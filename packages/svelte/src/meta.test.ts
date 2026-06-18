@@ -36,6 +36,8 @@ import { meta as tagMeta } from './tag/meta.js';
 import { meta as avatarMeta } from './avatar/meta.js';
 import { meta as badgeMeta } from './badge/meta.js';
 import { meta as cardMeta } from './card/meta.js';
+import { meta as tooltipMeta } from './tooltip/meta.js';
+import { meta as popoverMeta } from './popover/meta.js';
 
 const metas = {
   buttonMeta,
@@ -75,6 +77,8 @@ const metas = {
   avatarMeta,
   badgeMeta,
   cardMeta,
+  tooltipMeta,
+  popoverMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
