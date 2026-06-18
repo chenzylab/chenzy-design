@@ -35,6 +35,8 @@
     Breadcrumb,
     Pagination,
     Steps,
+    Tabs,
+    Dropdown,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -50,6 +52,18 @@
   let transferVal = $state<(string | number)[]>(['b']);
   let page = $state(1);
   let step = $state(1);
+  let activeTab = $state<string | number>('a');
+  let lastDropdown = $state('');
+  const tabList = [
+    { tab: '账户', itemKey: 'a' },
+    { tab: '安全', itemKey: 'b' },
+    { tab: '通知', itemKey: 'c', disabled: true },
+  ];
+  const dropdownItems = [
+    { key: 'edit', label: '编辑' },
+    { key: 'copy', label: '复制' },
+    { key: 'delete', label: '删除', danger: true },
+  ];
   const transferData = [
     { key: 'a', label: '北京' },
     { key: 'b', label: '上海' },
@@ -455,6 +469,29 @@
       />
     </div>
     <Text type="tertiary">当前步：{step}</Text>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Tabs / Dropdown</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 360px">
+      <Tabs {tabList} value={activeTab} onChange={(k) => (activeTab = k)} />
+    </div>
+    <Text type="tertiary">当前标签：{activeTab}</Text>
+
+    <Tabs {tabList} type="card" value={activeTab} onChange={(k) => (activeTab = k)} />
+
+    <Dropdown
+      items={dropdownItems}
+      trigger="click"
+      onSelect={(k) => (lastDropdown = String(k))}
+    >
+      {#snippet triggerContent()}
+        <Button type="secondary">操作菜单 ▾</Button>
+      {/snippet}
+    </Dropdown>
+    <Text type="tertiary">上次选择：{lastDropdown || '（无）'}</Text>
   </Space>
 </main>
 

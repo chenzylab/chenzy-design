@@ -28,6 +28,8 @@ import { meta as uploadMeta } from './upload/meta.js';
 import { meta as breadcrumbMeta } from './breadcrumb/meta.js';
 import { meta as paginationMeta } from './pagination/meta.js';
 import { meta as stepsMeta } from './steps/meta.js';
+import { meta as tabsMeta } from './tabs/meta.js';
+import { meta as dropdownMeta } from './dropdown/meta.js';
 
 const metas = {
   buttonMeta,
@@ -59,6 +61,8 @@ const metas = {
   breadcrumbMeta,
   paginationMeta,
   stepsMeta,
+  tabsMeta,
+  dropdownMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
