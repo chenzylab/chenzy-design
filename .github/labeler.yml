@@ -1,0 +1,41 @@
+# 按改动的文件路径自动给 PR 打标签（actions/labeler@v5）
+tokens:
+  - changed-files:
+      - any-glob-to-any-file: packages/tokens/**
+
+unocss-preset:
+  - changed-files:
+      - any-glob-to-any-file: packages/unocss-preset/**
+
+core:
+  - changed-files:
+      - any-glob-to-any-file: packages/core/**
+
+locale:
+  - changed-files:
+      - any-glob-to-any-file: packages/locale/**
+
+icons:
+  - changed-files:
+      - any-glob-to-any-file: packages/icons/**
+
+svelte:
+  - changed-files:
+      - any-glob-to-any-file: packages/svelte/**
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: packages/docs/**
+
+spec:
+  - changed-files:
+      - any-glob-to-any-file: specs/**
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+
+changeset:
+  - changed-files:
+      - any-glob-to-any-file: .changeset/**

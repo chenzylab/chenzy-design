@@ -23,10 +23,16 @@ packages/
 ## 开发
 ```bash
 pnpm install
+git config core.hooksPath .githooks   # 启用提交钩子（拦截违规 commit message）
 pnpm build:tokens     # 先生成 tokens.css / 类型
-pnpm dev              # 启动文档站（演示 Button + 主题切换）
+pnpm dev              # 启动文档站（演示组件 + 主题切换）
 pnpm verify           # lint + typecheck + test + build
 ```
+
+## 提交与发版
+- 提交信息遵循 Conventional Commits，且**不得包含任何 AI/助手字样**（由 `.githooks/commit-msg` 强制，规则见 AGENTS.md §7.1）。
+- 需发版的改动附 changeset：`pnpm changeset`；维护者 `pnpm version-packages` → `pnpm release`。
+- 依赖更新由 **Dependabot** 每周自动开 PR；PR 由 **labeler** 按改动路径自动打标签。
 
 ## 当前进度（M0 基建）
 - [x] monorepo 脚手架、根配置、CI

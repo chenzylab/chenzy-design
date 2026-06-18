@@ -1,0 +1,18 @@
+#!/bin/sh
+# 拦截含 AI/助手相关字样的 commit message。
+# 启用：git config core.hooksPath .githooks
+# 规则见 AGENTS.md §7.1。
+
+msg_file="$1"
+# 大小写不敏感匹配常见 AI 署名/字样
+pattern='co-authored-by:[[:space:]]*claude|generated with|claude|anthropic|copilot|chatgpt|\bai[ -]generated\b'
+
+if grep -iqE "$pattern" "$msg_file"; then
+  echo "✖ 提交被拒绝：commit message 不得包含 AI/助手相关字样。" >&2
+  echo "  命中以下内容：" >&2
+  grep -inE "$pattern" "$msg_file" | sed 's/^/    /' >&2
+  echo "  请改写提交信息，只描述「改了什么、为什么」。规则见 AGENTS.md §7.1。" >&2
+  exit 1
+fi
+
+exit 0

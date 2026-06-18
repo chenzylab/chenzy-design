@@ -19,9 +19,13 @@
     "test:watch": "vitest",
     "test:a11y": "echo \"[placeholder] Playwright + axe a11y suite — see specs/00-foundation/a11y.spec.md\"",
     "perf:check": "echo \"[placeholder] size-limit + bench — see specs/00-foundation/performance.spec.md\"",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "@eslint/js": "^9.17.0",
     "@sveltejs/package": "^2.3.7",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",

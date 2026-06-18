@@ -107,6 +107,13 @@ CSS 变量分三层（详见 `specs/00-foundation/theming.spec.md`）：
 
 `pnpm lint && pnpm typecheck && pnpm test && pnpm test:a11y && pnpm build && pnpm perf:check`
 
+## 7.1 提交信息规范（强制）
+
+- 遵循 Conventional Commits：`type(scope): 描述`（type 如 feat/fix/chore/ci/docs/refactor）。
+- **commit message 中禁止出现任何 AI/助手相关字样**：不得包含 `Co-Authored-By: Claude`、`Generated with ...`、`Claude`、`AI`、`Anthropic`、`Copilot` 等。提交信息只描述「改了什么、为什么」。
+- 本仓库提供本地 `commit-msg` 钩子（`.githooks/commit-msg`）自动拦截违规信息；通过 `git config core.hooksPath .githooks` 启用（见 README）。
+- 需发版的改动须附 changeset：`pnpm changeset`。
+
 ## 8. SPEC / SKILL 索引
 
 - 全局基建 SPEC：见 `specs/00-foundation/`（00 总纲、token、theming、a11y、i18n、performance、mvvm-adapter、ai-friendly、content-guidelines）
