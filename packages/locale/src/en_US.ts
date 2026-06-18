@@ -31,6 +31,18 @@ export const en_US: Locale = {
     now: 'Now',
     confirm: 'OK',
   },
+  Transfer: {
+    searchPlaceholder: 'Search',
+    itemsUnit: '{count} item(s)',
+    empty: 'No data',
+  },
+  Upload: {
+    trigger: 'Select file',
+    draggerText: 'Click or drag files here to upload',
+    sizeError: 'File must not exceed {size}',
+    limitError: 'At most {limit} file(s)',
+    remove: 'Remove',
+  },
   Form: {
     required: '{label} is required',
     optional: 'optional',

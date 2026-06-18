@@ -48,6 +48,21 @@ export interface Locale {
     now: string;
     confirm: string;
   };
+  Transfer: {
+    searchPlaceholder: string;
+    /** uses {count} */
+    itemsUnit: string;
+    empty: string;
+  };
+  Upload: {
+    trigger: string;
+    draggerText: string;
+    /** uses {size} */
+    sizeError: string;
+    /** uses {limit} */
+    limitError: string;
+    remove: string;
+  };
   Form: {
     /** uses {label} */
     required: string;
