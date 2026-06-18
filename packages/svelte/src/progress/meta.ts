@@ -1,0 +1,132 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * Progress — see specs/components/feedback/Progress.spec.md
+ */
+export const meta = {
+  name: 'Progress',
+  category: 'feedback',
+  description:
+    '进度条：line/circle/dashboard 三形态，normal/success/error/warning 四态；percent 钳制到 0..100，showInfo/format 控制信息区，success 环形显示对勾（非颜色冗余信号），indeterminate 不确定进度循环动画；role=progressbar，受控 percent 不回写，仅 onComplete/onChange 通知。',
+  exports: ['Progress'],
+  props: [
+    { name: 'percent', type: 'number', default: '0', desc: '受控进度，钳制到 0..100' },
+    {
+      name: 'type',
+      type: "'line'|'circle'|'dashboard'",
+      default: "'line'",
+      desc: '形态',
+    },
+    {
+      name: 'status',
+      type: "'normal'|'success'|'error'|'warning'",
+      default: "'normal'",
+      desc: '语义状态',
+    },
+    { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
+    {
+      name: 'width',
+      type: 'number',
+      default: 'undefined',
+      desc: 'circle/dashboard 直径 px，覆写 size',
+    },
+    { name: 'strokeWidth', type: 'number', default: 'undefined', desc: '笔触/条高 px 覆写' },
+    {
+      name: 'strokeLinecap',
+      type: "'round'|'butt'|'square'",
+      default: "'round'",
+      desc: 'circle 端点形状',
+    },
+    { name: 'showInfo', type: 'boolean', default: 'true', desc: '是否显示信息区' },
+    {
+      name: 'format',
+      type: '(percent: number, status: ProgressStatus) => string | null',
+      default: 'undefined',
+      desc: '自定义信息文本；返回 null 隐藏',
+    },
+    {
+      name: 'indeterminate',
+      type: 'boolean',
+      default: 'false',
+      desc: '不确定进度循环动画（纯 CSS）',
+    },
+    {
+      name: 'gapDegree',
+      type: 'number',
+      default: 'dashboard 时 75，否则 0',
+      desc: 'dashboard 开口角度',
+    },
+    {
+      name: 'gapPosition',
+      type: "'top'|'bottom'|'left'|'right'",
+      default: "'bottom'",
+      desc: '开口位置',
+    },
+    {
+      name: 'successWhenFull',
+      type: 'boolean',
+      default: 'false',
+      desc: '满 100 且 status=normal 时转 success',
+    },
+    {
+      name: 'motion',
+      type: 'boolean',
+      default: 'true',
+      desc: '过渡/循环动画，被 reduced-motion 覆盖',
+    },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍标签' },
+    {
+      name: 'formatSnippet',
+      type: 'Snippet<[{ percent: number; status: ProgressStatus }]>',
+      default: 'undefined',
+      desc: '信息区 snippet，优先于 format prop',
+    },
+    {
+      name: 'onComplete',
+      type: '(info: { percent: number }) => void',
+      default: 'undefined',
+      desc: 'percent 首达 100 触发一次',
+    },
+    {
+      name: 'onChange',
+      type: '(info: { percent: number }) => void',
+      default: 'undefined',
+      desc: 'percent 变更回调',
+    },
+  ],
+  events: [
+    { name: 'onComplete', desc: 'percent 首次到达 100' },
+    { name: 'onChange', desc: 'percent 变化' },
+  ],
+  slots: [{ name: 'formatSnippet', desc: '自定义信息区内容（优先于 format prop）' }],
+  a11y: {
+    hasRole: true,
+    focusable: false,
+    note: 'role=progressbar + aria-valuemin/max=0/100 与 aria-valuenow/aria-valuetext；indeterminate 时省略 aria-valuenow 并设 aria-busy；circle success 显示对勾图标作为非颜色冗余信号（aria-hidden）；不可聚焦不设 tabindex；reduced-motion 禁用过渡与循环动画。',
+  },
+  tokens: [
+    '--cd-progress-track-color',
+    '--cd-progress-stroke-normal',
+    '--cd-progress-stroke-success',
+    '--cd-progress-stroke-error',
+    '--cd-progress-stroke-warning',
+    '--cd-progress-info-color',
+    '--cd-progress-info-success-color',
+    '--cd-progress-height-small',
+    '--cd-progress-height-default',
+    '--cd-progress-height-large',
+    '--cd-progress-circle-size-small',
+    '--cd-progress-circle-size-default',
+    '--cd-progress-circle-size-large',
+    '--cd-progress-transition',
+  ],
+  responsive: false,
+  examples: [
+    { title: 'line 受控', code: '<Progress percent={percent} />' },
+    { title: 'circle 带百分比', code: '<Progress type="circle" percent={75} />' },
+    {
+      title: 'dashboard',
+      code: '<Progress type="dashboard" percent={60} status="warning" />',
+    },
+    { title: 'indeterminate', code: '<Progress indeterminate ariaLabel="加载中" />' },
+  ],
+} as const;

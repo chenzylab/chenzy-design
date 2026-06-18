@@ -30,6 +30,13 @@ export const zh_CN: Locale = {
     loading: '加载中',
     loaded: '加载完成',
   },
+  Progress: {
+    ariaLabel: '进度',
+    valueText: '已完成 {percent}',
+    success: '已完成',
+    error: '失败',
+    indeterminate: '加载中',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

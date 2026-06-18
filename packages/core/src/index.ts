@@ -93,3 +93,14 @@ export {
   type SpinController,
   type SpinOptions,
 } from './spin.js';
+export {
+  clampPercent,
+  resolveStatus,
+  getCirclePathProps,
+  getRootAriaProps,
+  type ProgressStatus,
+  type ProgressType,
+  type GapPosition,
+  type CirclePathProps,
+  type RootAriaProps,
+} from './progress.js';

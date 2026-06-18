@@ -51,6 +51,14 @@ export interface Locale {
     loading: string;
     loaded: string;
   };
+  Progress: {
+    ariaLabel: string;
+    /** uses {percent} */
+    valueText: string;
+    success: string;
+    error: string;
+    indeterminate: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;
