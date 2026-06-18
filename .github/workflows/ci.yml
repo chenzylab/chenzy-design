@@ -17,11 +17,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:tokens
+      # build first so downstream packages' dist/*.d.ts exist before typecheck
+      - run: pnpm build
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm build
       # a11y / perf gates wired once components land:
       # - run: pnpm test:a11y
       # - run: pnpm perf:check
