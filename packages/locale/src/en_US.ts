@@ -37,6 +37,11 @@ export const en_US: Locale = {
     error: 'Failed',
     indeterminate: 'Loading',
   },
+  Skeleton: {
+    loading: 'Loading content',
+    loaded: 'Content loaded',
+    imageAlt: 'Image placeholder',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

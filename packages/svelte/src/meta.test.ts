@@ -54,6 +54,7 @@ import { meta as scrollListMeta } from './scroll-list/meta.js';
 import { meta as overflowListMeta } from './overflow-list/meta.js';
 import { meta as spinMeta } from './spin/meta.js';
 import { meta as progressMeta } from './progress/meta.js';
+import { meta as skeletonMeta } from './skeleton/meta.js';
 
 const metas = {
   buttonMeta,
@@ -111,6 +112,7 @@ const metas = {
   overflowListMeta,
   spinMeta,
   progressMeta,
+  skeletonMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

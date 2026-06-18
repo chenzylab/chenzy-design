@@ -105,6 +105,15 @@ export {
   type ProgressType,
 } from './progress/index.js';
 export { Carousel, carouselMeta } from './carousel/index.js';
+export {
+  Skeleton,
+  SkeletonTitle,
+  SkeletonParagraph,
+  SkeletonAvatar,
+  SkeletonImage,
+  SkeletonButton,
+  skeletonMeta,
+} from './skeleton/index.js';
 // TreeNodeData/TreeKey 经 ./tree 子路径或 @chenzy-design/core 暴露；
 // 此处不在根 barrel 重导出类型，避免与 tree-select 的 TreeKey 命名冲突。
 export { Tree, treeMeta } from './tree/index.js';
