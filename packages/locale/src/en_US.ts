@@ -13,6 +13,12 @@ export const en_US: Locale = {
     expanded: 'Sidebar expanded',
     collapsed: 'Sidebar collapsed',
   },
+  Select: {
+    placeholder: 'Please select',
+    emptyText: 'No matches',
+    searchPlaceholder: 'Search',
+    loading: 'Loading',
+  },
   Form: {
     required: '{label} is required',
     optional: 'optional',

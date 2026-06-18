@@ -30,6 +30,12 @@ export interface Locale {
     expanded: string;
     collapsed: string;
   };
+  Select: {
+    placeholder: string;
+    emptyText: string;
+    searchPlaceholder: string;
+    loading: string;
+  };
   Form: {
     /** uses {label} */
     required: string;
