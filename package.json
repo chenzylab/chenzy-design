@@ -37,8 +37,13 @@
     "svelte-check": "^4.1.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.61.1",
-    "unocss": "^0.65.0",
-    "vite": "^6.0.0",
+    "unocss": "^66.7.2",
+    "vite": "^8.0.16",
     "vitest": "^4.1.9"
+  },
+  "pnpm": {
+    "overrides": {
+      "unocss": "^66.7.2"
+    }
   }
 }

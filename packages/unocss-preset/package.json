@@ -18,6 +18,6 @@
     "@chenzy-design/tokens": "workspace:*"
   },
   "peerDependencies": {
-    "unocss": ">=0.65.0"
+    "unocss": ">=66.0.0"
   }
 }
