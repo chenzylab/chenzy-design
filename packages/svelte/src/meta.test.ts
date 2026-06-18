@@ -6,6 +6,11 @@ import { meta as spaceMeta } from './space/meta.js';
 import { meta as typographyMeta } from './typography/meta.js';
 import { meta as gridMeta } from './grid/meta.js';
 import { meta as layoutMeta } from './layout/meta.js';
+import { meta as inputMeta } from './input/meta.js';
+import { meta as textareaMeta } from './textarea/meta.js';
+import { meta as switchMeta } from './switch/meta.js';
+import { meta as checkboxMeta } from './checkbox/meta.js';
+import { meta as radioMeta } from './radio/meta.js';
 
 const metas = {
   buttonMeta,
@@ -15,6 +20,11 @@ const metas = {
   typographyMeta,
   gridMeta,
   layoutMeta,
+  inputMeta,
+  textareaMeta,
+  switchMeta,
+  checkboxMeta,
+  radioMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
@@ -33,7 +43,9 @@ function allProps(m: Record<string, unknown>): PropEntry[] {
 describe('component metadata', () => {
   it.each(Object.entries(metas))('%s is well-formed', (_name, m) => {
     expect(m.name).toBeTruthy();
-    expect(m.category).toBe('basic');
+    expect(['basic', 'input', 'navigation', 'show', 'feedback', 'other']).toContain(
+      m.category,
+    );
     expect(m.description).toBeTruthy();
     expect(allProps(m).length).toBeGreaterThan(0);
   });

@@ -11,9 +11,20 @@
     Row,
     Col,
     Layout,
+    Input,
+    Textarea,
+    Switch,
+    Checkbox,
+    CheckboxGroup,
+    Radio,
+    RadioGroup,
   } from '@chenzy-design/svelte';
 
   let collapsed = $state(false);
+  let inputVal = $state('');
+  let switchOn = $state(true);
+  let checks = $state<(string | number)[]>(['a']);
+  let radioVal = $state<string | number | boolean>('1');
 
   let theme = $state<'light' | 'dark'>('light');
   $effect(() => {
@@ -129,6 +140,55 @@
       </Layout>
     </Layout>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>M2 Input</Title>
+  <Space direction="vertical" align="start">
+    <Space>
+      <Input
+        placeholder="请输入"
+        clearable
+        value={inputVal}
+        onChange={(v) => (inputVal = v)}
+      />
+      <Input type="password" placeholder="密码" />
+      <Input status="error" placeholder="错误态" />
+      <Input disabled placeholder="禁用" />
+    </Space>
+    <Text type="tertiary">受控值：{inputVal || '（空）'}</Text>
+
+    <Textarea placeholder="多行文本，autosize" autosize showCount maxLength={100} />
+
+    <Space>
+      <Switch value={switchOn} onChange={(v) => (switchOn = v)} />
+      <Text>开关：{switchOn ? '开' : '关'}</Text>
+      <Switch disabled />
+      <Switch loading />
+    </Space>
+
+    <CheckboxGroup
+      value={checks}
+      onChange={(v) => (checks = v)}
+      options={[
+        { label: '选项 A', value: 'a' },
+        { label: '选项 B', value: 'b' },
+        { label: '选项 C（禁用）', value: 'c', disabled: true },
+      ]}
+    />
+    <Text type="tertiary">已选：{checks.join(', ') || '（无）'}</Text>
+
+    <RadioGroup
+      value={radioVal}
+      onChange={(v) => (radioVal = v)}
+      options={[
+        { label: '单选 1', value: '1' },
+        { label: '单选 2', value: '2' },
+        { label: '单选 3', value: '3' },
+      ]}
+    />
+    <Text type="tertiary">当前：{radioVal}</Text>
+  </Space>
 </main>
 
 <style>
