@@ -23,3 +23,10 @@ export {
   LayoutSider,
   layoutMeta,
 } from './layout/index.js';
+
+// --- M2 Input ---
+export { Input, inputMeta } from './input/index.js';
+export { Textarea, textareaMeta } from './textarea/index.js';
+export { Switch, switchMeta } from './switch/index.js';
+export { Checkbox, CheckboxGroup, checkboxMeta } from './checkbox/index.js';
+export { Radio, RadioGroup, radioMeta } from './radio/index.js';

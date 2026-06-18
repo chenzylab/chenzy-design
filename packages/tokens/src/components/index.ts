@@ -6,6 +6,10 @@ import { spaceTokens } from './space.js';
 import { typographyTokens } from './typography.js';
 import { gridTokens } from './grid.js';
 import { layoutTokens } from './layout.js';
+import { inputTokens } from './input.js';
+import { switchTokens } from './switch.js';
+import { checkboxTokens } from './checkbox.js';
+import { radioTokens } from './radio.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -15,4 +19,8 @@ export const componentTokens = {
   ...typographyTokens,
   ...gridTokens,
   ...layoutTokens,
+  ...inputTokens,
+  ...switchTokens,
+  ...checkboxTokens,
+  ...radioTokens,
 } as const;
