@@ -58,6 +58,7 @@
     Table,
     Calendar,
     ScrollList,
+    OverflowList,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -134,6 +135,10 @@
     disabled: i === 3 || i === 4,
   }));
   let pickedHour = $state<string | number>(9);
+
+  const overflowTags = ['设计', '研发', '测试', '产品', '运营', '市场', '财务', '法务'];
+  let overflowWidth = $state(400);
+  let overflowHidden = $state(0);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -851,6 +856,24 @@
     />
   </div>
   <Text type="tertiary">选中小时：{pickedHour}</Text>
+
+  <Divider />
+
+  <Title heading={5}>OverflowList（溢出折叠）</Title>
+  <Text type="tertiary">拖动滑块改变容器宽度，溢出标签自动收纳进 +N</Text>
+  <input type="range" min="120" max="640" bind:value={overflowWidth} style="width: 320px; display: block" aria-label="容器宽度" />
+  <div style="width: {overflowWidth}px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px">
+    <OverflowList
+      items={overflowTags}
+      ariaLabel="部门标签"
+      onOverflowChange={(info) => (overflowHidden = info.overflowCount)}
+    >
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+  <Text type="tertiary">容器宽 {overflowWidth}px，已折叠 {overflowHidden} 项</Text>
 </main>
 
 {#snippet slideA()}

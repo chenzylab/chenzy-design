@@ -41,6 +41,12 @@ export interface Locale {
   Descriptions: {
     empty: string;
   };
+  OverflowList: {
+    /** uses {count} */
+    moreLabel: string;
+    /** uses {count} */
+    moreAriaLabel: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

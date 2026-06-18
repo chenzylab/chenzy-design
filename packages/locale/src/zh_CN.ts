@@ -22,6 +22,10 @@ export const zh_CN: Locale = {
     error: '加载失败',
   },
   Descriptions: { empty: '-' },
+  OverflowList: {
+    moreLabel: '+{count}',
+    moreAriaLabel: '显示其余 {count} 项',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

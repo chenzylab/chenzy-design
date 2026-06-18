@@ -51,6 +51,7 @@ import { meta as treeMeta } from './tree/meta.js';
 import { meta as tableMeta } from './table/meta.js';
 import { meta as calendarMeta } from './calendar/meta.js';
 import { meta as scrollListMeta } from './scroll-list/meta.js';
+import { meta as overflowListMeta } from './overflow-list/meta.js';
 
 const metas = {
   buttonMeta,
@@ -105,6 +106,7 @@ const metas = {
   tableMeta,
   calendarMeta,
   scrollListMeta,
+  overflowListMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
