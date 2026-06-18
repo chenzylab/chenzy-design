@@ -3,12 +3,12 @@
  * The actual values live in tokens.css (generated). Consumers reference vars.
  */
 import { aliasLight } from './alias/index.js';
-import { buttonTokens } from './components/button.js';
+import { componentTokens } from './components/index.js';
 
 export const prefix = '--cd-' as const;
 
 export type AliasTokenKey = keyof typeof aliasLight;
-export type ComponentTokenKey = keyof typeof buttonTokens;
+export type ComponentTokenKey = keyof typeof componentTokens;
 export type TokenKey = AliasTokenKey | ComponentTokenKey;
 
 /** resolve a semantic/component token name to its CSS var() reference */

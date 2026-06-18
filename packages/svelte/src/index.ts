@@ -3,3 +3,14 @@
  * Each component is its own entry for tree-shaking.
  */
 export { Button, buttonMeta } from './button/index.js';
+export { Icon, iconMeta } from './icon/index.js';
+export { Divider, dividerMeta } from './divider/index.js';
+export { Space, spaceMeta } from './space/index.js';
+export {
+  Typography,
+  Title,
+  Text,
+  Paragraph,
+  Link,
+  typographyMeta,
+} from './typography/index.js';
