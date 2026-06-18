@@ -19,6 +19,18 @@ export const en_US: Locale = {
     searchPlaceholder: 'Search',
     loading: 'Loading',
   },
+  DatePicker: {
+    placeholder: 'Select date',
+    today: 'Today',
+    clear: 'Clear',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+  },
+  TimePicker: {
+    placeholder: 'Select time',
+    now: 'Now',
+    confirm: 'OK',
+  },
   Form: {
     required: '{label} is required',
     optional: 'optional',

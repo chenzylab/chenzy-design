@@ -36,6 +36,18 @@ export interface Locale {
     searchPlaceholder: string;
     loading: string;
   };
+  DatePicker: {
+    placeholder: string;
+    today: string;
+    clear: string;
+    prevMonth: string;
+    nextMonth: string;
+  };
+  TimePicker: {
+    placeholder: string;
+    now: string;
+    confirm: string;
+  };
   Form: {
     /** uses {label} */
     required: string;
