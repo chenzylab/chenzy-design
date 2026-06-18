@@ -74,3 +74,5 @@ export { Tag, tagMeta } from './tag/index.js';
 export { Avatar, avatarMeta } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, cardMeta } from './card/index.js';
+export { Tooltip, tooltipMeta } from './tooltip/index.js';
+export { Popover, popoverMeta } from './popover/index.js';

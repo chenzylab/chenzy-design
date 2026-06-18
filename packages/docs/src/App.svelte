@@ -43,6 +43,8 @@
     Avatar,
     Badge,
     Card,
+    Tooltip,
+    Popover,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -574,6 +576,21 @@
         {/snippet}
       </Card>
     </div>
+
+    <Space>
+      <Tooltip content="这是一条提示文字" placement="top">
+        <Button type="secondary">悬停看提示</Button>
+      </Tooltip>
+      <Tooltip content="点击触发的提示" trigger="click" theme="light">
+        <Button type="secondary">点击提示</Button>
+      </Tooltip>
+      <Popover title="弹出卡片" trigger="click" position="bottom">
+        {#snippet contentSlot()}
+          <div style="width: 160px">这是 Popover 的富内容区域。</div>
+        {/snippet}
+        <Button type="primary">点击弹出</Button>
+      </Popover>
+    </Space>
   </Space>
 </main>
 
