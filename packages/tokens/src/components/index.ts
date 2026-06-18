@@ -20,6 +20,7 @@ import { treeTokens } from './tree.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
 import { tabsTokens } from './tabs.js';
+import { menuTokens } from './menu.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -43,4 +44,5 @@ export const componentTokens = {
   ...transferTokens,
   ...navigationTokens,
   ...tabsTokens,
+  ...menuTokens,
 } as const;
