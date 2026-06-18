@@ -57,6 +57,7 @@
     Tree,
     Table,
     Calendar,
+    ScrollList,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -126,6 +127,13 @@
     { key: 'm7', start: new Date(2026, 5, 22), title: '发版', color: 'var(--cd-color-success)' },
   ];
   let calSelectedText = $state('（未选）');
+
+  const hourData = Array.from({ length: 24 }, (_, i) => ({
+    value: i,
+    label: String(i).padStart(2, '0'),
+    disabled: i === 3 || i === 4,
+  }));
+  let pickedHour = $state<string | number>(9);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -829,6 +837,20 @@
     onSelect={(info) => (calSelectedText = info.date.toLocaleDateString('zh-CN'))}
   />
   <Text type="tertiary">选中日期：{calSelectedText}</Text>
+
+  <Divider />
+
+  <Title heading={5}>ScrollList（滚轮选择）</Title>
+  <Text type="tertiary">滚动 / 点击 / 方向键选择小时（03、04 禁用）</Text>
+  <div style="width: 80px">
+    <ScrollList
+      data={hourData}
+      defaultValue={9}
+      ariaLabel="小时"
+      onChange={(info) => (pickedHour = info.value)}
+    />
+  </div>
+  <Text type="tertiary">选中小时：{pickedHour}</Text>
 </main>
 
 {#snippet slideA()}

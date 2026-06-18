@@ -28,6 +28,7 @@ import { listTokens } from './list.js';
 import { virtualTokens } from './virtual.js';
 import { tableTokens } from './table.js';
 import { calendarTokens } from './calendar.js';
+import { scrollListTokens } from './scroll-list.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -59,4 +60,5 @@ export const componentTokens = {
   ...virtualTokens,
   ...tableTokens,
   ...calendarTokens,
+  ...scrollListTokens,
 } as const;

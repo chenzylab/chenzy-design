@@ -41,6 +41,12 @@ export interface Locale {
   Descriptions: {
     empty: string;
   };
+  ScrollList: {
+    ariaLabel: string;
+    empty: string;
+    /** uses {label} */
+    announceSelected: string;
+  };
   Calendar: {
     today: string;
     prev: string;

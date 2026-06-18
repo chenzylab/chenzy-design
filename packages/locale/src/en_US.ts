@@ -22,6 +22,11 @@ export const en_US: Locale = {
     error: 'Failed to load',
   },
   Descriptions: { empty: '-' },
+  ScrollList: {
+    ariaLabel: 'Scroll to select',
+    empty: 'No options',
+    announceSelected: 'Selected {label}',
+  },
   Calendar: {
     today: 'Today',
     prev: 'Previous',
