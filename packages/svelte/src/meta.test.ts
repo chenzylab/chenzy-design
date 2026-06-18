@@ -32,6 +32,10 @@ import { meta as tabsMeta } from './tabs/meta.js';
 import { meta as dropdownMeta } from './dropdown/meta.js';
 import { meta as menuMeta } from './menu/meta.js';
 import { meta as anchorMeta } from './anchor/meta.js';
+import { meta as tagMeta } from './tag/meta.js';
+import { meta as avatarMeta } from './avatar/meta.js';
+import { meta as badgeMeta } from './badge/meta.js';
+import { meta as cardMeta } from './card/meta.js';
 
 const metas = {
   buttonMeta,
@@ -67,6 +71,10 @@ const metas = {
   dropdownMeta,
   menuMeta,
   anchorMeta,
+  tagMeta,
+  avatarMeta,
+  badgeMeta,
+  cardMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

@@ -39,6 +39,10 @@
     Dropdown,
     Menu,
     Anchor,
+    Tag,
+    Avatar,
+    Badge,
+    Card,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -533,6 +537,44 @@
       <Text type="tertiary">锚点：{anchorKey}</Text>
     </div>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>M4 展示：Tag / Avatar / Badge / Card</Title>
+  <Space direction="vertical" align="start">
+    <Space>
+      <Tag color="primary">主要</Tag>
+      <Tag color="success" type="solid">成功</Tag>
+      <Tag color="danger" type="ghost">危险</Tag>
+      <Tag closable>可关闭</Tag>
+      <Tag checkable>可选中</Tag>
+    </Space>
+
+    <Space>
+      <Avatar>U</Avatar>
+      <Avatar shape="square" color="primary">陈</Avatar>
+      <Avatar size="large" src="https://invalid.example/x.png" alt="降级A" />
+      <Avatar dot status="error">E</Avatar>
+    </Space>
+
+    <Space>
+      <Badge count={5}><Avatar shape="square">消</Avatar></Badge>
+      <Badge count={128}><Avatar shape="square">多</Avatar></Badge>
+      <Badge dot><Avatar shape="square">点</Avatar></Badge>
+      <Badge status="success" count="在线" />
+    </Space>
+
+    <div style="width: 280px">
+      <Card title="卡片标题" bordered hoverable>
+        {#snippet extra()}<Text type="tertiary">更多</Text>{/snippet}
+        这是卡片正文内容。
+        {#snippet actions()}
+          <Button type="tertiary" size="small">操作一</Button>
+          <Button type="tertiary" size="small">操作二</Button>
+        {/snippet}
+      </Card>
+    </div>
+  </Space>
 </main>
 
 <style>

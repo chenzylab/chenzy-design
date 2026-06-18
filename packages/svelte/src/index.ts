@@ -68,3 +68,9 @@ export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
 export { Dropdown, dropdownMeta, type DropdownItem } from './dropdown/index.js';
 export { Menu, menuMeta, type MenuItemDef } from './menu/index.js';
 export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
+
+// --- M4 Show ---
+export { Tag, tagMeta } from './tag/index.js';
+export { Avatar, avatarMeta } from './avatar/index.js';
+export { Badge, badgeMeta } from './badge/index.js';
+export { Card, cardMeta } from './card/index.js';
