@@ -1,0 +1,17 @@
+{
+  "name": "@chenzy-design/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@chenzy-design/svelte": "workspace:*",
+    "@chenzy-design/tokens": "workspace:*",
+    "@chenzy-design/unocss-preset": "workspace:*"
+  }
+}

@@ -76,6 +76,18 @@ importers:
 
   packages/locale: {}
 
+  packages/playground:
+    dependencies:
+      '@chenzy-design/svelte':
+        specifier: workspace:*
+        version: link:../svelte
+      '@chenzy-design/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      '@chenzy-design/unocss-preset':
+        specifier: workspace:*
+        version: link:../unocss-preset
+
   packages/svelte:
     dependencies:
       '@chenzy-design/core':
