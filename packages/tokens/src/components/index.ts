@@ -25,6 +25,7 @@ import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { dataDisplayTokens } from './data-display.js';
 import { listTokens } from './list.js';
+import { virtualTokens } from './virtual.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -53,4 +54,5 @@ export const componentTokens = {
   ...tooltipTokens,
   ...dataDisplayTokens,
   ...listTokens,
+  ...virtualTokens,
 } as const;
