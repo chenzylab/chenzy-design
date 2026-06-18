@@ -12,6 +12,7 @@
     "build:tokens": "pnpm --filter @chenzy-design/tokens build",
     "build": "pnpm build:tokens && pnpm -r --filter './packages/*' build",
     "dev": "pnpm --filter @chenzy-design/docs dev",
+    "play": "pnpm --filter @chenzy-design/playground dev",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "typecheck": "pnpm -r --filter './packages/*' typecheck",
