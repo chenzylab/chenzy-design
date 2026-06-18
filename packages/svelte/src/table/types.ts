@@ -1,0 +1,43 @@
+/**
+ * Table 公共类型 — 由 Table.svelte 消费、index.ts 对外 re-export。
+ * 拆成独立模块以避免 .svelte 组件无法导出类型声明的限制。
+ * See specs/components/show/Table.spec.md
+ */
+import type { Snippet } from 'svelte';
+import type { RowKey } from '@chenzy-design/core';
+
+export type Align = 'left' | 'center' | 'right';
+export type TableSize = 'small' | 'default' | 'large';
+
+export interface ColumnDef<T> {
+  /** 列唯一键，缺省回退 dataIndex / 列索引 */
+  key?: string;
+  /** 取值字段 */
+  dataIndex?: keyof T & string;
+  /** 表头文案 */
+  title: string;
+  /** 列宽 */
+  width?: number | string;
+  /** 对齐方式，默认 left */
+  align?: Align;
+  /** 单元格溢出省略 */
+  ellipsis?: boolean;
+  /** true 按 dataIndex 默认比较；或自定义比较器 */
+  sorter?: boolean | ((a: T, b: T) => number);
+  /** 单元格自定义渲染 */
+  render?: Snippet<[{ value: unknown; record: T; index: number }]>;
+}
+
+export interface RowSelection<T> {
+  /** 受控选中行 key 列表 */
+  selectedRowKeys?: RowKey[];
+  /** 非受控初始选中 */
+  defaultSelectedRowKeys?: RowKey[];
+  /** 选择变更回调 */
+  onChange?: (keys: RowKey[], rows: T[]) => void;
+  /** 逐行定制复选框属性（如 disabled） */
+  getCheckboxProps?: (record: T) => { disabled?: boolean };
+}
+
+export type { RowKey } from '@chenzy-design/core';
+export type { SortState, SortOrder } from '@chenzy-design/core';

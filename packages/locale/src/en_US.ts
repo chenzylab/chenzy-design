@@ -6,7 +6,16 @@ export const en_US: Locale = {
   Modal: { okText: 'OK', cancelText: 'Cancel', close: 'Close' },
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
   Pagination: { total: '{total} items in total' },
-  Table: { emptyText: 'No data' },
+  Table: {
+    emptyText: 'No data',
+    selectAll: 'Select all',
+    selectRow: 'Select row',
+    sortBy: 'Sort by {column}',
+    sortAscend: 'Click to sort ascending',
+    sortDescend: 'Click to sort descending',
+    sortCancel: 'Click to cancel sorting',
+    selectedCount: '{count} selected',
+  },
   Empty: {
     noData: 'No data',
     noResult: 'No results',

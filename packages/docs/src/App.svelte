@@ -55,6 +55,7 @@
     VirtualList,
     Carousel,
     Tree,
+    Table,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -88,6 +89,29 @@
   ];
   let treeSel = $state<string | number>('figma');
   let treeChecked = $state<(string | number)[]>([]);
+
+  type TableRow = {
+    key: number;
+    name: string;
+    age: number;
+    city: string;
+    [k: string]: unknown;
+  };
+  const tableData: TableRow[] = [
+    { key: 1, name: '陈一', age: 32, city: '杭州' },
+    { key: 2, name: '林二', age: 28, city: '上海' },
+    { key: 3, name: '王三', age: 45, city: '北京' },
+    { key: 4, name: '赵四', age: 23, city: '深圳' },
+    { key: 5, name: '孙五', age: 38, city: '广州' },
+    { key: 6, name: '周六', age: 30, city: '成都' },
+    { key: 7, name: '吴七', age: 26, city: '武汉' },
+  ];
+  const tableColumns = [
+    { dataIndex: 'name', title: '姓名', sorter: true },
+    { dataIndex: 'age', title: '年龄', sorter: true, align: 'right' as const },
+    { dataIndex: 'city', title: '城市' },
+  ];
+  let tableSelected = $state<(string | number)[]>([]);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -761,6 +785,24 @@
       <Text type="tertiary">已勾选 {treeChecked.length} 项</Text>
     </div>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>Table</Title>
+  <Text type="tertiary">可排序（姓名/年龄）+ 行选择 + 分页（每页 5）</Text>
+  <Table
+    columns={tableColumns}
+    dataSource={tableData}
+    rowKey="key"
+    bordered
+    stripe
+    pagination={{ pageSize: 5 }}
+    rowSelection={{
+      selectedRowKeys: tableSelected,
+      onChange: (keys) => (tableSelected = keys),
+    }}
+  />
+  <Text type="tertiary">已选 {tableSelected.length} 行</Text>
 </main>
 
 {#snippet slideA()}

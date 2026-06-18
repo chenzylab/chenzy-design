@@ -6,7 +6,16 @@ export const zh_CN: Locale = {
   Modal: { okText: '确定', cancelText: '取消', close: '关闭' },
   Input: { clear: '清除', showPassword: '显示密码', hidePassword: '隐藏密码' },
   Pagination: { total: '共 {total} 条' },
-  Table: { emptyText: '暂无数据' },
+  Table: {
+    emptyText: '暂无数据',
+    selectAll: '全选',
+    selectRow: '选择此行',
+    sortBy: '按 {column} 排序',
+    sortAscend: '点击升序',
+    sortDescend: '点击降序',
+    sortCancel: '点击取消排序',
+    selectedCount: '已选 {count} 项',
+  },
   Empty: {
     noData: '暂无数据',
     noResult: '无搜索结果',
