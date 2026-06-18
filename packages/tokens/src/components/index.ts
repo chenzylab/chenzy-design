@@ -32,6 +32,7 @@ import { scrollListTokens } from './scroll-list.js';
 import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
 import { progressTokens } from './progress.js';
+import { skeletonTokens } from './skeleton.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -67,4 +68,5 @@ export const componentTokens = {
   ...overflowListTokens,
   ...spinTokens,
   ...progressTokens,
+  ...skeletonTokens,
 } as const;

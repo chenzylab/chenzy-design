@@ -37,6 +37,11 @@ export const zh_CN: Locale = {
     error: '失败',
     indeterminate: '加载中',
   },
+  Skeleton: {
+    loading: '内容加载中',
+    loaded: '内容已加载',
+    imageAlt: '图片占位',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

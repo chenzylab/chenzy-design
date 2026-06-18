@@ -59,6 +59,11 @@ export interface Locale {
     error: string;
     indeterminate: string;
   };
+  Skeleton: {
+    loading: string;
+    loaded: string;
+    imageAlt: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;
