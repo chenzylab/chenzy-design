@@ -3,7 +3,7 @@
  * Exposes Design Tokens as a UnoCSS theme + injects tokens.css.
  * See specs/00-foundation/theming.spec.md.
  */
-import type { Preset } from 'unocss';
+import type { Preset, PresetUnoTheme as Theme } from 'unocss';
 import { theme } from '@chenzy-design/tokens/uno-theme';
 
 export interface PresetOptions {
@@ -16,11 +16,11 @@ export interface PresetOptions {
   injectTokens?: boolean;
 }
 
-export function presetChenzy(options: PresetOptions = {}): Preset {
+export function presetChenzy(options: PresetOptions = {}): Preset<Theme> {
   const { injectTokens = false } = options;
   return {
     name: '@chenzy-design/unocss-preset',
-    theme,
+    theme: theme as Theme,
     preflights: injectTokens
       ? [{ getCSS: () => `@import '@chenzy-design/tokens/tokens.css';` }]
       : [],
