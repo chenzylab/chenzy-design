@@ -4,6 +4,8 @@ import { iconTokens } from './icon.js';
 import { dividerTokens } from './divider.js';
 import { spaceTokens } from './space.js';
 import { typographyTokens } from './typography.js';
+import { gridTokens } from './grid.js';
+import { layoutTokens } from './layout.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -11,4 +13,6 @@ export const componentTokens = {
   ...dividerTokens,
   ...spaceTokens,
   ...typographyTokens,
+  ...gridTokens,
+  ...layoutTokens,
 } as const;

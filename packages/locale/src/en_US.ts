@@ -7,4 +7,10 @@ export const en_US: Locale = {
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
   Pagination: { total: '{total} items in total' },
   Table: { emptyText: 'No data' },
+  Sider: {
+    expand: 'Expand sidebar',
+    collapse: 'Collapse sidebar',
+    expanded: 'Sidebar expanded',
+    collapsed: 'Sidebar collapsed',
+  },
 };

@@ -4,8 +4,18 @@ import { meta as iconMeta } from './icon/meta.js';
 import { meta as dividerMeta } from './divider/meta.js';
 import { meta as spaceMeta } from './space/meta.js';
 import { meta as typographyMeta } from './typography/meta.js';
+import { meta as gridMeta } from './grid/meta.js';
+import { meta as layoutMeta } from './layout/meta.js';
 
-const metas = { buttonMeta, iconMeta, dividerMeta, spaceMeta, typographyMeta };
+const metas = {
+  buttonMeta,
+  iconMeta,
+  dividerMeta,
+  spaceMeta,
+  typographyMeta,
+  gridMeta,
+  layoutMeta,
+};
 
 type PropEntry = { name?: string; type?: string };
 

@@ -6,3 +6,10 @@
 export { useId, __resetIdCounter } from './id.js';
 export { useFocusTrap, type FocusTrap } from './focus-trap.js';
 export { useDismiss, type DismissOptions } from './dismiss.js';
+export {
+  createSider,
+  type SiderApi,
+  type SiderOptions,
+  type SiderTrigger,
+  type Breakpoint,
+} from './sider.js';

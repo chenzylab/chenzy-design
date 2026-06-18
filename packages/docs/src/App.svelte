@@ -8,7 +8,12 @@
     Text,
     Paragraph,
     Link,
+    Row,
+    Col,
+    Layout,
   } from '@chenzy-design/svelte';
+
+  let collapsed = $state(false);
 
   let theme = $state<'light' | 'dark'>('light');
   $effect(() => {
@@ -82,4 +87,74 @@
     <Text type="tertiary">第二行</Text>
     <Button type="primary" size="small">一个按钮</Button>
   </Space>
+
+  <Divider />
+
+  <Title heading={5}>Grid（24 栅格 + gutter）</Title>
+  <Row gutter={16}>
+    <Col span={6}><div class="demo-cell">span 6</div></Col>
+    <Col span={6}><div class="demo-cell">span 6</div></Col>
+    <Col span={6}><div class="demo-cell">span 6</div></Col>
+    <Col span={6}><div class="demo-cell">span 6</div></Col>
+  </Row>
+  <div style="height: 8px"></div>
+  <Row gutter={16}>
+    <Col span={8}><div class="demo-cell">span 8</div></Col>
+    <Col span={8} offset={4}><div class="demo-cell">span 8 offset 4</div></Col>
+  </Row>
+
+  <Divider />
+
+  <Title heading={5}>Layout（可折叠侧栏）</Title>
+  <div class="demo-layout">
+    <Layout hasSider>
+      <Layout.Sider {collapsed} collapsible width={160} collapsedWidth={56}>
+        <div class="demo-sider-body">侧栏</div>
+      </Layout.Sider>
+      <Layout>
+        <Layout.Header>
+          <div class="demo-bar">
+            <Button
+              size="small"
+              type="tertiary"
+              onclick={() => (collapsed = !collapsed)}
+            >
+              {collapsed ? '展开' : '收起'}
+            </Button>
+            <Text strong>页头</Text>
+          </div>
+        </Layout.Header>
+        <Layout.Content padding>主体内容区</Layout.Content>
+        <Layout.Footer>页脚</Layout.Footer>
+      </Layout>
+    </Layout>
+  </div>
 </main>
+
+<style>
+  .demo-cell {
+    background: var(--cd-color-primary);
+    color: var(--cd-color-text-inverse);
+    text-align: center;
+    padding: var(--cd-spacing-2);
+    border-radius: var(--cd-radius-1);
+    font-size: var(--cd-font-size-1);
+  }
+  .demo-layout {
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-2);
+    overflow: hidden;
+    height: 220px;
+  }
+  .demo-sider-body {
+    padding: var(--cd-spacing-3);
+    color: var(--cd-color-text-1);
+  }
+  .demo-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-3);
+    padding-inline: var(--cd-spacing-3);
+    height: 100%;
+  }
+</style>

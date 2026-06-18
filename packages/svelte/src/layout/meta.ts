@@ -1,0 +1,116 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * Aggregated metadata for the Layout family (root + Header/Sider/Content/Footer).
+ */
+export const meta = {
+  name: 'Layout',
+  category: 'basic',
+  description: '页面级布局骨架：Layout 根容器 + Header / Sider / Content / Footer 子组件。',
+  subComponents: [
+    {
+      name: 'Layout',
+      element: 'section',
+      props: [
+        {
+          name: 'hasSider',
+          type: 'boolean',
+          default: 'undefined',
+          desc: '显式声明含侧边栏→row 方向；不传则由 Sider 挂载时自动检测',
+        },
+        { name: 'class', type: 'string', default: "''" },
+      ],
+    },
+    {
+      name: 'Layout.Header',
+      element: 'header',
+      props: [
+        { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky top:0' },
+        { name: 'height', type: 'string|number', default: 'undefined', desc: 'number→px，覆盖 token 高度' },
+        { name: 'class', type: 'string', default: "''" },
+      ],
+    },
+    {
+      name: 'Layout.Footer',
+      element: 'footer',
+      props: [
+        { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky bottom:0' },
+        { name: 'height', type: 'string|number', default: 'undefined' },
+        { name: 'class', type: 'string', default: "''" },
+      ],
+    },
+    {
+      name: 'Layout.Content',
+      element: 'main',
+      props: [
+        {
+          name: 'padding',
+          type: 'string|number|boolean',
+          default: 'false',
+          desc: 'true→token padding；number→px；string→原样；false→0',
+        },
+        { name: 'class', type: 'string', default: "''" },
+      ],
+    },
+    {
+      name: 'Layout.Sider',
+      element: 'aside',
+      props: [
+        { name: 'collapsed', type: 'boolean', default: 'undefined', desc: '受控收起状态' },
+        { name: 'defaultCollapsed', type: 'boolean', default: 'false' },
+        { name: 'collapsible', type: 'boolean', default: 'false', desc: 'true→渲染默认触发器' },
+        { name: 'width', type: 'string|number', default: '200', desc: 'number→px' },
+        { name: 'collapsedWidth', type: 'string|number', default: '60', desc: '0 时收起隐藏内容' },
+        { name: 'breakpoint', type: "'xs'|'sm'|'md'|'lg'|'xl'|'xxl'", default: 'undefined', desc: '低于断点自动收起' },
+        { name: 'reverseArrow', type: 'boolean', default: 'false', desc: '反转触发器箭头方向' },
+        { name: 'placement', type: "'left'|'right'", default: "'left'" },
+        { name: 'class', type: 'string', default: "''" },
+        { name: 'onCollapse', type: "(collapsed, trigger:'click'|'breakpoint')=>void", default: 'undefined' },
+        { name: 'trigger', type: 'Snippet<[{collapsed,toggle}]>', default: 'undefined', desc: '自定义触发器' },
+      ],
+    },
+  ],
+  events: [
+    { name: 'onCollapse', desc: 'Sider 收起状态变化，第二参数区分 click / breakpoint 触发来源' },
+  ],
+  slots: [
+    { name: 'children', desc: '各子组件内容' },
+    { name: 'trigger', desc: 'Sider 自定义触发器，接收 {collapsed, toggle}' },
+  ],
+  a11y: {
+    hasRole: false,
+    focusable: false,
+    sider: 'Sider 触发器为原生 button，含 aria-expanded / aria-controls / aria-label；collapsedWidth=0 时内容 aria-hidden',
+    note: 'reduced-motion 下移除 Sider 过渡',
+  },
+  tokens: [
+    '--cd-layout-bg',
+    '--cd-layout-header-bg',
+    '--cd-layout-header-height',
+    '--cd-layout-header-z',
+    '--cd-layout-footer-bg',
+    '--cd-layout-footer-color',
+    '--cd-layout-content-bg',
+    '--cd-layout-content-padding',
+    '--cd-layout-sider-bg',
+    '--cd-layout-sider-width',
+    '--cd-layout-sider-collapsed-width',
+    '--cd-layout-sider-border',
+    '--cd-layout-sider-trigger-bg',
+    '--cd-layout-sider-trigger-color',
+    '--cd-layout-sider-trigger-hover-bg',
+    '--cd-layout-motion-duration',
+    '--cd-layout-motion-ease',
+  ],
+  aiHints: [
+    'SSR/首屏含侧边栏时显式传 hasSider，避免 column→row 闪动。',
+    'Sider 受控用 collapsed + onCollapse；非受控用 defaultCollapsed。',
+    '需要响应式自动收起时传 breakpoint。',
+    'Layout.Header / Layout.Sider 等命名空间用法与具名 LayoutHeader 等价。',
+  ],
+  examples: [
+    {
+      title: '经典后台布局',
+      code: '<Layout hasSider><Layout.Sider collapsible /><Layout><Layout.Header /><Layout.Content padding>内容</Layout.Content><Layout.Footer>底部</Layout.Footer></Layout></Layout>',
+    },
+  ],
+} as const;
