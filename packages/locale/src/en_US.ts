@@ -13,6 +13,14 @@ export const en_US: Locale = {
     error: 'Failed to load',
   },
   Descriptions: { empty: '-' },
+  Tree: {
+    emptyText: 'No data',
+    searchPlaceholder: 'Search',
+    loading: 'Loading…',
+    a11yExpanded: 'Expanded {label}',
+    a11yCollapsed: 'Collapsed {label}',
+    a11yChecked: 'Checked {label}',
+  },
   Sider: {
     expand: 'Expand sidebar',
     collapse: 'Collapse sidebar',

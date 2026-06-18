@@ -32,6 +32,17 @@ export interface Locale {
   Descriptions: {
     empty: string;
   };
+  Tree: {
+    emptyText: string;
+    searchPlaceholder: string;
+    loading: string;
+    /** uses {label} */
+    a11yExpanded: string;
+    /** uses {label} */
+    a11yCollapsed: string;
+    /** uses {label} */
+    a11yChecked: string;
+  };
   Sider: {
     expand: string;
     collapse: string;

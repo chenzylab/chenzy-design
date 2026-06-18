@@ -54,10 +54,40 @@
     Highlight,
     VirtualList,
     Carousel,
+    Tree,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   let carouselIdx = $state(0);
+
+  const treeData = [
+    {
+      key: 'design',
+      label: '设计',
+      children: [
+        { key: 'figma', label: 'Figma 规范' },
+        { key: 'token', label: 'Design Token' },
+      ],
+    },
+    {
+      key: 'dev',
+      label: '研发',
+      children: [
+        { key: 'fe', label: '前端' },
+        {
+          key: 'be',
+          label: '后端',
+          children: [
+            { key: 'api', label: 'API' },
+            { key: 'db', label: '数据库' },
+          ],
+        },
+      ],
+    },
+    { key: 'qa', label: '测试' },
+  ];
+  let treeSel = $state<string | number>('figma');
+  let treeChecked = $state<(string | number)[]>([]);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -700,6 +730,37 @@
     </div>
     <Text type="tertiary">当前轮播：{carouselIdx + 1}</Text>
   </Space>
+
+  <Divider />
+
+  <Title heading={5}>Tree</Title>
+  <div style="display: flex; align-items: flex-start; gap: 48px; flex-wrap: wrap">
+    <div style="width: 240px">
+      <Text type="tertiary">单选 + 默认展开全部</Text>
+      <Tree
+        {treeData}
+        defaultExpandAll
+        value={treeSel}
+        onChange={(info) => (treeSel = info.value as string | number)}
+        ariaLabel="部门树"
+      />
+      <Text type="tertiary">已选：{treeSel}</Text>
+    </div>
+
+    <div style="width: 240px">
+      <Text type="tertiary">可勾选（父子联动）+ 可搜索</Text>
+      <Tree
+        {treeData}
+        checkable
+        filterable
+        defaultExpandAll
+        checkedKeys={treeChecked}
+        onCheck={(info) => (treeChecked = info.checked)}
+        ariaLabel="可勾选部门树"
+      />
+      <Text type="tertiary">已勾选 {treeChecked.length} 项</Text>
+    </div>
+  </div>
 </main>
 
 {#snippet slideA()}

@@ -13,6 +13,14 @@ export const zh_CN: Locale = {
     error: '加载失败',
   },
   Descriptions: { empty: '-' },
+  Tree: {
+    emptyText: '暂无数据',
+    searchPlaceholder: '搜索',
+    loading: '加载中…',
+    a11yExpanded: '已展开 {label}',
+    a11yCollapsed: '已收起 {label}',
+    a11yChecked: '已勾选 {label}',
+  },
   Sider: {
     expand: '展开侧边栏',
     collapse: '收起侧边栏',

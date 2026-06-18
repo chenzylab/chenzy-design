@@ -32,3 +32,17 @@ export {
   weekdayOrder,
   type DayCell,
 } from './date.js';
+export {
+  flattenVisible,
+  findNode,
+  collectExpandable,
+  collectExpandableToDepth,
+  conduct,
+  toggleCheck,
+  normalizeToLeaves,
+  computeFilteredKeys,
+  type TreeKey,
+  type TreeNodeData,
+  type FlatNode,
+  type CheckState,
+} from './tree.js';

@@ -1,0 +1,111 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * Tree — see specs/components/show/Tree.spec.md
+ */
+export const meta = {
+  name: 'Tree',
+  category: 'show',
+  description:
+    '树形控件：层级展示节点，支持展开/收起、单选/多选、可勾选父子联动（含半选 mixed）、内置搜索高亮。受控 value/checkedKeys/expandedKeys 均不回写，仅通过 onChange/onCheck/onExpandedChange 通知。键盘导航遵循 WAI-ARIA APG Tree View（单一 tab stop + aria-activedescendant）。',
+  exports: ['Tree'],
+  props: [
+    { name: 'treeData', type: 'TreeNodeData[]', default: '[]', desc: '树数据源' },
+    {
+      name: 'value',
+      type: 'TreeKey | TreeKey[] | null',
+      default: 'undefined',
+      desc: '受控选中；multiple 时为数组。受控时不回写',
+    },
+    {
+      name: 'defaultValue',
+      type: 'TreeKey | TreeKey[] | null',
+      default: 'null',
+      desc: '非受控初始选中',
+    },
+    { name: 'multiple', type: 'boolean', default: 'false', desc: '多选模式' },
+    { name: 'checkable', type: 'boolean', default: 'false', desc: '显示勾选框' },
+    {
+      name: 'checkedKeys',
+      type: 'TreeKey[]',
+      default: 'undefined',
+      desc: '受控勾选；内部用 conduct 归一。受控时不回写',
+    },
+    { name: 'defaultCheckedKeys', type: 'TreeKey[]', default: '[]', desc: '非受控初始勾选' },
+    {
+      name: 'checkStrictly',
+      type: 'boolean',
+      default: 'false',
+      desc: 'true 时父子解耦，仅切换单节点',
+    },
+    {
+      name: 'expandedKeys',
+      type: 'TreeKey[]',
+      default: 'undefined',
+      desc: '受控展开。受控时不回写',
+    },
+    { name: 'defaultExpandedKeys', type: 'TreeKey[]', default: '[]', desc: '非受控初始展开' },
+    { name: 'defaultExpandAll', type: 'boolean', default: 'false', desc: '初始展开全部' },
+    { name: 'selectable', type: 'boolean', default: 'true', desc: '节点是否可选中' },
+    { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位' },
+    { name: 'filterable', type: 'boolean', default: 'false', desc: '渲染内置搜索框' },
+    { name: 'blockNode', type: 'boolean', default: 'false', desc: '整行点击选中' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '整树禁用' },
+    { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
+    { name: 'status', type: "'default'|'warning'|'error'", default: "'default'" },
+    { name: 'emptyContent', type: 'string', default: 'undefined', desc: '空态文案' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍标签' },
+    { name: 'onChange', type: '(info) => void', default: 'undefined', desc: '选中变更' },
+    { name: 'onCheck', type: '(info) => void', default: 'undefined', desc: '勾选变更' },
+    {
+      name: 'onExpandedChange',
+      type: '(info) => void',
+      default: 'undefined',
+      desc: '展开变更',
+    },
+    { name: 'label', type: 'Snippet', default: 'undefined', desc: '自定义节点内容' },
+  ],
+  events: [
+    { name: 'onChange', desc: '选中节点变更：{ value, node, selected }' },
+    { name: 'onCheck', desc: '勾选变更：{ checked, node, halfChecked }' },
+    { name: 'onExpandedChange', desc: '展开/收起：{ expanded, node, expand }' },
+  ],
+  slots: [{ name: 'label', desc: '自定义节点渲染：{ node, level, searchValue, selected, checked }' }],
+  a11y: {
+    hasRole: true,
+    focusable: true,
+    note: 'role=tree（aria-multiselectable）容器为单一 tab stop，焦点通过 aria-activedescendant 指向当前高亮 treeitem；每行 role=treeitem 含 aria-level/setsize/posinset/expanded/selected/disabled，可勾选时 aria-checked 支持 true/false/"mixed"（半选）。方向键导航：↑↓ 移动、→ 展开/进入子、← 折叠/回父、Home/End 首末、Enter 选中、Space 勾选或选中。',
+  },
+  tokens: [
+    '--cd-tree-node-height',
+    '--cd-tree-node-height-small',
+    '--cd-tree-node-height-large',
+    '--cd-tree-indent',
+    '--cd-tree-node-color',
+    '--cd-tree-node-color-disabled',
+    '--cd-tree-node-bg-hover',
+    '--cd-tree-node-bg-selected',
+    '--cd-tree-node-color-selected',
+    '--cd-tree-expand-icon-color',
+    '--cd-tree-search-highlight-bg',
+    '--cd-tree-search-highlight-color',
+    '--cd-tree-focus-ring',
+    '--cd-tree-border-color',
+    '--cd-tree-border-color-warning',
+    '--cd-tree-border-color-error',
+  ],
+  responsive: false,
+  examples: [
+    {
+      title: '基础',
+      code: '<Tree treeData={data} defaultExpandAll onChange={(i) => (v = i.value)} />',
+    },
+    {
+      title: '可勾选联动',
+      code: '<Tree treeData={data} checkable onCheck={(i) => (keys = i.checked)} />',
+    },
+    {
+      title: '可搜索',
+      code: '<Tree treeData={data} filterable />',
+    },
+  ],
+} as const;
