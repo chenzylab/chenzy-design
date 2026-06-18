@@ -23,6 +23,8 @@ import { meta as datePickerMeta } from './date-picker/meta.js';
 import { meta as timePickerMeta } from './time-picker/meta.js';
 import { meta as cascaderMeta } from './cascader/meta.js';
 import { meta as treeSelectMeta } from './tree-select/meta.js';
+import { meta as transferMeta } from './transfer/meta.js';
+import { meta as uploadMeta } from './upload/meta.js';
 
 const metas = {
   buttonMeta,
@@ -49,6 +51,8 @@ const metas = {
   timePickerMeta,
   cascaderMeta,
   treeSelectMeta,
+  transferMeta,
+  uploadMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

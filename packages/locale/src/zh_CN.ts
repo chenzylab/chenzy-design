@@ -31,6 +31,18 @@ export const zh_CN: Locale = {
     now: '此刻',
     confirm: '确定',
   },
+  Transfer: {
+    searchPlaceholder: '搜索',
+    itemsUnit: '{count} 项',
+    empty: '暂无数据',
+  },
+  Upload: {
+    trigger: '选择文件',
+    draggerText: '点击或拖拽文件到此处上传',
+    sizeError: '文件大小不能超过 {size}',
+    limitError: '最多上传 {limit} 个文件',
+    remove: '移除',
+  },
   Form: {
     required: '{label}为必填项',
     optional: '选填',

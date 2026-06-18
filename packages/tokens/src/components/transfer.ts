@@ -1,0 +1,17 @@
+/** Component tokens for Transfer & Upload. See specs/components/input/Transfer.spec.md. */
+export const transferTokens = {
+  'transfer-panel-width': '200px',
+  'transfer-panel-height': '240px',
+  'transfer-panel-border': 'var(--cd-color-border)',
+  'transfer-panel-radius': 'var(--cd-radius-2)',
+  'transfer-panel-header-bg': 'var(--cd-color-fill-0)',
+  'transfer-item-height': '32px',
+  'transfer-item-bg-hover': 'var(--cd-color-fill-0)',
+  'transfer-gap': 'var(--cd-spacing-3)',
+  'upload-dragger-border': 'var(--cd-color-border)',
+  'upload-dragger-border-active': 'var(--cd-color-primary)',
+  'upload-dragger-bg': 'var(--cd-color-fill-0)',
+  'upload-dragger-radius': 'var(--cd-radius-2)',
+  'upload-item-bg-hover': 'var(--cd-color-fill-0)',
+  'upload-item-color-error': 'var(--cd-color-danger)',
+} as const;

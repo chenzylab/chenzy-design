@@ -30,6 +30,8 @@
     TimePicker,
     Cascader,
     TreeSelect,
+    Transfer,
+    Upload,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -42,6 +44,13 @@
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let treeVal = $state<string | number | null>(null);
+  let transferVal = $state<(string | number)[]>(['b']);
+  const transferData = [
+    { key: 'a', label: '北京' },
+    { key: 'b', label: '上海' },
+    { key: 'c', label: '广州' },
+    { key: 'd', label: '深圳' },
+  ];
   const regionData = [
     {
       label: '浙江',
@@ -396,6 +405,21 @@
       />
       <Text type="tertiary">树选：{treeVal ?? '（未选）'}</Text>
     </div>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Transfer / Upload</Title>
+  <Space direction="vertical" align="start">
+    <Transfer
+      dataSource={transferData}
+      value={transferVal}
+      titles={['可选城市', '已选城市']}
+      onChange={(keys) => (transferVal = keys)}
+    />
+    <Text type="tertiary">已选：{transferVal.join(', ') || '（无）'}</Text>
+
+    <Upload multiple drag accept="image/*" />
   </Space>
 </main>
 
