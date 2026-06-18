@@ -13,3 +13,14 @@ export {
   type SiderTrigger,
   type Breakpoint,
 } from './sider.js';
+export {
+  createForm,
+  type FormApi,
+  type FormOptions,
+  type FormState,
+  type FormValues,
+  type FieldConfig,
+  type FieldErrors,
+  type Rule,
+  type MessageDescriptor,
+} from './form.js';

@@ -33,3 +33,4 @@ export { Radio, RadioGroup, radioMeta } from './radio/index.js';
 export { InputNumber, inputNumberMeta } from './input-number/index.js';
 export { Rating, ratingMeta } from './rating/index.js';
 export { Slider, sliderMeta } from './slider/index.js';
+export { Form, FormField, FormInput, formMeta } from './form/index.js';

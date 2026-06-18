@@ -13,4 +13,16 @@ export const en_US: Locale = {
     expanded: 'Sidebar expanded',
     collapsed: 'Sidebar collapsed',
   },
+  Form: {
+    required: '{label} is required',
+    optional: 'optional',
+    typeError: '{label} has an invalid format',
+    minLength: 'Enter at least {min} characters',
+    maxLength: 'Enter at most {max} characters',
+    min: 'Cannot be less than {min}',
+    max: 'Cannot be greater than {max}',
+    pattern: '{label} does not match the required format',
+    submitFailAnnounce: '{count} field(s) failed validation',
+    colon: ':',
+  },
 };

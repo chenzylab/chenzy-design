@@ -30,4 +30,24 @@ export interface Locale {
     expanded: string;
     collapsed: string;
   };
+  Form: {
+    /** uses {label} */
+    required: string;
+    optional: string;
+    /** uses {label} */
+    typeError: string;
+    /** uses {min} */
+    minLength: string;
+    /** uses {max} */
+    maxLength: string;
+    /** uses {min} */
+    min: string;
+    /** uses {max} */
+    max: string;
+    /** uses {label} */
+    pattern: string;
+    /** uses {count} */
+    submitFailAnnounce: string;
+    colon: string;
+  };
 }
