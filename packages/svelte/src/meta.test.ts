@@ -17,6 +17,8 @@ import { meta as sliderMeta } from './slider/meta.js';
 import { meta as formMeta } from './form/meta.js';
 import { meta as selectMeta } from './select/meta.js';
 import { meta as autocompleteMeta } from './autocomplete/meta.js';
+import { meta as tagInputMeta } from './tag-input/meta.js';
+import { meta as colorPickerMeta } from './color-picker/meta.js';
 
 const metas = {
   buttonMeta,
@@ -37,6 +39,8 @@ const metas = {
   formMeta,
   selectMeta,
   autocompleteMeta,
+  tagInputMeta,
+  colorPickerMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

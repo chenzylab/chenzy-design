@@ -24,12 +24,16 @@
     Form,
     Select,
     AutoComplete,
+    TagInput,
+    ColorPicker,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
   let multiVal = $state<(string | number)[]>([]);
   let acVal = $state('');
+  let tags = $state<string[]>(['svelte', 'vite']);
+  let color = $state('#3366ff');
   const fruitOptions = [
     { label: '苹果', value: 'apple' },
     { label: '香蕉', value: 'banana' },
@@ -291,6 +295,30 @@
       />
       <Text type="tertiary">输入：{acVal || '（空）'}</Text>
     </div>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>TagInput / ColorPicker</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 320px">
+      <TagInput
+        value={tags}
+        separator={[',', 'Enter']}
+        placeholder="输入后回车或逗号"
+        onChange={(t) => (tags = t)}
+      />
+      <Text type="tertiary">标签：{tags.join(' / ') || '（无）'}</Text>
+    </div>
+
+    <Space>
+      <ColorPicker
+        value={color}
+        presets={['#3366ff', '#16a34a', '#ef4444', '#f59e0b']}
+        onChange={(c) => (color = c)}
+      />
+      <Text type="tertiary">颜色：{color}</Text>
+    </Space>
   </Space>
 </main>
 

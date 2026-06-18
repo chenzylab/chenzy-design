@@ -36,3 +36,5 @@ export { Slider, sliderMeta } from './slider/index.js';
 export { Form, FormField, FormInput, formMeta } from './form/index.js';
 export { Select, selectMeta, type OptionData } from './select/index.js';
 export { AutoComplete, autocompleteMeta } from './autocomplete/index.js';
+export { TagInput, tagInputMeta } from './tag-input/index.js';
+export { ColorPicker, colorPickerMeta } from './color-picker/index.js';
