@@ -28,6 +28,8 @@
     ColorPicker,
     DatePicker,
     TimePicker,
+    Cascader,
+    TreeSelect,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -38,6 +40,34 @@
   let color = $state('#3366ff');
   let dateVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
+  let cascaderVal = $state<(string | number)[]>([]);
+  let treeVal = $state<string | number | null>(null);
+  const regionData = [
+    {
+      label: '浙江',
+      value: 'zj',
+      children: [
+        { label: '杭州', value: 'hz', children: [{ label: '西湖区', value: 'xh' }, { label: '余杭区', value: 'yh' }] },
+        { label: '宁波', value: 'nb', children: [{ label: '海曙区', value: 'hs' }] },
+      ],
+    },
+    {
+      label: '江苏',
+      value: 'js',
+      children: [{ label: '南京', value: 'nj', children: [{ label: '玄武区', value: 'xw' }] }],
+    },
+  ];
+  const orgTree = [
+    {
+      key: 'eng',
+      label: '研发',
+      children: [
+        { key: 'fe', label: '前端' },
+        { key: 'be', label: '后端' },
+      ],
+    },
+    { key: 'design', label: '设计' },
+  ];
   const fruitOptions = [
     { label: '苹果', value: 'apple' },
     { label: '香蕉', value: 'banana' },
@@ -341,6 +371,31 @@
         时间：{timeVal ? timeVal.toLocaleTimeString('zh-CN') : '（未选）'}
       </Text>
     </Space>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Cascader / TreeSelect</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 240px">
+      <Cascader
+        treeData={regionData}
+        value={cascaderVal}
+        clearable
+        onChange={(p) => (cascaderVal = p)}
+      />
+      <Text type="tertiary">级联：{cascaderVal.join(' / ') || '（未选）'}</Text>
+    </div>
+    <div style="width: 240px">
+      <TreeSelect
+        treeData={orgTree}
+        value={treeVal}
+        clearable
+        defaultExpandAll
+        onChange={(k) => (treeVal = k)}
+      />
+      <Text type="tertiary">树选：{treeVal ?? '（未选）'}</Text>
+    </div>
   </Space>
 </main>
 
