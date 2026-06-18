@@ -12,6 +12,7 @@ import { checkboxTokens } from './checkbox.js';
 import { radioTokens } from './radio.js';
 import { ratingTokens } from './rating.js';
 import { sliderTokens } from './slider.js';
+import { formTokens } from './form.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -27,4 +28,5 @@ export const componentTokens = {
   ...radioTokens,
   ...ratingTokens,
   ...sliderTokens,
+  ...formTokens,
 } as const;

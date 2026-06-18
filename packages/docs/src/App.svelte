@@ -21,7 +21,10 @@
     InputNumber,
     Rating,
     Slider,
+    Form,
   } from '@chenzy-design/svelte';
+
+  let submitted = $state('');
 
   let collapsed = $state(false);
   let inputVal = $state('');
@@ -225,6 +228,23 @@
       <Text type="tertiary">区间：{rangeVal[0]} – {rangeVal[1]}</Text>
     </div>
   </Space>
+
+  <Divider />
+
+  <Title heading={5}>Form（校验 + 提交）</Title>
+  <div style="max-width: 360px">
+    <Form
+      onSubmit={(r) =>
+        (submitted = r.valid ? `提交成功：${JSON.stringify(r.values)}` : '校验未通过')}
+    >
+      <Form.Input field="email" label="邮箱" required rules={[{ type: 'email' }]} />
+      <Form.Input field="name" label="昵称" required />
+      {#snippet footer({ submitting })}
+        <Button type="primary" htmlType="submit" loading={submitting}>提交</Button>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">{submitted}</Text>
+  </div>
 </main>
 
 <style>

@@ -13,4 +13,16 @@ export const zh_CN: Locale = {
     expanded: '侧边栏已展开',
     collapsed: '侧边栏已收起',
   },
+  Form: {
+    required: '{label}为必填项',
+    optional: '选填',
+    typeError: '{label}格式不正确',
+    minLength: '至少输入 {min} 个字符',
+    maxLength: '最多输入 {max} 个字符',
+    min: '不能小于 {min}',
+    max: '不能大于 {max}',
+    pattern: '{label}格式不符合要求',
+    submitFailAnnounce: '{count} 个字段校验未通过',
+    colon: '：',
+  },
 };

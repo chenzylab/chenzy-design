@@ -1,0 +1,65 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * See specs/00-foundation/ai-friendly.spec.md.
+ */
+export const meta = {
+  name: 'Form',
+  category: 'input',
+  description: '表单容器，桥接 headless createForm，提供字段注册、校验、布局与 a11y。',
+  subComponents: ['Form.Field', 'Form.Input'],
+  props: [
+    { name: 'value', type: 'Record<string, unknown>', default: 'undefined', desc: '受控整表单值；变更经 onChange 上报' },
+    { name: 'initValues', type: 'Record<string, unknown>', default: '{}', desc: '非受控初始值' },
+    { name: 'layout', type: "'vertical'|'horizontal'", default: 'vertical' },
+    { name: 'labelPosition', type: "'top'|'left'", default: 'top' },
+    { name: 'labelWidth', type: 'number | string', default: 'undefined' },
+    { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    { name: 'disabled', type: 'boolean', default: 'false' },
+    { name: 'requiredMark', type: 'boolean', default: 'true' },
+    { name: 'colon', type: 'boolean', default: 'false' },
+    { name: 'onSubmit', type: '(r: { valid; values; errors }) => void', default: 'undefined' },
+    { name: 'onChange', type: '(values: Record<string, unknown>) => void', default: 'undefined' },
+    { name: 'children', type: 'Snippet', default: 'undefined' },
+    { name: 'footer', type: 'Snippet<[{ submitting: boolean }]>', default: 'undefined' },
+    // Form.Field
+    { name: 'Field.field', type: 'string', default: '—', desc: '字段名（必填）' },
+    { name: 'Field.label', type: 'string', default: 'undefined' },
+    { name: 'Field.rules', type: 'Rule[]', default: '[]' },
+    { name: 'Field.required', type: 'boolean', default: 'false' },
+    { name: 'Field.extraText', type: 'string', default: 'undefined' },
+    { name: 'Field.valuePropName', type: 'string', default: "'value'" },
+    { name: 'Field.children', type: 'Snippet<[{ value; onChange; onBlur; status; id; disabled }]>', default: 'undefined' },
+    // Form.Input
+    { name: 'Input.field', type: 'string', default: '—', desc: '字段名（必填）' },
+    { name: 'Input.label', type: 'string', default: 'undefined' },
+    { name: 'Input.rules', type: 'Rule[]', default: '[]' },
+    { name: 'Input.required', type: 'boolean', default: 'false' },
+    { name: 'Input.extraText', type: 'string', default: 'undefined' },
+    { name: 'Input.placeholder', type: 'string', default: 'undefined' },
+    { name: 'Input.type', type: "'text'|'password'", default: 'text' },
+    { name: 'Input.clearable', type: 'boolean', default: 'false' },
+    { name: 'Input.maxLength', type: 'number', default: 'undefined' },
+  ],
+  a11y: {
+    role: 'form',
+    notes: [
+      '原生 <form>，submit 经 preventDefault 接管',
+      '字段错误用 role=alert，经 aria-describedby 关联控件',
+      'extraText 无错误时经 aria-describedby 关联',
+      '必填星标 aria-hidden，必填语义由校验承载',
+      'TODO：Input 暴露 id 后用 label for/id 精确关联',
+    ],
+  },
+  tokens: [
+    '--cd-form-item-gap',
+    '--cd-form-label-color',
+    '--cd-form-label-gap',
+    '--cd-form-required-color',
+    '--cd-form-optional-color',
+    '--cd-form-extra-color',
+    '--cd-form-error-color',
+    '--cd-form-error-font-size',
+    '--cd-spacing-*',
+    '--cd-color-*',
+  ],
+} as const;
