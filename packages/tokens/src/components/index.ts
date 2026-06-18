@@ -24,6 +24,7 @@ import { menuTokens } from './menu.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { dataDisplayTokens } from './data-display.js';
+import { listTokens } from './list.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -51,4 +52,5 @@ export const componentTokens = {
   ...displayTokens,
   ...tooltipTokens,
   ...dataDisplayTokens,
+  ...listTokens,
 } as const;

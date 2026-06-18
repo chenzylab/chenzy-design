@@ -49,6 +49,9 @@
     Descriptions,
     Collapse,
     Timeline,
+    List,
+    Image,
+    Highlight,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -631,6 +634,40 @@
         { content: '运输中', time: '15:00' },
       ]}
       pending="等待签收"
+    />
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>List / Image / Highlight</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 320px">
+      <List
+        bordered
+        header="任务列表"
+        dataSource={[
+          { key: 1, name: '设计评审' },
+          { key: 2, name: '前端开发' },
+          { key: 3, name: '联调测试' },
+        ]}
+      >
+        {#snippet renderItem(item)}
+          <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+    </div>
+
+    <Image
+      src="https://invalid.example/photo.jpg"
+      alt="示例图片"
+      width={160}
+      height={100}
+      preview
+    />
+
+    <Highlight
+      sourceString="chenzy-design 是一套对标 Semi 的 Svelte 组件库"
+      searchWords={['design', 'Svelte']}
     />
   </Space>
 </main>
