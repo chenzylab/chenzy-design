@@ -24,3 +24,11 @@ export {
   type Rule,
   type MessageDescriptor,
 } from './form.js';
+export {
+  isSameDay,
+  startOfDay,
+  addMonths,
+  getMonthGrid,
+  weekdayOrder,
+  type DayCell,
+} from './date.js';

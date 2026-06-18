@@ -19,6 +19,18 @@ export const zh_CN: Locale = {
     searchPlaceholder: '搜索',
     loading: '加载中',
   },
+  DatePicker: {
+    placeholder: '请选择日期',
+    today: '今天',
+    clear: '清除',
+    prevMonth: '上个月',
+    nextMonth: '下个月',
+  },
+  TimePicker: {
+    placeholder: '请选择时间',
+    now: '此刻',
+    confirm: '确定',
+  },
   Form: {
     required: '{label}为必填项',
     optional: '选填',

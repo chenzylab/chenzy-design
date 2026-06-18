@@ -19,6 +19,8 @@ import { meta as selectMeta } from './select/meta.js';
 import { meta as autocompleteMeta } from './autocomplete/meta.js';
 import { meta as tagInputMeta } from './tag-input/meta.js';
 import { meta as colorPickerMeta } from './color-picker/meta.js';
+import { meta as datePickerMeta } from './date-picker/meta.js';
+import { meta as timePickerMeta } from './time-picker/meta.js';
 
 const metas = {
   buttonMeta,
@@ -41,6 +43,8 @@ const metas = {
   autocompleteMeta,
   tagInputMeta,
   colorPickerMeta,
+  datePickerMeta,
+  timePickerMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

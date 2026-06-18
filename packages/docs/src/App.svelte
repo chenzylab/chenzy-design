@@ -26,6 +26,8 @@
     AutoComplete,
     TagInput,
     ColorPicker,
+    DatePicker,
+    TimePicker,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -34,6 +36,8 @@
   let acVal = $state('');
   let tags = $state<string[]>(['svelte', 'vite']);
   let color = $state('#3366ff');
+  let dateVal = $state<Date | null>(null);
+  let timeVal = $state<Date | null>(null);
   const fruitOptions = [
     { label: '苹果', value: 'apple' },
     { label: '香蕉', value: 'banana' },
@@ -318,6 +322,24 @@
         onChange={(c) => (color = c)}
       />
       <Text type="tertiary">颜色：{color}</Text>
+    </Space>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>DatePicker / TimePicker</Title>
+  <Space direction="vertical" align="start">
+    <Space>
+      <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
+      <Text type="tertiary">
+        日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <TimePicker value={timeVal} onChange={(t) => (timeVal = t)} />
+      <Text type="tertiary">
+        时间：{timeVal ? timeVal.toLocaleTimeString('zh-CN') : '（未选）'}
+      </Text>
     </Space>
   </Space>
 </main>

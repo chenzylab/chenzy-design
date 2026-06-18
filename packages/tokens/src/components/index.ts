@@ -15,6 +15,7 @@ import { sliderTokens } from './slider.js';
 import { formTokens } from './form.js';
 import { selectTokens } from './select.js';
 import { colorPickerTokens } from './color-picker.js';
+import { datePickerTokens } from './date-picker.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -33,4 +34,5 @@ export const componentTokens = {
   ...formTokens,
   ...selectTokens,
   ...colorPickerTokens,
+  ...datePickerTokens,
 } as const;
