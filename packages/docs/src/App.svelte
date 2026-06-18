@@ -37,6 +37,8 @@
     Steps,
     Tabs,
     Dropdown,
+    Menu,
+    Anchor,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -63,6 +65,25 @@
     { key: 'edit', label: '编辑' },
     { key: 'copy', label: '复制' },
     { key: 'delete', label: '删除', danger: true },
+  ];
+  let menuSelected = $state<string | number>('overview');
+  const menuItems = [
+    { key: 'overview', label: '概览' },
+    {
+      key: 'settings',
+      label: '设置',
+      children: [
+        { key: 'profile', label: '个人资料' },
+        { key: 'security', label: '安全' },
+      ],
+    },
+    { key: 'help', label: '帮助', disabled: true },
+  ];
+  let anchorKey = $state('#sec-1');
+  const anchorLinks = [
+    { key: '#sec-1', href: '#sec-1', title: '第一节' },
+    { key: '#sec-2', href: '#sec-2', title: '第二节' },
+    { key: '#sec-3', href: '#sec-3', title: '第三节' },
   ];
   const transferData = [
     { key: 'a', label: '北京' },
@@ -493,6 +514,25 @@
     </Dropdown>
     <Text type="tertiary">上次选择：{lastDropdown || '（无）'}</Text>
   </Space>
+
+  <Divider />
+
+  <Title heading={5}>Menu / Anchor</Title>
+  <div style="display: flex; gap: 24px; align-items: flex-start">
+    <div style="width: 200px">
+      <Menu
+        items={menuItems}
+        selectedKeys={[menuSelected]}
+        defaultOpenKeys={['settings']}
+        onSelect={(k) => (menuSelected = k)}
+      />
+      <Text type="tertiary">菜单选中：{menuSelected}</Text>
+    </div>
+    <div style="width: 160px">
+      <Anchor links={anchorLinks} value={anchorKey} onChange={(k) => (anchorKey = k)} />
+      <Text type="tertiary">锚点：{anchorKey}</Text>
+    </div>
+  </div>
 </main>
 
 <style>

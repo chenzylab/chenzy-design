@@ -1,0 +1,53 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * See specs/00-foundation/ai-friendly.spec.md.
+ */
+export const meta = {
+  name: 'Anchor',
+  category: 'navigation',
+  description:
+    '锚点导航，垂直链接列表。支持 scroll-spy 激活高亮、点击平滑滚动、ink 边框指示，受控/非受控。',
+  props: [
+    { name: 'links', type: 'AnchorLink[]', default: '[]', desc: '锚点链接数据' },
+    {
+      name: 'value',
+      type: 'string',
+      default: 'undefined',
+      desc: '受控当前激活 key',
+    },
+    { name: 'defaultValue', type: 'string', default: 'undefined' },
+    { name: 'offsetTop', type: 'number', default: '0', desc: '滚动判定/定位偏移' },
+    { name: 'bounds', type: 'number', default: '5', desc: '激活判定边界容差' },
+    { name: 'showInk', type: 'boolean', default: 'true', desc: '是否显示 ink 边框' },
+    {
+      name: 'scrollMotion',
+      type: 'boolean',
+      default: 'true',
+      desc: '点击是否平滑滚动（reduced-motion 下强制即时）',
+    },
+    { name: 'onChange', type: '(key: string) => void', default: 'undefined' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+  ],
+  a11y: {
+    role: 'navigation',
+    keyboard: ['Tab', 'Enter'],
+    notes: [
+      'nav[aria-label] 包裹原生 a 链接列表',
+      '激活链接 aria-current=true',
+      '键盘交互为原生锚链接行为',
+      'scroll-spy 命令式监听 scroll，rAF 节流，reduced-motion 下点击即时定位',
+      'TODO: horizontal、affix sticky、updateHash、getContainer 自定义容器',
+    ],
+  },
+  tokens: [
+    '--cd-anchor-link-color',
+    '--cd-anchor-link-color-active',
+    '--cd-anchor-link-padding',
+    '--cd-anchor-rail-color',
+    '--cd-anchor-ink-color',
+    '--cd-anchor-ink-width',
+    '--cd-focus-ring',
+    '--cd-radius-1',
+    '--cd-motion-*',
+  ],
+} as const;

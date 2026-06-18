@@ -30,6 +30,8 @@ import { meta as paginationMeta } from './pagination/meta.js';
 import { meta as stepsMeta } from './steps/meta.js';
 import { meta as tabsMeta } from './tabs/meta.js';
 import { meta as dropdownMeta } from './dropdown/meta.js';
+import { meta as menuMeta } from './menu/meta.js';
+import { meta as anchorMeta } from './anchor/meta.js';
 
 const metas = {
   buttonMeta,
@@ -63,6 +65,8 @@ const metas = {
   stepsMeta,
   tabsMeta,
   dropdownMeta,
+  menuMeta,
+  anchorMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
