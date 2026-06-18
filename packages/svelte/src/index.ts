@@ -98,6 +98,12 @@ export { OverflowList, overflowListMeta } from './overflow-list/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';
+export {
+  Progress,
+  progressMeta,
+  type ProgressStatus,
+  type ProgressType,
+} from './progress/index.js';
 export { Carousel, carouselMeta } from './carousel/index.js';
 // TreeNodeData/TreeKey 经 ./tree 子路径或 @chenzy-design/core 暴露；
 // 此处不在根 barrel 重导出类型，避免与 tree-select 的 TreeKey 命名冲突。

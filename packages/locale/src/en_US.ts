@@ -30,6 +30,13 @@ export const en_US: Locale = {
     loading: 'Loading',
     loaded: 'Loaded',
   },
+  Progress: {
+    ariaLabel: 'Progress',
+    valueText: '{percent} complete',
+    success: 'Completed',
+    error: 'Failed',
+    indeterminate: 'Loading',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

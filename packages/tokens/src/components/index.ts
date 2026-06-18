@@ -31,6 +31,7 @@ import { calendarTokens } from './calendar.js';
 import { scrollListTokens } from './scroll-list.js';
 import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
+import { progressTokens } from './progress.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -65,4 +66,5 @@ export const componentTokens = {
   ...scrollListTokens,
   ...overflowListTokens,
   ...spinTokens,
+  ...progressTokens,
 } as const;
