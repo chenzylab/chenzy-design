@@ -56,6 +56,7 @@
     Carousel,
     Tree,
     Table,
+    Calendar,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -112,6 +113,19 @@
     { dataIndex: 'city', title: '城市' },
   ];
   let tableSelected = $state<(string | number)[]>([]);
+
+  // Calendar：锚定到固定月份（2026-06）便于演示事件
+  const calAnchor = new Date(2026, 5, 1);
+  const calEvents = [
+    { key: 'm1', start: new Date(2026, 5, 3), title: '周会' },
+    { key: 'm2', start: new Date(2026, 5, 10), title: '设计评审' },
+    { key: 'm3', start: new Date(2026, 5, 10), title: '需求对齐' },
+    { key: 'm4', start: new Date(2026, 5, 10), title: '联调' },
+    { key: 'm5', start: new Date(2026, 5, 10), title: '复盘' },
+    { key: 'm6', start: new Date(2026, 5, 15), end: new Date(2026, 5, 17), title: '出差', color: 'var(--cd-color-warning)' },
+    { key: 'm7', start: new Date(2026, 5, 22), title: '发版', color: 'var(--cd-color-success)' },
+  ];
+  let calSelectedText = $state('（未选）');
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -803,6 +817,18 @@
     }}
   />
   <Text type="tertiary">已选 {tableSelected.length} 行</Text>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（月视图）</Title>
+  <Text type="tertiary">事件展示 + 6/10 当天溢出折叠 + 跨天事件</Text>
+  <Calendar
+    defaultValue={calAnchor}
+    events={calEvents}
+    maxEventsPerDay={3}
+    onSelect={(info) => (calSelectedText = info.date.toLocaleDateString('zh-CN'))}
+  />
+  <Text type="tertiary">选中日期：{calSelectedText}</Text>
 </main>
 
 {#snippet slideA()}

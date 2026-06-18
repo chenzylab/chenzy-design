@@ -22,6 +22,13 @@ export const zh_CN: Locale = {
     error: '加载失败',
   },
   Descriptions: { empty: '-' },
+  Calendar: {
+    today: '今天',
+    prev: '上一月',
+    next: '下一月',
+    moreCount: '还有 {count} 项',
+    noEvents: '暂无日程',
+  },
   Tree: {
     emptyText: '暂无数据',
     searchPlaceholder: '搜索',

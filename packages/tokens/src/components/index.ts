@@ -27,6 +27,7 @@ import { dataDisplayTokens } from './data-display.js';
 import { listTokens } from './list.js';
 import { virtualTokens } from './virtual.js';
 import { tableTokens } from './table.js';
+import { calendarTokens } from './calendar.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -57,4 +58,5 @@ export const componentTokens = {
   ...listTokens,
   ...virtualTokens,
   ...tableTokens,
+  ...calendarTokens,
 } as const;

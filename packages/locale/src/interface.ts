@@ -41,6 +41,14 @@ export interface Locale {
   Descriptions: {
     empty: string;
   };
+  Calendar: {
+    today: string;
+    prev: string;
+    next: string;
+    /** uses {count} */
+    moreCount: string;
+    noEvents: string;
+  };
   Tree: {
     emptyText: string;
     searchPlaceholder: string;
