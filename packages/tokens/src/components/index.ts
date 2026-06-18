@@ -19,6 +19,7 @@ import { datePickerTokens } from './date-picker.js';
 import { treeTokens } from './tree.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
+import { tabsTokens } from './tabs.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -41,4 +42,5 @@ export const componentTokens = {
   ...treeTokens,
   ...transferTokens,
   ...navigationTokens,
+  ...tabsTokens,
 } as const;

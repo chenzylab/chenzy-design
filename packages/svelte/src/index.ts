@@ -64,3 +64,5 @@ export {
 } from './breadcrumb/index.js';
 export { Pagination, paginationMeta } from './pagination/index.js';
 export { Steps, stepsMeta, type StepItem } from './steps/index.js';
+export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
+export { Dropdown, dropdownMeta, type DropdownItem } from './dropdown/index.js';
