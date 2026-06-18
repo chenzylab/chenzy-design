@@ -14,6 +14,7 @@ import { ratingTokens } from './rating.js';
 import { sliderTokens } from './slider.js';
 import { formTokens } from './form.js';
 import { selectTokens } from './select.js';
+import { colorPickerTokens } from './color-picker.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -31,4 +32,5 @@ export const componentTokens = {
   ...sliderTokens,
   ...formTokens,
   ...selectTokens,
+  ...colorPickerTokens,
 } as const;
