@@ -26,6 +26,10 @@ export const zh_CN: Locale = {
     moreLabel: '+{count}',
     moreAriaLabel: '显示其余 {count} 项',
   },
+  Spin: {
+    loading: '加载中',
+    loaded: '加载完成',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

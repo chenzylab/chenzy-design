@@ -95,6 +95,9 @@ export { Image, imageMeta } from './image/index.js';
 export { Highlight, highlightMeta } from './highlight/index.js';
 export { VirtualList, virtualListMeta } from './virtual-list/index.js';
 export { OverflowList, overflowListMeta } from './overflow-list/index.js';
+
+// --- M5 Feedback ---
+export { Spin, spinMeta } from './spin/index.js';
 export { Carousel, carouselMeta } from './carousel/index.js';
 // TreeNodeData/TreeKey 经 ./tree 子路径或 @chenzy-design/core 暴露；
 // 此处不在根 barrel 重导出类型，避免与 tree-select 的 TreeKey 命名冲突。

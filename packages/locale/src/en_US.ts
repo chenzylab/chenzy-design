@@ -26,6 +26,10 @@ export const en_US: Locale = {
     moreLabel: '+{count}',
     moreAriaLabel: 'Show {count} more items',
   },
+  Spin: {
+    loading: 'Loading',
+    loaded: 'Loaded',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

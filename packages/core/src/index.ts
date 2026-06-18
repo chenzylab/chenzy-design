@@ -88,3 +88,8 @@ export {
   type OverflowComputeInput,
   type OverflowComputeResult,
 } from './overflow-list.js';
+export {
+  createSpinController,
+  type SpinController,
+  type SpinOptions,
+} from './spin.js';
