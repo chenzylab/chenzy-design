@@ -60,3 +60,13 @@ export {
   type SortState,
   type SelectAllState,
 } from './table.js';
+export {
+  eventCoversDay,
+  eventsForDay,
+  groupEventsByDays,
+  dayKey,
+  isPastDay,
+  type CalendarEvent,
+  type CalendarEventKey,
+  type DayEvents,
+} from './calendar.js';

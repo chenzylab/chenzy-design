@@ -1,0 +1,76 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * Calendar (month-view subset) — see specs/components/show/Calendar.spec.md
+ */
+export const meta = {
+  name: 'Calendar',
+  category: 'show',
+  description:
+    '月视图日历：6×7 日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、月份导航（上一月/今天/下一月）；受控 value(锚点)/selectedDate 不回写，仅通过 onChange/onSelect/onDateClick/onMoreClick 通知。本子集；week/day/range 视图、时间轴、弹层、虚拟化延后。',
+  exports: ['Calendar'],
+  props: [
+    { name: 'value', type: 'Date', default: 'undefined', desc: '受控锚点日期(决定展示月份)，受控时不回写' },
+    { name: 'defaultValue', type: 'Date', default: 'new Date()', desc: '非受控初始锚点' },
+    { name: 'events', type: 'CalendarEvent[]', default: '[]', desc: '事件列表' },
+    { name: 'weekStartsOn', type: '0|1|2|3|4|5|6', default: '0', desc: '一周起始(0=周日)' },
+    { name: 'maxEventsPerDay', type: 'number', default: '3', desc: '每格最多事件数，超出折叠 +N' },
+    { name: 'weekendDays', type: 'number[]', default: '[0, 6]', desc: '周末列序号' },
+    { name: 'markWeekend', type: 'boolean', default: 'true', desc: '弱化高亮周末列' },
+    { name: 'disabledDate', type: '(date: Date) => boolean', default: 'undefined', desc: '命中则该格禁用' },
+    { name: 'selectedDate', type: 'Date', default: 'undefined', desc: '受控选中日(边框态)，受控时不回写' },
+    { name: 'defaultSelectedDate', type: 'Date', default: 'undefined', desc: '非受控选中日初值' },
+    { name: 'locale', type: 'string', default: "'zh-CN'", desc: 'Intl 月份/星期名格式化语言' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '网格 aria-label，默认取月份标题' },
+    { name: 'onChange', type: '(info: { value: Date }) => void', default: 'undefined' },
+    { name: 'onSelect', type: '(info: { date: Date }) => void', default: 'undefined' },
+    { name: 'onDateClick', type: '(info: { date: Date }) => void', default: 'undefined' },
+    {
+      name: 'onMoreClick',
+      type: '(info: { date: Date; events: CalendarEvent[] }) => void',
+      default: 'undefined',
+    },
+    { name: 'dateCell', type: 'Snippet', default: 'undefined', desc: '自定义整格内容' },
+    { name: 'event', type: 'Snippet', default: 'undefined', desc: '自定义事件块' },
+  ],
+  events: [
+    { name: 'onChange', desc: '锚点(翻月/今天)变化' },
+    { name: 'onSelect', desc: '选中某日' },
+    { name: 'onDateClick', desc: '点击日格' },
+    { name: 'onMoreClick', desc: '点击 +N 折叠触发器' },
+  ],
+  slots: [
+    { name: 'dateCell', desc: '自定义整格内容 { date, events, isToday, isOutside, disabled }' },
+    { name: 'event', desc: '自定义事件块 { event }' },
+  ],
+  a11y: {
+    hasRole: true,
+    focusable: true,
+    note: '网格 role=grid，星期表头行 role=row 含 role=columnheader，每周一行 role=row 含 role=gridcell；today 设 aria-current=date，选中设 aria-selected，禁用设 aria-disabled；可交互格 Enter/Space 触发点击与选中。',
+  },
+  tokens: [
+    '--cd-calendar-bg',
+    '--cd-calendar-border',
+    '--cd-calendar-header-bg',
+    '--cd-calendar-text',
+    '--cd-calendar-text-secondary',
+    '--cd-calendar-today-bg',
+    '--cd-calendar-today-fg',
+    '--cd-calendar-selected-border',
+    '--cd-calendar-weekend-bg',
+    '--cd-calendar-cell-bg-hover',
+    '--cd-calendar-event-default-bg',
+    '--cd-calendar-event-fg',
+    '--cd-calendar-disabled-bg',
+    '--cd-calendar-more-color',
+    '--cd-calendar-cell-min-h',
+    '--cd-calendar-radius',
+  ],
+  responsive: false,
+  examples: [
+    { title: '基础月历', code: '<Calendar />' },
+    {
+      title: '带事件',
+      code: '<Calendar events={[{ key: 1, start: new Date(), title: "会议" }]} />',
+    },
+  ],
+} as const;

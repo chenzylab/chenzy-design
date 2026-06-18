@@ -22,6 +22,13 @@ export const en_US: Locale = {
     error: 'Failed to load',
   },
   Descriptions: { empty: '-' },
+  Calendar: {
+    today: 'Today',
+    prev: 'Previous',
+    next: 'Next',
+    moreCount: '+{count} more',
+    noEvents: 'No events',
+  },
   Tree: {
     emptyText: 'No data',
     searchPlaceholder: 'Search',
