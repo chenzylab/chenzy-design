@@ -13,6 +13,12 @@ export const zh_CN: Locale = {
     expanded: '侧边栏已展开',
     collapsed: '侧边栏已收起',
   },
+  Select: {
+    placeholder: '请选择',
+    emptyText: '无匹配项',
+    searchPlaceholder: '搜索',
+    loading: '加载中',
+  },
   Form: {
     required: '{label}为必填项',
     optional: '选填',

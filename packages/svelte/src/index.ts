@@ -34,3 +34,5 @@ export { InputNumber, inputNumberMeta } from './input-number/index.js';
 export { Rating, ratingMeta } from './rating/index.js';
 export { Slider, sliderMeta } from './slider/index.js';
 export { Form, FormField, FormInput, formMeta } from './form/index.js';
+export { Select, selectMeta, type OptionData } from './select/index.js';
+export { AutoComplete, autocompleteMeta } from './autocomplete/index.js';

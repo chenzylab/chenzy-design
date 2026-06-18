@@ -22,9 +22,20 @@
     Rating,
     Slider,
     Form,
+    Select,
+    AutoComplete,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
+  let selVal = $state<string | number>('');
+  let multiVal = $state<(string | number)[]>([]);
+  let acVal = $state('');
+  const fruitOptions = [
+    { label: '苹果', value: 'apple' },
+    { label: '香蕉', value: 'banana' },
+    { label: '橙子', value: 'orange' },
+    { label: '葡萄', value: 'grape' },
+  ];
 
   let collapsed = $state(false);
   let inputVal = $state('');
@@ -245,6 +256,42 @@
     </Form>
     <Text type="tertiary">{submitted}</Text>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>Select / AutoComplete</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 220px">
+      <Select
+        options={fruitOptions}
+        value={selVal}
+        clearable
+        onChange={(v) => (selVal = v as string | number)}
+      />
+      <Text type="tertiary">单选：{selVal || '（未选）'}</Text>
+    </div>
+
+    <div style="width: 260px">
+      <Select
+        options={fruitOptions}
+        multiple
+        filter
+        value={multiVal}
+        onChange={(v) => (multiVal = v as (string | number)[])}
+      />
+      <Text type="tertiary">多选：{multiVal.join(', ') || '（无）'}</Text>
+    </div>
+
+    <div style="width: 220px">
+      <AutoComplete
+        data={['gmail.com', 'outlook.com', 'qq.com', '163.com']}
+        value={acVal}
+        placeholder="输入邮箱后缀"
+        onChange={(v) => (acVal = v)}
+      />
+      <Text type="tertiary">输入：{acVal || '（空）'}</Text>
+    </div>
+  </Space>
 </main>
 
 <style>

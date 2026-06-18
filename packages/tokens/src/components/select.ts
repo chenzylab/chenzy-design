@@ -1,0 +1,21 @@
+/** Component tokens for Select & AutoComplete. See specs/components/input/Select.spec.md. */
+export const selectTokens = {
+  'select-height-default': '32px',
+  'select-height-small': '24px',
+  'select-height-large': '40px',
+  'select-padding-x': 'var(--cd-spacing-3)',
+  'select-border': 'var(--cd-color-border)',
+  'select-border-active': 'var(--cd-color-primary)',
+  'select-border-error': 'var(--cd-color-danger)',
+  'select-radius': 'var(--cd-radius-2)',
+  'select-bg': 'var(--cd-color-bg-0)',
+  'select-font-size': 'var(--cd-font-size-2)',
+  'select-dropdown-bg': 'var(--cd-color-bg-0)',
+  'select-dropdown-shadow': 'var(--cd-shadow-2)',
+  'select-dropdown-radius': 'var(--cd-radius-2)',
+  'select-dropdown-z': 'var(--cd-z-dropdown)',
+  'select-option-padding': 'var(--cd-spacing-2) var(--cd-spacing-3)',
+  'select-option-bg-hover': 'var(--cd-color-fill-0)',
+  'select-option-bg-active': 'var(--cd-color-fill-1)',
+  'select-option-color-selected': 'var(--cd-color-primary)',
+} as const;

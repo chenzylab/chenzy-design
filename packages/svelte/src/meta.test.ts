@@ -15,6 +15,8 @@ import { meta as inputNumberMeta } from './input-number/meta.js';
 import { meta as ratingMeta } from './rating/meta.js';
 import { meta as sliderMeta } from './slider/meta.js';
 import { meta as formMeta } from './form/meta.js';
+import { meta as selectMeta } from './select/meta.js';
+import { meta as autocompleteMeta } from './autocomplete/meta.js';
 
 const metas = {
   buttonMeta,
@@ -33,6 +35,8 @@ const metas = {
   ratingMeta,
   sliderMeta,
   formMeta,
+  selectMeta,
+  autocompleteMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
