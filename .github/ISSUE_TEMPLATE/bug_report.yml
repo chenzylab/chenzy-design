@@ -1,0 +1,50 @@
+name: 🐛 缺陷报告
+description: 报告组件库的一个 bug
+title: '[Bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 感谢反馈！请尽量提供可复现信息，便于定位。
+  - type: input
+    id: component
+    attributes:
+      label: 涉及的组件 / 包
+      placeholder: 例如 Button / @chenzy-design/core / tokens
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？期望是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 最小可复现步骤，或一个 REPL/StackBlitz 链接
+      placeholder: |
+        1. 渲染 <Button loading />
+        2. 点击
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      description: 版本号、浏览器、Node/pnpm 版本等
+      placeholder: |
+        @chenzy-design/svelte: 0.0.0
+        svelte: 5.x
+        浏览器: Chrome 130
+    validations:
+      required: false
+  - type: checkboxes
+    id: a11y
+    attributes:
+      label: 是否为无障碍问题
+      options:
+        - label: 该问题与键盘操作 / 屏幕阅读器 / ARIA / 对比度相关

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 架构与约定（AGENTS.md）
+    url: https://github.com/chenzylab/chenzy-design/blob/main/AGENTS.md
+    about: 提问前请先阅读项目宪法与目录约定
+  - name: 📐 组件规格（specs/）
+    url: https://github.com/chenzylab/chenzy-design/tree/main/specs
+    about: 查看各组件与横切能力的需求规格
