@@ -1,0 +1,34 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * See specs/00-foundation/ai-friendly.spec.md.
+ */
+export const meta = {
+  name: 'Rating',
+  category: 'input',
+  description: '评分组件，支持半星、hover 预览、点击清零与键盘操作，遵循 APG Slider 模式。',
+  props: [
+    { name: 'value', type: 'number', default: 'undefined', desc: '受控值；提供则为受控' },
+    { name: 'defaultValue', type: 'number', default: '0', desc: '非受控初始值' },
+    { name: 'count', type: 'number', default: '5', desc: '图标总数' },
+    { name: 'allowHalf', type: 'boolean', default: 'false', desc: '允许半星（步进 0.5）' },
+    { name: 'allowClear', type: 'boolean', default: 'true', desc: '点击当前值清零' },
+    { name: 'size', type: "'small'|'default'|'large'|number", default: 'default' },
+    { name: 'disabled', type: 'boolean', default: 'false' },
+    { name: 'readonly', type: 'boolean', default: 'false' },
+    { name: 'status', type: "'default'|'warning'|'error'", default: 'default' },
+    { name: 'name', type: 'string', default: 'undefined' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'onChange', type: '(v: number) => void', default: 'undefined' },
+  ],
+  a11y: {
+    role: 'slider',
+    keyboard: ['ArrowRight/Up', 'ArrowLeft/Down', 'Home', 'End', 'Delete', 'Backspace'],
+    notes: [
+      'role=slider + aria-valuenow/valuemin/valuemax/valuetext',
+      'hover 预览为纯本地状态，不影响受控值',
+      'allowHalf 时按指针落在星左/右半决定 .5',
+      'disabled→aria-disabled，readonly→aria-readonly，error→aria-invalid',
+    ],
+  },
+  tokens: ['--cd-rating-*', '--cd-color-warning', '--cd-color-danger', '--cd-focus-ring', '--cd-motion-*'],
+} as const;
