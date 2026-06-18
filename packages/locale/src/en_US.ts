@@ -7,6 +7,12 @@ export const en_US: Locale = {
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
   Pagination: { total: '{total} items in total' },
   Table: { emptyText: 'No data' },
+  Empty: {
+    noData: 'No data',
+    noResult: 'No results',
+    error: 'Failed to load',
+  },
+  Descriptions: { empty: '-' },
   Sider: {
     expand: 'Expand sidebar',
     collapse: 'Collapse sidebar',

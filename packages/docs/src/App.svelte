@@ -45,6 +45,10 @@
     Card,
     Tooltip,
     Popover,
+    Empty,
+    Descriptions,
+    Collapse,
+    Timeline,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -591,6 +595,43 @@
         <Button type="primary">点击弹出</Button>
       </Popover>
     </Space>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Empty / Descriptions / Collapse / Timeline</Title>
+  <Space direction="vertical" align="start">
+    <Empty image="noResult" description="换个关键词试试" />
+
+    <div style="width: 420px">
+      <Descriptions
+        bordered
+        column={2}
+        data={[
+          { label: '姓名', value: '陈某' },
+          { label: '年龄', value: 28 },
+          { label: '邮箱', value: 'a@b.com', span: 2 },
+          { label: '备注', value: null },
+        ]}
+      />
+    </div>
+
+    <div style="width: 420px">
+      <Collapse panels={[{ key: 'p1', header: '面板一' }, { key: 'p2', header: '面板二' }]}>
+        {#snippet children({ key })}
+          {#if key === 'p1'}面板一的内容{:else}面板二的内容{/if}
+        {/snippet}
+      </Collapse>
+    </div>
+
+    <Timeline
+      dataSource={[
+        { content: '创建订单', time: '09:00' },
+        { content: '已发货', time: '12:30', color: 'var(--cd-color-success)' },
+        { content: '运输中', time: '15:00' },
+      ]}
+      pending="等待签收"
+    />
   </Space>
 </main>
 

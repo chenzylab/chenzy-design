@@ -7,6 +7,12 @@ export const zh_CN: Locale = {
   Input: { clear: '清除', showPassword: '显示密码', hidePassword: '隐藏密码' },
   Pagination: { total: '共 {total} 条' },
   Table: { emptyText: '暂无数据' },
+  Empty: {
+    noData: '暂无数据',
+    noResult: '无搜索结果',
+    error: '加载失败',
+  },
+  Descriptions: { empty: '-' },
   Sider: {
     expand: '展开侧边栏',
     collapse: '收起侧边栏',

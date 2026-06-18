@@ -38,6 +38,10 @@ import { meta as badgeMeta } from './badge/meta.js';
 import { meta as cardMeta } from './card/meta.js';
 import { meta as tooltipMeta } from './tooltip/meta.js';
 import { meta as popoverMeta } from './popover/meta.js';
+import { meta as emptyMeta } from './empty/meta.js';
+import { meta as descriptionsMeta } from './descriptions/meta.js';
+import { meta as collapseMeta } from './collapse/meta.js';
+import { meta as timelineMeta } from './timeline/meta.js';
 
 const metas = {
   buttonMeta,
@@ -79,6 +83,10 @@ const metas = {
   cardMeta,
   tooltipMeta,
   popoverMeta,
+  emptyMeta,
+  descriptionsMeta,
+  collapseMeta,
+  timelineMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

@@ -24,6 +24,14 @@ export interface Locale {
   Table: {
     emptyText: string;
   };
+  Empty: {
+    noData: string;
+    noResult: string;
+    error: string;
+  };
+  Descriptions: {
+    empty: string;
+  };
   Sider: {
     expand: string;
     collapse: string;

@@ -23,6 +23,7 @@ import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
+import { dataDisplayTokens } from './data-display.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -49,4 +50,5 @@ export const componentTokens = {
   ...menuTokens,
   ...displayTokens,
   ...tooltipTokens,
+  ...dataDisplayTokens,
 } as const;
