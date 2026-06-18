@@ -84,3 +84,6 @@ export {
 } from './descriptions/index.js';
 export { Collapse, collapseMeta, type CollapsePanel } from './collapse/index.js';
 export { Timeline, timelineMeta, type TimelineItemData } from './timeline/index.js';
+export { List, listMeta } from './list/index.js';
+export { Image, imageMeta } from './image/index.js';
+export { Highlight, highlightMeta } from './highlight/index.js';
