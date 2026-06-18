@@ -11,6 +11,9 @@ import { meta as textareaMeta } from './textarea/meta.js';
 import { meta as switchMeta } from './switch/meta.js';
 import { meta as checkboxMeta } from './checkbox/meta.js';
 import { meta as radioMeta } from './radio/meta.js';
+import { meta as inputNumberMeta } from './input-number/meta.js';
+import { meta as ratingMeta } from './rating/meta.js';
+import { meta as sliderMeta } from './slider/meta.js';
 
 const metas = {
   buttonMeta,
@@ -25,6 +28,9 @@ const metas = {
   switchMeta,
   checkboxMeta,
   radioMeta,
+  inputNumberMeta,
+  ratingMeta,
+  sliderMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

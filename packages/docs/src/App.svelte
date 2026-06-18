@@ -18,6 +18,9 @@
     CheckboxGroup,
     Radio,
     RadioGroup,
+    InputNumber,
+    Rating,
+    Slider,
   } from '@chenzy-design/svelte';
 
   let collapsed = $state(false);
@@ -25,6 +28,10 @@
   let switchOn = $state(true);
   let checks = $state<(string | number)[]>(['a']);
   let radioVal = $state<string | number | boolean>('1');
+  let numVal = $state<number | null>(3);
+  let rateVal = $state(2.5);
+  let sliderVal = $state(40);
+  let rangeVal = $state<[number, number]>([20, 60]);
 
   let theme = $state<'light' | 'dark'>('light');
   $effect(() => {
@@ -188,6 +195,35 @@
       ]}
     />
     <Text type="tertiary">当前：{radioVal}</Text>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>M2 数值组件</Title>
+  <Space direction="vertical" align="start">
+    <Space>
+      <InputNumber value={numVal} min={0} max={10} onChange={(v) => (numVal = v)} />
+      <Text type="tertiary">数值：{numVal}</Text>
+    </Space>
+
+    <Space>
+      <Rating value={rateVal} allowHalf onChange={(v) => (rateVal = v)} />
+      <Text type="tertiary">评分：{rateVal}</Text>
+    </Space>
+
+    <div style="width: 280px">
+      <Slider value={sliderVal} onChange={(v) => (sliderVal = v as number)} />
+      <Text type="tertiary">单值：{sliderVal}</Text>
+    </div>
+
+    <div style="width: 280px">
+      <Slider
+        range
+        value={rangeVal}
+        onChange={(v) => (rangeVal = v as [number, number])}
+      />
+      <Text type="tertiary">区间：{rangeVal[0]} – {rangeVal[1]}</Text>
+    </div>
   </Space>
 </main>
 
