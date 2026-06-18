@@ -1,0 +1,20 @@
+/** Component tokens for Table (M4 Show). 全部回退到 Alias，禁止写死。 */
+export const tableTokens = {
+  'table-bg': 'var(--cd-color-bg-0)',
+  'table-header-bg': 'var(--cd-color-bg-1)',
+  'table-header-text': 'var(--cd-color-text-0)',
+  'table-cell-text': 'var(--cd-color-text-0)',
+  'table-border-color': 'var(--cd-color-border)',
+  'table-row-hover-bg': 'var(--cd-color-fill-0)',
+  'table-row-selected-bg': 'var(--cd-color-primary-light-default)',
+  'table-row-stripe-bg': 'var(--cd-color-fill-0)',
+  'table-cell-padding-y': 'var(--cd-spacing-3)',
+  'table-cell-padding-x': 'var(--cd-spacing-4)',
+  'table-cell-padding-y-small': 'var(--cd-spacing-2)',
+  'table-cell-padding-y-large': 'var(--cd-spacing-4)',
+  'table-sort-active-color': 'var(--cd-color-primary)',
+  'table-sort-icon-color': 'var(--cd-color-text-3)',
+  'table-loading-mask': 'var(--cd-color-bg-0)',
+  'table-empty-color': 'var(--cd-color-text-2)',
+  'table-radius': 'var(--cd-radius-2)',
+} as const;

@@ -46,3 +46,17 @@ export {
   type FlatNode,
   type CheckState,
 } from './tree.js';
+export {
+  nextSortOrder,
+  toggleSort,
+  applySort,
+  paginate,
+  pageCount,
+  selectAllState,
+  toggleSelectAll,
+  toggleRow,
+  type RowKey,
+  type SortOrder,
+  type SortState,
+  type SelectAllState,
+} from './table.js';

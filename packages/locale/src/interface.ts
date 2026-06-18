@@ -23,6 +23,15 @@ export interface Locale {
   };
   Table: {
     emptyText: string;
+    selectAll: string;
+    selectRow: string;
+    /** uses {column} */
+    sortBy: string;
+    sortAscend: string;
+    sortDescend: string;
+    sortCancel: string;
+    /** uses {count} */
+    selectedCount: string;
   };
   Empty: {
     noData: string;
