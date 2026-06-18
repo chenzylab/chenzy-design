@@ -24,4 +24,10 @@ export interface Locale {
   Table: {
     emptyText: string;
   };
+  Sider: {
+    expand: string;
+    collapse: string;
+    expanded: string;
+    collapsed: string;
+  };
 }

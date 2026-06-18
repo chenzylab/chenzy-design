@@ -1,0 +1,20 @@
+/** Component tokens for Layout. See specs/components/basic/Layout.spec.md. */
+export const layoutTokens = {
+  'layout-bg': 'var(--cd-color-bg-0)',
+  'layout-header-bg': 'var(--cd-color-bg-1)',
+  'layout-header-height': '60px',
+  'layout-header-z': 'var(--cd-z-sticky)',
+  'layout-footer-bg': 'var(--cd-color-bg-1)',
+  'layout-footer-color': 'var(--cd-color-text-2)',
+  'layout-content-bg': 'var(--cd-color-bg-0)',
+  'layout-content-padding': 'var(--cd-spacing-6)',
+  'layout-sider-bg': 'var(--cd-color-bg-1)',
+  'layout-sider-width': '200px',
+  'layout-sider-collapsed-width': '60px',
+  'layout-sider-border': 'var(--cd-color-border)',
+  'layout-sider-trigger-bg': 'var(--cd-color-bg-2)',
+  'layout-sider-trigger-color': 'var(--cd-color-text-1)',
+  'layout-sider-trigger-hover-bg': 'var(--cd-color-fill-1)',
+  'layout-motion-duration': 'var(--cd-motion-duration-mid)',
+  'layout-motion-ease': 'var(--cd-motion-ease-standard)',
+} as const;

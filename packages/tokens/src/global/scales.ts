@@ -57,9 +57,20 @@ export const motion = {
 
 export const zIndex = {
   affix: '10',
+  sticky: '900',
   dropdown: '1050',
   modal: '1000',
   popover: '1030',
   toast: '1080',
   tooltip: '1070',
+} as const;
+
+/** Responsive breakpoints (min-width). Emitted as CSS vars AND used as build-time
+ *  constants for media queries (CSS @media cannot use var()). See Grid/Layout specs. */
+export const breakpoint = {
+  sm: '576px',
+  md: '768px',
+  lg: '992px',
+  xl: '1200px',
+  xxl: '1600px',
 } as const;

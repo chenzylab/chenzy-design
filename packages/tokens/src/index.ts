@@ -18,3 +18,4 @@ export function tk(name: TokenKey): string {
 
 export { palette } from './global/color.js';
 export { aliasLight, aliasDark } from './alias/index.js';
+export { breakpoint } from './global/scales.js';
