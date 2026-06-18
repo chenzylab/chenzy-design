@@ -52,7 +52,12 @@
     List,
     Image,
     Highlight,
+    VirtualList,
+    Carousel,
   } from '@chenzy-design/svelte';
+
+  const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
+  let carouselIdx = $state(0);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -670,7 +675,42 @@
       searchWords={['design', 'Svelte']}
     />
   </Space>
+
+  <Divider />
+
+  <Title heading={5}>VirtualList（1 万行） / Carousel</Title>
+  <Space direction="vertical" align="start">
+    <div style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px">
+      <VirtualList data={bigData} height={200} itemSize={36} getKey={(it) => it.id}>
+        {#snippet renderItem(item)}
+          <div style="padding: 0 12px; line-height: 36px; border-bottom: 1px solid var(--cd-color-border)">
+            {(item as { text: string }).text}
+          </div>
+        {/snippet}
+      </VirtualList>
+    </div>
+
+    <div style="width: 360px">
+      <Carousel
+        slides={[slideA, slideB, slideC]}
+        value={carouselIdx}
+        onChange={(i) => (carouselIdx = i)}
+        height={160}
+      />
+    </div>
+    <Text type="tertiary">当前轮播：{carouselIdx + 1}</Text>
+  </Space>
 </main>
+
+{#snippet slideA()}
+  <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-primary);color:#fff;font-size:20px">幻灯片 1</div>
+{/snippet}
+{#snippet slideB()}
+  <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-success);color:#fff;font-size:20px">幻灯片 2</div>
+{/snippet}
+{#snippet slideC()}
+  <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-warning);color:#fff;font-size:20px">幻灯片 3</div>
+{/snippet}
 
 <style>
   .demo-cell {

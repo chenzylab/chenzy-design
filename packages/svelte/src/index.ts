@@ -87,3 +87,5 @@ export { Timeline, timelineMeta, type TimelineItemData } from './timeline/index.
 export { List, listMeta } from './list/index.js';
 export { Image, imageMeta } from './image/index.js';
 export { Highlight, highlightMeta } from './highlight/index.js';
+export { VirtualList, virtualListMeta } from './virtual-list/index.js';
+export { Carousel, carouselMeta } from './carousel/index.js';

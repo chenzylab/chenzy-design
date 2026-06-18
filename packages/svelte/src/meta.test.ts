@@ -45,6 +45,8 @@ import { meta as timelineMeta } from './timeline/meta.js';
 import { meta as listMeta } from './list/meta.js';
 import { meta as imageMeta } from './image/meta.js';
 import { meta as highlightMeta } from './highlight/meta.js';
+import { meta as virtualListMeta } from './virtual-list/meta.js';
+import { meta as carouselMeta } from './carousel/meta.js';
 
 const metas = {
   buttonMeta,
@@ -93,6 +95,8 @@ const metas = {
   listMeta,
   imageMeta,
   highlightMeta,
+  virtualListMeta,
+  carouselMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
