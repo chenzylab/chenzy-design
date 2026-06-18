@@ -32,6 +32,9 @@
     TreeSelect,
     Transfer,
     Upload,
+    Breadcrumb,
+    Pagination,
+    Steps,
   } from '@chenzy-design/svelte';
 
   let submitted = $state('');
@@ -45,6 +48,8 @@
   let cascaderVal = $state<(string | number)[]>([]);
   let treeVal = $state<string | number | null>(null);
   let transferVal = $state<(string | number)[]>(['b']);
+  let page = $state(1);
+  let step = $state(1);
   const transferData = [
     { key: 'a', label: '北京' },
     { key: 'b', label: '上海' },
@@ -420,6 +425,36 @@
     <Text type="tertiary">已选：{transferVal.join(', ') || '（无）'}</Text>
 
     <Upload multiple drag accept="image/*" />
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>M3 导航：Breadcrumb / Pagination / Steps</Title>
+  <Space direction="vertical" align="start">
+    <Breadcrumb
+      routes={[
+        { label: '首页', href: '#' },
+        { label: '组件', href: '#' },
+        { label: '导航' },
+      ]}
+    />
+
+    <Pagination total={256} currentPage={page} showTotal onChange={(p) => (page = p)} />
+    <Text type="tertiary">当前页：{page}</Text>
+
+    <div style="width: 480px">
+      <Steps
+        current={step}
+        clickable
+        steps={[
+          { title: '填写信息', description: '基本资料' },
+          { title: '确认订单', description: '核对内容' },
+          { title: '完成', description: '提交成功' },
+        ]}
+        onChange={(c) => (step = c)}
+      />
+    </div>
+    <Text type="tertiary">当前步：{step}</Text>
   </Space>
 </main>
 

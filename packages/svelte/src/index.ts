@@ -54,3 +54,13 @@ export {
   type UploadFileItem,
   type UploadStatus,
 } from './upload/index.js';
+
+// --- M3 Navigation ---
+export {
+  Breadcrumb,
+  BreadcrumbItem,
+  breadcrumbMeta,
+  type BreadcrumbRoute,
+} from './breadcrumb/index.js';
+export { Pagination, paginationMeta } from './pagination/index.js';
+export { Steps, stepsMeta, type StepItem } from './steps/index.js';
