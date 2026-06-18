@@ -70,3 +70,15 @@ export {
   type CalendarEventKey,
   type DayEvents,
 } from './calendar.js';
+export {
+  offsetToIndex,
+  indexToOffset,
+  indexOfValue,
+  nextEnabledIndex,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  keyboardTarget,
+  type ScrollListValue,
+  type ScrollListItem,
+  type ScrollListKey,
+} from './scroll-list.js';

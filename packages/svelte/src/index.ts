@@ -71,6 +71,12 @@ export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
 
 // --- M4 Show ---
 export { Tag, tagMeta } from './tag/index.js';
+export {
+  ScrollList,
+  scrollListMeta,
+  type ScrollListItem,
+  type ScrollListValue,
+} from './scroll-list/index.js';
 export { Avatar, avatarMeta } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, cardMeta } from './card/index.js';

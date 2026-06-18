@@ -50,6 +50,7 @@ import { meta as carouselMeta } from './carousel/meta.js';
 import { meta as treeMeta } from './tree/meta.js';
 import { meta as tableMeta } from './table/meta.js';
 import { meta as calendarMeta } from './calendar/meta.js';
+import { meta as scrollListMeta } from './scroll-list/meta.js';
 
 const metas = {
   buttonMeta,
@@ -103,6 +104,7 @@ const metas = {
   treeMeta,
   tableMeta,
   calendarMeta,
+  scrollListMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

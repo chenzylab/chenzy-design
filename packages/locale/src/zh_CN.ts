@@ -22,6 +22,11 @@ export const zh_CN: Locale = {
     error: '加载失败',
   },
   Descriptions: { empty: '-' },
+  ScrollList: {
+    ariaLabel: '滚动选择',
+    empty: '暂无可选项',
+    announceSelected: '已选中 {label}',
+  },
   Calendar: {
     today: '今天',
     prev: '上一月',
