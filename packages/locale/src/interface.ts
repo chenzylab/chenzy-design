@@ -47,6 +47,10 @@ export interface Locale {
     /** uses {count} */
     moreAriaLabel: string;
   };
+  Spin: {
+    loading: string;
+    loaded: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;
