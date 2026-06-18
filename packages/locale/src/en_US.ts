@@ -22,6 +22,10 @@ export const en_US: Locale = {
     error: 'Failed to load',
   },
   Descriptions: { empty: '-' },
+  OverflowList: {
+    moreLabel: '+{count}',
+    moreAriaLabel: 'Show {count} more items',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

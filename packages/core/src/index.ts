@@ -82,3 +82,9 @@ export {
   type ScrollListItem,
   type ScrollListKey,
 } from './scroll-list.js';
+export {
+  computeVisibleCount,
+  applyHysteresis,
+  type OverflowComputeInput,
+  type OverflowComputeResult,
+} from './overflow-list.js';
