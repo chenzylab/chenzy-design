@@ -21,6 +21,8 @@ import { meta as tagInputMeta } from './tag-input/meta.js';
 import { meta as colorPickerMeta } from './color-picker/meta.js';
 import { meta as datePickerMeta } from './date-picker/meta.js';
 import { meta as timePickerMeta } from './time-picker/meta.js';
+import { meta as cascaderMeta } from './cascader/meta.js';
+import { meta as treeSelectMeta } from './tree-select/meta.js';
 
 const metas = {
   buttonMeta,
@@ -45,6 +47,8 @@ const metas = {
   colorPickerMeta,
   datePickerMeta,
   timePickerMeta,
+  cascaderMeta,
+  treeSelectMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

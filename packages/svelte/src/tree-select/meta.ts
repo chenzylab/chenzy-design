@@ -1,0 +1,36 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * See specs/00-foundation/ai-friendly.spec.md.
+ */
+export const meta = {
+  name: 'TreeSelect',
+  category: 'input',
+  description: '树形选择器，单面板可展开/收起的树，单选叶子或任意节点。',
+  props: [
+    { name: 'value', type: 'TreeKey|null', default: 'undefined' },
+    { name: 'defaultValue', type: 'TreeKey|null', default: 'null' },
+    { name: 'treeData', type: 'TreeNode[]', default: '[]' },
+    { name: 'open', type: 'boolean', default: 'undefined' },
+    { name: 'defaultOpen', type: 'boolean', default: 'false' },
+    { name: 'placeholder', type: 'string', default: "'请选择'" },
+    { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    { name: 'status', type: "'default'|'warning'|'error'", default: 'default' },
+    { name: 'disabled', type: 'boolean', default: 'false' },
+    { name: 'clearable', type: 'boolean', default: 'false' },
+    { name: 'leafOnly', type: 'boolean', default: 'false' },
+    { name: 'defaultExpandAll', type: 'boolean', default: 'false' },
+    { name: 'onChange', type: '(key: TreeKey|null) => void', default: 'undefined' },
+    { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+  ],
+  a11y: {
+    role: 'combobox',
+    notes: [
+      'combobox 触发器 + role="tree" 面板 + role="treeitem"',
+      '有 children 节点 aria-expanded 标记展开态',
+      'aria-selected 标记选中节点',
+      'leafOnly 时非叶子节点仅切换展开，不可选',
+    ],
+  },
+  tokens: ['--cd-select-*', '--cd-tree-*', '--cd-focus-ring'],
+} as const;
