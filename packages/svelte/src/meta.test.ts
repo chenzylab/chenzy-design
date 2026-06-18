@@ -25,6 +25,9 @@ import { meta as cascaderMeta } from './cascader/meta.js';
 import { meta as treeSelectMeta } from './tree-select/meta.js';
 import { meta as transferMeta } from './transfer/meta.js';
 import { meta as uploadMeta } from './upload/meta.js';
+import { meta as breadcrumbMeta } from './breadcrumb/meta.js';
+import { meta as paginationMeta } from './pagination/meta.js';
+import { meta as stepsMeta } from './steps/meta.js';
 
 const metas = {
   buttonMeta,
@@ -53,6 +56,9 @@ const metas = {
   treeSelectMeta,
   transferMeta,
   uploadMeta,
+  breadcrumbMeta,
+  paginationMeta,
+  stepsMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

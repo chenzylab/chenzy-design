@@ -18,6 +18,7 @@ import { colorPickerTokens } from './color-picker.js';
 import { datePickerTokens } from './date-picker.js';
 import { treeTokens } from './tree.js';
 import { transferTokens } from './transfer.js';
+import { navigationTokens } from './navigation.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -39,4 +40,5 @@ export const componentTokens = {
   ...datePickerTokens,
   ...treeTokens,
   ...transferTokens,
+  ...navigationTokens,
 } as const;
