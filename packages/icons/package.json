@@ -1,0 +1,22 @@
+{
+  "name": "@chenzy-design/icons",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src", "dist"],
+  "scripts": {
+    "build": "echo \"[icons] codegen placeholder — see specs/components/basic/Icon.spec.md\"",
+    "typecheck": "echo \"[icons] no ts yet\""
+  },
+  "peerDependencies": {
+    "svelte": ">=5.0.0"
+  }
+}

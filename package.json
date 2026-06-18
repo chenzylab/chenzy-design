@@ -1,0 +1,39 @@
+{
+  "name": "chenzy-design",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:tokens": "pnpm --filter @chenzy-design/tokens build",
+    "build": "pnpm build:tokens && pnpm -r --filter './packages/*' build",
+    "dev": "pnpm --filter @chenzy-design/docs dev",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r --filter './packages/*' typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:a11y": "echo \"[placeholder] Playwright + axe a11y suite — see specs/00-foundation/a11y.spec.md\"",
+    "perf:check": "echo \"[placeholder] size-limit + bench — see specs/00-foundation/performance.spec.md\"",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@sveltejs/package": "^2.3.7",
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.2",
+    "svelte": "^5.16.0",
+    "typescript-eslint": "^8.18.0",
+    "svelte-check": "^4.1.0",
+    "typescript": "^5.7.2",
+    "unocss": "^0.65.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.8"
+  }
+}

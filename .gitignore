@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.svelte-kit/
+*.tsbuildinfo
+.DS_Store
+coverage/
+.vite/
+*.log
+
+# Claude Code runtime
+.claude/scheduled_tasks.lock

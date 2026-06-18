@@ -1,0 +1,28 @@
+{
+  "name": "@chenzy-design/svelte",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": ["*.css", "*.svelte"],
+  "svelte": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src", "dist"],
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@chenzy-design/core": "workspace:*",
+    "@chenzy-design/locale": "workspace:*",
+    "@chenzy-design/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": ">=5.0.0"
+  }
+}
