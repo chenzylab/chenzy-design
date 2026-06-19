@@ -4,6 +4,8 @@
   Controlled / uncontrolled (same pattern as Input). Variation only via onChange.
 -->
 <script lang="ts">
+  import { useLocale } from '../locale-provider/index.js';
+
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
@@ -46,6 +48,8 @@
     ariaLabel,
     onChange,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // Controlled when `value` prop is explicitly provided (incl. `null`).
   const isControlled = $derived(value !== undefined);
@@ -199,7 +203,7 @@
         type="button"
         class="cd-input-number__action cd-input-number__increment"
         tabindex="-1"
-        aria-label="增加"
+        aria-label={loc().t('InputNumber.increase')}
         disabled={disabled || readonly || atMax}
         onmousedown={preventBlurSteal}
         onclick={() => stepBy(1, false)}
@@ -212,7 +216,7 @@
         type="button"
         class="cd-input-number__action cd-input-number__decrement"
         tabindex="-1"
-        aria-label="减少"
+        aria-label={loc().t('InputNumber.decrease')}
         disabled={disabled || readonly || atMin}
         onmousedown={preventBlurSteal}
         onclick={() => stepBy(-1, false)}

@@ -1,8 +1,7 @@
 <!--
   Sider — collapsible side panel. Backed by headless createSider from core.
   Registers with Layout (context) so Layout switches to row direction.
-  NOTE: aria-label text is hardcoded Chinese for now.
-  TODO: wire to ConfigProvider locale once ConfigProvider exists.
+  aria-label 文案经 useLocale 取自 locale 包（Sider.expand/collapse）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -14,6 +13,7 @@
     type SiderTrigger,
   } from '@chenzy-design/core';
   import { LAYOUT_CONTEXT_KEY, type LayoutContext } from './Layout.svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     /** controlled collapsed value */
@@ -46,6 +46,8 @@
     children,
     trigger,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const layout = getContext<LayoutContext | undefined>(LAYOUT_CONTEXT_KEY);
 
@@ -140,7 +142,7 @@
       class="cd-layout-sider__trigger"
       aria-expanded={!collapsedState}
       aria-controls={sider.id}
-      aria-label={collapsedState ? '展开侧边栏' : '收起侧边栏'}
+      aria-label={collapsedState ? loc().t('Sider.expand') : loc().t('Sider.collapse')}
       onclick={toggle}
     >
       <span class="cd-layout-sider__arrow" aria-hidden="true">{pointsStart ? '‹' : '›'}</span>

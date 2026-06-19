@@ -17,6 +17,7 @@
     isPastDay,
     type CalendarEvent,
   } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -63,6 +64,8 @@
     event,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // 一次性常量：今天（render 用于派生 today/past 态，不放 $state 反复 new）
   const today = new Date();
@@ -175,7 +178,7 @@
     <button
       type="button"
       class="cd-calendar__nav"
-      aria-label="上一月"
+      aria-label={loc().t('Calendar.prev')}
       onclick={goPrev}
     >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -189,12 +192,12 @@
         />
       </svg>
     </button>
-    <button type="button" class="cd-calendar__today" onclick={goToday}>今天</button>
+    <button type="button" class="cd-calendar__today" onclick={goToday}>{loc().t('Calendar.today')}</button>
     <div class="cd-calendar__title">{monthTitle}</div>
     <button
       type="button"
       class="cd-calendar__nav"
-      aria-label="下一月"
+      aria-label={loc().t('Calendar.next')}
       onclick={goNext}
     >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -283,7 +286,7 @@
                       onMore(date, total);
                     }}
                   >
-                    还有 {overflow} 项
+                    {loc().t('Calendar.moreCount', { count: overflow })}
                   </button>
                 {/if}
               </div>

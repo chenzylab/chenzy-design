@@ -10,6 +10,7 @@
   import type { Snippet } from 'svelte';
   import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   type OkType = 'primary' | 'danger';
 
@@ -46,8 +47,8 @@
     maskClosable = true,
     keyboard = true,
     confirmLoading = false,
-    okText = '确定',
-    cancelText = '取消',
+    okText,
+    cancelText,
     okType = 'primary',
     footer,
     children,
@@ -60,6 +61,7 @@
   }: Props = $props();
 
   const titleId = useId('cd-modal-title');
+  const loc = useLocale();
 
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange/onCancel ---
   const isControlled = $derived(open !== undefined);
@@ -158,7 +160,7 @@
             <button
               type="button"
               class="cd-modal__close"
-              aria-label="关闭"
+              aria-label={loc().t('Modal.close')}
               onclick={cancel}
             >
               <svg
@@ -189,9 +191,9 @@
           {#if footer}
             {@render footer({ ok, cancel })}
           {:else}
-            <Button onclick={cancel}>{cancelText}</Button>
+            <Button onclick={cancel}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
             <Button type={okType} onclick={ok} loading={confirmLoading}>
-              {okText}
+              {okText ?? loc().t('Modal.okText')}
             </Button>
           {/if}
         </footer>

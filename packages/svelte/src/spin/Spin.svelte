@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { createSpinController, type SpinController } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
 
@@ -35,12 +36,14 @@
     minShowTime = 0,
     fullscreen = false,
     wrapperClassName = '',
-    ariaLabel = '加载中',
+    ariaLabel,
     indicator,
     children,
     onShow,
     onHide,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // effective：内部派生显示态，render 读它决定显隐（红线 #1）。
   let effective = $state(false);
@@ -76,7 +79,7 @@
 
   const hasTip = $derived(tip.length > 0);
   // 有 tip 时 tip 文本作为可访问名；无 tip 时用 ariaLabel。
-  const statusLabel = $derived(hasTip ? undefined : ariaLabel);
+  const statusLabel = $derived(hasTip ? undefined : (ariaLabel ?? loc().t('Spin.loading')));
 
   const indicatorClass = $derived(`cd-spin__indicator cd-spin__indicator--${size}`);
 </script>

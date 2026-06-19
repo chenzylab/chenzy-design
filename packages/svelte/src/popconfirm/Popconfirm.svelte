@@ -11,6 +11,7 @@
   import type { Snippet } from 'svelte';
   import { useId, useDismiss, useFocusTrap } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   type PopType = 'default' | 'danger' | 'warning';
   type Placement = 'top' | 'bottom' | 'left' | 'right';
@@ -50,8 +51,8 @@
     contentSnippet,
     type = 'default',
     icon,
-    okText = '确定',
-    cancelText = '取消',
+    okText,
+    cancelText,
     okType,
     showCancel = true,
     placement = 'top',
@@ -64,6 +65,8 @@
     onCancel,
     class: className,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const popupId = useId('cd-popconfirm-popup');
   const titleId = useId('cd-popconfirm-title');
@@ -250,10 +253,10 @@
       </div>
       <div class="cd-popconfirm__footer">
         {#if showCancel}
-          <Button size="small" onclick={cancel}>{cancelText}</Button>
+          <Button size="small" onclick={cancel}>{cancelText ?? loc().t('Popconfirm.cancel')}</Button>
         {/if}
         <Button size="small" type={resolvedOkType} onclick={confirm}>
-          {okText}
+          {okText ?? loc().t('Popconfirm.confirm')}
         </Button>
       </div>
     </div>

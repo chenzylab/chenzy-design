@@ -13,3 +13,5 @@ export { meta as localeProviderMeta } from './meta.js';
 export function getLocaleContext(): { current: LocaleApi } | undefined {
   return getContext(LOCALE_CONTEXT_KEY);
 }
+
+export { useLocale } from './use-locale.js';

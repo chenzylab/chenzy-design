@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   type TagType = 'light' | 'solid' | 'ghost';
   type TagColor = 'grey' | 'primary' | 'success' | 'warning' | 'danger';
@@ -43,6 +44,8 @@
     children,
     prefixIcon,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // --- visible: controlled vs uncontrolled (never write the prop back) ---
   const visibleControlled = $derived(visible !== undefined);
@@ -116,7 +119,7 @@
         <button
           type="button"
           class="cd-tag__close"
-          aria-label="关闭"
+          aria-label={loc().t('Tag.close')}
           disabled={disabled || undefined}
           onclick={handleClose}
         >

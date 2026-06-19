@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean };
@@ -38,12 +39,14 @@
     defaultOpen = false,
     size = 'default',
     status = 'default',
-    placeholder = '请选择',
+    placeholder,
     disabled = false,
     clearable = false,
     onChange,
     onOpenChange,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const listId = useId('cd-select-list');
 
@@ -262,7 +265,7 @@
             <button
               type="button"
               class="cd-select__tag-close"
-              aria-label={`移除 ${opt.label}`}
+              aria-label={loc().t('Select.removeItem', { label: opt.label })}
               onclick={(e) => {
                 e.stopPropagation();
                 removeTag(opt.value);
@@ -282,7 +285,7 @@
             class="cd-select__search"
             type="text"
             value={query}
-            aria-label="搜索选项"
+            aria-label={loc().t('Select.searchPlaceholder')}
             oninput={onSearchInput}
             onkeydown={onTriggerKeydown}
             onclick={(e) => e.stopPropagation()}
@@ -293,8 +296,8 @@
           class="cd-select__search"
           type="text"
           value={query}
-          placeholder={hasSelection ? singleLabel : placeholder}
-          aria-label="搜索选项"
+          placeholder={hasSelection ? singleLabel : (placeholder ?? loc().t('Select.placeholder'))}
+          aria-label={loc().t('Select.searchPlaceholder')}
           oninput={onSearchInput}
           onkeydown={onTriggerKeydown}
           onclick={(e) => e.stopPropagation()}
@@ -302,7 +305,7 @@
       {:else if hasSelection}
         <span class="cd-select__value">{singleLabel}</span>
       {:else}
-        <span class="cd-select__placeholder">{placeholder}</span>
+        <span class="cd-select__placeholder">{placeholder ?? loc().t('Select.placeholder')}</span>
       {/if}
     </div>
 
@@ -310,7 +313,7 @@
       <button
         type="button"
         class="cd-select__clear"
-        aria-label="清除"
+        aria-label={loc().t('Select.clear')}
         onclick={clearAll}
       >
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -337,7 +340,7 @@
       aria-multiselectable={multiple}
     >
       {#if filteredOptions.length === 0}
-        <div class="cd-select__empty">无匹配项</div>
+        <div class="cd-select__empty">{loc().t('Select.emptyText')}</div>
       {:else}
         {#each filteredOptions as opt, i (opt.value)}
           <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->

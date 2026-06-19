@@ -18,6 +18,7 @@
     type SortState,
   } from '@chenzy-design/core';
   import { Pagination } from '../pagination/index.js';
+  import { useLocale } from '../locale-provider/index.js';
   import type { ColumnDef, RowSelection, Align, TableSize } from './types.js';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
@@ -36,7 +37,7 @@
     pagination,
     rowSelection,
     rowClassName,
-    empty = '暂无数据',
+    empty,
     ariaLabel,
     onRowClick,
   }: {
@@ -64,6 +65,8 @@
     ariaLabel?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
   } = $props();
+
+  const loc = useLocale();
 
   // --- 键解析 ---
   const getKey = (record: T): RowKey =>
@@ -254,7 +257,7 @@
             <input
               type="checkbox"
               class="cd-table__checkbox"
-              aria-label="全选"
+              aria-label={loc().t('Table.selectAll')}
               checked={headerSelect.checked}
               {@attach indeterminate(headerSelect.indeterminate)}
               onchange={onToggleAll}
@@ -312,7 +315,7 @@
       {#if visibleRows.length === 0}
         <tr class="cd-table__row cd-table__row--empty">
           <td class="cd-table__cell cd-table__cell--empty" colspan={colSpan}>
-            {empty}
+            {empty ?? loc().t('Table.emptyText')}
           </td>
         </tr>
       {:else}
@@ -334,7 +337,7 @@
                 <input
                   type="checkbox"
                   class="cd-table__checkbox"
-                  aria-label="选择此行"
+                  aria-label={loc().t('Table.selectRow')}
                   checked={selected}
                   disabled={rowDisabled}
                   onclick={(e) => e.stopPropagation()}

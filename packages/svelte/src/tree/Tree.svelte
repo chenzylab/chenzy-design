@@ -19,6 +19,7 @@
     type TreeNodeData,
     type FlatNode,
   } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -82,6 +83,8 @@
     onExpandedChange,
     label,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const baseId = useId('cd-tree-item');
 
@@ -160,7 +163,7 @@
   });
 
   const isEmpty = $derived(visibleFlat.length === 0);
-  const emptyText = $derived(emptyContent ?? '暂无数据');
+  const emptyText = $derived(emptyContent ?? loc().t('Tree.emptyText'));
 
   // --- roving 焦点：activeKey + 派生高亮，render 不读挂载 registry (红线 #2) ---
   let activeKey = $state<TreeKey | null>(null);
@@ -404,8 +407,8 @@
       <input
         class="cd-tree__search-input"
         type="text"
-        placeholder="搜索"
-        aria-label="搜索树节点"
+        placeholder={loc().t('Tree.searchPlaceholder')}
+        aria-label={loc().t('Tree.searchPlaceholder')}
         bind:value={searchValue}
         {disabled}
       />
@@ -461,7 +464,7 @@
               class:cd-tree__switcher--open={expanded}
               role="button"
               tabindex="-1"
-              aria-label={expanded ? '收起' : '展开'}
+              aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
               onclick={(e) => {
                 e.stopPropagation();
                 if (!nodeDisabled) toggleExpand(node);

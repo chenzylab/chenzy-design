@@ -8,6 +8,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
   import type { DropdownItem } from './types.js';
 
   type ItemKey = string | number;
@@ -50,6 +51,8 @@
     triggerContent,
     children,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const menuId = useId('cd-dropdown-menu');
 
@@ -237,7 +240,7 @@
     {#if triggerContent}
       {@render triggerContent()}
     {:else}
-      <span class="cd-dropdown__trigger-default">菜单</span>
+      <span class="cd-dropdown__trigger-default">{loc().t('Dropdown.trigger')}</span>
     {/if}
   </div>
 

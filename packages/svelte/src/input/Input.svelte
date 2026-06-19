@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -51,6 +52,8 @@
     onClear,
     onEnter,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const isControlled = $derived(value !== undefined);
   let inner = $state(getInitialValue());
@@ -146,7 +149,7 @@
     <button
       type="button"
       class="cd-input__action cd-input__clear"
-      aria-label="清除"
+      aria-label={loc().t('Input.clear')}
       onclick={clear}
     >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -162,7 +165,7 @@
     <button
       type="button"
       class="cd-input__action cd-input__reveal"
-      aria-label={revealed ? '隐藏密码' : '显示密码'}
+      aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
       aria-pressed={revealed}
       onclick={toggleReveal}
     >

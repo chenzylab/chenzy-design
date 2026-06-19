@@ -7,6 +7,7 @@
   import { untrack, type Snippet } from 'svelte';
   import { createForm, type FormValues, type FieldErrors, type MessageDescriptor } from '@chenzy-design/core';
   import { setFormContext, type FormLayout, type FormLabelPosition, type FormSize } from './context.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     /** controlled whole-form values (reported back via onChange, never written to the prop) */
@@ -42,25 +43,12 @@
     footer,
   }: Props = $props();
 
-  // TODO: i18n — wire this to the locale package via ConfigProvider. For now a
-  // small built-in zh-CN message map with {label}/{min}/{max} interpolation.
-  const ZH_MESSAGES: Record<string, string> = {
-    'Form.required': '请输入{label}',
-    'Form.typeError': '{label}格式不正确',
-    'Form.minLength': '至少输入 {min} 个字符',
-    'Form.maxLength': '最多输入 {max} 个字符',
-    'Form.min': '不能小于 {min}',
-    'Form.max': '不能大于 {max}',
-    'Form.pattern': '{label}格式不正确',
-  };
+  const loc = useLocale();
 
+  // 校验消息：显式 text 优先，否则用 locale 的 Form.* 模板（带 {label}/{min}/{max} 插值）。
   function resolveMessage(d: MessageDescriptor): string {
     if (d.text !== undefined) return d.text;
-    const template = ZH_MESSAGES[d.key] ?? d.key;
-    const params = d.params ?? {};
-    return template.replace(/\{(\w+)\}/g, (_m, k: string) =>
-      k in params ? String(params[k]) : `{${k}}`,
-    );
+    return loc().t(d.key, d.params);
   }
 
   // initial values are a one-time snapshot by design; untrack makes the

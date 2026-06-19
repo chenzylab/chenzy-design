@@ -12,6 +12,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   type ImageFit = 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
   type ImageStatus = 'pending' | 'loading' | 'loaded' | 'error';
@@ -52,6 +53,8 @@
     errorSlot,
     placeholderSlot,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const useObserver = $derived(lazy && lazyMode === 'observer');
   // 仅用于 $state 初始值：untrack 读一次原始 props，避免 state_referenced_locally 警告。
@@ -163,7 +166,7 @@
     {#if fallbackSrc}
       <img class="cd-image__img" src={fallbackSrc} {alt} style={imgStyle} />
     {:else if fallback === true}
-      <div class="cd-image__error" role="img" aria-label={alt || '图片加载失败'}>
+      <div class="cd-image__error" role="img" aria-label={alt || loc().t('Image.errorAlt')}>
         <svg viewBox="0 0 48 48" width="32" height="32" aria-hidden="true" focusable="false">
           <rect x="6" y="10" width="36" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2" />
           <path d="M12 32 20 22 27 30 32 25 38 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
@@ -191,7 +194,7 @@
         type="button"
         class="cd-image__trigger"
         onclick={openPreview}
-        aria-label="预览图片"
+        aria-label={loc().t('Image.previewTrigger')}
       >
         <img
           bind:this={imgNode}
@@ -203,7 +206,7 @@
           onload={handleLoad}
           onerror={handleError}
         />
-        <span class="cd-image__mask" aria-hidden="true">预览</span>
+        <span class="cd-image__mask" aria-hidden="true">{loc().t('Image.previewMask')}</span>
       </button>
     {:else}
       <img
@@ -225,7 +228,7 @@
     class="cd-image__preview"
     role="dialog"
     aria-modal="true"
-    aria-label={alt || '图片预览'}
+    aria-label={alt || loc().t('Image.previewAlt')}
     tabindex="-1"
     onclick={closePreview}
     onkeydown={handleOverlayKeydown}
@@ -233,7 +236,7 @@
     <button
       type="button"
       class="cd-image__preview-close"
-      aria-label="关闭预览"
+      aria-label={loc().t('Image.closePreview')}
       onclick={closePreview}
     >
       ×

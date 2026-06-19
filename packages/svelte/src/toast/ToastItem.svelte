@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   import type { ToastItem, ToastType } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     toast: ToastItem;
@@ -17,6 +18,7 @@
   }
 
   let { toast, onClose, onPause, onResume }: Props = $props();
+  const loc = useLocale();
 
   const isAlert = $derived(toast.type === 'error' || toast.type === 'warning');
   const role = $derived(isAlert ? 'alert' : 'status');
@@ -107,7 +109,7 @@
     <button
       type="button"
       class="cd-toast-item__close"
-      aria-label="关闭"
+      aria-label={loc().t('Toast.close')}
       onclick={() => onClose(toast.id)}
     >
       <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">

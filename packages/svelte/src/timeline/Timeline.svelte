@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { TimelineItemData } from './types.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Mode = 'left' | 'alternate';
   type Size = 'small' | 'default' | 'large';
@@ -30,11 +31,12 @@
     class: className = '',
   }: Props = $props();
 
-  // TODO(i18n): 接 locale 包默认 loading 文案
-  const PENDING_TEXT = '加载中…';
+  const loc = useLocale();
 
   const hasPending = $derived(pending !== false);
-  const pendingText = $derived(typeof pending === 'string' ? pending : PENDING_TEXT);
+  const pendingText = $derived(
+    typeof pending === 'string' ? pending : loc().t('Timeline.pending'),
+  );
 
   const ordered = $derived(reverse ? [...dataSource].reverse() : dataSource);
 

@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
   import type { BreadcrumbRoute } from './types.js';
 
   type BreadcrumbSize = 'small' | 'default' | 'large';
@@ -27,6 +28,8 @@
     onClick,
   }: Props = $props();
 
+  const loc = useLocale();
+
   const cls = $derived(
     ['cd-breadcrumb', `cd-breadcrumb--${size}`, className].filter(Boolean).join(' '),
   );
@@ -38,7 +41,7 @@
   }
 </script>
 
-<nav class={cls} aria-label="面包屑">
+<nav class={cls} aria-label={loc().t('Breadcrumb.ariaLabel')}>
   {#if hasRoutes}
     <ol class="cd-breadcrumb__list">
       {#each routes as route, index (index)}

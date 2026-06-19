@@ -8,6 +8,7 @@
   import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
   import Button from '../button/Button.svelte';
+  import { useLocale } from '../locale-provider/index.js';
   import type { TransferItem } from './types.js';
 
   type TransferKey = string | number;
@@ -33,14 +34,20 @@
     defaultValue = [],
     dataSource = [],
     filter = true,
-    searchPlaceholder = '搜索',
+    searchPlaceholder,
     size = 'default',
     status = 'default',
     disabled = false,
     showPanelTitle = true,
-    titles = ['源', '已选'],
+    titles,
     onChange,
   }: Props = $props();
+
+  const loc = useLocale();
+
+  const searchPlaceholderText = $derived(
+    searchPlaceholder ?? loc().t('Transfer.searchPlaceholder'),
+  );
 
   const isControlled = $derived(value !== undefined);
   let inner = $state<TransferKey[]>(getInitialValue());
@@ -132,7 +139,7 @@
   <div class="cd-transfer__panel">
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
-        <span class="cd-transfer__panel-title">{titles[0]}</span>
+        <span class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
         <span class="cd-transfer__panel-count">{leftItems.length} 项</span>
       </div>
     {/if}
@@ -141,10 +148,10 @@
         <Input
           {size}
           value={leftQuery}
-          placeholder={searchPlaceholder}
+          placeholder={searchPlaceholderText}
           clearable
           disabled={disabled}
-          ariaLabel={searchPlaceholder}
+          ariaLabel={searchPlaceholderText}
           onInput={(v) => (leftQuery = v)}
         />
       </div>
@@ -189,7 +196,7 @@
   <div class="cd-transfer__panel">
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
-        <span class="cd-transfer__panel-title">{titles[1]}</span>
+        <span class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
         <span class="cd-transfer__panel-count">{rightItems.length} 项</span>
       </div>
     {/if}
@@ -198,10 +205,10 @@
         <Input
           {size}
           value={rightQuery}
-          placeholder={searchPlaceholder}
+          placeholder={searchPlaceholderText}
           clearable
           disabled={disabled}
-          ariaLabel={searchPlaceholder}
+          ariaLabel={searchPlaceholderText}
           onInput={(v) => (rightQuery = v)}
         />
       </div>
