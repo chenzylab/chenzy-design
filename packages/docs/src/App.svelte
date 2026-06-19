@@ -69,6 +69,7 @@
     SkeletonButton,
     Banner,
     Modal,
+    modal,
     Drawer,
     Popconfirm,
     Toast,
@@ -1084,9 +1085,36 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Modal（模态对话框）</Title>
-  <div style="display:flex; gap:12px">
+  <div style="display:flex; gap:12px; flex-wrap:wrap">
     <Button type="primary" onclick={() => (modalOpen = true)}>打开对话框</Button>
     <Button type="danger" onclick={() => (dangerModalOpen = true)}>删除确认</Button>
+  </div>
+
+  <Text type="tertiary">命令式 modal.confirm/info/...（mount 到 body、堆叠、async 确认）：</Text>
+  <div style="display:flex; gap:12px; flex-wrap:wrap" data-testid="modal-command">
+    <Button
+      onclick={() =>
+        modal.confirm({
+          title: '确认操作',
+          content: '确定要执行此操作吗？',
+          onOk: () => {
+            popResult = 'confirm-ok';
+          },
+          onCancel: () => {
+            popResult = 'confirm-cancel';
+          },
+        })}>confirm</Button
+    >
+    <Button onclick={() => modal.info({ title: '提示', content: '这是一条信息。' })}>info</Button>
+    <Button onclick={() => modal.success({ title: '成功', content: '操作已完成。' })}>success</Button>
+    <Button
+      onclick={() =>
+        modal.confirm({
+          title: '异步提交',
+          content: '点击确定后将等待 1 秒（模拟请求）。',
+          onOk: () => new Promise((r) => setTimeout(r, 1000)),
+        })}>async confirm</Button
+    >
   </div>
 
   <Modal
