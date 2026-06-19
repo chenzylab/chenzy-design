@@ -36,6 +36,7 @@
     Pagination,
     Steps,
     Tabs,
+    TabPane,
     Dropdown,
     Menu,
     Anchor,
@@ -723,6 +724,15 @@ let pageSize2 = $state(10);
     <Text type="tertiary">当前标签：{activeTab}</Text>
 
     <Tabs {tabList} type="card" value={activeTab} onChange={(k) => (activeTab = k)} />
+
+    <Text type="tertiary">tabPosition=left + lazy（首次激活才挂载内容）：</Text>
+    <div style="width: 420px" data-testid="tabs-left-lazy">
+      <Tabs {tabList} tabPosition="left" lazy keepDOM value={activeTab} onChange={(k) => (activeTab = k)}>
+        <TabPane itemKey="a"><div class="tab-pane-demo">账户内容</div></TabPane>
+        <TabPane itemKey="b"><div class="tab-pane-demo">安全内容</div></TabPane>
+        <TabPane itemKey="c"><div class="tab-pane-demo">通知内容</div></TabPane>
+      </Tabs>
+    </div>
 
     <Dropdown
       items={dropdownItems}
