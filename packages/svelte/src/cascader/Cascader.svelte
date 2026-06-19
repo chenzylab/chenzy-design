@@ -1,12 +1,14 @@
 <!--
   Cascader — see specs/components/input/Cascader.spec.md
   基础子集: 单选、点击逐级展开级联列、叶子选中。Token-driven, a11y-correct, 受控/非受控。
+  面板 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），flip 避让。
   TODO(延后): multiple/checkbox 级联、changeOnSelect 完整语义、loadData 异步、
   hover 展开、搜索 filterTreeNode、displayRender 自定义回显。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
@@ -165,15 +167,18 @@
     activePath = [];
   }
 
-  // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
+  // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
+  let panelEl = $state<HTMLDivElement | null>(null);
 
+  // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
     return useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [panelEl],
     });
   });
 
@@ -242,7 +247,12 @@
   </button>
 
   {#if isOpen}
-    <div class="cd-cascader__panel" id={listId}>
+    <div
+      class="cd-cascader__panel"
+      bind:this={panelEl}
+      use:floating={{ trigger: rootEl, placement: 'bottomStart', autoAdjust: true, offset: 4 }}
+      id={listId}
+    >
       {#each columns as column, colIndex (colIndex)}
         <ul class="cd-cascader__column" role="listbox">
           {#each column as node (node.value)}
@@ -353,10 +363,8 @@
   .cd-cascader--open .cd-cascader__arrow {
     transform: rotate(180deg);
   }
+  /* 面板 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-cascader__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
-    inset-inline-start: 0;
     z-index: var(--cd-select-dropdown-z);
     display: flex;
     max-block-size: 16rem;

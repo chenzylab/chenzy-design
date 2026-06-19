@@ -1,11 +1,13 @@
 <!--
   Select — see specs/components/input/Select.spec.md
   单选 / 多选 / 本地过滤 / 键盘导航 / 浮层。Token-driven, a11y-correct.
+  下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
   TODO(延后): 虚拟化、分组 GroupData、远程 remote/loading 防抖、allowCreate、maxTagCount 折叠。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean };
@@ -216,15 +218,18 @@
     activeIndex = -1;
   }
 
-  // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
+  // --- DOM 引用：触发根 + portal 下拉（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
+  let dropdownEl = $state<HTMLDivElement | null>(null);
 
+  // --- useDismiss (红线 #3): dropdown portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [dropdownEl],
     });
     return cleanup;
   });
@@ -335,6 +340,8 @@
   {#if isOpen}
     <div
       class="cd-select__dropdown"
+      bind:this={dropdownEl}
+      use:floating={{ trigger: rootEl, placement: 'bottomStart', autoAdjust: true, offset: 4, matchWidth: true }}
       role="listbox"
       id={listId}
       aria-multiselectable={multiple}
@@ -496,10 +503,8 @@
   .cd-select--open .cd-select__arrow {
     transform: rotate(180deg);
   }
+  /* 下拉 portal 到 body，由 JS 写 position:fixed + transform + matchWidth */
   .cd-select__dropdown {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
-    inset-inline: 0;
     z-index: var(--cd-select-dropdown-z);
     max-block-size: 16rem;
     overflow-y: auto;
