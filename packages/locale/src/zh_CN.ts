@@ -19,6 +19,8 @@ export const zh_CN: Locale = {
     emptyText: '暂无数据',
     selectAll: '全选',
     selectRow: '选择此行',
+    expandRow: '展开行',
+    collapseRow: '收起行',
     sortBy: '按 {column} 排序',
     sortAscend: '点击升序',
     sortDescend: '点击降序',

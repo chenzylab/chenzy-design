@@ -6,7 +6,7 @@ export const meta = {
   name: 'Table',
   category: 'show',
   description:
-    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。本子集；固定列 / 虚拟化 / 筛选 / 树形 / 行展开延后。',
+    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。本子集；固定列 / 虚拟化 / 筛选 / 树形延后。',
   exports: ['Table'],
   props: [
     { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/align/ellipsis/sorter/render' },
@@ -30,6 +30,12 @@ export const meta = {
       type: 'RowSelection<T>',
       default: 'undefined',
       desc: 'selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps',
+    },
+    {
+      name: 'expandable',
+      type: 'Expandable<T>',
+      default: 'undefined',
+      desc: 'expandedRowRender / rowExpandable / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand',
     },
     { name: 'rowClassName', type: '(record: T, index: number) => string', default: 'undefined' },
     { name: 'empty', type: 'string', default: "'暂无数据'", desc: '空数据占位文案' },

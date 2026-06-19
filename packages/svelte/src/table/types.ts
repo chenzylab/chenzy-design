@@ -28,6 +28,19 @@ export interface ColumnDef<T> {
   render?: Snippet<[{ value: unknown; record: T; index: number }]>;
 }
 
+export interface Expandable<T> {
+  /** 展开行内容渲染 */
+  expandedRowRender: Snippet<[{ record: T; index: number }]>;
+  /** 该行是否可展开，默认全部可展开 */
+  rowExpandable?: (record: T) => boolean;
+  /** 受控展开行 key 列表 */
+  expandedRowKeys?: RowKey[];
+  /** 非受控初始展开 */
+  defaultExpandedRowKeys?: RowKey[];
+  /** 展开/收起回调 */
+  onExpand?: (expanded: boolean, record: T) => void;
+}
+
 export interface RowSelection<T> {
   /** 受控选中行 key 列表 */
   selectedRowKeys?: RowKey[];

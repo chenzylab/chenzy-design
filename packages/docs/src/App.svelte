@@ -161,6 +161,7 @@
     { dataIndex: 'city', title: '城市' },
   ];
   let tableSelected = $state<(string | number)[]>([]);
+  let tableExpandInfo = $state('（未操作）');
 
   // Calendar：锚定到固定月份（2026-06）便于演示事件
   const calAnchor = new Date(2026, 5, 1);
@@ -971,6 +972,28 @@ let pageSize2 = $state(10);
     }}
   />
   <Text type="tertiary">已选 {tableSelected.length} 行</Text>
+
+  <Text type="tertiary">行展开（点击 ▶ 展开详情）：</Text>
+  <div data-testid="table-expand">
+    <Table
+      columns={tableColumns}
+      dataSource={tableData}
+      rowKey="key"
+      bordered
+      expandable={{
+        expandedRowRender: tableExpandRow,
+        onExpand: (expanded, record) =>
+          (tableExpandInfo = `${expanded ? '展开' : '收起'} ${record.name}`),
+      }}
+    />
+  </div>
+  <Text type="tertiary">{tableExpandInfo}</Text>
+
+  {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
+    <div style="line-height:1.8">
+      <strong>{record.name}</strong> 的详细资料：年龄 {record.age}，城市 {record.city}。
+    </div>
+  {/snippet}
 
   <Divider />
 
