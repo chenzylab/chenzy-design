@@ -129,3 +129,12 @@ export {
   type NotificationCloseReason,
 } from './notification.js';
 export { easeInOutCubic, isAboveThreshold, scrollPositionAt } from './back-top.js';
+export {
+  mergeConfig,
+  DEFAULT_CONFIG,
+  type ConfigInput,
+  type ResolvedConfig,
+  type ConfigTheme,
+  type ConfigDir,
+  type ConfigSize,
+} from './config-provider.js';
