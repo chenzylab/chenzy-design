@@ -48,8 +48,6 @@ export function useFloating(
 
   // portal: detach the popup from its in-flow parent and append to body so it
   // escapes any `overflow:hidden` ancestor clipping.
-  const originalParent = popup.parentNode;
-  const originalNext = popup.nextSibling;
   document.body.appendChild(popup);
   popup.style.position = 'fixed';
   popup.style.insetBlockStart = '0';
@@ -97,12 +95,58 @@ export function useFloating(
       }
       window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
-      // restore the popup to its original DOM slot so Svelte can unmount it.
-      if (originalParent) {
-        originalParent.insertBefore(popup, originalNext);
+      // Svelte may have already run its {#if} unmount against the popup's
+      // original slot (a no-op, since the node now lives in <body>), so the
+      // action owns teardown: remove the portaled popup outright. On the next
+      // open Svelte re-creates a fresh node + action instance.
+      popup.remove();
+    },
+  };
+}
+
+export interface FloatingActionParams extends UseFloatingOptions {
+  /** the trigger element the popup anchors to */
+  trigger: HTMLElement | null | undefined;
+}
+
+/**
+ * Svelte action wrapper around useFloating. Use on the popup element:
+ *   <div use:floating={{ trigger: rootEl, placement, autoAdjust, onPlacement }}>
+ *
+ * The action's destroy runs when Svelte tears the node down (before removal),
+ * which avoids the `$effect`-cleanup vs `{#if}`-unmount ordering race that would
+ * otherwise leave a portaled node orphaned in the DOM.
+ */
+export function floating(node: HTMLElement, params: FloatingActionParams) {
+  let handle: FloatingHandle | undefined;
+  let lastTrigger = params.trigger;
+  let lastPlacement = params.placement;
+
+  function start(p: FloatingActionParams) {
+    if (!p.trigger) return;
+    handle = useFloating(p.trigger, node, p);
+  }
+  function stop() {
+    handle?.destroy();
+    handle = undefined;
+  }
+
+  start(params);
+
+  return {
+    update(next: FloatingActionParams) {
+      // only rebuild (re-portal + re-listen) when the anchor or requested
+      // placement changes; otherwise just reposition in place. This avoids a
+      // rebuild loop when onPlacement writes back the resolved placement.
+      if (next.trigger !== lastTrigger || next.placement !== lastPlacement) {
+        lastTrigger = next.trigger;
+        lastPlacement = next.placement;
+        stop();
+        start(next);
       } else {
-        popup.remove();
+        handle?.update();
       }
     },
+    destroy: stop,
   };
 }
