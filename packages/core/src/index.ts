@@ -156,3 +156,15 @@ export {
   type LottiePlayerAdapter,
   type LottiePlayerFactory,
 } from './lottie-icon.js';
+export {
+  computePosition,
+  parsePlacement,
+  makePlacement,
+  type Placement,
+  type Side,
+  type Align,
+  type Rect,
+  type Viewport,
+  type ComputePositionInput,
+  type ComputePositionResult,
+} from './floating.js';

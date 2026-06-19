@@ -1,16 +1,26 @@
 <!--
   Popover — see specs/components/show/Popover.spec.md
-  基础子集：hover/click/focus 触发、常用 position、对齐、箭头、间距、标题。
-  TODO(延后): autoAdjustOverflow flip、12 方位完整矩阵、custom trigger。
+  基础子集：hover/click/focus 触发、position+align（映射 12 方位）、箭头、间距、标题。
+  定位：portal 到 body + position:fixed，core computePosition 计算坐标 +
+  autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
+  TODO(延后): custom trigger。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    makePlacement,
+    parsePlacement,
+    type Placement,
+    type Side,
+    type Align,
+  } from '@chenzy-design/core';
+  import { useFloating } from '../_floating/use-floating.js';
 
   type TriggerKind = 'hover' | 'click' | 'focus';
   type Position = 'top' | 'bottom' | 'left' | 'right';
-  type Align = 'start' | 'center' | 'end';
 
   interface Props {
     content?: string | Snippet;
@@ -20,6 +30,8 @@
     trigger?: TriggerKind;
     position?: Position;
     align?: Align;
+    /** 视口溢出时翻转到对侧 */
+    autoAdjustOverflow?: boolean;
     showArrow?: boolean;
     spacing?: number;
     mouseEnterDelay?: number;
@@ -38,6 +50,7 @@
     trigger = 'hover',
     position = 'bottom',
     align = 'center',
+    autoAdjustOverflow = true,
     showArrow = true,
     spacing = 8,
     mouseEnterDelay = 100,
@@ -49,6 +62,9 @@
   }: Props = $props();
 
   const popId = useId('cd-popover');
+
+  // position + align → core 12 方位 Placement
+  const placement = $derived(makePlacement(position as Side, align));
 
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
   const isControlled = $derived(open !== undefined);
@@ -112,9 +128,31 @@
     setOpen(!isOpen);
   }
 
-  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc，放进 $effect ---
+  // --- DOM 引用：触发包裹 + 浮层元素 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
+  let popEl = $state<HTMLDivElement | null>(null);
 
+  // 解析后的实际方位（flip 后）
+  let resolvedPlacement = $state<Placement>(untrack(() => placement));
+  const resolvedSide = $derived<Side>(parsePlacement(resolvedPlacement).side);
+  let arrowOffset = $state(0);
+
+  // --- 浮层定位 + portal (红线 #3) ---
+  $effect(() => {
+    if (!isOpen || !rootEl || !popEl) return;
+    const floating = useFloating(rootEl, popEl, {
+      placement,
+      autoAdjust: autoAdjustOverflow,
+      offset: spacing,
+      onPlacement: (info) => {
+        resolvedPlacement = info.placement;
+        arrowOffset = info.arrowOffset;
+      },
+    });
+    return floating.destroy;
+  });
+
+  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc ---
   $effect(() => {
     if (!isOpen || !rootEl || trigger !== 'click') return;
     const cleanup = useDismiss(rootEl, {
@@ -127,9 +165,14 @@
 
   // cleanup hover 定时器
   $effect(() => clearTimers);
+
+  const arrowStyle = $derived(
+    resolvedSide === 'top' || resolvedSide === 'bottom'
+      ? `inset-inline-start:${arrowOffset}px`
+      : `inset-block-start:${arrowOffset}px`,
+  );
 </script>
 
-<!-- 浮层定位纯 CSS：pop position:absolute 相对 root position:relative -->
 <!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children；自身无障碍语义忽略 -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -156,9 +199,9 @@
       id={popId}
       role="dialog"
       aria-modal="false"
-      class="cd-popover__pop cd-popover__pop--{position} cd-popover__pop--align-{align}"
+      bind:this={popEl}
+      class="cd-popover__pop cd-popover__pop--{resolvedSide}"
       class:cd-popover__pop--no-arrow={!showArrow}
-      style="--popover-spacing:{spacing}px"
     >
       {#if hasTitle}
         <div class="cd-popover__title">
@@ -179,7 +222,7 @@
         {/if}
       </div>
       {#if showArrow}
-        <span class="cd-popover__arrow" aria-hidden="true"></span>
+        <span class="cd-popover__arrow" style={arrowStyle} aria-hidden="true"></span>
       {/if}
     </div>
   {/if}
@@ -193,8 +236,8 @@
   .cd-popover__trigger {
     display: inline-block;
   }
+  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-popover__pop {
-    position: absolute;
     z-index: var(--cd-popover-z);
     inline-size: max-content;
     max-inline-size: 20rem;
@@ -212,7 +255,7 @@
     font-weight: var(--cd-font-weight-medium, 600);
   }
 
-  /* --- 箭头：方块旋转 45deg，按 position 定位 --- */
+  /* --- 箭头：方块旋转 45deg，交叉轴偏移由内联 style 控制 --- */
   .cd-popover__arrow {
     position: absolute;
     inline-size: var(--cd-popover-arrow-size);
@@ -221,70 +264,29 @@
     box-shadow: var(--cd-popover-shadow);
     transform: rotate(45deg);
   }
-
-  /* --- position 主方向（用 --popover-spacing 控制偏移）--- */
-  .cd-popover__pop--top {
-    inset-block-end: calc(100% + var(--popover-spacing));
+  .cd-popover__pop--top .cd-popover__arrow,
+  .cd-popover__pop--bottom .cd-popover__arrow {
+    margin-inline-start: calc(var(--cd-popover-arrow-size) / -2);
   }
-  .cd-popover__pop--bottom {
-    inset-block-start: calc(100% + var(--popover-spacing));
-  }
-  .cd-popover__pop--left {
-    inset-inline-end: calc(100% + var(--popover-spacing));
-  }
-  .cd-popover__pop--right {
-    inset-inline-start: calc(100% + var(--popover-spacing));
+  .cd-popover__pop--left .cd-popover__arrow,
+  .cd-popover__pop--right .cd-popover__arrow {
+    margin-block-start: calc(var(--cd-popover-arrow-size) / -2);
   }
 
-  /* --- align 交叉轴微调 --- */
-  /* top / bottom 的交叉轴是 inline 方向 */
-  .cd-popover__pop--top.cd-popover__pop--align-start,
-  .cd-popover__pop--bottom.cd-popover__pop--align-start {
-    inset-inline-start: 0;
-  }
-  .cd-popover__pop--top.cd-popover__pop--align-center,
-  .cd-popover__pop--bottom.cd-popover__pop--align-center {
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-  }
-  .cd-popover__pop--top.cd-popover__pop--align-end,
-  .cd-popover__pop--bottom.cd-popover__pop--align-end {
-    inset-inline-end: 0;
-  }
-  /* left / right 的交叉轴是 block 方向 */
-  .cd-popover__pop--left.cd-popover__pop--align-start,
-  .cd-popover__pop--right.cd-popover__pop--align-start {
-    inset-block-start: 0;
-  }
-  .cd-popover__pop--left.cd-popover__pop--align-center,
-  .cd-popover__pop--right.cd-popover__pop--align-center {
-    inset-block-start: 50%;
-    transform: translateY(-50%);
-  }
-  .cd-popover__pop--left.cd-popover__pop--align-end,
-  .cd-popover__pop--right.cd-popover__pop--align-end {
-    inset-block-end: 0;
-  }
-
-  /* --- 箭头定位（指向触发器）--- */
+  /* 箭头吸附到浮层贴近触发器的那条边（按解析后的 side） */
   .cd-popover__pop--top .cd-popover__arrow {
     inset-block-end: calc(var(--cd-popover-arrow-size) / -2);
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-popover-arrow-size) / -2);
   }
   .cd-popover__pop--bottom .cd-popover__arrow {
     inset-block-start: calc(var(--cd-popover-arrow-size) / -2);
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-popover-arrow-size) / -2);
   }
   .cd-popover__pop--left .cd-popover__arrow {
     inset-inline-end: calc(var(--cd-popover-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-popover-arrow-size) / -2);
   }
   .cd-popover__pop--right .cd-popover__arrow {
     inset-inline-start: calc(var(--cd-popover-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-popover-arrow-size) / -2);
+  }
+  .cd-popover__pop--no-arrow .cd-popover__arrow {
+    display: none;
   }
 </style>

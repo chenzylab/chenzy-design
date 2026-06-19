@@ -1,23 +1,18 @@
 <!--
   Tooltip — see specs/components/show/Tooltip.spec.md
-  基础子集：hover/focus/click 触发、常用 placement、箭头、延迟、dark/light 主题。
-  TODO(延后): 12 方位完整矩阵的 flip 避让、arrowPointAtCenter、status 图标、custom trigger。
+  基础子集：hover/focus/click 触发、12 方位、箭头、延迟、dark/light 主题。
+  定位：portal 到 body + position:fixed，core computePosition 计算坐标 +
+  autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
+  TODO(延后): arrowPointAtCenter、status 图标、custom trigger。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import { useId, useDismiss, type Placement } from '@chenzy-design/core';
+  import { useFloating } from '../_floating/use-floating.js';
+  import { resolveSide } from './placement.js';
 
   type TriggerKind = 'hover' | 'focus' | 'click';
-  type Placement =
-    | 'top'
-    | 'topLeft'
-    | 'topRight'
-    | 'bottom'
-    | 'bottomLeft'
-    | 'bottomRight'
-    | 'left'
-    | 'right';
   type Theme = 'dark' | 'light';
 
   interface Props {
@@ -26,6 +21,8 @@
     defaultOpen?: boolean;
     trigger?: TriggerKind | Array<TriggerKind>;
     placement?: Placement;
+    /** 视口溢出时翻转到对侧 */
+    autoAdjustOverflow?: boolean;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
     showArrow?: boolean;
@@ -42,6 +39,7 @@
     defaultOpen = false,
     trigger = ['hover', 'focus'],
     placement = 'top',
+    autoAdjustOverflow = true,
     mouseEnterDelay = 100,
     mouseLeaveDelay = 100,
     showArrow = true,
@@ -123,9 +121,31 @@
     setOpen(!isOpen);
   }
 
-  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc，放进 $effect ---
+  // --- DOM 引用：触发包裹 + 浮层元素 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
+  let popEl = $state<HTMLDivElement | null>(null);
 
+  // 解析后的实际方位（flip 后），驱动箭头朝向 class。初值仅取 placement 一次。
+  let resolvedPlacement = $state<Placement>(untrack(() => placement));
+  const resolvedSide = $derived(resolveSide(resolvedPlacement));
+  let arrowOffset = $state(0);
+
+  // --- 浮层定位 + portal (红线 #3)：open 且两端就绪时挂载、定位、监听；cleanup 卸载 ---
+  $effect(() => {
+    if (!isOpen || !rootEl || !popEl) return;
+    const floating = useFloating(rootEl, popEl, {
+      placement,
+      autoAdjust: autoAdjustOverflow,
+      offset: 8,
+      onPlacement: (info) => {
+        resolvedPlacement = info.placement;
+        arrowOffset = info.arrowOffset;
+      },
+    });
+    return floating.destroy;
+  });
+
+  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc ---
   $effect(() => {
     if (!isOpen || !rootEl || !triggers.includes('click')) return;
     const cleanup = useDismiss(rootEl, {
@@ -138,9 +158,15 @@
 
   // cleanup hover 定时器
   $effect(() => clearTimers);
+
+  // 箭头沿交叉轴的定位样式：top/bottom 用 inline-start，left/right 用 block-start。
+  const arrowStyle = $derived(
+    resolvedSide === 'top' || resolvedSide === 'bottom'
+      ? `inset-inline-start:${arrowOffset}px`
+      : `inset-block-start:${arrowOffset}px`,
+  );
 </script>
 
-<!-- 浮层定位纯 CSS：pop position:absolute 相对 root position:relative -->
 <!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children；自身无障碍语义忽略 -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -164,7 +190,8 @@
     <div
       id={tipId}
       role="tooltip"
-      class="cd-tooltip__pop cd-tooltip__pop--{placement} cd-tooltip__pop--{theme}"
+      bind:this={popEl}
+      class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
       style="max-inline-size:{maxWidthCss}"
     >
@@ -174,7 +201,7 @@
         {contentText}
       {/if}
       {#if showArrow}
-        <span class="cd-tooltip__arrow" aria-hidden="true"></span>
+        <span class="cd-tooltip__arrow" style={arrowStyle} aria-hidden="true"></span>
       {/if}
     </div>
   {/if}
@@ -188,8 +215,8 @@
   .cd-tooltip__trigger {
     display: inline-block;
   }
+  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-tooltip__pop {
-    position: absolute;
     z-index: var(--cd-tooltip-z);
     inline-size: max-content;
     padding: var(--cd-tooltip-padding);
@@ -211,13 +238,22 @@
     box-shadow: var(--cd-tooltip-shadow);
   }
 
-  /* --- 箭头：方块旋转 45deg，按 placement 定位 --- */
+  /* --- 箭头：方块旋转 45deg，交叉轴偏移由内联 style 控制 --- */
   .cd-tooltip__arrow {
     position: absolute;
     inline-size: var(--cd-tooltip-arrow-size);
     block-size: var(--cd-tooltip-arrow-size);
     background: inherit;
     transform: rotate(45deg);
+  }
+  /* 交叉轴居中补偿：仅在交叉轴方向回退半个箭头尺寸 */
+  .cd-tooltip__pop--top .cd-tooltip__arrow,
+  .cd-tooltip__pop--bottom .cd-tooltip__arrow {
+    margin-inline-start: calc(var(--cd-tooltip-arrow-size) / -2);
+  }
+  .cd-tooltip__pop--left .cd-tooltip__arrow,
+  .cd-tooltip__pop--right .cd-tooltip__arrow {
+    margin-block-start: calc(var(--cd-tooltip-arrow-size) / -2);
   }
   .cd-tooltip__pop--dark .cd-tooltip__arrow {
     background: var(--cd-tooltip-bg-dark);
@@ -226,92 +262,20 @@
     background: var(--cd-tooltip-bg-light);
   }
 
-  /* --- placement 定位（纯 CSS，不测 DOM）--- */
-  /* top 系列 */
-  .cd-tooltip__pop--top,
-  .cd-tooltip__pop--topLeft,
-  .cd-tooltip__pop--topRight {
-    inset-block-end: calc(100% + var(--cd-tooltip-arrow-size));
-  }
-  .cd-tooltip__pop--top {
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-  }
-  .cd-tooltip__pop--topLeft {
-    inset-inline-start: 0;
-  }
-  .cd-tooltip__pop--topRight {
-    inset-inline-end: 0;
-  }
-  .cd-tooltip__pop--top .cd-tooltip__arrow,
-  .cd-tooltip__pop--topLeft .cd-tooltip__arrow,
-  .cd-tooltip__pop--topRight .cd-tooltip__arrow {
+  /* 箭头吸附到浮层贴近触发器的那条边（按解析后的 side） */
+  .cd-tooltip__pop--top .cd-tooltip__arrow {
     inset-block-end: calc(var(--cd-tooltip-arrow-size) / -2);
   }
-  .cd-tooltip__pop--top .cd-tooltip__arrow {
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-tooltip-arrow-size) / -2);
-  }
-  .cd-tooltip__pop--topLeft .cd-tooltip__arrow {
-    inset-inline-start: calc(var(--cd-tooltip-arrow-size) * 2);
-  }
-  .cd-tooltip__pop--topRight .cd-tooltip__arrow {
-    inset-inline-end: calc(var(--cd-tooltip-arrow-size) * 2);
-  }
-
-  /* bottom 系列 */
-  .cd-tooltip__pop--bottom,
-  .cd-tooltip__pop--bottomLeft,
-  .cd-tooltip__pop--bottomRight {
-    inset-block-start: calc(100% + var(--cd-tooltip-arrow-size));
-  }
-  .cd-tooltip__pop--bottom {
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-  }
-  .cd-tooltip__pop--bottomLeft {
-    inset-inline-start: 0;
-  }
-  .cd-tooltip__pop--bottomRight {
-    inset-inline-end: 0;
-  }
-  .cd-tooltip__pop--bottom .cd-tooltip__arrow,
-  .cd-tooltip__pop--bottomLeft .cd-tooltip__arrow,
-  .cd-tooltip__pop--bottomRight .cd-tooltip__arrow {
-    inset-block-start: calc(var(--cd-tooltip-arrow-size) / -2);
-  }
   .cd-tooltip__pop--bottom .cd-tooltip__arrow {
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-tooltip-arrow-size) / -2);
-  }
-  .cd-tooltip__pop--bottomLeft .cd-tooltip__arrow {
-    inset-inline-start: calc(var(--cd-tooltip-arrow-size) * 2);
-  }
-  .cd-tooltip__pop--bottomRight .cd-tooltip__arrow {
-    inset-inline-end: calc(var(--cd-tooltip-arrow-size) * 2);
-  }
-
-  /* left */
-  .cd-tooltip__pop--left {
-    inset-inline-end: calc(100% + var(--cd-tooltip-arrow-size));
-    inset-block-start: 50%;
-    transform: translateY(-50%);
+    inset-block-start: calc(var(--cd-tooltip-arrow-size) / -2);
   }
   .cd-tooltip__pop--left .cd-tooltip__arrow {
     inset-inline-end: calc(var(--cd-tooltip-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-tooltip-arrow-size) / -2);
-  }
-
-  /* right */
-  .cd-tooltip__pop--right {
-    inset-inline-start: calc(100% + var(--cd-tooltip-arrow-size));
-    inset-block-start: 50%;
-    transform: translateY(-50%);
   }
   .cd-tooltip__pop--right .cd-tooltip__arrow {
     inset-inline-start: calc(var(--cd-tooltip-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-tooltip-arrow-size) / -2);
+  }
+  .cd-tooltip__pop--no-arrow .cd-tooltip__arrow {
+    display: none;
   }
 </style>
