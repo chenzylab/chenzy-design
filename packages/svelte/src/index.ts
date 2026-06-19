@@ -125,3 +125,10 @@ export { Tree, treeMeta } from './tree/index.js';
 // 此处仅在根 barrel 导出组件与 meta，避免类型命名冲突。
 export { Table, tableMeta } from './table/index.js';
 export { Calendar, calendarMeta, type CalendarEvent } from './calendar/index.js';
+export {
+  Toast,
+  toastMeta,
+  type ToastType,
+  type ToastOptions,
+  type ToastItem,
+} from './toast/index.js';

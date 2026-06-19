@@ -1,0 +1,21 @@
+/** Component tokens for Toast (M5 Feedback). 回退 Alias，禁写死。 */
+export const toastTokens = {
+  'toast-bg': 'var(--cd-color-bg-0)',
+  'toast-color-text': 'var(--cd-color-text-0)',
+  'toast-color-icon-info': 'var(--cd-color-primary)',
+  'toast-color-icon-success': 'var(--cd-color-success)',
+  'toast-color-icon-warning': 'var(--cd-color-warning)',
+  'toast-color-icon-error': 'var(--cd-color-danger)',
+  'toast-color-close': 'var(--cd-color-text-2)',
+  'toast-color-close-hover': 'var(--cd-color-text-0)',
+  'toast-radius': 'var(--cd-radius-2)',
+  'toast-shadow': 'var(--cd-shadow-3)',
+  'toast-padding': 'var(--cd-spacing-3) var(--cd-spacing-4)',
+  'toast-gap': 'var(--cd-spacing-2)',
+  'toast-font-size': 'var(--cd-font-size-2)',
+  'toast-max-width': '420px',
+  'toast-min-width': '240px',
+  'toast-stack-gap': 'var(--cd-spacing-2)',
+  'toast-z': '1100',
+  'toast-motion-duration': 'var(--cd-motion-duration-fast)',
+} as const;

@@ -58,6 +58,14 @@ export const en_US: Locale = {
     cancel: 'Cancel',
     confirming: 'Processing…',
   },
+  Toast: {
+    close: 'Close',
+    loading: 'Loading',
+    typeLabelInfo: 'Info',
+    typeLabelSuccess: 'Success',
+    typeLabelWarning: 'Warning',
+    typeLabelError: 'Error',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',
