@@ -16,6 +16,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { untrack } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
 
   type Animation = 'slide' | 'fade';
@@ -70,6 +71,19 @@
   // hover 暂停状态（本地）。
   let paused = $state(false);
 
+  // reduced-motion：matchMedia 监听，开启时暂停 autoplay（无障碍）。
+  let reducedMotion = $state(false);
+  $effect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion = mql.matches;
+    const onChangeMq = (e: MediaQueryListEvent) => {
+      reducedMotion = e.matches;
+    };
+    mql.addEventListener('change', onChangeMq);
+    return () => mql.removeEventListener('change', onChangeMq);
+  });
+
   const heightStyle = $derived(typeof height === 'number' ? `${height}px` : height);
 
   function go(i: number) {
@@ -93,11 +107,12 @@
   }
 
   // autoplay：$effect 内 setInterval，普通变量句柄 + cleanup。
+  // 用 untrack 读 current，避免 effect 依赖 current 而每次切换都重建定时器（计时被重置）；
+  // effect 仅依赖 autoplay/paused/count/interval/reducedMotion，定时器在一次播放周期内稳定。
   $effect(() => {
-    if (!autoplay || paused || count <= 1) return;
+    if (!autoplay || paused || reducedMotion || count <= 1) return;
     const id = setInterval(() => {
-      // 读 current 的最新值：从内部 / 受控 prop 计算下一帧。
-      go(current + 1);
+      go(untrack(() => current) + 1);
     }, interval);
     return () => clearInterval(id);
   });
