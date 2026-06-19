@@ -665,6 +665,11 @@ let pageSize2 = $state(10);
     <Text type="tertiary">已选：{transferVal.join(', ') || '（无）'}</Text>
 
     <Upload multiple drag accept="image/*" />
+
+    <Text type="tertiary">真实上传（action + 进度）：</Text>
+    <div data-testid="upload-action">
+      <Upload action="/api/upload" multiple />
+    </div>
   </Space>
 
   <Divider />

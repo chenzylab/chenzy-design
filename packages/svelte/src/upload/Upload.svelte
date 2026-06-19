@@ -1,15 +1,16 @@
 <!--
   Upload — see specs/components/input/Upload.spec.md
   Basic subset: file selection (click + drag) + file list (name/size/status/remove).
-  Controlled / uncontrolled `value`. This round does NOT do real network upload:
-  picked files become status='ready' (or are handed to customRequest).
-  TODO: real XHR upload/progress/concurrency, action URL, async beforeUpload,
-  directory, image preview, minSize.
+  Controlled / uncontrolled `value`. 真实上传：有 action 且无 customRequest 时，
+  选文件后自动 XHR 上传（uploading→进度→success/error），customRequest 优先；
+  XHR 句柄存 Map，remove/卸载时 abort。uploading 时渲染 Progress（line）。
+  TODO: concurrency 并发限制、async beforeUpload、directory、image preview、minSize。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId } from '@chenzy-design/core';
+  import { useId, computeUploadPercent, isUploadOk } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { Progress } from '../progress/index.js';
   import type { UploadFileItem } from './types.js';
 
   interface Props {
@@ -23,9 +24,19 @@
     disabled?: boolean;
     listType?: 'text' | 'none';
     drag?: boolean;
+    /** 上传地址；提供且无 customRequest 时选文件后自动 XHR 上传 */
+    action?: string;
+    /** 表单字段名，默认 'file' */
+    uploadName?: string;
+    /** 额外请求头 */
+    headers?: Record<string, string>;
+    /** 随文件一起提交的额外字段 */
+    uploadData?: Record<string, string>;
     customRequest?: (item: UploadFileItem) => void;
     onChange?: (list: UploadFileItem[]) => void;
     onExceed?: (files: File[]) => void;
+    onSuccess?: (response: string, item: UploadFileItem) => void;
+    onError?: (item: UploadFileItem) => void;
     children?: Snippet;
   }
 
@@ -39,9 +50,15 @@
     disabled = false,
     listType = 'text',
     drag = false,
+    action,
+    uploadName = 'file',
+    headers,
+    uploadData,
     customRequest,
     onChange,
     onExceed,
+    onSuccess,
+    onError,
     children,
   }: Props = $props();
 
@@ -58,6 +75,62 @@
   }
 
   let inputEl: HTMLInputElement | null = null;
+
+  // 进行中的 XHR 句柄（uid → xhr），remove/卸载时 abort。
+  const xhrMap = new Map<string, XMLHttpRequest>();
+
+  // 按 uid 局部更新某个文件项（不破坏受控/非受控约定，走 commit）。
+  function patchItem(uid: string, patch: Partial<UploadFileItem>) {
+    commit(current.map((it) => (it.uid === uid ? { ...it, ...patch } : it)));
+  }
+
+  // 卸载时中止所有进行中的上传。
+  $effect(() => {
+    return () => {
+      for (const xhr of xhrMap.values()) xhr.abort();
+      xhrMap.clear();
+    };
+  });
+
+  // XHR 上传单个文件项：uploading → onprogress 更新 percent → success/error。
+  function uploadItem(item: UploadFileItem) {
+    if (!action || !item.file) return;
+    const xhr = new XMLHttpRequest();
+    xhrMap.set(item.uid, xhr);
+    patchItem(item.uid, { status: 'uploading', percent: 0 });
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        patchItem(item.uid, { percent: computeUploadPercent(e.loaded, e.total) });
+      }
+    };
+    xhr.onload = () => {
+      xhrMap.delete(item.uid);
+      if (isUploadOk(xhr.status)) {
+        patchItem(item.uid, { status: 'success', percent: 100 });
+        onSuccess?.(xhr.responseText, item);
+      } else {
+        patchItem(item.uid, { status: 'error' });
+        onError?.(item);
+      }
+    };
+    xhr.onerror = () => {
+      xhrMap.delete(item.uid);
+      patchItem(item.uid, { status: 'error' });
+      onError?.(item);
+    };
+
+    const form = new FormData();
+    form.append(uploadName, item.file, item.name);
+    if (uploadData) {
+      for (const [k, v] of Object.entries(uploadData)) form.append(k, v);
+    }
+    xhr.open('POST', action);
+    if (headers) {
+      for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+    }
+    xhr.send(form);
+  }
 
   /** Format a byte count: <1KiB → B, <1MiB → KB, else MB (1 decimal). */
   function formatSize(bytes: number): string {
@@ -104,13 +177,21 @@
     const newItems = accepted.map(buildItem);
     commit([...current, ...newItems]);
 
-    if (customRequest) {
-      for (const item of newItems) customRequest(item);
+    // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅上传无尺寸错误的项。
+    for (const item of newItems) {
+      if (item.status === 'error') continue;
+      if (customRequest) customRequest(item);
+      else if (action) uploadItem(item);
     }
   }
 
   function remove(uid: string) {
     if (disabled) return;
+    const xhr = xhrMap.get(uid);
+    if (xhr) {
+      xhr.abort();
+      xhrMap.delete(uid);
+    }
     commit(current.filter((item) => item.uid !== uid));
   }
 
@@ -185,18 +266,25 @@
     <ul class="cd-upload__list">
       {#each current as item (item.uid)}
         <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'}>
-          <span class="cd-upload__item-name">{item.name}</span>
-          <span class="cd-upload__item-size">{formatSize(item.size)}</span>
-          <span class="cd-upload__item-status">{item.status}</span>
-          <button
-            type="button"
-            class="cd-upload__item-remove"
-            aria-label={loc().t('Upload.remove')}
-            {disabled}
-            onclick={() => remove(item.uid)}
-          >
-            &times;
-          </button>
+          <div class="cd-upload__item-main">
+            <span class="cd-upload__item-name">{item.name}</span>
+            <span class="cd-upload__item-size">{formatSize(item.size)}</span>
+            {#if item.status !== 'uploading'}
+              <span class="cd-upload__item-status">{item.status}</span>
+            {/if}
+            <button
+              type="button"
+              class="cd-upload__item-remove"
+              aria-label={loc().t('Upload.remove')}
+              {disabled}
+              onclick={() => remove(item.uid)}
+            >
+              &times;
+            </button>
+          </div>
+          {#if item.status === 'uploading'}
+            <Progress percent={item.percent ?? 0} size="small" />
+          {/if}
         </li>
       {/each}
     </ul>
@@ -278,11 +366,16 @@
   }
   .cd-upload__item {
     display: flex;
-    align-items: center;
-    gap: var(--cd-spacing-2);
+    flex-direction: column;
+    gap: var(--cd-spacing-1);
     padding-block: var(--cd-spacing-1);
     padding-inline: var(--cd-spacing-2);
     border-radius: var(--cd-radius-1);
+  }
+  .cd-upload__item-main {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-2);
   }
   .cd-upload__item:hover {
     background: var(--cd-upload-item-bg-hover);

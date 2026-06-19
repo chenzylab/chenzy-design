@@ -179,3 +179,4 @@ export {
   type AutosizeInput,
   type AutosizeResult,
 } from './textarea.js';
+export { computeUploadPercent, isUploadOk } from './upload.js';
