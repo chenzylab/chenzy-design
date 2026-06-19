@@ -935,6 +935,11 @@ let pageSize2 = $state(10);
       />
     </div>
     <Text type="tertiary">当前轮播：{carouselIdx + 1}</Text>
+
+    <Text type="tertiary">autoplay（1.2s 间隔，悬停暂停）：</Text>
+    <div style="width: 360px" data-testid="carousel-autoplay">
+      <Carousel slides={[slideA, slideB, slideC]} autoplay interval={1200} height={160} />
+    </div>
   </Space>
 
   <Divider />
