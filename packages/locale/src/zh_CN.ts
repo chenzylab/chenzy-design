@@ -121,6 +121,11 @@ export const zh_CN: Locale = {
     previewTrigger: '预览图片',
     closePreview: '关闭预览',
     previewMask: '预览',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    rotateLeft: '向左旋转',
+    rotateRight: '向右旋转',
+    reset: '重置',
   },
   Timeline: {
     pending: '加载中…',

@@ -162,6 +162,11 @@
   ];
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
+  const demoImageSrc =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="#0066ff"/><text x="80" y="68" font-size="20" fill="#fff" text-anchor="middle">IMG</text></svg>',
+    );
   let listMoreData = $state([
     { key: 1, name: '条目 1' },
     { key: 2, name: '条目 2' },
@@ -954,6 +959,18 @@ let pageSize2 = $state(10);
       height={100}
       preview
     />
+
+    <Text type="tertiary">预览缩放/旋转（点击图片打开，工具栏操作）：</Text>
+    <div data-testid="image-preview">
+      <Image
+        src={demoImageSrc}
+        alt="可预览示例"
+        width={160}
+        height={120}
+        lazy={false}
+        preview
+      />
+    </div>
 
     <Highlight
       sourceString="chenzy-design 是一套对标 Semi 的 Svelte 组件库"

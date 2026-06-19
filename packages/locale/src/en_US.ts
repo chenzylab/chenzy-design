@@ -121,6 +121,11 @@ export const en_US: Locale = {
     previewTrigger: 'Preview image',
     closePreview: 'Close preview',
     previewMask: 'Preview',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    rotateLeft: 'Rotate left',
+    rotateRight: 'Rotate right',
+    reset: 'Reset',
   },
   Timeline: {
     pending: 'Loading…',
