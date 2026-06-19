@@ -19,6 +19,8 @@ export const en_US: Locale = {
     emptyText: 'No data',
     selectAll: 'Select all',
     selectRow: 'Select row',
+    expandRow: 'Expand row',
+    collapseRow: 'Collapse row',
     sortBy: 'Sort by {column}',
     sortAscend: 'Click to sort ascending',
     sortDescend: 'Click to sort descending',

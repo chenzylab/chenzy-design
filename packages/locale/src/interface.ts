@@ -34,6 +34,8 @@ export interface Locale {
     emptyText: string;
     selectAll: string;
     selectRow: string;
+    expandRow: string;
+    collapseRow: string;
     /** uses {column} */
     sortBy: string;
     sortAscend: string;

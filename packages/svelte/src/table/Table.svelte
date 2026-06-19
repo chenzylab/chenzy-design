@@ -19,7 +19,7 @@
   } from '@chenzy-design/core';
   import { Pagination } from '../pagination/index.js';
   import { useLocale } from '../locale-provider/index.js';
-  import type { ColumnDef, RowSelection, Align, TableSize } from './types.js';
+  import type { ColumnDef, RowSelection, Expandable, Align, TableSize } from './types.js';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -36,6 +36,7 @@
     onSortChange,
     pagination,
     rowSelection,
+    expandable,
     rowClassName,
     empty,
     ariaLabel,
@@ -60,6 +61,7 @@
           onChange?: (page: number) => void;
         };
     rowSelection?: RowSelection<T>;
+    expandable?: Expandable<T>;
     rowClassName?: (record: T, index: number) => string;
     empty?: string;
     ariaLabel?: string;
@@ -164,7 +166,39 @@
   );
 
   const hasSelection = $derived(rowSelection !== undefined);
-  const colSpan = $derived(columns.length + (hasSelection ? 1 : 0));
+  const hasExpand = $derived(expandable !== undefined);
+  const colSpan = $derived(
+    columns.length + (hasSelection ? 1 : 0) + (hasExpand ? 1 : 0),
+  );
+
+  // --- 展开行：受控 expandedRowKeys 不回写 (红线 #1) ---
+  const isExpandControlled = $derived(expandable?.expandedRowKeys !== undefined);
+  let innerExpanded = $state<RowKey[]>(initExpanded());
+  function initExpanded(): RowKey[] {
+    return [...(expandable?.defaultExpandedRowKeys ?? [])];
+  }
+  const expandedSet = $derived<Set<RowKey>>(
+    new Set(
+      isExpandControlled
+        ? (expandable?.expandedRowKeys ?? [])
+        : innerExpanded,
+    ),
+  );
+
+  function canExpand(record: T): boolean {
+    return expandable?.rowExpandable ? expandable.rowExpandable(record) : true;
+  }
+
+  function toggleExpand(record: T) {
+    const key = getKey(record);
+    if (!canExpand(record)) return;
+    const next = new Set(expandedSet);
+    const willExpand = !next.has(key);
+    if (willExpand) next.add(key);
+    else next.delete(key);
+    if (!isExpandControlled) innerExpanded = [...next];
+    expandable?.onExpand?.(willExpand, record);
+  }
 
   // --- 选择变更：回调取对应行对象（在可见行集中查找）---
   function rowsForKeys(keys: RowKey[]): T[] {
@@ -252,6 +286,9 @@
   <table class={cls} aria-label={ariaLabel}>
     <thead class="cd-table__head">
       <tr>
+        {#if hasExpand}
+          <th class="cd-table__cell cd-table__cell--expand" scope="col"></th>
+        {/if}
         {#if hasSelection}
           <th class="cd-table__cell cd-table__cell--selection" scope="col">
             <input
@@ -332,6 +369,27 @@
             class:cd-table__row--clickable={clickable}
             onclick={clickable ? () => onRowClick?.({ record, index }) : undefined}
           >
+            {#if hasExpand}
+              <td class="cd-table__cell cd-table__cell--expand">
+                {#if canExpand(record)}
+                  <button
+                    type="button"
+                    class="cd-table__expand-btn"
+                    class:cd-table__expand-btn--open={expandedSet.has(key)}
+                    aria-expanded={expandedSet.has(key)}
+                    aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      toggleExpand(record);
+                    }}
+                  >
+                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+                    </svg>
+                  </button>
+                {/if}
+              </td>
+            {/if}
             {#if hasSelection}
               <td class="cd-table__cell cd-table__cell--selection">
                 <input
@@ -360,6 +418,13 @@
               </td>
             {/each}
           </tr>
+          {#if hasExpand && expandedSet.has(key) && canExpand(record)}
+            <tr class="cd-table__row cd-table__row--expanded">
+              <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan}>
+                {@render expandable!.expandedRowRender({ record, index })}
+              </td>
+            </tr>
+          {/if}
         {/each}
       {/if}
     </tbody>
@@ -433,6 +498,42 @@
   .cd-table__cell--selection {
     inline-size: 1px;
     white-space: nowrap;
+  }
+  .cd-table__cell--expand {
+    inline-size: 1px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .cd-table__expand-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-table__expand-btn:hover {
+    color: var(--cd-color-text-0);
+  }
+  .cd-table__expand-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-table__expand-btn--open {
+    transform: rotate(90deg);
+  }
+  .cd-table__cell--expanded-content {
+    padding: var(--cd-table-cell-padding, var(--cd-spacing-3));
+    background: var(--cd-color-fill-0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-table__expand-btn {
+      transition: none;
+    }
   }
   .cd-table__cell--ellipsis {
     max-inline-size: 0;
