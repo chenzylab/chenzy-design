@@ -682,6 +682,35 @@ let pageSize2 = $state(10);
       />
     </div>
     <Text type="tertiary">当前步：{step}</Text>
+
+    <Text type="tertiary">dot 点状（横向）：</Text>
+    <div style="width: 480px" data-testid="steps-dot">
+      <Steps
+        current={step}
+        dot
+        clickable
+        steps={[
+          { title: '填写信息' },
+          { title: '确认订单' },
+          { title: '完成' },
+        ]}
+        onChange={(c) => (step = c)}
+      />
+    </div>
+
+    <Text type="tertiary">dot 点状（纵向）：</Text>
+    <div style="width: 240px" data-testid="steps-dot-vertical">
+      <Steps
+        current={1}
+        dot
+        direction="vertical"
+        steps={[
+          { title: '已下单', description: '14:02' },
+          { title: '运输中', description: '配送员已揽件' },
+          { title: '已签收' },
+        ]}
+      />
+    </div>
   </Space>
 
   <Divider />

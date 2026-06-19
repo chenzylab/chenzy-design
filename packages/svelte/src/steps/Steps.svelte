@@ -1,7 +1,8 @@
 <!--
   Steps — see specs/components/navigation/Steps.spec.md
-  Base subset: horizontal/vertical, fill/nav types, clickable, status.
-  TODO: dot mode, type='basic' details.
+  Base subset: horizontal/vertical, fill/nav types, clickable, status, dot mode.
+  dot：图标渲染为小圆点（不显数字/✓），process 态高亮放大。
+  TODO: type='basic' details.
 -->
 <script lang="ts">
   import type { StepItem } from './types.js';
@@ -22,6 +23,8 @@
     size?: StepSize;
     initial?: number;
     clickable?: boolean;
+    /** 点状步骤：图标渲染为小圆点，不显数字/✓ */
+    dot?: boolean;
     onChange?: (current: number) => void;
     class?: string;
   }
@@ -36,6 +39,7 @@
     size = 'default',
     initial = 0,
     clickable,
+    dot = false,
     onChange,
     class: className = '',
   }: Props = $props();
@@ -63,6 +67,7 @@
       `cd-steps--${direction}`,
       `cd-steps--${type}`,
       `cd-steps--${size}`,
+      dot && 'cd-steps--dot',
       className,
     ]
       .filter(Boolean)
@@ -90,7 +95,7 @@
           onclick={() => select(index)}
         >
           <span class="cd-steps__icon" aria-hidden="true">
-            {#if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
+            {#if dot}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
           </span>
           <span class="cd-steps__content">
             <span class="cd-steps__title">{step.title}</span>
@@ -102,7 +107,7 @@
       {:else}
         <div class="cd-steps__head" aria-current={index === activeIndex ? 'step' : undefined}>
           <span class="cd-steps__icon" aria-hidden="true">
-            {#if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
+            {#if dot}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
           </span>
           <span class="cd-steps__content">
             <span class="cd-steps__title">{step.title}</span>
@@ -217,5 +222,27 @@
   }
   .cd-steps__line--finish {
     background: var(--cd-steps-line-color-finish);
+  }
+
+  /* --- dot 模式：图标缩为小圆点，process 态放大高亮 --- */
+  .cd-steps--dot .cd-steps__icon {
+    inline-size: var(--cd-steps-dot-size, 8px);
+    block-size: var(--cd-steps-dot-size, 8px);
+    background: var(--cd-steps-line-color);
+  }
+  .cd-steps--dot .cd-steps__item--process .cd-steps__icon {
+    inline-size: var(--cd-steps-dot-size-active, 10px);
+    block-size: var(--cd-steps-dot-size-active, 10px);
+    background: var(--cd-steps-icon-bg-process);
+  }
+  .cd-steps--dot .cd-steps__item--finish .cd-steps__icon {
+    background: var(--cd-steps-icon-bg-finish);
+  }
+  .cd-steps--dot .cd-steps__item--error .cd-steps__icon {
+    background: var(--cd-steps-icon-bg-error);
+  }
+  /* dot 模式垂直对齐 line 与圆点中心 */
+  .cd-steps--dot.cd-steps--vertical .cd-steps__line {
+    margin-inline-start: calc(var(--cd-steps-dot-size, 8px) / 2);
   }
 </style>

@@ -22,6 +22,7 @@ export const meta = {
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'initial', type: 'number', default: '0', desc: '起始序号偏移' },
     { name: 'clickable', type: 'boolean', default: "type==='nav'" },
+    { name: 'dot', type: 'boolean', default: 'false', desc: '点状步骤，图标渲染为小圆点' },
     { name: 'onChange', type: '(current: number) => void', default: 'undefined' },
     { name: 'class', type: 'string', default: "''" },
   ],
