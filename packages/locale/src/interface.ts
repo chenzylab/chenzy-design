@@ -75,6 +75,11 @@ export interface Locale {
     close: string;
     title: string;
   };
+  Popconfirm: {
+    confirm: string;
+    cancel: string;
+    confirming: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

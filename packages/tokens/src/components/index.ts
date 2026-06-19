@@ -36,6 +36,7 @@ import { skeletonTokens } from './skeleton.js';
 import { bannerTokens } from './banner.js';
 import { modalTokens } from './modal.js';
 import { drawerTokens } from './drawer.js';
+import { popconfirmTokens } from './popconfirm.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -75,4 +76,5 @@ export const componentTokens = {
   ...bannerTokens,
   ...modalTokens,
   ...drawerTokens,
+  ...popconfirmTokens,
 } as const;

@@ -1,0 +1,112 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * See specs/00-foundation/ai-friendly.spec.md.
+ */
+export const meta = {
+  name: 'Popconfirm',
+  category: 'feedback',
+  description:
+    '气泡确认：锚定触发元素的就地二次确认。支持 title/content、危险分级 type（default/warning/danger）、确认/取消双按钮、placement 4 向；role=dialog non-modal，复用 useDismiss/useFocusTrap。本子集，12 向位置全集、hover 触发、异步 loading、portal 延后。',
+  exports: ['Popconfirm'],
+  props: [
+    { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写，仅 onOpenChange' },
+    { name: 'defaultOpen', type: 'boolean', default: 'false', desc: '非受控初始显隐' },
+    { name: 'title', type: 'string', default: 'undefined', desc: '确认标题' },
+    { name: 'titleSnippet', type: 'Snippet', default: 'undefined', desc: '覆盖 title' },
+    { name: 'content', type: 'string', default: 'undefined', desc: '补充说明' },
+    { name: 'contentSnippet', type: 'Snippet', default: 'undefined', desc: '覆盖 content' },
+    {
+      name: 'type',
+      type: "'default'|'danger'|'warning'",
+      default: "'default'",
+      desc: '影响图标色与默认确认按钮类型',
+    },
+    {
+      name: 'icon',
+      type: 'Snippet | false',
+      default: 'undefined',
+      desc: '自定义图标；false 隐藏；缺省按 type 默认图标',
+    },
+    { name: 'okText', type: 'string', default: "'确定'" },
+    { name: 'cancelText', type: 'string', default: "'取消'" },
+    {
+      name: 'okType',
+      type: "'primary'|'danger'",
+      default: 'undefined',
+      desc: '覆盖确认按钮类型；缺省 type=danger→danger 否则 primary',
+    },
+    { name: 'showCancel', type: 'boolean', default: 'true', desc: '是否显示取消按钮' },
+    {
+      name: 'placement',
+      type: "'top'|'bottom'|'left'|'right'",
+      default: "'top'",
+      desc: '浮层方向',
+    },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用触发' },
+    { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 是否关闭' },
+    {
+      name: 'closeOnOutsideClick',
+      type: 'boolean',
+      default: 'true',
+      desc: '外部点击是否关闭',
+    },
+    { name: 'trigger', type: 'Snippet', default: 'undefined', desc: '触发元素（被包裹）' },
+    {
+      name: 'onOpenChange',
+      type: "(info: { open: boolean; reason: 'trigger'|'confirm'|'cancel'|'esc'|'outsideClick' }) => void",
+      default: 'undefined',
+    },
+    { name: 'onConfirm', type: '() => void', default: 'undefined', desc: '点击确认回调' },
+    { name: 'onCancel', type: '() => void', default: 'undefined', desc: '点击取消/外部关闭回调' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '附加到浮层的类名' },
+  ],
+  events: [
+    { name: 'onOpenChange', desc: '显隐变化，附带 reason 来源' },
+    { name: 'onConfirm', desc: '确认按钮点击' },
+    { name: 'onCancel', desc: '取消按钮点击或外部关闭' },
+  ],
+  slots: [
+    { name: 'trigger', desc: '触发元素（被包裹）' },
+    { name: 'titleSnippet', desc: '覆盖 title 的富内容标题' },
+    { name: 'contentSnippet', desc: '覆盖 content 的富内容说明' },
+    { name: 'icon', desc: '自定义图标（Snippet 或 false 隐藏）' },
+  ],
+  a11y: {
+    hasRole: true,
+    note: '触发器 aria-haspopup=dialog + aria-expanded + aria-controls；浮层 role=dialog（non-modal，不设 aria-modal）+ aria-labelledby(title) + aria-describedby(content)；Esc 关闭，Tab 在浮层内循环（useFocusTrap），关闭归还焦点；危险/警示图标 aria-hidden（语义靠文案）。',
+  },
+  tokens: [
+    '--cd-popconfirm-bg',
+    '--cd-popconfirm-color-text',
+    '--cd-popconfirm-color-text-secondary',
+    '--cd-popconfirm-border',
+    '--cd-popconfirm-shadow',
+    '--cd-popconfirm-radius',
+    '--cd-popconfirm-padding',
+    '--cd-popconfirm-icon-color-danger',
+    '--cd-popconfirm-icon-color-warning',
+    '--cd-popconfirm-icon-color-info',
+    '--cd-popconfirm-title-color',
+    '--cd-popconfirm-title-size',
+    '--cd-popconfirm-content-size',
+    '--cd-popconfirm-max-width',
+    '--cd-popconfirm-z',
+    '--cd-popconfirm-gap-footer',
+    '--cd-popconfirm-arrow-size',
+  ],
+  responsive: false,
+  examples: [
+    {
+      title: '删除确认（danger）',
+      code: '<Popconfirm type="danger" title="确定删除该项？" content="删除后不可恢复" onConfirm={() => remove()}>\n  {#snippet trigger()}<Button type="danger">删除</Button>{/snippet}\n</Popconfirm>',
+    },
+    {
+      title: '普通确认',
+      code: '<Popconfirm title="确认提交？" onConfirm={() => submit()}>\n  {#snippet trigger()}<Button>提交</Button>{/snippet}\n</Popconfirm>',
+    },
+    {
+      title: '自定义图标',
+      code: '<Popconfirm title="保存更改？" placement="bottom">\n  {#snippet icon()}<SaveIcon />{/snippet}\n  {#snippet trigger()}<Button>保存</Button>{/snippet}\n</Popconfirm>',
+    },
+  ],
+} as const;
