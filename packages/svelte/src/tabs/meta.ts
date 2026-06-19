@@ -12,6 +12,14 @@ export const meta = {
     { name: 'defaultValue', type: 'string|number', default: '首个标签', desc: '非受控初始 key' },
     { name: 'type', type: "'line'|'card'", default: 'line', desc: '视觉风格' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    {
+      name: 'tabPosition',
+      type: "'top'|'bottom'|'left'|'right'",
+      default: 'top',
+      desc: '标签栏位置',
+    },
+    { name: 'lazy', type: 'boolean', default: 'false', desc: '首次激活后才挂载面板' },
+    { name: 'keepDOM', type: 'boolean', default: 'false', desc: '激活过的面板保留 DOM' },
     { name: 'tabList', type: 'TabItem[]', default: '[]', desc: '数据驱动标签定义' },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
     {

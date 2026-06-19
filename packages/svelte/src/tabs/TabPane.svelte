@@ -22,10 +22,24 @@
 
   const ctx = getTabsContext();
   const active = $derived(ctx?.getActiveKey() === itemKey);
+  const lazy = $derived(ctx?.getLazy() ?? false);
+  const keepDOM = $derived(ctx?.getKeepDOM() ?? false);
+
+  // 记录是否曾激活过（红线 #2：本地 $state 在 effect 内写，不在 render 期写）。
+  let everActive = $state(false);
+  $effect(() => {
+    if (active) everActive = true;
+  });
+
+  // 渲染策略：
+  // - 非 keepDOM：仅渲染当前激活面板（切走即卸载）——天然懒挂。
+  // - keepDOM + lazy：首次激活才挂，之后保留 DOM（display:none 隐藏）。
+  // - keepDOM 非 lazy：预挂全部面板并保留（无懒加载）。
+  const shouldMount = $derived(keepDOM ? (lazy ? everActive : true) : active);
 </script>
 
-{#if active}
-  <div class="cd-tabs__panel" role="tabpanel">
+{#if shouldMount}
+  <div class="cd-tabs__panel" role="tabpanel" hidden={!active}>
     {@render children?.()}
   </div>
 {/if}

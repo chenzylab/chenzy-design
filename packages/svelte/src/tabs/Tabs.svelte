@@ -18,6 +18,7 @@
   type TabKey = string | number;
   type TabType = 'line' | 'card';
   type TabSize = 'small' | 'default' | 'large';
+  type TabPosition = 'top' | 'bottom' | 'left' | 'right';
   type KeyboardActivation = 'auto' | 'manual';
 
   interface Props {
@@ -25,9 +26,14 @@
     defaultValue?: TabKey;
     type?: TabType;
     size?: TabSize;
+    tabPosition?: TabPosition;
     tabList?: TabItem[];
     closable?: boolean;
     keyboardActivation?: KeyboardActivation;
+    /** 首次激活后才挂载面板内容 */
+    lazy?: boolean;
+    /** 激活过的面板切走后保留 DOM（display:none），而非卸载 */
+    keepDOM?: boolean;
     onChange?: (key: TabKey) => void;
     onTabClose?: (key: TabKey) => void;
     children?: Snippet;
@@ -38,9 +44,12 @@
     defaultValue,
     type = 'line',
     size = 'default',
+    tabPosition = 'top',
     tabList = [],
     closable = false,
     keyboardActivation = 'auto',
+    lazy = false,
+    keepDOM = false,
     onChange,
     onTabClose,
     children,
@@ -66,7 +75,12 @@
   }
 
   // 声明式 TabPane 通过 context 读取激活 key 决定显隐（红线 #2：getter，非数组注册）。
-  setTabsContext({ getActiveKey: () => activeKey });
+  // lazy/keepDOM 也经 context 暴露给 TabPane 决定挂载/保留策略。
+  setTabsContext({
+    getActiveKey: () => activeKey,
+    getLazy: () => lazy,
+    getKeepDOM: () => keepDOM,
+  });
 
   function tabId(key: TabKey): string {
     return `${baseId}-tab-${key}`;
@@ -153,7 +167,7 @@
   }
 
   const cls = $derived(
-    ['cd-tabs', `cd-tabs--${type}`, `cd-tabs--${size}`].join(' '),
+    ['cd-tabs', `cd-tabs--${type}`, `cd-tabs--${size}`, `cd-tabs--${tabPosition}`].join(' '),
   );
 </script>
 
@@ -220,6 +234,73 @@
   }
   .cd-tabs--line .cd-tabs__bar {
     border-block-end: 1px solid var(--cd-tabs-bar-border);
+  }
+
+  /* --- tabPosition: bottom（bar 在内容下方）--- */
+  .cd-tabs--bottom {
+    flex-direction: column-reverse;
+  }
+  .cd-tabs--bottom.cd-tabs--line .cd-tabs__bar {
+    border-block-end: none;
+    border-block-start: 1px solid var(--cd-tabs-bar-border);
+  }
+  .cd-tabs--bottom.cd-tabs--line .cd-tabs__tab-btn {
+    border-block-end: none;
+    border-block-start: var(--cd-tabs-ink-height) solid transparent;
+  }
+  .cd-tabs--bottom.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
+    border-block-start-color: var(--cd-tabs-ink-color);
+  }
+  .cd-tabs--bottom .cd-tabs__content {
+    padding-block-start: 0;
+    padding-block-end: var(--cd-spacing-3);
+  }
+
+  /* --- tabPosition: left / right（bar 竖向在侧）--- */
+  .cd-tabs--left,
+  .cd-tabs--right {
+    flex-direction: row;
+  }
+  .cd-tabs--right {
+    flex-direction: row-reverse;
+  }
+  .cd-tabs--left .cd-tabs__bar,
+  .cd-tabs--right .cd-tabs__bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__bar {
+    border-block-end: none;
+    border-inline-end: 1px solid var(--cd-tabs-bar-border);
+  }
+  .cd-tabs--right.cd-tabs--line .cd-tabs__bar {
+    border-block-end: none;
+    border-inline-start: 1px solid var(--cd-tabs-bar-border);
+  }
+  .cd-tabs--left .cd-tabs__tab-btn,
+  .cd-tabs--right .cd-tabs__tab-btn {
+    inline-size: 100%;
+    text-align: start;
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab-btn {
+    border-block-end: none;
+    border-inline-end: var(--cd-tabs-ink-height) solid transparent;
+  }
+  .cd-tabs--right.cd-tabs--line .cd-tabs__tab-btn {
+    border-block-end: none;
+    border-inline-start: var(--cd-tabs-ink-height) solid transparent;
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
+    border-inline-end-color: var(--cd-tabs-ink-color);
+  }
+  .cd-tabs--right.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
+    border-inline-start-color: var(--cd-tabs-ink-color);
+  }
+  .cd-tabs--left .cd-tabs__content,
+  .cd-tabs--right .cd-tabs__content {
+    flex: 1 1 auto;
+    padding-block-start: 0;
+    padding-inline: var(--cd-spacing-4);
   }
   .cd-tabs__tab {
     display: inline-flex;
