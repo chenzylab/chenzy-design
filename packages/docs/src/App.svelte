@@ -388,7 +388,7 @@ let pageSize2 = $state(10);
   </Row>
 
   <Text type="tertiary">响应式（缩放窗口看变化）：每格 xs=24 / sm=12 / lg=6，gutter 随断点变。</Text>
-  <Row gutter={{ xs: 8, md: 16, lg: 24 }} data-testid="grid-responsive">
+  <Row gutter={{ xs: 8, md: 16, lg: 24 }}>
     <Col xs={24} sm={12} lg={6}><div class="demo-cell">A</div></Col>
     <Col xs={24} sm={12} lg={6}><div class="demo-cell">B</div></Col>
     <Col xs={24} sm={12} lg={6}><div class="demo-cell">C</div></Col>
