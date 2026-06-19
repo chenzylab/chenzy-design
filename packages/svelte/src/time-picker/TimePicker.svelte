@@ -7,6 +7,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -36,7 +37,7 @@
     defaultValue = null,
     open,
     defaultOpen = false,
-    placeholder = '请选择时间',
+    placeholder,
     size = 'default',
     status = 'default',
     disabled = false,
@@ -50,6 +51,8 @@
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const baseId = useId('cd-time-picker-panel');
 
@@ -117,7 +120,7 @@
     }),
   );
 
-  const displayText = $derived(current ? triggerFormat.format(current) : placeholder);
+  const displayText = $derived(current ? triggerFormat.format(current) : (placeholder ?? loc().t('TimePicker.placeholder')));
 
   const showClear = $derived(clearable && !disabled && current !== null);
 
@@ -241,7 +244,7 @@
     </button>
 
     {#if showClear}
-      <button type="button" class="cd-time-picker__clear" aria-label="清除" onclick={clear}>
+      <button type="button" class="cd-time-picker__clear" aria-label={loc().t('TimePicker.clear')} onclick={clear}>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
           <path
             fill="currentColor"
@@ -266,11 +269,11 @@
       class="cd-time-picker__panel"
       id={baseId}
       role="dialog"
-      aria-label="选择时间"
+      aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
     >
       <div class="cd-time-picker__columns">
-        <ul class="cd-time-picker__col" role="listbox" aria-label="时" bind:this={hourCol}>
+        <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
           {#each hours as h (h)}
             <li
               class="cd-time-picker__item"
@@ -291,7 +294,7 @@
           {/each}
         </ul>
 
-        <ul class="cd-time-picker__col" role="listbox" aria-label="分" bind:this={minuteCol}>
+        <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
           {#each minutes as m (m)}
             <li
               class="cd-time-picker__item"
@@ -313,7 +316,7 @@
         </ul>
 
         {#if showSecond}
-          <ul class="cd-time-picker__col" role="listbox" aria-label="秒" bind:this={secondCol}>
+          <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
             {#each seconds as s (s)}
               <li
                 class="cd-time-picker__item"
@@ -337,8 +340,8 @@
       </div>
 
       <div class="cd-time-picker__footer">
-        <button type="button" class="cd-time-picker__now" onclick={setNow}>此刻</button>
-        <button type="button" class="cd-time-picker__ok" onclick={confirm}>确定</button>
+        <button type="button" class="cd-time-picker__now" onclick={setNow}>{loc().t('TimePicker.now')}</button>
+        <button type="button" class="cd-time-picker__ok" onclick={confirm}>{loc().t('TimePicker.confirm')}</button>
       </div>
     </div>
   {/if}

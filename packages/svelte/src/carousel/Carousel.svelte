@@ -16,6 +16,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Animation = 'slide' | 'fade';
 
@@ -52,6 +53,8 @@
     onChange,
     class: className = '',
   }: Props = $props();
+
+  const loc = useLocale();
 
   // 受控 / 非受控（红线 #1）：永不回写 prop。
   const isControlled = $derived(value !== undefined);
@@ -161,19 +164,19 @@
     <button
       type="button"
       class="cd-carousel__arrow cd-carousel__arrow--prev"
-      aria-label="上一张"
+      aria-label={loc().t('Carousel.prev')}
       onclick={prev}
     >‹</button>
     <button
       type="button"
       class="cd-carousel__arrow cd-carousel__arrow--next"
-      aria-label="下一张"
+      aria-label={loc().t('Carousel.next')}
       onclick={next}
     >›</button>
   {/if}
 
   {#if showIndicator && count > 1}
-    <div class="cd-carousel__indicators" role="tablist" aria-label="轮播指示器">
+    <div class="cd-carousel__indicators" role="tablist" aria-label={loc().t('Carousel.indicators')}>
       {#each slides as _slide, i (i)}
         <button
           type="button"

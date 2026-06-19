@@ -147,6 +147,7 @@ export {
   LocaleProvider,
   LOCALE_CONTEXT_KEY,
   getLocaleContext,
+  useLocale,
   localeProviderMeta,
   type LocaleApi,
 } from './locale-provider/index.js';

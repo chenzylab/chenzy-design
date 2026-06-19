@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Placement = 'left' | 'right' | 'top' | 'bottom';
   type Size = 'small' | 'default' | 'large';
@@ -52,6 +53,8 @@
     onClose,
     class: className,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const titleId = useId('cd-drawer-title');
 
@@ -168,7 +171,7 @@
           <button
             type="button"
             class="cd-drawer__close"
-            aria-label="关闭"
+            aria-label={loc().t('Drawer.close')}
             onclick={close}
           >
             <svg

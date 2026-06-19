@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
   import type { UploadFileItem } from './types.js';
 
   interface Props {
@@ -43,6 +44,8 @@
     onExceed,
     children,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const isControlled = $derived(value !== undefined);
   let inner = $state<UploadFileItem[]>(getInitialValue());
@@ -165,7 +168,7 @@
       {#if children}
         {@render children()}
       {:else}
-        <span class="cd-upload__dragger-text">点击或拖拽文件到此处上传</span>
+        <span class="cd-upload__dragger-text">{loc().t('Upload.draggerText')}</span>
       {/if}
     </div>
   {:else}
@@ -173,7 +176,7 @@
       {#if children}
         {@render children()}
       {:else}
-        选择文件
+        {loc().t('Upload.trigger')}
       {/if}
     </button>
   {/if}
@@ -188,7 +191,7 @@
           <button
             type="button"
             class="cd-upload__item-remove"
-            aria-label="移除"
+            aria-label={loc().t('Upload.remove')}
             {disabled}
             onclick={() => remove(item.uid)}
           >

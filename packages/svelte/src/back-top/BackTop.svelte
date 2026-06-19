@@ -16,6 +16,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { isAboveThreshold, scrollPositionAt } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
 
@@ -46,7 +47,7 @@
     bottom = 40,
     right = 40,
     size = 'default',
-    ariaLabel = '回到顶部',
+    ariaLabel,
     icon,
     children,
     onClick,
@@ -54,6 +55,8 @@
     onScrollEnd,
     class: className = '',
   }: Props = $props();
+
+  const loc = useLocale();
 
   // 本地响应式状态：仅由命令式 scroll 回调写入，render 期只读。
   let visible = $state(false);
@@ -131,7 +134,7 @@
   type="button"
   class="cd-backtop cd-backtop--{size} {className}"
   class:cd-backtop--visible={visible}
-  aria-label={ariaLabel}
+  aria-label={ariaLabel ?? loc().t('BackTop.ariaLabel')}
   aria-hidden={!visible}
   tabindex={visible ? 0 : -1}
   style="--cd-backtop-offset-bottom:{bottomPx}; --cd-backtop-offset-inline-end:{rightPx}"

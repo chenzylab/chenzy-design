@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
@@ -45,6 +46,8 @@
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const listId = useId('cd-cascader-panel');
 
@@ -213,7 +216,7 @@
         class="cd-cascader__clear"
         role="button"
         tabindex="-1"
-        aria-label="清除"
+        aria-label={loc().t('Cascader.clear')}
         onclick={clearAll}
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

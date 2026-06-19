@@ -5,6 +5,8 @@
   maxTagTextLength 截断、拖拽排序。
 -->
 <script lang="ts">
+  import { useLocale } from '../locale-provider/index.js';
+
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
@@ -43,6 +45,8 @@
     onChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // --- 受控值 (红线 #1): 不回写 value，仅 onChange ---
   const isControlled = $derived(value !== undefined);
@@ -157,7 +161,7 @@
         <button
           type="button"
           class="cd-tag-input__remove"
-          aria-label="删除"
+          aria-label={loc().t('TagInput.remove')}
           tabindex={-1}
           onclick={(e) => {
             e.stopPropagation();

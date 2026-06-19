@@ -5,7 +5,13 @@ export const en_US: Locale = {
   rtl: false,
   Modal: { okText: 'OK', cancelText: 'Cancel', close: 'Close' },
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
-  Pagination: { total: '{total} items in total' },
+  Pagination: {
+    total: '{total} items in total',
+    ariaLabel: 'Pagination',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    pageLabel: 'Page {page}',
+  },
   Table: {
     emptyText: 'No data',
     selectAll: 'Select all',
@@ -98,6 +104,18 @@ export const en_US: Locale = {
     a11yExpanded: 'Expanded {label}',
     a11yCollapsed: 'Collapsed {label}',
     a11yChecked: 'Checked {label}',
+    expand: 'Expand',
+    collapse: 'Collapse',
+  },
+  Image: {
+    errorAlt: 'Failed to load image',
+    previewAlt: 'Image preview',
+    previewTrigger: 'Preview image',
+    closePreview: 'Close preview',
+    previewMask: 'Preview',
+  },
+  Timeline: {
+    pending: 'Loading…',
   },
   Sider: {
     expand: 'Expand sidebar',
@@ -110,6 +128,8 @@ export const en_US: Locale = {
     emptyText: 'No matches',
     searchPlaceholder: 'Search',
     loading: 'Loading',
+    clear: 'Clear',
+    removeItem: 'Remove {label}',
   },
   DatePicker: {
     placeholder: 'Select date',
@@ -117,16 +137,24 @@ export const en_US: Locale = {
     clear: 'Clear',
     prevMonth: 'Previous month',
     nextMonth: 'Next month',
+    triggerLabel: 'Select date',
   },
   TimePicker: {
     placeholder: 'Select time',
     now: 'Now',
     confirm: 'OK',
+    clear: 'Clear',
+    triggerLabel: 'Select time',
+    hour: 'Hour',
+    minute: 'Minute',
+    second: 'Second',
   },
   Transfer: {
     searchPlaceholder: 'Search',
     itemsUnit: '{count} item(s)',
     empty: 'No data',
+    titleSource: 'Source',
+    titleTarget: 'Selected',
   },
   Upload: {
     trigger: 'Select file',
@@ -146,5 +174,42 @@ export const en_US: Locale = {
     pattern: '{label} does not match the required format',
     submitFailAnnounce: '{count} field(s) failed validation',
     colon: ':',
+  },
+  TreeSelect: {
+    clear: 'Clear',
+    emptyText: 'No data',
+  },
+  AutoComplete: {
+    clear: 'Clear',
+  },
+  InputNumber: {
+    increase: 'Increase',
+    decrease: 'Decrease',
+  },
+  Cascader: {
+    clear: 'Clear',
+  },
+  Carousel: {
+    prev: 'Previous slide',
+    next: 'Next slide',
+    indicators: 'Carousel indicators',
+  },
+  TagInput: {
+    remove: 'Remove',
+  },
+  Breadcrumb: {
+    ariaLabel: 'Breadcrumb',
+  },
+  ColorPicker: {
+    saturation: 'Saturation and brightness',
+    hue: 'Hue',
+    alpha: 'Alpha',
+    hex: 'Hex color value',
+  },
+  Tag: {
+    close: 'Close',
+  },
+  Dropdown: {
+    trigger: 'Menu',
   },
 };

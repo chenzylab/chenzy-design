@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   type EmptyImage = 'noData' | 'noResult' | 'error';
   type Size = 'small' | 'default' | 'large';
@@ -30,12 +31,13 @@
     imageSlot,
   }: Props = $props();
 
-  // TODO(i18n): 接 locale 包 Empty.* 文案
-  const defaultTitles: Record<EmptyImage, string> = {
-    noData: '暂无数据',
-    noResult: '无搜索结果',
-    error: '加载失败',
-  };
+  const loc = useLocale();
+
+  const defaultTitles = $derived<Record<EmptyImage, string>>({
+    noData: loc().t('Empty.noData'),
+    noResult: loc().t('Empty.noResult'),
+    error: loc().t('Empty.error'),
+  });
 
   const resolvedTitle = $derived(title ?? defaultTitles[image]);
 

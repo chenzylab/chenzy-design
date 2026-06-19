@@ -8,6 +8,7 @@
 <script lang="ts">
   import { useId } from '@chenzy-design/core';
   import type { NotificationItem, NotificationType } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     item: NotificationItem;
@@ -17,6 +18,7 @@
   }
 
   let { item, onClose, onPause, onResume }: Props = $props();
+  const loc = useLocale();
 
   const titleId = useId('cd-notification-title');
   const contentId = useId('cd-notification-content');
@@ -106,7 +108,7 @@
     <button
       type="button"
       class="cd-notification-item__close"
-      aria-label="关闭"
+      aria-label={loc().t('Notification.closeText')}
       onclick={() => onClose(item.id)}
     >
       <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">

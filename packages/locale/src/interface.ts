@@ -20,6 +20,11 @@ export interface Locale {
   Pagination: {
     /** uses {total} placeholder */
     total: string;
+    ariaLabel: string;
+    prevPage: string;
+    nextPage: string;
+    /** uses {page} */
+    pageLabel: string;
   };
   Table: {
     emptyText: string;
@@ -125,6 +130,18 @@ export interface Locale {
     a11yCollapsed: string;
     /** uses {label} */
     a11yChecked: string;
+    expand: string;
+    collapse: string;
+  };
+  Image: {
+    errorAlt: string;
+    previewAlt: string;
+    previewTrigger: string;
+    closePreview: string;
+    previewMask: string;
+  };
+  Timeline: {
+    pending: string;
   };
   Sider: {
     expand: string;
@@ -137,6 +154,9 @@ export interface Locale {
     emptyText: string;
     searchPlaceholder: string;
     loading: string;
+    clear: string;
+    /** uses {label} */
+    removeItem: string;
   };
   DatePicker: {
     placeholder: string;
@@ -144,17 +164,25 @@ export interface Locale {
     clear: string;
     prevMonth: string;
     nextMonth: string;
+    triggerLabel: string;
   };
   TimePicker: {
     placeholder: string;
     now: string;
     confirm: string;
+    clear: string;
+    triggerLabel: string;
+    hour: string;
+    minute: string;
+    second: string;
   };
   Transfer: {
     searchPlaceholder: string;
     /** uses {count} */
     itemsUnit: string;
     empty: string;
+    titleSource: string;
+    titleTarget: string;
   };
   Upload: {
     trigger: string;
@@ -184,5 +212,42 @@ export interface Locale {
     /** uses {count} */
     submitFailAnnounce: string;
     colon: string;
+  };
+  TreeSelect: {
+    clear: string;
+    emptyText: string;
+  };
+  AutoComplete: {
+    clear: string;
+  };
+  InputNumber: {
+    increase: string;
+    decrease: string;
+  };
+  Cascader: {
+    clear: string;
+  };
+  Carousel: {
+    prev: string;
+    next: string;
+    indicators: string;
+  };
+  TagInput: {
+    remove: string;
+  };
+  Breadcrumb: {
+    ariaLabel: string;
+  };
+  ColorPicker: {
+    saturation: string;
+    hue: string;
+    alpha: string;
+    hex: string;
+  };
+  Tag: {
+    close: string;
+  };
+  Dropdown: {
+    trigger: string;
   };
 }

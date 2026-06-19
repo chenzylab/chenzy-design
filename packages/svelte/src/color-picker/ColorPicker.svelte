@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
 
@@ -42,6 +43,8 @@
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const hexInputId = useId('cd-color-picker-hex');
 
@@ -415,7 +418,7 @@
         bind:this={satEl}
         role="slider"
         tabindex={disabled ? -1 : 0}
-        aria-label="饱和度与明度"
+        aria-label={loc().t('ColorPicker.saturation')}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(satPercent)}
@@ -441,7 +444,7 @@
             bind:this={hueEl}
             role="slider"
             tabindex={disabled ? -1 : 0}
-            aria-label="色相"
+            aria-label={loc().t('ColorPicker.hue')}
             aria-valuemin={0}
             aria-valuemax={360}
             aria-valuenow={hueRounded}
@@ -460,7 +463,7 @@
               bind:this={alphaEl}
               role="slider"
               tabindex={disabled ? -1 : 0}
-              aria-label="透明度"
+              aria-label={loc().t('ColorPicker.alpha')}
               aria-valuemin={0}
               aria-valuemax={1}
               aria-valuenow={alphaRounded}
@@ -487,7 +490,7 @@
           id={hexInputId}
           type="text"
           value={hexInput}
-          aria-label="十六进制颜色值"
+          aria-label={loc().t('ColorPicker.hex')}
           oninput={handleHexInput}
           onblur={handleHexBlur}
         />

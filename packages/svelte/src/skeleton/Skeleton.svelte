@@ -11,6 +11,7 @@
   import SkeletonAvatar from './SkeletonAvatar.svelte';
   import SkeletonTitle from './SkeletonTitle.svelte';
   import SkeletonParagraph from './SkeletonParagraph.svelte';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     loading?: boolean;
@@ -29,9 +30,11 @@
     unmountPlaceholder = true,
     placeholder,
     children,
-    ariaLabel = '内容加载中',
+    ariaLabel,
     class: className,
   }: Props = $props();
+
+  const loc = useLocale();
 
   // setContext 一个带 getter 的对象：原子子组件读取 ctx.active 即建立响应式依赖。
   const ctx: SkeletonContext = {
@@ -49,7 +52,7 @@
 </script>
 
 {#if loading}
-  <div class={cls} aria-busy="true" aria-live="polite" aria-label={ariaLabel}>
+  <div class={cls} aria-busy="true" aria-live="polite" aria-label={ariaLabel ?? loc().t('Skeleton.loading')}>
     {#if placeholder}
       {@render placeholder()}
     {:else}

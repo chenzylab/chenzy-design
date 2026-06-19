@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type ItemValue = string | number;
   type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
@@ -47,6 +48,8 @@
     onSelect,
     onOpenChange,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const listId = useId('cd-autocomplete-list');
 
@@ -232,7 +235,7 @@
     />
 
     {#if showClear}
-      <button type="button" class="cd-autocomplete__clear" aria-label="清除" onclick={clearAll}>
+      <button type="button" class="cd-autocomplete__clear" aria-label={loc().t('AutoComplete.clear')} onclick={clearAll}>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
           <path
             fill="currentColor"

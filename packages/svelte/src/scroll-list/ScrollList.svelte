@@ -20,6 +20,7 @@
     type ScrollListItem,
     type ScrollListKey,
   } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type ChangeInfo = { value: ScrollListValue; item: ScrollListItem; index: number };
@@ -45,10 +46,12 @@
     rows = 5,
     itemHeight,
     disabled = false,
-    ariaLabel = '滚动选择',
+    ariaLabel,
     renderItem,
     onChange,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const baseId = useId('cd-scroll-list-opt');
   function itemId(index: number): string {
@@ -236,7 +239,7 @@
     class="cd-scroll-list__column"
     role="listbox"
     aria-orientation="vertical"
-    aria-label={ariaLabel}
+    aria-label={ariaLabel ?? loc().t('ScrollList.ariaLabel')}
     aria-activedescendant={activeDescId}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}

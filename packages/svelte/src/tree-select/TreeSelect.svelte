@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
   import type { TreeNode, TreeKey } from './types.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -46,6 +47,8 @@
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const treeId = useId('cd-tree-select-panel');
 
@@ -206,7 +209,7 @@
           class:cd-tree-select__expand--open={nodeOpen}
           role="button"
           tabindex="-1"
-          aria-label={nodeOpen ? '收起' : '展开'}
+          aria-label={nodeOpen ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
           onclick={(e) => {
             e.stopPropagation();
             toggleExpand(node.key);
@@ -260,7 +263,7 @@
         class="cd-tree-select__clear"
         role="button"
         tabindex="-1"
-        aria-label="清除"
+        aria-label={loc().t('TreeSelect.clear')}
         onclick={clearAll}
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -288,7 +291,7 @@
   {#if isOpen}
     <div class="cd-tree-select__panel" id={treeId} role="tree">
       {#if treeData.length === 0}
-        <div class="cd-tree-select__empty">无数据</div>
+        <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
       {:else}
         {@render treeNodes(treeData, 0)}
       {/if}

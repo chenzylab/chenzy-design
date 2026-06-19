@@ -1212,6 +1212,18 @@
     </LocaleProvider>
   </div>
 
+  <div style="margin-top:16px" data-testid="i18n-consumer-demo">
+    <Text type="tertiary">下列组件被同一 LocaleProvider 包裹，其内部文案应随上方语言切换：</Text>
+    <LocaleProvider locale={localeIsZh ? zh_CN : en_US}>
+      <div style="margin-top:8px; max-width:420px">
+        <Empty />
+        <div style="margin-top:8px">
+          <Pagination total={1234} showTotal currentPage={1} pageSize={10} />
+        </div>
+      </div>
+    </LocaleProvider>
+  </div>
+
   <Divider />
 
   <Title heading={5}>ConfigProvider（全局配置 · 局部暗色作用域）</Title>

@@ -11,6 +11,7 @@
   import type { Snippet } from 'svelte';
   import { slide } from 'svelte/transition';
   import { resolveBannerRole, useId, type BannerType } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     type?: BannerType;
@@ -72,6 +73,8 @@
 
   const roleProps = $derived(resolveBannerRole(type, dynamic));
   const isRegion = $derived(roleProps.role === 'region');
+
+  const loc = useLocale();
 
   const titleId = useId('cd-banner-title');
   const descId = useId('cd-banner-desc');
@@ -199,7 +202,7 @@
       <button
         type="button"
         class="cd-banner__close"
-        aria-label="关闭"
+        aria-label={loc().t('Banner.closeButtonAriaLabel')}
         onclick={() => close('closeButton')}
       >
         {#if closeIcon}

@@ -5,7 +5,13 @@ export const zh_CN: Locale = {
   rtl: false,
   Modal: { okText: '确定', cancelText: '取消', close: '关闭' },
   Input: { clear: '清除', showPassword: '显示密码', hidePassword: '隐藏密码' },
-  Pagination: { total: '共 {total} 条' },
+  Pagination: {
+    total: '共 {total} 条',
+    ariaLabel: '分页',
+    prevPage: '上一页',
+    nextPage: '下一页',
+    pageLabel: '第 {page} 页',
+  },
   Table: {
     emptyText: '暂无数据',
     selectAll: '全选',
@@ -98,6 +104,18 @@ export const zh_CN: Locale = {
     a11yExpanded: '已展开 {label}',
     a11yCollapsed: '已收起 {label}',
     a11yChecked: '已勾选 {label}',
+    expand: '展开',
+    collapse: '收起',
+  },
+  Image: {
+    errorAlt: '图片加载失败',
+    previewAlt: '图片预览',
+    previewTrigger: '预览图片',
+    closePreview: '关闭预览',
+    previewMask: '预览',
+  },
+  Timeline: {
+    pending: '加载中…',
   },
   Sider: {
     expand: '展开侧边栏',
@@ -110,6 +128,8 @@ export const zh_CN: Locale = {
     emptyText: '无匹配项',
     searchPlaceholder: '搜索',
     loading: '加载中',
+    clear: '清除',
+    removeItem: '移除 {label}',
   },
   DatePicker: {
     placeholder: '请选择日期',
@@ -117,16 +137,24 @@ export const zh_CN: Locale = {
     clear: '清除',
     prevMonth: '上个月',
     nextMonth: '下个月',
+    triggerLabel: '选择日期',
   },
   TimePicker: {
     placeholder: '请选择时间',
     now: '此刻',
     confirm: '确定',
+    clear: '清除',
+    triggerLabel: '选择时间',
+    hour: '时',
+    minute: '分',
+    second: '秒',
   },
   Transfer: {
     searchPlaceholder: '搜索',
     itemsUnit: '{count} 项',
     empty: '暂无数据',
+    titleSource: '源',
+    titleTarget: '已选',
   },
   Upload: {
     trigger: '选择文件',
@@ -146,5 +174,42 @@ export const zh_CN: Locale = {
     pattern: '{label}格式不符合要求',
     submitFailAnnounce: '{count} 个字段校验未通过',
     colon: '：',
+  },
+  TreeSelect: {
+    clear: '清除',
+    emptyText: '无数据',
+  },
+  AutoComplete: {
+    clear: '清除',
+  },
+  InputNumber: {
+    increase: '增加',
+    decrease: '减少',
+  },
+  Cascader: {
+    clear: '清除',
+  },
+  Carousel: {
+    prev: '上一张',
+    next: '下一张',
+    indicators: '轮播指示器',
+  },
+  TagInput: {
+    remove: '删除',
+  },
+  Breadcrumb: {
+    ariaLabel: '面包屑',
+  },
+  ColorPicker: {
+    saturation: '饱和度与明度',
+    hue: '色相',
+    alpha: '透明度',
+    hex: '十六进制颜色值',
+  },
+  Tag: {
+    close: '关闭',
+  },
+  Dropdown: {
+    trigger: '菜单',
   },
 };

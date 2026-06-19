@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { useId, useDismiss, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -34,7 +35,7 @@
     defaultValue = null,
     open,
     defaultOpen = false,
-    placeholder = '请选择日期',
+    placeholder,
     size = 'default',
     status = 'default',
     disabled = false,
@@ -46,6 +47,8 @@
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const dialogId = useId('cd-date-picker-panel');
 
@@ -103,7 +106,7 @@
   );
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
 
-  const displayText = $derived(current ? triggerFormat.format(current) : placeholder);
+  const displayText = $derived(current ? triggerFormat.format(current) : (placeholder ?? loc().t('DatePicker.placeholder')));
   const headerText = $derived(headerFormat.format(cursor));
 
   // 星期名: 用 weekdayOrder + 一个已知周日基准 (2023-01-01 是星期日) 经 Intl 本地化
@@ -256,7 +259,7 @@
     </button>
 
     {#if showClear}
-      <button type="button" class="cd-date-picker__clear" aria-label="清除" onclick={clear}>
+      <button type="button" class="cd-date-picker__clear" aria-label={loc().t('DatePicker.clear')} onclick={clear}>
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
           <path
             fill="currentColor"
@@ -281,7 +284,7 @@
       class="cd-date-picker__panel"
       id={dialogId}
       role="dialog"
-      aria-label="选择日期"
+      aria-label={loc().t('DatePicker.triggerLabel')}
       tabindex="-1"
       onkeydown={onPanelKeydown}
     >
@@ -289,7 +292,7 @@
         <button
           type="button"
           class="cd-date-picker__nav"
-          aria-label="上个月"
+          aria-label={loc().t('DatePicker.prevMonth')}
           onclick={prevMonth}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
@@ -300,7 +303,7 @@
         <button
           type="button"
           class="cd-date-picker__nav"
-          aria-label="下个月"
+          aria-label={loc().t('DatePicker.nextMonth')}
           onclick={nextMonth}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">

@@ -5,6 +5,8 @@
   TODO: showSizeChanger, showQuickJumper, status validation, locale package.
 -->
 <script lang="ts">
+  import { useLocale } from '../locale-provider/index.js';
+
   type PaginationSize = 'small' | 'default' | 'large';
   type PaginationMode = 'default' | 'simple';
 
@@ -36,6 +38,8 @@
     onChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 
@@ -82,11 +86,10 @@
     onChange?.(page);
   }
 
-  // TODO: pull from locale package (Pagination.total). Built-in zh fallback.
-  const totalText = $derived(`共 ${nf.format(total)} 条`);
+  const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));
 </script>
 
-<nav class={cls} aria-label={ariaLabel ?? '分页'}>
+<nav class={cls} aria-label={ariaLabel ?? loc().t('Pagination.ariaLabel')}>
   {#if showTotal}
     <span class="cd-pagination__total">{totalText}</span>
   {/if}
@@ -95,7 +98,7 @@
     type="button"
     class="cd-pagination__prev"
     disabled={disabled || isFirst}
-    aria-label="上一页"
+    aria-label={loc().t('Pagination.prevPage')}
     onclick={() => goto(current - 1)}>‹</button
   >
 
@@ -117,7 +120,7 @@
               class="cd-pagination__page"
               class:cd-pagination__page--active={cell.value === current}
               aria-current={cell.value === current ? 'page' : undefined}
-              aria-label={`第 ${cell.value} 页`}
+              aria-label={loc().t('Pagination.pageLabel', { page: cell.value })}
               {disabled}
               onclick={() => goto(cell.value)}>{nf.format(cell.value)}</button
             >
@@ -131,7 +134,7 @@
     type="button"
     class="cd-pagination__next"
     disabled={disabled || isLast}
-    aria-label="下一页"
+    aria-label={loc().t('Pagination.nextPage')}
     onclick={() => goto(current + 1)}>›</button
   >
 </nav>
