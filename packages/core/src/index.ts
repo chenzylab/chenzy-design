@@ -119,3 +119,12 @@ export {
   type ToastPosition,
   type ToastCloseReason,
 } from './toast.js';
+export {
+  createNotificationStore,
+  type NotificationStore,
+  type NotificationItem,
+  type NotificationOptions,
+  type NotificationType,
+  type NotificationPlacement,
+  type NotificationCloseReason,
+} from './notification.js';

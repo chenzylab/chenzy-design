@@ -38,6 +38,7 @@ import { modalTokens } from './modal.js';
 import { drawerTokens } from './drawer.js';
 import { popconfirmTokens } from './popconfirm.js';
 import { toastTokens } from './toast.js';
+import { notificationTokens } from './notification.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -79,4 +80,5 @@ export const componentTokens = {
   ...drawerTokens,
   ...popconfirmTokens,
   ...toastTokens,
+  ...notificationTokens,
 } as const;

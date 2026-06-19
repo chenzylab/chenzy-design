@@ -66,6 +66,10 @@ export const en_US: Locale = {
     typeLabelWarning: 'Warning',
     typeLabelError: 'Error',
   },
+  Notification: {
+    closeText: 'Close',
+    notification: 'Notification',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

@@ -66,6 +66,10 @@ export const zh_CN: Locale = {
     typeLabelWarning: '警告',
     typeLabelError: '错误',
   },
+  Notification: {
+    closeText: '关闭',
+    notification: '通知',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',
