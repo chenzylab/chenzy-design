@@ -18,6 +18,8 @@ export interface UseFloatingOptions {
   autoAdjust?: boolean;
   /** min distance from the viewport edge (px) */
   padding?: number;
+  /** set the popup's min-inline-size to the trigger width (Select-style dropdowns) */
+  matchWidth?: boolean;
   /** called after each reposition with the resolved side/align + arrow offset */
   onPlacement?: (info: { placement: Placement; arrowOffset: number }) => void;
 }
@@ -44,7 +46,14 @@ export function useFloating(
     return { update: () => {}, destroy: () => {} };
   }
 
-  const { placement, offset = 8, autoAdjust = true, padding = 4, onPlacement } = options;
+  const {
+    placement,
+    offset = 8,
+    autoAdjust = true,
+    padding = 4,
+    matchWidth = false,
+    onPlacement,
+  } = options;
 
   // portal: detach the popup from its in-flow parent and append to body so it
   // escapes any `overflow:hidden` ancestor clipping.
@@ -58,6 +67,11 @@ export function useFloating(
 
   function position() {
     const triggerRect = trigger.getBoundingClientRect();
+    // match-width must be applied before measuring the popup so its rect (and
+    // the cross-axis clamping below) reflects the trigger-derived width.
+    if (matchWidth) {
+      popup.style.minInlineSize = `${Math.round(triggerRect.width)}px`;
+    }
     const popupRect = popup.getBoundingClientRect();
     const result = computePosition({
       triggerRect,
