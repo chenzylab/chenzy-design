@@ -128,3 +128,4 @@ export {
   type NotificationPlacement,
   type NotificationCloseReason,
 } from './notification.js';
+export { easeInOutCubic, isAboveThreshold, scrollPositionAt } from './back-top.js';

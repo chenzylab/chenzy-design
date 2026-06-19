@@ -61,6 +61,7 @@ import { meta as popconfirmMeta } from './popconfirm/meta.js';
 import { meta as drawerMeta } from './drawer/meta.js';
 import { meta as toastMeta } from './toast/meta.js';
 import { meta as notificationMeta } from './notification/meta.js';
+import { meta as backTopMeta } from './back-top/meta.js';
 
 const metas = {
   buttonMeta,
@@ -125,6 +126,7 @@ const metas = {
   drawerMeta,
   toastMeta,
   notificationMeta,
+  backTopMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
