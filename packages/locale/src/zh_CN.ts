@@ -58,6 +58,14 @@ export const zh_CN: Locale = {
     cancel: '取消',
     confirming: '处理中…',
   },
+  Toast: {
+    close: '关闭',
+    loading: '加载中',
+    typeLabelInfo: '信息',
+    typeLabelSuccess: '成功',
+    typeLabelWarning: '警告',
+    typeLabelError: '错误',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

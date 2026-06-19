@@ -1,0 +1,229 @@
+<!--
+  ToastItem — 单条轻提示卡片。
+  类型图标 + 内容 + 可选关闭按钮；pauseOnHover 经 mouseenter/leave + focusin/out 暂停/恢复定时器。
+  a11y（本子集简化）：error/warning -> role=alert + aria-live=assertive；其余 -> role=status + aria-live=polite。
+  关闭按钮 button + aria-label「关闭」，不抢焦点、不锁滚动。
+  loading 用 CSS infinite rotate spinner（旋转 animation 非显隐 from 帧问题，安全）。
+  TODO(延后): 单例 live region（当前每条卡片自带 role/aria-live）。
+-->
+<script lang="ts">
+  import type { ToastItem, ToastType } from '@chenzy-design/core';
+
+  interface Props {
+    toast: ToastItem;
+    onClose: (id: string) => void;
+    onPause: (id: string) => void;
+    onResume: (id: string) => void;
+  }
+
+  let { toast, onClose, onPause, onResume }: Props = $props();
+
+  const isAlert = $derived(toast.type === 'error' || toast.type === 'warning');
+  const role = $derived(isAlert ? 'alert' : 'status');
+  const ariaLive = $derived(isAlert ? 'assertive' : 'polite');
+
+  function handlePause() {
+    if (toast.pauseOnHover) onPause(toast.id);
+  }
+  function handleResume() {
+    if (toast.pauseOnHover) onResume(toast.id);
+  }
+</script>
+
+{#snippet typeIcon(type: ToastType)}
+  {#if type === 'success'}
+    <svg class="cd-toast-item__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M5 8.2l2 2 4-4.4"
+      />
+    </svg>
+  {:else if type === 'warning'}
+    <svg class="cd-toast-item__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        stroke-linejoin="round"
+        d="M8 1.5l6.5 12h-13z"
+      />
+      <path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 6.5v3.2" />
+      <circle cx="8" cy="11.6" r="0.85" fill="currentColor" />
+    </svg>
+  {:else if type === 'error'}
+    <svg class="cd-toast-item__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <path
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        d="M5.5 5.5l5 5M10.5 5.5l-5 5"
+      />
+    </svg>
+  {:else if type === 'loading'}
+    <svg
+      class="cd-toast-item__icon-svg cd-toast-item__spinner"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="8" cy="8" r="6.4" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.25" />
+      <path
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        d="M8 1.6a6.4 6.4 0 0 1 6.4 6.4"
+      />
+    </svg>
+  {:else}
+    <svg class="cd-toast-item__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
+      <path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 7.2v4" />
+      <circle cx="8" cy="4.7" r="0.85" fill="currentColor" />
+    </svg>
+  {/if}
+{/snippet}
+
+<div
+  class="cd-toast-item cd-toast-item--{toast.type}"
+  {role}
+  aria-live={ariaLive}
+  onmouseenter={handlePause}
+  onmouseleave={handleResume}
+  onfocusin={handlePause}
+  onfocusout={handleResume}
+>
+  <span class="cd-toast-item__icon">
+    {@render typeIcon(toast.type)}
+  </span>
+  <span class="cd-toast-item__content">{toast.content}</span>
+  {#if toast.closable}
+    <button
+      type="button"
+      class="cd-toast-item__close"
+      aria-label="关闭"
+      onclick={() => onClose(toast.id)}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path
+          stroke="currentColor"
+          stroke-width="1.4"
+          stroke-linecap="round"
+          d="M4 4l8 8M12 4l-8 8"
+        />
+      </svg>
+    </button>
+  {/if}
+</div>
+
+<style>
+  .cd-toast-item {
+    display: flex;
+    gap: var(--cd-toast-gap);
+    align-items: center;
+    box-sizing: border-box;
+    padding: var(--cd-toast-padding);
+    max-inline-size: var(--cd-toast-max-width);
+    min-inline-size: var(--cd-toast-min-width);
+    background: var(--cd-toast-bg);
+    color: var(--cd-toast-color-text);
+    font-size: var(--cd-toast-font-size);
+    line-height: 1.5;
+    border-radius: var(--cd-toast-radius);
+    box-shadow: var(--cd-toast-shadow);
+    pointer-events: auto;
+  }
+
+  .cd-toast-item__icon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.125em;
+    block-size: 1.125em;
+  }
+
+  .cd-toast-item__icon-svg {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .cd-toast-item--info .cd-toast-item__icon {
+    color: var(--cd-toast-color-icon-info);
+  }
+  .cd-toast-item--success .cd-toast-item__icon {
+    color: var(--cd-toast-color-icon-success);
+  }
+  .cd-toast-item--warning .cd-toast-item__icon {
+    color: var(--cd-toast-color-icon-warning);
+  }
+  .cd-toast-item--error .cd-toast-item__icon {
+    color: var(--cd-toast-color-icon-error);
+  }
+  .cd-toast-item--loading .cd-toast-item__icon {
+    color: var(--cd-toast-color-icon-info);
+  }
+
+  .cd-toast-item__content {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .cd-toast-item__close {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.25em;
+    block-size: 1.25em;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-toast-color-close);
+    cursor: pointer;
+    border-radius: var(--cd-radius-1);
+    transition: color var(--cd-toast-motion-duration) ease;
+  }
+
+  .cd-toast-item__close:hover {
+    color: var(--cd-toast-color-close-hover);
+  }
+
+  .cd-toast-item__close:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: 1px;
+  }
+
+  .cd-toast-item__close svg {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .cd-toast-item__spinner {
+    transform-origin: center;
+    animation: cd-toast-spin 0.8s linear infinite;
+  }
+
+  @keyframes cd-toast-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cd-toast-item__spinner {
+      animation-duration: 1.6s;
+    }
+    .cd-toast-item__close {
+      transition: none;
+    }
+  }
+</style>

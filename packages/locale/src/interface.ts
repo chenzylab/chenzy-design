@@ -80,6 +80,14 @@ export interface Locale {
     cancel: string;
     confirming: string;
   };
+  Toast: {
+    close: string;
+    loading: string;
+    typeLabelInfo: string;
+    typeLabelSuccess: string;
+    typeLabelWarning: string;
+    typeLabelError: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;
