@@ -11,6 +11,9 @@ export const zh_CN: Locale = {
     prevPage: '上一页',
     nextPage: '下一页',
     pageLabel: '第 {page} 页',
+    pageSize: '{size} 条/页',
+    jumpTo: '跳至',
+    jumpToSuffix: '页',
   },
   Table: {
     emptyText: '暂无数据',

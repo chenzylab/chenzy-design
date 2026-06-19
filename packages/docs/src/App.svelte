@@ -215,6 +215,8 @@
   let treeVal = $state<string | number | null>(null);
   let transferVal = $state<(string | number)[]>(['b']);
   let page = $state(1);
+let page2 = $state(1);
+let pageSize2 = $state(10);
   let step = $state(1);
   let activeTab = $state<string | number>('a');
   let lastDropdown = $state('');
@@ -638,6 +640,20 @@
 
     <Pagination total={256} currentPage={page} showTotal onChange={(p) => (page = p)} />
     <Text type="tertiary">当前页：{page}</Text>
+
+    <Pagination
+      total={256}
+      currentPage={page2}
+      pageSize={pageSize2}
+      showTotal
+      showSizeChanger
+      showQuickJumper
+      onChange={(p, s) => {
+        page2 = p;
+        pageSize2 = s;
+      }}
+    />
+    <Text type="tertiary">页 {page2} · 每页 {pageSize2} 条</Text>
 
     <div style="width: 480px">
       <Steps

@@ -11,6 +11,9 @@ export const en_US: Locale = {
     prevPage: 'Previous page',
     nextPage: 'Next page',
     pageLabel: 'Page {page}',
+    pageSize: '{size} / page',
+    jumpTo: 'Go to',
+    jumpToSuffix: '',
   },
   Table: {
     emptyText: 'No data',
