@@ -174,3 +174,8 @@ export {
   resolveResponsiveValue,
   type Breakpoint,
 } from './breakpoints.js';
+export {
+  computeAutosizeHeight,
+  type AutosizeInput,
+  type AutosizeResult,
+} from './textarea.js';

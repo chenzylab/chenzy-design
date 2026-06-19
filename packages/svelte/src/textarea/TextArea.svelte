@@ -1,8 +1,12 @@
 <!--
-  Textarea — see specs/components/input/Textarea.spec.md
-  Reuses input tokens. Controlled / uncontrolled, optional autosize.
+  TextArea — see specs/components/input/Input.spec.md（多行输入）
+  原生 <textarea>，受控/非受控，size/status，showCount/maxLength，IME 安全。
+  autosize：随内容自适应高度（minRows/maxRows），$effect 内命令式测量 scrollHeight
+  调 core computeAutosizeHeight 设高度 + cleanup（红线 #3）。
 -->
 <script lang="ts">
+  import { computeAutosizeHeight } from '@chenzy-design/core';
+
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type Autosize = boolean | { minRows?: number; maxRows?: number };
@@ -10,15 +14,16 @@
   interface Props {
     value?: string;
     defaultValue?: string;
-    placeholder?: string;
-    rows?: number;
-    autosize?: Autosize;
     size?: Size;
-    status?: Status;
     disabled?: boolean;
     readonly?: boolean;
+    placeholder?: string;
     showCount?: boolean;
     maxLength?: number;
+    status?: Status;
+    rows?: number;
+    /** 自适应高度：true 或 { minRows, maxRows } */
+    autosize?: Autosize;
     name?: string;
     ariaLabel?: string;
     onChange?: (v: string) => void;
@@ -28,15 +33,15 @@
   let {
     value = $bindable(),
     defaultValue = '',
-    placeholder,
-    rows = 3,
-    autosize = false,
     size = 'default',
-    status = 'default',
     disabled = false,
     readonly = false,
+    placeholder,
     showCount = false,
     maxLength,
+    status = 'default',
+    rows = 3,
+    autosize = false,
     name,
     ariaLabel,
     onChange,
@@ -52,85 +57,71 @@
   }
 
   let composing = $state(false);
-
   const len = $derived([...current].length);
-  const isAutosize = $derived(autosize !== false);
-  const minRows = $derived(typeof autosize === 'object' ? autosize.minRows : undefined);
-  const maxRows = $derived(typeof autosize === 'object' ? autosize.maxRows : undefined);
 
   function setValue(next: string) {
-    // Controlled (`value=` / `bind:value`): parent owns `value`; we propagate
-    // only via `onChange` (callers always fire it). Writing the prop here as
-    // well creates the value -> onChange -> value loop.
-    // Uncontrolled: keep our own state in sync.
+    // 受控时不回写 prop，仅经 onChange 上报（避免 value→onChange→value 死循环）。
     if (!isControlled) inner = next;
-  }
-
-  // Hold the textarea node so input handlers can resize imperatively.
-  let nativeEl: HTMLTextAreaElement | undefined;
-
-  /**
-   * Resize the textarea to fit content. Pure imperative DOM work — it reads
-   * layout (scrollHeight) and writes node.style only; it must NOT read reactive
-   * state, otherwise an {@attach} wrapping it would re-subscribe and loop
-   * (effect_update_depth_exceeded). Called on mount and on every input.
-   */
-  function resize(node: HTMLTextAreaElement): void {
-    if (!isAutosize) {
-      node.style.height = '';
-      node.style.overflowY = '';
-      return;
-    }
-    node.style.height = 'auto';
-    const style = getComputedStyle(node);
-    const lineHeight = parseFloat(style.lineHeight) || 20;
-    const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    const borderY = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-    let target = node.scrollHeight;
-    if (minRows !== undefined) {
-      target = Math.max(target, minRows * lineHeight + paddingY + borderY);
-    }
-    if (maxRows !== undefined) {
-      const max = maxRows * lineHeight + paddingY + borderY;
-      target = Math.min(target, max);
-      node.style.overflowY = node.scrollHeight > max ? 'auto' : 'hidden';
-    }
-    node.style.height = `${target}px`;
-  }
-
-  /** Non-reactive attachment: store the node and size it once on mount. */
-  function autosizeAttach(node: HTMLTextAreaElement) {
-    nativeEl = node;
-    resize(node);
-    return () => {
-      if (nativeEl === node) nativeEl = undefined;
-    };
   }
 
   function handleInput(e: Event & { currentTarget: HTMLTextAreaElement }) {
     const next = e.currentTarget.value;
     setValue(next);
-    resize(e.currentTarget);
     onInput?.(next);
     if (!composing) onChange?.(next);
-  }
-
-  function handleChange(e: Event & { currentTarget: HTMLTextAreaElement }) {
-    if (composing) return;
-    onChange?.(e.currentTarget.value);
   }
 
   function handleCompositionStart() {
     composing = true;
   }
-
   function handleCompositionEnd(e: Event & { currentTarget: HTMLTextAreaElement }) {
     composing = false;
     const next = e.currentTarget.value;
     setValue(next);
-    resize(e.currentTarget);
     onChange?.(next);
   }
+
+  const autosizeOn = $derived(autosize !== false);
+  const minRows = $derived(
+    typeof autosize === 'object' ? (autosize.minRows ?? rows) : rows,
+  );
+  const maxRows = $derived(
+    typeof autosize === 'object' ? autosize.maxRows : undefined,
+  );
+
+  // --- autosize 命令式测量 (红线 #3)：current 变化时测 scrollHeight 设高度 ---
+  let taEl = $state<HTMLTextAreaElement | null>(null);
+
+  $effect(() => {
+    if (!autosizeOn || !taEl) return;
+    const el = taEl;
+    // 读 current 建立依赖：内容变化触发重测。
+    void current;
+
+    const cs = getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
+    const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const verticalBorder = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+
+    // 先重置 height 再读 scrollHeight，得到内容自然高度。
+    const prevHeight = el.style.height;
+    el.style.height = 'auto';
+    const scrollHeight = el.scrollHeight + verticalBorder; // scrollHeight 不含 border
+    const result = computeAutosizeHeight({
+      scrollHeight,
+      lineHeight,
+      verticalPadding,
+      verticalBorder,
+      minRows,
+      ...(maxRows !== undefined ? { maxRows } : {}),
+    });
+    el.style.height = `${result.height}px`;
+    el.style.overflowY = result.overflow ? 'auto' : 'hidden';
+
+    return () => {
+      el.style.height = prevHeight;
+    };
+  });
 
   const cls = $derived(
     [
@@ -146,19 +137,19 @@
 
 <div class={cls} aria-invalid={status === 'error' || undefined}>
   <textarea
-    {@attach autosizeAttach}
     class="cd-textarea__native"
-    rows={isAutosize ? undefined : rows}
+    class:cd-textarea__native--autosize={autosizeOn}
+    bind:this={taEl}
     {name}
     {disabled}
     {readonly}
     {placeholder}
+    {rows}
     maxlength={maxLength}
     value={current}
     aria-label={ariaLabel}
     aria-invalid={status === 'error' || undefined}
     oninput={handleInput}
-    onchange={handleChange}
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
   ></textarea>
@@ -175,8 +166,7 @@
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    padding-block: var(--cd-spacing-2);
-    padding-inline: var(--cd-input-padding-x);
+    padding: var(--cd-input-padding-x);
     background: var(--cd-input-color-bg);
     color: var(--cd-input-color-text);
     border: 1px solid var(--cd-input-border);
@@ -206,7 +196,6 @@
     cursor: not-allowed;
   }
   .cd-textarea__native {
-    flex: 1 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
     margin: 0;
@@ -219,8 +208,15 @@
     resize: vertical;
     outline: none;
   }
+  .cd-textarea__native--autosize {
+    resize: none;
+    overflow-y: hidden;
+  }
   .cd-textarea__native::placeholder {
     color: var(--cd-input-color-placeholder);
+  }
+  .cd-textarea__native:disabled {
+    cursor: not-allowed;
   }
   .cd-textarea__count {
     position: absolute;
@@ -228,6 +224,7 @@
     inset-inline-end: var(--cd-spacing-2);
     color: var(--cd-color-text-3);
     font-size: var(--cd-font-size-1);
+    white-space: nowrap;
     pointer-events: none;
   }
   @media (prefers-reduced-motion: reduce) {

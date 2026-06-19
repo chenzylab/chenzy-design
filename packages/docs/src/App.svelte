@@ -12,7 +12,7 @@
     Col,
     Layout,
     Input,
-    Textarea,
+    TextArea,
     Switch,
     Checkbox,
     CheckboxGroup,
@@ -439,7 +439,12 @@ let pageSize2 = $state(10);
     </Space>
     <Text type="tertiary">受控值：{inputVal || '（空）'}</Text>
 
-    <Textarea placeholder="多行文本，autosize" autosize showCount maxLength={100} />
+    <div data-testid="textarea-autosize">
+      <TextArea placeholder="多行文本，autosize（随输入增高）" autosize showCount maxLength={100} />
+    </div>
+    <div data-testid="textarea-maxrows" style="margin-top:12px">
+      <TextArea placeholder="autosize 限高 minRows=2 maxRows=4，超出滚动" autosize={{ minRows: 2, maxRows: 4 }} />
+    </div>
 
     <Space>
       <Switch value={switchOn} onChange={(v) => (switchOn = v)} />
