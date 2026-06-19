@@ -49,6 +49,10 @@ export const zh_CN: Locale = {
     warning: '警告',
     danger: '错误',
   },
+  Drawer: {
+    close: '关闭',
+    title: '详情',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',
