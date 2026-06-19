@@ -1,20 +1,29 @@
 <!--
   Popconfirm — 气泡确认（feedback）。
   锚定触发元素的就地二次确认：title/content + 危险分级 type，确认/取消双按钮，
-  placement 4 向纯 CSS 锚定，role=dialog non-modal。
-  复用 core 原语：useId、useDismiss（外部点击/Esc 关闭）、useFocusTrap（焦点捕获+归还）。
+  12 方位 + autoAdjustOverflow flip 碰撞避让，role=dialog non-modal。
+  定位：portal 到 body + position:fixed（脱离 overflow:hidden 裁剪）。
+  复用 core 原语：useId、useDismiss（外部点击/Esc 关闭，popup 列入 extraTargets）、
+  useFocusTrap（焦点捕获+归还）、computePosition/useFloating。
   浮层静态显示（{#if isOpen} 直接挂载），无入场动画，reduced-motion 友好。
-  TODO(延后): 12 向位置全集、hover 触发、异步 confirm loading、portal/getContainer、
-  Esc 与 outsideClick 来源细分。
+  TODO(延后): hover 触发、异步 confirm loading、getContainer、Esc 与 outsideClick 来源细分。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap } from '@chenzy-design/core';
+  import { untrack } from 'svelte';
+  import {
+    useId,
+    useDismiss,
+    useFocusTrap,
+    parsePlacement,
+    type Placement,
+    type Side,
+  } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
 
   type PopType = 'default' | 'danger' | 'warning';
-  type Placement = 'top' | 'bottom' | 'left' | 'right';
   type OkType = 'primary' | 'danger';
   type DismissReason = 'trigger' | 'confirm' | 'cancel' | 'esc' | 'outsideClick';
 
@@ -87,14 +96,25 @@
 
   const hasContent = $derived(Boolean(contentSnippet) || Boolean(content));
 
+  // flip 后的实际方位（驱动箭头朝向）+ 箭头交叉轴偏移
+  let resolvedPlacement = $state<Placement>(untrack(() => placement));
+  const resolvedSide = $derived<Side>(parsePlacement(resolvedPlacement).side);
+  let arrowOffset = $state(0);
+
   const popupCls = $derived(
     [
       'cd-popconfirm__popup',
-      `cd-popconfirm__popup--${placement}`,
+      `cd-popconfirm__popup--${resolvedSide}`,
       className,
     ]
       .filter(Boolean)
       .join(' '),
+  );
+
+  const arrowStyle = $derived(
+    resolvedSide === 'top' || resolvedSide === 'bottom'
+      ? `inset-inline-start:${arrowOffset}px`
+      : `inset-block-start:${arrowOffset}px`,
   );
 
   function setOpen(next: boolean, reason: DismissReason) {
@@ -137,18 +157,26 @@
   let popupEl = $state<HTMLElement | null>(null);
   let rootEl = $state<HTMLElement | null>(null);
 
+  // 浮层定位由 use:floating action 接管（避免 effect cleanup 与 {#if} 卸载竞态）。
+  function onPlacement(info: { placement: Placement; arrowOffset: number }) {
+    resolvedPlacement = info.placement;
+    arrowOffset = info.arrowOffset;
+  }
+
+  // --- focus-trap + dismiss (红线 #3)：open 且浮层就绪时绑定，cleanup 解绑/归还焦点 ---
   $effect(() => {
     if (!isOpen || !popupEl) return;
     const trap = useFocusTrap(popupEl);
     trap.activate();
     let undismiss = () => {};
-    // outsideClick 判定基于 rootEl（含触发器+浮层）：点触发器在 rootEl 内不触发
-    // dismiss，由触发器 onclick 自行 toggle；点 rootEl 外部才视为取消。
+    // popup portal 到 body 后不在 rootEl 子树内：把 popupEl 列为 extraTargets，
+    // 否则点击浮层内部会被误判为 outsideClick。点触发器在 rootEl 内由 onclick toggle。
     if (closeOnEsc || closeOnOutsideClick) {
       undismiss = useDismiss(rootEl ?? popupEl, {
         onDismiss: dismiss,
         escape: closeOnEsc,
         outsideClick: closeOnOutsideClick,
+        extraTargets: [popupEl],
       });
     }
     return () => {
@@ -178,11 +206,12 @@
       class={popupCls}
       id={popupId}
       bind:this={popupEl}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, onPlacement }}
       role="dialog"
       aria-labelledby={titleId}
       aria-describedby={hasContent ? contentId : undefined}
     >
-      <div class="cd-popconfirm__arrow" aria-hidden="true"></div>
+      <div class="cd-popconfirm__arrow" style={arrowStyle} aria-hidden="true"></div>
       <div class="cd-popconfirm__body">
         {#if icon !== false}
           <span
@@ -282,8 +311,8 @@
     cursor: not-allowed;
   }
 
+  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-popconfirm__popup {
-    position: absolute;
     z-index: var(--cd-popconfirm-z);
     inline-size: max-content;
     max-inline-size: var(--cd-popconfirm-max-width);
@@ -293,33 +322,7 @@
     box-shadow: var(--cd-popconfirm-shadow);
   }
 
-  /* placement 锚定：inset + margin（间距用 arrow-size） */
-  .cd-popconfirm__popup--top {
-    inset-block-end: 100%;
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-    margin-block-end: var(--cd-popconfirm-arrow-size);
-  }
-  .cd-popconfirm__popup--bottom {
-    inset-block-start: 100%;
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-    margin-block-start: var(--cd-popconfirm-arrow-size);
-  }
-  .cd-popconfirm__popup--left {
-    inset-inline-end: 100%;
-    inset-block-start: 50%;
-    transform: translateY(-50%);
-    margin-inline-end: var(--cd-popconfirm-arrow-size);
-  }
-  .cd-popconfirm__popup--right {
-    inset-inline-start: 100%;
-    inset-block-start: 50%;
-    transform: translateY(-50%);
-    margin-inline-start: var(--cd-popconfirm-arrow-size);
-  }
-
-  /* arrow：旋转 45° 的纯色方块，定位到浮层贴触发器一侧的中点 */
+  /* arrow：旋转 45° 的纯色方块，交叉轴偏移由内联 style 控制 */
   .cd-popconfirm__arrow {
     position: absolute;
     inline-size: var(--cd-popconfirm-arrow-size);
@@ -327,25 +330,27 @@
     background: var(--cd-popconfirm-bg);
     transform: rotate(45deg);
   }
+  /* 交叉轴居中补偿：仅在交叉轴方向回退半个箭头尺寸 */
+  .cd-popconfirm__popup--top .cd-popconfirm__arrow,
+  .cd-popconfirm__popup--bottom .cd-popconfirm__arrow {
+    margin-inline-start: calc(var(--cd-popconfirm-arrow-size) / -2);
+  }
+  .cd-popconfirm__popup--left .cd-popconfirm__arrow,
+  .cd-popconfirm__popup--right .cd-popconfirm__arrow {
+    margin-block-start: calc(var(--cd-popconfirm-arrow-size) / -2);
+  }
+  /* 箭头吸附到浮层贴近触发器的那条边（按解析后的 side） */
   .cd-popconfirm__popup--top .cd-popconfirm__arrow {
     inset-block-end: calc(var(--cd-popconfirm-arrow-size) / -2);
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-popconfirm-arrow-size) / -2);
   }
   .cd-popconfirm__popup--bottom .cd-popconfirm__arrow {
     inset-block-start: calc(var(--cd-popconfirm-arrow-size) / -2);
-    inset-inline-start: 50%;
-    margin-inline-start: calc(var(--cd-popconfirm-arrow-size) / -2);
   }
   .cd-popconfirm__popup--left .cd-popconfirm__arrow {
     inset-inline-end: calc(var(--cd-popconfirm-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-popconfirm-arrow-size) / -2);
   }
   .cd-popconfirm__popup--right .cd-popconfirm__arrow {
     inset-inline-start: calc(var(--cd-popconfirm-arrow-size) / -2);
-    inset-block-start: 50%;
-    margin-block-start: calc(var(--cd-popconfirm-arrow-size) / -2);
   }
 
   .cd-popconfirm__body {

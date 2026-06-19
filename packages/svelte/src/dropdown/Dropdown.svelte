@@ -1,19 +1,20 @@
 <!--
   Dropdown — see specs/components/navigation/Dropdown.spec.md
-  基础子集：click/hover 触发、bottomStart/bottomEnd/topStart 位置、菜单项、
-  useDismiss、closeOnSelect、键盘导航。
-  TODO(延后): contextMenu、12 位置矩阵全集、destroyOnClose、嵌套子菜单、
-  portal/getPopupContainer、autoAdjustOverflow 碰撞检测。
+  基础子集：click/hover 触发、12 方位、菜单项、useDismiss、closeOnSelect、键盘导航。
+  定位：portal 到 body + position:fixed，core computePosition + autoAdjustOverflow flip。
+  TODO(延后): contextMenu、destroyOnClose、嵌套子菜单、getPopupContainer。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import { useId, useDismiss, type Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
   import type { DropdownItem } from './types.js';
 
   type ItemKey = string | number;
   type Trigger = 'hover' | 'click';
-  type Position = 'bottomStart' | 'bottomEnd' | 'topStart';
+  // 12 方位全集（兼容旧的 bottomStart/bottomEnd/topStart）
+  type Position = Placement;
   type Size = 'small' | 'default' | 'large';
 
   interface Props {
@@ -190,26 +191,39 @@
     }
   }
 
-  // --- useDismiss (红线 #3)：放进 $effect，open 时绑、cleanup 解绑 ---
+  // --- DOM 引用：触发根 + portal 浮层菜单（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
+  let menuEl = $state<HTMLDivElement | null>(null);
 
+  // --- useDismiss (红线 #3)：menu portal 出 root 子树后，需把 menuEl 列为内部 ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: closeOnEsc,
       outsideClick: true,
+      extraTargets: [menuEl],
     });
     return cleanup;
   });
 
   $effect(() => clearTimers);
 
+  // portal 后 menu 不在 root 子树内，hover 移到 menu 上需维持 open。
+  function onMenuPointerEnter() {
+    if (trigger !== 'hover') return;
+    clearTimers();
+  }
+  function onMenuPointerLeave() {
+    if (trigger !== 'hover') return;
+    clearTimers();
+    leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
+  }
+
   const cls = $derived(
     [
       'cd-dropdown',
       `cd-dropdown--${size}`,
-      `cd-dropdown--${position}`,
       disabled && 'cd-dropdown--disabled',
       isOpen && 'cd-dropdown--open',
     ]
@@ -248,10 +262,14 @@
     <div
       class="cd-dropdown__menu"
       id={menuId}
+      bind:this={menuEl}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4 }}
       role="menu"
       tabindex="-1"
       aria-activedescendant={activeItemId}
       onkeydown={onMenuKeydown}
+      onpointerenter={onMenuPointerEnter}
+      onpointerleave={onMenuPointerLeave}
     >
       {#if children}
         {@render children()}
@@ -299,27 +317,14 @@
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
+  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-dropdown__menu {
-    position: absolute;
     z-index: var(--cd-dropdown-z);
     min-inline-size: var(--cd-dropdown-min-width);
     padding-block: var(--cd-spacing-1);
     background: var(--cd-dropdown-bg);
     border-radius: var(--cd-dropdown-radius);
     box-shadow: var(--cd-dropdown-shadow);
-  }
-  /* 位置矩阵：bottomStart / bottomEnd / topStart */
-  .cd-dropdown--bottomStart .cd-dropdown__menu {
-    inset-block-start: calc(100% + var(--cd-spacing-1));
-    inset-inline-start: 0;
-  }
-  .cd-dropdown--bottomEnd .cd-dropdown__menu {
-    inset-block-start: calc(100% + var(--cd-spacing-1));
-    inset-inline-end: 0;
-  }
-  .cd-dropdown--topStart .cd-dropdown__menu {
-    inset-block-end: calc(100% + var(--cd-spacing-1));
-    inset-inline-start: 0;
   }
   .cd-dropdown__item {
     display: flex;

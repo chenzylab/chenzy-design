@@ -9,7 +9,7 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
-  import { useFloating } from '../_floating/use-floating.js';
+  import { floating } from '../_floating/use-floating.js';
   import { resolveSide } from './placement.js';
 
   type TriggerKind = 'hover' | 'focus' | 'click';
@@ -121,7 +121,7 @@
     setOpen(!isOpen);
   }
 
-  // --- DOM 引用：触发包裹 + 浮层元素 ---
+  // --- DOM 引用：触发包裹（浮层定位由 use:floating action 接管）---
   let rootEl = $state<HTMLSpanElement | null>(null);
   let popEl = $state<HTMLDivElement | null>(null);
 
@@ -130,28 +130,21 @@
   const resolvedSide = $derived(resolveSide(resolvedPlacement));
   let arrowOffset = $state(0);
 
-  // --- 浮层定位 + portal (红线 #3)：open 且两端就绪时挂载、定位、监听；cleanup 卸载 ---
-  $effect(() => {
-    if (!isOpen || !rootEl || !popEl) return;
-    const floating = useFloating(rootEl, popEl, {
-      placement,
-      autoAdjust: autoAdjustOverflow,
-      offset: 8,
-      onPlacement: (info) => {
-        resolvedPlacement = info.placement;
-        arrowOffset = info.arrowOffset;
-      },
-    });
-    return floating.destroy;
-  });
+  // use:floating 的稳定参数：仅含原始输入（placement/trigger 不随 resolved 变化），
+  // onPlacement 为稳定函数引用，避免 action update 触发重建循环。
+  function onPlacement(info: { placement: Placement; arrowOffset: number }) {
+    resolvedPlacement = info.placement;
+    arrowOffset = info.arrowOffset;
+  }
 
-  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc ---
+  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc；popup portal 列入 extraTargets ---
   $effect(() => {
     if (!isOpen || !rootEl || !triggers.includes('click')) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [popEl],
     });
     return cleanup;
   });
@@ -191,6 +184,7 @@
       id={tipId}
       role="tooltip"
       bind:this={popEl}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, onPlacement }}
       class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
       style="max-inline-size:{maxWidthCss}"
