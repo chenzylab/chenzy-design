@@ -42,6 +42,13 @@ export const en_US: Locale = {
     loaded: 'Content loaded',
     imageAlt: 'Image placeholder',
   },
+  Banner: {
+    closeButtonAriaLabel: 'Close',
+    info: 'Info',
+    success: 'Success',
+    warning: 'Warning',
+    danger: 'Error',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

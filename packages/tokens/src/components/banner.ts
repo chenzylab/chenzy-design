@@ -1,0 +1,25 @@
+/** Component tokens for Banner (M5 Feedback). 回退 Alias，禁写死。 */
+export const bannerTokens = {
+  'banner-radius': 'var(--cd-radius-2)',
+  'banner-padding-y': 'var(--cd-spacing-3)',
+  'banner-padding-x': 'var(--cd-spacing-4)',
+  'banner-gap': 'var(--cd-spacing-3)',
+  'banner-icon-size': '20px',
+  'banner-title-color': 'var(--cd-color-text-0)',
+  'banner-desc-color': 'var(--cd-color-text-1)',
+  'banner-title-size': 'var(--cd-font-size-2)',
+  'banner-desc-size': 'var(--cd-font-size-1)',
+  'banner-accent-width': '4px',
+  // four-type tints via color-mix (success/danger lack a light alias; primary/warning use theirs)
+  'banner-info-bg': 'var(--cd-color-primary-light-default)',
+  'banner-info-accent': 'var(--cd-color-primary)',
+  'banner-success-bg': 'color-mix(in srgb, var(--cd-color-success) 12%, transparent)',
+  'banner-success-accent': 'var(--cd-color-success)',
+  'banner-warning-bg': 'var(--cd-color-warning-light-default)',
+  'banner-warning-accent': 'var(--cd-color-warning)',
+  'banner-danger-bg': 'color-mix(in srgb, var(--cd-color-danger) 12%, transparent)',
+  'banner-danger-accent': 'var(--cd-color-danger)',
+  'banner-close-color': 'var(--cd-color-text-2)',
+  'banner-close-hover-bg': 'var(--cd-color-fill-1)',
+  'banner-motion-duration': 'var(--cd-motion-duration-fast)',
+} as const;
