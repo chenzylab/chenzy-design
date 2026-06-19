@@ -73,6 +73,7 @@
     Popconfirm,
     Toast,
     notification,
+    BackTop,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -1163,6 +1164,8 @@
     <Button onclick={() => notification.destroyAll()}>清空全部</Button>
   </div>
 </main>
+
+<BackTop visibilityHeight={300} />
 
 {#snippet slideA()}
   <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-primary);color:#fff;font-size:20px">幻灯片 1</div>

@@ -140,3 +140,6 @@ export {
   type NotificationItem,
   type NotificationPlacement,
 } from './notification/index.js';
+
+// --- M6 Other ---
+export { BackTop, backTopMeta } from './back-top/index.js';

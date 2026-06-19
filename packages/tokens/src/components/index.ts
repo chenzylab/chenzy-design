@@ -39,6 +39,7 @@ import { drawerTokens } from './drawer.js';
 import { popconfirmTokens } from './popconfirm.js';
 import { toastTokens } from './toast.js';
 import { notificationTokens } from './notification.js';
+import { backTopTokens } from './back-top.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -81,4 +82,5 @@ export const componentTokens = {
   ...popconfirmTokens,
   ...toastTokens,
   ...notificationTokens,
+  ...backTopTokens,
 } as const;

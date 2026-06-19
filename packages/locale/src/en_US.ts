@@ -70,6 +70,10 @@ export const en_US: Locale = {
     closeText: 'Close',
     notification: 'Notification',
   },
+  BackTop: {
+    ariaLabel: 'Back to top',
+    arrived: 'Back to top',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

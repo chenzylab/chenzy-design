@@ -92,6 +92,10 @@ export interface Locale {
     closeText: string;
     notification: string;
   };
+  BackTop: {
+    ariaLabel: string;
+    arrived: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

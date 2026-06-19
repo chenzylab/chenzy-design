@@ -70,6 +70,10 @@ export const zh_CN: Locale = {
     closeText: '关闭',
     notification: '通知',
   },
+  BackTop: {
+    ariaLabel: '回到顶部',
+    arrived: '已回到顶部',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',
