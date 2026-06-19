@@ -25,6 +25,10 @@ export interface Locale {
     nextPage: string;
     /** uses {page} */
     pageLabel: string;
+    /** uses {size} */
+    pageSize: string;
+    jumpTo: string;
+    jumpToSuffix: string;
   };
   Table: {
     emptyText: string;

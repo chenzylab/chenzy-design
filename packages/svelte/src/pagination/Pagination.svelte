@@ -1,11 +1,14 @@
 <!--
   Pagination — see specs/components/navigation/Pagination.spec.md
   Base subset: default + simple modes, prev/next, page buttons with ellipsis,
-  showTotal text. Numbers localized via Intl.NumberFormat.
-  TODO: showSizeChanger, showQuickJumper, status validation, locale package.
+  showTotal text, showSizeChanger (reuses Select), showQuickJumper (reuses Input).
+  Numbers localized via Intl.NumberFormat; text via locale package.
+  TODO: status validation.
 -->
 <script lang="ts">
   import { useLocale } from '../locale-provider/index.js';
+  import { Select } from '../select/index.js';
+  import { Input } from '../input/index.js';
 
   type PaginationSize = 'small' | 'default' | 'large';
   type PaginationMode = 'default' | 'simple';
@@ -14,14 +17,23 @@
     total?: number;
     currentPage?: number;
     defaultCurrentPage?: number;
-    /** fixed this round; only used to compute pageCount */
+    /** controlled page size; omit for uncontrolled (defaultPageSize) */
     pageSize?: number;
+    defaultPageSize?: number;
+    /** options for the size changer */
+    pageSizeOptions?: number[];
     size?: PaginationSize;
     mode?: PaginationMode;
     showTotal?: boolean;
+    /** show the page-size selector (reuses Select) */
+    showSizeChanger?: boolean;
+    /** show the quick-jump input (reuses Input) */
+    showQuickJumper?: boolean;
     disabled?: boolean;
     locale?: string;
-    onChange?: (page: number) => void;
+    /** fires on page OR page-size change; receives the resolved (page, pageSize) */
+    onChange?: (page: number, pageSize: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
     ariaLabel?: string;
   }
 
@@ -29,19 +41,33 @@
     total = 0,
     currentPage,
     defaultCurrentPage = 1,
-    pageSize = 10,
+    pageSize,
+    defaultPageSize = 10,
+    pageSizeOptions = [10, 20, 50, 100],
     size = 'default',
     mode = 'default',
     showTotal = false,
+    showSizeChanger = false,
+    showQuickJumper = false,
     disabled = false,
     locale = 'zh-CN',
     onChange,
+    onPageSizeChange,
     ariaLabel,
   }: Props = $props();
 
   const loc = useLocale();
 
-  const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+  // --- pageSize 受控/非受控 (红线 #1)：不回写 prop ---
+  const isSizeControlled = $derived(pageSize !== undefined);
+  let innerSize = $state(getInitialSize());
+  const currentSize = $derived(isSizeControlled ? (pageSize as number) : innerSize);
+
+  function getInitialSize(): number {
+    return defaultPageSize;
+  }
+
+  const pageCount = $derived(Math.max(1, Math.ceil(total / currentSize)));
 
   // Controlled / uncontrolled (red line #1): never write back the prop.
   const isControlled = $derived(currentPage !== undefined);
@@ -50,6 +76,34 @@
 
   function getInitialPage(): number {
     return defaultCurrentPage;
+  }
+
+  // size-changer options for Select
+  const sizeOptions = $derived(
+    pageSizeOptions.map((n) => ({
+      label: loc().t('Pagination.pageSize', { size: n }),
+      value: n,
+    })),
+  );
+
+  // 改变每页条数：保持当前页，超出新总页数则钳到末页（onChange 上报 page+size）。
+  function changePageSize(nextSize: number) {
+    if (disabled || nextSize === currentSize) return;
+    if (!isSizeControlled) innerSize = nextSize;
+    const nextCount = Math.max(1, Math.ceil(total / nextSize));
+    const nextPage = Math.min(current, nextCount);
+    if (!isControlled && nextPage !== inner) inner = nextPage;
+    onPageSizeChange?.(nextSize);
+    onChange?.(nextPage, nextSize);
+  }
+
+  // 快速跳页：解析输入，钳入 [1, pageCount]，跳转。
+  let jumpValue = $state('');
+  function jump() {
+    const n = Number.parseInt(jumpValue, 10);
+    jumpValue = '';
+    if (Number.isNaN(n)) return;
+    goto(Math.min(Math.max(n, 1), pageCount));
   }
 
   const nf = $derived(new Intl.NumberFormat(locale));
@@ -83,7 +137,7 @@
     if (disabled) return;
     if (page < 1 || page > pageCount || page === current) return;
     if (!isControlled) inner = page;
-    onChange?.(page);
+    onChange?.(page, currentSize);
   }
 
   const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));
@@ -137,6 +191,36 @@
     aria-label={loc().t('Pagination.nextPage')}
     onclick={() => goto(current + 1)}>›</button
   >
+
+  {#if showSizeChanger}
+    <span class="cd-pagination__size-changer">
+      <Select
+        {size}
+        {disabled}
+        options={sizeOptions}
+        value={currentSize}
+        onChange={(v) => changePageSize(Number(v))}
+      />
+    </span>
+  {/if}
+
+  {#if showQuickJumper}
+    <span class="cd-pagination__jumper">
+      <span class="cd-pagination__jumper-label">{loc().t('Pagination.jumpTo')}</span>
+      <span class="cd-pagination__jumper-input">
+        <Input
+          {size}
+          {disabled}
+          value={jumpValue}
+          onInput={(v) => (jumpValue = v)}
+          onEnter={jump}
+        />
+      </span>
+      {#if loc().t('Pagination.jumpToSuffix')}
+        <span class="cd-pagination__jumper-suffix">{loc().t('Pagination.jumpToSuffix')}</span>
+      {/if}
+    </span>
+  {/if}
 </nav>
 
 <style>
@@ -207,6 +291,18 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-1);
+  }
+  .cd-pagination__size-changer {
+    display: inline-flex;
+    inline-size: var(--cd-pagination-size-changer-width, 7.5rem);
+  }
+  .cd-pagination__jumper {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
+  }
+  .cd-pagination__jumper-input {
+    inline-size: var(--cd-pagination-jumper-width, 3.5rem);
   }
   .cd-pagination--small .cd-pagination__page,
   .cd-pagination--small .cd-pagination__prev,
