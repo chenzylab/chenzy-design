@@ -1,14 +1,17 @@
 <!--
   List — see specs/components/show/List.spec.md
   基础子集：dataSource + renderItem、header/footer（string|Snippet）、bordered/split、
-    loading（骨架/spinner）、empty。
-  TODO(延后): 虚拟化、分页、grid 布局、selectable、loadMore、List.Item/Meta 子项。
+    loading（骨架/spinner）、empty、loadMore（内置按钮/自定义）、grid 网格布局。
+  TODO(延后): 虚拟化、分页、selectable、List.Item/Meta 子项。
 -->
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
   import Empty from '../empty/Empty.svelte';
+  import { Button } from '../button/index.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   type ListSize = 'small' | 'default' | 'large';
+  type GridConfig = number | { column?: number; gutter?: number };
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -25,6 +28,11 @@
     loadingSkeleton = false,
     skeletonCount = 3,
     emptyContent,
+    grid,
+    loadMore,
+    onLoadMore,
+    loadingMore = false,
+    hasMore = false,
     class: className = '',
   }: {
     dataSource?: T[];
@@ -39,8 +47,20 @@
     loadingSkeleton?: boolean;
     skeletonCount?: number;
     emptyContent?: string | Snippet;
+    /** 网格布局：列数或 { column, gutter } */
+    grid?: GridConfig;
+    /** 自定义底部加载区（优先于内置按钮） */
+    loadMore?: Snippet;
+    /** 内置「加载更多」按钮回调 */
+    onLoadMore?: () => void;
+    /** 内置按钮 loading 态 */
+    loadingMore?: boolean;
+    /** 是否还有更多（控制内置按钮显隐） */
+    hasMore?: boolean;
     class?: string;
   } = $props();
+
+  const loc = useLocale();
 
   function isSnippet(v: unknown): v is Snippet {
     return typeof v === 'function';
@@ -56,6 +76,20 @@
 
   const isEmpty = $derived(!loading && dataSource.length === 0);
   const skeletonRows = $derived(Array.from({ length: Math.max(0, skeletonCount) }, (_, i) => i));
+
+  // grid 布局：解析列数/间距，生成 inline CSS（CSS grid）。
+  const gridOn = $derived(grid !== undefined);
+  const gridColumn = $derived(
+    typeof grid === 'number' ? grid : (grid?.column ?? 4),
+  );
+  const gridGutter = $derived(
+    typeof grid === 'object' ? (grid.gutter ?? 16) : 16,
+  );
+  const gridStyle = $derived(
+    gridOn
+      ? `display:grid;grid-template-columns:repeat(${gridColumn},minmax(0,1fr));gap:${gridGutter}px`
+      : undefined,
+  );
 
   const cls = $derived(
     [
@@ -101,13 +135,27 @@
         {/if}
       </div>
     {:else}
-      <ul class="cd-list__items">
+      <ul class="cd-list__items" class:cd-list__items--grid={gridOn} style={gridStyle}>
         {#each dataSource as item, index (keyOf(item, index))}
-          <li class="cd-list__item">
+          <li class="cd-list__item" class:cd-list__item--grid={gridOn}>
             {#if renderItem}{@render renderItem(item, index)}{/if}
           </li>
         {/each}
       </ul>
+
+      {#if loadMore}
+        <div class="cd-list__load-more">{@render loadMore()}</div>
+      {:else if onLoadMore !== undefined && (hasMore || loadingMore)}
+        <div class="cd-list__load-more">
+          <Button
+            loading={loadingMore}
+            disabled={!hasMore && !loadingMore}
+            onclick={() => onLoadMore?.()}
+          >
+            {loc().t('List.loadMore')}
+          </Button>
+        </div>
+      {/if}
     {/if}
   </div>
 
@@ -156,6 +204,22 @@
   }
   .cd-list--split .cd-list__item + .cd-list__item {
     border-block-start: 1px solid var(--cd-list-split-color);
+  }
+  /* grid 模式：取消 split 分隔线与行内边距，由 grid gap 控制间距 */
+  .cd-list__items--grid {
+    padding-block: var(--cd-list-pad-y);
+  }
+  .cd-list--split .cd-list__item--grid + .cd-list__item--grid {
+    border-block-start: none;
+  }
+  .cd-list__item--grid {
+    padding: 0;
+  }
+
+  .cd-list__load-more {
+    display: flex;
+    justify-content: center;
+    padding-block: var(--cd-list-item-padding);
   }
 
   .cd-list__empty {

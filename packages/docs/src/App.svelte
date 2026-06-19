@@ -162,6 +162,26 @@
   ];
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
+  let listMoreData = $state([
+    { key: 1, name: '条目 1' },
+    { key: 2, name: '条目 2' },
+    { key: 3, name: '条目 3' },
+  ]);
+  let listLoadingMore = $state(false);
+  function loadMoreItems() {
+    listLoadingMore = true;
+    setTimeout(() => {
+      const start = listMoreData.length;
+      listMoreData = [
+        ...listMoreData,
+        ...Array.from({ length: 3 }, (_, i) => ({
+          key: start + i + 1,
+          name: `条目 ${start + i + 1}`,
+        })),
+      ];
+      listLoadingMore = false;
+    }, 800);
+  }
 
   // Calendar：锚定到固定月份（2026-06）便于演示事件
   const calAnchor = new Date(2026, 5, 1);
@@ -894,6 +914,35 @@ let pageSize2 = $state(10);
       >
         {#snippet renderItem(item)}
           <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+    </div>
+
+    <Text type="tertiary">loadMore（加载更多按钮）：</Text>
+    <div style="width: 320px" data-testid="list-loadmore">
+      <List
+        bordered
+        dataSource={listMoreData}
+        hasMore={listMoreData.length < 9}
+        loadingMore={listLoadingMore}
+        onLoadMore={loadMoreItems}
+      >
+        {#snippet renderItem(item)}
+          <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+    </div>
+
+    <Text type="tertiary">grid 网格（3 列）：</Text>
+    <div style="width: 360px" data-testid="list-grid">
+      <List
+        grid={{ column: 3, gutter: 12 }}
+        dataSource={[1, 2, 3, 4, 5, 6]}
+      >
+        {#snippet renderItem(item)}
+          <div style="padding:16px;background:var(--cd-color-fill-1);border-radius:8px;text-align:center">
+            {item}
+          </div>
         {/snippet}
       </List>
     </div>

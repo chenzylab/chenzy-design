@@ -95,6 +95,9 @@ export const zh_CN: Locale = {
     empty: '暂无可选项',
     announceSelected: '已选中 {label}',
   },
+  List: {
+    loadMore: '加载更多',
+  },
   Calendar: {
     today: '今天',
     prev: '上一月',

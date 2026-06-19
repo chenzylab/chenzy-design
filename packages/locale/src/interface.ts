@@ -118,6 +118,9 @@ export interface Locale {
     /** uses {label} */
     announceSelected: string;
   };
+  List: {
+    loadMore: string;
+  };
   Calendar: {
     today: string;
     prev: string;
