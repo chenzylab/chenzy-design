@@ -64,6 +64,13 @@ export interface Locale {
     loaded: string;
     imageAlt: string;
   };
+  Banner: {
+    closeButtonAriaLabel: string;
+    info: string;
+    success: string;
+    warning: string;
+    danger: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

@@ -42,6 +42,13 @@ export const zh_CN: Locale = {
     loaded: '内容已加载',
     imageAlt: '图片占位',
   },
+  Banner: {
+    closeButtonAriaLabel: '关闭',
+    info: '提示',
+    success: '成功',
+    warning: '警告',
+    danger: '错误',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

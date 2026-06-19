@@ -33,6 +33,7 @@ import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
 import { progressTokens } from './progress.js';
 import { skeletonTokens } from './skeleton.js';
+import { bannerTokens } from './banner.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -69,4 +70,5 @@ export const componentTokens = {
   ...spinTokens,
   ...progressTokens,
   ...skeletonTokens,
+  ...bannerTokens,
 } as const;
