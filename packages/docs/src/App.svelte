@@ -747,6 +747,15 @@
         <Button type="primary">点击弹出</Button>
       </Popover>
     </Space>
+
+    <div data-testid="tooltip-collision" style="display:flex; justify-content:space-between; margin-top:8px">
+      <Tooltip content="贴顶触发 flip：请求 top，空间不足应翻到 bottom" placement="top" defaultOpen>
+        <Button type="secondary">贴顶</Button>
+      </Tooltip>
+      <Tooltip content="贴右触发 flip：请求 right，空间不足应翻到 left" placement="right" defaultOpen>
+        <Button type="secondary">贴右</Button>
+      </Tooltip>
+    </div>
   </Space>
 
   <Divider />

@@ -173,5 +173,12 @@ export {
   type LottiePlayerAdapter,
   type LottiePlayerFactory,
 } from './lottie-icon/index.js';
+// 浮层定位原语（Tooltip/Popover 等共用，未来 Dropdown/Popconfirm 复用）
+export {
+  useFloating,
+  type UseFloatingOptions,
+  type FloatingHandle,
+} from './_floating/use-floating.js';
+export { computePosition, type Placement } from '@chenzy-design/core';
 // 内置语言包重导出，供 LocaleProvider 直接使用
 export { zh_CN, en_US, type Locale } from '@chenzy-design/locale';
