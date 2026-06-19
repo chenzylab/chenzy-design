@@ -64,6 +64,7 @@ import { meta as notificationMeta } from './notification/meta.js';
 import { meta as backTopMeta } from './back-top/meta.js';
 import { meta as localeProviderMeta } from './locale-provider/meta.js';
 import { meta as configProviderMeta } from './config-provider/meta.js';
+import { meta as resizeObserverMeta } from './resize-observer/meta.js';
 
 const metas = {
   buttonMeta,
@@ -131,6 +132,7 @@ const metas = {
   backTopMeta,
   localeProviderMeta,
   configProviderMeta,
+  resizeObserverMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

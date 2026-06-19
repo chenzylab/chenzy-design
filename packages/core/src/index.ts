@@ -138,3 +138,12 @@ export {
   type ConfigDir,
   type ConfigSize,
 } from './config-provider.js';
+export {
+  createResizeObserver,
+  normalizeEntry,
+  isResizeObserverSupported,
+  type ResizeBox,
+  type CDResizeEntry,
+  type ResizeObserverApi,
+  type ResizeObserverOptions,
+} from './resize-observer.js';
