@@ -143,3 +143,12 @@ export {
 
 // --- M6 Other ---
 export { BackTop, backTopMeta } from './back-top/index.js';
+export {
+  LocaleProvider,
+  LOCALE_CONTEXT_KEY,
+  getLocaleContext,
+  localeProviderMeta,
+  type LocaleApi,
+} from './locale-provider/index.js';
+// 内置语言包重导出，供 LocaleProvider 直接使用
+export { zh_CN, en_US, type Locale } from '@chenzy-design/locale';

@@ -62,6 +62,7 @@ import { meta as drawerMeta } from './drawer/meta.js';
 import { meta as toastMeta } from './toast/meta.js';
 import { meta as notificationMeta } from './notification/meta.js';
 import { meta as backTopMeta } from './back-top/meta.js';
+import { meta as localeProviderMeta } from './locale-provider/meta.js';
 
 const metas = {
   buttonMeta,
@@ -127,6 +128,7 @@ const metas = {
   toastMeta,
   notificationMeta,
   backTopMeta,
+  localeProviderMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

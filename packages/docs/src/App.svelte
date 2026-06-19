@@ -74,6 +74,9 @@
     Toast,
     notification,
     BackTop,
+    LocaleProvider,
+    zh_CN,
+    en_US,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -171,6 +174,8 @@
   let drawerBottom = $state(false);
 
   let popResult = $state('（无）');
+
+  let localeIsZh = $state(true);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -1162,6 +1167,23 @@
     <Button type="warning" onclick={() => notification.warning({ title: '存储空间不足', content: '剩余空间不足 10%。', placement: 'bottomRight' })}>warning（右下）</Button>
     <Button type="danger" onclick={() => notification.error({ title: '保存失败', content: '网络中断，未保存的更改已暂存本地。', duration: 0 })}>error（常驻）</Button>
     <Button onclick={() => notification.destroyAll()}>清空全部</Button>
+  </div>
+
+  <Divider />
+
+  <Title heading={5}>LocaleProvider（语言上下文 · renderless）</Title>
+  <Button onclick={() => (localeIsZh = !localeIsZh)}>切换语言：{localeIsZh ? '中文' : 'English'}</Button>
+  <div style="margin-top:8px">
+    <LocaleProvider locale={localeIsZh ? zh_CN : en_US}>
+      {#snippet children({ locale, t, formatNumber, direction })}
+        <div style="line-height:2">
+          <div>生效 locale：<strong>{locale}</strong>（方向 {direction}）</div>
+          <div>Modal.okText：<strong>{t('Modal.okText')}</strong> / Modal.cancelText：<strong>{t('Modal.cancelText')}</strong></div>
+          <div>Pagination.total：<strong>{t('Pagination.total', { total: 1234 })}</strong></div>
+          <div>格式化数字 1234567.89：<strong>{formatNumber(1234567.89)}</strong></div>
+        </div>
+      {/snippet}
+    </LocaleProvider>
   </div>
 </main>
 
