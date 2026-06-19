@@ -855,6 +855,19 @@ let pageSize2 = $state(10);
       </Collapse>
     </div>
 
+    <Text type="tertiary">lazyRender（首次展开才渲染内容）：</Text>
+    <div style="width: 420px" data-testid="collapse-lazy">
+      <Collapse
+        lazyRender
+        keepDOM={false}
+        panels={[{ key: 'la', header: '懒面板 A' }, { key: 'lb', header: '懒面板 B' }]}
+      >
+        {#snippet children({ key })}
+          {#if key === 'la'}<span data-testid="lazy-la">懒内容 A</span>{:else}<span data-testid="lazy-lb">懒内容 B</span>{/if}
+        {/snippet}
+      </Collapse>
+    </div>
+
     <Timeline
       dataSource={[
         { content: '创建订单', time: '09:00' },

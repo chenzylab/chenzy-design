@@ -22,6 +22,8 @@ export const meta = {
     { name: 'bordered', type: 'boolean', default: 'true' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'motion', type: 'boolean', default: 'true', desc: '展开动画开关' },
+    { name: 'lazyRender', type: 'boolean', default: 'false', desc: '首次展开后才渲染内容' },
+    { name: 'keepDOM', type: 'boolean', default: 'true', desc: '展开过的内容保留 DOM' },
     { name: 'onChange', type: '(keys: string[]) => void', default: 'undefined' },
     {
       name: 'children',

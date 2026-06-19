@@ -1,8 +1,8 @@
 <!--
   Collapse — see specs/components/show/Collapse.spec.md
   基础子集: 数据驱动 panels + 受控 activeKey、accordion、展开动画、
-    箭头位置、bordered。
-  TODO(延后): 声明式 Panel 子组件、keepDOM/lazyRender、disabled 单面板细节。
+    箭头位置、bordered、lazyRender/keepDOM 内容挂载策略。
+  TODO(延后): 声明式 Panel 子组件、disabled 单面板细节。
 
   红线遵守:
   #1 受控 activeKey 不回写 prop：isControlled = $derived(prop !== undefined)，
@@ -29,6 +29,10 @@
     bordered?: boolean;
     disabled?: boolean;
     motion?: boolean;
+    /** 首次展开后才渲染面板内容 */
+    lazyRender?: boolean;
+    /** 展开过的面板内容保留 DOM（收起后不卸载），与 lazyRender 配合 */
+    keepDOM?: boolean;
     onChange?: (keys: string[]) => void;
     children?: Snippet<[{ key: string }]>;
   }
@@ -43,6 +47,8 @@
     bordered = true,
     disabled = false,
     motion = true,
+    lazyRender = false,
+    keepDOM = true,
     onChange,
     children,
   }: Props = $props();
@@ -68,8 +74,27 @@
     isControlled ? normalize(activeKey) : [...innerKeys],
   );
 
+  // 记录曾展开过的面板（lazyRender + keepDOM 用）。初值为初始展开集。
+  const everExpanded = $state<SvelteSet<string>>(getInitialEverExpanded());
+  function getInitialEverExpanded(): SvelteSet<string> {
+    return new SvelteSet(normalize(defaultActiveKey ?? activeKey));
+  }
+  // 当前激活的也并入「曾展开」（受控场景：active 推进 everExpanded，effect 内写不在 render 期）。
+  $effect(() => {
+    for (const k of currentKeys) everExpanded.add(k);
+  });
+
   function isActive(key: string): boolean {
     return currentKeys.includes(key);
+  }
+
+  // 渲染策略：
+  // - 非 lazyRender：始终渲染（内容常驻，配合 grid 动画）。
+  // - lazyRender + keepDOM：首次展开才渲染，之后保留 DOM。
+  // - lazyRender 非 keepDOM：仅当前展开渲染（收起卸载）。
+  function shouldRender(key: string): boolean {
+    if (!lazyRender) return true;
+    return keepDOM ? everExpanded.has(key) : isActive(key);
   }
 
   function toggle(panel: CollapsePanel) {
@@ -139,7 +164,9 @@
       >
         <div class="cd-collapse__region-inner">
           <div class="cd-collapse__content">
-            {@render children?.({ key: panel.key })}
+            {#if shouldRender(panel.key)}
+              {@render children?.({ key: panel.key })}
+            {/if}
           </div>
         </div>
       </div>
