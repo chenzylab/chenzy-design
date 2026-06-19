@@ -1,8 +1,8 @@
 <!--
   Row — 24-column flex grid container. Pairs with Col.
   Token-driven gutter via negative-margin technique. No hardcoded colors.
-  NOTE: responsive object gutter (e.g. { md: 16 }) is intentionally not
-  implemented this iteration; passing an object degrades to 0 gutter. TODO.
+  响应式 gutter：支持按断点对象 { xs, sm, md, lg, xl, xxl }，每档值可为
+  number 或 [x, y]，按当前视口断点降级解析（mobile-first）。
 -->
 <script lang="ts" module>
   export const ROW_CONTEXT_KEY = Symbol('cd-row');
@@ -15,12 +15,16 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { setContext } from 'svelte';
+  import { resolveResponsiveValue, type Breakpoint } from '@chenzy-design/core';
+  import { useBreakpoint } from './use-breakpoint.svelte.js';
 
   type RowAlign = 'top' | 'middle' | 'bottom' | 'baseline' | 'stretch';
   type RowJustify = 'start' | 'end' | 'center' | 'space-between' | 'space-around' | 'space-evenly';
+  type GutterValue = number | [number, number];
+  type ResponsiveGutter = Partial<Record<Breakpoint, GutterValue>>;
 
   interface Props {
-    gutter?: number | [number, number];
+    gutter?: GutterValue | ResponsiveGutter;
     align?: RowAlign;
     justify?: RowJustify;
     wrap?: boolean;
@@ -37,11 +41,17 @@
     children,
   }: Props = $props();
 
+  const bp = useBreakpoint();
+
+  function toPair(v: GutterValue): [number, number] {
+    return Array.isArray(v) ? [v[0], v[1]] : [v, 0];
+  }
+
   const gutters = $derived.by<[number, number]>(() => {
-    if (Array.isArray(gutter)) return [gutter[0], gutter[1]];
-    if (typeof gutter === 'number') return [gutter, 0];
-    // TODO: responsive object gutter not implemented — degrade to 0.
-    return [0, 0];
+    if (typeof gutter === 'number' || Array.isArray(gutter)) return toPair(gutter);
+    // responsive object: resolve by current breakpoint (mobile-first cascade).
+    const resolved = resolveResponsiveValue<GutterValue>(gutter, bp.current, 0);
+    return toPair(resolved);
   });
 
   const gutterX = $derived(gutters[0]);

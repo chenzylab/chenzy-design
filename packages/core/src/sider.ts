@@ -4,19 +4,10 @@
  * No DOM rendering, no framework deps. See specs/components/basic/Layout.spec.md.
  */
 import { useId } from './id.js';
+import { BREAKPOINTS, type Breakpoint } from './breakpoints.js';
 
 export type SiderTrigger = 'click' | 'breakpoint';
-export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
-
-/** min-width per breakpoint (must stay in sync with @chenzy-design/tokens breakpoints) */
-const BREAKPOINTS: Record<Breakpoint, number> = {
-  xs: 0,
-  sm: 576,
-  md: 768,
-  lg: 992,
-  xl: 1200,
-  xxl: 1600,
-};
+export type { Breakpoint };
 
 export interface SiderOptions {
   /** controlled collapsed value; when provided, internal state is not mutated */

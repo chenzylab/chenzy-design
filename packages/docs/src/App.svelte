@@ -387,6 +387,14 @@ let pageSize2 = $state(10);
     <Col span={8} offset={4}><div class="demo-cell">span 8 offset 4</div></Col>
   </Row>
 
+  <Text type="tertiary">响应式（缩放窗口看变化）：每格 xs=24 / sm=12 / lg=6，gutter 随断点变。</Text>
+  <Row gutter={{ xs: 8, md: 16, lg: 24 }}>
+    <Col xs={24} sm={12} lg={6}><div class="demo-cell">A</div></Col>
+    <Col xs={24} sm={12} lg={6}><div class="demo-cell">B</div></Col>
+    <Col xs={24} sm={12} lg={6}><div class="demo-cell">C</div></Col>
+    <Col xs={24} sm={12} lg={6}><div class="demo-cell">D</div></Col>
+  </Row>
+
   <Divider />
 
   <Title heading={5}>Layout（可折叠侧栏）</Title>

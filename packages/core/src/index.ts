@@ -12,7 +12,6 @@ export {
   type SiderApi,
   type SiderOptions,
   type SiderTrigger,
-  type Breakpoint,
 } from './sider.js';
 export {
   createForm,
@@ -168,3 +167,10 @@ export {
   type ComputePositionInput,
   type ComputePositionResult,
 } from './floating.js';
+export {
+  BREAKPOINTS,
+  BREAKPOINT_ORDER,
+  resolveActiveBreakpoint,
+  resolveResponsiveValue,
+  type Breakpoint,
+} from './breakpoints.js';
