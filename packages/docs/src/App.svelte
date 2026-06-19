@@ -79,7 +79,31 @@
     en_US,
     ConfigProvider,
     ResizeObserver,
+    LottieIcon,
   } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory } from '@chenzy-design/svelte';
+
+  // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
+  // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
+  const mockPlayer: LottiePlayerFactory = ({ container, autoplay }) => {
+    const el = document.createElement('div');
+    el.style.cssText =
+      'width:100%;height:100%;border-radius:3px;background:var(--cd-color-primary);' +
+      'animation:cd-demo-spin 1s linear infinite;animation-play-state:paused';
+    container.appendChild(el);
+    const setState = (s: string) => (el.style.animationPlayState = s);
+    if (autoplay) setState('running');
+    return {
+      play: () => setState('running'),
+      pause: () => setState('paused'),
+      stop: () => {
+        setState('paused');
+        el.style.transform = 'rotate(0deg)';
+      },
+      goToFrame: () => setState('paused'),
+      destroy: () => el.remove(),
+    };
+  };
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   let carouselIdx = $state(0);
@@ -1218,6 +1242,25 @@
       {/snippet}
     </ResizeObserver>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>LottieIcon（动画图标 · 依赖注入 player）</Title>
+  <Text type="tertiary">库不绑定 lottie-web，用户注入 player 工厂；此处用 mock player 演示</Text>
+  <div style="display:flex; gap:32px; align-items:center; margin-top:8px">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" decorative={false} label="自动播放" />
+      <Text type="tertiary">auto（自动播放）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" trigger="hover" decorative={false} label="悬停播放" />
+      <Text type="tertiary">hover（悬停播放）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" reducedMotion decorative={false} label="降级静止" />
+      <Text type="tertiary">reducedMotion（静止）</Text>
+    </div>
+  </div>
 </main>
 
 <BackTop visibilityHeight={300} />
@@ -1233,6 +1276,11 @@
 {/snippet}
 
 <style>
+  @keyframes -global-cd-demo-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   .demo-cell {
     background: var(--cd-color-primary);
     color: var(--cd-color-text-inverse);

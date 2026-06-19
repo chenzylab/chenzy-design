@@ -166,5 +166,11 @@ export {
   type ResizeBox,
   createResizeObserver,
 } from './resize-observer/index.js';
+export {
+  LottieIcon,
+  lottieIconMeta,
+  type LottiePlayerAdapter,
+  type LottiePlayerFactory,
+} from './lottie-icon/index.js';
 // 内置语言包重导出，供 LocaleProvider 直接使用
 export { zh_CN, en_US, type Locale } from '@chenzy-design/locale';

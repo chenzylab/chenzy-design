@@ -147,3 +147,12 @@ export {
   type ResizeObserverApi,
   type ResizeObserverOptions,
 } from './resize-observer.js';
+export {
+  resolveSize,
+  resolveAnimated,
+  shouldAutoplay,
+  type LottieTrigger,
+  type LottieSize,
+  type LottiePlayerAdapter,
+  type LottiePlayerFactory,
+} from './lottie-icon.js';

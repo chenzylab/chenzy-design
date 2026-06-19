@@ -96,6 +96,11 @@ export interface Locale {
     ariaLabel: string;
     arrived: string;
   };
+  LottieIcon: {
+    loading: string;
+    loadError: string;
+    label: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;
