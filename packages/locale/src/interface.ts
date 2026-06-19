@@ -71,6 +71,10 @@ export interface Locale {
     warning: string;
     danger: string;
   };
+  Drawer: {
+    close: string;
+    title: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

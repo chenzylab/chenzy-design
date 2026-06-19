@@ -69,6 +69,7 @@
     SkeletonButton,
     Banner,
     Modal,
+    Drawer,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -160,6 +161,10 @@
 
   let modalOpen = $state(false);
   let dangerModalOpen = $state(false);
+
+  let drawerRight = $state(false);
+  let drawerLeft = $state(false);
+  let drawerBottom = $state(false);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -1045,6 +1050,49 @@
       确定删除此项目？此操作不可撤销，项目下的全部数据将被永久移除。
     </p>
   </Modal>
+
+  <Divider />
+
+  <Title heading={5}>Drawer（抽屉 / SideSheet）</Title>
+  <div style="display:flex; gap:12px">
+    <Button type="primary" onclick={() => (drawerRight = true)}>右侧抽屉</Button>
+    <Button onclick={() => (drawerLeft = true)}>左侧抽屉</Button>
+    <Button onclick={() => (drawerBottom = true)}>底部抽屉</Button>
+  </div>
+
+  <Drawer
+    open={drawerRight}
+    placement="right"
+    title="编辑用户"
+    onOpenChange={(o) => (drawerRight = o)}
+  >
+    <p style="margin:0; line-height:1.8">
+      右侧抽屉从视口右边缘滑入，承载较长的编辑表单。按 Esc 或点击遮罩关闭，背景滚动被锁定，焦点被捕获在面板内。
+    </p>
+    {#snippet footer()}
+      <Button onclick={() => (drawerRight = false)}>取消</Button>
+      <Button type="primary" onclick={() => (drawerRight = false)}>保存</Button>
+    {/snippet}
+  </Drawer>
+
+  <Drawer
+    open={drawerLeft}
+    placement="left"
+    size="small"
+    title="导航菜单"
+    onOpenChange={(o) => (drawerLeft = o)}
+  >
+    <p style="margin:0; line-height:1.8">左侧小尺寸抽屉，常用于移动端导航菜单。</p>
+  </Drawer>
+
+  <Drawer
+    open={drawerBottom}
+    placement="bottom"
+    title="筛选条件"
+    onOpenChange={(o) => (drawerBottom = o)}
+  >
+    <p style="margin:0; line-height:1.8">底部抽屉从下方滑入，适合筛选面板等场景。</p>
+  </Drawer>
 </main>
 
 {#snippet slideA()}

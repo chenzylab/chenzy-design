@@ -49,6 +49,10 @@ export const en_US: Locale = {
     warning: 'Warning',
     danger: 'Error',
   },
+  Drawer: {
+    close: 'Close',
+    title: 'Details',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',
