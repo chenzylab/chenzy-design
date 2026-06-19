@@ -70,6 +70,7 @@
     Banner,
     Modal,
     Drawer,
+    Popconfirm,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -165,6 +166,8 @@
   let drawerRight = $state(false);
   let drawerLeft = $state(false);
   let drawerBottom = $state(false);
+
+  let popResult = $state('（无）');
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -1093,6 +1096,47 @@
   >
     <p style="margin:0; line-height:1.8">底部抽屉从下方滑入，适合筛选面板等场景。</p>
   </Drawer>
+
+  <Divider />
+
+  <Title heading={5}>Popconfirm（气泡确认）</Title>
+  <div style="display:flex; gap:24px; padding:40px 0">
+    <Popconfirm
+      type="danger"
+      title="确定删除该项？"
+      content="此操作无法撤销。"
+      okText="删除"
+      onConfirm={() => (popResult = '已删除')}
+      onCancel={() => (popResult = '已取消')}
+    >
+      {#snippet trigger()}
+        <Button type="danger">删除</Button>
+      {/snippet}
+    </Popconfirm>
+
+    <Popconfirm
+      placement="bottom"
+      title="确定提交？"
+      onConfirm={() => (popResult = '已提交')}
+    >
+      {#snippet trigger()}
+        <Button type="primary">提交</Button>
+      {/snippet}
+    </Popconfirm>
+
+    <Popconfirm
+      type="warning"
+      placement="right"
+      title="退出登录？"
+      content="退出后需重新登录。"
+      onConfirm={() => (popResult = '已退出')}
+    >
+      {#snippet trigger()}
+        <Button>退出</Button>
+      {/snippet}
+    </Popconfirm>
+  </div>
+  <Text type="tertiary">操作结果：{popResult}</Text>
 </main>
 
 {#snippet slideA()}

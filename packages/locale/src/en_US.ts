@@ -53,6 +53,11 @@ export const en_US: Locale = {
     close: 'Close',
     title: 'Details',
   },
+  Popconfirm: {
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    confirming: 'Processing…',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',

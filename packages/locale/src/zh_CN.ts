@@ -53,6 +53,11 @@ export const zh_CN: Locale = {
     close: '关闭',
     title: '详情',
   },
+  Popconfirm: {
+    confirm: '确定',
+    cancel: '取消',
+    confirming: '处理中…',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

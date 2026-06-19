@@ -57,6 +57,7 @@ import { meta as progressMeta } from './progress/meta.js';
 import { meta as skeletonMeta } from './skeleton/meta.js';
 import { meta as bannerMeta } from './banner/meta.js';
 import { meta as modalMeta } from './modal/meta.js';
+import { meta as popconfirmMeta } from './popconfirm/meta.js';
 import { meta as drawerMeta } from './drawer/meta.js';
 
 const metas = {
@@ -118,6 +119,7 @@ const metas = {
   skeletonMeta,
   bannerMeta,
   modalMeta,
+  popconfirmMeta,
   drawerMeta,
 };
 

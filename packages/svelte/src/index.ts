@@ -116,6 +116,7 @@ export {
 } from './skeleton/index.js';
 export { Banner, bannerMeta, type BannerType } from './banner/index.js';
 export { Modal, modalMeta } from './modal/index.js';
+export { Popconfirm, popconfirmMeta } from './popconfirm/index.js';
 export { Drawer, SideSheet, drawerMeta } from './drawer/index.js';
 // TreeNodeData/TreeKey 经 ./tree 子路径或 @chenzy-design/core 暴露；
 // 此处不在根 barrel 重导出类型，避免与 tree-select 的 TreeKey 命名冲突。

@@ -1,0 +1,21 @@
+/** Component tokens for Popconfirm (M5 Feedback). 回退 Alias，禁写死。 */
+export const popconfirmTokens = {
+  'popconfirm-bg': 'var(--cd-color-bg-0)',
+  'popconfirm-color-text': 'var(--cd-color-text-0)',
+  'popconfirm-color-text-secondary': 'var(--cd-color-text-1)',
+  'popconfirm-border': 'var(--cd-color-border)',
+  'popconfirm-shadow': 'var(--cd-shadow-3)',
+  'popconfirm-radius': 'var(--cd-radius-2)',
+  'popconfirm-padding': 'var(--cd-spacing-4)',
+  'popconfirm-icon-color-danger': 'var(--cd-color-danger)',
+  'popconfirm-icon-color-warning': 'var(--cd-color-warning)',
+  'popconfirm-icon-color-info': 'var(--cd-color-primary)',
+  'popconfirm-title-color': 'var(--cd-color-text-0)',
+  'popconfirm-title-size': 'var(--cd-font-size-2)',
+  'popconfirm-content-size': 'var(--cd-font-size-1)',
+  'popconfirm-max-width': '280px',
+  'popconfirm-z': '1000',
+  'popconfirm-gap-footer': 'var(--cd-spacing-2)',
+  'popconfirm-arrow-size': '8px',
+  'popconfirm-motion-duration': 'var(--cd-motion-duration-fast)',
+} as const;
