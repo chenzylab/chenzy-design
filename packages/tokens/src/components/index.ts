@@ -34,6 +34,7 @@ import { spinTokens } from './spin.js';
 import { progressTokens } from './progress.js';
 import { skeletonTokens } from './skeleton.js';
 import { bannerTokens } from './banner.js';
+import { modalTokens } from './modal.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -71,4 +72,5 @@ export const componentTokens = {
   ...progressTokens,
   ...skeletonTokens,
   ...bannerTokens,
+  ...modalTokens,
 } as const;
