@@ -214,6 +214,10 @@ export const en_US: Locale = {
   },
   Breadcrumb: {
     ariaLabel: 'Breadcrumb',
+    moreLabel: 'Show {count} more',
+  },
+  Anchor: {
+    ariaLabel: 'Page navigation',
   },
   ColorPicker: {
     saturation: 'Saturation and brightness',

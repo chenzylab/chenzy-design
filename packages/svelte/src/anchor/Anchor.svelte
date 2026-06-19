@@ -5,10 +5,14 @@
   scroll-spy (红线 #3): $effect 内命令式 addEventListener('scroll')，rAF 节流，
   在事件回调里读 getBoundingClientRect (非 render 期)，cleanup 移除监听 + 取消 rAF。
   ink 用激活链接的 CSS 左边框 (border-inline-start)，不 JS 测 DOM 定位。
-  TODO(延后): horizontal、affix sticky、updateHash、getContainer 自定义容器、targetOffset 细节。
+  affix: position:sticky 吸顶（inset-block-start = offsetTop）。
+  updateHash: 激活变更时写 location.hash（replaceState，不触发额外滚动/历史堆栈）。
+  targetOffset: 点击滚动的独立偏移，缺省继承 offsetTop。
+  TODO(延后): horizontal、getContainer 自定义容器、多级嵌套。
 -->
 <script lang="ts">
   import type { AnchorLink } from './types.js';
+  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     links?: AnchorLink[];
@@ -18,6 +22,12 @@
     bounds?: number;
     showInk?: boolean;
     scrollMotion?: boolean;
+    /** position:sticky 吸顶 */
+    affix?: boolean;
+    /** 激活变更时写 location.hash */
+    updateHash?: boolean;
+    /** 点击滚动的独立偏移（缺省继承 offsetTop） */
+    targetOffset?: number;
     onChange?: (key: string) => void;
     ariaLabel?: string;
   }
@@ -30,9 +40,14 @@
     bounds = 5,
     showInk = true,
     scrollMotion = true,
+    affix = false,
+    updateHash = false,
+    targetOffset,
     onChange,
     ariaLabel,
   }: Props = $props();
+
+  const loc = useLocale();
 
   function getInitialActive(): string {
     return defaultValue ?? links[0]?.key ?? '';
@@ -47,6 +62,14 @@
     if (key === activeKey) return;
     if (!isControlled) innerActive = key;
     onChange?.(key);
+  }
+
+  // updateHash：把激活链接的 href（#id）写入 location.hash。
+  // 用 replaceState 避免污染历史堆栈与触发浏览器原生跳转滚动。
+  function writeHash(href: string) {
+    if (!updateHash || typeof window === 'undefined') return;
+    if (!href.startsWith('#')) return;
+    history.replaceState(null, '', href);
   }
 
   // 命令式读取目标元素并算出当前激活 key（在事件回调里调用，非 render 期）。
@@ -103,18 +126,21 @@
     const el = document.querySelector(link.href);
     if (el) {
       const smooth = scrollMotion && !prefersReducedMotion();
-      const top =
-        el.getBoundingClientRect().top + window.scrollY - offsetTop;
+      const offset = targetOffset ?? offsetTop;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
     }
     setActive(link.key);
+    writeHash(link.href);
   }
 </script>
 
 <nav
   class="cd-anchor"
   class:cd-anchor--no-ink={!showInk}
-  aria-label={ariaLabel}
+  class:cd-anchor--affix={affix}
+  style={affix ? `inset-block-start:${offsetTop}px` : undefined}
+  aria-label={ariaLabel ?? loc().t('Anchor.ariaLabel')}
 >
   <ul class="cd-anchor__list">
     {#each links as link (link.key)}
@@ -137,6 +163,10 @@
 <style>
   .cd-anchor {
     display: block;
+  }
+  .cd-anchor--affix {
+    position: sticky;
+    inset-block-start: 0;
   }
   .cd-anchor__list {
     margin: 0;
