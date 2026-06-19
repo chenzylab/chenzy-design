@@ -56,6 +56,7 @@ import { meta as spinMeta } from './spin/meta.js';
 import { meta as progressMeta } from './progress/meta.js';
 import { meta as skeletonMeta } from './skeleton/meta.js';
 import { meta as bannerMeta } from './banner/meta.js';
+import { meta as modalMeta } from './modal/meta.js';
 
 const metas = {
   buttonMeta,
@@ -115,6 +116,7 @@ const metas = {
   progressMeta,
   skeletonMeta,
   bannerMeta,
+  modalMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

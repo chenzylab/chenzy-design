@@ -68,6 +68,7 @@
     SkeletonImage,
     SkeletonButton,
     Banner,
+    Modal,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -156,6 +157,9 @@
   let skeletonLoading = $state(true);
 
   let bannerOpen = $state(true);
+
+  let modalOpen = $state(false);
+  let dangerModalOpen = $state(false);
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
@@ -1009,6 +1013,38 @@
       />
     </div>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>Modal（模态对话框）</Title>
+  <div style="display:flex; gap:12px">
+    <Button type="primary" onclick={() => (modalOpen = true)}>打开对话框</Button>
+    <Button type="danger" onclick={() => (dangerModalOpen = true)}>删除确认</Button>
+  </div>
+
+  <Modal
+    open={modalOpen}
+    title="编辑资料"
+    onOpenChange={(o) => (modalOpen = o)}
+    onOk={() => (modalOpen = false)}
+  >
+    <p style="margin:0; line-height:1.8">
+      这是模态对话框的内容区。打开时焦点被捕获在面板内，Tab 循环不逃逸；按 Esc 或点击遮罩可关闭；背景滚动被锁定。
+    </p>
+  </Modal>
+
+  <Modal
+    open={dangerModalOpen}
+    title="删除项目"
+    okType="danger"
+    okText="删除"
+    onOpenChange={(o) => (dangerModalOpen = o)}
+    onOk={() => (dangerModalOpen = false)}
+  >
+    <p style="margin:0; line-height:1.8">
+      确定删除此项目？此操作不可撤销，项目下的全部数据将被永久移除。
+    </p>
+  </Modal>
 </main>
 
 {#snippet slideA()}
