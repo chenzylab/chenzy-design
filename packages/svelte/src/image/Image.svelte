@@ -1,7 +1,8 @@
 <!--
   Image — see specs/components/show/Image.spec.md
-  基础子集：src + 懒加载(native/observer) + fit/position + 占位 + 失败降级 + 点击预览(全屏遮罩)。
-  TODO(延后): LQIP 模糊、预览组缩放/旋转/多图切换、crossorigin/srcset 细节、portal。
+  基础子集：src + 懒加载(native/observer) + fit/position + 占位 + 失败降级 +
+    点击预览(全屏遮罩 + 缩放/旋转/重置工具栏)。
+  TODO(延后): LQIP 模糊、预览组多图切换、crossorigin/srcset 细节、portal。
 
   红线遵守：
    - observer 模式 IntersectionObserver 在 $effect 内命令式创建 + cleanup disconnect；
@@ -107,8 +108,38 @@
     status = 'error';
   }
 
+  // 预览变换状态：缩放倍数 + 旋转角度（每次打开从 1x/0° 开始）。
+  let previewScale = $state(1);
+  let previewRotate = $state(0);
+  const SCALE_STEP = 0.25;
+  const SCALE_MIN = 0.25;
+  const SCALE_MAX = 4;
+  const previewTransform = $derived(
+    `scale(${previewScale}) rotate(${previewRotate}deg)`,
+  );
+
+  function resetTransform() {
+    previewScale = 1;
+    previewRotate = 0;
+  }
+  function zoomIn() {
+    previewScale = Math.min(SCALE_MAX, previewScale + SCALE_STEP);
+  }
+  function zoomOut() {
+    previewScale = Math.max(SCALE_MIN, previewScale - SCALE_STEP);
+  }
+  function rotateLeft() {
+    previewRotate -= 90;
+  }
+  function rotateRight() {
+    previewRotate += 90;
+  }
+
   function openPreview() {
-    if (canPreview) previewOpen = true;
+    if (canPreview) {
+      resetTransform();
+      previewOpen = true;
+    }
   }
 
   function closePreview() {
@@ -120,6 +151,11 @@
       e.preventDefault();
       closePreview();
     }
+  }
+
+  // 仅点击遮罩自身（非内部图片/工具栏）才关闭，避免在子元素上加 stopPropagation。
+  function onOverlayClick(e: MouseEvent) {
+    if (e.target === e.currentTarget) closePreview();
   }
 
   // IntersectionObserver：命令式创建 + cleanup，进入视口才放行真实 src
@@ -230,7 +266,7 @@
     aria-modal="true"
     aria-label={alt || loc().t('Image.previewAlt')}
     tabindex="-1"
-    onclick={closePreview}
+    onclick={onOverlayClick}
     onkeydown={handleOverlayKeydown}
   >
     <button
@@ -241,7 +277,19 @@
     >
       ×
     </button>
-    <img class="cd-image__preview-img" {src} {alt} />
+    <img
+      class="cd-image__preview-img"
+      {src}
+      {alt}
+      style="transform:{previewTransform}"
+    />
+    <div class="cd-image__preview-toolbar">
+      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.zoomOut')} onclick={zoomOut}>−</button>
+      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.zoomIn')} onclick={zoomIn}>+</button>
+      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.rotateLeft')} onclick={rotateLeft}>⟲</button>
+      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.rotateRight')} onclick={rotateRight}>⟳</button>
+      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.reset')} onclick={resetTransform}>⤢</button>
+    </div>
   </div>
 {/if}
 
@@ -332,6 +380,7 @@
     max-inline-size: 90vw;
     max-block-size: 90vh;
     object-fit: contain;
+    transition: transform var(--cd-motion-duration-mid, 0.2s) var(--cd-motion-ease-standard);
   }
   .cd-image__preview-close {
     position: absolute;
@@ -350,9 +399,42 @@
   .cd-image__preview-close:focus-visible {
     outline: var(--cd-focus-ring);
   }
+  .cd-image__preview-toolbar {
+    position: absolute;
+    inset-block-end: 24px;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-spacing-2);
+    border-radius: var(--cd-radius-full);
+    background: var(--cd-image-mask-bg);
+  }
+  .cd-image__preview-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 32px;
+    block-size: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--cd-radius-full);
+    background: transparent;
+    color: var(--cd-image-mask-color);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .cd-image__preview-tool:hover {
+    background: rgb(255 255 255 / 0.15);
+  }
+  .cd-image__preview-tool:focus-visible {
+    outline: var(--cd-focus-ring);
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-image__mask {
+    .cd-image__mask,
+    .cd-image__preview-img {
       transition: none;
     }
   }

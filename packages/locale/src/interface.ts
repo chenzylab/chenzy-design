@@ -148,6 +148,11 @@ export interface Locale {
     previewTrigger: string;
     closePreview: string;
     previewMask: string;
+    zoomIn: string;
+    zoomOut: string;
+    rotateLeft: string;
+    rotateRight: string;
+    reset: string;
   };
   Timeline: {
     pending: string;
