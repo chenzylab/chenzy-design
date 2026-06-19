@@ -132,3 +132,11 @@ export {
   type ToastOptions,
   type ToastItem,
 } from './toast/index.js';
+export {
+  notification,
+  notificationMeta,
+  type NotificationType,
+  type NotificationOptions,
+  type NotificationItem,
+  type NotificationPlacement,
+} from './notification/index.js';

@@ -88,6 +88,10 @@ export interface Locale {
     typeLabelWarning: string;
     typeLabelError: string;
   };
+  Notification: {
+    closeText: string;
+    notification: string;
+  };
   ScrollList: {
     ariaLabel: string;
     empty: string;

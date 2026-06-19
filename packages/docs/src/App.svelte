@@ -72,6 +72,7 @@
     Drawer,
     Popconfirm,
     Toast,
+    notification,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -1149,6 +1150,17 @@
     <Button type="danger" onclick={() => Toast.error('网络异常，请重试')}>error</Button>
     <Button onclick={() => Toast.loading('正在上传…', { duration: 0 })}>loading（常驻）</Button>
     <Button onclick={() => Toast.destroyAll()}>清空全部</Button>
+  </div>
+
+  <Divider />
+
+  <Title heading={5}>Notification（通知提醒框 · 命令式）</Title>
+  <div style="display:flex; gap:12px; flex-wrap:wrap">
+    <Button type="primary" onclick={() => notification.success({ title: '上传完成', content: '文件已成功保存到云端。' })}>success（右上）</Button>
+    <Button onclick={() => notification.info({ title: '新消息', content: '你有一条新的待办事项。', placement: 'topLeft' })}>info（左上）</Button>
+    <Button type="warning" onclick={() => notification.warning({ title: '存储空间不足', content: '剩余空间不足 10%。', placement: 'bottomRight' })}>warning（右下）</Button>
+    <Button type="danger" onclick={() => notification.error({ title: '保存失败', content: '网络中断，未保存的更改已暂存本地。', duration: 0 })}>error（常驻）</Button>
+    <Button onclick={() => notification.destroyAll()}>清空全部</Button>
   </div>
 </main>
 

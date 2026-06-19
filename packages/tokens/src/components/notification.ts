@@ -1,0 +1,23 @@
+/** Component tokens for Notification (M5 Feedback). 回退 Alias，禁写死。 */
+export const notificationTokens = {
+  'notification-width': '360px',
+  'notification-bg': 'var(--cd-color-bg-0)',
+  'notification-color-title': 'var(--cd-color-text-0)',
+  'notification-color-content': 'var(--cd-color-text-1)',
+  'notification-border': 'var(--cd-color-border)',
+  'notification-radius': 'var(--cd-radius-3)',
+  'notification-shadow': 'var(--cd-shadow-3)',
+  'notification-padding': 'var(--cd-spacing-4)',
+  'notification-gap': 'var(--cd-spacing-3)',
+  'notification-icon-success': 'var(--cd-color-success)',
+  'notification-icon-info': 'var(--cd-color-primary)',
+  'notification-icon-warning': 'var(--cd-color-warning)',
+  'notification-icon-error': 'var(--cd-color-danger)',
+  'notification-close-color': 'var(--cd-color-text-2)',
+  'notification-close-color-hover': 'var(--cd-color-text-0)',
+  'notification-title-size': 'var(--cd-font-size-2)',
+  'notification-content-size': 'var(--cd-font-size-1)',
+  'notification-z': '1100',
+  'notification-offset': 'var(--cd-spacing-6)',
+  'notification-motion-duration': 'var(--cd-motion-duration-mid)',
+} as const;
