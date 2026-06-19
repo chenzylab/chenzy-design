@@ -168,6 +168,8 @@ export const en_US: Locale = {
     empty: 'No data',
     titleSource: 'Source',
     titleTarget: 'Selected',
+    moveToRight: 'Move to right',
+    moveToLeft: 'Move to left',
   },
   Upload: {
     trigger: 'Select file',

@@ -140,7 +140,7 @@
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
         <span class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
-        <span class="cd-transfer__panel-count">{leftItems.length} 项</span>
+        <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: leftItems.length })}</span>
       </div>
     {/if}
     {#if filter}
@@ -168,6 +168,8 @@
             {item.label}
           </Checkbox>
         </li>
+      {:else}
+        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
       {/each}
     </ul>
   </div>
@@ -176,7 +178,7 @@
     <Button
       type="primary"
       size="small"
-      ariaLabel="移到右侧"
+      ariaLabel={loc().t('Transfer.moveToRight')}
       disabled={moveRightDisabled}
       onclick={moveToRight}
     >
@@ -185,7 +187,7 @@
     <Button
       type="primary"
       size="small"
-      ariaLabel="移到左侧"
+      ariaLabel={loc().t('Transfer.moveToLeft')}
       disabled={moveLeftDisabled}
       onclick={moveToLeft}
     >
@@ -197,7 +199,7 @@
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
         <span class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
-        <span class="cd-transfer__panel-count">{rightItems.length} 项</span>
+        <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: rightItems.length })}</span>
       </div>
     {/if}
     {#if filter}
@@ -225,6 +227,8 @@
             {item.label}
           </Checkbox>
         </li>
+      {:else}
+        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
       {/each}
     </ul>
   </div>
@@ -283,6 +287,14 @@
   }
   .cd-transfer__item:hover {
     background: var(--cd-transfer-item-bg-hover);
+  }
+  .cd-transfer__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--cd-spacing-4);
+    color: var(--cd-color-text-3);
+    font-size: var(--cd-font-size-1);
   }
   .cd-transfer__ops {
     display: flex;

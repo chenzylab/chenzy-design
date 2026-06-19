@@ -168,6 +168,8 @@ export const zh_CN: Locale = {
     empty: '暂无数据',
     titleSource: '源',
     titleTarget: '已选',
+    moveToRight: '移到右侧',
+    moveToLeft: '移到左侧',
   },
   Upload: {
     trigger: '选择文件',

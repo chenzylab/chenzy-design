@@ -197,6 +197,8 @@ export interface Locale {
     empty: string;
     titleSource: string;
     titleTarget: string;
+    moveToRight: string;
+    moveToLeft: string;
   };
   Upload: {
     trigger: string;
