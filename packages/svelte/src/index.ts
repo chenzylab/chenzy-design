@@ -150,5 +150,12 @@ export {
   localeProviderMeta,
   type LocaleApi,
 } from './locale-provider/index.js';
+export {
+  ConfigProvider,
+  CONFIG_CONTEXT_KEY,
+  getConfigContext,
+  configProviderMeta,
+  type ConfigContextValue,
+} from './config-provider/index.js';
 // 内置语言包重导出，供 LocaleProvider 直接使用
 export { zh_CN, en_US, type Locale } from '@chenzy-design/locale';

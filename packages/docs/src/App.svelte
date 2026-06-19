@@ -77,6 +77,7 @@
     LocaleProvider,
     zh_CN,
     en_US,
+    ConfigProvider,
   } from '@chenzy-design/svelte';
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
@@ -1185,6 +1186,23 @@
       {/snippet}
     </LocaleProvider>
   </div>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider（全局配置 · 局部暗色作用域）</Title>
+  <Text type="tertiary">用 ConfigProvider wrap + theme=dark 在子树内建立独立暗色作用域</Text>
+  <ConfigProvider wrap theme="dark">
+    <div style="margin-top:8px; padding:24px; border-radius:8px; background:var(--cd-color-bg-0); color:var(--cd-color-text-0)">
+      <p style="margin:0 0 12px; line-height:1.8">
+        这个区块被 ConfigProvider theme="dark" 包裹，内部所有 <code>var(--cd-color-*)</code> 自动切换为暗色调色板。
+      </p>
+      <div style="display:flex; gap:12px">
+        <Button type="primary">主要按钮</Button>
+        <Button>次要按钮</Button>
+        <Tag color="success">标签</Tag>
+      </div>
+    </div>
+  </ConfigProvider>
 </main>
 
 <BackTop visibilityHeight={300} />
