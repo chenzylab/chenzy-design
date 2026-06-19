@@ -95,6 +95,9 @@ export const en_US: Locale = {
     empty: 'No options',
     announceSelected: 'Selected {label}',
   },
+  List: {
+    loadMore: 'Load more',
+  },
   Calendar: {
     today: 'Today',
     prev: 'Previous',
