@@ -74,6 +74,11 @@ export const zh_CN: Locale = {
     ariaLabel: '回到顶部',
     arrived: '已回到顶部',
   },
+  LottieIcon: {
+    loading: '动画加载中',
+    loadError: '动画加载失败',
+    label: '图标',
+  },
   ScrollList: {
     ariaLabel: '滚动选择',
     empty: '暂无可选项',

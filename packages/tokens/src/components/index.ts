@@ -40,6 +40,7 @@ import { popconfirmTokens } from './popconfirm.js';
 import { toastTokens } from './toast.js';
 import { notificationTokens } from './notification.js';
 import { backTopTokens } from './back-top.js';
+import { lottieIconTokens } from './lottie-icon.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -83,4 +84,5 @@ export const componentTokens = {
   ...toastTokens,
   ...notificationTokens,
   ...backTopTokens,
+  ...lottieIconTokens,
 } as const;

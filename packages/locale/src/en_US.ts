@@ -74,6 +74,11 @@ export const en_US: Locale = {
     ariaLabel: 'Back to top',
     arrived: 'Back to top',
   },
+  LottieIcon: {
+    loading: 'Loading animation',
+    loadError: 'Failed to load animation',
+    label: 'Icon',
+  },
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',
