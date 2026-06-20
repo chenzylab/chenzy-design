@@ -1,14 +1,16 @@
 <!--
   Steps — see specs/components/navigation/Steps.spec.md
-  Base subset: horizontal/vertical, fill/nav types, clickable, status, dot mode.
+  Base subset: horizontal/vertical, fill/nav/basic types, clickable, status, dot mode.
   dot：图标渲染为小圆点（不显数字/✓），process 态高亮放大。
-  TODO: type='basic' details.
+  basic：线框/简洁型——节点圆圈描边而非实心填充，process 态高亮描边。
+  icon：自定义图标 snippet，提供时替代默认序号/✓/✕。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import type { StepItem } from './types.js';
 
   type StepDirection = 'horizontal' | 'vertical';
-  type StepType = 'fill' | 'nav';
+  type StepType = 'fill' | 'nav' | 'basic';
   type StepStatus = 'process' | 'finish' | 'error' | 'warning';
   type StepSize = 'small' | 'default' | 'large';
   type DerivedStatus = 'wait' | 'process' | 'finish' | 'error' | 'warning';
@@ -25,6 +27,8 @@
     clickable?: boolean;
     /** 点状步骤：图标渲染为小圆点，不显数字/✓ */
     dot?: boolean;
+    /** 自定义图标渲染器，提供时替代默认序号/✓/✕（dot 模式不渲染图标） */
+    icon?: Snippet<[{ step: StepItem; index: number; status: DerivedStatus }]>;
     onChange?: (current: number) => void;
     class?: string;
   }
@@ -40,6 +44,7 @@
     initial = 0,
     clickable,
     dot = false,
+    icon,
     onChange,
     class: className = '',
   }: Props = $props();
@@ -82,6 +87,18 @@
   }
 </script>
 
+{#snippet head(step: StepItem, index: number, st: DerivedStatus)}
+  <span class="cd-steps__icon" aria-hidden="true">
+    {#if dot}{:else if icon}{@render icon({ step, index, status: st })}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
+  </span>
+  <span class="cd-steps__content">
+    <span class="cd-steps__title">{step.title}</span>
+    {#if step.description}
+      <span class="cd-steps__desc">{step.description}</span>
+    {/if}
+  </span>
+{/snippet}
+
 <ol class={cls}>
   {#each steps as step, index (index)}
     {@const st = statusOf(index)}
@@ -94,27 +111,11 @@
           aria-current={index === activeIndex ? 'step' : undefined}
           onclick={() => select(index)}
         >
-          <span class="cd-steps__icon" aria-hidden="true">
-            {#if dot}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
-          </span>
-          <span class="cd-steps__content">
-            <span class="cd-steps__title">{step.title}</span>
-            {#if step.description}
-              <span class="cd-steps__desc">{step.description}</span>
-            {/if}
-          </span>
+          {@render head(step, index, st)}
         </button>
       {:else}
         <div class="cd-steps__head" aria-current={index === activeIndex ? 'step' : undefined}>
-          <span class="cd-steps__icon" aria-hidden="true">
-            {#if dot}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
-          </span>
-          <span class="cd-steps__content">
-            <span class="cd-steps__title">{step.title}</span>
-            {#if step.description}
-              <span class="cd-steps__desc">{step.description}</span>
-            {/if}
-          </span>
+          {@render head(step, index, st)}
         </div>
       {/if}
       {#if !last}
@@ -222,6 +223,28 @@
   }
   .cd-steps__line--finish {
     background: var(--cd-steps-line-color-finish);
+  }
+
+  /* --- basic 线框型：节点圆圈用描边而非实心填充 --- */
+  .cd-steps--basic .cd-steps__icon {
+    background: transparent;
+    color: var(--cd-steps-basic-color, var(--cd-color-text-2));
+    border: 1px solid var(--cd-steps-basic-border, var(--cd-color-border));
+  }
+  .cd-steps--basic .cd-steps__item--process .cd-steps__icon {
+    background: transparent;
+    color: var(--cd-steps-basic-color-process, var(--cd-color-primary));
+    border-color: var(--cd-steps-basic-border-process, var(--cd-color-primary));
+  }
+  .cd-steps--basic .cd-steps__item--finish .cd-steps__icon {
+    background: transparent;
+    color: var(--cd-steps-basic-color-finish, var(--cd-color-primary));
+    border-color: var(--cd-steps-basic-border-finish, var(--cd-color-primary));
+  }
+  .cd-steps--basic .cd-steps__item--error .cd-steps__icon {
+    background: transparent;
+    color: var(--cd-steps-basic-color-error, var(--cd-color-danger));
+    border-color: var(--cd-steps-basic-border-error, var(--cd-color-danger));
   }
 
   /* --- dot 模式：图标缩为小圆点，process 态放大高亮 --- */
