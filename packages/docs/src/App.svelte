@@ -2258,6 +2258,18 @@ let pageSize2 = $state(10);
       />
     </div>
 
+    <Text type="tertiary">right 靠右模式（轴线在右、内容靠右对齐，left 镜像）：</Text>
+    <div data-testid="timeline-right" style="width: 360px">
+      <Timeline
+        mode="right"
+        dataSource={[
+          { content: '创建订单', time: '09:00' },
+          { content: '已发货', time: '12:30', color: 'var(--cd-color-success)' },
+          { content: '运输中', time: '15:00' },
+        ]}
+      />
+    </div>
+
     <Text type="tertiary">声明式 Timeline.Item（children 可放富内容，alternate 交替布局生效）：</Text>
     <div data-testid="timeline-item" style="width: 360px">
       <Timeline mode="alternate">
