@@ -223,6 +223,8 @@ export interface Locale {
     draggerText: string;
     /** uses {size} */
     sizeError: string;
+    /** uses {size} — file smaller than minSize */
+    minSizeError: string;
     /** uses {limit} */
     limitError: string;
     remove: string;

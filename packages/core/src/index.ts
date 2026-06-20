@@ -201,12 +201,14 @@ export {
   isUploadOk,
   createUploadQueue,
   resolveBeforeUpload,
+  validateFileSize,
 } from './upload.js';
 export type {
   UploadTask,
   UploadQueue,
   BeforeUploadResult,
   BeforeUploadDecision,
+  UploadSizeError,
 } from './upload.js';
 export {
   fixedRange,

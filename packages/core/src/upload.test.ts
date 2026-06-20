@@ -4,6 +4,7 @@ import {
   isUploadOk,
   createUploadQueue,
   resolveBeforeUpload,
+  validateFileSize,
 } from './upload.js';
 
 /** A deferred whose promise resolves only when `resolve()` is called. */
@@ -137,6 +138,41 @@ describe('createUploadQueue', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(ran).toEqual([0, 1, 2, 3, 4]);
     expect(q.active).toBe(0);
+  });
+});
+
+describe('validateFileSize', () => {
+  it('passes when no bounds are set', () => {
+    expect(validateFileSize(0)).toBeNull();
+    expect(validateFileSize(10 * 1024 * 1024, {})).toBeNull();
+  });
+
+  it('reports "max" when over maxSize (KB)', () => {
+    // maxSize 100KB → boundary is 102400 bytes.
+    expect(validateFileSize(102_401, { maxSize: 100 })).toBe('max');
+    expect(validateFileSize(102_400, { maxSize: 100 })).toBeNull();
+    expect(validateFileSize(50_000, { maxSize: 100 })).toBeNull();
+  });
+
+  it('reports "min" when under minSize (KB)', () => {
+    // minSize 10KB → boundary is 10240 bytes.
+    expect(validateFileSize(10_239, { minSize: 10 })).toBe('min');
+    expect(validateFileSize(10_240, { minSize: 10 })).toBeNull();
+    expect(validateFileSize(50_000, { minSize: 10 })).toBeNull();
+  });
+
+  it('passes within [minSize, maxSize]', () => {
+    expect(validateFileSize(50_000, { minSize: 10, maxSize: 100 })).toBeNull();
+  });
+
+  it('checks max before min', () => {
+    // size below min AND above max is impossible for min<=max; verify max wins
+    // when both technically match a degenerate inverted range.
+    expect(validateFileSize(200_000, { minSize: 300, maxSize: 100 })).toBe('max');
+  });
+
+  it('treats 0-byte files as under any minSize', () => {
+    expect(validateFileSize(0, { minSize: 1 })).toBe('min');
   });
 });
 

@@ -191,6 +191,7 @@ export const en_US: Locale = {
     trigger: 'Select file',
     draggerText: 'Click or drag files here to upload',
     sizeError: 'File must not exceed {size}',
+    minSizeError: 'File must be at least {size}',
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
   },
