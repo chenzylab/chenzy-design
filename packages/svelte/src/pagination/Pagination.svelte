@@ -3,9 +3,18 @@
   Base subset: default + simple modes, prev/next, page buttons with ellipsis,
   showTotal text, showSizeChanger (reuses Select), showQuickJumper (reuses Input).
   Numbers localized via Intl.NumberFormat; text via locale package.
-  TODO: status validation.
+  Boundary validation/clamping via @chenzy-design/core (pure functions):
+  out-of-range current/pageSize and quick-jumper input are clamped to a valid
+  page. Controlled props are never written back (red line #1): the clamped page
+  is only surfaced through onChange.
 -->
 <script lang="ts">
+  import {
+    paginationPageCount as computePageCount,
+    clampPage,
+    clampPageSize,
+    parseJumpInput,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Select } from '../select/index.js';
   import { Input } from '../input/index.js';
@@ -61,18 +70,24 @@
   // --- pageSize 受控/非受控 (红线 #1)：不回写 prop ---
   const isSizeControlled = $derived(pageSize !== undefined);
   let innerSize = $state(getInitialSize());
-  const currentSize = $derived(isSizeControlled ? (pageSize as number) : innerSize);
+  // 钳制：非法/不在选项内的 pageSize 回退默认值（不回写受控 prop）。
+  const currentSize = $derived(
+    clampPageSize(isSizeControlled ? (pageSize as number) : innerSize, pageSizeOptions, defaultPageSize),
+  );
 
   function getInitialSize(): number {
-    return defaultPageSize;
+    return clampPageSize(defaultPageSize, pageSizeOptions, 10);
   }
 
-  const pageCount = $derived(Math.max(1, Math.ceil(total / currentSize)));
+  const pageCount = $derived(computePageCount(total, currentSize));
 
   // Controlled / uncontrolled (red line #1): never write back the prop.
   const isControlled = $derived(currentPage !== undefined);
   let inner = $state(getInitialPage());
-  const current = $derived(isControlled ? (currentPage as number) : inner);
+  // 钳制：显示的 current 始终落在 [1, pageCount]，越界时显示钳后值（不回写受控 prop）。
+  const current = $derived(
+    clampPage(isControlled ? (currentPage as number) : inner, total, currentSize),
+  );
 
   function getInitialPage(): number {
     return defaultCurrentPage;
@@ -90,20 +105,19 @@
   function changePageSize(nextSize: number) {
     if (disabled || nextSize === currentSize) return;
     if (!isSizeControlled) innerSize = nextSize;
-    const nextCount = Math.max(1, Math.ceil(total / nextSize));
-    const nextPage = Math.min(current, nextCount);
+    const nextPage = clampPage(current, total, nextSize);
     if (!isControlled && nextPage !== inner) inner = nextPage;
     onPageSizeChange?.(nextSize);
     onChange?.(nextPage, nextSize);
   }
 
-  // 快速跳页：解析输入，钳入 [1, pageCount]，跳转。
+  // 快速跳页：解析输入，越界静默钳入 [1, pageCount]；非数字/空输入忽略。
   let jumpValue = $state('');
   function jump() {
-    const n = Number.parseInt(jumpValue, 10);
+    const next = parseJumpInput(jumpValue, total, currentSize);
     jumpValue = '';
-    if (Number.isNaN(n)) return;
-    goto(Math.min(Math.max(n, 1), pageCount));
+    if (next === null) return;
+    goto(next);
   }
 
   const nf = $derived(new Intl.NumberFormat(locale));
@@ -135,9 +149,10 @@
 
   function goto(page: number) {
     if (disabled) return;
-    if (page < 1 || page > pageCount || page === current) return;
-    if (!isControlled) inner = page;
-    onChange?.(page, currentSize);
+    const next = clampPage(page, total, currentSize);
+    if (next === current) return;
+    if (!isControlled) inner = next;
+    onChange?.(next, currentSize);
   }
 
   const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));
