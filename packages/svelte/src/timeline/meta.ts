@@ -6,9 +6,20 @@ export const meta = {
   name: 'Timeline',
   category: 'show',
   description:
-    '时间轴，按时间顺序垂直/水平展示一组事件。支持 left/alternate/center 模式、vertical/horizontal 方向、dataSource 数据驱动、pending 幽灵节点、reverse 倒序与实/虚线样式。',
+    '时间轴，按时间顺序垂直/水平展示一组事件。两种用法择一：传 dataSource 数据驱动，或不传 dataSource 而在 children 内写 <Timeline.Item> 声明式（可放任意富内容）。支持 left/alternate/center 模式、vertical/horizontal 方向、pending 幽灵节点、reverse 倒序与实/虚线样式；交替布局由纯 CSS :nth-child 决定，两种用法共用同一套结构与样式。',
   props: [
-    { name: 'dataSource', type: 'TimelineItemData[]', default: '[]', desc: '节点数据' },
+    {
+      name: 'dataSource',
+      type: 'TimelineItemData[]',
+      default: '[]',
+      desc: '节点数据（数据驱动用法；优先于声明式 children）',
+    },
+    {
+      name: 'children',
+      type: 'Snippet',
+      default: 'undefined',
+      desc: '声明式用法：内嵌 <Timeline.Item> 列表，仅在未传 dataSource 时生效',
+    },
     {
       name: 'mode',
       type: "'left'|'alternate'|'center'",
@@ -31,6 +42,23 @@ export const meta = {
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'lineStyle', type: "'solid'|'dashed'", default: 'solid' },
     { name: 'class', type: 'string', default: "''" },
+  ],
+  subComponents: [
+    {
+      name: 'Timeline.Item',
+      desc: '声明式单项，渲染 dot/line/内容（children），与 dataSource 项视觉一致',
+      props: [
+        { name: 'dotColor', type: 'string', default: 'undefined', desc: '圆点颜色' },
+        {
+          name: 'lineStyle',
+          type: "'solid'|'dashed'",
+          default: '继承父 Timeline',
+          desc: '单项连接线样式',
+        },
+        { name: 'time', type: 'string', default: 'undefined', desc: '时间文本' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '项内容' },
+      ],
+    },
   ],
   a11y: {
     role: 'list',
