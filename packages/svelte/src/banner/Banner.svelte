@@ -5,7 +5,7 @@
   红线 #1：受控 open 绝不回写——isOpen 派生自受控 open 或内部 innerOpen，关闭仅回调 + 仅非受控写 innerOpen。
   红线 #2：render 不读 effect 写的状态。
   红线 #3：无 DOM 几何测量；关闭过渡用 svelte/transition (slide)，reduced-motion 经 duration 降级。
-  TODO(延后): closeOnEsc 暂未实现（prop 保留）。
+  closeOnEsc：开启且可关闭并显示时，$effect 内 window keydown 监听 Esc → close('esc')，cleanup 解绑。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -46,7 +46,6 @@
     open,
     defaultOpen = true,
     closable = true,
-    // closeOnEsc 暂未实现，prop 保留以稳定 API（见文件头 TODO）。
     closeOnEsc = false,
     animation = true,
     dynamic = false,
@@ -93,6 +92,18 @@
     onOpenChange?.({ open: false });
     onClose?.({ trigger });
   }
+
+  // 红线 #3：Esc 监听命令式绑定 + cleanup。
+  // 仅在显示、开启 closeOnEsc 且可关闭时绑定全局 keydown（横幅内嵌文档流非夺焦，故监听 window）；
+  // 关闭后 isOpen 变 false，effect 重跑触发 cleanup 解绑，避免遗留监听。
+  $effect(() => {
+    if (!isOpen || !closeOnEsc || !closable) return;
+    function onKeydown(e: KeyboardEvent) {
+      if (e.key === 'Escape') close('esc');
+    }
+    window.addEventListener('keydown', onKeydown);
+    return () => window.removeEventListener('keydown', onKeydown);
+  });
 
   const cls = $derived(
     [
