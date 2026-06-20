@@ -5,6 +5,7 @@ import {
   totalFromOffsets,
   offsetToIndex,
   dynamicRange,
+  scrollOffsetForIndex,
 } from './virtual-list.js';
 
 describe('fixedRange', () => {
@@ -107,5 +108,42 @@ describe('dynamicRange', () => {
 
   it('empty', () => {
     expect(dynamicRange([0], 0, 200, 2)).toEqual({ startIndex: 0, endIndex: 0 });
+  });
+});
+
+describe('scrollOffsetForIndex', () => {
+  // fixed: itemSize 40, viewport 200, total 1000*40 = 40000.
+  it('align=start places the item leading edge at viewport start', () => {
+    // index 10 → itemStart 400.
+    expect(scrollOffsetForIndex(400, 40, 200, 40000, 'start')).toBe(400);
+  });
+
+  it('align=center centers the item', () => {
+    // 400 - (200 - 40)/2 = 400 - 80 = 320.
+    expect(scrollOffsetForIndex(400, 40, 200, 40000, 'center')).toBe(320);
+  });
+
+  it('align=end aligns trailing edges', () => {
+    // 400 - (200 - 40) = 240.
+    expect(scrollOffsetForIndex(400, 40, 200, 40000, 'end')).toBe(240);
+  });
+
+  it('defaults to start', () => {
+    expect(scrollOffsetForIndex(400, 40, 200, 40000)).toBe(400);
+  });
+
+  it('clamps to the reachable scroll range', () => {
+    // last item itemStart 39960; max scroll = 40000 - 200 = 39800.
+    expect(scrollOffsetForIndex(39960, 40, 200, 40000, 'start')).toBe(39800);
+    // negative target (center near top) clamps to 0.
+    expect(scrollOffsetForIndex(0, 40, 200, 40000, 'center')).toBe(0);
+  });
+
+  it('works with dynamic offsets (itemStart from prefix-sum)', () => {
+    const offsets = buildOffsets([100, 100, 50, 50, 50]); // [0,100,200,250,300,350]
+    const total = totalFromOffsets(offsets); // 350
+    // index 3 → itemStart offsets[3]=250, itemSize 50, viewport 120, total 350.
+    // start: 250 clamped to max(0, 350-120)=230 → 230.
+    expect(scrollOffsetForIndex(offsets[3]!, 50, 120, total, 'start')).toBe(230);
   });
 });

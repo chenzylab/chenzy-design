@@ -186,5 +186,7 @@ export {
   totalFromOffsets,
   offsetToIndex as virtualOffsetToIndex,
   dynamicRange,
+  scrollOffsetForIndex,
   type VirtualRange,
+  type ScrollAlign,
 } from './virtual-list.js';

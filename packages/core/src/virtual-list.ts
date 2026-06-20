@@ -93,6 +93,44 @@ export function offsetToIndex(offsets: readonly number[], top: number): number {
   return ans;
 }
 
+/** Alignment of the target item within the viewport for scrollToIndex. */
+export type ScrollAlign = 'start' | 'center' | 'end';
+
+/**
+ * Compute the target scroll offset (scrollTop for vertical / scrollLeft for
+ * horizontal — the math is direction-agnostic) that brings item `index` into
+ * view with the given alignment.
+ *
+ * @param index      target item index (clamped to [0, count - 1])
+ * @param itemStart  leading edge offset of the item (px). For fixed lists this
+ *                   is `index * itemSize`; for dynamic lists it's `offsets[index]`.
+ * @param itemSize   the item's own size (px) along the scroll axis.
+ * @param viewportSize  viewport size (px) along the scroll axis.
+ * @param totalSize  total content size (px) along the scroll axis, used to clamp
+ *                   the result to a reachable scroll position.
+ * @param align      'start' (default) aligns the item's leading edge to the
+ *                   viewport start; 'center' centers it; 'end' aligns trailing edges.
+ */
+export function scrollOffsetForIndex(
+  itemStart: number,
+  itemSize: number,
+  viewportSize: number,
+  totalSize: number,
+  align: ScrollAlign = 'start',
+): number {
+  let offset: number;
+  if (align === 'center') {
+    offset = itemStart - (viewportSize - itemSize) / 2;
+  } else if (align === 'end') {
+    offset = itemStart - (viewportSize - itemSize);
+  } else {
+    offset = itemStart;
+  }
+  // Clamp to the reachable scroll range [0, max(0, total - viewport)].
+  const max = Math.max(0, totalSize - viewportSize);
+  return clamp(offset, 0, max);
+}
+
 /**
  * Dynamic (variable height) visible range using a prefix-sum offsets table.
  * @param offsets    prefix-sum table from buildOffsets (length = count + 1)
