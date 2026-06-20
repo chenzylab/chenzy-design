@@ -418,6 +418,7 @@
 
   let modalOpen = $state(false);
   let dangerModalOpen = $state(false);
+  let destroyModalOpen = $state(false);
 
   let drawerRight = $state(false);
   let drawerLeft = $state(false);
@@ -2795,6 +2796,41 @@ let pageSize2 = $state(10);
     <p style="margin:0; line-height:1.8">
       确定删除此项目？此操作不可撤销，项目下的全部数据将被永久移除。
     </p>
+  </Modal>
+
+  <Text type="tertiary">Modal.confirm 工厂 + 堆叠 z-index（点确认再开一层，后开者在上）：</Text>
+  <div style="display:flex; gap:12px; flex-wrap:wrap" data-testid="modal-stack">
+    <Button
+      onclick={() =>
+        Modal.confirm({
+          title: '第一层',
+          content: '点击确定将在上层再弹出一个确认框（验证堆叠）。',
+          onOk: () => {
+            Modal.confirm({
+              title: '第二层（更高 z-index）',
+              content: '这一层叠在第一层之上。',
+            });
+          },
+        })}>Modal.confirm 堆叠</Button
+    >
+  </div>
+
+  <Text type="tertiary">destroyOnClose：关闭即卸载内容，重开重置内部状态（输入框）：</Text>
+  <div style="display:flex; gap:12px; flex-wrap:wrap" data-testid="modal-destroy">
+    <Button onclick={() => (destroyModalOpen = true)}>打开（destroyOnClose）</Button>
+  </div>
+  <Modal
+    open={destroyModalOpen}
+    title="destroyOnClose 演示"
+    destroyOnClose
+    onOpenChange={(o) => (destroyModalOpen = o)}
+    onOk={() => (destroyModalOpen = false)}
+  >
+    <p style="margin:0 0 8px; line-height:1.6">在下方输入内容后关闭再重开，内容会被重置（内容随关闭卸载）：</p>
+    <input
+      placeholder="输入草稿…"
+      style="inline-size:100%; box-sizing:border-box; padding:6px 10px; border:1px solid var(--cd-color-border); border-radius:6px"
+    />
   </Modal>
 
   <Divider />
