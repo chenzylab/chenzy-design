@@ -271,6 +271,24 @@
   let submitted = $state('');
   let selVal = $state<string | number>('');
   let selGroupVal = $state<string | number>('');
+  // remote 搜索：模拟异步返回选项
+  let remoteVal = $state<string | number>('');
+  let remoteOptions = $state<{ label: string; value: string }[]>([]);
+  let remoteLoading = $state(false);
+  let remoteTimer: ReturnType<typeof setTimeout> | undefined;
+  function handleRemoteSearch(q: string) {
+    if (remoteTimer) clearTimeout(remoteTimer);
+    if (!q.trim()) {
+      remoteOptions = [];
+      remoteLoading = false;
+      return;
+    }
+    remoteLoading = true;
+    remoteTimer = setTimeout(() => {
+      remoteOptions = [1, 2, 3].map((i) => ({ label: `${q} 结果 ${i}`, value: `${q}-${i}` }));
+      remoteLoading = false;
+    }, 500);
+  }
   let multiVal = $state<(string | number)[]>([]);
   let acVal = $state('');
   let tags = $state<string[]>(['svelte', 'vite']);
@@ -664,6 +682,20 @@ let pageSize2 = $state(10);
         onChange={(v) => (selGroupVal = v as string | number)}
       />
       <Text type="tertiary">分组单选：{selGroupVal || '（未选）'}</Text>
+    </div>
+
+    <div style="width: 220px" data-testid="select-remote">
+      <Select
+        options={remoteOptions}
+        filter
+        loading={remoteLoading}
+        onSearch={handleRemoteSearch}
+        clearable
+        placeholder="远程搜索（输入触发）"
+        value={remoteVal}
+        onChange={(v) => (remoteVal = v as string | number)}
+      />
+      <Text type="tertiary">远程：{remoteVal || '（未选）'}</Text>
     </div>
 
     <div style="width: 260px" data-testid="select-multi">

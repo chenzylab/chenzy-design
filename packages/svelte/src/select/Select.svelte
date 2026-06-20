@@ -4,7 +4,8 @@
   下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
   maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
   分组：options 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
-  TODO(延后): 虚拟化、远程 remote/loading 防抖。
+  remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 options；loading 显示 spinner。
+  TODO(延后): 虚拟化。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
@@ -41,6 +42,12 @@
     maxTagCount?: number;
     /** filter 无匹配时允许创建新选项（值=输入文本） */
     allowCreate?: boolean;
+    /** 远程搜索：输入防抖后回调（由外部更新 options，不再本地过滤） */
+    onSearch?: (query: string) => void;
+    /** 远程加载中（显示 spinner） */
+    loading?: boolean;
+    /** onSearch 防抖毫秒（默认 300） */
+    searchDebounce?: number;
     onChange?: (v: OptionValue | OptionValue[]) => void;
     onOpenChange?: (open: boolean) => void;
   }
@@ -60,6 +67,9 @@
     clearable = false,
     maxTagCount = 0,
     allowCreate = false,
+    onSearch,
+    loading = false,
+    searchDebounce = 300,
     onChange,
     onOpenChange,
   }: Props = $props();
@@ -126,7 +136,11 @@
     createdOptions.length === 0 ? flatBase : [...flatBase, ...createdOptions],
   );
 
+  // remote 模式：外部已按 query 更新 options，本地不再过滤。
+  const isRemote = $derived(onSearch !== undefined);
+
   const filteredOptions = $derived.by(() => {
+    if (isRemote) return mergedOptions;
     if (!filter || query.trim() === '') return mergedOptions;
     const q = query.toLowerCase();
     return mergedOptions.filter((o) => o.label.toLowerCase().includes(q));
@@ -291,10 +305,25 @@
     }
   }
 
+  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleSearch(q: string) {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchTimer = undefined;
+      onSearch?.(q);
+    }, Math.max(0, searchDebounce));
+  }
+  // 卸载兜底清理。
+  $effect(() => () => {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+  });
+
   function onSearchInput(e: Event & { currentTarget: HTMLInputElement }) {
     query = e.currentTarget.value;
     if (!isOpen) setOpen(true);
     activeIndex = -1;
+    if (isRemote) scheduleSearch(query);
   }
 
   // --- DOM 引用：触发根 + portal 下拉（定位由 use:floating action 接管）---
@@ -427,7 +456,14 @@
       role="listbox"
       id={listId}
       aria-multiselectable={multiple}
+      aria-busy={loading || undefined}
     >
+      {#if loading}
+        <div class="cd-select__loading">
+          <span class="cd-select__spinner" aria-hidden="true"></span>
+          <span>{loc().t('Select.loading')}</span>
+        </div>
+      {/if}
       {#if canCreate}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
@@ -440,7 +476,7 @@
           <span class="cd-select__option-label">{loc().t('Select.create', { label: query.trim() })}</span>
         </div>
       {/if}
-      {#if filteredOptions.length === 0 && !canCreate}
+      {#if filteredOptions.length === 0 && !canCreate && !loading}
         <div class="cd-select__empty">{loc().t('Select.emptyText')}</div>
       {:else if hasGroups}
         {#each groupedView as group, gi (group.label ?? `g-${gi}`)}
@@ -664,7 +700,31 @@
     color: var(--cd-color-text-3);
     text-align: center;
   }
+  .cd-select__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-select-option-padding);
+    color: var(--cd-color-text-3);
+  }
+  .cd-select__spinner {
+    inline-size: 1em;
+    block-size: 1em;
+    border: 2px solid var(--cd-color-border);
+    border-block-start-color: var(--cd-color-primary);
+    border-radius: var(--cd-radius-full);
+    animation: cd-select-spin 0.7s linear infinite;
+  }
+  @keyframes cd-select-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
+    .cd-select__spinner {
+      animation: none;
+    }
     .cd-select__trigger,
     .cd-select__arrow {
       transition: none;
