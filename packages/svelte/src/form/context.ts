@@ -2,7 +2,7 @@ import { getContext, setContext } from 'svelte';
 import type { FormApi, FormState } from '@chenzy-design/core';
 
 export type FormLayout = 'vertical' | 'horizontal';
-export type FormLabelPosition = 'top' | 'left';
+export type FormLabelPosition = 'top' | 'left' | 'inset';
 export type FormSize = 'small' | 'default' | 'large';
 
 export interface FormContext {

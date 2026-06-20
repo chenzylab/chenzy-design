@@ -622,6 +622,14 @@ let pageSize2 = $state(10);
     <Text type="tertiary">{submitted}</Text>
   </div>
 
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-inset">
+    <Text type="tertiary">inset label（聚焦/有值时上浮）：</Text>
+    <Form labelPosition="inset">
+      <Form.Input field="city" label="城市" />
+      <Form.Input field="company" label="公司" />
+    </Form>
+  </div>
+
   <Divider />
 
   <Title heading={5}>Select / AutoComplete</Title>
