@@ -142,6 +142,7 @@
           style="padding-inline-start: {indent}"
           onclick={() => toggleSub(item)}
         >
+          {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
           <span class="cd-menu__label">{item.label}</span>
           <span
             class="cd-menu__arrow"
@@ -173,6 +174,7 @@
           style="padding-inline-start: {indent}"
           onclick={() => selectLeaf(item)}
         >
+          {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
           <span class="cd-menu__label">{item.label}</span>
         </button>
       </li>
@@ -292,6 +294,15 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  .cd-menu__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--cd-menu-item-color);
   }
   .cd-menu__arrow {
     display: inline-flex;

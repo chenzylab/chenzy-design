@@ -1,3 +1,5 @@
+import type { Snippet } from 'svelte';
+
 /** Menu 项键类型。 */
 export type MenuKey = string | number;
 
@@ -6,5 +8,7 @@ export interface MenuItemDef {
   key: string | number;
   label: string;
   disabled?: boolean;
+  /** 项前自定义图标 */
+  icon?: Snippet;
   children?: MenuItemDef[];
 }

@@ -60,6 +60,8 @@
     label?: Snippet<
       [{ node: TreeNodeData; level: number; searchValue: string; selected: boolean; checked: boolean }]
     >;
+    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态 */
+    icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; level: number }]>;
   }
 
   let {
@@ -88,6 +90,7 @@
     onCheck,
     onExpandedChange,
     label,
+    icon,
   }: Props = $props();
 
   const loc = useLocale();
@@ -570,7 +573,9 @@
           {/if}
 
           {#if showIcon}
-            <span class="cd-tree__icon" aria-hidden="true"></span>
+            <span class="cd-tree__icon" aria-hidden="true">
+              {#if icon}{@render icon({ node, expanded, level: f.level })}{/if}
+            </span>
           {/if}
 
           <span class="cd-tree__label">
@@ -728,9 +733,16 @@
 
   .cd-tree__icon {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
     inline-size: 0;
     block-size: 1rem;
+    color: var(--cd-tree-node-color);
+  }
+  /* 有自定义图标内容时撑开尺寸 */
+  .cd-tree__icon:not(:empty) {
+    inline-size: 1rem;
   }
 
   .cd-tree__label {

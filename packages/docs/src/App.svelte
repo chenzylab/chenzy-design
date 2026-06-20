@@ -921,10 +921,25 @@ let pageSize2 = $state(10);
 
   <Title heading={5}>Menu / Anchor</Title>
   <div style="display: flex; gap: 24px; align-items: flex-start">
-    <div style="width: 200px">
-      <Text type="tertiary">inline 内联展开</Text>
+    <div style="width: 200px" data-testid="menu-icon">
+      <Text type="tertiary">inline 内联展开（带图标）</Text>
+      {#snippet iconOverview()}<span>📊</span>{/snippet}
+      {#snippet iconSettings()}<span>⚙️</span>{/snippet}
+      {#snippet iconHelp()}<span>❓</span>{/snippet}
       <Menu
-        items={menuItems}
+        items={[
+          { key: 'overview', label: '概览', icon: iconOverview },
+          {
+            key: 'settings',
+            label: '设置',
+            icon: iconSettings,
+            children: [
+              { key: 'profile', label: '个人资料' },
+              { key: 'security', label: '安全' },
+            ],
+          },
+          { key: 'help', label: '帮助', icon: iconHelp, disabled: true },
+        ]}
         mode="inline"
         selectedKeys={[menuSelected]}
         defaultOpenKeys={['settings']}
@@ -1209,15 +1224,23 @@ let pageSize2 = $state(10);
 
   <Title heading={5}>Tree</Title>
   <div style="display: flex; align-items: flex-start; gap: 48px; flex-wrap: wrap">
-    <div style="width: 240px">
-      <Text type="tertiary">单选 + 默认展开全部</Text>
+    <div style="width: 240px" data-testid="tree-icon">
+      <Text type="tertiary">单选 + 节点图标</Text>
       <Tree
         {treeData}
         defaultExpandAll
         value={treeSel}
         onChange={(info) => (treeSel = info.value as string | number)}
         ariaLabel="部门树"
-      />
+      >
+        {#snippet icon({ node, expanded })}
+          {#if node.children && node.children.length}
+            <span class="tree-icon-glyph">{expanded ? '📂' : '📁'}</span>
+          {:else}
+            <span class="tree-icon-glyph">📄</span>
+          {/if}
+        {/snippet}
+      </Tree>
       <Text type="tertiary">已选：{treeSel}</Text>
     </div>
 

@@ -126,6 +126,7 @@
         }
       }}
     >
+      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
       <span class="cd-menu__label">{item.label}</span>
       <span class="cd-menu__arrow cd-menu__arrow--popup" aria-hidden="true">
         <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
@@ -172,6 +173,7 @@
       disabled={item.disabled || undefined}
       onclick={onLeafClick}
     >
+      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
       <span class="cd-menu__label">{item.label}</span>
     </button>
   </li>
@@ -231,6 +233,15 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  .cd-menu__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--cd-menu-item-color);
   }
   .cd-menu__arrow {
     display: inline-flex;
