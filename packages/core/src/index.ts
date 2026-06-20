@@ -29,8 +29,10 @@ export {
   startOfDay,
   addMonths,
   addWeeks,
+  addDays,
   getMonthGrid,
   getWeekGrid,
+  getDayHours,
   weekdayOrder,
   type DayCell,
 } from './date.js';
@@ -74,11 +76,13 @@ export {
   eventCoversDay,
   eventsForDay,
   groupEventsByDays,
+  timelineForDay,
   dayKey,
   isPastDay,
   type CalendarEvent,
   type CalendarEventKey,
   type DayEvents,
+  type DayTimeline,
 } from './calendar.js';
 export {
   offsetToIndex,

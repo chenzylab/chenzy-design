@@ -108,6 +108,7 @@ export const en_US: Locale = {
     next: 'Next',
     moreCount: '+{count} more',
     noEvents: 'No events',
+    allDay: 'All day',
   },
   Tree: {
     emptyText: 'No data',

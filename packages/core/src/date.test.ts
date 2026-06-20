@@ -4,8 +4,10 @@ import {
   startOfDay,
   addMonths,
   addWeeks,
+  addDays,
   getMonthGrid,
   getWeekGrid,
+  getDayHours,
   weekdayOrder,
 } from './date.js';
 
@@ -78,5 +80,31 @@ describe('date utils', () => {
     expect(cells[0]?.date.getMonth()).toBe(0); // Jan 28
     expect(cells[0]?.inMonth).toBe(false);
     expect(cells.some((c) => c.inMonth)).toBe(true);
+  });
+
+  it('addDays steps by 1 day and crosses month boundaries', () => {
+    expect(addDays(new Date(2024, 0, 1), 1).getDate()).toBe(2);
+    expect(addDays(new Date(2024, 0, 1), -1).getMonth()).toBe(11); // Dec 31, 2023
+    expect(addDays(new Date(2024, 0, 1), -1).getFullYear()).toBe(2023);
+    // preserves time-of-day
+    const t = addDays(new Date(2024, 0, 1, 13, 30), 1);
+    expect(t.getHours()).toBe(13);
+    expect(t.getMinutes()).toBe(30);
+  });
+
+  it('getDayHours yields one slot per hour in range on the cursor day', () => {
+    const slots = getDayHours(new Date(2024, 5, 15, 8, 30));
+    expect(slots).toHaveLength(24);
+    expect(slots[0]?.hour).toBe(0);
+    expect(slots[0]?.date.getHours()).toBe(0);
+    expect(slots[0]?.date.getDate()).toBe(15);
+    expect(slots[23]?.hour).toBe(23);
+  });
+
+  it('getDayHours honours and clamps a custom from/to range', () => {
+    const slots = getDayHours(new Date(2024, 5, 15), 9, 11);
+    expect(slots.map((s) => s.hour)).toEqual([9, 10, 11]);
+    // out-of-bounds clamps into 0..23
+    expect(getDayHours(new Date(2024, 5, 15), -5, 30)).toHaveLength(24);
   });
 });

@@ -88,5 +88,54 @@ export function isPastDay(date: Date, today: Date): boolean {
   return startOfDay(date).getTime() < startOfDay(today).getTime();
 }
 
+/** Events laid out on a single day's hour timeline. */
+export interface DayTimeline {
+  /** all-day events + events that cover the day without a concrete hour (e.g. multi-day) */
+  allDay: CalendarEvent[];
+  /** map of hour (0..23) → timed events starting in that hour, sorted by start time */
+  byHour: Map<number, CalendarEvent[]>;
+}
+
+/**
+ * Split a day's events into an all-day bucket and per-hour buckets for the
+ * day timeline (`mode='day'`). An event is "timed" on `date` only when it
+ * actually starts on that calendar day and is not flagged `allDay`; its hour
+ * is clamped into [fromHour, toHour]. Everything else covering the day (all-day
+ * flagged, or multi-day events whose start falls on another day) goes to
+ * `allDay`. Pure: no DOM, no mutation of inputs.
+ */
+export function timelineForDay(
+  events: readonly CalendarEvent[],
+  date: Date,
+  fromHour = 0,
+  toHour = 23,
+): DayTimeline {
+  const lo = Math.max(0, Math.min(23, Math.floor(fromHour)));
+  const hi = Math.max(lo, Math.min(23, Math.floor(toHour)));
+  const covering = events.filter((e) => eventCoversDay(e, date));
+  const allDay: CalendarEvent[] = [];
+  const timed: { hour: number; event: CalendarEvent }[] = [];
+  for (const e of covering) {
+    if (e.allDay || !isSameDay(e.start, date)) {
+      allDay.push(e);
+      continue;
+    }
+    const hour = Math.max(lo, Math.min(hi, e.start.getHours()));
+    timed.push({ hour, event: e });
+  }
+  timed.sort((a, b) => {
+    const d = a.event.start.getTime() - b.event.start.getTime();
+    if (d !== 0) return d;
+    return String(a.event.key).localeCompare(String(b.event.key));
+  });
+  const byHour = new Map<number, CalendarEvent[]>();
+  for (const { hour, event } of timed) {
+    const list = byHour.get(hour);
+    if (list) list.push(event);
+    else byHour.set(hour, [event]);
+  }
+  return { allDay, byHour };
+}
+
 /** re-export for convenience so the render layer imports calendar bits from one place */
 export { isSameDay };

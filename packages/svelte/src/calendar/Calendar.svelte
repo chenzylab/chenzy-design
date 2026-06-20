@@ -1,22 +1,26 @@
 <!--
   Calendar — see specs/components/show/Calendar.spec.md
-  月/周视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态。
-  mode='month'(6×7) | 'week'(1×7)；selectionMode='single'(选中日) | 'range'(范围选择，起止+区间高亮+hover 预览)。
+  月/周/日视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态。
+  mode='month'(6×7) | 'week'(1×7) | 'day'(单日时间轴，纵向小时段)；selectionMode='single'(选中日) | 'range'(范围选择，起止+区间高亮+hover 预览)。
+  day 模式：dayStartHour~dayEndHour 逐小时一行，带时间事件按起始小时入对应时段、全天/跨天延续事件入顶部「全天」区（纯派生 timelineForDay，纯 CSS 布局）。
   受控 value(锚点)/selectedDate/rangeValue 不回写，仅 onChange/onSelect/onRangeChange/onDateClick/onMoreClick 通知。
-  复用 @chenzy-design/core 的纯日期/分组算法（getMonthGrid/getWeekGrid/addMonths/addWeeks…），不重复实现。
-  TODO(延后): day 视图、时间轴、弹层、虚拟化、完整 roving 焦点、i18n LocaleProvider。
+  复用 @chenzy-design/core 的纯日期/分组算法（getMonthGrid/getWeekGrid/getDayHours/addMonths/addWeeks/addDays/timelineForDay…），不重复实现。
+  TODO(延后): 弹层、虚拟化、完整 roving 焦点。
 -->
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
   import {
     getMonthGrid,
     getWeekGrid,
+    getDayHours,
     weekdayOrder,
     isSameDay,
     startOfDay,
     addMonths,
     addWeeks,
+    addDays,
     groupEventsByDays,
+    timelineForDay,
     dayKey,
     isPastDay,
     type CalendarEvent,
@@ -24,7 +28,7 @@
   import { useLocale } from '../locale-provider/index.js';
 
   type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  type Mode = 'month' | 'week';
+  type Mode = 'month' | 'week' | 'day';
   type SelectionMode = 'single' | 'range';
   type RangeValue = [Date, Date];
 
@@ -36,6 +40,8 @@
     events?: CalendarEvent[];
     weekStartsOn?: WeekStart;
     maxEventsPerDay?: number;
+    dayStartHour?: number;
+    dayEndHour?: number;
     weekendDays?: number[];
     markWeekend?: boolean;
     disabledDate?: (date: Date) => boolean;
@@ -64,6 +70,8 @@
     events = [],
     weekStartsOn = 0,
     maxEventsPerDay = 3,
+    dayStartHour = 0,
+    dayEndHour = 23,
     weekendDays = [0, 6],
     markWeekend = true,
     disabledDate,
@@ -124,15 +132,20 @@
   let previewEnd = $state<Date | null>(null);
 
   // --- 网格与分组：全部从 props/本地 $state 派生 (红线 #2) ---
+  // day 模式不需要日格网格；给出空数组避免下游再分支
   const cells = $derived(
-    mode === 'week'
-      ? getWeekGrid(currentValue, weekStartsOn)
-      : getMonthGrid(currentValue, weekStartsOn),
+    mode === 'day'
+      ? []
+      : mode === 'week'
+        ? getWeekGrid(currentValue, weekStartsOn)
+        : getMonthGrid(currentValue, weekStartsOn),
   );
   const weeks = $derived(
     mode === 'week'
       ? [cells]
-      : Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, (i + 1) * 7)),
+      : mode === 'day'
+        ? []
+        : Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, (i + 1) * 7)),
   );
   const dayMap = $derived(
     groupEventsByDays(
@@ -140,6 +153,16 @@
       cells.map((c) => c.date),
       maxEventsPerDay,
     ),
+  );
+
+  // --- day 视图：单日时间轴（纯派生，红线 #2/#3） ---
+  const hourSlots = $derived(
+    mode === 'day' ? getDayHours(currentValue, dayStartHour, dayEndHour) : [],
+  );
+  const dayTimeline = $derived(
+    mode === 'day'
+      ? timelineForDay(events, currentValue, dayStartHour, dayEndHour)
+      : { allDay: [], byHour: new Map<number, CalendarEvent[]>() },
   );
 
   // --- Intl 格式化 ---
@@ -163,7 +186,26 @@
         : rangeTitleFormatter.format(last);
     return `${startText} – ${endText}`;
   });
-  const title = $derived(mode === 'week' ? weekTitle : titleFormatter.format(currentValue));
+  // day 模式标题：完整日期（含星期）
+  const dayTitleFullFormatter = $derived(
+    new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    }),
+  );
+  // 时间轴每行的小时标签（如 09:00）
+  const hourLabelFormatter = $derived(
+    new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false }),
+  );
+  const title = $derived(
+    mode === 'week'
+      ? weekTitle
+      : mode === 'day'
+        ? dayTitleFullFormatter.format(currentValue)
+        : titleFormatter.format(currentValue),
+  );
 
   // 星期表头：用首周 7 格的 date 生成名称（顺序与 weekStartsOn 一致）
   const weekdayOrderList = $derived(weekdayOrder(weekStartsOn));
@@ -177,11 +219,16 @@
     onChange?.({ value: next });
   }
 
+  function step(delta: number): Date {
+    if (mode === 'day') return addDays(currentValue, delta);
+    if (mode === 'week') return addWeeks(currentValue, delta);
+    return addMonths(currentValue, delta);
+  }
   function goPrev() {
-    setAnchor(mode === 'week' ? addWeeks(currentValue, -1) : addMonths(currentValue, -1));
+    setAnchor(step(-1));
   }
   function goNext() {
-    setAnchor(mode === 'week' ? addWeeks(currentValue, 1) : addMonths(currentValue, 1));
+    setAnchor(step(1));
   }
   function goToday() {
     setAnchor(new Date());
@@ -324,6 +371,60 @@
     </button>
   </div>
 
+  {#if mode === 'day'}
+    <div class="cd-calendar__timeline" aria-label={ariaLabel ?? title}>
+      {#if dayTimeline.allDay.length > 0}
+        <div class="cd-calendar__allday">
+          <div class="cd-calendar__allday-label">{loc().t('Calendar.allDay')}</div>
+          <div class="cd-calendar__allday-events">
+            {#each dayTimeline.allDay as ev (ev.key)}
+              {#if event}
+                {@render event({ event: ev })}
+              {:else}
+                <div
+                  class="cd-calendar__event"
+                  class:cd-calendar__event--disabled={ev.disabled}
+                  style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                  title={ev.title}
+                >
+                  <span class="cd-calendar__event-bar" aria-hidden="true"></span>
+                  <span class="cd-calendar__event-title">{ev.title}</span>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {/if}
+      <div class="cd-calendar__hours" role="list">
+        {#each hourSlots as slot (slot.hour)}
+          {@const hourEvents = dayTimeline.byHour.get(slot.hour) ?? []}
+          <div class="cd-calendar__hour" role="listitem">
+            <div class="cd-calendar__hour-label" aria-hidden="true">
+              {hourLabelFormatter.format(slot.date)}
+            </div>
+            <div class="cd-calendar__hour-slot">
+              {#each hourEvents as ev (ev.key)}
+                {#if event}
+                  {@render event({ event: ev })}
+                {:else}
+                  <div
+                    class="cd-calendar__event cd-calendar__event--timed"
+                    class:cd-calendar__event--disabled={ev.disabled}
+                    style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                    title={ev.title}
+                  >
+                    <span class="cd-calendar__event-bar" aria-hidden="true"></span>
+                    <span class="cd-calendar__event-time">{hourLabelFormatter.format(ev.start)}</span>
+                    <span class="cd-calendar__event-title">{ev.title}</span>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {:else}
   <div class="cd-calendar__grid" role="grid" aria-label={ariaLabel ?? title}>
     <div class="cd-calendar__row cd-calendar__row--head" role="row">
       {#each weekdayNames as name, i (weekdayOrderList[i])}
@@ -413,6 +514,7 @@
       </div>
     {/each}
   </div>
+  {/if}
 </div>
 
 <style>
@@ -614,6 +716,74 @@
     outline: none;
     box-shadow: 0 0 0 2px var(--cd-focus-ring);
     border-radius: var(--cd-calendar-radius);
+  }
+
+  /* --- day 视图：单日时间轴 --- */
+  .cd-calendar__timeline {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cd-calendar__allday {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    border-block-end: 1px solid var(--cd-calendar-border);
+    background: var(--cd-calendar-header-bg);
+  }
+  .cd-calendar__allday-label {
+    flex: 0 0 var(--cd-calendar-hour-label-w, 56px);
+    color: var(--cd-calendar-text-secondary);
+    font-weight: 500;
+    text-align: end;
+  }
+  .cd-calendar__allday-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-inline-size: 0;
+    flex: 1 1 auto;
+  }
+
+  .cd-calendar__hours {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-calendar__hour {
+    display: flex;
+    align-items: stretch;
+    gap: var(--cd-spacing-2);
+    min-block-size: var(--cd-calendar-hour-min-h, 40px);
+    border-block-end: 1px solid var(--cd-calendar-border);
+  }
+  .cd-calendar__hour:last-child {
+    border-block-end: none;
+  }
+  .cd-calendar__hour-label {
+    flex: 0 0 var(--cd-calendar-hour-label-w, 56px);
+    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    color: var(--cd-calendar-text-secondary);
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    border-inline-end: 1px solid var(--cd-calendar-border);
+  }
+  .cd-calendar__hour-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    padding: var(--cd-spacing-1);
+  }
+  .cd-calendar__event--timed {
+    padding-block: 2px;
+  }
+  .cd-calendar__event-time {
+    flex: 0 0 auto;
+    color: var(--cd-calendar-text-secondary);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.75rem;
   }
 
   @media (prefers-reduced-motion: reduce) {
