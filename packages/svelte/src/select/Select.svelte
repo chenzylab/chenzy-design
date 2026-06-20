@@ -2,7 +2,8 @@
   Select — see specs/components/input/Select.spec.md
   单选 / 多选 / 本地过滤 / 键盘导航 / 浮层。Token-driven, a11y-correct.
   下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
-  TODO(延后): 虚拟化、分组 GroupData、远程 remote/loading 防抖、allowCreate、maxTagCount 折叠。
+  maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
+  TODO(延后): 虚拟化、分组 GroupData、远程 remote/loading 防抖。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
@@ -27,6 +28,10 @@
     placeholder?: string;
     disabled?: boolean;
     clearable?: boolean;
+    /** 多选 tag 最大显示数，超出折叠为 +N（0=不折叠） */
+    maxTagCount?: number;
+    /** filter 无匹配时允许创建新选项（值=输入文本） */
+    allowCreate?: boolean;
     onChange?: (v: OptionValue | OptionValue[]) => void;
     onOpenChange?: (open: boolean) => void;
   }
@@ -44,6 +49,8 @@
     placeholder,
     disabled = false,
     clearable = false,
+    maxTagCount = 0,
+    allowCreate = false,
     onChange,
     onOpenChange,
   }: Props = $props();
@@ -97,11 +104,34 @@
   // --- 本地过滤搜索 ---
   let query = $state('');
 
+  // allowCreate：本地已创建选项，合并进选项集供回显与列表（不写回 options prop）。
+  let createdOptions = $state<OptionData[]>([]);
+  const mergedOptions = $derived<OptionData[]>(
+    createdOptions.length === 0 ? options : [...options, ...createdOptions],
+  );
+
   const filteredOptions = $derived.by(() => {
-    if (!filter || query.trim() === '') return options;
+    if (!filter || query.trim() === '') return mergedOptions;
     const q = query.toLowerCase();
-    return options.filter((o) => o.label.toLowerCase().includes(q));
+    return mergedOptions.filter((o) => o.label.toLowerCase().includes(q));
   });
+
+  // 当前输入是否可创建新选项：allowCreate + filter 有输入 + 无 label 完全匹配。
+  const canCreate = $derived(
+    allowCreate &&
+      filter &&
+      query.trim() !== '' &&
+      !mergedOptions.some((o) => o.label.toLowerCase() === query.trim().toLowerCase()),
+  );
+
+  function createOption() {
+    const label = query.trim();
+    if (!label) return;
+    const opt: OptionData = { label, value: label };
+    createdOptions = [...createdOptions, opt];
+    selectOption(opt);
+    query = '';
+  }
 
   // --- roving 高亮 (红线 #2): activeIndex 为本地 $state，不依赖挂载 registry ---
   let activeIndex = $state(-1);
@@ -113,7 +143,14 @@
   );
 
   const selectedOptions = $derived(
-    options.filter((o) => selectedValues.includes(o.value)),
+    mergedOptions.filter((o) => selectedValues.includes(o.value)),
+  );
+  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数
+  const visibleTags = $derived(
+    maxTagCount > 0 ? selectedOptions.slice(0, maxTagCount) : selectedOptions,
+  );
+  const hiddenTagCount = $derived(
+    maxTagCount > 0 ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
   );
 
   const singleLabel = $derived(
@@ -192,6 +229,8 @@
         } else if (activeIndex >= 0) {
           const opt = filteredOptions[activeIndex];
           if (opt) selectOption(opt);
+        } else if (canCreate) {
+          createOption();
         }
         break;
       case ' ':
@@ -264,7 +303,7 @@
   >
     <div class="cd-select__content">
       {#if multiple && selectedOptions.length > 0}
-        {#each selectedOptions as opt (opt.value)}
+        {#each visibleTags as opt (opt.value)}
           <span class="cd-select__tag">
             <span class="cd-select__tag-label">{opt.label}</span>
             <button
@@ -285,6 +324,9 @@
             </button>
           </span>
         {/each}
+        {#if hiddenTagCount > 0}
+          <span class="cd-select__tag cd-select__tag--rest">+{hiddenTagCount}</span>
+        {/if}
         {#if filter}
           <input
             class="cd-select__search"
@@ -346,7 +388,19 @@
       id={listId}
       aria-multiselectable={multiple}
     >
-      {#if filteredOptions.length === 0}
+      {#if canCreate}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <div
+          class="cd-select__option cd-select__option--create"
+          role="option"
+          aria-selected={false}
+          tabindex="-1"
+          onclick={createOption}
+        >
+          <span class="cd-select__option-label">{loc().t('Select.create', { label: query.trim() })}</span>
+        </div>
+      {/if}
+      {#if filteredOptions.length === 0 && !canCreate}
         <div class="cd-select__empty">{loc().t('Select.emptyText')}</div>
       {:else}
         {#each filteredOptions as opt, i (opt.value)}
@@ -466,6 +520,12 @@
     background: var(--cd-color-fill-1);
     border-radius: var(--cd-radius-1);
     font-size: var(--cd-font-size-1);
+  }
+  .cd-select__tag--rest {
+    color: var(--cd-color-text-2);
+  }
+  .cd-select__option--create {
+    color: var(--cd-color-primary);
   }
   .cd-select__tag-close {
     display: inline-flex;

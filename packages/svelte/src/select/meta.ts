@@ -19,6 +19,8 @@ export const meta = {
     { name: 'placeholder', type: 'string', default: "'请选择'" },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'clearable', type: 'boolean', default: 'false' },
+    { name: 'maxTagCount', type: 'number', default: '0', desc: '多选 tag 超出折叠为 +N（0=不折叠）' },
+    { name: 'allowCreate', type: 'boolean', default: 'false', desc: 'filter 无匹配时可创建新选项' },
     { name: 'onChange', type: '(v: string|number|(string|number)[]) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
   ],

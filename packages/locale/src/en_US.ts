@@ -143,6 +143,7 @@ export const en_US: Locale = {
     loading: 'Loading',
     clear: 'Clear',
     removeItem: 'Remove {label}',
+    create: 'Create "{label}"',
   },
   DatePicker: {
     placeholder: 'Select date',

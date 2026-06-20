@@ -143,6 +143,7 @@ export const zh_CN: Locale = {
     loading: '加载中',
     clear: '清除',
     removeItem: '移除 {label}',
+    create: '创建 "{label}"',
   },
   DatePicker: {
     placeholder: '请选择日期',
