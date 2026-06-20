@@ -33,6 +33,8 @@
     /** 视口溢出时翻转到对侧 */
     autoAdjustOverflow?: boolean;
     showArrow?: boolean;
+    /** start/end 对齐时箭头指向触发器中心（默认 false：贴对齐边） */
+    arrowPointAtCenter?: boolean;
     spacing?: number;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
@@ -52,6 +54,7 @@
     align = 'center',
     autoAdjustOverflow = true,
     showArrow = true,
+    arrowPointAtCenter = false,
     spacing = 8,
     mouseEnterDelay = 100,
     mouseLeaveDelay = 100,
@@ -191,7 +194,7 @@
       role="dialog"
       aria-modal="false"
       bind:this={popEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: spacing, onPlacement }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: spacing, arrowPointAtCenter, onPlacement }}
       class="cd-popover__pop cd-popover__pop--{resolvedSide}"
       class:cd-popover__pop--no-arrow={!showArrow}
     >

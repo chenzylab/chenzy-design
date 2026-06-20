@@ -154,4 +154,33 @@ describe('computePosition arrowOffset', () => {
     // trigger center x = 1000; popup leading x clamped to 916 → 84, clamped to popup-4 = 76
     expect(r.arrowOffset).toBe(76);
   });
+
+  it('pins the arrow near the aligned edge for start alignment by default', () => {
+    const r = computePosition({ ...base, placement: 'bottomStart' });
+    // default arrowEdgeDistance 12, measured from the leading (left) edge
+    expect(r.arrowOffset).toBe(12);
+  });
+
+  it('pins the arrow near the aligned edge for end alignment by default', () => {
+    const r = computePosition({ ...base, placement: 'bottomEnd' });
+    // popup width 80 − edgeDistance 12 = 68
+    expect(r.arrowOffset).toBe(68);
+  });
+
+  it('honors a custom arrowEdgeDistance', () => {
+    const r = computePosition({ ...base, placement: 'bottomStart', arrowEdgeDistance: 20 });
+    expect(r.arrowOffset).toBe(20);
+  });
+
+  it('points start-aligned arrow at the trigger center when arrowPointAtCenter', () => {
+    const r = computePosition({ ...base, placement: 'bottomStart', arrowPointAtCenter: true });
+    // popup leading x = trigger.x = 200; trigger center x = 250 → 50
+    expect(r.arrowOffset).toBe(50);
+  });
+
+  it('points end-aligned arrow at the trigger center when arrowPointAtCenter', () => {
+    const r = computePosition({ ...base, placement: 'bottomEnd', arrowPointAtCenter: true });
+    // popup leading x = 200+100−80 = 220; trigger center x = 250 → 30
+    expect(r.arrowOffset).toBe(30);
+  });
 });

@@ -51,6 +51,17 @@ export interface ComputePositionInput {
   autoAdjust?: boolean;
   /** keep the popup at least this far from the viewport edge (px) */
   padding?: number;
+  /**
+   * For start/end-aligned placements, point the arrow at the trigger center
+   * instead of pinning it a fixed distance from the popup's aligned edge.
+   * Centered placements always point at the center either way. Default false.
+   */
+  arrowPointAtCenter?: boolean;
+  /**
+   * For start/end alignment with arrowPointAtCenter=false, the distance (px)
+   * from the popup's aligned edge to the arrow center. Default 12.
+   */
+  arrowEdgeDistance?: number;
 }
 
 export interface ComputePositionResult {
@@ -213,15 +224,28 @@ export function computePosition(input: ComputePositionInput): ComputePositionRes
     y = clamp(rawY, padding, viewport.height - popupRect.height - padding);
   }
 
-  // arrow points at the trigger center; offset is measured from the popup's
-  // leading cross-axis edge to that center, clamped inside the popup.
+  // Arrow cross-axis offset, measured from the popup's leading edge.
+  // - centered align: always at the trigger center (== popup center).
+  // - start/end align + arrowPointAtCenter: at the trigger center too.
+  // - start/end align (default): pinned `arrowEdgeDistance` from the aligned
+  //   edge, so the arrow hugs the corner the popup lines up with.
   const vertical = isVerticalSide(side);
-  const triggerCenter = vertical
-    ? triggerRect.x + triggerRect.width / 2
-    : triggerRect.y + triggerRect.height / 2;
   const popupLeadingEdge = vertical ? x : y;
   const popupCrossSize = vertical ? popupRect.width : popupRect.height;
-  const arrowOffset = clamp(triggerCenter - popupLeadingEdge, padding, popupCrossSize - padding);
+  const edgeDistance = input.arrowEdgeDistance ?? 12;
+  const pointAtCenter = input.arrowPointAtCenter ?? false;
+
+  let arrowOffset: number;
+  if (align === 'center' || pointAtCenter) {
+    const triggerCenter = vertical
+      ? triggerRect.x + triggerRect.width / 2
+      : triggerRect.y + triggerRect.height / 2;
+    arrowOffset = clamp(triggerCenter - popupLeadingEdge, padding, popupCrossSize - padding);
+  } else if (align === 'start') {
+    arrowOffset = clamp(edgeDistance, padding, popupCrossSize - padding);
+  } else {
+    arrowOffset = clamp(popupCrossSize - edgeDistance, padding, popupCrossSize - padding);
+  }
 
   return { x, y, placement: makePlacement(side, align), side, align, arrowOffset };
 }
