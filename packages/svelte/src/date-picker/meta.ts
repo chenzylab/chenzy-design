@@ -6,9 +6,9 @@ export const meta = {
   name: 'DatePicker',
   category: 'input',
   description:
-    '日期选择器，type=date 日历面板 / type=dateTime 日期+时间（复用 TimePicker 时分秒列），受控/非受控；显示与星期/月份均经 Intl.DateTimeFormat 本地化。',
+    '日期选择器，type=date 日历面板 / type=dateTime 日期+时间（复用 TimePicker 时分秒列）/ type=month 月份面板 / type=year 年份面板，受控/非受控；显示与星期/月份/年份均经 Intl.DateTimeFormat 本地化。',
   props: [
-    { name: 'type', type: "'date'|'dateTime'", default: "'date'" },
+    { name: 'type', type: "'date'|'dateTime'|'month'|'year'", default: "'date'" },
     { name: 'value', type: 'Date | null', default: 'undefined' },
     { name: 'defaultValue', type: 'Date | null', default: 'null' },
     { name: 'open', type: 'boolean', default: 'undefined' },
@@ -34,6 +34,8 @@ export const meta = {
       '触发器 Enter/Space/↓ 打开；面板内方向键移动高亮日、Enter 选中、Esc 关闭',
       'roving tabindex：仅高亮日可聚焦',
       'type=dateTime：时/分/秒列 role=listbox + option，选日期不关面板，点确定关闭',
+      'type=month：12 个月格，头部显示年份 + 左右切年；点月份选中并关闭',
+      'type=year：一页 12 年（一十年 + 前后各 1 占位），头部显示十年范围 + 左右切十年；点年份选中并关闭',
     ],
   },
   tokens: ['--cd-date-picker-*', '--cd-input-*', '--cd-focus-ring', '--cd-motion-*'],

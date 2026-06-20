@@ -304,6 +304,8 @@
   let dateVal = $state<Date | null>(null);
   let dateTimeVal = $state<Date | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
+let monthVal = $state<Date | null>(null);
+let yearVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
@@ -836,6 +838,22 @@ let pageSize2 = $state(10);
       </span>
       <Text type="tertiary">
         日期时间：{dateTimeVal ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-month" style="width:260px; display:inline-block">
+        <DatePicker type="month" value={monthVal} onChange={(d) => (monthVal = d)} />
+      </span>
+      <Text type="tertiary">
+        月份：{monthVal ? `${monthVal.getFullYear()}-${monthVal.getMonth() + 1}` : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-year" style="width:260px; display:inline-block">
+        <DatePicker type="year" value={yearVal} onChange={(d) => (yearVal = d)} />
+      </span>
+      <Text type="tertiary">
+        年份：{yearVal ? yearVal.getFullYear() : '（未选）'}
       </Text>
     </Space>
     <Space>

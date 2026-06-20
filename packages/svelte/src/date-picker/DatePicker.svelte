@@ -12,7 +12,7 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
-  type PickerType = 'date' | 'dateTime';
+  type PickerType = 'date' | 'dateTime' | 'month' | 'year';
 
   interface Props {
     type?: PickerType;
@@ -55,6 +55,8 @@
   }: Props = $props();
 
   const isDateTime = $derived(type === 'dateTime');
+  const isMonth = $derived(type === 'month');
+  const isYear = $derived(type === 'year');
 
   const loc = useLocale();
 
@@ -107,22 +109,59 @@
 
   // --- Intl 本地化格式化器 (不手拼日期串) ---
   const triggerFormat = $derived(
-    new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      ...(isDateTime
-        ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
-        : {}),
-    }),
+    new Intl.DateTimeFormat(
+      locale,
+      isYear
+        ? { year: 'numeric' }
+        : isMonth
+          ? { year: 'numeric', month: '2-digit' }
+          : {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              ...(isDateTime
+                ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+                : {}),
+            },
+    ),
   );
   const headerFormat = $derived(
     new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
   );
+  // 仅年份的头部文案 (month 面板头部 / year 面板基准)
+  const yearFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric' }));
+  // 月格短名 (month 面板 12 格)
+  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
 
   const displayText = $derived(current ? triggerFormat.format(current) : (placeholder ?? loc().t('DatePicker.placeholder')));
-  const headerText = $derived(headerFormat.format(cursor));
+
+  // --- 十年范围 (year 面板)：以 cursor 年所在的十年起点对齐 ---
+  const decadeStart = $derived(Math.floor(cursor.getFullYear() / 10) * 10);
+  const headerText = $derived(
+    isYear
+      ? `${decadeStart}-${decadeStart + 9}`
+      : isMonth
+        ? yearFormat.format(cursor)
+        : headerFormat.format(cursor),
+  );
+
+  // month 面板 12 个月格 (用 cursor 年份 + 0..11 月)
+  const monthCells = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const date = new Date(cursor.getFullYear(), m, 1);
+      return { date, label: monthShortFormat.format(date), month: m };
+    }),
+  );
+
+  // year 面板格子：前后各留 1 个邻十年年份用于占位，共 12 格
+  const yearCells = $derived(
+    Array.from({ length: 12 }, (_, i) => {
+      const year = decadeStart - 1 + i;
+      const date = new Date(year, 0, 1);
+      return { date, year, inDecade: year >= decadeStart && year <= decadeStart + 9 };
+    }),
+  );
 
   // 星期名: 用 weekdayOrder + 一个已知周日基准 (2023-01-01 是星期日) 经 Intl 本地化
   const weekdayNames = $derived(
@@ -139,6 +178,51 @@
   function nextMonth() {
     cursor = addMonths(cursor, 1);
   }
+  // month 面板：切年（±12 个月）
+  function prevYear() {
+    cursor = addMonths(cursor, -12);
+  }
+  function nextYear() {
+    cursor = addMonths(cursor, 12);
+  }
+  // year 面板：切十年
+  function prevDecade() {
+    cursor = new Date(cursor.getFullYear() - 10, cursor.getMonth(), 1);
+  }
+  function nextDecade() {
+    cursor = new Date(cursor.getFullYear() + 10, cursor.getMonth(), 1);
+  }
+
+  // 选中某个月：保留年+月，归一到该月 1 号起始
+  function selectMonth(date: Date) {
+    if (disabledDate?.(date)) return;
+    setValue(startOfDay(date));
+    setOpen(false);
+  }
+  // 选中某一年：归一到该年 1 月 1 号起始
+  function selectYear(date: Date) {
+    if (disabledDate?.(date)) return;
+    setValue(startOfDay(date));
+    setOpen(false);
+  }
+
+  // 头部导航按面板类型分派（month=切年, year=切十年, 其它=切月）
+  const onPrev = $derived(isYear ? prevDecade : isMonth ? prevYear : prevMonth);
+  const onNext = $derived(isYear ? nextDecade : isMonth ? nextYear : nextMonth);
+  const prevLabel = $derived(
+    isYear
+      ? loc().t('DatePicker.prevDecade')
+      : isMonth
+        ? loc().t('DatePicker.prevYear')
+        : loc().t('DatePicker.prevMonth'),
+  );
+  const nextLabel = $derived(
+    isYear
+      ? loc().t('DatePicker.nextDecade')
+      : isMonth
+        ? loc().t('DatePicker.nextYear')
+        : loc().t('DatePicker.nextMonth'),
+  );
 
   // --- 时间部分 (dateTime)：复用 TimePicker 的列逻辑 ---
   const selectedHour = $derived(current ? current.getHours() : 0);
@@ -170,6 +254,16 @@
 
   function selectToday() {
     if (disabledDate?.(today)) return;
+    if (isMonth) {
+      setValue(startOfDay(new Date(today.getFullYear(), today.getMonth(), 1)));
+      setOpen(false);
+      return;
+    }
+    if (isYear) {
+      setValue(startOfDay(new Date(today.getFullYear(), 0, 1)));
+      setOpen(false);
+      return;
+    }
     setValue(combine(today));
     if (!isDateTime) setOpen(false);
   }
@@ -373,8 +467,8 @@
         <button
           type="button"
           class="cd-date-picker__nav"
-          aria-label={loc().t('DatePicker.prevMonth')}
-          onclick={prevMonth}
+          aria-label={prevLabel}
+          onclick={onPrev}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
@@ -384,8 +478,8 @@
         <button
           type="button"
           class="cd-date-picker__nav"
-          aria-label={loc().t('DatePicker.nextMonth')}
-          onclick={nextMonth}
+          aria-label={nextLabel}
+          onclick={onNext}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
@@ -393,36 +487,87 @@
         </button>
       </div>
 
-      <div class="cd-date-picker__weekdays" aria-hidden="true">
-        {#each weekdayNames as name, i (i)}
-          <span class="cd-date-picker__weekday">{name}</span>
-        {/each}
-      </div>
+      {#if isMonth}
+        <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid">
+          {#each monthCells as cell (cell.month)}
+            {@const isSelected =
+              current !== null &&
+              current.getFullYear() === cell.date.getFullYear() &&
+              current.getMonth() === cell.month}
+            {@const isCurrent =
+              today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+            {@const isDisabled = disabledDate?.(cell.date) ?? false}
+            <button
+              type="button"
+              class="cd-date-picker__cell cd-date-picker__cell--block"
+              class:cd-date-picker__cell--selected={isSelected}
+              class:cd-date-picker__cell--today={isCurrent}
+              role="gridcell"
+              aria-selected={isSelected}
+              aria-disabled={isDisabled || undefined}
+              disabled={isDisabled}
+              tabindex={-1}
+              onclick={() => selectMonth(cell.date)}
+            >
+              {cell.label}
+            </button>
+          {/each}
+        </div>
+      {:else if isYear}
+        <div class="cd-date-picker__grid cd-date-picker__grid--year" role="grid">
+          {#each yearCells as cell (cell.year)}
+            {@const isSelected = current !== null && current.getFullYear() === cell.year}
+            {@const isCurrent = today.getFullYear() === cell.year}
+            {@const isDisabled = disabledDate?.(cell.date) ?? false}
+            <button
+              type="button"
+              class="cd-date-picker__cell cd-date-picker__cell--block"
+              class:cd-date-picker__cell--muted={!cell.inDecade}
+              class:cd-date-picker__cell--selected={isSelected}
+              class:cd-date-picker__cell--today={isCurrent}
+              role="gridcell"
+              aria-selected={isSelected}
+              aria-disabled={isDisabled || undefined}
+              disabled={isDisabled}
+              tabindex={-1}
+              onclick={() => selectYear(cell.date)}
+            >
+              {cell.year}
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <div class="cd-date-picker__weekdays" aria-hidden="true">
+          {#each weekdayNames as name, i (i)}
+            <span class="cd-date-picker__weekday">{name}</span>
+          {/each}
+        </div>
 
-      <div class="cd-date-picker__grid" role="grid">
-        {#each grid as cell (cell.date.getTime())}
-          {@const isSelected = isSameDay(cell.date, current)}
-          {@const isToday = isSameDay(cell.date, today)}
-          {@const isHighlight = isSameDay(cell.date, highlight)}
-          {@const isDisabled = disabledDate?.(cell.date) ?? false}
-          <button
-            type="button"
-            class="cd-date-picker__cell"
-            class:cd-date-picker__cell--muted={!cell.inMonth}
-            class:cd-date-picker__cell--selected={isSelected}
-            class:cd-date-picker__cell--today={isToday}
-            class:cd-date-picker__cell--highlight={isHighlight}
-            role="gridcell"
-            aria-selected={isSelected}
-            aria-disabled={isDisabled || undefined}
-            disabled={isDisabled}
-            tabindex={isHighlight ? 0 : -1}
-            onclick={() => selectDate(cell.date)}
-          >
-            {cell.date.getDate()}
-          </button>
-        {/each}
-      </div>
+        <div class="cd-date-picker__grid" role="grid">
+          {#each grid as cell (cell.date.getTime())}
+            {@const isSelected = isSameDay(cell.date, current)}
+            {@const isToday = isSameDay(cell.date, today)}
+            {@const isHighlight = isSameDay(cell.date, highlight)}
+            {@const isDisabled = disabledDate?.(cell.date) ?? false}
+            <button
+              type="button"
+              class="cd-date-picker__cell"
+              class:cd-date-picker__cell--muted={!cell.inMonth}
+              class:cd-date-picker__cell--selected={isSelected}
+              class:cd-date-picker__cell--today={isToday}
+              class:cd-date-picker__cell--highlight={isHighlight}
+              role="gridcell"
+              aria-selected={isSelected}
+              aria-disabled={isDisabled || undefined}
+              disabled={isDisabled}
+              tabindex={isHighlight ? 0 : -1}
+              onclick={() => selectDate(cell.date)}
+            >
+              {cell.date.getDate()}
+            </button>
+          {/each}
+        </div>
+      {/if}
       </div>
 
       {#if isDateTime}
@@ -717,6 +862,18 @@
     display: grid;
     grid-template-columns: repeat(7, var(--cd-date-picker-cell-size));
     gap: 2px;
+  }
+  /* month/year 面板：3 列大格 */
+  .cd-date-picker__grid--month,
+  .cd-date-picker__grid--year {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--cd-spacing-1);
+    inline-size: calc(var(--cd-date-picker-cell-size) * 7 + 2px * 6);
+  }
+  .cd-date-picker__cell--block {
+    inline-size: auto;
+    padding-inline: var(--cd-spacing-2);
+    block-size: calc(var(--cd-date-picker-cell-size) * 1.4);
   }
   .cd-date-picker__weekday {
     display: inline-flex;
