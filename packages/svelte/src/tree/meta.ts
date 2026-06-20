@@ -69,6 +69,7 @@ export const meta = {
       desc: '展开变更',
     },
     { name: 'label', type: 'Snippet', default: 'undefined', desc: '自定义节点内容' },
+    { name: 'icon', type: 'Snippet<[{ node, expanded, level }]>', default: 'undefined', desc: '自定义节点图标（showIcon 时渲染在 label 前）' },
   ],
   events: [
     { name: 'onChange', desc: '选中节点变更：{ value, node, selected }' },
