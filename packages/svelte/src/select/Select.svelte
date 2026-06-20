@@ -5,10 +5,19 @@
   maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
   分组：options 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
   remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 options；loading 显示 spinner。
-  TODO(延后): 虚拟化。
+  虚拟化：virtualized=true 时下拉只渲染视口内 option（复用 core fixedRange），spacer 撑总高、
+  option 绝对定位按索引偏移；scrollTop 由命令式 scroll 回调 + rAF 节流写入本地 $state，可见区间
+  纯 $derived render 期只读（红线 #2/#3）。键盘移动 activeIndex 时命令式 scrollOffsetForIndex 滚到可见
+  （未渲染的 active option 移动后会被滚进视口而渲染，a11y 取舍同 Tree 虚拟化）。
+  虚拟化仅作用于「非分组」扁平选项集（hasGroups 时回退全量渲染，忽略 virtualized）。
 -->
 <script lang="ts">
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    fixedRange,
+    scrollOffsetForIndex,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
 
@@ -48,6 +57,12 @@
     loading?: boolean;
     /** onSearch 防抖毫秒（默认 300） */
     searchDebounce?: number;
+    /** 选项虚拟化：大数据下拉只渲染视口内 option（仅非分组生效，默认 false） */
+    virtualized?: boolean;
+    /** 虚拟化选项行高（px，默认 32）；需与样式实际行高一致 */
+    optionHeight?: number;
+    /** 下拉最大高度（px，默认 256）；虚拟化时同时作为视口高度 */
+    maxHeight?: number;
     onChange?: (v: OptionValue | OptionValue[]) => void;
     onOpenChange?: (open: boolean) => void;
   }
@@ -70,6 +85,9 @@
     onSearch,
     loading = false,
     searchDebounce = 300,
+    virtualized = false,
+    optionHeight = 32,
+    maxHeight = 256,
     onChange,
     onOpenChange,
   }: Props = $props();
@@ -196,6 +214,29 @@
       : undefined,
   );
 
+  // --- 选项虚拟化（仅非分组生效；分组时回退全量渲染）---
+  // 视口=下拉容器自身滚动；scrollTop 由命令式 scroll 回调写入本地 $state，
+  // 可见区间纯 $derived render 期只读不读 DOM（红线 #2/#3）。
+  const VIRTUAL_OVERSCAN = 4;
+  const isVirtual = $derived(virtualized && !hasGroups);
+  const vOptionHeight = $derived(optionHeight > 0 ? optionHeight : 32);
+  const vViewportH = $derived(maxHeight > 0 ? maxHeight : 256);
+  // 仅由 scroll 回调写入的本地 scrollTop，render 期只读。
+  let scrollTop = $state(0);
+  // rAF 节流句柄（非响应式）。
+  let rafId = 0;
+
+  const vTotalHeight = $derived(filteredOptions.length * vOptionHeight);
+  const vRange = $derived(
+    isVirtual
+      ? fixedRange(scrollTop, vViewportH, vOptionHeight, filteredOptions.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: filteredOptions.length },
+  );
+  // 实际喂给 #each 的选项集合：虚拟化时只取视口内切片，否则全量。
+  const vRenderOptions = $derived(
+    isVirtual ? filteredOptions.slice(vRange.startIndex, vRange.endIndex) : filteredOptions,
+  );
+
   const selectedOptions = $derived(
     mergedOptions.filter((o) => selectedValues.includes(o.value)),
   );
@@ -258,9 +299,32 @@
       next = (next + delta + len) % len;
       if (!filteredOptions[next]?.disabled) {
         activeIndex = next;
+        scrollIndexIntoView(next);
         return;
       }
     }
+  }
+
+  // 命令式滚到指定选项索引使其落入视口（虚拟化键盘导航时调用）。
+  // 未渲染的 active option 经此滚入视口后才会渲染（a11y 取舍同 Tree 虚拟化）。
+  function scrollIndexIntoView(index: number) {
+    const el = dropdownEl;
+    if (!el || !isVirtual || index < 0) return;
+    const itemStart = index * vOptionHeight;
+    const top = el.scrollTop;
+    const bottom = top + el.clientHeight;
+    // 已完整可见则不滚动，避免抖动。
+    if (itemStart >= top && itemStart + vOptionHeight <= bottom) return;
+    const align = itemStart < top ? 'start' : 'end';
+    const target = scrollOffsetForIndex(
+      itemStart,
+      vOptionHeight,
+      el.clientHeight,
+      vTotalHeight,
+      align,
+    );
+    el.scrollTop = target;
+    scrollTop = target;
   }
 
   function onTriggerKeydown(e: KeyboardEvent) {
@@ -329,6 +393,30 @@
   // --- DOM 引用：触发根 + portal 下拉（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
   let dropdownEl = $state<HTMLDivElement | null>(null);
+
+  // --- 虚拟化滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）---
+  // 开启下拉后绑定到滚动容器；scrollTop 写本地 $state 驱动 vRange 派生。
+  $effect(() => {
+    const el = dropdownEl;
+    if (!el || !isOpen || !isVirtual) return;
+    // 重新打开时复位滚动位置，避免沿用上次 scrollTop。
+    scrollTop = el.scrollTop;
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (el) scrollTop = el.scrollTop;
+      });
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+  });
 
   // --- useDismiss (红线 #3): dropdown portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
@@ -457,6 +545,7 @@
       id={listId}
       aria-multiselectable={multiple}
       aria-busy={loading || undefined}
+      style={`max-block-size:${maxHeight}px`}
     >
       {#if loading}
         <div class="cd-select__loading">
@@ -487,6 +576,17 @@
             {@render optionRow(it.opt, it.flatIndex)}
           {/each}
         {/each}
+      {:else if isVirtual}
+        <!-- 虚拟化：spacer 撑总高，可见 option 绝对定位按全局索引偏移；只渲染视口切片 -->
+        <div class="cd-select__spacer" style={`block-size:${vTotalHeight}px`}>
+          {#each vRenderOptions as opt, i (opt.value)}
+            {@render optionRow(
+              opt,
+              vRange.startIndex + i,
+              `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * vOptionHeight}px); block-size:${vOptionHeight}px`,
+            )}
+          {/each}
+        </div>
       {:else}
         {#each filteredOptions as opt, i (opt.value)}
           {@render optionRow(opt, i)}
@@ -496,7 +596,7 @@
   {/if}
 </div>
 
-{#snippet optionRow(opt: OptionData, i: number)}
+{#snippet optionRow(opt: OptionData, i: number, style?: string)}
   <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
@@ -508,6 +608,7 @@
     aria-selected={isSelected(opt.value)}
     aria-disabled={opt.disabled || undefined}
     tabindex="-1"
+    {style}
     onpointerenter={() => {
       if (!opt.disabled) activeIndex = i;
     }}
@@ -661,6 +762,16 @@
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  /* 虚拟化：spacer 撑出未渲染选项的总高，可见 option 绝对定位于其内 */
+  .cd-select__spacer {
+    position: relative;
+    inline-size: 100%;
+  }
+  /* 虚拟化行带固定 block-size + 内边距，需 border-box 保证行高与 optionHeight 一致 */
+  .cd-select__spacer .cd-select__option {
+    box-sizing: border-box;
+    overflow: hidden;
   }
   .cd-select__group-label {
     padding: var(--cd-spacing-1) var(--cd-select-option-padding, var(--cd-spacing-2));

@@ -613,6 +613,13 @@ let pageSize2 = $state(10);
     { label: '葡萄', value: 'grape' },
   ];
 
+  // 虚拟化大数据：1000+ 选项，下拉只渲染视口内 ~15 个。
+  const bigOptions = Array.from({ length: 2000 }, (_, i) => ({
+    label: `选项 ${i + 1}`,
+    value: i + 1,
+  }));
+  let bigVal = $state<string | number>('');
+
   let collapsed = $state(false);
   let inputVal = $state('');
   let switchOn = $state(true);
@@ -1020,6 +1027,19 @@ let pageSize2 = $state(10);
         onChange={(v) => (multiVal = v as (string | number)[])}
       />
       <Text type="tertiary">多选（折叠 2 / 可创建）：{multiVal.join(', ') || '（无）'}</Text>
+    </div>
+
+    <div style="width: 260px" data-testid="select-virtualized">
+      <Select
+        options={bigOptions}
+        virtualized
+        filter
+        clearable
+        placeholder="虚拟化（2000 选项）"
+        value={bigVal}
+        onChange={(v) => (bigVal = v as string | number)}
+      />
+      <Text type="tertiary">虚拟化单选：{bigVal || '（未选）'}</Text>
     </div>
 
     <div style="width: 220px">
