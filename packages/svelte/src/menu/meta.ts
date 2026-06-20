@@ -11,9 +11,9 @@ export const meta = {
     { name: 'items', type: 'MenuItemDef[]', default: '[]', desc: '菜单数据（含 children 即 SubMenu）' },
     {
       name: 'mode',
-      type: "'vertical'|'inline'",
+      type: "'vertical'|'inline'|'horizontal'",
       default: 'vertical',
-      desc: 'vertical=SubMenu hover 浮层弹出（多级）；inline=内联展开',
+      desc: 'vertical=SubMenu hover 浮层；inline=内联展开；horizontal=顶部菜单栏 + ←→ roving',
     },
     {
       name: 'selectedKeys',

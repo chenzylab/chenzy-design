@@ -4,17 +4,17 @@
   selectedKeys 单选, openKeys 展开/收起, navigation 语义 (role=menu/menuitem)。
   受控/非受控 (红线 #1: 不回写 prop, 仅 onChange/onOpenChange)。
   展开状态用本地 Set $state (红线 #2: 不读挂载 registry)。
-  vertical 模式: SubMenu 改为 hover 弹出浮层 (复用 _floating, rightStart 定位, 多级嵌套),
+  vertical 模式: SubMenu 改为 hover 弹出浮层 (复用 _floating, 顶层 bottomStart + 嵌套 rightStart, 多级嵌套),
   进入/离开带延迟避免缝隙抖动; inline 模式保持内联展开。
-  TODO(延后): horizontal/menubar roving、inlineCollapsed 图标轨、
-  multiple、commands purpose、nav+links 语义区分。
+  horizontal 模式: 顶部菜单栏 (role=menubar), 顶层项横排 + ←→ roving 键盘切换, SubMenu 向下弹浮层 (复用 MenuPopupNode)。
+  TODO(延后): inlineCollapsed 图标轨、multiple、commands purpose、nav+links 语义区分。
 -->
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import MenuPopupNode from './MenuPopupNode.svelte';
   import type { MenuItemDef, MenuKey } from './types.js';
 
-  type Mode = 'vertical' | 'inline';
+  type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
 
   interface Props {
@@ -102,6 +102,27 @@
   const cls = $derived(
     ['cd-menu', `cd-menu--${mode}`, `cd-menu--${size}`].join(' '),
   );
+
+  // horizontal menubar：←→ 在顶层项间 roving 移动焦点（顶层是 li 直下的可聚焦元素）
+  let rootEl = $state<HTMLUListElement | null>(null);
+  function onMenubarKeydown(e: KeyboardEvent) {
+    if (mode !== 'horizontal') return;
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+    if (!rootEl) return;
+    // 顶层可聚焦项：每个顶层 li 内的第一个 menuitem 按钮/链接
+    const tops = [...rootEl.children]
+      .map((li) => li.querySelector<HTMLElement>('[role="menuitem"]'))
+      .filter((el): el is HTMLElement => el !== null);
+    if (tops.length === 0) return;
+    const cur = tops.findIndex((el) => el === document.activeElement);
+    e.preventDefault();
+    let next = cur;
+    if (e.key === 'ArrowRight') next = cur < 0 ? 0 : (cur + 1) % tops.length;
+    else if (e.key === 'ArrowLeft') next = cur < 0 ? tops.length - 1 : (cur - 1 + tops.length) % tops.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tops.length - 1;
+    tops[next]?.focus();
+  }
 </script>
 
 {#snippet renderItems(list: MenuItemDef[], level: number)}
@@ -159,8 +180,16 @@
   {/each}
 {/snippet}
 
-<ul class={cls} role="menu" aria-label={ariaLabel}>
-  {#if mode === 'vertical'}
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<ul
+  class={cls}
+  role={mode === 'horizontal' ? 'menubar' : 'menu'}
+  aria-label={ariaLabel}
+  aria-orientation={mode === 'horizontal' ? 'horizontal' : undefined}
+  bind:this={rootEl}
+  onkeydown={onMenubarKeydown}
+>
+  {#if mode === 'vertical' || mode === 'horizontal'}
     {#each items as item (item.key)}
       <MenuPopupNode
         {item}
@@ -182,6 +211,20 @@
     list-style: none;
     background: var(--cd-menu-bg);
     color: var(--cd-menu-item-color);
+  }
+  /* horizontal 菜单栏：顶层项横排。顶层 li/控件由 MenuPopupNode 渲染（独立组件），
+     故用 :global 穿透 scoped 边界控制其方向与宽度。 */
+  .cd-menu--horizontal {
+    display: flex;
+    align-items: stretch;
+    border-block-end: 1px solid var(--cd-menu-border-color, var(--cd-color-border));
+  }
+  .cd-menu--horizontal > :global(.cd-menu__item) {
+    display: flex;
+  }
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link),
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title) {
+    inline-size: auto;
   }
   .cd-menu__item {
     margin: 0;
