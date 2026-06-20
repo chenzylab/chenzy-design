@@ -24,7 +24,9 @@
     prefix?: Snippet;
     suffix?: Snippet;
     name?: string;
+    id?: string;
     ariaLabel?: string;
+    ariaDescribedby?: string;
     onChange?: (v: string) => void;
     onInput?: (v: string) => void;
     onClear?: () => void;
@@ -46,7 +48,9 @@
     prefix,
     suffix,
     name,
+    id,
     ariaLabel,
+    ariaDescribedby,
     onChange,
     onInput,
     onClear,
@@ -131,12 +135,14 @@
     class="cd-input__native"
     type={inputType}
     {name}
+    {id}
     {disabled}
     {readonly}
     {placeholder}
     maxlength={maxLength}
     value={current}
     aria-label={ariaLabel}
+    aria-describedby={ariaDescribedby}
     aria-invalid={status === 'error' || undefined}
     oninput={handleInput}
     onchange={handleChange}
