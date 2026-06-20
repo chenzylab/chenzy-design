@@ -184,6 +184,10 @@ export interface Locale {
     clear: string;
     prevMonth: string;
     nextMonth: string;
+    prevYear: string;
+    nextYear: string;
+    prevDecade: string;
+    nextDecade: string;
     triggerLabel: string;
     startPlaceholder: string;
     endPlaceholder: string;
