@@ -901,6 +901,24 @@ let pageSize2 = $state(10);
         <Button type="secondary">贴右</Button>
       </Tooltip>
     </div>
+
+    <div data-testid="tooltip-arrow-center" style="display:flex; gap:120px; margin-top:24px">
+      <Tooltip content="默认：箭头贴对齐边" placement="bottomStart" defaultOpen>
+        <span style="display:inline-block; width:200px; text-align:center">
+          <Button type="secondary">bottomStart 默认</Button>
+        </span>
+      </Tooltip>
+      <Tooltip
+        content="arrowPointAtCenter：箭头指向中心"
+        placement="bottomStart"
+        arrowPointAtCenter
+        defaultOpen
+      >
+        <span style="display:inline-block; width:200px; text-align:center">
+          <Button type="secondary">bottomStart 指中心</Button>
+        </span>
+      </Tooltip>
+    </div>
   </Space>
 
   <Divider />

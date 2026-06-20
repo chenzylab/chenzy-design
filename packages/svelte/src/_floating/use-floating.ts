@@ -20,6 +20,10 @@ export interface UseFloatingOptions {
   padding?: number;
   /** set the popup's min-inline-size to the trigger width (Select-style dropdowns) */
   matchWidth?: boolean;
+  /** point start/end-aligned arrows at the trigger center (default false) */
+  arrowPointAtCenter?: boolean;
+  /** distance (px) from the aligned edge to the arrow for start/end alignment */
+  arrowEdgeDistance?: number;
   /** called after each reposition with the resolved side/align + arrow offset */
   onPlacement?: (info: { placement: Placement; arrowOffset: number }) => void;
 }
@@ -52,6 +56,8 @@ export function useFloating(
     autoAdjust = true,
     padding = 4,
     matchWidth = false,
+    arrowPointAtCenter = false,
+    arrowEdgeDistance,
     onPlacement,
   } = options;
 
@@ -81,6 +87,8 @@ export function useFloating(
       offset,
       autoAdjust,
       padding,
+      arrowPointAtCenter,
+      ...(arrowEdgeDistance !== undefined ? { arrowEdgeDistance } : {}),
     });
     popup.style.transform = `translate(${Math.round(result.x)}px, ${Math.round(result.y)}px)`;
     onPlacement?.({ placement: result.placement, arrowOffset: result.arrowOffset });
@@ -135,6 +143,7 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
   let handle: FloatingHandle | undefined;
   let lastTrigger = params.trigger;
   let lastPlacement = params.placement;
+  let lastPointAtCenter = params.arrowPointAtCenter;
 
   function start(p: FloatingActionParams) {
     if (!p.trigger) return;
@@ -152,9 +161,14 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
       // only rebuild (re-portal + re-listen) when the anchor or requested
       // placement changes; otherwise just reposition in place. This avoids a
       // rebuild loop when onPlacement writes back the resolved placement.
-      if (next.trigger !== lastTrigger || next.placement !== lastPlacement) {
+      if (
+        next.trigger !== lastTrigger ||
+        next.placement !== lastPlacement ||
+        next.arrowPointAtCenter !== lastPointAtCenter
+      ) {
         lastTrigger = next.trigger;
         lastPlacement = next.placement;
+        lastPointAtCenter = next.arrowPointAtCenter;
         stop();
         start(next);
       } else {

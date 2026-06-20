@@ -26,6 +26,12 @@ export const meta = {
     { name: 'mouseEnterDelay', type: 'number', default: '100', desc: 'hover 进入延迟(ms)' },
     { name: 'mouseLeaveDelay', type: 'number', default: '100', desc: 'hover 离开延迟(ms)' },
     { name: 'showArrow', type: 'boolean', default: 'true', desc: '是否显示箭头' },
+    {
+      name: 'arrowPointAtCenter',
+      type: 'boolean',
+      default: 'false',
+      desc: 'start/end 对齐时箭头指向触发器中心',
+    },
     { name: 'theme', type: "'dark'|'light'", default: 'dark', desc: '主题' },
     { name: 'maxWidth', type: 'number | string', default: '300', desc: '浮层最大宽度' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用触发' },

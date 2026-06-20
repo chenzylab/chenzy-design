@@ -3,7 +3,8 @@
   基础子集：hover/focus/click 触发、12 方位、箭头、延迟、dark/light 主题。
   定位：portal 到 body + position:fixed，core computePosition 计算坐标 +
   autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
-  TODO(延后): arrowPointAtCenter、status 图标、custom trigger。
+  arrowPointAtCenter：start/end 对齐时箭头改为指向触发器中心（默认贴对齐边）。
+  TODO(延后): status 图标、custom trigger。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -26,6 +27,8 @@
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
     showArrow?: boolean;
+    /** start/end 对齐时箭头指向触发器中心（默认 false：贴对齐边） */
+    arrowPointAtCenter?: boolean;
     theme?: Theme;
     maxWidth?: number | string;
     disabled?: boolean;
@@ -43,6 +46,7 @@
     mouseEnterDelay = 100,
     mouseLeaveDelay = 100,
     showArrow = true,
+    arrowPointAtCenter = false,
     theme = 'dark',
     maxWidth = 300,
     disabled = false,
@@ -184,7 +188,7 @@
       id={tipId}
       role="tooltip"
       bind:this={popEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, onPlacement }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, arrowPointAtCenter, onPlacement }}
       class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
       style="max-inline-size:{maxWidthCss}"

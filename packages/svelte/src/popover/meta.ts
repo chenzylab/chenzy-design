@@ -16,6 +16,12 @@ export const meta = {
     { name: 'position', type: "'top'|'bottom'|'left'|'right'", default: 'bottom', desc: '浮层主方向' },
     { name: 'align', type: "'start'|'center'|'end'", default: 'center', desc: '交叉轴对齐' },
     { name: 'showArrow', type: 'boolean', default: 'true', desc: '是否显示箭头' },
+    {
+      name: 'arrowPointAtCenter',
+      type: 'boolean',
+      default: 'false',
+      desc: 'start/end 对齐时箭头指向触发器中心',
+    },
     { name: 'spacing', type: 'number', default: '8', desc: '浮层与触发器间距(px)' },
     { name: 'mouseEnterDelay', type: 'number', default: '100', desc: 'hover 进入延迟(ms)' },
     { name: 'mouseLeaveDelay', type: 'number', default: '100', desc: 'hover 离开延迟(ms)' },
