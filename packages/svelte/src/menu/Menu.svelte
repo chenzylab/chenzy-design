@@ -26,6 +26,8 @@
     defaultOpenKeys?: MenuKey[];
     size?: Size;
     inlineIndent?: number;
+    /** inline 模式下折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层 */
+    inlineCollapsed?: boolean;
     onSelect?: (key: MenuKey) => void;
     onOpenChange?: (keys: MenuKey[]) => void;
     ariaLabel?: string;
@@ -40,10 +42,14 @@
     defaultOpenKeys = [],
     size = 'default',
     inlineIndent = 24,
+    inlineCollapsed = false,
     onSelect,
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  // 折叠仅在 inline 模式生效；其它模式忽略以保持向后兼容。
+  const collapsed = $derived(mode === 'inline' && inlineCollapsed);
 
   function getInitialSelected(): SvelteSet<MenuKey> {
     return new SvelteSet(defaultSelectedKeys);
@@ -100,7 +106,14 @@
   }
 
   const cls = $derived(
-    ['cd-menu', `cd-menu--${mode}`, `cd-menu--${size}`].join(' '),
+    [
+      'cd-menu',
+      `cd-menu--${mode}`,
+      `cd-menu--${size}`,
+      collapsed ? 'cd-menu--collapsed' : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 
   // horizontal menubar：←→ 在顶层项间 roving 移动焦点（顶层是 li 直下的可聚焦元素）
@@ -191,7 +204,18 @@
   bind:this={rootEl}
   onkeydown={onMenubarKeydown}
 >
-  {#if mode === 'vertical' || mode === 'horizontal'}
+  {#if collapsed}
+    {#each items as item (item.key)}
+      <MenuPopupNode
+        {item}
+        placement="rightStart"
+        collapsed
+        {isSelected}
+        onSelectLeaf={selectLeaf}
+        onCloseAll={() => {}}
+      />
+    {/each}
+  {:else if mode === 'vertical' || mode === 'horizontal'}
     {#each items as item (item.key)}
       <MenuPopupNode
         {item}
@@ -227,6 +251,10 @@
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link),
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title) {
     inline-size: auto;
+  }
+  /* 折叠图标轨：容器收窄到仅容图标 + padding */
+  .cd-menu--collapsed {
+    inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-2)));
   }
   .cd-menu__item {
     margin: 0;

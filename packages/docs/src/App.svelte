@@ -372,6 +372,7 @@ let pageSize2 = $state(10);
     { key: 'delete', label: '删除', danger: true },
   ];
   let menuSelected = $state<string | number>('overview');
+  let menuCollapsed = $state(true);
   const menuItems = [
     { key: 'overview', label: '概览' },
     {
@@ -1201,6 +1202,40 @@ let pageSize2 = $state(10);
       selectedKeys={[menuSelected]}
       onSelect={(k) => (menuSelected = k)}
     />
+  </div>
+
+  <div style="margin-top:16px" data-testid="menu-collapsed">
+    <Text type="tertiary">inlineCollapsed 折叠图标轨（只显图标 + hover 浮层）</Text>
+    {#snippet iconCOverview()}<span>📊</span>{/snippet}
+    {#snippet iconCSettings()}<span>⚙️</span>{/snippet}
+    {#snippet iconCHelp()}<span>❓</span>{/snippet}
+    <div>
+      <Button size="small" onclick={() => (menuCollapsed = !menuCollapsed)}>
+        {menuCollapsed ? '展开' : '收起'}
+      </Button>
+    </div>
+    <div style="margin-top:8px">
+      <Menu
+        mode="inline"
+        inlineCollapsed={menuCollapsed}
+        items={[
+          { key: 'overview', label: '概览', icon: iconCOverview },
+          {
+            key: 'settings',
+            label: '设置',
+            icon: iconCSettings,
+            children: [
+              { key: 'profile', label: '个人资料' },
+              { key: 'security', label: '安全' },
+            ],
+          },
+          { key: 'help', label: '帮助', icon: iconCHelp, disabled: true },
+        ]}
+        defaultOpenKeys={['settings']}
+        selectedKeys={[menuSelected]}
+        onSelect={(k) => (menuSelected = k)}
+      />
+    </div>
   </div>
 
   <Divider />

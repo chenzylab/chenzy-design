@@ -22,6 +22,8 @@
     onCloseAll: () => void;
     openDelay?: number;
     closeDelay?: number;
+    /** 折叠图标轨：仅本节点（顶层）隐藏文字 label、只显图标，浮层内子项不受影响 */
+    collapsed?: boolean;
   }
 
   let {
@@ -32,7 +34,11 @@
     onCloseAll,
     openDelay = 100,
     closeDelay = 200,
+    collapsed = false,
   }: Props = $props();
+
+  // 折叠态无图标时取 label 首字符兜底显示，保证轨上仍有可视标识。
+  const firstChar = $derived([...(item.label ?? '')][0] ?? '');
 
   const hasChildren = $derived(!!item.children && item.children.length > 0);
 
@@ -111,10 +117,13 @@
     <button
       type="button"
       class="cd-menu__title"
+      class:cd-menu__title--collapsed={collapsed}
       role="menuitem"
       aria-haspopup="true"
       aria-expanded={open}
       aria-disabled={item.disabled || undefined}
+      aria-label={collapsed ? item.label : undefined}
+      title={collapsed ? item.label : undefined}
       disabled={item.disabled || undefined}
       bind:this={titleEl}
       onkeydown={(e) => {
@@ -126,13 +135,13 @@
         }
       }}
     >
-      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
-      <span class="cd-menu__label">{item.label}</span>
+      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+      {#if !collapsed}<span class="cd-menu__label">{item.label}</span>
       <span class="cd-menu__arrow cd-menu__arrow--popup" aria-hidden="true">
         <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
           <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
         </svg>
-      </span>
+      </span>{/if}
     </button>
 
     {#if open && titleEl}
@@ -167,14 +176,17 @@
       type="button"
       class="cd-menu__link"
       class:cd-menu__link--selected={selected}
+      class:cd-menu__link--collapsed={collapsed}
       role="menuitem"
       aria-current={selected ? 'true' : undefined}
       aria-disabled={item.disabled || undefined}
+      aria-label={collapsed ? item.label : undefined}
+      title={collapsed ? item.label : undefined}
       disabled={item.disabled || undefined}
       onclick={onLeafClick}
     >
-      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
-      <span class="cd-menu__label">{item.label}</span>
+      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+      {#if !collapsed}<span class="cd-menu__label">{item.label}</span>{/if}
     </button>
   </li>
 {/if}
@@ -242,6 +254,16 @@
     inline-size: 1rem;
     block-size: 1rem;
     color: var(--cd-menu-item-color);
+  }
+  .cd-menu__icon--char {
+    font-weight: 600;
+  }
+  /* 折叠图标轨：顶层项只显图标、居中、无文字与箭头 */
+  .cd-menu__title--collapsed,
+  .cd-menu__link--collapsed {
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
   }
   .cd-menu__arrow {
     display: inline-flex;

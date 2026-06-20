@@ -32,6 +32,12 @@ export const meta = {
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'inlineIndent', type: 'number', default: '24', desc: '子级缩进像素' },
     {
+      name: 'inlineCollapsed',
+      type: 'boolean',
+      default: 'false',
+      desc: 'inline 模式折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层（无图标项取 label 首字符；保留 aria-label/title 可访问名）',
+    },
+    {
       name: 'onSelect',
       type: '(key: string|number) => void',
       default: 'undefined',
