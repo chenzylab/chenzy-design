@@ -2,6 +2,8 @@
   InputNumber — see specs/components/input/InputNumber.spec.md
   Constrained numeric input: native <input inputmode="decimal"> + stacked steppers.
   Controlled / uncontrolled (same pattern as Input). Variation only via onChange.
+  长按连续增减：按钮 mousedown 首延迟 400ms 后以 60ms 间隔重复，up/leave/卸载清理。
+  formatter/parser：自定义显示/解析（formatter 仅作用于非编辑态显示）。
 -->
 <script lang="ts">
   import { useLocale } from '../locale-provider/index.js';
@@ -26,6 +28,10 @@
     placeholder?: string;
     name?: string;
     ariaLabel?: string;
+    /** 自定义显示格式化（仅非编辑态） */
+    formatter?: (n: number) => string;
+    /** 自定义解析（与 formatter 对应） */
+    parser?: (s: string) => number;
     onChange?: (v: number | null) => void;
   }
 
@@ -46,6 +52,8 @@
     placeholder,
     name,
     ariaLabel,
+    formatter,
+    parser,
     onChange,
   }: Props = $props();
 
@@ -75,13 +83,13 @@
 
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
-    return String(n);
+    return formatter ? formatter(n) : String(n);
   }
 
   function parseText(t: string): number | null {
     const trimmed = t.trim();
     if (trimmed === '') return null;
-    const n = Number(trimmed);
+    const n = parser ? parser(t) : Number(trimmed);
     return Number.isNaN(n) ? null : n;
   }
 
@@ -144,6 +152,33 @@
     if (next !== current) commitValue(next);
   }
 
+  // --- 长按连续增减：首延迟 400ms 后以 60ms 间隔重复，cleanup 清理（红线 #3）---
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
+  let holdInterval: ReturnType<typeof setInterval> | undefined;
+
+  function stopHold() {
+    if (holdTimer !== undefined) {
+      clearTimeout(holdTimer);
+      holdTimer = undefined;
+    }
+    if (holdInterval !== undefined) {
+      clearInterval(holdInterval);
+      holdInterval = undefined;
+    }
+  }
+
+  function startHold(dir: 1 | -1, e: MouseEvent) {
+    preventBlurSteal(e);
+    if (disabled || readonly) return;
+    stepBy(dir, false);
+    holdTimer = setTimeout(() => {
+      holdInterval = setInterval(() => stepBy(dir, false), 60);
+    }, 400);
+  }
+
+  // 组件卸载兜底清理定时器。
+  $effect(() => stopHold);
+
   function handleKeydown(e: KeyboardEvent) {
     if (!keyboard || disabled || readonly) return;
     if (e.key === 'ArrowUp') {
@@ -205,8 +240,9 @@
         tabindex="-1"
         aria-label={loc().t('InputNumber.increase')}
         disabled={disabled || readonly || atMax}
-        onmousedown={preventBlurSteal}
-        onclick={() => stepBy(1, false)}
+        onmousedown={(e) => startHold(1, e)}
+        onmouseup={stopHold}
+        onmouseleave={stopHold}
       >
         <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
           <path fill="currentColor" d="M8 4 3 10h10L8 4Z" />
@@ -218,8 +254,9 @@
         tabindex="-1"
         aria-label={loc().t('InputNumber.decrease')}
         disabled={disabled || readonly || atMin}
-        onmousedown={preventBlurSteal}
-        onclick={() => stepBy(-1, false)}
+        onmousedown={(e) => startHold(-1, e)}
+        onmouseup={stopHold}
+        onmouseleave={stopHold}
       >
         <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
           <path fill="currentColor" d="M3 6h10L8 12 3 6Z" />

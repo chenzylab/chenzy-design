@@ -336,6 +336,7 @@ let pageSize2 = $state(10);
   let checks = $state<(string | number)[]>(['a']);
   let radioVal = $state<string | number | boolean>('1');
   let numVal = $state<number | null>(3);
+  let amountVal = $state<number | null>(12000);
   let rateVal = $state(2.5);
   let sliderVal = $state(40);
   let rangeVal = $state<[number, number]>([20, 60]);
@@ -525,6 +526,18 @@ let pageSize2 = $state(10);
       <InputNumber value={numVal} min={0} max={10} onChange={(v) => (numVal = v)} />
       <Text type="tertiary">数值：{numVal}</Text>
     </Space>
+
+    <div data-testid="inputnumber-fmt">
+      <InputNumber
+        value={amountVal}
+        min={0}
+        step={1000}
+        formatter={(n) => `¥ ${n.toLocaleString('en-US')}`}
+        parser={(s) => Number(s.replace(/[^\d.-]/g, ''))}
+        onChange={(v) => (amountVal = v)}
+      />
+      <Text type="tertiary">金额：{amountVal}（长按 +/- 连续增减）</Text>
+    </div>
 
     <Space>
       <Rating value={rateVal} allowHalf onChange={(v) => (rateVal = v)} />

@@ -14,6 +14,8 @@ export const meta = {
     { name: 'step', type: 'number', default: '1' },
     { name: 'shiftStep', type: 'number', default: 'step * 10', desc: 'Shift+↑↓ 步长' },
     { name: 'precision', type: 'number', default: 'undefined', desc: '失焦四舍五入保留小数位' },
+    { name: 'formatter', type: '(n: number) => string', default: 'undefined', desc: '自定义显示格式化（仅非编辑态）' },
+    { name: 'parser', type: '(s: string) => number', default: 'undefined', desc: '自定义解析' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'readonly', type: 'boolean', default: 'false' },
