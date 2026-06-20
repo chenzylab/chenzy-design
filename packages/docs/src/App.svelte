@@ -479,6 +479,12 @@ let pageSize2 = $state(10);
   ];
   let menuSelected = $state<string | number>('overview');
   let menuCollapsed = $state(true);
+  let menuMultiple = $state<(string | number)[]>(['overview']);
+  function toggleMenuMultiple(k: string | number) {
+    menuMultiple = menuMultiple.includes(k)
+      ? menuMultiple.filter((x) => x !== k)
+      : [...menuMultiple, k];
+  }
   const menuItems = [
     { key: 'overview', label: '概览' },
     {
@@ -1436,6 +1442,25 @@ let pageSize2 = $state(10);
     <div style="width: 160px" data-testid="anchor-demo">
       <Anchor links={anchorLinks} value={anchorKey} affix updateHash onChange={(k) => (anchorKey = k)} />
       <Text type="tertiary">锚点：{anchorKey}</Text>
+    </div>
+  </div>
+
+  <div style="margin-top:16px" data-testid="menu-multiple">
+    <Text type="tertiary">multiple 多选（点击 toggle，多项可同时高亮 + 勾选）</Text>
+    <div style="width: 200px">
+      <Menu
+        mode="inline"
+        multiple
+        items={[
+          { key: 'overview', label: '概览' },
+          { key: 'analytics', label: '分析' },
+          { key: 'reports', label: '报表' },
+          { key: 'settings', label: '设置' },
+        ]}
+        selectedKeys={menuMultiple}
+        onSelect={(k) => toggleMenuMultiple(k)}
+      />
+      <Text type="tertiary">已选：{menuMultiple.join(', ') || '（无）'}</Text>
     </div>
   </div>
 

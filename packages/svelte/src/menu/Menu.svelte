@@ -7,7 +7,9 @@
   vertical 模式: SubMenu 改为 hover 弹出浮层 (复用 _floating, 顶层 bottomStart + 嵌套 rightStart, 多级嵌套),
   进入/离开带延迟避免缝隙抖动; inline 模式保持内联展开。
   horizontal 模式: 顶部菜单栏 (role=menubar), 顶层项横排 + ←→ roving 键盘切换, SubMenu 向下弹浮层 (复用 MenuPopupNode)。
-  TODO(延后): inlineCollapsed 图标轨、multiple、commands purpose、nav+links 语义区分。
+  multiple 多选: 点叶子项 toggle 选中态, selectedKeys 可含多项同时高亮 + 勾选标记 (role=menuitemcheckbox/aria-checked);
+  受控不回写 (红线 #1), 父组件据 onSelect(key) 自行 toggle; 非受控内部维护多选 Set。
+  TODO(延后): commands purpose、nav+links 语义区分。
 -->
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
@@ -28,6 +30,8 @@
     inlineIndent?: number;
     /** inline 模式下折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层 */
     inlineCollapsed?: boolean;
+    /** 多选模式：点击叶子项 toggle 其选中态，selectedKeys 可含多项同时高亮（默认单选） */
+    multiple?: boolean;
     onSelect?: (key: MenuKey) => void;
     onOpenChange?: (keys: MenuKey[]) => void;
     ariaLabel?: string;
@@ -43,6 +47,7 @@
     size = 'default',
     inlineIndent = 24,
     inlineCollapsed = false,
+    multiple = false,
     onSelect,
     onOpenChange,
     ariaLabel,
@@ -86,10 +91,17 @@
 
   function selectLeaf(item: MenuItemDef) {
     if (item.disabled) return;
+    // 非受控才回写内部 Set：multiple 下 toggle（已选取消/未选加入），单选下替换。
     if (!isSelectControlled) {
-      innerSelected.clear();
-      innerSelected.add(item.key);
+      if (multiple) {
+        if (innerSelected.has(item.key)) innerSelected.delete(item.key);
+        else innerSelected.add(item.key);
+      } else {
+        innerSelected.clear();
+        innerSelected.add(item.key);
+      }
     }
+    // 受控由父组件依据 onSelect(key) 自行维护 selectedKeys（红线 #1：不回写 prop）。
     onSelect?.(item.key);
   }
 
@@ -180,8 +192,9 @@
           type="button"
           class="cd-menu__link"
           class:cd-menu__link--selected={selected}
-          role="menuitem"
-          aria-current={selected ? 'true' : undefined}
+          role={multiple ? 'menuitemcheckbox' : 'menuitem'}
+          aria-current={!multiple && selected ? 'true' : undefined}
+          aria-checked={multiple ? selected : undefined}
           aria-disabled={item.disabled || undefined}
           disabled={item.disabled || undefined}
           style="padding-inline-start: {indent}"
@@ -189,6 +202,13 @@
         >
           {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
           <span class="cd-menu__label">{item.label}</span>
+          {#if multiple}
+            <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+              </svg>
+            </span>
+          {/if}
         </button>
       </li>
     {/if}
@@ -210,6 +230,7 @@
         {item}
         placement="rightStart"
         collapsed
+        {multiple}
         {isSelected}
         onSelectLeaf={selectLeaf}
         onCloseAll={() => {}}
@@ -220,6 +241,7 @@
       <MenuPopupNode
         {item}
         placement="bottomStart"
+        {multiple}
         {isSelected}
         onSelectLeaf={selectLeaf}
         onCloseAll={() => {}}
@@ -331,6 +353,19 @@
     inline-size: 1rem;
     block-size: 1rem;
     color: var(--cd-menu-item-color);
+  }
+  .cd-menu__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--cd-menu-item-color-selected);
+    opacity: 0;
+  }
+  .cd-menu__check--on {
+    opacity: 1;
   }
   .cd-menu__arrow {
     display: inline-flex;
