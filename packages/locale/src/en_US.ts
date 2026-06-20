@@ -131,6 +131,8 @@ export const en_US: Locale = {
     rotateLeft: 'Rotate left',
     rotateRight: 'Rotate right',
     reset: 'Reset',
+    prev: 'Previous',
+    next: 'Next',
   },
   Timeline: {
     pending: 'Loading…',

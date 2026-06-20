@@ -131,6 +131,8 @@ export const zh_CN: Locale = {
     rotateLeft: '向左旋转',
     rotateRight: '向右旋转',
     reset: '重置',
+    prev: '上一张',
+    next: '下一张',
   },
   Timeline: {
     pending: '加载中…',

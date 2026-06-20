@@ -1,19 +1,22 @@
 <!--
   Image — see specs/components/show/Image.spec.md
   基础子集：src + 懒加载(native/observer) + fit/position + 占位 + 失败降级 +
-    点击预览(全屏遮罩 + 缩放/旋转/重置工具栏)。
-  TODO(延后): LQIP 模糊、预览组多图切换、crossorigin/srcset 细节、portal。
+    点击预览(全屏遮罩 portal + 缩放/旋转/重置工具栏 + 多图左右切换) + LQIP 模糊占位。
+  TODO(延后): crossorigin/srcset 细节。
 
   红线遵守：
    - observer 模式 IntersectionObserver 在 $effect 内命令式创建 + cleanup disconnect；
      node 用 bind:this 普通引用，不在 render 期读几何。
-   - 预览 Esc keydown 监听在 $effect 内 addEventListener + cleanup removeEventListener。
+   - 预览浮层 portal、keydown 监听在 ImagePreview 内命令式 + cleanup。
    - 无受控 prop 需回写（previewOpen 为本地 $state）。
+   - 在 Image.PreviewGroup 内时，预览态交由组共享浮层管理（受控不回写仅回调）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import ImagePreview from './ImagePreview.svelte';
+  import { getImageGroupContext } from './context.js';
 
   type ImageFit = 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
   type ImageStatus = 'pending' | 'loading' | 'loaded' | 'error';
@@ -71,10 +74,15 @@
   // observer 模式下，进入视口前不设真实 src
   const resolvedSrc = $derived(useObserver && !inView ? undefined : src);
 
-  // placeholder 是字符串时当作占位图 src（loading/pending 阶段显示）
+  // placeholder 是字符串时当作 LQIP 低质占位图 src（loading/pending 阶段显示，CSS blur 模糊）。
+  // 主图 onload 前显示模糊占位，加载完成后主图淡入清晰、占位淡出。
   const placeholderSrc = $derived(typeof placeholder === 'string' ? placeholder : undefined);
   const showPlaceholder = $derived(status === 'pending' || status === 'loading');
   const showSkeleton = $derived(showPlaceholder && placeholder === true);
+  // 是否为 LQIP 模糊占位（字符串占位 = 低质图，需 blur + 淡入主图）。
+  const isLqip = $derived(placeholderSrc !== undefined);
+  // 主图加载完成才淡入（仅 LQIP 场景需要，避免无占位时初始透明闪烁）。
+  const imgLoaded = $derived(status === 'loaded');
 
   // error 降级：fallback 为字符串 → 降级图；true → 默认破图占位；false → errorSlot
   const fallbackSrc = $derived(typeof fallback === 'string' ? fallback : undefined);
@@ -92,6 +100,13 @@
 
   const imgStyle = $derived(`object-fit:${fit};object-position:${position}`);
 
+  // 主图类名：LQIP 场景下未加载完成时透明，加载完成淡入清晰。
+  const imgCls = $derived(
+    ['cd-image__img', isLqip && 'cd-image__img--fade', isLqip && imgLoaded && 'cd-image__img--in']
+      .filter(Boolean)
+      .join(' '),
+  );
+
   const cls = $derived(
     ['cd-image', preview && status === 'loaded' && 'cd-image--previewable', className]
       .filter(Boolean)
@@ -108,36 +123,20 @@
     status = 'error';
   }
 
-  // 预览变换状态：缩放倍数 + 旋转角度（每次打开从 1x/0° 开始）。
-  let previewScale = $state(1);
-  let previewRotate = $state(0);
-  const SCALE_STEP = 0.25;
-  const SCALE_MIN = 0.25;
-  const SCALE_MAX = 4;
-  const previewTransform = $derived(
-    `scale(${previewScale}) rotate(${previewRotate}deg)`,
-  );
-
-  function resetTransform() {
-    previewScale = 1;
-    previewRotate = 0;
-  }
-  function zoomIn() {
-    previewScale = Math.min(SCALE_MAX, previewScale + SCALE_STEP);
-  }
-  function zoomOut() {
-    previewScale = Math.max(SCALE_MIN, previewScale - SCALE_STEP);
-  }
-  function rotateLeft() {
-    previewRotate -= 90;
-  }
-  function rotateRight() {
-    previewRotate += 90;
+  // 预览组上下文：存在则把预览态交给组共享浮层（多图切换）；否则用本地单图浮层。
+  const group = getImageGroupContext();
+  // 在组内注册自身（注册顺序 = 组内稳定槽位索引）。注册是一次性的（非响应式），
+  // src/alt 经 getter 暴露给组以保持响应性。卸载时经 $effect cleanup 注销。
+  const groupSlot = group ? group.register({ getSrc: () => src, getAlt: () => alt }) : -1;
+  if (group) {
+    $effect(() => () => group.unregister(groupSlot));
   }
 
   function openPreview() {
-    if (canPreview) {
-      resetTransform();
+    if (!canPreview) return;
+    if (group) {
+      group.open(groupSlot);
+    } else {
       previewOpen = true;
     }
   }
@@ -146,17 +145,8 @@
     previewOpen = false;
   }
 
-  function handleOverlayKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      closePreview();
-    }
-  }
-
-  // 仅点击遮罩自身（非内部图片/工具栏）才关闭，避免在子元素上加 stopPropagation。
-  function onOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) closePreview();
-  }
+  // 单图浮层只有一张图，索引恒为 0；onChange 无实际切换（满足共享组件接口）。
+  const singleImages = $derived([{ src, alt }]);
 
   // IntersectionObserver：命令式创建 + cleanup，进入视口才放行真实 src
   $effect(() => {
@@ -186,14 +176,16 @@
     return () => observer.disconnect();
   });
 
-  // 预览遮罩 Esc 监听：命令式绑定 + cleanup 解绑
+  // 缓存图竞态兜底：若图片在 onload 监听挂载前已 complete（如缓存命中 / data-URI 同步解码），
+  // load 事件可能不再触发，status 会卡在 loading。此处命令式补判 complete 推进状态。
   $effect(() => {
-    if (!previewOpen) return;
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') closePreview();
+    if (status !== 'loading') return;
+    const node = imgNode;
+    if (!node || !node.getAttribute('src')) return;
+    if (node.complete) {
+      // naturalWidth 为 0 视为解码失败 → error，否则 loaded。
+      status = node.naturalWidth > 0 ? 'loaded' : 'error';
     }
-    window.addEventListener('keydown', onKeydown);
-    return () => window.removeEventListener('keydown', onKeydown);
   });
 </script>
 
@@ -216,7 +208,7 @@
     {#if showPlaceholder}
       <div class="cd-image__placeholder" aria-hidden="true">
         {#if placeholderSrc}
-          <img class="cd-image__img cd-image__placeholder-img" src={placeholderSrc} alt="" style={imgStyle} />
+          <img class="cd-image__img cd-image__placeholder-img cd-image__placeholder-img--blur" src={placeholderSrc} alt="" style={imgStyle} />
         {:else if placeholderSlot}
           {@render placeholderSlot()}
         {:else if showSkeleton}
@@ -234,7 +226,7 @@
       >
         <img
           bind:this={imgNode}
-          class="cd-image__img"
+          class={imgCls}
           src={resolvedSrc}
           {alt}
           loading={nativeLoading}
@@ -247,7 +239,7 @@
     {:else}
       <img
         bind:this={imgNode}
-        class="cd-image__img"
+        class={imgCls}
         src={resolvedSrc}
         {alt}
         loading={nativeLoading}
@@ -259,38 +251,14 @@
   {/if}
 </div>
 
-{#if previewOpen}
-  <div
-    class="cd-image__preview"
-    role="dialog"
-    aria-modal="true"
-    aria-label={alt || loc().t('Image.previewAlt')}
-    tabindex="-1"
-    onclick={onOverlayClick}
-    onkeydown={handleOverlayKeydown}
-  >
-    <button
-      type="button"
-      class="cd-image__preview-close"
-      aria-label={loc().t('Image.closePreview')}
-      onclick={closePreview}
-    >
-      ×
-    </button>
-    <img
-      class="cd-image__preview-img"
-      {src}
-      {alt}
-      style="transform:{previewTransform}"
-    />
-    <div class="cd-image__preview-toolbar">
-      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.zoomOut')} onclick={zoomOut}>−</button>
-      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.zoomIn')} onclick={zoomIn}>+</button>
-      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.rotateLeft')} onclick={rotateLeft}>⟲</button>
-      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.rotateRight')} onclick={rotateRight}>⟳</button>
-      <button type="button" class="cd-image__preview-tool" aria-label={loc().t('Image.reset')} onclick={resetTransform}>⤢</button>
-    </div>
-  </div>
+<!-- 单图预览：复用共享浮层（组预览由 Image.PreviewGroup 渲染共享浮层）。 -->
+{#if previewOpen && !group}
+  <ImagePreview
+    images={singleImages}
+    current={0}
+    onClose={closePreview}
+    onChange={() => {}}
+  />
 {/if}
 
 <style>
@@ -366,75 +334,22 @@
     opacity: 1;
   }
 
-  .cd-image__preview {
-    position: fixed;
-    inset: 0;
-    z-index: var(--cd-image-preview-z);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cd-image-preview-overlay);
-    line-height: normal;
+  /* LQIP：低质占位图模糊；主图加载完成前透明，加载后淡入清晰。 */
+  .cd-image__placeholder-img--blur {
+    filter: blur(12px);
+    transform: scale(1.05);
   }
-  .cd-image__preview-img {
-    max-inline-size: 90vw;
-    max-block-size: 90vh;
-    object-fit: contain;
-    transition: transform var(--cd-motion-duration-mid, 0.2s) var(--cd-motion-ease-standard);
+  .cd-image__img--fade {
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-mid, 0.2s) var(--cd-motion-ease-standard);
   }
-  .cd-image__preview-close {
-    position: absolute;
-    inset-block-start: 16px;
-    inset-inline-end: 16px;
-    inline-size: 36px;
-    block-size: 36px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--cd-radius-full);
-    background: var(--cd-image-mask-bg);
-    color: var(--cd-image-mask-color);
-    font-size: 24px;
-    cursor: pointer;
-  }
-  .cd-image__preview-close:focus-visible {
-    outline: var(--cd-focus-ring);
-  }
-  .cd-image__preview-toolbar {
-    position: absolute;
-    inset-block-end: 24px;
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-2);
-    border-radius: var(--cd-radius-full);
-    background: var(--cd-image-mask-bg);
-  }
-  .cd-image__preview-tool {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 32px;
-    block-size: 32px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--cd-radius-full);
-    background: transparent;
-    color: var(--cd-image-mask-color);
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .cd-image__preview-tool:hover {
-    background: rgb(255 255 255 / 0.15);
-  }
-  .cd-image__preview-tool:focus-visible {
-    outline: var(--cd-focus-ring);
+  .cd-image__img--in {
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cd-image__mask,
-    .cd-image__preview-img {
+    .cd-image__img--fade {
       transition: none;
     }
   }
