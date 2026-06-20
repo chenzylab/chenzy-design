@@ -118,6 +118,11 @@
     };
   });
   let carouselIdx = $state(0);
+  // VirtualList scrollToIndex demo：bind 组件实例 + 目标索引输入。
+  let scrollToVL = $state<{ scrollToIndex: (i: number, o?: { align?: 'start' | 'center' | 'end' }) => void } | null>(null);
+  let scrollToTarget = $state(500);
+  // VirtualList horizontal demo 数据：120 列。
+  const hData = Array.from({ length: 200 }, (_, i) => ({ id: i, text: `列 ${i + 1}` }));
 
   const treeData = [
     {
@@ -1364,6 +1369,61 @@ let pageSize2 = $state(10);
           <div
             style="padding: 8px 12px; border-bottom: 1px solid var(--cd-color-border); white-space: pre-line"
           >
+            {(item as { text: string }).text}
+          </div>
+        {/snippet}
+      </VirtualList>
+    </div>
+
+    <Text type="tertiary">horizontal 横向虚拟化（itemSize 作列宽 + scrollLeft）：</Text>
+    <div
+      style="width: 360px; height: 80px; border: 1px solid var(--cd-color-border); border-radius: 8px"
+      data-testid="virtuallist-horizontal"
+    >
+      <VirtualList
+        data={hData}
+        horizontal
+        height={360}
+        itemSize={96}
+        getKey={(it) => it.id}
+      >
+        {#snippet renderItem(item)}
+          <div
+            style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--cd-color-border)"
+          >
+            {(item as { text: string }).text}
+          </div>
+        {/snippet}
+      </VirtualList>
+    </div>
+
+    <Text type="tertiary">scrollToIndex 命令式跳转：</Text>
+    <Space align="center">
+      <InputNumber
+        value={scrollToTarget}
+        min={0}
+        max={9999}
+        onChange={(v) => (scrollToTarget = v ?? 0)}
+      />
+      <Button
+        onclick={() => scrollToVL?.scrollToIndex(scrollToTarget, { align: 'start' })}
+      >
+        跳到第 N 项
+      </Button>
+    </Space>
+    <div
+      style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px"
+      data-testid="virtuallist-scrollto"
+    >
+      <VirtualList
+        bind:this={scrollToVL}
+        data={bigData}
+        height={200}
+        itemSize={36}
+        getKey={(it) => it.id}
+      >
+        {#snippet renderItem(item)}
+          <div style="padding: 0 12px; line-height: 36px; border-bottom: 1px solid var(--cd-color-border)">
             {(item as { text: string }).text}
           </div>
         {/snippet}
