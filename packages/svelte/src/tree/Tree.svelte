@@ -6,7 +6,8 @@
   复用 @chenzy-design/core 的纯函数树算法，不重复实现。
   loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap
   并派生合并树喂给所有 core 函数（不写回受控 treeData，红线 #1）。
-  TODO(延后): draggable / virtualized / showLine / accordion / fieldNames。
+  showLine：层级引导线（复用 core FlatNode.isLast/ancestorIsLast，纯 CSS ├/└/竖线）。
+  TODO(延后): draggable / virtualized / accordion / fieldNames。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -45,6 +46,8 @@
     defaultExpandAll?: boolean;
     selectable?: boolean;
     showIcon?: boolean;
+    /** 显示层级连接线（父子引导线） */
+    showLine?: boolean;
     filterable?: boolean;
     blockNode?: boolean;
     disabled?: boolean;
@@ -78,6 +81,7 @@
     defaultExpandAll = false,
     selectable = true,
     showIcon = true,
+    showLine = false,
     filterable = false,
     blockNode = false,
     disabled = false,
@@ -451,6 +455,7 @@
       `cd-tree--${size}`,
       `cd-tree--${status}`,
       disabled && 'cd-tree--disabled',
+      showLine && 'cd-tree--line',
     ]
       .filter(Boolean)
       .join(' '),
@@ -511,9 +516,22 @@
           aria-selected={selectable ? selected : undefined}
           aria-checked={checkable ? ariaCheckedValue(node) : undefined}
           aria-disabled={nodeDisabled || undefined}
-          style="padding-inline-start: calc({f.level} * var(--cd-tree-indent))"
+          style={showLine ? undefined : `padding-inline-start: calc(${f.level} * var(--cd-tree-indent))`}
           onclick={() => onRowClick(node)}
         >
+          {#if showLine && f.level > 0}
+            <!-- 引导线列：每层祖先一格，祖先非末→贯穿竖线；自身连接列画拐角 -->
+            {#each Array(f.level) as _, depth (depth)}
+              {@const isSelfColumn = depth === f.level - 1}
+              <span
+                class="cd-tree__line"
+                class:cd-tree__line--through={!isSelfColumn && !f.ancestorIsLast[depth]}
+                class:cd-tree__line--elbow={isSelfColumn && f.isLast}
+                class:cd-tree__line--tee={isSelfColumn && !f.isLast}
+                aria-hidden="true"
+              ></span>
+            {/each}
+          {/if}
           {#if loading}
             <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
               <span class="cd-tree__spinner"></span>
@@ -672,6 +690,52 @@
   }
   .cd-tree__node--disabled:hover {
     background: transparent;
+  }
+
+  /* --- showLine 层级引导线：每层一格，用 ::before 画竖线、::after 画横线 --- */
+  .cd-tree__line {
+    position: relative;
+    flex: 0 0 auto;
+    inline-size: var(--cd-tree-indent);
+    align-self: stretch;
+  }
+  /* 贯穿竖线（祖先非末层） */
+  .cd-tree__line--through::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: var(--cd-tree-line-color, var(--cd-color-border));
+  }
+  /* ├ 形：竖线贯穿 + 横线到右 */
+  .cd-tree__line--tee::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: var(--cd-tree-line-color, var(--cd-color-border));
+  }
+  /* └ 形：竖线 top→中 + 横线到右 */
+  .cd-tree__line--elbow::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    block-size: 50%;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    background: var(--cd-tree-line-color, var(--cd-color-border));
+  }
+  .cd-tree__line--tee::after,
+  .cd-tree__line--elbow::after {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inset-inline-end: 0;
+    block-size: 1px;
+    background: var(--cd-tree-line-color, var(--cd-color-border));
   }
 
   .cd-tree__switcher {

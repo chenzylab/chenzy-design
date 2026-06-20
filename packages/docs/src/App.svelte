@@ -1258,6 +1258,11 @@ let pageSize2 = $state(10);
       <Text type="tertiary">已勾选 {treeChecked.length} 项</Text>
     </div>
 
+    <div style="width: 240px" data-testid="tree-showline">
+      <Text type="tertiary">showLine 层级连接线</Text>
+      <Tree {treeData} showLine showIcon={false} defaultExpandAll ariaLabel="连接线树" />
+    </div>
+
     <div style="width: 240px" data-testid="tree-loaddata">
       <Text type="tertiary">异步加载（展开拉取子节点）</Text>
       <Tree treeData={treeAsyncRoots} loadData={loadTreeChildren} ariaLabel="异步加载树" />

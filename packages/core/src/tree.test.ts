@@ -58,6 +58,22 @@ describe('flattenVisible', () => {
     expect(child?.setSize).toBe(2);
     expect(child?.parentKey).toBe('1');
   });
+
+  it('reports isLast and ancestorIsLast for tree guide lines', () => {
+    const flat = flattenVisible(data, new Set(['1', '1-2']));
+    const byKey = (k: string) => flat.find((f) => f.node.key === k);
+    // root '1' has sibling '2' after it → not last; root level has no ancestors
+    expect(byKey('1')?.isLast).toBe(false);
+    expect(byKey('1')?.ancestorIsLast).toEqual([]);
+    // '1-2' is the last child of '1'; its ancestor '1' was NOT last
+    expect(byKey('1-2')?.isLast).toBe(true);
+    expect(byKey('1-2')?.ancestorIsLast).toEqual([false]);
+    // '1-2-1' ancestors: '1'(false) then '1-2'(true)
+    expect(byKey('1-2-1')?.ancestorIsLast).toEqual([false, true]);
+    expect(byKey('1-2-1')?.isLast).toBe(false);
+    // last root '2'
+    expect(byKey('2')?.isLast).toBe(true);
+  });
 });
 
 describe('findNode / collectExpandable', () => {
