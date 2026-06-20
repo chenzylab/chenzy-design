@@ -180,3 +180,11 @@ export {
   type AutosizeResult,
 } from './textarea.js';
 export { computeUploadPercent, isUploadOk } from './upload.js';
+export {
+  fixedRange,
+  buildOffsets,
+  totalFromOffsets,
+  offsetToIndex as virtualOffsetToIndex,
+  dynamicRange,
+  type VirtualRange,
+} from './virtual-list.js';

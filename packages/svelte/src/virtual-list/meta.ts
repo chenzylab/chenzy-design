@@ -6,7 +6,7 @@ export const meta = {
   name: 'VirtualList',
   category: 'show',
   description:
-    '虚拟滚动列表底座（泛型）：仅渲染可视区 + overscan 缓冲区，O(1) 区间计算高性能渲染超长列表。基础子集为 fixed 定高 + vertical + 内部容器滚动。自身无视觉，行渲染由 renderItem 提供。',
+    "虚拟滚动列表底座（泛型）：仅渲染可视区 + overscan 缓冲区高性能渲染超长列表。fixed 定高 O(1) 区间；dynamic 不定高（itemSize='auto'）用 estimatedItemSize 估算 + ResizeObserver 实测回填高度表，前缀和修正偏移/区间并做滚动偏移补偿。vertical + 内部容器滚动。自身无视觉，行渲染由 renderItem 提供。",
   exports: ['VirtualList'],
   props: [
     { name: 'data', type: 'T[]', default: '[]', desc: '列表数据数组' },
@@ -16,7 +16,18 @@ export const meta = {
       default: '(_, i) => i',
       desc: '行唯一标识，用于 each key',
     },
-    { name: 'itemSize', type: 'number', default: '40', desc: '固定行高（px，fixed 定高）' },
+    {
+      name: 'itemSize',
+      type: "number | 'auto'",
+      default: '40',
+      desc: "固定行高（px，fixed 定高）；传 'auto' 启用 dynamic 不定高测量",
+    },
+    {
+      name: 'estimatedItemSize',
+      type: 'number',
+      default: '40',
+      desc: 'dynamic 模式初始估算行高（px），用于首屏占位与总高估算',
+    },
     { name: 'overscan', type: 'number', default: '3', desc: '可视区上下缓冲行数，消除白屏' },
     {
       name: 'height',
@@ -41,6 +52,7 @@ export const meta = {
       '视口 role=list，可见行 role=listitem',
       '行带 aria-setsize（总数）与 aria-posinset（1 基序号）',
       '滚动监听命令式 + rAF 节流，不读 render 期 DOM 几何',
+      'dynamic 行高用 ResizeObserver 命令式实测，cleanup 时 disconnect',
     ],
   },
   tokens: ['--cd-virtual-list-bg', '--cd-virtual-list-scrollbar'],
@@ -49,6 +61,11 @@ export const meta = {
       title: '基础',
       code:
         '{#snippet row(item, i)}<div>{i}: {item.label}</div>{/snippet}\n<VirtualList data={rows} itemSize={48} height={400} renderItem={row} />',
+    },
+    {
+      title: 'dynamic 不定高',
+      code:
+        "{#snippet row(item, i)}<div>{item.text}</div>{/snippet}\n<VirtualList data={rows} itemSize=\"auto\" estimatedItemSize={48} height={300} renderItem={row} />",
     },
   ],
 } as const;
