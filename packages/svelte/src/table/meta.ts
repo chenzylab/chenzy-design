@@ -6,10 +6,10 @@ export const meta = {
   name: 'Table',
   category: 'show',
   description:
-    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。本子集；固定列 / 虚拟化 / 筛选 / 树形延后。',
+    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。虚拟化 / 树形延后。',
   exports: ['Table'],
   props: [
-    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/align/ellipsis/sorter/filters/onFilter/render' },
+    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/ellipsis/sorter/filters/onFilter/render' },
     { name: 'dataSource', type: 'T[]', default: '[]', desc: '数据行' },
     { name: 'rowKey', type: "string | ((record: T) => RowKey)", default: "'key'", desc: '行唯一键解析' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
@@ -89,6 +89,10 @@ export const meta = {
     {
       title: '行选择 + 分页',
       code: '<Table {columns} dataSource={data} rowSelection={{ onChange: (keys) => (selected = keys) }} pagination={{ pageSize: 10 }} />',
+    },
+    {
+      title: '列宽拖拽',
+      code: '<Table columns={[{ dataIndex: "name", title: "姓名", width: 160, resizable: true }]} dataSource={data} />',
     },
   ],
 } as const;

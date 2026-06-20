@@ -1434,6 +1434,21 @@ let pageSize2 = $state(10);
     />
   </div>
 
+  <Text type="tertiary">列宽拖拽（拖动姓名 / 城市列头右侧手柄调整列宽，最小 40px）：</Text>
+  <div data-testid="table-resizable" style="max-width:560px">
+    <Table
+      columns={[
+        { dataIndex: 'name', title: '姓名', width: 160, resizable: true },
+        { dataIndex: 'age', title: '年龄', width: 100, align: 'right' as const },
+        { dataIndex: 'city', title: '城市', width: 160, resizable: true },
+        { dataIndex: 'email', title: '邮箱', width: 200 },
+      ]}
+      dataSource={tableData}
+      rowKey="key"
+      bordered
+    />
+  </div>
+
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">
       <strong>{record.name}</strong> 的详细资料：年龄 {record.age}，城市 {record.city}。

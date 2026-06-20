@@ -29,6 +29,7 @@ export const zh_CN: Locale = {
     filter: '筛选',
     filterReset: '重置',
     filterConfirm: '确定',
+    resizeColumn: '拖拽调整列宽',
   },
   Empty: {
     noData: '暂无数据',

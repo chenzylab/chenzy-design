@@ -29,6 +29,7 @@ export const en_US: Locale = {
     filter: 'Filter',
     filterReset: 'Reset',
     filterConfirm: 'OK',
+    resizeColumn: 'Drag to resize column',
   },
   Empty: {
     noData: 'No data',

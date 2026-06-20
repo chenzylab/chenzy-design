@@ -6,7 +6,9 @@
   复用 @chenzy-design/core 纯函数算法与 Pagination 组件，不重复实现。
   固定列：column.fixed='left'|'right'，横滚时 sticky 锁定 + 逐列像素偏移 + 边界阴影。
   列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
-  TODO(延后): 虚拟化 / 树形数据 / 列宽调整。
+  列宽拖拽：column.resizable，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
+  覆盖宽度存本地 SvelteMap 不写回 columns prop(红线 #1)，进 cellStyle 宽度计算。
+  TODO(延后): 虚拟化 / 树形数据。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -81,6 +83,62 @@
 
   const colKeyOf = (col: ColumnDef<T>, index: number): string =>
     col.key ?? col.dataIndex ?? String(index);
+
+  // --- 列宽拖拽：本地覆盖宽度 (colKey → px)，不写回 columns prop (红线 #1) ---
+  const MIN_COL_WIDTH = 40;
+  const widthOverrides = new SvelteMap<string, number>();
+  // 拖拽手柄所在列头引用（用于 pointerdown 读取起始几何）
+  const resizeHandles: Record<string, HTMLElement | null> = $state({});
+  // 当前正在拖拽的列 key（用于手柄高亮 / body class）
+  let resizingKey = $state<string | null>(null);
+
+  // 解析某列最终宽度：覆盖宽度优先，否则 col.width
+  function resolveWidth(col: ColumnDef<T>, index: number): number | string | undefined {
+    const ov = widthOverrides.get(colKeyOf(col, index));
+    if (ov !== undefined) return ov;
+    return col.width;
+  }
+
+  // 列头拖拽：命令式管理指针几何 (红线 #3)。
+  // pointerdown 一次性把起始宽度 / clientX 存普通变量，document 上手动绑定
+  // pointermove / pointerup，结束时解绑。绝不用响应式 attachment 读几何。
+  function startResize(event: PointerEvent, col: ColumnDef<T>, index: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    const colKey = colKeyOf(col, index);
+    const th = resizeHandles[colKey]?.closest('th') as HTMLElement | null;
+    // 起始宽度：已有覆盖 > col.width 数值 > 实测列头宽度
+    const ov = widthOverrides.get(colKey);
+    const startWidth =
+      ov ?? (typeof col.width === 'number' ? col.width : (th?.getBoundingClientRect().width ?? MIN_COL_WIDTH));
+    const startX = event.clientX;
+
+    resizingKey = colKey;
+
+    const onMove = (e: PointerEvent) => {
+      const next = Math.max(MIN_COL_WIDTH, Math.round(startWidth + (e.clientX - startX)));
+      widthOverrides.set(colKey, next);
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      activeMove = null;
+      activeUp = null;
+      resizingKey = null;
+    };
+    activeMove = onMove;
+    activeUp = onUp;
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }
+
+  // 卸载兜底：若拖拽未结束就卸载，清掉可能遗留的全局监听 (红线 #3)。
+  let activeMove: ((e: PointerEvent) => void) | null = null;
+  let activeUp: (() => void) | null = null;
+  $effect(() => () => {
+    if (activeMove) document.removeEventListener('pointermove', activeMove);
+    if (activeUp) document.removeEventListener('pointerup', activeUp);
+  });
 
   // --- 排序：受控 sortState 不回写 (红线 #1) ---
   const isSortControlled = $derived(sortState !== undefined);
@@ -321,9 +379,10 @@
   function alignOf(col: ColumnDef<T>): Align {
     return col.align ?? 'left';
   }
-  function widthStyle(col: ColumnDef<T>): string | undefined {
-    if (col.width === undefined) return undefined;
-    return typeof col.width === 'number' ? `width:${col.width}px` : `width:${col.width}`;
+  function widthStyle(col: ColumnDef<T>, index: number): string | undefined {
+    const w = resolveWidth(col, index);
+    if (w === undefined) return undefined;
+    return typeof w === 'number' ? `width:${w}px` : `width:${w}`;
   }
 
   // --- 固定列：纯 CSS sticky + 逐列像素偏移计算 ---
@@ -334,22 +393,28 @@
   const hasFixed = $derived(columns.some((c) => c.fixed));
   // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
   const totalMinWidth = $derived(
-    leadingWidth + columns.reduce((sum, c) => sum + (typeof c.width === 'number' ? c.width : 120), 0),
+    leadingWidth +
+      columns.reduce((sum, c, i) => {
+        const w = resolveWidth(c, i);
+        return sum + (typeof w === 'number' ? w : 120);
+      }, 0),
   );
   const tableStyle = $derived(hasFixed ? `min-inline-size:${totalMinWidth}px` : undefined);
 
-  function colNumWidth(col: ColumnDef<T>): number {
-    return typeof col.width === 'number' ? col.width : 0;
+  function colNumWidth(col: ColumnDef<T>, index: number): number {
+    const w = resolveWidth(col, index);
+    return typeof w === 'number' ? w : 0;
   }
 
   // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和
   const fixedLeftOffsets = $derived.by(() => {
     const out: (number | null)[] = [];
     let acc = leadingWidth;
-    for (const col of columns) {
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i] as ColumnDef<T>;
       if (col.fixed === 'left') {
         out.push(acc);
-        acc += colNumWidth(col);
+        acc += colNumWidth(col, i);
       } else {
         out.push(null);
       }
@@ -364,7 +429,7 @@
       const col = columns[i] as ColumnDef<T>;
       if (col.fixed === 'right') {
         out[i] = acc;
-        acc += colNumWidth(col);
+        acc += colNumWidth(col, i);
       }
     }
     return out;
@@ -382,7 +447,7 @@
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
     const parts: string[] = [];
-    const w = widthStyle(col);
+    const w = widthStyle(col, i);
     if (w) parts.push(w);
     const left = fixedLeftOffsets[i];
     const right = fixedRightOffsets[i];
@@ -453,10 +518,13 @@
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
           {@const hasFilter = !!col.filters && col.filters.length > 0}
+          {@const resizable = !!col.resizable}
           <th
             class="cd-table__cell cd-table__cell--head cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
             class:cd-table__cell--ellipsis={col.ellipsis}
             class:cd-table__cell--has-filter={hasFilter}
+            class:cd-table__cell--resizable={resizable}
+            class:cd-table__cell--resizing={resizingKey === colKey}
             scope="col"
             style={cellStyle(col, i)}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
@@ -543,6 +611,17 @@
                   </div>
                 </div>
               {/if}
+            {/if}
+
+            {#if resizable}
+              <span
+                class="cd-table__resize-handle"
+                role="separator"
+                aria-orientation="vertical"
+                aria-label={loc().t('Table.resizeColumn')}
+                bind:this={resizeHandles[colKey]}
+                onpointerdown={(e) => startResize(e, col, i)}
+              ></span>
             {/if}
           </th>
         {/each}
@@ -907,6 +986,40 @@
   }
   .cd-table__filter-confirm {
     color: var(--cd-color-primary);
+  }
+
+  /* --- 列宽拖拽手柄 --- */
+  .cd-table__cell--resizable {
+    position: relative;
+  }
+  .cd-table__resize-handle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    inline-size: 8px;
+    cursor: col-resize;
+    /* 提到固定列阴影/内容之上，确保可命中 */
+    z-index: 4;
+    touch-action: none;
+    user-select: none;
+  }
+  .cd-table__resize-handle::after {
+    content: '';
+    position: absolute;
+    inset-block: 25%;
+    inset-inline-end: 3px;
+    inline-size: 2px;
+    background: transparent;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-table__resize-handle:hover::after,
+  .cd-table__cell--resizing .cd-table__resize-handle::after {
+    background: var(--cd-color-primary);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-table__resize-handle::after {
+      transition: none;
+    }
   }
 
   .cd-table__sort-btn {

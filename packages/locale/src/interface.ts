@@ -46,6 +46,7 @@ export interface Locale {
     filter: string;
     filterReset: string;
     filterConfirm: string;
+    resizeColumn: string;
   };
   Empty: {
     noData: string;

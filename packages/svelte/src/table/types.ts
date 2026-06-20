@@ -20,6 +20,8 @@ export interface ColumnDef<T> {
   width?: number | string;
   /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值） */
   fixed?: 'left' | 'right';
+  /** 列宽可拖拽调整：列头右侧出现拖拽手柄，指针拖拽实时改列宽 */
+  resizable?: boolean;
   /** 对齐方式，默认 left */
   align?: Align;
   /** 单元格溢出省略 */
