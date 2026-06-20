@@ -215,6 +215,8 @@ export const zh_CN: Locale = {
   },
   AutoComplete: {
     clear: '清除',
+    loading: '加载中',
+    emptyText: '无匹配项',
   },
   InputNumber: {
     increase: '增加',

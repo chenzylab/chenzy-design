@@ -5,7 +5,7 @@
 export const meta = {
   name: 'AutoComplete',
   category: 'input',
-  description: '输入联想框，支持本地过滤候选与键盘选择。',
+  description: '输入联想框，支持本地过滤候选、远程异步搜索与键盘选择。',
   props: [
     { name: 'value', type: 'string', default: 'undefined' },
     { name: 'defaultValue', type: 'string', default: "''" },
@@ -19,6 +19,10 @@ export const meta = {
     { name: 'filter', type: 'boolean', default: 'true' },
     { name: 'defaultActiveFirstOption', type: 'boolean', default: 'true' },
     { name: 'clearable', type: 'boolean', default: 'false' },
+    { name: 'onSearch', type: '(query: string) => void', default: 'undefined' },
+    { name: 'loading', type: 'boolean', default: 'false' },
+    { name: 'searchDebounce', type: 'number', default: '300' },
+    { name: 'maxCount', type: 'number', default: '0' },
     { name: 'onChange', type: '(v: string) => void', default: 'undefined' },
     { name: 'onSelect', type: '(value: string|number) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
