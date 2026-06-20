@@ -276,6 +276,7 @@
   let dateVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
+  let cascaderMultiVal = $state<(string | number)[][]>([]);
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
@@ -706,9 +707,20 @@ let pageSize2 = $state(10);
         treeData={regionData}
         value={cascaderVal}
         clearable
-        onChange={(p) => (cascaderVal = p)}
+        onChange={(p) => (cascaderVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
       />
       <Text type="tertiary">级联：{cascaderVal.join(' / ') || '（未选）'}</Text>
+    </div>
+    <div style="width: 320px" data-testid="cascader-multiple">
+      <Cascader
+        treeData={regionData}
+        multiple
+        clearable
+        placeholder="多选地区"
+        value={cascaderMultiVal}
+        onChange={(p) => (cascaderMultiVal = (Array.isArray(p[0]) ? p : p.length ? [p] : []) as (string | number)[][])}
+      />
+      <Text type="tertiary">多选级联：已选 {cascaderMultiVal.length} 条</Text>
     </div>
     <div style="width: 240px" data-testid="cascader-async">
       <Cascader treeData={lazyRegionData} loadData={loadRegionChildren} />
