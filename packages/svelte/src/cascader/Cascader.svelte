@@ -2,11 +2,14 @@
   Cascader — see specs/components/input/Cascader.spec.md
   基础子集: 单选、点击逐级展开级联列、叶子选中。Token-driven, a11y-correct, 受控/非受控。
   面板 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），flip 避让。
-  TODO(延后): multiple/checkbox 级联、changeOnSelect 完整语义、loadData 异步、
+  异步 loadData：点击非叶子且无 children 的节点时调 loadData 动态加载，
+  加载中显示 spinner，结果缓存到本地 extraChildren（不改 treeData prop）。
+  TODO(延后): multiple/checkbox 级联、changeOnSelect 完整语义、
   hover 展开、搜索 filterTreeNode、displayRender 自定义回显。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import type { CascaderNode } from './types.js';
@@ -27,6 +30,8 @@
     disabled?: boolean;
     clearable?: boolean;
     changeOnSelect?: boolean;
+    /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
+    loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
     onChange?: (path: Key[]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -44,12 +49,24 @@
     disabled = false,
     clearable = false,
     changeOnSelect = false,
+    loadData,
     onChange,
     onOpenChange,
     ariaLabel,
   }: Props = $props();
 
   const loc = useLocale();
+
+  // 异步加载：已加载子节点缓存（node.value → children）+ 加载中节点集合。
+  // 不写回 treeData prop（红线 #1：不改受控数据源）。
+  const extraChildren = new SvelteMap<Key, CascaderNode[]>();
+  const loadingKeys = new SvelteSet<Key>();
+
+  // 取节点的有效子节点：优先 node.children，否则查 extraChildren 缓存。
+  function childrenOf(node: CascaderNode): CascaderNode[] | undefined {
+    if (node.children && node.children.length > 0) return node.children;
+    return extraChildren.get(node.value);
+  }
 
   const listId = useId('cd-cascader-panel');
 
@@ -66,15 +83,16 @@
     return chain;
   }
 
-  // --- 纯函数: 由 activePath 生成各列数据 ---
+  // --- 由 activePath 生成各列数据（含异步加载的子节点缓存）---
   function columnsFor(data: CascaderNode[], path: Key[]): CascaderNode[][] {
     const columns: CascaderNode[][] = [data];
     let level = data;
     for (const key of path) {
       const node = level.find((n) => n.value === key);
-      if (!node || !node.children || node.children.length === 0) break;
-      columns.push(node.children);
-      level = node.children;
+      const kids = node ? childrenOf(node) : undefined;
+      if (!node || !kids || kids.length === 0) break;
+      columns.push(kids);
+      level = kids;
     }
     return columns;
   }
@@ -141,7 +159,33 @@
   }
 
   function hasChildren(node: CascaderNode): boolean {
-    return !!node.children && node.children.length > 0;
+    const kids = childrenOf(node);
+    return !!kids && kids.length > 0;
+  }
+
+  // 节点是否可展开：已有子节点，或非叶子且配置了 loadData（可异步加载）。
+  function canExpand(node: CascaderNode): boolean {
+    if (hasChildren(node)) return true;
+    return !node.isLeaf && loadData !== undefined;
+  }
+
+  function isLoading(node: CascaderNode): boolean {
+    return loadingKeys.has(node.value);
+  }
+
+  // 异步加载子节点：标记 loading → await loadData → 缓存结果 → 清 loading。
+  async function loadChildren(node: CascaderNode): Promise<boolean> {
+    if (!loadData || loadingKeys.has(node.value)) return false;
+    loadingKeys.add(node.value);
+    try {
+      const kids = await loadData(node);
+      extraChildren.set(node.value, kids);
+      return kids.length > 0;
+    } catch {
+      return false;
+    } finally {
+      loadingKeys.delete(node.value);
+    }
   }
 
   function selectNode(colIndex: number, node: CascaderNode) {
@@ -153,6 +197,10 @@
     if (hasChildren(node)) {
       // 非叶子: 展开下一列；changeOnSelect 时也提交当前路径
       if (changeOnSelect) setValue(nextPath.slice());
+    } else if (!node.isLeaf && loadData) {
+      // 异步加载：加载完成后子节点经 extraChildren 进列，activePath 已指向本节点。
+      if (changeOnSelect) setValue(nextPath.slice());
+      void loadChildren(node);
     } else {
       // 叶子: 提交完整路径并关闭
       setValue(nextPath.slice());
@@ -273,7 +321,9 @@
               tabindex={node.disabled ? -1 : 0}
             >
               <span class="cd-cascader__option-label">{node.label}</span>
-              {#if hasChildren(node)}
+              {#if isLoading(node)}
+                <span class="cd-cascader__option-loading" aria-label={loc().t('Cascader.loading')}></span>
+              {:else if canExpand(node)}
                 <span class="cd-cascader__option-expand" aria-hidden="true">›</span>
               {/if}
             </li>
@@ -420,7 +470,24 @@
     flex: 0 0 auto;
     color: var(--cd-tree-expand-icon-color);
   }
+  .cd-cascader__option-loading {
+    flex: 0 0 auto;
+    inline-size: 12px;
+    block-size: 12px;
+    border: 2px solid var(--cd-tree-expand-icon-color, currentColor);
+    border-block-start-color: transparent;
+    border-radius: var(--cd-radius-full);
+    animation: cd-cascader-spin 0.7s linear infinite;
+  }
+  @keyframes cd-cascader-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
+    .cd-cascader__option-loading {
+      animation: none;
+    }
     .cd-cascader__trigger,
     .cd-cascader__arrow {
       transition: none;

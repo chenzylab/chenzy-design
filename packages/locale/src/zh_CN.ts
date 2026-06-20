@@ -203,6 +203,7 @@ export const zh_CN: Locale = {
   },
   Cascader: {
     clear: '清除',
+    loading: '加载中',
   },
   Carousel: {
     prev: '上一张',

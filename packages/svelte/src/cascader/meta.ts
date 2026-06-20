@@ -18,6 +18,7 @@ export const meta = {
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'clearable', type: 'boolean', default: 'false' },
     { name: 'changeOnSelect', type: 'boolean', default: 'false' },
+    { name: 'loadData', type: '(node: CascaderNode) => Promise<CascaderNode[]>', default: 'undefined', desc: '动态加载子节点' },
     { name: 'onChange', type: '(path: (string|number)[]) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },

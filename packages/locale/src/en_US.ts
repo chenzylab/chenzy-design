@@ -203,6 +203,7 @@ export const en_US: Locale = {
   },
   Cascader: {
     clear: 'Clear',
+    loading: 'Loading',
   },
   Carousel: {
     prev: 'Previous slide',

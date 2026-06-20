@@ -242,6 +242,7 @@ export interface Locale {
   };
   Cascader: {
     clear: string;
+    loading: string;
   };
   Carousel: {
     prev: string;
