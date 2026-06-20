@@ -151,6 +151,9 @@ export const en_US: Locale = {
     prevMonth: 'Previous month',
     nextMonth: 'Next month',
     triggerLabel: 'Select date',
+    startPlaceholder: 'Start date',
+    endPlaceholder: 'End date',
+    rangeTriggerLabel: 'Select date range',
   },
   TimePicker: {
     placeholder: 'Select time',

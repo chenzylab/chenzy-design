@@ -179,6 +179,9 @@ export interface Locale {
     prevMonth: string;
     nextMonth: string;
     triggerLabel: string;
+    startPlaceholder: string;
+    endPlaceholder: string;
+    rangeTriggerLabel: string;
   };
   TimePicker: {
     placeholder: string;

@@ -27,6 +27,7 @@
     TagInput,
     ColorPicker,
     DatePicker,
+    RangePicker,
     TimePicker,
     Cascader,
     TreeSelect,
@@ -274,6 +275,7 @@
   let tags = $state<string[]>(['svelte', 'vite']);
   let color = $state('#3366ff');
   let dateVal = $state<Date | null>(null);
+  let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
@@ -691,6 +693,16 @@ let pageSize2 = $state(10);
       <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
       <Text type="tertiary">
         日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="range-picker" style="width:260px; display:inline-block">
+        <RangePicker value={dateRangeVal} onChange={(r) => (dateRangeVal = r)} />
+      </span>
+      <Text type="tertiary">
+        范围：{dateRangeVal && dateRangeVal[0] && dateRangeVal[1]
+          ? `${dateRangeVal[0].toLocaleDateString('zh-CN')} ~ ${dateRangeVal[1].toLocaleDateString('zh-CN')}`
+          : '（未选）'}
       </Text>
     </Space>
     <Space>
