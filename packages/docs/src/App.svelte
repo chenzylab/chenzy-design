@@ -1912,6 +1912,24 @@ let pageSize2 = $state(10);
         ]}
       />
     </div>
+
+    <Text type="tertiary">声明式 Timeline.Item（children 可放富内容，alternate 交替布局生效）：</Text>
+    <div data-testid="timeline-item" style="width: 360px">
+      <Timeline mode="alternate">
+        <Timeline.Item time="09:00">
+          <strong>创建订单</strong>
+        </Timeline.Item>
+        <Timeline.Item time="12:30" dotColor="var(--cd-color-success)">
+          已发货 — <Text type="success">顺丰快递</Text>
+        </Timeline.Item>
+        <Timeline.Item time="15:00" lineStyle="dashed">
+          运输中
+        </Timeline.Item>
+        <Timeline.Item time="18:20">
+          已签收
+        </Timeline.Item>
+      </Timeline>
+    </div>
   </Space>
 
   <Divider />
