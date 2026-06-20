@@ -162,6 +162,20 @@
   ];
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
+  const lazyRegionData = [
+    { label: '华东', value: 'east' },
+    { label: '华南', value: 'south' },
+  ];
+  function loadRegionChildren(node: { value: string | number }) {
+    return new Promise<{ label: string; value: string; isLeaf?: boolean }[]>((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { label: `${node.value}-城市A`, value: `${node.value}-a`, isLeaf: true },
+          { label: `${node.value}-城市B`, value: `${node.value}-b`, isLeaf: true },
+        ]);
+      }, 600);
+    });
+  }
   const demoImageSrc =
     'data:image/svg+xml;utf8,' +
     encodeURIComponent(
@@ -639,6 +653,10 @@ let pageSize2 = $state(10);
         onChange={(p) => (cascaderVal = p)}
       />
       <Text type="tertiary">级联：{cascaderVal.join(' / ') || '（未选）'}</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-async">
+      <Cascader treeData={lazyRegionData} loadData={loadRegionChildren} />
+      <Text type="tertiary">异步 loadData（点击节点动态加载）</Text>
     </div>
     <div style="width: 240px">
       <TreeSelect
