@@ -272,6 +272,7 @@
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let treeVal = $state<string | number | null>(null);
+  let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
   let page = $state(1);
 let page2 = $state(1);
@@ -694,9 +695,21 @@ let pageSize2 = $state(10);
         value={treeVal}
         clearable
         defaultExpandAll
-        onChange={(k) => (treeVal = k)}
+        onChange={(k) => (treeVal = Array.isArray(k) ? (k[0] ?? null) : k)}
       />
       <Text type="tertiary">树选：{treeVal ?? '（未选）'}</Text>
+    </div>
+    <div style="width: 280px" data-testid="treeselect-multiple">
+      <TreeSelect
+        treeData={orgTree}
+        multiple
+        clearable
+        defaultExpandAll
+        placeholder="多选部门"
+        value={treeMultiVal}
+        onChange={(k) => (treeMultiVal = Array.isArray(k) ? k : k === null ? [] : [k])}
+      />
+      <Text type="tertiary">已选 {treeMultiVal.length} 项</Text>
     </div>
   </Space>
 
