@@ -28,7 +28,9 @@ export {
   isSameDay,
   startOfDay,
   addMonths,
+  addWeeks,
   getMonthGrid,
+  getWeekGrid,
   weekdayOrder,
   type DayCell,
 } from './date.js';

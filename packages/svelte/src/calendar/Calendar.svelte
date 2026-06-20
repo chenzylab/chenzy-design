@@ -1,17 +1,21 @@
 <!--
-  Calendar (month-view subset) — see specs/components/show/Calendar.spec.md
-  月视图日历：6×7 日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、月份导航。
-  受控 value(锚点)/selectedDate 不回写，仅 onChange/onSelect/onDateClick/onMoreClick 通知。
-  复用 @chenzy-design/core 的纯日期/分组算法，不重复实现。
-  TODO(延后): week/day/range 视图、时间轴、弹层、虚拟化、完整 roving 焦点、i18n LocaleProvider。
+  Calendar — see specs/components/show/Calendar.spec.md
+  月/周视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态。
+  mode='month'(6×7) | 'week'(1×7)；selectionMode='single'(选中日) | 'range'(范围选择，起止+区间高亮+hover 预览)。
+  受控 value(锚点)/selectedDate/rangeValue 不回写，仅 onChange/onSelect/onRangeChange/onDateClick/onMoreClick 通知。
+  复用 @chenzy-design/core 的纯日期/分组算法（getMonthGrid/getWeekGrid/addMonths/addWeeks…），不重复实现。
+  TODO(延后): day 视图、时间轴、弹层、虚拟化、完整 roving 焦点、i18n LocaleProvider。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import {
     getMonthGrid,
+    getWeekGrid,
     weekdayOrder,
     isSameDay,
+    startOfDay,
     addMonths,
+    addWeeks,
     groupEventsByDays,
     dayKey,
     isPastDay,
@@ -20,10 +24,15 @@
   import { useLocale } from '../locale-provider/index.js';
 
   type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  type Mode = 'month' | 'week';
+  type SelectionMode = 'single' | 'range';
+  type RangeValue = [Date, Date];
 
   interface Props {
     value?: Date;
     defaultValue?: Date;
+    mode?: Mode;
+    selectionMode?: SelectionMode;
     events?: CalendarEvent[];
     weekStartsOn?: WeekStart;
     maxEventsPerDay?: number;
@@ -32,9 +41,12 @@
     disabledDate?: (date: Date) => boolean;
     selectedDate?: Date;
     defaultSelectedDate?: Date;
+    rangeValue?: RangeValue | null;
+    defaultRangeValue?: RangeValue | null;
     locale?: string;
     onChange?: (info: { value: Date }) => void;
     onSelect?: (info: { date: Date }) => void;
+    onRangeChange?: (info: { range: RangeValue }) => void;
     onDateClick?: (info: { date: Date }) => void;
     onMoreClick?: (info: { date: Date; events: CalendarEvent[] }) => void;
     dateCell?: Snippet<
@@ -47,6 +59,8 @@
   let {
     value,
     defaultValue,
+    mode = 'month',
+    selectionMode = 'single',
     events = [],
     weekStartsOn = 0,
     maxEventsPerDay = 3,
@@ -55,9 +69,12 @@
     disabledDate,
     selectedDate,
     defaultSelectedDate,
+    rangeValue,
+    defaultRangeValue,
     locale = 'zh-CN',
     onChange,
     onSelect,
+    onRangeChange,
     onDateClick,
     onMoreClick,
     dateCell,
@@ -88,10 +105,34 @@
     isSelectedControlled ? (selectedDate as Date) : innerSelected,
   );
 
+  // --- 选中范围 rangeValue：受控不回写 (红线 #1) ---
+  function normRange(r: RangeValue | null | undefined): RangeValue | null {
+    if (!r) return null;
+    const a = startOfDay(r[0]);
+    const b = startOfDay(r[1]);
+    return a.getTime() <= b.getTime() ? [a, b] : [b, a];
+  }
+  const isRangeControlled = $derived(rangeValue !== undefined);
+  let innerRange = $state<RangeValue | null>(untrack(() => normRange(defaultRangeValue)));
+  const currentRange = $derived(
+    isRangeControlled ? normRange(rangeValue) : innerRange,
+  );
+
+  // --- range 选择状态机：'start'=待选起点；'end'=已选起点待选终点 ---
+  let phase = $state<'start' | 'end'>('start');
+  let pendingStart = $state<Date | null>(null);
+  let previewEnd = $state<Date | null>(null);
+
   // --- 网格与分组：全部从 props/本地 $state 派生 (红线 #2) ---
-  const cells = $derived(getMonthGrid(currentValue, weekStartsOn));
+  const cells = $derived(
+    mode === 'week'
+      ? getWeekGrid(currentValue, weekStartsOn)
+      : getMonthGrid(currentValue, weekStartsOn),
+  );
   const weeks = $derived(
-    Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, (i + 1) * 7)),
+    mode === 'week'
+      ? [cells]
+      : Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, (i + 1) * 7)),
   );
   const dayMap = $derived(
     groupEventsByDays(
@@ -106,7 +147,23 @@
     new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
   );
   const weekdayFormatter = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
-  const monthTitle = $derived(titleFormatter.format(currentValue));
+  // week 模式标题：本周首日 ~ 末日（同月则只展示一次月份）
+  const rangeTitleFormatter = $derived(
+    new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }),
+  );
+  const dayTitleFormatter = $derived(new Intl.DateTimeFormat(locale, { day: 'numeric' }));
+  const weekTitle = $derived.by(() => {
+    const first = cells[0]?.date;
+    const last = cells[cells.length - 1]?.date;
+    if (!first || !last) return '';
+    const startText = rangeTitleFormatter.format(first);
+    const endText =
+      first.getMonth() === last.getMonth() && first.getFullYear() === last.getFullYear()
+        ? dayTitleFormatter.format(last)
+        : rangeTitleFormatter.format(last);
+    return `${startText} – ${endText}`;
+  });
+  const title = $derived(mode === 'week' ? weekTitle : titleFormatter.format(currentValue));
 
   // 星期表头：用首周 7 格的 date 生成名称（顺序与 weekStartsOn 一致）
   const weekdayOrderList = $derived(weekdayOrder(weekStartsOn));
@@ -121,10 +178,10 @@
   }
 
   function goPrev() {
-    setAnchor(addMonths(currentValue, -1));
+    setAnchor(mode === 'week' ? addWeeks(currentValue, -1) : addMonths(currentValue, -1));
   }
   function goNext() {
-    setAnchor(addMonths(currentValue, 1));
+    setAnchor(mode === 'week' ? addWeeks(currentValue, 1) : addMonths(currentValue, 1));
   }
   function goToday() {
     setAnchor(new Date());
@@ -135,14 +192,47 @@
     onSelect?.({ date });
   }
 
+  function setRange(next: RangeValue) {
+    if (!isRangeControlled) innerRange = next;
+    onRangeChange?.({ range: next });
+  }
+
   function isDisabled(date: Date): boolean {
     return disabledDate?.(date) ?? false;
+  }
+
+  // range 选择：点第一天设起、第二天设止（排序后提交）
+  function onRangeActivate(date: Date) {
+    const day = startOfDay(date);
+    if (phase === 'start') {
+      pendingStart = day;
+      previewEnd = day;
+      phase = 'end';
+      return;
+    }
+    const a = pendingStart ?? day;
+    const next: RangeValue =
+      a.getTime() <= day.getTime() ? [a, day] : [day, a];
+    setRange(next);
+    phase = 'start';
+    pendingStart = null;
+    previewEnd = null;
   }
 
   function onCellActivate(date: Date) {
     if (isDisabled(date)) return;
     onDateClick?.({ date });
-    setSelected(date);
+    if (selectionMode === 'range') {
+      onRangeActivate(date);
+    } else {
+      setSelected(date);
+    }
+  }
+
+  function onCellHover(date: Date) {
+    if (selectionMode === 'range' && phase === 'end' && !isDisabled(date)) {
+      previewEnd = startOfDay(date);
+    }
   }
 
   function onCellKeydown(e: KeyboardEvent, date: Date) {
@@ -150,6 +240,26 @@
       e.preventDefault();
       onCellActivate(date);
     }
+  }
+
+  // --- range 区间端点 / 区间内判定（纯派生，红线 #2） ---
+  const rangeStart = $derived(phase === 'end' ? pendingStart : (currentRange?.[0] ?? null));
+  const rangeEnd = $derived(phase === 'end' ? previewEnd : (currentRange?.[1] ?? null));
+  const span = $derived.by<[number, number] | null>(() => {
+    if (!rangeStart || !rangeEnd) return null;
+    const ta = rangeStart.getTime();
+    const tb = rangeEnd.getTime();
+    return ta <= tb ? [ta, tb] : [tb, ta];
+  });
+
+  function isRangeEdge(date: Date): boolean {
+    if (selectionMode !== 'range') return false;
+    return isSameDay(date, rangeStart) || isSameDay(date, rangeEnd);
+  }
+  function isInRange(date: Date): boolean {
+    if (selectionMode !== 'range' || !span) return false;
+    const t = startOfDay(date).getTime();
+    return t > span[0] && t < span[1];
   }
 
   function onMore(date: Date, total: CalendarEvent[]) {
@@ -169,6 +279,7 @@
   }
 
   function isSelectedDay(date: Date): boolean {
+    if (selectionMode === 'range') return false;
     return isSameDay(date, currentSelected);
   }
 </script>
@@ -193,7 +304,7 @@
       </svg>
     </button>
     <button type="button" class="cd-calendar__today" onclick={goToday}>{loc().t('Calendar.today')}</button>
-    <div class="cd-calendar__title">{monthTitle}</div>
+    <div class="cd-calendar__title">{title}</div>
     <button
       type="button"
       class="cd-calendar__nav"
@@ -213,7 +324,7 @@
     </button>
   </div>
 
-  <div class="cd-calendar__grid" role="grid" aria-label={ariaLabel ?? monthTitle}>
+  <div class="cd-calendar__grid" role="grid" aria-label={ariaLabel ?? title}>
     <div class="cd-calendar__row cd-calendar__row--head" role="row">
       {#each weekdayNames as name, i (weekdayOrderList[i])}
         {@const weekend = markWeekend && weekendDays.includes(weekdayOrderList[i] as number)}
@@ -237,25 +348,31 @@
           {@const selected = isSelectedDay(date)}
           {@const weekend = isWeekendDay(date)}
           {@const past = isPastDay(date, today)}
+          {@const rangeEdgeCell = isRangeEdge(date)}
+          {@const inRangeCell = isInRange(date)}
           {@const dayData = dayMap.get(dayKey(date))}
           {@const visible = dayData?.visible ?? []}
           {@const total = dayData?.total ?? []}
           {@const overflow = dayData?.overflow ?? 0}
           <div
             class="cd-calendar__cell"
+            class:cd-calendar__cell--week={mode === 'week'}
             class:cd-calendar__cell--today={isToday}
             class:cd-calendar__cell--selected={selected}
+            class:cd-calendar__cell--range-edge={rangeEdgeCell}
+            class:cd-calendar__cell--in-range={inRangeCell}
             class:cd-calendar__cell--outside={outside}
             class:cd-calendar__cell--weekend={weekend}
             class:cd-calendar__cell--disabled={disabled}
             class:cd-calendar__cell--past={past}
             role="gridcell"
             tabindex={disabled ? undefined : 0}
-            aria-selected={selected || undefined}
+            aria-selected={selected || rangeEdgeCell || undefined}
             aria-disabled={disabled || undefined}
             aria-current={isToday ? 'date' : undefined}
             onclick={() => onCellActivate(date)}
             onkeydown={(e) => onCellKeydown(e, date)}
+            onpointerenter={() => onCellHover(date)}
           >
             {#if dateCell}
               {@render dateCell({ date, events: total, isToday, isOutside: outside, disabled })}
@@ -402,6 +519,19 @@
   }
   .cd-calendar__cell--selected {
     box-shadow: inset 0 0 0 2px var(--cd-calendar-selected-border);
+  }
+  /* range 区间内：浅底连续填充 */
+  .cd-calendar__cell--in-range {
+    background: var(--cd-calendar-range-bg, var(--cd-calendar-today-bg));
+  }
+  /* range 端点：实心边框高亮（起止） */
+  .cd-calendar__cell--range-edge {
+    background: var(--cd-calendar-range-edge-bg, var(--cd-calendar-today-bg));
+    box-shadow: inset 0 0 0 2px var(--cd-calendar-selected-border);
+  }
+  /* week 模式：单行更高，事件区有更多展示空间 */
+  .cd-calendar__cell--week {
+    min-block-size: var(--cd-calendar-week-cell-min-h, calc(var(--cd-calendar-cell-min-h) * 3));
   }
   .cd-calendar__cell--outside .cd-calendar__date {
     color: var(--cd-calendar-text-secondary);
