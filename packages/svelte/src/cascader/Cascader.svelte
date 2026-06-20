@@ -7,7 +7,9 @@
   multiple：每列 checkbox 多选 + 父子联动（复用 core conduct/toggleCheck，以 value 为 key），
   trigger 按选中叶子路径多 tag 回显可单独移除；value 为 Key[][]（多条路径）。
   filterable：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
-  TODO(延后): changeOnSelect 完整语义、hover 展开、displayRender 自定义回显。
+  expandTrigger='hover'：悬停非叶子节点即展开子级列（pointerenter 设 activePath，选中仍用点击）。
+  displayRender：自定义触发器选中路径回显（单选 + 多选每个 tag 共用）。
+  TODO(延后): changeOnSelect 完整语义。
 -->
 <script lang="ts">
   import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
@@ -36,10 +38,14 @@
     disabled?: boolean;
     clearable?: boolean;
     changeOnSelect?: boolean;
+    /** 展开触发方式：'click' 点击展开（默认）；'hover' 悬停非叶子节点即展开子级列 */
+    expandTrigger?: 'click' | 'hover';
     /** 搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中 */
     filterable?: boolean;
     /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
+    /** 自定义触发器选中路径的回显文本（单选 + 多选每个 tag 均走此函数） */
+    displayRender?: (labels: string[], selectedNodes: CascaderNode[]) => string;
     /** 单选回调单条路径；多选回调多条叶子路径 */
     onChange?: (value: Key[] | Key[][]) => void;
     onOpenChange?: (open: boolean) => void;
@@ -59,8 +65,10 @@
     disabled = false,
     clearable = false,
     changeOnSelect = false,
+    expandTrigger = 'click',
     filterable = false,
     loadData,
+    displayRender,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -249,32 +257,39 @@
   );
 
   // 选中叶子的完整路径链（用于多 tag 回显）。遍历合并树收集 checked 的叶子路径。
-  const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[] }[]>(() => {
+  const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[]; nodes: CascaderNode[] }[]>(() => {
     if (!multiple) return [];
-    const out: { path: Key[]; labels: string[] }[] = [];
-    const walk = (nodes: CascaderNode[], path: Key[], labels: string[]) => {
+    const out: { path: Key[]; labels: string[]; nodes: CascaderNode[] }[] = [];
+    const walk = (nodes: CascaderNode[], path: Key[], labels: string[], chain: CascaderNode[]) => {
       for (const n of nodes) {
         const kids = childrenOf(n);
         const np = [...path, n.value];
         const nl = [...labels, n.label];
+        const nc = [...chain, n];
         const isLeaf = !kids || kids.length === 0;
         if (isLeaf && checkState.checked.has(n.value)) {
-          out.push({ path: np, labels: nl });
+          out.push({ path: np, labels: nl, nodes: nc });
         } else if (!isLeaf) {
-          walk(kids, np, nl);
+          walk(kids, np, nl, nc);
         }
       }
     };
-    walk(treeData, [], []);
+    walk(treeData, [], [], []);
     return out;
   });
 
   const selectedChain = $derived(findPath(treeData, currentValue));
-  const displayLabel = $derived(selectedChain.map((n) => n.label).join(' / '));
+  const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
   const showClear = $derived(clearable && !disabled && hasSelection);
+
+  // 单条路径回显文本：有 displayRender 走自定义，否则 label 用「 / 」连接。
+  // 多选每个 tag 与单选回显共用此逻辑。
+  function renderPath(labels: string[], nodes: CascaderNode[]): string {
+    return displayRender ? displayRender(labels, nodes) : labels.join(' / ');
+  }
 
   function setValue(next: Key[]) {
     if (!isValueControlled) innerValue = next;
@@ -419,6 +434,19 @@
     }
   }
 
+  // expandTrigger='hover'：悬停非叶子（或可异步加载）节点即展开其子级列。
+  // 仅设 activePath + 触发 loadData，不做选中（选中仍走 click）。
+  function hoverExpand(colIndex: number, node: CascaderNode) {
+    if (expandTrigger !== 'hover' || disabled || node.disabled) return;
+    if (!canExpand(node)) return;
+    const nextPath = activePath.slice(0, colIndex);
+    nextPath.push(node.value);
+    activePath = nextPath;
+    if (!hasChildren(node) && !node.isLeaf && loadData) {
+      void loadChildren(node);
+    }
+  }
+
   function clearAll(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
@@ -490,7 +518,7 @@
                 closable={!disabled}
                 onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
               >
-                {leaf.labels.join(' / ')}
+                {renderPath(leaf.labels, leaf.nodes)}
               </Tag>
             {/each}
           </span>
@@ -594,6 +622,7 @@
               aria-selected={isActiveAt(colIndex, node)}
               aria-disabled={node.disabled || undefined}
               onclick={() => selectNode(colIndex, node)}
+              onpointerenter={() => hoverExpand(colIndex, node)}
               onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();

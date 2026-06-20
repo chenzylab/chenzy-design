@@ -349,6 +349,8 @@ let presetVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
+  let cascaderHoverVal = $state<(string | number)[]>([]);
+  let cascaderDisplayVal = $state<(string | number)[]>([]);
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
@@ -987,6 +989,28 @@ let pageSize2 = $state(10);
     <div style="width: 240px" data-testid="cascader-async">
       <Cascader treeData={lazyRegionData} loadData={loadRegionChildren} />
       <Text type="tertiary">异步 loadData（点击节点动态加载）</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-hover">
+      <Cascader
+        treeData={regionData}
+        expandTrigger="hover"
+        clearable
+        placeholder="悬停展开"
+        value={cascaderHoverVal}
+        onChange={(p) => (cascaderHoverVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
+      />
+      <Text type="tertiary">悬停展开（expandTrigger="hover"）：{cascaderHoverVal.join(' / ') || '（未选）'}</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-display">
+      <Cascader
+        treeData={regionData}
+        clearable
+        placeholder="自定义回显"
+        value={cascaderDisplayVal}
+        displayRender={(labels) => labels.join('-')}
+        onChange={(p) => (cascaderDisplayVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
+      />
+      <Text type="tertiary">displayRender 省-市-区 格式回显</Text>
     </div>
     <div style="width: 240px" data-testid="treeselect-filter">
       <TreeSelect
