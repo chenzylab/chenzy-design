@@ -18,6 +18,8 @@ export interface ColumnDef<T> {
   title: string;
   /** 列宽 */
   width?: number | string;
+  /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值） */
+  fixed?: 'left' | 'right';
   /** 对齐方式，默认 left */
   align?: Align;
   /** 单元格溢出省略 */
