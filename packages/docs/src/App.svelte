@@ -294,6 +294,7 @@
   let tags = $state<string[]>(['svelte', 'vite']);
   let color = $state('#3366ff');
   let dateVal = $state<Date | null>(null);
+  let dateTimeVal = $state<Date | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
@@ -784,6 +785,14 @@ let pageSize2 = $state(10);
       <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
       <Text type="tertiary">
         日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-datetime" style="width:260px; display:inline-block">
+        <DatePicker type="dateTime" value={dateTimeVal} onChange={(d) => (dateTimeVal = d)} />
+      </span>
+      <Text type="tertiary">
+        日期时间：{dateTimeVal ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
       </Text>
     </Space>
     <Space>

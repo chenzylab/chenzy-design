@@ -1,18 +1,21 @@
 <!--
   DatePicker — see specs/components/input/DatePicker.spec.md
-  基础子集: 单选 type='date' 日历面板。Token-driven, a11y-correct, 受控/非受控。
-  本地化全部走 Intl.DateTimeFormat (不手拼日期串)。
-  TODO(延后): dateTime/range/month/year 类型、disabledTime、maxRange、自定义 format 解析手输。
+  基础子集: 单选 type='date' 日历面板 / type='dateTime' 日期+时间。Token-driven, a11y-correct, 受控/非受控。
+  本地化全部走 Intl.DateTimeFormat (不手拼日期串)。dateTime 复用 TimePicker 的时/分/秒列逻辑。
+  TODO(延后): range/month/year 类型、disabledTime、maxRange、自定义 format 解析手输。
 -->
 <script lang="ts">
+  import { tick } from 'svelte';
   import { useId, useDismiss, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
+  type PickerType = 'date' | 'dateTime';
 
   interface Props {
+    type?: PickerType;
     value?: Date | null;
     defaultValue?: Date | null;
     open?: boolean;
@@ -24,6 +27,7 @@
     clearable?: boolean;
     disabledDate?: (date: Date) => boolean;
     weekStart?: WeekStart;
+    showSecond?: boolean;
     locale?: string;
     onChange?: (v: Date | null) => void;
     onOpenChange?: (open: boolean) => void;
@@ -31,6 +35,7 @@
   }
 
   let {
+    type = 'date',
     value,
     defaultValue = null,
     open,
@@ -42,11 +47,14 @@
     clearable = true,
     disabledDate,
     weekStart = 0,
+    showSecond = true,
     locale = 'zh-CN',
     onChange,
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  const isDateTime = $derived(type === 'dateTime');
 
   const loc = useLocale();
 
@@ -99,7 +107,14 @@
 
   // --- Intl 本地化格式化器 (不手拼日期串) ---
   const triggerFormat = $derived(
-    new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }),
+    new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      ...(isDateTime
+        ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+        : {}),
+    }),
   );
   const headerFormat = $derived(
     new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
@@ -125,17 +140,80 @@
     cursor = addMonths(cursor, 1);
   }
 
+  // --- 时间部分 (dateTime)：复用 TimePicker 的列逻辑 ---
+  const selectedHour = $derived(current ? current.getHours() : 0);
+  const selectedMinute = $derived(current ? current.getMinutes() : 0);
+  const selectedSecond = $derived(current ? current.getSeconds() : 0);
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const minutes = Array.from({ length: 60 }, (_, i) => i);
+  const seconds = Array.from({ length: 60 }, (_, i) => i);
+
+  function pad2(n: number): string {
+    return n < 10 ? `0${n}` : `${n}`;
+  }
+
+  // 合并指定日期与已有时分秒 (dateTime 保留时间，date 归零到当天起始)
+  function combine(date: Date): Date {
+    if (!isDateTime) return startOfDay(date);
+    const next = new Date(date);
+    next.setHours(selectedHour, selectedMinute, selectedSecond, 0);
+    return next;
+  }
+
   function selectDate(date: Date) {
     if (disabledDate?.(date)) return;
-    setValue(startOfDay(date));
-    setOpen(false);
+    setValue(combine(date));
+    // dateTime：选日期后保留面板，让用户继续选时间，点确定再关
+    if (!isDateTime) setOpen(false);
   }
 
   function selectToday() {
     if (disabledDate?.(today)) return;
-    setValue(startOfDay(today));
+    setValue(combine(today));
+    if (!isDateTime) setOpen(false);
+  }
+
+  // 时间列：基于 current（无则今天）写入 h/m/s，不关面板
+  function commitTime(h: number, m: number, s: number) {
+    const base = current ? new Date(current) : startOfDay(today);
+    base.setHours(h, m, s, 0);
+    setValue(base);
+  }
+  function pickHour(h: number) {
+    commitTime(h, selectedMinute, selectedSecond);
+  }
+  function pickMinute(m: number) {
+    commitTime(selectedHour, m, selectedSecond);
+  }
+  function pickSecond(s: number) {
+    commitTime(selectedHour, selectedMinute, s);
+  }
+
+  function confirm() {
     setOpen(false);
   }
+
+  // 时间列容器引用 (红线 #3: 普通 bind:this，scrollIntoView 命令式调用)
+  let hourCol = $state<HTMLUListElement | null>(null);
+  let minuteCol = $state<HTMLUListElement | null>(null);
+  let secondCol = $state<HTMLUListElement | null>(null);
+
+  function scrollColToSelected(col: HTMLUListElement | null) {
+    if (!col) return;
+    const target = col.querySelector<HTMLElement>('[aria-selected="true"]');
+    target?.scrollIntoView({ block: 'center' });
+  }
+
+  // 打开时把时间列各自滚到选中项 (命令式，不放响应式 attachment)
+  $effect(() => {
+    if (!isOpen || !isDateTime) return;
+    void tick().then(() => {
+      scrollColToSelected(hourCol);
+      scrollColToSelected(minuteCol);
+      if (showSecond) scrollColToSelected(secondCol);
+    });
+  });
 
   function clear(e: MouseEvent) {
     e.stopPropagation();
@@ -282,12 +360,15 @@
   {#if isOpen}
     <div
       class="cd-date-picker__panel"
+      class:cd-date-picker__panel--datetime={isDateTime}
       id={dialogId}
       role="dialog"
       aria-label={loc().t('DatePicker.triggerLabel')}
       tabindex="-1"
       onkeydown={onPanelKeydown}
     >
+      <div class="cd-date-picker__body">
+      <div class="cd-date-picker__calendar">
       <div class="cd-date-picker__header">
         <button
           type="button"
@@ -342,11 +423,85 @@
           </button>
         {/each}
       </div>
+      </div>
+
+      {#if isDateTime}
+        <div class="cd-date-picker__time">
+          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
+            {#each hours as h (h)}
+              <li
+                class="cd-date-picker__time-item"
+                class:cd-date-picker__time-item--selected={h === selectedHour}
+                role="option"
+                aria-selected={h === selectedHour}
+                tabindex="-1"
+                onclick={() => pickHour(h)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    pickHour(h);
+                  }
+                }}
+              >
+                {pad2(h)}
+              </li>
+            {/each}
+          </ul>
+          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
+            {#each minutes as m (m)}
+              <li
+                class="cd-date-picker__time-item"
+                class:cd-date-picker__time-item--selected={m === selectedMinute}
+                role="option"
+                aria-selected={m === selectedMinute}
+                tabindex="-1"
+                onclick={() => pickMinute(m)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    pickMinute(m);
+                  }
+                }}
+              >
+                {pad2(m)}
+              </li>
+            {/each}
+          </ul>
+          {#if showSecond}
+            <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
+              {#each seconds as s (s)}
+                <li
+                  class="cd-date-picker__time-item"
+                  class:cd-date-picker__time-item--selected={s === selectedSecond}
+                  role="option"
+                  aria-selected={s === selectedSecond}
+                  tabindex="-1"
+                  onclick={() => pickSecond(s)}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      pickSecond(s);
+                    }
+                  }}
+                >
+                  {pad2(s)}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+      {/if}
+      </div>
 
       <div class="cd-date-picker__footer">
         <button type="button" class="cd-date-picker__today" onclick={selectToday}>
-          今天
+          {loc().t('DatePicker.today')}
         </button>
+        {#if isDateTime}
+          <button type="button" class="cd-date-picker__ok" onclick={confirm}>
+            {loc().t('TimePicker.confirm')}
+          </button>
+        {/if}
       </div>
     </div>
   {/if}
@@ -462,6 +617,66 @@
   .cd-date-picker__panel:focus-visible {
     outline: none;
   }
+  .cd-date-picker__body {
+    display: flex;
+    align-items: stretch;
+  }
+  .cd-date-picker__time {
+    display: flex;
+    margin-inline-start: var(--cd-spacing-2);
+    padding-inline-start: var(--cd-spacing-2);
+    border-inline-start: 1px solid var(--cd-color-border);
+  }
+  .cd-date-picker__time-col {
+    inline-size: var(--cd-time-picker-time-col-width);
+    block-size: calc(var(--cd-time-picker-time-item-height) * 7);
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+  }
+  .cd-date-picker__time-col + .cd-date-picker__time-col {
+    border-inline-start: 1px solid var(--cd-color-border);
+  }
+  .cd-date-picker__time-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--cd-time-picker-time-item-height);
+    color: var(--cd-color-text-0);
+    cursor: pointer;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-date-picker__time-item:hover {
+    background: var(--cd-date-picker-cell-bg-hover);
+  }
+  .cd-date-picker__time-item:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-date-picker__time-item--selected,
+  .cd-date-picker__time-item--selected:hover {
+    background: var(--cd-date-picker-cell-bg-selected);
+    color: var(--cd-date-picker-cell-color-selected);
+  }
+  .cd-date-picker__ok {
+    padding-inline: var(--cd-spacing-2);
+    padding-block: var(--cd-spacing-1);
+    border: none;
+    border-radius: var(--cd-radius-1);
+    background: var(--cd-color-primary);
+    color: var(--cd-color-white, #fff);
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-date-picker__ok:hover {
+    background: var(--cd-color-primary-hover, var(--cd-color-primary));
+  }
+  .cd-date-picker__ok:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
   .cd-date-picker__header {
     display: flex;
     align-items: center;
@@ -554,10 +769,15 @@
   }
   .cd-date-picker__footer {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: var(--cd-spacing-2);
     margin-block-start: var(--cd-spacing-2);
     padding-block-start: var(--cd-spacing-2);
     border-block-start: 1px solid var(--cd-color-border);
+  }
+  .cd-date-picker__panel--datetime .cd-date-picker__footer {
+    justify-content: space-between;
   }
   .cd-date-picker__today {
     padding: 0;
