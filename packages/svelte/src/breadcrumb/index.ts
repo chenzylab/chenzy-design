@@ -14,3 +14,8 @@ export const Breadcrumb: typeof BreadcrumbRoot & {
 
 export { meta as breadcrumbMeta } from './meta.js';
 export type { BreadcrumbRoute } from './types.js';
+export {
+  getBreadcrumbContext,
+  setBreadcrumbContext,
+  type BreadcrumbContext,
+} from './context.js';
