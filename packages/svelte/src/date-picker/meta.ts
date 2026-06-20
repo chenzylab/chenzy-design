@@ -6,8 +6,9 @@ export const meta = {
   name: 'DatePicker',
   category: 'input',
   description:
-    '日期选择器，单选 type=date 日历面板，受控/非受控；显示与星期/月份均经 Intl.DateTimeFormat 本地化。',
+    '日期选择器，type=date 日历面板 / type=dateTime 日期+时间（复用 TimePicker 时分秒列），受控/非受控；显示与星期/月份均经 Intl.DateTimeFormat 本地化。',
   props: [
+    { name: 'type', type: "'date'|'dateTime'", default: "'date'" },
     { name: 'value', type: 'Date | null', default: 'undefined' },
     { name: 'defaultValue', type: 'Date | null', default: 'null' },
     { name: 'open', type: 'boolean', default: 'undefined' },
@@ -19,6 +20,7 @@ export const meta = {
     { name: 'clearable', type: 'boolean', default: 'true' },
     { name: 'disabledDate', type: '(date: Date) => boolean', default: 'undefined' },
     { name: 'weekStart', type: '0 | 1', default: '0' },
+    { name: 'showSecond', type: 'boolean', default: 'true' },
     { name: 'locale', type: 'string', default: "'zh-CN'" },
     { name: 'onChange', type: '(v: Date | null) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
@@ -31,6 +33,7 @@ export const meta = {
       '面板 role=dialog；日期网格 role=grid，单元格 role=gridcell + aria-selected',
       '触发器 Enter/Space/↓ 打开；面板内方向键移动高亮日、Enter 选中、Esc 关闭',
       'roving tabindex：仅高亮日可聚焦',
+      'type=dateTime：时/分/秒列 role=listbox + option，选日期不关面板，点确定关闭',
     ],
   },
   tokens: ['--cd-date-picker-*', '--cd-input-*', '--cd-focus-ring', '--cd-motion-*'],
