@@ -3,13 +3,18 @@
   基础子集：click/hover/contextMenu 触发、12 方位、菜单项、useDismiss、closeOnSelect、键盘导航。
   定位：portal 到 body + position:fixed，core computePosition + autoAdjustOverflow flip。
   contextMenu：右键 preventDefault + 记录光标 x/y，浮层 portal 到 body 并 fixed 落点光标。
-  TODO(延后): destroyOnClose、嵌套子菜单、getPopupContainer。
+  嵌套子菜单 / divider / group：与 Menu 对齐的判别联合（types.ts），菜单体经 DropdownItemNode 递归渲染，
+  子浮层 hover/聚焦展开并 floating 到父项右侧（溢出翻转左侧）；键盘 →/←/↑↓/Esc 逐层导航。
+  键盘 roving：焦点式（query 当前层可聚焦 menuitem 移动焦点），兼容嵌套与 divider/group。
+  TODO(延后): destroyOnClose、getPopupContainer。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import DropdownItemNode from './DropdownItemNode.svelte';
+  import { isDropdownDivider, isDropdownGroup } from './types.js';
   import type { DropdownItem } from './types.js';
 
   type ItemKey = string | number;
@@ -71,32 +76,10 @@
     if (next === isOpen) return;
     if (!isControlled) innerOpen = next;
     onOpenChange?.(next);
-    if (!next) activeIndex = -1;
   }
 
-  // --- roving 高亮 (红线 #2)：activeIndex 本地 $state，不读挂载 registry ---
-  let activeIndex = $state(-1);
-
-  const activeItemId = $derived(
-    activeIndex >= 0 && activeIndex < items.length
-      ? `${menuId}-item-${activeIndex}`
-      : undefined,
-  );
-
-  function enabledNext(from: number, delta: number): number {
-    const len = items.length;
-    if (len === 0) return -1;
-    let idx = from;
-    for (let i = 0; i < len; i += 1) {
-      idx = (idx + delta + len) % len;
-      if (!items[idx]?.disabled) return idx;
-    }
-    return -1;
-  }
-
-  function selectItem(item: DropdownItem) {
-    if (item.disabled || disabled) return;
-    onSelect?.(item.key);
+  function selectLeaf(key: ItemKey) {
+    onSelect?.(key);
     if (closeOnSelect) setOpen(false);
   }
 
@@ -145,6 +128,29 @@
     setOpen(true);
   }
 
+  // 顶层菜单可聚焦项：本层直属（不含子浮层里的）未禁用 menuitem。
+  function topMenuItems(): HTMLElement[] {
+    if (!menuEl) return [];
+    return [...menuEl.querySelectorAll<HTMLElement>('[role="menuitem"]')].filter(
+      (el) => el.getAttribute('aria-disabled') !== 'true' && belongsToTopLevel(el),
+    );
+  }
+
+  // 元素是否属于顶层菜单（不在任何子浮层 .cd-dropdown__sub 内）。
+  function belongsToTopLevel(el: HTMLElement): boolean {
+    return el.closest('.cd-dropdown__sub') === null;
+  }
+
+  function focusTopItem(delta: number) {
+    const list = topMenuItems();
+    if (list.length === 0) return;
+    const cur = list.findIndex((el) => el === document.activeElement);
+    let next: number;
+    if (cur < 0) next = delta > 0 ? 0 : list.length - 1;
+    else next = (cur + delta + list.length) % list.length;
+    list[next]?.focus();
+  }
+
   function onTriggerKeydown(e: KeyboardEvent) {
     if (disabled) return;
     switch (e.key) {
@@ -153,16 +159,16 @@
         e.preventDefault();
         if (!isOpen) {
           setOpen(true);
-          activeIndex = enabledNext(-1, 1);
+          focusFirstWhenReady();
         }
         break;
       case 'ArrowDown':
         e.preventDefault();
         if (!isOpen) {
           setOpen(true);
-          activeIndex = enabledNext(-1, 1);
+          focusFirstWhenReady();
         } else {
-          activeIndex = enabledNext(activeIndex, 1);
+          focusTopItem(1);
         }
         break;
       case 'Escape':
@@ -176,24 +182,25 @@
     }
   }
 
+  // 打开后浮层需在下一帧挂载完成才能聚焦首项。
+  function focusFirstWhenReady() {
+    requestAnimationFrame(() => {
+      const list = topMenuItems();
+      list[0]?.focus();
+    });
+  }
+
   function onMenuKeydown(e: KeyboardEvent) {
     if (!isOpen) return;
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        activeIndex = enabledNext(activeIndex, 1);
+        focusTopItem(1);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        activeIndex = enabledNext(activeIndex, -1);
+        focusTopItem(-1);
         break;
-      case 'Enter':
-      case ' ': {
-        e.preventDefault();
-        const item = items[activeIndex];
-        if (item) selectItem(item);
-        break;
-      }
       case 'Escape':
         if (closeOnEsc) {
           e.preventDefault();
@@ -207,18 +214,35 @@
 
   // --- DOM 引用：触发根 + portal 浮层菜单（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
-  let menuEl = $state<HTMLDivElement | null>(null);
+  let menuEl = $state<HTMLUListElement | null>(null);
 
-  // --- useDismiss (红线 #3)：menu portal 出 root 子树后，需把 menuEl 列为内部 ---
+  // --- useDismiss (红线 #3)：仅复用 Escape；outside-click 自管理。---
+  // 子菜单浮层各自 portal 到 body（动态多层），无法逐一列入 extraTargets，
+  // 故 outside 判定改为：点在触发根 / 顶层菜单 / 任意 .cd-dropdown__sub 浮层内即「内部」。
   $effect(() => {
     if (!isOpen || !rootEl) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: closeOnEsc,
-      outsideClick: true,
+      outsideClick: false,
       extraTargets: [menuEl],
     });
     return cleanup;
+  });
+
+  // outside-click 命令式监听 + cleanup（红线 #3）：识别多层子浮层为内部。
+  $effect(() => {
+    if (!isOpen || !rootEl) return;
+    const root = rootEl;
+    function onPointerDown(e: PointerEvent) {
+      const t = e.target as Node | null;
+      if (root.contains(t)) return;
+      if (menuEl && menuEl.contains(t)) return;
+      if (t instanceof Element && t.closest('.cd-dropdown__sub')) return;
+      setOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
   });
 
   // contextMenu 浮层定位：portal 到 body + position:fixed 到光标 x/y。
@@ -266,8 +290,11 @@
     if (trigger !== 'hover') return;
     clearTimers();
   }
-  function onMenuPointerLeave() {
+  function onMenuPointerLeave(e: PointerEvent) {
     if (trigger !== 'hover') return;
+    // 指针移入子菜单浮层（portal 到 body，在顶层 ul 之外）时不关闭整体。
+    const related = e.relatedTarget as Node | null;
+    if (related instanceof Element && related.closest('.cd-dropdown__sub')) return;
     clearTimers();
     leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
   }
@@ -284,7 +311,6 @@
   );
 </script>
 
-<!-- 浮层定位纯 CSS：menu position:absolute 相对 root position:relative -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class={cls}
@@ -310,61 +336,47 @@
     {/if}
   </div>
 
-  {#snippet menuItems()}
+  {#snippet menuBody()}
     {#if children}
       {@render children()}
     {:else}
-      {#each items as item, i (item.key)}
-        <button
-          type="button"
-          class="cd-dropdown__item"
-          class:cd-dropdown__item--active={i === activeIndex}
-          class:cd-dropdown__item--danger={item.danger}
-          id={`${menuId}-item-${i}`}
-          role="menuitem"
-          tabindex="-1"
-          aria-disabled={item.disabled || undefined}
-          disabled={item.disabled ?? false}
-          onpointerenter={() => {
-            if (!item.disabled) activeIndex = i;
-          }}
-          onclick={() => selectItem(item)}
-        >
-          {item.label}
-        </button>
+      {#each items as item, i (isDropdownDivider(item) || isDropdownGroup(item) ? `__cd-dd-top-${i}` : item.key)}
+        <DropdownItemNode
+          {item}
+          onSelectLeaf={selectLeaf}
+          onCloseAll={() => {}}
+        />
       {/each}
     {/if}
   {/snippet}
 
   {#if isOpen && trigger === 'contextMenu'}
     <!-- contextMenu：浮层 portal 到 body 并定位到光标 x/y -->
-    <div
+    <ul
       class="cd-dropdown__menu"
       id={menuId}
       bind:this={menuEl}
       use:cursorFloating={{ x: cursorX, y: cursorY }}
       role="menu"
       tabindex="-1"
-      aria-activedescendant={activeItemId}
       onkeydown={onMenuKeydown}
     >
-      {@render menuItems()}
-    </div>
+      {@render menuBody()}
+    </ul>
   {:else if isOpen}
-    <div
+    <ul
       class="cd-dropdown__menu"
       id={menuId}
       bind:this={menuEl}
       use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4 }}
       role="menu"
       tabindex="-1"
-      aria-activedescendant={activeItemId}
       onkeydown={onMenuKeydown}
       onpointerenter={onMenuPointerEnter}
       onpointerleave={onMenuPointerLeave}
     >
-      {@render menuItems()}
-    </div>
+      {@render menuBody()}
+    </ul>
   {/if}
 </div>
 
@@ -389,37 +401,14 @@
   }
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-dropdown__menu {
+    margin: 0;
+    padding-block: var(--cd-spacing-1);
+    padding-inline: 0;
+    list-style: none;
     z-index: var(--cd-dropdown-z);
     min-inline-size: var(--cd-dropdown-min-width);
-    padding-block: var(--cd-spacing-1);
     background: var(--cd-dropdown-bg);
     border-radius: var(--cd-dropdown-radius);
     box-shadow: var(--cd-dropdown-shadow);
-  }
-  .cd-dropdown__item {
-    display: flex;
-    align-items: center;
-    inline-size: 100%;
-    margin: 0;
-    padding: var(--cd-dropdown-item-padding);
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: start;
-    cursor: pointer;
-  }
-  .cd-dropdown__item--active {
-    background: var(--cd-dropdown-item-bg-hover);
-  }
-  .cd-dropdown__item--danger {
-    color: var(--cd-color-danger);
-  }
-  .cd-dropdown__item--danger.cd-dropdown__item--active {
-    background: var(--cd-color-danger-light-default, var(--cd-dropdown-item-bg-hover));
-  }
-  .cd-dropdown__item[aria-disabled='true'] {
-    color: var(--cd-dropdown-item-color-disabled);
-    cursor: not-allowed;
   }
 </style>

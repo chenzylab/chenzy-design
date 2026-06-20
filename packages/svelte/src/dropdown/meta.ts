@@ -6,9 +6,14 @@ export const meta = {
   name: 'Dropdown',
   category: 'navigation',
   description:
-    '下拉菜单，通过触发元素唤起一组可操作命令项。支持 hover/click/contextMenu 触发、useDismiss 关闭、键盘导航与危险项。',
+    '下拉菜单，通过触发元素唤起一组可操作命令项。支持 hover/click/contextMenu 触发、嵌套子菜单、divider 分隔符、group 分组、useDismiss 关闭、键盘导航与危险项。',
   props: [
-    { name: 'items', type: 'DropdownItem[]', default: '[]', desc: '菜单项数据' },
+    {
+      name: 'items',
+      type: 'DropdownItem[]',
+      default: '[]',
+      desc: '菜单项数据；判别联合：普通项含 children 即可展开子菜单，type=divider 分隔符，type=group 分组标题',
+    },
     {
       name: 'trigger',
       type: "'hover'|'click'|'contextMenu'",
@@ -36,11 +41,12 @@ export const meta = {
   ],
   a11y: {
     role: 'menu',
-    keyboard: ['Enter', 'Space', 'ArrowDown', 'ArrowUp', 'Escape'],
+    keyboard: ['Enter', 'Space', 'ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Escape'],
     notes: [
       '触发器 aria-haspopup=menu + aria-expanded + aria-controls',
-      '浮层 role=menu，项 role=menuitem',
-      'aria-activedescendant 指向当前高亮项',
+      '浮层 role=menu，项 role=menuitem，焦点式 roving（tabindex=-1 + 方向键移动焦点）',
+      '子菜单父项 aria-haspopup=menu + aria-expanded；→ 进入子菜单首项，← / Esc 逐层返回',
+      'divider role=separator；group 组标题不可聚焦，组内项始终展开（role=group）',
       'useDismiss 处理外部点击与 Escape 关闭',
     ],
   },

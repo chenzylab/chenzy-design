@@ -84,7 +84,7 @@
     ResizeObserver,
     LottieIcon,
   } from '@chenzy-design/svelte';
-  import type { LottiePlayerFactory, TreeNode } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory, TreeNode, DropdownItem } from '@chenzy-design/svelte';
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
@@ -517,6 +517,37 @@ let pageSize2 = $state(10);
     { key: 'edit', label: '编辑' },
     { key: 'copy', label: '复制' },
     { key: 'delete', label: '删除', danger: true },
+  ];
+  // 嵌套子菜单 + divider + group demo（多层嵌套）
+  const dropdownTreeItems: DropdownItem[] = [
+    { key: 'new', label: '新建' },
+    {
+      key: 'export',
+      label: '导出为',
+      children: [
+        { key: 'export-pdf', label: 'PDF' },
+        { key: 'export-png', label: 'PNG' },
+        {
+          key: 'export-more',
+          label: '更多格式',
+          children: [
+            { key: 'export-svg', label: 'SVG' },
+            { key: 'export-webp', label: 'WebP' },
+          ],
+        },
+      ],
+    },
+    { type: 'divider' },
+    {
+      type: 'group',
+      label: '编辑操作',
+      children: [
+        { key: 'cut', label: '剪切' },
+        { key: 'paste', label: '粘贴', disabled: true },
+      ],
+    },
+    { type: 'divider' },
+    { key: 'remove', label: '删除', danger: true },
   ];
   let menuSelected = $state<string | number>('overview');
   let menuCollapsed = $state(true);
@@ -1624,6 +1655,19 @@ let pageSize2 = $state(10);
           >
             在此区域点击右键
           </div>
+        {/snippet}
+      </Dropdown>
+    </div>
+
+    <div data-testid="dropdown-submenu">
+      <Text type="tertiary">嵌套子菜单 + divider 分隔 + group 分组（多层）</Text>
+      <Dropdown
+        items={dropdownTreeItems}
+        trigger="click"
+        onSelect={(k) => (lastDropdown = String(k))}
+      >
+        {#snippet triggerContent()}
+          <Button type="secondary">文件菜单 ▾</Button>
         {/snippet}
       </Dropdown>
     </div>
