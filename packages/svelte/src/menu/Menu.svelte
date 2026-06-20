@@ -4,11 +4,14 @@
   selectedKeys 单选, openKeys 展开/收起, navigation 语义 (role=menu/menuitem)。
   受控/非受控 (红线 #1: 不回写 prop, 仅 onChange/onOpenChange)。
   展开状态用本地 Set $state (红线 #2: 不读挂载 registry)。
+  vertical 模式: SubMenu 改为 hover 弹出浮层 (复用 _floating, rightStart 定位, 多级嵌套),
+  进入/离开带延迟避免缝隙抖动; inline 模式保持内联展开。
   TODO(延后): horizontal/menubar roving、inlineCollapsed 图标轨、
-  hover 浮层子菜单、multiple、commands purpose、nav+links 语义区分。
+  multiple、commands purpose、nav+links 语义区分。
 -->
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
+  import MenuPopupNode from './MenuPopupNode.svelte';
   import type { MenuItemDef, MenuKey } from './types.js';
 
   type Mode = 'vertical' | 'inline';
@@ -157,7 +160,19 @@
 {/snippet}
 
 <ul class={cls} role="menu" aria-label={ariaLabel}>
-  {@render renderItems(items, 0)}
+  {#if mode === 'vertical'}
+    {#each items as item (item.key)}
+      <MenuPopupNode
+        {item}
+        placement="bottomStart"
+        {isSelected}
+        onSelectLeaf={selectLeaf}
+        onCloseAll={() => {}}
+      />
+    {/each}
+  {:else}
+    {@render renderItems(items, 0)}
+  {/if}
 </ul>
 
 <style>
