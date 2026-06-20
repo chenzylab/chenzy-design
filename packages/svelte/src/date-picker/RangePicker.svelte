@@ -1,6 +1,7 @@
 <!--
   RangePicker — see specs/components/input/DatePicker.spec.md（range 范围选择）
-  单面板序列选择：第一次点击设起始、第二次设结束，自动排序 start<=end，hover 预览区间。
+  双面板（两个月并排，右面板=左面板+1）序列选择：第一次点击设起始、第二次设结束，
+  自动排序 start<=end，起止可落在不同面板，hover 跨面板预览区间。
   受控 value=[start,end]（Date|null 元组）不回写 (红线 #1)，仅 onChange。
   本地化走 Intl.DateTimeFormat。useDismiss / 几何由 $effect 管理 (红线 #3)。
   复用 @chenzy-design/core 日期纯函数（getMonthGrid/addMonths/isSameDay/startOfDay/weekdayOrder）。
@@ -127,13 +128,18 @@
   const endText = $derived(
     endVal ? triggerFormat.format(endVal) : (endPlaceholder ?? loc().t('DatePicker.endPlaceholder')),
   );
-  const headerText = $derived(headerFormat.format(cursor));
+  // --- 双面板：cursor = 左面板月份，右面板 = 左 + 1 ---
+  const rightCursor = $derived(addMonths(cursor, 1));
+  const leftHeaderText = $derived(headerFormat.format(cursor));
+  const rightHeaderText = $derived(headerFormat.format(rightCursor));
   const weekdayNames = $derived(
     weekdayOrder(weekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
   );
-  const grid = $derived(getMonthGrid(cursor, weekStart));
+  const leftGrid = $derived(getMonthGrid(cursor, weekStart));
+  const rightGrid = $derived(getMonthGrid(rightCursor, weekStart));
   const showClear = $derived(clearable && !disabled && (startVal !== null || endVal !== null));
 
+  // 整体左右翻一个月（左面板 −1 / 右面板 +1 联动，两面板始终相邻）
   function prevMonth() {
     cursor = addMonths(cursor, -1);
   }
@@ -266,49 +272,94 @@
 
   {#if isOpen}
     <div class="cd-range-picker__panel" id={dialogId} role="dialog" aria-label={loc().t('DatePicker.rangeTriggerLabel')} tabindex="-1">
-      <div class="cd-range-picker__header">
-        <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.prevMonth')} onclick={prevMonth}>
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
-          </svg>
-        </button>
-        <span class="cd-range-picker__title">{headerText}</span>
-        <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.nextMonth')} onclick={nextMonth}>
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
-          </svg>
-        </button>
-      </div>
+      <div class="cd-range-picker__panels">
+        <!-- 左面板 -->
+        <div class="cd-range-picker__month">
+          <div class="cd-range-picker__header">
+            <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.prevMonth')} onclick={prevMonth}>
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
+              </svg>
+            </button>
+            <span class="cd-range-picker__title">{leftHeaderText}</span>
+            <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
+          </div>
 
-      <div class="cd-range-picker__weekdays" aria-hidden="true">
-        {#each weekdayNames as name, i (i)}
-          <span class="cd-range-picker__weekday">{name}</span>
-        {/each}
-      </div>
+          <div class="cd-range-picker__weekdays" aria-hidden="true">
+            {#each weekdayNames as name, i (i)}
+              <span class="cd-range-picker__weekday">{name}</span>
+            {/each}
+          </div>
 
-      <div class="cd-range-picker__grid" role="grid">
-        {#each grid as cell (cell.date.getTime())}
-          {@const edge = isEdge(cell.date)}
-          {@const within = inRange(cell.date)}
-          {@const isToday = isSameDay(cell.date, today)}
-          {@const isDisabled = disabledDate?.(cell.date) ?? false}
-          <button
-            type="button"
-            class="cd-range-picker__cell"
-            class:cd-range-picker__cell--muted={!cell.inMonth}
-            class:cd-range-picker__cell--edge={edge}
-            class:cd-range-picker__cell--in-range={within}
-            class:cd-range-picker__cell--today={isToday}
-            role="gridcell"
-            aria-selected={edge}
-            aria-disabled={isDisabled || undefined}
-            disabled={isDisabled}
-            onclick={() => selectDate(cell.date)}
-            onpointerenter={() => onCellHover(cell.date)}
-          >
-            {cell.date.getDate()}
-          </button>
-        {/each}
+          <div class="cd-range-picker__grid" role="grid" aria-label={leftHeaderText}>
+            {#each leftGrid as cell (cell.date.getTime())}
+              {@const edge = isEdge(cell.date)}
+              {@const within = inRange(cell.date)}
+              {@const isToday = isSameDay(cell.date, today)}
+              {@const isDisabled = disabledDate?.(cell.date) ?? false}
+              <button
+                type="button"
+                class="cd-range-picker__cell"
+                class:cd-range-picker__cell--muted={!cell.inMonth}
+                class:cd-range-picker__cell--edge={edge}
+                class:cd-range-picker__cell--in-range={within}
+                class:cd-range-picker__cell--today={isToday}
+                role="gridcell"
+                aria-selected={edge}
+                aria-disabled={isDisabled || undefined}
+                disabled={isDisabled}
+                onclick={() => selectDate(cell.date)}
+                onpointerenter={() => onCellHover(cell.date)}
+              >
+                {cell.date.getDate()}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- 右面板 -->
+        <div class="cd-range-picker__month">
+          <div class="cd-range-picker__header">
+            <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
+            <span class="cd-range-picker__title">{rightHeaderText}</span>
+            <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.nextMonth')} onclick={nextMonth}>
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="cd-range-picker__weekdays" aria-hidden="true">
+            {#each weekdayNames as name, i (i)}
+              <span class="cd-range-picker__weekday">{name}</span>
+            {/each}
+          </div>
+
+          <div class="cd-range-picker__grid" role="grid" aria-label={rightHeaderText}>
+            {#each rightGrid as cell (cell.date.getTime())}
+              {@const edge = isEdge(cell.date)}
+              {@const within = inRange(cell.date)}
+              {@const isToday = isSameDay(cell.date, today)}
+              {@const isDisabled = disabledDate?.(cell.date) ?? false}
+              <button
+                type="button"
+                class="cd-range-picker__cell"
+                class:cd-range-picker__cell--muted={!cell.inMonth}
+                class:cd-range-picker__cell--edge={edge}
+                class:cd-range-picker__cell--in-range={within}
+                class:cd-range-picker__cell--today={isToday}
+                role="gridcell"
+                aria-selected={edge}
+                aria-disabled={isDisabled || undefined}
+                disabled={isDisabled}
+                onclick={() => selectDate(cell.date)}
+                onpointerenter={() => onCellHover(cell.date)}
+              >
+                {cell.date.getDate()}
+              </button>
+            {/each}
+          </div>
+        </div>
       </div>
     </div>
   {/if}
@@ -422,6 +473,23 @@
   }
   .cd-range-picker__panel:focus-visible {
     outline: none;
+  }
+  /* 双面板：左右两个月历并排 */
+  .cd-range-picker__panels {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cd-spacing-4);
+  }
+  .cd-range-picker__month {
+    flex: 0 0 auto;
+  }
+  .cd-range-picker__nav--ghost {
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cd-range-picker__nav--ghost:hover {
+    background: transparent;
   }
   .cd-range-picker__header {
     display: flex;
