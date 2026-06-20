@@ -9,7 +9,8 @@
 <script lang="ts">
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
-  import type { MenuItemDef, MenuKey } from './types.js';
+  import { isDivider, isGroup } from './types.js';
+  import type { MenuItemDef, MenuItemNode, MenuKey } from './types.js';
   import Self from './MenuPopupNode.svelte';
 
   interface Props {
@@ -17,7 +18,7 @@
     /** 顶层节点用 bottomStart 弹出向下，嵌套层用 rightStart 向右 */
     placement: Placement;
     isSelected: (key: MenuKey) => boolean;
-    onSelectLeaf: (item: MenuItemDef) => void;
+    onSelectLeaf: (item: MenuItemNode) => void;
     /** 选中叶子后自顶向下逐级关闭浮层 */
     onCloseAll: () => void;
     openDelay?: number;
@@ -40,10 +41,12 @@
     multiple = false,
   }: Props = $props();
 
+  // 分隔符/分组在模板顶层单独处理；此处统一窄化为普通项节点供后续派生使用。
+  const node = $derived(item as MenuItemNode);
   // 折叠态无图标时取 label 首字符兜底显示，保证轨上仍有可视标识。
-  const firstChar = $derived([...(item.label ?? '')][0] ?? '');
+  const firstChar = $derived([...(node.label ?? '')][0] ?? '');
 
-  const hasChildren = $derived(!!item.children && item.children.length > 0);
+  const hasChildren = $derived(!!node.children && node.children.length > 0);
 
   let titleEl = $state<HTMLButtonElement | null>(null);
   let open = $state(false);
@@ -63,7 +66,7 @@
   }
 
   function scheduleOpen() {
-    if (item.disabled || !hasChildren) return;
+    if (node.disabled || !hasChildren) return;
     if (closeTimer !== undefined) {
       clearTimeout(closeTimer);
       closeTimer = undefined;
@@ -101,8 +104,8 @@
   }
 
   function onLeafClick() {
-    if (item.disabled) return;
-    onSelectLeaf(item);
+    if (node.disabled) return;
+    onSelectLeaf(node);
     onCloseAll();
   }
 
@@ -110,7 +113,30 @@
   $effect(() => clearTimers);
 </script>
 
-{#if hasChildren}
+{#if isDivider(item)}
+  <li class="cd-menu__divider" role="separator"></li>
+{:else if isGroup(item)}
+  <li class="cd-menu__item cd-menu__item--group" role="none">
+    {#if !collapsed}
+      <div class="cd-menu__group-title">{item.label}</div>
+    {/if}
+    <ul class="cd-menu__group-list" role="group" aria-label={item.label}>
+      {#each item.children as child, i (child.key ?? `__cd-menu-grp-${i}`)}
+        <Self
+          item={child}
+          {placement}
+          {collapsed}
+          {isSelected}
+          {multiple}
+          {onSelectLeaf}
+          {onCloseAll}
+          {openDelay}
+          {closeDelay}
+        />
+      {/each}
+    </ul>
+  </li>
+{:else if hasChildren}
   <li
     class="cd-menu__item cd-menu__item--submenu"
     role="none"
@@ -124,22 +150,22 @@
       role="menuitem"
       aria-haspopup="true"
       aria-expanded={open}
-      aria-disabled={item.disabled || undefined}
-      aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
-      disabled={item.disabled || undefined}
+      aria-disabled={node.disabled || undefined}
+      aria-label={collapsed ? node.label : undefined}
+      title={collapsed ? node.label : undefined}
+      disabled={node.disabled || undefined}
       bind:this={titleEl}
       onkeydown={(e) => {
         if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          if (hasChildren && !item.disabled) open = true;
+          if (hasChildren && !node.disabled) open = true;
         } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
           closeNow();
         }
       }}
     >
-      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-      {#if !collapsed}<span class="cd-menu__label">{item.label}</span>
+      {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+      {#if !collapsed}<span class="cd-menu__label">{node.label}</span>
       <span class="cd-menu__arrow cd-menu__arrow--popup" aria-hidden="true">
         <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
           <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
@@ -155,7 +181,7 @@
         onpointerenter={keepOpen}
         onpointerleave={scheduleClose}
       >
-        {#each item.children ?? [] as child (child.key)}
+        {#each node.children ?? [] as child, i (child.key ?? `__cd-menu-sub-${i}`)}
           <Self
             item={child}
             placement="rightStart"
@@ -174,7 +200,7 @@
     {/if}
   </li>
 {:else}
-  {@const selected = isSelected(item.key)}
+  {@const selected = isSelected(node.key)}
   <li class="cd-menu__item" role="none">
     <button
       type="button"
@@ -184,14 +210,14 @@
       role={multiple ? 'menuitemcheckbox' : 'menuitem'}
       aria-current={!multiple && selected ? 'true' : undefined}
       aria-checked={multiple ? selected : undefined}
-      aria-disabled={item.disabled || undefined}
-      aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
-      disabled={item.disabled || undefined}
+      aria-disabled={node.disabled || undefined}
+      aria-label={collapsed ? node.label : undefined}
+      title={collapsed ? node.label : undefined}
+      disabled={node.disabled || undefined}
       onclick={onLeafClick}
     >
-      {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-      {#if !collapsed}<span class="cd-menu__label">{item.label}</span>{/if}
+      {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+      {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
       {#if multiple && !collapsed}
         <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
           <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
@@ -208,6 +234,28 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  /* 分隔符：水平细线，不可交互 */
+  .cd-menu__divider {
+    block-size: 1px;
+    margin-block: var(--cd-spacing-1);
+    background: var(--cd-menu-border-color, var(--cd-color-border));
+  }
+  /* 分组：始终展开的分区标题 + 组内项 */
+  .cd-menu__group-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cd-menu__group-title {
+    display: flex;
+    align-items: center;
+    block-size: var(--cd-menu-item-height);
+    padding-inline: var(--cd-menu-item-padding);
+    color: var(--cd-menu-item-color-disabled);
+    font-size: var(--cd-font-size-1);
+    cursor: default;
+    user-select: none;
   }
   .cd-menu__link,
   .cd-menu__title {

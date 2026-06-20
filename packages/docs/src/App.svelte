@@ -518,6 +518,37 @@ let pageSize2 = $state(10);
     },
     { key: 'about', label: '关于' },
   ];
+  // divider 分隔符 + group 分组标题
+  const menuGroupItems = [
+    {
+      type: 'group' as const,
+      key: 'g-main',
+      label: '主导航',
+      children: [
+        { key: 'overview', label: '概览' },
+        { key: 'analytics', label: '分析' },
+      ],
+    },
+    { type: 'divider' as const },
+    {
+      type: 'group' as const,
+      key: 'g-manage',
+      label: '管理',
+      children: [
+        { key: 'users', label: '用户' },
+        {
+          key: 'settings',
+          label: '设置',
+          children: [
+            { key: 'profile', label: '个人资料' },
+            { key: 'security', label: '安全' },
+          ],
+        },
+      ],
+    },
+    { type: 'divider' as const },
+    { key: 'help', label: '帮助', disabled: true },
+  ];
   let anchorKey = $state('#sec-1');
   const anchorLinks = [
     { key: '#sec-1', href: '#sec-1', title: '第一节' },
@@ -1557,6 +1588,19 @@ let pageSize2 = $state(10);
           },
           { key: 'help', label: '帮助', icon: iconCHelp, disabled: true },
         ]}
+        defaultOpenKeys={['settings']}
+        selectedKeys={[menuSelected]}
+        onSelect={(k) => (menuSelected = k)}
+      />
+    </div>
+  </div>
+
+  <div style="margin-top:16px" data-testid="menu-divider-group">
+    <Text type="tertiary">divider 分隔符 + group 分组标题（inline）</Text>
+    <div style="width: 200px">
+      <Menu
+        mode="inline"
+        items={menuGroupItems}
         defaultOpenKeys={['settings']}
         selectedKeys={[menuSelected]}
         onSelect={(k) => (menuSelected = k)}

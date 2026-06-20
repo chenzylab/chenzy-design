@@ -14,7 +14,8 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import MenuPopupNode from './MenuPopupNode.svelte';
-  import type { MenuItemDef, MenuKey } from './types.js';
+  import { isDivider, isGroup } from './types.js';
+  import type { MenuItemDef, MenuItemNode, MenuKey } from './types.js';
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
@@ -85,11 +86,11 @@
     return currentOpen.has(key);
   }
 
-  function hasChildren(item: MenuItemDef): boolean {
+  function hasChildren(item: MenuItemNode): boolean {
     return !!item.children && item.children.length > 0;
   }
 
-  function selectLeaf(item: MenuItemDef) {
+  function selectLeaf(item: MenuItemNode) {
     if (item.disabled) return;
     // 非受控才回写内部 Set：multiple 下 toggle（已选取消/未选加入），单选下替换。
     if (!isSelectControlled) {
@@ -105,7 +106,7 @@
     onSelect?.(item.key);
   }
 
-  function toggleSub(item: MenuItemDef) {
+  function toggleSub(item: MenuItemNode) {
     if (item.disabled) return;
     const willOpen = !currentOpen.has(item.key);
     const next = [...currentOpen].filter((k) => k !== item.key);
@@ -151,9 +152,28 @@
 </script>
 
 {#snippet renderItems(list: MenuItemDef[], level: number)}
-  {#each list as item (item.key)}
+  {#each list as item, i (item.key ?? `__cd-menu-${level}-${i}`)}
     {@const indent = `calc(var(--cd-menu-item-padding) + ${level} * ${inlineIndent}px)`}
-    {#if hasChildren(item)}
+    {#if isDivider(item)}
+      <li class="cd-menu__divider" role="separator"></li>
+    {:else if isGroup(item)}
+      <li class="cd-menu__item cd-menu__item--group" role="none">
+        <div
+          class="cd-menu__group-title"
+          style="padding-inline-start: {indent}"
+          id="cd-menu-group-{item.key ?? `${level}-${i}`}"
+        >
+          {item.label}
+        </div>
+        <ul
+          class="cd-menu__group-list"
+          role="group"
+          aria-labelledby="cd-menu-group-{item.key ?? `${level}-${i}`}"
+        >
+          {@render renderItems(item.children, level)}
+        </ul>
+      </li>
+    {:else if hasChildren(item)}
       {@const open = isOpen(item.key)}
       <li class="cd-menu__item cd-menu__item--submenu" role="none">
         <button
@@ -225,7 +245,7 @@
   onkeydown={onMenubarKeydown}
 >
   {#if collapsed}
-    {#each items as item (item.key)}
+    {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
       <MenuPopupNode
         {item}
         placement="rightStart"
@@ -237,7 +257,7 @@
       />
     {/each}
   {:else if mode === 'vertical' || mode === 'horizontal'}
-    {#each items as item (item.key)}
+    {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
       <MenuPopupNode
         {item}
         placement="bottomStart"
@@ -286,6 +306,28 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  /* 分隔符：水平细线，不可交互 */
+  .cd-menu__divider {
+    block-size: 1px;
+    margin-block: var(--cd-spacing-1);
+    background: var(--cd-menu-border-color, var(--cd-color-border));
+  }
+  /* 分组：始终展开的分区标题 + 组内项列表 */
+  .cd-menu__group-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cd-menu__group-title {
+    display: flex;
+    align-items: center;
+    block-size: var(--cd-menu-item-height);
+    padding-inline: var(--cd-menu-item-padding);
+    color: var(--cd-menu-item-color-disabled);
+    font-size: var(--cd-font-size-1);
+    cursor: default;
+    user-select: none;
   }
   .cd-menu__link,
   .cd-menu__title {
