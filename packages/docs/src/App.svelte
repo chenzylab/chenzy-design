@@ -2320,6 +2320,22 @@ let pageSize2 = $state(10);
       sourceString="chenzy-design 是一套对标 Semi 的 Svelte 组件库"
       searchWords={['design', 'Svelte']}
     />
+
+    <Text type="tertiary">重叠区间合并（"foo" + "ooba" + "bar" → 单一连续高亮，不重复包裹）：</Text>
+    <div data-testid="highlight-overlap">
+      <Highlight sourceString="foobar baz" searchWords={['foo', 'ooba', 'bar']} />
+    </div>
+
+    <Text type="tertiary">自定义命中片段 snippet（彩色徽标替代默认 mark）：</Text>
+    <div data-testid="highlight-custom">
+      <Highlight sourceString="Svelte 5 runes 让 Svelte 更强" searchWords="Svelte">
+        {#snippet highlight({ chunk, index })}
+          <strong
+            style="color: var(--cd-color-primary); border-bottom: 2px solid var(--cd-color-primary)"
+            data-hit={index}>{chunk}</strong>
+        {/snippet}
+      </Highlight>
+    </div>
   </Space>
 
   <Divider />
