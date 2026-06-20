@@ -215,6 +215,8 @@ export const en_US: Locale = {
   },
   AutoComplete: {
     clear: 'Clear',
+    loading: 'Loading',
+    emptyText: 'No matches',
   },
   InputNumber: {
     increase: 'Increase',

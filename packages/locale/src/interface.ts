@@ -258,6 +258,8 @@ export interface Locale {
   };
   AutoComplete: {
     clear: string;
+    loading: string;
+    emptyText: string;
   };
   InputNumber: {
     increase: string;

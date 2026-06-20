@@ -458,6 +458,23 @@
   }
   let multiVal = $state<(string | number)[]>([]);
   let acVal = $state('');
+  let acRemoteVal = $state('');
+  let acRemoteData = $state<{ label: string; value: string }[]>([]);
+  let acRemoteLoading = $state(false);
+  let acRemoteTimer: ReturnType<typeof setTimeout> | undefined;
+  function handleAcRemoteSearch(q: string) {
+    if (acRemoteTimer) clearTimeout(acRemoteTimer);
+    if (!q.trim()) {
+      acRemoteData = [];
+      acRemoteLoading = false;
+      return;
+    }
+    acRemoteLoading = true;
+    acRemoteTimer = setTimeout(() => {
+      acRemoteData = [1, 2, 3].map((i) => ({ label: `${q}-suggestion-${i}`, value: `${q}-${i}` }));
+      acRemoteLoading = false;
+    }, 500);
+  }
   let tags = $state<string[]>(['svelte', 'vite']);
   let tagsCtrl = $state<string[]>([]);
   let tagInputCtrl = $state('');
@@ -1226,6 +1243,21 @@ let pageSize2 = $state(10);
         onChange={(v) => (acVal = v)}
       />
       <Text type="tertiary">输入：{acVal || '（空）'}</Text>
+    </div>
+
+    <div style="width: 220px" data-testid="autocomplete-remote">
+      <AutoComplete
+        data={acRemoteData}
+        loading={acRemoteLoading}
+        onSearch={handleAcRemoteSearch}
+        searchDebounce={300}
+        maxCount={5}
+        clearable
+        placeholder="远程联想（输入触发）"
+        value={acRemoteVal}
+        onChange={(v) => (acRemoteVal = v)}
+      />
+      <Text type="tertiary">远程输入：{acRemoteVal || '（空）'}</Text>
     </div>
   </Space>
 

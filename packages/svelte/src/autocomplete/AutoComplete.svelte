@@ -1,7 +1,9 @@
 <!--
   AutoComplete — see specs/components/input/AutoComplete.spec.md
   输入联想 + 本地过滤 + 键盘选择。Token-driven, a11y-correct (combobox + listbox)。
-  TODO(延后): remote/debounce on:search、maxCount、insetLabel、triggerRender=focus、分组。
+  remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 data；loading 显示 spinner。
+  remote 模式本地不再过滤（外部已按 query 准备 data）。maxCount：建议项最多渲染条数（0=不限）。
+  TODO(延后): insetLabel、triggerRender=focus、分组。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
@@ -26,6 +28,14 @@
     filter?: boolean;
     defaultActiveFirstOption?: boolean;
     clearable?: boolean;
+    /** 远程搜索：输入防抖后回调（由外部更新 data，本地不再过滤） */
+    onSearch?: (query: string) => void;
+    /** 远程加载中（显示 spinner） */
+    loading?: boolean;
+    /** onSearch 防抖毫秒（默认 300） */
+    searchDebounce?: number;
+    /** 建议项最多渲染条数（0=不限制） */
+    maxCount?: number;
     onChange?: (v: string) => void;
     onSelect?: (value: ItemValue) => void;
     onOpenChange?: (open: boolean) => void;
@@ -44,6 +54,10 @@
     filter = true,
     defaultActiveFirstOption = true,
     clearable = false,
+    onSearch,
+    loading = false,
+    searchDebounce = 300,
+    maxCount = 0,
     onChange,
     onSelect,
     onOpenChange,
@@ -90,14 +104,23 @@
     return { value: it.value, label: it.label ?? String(it.value), disabled: it.disabled ?? false };
   }
 
+  // remote 模式：外部已按 query 更新 data，本地不再过滤。
+  const isRemote = $derived(onSearch !== undefined);
+
   const options = $derived.by<NormalizedItem[]>(() => {
     const all = data.map(normalize);
-    if (!filter || currentValue === '') return all;
-    const q = currentValue.toLowerCase();
-    return all.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) || String(o.value).toLowerCase().includes(q),
-    );
+    const matched =
+      isRemote || !filter || currentValue === ''
+        ? all
+        : (() => {
+            const q = currentValue.toLowerCase();
+            return all.filter(
+              (o) =>
+                o.label.toLowerCase().includes(q) ||
+                String(o.value).toLowerCase().includes(q),
+            );
+          })();
+    return maxCount > 0 ? matched.slice(0, maxCount) : matched;
   });
 
   // --- roving 高亮 (红线 #2): activeIndex 本地 $state，不依赖挂载 registry ---
@@ -109,11 +132,12 @@
       : undefined,
   );
 
-  const showDropdown = $derived(isOpen && options.length > 0);
+  // remote 模式下即便暂无候选也展开（显示 spinner / 空文案）；本地模式无候选则不展开。
+  const showDropdown = $derived(isOpen && (options.length > 0 || isRemote));
   const showClear = $derived(clearable && !disabled && currentValue.length > 0);
 
   function openWithOptions() {
-    if (options.length === 0) {
+    if (!isRemote && options.length === 0) {
       setOpen(false);
       return;
     }
@@ -125,12 +149,28 @@
     return options.findIndex((o) => !o.disabled);
   }
 
+  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleSearch(q: string) {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchTimer = undefined;
+      onSearch?.(q);
+    }, Math.max(0, searchDebounce));
+  }
+  // 卸载兜底清理。
+  $effect(() => () => {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+  });
+
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.value;
     setValue(next);
-    // 输入即打开浮层（有候选时）。openWithOptions 读取 derived options，
+    // 输入即打开浮层。openWithOptions 读取 derived options，
     // 它在本次更新已随 currentValue 变化；调用在事件处理器内，非 render 期。
     openWithOptions();
+    // remote：防抖回调外部更新 data（受控值红线 #1：仅 onSearch，不回写）。
+    if (isRemote) scheduleSearch(next);
   }
 
   function commit(opt: NormalizedItem) {
@@ -247,7 +287,16 @@
   </div>
 
   {#if showDropdown}
-    <div class="cd-autocomplete__dropdown" role="listbox" id={listId}>
+    <div class="cd-autocomplete__dropdown" role="listbox" id={listId} aria-busy={loading || undefined}>
+      {#if loading}
+        <div class="cd-autocomplete__loading">
+          <span class="cd-autocomplete__spinner" aria-hidden="true"></span>
+          <span>{loc().t('AutoComplete.loading')}</span>
+        </div>
+      {/if}
+      {#if options.length === 0 && !loading}
+        <div class="cd-autocomplete__empty">{loc().t('AutoComplete.emptyText')}</div>
+      {/if}
       {#each options as opt, i (opt.value)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
@@ -366,9 +415,38 @@
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
+  .cd-autocomplete__empty {
+    padding: var(--cd-select-option-padding);
+    color: var(--cd-color-text-3);
+    text-align: center;
+  }
+  .cd-autocomplete__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-select-option-padding);
+    color: var(--cd-color-text-3);
+  }
+  .cd-autocomplete__spinner {
+    inline-size: 1em;
+    block-size: 1em;
+    border: 2px solid var(--cd-color-border);
+    border-block-start-color: var(--cd-color-primary);
+    border-radius: var(--cd-radius-full);
+    animation: cd-autocomplete-spin 0.7s linear infinite;
+  }
+  @keyframes cd-autocomplete-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .cd-autocomplete__control {
       transition: none;
+    }
+    .cd-autocomplete__spinner {
+      animation: none;
     }
   }
 </style>
