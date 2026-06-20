@@ -419,6 +419,7 @@
   let modalOpen = $state(false);
   let dangerModalOpen = $state(false);
   let destroyModalOpen = $state(false);
+  let dragModalOpen = $state(false);
 
   let drawerRight = $state(false);
   let drawerLeft = $state(false);
@@ -2949,6 +2950,22 @@ let pageSize2 = $state(10);
       placeholder="输入草稿…"
       style="inline-size:100%; box-sizing:border-box; padding:6px 10px; border:1px solid var(--cd-color-border); border-radius:6px"
     />
+  </Modal>
+
+  <Text type="tertiary">draggable：按住标题栏拖动对话框到新位置（重开重置位置）：</Text>
+  <div style="display:flex; gap:12px; flex-wrap:wrap" data-testid="modal-drag">
+    <Button onclick={() => (dragModalOpen = true)}>打开（draggable）</Button>
+  </div>
+  <Modal
+    open={dragModalOpen}
+    title="可拖拽对话框"
+    draggable
+    onOpenChange={(o) => (dragModalOpen = o)}
+    onOk={() => (dragModalOpen = false)}
+  >
+    <p style="margin:0; line-height:1.8">
+      按住上方标题栏即可拖动整个对话框。拖拽是鼠标增强，键盘 Tab 焦点循环与 Esc 关闭不受影响；重新打开会回到初始居中位置。
+    </p>
   </Modal>
 
   <Divider />

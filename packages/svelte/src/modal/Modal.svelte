@@ -6,7 +6,8 @@
   堆叠 z-index 由 z-stack 模块级计数器分配（声明式 + 命令式共享）。
   destroyOnClose：关闭即卸载内容（{#if}），重开重建。
   命令式工厂 Modal.confirm/info/... 见 command.svelte.ts（已 Object.assign 到 Modal）。
-  TODO(延后): 拖拽。
+  draggable：按住标题栏拖动面板，偏移 $state 派生为 transform 叠加在居中/距顶定位上，
+  pointermove/up 绑 window 命令式 + cleanup，重开偏移重置。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -26,6 +27,8 @@
     closable?: boolean;
     maskClosable?: boolean;
     keyboard?: boolean;
+    /** 为真时按住标题栏可拖动整个对话框。默认 false。 */
+    draggable?: boolean;
     confirmLoading?: boolean;
     okText?: string;
     cancelText?: string;
@@ -53,6 +56,7 @@
     closable = true,
     maskClosable = true,
     keyboard = true,
+    draggable = false,
     confirmLoading = false,
     okText,
     cancelText,
@@ -156,6 +160,66 @@
     };
   });
 
+  // --- 拖拽 (红线 #2/#3)：偏移量存 $state，派生为 transform；
+  //     pointerdown 在 header 起拖，pointermove/up 绑 window 命令式 + cleanup，
+  //     以便拖出 header 仍跟随、松手在视口外亦能结束。重开偏移重置。 ---
+  let dragX = $state(0);
+  let dragY = $state(0);
+
+  // 偏移叠加在现有居中/距顶定位之上（红线 #2：纯函数派生）。
+  const panelTransform = $derived(
+    draggable && (dragX !== 0 || dragY !== 0)
+      ? `transform: translate(${dragX}px, ${dragY}px)`
+      : undefined,
+  );
+
+  // 重开（isOpen 由 false→true）时重置偏移。
+  let wasOpen = false;
+  $effect(() => {
+    if (isOpen && !wasOpen) {
+      dragX = 0;
+      dragY = 0;
+    }
+    wasOpen = isOpen;
+  });
+
+  function onHeaderPointerDown(e: PointerEvent) {
+    if (!draggable) return;
+    // 仅主键拖拽；避免拖到关闭按钮等交互元素时误触。
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('.cd-modal__close')) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const baseX = dragX;
+    const baseY = dragY;
+
+    function onMove(ev: PointerEvent) {
+      let nextX = baseX + (ev.clientX - startX);
+      let nextY = baseY + (ev.clientY - startY);
+      // 边界：保留面板至少一部分可见（不让标题栏完全拖出视口）。
+      if (panelEl) {
+        const rect = panelEl.getBoundingClientRect();
+        const margin = 40;
+        const minX = -(rect.left - baseX) - rect.width + margin;
+        const maxX = window.innerWidth - (rect.left - baseX) - margin;
+        const minY = -(rect.top - baseY);
+        const maxY = window.innerHeight - (rect.top - baseY) - margin;
+        nextX = Math.min(Math.max(nextX, minX), maxX);
+        nextY = Math.min(Math.max(nextY, minY), maxY);
+      }
+      dragX = nextX;
+      dragY = nextY;
+    }
+    function onUp() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
   // --- portal action (红线 #3)：命令式 appendChild 到 getContainer()/body，
   //     脱离父 DOM 层叠上下文；destroy 时 removeChild 归还/清理。 ---
   function portal(node: HTMLElement) {
@@ -192,10 +256,18 @@
       aria-modal="true"
       aria-labelledby={hasTitle ? titleId : undefined}
       aria-label={hasTitle ? undefined : ariaLabel}
-      style="inline-size: {widthStyle}"
+      style="inline-size: {widthStyle}{panelTransform ? `; ${panelTransform}` : ''}"
     >
       {#if hasTitle || closable}
-        <header class="cd-modal__header">
+        <!-- draggable：标题栏起拖。pointerdown 命令式绑 window move/up（见脚本）。
+             拖拽是鼠标增强，键盘/焦点陷阱不受影响；header role=presentation 与遮罩同理
+             （内部 h2/关闭按钮各自保留语义角色），满足静态元素交互的 a11y 规则。 -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <header
+          class="cd-modal__header"
+          class:cd-modal__header--draggable={draggable}
+          onpointerdown={draggable ? onHeaderPointerDown : undefined}
+        >
           {#if hasTitle}
             <h2 id={titleId} class="cd-modal__title">
               {#if titleSnippet}
@@ -292,6 +364,15 @@
     justify-content: space-between;
     gap: var(--cd-modal-header-gap);
     margin-block-end: var(--cd-modal-header-gap);
+  }
+  .cd-modal__header--draggable {
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+  }
+  /* 关闭按钮区域保留默认指针，避免落在「可拖拽」视觉上 */
+  .cd-modal__header--draggable .cd-modal__close {
+    cursor: pointer;
   }
   .cd-modal__title {
     margin: 0;

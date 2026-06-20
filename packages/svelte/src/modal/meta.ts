@@ -6,7 +6,7 @@ export const meta = {
   name: 'Modal',
   category: 'feedback',
   description:
-    '模态对话框：fixed 遮罩 + 面板，portal 到 body（或 getContainer）脱离父层叠上下文，role=dialog aria-modal；useFocusTrap 焦点捕获与归还、Esc/遮罩点击关闭（受 keyboard/maskClosable 控制）、useScrollLock 锁背景滚动；头/体/尾结构，ok/cancel 默认按钮可换自定义尾部，danger okType；reduced-motion 关闭过渡。受控 open 不回写，仅 onOpenChange/onCancel 通知。destroyOnClose 关闭即卸载内容、重开重建（默认 false 保留 DOM）。堆叠 z-index 由模块级计数器分配（声明式与命令式共享，后开者在上、关闭回收）。命令式工厂 Modal.confirm/info/success/warning/error（亦可解构 modal）：mount 到 body 临时 host、async onOk 自动 loading、返回 { destroy, update }。',
+    '模态对话框：fixed 遮罩 + 面板，portal 到 body（或 getContainer）脱离父层叠上下文，role=dialog aria-modal；useFocusTrap 焦点捕获与归还、Esc/遮罩点击关闭（受 keyboard/maskClosable 控制）、useScrollLock 锁背景滚动；头/体/尾结构，ok/cancel 默认按钮可换自定义尾部，danger okType；reduced-motion 关闭过渡。受控 open 不回写，仅 onOpenChange/onCancel 通知。destroyOnClose 关闭即卸载内容、重开重建（默认 false 保留 DOM）。draggable 按住标题栏拖动面板（偏移派生 transform 叠加定位，重开重置，pointer 事件绑 window）。堆叠 z-index 由模块级计数器分配（声明式与命令式共享，后开者在上、关闭回收）。命令式工厂 Modal.confirm/info/success/warning/error（亦可解构 modal）：mount 到 body 临时 host、async onOk 自动 loading、返回 { destroy, update }。',
   exports: ['Modal', 'modal'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写' },
@@ -22,6 +22,12 @@ export const meta = {
     { name: 'closable', type: 'boolean', default: 'true', desc: '右上角关闭按钮' },
     { name: 'maskClosable', type: 'boolean', default: 'true', desc: '点遮罩关闭' },
     { name: 'keyboard', type: 'boolean', default: 'true', desc: 'Esc 关闭' },
+    {
+      name: 'draggable',
+      type: 'boolean',
+      default: 'false',
+      desc: '按住标题栏拖动面板（偏移叠加在定位上，重开重置）；鼠标增强不影响键盘/焦点',
+    },
     {
       name: 'confirmLoading',
       type: 'boolean',
