@@ -1528,6 +1528,35 @@ let pageSize2 = $state(10);
         ]}
       />
     </div>
+
+    <Text type="tertiary">type=basic 线框型（描边圆，非实心填充）：</Text>
+    <div style="width: 480px" data-testid="steps-basic">
+      <Steps
+        current={1}
+        type="basic"
+        steps={[
+          { title: '填写信息', description: '基本资料' },
+          { title: '确认订单', description: '核对内容' },
+          { title: '完成', description: '提交成功' },
+        ]}
+      />
+    </div>
+
+    <Text type="tertiary">icon 自定义图标（emoji 替代默认序号/✓/✕）：</Text>
+    <div style="width: 480px" data-testid="steps-icon">
+      <Steps
+        current={1}
+        steps={[
+          { title: '登录', description: '账号验证' },
+          { title: '配送', description: '正在派送' },
+          { title: '收货', description: '确认签收' },
+        ]}
+      >
+        {#snippet icon({ index })}
+          <span>{['🔑', '🚚', '📦'][index]}</span>
+        {/snippet}
+      </Steps>
+    </div>
   </Space>
 
   <Divider />

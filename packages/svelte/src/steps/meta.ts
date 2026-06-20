@@ -6,13 +6,13 @@ export const meta = {
   name: 'Steps',
   category: 'navigation',
   description:
-    '步骤条，引导用户按流程完成任务。支持横向/纵向、fill/nav 类型、可点击与状态展示。',
+    '步骤条，引导用户按流程完成任务。支持横向/纵向、fill/nav/basic 类型、自定义图标、可点击与状态展示。',
   props: [
     { name: 'current', type: 'number', default: 'undefined', desc: '受控当前步' },
     { name: 'defaultCurrent', type: 'number', default: '0' },
     { name: 'steps', type: 'StepItem[]', default: '[]', desc: '步骤数据' },
     { name: 'direction', type: "'horizontal'|'vertical'", default: 'horizontal' },
-    { name: 'type', type: "'fill'|'nav'", default: 'fill' },
+    { name: 'type', type: "'fill'|'nav'|'basic'", default: 'fill', desc: 'basic 为线框/描边型' },
     {
       name: 'status',
       type: "'process'|'finish'|'error'|'warning'",
@@ -23,6 +23,12 @@ export const meta = {
     { name: 'initial', type: 'number', default: '0', desc: '起始序号偏移' },
     { name: 'clickable', type: 'boolean', default: "type==='nav'" },
     { name: 'dot', type: 'boolean', default: 'false', desc: '点状步骤，图标渲染为小圆点' },
+    {
+      name: 'icon',
+      type: 'Snippet<[{ step: StepItem; index: number; status: DerivedStatus }]>',
+      default: 'undefined',
+      desc: '自定义图标渲染器，提供时替代默认序号/✓/✕',
+    },
     { name: 'onChange', type: '(current: number) => void', default: 'undefined' },
     { name: 'class', type: 'string', default: "''" },
   ],
