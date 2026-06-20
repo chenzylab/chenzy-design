@@ -1,13 +1,13 @@
 <!--
   Timeline — see specs/components/show/Timeline.spec.md
-  基础子集: vertical/horizontal 方向、left/alternate/center mode、dataSource、pending、reverse、lineStyle。
+  基础子集: vertical/horizontal 方向、left/right/alternate/center mode、dataSource、pending、reverse、lineStyle。
   两种用法择一：
     - 数据驱动：传 dataSource 数组（向后兼容，行为不变）。
     - 声明式：不传 dataSource，改在 children 内写 <Timeline.Item>（更灵活，可放富内容）。
   交替布局（alternate/center）由纯 CSS :nth-child 决定，两种模式渲染同一套 .cd-timeline__item
   结构，故声明式无需在父级计算索引即可复用同一交替样式。reverse 仅作用于 dataSource 模式
   （声明式下顺序由作者书写顺序决定）。
-  TODO(延后): right mode、virtualized、interactive 键盘漫游。
+  TODO(延后): virtualized、interactive 键盘漫游。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -15,7 +15,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import { setTimelineContext } from './context.js';
 
-  type Mode = 'left' | 'alternate' | 'center';
+  type Mode = 'left' | 'right' | 'alternate' | 'center';
   type Direction = 'vertical' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
   type LineStyle = 'solid' | 'dashed';
@@ -204,6 +204,21 @@
   }
   .cd-timeline--center :global(.cd-timeline__item:nth-child(even)) {
     text-align: start;
+  }
+
+  /* right: left 的镜像——轴线在右侧，内容靠右对齐排在轴左侧。
+     复用 alternate even-child 的镜像手法（row-reverse + 内边距/dot/tail 翻转），
+     但应用到全部 item 而非交替项。 */
+  .cd-timeline--right :global(.cd-timeline__item) {
+    flex-direction: row-reverse;
+    text-align: end;
+    padding-inline: 0 var(--cd-timeline-dot-size);
+  }
+  .cd-timeline--right :global(.cd-timeline__dot) {
+    inset-inline: auto 0;
+  }
+  .cd-timeline--right :global(.cd-timeline__tail) {
+    inset-inline: auto calc(var(--cd-timeline-dot-size) / 2);
   }
 
   /* horizontal: 节点横向一行，连接线水平，内容在节点下方 */

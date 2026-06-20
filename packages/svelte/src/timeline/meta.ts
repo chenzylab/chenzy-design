@@ -6,7 +6,7 @@ export const meta = {
   name: 'Timeline',
   category: 'show',
   description:
-    '时间轴，按时间顺序垂直/水平展示一组事件。两种用法择一：传 dataSource 数据驱动，或不传 dataSource 而在 children 内写 <Timeline.Item> 声明式（可放任意富内容）。支持 left/alternate/center 模式、vertical/horizontal 方向、pending 幽灵节点、reverse 倒序与实/虚线样式；交替布局由纯 CSS :nth-child 决定，两种用法共用同一套结构与样式。',
+    '时间轴，按时间顺序垂直/水平展示一组事件。两种用法择一：传 dataSource 数据驱动，或不传 dataSource 而在 children 内写 <Timeline.Item> 声明式（可放任意富内容）。支持 left/right/alternate/center 模式、vertical/horizontal 方向、pending 幽灵节点、reverse 倒序与实/虚线样式；交替布局由纯 CSS :nth-child 决定，两种用法共用同一套结构与样式。',
   props: [
     {
       name: 'dataSource',
@@ -22,9 +22,9 @@ export const meta = {
     },
     {
       name: 'mode',
-      type: "'left'|'alternate'|'center'",
+      type: "'left'|'right'|'alternate'|'center'",
       default: 'left',
-      desc: 'center 轴线居中、两侧内容朝轴对称对齐',
+      desc: 'right 轴线在右、内容靠右对齐（left 镜像）；center 轴线居中、两侧内容朝轴对称对齐',
     },
     {
       name: 'direction',
