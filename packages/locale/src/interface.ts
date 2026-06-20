@@ -253,6 +253,11 @@ export interface Locale {
   };
   Breadcrumb: {
     ariaLabel: string;
+    /** uses {count} */
+    moreLabel: string;
+  };
+  Anchor: {
+    ariaLabel: string;
   };
   ColorPicker: {
     saturation: string;

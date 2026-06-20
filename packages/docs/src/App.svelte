@@ -790,8 +790,8 @@ let pageSize2 = $state(10);
       />
       <Text type="tertiary">菜单选中：{menuSelected}</Text>
     </div>
-    <div style="width: 160px">
-      <Anchor links={anchorLinks} value={anchorKey} onChange={(k) => (anchorKey = k)} />
+    <div style="width: 160px" data-testid="anchor-demo">
+      <Anchor links={anchorLinks} value={anchorKey} affix updateHash onChange={(k) => (anchorKey = k)} />
       <Text type="tertiary">锚点：{anchorKey}</Text>
     </div>
   </div>

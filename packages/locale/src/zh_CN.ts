@@ -214,6 +214,10 @@ export const zh_CN: Locale = {
   },
   Breadcrumb: {
     ariaLabel: '面包屑',
+    moreLabel: '展开其余 {count} 项',
+  },
+  Anchor: {
+    ariaLabel: '页面导航',
   },
   ColorPicker: {
     saturation: '饱和度与明度',
