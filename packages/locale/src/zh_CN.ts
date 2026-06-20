@@ -225,6 +225,8 @@ export const zh_CN: Locale = {
     hue: '色相',
     alpha: '透明度',
     hex: '十六进制颜色值',
+    eyeDropper: '屏幕取色',
+    recent: '最近使用',
   },
   Tag: {
     close: '关闭',

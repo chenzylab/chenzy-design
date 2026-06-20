@@ -5,8 +5,9 @@
   拖拽用命令式指针（红线 #3）：pointerdown 一次性读 rect 存普通变量，
   document pointermove/pointerup 手动加/移除。useDismiss 放 $effect。
   对外 value/onChange 一律为 hex 字符串。
-  TODO(延后): format=rgb/hsv 切换 UI、eyeDropper、recentColors、inline 模式、
-  rgb/hsv 对象入参。
+  eyeDropper：浏览器支持 window.EyeDropper 时渲染吸管按钮，取屏幕色（降级隐藏）。
+  recentColors：记录最近应用的颜色（preset/eyeDropper/hex 确认/关闭面板时），去重 + 上限。
+  TODO(延后): format=rgb/hsv 切换 UI、inline 模式、rgb/hsv 对象入参。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
@@ -24,6 +25,12 @@
     size?: Size;
     disabled?: boolean;
     outputUppercase?: boolean;
+    /** 支持浏览器 EyeDropper 时显示吸管按钮（默认 true，不支持自动隐藏） */
+    eyeDropper?: boolean;
+    /** 显示最近使用颜色行（默认 false） */
+    recentColors?: boolean;
+    /** 最近颜色上限（默认 8） */
+    recentMax?: number;
     onChange?: (hex: string) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -39,6 +46,9 @@
     size = 'default',
     disabled = false,
     outputUppercase = true,
+    eyeDropper = true,
+    recentColors = false,
+    recentMax = 8,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -158,6 +168,8 @@
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
+    // 关闭面板时把当前颜色记入最近用色
+    if (!next) recordColor(hsvToHex({ h, s, v, a }));
     if (!isOpenControlled) innerOpen = next;
     onOpenChange?.(next);
   }
@@ -228,15 +240,48 @@
     hexInput = displayHex;
   }
 
-  // ---------- presets ----------
-  function applyPreset(preset: string) {
+  // 应用一个完整 hex（preset / eyeDropper / 最近色）：写 HSV + 提交 + 记录最近。
+  function applyHex(hex: string) {
     if (disabled) return;
-    const next = hexToHsv(preset);
+    const next = hexToHsv(hex);
     h = next.h;
     s = next.s;
     v = next.v;
     a = alpha ? next.a : 1;
     commitHsv();
+    recordColor(hsvToHex({ h, s, v, a }));
+  }
+
+  // ---------- presets ----------
+  function applyPreset(preset: string) {
+    applyHex(preset);
+  }
+
+  // ---------- recentColors ----------
+  let recent = $state<string[]>([]);
+  function recordColor(hex: string) {
+    if (!recentColors) return;
+    const norm = outputUppercase ? hex.toUpperCase() : hex.toLowerCase();
+    const next = [norm, ...recent.filter((c) => c !== norm)];
+    recent = next.slice(0, recentMax);
+  }
+
+  // ---------- eyeDropper（实验性 API，降级隐藏） ----------
+  interface EyeDropperCtor {
+    new (): { open: () => Promise<{ sRGBHex: string }> };
+  }
+  const eyeDropperSupported = $derived(
+    eyeDropper && typeof window !== 'undefined' && 'EyeDropper' in window,
+  );
+  async function pickWithEyeDropper() {
+    if (disabled || !eyeDropperSupported) return;
+    const Ctor = (window as unknown as { EyeDropper: EyeDropperCtor }).EyeDropper;
+    try {
+      const result = await new Ctor().open();
+      if (result?.sRGBHex) applyHex(result.sRGBHex);
+    } catch {
+      // 用户取消（Esc）或失败：静默忽略
+    }
   }
 
   // ---------- 命令式拖拽 (红线 #3) ----------
@@ -494,6 +539,19 @@
           oninput={handleHexInput}
           onblur={handleHexBlur}
         />
+        {#if eyeDropperSupported}
+          <button
+            type="button"
+            class="cd-color-picker__eyedropper"
+            aria-label={loc().t('ColorPicker.eyeDropper')}
+            {disabled}
+            onclick={pickWithEyeDropper}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M11.6 1.5a2 2 0 0 1 2.9 2.8l-1.3 1.3 1 1-1.1 1-1-1-5.4 5.4-3 .8.8-3 5.4-5.4-1-1 1-1.1 1 1 1.3-1.3Z" />
+            </svg>
+          </button>
+        {/if}
       </div>
 
       {#if presets.length > 0}
@@ -507,6 +565,23 @@
               onclick={() => applyPreset(preset)}
             ></button>
           {/each}
+        </div>
+      {/if}
+
+      {#if recentColors && recent.length > 0}
+        <div class="cd-color-picker__recent">
+          <span class="cd-color-picker__recent-label">{loc().t('ColorPicker.recent')}</span>
+          <div class="cd-color-picker__recent-swatches">
+            {#each recent as color (color)}
+              <button
+                type="button"
+                class="cd-color-picker__preset"
+                aria-label={color}
+                style="background:{color}"
+                onclick={() => applyHex(color)}
+              ></button>
+            {/each}
+          </div>
         </div>
       {/if}
     </div>
@@ -706,5 +781,45 @@
   .cd-color-picker__preset:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
+  }
+  .cd-color-picker__eyedropper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: var(--cd-input-height-small);
+    block-size: var(--cd-input-height-small);
+    padding: 0;
+    color: var(--cd-color-text-2);
+    background: var(--cd-input-bg);
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+    cursor: pointer;
+  }
+  .cd-color-picker__eyedropper:hover:not(:disabled) {
+    color: var(--cd-color-primary);
+    border-color: var(--cd-input-border-active);
+  }
+  .cd-color-picker__eyedropper:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-color-picker__eyedropper:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .cd-color-picker__recent {
+    margin-block-start: var(--cd-spacing-3);
+  }
+  .cd-color-picker__recent-label {
+    display: block;
+    margin-block-end: var(--cd-spacing-1);
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-color-picker__recent-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-2);
   }
 </style>

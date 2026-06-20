@@ -265,6 +265,8 @@ export interface Locale {
     hue: string;
     alpha: string;
     hex: string;
+    eyeDropper: string;
+    recent: string;
   };
   Tag: {
     close: string;
