@@ -261,6 +261,13 @@
     { dataIndex: 'city', title: '城市' },
   ];
   let tableSelected = $state<(string | number)[]>([]);
+  // 大数据虚拟滚动：1000+ 行，仅渲染视口内行
+  const tableBigData: TableRow[] = Array.from({ length: 2000 }, (_, i) => ({
+    key: i + 1,
+    name: `用户 ${i + 1}`,
+    age: 18 + (i % 50),
+    city: (['杭州', '上海', '北京', '深圳', '广州', '成都'] as const)[i % 6]!,
+  }));
   let tableExpandInfo = $state('（未操作）');
   let tableTreeInfo = $state('（未操作）');
   let tableTreeChecked = $state<(string | number)[]>([]);
@@ -2049,6 +2056,19 @@ let pageSize2 = $state(10);
     />
   </div>
   <Text type="tertiary">已选 keys：{tableTreeChecked.join(', ') || '（无）'}</Text>
+
+  <Text type="tertiary">行虚拟滚动（2000 行，仅渲染视口内 ~十几行，滚动流畅；表头 sticky 固定；排序仍生效）：</Text>
+  <div data-testid="table-virtualized" style="max-width:520px">
+    <Table
+      columns={tableColumns}
+      dataSource={tableBigData}
+      rowKey="key"
+      bordered
+      virtualized
+      height={400}
+      rowHeight={48}
+    />
+  </div>
 
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">

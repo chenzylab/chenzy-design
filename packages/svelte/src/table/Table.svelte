@@ -15,7 +15,11 @@
   后代部分选中父行半选 indeterminate），true=父子独立(向后兼容)。联动 {checked,half} 经 core
   conductRows/toggleRowCheck 纯函数据整棵可见行树派生 (红线 #2)；内部存叶子级 base，
   onChange 回传含父行的完整 checked 集；半选写 input.indeterminate 复用 attachment (红线 #3)。
-  TODO(延后): 虚拟化。
+  行虚拟滚动：virtualized=true 时 .cd-table-wrap 自身纵向滚动(固定 height)，thead sticky 固定顶部，
+  tbody 仅渲染视口内行切片(复用 core fixedRange 算可见区间)，首尾各一个 padding spacer tr 撑出
+  未渲染行总高(保持原生 <table>/<tr>/<td> 语义与 a11y)。scrollTop 命令式 scroll 回调 + rAF 节流写入
+  本地 $state，可见区间纯 $derived render 期只读(红线 #2/#3)。virtualized 与 pagination 互斥(虚拟时
+  忽略分页全量滚动)；排序/筛选/行选择/树形/固定列均正常协同。假定行等高，不建议与 expandable 混用。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -28,6 +32,7 @@
     flattenTreeRows,
     conductRows,
     toggleRowCheck,
+    fixedRange,
     type RowKey,
     type SortState,
     type FlatRow,
@@ -60,6 +65,9 @@
     empty,
     ariaLabel,
     onRowClick,
+    virtualized = false,
+    height = 400,
+    rowHeight = 48,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -86,6 +94,14 @@
     empty?: string;
     ariaLabel?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
+    /** 行虚拟滚动：仅渲染视口内行，适合大数据（1000+ 行）。默认 false（行为不变）。
+     *  启用时忽略 pagination（全量滚动），表头 sticky 固定于滚动容器顶部。
+     *  假定行等高（rowHeight）；与 expandable 同用时展开内容行不计入高度，故不建议混用。 */
+    virtualized?: boolean;
+    /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 400 */
+    height?: number;
+    /** 虚拟滚动行高（px）。virtualized 时生效，默认 48 */
+    rowHeight?: number;
   } = $props();
 
   const loc = useLocale();
@@ -253,7 +269,8 @@
   });
 
   // --- 分页：受控 current 不回写 (红线 #1) ---
-  const paginationEnabled = $derived(pagination !== false);
+  // virtualized 与分页互斥：虚拟滚动时全量渲染滚动，忽略 pagination（取舍见 props 注释）。
+  const paginationEnabled = $derived(!virtualized && pagination !== false);
   const pageSize = $derived(pagination ? (pagination.pageSize ?? 10) : 10);
   const isPageControlled = $derived(!!pagination && pagination.current !== undefined);
   let innerPage = $state(initPage());
@@ -346,6 +363,54 @@
       }));
     }
     return flattenTreeRows(visibleRows, treeExpandedSet, getKey, getChildren);
+  });
+
+  // --- 行虚拟滚动：仅渲染视口内行（复用 core fixedRange 纯函数）---
+  // 视口容器自身滚动，scrollTop 由命令式 scroll 回调写入；可见区间纯 $derived
+  // 仅依赖本地 $state，render 期只读不读 DOM（红线 #2）。
+  const VIRTUAL_OVERSCAN = 4;
+  let scrollEl = $state<HTMLDivElement | null>(null);
+  // 仅由 scroll 回调写入的本地 scrollTop，render 期只读。
+  let scrollTop = $state(0);
+  // rAF 节流句柄（非响应式）。
+  let rafId = 0;
+
+  const vRowHeight = $derived(rowHeight > 0 ? rowHeight : 48);
+  const vTotalHeight = $derived(displayRows.length * vRowHeight);
+  const vRange = $derived(
+    virtualized
+      ? fixedRange(scrollTop, height, vRowHeight, displayRows.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: displayRows.length },
+  );
+  // 实际喂给 #each 的行集合：virtualized 时只取视口内切片，否则全量。
+  const renderRows = $derived(
+    virtualized ? displayRows.slice(vRange.startIndex, vRange.endIndex) : displayRows,
+  );
+  // 上下 spacer 行高度：未渲染的上方/下方行总高，撑出正确总高（保持原生 table 语义）。
+  const vTopPad = $derived(virtualized ? vRange.startIndex * vRowHeight : 0);
+  const vBottomPad = $derived(
+    virtualized ? Math.max(0, (displayRows.length - vRange.endIndex) * vRowHeight) : 0,
+  );
+
+  // 滚动监听（命令式 + rAF 节流 + cleanup）（红线 #3）。
+  $effect(() => {
+    const el = scrollEl;
+    if (!el || !virtualized) return;
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (el) scrollTop = el.scrollTop;
+      });
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
   });
 
   // 全选范围 = 当前渲染行集（树形含已展开的子行）；半选据可见行计算
@@ -626,9 +691,14 @@
   );
 </script>
 
-<div class="cd-table-wrap">
+<div
+  class="cd-table-wrap"
+  class:cd-table-wrap--virtual={virtualized}
+  bind:this={scrollEl}
+  style={virtualized ? `block-size:${height}px; overflow:auto` : undefined}
+>
   <table class={cls} style={tableStyle} aria-label={ariaLabel}>
-    <thead class="cd-table__head">
+    <thead class="cd-table__head" class:cd-table__head--sticky={virtualized}>
       <tr>
         {#if hasExpand}
           <th class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" scope="col" style={leadingStyle('expand')}></th>
@@ -766,7 +836,12 @@
           </td>
         </tr>
       {:else}
-        {#each displayRows as row (row.key)}
+        {#if virtualized && vTopPad > 0}
+          <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
+            <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
+          </tr>
+        {/if}
+        {#each renderRows as row (row.key)}
           {@const record = row.record}
           {@const key = row.key}
           {@const index = row.topIndex}
@@ -863,6 +938,11 @@
             </tr>
           {/if}
         {/each}
+        {#if virtualized && vBottomPad > 0}
+          <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
+            <td colspan={colSpan} style="block-size:{vBottomPad}px; padding:0; border:0"></td>
+          </tr>
+        {/if}
       {/if}
     </tbody>
   </table>
@@ -891,6 +971,21 @@
     position: relative;
     inline-size: 100%;
     overflow-x: auto;
+  }
+
+  /* 行虚拟滚动：容器自身纵向滚动，表头 sticky 固定于顶部 */
+  .cd-table-wrap--virtual {
+    overflow: auto;
+  }
+  .cd-table__head--sticky th {
+    position: sticky;
+    inset-block-start: 0;
+    /* 高于固定列单元格(z-index:3)，确保横向固定列表头不盖过纵向 sticky 表头 */
+    z-index: 5;
+  }
+  /* spacer 占位行无内容、无交互，仅撑高 */
+  .cd-table__row--spacer:hover {
+    background: transparent;
   }
 
   .cd-table {
