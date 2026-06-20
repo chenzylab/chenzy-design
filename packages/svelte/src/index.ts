@@ -77,7 +77,7 @@ export {
   type ScrollListItem,
   type ScrollListValue,
 } from './scroll-list/index.js';
-export { Avatar, avatarMeta } from './avatar/index.js';
+export { Avatar, AvatarGroup, avatarMeta } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, cardMeta } from './card/index.js';
 export { Tooltip, tooltipMeta } from './tooltip/index.js';
