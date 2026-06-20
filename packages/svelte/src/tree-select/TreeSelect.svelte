@@ -5,9 +5,12 @@
   filterable: 面板顶部搜索框过滤节点（复用 core computeFilteredKeys），命中 + 祖先链可见、命中文本高亮。
   Token-driven, a11y-correct, 受控/非受控。
   fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化，默认字段名时零开销。
-  TODO(延后): remote 异步加载、虚拟化、节点 icon。
+  icon：自定义节点图标 snippet（showIcon 为真时渲染在 label 前），API 与 Tree 的 icon 对齐
+  （参数 { node, expanded, level }）。渲染层特性，不改 treeData（红线 #1）。
+  TODO(延后): remote 异步加载、虚拟化。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import {
     useId,
     useDismiss,
@@ -51,9 +54,13 @@
     defaultExpandAll?: boolean;
     /** 面板顶部搜索框过滤节点（命中 + 祖先链可见、高亮命中文本） */
     filterable?: boolean;
+    /** 是否预留节点图标位（icon 提供时渲染在 label 前）。默认 true，与 Tree 对齐。 */
+    showIcon?: boolean;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
+    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态，与 Tree 的 icon 对齐。 */
+    icon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
   }
 
   let {
@@ -73,9 +80,11 @@
     leafOnly = false,
     defaultExpandAll = false,
     filterable = false,
+    showIcon = true,
     onChange,
     onOpenChange,
     ariaLabel,
+    icon,
   }: Props = $props();
 
   const loc = useLocale();
@@ -445,6 +454,11 @@
           {/if}
         </span>
       {/if}
+      {#if showIcon}
+        <span class="cd-tree-select__icon" aria-hidden="true">
+          {#if icon}{@render icon({ node, expanded: nodeOpen, level })}{/if}
+        </span>
+      {/if}
       <span class="cd-tree-select__node-label">
         {#if searchActive}
           {#each highlightParts(node.label) as part, i (i)}
@@ -722,6 +736,19 @@
   }
   .cd-tree-select__expand--placeholder {
     cursor: default;
+  }
+  .cd-tree-select__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 0;
+    block-size: 1rem;
+    color: var(--cd-tree-node-color);
+  }
+  /* 有自定义图标内容时撑开尺寸（对齐 Tree 的 .cd-tree__icon） */
+  .cd-tree-select__icon:not(:empty) {
+    inline-size: 1rem;
   }
   .cd-tree-select__node-label {
     overflow: hidden;

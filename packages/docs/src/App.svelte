@@ -178,6 +178,7 @@
   let treeFieldSel = $state<string | number | null>(null);
   let treeFieldChecked = $state<(string | number)[]>([]);
   let treeSelectFieldVal = $state<string | number | null>(null);
+  let treeSelectIconVal = $state<string | number | null>(null);
 
   // Tree 异步加载：根节点无 children，展开时按 key 拉取子节点；'leaf-x' 标记叶子。
   const treeAsyncRoots = [
@@ -1346,6 +1347,25 @@ let pageSize2 = $state(10);
         onChange={(k) => (treeSelectFieldVal = Array.isArray(k) ? (k[0] ?? null) : k)}
       />
       <Text type="tertiary">树选（fieldNames）：{treeSelectFieldVal ?? '（未选）'}</Text>
+    </div>
+    <div style="width: 240px" data-testid="treeselect-icon">
+      <TreeSelect
+        treeData={orgTree}
+        clearable
+        defaultExpandAll
+        placeholder="带图标树选"
+        value={treeSelectIconVal}
+        onChange={(k) => (treeSelectIconVal = Array.isArray(k) ? (k[0] ?? null) : k)}
+      >
+        {#snippet icon({ node, expanded })}
+          {#if node.children && node.children.length}
+            <span class="tree-icon-glyph">{expanded ? '📂' : '📁'}</span>
+          {:else}
+            <span class="tree-icon-glyph">📄</span>
+          {/if}
+        {/snippet}
+      </TreeSelect>
+      <Text type="tertiary">树选（图标）：{treeSelectIconVal ?? '（未选）'}</Text>
     </div>
   </Space>
 
