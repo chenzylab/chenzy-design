@@ -28,6 +28,13 @@ export const meta = {
     { name: 'leafOnly', type: 'boolean', default: 'false' },
     { name: 'defaultExpandAll', type: 'boolean', default: 'false' },
     { name: 'filterable', type: 'boolean', default: 'false', desc: '面板搜索框过滤节点 + 高亮命中' },
+    { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位（icon 提供时渲染在 label 前），与 Tree 对齐' },
+    {
+      name: 'icon',
+      type: 'Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>',
+      default: 'undefined',
+      desc: '自定义节点图标，showIcon 为真时渲染在 label 前；参数含节点与展开态，与 Tree 的 icon API 对齐',
+    },
     {
       name: 'onChange',
       type: '(value: TreeKey|TreeKey[]|null) => void',
