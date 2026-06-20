@@ -174,6 +174,8 @@ export const en_US: Locale = {
     hour: 'Hour',
     minute: 'Minute',
     second: 'Second',
+    am: 'AM',
+    pm: 'PM',
   },
   Transfer: {
     searchPlaceholder: 'Search',
@@ -256,5 +258,6 @@ export const en_US: Locale = {
     scrollPrev: 'Scroll backward',
     scrollNext: 'Scroll forward',
     add: 'Add tab',
+    more: 'More',
   },
 };

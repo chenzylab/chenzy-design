@@ -1,12 +1,25 @@
 <!--
   TimePicker — see specs/components/input/TimePicker.spec.md
-  基础子集: 单选 type='time'，HH:mm:ss 三列滚动选择。受控/非受控。
+  单选 type='time'，HH:mm:ss 三列滚动选择 (+ 12h 制 AM/PM 列)。受控/非受控。
   显示走 Intl.DateTimeFormat (不手拼时间串)。scrollIntoView 命令式调用 (非响应式 attachment)。
-  TODO(延后): timeRange、use12Hours、disabledHours/Minutes/Seconds、hideDisabledOptions、字符串入参。
+  列项/禁用集生成走 @chenzy-design/core 纯函数 (红线 #2)。
+  TODO(延后): timeRange、format 字符串、字符串入参。
 -->
 <script lang="ts">
   import { tick } from 'svelte';
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    buildHourOptions,
+    buildMinuteOptions,
+    buildSecondOptions,
+    applyHideDisabled,
+    to12Hour,
+    meridiemOf,
+    from12Hour,
+    type Meridiem,
+    type TimeOption,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -26,6 +39,11 @@
     minuteStep?: number;
     secondStep?: number;
     showSecond?: boolean;
+    use12Hours?: boolean;
+    disabledHours?: () => number[];
+    disabledMinutes?: (hour: number) => number[];
+    disabledSeconds?: (hour: number, minute: number) => number[];
+    hideDisabledOptions?: boolean;
     locale?: string;
     onChange?: (v: Date | null) => void;
     onOpenChange?: (open: boolean) => void;
@@ -46,6 +64,11 @@
     minuteStep = 1,
     secondStep = 1,
     showSecond = true,
+    use12Hours = false,
+    disabledHours,
+    disabledMinutes,
+    disabledSeconds,
+    hideDisabledOptions = false,
     locale = 'zh-CN',
     onChange,
     onOpenChange,
@@ -90,33 +113,46 @@
     setOpen(!isOpen);
   }
 
-  // --- 选中的 h/m/s 派生初值；从 current 读取 ---
+  // --- 选中的 h/m/s 派生 (24h 内部表示)；从 current 读取 ---
   const selectedHour = $derived(current ? current.getHours() : 0);
   const selectedMinute = $derived(current ? current.getMinutes() : 0);
   const selectedSecond = $derived(current ? current.getSeconds() : 0);
 
-  function buildRange(max: number, step: number): number[] {
-    const safeStep = step > 0 ? step : 1;
-    const out: number[] = [];
-    for (let i = 0; i < max; i += safeStep) out.push(i);
-    return out;
-  }
+  // --- 12h 制派生：当前 meridiem + 小时列显示值 (红线 #2 经 core 纯函数) ---
+  const selectedMeridiem = $derived<Meridiem>(meridiemOf(selectedHour));
+  const selectedHourDisplay = $derived(use12Hours ? to12Hour(selectedHour) : selectedHour);
 
-  const hours = $derived(buildRange(24, hourStep));
-  const minutes = $derived(buildRange(60, minuteStep));
-  const seconds = $derived(buildRange(60, secondStep));
+  // --- 列项 + 禁用集生成 (红线 #2: 派生纯函数) ---
+  const hours = $derived(
+    applyHideDisabled(
+      buildHourOptions(hourStep, use12Hours, selectedMeridiem, disabledHours),
+      hideDisabledOptions,
+    ),
+  );
+  const minutes = $derived(
+    applyHideDisabled(
+      buildMinuteOptions(minuteStep, selectedHour, disabledMinutes),
+      hideDisabledOptions,
+    ),
+  );
+  const seconds = $derived(
+    applyHideDisabled(
+      buildSecondOptions(secondStep, selectedHour, selectedMinute, disabledSeconds),
+      hideDisabledOptions,
+    ),
+  );
 
   function pad2(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
   }
 
-  // --- Intl 本地化展示 (不手拼时间串) ---
+  // --- Intl 本地化展示 (不手拼时间串)；12h 制由 hour12 驱动 AM/PM ---
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
       second: showSecond ? '2-digit' : undefined,
-      hour12: false,
+      hour12: use12Hours,
     }),
   );
 
@@ -131,14 +167,21 @@
     setValue(base);
   }
 
+  // 12h 制下小时列的值是显示小时 (1-12)，按当前 meridiem 转回 24h 内部表示
   function pickHour(h: number) {
-    commit(h, selectedMinute, selectedSecond);
+    const hour24 = use12Hours ? from12Hour(h, selectedMeridiem) : h;
+    commit(hour24, selectedMinute, selectedSecond);
   }
   function pickMinute(m: number) {
     commit(selectedHour, m, selectedSecond);
   }
   function pickSecond(s: number) {
     commit(selectedHour, selectedMinute, s);
+  }
+  // 切换 AM/PM：保持当前显示小时，重算 24h 表示
+  function pickMeridiem(m: Meridiem) {
+    if (m === selectedMeridiem) return;
+    commit(from12Hour(selectedHourDisplay, m), selectedMinute, selectedSecond);
   }
 
   function setNow() {
@@ -274,65 +317,94 @@
     >
       <div class="cd-time-picker__columns">
         <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
-          {#each hours as h (h)}
+          {#each hours as h (h.value)}
             <li
               class="cd-time-picker__item"
-              class:cd-time-picker__item--selected={h === selectedHour}
+              class:cd-time-picker__item--selected={h.value === selectedHourDisplay}
+              class:cd-time-picker__item--disabled={h.disabled}
               role="option"
-              aria-selected={h === selectedHour}
+              aria-selected={h.value === selectedHourDisplay}
+              aria-disabled={h.disabled || undefined}
               tabindex="-1"
-              onclick={() => pickHour(h)}
+              onclick={() => !h.disabled && pickHour(h.value)}
               onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (!h.disabled && (e.key === 'Enter' || e.key === ' ')) {
                   e.preventDefault();
-                  pickHour(h);
+                  pickHour(h.value);
                 }
               }}
             >
-              {pad2(h)}
+              {pad2(h.value)}
             </li>
           {/each}
         </ul>
 
         <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
-          {#each minutes as m (m)}
+          {#each minutes as m (m.value)}
             <li
               class="cd-time-picker__item"
-              class:cd-time-picker__item--selected={m === selectedMinute}
+              class:cd-time-picker__item--selected={m.value === selectedMinute}
+              class:cd-time-picker__item--disabled={m.disabled}
               role="option"
-              aria-selected={m === selectedMinute}
+              aria-selected={m.value === selectedMinute}
+              aria-disabled={m.disabled || undefined}
               tabindex="-1"
-              onclick={() => pickMinute(m)}
+              onclick={() => !m.disabled && pickMinute(m.value)}
               onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (!m.disabled && (e.key === 'Enter' || e.key === ' ')) {
                   e.preventDefault();
-                  pickMinute(m);
+                  pickMinute(m.value);
                 }
               }}
             >
-              {pad2(m)}
+              {pad2(m.value)}
             </li>
           {/each}
         </ul>
 
         {#if showSecond}
           <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
-            {#each seconds as s (s)}
+            {#each seconds as s (s.value)}
               <li
                 class="cd-time-picker__item"
-                class:cd-time-picker__item--selected={s === selectedSecond}
+                class:cd-time-picker__item--selected={s.value === selectedSecond}
+                class:cd-time-picker__item--disabled={s.disabled}
                 role="option"
-                aria-selected={s === selectedSecond}
+                aria-selected={s.value === selectedSecond}
+                aria-disabled={s.disabled || undefined}
                 tabindex="-1"
-                onclick={() => pickSecond(s)}
+                onclick={() => !s.disabled && pickSecond(s.value)}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (!s.disabled && (e.key === 'Enter' || e.key === ' ')) {
                     e.preventDefault();
-                    pickSecond(s);
+                    pickSecond(s.value);
                   }
                 }}
               >
-                {pad2(s)}
+                {pad2(s.value)}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        {#if use12Hours}
+          <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.triggerLabel')}>
+            {#each ['am', 'pm'] as const as mer (mer)}
+              <li
+                class="cd-time-picker__item"
+                class:cd-time-picker__item--selected={mer === selectedMeridiem}
+                role="option"
+                aria-selected={mer === selectedMeridiem}
+                tabindex="-1"
+                onclick={() => pickMeridiem(mer)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    pickMeridiem(mer);
+                  }
+                }}
+              >
+                {loc().t(`TimePicker.${mer}`)}
               </li>
             {/each}
           </ul>
@@ -491,6 +563,12 @@
   .cd-time-picker__item--selected:hover {
     background: var(--cd-date-picker-cell-bg-selected);
     color: var(--cd-date-picker-cell-color-selected);
+  }
+  .cd-time-picker__item--disabled,
+  .cd-time-picker__item--disabled:hover {
+    color: var(--cd-color-text-3);
+    background: transparent;
+    cursor: not-allowed;
   }
   .cd-time-picker__footer {
     display: flex;
