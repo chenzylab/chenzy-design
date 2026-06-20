@@ -25,6 +25,15 @@ export {
   type MessageDescriptor,
 } from './form.js';
 export {
+  findRanges,
+  mergeRanges,
+  chunksFromRanges,
+  highlightChunks,
+  type HighlightRange,
+  type HighlightChunk,
+  type FindRangesOptions,
+} from './highlight.js';
+export {
   isSameDay,
   startOfDay,
   addMonths,
