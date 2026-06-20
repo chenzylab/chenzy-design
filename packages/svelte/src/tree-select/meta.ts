@@ -21,6 +21,7 @@ export const meta = {
     { name: 'clearable', type: 'boolean', default: 'false' },
     { name: 'leafOnly', type: 'boolean', default: 'false' },
     { name: 'defaultExpandAll', type: 'boolean', default: 'false' },
+    { name: 'filterable', type: 'boolean', default: 'false', desc: '面板搜索框过滤节点 + 高亮命中' },
     {
       name: 'onChange',
       type: '(value: TreeKey|TreeKey[]|null) => void',

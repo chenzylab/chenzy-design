@@ -19,6 +19,7 @@ export const meta = {
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'clearable', type: 'boolean', default: 'false' },
     { name: 'changeOnSelect', type: 'boolean', default: 'false' },
+    { name: 'filterable', type: 'boolean', default: 'false', desc: '搜索时切换扁平路径列表 + 高亮命中' },
     { name: 'loadData', type: '(node: CascaderNode) => Promise<CascaderNode[]>', default: 'undefined', desc: '动态加载子节点' },
     { name: 'onChange', type: '(value: (string|number)[] | (string|number)[][]) => void', default: 'undefined', desc: '单选回调单条路径；多选回调多条叶子路径' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },

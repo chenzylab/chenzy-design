@@ -2,11 +2,19 @@
   TreeSelect — see specs/components/input/TreeSelect.spec.md
   基础子集: 单选、可展开/收起的单面板树、叶子或任意节点选中 (leafOnly 控制)。
   multiple: checkbox 多选 + 父子联动 (复用 core conduct/toggleCheck)，trigger 多 tag 回显可单独移除。
+  filterable: 面板顶部搜索框过滤节点（复用 core computeFilteredKeys），命中 + 祖先链可见、命中文本高亮。
   Token-driven, a11y-correct, 受控/非受控。
-  TODO(延后): filterable 搜索、remote 异步加载、虚拟化、节点 icon。
+  TODO(延后): remote 异步加载、虚拟化、节点 icon。
 -->
 <script lang="ts">
-  import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    conduct,
+    toggleCheck,
+    computeFilteredKeys,
+    type TreeNodeData,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import Tag from '../tag/Tag.svelte';
   import type { TreeNode, TreeKey } from './types.js';
@@ -31,6 +39,8 @@
     clearable?: boolean;
     leafOnly?: boolean;
     defaultExpandAll?: boolean;
+    /** 面板顶部搜索框过滤节点（命中 + 祖先链可见、高亮命中文本） */
+    filterable?: boolean;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -51,6 +61,7 @@
     clearable = false,
     leafOnly = false,
     defaultExpandAll = false,
+    filterable = false,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -206,6 +217,7 @@
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
+    if (!next) searchValue = '';
     if (!isOpenControlled) innerOpen = next;
     onOpenChange?.(next);
   }
@@ -219,8 +231,47 @@
     return !!node.children && node.children.length > 0;
   }
 
+  // --- 搜索过滤（本地 state，复用 core computeFilteredKeys）---
+  let searchValue = $state('');
+  const trimmedSearch = $derived(searchValue.trim());
+  const searchActive = $derived(filterable && trimmedSearch.length > 0);
+  const filterResult = $derived.by(() => {
+    if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
+    const lower = trimmedSearch.toLowerCase();
+    return computeFilteredKeys(
+      treeData as unknown as TreeNodeData[],
+      (node) => node.label.toLowerCase().includes(lower),
+    );
+  });
+  // 节点在搜索结果可见：命中本身、或在祖先链/含命中后代（expand 集）。
+  function nodeVisible(key: TreeKey): boolean {
+    if (!searchActive) return true;
+    return filterResult.matched.has(key) || filterResult.expand.has(key);
+  }
+
   function isExpanded(key: TreeKey): boolean {
+    // 搜索激活时强制展开命中链
+    if (searchActive && filterResult.expand.has(key)) return true;
     return expandedKeys.has(key);
+  }
+
+  // --- 命中文本高亮：拆成片段供模板渲染 ---
+  type HlPart = { text: string; mark: boolean };
+  function highlightParts(text: string): HlPart[] {
+    if (!searchActive) return [{ text, mark: false }];
+    const lower = text.toLowerCase();
+    const term = trimmedSearch.toLowerCase();
+    const parts: HlPart[] = [];
+    let from = 0;
+    let idx = lower.indexOf(term, from);
+    while (idx !== -1) {
+      if (idx > from) parts.push({ text: text.slice(from, idx), mark: false });
+      parts.push({ text: text.slice(idx, idx + term.length), mark: true });
+      from = idx + term.length;
+      idx = lower.indexOf(term, from);
+    }
+    if (from < text.length) parts.push({ text: text.slice(from), mark: false });
+    return parts;
   }
 
   function toggleExpand(key: TreeKey) {
@@ -282,6 +333,7 @@
 
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {#each nodes as node (node.key)}
+    {#if nodeVisible(node.key)}
     {@const expandable = hasChildren(node)}
     {@const nodeOpen = expandable && isExpanded(node.key)}
     {@const cs = nodeCheckState(node)}
@@ -348,10 +400,19 @@
           {/if}
         </span>
       {/if}
-      <span class="cd-tree-select__node-label">{node.label}</span>
+      <span class="cd-tree-select__node-label">
+        {#if searchActive}
+          {#each highlightParts(node.label) as part, i (i)}
+            {#if part.mark}<mark class="cd-tree-select__highlight">{part.text}</mark>{:else}{part.text}{/if}
+          {/each}
+        {:else}
+          {node.label}
+        {/if}
+      </span>
     </div>
     {#if expandable && nodeOpen}
       {@render treeNodes(node.children ?? [], level + 1)}
+    {/if}
     {/if}
   {/each}
 {/snippet}
@@ -433,12 +494,28 @@
   </div>
 
   {#if isOpen}
-    <div class="cd-tree-select__panel" id={treeId} role="tree">
-      {#if treeData.length === 0}
-        <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
-      {:else}
-        {@render treeNodes(treeData, 0)}
+    <div class="cd-tree-select__panel" id={treeId}>
+      {#if filterable}
+        <div class="cd-tree-select__search">
+          <input
+            class="cd-tree-select__search-input"
+            type="text"
+            placeholder={loc().t('TreeSelect.searchPlaceholder')}
+            aria-label={loc().t('TreeSelect.searchPlaceholder')}
+            bind:value={searchValue}
+          />
+        </div>
       {/if}
+      <div class="cd-tree-select__tree" role="tree">
+        {#if treeData.length === 0}
+          <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+        {:else}
+          {@render treeNodes(treeData, 0)}
+          {#if searchActive && filterResult.matched.size === 0}
+            <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+          {/if}
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
@@ -527,12 +604,39 @@
     inset-block-start: calc(100% + var(--cd-spacing-1));
     inset-inline: 0;
     z-index: var(--cd-select-dropdown-z);
-    max-block-size: 16rem;
-    overflow-y: auto;
     padding-block: var(--cd-spacing-1);
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  .cd-tree-select__search {
+    padding-block-end: var(--cd-spacing-1);
+    padding-inline: var(--cd-spacing-2);
+  }
+  .cd-tree-select__search-input {
+    inline-size: 100%;
+    block-size: var(--cd-input-height-small);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-input-bg, transparent);
+    color: inherit;
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+    font: inherit;
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-tree-select__search-input:focus-visible {
+    outline: none;
+    border-color: var(--cd-input-border-active);
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-tree-select__tree {
+    max-block-size: 14rem;
+    overflow-y: auto;
+  }
+  .cd-tree-select__highlight {
+    padding: 0;
+    color: var(--cd-tree-search-highlight-color);
+    background: var(--cd-tree-search-highlight-bg);
   }
   .cd-tree-select__node {
     display: flex;

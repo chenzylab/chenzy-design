@@ -196,6 +196,7 @@ export const en_US: Locale = {
   TreeSelect: {
     clear: 'Clear',
     emptyText: 'No data',
+    searchPlaceholder: 'Search',
   },
   AutoComplete: {
     clear: 'Clear',
@@ -207,6 +208,8 @@ export const en_US: Locale = {
   Cascader: {
     clear: 'Clear',
     loading: 'Loading',
+    searchPlaceholder: 'Search',
+    emptyText: 'No match',
   },
   Carousel: {
     prev: 'Previous slide',
