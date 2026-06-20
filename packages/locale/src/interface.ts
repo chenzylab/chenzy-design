@@ -243,6 +243,8 @@ export interface Locale {
     /** uses {count} */
     submitFailAnnounce: string;
     colon: string;
+    /** announced/shown while a field is running async validation */
+    validating: string;
   };
   TreeSelect: {
     clear: string;

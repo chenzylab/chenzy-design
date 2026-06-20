@@ -202,6 +202,7 @@ export const zh_CN: Locale = {
     pattern: '{label}格式不符合要求',
     submitFailAnnounce: '{count} 个字段校验未通过',
     colon: '：',
+    validating: '校验中…',
   },
   TreeSelect: {
     clear: '清除',

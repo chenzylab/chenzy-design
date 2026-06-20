@@ -27,6 +27,11 @@ export interface Rule {
   validator?: (value: unknown, values: FormValues) => ValidateResult | Promise<ValidateResult>;
   /** override message for the built-in rule on this entry */
   message?: string;
+  /**
+   * when true, a failure of THIS rule produces a non-blocking warning instead of
+   * an error: it surfaces a (yellow) hint but never fails `submit`. Mirrors AntD.
+   */
+  warningOnly?: boolean;
 }
 
 export interface FieldConfig {
@@ -47,6 +52,8 @@ export type FieldErrors = Record<string, string | undefined>;
 export interface FormState {
   values: FormValues;
   errors: FieldErrors;
+  /** non-blocking warnings (from `warningOnly` rules); never affect submit validity */
+  warnings: FieldErrors;
   touched: Record<string, boolean>;
   validating: Record<string, boolean>;
   submitting: boolean;
@@ -80,7 +87,9 @@ export interface FormApi {
   setFieldsValue(values: FormValues): void;
   setFieldTouched(name: string, touched?: boolean): void;
   getFieldError(name: string): string | undefined;
-  /** validate one field; resolves to its error (or undefined) */
+  /** the field's non-blocking warning (from a `warningOnly` rule), if any */
+  getFieldWarning(name: string): string | undefined;
+  /** validate one field; resolves to its (blocking) error (or undefined) */
   validateField(name: string): Promise<string | undefined>;
   /** validate all (or given) fields; resolves to true when valid */
   validate(names?: string[]): Promise<boolean>;
@@ -103,6 +112,7 @@ export function createForm(options: FormOptions = {}): FormApi {
   const state: FormState = {
     values: { ...initial },
     errors: {},
+    warnings: {},
     touched: {},
     validating: {},
     submitting: false,
@@ -118,52 +128,78 @@ export function createForm(options: FormOptions = {}): FormApi {
     return fields.get(name)?.label ?? name;
   }
 
-  /** run all rules for a field; returns first error message or undefined */
-  async function runRules(name: string, value: unknown): Promise<string | undefined> {
+  /**
+   * run all rules for a field. Returns the first blocking error and the first
+   * warning (from a `warningOnly` rule), if any. A failing `warningOnly` rule
+   * records a warning but does NOT halt evaluation — later rules still run, so a
+   * real error can still win. A failing normal rule short-circuits with an error.
+   */
+  async function runRules(
+    name: string,
+    value: unknown,
+  ): Promise<{ error?: string | undefined; warning?: string | undefined }> {
     const cfg = fields.get(name);
-    if (!cfg?.rules) return undefined;
+    if (!cfg?.rules) return {};
     const label = labelOf(name);
-    for (const rule of cfg.rules) {
-      const msg = (d: MessageDescriptor): string =>
-        rule.message ?? resolve(d);
+    let warning: string | undefined;
 
+    // route a failed rule's message: warningOnly → record warning & continue;
+    // otherwise return it as the blocking error.
+    const fail = (
+      rule: Rule,
+      d: MessageDescriptor,
+    ): { error?: string | undefined; warning?: string | undefined } | undefined => {
+      const text = rule.message ?? resolve(d);
+      if (rule.warningOnly) {
+        if (warning === undefined) warning = text;
+        return undefined; // keep scanning subsequent rules
+      }
+      return { error: text, warning };
+    };
+
+    for (const rule of cfg.rules) {
       const isEmpty = value === undefined || value === null || value === '';
 
       if (rule.required && isEmpty) {
-        return msg({ key: 'Form.required', params: { label } });
+        const r = fail(rule, { key: 'Form.required', params: { label } });
+        if (r) return r;
+        continue;
       }
       if (isEmpty) continue; // other rules skip empty values
 
+      let descriptor: MessageDescriptor | undefined;
       if (rule.type === 'email' && !EMAIL_RE.test(String(value))) {
-        return msg({ key: 'Form.typeError', params: { label } });
+        descriptor = { key: 'Form.typeError', params: { label } };
+      } else if (rule.type === 'url' && !URL_RE.test(String(value))) {
+        descriptor = { key: 'Form.typeError', params: { label } };
+      } else if (rule.type === 'number' && Number.isNaN(Number(value))) {
+        descriptor = { key: 'Form.typeError', params: { label } };
+      } else if (rule.minLength !== undefined && String(value).length < rule.minLength) {
+        descriptor = { key: 'Form.minLength', params: { min: rule.minLength } };
+      } else if (rule.maxLength !== undefined && String(value).length > rule.maxLength) {
+        descriptor = { key: 'Form.maxLength', params: { max: rule.maxLength } };
+      } else if (rule.min !== undefined && Number(value) < rule.min) {
+        descriptor = { key: 'Form.min', params: { min: rule.min } };
+      } else if (rule.max !== undefined && Number(value) > rule.max) {
+        descriptor = { key: 'Form.max', params: { max: rule.max } };
+      } else if (rule.pattern && !rule.pattern.test(String(value))) {
+        descriptor = { key: 'Form.pattern', params: { label } };
       }
-      if (rule.type === 'url' && !URL_RE.test(String(value))) {
-        return msg({ key: 'Form.typeError', params: { label } });
-      }
-      if (rule.type === 'number' && Number.isNaN(Number(value))) {
-        return msg({ key: 'Form.typeError', params: { label } });
-      }
-      if (rule.minLength !== undefined && String(value).length < rule.minLength) {
-        return msg({ key: 'Form.minLength', params: { min: rule.minLength } });
-      }
-      if (rule.maxLength !== undefined && String(value).length > rule.maxLength) {
-        return msg({ key: 'Form.maxLength', params: { max: rule.maxLength } });
-      }
-      if (rule.min !== undefined && Number(value) < rule.min) {
-        return msg({ key: 'Form.min', params: { min: rule.min } });
-      }
-      if (rule.max !== undefined && Number(value) > rule.max) {
-        return msg({ key: 'Form.max', params: { max: rule.max } });
-      }
-      if (rule.pattern && !rule.pattern.test(String(value))) {
-        return msg({ key: 'Form.pattern', params: { label } });
-      }
-      if (rule.validator) {
-        const r = await rule.validator(value, state.values);
+      if (descriptor) {
+        const r = fail(rule, descriptor);
         if (r) return r;
+        continue;
+      }
+
+      if (rule.validator) {
+        const v = await rule.validator(value, state.values);
+        if (v) {
+          const r = fail(rule, { text: v, key: '' });
+          if (r) return r;
+        }
       }
     }
-    return undefined;
+    return { warning };
   }
 
   async function validateField(name: string): Promise<string | undefined> {
@@ -172,13 +208,14 @@ export function createForm(options: FormOptions = {}): FormApi {
     state.validating = { ...state.validating, [name]: true };
     emit();
 
-    const error = await runRules(name, state.values[name]);
+    const { error, warning } = await runRules(name, state.values[name]);
 
     // race guard: a newer validation superseded this one → discard
     if (tokens.get(name) !== token) return state.errors[name];
 
     state.validating = { ...state.validating, [name]: false };
     state.errors = { ...state.errors, [name]: error };
+    state.warnings = { ...state.warnings, [name]: warning };
     emit();
     return error;
   }
@@ -234,6 +271,7 @@ export function createForm(options: FormOptions = {}): FormApi {
       emit();
     },
     getFieldError: (name) => state.errors[name],
+    getFieldWarning: (name) => state.warnings[name],
     validateField,
     async validate(names) {
       const targets = names ?? [...fields.keys()];
@@ -243,6 +281,7 @@ export function createForm(options: FormOptions = {}): FormApi {
     resetFields() {
       state.values = { ...initial };
       state.errors = {};
+      state.warnings = {};
       state.touched = {};
       state.validating = {};
       emit();

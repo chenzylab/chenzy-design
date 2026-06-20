@@ -124,6 +124,76 @@ describe('createForm', () => {
     expect(f.getFieldError('confirm')).toBeUndefined();
   });
 
+  it('warningOnly rule produces a warning, not an error, and does not block submit', async () => {
+    const f = createForm();
+    f.registerField('name', {
+      rules: [{ minLength: 5, warningOnly: true, message: 'too short' }],
+    });
+    f.setFieldValue('name', 'ab');
+    const err = await f.validateField('name');
+    // warningOnly never surfaces as a blocking error
+    expect(err).toBeUndefined();
+    expect(f.getFieldError('name')).toBeUndefined();
+    expect(f.getFieldWarning('name')).toBe('too short');
+
+    // submit must still be valid despite the standing warning
+    const r = await f.submit();
+    expect(r.valid).toBe(true);
+    expect(f.getFieldWarning('name')).toBe('too short');
+  });
+
+  it('warning clears once the warningOnly rule passes', async () => {
+    const f = createForm();
+    f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
+    f.setFieldValue('name', 'ab');
+    await f.validateField('name');
+    expect(f.getFieldWarning('name')).toBe('w');
+    f.setFieldValue('name', 'abcdef');
+    await f.validateField('name');
+    expect(f.getFieldWarning('name')).toBeUndefined();
+  });
+
+  it('a blocking rule still wins even when a warningOnly rule also fails', async () => {
+    const f = createForm();
+    f.registerField('name', {
+      rules: [
+        { minLength: 5, warningOnly: true, message: 'warn' },
+        { required: true, message: 'err' },
+      ],
+    });
+    f.setFieldValue('name', '');
+    const err = await f.validateField('name');
+    expect(err).toBe('err');
+    expect(f.getFieldError('name')).toBe('err');
+    const r = await f.submit();
+    expect(r.valid).toBe(false);
+  });
+
+  it('validating flag is set during async validation and cleared after', async () => {
+    let resolveV: ((v: string | undefined) => void) | undefined;
+    const f = createForm();
+    f.registerField('u', {
+      rules: [{ validator: () => new Promise((r) => (resolveV = r)) }],
+    });
+    f.setFieldValue('u', 'x');
+    const p = f.validateField('u');
+    // synchronously after kicking off: the field is marked validating
+    expect(f.getState().validating.u).toBe(true);
+    resolveV?.(undefined);
+    await p;
+    expect(f.getState().validating.u).toBe(false);
+  });
+
+  it('resetFields clears warnings too', async () => {
+    const f = createForm();
+    f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
+    f.setFieldValue('name', 'ab');
+    await f.validateField('name');
+    expect(f.getFieldWarning('name')).toBe('w');
+    f.resetFields();
+    expect(f.getFieldWarning('name')).toBeUndefined();
+  });
+
   it('subscribe notifies on changes', () => {
     const f = createForm();
     f.registerField('x');

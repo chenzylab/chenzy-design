@@ -7,8 +7,9 @@
   import type { Snippet } from 'svelte';
   import { useId, type Rule } from '@chenzy-design/core';
   import { getFormContext } from './context.js';
+  import { useLocale } from '../locale-provider/index.js';
 
-  type FieldStatus = 'default' | 'error';
+  type FieldStatus = 'default' | 'error' | 'warning';
 
   interface ChildArgs {
     value: unknown;
@@ -48,8 +49,11 @@
   if (!ctx) throw new Error('<Form.Field> must be used inside <Form>');
   const { form, getFormState } = ctx;
 
+  const loc = useLocale();
+
   const id = useId('cd-field');
   const errorId = `${id}-error`;
+  const warningId = `${id}-warning`;
   const extraId = `${id}-extra`;
 
   // Register the field in the core registry (a plain Map, not Svelte-reactive),
@@ -67,12 +71,20 @@
   // Read-only slices derived from the bridged form state (render-safe getters).
   const value = $derived(getFormState().values[field]);
   const error = $derived(getFormState().errors[field]);
+  const warning = $derived(getFormState().warnings[field]);
+  const validating = $derived(getFormState().validating[field] === true);
   const touched = $derived(getFormState().touched[field]);
-  const status = $derived<FieldStatus>(error ? 'error' : 'default');
+
+  const showError = $derived(error !== undefined && error !== '');
+  // a warning only surfaces when there is no blocking error to show
+  const showWarning = $derived(!showError && warning !== undefined && warning !== '');
+  const status = $derived<FieldStatus>(showError ? 'error' : showWarning ? 'warning' : 'default');
 
   const showRequiredMark = $derived(ctx.getRequiredMark() && required);
-  const showError = $derived(error !== undefined && error !== '');
-  const showExtra = $derived(!showError && extraText !== undefined && extraText !== '');
+  const showExtra = $derived(
+    !showError && !showWarning && extraText !== undefined && extraText !== '',
+  );
+  const validatingText = $derived(loc().t('Form.validating'));
 
   function handleChange(v: unknown) {
     // Re-validate on change once the field is "active": after a blur (touched)
@@ -88,7 +100,9 @@
     void form.validateField(field);
   }
 
-  const describedBy = $derived(showError ? errorId : showExtra ? extraId : undefined);
+  const describedBy = $derived(
+    showError ? errorId : showWarning ? warningId : showExtra ? extraId : undefined,
+  );
 
   const labelWidth = $derived(ctx.getLabelWidth());
   const labelPosition = $derived(ctx.getLabelPosition());
@@ -148,8 +162,17 @@
       disabled: ctx.getDisabled(),
     })}
 
+    {#if validating}
+      <div class="cd-form-field__validating" aria-live="polite">
+        <span class="cd-form-field__spinner" aria-hidden="true"></span>
+        <span>{validatingText}</span>
+      </div>
+    {/if}
+
     {#if showError}
       <div id={errorId} role="alert" class="cd-form-field__error">{error}</div>
+    {:else if showWarning}
+      <div id={warningId} class="cd-form-field__warning">{warning}</div>
     {:else if showExtra}
       <div id={extraId} class="cd-form-field__extra">{extraText}</div>
     {/if}
@@ -223,8 +246,38 @@
     color: var(--cd-form-error-color, var(--cd-color-danger, #e54848));
     font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
   }
+  .cd-form-field__warning {
+    color: var(--cd-form-warning-color, var(--cd-color-warning, #fa8c16));
+    font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
+  }
   .cd-form-field__extra {
     color: var(--cd-form-extra-color, var(--cd-color-text-3));
     font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
+  }
+  /* async-validation indicator (red line #3: pure-CSS spin, no JS geometry) */
+  .cd-form-field__validating {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
+    color: var(--cd-form-extra-color, var(--cd-color-text-3));
+    font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
+  }
+  .cd-form-field__spinner {
+    inline-size: 0.85em;
+    block-size: 0.85em;
+    border: 2px solid var(--cd-color-fill-2, rgba(0, 0, 0, 0.1));
+    border-block-start-color: var(--cd-color-primary, #3370ff);
+    border-radius: 50%;
+    animation: cd-form-field-spin 0.7s linear infinite;
+  }
+  @keyframes cd-form-field-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-form-field__spinner {
+      animation-duration: 1.8s;
+    }
   }
 </style>
