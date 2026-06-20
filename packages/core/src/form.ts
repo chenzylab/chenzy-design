@@ -34,6 +34,12 @@ export interface FieldConfig {
   initialValue?: unknown;
   /** label used for interpolating default messages */
   label?: string;
+  /**
+   * names of other fields this field's validation depends on. When any listed
+   * field's value changes (validate-on-change), this field is re-validated too —
+   * e.g. a "confirm password" field depends on ["password"].
+   */
+  dependencies?: string[];
 }
 
 export type FieldErrors = Record<string, string | undefined>;
@@ -90,6 +96,9 @@ export function createForm(options: FormOptions = {}): FormApi {
   const fields = new Map<string, FieldConfig>();
   // per-field async race token: only the latest validation may write the error
   const tokens = new Map<string, string>();
+  // reverse dependency graph: dep field name → set of fields that depend on it.
+  // setFieldValue(dep) connects to re-validating the dependents.
+  const dependents = new Map<string, Set<string>>();
 
   const state: FormState = {
     values: { ...initial },
@@ -182,6 +191,12 @@ export function createForm(options: FormOptions = {}): FormApi {
     },
     registerField(name, config = {}) {
       fields.set(name, config);
+      // wire the reverse dependency graph: each dep gains `name` as a dependent.
+      for (const dep of config.dependencies ?? []) {
+        let set = dependents.get(dep);
+        if (!set) dependents.set(dep, (set = new Set()));
+        set.add(name);
+      }
       if (config.initialValue !== undefined && state.values[name] === undefined) {
         state.values = { ...state.values, [name]: config.initialValue };
         initial[name] = config.initialValue;
@@ -190,6 +205,7 @@ export function createForm(options: FormOptions = {}): FormApi {
       return () => {
         fields.delete(name);
         tokens.delete(name);
+        for (const dep of config.dependencies ?? []) dependents.get(dep)?.delete(name);
       };
     },
     getFieldValue: (name) => state.values[name],
@@ -197,6 +213,17 @@ export function createForm(options: FormOptions = {}): FormApi {
       state.values = { ...state.values, [name]: value };
       emit();
       if (opts?.validate) void validateField(name);
+      // Re-validate downstream fields that depend on this one (e.g. confirm
+      // password depends on password) whenever the dependency value changes —
+      // independent of whether the *source* field validates itself. We only
+      // touch dependents that are already "active" (touched or showing an
+      // error), so fields the user hasn't interacted with stay clean.
+      for (const dep of dependents.get(name) ?? []) {
+        const active =
+          state.touched[dep] === true ||
+          (state.errors[dep] !== undefined && state.errors[dep] !== '');
+        if (active) void validateField(dep);
+      }
     },
     setFieldsValue(values) {
       state.values = { ...state.values, ...values };

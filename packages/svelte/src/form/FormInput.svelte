@@ -18,6 +18,7 @@
     type?: 'text' | 'password';
     clearable?: boolean;
     maxLength?: number;
+    dependencies?: string[];
   }
 
   let {
@@ -30,6 +31,7 @@
     type = 'text',
     clearable = false,
     maxLength,
+    dependencies,
   }: Props = $props();
 
   // Build props with conditional keys so we never pass an explicit `undefined`
@@ -40,6 +42,7 @@
     required,
     ...(label !== undefined ? { label } : {}),
     ...(extraText !== undefined ? { extraText } : {}),
+    ...(dependencies !== undefined ? { dependencies } : {}),
   });
 </script>
 

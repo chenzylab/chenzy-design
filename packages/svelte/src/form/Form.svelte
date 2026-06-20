@@ -21,6 +21,8 @@
     disabled?: boolean;
     requiredMark?: boolean;
     colon?: boolean;
+    /** on failed submit, scroll to and focus the first errored field */
+    scrollToError?: boolean;
     onSubmit?: (r: { valid: boolean; values: FormValues; errors: FieldErrors }) => void;
     onChange?: (values: FormValues) => void;
     children?: Snippet;
@@ -37,6 +39,7 @@
     disabled = false,
     requiredMark = true,
     colon = false,
+    scrollToError = false,
     onSubmit,
     onChange,
     children,
@@ -91,9 +94,32 @@
     getColon: () => colon,
   });
 
+  // ref to the <form> element — used imperatively (red line #3: DOM ops live in
+  // the event handler, never in render) to locate the first errored field.
+  let formEl: HTMLFormElement | undefined;
+
+  function focusFirstError(errors: FieldErrors): void {
+    if (!formEl) return;
+    // walk fields in DOM order so we land on the *first* errored one on screen.
+    const nodes = formEl.querySelectorAll<HTMLElement>('[data-field]');
+    for (const node of nodes) {
+      const name = node.dataset.field;
+      if (name === undefined) continue;
+      const err = errors[name];
+      if (err === undefined || err === '') continue;
+      node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const control = node.querySelector<HTMLElement>(
+        'input, textarea, select, [tabindex]:not([tabindex="-1"])',
+      );
+      control?.focus({ preventScroll: true });
+      return;
+    }
+  }
+
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     const r = await form.submit();
+    if (!r.valid && scrollToError) focusFirstError(r.errors);
     onSubmit?.(r);
   }
 
@@ -102,7 +128,7 @@
   );
 </script>
 
-<form class={cls} onsubmit={handleSubmit}>
+<form bind:this={formEl} class={cls} onsubmit={handleSubmit}>
   {@render children?.()}
   {#if footer}
     <div class="cd-form__footer">

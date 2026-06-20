@@ -83,6 +83,47 @@ describe('createForm', () => {
     expect(r2.values).toEqual({ name: 'ok' });
   });
 
+  it('dependencies: changing a dependency re-validates the dependent field', async () => {
+    const f = createForm();
+    f.registerField('password', { rules: [{ required: true }] });
+    f.registerField('confirm', {
+      dependencies: ['password'],
+      rules: [
+        {
+          validator: (v, values) =>
+            v === values.password ? undefined : 'mismatch',
+        },
+      ],
+    });
+
+    f.setFieldValue('password', 'aaa');
+    f.setFieldValue('confirm', 'bbb');
+    await f.validateField('confirm');
+    expect(f.getFieldError('confirm')).toBe('mismatch');
+
+    // changing password automatically re-validates the dependent confirm (which
+    // is "active" because it already shows an error). The error clears once the
+    // values match — note we do NOT validate the password field itself here.
+    f.setFieldValue('password', 'bbb');
+    // allow the scheduled (async) dependent validation to settle
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(f.getFieldError('confirm')).toBeUndefined();
+  });
+
+  it('dependencies: untouched/error-free dependent is not eagerly validated', async () => {
+    const f = createForm();
+    f.registerField('password', {});
+    f.registerField('confirm', {
+      dependencies: ['password'],
+      rules: [{ validator: (v, values) => (v === values.password ? undefined : 'mismatch') }],
+    });
+    // confirm has neither been touched nor shows an error → must stay clean
+    f.setFieldValue('password', 'x', { validate: true });
+    await Promise.resolve();
+    expect(f.getFieldError('confirm')).toBeUndefined();
+  });
+
   it('subscribe notifies on changes', () => {
     const f = createForm();
     f.registerField('x');

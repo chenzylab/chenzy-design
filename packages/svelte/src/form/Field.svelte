@@ -26,13 +26,23 @@
     required?: boolean;
     extraText?: string;
     valuePropName?: string;
+    /** names of fields this field's validation depends on (e.g. confirm → ['password']) */
+    dependencies?: string[];
     children?: Snippet<[ChildArgs]>;
   }
 
   // TODO: `valuePropName` is reserved for non-`value` controls (e.g. checked);
   // it is part of the public Props but not consumed this round, so it is left
   // out of the destructure intentionally.
-  let { field, label, rules = [], required = false, extraText, children }: Props = $props();
+  let {
+    field,
+    label,
+    rules = [],
+    required = false,
+    extraText,
+    dependencies,
+    children,
+  }: Props = $props();
 
   const ctx = getFormContext();
   if (!ctx) throw new Error('<Form.Field> must be used inside <Form>');
@@ -46,7 +56,11 @@
   // so this never feeds back into a render-read. Cleanup unregisters.
   $effect(() => {
     const effectiveRules = required ? [{ required: true } as Rule, ...rules] : rules;
-    const config = label !== undefined ? { rules: effectiveRules, label } : { rules: effectiveRules };
+    const config: { rules: Rule[]; label?: string; dependencies?: string[] } = {
+      rules: effectiveRules,
+    };
+    if (label !== undefined) config.label = label;
+    if (dependencies !== undefined) config.dependencies = dependencies;
     return form.registerField(field, config);
   });
 
@@ -102,7 +116,7 @@
   );
 </script>
 
-<div class={cls}>
+<div class={cls} data-field={field}>
   {#if label !== undefined && !isInset}
     <label class="cd-form-field__label" for={id} style={labelStyle}>
       {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}

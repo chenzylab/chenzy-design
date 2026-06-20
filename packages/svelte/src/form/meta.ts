@@ -17,6 +17,7 @@ export const meta = {
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'requiredMark', type: 'boolean', default: 'true' },
     { name: 'colon', type: 'boolean', default: 'false' },
+    { name: 'scrollToError', type: 'boolean', default: 'false', desc: '提交校验失败时滚动并聚焦首个错误字段' },
     { name: 'onSubmit', type: '(r: { valid; values; errors }) => void', default: 'undefined' },
     { name: 'onChange', type: '(values: Record<string, unknown>) => void', default: 'undefined' },
     { name: 'children', type: 'Snippet', default: 'undefined' },
@@ -27,6 +28,7 @@ export const meta = {
     { name: 'Field.rules', type: 'Rule[]', default: '[]' },
     { name: 'Field.required', type: 'boolean', default: 'false' },
     { name: 'Field.extraText', type: 'string', default: 'undefined' },
+    { name: 'Field.dependencies', type: 'string[]', default: 'undefined', desc: '依赖字段名；其值变化时本字段自动重校验' },
     { name: 'Field.valuePropName', type: 'string', default: "'value'" },
     { name: 'Field.children', type: 'Snippet<[{ value; onChange; onBlur; status; id; disabled }]>', default: 'undefined' },
     // Form.Input
@@ -39,6 +41,7 @@ export const meta = {
     { name: 'Input.type', type: "'text'|'password'", default: 'text' },
     { name: 'Input.clearable', type: 'boolean', default: 'false' },
     { name: 'Input.maxLength', type: 'number', default: 'undefined' },
+    { name: 'Input.dependencies', type: 'string[]', default: 'undefined', desc: '依赖字段名；其值变化时本字段自动重校验' },
   ],
   a11y: {
     role: 'form',

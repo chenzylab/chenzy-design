@@ -677,6 +677,41 @@ let pageSize2 = $state(10);
     </Form>
   </div>
 
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-dependencies">
+    <Text type="tertiary">字段联动 dependencies（确认密码依赖密码）：</Text>
+    <Form>
+      <Form.Input field="password" label="密码" type="password" required />
+      <Form.Input
+        field="confirm"
+        label="确认密码"
+        type="password"
+        required
+        dependencies={['password']}
+        rules={[
+          {
+            validator: (v, values) =>
+              v === values.password ? undefined : '两次输入的密码不一致',
+          },
+        ]}
+      />
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-scroll-to-error">
+    <Text type="tertiary">scrollToError（提交滚动到首个错误字段）：</Text>
+    <Form scrollToError>
+      <Form.Input field="s_a" label="字段 A" required />
+      <Form.Input field="s_b" label="字段 B" required />
+      <Form.Input field="s_c" label="字段 C" required />
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+  </div>
+
   <Divider />
 
   <Title heading={5}>Select / AutoComplete</Title>
