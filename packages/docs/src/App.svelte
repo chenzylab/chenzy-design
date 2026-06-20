@@ -381,6 +381,16 @@
     { key: 'm6', start: new Date(2026, 5, 15), end: new Date(2026, 5, 17), title: '出差', color: 'var(--cd-color-warning)' },
     { key: 'm7', start: new Date(2026, 5, 22), title: '发版', color: 'var(--cd-color-success)' },
   ];
+  // Calendar 日视图：锚定到固定一天（2026-06-10），含定时事件 + 全天/跨天事件
+  const calDayAnchor = new Date(2026, 5, 10);
+  const calDayEvents = [
+    { key: 'd0', start: new Date(2026, 5, 10), title: '团队站会（全天）', allDay: true },
+    { key: 'd5', start: new Date(2026, 5, 9), end: new Date(2026, 5, 11), title: '出差（跨天）', color: 'var(--cd-color-warning)' },
+    { key: 'd1', start: new Date(2026, 5, 10, 9, 30), title: '需求评审' },
+    { key: 'd2', start: new Date(2026, 5, 10, 11, 0), title: '一对一' },
+    { key: 'd3', start: new Date(2026, 5, 10, 14, 0), title: '设计联调', color: 'var(--cd-color-success)' },
+    { key: 'd4', start: new Date(2026, 5, 10, 14, 45), title: '客户演示' },
+  ];
   let calSelectedText = $state('（未选）');
   let calRangeText = $state('（未选）');
   function fmtDay(d: Date) {
@@ -2380,6 +2390,22 @@ let pageSize2 = $state(10);
   <Text type="tertiary">mode="week"：单行 7 天，周导航前后切换</Text>
   <div data-testid="calendar-week">
     <Calendar mode="week" defaultValue={calAnchor} events={calEvents} maxEventsPerDay={4} />
+  </div>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（日视图 / 单日时间轴）</Title>
+  <Text type="tertiary">
+    mode="day"：纵向逐小时时间轴（8–20 时），带时间的事件入对应时段，全天/跨天事件入顶部「全天」区；天导航 ±1 切换
+  </Text>
+  <div data-testid="calendar-day">
+    <Calendar
+      mode="day"
+      defaultValue={calDayAnchor}
+      dayStartHour={8}
+      dayEndHour={20}
+      events={calDayEvents}
+    />
   </div>
 
   <Divider />

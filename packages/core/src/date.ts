@@ -68,6 +68,31 @@ export function addWeeks(d: Date, delta: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta * 7);
 }
 
+/** add (possibly negative) days, preserving the local time-of-day */
+export function addDays(d: Date, delta: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + delta);
+  return r;
+}
+
+/**
+ * Build an ordered list of hour slots [from, to) for a single day's timeline.
+ * Each slot's `date` is the start-of-hour Date on the day of `cursor`.
+ * @param from first hour (inclusive), default 0
+ * @param to last hour (inclusive), default 23
+ */
+export function getDayHours(cursor: Date, from = 0, to = 23): { hour: number; date: Date }[] {
+  const lo = Math.max(0, Math.min(23, Math.floor(from)));
+  const hi = Math.max(lo, Math.min(23, Math.floor(to)));
+  const y = cursor.getFullYear();
+  const m = cursor.getMonth();
+  const d = cursor.getDate();
+  return Array.from({ length: hi - lo + 1 }, (_, i) => {
+    const hour = lo + i;
+    return { hour, date: new Date(y, m, d, hour) };
+  });
+}
+
 /**
  * Build a single-week (7-cell) grid for the week containing `cursor`.
  * Every cell `inMonth` is relative to the month of `cursor`.

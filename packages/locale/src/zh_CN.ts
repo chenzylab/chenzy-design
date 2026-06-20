@@ -108,6 +108,7 @@ export const zh_CN: Locale = {
     next: '下一月',
     moreCount: '还有 {count} 项',
     noEvents: '暂无日程',
+    allDay: '全天',
   },
   Tree: {
     emptyText: '暂无数据',

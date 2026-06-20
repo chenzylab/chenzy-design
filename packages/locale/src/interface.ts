@@ -132,6 +132,7 @@ export interface Locale {
     /** uses {count} */
     moreCount: string;
     noEvents: string;
+    allDay: string;
   };
   Tree: {
     emptyText: string;

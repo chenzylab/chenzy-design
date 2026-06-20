@@ -3,6 +3,7 @@ import {
   eventCoversDay,
   eventsForDay,
   groupEventsByDays,
+  timelineForDay,
   dayKey,
   isPastDay,
   type CalendarEvent,
@@ -61,6 +62,40 @@ describe('groupEventsByDays', () => {
     expect(map.get(dayKey(d(2026, 5, 10)))?.total.length).toBe(4);
     expect(map.get(dayKey(d(2026, 5, 11)))?.total.map((e) => e.key)).toEqual(['d']);
     expect(map.get(dayKey(d(2026, 5, 20)))?.total.map((e) => e.key)).toEqual(['e']);
+  });
+});
+
+describe('timelineForDay', () => {
+  it('buckets timed events by their start hour, sorted by start time', () => {
+    const tl = timelineForDay(events, d(2026, 5, 10));
+    // a@09 and b@14 are timed; c is allDay; d is multi-day starting same day 00:00
+    expect(tl.byHour.get(9)?.map((e) => e.key)).toEqual(['a']);
+    expect(tl.byHour.get(14)?.map((e) => e.key)).toEqual(['b']);
+    expect(tl.byHour.get(0)?.map((e) => e.key)).toEqual(['d']); // 00:00 start
+  });
+
+  it('puts all-day events into the allDay bucket', () => {
+    const tl = timelineForDay(events, d(2026, 5, 10));
+    expect(tl.allDay.map((e) => e.key)).toEqual(['c']);
+  });
+
+  it('routes multi-day events to allDay on continuation days (start on another day)', () => {
+    const tl = timelineForDay(events, d(2026, 5, 11));
+    // event d covers the 11th but starts on the 10th → all-day on the 11th
+    expect(tl.allDay.map((e) => e.key)).toEqual(['d']);
+    expect([...tl.byHour.keys()]).toEqual([]);
+  });
+
+  it('clamps event hours into the visible from/to range', () => {
+    const late: CalendarEvent[] = [{ key: 'z', start: d(2026, 5, 10, 22), title: '深夜' }];
+    const tl = timelineForDay(late, d(2026, 5, 10), 8, 18);
+    expect(tl.byHour.get(18)?.map((e) => e.key)).toEqual(['z']);
+  });
+
+  it('returns empty buckets for a day with no events', () => {
+    const tl = timelineForDay(events, d(2026, 5, 1));
+    expect(tl.allDay).toEqual([]);
+    expect(tl.byHour.size).toBe(0);
   });
 });
 
