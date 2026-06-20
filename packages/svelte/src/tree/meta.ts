@@ -54,6 +54,12 @@ export const meta = {
     { name: 'status', type: "'default'|'warning'|'error'", default: "'default'" },
     { name: 'emptyContent', type: 'string', default: 'undefined', desc: '空态文案' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍标签' },
+    {
+      name: 'loadData',
+      type: '(node) => Promise<TreeNodeData[]>',
+      default: 'undefined',
+      desc: '异步加载子节点：展开未加载的非叶子节点时调用',
+    },
     { name: 'onChange', type: '(info) => void', default: 'undefined', desc: '选中变更' },
     { name: 'onCheck', type: '(info) => void', default: 'undefined', desc: '勾选变更' },
     {

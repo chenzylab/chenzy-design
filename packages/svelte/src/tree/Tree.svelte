@@ -4,7 +4,9 @@
   受控 value/checkedKeys/expandedKeys 不回写，仅 onChange/onCheck/onExpandedChange 通知。
   键盘遵循 WAI-ARIA APG Tree View（单一 tab stop + aria-activedescendant）。
   复用 @chenzy-design/core 的纯函数树算法，不重复实现。
-  TODO(延后): draggable / virtualized / loadData / showLine / accordion / fieldNames。
+  loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap
+  并派生合并树喂给所有 core 函数（不写回受控 treeData，红线 #1）。
+  TODO(延后): draggable / virtualized / showLine / accordion / fieldNames。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -19,6 +21,7 @@
     type TreeNodeData,
     type FlatNode,
   } from '@chenzy-design/core';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -49,6 +52,8 @@
     status?: Status;
     emptyContent?: string;
     ariaLabel?: string;
+    /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组 */
+    loadData?: (node: TreeNodeData) => Promise<TreeNodeData[]>;
     onChange?: (info: ChangeInfo) => void;
     onCheck?: (info: CheckInfo) => void;
     onExpandedChange?: (info: ExpandInfo) => void;
@@ -78,6 +83,7 @@
     status = 'default',
     emptyContent,
     ariaLabel,
+    loadData,
     onChange,
     onCheck,
     onExpandedChange,
@@ -90,6 +96,46 @@
 
   function itemId(key: TreeKey): string {
     return `${baseId}-${String(key)}`;
+  }
+
+  // --- 异步加载：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
+  const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
+  const loadingKeys = new SvelteSet<TreeKey>();
+  const loadedKeys = new SvelteSet<TreeKey>();
+
+  // 合并树：把已加载的子节点注入对应节点，喂给所有 core 纯函数。
+  // 无加载时返回原 treeData 引用，零开销。
+  const mergedData = $derived.by<TreeNodeData[]>(() => {
+    if (loadedChildren.size === 0) return treeData;
+    const inject = (nodes: TreeNodeData[]): TreeNodeData[] =>
+      nodes.map((n) => {
+        const loaded = loadedChildren.get(n.key);
+        const kids = n.children ?? loaded;
+        if (!kids) return n;
+        return { ...n, children: inject(kids) };
+      });
+    return inject(treeData);
+  });
+
+  // 行是否可展开：原本有子 → 是；否则有 loadData、非叶子、尚未加载（或加载出非空）→ 是。
+  function isExpandable(node: TreeNodeData, flatHasChildren: boolean): boolean {
+    if (flatHasChildren) return true;
+    if (!loadData || node.isLeaf === true) return false;
+    // 已加载且为空 → 不可展开；未加载 → 显示箭头（异步占位）
+    if (loadedKeys.has(node.key)) return (loadedChildren.get(node.key)?.length ?? 0) > 0;
+    return true;
+  }
+
+  async function loadChildren(node: TreeNodeData) {
+    if (!loadData || loadingKeys.has(node.key) || loadedKeys.has(node.key)) return;
+    loadingKeys.add(node.key);
+    try {
+      const kids = await loadData(node);
+      loadedChildren.set(node.key, kids);
+    } finally {
+      loadingKeys.delete(node.key);
+      loadedKeys.add(node.key);
+    }
   }
 
   // --- selection: 受控 value 不回写 (红线 #1) ---
@@ -121,7 +167,7 @@
     if (checkStrictly) {
       return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     }
-    return conduct(treeData, currentCheckedBase);
+    return conduct(mergedData, currentCheckedBase);
   });
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
@@ -142,7 +188,7 @@
   const filterResult = $derived.by(() => {
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     const lower = trimmedSearch.toLowerCase();
-    return computeFilteredKeys(treeData, (node) => node.label.toLowerCase().includes(lower));
+    return computeFilteredKeys(mergedData, (node) => node.label.toLowerCase().includes(lower));
   });
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回）
   const effectiveExpanded = $derived.by(() => {
@@ -153,7 +199,7 @@
   });
 
   // --- 可见扁平节点 ---
-  const flat = $derived(flattenVisible(treeData, effectiveExpanded));
+  const flat = $derived(flattenVisible(mergedData, effectiveExpanded));
   // 搜索时仅保留命中或其祖先链上的节点（expand 集即祖先链 + 自身有命中后代者）
   const visibleFlat = $derived.by(() => {
     if (!searchActive) return flat;
@@ -222,12 +268,12 @@
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
     } else {
-      nextBase = toggleCheck(treeData, currentCheckedBase, node.key);
+      nextBase = toggleCheck(mergedData, currentCheckedBase, node.key);
     }
     if (!isCheckControlled) innerCheckedBase = nextBase;
     const resolved = checkStrictly
       ? { checked: new Set(nextBase), half: new Set<TreeKey>() }
-      : conduct(treeData, nextBase);
+      : conduct(mergedData, nextBase);
     onCheck?.({
       checked: [...resolved.checked],
       node,
@@ -244,15 +290,21 @@
   }
 
   function toggleExpand(node: TreeNodeData) {
-    if (!node.children || node.children.length === 0) return;
-    emitExpand(node, !isExpanded(node.key));
+    const hasOwnKids = (node.children?.length ?? 0) > 0;
+    if (!isExpandable(node, hasOwnKids)) return;
+    const willExpand = !isExpanded(node.key);
+    // 展开未加载的异步节点：先取数据再展开（数据到位后合并树派生即显示子节点）
+    if (willExpand && !hasOwnKids && loadData && !loadedKeys.has(node.key)) {
+      void loadChildren(node);
+    }
+    emitExpand(node, willExpand);
   }
 
   function onRowClick(node: TreeNodeData) {
     if (isNodeDisabled(node)) return;
     activeKey = node.key;
     if (isSelectable(node)) emitSelect(node);
-    else if (node.children && node.children.length > 0) toggleExpand(node);
+    else if (isExpandable(node, (node.children?.length ?? 0) > 0)) toggleExpand(node);
   }
 
   // --- 键盘导航 (红线 #2: 全部基于派生 visibleFlat 与 activeKey) ---
@@ -324,14 +376,15 @@
         break;
       case 'ArrowRight':
         e.preventDefault();
-        if (f && f.hasChildren) {
-          if (!isExpanded(f.node.key)) emitExpand(f.node, true);
+        if (f && isExpandable(f.node, f.hasChildren)) {
+          if (!isExpanded(f.node.key)) toggleExpand(f.node);
           else moveNext();
         }
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        if (f && f.hasChildren && isExpanded(f.node.key)) emitExpand(f.node, false);
+        if (f && isExpandable(f.node, f.hasChildren) && isExpanded(f.node.key))
+          emitExpand(f.node, false);
         else moveToParent();
         break;
       case 'Home':
@@ -430,7 +483,8 @@
     >
       {#each visibleFlat as f (f.node.key)}
         {@const node = f.node}
-        {@const expandable = f.hasChildren}
+        {@const expandable = isExpandable(node, f.hasChildren)}
+        {@const loading = loadingKeys.has(node.key)}
         {@const expanded = expandable && isExpanded(node.key)}
         {@const nodeDisabled = isNodeDisabled(node)}
         {@const selected = selectedSet.has(node.key)}
@@ -457,7 +511,11 @@
           style="padding-inline-start: calc({f.level} * var(--cd-tree-indent))"
           onclick={() => onRowClick(node)}
         >
-          {#if expandable}
+          {#if loading}
+            <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
+              <span class="cd-tree__spinner"></span>
+            </span>
+          {:else if expandable}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <span
               class="cd-tree__switcher"
@@ -628,6 +686,22 @@
   .cd-tree__switcher--leaf {
     cursor: default;
   }
+  .cd-tree__switcher--loading {
+    cursor: default;
+  }
+  .cd-tree__spinner {
+    inline-size: 0.75rem;
+    block-size: 0.75rem;
+    border: 2px solid var(--cd-color-border, currentColor);
+    border-block-start-color: var(--cd-color-primary);
+    border-radius: 50%;
+    animation: cd-tree-spin 0.7s linear infinite;
+  }
+  @keyframes cd-tree-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 
   .cd-tree__checkbox {
     display: inline-flex;
@@ -681,6 +755,9 @@
     .cd-tree__node,
     .cd-tree__switcher {
       transition: none;
+    }
+    .cd-tree__spinner {
+      animation: none;
     }
   }
 </style>

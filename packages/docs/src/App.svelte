@@ -139,6 +139,23 @@
   let treeSel = $state<string | number>('figma');
   let treeChecked = $state<(string | number)[]>([]);
 
+  // Tree 异步加载：根节点无 children，展开时按 key 拉取子节点；'leaf-x' 标记叶子。
+  const treeAsyncRoots = [
+    { key: 'east', label: '华东' },
+    { key: 'south', label: '华南' },
+    { key: 'leaf-hk', label: '香港（叶子）', isLeaf: true },
+  ];
+  function loadTreeChildren(node: { key: string | number; label: string }) {
+    return new Promise<Array<{ key: string; label: string; isLeaf?: boolean }>>((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { key: `${node.key}-1`, label: `${node.label}·城市A`, isLeaf: true },
+          { key: `${node.key}-2`, label: `${node.label}·城市B`, isLeaf: true },
+        ]);
+      }, 600);
+    });
+  }
+
   type TableRow = {
     key: number;
     name: string;
@@ -1104,6 +1121,11 @@ let pageSize2 = $state(10);
         ariaLabel="可勾选部门树"
       />
       <Text type="tertiary">已勾选 {treeChecked.length} 项</Text>
+    </div>
+
+    <div style="width: 240px" data-testid="tree-loaddata">
+      <Text type="tertiary">异步加载（展开拉取子节点）</Text>
+      <Tree treeData={treeAsyncRoots} loadData={loadTreeChildren} ariaLabel="异步加载树" />
     </div>
   </div>
 
