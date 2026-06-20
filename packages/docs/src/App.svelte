@@ -1136,6 +1136,19 @@ let pageSize2 = $state(10);
       </List>
     </div>
 
+    <Text type="tertiary">pagination 分页（每页 3）：</Text>
+    <div style="width: 320px" data-testid="list-pagination">
+      <List
+        bordered
+        dataSource={Array.from({ length: 8 }, (_, i) => ({ key: i + 1, name: `条目 ${i + 1}` }))}
+        pagination={{ pageSize: 3 }}
+      >
+        {#snippet renderItem(item)}
+          <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+    </div>
+
     <Image
       src="https://invalid.example/photo.jpg"
       alt="示例图片"

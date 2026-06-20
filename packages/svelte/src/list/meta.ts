@@ -41,6 +41,7 @@ export const meta = {
     { name: 'onLoadMore', type: '() => void', default: 'undefined', desc: '内置加载更多按钮回调' },
     { name: 'loadingMore', type: 'boolean', default: 'false', desc: '内置按钮 loading 态' },
     { name: 'hasMore', type: 'boolean', default: 'false', desc: '是否还有更多数据' },
+    { name: 'pagination', type: 'false | { pageSize?, current?, defaultCurrent?, onChange? }', default: 'undefined', desc: '分页（切片当页，与 loadMore 互斥优先）' },
     { name: 'class', type: 'string', default: "''", desc: '根类名透传' },
   ],
   events: [],
