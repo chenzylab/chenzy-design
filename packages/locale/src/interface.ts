@@ -309,4 +309,8 @@ export interface Locale {
     add: string;
     more: string;
   };
+  Tooltip: {
+    warningLabel: string;
+    errorLabel: string;
+  };
 }

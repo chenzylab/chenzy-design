@@ -265,4 +265,8 @@ export const zh_CN: Locale = {
     add: '新增标签',
     more: '更多',
   },
+  Tooltip: {
+    warningLabel: '警告',
+    errorLabel: '错误',
+  },
 };

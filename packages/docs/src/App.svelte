@@ -120,6 +120,8 @@
   let carouselIdx = $state(0);
   // Popover custom 受控触发 demo：显隐完全由外部按钮控制。
   let popoverCustomOpen = $state(false);
+  // Tooltip custom 触发 demo：显隐完全由本地受控状态驱动。
+  let tooltipCustomOpen = $state(false);
   // VirtualList scrollToIndex demo：bind 组件实例 + 目标索引输入。
   let scrollToVL = $state<{ scrollToIndex: (i: number, o?: { align?: 'start' | 'center' | 'end' }) => void } | null>(null);
   let scrollToTarget = $state(500);
@@ -2117,6 +2119,35 @@ let pageSize2 = $state(10);
           <Button type="secondary">bottomStart 指中心</Button>
         </span>
       </Tooltip>
+    </div>
+
+    <Text type="tertiary">status 语义图标（warning / error，图标在内容前）：</Text>
+    <div data-testid="tooltip-status">
+      <Space>
+        <Tooltip content="表单校验未通过的警示提示" status="warning" theme="light" defaultOpen>
+          <Button type="secondary">warning 态</Button>
+        </Tooltip>
+        <Tooltip content="操作失败：请稍后重试" status="error" theme="light" defaultOpen>
+          <Button type="secondary">error 态</Button>
+        </Tooltip>
+      </Space>
+    </div>
+
+    <Text type="tertiary">custom 触发（完全受控，外部按钮切换显隐）：</Text>
+    <div data-testid="tooltip-custom">
+      <Space>
+        <Button type="primary" onclick={() => (tooltipCustomOpen = !tooltipCustomOpen)}>
+          {tooltipCustomOpen ? '隐藏' : '显示'}提示
+        </Button>
+        <Tooltip
+          content="由外部状态控制显隐，不响应 hover/click/focus"
+          trigger="custom"
+          open={tooltipCustomOpen}
+          onOpenChange={(o) => (tooltipCustomOpen = o)}
+        >
+          <Button type="secondary">受控目标（hover 无效）</Button>
+        </Tooltip>
+      </Space>
     </div>
   </Space>
 

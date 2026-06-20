@@ -4,7 +4,8 @@
   定位：portal 到 body + position:fixed，core computePosition 计算坐标 +
   autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
   arrowPointAtCenter：start/end 对齐时箭头改为指向触发器中心（默认贴对齐边）。
-  TODO(延后): status 图标、custom trigger。
+  status：default|warning|error，非 default 时内容前渲染语义图标（aria-label 经 locale）。
+  custom trigger：显隐完全由受控 open + onOpenChange 控制，不自动 hover/click/focus（供调用方自定义触发）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -12,9 +13,11 @@
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
   import { floating } from '../_floating/use-floating.js';
   import { resolveSide } from './placement.js';
+  import { useLocale } from '../locale-provider/index.js';
 
-  type TriggerKind = 'hover' | 'focus' | 'click';
+  type TriggerKind = 'hover' | 'focus' | 'click' | 'custom';
   type Theme = 'dark' | 'light';
+  type Status = 'default' | 'warning' | 'error';
 
   interface Props {
     content?: string | Snippet;
@@ -30,6 +33,8 @@
     /** start/end 对齐时箭头指向触发器中心（默认 false：贴对齐边） */
     arrowPointAtCenter?: boolean;
     theme?: Theme;
+    /** 语义态：非 default 时内容前渲染对应状态图标 */
+    status?: Status;
     maxWidth?: number | string;
     disabled?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -48,6 +53,7 @@
     showArrow = true,
     arrowPointAtCenter = false,
     theme = 'dark',
+    status = 'default',
     maxWidth = 300,
     disabled = false,
     onOpenChange,
@@ -55,6 +61,7 @@
   }: Props = $props();
 
   const tipId = useId('cd-tooltip');
+  const loc = useLocale();
 
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
   const isControlled = $derived(open !== undefined);
@@ -81,6 +88,16 @@
   );
   const contentSnippet = $derived(
     typeof content === 'function' ? content : undefined,
+  );
+
+  // status：非 default 时内容前渲染语义图标（纯派生，红线 #2）
+  const hasStatusIcon = $derived(status === 'warning' || status === 'error');
+  const statusLabel = $derived(
+    status === 'warning'
+      ? loc().t('Tooltip.warningLabel')
+      : status === 'error'
+        ? loc().t('Tooltip.errorLabel')
+        : undefined,
   );
 
   // --- hover 延迟开关：setTimeout 存普通变量，cleanup 清除 ---
@@ -191,13 +208,43 @@
       use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, arrowPointAtCenter, onPlacement }}
       class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
+      class:cd-tooltip__pop--with-status={hasStatusIcon}
       style="max-inline-size:{maxWidthCss}"
     >
-      {#if contentSnippet}
-        {@render contentSnippet()}
-      {:else}
-        {contentText}
+      {#if hasStatusIcon}
+        <span class="cd-tooltip__status cd-tooltip__status--{status}" aria-label={statusLabel} role="img">
+          {#if status === 'warning'}
+            <svg class="cd-tooltip__status-svg" viewBox="0 0 16 16" focusable="false">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+                d="M8 1.8l6.4 11.4H1.6z"
+              />
+              <path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 6v3.4" />
+              <circle cx="8" cy="11.4" r="0.85" fill="currentColor" />
+            </svg>
+          {:else}
+            <svg class="cd-tooltip__status-svg" viewBox="0 0 16 16" focusable="false">
+              <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
+              <path
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                d="M5.5 5.5l5 5M10.5 5.5l-5 5"
+              />
+            </svg>
+          {/if}
+        </span>
       {/if}
+      <span class="cd-tooltip__content">
+        {#if contentSnippet}
+          {@render contentSnippet()}
+        {:else}
+          {contentText}
+        {/if}
+      </span>
       {#if showArrow}
         <span class="cd-tooltip__arrow" style={arrowStyle} aria-hidden="true"></span>
       {/if}
@@ -223,6 +270,35 @@
     line-height: var(--cd-line-height-1, 1.5);
     word-wrap: break-word;
     pointer-events: none;
+  }
+
+  /* --- status：图标 + 内容横向排布 --- */
+  .cd-tooltip__pop--with-status {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--cd-spacing-1);
+  }
+  .cd-tooltip__status {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1em;
+    block-size: 1em;
+    margin-block-start: 0.1em;
+  }
+  .cd-tooltip__status-svg {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+  .cd-tooltip__status--warning {
+    color: var(--cd-tooltip-status-warning);
+  }
+  .cd-tooltip__status--error {
+    color: var(--cd-tooltip-status-error);
+  }
+  .cd-tooltip__content {
+    min-inline-size: 0;
   }
 
   /* --- 主题 --- */
