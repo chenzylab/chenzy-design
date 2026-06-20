@@ -4,7 +4,8 @@
   受控 sortState / rowSelection.selectedRowKeys / pagination.current 不回写，
   仅通过 onSortChange / rowSelection.onChange / pagination.onChange 通知 (红线 #1)。
   复用 @chenzy-design/core 纯函数算法与 Pagination 组件，不重复实现。
-  TODO(延后): 固定列 / 虚拟化 / 筛选 / 树形 / 行展开。
+  固定列：column.fixed='left'|'right'，横滚时 sticky 锁定 + 逐列像素偏移 + 边界阴影。
+  TODO(延后): 虚拟化 / 列筛选 / 树形数据 / 列宽调整。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -262,6 +263,89 @@
     return typeof col.width === 'number' ? `width:${col.width}px` : `width:${col.width}`;
   }
 
+  // --- 固定列：纯 CSS sticky + 逐列像素偏移计算 ---
+  // selection / expand 前置列宽（与 CSS .cd-table__cell--selection/--expand 对齐）
+  const LEADING_W = 48;
+  // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
+  const leadingWidth = $derived((hasExpand ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
+  const hasFixed = $derived(columns.some((c) => c.fixed));
+  // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
+  const totalMinWidth = $derived(
+    leadingWidth + columns.reduce((sum, c) => sum + (typeof c.width === 'number' ? c.width : 120), 0),
+  );
+  const tableStyle = $derived(hasFixed ? `min-inline-size:${totalMinWidth}px` : undefined);
+
+  function colNumWidth(col: ColumnDef<T>): number {
+    return typeof col.width === 'number' ? col.width : 0;
+  }
+
+  // 每个数据列的 left 偏移（左固定列）：前置宽 + 之前所有左固定列宽之和
+  const fixedLeftOffsets = $derived.by(() => {
+    const out: (number | null)[] = [];
+    let acc = leadingWidth;
+    for (const col of columns) {
+      if (col.fixed === 'left') {
+        out.push(acc);
+        acc += colNumWidth(col);
+      } else {
+        out.push(null);
+      }
+    }
+    return out;
+  });
+  // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和
+  const fixedRightOffsets = $derived.by(() => {
+    const out: (number | null)[] = new Array(columns.length).fill(null);
+    let acc = 0;
+    for (let i = columns.length - 1; i >= 0; i--) {
+      const col = columns[i] as ColumnDef<T>;
+      if (col.fixed === 'right') {
+        out[i] = acc;
+        acc += colNumWidth(col);
+      }
+    }
+    return out;
+  });
+  // 最后一个左固定列 / 第一个右固定列索引（用于阴影边界）
+  const lastLeftFixed = $derived.by(() => {
+    let idx = -1;
+    columns.forEach((c, i) => {
+      if (c.fixed === 'left') idx = i;
+    });
+    return idx;
+  });
+  const firstRightFixed = $derived(columns.findIndex((c) => c.fixed === 'right'));
+
+  // 组合某数据列的 sticky 行内样式（含宽度）
+  function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
+    const parts: string[] = [];
+    const w = widthStyle(col);
+    if (w) parts.push(w);
+    const left = fixedLeftOffsets[i];
+    const right = fixedRightOffsets[i];
+    if (left != null) parts.push(`position:sticky`, `inset-inline-start:${left}px`);
+    else if (right != null) parts.push(`position:sticky`, `inset-inline-end:${right}px`);
+    return parts.length ? parts.join(';') : undefined;
+  }
+
+  function fixedCellClass(i: number): string {
+    if (fixedLeftOffsets[i] != null) {
+      return `cd-table__cell--fixed cd-table__cell--fixed-left${i === lastLeftFixed ? ' cd-table__cell--fixed-left-last' : ''}`;
+    }
+    if (fixedRightOffsets[i] != null) {
+      return `cd-table__cell--fixed cd-table__cell--fixed-right${i === firstRightFixed ? ' cd-table__cell--fixed-right-first' : ''}`;
+    }
+    return '';
+  }
+
+  // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左
+  function leadingStyle(slot: 'expand' | 'selection'): string | undefined {
+    if (!hasFixed || lastLeftFixed < 0) return undefined;
+    const offset = slot === 'expand' ? 0 : hasExpand ? LEADING_W : 0;
+    return `position:sticky;inset-inline-start:${offset}px`;
+  }
+  const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
+
   // --- 半选 indeterminate：用 attachment 命令式写具体 input 元素属性。
   //     仅读派生布尔值并写 DOM，不读几何，写属性不触发响应式，无循环风险 (不违反红线 #3)。
   function indeterminate(value: boolean) {
@@ -276,6 +360,7 @@
       `cd-table--${size}`,
       bordered && 'cd-table--bordered',
       stripe && 'cd-table--stripe',
+      hasFixed && 'cd-table--fixed',
     ]
       .filter(Boolean)
       .join(' '),
@@ -283,14 +368,14 @@
 </script>
 
 <div class="cd-table-wrap">
-  <table class={cls} aria-label={ariaLabel}>
+  <table class={cls} style={tableStyle} aria-label={ariaLabel}>
     <thead class="cd-table__head">
       <tr>
         {#if hasExpand}
-          <th class="cd-table__cell cd-table__cell--expand" scope="col"></th>
+          <th class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" scope="col" style={leadingStyle('expand')}></th>
         {/if}
         {#if hasSelection}
-          <th class="cd-table__cell cd-table__cell--selection" scope="col">
+          <th class="cd-table__cell cd-table__cell--selection {leadingFixedClass}" scope="col" style={leadingStyle('selection')}>
             <input
               type="checkbox"
               class="cd-table__checkbox"
@@ -304,10 +389,10 @@
         {#each columns as col, i (colKeyOf(col, i))}
           {@const sortable = !!col.sorter}
           <th
-            class="cd-table__cell cd-table__cell--head cd-table__cell--{alignOf(col)}"
+            class="cd-table__cell cd-table__cell--head cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
             class:cd-table__cell--ellipsis={col.ellipsis}
             scope="col"
-            style={widthStyle(col)}
+            style={cellStyle(col, i)}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
           >
             {#if sortable}
@@ -370,7 +455,7 @@
             onclick={clickable ? () => onRowClick?.({ record, index }) : undefined}
           >
             {#if hasExpand}
-              <td class="cd-table__cell cd-table__cell--expand">
+              <td class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" style={leadingStyle('expand')}>
                 {#if canExpand(record)}
                   <button
                     type="button"
@@ -391,7 +476,7 @@
               </td>
             {/if}
             {#if hasSelection}
-              <td class="cd-table__cell cd-table__cell--selection">
+              <td class="cd-table__cell cd-table__cell--selection {leadingFixedClass}" style={leadingStyle('selection')}>
                 <input
                   type="checkbox"
                   class="cd-table__checkbox"
@@ -406,9 +491,9 @@
             {#each columns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
               <td
-                class="cd-table__cell cd-table__cell--{alignOf(col)}"
+                class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
                 class:cd-table__cell--ellipsis={col.ellipsis}
-                style={widthStyle(col)}
+                style={cellStyle(col, i)}
               >
                 {#if col.render}
                   {@render col.render({ value, record, index })}
@@ -453,6 +538,7 @@
   .cd-table-wrap {
     position: relative;
     inline-size: 100%;
+    overflow-x: auto;
   }
 
   .cd-table {
@@ -462,6 +548,12 @@
     color: var(--cd-table-cell-text);
     border-radius: var(--cd-table-radius);
     font-size: var(--cd-font-size-body);
+  }
+  /* 固定列：用 fixed 布局让列宽精确生效，min-width 撑过容器以触发横滚 */
+  .cd-table--fixed {
+    inline-size: auto;
+    min-inline-size: 100%;
+    table-layout: fixed;
   }
 
   .cd-table__cell {
@@ -496,11 +588,12 @@
     text-align: right;
   }
   .cd-table__cell--selection {
-    inline-size: 1px;
+    inline-size: 48px;
+    text-align: center;
     white-space: nowrap;
   }
   .cd-table__cell--expand {
-    inline-size: 1px;
+    inline-size: 48px;
     white-space: nowrap;
     text-align: center;
   }
@@ -540,6 +633,59 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  /* --- 固定列：sticky 单元格需不透明背景，避免透出横滚内容 --- */
+  .cd-table__cell--fixed {
+    z-index: 2;
+    background: var(--cd-table-bg);
+  }
+  .cd-table__head .cd-table__cell--fixed {
+    z-index: 3;
+    background: var(--cd-table-header-bg);
+  }
+  /* 固定列随行态变色：hover / stripe / selected 时同步背景 */
+  .cd-table__row:hover .cd-table__cell--fixed {
+    background: var(--cd-table-row-hover-bg);
+  }
+  .cd-table__row--stripe .cd-table__cell--fixed {
+    background: var(--cd-table-row-stripe-bg);
+  }
+  .cd-table__row--selected .cd-table__cell--fixed,
+  .cd-table__row--selected:hover .cd-table__cell--fixed {
+    background: var(--cd-table-row-selected-bg);
+  }
+  /* 边界阴影：最后一个左固定列右侧、第一个右固定列左侧 */
+  .cd-table__cell--fixed-left-last::after,
+  .cd-table__cell--fixed-right-first::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inline-size: 6px;
+    pointer-events: none;
+  }
+  .cd-table__cell--fixed-left-last {
+    position: sticky;
+  }
+  .cd-table__cell--fixed-left-last::after {
+    inset-inline-end: -6px;
+    background: linear-gradient(
+      to right,
+      var(--cd-table-fixed-shadow, rgba(0, 0, 0, 0.12)),
+      transparent
+    );
+  }
+  .cd-table__cell--fixed-right-first::after {
+    inset-inline-start: -6px;
+    background: linear-gradient(
+      to left,
+      var(--cd-table-fixed-shadow, rgba(0, 0, 0, 0.12)),
+      transparent
+    );
+  }
+  /* sticky cell 需相对定位以承载 ::after 阴影 */
+  .cd-table__cell--fixed {
+    position: sticky;
   }
 
   .cd-table--bordered .cd-table__cell {

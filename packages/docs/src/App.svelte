@@ -179,6 +179,11 @@
   ];
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
+  const fixedData = [
+    { key: 1, name: '张三', age: 28, city: '北京', email: 'zhang@x.com', phone: '139-0000', action: '编辑' },
+    { key: 2, name: '李四', age: 32, city: '上海', email: 'li@x.com', phone: '138-1111', action: '编辑' },
+    { key: 3, name: '王五', age: 25, city: '广州', email: 'wang@x.com', phone: '137-2222', action: '编辑' },
+  ];
   const lazyRegionData = [
     { label: '华东', value: 'east' },
     { label: '华南', value: 'south' },
@@ -1206,6 +1211,23 @@ let pageSize2 = $state(10);
     />
   </div>
   <Text type="tertiary">{tableExpandInfo}</Text>
+
+  <Text type="tertiary">固定列（横向滚动，姓名列左固定 / 操作列右固定）：</Text>
+  <div data-testid="table-fixed" style="max-width:520px">
+    <Table
+      columns={[
+        { dataIndex: 'name', title: '姓名', width: 120, fixed: 'left' },
+        { dataIndex: 'age', title: '年龄', width: 200 },
+        { dataIndex: 'city', title: '城市', width: 200 },
+        { dataIndex: 'email', title: '邮箱', width: 240 },
+        { dataIndex: 'phone', title: '电话', width: 200 },
+        { dataIndex: 'action', title: '操作', width: 100, fixed: 'right' },
+      ]}
+      dataSource={fixedData}
+      rowKey="key"
+      bordered
+    />
+  </div>
 
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">
