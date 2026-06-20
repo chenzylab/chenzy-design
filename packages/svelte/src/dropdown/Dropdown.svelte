@@ -1,8 +1,9 @@
 <!--
   Dropdown — see specs/components/navigation/Dropdown.spec.md
-  基础子集：click/hover 触发、12 方位、菜单项、useDismiss、closeOnSelect、键盘导航。
+  基础子集：click/hover/contextMenu 触发、12 方位、菜单项、useDismiss、closeOnSelect、键盘导航。
   定位：portal 到 body + position:fixed，core computePosition + autoAdjustOverflow flip。
-  TODO(延后): contextMenu、destroyOnClose、嵌套子菜单、getPopupContainer。
+  contextMenu：右键 preventDefault + 记录光标 x/y，浮层 portal 到 body 并 fixed 落点光标。
+  TODO(延后): destroyOnClose、嵌套子菜单、getPopupContainer。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -12,7 +13,7 @@
   import type { DropdownItem } from './types.js';
 
   type ItemKey = string | number;
-  type Trigger = 'hover' | 'click';
+  type Trigger = 'hover' | 'click' | 'contextMenu';
   // 12 方位全集（兼容旧的 bottomStart/bottomEnd/topStart）
   type Position = Placement;
   type Size = 'small' | 'default' | 'large';
@@ -131,6 +132,19 @@
     setOpen(!isOpen);
   }
 
+  // --- contextMenu 触发：右键弹菜单，菜单定位到鼠标光标处 ---
+  // 鼠标坐标存普通 $state，仅用于浮层 fixed 定位（红线 #3：命令式监听 + cleanup）。
+  let cursorX = $state(0);
+  let cursorY = $state(0);
+
+  function onContextMenu(e: MouseEvent) {
+    if (disabled || trigger !== 'contextMenu') return;
+    e.preventDefault();
+    cursorX = e.clientX;
+    cursorY = e.clientY;
+    setOpen(true);
+  }
+
   function onTriggerKeydown(e: KeyboardEvent) {
     if (disabled) return;
     switch (e.key) {
@@ -207,6 +221,44 @@
     return cleanup;
   });
 
+  // contextMenu 浮层定位：portal 到 body + position:fixed 到光标 x/y。
+  // floating action 只支持元素锚点，故 contextMenu 用此命令式 action 直接落点光标。
+  function cursorFloating(node: HTMLElement, coords: { x: number; y: number }) {
+    if (typeof document === 'undefined') {
+      return { update() {}, destroy() {} };
+    }
+    document.body.appendChild(node);
+    node.style.position = 'fixed';
+    node.style.margin = '0';
+
+    function place(x: number, y: number) {
+      const rect = node.getBoundingClientRect();
+      // 防止越出视口右/下边缘：超出则向左/上贴边。
+      const left = Math.max(0, Math.min(x, window.innerWidth - rect.width));
+      const top = Math.max(0, Math.min(y, window.innerHeight - rect.height));
+      node.style.insetInlineStart = `${Math.round(left)}px`;
+      node.style.insetBlockStart = `${Math.round(top)}px`;
+    }
+
+    place(coords.x, coords.y);
+    return {
+      update(next: { x: number; y: number }) {
+        place(next.x, next.y);
+      },
+      destroy() {
+        node.remove();
+      },
+    };
+  }
+
+  // contextmenu 监听绑触发根，命令式 + cleanup（红线 #3）。
+  $effect(() => {
+    if (trigger !== 'contextMenu' || !rootEl) return;
+    const el = rootEl;
+    el.addEventListener('contextmenu', onContextMenu);
+    return () => el.removeEventListener('contextmenu', onContextMenu);
+  });
+
   $effect(() => clearTimers);
 
   // portal 后 menu 不在 root 子树内，hover 移到 menu 上需维持 open。
@@ -258,7 +310,47 @@
     {/if}
   </div>
 
-  {#if isOpen}
+  {#snippet menuItems()}
+    {#if children}
+      {@render children()}
+    {:else}
+      {#each items as item, i (item.key)}
+        <button
+          type="button"
+          class="cd-dropdown__item"
+          class:cd-dropdown__item--active={i === activeIndex}
+          class:cd-dropdown__item--danger={item.danger}
+          id={`${menuId}-item-${i}`}
+          role="menuitem"
+          tabindex="-1"
+          aria-disabled={item.disabled || undefined}
+          disabled={item.disabled ?? false}
+          onpointerenter={() => {
+            if (!item.disabled) activeIndex = i;
+          }}
+          onclick={() => selectItem(item)}
+        >
+          {item.label}
+        </button>
+      {/each}
+    {/if}
+  {/snippet}
+
+  {#if isOpen && trigger === 'contextMenu'}
+    <!-- contextMenu：浮层 portal 到 body 并定位到光标 x/y -->
+    <div
+      class="cd-dropdown__menu"
+      id={menuId}
+      bind:this={menuEl}
+      use:cursorFloating={{ x: cursorX, y: cursorY }}
+      role="menu"
+      tabindex="-1"
+      aria-activedescendant={activeItemId}
+      onkeydown={onMenuKeydown}
+    >
+      {@render menuItems()}
+    </div>
+  {:else if isOpen}
     <div
       class="cd-dropdown__menu"
       id={menuId}
@@ -271,29 +363,7 @@
       onpointerenter={onMenuPointerEnter}
       onpointerleave={onMenuPointerLeave}
     >
-      {#if children}
-        {@render children()}
-      {:else}
-        {#each items as item, i (item.key)}
-          <button
-            type="button"
-            class="cd-dropdown__item"
-            class:cd-dropdown__item--active={i === activeIndex}
-            class:cd-dropdown__item--danger={item.danger}
-            id={`${menuId}-item-${i}`}
-            role="menuitem"
-            tabindex="-1"
-            aria-disabled={item.disabled || undefined}
-            disabled={item.disabled ?? false}
-            onpointerenter={() => {
-              if (!item.disabled) activeIndex = i;
-            }}
-            onclick={() => selectItem(item)}
-          >
-            {item.label}
-          </button>
-        {/each}
-      {/if}
+      {@render menuItems()}
     </div>
   {/if}
 </div>
