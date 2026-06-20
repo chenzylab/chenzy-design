@@ -158,6 +158,8 @@ export interface Locale {
     rotateLeft: string;
     rotateRight: string;
     reset: string;
+    prev: string;
+    next: string;
   };
   Timeline: {
     pending: string;

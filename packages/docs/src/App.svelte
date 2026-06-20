@@ -349,6 +349,23 @@
     encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="#0066ff"/><text x="80" y="68" font-size="20" fill="#fff" text-anchor="middle">IMG</text></svg>',
     );
+  // 预览组多图示例：三张不同色块图。
+  function makeImg(label: string, color: string): string {
+    return (
+      'data:image/svg+xml;utf8,' +
+      encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="${color}"/><text x="80" y="68" font-size="20" fill="#fff" text-anchor="middle">${label}</text></svg>`,
+      )
+    );
+  }
+  const groupImages = [
+    { src: makeImg('A', '#0066ff'), alt: '图片 A' },
+    { src: makeImg('B', '#00a854'), alt: '图片 B' },
+    { src: makeImg('C', '#fa8c16'), alt: '图片 C' },
+  ];
+  // LQIP：低质 1px 模糊占位（纯色）+ 高清主图。
+  const lqipPlaceholder = makeImg('', '#888');
+  const lqipMain = makeImg('HD', '#5b21b6');
   let listMoreData = $state([
     { key: 1, name: '条目 1' },
     { key: 2, name: '条目 2' },
@@ -2273,6 +2290,29 @@ let pageSize2 = $state(10);
         height={120}
         lazy={false}
         preview
+      />
+    </div>
+
+    <Text type="tertiary">预览组多图切换（点任一图进入，← → 按钮或键盘箭头切换）：</Text>
+    <div data-testid="image-preview-group">
+      <Image.PreviewGroup>
+        <Space>
+          {#each groupImages as img (img.src)}
+            <Image src={img.src} alt={img.alt} width={120} height={90} lazy={false} preview />
+          {/each}
+        </Space>
+      </Image.PreviewGroup>
+    </div>
+
+    <Text type="tertiary">LQIP 模糊占位 → 主图淡入清晰：</Text>
+    <div data-testid="image-lqip">
+      <Image
+        src={lqipMain}
+        placeholder={lqipPlaceholder}
+        alt="LQIP 示例"
+        width={160}
+        height={120}
+        lazy={false}
       />
     </div>
 
