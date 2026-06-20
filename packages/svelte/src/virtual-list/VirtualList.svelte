@@ -14,7 +14,15 @@
   scrollToIndex(index, opts?): 命令式 API——根据该 index 的 offset（fixed 用
     index*itemSize；dynamic 用 offsets 前缀和）+ align 计算目标滚动位置，直接写
     滚动容器 scrollTop（horizontal 则 scrollLeft）。放导出函数（非 render），属命令式 DOM 写。
-  TODO(延后): scrollTarget='window'。
+  scrollTarget='self'（默认）| 'window'：
+    - 'self'：内部容器自身 overflow 滚动（默认，向后兼容，行为不变）。
+    - 'window'：容器不再自身滚动，撑开总高靠窗口（document）滚动，适合整页长列表。
+      虚拟化基于窗口几何：容器顶相对文档位置（getBoundingClientRect().top + scrollY）
+      + window.scrollY + window.innerHeight，经 core 纯函数 windowScrollTop 折算为本地
+      scrollTop 再喂给 fixedRange/dynamicRange（区间数学完全复用）。监听 window 的
+      scroll/resize（命令式 addEventListener + rAF 节流，cleanup removeEventListener）。
+      window 模式为纵向窗口滚动场景，horizontal 在 window 模式下退化为 self（横向窗口
+      滚动罕见且语义不清）；fixed/dynamic 行高路径均复用。
 
   ⚠️ 死循环红线：
     - 滚动监听用 $effect 内命令式 addEventListener('scroll', ..., {passive:true})
@@ -35,6 +43,7 @@
     totalFromOffsets,
     dynamicRange,
     scrollOffsetForIndex,
+    windowScrollTop,
     type ScrollAlign,
   } from '@chenzy-design/core';
 
@@ -46,6 +55,7 @@
     overscan = 3,
     height = 400,
     horizontal = false,
+    scrollTarget = 'self',
     renderItem,
     class: className = '',
   }: {
@@ -60,10 +70,17 @@
     height?: number | string;
     /** 横向虚拟化：沿 x 轴排列、读/写 scrollLeft。默认 false（vertical）。 */
     horizontal?: boolean;
+    /**
+     * 滚动源：'self'（默认）内部容器自身滚动；'window' 用窗口（document）滚动、
+     * 容器撑开总高，适合整页长列表（纵向）。horizontal 在 window 下退化为 self。
+     */
+    scrollTarget?: 'self' | 'window';
     renderItem: Snippet<[item: T, index: number]>;
     class?: string;
   } = $props();
 
+  // window 模式判定：scrollTarget='window' 且非 horizontal（横向窗口滚动罕见，退化为 self）。
+  const windowMode = $derived(scrollTarget === 'window' && !horizontal);
   // dynamic 模式判定：itemSize='auto'。horizontal 暂不支持 dynamic，强制走 fixed。
   const dynamic = $derived(itemSize === 'auto' && !horizontal);
   // fixed 路径行高（dynamic 时该值不参与几何）。
@@ -75,10 +92,14 @@
   // 本地响应式状态：仅由命令式回调 / ResizeObserver 写入，render 期只读。
   // 主轴滚动偏移：vertical 为 scrollTop、horizontal 为 scrollLeft（方向无关命名沿用 scrollTop）。
   let scrollTop = $state(0);
-  // 测量得到的视口主轴尺寸（仅 height 为字符串时由 ResizeObserver 回填）。
+  // 测量得到的视口主轴尺寸：self 模式仅 height 为字符串时由 ResizeObserver 回填；
+  // window 模式由 scroll/resize 回调写入 window.innerHeight（命令式，非 render 期）。
   let measuredH = $state(0);
-  // 有效视口主轴尺寸：height 为数字时直接用 prop，否则用测量值（纯 $derived）。
-  const viewportH = $derived(typeof height === 'number' ? height : measuredH);
+  // 有效视口主轴尺寸：window 模式用测量的窗口视口高；self 模式 height 为数字直接用
+  // prop，否则用测量值（纯 $derived）。
+  const viewportH = $derived(
+    windowMode ? measuredH : typeof height === 'number' ? height : measuredH,
+  );
 
   // dynamic：实测行高缓存表。索引 → 真实高度（px）；未测得为 undefined（用估算）。
   // 普通对象 $state，由 ResizeObserver 命令式写入；render 期只读。
@@ -141,24 +162,35 @@
     const i = Math.max(0, Math.min(data.length - 1, Math.floor(index)));
     // 总主轴尺寸：dynamic 取 offsets 末项；fixed 为 count*size。
     const totalMain = dynamic ? totalFromOffsets(offsets) : data.length * fixedSize;
+    // 目标本地偏移（相对内容顶）。window 模式视口高用 innerHeight。
     const target = scrollOffsetForIndex(
       itemOffset(i),
       itemMainSize(i),
-      // 视口主轴尺寸：优先读实时 DOM，回退派生值。
-      horizontal ? el.clientWidth : el.clientHeight,
+      windowMode
+        ? window.innerHeight
+        : horizontal
+          ? el.clientWidth
+          : el.clientHeight,
       totalMain,
       opts?.align ?? 'start',
     );
+    if (windowMode) {
+      // 窗口滚动：本地偏移 + 容器相对文档顶位置（命令式读几何，非 render 期）。
+      const containerStart = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: containerStart + target });
+      scrollTop = target;
+      return;
+    }
     if (horizontal) el.scrollLeft = target;
     else el.scrollTop = target;
     // 同步本地 state（DOM 滚动事件随后也会触发，这里立即更新避免一帧延迟）。
     scrollTop = target;
   }
 
-  // 滚动监听（命令式 + rAF 节流 + cleanup）。
+  // self 模式滚动监听（命令式 + rAF 节流 + cleanup）。
   $effect(() => {
     const el = viewportEl;
-    if (!el) return;
+    if (!el || windowMode) return;
 
     function onScroll() {
       if (rafId) return;
@@ -179,10 +211,52 @@
     };
   });
 
-  // 视口高度测量：仅当 height 非数字（字符串/百分比）时启用 ResizeObserver。
+  // window 模式：监听 window 的 scroll/resize（命令式 + rAF 节流 + cleanup）。
+  // 用容器相对文档顶位置 + window.scrollY + innerHeight，经 core windowScrollTop
+  // 折算为本地 scrollTop 喂给区间数学；measuredH 回填 innerHeight 作视口高。
   $effect(() => {
     const el = viewportEl;
-    if (!el || typeof height === 'number') return;
+    if (!el || !windowMode) return;
+
+    // 总主轴尺寸（读 $derived，非 DOM 几何）；用于 clamp 本地偏移。
+    function totalMain(): number {
+      return dynamic ? totalFromOffsets(offsets) : data.length * fixedSize;
+    }
+
+    function recompute() {
+      if (!el) return;
+      // 命令式读几何（非 render 期）：容器顶相对文档位置 + 窗口滚动 + 视口高。
+      const containerStart = el.getBoundingClientRect().top + window.scrollY;
+      measuredH = window.innerHeight;
+      scrollTop = windowScrollTop(containerStart, window.scrollY, totalMain());
+    }
+
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        recompute();
+      });
+    }
+
+    // 立即算一次（首屏定位）。
+    recompute();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+  });
+
+  // self 模式视口高度测量：仅当 height 非数字（字符串/百分比）时启用 ResizeObserver。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || windowMode || typeof height === 'number') return;
 
     // 立即测一次主轴尺寸（命令式，非 render 期）；horizontal 测 clientWidth。
     measuredH = horizontal ? el.clientWidth : el.clientHeight;
@@ -219,10 +293,16 @@
       const delta = h - before;
       heights[idx] = h;
 
-      if (delta !== 0 && el && itemOffset(idx) < el.scrollTop) {
-        // 命令式调整 scrollTop（非 render 期），下一帧 onScroll 会同步本地 state。
-        el.scrollTop += delta;
-        scrollTop = el.scrollTop;
+      if (delta !== 0 && el && itemOffset(idx) < scrollTop) {
+        // 命令式补偿，避免视图跳动（非 render 期）。
+        if (windowMode) {
+          // 窗口模式：滚动文档而非内部容器；下一帧 onScroll 同步本地 state。
+          window.scrollBy(0, delta);
+          scrollTop += delta;
+        } else {
+          el.scrollTop += delta;
+          scrollTop = el.scrollTop;
+        }
       }
     }
 
@@ -246,9 +326,14 @@
       .join(' '),
   );
 
-  // 视口主轴尺寸样式：vertical 用高度（width 由 CSS 撑满）；horizontal 用宽度。
+  // 视口主轴尺寸样式：window 模式容器不自身滚动（无 overflow/无固定高，撑开总高靠窗口
+  // 滚动）；self 模式 vertical 用高度、horizontal 用宽度并 overflow:auto。
   const viewportStyle = $derived(
-    horizontal ? `inline-size:${heightStyle}; overflow:auto` : `block-size:${heightStyle}; overflow:auto`,
+    windowMode
+      ? ''
+      : horizontal
+        ? `inline-size:${heightStyle}; overflow:auto`
+        : `block-size:${heightStyle}; overflow:auto`,
   );
   // 撑高/撑宽占位主轴尺寸样式。
   const spacerStyle = $derived(

@@ -132,6 +132,30 @@ export function scrollOffsetForIndex(
 }
 
 /**
+ * Convert a window/outer-scroll position into the list's *local* scroll offset
+ * (the value fed into fixedRange/dynamicRange). For scrollTarget='window' the
+ * list container is not itself scrollable — it merely occupies a region of the
+ * document, so the effective scrollTop is how far the document has scrolled past
+ * the container's leading edge, clamped to [0, total].
+ *
+ * @param containerStart  the container's leading-edge offset within the document
+ *                        along the scroll axis (e.g. rect.top + window.scrollY).
+ * @param scrollPos       current outer scroll position (window.scrollY / scrollX).
+ * @param total           total content size along the scroll axis (for clamping).
+ *
+ * Pure: the render layer reads geometry imperatively (getBoundingClientRect +
+ * scrollY) and passes the numbers in.
+ */
+export function windowScrollTop(
+  containerStart: number,
+  scrollPos: number,
+  total: number,
+): number {
+  const local = scrollPos - containerStart;
+  return clamp(local, 0, Math.max(0, total));
+}
+
+/**
  * Dynamic (variable height) visible range using a prefix-sum offsets table.
  * @param offsets    prefix-sum table from buildOffsets (length = count + 1)
  * @param scrollTop  current viewport scrollTop

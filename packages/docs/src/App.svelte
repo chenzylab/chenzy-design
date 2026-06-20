@@ -123,6 +123,8 @@
   let scrollToTarget = $state(500);
   // VirtualList horizontal demo 数据：120 列。
   const hData = Array.from({ length: 200 }, (_, i) => ({ id: i, text: `列 ${i + 1}` }));
+  // VirtualList scrollTarget='window' demo 数据：2000 行整页长列表。
+  const winData = Array.from({ length: 2000 }, (_, i) => ({ id: i, text: `窗口滚动行 ${i + 1}` }));
 
   const treeData = [
     {
@@ -1470,6 +1472,25 @@ let pageSize2 = $state(10);
         bind:this={scrollToVL}
         data={bigData}
         height={200}
+        itemSize={36}
+        getKey={(it) => it.id}
+      >
+        {#snippet renderItem(item)}
+          <div style="padding: 0 12px; line-height: 36px; border-bottom: 1px solid var(--cd-color-border)">
+            {(item as { text: string }).text}
+          </div>
+        {/snippet}
+      </VirtualList>
+    </div>
+
+    <Text type="tertiary">scrollTarget="window" 整页长列表（虚拟化跟随窗口滚动）：</Text>
+    <div
+      style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px"
+      data-testid="virtuallist-window"
+    >
+      <VirtualList
+        data={winData}
+        scrollTarget="window"
         itemSize={36}
         getKey={(it) => it.id}
       >

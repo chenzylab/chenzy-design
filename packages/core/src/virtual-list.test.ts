@@ -6,6 +6,7 @@ import {
   offsetToIndex,
   dynamicRange,
   scrollOffsetForIndex,
+  windowScrollTop,
 } from './virtual-list.js';
 
 describe('fixedRange', () => {
@@ -108,6 +109,38 @@ describe('dynamicRange', () => {
 
   it('empty', () => {
     expect(dynamicRange([0], 0, 200, 2)).toEqual({ startIndex: 0, endIndex: 0 });
+  });
+});
+
+describe('windowScrollTop', () => {
+  it('is 0 before the container has been scrolled past', () => {
+    // container starts 500px down the document; window not scrolled.
+    expect(windowScrollTop(500, 0, 4000)).toBe(0);
+    // scrolled to the container top exactly.
+    expect(windowScrollTop(500, 500, 4000)).toBe(0);
+  });
+
+  it('tracks how far the document scrolled past the container top', () => {
+    expect(windowScrollTop(500, 800, 4000)).toBe(300);
+    expect(windowScrollTop(0, 1000, 4000)).toBe(1000);
+  });
+
+  it('clamps to [0, total]', () => {
+    expect(windowScrollTop(500, 200, 4000)).toBe(0); // negative → 0
+    expect(windowScrollTop(0, 99999, 4000)).toBe(4000); // beyond total
+  });
+
+  it('handles total <= 0', () => {
+    expect(windowScrollTop(0, 500, 0)).toBe(0);
+  });
+
+  it('feeds fixedRange like internal scrollTop does', () => {
+    // container at doc-top 1000, window scrolled to 1400 → local 400.
+    const local = windowScrollTop(1000, 1400, 40 * 1000);
+    expect(local).toBe(400);
+    const r = fixedRange(local, 200, 40, 1000, 2);
+    expect(r.startIndex).toBe(8);
+    expect(r.endIndex).toBe(17);
   });
 });
 
