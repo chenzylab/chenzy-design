@@ -412,6 +412,19 @@ let pageSize2 = $state(10);
     { key: '#sec-2', href: '#sec-2', title: '第二节' },
     { key: '#sec-3', href: '#sec-3', title: '第三节' },
   ];
+  let anchorContainerEl = $state<HTMLElement | null>(null);
+  let anchorContainerKey = $state('#cbox-1');
+  const anchorContainerLinks = [
+    { key: '#cbox-1', href: '#cbox-1', title: '容器节 1' },
+    { key: '#cbox-2', href: '#cbox-2', title: '容器节 2' },
+    { key: '#cbox-3', href: '#cbox-3', title: '容器节 3' },
+  ];
+  let anchorHKey = $state('#hsec-1');
+  const anchorHLinks = [
+    { key: '#hsec-1', href: '#hsec-1', title: '概述' },
+    { key: '#hsec-2', href: '#hsec-2', title: '安装' },
+    { key: '#hsec-3', href: '#hsec-3', title: '用法' },
+  ];
   const transferData = [
     { key: 'a', label: '北京' },
     { key: 'b', label: '上海' },
@@ -1237,6 +1250,41 @@ let pageSize2 = $state(10);
         onSelect={(k) => (menuSelected = k)}
       />
     </div>
+  </div>
+
+  <div style="margin-top:16px" data-testid="anchor-container">
+    <Text type="tertiary">getContainer 自定义滚动容器（锚点定位/激活随容器滚动）</Text>
+    <div style="display:flex; gap:16px; margin-top:8px">
+      <div style="width:120px">
+        <Anchor
+          links={anchorContainerLinks}
+          value={anchorContainerKey}
+          getContainer={() => anchorContainerEl}
+          onChange={(k) => (anchorContainerKey = k)}
+        />
+      </div>
+      <div
+        bind:this={anchorContainerEl}
+        data-testid="anchor-container-scroll"
+        style="height:160px; overflow:auto; flex:1; border:1px solid var(--cd-color-border); padding:8px"
+      >
+        <div id="cbox-1" style="height:140px">容器节 1 内容</div>
+        <div id="cbox-2" style="height:140px">容器节 2 内容</div>
+        <div id="cbox-3" style="height:140px">容器节 3 内容</div>
+      </div>
+    </div>
+    <Text type="tertiary">容器锚点：{anchorContainerKey}</Text>
+  </div>
+
+  <div style="margin-top:16px" data-testid="anchor-horizontal">
+    <Text type="tertiary">horizontal 水平模式（链接横排 + 底部 ink）</Text>
+    <Anchor
+      horizontal
+      links={anchorHLinks}
+      value={anchorHKey}
+      onChange={(k) => (anchorHKey = k)}
+    />
+    <Text type="tertiary">水平锚点：{anchorHKey}</Text>
   </div>
 
   <Divider />
