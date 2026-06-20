@@ -109,6 +109,14 @@
   };
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
+  // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
+  const dynData = Array.from({ length: 2000 }, (_, i) => {
+    const lines = (i % 5) + 1;
+    return {
+      id: i,
+      text: `第 ${i + 1} 项 · ${lines} 行\n` + Array.from({ length: lines }, (_, l) => `内容 ${l + 1}`).join('\n'),
+    };
+  });
   let carouselIdx = $state(0);
 
   const treeData = [
@@ -1290,6 +1298,28 @@ let pageSize2 = $state(10);
       <VirtualList data={bigData} height={200} itemSize={36} getKey={(it) => it.id}>
         {#snippet renderItem(item)}
           <div style="padding: 0 12px; line-height: 36px; border-bottom: 1px solid var(--cd-color-border)">
+            {(item as { text: string }).text}
+          </div>
+        {/snippet}
+      </VirtualList>
+    </div>
+
+    <Text type="tertiary">dynamic 不定高（itemSize="auto" + ResizeObserver 实测）：</Text>
+    <div
+      style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px"
+      data-testid="virtuallist-dynamic"
+    >
+      <VirtualList
+        data={dynData}
+        height={300}
+        itemSize="auto"
+        estimatedItemSize={48}
+        getKey={(it) => it.id}
+      >
+        {#snippet renderItem(item)}
+          <div
+            style="padding: 8px 12px; border-bottom: 1px solid var(--cd-color-border); white-space: pre-line"
+          >
             {(item as { text: string }).text}
           </div>
         {/snippet}
