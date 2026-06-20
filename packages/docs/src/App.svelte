@@ -84,7 +84,7 @@
     ResizeObserver,
     LottieIcon,
   } from '@chenzy-design/svelte';
-  import type { LottiePlayerFactory } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory, TreeNode } from '@chenzy-design/svelte';
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
@@ -154,6 +154,30 @@
   ];
   let treeSel = $state<string | number>('figma');
   let treeChecked = $state<(string | number)[]>([]);
+
+  // fieldNames 字段映射 demo：后端原始数据使用 { id, name, sub } 字段
+  const treeFieldData = [
+    {
+      id: 'd1',
+      name: '设计中心',
+      sub: [
+        { id: 'd1-1', name: 'Figma 规范' },
+        { id: 'd1-2', name: 'Design Token' },
+      ],
+    },
+    {
+      id: 'd2',
+      name: '研发中心',
+      sub: [
+        { id: 'd2-1', name: '前端组' },
+        { id: 'd2-2', name: '后端组' },
+      ],
+    },
+  ];
+  const treeFieldNames = { key: 'id', label: 'name', children: 'sub' };
+  let treeFieldSel = $state<string | number | null>(null);
+  let treeFieldChecked = $state<(string | number)[]>([]);
+  let treeSelectFieldVal = $state<string | number | null>(null);
 
   // Tree 异步加载：根节点无 children，展开时按 key 拉取子节点；'leaf-x' 标记叶子。
   const treeAsyncRoots = [
@@ -1307,6 +1331,18 @@ let pageSize2 = $state(10);
       />
       <Text type="tertiary">已选 {treeMultiVal.length} 项</Text>
     </div>
+    <div style="width: 240px" data-testid="treeselect-fieldnames">
+      <TreeSelect
+        treeData={treeFieldData as unknown as TreeNode[]}
+        fieldNames={treeFieldNames}
+        clearable
+        defaultExpandAll
+        placeholder="字段映射树选"
+        value={treeSelectFieldVal}
+        onChange={(k) => (treeSelectFieldVal = Array.isArray(k) ? (k[0] ?? null) : k)}
+      />
+      <Text type="tertiary">树选（fieldNames）：{treeSelectFieldVal ?? '（未选）'}</Text>
+    </div>
   </Space>
 
   <Divider />
@@ -2092,6 +2128,22 @@ let pageSize2 = $state(10);
         }}
       />
       <Text type="tertiary">最近一次拖拽：{dragInfo}</Text>
+    </div>
+
+    <div style="width: 240px" data-testid="tree-fieldnames">
+      <Text type="tertiary">fieldNames 字段映射（数据用 id/name/sub）</Text>
+      <Tree
+        treeData={treeFieldData as unknown as TreeNode[]}
+        fieldNames={treeFieldNames}
+        checkable
+        defaultExpandAll
+        value={treeFieldSel}
+        checkedKeys={treeFieldChecked}
+        onChange={(info) => (treeFieldSel = info.value as string | number)}
+        onCheck={(info) => (treeFieldChecked = info.checked)}
+        ariaLabel="字段映射树"
+      />
+      <Text type="tertiary">已选：{treeFieldSel ?? '（未选）'}，已勾选 {treeFieldChecked.length} 项</Text>
     </div>
   </div>
 

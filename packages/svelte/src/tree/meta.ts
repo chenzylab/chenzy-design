@@ -9,7 +9,13 @@ export const meta = {
     '树形控件：层级展示节点，支持展开/收起、单选/多选、可勾选父子联动（含半选 mixed）、内置搜索高亮。受控 value/checkedKeys/expandedKeys 均不回写，仅通过 onChange/onCheck/onExpandedChange 通知。键盘导航遵循 WAI-ARIA APG Tree View（单一 tab stop + aria-activedescendant）。',
   exports: ['Tree'],
   props: [
-    { name: 'treeData', type: 'TreeNodeData[]', default: '[]', desc: '树数据源' },
+    { name: 'treeData', type: 'TreeNodeData[]', default: '[]', desc: '树数据源；字段名可经 fieldNames 自定义' },
+    {
+      name: 'fieldNames',
+      type: '{ key?: string; label?: string; children?: string }',
+      default: "{ key:'key', label:'label', children:'children' }",
+      desc: '自定义节点字段名映射，适配任意后端数据（如 { key:\'id\', label:\'name\', children:\'sub\' }）。派生只读映射，回调回传原始节点',
+    },
     {
       name: 'value',
       type: 'TreeKey | TreeKey[] | null',
