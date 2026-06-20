@@ -7,7 +7,7 @@ export const meta = {
   category: 'other',
   renderless: true,
   description:
-    '全局配置总入口，通过 setContext 注入 locale/theme/dir/size/zIndexBase/transition 等配置 context 供子树继承；嵌套时浅合并（undefined 继承、就近 wins）；theme="dark" 在 wrap 根写 data-theme 触发 tokens 暗色调色板；wrap=true 渲染 display:contents 包裹元素建立独立主题/方向作用域，默认 wrap=false renderless 无 DOM；locale 维度复用 LocaleProvider 的 createLocale + LOCALE_CONTEXT_KEY 机制。本子集 theme=auto / prefers-reduced-motion / getPopupContainer / getValidateMessages / as 自定义标签延后。',
+    '全局配置总入口，通过 setContext 注入 locale/theme/dir/size/zIndexBase/transition/reducedMotion 等配置 context 供子树继承；嵌套时浅合并（undefined 继承、就近 wins）；theme="dark" 在 wrap 根写 data-theme 触发 tokens 暗色调色板，theme="auto" 经命令式 matchMedia 监听 prefers-color-scheme 实时解析 light/dark（系统切换自动响应、带 cleanup）；reducedMotion(boolean|"auto") 控制动画降级，显式开启时写全局标记（wrap 时在包裹 div、renderless 时命令式写 documentElement 的 data-reduced-motion）令依赖 motion-duration token 的动画退化，"auto" 沿用系统原生 @media；wrap=true 渲染 display:contents 包裹元素建立独立主题/方向作用域，默认 wrap=false renderless 无 DOM；locale 维度复用 LocaleProvider 的 createLocale + LOCALE_CONTEXT_KEY 机制。本子集 getPopupContainer / getValidateMessages / as 自定义标签延后。',
   exports: ['ConfigProvider'],
   props: [
     {
@@ -18,9 +18,15 @@ export const meta = {
     },
     {
       name: 'theme',
-      type: "'light'|'dark'",
+      type: "'light'|'dark'|'auto'",
       default: 'undefined',
-      desc: '主题，undefined 继承父级；dark 在 wrap 根写 data-theme 触发暗色调色板',
+      desc: '主题，undefined 继承父级；dark 在 wrap 根写 data-theme 触发暗色调色板；auto 跟随系统 prefers-color-scheme 实时切 light/dark',
+    },
+    {
+      name: 'reducedMotion',
+      type: "boolean|'auto'",
+      default: "'auto'",
+      desc: '动画降级开关，undefined 继承父级（默认 auto）；true 强制降级、false 强制开启、auto 跟随系统 prefers-reduced-motion；显式开启时写全局 data-reduced-motion 标记令动画退化',
     },
     {
       name: 'dir',
@@ -54,7 +60,8 @@ export const meta = {
     },
   ],
   events: [
-    { name: 'onThemeChange', desc: 'theme 变化时通知（受控，不回写）' },
+    { name: 'onThemeChange', desc: 'theme 变化时通知（受控，不回写）；info.applied 为 auto 解析后实际落地的 light/dark' },
+    { name: 'onReducedMotionChange', desc: 'reducedMotion 解析结果变化时通知（受控，不回写）；info.reduced=true 表示已降级' },
     { name: 'onLocaleChange', desc: 'locale 变化时通知（受控，不回写）' },
     { name: 'onDirChange', desc: 'dir 变化时通知（受控，不回写）' },
     { name: 'onConfigChange', desc: '合并后配置变化时通知（受控，不回写）' },
@@ -74,6 +81,14 @@ export const meta = {
     {
       title: '局部暗色覆盖',
       code: '<ConfigProvider wrap theme="dark">{@render panel()}</ConfigProvider>',
+    },
+    {
+      title: '跟随系统主题（auto）',
+      code: '<ConfigProvider wrap theme="auto">{@render app()}</ConfigProvider>',
+    },
+    {
+      title: '强制降级动画',
+      code: '<ConfigProvider reducedMotion>{@render app()}</ConfigProvider>',
     },
     {
       title: '嵌套 dir 覆盖',

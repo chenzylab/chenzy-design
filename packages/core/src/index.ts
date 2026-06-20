@@ -159,11 +159,15 @@ export { easeInOutCubic, isAboveThreshold, scrollPositionAt } from './back-top.j
 export {
   mergeConfig,
   DEFAULT_CONFIG,
+  resolveAppliedTheme,
+  resolveReducedMotion,
   type ConfigInput,
   type ResolvedConfig,
   type ConfigTheme,
+  type AppliedTheme,
   type ConfigDir,
   type ConfigSize,
+  type ReducedMotionInput,
 } from './config-provider.js';
 export {
   createResizeObserver,

@@ -60,6 +60,14 @@ ${darkVars.join('\n')}
     ${PREFIX}motion-duration-slow: 0ms;
   }
 }
+
+/* JS 驱动的全局降级标记：ConfigProvider reducedMotion 显式开启时由 JS 写入，
+   优先于系统媒体查询，令依赖 motion-duration token 的动画退化为 0ms。 */
+[data-reduced-motion] {
+  ${PREFIX}motion-duration-fast: 0ms;
+  ${PREFIX}motion-duration-mid: 0ms;
+  ${PREFIX}motion-duration-slow: 0ms;
+}
 `;
 writeFileSync(resolve(dist, 'tokens.css'), css);
 console.log('[tokens] built dist/tokens.css');

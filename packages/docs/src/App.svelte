@@ -118,6 +118,11 @@
     };
   });
   let carouselIdx = $state(0);
+  // ConfigProvider theme=auto demo：onThemeChange 回调里捕获 auto 解析后的实际主题。
+  let cpAppliedTheme = $state<'light' | 'dark'>('light');
+  // ConfigProvider reducedMotion demo：Switch 受控 + 回调捕获解析结果。
+  let cpReduced = $state(false);
+  let cpReducedApplied = $state(false);
   // Popover custom 受控触发 demo：显隐完全由外部按钮控制。
   let popoverCustomOpen = $state(false);
   // Tooltip custom 触发 demo：显隐完全由本地受控状态驱动。
@@ -3367,6 +3372,42 @@ let pageSize2 = $state(10);
         <Button>次要按钮</Button>
         <Tag color="success">标签</Tag>
       </div>
+    </div>
+  </ConfigProvider>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider theme=auto（跟随系统）</Title>
+  <Text type="tertiary">theme="auto" 跟随系统 prefers-color-scheme 实时切 light/dark，切换系统外观会即时响应</Text>
+  <ConfigProvider
+    wrap
+    theme="auto"
+    onThemeChange={(info) => (cpAppliedTheme = info.applied)}
+  >
+    <div data-testid="cp-auto" style="margin-top:8px; padding:24px; border-radius:8px; background:var(--cd-color-bg-0); color:var(--cd-color-text-0)">
+      <p style="margin:0 0 12px; line-height:1.8">
+        当前系统解析主题：<strong data-testid="cp-auto-applied">{cpAppliedTheme}</strong>
+      </p>
+      <div style="display:flex; gap:12px">
+        <Button type="primary">主要按钮</Button>
+        <Tag color="success">标签</Tag>
+      </div>
+    </div>
+  </ConfigProvider>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider reducedMotion（降级动画）</Title>
+  <Text type="tertiary">reducedMotion 显式开启时写全局 data-reduced-motion 标记，令依赖 motion-duration token 的动画退化为 0ms</Text>
+  <ConfigProvider
+    reducedMotion={cpReduced}
+    onReducedMotionChange={(info) => (cpReducedApplied = info.reduced)}
+  >
+    <div data-testid="cp-reduced" style="margin-top:8px; display:flex; align-items:center; gap:8px">
+      <Switch value={cpReduced} onChange={(v) => (cpReduced = v)} />
+      <Text type="tertiary">
+        reducedMotion={String(cpReduced)} · reduced={String(cpReducedApplied)}
+      </Text>
     </div>
   </ConfigProvider>
 
