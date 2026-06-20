@@ -9,7 +9,13 @@ export const meta = {
   props: [
     { name: 'value', type: 'TreeKey|TreeKey[]|null', default: 'undefined' },
     { name: 'defaultValue', type: 'TreeKey|TreeKey[]|null', default: 'null' },
-    { name: 'treeData', type: 'TreeNode[]', default: '[]' },
+    { name: 'treeData', type: 'TreeNode[]', default: '[]', desc: '树数据源；字段名可经 fieldNames 自定义' },
+    {
+      name: 'fieldNames',
+      type: '{ key?: string; label?: string; children?: string }',
+      default: "{ key:'key', label:'label', children:'children' }",
+      desc: '自定义节点字段名映射，适配任意后端数据（如 { key:\'id\', label:\'name\', children:\'sub\' }）。派生只读映射；onChange 回传的 key 即原始字段值',
+    },
     { name: 'open', type: 'boolean', default: 'undefined' },
     { name: 'defaultOpen', type: 'boolean', default: 'false' },
     { name: 'multiple', type: 'boolean', default: 'false', desc: 'checkbox 多选 + 父子联动，多 tag 回显' },

@@ -13,7 +13,9 @@
   + rAF 节流 + cleanup（红线 #3），可见区间 $derived 纯派生（红线 #2）。键盘移动 activeKey 时
   scrollToIndex 滚到可见。a11y 取舍：aria-activedescendant 指向的行可能因虚拟化未渲染，故键盘
   移动后命令式滚动确保目标行进入视口并被渲染，保证键盘可用。
-  TODO(延后): draggable / accordion / fieldNames。
+  fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化（红线 #1/#2），
+  默认字段名时零开销直接用原 treeData，回调回传原始节点（__orig）。
+  TODO(延后): accordion。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -48,8 +50,20 @@
     dropPosition: DropPosition;
   };
 
+  /** 自定义节点字段名映射（适配任意后端数据结构）。默认 key/label/children。 */
+  type FieldNames = { key?: string; label?: string; children?: string };
+
+  /** 标准节点附带原始节点引用，用于回调时回传用户原始数据。 */
+  type NormalizedNode = TreeNodeData & { __orig: Record<string, unknown> };
+
   interface Props {
+    /**
+     * 树数据源。默认节点字段为 key/label/children；
+     * 用 fieldNames 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
+     */
     treeData?: TreeNodeData[];
+    /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
+    fieldNames?: FieldNames;
     value?: TreeKey | TreeKey[] | null;
     defaultValue?: TreeKey | TreeKey[] | null;
     multiple?: boolean;
@@ -95,6 +109,7 @@
 
   let {
     treeData = [],
+    fieldNames,
     value,
     defaultValue = null,
     multiple = false,
@@ -136,6 +151,46 @@
     return `${baseId}-${String(key)}`;
   }
 
+  // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
+  // 默认（全标准名）时直接返回原 treeData 引用，零额外开销（红线 #3）；映射为纯 $derived（红线 #2），
+  // 不写回 treeData（红线 #1）。每个标准节点附带 __orig 指向用户原始节点，回调时回传原始数据。
+  const keyField = $derived(fieldNames?.key ?? 'key');
+  const labelField = $derived(fieldNames?.label ?? 'label');
+  const childrenField = $derived(fieldNames?.children ?? 'children');
+  const fieldNamesDefault = $derived(
+    keyField === 'key' && labelField === 'label' && childrenField === 'children',
+  );
+
+  function normalizeNodes(nodes: TreeNodeData[]): NormalizedNode[] {
+    const kf = keyField;
+    const lf = labelField;
+    const cf = childrenField;
+    return nodes.map((raw) => {
+      const r = raw as unknown as Record<string, unknown>;
+      const kids = r[cf] as TreeNodeData[] | undefined;
+      const out: NormalizedNode = {
+        ...(raw as TreeNodeData),
+        key: r[kf] as TreeKey,
+        label: r[lf] as string,
+        __orig: r,
+      };
+      if (kids) out.children = normalizeNodes(kids);
+      else delete out.children;
+      return out;
+    });
+  }
+
+  // 标准化后的树：默认时即 treeData 原引用（零开销），否则递归映射字段名。
+  const normalizedData = $derived<TreeNodeData[]>(
+    fieldNamesDefault ? treeData : normalizeNodes(treeData),
+  );
+
+  /** 回调回传：自定义 fieldNames 时回原始节点，否则回标准节点本身。 */
+  function toOrig(node: TreeNodeData): TreeNodeData {
+    const orig = (node as Partial<NormalizedNode>).__orig;
+    return (orig as TreeNodeData | undefined) ?? node;
+  }
+
   // --- 异步加载：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
   const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
   const loadingKeys = new SvelteSet<TreeKey>();
@@ -144,7 +199,7 @@
   // 合并树：把已加载的子节点注入对应节点，喂给所有 core 纯函数。
   // 无加载时返回原 treeData 引用，零开销。
   const mergedData = $derived.by<TreeNodeData[]>(() => {
-    if (loadedChildren.size === 0) return treeData;
+    if (loadedChildren.size === 0) return normalizedData;
     const inject = (nodes: TreeNodeData[]): TreeNodeData[] =>
       nodes.map((n) => {
         const loaded = loadedChildren.get(n.key);
@@ -152,7 +207,7 @@
         if (!kids) return n;
         return { ...n, children: inject(kids) };
       });
-    return inject(treeData);
+    return inject(normalizedData);
   });
 
   // 行是否可展开：原本有子 → 是；否则有 loadData、非叶子、尚未加载（或加载出非空）→ 是。
@@ -168,8 +223,9 @@
     if (!loadData || loadingKeys.has(node.key) || loadedKeys.has(node.key)) return;
     loadingKeys.add(node.key);
     try {
-      const kids = await loadData(node);
-      loadedChildren.set(node.key, kids);
+      // loadData 收到用户原始节点（自定义字段名形态），返回结果按 fieldNames 标准化后缓存。
+      const kids = await loadData(toOrig(node));
+      loadedChildren.set(node.key, fieldNamesDefault ? kids : normalizeNodes(kids));
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
@@ -210,7 +266,11 @@
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
   function initExpanded(): Set<TreeKey> {
-    if (defaultExpandAll) return new Set(collectExpandable(treeData));
+    // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时 collectExpandable 才能识别 children）。
+    if (defaultExpandAll) {
+      const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
+      return new Set(collectExpandable(base));
+    }
     return new Set(defaultExpandedKeys);
   }
   const isExpandControlled = $derived(expandedKeys !== undefined);
@@ -364,7 +424,7 @@
       selected = true;
     }
     if (!isValueControlled) innerValue = next;
-    onChange?.({ value: next, node, selected });
+    onChange?.({ value: next, node: toOrig(node), selected });
   }
 
   function emitCheck(node: TreeNodeData) {
@@ -383,7 +443,7 @@
       : conduct(mergedData, nextBase);
     onCheck?.({
       checked: [...resolved.checked],
-      node,
+      node: toOrig(node),
       halfChecked: [...resolved.half],
     });
   }
@@ -393,7 +453,7 @@
     if (expand) next.add(node.key);
     else next.delete(node.key);
     if (!isExpandControlled) innerExpanded = next;
-    onExpandedChange?.({ expanded: [...next], node, expand });
+    onExpandedChange?.({ expanded: [...next], node: toOrig(node), expand });
   }
 
   function toggleExpand(node: TreeNodeData) {
@@ -617,7 +677,8 @@
     const dropNode = node;
     const position = dropPos;
     resetDrag();
-    if (dragNode) onDrop?.({ dragNode, dropNode, dropPosition: position });
+    if (dragNode)
+      onDrop?.({ dragNode: toOrig(dragNode), dropNode: toOrig(dropNode), dropPosition: position });
   }
 
   function onNodeDragEnd() {

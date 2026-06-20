@@ -4,6 +4,7 @@
   multiple: checkbox 多选 + 父子联动 (复用 core conduct/toggleCheck)，trigger 多 tag 回显可单独移除。
   filterable: 面板顶部搜索框过滤节点（复用 core computeFilteredKeys），命中 + 祖先链可见、命中文本高亮。
   Token-driven, a11y-correct, 受控/非受控。
+  fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化，默认字段名时零开销。
   TODO(延后): remote 异步加载、虚拟化、节点 icon。
 -->
 <script lang="ts">
@@ -22,10 +23,19 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
+  /** 自定义节点字段名映射（适配任意后端数据结构）。默认 key/label/children。 */
+  type FieldNames = { key?: string; label?: string; children?: string };
+
   interface Props {
     value?: TreeKey | TreeKey[] | null;
     defaultValue?: TreeKey | TreeKey[] | null;
+    /**
+     * 树数据源。默认节点字段为 key/label/children；
+     * 用 fieldNames 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
+     */
     treeData?: TreeNode[];
+    /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
+    fieldNames?: FieldNames;
     open?: boolean;
     defaultOpen?: boolean;
     /** 多选：面板节点显示 checkbox + 父子联动，trigger 多 tag 回显 */
@@ -50,6 +60,7 @@
     value,
     defaultValue = null,
     treeData = [],
+    fieldNames,
     open,
     defaultOpen = false,
     multiple = false,
@@ -70,6 +81,39 @@
   const loc = useLocale();
 
   const treeId = useId('cd-tree-select-panel');
+
+  // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
+  // 默认（全标准名）时直接返回原 treeData 引用，零额外开销；映射为纯 $derived（红线 #2），不写回（红线 #1）。
+  // 节点 key 取自原始 key 字段，故 onChange 回传的 value（key）即用户原始 id，无需额外映射回原节点。
+  const keyField = $derived(fieldNames?.key ?? 'key');
+  const labelField = $derived(fieldNames?.label ?? 'label');
+  const childrenField = $derived(fieldNames?.children ?? 'children');
+  const fieldNamesDefault = $derived(
+    keyField === 'key' && labelField === 'label' && childrenField === 'children',
+  );
+
+  function normalizeNodes(nodes: TreeNode[]): TreeNode[] {
+    const kf = keyField;
+    const lf = labelField;
+    const cf = childrenField;
+    return nodes.map((raw) => {
+      const r = raw as unknown as Record<string, unknown>;
+      const kids = r[cf] as TreeNode[] | undefined;
+      const out: TreeNode = {
+        ...raw,
+        key: r[kf] as TreeKey,
+        label: r[lf] as string,
+      };
+      if (kids) out.children = normalizeNodes(kids);
+      else delete out.children;
+      return out;
+    });
+  }
+
+  // 标准化后的树：默认时即 treeData 原引用（零开销），否则递归映射字段名。
+  const normalizedTree = $derived<TreeNode[]>(
+    fieldNamesDefault ? treeData : normalizeNodes(treeData),
+  );
 
   // --- 纯函数: 递归查找节点 (用于回显 label) ---
   function findNode(data: TreeNode[], key: TreeKey): TreeNode | undefined {
@@ -110,9 +154,10 @@
     return defaultOpen;
   }
   function getInitialExpanded(): Set<TreeKey> {
-    return defaultExpandAll
-      ? new Set(collectExpandable(treeData, []))
-      : new Set<TreeKey>();
+    // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时才能识别 children）。
+    if (!defaultExpandAll) return new Set<TreeKey>();
+    const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
+    return new Set(collectExpandable(base, []));
   }
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
@@ -134,7 +179,7 @@
   const checkState = $derived.by(() => {
     if (!multiple) return { checked: new Set<TreeKey>(), half: new Set<TreeKey>() };
     if (checkStrictly) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
-    return conduct(treeData as unknown as TreeNodeData[], currentCheckedBase);
+    return conduct(normalizedTree as unknown as TreeNodeData[], currentCheckedBase);
   });
   // trigger 回显的已选节点（多选取 checked 全集，按树序）
   const checkedNodes = $derived.by<TreeNode[]>(() => {
@@ -146,7 +191,7 @@
         if (n.children) walk(n.children);
       }
     };
-    walk(treeData);
+    walk(normalizedTree);
     return out;
   });
 
@@ -159,7 +204,7 @@
   let expandedKeys = $state<Set<TreeKey>>(getInitialExpanded());
 
   const selectedNode = $derived(
-    currentValue === null ? undefined : findNode(treeData, currentValue),
+    currentValue === null ? undefined : findNode(normalizedTree, currentValue),
   );
   const displayLabel = $derived(selectedNode?.label ?? '');
   const hasSelection = $derived(
@@ -177,7 +222,7 @@
     if (!isValueControlled) innerChecked = nextBase;
     const resolved = checkStrictly
       ? new Set(nextBase)
-      : conduct(treeData as unknown as TreeNodeData[], nextBase).checked;
+      : conduct(normalizedTree as unknown as TreeNodeData[], nextBase).checked;
     onChange?.([...resolved]);
   }
 
@@ -189,7 +234,7 @@
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
     } else {
-      nextBase = toggleCheck(treeData as unknown as TreeNodeData[], currentCheckedBase, node.key);
+      nextBase = toggleCheck(normalizedTree as unknown as TreeNodeData[], currentCheckedBase, node.key);
     }
     setChecked(nextBase);
   }
@@ -204,7 +249,7 @@
       setChecked(next);
     } else if (isChecked) {
       // 复用 toggleCheck：已选 → 取消（含子树联动）
-      setChecked(toggleCheck(treeData as unknown as TreeNodeData[], currentCheckedBase, node.key));
+      setChecked(toggleCheck(normalizedTree as unknown as TreeNodeData[], currentCheckedBase, node.key));
     }
   }
 
@@ -239,7 +284,7 @@
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     const lower = trimmedSearch.toLowerCase();
     return computeFilteredKeys(
-      treeData as unknown as TreeNodeData[],
+      normalizedTree as unknown as TreeNodeData[],
       (node) => node.label.toLowerCase().includes(lower),
     );
   });
@@ -507,10 +552,10 @@
         </div>
       {/if}
       <div class="cd-tree-select__tree" role="tree">
-        {#if treeData.length === 0}
+        {#if normalizedTree.length === 0}
           <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
         {:else}
-          {@render treeNodes(treeData, 0)}
+          {@render treeNodes(normalizedTree, 0)}
           {#if searchActive && filterResult.matched.size === 0}
             <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
           {/if}
