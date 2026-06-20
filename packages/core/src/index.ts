@@ -240,6 +240,27 @@ export {
   parseJumpInput,
 } from './pagination.js';
 export {
+  clamp01 as colorClamp01,
+  parseHex,
+  rgbToHex,
+  rgbToHsv,
+  hsvToRgb,
+  hsvToHsl,
+  hslToHsv,
+  rgbToHsl,
+  hslToRgb,
+  hexToHsv,
+  hsvToHex,
+  formatColor,
+  parseColor,
+  type Rgb,
+  type Hsv,
+  type Hsl,
+  type ColorFormat,
+  type RgbToHexOptions,
+  type FormatOptions,
+} from './color.js';
+export {
   buildRange as buildTimeRange,
   to12Hour,
   meridiemOf,

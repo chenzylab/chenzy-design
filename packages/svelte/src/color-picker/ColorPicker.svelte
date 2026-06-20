@@ -4,13 +4,24 @@
   受控 value / open 不回写 (红线 #1)，仅 onChange / onOpenChange。
   拖拽用命令式指针（红线 #3）：pointerdown 一次性读 rect 存普通变量，
   document pointermove/pointerup 手动加/移除。useDismiss 放 $effect。
-  对外 value/onChange 一律为 hex 字符串。
+  对外 value/onChange 一律为 hex 字符串（向后兼容；format 仅影响面板内显示/编辑）。
   eyeDropper：浏览器支持 window.EyeDropper 时渲染吸管按钮，取屏幕色（降级隐藏）。
   recentColors：记录最近应用的颜色（preset/eyeDropper/hex 确认/关闭面板时），去重 + 上限。
-  TODO(延后): format=rgb/hsv 切换 UI、inline 模式、rgb/hsv 对象入参。
+  format：面板内可切换 hex/rgb/hsv/hsl 显示与编辑（红线 #2：转换纯函数在 core）。
+  inline：不渲染 trigger 浮层，直接内联渲染选色面板（设置页嵌入）。
 -->
 <script lang="ts">
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    hexToHsv as coreHexToHsv,
+    hsvToHex as coreHsvToHex,
+    formatColor,
+    parseColor,
+    colorClamp01,
+    type Hsv,
+    type ColorFormat,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -25,6 +36,14 @@
     size?: Size;
     disabled?: boolean;
     outputUppercase?: boolean;
+    /** 受控：面板内显示/编辑的颜色格式。对外 onChange 仍为 hex 字符串。 */
+    format?: ColorFormat;
+    /** 非受控初始格式（默认 'hex'）。format 受控时忽略。 */
+    defaultFormat?: ColorFormat;
+    /** 面板内是否显示格式切换器（默认 true；format 锁定可设 false） */
+    showFormatToggle?: boolean;
+    /** 内联渲染选色面板，不使用 trigger 浮层（默认 false） */
+    inline?: boolean;
     /** 支持浏览器 EyeDropper 时显示吸管按钮（默认 true，不支持自动隐藏） */
     eyeDropper?: boolean;
     /** 显示最近使用颜色行（默认 false） */
@@ -33,6 +52,8 @@
     recentMax?: number;
     onChange?: (hex: string) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 面板内格式切换时触发 */
+    onFormatChange?: (format: ColorFormat) => void;
     ariaLabel?: string;
   }
 
@@ -46,11 +67,16 @@
     size = 'default',
     disabled = false,
     outputUppercase = true,
+    format,
+    defaultFormat = 'hex',
+    showFormatToggle = true,
+    inline = false,
     eyeDropper = true,
     recentColors = false,
     recentMax = 8,
     onChange,
     onOpenChange,
+    onFormatChange,
     ariaLabel,
   }: Props = $props();
 
@@ -58,89 +84,15 @@
 
   const hexInputId = useId('cd-color-picker-hex');
 
-  // ---------- 色彩工具（纯函数）----------
-  interface Hsv {
-    h: number; // 0-360
-    s: number; // 0-1
-    v: number; // 0-1
-    a: number; // 0-1
-  }
-
-  function clamp01(n: number): number {
-    return Math.min(1, Math.max(0, n));
-  }
-
-  function parseHex(input: string): { r: number; g: number; b: number; a: number } | null {
-    let h = input.trim().replace(/^#/, '');
-    if (/^[0-9a-fA-F]{3}$/.test(h)) {
-      h = h.split('').map((c) => c + c).join('');
-    }
-    if (/^[0-9a-fA-F]{4}$/.test(h)) {
-      h = h.split('').map((c) => c + c).join('');
-    }
-    if (/^[0-9a-fA-F]{6}$/.test(h)) {
-      return {
-        r: parseInt(h.slice(0, 2), 16),
-        g: parseInt(h.slice(2, 4), 16),
-        b: parseInt(h.slice(4, 6), 16),
-        a: 1,
-      };
-    }
-    if (/^[0-9a-fA-F]{8}$/.test(h)) {
-      return {
-        r: parseInt(h.slice(0, 2), 16),
-        g: parseInt(h.slice(2, 4), 16),
-        b: parseInt(h.slice(4, 6), 16),
-        a: parseInt(h.slice(6, 8), 16) / 255,
-      };
-    }
-    return null;
-  }
+  // ---------- 色彩工具（纯函数来自 core，红线 #2）----------
+  const clamp01 = colorClamp01;
 
   function hexToHsv(hex: string): Hsv {
-    const rgb = parseHex(hex);
-    if (!rgb) return { h: 0, s: 0, v: 0, a: 1 };
-    const r = rgb.r / 255;
-    const g = rgb.g / 255;
-    const b = rgb.b / 255;
-    const maxC = Math.max(r, g, b);
-    const minC = Math.min(r, g, b);
-    const delta = maxC - minC;
-    let h = 0;
-    if (delta !== 0) {
-      if (maxC === r) h = ((g - b) / delta) % 6;
-      else if (maxC === g) h = (b - r) / delta + 2;
-      else h = (r - g) / delta + 4;
-      h *= 60;
-      if (h < 0) h += 360;
-    }
-    const s = maxC === 0 ? 0 : delta / maxC;
-    const v = maxC;
-    return { h, s, v, a: rgb.a };
+    return coreHexToHsv(hex);
   }
 
-  function toHex2(n: number): string {
-    return Math.round(clamp01(n) * 255)
-      .toString(16)
-      .padStart(2, '0');
-  }
-
-  function hsvToHex({ h, s, v, a }: Hsv): string {
-    const c = v * s;
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = v - c;
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    if (h < 60) [r, g, b] = [c, x, 0];
-    else if (h < 120) [r, g, b] = [x, c, 0];
-    else if (h < 180) [r, g, b] = [0, c, x];
-    else if (h < 240) [r, g, b] = [0, x, c];
-    else if (h < 300) [r, g, b] = [x, 0, c];
-    else [r, g, b] = [c, 0, x];
-    let out = `#${toHex2(r + m)}${toHex2(g + m)}${toHex2(b + m)}`;
-    if (a < 1) out += toHex2(a);
-    return outputUppercase ? out.toUpperCase() : out.toLowerCase();
+  function hsvToHex(hsv: Hsv): string {
+    return coreHsvToHex(hsv, { uppercase: outputUppercase });
   }
 
   // ---------- 受控值 (红线 #1) ----------
@@ -158,9 +110,28 @@
   }
 
   // ---------- 受控 open (红线 #1) ----------
+  // inline 模式：面板常驻渲染，不受 open 控制。
   const isOpenControlled = $derived(open !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(inline ? true : isOpenControlled ? !!open : innerOpen);
+
+  // ---------- 受控 format (红线 #1) ----------
+  const isFormatControlled = $derived(format !== undefined);
+  let innerFormat = $state<ColorFormat>(getInitialFormat());
+  const currentFormat = $derived<ColorFormat>(isFormatControlled ? format! : innerFormat);
+
+  function getInitialFormat(): ColorFormat {
+    return format ?? defaultFormat;
+  }
+  const formatOptions: ColorFormat[] = ['hex', 'rgb', 'hsv', 'hsl'];
+
+  function setFormat(next: ColorFormat) {
+    if (next === currentFormat) return;
+    if (!isFormatControlled) innerFormat = next;
+    onFormatChange?.(next);
+    // 切换格式时立即用当前色按新格式刷新输入框（非编辑态）。
+    editingHex = false;
+  }
 
   function getInitialOpen(): boolean {
     return defaultOpen;
@@ -209,25 +180,29 @@
   const displayHex = $derived(hsvToHex({ h, s, v, a }));
   const opaqueHex = $derived(hsvToHex({ h, s, v, a: 1 }));
 
+  // 按当前格式格式化的字符串，用于输入框显示。
+  const displayFormatted = $derived(
+    formatColor(
+      { h, s, v, a: alpha ? a : 1 },
+      currentFormat,
+      { uppercase: outputUppercase, alpha },
+    ),
+  );
+
   function commitHsv() {
     setValue(hsvToHex({ h, s, v, a }));
   }
 
-  // ---------- hex 输入框 ----------
-  let hexInput = $state('');
-  // 浮层显示时把输入同步成当前 hex（非拖拽 / 非用户编辑）。
-  $effect(() => {
-    if (!isOpen) return;
-    if (dragging || editingHex) return;
-    hexInput = displayHex;
-  });
+  // ---------- 颜色输入框（按 currentFormat 显示/编辑） ----------
+  // 编辑态显示用户输入缓冲，否则始终派生 displayFormatted（切换格式/拖拽即时刷新）。
+  let hexBuffer = $state('');
+  const hexInput = $derived(editingHex ? hexBuffer : displayFormatted);
 
   function handleHexInput(e: Event & { currentTarget: HTMLInputElement }) {
     editingHex = true;
-    hexInput = e.currentTarget.value;
-    const parsed = parseHex(hexInput);
-    if (!parsed) return;
-    const next = hexToHsv(hexInput);
+    hexBuffer = e.currentTarget.value;
+    const next = parseColor(hexBuffer, currentFormat);
+    if (!next) return;
     h = next.h;
     s = next.s;
     v = next.v;
@@ -237,7 +212,6 @@
 
   function handleHexBlur() {
     editingHex = false;
-    hexInput = displayHex;
   }
 
   // 应用一个完整 hex（preset / eyeDropper / 最近色）：写 HSV + 提交 + 记录最近。
@@ -415,7 +389,8 @@
   let rootEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
-    if (!isOpen || !rootEl) return;
+    // inline 模式无浮层，不挂 dismiss。
+    if (inline || !isOpen || !rootEl) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
@@ -436,6 +411,7 @@
     [
       'cd-color-picker',
       `cd-color-picker--${size}`,
+      inline && 'cd-color-picker--inline',
       disabled && 'cd-color-picker--disabled',
       isOpen && 'cd-color-picker--open',
     ]
@@ -444,20 +420,7 @@
   );
 </script>
 
-<div class={cls} bind:this={rootEl}>
-  <button
-    type="button"
-    class="cd-color-picker__trigger"
-    aria-haspopup="dialog"
-    aria-expanded={isOpen}
-    aria-label={ariaLabel}
-    {disabled}
-    style="background:{displayHex}"
-    onclick={toggleOpen}
-  ></button>
-
-  {#if isOpen}
-    <div class="cd-color-picker__panel" role="dialog" aria-label={ariaLabel ?? '颜色选择'}>
+{#snippet panelBody()}
       <div
         class="cd-color-picker__saturation"
         bind:this={satEl}
@@ -529,7 +492,22 @@
       </div>
 
       <div class="cd-color-picker__field">
-        <label class="cd-color-picker__label" for={hexInputId}>HEX</label>
+        {#if showFormatToggle}
+          <label class="cd-color-picker__format" aria-label={loc().t('ColorPicker.format')}>
+            <select
+              class="cd-color-picker__format-select"
+              value={currentFormat}
+              {disabled}
+              onchange={(e) => setFormat(e.currentTarget.value as ColorFormat)}
+            >
+              {#each formatOptions as opt (opt)}
+                <option value={opt}>{opt.toUpperCase()}</option>
+              {/each}
+            </select>
+          </label>
+        {:else}
+          <label class="cd-color-picker__label" for={hexInputId}>{currentFormat.toUpperCase()}</label>
+        {/if}
         <input
           class="cd-color-picker__hex"
           id={hexInputId}
@@ -584,9 +562,34 @@
           </div>
         </div>
       {/if}
+{/snippet}
+
+{#if inline}
+  <div class={cls} bind:this={rootEl}>
+    <div class="cd-color-picker__panel cd-color-picker__panel--inline" role="group" aria-label={ariaLabel ?? '颜色选择'}>
+      {@render panelBody()}
     </div>
-  {/if}
-</div>
+  </div>
+{:else}
+  <div class={cls} bind:this={rootEl}>
+    <button
+      type="button"
+      class="cd-color-picker__trigger"
+      aria-haspopup="dialog"
+      aria-expanded={isOpen}
+      aria-label={ariaLabel}
+      {disabled}
+      style="background:{displayHex}"
+      onclick={toggleOpen}
+    ></button>
+
+    {#if isOpen}
+      <div class="cd-color-picker__panel" role="dialog" aria-label={ariaLabel ?? '颜色选择'}>
+        {@render panelBody()}
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .cd-color-picker {
@@ -627,6 +630,15 @@
     background: var(--cd-color-picker-panel-bg);
     border-radius: var(--cd-color-picker-panel-radius);
     box-shadow: var(--cd-color-picker-panel-shadow);
+  }
+  .cd-color-picker--inline {
+    display: inline-flex;
+  }
+  .cd-color-picker__panel--inline {
+    position: static;
+    inset: auto;
+    box-shadow: none;
+    border: 1px solid var(--cd-color-border);
   }
   .cd-color-picker__saturation {
     position: relative;
@@ -746,6 +758,30 @@
     flex: 0 0 auto;
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-1);
+  }
+  .cd-color-picker__format {
+    flex: 0 0 auto;
+    display: inline-flex;
+  }
+  .cd-color-picker__format-select {
+    block-size: var(--cd-input-height-small);
+    padding-inline: var(--cd-spacing-1);
+    color: var(--cd-color-text-2);
+    background: var(--cd-input-bg);
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+    font: inherit;
+    font-size: var(--cd-font-size-1);
+    cursor: pointer;
+  }
+  .cd-color-picker__format-select:focus-visible {
+    outline: none;
+    border-color: var(--cd-input-border-active);
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-color-picker__format-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
   .cd-color-picker__hex {
     flex: 1 1 auto;

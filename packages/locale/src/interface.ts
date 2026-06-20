@@ -296,6 +296,7 @@ export interface Locale {
     hex: string;
     eyeDropper: string;
     recent: string;
+    format: string;
   };
   Tag: {
     close: string;
