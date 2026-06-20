@@ -47,22 +47,26 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled })}
+  {#snippet children({ value, onChange, status, disabled, id, describedBy })}
     <!--
-      Input does not expose `id`/`onBlur` props, so:
-      - label `for` association degrades to `aria-label` (Field still renders the
-        visible <label>). TODO: expose `id` on Input for proper for/id linking.
-      - blur-time validation is deferred until Input gains an `onBlur` hook.
+      `id` is wired to the native <input> so Field's visible <label for={id}>
+      precisely targets the control (WAI-ARIA preferred association): clicking the
+      label focuses the input and screen readers pair them by name. `ariaLabel`
+      remains as a redundant accessible name (and the only one when no `label`).
+      `describedBy` links the error/warning/extra text to the control.
+      blur-time validation is still deferred until Input gains an `onBlur` hook.
     -->
     <Input
       value={value === undefined ? '' : String(value)}
       status={status === 'error' ? 'error' : 'default'}
       {disabled}
+      {id}
       {type}
       {clearable}
       {...(placeholder !== undefined ? { placeholder } : {})}
       {...(maxLength !== undefined ? { maxLength } : {})}
       {...(label !== undefined ? { ariaLabel: label } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

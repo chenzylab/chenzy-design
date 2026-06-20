@@ -18,6 +18,8 @@
     onBlur: () => void;
     status: FieldStatus;
     id: string;
+    /** id(s) of the field's error/warning/extra text, for the control's aria-describedby */
+    describedBy: string | undefined;
     disabled: boolean;
     /**
      * Convenience alias keyed by `valuePropName` (default 'value'), carrying the
@@ -173,6 +175,7 @@
       onBlur: handleBlur,
       status,
       id,
+      describedBy,
       disabled: ctx.getDisabled(),
     })}
 
