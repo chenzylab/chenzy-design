@@ -252,6 +252,7 @@ export const zh_CN: Locale = {
     hex: '十六进制颜色值',
     eyeDropper: '屏幕取色',
     recent: '最近使用',
+    format: '颜色格式',
   },
   Tag: {
     close: '关闭',

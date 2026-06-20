@@ -506,6 +506,7 @@
   let tagsCtrl = $state<string[]>([]);
   let tagInputCtrl = $state('');
   let color = $state('#3366ff');
+let colorInline = $state('#16a34a');
   let dateVal = $state<Date | null>(null);
   let dateTimeVal = $state<Date | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
@@ -1325,6 +1326,19 @@ let pageSize2 = $state(10);
         />
       </span>
       <Text type="tertiary">颜色：{color}（吸管按需显示 + 最近用色）</Text>
+    </Space>
+
+    <Space align="start">
+      <span data-testid="colorpicker-inline">
+        <ColorPicker
+          inline
+          value={colorInline}
+          defaultFormat="rgb"
+          presets={['#3366ff', '#16a34a', '#ef4444']}
+          onChange={(c) => (colorInline = c)}
+        />
+      </span>
+      <Text type="tertiary">内联 + format 切换：{colorInline}</Text>
     </Space>
   </Space>
 

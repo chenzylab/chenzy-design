@@ -252,6 +252,7 @@ export const en_US: Locale = {
     hex: 'Hex color value',
     eyeDropper: 'Pick color from screen',
     recent: 'Recently used',
+    format: 'Color format',
   },
   Tag: {
     close: 'Close',
