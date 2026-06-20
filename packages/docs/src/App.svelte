@@ -462,6 +462,8 @@ let yearVal = $state<Date | null>(null);
 let disabledTimeVal = $state<Date | null>(null);
 let presetVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
+  let timeVal12 = $state<Date | null>(null);
+  let timeValDisabled = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
   let cascaderHoverVal = $state<(string | number)[]>([]);
@@ -2924,6 +2926,37 @@ let pageSize2 = $state(10);
       <Text type="tertiary">reducedMotion（静止）</Text>
     </div>
   </div>
+
+  <Title heading={5}>TimePicker · 12 小时制 + 禁用项</Title>
+  <Space direction="vertical" align="start">
+    <Space>
+      <TimePicker use12Hours value={timeVal12} onChange={(t) => (timeVal12 = t)} />
+      <Text type="tertiary">
+        12h（AM/PM）：{timeVal12 ? timeVal12.toLocaleTimeString('en-US') : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <TimePicker
+        value={timeValDisabled}
+        onChange={(t) => (timeValDisabled = t)}
+        disabledHours={() => [0, 1, 2, 3, 4, 5, 6]}
+        disabledMinutes={(h) => (h === 9 ? [0, 15, 30] : [])}
+      />
+      <Text type="tertiary">
+        禁用 0-6 时、9 时的 0/15/30 分（置灰）：{timeValDisabled
+          ? timeValDisabled.toLocaleTimeString('zh-CN')
+          : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <TimePicker
+        defaultValue={null}
+        hideDisabledOptions
+        disabledHours={() => [0, 1, 2, 3, 4, 5, 6]}
+      />
+      <Text type="tertiary">hideDisabledOptions：禁用的 0-6 时直接从列中隐藏</Text>
+    </Space>
+  </Space>
 </main>
 
 <BackTop visibilityHeight={300} />

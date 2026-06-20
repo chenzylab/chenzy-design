@@ -174,6 +174,8 @@ export const zh_CN: Locale = {
     hour: '时',
     minute: '分',
     second: '秒',
+    am: '上午',
+    pm: '下午',
   },
   Transfer: {
     searchPlaceholder: '搜索',
@@ -256,5 +258,6 @@ export const zh_CN: Locale = {
     scrollPrev: '向前滚动',
     scrollNext: '向后滚动',
     add: '新增标签',
+    more: '更多',
   },
 };

@@ -203,6 +203,8 @@ export interface Locale {
     hour: string;
     minute: string;
     second: string;
+    am: string;
+    pm: string;
   };
   Transfer: {
     searchPlaceholder: string;
@@ -299,5 +301,6 @@ export interface Locale {
     scrollPrev: string;
     scrollNext: string;
     add: string;
+    more: string;
   };
 }

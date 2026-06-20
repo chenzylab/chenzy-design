@@ -205,3 +205,17 @@ export {
   type VirtualRange,
   type ScrollAlign,
 } from './virtual-list.js';
+export {
+  buildRange as buildTimeRange,
+  to12Hour,
+  meridiemOf,
+  from12Hour,
+  buildHourOptions,
+  buildMinuteOptions,
+  buildSecondOptions,
+  applyHideDisabled,
+  isTimeDisabled,
+  type Meridiem,
+  type TimeOption,
+  type DisabledTime,
+} from './time.js';
