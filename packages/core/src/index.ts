@@ -233,6 +233,13 @@ export {
   type ScrollAlign,
 } from './virtual-list.js';
 export {
+  pageCount as paginationPageCount,
+  clampPage,
+  isPageInRange,
+  clampPageSize,
+  parseJumpInput,
+} from './pagination.js';
+export {
   buildRange as buildTimeRange,
   to12Hour,
   meridiemOf,
