@@ -172,6 +172,63 @@
     });
   }
 
+  // Tree draggable：本地受控 treeData，onDrop 里实际重排演示拖拽生效（组件不内部改）。
+  type DragNode = { key: string | number; label: string; children?: DragNode[] };
+  let dragTreeData = $state<DragNode[]>([
+    {
+      key: 'a',
+      label: '一级 A',
+      children: [
+        { key: 'a1', label: 'A-1' },
+        { key: 'a2', label: 'A-2' },
+      ],
+    },
+    {
+      key: 'b',
+      label: '一级 B',
+      children: [{ key: 'b1', label: 'B-1' }],
+    },
+    { key: 'c', label: '一级 C' },
+  ]);
+  let dragInfo = $state('（未拖拽）');
+
+  // 在受控数据上重排：先摘除 dragNode，再按 dropPosition 插回 dropNode 的前/后/内部。
+  function reorderTree(
+    data: DragNode[],
+    dragKey: string | number,
+    dropKey: string | number,
+    pos: 'before' | 'inside' | 'after',
+  ): DragNode[] {
+    let dragged: DragNode | undefined;
+    function remove(list: DragNode[]): DragNode[] {
+      const out: DragNode[] = [];
+      for (const n of list) {
+        if (n.key === dragKey) {
+          dragged = n;
+          continue;
+        }
+        out.push(n.children ? { ...n, children: remove(n.children) } : n);
+      }
+      return out;
+    }
+    const pruned = remove(data);
+    if (!dragged) return data;
+    function insert(list: DragNode[]): DragNode[] {
+      const out: DragNode[] = [];
+      for (const n of list) {
+        if (n.key === dropKey) {
+          if (pos === 'before') out.push(dragged as DragNode, n);
+          else if (pos === 'after') out.push(n, dragged as DragNode);
+          else out.push({ ...n, children: [...(n.children ?? []), dragged as DragNode] });
+        } else {
+          out.push(n.children ? { ...n, children: insert(n.children) } : n);
+        }
+      }
+      return out;
+    }
+    return insert(pruned);
+  }
+
   // Tree virtualized：大数据树（50 个分组 × 20 子项 = 1050 节点）验证只渲染视口内行。
   const bigTreeData = Array.from({ length: 50 }, (_, g) => ({
     key: `g${g}`,
@@ -1796,6 +1853,28 @@ let pageSize2 = $state(10);
         defaultExpandAll
         ariaLabel="大数据虚拟树"
       />
+    </div>
+
+    <div style="width: 240px" data-testid="tree-draggable">
+      <Text type="tertiary">draggable 拖拽排序（before / inside / after）</Text>
+      <Tree
+        treeData={dragTreeData}
+        draggable
+        defaultExpandAll
+        showLine
+        showIcon={false}
+        ariaLabel="可拖拽树"
+        onDrop={(info) => {
+          dragTreeData = reorderTree(
+            dragTreeData,
+            info.dragNode.key,
+            info.dropNode.key,
+            info.dropPosition,
+          );
+          dragInfo = `${info.dragNode.label} → ${info.dropNode.label}（${info.dropPosition}）`;
+        }}
+      />
+      <Text type="tertiary">最近一次拖拽：{dragInfo}</Text>
     </div>
   </div>
 

@@ -41,10 +41,13 @@ export {
   toggleCheck,
   normalizeToLeaves,
   computeFilteredKeys,
+  computeDropPosition,
+  isAncestorOrSelf,
   type TreeKey,
   type TreeNodeData,
   type FlatNode,
   type CheckState,
+  type DropPosition,
 } from './tree.js';
 export {
   nextSortOrder,

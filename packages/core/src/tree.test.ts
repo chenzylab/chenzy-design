@@ -8,6 +8,8 @@ import {
   toggleCheck,
   normalizeToLeaves,
   computeFilteredKeys,
+  computeDropPosition,
+  isAncestorOrSelf,
   type TreeNodeData,
 } from './tree.js';
 
@@ -191,5 +193,49 @@ describe('computeFilteredKeys', () => {
     const { matched, expand } = computeFilteredKeys(data, () => false);
     expect(matched.size).toBe(0);
     expect(expand.size).toBe(0);
+  });
+});
+
+describe('computeDropPosition', () => {
+  it('splits a 32px row into before / inside / after thirds', () => {
+    expect(computeDropPosition(4, 32)).toBe('before'); // < 8 (1/4)
+    expect(computeDropPosition(16, 32)).toBe('inside'); // middle
+    expect(computeDropPosition(28, 32)).toBe('after'); // > 24 (3/4)
+  });
+
+  it('boundaries: edges fold to inside', () => {
+    expect(computeDropPosition(8, 32)).toBe('inside'); // not < 8
+    expect(computeDropPosition(24, 32)).toBe('inside'); // not > 24
+  });
+
+  it('clamps out-of-range offsets', () => {
+    expect(computeDropPosition(-10, 32)).toBe('before');
+    expect(computeDropPosition(999, 32)).toBe('after');
+  });
+
+  it('only before/after when inside not allowed (leaf target)', () => {
+    expect(computeDropPosition(10, 32, false)).toBe('before');
+    expect(computeDropPosition(20, 32, false)).toBe('after');
+    expect(computeDropPosition(16, 32, false)).toBe('after'); // exactly half → after
+  });
+
+  it('degenerate row height returns after', () => {
+    expect(computeDropPosition(0, 0)).toBe('after');
+  });
+});
+
+describe('isAncestorOrSelf', () => {
+  it('is true for the same key', () => {
+    expect(isAncestorOrSelf(data, '1', '1')).toBe(true);
+  });
+
+  it('is true for a descendant', () => {
+    expect(isAncestorOrSelf(data, '1', '1-1')).toBe(true);
+    expect(isAncestorOrSelf(data, '1', '1-2-1')).toBe(true);
+  });
+
+  it('is false for unrelated nodes', () => {
+    expect(isAncestorOrSelf(data, '1-1', '1')).toBe(false);
+    expect(isAncestorOrSelf(data, '2', '1-1')).toBe(false);
   });
 });

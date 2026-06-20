@@ -69,6 +69,18 @@ export const meta = {
       default: 'undefined',
       desc: '异步加载子节点：展开未加载的非叶子节点时调用',
     },
+    {
+      name: 'draggable',
+      type: 'boolean',
+      default: 'false',
+      desc: '启用 HTML5 拖拽排序：节点可拖动改变层级/顺序（before/inside/after）',
+    },
+    {
+      name: 'onDrop',
+      type: '(info: { dragNode, dropNode, dropPosition }) => void',
+      default: 'undefined',
+      desc: '放下时回调；受控数据由父组件按 info 重排 treeData，组件不内部改',
+    },
     { name: 'onChange', type: '(info) => void', default: 'undefined', desc: '选中变更' },
     { name: 'onCheck', type: '(info) => void', default: 'undefined', desc: '勾选变更' },
     {
@@ -84,6 +96,7 @@ export const meta = {
     { name: 'onChange', desc: '选中节点变更：{ value, node, selected }' },
     { name: 'onCheck', desc: '勾选变更：{ checked, node, halfChecked }' },
     { name: 'onExpandedChange', desc: '展开/收起：{ expanded, node, expand }' },
+    { name: 'onDrop', desc: '拖拽放下：{ dragNode, dropNode, dropPosition: before|inside|after }' },
   ],
   slots: [{ name: 'label', desc: '自定义节点渲染：{ node, level, searchValue, selected, checked }' }],
   a11y: {

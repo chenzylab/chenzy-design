@@ -26,9 +26,12 @@
     computeFilteredKeys,
     fixedRange,
     scrollOffsetForIndex,
+    computeDropPosition,
+    isAncestorOrSelf,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
+    type DropPosition,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
@@ -39,6 +42,11 @@
   type ChangeInfo = { value: TreeKey | TreeKey[]; node: TreeNodeData; selected: boolean };
   type CheckInfo = { checked: TreeKey[]; node: TreeNodeData; halfChecked: TreeKey[] };
   type ExpandInfo = { expanded: TreeKey[]; node: TreeNodeData; expand: boolean };
+  type DropInfo = {
+    dragNode: TreeNodeData;
+    dropNode: TreeNodeData;
+    dropPosition: DropPosition;
+  };
 
   interface Props {
     treeData?: TreeNodeData[];
@@ -71,6 +79,10 @@
     ariaLabel?: string;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组 */
     loadData?: (node: TreeNodeData) => Promise<TreeNodeData[]>;
+    /** 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序。默认 false（行为不变） */
+    draggable?: boolean;
+    /** 放下时回调（受控数据，组件不内部改 treeData，由父组件按 info 重排）。 */
+    onDrop?: (info: DropInfo) => void;
     onChange?: (info: ChangeInfo) => void;
     onCheck?: (info: CheckInfo) => void;
     onExpandedChange?: (info: ExpandInfo) => void;
@@ -107,6 +119,8 @@
     emptyContent,
     ariaLabel,
     loadData,
+    draggable = false,
+    onDrop,
     onChange,
     onCheck,
     onExpandedChange,
@@ -507,6 +521,114 @@
     scrollActiveIntoView();
   }
 
+  // --- 拖拽排序：HTML5 DnD（draggable + drag 事件），状态用 $state，命令式事件处理 ---
+  // 受控：组件不改 treeData，仅 onDrop 通知父组件重排（红线 #1）。
+  // 插入指示由 drag 事件更新 $state，render 读它显示指示线（红线 #2/#3）。
+  let dragKey = $state<TreeKey | null>(null); // 当前被拖拽节点 key
+  let dropKey = $state<TreeKey | null>(null); // 当前悬停目标 key
+  let dropPos = $state<DropPosition | null>(null); // 放置位置 before/inside/after
+  // 拖到 inside 时延时自动展开的计时器（命令式，dragleave/drop/dragend 清理）。
+  let expandTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function clearExpandTimer() {
+    if (expandTimer !== undefined) {
+      clearTimeout(expandTimer);
+      expandTimer = undefined;
+    }
+  }
+
+  function resetDrag() {
+    clearExpandTimer();
+    dragKey = null;
+    dropKey = null;
+    dropPos = null;
+  }
+
+  function isDraggableNode(node: TreeNodeData): boolean {
+    return draggable && !isNodeDisabled(node);
+  }
+
+  function onNodeDragStart(e: DragEvent, node: TreeNodeData) {
+    if (!isDraggableNode(node)) {
+      e.preventDefault();
+      return;
+    }
+    dragKey = node.key;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      // 必须 setData 否则部分浏览器不触发 drop。
+      e.dataTransfer.setData('text/plain', String(node.key));
+    }
+  }
+
+  function onNodeDragOver(e: DragEvent, f: FlatNode) {
+    const node = f.node;
+    if (dragKey === null || isNodeDisabled(node)) return;
+    // 不能放到自身或自身子树内（受控数据无意义且会丢节点）。
+    if (isAncestorOrSelf(mergedData, dragKey, node.key)) return;
+    // dragover 必须 preventDefault 才能触发 drop（红线 #3）。
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    // 叶子且无 loadData → 不允许 inside（不会有子节点容器）。
+    const allowInside = f.hasChildren || (!!loadData && node.isLeaf !== true);
+    const pos = computeDropPosition(offsetY, rect.height || rowHeight, allowInside);
+    // 切换目标行时重置 inside 自动展开计时器。
+    if (dropKey !== node.key) clearExpandTimer();
+    dropKey = node.key;
+    dropPos = pos;
+    // 拖到内部时自动展开目标（便于放入），延时避免误触。
+    if (pos === 'inside' && isExpandable(node, f.hasChildren) && !isExpanded(node.key)) {
+      if (expandTimer === undefined) {
+        expandTimer = setTimeout(() => {
+          expandTimer = undefined;
+          if (dropKey === node.key && dropPos === 'inside') toggleExpand(node);
+        }, 500);
+      }
+    } else {
+      clearExpandTimer();
+    }
+  }
+
+  function onNodeDragLeave(e: DragEvent, node: TreeNodeData) {
+    // 仅当真正离开该行（而非进入子元素）时清理目标，避免指示线闪烁。
+    const related = e.relatedTarget as Node | null;
+    const cur = e.currentTarget as HTMLElement;
+    if (related && cur.contains(related)) return;
+    if (dropKey === node.key) {
+      clearExpandTimer();
+      dropKey = null;
+      dropPos = null;
+    }
+  }
+
+  function onNodeDrop(e: DragEvent, node: TreeNodeData) {
+    if (dragKey === null || dropPos === null) {
+      resetDrag();
+      return;
+    }
+    if (isNodeDisabled(node) || isAncestorOrSelf(mergedData, dragKey, node.key)) {
+      resetDrag();
+      return;
+    }
+    e.preventDefault();
+    const dragNode = findFlatNode(dragKey);
+    const dropNode = node;
+    const position = dropPos;
+    resetDrag();
+    if (dragNode) onDrop?.({ dragNode, dropNode, dropPosition: position });
+  }
+
+  function onNodeDragEnd() {
+    resetDrag();
+  }
+
+  function findFlatNode(key: TreeKey): TreeNodeData | undefined {
+    const f = flat.find((x) => x.node.key === key);
+    return f?.node;
+  }
+
   // --- 搜索高亮：把命中子串包 <mark>，返回片段数组供模板渲染 ---
   type Part = { text: string; mark: boolean };
   function highlightParts(text: string): Part[] {
@@ -615,6 +737,8 @@
   {@const selected = selectedSet.has(node.key)}
   {@const checked = rowChecked(node)}
   {@const active = activeKey === node.key}
+  {@const dragging = dragKey === node.key}
+  {@const isDropTarget = dropKey === node.key}
   {@const indentStyle = showLine ? '' : `padding-inline-start: calc(${f.level} * var(--cd-tree-indent))`}
         <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
         <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -625,7 +749,12 @@
           class:cd-tree__node--disabled={nodeDisabled}
           class:cd-tree__node--active={active}
           class:cd-tree__node--block={blockNode}
+          class:cd-tree__node--dragging={dragging}
+          class:cd-tree__node--drop-before={isDropTarget && dropPos === 'before'}
+          class:cd-tree__node--drop-inside={isDropTarget && dropPos === 'inside'}
+          class:cd-tree__node--drop-after={isDropTarget && dropPos === 'after'}
           role="treeitem"
+          draggable={draggable && !nodeDisabled ? true : undefined}
           tabindex={-1}
           aria-level={f.level + 1}
           aria-setsize={f.setSize}
@@ -636,6 +765,11 @@
           aria-disabled={nodeDisabled || undefined}
           style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
+          ondragstart={draggable ? (e) => onNodeDragStart(e, node) : undefined}
+          ondragover={draggable ? (e) => onNodeDragOver(e, f) : undefined}
+          ondragleave={draggable ? (e) => onNodeDragLeave(e, node) : undefined}
+          ondrop={draggable ? (e) => onNodeDrop(e, node) : undefined}
+          ondragend={draggable ? onNodeDragEnd : undefined}
         >
           {#if showLine && f.level > 0}
             <!-- 引导线列：每层祖先一格，祖先非末→贯穿竖线；自身连接列画拐角 -->
@@ -814,6 +948,37 @@
   }
   .cd-tree__node--disabled:hover {
     background: transparent;
+  }
+
+  /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
+  .cd-tree__node--dragging {
+    opacity: 0.5;
+  }
+  /* before/after 用 ::after 画一条插入指示线（不影响布局，子元素不接收 drag 事件） */
+  .cd-tree__node--drop-before::after,
+  .cd-tree__node--drop-after::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    block-size: 2px;
+    background: var(--cd-tree-focus-ring, var(--cd-color-primary));
+    border-radius: 1px;
+    pointer-events: none;
+  }
+  .cd-tree__node--drop-before::after {
+    inset-block-start: -1px;
+  }
+  .cd-tree__node--drop-after::after {
+    inset-block-end: -1px;
+  }
+  /* inside：成为子节点 → 整行高亮框 */
+  .cd-tree__node--drop-inside {
+    background: var(--cd-tree-node-bg-hover);
+    box-shadow: inset 0 0 0 1px var(--cd-tree-focus-ring, var(--cd-color-primary));
+  }
+  /* 节点需相对定位以承载绝对定位的指示线；虚拟化行已 position:absolute，非虚拟行设 relative */
+  .cd-tree__node {
+    position: relative;
   }
 
   /* --- showLine 层级引导线：每层一格，用 ::before 画竖线、::after 画横线 --- */
