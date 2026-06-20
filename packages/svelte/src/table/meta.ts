@@ -6,7 +6,7 @@ export const meta = {
   name: 'Table',
   category: 'show',
   description:
-    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。虚拟化延后。',
+    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。行虚拟滚动 virtualized：仅渲染视口内行切片（复用 core fixedRange），首尾 padding spacer tr 撑总高，保持原生 table 语义；thead sticky 固定顶部；与 pagination 互斥（虚拟时忽略分页）。',
   exports: ['Table'],
   props: [
     { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/ellipsis/sorter/filters/onFilter/render' },
@@ -47,6 +47,9 @@ export const meta = {
     { name: 'empty', type: 'string', default: "'暂无数据'", desc: '空数据占位文案' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: 'table aria-label' },
     { name: 'onRowClick', type: '(info: { record: T; index: number }) => void', default: 'undefined' },
+    { name: 'virtualized', type: 'boolean', default: 'false', desc: '行虚拟滚动：仅渲染视口内行，适合大数据(1000+)。启用时忽略 pagination(全量滚动)、表头 sticky 固定顶部；假定行等高，不建议与 expandable 混用' },
+    { name: 'height', type: 'number', default: '400', desc: '虚拟滚动视口高度(px)，virtualized 时生效' },
+    { name: 'rowHeight', type: 'number', default: '48', desc: '虚拟滚动行高(px)，virtualized 时生效' },
   ],
   events: [
     { name: 'onSortChange', desc: '表头排序切换(三态循环)' },
@@ -107,6 +110,10 @@ export const meta = {
     {
       title: '树形行选择父子联动',
       code: '<Table {columns} dataSource={treeRows} rowKey="key" tree rowSelection={{ onChange: (keys) => (selected = keys) }} />',
+    },
+    {
+      title: '行虚拟滚动（大数据）',
+      code: '<Table {columns} dataSource={bigData} rowKey="id" virtualized height={400} rowHeight={48} />',
     },
   ],
 } as const;
