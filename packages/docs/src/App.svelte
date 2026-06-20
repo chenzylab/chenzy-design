@@ -2942,6 +2942,34 @@ let pageSize2 = $state(10);
         </div>
       </Skeleton>
     </div>
+
+    <div style="margin-top:16px">
+      <Text type="tertiary">keepDOM 模式（unmountPlaceholder=false，display:none 切换，保留 DOM）</Text>
+    </div>
+    <div style="width:360px; margin-top:8px; padding:16px; border:1px solid var(--cd-color-border); border-radius:8px">
+      <Skeleton loading={skeletonLoading} active unmountPlaceholder={false}>
+        {#snippet placeholder()}
+          <div style="display:flex; gap:16px">
+            <SkeletonAvatar size="large" />
+            <div style="flex:1">
+              <SkeletonTitle width="50%" />
+              <div style="margin-top:12px">
+                <SkeletonParagraph rows={2} />
+              </div>
+            </div>
+          </div>
+        {/snippet}
+        <div data-testid="skeleton-keepdom-content" style="display:flex; gap:16px">
+          <div style="width:40px; height:40px; border-radius:50%; background:var(--cd-color-primary); flex:0 0 auto"></div>
+          <div>
+            <strong>陈一</strong>
+            <p style="margin:8px 0 0; color:var(--cd-color-text-1); line-height:1.6">
+              keepDOM 模式下真实内容始终在 DOM，靠 display 切换。
+            </p>
+          </div>
+        </div>
+      </Skeleton>
+    </div>
   </div>
 
   <Divider />
