@@ -212,6 +212,8 @@ export interface Locale {
     titleTarget: string;
     moveToRight: string;
     moveToLeft: string;
+    /** oneWay 模式：移除单项的按钮 aria-label */
+    remove: string;
   };
   Upload: {
     trigger: string;
