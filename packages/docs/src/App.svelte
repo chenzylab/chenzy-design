@@ -490,6 +490,7 @@ let pageSize2 = $state(10);
   let step = $state(1);
   let activeTab = $state<string | number>('a');
   let lastDropdown = $state('');
+  let dropdownPopupContainer = $state<HTMLDivElement | null>(null);
   const tabList = [
     { tab: '账户', itemKey: 'a' },
     { tab: '安全', itemKey: 'b' },
@@ -1735,6 +1736,39 @@ let pageSize2 = $state(10);
           <Button type="secondary">文件菜单 ▾</Button>
         {/snippet}
       </Dropdown>
+    </div>
+
+    <div data-testid="dropdown-destroy">
+      <Text type="tertiary">destroyOnClose：关闭即卸载浮层 DOM，重开重建</Text>
+      <Dropdown
+        items={dropdownItems}
+        trigger="click"
+        destroyOnClose
+        onSelect={(k) => (lastDropdown = String(k))}
+      >
+        {#snippet triggerContent()}
+          <Button type="secondary">destroyOnClose ▾</Button>
+        {/snippet}
+      </Dropdown>
+    </div>
+
+    <div data-testid="dropdown-container">
+      <Text type="tertiary">getPopupContainer：浮层挂到指定容器（非 body）</Text>
+      <div
+        bind:this={dropdownPopupContainer}
+        style="position:relative;padding:16px;border:1px dashed var(--cd-color-border);border-radius:6px;overflow:hidden"
+      >
+        <Dropdown
+          items={dropdownTreeItems}
+          trigger="click"
+          getPopupContainer={() => dropdownPopupContainer}
+          onSelect={(k) => (lastDropdown = String(k))}
+        >
+          {#snippet triggerContent()}
+            <Button type="secondary">挂到容器 ▾</Button>
+          {/snippet}
+        </Dropdown>
+      </div>
     </div>
   </Space>
 
