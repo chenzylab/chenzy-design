@@ -6,7 +6,8 @@
   加载中显示 spinner，结果缓存到本地 extraChildren（不改 treeData prop）。
   multiple：每列 checkbox 多选 + 父子联动（复用 core conduct/toggleCheck，以 value 为 key），
   trigger 按选中叶子路径多 tag 回显可单独移除；value 为 Key[][]（多条路径）。
-  TODO(延后): changeOnSelect 完整语义、hover 展开、搜索 filterTreeNode、displayRender 自定义回显。
+  filterable：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
+  TODO(延后): changeOnSelect 完整语义、hover 展开、displayRender 自定义回显。
 -->
 <script lang="ts">
   import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
@@ -35,6 +36,8 @@
     disabled?: boolean;
     clearable?: boolean;
     changeOnSelect?: boolean;
+    /** 搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中 */
+    filterable?: boolean;
     /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
     /** 单选回调单条路径；多选回调多条叶子路径 */
@@ -56,6 +59,7 @@
     disabled = false,
     clearable = false,
     changeOnSelect = false,
+    filterable = false,
     loadData,
     onChange,
     onOpenChange,
@@ -162,6 +166,73 @@
   }
   const mergedTreeData = $derived(toTreeData(treeData));
 
+  // --- filterable：扁平路径列表 + 搜索过滤 ---
+  let searchValue = $state('');
+  const trimmedSearch = $derived(searchValue.trim());
+  const searchActive = $derived(filterable && trimmedSearch.length > 0);
+
+  interface FlatPath {
+    values: Key[];
+    labels: string[];
+    disabled: boolean;
+  }
+  // 收集所有可选路径：叶子路径；changeOnSelect 时含所有非叶子路径。
+  const flatPaths = $derived.by<FlatPath[]>(() => {
+    const out: FlatPath[] = [];
+    const walk = (nodes: CascaderNode[], vals: Key[], labels: string[], parentDisabled: boolean) => {
+      for (const n of nodes) {
+        const kids = childrenOf(n);
+        const isLeaf = !kids || kids.length === 0;
+        const nv = [...vals, n.value];
+        const nl = [...labels, n.label];
+        const dis = parentDisabled || !!n.disabled;
+        if (isLeaf || changeOnSelect) out.push({ values: nv, labels: nl, disabled: dis });
+        if (!isLeaf) walk(kids, nv, nl, dis);
+      }
+    };
+    walk(treeData, [], [], false);
+    return out;
+  });
+  const filteredPaths = $derived.by<FlatPath[]>(() => {
+    if (!searchActive) return [];
+    const lower = trimmedSearch.toLowerCase();
+    return flatPaths.filter((p) => p.labels.join(' / ').toLowerCase().includes(lower));
+  });
+
+  // 命中文本高亮（作用于整条 label 链字符串）
+  type HlPart = { text: string; mark: boolean };
+  function highlightParts(text: string): HlPart[] {
+    if (!searchActive) return [{ text, mark: false }];
+    const lower = text.toLowerCase();
+    const term = trimmedSearch.toLowerCase();
+    const parts: HlPart[] = [];
+    let from = 0;
+    let idx = lower.indexOf(term, from);
+    while (idx !== -1) {
+      if (idx > from) parts.push({ text: text.slice(from, idx), mark: false });
+      parts.push({ text: text.slice(idx, idx + term.length), mark: true });
+      from = idx + term.length;
+      idx = lower.indexOf(term, from);
+    }
+    if (from < text.length) parts.push({ text: text.slice(from), mark: false });
+    return parts;
+  }
+
+  // 点击扁平路径：单选选中关闭；多选切换勾选（取末端节点）
+  function selectFlatPath(p: FlatPath) {
+    if (p.disabled || disabled) return;
+    if (multiple) {
+      const leaf = p.values[p.values.length - 1] as Key;
+      const nextBase = toggleCheck(mergedTreeData, checkedBase, leaf);
+      const resolved = conduct(mergedTreeData, nextBase);
+      setPaths(leafBaseToPaths(resolved.checked));
+      searchValue = '';
+    } else {
+      setValue(p.values.slice());
+      setOpen(false);
+    }
+  }
+
   // 多选勾选 base：把每条选中路径的叶子 value 作为显式勾选项
   function pathsToLeafBase(paths: Key[][]): Set<Key> {
     const set = new Set<Key>();
@@ -260,6 +331,7 @@
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
+    if (!next) searchValue = '';
     if (!isOpenControlled) innerOpen = next;
     onOpenChange?.(next);
     if (next) {
@@ -469,6 +541,48 @@
       use:floating={{ trigger: rootEl, placement: 'bottomStart', autoAdjust: true, offset: 4 }}
       id={listId}
     >
+      {#if filterable}
+        <div class="cd-cascader__search">
+          <input
+            class="cd-cascader__search-input"
+            type="text"
+            placeholder={loc().t('Cascader.searchPlaceholder')}
+            aria-label={loc().t('Cascader.searchPlaceholder')}
+            bind:value={searchValue}
+          />
+        </div>
+      {/if}
+      {#if searchActive}
+        <ul class="cd-cascader__flat" role="listbox">
+          {#if filteredPaths.length === 0}
+            <li class="cd-cascader__empty">{loc().t('Cascader.emptyText')}</li>
+          {:else}
+            {#each filteredPaths as p (p.values.join('/'))}
+              <li
+                class="cd-cascader__option cd-cascader__flat-option"
+                role="option"
+                aria-selected={false}
+                aria-disabled={p.disabled || undefined}
+                onclick={() => selectFlatPath(p)}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectFlatPath(p);
+                  }
+                }}
+                tabindex={p.disabled ? -1 : 0}
+              >
+                <span class="cd-cascader__option-label">
+                  {#each highlightParts(p.labels.join(' / ')) as part, i (i)}
+                    {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
+                  {/each}
+                </span>
+              </li>
+            {/each}
+          {/if}
+        </ul>
+      {:else}
+      <div class="cd-cascader__columns">
       {#each columns as column, colIndex (colIndex)}
         <ul class="cd-cascader__column" role="listbox">
           {#each column as node (node.value)}
@@ -523,6 +637,8 @@
           {/each}
         </ul>
       {/each}
+      </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -610,11 +726,59 @@
   .cd-cascader__panel {
     z-index: var(--cd-select-dropdown-z);
     display: flex;
-    max-block-size: 16rem;
+    flex-direction: column;
     padding: 0;
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  /* 级联列容器：横向排列各列 */
+  .cd-cascader__columns {
+    display: flex;
+    max-block-size: 16rem;
+  }
+  .cd-cascader__search {
+    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    border-block-end: 1px solid var(--cd-cascader-column-border);
+  }
+  .cd-cascader__search-input {
+    inline-size: 100%;
+    block-size: var(--cd-input-height-small);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-input-bg, transparent);
+    color: inherit;
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+    font: inherit;
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-cascader__search-input:focus-visible {
+    outline: none;
+    border-color: var(--cd-input-border-active);
+    box-shadow: var(--cd-focus-ring);
+  }
+  /* 搜索结果：扁平路径列表（单列纵向滚动） */
+  .cd-cascader__flat {
+    margin: 0;
+    padding-block: var(--cd-spacing-1);
+    padding-inline: 0;
+    list-style: none;
+    max-block-size: 16rem;
+    min-inline-size: var(--cd-cascader-column-width);
+    overflow-y: auto;
+  }
+  .cd-cascader__flat-option {
+    justify-content: flex-start;
+  }
+  .cd-cascader__empty {
+    padding: var(--cd-tree-node-padding-x);
+    color: var(--cd-color-text-3);
+    text-align: center;
+  }
+  .cd-cascader__highlight {
+    padding: 0;
+    color: var(--cd-tree-search-highlight-color);
+    background: var(--cd-tree-search-highlight-bg);
   }
   .cd-cascader__column {
     margin: 0;

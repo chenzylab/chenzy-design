@@ -196,6 +196,7 @@ export const zh_CN: Locale = {
   TreeSelect: {
     clear: '清除',
     emptyText: '无数据',
+    searchPlaceholder: '搜索',
   },
   AutoComplete: {
     clear: '清除',
@@ -207,6 +208,8 @@ export const zh_CN: Locale = {
   Cascader: {
     clear: '清除',
     loading: '加载中',
+    searchPlaceholder: '搜索',
+    emptyText: '无匹配项',
   },
   Carousel: {
     prev: '上一张',

@@ -235,6 +235,7 @@ export interface Locale {
   TreeSelect: {
     clear: string;
     emptyText: string;
+    searchPlaceholder: string;
   };
   AutoComplete: {
     clear: string;
@@ -246,6 +247,8 @@ export interface Locale {
   Cascader: {
     clear: string;
     loading: string;
+    searchPlaceholder: string;
+    emptyText: string;
   };
   Carousel: {
     prev: string;

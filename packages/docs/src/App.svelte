@@ -717,14 +717,16 @@ let pageSize2 = $state(10);
 
   <Title heading={5}>Cascader / TreeSelect</Title>
   <Space direction="vertical" align="start">
-    <div style="width: 240px">
+    <div style="width: 240px" data-testid="cascader-filter">
       <Cascader
         treeData={regionData}
         value={cascaderVal}
         clearable
+        filterable
+        placeholder="可搜索级联"
         onChange={(p) => (cascaderVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
       />
-      <Text type="tertiary">级联：{cascaderVal.join(' / ') || '（未选）'}</Text>
+      <Text type="tertiary">级联（可搜索）：{cascaderVal.join(' / ') || '（未选）'}</Text>
     </div>
     <div style="width: 320px" data-testid="cascader-multiple">
       <Cascader
@@ -741,15 +743,16 @@ let pageSize2 = $state(10);
       <Cascader treeData={lazyRegionData} loadData={loadRegionChildren} />
       <Text type="tertiary">异步 loadData（点击节点动态加载）</Text>
     </div>
-    <div style="width: 240px">
+    <div style="width: 240px" data-testid="treeselect-filter">
       <TreeSelect
         treeData={orgTree}
         value={treeVal}
         clearable
-        defaultExpandAll
+        filterable
+        placeholder="可搜索树选"
         onChange={(k) => (treeVal = Array.isArray(k) ? (k[0] ?? null) : k)}
       />
-      <Text type="tertiary">树选：{treeVal ?? '（未选）'}</Text>
+      <Text type="tertiary">树选（可搜索）：{treeVal ?? '（未选）'}</Text>
     </div>
     <div style="width: 280px" data-testid="treeselect-multiple">
       <TreeSelect
