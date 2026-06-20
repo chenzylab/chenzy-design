@@ -6,8 +6,8 @@ export const meta = {
   name: 'Avatar',
   category: 'show',
   description:
-    '头像：支持图片(src/srcset)、加载失败降级到 children/alt 首字，circle/square 形状，枚举或自定义数字尺寸，color=auto 按文字哈希取色，右下角状态点。',
-  exports: ['Avatar'],
+    '头像：支持图片(src/srcset)、加载失败降级到 children/alt 首字，circle/square 形状，枚举或自定义数字尺寸，color=auto 按文字哈希取色，右下角状态点。Avatar.Group 把多个头像重叠排列，items+maxCount 折叠出「+M」溢出头像，组级 shape/size 透传（子 Avatar 自身 prop 优先）。',
+  exports: ['Avatar', 'AvatarGroup'],
   props: [
     { name: 'src', type: 'string', default: 'undefined', desc: '图片地址' },
     { name: 'srcset', type: 'string', default: 'undefined' },
@@ -53,5 +53,13 @@ export const meta = {
     { title: '图片', code: '<Avatar src="/u.png" alt="用户" />' },
     { title: '文字', code: '<Avatar color="auto" alt="陈" />' },
     { title: '状态点', code: '<Avatar alt="A" dot status="error" />' },
+    {
+      title: '头像组折叠',
+      code: '<Avatar.Group maxCount={3} items={[{content:"陈"},{content:"李"},{content:"王"},{content:"赵"}]} />',
+    },
+    {
+      title: '头像组自定义',
+      code: '<Avatar.Group size="small"><Avatar>陈</Avatar><Avatar color="auto" alt="李" /></Avatar.Group>',
+    },
   ],
 } as const;

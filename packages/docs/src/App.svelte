@@ -1728,6 +1728,26 @@ let pageSize2 = $state(10);
       <Avatar dot status="error">E</Avatar>
     </Space>
 
+    <div data-testid="avatar-group">
+      <Space direction="vertical" align="start">
+        <Avatar.Group
+          maxCount={3}
+          items={[
+            { color: 'auto', content: '陈' },
+            { color: 'auto', content: '李' },
+            { color: 'auto', content: '王' },
+            { color: 'auto', content: '赵' },
+            { color: 'auto', content: '孙' },
+          ]}
+        />
+        <Avatar.Group size="small" shape="square">
+          <Avatar color="primary">陈</Avatar>
+          <Avatar color="auto" alt="李" />
+          <Avatar color="auto" alt="王" />
+        </Avatar.Group>
+      </Space>
+    </div>
+
     <Space>
       <Badge count={5}><Avatar shape="square">消</Avatar></Badge>
       <Badge count={128}><Avatar shape="square">多</Avatar></Badge>

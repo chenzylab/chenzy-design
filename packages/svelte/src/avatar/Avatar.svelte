@@ -4,9 +4,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { getAvatarGroupContext, type AvatarShape, type AvatarSizeEnum } from './context.js';
 
-  type AvatarShape = 'circle' | 'square';
-  type AvatarSizeEnum = 'extra-small' | 'small' | 'default' | 'large' | 'extra-large';
   type AvatarStatus = 'default' | 'warning' | 'error';
 
   interface Props {
@@ -27,8 +26,8 @@
     src,
     srcset,
     alt,
-    shape = 'circle',
-    size = 'default',
+    shape: shapeProp,
+    size: sizeProp,
     color = 'grey',
     status = 'default',
     dot = false,
@@ -36,6 +35,12 @@
     gap = 3,
     children,
   }: Props = $props();
+
+  // Avatar.Group may provide shared shape/size; the child's own prop wins,
+  // falling back to the group's value, then the standalone default.
+  const group = getAvatarGroupContext();
+  const shape = $derived(shapeProp ?? group?.getShape() ?? 'circle');
+  const size = $derived(sizeProp ?? group?.getSize() ?? 'default');
 
   // image load failure → fall back to text/children
   let failed = $state(false);
