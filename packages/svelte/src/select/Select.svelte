@@ -3,7 +3,8 @@
   单选 / 多选 / 本地过滤 / 键盘导航 / 浮层。Token-driven, a11y-correct.
   下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
   maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
-  TODO(延后): 虚拟化、分组 GroupData、远程 remote/loading 防抖。
+  分组：options 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
+  TODO(延后): 虚拟化、远程 remote/loading 防抖。
 -->
 <script lang="ts">
   import { useId, useDismiss } from '@chenzy-design/core';
@@ -12,13 +13,21 @@
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean };
+  /** 选项分组：含 options 即为分组项 */
+  type OptionGroup = { label: string; options: OptionData[] };
+  type OptionOrGroup = OptionData | OptionGroup;
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
+
+  function isGroup(o: OptionOrGroup): o is OptionGroup {
+    return Array.isArray((o as OptionGroup).options);
+  }
 
   interface Props {
     value?: OptionValue | OptionValue[];
     defaultValue?: OptionValue | OptionValue[];
-    options?: OptionData[];
+    /** 选项；可含分组项 { label, options: [] } */
+    options?: OptionOrGroup[];
     multiple?: boolean;
     filter?: boolean;
     open?: boolean;
@@ -104,16 +113,47 @@
   // --- 本地过滤搜索 ---
   let query = $state('');
 
+  // 是否含分组：决定渲染走分组结构还是扁平。
+  const hasGroups = $derived(options.some(isGroup));
+  // 扁平选项序列（拍平分组）——逻辑/键盘/filter/回显统一基于它。
+  const flatBase = $derived<OptionData[]>(
+    options.flatMap((o) => (isGroup(o) ? o.options : [o])),
+  );
+
   // allowCreate：本地已创建选项，合并进选项集供回显与列表（不写回 options prop）。
   let createdOptions = $state<OptionData[]>([]);
   const mergedOptions = $derived<OptionData[]>(
-    createdOptions.length === 0 ? options : [...options, ...createdOptions],
+    createdOptions.length === 0 ? flatBase : [...flatBase, ...createdOptions],
   );
 
   const filteredOptions = $derived.by(() => {
     if (!filter || query.trim() === '') return mergedOptions;
     const q = query.toLowerCase();
     return mergedOptions.filter((o) => o.label.toLowerCase().includes(q));
+  });
+
+  // 分组渲染视图：每组过滤后的选项 + 全局扁平索引（用于 activeIndex 匹配）。
+  // 仅在 hasGroups 时使用；createdOptions 归入末尾「（新建）」无组段。
+  const groupedView = $derived.by<{ label: string | null; items: { opt: OptionData; flatIndex: number }[] }[]>(() => {
+    if (!hasGroups) return [];
+    const out: { label: string | null; items: { opt: OptionData; flatIndex: number }[] }[] = [];
+    const indexOf = (opt: OptionData) => filteredOptions.indexOf(opt);
+    for (const o of options) {
+      if (isGroup(o)) {
+        const items = o.options
+          .filter((opt) => filteredOptions.includes(opt))
+          .map((opt) => ({ opt, flatIndex: indexOf(opt) }));
+        if (items.length > 0) out.push({ label: o.label, items });
+      } else if (filteredOptions.includes(o)) {
+        out.push({ label: null, items: [{ opt: o, flatIndex: indexOf(o) }] });
+      }
+    }
+    // 已创建选项（无组）
+    const created = createdOptions
+      .filter((opt) => filteredOptions.includes(opt))
+      .map((opt) => ({ opt, flatIndex: indexOf(opt) }));
+    if (created.length > 0) out.push({ label: null, items: created });
+    return out;
   });
 
   // 当前输入是否可创建新选项：allowCreate + filter 有输入 + 无 label 完全匹配。
@@ -402,43 +442,56 @@
       {/if}
       {#if filteredOptions.length === 0 && !canCreate}
         <div class="cd-select__empty">{loc().t('Select.emptyText')}</div>
+      {:else if hasGroups}
+        {#each groupedView as group, gi (group.label ?? `g-${gi}`)}
+          {#if group.label !== null}
+            <div class="cd-select__group-label" role="presentation">{group.label}</div>
+          {/if}
+          {#each group.items as it (it.opt.value)}
+            {@render optionRow(it.opt, it.flatIndex)}
+          {/each}
+        {/each}
       {:else}
         {#each filteredOptions as opt, i (opt.value)}
-          <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            class="cd-select__option"
-            class:cd-select__option--active={i === activeIndex}
-            class:cd-select__option--selected={isSelected(opt.value)}
-            id={`${listId}-opt-${i}`}
-            role="option"
-            aria-selected={isSelected(opt.value)}
-            aria-disabled={opt.disabled || undefined}
-            tabindex="-1"
-            onpointerenter={() => {
-              if (!opt.disabled) activeIndex = i;
-            }}
-            onclick={() => selectOption(opt)}
-          >
-            {#if multiple}
-              <span class="cd-select__check" aria-hidden="true">
-                {#if isSelected(opt.value)}
-                  <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-                    <path
-                      fill="currentColor"
-                      d="M6.2 11.2 2.9 7.9l1.1-1.1 2.2 2.2 5-5L12.3 5l-6.1 6.2Z"
-                    />
-                  </svg>
-                {/if}
-              </span>
-            {/if}
-            <span class="cd-select__option-label">{opt.label}</span>
-          </div>
+          {@render optionRow(opt, i)}
         {/each}
       {/if}
     </div>
   {/if}
 </div>
+
+{#snippet optionRow(opt: OptionData, i: number)}
+  <!-- 选项通过 combobox 的 roving + aria-activedescendant 键盘操作，无需自身键事件 -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="cd-select__option"
+    class:cd-select__option--active={i === activeIndex}
+    class:cd-select__option--selected={isSelected(opt.value)}
+    id={`${listId}-opt-${i}`}
+    role="option"
+    aria-selected={isSelected(opt.value)}
+    aria-disabled={opt.disabled || undefined}
+    tabindex="-1"
+    onpointerenter={() => {
+      if (!opt.disabled) activeIndex = i;
+    }}
+    onclick={() => selectOption(opt)}
+  >
+    {#if multiple}
+      <span class="cd-select__check" aria-hidden="true">
+        {#if isSelected(opt.value)}
+          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+            <path
+              fill="currentColor"
+              d="M6.2 11.2 2.9 7.9l1.1-1.1 2.2 2.2 5-5L12.3 5l-6.1 6.2Z"
+            />
+          </svg>
+        {/if}
+      </span>
+    {/if}
+    <span class="cd-select__option-label">{opt.label}</span>
+  </div>
+{/snippet}
 
 <style>
   .cd-select {
@@ -572,6 +625,13 @@
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  .cd-select__group-label {
+    padding: var(--cd-spacing-1) var(--cd-select-option-padding, var(--cd-spacing-2));
+    color: var(--cd-color-text-3);
+    font-size: var(--cd-font-size-1);
+    font-weight: var(--cd-font-weight-medium, 500);
+    user-select: none;
   }
   .cd-select__option {
     display: flex;
