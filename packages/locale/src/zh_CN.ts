@@ -151,6 +151,9 @@ export const zh_CN: Locale = {
     prevMonth: '上个月',
     nextMonth: '下个月',
     triggerLabel: '选择日期',
+    startPlaceholder: '开始日期',
+    endPlaceholder: '结束日期',
+    rangeTriggerLabel: '选择日期范围',
   },
   TimePicker: {
     placeholder: '请选择时间',
