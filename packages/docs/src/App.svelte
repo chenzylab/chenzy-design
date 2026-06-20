@@ -354,6 +354,7 @@ let presetVal = $state<Date | null>(null);
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
+  let transferGroupVal = $state<(string | number)[]>(['hz']);
   // picture-card 上传：含一个初始已上传项（url 预览），便于直接看到缩略图
   let uploadImageVal = $state<
     { uid: string; name: string; size: number; status: 'ready' | 'uploading' | 'success' | 'error'; url?: string; file?: File }[]
@@ -432,6 +433,23 @@ let pageSize2 = $state(10);
     { key: 'b', label: '上海' },
     { key: 'c', label: '广州' },
     { key: 'd', label: '深圳' },
+  ];
+  const transferGroupData = [
+    {
+      title: '华东',
+      items: [
+        { key: 'hz', label: '杭州' },
+        { key: 'nj', label: '南京' },
+        { key: 'sh', label: '上海' },
+      ],
+    },
+    {
+      title: '华南',
+      items: [
+        { key: 'gz', label: '广州' },
+        { key: 'sz', label: '深圳' },
+      ],
+    },
   ];
   const regionData = [
     {
@@ -1048,6 +1066,16 @@ let pageSize2 = $state(10);
       onChange={(keys) => (transferVal = keys)}
     />
     <Text type="tertiary">已选：{transferVal.join(', ') || '（无）'}</Text>
+
+    <div data-testid="transfer-group">
+      <Transfer
+        dataSource={transferGroupData}
+        value={transferGroupVal}
+        titles={['可选城市', '已选城市']}
+        onChange={(keys) => (transferGroupVal = keys)}
+      />
+    </div>
+    <Text type="tertiary">分组已选：{transferGroupVal.join(', ') || '（无）'}</Text>
 
     <Upload multiple drag accept="image/*" />
 

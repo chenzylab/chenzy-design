@@ -47,7 +47,7 @@ export {
   type TreeNode,
   type TreeKey,
 } from './tree-select/index.js';
-export { Transfer, transferMeta, type TransferItem } from './transfer/index.js';
+export { Transfer, transferMeta, type TransferItem, type TransferGroup } from './transfer/index.js';
 export {
   Upload,
   uploadMeta,
