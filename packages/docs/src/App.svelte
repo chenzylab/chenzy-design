@@ -502,6 +502,10 @@ let pageSize2 = $state(10);
     { tab: '安全审计', itemKey: 'o7' },
     { tab: '高级设置', itemKey: 'o8' },
   ];
+  // overflow=dropdown demo：窄容器把放不下的标签收进末尾「更多」下拉
+  let dropdownTabActive = $state<string | number>('o1');
+  // type=button demo：分段按钮组
+  let buttonTabActive = $state<string | number>('a');
   // addable demo：「+」按钮回调里父组件追加 tab（受控数据）
   let addableActive = $state<string | number>('t1');
   let addableTabs = $state([
@@ -1650,6 +1654,26 @@ let pageSize2 = $state(10);
         tabList={overflowTabs}
         value={overflowActive}
         onChange={(k) => (overflowActive = k)}
+      />
+    </div>
+
+    <Text type="tertiary">溢出收纳 overflow=dropdown（放不下的标签进末尾「更多」下拉，激活标签始终可见）：</Text>
+    <div style="width: 280px" data-testid="tabs-overflow-dropdown">
+      <Tabs
+        tabList={overflowTabs}
+        overflow="dropdown"
+        value={dropdownTabActive}
+        onChange={(k) => (dropdownTabActive = k)}
+      />
+    </div>
+
+    <Text type="tertiary">type=button（分段按钮组）：</Text>
+    <div data-testid="tabs-button">
+      <Tabs
+        type="button"
+        tabList={tabList}
+        value={buttonTabActive}
+        onChange={(k) => (buttonTabActive = k)}
       />
     </div>
 

@@ -84,6 +84,79 @@ export function computeVisibleCount(input: OverflowComputeInput): OverflowComput
 }
 
 /**
+ * Tabs dropdown-overflow partition input. Given measured tab sizes + the bar's
+ * available main-axis size, decide which leading tabs render inline and which
+ * collapse into a "more" trigger. Pure math: the svelte layer measures DOM
+ * (ResizeObserver) and feeds sizes in. The active tab is always kept visible
+ * (Semi behavior) — if it would collapse, it is pulled into the visible set so
+ * the selected panel's tab is never hidden behind the dropdown.
+ */
+export interface TabOverflowInput {
+  /** measured main-axis size of each tab, in document order */
+  tabSizes: readonly number[];
+  /** available main-axis size of the tab bar (minus reserved chrome) */
+  containerSize: number;
+  /** main-axis size of the "more" trigger (reserved when collapsing) */
+  moreSize: number;
+  /** gap between adjacent tabs */
+  gap: number;
+  /** index of the active tab; always kept in the visible set when valid */
+  activeIndex?: number;
+}
+
+export interface TabOverflowResult {
+  /** tab indexes rendered inline, in document order */
+  visibleIndexes: number[];
+  /** tab indexes collapsed into the "more" dropdown, in document order */
+  overflowIndexes: number[];
+}
+
+/**
+ * Partition tabs into visible (inline) and overflow (collapsed into "more").
+ * Reuses {@link computeVisibleCount} for the leading-fit math, then guarantees
+ * the active tab is visible by swapping it into the last visible slot if it
+ * landed in the overflow set.
+ */
+export function computeTabOverflow(input: TabOverflowInput): TabOverflowResult {
+  const { tabSizes, containerSize, moreSize, gap, activeIndex } = input;
+  const count = tabSizes.length;
+  if (count === 0) return { visibleIndexes: [], overflowIndexes: [] };
+
+  const { visibleCount } = computeVisibleCount({
+    itemSizes: tabSizes,
+    containerSize,
+    overflowSize: moreSize,
+    gap,
+  });
+
+  // Leading tabs are visible by default.
+  const visible = new Set<number>();
+  for (let i = 0; i < visibleCount; i += 1) visible.add(i);
+
+  // Guarantee the active tab is visible: if it overflowed, swap it for the last
+  // leading visible tab (which is then pushed into overflow). Keeps the visible
+  // count stable so the "more" reservation still holds.
+  if (
+    activeIndex !== undefined &&
+    activeIndex >= 0 &&
+    activeIndex < count &&
+    !visible.has(activeIndex) &&
+    visibleCount > 0
+  ) {
+    visible.delete(visibleCount - 1);
+    visible.add(activeIndex);
+  }
+
+  const visibleIndexes: number[] = [];
+  const overflowIndexes: number[] = [];
+  for (let i = 0; i < count; i += 1) {
+    if (visible.has(i)) visibleIndexes.push(i);
+    else overflowIndexes.push(i);
+  }
+  return { visibleIndexes, overflowIndexes };
+}
+
+/**
  * Apply hysteresis: keep the previous visibleCount unless the new computation
  * differs by enough to cross the threshold band, preventing flicker at the
  * boundary width. Returns the count to actually render.
