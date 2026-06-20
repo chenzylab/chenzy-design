@@ -49,6 +49,19 @@ export interface Expandable<T> {
   onExpand?: (expanded: boolean, record: T) => void;
 }
 
+export interface TreeTable {
+  /** 子行字段名，默认 'children' */
+  childrenColumnName?: string;
+  /** 每层缩进像素，默认 16 */
+  indentSize?: number;
+  /** 非受控初始展开行 key 列表 */
+  defaultExpandedRowKeys?: RowKey[];
+  /** 受控展开行 key 列表；受控时不回写，仅 onExpand 通知 */
+  expandedRowKeys?: RowKey[];
+  /** 展开/收起回调 */
+  onExpand?: (expanded: boolean, key: RowKey) => void;
+}
+
 export interface RowSelection<T> {
   /** 受控选中行 key 列表 */
   selectedRowKeys?: RowKey[];

@@ -55,10 +55,12 @@ export {
   selectAllState,
   toggleSelectAll,
   toggleRow,
+  flattenTreeRows,
   type RowKey,
   type SortOrder,
   type SortState,
   type SelectAllState,
+  type FlatRow,
 } from './table.js';
 export {
   eventCoversDay,

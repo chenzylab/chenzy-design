@@ -8,6 +8,7 @@ import {
   selectAllState,
   toggleSelectAll,
   toggleRow,
+  flattenTreeRows,
   type SortState,
 } from './table.js';
 
@@ -104,5 +105,53 @@ describe('selection', () => {
   it('toggleRow flips a single row', () => {
     expect([...toggleRow(new Set(), 'a')]).toEqual(['a']);
     expect([...toggleRow(new Set(['a']), 'a')]).toEqual([]);
+  });
+});
+
+describe('flattenTreeRows', () => {
+  interface Row {
+    id: number;
+    children?: Row[];
+  }
+  const data: Row[] = [
+    {
+      id: 1,
+      children: [{ id: 11 }, { id: 12, children: [{ id: 121 }] }],
+    },
+    { id: 2 },
+    { id: 3, children: [{ id: 31 }] },
+  ];
+  const getKey = (r: Row) => r.id;
+  const getChildren = (r: Row) => r.children;
+
+  it('shows only top-level rows when nothing is expanded', () => {
+    const flat = flattenTreeRows(data, new Set(), getKey, getChildren);
+    expect(flat.map((r) => r.key)).toEqual([1, 2, 3]);
+    expect(flat.every((r) => r.level === 0)).toBe(true);
+    expect(flat.map((r) => r.hasChildren)).toEqual([true, false, true]);
+    expect(flat.map((r) => r.topIndex)).toEqual([0, 1, 2]);
+  });
+
+  it('reveals children of expanded rows with incremented level', () => {
+    const flat = flattenTreeRows(data, new Set([1]), getKey, getChildren);
+    expect(flat.map((r) => r.key)).toEqual([1, 11, 12, 2, 3]);
+    const r12 = flat.find((r) => r.key === 12)!;
+    expect(r12.level).toBe(1);
+    expect(r12.parentKey).toBe(1);
+    expect(r12.hasChildren).toBe(true);
+  });
+
+  it('recurses into nested expanded rows and carries topIndex', () => {
+    const flat = flattenTreeRows(data, new Set([1, 12]), getKey, getChildren);
+    expect(flat.map((r) => r.key)).toEqual([1, 11, 12, 121, 2, 3]);
+    const deep = flat.find((r) => r.key === 121)!;
+    expect(deep.level).toBe(2);
+    expect(deep.parentKey).toBe(12);
+    expect(deep.topIndex).toBe(0);
+  });
+
+  it('does not expand a key with no children', () => {
+    const flat = flattenTreeRows(data, new Set([2]), getKey, getChildren);
+    expect(flat.map((r) => r.key)).toEqual([1, 2, 3]);
   });
 });

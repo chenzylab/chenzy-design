@@ -8,7 +8,10 @@
   列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
   列宽拖拽：column.resizable，列头右侧拖拽手柄，指针几何命令式管理(红线 #3)；
   覆盖宽度存本地 SvelteMap 不写回 columns prop(红线 #1)，进 cellStyle 宽度计算。
-  TODO(延后): 虚拟化 / 树形数据。
+  树形数据：tree=true 或 tree={{ childrenColumnName, indentSize, expandedRowKeys... }}；
+  行含 children 自动嵌套，第一列内展开三角 + 逐级缩进；排序/分页/筛选作用于顶层行，
+  可见行经 core flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)；受控展开 keys 不回写 (红线 #1)。
+  TODO(延后): 虚拟化。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -18,15 +21,17 @@
     selectAllState,
     toggleSelectAll,
     toggleRow,
+    flattenTreeRows,
     type RowKey,
     type SortState,
+    type FlatRow,
   } from '@chenzy-design/core';
   import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import type { ColumnDef, RowSelection, Expandable, Align, TableSize } from './types.js';
+  import type { ColumnDef, RowSelection, Expandable, TreeTable, Align, TableSize } from './types.js';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -44,6 +49,7 @@
     pagination,
     rowSelection,
     expandable,
+    tree,
     rowClassName,
     empty,
     ariaLabel,
@@ -69,6 +75,7 @@
         };
     rowSelection?: RowSelection<T>;
     expandable?: Expandable<T>;
+    tree?: boolean | TreeTable;
     rowClassName?: (record: T, index: number) => string;
     empty?: string;
     ariaLabel?: string;
@@ -271,14 +278,63 @@
   );
   const selectedSet = $derived(new Set(currentSelectedKeys));
 
-  // 全选范围 = 当前渲染行集；半选状态据当前可见行计算
-  const visibleKeys = $derived(visibleRows.map((r) => getKey(r)));
+  // --- 树形数据（嵌套行）---
+  // tree 启用时：filter/sort/paginate 作用于顶层行(processed/visibleRows)，
+  // 然后据展开态把可见顶层行扁平化为带 level/hasChildren 的渲染行列表。
+  // 受控 tree.expandedRowKeys 不回写，仅 onExpand 通知 (红线 #1)。
+  const treeEnabled = $derived(tree !== undefined && tree !== false);
+  const treeOpts = $derived<TreeTable>(typeof tree === 'object' ? tree : {});
+  const childrenColumnName = $derived(treeOpts.childrenColumnName ?? 'children');
+  const indentSize = $derived(treeOpts.indentSize ?? 16);
+
+  function getChildren(record: T): T[] | undefined {
+    const kids = record[childrenColumnName];
+    return Array.isArray(kids) ? (kids as T[]) : undefined;
+  }
+
+  const isTreeExpandControlled = $derived(treeOpts.expandedRowKeys !== undefined);
+  let innerTreeExpanded = $state<RowKey[]>(initTreeExpanded());
+  function initTreeExpanded(): RowKey[] {
+    return [...(typeof tree === 'object' ? (tree.defaultExpandedRowKeys ?? []) : [])];
+  }
+  const treeExpandedSet = $derived<Set<RowKey>>(
+    new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
+  );
+
+  function toggleTreeExpand(record: T) {
+    const key = getKey(record);
+    const next = new Set(treeExpandedSet);
+    const willExpand = !next.has(key);
+    if (willExpand) next.add(key);
+    else next.delete(key);
+    if (!isTreeExpandControlled) innerTreeExpanded = [...next];
+    treeOpts.onExpand?.(willExpand, key);
+  }
+
+  // 扁平化可见行：纯 $derived，不读 effect 写的状态 (红线 #2)。
+  // 顶层行已是分页后的 visibleRows；树形时递归展开，否则等价 1:1 映射。
+  const displayRows = $derived.by<FlatRow<T>[]>(() => {
+    if (!treeEnabled) {
+      return visibleRows.map((record, i) => ({
+        record,
+        key: getKey(record),
+        level: 0,
+        parentKey: null,
+        hasChildren: false,
+        topIndex: i,
+      }));
+    }
+    return flattenTreeRows(visibleRows, treeExpandedSet, getKey, getChildren);
+  });
+
+  // 全选范围 = 当前渲染行集（树形含已展开的子行）；半选据可见行计算
+  const visibleKeys = $derived(displayRows.map((r) => r.key));
   const disabledSet = $derived.by(() => {
     const set = new Set<RowKey>();
     const getProps = rowSelection?.getCheckboxProps;
     if (getProps) {
-      for (const r of visibleRows) {
-        if (getProps(r).disabled) set.add(getKey(r));
+      for (const r of displayRows) {
+        if (getProps(r.record).disabled) set.add(r.key);
       }
     }
     return set;
@@ -322,10 +378,10 @@
     expandable?.onExpand?.(willExpand, record);
   }
 
-  // --- 选择变更：回调取对应行对象（在可见行集中查找）---
+  // --- 选择变更：回调取对应行对象（在当前渲染行集中查找，树形含子行）---
   function rowsForKeys(keys: RowKey[]): T[] {
     const map = new Map<RowKey, T>();
-    for (const r of visibleRows) map.set(getKey(r), r);
+    for (const r of displayRows) map.set(r.key, r.record);
     const result: T[] = [];
     for (const k of keys) {
       const r = map.get(k);
@@ -635,8 +691,10 @@
           </td>
         </tr>
       {:else}
-        {#each visibleRows as record, index (getKey(record))}
-          {@const key = getKey(record)}
+        {#each displayRows as row (row.key)}
+          {@const record = row.record}
+          {@const key = row.key}
+          {@const index = row.topIndex}
           {@const selected = selectedSet.has(key)}
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
@@ -646,6 +704,7 @@
             class:cd-table__row--selected={selected}
             class:cd-table__row--stripe={stripe && index % 2 === 1}
             class:cd-table__row--clickable={clickable}
+            class:cd-table__row--child={treeEnabled && row.level > 0}
             onclick={clickable ? () => onRowClick?.({ record, index }) : undefined}
           >
             {#if hasExpand}
@@ -689,6 +748,28 @@
                 class:cd-table__cell--ellipsis={col.ellipsis}
                 style={cellStyle(col, i)}
               >
+                {#if treeEnabled && i === 0}
+                  <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                  {#if row.hasChildren}
+                    <button
+                      type="button"
+                      class="cd-table__tree-toggle"
+                      class:cd-table__tree-toggle--open={treeExpandedSet.has(key)}
+                      aria-expanded={treeExpandedSet.has(key)}
+                      aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        toggleTreeExpand(record);
+                      }}
+                    >
+                      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+                      </svg>
+                    </button>
+                  {:else}
+                    <span class="cd-table__tree-toggle cd-table__tree-toggle--placeholder" aria-hidden="true"></span>
+                  {/if}
+                {/if}
                 {#if col.render}
                   {@render col.render({ value, record, index })}
                 {:else}
@@ -827,6 +908,46 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  /* --- 树形数据：缩进 + 展开三角 --- */
+  .cd-table__tree-indent {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .cd-table__tree-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 16px;
+    block-size: 16px;
+    margin-inline-end: var(--cd-spacing-1);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    vertical-align: middle;
+    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-table__tree-toggle:hover {
+    color: var(--cd-color-text-0);
+  }
+  .cd-table__tree-toggle:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-table__tree-toggle--open {
+    transform: rotate(90deg);
+  }
+  .cd-table__tree-toggle--placeholder {
+    cursor: default;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-table__tree-toggle {
+      transition: none;
+    }
   }
 
   /* --- 固定列：sticky 单元格需不透明背景，避免透出横滚内容 --- */
