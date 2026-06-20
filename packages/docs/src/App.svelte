@@ -653,6 +653,29 @@ let pageSize2 = $state(10);
     </Form>
   </div>
 
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-list">
+    <Text type="tertiary">Form.List 动态字段数组（增/删联系人）：</Text>
+    <Form>
+      <Form.List name="contacts" initialCount={1}>
+        {#snippet children({ items, name, add, remove })}
+          {#each items as item, i (item.key)}
+            <div style="display:flex; gap:8px; align-items:flex-start">
+              <div style="flex:1">
+                <Form.Input field={name(item, 'name')} label={`联系人 ${i + 1}`} required />
+              </div>
+              <button
+                type="button"
+                style="margin-top:28px"
+                onclick={() => remove(item)}
+              >删除</button>
+            </div>
+          {/each}
+          <Button onclick={add}>+ 添加联系人</Button>
+        {/snippet}
+      </Form.List>
+    </Form>
+  </div>
+
   <Divider />
 
   <Title heading={5}>Select / AutoComplete</Title>
