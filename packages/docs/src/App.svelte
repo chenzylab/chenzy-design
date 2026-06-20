@@ -947,6 +947,16 @@ let pageSize2 = $state(10);
     </div>
   </div>
 
+  <div style="margin-top:16px" data-testid="menu-horizontal">
+    <Text type="tertiary">horizontal 菜单栏（hover 子菜单 + ←→ 导航）</Text>
+    <Menu
+      items={menuPopupItems}
+      mode="horizontal"
+      selectedKeys={[menuSelected]}
+      onSelect={(k) => (menuSelected = k)}
+    />
+  </div>
+
   <Divider />
 
   <Title heading={5}>M4 展示：Tag / Avatar / Badge / Card</Title>
