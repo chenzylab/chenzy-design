@@ -123,3 +123,58 @@ export function toggleRow(
   else next.add(key);
   return next;
 }
+
+// --- Tree data (嵌套行) ---------------------------------------------------
+
+/** A tree row flattened into the visible, ordered list (only expanded subtrees). */
+export interface FlatRow<T> {
+  /** the original data record */
+  record: T;
+  /** the record's resolved row key */
+  key: RowKey;
+  /** depth from the top level, starting at 0 */
+  level: number;
+  /** parent key, or null for top-level rows */
+  parentKey: RowKey | null;
+  /** has at least one child row */
+  hasChildren: boolean;
+  /** index of the record among the *top-level* rows (stable for striping/aria) */
+  topIndex: number;
+}
+
+/**
+ * Flatten tree-structured rows into an ordered list of visible rows.
+ * A row's children are included only when its key is in `expandedKeys`.
+ * Pure: no DOM, no mutable state — the render layer owns expansion state.
+ *
+ * `getKey` resolves a row's key; `getChildren` returns child rows (or
+ * undefined/empty for leaves). `topIndex` is the row's position among the
+ * top-level rows it descends from, so callers can keep stable striping/aria.
+ */
+export function flattenTreeRows<T>(
+  rows: readonly T[],
+  expandedKeys: ReadonlySet<RowKey>,
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+): FlatRow<T>[] {
+  const out: FlatRow<T>[] = [];
+  function walk(
+    nodes: readonly T[],
+    level: number,
+    parentKey: RowKey | null,
+    topIndex: number,
+  ): void {
+    nodes.forEach((record, i) => {
+      const key = getKey(record);
+      const children = getChildren(record);
+      const hasChildren = !!children && children.length > 0;
+      const ti = level === 0 ? i : topIndex;
+      out.push({ record, key, level, parentKey, hasChildren, topIndex: ti });
+      if (hasChildren && expandedKeys.has(key)) {
+        walk(children as readonly T[], level + 1, key, ti);
+      }
+    });
+  }
+  walk(rows, 0, null, 0);
+  return out;
+}

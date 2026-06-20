@@ -6,7 +6,7 @@ export const meta = {
   name: 'Table',
   category: 'show',
   description:
-    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。虚拟化 / 树形延后。',
+    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。虚拟化延后。',
   exports: ['Table'],
   props: [
     { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/ellipsis/sorter/filters/onFilter/render' },
@@ -36,6 +36,12 @@ export const meta = {
       type: 'Expandable<T>',
       default: 'undefined',
       desc: 'expandedRowRender / rowExpandable / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand',
+    },
+    {
+      name: 'tree',
+      type: 'boolean | TreeTable',
+      default: 'undefined',
+      desc: '树形数据：true 或 { childrenColumnName(默认 children) / indentSize(默认 16) / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand }。第一列内展开三角+逐级缩进；排序/分页/筛选作用于顶层行',
     },
     { name: 'rowClassName', type: '(record: T, index: number) => string', default: 'undefined' },
     { name: 'empty', type: 'string', default: "'暂无数据'", desc: '空数据占位文案' },
@@ -93,6 +99,10 @@ export const meta = {
     {
       title: '列宽拖拽',
       code: '<Table columns={[{ dataIndex: "name", title: "姓名", width: 160, resizable: true }]} dataSource={data} />',
+    },
+    {
+      title: '树形数据',
+      code: '<Table {columns} dataSource={treeRows} rowKey="key" tree={{ defaultExpandedRowKeys: [1] }} />',
     },
   ],
 } as const;

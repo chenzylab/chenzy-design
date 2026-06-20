@@ -193,6 +193,36 @@
   ];
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
+  let tableTreeInfo = $state('（未操作）');
+  const tableTreeData: TableRow[] = [
+    {
+      key: 1,
+      name: '研发中心',
+      age: 120,
+      city: '杭州',
+      children: [
+        {
+          key: 11,
+          name: '前端组',
+          age: 40,
+          city: '杭州',
+          children: [
+            { key: 111, name: '陈一', age: 32, city: '杭州' },
+            { key: 112, name: '林二', age: 28, city: '杭州' },
+          ],
+        },
+        { key: 12, name: '后端组', age: 80, city: '杭州' },
+      ],
+    },
+    {
+      key: 2,
+      name: '设计中心',
+      age: 35,
+      city: '上海',
+      children: [{ key: 21, name: '王三', age: 35, city: '上海' }],
+    },
+    { key: 3, name: '行政', age: 12, city: '北京' },
+  ];
   const fixedData = [
     { key: 1, name: '张三', age: 28, city: '北京', email: 'zhang@x.com', phone: '139-0000', action: '编辑' },
     { key: 2, name: '李四', age: 32, city: '上海', email: 'li@x.com', phone: '138-1111', action: '编辑' },
@@ -1603,6 +1633,26 @@ let pageSize2 = $state(10);
       bordered
     />
   </div>
+
+  <Text type="tertiary">树形数据（行含 children，第一列展开三角 + 缩进；默认展开「研发中心」）：</Text>
+  <div data-testid="table-tree" style="max-width:520px">
+    <Table
+      columns={[
+        { dataIndex: 'name', title: '部门 / 姓名' },
+        { dataIndex: 'age', title: '人数', align: 'right' as const },
+        { dataIndex: 'city', title: '城市' },
+      ]}
+      dataSource={tableTreeData}
+      rowKey="key"
+      bordered
+      tree={{
+        defaultExpandedRowKeys: [1],
+        onExpand: (expanded, key) =>
+          (tableTreeInfo = `${expanded ? '展开' : '收起'} 行 ${key}`),
+      }}
+    />
+  </div>
+  <Text type="tertiary">{tableTreeInfo}</Text>
 
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">
