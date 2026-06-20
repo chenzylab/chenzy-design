@@ -301,6 +301,10 @@
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
+  // picture-card 上传：含一个初始已上传项（url 预览），便于直接看到缩略图
+  let uploadImageVal = $state<
+    { uid: string; name: string; size: number; status: 'ready' | 'uploading' | 'success' | 'error'; url?: string; file?: File }[]
+  >([{ uid: 'img-1', name: 'sample.svg', size: 1024, status: 'success', url: demoImageSrc }]);
   let page = $state(1);
 let page2 = $state(1);
 let pageSize2 = $state(10);
@@ -849,6 +853,17 @@ let pageSize2 = $state(10);
     <Text type="tertiary">真实上传（action + 进度）：</Text>
     <div data-testid="upload-action">
       <Upload action="/api/upload" multiple />
+    </div>
+
+    <Text type="tertiary">picture-card（缩略图网格）：</Text>
+    <div data-testid="upload-image">
+      <Upload
+        listType="picture-card"
+        multiple
+        accept="image/*"
+        value={uploadImageVal}
+        onChange={(list) => (uploadImageVal = list)}
+      />
     </div>
   </Space>
 

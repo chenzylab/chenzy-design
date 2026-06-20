@@ -4,7 +4,8 @@
   Controlled / uncontrolled `value`. 真实上传：有 action 且无 customRequest 时，
   选文件后自动 XHR 上传（uploading→进度→success/error），customRequest 优先；
   XHR 句柄存 Map，remove/卸载时 abort。uploading 时渲染 Progress（line）。
-  TODO: concurrency 并发限制、async beforeUpload、directory、image preview、minSize。
+  listType=image/picture-card：缩略图预览（item.url 优先，否则 file → objectURL，移除/卸载 revoke）。
+  TODO: concurrency 并发限制、async beforeUpload、directory、minSize。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -22,7 +23,7 @@
     /** Max size per file, in KB. */
     maxSize?: number;
     disabled?: boolean;
-    listType?: 'text' | 'none';
+    listType?: 'text' | 'image' | 'picture-card' | 'none';
     drag?: boolean;
     /** 上传地址；提供且无 customRequest 时选文件后自动 XHR 上传 */
     action?: string;
@@ -79,16 +80,39 @@
   // 进行中的 XHR 句柄（uid → xhr），remove/卸载时 abort。
   const xhrMap = new Map<string, XMLHttpRequest>();
 
+  // image/picture-card 预览：本地缓存 file → objectURL（uid → url），移除/卸载 revoke。
+  const objectUrls = new Map<string, string>();
+  const isImageList = $derived(listType === 'image' || listType === 'picture-card');
+  function previewUrl(item: UploadFileItem): string | undefined {
+    if (item.url) return item.url;
+    if (!item.file) return undefined;
+    let u = objectUrls.get(item.uid);
+    if (u === undefined) {
+      u = URL.createObjectURL(item.file);
+      objectUrls.set(item.uid, u);
+    }
+    return u;
+  }
+  function revokeUrl(uid: string) {
+    const u = objectUrls.get(uid);
+    if (u !== undefined) {
+      URL.revokeObjectURL(u);
+      objectUrls.delete(uid);
+    }
+  }
+
   // 按 uid 局部更新某个文件项（不破坏受控/非受控约定，走 commit）。
   function patchItem(uid: string, patch: Partial<UploadFileItem>) {
     commit(current.map((it) => (it.uid === uid ? { ...it, ...patch } : it)));
   }
 
-  // 卸载时中止所有进行中的上传。
+  // 卸载时中止所有进行中的上传 + 释放预览 objectURL。
   $effect(() => {
     return () => {
       for (const xhr of xhrMap.values()) xhr.abort();
       xhrMap.clear();
+      for (const u of objectUrls.values()) URL.revokeObjectURL(u);
+      objectUrls.clear();
     };
   });
 
@@ -192,6 +216,7 @@
       xhr.abort();
       xhrMap.delete(uid);
     }
+    revokeUrl(uid);
     commit(current.filter((item) => item.uid !== uid));
   }
 
@@ -285,6 +310,45 @@
           {#if item.status === 'uploading'}
             <Progress percent={item.percent ?? 0} size="small" />
           {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+
+  {#if isImageList && current.length > 0}
+    <ul
+      class="cd-upload__grid"
+      class:cd-upload__grid--card={listType === 'picture-card'}
+    >
+      {#each current as item (item.uid)}
+        {@const url = previewUrl(item)}
+        <li
+          class="cd-upload__card"
+          class:cd-upload__card--error={item.status === 'error'}
+          class:cd-upload__card--uploading={item.status === 'uploading'}
+        >
+          {#if url}
+            <img class="cd-upload__thumb" src={url} alt={item.name} />
+          {:else}
+            <span class="cd-upload__thumb cd-upload__thumb--placeholder" aria-hidden="true"></span>
+          {/if}
+          {#if item.status === 'uploading'}
+            <div class="cd-upload__card-progress">
+              <Progress percent={item.percent ?? 0} size="small" />
+            </div>
+          {/if}
+          <div class="cd-upload__card-overlay">
+            <span class="cd-upload__card-name">{item.name}</span>
+            <button
+              type="button"
+              class="cd-upload__card-remove"
+              aria-label={loc().t('Upload.remove')}
+              {disabled}
+              onclick={() => remove(item.uid)}
+            >
+              &times;
+            </button>
+          </div>
         </li>
       {/each}
     </ul>
@@ -424,7 +488,90 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
+
+  /* --- image / picture-card 缩略图网格 --- */
+  .cd-upload__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cd-upload__card {
+    position: relative;
+    inline-size: 96px;
+    block-size: 96px;
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-2);
+    overflow: hidden;
+    background: var(--cd-color-fill-0);
+  }
+  .cd-upload__card--error {
+    border-color: var(--cd-upload-item-color-error, var(--cd-color-danger));
+  }
+  .cd-upload__thumb {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .cd-upload__thumb--placeholder {
+    background: var(--cd-color-fill-1);
+  }
+  .cd-upload__card-progress {
+    position: absolute;
+    inset-inline: var(--cd-spacing-1);
+    inset-block-end: var(--cd-spacing-1);
+  }
+  .cd-upload__card-overlay {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
+    padding: var(--cd-spacing-1);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-upload__card:hover .cd-upload__card-overlay,
+  .cd-upload__card:focus-within .cd-upload__card-overlay {
+    opacity: 1;
+  }
+  .cd-upload__card-name {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-upload__card-remove {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    border: none;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    font-size: var(--cd-font-size-3);
+    line-height: 1;
+  }
+  .cd-upload__card-remove:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
   @media (prefers-reduced-motion: reduce) {
+    .cd-upload__card-overlay {
+      transition: none;
+    }
     .cd-upload__dragger {
       transition: none;
     }
