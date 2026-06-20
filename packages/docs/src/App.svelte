@@ -636,15 +636,17 @@ let pageSize2 = $state(10);
       <Text type="tertiary">单选：{selVal || '（未选）'}</Text>
     </div>
 
-    <div style="width: 260px">
+    <div style="width: 260px" data-testid="select-multi">
       <Select
         options={fruitOptions}
         multiple
         filter
+        allowCreate
+        maxTagCount={2}
         value={multiVal}
         onChange={(v) => (multiVal = v as (string | number)[])}
       />
-      <Text type="tertiary">多选：{multiVal.join(', ') || '（无）'}</Text>
+      <Text type="tertiary">多选（折叠 2 / 可创建）：{multiVal.join(', ') || '（无）'}</Text>
     </div>
 
     <div style="width: 220px">

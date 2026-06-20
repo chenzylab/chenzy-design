@@ -171,6 +171,8 @@ export interface Locale {
     clear: string;
     /** uses {label} */
     removeItem: string;
+    /** uses {label} */
+    create: string;
   };
   DatePicker: {
     placeholder: string;
