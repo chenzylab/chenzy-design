@@ -24,6 +24,8 @@
     closeDelay?: number;
     /** 折叠图标轨：仅本节点（顶层）隐藏文字 label、只显图标，浮层内子项不受影响 */
     collapsed?: boolean;
+    /** 多选模式：选中叶子显勾选标记并用 aria-checked/menuitemcheckbox 语义 */
+    multiple?: boolean;
   }
 
   let {
@@ -35,6 +37,7 @@
     openDelay = 100,
     closeDelay = 200,
     collapsed = false,
+    multiple = false,
   }: Props = $props();
 
   // 折叠态无图标时取 label 首字符兜底显示，保证轨上仍有可视标识。
@@ -157,6 +160,7 @@
             item={child}
             placement="rightStart"
             {isSelected}
+            {multiple}
             {onSelectLeaf}
             onCloseAll={() => {
               closeNow();
@@ -177,8 +181,9 @@
       class="cd-menu__link"
       class:cd-menu__link--selected={selected}
       class:cd-menu__link--collapsed={collapsed}
-      role="menuitem"
-      aria-current={selected ? 'true' : undefined}
+      role={multiple ? 'menuitemcheckbox' : 'menuitem'}
+      aria-current={!multiple && selected ? 'true' : undefined}
+      aria-checked={multiple ? selected : undefined}
       aria-disabled={item.disabled || undefined}
       aria-label={collapsed ? item.label : undefined}
       title={collapsed ? item.label : undefined}
@@ -187,6 +192,13 @@
     >
       {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
       {#if !collapsed}<span class="cd-menu__label">{item.label}</span>{/if}
+      {#if multiple && !collapsed}
+        <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+          </svg>
+        </span>
+      {/if}
     </button>
   </li>
 {/if}
@@ -264,6 +276,19 @@
     justify-content: center;
     gap: 0;
     padding-inline: 0;
+  }
+  .cd-menu__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: var(--cd-menu-item-color-selected);
+    opacity: 0;
+  }
+  .cd-menu__check--on {
+    opacity: 1;
   }
   .cd-menu__arrow {
     display: inline-flex;

@@ -38,9 +38,16 @@ export const meta = {
       desc: 'inline 模式折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层（无图标项取 label 首字符；保留 aria-label/title 可访问名）',
     },
     {
+      name: 'multiple',
+      type: 'boolean',
+      default: 'false',
+      desc: '多选模式：点击叶子项 toggle 选中态，selectedKeys 可含多项同时高亮并显勾选标记。受控下父组件依据 onSelect(key) 自行 toggle selectedKeys；非受控由组件内部维护多选 Set',
+    },
+    {
       name: 'onSelect',
       type: '(key: string|number) => void',
       default: 'undefined',
+      desc: '点击叶子项回调，回传被点击的 key（多选语义不变，由父组件据此 toggle）',
     },
     {
       name: 'onOpenChange',
@@ -55,7 +62,7 @@ export const meta = {
     notes: [
       'ul[role=menu] > li[role=none] > button[role=menuitem] 结构',
       'SubMenu 标题 aria-haspopup=true + aria-expanded 反映展开态',
-      '选中叶子项 aria-current=true',
+      '选中叶子项 aria-current=true（单选）；multiple 下叶子项 role=menuitemcheckbox + aria-checked',
       '禁用项 aria-disabled=true 且原生 disabled',
       'TODO: horizontal/menubar roving tabindex、nav+links 语义区分',
     ],
