@@ -265,4 +265,8 @@ export const en_US: Locale = {
     add: 'Add tab',
     more: 'More',
   },
+  Tooltip: {
+    warningLabel: 'Warning',
+    errorLabel: 'Error',
+  },
 };
