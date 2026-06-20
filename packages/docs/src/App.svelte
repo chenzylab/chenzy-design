@@ -2450,6 +2450,11 @@ let pageSize2 = $state(10);
       <Tree {treeData} showLine showIcon={false} defaultExpandAll ariaLabel="连接线树" />
     </div>
 
+    <div style="width: 240px" data-testid="tree-accordion">
+      <Text type="tertiary">accordion 手风琴（同层级只展开一个）</Text>
+      <Tree {treeData} accordion ariaLabel="手风琴树" />
+    </div>
+
     <div style="width: 240px" data-testid="tree-loaddata">
       <Text type="tertiary">异步加载（展开拉取子节点）</Text>
       <Tree treeData={treeAsyncRoots} loadData={loadTreeChildren} ariaLabel="异步加载树" />

@@ -47,6 +47,8 @@ export {
   computeFilteredKeys,
   computeDropPosition,
   isAncestorOrSelf,
+  siblingKeys,
+  accordionExpand,
   type TreeKey,
   type TreeNodeData,
   type FlatNode,
