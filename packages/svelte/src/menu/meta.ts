@@ -6,9 +6,14 @@ export const meta = {
   name: 'Menu',
   category: 'navigation',
   description:
-    '导航菜单，数据驱动。支持 vertical/inline 模式、SubMenu 展开/收起、单选高亮，受控/非受控。',
+    '导航菜单，数据驱动。支持 vertical/inline 模式、SubMenu 展开/收起、单选高亮，受控/非受控。items 支持 type=divider 分隔符与 type=group 分组标题。',
   props: [
-    { name: 'items', type: 'MenuItemDef[]', default: '[]', desc: '菜单数据（含 children 即 SubMenu；item.icon 为项前图标 Snippet）' },
+    {
+      name: 'items',
+      type: 'MenuItemDef[]',
+      default: '[]',
+      desc: '菜单数据。普通项可省略 type（含 children 即可展开的 SubMenu，item.icon 为项前图标 Snippet）；{ type:"divider" } 渲染水平分隔线；{ type:"group", label, children } 渲染始终展开的分组标题 + 组内项',
+    },
     {
       name: 'mode',
       type: "'vertical'|'inline'|'horizontal'",
@@ -64,6 +69,8 @@ export const meta = {
       'SubMenu 标题 aria-haspopup=true + aria-expanded 反映展开态',
       '选中叶子项 aria-current=true（单选）；multiple 下叶子项 role=menuitemcheckbox + aria-checked',
       '禁用项 aria-disabled=true 且原生 disabled',
+      'divider 渲染 li[role=separator]，不可聚焦不可选；键盘导航天然跳过（非 menuitem）',
+      'group 渲染组标题（不可点击）+ ul[role=group][aria-label=分组名]，组内项正常 menuitem 可选；组标题不可聚焦故键盘跳过',
       'TODO: horizontal/menubar roving tabindex、nav+links 语义区分',
     ],
   },
