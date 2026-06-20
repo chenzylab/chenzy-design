@@ -26,6 +26,9 @@ export const en_US: Locale = {
     sortDescend: 'Click to sort descending',
     sortCancel: 'Click to cancel sorting',
     selectedCount: '{count} selected',
+    filter: 'Filter',
+    filterReset: 'Reset',
+    filterConfirm: 'OK',
   },
   Empty: {
     noData: 'No data',

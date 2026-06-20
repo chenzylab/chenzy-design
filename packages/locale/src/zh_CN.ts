@@ -26,6 +26,9 @@ export const zh_CN: Locale = {
     sortDescend: '点击降序',
     sortCancel: '点击取消排序',
     selectedCount: '已选 {count} 项',
+    filter: '筛选',
+    filterReset: '重置',
+    filterConfirm: '确定',
   },
   Empty: {
     noData: '暂无数据',

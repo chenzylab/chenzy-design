@@ -5,7 +5,8 @@
   仅通过 onSortChange / rowSelection.onChange / pagination.onChange 通知 (红线 #1)。
   复用 @chenzy-design/core 纯函数算法与 Pagination 组件，不重复实现。
   固定列：column.fixed='left'|'right'，横滚时 sticky 锁定 + 逐列像素偏移 + 边界阴影。
-  TODO(延后): 虚拟化 / 列筛选 / 树形数据 / 列宽调整。
+  列筛选：column.filters + onFilter，列头漏斗弹浮层多选过滤（复用 _floating + useDismiss）。
+  TODO(延后): 虚拟化 / 树形数据 / 列宽调整。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
   import {
@@ -18,7 +19,10 @@
     type RowKey,
     type SortState,
   } from '@chenzy-design/core';
+  import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
+  import { floating } from '../_floating/use-floating.js';
+  import { useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import type { ColumnDef, RowSelection, Expandable, Align, TableSize } from './types.js';
 
@@ -88,9 +92,68 @@
     return { ...defaultSortState };
   }
 
-  // --- 数据管道：排序（客户端）。状态全来自 props / 本地 $state，派生安全 (红线 #2) ---
+  // --- 列筛选：本地 state（colKey → 选中值集合），不写回 props (红线 #1) ---
+  const filterState = new SvelteMap<string, Set<string | number>>();
+  // 打开的筛选浮层列 key（同时只开一个）
+  let openFilterKey = $state<string | null>(null);
+  // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
+  const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
+  let filterPanelEl = $state<HTMLDivElement | null>(null);
+
+  // 浮层外点击/Esc 关闭（红线 #3：$effect 内 useDismiss，cleanup 解绑）
+  $effect(() => {
+    if (openFilterKey === null) return;
+    const trigger = filterTriggers[openFilterKey];
+    if (!trigger) return;
+    return useDismiss(trigger, {
+      onDismiss: () => (openFilterKey = null),
+      escape: true,
+      outsideClick: true,
+      extraTargets: [filterPanelEl],
+    });
+  });
+
+  function activeFilterValues(colKey: string): Set<string | number> {
+    return filterState.get(colKey) ?? new Set();
+  }
+  function isFiltered(colKey: string): boolean {
+    return (filterState.get(colKey)?.size ?? 0) > 0;
+  }
+  function toggleFilterValue(colKey: string, value: string | number) {
+    const cur = new Set(filterState.get(colKey) ?? []);
+    if (cur.has(value)) cur.delete(value);
+    else cur.add(value);
+    filterState.set(colKey, cur);
+  }
+  function resetFilter(colKey: string) {
+    filterState.set(colKey, new Set());
+    openFilterKey = null;
+  }
+  // 行是否通过某列筛选：选中值任一 onFilter 命中（缺省按 dataIndex 全等）。
+  function rowPassesColumn(col: ColumnDef<T>, colKey: string, record: T): boolean {
+    const selected = filterState.get(colKey);
+    if (!selected || selected.size === 0) return true;
+    const test =
+      col.onFilter ??
+      ((value: string | number, rec: T): boolean =>
+        col.dataIndex ? rec[col.dataIndex] === value : false);
+    for (const v of selected) {
+      if (test(v, record)) return true;
+    }
+    return false;
+  }
+
+  // --- 数据管道：列筛选 → 排序（客户端）。状态全来自 props / 本地 $state，派生安全 (红线 #2) ---
   const processed = $derived.by(() => {
     let data = [...dataSource];
+    // 列筛选（多列 AND）
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i] as ColumnDef<T>;
+      const ck = colKeyOf(col, i);
+      if (isFiltered(ck)) {
+        data = data.filter((rec) => rowPassesColumn(col, ck, rec));
+      }
+    }
     const { key, order } = currentSort;
     if (key && order) {
       let target: ColumnDef<T> | undefined;
@@ -388,9 +451,12 @@
         {/if}
         {#each columns as col, i (colKeyOf(col, i))}
           {@const sortable = !!col.sorter}
+          {@const colKey = colKeyOf(col, i)}
+          {@const hasFilter = !!col.filters && col.filters.length > 0}
           <th
             class="cd-table__cell cd-table__cell--head cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
             class:cd-table__cell--ellipsis={col.ellipsis}
+            class:cd-table__cell--has-filter={hasFilter}
             scope="col"
             style={cellStyle(col, i)}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
@@ -428,6 +494,55 @@
               </button>
             {:else}
               <span class="cd-table__title">{col.title}</span>
+            {/if}
+
+            {#if hasFilter}
+              <button
+                type="button"
+                class="cd-table__filter-btn"
+                class:cd-table__filter-btn--active={isFiltered(colKey)}
+                aria-label={loc().t('Table.filter')}
+                aria-expanded={openFilterKey === colKey}
+                bind:this={filterTriggers[colKey]}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  openFilterKey = openFilterKey === colKey ? null : colKey;
+                }}
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M2 3h12l-4.5 5.5V13L6.5 11V8.5L2 3Z" />
+                </svg>
+              </button>
+              {#if openFilterKey === colKey && filterTriggers[colKey]}
+                <div
+                  class="cd-table__filter-panel"
+                  use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4 }}
+                  bind:this={filterPanelEl}
+                >
+                  <ul class="cd-table__filter-list">
+                    {#each col.filters ?? [] as f (f.value)}
+                      <li class="cd-table__filter-option">
+                        <label class="cd-table__filter-label">
+                          <input
+                            type="checkbox"
+                            checked={activeFilterValues(colKey).has(f.value)}
+                            onchange={() => toggleFilterValue(colKey, f.value)}
+                          />
+                          <span>{f.text}</span>
+                        </label>
+                      </li>
+                    {/each}
+                  </ul>
+                  <div class="cd-table__filter-actions">
+                    <button type="button" class="cd-table__filter-reset" onclick={() => resetFilter(colKey)}>
+                      {loc().t('Table.filterReset')}
+                    </button>
+                    <button type="button" class="cd-table__filter-confirm" onclick={() => (openFilterKey = null)}>
+                      {loc().t('Table.filterConfirm')}
+                    </button>
+                  </div>
+                </div>
+              {/if}
             {/if}
           </th>
         {/each}
@@ -716,6 +831,82 @@
     padding-block: var(--cd-spacing-6, 32px);
     color: var(--cd-table-empty-color);
     text-align: center;
+  }
+
+  /* --- 列筛选 --- */
+  .cd-table__cell--has-filter {
+    position: relative;
+  }
+  .cd-table__filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-start: var(--cd-spacing-1);
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--cd-table-sort-icon-color);
+    cursor: pointer;
+    border-radius: var(--cd-radius-1);
+    vertical-align: middle;
+  }
+  .cd-table__filter-btn:hover {
+    color: var(--cd-color-text-0);
+  }
+  .cd-table__filter-btn--active {
+    color: var(--cd-color-primary);
+  }
+  .cd-table__filter-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-table__filter-panel {
+    z-index: var(--cd-select-dropdown-z, 1050);
+    min-inline-size: 10rem;
+    padding-block: var(--cd-spacing-1);
+    background: var(--cd-select-dropdown-bg, var(--cd-color-bg-0, #fff));
+    border-radius: var(--cd-select-dropdown-radius, 6px);
+    box-shadow: var(--cd-select-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));
+    font-weight: 400;
+  }
+  .cd-table__filter-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-block-size: 14rem;
+    overflow-y: auto;
+  }
+  .cd-table__filter-label {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-spacing-1) var(--cd-spacing-3);
+    cursor: pointer;
+  }
+  .cd-table__filter-label:hover {
+    background: var(--cd-table-row-hover-bg);
+  }
+  .cd-table__filter-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--cd-spacing-2);
+    padding: var(--cd-spacing-1) var(--cd-spacing-3);
+    border-block-start: 1px solid var(--cd-table-border-color);
+  }
+  .cd-table__filter-reset,
+  .cd-table__filter-confirm {
+    padding: 0;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: var(--cd-font-size-1);
+    cursor: pointer;
+  }
+  .cd-table__filter-reset {
+    color: var(--cd-color-text-2);
+  }
+  .cd-table__filter-confirm {
+    color: var(--cd-color-primary);
   }
 
   .cd-table__sort-btn {
