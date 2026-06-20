@@ -118,6 +118,8 @@
     };
   });
   let carouselIdx = $state(0);
+  // Popover custom 受控触发 demo：显隐完全由外部按钮控制。
+  let popoverCustomOpen = $state(false);
   // VirtualList scrollToIndex demo：bind 组件实例 + 目标索引输入。
   let scrollToVL = $state<{ scrollToIndex: (i: number, o?: { align?: 'start' | 'center' | 'end' }) => void } | null>(null);
   let scrollToTarget = $state(500);
@@ -2062,6 +2064,31 @@ let pageSize2 = $state(10);
           <div style="width: 160px">这是 Popover 的富内容区域。</div>
         {/snippet}
         <Button type="primary">点击弹出</Button>
+      </Popover>
+    </Space>
+
+    <Space>
+      <span data-testid="popover-custom-toggle">
+        <Button
+          type="secondary"
+          onclick={() => (popoverCustomOpen = !popoverCustomOpen)}
+        >
+          外部按钮 {popoverCustomOpen ? '关闭' : '打开'}
+        </Button>
+      </span>
+      <Popover
+        title="受控卡片"
+        trigger="custom"
+        position="bottom"
+        open={popoverCustomOpen}
+        onOpenChange={(o) => (popoverCustomOpen = o)}
+      >
+        {#snippet contentSlot()}
+          <div data-testid="popover-custom-content" style="width: 180px">
+            显隐完全由外部按钮控制（custom 受控触发）。
+          </div>
+        {/snippet}
+        <Button>受控锚点（不响应交互）</Button>
       </Popover>
     </Space>
 

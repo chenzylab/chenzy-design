@@ -1,9 +1,10 @@
 <!--
   Popover — see specs/components/show/Popover.spec.md
-  基础子集：hover/click/focus 触发、position+align（映射 12 方位）、箭头、间距、标题。
+  基础子集：hover/click/focus/custom 触发、position+align（映射 12 方位）、箭头、间距、标题。
   定位：portal 到 body + position:fixed，core computePosition 计算坐标 +
   autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
-  TODO(延后): custom trigger。
+  custom：显隐完全由受控 open + onOpenChange 控制，组件不自动响应 hover/click/focus，
+  也不启用 useDismiss 外部点击/Esc 关闭——由调用方自行决定何时显隐。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -19,7 +20,7 @@
   } from '@chenzy-design/core';
   import { floating } from '../_floating/use-floating.js';
 
-  type TriggerKind = 'hover' | 'click' | 'focus';
+  type TriggerKind = 'hover' | 'click' | 'focus' | 'custom';
   type Position = 'top' | 'bottom' | 'left' | 'right';
 
   interface Props {
