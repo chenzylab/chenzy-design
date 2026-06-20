@@ -389,6 +389,7 @@
   let localeIsZh = $state(true);
 
   let submitted = $state('');
+  let warnSubmitted = $state('');
   let selVal = $state<string | number>('');
   let selGroupVal = $state<string | number>('');
   // remote 搜索：模拟异步返回选项
@@ -916,6 +917,41 @@ let pageSize2 = $state(10);
         <Button type="primary" htmlType="submit">提交</Button>
       {/snippet}
     </Form>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-validating">
+    <Text type="tertiary">validating（异步校验中显示加载指示）：</Text>
+    <Form>
+      <Form.Input
+        field="username"
+        label="用户名"
+        rules={[
+          {
+            validator: (v) =>
+              new Promise((resolve) =>
+                setTimeout(() => resolve(v === 'taken' ? '该用户名已被占用' : undefined), 800),
+              ),
+          },
+        ]}
+      />
+    </Form>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-warning">
+    <Text type="tertiary">warningOnly（非阻塞警告，不影响提交）：</Text>
+    <Form
+      onSubmit={(r) => (warnSubmitted = r.valid ? `提交成功：${JSON.stringify(r.values)}` : '校验未通过')}
+    >
+      <Form.Input
+        field="nickname"
+        label="昵称"
+        rules={[{ minLength: 6, warningOnly: true, message: '建议昵称不少于 6 个字符' }]}
+      />
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">{warnSubmitted}</Text>
   </div>
 
   <Divider />

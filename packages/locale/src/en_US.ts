@@ -202,6 +202,7 @@ export const en_US: Locale = {
     pattern: '{label} does not match the required format',
     submitFailAnnounce: '{count} field(s) failed validation',
     colon: ':',
+    validating: 'Validating…',
   },
   TreeSelect: {
     clear: 'Clear',
