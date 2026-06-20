@@ -47,6 +47,7 @@ export const meta = {
     { name: 'defaultExpandAll', type: 'boolean', default: 'false', desc: '初始展开全部' },
     { name: 'selectable', type: 'boolean', default: 'true', desc: '节点是否可选中' },
     { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位' },
+    { name: 'showLine', type: 'boolean', default: 'false', desc: '显示层级连接线（├/└/竖线）' },
     { name: 'filterable', type: 'boolean', default: 'false', desc: '渲染内置搜索框' },
     { name: 'blockNode', type: 'boolean', default: 'false', desc: '整行点击选中' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '整树禁用' },

@@ -31,6 +31,12 @@ export interface FlatNode {
   posInSet: number;
   /** sibling count (aria-setsize) */
   setSize: number;
+  /** is this node the last among its siblings (for tree guide lines) */
+  isLast: boolean;
+  /** per-ancestor-level: was that ancestor the last of its siblings?
+   *  length === level; index 0 is the root-level ancestor. Used to decide
+   *  whether a vertical guide line continues through each indent column. */
+  ancestorIsLast: boolean[];
 }
 
 export type CheckState = 'checked' | 'half' | 'unchecked';
@@ -48,10 +54,16 @@ export function flattenVisible(
   expandedKeys: ReadonlySet<TreeKey>,
 ): FlatNode[] {
   const out: FlatNode[] = [];
-  function walk(nodes: TreeNodeData[], level: number, parentKey: TreeKey | null): void {
+  function walk(
+    nodes: TreeNodeData[],
+    level: number,
+    parentKey: TreeKey | null,
+    ancestorIsLast: boolean[],
+  ): void {
     const setSize = nodes.length;
     nodes.forEach((node, i) => {
       const kids = hasKids(node);
+      const isLast = i === setSize - 1;
       out.push({
         node,
         level,
@@ -59,13 +71,15 @@ export function flattenVisible(
         hasChildren: kids,
         posInSet: i + 1,
         setSize,
+        isLast,
+        ancestorIsLast,
       });
       if (kids && expandedKeys.has(node.key)) {
-        walk(node.children as TreeNodeData[], level + 1, node.key);
+        walk(node.children as TreeNodeData[], level + 1, node.key, [...ancestorIsLast, isLast]);
       }
     });
   }
-  walk(data, 0, null);
+  walk(data, 0, null, []);
   return out;
 }
 
