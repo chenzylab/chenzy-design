@@ -1,7 +1,8 @@
 <!--
   Breadcrumb — see specs/components/navigation/Breadcrumb.spec.md
   Data-driven `routes` mode (browser-verifiable) + declarative `children` mode.
-  TODO: maxItemCount collapse, showTooltip, moreType popover, renderItem/renderMore.
+  maxItemCount: 超出时中间折叠为 ... 触发器（保留首项 + 末 maxItemCount-1 项），点击展开全部。
+  TODO: showTooltip, moreType popover, renderItem/renderMore.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -9,11 +10,16 @@
   import type { BreadcrumbRoute } from './types.js';
 
   type BreadcrumbSize = 'small' | 'default' | 'large';
+  type DisplayCell =
+    | { type: 'route'; route: BreadcrumbRoute; index: number }
+    | { type: 'ellipsis'; count: number };
 
   interface Props {
     routes?: BreadcrumbRoute[];
     separator?: string;
     size?: BreadcrumbSize;
+    /** 超出此数量时中间折叠（0 = 不折叠） */
+    maxItemCount?: number;
     class?: string;
     children?: Snippet;
     onClick?: (route: BreadcrumbRoute, index: number) => void;
@@ -23,6 +29,7 @@
     routes = [],
     separator = '/',
     size = 'default',
+    maxItemCount = 0,
     class: className = '',
     children,
     onClick,
@@ -36,6 +43,26 @@
 
   const hasRoutes = $derived(routes.length > 0);
 
+  // 折叠：展开后显示全部；本地 $state。
+  let expanded = $state(false);
+
+  // 折叠生效：maxItemCount>0、未展开、路由数超上限。
+  // 折叠后展示：首项 + ellipsis + 末 (maxItemCount-1) 项。
+  const cells = $derived.by<DisplayCell[]>(() => {
+    const all: DisplayCell[] = routes.map((route, index) => ({
+      type: 'route',
+      route,
+      index,
+    }));
+    if (expanded || maxItemCount <= 0 || routes.length <= maxItemCount) return all;
+    const tail = Math.max(1, maxItemCount - 1);
+    const head = all.slice(0, 1);
+    const rest = all.slice(1, routes.length - tail);
+    const tailCells = all.slice(routes.length - tail);
+    if (rest.length === 0) return all;
+    return [...head, { type: 'ellipsis', count: rest.length }, ...tailCells];
+  });
+
   function handleClick(route: BreadcrumbRoute, index: number) {
     onClick?.(route, index);
   }
@@ -44,29 +71,36 @@
 <nav class={cls} aria-label={loc().t('Breadcrumb.ariaLabel')}>
   {#if hasRoutes}
     <ol class="cd-breadcrumb__list">
-      {#each routes as route, index (index)}
-        {@const isLast = index === routes.length - 1}
+      {#each cells as cell, cellIndex (cell.type === 'route' ? `r-${cell.index}` : 'ellipsis')}
+        {@const isLast = cellIndex === cells.length - 1}
         <li class="cd-breadcrumb__item">
-          {#if isLast}
-            <span class="cd-breadcrumb__current" aria-current="page">{route.label}</span>
-          {:else if route.href}
+          {#if cell.type === 'ellipsis'}
+            <button
+              type="button"
+              class="cd-breadcrumb__more"
+              aria-label={loc().t('Breadcrumb.moreLabel', { count: cell.count })}
+              onclick={() => (expanded = true)}
+            >…</button>
+          {:else if isLast}
+            <span class="cd-breadcrumb__current" aria-current="page">{cell.route.label}</span>
+          {:else if cell.route.href}
             <a
               class="cd-breadcrumb__link"
-              href={route.href}
-              onclick={() => handleClick(route, index)}>{route.label}</a
+              href={cell.route.href}
+              onclick={() => handleClick(cell.route, cell.index)}>{cell.route.label}</a
             >
           {:else}
             <span
               class="cd-breadcrumb__text"
               role="link"
               tabindex="0"
-              onclick={() => handleClick(route, index)}
+              onclick={() => handleClick(cell.route, cell.index)}
               onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  handleClick(route, index);
+                  handleClick(cell.route, cell.index);
                 }
-              }}>{route.label}</span
+              }}>{cell.route.label}</span
             >
           {/if}
           {#if !isLast}
@@ -129,5 +163,26 @@
   }
   .cd-breadcrumb__current {
     color: var(--cd-breadcrumb-color-active);
+  }
+  .cd-breadcrumb__more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 1.5em;
+    padding: 0 var(--cd-spacing-1);
+    border: none;
+    background: transparent;
+    color: var(--cd-breadcrumb-color-link);
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-breadcrumb__more:hover {
+    background: var(--cd-color-fill-1);
+  }
+  .cd-breadcrumb__more:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
 </style>

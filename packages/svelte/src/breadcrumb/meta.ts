@@ -15,6 +15,7 @@ export const meta = {
       desc: '数据驱动的路由项，最后一项为当前页（aria-current=page）',
     },
     { name: 'separator', type: 'string', default: "'/'", desc: '分隔符文本' },
+    { name: 'maxItemCount', type: 'number', default: '0', desc: '超出时中间折叠（0=不折叠）' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'class', type: 'string', default: "''" },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 Item 列表' },
