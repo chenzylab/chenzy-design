@@ -99,8 +99,11 @@ export {
 export {
   computeVisibleCount,
   applyHysteresis,
+  computeTabOverflow,
   type OverflowComputeInput,
   type OverflowComputeResult,
+  type TabOverflowInput,
+  type TabOverflowResult,
 } from './overflow-list.js';
 export {
   createSpinController,

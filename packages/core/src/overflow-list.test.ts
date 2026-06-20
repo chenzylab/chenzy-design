@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeVisibleCount, applyHysteresis } from './overflow-list.js';
+import { computeVisibleCount, applyHysteresis, computeTabOverflow } from './overflow-list.js';
 
 // five items, each 100px wide, gap 0 for easy arithmetic
 const sizes = [100, 100, 100, 100, 100];
@@ -89,5 +89,52 @@ describe('applyHysteresis', () => {
 
   it('no change when next equals prev', () => {
     expect(applyHysteresis(4, 4, 500, 498, 8)).toBe(4);
+  });
+});
+
+describe('computeTabOverflow', () => {
+  it('shows all tabs when everything fits', () => {
+    expect(
+      computeTabOverflow({ tabSizes: sizes, containerSize: 500, moreSize: 40, gap: 0 }),
+    ).toEqual({ visibleIndexes: [0, 1, 2, 3, 4], overflowIndexes: [] });
+  });
+
+  it('collapses trailing tabs into overflow when short', () => {
+    // 360, gap 10, more 40 → 2 leading fit (same math as computeVisibleCount)
+    expect(
+      computeTabOverflow({ tabSizes: sizes, containerSize: 360, moreSize: 40, gap: 10 }),
+    ).toEqual({ visibleIndexes: [0, 1], overflowIndexes: [2, 3, 4] });
+  });
+
+  it('keeps the active tab visible by swapping it into the last visible slot', () => {
+    // Only 2 leading tabs fit; active is index 4 (would overflow). Swap: drop
+    // last visible (index 1), surface index 4 → visible {0,4}.
+    expect(
+      computeTabOverflow({
+        tabSizes: sizes,
+        containerSize: 360,
+        moreSize: 40,
+        gap: 10,
+        activeIndex: 4,
+      }),
+    ).toEqual({ visibleIndexes: [0, 4], overflowIndexes: [1, 2, 3] });
+  });
+
+  it('does not swap when the active tab is already visible', () => {
+    expect(
+      computeTabOverflow({
+        tabSizes: sizes,
+        containerSize: 360,
+        moreSize: 40,
+        gap: 10,
+        activeIndex: 0,
+      }),
+    ).toEqual({ visibleIndexes: [0, 1], overflowIndexes: [2, 3, 4] });
+  });
+
+  it('handles empty input', () => {
+    expect(
+      computeTabOverflow({ tabSizes: [], containerSize: 500, moreSize: 40, gap: 0 }),
+    ).toEqual({ visibleIndexes: [], overflowIndexes: [] });
   });
 });

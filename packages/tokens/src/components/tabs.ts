@@ -12,6 +12,13 @@ export const tabsTokens = {
   'tabs-card-bg': 'var(--cd-color-fill-0)',
   'tabs-card-bg-active': 'var(--cd-color-bg-0)',
   'tabs-card-radius': 'var(--cd-radius-2)',
+  // type=button（分段按钮组）
+  'tabs-button-bg': 'var(--cd-color-fill-0)',
+  'tabs-button-bg-hover': 'var(--cd-color-fill-1)',
+  'tabs-button-bg-active': 'var(--cd-color-primary)',
+  'tabs-button-color-active': 'var(--cd-color-white, #fff)',
+  'tabs-button-gap': '2px',
+  'tabs-button-pad': '2px',
   // Dropdown
   'dropdown-bg': 'var(--cd-color-bg-0)',
   'dropdown-shadow': 'var(--cd-shadow-2)',
