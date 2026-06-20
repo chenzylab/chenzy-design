@@ -298,3 +298,45 @@ export function computeFilteredKeys(
   for (const root of data) walk(root, []);
   return { matched, expand };
 }
+
+export type DropPosition = 'before' | 'inside' | 'after';
+
+/**
+ * Drag & drop: given the pointer's vertical offset within a target row, decide
+ * the drop position. The row is split into three zones — top → `before`,
+ * middle → `inside` (become a child), bottom → `after`. When `allowInside` is
+ * false (e.g. a leaf target that should not gain children) the middle zone is
+ * folded into the nearer edge, yielding only `before`/`after`.
+ * Pure function (no DOM) so it is unit-testable; the render layer passes the
+ * measured offsetY/rowHeight.
+ */
+export function computeDropPosition(
+  offsetY: number,
+  rowHeight: number,
+  allowInside = true,
+): DropPosition {
+  if (rowHeight <= 0) return 'after';
+  const y = offsetY < 0 ? 0 : offsetY > rowHeight ? rowHeight : offsetY;
+  if (!allowInside) {
+    return y < rowHeight / 2 ? 'before' : 'after';
+  }
+  // 三分区：上 1/4 before、中段 inside、下 1/4 after。
+  if (y < rowHeight / 4) return 'before';
+  if (y > (rowHeight * 3) / 4) return 'after';
+  return 'inside';
+}
+
+/**
+ * Whether `maybeAncestorKey` is the same as, or an ancestor of, `key`.
+ * Used to reject dropping a dragged node onto itself or into its own subtree.
+ */
+export function isAncestorOrSelf(
+  data: TreeNodeData[],
+  maybeAncestorKey: TreeKey,
+  key: TreeKey,
+): boolean {
+  if (maybeAncestorKey === key) return true;
+  const ancestor = findNode(data, maybeAncestorKey);
+  if (!ancestor || !ancestor.children) return false;
+  return !!findNode(ancestor.children, key);
+}
