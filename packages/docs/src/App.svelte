@@ -742,6 +742,8 @@ let pageSize2 = $state(10);
 
   // Upload concurrency + beforeUpload 演示
   let uploadConcVal = $state<UploadFileItem[]>([]);
+  // Upload directory + minSize 演示
+  let uploadDirVal = $state<UploadFileItem[]>([]);
   let uploadConcActive = $state(0);
   let uploadConcPeak = $state(0);
   // 模拟上传：每个请求 ~800ms 完成，返回 Promise 让 concurrency 调度（完成才补位）。
@@ -3071,6 +3073,24 @@ let pageSize2 = $state(10);
       当前进行中：<strong data-testid="upload-conc-active">{uploadConcActive}</strong> · 峰值并发：<strong
         data-testid="upload-conc-peak">{uploadConcPeak}</strong>
     </Text>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Upload：directory 目录上传 + minSize 最小文件校验</Title>
+  <Space direction="vertical" align="start">
+    <Text type="tertiary">
+      directory：选择整个目录（递归选其下所有文件，保留相对路径）；minSize=10KB / maxSize=2048KB：过小或过大的文件标记 error 并提示。
+    </Text>
+    <div data-testid="upload-directory">
+      <Upload
+        directory
+        minSize={10}
+        maxSize={2048}
+        value={uploadDirVal}
+        onChange={(list) => (uploadDirVal = list)}
+      />
+    </div>
   </Space>
 </main>
 

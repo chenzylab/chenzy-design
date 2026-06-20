@@ -7,7 +7,8 @@
   listType=image/picture-card：缩略图预览（item.url 优先，否则 file → objectURL，移除/卸载 revoke）。
   concurrency 并发上限（0=不限，超出排队、完成补位，core createUploadQueue 调度）；
   beforeUpload 异步校验/转换（false/reject 跳过该文件，返回 File 替换，true 正常上传）。
-  TODO: directory、minSize。
+  directory：input 命令式加 webkitdirectory，可递归选择整个目录（保留 relativePath）。
+  minSize/maxSize：core validateFileSize 纯函数校验（单位 KB），超限标 error + i18n 提示。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -17,6 +18,7 @@
     isUploadOk,
     createUploadQueue,
     resolveBeforeUpload,
+    validateFileSize,
     type BeforeUploadResult,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -28,9 +30,13 @@
     defaultValue?: UploadFileItem[];
     accept?: string;
     multiple?: boolean;
+    /** 上传整个目录（input 加 webkitdirectory，递归选择目录下所有文件）。 */
+    directory?: boolean;
     limit?: number;
     /** Max size per file, in KB. */
     maxSize?: number;
+    /** Min size per file, in KB. 小于此值的文件校验失败（error）。 */
+    minSize?: number;
     disabled?: boolean;
     listType?: 'text' | 'image' | 'picture-card' | 'none';
     drag?: boolean;
@@ -63,8 +69,10 @@
     defaultValue = [],
     accept,
     multiple = false,
+    directory = false,
     limit,
     maxSize,
+    minSize,
     disabled = false,
     listType = 'text',
     drag = false,
@@ -131,6 +139,13 @@
   function patchItem(uid: string, patch: Partial<UploadFileItem>) {
     commit(current.map((it) => (it.uid === uid ? { ...it, ...patch } : it)));
   }
+
+  // directory 是非标准 input 属性（webkitdirectory），Svelte 模板不直接支持，
+  // 故命令式 toggle（红线 #3）。directory 变化时同步增删。
+  $effect(() => {
+    if (!inputEl) return;
+    inputEl.toggleAttribute('webkitdirectory', directory);
+  });
 
   // 卸载时中止所有进行中的上传 + 释放预览 objectURL。
   $effect(() => {
@@ -216,14 +231,24 @@
   }
 
   function buildItem(file: File): UploadFileItem {
-    const exceededSize = maxSize !== undefined && file.size > maxSize * 1024;
+    // 纯函数校验大小（KB），min/max 同源；超限 → error + 本地化提示。
+    const sizeError = validateFileSize(file.size, { minSize, maxSize });
+    // 目录上传时浏览器在 webkitRelativePath 上保留相对路径（如 dir/sub/a.txt）。
+    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath;
     const item: UploadFileItem = {
       uid: useId('cd-upload'),
       name: file.name,
       size: file.size,
-      status: exceededSize ? 'error' : 'ready',
+      status: sizeError ? 'error' : 'ready',
       file,
     };
+    if (relativePath) item.relativePath = relativePath;
+    if (sizeError) {
+      const limitKB = sizeError === 'max' ? maxSize! : minSize!;
+      item.error = loc().t(sizeError === 'max' ? 'Upload.sizeError' : 'Upload.minSizeError', {
+        size: formatSize(limitKB * 1024),
+      });
+    }
     return item;
   }
 
@@ -378,7 +403,7 @@
             <span class="cd-upload__item-name">{item.name}</span>
             <span class="cd-upload__item-size">{formatSize(item.size)}</span>
             {#if item.status !== 'uploading'}
-              <span class="cd-upload__item-status">{item.status}</span>
+              <span class="cd-upload__item-status">{item.error ?? item.status}</span>
             {/if}
             <button
               type="button"

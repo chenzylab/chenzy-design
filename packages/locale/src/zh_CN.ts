@@ -191,6 +191,7 @@ export const zh_CN: Locale = {
     trigger: '选择文件',
     draggerText: '点击或拖拽文件到此处上传',
     sizeError: '文件大小不能超过 {size}',
+    minSizeError: '文件大小不能小于 {size}',
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
   },

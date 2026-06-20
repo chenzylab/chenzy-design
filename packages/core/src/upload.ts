@@ -72,6 +72,31 @@ export function createUploadQueue(limit = 0): UploadQueue {
   };
 }
 
+/** Why a file failed size validation (or `null` when it passes). */
+export type UploadSizeError = 'min' | 'max' | null;
+
+/**
+ * Validate one file's size against optional bounds (both in KB, matching the
+ * `maxSize` / `minSize` props). Pure: the render layer maps the result onto
+ * item status + an i18n message.
+ *
+ * - `max` when `maxSize` is set and `size > maxSize * 1024`.
+ * - `min` when `minSize` is set and `size < minSize * 1024`.
+ * - `null` otherwise (no bound set, or within range).
+ *
+ * `max` is checked first so a single offending file reports the upper bound
+ * when both are somehow violated (cannot happen for a coherent min ≤ max).
+ */
+export function validateFileSize(
+  bytes: number,
+  opts: { minSize?: number | undefined; maxSize?: number | undefined } = {},
+): UploadSizeError {
+  const { minSize, maxSize } = opts;
+  if (maxSize !== undefined && bytes > maxSize * 1024) return 'max';
+  if (minSize !== undefined && bytes < minSize * 1024) return 'min';
+  return null;
+}
+
 /**
  * Normalise a `beforeUpload` result into an action for one file.
  * - `false` → skip the file (treat as rejected/removed).
