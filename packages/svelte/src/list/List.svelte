@@ -2,12 +2,14 @@
   List — see specs/components/show/List.spec.md
   基础子集：dataSource + renderItem、header/footer（string|Snippet）、bordered/split、
     loading（骨架/spinner）、empty、loadMore（内置按钮/自定义）、grid 网格布局。
-  TODO(延后): 虚拟化、分页、selectable、List.Item/Meta 子项。
+  pagination：复用 Pagination 组件，对 dataSource 切片渲染当页（受控 current 不回写，红线 #1）。
+  TODO(延后): 虚拟化、selectable、List.Item/Meta 子项。
 -->
 <script lang="ts" generics="T">
-  import type { Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import Empty from '../empty/Empty.svelte';
   import { Button } from '../button/index.js';
+  import { Pagination } from '../pagination/index.js';
   import { useLocale } from '../locale-provider/index.js';
 
   type ListSize = 'small' | 'default' | 'large';
@@ -33,6 +35,7 @@
     onLoadMore,
     loadingMore = false,
     hasMore = false,
+    pagination,
     class: className = '',
   }: {
     dataSource?: T[];
@@ -57,6 +60,15 @@
     loadingMore?: boolean;
     /** 是否还有更多（控制内置按钮显隐） */
     hasMore?: boolean;
+    /** 分页：复用 Pagination，对 dataSource 切片渲染当页（与 loadMore 互斥，优先生效） */
+    pagination?:
+      | false
+      | {
+          pageSize?: number;
+          current?: number;
+          defaultCurrent?: number;
+          onChange?: (page: number) => void;
+        };
     class?: string;
   } = $props();
 
@@ -76,6 +88,25 @@
 
   const isEmpty = $derived(!loading && dataSource.length === 0);
   const skeletonRows = $derived(Array.from({ length: Math.max(0, skeletonCount) }, (_, i) => i));
+
+  // --- 分页：受控 current 不回写 (红线 #1)，本地 inner 兜底 ---
+  const paginationOn = $derived(pagination !== undefined && pagination !== false);
+  const pageSize = $derived(pagination ? (pagination.pageSize ?? 10) : 10);
+  const isPageControlled = $derived(!!pagination && pagination.current !== undefined);
+  let innerPage = $state(untrack(() => (pagination ? (pagination.defaultCurrent ?? 1) : 1)));
+  const currentPage = $derived(
+    pagination && pagination.current !== undefined ? pagination.current : innerPage,
+  );
+  // 当前页切片数据；未分页时为全量。
+  const pagedData = $derived.by<T[]>(() => {
+    if (!paginationOn) return dataSource;
+    const start = (currentPage - 1) * pageSize;
+    return dataSource.slice(start, start + pageSize);
+  });
+  function onPageChange(page: number) {
+    if (!isPageControlled) innerPage = page;
+    if (pagination) pagination.onChange?.(page);
+  }
 
   // grid 布局：解析列数/间距，生成 inline CSS（CSS grid）。
   const gridOn = $derived(grid !== undefined);
@@ -136,14 +167,24 @@
       </div>
     {:else}
       <ul class="cd-list__items" class:cd-list__items--grid={gridOn} style={gridStyle}>
-        {#each dataSource as item, index (keyOf(item, index))}
+        {#each pagedData as item, index (keyOf(item, index))}
           <li class="cd-list__item" class:cd-list__item--grid={gridOn}>
             {#if renderItem}{@render renderItem(item, index)}{/if}
           </li>
         {/each}
       </ul>
 
-      {#if loadMore}
+      {#if paginationOn}
+        <div class="cd-list__pagination">
+          <Pagination
+            total={dataSource.length}
+            currentPage={currentPage}
+            {pageSize}
+            size={size === 'large' ? 'default' : size}
+            onChange={onPageChange}
+          />
+        </div>
+      {:else if loadMore}
         <div class="cd-list__load-more">{@render loadMore()}</div>
       {:else if onLoadMore !== undefined && (hasMore || loadingMore)}
         <div class="cd-list__load-more">
@@ -220,6 +261,12 @@
     display: flex;
     justify-content: center;
     padding-block: var(--cd-list-item-padding);
+  }
+  .cd-list__pagination {
+    display: flex;
+    justify-content: flex-end;
+    padding-block: var(--cd-list-item-padding);
+    padding-inline: var(--cd-list-item-padding);
   }
 
   .cd-list__empty {
