@@ -6,7 +6,7 @@ export const meta = {
   name: 'Popconfirm',
   category: 'feedback',
   description:
-    '气泡确认：锚定触发元素的就地二次确认。支持 title/content、危险分级 type（default/warning/danger）、确认/取消双按钮、placement 4 向；role=dialog non-modal，复用 useDismiss/useFocusTrap。本子集，12 向位置全集、hover 触发、异步 loading、portal 延后。',
+    '气泡确认：锚定触发元素的就地二次确认。支持 title/content、危险分级 type（default/warning/danger）、确认/取消双按钮、placement 4 向；triggerType=click/hover、onConfirm 返回 Promise 时确认按钮 loading（resolve 关闭 / reject 保持）、getPopupContainer 自定义浮层容器；role=dialog non-modal，复用 useDismiss/useFocusTrap/useFloating。',
   exports: ['Popconfirm'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写，仅 onOpenChange' },
@@ -50,13 +50,42 @@ export const meta = {
       default: 'true',
       desc: '外部点击是否关闭',
     },
+    {
+      name: 'triggerType',
+      type: "'click'|'hover'",
+      default: "'click'",
+      desc: "触发方式：click 点击 toggle；hover 悬停开关（enter/leave 延迟），指针移入浮层维持打开",
+    },
+    {
+      name: 'mouseEnterDelay',
+      type: 'number',
+      default: '150',
+      desc: 'hover 触发：指针进入到打开的延迟（ms）',
+    },
+    {
+      name: 'mouseLeaveDelay',
+      type: 'number',
+      default: '150',
+      desc: 'hover 触发：指针离开到关闭的延迟（ms）',
+    },
+    {
+      name: 'getPopupContainer',
+      type: '() => HTMLElement | null',
+      default: 'undefined',
+      desc: '浮层 portal 容器，缺省 document.body；脱离 overflow 裁剪与父层叠上下文',
+    },
     { name: 'trigger', type: 'Snippet', default: 'undefined', desc: '触发元素（被包裹）' },
     {
       name: 'onOpenChange',
       type: "(info: { open: boolean; reason: 'trigger'|'confirm'|'cancel'|'esc'|'outsideClick' }) => void",
       default: 'undefined',
     },
-    { name: 'onConfirm', type: '() => void', default: 'undefined', desc: '点击确认回调' },
+    {
+      name: 'onConfirm',
+      type: '() => void | Promise<unknown>',
+      default: 'undefined',
+      desc: '点击确认回调；返回 Promise 时确认按钮进入 loading，resolve 后关闭、reject 保持打开',
+    },
     { name: 'onCancel', type: '() => void', default: 'undefined', desc: '点击取消/外部关闭回调' },
     { name: 'class', type: 'string', default: 'undefined', desc: '附加到浮层的类名' },
   ],

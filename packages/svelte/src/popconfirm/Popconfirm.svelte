@@ -2,11 +2,15 @@
   Popconfirm — 气泡确认（feedback）。
   锚定触发元素的就地二次确认：title/content + 危险分级 type，确认/取消双按钮，
   12 方位 + autoAdjustOverflow flip 碰撞避让，role=dialog non-modal。
-  定位：portal 到 body + position:fixed（脱离 overflow:hidden 裁剪）。
+  定位：portal 到 getPopupContainer()（缺省 body）+ position:fixed（脱离 overflow:hidden 裁剪）。
+  触发：triggerType='click'（默认，点击 toggle）| 'hover'（悬停 enter/leave delay 开关，
+  指针移入浮层维持 open，复用 Dropdown 的 hover 定时器模式）。
+  异步确认：onConfirm 返回 Promise 时确认按钮进入 loading 态，resolve 后关闭、reject 保持打开
+  （对齐 ConfirmModal 的异步编排）。
   复用 core 原语：useId、useDismiss（外部点击/Esc 关闭，popup 列入 extraTargets）、
-  useFocusTrap（焦点捕获+归还）、computePosition/useFloating。
+  useFocusTrap（焦点捕获+归还）、computePosition/useFloating（container 选项接 getPopupContainer）。
   浮层静态显示（{#if isOpen} 直接挂载），无入场动画，reduced-motion 友好。
-  TODO(延后): hover 触发、异步 confirm loading、getContainer、Esc 与 outsideClick 来源细分。
+  TODO(延后): Esc 与 outsideClick 来源细分。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -25,6 +29,7 @@
 
   type PopType = 'default' | 'danger' | 'warning';
   type OkType = 'primary' | 'danger';
+  type TriggerType = 'click' | 'hover';
   type DismissReason = 'trigger' | 'confirm' | 'cancel' | 'esc' | 'outsideClick';
 
   interface Props {
@@ -44,9 +49,18 @@
     disabled?: boolean;
     closeOnEsc?: boolean;
     closeOnOutsideClick?: boolean;
+    /** 触发方式：'click' 点击 toggle（默认）| 'hover' 悬停开关 */
+    triggerType?: TriggerType;
+    /** hover 触发：指针进入到打开的延迟（ms） */
+    mouseEnterDelay?: number;
+    /** hover 触发：指针离开到关闭的延迟（ms） */
+    mouseLeaveDelay?: number;
+    /** 浮层 portal 容器，缺省 document.body */
+    getPopupContainer?: () => HTMLElement | null;
     trigger?: Snippet;
     onOpenChange?: (info: { open: boolean; reason: DismissReason }) => void;
-    onConfirm?: () => void;
+    /** 确认回调；返回 Promise 时确认按钮 loading，resolve 关闭 / reject 保持打开 */
+    onConfirm?: () => void | Promise<unknown>;
     onCancel?: () => void;
     class?: string;
   }
@@ -68,6 +82,10 @@
     disabled = false,
     closeOnEsc = true,
     closeOnOutsideClick = true,
+    triggerType = 'click',
+    mouseEnterDelay = 150,
+    mouseLeaveDelay = 150,
+    getPopupContainer,
     trigger,
     onOpenChange,
     onConfirm,
@@ -123,30 +141,91 @@
   }
 
   function onTriggerClick() {
-    if (disabled) return;
+    if (disabled || triggerType !== 'click') return;
     setOpen(!isOpen, 'trigger');
   }
 
   function onTriggerKeydown(e: KeyboardEvent) {
     if (disabled) return;
+    // 键盘可达性：无论 click/hover，Enter/Space 都能展开（hover 模式键盘等价）。
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       setOpen(!isOpen, 'trigger');
     }
   }
 
-  function confirm() {
-    onConfirm?.();
-    setOpen(false, 'confirm');
+  // --- hover 延迟开关 (红线 #3)：setTimeout 存普通变量，cleanup 清除。
+  //     参考 Dropdown：enter 延迟开、leave 延迟关，指针移入浮层维持 open。 ---
+  let enterTimer: ReturnType<typeof setTimeout> | undefined;
+  let leaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function clearTimers() {
+    if (enterTimer !== undefined) {
+      clearTimeout(enterTimer);
+      enterTimer = undefined;
+    }
+    if (leaveTimer !== undefined) {
+      clearTimeout(leaveTimer);
+      leaveTimer = undefined;
+    }
+  }
+
+  function onTriggerPointerEnter() {
+    if (disabled || triggerType !== 'hover') return;
+    clearTimers();
+    enterTimer = setTimeout(() => setOpen(true, 'trigger'), mouseEnterDelay);
+  }
+
+  function onTriggerPointerLeave() {
+    if (disabled || triggerType !== 'hover') return;
+    clearTimers();
+    leaveTimer = setTimeout(() => setOpen(false, 'trigger'), mouseLeaveDelay);
+  }
+
+  // popup portal 到容器后不在 rootEl 子树内：指针移入浮层需取消关闭，移出再延迟关。
+  function onPopupPointerEnter() {
+    if (triggerType !== 'hover') return;
+    clearTimers();
+  }
+
+  function onPopupPointerLeave() {
+    if (triggerType !== 'hover') return;
+    clearTimers();
+    leaveTimer = setTimeout(() => setOpen(false, 'trigger'), mouseLeaveDelay);
+  }
+
+  $effect(() => clearTimers);
+
+  // --- 异步确认 (红线 #3)：onConfirm 返回 Promise 时确认按钮 loading，
+  //     resolve 后关闭、reject 保持打开（对齐 ConfirmModal）。 ---
+  let confirmLoading = $state(false);
+
+  async function confirm() {
+    if (confirmLoading) return;
+    const result = onConfirm?.();
+    if (result instanceof Promise) {
+      confirmLoading = true;
+      try {
+        await result;
+        confirmLoading = false;
+        setOpen(false, 'confirm');
+      } catch {
+        confirmLoading = false; // reject：复位，保持打开
+      }
+    } else {
+      setOpen(false, 'confirm');
+    }
   }
 
   function cancel() {
+    if (confirmLoading) return;
     onCancel?.();
     setOpen(false, 'cancel');
   }
 
   // 外部点击/Esc 统一按取消处理（reason 暂统一 outsideClick，来源细分 TODO）
   function dismiss() {
+    if (confirmLoading) return; // 异步确认进行中不被外部点击/Esc 打断
     onCancel?.();
     setOpen(false, 'outsideClick');
   }
@@ -182,11 +261,19 @@
     return () => {
       undismiss();
       trap.deactivate();
+      // 浮层关闭即复位 loading（覆盖受控 open 在 loading 中被外部关闭的边界）。
+      confirmLoading = false;
     };
   });
 </script>
 
-<div class="cd-popconfirm" bind:this={rootEl}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="cd-popconfirm"
+  bind:this={rootEl}
+  onpointerenter={onTriggerPointerEnter}
+  onpointerleave={onTriggerPointerLeave}
+>
   <div
     class="cd-popconfirm__trigger"
     role="button"
@@ -206,10 +293,13 @@
       class={popupCls}
       id={popupId}
       bind:this={popupEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, onPlacement }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, getContainer: getPopupContainer, onPlacement }}
       role="dialog"
+      tabindex="-1"
       aria-labelledby={titleId}
       aria-describedby={hasContent ? contentId : undefined}
+      onpointerenter={onPopupPointerEnter}
+      onpointerleave={onPopupPointerLeave}
     >
       <div class="cd-popconfirm__arrow" style={arrowStyle} aria-hidden="true"></div>
       <div class="cd-popconfirm__body">
@@ -282,9 +372,11 @@
       </div>
       <div class="cd-popconfirm__footer">
         {#if showCancel}
-          <Button size="small" onclick={cancel}>{cancelText ?? loc().t('Popconfirm.cancel')}</Button>
+          <Button size="small" disabled={confirmLoading} onclick={cancel}>
+            {cancelText ?? loc().t('Popconfirm.cancel')}
+          </Button>
         {/if}
-        <Button size="small" type={resolvedOkType} onclick={confirm}>
+        <Button size="small" type={resolvedOkType} loading={confirmLoading} onclick={confirm}>
           {okText ?? loc().t('Popconfirm.confirm')}
         </Button>
       </div>
