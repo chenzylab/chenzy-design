@@ -4,14 +4,16 @@
   面板 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），flip 避让。
   异步 loadData：点击非叶子且无 children 的节点时调 loadData 动态加载，
   加载中显示 spinner，结果缓存到本地 extraChildren（不改 treeData prop）。
-  TODO(延后): multiple/checkbox 级联、changeOnSelect 完整语义、
-  hover 展开、搜索 filterTreeNode、displayRender 自定义回显。
+  multiple：每列 checkbox 多选 + 父子联动（复用 core conduct/toggleCheck，以 value 为 key），
+  trigger 按选中叶子路径多 tag 回显可单独移除；value 为 Key[][]（多条路径）。
+  TODO(延后): changeOnSelect 完整语义、hover 展开、搜索 filterTreeNode、displayRender 自定义回显。
 -->
 <script lang="ts">
-  import { useId, useDismiss } from '@chenzy-design/core';
+  import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import Tag from '../tag/Tag.svelte';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
@@ -19,11 +21,14 @@
   type Status = 'default' | 'warning' | 'error';
 
   interface Props {
-    value?: Key[];
-    defaultValue?: Key[];
+    /** 单选为单条路径 Key[]；多选为多条路径 Key[][] */
+    value?: Key[] | Key[][];
+    defaultValue?: Key[] | Key[][];
     treeData?: CascaderNode[];
     open?: boolean;
     defaultOpen?: boolean;
+    /** 多选：每列 checkbox + 父子联动，trigger 多 tag 回显 */
+    multiple?: boolean;
     size?: Size;
     status?: Status;
     placeholder?: string;
@@ -32,7 +37,8 @@
     changeOnSelect?: boolean;
     /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
-    onChange?: (path: Key[]) => void;
+    /** 单选回调单条路径；多选回调多条叶子路径 */
+    onChange?: (value: Key[] | Key[][]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
   }
@@ -43,6 +49,7 @@
     treeData = [],
     open,
     defaultOpen = false,
+    multiple = false,
     size = 'default',
     status = 'default',
     placeholder = '请选择',
@@ -97,20 +104,41 @@
     return columns;
   }
 
+  // 联合 value 规整：单选取单条路径，多选取多条路径
+  function asSinglePath(v: Key[] | Key[][] | undefined): Key[] {
+    if (!v || v.length === 0) return [];
+    return Array.isArray(v[0]) ? ((v[0] as Key[]) ?? []) : (v as Key[]);
+  }
+  function asMultiPaths(v: Key[] | Key[][] | undefined): Key[][] {
+    if (!v || v.length === 0) return [];
+    return Array.isArray(v[0]) ? (v as Key[][]) : [v as Key[]];
+  }
+
   function getInitialValue(): Key[] {
-    return defaultValue ?? [];
+    return asSinglePath(defaultValue);
+  }
+  function getInitialPaths(): Key[][] {
+    return asMultiPaths(defaultValue).map((p) => p.slice());
   }
   function getInitialOpen(): boolean {
     return defaultOpen;
   }
   function getInitialPath(): Key[] {
-    return defaultValue ? defaultValue.slice() : [];
+    return asSinglePath(defaultValue).slice();
   }
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
   const isValueControlled = $derived(value !== undefined);
+  // 单选：当前路径
   let innerValue = $state<Key[]>(getInitialValue());
-  const currentValue = $derived<Key[]>(isValueControlled ? (value ?? []) : innerValue);
+  const currentValue = $derived<Key[]>(
+    isValueControlled ? asSinglePath(value) : innerValue,
+  );
+  // 多选：选中的多条叶子路径
+  let innerPaths = $state<Key[][]>(getInitialPaths());
+  const currentPaths = $derived<Key[][]>(
+    isValueControlled ? asMultiPaths(value) : innerPaths,
+  );
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
   const isOpenControlled = $derived(open !== undefined);
@@ -122,14 +150,112 @@
 
   const columns = $derived(columnsFor(treeData, activePath));
 
+  // --- 多选：合并树（含异步缓存）转 core TreeNodeData（以 value 为 key），跑 conduct ---
+  function toTreeData(nodes: CascaderNode[]): TreeNodeData[] {
+    return nodes.map((n) => {
+      const kids = childrenOf(n);
+      const td: TreeNodeData = { key: n.value, label: n.label };
+      if (n.disabled) td.disabled = true;
+      if (kids && kids.length > 0) td.children = toTreeData(kids);
+      return td;
+    });
+  }
+  const mergedTreeData = $derived(toTreeData(treeData));
+
+  // 多选勾选 base：把每条选中路径的叶子 value 作为显式勾选项
+  function pathsToLeafBase(paths: Key[][]): Set<Key> {
+    const set = new Set<Key>();
+    for (const p of paths) {
+      if (p.length > 0) set.add(p[p.length - 1] as Key);
+    }
+    return set;
+  }
+  const checkedBase = $derived(pathsToLeafBase(currentPaths));
+  const checkState = $derived.by(() =>
+    multiple
+      ? conduct(mergedTreeData, checkedBase)
+      : { checked: new Set<Key>(), half: new Set<Key>() },
+  );
+
+  // 选中叶子的完整路径链（用于多 tag 回显）。遍历合并树收集 checked 的叶子路径。
+  const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[] }[]>(() => {
+    if (!multiple) return [];
+    const out: { path: Key[]; labels: string[] }[] = [];
+    const walk = (nodes: CascaderNode[], path: Key[], labels: string[]) => {
+      for (const n of nodes) {
+        const kids = childrenOf(n);
+        const np = [...path, n.value];
+        const nl = [...labels, n.label];
+        const isLeaf = !kids || kids.length === 0;
+        if (isLeaf && checkState.checked.has(n.value)) {
+          out.push({ path: np, labels: nl });
+        } else if (!isLeaf) {
+          walk(kids, np, nl);
+        }
+      }
+    };
+    walk(treeData, [], []);
+    return out;
+  });
+
   const selectedChain = $derived(findPath(treeData, currentValue));
   const displayLabel = $derived(selectedChain.map((n) => n.label).join(' / '));
-  const hasSelection = $derived(selectedChain.length > 0);
+  const hasSelection = $derived(
+    multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
+  );
   const showClear = $derived(clearable && !disabled && hasSelection);
 
   function setValue(next: Key[]) {
     if (!isValueControlled) innerValue = next;
     onChange?.(next);
+  }
+
+  // 多选：由勾选叶子全集生成多条路径回调
+  function leafBaseToPaths(checkedSet: Set<Key>): Key[][] {
+    const out: Key[][] = [];
+    const walk = (nodes: CascaderNode[], path: Key[]) => {
+      for (const n of nodes) {
+        const kids = childrenOf(n);
+        const np = [...path, n.value];
+        const isLeaf = !kids || kids.length === 0;
+        if (isLeaf) {
+          if (checkedSet.has(n.value)) out.push(np);
+        } else {
+          walk(kids, np);
+        }
+      }
+    };
+    walk(treeData, []);
+    return out;
+  }
+
+  function setPaths(nextPaths: Key[][]) {
+    if (!isValueControlled) innerPaths = nextPaths;
+    onChange?.(nextPaths);
+  }
+
+  // 切换某节点勾选（父子联动），由 nextBase → conduct → 叶子路径回调
+  function toggleCheckNode(node: CascaderNode) {
+    if (node.disabled || disabled) return;
+    const nextBase = toggleCheck(mergedTreeData, checkedBase, node.value);
+    const resolved = conduct(mergedTreeData, nextBase);
+    setPaths(leafBaseToPaths(resolved.checked));
+  }
+
+  // 移除某 tag（按叶子 value 取消勾选，联动祖先半选更新）
+  function removeLeaf(leafValue: Key) {
+    if (disabled) return;
+    const nextBase = new Set(checkedBase);
+    nextBase.delete(leafValue);
+    const resolved = conduct(mergedTreeData, nextBase);
+    setPaths(leafBaseToPaths(resolved.checked));
+  }
+
+  function nodeCheck(node: CascaderNode): { checked: boolean; half: boolean } {
+    return {
+      checked: checkState.checked.has(node.value),
+      half: !checkState.checked.has(node.value) && checkState.half.has(node.value),
+    };
   }
 
   function setOpen(next: boolean) {
@@ -194,6 +320,19 @@
     nextPath.push(node.value);
     activePath = nextPath;
 
+    // 多选：非叶子展开列 / 异步加载；叶子切换勾选且不关面板
+    if (multiple) {
+      if (hasChildren(node)) {
+        return;
+      }
+      if (!node.isLeaf && loadData) {
+        void loadChildren(node);
+        return;
+      }
+      toggleCheckNode(node);
+      return;
+    }
+
     if (hasChildren(node)) {
       // 非叶子: 展开下一列；changeOnSelect 时也提交当前路径
       if (changeOnSelect) setValue(nextPath.slice());
@@ -211,7 +350,11 @@
   function clearAll(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
-    setValue([]);
+    if (multiple) {
+      setPaths([]);
+    } else {
+      setValue([]);
+    }
     activePath = [];
   }
 
@@ -244,8 +387,8 @@
 </script>
 
 <div class={cls} bind:this={rootEl}>
-  <button
-    type="button"
+  <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
+  <div
     class="cd-cascader__trigger"
     role="combobox"
     aria-haspopup="listbox"
@@ -253,11 +396,36 @@
     aria-controls={listId}
     aria-label={ariaLabel}
     aria-invalid={status === 'error' || undefined}
-    disabled={disabled || undefined}
+    aria-disabled={disabled || undefined}
+    tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!disabled) setOpen(true);
+      } else if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    }}
   >
     <span class="cd-cascader__content">
-      {#if hasSelection}
+      {#if multiple}
+        {#if checkedLeafPaths.length > 0}
+          <span class="cd-cascader__tags">
+            {#each checkedLeafPaths as leaf (leaf.path.join('/'))}
+              <Tag
+                size={size === 'large' ? 'default' : 'small'}
+                closable={!disabled}
+                onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
+              >
+                {leaf.labels.join(' / ')}
+              </Tag>
+            {/each}
+          </span>
+        {:else}
+          <span class="cd-cascader__placeholder">{placeholder}</span>
+        {/if}
+      {:else if hasSelection}
         <span class="cd-cascader__value">{displayLabel}</span>
       {:else}
         <span class="cd-cascader__placeholder">{placeholder}</span>
@@ -292,7 +460,7 @@
         <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
       </svg>
     </span>
-  </button>
+  </div>
 
   {#if isOpen}
     <div
@@ -320,6 +488,31 @@
               }}
               tabindex={node.disabled ? -1 : 0}
             >
+              {#if multiple}
+                {@const cs = nodeCheck(node)}
+                <span
+                  class="cd-cascader__checkbox"
+                  class:cd-cascader__checkbox--checked={cs.checked}
+                  class:cd-cascader__checkbox--half={cs.half}
+                  role="button"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggleCheckNode(node);
+                  }}
+                >
+                  {#if cs.checked}
+                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
+                    </svg>
+                  {:else if cs.half}
+                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 8h8" />
+                    </svg>
+                  {/if}
+                </span>
+              {/if}
               <span class="cd-cascader__option-label">{node.label}</span>
               {#if isLoading(node)}
                 <span class="cd-cascader__option-loading" aria-label={loc().t('Cascader.loading')}></span>
@@ -374,7 +567,7 @@
   .cd-cascader--error .cd-cascader__trigger {
     border-color: var(--cd-select-border-error);
   }
-  .cd-cascader__trigger:disabled {
+  .cd-cascader__trigger[aria-disabled='true'] {
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
@@ -465,6 +658,32 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    flex: 1 1 auto;
+  }
+  .cd-cascader__checkbox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 1rem;
+    block-size: 1rem;
+    color: #fff;
+    background: var(--cd-color-bg-1, #fff);
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-small, 3px);
+    cursor: pointer;
+  }
+  .cd-cascader__checkbox--checked,
+  .cd-cascader__checkbox--half {
+    background: var(--cd-color-primary);
+    border-color: var(--cd-color-primary);
+  }
+  .cd-cascader__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-1);
+    align-items: center;
+    min-inline-size: 0;
   }
   .cd-cascader__option-expand {
     flex: 0 0 auto;
