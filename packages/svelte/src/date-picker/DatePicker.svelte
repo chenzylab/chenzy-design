@@ -2,7 +2,8 @@
   DatePicker — see specs/components/input/DatePicker.spec.md
   基础子集: 单选 type='date' 日历面板 / type='dateTime' 日期+时间。Token-driven, a11y-correct, 受控/非受控。
   本地化全部走 Intl.DateTimeFormat (不手拼日期串)。dateTime 复用 TimePicker 的时/分/秒列逻辑。
-  TODO(延后): range/month/year 类型、disabledTime、maxRange、自定义 format 解析手输。
+  disabledTime: dateTime 时/分/秒列按日期禁用值置灰跳过；presets: 面板侧边快捷日期按钮。
+  TODO(延后): maxRange、自定义 format 解析手输。
 -->
 <script lang="ts">
   import { tick } from 'svelte';
@@ -13,6 +14,19 @@
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
   type PickerType = 'date' | 'dateTime' | 'month' | 'year';
+
+  // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值
+  interface DisabledTime {
+    disabledHours?: () => number[];
+    disabledMinutes?: (hour: number) => number[];
+    disabledSeconds?: (hour: number, minute: number) => number[];
+  }
+
+  // 快捷日期项：value 可为 Date 或惰性求值函数 (点击时才计算，如「今天」)
+  interface Preset {
+    label: string;
+    value: Date | (() => Date);
+  }
 
   interface Props {
     type?: PickerType;
@@ -26,6 +40,8 @@
     disabled?: boolean;
     clearable?: boolean;
     disabledDate?: (date: Date) => boolean;
+    disabledTime?: (date: Date) => DisabledTime;
+    presets?: Preset[];
     weekStart?: WeekStart;
     showSecond?: boolean;
     locale?: string;
@@ -46,6 +62,8 @@
     disabled = false,
     clearable = true,
     disabledDate,
+    disabledTime,
+    presets,
     weekStart = 0,
     showSecond = true,
     locale = 'zh-CN',
@@ -237,6 +255,19 @@
     return n < 10 ? `0${n}` : `${n}`;
   }
 
+  // --- disabledTime (dateTime)：按当前日期解析各列禁用值集合 ---
+  // 基准日期取当前选中值(无则今天)；时/分依赖已选时分以联动下游列。
+  const disabledTimeCfg = $derived(
+    isDateTime && disabledTime ? disabledTime(current ?? today) : undefined,
+  );
+  const disabledHourSet = $derived(new Set(disabledTimeCfg?.disabledHours?.() ?? []));
+  const disabledMinuteSet = $derived(
+    new Set(disabledTimeCfg?.disabledMinutes?.(selectedHour) ?? []),
+  );
+  const disabledSecondSet = $derived(
+    new Set(disabledTimeCfg?.disabledSeconds?.(selectedHour, selectedMinute) ?? []),
+  );
+
   // 合并指定日期与已有时分秒 (dateTime 保留时间，date 归零到当天起始)
   function combine(date: Date): Date {
     if (!isDateTime) return startOfDay(date);
@@ -275,13 +306,35 @@
     setValue(base);
   }
   function pickHour(h: number) {
+    if (disabledHourSet.has(h)) return;
     commitTime(h, selectedMinute, selectedSecond);
   }
   function pickMinute(m: number) {
+    if (disabledMinuteSet.has(m)) return;
     commitTime(selectedHour, m, selectedSecond);
   }
   function pickSecond(s: number) {
+    if (disabledSecondSet.has(s)) return;
     commitTime(selectedHour, selectedMinute, s);
+  }
+
+  // --- presets：点击快捷项直接选中 (惰性 value 即时求值) ---
+  function selectPreset(preset: Preset) {
+    const date = typeof preset.value === 'function' ? preset.value() : preset.value;
+    if (disabledDate?.(date)) return;
+    if (isMonth) {
+      setValue(startOfDay(new Date(date.getFullYear(), date.getMonth(), 1)));
+      setOpen(false);
+      return;
+    }
+    if (isYear) {
+      setValue(startOfDay(new Date(date.getFullYear(), 0, 1)));
+      setOpen(false);
+      return;
+    }
+    // dateTime：连带时间一起选中；date：归零到当天起始。
+    setValue(isDateTime ? new Date(date) : startOfDay(date));
+    setOpen(false);
   }
 
   function confirm() {
@@ -461,6 +514,21 @@
       tabindex="-1"
       onkeydown={onPanelKeydown}
     >
+      <div class="cd-date-picker__layout" class:cd-date-picker__layout--presets={presets && presets.length > 0}>
+      {#if presets && presets.length > 0}
+        <div class="cd-date-picker__presets" role="group" aria-label={loc().t('DatePicker.triggerLabel')}>
+          {#each presets as preset, i (i)}
+            <button
+              type="button"
+              class="cd-date-picker__preset"
+              onclick={() => selectPreset(preset)}
+            >
+              {preset.label}
+            </button>
+          {/each}
+        </div>
+      {/if}
+      <div class="cd-date-picker__main">
       <div class="cd-date-picker__body">
       <div class="cd-date-picker__calendar">
       <div class="cd-date-picker__header">
@@ -574,11 +642,14 @@
         <div class="cd-date-picker__time">
           <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
             {#each hours as h (h)}
+              {@const isHourDisabled = disabledHourSet.has(h)}
               <li
                 class="cd-date-picker__time-item"
                 class:cd-date-picker__time-item--selected={h === selectedHour}
+                class:cd-date-picker__time-item--disabled={isHourDisabled}
                 role="option"
                 aria-selected={h === selectedHour}
+                aria-disabled={isHourDisabled || undefined}
                 tabindex="-1"
                 onclick={() => pickHour(h)}
                 onkeydown={(e) => {
@@ -594,11 +665,14 @@
           </ul>
           <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
             {#each minutes as m (m)}
+              {@const isMinuteDisabled = disabledMinuteSet.has(m)}
               <li
                 class="cd-date-picker__time-item"
                 class:cd-date-picker__time-item--selected={m === selectedMinute}
+                class:cd-date-picker__time-item--disabled={isMinuteDisabled}
                 role="option"
                 aria-selected={m === selectedMinute}
+                aria-disabled={isMinuteDisabled || undefined}
                 tabindex="-1"
                 onclick={() => pickMinute(m)}
                 onkeydown={(e) => {
@@ -615,11 +689,14 @@
           {#if showSecond}
             <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
               {#each seconds as s (s)}
+                {@const isSecondDisabled = disabledSecondSet.has(s)}
                 <li
                   class="cd-date-picker__time-item"
                   class:cd-date-picker__time-item--selected={s === selectedSecond}
+                  class:cd-date-picker__time-item--disabled={isSecondDisabled}
                   role="option"
                   aria-selected={s === selectedSecond}
+                  aria-disabled={isSecondDisabled || undefined}
                   tabindex="-1"
                   onclick={() => pickSecond(s)}
                   onkeydown={(e) => {
@@ -647,6 +724,8 @@
             {loc().t('TimePicker.confirm')}
           </button>
         {/if}
+      </div>
+      </div>
       </div>
     </div>
   {/if}
@@ -762,6 +841,45 @@
   .cd-date-picker__panel:focus-visible {
     outline: none;
   }
+  .cd-date-picker__layout {
+    display: flex;
+    align-items: stretch;
+  }
+  .cd-date-picker__main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+  }
+  .cd-date-picker__presets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-1);
+    margin-inline-end: var(--cd-spacing-3);
+    padding-inline-end: var(--cd-spacing-3);
+    border-inline-end: 1px solid var(--cd-color-border);
+    min-inline-size: 5rem;
+  }
+  .cd-date-picker__preset {
+    padding-inline: var(--cd-spacing-2);
+    padding-block: var(--cd-spacing-1);
+    border: none;
+    border-radius: var(--cd-radius-1);
+    background: transparent;
+    color: var(--cd-color-text-0);
+    font: inherit;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-date-picker__preset:hover {
+    background: var(--cd-date-picker-cell-bg-hover);
+    color: var(--cd-color-primary);
+  }
+  .cd-date-picker__preset:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
   .cd-date-picker__body {
     display: flex;
     align-items: stretch;
@@ -804,6 +922,12 @@
   .cd-date-picker__time-item--selected:hover {
     background: var(--cd-date-picker-cell-bg-selected);
     color: var(--cd-date-picker-cell-color-selected);
+  }
+  .cd-date-picker__time-item--disabled,
+  .cd-date-picker__time-item--disabled:hover {
+    color: var(--cd-color-text-3);
+    cursor: not-allowed;
+    background: transparent;
   }
   .cd-date-picker__ok {
     padding-inline: var(--cd-spacing-2);
@@ -955,7 +1079,8 @@
   @media (prefers-reduced-motion: reduce) {
     .cd-date-picker__trigger,
     .cd-date-picker__clear,
-    .cd-date-picker__cell {
+    .cd-date-picker__cell,
+    .cd-date-picker__preset {
       transition: none;
     }
   }

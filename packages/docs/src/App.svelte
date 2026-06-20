@@ -343,6 +343,8 @@
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
 let monthVal = $state<Date | null>(null);
 let yearVal = $state<Date | null>(null);
+let disabledTimeVal = $state<Date | null>(null);
+let presetVal = $state<Date | null>(null);
   let timeVal = $state<Date | null>(null);
   let cascaderVal = $state<(string | number)[]>([]);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
@@ -891,6 +893,33 @@ let pageSize2 = $state(10);
       </span>
       <Text type="tertiary">
         年份：{yearVal ? yearVal.getFullYear() : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-disabledtime" style="width:260px; display:inline-block">
+        <DatePicker
+          type="dateTime"
+          value={disabledTimeVal}
+          onChange={(d) => (disabledTimeVal = d)}
+          disabledTime={() => ({ disabledHours: () => Array.from({ length: 12 }, (_, i) => i) })}
+        />
+      </span>
+      <Text type="tertiary">禁用时间：上午 0-11 时不可选</Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-presets" style="width:260px; display:inline-block">
+        <DatePicker
+          value={presetVal}
+          onChange={(d) => (presetVal = d)}
+          presets={[
+            { label: '今天', value: () => new Date() },
+            { label: '昨天', value: () => new Date(Date.now() - 86400000) },
+            { label: '一周后', value: () => new Date(Date.now() + 7 * 86400000) },
+          ]}
+        />
+      </span>
+      <Text type="tertiary">
+        快捷：{presetVal ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}
       </Text>
     </Space>
     <Space>
