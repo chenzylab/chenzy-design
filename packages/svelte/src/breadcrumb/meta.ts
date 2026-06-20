@@ -16,6 +16,18 @@ export const meta = {
     },
     { name: 'separator', type: 'string', default: "'/'", desc: '分隔符文本' },
     { name: 'maxItemCount', type: 'number', default: '0', desc: '超出时中间折叠（0=不折叠）' },
+    {
+      name: 'showTooltip',
+      type: 'boolean',
+      default: 'false',
+      desc: '项文本超出 --cd-breadcrumb-item-max-width 被截断时，hover 用 Tooltip 展示完整 label',
+    },
+    {
+      name: 'moreType',
+      type: "'tooltip'|'popover'",
+      default: 'undefined',
+      desc: '折叠 … 的浮层类型：tooltip 悬浮列出被折叠项文本；popover 点击展开可点击跳转的折叠项列表。不设时点击 … 直接展开全部（向后兼容）',
+    },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'class', type: 'string', default: "''" },
     {
@@ -58,5 +70,11 @@ export const meta = {
       '分隔符 aria-hidden=true',
     ],
   },
-  tokens: ['--cd-breadcrumb-*', '--cd-focus-ring', '--cd-font-size-*', '--cd-radius-1'],
+  tokens: [
+    '--cd-breadcrumb-*',
+    '--cd-breadcrumb-item-max-width',
+    '--cd-focus-ring',
+    '--cd-font-size-*',
+    '--cd-radius-1',
+  ],
 } as const;

@@ -4,18 +4,26 @@
   声明式模式：子项间分隔符由纯 CSS（:not(:last-child)::after）自动插入，最后一项后无分隔符；
   最后一项语义（当前页：不可点 + aria-current=page）由 context 注册顺序派生（红线 #2 纯函数）。
   maxItemCount: 超出时中间折叠为 ... 触发器（保留首项 + 末 maxItemCount-1 项），点击展开全部。
-  TODO: showTooltip, moreType popover, renderItem/renderMore.
+  showTooltip: 文本可能被截断的项，启用后用 :global Tooltip 悬浮展示完整 label（label 截断由 CSS 控制）。
+  moreType: 折叠 ... 的浮层类型——'tooltip' 悬浮列出被折叠项；'popover' 悬浮列出且其中项可点击跳转。
+    未设 moreType（undefined）时维持现状：点击 ... 直接展开全部（向后兼容）。
+  复用库内 Tooltip/Popover（红线 #3：cleanup 由其内部 useDismiss/定时器自管）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
+  import Popover from '../popover/Popover.svelte';
   import { setBreadcrumbContext } from './context.js';
   import type { BreadcrumbRoute } from './types.js';
 
   type BreadcrumbSize = 'small' | 'default' | 'large';
+  /** 折叠 ... 浮层类型；undefined 时点击直接展开全部（向后兼容） */
+  type MoreType = 'tooltip' | 'popover';
+  type CollapsedRoute = { route: BreadcrumbRoute; index: number };
   type DisplayCell =
     | { type: 'route'; route: BreadcrumbRoute; index: number }
-    | { type: 'ellipsis'; count: number };
+    | { type: 'ellipsis'; count: number; collapsed: CollapsedRoute[] };
 
   interface Props {
     routes?: BreadcrumbRoute[];
@@ -23,6 +31,10 @@
     size?: BreadcrumbSize;
     /** 超出此数量时中间折叠（0 = 不折叠） */
     maxItemCount?: number;
+    /** 文本被截断的项 hover 时用 Tooltip 展示完整 label */
+    showTooltip?: boolean;
+    /** 折叠 ... 的浮层类型；不设则点击 ... 直接展开全部 */
+    moreType?: MoreType;
     class?: string;
     children?: Snippet;
     onClick?: (route: BreadcrumbRoute, index: number) => void;
@@ -33,6 +45,8 @@
     separator = '/',
     size = 'default',
     maxItemCount = 0,
+    showTooltip = false,
+    moreType,
     class: className = '',
     children,
     onClick,
@@ -63,7 +77,11 @@
     const rest = all.slice(1, routes.length - tail);
     const tailCells = all.slice(routes.length - tail);
     if (rest.length === 0) return all;
-    return [...head, { type: 'ellipsis', count: rest.length }, ...tailCells];
+    const collapsed: CollapsedRoute[] = rest.map((c) =>
+      // rest 内必为 route cell（all 全由 route 构成）
+      c.type === 'route' ? { route: c.route, index: c.index } : { route: { label: '' }, index: -1 },
+    );
+    return [...head, { type: 'ellipsis', count: rest.length, collapsed }, ...tailCells];
   });
 
   function handleClick(route: BreadcrumbRoute, index: number) {
@@ -88,6 +106,52 @@
   });
 </script>
 
+<!-- 单个路由项内容：末项=当前页（不可点），有 href=链接，否则可点文本。 -->
+{#snippet routeItem(route: BreadcrumbRoute, index: number, last: boolean)}
+  {#if last}
+    <span class="cd-breadcrumb__current" aria-current="page">{route.label}</span>
+  {:else if route.href}
+    <a
+      class="cd-breadcrumb__link"
+      href={route.href}
+      onclick={() => handleClick(route, index)}>{route.label}</a
+    >
+  {:else}
+    <span
+      class="cd-breadcrumb__text"
+      role="link"
+      tabindex="0"
+      onclick={() => handleClick(route, index)}
+      onkeydown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick(route, index);
+        }
+      }}>{route.label}</span
+    >
+  {/if}
+{/snippet}
+
+<!-- showTooltip 开启：用 Tooltip 包裹（label 截断由 CSS 控制），content 为完整文本。 -->
+{#snippet maybeTooltip(route: BreadcrumbRoute, index: number, last: boolean)}
+  {#if showTooltip}
+    <Tooltip content={route.label} placement="top">
+      <span class="cd-breadcrumb__ellipsis-wrap">{@render routeItem(route, index, last)}</span>
+    </Tooltip>
+  {:else}
+    {@render routeItem(route, index, last)}
+  {/if}
+{/snippet}
+
+<!-- 折叠 ... 触发器（Tooltip/Popover 的 child） -->
+{#snippet moreTrigger(count: number)}
+  <button
+    type="button"
+    class="cd-breadcrumb__more"
+    aria-label={loc().t('Breadcrumb.moreLabel', { count })}
+  >…</button>
+{/snippet}
+
 <nav class={cls} aria-label={loc().t('Breadcrumb.ariaLabel')}>
   {#if hasRoutes}
     <ol class="cd-breadcrumb__list">
@@ -95,33 +159,57 @@
         {@const isLast = cellIndex === cells.length - 1}
         <li class="cd-breadcrumb__item">
           {#if cell.type === 'ellipsis'}
-            <button
-              type="button"
-              class="cd-breadcrumb__more"
-              aria-label={loc().t('Breadcrumb.moreLabel', { count: cell.count })}
-              onclick={() => (expanded = true)}
-            >…</button>
-          {:else if isLast}
-            <span class="cd-breadcrumb__current" aria-current="page">{cell.route.label}</span>
-          {:else if cell.route.href}
-            <a
-              class="cd-breadcrumb__link"
-              href={cell.route.href}
-              onclick={() => handleClick(cell.route, cell.index)}>{cell.route.label}</a
-            >
+            {#if moreType === 'popover'}
+              <Popover trigger="click" position="bottom" align="start">
+                {@render moreTrigger(cell.count)}
+                {#snippet contentSlot()}
+                  <ul class="cd-breadcrumb__more-list">
+                    {#each cell.collapsed as c (c.index)}
+                      <li class="cd-breadcrumb__more-list-item">
+                        {#if c.route.href}
+                          <a
+                            class="cd-breadcrumb__link"
+                            href={c.route.href}
+                            onclick={() => handleClick(c.route, c.index)}>{c.route.label}</a
+                          >
+                        {:else}
+                          <span
+                            class="cd-breadcrumb__text"
+                            role="link"
+                            tabindex="0"
+                            onclick={() => handleClick(c.route, c.index)}
+                            onkeydown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleClick(c.route, c.index);
+                              }
+                            }}>{c.route.label}</span
+                          >
+                        {/if}
+                      </li>
+                    {/each}
+                  </ul>
+                {/snippet}
+              </Popover>
+            {:else if moreType === 'tooltip'}
+              <Tooltip placement="bottom">
+                {@render moreTrigger(cell.count)}
+                {#snippet content()}
+                  <span class="cd-breadcrumb__more-tip">
+                    {cell.collapsed.map((c) => c.route.label).join(` ${separator} `)}
+                  </span>
+                {/snippet}
+              </Tooltip>
+            {:else}
+              <button
+                type="button"
+                class="cd-breadcrumb__more"
+                aria-label={loc().t('Breadcrumb.moreLabel', { count: cell.count })}
+                onclick={() => (expanded = true)}
+              >…</button>
+            {/if}
           {:else}
-            <span
-              class="cd-breadcrumb__text"
-              role="link"
-              tabindex="0"
-              onclick={() => handleClick(cell.route, cell.index)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleClick(cell.route, cell.index);
-                }
-              }}>{cell.route.label}</span
-            >
+            {@render maybeTooltip(cell.route, cell.index, isLast)}
           {/if}
           {#if !isLast}
             <span class="cd-breadcrumb__separator" aria-hidden="true">{separator}</span>
@@ -216,5 +304,41 @@
   .cd-breadcrumb__more:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
+  }
+
+  /* showTooltip：截断包裹——超过 max-inline-size 时省略号，hover 由 Tooltip 显示完整文本 */
+  .cd-breadcrumb__ellipsis-wrap {
+    display: inline-block;
+    max-inline-size: var(--cd-breadcrumb-item-max-width, 12em);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+  /* 内层可点元素在截断包裹内需为块级以继承省略号 */
+  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__link),
+  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__text),
+  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__current) {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* moreType=popover 折叠项列表 */
+  .cd-breadcrumb__more-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cd-breadcrumb__more-list-item {
+    white-space: nowrap;
+  }
+  /* moreType=tooltip 折叠项文本（换行友好） */
+  .cd-breadcrumb__more-tip {
+    white-space: normal;
   }
 </style>

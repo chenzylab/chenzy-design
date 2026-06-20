@@ -532,6 +532,7 @@ let presetVal = $state<Date | null>(null);
     { uid: string; name: string; size: number; status: 'ready' | 'uploading' | 'success' | 'error'; url?: string; file?: File }[]
   >([{ uid: 'img-1', name: 'sample.svg', size: 1024, status: 'success', url: demoImageSrc }]);
   let page = $state(1);
+let breadcrumbMore = $state('—');
 let page2 = $state(1);
 let pageSize2 = $state(10);
   let step = $state(1);
@@ -1626,6 +1627,49 @@ let pageSize2 = $state(10);
         <Breadcrumb.Item href="#">组件</Breadcrumb.Item>
         <Breadcrumb.Item>导航</Breadcrumb.Item>
       </Breadcrumb>
+    </div>
+
+    <div data-testid="breadcrumb-tooltip" style="max-inline-size: 360px">
+      <Breadcrumb
+        showTooltip
+        routes={[
+          { label: '首页', href: '#' },
+          { label: '这是一个非常非常非常长以至于会被截断的中间项标题', href: '#' },
+          { label: '另一个同样很长很长很长很长会被省略号截断的当前页标题' },
+        ]}
+      />
+    </div>
+
+    <div data-testid="breadcrumb-more-popover">
+      <Breadcrumb
+        maxItemCount={3}
+        moreType="popover"
+        onClick={(r) => (breadcrumbMore = r.label)}
+        routes={[
+          { label: '首页', href: '#' },
+          { label: '一级', href: '#' },
+          { label: '二级', href: '#' },
+          { label: '三级', href: '#' },
+          { label: '四级', href: '#' },
+          { label: '当前页' },
+        ]}
+      />
+      <Text type="tertiary">popover 点击折叠项：{breadcrumbMore}</Text>
+    </div>
+
+    <div data-testid="breadcrumb-more-tooltip">
+      <Breadcrumb
+        maxItemCount={3}
+        moreType="tooltip"
+        routes={[
+          { label: '首页', href: '#' },
+          { label: '一级', href: '#' },
+          { label: '二级', href: '#' },
+          { label: '三级', href: '#' },
+          { label: '四级', href: '#' },
+          { label: '当前页' },
+        ]}
+      />
     </div>
 
     <Pagination total={256} currentPage={page} showTotal onChange={(p) => (page = p)} />
