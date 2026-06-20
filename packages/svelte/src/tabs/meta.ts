@@ -23,6 +23,12 @@ export const meta = {
     { name: 'tabList', type: 'TabItem[]', default: '[]', desc: '数据驱动标签定义' },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
     {
+      name: 'addable',
+      type: 'boolean',
+      default: 'false',
+      desc: '标签栏末尾显示「+」按钮，点击触发 onAdd（受控，由父组件追加）',
+    },
+    {
       name: 'keyboardActivation',
       type: "'auto'|'manual'",
       default: 'auto',
@@ -30,6 +36,12 @@ export const meta = {
     },
     { name: 'onChange', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onTabClose', type: '(key: string|number) => void', default: 'undefined' },
+    {
+      name: 'onAdd',
+      type: '() => void',
+      default: 'undefined',
+      desc: 'addable=true 时点击「+」按钮回调（受控数据，组件内不改 tabList）',
+    },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 TabPane 内容' },
   ],
   a11y: {
@@ -40,6 +52,8 @@ export const meta = {
       'roving tabindex：仅激活标签 tabindex=0，其余 -1',
       'keyboardActivation=auto 聚焦即激活，manual 需 Enter/Space 确认',
       '面板 role=tabpanel；关闭叉为带 aria-label 的原生 button',
+      '标签溢出时出现前/后滚动箭头（带 aria-label，tabindex=-1 不入 Tab 序），激活标签自动滚到可视区',
+      'addable 的「+」为带 aria-label 的原生 button',
     ],
   },
   tokens: ['--cd-tabs-*', '--cd-focus-ring', '--cd-radius-1', '--cd-spacing-*'],
