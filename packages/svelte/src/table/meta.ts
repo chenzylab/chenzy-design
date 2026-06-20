@@ -6,7 +6,7 @@ export const meta = {
   name: 'Table',
   category: 'show',
   description:
-    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。虚拟化延后。',
+    '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。虚拟化延后。',
   exports: ['Table'],
   props: [
     { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/ellipsis/sorter/filters/onFilter/render' },
@@ -29,7 +29,7 @@ export const meta = {
       name: 'rowSelection',
       type: 'RowSelection<T>',
       default: 'undefined',
-      desc: 'selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps',
+      desc: 'selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps；checkStrictly(默认 false) 树形父子联动开关：false 勾父连带勾后代+后代部分选中父行半选，true 父子独立',
     },
     {
       name: 'expandable',
@@ -103,6 +103,10 @@ export const meta = {
     {
       title: '树形数据',
       code: '<Table {columns} dataSource={treeRows} rowKey="key" tree={{ defaultExpandedRowKeys: [1] }} />',
+    },
+    {
+      title: '树形行选择父子联动',
+      code: '<Table {columns} dataSource={treeRows} rowKey="key" tree rowSelection={{ onChange: (keys) => (selected = keys) }} />',
     },
   ],
 } as const;

@@ -178,3 +178,152 @@ export function flattenTreeRows<T>(
   walk(rows, 0, null, 0);
   return out;
 }
+
+// --- Tree row selection conduction (父子联动) ----------------------------
+// Mirrors tree.ts conduct/toggleCheck, but operates on Table rows via
+// getKey/getChildren rather than the {key,label,children} TreeNodeData shape,
+// so callers needn't reshape rows. Disabled rows are excluded from auto-check.
+
+interface RowMeta {
+  /** leaf descendant keys per node (the checkable units) */
+  leaves: Map<RowKey, RowKey[]>;
+  /** all node keys in document order */
+  allKeys: RowKey[];
+}
+
+function buildRowMeta<T>(
+  rows: readonly T[],
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+  disabled: ReadonlySet<RowKey>,
+): RowMeta {
+  const leaves = new Map<RowKey, RowKey[]>();
+  const allKeys: RowKey[] = [];
+
+  function walk(record: T): RowKey[] {
+    const key = getKey(record);
+    allKeys.push(key);
+    const kids = getChildren(record);
+    if (!kids || kids.length === 0) {
+      // a leaf contributes itself only when enabled
+      const own = disabled.has(key) ? [] : [key];
+      leaves.set(key, own);
+      return own;
+    }
+    const collected: RowKey[] = [];
+    for (const child of kids) collected.push(...walk(child));
+    leaves.set(key, collected);
+    return collected;
+  }
+
+  for (const root of rows) walk(root);
+  return { leaves, allKeys };
+}
+
+/** Collect keys of every row that is disabled (own flag, not inherited). */
+function collectDisabled<T>(
+  rows: readonly T[],
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+  isDisabled: (record: T) => boolean,
+): Set<RowKey> {
+  const out = new Set<RowKey>();
+  function walk(record: T): void {
+    if (isDisabled(record)) out.add(getKey(record));
+    const kids = getChildren(record);
+    if (kids) for (const c of kids) walk(c);
+  }
+  for (const r of rows) walk(r);
+  return out;
+}
+
+/**
+ * Conduction (related mode) for tree-structured table rows: given a base set of
+ * checked keys, derive the full checked set + half-checked (indeterminate) set
+ * with bottom-up + top-down parent/child propagation. A checked parent checks
+ * all enabled leaf descendants; a parent with some-but-not-all checked leaves is
+ * half. Disabled leaves are excluded from the computation.
+ */
+export function conductRows<T>(
+  rows: readonly T[],
+  checkedInput: ReadonlySet<RowKey>,
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+  isDisabled: (record: T) => boolean = () => false,
+): { checked: Set<RowKey>; half: Set<RowKey> } {
+  const disabled = collectDisabled(rows, getKey, getChildren, isDisabled);
+  const meta = buildRowMeta(rows, getKey, getChildren, disabled);
+
+  // Top-down: a checked node checks all its enabled leaf descendants.
+  const leafChecked = new Set<RowKey>();
+  for (const key of checkedInput) {
+    const ls = meta.leaves.get(key);
+    if (!ls) continue;
+    for (const leaf of ls) leafChecked.add(leaf); // already enabled-only
+  }
+
+  const checked = new Set<RowKey>();
+  const half = new Set<RowKey>();
+
+  // Bottom-up: reverse document order so children resolve before parents.
+  for (let i = meta.allKeys.length - 1; i >= 0; i--) {
+    const key = meta.allKeys[i] as RowKey;
+    const enabledLeaves = meta.leaves.get(key) as RowKey[];
+    if (enabledLeaves.length === 0) continue;
+    const checkedCount = enabledLeaves.filter((l) => leafChecked.has(l)).length;
+    if (checkedCount === 0) continue;
+    if (checkedCount === enabledLeaves.length) checked.add(key);
+    else half.add(key);
+  }
+
+  return { checked, half };
+}
+
+/**
+ * Normalize a checked set to leaf-level for table rows: any non-leaf (parent)
+ * key is expanded to its enabled leaf descendants. Makes a base set resilient to
+ * being fed conductRows output (which contains parent keys).
+ */
+export function normalizeRowsToLeaves<T>(
+  rows: readonly T[],
+  checked: ReadonlySet<RowKey>,
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+  isDisabled: (record: T) => boolean = () => false,
+): Set<RowKey> {
+  const disabled = collectDisabled(rows, getKey, getChildren, isDisabled);
+  const meta = buildRowMeta(rows, getKey, getChildren, disabled);
+  const out = new Set<RowKey>();
+  for (const key of checked) {
+    const leaves = meta.leaves.get(key);
+    if (!leaves) continue; // unknown key — drop it
+    if (leaves.length === 1 && leaves[0] === key) out.add(key); // a leaf
+    else for (const l of leaves) out.add(l); // parent → its leaves
+  }
+  return out;
+}
+
+/**
+ * Toggle a row's check in related mode: returns the next *base* checked set
+ * (leaf-level) after toggling `key`. The input base is normalized to leaves
+ * first, so passing conductRows output round-trips correctly. Feed the result
+ * through conductRows to render. Disabled leaves are never auto-changed.
+ */
+export function toggleRowCheck<T>(
+  rows: readonly T[],
+  currentChecked: ReadonlySet<RowKey>,
+  key: RowKey,
+  getKey: (record: T) => RowKey,
+  getChildren: (record: T) => readonly T[] | undefined,
+  isDisabled: (record: T) => boolean = () => false,
+): Set<RowKey> {
+  const disabled = collectDisabled(rows, getKey, getChildren, isDisabled);
+  const meta = buildRowMeta(rows, getKey, getChildren, disabled);
+  const base = normalizeRowsToLeaves(rows, currentChecked, getKey, getChildren, isDisabled);
+  const leaves = meta.leaves.get(key) ?? []; // enabled-only
+  const allChecked = leaves.length > 0 && leaves.every((l) => base.has(l));
+  const next = new Set(base);
+  if (allChecked) for (const l of leaves) next.delete(l);
+  else for (const l of leaves) next.add(l);
+  return next;
+}

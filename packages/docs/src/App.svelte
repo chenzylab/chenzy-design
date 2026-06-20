@@ -196,6 +196,7 @@
   let tableSelected = $state<(string | number)[]>([]);
   let tableExpandInfo = $state('（未操作）');
   let tableTreeInfo = $state('（未操作）');
+  let tableTreeChecked = $state<(string | number)[]>([]);
   const tableTreeData: TableRow[] = [
     {
       key: 1,
@@ -1738,6 +1739,25 @@ let pageSize2 = $state(10);
     />
   </div>
   <Text type="tertiary">{tableTreeInfo}</Text>
+
+  <Text type="tertiary">树形行选择父子联动（勾「研发中心」连带勾所有后代；取消一个子行父行变半选；checkStrictly 默认联动）：</Text>
+  <div data-testid="table-tree-checkable" style="max-width:520px">
+    <Table
+      columns={[
+        { dataIndex: 'name', title: '部门 / 姓名' },
+        { dataIndex: 'age', title: '人数', align: 'right' as const },
+        { dataIndex: 'city', title: '城市' },
+      ]}
+      dataSource={tableTreeData}
+      rowKey="key"
+      bordered
+      tree={{ defaultExpandedRowKeys: [1, 11] }}
+      rowSelection={{
+        onChange: (keys) => (tableTreeChecked = keys),
+      }}
+    />
+  </div>
+  <Text type="tertiary">已选 keys：{tableTreeChecked.join(', ') || '（无）'}</Text>
 
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">
