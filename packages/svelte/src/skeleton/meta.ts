@@ -22,7 +22,7 @@ export const meta = {
       name: 'unmountPlaceholder',
       type: 'boolean',
       default: 'true',
-      desc: 'loading=false 后卸载占位 DOM（当前实现恒等同卸载）',
+      desc: 'true 用 {#if} 条件渲染，未激活一侧从 DOM 卸载；false 走 keepDOM 模式：占位与真实内容同时挂载，靠 display:none 切换（隐藏侧 inert+aria-hidden），避免重挂开销',
     },
     { name: 'placeholder', type: 'Snippet', default: 'undefined', desc: '自定义占位模板，缺省渲染 Avatar+Title+Paragraph 组合' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '真实内容' },

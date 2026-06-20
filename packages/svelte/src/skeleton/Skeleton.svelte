@@ -3,6 +3,8 @@
   loading 切换占位/真实内容；active 控制 shimmer 动画（经 context 传给原子子组件）。
   loading 受控不回写（红线 #1）：仅由父级 prop 驱动，组件内部不修改。
   占位容器 aria-busy + aria-live=polite + aria-label；骨架块本身 aria-hidden。
+  unmountPlaceholder=true（默认）：{#if} 条件渲染，未激活的一侧从 DOM 卸载。
+  unmountPlaceholder=false（keepDOM）：占位与真实内容同时挂载，靠 display:none 切换，避免重挂开销。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -26,7 +28,7 @@
   let {
     loading = true,
     active = false,
-    // unmountPlaceholder 当前实现等同卸载（{#if loading}）；保留 prop 语义，false 行为暂同卸载。TODO: display:none 保留 DOM。
+    // unmountPlaceholder=true（默认）走 {#if} 卸载；false 走 keepDOM（display:none 切换）。
     unmountPlaceholder = true,
     placeholder,
     children,
@@ -49,29 +51,69 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // 状态渲染派生纯函数（红线 #2）：仅由入参算出隐藏标记，不产生副作用。
+  function hidden(isLoading: boolean, showWhenLoading: boolean): boolean {
+    return showWhenLoading ? !isLoading : isLoading;
+  }
 </script>
 
-{#if loading}
-  <div class={cls} aria-busy="true" aria-live="polite" aria-label={ariaLabel ?? loc().t('Skeleton.loading')}>
-    {#if placeholder}
-      {@render placeholder()}
-    {:else}
-      <div class="cd-skeleton__default">
-        <SkeletonAvatar />
-        <div class="cd-skeleton__default-body">
-          <SkeletonTitle />
-          <SkeletonParagraph />
-        </div>
+{#snippet placeholderBody()}
+  {#if placeholder}
+    {@render placeholder()}
+  {:else}
+    <div class="cd-skeleton__default">
+      <SkeletonAvatar />
+      <div class="cd-skeleton__default-body">
+        <SkeletonTitle />
+        <SkeletonParagraph />
       </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
+{/snippet}
+
+{#if unmountPlaceholder}
+  {#if loading}
+    <div class={cls} aria-busy="true" aria-live="polite" aria-label={ariaLabel ?? loc().t('Skeleton.loading')}>
+      {@render placeholderBody()}
+    </div>
+  {:else}
+    {@render children?.()}
+  {/if}
 {:else}
-  {@render children?.()}
+  <!-- keepDOM：两侧均挂载，靠 display:none 切换；隐藏侧加 inert/aria-hidden 防焦点与朗读。 -->
+  <div
+    class={cls}
+    aria-busy="true"
+    aria-live="polite"
+    aria-label={ariaLabel ?? loc().t('Skeleton.loading')}
+    aria-hidden={hidden(loading, true) ? 'true' : undefined}
+    inert={hidden(loading, true)}
+    hidden={hidden(loading, true)}
+  >
+    {@render placeholderBody()}
+  </div>
+  <div
+    class="cd-skeleton__content"
+    aria-hidden={hidden(loading, false) ? 'true' : undefined}
+    inert={hidden(loading, false)}
+    hidden={hidden(loading, false)}
+  >
+    {@render children?.()}
+  </div>
 {/if}
 
 <style>
   .cd-skeleton {
     display: block;
+  }
+  .cd-skeleton__content {
+    display: contents;
+  }
+  /* keepDOM 隐藏侧：[hidden] 须压过 .cd-skeleton 的 display:block 与 __content 的 display:contents。 */
+  .cd-skeleton[hidden],
+  .cd-skeleton__content[hidden] {
+    display: none;
   }
   .cd-skeleton__default {
     display: flex;
