@@ -6,10 +6,21 @@ export const meta = {
   name: 'Timeline',
   category: 'show',
   description:
-    '时间轴，按时间顺序垂直展示一组事件。支持 left/alternate 模式、dataSource 数据驱动、pending 幽灵节点、reverse 倒序与实/虚线样式。',
+    '时间轴，按时间顺序垂直/水平展示一组事件。支持 left/alternate/center 模式、vertical/horizontal 方向、dataSource 数据驱动、pending 幽灵节点、reverse 倒序与实/虚线样式。',
   props: [
     { name: 'dataSource', type: 'TimelineItemData[]', default: '[]', desc: '节点数据' },
-    { name: 'mode', type: "'left'|'alternate'", default: 'left' },
+    {
+      name: 'mode',
+      type: "'left'|'alternate'|'center'",
+      default: 'left',
+      desc: 'center 轴线居中、两侧内容朝轴对称对齐',
+    },
+    {
+      name: 'direction',
+      type: "'vertical'|'horizontal'",
+      default: 'vertical',
+      desc: '时间轴方向',
+    },
     { name: 'reverse', type: 'boolean', default: 'false', desc: '倒序展示' },
     {
       name: 'pending',
