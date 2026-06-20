@@ -7,7 +7,13 @@
   loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap
   并派生合并树喂给所有 core 函数（不写回受控 treeData，红线 #1）。
   showLine：层级引导线（复用 core FlatNode.isLast/ancestorIsLast，纯 CSS ├/└/竖线）。
-  TODO(延后): draggable / virtualized / accordion / fieldNames。
+  virtualized：大数据树虚拟滚动。直接用 core fixedRange 纯函数自建轻量 fixed 定高虚拟化
+  （非复用 VirtualList 组件——其 role=list/listitem 包裹层会破坏 role=tree→treeitem 的 ARIA
+  结构），保持 role=tree 容器 + 行 role=treeitem 语义不变；只渲染视口内切片。滚动监听命令式
+  + rAF 节流 + cleanup（红线 #3），可见区间 $derived 纯派生（红线 #2）。键盘移动 activeKey 时
+  scrollToIndex 滚到可见。a11y 取舍：aria-activedescendant 指向的行可能因虚拟化未渲染，故键盘
+  移动后命令式滚动确保目标行进入视口并被渲染，保证键盘可用。
+  TODO(延后): draggable / accordion / fieldNames。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -18,6 +24,8 @@
     conduct,
     toggleCheck,
     computeFilteredKeys,
+    fixedRange,
+    scrollOffsetForIndex,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
@@ -48,6 +56,12 @@
     showIcon?: boolean;
     /** 显示层级连接线（父子引导线） */
     showLine?: boolean;
+    /** 虚拟滚动：仅渲染视口内的可见节点行，适合大数据树（1000+ 节点）。默认 false（行为不变） */
+    virtualized?: boolean;
+    /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 320 */
+    height?: number;
+    /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32 */
+    itemHeight?: number;
     filterable?: boolean;
     blockNode?: boolean;
     disabled?: boolean;
@@ -82,6 +96,9 @@
     selectable = true,
     showIcon = true,
     showLine = false,
+    virtualized = false,
+    height = 320,
+    itemHeight = 32,
     filterable = false,
     blockNode = false,
     disabled = false,
@@ -226,6 +243,75 @@
     return exists ? itemId(activeKey) : undefined;
   });
 
+  // --- 虚拟滚动：复用 core 纯函数 fixedRange 自建轻量 fixed 定高虚拟化 ---
+  // 选型说明：库内 VirtualList 组件会注入 role=list / role=listitem 包裹层，
+  // 破坏 role=tree → role=treeitem 的 ARIA 结构（treeitem 不能是 listitem 的子），
+  // 故直接用 core 的 fixedRange 纯函数在 Tree 内自建：滚动监听命令式 + cleanup（红线 #3），
+  // 可见区间用 $derived 纯派生（红线 #2），保持 role=tree 容器 + 行 role=treeitem 语义不变。
+  const VIRTUAL_OVERSCAN = 4;
+  // viewport 元素普通引用（bind:this），不参与响应式几何读取。
+  let viewportEl = $state<HTMLDivElement | null>(null);
+  // 仅由命令式 scroll 回调写入的本地 scrollTop，render 期只读。
+  let scrollTop = $state(0);
+  // rAF 节流句柄（非响应式）。
+  let rafId = 0;
+
+  const rowHeight = $derived(itemHeight > 0 ? itemHeight : 32);
+  const totalHeight = $derived(visibleFlat.length * rowHeight);
+  // 可视区间：纯 $derived，仅依赖本地 $state，render-safe（不读 DOM）（红线 #2）。
+  const vRange = $derived(
+    virtualized
+      ? fixedRange(scrollTop, height, rowHeight, visibleFlat.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: visibleFlat.length },
+  );
+  // 实际喂给 #each 的行集合：virtualized 时只取视口内切片，否则全量。
+  const renderFlat = $derived(
+    virtualized ? visibleFlat.slice(vRange.startIndex, vRange.endIndex) : visibleFlat,
+  );
+
+  // 滚动监听（命令式 + rAF 节流 + cleanup）（红线 #3）。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !virtualized) return;
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (el) scrollTop = el.scrollTop;
+      });
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+  });
+
+  // 命令式滚到指定行索引使其落入视口（键盘移动 activeKey 时调用）。
+  function scrollIndexIntoView(index: number) {
+    const el = viewportEl;
+    if (!el || !virtualized || index < 0) return;
+    const itemStart = index * rowHeight;
+    const top = el.scrollTop;
+    const bottom = top + el.clientHeight;
+    // 已完整可见则不滚动，避免抖动。
+    if (itemStart >= top && itemStart + rowHeight <= bottom) return;
+    // 目标在视口上方对齐顶，下方对齐底。
+    const align = itemStart < top ? 'start' : 'end';
+    const target = scrollOffsetForIndex(itemStart, rowHeight, el.clientHeight, totalHeight, align);
+    el.scrollTop = target;
+    scrollTop = target;
+  }
+
+  function scrollActiveIntoView() {
+    if (!virtualized || activeKey === null) return;
+    const i = visibleFlat.findIndex((f) => f.node.key === activeKey);
+    scrollIndexIntoView(i);
+  }
+
   function isNodeDisabled(node: TreeNodeData): boolean {
     return disabled || !!node.disabled;
   }
@@ -368,6 +454,7 @@
       ) {
         e.preventDefault();
         moveFirst();
+        scrollActiveIntoView();
       }
       return;
     }
@@ -416,6 +503,8 @@
       default:
         break;
     }
+    // 移动 activeKey 后若目标行不在视口（虚拟化）则滚到可见。
+    scrollActiveIntoView();
   }
 
   // --- 搜索高亮：把命中子串包 <mark>，返回片段数组供模板渲染 ---
@@ -478,6 +567,27 @@
 
   {#if isEmpty}
     <div class="cd-tree__empty">{emptyText}</div>
+  {:else if virtualized}
+    <!-- 虚拟滚动：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
+         只渲染视口内切片 renderFlat，保持 treeitem 语义不变（a11y 取舍见下）。-->
+    <div
+      class="cd-tree__list cd-tree__list--virtual"
+      role="tree"
+      aria-label={ariaLabel}
+      aria-multiselectable={multiple || checkable}
+      aria-activedescendant={activeDescId}
+      aria-disabled={disabled || undefined}
+      tabindex={disabled ? -1 : 0}
+      bind:this={viewportEl}
+      style={`block-size:${height}px; overflow:auto`}
+      onkeydown={onKeydown}
+    >
+      <div class="cd-tree__spacer" style={`block-size:${totalHeight}px`}>
+        {#each renderFlat as f, i (f.node.key)}
+          {@render row(f, `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); block-size:${rowHeight}px`)}
+        {/each}
+      </div>
+    </div>
   {:else}
     <div
       class="cd-tree__list"
@@ -490,14 +600,22 @@
       onkeydown={onKeydown}
     >
       {#each visibleFlat as f (f.node.key)}
-        {@const node = f.node}
-        {@const expandable = isExpandable(node, f.hasChildren)}
-        {@const loading = loadingKeys.has(node.key)}
-        {@const expanded = expandable && isExpanded(node.key)}
-        {@const nodeDisabled = isNodeDisabled(node)}
-        {@const selected = selectedSet.has(node.key)}
-        {@const checked = rowChecked(node)}
-        {@const active = activeKey === node.key}
+        {@render row(f, undefined)}
+      {/each}
+    </div>
+  {/if}
+</div>
+
+{#snippet row(f: FlatNode, posStyle: string | undefined)}
+  {@const node = f.node}
+  {@const expandable = isExpandable(node, f.hasChildren)}
+  {@const loading = loadingKeys.has(node.key)}
+  {@const expanded = expandable && isExpanded(node.key)}
+  {@const nodeDisabled = isNodeDisabled(node)}
+  {@const selected = selectedSet.has(node.key)}
+  {@const checked = rowChecked(node)}
+  {@const active = activeKey === node.key}
+  {@const indentStyle = showLine ? '' : `padding-inline-start: calc(${f.level} * var(--cd-tree-indent))`}
         <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
@@ -516,7 +634,7 @@
           aria-selected={selectable ? selected : undefined}
           aria-checked={checkable ? ariaCheckedValue(node) : undefined}
           aria-disabled={nodeDisabled || undefined}
-          style={showLine ? undefined : `padding-inline-start: calc(${f.level} * var(--cd-tree-indent))`}
+          style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
         >
           {#if showLine && f.level > 0}
@@ -608,10 +726,7 @@
             {/if}
           </span>
         </div>
-      {/each}
-    </div>
-  {/if}
-</div>
+{/snippet}
 
 <style>
   .cd-tree {
@@ -662,6 +777,15 @@
   .cd-tree__list:focus-visible {
     box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
     border-radius: var(--cd-radius-small, 4px);
+  }
+  /* 虚拟滚动：容器自身滚动，display block 以便 spacer 绝对定位行布局生效 */
+  .cd-tree__list--virtual {
+    display: block;
+    position: relative;
+  }
+  .cd-tree__spacer {
+    position: relative;
+    inline-size: 100%;
   }
 
   .cd-tree__node {
