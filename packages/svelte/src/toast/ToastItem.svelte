@@ -1,10 +1,11 @@
 <!--
-  ToastItem — 单条轻提示卡片。
+  ToastItem — 单条轻提示卡片（纯视觉）。
   类型图标 + 内容 + 可选关闭按钮；pauseOnHover 经 mouseenter/leave + focusin/out 暂停/恢复定时器。
-  a11y（本子集简化）：error/warning -> role=alert + aria-live=assertive；其余 -> role=status + aria-live=polite。
+  a11y：卡片 role=presentation + aria-live=off（不充当 live region）；所有文案播报统一走单例
+  live region（见 live-region.ts），由 store.ts 在新增/更新 toast 时命令式写入，避免每条卡片
+  各自 region 造成的重复/竞争播报。error -> assertive，其余 -> polite。
   关闭按钮 button + aria-label「关闭」，不抢焦点、不锁滚动。
   loading 用 CSS infinite rotate spinner（旋转 animation 非显隐 from 帧问题，安全）。
-  TODO(延后): 单例 live region（当前每条卡片自带 role/aria-live）。
 -->
 <script lang="ts">
   import type { ToastItem, ToastType } from '@chenzy-design/core';
@@ -19,10 +20,6 @@
 
   let { toast, onClose, onPause, onResume }: Props = $props();
   const loc = useLocale();
-
-  const isAlert = $derived(toast.type === 'error' || toast.type === 'warning');
-  const role = $derived(isAlert ? 'alert' : 'status');
-  const ariaLive = $derived(isAlert ? 'assertive' : 'polite');
 
   function handlePause() {
     if (toast.pauseOnHover) onPause(toast.id);
@@ -94,8 +91,8 @@
 
 <div
   class="cd-toast-item cd-toast-item--{toast.type}"
-  {role}
-  aria-live={ariaLive}
+  role="presentation"
+  aria-live="off"
   onmouseenter={handlePause}
   onmouseleave={handleResume}
   onfocusin={handlePause}

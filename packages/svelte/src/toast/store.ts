@@ -10,6 +10,7 @@ import {
   type ToastOptions,
   type ToastType,
 } from '@chenzy-design/core';
+import { announce } from './live-region.js';
 
 let store: ToastStore | null = null;
 let containerMounted = false;
@@ -42,7 +43,10 @@ function show(
 ): string {
   const s = ensureStore();
   void ensureContainer();
-  return s.add({ content, type, ...opts });
+  const id = s.add({ content, type, ...opts });
+  // a11y：把文案写入单例 live region 供屏幕阅读器播报（卡片本身不再带 role/aria-live）。
+  announce(content, type);
+  return id;
 }
 
 export const Toast = {
@@ -59,14 +63,20 @@ export const Toast = {
   /** 完整选项打开一条 toast，返回其 id。 */
   open: (opts: ToastOptions): string => {
     void ensureContainer();
-    return ensureStore().add(opts);
+    const id = ensureStore().add(opts);
+    announce(opts.content, opts.type ?? 'info');
+    return id;
   },
   /** 手动关闭指定 toast。 */
   close: (id: string): void => ensureStore().remove(id, 'manual'),
   /** 按同 id 更新一条 toast（store.add 对已存在 id 走原地更新 + 重启定时器）。 */
   update: (id: string, opts: Partial<ToastOptions>): string => {
     void ensureContainer();
-    return ensureStore().add({ ...opts, id, content: opts.content ?? '' });
+    const content = opts.content ?? '';
+    const result = ensureStore().add({ ...opts, id, content });
+    // 仅在有新文案时播报，避免空字符串无意义地刷新 region。
+    if (content) announce(content, opts.type ?? 'info');
+    return result;
   },
   /** 清空全部 toast。 */
   destroyAll: (): void => ensureStore().removeAll(),
