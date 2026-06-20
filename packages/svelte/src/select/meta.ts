@@ -9,7 +9,7 @@ export const meta = {
   props: [
     { name: 'value', type: 'string|number|(string|number)[]', default: 'undefined' },
     { name: 'defaultValue', type: 'string|number|(string|number)[]', default: 'undefined' },
-    { name: 'options', type: 'OptionData[]', default: '[]' },
+    { name: 'options', type: 'OptionData[] | OptionGroup[]', default: '[]', desc: '选项；含 { label, options:[] } 即分组' },
     { name: 'multiple', type: 'boolean', default: 'false' },
     { name: 'filter', type: 'boolean', default: 'false' },
     { name: 'open', type: 'boolean', default: 'undefined' },

@@ -270,6 +270,7 @@
 
   let submitted = $state('');
   let selVal = $state<string | number>('');
+  let selGroupVal = $state<string | number>('');
   let multiVal = $state<(string | number)[]>([]);
   let acVal = $state('');
   let tags = $state<string[]>(['svelte', 'vite']);
@@ -642,6 +643,27 @@ let pageSize2 = $state(10);
         onChange={(v) => (selVal = v as string | number)}
       />
       <Text type="tertiary">单选：{selVal || '（未选）'}</Text>
+    </div>
+
+    <div style="width: 220px" data-testid="select-group">
+      <Select
+        options={[
+          { label: '水果', options: [
+            { label: '苹果', value: 'apple' },
+            { label: '香蕉', value: 'banana' },
+          ] },
+          { label: '蔬菜', options: [
+            { label: '番茄', value: 'tomato' },
+            { label: '黄瓜', value: 'cucumber' },
+          ] },
+        ]}
+        filter
+        clearable
+        placeholder="分组选择"
+        value={selGroupVal}
+        onChange={(v) => (selGroupVal = v as string | number)}
+      />
+      <Text type="tertiary">分组单选：{selGroupVal || '（未选）'}</Text>
     </div>
 
     <div style="width: 260px" data-testid="select-multi">
