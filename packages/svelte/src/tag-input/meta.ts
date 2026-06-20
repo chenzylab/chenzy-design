@@ -9,6 +9,8 @@ export const meta = {
   props: [
     { name: 'value', type: 'string[]', default: 'undefined' },
     { name: 'defaultValue', type: 'string[]', default: '[]' },
+    { name: 'inputValue', type: 'string', default: 'undefined' },
+    { name: 'defaultInputValue', type: 'string', default: "''" },
     { name: 'placeholder', type: 'string', default: 'undefined' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'status', type: "'default'|'warning'|'error'", default: 'default' },
@@ -21,6 +23,7 @@ export const meta = {
     { name: 'allowDuplicates', type: 'boolean', default: 'false' },
     { name: 'trimWhitespace', type: 'boolean', default: 'true' },
     { name: 'onChange', type: '(tags: string[]) => void', default: 'undefined' },
+    { name: 'onInputChange', type: '(value: string) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
   ],
   a11y: {

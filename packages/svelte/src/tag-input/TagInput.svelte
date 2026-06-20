@@ -1,8 +1,9 @@
 <!--
   TagInput — see specs/components/input/TagInput.spec.md
   基础子集：标签输入。受控 value 不回写 (红线 #1)，变更仅 onChange。
-  TODO(延后): 受控 inputValue（本轮 inputValue 仅非受控内部 state）、
-  maxTagTextLength 截断、拖拽排序。
+  受控 inputValue 同理：提供 inputValue 时输入框文本由外部控制，
+  键入仅触发 onInputChange，组件不自行写回 (红线 #1)。
+  TODO(延后): maxTagTextLength 截断、拖拽排序。
 -->
 <script lang="ts">
   import { useLocale } from '../locale-provider/index.js';
@@ -13,6 +14,8 @@
   interface Props {
     value?: string[];
     defaultValue?: string[];
+    inputValue?: string;
+    defaultInputValue?: string;
     placeholder?: string;
     size?: Size;
     status?: Status;
@@ -25,12 +28,15 @@
     allowDuplicates?: boolean;
     trimWhitespace?: boolean;
     onChange?: (tags: string[]) => void;
+    onInputChange?: (value: string) => void;
     ariaLabel?: string;
   }
 
   let {
     value,
     defaultValue = [],
+    inputValue,
+    defaultInputValue = '',
     placeholder,
     size = 'default',
     status = 'default',
@@ -43,6 +49,7 @@
     allowDuplicates = false,
     trimWhitespace = true,
     onChange,
+    onInputChange,
     ariaLabel,
   }: Props = $props();
 
@@ -57,8 +64,21 @@
     return defaultValue;
   }
 
-  // inputValue 本轮仅非受控内部 state (TODO: 受控 inputValue)
-  let inputValue = $state('');
+  // --- 受控 inputValue (红线 #1): 不回写 inputValue，仅 onInputChange ---
+  const isInputControlled = $derived(inputValue !== undefined);
+  let innerInput = $state<string>(getInitialInput());
+  const currentInput = $derived<string>(
+    isInputControlled ? (inputValue ?? '') : innerInput,
+  );
+
+  function getInitialInput(): string {
+    return defaultInputValue;
+  }
+
+  function setInput(next: string) {
+    if (!isInputControlled) innerInput = next;
+    onInputChange?.(next);
+  }
 
   const separators = $derived(
     Array.isArray(separator) ? separator : [separator],
@@ -73,19 +93,19 @@
 
   function commitInput() {
     if (disabled || readonly) return;
-    let text = inputValue;
+    let text = currentInput;
     if (trimWhitespace) text = text.trim();
     if (text === '') {
-      inputValue = '';
+      setInput('');
       return;
     }
     if (atMax) return;
     if (!allowDuplicates && current.includes(text)) {
-      inputValue = '';
+      setInput('');
       return;
     }
     setTags([...current, text]);
-    inputValue = '';
+    setInput('');
   }
 
   function removeAt(index: number) {
@@ -105,7 +125,7 @@
   }
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
-    inputValue = e.currentTarget.value;
+    setInput(e.currentTarget.value);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -115,7 +135,7 @@
       commitInput();
       return;
     }
-    if (e.key === 'Backspace' && inputValue === '') {
+    if (e.key === 'Backspace' && currentInput === '') {
       e.preventDefault();
       removeLast();
     }
@@ -178,7 +198,7 @@
     class="cd-tag-input__input"
     bind:this={inputEl}
     type="text"
-    value={inputValue}
+    value={currentInput}
     placeholder={current.length === 0 ? placeholder : undefined}
     {disabled}
     {readonly}
