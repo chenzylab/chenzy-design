@@ -6,9 +6,14 @@ export const meta = {
   name: 'Collapse',
   category: 'show',
   description:
-    '折叠面板，分组承载内容、按需展开。支持数据驱动 panels、受控 activeKey、accordion 手风琴、展开动画、箭头位置与边框。',
+    '折叠面板，分组承载内容、按需展开。支持数据驱动 panels 与声明式 <Collapse.Panel> 两种用法（择一）、受控 activeKey、accordion 手风琴、展开动画、箭头位置、边框与面板级 disabled。',
   props: [
-    { name: 'panels', type: 'CollapsePanel[]', default: '[]', desc: '面板头部数据' },
+    {
+      name: 'panels',
+      type: 'CollapsePanel[]',
+      default: '[]',
+      desc: '面板头部数据（数据驱动模式；为空且传 children 时切换为声明式 <Collapse.Panel>）',
+    },
     {
       name: 'activeKey',
       type: 'string|string[]',
@@ -27,9 +32,22 @@ export const meta = {
     { name: 'onChange', type: '(keys: string[]) => void', default: 'undefined' },
     {
       name: 'children',
-      type: 'Snippet<[{ key: string }]>',
+      type: 'Snippet<[{ key: string }]> | Snippet',
       default: 'undefined',
-      desc: '按 key 渲染面板内容',
+      desc: '数据驱动：按 key 渲染面板内容；声明式（不传 panels）：内嵌 <Collapse.Panel> 列表',
+    },
+  ],
+  subcomponents: [
+    {
+      name: 'Collapse.Panel',
+      desc: '声明式单面板，经 Object.assign(Collapse, { Panel }) 导出，父子状态用 context 传递（同 Timeline.Item / Form.Field 复合模式）。等价于 panels 数据驱动的一项，可放富内容头部/内容。',
+      props: [
+        { name: 'itemKey', type: 'string', default: '(required)', desc: '面板唯一标识，等价 panel.key' },
+        { name: 'header', type: 'string', default: 'undefined', desc: '头部文本' },
+        { name: 'disabled', type: 'boolean', default: 'false', desc: '面板级 disabled，该面板不可展开/收起' },
+        { name: 'head', type: 'Snippet', default: 'undefined', desc: '头部富内容插槽，优先于 header' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '面板内容' },
+      ],
     },
   ],
   a11y: {

@@ -88,7 +88,13 @@ export {
   descriptionsMeta,
   type DescriptionItem,
 } from './descriptions/index.js';
-export { Collapse, collapseMeta, type CollapsePanel } from './collapse/index.js';
+export {
+  Collapse,
+  CollapsePanelComponent,
+  collapseMeta,
+  type CollapsePanel,
+  type CollapseContext,
+} from './collapse/index.js';
 export { Timeline, TimelineItem, timelineMeta, type TimelineItemData } from './timeline/index.js';
 export { List, listMeta } from './list/index.js';
 export { Image, imageMeta } from './image/index.js';
