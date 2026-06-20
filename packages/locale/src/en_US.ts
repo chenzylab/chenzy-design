@@ -249,4 +249,9 @@ export const en_US: Locale = {
   Dropdown: {
     trigger: 'Menu',
   },
+  Tabs: {
+    scrollPrev: 'Scroll backward',
+    scrollNext: 'Scroll forward',
+    add: 'Add tab',
+  },
 };

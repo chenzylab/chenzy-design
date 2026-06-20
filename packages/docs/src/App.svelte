@@ -380,6 +380,31 @@ let pageSize2 = $state(10);
     { tab: '安全', itemKey: 'b' },
     { tab: '通知', itemKey: 'c', disabled: true },
   ];
+  // 溢出滚动 demo：很多标签 + 窄容器触发滚动箭头
+  let overflowActive = $state<string | number>('o1');
+  const overflowTabs = [
+    { tab: '概览', itemKey: 'o1' },
+    { tab: '用户管理', itemKey: 'o2' },
+    { tab: '权限配置', itemKey: 'o3' },
+    { tab: '数据统计', itemKey: 'o4' },
+    { tab: '消息中心', itemKey: 'o5' },
+    { tab: '系统日志', itemKey: 'o6' },
+    { tab: '安全审计', itemKey: 'o7' },
+    { tab: '高级设置', itemKey: 'o8' },
+  ];
+  // addable demo：「+」按钮回调里父组件追加 tab（受控数据）
+  let addableActive = $state<string | number>('t1');
+  let addableTabs = $state([
+    { tab: '标签 1', itemKey: 't1' },
+    { tab: '标签 2', itemKey: 't2' },
+  ]);
+  let addableSeq = 2;
+  function addTab() {
+    addableSeq += 1;
+    const key = `t${addableSeq}`;
+    addableTabs = [...addableTabs, { tab: `标签 ${addableSeq}`, itemKey: key }];
+    addableActive = key;
+  }
   const dropdownItems = [
     { key: 'edit', label: '编辑' },
     { key: 'copy', label: '复制' },
@@ -1211,6 +1236,27 @@ let pageSize2 = $state(10);
         <TabPane itemKey="b"><div class="tab-pane-demo">安全内容</div></TabPane>
         <TabPane itemKey="c"><div class="tab-pane-demo">通知内容</div></TabPane>
       </Tabs>
+    </div>
+
+    <Text type="tertiary">溢出滚动（窄容器 + 多标签，出现前/后滚动箭头）：</Text>
+    <div style="width: 280px" data-testid="tabs-overflow">
+      <Tabs
+        tabList={overflowTabs}
+        value={overflowActive}
+        onChange={(k) => (overflowActive = k)}
+      />
+    </div>
+
+    <Text type="tertiary">addable（点「+」追加标签，当前 {addableTabs.length} 个）：</Text>
+    <div style="width: 360px" data-testid="tabs-addable">
+      <Tabs
+        type="card"
+        tabList={addableTabs}
+        addable
+        onAdd={addTab}
+        value={addableActive}
+        onChange={(k) => (addableActive = k)}
+      />
     </div>
 
     <Dropdown

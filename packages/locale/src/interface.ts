@@ -290,4 +290,9 @@ export interface Locale {
   Dropdown: {
     trigger: string;
   };
+  Tabs: {
+    scrollPrev: string;
+    scrollNext: string;
+    add: string;
+  };
 }

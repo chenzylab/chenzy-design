@@ -249,4 +249,9 @@ export const zh_CN: Locale = {
   Dropdown: {
     trigger: '菜单',
   },
+  Tabs: {
+    scrollPrev: '向前滚动',
+    scrollNext: '向后滚动',
+    add: '新增标签',
+  },
 };
