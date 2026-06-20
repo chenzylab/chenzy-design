@@ -51,6 +51,12 @@ export const meta = {
     },
     { name: 'defaultExpandedKeys', type: 'TreeKey[]', default: '[]', desc: '非受控初始展开' },
     { name: 'defaultExpandAll', type: 'boolean', default: 'false', desc: '初始展开全部' },
+    {
+      name: 'accordion',
+      type: 'boolean',
+      default: 'false',
+      desc: '手风琴模式：同层级最多展开一个，展开节点时自动收起同父级其它节点（不同层级互不影响）。受控 expandedKeys 同样生效，仅经 onExpandedChange 回传新集不回写',
+    },
     { name: 'selectable', type: 'boolean', default: 'true', desc: '节点是否可选中' },
     { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位' },
     { name: 'showLine', type: 'boolean', default: 'false', desc: '显示层级连接线（├/└/竖线）' },

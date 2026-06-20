@@ -15,7 +15,8 @@
   移动后命令式滚动确保目标行进入视口并被渲染，保证键盘可用。
   fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化（红线 #1/#2），
   默认字段名时零开销直接用原 treeData，回调回传原始节点（__orig）。
-  TODO(延后): accordion。
+  accordion：手风琴模式，同层级最多展开一个——展开某节点时用 core 的 accordionExpand 纯函数
+  计算并收起其同父级 siblings（不同层级互不影响）。受控时只 onExpandedChange 回传新集不回写（红线 #1）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -30,6 +31,7 @@
     scrollOffsetForIndex,
     computeDropPosition,
     isAncestorOrSelf,
+    accordionExpand,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
@@ -74,6 +76,12 @@
     expandedKeys?: TreeKey[];
     defaultExpandedKeys?: TreeKey[];
     defaultExpandAll?: boolean;
+    /**
+     * 手风琴模式：同一层级最多展开一个节点。展开某节点时自动收起其同父级（siblings）
+     * 的其它已展开节点；不同层级互不影响。受控 expandedKeys 同样生效（通过 onExpandedChange
+     * 回传收起 siblings 后的新展开集，不自行回写——红线 #1）。默认 false（展开行为不变）。
+     */
+    accordion?: boolean;
     selectable?: boolean;
     showIcon?: boolean;
     /** 显示层级连接线（父子引导线） */
@@ -120,6 +128,7 @@
     expandedKeys,
     defaultExpandedKeys = [],
     defaultExpandAll = false,
+    accordion = false,
     selectable = true,
     showIcon = true,
     showLine = false,
@@ -449,9 +458,17 @@
   }
 
   function emitExpand(node: TreeNodeData, expand: boolean) {
-    const next = new Set(currentExpandedSet);
-    if (expand) next.add(node.key);
-    else next.delete(node.key);
+    // accordion：展开时同层级只保留一个，自动收起同父级其它已展开节点（纯函数 core，红线 #2）。
+    // 不同层级互不影响；收起仅移除自身。受控时也只回调收起 siblings 后的新集，不回写（红线 #1）。
+    let next: Set<TreeKey>;
+    if (expand) {
+      next = accordion
+        ? accordionExpand(mergedData, currentExpandedSet, node.key)
+        : new Set(currentExpandedSet).add(node.key);
+    } else {
+      next = new Set(currentExpandedSet);
+      next.delete(node.key);
+    }
     if (!isExpandControlled) innerExpanded = next;
     onExpandedChange?.({ expanded: [...next], node: toOrig(node), expand });
   }

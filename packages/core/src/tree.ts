@@ -299,6 +299,46 @@ export function computeFilteredKeys(
   return { matched, expand };
 }
 
+/**
+ * Return the keys of `key`'s siblings (nodes sharing the same direct parent),
+ * excluding `key` itself. Roots are siblings of each other. Returns an empty
+ * array if the key is not found. Pure function — used by accordion mode to
+ * collapse same-level siblings when a node expands.
+ */
+export function siblingKeys(data: TreeNodeData[], key: TreeKey): TreeKey[] {
+  function findSiblings(nodes: TreeNodeData[]): TreeKey[] | null {
+    if (nodes.some((n) => n.key === key)) {
+      return nodes.filter((n) => n.key !== key).map((n) => n.key);
+    }
+    for (const n of nodes) {
+      if (n.children) {
+        const found = findSiblings(n.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  return findSiblings(data) ?? [];
+}
+
+/**
+ * Accordion expand: compute the next expanded set when `key` is expanded under
+ * accordion mode — at most one node per level stays expanded, so all of `key`'s
+ * siblings are collapsed. Returns a new Set containing the current expanded keys
+ * plus `key`, minus `key`'s siblings. Pure function (no DOM, no mutation of
+ * inputs); the render layer derives the resulting expansion from it.
+ */
+export function accordionExpand(
+  data: TreeNodeData[],
+  expandedKeys: ReadonlySet<TreeKey>,
+  key: TreeKey,
+): Set<TreeKey> {
+  const next = new Set(expandedKeys);
+  next.add(key);
+  for (const s of siblingKeys(data, key)) next.delete(s);
+  return next;
+}
+
 export type DropPosition = 'before' | 'inside' | 'after';
 
 /**

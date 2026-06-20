@@ -10,6 +10,8 @@ import {
   computeFilteredKeys,
   computeDropPosition,
   isAncestorOrSelf,
+  siblingKeys,
+  accordionExpand,
   type TreeNodeData,
 } from './tree.js';
 
@@ -237,5 +239,44 @@ describe('isAncestorOrSelf', () => {
   it('is false for unrelated nodes', () => {
     expect(isAncestorOrSelf(data, '1-1', '1')).toBe(false);
     expect(isAncestorOrSelf(data, '2', '1-1')).toBe(false);
+  });
+});
+
+describe('siblingKeys', () => {
+  it('returns root siblings excluding self', () => {
+    expect(siblingKeys(data, '1')).toEqual(['2']);
+    expect(siblingKeys(data, '2')).toEqual(['1']);
+  });
+  it('returns same-parent siblings excluding self', () => {
+    expect(siblingKeys(data, '1-1')).toEqual(['1-2']);
+    expect(siblingKeys(data, '1-2')).toEqual(['1-1']);
+  });
+  it('returns deeper-level siblings', () => {
+    expect(siblingKeys(data, '1-2-1')).toEqual(['1-2-2']);
+  });
+  it('returns empty for unknown key', () => {
+    expect(siblingKeys(data, 'nope')).toEqual([]);
+  });
+});
+
+describe('accordionExpand', () => {
+  it('adds key and removes its siblings', () => {
+    // expand 1-2 while 1-1 already expanded → 1-1 collapses
+    const next = accordionExpand(data, new Set(['1', '1-1']), '1-2');
+    expect([...next].sort()).toEqual(['1', '1-2']);
+  });
+  it('keeps non-sibling expanded nodes (different level not mutually exclusive)', () => {
+    // 1 (root) expanded, expand 1-2-1 deep child → root 1 untouched
+    const next = accordionExpand(data, new Set(['1', '1-2']), '1-2-1');
+    expect([...next].sort()).toEqual(['1', '1-2', '1-2-1']);
+  });
+  it('collapses other root when expanding a root', () => {
+    const next = accordionExpand(data, new Set(['2']), '1');
+    expect([...next]).toEqual(['1']);
+  });
+  it('does not mutate the input set', () => {
+    const input = new Set(['1', '1-1']);
+    accordionExpand(data, input, '1-2');
+    expect([...input].sort()).toEqual(['1', '1-1']);
   });
 });
