@@ -6,7 +6,7 @@ export const meta = {
   name: 'Drawer',
   category: 'feedback',
   description:
-    '抽屉浮层：四方向（left/right/top/bottom）贴边面板，复用 Modal 浮层模式——fixed 容器 + 面板（无 portal），role=dialog aria-modal；useFocusTrap 焦点捕获与归还、useDismiss Esc 关闭（closeOnEsc）、mask 时 useScrollLock 锁背景滚动；mask/maskClosable 遮罩点击关闭、closable 右上角关闭按钮；size(small/default/large) 预设宽高，width/height 优先覆盖；头/体/尾结构。有 title 用 aria-labelledby，否则 aria-label。别名 SideSheet（行为一致）。受控 open 不回写，仅 onOpenChange/onClose 通知。本子集；嵌套层栈管理、destroyOnClose、portal-to-body、滑入过渡动画延后。',
+    '抽屉浮层：四方向（left/right/top/bottom）贴边滑入面板，复用 Modal 浮层基建——portal 到 body（或 getContainer）脱离父层叠上下文，role=dialog aria-modal；useFocusTrap 焦点捕获与归还、useDismiss Esc 关闭（closeOnEsc）、mask 时 useScrollLock 锁背景滚动；mask/maskClosable 遮罩点击关闭、closable 右上角关闭按钮；size(small/default/large) 预设宽高，width/height 优先覆盖；头/体/尾结构。滑入过渡为 CSS transform/opacity（token 时长缓动，reduced-motion 退化）；destroyOnClose 关闭即卸载内容（重开重建），出场过渡结束后 onAfterClose。堆叠 z-index 与 Modal 共享 modal/z-stack 模块级计数器，多层叠放后开者在上。有 title 用 aria-labelledby，否则 aria-label。别名 SideSheet（行为一致）。受控 open 不回写，仅 onOpenChange/onClose 通知。',
   exports: ['Drawer', 'SideSheet'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写' },
@@ -46,6 +46,18 @@ export const meta = {
     { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 关闭' },
     { name: 'closable', type: 'boolean', default: 'true', desc: '右上角关闭按钮' },
     {
+      name: 'destroyOnClose',
+      type: 'boolean',
+      default: 'false',
+      desc: '关闭即卸载内部内容并重置状态；默认 false 保留 DOM 仅隐藏',
+    },
+    {
+      name: 'getContainer',
+      type: '() => HTMLElement | null',
+      default: 'undefined',
+      desc: 'Portal 容器，缺省 document.body；脱离父层叠上下文',
+    },
+    {
       name: 'footer',
       type: 'Snippet|null',
       default: 'undefined',
@@ -55,10 +67,12 @@ export const meta = {
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无 title 时的 aria-label' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
     { name: 'onClose', type: '() => void', default: 'undefined' },
+    { name: 'onAfterClose', type: '() => void', default: 'undefined', desc: '出场过渡结束（DOM 卸载后）触发' },
   ],
   events: [
     { name: 'onOpenChange', desc: '显隐变化通知' },
     { name: 'onClose', desc: '关闭按钮/遮罩/Esc 关闭' },
+    { name: 'onAfterClose', desc: '出场过渡结束后触发，配合 destroyOnClose 清理' },
   ],
   slots: [
     { name: 'children', desc: '主体内容' },
