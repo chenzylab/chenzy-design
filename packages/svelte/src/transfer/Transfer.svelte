@@ -4,15 +4,37 @@
   move buttons, local search filter. Controlled / uncontrolled `value`.
   groupList: `dataSource` accepts grouped `{ title, items }[]` (or flat items
   with an optional `group` field) — each side renders group headers + items.
-  TODO: treeList, draggable, virtualize, oneWay, remote onSearch.
+  treeList: `dataSource` accepts `TransferTreeNode[]` (items with `children`).
+  The source panel renders a tree (indent + expand/collapse); checking a parent
+  conducts to all enabled leaf descendants (core `conduct`/`toggleCheck`), with
+  tri-state half-check. Only leaves migrate to the (flat) target panel; migrated
+  leaves are greyed/disabled in the source tree.
+  oneWay: left→right only — each target row has its own remove button; no
+  right→left batch button.
+  TODO: draggable, virtualize, remote onSearch.
 -->
 <script lang="ts">
   import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
   import Button from '../button/Button.svelte';
   import { useLocale } from '../locale-provider/index.js';
-  import type { TransferGroup, TransferItem, TransferRenderGroup } from './types.js';
+  import {
+    conduct,
+    toggleCheck,
+    flattenVisible,
+    collectExpandable,
+    computeFilteredKeys,
+    type TreeNodeData,
+    type FlatNode,
+  } from '@chenzy-design/core';
+  import type {
+    TransferGroup,
+    TransferItem,
+    TransferRenderGroup,
+    TransferTreeNode,
+  } from './types.js';
   import { buildGroups, hasGroups, normalizeData } from './group.js';
+  import { isTreeData, flattenLeaves } from './tree.js';
 
   type TransferKey = string | number;
   type Size = 'small' | 'default' | 'large';
@@ -21,7 +43,7 @@
   interface Props {
     value?: TransferKey[];
     defaultValue?: TransferKey[];
-    dataSource?: TransferItem[] | TransferGroup[];
+    dataSource?: TransferItem[] | TransferGroup[] | TransferTreeNode[];
     filter?: boolean;
     searchPlaceholder?: string;
     size?: Size;
@@ -29,6 +51,8 @@
     disabled?: boolean;
     showPanelTitle?: boolean;
     titles?: [string, string];
+    /** Left→right only: target rows get a remove button, no right→left batch. */
+    oneWay?: boolean;
     onChange?: (targetKeys: TransferKey[]) => void;
   }
 
@@ -43,6 +67,7 @@
     disabled = false,
     showPanelTitle = true,
     titles,
+    oneWay = false,
     onChange,
   }: Props = $props();
 
@@ -63,6 +88,8 @@
   }
 
   // Local checked sets — purely local UI state, independent of `value`.
+  // In tree mode `leftChecked` is the *base* (leaf-level) checked set fed to
+  // core `conduct`/`toggleCheck`.
   let leftChecked = $state<TransferKey[]>([]);
   let rightChecked = $state<TransferKey[]>([]);
 
@@ -70,10 +97,20 @@
   let leftQuery = $state('');
   let rightQuery = $state('');
 
+  // --- Tree mode detection (treeList) -------------------------------------
+  const isTree = $derived(isTreeData(dataSource as readonly unknown[]));
+  const treeData = $derived(isTree ? (dataSource as TransferTreeNode[]) : []);
+
+  // Tree leaves flattened to flat items (the migratable units) for the target
+  // panel + label lookups. In tree mode this replaces the normalized list.
+  const treeLeaves = $derived(flattenLeaves(treeData));
+
   // Normalize grouped `{ title, items }[]` or flat items into one flat list,
   // tagging each item with `group`. Backward compatible: flat data is untouched.
-  const items = $derived(normalizeData(dataSource));
-  const grouped = $derived(hasGroups(items));
+  const items = $derived(
+    isTree ? treeLeaves : normalizeData(dataSource as TransferItem[] | TransferGroup[]),
+  );
+  const grouped = $derived(!isTree && hasGroups(items));
 
   const leftItems = $derived(items.filter((item) => !current.includes(item.key)));
   const rightItems = $derived(items.filter((item) => current.includes(item.key)));
@@ -95,6 +132,73 @@
   const targetFallback = $derived(titles?.[1] ?? loc().t('Transfer.titleTarget'));
   const leftGroups = $derived(buildGroups(leftVisible, sourceFallback));
   const rightGroups = $derived(buildGroups(rightVisible, targetFallback));
+
+  // --- Tree-mode derivations (pure; render never writes state) -------------
+  const movedSet = $derived(new Set(current));
+
+  // Tree for the source panel: already-migrated leaves are disabled (greyed) so
+  // they cannot be re-checked (core `conduct` excludes disabled from auto-check).
+  function maskTree(nodes: TransferTreeNode[]): TreeNodeData[] {
+    return nodes.map((n) => {
+      if (n.children && n.children.length > 0) {
+        return { ...n, children: maskTree(n.children) } as TreeNodeData;
+      }
+      return { ...n, disabled: !!n.disabled || movedSet.has(n.key) } as TreeNodeData;
+    });
+  }
+  const sourceTree = $derived(maskTree(treeData));
+
+  // Expansion is local UI state. Default: expand all parents on first paint.
+  let expandedTouched = $state(false);
+  let innerExpanded = $state<Set<TransferKey>>(new Set());
+  const defaultExpanded = $derived(new Set(collectExpandable(sourceTree)));
+  const baseExpanded = $derived(expandedTouched ? innerExpanded : defaultExpanded);
+
+  // Search expands ancestors of matches without writing the base set (红线 #1/#2).
+  const treeSearch = $derived(filter ? leftQuery.trim().toLowerCase() : '');
+  const treeFiltered = $derived(
+    treeSearch
+      ? computeFilteredKeys(sourceTree, (n) => n.label.toLowerCase().includes(treeSearch))
+      : { matched: new Set<TransferKey>(), expand: new Set<TransferKey>() },
+  );
+  const searchExpand = $derived(treeFiltered.expand);
+  const searchMatched = $derived(treeFiltered.matched);
+  const effectiveExpanded = $derived(
+    treeSearch ? new Set([...baseExpanded, ...searchExpand]) : baseExpanded,
+  );
+
+  const flatNodes = $derived(isTree ? flattenVisible(sourceTree, effectiveExpanded) : []);
+  // Hide nodes that (under active search) neither match nor have a matching
+  // descendant. A node stays if matched, or is an expanded ancestor of a match.
+  const visibleFlat = $derived(
+    treeSearch
+      ? flatNodes.filter(
+          (f) => searchMatched.has(f.node.key) || searchExpand.has(f.node.key),
+        )
+      : flatNodes,
+  );
+
+  // Conduction: derive checked/half from the leaf-level base set.
+  const conducted = $derived(
+    isTree ? conduct(sourceTree, new Set(leftChecked)) : { checked: new Set<TransferKey>(), half: new Set<TransferKey>() },
+  );
+
+  function isExpanded(key: TransferKey): boolean {
+    return effectiveExpanded.has(key);
+  }
+
+  function toggleExpand(key: TransferKey) {
+    const next = new Set(baseExpanded);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    innerExpanded = next;
+    expandedTouched = true;
+  }
+
+  function toggleTreeCheck(node: TreeNodeData) {
+    if (disabled || node.disabled) return;
+    leftChecked = [...toggleCheck(sourceTree, new Set(leftChecked), node.key)];
+  }
 
   /** Movable (non-disabled, checked) keys within one render group. */
   function groupMovable(
@@ -149,12 +253,13 @@
 
   function moveToRight() {
     if (disabled) return;
+    // In tree mode `leftChecked` is leaf-level; keep only enabled, not-yet-moved.
     const movable = leftItems
       .filter((i) => !i.disabled && leftChecked.includes(i.key))
       .map((i) => i.key);
     if (movable.length === 0) return;
     commit([...current, ...movable]);
-    leftChecked = [];
+    leftChecked = leftChecked.filter((k) => !movable.includes(k));
   }
 
   function moveToLeft() {
@@ -166,6 +271,13 @@
     const remove = new Set(movable);
     commit(current.filter((k) => !remove.has(k)));
     rightChecked = [];
+  }
+
+  /** oneWay: remove a single target item back to the source. */
+  function removeOne(key: TransferKey) {
+    if (disabled) return;
+    commit(current.filter((k) => k !== key));
+    rightChecked = rightChecked.filter((k) => k !== key);
   }
 
   const moveRightDisabled = $derived(
@@ -186,20 +298,76 @@
 
 {#snippet itemRow(side: 'left' | 'right', item: TransferItem)}
   <li class="cd-transfer__item">
+    {#if side === 'right' && oneWay}
+      <span class="cd-transfer__item-label">{item.label}</span>
+      <button
+        type="button"
+        class="cd-transfer__remove"
+        aria-label={loc().t('Transfer.remove')}
+        disabled={disabled || (item.disabled ?? false)}
+        onclick={() => removeOne(item.key)}
+      >
+        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+          <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8" />
+        </svg>
+      </button>
+    {:else}
+      <Checkbox
+        {size}
+        checked={(side === 'left' ? leftChecked : rightChecked).includes(item.key)}
+        disabled={disabled || (item.disabled ?? false)}
+        onChange={() => toggleChecked(side, item.key)}
+      >
+        {item.label}
+      </Checkbox>
+    {/if}
+  </li>
+{/snippet}
+
+{#snippet treeRow(f: FlatNode)}
+  {@const node = f.node}
+  {@const checked = conducted.checked.has(node.key)}
+  {@const half = !checked && conducted.half.has(node.key)}
+  <li
+    class="cd-transfer__tree-node"
+    style="padding-inline-start: calc({f.level} * var(--cd-transfer-tree-indent, 18px))"
+  >
+    {#if f.hasChildren}
+      <button
+        type="button"
+        class="cd-transfer__switcher"
+        class:cd-transfer__switcher--open={isExpanded(node.key)}
+        aria-label={isExpanded(node.key) ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
+        onclick={() => toggleExpand(node.key)}
+      >
+        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+        </svg>
+      </button>
+    {:else}
+      <span class="cd-transfer__switcher cd-transfer__switcher--leaf" aria-hidden="true"></span>
+    {/if}
     <Checkbox
       {size}
-      checked={(side === 'left' ? leftChecked : rightChecked).includes(item.key)}
-      disabled={disabled || (item.disabled ?? false)}
-      onChange={() => toggleChecked(side, item.key)}
+      {checked}
+      indeterminate={half}
+      disabled={disabled || (node.disabled ?? false)}
+      onChange={() => toggleTreeCheck(node)}
     >
-      {item.label}
+      {node.label}
     </Checkbox>
   </li>
 {/snippet}
 
 {#snippet panelList(side: 'left' | 'right', visible: TransferItem[], groups: TransferRenderGroup[])}
   <ul class="cd-transfer__list">
-    {#if grouped}
+    {#if side === 'left' && isTree}
+      {#each visibleFlat as f (f.node.key)}
+        {@render treeRow(f)}
+      {:else}
+        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+      {/each}
+    {:else if grouped}
       {#each groups as group (group.title)}
         {@const state = groupCheckState(side, group)}
         <li class="cd-transfer__group">
@@ -268,15 +436,17 @@
     >
       &gt;
     </Button>
-    <Button
-      type="primary"
-      size="small"
-      ariaLabel={loc().t('Transfer.moveToLeft')}
-      disabled={moveLeftDisabled}
-      onclick={moveToLeft}
-    >
-      &lt;
-    </Button>
+    {#if !oneWay}
+      <Button
+        type="primary"
+        size="small"
+        ariaLabel={loc().t('Transfer.moveToLeft')}
+        disabled={moveLeftDisabled}
+        onclick={moveToLeft}
+      >
+        &lt;
+      </Button>
+    {/if}
   </div>
 
   <div class="cd-transfer__panel">
@@ -351,11 +521,78 @@
   .cd-transfer__item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--cd-spacing-2);
     min-block-size: var(--cd-transfer-item-height);
     padding-inline: var(--cd-spacing-3);
   }
   .cd-transfer__item:hover {
     background: var(--cd-transfer-item-bg-hover);
+  }
+  .cd-transfer__item-label {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cd-transfer__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: 18px;
+    block-size: 18px;
+    padding: 0;
+    border: none;
+    border-radius: var(--cd-radius-1, 4px);
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+  }
+  .cd-transfer__remove:hover:not(:disabled) {
+    background: var(--cd-transfer-item-bg-hover);
+    color: var(--cd-color-text-0);
+  }
+  .cd-transfer__remove:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .cd-transfer__remove:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-transfer__tree-node {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--cd-transfer-item-height);
+    padding-inline-end: var(--cd-spacing-3);
+  }
+  .cd-transfer__tree-node:hover {
+    background: var(--cd-transfer-item-bg-hover);
+  }
+  .cd-transfer__switcher {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: 18px;
+    block-size: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .cd-transfer__switcher--open {
+    transform: rotate(90deg);
+  }
+  .cd-transfer__switcher--leaf {
+    cursor: default;
+  }
+  .cd-transfer__switcher:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-transfer__group {
     display: block;

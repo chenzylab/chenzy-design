@@ -18,3 +18,15 @@ export interface TransferRenderGroup {
   title: string;
   items: TransferItem[];
 }
+
+/**
+ * Tree data source node (`treeList`): the source panel renders a tree. Checking a
+ * parent conducts to all enabled leaf descendants; only leaf keys are migrated to
+ * the target panel (which stays flat). A node with `children` is a parent.
+ */
+export interface TransferTreeNode {
+  key: string | number;
+  label: string;
+  disabled?: boolean;
+  children?: TransferTreeNode[];
+}

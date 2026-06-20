@@ -365,6 +365,8 @@ let presetVal = $state<Date | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
   let transferGroupVal = $state<(string | number)[]>(['hz']);
+  let transferTreeVal = $state<(string | number)[]>(['hz']);
+  let transferOneWayVal = $state<(string | number)[]>(['b']);
   // picture-card 上传：含一个初始已上传项（url 预览），便于直接看到缩略图
   let uploadImageVal = $state<
     { uid: string; name: string; size: number; status: 'ready' | 'uploading' | 'success' | 'error'; url?: string; file?: File }[]
@@ -485,6 +487,26 @@ let pageSize2 = $state(10);
         { key: 'sz', label: '深圳' },
       ],
     },
+  ];
+  const transferTreeData = [
+    {
+      key: 'east',
+      label: '华东',
+      children: [
+        { key: 'hz', label: '杭州' },
+        { key: 'nj', label: '南京' },
+        { key: 'sh', label: '上海' },
+      ],
+    },
+    {
+      key: 'south',
+      label: '华南',
+      children: [
+        { key: 'gz', label: '广州' },
+        { key: 'sz', label: '深圳' },
+      ],
+    },
+    { key: 'cd', label: '成都' },
   ];
   const regionData = [
     {
@@ -1111,6 +1133,29 @@ let pageSize2 = $state(10);
       />
     </div>
     <Text type="tertiary">分组已选：{transferGroupVal.join(', ') || '（无）'}</Text>
+
+    <Text type="tertiary">treeList 树状源面板（勾父连带勾子叶子、半选、已迁移叶子置灰）：</Text>
+    <div data-testid="transfer-tree">
+      <Transfer
+        dataSource={transferTreeData}
+        value={transferTreeVal}
+        titles={['可选城市', '已选城市']}
+        onChange={(keys) => (transferTreeVal = keys)}
+      />
+    </div>
+    <Text type="tertiary">树已选：{transferTreeVal.join(', ') || '（无）'}</Text>
+
+    <Text type="tertiary">oneWay 单向迁移（右侧项各带移除按钮）：</Text>
+    <div data-testid="transfer-oneway">
+      <Transfer
+        oneWay
+        dataSource={transferData}
+        value={transferOneWayVal}
+        titles={['可选城市', '已选城市']}
+        onChange={(keys) => (transferOneWayVal = keys)}
+      />
+    </div>
+    <Text type="tertiary">单向已选：{transferOneWayVal.join(', ') || '（无）'}</Text>
 
     <Upload multiple drag accept="image/*" />
 
