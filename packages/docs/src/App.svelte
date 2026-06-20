@@ -172,6 +172,16 @@
     });
   }
 
+  // Tree virtualized：大数据树（50 个分组 × 20 子项 = 1050 节点）验证只渲染视口内行。
+  const bigTreeData = Array.from({ length: 50 }, (_, g) => ({
+    key: `g${g}`,
+    label: `分组 ${g + 1}`,
+    children: Array.from({ length: 20 }, (_, c) => ({
+      key: `g${g}-c${c}`,
+      label: `分组 ${g + 1} · 节点 ${c + 1}`,
+    })),
+  }));
+
   type TableRow = {
     key: number;
     name: string;
@@ -1701,6 +1711,17 @@ let pageSize2 = $state(10);
     <div style="width: 240px" data-testid="tree-loaddata">
       <Text type="tertiary">异步加载（展开拉取子节点）</Text>
       <Tree treeData={treeAsyncRoots} loadData={loadTreeChildren} ariaLabel="异步加载树" />
+    </div>
+
+    <div style="width: 280px" data-testid="tree-virtualized">
+      <Text type="tertiary">虚拟滚动（1050 节点，仅渲染视口内行）</Text>
+      <Tree
+        treeData={bigTreeData}
+        virtualized
+        height={320}
+        defaultExpandAll
+        ariaLabel="大数据虚拟树"
+      />
     </div>
   </div>
 
