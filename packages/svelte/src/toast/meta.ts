@@ -6,7 +6,7 @@ export const meta = {
   name: 'Toast',
   category: 'feedback',
   description:
-    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/loading/open/close/update/destroyAll）。单例容器惰性挂载到 body；类型预设图标 + 自动消失 + 悬停暂停 + maxCount FIFO 淘汰 + 同 id 去重更新；error/warning role=alert(assertive)、其余 role=status(polite)。本子集：6 方位仅 top/bottom，promise/stack/theme/单例 live region 延后。',
+    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/loading/open/close/update/destroyAll）。单例容器惰性挂载到 body；类型预设图标 + 自动消失 + 悬停暂停 + maxCount FIFO 淘汰 + 同 id 去重更新；a11y 播报走单例 ARIA live region（error->assertive、其余->polite），卡片本身纯视觉无 role/aria-live。本子集：6 方位仅 top/bottom，promise/stack/theme 延后。',
   exports: ['Toast'],
   imperative: true,
   props: [
@@ -39,7 +39,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: false,
-    note: 'error/warning 用 role=alert + aria-live=assertive，其余 role=status + aria-live=polite；关闭按钮 button + aria-label「关闭」。不抢焦点、不锁滚动。TODO：单例 live region 延后，当前每条卡片自带 role/aria-live。',
+    note: '所有文案播报走 body 上单例 ARIA live region（全局唯一一对：role=status/aria-live=polite + role=alert/aria-live=assertive）；error 走 assertive 立即打断，其余走 polite。store 在新增/更新 toast 时命令式写入 region 文案，卡片本身纯视觉、不带 role/aria-live，避免多 region 重复/竞争播报。关闭按钮 button + aria-label「关闭」。不抢焦点、不锁滚动。',
   },
   tokens: [
     '--cd-toast-bg',
