@@ -5,11 +5,20 @@
   选文件后自动 XHR 上传（uploading→进度→success/error），customRequest 优先；
   XHR 句柄存 Map，remove/卸载时 abort。uploading 时渲染 Progress（line）。
   listType=image/picture-card：缩略图预览（item.url 优先，否则 file → objectURL，移除/卸载 revoke）。
-  TODO: concurrency 并发限制、async beforeUpload、directory、minSize。
+  concurrency 并发上限（0=不限，超出排队、完成补位，core createUploadQueue 调度）；
+  beforeUpload 异步校验/转换（false/reject 跳过该文件，返回 File 替换，true 正常上传）。
+  TODO: directory、minSize。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, computeUploadPercent, isUploadOk } from '@chenzy-design/core';
+  import {
+    useId,
+    computeUploadPercent,
+    isUploadOk,
+    createUploadQueue,
+    resolveBeforeUpload,
+    type BeforeUploadResult,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Progress } from '../progress/index.js';
   import type { UploadFileItem } from './types.js';
@@ -33,7 +42,15 @@
     headers?: Record<string, string>;
     /** 随文件一起提交的额外字段 */
     uploadData?: Record<string, string>;
-    customRequest?: (item: UploadFileItem) => void;
+    /** 同时进行的上传数上限；0/不传=不限（受控调度，超出排队，完成补位） */
+    concurrency?: number;
+    /**
+     * 每个文件上传前调用：返回 false / reject 跳过该文件（移除）；
+     * 返回 File 替换为该文件（如压缩后）；返回 true / resolve 正常上传。异步会被 await。
+     */
+    beforeUpload?: (file: File, fileList: File[]) => BeforeUploadResult | Promise<BeforeUploadResult>;
+    /** 自定义上传实现（优先于 action）。返回 Promise 时受 concurrency 调度（完成才释放槽位）。 */
+    customRequest?: (item: UploadFileItem) => void | Promise<void>;
     onChange?: (list: UploadFileItem[]) => void;
     onExceed?: (files: File[]) => void;
     onSuccess?: (response: string, item: UploadFileItem) => void;
@@ -55,6 +72,8 @@
     uploadName = 'file',
     headers,
     uploadData,
+    concurrency = 0,
+    beforeUpload,
     customRequest,
     onChange,
     onExceed,
@@ -79,6 +98,13 @@
 
   // 进行中的 XHR 句柄（uid → xhr），remove/卸载时 abort。
   const xhrMap = new Map<string, XMLHttpRequest>();
+
+  // 并发调度队列：concurrency 变化时重建（新文件用新上限，进行中的 XHR 不受影响）。
+  // concurrency<=0 时不限，行为与未接入队列前一致。
+  const queue = $derived(createUploadQueue(concurrency));
+
+  // 卸载标记：避免卸载后仍向已 abort 的 XHR/已移除项回写状态。
+  let mounted = true;
 
   // image/picture-card 预览：本地缓存 file → objectURL（uid → url），移除/卸载 revoke。
   const objectUrls = new Map<string, string>();
@@ -109,6 +135,7 @@
   // 卸载时中止所有进行中的上传 + 释放预览 objectURL。
   $effect(() => {
     return () => {
+      mounted = false;
       for (const xhr of xhrMap.values()) xhr.abort();
       xhrMap.clear();
       for (const u of objectUrls.values()) URL.revokeObjectURL(u);
@@ -117,43 +144,63 @@
   });
 
   // XHR 上传单个文件项：uploading → onprogress 更新 percent → success/error。
-  function uploadItem(item: UploadFileItem) {
-    if (!action || !item.file) return;
-    const xhr = new XMLHttpRequest();
-    xhrMap.set(item.uid, xhr);
-    patchItem(item.uid, { status: 'uploading', percent: 0 });
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        patchItem(item.uid, { percent: computeUploadPercent(e.loaded, e.total) });
+  // 返回 Promise，在 load/error/abort 任一终态 resolve，供并发队列释放槽位。
+  function uploadItem(item: UploadFileItem, file: File): Promise<void> {
+    return new Promise<void>((resolve) => {
+      if (!action) {
+        resolve();
+        return;
       }
-    };
-    xhr.onload = () => {
-      xhrMap.delete(item.uid);
-      if (isUploadOk(xhr.status)) {
-        patchItem(item.uid, { status: 'success', percent: 100 });
-        onSuccess?.(xhr.responseText, item);
-      } else {
+      const xhr = new XMLHttpRequest();
+      xhrMap.set(item.uid, xhr);
+      patchItem(item.uid, { status: 'uploading', percent: 0 });
+
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          patchItem(item.uid, { percent: computeUploadPercent(e.loaded, e.total) });
+        }
+      };
+      xhr.onload = () => {
+        xhrMap.delete(item.uid);
+        if (isUploadOk(xhr.status)) {
+          patchItem(item.uid, { status: 'success', percent: 100 });
+          onSuccess?.(xhr.responseText, item);
+        } else {
+          patchItem(item.uid, { status: 'error' });
+          onError?.(item);
+        }
+        done();
+      };
+      xhr.onerror = () => {
+        xhrMap.delete(item.uid);
         patchItem(item.uid, { status: 'error' });
         onError?.(item);
-      }
-    };
-    xhr.onerror = () => {
-      xhrMap.delete(item.uid);
-      patchItem(item.uid, { status: 'error' });
-      onError?.(item);
-    };
+        done();
+      };
+      // abort（remove/卸载）也要释放槽位，否则队列卡死。
+      xhr.onabort = () => {
+        xhrMap.delete(item.uid);
+        done();
+      };
 
-    const form = new FormData();
-    form.append(uploadName, item.file, item.name);
-    if (uploadData) {
-      for (const [k, v] of Object.entries(uploadData)) form.append(k, v);
-    }
-    xhr.open('POST', action);
-    if (headers) {
-      for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
-    }
-    xhr.send(form);
+      const form = new FormData();
+      form.append(uploadName, file, item.name);
+      if (uploadData) {
+        for (const [k, v] of Object.entries(uploadData)) form.append(k, v);
+      }
+      xhr.open('POST', action);
+      if (headers) {
+        for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+      }
+      xhr.send(form);
+    });
   }
 
   /** Format a byte count: <1KiB → B, <1MiB → KB, else MB (1 decimal). */
@@ -201,12 +248,48 @@
     const newItems = accepted.map(buildItem);
     commit([...current, ...newItems]);
 
-    // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅上传无尺寸错误的项。
+    // beforeUpload 通过的项才进队列受 concurrency 调度。
+    // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅处理无尺寸错误的项。
     for (const item of newItems) {
-      if (item.status === 'error') continue;
-      if (customRequest) customRequest(item);
-      else if (action) uploadItem(item);
+      if (item.status === 'error' || !item.file) continue;
+      dispatch(item, item.file, accepted);
     }
+  }
+
+  // 单个文件的上传派发：先跑（可能异步的）beforeUpload，通过后入队受并发调度。
+  async function dispatch(item: UploadFileItem, original: File, fileList: File[]) {
+    let file = original;
+    if (beforeUpload) {
+      let result: BeforeUploadResult;
+      try {
+        result = await beforeUpload(original, fileList);
+      } catch {
+        // reject 视为拒绝该文件。
+        result = false;
+      }
+      if (!mounted) return;
+      // 上传开始前可能已被手动移除。
+      if (!current.some((it) => it.uid === item.uid)) return;
+      const decision = resolveBeforeUpload(original, result);
+      if (!decision.upload) {
+        // 跳过该文件：从列表移除（受控仅 onChange，不回写）。
+        remove(item.uid);
+        return;
+      }
+      file = decision.file ?? original;
+      if (file !== original) patchItem(item.uid, { name: file.name, size: file.size, file });
+    }
+    if (!mounted) return;
+    // 入队受 concurrency 调度：customRequest 返回 Promise 时队列会 await 其完成
+    // 来释放槽位（同步返回则立即释放，由其自管生命周期）；否则由队列 await XHR。
+    queue.add(() => {
+      if (!mounted) return;
+      if (!current.some((it) => it.uid === item.uid)) return;
+      if (customRequest) {
+        return customRequest({ ...item, file });
+      }
+      if (action) return uploadItem(item, file);
+    });
   }
 
   function remove(uid: string) {

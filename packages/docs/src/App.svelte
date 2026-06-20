@@ -84,7 +84,7 @@
     ResizeObserver,
     LottieIcon,
   } from '@chenzy-design/svelte';
-  import type { LottiePlayerFactory, TreeNode, DropdownItem } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem } from '@chenzy-design/svelte';
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
@@ -734,6 +734,38 @@ let pageSize2 = $state(10);
   let rateVal = $state(2.5);
   let sliderVal = $state(40);
   let rangeVal = $state<[number, number]>([20, 60]);
+
+  // Upload concurrency + beforeUpload 演示
+  let uploadConcVal = $state<UploadFileItem[]>([]);
+  let uploadConcActive = $state(0);
+  let uploadConcPeak = $state(0);
+  // 模拟上传：每个请求 ~800ms 完成，返回 Promise 让 concurrency 调度（完成才补位）。
+  function mockUpload(item: UploadFileItem): Promise<void> {
+    uploadConcActive += 1;
+    if (uploadConcActive > uploadConcPeak) uploadConcPeak = uploadConcActive;
+    return new Promise<void>((resolve) => {
+      let p = 0;
+      const tick = setInterval(() => {
+        p = Math.min(100, p + 25);
+        uploadConcVal = uploadConcVal.map((it) =>
+          it.uid === item.uid ? { ...it, status: 'uploading', percent: p } : it,
+        );
+        if (p >= 100) {
+          clearInterval(tick);
+          uploadConcActive -= 1;
+          uploadConcVal = uploadConcVal.map((it) =>
+            it.uid === item.uid ? { ...it, status: 'success', percent: 100 } : it,
+          );
+          resolve();
+        }
+      }, 200);
+    });
+  }
+  // beforeUpload：拒绝大于 100KB 的文件（演示异步拦截）。
+  async function uploadBefore(file: File): Promise<boolean> {
+    await new Promise((r) => setTimeout(r, 150));
+    return file.size <= 100 * 1024;
+  }
 
   let theme = $state<'light' | 'dark'>('light');
   $effect(() => {
@@ -2956,6 +2988,29 @@ let pageSize2 = $state(10);
       />
       <Text type="tertiary">hideDisabledOptions：禁用的 0-6 时直接从列中隐藏</Text>
     </Space>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>Upload：concurrency 并发限制 + 异步 beforeUpload</Title>
+  <Space direction="vertical" align="start">
+    <Text type="tertiary">
+      concurrency=2（模拟上传，同时进行不超过 2 个，完成一个补一个）；beforeUpload 异步拒绝大于 100KB 的文件。
+    </Text>
+    <div data-testid="upload-concurrency">
+      <Upload
+        multiple
+        concurrency={2}
+        beforeUpload={uploadBefore}
+        customRequest={mockUpload}
+        value={uploadConcVal}
+        onChange={(list) => (uploadConcVal = list)}
+      />
+    </div>
+    <Text type="tertiary">
+      当前进行中：<strong data-testid="upload-conc-active">{uploadConcActive}</strong> · 峰值并发：<strong
+        data-testid="upload-conc-peak">{uploadConcPeak}</strong>
+    </Text>
   </Space>
 </main>
 

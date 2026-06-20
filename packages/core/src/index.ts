@@ -193,7 +193,18 @@ export {
   type AutosizeInput,
   type AutosizeResult,
 } from './textarea.js';
-export { computeUploadPercent, isUploadOk } from './upload.js';
+export {
+  computeUploadPercent,
+  isUploadOk,
+  createUploadQueue,
+  resolveBeforeUpload,
+} from './upload.js';
+export type {
+  UploadTask,
+  UploadQueue,
+  BeforeUploadResult,
+  BeforeUploadDecision,
+} from './upload.js';
 export {
   fixedRange,
   buildOffsets,
