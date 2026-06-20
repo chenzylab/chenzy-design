@@ -9,6 +9,9 @@ import {
   toggleSelectAll,
   toggleRow,
   flattenTreeRows,
+  conductRows,
+  normalizeRowsToLeaves,
+  toggleRowCheck,
   type SortState,
 } from './table.js';
 
@@ -153,5 +156,87 @@ describe('flattenTreeRows', () => {
   it('does not expand a key with no children', () => {
     const flat = flattenTreeRows(data, new Set([2]), getKey, getChildren);
     expect(flat.map((r) => r.key)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('tree row selection conduction', () => {
+  interface Row {
+    id: number;
+    disabled?: boolean;
+    children?: Row[];
+  }
+  // 1 ─ 11
+  //   └ 12 ─ 121
+  //         └ 122
+  // 2
+  const data: Row[] = [
+    {
+      id: 1,
+      children: [
+        { id: 11 },
+        { id: 12, children: [{ id: 121 }, { id: 122 }] },
+      ],
+    },
+    { id: 2 },
+  ];
+  const getKey = (r: Row) => r.id;
+  const getChildren = (r: Row) => r.children;
+  const isDisabled = (r: Row) => !!r.disabled;
+
+  it('conductRows: checking a parent fully checks descendants', () => {
+    const { checked, half } = conductRows(data, new Set([1]), getKey, getChildren);
+    expect([...checked].sort((a, b) => Number(a) - Number(b))).toEqual([1, 11, 12, 121, 122]);
+    expect(half.size).toBe(0);
+  });
+
+  it('conductRows: partial children make ancestors half', () => {
+    const { checked, half } = conductRows(data, new Set([121]), getKey, getChildren);
+    expect([...checked]).toEqual([121]);
+    expect([...half].sort((a, b) => Number(a) - Number(b))).toEqual([1, 12]);
+  });
+
+  it('conductRows: all leaves of a parent → parent checked, not half', () => {
+    const { checked, half } = conductRows(data, new Set([121, 122]), getKey, getChildren);
+    expect(checked.has(12)).toBe(true);
+    expect(half.has(12)).toBe(false); // 12 fully checked, not half
+    expect(half.has(1)).toBe(true); // 1 still partial (11 unchecked)
+  });
+
+  it('conductRows: disabled leaf excluded from parent computation', () => {
+    const withDisabled: Row[] = [
+      { id: 1, children: [{ id: 11 }, { id: 12, disabled: true }] },
+    ];
+    // check only 11; 12 is disabled so 1 counts only the enabled leaf → checked
+    const { checked, half } = conductRows(
+      withDisabled,
+      new Set([11]),
+      getKey,
+      getChildren,
+      isDisabled,
+    );
+    expect(checked.has(1)).toBe(true);
+    expect(half.has(1)).toBe(false);
+  });
+
+  it('toggleRowCheck: toggling a parent adds/removes all leaves', () => {
+    const on = toggleRowCheck(data, new Set(), 1, getKey, getChildren);
+    expect([...on].sort((a, b) => Number(a) - Number(b))).toEqual([11, 121, 122]); // leaf-level base
+    const off = toggleRowCheck(data, on, 1, getKey, getChildren);
+    expect(off.size).toBe(0);
+  });
+
+  it('toggleRowCheck: round-trips conductRows output (parent keys)', () => {
+    // feed conduct output (contains parent keys) back through toggle
+    const { checked } = conductRows(data, new Set([1]), getKey, getChildren);
+    const off = toggleRowCheck(data, checked, 12, getKey, getChildren);
+    // toggling 12 off should remove its leaves only, keep 11
+    expect(off.has(11)).toBe(true);
+    expect(off.has(121)).toBe(false);
+    expect(off.has(122)).toBe(false);
+  });
+
+  it('normalizeRowsToLeaves: expands parents to leaves, drops unknown keys', () => {
+    const out = normalizeRowsToLeaves(data, new Set([1, 999]), getKey, getChildren);
+    expect([...out].sort((a, b) => Number(a) - Number(b))).toEqual([11, 121, 122]);
   });
 });

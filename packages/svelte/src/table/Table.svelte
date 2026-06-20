@@ -11,6 +11,10 @@
   树形数据：tree=true 或 tree={{ childrenColumnName, indentSize, expandedRowKeys... }}；
   行含 children 自动嵌套，第一列内展开三角 + 逐级缩进；排序/分页/筛选作用于顶层行，
   可见行经 core flattenTreeRows 纯函数扁平化驱动 tbody (红线 #2)；受控展开 keys 不回写 (红线 #1)。
+  树形行选择父子联动：rowSelection.checkStrictly 默认 false=联动（勾父连带勾全部后代，
+  后代部分选中父行半选 indeterminate），true=父子独立(向后兼容)。联动 {checked,half} 经 core
+  conductRows/toggleRowCheck 纯函数据整棵可见行树派生 (红线 #2)；内部存叶子级 base，
+  onChange 回传含父行的完整 checked 集；半选写 input.indeterminate 复用 attachment (红线 #3)。
   TODO(延后): 虚拟化。
 -->
 <script lang="ts" generics="T extends Record<string, unknown>">
@@ -22,6 +26,8 @@
     toggleSelectAll,
     toggleRow,
     flattenTreeRows,
+    conductRows,
+    toggleRowCheck,
     type RowKey,
     type SortState,
     type FlatRow,
@@ -292,6 +298,21 @@
     return Array.isArray(kids) ? (kids as T[]) : undefined;
   }
 
+  // --- 树形行选择父子联动 ---
+  // checkStrictly 默认 false=联动；true 时父子独立（与非树形逐行选择一致，向后兼容）。
+  // 联动仅在树形 + 有行选择时生效。联动态下 base 选中集为叶子级，经纯函数
+  // conductRows(顶层可见行树) 派生 {checked, half}（红线 #2：纯函数 + $derived）。
+  const treeCheckable = $derived(
+    treeEnabled && rowSelection !== undefined && rowSelection.checkStrictly !== true,
+  );
+  const rowDisabledFn = (record: T): boolean =>
+    rowSelection?.getCheckboxProps?.(record)?.disabled ?? false;
+  // 联动选择派生：覆盖整棵可见顶层行树（含未展开的子行）。
+  const conducted = $derived.by(() => {
+    if (!treeCheckable) return { checked: selectedSet, half: new Set<RowKey>() };
+    return conductRows(visibleRows, selectedSet, getKey, getChildren, rowDisabledFn);
+  });
+
   const isTreeExpandControlled = $derived(treeOpts.expandedRowKeys !== undefined);
   let innerTreeExpanded = $state<RowKey[]>(initTreeExpanded());
   function initTreeExpanded(): RowKey[] {
@@ -339,9 +360,20 @@
     }
     return set;
   });
-  const headerSelect = $derived(
-    selectAllState(visibleKeys, selectedSet, disabledSet),
-  );
+  // 全选状态：联动态据「整棵可见行树」的顶层行 checked/half 计算
+  // （顶层行全 checked → 全选；任一 half 或部分 checked → 半选），
+  // 否则沿用扁平可见行的 selectAllState。
+  const topKeys = $derived(visibleRows.map((r) => getKey(r)));
+  const headerSelect = $derived.by(() => {
+    if (!treeCheckable) return selectAllState(visibleKeys, selectedSet, disabledSet);
+    const tops = topKeys.filter((k) => !disabledSet.has(k));
+    if (tops.length === 0) return { checked: false, indeterminate: false };
+    const allChecked = tops.every((k) => conducted.checked.has(k));
+    const anyMarked = tops.some(
+      (k) => conducted.checked.has(k) || conducted.half.has(k),
+    );
+    return { checked: allChecked, indeterminate: !allChecked && anyMarked };
+  });
 
   const hasSelection = $derived(rowSelection !== undefined);
   const hasExpand = $derived(expandable !== undefined);
@@ -378,30 +410,73 @@
     expandable?.onExpand?.(willExpand, record);
   }
 
-  // --- 选择变更：回调取对应行对象（在当前渲染行集中查找，树形含子行）---
-  function rowsForKeys(keys: RowKey[]): T[] {
+  // --- 选择变更：回调取对应行对象 ---
+  // 联动树形需含未展开的子行，故据整棵可见行树建 key→record 映射；
+  // 非树形/严格态沿用扁平 displayRows。
+  const keyRecordMap = $derived.by(() => {
     const map = new Map<RowKey, T>();
-    for (const r of displayRows) map.set(r.key, r.record);
+    if (treeCheckable) {
+      const walk = (record: T): void => {
+        map.set(getKey(record), record);
+        const kids = getChildren(record);
+        if (kids) for (const c of kids) walk(c);
+      };
+      for (const r of visibleRows) walk(r);
+    } else {
+      for (const r of displayRows) map.set(r.key, r.record);
+    }
+    return map;
+  });
+  function rowsForKeys(keys: RowKey[]): T[] {
     const result: T[] = [];
     for (const k of keys) {
-      const r = map.get(k);
+      const r = keyRecordMap.get(k);
       if (r !== undefined) result.push(r);
     }
     return result;
   }
 
+  // next 是叶子级 base 集（联动态可经 conductRows round-trip）。
+  // 内部态存 base；onChange 联动态回传含父行的完整 checked 集 + 行。
   function emitSelection(next: Set<RowKey>) {
-    const keys = [...next];
-    if (!isSelectionControlled) innerSelected = keys;
-    rowSelection?.onChange?.(keys, rowsForKeys(keys));
+    if (!isSelectionControlled) innerSelected = [...next];
+    if (treeCheckable) {
+      const { checked } = conductRows(visibleRows, next, getKey, getChildren, rowDisabledFn);
+      const keys = [...checked];
+      rowSelection?.onChange?.(keys, rowsForKeys(keys));
+    } else {
+      const keys = [...next];
+      rowSelection?.onChange?.(keys, rowsForKeys(keys));
+    }
   }
 
   function onToggleAll() {
+    if (treeCheckable) {
+      // 全选：勾全部可见顶层行（连带后代叶子）；已全选则清空。
+      const tops = topKeys.filter((k) => !disabledSet.has(k));
+      const allChecked = tops.length > 0 && tops.every((k) => conducted.checked.has(k));
+      let next = new Set(selectedSet);
+      for (const k of tops) {
+        // 目标态：全选则要 off，否则要 on；与当前态不符才 toggle
+        const isOn = conducted.checked.has(k);
+        if (allChecked === isOn) {
+          next = toggleRowCheck(visibleRows, next, k, getKey, getChildren, rowDisabledFn);
+        }
+      }
+      emitSelection(next);
+      return;
+    }
     emitSelection(toggleSelectAll(visibleKeys, selectedSet, disabledSet));
   }
 
   function onToggleRow(record: T) {
     if (disabledSet.has(getKey(record))) return;
+    if (treeCheckable) {
+      emitSelection(
+        toggleRowCheck(visibleRows, selectedSet, getKey(record), getKey, getChildren, rowDisabledFn),
+      );
+      return;
+    }
     emitSelection(toggleRow(selectedSet, getKey(record)));
   }
 
@@ -695,7 +770,8 @@
           {@const record = row.record}
           {@const key = row.key}
           {@const index = row.topIndex}
-          {@const selected = selectedSet.has(key)}
+          {@const selected = treeCheckable ? conducted.checked.has(key) : selectedSet.has(key)}
+          {@const rowHalf = treeCheckable && conducted.half.has(key)}
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
           {@const clickable = !!onRowClick}
@@ -736,6 +812,7 @@
                   aria-label={loc().t('Table.selectRow')}
                   checked={selected}
                   disabled={rowDisabled}
+                  {@attach indeterminate(rowHalf)}
                   onclick={(e) => e.stopPropagation()}
                   onchange={() => onToggleRow(record)}
                 />

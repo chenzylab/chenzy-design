@@ -71,6 +71,12 @@ export interface RowSelection<T> {
   onChange?: (keys: RowKey[], rows: T[]) => void;
   /** 逐行定制复选框属性（如 disabled） */
   getCheckboxProps?: (record: T) => { disabled?: boolean };
+  /**
+   * 树形表父子选择是否独立。默认 false：勾选父行连带勾选所有后代，
+   * 后代部分选中时父行显示半选(indeterminate)。true 时父子互不联动
+   * （等同非树形表逐行选择，向后兼容）。仅在 tree 启用时生效。
+   */
+  checkStrictly?: boolean;
 }
 
 export type { RowKey } from '@chenzy-design/core';
