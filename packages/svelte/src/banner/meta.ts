@@ -26,7 +26,7 @@ export const meta = {
       name: 'closeOnEsc',
       type: 'boolean',
       default: 'false',
-      desc: '聚焦内部按 Esc 关闭（本子集暂未实现，prop 保留）',
+      desc: '开启且可关闭时，按 Esc 关闭横幅（监听 window keydown，触发 onClose trigger:esc）',
     },
     { name: 'animation', type: 'boolean', default: 'true', desc: '关闭过渡(slide)，reduced-motion 降级' },
     {

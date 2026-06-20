@@ -2773,9 +2773,10 @@ let pageSize2 = $state(10);
       <Banner
         type="info"
         open={bannerOpen}
+        closeOnEsc
         onOpenChange={(info) => (bannerOpen = info.open)}
         title="可关闭横幅"
-        description="点击右侧关闭按钮收起，受控 open 状态。"
+        description="点击右侧关闭按钮收起，或按 Esc 关闭；受控 open 状态。"
       />
     </div>
   </div>
