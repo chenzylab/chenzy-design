@@ -2093,6 +2093,21 @@ let pageSize2 = $state(10);
       </Collapse>
     </div>
 
+    <Text type="tertiary">声明式 &lt;Collapse.Panel&gt;（accordion + 面板级 disabled）：</Text>
+    <div style="width: 420px" data-testid="collapse-declarative">
+      <Collapse accordion defaultActiveKey="d1">
+        <Collapse.Panel itemKey="d1" header="声明式面板一">
+          <span data-testid="decl-d1">声明式内容一</span>
+        </Collapse.Panel>
+        <Collapse.Panel itemKey="d2" header="声明式面板二">
+          <span data-testid="decl-d2">声明式内容二</span>
+        </Collapse.Panel>
+        <Collapse.Panel itemKey="d3" header="禁用面板（不可展开）" disabled>
+          <span data-testid="decl-d3">不应出现的内容</span>
+        </Collapse.Panel>
+      </Collapse>
+    </div>
+
     <Timeline
       dataSource={[
         { content: '创建订单', time: '09:00' },
