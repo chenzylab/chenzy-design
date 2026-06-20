@@ -84,20 +84,47 @@
       : undefined,
   );
 
+  // inset：label 浮入控件，聚焦或有值时上浮变小（floating label）
+  const isInset = $derived(labelPosition === 'inset');
+  let focused = $state(false);
+  const hasValue = $derived(value !== undefined && value !== null && value !== '');
+  const labelFloated = $derived(focused || hasValue);
+
   const cls = $derived(
-    `cd-form-field cd-form-field--label-${labelPosition} cd-form-field--${status}`,
+    [
+      'cd-form-field',
+      `cd-form-field--label-${labelPosition}`,
+      `cd-form-field--${status}`,
+      isInset && labelFloated && 'cd-form-field--floated',
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 </script>
 
 <div class={cls}>
-  {#if label !== undefined}
+  {#if label !== undefined && !isInset}
     <label class="cd-form-field__label" for={id} style={labelStyle}>
       {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
       <span class="cd-form-field__label-text">{label}{ctx.getColon() ? '：' : ''}</span>
     </label>
   {/if}
 
-  <div class="cd-form-field__control" aria-describedby={describedBy}>
+  <!-- inset 时 label 浮入控件容器内；focusin/focusout 驱动上浮 (红线 #3 命令式 DOM 事件) -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="cd-form-field__control"
+    aria-describedby={describedBy}
+    onfocusin={isInset ? () => (focused = true) : undefined}
+    onfocusout={isInset ? () => (focused = false) : undefined}
+  >
+    {#if label !== undefined && isInset}
+      <label class="cd-form-field__inset-label" for={id}>
+        {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
+        <span class="cd-form-field__label-text">{label}</span>
+      </label>
+    {/if}
+
     {@render children?.({
       value,
       onChange: handleChange,
@@ -145,6 +172,38 @@
     flex-direction: column;
     gap: var(--cd-spacing-1);
     min-inline-size: 0;
+  }
+  /* inset floating label */
+  .cd-form-field--label-inset {
+    flex-direction: column;
+  }
+  .cd-form-field--label-inset .cd-form-field__control {
+    position: relative;
+    padding-block-start: var(--cd-spacing-3);
+  }
+  .cd-form-field__inset-label {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: var(--cd-input-padding-x, var(--cd-spacing-3));
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
+    color: var(--cd-input-color-placeholder, var(--cd-color-text-3));
+    pointer-events: none;
+    transition:
+      transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      font-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-form-field--floated .cd-form-field__inset-label {
+    transform: translateY(calc(-50% - 0.85rem)) scale(0.85);
+    color: var(--cd-form-label-color, var(--cd-color-text-1));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-form-field__inset-label {
+      transition: none;
+    }
   }
   .cd-form-field__error {
     color: var(--cd-form-error-color, var(--cd-color-danger, #e54848));

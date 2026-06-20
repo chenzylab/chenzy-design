@@ -14,7 +14,7 @@
     value?: FormValues;
     initValues?: FormValues;
     layout?: FormLayout;
-    /** TODO: 'inset' label position is not implemented this round */
+    /** 'top' | 'left' | 'inset'（inset：label 浮入控件，聚焦/有值时上浮变小） */
     labelPosition?: FormLabelPosition;
     labelWidth?: number | string;
     size?: FormSize;
