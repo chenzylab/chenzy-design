@@ -2062,6 +2062,16 @@ let pageSize2 = $state(10);
       />
     </div>
 
+    <Text type="tertiary">声明式 Descriptions.Item（children 可放富内容，span 跨列、bordered、column 换行均生效）：</Text>
+    <div style="width: 420px" data-testid="descriptions-item">
+      <Descriptions bordered column={2}>
+        <Descriptions.Item label="姓名">陈某</Descriptions.Item>
+        <Descriptions.Item label="年龄">28</Descriptions.Item>
+        <Descriptions.Item label="邮箱" span={2}>a@b.com</Descriptions.Item>
+        <Descriptions.Item label="备注" />
+      </Descriptions>
+    </div>
+
     <div style="width: 420px">
       <Collapse panels={[{ key: 'p1', header: '面板一' }, { key: 'p2', header: '面板二' }]}>
         {#snippet children({ key })}

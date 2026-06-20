@@ -85,6 +85,7 @@ export { Popover, popoverMeta } from './popover/index.js';
 export { Empty, emptyMeta } from './empty/index.js';
 export {
   Descriptions,
+  DescriptionsItem,
   descriptionsMeta,
   type DescriptionItem,
 } from './descriptions/index.js';
