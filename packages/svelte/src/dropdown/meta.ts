@@ -6,10 +6,15 @@ export const meta = {
   name: 'Dropdown',
   category: 'navigation',
   description:
-    '下拉菜单，通过触发元素唤起一组可操作命令项。支持 hover/click 触发、useDismiss 关闭、键盘导航与危险项。',
+    '下拉菜单，通过触发元素唤起一组可操作命令项。支持 hover/click/contextMenu 触发、useDismiss 关闭、键盘导航与危险项。',
   props: [
     { name: 'items', type: 'DropdownItem[]', default: '[]', desc: '菜单项数据' },
-    { name: 'trigger', type: "'hover'|'click'", default: 'hover', desc: '触发方式' },
+    {
+      name: 'trigger',
+      type: "'hover'|'click'|'contextMenu'",
+      default: 'hover',
+      desc: "触发方式；contextMenu 为右键唤起并定位到光标",
+    },
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐' },
     { name: 'defaultOpen', type: 'boolean', default: 'false', desc: '非受控初始显隐' },
     {

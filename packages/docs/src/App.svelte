@@ -1610,6 +1610,23 @@ let pageSize2 = $state(10);
       {/snippet}
     </Dropdown>
     <Text type="tertiary">上次选择：{lastDropdown || '（无）'}</Text>
+
+    <div data-testid="dropdown-contextmenu">
+      <Text type="tertiary">右键菜单（菜单定位到光标处）</Text>
+      <Dropdown
+        items={dropdownItems}
+        trigger="contextMenu"
+        onSelect={(k) => (lastDropdown = String(k))}
+      >
+        {#snippet triggerContent()}
+          <div
+            style="display:flex;align-items:center;justify-content:center;width:240px;height:80px;border:1px dashed var(--cd-color-border);border-radius:6px;color:var(--cd-color-text-2)"
+          >
+            在此区域点击右键
+          </div>
+        {/snippet}
+      </Dropdown>
+    </div>
   </Space>
 
   <Divider />
