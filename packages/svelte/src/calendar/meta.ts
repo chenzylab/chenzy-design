@@ -1,28 +1,33 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * Calendar (month-view subset) — see specs/components/show/Calendar.spec.md
+ * Calendar — see specs/components/show/Calendar.spec.md
  */
 export const meta = {
   name: 'Calendar',
   category: 'show',
   description:
-    '月视图日历：6×7 日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、月份导航（上一月/今天/下一月）；受控 value(锚点)/selectedDate 不回写，仅通过 onChange/onSelect/onDateClick/onMoreClick 通知。本子集；week/day/range 视图、时间轴、弹层、虚拟化延后。',
+    '月/周视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、导航（上一/今天/下一，月或周）；mode 切换月(6×7)/周(1×7)视图，selectionMode 切换单选(selectedDate)/范围(rangeValue，起止+区间高亮+hover 预览)。受控 value(锚点)/selectedDate/rangeValue 不回写，仅通过 onChange/onSelect/onRangeChange/onDateClick/onMoreClick 通知。day 视图、时间轴、弹层、虚拟化延后。',
   exports: ['Calendar'],
   props: [
-    { name: 'value', type: 'Date', default: 'undefined', desc: '受控锚点日期(决定展示月份)，受控时不回写' },
+    { name: 'value', type: 'Date', default: 'undefined', desc: '受控锚点日期(决定展示月份/周)，受控时不回写' },
     { name: 'defaultValue', type: 'Date', default: 'new Date()', desc: '非受控初始锚点' },
+    { name: 'mode', type: "'month' | 'week'", default: "'month'", desc: '视图模式：月(6×7)或周(1×7)' },
+    { name: 'selectionMode', type: "'single' | 'range'", default: "'single'", desc: '选择模式：单选或范围' },
     { name: 'events', type: 'CalendarEvent[]', default: '[]', desc: '事件列表' },
     { name: 'weekStartsOn', type: '0|1|2|3|4|5|6', default: '0', desc: '一周起始(0=周日)' },
     { name: 'maxEventsPerDay', type: 'number', default: '3', desc: '每格最多事件数，超出折叠 +N' },
     { name: 'weekendDays', type: 'number[]', default: '[0, 6]', desc: '周末列序号' },
     { name: 'markWeekend', type: 'boolean', default: 'true', desc: '弱化高亮周末列' },
     { name: 'disabledDate', type: '(date: Date) => boolean', default: 'undefined', desc: '命中则该格禁用' },
-    { name: 'selectedDate', type: 'Date', default: 'undefined', desc: '受控选中日(边框态)，受控时不回写' },
+    { name: 'selectedDate', type: 'Date', default: 'undefined', desc: '受控选中日(边框态，single 模式)，受控时不回写' },
     { name: 'defaultSelectedDate', type: 'Date', default: 'undefined', desc: '非受控选中日初值' },
+    { name: 'rangeValue', type: '[Date, Date] | null', default: 'undefined', desc: '受控选中范围(range 模式)，受控时不回写' },
+    { name: 'defaultRangeValue', type: '[Date, Date] | null', default: 'undefined', desc: '非受控范围初值' },
     { name: 'locale', type: 'string', default: "'zh-CN'", desc: 'Intl 月份/星期名格式化语言' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '网格 aria-label，默认取月份标题' },
     { name: 'onChange', type: '(info: { value: Date }) => void', default: 'undefined' },
     { name: 'onSelect', type: '(info: { date: Date }) => void', default: 'undefined' },
+    { name: 'onRangeChange', type: '(info: { range: [Date, Date] }) => void', default: 'undefined' },
     { name: 'onDateClick', type: '(info: { date: Date }) => void', default: 'undefined' },
     {
       name: 'onMoreClick',
@@ -33,8 +38,9 @@ export const meta = {
     { name: 'event', type: 'Snippet', default: 'undefined', desc: '自定义事件块' },
   ],
   events: [
-    { name: 'onChange', desc: '锚点(翻月/今天)变化' },
-    { name: 'onSelect', desc: '选中某日' },
+    { name: 'onChange', desc: '锚点(翻月/翻周/今天)变化' },
+    { name: 'onSelect', desc: '选中某日(single 模式)' },
+    { name: 'onRangeChange', desc: '范围选择完成(range 模式，已排序)' },
     { name: 'onDateClick', desc: '点击日格' },
     { name: 'onMoreClick', desc: '点击 +N 折叠触发器' },
   ],
@@ -56,6 +62,9 @@ export const meta = {
     '--cd-calendar-today-bg',
     '--cd-calendar-today-fg',
     '--cd-calendar-selected-border',
+    '--cd-calendar-range-bg',
+    '--cd-calendar-range-edge-bg',
+    '--cd-calendar-week-cell-min-h',
     '--cd-calendar-weekend-bg',
     '--cd-calendar-cell-bg-hover',
     '--cd-calendar-event-default-bg',
@@ -71,6 +80,11 @@ export const meta = {
     {
       title: '带事件',
       code: '<Calendar events={[{ key: 1, start: new Date(), title: "会议" }]} />',
+    },
+    { title: '周视图', code: '<Calendar mode="week" />' },
+    {
+      title: '范围选择',
+      code: '<Calendar selectionMode="range" onRangeChange={(i) => console.log(i.range)} />',
     },
   ],
 } as const;

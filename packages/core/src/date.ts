@@ -62,3 +62,25 @@ export function getMonthGrid(cursor: Date, weekStart = 0): DayCell[] {
 export function weekdayOrder(weekStart = 0): number[] {
   return Array.from({ length: 7 }, (_, i) => (i + weekStart) % 7);
 }
+
+/** add (possibly negative) weeks (7-day steps), preserving the day-of-week */
+export function addWeeks(d: Date, delta: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta * 7);
+}
+
+/**
+ * Build a single-week (7-cell) grid for the week containing `cursor`.
+ * Every cell `inMonth` is relative to the month of `cursor`.
+ * @param weekStart 0 = Sunday (default), 1 = Monday
+ */
+export function getWeekGrid(cursor: Date, weekStart = 0): DayCell[] {
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const weekday = cursor.getDay(); // 0..6 (Sun..Sat)
+  const lead = (weekday - weekStart + 7) % 7;
+  const start = new Date(year, month, cursor.getDate() - lead);
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    return { date, inMonth: date.getMonth() === month };
+  });
+}

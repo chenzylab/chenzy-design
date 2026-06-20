@@ -381,6 +381,10 @@
     { key: 'm7', start: new Date(2026, 5, 22), title: '发版', color: 'var(--cd-color-success)' },
   ];
   let calSelectedText = $state('（未选）');
+  let calRangeText = $state('（未选）');
+  function fmtDay(d: Date) {
+    return d.toLocaleDateString('zh-CN');
+  }
 
   const hourData = Array.from({ length: 24 }, (_, i) => ({
     value: i,
@@ -2304,6 +2308,28 @@ let pageSize2 = $state(10);
     onSelect={(info) => (calSelectedText = info.date.toLocaleDateString('zh-CN'))}
   />
   <Text type="tertiary">选中日期：{calSelectedText}</Text>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（周视图）</Title>
+  <Text type="tertiary">mode="week"：单行 7 天，周导航前后切换</Text>
+  <div data-testid="calendar-week">
+    <Calendar mode="week" defaultValue={calAnchor} events={calEvents} maxEventsPerDay={4} />
+  </div>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（范围选择）</Title>
+  <Text type="tertiary">selectionMode="range"：点两天选范围，自动排序，区间高亮 + hover 预览</Text>
+  <div data-testid="calendar-range">
+    <Calendar
+      selectionMode="range"
+      defaultValue={calAnchor}
+      onRangeChange={(info) =>
+        (calRangeText = `${fmtDay(info.range[0])} ~ ${fmtDay(info.range[1])}`)}
+    />
+  </div>
+  <Text type="tertiary">选中范围：{calRangeText}</Text>
 
   <Divider />
 
