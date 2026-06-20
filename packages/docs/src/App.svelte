@@ -390,6 +390,7 @@
 
   let submitted = $state('');
   let warnSubmitted = $state('');
+  let valuePropSubmitted = $state('');
   let selVal = $state<string | number>('');
   let selGroupVal = $state<string | number>('');
   // remote 搜索：模拟异步返回选项
@@ -996,6 +997,31 @@ let pageSize2 = $state(10);
       {/snippet}
     </Form>
     <Text type="tertiary">{warnSubmitted}</Text>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-valueprop">
+    <Text type="tertiary">valuePropName="checked"（Checkbox 接入表单字段）：</Text>
+    <Form
+      onSubmit={(r) =>
+        (valuePropSubmitted = r.valid ? `提交成功：${JSON.stringify(r.values)}` : '校验未通过')}
+    >
+      <Form.Field
+        field="agree"
+        valuePropName="checked"
+        required
+        rules={[{ validator: (v) => (v === true ? undefined : '请勾选同意协议') }]}
+      >
+        {#snippet children({ checked, onChange })}
+          <Checkbox checked={checked === true} onChange={(c) => onChange(c)}>
+            我已阅读并同意用户协议
+          </Checkbox>
+        {/snippet}
+      </Form.Field>
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">{valuePropSubmitted}</Text>
   </div>
 
   <Divider />

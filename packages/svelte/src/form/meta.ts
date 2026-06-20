@@ -29,8 +29,8 @@ export const meta = {
     { name: 'Field.required', type: 'boolean', default: 'false' },
     { name: 'Field.extraText', type: 'string', default: 'undefined' },
     { name: 'Field.dependencies', type: 'string[]', default: 'undefined', desc: '依赖字段名；其值变化时本字段自动重校验' },
-    { name: 'Field.valuePropName', type: 'string', default: "'value'" },
-    { name: 'Field.children', type: 'Snippet<[{ value; onChange; onBlur; status; id; disabled }]>', default: 'undefined' },
+    { name: 'Field.valuePropName', type: 'string', default: "'value'", desc: "控件值属性名；如 Checkbox/Switch 用 'checked'，snippet 参数即多出同名别名映射字段值" },
+    { name: 'Field.children', type: 'Snippet<[{ value; [valuePropName]; onChange; onBlur; status; id; disabled }]>', default: 'undefined', desc: 'snippet 参数含通用 value 及按 valuePropName 命名的别名（默认 value）' },
     // Form.Input
     { name: 'Input.field', type: 'string', default: '—', desc: '字段名（必填）' },
     { name: 'Input.label', type: 'string', default: 'undefined' },

@@ -12,12 +12,19 @@
   type FieldStatus = 'default' | 'error' | 'warning';
 
   interface ChildArgs {
+    /** Generic field value — always present, regardless of `valuePropName`. */
     value: unknown;
     onChange: (v: unknown) => void;
     onBlur: () => void;
     status: FieldStatus;
     id: string;
     disabled: boolean;
+    /**
+     * Convenience alias keyed by `valuePropName` (default 'value'), carrying the
+     * same value as `value`. Lets non-`value` controls (e.g. Checkbox/Switch use
+     * `checked`) destructure `{ checked, onChange }` directly from the snippet.
+     */
+    [key: string]: unknown;
   }
 
   interface Props {
@@ -26,21 +33,24 @@
     rules?: Rule[];
     required?: boolean;
     extraText?: string;
+    /**
+     * Name of the control's value prop. Default 'value'. For boolean controls
+     * such as Checkbox/Switch pass 'checked'; the snippet then exposes a
+     * `checked` alias mirroring the field value.
+     */
     valuePropName?: string;
     /** names of fields this field's validation depends on (e.g. confirm → ['password']) */
     dependencies?: string[];
     children?: Snippet<[ChildArgs]>;
   }
 
-  // TODO: `valuePropName` is reserved for non-`value` controls (e.g. checked);
-  // it is part of the public Props but not consumed this round, so it is left
-  // out of the destructure intentionally.
   let {
     field,
     label,
     rules = [],
     required = false,
     extraText,
+    valuePropName = 'value',
     dependencies,
     children,
   }: Props = $props();
@@ -155,6 +165,10 @@
 
     {@render children?.({
       value,
+      // alias keyed by valuePropName (e.g. `checked`); for the default 'value'
+      // this is the same key and a no-op spread. Pure object construction —
+      // no write-back, satisfies red line #1/#2.
+      [valuePropName]: value,
       onChange: handleChange,
       onBlur: handleBlur,
       status,
