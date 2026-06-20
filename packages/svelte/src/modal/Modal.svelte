@@ -1,16 +1,19 @@
 <!--
   Modal — see specs/components/feedback/Modal.spec.md
-  基础子集：fixed 遮罩+面板（无 portal），role=dialog aria-modal，
+  fixed 遮罩+面板，portal 到 body（或 getContainer），role=dialog aria-modal，
   useFocusTrap 焦点捕获+归还、useDismiss Esc 关闭、useScrollLock 锁背景滚动，
   遮罩点击关闭、ok/cancel 按钮、自定义尾部、reduced-motion。
-  TODO(延后): portal-to-body / getContainer、命令式工厂 (Modal.confirm)、
-  destroyOnClose、堆叠 z-index 管理、拖拽。
+  堆叠 z-index 由 z-stack 模块级计数器分配（声明式 + 命令式共享）。
+  destroyOnClose：关闭即卸载内容（{#if}），重开重建。
+  命令式工厂 Modal.confirm/info/... 见 command.svelte.ts（已 Object.assign 到 Modal）。
+  TODO(延后): 拖拽。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import { acquireZIndex } from './z-stack.js';
 
   type OkType = 'primary' | 'danger';
 
@@ -27,6 +30,10 @@
     okText?: string;
     cancelText?: string;
     okType?: OkType;
+    /** 关闭即卸载内部内容；重开重建。默认 false（保留 DOM 仅隐藏 via {#if isOpen}）。 */
+    destroyOnClose?: boolean;
+    /** Portal 容器，缺省 document.body。脱离父层叠上下文。 */
+    getContainer?: () => HTMLElement | null;
     footer?: Snippet<[{ ok: () => void; cancel: () => void }]> | null;
     children?: Snippet;
     ariaLabel?: string;
@@ -50,6 +57,8 @@
     okText,
     cancelText,
     okType = 'primary',
+    destroyOnClose = false,
+    getContainer,
     footer,
     children,
     ariaLabel,
@@ -77,6 +86,14 @@
   const widthStyle = $derived(typeof width === 'number' ? `${width}px` : width);
 
   const panelCls = $derived(['cd-modal', className].filter(Boolean).join(' '));
+
+  // --- destroyOnClose：默认 false 时首开后保留 DOM（仅 isOpen 切换显隐），
+  //     true 时关闭即从 DOM 卸载（{#if isOpen}），重开重建。 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
 
   function cancel() {
     if (!isControlled) innerOpen = false;
@@ -124,15 +141,49 @@
       trap.deactivate();
     };
   });
+
+  // --- 堆叠 z-index (红线 #3)：每次打开向模块计数器申请一层，关闭回收。
+  //     与命令式 modal.confirm 共享计数器，多层叠放后开者在上。 ---
+  let stackZ = $state<number | undefined>(undefined);
+
+  $effect(() => {
+    if (!isOpen) return;
+    const { zIndex, release } = acquireZIndex();
+    stackZ = zIndex;
+    return () => {
+      stackZ = undefined;
+      release();
+    };
+  });
+
+  // --- portal action (红线 #3)：命令式 appendChild 到 getContainer()/body，
+  //     脱离父 DOM 层叠上下文；destroy 时 removeChild 归还/清理。 ---
+  function portal(node: HTMLElement) {
+    if (typeof document === 'undefined') {
+      return { destroy() {} };
+    }
+    const target = getContainer?.() ?? document.body;
+    target.appendChild(node);
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node);
+      },
+    };
+  }
 </script>
 
-{#if isOpen}
-  <!-- 遮罩 role=presentation：点击关闭为鼠标增强，键盘等价为 Esc（focus-trap + useDismiss 提供） -->
+{#if shouldRender}
+  <!-- 遮罩 role=presentation：点击关闭为鼠标增强，键盘等价为 Esc（focus-trap + useDismiss 提供）
+       use:portal 命令式挂载到 getContainer()/body，脱离父层叠上下文；
+       !isOpen 时（destroyOnClose=false 保留 DOM）以 hidden class 隐藏。 -->
   <div
     class="cd-modal-mask"
     class:cd-modal-mask--centered={centered}
+    class:cd-modal-mask--hidden={!isOpen}
+    style={stackZ !== undefined ? `--cd-modal-z:${stackZ}` : undefined}
     onclick={onMaskClick}
     role="presentation"
+    use:portal
   >
     <div
       class={panelCls}
@@ -216,6 +267,10 @@
   }
   .cd-modal-mask--centered {
     align-items: center;
+  }
+  /* destroyOnClose=false 时关闭仅隐藏、保留 DOM 与内部状态 */
+  .cd-modal-mask--hidden {
+    display: none;
   }
   .cd-modal {
     box-sizing: border-box;

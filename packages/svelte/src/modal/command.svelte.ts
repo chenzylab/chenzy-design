@@ -6,6 +6,8 @@
  * See specs/components/feedback/Modal.spec.md（命令式工厂）。
  */
 
+import { acquireZIndex } from './z-stack.js';
+
 type ConfirmType = 'confirm' | 'info' | 'success' | 'warning' | 'error';
 
 export interface ModalCommandConfig {
@@ -28,10 +30,6 @@ export interface ModalCommandHandle {
   update: (next: Partial<ModalCommandConfig>) => void;
 }
 
-// z-index 基线（与 --cd-modal-z 一致），每开一个 +10 以堆叠。
-const Z_BASE = 1000;
-let openCount = 0;
-
 function noop(): ModalCommandHandle {
   return { destroy: () => {}, update: () => {} };
 }
@@ -39,8 +37,7 @@ function noop(): ModalCommandHandle {
 function spawn(type: ConfirmType, config: ModalCommandConfig): ModalCommandHandle {
   if (typeof document === 'undefined') return noop();
 
-  openCount += 1;
-  const zIndex = Z_BASE + openCount * 10;
+  const { zIndex, release } = acquireZIndex();
 
   const host = document.createElement('div');
   host.className = 'cd-modal-command-host';
@@ -52,7 +49,7 @@ function spawn(type: ConfirmType, config: ModalCommandConfig): ModalCommandHandl
   function cleanup() {
     if (unmounted) return;
     unmounted = true;
-    openCount = Math.max(0, openCount - 1);
+    release();
     api?.destroy();
     if (host.parentNode) host.parentNode.removeChild(host);
   }

@@ -6,8 +6,8 @@ export const meta = {
   name: 'Modal',
   category: 'feedback',
   description:
-    '模态对话框：fixed 遮罩 + 面板（无 portal），role=dialog aria-modal；useFocusTrap 焦点捕获与归还、Esc/遮罩点击关闭（受 keyboard/maskClosable 控制）、useScrollLock 锁背景滚动；头/体/尾结构，ok/cancel 默认按钮可换自定义尾部，danger okType；reduced-motion 关闭过渡。受控 open 不回写，仅 onOpenChange/onCancel 通知。本子集；命令式工厂(Modal.confirm)、portal-to-body、destroyOnClose 延后。',
-  exports: ['Modal'],
+    '模态对话框：fixed 遮罩 + 面板，portal 到 body（或 getContainer）脱离父层叠上下文，role=dialog aria-modal；useFocusTrap 焦点捕获与归还、Esc/遮罩点击关闭（受 keyboard/maskClosable 控制）、useScrollLock 锁背景滚动；头/体/尾结构，ok/cancel 默认按钮可换自定义尾部，danger okType；reduced-motion 关闭过渡。受控 open 不回写，仅 onOpenChange/onCancel 通知。destroyOnClose 关闭即卸载内容、重开重建（默认 false 保留 DOM）。堆叠 z-index 由模块级计数器分配（声明式与命令式共享，后开者在上、关闭回收）。命令式工厂 Modal.confirm/info/success/warning/error（亦可解构 modal）：mount 到 body 临时 host、async onOk 自动 loading、返回 { destroy, update }。',
+  exports: ['Modal', 'modal'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写' },
     { name: 'title', type: 'string', default: 'undefined', desc: '标题文案' },
@@ -31,6 +31,18 @@ export const meta = {
     { name: 'okText', type: 'string', default: "'确定'" },
     { name: 'cancelText', type: 'string', default: "'取消'" },
     { name: 'okType', type: "'primary'|'danger'", default: "'primary'", desc: '确认按钮类型' },
+    {
+      name: 'destroyOnClose',
+      type: 'boolean',
+      default: 'false',
+      desc: '关闭即卸载内部内容（{#if} 卸载），重开重建；默认保留 DOM 仅隐藏',
+    },
+    {
+      name: 'getContainer',
+      type: '() => HTMLElement | null',
+      default: 'undefined',
+      desc: 'Portal 容器，缺省 document.body',
+    },
     {
       name: 'footer',
       type: 'Snippet<[{ ok; cancel }]>|null',
@@ -89,6 +101,14 @@ export const meta = {
     {
       title: 'danger 确认',
       code: '<Modal open={visible} title="删除" okType="danger" okText="删除" onOk={remove}>不可恢复，确定删除？</Modal>',
+    },
+    {
+      title: '命令式确认（异步 onOk 自动 loading）',
+      code: "Modal.confirm({ title: '确认操作', content: '确定执行？', onOk: () => fetch('/api/do') });",
+    },
+    {
+      title: 'destroyOnClose 重开重建',
+      code: '<Modal open={visible} title="表单" destroyOnClose>...每次重开重置内部状态...</Modal>',
     },
   ],
 } as const;
