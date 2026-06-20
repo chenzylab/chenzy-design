@@ -429,6 +429,7 @@
   let drawerNestInner = $state(false);
 
   let popResult = $state('（无）');
+  let popContainerEl = $state<HTMLDivElement | null>(null);
 
   let localeIsZh = $state(true);
 
@@ -2972,7 +2973,7 @@ let pageSize2 = $state(10);
       title="确定删除该项？"
       content="此操作无法撤销。"
       okText="删除"
-      onConfirm={() => (popResult = '已删除')}
+      onConfirm={() => { popResult = '已删除'; }}
       onCancel={() => (popResult = '已取消')}
     >
       {#snippet trigger()}
@@ -2983,7 +2984,7 @@ let pageSize2 = $state(10);
     <Popconfirm
       placement="bottom"
       title="确定提交？"
-      onConfirm={() => (popResult = '已提交')}
+      onConfirm={() => { popResult = '已提交'; }}
     >
       {#snippet trigger()}
         <Button type="primary">提交</Button>
@@ -2995,10 +2996,50 @@ let pageSize2 = $state(10);
       placement="right"
       title="退出登录？"
       content="退出后需重新登录。"
-      onConfirm={() => (popResult = '已退出')}
+      onConfirm={() => { popResult = '已退出'; }}
     >
       {#snippet trigger()}
         <Button>退出</Button>
+      {/snippet}
+    </Popconfirm>
+
+    <Popconfirm
+      triggerType="hover"
+      title="悬停触发"
+      content="移开指针延迟关闭。"
+      onConfirm={() => { popResult = '悬停已确认'; }}
+    >
+      {#snippet trigger()}
+        <Button>悬停（hover）</Button>
+      {/snippet}
+    </Popconfirm>
+
+    <Popconfirm
+      type="danger"
+      title="异步删除该项？"
+      content="确认后等待 1s 模拟请求。"
+      okText="删除"
+      onConfirm={() =>
+        new Promise((resolve) => setTimeout(() => {
+          popResult = '异步删除完成';
+          resolve(undefined);
+        }, 1000))}
+    >
+      {#snippet trigger()}
+        <Button type="danger">异步删除</Button>
+      {/snippet}
+    </Popconfirm>
+  </div>
+  <div bind:this={popContainerEl} style="position:relative"></div>
+  <div style="padding:12px 0">
+    <Popconfirm
+      title="挂载到自定义容器"
+      content="浮层 portal 到下方容器而非 body。"
+      getPopupContainer={() => popContainerEl}
+      onConfirm={() => { popResult = '容器确认'; }}
+    >
+      {#snippet trigger()}
+        <Button>getPopupContainer</Button>
       {/snippet}
     </Popconfirm>
   </div>
