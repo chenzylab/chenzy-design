@@ -225,6 +225,8 @@ export const en_US: Locale = {
     hue: 'Hue',
     alpha: 'Alpha',
     hex: 'Hex color value',
+    eyeDropper: 'Pick color from screen',
+    recent: 'Recently used',
   },
   Tag: {
     close: 'Close',

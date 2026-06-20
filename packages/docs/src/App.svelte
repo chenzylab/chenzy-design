@@ -671,12 +671,15 @@ let pageSize2 = $state(10);
     </div>
 
     <Space>
-      <ColorPicker
-        value={color}
-        presets={['#3366ff', '#16a34a', '#ef4444', '#f59e0b']}
-        onChange={(c) => (color = c)}
-      />
-      <Text type="tertiary">颜色：{color}</Text>
+      <span data-testid="colorpicker-demo">
+        <ColorPicker
+          value={color}
+          presets={['#3366ff', '#16a34a', '#ef4444', '#f59e0b']}
+          recentColors
+          onChange={(c) => (color = c)}
+        />
+      </span>
+      <Text type="tertiary">颜色：{color}（吸管按需显示 + 最近用色）</Text>
     </Space>
   </Space>
 
