@@ -1389,6 +1389,28 @@ let pageSize2 = $state(10);
     />
   </div>
 
+  <Text type="tertiary">列筛选（城市列漏斗多选）：</Text>
+  <div data-testid="table-filter">
+    <Table
+      columns={[
+        { dataIndex: 'name', title: '姓名' },
+        { dataIndex: 'age', title: '年龄', align: 'right' as const },
+        {
+          dataIndex: 'city',
+          title: '城市',
+          filters: [
+            { text: '北京', value: '北京' },
+            { text: '上海', value: '上海' },
+            { text: '广州', value: '广州' },
+          ],
+        },
+      ]}
+      dataSource={tableData}
+      rowKey="key"
+      bordered
+    />
+  </div>
+
   {#snippet tableExpandRow({ record }: { record: TableRow; index: number })}
     <div style="line-height:1.8">
       <strong>{record.name}</strong> 的详细资料：年龄 {record.age}，城市 {record.city}。

@@ -43,6 +43,9 @@ export interface Locale {
     sortCancel: string;
     /** uses {count} */
     selectedCount: string;
+    filter: string;
+    filterReset: string;
+    filterConfirm: string;
   };
   Empty: {
     noData: string;

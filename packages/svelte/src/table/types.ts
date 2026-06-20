@@ -26,6 +26,10 @@ export interface ColumnDef<T> {
   ellipsis?: boolean;
   /** true 按 dataIndex 默认比较；或自定义比较器 */
   sorter?: boolean | ((a: T, b: T) => number);
+  /** 列头筛选项（下拉多选）；配合 onFilter 过滤数据 */
+  filters?: { text: string; value: string | number }[];
+  /** 行是否匹配某筛选值；缺省时按 dataIndex 全等比较 */
+  onFilter?: (value: string | number, record: T) => boolean;
   /** 单元格自定义渲染 */
   render?: Snippet<[{ value: unknown; record: T; index: number }]>;
 }
