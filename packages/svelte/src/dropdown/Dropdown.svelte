@@ -6,15 +6,18 @@
   嵌套子菜单 / divider / group：与 Menu 对齐的判别联合（types.ts），菜单体经 DropdownItemNode 递归渲染，
   子浮层 hover/聚焦展开并 floating 到父项右侧（溢出翻转左侧）；键盘 →/←/↑↓/Esc 逐层导航。
   键盘 roving：焦点式（query 当前层可聚焦 menuitem 移动焦点），兼容嵌套与 divider/group。
-  TODO(延后): destroyOnClose、getPopupContainer。
+  destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 显隐），true 时关闭即卸载 {#if}，重开重建。
+  getPopupContainer：自定义浮层挂载容器（默认 body）；非 body 容器时 floating 切 position:absolute 相对容器定位，
+    嵌套子菜单经 ctx 透传同容器，contextMenu 浮层亦挂同容器。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { setContext, type Snippet } from 'svelte';
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import DropdownItemNode from './DropdownItemNode.svelte';
   import { isDropdownDivider, isDropdownGroup } from './types.js';
+  import { DROPDOWN_CTX, type DropdownContext } from './context.js';
   import type { DropdownItem } from './types.js';
 
   type ItemKey = string | number;
@@ -35,6 +38,10 @@
     closeOnEsc?: boolean;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
+    /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
+    destroyOnClose?: boolean;
+    /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
     onSelect?: (key: ItemKey) => void;
     onOpenChange?: (open: boolean) => void;
     triggerContent?: Snippet;
@@ -53,6 +60,8 @@
     closeOnEsc = true,
     mouseEnterDelay = 150,
     mouseLeaveDelay = 150,
+    destroyOnClose = false,
+    getPopupContainer,
     onSelect,
     onOpenChange,
     triggerContent,
@@ -63,10 +72,25 @@
 
   const menuId = useId('cd-dropdown-menu');
 
+  // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）。
+  setContext<DropdownContext>(DROPDOWN_CTX, {
+    get getContainer() {
+      return getPopupContainer;
+    },
+  });
+
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
   const isControlled = $derived(open !== undefined);
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isControlled ? !!open : innerOpen);
+
+  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 切显隐），
+  //     true 时关闭即从 DOM 卸载（{#if shouldRender}），重开重建。 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
 
   function getInitialOpen(): boolean {
     return defaultOpen;
@@ -251,15 +275,24 @@
     if (typeof document === 'undefined') {
       return { update() {}, destroy() {} };
     }
-    document.body.appendChild(node);
-    node.style.position = 'fixed';
+    // 自定义容器（getPopupContainer）时挂同容器并改 absolute 相对容器定位。
+    const container = getPopupContainer?.() ?? document.body;
+    const useAbsolute = container !== document.body;
+    container.appendChild(node);
+    node.style.position = useAbsolute ? 'absolute' : 'fixed';
     node.style.margin = '0';
 
     function place(x: number, y: number) {
       const rect = node.getBoundingClientRect();
       // 防止越出视口右/下边缘：超出则向左/上贴边。
-      const left = Math.max(0, Math.min(x, window.innerWidth - rect.width));
-      const top = Math.max(0, Math.min(y, window.innerHeight - rect.height));
+      let left = Math.max(0, Math.min(x, window.innerWidth - rect.width));
+      let top = Math.max(0, Math.min(y, window.innerHeight - rect.height));
+      if (useAbsolute) {
+        // 光标坐标是视口系；转为容器局部坐标（减容器盒原点 + 加容器滚动）。
+        const cRect = container.getBoundingClientRect();
+        left = left - cRect.left + container.scrollLeft;
+        top = top - cRect.top + container.scrollTop;
+      }
       node.style.insetInlineStart = `${Math.round(left)}px`;
       node.style.insetBlockStart = `${Math.round(top)}px`;
     }
@@ -363,14 +396,17 @@
     >
       {@render menuBody()}
     </ul>
-  {:else if isOpen}
+  {:else if shouldRender}
+    <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
     <ul
       class="cd-dropdown__menu"
+      class:cd-dropdown__menu--hidden={!isOpen}
       id={menuId}
       bind:this={menuEl}
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4 }}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4, getContainer: getPopupContainer, open: isOpen }}
       role="menu"
       tabindex="-1"
+      aria-hidden={!isOpen || undefined}
       onkeydown={onMenuKeydown}
       onpointerenter={onMenuPointerEnter}
       onpointerleave={onMenuPointerLeave}
@@ -410,5 +446,9 @@
     background: var(--cd-dropdown-bg);
     border-radius: var(--cd-dropdown-radius);
     box-shadow: var(--cd-dropdown-shadow);
+  }
+  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
+  .cd-dropdown__menu--hidden {
+    display: none;
   }
 </style>

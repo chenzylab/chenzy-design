@@ -7,13 +7,14 @@
   键盘: →/Enter/Space 进入子菜单首项, ←/Esc 返回/关闭本级 (红线 #3: 定时器/floating 命令式 + cleanup)。
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, getContext } from 'svelte';
   import { floating } from '../_floating/use-floating.js';
   import {
     isDropdownDivider,
     isDropdownGroup,
     hasDropdownChildren,
   } from './types.js';
+  import { DROPDOWN_CTX, type DropdownContext } from './context.js';
   import type { DropdownItem, DropdownItemNode, DropdownKey } from './types.js';
   import Self from './DropdownItemNode.svelte';
 
@@ -34,6 +35,9 @@
     openDelay = 100,
     closeDelay = 200,
   }: Props = $props();
+
+  // 子菜单浮层挂同顶层容器（getPopupContainer，经 Dropdown context 透传）。
+  const ddCtx = getContext<DropdownContext | undefined>(DROPDOWN_CTX);
 
   // 分隔符/分组在模板顶层单独处理；此处窄化为普通项节点供派生使用。
   const node = $derived(item as DropdownItemNode);
@@ -194,7 +198,7 @@
         role="menu"
         tabindex="-1"
         bind:this={subEl}
-        use:floating={{ trigger: titleEl, placement: 'rightStart', offset: 2, autoAdjust: true }}
+        use:floating={{ trigger: titleEl, placement: 'rightStart', offset: 2, autoAdjust: true, getContainer: ddCtx?.getContainer }}
         onpointerenter={keepOpen}
         onpointerleave={scheduleClose}
         onkeydown={onSubKeydown}

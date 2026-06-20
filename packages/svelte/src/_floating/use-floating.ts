@@ -26,6 +26,13 @@ export interface UseFloatingOptions {
   arrowEdgeDistance?: number;
   /** called after each reposition with the resolved side/align + arrow offset */
   onPlacement?: (info: { placement: Placement; arrowOffset: number }) => void;
+  /**
+   * Custom mount container for the portaled popup. Defaults to document.body.
+   * When it resolves to a non-body element the popup is positioned with
+   * `position:absolute` relative to that container (offset by the container's
+   * box + scroll), instead of the viewport-fixed positioning used for body.
+   */
+  getContainer?: (() => HTMLElement | null | undefined) | undefined;
 }
 
 export interface FloatingHandle {
@@ -59,12 +66,18 @@ export function useFloating(
     arrowPointAtCenter = false,
     arrowEdgeDistance,
     onPlacement,
+    getContainer,
   } = options;
 
-  // portal: detach the popup from its in-flow parent and append to body so it
-  // escapes any `overflow:hidden` ancestor clipping.
-  document.body.appendChild(popup);
-  popup.style.position = 'fixed';
+  // portal: detach the popup from its in-flow parent and append to the custom
+  // container (default <body>) so it escapes any `overflow:hidden` ancestor
+  // clipping. A non-body container switches positioning to `position:absolute`
+  // relative to that container (computePosition still works in viewport space;
+  // we translate the result into the container's coordinate space below).
+  const container = getContainer?.() ?? document.body;
+  const useAbsolute = container !== document.body;
+  container.appendChild(popup);
+  popup.style.position = useAbsolute ? 'absolute' : 'fixed';
   popup.style.insetBlockStart = '0';
   popup.style.insetInlineStart = '0';
   popup.style.margin = '0';
@@ -90,7 +103,16 @@ export function useFloating(
       arrowPointAtCenter,
       ...(arrowEdgeDistance !== undefined ? { arrowEdgeDistance } : {}),
     });
-    popup.style.transform = `translate(${Math.round(result.x)}px, ${Math.round(result.y)}px)`;
+    let x = result.x;
+    let y = result.y;
+    if (useAbsolute) {
+      // computePosition yields viewport coords; convert to the container's
+      // local space: subtract the container's box origin and add its scroll.
+      const cRect = container.getBoundingClientRect();
+      x = x - cRect.left + container.scrollLeft;
+      y = y - cRect.top + container.scrollTop;
+    }
+    popup.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
     onPlacement?.({ placement: result.placement, arrowOffset: result.arrowOffset });
   }
 
@@ -129,6 +151,12 @@ export function useFloating(
 export interface FloatingActionParams extends UseFloatingOptions {
   /** the trigger element the popup anchors to */
   trigger: HTMLElement | null | undefined;
+  /**
+   * Optional liveness flag. When a caller keeps the popup mounted while hidden
+   * (e.g. Dropdown destroyOnClose=false caches DOM), toggling this forces a
+   * reposition on re-show without rebuilding the portal.
+   */
+  open?: boolean;
 }
 
 /**

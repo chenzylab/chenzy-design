@@ -34,6 +34,18 @@ export const meta = {
     { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 是否关闭' },
     { name: 'mouseEnterDelay', type: 'number', default: '150', desc: 'hover 进入延迟(ms)' },
     { name: 'mouseLeaveDelay', type: 'number', default: '150', desc: 'hover 离开延迟(ms)' },
+    {
+      name: 'destroyOnClose',
+      type: 'boolean',
+      default: 'false',
+      desc: '关闭即卸载浮层内容（{#if}）重开重建；默认 false 首开后保留 DOM 仅隐藏',
+    },
+    {
+      name: 'getPopupContainer',
+      type: '() => HTMLElement',
+      default: '() => document.body',
+      desc: '浮层挂载容器；非 body 容器时改 absolute 相对该容器定位，嵌套子菜单与右键浮层同容器',
+    },
     { name: 'onSelect', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
     { name: 'triggerContent', type: 'Snippet', default: 'undefined', desc: '触发元素内容' },
