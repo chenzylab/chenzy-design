@@ -18,7 +18,12 @@ export const meta = {
     { name: 'maxItemCount', type: 'number', default: '0', desc: '超出时中间折叠（0=不折叠）' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'class', type: 'string', default: "''" },
-    { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 Item 列表' },
+    {
+      name: 'children',
+      type: 'Snippet',
+      default: 'undefined',
+      desc: '声明式 <Breadcrumb.Item> 列表；项间分隔符按 separator 纯 CSS 自动插入，最后一项后无分隔符',
+    },
     {
       name: 'onClick',
       type: '(route: BreadcrumbRoute, index: number) => void',
@@ -28,11 +33,18 @@ export const meta = {
   subComponents: [
     {
       name: 'BreadcrumbItem',
+      usage: '<Breadcrumb.Item> 或 <BreadcrumbItem>，置于 <Breadcrumb> 的 children 内',
+      desc: '声明式面包屑项；项间分隔符由父级纯 CSS 自动插入，最后一项自动渲染为当前页（不可点 + aria-current=page）',
       props: [
-        { name: 'href', type: 'string', default: 'undefined' },
+        { name: 'href', type: 'string', default: 'undefined', desc: '链接地址；最后一项忽略 href' },
         { name: 'class', type: 'string', default: "''" },
         { name: 'children', type: 'Snippet', default: 'undefined' },
-        { name: 'onClick', type: '(e: MouseEvent) => void', default: 'undefined' },
+        {
+          name: 'onClick',
+          type: '(e: MouseEvent) => void',
+          default: 'undefined',
+          desc: '点击/键盘激活回调；最后一项不触发',
+        },
       ],
     },
   ],

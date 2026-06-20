@@ -1,12 +1,15 @@
 <!--
   Breadcrumb — see specs/components/navigation/Breadcrumb.spec.md
-  Data-driven `routes` mode (browser-verifiable) + declarative `children` mode.
+  Data-driven `routes` mode (browser-verifiable) + declarative `<Breadcrumb.Item>` mode。
+  声明式模式：子项间分隔符由纯 CSS（:not(:last-child)::after）自动插入，最后一项后无分隔符；
+  最后一项语义（当前页：不可点 + aria-current=page）由 context 注册顺序派生（红线 #2 纯函数）。
   maxItemCount: 超出时中间折叠为 ... 触发器（保留首项 + 末 maxItemCount-1 项），点击展开全部。
   TODO: showTooltip, moreType popover, renderItem/renderMore.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import { setBreadcrumbContext } from './context.js';
   import type { BreadcrumbRoute } from './types.js';
 
   type BreadcrumbSize = 'small' | 'default' | 'large';
@@ -66,6 +69,23 @@
   function handleClick(route: BreadcrumbRoute, index: number) {
     onClick?.(route, index);
   }
+
+  // 声明式 <Breadcrumb.Item> 注册：按 mount 顺序（= 源码顺序）收集 id，
+  // 据此派生「最后一项」。分隔符本身由纯 CSS 插入，无需 JS。
+  let nextId = 0;
+  let registered = $state<number[]>([]);
+  setBreadcrumbContext({
+    register: () => {
+      const id = nextId++;
+      registered.push(id);
+      return id;
+    },
+    unregister: (id: number) => {
+      const i = registered.indexOf(id);
+      if (i !== -1) registered.splice(i, 1);
+    },
+    isLast: (id: number) => registered.length > 0 && registered[registered.length - 1] === id,
+  });
 </script>
 
 <nav class={cls} aria-label={loc().t('Breadcrumb.ariaLabel')}>
@@ -110,7 +130,10 @@
       {/each}
     </ol>
   {:else}
-    <ol class="cd-breadcrumb__list">
+    <ol
+      class="cd-breadcrumb__list cd-breadcrumb__list--declarative"
+      style="--cd-breadcrumb-separator-content: '{separator}'"
+    >
       {@render children?.()}
     </ol>
   {/if}
@@ -136,7 +159,9 @@
     padding: 0;
     list-style: none;
   }
-  .cd-breadcrumb__item {
+  /* 子项内容类用 :global 包裹：声明式 <Breadcrumb.Item> 渲染的元素在子组件作用域内，
+     数据驱动模式的元素则为本组件 .cd-breadcrumb 后代，两者统一受样式约束（对齐 Collapse 模式）。 */
+  .cd-breadcrumb :global(.cd-breadcrumb__item) {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-breadcrumb-gap);
@@ -145,23 +170,30 @@
     color: var(--cd-breadcrumb-separator-color);
     user-select: none;
   }
-  .cd-breadcrumb__link,
-  .cd-breadcrumb__text {
+  /* 声明式 Item 间分隔符：纯 CSS 自动插入，最后一项后不加（红线 #2）。 */
+  .cd-breadcrumb__list--declarative :global(.cd-breadcrumb__item:not(:last-child))::after {
+    content: var(--cd-breadcrumb-separator-content, '/');
+    margin-inline-start: var(--cd-breadcrumb-gap);
+    color: var(--cd-breadcrumb-separator-color);
+    user-select: none;
+  }
+  .cd-breadcrumb :global(.cd-breadcrumb__link),
+  .cd-breadcrumb :global(.cd-breadcrumb__text) {
     color: var(--cd-breadcrumb-color-link);
     text-decoration: none;
     cursor: pointer;
     border-radius: var(--cd-radius-1);
   }
-  .cd-breadcrumb__link:hover,
-  .cd-breadcrumb__text:hover {
+  .cd-breadcrumb :global(.cd-breadcrumb__link:hover),
+  .cd-breadcrumb :global(.cd-breadcrumb__text:hover) {
     text-decoration: underline;
   }
-  .cd-breadcrumb__link:focus-visible,
-  .cd-breadcrumb__text:focus-visible {
+  .cd-breadcrumb :global(.cd-breadcrumb__link:focus-visible),
+  .cd-breadcrumb :global(.cd-breadcrumb__text:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-breadcrumb__current {
+  .cd-breadcrumb :global(.cd-breadcrumb__current) {
     color: var(--cd-breadcrumb-color-active);
   }
   .cd-breadcrumb__more {

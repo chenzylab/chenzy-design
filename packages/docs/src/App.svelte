@@ -1615,6 +1615,14 @@ let pageSize2 = $state(10);
       />
     </div>
 
+    <div data-testid="breadcrumb-declarative">
+      <Breadcrumb>
+        <Breadcrumb.Item href="#">首页</Breadcrumb.Item>
+        <Breadcrumb.Item href="#">组件</Breadcrumb.Item>
+        <Breadcrumb.Item>导航</Breadcrumb.Item>
+      </Breadcrumb>
+    </div>
+
     <Pagination total={256} currentPage={page} showTotal onChange={(p) => (page = p)} />
     <Text type="tertiary">当前页：{page}</Text>
 
