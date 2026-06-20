@@ -189,6 +189,7 @@ export {
   offsetToIndex as virtualOffsetToIndex,
   dynamicRange,
   scrollOffsetForIndex,
+  windowScrollTop,
   type VirtualRange,
   type ScrollAlign,
 } from './virtual-list.js';

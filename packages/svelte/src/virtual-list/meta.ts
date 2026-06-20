@@ -6,7 +6,7 @@ export const meta = {
   name: 'VirtualList',
   category: 'show',
   description:
-    "虚拟滚动列表底座（泛型）：仅渲染可视区 + overscan 缓冲区高性能渲染超长列表。fixed 定高 O(1) 区间；dynamic 不定高（itemSize='auto'）用 estimatedItemSize 估算 + ResizeObserver 实测回填高度表，前缀和修正偏移/区间并做滚动偏移补偿。支持 vertical/horizontal（horizontal 仅 fixed 定宽，dynamic 退化为按 estimatedItemSize 的定宽）。提供 scrollToIndex 命令式跳转 API。内部容器滚动。自身无视觉，行渲染由 renderItem 提供。",
+    "虚拟滚动列表底座（泛型）：仅渲染可视区 + overscan 缓冲区高性能渲染超长列表。fixed 定高 O(1) 区间；dynamic 不定高（itemSize='auto'）用 estimatedItemSize 估算 + ResizeObserver 实测回填高度表，前缀和修正偏移/区间并做滚动偏移补偿。支持 vertical/horizontal（horizontal 仅 fixed 定宽，dynamic 退化为按 estimatedItemSize 的定宽）。scrollTarget='self'（默认）内部容器滚动；'window' 用窗口（document）滚动、容器撑高，适合整页长列表（纵向；horizontal 下退化为 self，fixed/dynamic 均复用窗口几何 windowScrollTop）。提供 scrollToIndex 命令式跳转 API。自身无视觉，行渲染由 renderItem 提供。",
   exports: ['VirtualList'],
   props: [
     { name: 'data', type: 'T[]', default: '[]', desc: '列表数据数组' },
@@ -40,6 +40,12 @@ export const meta = {
       type: 'boolean',
       default: 'false',
       desc: '横向虚拟化：沿 x 轴排列、itemSize 作列宽、读/写 scrollLeft（仅支持 fixed 定宽）',
+    },
+    {
+      name: 'scrollTarget',
+      type: "'self' | 'window'",
+      default: "'self'",
+      desc: "滚动源：'self' 内部容器自身滚动（默认，向后兼容）；'window' 用窗口（document）滚动、容器撑开总高，适合整页长列表（纵向）。horizontal 在 window 下退化为 self。",
     },
     {
       name: 'renderItem',
@@ -90,6 +96,11 @@ export const meta = {
       title: 'scrollToIndex 命令式跳转',
       code:
         "let vl;\n<button onclick={() => vl.scrollToIndex(500, { align: 'center' })}>跳到第 500 项</button>\n<VirtualList bind:this={vl} data={rows} itemSize={36} renderItem={row} />",
+    },
+    {
+      title: 'window 窗口滚动（整页长列表）',
+      code:
+        '{#snippet row(item, i)}<div>{i}: {item.label}</div>{/snippet}\n<VirtualList data={rows} scrollTarget="window" itemSize={48} renderItem={row} />',
     },
   ],
 } as const;
