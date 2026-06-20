@@ -14,7 +14,7 @@ export const meta = {
     { name: 'limit', type: 'number', default: 'undefined', desc: '最大文件数；超出触发 onExceed' },
     { name: 'maxSize', type: 'number', default: 'undefined', desc: '单文件最大体积（KB）；超限标记 error' },
     { name: 'disabled', type: 'boolean', default: 'false' },
-    { name: 'listType', type: "'text'|'none'", default: 'text' },
+    { name: 'listType', type: "'text'|'image'|'picture-card'|'none'", default: 'text', desc: 'image/picture-card 显示缩略图网格' },
     { name: 'drag', type: 'boolean', default: 'false', desc: 'true 渲染拖拽区，false 渲染按钮' },
     { name: 'action', type: 'string', default: 'undefined', desc: '上传地址；有则选文件后自动 XHR 上传' },
     { name: 'uploadName', type: 'string', default: "'file'", desc: '表单字段名' },
