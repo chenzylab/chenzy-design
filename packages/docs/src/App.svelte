@@ -862,11 +862,14 @@ let pageSize2 = $state(10);
       </Text>
     </Space>
     <Space>
-      <span data-testid="range-picker" style="width:260px; display:inline-block">
+      <span
+        data-testid="rangepicker-dual"
+        style="width:260px; display:inline-block"
+      >
         <RangePicker value={dateRangeVal} onChange={(r) => (dateRangeVal = r)} />
       </span>
       <Text type="tertiary">
-        范围：{dateRangeVal && dateRangeVal[0] && dateRangeVal[1]
+        范围（双面板，两个月并排）：{dateRangeVal && dateRangeVal[0] && dateRangeVal[1]
           ? `${dateRangeVal[0].toLocaleDateString('zh-CN')} ~ ${dateRangeVal[1].toLocaleDateString('zh-CN')}`
           : '（未选）'}
       </Text>
