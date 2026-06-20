@@ -303,6 +303,26 @@ let pageSize2 = $state(10);
     },
     { key: 'help', label: '帮助', disabled: true },
   ];
+  // hover 浮层菜单：含两级嵌套，验证多级浮层
+  const menuPopupItems = [
+    { key: 'overview', label: '概览' },
+    {
+      key: 'settings',
+      label: '设置',
+      children: [
+        { key: 'profile', label: '个人资料' },
+        {
+          key: 'security',
+          label: '安全',
+          children: [
+            { key: 'password', label: '修改密码' },
+            { key: '2fa', label: '两步验证' },
+          ],
+        },
+      ],
+    },
+    { key: 'about', label: '关于' },
+  ];
   let anchorKey = $state('#sec-1');
   const anchorLinks = [
     { key: '#sec-1', href: '#sec-1', title: '第一节' },
@@ -857,13 +877,24 @@ let pageSize2 = $state(10);
   <Title heading={5}>Menu / Anchor</Title>
   <div style="display: flex; gap: 24px; align-items: flex-start">
     <div style="width: 200px">
+      <Text type="tertiary">inline 内联展开</Text>
       <Menu
         items={menuItems}
+        mode="inline"
         selectedKeys={[menuSelected]}
         defaultOpenKeys={['settings']}
         onSelect={(k) => (menuSelected = k)}
       />
       <Text type="tertiary">菜单选中：{menuSelected}</Text>
+    </div>
+    <div style="width: 200px" data-testid="menu-popup">
+      <Text type="tertiary">vertical hover 浮层（多级）</Text>
+      <Menu
+        items={menuPopupItems}
+        mode="vertical"
+        selectedKeys={[menuSelected]}
+        onSelect={(k) => (menuSelected = k)}
+      />
     </div>
     <div style="width: 160px" data-testid="anchor-demo">
       <Anchor links={anchorLinks} value={anchorKey} affix updateHash onChange={(k) => (anchorKey = k)} />

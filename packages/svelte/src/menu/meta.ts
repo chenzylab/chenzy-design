@@ -9,7 +9,12 @@ export const meta = {
     '导航菜单，数据驱动。支持 vertical/inline 模式、SubMenu 展开/收起、单选高亮，受控/非受控。',
   props: [
     { name: 'items', type: 'MenuItemDef[]', default: '[]', desc: '菜单数据（含 children 即 SubMenu）' },
-    { name: 'mode', type: "'vertical'|'inline'", default: 'vertical' },
+    {
+      name: 'mode',
+      type: "'vertical'|'inline'",
+      default: 'vertical',
+      desc: 'vertical=SubMenu hover 浮层弹出（多级）；inline=内联展开',
+    },
     {
       name: 'selectedKeys',
       type: '(string|number)[]',
