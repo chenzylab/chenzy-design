@@ -1877,6 +1877,31 @@ let pageSize2 = $state(10);
       ]}
       pending="等待签收"
     />
+
+    <Text type="tertiary">horizontal 水平方向：</Text>
+    <div data-testid="timeline-horizontal" style="width: 480px">
+      <Timeline
+        direction="horizontal"
+        dataSource={[
+          { content: '创建订单', time: '09:00' },
+          { content: '已发货', time: '12:30', color: 'var(--cd-color-success)' },
+          { content: '运输中', time: '15:00' },
+          { content: '已签收', time: '18:20' },
+        ]}
+      />
+    </div>
+
+    <Text type="tertiary">center 居中模式（轴居中、两侧朝轴对称对齐）：</Text>
+    <div data-testid="timeline-center" style="width: 360px">
+      <Timeline
+        mode="center"
+        dataSource={[
+          { content: '创建订单', time: '09:00' },
+          { content: '已发货', time: '12:30', color: 'var(--cd-color-success)' },
+          { content: '运输中', time: '15:00' },
+        ]}
+      />
+    </div>
   </Space>
 
   <Divider />

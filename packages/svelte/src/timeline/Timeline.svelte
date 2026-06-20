@@ -1,19 +1,21 @@
 <!--
   Timeline — see specs/components/show/Timeline.spec.md
-  基础子集: vertical 方向、left/alternate mode、dataSource、pending、reverse、lineStyle。
-  TODO(延后): horizontal、center mode、声明式 Item、virtualized、interactive 键盘漫游。
+  基础子集: vertical/horizontal 方向、left/alternate/center mode、dataSource、pending、reverse、lineStyle。
+  TODO(延后): right mode、声明式 Item、virtualized、interactive 键盘漫游。
 -->
 <script lang="ts">
   import type { TimelineItemData } from './types.js';
   import { useLocale } from '../locale-provider/index.js';
 
-  type Mode = 'left' | 'alternate';
+  type Mode = 'left' | 'alternate' | 'center';
+  type Direction = 'vertical' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
   type LineStyle = 'solid' | 'dashed';
 
   interface Props {
     dataSource?: TimelineItemData[];
     mode?: Mode;
+    direction?: Direction;
     reverse?: boolean;
     pending?: boolean | string;
     size?: Size;
@@ -24,6 +26,7 @@
   let {
     dataSource = [],
     mode = 'left',
+    direction = 'vertical',
     reverse = false,
     pending = false,
     size = 'default',
@@ -44,6 +47,7 @@
     [
       'cd-timeline',
       `cd-timeline--${mode}`,
+      `cd-timeline--${direction}`,
       `cd-timeline--${size}`,
       `cd-timeline--${lineStyle}`,
       className,
@@ -142,22 +146,76 @@
     font-size: var(--cd-font-size-1);
   }
 
-  /* alternate: 奇偶项左右交替 */
-  .cd-timeline--alternate .cd-timeline__item {
+  /* alternate / center: 轴线居中，奇偶项左右交替 */
+  .cd-timeline--alternate .cd-timeline__item,
+  .cd-timeline--center .cd-timeline__item {
     inline-size: 50%;
   }
-  .cd-timeline--alternate .cd-timeline__item:nth-child(odd) {
+  .cd-timeline--alternate .cd-timeline__item:nth-child(odd),
+  .cd-timeline--center .cd-timeline__item:nth-child(odd) {
     margin-inline-start: auto;
   }
-  .cd-timeline--alternate .cd-timeline__item:nth-child(even) {
+  .cd-timeline--alternate .cd-timeline__item:nth-child(even),
+  .cd-timeline--center .cd-timeline__item:nth-child(even) {
     flex-direction: row-reverse;
     text-align: end;
     padding-inline: 0 var(--cd-timeline-dot-size);
   }
-  .cd-timeline--alternate .cd-timeline__item:nth-child(even) .cd-timeline__dot {
+  .cd-timeline--alternate .cd-timeline__item:nth-child(even) .cd-timeline__dot,
+  .cd-timeline--center .cd-timeline__item:nth-child(even) .cd-timeline__dot {
     inset-inline: auto 0;
   }
-  .cd-timeline--alternate .cd-timeline__item:nth-child(even) .cd-timeline__tail {
+  .cd-timeline--alternate .cd-timeline__item:nth-child(even) .cd-timeline__tail,
+  .cd-timeline--center .cd-timeline__item:nth-child(even) .cd-timeline__tail {
     inset-inline: auto calc(var(--cd-timeline-dot-size) / 2);
+  }
+  /* center 与 alternate 的差异：center 下两侧内容均朝轴线对齐，
+     左侧内容右对齐、右侧内容左对齐，形成关于中轴对称的居中观感；
+     alternate 则保留各侧自然阅读方向（左侧左对齐）。 */
+  .cd-timeline--center .cd-timeline__item:nth-child(odd) {
+    text-align: end;
+  }
+  .cd-timeline--center .cd-timeline__item:nth-child(even) {
+    text-align: start;
+  }
+
+  /* horizontal: 节点横向一行，连接线水平，内容在节点下方 */
+  .cd-timeline--horizontal {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .cd-timeline--horizontal .cd-timeline__item {
+    flex: 1 1 0;
+    inline-size: auto;
+    flex-direction: column;
+    margin-inline-start: 0;
+    text-align: start;
+    padding-block-start: var(--cd-timeline-dot-size);
+    padding-block-end: 0;
+    padding-inline: 0;
+  }
+  .cd-timeline--horizontal .cd-timeline__dot {
+    inset-block-start: 0;
+    inset-inline-start: 0;
+  }
+  /* 水平轴线：从节点圆心向右延伸至下一节点 */
+  .cd-timeline--horizontal .cd-timeline__tail {
+    inset-block: calc(var(--cd-timeline-dot-size) / 2) auto;
+    inset-inline: var(--cd-timeline-dot-size) 0;
+    inline-size: auto;
+    block-size: 0;
+    border-inline-start: none;
+    border-block-start: 1px solid var(--cd-timeline-line-color);
+  }
+  .cd-timeline--horizontal.cd-timeline--dashed .cd-timeline__tail {
+    border-block-start-style: dashed;
+  }
+  .cd-timeline--horizontal
+    .cd-timeline__item:nth-last-child(2):has(~ .cd-timeline__item--pending)
+    .cd-timeline__tail {
+    border-block-start-style: dashed;
+  }
+  .cd-timeline--horizontal .cd-timeline__body {
+    margin-block-start: var(--cd-timeline-gap);
   }
 </style>
