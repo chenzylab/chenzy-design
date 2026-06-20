@@ -9,7 +9,9 @@
   filterable：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
   expandTrigger='hover'：悬停非叶子节点即展开子级列（pointerenter 设 activePath，选中仍用点击）。
   displayRender：自定义触发器选中路径回显（单选 + 多选每个 tag 共用）。
-  TODO(延后): changeOnSelect 完整语义。
+  changeOnSelect（单选）：点击任一层级节点（含中间非叶子）立即提交从根到该
+  节点的路径并触发 onChange；非叶子同时展开子列、不关闭面板（可停在任意层级
+  或继续深入），叶子提交并关闭。关闭时仅叶子提交并关闭，非叶子仅展开（默认）。
 -->
 <script lang="ts">
   import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
@@ -420,11 +422,15 @@
       return;
     }
 
+    // changeOnSelect 完整语义（单选）：点击任一层级（含中间非叶子）立即提交
+    // 从根到该节点的路径并触发 onChange。非叶子同时展开其子列且不关闭面板
+    // （让用户「停在任意层级」或继续深入）；叶子提交并关闭。
     if (hasChildren(node)) {
-      // 非叶子: 展开下一列；changeOnSelect 时也提交当前路径
+      // 非叶子: 展开下一列；changeOnSelect 时同时提交当前路径、保持面板
       if (changeOnSelect) setValue(nextPath.slice());
     } else if (!node.isLeaf && loadData) {
-      // 异步加载：加载完成后子节点经 extraChildren 进列，activePath 已指向本节点。
+      // 可异步加载的非叶子：changeOnSelect 时先提交本路径，再加载子节点
+      // （加载完成后子节点经 extraChildren 进列，activePath 已指向本节点）。
       if (changeOnSelect) setValue(nextPath.slice());
       void loadChildren(node);
     } else {

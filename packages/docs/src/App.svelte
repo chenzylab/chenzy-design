@@ -425,6 +425,7 @@ let presetVal = $state<Date | null>(null);
   let cascaderMultiVal = $state<(string | number)[][]>([]);
   let cascaderHoverVal = $state<(string | number)[]>([]);
   let cascaderDisplayVal = $state<(string | number)[]>([]);
+  let cascaderCosVal = $state<(string | number)[]>([]);
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
@@ -1150,6 +1151,19 @@ let pageSize2 = $state(10);
         onChange={(p) => (cascaderDisplayVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
       />
       <Text type="tertiary">displayRender 省-市-区 格式回显</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-change-on-select">
+      <Cascader
+        treeData={regionData}
+        changeOnSelect
+        clearable
+        placeholder="任意层级可选"
+        value={cascaderCosVal}
+        onChange={(p) => (cascaderCosVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
+      />
+      <Text type="tertiary"
+        >changeOnSelect 任意层级可选：{cascaderCosVal.join(' / ') || '（未选）'}</Text
+      >
     </div>
     <div style="width: 240px" data-testid="treeselect-filter">
       <TreeSelect

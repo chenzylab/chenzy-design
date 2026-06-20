@@ -18,7 +18,7 @@ export const meta = {
     { name: 'placeholder', type: 'string', default: "'请选择'" },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'clearable', type: 'boolean', default: 'false' },
-    { name: 'changeOnSelect', type: 'boolean', default: 'false' },
+    { name: 'changeOnSelect', type: 'boolean', default: 'false', desc: '单选：点击任一层级（含中间非叶子）即提交该路径并触发 onChange，非叶子同时展开子列且不关闭面板，叶子提交并关闭；关闭时仅叶子提交并关闭' },
     { name: 'expandTrigger', type: "'click'|'hover'", default: "'click'", desc: "'hover' 悬停非叶子节点即展开子级列" },
     { name: 'filterable', type: 'boolean', default: 'false', desc: '搜索时切换扁平路径列表 + 高亮命中' },
     { name: 'loadData', type: '(node: CascaderNode) => Promise<CascaderNode[]>', default: 'undefined', desc: '动态加载子节点' },
