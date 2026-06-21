@@ -5,10 +5,13 @@
   键入仅触发 onInputChange，组件不自行写回 (红线 #1)。
   maxTagTextLength: 标签显示文本超长时截断为「前缀…」，完整文本经 title 查看；
   截断仅影响显示派生 (纯函数 truncate)，标签实际值不变 (红线 #1)。
-  TODO(延后): 拖拽排序。
+  draggable: 启用后标签可用鼠标拖拽重排，新顺序经 reorder 纯函数 (红线 #2) 算出后
+  仅经 onChange 回传 (受控不回写 value，红线 #1)；拖拽监听命令式 + 拖拽态存 $state (红线 #3)。
+  拖拽是鼠标增强，键盘增删标签交互不受影响。
 -->
 <script lang="ts">
   import { useLocale } from '../locale-provider/index.js';
+  import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -30,6 +33,7 @@
     addOnBlur?: boolean;
     allowDuplicates?: boolean;
     trimWhitespace?: boolean;
+    draggable?: boolean;
     onChange?: (tags: string[]) => void;
     onInputChange?: (value: string) => void;
     ariaLabel?: string;
@@ -52,6 +56,7 @@
     addOnBlur = false,
     allowDuplicates = false,
     trimWhitespace = true,
+    draggable = false,
     onChange,
     onInputChange,
     ariaLabel,
@@ -138,6 +143,73 @@
     setTags(current.slice(0, -1));
   }
 
+  // --- 拖拽排序：HTML5 DnD（draggable + drag 事件），与库内 Tree 对齐 ---
+  // 受控不改 value，仅经 onChange 通知新顺序（红线 #1）；
+  // 拖拽态用 $state，事件处理命令式 + drop/dragend 清理（红线 #3）；
+  // 插入位置与重排交由 reorder.ts 纯函数计算（红线 #2）。
+  const canDrag = $derived(draggable && !disabled && !readonly);
+  let dragIndex = $state<number | null>(null); // 被拖拽标签下标
+  let dropIndex = $state<number | null>(null); // 当前悬停目标下标
+  let dropSide = $state<InsertSide | null>(null); // 插入到目标前/后
+
+  function resetDrag() {
+    dragIndex = null;
+    dropIndex = null;
+    dropSide = null;
+  }
+
+  function onTagDragStart(e: DragEvent, index: number) {
+    if (!canDrag) {
+      e.preventDefault();
+      return;
+    }
+    dragIndex = index;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      // 必须 setData，否则部分浏览器不触发 drop。
+      e.dataTransfer.setData('text/plain', String(index));
+    }
+  }
+
+  function onTagDragOver(e: DragEvent, index: number) {
+    if (dragIndex === null) return;
+    // dragover 必须 preventDefault 才能触发 drop（红线 #3）。
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    dropIndex = index;
+    dropSide = computeInsertSide(e.clientX - rect.left, rect.width);
+  }
+
+  function onTagDragLeave(e: DragEvent, index: number) {
+    // 仅当真正离开该标签（而非进入其子元素）时清理目标，避免指示线闪烁。
+    const related = e.relatedTarget as Node | null;
+    const cur = e.currentTarget as HTMLElement;
+    if (related && cur.contains(related)) return;
+    if (dropIndex === index) {
+      dropIndex = null;
+      dropSide = null;
+    }
+  }
+
+  function onTagDrop(e: DragEvent, index: number) {
+    if (dragIndex === null || dropSide === null) {
+      resetDrag();
+      return;
+    }
+    e.preventDefault();
+    const next = reorder(current, dragIndex, index, dropSide);
+    resetDrag();
+    // 顺序未变时不发 onChange，避免无意义回调。
+    if (next.length === current.length && next.some((t, i) => t !== current[i])) {
+      setTags(next);
+    }
+  }
+
+  function onTagDragEnd() {
+    resetDrag();
+  }
+
   function matchesSeparator(e: KeyboardEvent): boolean {
     // 'Enter' 按 key 名匹配；字符分隔符（如 ',' / ';'）按 key 字符匹配。
     return separators.some((sep) => sep === e.key);
@@ -194,7 +266,20 @@
   onclick={focusInput}
 >
   {#each displayTags as tag, i (`${tag.value}-${i}`)}
-    <span class="cd-tag-input__tag">
+    <!-- 标签拖拽为鼠标增强（HTML5 DnD），键盘用户经下方输入框与删除按钮增删，无需此处 role -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <span
+      class="cd-tag-input__tag"
+      class:cd-tag-input__tag--dragging={dragIndex === i}
+      class:cd-tag-input__tag--drop-before={dropIndex === i && dropSide === 'before'}
+      class:cd-tag-input__tag--drop-after={dropIndex === i && dropSide === 'after'}
+      draggable={canDrag}
+      ondragstart={(e) => onTagDragStart(e, i)}
+      ondragover={(e) => onTagDragOver(e, i)}
+      ondragleave={(e) => onTagDragLeave(e, i)}
+      ondrop={(e) => onTagDrop(e, i)}
+      ondragend={onTagDragEnd}
+    >
       <span
         class="cd-tag-input__text"
         title={tag.truncated ? tag.value : undefined}
@@ -273,6 +358,7 @@
     cursor: default;
   }
   .cd-tag-input__tag {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-1);
@@ -281,6 +367,29 @@
     border-radius: var(--cd-radius-1);
     font-size: var(--cd-font-size-1);
     white-space: nowrap;
+  }
+  .cd-tag-input__tag[draggable='true'] {
+    cursor: grab;
+  }
+  .cd-tag-input__tag--dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+  }
+  /* 插入指示线：拖拽时显示在目标标签的前 / 后侧（红线 #3 状态驱动渲染）。 */
+  .cd-tag-input__tag--drop-before::before,
+  .cd-tag-input__tag--drop-after::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inline-size: 2px;
+    background: var(--cd-input-border-active);
+    border-radius: 1px;
+  }
+  .cd-tag-input__tag--drop-before::before {
+    inset-inline-start: calc(var(--cd-spacing-1) / -2 - 1px);
+  }
+  .cd-tag-input__tag--drop-after::after {
+    inset-inline-end: calc(var(--cd-spacing-1) / -2 - 1px);
   }
   .cd-tag-input__text {
     overflow: hidden;

@@ -518,6 +518,7 @@
   let tags = $state<string[]>(['svelte', 'vite']);
   let tagsCtrl = $state<string[]>([]);
 let tagsTrunc = $state<string[]>(['超长标签文本示例内容', '短']);
+let tagsDrag = $state<string[]>(['一', '二', '三', '四']);
   let tagInputCtrl = $state('');
   let color = $state('#3366ff');
 let colorInline = $state('#16a34a');
@@ -1390,6 +1391,17 @@ let pageSize2 = $state(10);
         onChange={(t) => (tagsTrunc = t)}
       />
       <Text type="tertiary">实际值：{tagsTrunc.join(' / ') || '（无）'}</Text>
+    </div>
+
+    <div style="width: 320px" data-testid="taginput-draggable">
+      <TagInput
+        value={tagsDrag}
+        draggable
+        separator={[',', 'Enter']}
+        placeholder="可拖拽重排标签"
+        onChange={(t) => (tagsDrag = t)}
+      />
+      <Text type="tertiary">顺序：{tagsDrag.join(' / ') || '（无）'}</Text>
     </div>
 
     <Space>
