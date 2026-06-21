@@ -49,6 +49,8 @@
     clearable?: boolean;
     /** 多选 tag 最大显示数，超出折叠为 +N（0=不折叠） */
     maxTagCount?: number;
+    /** 多选单个 Tag 文本最大长度，超出截断为「前缀…」，完整文本经 title 查看（不截则不传） */
+    maxTagTextLength?: number;
     /** filter 无匹配时允许创建新选项（值=输入文本） */
     allowCreate?: boolean;
     /** 远程搜索：输入防抖后回调（由外部更新 options，不再本地过滤） */
@@ -81,6 +83,7 @@
     disabled = false,
     clearable = false,
     maxTagCount = 0,
+    maxTagTextLength,
     allowCreate = false,
     onSearch,
     loading = false,
@@ -240,9 +243,21 @@
   const selectedOptions = $derived(
     mergedOptions.filter((o) => selectedValues.includes(o.value)),
   );
-  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数
+  // 截断纯函数：仅影响显示，超过 limit 取前 limit 字符 + 省略号（红线 #2）。
+  function truncate(text: string, limit?: number): string {
+    if (limit === undefined || limit < 0) return text;
+    return text.length > limit ? `${text.slice(0, limit)}…` : text;
+  }
+
+  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数。
+  // maxTagTextLength 仅影响 tag 显示文本（截断派生），实际值/回显不变（红线 #1/#2）。
   const visibleTags = $derived(
-    maxTagCount > 0 ? selectedOptions.slice(0, maxTagCount) : selectedOptions,
+    (maxTagCount > 0 ? selectedOptions.slice(0, maxTagCount) : selectedOptions).map(
+      (opt) => {
+        const display = truncate(opt.label, maxTagTextLength);
+        return { opt, display, truncated: display !== opt.label };
+      },
+    ),
   );
   const hiddenTagCount = $derived(
     maxTagCount > 0 ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
@@ -460,16 +475,19 @@
   >
     <div class="cd-select__content">
       {#if multiple && selectedOptions.length > 0}
-        {#each visibleTags as opt (opt.value)}
+        {#each visibleTags as tag (tag.opt.value)}
           <span class="cd-select__tag">
-            <span class="cd-select__tag-label">{opt.label}</span>
+            <span
+              class="cd-select__tag-label"
+              title={tag.truncated ? tag.opt.label : undefined}
+            >{tag.display}</span>
             <button
               type="button"
               class="cd-select__tag-close"
-              aria-label={loc().t('Select.removeItem', { label: opt.label })}
+              aria-label={loc().t('Select.removeItem', { label: tag.opt.label })}
               onclick={(e) => {
                 e.stopPropagation();
-                removeTag(opt.value);
+                removeTag(tag.opt.value);
               }}
             >
               <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">

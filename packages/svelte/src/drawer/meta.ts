@@ -44,6 +44,7 @@ export const meta = {
     { name: 'mask', type: 'boolean', default: 'true', desc: '显示遮罩；false 不锁滚动且容器不拦截' },
     { name: 'maskClosable', type: 'boolean', default: 'true', desc: '点遮罩关闭' },
     { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 关闭' },
+    { name: 'keyboard', type: 'boolean', default: 'true', desc: '键盘交互总开关；false 停用 Esc 关闭与 Tab/Shift+Tab 焦点循环（覆盖 closeOnEsc，仍保留进场/归还焦点）' },
     { name: 'closable', type: 'boolean', default: 'true', desc: '右上角关闭按钮' },
     {
       name: 'destroyOnClose',
@@ -82,7 +83,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: true,
-    note: 'role=dialog + aria-modal（随 mask）；有 title 用 aria-labelledby，无则 aria-label；useFocusTrap 捕获 Tab 焦点并在关闭时归还触发元素；closeOnEsc 控制 Esc 关闭；mask 时 useScrollLock 锁背景滚动；关闭按钮 aria-label「关闭」。',
+    note: 'role=dialog + aria-modal（随 mask）；有 title 用 aria-labelledby，无则 aria-label；useFocusTrap 捕获 Tab 焦点并在关闭时归还触发元素；closeOnEsc 控制 Esc 关闭；keyboard=false 为键盘交互总开关，停用 Esc/Tab/Shift+Tab（覆盖 closeOnEsc，仍保留进场与归还焦点）；mask 时 useScrollLock 锁背景滚动；关闭按钮 aria-label「关闭」。',
   },
   tokens: [
     '--cd-drawer-bg',

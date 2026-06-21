@@ -27,6 +27,8 @@
     mask?: boolean;
     maskClosable?: boolean;
     closeOnEsc?: boolean;
+    /** 键盘交互总开关；false 时停用 Esc 关闭与焦点陷阱键盘行为（覆盖 closeOnEsc）。 */
+    keyboard?: boolean;
     closable?: boolean;
     /** 关闭即卸载内部内容；重开重建。默认 false（保留 DOM 仅隐藏）。 */
     destroyOnClose?: boolean;
@@ -53,6 +55,7 @@
     mask = true,
     maskClosable = true,
     closeOnEsc = true,
+    keyboard = true,
     closable = true,
     destroyOnClose = false,
     getContainer,
@@ -194,11 +197,13 @@
 
   $effect(() => {
     if (!isOpen || !panelEl) return;
-    const trap = useFocusTrap(panelEl);
+    // keyboard 总开关：false 时停用 Tab 焦点循环捕获（仍保留进场聚焦与归还焦点）。
+    const trap = useFocusTrap(panelEl, { trapTab: keyboard });
     trap.activate();
     const releaseScroll = mask ? useScrollLock() : () => {};
     let undismiss = () => {};
-    if (closeOnEsc) {
+    // keyboard 总开关节制 Esc：keyboard=false 时即便 closeOnEsc=true 也不绑 Esc。
+    if (keyboard && closeOnEsc) {
       undismiss = useDismiss(panelEl, {
         onDismiss: () => close(),
         escape: true,
