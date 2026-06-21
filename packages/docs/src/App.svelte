@@ -590,6 +590,8 @@
   let submitted = $state('');
   let warnSubmitted = $state('');
   let valuePropSubmitted = $state('');
+  let specPropsSubmitted = $state('');
+  let nativeSubmitCount = $state(0);
   let selVal = $state<string | number>('');
   let selGroupVal = $state<string | number>('');
   // remote 搜索：模拟异步返回选项
@@ -1442,6 +1444,52 @@ let pageSize2 = $state(10);
       {/snippet}
     </Form>
     <Text type="tertiary">{valuePropSubmitted}</Text>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-spec-props">
+    <Text type="tertiary"
+      >spec §4 props（labelAlign=right / validateTrigger=blur / showValidateIcon / stopValidateWithError
+      / allowEmpty）：</Text
+    >
+    <Form
+      labelPosition="left"
+      labelWidth={88}
+      labelAlign="right"
+      validateTrigger="blur"
+      showValidateIcon
+      stopValidateWithError
+      allowEmpty
+      onSubmit={(r) =>
+        (specPropsSubmitted = `valid=${r.valid} values=${JSON.stringify(r.values)}`)}
+    >
+      <Form.Input
+        field="sp_email"
+        label="邮箱"
+        required
+        rules={[{ type: 'email' }, { minLength: 20 }]}
+      />
+      <Form.Input field="sp_note" label="备注" trigger="change" />
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">{specPropsSubmitted}</Text>
+  </div>
+
+  <div style="max-width: 360px; margin-top: 16px" data-testid="form-prevent-default">
+    <Text type="tertiary">preventDefault=false（不拦截原生 submit）：</Text>
+    <Form
+      preventDefault={false}
+      onSubmit={() => {
+        nativeSubmitCount += 1;
+      }}
+    >
+      <Form.Input field="pd_name" label="名称" />
+      {#snippet footer()}
+        <Button type="primary" htmlType="submit">提交</Button>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">onSubmit 次数：{nativeSubmitCount}</Text>
   </div>
 
   <Divider />

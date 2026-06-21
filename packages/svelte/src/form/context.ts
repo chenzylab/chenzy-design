@@ -4,6 +4,7 @@ import type { FormApi, FormState } from '@chenzy-design/core';
 export type FormLayout = 'vertical' | 'horizontal';
 export type FormLabelPosition = 'top' | 'left' | 'inset';
 export type FormSize = 'small' | 'default' | 'large';
+export type FormLabelAlign = 'left' | 'right';
 
 export interface FormContext {
   /** the headless form instance from @chenzy-design/core */
@@ -14,10 +15,14 @@ export interface FormContext {
   // context boundary (reading a plain value would freeze the initial snapshot).
   getLabelPosition: () => FormLabelPosition;
   getLabelWidth: () => number | string | undefined;
+  /** Label text alignment (spec §4 L60). */
+  getLabelAlign: () => FormLabelAlign;
   getSize: () => FormSize;
   getDisabled: () => boolean;
   getRequiredMark: () => boolean;
   getColon: () => boolean;
+  /** whether error/warning text carries a status icon (spec §4 L66). */
+  getShowValidateIcon: () => boolean;
 }
 
 const KEY = Symbol('cd-form');

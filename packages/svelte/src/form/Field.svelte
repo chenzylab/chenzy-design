@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, type Rule } from '@chenzy-design/core';
+  import { useId, type Rule, type ValidateTrigger } from '@chenzy-design/core';
   import { getFormContext } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -43,6 +43,8 @@
     valuePropName?: string;
     /** names of fields this field's validation depends on (e.g. confirm → ['password']) */
     dependencies?: string[];
+    /** field-level override of the form's validateTrigger (spec §4 L84). */
+    trigger?: ValidateTrigger | ValidateTrigger[];
     children?: Snippet<[ChildArgs]>;
   }
 
@@ -54,6 +56,7 @@
     extraText,
     valuePropName = 'value',
     dependencies,
+    trigger,
     children,
   }: Props = $props();
 
@@ -72,12 +75,22 @@
   // so this never feeds back into a render-read. Cleanup unregisters.
   $effect(() => {
     const effectiveRules = required ? [{ required: true } as Rule, ...rules] : rules;
-    const config: { rules: Rule[]; label?: string; dependencies?: string[] } = {
+    const config: {
+      rules: Rule[];
+      label?: string;
+      dependencies?: string[];
+      trigger?: ValidateTrigger | ValidateTrigger[];
+    } = {
       rules: effectiveRules,
     };
     if (label !== undefined) config.label = label;
     if (dependencies !== undefined) config.dependencies = dependencies;
-    return form.registerField(field, config);
+    if (trigger !== undefined) config.trigger = trigger;
+    const unregister = form.registerField(field, config);
+    // spec §2 L26: a `mount` trigger validates once right after registration.
+    // Imperative one-shot (not a render read) so it cannot loop.
+    if (form.getFieldTrigger(field).includes('mount')) void form.validateField(field);
+    return unregister;
   });
 
   // Read-only slices derived from the bridged form state (render-safe getters).
@@ -98,18 +111,28 @@
   );
   const validatingText = $derived(loc().t('Form.validating'));
 
+  // resolved validation triggers for this field (own override → form default).
+  // Plain getters off the core registry (a non-reactive Map), read inside event
+  // handlers only — never during render, so no effect loop.
+  function triggers(): ValidateTrigger[] {
+    return form.getFieldTrigger(field);
+  }
+
   function handleChange(v: unknown) {
-    // Re-validate on change once the field is "active": after a blur (touched)
-    // OR while an error is already showing (so typing clears a submit error).
-    // Without this, a submit-time required error never clears as the user types
-    // (controls like Input have no blur hook to set `touched`).
+    const tr = triggers();
+    // Validate on change when 'change' is an active trigger AND the field is
+    // already "active": after a blur (touched) OR while an error is showing (so
+    // typing clears a submit error). Controls like Input have no blur hook to
+    // set `touched`, so the "showing error" path keeps submit errors clearable.
     const active = touched === true || (error !== undefined && error !== '');
-    form.setFieldValue(field, v, { validate: active });
+    const validate = tr.includes('change') && active;
+    form.setFieldValue(field, v, { validate });
   }
 
   function handleBlur() {
     form.setFieldTouched(field);
-    void form.validateField(field);
+    // only validate on blur when 'blur' is an active trigger for this field.
+    if (triggers().includes('blur')) void form.validateField(field);
   }
 
   const describedBy = $derived(
@@ -118,10 +141,18 @@
 
   const labelWidth = $derived(ctx.getLabelWidth());
   const labelPosition = $derived(ctx.getLabelPosition());
+  const labelAlign = $derived(ctx.getLabelAlign());
+  const showValidateIcon = $derived(ctx.getShowValidateIcon());
+  // label style: fixed width in `left` mode + text-align from labelAlign (§4 L60)
   const labelStyle = $derived(
-    labelPosition === 'left' && labelWidth !== undefined
-      ? `inline-size:${typeof labelWidth === 'number' ? `${labelWidth}px` : labelWidth}`
-      : undefined,
+    [
+      labelPosition === 'left' && labelWidth !== undefined
+        ? `inline-size:${typeof labelWidth === 'number' ? `${labelWidth}px` : labelWidth}`
+        : undefined,
+      `text-align:${labelAlign}`,
+    ]
+      .filter(Boolean)
+      .join(';'),
   );
 
   // inset：label 浮入控件，聚焦或有值时上浮变小（floating label）
@@ -144,7 +175,11 @@
 
 <div class={cls} data-field={field}>
   {#if label !== undefined && !isInset}
-    <label class="cd-form-field__label" for={id} style={labelStyle}>
+    <label
+      class="cd-form-field__label cd-form-field__label--align-{labelAlign}"
+      for={id}
+      style={labelStyle}
+    >
       {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
       <span class="cd-form-field__label-text">{label}{ctx.getColon() ? '：' : ''}</span>
     </label>
@@ -187,9 +222,43 @@
     {/if}
 
     {#if showError}
-      <div id={errorId} role="alert" class="cd-form-field__error">{error}</div>
+      <div id={errorId} role="alert" class="cd-form-field__error">
+        {#if showValidateIcon}
+          <svg
+            class="cd-form-field__status-icon"
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.5h1.5v5h-1.5v-5ZM8 12.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+            />
+          </svg>
+        {/if}
+        <span>{error}</span>
+      </div>
     {:else if showWarning}
-      <div id={warningId} class="cd-form-field__warning">{warning}</div>
+      <div id={warningId} class="cd-form-field__warning">
+        {#if showValidateIcon}
+          <svg
+            class="cd-form-field__status-icon"
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              fill="currentColor"
+              d="M7.13 1.7a1 1 0 0 1 1.74 0l6.1 10.8A1 1 0 0 1 14.1 14H1.9a1 1 0 0 1-.87-1.5l6.1-10.8ZM7.25 6h1.5v4h-1.5V6ZM8 12.4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
+            />
+          </svg>
+        {/if}
+        <span>{warning}</span>
+      </div>
     {:else if showExtra}
       <div id={extraId} class="cd-form-field__extra">{extraText}</div>
     {/if}
@@ -213,6 +282,13 @@
     align-items: center;
     gap: var(--cd-spacing-1);
     color: var(--cd-form-label-color, var(--cd-color-text-1));
+  }
+  /* labelAlign (§4 L60): justify the label's inline content within its box */
+  .cd-form-field__label--align-left {
+    justify-content: flex-start;
+  }
+  .cd-form-field__label--align-right {
+    justify-content: flex-end;
   }
   .cd-form-field--label-left .cd-form-field__label {
     padding-block-start: var(--cd-spacing-1);
@@ -260,12 +336,21 @@
     }
   }
   .cd-form-field__error {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
     color: var(--cd-form-error-color, var(--cd-color-danger, #e54848));
     font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
   }
   .cd-form-field__warning {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
     color: var(--cd-form-warning-color, var(--cd-color-warning, #fa8c16));
     font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
+  }
+  .cd-form-field__status-icon {
+    flex: 0 0 auto;
   }
   .cd-form-field__extra {
     color: var(--cd-form-extra-color, var(--cd-color-text-3));

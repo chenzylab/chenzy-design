@@ -194,6 +194,106 @@ describe('createForm', () => {
     expect(f.getFieldWarning('name')).toBeUndefined();
   });
 
+  // ---- validateTrigger (spec §4 L65 / L84) ----
+  it('getFieldTrigger returns the form default when no field override', () => {
+    const f = createForm();
+    f.registerField('a', {});
+    expect(f.getFieldTrigger('a')).toEqual(['blur', 'change']);
+  });
+
+  it('getFieldTrigger honors a form-level validateTrigger', () => {
+    const f = createForm({ validateTrigger: 'blur' });
+    f.registerField('a', {});
+    expect(f.getFieldTrigger('a')).toEqual(['blur']);
+  });
+
+  it('getFieldTrigger field-level trigger overrides the form default', () => {
+    const f = createForm({ validateTrigger: ['blur', 'change'] });
+    f.registerField('a', { trigger: 'submit' });
+    expect(f.getFieldTrigger('a')).toEqual(['submit']);
+  });
+
+  it('getFieldTrigger normalizes a single value to an array', () => {
+    const f = createForm({ validateTrigger: 'change' });
+    f.registerField('a', {});
+    expect(f.getFieldTrigger('a')).toEqual(['change']);
+  });
+
+  // ---- stopValidateWithError (spec §4 L68) ----
+  it('stopValidateWithError:false (default) runs all rules, surfaces first error', async () => {
+    const calls: string[] = [];
+    const f = createForm();
+    f.registerField('x', {
+      rules: [
+        { validator: () => (calls.push('r1'), 'first') },
+        { validator: () => (calls.push('r2'), 'second') },
+      ],
+    });
+    f.setFieldValue('x', 'v');
+    const err = await f.validateField('x');
+    expect(err).toBe('first');
+    // both rules ran because we did NOT stop at the first error
+    expect(calls).toEqual(['r1', 'r2']);
+  });
+
+  it('stopValidateWithError:true stops at the first failing rule', async () => {
+    const calls: string[] = [];
+    const f = createForm({ stopValidateWithError: true });
+    f.registerField('x', {
+      rules: [
+        { validator: () => (calls.push('r1'), 'first') },
+        { validator: () => (calls.push('r2'), 'second') },
+      ],
+    });
+    f.setFieldValue('x', 'v');
+    const err = await f.validateField('x');
+    expect(err).toBe('first');
+    // second rule never ran
+    expect(calls).toEqual(['r1']);
+  });
+
+  it('stopValidateWithError:false still lets a later warningOnly rule surface a warning', async () => {
+    const f = createForm();
+    f.registerField('x', {
+      rules: [
+        { required: true, message: 'err' },
+        { minLength: 5, warningOnly: true, message: 'warn' },
+      ],
+    });
+    f.setFieldValue('x', '');
+    await f.validateField('x');
+    expect(f.getFieldError('x')).toBe('err');
+    // empty value skips minLength, so no warning here — sanity that error wins
+    f.setFieldValue('x', 'ab');
+    await f.validateField('x');
+    // 'ab' passes required, fails minLength → warning surfaces
+    expect(f.getFieldError('x')).toBeUndefined();
+    expect(f.getFieldWarning('x')).toBe('warn');
+  });
+
+  // ---- allowEmpty (spec §4 L70) ----
+  it('allowEmpty:false (default) drops empty-value keys on submit/getFieldsValue', async () => {
+    const f = createForm();
+    f.registerField('name', {});
+    f.registerField('bio', {});
+    f.setFieldValue('name', 'jo');
+    f.setFieldValue('bio', '');
+    expect(f.getFieldsValue()).toEqual({ name: 'jo' });
+    const r = await f.submit();
+    expect(r.values).toEqual({ name: 'jo' });
+  });
+
+  it('allowEmpty:true keeps empty-value keys', async () => {
+    const f = createForm({ allowEmpty: true });
+    f.registerField('name', {});
+    f.registerField('bio', {});
+    f.setFieldValue('name', 'jo');
+    f.setFieldValue('bio', '');
+    expect(f.getFieldsValue()).toEqual({ name: 'jo', bio: '' });
+    const r = await f.submit();
+    expect(r.values).toEqual({ name: 'jo', bio: '' });
+  });
+
   it('subscribe notifies on changes', () => {
     const f = createForm();
     f.registerField('x');

@@ -3,7 +3,7 @@
   Convenience wrapper: <Form.Field> + <Input> bound to a field.
 -->
 <script lang="ts">
-  import type { Rule } from '@chenzy-design/core';
+  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import Input from '../input/Input.svelte';
@@ -19,6 +19,8 @@
     clearable?: boolean;
     maxLength?: number;
     dependencies?: string[];
+    /** field-level override of the form's validateTrigger (spec §4 L84). */
+    trigger?: ValidateTrigger | ValidateTrigger[];
   }
 
   let {
@@ -32,6 +34,7 @@
     clearable = false,
     maxLength,
     dependencies,
+    trigger,
   }: Props = $props();
 
   // Build props with conditional keys so we never pass an explicit `undefined`
@@ -43,11 +46,12 @@
     ...(label !== undefined ? { label } : {}),
     ...(extraText !== undefined ? { extraText } : {}),
     ...(dependencies !== undefined ? { dependencies } : {}),
+    ...(trigger !== undefined ? { trigger } : {}),
   });
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled, id, describedBy })}
+  {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy })}
     <!--
       `id` is wired to the native <input> so Field's visible <label for={id}>
       precisely targets the control (WAI-ARIA preferred association): clicking the
@@ -68,6 +72,7 @@
       {...(label !== undefined ? { ariaLabel: label } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       onChange={(v) => onChange(v)}
+      onBlur={() => onBlur()}
     />
   {/snippet}
 </Field>
