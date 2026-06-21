@@ -83,6 +83,7 @@
     registerLocale,
     ConfigProvider,
     ResizeObserver,
+    resize,
     LottieIcon,
   } from '@chenzy-design/svelte';
   import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem, Locale } from '@chenzy-design/svelte';
@@ -130,6 +131,11 @@
   let roInstantCount = $state(0);
   let roMultiLast = $state('—');
   let roMultiCount = $state(0);
+  // device-pixel-content-box / tag 自定义 / action 动态参数重建 demo
+  let roDprLast = $state('—');
+  let roActionBox = $state<'content-box' | 'device-pixel-content-box'>('content-box');
+  let roActionLast = $state('—');
+  let roActionBoxSeen = $state('—');
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
@@ -4325,6 +4331,29 @@ let pageSize2 = $state(10);
       <div style="resize:horizontal; overflow:auto; width:200px; height:40px; min-width:80px; background:var(--cd-color-fill-0); border-radius:6px; display:flex; align-items:center; padding-left:8px; color:var(--cd-color-text-1)">子元素 B（横向可拖）</div>
     </ResizeObserver>
     <div style="margin-top:8px"><Text type="tertiary"><span data-testid="ro-multi">最后变化：{roMultiLast}（debounced 回调 {roMultiCount} 次）</span></Text></div>
+  </div>
+
+  <div style="margin-top:16px"><Text type="tertiary">device-pixel-content-box（物理像素，含 DPR）+ tag 自定义包裹标签（section）</Text></div>
+  <div style="margin-top:8px; resize:both; overflow:auto; width:240px; height:90px; min-width:140px; min-height:60px; border:1px dashed var(--cd-color-border); border-radius:8px">
+    <ResizeObserver tag="section" box="device-pixel-content-box" onResize={(e) => (roDprLast = `${Math.round(e.width)}×${Math.round(e.height)} 物理px (box=${e.box})`)}>
+      {#snippet children({ width, height })}
+        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--cd-color-text-1)">
+          <span data-testid="ro-dpr">{Math.round(width)} × {Math.round(height)} 物理px</span>
+        </div>
+      {/snippet}
+    </ResizeObserver>
+  </div>
+  <div style="margin-top:8px"><Text type="tertiary"><span data-testid="ro-dpr-last">{roDprLast}</span></Text></div>
+
+  <div style="margin-top:16px"><Text type="tertiary">use:resize action 动态参数重建：切换 box 即 disconnect 旧 observer 重建</Text></div>
+  <div style="display:flex; gap:12px; align-items:center; margin-top:8px">
+    <Button size="small" onclick={() => (roActionBox = roActionBox === 'content-box' ? 'device-pixel-content-box' : 'content-box')}>切换 box（当前 {roActionBox}）</Button>
+  </div>
+  <div
+    use:resize={{ box: roActionBox, onResize: (e) => { roActionLast = `${Math.round(e.width)}×${Math.round(e.height)}`; roActionBoxSeen = e.box; } }}
+    style="margin-top:8px; resize:both; overflow:auto; width:220px; height:80px; min-width:120px; min-height:50px; border:1px dashed var(--cd-color-border); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--cd-color-text-1)"
+  >
+    <span data-testid="ro-action">{roActionLast} · box={roActionBoxSeen}</span>
   </div>
 
   <Divider />

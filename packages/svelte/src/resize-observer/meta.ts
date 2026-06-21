@@ -7,7 +7,7 @@ export const meta = {
   category: 'other',
   renderless: true,
   description:
-    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；内置 throttle/debounce 节流去抖与 multiple 多目标观测；SSR/老浏览器静默降级；另导出 resize action 供轻量 use:resize 用法、getGlobalResizeObserver 单例池供大列表共享。本子集 content-box/border-box，device-pixel-content-box 延后。',
+    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；内置 throttle/debounce 节流去抖与 multiple 多目标观测；SSR/老浏览器静默降级；另导出 resize action 供轻量 use:resize 用法、getGlobalResizeObserver 单例池供大列表共享。盒模型支持 content-box/border-box/device-pixel-content-box，包裹元素标签可经 tag 自定义。',
   exports: [
     'ResizeObserver',
     'resize',
@@ -17,9 +17,9 @@ export const meta = {
   props: [
     {
       name: 'box',
-      type: "'content-box'|'border-box'",
+      type: "'content-box'|'border-box'|'device-pixel-content-box'",
       default: "'content-box'",
-      desc: '观测盒模型，content-box 仅内容区，border-box 含 padding+border',
+      desc: '观测盒模型：content-box 仅内容区，border-box 含 padding+border，device-pixel-content-box 物理像素内容盒（含 DPR；不支持时回退 content-box）',
     },
     {
       name: 'disabled',
@@ -55,7 +55,7 @@ export const meta = {
       name: 'tag',
       type: 'string',
       default: "'div'",
-      desc: '包裹元素标签，本子集固定 div（自定义 tag 延后）',
+      desc: '包裹元素标签，经 svelte:element 渲染；须为可生成盒子的元素（勿用 display:contents 类标签）',
     },
   ],
   events: [

@@ -8,10 +8,13 @@
  *   - throttle / debounce 节流去抖（命令式定时器 + cleanup，红线 #3）
  *   - 多目标（observe/unobserve 多个元素，回调按 target 路由）
  *   - 单例 observer 池 getGlobalResizeObserver()（多元素复用 1 个原生 observer）
- * 仍延后：device-pixel-content-box、window.resize 降级。
+ * 仍延后：window.resize 降级。
  */
 
-export type ResizeBox = 'content-box' | 'border-box';
+export type ResizeBox =
+  | 'content-box'
+  | 'border-box'
+  | 'device-pixel-content-box';
 
 /** 节流/去抖调度策略。'none' = 原生即时（默认，向后兼容）。 */
 export type ResizeSchedule =
@@ -60,10 +63,20 @@ export function normalizeEntry(entry: ResizeObserverEntry, box: ResizeBox): CDRe
   let width: number;
   let height: number;
 
-  const boxSize =
-    box === 'border-box'
-      ? (entry.borderBoxSize as ReadonlyArray<ResizeObserverSize> | undefined)
-      : (entry.contentBoxSize as ReadonlyArray<ResizeObserverSize> | undefined);
+  let boxSize: ReadonlyArray<ResizeObserverSize> | undefined;
+  if (box === 'border-box') {
+    boxSize = entry.borderBoxSize as ReadonlyArray<ResizeObserverSize> | undefined;
+  } else if (box === 'device-pixel-content-box') {
+    // 物理像素内容盒（含 DPR 缩放），仅新式浏览器支持；
+    // 不可用时回退 contentBoxSize（CSS 像素），再回退 contentRect。
+    boxSize =
+      (entry.devicePixelContentBoxSize as
+        | ReadonlyArray<ResizeObserverSize>
+        | undefined) ??
+      (entry.contentBoxSize as ReadonlyArray<ResizeObserverSize> | undefined);
+  } else {
+    boxSize = entry.contentBoxSize as ReadonlyArray<ResizeObserverSize> | undefined;
+  }
 
   if (boxSize && boxSize.length > 0) {
     width = boxSize[0]!.inlineSize;

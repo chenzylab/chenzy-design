@@ -4,10 +4,9 @@
   通过 @chenzy-design/core 的 createResizeObserver 监听其尺寸，
   slot 暴露归一化的 width/height/entry。
 
-  子集：content-box / border-box，单目标 + 多目标（multiple）+ throttle/debounce 节流去抖。
+  盒模型：content-box / border-box / device-pixel-content-box，
+  单目标 + 多目标（multiple）+ throttle/debounce 节流去抖，包裹元素标签可经 tag 自定义。
   TODO(延后):
-    - device-pixel-content-box
-    - tag 自定义包裹元素标签（本子集固定 div）
     - 单例 observer 池：core 已导出 getGlobalResizeObserver()，
       但本组件每实例自管一个原生 observer（多目标时复用同一实例观测多元素，
       已满足"不为每个元素新建 observer"）；跨组件级全局池由大列表场景按需接入。
@@ -28,7 +27,7 @@
   } from '@chenzy-design/core';
 
   interface Props {
-    /** 观测盒模型，默认 'content-box' */
+    /** 观测盒模型，默认 'content-box'（另支持 border-box / device-pixel-content-box） */
     box?: ResizeBox;
     /** 暂停尺寸分发，默认 false（observer 仍在监听，仅不向外通知） */
     disabled?: boolean;
@@ -47,7 +46,7 @@
     multiple?: boolean;
     /** 挂载后立即测量一次，默认 true（ResizeObserver 原生在 observe 时触发首次回调，天然满足） */
     observeOnMount?: boolean;
-    /** 包裹元素标签，默认 'div'（本子集固定 div，tag 自定义延后） */
+    /** 包裹元素标签，默认 'div'。须为可生成盒子的元素（勿用 display:contents 类标签）。 */
     tag?: string;
     /** 尺寸变化回调（归一化 entry） */
     onResize?: (entry: CDResizeEntry) => void;
@@ -67,6 +66,7 @@
     debounce = 0,
     multiple = false,
     observeOnMount = true,
+    tag = 'div',
     onResize,
     onFirstMeasure,
     children,
@@ -128,9 +128,9 @@
   );
 </script>
 
-<div class={cls} bind:this={el}>
+<svelte:element this={tag} class={cls} bind:this={el}>
   {#if children}{@render children({ width, height, entry })}{/if}
-</div>
+</svelte:element>
 
 <style>
   /*

@@ -1,21 +1,21 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
  * Aggregated metadata for the Grid family (Row + Col).
- * 24-column flex grid. responsive breakpoint props are NOT implemented yet (TODO).
+ * 24-column flex grid with responsive breakpoint props (xs/sm/md/lg/xl/xxl).
  */
 export const meta = {
   name: 'Grid',
   category: 'basic',
-  description: '24 栅格布局：Row 容器 + Col 列，flex 实现，gutter 经 context 下发到 Col。',
+  description: '24 栅格布局：Row 容器 + Col 列，flex 实现，gutter 经 context 下发到 Col；支持 xs/sm/md/lg/xl/xxl 响应式断点（mobile-first 降级解析）。',
   exports: ['Row', 'Col'],
   // flat props (Row + Col merged); each item tagged with its owner.
   props: [
     {
       owner: 'Row',
       name: 'gutter',
-      type: 'number|[number,number]',
+      type: 'number|[number,number]|Partial<Record<Breakpoint,number|[number,number]>>',
       default: '0',
-      desc: 'number→水平间距；[x,y]→水平+垂直；对象暂降级为 0 (TODO 响应式)',
+      desc: 'number→水平间距；[x,y]→水平+垂直；按断点对象 { xs,sm,md,... } 时按当前视口 mobile-first 降级解析',
     },
     {
       owner: 'Row',
@@ -45,17 +45,28 @@ export const meta = {
       default: 'undefined',
       desc: '设置后优先于 span，直接控制 flex',
     },
+    {
+      owner: 'Col',
+      name: 'xs|sm|md|lg|xl|xxl',
+      type: 'number | { span?, offset?, order?, push?, pull?, flex? }',
+      default: 'undefined',
+      desc: '响应式断点覆盖：值为 number(span) 或子集对象，按当前视口 mobile-first 降级解析后覆盖基础 props',
+    },
     { owner: 'Col', name: 'class', type: 'string', default: "''" },
   ],
   events: [],
   slots: [{ name: 'children', desc: 'Row 内放 Col；Col 内放任意内容' }],
   a11y: { hasRole: false, focusable: false, note: '纯布局容器，不引入语义角色' },
   tokens: ['--cd-grid-columns', '--cd-grid-gutter-x', '--cd-grid-gutter-y'],
-  responsive: false,
+  responsive: true,
   examples: [
     {
       title: '基础两栏',
       code: '<Row gutter={16}><Col span={12}>左</Col><Col span={12}>右</Col></Row>',
+    },
+    {
+      title: '响应式断点',
+      code: '<Row gutter={{ xs: 8, md: 24 }}><Col xs={24} md={12}>左</Col><Col xs={24} md={12}>右</Col></Row>',
     },
   ],
 } as const;
