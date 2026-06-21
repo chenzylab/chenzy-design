@@ -57,6 +57,18 @@ export const meta = {
     { name: 'subMenuOpenDelay', type: 'number', default: '100', desc: 'hover 触发子菜单浮层展开延迟(ms)' },
     { name: 'subMenuCloseDelay', type: 'number', default: '100', desc: 'hover 触发子菜单浮层收起延迟(ms)' },
     {
+      name: 'status',
+      type: "'default'|'warning'|'error'",
+      default: 'default',
+      desc: '校验态（表单内菜单选择，少见）：非 default 时加 cd-menu--{status} 类，以 token 着色选中指示条/文字，error 时根节点 aria-invalid=true',
+    },
+    {
+      name: 'destroyOnHide',
+      type: 'boolean',
+      default: 'false',
+      desc: '浮层子菜单隐藏时是否卸载内容 DOM；默认 false 首开后保留 DOM 仅隐藏，true 时随 open 卸载/重建。仅作用于 vertical/horizontal/collapsed 浮层子菜单',
+    },
+    {
       name: 'getPopupContainer',
       type: '() => HTMLElement',
       default: '() => document.body',

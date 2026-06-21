@@ -35,6 +35,25 @@ export const meta = {
     { name: 'mouseEnterDelay', type: 'number', default: '150', desc: 'hover 进入延迟(ms)' },
     { name: 'mouseLeaveDelay', type: 'number', default: '150', desc: 'hover 离开延迟(ms)' },
     {
+      name: 'spacing',
+      type: 'number | { x: number; y: number }',
+      default: '4',
+      desc: '浮层与触发元素间距(px)，映射到 floating 主轴 offset；{ x, y } 按 position 主轴方向取值（上下取 y、左右取 x）',
+    },
+    {
+      name: 'clickToHide',
+      type: 'boolean',
+      default: 'true',
+      desc: 'hover 模式下点击菜单项是否关闭浮层；false 时点击项不关闭（仅移出/Esc/外部点击收起），仅影响 hover 触发',
+    },
+    { name: 'zIndex', type: 'number', default: '1050', desc: '浮层层级（写入浮层内联 z-index）' },
+    {
+      name: 'autoAdjustOverflow',
+      type: 'boolean',
+      default: 'true',
+      desc: '空间不足时自动翻转/移位到可视区（透传 floating autoAdjust）；false 时严格按 position 定位不翻转',
+    },
+    {
       name: 'destroyOnClose',
       type: 'boolean',
       default: 'false',
