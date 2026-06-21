@@ -17,6 +17,7 @@
     useDismiss,
     fixedRange,
     scrollOffsetForIndex,
+    type Placement,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -44,6 +45,8 @@
     defaultOpen?: boolean;
     size?: Size;
     status?: Status;
+    /** 下拉浮层 placement（默认 bottomStart，自动避让仍生效） */
+    placement?: Placement;
     placeholder?: string;
     disabled?: boolean;
     clearable?: boolean;
@@ -79,6 +82,7 @@
     defaultOpen = false,
     size = 'default',
     status = 'default',
+    placement = 'bottomStart',
     placeholder,
     disabled = false,
     clearable = false,
@@ -558,7 +562,7 @@
     <div
       class="cd-select__dropdown"
       bind:this={dropdownEl}
-      use:floating={{ trigger: rootEl, placement: 'bottomStart', autoAdjust: true, offset: 4, matchWidth: true }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 4, matchWidth: true }}
       role="listbox"
       id={listId}
       aria-multiselectable={multiple}

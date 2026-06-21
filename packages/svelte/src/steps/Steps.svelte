@@ -61,6 +61,9 @@
   const isClickable = $derived(clickable ?? type === 'nav');
 
   function statusOf(index: number): DerivedStatus {
+    // 显式 step.status 优先于由 current 推断的状态
+    const explicit = steps[index]?.status;
+    if (explicit) return explicit;
     if (index < activeIndex) return 'finish';
     if (index === activeIndex) return status;
     return 'wait';
@@ -81,6 +84,7 @@
 
   function select(index: number) {
     if (!isClickable) return;
+    if (steps[index]?.disabled) return; // 禁用步不可激活
     if (index === activeIndex) return;
     if (!isControlled) inner = index;
     onChange?.(index);
@@ -103,18 +107,25 @@
   {#each steps as step, index (index)}
     {@const st = statusOf(index)}
     {@const last = index === steps.length - 1}
-    <li class="cd-steps__item cd-steps__item--{st}">
+    {@const isDisabled = step.disabled === true}
+    <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--disabled={isDisabled}>
       {#if isClickable}
         <button
           type="button"
           class="cd-steps__head"
           aria-current={index === activeIndex ? 'step' : undefined}
+          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
           onclick={() => select(index)}
         >
           {@render head(step, index, st)}
         </button>
       {:else}
-        <div class="cd-steps__head" aria-current={index === activeIndex ? 'step' : undefined}>
+        <div
+          class="cd-steps__head"
+          aria-current={index === activeIndex ? 'step' : undefined}
+          aria-disabled={isDisabled || undefined}
+        >
           {@render head(step, index, st)}
         </div>
       {/if}
@@ -168,6 +179,14 @@
   }
   button.cd-steps__head {
     cursor: pointer;
+  }
+  /* 禁用步：置灰、不可点击 */
+  .cd-steps__item--disabled .cd-steps__head {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+  button.cd-steps__head:disabled {
+    cursor: not-allowed;
   }
   button.cd-steps__head:focus-visible {
     outline: none;

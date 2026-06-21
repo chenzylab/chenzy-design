@@ -685,6 +685,7 @@ let breadcrumbMore = $state('—');
 let page2 = $state(1);
 let pageSize2 = $state(10);
   let step = $state(1);
+  let stepD = $state(0);
   let activeTab = $state<string | number>('a');
   let lastDropdown = $state('');
   let dropdownPopupContainer = $state<HTMLDivElement | null>(null);
@@ -2524,6 +2525,22 @@ let pageSize2 = $state(10);
     />
     <Text type="tertiary">页 {page2} · 每页 {pageSize2} 条</Text>
 
+    <Text type="tertiary">siblingCount=2 / boundaryCount=2（更多页码、更晚省略）：</Text>
+    <div data-testid="pg-sibling">
+      <Pagination total={500} currentPage={25} siblingCount={2} boundaryCount={2} />
+    </div>
+
+    <Text type="tertiary">hideOnSinglePage（total=8 → 单页隐藏）：</Text>
+    <div data-testid="pg-hide">
+      <Pagination total={8} hideOnSinglePage />
+      <Text type="tertiary">（上方应为空）</Text>
+    </div>
+
+    <Text type="tertiary">status=error（跳页输入校验态）：</Text>
+    <div data-testid="pg-status">
+      <Pagination total={256} status="error" showQuickJumper />
+    </div>
+
     <div style="width: 480px">
       <Steps
         current={step}
@@ -2537,6 +2554,21 @@ let pageSize2 = $state(10);
       />
     </div>
     <Text type="tertiary">当前步：{step}</Text>
+
+    <Text type="tertiary">per-step disabled（第 2 步禁用，不可点击）：</Text>
+    <div style="width: 480px" data-testid="steps-disabled">
+      <Steps
+        current={stepD}
+        clickable
+        steps={[
+          { title: '填写信息' },
+          { title: '确认订单', disabled: true },
+          { title: '完成' },
+        ]}
+        onChange={(c) => (stepD = c)}
+      />
+    </div>
+    <Text type="tertiary">当前步：{stepD}（点第 2 步应无变化）</Text>
 
     <Text type="tertiary">dot 点状（横向）：</Text>
     <div style="width: 480px" data-testid="steps-dot">

@@ -42,6 +42,92 @@ export function clampPageSize(size: number, options: number[], fallback: number)
   return intSize;
 }
 
+/** A cell in the rendered page sequence: a concrete page or an ellipsis gap. */
+export type PageCell =
+  | { type: 'page'; value: number }
+  | { type: 'ellipsis'; position: 'prev' | 'next' };
+
+/**
+ * Build the visible page sequence with ellipsis folding (AntD-style).
+ *
+ * Always keeps `boundaryCount` pages at each end and `siblingCount` pages on
+ * either side of `current`; everything else collapses into an ellipsis cell.
+ * An ellipsis is only emitted when it would hide at least two pages — when a
+ * single page would be hidden it is rendered instead (no `… ` standing in for
+ * one page). The result length is bounded and independent of `count` once it
+ * exceeds the visible window, so a million pages still yields O(1) cells.
+ *
+ * Pure function of `(current, count, siblingCount, boundaryCount)` — safe to
+ * call from the render layer / memoize. Inputs are sanitised: non-finite or
+ * negative sibling/boundary counts fall back to 0, `current` is clamped into
+ * `[1, count]`, `count` is floored at 1.
+ */
+export function pageRange(
+  current: number,
+  count: number,
+  siblingCount = 1,
+  boundaryCount = 1,
+): PageCell[] {
+  const total = Math.max(1, Number.isFinite(count) ? Math.trunc(count) : 1);
+  const sibling = Math.max(0, Number.isFinite(siblingCount) ? Math.trunc(siblingCount) : 0);
+  const boundary = Math.max(0, Number.isFinite(boundaryCount) ? Math.trunc(boundaryCount) : 0);
+  const cur = Math.min(Math.max(1, Number.isFinite(current) ? Math.trunc(current) : 1), total);
+
+  // When every page fits inside the visible window there is nothing to fold:
+  // list them all. Window width = boundary*2 + sibling*2 + current + 2 ellipsis.
+  if (boundary * 2 + sibling * 2 + 5 >= total) {
+    return numbers(1, total).map((value) => ({ type: 'page', value }) as PageCell);
+  }
+
+  // Fixed-size leading / trailing boundary blocks (capped at total).
+  const startPages = numbers(1, Math.min(boundary, total));
+  const endPages = numbers(Math.max(total - boundary + 1, boundary + 1), total);
+
+  // Sibling window around current, kept clamped so it never overlaps the
+  // boundary blocks and keeps a constant width even at the very ends.
+  const siblingsStart = Math.max(
+    Math.min(cur - sibling, total - boundary - sibling * 2 - 1),
+    boundary + 2,
+  );
+  const firstEndPage = endPages[0];
+  const siblingsEnd = Math.min(
+    Math.max(cur + sibling, boundary + sibling * 2 + 2),
+    firstEndPage !== undefined ? firstEndPage - 2 : total - 1,
+  );
+
+  const items: (number | 'ellipsis-prev' | 'ellipsis-next')[] = [
+    ...startPages,
+    // left ellipsis, or the single page it would have hidden
+    ...(siblingsStart > boundary + 2
+      ? (['ellipsis-prev'] as const)
+      : boundary + 1 < siblingsStart
+        ? numbers(boundary + 1, siblingsStart - 1)
+        : []),
+    ...numbers(siblingsStart, siblingsEnd),
+    // right ellipsis, or the single page it would have hidden
+    ...(siblingsEnd < total - boundary - 1
+      ? (['ellipsis-next'] as const)
+      : total - boundary > siblingsEnd
+        ? numbers(siblingsEnd + 1, total - boundary)
+        : []),
+    ...endPages,
+  ];
+
+  return items.map((it) =>
+    typeof it === 'number'
+      ? ({ type: 'page', value: it } as PageCell)
+      : ({ type: 'ellipsis', position: it === 'ellipsis-prev' ? 'prev' : 'next' } as PageCell),
+  );
+}
+
+/** Inclusive integer range `[start, end]`; empty when `start > end`. */
+function numbers(start: number, end: number): number[] {
+  if (start > end) return [];
+  const out: number[] = [];
+  for (let i = start; i <= end; i++) out.push(i);
+  return out;
+}
+
 /**
  * Parse + clamp a quick-jumper text input into a valid page number.
  * Returns the clamped page, or `null` when the input is empty / non-numeric

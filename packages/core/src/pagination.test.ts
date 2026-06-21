@@ -5,7 +5,14 @@ import {
   isPageInRange,
   clampPageSize,
   parseJumpInput,
+  pageRange,
+  type PageCell,
 } from './pagination.js';
+
+/** Compact a PageCell[] into a readable token list, e.g. [1,'<',5,'>',10]. */
+function tokens(cells: PageCell[]): (number | string)[] {
+  return cells.map((c) => (c.type === 'page' ? c.value : c.position === 'prev' ? '<' : '>'));
+}
 
 describe('pageCount', () => {
   it('computes ceil(total / pageSize)', () => {
@@ -117,5 +124,61 @@ describe('parseJumpInput', () => {
 
   it('trims surrounding whitespace', () => {
     expect(parseJumpInput('  4  ', 100, 10)).toBe(4);
+  });
+});
+
+describe('pageRange', () => {
+  it('lists every page when the window covers them (no ellipsis)', () => {
+    // default sibling=1, boundary=1 → list all when count <= 9
+    expect(tokens(pageRange(1, 7))).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(tokens(pageRange(3, 5))).toEqual([1, 2, 3, 4, 5]);
+    expect(tokens(pageRange(1, 1))).toEqual([1]);
+  });
+
+  it('folds the right side when current is near the start', () => {
+    expect(tokens(pageRange(1, 10))).toEqual([1, 2, 3, 4, 5, '>', 10]);
+    expect(tokens(pageRange(3, 10))).toEqual([1, 2, 3, 4, 5, '>', 10]);
+  });
+
+  it('folds the left side when current is near the end', () => {
+    expect(tokens(pageRange(10, 10))).toEqual([1, '<', 6, 7, 8, 9, 10]);
+    expect(tokens(pageRange(8, 10))).toEqual([1, '<', 6, 7, 8, 9, 10]);
+  });
+
+  it('folds both sides when current is in the middle', () => {
+    expect(tokens(pageRange(5, 10))).toEqual([1, '<', 4, 5, 6, '>', 10]);
+    expect(tokens(pageRange(50, 100))).toEqual([1, '<', 49, 50, 51, '>', 100]);
+  });
+
+  it('never renders an ellipsis that would hide only one page', () => {
+    // gap between boundary(1) and sibling window would be a single page → show it
+    expect(tokens(pageRange(4, 10))).toEqual([1, 2, 3, 4, 5, '>', 10]);
+    expect(tokens(pageRange(7, 10))).toEqual([1, '<', 6, 7, 8, 9, 10]);
+  });
+
+  it('honours siblingCount', () => {
+    // wider window keeps the left side contiguous (no left ellipsis needed)
+    expect(tokens(pageRange(5, 20, 2))).toEqual([1, 2, 3, 4, 5, 6, 7, '>', 20]);
+    expect(tokens(pageRange(10, 20, 2))).toEqual([1, '<', 8, 9, 10, 11, 12, '>', 20]);
+    expect(tokens(pageRange(5, 20, 0))).toEqual([1, '<', 5, '>', 20]);
+  });
+
+  it('honours boundaryCount', () => {
+    expect(tokens(pageRange(10, 20, 1, 2))).toEqual([1, 2, '<', 9, 10, 11, '>', 19, 20]);
+    expect(tokens(pageRange(10, 20, 1, 0))).toEqual(['<', 9, 10, 11, '>']);
+  });
+
+  it('keeps cell count O(1) regardless of total pages', () => {
+    const small = pageRange(500_000, 1_000_000);
+    const huge = pageRange(500_000, 1_000_000_000);
+    expect(small.length).toBe(huge.length);
+    expect(tokens(small)).toEqual([1, '<', 499999, 500000, 500001, '>', 1000000]);
+  });
+
+  it('sanitises invalid inputs', () => {
+    expect(tokens(pageRange(Number.NaN, 10))).toEqual([1, 2, 3, 4, 5, '>', 10]); // current→1
+    expect(tokens(pageRange(99, 10))).toEqual([1, '<', 6, 7, 8, 9, 10]); // current clamped to 10
+    expect(tokens(pageRange(5, 10, -1, -1))).toEqual(['<', 5, '>']); // sibling/boundary→0
+    expect(tokens(pageRange(1, 0))).toEqual([1]); // count floored to 1
   });
 });
