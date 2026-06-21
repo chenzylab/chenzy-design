@@ -12,11 +12,27 @@
   changeOnSelect（单选）：点击任一层级节点（含中间非叶子）立即提交从根到该
   节点的路径并触发 onChange；非叶子同时展开子列、不关闭面板（可停在任意层级
   或继续深入），叶子提交并关闭。关闭时仅叶子提交并关闭，非叶子仅展开（默认）。
+  spec §4 补齐：separator（分隔符）、displayProp（回显字段 label/value）、
+  maxTagCount（多选 tag 折叠 +N）、leafOnly（多选完全勾选父级折叠为父路径）、
+  filterTreeNode（filterable 的超集：true=默认子串匹配，函数=自定义谓词）、
+  filterLeafOnly（搜索是否仅到叶子）、emptyContent（空态 string|Snippet）、
+  destroyOnClose（关闭保留/卸载浮层 DOM）、zIndex、getPopupContainer（浮层容器）、
+  columnWidth（列宽 number|number[]）。
 -->
 <script lang="ts">
-  import { useId, useDismiss, conduct, toggleCheck, type TreeNodeData } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    conduct,
+    toggleCheck,
+    resolveColumnWidth,
+    type TreeNodeData,
+    type CascaderFlatPath,
+  } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
   import type { CascaderNode } from './types.js';
@@ -42,8 +58,30 @@
     changeOnSelect?: boolean;
     /** 展开触发方式：'click' 点击展开（默认）；'hover' 悬停非叶子节点即展开子级列 */
     expandTrigger?: 'click' | 'hover';
-    /** 搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中 */
+    /** 多选时只回传/计数叶子节点（父节点不进 value、tag、计数） */
+    leafOnly?: boolean;
+    /** 搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中（向后兼容别名，等价 filterTreeNode=true） */
     filterable?: boolean;
+    /** 是否可搜索及自定义匹配：false 关闭；true 默认按 label 链子串匹配；函数自定义谓词 */
+    filterTreeNode?: boolean | ((query: string, path: CascaderFlatPath<CascaderNode>) => boolean);
+    /** 搜索结果是否仅展示到叶子路径（默认 true；false 时含中间层级路径） */
+    filterLeafOnly?: boolean;
+    /** 触发器回显使用的字段：'label'（默认）或 'value' */
+    displayProp?: 'label' | 'value';
+    /** 路径分隔符（回显 / 搜索 label 链拼接） */
+    separator?: string;
+    /** 多选 Tag 溢出折叠阈值：超出显示前 N 个 + +M */
+    maxTagCount?: number;
+    /** 列为空（无可选项）时内容；缺省走 i18n */
+    emptyContent?: string | Snippet;
+    /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
+    destroyOnClose?: boolean;
+    /** 浮层层级 */
+    zIndex?: number;
+    /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 列宽：统一（number）或逐列（number[]，超出取末项） */
+    columnWidth?: number | number[];
     /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
     /** 自定义触发器选中路径的回显文本（单选 + 多选每个 tag 均走此函数） */
@@ -68,7 +106,18 @@
     clearable = false,
     changeOnSelect = false,
     expandTrigger = 'click',
+    leafOnly = false,
     filterable = false,
+    filterTreeNode,
+    filterLeafOnly = true,
+    displayProp = 'label',
+    separator = ' / ',
+    maxTagCount,
+    emptyContent,
+    destroyOnClose = false,
+    zIndex = 1030,
+    getPopupContainer,
+    columnWidth = 180,
     loadData,
     displayRender,
     onChange,
@@ -77,6 +126,16 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
+  const globalPopupContainer = getGlobalPopupContainer();
+  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
+
+  // filterTreeNode 优先；未显式传时回退 filterable 别名（向后兼容）。
+  // 归一为：是否可搜索 + 实际谓词（true=默认子串匹配，函数=自定义）。
+  const filterSpec = $derived<boolean | ((q: string, p: CascaderFlatPath<CascaderNode>) => boolean)>(
+    filterTreeNode !== undefined ? filterTreeNode : filterable,
+  );
+  const isFilterable = $derived(filterSpec !== false);
 
   // 异步加载：已加载子节点缓存（node.value → children）+ 加载中节点集合。
   // 不写回 treeData prop（红线 #1：不改受控数据源）。
@@ -179,34 +238,53 @@
   // --- filterable：扁平路径列表 + 搜索过滤 ---
   let searchValue = $state('');
   const trimmedSearch = $derived(searchValue.trim());
-  const searchActive = $derived(filterable && trimmedSearch.length > 0);
+  const searchActive = $derived(isFilterable && trimmedSearch.length > 0);
 
   interface FlatPath {
     values: Key[];
     labels: string[];
+    nodes: CascaderNode[];
+    isLeaf: boolean;
     disabled: boolean;
   }
-  // 收集所有可选路径：叶子路径；changeOnSelect 时含所有非叶子路径。
+  // 收集所有可选路径：叶子路径；filterLeafOnly=false 或 changeOnSelect 时含非叶子路径。
+  // （含非叶子时由 filteredPaths 按 filterLeafOnly 再裁剪。）
   const flatPaths = $derived.by<FlatPath[]>(() => {
     const out: FlatPath[] = [];
-    const walk = (nodes: CascaderNode[], vals: Key[], labels: string[], parentDisabled: boolean) => {
+    const walk = (
+      nodes: CascaderNode[],
+      vals: Key[],
+      labels: string[],
+      chain: CascaderNode[],
+      parentDisabled: boolean,
+    ) => {
       for (const n of nodes) {
         const kids = childrenOf(n);
         const isLeaf = !kids || kids.length === 0;
         const nv = [...vals, n.value];
         const nl = [...labels, n.label];
+        const nc = [...chain, n];
         const dis = parentDisabled || !!n.disabled;
-        if (isLeaf || changeOnSelect) out.push({ values: nv, labels: nl, disabled: dis });
-        if (!isLeaf) walk(kids, nv, nl, dis);
+        if (isLeaf || changeOnSelect || !filterLeafOnly)
+          out.push({ values: nv, labels: nl, nodes: nc, isLeaf, disabled: dis });
+        if (!isLeaf) walk(kids, nv, nl, nc, dis);
       }
     };
-    walk(treeData, [], [], false);
+    walk(treeData, [], [], [], false);
     return out;
   });
   const filteredPaths = $derived.by<FlatPath[]>(() => {
     if (!searchActive) return [];
+    const spec = filterSpec;
+    if (spec === false) return [];
+    if (typeof spec === 'function') {
+      return flatPaths.filter((p) => spec(trimmedSearch, p));
+    }
     const lower = trimmedSearch.toLowerCase();
-    return flatPaths.filter((p) => p.labels.join(' / ').toLowerCase().includes(lower));
+    return flatPaths.filter((p) => {
+      if (filterLeafOnly && !p.isLeaf) return false;
+      return p.labels.join(separator).toLowerCase().includes(lower);
+    });
   });
 
   // 命中文本高亮（作用于整条 label 链字符串）
@@ -258,7 +336,9 @@
       : { checked: new Set<Key>(), half: new Set<Key>() },
   );
 
-  // 选中叶子的完整路径链（用于多 tag 回显）。遍历合并树收集 checked 的叶子路径。
+  // 选中路径链（用于多 tag 回显）。遍历合并树收集 checked 路径：
+  //   leafOnly=false（默认）：仅叶子（现状不变）。
+  //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻（父 tag 代表整子树）。
   const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[]; nodes: CascaderNode[] }[]>(() => {
     if (!multiple) return [];
     const out: { path: Key[]; labels: string[]; nodes: CascaderNode[] }[] = [];
@@ -269,9 +349,12 @@
         const nl = [...labels, n.label];
         const nc = [...chain, n];
         const isLeaf = !kids || kids.length === 0;
-        if (isLeaf && checkState.checked.has(n.value)) {
+        if (isLeaf) {
+          if (checkState.checked.has(n.value)) out.push({ path: np, labels: nl, nodes: nc });
+        } else if (leafOnly && checkState.checked.has(n.value)) {
+          // 父级完全勾选 → 折叠为父路径
           out.push({ path: np, labels: nl, nodes: nc });
-        } else if (!isLeaf) {
+        } else {
           walk(kids, np, nl, nc);
         }
       }
@@ -280,6 +363,18 @@
     return out;
   });
 
+  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数（仅影响显示，不改 value，红线 #1/#2）。
+  const visibleTagPaths = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? checkedLeafPaths.slice(0, maxTagCount)
+      : checkedLeafPaths,
+  );
+  const hiddenTagCount = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? Math.max(0, checkedLeafPaths.length - maxTagCount)
+      : 0,
+  );
+
   const selectedChain = $derived(findPath(treeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
@@ -287,10 +382,13 @@
   );
   const showClear = $derived(clearable && !disabled && hasSelection);
 
-  // 单条路径回显文本：有 displayRender 走自定义，否则 label 用「 / 」连接。
+  // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
+  // 否则按 displayProp 取 label 或 value 链，用 separator 连接。
   // 多选每个 tag 与单选回显共用此逻辑。
   function renderPath(labels: string[], nodes: CascaderNode[]): string {
-    return displayRender ? displayRender(labels, nodes) : labels.join(' / ');
+    if (displayRender) return displayRender(labels, nodes);
+    const fields = displayProp === 'value' ? nodes.map((n) => String(n.value)) : labels;
+    return fields.join(separator);
   }
 
   function setValue(next: Key[]) {
@@ -298,7 +396,9 @@
     onChange?.(next);
   }
 
-  // 多选：由勾选叶子全集生成多条路径回调
+  // 多选：由 conduct 解析后的 checked 全集生成多条路径回调。
+  //   leafOnly=false（默认）：仅叶子路径（现状不变）。
+  //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻。
   function leafBaseToPaths(checkedSet: Set<Key>): Key[][] {
     const out: Key[][] = [];
     const walk = (nodes: CascaderNode[], path: Key[]) => {
@@ -308,6 +408,8 @@
         const isLeaf = !kids || kids.length === 0;
         if (isLeaf) {
           if (checkedSet.has(n.value)) out.push(np);
+        } else if (leafOnly && checkedSet.has(n.value)) {
+          out.push(np);
         } else {
           walk(kids, np);
         }
@@ -468,6 +570,20 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
 
+  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 切显隐），
+  //     true 时关闭即从 DOM 卸载（{#if shouldRender}），重开重建。 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+
+  // 空态文本（emptyContent 为 string 时用，Snippet 时模板直接渲染）。
+  const emptyText = $derived(
+    typeof emptyContent === 'string' ? emptyContent : loc().t('Cascader.emptyText'),
+  );
+  const isEmptySnippet = $derived(typeof emptyContent === 'function');
+
   // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -518,7 +634,7 @@
       {#if multiple}
         {#if checkedLeafPaths.length > 0}
           <span class="cd-cascader__tags">
-            {#each checkedLeafPaths as leaf (leaf.path.join('/'))}
+            {#each visibleTagPaths as leaf (leaf.path.join('/'))}
               <Tag
                 size={size === 'large' ? 'default' : 'small'}
                 closable={!disabled}
@@ -527,6 +643,9 @@
                 {renderPath(leaf.labels, leaf.nodes)}
               </Tag>
             {/each}
+            {#if hiddenTagCount > 0}
+              <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+            {/if}
           </span>
         {:else}
           <span class="cd-cascader__placeholder">{placeholder}</span>
@@ -568,14 +687,23 @@
     </span>
   </div>
 
-  {#if isOpen}
+  {#if shouldRender}
     <div
       class="cd-cascader__panel"
+      class:cd-cascader__panel--hidden={!isOpen}
       bind:this={panelEl}
-      use:floating={{ trigger: rootEl, placement: 'bottomStart', autoAdjust: true, offset: 4 }}
+      use:floating={{
+        trigger: rootEl,
+        placement: 'bottomStart',
+        autoAdjust: true,
+        offset: 4,
+        getContainer: resolvePopupContainer,
+        open: isOpen,
+      }}
       id={listId}
+      style:z-index={zIndex}
     >
-      {#if filterable}
+      {#if isFilterable}
         <div class="cd-cascader__search">
           <input
             class="cd-cascader__search-input"
@@ -589,7 +717,11 @@
       {#if searchActive}
         <ul class="cd-cascader__flat" role="listbox">
           {#if filteredPaths.length === 0}
-            <li class="cd-cascader__empty">{loc().t('Cascader.emptyText')}</li>
+            {#if isEmptySnippet}
+              <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+            {:else}
+              <li class="cd-cascader__empty">{emptyText}</li>
+            {/if}
           {:else}
             {#each filteredPaths as p (p.values.join('/'))}
               <li
@@ -607,7 +739,7 @@
                 tabindex={p.disabled ? -1 : 0}
               >
                 <span class="cd-cascader__option-label">
-                  {#each highlightParts(p.labels.join(' / ')) as part, i (i)}
+                  {#each highlightParts(p.labels.join(separator)) as part, i (i)}
                     {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
                   {/each}
                 </span>
@@ -618,7 +750,18 @@
       {:else}
       <div class="cd-cascader__columns">
       {#each columns as column, colIndex (colIndex)}
-        <ul class="cd-cascader__column" role="listbox">
+        <ul
+          class="cd-cascader__column"
+          role="listbox"
+          style:inline-size="{resolveColumnWidth(columnWidth, colIndex, 180)}px"
+        >
+          {#if column.length === 0}
+            {#if isEmptySnippet}
+              <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+            {:else}
+              <li class="cd-cascader__empty">{emptyText}</li>
+            {/if}
+          {/if}
           {#each column as node (node.value)}
             <li
               class="cd-cascader__option"
@@ -766,6 +909,10 @@
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
+  .cd-cascader__panel--hidden {
+    display: none;
   }
   /* 级联列容器：横向排列各列 */
   .cd-cascader__columns {
