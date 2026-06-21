@@ -4,12 +4,23 @@
   Controlled / uncontrolled (same pattern as Input). Variation only via onChange.
   长按连续增减：按钮 mousedown 首延迟 400ms 后以 60ms 间隔重复，up/leave/卸载清理。
   formatter/parser：自定义显示/解析（formatter 仅作用于非编辑态显示）。
+  mouseWheel/selectOnFocus/autofocus 命令式监听挂在 action 上并 cleanup（红线 #3）。
 -->
 <script lang="ts">
+  import {
+    useId,
+    clampWithMode,
+    boundaryHitOf,
+    roundToPrecision,
+    addNumberStep,
+    formatWithLocale,
+    type BoundaryMode,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
+  type ControlsPosition = 'right' | 'sides';
 
   interface Props {
     value?: number | null;
@@ -19,20 +30,38 @@
     step?: number;
     shiftStep?: number;
     precision?: number;
+    /** 越界处理：clamp 钳制 / strict 拒绝回滚 */
+    boundaryMode?: BoundaryMode;
     size?: Size;
     disabled?: boolean;
     readonly?: boolean;
     status?: Status;
     controls?: boolean;
+    /** 步进按钮布局：right 右侧 stacked / sides 两侧 */
+    controlsPosition?: ControlsPosition;
+    /** 步进按钮内嵌悬浮（hover/focus 显形） */
+    innerButtons?: boolean;
     keyboard?: boolean;
+    /** 聚焦时滚轮步进 */
+    mouseWheel?: boolean;
     placeholder?: string;
     name?: string;
+    /** input 元素 id，关联外部 label；不传自动生成 */
+    id?: string;
     ariaLabel?: string;
+    /** 挂载自动聚焦 */
+    autofocus?: boolean;
+    /** 聚焦时全选文本 */
+    selectOnFocus?: boolean;
+    /** 数字格式化 locale，传给内部 Intl（仅未提供 formatter 时生效） */
+    locale?: string;
     /** 自定义显示格式化（仅非编辑态） */
     formatter?: (n: number) => string;
     /** 自定义解析（与 formatter 对应） */
     parser?: (s: string) => number;
     onChange?: (v: number | null) => void;
+    /** 触达/试图越过边界 */
+    onBoundaryHit?: (e: { boundary: 'min' | 'max'; value: number }) => void;
   }
 
   let {
@@ -43,21 +72,33 @@
     step = 1,
     shiftStep,
     precision,
+    boundaryMode = 'clamp',
     size = 'default',
     disabled = false,
     readonly = false,
     status = 'default',
     controls = true,
+    controlsPosition = 'right',
+    innerButtons = false,
     keyboard = true,
+    mouseWheel = false,
     placeholder,
     name,
+    id,
     ariaLabel,
+    autofocus = false,
+    selectOnFocus = false,
+    locale,
     formatter,
     parser,
     onChange,
+    onBoundaryHit,
   }: Props = $props();
 
   const loc = useLocale();
+  // 生成一次稳定回退 id（在 $derived 里调 useId 会每次产生新 id）。
+  const autoId = useId('cd-input-number');
+  const inputId = $derived(id ?? autoId);
 
   // Controlled when `value` prop is explicitly provided (incl. `null`).
   const isControlled = $derived(value !== undefined);
@@ -83,7 +124,10 @@
 
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
-    return formatter ? formatter(n) : String(n);
+    if (formatter) return formatter(n);
+    // 未提供 formatter 时：仅当显式传入 locale 才走 Intl，否则保持现状 String(n)。
+    if (locale) return formatWithLocale(n, locale);
+    return String(n);
   }
 
   function parseText(t: string): number | null {
@@ -93,27 +137,17 @@
     return Number.isNaN(n) ? null : n;
   }
 
-  function clamp(n: number): number {
-    return Math.min(max, Math.max(min, n));
-  }
-
   function applyPrecision(n: number): number {
-    if (precision === undefined) return n;
-    const factor = 10 ** precision;
-    return Math.round(n * factor) / factor;
+    return roundToPrecision(n, precision);
   }
 
-  // Floating-point safe step using integer scaling.
-  function addStep(base: number, delta: number): number {
-    const decimals = Math.max(decimalsOf(base), decimalsOf(delta));
-    const factor = 10 ** decimals;
-    return (Math.round(base * factor) + Math.round(delta * factor)) / factor;
-  }
-
-  function decimalsOf(n: number): number {
-    const s = String(n);
-    const dot = s.indexOf('.');
-    return dot === -1 ? 0 : s.length - dot - 1;
+  // 归一化：round → clamp/strict。strict 越界返回 null（表示拒绝，调用方回滚）。
+  // 同时上报 boundaryHit。
+  function normalize(n: number): number | null {
+    const rounded = applyPrecision(n);
+    const hit = boundaryHitOf(rounded, min, max);
+    if (hit) onBoundaryHit?.({ boundary: hit, value: rounded });
+    return clampWithMode(rounded, min, max, boundaryMode);
   }
 
   function commitValue(next: number | null) {
@@ -135,7 +169,13 @@
       if (current !== null) commitValue(null);
       return;
     }
-    const normalized = clamp(applyPrecision(parsed));
+    const normalized = normalize(parsed);
+    // strict 越界：normalize 返回 null → 拒绝写入，回滚到 current 显示。
+    // 受控值未变（不会触发重渲染回填 input），故命令式把 DOM 值还原为当前显示串。
+    if (normalized === null) {
+      restoreDisplay();
+      return;
+    }
     if (normalized !== current) commitValue(normalized);
   }
 
@@ -147,8 +187,10 @@
     if (disabled || readonly) return;
     const delta = (large ? effectiveShiftStep : step) * dir;
     const base = current ?? (Number.isFinite(min) ? min : 0);
-    const next = clamp(applyPrecision(addStep(base, delta)));
+    const next = normalize(addNumberStep(base, delta));
     editingText = null;
+    // strict 越界回滚：保持 current。
+    if (next === null) return;
     if (next !== current) commitValue(next);
   }
 
@@ -187,6 +229,12 @@
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       stepBy(-1, e.shiftKey);
+    } else if (e.key === 'PageUp') {
+      e.preventDefault();
+      stepBy(1, true);
+    } else if (e.key === 'PageDown') {
+      e.preventDefault();
+      stepBy(-1, true);
     } else if (e.key === 'Enter') {
       commitFromText();
     }
@@ -197,11 +245,53 @@
     e.preventDefault();
   }
 
+  // --- 命令式监听：autofocus / selectOnFocus / mouseWheel + cleanup（红线 #3）---
+  let inputEl: HTMLInputElement | undefined;
+
+  // 受控值未变时（如 strict 越界拒绝），Svelte 不会重渲染 input.value，需命令式还原。
+  function restoreDisplay() {
+    if (inputEl) inputEl.value = formatDisplay(current);
+  }
+
+  function inputActions(node: HTMLInputElement) {
+    inputEl = node;
+    if (autofocus && !disabled) {
+      // 推迟到下一帧，确保挂载后 DOM 已就绪、避免抢占 SSR hydration。
+      requestAnimationFrame(() => node.focus());
+    }
+
+    function onFocus() {
+      // 推迟到下一帧：浏览器在 focus 后才放置默认光标，立即 select 会被覆盖。
+      if (selectOnFocus) requestAnimationFrame(() => node.select());
+    }
+
+    // 滚轮步进：仅聚焦时响应，passive=false 以便 preventDefault 阻止页面滚动。
+    function onWheel(e: WheelEvent) {
+      if (!mouseWheel || disabled || readonly) return;
+      if (document.activeElement !== node) return;
+      e.preventDefault();
+      stepBy(e.deltaY < 0 ? 1 : -1, e.shiftKey);
+    }
+
+    node.addEventListener('focus', onFocus);
+    node.addEventListener('wheel', onWheel, { passive: false });
+
+    return {
+      destroy() {
+        node.removeEventListener('focus', onFocus);
+        node.removeEventListener('wheel', onWheel);
+        if (inputEl === node) inputEl = undefined;
+      },
+    };
+  }
+
   const cls = $derived(
     [
       'cd-input-number',
       `cd-input-number--${size}`,
       `cd-input-number--${status}`,
+      `cd-input-number--controls-${controlsPosition}`,
+      innerButtons && 'cd-input-number--inner',
       disabled && 'cd-input-number--disabled',
     ]
       .filter(Boolean)
@@ -211,10 +301,12 @@
 
 <div class={cls} aria-invalid={status === 'error' || undefined}>
   <input
+    use:inputActions
     class="cd-input-number__native"
     type="text"
     inputmode="decimal"
     role="spinbutton"
+    id={inputId}
     {name}
     {disabled}
     {readonly}
@@ -352,9 +444,58 @@
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
+  /* --- controlsPosition="sides"：减/输入/加 横向排布，按钮分居两侧 --- */
+  .cd-input-number--controls-sides {
+    position: relative;
+  }
+  .cd-input-number--controls-sides .cd-input-number__actions {
+    flex-direction: row;
+    inline-size: auto;
+    border-inline-start: none;
+    order: 2;
+  }
+  .cd-input-number--controls-sides .cd-input-number__decrement {
+    order: 0;
+    border-block-end: none;
+    border-inline-end: 1px solid var(--cd-input-border);
+  }
+  .cd-input-number--controls-sides .cd-input-number__increment {
+    order: 3;
+    border-block-end: none;
+    border-inline-start: 1px solid var(--cd-input-border);
+  }
+  .cd-input-number--controls-sides .cd-input-number__native {
+    order: 1;
+    text-align: center;
+  }
+  .cd-input-number--controls-sides .cd-input-number__action {
+    inline-size: var(--cd-spacing-6, 28px);
+  }
+
+  /* --- innerButtons：按钮悬浮于右内侧，hover/focus 显形 --- */
+  .cd-input-number--inner {
+    position: relative;
+  }
+  .cd-input-number--inner .cd-input-number__actions {
+    position: absolute;
+    inset-block: 1px;
+    inset-inline-end: 1px;
+    border-inline-start: none;
+    background: var(--cd-input-color-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-input-number--inner:hover .cd-input-number__actions,
+  .cd-input-number--inner:focus-within .cd-input-number__actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cd-input-number,
-    .cd-input-number__action {
+    .cd-input-number__action,
+    .cd-input-number--inner .cd-input-number__actions {
       transition: none;
     }
   }

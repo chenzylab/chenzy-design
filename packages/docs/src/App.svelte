@@ -1028,6 +1028,10 @@ let pageSize2 = $state(10);
   let radioStatusVal = $state<string | number | boolean>('warn');
   let numVal = $state<number | null>(3);
   let amountVal = $state<number | null>(12000);
+  let wheelVal = $state<number | null>(50);
+  let strictVal = $state<number | null>(5);
+  let sidesVal = $state<number | null>(2);
+  let strictHit = $state('');
   let rateVal = $state(2.5);
   let sliderVal = $state(40);
   let rangeVal = $state<[number, number]>([20, 60]);
@@ -1365,6 +1369,60 @@ let pageSize2 = $state(10);
         onChange={(v) => (amountVal = v)}
       />
       <Text type="tertiary">金额：{amountVal}（长按 +/- 连续增减）</Text>
+    </div>
+
+    <div data-testid="inputnumber-wheel">
+      <InputNumber
+        value={wheelVal}
+        min={0}
+        max={100}
+        mouseWheel
+        selectOnFocus
+        onChange={(v) => (wheelVal = v)}
+      />
+      <Text type="tertiary">滚轮调值（聚焦后滚动）+ 聚焦全选：{wheelVal}</Text>
+    </div>
+
+    <div data-testid="inputnumber-strict">
+      <InputNumber
+        value={strictVal}
+        min={0}
+        max={10}
+        boundaryMode="strict"
+        onChange={(v) => (strictVal = v)}
+        onBoundaryHit={(e) => (strictHit = `${e.boundary} @ ${e.value}`)}
+      />
+      <Text type="tertiary">strict 越界拒绝回滚；boundaryHit：{strictHit || '—'}</Text>
+    </div>
+
+    <div data-testid="inputnumber-sides">
+      <div style="width: 160px">
+        <InputNumber
+          value={sidesVal}
+          min={0}
+          max={9}
+          controlsPosition="sides"
+          onChange={(v) => (sidesVal = v)}
+        />
+      </div>
+      <Text type="tertiary">controlsPosition=sides 两侧按钮：{sidesVal}</Text>
+    </div>
+
+    <div data-testid="inputnumber-inner">
+      <div style="width: 160px">
+        <InputNumber defaultValue={1} min={0} innerButtons />
+      </div>
+      <Text type="tertiary">innerButtons 内嵌按钮（hover/聚焦显形）</Text>
+    </div>
+
+    <div data-testid="inputnumber-locale">
+      <InputNumber defaultValue={1234567} locale="de-DE" />
+      <Text type="tertiary">locale=de-DE 千分位（无 formatter 时走 Intl）</Text>
+    </div>
+
+    <div data-testid="inputnumber-label">
+      <label for="qty-demo"><Text type="tertiary">数量（id 关联 label）</Text></label>
+      <InputNumber id="qty-demo" defaultValue={1} min={0} autofocus={false} />
     </div>
 
     <Space>
