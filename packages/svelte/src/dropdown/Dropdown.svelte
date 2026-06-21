@@ -14,6 +14,7 @@
   import { setContext, type Snippet } from 'svelte';
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import DropdownItemNode from './DropdownItemNode.svelte';
   import { isDropdownDivider, isDropdownGroup } from './types.js';
@@ -69,13 +70,17 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
+  const globalPopupContainer = getGlobalPopupContainer();
+  // 合并后的容器解析器：prop 优先，否则全局默认；两处（context 共享 + portal）共用。
+  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
   const menuId = useId('cd-dropdown-menu');
 
   // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）。
   setContext<DropdownContext>(DROPDOWN_CTX, {
     get getContainer() {
-      return getPopupContainer;
+      return resolvePopupContainer;
     },
   });
 
@@ -276,7 +281,7 @@
       return { update() {}, destroy() {} };
     }
     // 自定义容器（getPopupContainer）时挂同容器并改 absolute 相对容器定位。
-    const container = getPopupContainer?.() ?? document.body;
+    const container = resolvePopupContainer?.() ?? document.body;
     const useAbsolute = container !== document.body;
     container.appendChild(node);
     node.style.position = useAbsolute ? 'absolute' : 'fixed';
@@ -403,7 +408,7 @@
       class:cd-dropdown__menu--hidden={!isOpen}
       id={menuId}
       bind:this={menuEl}
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4, getContainer: getPopupContainer, open: isOpen }}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4, getContainer: resolvePopupContainer, open: isOpen }}
       role="menu"
       tabindex="-1"
       aria-hidden={!isOpen || undefined}

@@ -140,6 +140,10 @@
   // ConfigProvider reducedMotion demo：Switch 受控 + 回调捕获解析结果。
   let cpReduced = $state(false);
   let cpReducedApplied = $state(false);
+  // ConfigProvider getValidateMessages demo：提交结果文案。
+  let cpValidateMsg = $state('');
+  // ConfigProvider getPopupContainer demo：浮层挂载宿主元素引用。
+  let cpPopupHost = $state<HTMLElement | null>(null);
   // Popover custom 受控触发 demo：显隐完全由外部按钮控制。
   let popoverCustomOpen = $state(false);
   // Tooltip custom 触发 demo：显隐完全由本地受控状态驱动。
@@ -3901,6 +3905,63 @@ let pageSize2 = $state(10);
       </Text>
     </div>
   </ConfigProvider>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider · as 自定义包裹标签</Title>
+  <Text type="tertiary">wrap=true 时 as 可把包裹元素改为 section/article/main 等语义标签（display:contents 不打断 a11y 树）</Text>
+  <ConfigProvider wrap as="section">
+    <div data-testid="cp-as" style="margin-top:8px; padding:16px; border:1px dashed var(--cd-color-border); border-radius:8px">
+      <Text type="tertiary">外层包裹元素标签为 <code>&lt;section&gt;</code>（见 DOM）</Text>
+    </div>
+  </ConfigProvider>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider · getValidateMessages 全局校验文案</Title>
+  <Text type="tertiary">getValidateMessages 在 locale 内置文案之上按 Form.* 键覆盖校验提示（支持 {'{label}'} 插值），不传字段回退默认</Text>
+  <ConfigProvider
+    getValidateMessages={() => ({
+      'Form.required': '【{label}】这一项必须填写哦',
+    })}
+  >
+    <div data-testid="cp-validate" style="max-width:360px; margin-top:8px">
+      <Form onSubmit={(r) => (cpValidateMsg = r.valid ? '校验通过' : '校验未通过（看上方提示）')}>
+        <Form.Input field="nickname" label="昵称" required />
+        {#snippet footer({ submitting })}
+          <Button type="primary" htmlType="submit" loading={submitting}>提交（不填触发）</Button>
+        {/snippet}
+      </Form>
+      <Text type="tertiary">{cpValidateMsg}</Text>
+    </div>
+  </ConfigProvider>
+
+  <Divider />
+
+  <Title heading={5}>ConfigProvider · getPopupContainer 全局浮层容器</Title>
+  <Text type="tertiary">getPopupContainer 经 context 提供全局默认容器；Dropdown 未传自身 prop 时浮层 portal 到此容器（而非 body）</Text>
+  <div
+    bind:this={cpPopupHost}
+    data-testid="cp-popup-host"
+    style="position:relative; margin-top:8px; padding:16px; border:1px dashed var(--cd-color-border); border-radius:8px"
+  >
+    <Text type="tertiary">浮层挂载宿主（下方菜单将 portal 进这里）：</Text>
+    <div style="margin-top:8px">
+      <ConfigProvider getPopupContainer={() => cpPopupHost ?? document.body}>
+        <Dropdown
+          items={[
+            { key: 'a', label: '选项 A' },
+            { key: 'b', label: '选项 B' },
+          ]}
+          trigger="click"
+        >
+          {#snippet triggerContent()}
+            <Button>打开菜单</Button>
+          {/snippet}
+        </Dropdown>
+      </ConfigProvider>
+    </div>
+  </div>
 
   <Divider />
 

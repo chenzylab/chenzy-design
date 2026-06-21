@@ -14,6 +14,7 @@
   import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { acquireZIndex } from './z-stack.js';
 
   type OkType = 'primary' | 'danger';
@@ -75,6 +76,8 @@
 
   const titleId = useId('cd-modal-title');
   const loc = useLocale();
+  // ConfigProvider 全局浮层容器默认；自身 getContainer prop 优先，未传时回退此值（再回退 body）。
+  const globalPopupContainer = getGlobalPopupContainer();
 
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange/onCancel ---
   const isControlled = $derived(open !== undefined);
@@ -226,7 +229,7 @@
     if (typeof document === 'undefined') {
       return { destroy() {} };
     }
-    const target = getContainer?.() ?? document.body;
+    const target = getContainer?.() ?? globalPopupContainer?.() ?? document.body;
     target.appendChild(node);
     return {
       destroy() {
