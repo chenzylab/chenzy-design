@@ -71,6 +71,11 @@ export const zh_CN: Locale = {
     close: '关闭',
     title: '详情',
   },
+  SideSheet: {
+    closeAriaLabel: '关闭',
+    closeText: '关闭',
+    confirmText: '确定',
+  },
   Popconfirm: {
     confirm: '确定',
     cancel: '取消',

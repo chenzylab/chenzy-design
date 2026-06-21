@@ -71,6 +71,11 @@ export const en_US: Locale = {
     close: 'Close',
     title: 'Details',
   },
+  SideSheet: {
+    closeAriaLabel: 'Close',
+    closeText: 'Close',
+    confirmText: 'OK',
+  },
   Popconfirm: {
     confirm: 'Confirm',
     cancel: 'Cancel',

@@ -93,6 +93,11 @@ export interface Locale {
     close: string;
     title: string;
   };
+  SideSheet: {
+    closeAriaLabel: string;
+    closeText: string;
+    confirmText: string;
+  };
   Popconfirm: {
     confirm: string;
     cancel: string;
