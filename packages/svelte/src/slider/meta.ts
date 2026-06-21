@@ -19,6 +19,7 @@ export const meta = {
     { name: 'height', type: 'number', default: '200', desc: '垂直模式高度（px）' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    { name: 'status', type: "'default'|'warning'|'error'", default: 'default', desc: '校验态，影响已选轨道与手柄边框色' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
     { name: 'onChange', type: '(v: number | [number, number]) => void', default: 'undefined' },
   ],

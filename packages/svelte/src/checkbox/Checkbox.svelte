@@ -10,9 +10,10 @@
     type CheckboxValue,
     type CheckboxSize,
     type CheckboxType,
+    type CheckboxStatus,
   } from './context.js';
 
-  type Status = 'default' | 'warning' | 'error';
+  type Status = CheckboxStatus;
 
   interface Props {
     checked?: boolean;
@@ -76,6 +77,8 @@
   const resolvedName = $derived(name ?? group?.getName());
   // Group transparently provides `type`; a per-item non-default `type` overrides it.
   const resolvedType = $derived(type !== 'default' ? type : (group?.getType() ?? 'default'));
+  // Group transparently provides `status`; a per-item non-default `status` overrides it.
+  const resolvedStatus = $derived(status !== 'default' ? status : (group?.getStatus() ?? 'default'));
 
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.checked;
@@ -100,7 +103,7 @@
     [
       'cd-checkbox',
       `cd-checkbox--${resolvedSize}`,
-      `cd-checkbox--${status}`,
+      `cd-checkbox--${resolvedStatus}`,
       resolvedType !== 'default' && `cd-checkbox--${resolvedType}`,
       isChecked && 'cd-checkbox--checked',
       indeterminate && !isChecked && 'cd-checkbox--indeterminate',
@@ -121,6 +124,7 @@
     value={value !== undefined ? String(value) : undefined}
     checked={isChecked}
     disabled={resolvedDisabled}
+    aria-invalid={resolvedStatus === 'error' || undefined}
     aria-describedby={extraId}
     onchange={handleChange}
   />

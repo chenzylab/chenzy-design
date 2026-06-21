@@ -8,4 +8,6 @@ export const sliderTokens = {
   'slider-handle-border': 'var(--cd-color-primary)',
   'slider-mark-color': 'var(--cd-color-text-2)',
   'slider-radius': 'var(--cd-radius-full)',
+  'slider-status-warning': 'var(--cd-color-warning)',
+  'slider-status-error': 'var(--cd-color-danger)',
 } as const;

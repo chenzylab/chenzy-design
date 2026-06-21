@@ -15,6 +15,7 @@ export const meta = {
     { name: 'defaultOpen', type: 'boolean', default: 'false' },
     { name: 'presets', type: 'string[]', default: '[]' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    { name: 'status', type: "'default'|'warning'|'error'", default: 'default', desc: '校验态，仅影响 trigger / inline 面板边框色' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'outputUppercase', type: 'boolean', default: 'true' },
     { name: 'format', type: "'hex'|'rgb'|'hsv'|'hsl'", default: 'undefined', desc: '受控：面板内显示/编辑的颜色格式（对外 onChange 仍为 hex）' },

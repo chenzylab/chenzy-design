@@ -10,6 +10,7 @@
     type CheckboxValue,
     type CheckboxSize,
     type CheckboxType,
+    type CheckboxStatus,
   } from './context.js';
 
   type OptionObject = { label: string; value: CheckboxValue; disabled?: boolean; extra?: string };
@@ -21,6 +22,7 @@
     options?: Option[];
     disabled?: boolean;
     size?: CheckboxSize;
+    status?: CheckboxStatus;
     type?: CheckboxType;
     name?: string;
     direction?: 'horizontal' | 'vertical';
@@ -34,6 +36,7 @@
     options,
     disabled = false,
     size = 'default',
+    status = 'default',
     type = 'default',
     name,
     direction = 'horizontal',
@@ -74,6 +77,7 @@
     getSize: () => size,
     getName: () => name,
     getType: () => type,
+    getStatus: () => status,
   });
 
   const cls = $derived(`cd-checkbox-group cd-checkbox-group--${direction}`);

@@ -3,6 +3,8 @@ export const colorPickerTokens = {
   'color-picker-trigger-size': '28px',
   'color-picker-trigger-radius': 'var(--cd-radius-2)',
   'color-picker-trigger-border': 'var(--cd-color-border)',
+  'color-picker-status-warning': 'var(--cd-color-warning)',
+  'color-picker-status-error': 'var(--cd-color-danger)',
   'color-picker-panel-bg': 'var(--cd-color-bg-0)',
   'color-picker-panel-shadow': 'var(--cd-shadow-2)',
   'color-picker-panel-radius': 'var(--cd-radius-3)',

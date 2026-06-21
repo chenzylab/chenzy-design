@@ -25,6 +25,7 @@
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
+  type Status = 'default' | 'warning' | 'error';
 
   interface Props {
     value?: string;
@@ -34,6 +35,7 @@
     defaultOpen?: boolean;
     presets?: string[];
     size?: Size;
+    status?: Status;
     disabled?: boolean;
     outputUppercase?: boolean;
     /** 受控：面板内显示/编辑的颜色格式。对外 onChange 仍为 hex 字符串。 */
@@ -65,6 +67,7 @@
     defaultOpen = false,
     presets = [],
     size = 'default',
+    status = 'default',
     disabled = false,
     outputUppercase = true,
     format,
@@ -411,6 +414,7 @@
     [
       'cd-color-picker',
       `cd-color-picker--${size}`,
+      status !== 'default' && `cd-color-picker--${status}`,
       inline && 'cd-color-picker--inline',
       disabled && 'cd-color-picker--disabled',
       isOpen && 'cd-color-picker--open',
@@ -619,6 +623,15 @@
   .cd-color-picker__trigger:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+  /* 校验态：仅影响 trigger 与 inline 面板边框色，不改内部取色控件。 */
+  .cd-color-picker--warning .cd-color-picker__trigger,
+  .cd-color-picker--warning .cd-color-picker__panel--inline {
+    border-color: var(--cd-color-picker-status-warning);
+  }
+  .cd-color-picker--error .cd-color-picker__trigger,
+  .cd-color-picker--error .cd-color-picker__panel--inline {
+    border-color: var(--cd-color-picker-status-error);
   }
   .cd-color-picker__panel {
     position: absolute;

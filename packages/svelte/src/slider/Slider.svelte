@@ -8,6 +8,7 @@
 -->
 <script lang="ts">
   type Size = 'small' | 'default' | 'large';
+  type Status = 'default' | 'warning' | 'error';
   type Single = number;
   type Pair = [number, number];
   type SliderValue = Single | Pair;
@@ -25,6 +26,7 @@
     height?: number;
     disabled?: boolean;
     size?: Size;
+    status?: Status;
     ariaLabel?: string;
     onChange?: (v: SliderValue) => void;
   }
@@ -42,6 +44,7 @@
     height = 200,
     disabled = false,
     size = 'default',
+    status = 'default',
     ariaLabel,
     onChange,
   }: Props = $props();
@@ -235,6 +238,7 @@
       'cd-slider',
       `cd-slider--${size}`,
       `cd-slider--${vertical ? 'vertical' : 'horizontal'}`,
+      status !== 'default' && `cd-slider--${status}`,
       disabled && 'cd-slider--disabled',
     ]
       .filter(Boolean)
@@ -385,6 +389,19 @@
   }
   .cd-slider--disabled .cd-slider__track {
     background: var(--cd-color-text-3);
+  }
+  /* 校验态：已选轨道段与手柄边框改用 warning/error 色调（disabled 优先）。 */
+  .cd-slider--warning:not(.cd-slider--disabled) .cd-slider__track {
+    background: var(--cd-slider-status-warning);
+  }
+  .cd-slider--warning:not(.cd-slider--disabled) .cd-slider__handle {
+    border-color: var(--cd-slider-status-warning);
+  }
+  .cd-slider--error:not(.cd-slider--disabled) .cd-slider__track {
+    background: var(--cd-slider-status-error);
+  }
+  .cd-slider--error:not(.cd-slider--disabled) .cd-slider__handle {
+    border-color: var(--cd-slider-status-error);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-slider__handle {
