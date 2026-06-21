@@ -49,6 +49,21 @@ export const meta = {
       desc: '多选模式：点击叶子项 toggle 选中态，selectedKeys 可含多项同时高亮并显勾选标记。受控下父组件依据 onSelect(key) 自行 toggle selectedKeys；非受控由组件内部维护多选 Set',
     },
     {
+      name: 'triggerSubMenuAction',
+      type: "'hover'|'click'",
+      default: 'hover',
+      desc: '浮层子菜单触发方式（vertical/horizontal/collapsed 浮层模式生效）：hover 悬停带 open/close 延迟开合；click 点击 title 切换。缺省按 mode 推导（默认 hover）',
+    },
+    { name: 'subMenuOpenDelay', type: 'number', default: '100', desc: 'hover 触发子菜单浮层展开延迟(ms)' },
+    { name: 'subMenuCloseDelay', type: 'number', default: '100', desc: 'hover 触发子菜单浮层收起延迟(ms)' },
+    {
+      name: 'getPopupContainer',
+      type: '() => HTMLElement',
+      default: '() => document.body',
+      desc: '浮层子菜单挂载容器（透传 floating action getContainer）；非 body 时改 absolute 相对该容器定位',
+    },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '整体禁用：所有项不可交互（叠加单项 disabled）' },
+    {
       name: 'purpose',
       type: "'menu'|'navigation'",
       default: 'menu',

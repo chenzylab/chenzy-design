@@ -29,6 +29,12 @@
     multiple?: boolean;
     /** navigation 用途：含 href 叶子渲染原生 <a href>，结构去除 menu/menuitem role（原生链接语义） */
     navigation?: boolean;
+    /** 浮层子菜单触发方式：'hover'（默认）随悬停开合 / 'click' 点击 title 切换 */
+    trigger?: 'hover' | 'click';
+    /** 浮层子菜单挂载容器（透传 floating action getContainer） */
+    getPopupContainer?: (() => HTMLElement | null | undefined) | undefined;
+    /** 整体禁用（来自父 Menu disabled）：叠加单项 disabled */
+    parentDisabled?: boolean;
   }
 
   let {
@@ -42,6 +48,9 @@
     collapsed = false,
     multiple = false,
     navigation = false,
+    trigger = 'hover',
+    getPopupContainer,
+    parentDisabled = false,
   }: Props = $props();
 
   // 分隔符/分组在模板顶层单独处理；此处统一窄化为普通项节点供后续派生使用。
@@ -50,6 +59,8 @@
   const firstChar = $derived([...(node.label ?? '')][0] ?? '');
 
   const hasChildren = $derived(!!node.children && node.children.length > 0);
+  // 整体 disabled（parentDisabled）叠加单项 disabled。
+  const itemDisabled = $derived(parentDisabled || !!node.disabled);
 
   let titleEl = $state<HTMLButtonElement | null>(null);
   let open = $state(false);
@@ -69,7 +80,7 @@
   }
 
   function scheduleOpen() {
-    if (node.disabled || !hasChildren) return;
+    if (trigger !== 'hover' || itemDisabled || !hasChildren) return;
     if (closeTimer !== undefined) {
       clearTimeout(closeTimer);
       closeTimer = undefined;
@@ -82,6 +93,7 @@
   }
 
   function scheduleClose() {
+    if (trigger !== 'hover') return;
     if (openTimer !== undefined) {
       clearTimeout(openTimer);
       openTimer = undefined;
@@ -107,9 +119,15 @@
   }
 
   function onLeafClick() {
-    if (node.disabled) return;
+    if (itemDisabled) return;
     onSelectLeaf(node);
     onCloseAll();
+  }
+
+  // click 触发模式：点击 title 切换浮层开合（hover 模式下点击不接管）。
+  function onTitleClick() {
+    if (trigger !== 'click' || itemDisabled || !hasChildren) return;
+    open = !open;
   }
 
   // 卸载兜底清理定时器。
@@ -132,6 +150,9 @@
           {isSelected}
           {multiple}
           {navigation}
+          {trigger}
+          {getPopupContainer}
+          {parentDisabled}
           {onSelectLeaf}
           {onCloseAll}
           {openDelay}
@@ -154,15 +175,16 @@
       role={navigation ? undefined : 'menuitem'}
       aria-haspopup="true"
       aria-expanded={open}
-      aria-disabled={node.disabled || undefined}
+      aria-disabled={itemDisabled || undefined}
       aria-label={collapsed ? node.label : undefined}
       title={collapsed ? node.label : undefined}
-      disabled={node.disabled || undefined}
+      disabled={itemDisabled || undefined}
       bind:this={titleEl}
+      onclick={onTitleClick}
       onkeydown={(e) => {
         if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          if (hasChildren && !node.disabled) open = true;
+          if (hasChildren && !itemDisabled) open = true;
         } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
           closeNow();
         }
@@ -181,7 +203,7 @@
       <ul
         class="cd-menu__sub cd-menu__sub--popup"
         role={navigation ? undefined : 'menu'}
-        use:floating={{ trigger: titleEl, placement, offset: 2, autoAdjust: true }}
+        use:floating={{ trigger: titleEl, placement, offset: 2, autoAdjust: true, getContainer: getPopupContainer }}
         onpointerenter={keepOpen}
         onpointerleave={scheduleClose}
       >
@@ -192,6 +214,9 @@
             {isSelected}
             {multiple}
             {navigation}
+            {trigger}
+            {getPopupContainer}
+            parentDisabled={parentDisabled}
             {onSelectLeaf}
             onCloseAll={() => {
               closeNow();
@@ -213,11 +238,11 @@
         class="cd-menu__link"
         class:cd-menu__link--selected={selected}
         class:cd-menu__link--collapsed={collapsed}
-        href={node.disabled ? undefined : node.href}
+        href={itemDisabled ? undefined : node.href}
         target={node.target}
         rel={node.rel}
         aria-current={selected ? 'page' : undefined}
-        aria-disabled={node.disabled || undefined}
+        aria-disabled={itemDisabled || undefined}
         aria-label={collapsed ? node.label : undefined}
         title={collapsed ? node.label : undefined}
         onclick={onLeafClick}
@@ -234,10 +259,10 @@
         role={navigation ? undefined : multiple ? 'menuitemcheckbox' : 'menuitem'}
         aria-current={!navigation && !multiple && selected ? 'true' : undefined}
         aria-checked={!navigation && multiple ? selected : undefined}
-        aria-disabled={node.disabled || undefined}
+        aria-disabled={itemDisabled || undefined}
         aria-label={collapsed ? node.label : undefined}
         title={collapsed ? node.label : undefined}
-        disabled={node.disabled || undefined}
+        disabled={itemDisabled || undefined}
         onclick={onLeafClick}
       >
         {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}

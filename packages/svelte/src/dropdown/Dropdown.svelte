@@ -41,6 +41,16 @@
     mouseLeaveDelay?: number;
     /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
     destroyOnClose?: boolean;
+    /**
+     * 首次打开前不渲染浮层内容（默认 true：惰性渲染，首开才挂载）。
+     * 设为 false 时即使从未打开也预渲染浮层 DOM（仅隐藏），可减少首开开销。
+     */
+    lazyRender?: boolean;
+    /**
+     * 关闭后保留浮层 DOM（与 destroyOnClose 互斥；为 true 时强制保留，忽略 destroyOnClose）。
+     * 默认 false：保留策略由 destroyOnClose 决定。
+     */
+    keepDOM?: boolean;
     /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
     onSelect?: (key: ItemKey) => void;
@@ -62,6 +72,8 @@
     mouseEnterDelay = 150,
     mouseLeaveDelay = 150,
     destroyOnClose = false,
+    lazyRender = true,
+    keepDOM = false,
     getPopupContainer,
     onSelect,
     onOpenChange,
@@ -89,13 +101,22 @@
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isControlled ? !!open : innerOpen);
 
-  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 切显隐），
-  //     true 时关闭即从 DOM 卸载（{#if shouldRender}），重开重建。 ---
+  // --- 渲染策略：lazyRender 控制首开前是否预渲染；keepDOM/destroyOnClose 控制关闭后是否保留 ---
+  //  lazyRender=false 时即使从未打开也预渲染（仅隐藏）。
+  //  关闭后保留：keepDOM=true 强制保留（忽略 destroyOnClose）；否则 destroyOnClose=false 保留 / true 卸载。
   let hasBeenOpened = $state(false);
   $effect(() => {
     if (isOpen) hasBeenOpened = true;
   });
-  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+  // 关闭后是否保留 DOM：keepDOM 优先，否则取 !destroyOnClose。
+  const retainOnClose = $derived(keepDOM || !destroyOnClose);
+  const shouldRender = $derived(
+    isOpen ||
+      // 已开过且关闭后需保留
+      (hasBeenOpened && retainOnClose) ||
+      // 非惰性：从未打开也预渲染
+      !lazyRender,
+  );
 
   function getInitialOpen(): boolean {
     return defaultOpen;

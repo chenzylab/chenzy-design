@@ -41,6 +41,18 @@ export const meta = {
       desc: '关闭即卸载浮层内容（{#if}）重开重建；默认 false 首开后保留 DOM 仅隐藏',
     },
     {
+      name: 'lazyRender',
+      type: 'boolean',
+      default: 'true',
+      desc: '首次打开前不渲染浮层内容（惰性）；false 时即使从未打开也预渲染浮层 DOM（仅隐藏）',
+    },
+    {
+      name: 'keepDOM',
+      type: 'boolean',
+      default: 'false',
+      desc: '关闭后保留浮层 DOM（与 destroyOnClose 互斥；true 时强制保留，忽略 destroyOnClose）',
+    },
+    {
       name: 'getPopupContainer',
       type: '() => HTMLElement',
       default: '() => document.body',
