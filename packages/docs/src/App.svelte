@@ -541,6 +541,8 @@ let monthVal = $state<Date | null>(null);
 let yearVal = $state<Date | null>(null);
 let disabledTimeVal = $state<Date | null>(null);
 let presetVal = $state<Date | null>(null);
+let formatVal = $state<Date | null>(null);
+let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
   let timeVal = $state<Date | null>(null);
   let timeVal12 = $state<Date | null>(null);
   let timeValDisabled = $state<Date | null>(null);
@@ -1545,6 +1547,26 @@ let pageSize2 = $state(10);
       <Text type="tertiary">
         范围（双面板，两个月并排）：{dateRangeVal && dateRangeVal[0] && dateRangeVal[1]
           ? `${dateRangeVal[0].toLocaleDateString('zh-CN')} ~ ${dateRangeVal[1].toLocaleDateString('zh-CN')}`
+          : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="datepicker-format" style="width:260px; display:inline-block">
+        <DatePicker format="YYYY-MM-DD" value={formatVal} onChange={(d) => (formatVal = d)} />
+      </span>
+      <Text type="tertiary">
+        自定义 format（可手输 YYYY-MM-DD）：{formatVal
+          ? formatVal.toLocaleDateString('zh-CN')
+          : '（未选）'}
+      </Text>
+    </Space>
+    <Space>
+      <span data-testid="rangepicker-maxrange" style="width:260px; display:inline-block">
+        <RangePicker maxRange={7} value={maxRangeVal} onChange={(r) => (maxRangeVal = r)} />
+      </span>
+      <Text type="tertiary">
+        maxRange=7（最多 7 天跨度）：{maxRangeVal && maxRangeVal[0] && maxRangeVal[1]
+          ? `${maxRangeVal[0].toLocaleDateString('zh-CN')} ~ ${maxRangeVal[1].toLocaleDateString('zh-CN')}`
           : '（未选）'}
       </Text>
     </Space>
