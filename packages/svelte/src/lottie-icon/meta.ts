@@ -6,7 +6,7 @@ export const meta = {
   name: 'LottieIcon',
   category: 'other',
   description:
-    'Lottie 动画图标：依赖注入 player 工厂（库不绑定 lottie-web，用户自带），data 内联 JSON 或 src URL 异步 fetch（AbortController + 加载中 skeleton / 失败 error 态），size/color/trigger(auto/hover/manual)/loop/speed 播放控制，segments 帧段([start,end]或命名 marker)，flipRtl RTL 水平镜像，命令式 play/pause/stop，prefers-reduced-motion 降级首帧静止，decorative aria-hidden / 功能性 role=img+label；本子集 visible/canvas 延后。',
+    'Lottie 动画图标：依赖注入 player 工厂（库不绑定 lottie-web，用户自带），data 内联 JSON 或 src URL 异步 fetch（AbortController + 加载中 skeleton / 失败 error 态），size/color/trigger(auto/hover/manual)/loop/speed 播放控制，segments 帧段([start,end]或命名 marker)，flipRtl RTL 水平镜像，visible 受控显隐（false 暂停+display:none），canvas/renderer 渲染后端(svg/canvas/html，经 adapter 透传)，命令式 play/pause/stop，prefers-reduced-motion 降级首帧静止，decorative aria-hidden / 功能性 role=img+label。',
   exports: ['LottieIcon'],
   props: [
     {
@@ -38,6 +38,24 @@ export const meta = {
       type: 'boolean',
       default: 'false',
       desc: 'RTL 场景水平镜像动画（transform scaleX(-1)）',
+    },
+    {
+      name: 'visible',
+      type: 'boolean',
+      default: 'true',
+      desc: '受控显隐：false 时 display:none 并命令式暂停动画，true 恢复（auto+autoplay 自动续播）；组件不回写',
+    },
+    {
+      name: 'canvas',
+      type: 'boolean',
+      default: 'false',
+      desc: '便捷开关：true 时用 canvas 渲染后端（等价 renderer="canvas"），经 adapter 透传',
+    },
+    {
+      name: 'renderer',
+      type: "'svg'|'canvas'|'html'",
+      default: 'undefined',
+      desc: '渲染后端，经 adapter 的 renderer 参数透传（优先于 canvas）；未设时默认 svg，旧 adapter 不破坏',
     },
     {
       name: 'size',

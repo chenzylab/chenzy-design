@@ -11,6 +11,13 @@ export type LottieTrigger = 'auto' | 'hover' | 'manual';
 export type LottieSize = 'small' | 'default' | 'large';
 
 /**
+ * Render backend the injected player should use. Mirrors lottie-web's
+ * `renderer` option ('svg' | 'canvas' | 'html'). Optional everywhere so legacy
+ * factories that ignore it keep their default ('svg') behaviour.
+ */
+export type LottieRenderer = 'svg' | 'canvas' | 'html';
+
+/**
  * Frame segment to play: a `[start, end]` frame pair, or a named marker string
  * resolved against the animation data's `markers`. See `resolveSegments`.
  */
@@ -41,7 +48,28 @@ export type LottiePlayerFactory = (config: {
   speed: number;
   /** Resolved initial `[start, end]` frame segment, when `segments` is set. */
   segment?: [number, number];
+  /**
+   * Render backend ('svg' | 'canvas' | 'html'), forwarded to e.g. lottie-web's
+   * `renderer` option. Optional & backward-compatible: omitted when the host's
+   * `canvas`/`renderer` prop is unset, so legacy factories default to 'svg'.
+   */
+  renderer?: LottieRenderer;
 }) => LottiePlayerAdapter;
+
+/**
+ * Resolve the host `canvas` / `renderer` prop into a concrete renderer backend
+ * for the factory (pure). `renderer` (explicit string) wins; otherwise
+ * `canvas === true` → 'canvas'. Returns `undefined` when neither is set so the
+ * host omits `renderer` entirely and legacy factories keep their 'svg' default.
+ */
+export function resolveRenderer(
+  canvas: boolean | undefined,
+  renderer: LottieRenderer | undefined,
+): LottieRenderer | undefined {
+  if (renderer != null) return renderer;
+  if (canvas === true) return 'canvas';
+  return undefined;
+}
 
 /** A Lottie marker entry (subset) as found in animation data `markers`. */
 interface LottieMarker {

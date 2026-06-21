@@ -17,9 +17,11 @@
     shouldAutoplay,
     resolveSegments,
     isLottieSrc,
+    resolveRenderer,
     type LottieTrigger,
     type LottieSize,
     type LottieSegments,
+    type LottieRenderer,
     type LottiePlayerAdapter,
     type LottiePlayerFactory,
   } from '@chenzy-design/core';
@@ -36,6 +38,12 @@
     segments?: LottieSegments;
     /** RTL 场景水平镜像动画（transform scaleX(-1)）。 */
     flipRtl?: boolean;
+    /** 受控显隐（默认 true）：false 时隐藏并暂停动画，true 恢复播放。组件不回写（红线 #1）。 */
+    visible?: boolean;
+    /** 便捷开关：true 时用 canvas 渲染后端（等价 renderer='canvas'）。 */
+    canvas?: boolean;
+    /** 渲染后端（'svg'|'canvas'|'html'），经 adapter 透传；优先于 canvas。未设时默认 svg。 */
+    renderer?: LottieRenderer;
     size?: LottieSize | number;
     color?: string;
     trigger?: LottieTrigger;
@@ -61,6 +69,9 @@
     player,
     segments,
     flipRtl = false,
+    visible = true,
+    canvas = false,
+    renderer,
     size = 'default',
     color,
     trigger = 'auto',
@@ -85,7 +96,8 @@
   // 系统 reduced-motion；matchMedia 命令式监听（cleanup 解绑）。
   let systemReduced = $state(false);
   // adapter 由 player 工厂创建，$effect 命令式生命周期。
-  let adapter: LottiePlayerAdapter | null = null;
+  // $state：供下方 visible effect 在 adapter 创建/销毁后重新协调 play/pause。
+  let adapter = $state<LottiePlayerAdapter | null>(null);
 
   // src fetch 结果（不回写 data prop，受控不污染）；状态机驱动 skeleton/error。
   let fetched = $state<unknown>(undefined);
@@ -97,6 +109,8 @@
   const activeData = $derived(data != null ? data : fetched);
   // 解析后的帧段（纯函数）；null 表示整段播放。
   const segment = $derived(resolveSegments(segments, activeData));
+  // 渲染后端（纯函数）：renderer 优先，其次 canvas→'canvas'；undefined 表示沿用 adapter 默认（svg）。
+  const renderBackend = $derived(resolveRenderer(canvas, renderer));
 
   // matchMedia 订阅系统 reduced-motion，cleanup 解绑。
   $effect(() => {
@@ -146,7 +160,8 @@
   });
 
   // player 生命周期：container + data 就绪时创建 adapter，cleanup 销毁。
-  // 依赖 container/activeData/animated/player + 配置项 + 解析后 segment；变化重建 adapter（可接受）。
+  // 依赖 container/activeData/animated/player + 配置项 + 解析后 segment + 渲染后端；变化重建 adapter（可接受）。
+  // 注意：不依赖 visible——显隐切换由下方独立 effect 命令式 play/pause 控制，避免无谓重建。
   $effect(() => {
     if (!container || activeData == null) return;
     const willAutoplay = shouldAutoplay(trigger, autoplay, animated);
@@ -157,6 +172,7 @@
       autoplay: willAutoplay,
       speed,
       ...(segment ? { segment } : {}),
+      ...(renderBackend ? { renderer: renderBackend } : {}),
     });
     adapter = a;
     // 有帧段且应当播放：命令式播放指定段（player 未实现 playSegments 时已由 factory segment 兜底）。
@@ -172,6 +188,23 @@
       a.destroy();
       adapter = null;
     };
+  });
+
+  // 受控 visible：命令式控制 player play/pause（红线 #3）。不回写 visible（红线 #1）。
+  // visible=false → 暂停（容器同时 display:none 隐藏）；visible=true 且允许动画 → 按触发方式恢复播放。
+  // reduced-motion（animated=false）下保持静止首帧，不强行起播。
+  $effect(() => {
+    const a = adapter;
+    if (!a) return;
+    if (!visible) {
+      a.pause();
+      return;
+    }
+    // 恢复显隐：仅 auto + autoplay 场景自动续播；hover/manual 维持当前态由用户驱动。
+    if (animated && shouldAutoplay(trigger, autoplay, animated)) {
+      if (segment && a.playSegments) a.playSegments(segment);
+      else a.play();
+    }
   });
 
   // 命令式方法，供 bind:this 调用。
@@ -204,7 +237,12 @@
 </script>
 
 <i
-  class={['cd-lottie-icon', flipRtl && 'cd-lottie-icon--flip-rtl', className]
+  class={[
+    'cd-lottie-icon',
+    flipRtl && 'cd-lottie-icon--flip-rtl',
+    !visible && 'cd-lottie-icon--hidden',
+    className,
+  ]
     .filter(Boolean)
     .join(' ')}
   bind:this={container}
@@ -243,6 +281,11 @@
   /* RTL 镜像：水平翻转动画内容 */
   .cd-lottie-icon--flip-rtl {
     transform: scaleX(-1);
+  }
+
+  /* 受控隐藏：display:none（不占位）；adapter 已在 effect cleanup 中销毁/暂停 */
+  .cd-lottie-icon--hidden {
+    display: none;
   }
 
   /* player 注入的内容撑满容器 */

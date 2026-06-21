@@ -5,6 +5,7 @@ import {
   shouldAutoplay,
   resolveSegments,
   isLottieSrc,
+  resolveRenderer,
 } from './lottie-icon.js';
 
 describe('resolveSize', () => {
@@ -80,5 +81,20 @@ describe('isLottieSrc', () => {
     expect(isLottieSrc('   ')).toBe(false);
     expect(isLottieSrc(undefined)).toBe(false);
     expect(isLottieSrc({})).toBe(false);
+  });
+});
+
+describe('resolveRenderer', () => {
+  it('explicit renderer wins over canvas', () => {
+    expect(resolveRenderer(true, 'html')).toBe('html');
+    expect(resolveRenderer(false, 'svg')).toBe('svg');
+    expect(resolveRenderer(undefined, 'canvas')).toBe('canvas');
+  });
+  it('canvas=true maps to canvas when no explicit renderer', () => {
+    expect(resolveRenderer(true, undefined)).toBe('canvas');
+  });
+  it('undefined (omitted) for default svg / backward compat', () => {
+    expect(resolveRenderer(false, undefined)).toBeUndefined();
+    expect(resolveRenderer(undefined, undefined)).toBeUndefined();
   });
 });

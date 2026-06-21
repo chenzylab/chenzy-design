@@ -88,7 +88,7 @@
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
-  const mockPlayer: LottiePlayerFactory = ({ container, autoplay, segment }) => {
+  const mockPlayer: LottiePlayerFactory = ({ container, autoplay, segment, renderer }) => {
     const el = document.createElement('div');
     el.style.cssText =
       'width:100%;height:100%;border-radius:3px;background:var(--cd-color-primary);' +
@@ -97,6 +97,8 @@
     const setState = (s: string) => (el.style.animationPlayState = s);
     // 初始帧段：用 data-segment 标注，便于演示帧段被透传。
     if (segment) container.dataset.segment = `${segment[0]}-${segment[1]}`;
+    // 渲染后端：用 data-renderer 标注，便于演示 canvas/renderer 透传（旧 adapter 不传则默认 svg）。
+    container.dataset.renderer = renderer ?? 'svg';
     if (autoplay) setState('running');
     return {
       play: () => setState('running'),
@@ -120,6 +122,8 @@
       type: 'application/json',
     }),
   );
+  // 受控 visible 演示开关。
+  let lottieVisible = $state(true);
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
@@ -3919,6 +3923,25 @@ let pageSize2 = $state(10);
     <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
       <LottieIcon src="https://invalid.invalid/nope.json" player={mockPlayer} size="large" decorative={false} label="加载失败" />
       <Text type="tertiary">src 失败（error 态）</Text>
+    </div>
+  </div>
+  <div style="display:flex; gap:32px; align-items:center; margin-top:16px">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" canvas decorative={false} label="canvas 渲染" />
+      <Text type="tertiary">canvas（renderer=canvas）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" renderer="html" decorative={false} label="html 渲染" />
+      <Text type="tertiary">renderer="html"</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:8px">
+      <div id="lottie-visible-demo" style="display:flex; gap:8px; align-items:center">
+        <LottieIcon data={{}} player={mockPlayer} size="large" visible={lottieVisible} decorative={false} label="受控显隐" />
+        <Button size="small" onclick={() => (lottieVisible = !lottieVisible)}>
+          {lottieVisible ? '隐藏' : '显示'}
+        </Button>
+      </div>
+      <Text type="tertiary">visible（受控显隐 + 暂停）</Text>
     </div>
   </div>
 
