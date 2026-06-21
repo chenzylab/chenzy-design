@@ -695,6 +695,23 @@ let pageSize2 = $state(10);
     { type: 'divider' as const },
     { key: 'help', label: '帮助', disabled: true },
   ];
+  // navigation 用途：站点导航，叶子带 href 渲染原生 <a>，含 inline 子导航
+  let navCurrent = $state<string | number>('nav-docs');
+  const navItems = [
+    { key: 'nav-home', label: '首页', href: '#nav-home' },
+    {
+      key: 'nav-docs',
+      label: '文档',
+      children: [
+        { key: 'nav-start', label: '快速开始', href: '#nav-start' },
+        { key: 'nav-guide', label: '指南', href: '#nav-guide' },
+      ],
+    },
+    { type: 'divider' as const },
+    { key: 'nav-blog', label: '博客', href: '#nav-blog' },
+    { key: 'nav-ext', label: 'GitHub', href: 'https://github.com', target: '_blank', rel: 'noopener noreferrer' },
+    { key: 'nav-off', label: '停用项', href: '#nav-off', disabled: true },
+  ];
   let anchorKey = $state('#sec-1');
   const anchorLinks = [
     { key: '#sec-1', href: '#sec-1', title: '第一节' },
@@ -2090,6 +2107,33 @@ let pageSize2 = $state(10);
         onSelect={(k) => (menuSelected = k)}
       />
     </div>
+  </div>
+
+  <div style="margin-top:16px" data-testid="menu-navigation">
+    <Text type="tertiary">
+      purpose="navigation" 站点导航（nav landmark + 原生 &lt;a href&gt;，aria-current=page，Tab 键序）
+    </Text>
+    <div style="width: 200px; margin-top:8px">
+      <Menu
+        mode="inline"
+        purpose="navigation"
+        items={navItems}
+        defaultOpenKeys={['nav-docs']}
+        selectedKeys={[navCurrent]}
+        ariaLabel="主站导航"
+        onSelect={(k) => (navCurrent = k)}
+      />
+    </div>
+    <Text type="tertiary">horizontal navigation（顶部导航栏）</Text>
+    <Menu
+      mode="horizontal"
+      purpose="navigation"
+      items={navItems}
+      selectedKeys={[navCurrent]}
+      ariaLabel="顶部站点导航"
+      onSelect={(k) => (navCurrent = k)}
+    />
+    <Text type="tertiary">当前：{navCurrent}</Text>
   </div>
 
   <div style="margin-top:16px" data-testid="anchor-container">
