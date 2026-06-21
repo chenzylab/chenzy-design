@@ -2773,6 +2773,50 @@ let pageSize2 = $state(10);
         </Timeline.Item>
       </Timeline>
     </div>
+
+    <Text type="tertiary">virtualized 虚拟化（1000 项，只渲染视口内项，轴线连续）：</Text>
+    <div data-testid="timeline-virtual" style="width: 360px">
+      <Timeline
+        virtualized
+        itemHeight={56}
+        maxHeight={320}
+        dataSource={Array.from({ length: 1000 }, (_, i) => ({
+          key: `v${i}`,
+          content: `事件 #${i + 1}`,
+          time: `节点 ${i + 1}`,
+          ...(i % 7 === 0 ? { color: 'var(--cd-color-success)' } : {}),
+        }))}
+      />
+    </div>
+
+    <Text type="tertiary">interactive 键盘 roving（点击聚焦后 ↑↓ 移动焦点、Enter 激活）：</Text>
+    <div data-testid="timeline-interactive" style="width: 360px">
+      <Timeline
+        interactive
+        dataSource={[
+          { key: 'a', content: '可聚焦节点 A', time: '09:00', onClick: () => console.log('click A') },
+          { key: 'b', content: '可聚焦节点 B', time: '12:30', onClick: () => console.log('click B') },
+          { key: 'c', content: '可聚焦节点 C', time: '15:00', onClick: () => console.log('click C') },
+          { key: 'd', content: '可聚焦节点 D', time: '18:20', onClick: () => console.log('click D') },
+        ]}
+      />
+    </div>
+
+    <Text type="tertiary">virtualized + interactive（1000 项可键盘漫游，焦点滚动跟随）：</Text>
+    <div data-testid="timeline-virtual-interactive" style="width: 360px">
+      <Timeline
+        virtualized
+        interactive
+        itemHeight={56}
+        maxHeight={320}
+        dataSource={Array.from({ length: 1000 }, (_, i) => ({
+          key: `vi${i}`,
+          content: `可漫游事件 #${i + 1}`,
+          time: `节点 ${i + 1}`,
+          onClick: () => console.log('vi click', i),
+        }))}
+      />
+    </div>
   </Space>
 
   <Divider />

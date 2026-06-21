@@ -255,6 +255,11 @@ export {
   type ScrollAlign,
 } from './virtual-list.js';
 export {
+  rovingKeyFromEvent,
+  nextRovingIndex,
+  type RovingKey,
+} from './roving.js';
+export {
   toggleSelection,
   rangeSelection,
   type ListKey,
