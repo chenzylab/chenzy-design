@@ -27,6 +27,8 @@
     collapsed?: boolean;
     /** 多选模式：选中叶子显勾选标记并用 aria-checked/menuitemcheckbox 语义 */
     multiple?: boolean;
+    /** navigation 用途：含 href 叶子渲染原生 <a href>，结构去除 menu/menuitem role（原生链接语义） */
+    navigation?: boolean;
   }
 
   let {
@@ -39,6 +41,7 @@
     closeDelay = 200,
     collapsed = false,
     multiple = false,
+    navigation = false,
   }: Props = $props();
 
   // 分隔符/分组在模板顶层单独处理；此处统一窄化为普通项节点供后续派生使用。
@@ -114,13 +117,13 @@
 </script>
 
 {#if isDivider(item)}
-  <li class="cd-menu__divider" role="separator"></li>
+  <li class="cd-menu__divider" role={navigation ? undefined : 'separator'}></li>
 {:else if isGroup(item)}
-  <li class="cd-menu__item cd-menu__item--group" role="none">
+  <li class="cd-menu__item cd-menu__item--group" role={navigation ? undefined : 'none'}>
     {#if !collapsed}
       <div class="cd-menu__group-title">{item.label}</div>
     {/if}
-    <ul class="cd-menu__group-list" role="group" aria-label={item.label}>
+    <ul class="cd-menu__group-list" role={navigation ? undefined : 'group'} aria-label={item.label}>
       {#each item.children as child, i (child.key ?? `__cd-menu-grp-${i}`)}
         <Self
           item={child}
@@ -128,6 +131,7 @@
           {collapsed}
           {isSelected}
           {multiple}
+          {navigation}
           {onSelectLeaf}
           {onCloseAll}
           {openDelay}
@@ -139,7 +143,7 @@
 {:else if hasChildren}
   <li
     class="cd-menu__item cd-menu__item--submenu"
-    role="none"
+    role={navigation ? undefined : 'none'}
     onpointerenter={scheduleOpen}
     onpointerleave={scheduleClose}
   >
@@ -147,7 +151,7 @@
       type="button"
       class="cd-menu__title"
       class:cd-menu__title--collapsed={collapsed}
-      role="menuitem"
+      role={navigation ? undefined : 'menuitem'}
       aria-haspopup="true"
       aria-expanded={open}
       aria-disabled={node.disabled || undefined}
@@ -176,7 +180,7 @@
     {#if open && titleEl}
       <ul
         class="cd-menu__sub cd-menu__sub--popup"
-        role="menu"
+        role={navigation ? undefined : 'menu'}
         use:floating={{ trigger: titleEl, placement, offset: 2, autoAdjust: true }}
         onpointerenter={keepOpen}
         onpointerleave={scheduleClose}
@@ -187,6 +191,7 @@
             placement="rightStart"
             {isSelected}
             {multiple}
+            {navigation}
             {onSelectLeaf}
             onCloseAll={() => {
               closeNow();
@@ -201,31 +206,51 @@
   </li>
 {:else}
   {@const selected = isSelected(node.key)}
-  <li class="cd-menu__item" role="none">
-    <button
-      type="button"
-      class="cd-menu__link"
-      class:cd-menu__link--selected={selected}
-      class:cd-menu__link--collapsed={collapsed}
-      role={multiple ? 'menuitemcheckbox' : 'menuitem'}
-      aria-current={!multiple && selected ? 'true' : undefined}
-      aria-checked={multiple ? selected : undefined}
-      aria-disabled={node.disabled || undefined}
-      aria-label={collapsed ? node.label : undefined}
-      title={collapsed ? node.label : undefined}
-      disabled={node.disabled || undefined}
-      onclick={onLeafClick}
-    >
-      {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-      {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
-      {#if multiple && !collapsed}
-        <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-            <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
-          </svg>
-        </span>
-      {/if}
-    </button>
+  <li class="cd-menu__item" role={navigation ? undefined : 'none'}>
+    {#if navigation && node.href !== undefined}
+      <!-- navigation 用途：含 href 叶子渲染原生 <a>，原生链接 + Tab 键序 -->
+      <a
+        class="cd-menu__link"
+        class:cd-menu__link--selected={selected}
+        class:cd-menu__link--collapsed={collapsed}
+        href={node.disabled ? undefined : node.href}
+        target={node.target}
+        rel={node.rel}
+        aria-current={selected ? 'page' : undefined}
+        aria-disabled={node.disabled || undefined}
+        aria-label={collapsed ? node.label : undefined}
+        title={collapsed ? node.label : undefined}
+        onclick={onLeafClick}
+      >
+        {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+        {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
+      </a>
+    {:else}
+      <button
+        type="button"
+        class="cd-menu__link"
+        class:cd-menu__link--selected={selected}
+        class:cd-menu__link--collapsed={collapsed}
+        role={navigation ? undefined : multiple ? 'menuitemcheckbox' : 'menuitem'}
+        aria-current={!navigation && !multiple && selected ? 'true' : undefined}
+        aria-checked={!navigation && multiple ? selected : undefined}
+        aria-disabled={node.disabled || undefined}
+        aria-label={collapsed ? node.label : undefined}
+        title={collapsed ? node.label : undefined}
+        disabled={node.disabled || undefined}
+        onclick={onLeafClick}
+      >
+        {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+        {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
+        {#if multiple && !collapsed && !navigation}
+          <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+            </svg>
+          </span>
+        {/if}
+      </button>
+    {/if}
   </li>
 {/if}
 
@@ -272,6 +297,15 @@
     text-align: start;
     cursor: pointer;
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  /* navigation 叶子用 <a> 渲染：抹平默认下划线/颜色，复用 link 视觉 */
+  a.cd-menu__link {
+    text-decoration: none;
+  }
+  a.cd-menu__link[aria-disabled='true'] {
+    color: var(--cd-menu-item-color-disabled);
+    cursor: not-allowed;
+    pointer-events: none;
   }
   .cd-menu__link:hover,
   .cd-menu__title:hover {

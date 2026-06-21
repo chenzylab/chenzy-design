@@ -6,13 +6,13 @@ export const meta = {
   name: 'Menu',
   category: 'navigation',
   description:
-    '导航菜单，数据驱动。支持 vertical/inline 模式、SubMenu 展开/收起、单选高亮，受控/非受控。items 支持 type=divider 分隔符与 type=group 分组标题。',
+    '导航菜单，数据驱动。支持 vertical/inline/horizontal 模式、SubMenu 展开/收起、单选/多选高亮，受控/非受控。items 支持 type=divider 分隔符与 type=group 分组标题。purpose 区分命令式菜单（menu/menuitem 语义）与站点导航（nav landmark + 原生 <a> 链接语义）。',
   props: [
     {
       name: 'items',
       type: 'MenuItemDef[]',
       default: '[]',
-      desc: '菜单数据。普通项可省略 type（含 children 即可展开的 SubMenu，item.icon 为项前图标 Snippet）；{ type:"divider" } 渲染水平分隔线；{ type:"group", label, children } 渲染始终展开的分组标题 + 组内项',
+      desc: '菜单数据。普通项可省略 type（含 children 即可展开的 SubMenu，item.icon 为项前图标 Snippet）；{ type:"divider" } 渲染水平分隔线；{ type:"group", label, children } 渲染始终展开的分组标题 + 组内项。navigation 用途下叶子可带 href/target/rel，渲染为原生 <a>',
     },
     {
       name: 'mode',
@@ -49,6 +49,12 @@ export const meta = {
       desc: '多选模式：点击叶子项 toggle 选中态，selectedKeys 可含多项同时高亮并显勾选标记。受控下父组件依据 onSelect(key) 自行 toggle selectedKeys；非受控由组件内部维护多选 Set',
     },
     {
+      name: 'purpose',
+      type: "'menu'|'navigation'",
+      default: 'menu',
+      desc: "语义用途。'menu'（默认，向后兼容）=命令式菜单：role=menu/menuitem + roving tabindex，叶子 button+onClick。'navigation'=站点导航：<nav> landmark 包裹原生 list，含 href 的叶子渲染原生 <a href>（aria-current=page），沿用浏览器链接 + Tab 键序，不用 menuitem role。role 由 deriveMenuSemantics 纯函数据 purpose+mode+multiple 派生",
+    },
+    {
       name: 'onSelect',
       type: '(key: string|number) => void',
       default: 'undefined',
@@ -71,7 +77,8 @@ export const meta = {
       '禁用项 aria-disabled=true 且原生 disabled',
       'divider 渲染 li[role=separator]，不可聚焦不可选；键盘导航天然跳过（非 menuitem）',
       'group 渲染组标题（不可点击）+ ul[role=group][aria-label=分组名]，组内项正常 menuitem 可选；组标题不可聚焦故键盘跳过',
-      'TODO: horizontal/menubar roving tabindex、nav+links 语义区分',
+      "purpose='navigation'：<nav aria-label> landmark 包裹原生 ul>li>a（去除 menu/menuitem/separator/group 等 role），含 href 叶子为 <a href>，当前项 aria-current=page；用浏览器原生链接 + Tab 键序导航，不接管 ←→ roving",
+      "purpose='menu'（默认）：role=menu/menubar + menuitem，叶子 button + onClick，行为完全向后兼容；role 集合由 deriveMenuSemantics(purpose, mode, multiple) 纯函数派生（红线 #2）",
     ],
   },
   tokens: [

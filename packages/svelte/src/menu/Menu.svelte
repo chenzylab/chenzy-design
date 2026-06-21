@@ -9,13 +9,16 @@
   horizontal 模式: 顶部菜单栏 (role=menubar), 顶层项横排 + ←→ roving 键盘切换, SubMenu 向下弹浮层 (复用 MenuPopupNode)。
   multiple 多选: 点叶子项 toggle 选中态, selectedKeys 可含多项同时高亮 + 勾选标记 (role=menuitemcheckbox/aria-checked);
   受控不回写 (红线 #1), 父组件据 onSelect(key) 自行 toggle; 非受控内部维护多选 Set。
-  TODO(延后): commands purpose、nav+links 语义区分。
+  purpose 语义区分 (红线 #2: role 由 deriveMenuSemantics 纯函数派生):
+    'menu' (默认, 命令式菜单): role=menu/menuitem + roving tabindex, 叶子 button + onClick, 行为完全向后兼容;
+    'navigation' (站点导航): <nav> landmark 包裹 ul, 含 href 的叶子渲染原生 <a href> 走浏览器链接 + Tab 键序,
+    不用 menuitem role (改用原生 list/link 语义)。
 -->
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import MenuPopupNode from './MenuPopupNode.svelte';
-  import { isDivider, isGroup } from './types.js';
-  import type { MenuItemDef, MenuItemNode, MenuKey } from './types.js';
+  import { deriveMenuSemantics, isDivider, isGroup } from './types.js';
+  import type { MenuItemDef, MenuItemNode, MenuKey, MenuPurpose } from './types.js';
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
@@ -33,6 +36,12 @@
     inlineCollapsed?: boolean;
     /** 多选模式：点击叶子项 toggle 其选中态，selectedKeys 可含多项同时高亮（默认单选） */
     multiple?: boolean;
+    /**
+     * 语义用途（默认 'menu'）：
+     * 'menu' = 命令式菜单（role=menu/menuitem + roving，执行操作）；
+     * 'navigation' = 站点导航（nav landmark + 含 href 叶子渲染 <a>，原生链接语义）。
+     */
+    purpose?: MenuPurpose;
     onSelect?: (key: MenuKey) => void;
     onOpenChange?: (keys: MenuKey[]) => void;
     ariaLabel?: string;
@@ -49,6 +58,7 @@
     inlineIndent = 24,
     inlineCollapsed = false,
     multiple = false,
+    purpose = 'menu',
     onSelect,
     onOpenChange,
     ariaLabel,
@@ -56,6 +66,10 @@
 
   // 折叠仅在 inline 模式生效；其它模式忽略以保持向后兼容。
   const collapsed = $derived(mode === 'inline' && inlineCollapsed);
+
+  // role/语义由纯函数派生（红线 #2）：navigation 用原生 nav/list/link，menu 用 menu/menuitem。
+  const sem = $derived(deriveMenuSemantics(purpose, mode, multiple));
+  const navigation = $derived(sem.navigation);
 
   function getInitialSelected(): SvelteSet<MenuKey> {
     return new SvelteSet(defaultSelectedKeys);
@@ -132,7 +146,8 @@
   // horizontal menubar：←→ 在顶层项间 roving 移动焦点（顶层是 li 直下的可聚焦元素）
   let rootEl = $state<HTMLUListElement | null>(null);
   function onMenubarKeydown(e: KeyboardEvent) {
-    if (mode !== 'horizontal') return;
+    // navigation 用途用原生链接 + Tab 键序，不接管 ←→ roving（红线: 不破坏原生导航）。
+    if (sem.navigation || mode !== 'horizontal') return;
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
     if (!rootEl) return;
     // 顶层可聚焦项：每个顶层 li 内的第一个 menuitem 按钮/链接
@@ -155,9 +170,9 @@
   {#each list as item, i (item.key ?? `__cd-menu-${level}-${i}`)}
     {@const indent = `calc(var(--cd-menu-item-padding) + ${level} * ${inlineIndent}px)`}
     {#if isDivider(item)}
-      <li class="cd-menu__divider" role="separator"></li>
+      <li class="cd-menu__divider" role={sem.navigation ? undefined : 'separator'}></li>
     {:else if isGroup(item)}
-      <li class="cd-menu__item cd-menu__item--group" role="none">
+      <li class="cd-menu__item cd-menu__item--group" role={sem.structuralRole}>
         <div
           class="cd-menu__group-title"
           style="padding-inline-start: {indent}"
@@ -167,7 +182,7 @@
         </div>
         <ul
           class="cd-menu__group-list"
-          role="group"
+          role={sem.groupListRole}
           aria-labelledby="cd-menu-group-{item.key ?? `${level}-${i}`}"
         >
           {@render renderItems(item.children, level)}
@@ -175,11 +190,11 @@
       </li>
     {:else if hasChildren(item)}
       {@const open = isOpen(item.key)}
-      <li class="cd-menu__item cd-menu__item--submenu" role="none">
+      <li class="cd-menu__item cd-menu__item--submenu" role={sem.structuralRole}>
         <button
           type="button"
           class="cd-menu__title"
-          role="menuitem"
+          role={sem.submenuTitleRole}
           aria-haspopup="true"
           aria-expanded={open}
           aria-disabled={item.disabled || undefined}
@@ -200,85 +215,129 @@
           </span>
         </button>
         {#if open}
-          <ul class="cd-menu__sub" role="menu">
+          <ul class="cd-menu__sub" role={sem.subListRole}>
             {@render renderItems(item.children ?? [], level + 1)}
           </ul>
         {/if}
       </li>
     {:else}
       {@const selected = isSelected(item.key)}
-      <li class="cd-menu__item" role="none">
-        <button
-          type="button"
-          class="cd-menu__link"
-          class:cd-menu__link--selected={selected}
-          role={multiple ? 'menuitemcheckbox' : 'menuitem'}
-          aria-current={!multiple && selected ? 'true' : undefined}
-          aria-checked={multiple ? selected : undefined}
-          aria-disabled={item.disabled || undefined}
-          disabled={item.disabled || undefined}
-          style="padding-inline-start: {indent}"
-          onclick={() => selectLeaf(item)}
-        >
-          {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
-          <span class="cd-menu__label">{item.label}</span>
-          {#if multiple}
-            <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
-              <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-                <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
-              </svg>
-            </span>
-          {/if}
-        </button>
+      <li class="cd-menu__item" role={sem.structuralRole}>
+        {#if sem.navigation && item.href !== undefined}
+          <!-- navigation 用途：含 href 叶子渲染原生 <a>，走浏览器链接 + Tab 键序 -->
+          <a
+            class="cd-menu__link"
+            class:cd-menu__link--selected={selected}
+            href={item.disabled ? undefined : item.href}
+            target={item.target}
+            rel={item.rel}
+            aria-current={selected ? 'page' : undefined}
+            aria-disabled={item.disabled || undefined}
+            style="padding-inline-start: {indent}"
+            onclick={() => selectLeaf(item)}
+          >
+            {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
+            <span class="cd-menu__label">{item.label}</span>
+          </a>
+        {:else}
+          <button
+            type="button"
+            class="cd-menu__link"
+            class:cd-menu__link--selected={selected}
+            role={sem.leafRole}
+            aria-current={!sem.navigation && !multiple && selected ? 'true' : undefined}
+            aria-checked={multiple ? selected : undefined}
+            aria-disabled={item.disabled || undefined}
+            disabled={item.disabled || undefined}
+            style="padding-inline-start: {indent}"
+            onclick={() => selectLeaf(item)}
+          >
+            {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
+            <span class="cd-menu__label">{item.label}</span>
+            {#if multiple}
+              <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                  <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+                </svg>
+              </span>
+            {/if}
+          </button>
+        {/if}
       </li>
     {/if}
   {/each}
 {/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<ul
-  class={cls}
-  role={mode === 'horizontal' ? 'menubar' : 'menu'}
-  aria-label={ariaLabel}
-  aria-orientation={mode === 'horizontal' ? 'horizontal' : undefined}
-  bind:this={rootEl}
-  onkeydown={onMenubarKeydown}
->
-  {#if collapsed}
-    {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
-      <MenuPopupNode
-        {item}
-        placement="rightStart"
-        collapsed
-        {multiple}
-        {isSelected}
-        onSelectLeaf={selectLeaf}
-        onCloseAll={() => {}}
-      />
-    {/each}
-  {:else if mode === 'vertical' || mode === 'horizontal'}
-    {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
-      <MenuPopupNode
-        {item}
-        placement="bottomStart"
-        {multiple}
-        {isSelected}
-        onSelectLeaf={selectLeaf}
-        onCloseAll={() => {}}
-      />
-    {/each}
-  {:else}
-    {@render renderItems(items, 0)}
-  {/if}
-</ul>
+{#snippet menuList()}
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <ul
+    class={cls}
+    role={sem.listRole}
+    aria-label={sem.navigation ? undefined : ariaLabel}
+    aria-orientation={!sem.navigation && mode === 'horizontal' ? 'horizontal' : undefined}
+    bind:this={rootEl}
+    onkeydown={onMenubarKeydown}
+  >
+    {#if collapsed}
+      {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
+        <MenuPopupNode
+          {item}
+          placement="rightStart"
+          collapsed
+          {multiple}
+          {navigation}
+          {isSelected}
+          onSelectLeaf={selectLeaf}
+          onCloseAll={() => {}}
+        />
+      {/each}
+    {:else if mode === 'vertical' || mode === 'horizontal'}
+      {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}
+        <MenuPopupNode
+          {item}
+          placement="bottomStart"
+          {multiple}
+          {navigation}
+          {isSelected}
+          onSelectLeaf={selectLeaf}
+          onCloseAll={() => {}}
+        />
+      {/each}
+    {:else}
+      {@render renderItems(items, 0)}
+    {/if}
+  </ul>
+{/snippet}
+
+{#if sem.navigation}
+  <!-- navigation 用途：nav landmark 包裹原生 list/link，提供站点导航地标语义 -->
+  <nav class="cd-menu-nav" aria-label={ariaLabel}>
+    {@render menuList()}
+  </nav>
+{:else}
+  {@render menuList()}
+{/if}
 
 <style>
+  /* navigation 用途的 nav landmark 包裹：不引入额外盒模型，仅作语义地标 */
+  .cd-menu-nav {
+    display: contents;
+  }
   .cd-menu {
     margin: 0;
     padding: 0;
     list-style: none;
     background: var(--cd-menu-bg);
     color: var(--cd-menu-item-color);
+  }
+  /* navigation 叶子用 <a> 渲染：抹平默认下划线/颜色，复用 link 视觉 */
+  .cd-menu a.cd-menu__link {
+    text-decoration: none;
+  }
+  .cd-menu a.cd-menu__link[aria-disabled='true'] {
+    color: var(--cd-menu-item-color-disabled);
+    cursor: not-allowed;
+    pointer-events: none;
   }
   /* horizontal 菜单栏：顶层项横排。顶层 li/控件由 MenuPopupNode 渲染（独立组件），
      故用 :global 穿透 scoped 边界控制其方向与宽度。 */
