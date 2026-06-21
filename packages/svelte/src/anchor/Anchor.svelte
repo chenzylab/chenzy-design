@@ -11,7 +11,10 @@
   getContainer: 自定义滚动容器（缺省 window）。提供时监听该容器 scroll，
     几何按容器视口换算（target.top - container.top），点击滚动该容器（红线 #3）。
   horizontal: 水平模式，链接横排，ink 走底部下划线（border-block-end）。
-  TODO(延后): 多级嵌套。
+  多级嵌套: link.children 形成树形。渲染用递归 snippet（renderList），每深一层
+    的子列表向内缩进一级（--cd-anchor-indent，逐层累加），rail 只在顶层一条。
+    scroll-spy 命令式遍历扁平化树（flatten 纯函数派生 flatLinks），父子链接皆可
+    点击跳转 + 滚动高亮。无 children 时行为与平铺链接完全一致（向后兼容）。
 -->
 <script lang="ts">
   import type { AnchorLink } from './types.js';
@@ -58,8 +61,20 @@
 
   const loc = useLocale();
 
+  // 深度优先扁平化嵌套链接树（纯函数，红线 #2）。scroll-spy 与初始激活
+  // 计算只关心全部叶/枝链接的线性集合，与渲染的树形结构解耦。
+  function flatten(items: AnchorLink[]): AnchorLink[] {
+    const out: AnchorLink[] = [];
+    for (const item of items) {
+      out.push(item);
+      if (item.children?.length) out.push(...flatten(item.children));
+    }
+    return out;
+  }
+  const flatLinks = $derived<AnchorLink[]>(flatten(links));
+
   function getInitialActive(): string {
-    return defaultValue ?? links[0]?.key ?? '';
+    return defaultValue ?? flatten(links)[0]?.key ?? '';
   }
 
   // --- 受控 value (红线 #1): 不回写 value, 仅 onChange ---
@@ -93,7 +108,8 @@
     const refTop = getReferenceTop();
     let best = '';
     let bestTop = -Infinity;
-    for (const link of links) {
+    // 遍历扁平化后的全部链接（含嵌套子链接），父子皆参与 scroll-spy。
+    for (const link of flatLinks) {
       const el = document.querySelector(link.href);
       if (!el) continue;
       // 相对滚动容器视口顶部的偏移。
@@ -105,7 +121,7 @@
       }
     }
     // 没有任何 section 越过阈值时，回退到第一个链接。
-    if (best === '') best = links[0]?.key ?? '';
+    if (best === '') best = flatLinks[0]?.key ?? '';
     return best;
   }
 
@@ -177,12 +193,16 @@
   style={affix ? `inset-block-start:${offsetTop}px` : undefined}
   aria-label={ariaLabel ?? loc().t('Anchor.ariaLabel')}
 >
+  {@render renderList(links, 0)}
+</nav>
+
+{#snippet renderList(items: AnchorLink[], level: number)}
   <ul class="cd-anchor__list">
-    {#each links as link (link.key)}
+    {#each items as link (link.key)}
       {@const active = link.key === activeKey}
       <li class="cd-anchor__item">
         <a
-          class="cd-anchor__link"
+          class="cd-anchor__link cd-anchor__link--level-{level}"
           class:cd-anchor__link--active={active}
           href={link.href}
           aria-current={active ? 'true' : undefined}
@@ -190,10 +210,13 @@
         >
           {link.title}
         </a>
+        {#if link.children?.length}
+          {@render renderList(link.children, level + 1)}
+        {/if}
       </li>
     {/each}
   </ul>
-</nav>
+{/snippet}
 
 <style>
   .cd-anchor {
@@ -208,6 +231,12 @@
     padding: 0;
     list-style: none;
     border-inline-start: 1px solid var(--cd-anchor-rail-color);
+  }
+  /* 嵌套子列表：不重复绘制滑轨（rail 只在顶层一条），整体向内缩进一级，
+     使每深一层的链接累加缩进。level-0 顶层链接样式完全不受影响（向后兼容）。 */
+  .cd-anchor__list .cd-anchor__list {
+    border-inline-start: none;
+    margin-inline-start: var(--cd-anchor-indent, 16px);
   }
   .cd-anchor__item {
     margin: 0;
