@@ -193,6 +193,7 @@ export const zh_CN: Locale = {
     moveToRight: '移到右侧',
     moveToLeft: '移到左侧',
     remove: '移除',
+    loading: '加载中…',
   },
   Upload: {
     trigger: '选择文件',

@@ -224,6 +224,8 @@ export interface Locale {
     moveToLeft: string;
     /** oneWay 模式：移除单项的按钮 aria-label */
     remove: string;
+    /** remote onSearch 加载中提示 */
+    loading: string;
   };
   Upload: {
     trigger: string;

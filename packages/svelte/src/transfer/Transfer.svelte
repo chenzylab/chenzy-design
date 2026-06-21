@@ -11,7 +11,16 @@
   leaves are greyed/disabled in the source tree.
   oneWay: left→right only — each target row has its own remove button; no
   right→left batch button.
-  TODO: draggable, virtualize, remote onSearch.
+  virtualize: `virtualize` (+`itemHeight`) renders only the in-viewport slice of
+  *both* flat panels (reuses core `fixedRange`); scrollTop is written by an
+  imperative rAF-throttled scroll listener into local $state, the visible range
+  is a pure $derived (红线 #2/#3). Falls back to full render for tree/group panels.
+  draggable: `draggable` lets target (selected) rows be reordered by mouse via
+  HTML5 DnD; the new order is computed by the `reorder` pure fn (红线 #2) and only
+  propagated via `onChange` — controlled `value` is never written (红线 #1).
+  remote onSearch: providing `onSearch(query, direction)` switches to remote mode
+  (debounced via `searchDebounce`, imperative timer + cleanup, 红线 #3); the parent
+  updates `dataSource`, local filtering is skipped, `loading` shows a spinner.
 -->
 <script lang="ts">
   import Checkbox from '../checkbox/Checkbox.svelte';
@@ -33,8 +42,11 @@
     TransferRenderGroup,
     TransferTreeNode,
   } from './types.js';
+  import { fixedRange } from '@chenzy-design/core';
   import { buildGroups, hasGroups, normalizeData } from './group.js';
   import { isTreeData, flattenLeaves } from './tree.js';
+  import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
+  import type { Attachment } from 'svelte/attachments';
 
   type TransferKey = string | number;
   type Size = 'small' | 'default' | 'large';
@@ -53,6 +65,29 @@
     titles?: [string, string];
     /** Left→right only: target rows get a remove button, no right→left batch. */
     oneWay?: boolean;
+    /**
+     * Reorder target (selected) rows by mouse drag (HTML5 DnD). New order is
+     * propagated only via `onChange` (controlled `value` is never written).
+     * Ignored in tree mode (target panel stays flat but DnD reorder applies).
+     */
+    draggable?: boolean;
+    /**
+     * Virtualize both flat panels: render only the in-viewport slice for large
+     * lists. Reuses core `fixedRange`. Ignored for grouped/tree source panels.
+     */
+    virtualize?: boolean;
+    /** Virtualized row height (px, default 32); must match the real row height. */
+    itemHeight?: number;
+    /**
+     * Remote search: providing this switches to remote mode — input is debounced
+     * (`searchDebounce` ms) then this is called with the query and which panel
+     * fired it; the parent updates `dataSource`, local filtering is skipped.
+     */
+    onSearch?: (query: string, direction: 'left' | 'right') => void;
+    /** Remote loading: shows a spinner row in each panel list. */
+    loading?: boolean;
+    /** onSearch debounce in ms (default 300). */
+    searchDebounce?: number;
     onChange?: (targetKeys: TransferKey[]) => void;
   }
 
@@ -68,6 +103,12 @@
     showPanelTitle = true,
     titles,
     oneWay = false,
+    draggable = false,
+    virtualize = false,
+    itemHeight = 32,
+    onSearch,
+    loading = false,
+    searchDebounce = 300,
     onChange,
   }: Props = $props();
 
@@ -115,15 +156,22 @@
   const leftItems = $derived(items.filter((item) => !current.includes(item.key)));
   const rightItems = $derived(items.filter((item) => current.includes(item.key)));
 
+  // remote 模式：外部已按 query 更新 dataSource，本地不再过滤（对齐 Select）。
+  const isRemote = $derived(onSearch !== undefined);
+
   function matches(label: string, query: string): boolean {
     return label.toLowerCase().includes(query.trim().toLowerCase());
   }
 
   const leftVisible = $derived(
-    filter && leftQuery ? leftItems.filter((i) => matches(i.label, leftQuery)) : leftItems,
+    filter && !isRemote && leftQuery
+      ? leftItems.filter((i) => matches(i.label, leftQuery))
+      : leftItems,
   );
   const rightVisible = $derived(
-    filter && rightQuery ? rightItems.filter((i) => matches(i.label, rightQuery)) : rightItems,
+    filter && !isRemote && rightQuery
+      ? rightItems.filter((i) => matches(i.label, rightQuery))
+      : rightItems,
   );
 
   // Render groups — pure derivations. Empty groups vanish because the input is
@@ -155,7 +203,7 @@
   const baseExpanded = $derived(expandedTouched ? innerExpanded : defaultExpanded);
 
   // Search expands ancestors of matches without writing the base set (红线 #1/#2).
-  const treeSearch = $derived(filter ? leftQuery.trim().toLowerCase() : '');
+  const treeSearch = $derived(filter && !isRemote ? leftQuery.trim().toLowerCase() : '');
   const treeFiltered = $derived(
     treeSearch
       ? computeFilteredKeys(sourceTree, (n) => n.label.toLowerCase().includes(treeSearch))
@@ -280,6 +328,163 @@
     rightChecked = rightChecked.filter((k) => k !== key);
   }
 
+  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）对齐 Select ---
+  let leftTimer: ReturnType<typeof setTimeout> | undefined;
+  let rightTimer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleSearch(direction: 'left' | 'right', q: string) {
+    const timer = direction === 'left' ? leftTimer : rightTimer;
+    if (timer !== undefined) clearTimeout(timer);
+    const id = setTimeout(() => {
+      if (direction === 'left') leftTimer = undefined;
+      else rightTimer = undefined;
+      onSearch?.(q, direction);
+    }, Math.max(0, searchDebounce));
+    if (direction === 'left') leftTimer = id;
+    else rightTimer = id;
+  }
+  function onQueryInput(direction: 'left' | 'right', v: string) {
+    if (direction === 'left') leftQuery = v;
+    else rightQuery = v;
+    if (isRemote) scheduleSearch(direction, v);
+  }
+  // 卸载兜底清理。
+  $effect(() => () => {
+    if (leftTimer !== undefined) clearTimeout(leftTimer);
+    if (rightTimer !== undefined) clearTimeout(rightTimer);
+  });
+
+  // --- 目标列拖拽重排（HTML5 DnD，与 TagInput 对齐）---------------------------
+  // 受控不改 value，仅经 onChange 通知新顺序（红线 #1）；拖拽态用 $state，事件
+  // 处理命令式 + drop/dragend 清理（红线 #3）；重排交由 reorder.ts 纯函数（红线 #2）。
+  // 拖拽作用于「当前 target keys 的顺序」，按可见目标项的全局索引映射回 current。
+  const canDrag = $derived(draggable && !disabled);
+  let dragIndex = $state<number | null>(null); // 被拖拽目标项在 current 中的下标
+  let dropIndex = $state<number | null>(null); // 当前悬停目标项下标
+  let dropSide = $state<InsertSide | null>(null); // 插入到目标前/后
+
+  function resetDrag() {
+    dragIndex = null;
+    dropIndex = null;
+    dropSide = null;
+  }
+  // 把可见目标项映射回它在 current（已选顺序）中的下标。
+  function targetIndexOf(key: TransferKey): number {
+    return current.indexOf(key);
+  }
+  function onRowDragStart(e: DragEvent, key: TransferKey) {
+    if (!canDrag) {
+      e.preventDefault();
+      return;
+    }
+    dragIndex = targetIndexOf(key);
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      // 必须 setData，否则部分浏览器不触发 drop。
+      e.dataTransfer.setData('text/plain', String(dragIndex));
+    }
+  }
+  function onRowDragOver(e: DragEvent, key: TransferKey) {
+    if (dragIndex === null) return;
+    e.preventDefault(); // dragover 必须 preventDefault 才能触发 drop。
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    dropIndex = targetIndexOf(key);
+    dropSide = computeInsertSide(e.clientY - rect.top, rect.height);
+  }
+  function onRowDragLeave(e: DragEvent, key: TransferKey) {
+    const related = e.relatedTarget as Node | null;
+    const cur = e.currentTarget as HTMLElement;
+    if (related && cur.contains(related)) return;
+    if (dropIndex === targetIndexOf(key)) {
+      dropIndex = null;
+      dropSide = null;
+    }
+  }
+  function onRowDrop(e: DragEvent, key: TransferKey) {
+    if (dragIndex === null || dropSide === null) {
+      resetDrag();
+      return;
+    }
+    e.preventDefault();
+    const next = reorder(current, dragIndex, targetIndexOf(key), dropSide);
+    const changed = next.length === current.length && next.some((k, i) => k !== current[i]);
+    resetDrag();
+    if (changed) commit(next); // 受控仅 onChange（红线 #1）。
+  }
+
+  // --- 虚拟化（仅平铺、非分组面板生效；tree/group 回退全量渲染）--------------
+  // 视口=列表容器自身滚动；scrollTop 由命令式 rAF 节流回调写本地 $state，可见区间
+  // 纯 $derived render 期只读不读 DOM（红线 #2/#3）。对齐 Select 虚拟化范式。
+  const VIRTUAL_OVERSCAN = 4;
+  const vItemHeight = $derived(itemHeight > 0 ? itemHeight : 32);
+  const leftVirtual = $derived(virtualize && !grouped && !isTree);
+  const rightVirtual = $derived(virtualize && !grouped);
+  let leftScrollTop = $state(0);
+  let rightScrollTop = $state(0);
+  let leftViewportH = $state(0);
+  let rightViewportH = $state(0);
+
+  const leftVTotal = $derived(leftVisible.length * vItemHeight);
+  const rightVTotal = $derived(rightVisible.length * vItemHeight);
+  const leftVRange = $derived(
+    leftVirtual
+      ? fixedRange(leftScrollTop, leftViewportH, vItemHeight, leftVisible.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: leftVisible.length },
+  );
+  const rightVRange = $derived(
+    rightVirtual
+      ? fixedRange(rightScrollTop, rightViewportH, vItemHeight, rightVisible.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: rightVisible.length },
+  );
+  const leftVItems = $derived(
+    leftVirtual ? leftVisible.slice(leftVRange.startIndex, leftVRange.endIndex) : leftVisible,
+  );
+  const rightVItems = $derived(
+    rightVirtual ? rightVisible.slice(rightVRange.startIndex, rightVRange.endIndex) : rightVisible,
+  );
+
+  // 滚动容器：用 attachment 绑定列表元素，命令式 rAF 节流监听 scroll，把视口高度与
+  // scrollTop 写回本地 $state 驱动 vRange 派生；attachment 返回 cleanup（红线 #3）。
+  function virtualScroll(
+    setTop: (n: number) => void,
+    setViewport: (n: number) => void,
+  ): Attachment<HTMLUListElement> {
+    return (el) => {
+      let raf = 0;
+      setViewport(el.clientHeight);
+      setTop(el.scrollTop);
+      function onScroll() {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          setTop(el.scrollTop);
+        });
+      }
+      el.addEventListener('scroll', onScroll, { passive: true });
+      return () => {
+        el.removeEventListener('scroll', onScroll);
+        if (raf) cancelAnimationFrame(raf);
+      };
+    };
+  }
+  const noopAttach: Attachment<HTMLUListElement> = () => {};
+  const leftScrollAttach = $derived(
+    leftVirtual
+      ? virtualScroll(
+          (n) => (leftScrollTop = n),
+          (n) => (leftViewportH = n),
+        )
+      : noopAttach,
+  );
+  const rightScrollAttach = $derived(
+    rightVirtual
+      ? virtualScroll(
+          (n) => (rightScrollTop = n),
+          (n) => (rightViewportH = n),
+        )
+      : noopAttach,
+  );
+
   const moveRightDisabled = $derived(
     disabled ||
       leftItems.filter((i) => !i.disabled && leftChecked.includes(i.key)).length === 0,
@@ -296,8 +501,27 @@
   );
 </script>
 
-{#snippet itemRow(side: 'left' | 'right', item: TransferItem)}
-  <li class="cd-transfer__item">
+{#snippet itemRow(side: 'left' | 'right', item: TransferItem, style = '')}
+  {@const tIndex = side === 'right' ? targetIndexOf(item.key) : -1}
+  {@const dragRow = side === 'right' && canDrag && !(item.disabled ?? false)}
+  <li
+    class="cd-transfer__item"
+    class:cd-transfer__item--draggable={dragRow}
+    class:cd-transfer__item--dragging={side === 'right' && dragIndex !== null && dragIndex === tIndex}
+    class:cd-transfer__item--drop-before={side === 'right' &&
+      dropIndex === tIndex &&
+      dropSide === 'before'}
+    class:cd-transfer__item--drop-after={side === 'right' &&
+      dropIndex === tIndex &&
+      dropSide === 'after'}
+    {style}
+    draggable={dragRow}
+    ondragstart={dragRow ? (e) => onRowDragStart(e, item.key) : undefined}
+    ondragover={side === 'right' && canDrag ? (e) => onRowDragOver(e, item.key) : undefined}
+    ondragleave={side === 'right' && canDrag ? (e) => onRowDragLeave(e, item.key) : undefined}
+    ondrop={side === 'right' && canDrag ? (e) => onRowDrop(e, item.key) : undefined}
+    ondragend={side === 'right' && canDrag ? resetDrag : undefined}
+  >
     {#if side === 'right' && oneWay}
       <span class="cd-transfer__item-label">{item.label}</span>
       <button
@@ -360,12 +584,24 @@
 {/snippet}
 
 {#snippet panelList(side: 'left' | 'right', visible: TransferItem[], groups: TransferRenderGroup[])}
-  <ul class="cd-transfer__list">
+  {@const isVirtual = side === 'left' ? leftVirtual : rightVirtual}
+  {@const vItems = side === 'left' ? leftVItems : rightVItems}
+  {@const vRange = side === 'left' ? leftVRange : rightVRange}
+  {@const vTotal = side === 'left' ? leftVTotal : rightVTotal}
+  <ul class="cd-transfer__list" {@attach side === 'left' ? leftScrollAttach : rightScrollAttach}>
+    {#if loading}
+      <li class="cd-transfer__loading" aria-live="polite">
+        <span class="cd-transfer__spinner" aria-hidden="true"></span>
+        <span>{loc().t('Transfer.loading')}</span>
+      </li>
+    {/if}
     {#if side === 'left' && isTree}
       {#each visibleFlat as f (f.node.key)}
         {@render treeRow(f)}
       {:else}
-        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {#if !loading}
+          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {/if}
       {/each}
     {:else if grouped}
       {#each groups as group (group.title)}
@@ -390,13 +626,30 @@
           </ul>
         </li>
       {:else}
-        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {#if !loading}
+          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {/if}
       {/each}
+    {:else if isVirtual}
+      <!-- 虚拟化：spacer 撑总高，可见项绝对定位按全局索引偏移；只渲染视口切片 -->
+      <li class="cd-transfer__spacer" style={`block-size:${vTotal}px`} aria-hidden="true"></li>
+      {#each vItems as item, i (item.key)}
+        {@render itemRow(
+          side,
+          item,
+          `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * vItemHeight}px); block-size:${vItemHeight}px`,
+        )}
+      {/each}
+      {#if visible.length === 0 && !loading}
+        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+      {/if}
     {:else}
       {#each visible as item (item.key)}
         {@render itemRow(side, item)}
       {:else}
-        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {#if !loading}
+          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {/if}
       {/each}
     {/if}
   </ul>
@@ -419,7 +672,7 @@
           clearable
           disabled={disabled}
           ariaLabel={searchPlaceholderText}
-          onInput={(v) => (leftQuery = v)}
+          onInput={(v) => onQueryInput('left', v)}
         />
       </div>
     {/if}
@@ -465,7 +718,7 @@
           clearable
           disabled={disabled}
           ariaLabel={searchPlaceholderText}
-          onInput={(v) => (rightQuery = v)}
+          onInput={(v) => onQueryInput('right', v)}
         />
       </div>
     {/if}
@@ -512,11 +765,16 @@
     border-block-end: 1px solid var(--cd-transfer-panel-border);
   }
   .cd-transfer__list {
+    position: relative;
     flex: 1 1 auto;
     margin: 0;
     padding: 0;
     list-style: none;
     overflow-y: auto;
+  }
+  /* 虚拟化占位：撑出总高度，可见项绝对定位浮于其上。 */
+  .cd-transfer__spacer {
+    pointer-events: none;
   }
   .cd-transfer__item {
     display: flex;
@@ -528,6 +786,46 @@
   }
   .cd-transfer__item:hover {
     background: var(--cd-transfer-item-bg-hover);
+  }
+  .cd-transfer__item--draggable {
+    cursor: grab;
+  }
+  .cd-transfer__item--dragging {
+    opacity: 0.5;
+  }
+  /* 拖拽插入指示线：目标项上/下边缘 2px 主色线。 */
+  .cd-transfer__item--drop-before {
+    box-shadow: inset 0 2px 0 0 var(--cd-color-primary);
+  }
+  .cd-transfer__item--drop-after {
+    box-shadow: inset 0 -2px 0 0 var(--cd-color-primary);
+  }
+  .cd-transfer__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cd-spacing-2);
+    padding-block: var(--cd-spacing-3);
+    color: var(--cd-color-text-3);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-transfer__spinner {
+    inline-size: 1em;
+    block-size: 1em;
+    border: 2px solid var(--cd-color-border);
+    border-block-start-color: var(--cd-color-primary);
+    border-radius: var(--cd-radius-full);
+    animation: cd-transfer-spin 0.7s linear infinite;
+  }
+  @keyframes cd-transfer-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-transfer__spinner {
+      animation: none;
+    }
   }
   .cd-transfer__item-label {
     flex: 1 1 auto;
