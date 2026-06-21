@@ -2726,6 +2726,31 @@ let pageSize2 = $state(10);
     <div style="width: 360px" data-testid="carousel-autoplay">
       <Carousel slides={[slideA, slideB, slideC]} autoplay interval={1200} height={160} />
     </div>
+
+    <Text type="tertiary">slidesToShow=2 多图同屏（slidesToScroll=2，可拖拽）：</Text>
+    <div style="width: 480px" data-testid="carousel-multi">
+      <Carousel
+        slides={[slideA, slideB, slideC, slideD, slideE]}
+        slidesToShow={2}
+        slidesToScroll={2}
+        loop={false}
+        height={160}
+      />
+    </div>
+
+    <Text type="tertiary">vertical 纵向（拖拽 / 箭头上下 / 右侧指示器）：</Text>
+    <div style="width: 360px" data-testid="carousel-vertical">
+      <Carousel
+        slides={[slideA, slideB, slideC]}
+        vertical
+        height={200}
+      />
+    </div>
+
+    <Text type="tertiary">draggable 拖拽手势切换：</Text>
+    <div style="width: 360px" data-testid="carousel-drag">
+      <Carousel slides={[slideA, slideB, slideC]} height={160} />
+    </div>
   </Space>
 
   <Divider />
@@ -3779,6 +3804,12 @@ let pageSize2 = $state(10);
 {/snippet}
 {#snippet slideC()}
   <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-warning);color:#fff;font-size:20px">幻灯片 3</div>
+{/snippet}
+{#snippet slideD()}
+  <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-danger);color:#fff;font-size:20px">幻灯片 4</div>
+{/snippet}
+{#snippet slideE()}
+  <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-tertiary);color:#fff;font-size:20px">幻灯片 5</div>
 {/snippet}
 
 <style>
