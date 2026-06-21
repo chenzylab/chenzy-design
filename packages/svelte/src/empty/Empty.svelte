@@ -1,8 +1,8 @@
 <!--
   Empty — see specs/components/show/Empty.spec.md
-  基础子集: 内置预设插画 (noData/noResult/error) + 标题 + 描述 + 动作 slot。
-  TODO(延后): URL 外部图、horizontal layout、responsive 收缩、
-    construction/success/noAccess 全套插画。
+  内置预设插画 (noData/noResult/error) | 外部图片 URL | 自定义 snippet
+  + 标题 + 描述 + 动作 slot。layout=vertical|horizontal，responsive 窄容器收缩。
+  TODO(延后): construction/success/noAccess 全套插画。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -10,12 +10,18 @@
 
   type EmptyImage = 'noData' | 'noResult' | 'error';
   type Size = 'small' | 'default' | 'large';
+  type Layout = 'vertical' | 'horizontal';
 
   interface Props {
-    image?: EmptyImage;
+    /** 内置预设名，或外部图片 URL（非预设字符串按 URL 渲染 <img>） */
+    image?: EmptyImage | (string & {});
     title?: string;
     description?: string;
     size?: Size;
+    /** 排布方向；horizontal 在窄容器自动降级为 vertical（需 responsive） */
+    layout?: Layout;
+    /** 是否启用容器宽度自适应收缩（CSS 容器查询，纯样式） */
+    responsive?: boolean;
     class?: string;
     children?: Snippet;
     imageSlot?: Snippet;
@@ -26,6 +32,8 @@
     title,
     description,
     size = 'default',
+    layout = 'vertical',
+    responsive = true,
     class: className = '',
     children,
     imageSlot,
@@ -33,23 +41,48 @@
 
   const loc = useLocale();
 
+  const presets = ['noData', 'noResult', 'error'] as const;
+  // 纯派生：image 是否为内置预设；否则按外部图片 URL 处理。
+  const isPreset = $derived(
+    (presets as readonly string[]).includes(image),
+  );
+
   const defaultTitles = $derived<Record<EmptyImage, string>>({
     noData: loc().t('Empty.noData'),
     noResult: loc().t('Empty.noResult'),
     error: loc().t('Empty.error'),
   });
 
-  const resolvedTitle = $derived(title ?? defaultTitles[image]);
+  const resolvedTitle = $derived(
+    title ?? (isPreset ? defaultTitles[image as EmptyImage] : undefined),
+  );
 
   const cls = $derived(
-    ['cd-empty', `cd-empty--${size}`, className].filter(Boolean).join(' '),
+    [
+      'cd-empty',
+      `cd-empty--${size}`,
+      responsive && 'cd-empty--responsive',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
+  // 内层承载 flex 布局方向；root 仅作 CSS 容器（容器查询只能影响后代）
+  const layoutCls = $derived(`cd-empty__layout cd-empty__layout--${layout}`);
 </script>
 
 <div class={cls}>
-  <div class="cd-empty__image" aria-hidden="true">
+  <div class={layoutCls}>
+  <div class="cd-empty__image" aria-hidden={isPreset ? 'true' : undefined}>
     {#if imageSlot}
       {@render imageSlot()}
+    {:else if !isPreset}
+      <img
+        class="cd-empty__img"
+        src={image}
+        alt={resolvedTitle ?? ''}
+        loading="lazy"
+      />
     {:else if image === 'noData'}
       <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
         <rect
@@ -92,23 +125,32 @@
     {/if}
   </div>
 
-  {#if resolvedTitle}
-    <p class="cd-empty__title">{resolvedTitle}</p>
-  {/if}
+  {#if resolvedTitle || description || children}
+    <div class="cd-empty__content">
+      {#if resolvedTitle}
+        <p class="cd-empty__title">{resolvedTitle}</p>
+      {/if}
 
-  {#if description}
-    <p class="cd-empty__description">{description}</p>
-  {/if}
+      {#if description}
+        <p class="cd-empty__description">{description}</p>
+      {/if}
 
-  {#if children}
-    <div class="cd-empty__footer">
-      {@render children()}
+      {#if children}
+        <div class="cd-empty__footer">
+          {@render children()}
+        </div>
+      {/if}
     </div>
   {/if}
+  </div>
 </div>
 
 <style>
-  .cd-empty {
+  /* root 仅负责作 CSS 查询容器（responsive 时）；布局在内层 __layout */
+  .cd-empty--responsive {
+    container-type: inline-size;
+  }
+  .cd-empty__layout {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -120,11 +162,25 @@
     display: inline-flex;
     color: var(--cd-empty-image-color);
   }
-  .cd-empty--small .cd-empty__image :global(svg) {
+  .cd-empty__content {
+    display: flex;
+    flex-direction: column;
+    align-items: inherit;
+    gap: var(--cd-empty-gap);
+  }
+  .cd-empty__img {
+    display: block;
+    inline-size: 64px;
+    block-size: auto;
+    object-fit: contain;
+  }
+  .cd-empty--small .cd-empty__image :global(svg),
+  .cd-empty--small .cd-empty__img {
     inline-size: 48px;
     block-size: 48px;
   }
-  .cd-empty--large .cd-empty__image :global(svg) {
+  .cd-empty--large .cd-empty__image :global(svg),
+  .cd-empty--large .cd-empty__img {
     inline-size: 80px;
     block-size: 80px;
   }
@@ -138,5 +194,35 @@
   }
   .cd-empty__footer {
     margin-block-start: var(--cd-empty-gap);
+  }
+
+  /* horizontal：插画在前、文案在后，左右排列并垂直居中 */
+  .cd-empty__layout--horizontal {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    text-align: start;
+  }
+  /* horizontal 下文案列左对齐 */
+  .cd-empty__layout--horizontal .cd-empty__content {
+    align-items: flex-start;
+  }
+
+  /* 响应式收缩：root 容器窄于断点时插画变小，horizontal 降级为 vertical。
+     容器查询只作用于后代，故查询 root、命中内层 __layout */
+  @container (max-width: 320px) {
+    .cd-empty--responsive .cd-empty__layout--horizontal {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .cd-empty--responsive .cd-empty__layout--horizontal .cd-empty__content {
+      align-items: center;
+    }
+    .cd-empty--responsive .cd-empty__image :global(svg),
+    .cd-empty--responsive .cd-empty__img {
+      inline-size: 48px;
+      block-size: 48px;
+    }
   }
 </style>

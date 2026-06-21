@@ -2240,6 +2240,26 @@ let pageSize2 = $state(10);
   <Space direction="vertical" align="start">
     <Empty image="noResult" description="换个关键词试试" />
 
+    <Empty
+      layout="horizontal"
+      title="暂无项目"
+      description="创建第一个项目以开始协作"
+    />
+
+    <div style="width: 280px; border: 1px dashed var(--cd-color-border)">
+      <Empty
+        layout="horizontal"
+        title="窄容器自动降级"
+        description="宽度小于断点时 horizontal 切回 vertical 并缩小插画"
+      />
+    </div>
+
+    <Empty
+      image="https://lf-scm-cn.semi.design/obj/semi-tos/files/Illustration-NoContent.svg"
+      title="外部图片"
+      description="image 传 URL 时渲染外部图"
+    />
+
     <div style="width: 420px">
       <Descriptions
         bordered
