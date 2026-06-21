@@ -9,6 +9,9 @@ import {
   buildSecondOptions,
   applyHideDisabled,
   isTimeDisabled,
+  parseFormatSpec,
+  formatTime,
+  parseTimeString,
   type TimeOption,
 } from './time.js';
 
@@ -114,5 +117,81 @@ describe('isTimeDisabled', () => {
     expect(isTimeDisabled(9, 30, 15, { disabledSeconds: () => [15] })).toBe(true);
     expect(isTimeDisabled(9, 31, 0, { disabledMinutes: (h) => (h === 9 ? [30] : []) })).toBe(false);
     expect(isTimeDisabled(1, 2, 3, {})).toBe(false);
+  });
+});
+
+describe('parseFormatSpec', () => {
+  it('HH:mm:ss → hour+minute+second, 24h', () => {
+    expect(parseFormatSpec('HH:mm:ss')).toEqual({
+      showHour: true,
+      showMinute: true,
+      showSecond: true,
+      use12Hours: false,
+    });
+  });
+
+  it('HH:mm drops second', () => {
+    expect(parseFormatSpec('HH:mm')).toEqual({
+      showHour: true,
+      showMinute: true,
+      showSecond: false,
+      use12Hours: false,
+    });
+  });
+
+  it('lowercase h implies 12h', () => {
+    expect(parseFormatSpec('hh:mm')).toMatchObject({ use12Hours: true, showSecond: false });
+  });
+
+  it('A token implies 12h even with uppercase H', () => {
+    expect(parseFormatSpec('hh:mm A')).toMatchObject({ use12Hours: true, showMinute: true });
+    expect(parseFormatSpec('h:mm a')).toMatchObject({ use12Hours: true });
+  });
+});
+
+describe('formatTime', () => {
+  it('zero-pads HH:mm:ss', () => {
+    expect(formatTime({ hour: 9, minute: 5, second: 3 }, 'HH:mm:ss')).toBe('09:05:03');
+  });
+
+  it('single-letter tokens are unpadded', () => {
+    expect(formatTime({ hour: 9, minute: 5, second: 3 }, 'H:m:s')).toBe('9:5:3');
+  });
+
+  it('12h with meridiem token', () => {
+    expect(formatTime({ hour: 13, minute: 30, second: 0 }, 'hh:mm A')).toBe('01:30 PM');
+    expect(formatTime({ hour: 0, minute: 0, second: 0 }, 'h:mm a')).toBe('12:00 am');
+  });
+
+  it('passes literals through', () => {
+    expect(formatTime({ hour: 8, minute: 0, second: 0 }, 'HH时mm分')).toBe('08时00分');
+  });
+});
+
+describe('parseTimeString', () => {
+  it('parses HH:mm:ss', () => {
+    expect(parseTimeString('12:30:45')).toEqual({ hour: 12, minute: 30, second: 45 });
+  });
+
+  it('parses HH:mm with second defaulting to 0', () => {
+    expect(parseTimeString('08:05')).toEqual({ hour: 8, minute: 5, second: 0 });
+  });
+
+  it('tolerates missing leading zeros and whitespace', () => {
+    expect(parseTimeString(' 1:5:9 ')).toEqual({ hour: 1, minute: 5, second: 9 });
+  });
+
+  it('parses trailing meridiem as 12h hour', () => {
+    expect(parseTimeString('12:30 pm')).toEqual({ hour: 12, minute: 30, second: 0 });
+    expect(parseTimeString('12:00am')).toEqual({ hour: 0, minute: 0, second: 0 });
+    expect(parseTimeString('1:05:09AM')).toEqual({ hour: 1, minute: 5, second: 9 });
+  });
+
+  it('returns null on invalid input', () => {
+    expect(parseTimeString('')).toBeNull();
+    expect(parseTimeString('25:00')).toBeNull();
+    expect(parseTimeString('10:75')).toBeNull();
+    expect(parseTimeString('13:00 pm')).toBeNull(); // hour out of 1-12 with meridiem
+    expect(parseTimeString('abc')).toBeNull();
   });
 });

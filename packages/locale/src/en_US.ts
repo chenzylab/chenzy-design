@@ -178,6 +178,8 @@ export const en_US: Locale = {
     second: 'Second',
     am: 'AM',
     pm: 'PM',
+    rangeStart: 'Start time',
+    rangeEnd: 'End time',
   },
   Transfer: {
     searchPlaceholder: 'Search',

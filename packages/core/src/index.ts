@@ -282,7 +282,12 @@ export {
   buildSecondOptions,
   applyHideDisabled,
   isTimeDisabled,
+  parseFormatSpec,
+  formatTime,
+  parseTimeString,
   type Meridiem,
   type TimeOption,
   type DisabledTime,
+  type TimeParts,
+  type FormatSpec,
 } from './time.js';
