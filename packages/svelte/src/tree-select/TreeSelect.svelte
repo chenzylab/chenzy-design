@@ -23,13 +23,17 @@
     conduct,
     toggleCheck,
     computeFilteredKeys,
+    collectCheckedByStrategy,
     flattenVisible,
     fixedRange,
     type TreeNodeData,
     type FlatNode,
+    type CheckedStrategy,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
+  import { getGlobalPopupContainer } from '../config-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
   import type { TreeNode, TreeKey } from './types.js';
 
@@ -55,6 +59,18 @@
     multiple?: boolean;
     /** 多选时父子勾选互不影响（无半选） */
     checkStrictly?: boolean;
+    /**
+     * 多选父子是否级联联动（对齐 Tree）。'related'（默认）父子联动；
+     * 'unRelated' 互不影响（等价 checkStrictly）。checkStrictly=true 强制 unRelated（向后兼容）。
+     */
+    checkRelation?: 'related' | 'unRelated';
+    /**
+     * 多选回填值 / Tag 的收敛策略：'all'（默认，全部勾选节点）、
+     * 'parent'（完全勾选父级折叠为父）、'child'（仅叶子）。仅 related 级联时生效。
+     */
+    showCheckedStrategy?: CheckedStrategy;
+    /** 多选回填 Tag 最大展示数，超出折叠为 +N（仅影响显示，不改 value）。 */
+    maxTagCount?: number;
     placeholder?: string;
     size?: Size;
     status?: Status;
@@ -62,14 +78,36 @@
     clearable?: boolean;
     leafOnly?: boolean;
     defaultExpandAll?: boolean;
+    /** 默认展开的节点 key（非受控初始展开集，与 defaultExpandAll 取并集）。 */
+    treeDefaultExpandedKeys?: TreeKey[];
     /** 面板顶部搜索框过滤节点（命中 + 祖先链可见、高亮命中文本） */
     filterable?: boolean;
+    /**
+     * 远程搜索：输入仅触发 onSearch（防抖后），不本地过滤（由外部更新 treeData）。
+     * 隐含 filterable 行为（显示搜索框）。默认 false。
+     */
+    remote?: boolean;
+    /** onSearch 防抖毫秒（remote 时生效，默认 300）。 */
+    searchDebounce?: number;
+    /** 远程搜索输入回调（防抖后）。 */
+    onSearch?: (query: string) => void;
     /** 是否预留节点图标位（icon 提供时渲染在 label 前）。默认 true，与 Tree 对齐。 */
     showIcon?: boolean;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组。与 Tree 的 loadData 对齐。 */
     loadData?: (node: TreeNode) => Promise<TreeNode[]>;
     /** 虚拟滚动：仅渲染视口内的可见节点行，适合大数据树（1000+ 节点）。默认 false（行为不变）。 */
     virtualized?: boolean;
+    /**
+     * 自动启用虚拟化的可见节点数阈值：可见扁平行数 ≥ 此值时自动开启虚拟化。
+     * 默认 100。virtualized 显式为 true 时强制开启（不看阈值）。
+     */
+    virtualizeThreshold?: number;
+    /** 浮层宽度对齐触发器（min-inline-size = 触发器宽）。默认 true。 */
+    dropdownMatchSelectWidth?: boolean;
+    /** 浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 关闭即从 DOM 卸载浮层（重开重建）。默认 false：首开后保留 DOM 仅隐藏。 */
+    destroyOnClose?: boolean;
     /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 224（与默认面板 max-height 一致）。 */
     height?: number;
     /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32。 */
@@ -90,6 +128,9 @@
     defaultOpen = false,
     multiple = false,
     checkStrictly = false,
+    checkRelation = 'related',
+    showCheckedStrategy = 'all',
+    maxTagCount,
     placeholder = '请选择',
     size = 'default',
     status = 'default',
@@ -97,10 +138,18 @@
     clearable = false,
     leafOnly = false,
     defaultExpandAll = false,
+    treeDefaultExpandedKeys,
     filterable = false,
+    remote = false,
+    searchDebounce = 300,
+    onSearch,
     showIcon = true,
     loadData,
     virtualized = false,
+    virtualizeThreshold = 100,
+    dropdownMatchSelectWidth = true,
+    getPopupContainer,
+    destroyOnClose = false,
     height = 224,
     itemHeight = 32,
     onChange,
@@ -110,6 +159,13 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
+  const globalPopupContainer = getGlobalPopupContainer();
+  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
+
+  // remote 隐含可搜索（显示搜索框）；checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
+  const isFilterable = $derived(filterable || remote);
+  const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
 
   const treeId = useId('cd-tree-select-panel');
 
@@ -218,10 +274,14 @@
     return defaultOpen;
   }
   function getInitialExpanded(): Set<TreeKey> {
-    // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时才能识别 children）。
-    if (!defaultExpandAll) return new Set<TreeKey>();
-    const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
-    return new Set(collectExpandable(base, []));
+    // treeDefaultExpandedKeys 与 defaultExpandAll 取并集（非受控初始展开集）。
+    const set = new Set<TreeKey>(treeDefaultExpandedKeys ?? []);
+    if (defaultExpandAll) {
+      // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时才能识别 children）。
+      const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
+      for (const k of collectExpandable(base, [])) set.add(k);
+    }
+    return set;
   }
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
@@ -242,22 +302,44 @@
   );
   const checkState = $derived.by(() => {
     if (!multiple) return { checked: new Set<TreeKey>(), half: new Set<TreeKey>() };
-    if (checkStrictly) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
+    if (isUnRelated) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     return conduct(mergedTree as unknown as TreeNodeData[], currentCheckedBase);
   });
-  // trigger 回显的已选节点（多选取 checked 全集，按树序）
+  // 回填值/Tag 收敛集（showCheckedStrategy）：unRelated 无父子关系故策略不生效（取全 checked）。
+  const strategyKeys = $derived.by<TreeKey[]>(() => {
+    if (!multiple) return [];
+    if (isUnRelated) return [...checkState.checked];
+    return collectCheckedByStrategy(
+      mergedTree as unknown as TreeNodeData[],
+      checkState.checked,
+      showCheckedStrategy,
+    );
+  });
+  // trigger 回显的已选节点（按收敛策略，树序）
   const checkedNodes = $derived.by<TreeNode[]>(() => {
     if (!multiple) return [];
+    const keep = new Set(strategyKeys);
     const out: TreeNode[] = [];
     const walk = (nodes: TreeNode[]) => {
       for (const n of nodes) {
-        if (checkState.checked.has(n.key)) out.push(n);
+        if (keep.has(n.key)) out.push(n);
         if (n.children) walk(n.children);
       }
     };
     walk(mergedTree);
     return out;
   });
+  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数（仅影响显示，不改 value，红线 #1/#2）。
+  const visibleTagNodes = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? checkedNodes.slice(0, maxTagCount)
+      : checkedNodes,
+  );
+  const hiddenTagCount = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? Math.max(0, checkedNodes.length - maxTagCount)
+      : 0,
+  );
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
   const isOpenControlled = $derived(open !== undefined);
@@ -281,19 +363,27 @@
     onChange?.(next);
   }
 
-  // 多选：勾选 base 变更 → conduct 归一为 checked 全集回调
+  // 多选：勾选 base 变更 → conduct 归一 → 按 showCheckedStrategy 收敛后回调
   function setChecked(nextBase: Set<TreeKey>) {
     if (!isValueControlled) innerChecked = nextBase;
-    const resolved = checkStrictly
-      ? new Set(nextBase)
-      : conduct(mergedTree as unknown as TreeNodeData[], nextBase).checked;
-    onChange?.([...resolved]);
+    if (isUnRelated) {
+      onChange?.([...nextBase]);
+      return;
+    }
+    const resolved = conduct(mergedTree as unknown as TreeNodeData[], nextBase).checked;
+    onChange?.(
+      collectCheckedByStrategy(
+        mergedTree as unknown as TreeNodeData[],
+        resolved,
+        showCheckedStrategy,
+      ),
+    );
   }
 
   function toggleCheckNode(node: TreeNode) {
     if (node.disabled || disabled) return;
     let nextBase: Set<TreeKey>;
-    if (checkStrictly) {
+    if (isUnRelated) {
       nextBase = new Set(currentCheckedBase);
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
@@ -303,11 +393,11 @@
     setChecked(nextBase);
   }
 
-  // 移除某 tag：把该节点（及其子树，非 strictly）从勾选中去掉
+  // 移除某 tag：把该节点（及其子树，related）从勾选中去掉
   function removeChecked(node: TreeNode) {
     if (disabled) return;
     const isChecked = checkState.checked.has(node.key);
-    if (checkStrictly) {
+    if (isUnRelated) {
       const next = new Set(currentCheckedBase);
       next.delete(node.key);
       setChecked(next);
@@ -352,7 +442,8 @@
   // --- 搜索过滤（本地 state，复用 core computeFilteredKeys）---
   let searchValue = $state('');
   const trimmedSearch = $derived(searchValue.trim());
-  const searchActive = $derived(filterable && trimmedSearch.length > 0);
+  // remote 模式不本地过滤（外部更新 treeData），仅本地 filterable 时高亮/收敛命中链。
+  const searchActive = $derived(!remote && isFilterable && trimmedSearch.length > 0);
   const filterResult = $derived.by(() => {
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     const lower = trimmedSearch.toLowerCase();
@@ -381,9 +472,22 @@
     for (const k of filterResult.expand) merged.add(k);
     return merged;
   });
+  // virtualizeThreshold：节点总数 ≥ 阈值时自动启用虚拟化（virtualized=true 时强制启用）。
+  const totalNodeCount = $derived.by(() => {
+    let n = 0;
+    const walk = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        n++;
+        if (node.children) walk(node.children);
+      }
+    };
+    walk(mergedTree);
+    return n;
+  });
+  const useVirtual = $derived(virtualized || totalNodeCount >= virtualizeThreshold);
   // 可见扁平节点（仅虚拟化时计算，非虚拟化沿用递归 snippet 零额外开销）。
   const flat = $derived(
-    virtualized
+    useVirtual
       ? flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded)
       : [],
   );
@@ -403,18 +507,18 @@
   const totalHeight = $derived(visibleFlat.length * rowHeight);
   // 可视区间：纯 $derived，仅依赖本地 $state，render-safe 不读 DOM（红线 #2）。
   const vRange = $derived(
-    virtualized
+    useVirtual
       ? fixedRange(scrollTop, height, rowHeight, visibleFlat.length, VIRTUAL_OVERSCAN)
       : { startIndex: 0, endIndex: visibleFlat.length },
   );
   const renderFlat = $derived(
-    virtualized ? visibleFlat.slice(vRange.startIndex, vRange.endIndex) : visibleFlat,
+    useVirtual ? visibleFlat.slice(vRange.startIndex, vRange.endIndex) : visibleFlat,
   );
 
   // 滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）。
   $effect(() => {
     const el = viewportEl;
-    if (!el || !virtualized) return;
+    if (!el || !useVirtual) return;
     function onScroll() {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
@@ -494,15 +598,43 @@
     }
   }
 
-  // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
-  let rootEl = $state<HTMLDivElement | null>(null);
+  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  function scheduleSearch(q: string) {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchTimer = undefined;
+      onSearch?.(q);
+    }, Math.max(0, searchDebounce));
+  }
+  // 卸载兜底清理。
+  $effect(() => () => {
+    if (searchTimer !== undefined) clearTimeout(searchTimer);
+  });
+  function onSearchInput(e: Event & { currentTarget: HTMLInputElement }) {
+    searchValue = e.currentTarget.value;
+    if (remote) scheduleSearch(searchValue.trim());
+  }
 
+  // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
+  let rootEl = $state<HTMLDivElement | null>(null);
+  let panelEl = $state<HTMLDivElement | null>(null);
+
+  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅隐藏），true 时关闭即卸载，重开重建。 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+
+  // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
     return useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [panelEl],
     });
   });
 
@@ -648,7 +780,7 @@
       {#if multiple}
         {#if checkedNodes.length > 0}
           <span class="cd-tree-select__tags">
-            {#each checkedNodes as node (node.key)}
+            {#each visibleTagNodes as node (node.key)}
               <Tag
                 size={size === 'large' ? 'default' : 'small'}
                 closable={!disabled}
@@ -657,6 +789,9 @@
                 {node.label}
               </Tag>
             {/each}
+            {#if hiddenTagCount > 0}
+              <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+            {/if}
           </span>
         {:else}
           <span class="cd-tree-select__placeholder">{placeholder}</span>
@@ -698,16 +833,31 @@
     </span>
   </div>
 
-  {#if isOpen}
-    <div class="cd-tree-select__panel" id={treeId}>
-      {#if filterable}
+  {#if shouldRender}
+    <div
+      class="cd-tree-select__panel"
+      class:cd-tree-select__panel--hidden={!isOpen}
+      bind:this={panelEl}
+      use:floating={{
+        trigger: rootEl,
+        placement: 'bottomStart',
+        autoAdjust: true,
+        offset: 4,
+        matchWidth: dropdownMatchSelectWidth,
+        getContainer: resolvePopupContainer,
+        open: isOpen,
+      }}
+      id={treeId}
+    >
+      {#if isFilterable}
         <div class="cd-tree-select__search">
           <input
             class="cd-tree-select__search-input"
             type="text"
             placeholder={loc().t('TreeSelect.searchPlaceholder')}
             aria-label={loc().t('TreeSelect.searchPlaceholder')}
-            bind:value={searchValue}
+            value={searchValue}
+            oninput={onSearchInput}
           />
         </div>
       {/if}
@@ -715,7 +865,7 @@
         <div class="cd-tree-select__tree" role="tree">
           <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
         </div>
-      {:else if virtualized}
+      {:else if useVirtual}
         <!-- 虚拟滚动（复用 Tree 范式）：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
              只渲染视口内切片 renderFlat，保持 role=tree → role=treeitem 语义不变。 -->
         <div
@@ -829,15 +979,17 @@
   .cd-tree-select--open .cd-tree-select__arrow {
     transform: rotate(180deg);
   }
+  /* 面板 portal 到容器，由 use:floating action 写 position:fixed + transform 定位 */
   .cd-tree-select__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
-    inset-inline: 0;
     z-index: var(--cd-select-dropdown-z);
     padding-block: var(--cd-spacing-1);
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
+  .cd-tree-select__panel--hidden {
+    display: none;
   }
   .cd-tree-select__search {
     padding-block-end: var(--cd-spacing-1);

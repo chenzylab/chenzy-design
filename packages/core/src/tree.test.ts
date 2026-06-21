@@ -10,6 +10,7 @@ import {
   computeFilteredKeys,
   computeDropPosition,
   isAncestorOrSelf,
+  collectCheckedByStrategy,
   siblingKeys,
   accordionExpand,
   type TreeNodeData,
@@ -297,5 +298,48 @@ describe('accordionExpand', () => {
     const input = new Set(['1', '1-1']);
     accordionExpand(data, input, '1-2');
     expect([...input].sort()).toEqual(['1', '1-1']);
+  });
+});
+
+describe('collectCheckedByStrategy', () => {
+  // Fully check the whole tree: conduct returns every node as checked.
+  const allChecked = conduct(data, new Set(['1', '2'])).checked;
+
+  it("'all' returns every checked node in document order", () => {
+    expect(collectCheckedByStrategy(data, allChecked, 'all')).toEqual([
+      '1',
+      '1-1',
+      '1-2',
+      '1-2-1',
+      '1-2-2',
+      '2',
+    ]);
+  });
+
+  it("'parent' collapses fully-checked subtrees to top-most parents", () => {
+    expect(collectCheckedByStrategy(data, allChecked, 'parent')).toEqual(['1', '2']);
+  });
+
+  it("'child' keeps only checked leaves", () => {
+    expect(collectCheckedByStrategy(data, allChecked, 'child')).toEqual([
+      '1-1',
+      '1-2-1',
+      '1-2-2',
+      '2',
+    ]);
+  });
+
+  it('partial check: parent keeps deepest fully-checked node, not half parent', () => {
+    const partial = conduct(data, new Set(['1-2'])).checked; // 1-2 + its leaves
+    expect(collectCheckedByStrategy(data, partial, 'parent')).toEqual(['1-2']);
+    expect(collectCheckedByStrategy(data, partial, 'child')).toEqual(['1-2-1', '1-2-2']);
+    expect(collectCheckedByStrategy(data, partial, 'all')).toEqual(['1-2', '1-2-1', '1-2-2']);
+  });
+
+  it('empty checked set yields empty for all strategies', () => {
+    const empty = new Set<string>();
+    expect(collectCheckedByStrategy(data, empty, 'all')).toEqual([]);
+    expect(collectCheckedByStrategy(data, empty, 'parent')).toEqual([]);
+    expect(collectCheckedByStrategy(data, empty, 'child')).toEqual([]);
   });
 });
