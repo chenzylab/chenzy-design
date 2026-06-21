@@ -136,6 +136,13 @@
   let roActionBox = $state<'content-box' | 'device-pixel-content-box'>('content-box');
   let roActionLast = $state('—');
   let roActionBoxSeen = $state('—');
+  // fallbackToWindow 降级 + onResizeStart/onResizeEnd 边界事件 demo
+  let roFbLast = $state('—');
+  let roFbCount = $state(0);
+  let roSeStatus = $state('空闲');
+  let roSeStart = $state(0);
+  let roSeEnd = $state(0);
+  let roSeLast = $state('—');
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
@@ -4452,6 +4459,30 @@ let pageSize2 = $state(10);
     style="margin-top:8px; resize:both; overflow:auto; width:220px; height:80px; min-width:120px; min-height:50px; border:1px dashed var(--cd-color-border); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--cd-color-text-1)"
   >
     <span data-testid="ro-action">{roActionLast} · box={roActionBoxSeen}</span>
+  </div>
+
+  <div style="margin-top:16px"><Text type="tertiary">fallbackToWindow 降级：显式开启后改用 window.resize 近似重测（缩放浏览器窗口触发）</Text></div>
+  <div style="margin-top:8px; width:100%; max-width:360px; height:64px; border:1px dashed var(--cd-color-border); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--cd-color-text-1)">
+    <ResizeObserver fallbackToWindow onResize={(e) => { roFbLast = `${Math.round(e.width)}×${Math.round(e.height)}`; roFbCount += 1; }}>
+      {#snippet children()}
+        <span data-testid="ro-fallback">window 降级测得：{roFbLast}（{roFbCount} 次）</span>
+      {/snippet}
+    </ResizeObserver>
+  </div>
+
+  <div style="margin-top:16px"><Text type="tertiary">onResizeStart / onResizeEnd：拖拽开始即 start，静默约 150ms 后 end</Text></div>
+  <div style="margin-top:8px; resize:both; overflow:auto; width:240px; height:90px; min-width:140px; min-height:60px; border:1px dashed var(--cd-color-border); border-radius:8px">
+    <ResizeObserver
+      onResizeStart={() => { roSeStatus = '调整中…'; roSeStart += 1; }}
+      onResizeEnd={(e) => { roSeStatus = '已完成'; roSeEnd += 1; roSeLast = `${Math.round(e.width)}×${Math.round(e.height)}`; }}
+    >
+      {#snippet children({ width, height })}
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:4px; color:var(--cd-color-text-1)">
+          <span>{Math.round(width)} × {Math.round(height)}</span>
+          <span data-testid="ro-startend">状态：{roSeStatus}（start {roSeStart} / end {roSeEnd}，末值 {roSeLast}）</span>
+        </div>
+      {/snippet}
+    </ResizeObserver>
   </div>
 
   <Divider />

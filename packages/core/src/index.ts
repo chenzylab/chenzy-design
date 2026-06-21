@@ -194,6 +194,8 @@ export {
   isResizeObserverSupported,
   resolveSchedule,
   createScheduler,
+  advanceResizePhase,
+  endResizePhase,
   getGlobalResizeObserver,
   type ResizeBox,
   type ResizeSchedule,

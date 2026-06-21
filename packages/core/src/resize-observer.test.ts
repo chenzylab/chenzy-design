@@ -5,6 +5,8 @@ import {
   createResizeObserver,
   resolveSchedule,
   createScheduler,
+  advanceResizePhase,
+  endResizePhase,
   getGlobalResizeObserver,
 } from './resize-observer.js';
 
@@ -215,6 +217,173 @@ describe('createResizeObserver (scheduling)', () => {
     expect(onResize).not.toHaveBeenCalled();
     vi.advanceTimersByTime(100);
     expect(onResize).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('advanceResizePhase / endResizePhase (start/end 纯状态机)', () => {
+  it('first resize while idle → emitStart and enters resizing', () => {
+    expect(advanceResizePhase(false)).toEqual({ resizing: true, emitStart: true });
+  });
+
+  it('subsequent resize while resizing → no start, stays resizing', () => {
+    expect(advanceResizePhase(true)).toEqual({ resizing: true, emitStart: false });
+  });
+
+  it('silence while resizing → emitEnd and leaves resizing', () => {
+    expect(endResizePhase(true)).toEqual({ resizing: false, emitEnd: true });
+  });
+
+  it('silence while idle → no end (idempotent)', () => {
+    expect(endResizePhase(false)).toEqual({ resizing: false, emitEnd: false });
+  });
+
+  it('full cycle: start once, end once across a burst', () => {
+    let state = false;
+    let starts = 0;
+    let ends = 0;
+    // burst of three resizes
+    for (let i = 0; i < 3; i++) {
+      const a = advanceResizePhase(state);
+      state = a.resizing;
+      if (a.emitStart) starts += 1;
+    }
+    const e = endResizePhase(state);
+    state = e.resizing;
+    if (e.emitEnd) ends += 1;
+    expect(starts).toBe(1);
+    expect(ends).toBe(1);
+    expect(state).toBe(false);
+  });
+});
+
+describe('createResizeObserver (start/end events)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('fires onResizeStart once on first frame, onResizeEnd after silence', () => {
+    vi.useFakeTimers();
+    let trigger!: (entries: ResizeObserverEntry[]) => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (e: ResizeObserverEntry[]) => void) {
+          trigger = cb;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const onResizeStart = vi.fn();
+    const onResizeEnd = vi.fn();
+    createResizeObserver({
+      onResize: () => {},
+      onResizeStart,
+      onResizeEnd,
+      resizeEndDelay: 100,
+    });
+    const e = makeEntry({ contentRect: { width: 10, height: 10 } as DOMRectReadOnly });
+    trigger([e]);
+    trigger([e]);
+    trigger([e]);
+    expect(onResizeStart).toHaveBeenCalledTimes(1);
+    expect(onResizeEnd).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(100);
+    expect(onResizeEnd).toHaveBeenCalledTimes(1);
+    // a fresh burst → start again
+    trigger([e]);
+    expect(onResizeStart).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not arm timers when no start/end handlers given (backward compat)', () => {
+    vi.useFakeTimers();
+    let trigger!: (entries: ResizeObserverEntry[]) => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (e: ResizeObserverEntry[]) => void) {
+          trigger = cb;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const onResize = vi.fn();
+    createResizeObserver({ onResize });
+    const e = makeEntry({ contentRect: { width: 1, height: 1 } as DOMRectReadOnly });
+    trigger([e]);
+    expect(onResize).toHaveBeenCalledTimes(1);
+    // no pending timers expected
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('createResizeObserver (fallbackToWindow)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('uses window.resize when native is absent', () => {
+    vi.stubGlobal('ResizeObserver', undefined);
+    const addEventListener = vi.fn();
+    const removeEventListener = vi.fn();
+    vi.stubGlobal('addEventListener', addEventListener);
+    vi.stubGlobal('removeEventListener', removeEventListener);
+
+    const onResize = vi.fn();
+    const api = createResizeObserver({ onResize, fallbackToWindow: true });
+    expect(api.supported).toBe(false);
+
+    const el = {
+      getBoundingClientRect: () => ({ width: 42, height: 24 }),
+    } as unknown as Element;
+    api.observe(el);
+    // observe measures immediately
+    expect(onResize).toHaveBeenCalledTimes(1);
+    expect(onResize).toHaveBeenLastCalledWith(
+      expect.objectContaining({ width: 42, height: 24 }),
+    );
+    expect(addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+
+    // simulate a window resize → re-measure
+    const handler = addEventListener.mock.calls[0]![1] as () => void;
+    handler();
+    expect(onResize).toHaveBeenCalledTimes(2);
+
+    api.disconnect();
+    expect(removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+  });
+
+  it('explicit fallbackToWindow=true wins even if native exists', () => {
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = observe;
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+    vi.stubGlobal('addEventListener', vi.fn());
+    vi.stubGlobal('removeEventListener', vi.fn());
+    const api = createResizeObserver({ onResize: () => {}, fallbackToWindow: true });
+    const el = {
+      getBoundingClientRect: () => ({ width: 1, height: 1 }),
+    } as unknown as Element;
+    api.observe(el);
+    // native observer not used in fallback mode
+    expect(observe).not.toHaveBeenCalled();
+  });
+
+  it('stays no-op when unsupported and fallbackToWindow is off', () => {
+    vi.stubGlobal('ResizeObserver', undefined);
+    vi.stubGlobal('addEventListener', undefined);
+    const onResize = vi.fn();
+    const api = createResizeObserver({ onResize });
+    expect(api.supported).toBe(false);
+    expect(() => api.observe({} as Element)).not.toThrow();
+    expect(onResize).not.toHaveBeenCalled();
   });
 });
 

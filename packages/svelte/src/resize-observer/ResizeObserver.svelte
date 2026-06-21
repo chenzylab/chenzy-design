@@ -6,10 +6,8 @@
 
   盒模型：content-box / border-box / device-pixel-content-box，
   单目标 + 多目标（multiple）+ throttle/debounce 节流去抖，包裹元素标签可经 tag 自定义。
-  TODO(延后):
-    - 单例 observer 池：core 已导出 getGlobalResizeObserver()，
-      但本组件每实例自管一个原生 observer（多目标时复用同一实例观测多元素，
-      已满足"不为每个元素新建 observer"）；跨组件级全局池由大列表场景按需接入。
+  fallbackToWindow 降级（原生不可用或显式开启时监听 window.resize 近似重测），
+  onResizeStart/onResizeEnd 边界事件（连续变化首帧 / 静默结束，core 纯状态机驱动）。
 
   ⚠️ 死循环红线：
     - 红线 #1：无受控回写，尺寸只向 slot / 回调单向分发。
@@ -48,10 +46,19 @@
     observeOnMount?: boolean;
     /** 包裹元素标签，默认 'div'。须为可生成盒子的元素（勿用 display:contents 类标签）。 */
     tag?: string;
+    /**
+     * 原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize，
+     * 用 getBoundingClientRect 近似重测（精度较低）。默认 false：不支持环境静默降级。
+     */
+    fallbackToWindow?: boolean;
     /** 尺寸变化回调（归一化 entry） */
     onResize?: (entry: CDResizeEntry) => void;
     /** 首次测量回调 */
     onFirstMeasure?: (entry: CDResizeEntry) => void;
+    /** 一段连续尺寸变化的首帧触发（"调整中"态） */
+    onResizeStart?: (entry: CDResizeEntry) => void;
+    /** 连续变化结束后（静默一段时间）触发，payload 为最后一帧（"调整完成"） */
+    onResizeEnd?: (entry: CDResizeEntry) => void;
     /** slot 作用域参数：{ width, height, entry } */
     children?: Snippet<
       [{ width: number; height: number; entry: CDResizeEntry | null }]
@@ -67,8 +74,11 @@
     multiple = false,
     observeOnMount = true,
     tag = 'div',
+    fallbackToWindow = false,
     onResize,
     onFirstMeasure,
+    onResizeStart,
+    onResizeEnd,
     children,
     class: className,
   }: Props = $props();
@@ -95,6 +105,20 @@
       box,
       throttle,
       debounce,
+      fallbackToWindow,
+      // 仅在使用方监听时挂 start/end，避免无谓的静默计时器（向后兼容）。
+      onResizeStart: onResizeStart
+        ? (e) => {
+            if (disabled) return;
+            onResizeStart?.(e);
+          }
+        : undefined,
+      onResizeEnd: onResizeEnd
+        ? (e) => {
+            if (disabled) return;
+            onResizeEnd?.(e);
+          }
+        : undefined,
       onResize: (e) => {
         // disabled 在回调内读 prop 最新值（Svelte 5 解构 prop 在闭包内访问是响应式最新值）。
         if (disabled) return;
@@ -109,8 +133,9 @@
       },
     });
 
-    // SSR / 老浏览器静默降级。
-    if (!ro.supported) return;
+    // SSR / 无原生 RO 且未开启 window 降级：静默不监听。
+    // 降级模式 supported 仍为 false，但内部已挂 window.resize，故需放行。
+    if (!ro.supported && !fallbackToWindow) return;
 
     if (multiple) {
       // 多目标：观测包裹元素的所有直接子元素（同一 observer 实例复用）。
