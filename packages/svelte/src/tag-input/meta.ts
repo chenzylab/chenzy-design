@@ -18,6 +18,7 @@ export const meta = {
     { name: 'readonly', type: 'boolean', default: 'false' },
     { name: 'max', type: 'number', default: 'undefined' },
     { name: 'maxLength', type: 'number', default: 'undefined' },
+    { name: 'maxTagTextLength', type: 'number', default: 'undefined' },
     { name: 'separator', type: 'string|string[]', default: "['Enter']" },
     { name: 'addOnBlur', type: 'boolean', default: 'false' },
     { name: 'allowDuplicates', type: 'boolean', default: 'false' },
