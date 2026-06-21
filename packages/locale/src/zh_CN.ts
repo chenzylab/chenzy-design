@@ -5,6 +5,12 @@ export const zh_CN: Locale = {
   rtl: false,
   Modal: { okText: '确定', cancelText: '取消', close: '关闭' },
   Input: { clear: '清除', showPassword: '显示密码', hidePassword: '隐藏密码' },
+  Textarea: {
+    clear: '清空',
+    countFormat: '{count} / {maxCount}',
+    countOnly: '{count}',
+    overLimitAnnounce: '已超出 {over} 个字符',
+  },
   Pagination: {
     total: '共 {total} 条',
     ariaLabel: '分页',

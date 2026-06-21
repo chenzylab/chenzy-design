@@ -5,6 +5,12 @@ export const en_US: Locale = {
   rtl: false,
   Modal: { okText: 'OK', cancelText: 'Cancel', close: 'Close' },
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
+  Textarea: {
+    clear: 'Clear',
+    countFormat: '{count} / {maxCount}',
+    countOnly: '{count}',
+    overLimitAnnounce: 'Exceeded by {over} characters',
+  },
   Pagination: {
     total: '{total} items in total',
     ariaLabel: 'Pagination',

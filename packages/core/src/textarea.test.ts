@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeAutosizeHeight } from './textarea.js';
+import { computeAutosizeHeight, countCharacters } from './textarea.js';
 
 // row metrics: line 20px, padding 8px (4+4), border 2px (1+1).
 // 1 row = 20 + 8 + 2 = 30; 3 rows = 60 + 10 = 70; 5 rows = 100 + 10 = 110.
@@ -42,5 +42,51 @@ describe('computeAutosizeHeight', () => {
   it('respects minRows even with default (Infinity) maxRows', () => {
     const r = computeAutosizeHeight({ ...metrics, scrollHeight: 20, minRows: 3 });
     expect(r.height).toBe(70); // 3 rows
+  });
+});
+
+describe('countCharacters', () => {
+  it('returns 0 for empty string', () => {
+    expect(countCharacters('')).toBe(0);
+    expect(countCharacters('', { graphemes: true })).toBe(0);
+  });
+
+  it('counts ASCII identically in both modes', () => {
+    expect(countCharacters('hello')).toBe(5);
+    expect(countCharacters('hello', { graphemes: true })).toBe(5);
+  });
+
+  it('counts CJK by code point in default mode', () => {
+    expect(countCharacters('你好世界')).toBe(4);
+  });
+
+  it('default mode counts a single emoji by code point (spread)', () => {
+    // 😀 is one code point → spread length 1
+    expect(countCharacters('😀')).toBe(1);
+  });
+
+  it('default mode splits ZWJ emoji into multiple code points', () => {
+    // 👨‍👩‍👧 = man + ZWJ + woman + ZWJ + girl → 5 code points via spread
+    expect(countCharacters('👨‍👩‍👧')).toBe(5);
+  });
+
+  it('grapheme mode counts a ZWJ family emoji as one character', () => {
+    expect(countCharacters('👨‍👩‍👧', { graphemes: true })).toBe(1);
+  });
+
+  it('grapheme mode counts a flag emoji as one character', () => {
+    // 🇨🇳 is two regional-indicator code points → 1 grapheme
+    expect(countCharacters('🇨🇳', { graphemes: true })).toBe(1);
+  });
+
+  it('grapheme mode counts combining marks as one character', () => {
+    // 'e' + combining acute accent → 1 grapheme, 2 code points
+    expect(countCharacters('é')).toBe(2);
+    expect(countCharacters('é', { graphemes: true })).toBe(1);
+  });
+
+  it('grapheme mode counts mixed text correctly', () => {
+    // a + family emoji + b → 3 graphemes
+    expect(countCharacters('a👨‍👩‍👧b', { graphemes: true })).toBe(3);
   });
 });
