@@ -52,6 +52,9 @@ export interface Locale {
     noData: string;
     noResult: string;
     error: string;
+    construction: string;
+    success: string;
+    noAccess: string;
   };
   Descriptions: {
     empty: string;

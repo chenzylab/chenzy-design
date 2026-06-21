@@ -2381,6 +2381,12 @@ let pageSize2 = $state(10);
       description="image 传 URL 时渲染外部图"
     />
 
+    <Space>
+      <Empty image="construction" />
+      <Empty image="success" />
+      <Empty image="noAccess" />
+    </Space>
+
     <div style="width: 420px">
       <Descriptions
         bordered

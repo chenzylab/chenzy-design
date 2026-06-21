@@ -35,6 +35,9 @@ export const zh_CN: Locale = {
     noData: '暂无数据',
     noResult: '无搜索结果',
     error: '加载失败',
+    construction: '建设中',
+    success: '操作成功',
+    noAccess: '无访问权限',
   },
   Descriptions: { empty: '-' },
   OverflowList: {

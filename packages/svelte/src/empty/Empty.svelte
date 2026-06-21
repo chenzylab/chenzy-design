@@ -1,14 +1,20 @@
 <!--
   Empty — see specs/components/show/Empty.spec.md
-  内置预设插画 (noData/noResult/error) | 外部图片 URL | 自定义 snippet
+  内置预设插画 (noData/noResult/error/construction/success/noAccess)
+  | 外部图片 URL | 自定义 snippet
   + 标题 + 描述 + 动作 slot。layout=vertical|horizontal，responsive 窄容器收缩。
-  TODO(延后): construction/success/noAccess 全套插画。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
 
-  type EmptyImage = 'noData' | 'noResult' | 'error';
+  type EmptyImage =
+    | 'noData'
+    | 'noResult'
+    | 'error'
+    | 'construction'
+    | 'success'
+    | 'noAccess';
   type Size = 'small' | 'default' | 'large';
   type Layout = 'vertical' | 'horizontal';
 
@@ -41,7 +47,14 @@
 
   const loc = useLocale();
 
-  const presets = ['noData', 'noResult', 'error'] as const;
+  const presets = [
+    'noData',
+    'noResult',
+    'error',
+    'construction',
+    'success',
+    'noAccess',
+  ] as const;
   // 纯派生：image 是否为内置预设；否则按外部图片 URL 处理。
   const isPreset = $derived(
     (presets as readonly string[]).includes(image),
@@ -51,6 +64,9 @@
     noData: loc().t('Empty.noData'),
     noResult: loc().t('Empty.noResult'),
     error: loc().t('Empty.error'),
+    construction: loc().t('Empty.construction'),
+    success: loc().t('Empty.success'),
+    noAccess: loc().t('Empty.noAccess'),
   });
 
   const resolvedTitle = $derived(
@@ -109,6 +125,66 @@
           stroke-width="2"
         />
         <line x1="38" y1="38" x2="50" y2="50" stroke="currentColor" stroke-width="2" />
+      </svg>
+    {:else if image === 'construction'}
+      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
+        <path
+          d="M10 48 24 18l3 6-11 24Z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M54 48 40 18l-3 6 11 24Z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <line x1="24" y1="18" x2="40" y2="18" stroke="currentColor" stroke-width="2" />
+        <line x1="8" y1="48" x2="56" y2="48" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    {:else if image === 'success'}
+      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
+        <circle
+          cx="32"
+          cy="32"
+          r="20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M22 33 29 40 43 25"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    {:else if image === 'noAccess'}
+      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
+        <rect
+          x="18"
+          y="30"
+          width="28"
+          height="20"
+          rx="3"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+        <path
+          d="M24 30v-6a8 8 0 0 1 16 0v6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <circle cx="32" cy="38" r="2" fill="currentColor" />
+        <line x1="32" y1="40" x2="32" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
     {:else}
       <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
