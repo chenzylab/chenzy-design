@@ -5,7 +5,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Checkbox from './Checkbox.svelte';
-  import { setCheckboxGroupContext, type CheckboxValue, type CheckboxSize } from './context.js';
+  import {
+    setCheckboxGroupContext,
+    type CheckboxValue,
+    type CheckboxSize,
+    type CheckboxType,
+  } from './context.js';
 
   type OptionObject = { label: string; value: CheckboxValue; disabled?: boolean; extra?: string };
   type Option = string | number | OptionObject;
@@ -16,6 +21,7 @@
     options?: Option[];
     disabled?: boolean;
     size?: CheckboxSize;
+    type?: CheckboxType;
     name?: string;
     direction?: 'horizontal' | 'vertical';
     onChange?: (v: CheckboxValue[]) => void;
@@ -28,6 +34,7 @@
     options,
     disabled = false,
     size = 'default',
+    type = 'default',
     name,
     direction = 'horizontal',
     onChange,
@@ -66,6 +73,7 @@
     getDisabled: () => disabled,
     getSize: () => size,
     getName: () => name,
+    getType: () => type,
   });
 
   const cls = $derived(`cd-checkbox-group cd-checkbox-group--${direction}`);
