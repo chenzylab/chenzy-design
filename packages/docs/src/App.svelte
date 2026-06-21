@@ -700,6 +700,37 @@ let pageSize2 = $state(10);
     { key: '#hsec-2', href: '#hsec-2', title: '安装' },
     { key: '#hsec-3', href: '#hsec-3', title: '用法' },
   ];
+  let anchorNestEl = $state<HTMLElement | null>(null);
+  let anchorNestKey = $state('#nest-1');
+  const anchorNestLinks = [
+    {
+      key: '#nest-1',
+      href: '#nest-1',
+      title: '开始',
+      children: [
+        { key: '#nest-1-1', href: '#nest-1-1', title: '安装' },
+        { key: '#nest-1-2', href: '#nest-1-2', title: '快速上手' },
+      ],
+    },
+    {
+      key: '#nest-2',
+      href: '#nest-2',
+      title: '组件',
+      children: [
+        {
+          key: '#nest-2-1',
+          href: '#nest-2-1',
+          title: '导航',
+          children: [
+            { key: '#nest-2-1-1', href: '#nest-2-1-1', title: 'Anchor' },
+            { key: '#nest-2-1-2', href: '#nest-2-1-2', title: 'Menu' },
+          ],
+        },
+        { key: '#nest-2-2', href: '#nest-2-2', title: '反馈' },
+      ],
+    },
+    { key: '#nest-3', href: '#nest-3', title: '主题' },
+  ];
   const transferData = [
     { key: 'a', label: '北京' },
     { key: 'b', label: '上海' },
@@ -2066,6 +2097,36 @@ let pageSize2 = $state(10);
       onChange={(k) => (anchorHKey = k)}
     />
     <Text type="tertiary">水平锚点：{anchorHKey}</Text>
+  </div>
+
+  <div style="margin-top:16px" data-testid="anchor-nested">
+    <Text type="tertiary">多级嵌套链接树（children 逐级缩进，父子皆跳转/高亮）</Text>
+    <div style="display:flex; gap:16px; margin-top:8px">
+      <div style="width:160px">
+        <Anchor
+          links={anchorNestLinks}
+          value={anchorNestKey}
+          getContainer={() => anchorNestEl}
+          onChange={(k) => (anchorNestKey = k)}
+        />
+      </div>
+      <div
+        bind:this={anchorNestEl}
+        data-testid="anchor-nested-scroll"
+        style="height:180px; overflow:auto; flex:1; border:1px solid var(--cd-color-border); padding:8px"
+      >
+        <div id="nest-1" style="height:120px">开始</div>
+        <div id="nest-1-1" style="height:120px">安装</div>
+        <div id="nest-1-2" style="height:120px">快速上手</div>
+        <div id="nest-2" style="height:120px">组件</div>
+        <div id="nest-2-1" style="height:120px">导航</div>
+        <div id="nest-2-1-1" style="height:120px">Anchor</div>
+        <div id="nest-2-1-2" style="height:120px">Menu</div>
+        <div id="nest-2-2" style="height:120px">反馈</div>
+        <div id="nest-3" style="height:120px">主题</div>
+      </div>
+    </div>
+    <Text type="tertiary">嵌套锚点：{anchorNestKey}</Text>
   </div>
 
   <Divider />

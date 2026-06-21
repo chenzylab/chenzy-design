@@ -6,9 +6,14 @@ export const meta = {
   name: 'Anchor',
   category: 'navigation',
   description:
-    '锚点导航，垂直/水平链接列表。支持 scroll-spy 激活高亮、点击平滑滚动、ink 边框指示、自定义滚动容器，受控/非受控。',
+    '锚点导航，垂直/水平链接列表。支持 scroll-spy 激活高亮、点击平滑滚动、ink 边框指示、自定义滚动容器、多级嵌套链接树，受控/非受控。',
   props: [
-    { name: 'links', type: 'AnchorLink[]', default: '[]', desc: '锚点链接数据' },
+    {
+      name: 'links',
+      type: 'AnchorLink[]',
+      default: '[]',
+      desc: '锚点链接数据；link.children 形成多级嵌套树，渲染逐级缩进，父子皆参与滚动高亮（无 children 即平铺）',
+    },
     {
       name: 'value',
       type: 'string',
@@ -47,12 +52,14 @@ export const meta = {
       '键盘交互为原生锚链接行为',
       'scroll-spy 命令式监听 scroll（getContainer 时监听容器），rAF 节流，reduced-motion 下点击即时定位',
       'horizontal 水平模式仅改布局/ink 方向，激活态与键盘交互不变',
+      '多级嵌套用嵌套 ul/li 表达层级树，子链接逐级缩进；扁平化树参与 scroll-spy，父子链接均可聚焦/跳转/高亮',
     ],
   },
   tokens: [
     '--cd-anchor-link-color',
     '--cd-anchor-link-color-active',
     '--cd-anchor-link-padding',
+    '--cd-anchor-indent',
     '--cd-anchor-rail-color',
     '--cd-anchor-ink-color',
     '--cd-anchor-ink-width',
