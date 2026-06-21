@@ -103,6 +103,7 @@ export const en_US: Locale = {
   ScrollList: {
     ariaLabel: 'Scroll to select',
     empty: 'No options',
+    loading: 'Loading…',
     announceSelected: 'Selected {label}',
   },
   List: {
