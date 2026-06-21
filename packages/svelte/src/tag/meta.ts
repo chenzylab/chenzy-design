@@ -37,6 +37,18 @@ export const meta = {
     { name: 'onChange', type: '(checked: boolean) => void', default: 'undefined' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '标签内容' },
     { name: 'prefixIcon', type: 'Snippet', default: 'undefined', desc: '前置图标' },
+    { name: 'suffixIcon', type: 'Snippet', default: 'undefined', desc: '后置图标（关闭图标始终最右）' },
+    { name: 'avatarSrc', type: 'string', default: 'undefined', desc: '头像型 Tag 的图片地址' },
+    {
+      name: 'avatarShape',
+      type: "'square'|'circle'",
+      default: "'square'",
+      desc: '头像形状',
+    },
+    { name: 'closeIcon', type: 'Snippet', default: 'undefined', desc: '自定义关闭图标（默认内置 X）' },
+    { name: 'tagKey', type: 'string|number', default: 'undefined', desc: '在 TagGroup 中的稳定标识' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '透传根类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '透传根内联样式' },
   ],
   events: [
     { name: 'onClose', desc: '关闭按钮点击' },
@@ -45,6 +57,8 @@ export const meta = {
   slots: [
     { name: 'children', desc: '标签文本/内容' },
     { name: 'prefixIcon', desc: '前置图标' },
+    { name: 'suffixIcon', desc: '后置图标' },
+    { name: 'closeIcon', desc: '自定义关闭图标' },
   ],
   a11y: {
     hasRole: true,

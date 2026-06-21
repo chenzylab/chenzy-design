@@ -24,9 +24,33 @@ export const meta = {
     { name: 'hoverable', type: 'boolean', default: 'false', desc: '悬停阴影，同 shadow=hover 视觉' },
     { name: 'loading', type: 'boolean', default: 'false', desc: 'body 显示骨架占位' },
     { name: 'loadingRows', type: 'number', default: '3', desc: '骨架行数' },
+    { name: 'headerStyle', type: 'string', default: 'undefined', desc: 'header 区内联样式透传' },
+    { name: 'bodyStyle', type: 'string', default: 'undefined', desc: 'body 区内联样式透传' },
+    { name: 'headerLine', type: 'boolean', default: 'true', desc: 'header 与 body 间分隔线' },
+    { name: 'footerLine', type: 'boolean', default: 'true', desc: 'actions 区上方分隔线' },
+    {
+      name: 'clickable',
+      type: 'boolean',
+      default: 'false',
+      desc: '整卡可点击：role=button + 键盘/点击激活，合并 hoverable 视觉',
+    },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '仅 clickable 时生效，禁用点击与 hover' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
+    {
+      name: 'onClick',
+      type: '(e: MouseEvent | KeyboardEvent) => void',
+      default: 'undefined',
+      desc: 'clickable 时点击/键盘激活回调；disabled 不触发',
+    },
+    { name: 'onMouseenter', type: '(e: MouseEvent) => void', default: 'undefined' },
+    { name: 'onMouseleave', type: '(e: MouseEvent) => void', default: 'undefined' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '卡片正文' },
   ],
-  events: [],
+  events: [
+    { name: 'onClick', desc: 'clickable 整卡点击或键盘激活（Enter/Space）' },
+    { name: 'onMouseenter', desc: '指针进入卡片' },
+    { name: 'onMouseleave', desc: '指针离开卡片' },
+  ],
   slots: [
     { name: 'title', desc: '标题(string 或 Snippet)' },
     { name: 'extra', desc: 'header 右侧' },
@@ -37,7 +61,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: false,
-    note: '有 title 时根 role=region；string title 经 useId 关联 aria-labelledby；骨架 aria-hidden。',
+    note: '有 title 时根 role=region；string title 经 useId 关联 aria-labelledby；骨架 aria-hidden。clickable 时根 role=button + tabindex，Enter/Space 激活，disabled 时 aria-disabled + tabindex=-1。',
   },
   tokens: [
     '--cd-card-bg',

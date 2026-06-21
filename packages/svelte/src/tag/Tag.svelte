@@ -5,6 +5,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import Avatar from '../avatar/Avatar.svelte';
 
   type TagType = 'light' | 'solid' | 'ghost';
   type TagColor = 'grey' | 'primary' | 'success' | 'warning' | 'danger';
@@ -27,6 +28,20 @@
     onChange?: (checked: boolean) => void;
     children?: Snippet;
     prefixIcon?: Snippet;
+    /** 后置图标（与 closable 互不冲突，关闭图标始终最右） */
+    suffixIcon?: Snippet;
+    /** 头像型 Tag 的图片地址 */
+    avatarSrc?: string;
+    /** 头像形状 */
+    avatarShape?: 'square' | 'circle';
+    /** 自定义关闭图标（默认内置 X） */
+    closeIcon?: Snippet;
+    /** 在 TagGroup 中的稳定标识 */
+    tagKey?: string | number;
+    /** 透传根类名 */
+    class?: string;
+    /** 透传根内联样式 */
+    style?: string;
   }
 
   let {
@@ -43,6 +58,12 @@
     onChange,
     children,
     prefixIcon,
+    suffixIcon,
+    avatarSrc,
+    avatarShape = 'square',
+    closeIcon,
+    class: className,
+    style,
   }: Props = $props();
 
   const loc = useLocale();
@@ -67,9 +88,16 @@
       checkable && 'cd-tag--checkable',
       checkable && currentChecked && 'cd-tag--checked',
       disabled && 'cd-tag--disabled',
+      avatarSrc && 'cd-tag--has-avatar',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
+  );
+
+  // avatar sizing follows tag size; keep avatar compact within the tag
+  const avatarSize = $derived(
+    size === 'small' ? 16 : size === 'large' ? 24 : 20,
   );
 
   function handleToggle() {
@@ -101,6 +129,7 @@
   {#if checkable}
     <span
       class={cls}
+      {style}
       role="checkbox"
       aria-checked={currentChecked}
       aria-disabled={disabled || undefined}
@@ -108,13 +137,15 @@
       onclick={handleToggle}
       onkeydown={handleKeydown}
     >
-      {#if prefixIcon}<span class="cd-tag__prefix">{@render prefixIcon()}</span>{/if}
+      {@render leading()}
       {#if children}<span class="cd-tag__content">{@render children()}</span>{/if}
+      {@render trailing()}
     </span>
   {:else}
-    <span class={cls}>
-      {#if prefixIcon}<span class="cd-tag__prefix">{@render prefixIcon()}</span>{/if}
+    <span class={cls} {style}>
+      {@render leading()}
       {#if children}<span class="cd-tag__content">{@render children()}</span>{/if}
+      {@render trailing()}
       {#if closable}
         <button
           type="button"
@@ -123,20 +154,39 @@
           disabled={disabled || undefined}
           onclick={handleClose}
         >
-          <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              d="M4 4 L12 12 M12 4 L4 12"
-            />
-          </svg>
+          {#if closeIcon}
+            {@render closeIcon()}
+          {:else}
+            <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                d="M4 4 L12 12 M12 4 L4 12"
+              />
+            </svg>
+          {/if}
         </button>
       {/if}
     </span>
   {/if}
 {/if}
+
+<!-- leading: avatar (highest priority) then prefix icon -->
+{#snippet leading()}
+  {#if avatarSrc}
+    <span class="cd-tag__avatar">
+      <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
+    </span>
+  {/if}
+  {#if prefixIcon}<span class="cd-tag__prefix">{@render prefixIcon()}</span>{/if}
+{/snippet}
+
+<!-- trailing: suffix icon (closable's X is rendered separately, always rightmost) -->
+{#snippet trailing()}
+  {#if suffixIcon}<span class="cd-tag__suffix">{@render suffixIcon()}</span>{/if}
+{/snippet}
 
 <style>
   .cd-tag {
@@ -245,9 +295,16 @@
   }
 
   .cd-tag__prefix,
+  .cd-tag__suffix,
   .cd-tag__content {
     display: inline-flex;
     align-items: center;
+  }
+
+  .cd-tag__avatar {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: calc(var(--cd-tag-padding-x) * -0.5);
   }
 
   .cd-tag__close {
