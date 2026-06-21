@@ -209,6 +209,8 @@
   let treeFieldChecked = $state<(string | number)[]>([]);
   let treeSelectFieldVal = $state<string | number | null>(null);
   let treeSelectIconVal = $state<string | number | null>(null);
+  let treeSelectAsyncVal = $state<string | number | null>(null);
+  let treeSelectVirtualVal = $state<string | number | null>(null);
 
   // Tree 异步加载：根节点无 children，展开时按 key 拉取子节点；'leaf-x' 标记叶子。
   const treeAsyncRoots = [
@@ -1700,6 +1702,29 @@ let pageSize2 = $state(10);
         {/snippet}
       </TreeSelect>
       <Text type="tertiary">树选（图标）：{treeSelectIconVal ?? '（未选）'}</Text>
+    </div>
+    <div style="width: 240px" data-testid="treeselect-async">
+      <TreeSelect
+        treeData={treeAsyncRoots as unknown as TreeNode[]}
+        loadData={loadTreeChildren}
+        clearable
+        placeholder="异步加载树选"
+        value={treeSelectAsyncVal}
+        onChange={(k) => (treeSelectAsyncVal = Array.isArray(k) ? (k[0] ?? null) : k)}
+      />
+      <Text type="tertiary">异步 loadData：展开节点动态加载子项</Text>
+    </div>
+    <div style="width: 260px" data-testid="treeselect-virtual">
+      <TreeSelect
+        treeData={bigTreeData}
+        virtualized
+        defaultExpandAll
+        clearable
+        placeholder="虚拟化大树选"
+        value={treeSelectVirtualVal}
+        onChange={(k) => (treeSelectVirtualVal = Array.isArray(k) ? (k[0] ?? null) : k)}
+      />
+      <Text type="tertiary">virtualized 1050 节点：仅渲染视口内行</Text>
     </div>
   </Space>
 

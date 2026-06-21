@@ -7,7 +7,13 @@
   fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化，默认字段名时零开销。
   icon：自定义节点图标 snippet（showIcon 为真时渲染在 label 前），API 与 Tree 的 icon 对齐
   （参数 { node, expanded, level }）。渲染层特性，不改 treeData（红线 #1）。
-  TODO(延后): remote 异步加载、虚拟化。
+  loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap 并派生合并树喂给
+  所有 core 函数（不写回受控 treeData，红线 #1）；加载中显示 spinner，竞态由 loadedKeys/loadingKeys 去重。
+  virtualized：大数据树虚拟滚动。复用 Tree 范式——直接用 core fixedRange 纯函数自建轻量 fixed 定高
+  虚拟化（非复用 VirtualList 组件，其 role=list/listitem 会破坏 role=tree→treeitem 语义），保持
+  role=tree 容器 + 行 role=treeitem 不变；只渲染视口内切片（flattenVisible 派生扁平节点 + 区间纯派生，
+  红线 #2）。滚动监听命令式 + rAF 节流 + cleanup（红线 #3）。virtualized 时与搜索 filterable 互斥
+  （搜索强制展开命中链与定高虚拟化叠加复杂，故 virtualized 优先静态/异步大树场景）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -17,8 +23,12 @@
     conduct,
     toggleCheck,
     computeFilteredKeys,
+    flattenVisible,
+    fixedRange,
     type TreeNodeData,
+    type FlatNode,
   } from '@chenzy-design/core';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
   import Tag from '../tag/Tag.svelte';
   import type { TreeNode, TreeKey } from './types.js';
@@ -56,6 +66,14 @@
     filterable?: boolean;
     /** 是否预留节点图标位（icon 提供时渲染在 label 前）。默认 true，与 Tree 对齐。 */
     showIcon?: boolean;
+    /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组。与 Tree 的 loadData 对齐。 */
+    loadData?: (node: TreeNode) => Promise<TreeNode[]>;
+    /** 虚拟滚动：仅渲染视口内的可见节点行，适合大数据树（1000+ 节点）。默认 false（行为不变）。 */
+    virtualized?: boolean;
+    /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 224（与默认面板 max-height 一致）。 */
+    height?: number;
+    /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32。 */
+    itemHeight?: number;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -81,6 +99,10 @@
     defaultExpandAll = false,
     filterable = false,
     showIcon = true,
+    loadData,
+    virtualized = false,
+    height = 224,
+    itemHeight = 32,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -123,6 +145,39 @@
   const normalizedTree = $derived<TreeNode[]>(
     fieldNamesDefault ? treeData : normalizeNodes(treeData),
   );
+
+  // --- 异步加载（对齐 Tree）：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
+  // loadedChildren 缓存已加载子树；loadingKeys 加载中（防重入/竞态）；loadedKeys 已完成（防重复请求）。
+  const loadedChildren = new SvelteMap<TreeKey, TreeNode[]>();
+  const loadingKeys = new SvelteSet<TreeKey>();
+  const loadedKeys = new SvelteSet<TreeKey>();
+
+  // 合并树：把已加载的子节点注入对应节点，喂给所有 core 纯函数与渲染。
+  // 无加载时返回 normalizedTree 原引用，零开销（红线 #2 纯派生）。
+  const mergedTree = $derived.by<TreeNode[]>(() => {
+    if (loadedChildren.size === 0) return normalizedTree;
+    const inject = (nodes: TreeNode[]): TreeNode[] =>
+      nodes.map((n) => {
+        const loaded = loadedChildren.get(n.key);
+        const kids = n.children ?? loaded;
+        if (!kids) return n;
+        return { ...n, children: inject(kids) };
+      });
+    return inject(normalizedTree);
+  });
+
+  // 异步加载某节点子树（竞态：loadingKeys/loadedKeys 去重；快速展开/折叠不重复请求）。
+  async function loadChildren(node: TreeNode) {
+    if (!loadData || loadingKeys.has(node.key) || loadedKeys.has(node.key)) return;
+    loadingKeys.add(node.key);
+    try {
+      const kids = await loadData(node);
+      loadedChildren.set(node.key, fieldNamesDefault ? kids : normalizeNodes(kids));
+    } finally {
+      loadingKeys.delete(node.key);
+      loadedKeys.add(node.key);
+    }
+  }
 
   // --- 纯函数: 递归查找节点 (用于回显 label) ---
   function findNode(data: TreeNode[], key: TreeKey): TreeNode | undefined {
@@ -188,7 +243,7 @@
   const checkState = $derived.by(() => {
     if (!multiple) return { checked: new Set<TreeKey>(), half: new Set<TreeKey>() };
     if (checkStrictly) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
-    return conduct(normalizedTree as unknown as TreeNodeData[], currentCheckedBase);
+    return conduct(mergedTree as unknown as TreeNodeData[], currentCheckedBase);
   });
   // trigger 回显的已选节点（多选取 checked 全集，按树序）
   const checkedNodes = $derived.by<TreeNode[]>(() => {
@@ -200,7 +255,7 @@
         if (n.children) walk(n.children);
       }
     };
-    walk(normalizedTree);
+    walk(mergedTree);
     return out;
   });
 
@@ -213,7 +268,7 @@
   let expandedKeys = $state<Set<TreeKey>>(getInitialExpanded());
 
   const selectedNode = $derived(
-    currentValue === null ? undefined : findNode(normalizedTree, currentValue),
+    currentValue === null ? undefined : findNode(mergedTree, currentValue),
   );
   const displayLabel = $derived(selectedNode?.label ?? '');
   const hasSelection = $derived(
@@ -231,7 +286,7 @@
     if (!isValueControlled) innerChecked = nextBase;
     const resolved = checkStrictly
       ? new Set(nextBase)
-      : conduct(normalizedTree as unknown as TreeNodeData[], nextBase).checked;
+      : conduct(mergedTree as unknown as TreeNodeData[], nextBase).checked;
     onChange?.([...resolved]);
   }
 
@@ -243,7 +298,7 @@
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
     } else {
-      nextBase = toggleCheck(normalizedTree as unknown as TreeNodeData[], currentCheckedBase, node.key);
+      nextBase = toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key);
     }
     setChecked(nextBase);
   }
@@ -258,7 +313,7 @@
       setChecked(next);
     } else if (isChecked) {
       // 复用 toggleCheck：已选 → 取消（含子树联动）
-      setChecked(toggleCheck(normalizedTree as unknown as TreeNodeData[], currentCheckedBase, node.key));
+      setChecked(toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key));
     }
   }
 
@@ -285,6 +340,15 @@
     return !!node.children && node.children.length > 0;
   }
 
+  // 行是否可展开（含异步占位，对齐 Tree.isExpandable）：
+  // 有真实子节点 → 是；否则有 loadData、非叶子、且（未加载 → 显示箭头占位 / 已加载非空 → 是）。
+  function isExpandable(node: TreeNode): boolean {
+    if (hasChildren(node)) return true;
+    if (!loadData || node.isLeaf === true) return false;
+    if (loadedKeys.has(node.key)) return (loadedChildren.get(node.key)?.length ?? 0) > 0;
+    return true;
+  }
+
   // --- 搜索过滤（本地 state，复用 core computeFilteredKeys）---
   let searchValue = $state('');
   const trimmedSearch = $derived(searchValue.trim());
@@ -293,7 +357,7 @@
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     const lower = trimmedSearch.toLowerCase();
     return computeFilteredKeys(
-      normalizedTree as unknown as TreeNodeData[],
+      mergedTree as unknown as TreeNodeData[],
       (node) => node.label.toLowerCase().includes(lower),
     );
   });
@@ -308,6 +372,70 @@
     if (searchActive && filterResult.expand.has(key)) return true;
     return expandedKeys.has(key);
   }
+
+  // --- 虚拟滚动（复用 Tree 范式）：派生展开集 → flattenVisible 扁平可见行 → fixedRange 视口切片 ---
+  // 搜索激活时把过滤展开集并入可见展开集（派生，不写回受控 expandedKeys，红线 #1/#2）。
+  const effectiveExpanded = $derived.by(() => {
+    if (!searchActive) return expandedKeys;
+    const merged = new Set(expandedKeys);
+    for (const k of filterResult.expand) merged.add(k);
+    return merged;
+  });
+  // 可见扁平节点（仅虚拟化时计算，非虚拟化沿用递归 snippet 零额外开销）。
+  const flat = $derived(
+    virtualized
+      ? flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded)
+      : [],
+  );
+  // 搜索时仅保留命中或祖先链上的行（与递归 snippet 的 nodeVisible 一致）。
+  const visibleFlat = $derived.by<FlatNode[]>(() => {
+    if (!searchActive) return flat;
+    return flat.filter(
+      (f) => filterResult.matched.has(f.node.key) || filterResult.expand.has(f.node.key),
+    );
+  });
+
+  const VIRTUAL_OVERSCAN = 4;
+  let viewportEl = $state<HTMLDivElement | null>(null);
+  let scrollTop = $state(0);
+  let rafId = 0;
+  const rowHeight = $derived(itemHeight > 0 ? itemHeight : 32);
+  const totalHeight = $derived(visibleFlat.length * rowHeight);
+  // 可视区间：纯 $derived，仅依赖本地 $state，render-safe 不读 DOM（红线 #2）。
+  const vRange = $derived(
+    virtualized
+      ? fixedRange(scrollTop, height, rowHeight, visibleFlat.length, VIRTUAL_OVERSCAN)
+      : { startIndex: 0, endIndex: visibleFlat.length },
+  );
+  const renderFlat = $derived(
+    virtualized ? visibleFlat.slice(vRange.startIndex, vRange.endIndex) : visibleFlat,
+  );
+
+  // 滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !virtualized) return;
+    function onScroll() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (el) scrollTop = el.scrollTop;
+      });
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+  });
+
+  // 面板关闭时复位 scrollTop，避免下次打开停在旧位置（命令式 viewport 也随之卸载/重建）。
+  $effect(() => {
+    if (!isOpen) scrollTop = 0;
+  });
 
   // --- 命中文本高亮：拆成片段供模板渲染 ---
   type HlPart = { text: string; mark: boolean };
@@ -328,10 +456,16 @@
     return parts;
   }
 
-  function toggleExpand(key: TreeKey) {
+  function toggleExpand(node: TreeNode) {
+    const key = node.key;
     const next = new Set(expandedKeys);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+      // 展开未加载的异步节点：先取数据（数据到位后合并树派生即显示子节点）。
+      if (!hasChildren(node) && loadData && !loadedKeys.has(key)) void loadChildren(node);
+    }
     expandedKeys = next;
   }
 
@@ -342,8 +476,8 @@
       toggleCheckNode(node);
       return;
     }
-    if (leafOnly && hasChildren(node)) {
-      toggleExpand(node.key);
+    if (leafOnly && isExpandable(node)) {
+      toggleExpand(node);
       return;
     }
     setValue(node.key);
@@ -385,93 +519,105 @@
   );
 </script>
 
+{#snippet nodeRow(node: TreeNode, level: number, posStyle: string | undefined)}
+  {@const expandable = isExpandable(node)}
+  {@const loading = loadingKeys.has(node.key)}
+  {@const nodeOpen = expandable && isExpanded(node.key)}
+  {@const cs = nodeCheckState(node)}
+  {@const selected = multiple ? cs.checked : currentValue === node.key}
+  <div
+    class="cd-tree-select__node"
+    class:cd-tree-select__node--selected={!multiple && selected}
+    role="treeitem"
+    aria-selected={selected}
+    aria-checked={multiple ? (cs.checked ? true : cs.half ? 'mixed' : false) : undefined}
+    aria-expanded={expandable ? nodeOpen : undefined}
+    aria-disabled={node.disabled || undefined}
+    style={[posStyle, `padding-inline-start: calc(${level} * var(--cd-tree-indent))`]
+      .filter(Boolean)
+      .join('; ')}
+    onclick={() => selectNode(node)}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectNode(node);
+      }
+    }}
+    tabindex={node.disabled ? -1 : 0}
+  >
+    {#if loading}
+      <span class="cd-tree-select__expand cd-tree-select__expand--loading" aria-hidden="true">
+        <span class="cd-tree-select__spinner"></span>
+      </span>
+    {:else if expandable}
+      <span
+        class="cd-tree-select__expand"
+        class:cd-tree-select__expand--open={nodeOpen}
+        role="button"
+        tabindex="-1"
+        aria-label={nodeOpen ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
+        onclick={(e) => {
+          e.stopPropagation();
+          toggleExpand(node);
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleExpand(node);
+          }
+        }}
+      >
+        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+        </svg>
+      </span>
+    {:else}
+      <span class="cd-tree-select__expand cd-tree-select__expand--placeholder" aria-hidden="true"></span>
+    {/if}
+    {#if multiple}
+      <span
+        class="cd-tree-select__checkbox"
+        class:cd-tree-select__checkbox--checked={cs.checked}
+        class:cd-tree-select__checkbox--half={cs.half}
+        aria-hidden="true"
+      >
+        {#if cs.checked}
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
+          </svg>
+        {:else if cs.half}
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 8h8" />
+          </svg>
+        {/if}
+      </span>
+    {/if}
+    {#if showIcon}
+      <span class="cd-tree-select__icon" aria-hidden="true">
+        {#if icon}{@render icon({ node, expanded: nodeOpen, level })}{/if}
+      </span>
+    {/if}
+    <span class="cd-tree-select__node-label">
+      {#if searchActive}
+        {#each highlightParts(node.label) as part, i (i)}
+          {#if part.mark}<mark class="cd-tree-select__highlight">{part.text}</mark>{:else}{part.text}{/if}
+        {/each}
+      {:else}
+        {node.label}
+      {/if}
+    </span>
+  </div>
+{/snippet}
+
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {#each nodes as node (node.key)}
     {#if nodeVisible(node.key)}
-    {@const expandable = hasChildren(node)}
-    {@const nodeOpen = expandable && isExpanded(node.key)}
-    {@const cs = nodeCheckState(node)}
-    {@const selected = multiple ? cs.checked : currentValue === node.key}
-    <div
-      class="cd-tree-select__node"
-      class:cd-tree-select__node--selected={!multiple && selected}
-      role="treeitem"
-      aria-selected={selected}
-      aria-checked={multiple ? (cs.checked ? true : cs.half ? 'mixed' : false) : undefined}
-      aria-expanded={expandable ? nodeOpen : undefined}
-      aria-disabled={node.disabled || undefined}
-      style="padding-inline-start: calc({level} * var(--cd-tree-indent))"
-      onclick={() => selectNode(node)}
-      onkeydown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          selectNode(node);
-        }
-      }}
-      tabindex={node.disabled ? -1 : 0}
-    >
-      {#if expandable}
-        <span
-          class="cd-tree-select__expand"
-          class:cd-tree-select__expand--open={nodeOpen}
-          role="button"
-          tabindex="-1"
-          aria-label={nodeOpen ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
-          onclick={(e) => {
-            e.stopPropagation();
-            toggleExpand(node.key);
-          }}
-          onkeydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleExpand(node.key);
-            }
-          }}
-        >
-          <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-          </svg>
-        </span>
-      {:else}
-        <span class="cd-tree-select__expand cd-tree-select__expand--placeholder" aria-hidden="true"></span>
+      {@const nodeOpen = isExpandable(node) && isExpanded(node.key)}
+      {@render nodeRow(node, level, undefined)}
+      {#if nodeOpen}
+        {@render treeNodes(node.children ?? [], level + 1)}
       {/if}
-      {#if multiple}
-        <span
-          class="cd-tree-select__checkbox"
-          class:cd-tree-select__checkbox--checked={cs.checked}
-          class:cd-tree-select__checkbox--half={cs.half}
-          aria-hidden="true"
-        >
-          {#if cs.checked}
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
-            </svg>
-          {:else if cs.half}
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 8h8" />
-            </svg>
-          {/if}
-        </span>
-      {/if}
-      {#if showIcon}
-        <span class="cd-tree-select__icon" aria-hidden="true">
-          {#if icon}{@render icon({ node, expanded: nodeOpen, level })}{/if}
-        </span>
-      {/if}
-      <span class="cd-tree-select__node-label">
-        {#if searchActive}
-          {#each highlightParts(node.label) as part, i (i)}
-            {#if part.mark}<mark class="cd-tree-select__highlight">{part.text}</mark>{:else}{part.text}{/if}
-          {/each}
-        {:else}
-          {node.label}
-        {/if}
-      </span>
-    </div>
-    {#if expandable && nodeOpen}
-      {@render treeNodes(node.children ?? [], level + 1)}
-    {/if}
     {/if}
   {/each}
 {/snippet}
@@ -565,16 +711,41 @@
           />
         </div>
       {/if}
-      <div class="cd-tree-select__tree" role="tree">
-        {#if normalizedTree.length === 0}
+      {#if mergedTree.length === 0}
+        <div class="cd-tree-select__tree" role="tree">
           <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
-        {:else}
-          {@render treeNodes(normalizedTree, 0)}
+        </div>
+      {:else if virtualized}
+        <!-- 虚拟滚动（复用 Tree 范式）：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
+             只渲染视口内切片 renderFlat，保持 role=tree → role=treeitem 语义不变。 -->
+        <div
+          class="cd-tree-select__tree cd-tree-select__tree--virtual"
+          role="tree"
+          bind:this={viewportEl}
+          style={`block-size:${height}px`}
+        >
+          {#if visibleFlat.length === 0}
+            <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+          {:else}
+            <div class="cd-tree-select__spacer" style={`block-size:${totalHeight}px`}>
+              {#each renderFlat as f, i (f.node.key)}
+                {@render nodeRow(
+                  f.node,
+                  f.level,
+                  `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); block-size:${rowHeight}px`,
+                )}
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <div class="cd-tree-select__tree" role="tree">
+          {@render treeNodes(mergedTree, 0)}
           {#if searchActive && filterResult.matched.size === 0}
             <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
           {/if}
-        {/if}
-      </div>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -692,6 +863,16 @@
     max-block-size: 14rem;
     overflow-y: auto;
   }
+  /* 虚拟滚动：容器自身定高滚动，spacer 绝对定位行布局，max-block-size 让位给固定 height */
+  .cd-tree-select__tree--virtual {
+    position: relative;
+    max-block-size: none;
+    overflow-y: auto;
+  }
+  .cd-tree-select__spacer {
+    position: relative;
+    inline-size: 100%;
+  }
   .cd-tree-select__highlight {
     padding: 0;
     color: var(--cd-tree-search-highlight-color);
@@ -736,6 +917,23 @@
   }
   .cd-tree-select__expand--placeholder {
     cursor: default;
+  }
+  .cd-tree-select__expand--loading {
+    cursor: default;
+    transition: none;
+  }
+  .cd-tree-select__spinner {
+    inline-size: 0.75rem;
+    block-size: 0.75rem;
+    border: 2px solid var(--cd-color-border, currentColor);
+    border-block-start-color: var(--cd-color-primary);
+    border-radius: 50%;
+    animation: cd-tree-select-spin 0.7s linear infinite;
+  }
+  @keyframes cd-tree-select-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
   .cd-tree-select__icon {
     display: inline-flex;
@@ -789,6 +987,9 @@
     .cd-tree-select__arrow,
     .cd-tree-select__expand {
       transition: none;
+    }
+    .cd-tree-select__spinner {
+      animation: none;
     }
   }
 </style>
