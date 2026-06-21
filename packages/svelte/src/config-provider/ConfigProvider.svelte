@@ -17,7 +17,12 @@
   import { createLocale, type LocaleApi } from '@chenzy-design/locale';
   import type { Locale } from '@chenzy-design/locale';
   import { LOCALE_CONTEXT_KEY } from '../locale-provider/context.js';
-  import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from './context.js';
+  import {
+    CONFIG_CONTEXT_KEY,
+    type ConfigContextValue,
+    type GetPopupContainer,
+    type GetValidateMessages,
+  } from './context.js';
 
   interface Props {
     /** 语言包；提供则注入 locale context（复用 LocaleProvider 机制），未提供沿用上层。 */
@@ -34,9 +39,13 @@
     zIndexBase?: number;
     /** 是否启用过渡动画，undefined 继承父级。 */
     transition?: boolean;
-    /** 默认 false：true 时渲染包裹 div（display:contents）建立主题/方向作用域。 */
+    /** 全局浮层默认挂载容器；浮层组件（Modal/Dropdown 等）未传自身 prop 时回退此值，undefined 继承父级（最终回退 document.body）。 */
+    getPopupContainer?: GetPopupContainer;
+    /** 全局表单校验文案覆盖；按 `Form.*` 键返回模板（支持 {label}/{min}/{max} 插值），仅覆盖列出键、其余回退 locale；undefined 继承父级。 */
+    getValidateMessages?: GetValidateMessages;
+    /** 默认 false：true 时渲染包裹元素（display:contents）建立主题/方向作用域。 */
     wrap?: boolean;
-    /** wrap 元素标签，默认 'div'（本子集固定 div，as 标 TODO）。 */
+    /** wrap 元素标签，默认 'div'；可设 section/article/main 等语义标签。 */
     as?: string;
     /** theme 变化通知（受控，不回写）；applied 为 auto 解析后实际落地的 light/dark。 */
     onThemeChange?: (info: { theme: ConfigTheme; applied: AppliedTheme }) => void;
@@ -59,8 +68,10 @@
     size,
     zIndexBase,
     transition,
+    getPopupContainer,
+    getValidateMessages,
     wrap = false,
-    // `as` 本子集固定 div（TODO 自定义标签），声明于 Props 但不解构以免未用绑定。
+    as = 'div',
     onThemeChange,
     onReducedMotionChange,
     onLocaleChange,
@@ -144,10 +155,23 @@
     return () => root.removeAttribute('data-reduced-motion');
   });
 
+  // 函数型配置（getPopupContainer/getValidateMessages）不参与 core 的纯配置合并，
+  // 在此就近合并：本地提供则 wins，未提供继承父级（红线 #2 派生、不回写 props）。
+  const resolvedPopupContainer = $derived(getPopupContainer ?? parentCfg?.getPopupContainer);
+  const resolvedValidateMessages = $derived(
+    getValidateMessages ?? parentCfg?.getValidateMessages,
+  );
+
   // 注入 config context：getter 保证后代读到最新合并结果。红线：受控不回写 props。
   setContext(CONFIG_CONTEXT_KEY, {
     get current(): ResolvedConfig {
       return resolved;
+    },
+    get getPopupContainer(): GetPopupContainer | undefined {
+      return resolvedPopupContainer;
+    },
+    get getValidateMessages(): GetValidateMessages | undefined {
+      return resolvedValidateMessages;
     },
   } satisfies ConfigContextValue);
 
@@ -183,14 +207,15 @@
 </script>
 
 {#if wrap}
-  <div
+  <svelte:element
+    this={as}
     class="cd-config-provider cd-config-provider--{resolved.size}"
     data-theme={appliedTheme === 'dark' ? 'dark' : undefined}
     data-reduced-motion={resolved.reducedMotion !== 'auto' && reduced ? '' : undefined}
     dir={resolved.dir}
   >
     {@render children?.()}
-  </div>
+  </svelte:element>
 {:else}
   {@render children?.()}
 {/if}
