@@ -6,7 +6,10 @@
   - mode='collapse'：容器放不下时把溢出项收纳进 +N 折叠节点（collapseFrom 决定从尾/头折叠）。
   - mode='scroll'：不折叠，可见层变可滚动容器，溢出项靠滚动查看。
   - direction='horizontal'|'vertical'：主轴方向；几何测量读对应维度（宽/高）。
-  TODO(延后): 命令式方法（forceMeasure / scrollTo 等）。
+  命令式方法（bind:this 暴露，红线 #3：方法内直接操作 DOM，非 render 期）：
+  - forceMeasure()：强制立即重新测量 + 重算可见/溢出划分（容器尺寸变化未被
+    ResizeObserver 捕获——如父级 display 切换、字体/缩放变化时手动触发）。
+  - scrollTo(index, opts?)：scroll 模式下把指定项滚到可见层主轴位置（collapse 模式 no-op）。
 
   ⚠️ 三条死循环红线（本组件最易爆，严格遵守）：
     1. onOverflowChange 去重：只在 overflowCount/visibleCount 实际变化时调，
@@ -77,6 +80,7 @@
   // 内层可见层 .cd-overflow-list__visible 是 flex + overflow:hidden，其 border-box 不随父宽
   // 变化上报 RO（bug 根因），故几何测量改用根容器。
   let containerEl = $state<HTMLElement | null>(null); // 根容器，RO 观测对象 + containerSize 来源
+  let visibleEl = $state<HTMLElement | null>(null); // 可见层（scroll 模式即滚动容器，scrollTo 目标）
   let measureEl = $state<HTMLElement | null>(null); // 离屏测量层容器
 
   // 几何 $state：仅由命令式 measure()（RO 回调 / effect）写入，render 期只读。
@@ -241,6 +245,66 @@
     });
   }
 
+  /**
+   * 命令式方法：强制立即重新测量 + 重算可见/溢出划分（红线 #3：方法内直接调 measure 操作
+   * DOM，非 render 期，由父组件 bind:this 后主动调用）。
+   * 用于容器尺寸变化未被 ResizeObserver 捕获的场景：父级从 display:none 切回、字体加载完成、
+   * 浏览器缩放、内容动态改变间距等。同步执行（不经 rAF），调用后 visibleCount/overflowCount
+   * 立即反映最新几何，behavior 与 RO 自然触发完全一致（去重 onOverflowChange 同样生效）。
+   */
+  export function forceMeasure(): void {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    measure();
+  }
+
+  /**
+   * 命令式方法：scroll 模式下把指定项滚动到可见层主轴位置（红线 #3：直接写 DOM
+   * scrollLeft/scrollTop，非 render 期）。collapse 模式无滚动容器，为 no-op。
+   * @param index 目标索引（自动 clamp 到 [0, items.length - 1]）
+   * @param opts.align 'start'（默认）| 'center' | 'end'：目标项在视口主轴内的对齐方式
+   */
+  export function scrollTo(
+    index: number,
+    opts?: { align?: 'start' | 'center' | 'end' },
+  ): void {
+    const el = visibleEl;
+    if (!el || !isScroll || items.length === 0) return;
+    const i = Math.max(0, Math.min(items.length - 1, Math.floor(index)));
+    const vertical = direction === 'vertical';
+
+    // scroll 模式可见层渲染全部 items，直接读第 i 个 .cd-overflow-list__item 的几何。
+    const nodes = el.querySelectorAll<HTMLElement>('.cd-overflow-list__item');
+    const node = nodes[i];
+    if (!node) return;
+
+    // 目标项相对滚动内容起点的主轴偏移与尺寸：用 getBoundingClientRect 差值（不受
+    // offsetParent 影响），再叠加当前滚动量还原内容坐标。命令式读几何，非 render 期。
+    const elRect = el.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const itemStart = vertical
+      ? nodeRect.top - elRect.top + el.scrollTop
+      : nodeRect.left - elRect.left + el.scrollLeft;
+    const itemSize = vertical ? nodeRect.height : nodeRect.width;
+    const viewport = vertical ? el.clientHeight : el.clientWidth;
+    const maxScroll =
+      (vertical ? el.scrollHeight : el.scrollWidth) - viewport;
+
+    const align = opts?.align ?? 'start';
+    let target =
+      align === 'center'
+        ? itemStart - (viewport - itemSize) / 2
+        : align === 'end'
+          ? itemStart - (viewport - itemSize)
+          : itemStart;
+    target = Math.max(0, Math.min(maxScroll, target));
+
+    if (vertical) el.scrollTop = target;
+    else el.scrollLeft = target;
+  }
+
   // ResizeObserver：命令式创建 + observe(containerEl)，容器尺寸变 → rAF 合批 measure。
   // 观测根容器（block，随父宽变化，RO 必 fire）而非内层 flex/overflow 可见层（bug 根因：
   // 其 border-box 不随父变化上报 RO）。依赖 containerEl 就绪；cleanup disconnect + cancelAnimationFrame。
@@ -282,7 +346,7 @@
 
 <div class={cls} role="group" aria-label={ariaLabel} bind:this={containerEl}>
   <!-- 可见层：实际渲染，用户所见。scroll 模式下可滚动；collapse 模式下溢出收纳为 +N。 -->
-  <div class="cd-overflow-list__visible">
+  <div class="cd-overflow-list__visible" bind:this={visibleEl}>
     <!-- start 折叠：折叠节点在头部（溢出项是前面的项）。scroll 模式 overflowCount 恒为 0。 -->
     {#if overflowCount > 0 && collapseFrom === 'start'}
       {#if overflow}

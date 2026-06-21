@@ -6,7 +6,7 @@ export const meta = {
   name: 'OverflowList',
   category: 'show',
   description:
-    '溢出列表：collapse 折叠模式把溢出项收纳进 +N 折叠节点（collapseFrom 决定从尾 end / 头 start 折叠），或 scroll 滚动模式不折叠改为可滚动容器；direction 支持 horizontal 横向 / vertical 纵向。ResizeObserver 命令式测量 + requestAnimationFrame 合批 + hysteresis 滞后防抖动，复用 @chenzy-design/core 收纳算法（computeOverflowPartition）。命令式方法（forceMeasure / scrollTo）延后。',
+    '溢出列表：collapse 折叠模式把溢出项收纳进 +N 折叠节点（collapseFrom 决定从尾 end / 头 start 折叠），或 scroll 滚动模式不折叠改为可滚动容器；direction 支持 horizontal 横向 / vertical 纵向。ResizeObserver 命令式测量 + requestAnimationFrame 合批 + hysteresis 滞后防抖动，复用 @chenzy-design/core 收纳算法（computeOverflowPartition）。命令式方法（bind:this 暴露）：forceMeasure() 强制立即重测重算（容器尺寸变化未被 RO 捕获时手动触发）；scrollTo(index, opts?) scroll 模式滚动到指定项（opts.align start/center/end）。',
   exports: ['OverflowList'],
   props: [
     { name: 'items', type: 'T[]', default: '[]', desc: '数据驱动的列表项' },
@@ -78,6 +78,18 @@ export const meta = {
     {
       name: 'onOverflowChange',
       desc: '可见数 / 溢出数变化时回调，携带 overflowItems',
+    },
+  ],
+  methods: [
+    {
+      name: 'forceMeasure',
+      type: '() => void',
+      desc: '命令式强制立即重新测量 + 重算可见/溢出划分（bind:this 后调用）。用于容器尺寸变化未被 ResizeObserver 捕获的场景：父级 display 切回、字体加载、缩放等。同步执行，去重 onOverflowChange 同样生效。',
+    },
+    {
+      name: 'scrollTo',
+      type: "(index: number, opts?: { align?: 'start' | 'center' | 'end' }) => void",
+      desc: 'scroll 模式下命令式滚动到指定项（bind:this 后调用）。align 默认 start；vertical 写 scrollTop，horizontal 写 scrollLeft；index 自动 clamp。collapse 模式为 no-op。',
     },
   ],
   slots: [

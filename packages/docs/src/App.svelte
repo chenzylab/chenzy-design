@@ -446,6 +446,11 @@
   const overflowTags = ['设计', '研发', '测试', '产品', '运营', '市场', '财务', '法务'];
   let overflowWidth = $state(400);
   let overflowHidden = $state(0);
+  // 命令式方法演示：forceMeasure（隐藏后重显手动重测）+ scrollTo（scroll 模式滚到指定项）
+  let overflowForceRef = $state<{ forceMeasure: () => void } | undefined>();
+  let overflowScrollRef = $state<{ scrollTo: (i: number, o?: { align?: 'start' | 'center' | 'end' }) => void } | undefined>();
+  let overflowHiddenBox = $state(false);
+  const longTags = ['标签一', '标签二', '标签三', '标签四', '标签五', '标签六', '标签七', '标签八', '标签九', '标签十', '标签十一', '标签十二'];
 
   let spinWrap = $state(true);
 
@@ -3230,6 +3235,33 @@ let pageSize2 = $state(10);
   <div style="margin-top:12px"><Text type="tertiary">direction="vertical"（纵向折叠，容器高 120px）</Text></div>
   <div style="height:120px; width:160px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px">
     <OverflowList items={overflowTags} direction="vertical" ariaLabel="部门标签（纵向）">
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+
+  <div style="margin-top:12px"><Text type="tertiary">forceMeasure()（命令式：父级 display 切回后手动重测）</Text></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <Button onclick={() => (overflowHiddenBox = !overflowHiddenBox)}>{overflowHiddenBox ? '显示容器' : '隐藏容器'}</Button>
+    <Button onclick={() => overflowForceRef?.forceMeasure()}>forceMeasure()</Button>
+  </div>
+  <div style="display:{overflowHiddenBox ? 'none' : 'block'}; width: 360px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px" data-testid="overflow-force-box">
+    <OverflowList bind:this={overflowForceRef} items={overflowTags} ariaLabel="部门标签（forceMeasure）">
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+
+  <div style="margin-top:12px"><Text type="tertiary">scrollTo(index)（scroll 模式命令式滚动到指定项）</Text></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <Button onclick={() => overflowScrollRef?.scrollTo(0)}>滚到首项</Button>
+    <Button onclick={() => overflowScrollRef?.scrollTo(6, { align: 'center' })}>居中第 7 项</Button>
+    <Button onclick={() => overflowScrollRef?.scrollTo(11, { align: 'end' })}>滚到末项</Button>
+  </div>
+  <div style="width: 300px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px" data-testid="overflow-scroll-box">
+    <OverflowList bind:this={overflowScrollRef} items={longTags} mode="scroll" ariaLabel="标签（scrollTo）">
       {#snippet item({ item })}
         <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
       {/snippet}
