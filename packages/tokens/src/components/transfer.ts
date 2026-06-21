@@ -14,4 +14,7 @@ export const transferTokens = {
   'upload-dragger-radius': 'var(--cd-radius-2)',
   'upload-item-bg-hover': 'var(--cd-color-fill-0)',
   'upload-item-color-error': 'var(--cd-color-danger)',
+  // 组件级 status 校验态边框色（区别于 file.status 上传进度态）。
+  'upload-border-warning': 'var(--cd-color-warning)',
+  'upload-border-error': 'var(--cd-color-danger)',
 } as const;

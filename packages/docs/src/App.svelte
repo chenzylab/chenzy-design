@@ -2165,6 +2165,23 @@ let pageSize2 = $state(10);
         onChange={(list) => (uploadImageVal = list)}
       />
     </div>
+
+    <Text type="tertiary">组件级 size 尺寸（small / default / large，影响触发按钮/拖拽区）：</Text>
+    <div data-testid="upload-size">
+      <Space>
+        <Upload size="small">small</Upload>
+        <Upload size="default">default</Upload>
+        <Upload size="large">large</Upload>
+      </Space>
+    </div>
+
+    <Text type="tertiary">组件级 status 校验态（warning / error，影响上传区边框色，区别于文件项 file.status）：</Text>
+    <div data-testid="upload-status">
+      <Space direction="vertical" align="start">
+        <Upload status="warning" drag accept="image/*" />
+        <Upload status="error" drag accept="image/*" />
+      </Space>
+    </div>
   </Space>
 
   <Divider />
