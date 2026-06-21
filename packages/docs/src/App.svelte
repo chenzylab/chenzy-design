@@ -596,6 +596,8 @@
   let valuePropSubmitted = $state('');
   let specPropsSubmitted = $state('');
   let nativeSubmitCount = $state(0);
+  let fieldPropsSubmitted = $state('');
+  let extStatus = $state<'default' | 'warning' | 'error'>('error');
   let selVal = $state<string | number>('');
   let selGroupVal = $state<string | number>('');
   // remote 搜索：模拟异步返回选项
@@ -1542,6 +1544,67 @@ let pageSize2 = $state(10);
       {/snippet}
     </Form>
     <Text type="tertiary">onSubmit 次数：{nativeSubmitCount}</Text>
+  </div>
+
+  <div style="max-width: 520px; margin-top: 16px" data-testid="form-field-props">
+    <Text type="tertiary"
+      >Form.Field spec §4.2（initValue / validateStatus / noStyle / span /
+      transform）：</Text
+    >
+    <Form
+      onSubmit={(r) =>
+        (fieldPropsSubmitted = r.valid
+          ? `提交值：${JSON.stringify(r.values)}`
+          : '校验未通过')}
+    >
+      <!-- span: 字段在 grid 容器内占列 -->
+      <div
+        style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-items:start"
+      >
+        <!-- initValue: 字段级初值（容器未给该字段时生效） -->
+        <Form.Input field="fp_first" label="名" initValue="三" span={1} />
+        <Form.Input field="fp_last" label="姓" initValue="张" span={1} />
+        <!-- transform: 提交前去空格并大写；live 值保持原样 -->
+        <Form.Input
+          field="fp_code"
+          label="编码（提交时大写）"
+          span={2}
+          transform={(v) => String(v ?? '').trim().toUpperCase()}
+        />
+        <!-- validateStatus: 外部强制展示态（受控，不经内部校验） -->
+        <Form.Input
+          field="fp_ext"
+          label="外部受控态"
+          validateStatus={extStatus}
+          span={2}
+        />
+        <!-- noStyle: 仅收集不渲染布局，控件直接平铺 -->
+        <div style="grid-column:span 2">
+          <Form.Field field="fp_hidden" initValue="hidden-collected" noStyle>
+            {#snippet children({ value })}
+              <Text type="tertiary"
+                >noStyle 字段值（无布局，仍参与收集）：{String(value)}</Text
+              >
+            {/snippet}
+          </Form.Field>
+        </div>
+      </div>
+      {#snippet footer()}
+        <Space>
+          <Button type="primary" htmlType="submit">提交</Button>
+          <Button
+            onclick={() =>
+              (extStatus =
+                extStatus === 'error'
+                  ? 'warning'
+                  : extStatus === 'warning'
+                    ? 'default'
+                    : 'error')}>切换受控态（{extStatus}）</Button
+          >
+        </Space>
+      {/snippet}
+    </Form>
+    <Text type="tertiary">{fieldPropsSubmitted}</Text>
   </div>
 
   <Divider />

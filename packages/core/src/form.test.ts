@@ -294,6 +294,51 @@ describe('createForm', () => {
     expect(r.values).toEqual({ name: 'jo', bio: '' });
   });
 
+  // ---- field-level initialValue (spec §4.2 L79) ----
+  it('registerField initialValue seeds the field value (field-level init)', () => {
+    const f = createForm();
+    f.registerField('plan', { initialValue: 'pro' });
+    expect(f.getFieldValue('plan')).toBe('pro');
+    expect(f.getFieldsValue()).toEqual({ plan: 'pro' });
+  });
+
+  it('container initialValues take precedence over field initialValue', () => {
+    const f = createForm({ initialValues: { plan: 'team' } });
+    f.registerField('plan', { initialValue: 'pro' });
+    // container already supplied a value → field init does not clobber it
+    expect(f.getFieldValue('plan')).toBe('team');
+  });
+
+  it('resetFields restores the field-level initialValue', () => {
+    const f = createForm();
+    f.registerField('plan', { initialValue: 'pro' });
+    f.setFieldValue('plan', 'free');
+    expect(f.getFieldValue('plan')).toBe('free');
+    f.resetFields();
+    expect(f.getFieldValue('plan')).toBe('pro');
+  });
+
+  // ---- field-level transform (spec §4.2 L88) ----
+  it('transform converts the value on collect/submit without mutating state', async () => {
+    const f = createForm();
+    f.registerField('tags', { transform: (v) => String(v).split(',').map((s) => s.trim()) });
+    f.setFieldValue('tags', 'a, b , c');
+    // live state keeps the raw string (red line #2: pure transform, no write-back)
+    expect(f.getFieldValue('tags')).toBe('a, b , c');
+    expect(f.getFieldsValue()).toEqual({ tags: ['a', 'b', 'c'] });
+    const r = await f.submit();
+    expect(r.values).toEqual({ tags: ['a', 'b', 'c'] });
+  });
+
+  it('transform receives sibling values and runs over emptiable input', async () => {
+    const f = createForm({ allowEmpty: true });
+    f.registerField('a', {});
+    f.registerField('full', { transform: (_v, values) => `${values.a as string}!` });
+    f.setFieldValue('a', 'hi');
+    f.setFieldValue('full', '');
+    expect(f.getFieldsValue()).toEqual({ a: 'hi', full: 'hi!' });
+  });
+
   it('subscribe notifies on changes', () => {
     const f = createForm();
     f.registerField('x');

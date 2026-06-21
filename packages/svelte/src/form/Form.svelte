@@ -115,15 +115,20 @@
   // formState — it never reads state that children write on mount, so no loop.
   let formState = $state({ ...form.getState() });
   let lastValues = form.getState().values;
-  $effect(() =>
-    form.subscribe((s) => {
-      formState = { ...s };
-      if (s.values !== lastValues) {
-        lastValues = s.values;
-        onChange?.(s.values);
-      }
-    }),
-  );
+  // Subscribe synchronously at component init (NOT inside an $effect): child
+  // Field registration effects run after the parent's setup but emit on the core
+  // bus; subscribing here guarantees we capture those early emits (e.g. a
+  // field-level `initValue` seeding the value). The subscriber only WRITES
+  // `formState` from the stable core state — it never reads child-written render
+  // state, so there is no effect loop. Cleanup unsubscribes on destroy.
+  const unsub = form.subscribe((s) => {
+    formState = { ...s };
+    if (s.values !== lastValues) {
+      lastValues = s.values;
+      onChange?.(s.values);
+    }
+  });
+  $effect(() => unsub);
 
   // Controlled `value`: push into the form only when the prop reference changes.
   // We never write back to the prop (onChange is the only outward channel), so

@@ -12,8 +12,16 @@
     field: string;
     label?: string;
     rules?: Rule[];
+    /** field-level initial value (spec §4.2 L79). */
+    initValue?: unknown;
     required?: boolean;
+    /** externally forced validate status — controlled display (spec §4.2 L81). */
+    validateStatus?: 'default' | 'warning' | 'error';
     extraText?: string;
+    /** column span inside a grid parent / Form.Section (spec §4.2 L86). */
+    span?: number;
+    /** pure value transform at collect/submit time (spec §4.2 L88). */
+    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
     placeholder?: string;
     type?: 'text' | 'password';
     clearable?: boolean;
@@ -27,8 +35,12 @@
     field,
     label,
     rules = [],
+    initValue,
     required = false,
+    validateStatus,
     extraText,
+    span,
+    transform,
     placeholder,
     type = 'text',
     clearable = false,
@@ -44,7 +56,11 @@
     rules,
     required,
     ...(label !== undefined ? { label } : {}),
+    ...(initValue !== undefined ? { initValue } : {}),
+    ...(validateStatus !== undefined ? { validateStatus } : {}),
     ...(extraText !== undefined ? { extraText } : {}),
+    ...(span !== undefined ? { span } : {}),
+    ...(transform !== undefined ? { transform } : {}),
     ...(dependencies !== undefined ? { dependencies } : {}),
     ...(trigger !== undefined ? { trigger } : {}),
   });

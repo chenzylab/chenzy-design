@@ -58,6 +58,12 @@ export interface FieldConfig {
    * omitted the field inherits the form default.
    */
   trigger?: ValidateTrigger | ValidateTrigger[];
+  /**
+   * pure transform applied to the field's value when collecting values for
+   * `getFieldsValue`/`submit` (spec §4.2 L88). Does NOT mutate state — the live
+   * `values` keep the raw value; only the collected payload is transformed.
+   */
+  transform?: (value: unknown, values: FormValues) => unknown;
 }
 
 export type FieldErrors = Record<string, string | undefined>;
@@ -188,10 +194,15 @@ export function createForm(options: FormOptions = {}): FormApi {
    * `allowEmpty:false`, keys whose value is empty are omitted from the payload.
    */
   function collectValues(): FormValues {
-    if (allowEmpty) return { ...state.values };
     const out: FormValues = {};
-    for (const [k, v] of Object.entries(state.values)) {
-      if (!isEmptyValue(v)) out[k] = v;
+    for (const [k, raw] of Object.entries(state.values)) {
+      // a registered field's `transform` runs over the raw value (pure, no
+      // state write-back per red line #2). Unregistered keys pass through.
+      const transform = fields.get(k)?.transform;
+      const v = transform ? transform(raw, state.values) : raw;
+      // `allowEmpty` is decided on the *transformed* value: a transform may turn
+      // an empty input into a real value (or vice versa).
+      if (allowEmpty || !isEmptyValue(v)) out[k] = v;
     }
     return out;
   }
