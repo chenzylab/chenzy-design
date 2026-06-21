@@ -3,7 +3,9 @@
   基础子集：标签输入。受控 value 不回写 (红线 #1)，变更仅 onChange。
   受控 inputValue 同理：提供 inputValue 时输入框文本由外部控制，
   键入仅触发 onInputChange，组件不自行写回 (红线 #1)。
-  TODO(延后): maxTagTextLength 截断、拖拽排序。
+  maxTagTextLength: 标签显示文本超长时截断为「前缀…」，完整文本经 title 查看；
+  截断仅影响显示派生 (纯函数 truncate)，标签实际值不变 (红线 #1)。
+  TODO(延后): 拖拽排序。
 -->
 <script lang="ts">
   import { useLocale } from '../locale-provider/index.js';
@@ -23,6 +25,7 @@
     readonly?: boolean;
     max?: number;
     maxLength?: number;
+    maxTagTextLength?: number;
     separator?: string | string[];
     addOnBlur?: boolean;
     allowDuplicates?: boolean;
@@ -44,6 +47,7 @@
     readonly = false,
     max,
     maxLength,
+    maxTagTextLength,
     separator = ['Enter'],
     addOnBlur = false,
     allowDuplicates = false,
@@ -54,6 +58,12 @@
   }: Props = $props();
 
   const loc = useLocale();
+
+  // 截断纯函数：仅影响显示，超过 max 时取前 max 字符 + 省略号 (红线 #2)。
+  function truncate(text: string, limit?: number): string {
+    if (limit === undefined || limit < 0) return text;
+    return text.length > limit ? `${text.slice(0, limit)}…` : text;
+  }
 
   // --- 受控值 (红线 #1): 不回写 value，仅 onChange ---
   const isControlled = $derived(value !== undefined);
@@ -85,6 +95,15 @@
   );
 
   const atMax = $derived(max !== undefined && current.length >= max);
+
+  // 派生显示文本：实际值不变，仅渲染层截断 (红线 #1/#2)。
+  const displayTags = $derived(
+    current.map((tag) => ({
+      value: tag,
+      label: truncate(tag, maxTagTextLength),
+      truncated: truncate(tag, maxTagTextLength) !== tag,
+    })),
+  );
 
   function setTags(next: string[]) {
     if (!isControlled) inner = next;
@@ -174,9 +193,12 @@
   aria-disabled={disabled || undefined}
   onclick={focusInput}
 >
-  {#each current as tag, i (`${tag}-${i}`)}
+  {#each displayTags as tag, i (`${tag.value}-${i}`)}
     <span class="cd-tag-input__tag">
-      <span class="cd-tag-input__text">{tag}</span>
+      <span
+        class="cd-tag-input__text"
+        title={tag.truncated ? tag.value : undefined}
+      >{tag.label}</span>
       {#if !readonly && !disabled}
         <button
           type="button"

@@ -504,6 +504,7 @@
   }
   let tags = $state<string[]>(['svelte', 'vite']);
   let tagsCtrl = $state<string[]>([]);
+let tagsTrunc = $state<string[]>(['超长标签文本示例内容', '短']);
   let tagInputCtrl = $state('');
   let color = $state('#3366ff');
 let colorInline = $state('#16a34a');
@@ -1314,6 +1315,17 @@ let pageSize2 = $state(10);
         onInputChange={(v) => (tagInputCtrl = v.toUpperCase())}
       />
       <Text type="tertiary">输入(强制大写)：{tagInputCtrl || '（空）'}</Text>
+    </div>
+
+    <div style="width: 320px" data-testid="taginput-maxlen">
+      <TagInput
+        value={tagsTrunc}
+        maxTagTextLength={6}
+        separator={[',', 'Enter']}
+        placeholder="超长标签截断显示（maxTagTextLength=6）"
+        onChange={(t) => (tagsTrunc = t)}
+      />
+      <Text type="tertiary">实际值：{tagsTrunc.join(' / ') || '（无）'}</Text>
     </div>
 
     <Space>
