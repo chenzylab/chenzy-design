@@ -10,6 +10,7 @@
     setRadioGroupContext,
     type RadioValue,
     type RadioSize,
+    type RadioStatus,
     type RadioRegistration,
   } from './context.js';
 
@@ -22,6 +23,7 @@
     options?: OptionObject[];
     disabled?: boolean;
     size?: RadioSize;
+    status?: RadioStatus;
     direction?: 'horizontal' | 'vertical';
     onChange?: (v: RadioValue) => void;
     children?: Snippet;
@@ -35,6 +37,7 @@
     options,
     disabled = false,
     size = 'default',
+    status = 'default',
     direction = 'horizontal',
     onChange,
     children,
@@ -126,6 +129,7 @@
     getSelected: () => selected,
     getDisabled: () => disabled,
     getSize: () => size,
+    getStatus: () => status,
     select,
     register,
     onKeydown,
@@ -135,7 +139,12 @@
   const cls = $derived(`cd-radio-group cd-radio-group--${direction}`);
 </script>
 
-<div class={cls} role="radiogroup" aria-label={ariaLabel}>
+<div
+  class={cls}
+  role="radiogroup"
+  aria-label={ariaLabel}
+  aria-invalid={status === 'error' ? 'true' : undefined}
+>
   {#if options}
     {#each options as opt (opt.value)}
       <Radio value={opt.value} disabled={opt.disabled ?? false} extra={opt.extra}>{opt.label}</Radio

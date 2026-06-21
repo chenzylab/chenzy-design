@@ -7,5 +7,7 @@ export const radioTokens = {
   'radio-bg': 'var(--cd-color-bg-0)',
   'radio-color-checked': 'var(--cd-color-primary)',
   'radio-dot-color': 'var(--cd-color-bg-0)',
+  'radio-color-warning': 'var(--cd-color-warning)',
+  'radio-color-error': 'var(--cd-color-danger)',
   'radio-label-gap': 'var(--cd-spacing-2)',
 } as const;
