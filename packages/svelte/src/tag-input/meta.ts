@@ -32,11 +32,12 @@ export const meta = {
     role: 'group',
     notes: [
       '容器 role=group + aria-label',
-      '每个标签删除按钮含 aria-label（本轮内置中文「删除」，TODO 接 locale）',
+      '每个标签删除按钮含 aria-label，文案取自 locale（TagInput.remove，默认中文「删除」）',
       '键盘：分隔符（默认 Enter）提交、输入为空时 Backspace 删除末尾标签',
       'draggable 仅为鼠标增强（HTML5 DnD）；键盘增删标签交互不受影响',
       'error 状态时 aria-invalid 标注于内部输入',
     ],
   },
+  i18nKeys: ['TagInput.remove'],
   tokens: ['--cd-input-*', '--cd-focus-ring', '--cd-motion-*', '--cd-color-fill-*'],
 } as const;

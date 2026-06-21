@@ -521,6 +521,7 @@
   let tagsCtrl = $state<string[]>([]);
 let tagsTrunc = $state<string[]>(['超长标签文本示例内容', '短']);
 let tagsDrag = $state<string[]>(['一', '二', '三', '四']);
+  let tagsI18n = $state<string[]>(['svelte', 'i18n']);
   let tagInputCtrl = $state('');
   let color = $state('#3366ff');
 let colorInline = $state('#16a34a');
@@ -3720,6 +3721,9 @@ let pageSize2 = $state(10);
         <Empty />
         <div style="margin-top:8px">
           <Pagination total={1234} showTotal currentPage={1} pageSize={10} />
+        </div>
+        <div style="margin-top:8px" data-testid="taginput-i18n">
+          <TagInput value={tagsI18n} onChange={(t) => (tagsI18n = t)} />
         </div>
       </div>
     </LocaleProvider>
