@@ -12,8 +12,58 @@ const commonProps = [
   { name: 'underline', type: 'boolean', default: 'false' },
   { name: 'delete', type: 'boolean', default: 'false', desc: '删除线' },
   { name: 'code', type: 'boolean', default: 'false', desc: '等宽代码样式' },
+  {
+    name: 'ellipsis',
+    type: 'boolean | EllipsisConfig',
+    default: 'false',
+    desc: '省略：单行/多行(rows)截断、expandable 展开、suffix、pos、showTooltip。CSS clamp 为默认路径，expandable/suffix/showTooltip 触发 ResizeObserver 测量路径。',
+  },
+  {
+    name: 'copyable',
+    type: 'boolean | CopyableConfig',
+    default: 'false',
+    desc: '复制：尾部复制按钮 + 成功反馈 + live announce，剪贴板 execCommand 回退，可自定义 content/icon/successIcon。',
+  },
+  {
+    name: 'editable',
+    type: 'boolean | EditableConfig',
+    default: 'false',
+    desc: '可编辑：click/dblclick/icon 触发 inline textarea，maxLength、autosize、Enter 提交/Shift+Enter 换行/Esc 取消、焦点归还。受控 value + onChange。',
+  },
+  { name: 'value', type: 'string', default: 'undefined', desc: 'editable 受控文本值（红线 #1：仅 onChange 回传，不回写）' },
+  { name: 'component', type: 'string', default: '各自默认', desc: '覆盖渲染标签' },
   { name: 'class', type: 'string', default: "''" },
 ] as const;
+
+const ellipsisConfig = {
+  name: 'EllipsisConfig',
+  fields: [
+    { name: 'rows', type: 'number', default: '1' },
+    { name: 'expandable', type: 'boolean', default: 'false' },
+    { name: 'expandText / collapseText', type: 'string', default: 'i18n' },
+    { name: 'suffix', type: 'string', default: 'undefined' },
+    { name: 'pos', type: "'end'|'middle'|'start'", default: "'end'" },
+    { name: 'showTooltip', type: "boolean | { type?: 'tooltip'|'popover' }", default: 'false' },
+    { name: 'onExpand', type: '(expanded: boolean) => void', default: 'undefined' },
+  ],
+} as const;
+const copyableConfig = {
+  name: 'CopyableConfig',
+  fields: [
+    { name: 'content', type: 'string', default: '节点文本' },
+    { name: 'successText', type: 'string', default: 'i18n' },
+    { name: 'icon / successIcon', type: 'Snippet', default: '内置图标' },
+  ],
+} as const;
+const editableConfig = {
+  name: 'EditableConfig',
+  fields: [
+    { name: 'editing', type: 'boolean', default: 'undefined', desc: '受控编辑态' },
+    { name: 'trigger', type: "'click'|'dblclick'|'icon'", default: "'icon'" },
+    { name: 'maxLength', type: 'number', default: 'undefined' },
+    { name: 'autosize', type: 'boolean', default: 'true' },
+  ],
+} as const;
 
 export const meta = {
   name: 'Typography',
@@ -38,12 +88,38 @@ export const meta = {
       ],
     },
   ],
-  events: [],
-  slots: [{ name: 'children', desc: '文本内容' }],
+  configObjects: [ellipsisConfig, copyableConfig, editableConfig],
+  events: [
+    { name: 'onCopy', payload: '(content: string)', desc: '复制成功后' },
+    { name: 'onChange', payload: '(value: string)', desc: 'editable 提交（受控 value + onChange）' },
+    { name: 'onEditStart', payload: '()', desc: '进入编辑' },
+    { name: 'onEditCancel', payload: '()', desc: '取消编辑' },
+    { name: 'onExpand', payload: '(expanded: boolean)', desc: 'ellipsis 展开/收起切换' },
+    { name: 'onClick', payload: '(e: MouseEvent)', desc: 'Link 点击（disabled 阻止）' },
+  ],
+  slots: [
+    { name: 'children', desc: '文本内容' },
+    { name: 'copyIcon (config.icon/successIcon)', desc: '自定义复制图标' },
+  ],
   a11y: {
-    link: 'disabled 时移除 href 并 aria-disabled',
-    note: 'reduced-motion 下移除 Link 过渡',
+    link: 'disabled 时移除 href + aria-disabled + tabindex=-1 + 阻止默认',
+    copyable: '复制按钮 <button> 带 aria-label(i18n)，成功经 aria-live=polite 播报，图标形状切换不依赖颜色',
+    editable: '编辑触发 <button> 带 aria-label，textarea 自动聚焦，Esc 取消焦点归还触发器',
+    ellipsis: 'showTooltip 溢出显示完整内容；expandable 展开按钮 aria-expanded；CSS clamp 保留完整文本供 SR',
+    note: 'reduced-motion 下移除 Link/图标过渡',
   },
+  a11yRoles: ['heading', 'link', 'button'],
+  i18nKeys: [
+    'Typography.copy',
+    'Typography.copied',
+    'Typography.copyFailed',
+    'Typography.edit',
+    'Typography.editConfirm',
+    'Typography.editCancel',
+    'Typography.expand',
+    'Typography.collapse',
+    'Typography.ellipsisSuffix',
+  ],
   tokens: [
     '--cd-typography-color',
     '--cd-typography-color-secondary',
@@ -53,10 +129,21 @@ export const meta = {
     '--cd-typography-mark-bg',
     '--cd-typography-code-bg',
     '--cd-typography-code-font-size',
+    '--cd-typography-action-color',
+    '--cd-typography-action-color-hover',
     '--cd-font-size-1..6',
+  ],
+  relatedComponents: ['Tooltip', 'Highlight', 'Numeral'],
+  aiHints: [
+    '需要文档大纲用 Title 并匹配 heading 级别；仅放大字号用 component 改标签保留视觉。',
+    '长文本截断优先 CSS clamp（默认零测量）；需展开/tooltip/suffix 才走 ResizeObserver 测量路径。',
+    'editable 是受控的：必须配 value + onChange，组件不回写。',
   ],
   examples: [
     { title: '标题', code: '<Typography.Title heading={2}>标题</Typography.Title>' },
     { title: '链接', code: '<Typography.Link href="/" target="_blank">前往</Typography.Link>' },
+    { title: '多行省略 + 展开', code: '<Typography.Paragraph ellipsis={{ rows: 2, expandable: true }}>长文本…</Typography.Paragraph>' },
+    { title: '可复制', code: '<Typography.Text copyable>npm i @chenzy-design/svelte</Typography.Text>' },
+    { title: 'inline 编辑', code: '<Typography.Text editable {value} onChange={(v) => (value = v)}>{value}</Typography.Text>' },
   ],
 } as const;

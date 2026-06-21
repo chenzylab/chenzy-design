@@ -1002,6 +1002,7 @@ let pageSize2 = $state(10);
   let bigVal = $state<string | number>('');
 
   let collapsed = $state(false);
+  let editableText = $state('双击或点击编辑图标修改这段文字');
   let inputVal = $state('');
   let switchOn = $state(true);
   let checks = $state<(string | number)[]>(['a']);
@@ -1112,6 +1113,39 @@ let pageSize2 = $state(10);
     <Text delete>删除线</Text>、<Text strong>加粗</Text>，以及
     <Link href="https://semi.design" target="_blank">一个链接</Link>。
   </Paragraph>
+
+  <Title heading={6}>Typography · ellipsis 省略</Title>
+  <Paragraph type="tertiary">单行省略（鼠标悬浮看完整内容 tooltip）：</Paragraph>
+  <div style="max-width: 320px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
+    <Text ellipsis={{ showTooltip: true }}>
+      这是一段很长很长很长很长很长很长很长很长很长很长很长很长的单行文本会被省略
+    </Text>
+  </div>
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">多行省略 + 展开/收起（rows=2, expandable）：</Paragraph></div>
+  <div style="max-width: 360px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
+    <Paragraph ellipsis={{ rows: 2, expandable: true }}>
+      多行省略示例：这是一段较长的段落文本，超过两行后会被截断并显示展开按钮。点击展开查看完整内容，再次点击收起。
+      省略逻辑由 @chenzy-design/core 的 createEllipsis 提供，CSS line-clamp 为默认路径，expandable/showTooltip/suffix 才启用 ResizeObserver 测量路径。
+    </Paragraph>
+  </div>
+
+  <Title heading={6}>Typography · copyable 复制</Title>
+  <Space>
+    <Text copyable>npm i @chenzy-design/svelte</Text>
+    <Text copyable={{ content: '自定义复制的内容 hello' }}>复制自定义内容</Text>
+  </Space>
+
+  <Title heading={6}>Typography · editable 可编辑</Title>
+  <Text
+    editable={{ trigger: 'dblclick', maxLength: 60 }}
+    value={editableText}
+    onChange={(v) => (editableText = v)}
+  >
+    {editableText}
+  </Text>
+  <div style="margin-top: 8px;"><Paragraph type="tertiary">
+    点击右侧编辑图标或双击文字进入编辑；Enter 提交、Esc 取消、Shift+Enter 换行。受控 value + onChange（不回写）。
+  </Paragraph></div>
 
   <Divider dashed />
 

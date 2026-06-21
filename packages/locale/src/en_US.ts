@@ -285,4 +285,15 @@ export const en_US: Locale = {
     warningLabel: 'Warning',
     errorLabel: 'Error',
   },
+  Typography: {
+    copy: 'Copy',
+    copied: 'Copied',
+    copyFailed: 'Copy failed',
+    edit: 'Edit',
+    editConfirm: 'Save',
+    editCancel: 'Cancel',
+    expand: 'Expand',
+    collapse: 'Collapse',
+    ellipsisSuffix: '…',
+  },
 };
