@@ -5,7 +5,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
-  import { getCheckboxGroupContext, type CheckboxValue, type CheckboxSize } from './context.js';
+  import {
+    getCheckboxGroupContext,
+    type CheckboxValue,
+    type CheckboxSize,
+    type CheckboxType,
+  } from './context.js';
 
   type Status = 'default' | 'warning' | 'error';
 
@@ -17,6 +22,8 @@
     disabled?: boolean;
     size?: CheckboxSize;
     status?: Status;
+    /** Display form. card adds border+background and expands the hit area to the whole card; pureCard is borderless. */
+    type?: CheckboxType;
     name?: string;
     extra?: string | undefined;
     id?: string;
@@ -32,6 +39,7 @@
     disabled = false,
     size = 'default',
     status = 'default',
+    type = 'default',
     name,
     extra,
     id,
@@ -66,6 +74,8 @@
   const resolvedSize = $derived(group ? group.getSize() : size);
   const resolvedDisabled = $derived(disabled || (group ? group.getDisabled() : false));
   const resolvedName = $derived(name ?? group?.getName());
+  // Group transparently provides `type`; a per-item non-default `type` overrides it.
+  const resolvedType = $derived(type !== 'default' ? type : (group?.getType() ?? 'default'));
 
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.checked;
@@ -91,6 +101,7 @@
       'cd-checkbox',
       `cd-checkbox--${resolvedSize}`,
       `cd-checkbox--${status}`,
+      resolvedType !== 'default' && `cd-checkbox--${resolvedType}`,
       isChecked && 'cd-checkbox--checked',
       indeterminate && !isChecked && 'cd-checkbox--indeterminate',
       resolvedDisabled && 'cd-checkbox--disabled',
@@ -219,8 +230,47 @@
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-1);
   }
+
+  /* card / pureCard 形态：整张卡片即命中区，hover 抬升背景，选中描边 primary。 */
+  .cd-checkbox--card,
+  .cd-checkbox--pureCard {
+    padding: var(--cd-checkbox-card-padding);
+    border-radius: var(--cd-checkbox-card-radius);
+    background: var(--cd-checkbox-card-bg);
+    transition:
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-checkbox--card {
+    border: 1px solid var(--cd-checkbox-card-border);
+  }
+  .cd-checkbox--pureCard {
+    border: 1px solid transparent;
+  }
+  .cd-checkbox--card:hover:not(.cd-checkbox--disabled),
+  .cd-checkbox--pureCard:hover:not(.cd-checkbox--disabled) {
+    background: var(--cd-checkbox-card-bg-hover);
+  }
+  .cd-checkbox--card.cd-checkbox--checked,
+  .cd-checkbox--card.cd-checkbox--indeterminate,
+  .cd-checkbox--pureCard.cd-checkbox--checked,
+  .cd-checkbox--pureCard.cd-checkbox--indeterminate {
+    border-color: var(--cd-checkbox-card-border-checked);
+  }
+  .cd-checkbox--card .cd-checkbox__input:focus-visible ~ .cd-checkbox__box,
+  .cd-checkbox--pureCard .cd-checkbox__input:focus-visible ~ .cd-checkbox__box {
+    box-shadow: none;
+  }
+  .cd-checkbox--card:has(.cd-checkbox__input:focus-visible),
+  .cd-checkbox--pureCard:has(.cd-checkbox__input:focus-visible) {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .cd-checkbox__box {
+    .cd-checkbox__box,
+    .cd-checkbox--card,
+    .cd-checkbox--pureCard {
       transition: none;
     }
   }
