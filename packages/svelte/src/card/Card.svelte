@@ -20,6 +20,22 @@
     hoverable?: boolean;
     loading?: boolean;
     loadingRows?: number;
+    /** header 区内联样式透传 */
+    headerStyle?: string;
+    /** body 区内联样式透传 */
+    bodyStyle?: string;
+    /** header 与 body 间是否显示分隔线 */
+    headerLine?: boolean;
+    /** actions 区上方是否显示分隔线 */
+    footerLine?: boolean;
+    /** 整卡可点击：合并 hoverable 视觉并启用键盘/点击激活与 role=button */
+    clickable?: boolean;
+    /** 仅在 clickable 时生效，禁用点击与 hover 反馈 */
+    disabled?: boolean;
+    class?: string;
+    onClick?: (originalEvent: MouseEvent | KeyboardEvent) => void;
+    onMouseenter?: (originalEvent: MouseEvent) => void;
+    onMouseleave?: (originalEvent: MouseEvent) => void;
     children?: Snippet;
   }
 
@@ -34,6 +50,16 @@
     hoverable = false,
     loading = false,
     loadingRows = 3,
+    headerStyle,
+    bodyStyle,
+    headerLine = true,
+    footerLine = true,
+    clickable = false,
+    disabled = false,
+    class: className,
+    onClick,
+    onMouseenter,
+    onMouseleave,
     children,
   }: Props = $props();
 
@@ -55,24 +81,67 @@
       `cd-card--${size}`,
       bordered && 'cd-card--bordered',
       `cd-card--shadow-${shadow}`,
-      (hoverable || shadow === 'hover') && 'cd-card--hoverable',
+      (hoverable || shadow === 'hover' || (clickable && !disabled)) &&
+        'cd-card--hoverable',
+      clickable && 'cd-card--clickable',
+      clickable && disabled && 'cd-card--disabled',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // clickable interaction: pure handlers, no global listeners → no cleanup needed
+  function handleClick(e: MouseEvent) {
+    if (!clickable || disabled) return;
+    onClick?.(e);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (!clickable || disabled) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      // Space: prevent page scroll on activation
+      e.preventDefault();
+      onClick?.(e);
+    }
+  }
+
+  function handleMouseenter(e: MouseEvent) {
+    onMouseenter?.(e);
+  }
+  function handleMouseleave(e: MouseEvent) {
+    onMouseleave?.(e);
+  }
 </script>
 
+<!--
+  tabindex is only set together with role="button" (clickable, not disabled),
+  so the element is interactive when focusable; the static check can't see the
+  cross-attribute correlation.
+-->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class={cls}
-  role={hasTitle ? 'region' : undefined}
+  role={clickable ? 'button' : hasTitle ? 'region' : undefined}
   aria-labelledby={titleIsString ? titleId : undefined}
+  aria-disabled={clickable && disabled ? 'true' : undefined}
+  tabindex={clickable ? (disabled ? -1 : 0) : undefined}
+  onclick={clickable ? handleClick : undefined}
+  onkeydown={clickable ? handleKeydown : undefined}
+  onmouseenter={onMouseenter ? handleMouseenter : undefined}
+  onmouseleave={onMouseleave ? handleMouseleave : undefined}
 >
   {#if cover}
     <div class="cd-card__cover">{@render cover()}</div>
   {/if}
 
   {#if hasHeader}
-    <div class="cd-card__header">
+    <div
+      class={['cd-card__header', !headerLine && 'cd-card__header--no-line']
+        .filter(Boolean)
+        .join(' ')}
+      style={headerStyle}
+    >
       {#if hasTitle}
         <div class="cd-card__title" id={titleIsString ? titleId : undefined}>
           {#if titleText !== undefined}
@@ -88,7 +157,7 @@
     </div>
   {/if}
 
-  <div class="cd-card__body">
+  <div class="cd-card__body" style={bodyStyle}>
     {#if loading}
       <div class="cd-card__skeleton" aria-hidden="true">
         {#each rows as row (row)}
@@ -101,7 +170,13 @@
   </div>
 
   {#if actions}
-    <div class="cd-card__actions">{@render actions()}</div>
+    <div
+      class={['cd-card__actions', !footerLine && 'cd-card__actions--no-line']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {@render actions()}
+    </div>
   {/if}
 </div>
 
@@ -126,6 +201,28 @@
     box-shadow: var(--cd-card-shadow-hover);
   }
 
+  .cd-card--clickable {
+    cursor: pointer;
+    transition:
+      box-shadow var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-card--clickable:not(.cd-card--disabled):hover {
+    transform: translateY(-2px);
+  }
+  .cd-card--clickable:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-card--disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .cd-card--disabled.cd-card--clickable:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
   .cd-card__cover {
     display: block;
     overflow: hidden;
@@ -142,6 +239,9 @@
     gap: var(--cd-spacing-3);
     padding: var(--cd-card-padding);
     border-block-end: 1px solid var(--cd-card-header-border);
+  }
+  .cd-card__header--no-line {
+    border-block-end: none;
   }
   .cd-card--small .cd-card__header {
     padding: var(--cd-card-padding-small);
@@ -177,6 +277,9 @@
     display: flex;
     align-items: center;
     border-block-start: 1px solid var(--cd-card-header-border);
+  }
+  .cd-card__actions--no-line {
+    border-block-start: none;
   }
   .cd-card__actions :global(> *) {
     flex: 1 1 0;
@@ -221,9 +324,13 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-card,
+    .cd-card--clickable,
     .cd-card__skeleton-row {
       transition: none;
       animation: none;
+    }
+    .cd-card--clickable:not(.cd-card--disabled):hover {
+      transform: none;
     }
   }
 </style>
