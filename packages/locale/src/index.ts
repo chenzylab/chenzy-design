@@ -12,3 +12,10 @@ export {
   type CreateLocaleOptions,
   type Direction,
 } from './create-locale.js';
+export {
+  mergeLocale,
+  registerLocale,
+  unregisterLocale,
+  resolveLocale,
+  type PartialLocale,
+} from './registry.js';

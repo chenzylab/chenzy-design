@@ -16,6 +16,10 @@ export interface LocaleApi {
   readonly code: string;
   /** text direction derived from the locale (or forced) */
   readonly direction: Direction;
+  /** default IANA time zone applied to formatDate (undefined → runtime zone) */
+  readonly timeZone?: string;
+  /** default ISO 4217 currency for currency-style formatNumber */
+  readonly currency?: string;
   /** translate a dot-path key (e.g. 'Modal.okText'); interpolates {params} */
   t(key: string, params?: Record<string, string | number>): string;
   formatDate(date: Date, options?: Intl.DateTimeFormatOptions): string;
@@ -29,6 +33,10 @@ export interface CreateLocaleOptions {
   fallback?: Locale;
   /** force direction; omit to derive from `locale.rtl` */
   direction?: Direction | 'auto';
+  /** default IANA time zone for formatDate (e.g. 'Asia/Shanghai'); per-call opts win */
+  timeZone?: string;
+  /** default ISO 4217 currency injected when formatNumber uses style:'currency' */
+  currency?: string;
 }
 
 /** read a dot-path (e.g. 'Modal.okText') from a bundle; undefined if absent */
@@ -42,7 +50,7 @@ function readPath(bundle: unknown, key: string): string | undefined {
 }
 
 export function createLocale(options: CreateLocaleOptions): LocaleApi {
-  const { locale, fallback = en_US } = options;
+  const { locale, fallback = en_US, timeZone, currency } = options;
   const code = locale.code;
   const direction: Direction =
     options.direction && options.direction !== 'auto'
@@ -56,19 +64,27 @@ export function createLocale(options: CreateLocaleOptions): LocaleApi {
   const numberCache = new Map<string, Intl.NumberFormat>();
 
   function getDateFormatter(opts?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-    const cacheKey = JSON.stringify(opts ?? {});
+    // Inject the provider timeZone as a default; per-call opts.timeZone still wins.
+    const merged: Intl.DateTimeFormatOptions | undefined =
+      timeZone && !(opts && 'timeZone' in opts) ? { timeZone, ...opts } : opts;
+    const cacheKey = JSON.stringify(merged ?? {});
     let fmt = dateCache.get(cacheKey);
     if (!fmt) {
-      fmt = new Intl.DateTimeFormat(code, opts);
+      fmt = new Intl.DateTimeFormat(code, merged);
       dateCache.set(cacheKey, fmt);
     }
     return fmt;
   }
   function getNumberFormatter(opts?: Intl.NumberFormatOptions): Intl.NumberFormat {
-    const cacheKey = JSON.stringify(opts ?? {});
+    // When formatting as currency without an explicit code, fall back to the provider currency.
+    const merged: Intl.NumberFormatOptions | undefined =
+      currency && opts?.style === 'currency' && !opts.currency
+        ? { ...opts, currency }
+        : opts;
+    const cacheKey = JSON.stringify(merged ?? {});
     let fmt = numberCache.get(cacheKey);
     if (!fmt) {
-      fmt = new Intl.NumberFormat(code, opts);
+      fmt = new Intl.NumberFormat(code, merged);
       numberCache.set(cacheKey, fmt);
     }
     return fmt;
@@ -77,6 +93,8 @@ export function createLocale(options: CreateLocaleOptions): LocaleApi {
   return {
     code,
     direction,
+    ...(timeZone ? { timeZone } : {}),
+    ...(currency ? { currency } : {}),
     t(key, params) {
       const raw = readPath(locale, key) ?? readPath(fallback, key) ?? key;
       return params ? interpolate(raw, params) : raw;
