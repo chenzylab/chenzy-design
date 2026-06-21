@@ -667,6 +667,9 @@ let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
   let cascaderHoverVal = $state<(string | number)[]>([]);
   let cascaderDisplayVal = $state<(string | number)[]>([]);
   let cascaderCosVal = $state<(string | number)[]>([]);
+  let cascaderSepVal = $state<(string | number)[]>([]);
+  let cascaderMaxTagVal = $state<(string | number)[][]>([]);
+  let cascaderLeafOnlyVal = $state<(string | number)[][]>([]);
   let treeVal = $state<string | number | null>(null);
   let treeMultiVal = $state<(string | number)[]>([]);
   let transferVal = $state<(string | number)[]>(['b']);
@@ -2172,6 +2175,63 @@ let pageSize2 = $state(10);
       <Text type="tertiary"
         >changeOnSelect 任意层级可选：{cascaderCosVal.join(' / ') || '（未选）'}</Text
       >
+    </div>
+    <div style="width: 240px" data-testid="cascader-separator">
+      <Cascader
+        treeData={regionData}
+        clearable
+        separator=" › "
+        displayProp="value"
+        placeholder="自定义分隔符 + value 回显"
+        value={cascaderSepVal}
+        onChange={(p) => (cascaderSepVal = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
+      />
+      <Text type="tertiary">separator=" › " + displayProp="value"</Text>
+    </div>
+    <div style="width: 320px" data-testid="cascader-maxtag">
+      <Cascader
+        treeData={regionData}
+        multiple
+        clearable
+        maxTagCount={1}
+        placeholder="多选 + maxTagCount"
+        value={cascaderMaxTagVal}
+        onChange={(p) => (cascaderMaxTagVal = (Array.isArray(p[0]) ? p : p.length ? [p] : []) as (string | number)[][])}
+      />
+      <Text type="tertiary">maxTagCount=1：超出折叠 +N</Text>
+    </div>
+    <div style="width: 320px" data-testid="cascader-leafonly">
+      <Cascader
+        treeData={regionData}
+        multiple
+        leafOnly
+        clearable
+        columnWidth={[160, 200]}
+        placeholder="leafOnly + 逐列列宽"
+        value={cascaderLeafOnlyVal}
+        onChange={(p) => (cascaderLeafOnlyVal = (Array.isArray(p[0]) ? p : p.length ? [p] : []) as (string | number)[][])}
+      />
+      <Text type="tertiary">leafOnly：全选父级折叠为父 tag；columnWidth=[160,200]</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-filtertreenode">
+      <Cascader
+        treeData={regionData}
+        clearable
+        filterTreeNode={(q, path) => path.labels.some((l) => l.includes(q))}
+        filterLeafOnly={false}
+        emptyContent="未找到匹配地区"
+        placeholder="自定义过滤谓词"
+      />
+      <Text type="tertiary">filterTreeNode 自定义谓词 + filterLeafOnly=false + emptyContent</Text>
+    </div>
+    <div style="width: 240px" data-testid="cascader-keepdom">
+      <Cascader
+        treeData={regionData}
+        clearable
+        destroyOnClose={false}
+        placeholder="destroyOnClose=false"
+      />
+      <Text type="tertiary">destroyOnClose=false：关闭保留浮层 DOM（仅隐藏）</Text>
     </div>
     <div style="width: 240px" data-testid="treeselect-filter">
       <TreeSelect
