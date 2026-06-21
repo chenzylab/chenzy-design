@@ -106,6 +106,19 @@ export const en_US: Locale = {
     ariaLabel: 'Back to top',
     arrived: 'Returned to top',
   },
+  Switch: {
+    on: 'On',
+    off: 'Off',
+    loading: 'Loading',
+    announceChecked: 'Turned on',
+    announceUnchecked: 'Turned off',
+  },
+  Rating: {
+    ariaLabel: 'Rating',
+    valueText: '{value} of {count} stars',
+    cleared: 'Rating cleared',
+    unrated: 'Not rated',
+  },
   LottieIcon: {
     loading: 'Loading animation',
     loadError: 'Failed to load animation',

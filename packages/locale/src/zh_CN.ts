@@ -106,6 +106,19 @@ export const zh_CN: Locale = {
     ariaLabel: '回到顶部',
     arrived: '已回到顶部',
   },
+  Switch: {
+    on: '开',
+    off: '关',
+    loading: '加载中',
+    announceChecked: '已开启',
+    announceUnchecked: '已关闭',
+  },
+  Rating: {
+    ariaLabel: '评分',
+    valueText: '{value} 颗星，共 {count} 颗',
+    cleared: '已清除评分',
+    unrated: '未评分',
+  },
   LottieIcon: {
     loading: '动画加载中',
     loadError: '动画加载失败',

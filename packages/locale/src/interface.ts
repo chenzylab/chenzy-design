@@ -135,6 +135,22 @@ export interface Locale {
     ariaLabel: string;
     arrived: string;
   };
+  Switch: {
+    on: string;
+    off: string;
+    loading: string;
+    /** announceOnChange 播报（开） */
+    announceChecked: string;
+    /** announceOnChange 播报（关） */
+    announceUnchecked: string;
+  };
+  Rating: {
+    ariaLabel: string;
+    /** uses {value} and {count} */
+    valueText: string;
+    cleared: string;
+    unrated: string;
+  };
   LottieIcon: {
     loading: string;
     loadError: string;

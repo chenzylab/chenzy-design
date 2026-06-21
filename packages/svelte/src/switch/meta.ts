@@ -9,6 +9,8 @@ export const meta = {
   props: [
     { name: 'value', type: 'boolean', default: 'undefined', desc: '受控值；提供则为受控' },
     { name: 'defaultValue', type: 'boolean', default: 'false', desc: '非受控初始值' },
+    { name: 'checkedValue', type: 'string | number | boolean', default: 'true', desc: '开态映射的实际值（onChange.nativeValue 与表单提交值）' },
+    { name: 'uncheckedValue', type: 'string | number | boolean', default: 'false', desc: '关态映射的实际值' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'status', type: "'default'|'warning'|'error'", default: 'default' },
     { name: 'disabled', type: 'boolean', default: 'false' },
@@ -16,8 +18,18 @@ export const meta = {
     { name: 'checkedChildren', type: 'string | Snippet', default: 'undefined' },
     { name: 'uncheckedChildren', type: 'string | Snippet', default: 'undefined' },
     { name: 'name', type: 'string', default: 'undefined' },
+    { name: 'required', type: 'boolean', default: 'false', desc: '表单必填校验（须为开态）' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
-    { name: 'onChange', type: '(v: boolean) => void', default: 'undefined' },
+    { name: 'announceOnChange', type: 'boolean', default: 'false', desc: '切换后用 live region 播报新状态' },
+    { name: 'autofocus', type: 'boolean', default: 'false', desc: '挂载后自动聚焦' },
+    { name: 'onChange', type: '(v: boolean, detail?: { value: boolean; nativeValue: string|number|boolean; event: Event }) => void', default: 'undefined' },
+  ],
+  i18nKeys: [
+    'Switch.on',
+    'Switch.off',
+    'Switch.loading',
+    'Switch.announceChecked',
+    'Switch.announceUnchecked',
   ],
   a11y: {
     role: 'switch',
