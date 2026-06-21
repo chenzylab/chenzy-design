@@ -41,6 +41,36 @@ export const meta = {
     },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'lineStyle', type: "'solid'|'dashed'", default: 'solid' },
+    {
+      name: 'virtualized',
+      type: 'boolean',
+      default: 'false',
+      desc: '虚拟化：长时间轴只渲染视口内项（复用 core fixedRange；仅 dataSource 模式生效，强制 vertical 列布局，轴线靠固定项高连续）',
+    },
+    {
+      name: 'itemHeight',
+      type: 'number',
+      default: '56',
+      desc: '虚拟化固定项高（px）',
+    },
+    {
+      name: 'maxHeight',
+      type: 'number|string',
+      default: '400',
+      desc: '虚拟化视口最大高（px 数字或 CSS 字符串）',
+    },
+    {
+      name: 'overscan',
+      type: 'number',
+      default: '3',
+      desc: '虚拟化上下缓冲项数',
+    },
+    {
+      name: 'interactive',
+      type: 'boolean',
+      default: 'false',
+      desc: 'roving tabindex 键盘漫游：项可聚焦，↑↓/←→ 移动焦点、Home/End 跳首尾、Enter/Space 触发项 onClick',
+    },
     { name: 'class', type: 'string', default: "''" },
   ],
   subComponents: [
@@ -56,13 +86,24 @@ export const meta = {
           desc: '单项连接线样式',
         },
         { name: 'time', type: 'string', default: 'undefined', desc: '时间文本' },
+        {
+          name: 'onClick',
+          type: '() => void',
+          default: 'undefined',
+          desc: 'interactive 模式下点击或 Enter/Space 触发',
+        },
         { name: 'children', type: 'Snippet', default: 'undefined', desc: '项内容' },
       ],
     },
   ],
   a11y: {
     role: 'list',
-    notes: ['ul/li 结构', '圆点与连接线 aria-hidden=true', '内容与时间为可读文本'],
+    notes: [
+      'ul/li 结构',
+      '圆点与连接线 aria-hidden=true',
+      '内容与时间为可读文本',
+      'interactive：项 role=button + roving tabindex（焦点项 tabindex=0 其余 -1），↑↓/←→ 移动焦点、Home/End 跳首尾、Enter/Space 激活，aria-label 取节点内容',
+    ],
   },
   tokens: ['--cd-timeline-*', '--cd-radius-full', '--cd-spacing-1', '--cd-font-size-1'],
 } as const;
