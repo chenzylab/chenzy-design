@@ -1,9 +1,11 @@
 <!--
   ToastContainer — 单例容器，订阅 store 渲染全部 toast。
   由 store.ts 惰性 mount 到 body 下的宿主节点；仅此一个实例。
-  按 position 分 top / bottom 两个固定定位堆叠列。
+  按 6 方位（topLeft/top/topRight/bottomLeft/bottom/bottomRight）分组渲染独立堆叠列，
+  对齐 Notification 的方位实现。向后兼容：旧的纯 top/bottom 用法仍居中堆叠不变。
   进出场用 svelte/transition fly（运行时驱动，退场后 DOM 正常卸载，不卡 from 帧）；
   重排用 animate:flip。reduced-motion 时 fly duration 降为 0。
+  红线 #2：方位分组（grouped）/进出场偏移（flyParams）为派生纯函数。
   红线：render 不读 effect 写的状态——toasts 初始同步读一次（拿到惰性挂载前已入队的首条），
   $effect 仅做订阅 + cleanup 退订。
 -->
@@ -11,7 +13,7 @@
   import { fly } from 'svelte/transition';
   import { flip } from 'svelte/animate';
   import { prefersReducedMotion } from 'svelte/motion';
-  import type { ToastStore, ToastItem } from '@chenzy-design/core';
+  import type { ToastStore, ToastItem, ToastPosition } from '@chenzy-design/core';
   import ToastItemView from './ToastItem.svelte';
 
   interface Props {
@@ -37,11 +39,32 @@
     return unsub;
   });
 
-  const topToasts = $derived(toasts.filter((t) => t.position === 'top'));
-  const bottomToasts = $derived(toasts.filter((t) => t.position === 'bottom'));
+  const positions: ToastPosition[] = [
+    'topLeft',
+    'top',
+    'topRight',
+    'bottomLeft',
+    'bottom',
+    'bottomRight',
+  ];
 
   const flyDuration = $derived(prefersReducedMotion.current ? 0 : 220);
   const flipDuration = $derived(prefersReducedMotion.current ? 0 : 200);
+
+  // 红线 #2：方位分组纯派生——按 6 方位过滤当前 toasts。
+  const grouped = $derived(
+    positions.map((p) => ({
+      position: p,
+      items: toasts.filter((t) => t.position === p),
+    })),
+  );
+
+  // 每方位进出场偏移：左侧从左滑入、右侧从右滑入、居中走垂直（对齐 Notification）。
+  function flyParams(position: ToastPosition): { x: number; y: number } {
+    if (position === 'topLeft' || position === 'bottomLeft') return { x: -24, y: 0 };
+    if (position === 'topRight' || position === 'bottomRight') return { x: 24, y: 0 };
+    return { x: 0, y: position === 'top' ? -16 : 16 };
+  }
 
   function handleClose(id: string) {
     store.remove(id, 'manual');
@@ -54,67 +77,78 @@
   }
 </script>
 
-{#if topToasts.length > 0}
-  <div class="cd-toast-stack cd-toast-stack--top">
-    {#each topToasts as t (t.id)}
-      <div
-        class="cd-toast-stack__item"
-        in:fly={{ y: -16, duration: flyDuration }}
-        out:fly={{ y: -16, duration: flyDuration }}
-        animate:flip={{ duration: flipDuration }}
-      >
-        <ToastItemView
-          toast={t}
-          onClose={handleClose}
-          onPause={handlePause}
-          onResume={handleResume}
-        />
-      </div>
-    {/each}
-  </div>
-{/if}
-
-{#if bottomToasts.length > 0}
-  <div class="cd-toast-stack cd-toast-stack--bottom">
-    {#each bottomToasts as t (t.id)}
-      <div
-        class="cd-toast-stack__item"
-        in:fly={{ y: 16, duration: flyDuration }}
-        out:fly={{ y: 16, duration: flyDuration }}
-        animate:flip={{ duration: flipDuration }}
-      >
-        <ToastItemView
-          toast={t}
-          onClose={handleClose}
-          onPause={handlePause}
-          onResume={handleResume}
-        />
-      </div>
-    {/each}
-  </div>
-{/if}
+{#each grouped as group (group.position)}
+  {#if group.items.length > 0}
+    <div class="cd-toast-stack cd-toast-stack--{group.position}">
+      {#each group.items as t (t.id)}
+        <div
+          class="cd-toast-stack__item"
+          in:fly={{ ...flyParams(group.position), duration: flyDuration }}
+          out:fly={{ ...flyParams(group.position), duration: flyDuration }}
+          animate:flip={{ duration: flipDuration }}
+        >
+          <ToastItemView
+            toast={t}
+            onClose={handleClose}
+            onPause={handlePause}
+            onResume={handleResume}
+          />
+        </div>
+      {/each}
+    </div>
+  {/if}
+{/each}
 
 <style>
   .cd-toast-stack {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: var(--cd-toast-z);
     display: flex;
     flex-direction: column;
     gap: var(--cd-toast-stack-gap);
-    align-items: center;
     inline-size: max-content;
     max-inline-size: calc(100vw - 32px);
     pointer-events: none;
   }
 
+  .cd-toast-stack--topLeft {
+    top: 24px;
+    left: 24px;
+    align-items: flex-start;
+  }
+
   .cd-toast-stack--top {
     top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+  }
+
+  .cd-toast-stack--topRight {
+    top: 24px;
+    right: 24px;
+    align-items: flex-end;
+  }
+
+  .cd-toast-stack--bottomLeft {
+    bottom: 24px;
+    left: 24px;
+    align-items: flex-start;
+    flex-direction: column-reverse;
   }
 
   .cd-toast-stack--bottom {
     bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+    flex-direction: column-reverse;
+  }
+
+  .cd-toast-stack--bottomRight {
+    bottom: 24px;
+    right: 24px;
+    align-items: flex-end;
     flex-direction: column-reverse;
   }
 

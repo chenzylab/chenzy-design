@@ -83,6 +83,9 @@ export const zh_CN: Locale = {
     typeLabelSuccess: '成功',
     typeLabelWarning: '警告',
     typeLabelError: '错误',
+    promiseLoading: '加载中…',
+    promiseSuccess: '成功',
+    promiseError: '出错了',
   },
   Notification: {
     closeText: '关闭',

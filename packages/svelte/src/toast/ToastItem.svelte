@@ -90,7 +90,7 @@
 {/snippet}
 
 <div
-  class="cd-toast-item cd-toast-item--{toast.type}"
+  class="cd-toast-item cd-toast-item--{toast.type} cd-toast-item--{toast.theme}"
   role="presentation"
   aria-live="off"
   onmouseenter={handlePause}
@@ -167,6 +167,18 @@
   }
   .cd-toast-item--loading .cd-toast-item__icon {
     color: var(--cd-toast-color-icon-info);
+  }
+
+  /* dark 主题：深色卡片，文案/关闭色覆盖为 token（对齐 Notification dark theme） */
+  .cd-toast-item--dark {
+    background: var(--cd-toast-bg-dark);
+    color: var(--cd-toast-color-text-dark);
+  }
+  .cd-toast-item--dark .cd-toast-item__close {
+    color: var(--cd-toast-color-close-dark);
+  }
+  .cd-toast-item--dark .cd-toast-item__close:hover {
+    color: var(--cd-toast-color-close-hover-dark);
   }
 
   .cd-toast-item__content {

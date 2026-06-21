@@ -83,6 +83,9 @@ export const en_US: Locale = {
     typeLabelSuccess: 'Success',
     typeLabelWarning: 'Warning',
     typeLabelError: 'Error',
+    promiseLoading: 'Loading…',
+    promiseSuccess: 'Success',
+    promiseError: 'Error',
   },
   Notification: {
     closeText: 'Close',

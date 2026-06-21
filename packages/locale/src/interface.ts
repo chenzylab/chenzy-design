@@ -105,6 +105,12 @@ export interface Locale {
     typeLabelSuccess: string;
     typeLabelWarning: string;
     typeLabelError: string;
+    /** Toast.promise 默认文案：pending */
+    promiseLoading: string;
+    /** Toast.promise 默认文案：resolve */
+    promiseSuccess: string;
+    /** Toast.promise 默认文案：reject */
+    promiseError: string;
   };
   Notification: {
     closeText: string;

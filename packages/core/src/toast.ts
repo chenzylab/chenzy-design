@@ -8,8 +8,18 @@
 import { useId } from './id.js';
 
 export type ToastType = 'info' | 'success' | 'warning' | 'error' | 'loading';
-export type ToastPosition = 'top' | 'bottom';
+/**
+ * 6 方位（对齐 Notification placement）。向后兼容：旧的 'top'/'bottom' 仍是合法值且默认 'top'。
+ */
+export type ToastPosition =
+  | 'topLeft'
+  | 'top'
+  | 'topRight'
+  | 'bottomLeft'
+  | 'bottom'
+  | 'bottomRight';
 export type ToastCloseReason = 'timeout' | 'manual' | 'replace' | 'destroyAll';
+export type ToastTheme = 'light' | 'dark';
 
 export interface ToastOptions {
   id?: string;
@@ -20,6 +30,8 @@ export interface ToastOptions {
   position?: ToastPosition;
   closable?: boolean;
   pauseOnHover?: boolean;
+  /** visual theme of the card */
+  theme?: ToastTheme;
   onClose?: (id: string, reason: ToastCloseReason) => void;
 }
 
@@ -31,6 +43,7 @@ export interface ToastItem {
   position: ToastPosition;
   closable: boolean;
   pauseOnHover: boolean;
+  theme: ToastTheme;
   onClose: ((id: string, reason: ToastCloseReason) => void) | undefined;
 }
 
@@ -114,6 +127,7 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
       position: options.position ?? 'top',
       closable: options.closable ?? true,
       pauseOnHover: options.pauseOnHover ?? true,
+      theme: options.theme ?? 'light',
       onClose: options.onClose,
     };
 
@@ -125,12 +139,14 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
       toasts = toasts.map((t, i) => (i === existingIndex ? item : t));
     } else {
       toasts = [...toasts, item];
-      // FIFO eviction when over maxCount
-      while (toasts.length > maxCount) {
-        const oldest = toasts[0]!;
+      // FIFO eviction per position（对齐 Notification 按方位淘汰，支持多方位独立堆叠）。
+      // 向后兼容：单方位（含旧的纯 top/bottom 用法）时与原全局 FIFO 行为一致。
+      const samePosition = toasts.filter((t) => t.position === item.position);
+      if (samePosition.length > maxCount) {
+        const oldest = samePosition[0]!;
         clearTimer(oldest.id);
         timers.delete(oldest.id);
-        toasts = toasts.slice(1);
+        toasts = toasts.filter((t) => t.id !== oldest.id);
         oldest.onClose?.(oldest.id, 'replace');
       }
     }
