@@ -21,6 +21,8 @@
     /** required for icon-only buttons */
     ariaLabel?: string;
     icon?: Snippet;
+    /** 图标相对文字位置。spec §4 L27 */
+    iconPosition?: 'left' | 'right';
     children?: Snippet;
     onclick?: (e: MouseEvent) => void;
   }
@@ -36,6 +38,7 @@
     href,
     ariaLabel,
     icon,
+    iconPosition = 'left',
     children,
     onclick,
   }: Props = $props();
@@ -48,6 +51,7 @@
       `cd-button--${size}`,
       block && 'cd-button--block',
       loading && 'cd-button--loading',
+      icon && iconPosition === 'right' && 'cd-button--icon-right',
     ]
       .filter(Boolean)
       .join(' '),
@@ -159,6 +163,10 @@
   }
   .cd-button__icon {
     display: inline-flex;
+  }
+  /* iconPosition=right: 纯 CSS flex order, DOM 顺序不变 (spec §4 L27) */
+  .cd-button--icon-right .cd-button__icon {
+    order: 1;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-button {

@@ -1058,6 +1058,12 @@ let pageSize2 = $state(10);
   });
 </script>
 
+{#snippet arrowIcon()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+{/snippet}
+
 <main class="p-6">
   <header class="flex items-center justify-between mb-6">
     <Title heading={3}>chenzy-design · M1 Basic</Title>
@@ -1078,6 +1084,12 @@ let pageSize2 = $state(10);
     <Button type="danger">危险</Button>
     <Button type="primary" disabled>禁用</Button>
     <Button type="primary" loading>加载中</Button>
+  </Space>
+
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">iconPosition 图标位置（left 默认 / right）：</Paragraph></div>
+  <Space wrap>
+    <Button type="primary" icon={arrowIcon}>左侧图标</Button>
+    <Button type="primary" iconPosition="right" icon={arrowIcon}>右侧图标</Button>
   </Space>
 
   <Divider />
@@ -1115,6 +1127,15 @@ let pageSize2 = $state(10);
     <Text delete>删除线</Text>、<Text strong>加粗</Text>，以及
     <Link href="https://semi.design" target="_blank">一个链接</Link>。
   </Paragraph>
+
+  <Title heading={6}>Typography · size 字号档（small / default / large）</Title>
+  <Space direction="vertical" align="start">
+    <Text size="small">size=small 小号文本</Text>
+    <Text>size=default 默认文本</Text>
+    <Text size="large">size=large 大号文本</Text>
+    <Paragraph size="small">size=small 小号段落文本</Paragraph>
+    <Paragraph size="large">size=large 大号段落文本</Paragraph>
+  </Space>
 
   <Title heading={6}>Typography · ellipsis 省略</Title>
   <Paragraph type="tertiary">单行省略（鼠标悬浮看完整内容 tooltip）：</Paragraph>

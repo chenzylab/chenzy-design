@@ -27,6 +27,7 @@
 
   type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
+  type TypoSize = 'small' | 'default' | 'large';
 
   export interface EllipsisConfig {
     rows?: number;
@@ -57,6 +58,8 @@
     baseClass: string;
     extraClass?: string;
     type?: TypoType;
+    /** 字号档（Text/Paragraph）。Title 由 heading 决定，不传 size。spec §4.1 L60 */
+    size?: TypoSize;
     strong?: boolean;
     weight?: TypoWeight | undefined;
     disabled?: boolean;
@@ -86,6 +89,7 @@
     baseClass,
     extraClass,
     type = 'default',
+    size = 'default',
     strong = false,
     weight,
     disabled = false,
@@ -376,6 +380,8 @@
       baseClass,
       extraClass,
       type !== 'default' && `${baseClass}--${type}`,
+      // 字号档：Title (extraClass 含 --title) 由 heading 决定, 忽略 size (spec §4.1 L60)
+      size !== 'default' && !extraClass?.includes(`${baseClass}--title`) && `${baseClass}--size-${size}`,
       strong && `${baseClass}--strong`,
       disabled && `${baseClass}--disabled`,
       mark && `${baseClass}--mark`,
@@ -575,6 +581,13 @@
   }
   :global(.cd-typography--strong) {
     font-weight: var(--cd-font-weight-semibold);
+  }
+  /* 字号档 (Text/Paragraph) — spec §4.1 size + §5 token 表; default 沿用继承字号保持向后兼容 */
+  :global(.cd-typography--size-small) {
+    font-size: var(--cd-typography-font-size-small, var(--cd-font-size-1));
+  }
+  :global(.cd-typography--size-large) {
+    font-size: var(--cd-typography-font-size-large, var(--cd-font-size-3));
   }
   :global(.cd-typography--disabled) {
     opacity: 0.5;

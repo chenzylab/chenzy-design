@@ -5,6 +5,7 @@
  */
 const commonProps = [
   { name: 'type', type: "'default'|'secondary'|'tertiary'|'warning'|'danger'|'success'", default: "'default'" },
+  { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '字号档（Text/Paragraph）。Title 由 heading 决定，忽略 size。' },
   { name: 'strong', type: 'boolean', default: 'false', desc: 'font-weight semibold' },
   { name: 'weight', type: "number|'regular'|'medium'|'semibold'|'bold'", default: 'undefined', desc: '显式覆盖字重' },
   { name: 'disabled', type: 'boolean', default: 'false' },
@@ -129,6 +130,9 @@ export const meta = {
     '--cd-typography-mark-bg',
     '--cd-typography-code-bg',
     '--cd-typography-code-font-size',
+    '--cd-typography-font-size-small',
+    '--cd-typography-font-size-default',
+    '--cd-typography-font-size-large',
     '--cd-typography-action-color',
     '--cd-typography-action-color-hover',
     '--cd-font-size-1..6',

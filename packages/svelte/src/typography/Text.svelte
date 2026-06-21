@@ -13,9 +13,12 @@
 
   type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
+  type TypoSize = 'small' | 'default' | 'large';
 
   interface Props {
     type?: TypoType;
+    /** 字号档 small/default/large。spec §4.1 L60 */
+    size?: TypoSize;
     strong?: boolean;
     weight?: TypoWeight;
     disabled?: boolean;
@@ -39,6 +42,7 @@
 
   let {
     type = 'default',
+    size = 'default',
     strong = false,
     weight,
     disabled = false,
@@ -66,6 +70,7 @@
   baseClass="cd-typography"
   extraClass="cd-typography--text"
   {type}
+  {size}
   {strong}
   {weight}
   {disabled}
