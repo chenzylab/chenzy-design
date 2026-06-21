@@ -5,6 +5,10 @@
   document pointermove/up listeners added/removed by hand — no reactive
   attachment reads DOM measurements (avoids re-subscribe loops). Variation only
   via onChange; an optional local `dragValue` gives instant feedback while dragging.
+
+  Tooltip is a lightweight absolutely-positioned bubble above each handle, shown
+  on hover/focus/drag (or always via alwaysShowTip / forced via tooltipVisible).
+  No floating library is pulled in: percent layout already gives the position.
 -->
 <script lang="ts">
   type Size = 'small' | 'default' | 'large';
@@ -21,12 +25,22 @@
     step?: number | null;
     range?: boolean;
     marks?: Record<number, string>;
+    dots?: boolean;
     included?: boolean;
     vertical?: boolean;
+    verticalReverse?: boolean;
     height?: number;
     disabled?: boolean;
+    clickable?: boolean;
     size?: Size;
     status?: Status;
+    tooltipVisible?: boolean;
+    alwaysShowTip?: boolean;
+    tipFormatter?: (value: number) => string | null;
+    getAriaValueText?: (value: number, index: number) => string;
+    railStyle?: string;
+    handleStyle?: string;
+    id?: string;
     ariaLabel?: string;
     onChange?: (v: SliderValue) => void;
   }
@@ -39,12 +53,22 @@
     step = 1,
     range = false,
     marks,
+    dots = false,
     included = true,
     vertical = false,
+    verticalReverse = false,
     height = 200,
     disabled = false,
+    clickable = true,
     size = 'default',
     status = 'default',
+    tooltipVisible = undefined,
+    alwaysShowTip = false,
+    tipFormatter = String,
+    getAriaValueText,
+    railStyle,
+    handleStyle,
+    id,
     ariaLabel,
     onChange,
   }: Props = $props();
@@ -54,6 +78,10 @@
   // While dragging, a local override gives instant visual feedback without
   // writing the controlled prop. null = not dragging.
   let dragValue = $state<SliderValue | null>(null);
+  // Which handle (if any) the pointer is hovering / which has focus — drives the
+  // hover/focus tooltip without any imperative DOM measurement.
+  let hoverIndex = $state<number | null>(null);
+  let focusIndex = $state<number | null>(null);
 
   const current = $derived<SliderValue>(
     dragValue ?? (isControlled ? (value as SliderValue) : inner),
@@ -72,6 +100,16 @@
   const markKeys = $derived(
     marks ? Object.keys(marks).map(Number).sort((a, b) => a - b) : [],
   );
+
+  // Dot positions: every step between min and max (skip endpoints duplicates of marks not needed).
+  const dotValues = $derived.by<number[]>(() => {
+    if (!dots || step === null || step <= 0) return [];
+    const out: number[] = [];
+    for (let v = min; v <= max + 1e-9; v += step) {
+      out.push(Math.round(v * 1e6) / 1e6);
+    }
+    return out;
+  });
 
   function clampToRange(n: number): number {
     return Math.min(max, Math.max(min, n));
@@ -131,7 +169,10 @@
   function ratioFromRect(rect: DOMRect, clientX: number, clientY: number): number {
     let ratio: number;
     if (vertical) {
-      ratio = (rect.bottom - clientY) / rect.height;
+      // Default: bottom = min (value grows upward). verticalReverse flips it.
+      ratio = verticalReverse
+        ? (clientY - rect.top) / rect.height
+        : (rect.bottom - clientY) / rect.height;
     } else {
       const rtl = getComputedStyle(document.documentElement).direction === 'rtl';
       const fromStart = (clientX - rect.left) / rect.width;
@@ -184,7 +225,7 @@
   }
 
   function handleRailPointerDown(e: PointerEvent) {
-    if (disabled || !railElement) return;
+    if (disabled || !railElement || !clickable) return;
     const rect = railElement.getBoundingClientRect();
     const raw = min + ratioFromRect(rect, e.clientX, e.clientY) * (max - min);
     beginDrag(nearestHandle(raw), e);
@@ -233,20 +274,66 @@
     return (current as Pair)[index] ?? min;
   }
 
+  // A dot sits inside the filled segment (active) when between trackStart/End.
+  function dotActive(v: number): boolean {
+    const pct = valueToPercent(v);
+    return included && pct >= trackStart - 1e-9 && pct <= trackEnd + 1e-9;
+  }
+
+  // Should the value bubble show for a given handle?
+  function tipText(index: number): string | null {
+    return tipFormatter ? tipFormatter(handleValue(index)) : String(handleValue(index));
+  }
+  function tipShown(index: number): boolean {
+    if (tipText(index) === null) return false;
+    if (tooltipVisible !== undefined) return tooltipVisible;
+    if (alwaysShowTip) return true;
+    if (dragValue !== null && activeIndex === index) return true;
+    return hoverIndex === index || focusIndex === index;
+  }
+
+  function ariaValueText(index: number): string | undefined {
+    const v = handleValue(index);
+    if (getAriaValueText) return getAriaValueText(v, index);
+    const t = tipFormatter ? tipFormatter(v) : null;
+    return t ?? undefined;
+  }
+
+  // Position style for an element at a value percent, honoring direction.
+  function posStyle(pct: number): string {
+    if (vertical) {
+      return verticalReverse ? `inset-block-start: ${pct}%` : `inset-block-end: ${pct}%`;
+    }
+    return `inset-inline-start: ${pct}%`;
+  }
+
   const cls = $derived(
     [
       'cd-slider',
       `cd-slider--${size}`,
       `cd-slider--${vertical ? 'vertical' : 'horizontal'}`,
+      vertical && verticalReverse && 'cd-slider--reverse',
       status !== 'default' && `cd-slider--${status}`,
       disabled && 'cd-slider--disabled',
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // Track segment style: anchor + size, honoring vertical reverse.
+  const trackSegStyle = $derived.by(() => {
+    const segSize = `${trackEnd - trackStart}%`;
+    if (vertical) {
+      return verticalReverse
+        ? `inset-block-start: ${trackStart}%; block-size: ${segSize}`
+        : `inset-block-end: ${trackStart}%; block-size: ${segSize}`;
+    }
+    return `inset-inline-start: ${trackStart}%; inline-size: ${segSize}`;
+  });
 </script>
 
 <div
+  {id}
   class={cls}
   class:cd-slider--vertical={vertical}
   role="group"
@@ -258,23 +345,25 @@
     class="cd-slider__rail"
     role="presentation"
     bind:this={railElement}
+    style={railStyle}
     onpointerdown={handleRailPointerDown}
   >
     {#if included}
-      <div
-        class="cd-slider__track"
-        style={vertical
-          ? `inset-block-end: ${trackStart}%; block-size: ${trackEnd - trackStart}%`
-          : `inset-inline-start: ${trackStart}%; inline-size: ${trackEnd - trackStart}%`}
-      ></div>
+      <div class="cd-slider__track" style={trackSegStyle}></div>
     {/if}
+
+    {#each dotValues as dv (dv)}
+      {@const pct = valueToPercent(dv)}
+      <span
+        class="cd-slider__dot"
+        class:cd-slider__dot--active={dotActive(dv)}
+        style={posStyle(pct)}
+      ></span>
+    {/each}
 
     {#each markKeys as mk (mk)}
       {@const pct = valueToPercent(mk)}
-      <span
-        class="cd-slider__mark"
-        style={vertical ? `inset-block-end: ${pct}%` : `inset-inline-start: ${pct}%`}
-      >{marks?.[mk]}</span>
+      <span class="cd-slider__mark" style={posStyle(pct)}>{marks?.[mk]}</span>
     {/each}
 
     {#each handleList as index (index)}
@@ -289,11 +378,20 @@
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={hv}
+        aria-valuetext={ariaValueText(index)}
         aria-disabled={disabled || undefined}
-        style={vertical ? `inset-block-end: ${pct}%` : `inset-inline-start: ${pct}%`}
+        style={`${posStyle(pct)};${handleStyle ?? ''}`}
         onpointerdown={(e) => handleHandlePointerDown(index, e)}
         onkeydown={(e) => handleKeydown(index, e)}
-      ></span>
+        onpointerenter={() => (hoverIndex = index)}
+        onpointerleave={() => (hoverIndex = null)}
+        onfocus={() => (focusIndex = index)}
+        onblur={() => (focusIndex = null)}
+      >
+        {#if tipShown(index)}
+          <span class="cd-slider__tip" role="tooltip" aria-hidden="true">{tipText(index)}</span>
+        {/if}
+      </span>
     {/each}
   </div>
 </div>
@@ -358,6 +456,10 @@
     inset-inline-start: 50%;
     transform: translate(-50%, 50%);
   }
+  /* Reverse vertical: handle anchored from the top, offset upward by half. */
+  .cd-slider--vertical.cd-slider--reverse .cd-slider__handle {
+    transform: translate(-50%, -50%);
+  }
   .cd-slider__handle:hover {
     box-shadow: var(--cd-shadow-1);
   }
@@ -366,6 +468,50 @@
   }
   .cd-slider__handle:focus-visible {
     box-shadow: var(--cd-focus-ring);
+  }
+  /* Value bubble above the handle. */
+  .cd-slider__tip {
+    position: absolute;
+    inset-block-end: calc(100% + var(--cd-spacing-2));
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    padding: 2px var(--cd-spacing-2);
+    background: var(--cd-color-bg-inverse, rgba(0, 0, 0, 0.85));
+    color: var(--cd-color-text-inverse, #fff);
+    font-size: var(--cd-font-size-1);
+    line-height: 1.4;
+    white-space: nowrap;
+    border-radius: var(--cd-radius-1, 4px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .cd-slider--vertical .cd-slider__tip {
+    inset-block-end: 50%;
+    inset-inline-start: calc(100% + var(--cd-spacing-2));
+    transform: translateY(50%);
+  }
+  /* Step dots. */
+  .cd-slider__dot {
+    position: absolute;
+    inset-block-start: 50%;
+    inline-size: 8px;
+    block-size: 8px;
+    background: var(--cd-color-bg-0);
+    border: 2px solid var(--cd-slider-dot-color, var(--cd-color-border));
+    border-radius: var(--cd-radius-full);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cd-slider__dot--active {
+    border-color: var(--cd-slider-dot-color-active, var(--cd-color-primary));
+  }
+  .cd-slider--vertical .cd-slider__dot {
+    inset-block-start: auto;
+    inset-inline-start: 50%;
+    transform: translate(-50%, 50%);
+  }
+  .cd-slider--vertical.cd-slider--reverse .cd-slider__dot {
+    transform: translate(-50%, -50%);
   }
   .cd-slider__mark {
     position: absolute;
@@ -379,6 +525,9 @@
     inset-block-start: auto;
     inset-inline-start: calc(100% + var(--cd-spacing-2));
     transform: translateY(50%);
+  }
+  .cd-slider--vertical.cd-slider--reverse .cd-slider__mark {
+    transform: translateY(-50%);
   }
   .cd-slider--disabled {
     opacity: 0.5;
