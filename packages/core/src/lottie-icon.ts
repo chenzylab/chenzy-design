@@ -10,6 +10,12 @@
 export type LottieTrigger = 'auto' | 'hover' | 'manual';
 export type LottieSize = 'small' | 'default' | 'large';
 
+/**
+ * Frame segment to play: a `[start, end]` frame pair, or a named marker string
+ * resolved against the animation data's `markers`. See `resolveSegments`.
+ */
+export type LottieSegments = [number, number] | string;
+
 /** Minimal player adapter the host injects (e.g. wrapping lottie-web). */
 export interface LottiePlayerAdapter {
   play(): void;
@@ -17,6 +23,12 @@ export interface LottiePlayerAdapter {
   stop(): void;
   /** jump to a specific frame and hold (used for reduced-motion static frame) */
   goToFrame?(frame: number): void;
+  /**
+   * Play a resolved `[start, end]` frame segment. Optional: when the injected
+   * player lacks it, the host falls back to `play()`. The svelte layer always
+   * passes a numeric pair (named markers resolved via `resolveSegments`).
+   */
+  playSegments?(segments: [number, number]): void;
   destroy(): void;
 }
 
@@ -27,7 +39,54 @@ export type LottiePlayerFactory = (config: {
   loop: boolean | number;
   autoplay: boolean;
   speed: number;
+  /** Resolved initial `[start, end]` frame segment, when `segments` is set. */
+  segment?: [number, number];
 }) => LottiePlayerAdapter;
+
+/** A Lottie marker entry (subset) as found in animation data `markers`. */
+interface LottieMarker {
+  cm?: string;
+  tm?: number;
+  dr?: number;
+}
+
+/**
+ * Resolve a `segments` prop into a concrete `[start, end]` frame pair.
+ * - `[start, end]` numeric pair → returned as-is.
+ * - marker name string → looked up in the data's `markers` (`cm` name,
+ *   `tm` start time, `dr` duration); resolves to `[tm, tm + dr]`.
+ * Returns `null` when unresolvable (no markers / name not found / bad input)
+ * so the host can fall back to playing the whole animation.
+ */
+export function resolveSegments(
+  segments: LottieSegments | undefined,
+  data: unknown,
+): [number, number] | null {
+  if (segments == null) return null;
+  if (Array.isArray(segments)) {
+    const [start, end] = segments;
+    if (typeof start === 'number' && typeof end === 'number' && Number.isFinite(start) && Number.isFinite(end)) {
+      return [start, end];
+    }
+    return null;
+  }
+  if (typeof segments !== 'string') return null;
+  const markers = (data as { markers?: LottieMarker[] } | null | undefined)?.markers;
+  if (!Array.isArray(markers)) return null;
+  const marker = markers.find((m) => m && m.cm === segments);
+  if (!marker || typeof marker.tm !== 'number') return null;
+  const start = marker.tm;
+  const end = start + (typeof marker.dr === 'number' ? marker.dr : 0);
+  return [start, end];
+}
+
+/**
+ * Is `src` a usable animation source URL (non-empty string). Pure guard used
+ * by the host to decide whether to kick off a fetch.
+ */
+export function isLottieSrc(src: unknown): src is string {
+  return typeof src === 'string' && src.trim().length > 0;
+}
 
 const SIZE_PX: Record<LottieSize, number> = { small: 16, default: 20, large: 24 };
 

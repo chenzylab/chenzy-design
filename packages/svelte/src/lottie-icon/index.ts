@@ -5,4 +5,5 @@ export type {
   LottiePlayerFactory,
   LottieTrigger,
   LottieSize,
+  LottieSegments,
 } from '@chenzy-design/core';

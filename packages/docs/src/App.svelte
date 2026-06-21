@@ -88,13 +88,15 @@
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
-  const mockPlayer: LottiePlayerFactory = ({ container, autoplay }) => {
+  const mockPlayer: LottiePlayerFactory = ({ container, autoplay, segment }) => {
     const el = document.createElement('div');
     el.style.cssText =
       'width:100%;height:100%;border-radius:3px;background:var(--cd-color-primary);' +
       'animation:cd-demo-spin 1s linear infinite;animation-play-state:paused';
     container.appendChild(el);
     const setState = (s: string) => (el.style.animationPlayState = s);
+    // 初始帧段：用 data-segment 标注，便于演示帧段被透传。
+    if (segment) container.dataset.segment = `${segment[0]}-${segment[1]}`;
     if (autoplay) setState('running');
     return {
       play: () => setState('running'),
@@ -104,9 +106,20 @@
         el.style.transform = 'rotate(0deg)';
       },
       goToFrame: () => setState('paused'),
+      playSegments: (seg) => {
+        container.dataset.segment = `${seg[0]}-${seg[1]}`;
+        setState('running');
+      },
       destroy: () => el.remove(),
     };
   };
+
+  // src fetch 演示：把内联 JSON 转成 blob URL（无需真实网络/打包资源）。
+  const lottieDemoUrl = URL.createObjectURL(
+    new Blob([JSON.stringify({ v: '5.7.0', fr: 30, op: 60, markers: [{ cm: 'wave', tm: 10, dr: 20 }] })], {
+      type: 'application/json',
+    }),
+  );
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
@@ -3609,6 +3622,24 @@ let pageSize2 = $state(10);
     <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
       <LottieIcon data={{}} player={mockPlayer} size="large" reducedMotion decorative={false} label="降级静止" />
       <Text type="tertiary">reducedMotion（静止）</Text>
+    </div>
+  </div>
+  <div style="display:flex; gap:32px; align-items:center; margin-top:16px">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon src={lottieDemoUrl} player={mockPlayer} size="large" decorative={false} label="远程加载" />
+      <Text type="tertiary">src（URL 异步 fetch）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" segments={[10, 60]} decorative={false} label="帧段播放" />
+      <Text type="tertiary">segments（[10,60] 帧段）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon data={{}} player={mockPlayer} size="large" flipRtl decorative={false} label="RTL 镜像" />
+      <Text type="tertiary">flipRtl（水平镜像）</Text>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:4px">
+      <LottieIcon src="https://invalid.invalid/nope.json" player={mockPlayer} size="large" decorative={false} label="加载失败" />
+      <Text type="tertiary">src 失败（error 态）</Text>
     </div>
   </div>
 

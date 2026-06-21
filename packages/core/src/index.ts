@@ -182,8 +182,11 @@ export {
   resolveSize,
   resolveAnimated,
   shouldAutoplay,
+  resolveSegments,
+  isLottieSrc,
   type LottieTrigger,
   type LottieSize,
+  type LottieSegments,
   type LottiePlayerAdapter,
   type LottiePlayerFactory,
 } from './lottie-icon.js';
