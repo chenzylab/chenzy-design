@@ -17,6 +17,16 @@ export interface Locale {
     showPassword: string;
     hidePassword: string;
   };
+  Textarea: {
+    /** clear button aria-label */
+    clear: string;
+    /** count display template, uses {count} and {maxCount} */
+    countFormat: string;
+    /** count display template with no limit, uses {count} */
+    countOnly: string;
+    /** over-limit live announcement, uses {over} */
+    overLimitAnnounce: string;
+  };
   Pagination: {
     /** uses {total} placeholder */
     total: string;

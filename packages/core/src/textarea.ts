@@ -62,3 +62,48 @@ export function computeAutosizeHeight(input: AutosizeInput): AutosizeResult {
 
   return { height, overflow };
 }
+
+// --- character counting -----------------------------------------------------
+
+/**
+ * Lazily-built, locale-keyed cache of `Intl.Segmenter` instances. The Segmenter
+ * is only constructed when grapheme counting is actually requested (perf budget:
+ * default length counting has zero extra cost). One instance per locale is reused.
+ */
+const segmenterCache = new Map<string, Intl.Segmenter | null>();
+
+function getGraphemeSegmenter(locale?: string): Intl.Segmenter | null {
+  const key = locale ?? '';
+  if (segmenterCache.has(key)) return segmenterCache.get(key) ?? null;
+  let seg: Intl.Segmenter | null = null;
+  // Intl.Segmenter is widely supported but guard for older runtimes/SSR.
+  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+    seg = new Intl.Segmenter(locale, { granularity: 'grapheme' });
+  }
+  segmenterCache.set(key, seg);
+  return seg;
+}
+
+/**
+ * Count the visible characters of a string. Pure (no DOM).
+ *
+ * - `graphemes: false` (default) → spread-based code-point count (`[...s].length`),
+ *   matching the existing behaviour; zero extra cost.
+ * - `graphemes: true` → counts user-perceived characters via `Intl.Segmenter`
+ *   (correctly handles emoji, ZWJ sequences, combining marks, flags). Falls back
+ *   to the code-point count when `Intl.Segmenter` is unavailable.
+ */
+export function countCharacters(
+  value: string,
+  options?: { graphemes?: boolean; locale?: string },
+): number {
+  if (!value) return 0;
+  if (!options?.graphemes) return [...value].length;
+  const seg = getGraphemeSegmenter(options.locale);
+  if (!seg) return [...value].length;
+  let n = 0;
+  // Iterate segments; the iterator yields one entry per grapheme cluster.
+  const iter = seg.segment(value)[Symbol.iterator]();
+  while (!iter.next().done) n++;
+  return n;
+}

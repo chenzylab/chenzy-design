@@ -239,6 +239,7 @@ export {
 } from './breakpoints.js';
 export {
   computeAutosizeHeight,
+  countCharacters,
   type AutosizeInput,
   type AutosizeResult,
 } from './textarea.js';

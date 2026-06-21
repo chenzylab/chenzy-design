@@ -1021,6 +1021,7 @@ let pageSize2 = $state(10);
   let collapsed = $state(false);
   let editableText = $state('双击或点击编辑图标修改这段文字');
   let inputVal = $state('');
+  let taVal = $state('受控多行文本');
   let switchOn = $state(true);
   let checks = $state<(string | number)[]>(['a']);
   let cardChecks = $state<(string | number)[]>(['pro']);
@@ -1280,6 +1281,32 @@ let pageSize2 = $state(10);
     </div>
     <div data-testid="textarea-maxrows" style="margin-top:12px">
       <TextArea placeholder="autosize 限高 minRows=2 maxRows=4，超出滚动" autosize={{ minRows: 2, maxRows: 4 }} />
+    </div>
+    <div data-testid="textarea-maxcount" style="margin-top:12px">
+      <TextArea placeholder="maxCount=20，超限计数变红并播报" showCount maxCount={20} showClear />
+    </div>
+    <div data-testid="textarea-graphemes" style="margin-top:12px">
+      <TextArea
+        placeholder="countGraphemes：emoji 👨‍👩‍👧 按视觉字符计数"
+        showCount
+        countGraphemes
+        maxCount={10}
+        defaultValue="👨‍👩‍👧🇨🇳"
+      />
+    </div>
+    <div data-testid="textarea-controlled" style="margin-top:12px">
+      <TextArea
+        value={taVal}
+        onChange={(v) => (taVal = v)}
+        showClear
+        showCount
+        validateStatus="warning"
+        placeholder="受控 + showClear + validateStatus=warning"
+      />
+      <Text type="tertiary">受控值长度：{taVal.length}</Text>
+    </div>
+    <div data-testid="textarea-autofocus" style="margin-top:12px">
+      <TextArea placeholder="status=error + autoFocus" status="error" autoFocus />
     </div>
 
     <Space>
