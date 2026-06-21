@@ -2877,6 +2877,21 @@ let pageSize2 = $state(10);
     <div style="width: 360px" data-testid="carousel-drag">
       <Carousel slides={[slideA, slideB, slideC]} height={160} />
     </div>
+
+    <Text type="tertiary">indicatorType="line" 横线条指示器：</Text>
+    <div style="width: 360px" data-testid="carousel-indicator-line">
+      <Carousel slides={[slideA, slideB, slideC]} indicatorType="line" height={160} />
+    </div>
+
+    <Text type="tertiary">indicatorType="columnar" 竖栏指示器：</Text>
+    <div style="width: 360px" data-testid="carousel-indicator-columnar">
+      <Carousel slides={[slideA, slideB, slideC]} indicatorType="columnar" height={160} />
+    </div>
+
+    <Text type="tertiary">vertical + line 指示器（右侧纵向）：</Text>
+    <div style="width: 360px" data-testid="carousel-indicator-vertical-line">
+      <Carousel slides={[slideA, slideB, slideC]} vertical indicatorType="line" height={200} />
+    </div>
   </Space>
 
   <Divider />

@@ -1,10 +1,8 @@
 <!--
   Carousel — see specs/components/show/Carousel.spec.md
   基础子集：单/多 slide 展示（slidesToShow/slidesToScroll）、slide/fade 动画、
-    autoplay（含 hoverToPause）、loop、dot 指示器、prev/next 箭头、受控 value、
+    autoplay（含 hoverToPause）、loop、dot/line/columnar 指示器、prev/next 箭头、受控 value、
     vertical 纵向方向、pointer 拖拽/滑动手势切换。
-  TODO(延后):
-    - line / columnar 指示器样式
 
   ⚠️ 死循环红线：
     - 受控 value 不回写 prop（红线 #1）：isControlled = $derived(value !== undefined) +
@@ -20,6 +18,7 @@
   import { useLocale } from '../locale-provider/index.js';
 
   type Animation = 'slide' | 'fade';
+  type IndicatorType = 'dot' | 'line' | 'columnar';
 
   interface Props {
     slides?: Snippet[];
@@ -35,6 +34,7 @@
     vertical?: boolean;
     draggable?: boolean;
     showIndicator?: boolean;
+    indicatorType?: IndicatorType;
     showArrow?: boolean;
     hoverToPause?: boolean;
     height?: number | string;
@@ -56,6 +56,7 @@
     vertical = false,
     draggable = true,
     showIndicator = true,
+    indicatorType = 'dot',
     showArrow = true,
     hoverToPause = true,
     height = 240,
@@ -284,11 +285,15 @@
   {/if}
 
   {#if showIndicator && pageCount > 1}
-    <div class="cd-carousel__indicators" role="tablist" aria-label={loc().t('Carousel.indicators')}>
+    <div
+      class="cd-carousel__indicators cd-carousel__indicators--{indicatorType}"
+      role="tablist"
+      aria-label={loc().t('Carousel.indicators')}
+    >
       {#each { length: pageCount } as _p, p (p)}
         <button
           type="button"
-          class="cd-carousel__dot"
+          class="cd-carousel__dot cd-carousel__indicator cd-carousel__indicator--{indicatorType}"
           class:cd-carousel__dot--active={p === activePage}
           role="tab"
           aria-selected={p === activePage}
@@ -446,6 +451,62 @@
   .cd-carousel__dot:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
+  }
+
+  /* line 指示器：横向细长条；激活态加长 + 高亮（纯 CSS 派生，红线 #2）。 */
+  .cd-carousel__indicator--line {
+    inline-size: 16px;
+    block-size: 4px;
+    border-radius: var(--cd-radius-full);
+    transition:
+      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      inline-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-carousel__indicator--line.cd-carousel__dot--active {
+    inline-size: 24px;
+  }
+  /* vertical 方向：line 旋为纵向细条（主轴改为 block-size 伸缩）。 */
+  .cd-carousel--vertical .cd-carousel__indicator--line {
+    inline-size: 4px;
+    block-size: 16px;
+    transition:
+      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      block-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-carousel--vertical .cd-carousel__indicator--line.cd-carousel__dot--active {
+    block-size: 24px;
+  }
+
+  /* columnar 指示器：竖栏；默认矮，激活态变高 + 高亮。 */
+  .cd-carousel__indicator--columnar {
+    inline-size: 4px;
+    block-size: 8px;
+    border-radius: var(--cd-radius-sm, 2px);
+    transition:
+      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      block-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-carousel__indicator--columnar.cd-carousel__dot--active {
+    block-size: 14px;
+  }
+  /* vertical 方向：columnar 转为横栏，主轴改为 inline-size 伸缩。 */
+  .cd-carousel--vertical .cd-carousel__indicator--columnar {
+    inline-size: 8px;
+    block-size: 4px;
+    transition:
+      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      inline-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-carousel--vertical .cd-carousel__indicator--columnar.cd-carousel__dot--active {
+    inline-size: 14px;
+  }
+
+  /* columnar 横向时按底边对齐，竖栏自底部生长更自然。 */
+  .cd-carousel__indicators--columnar {
+    align-items: flex-end;
+  }
+  .cd-carousel--vertical .cd-carousel__indicators--columnar {
+    align-items: flex-start;
   }
 
   @media (prefers-reduced-motion: reduce) {
