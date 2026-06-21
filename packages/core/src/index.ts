@@ -251,6 +251,12 @@ export {
   type ScrollAlign,
 } from './virtual-list.js';
 export {
+  toggleSelection,
+  rangeSelection,
+  type ListKey,
+  type SelectionMode,
+} from './list-selection.js';
+export {
   pageCount as paginationPageCount,
   clampPage,
   isPageInRange,

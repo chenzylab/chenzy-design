@@ -3,17 +3,51 @@
   基础子集：dataSource + renderItem、header/footer（string|Snippet）、bordered/split、
     loading（骨架/spinner）、empty、loadMore（内置按钮/自定义）、grid 网格布局。
   pagination：复用 Pagination 组件，对 dataSource 切片渲染当页（受控 current 不回写，红线 #1）。
-  TODO(延后): 虚拟化、selectable、List.Item/Meta 子项。
+  进阶子集：
+    - 虚拟化（virtualized）：大数据只渲染视口内行，复用 core fixedRange/dynamicRange/
+      scrollOffsetForIndex（与 VirtualList 同一套区间数学）。命令式滚动监听 + rAF 节流 +
+      cleanup（红线 #3）；区间/总高纯 $derived，仅依赖本地 $state（红线 #2）。virtualized
+      与 grid/pagination 互斥（优先生效，对全量 dataSource 虚拟化）。
+    - selectable（'single'|'multiple'）：行可选，选中态受控 selectedKeys + onSelectionChange，
+      不回写仅回调（红线 #1）。容器 role=listbox（multiple 时 aria-multiselectable），
+      行 role=option + aria-selected。shift 连选（multiple）。
+    - 声明式 List.Item / List.Item.Meta：不传 dataSource 时渲染 children（内嵌 <List.Item>），
+      通过 context 暴露 selectable 状态给子项（getter 保持响应性，子项不写 $state，避免
+      effect 自循环——红线 #2）。
 -->
 <script lang="ts" generics="T">
   import { untrack, type Snippet } from 'svelte';
+  import {
+    fixedRange,
+    buildOffsets,
+    totalFromOffsets,
+    dynamicRange,
+    scrollOffsetForIndex,
+    toggleSelection,
+    rangeSelection,
+    type ScrollAlign,
+    type ListKey,
+  } from '@chenzy-design/core';
   import Empty from '../empty/Empty.svelte';
   import { Button } from '../button/index.js';
+  import { Checkbox } from '../checkbox/index.js';
   import { Pagination } from '../pagination/index.js';
   import { useLocale } from '../locale-provider/index.js';
+  import { setListContext } from './context.js';
 
   type ListSize = 'small' | 'default' | 'large';
   type GridConfig = number | { column?: number; gutter?: number };
+  type SelectableMode = false | 'single' | 'multiple';
+  type VirtualConfig = {
+    /** 行高（px），默认 40；传 'auto' 启用动态测高。 */
+    itemSize?: number | 'auto';
+    /** 动态测高初始估算行高（px）。 */
+    estimatedItemSize?: number;
+    /** 视口高度（px 数字，或 CSS 字符串如 '60vh'）。 */
+    height: number | string;
+    /** 上下缓冲行数，默认 3。 */
+    overscan?: number;
+  };
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -36,6 +70,12 @@
     loadingMore = false,
     hasMore = false,
     pagination,
+    virtualized = false,
+    selectable = false,
+    selectedKeys,
+    defaultSelectedKeys = [],
+    onSelectionChange,
+    children,
     class: className = '',
   }: {
     dataSource?: T[];
@@ -69,6 +109,21 @@
           defaultCurrent?: number;
           onChange?: (page: number) => void;
         };
+    /** 虚拟化：大数据只渲染视口内行（与 grid/pagination 互斥，优先生效）。 */
+    virtualized?: false | VirtualConfig;
+    /** 行可选：'single' 单选 / 'multiple' 多选。 */
+    selectable?: SelectableMode;
+    /** 受控选中 key 集合（不回写，仅 onSelectionChange 回调，红线 #1）。 */
+    selectedKeys?: ListKey[];
+    /** 非受控初始选中 key 集合。 */
+    defaultSelectedKeys?: ListKey[];
+    /** 选中态变更回调（受控/非受控均触发）。 */
+    onSelectionChange?: (
+      keys: ListKey[],
+      info: { item: T | undefined; key: ListKey; selected: boolean },
+    ) => void;
+    /** 声明式用法：内嵌 <List.Item>（不传 dataSource 时生效）。 */
+    children?: Snippet;
     class?: string;
   } = $props();
 
@@ -86,8 +141,220 @@
     return index;
   }
 
-  const isEmpty = $derived(!loading && dataSource.length === 0);
+  // 声明式用法：未传 dataSource 且存在 children（内嵌 <List.Item>）。优先级低于 dataSource。
+  const useDeclarative = $derived(dataSource.length === 0 && children != null);
+
+  const isEmpty = $derived(!loading && !useDeclarative && dataSource.length === 0);
   const skeletonRows = $derived(Array.from({ length: Math.max(0, skeletonCount) }, (_, i) => i));
+
+  // --- selectable 选中态：受控 selectedKeys 不回写，本地 inner 兜底（红线 #1） ---
+  const selectMode = $derived<'single' | 'multiple' | null>(
+    selectable === 'single' || selectable === 'multiple' ? selectable : null,
+  );
+  const isSelectControlled = $derived(selectedKeys !== undefined);
+  let innerSelected = $state<ListKey[]>(untrack(() => [...defaultSelectedKeys]));
+  // 当前选中集合（受控优先）；用 Set 做 O(1) 命中判定（红线 #2：纯派生）。
+  const selectedSet = $derived<ReadonlySet<ListKey>>(
+    new Set(selectedKeys !== undefined ? selectedKeys : innerSelected),
+  );
+  // shift 连选锚点（普通簿记变量，不参与 render 响应式）。
+  let anchorIndex = -1;
+
+  function keyToItem(key: ListKey): T | undefined {
+    for (let i = 0; i < dataSource.length; i += 1) {
+      const it = dataSource[i]!;
+      if (keyOf(it, i) === key) return it;
+    }
+    return undefined;
+  }
+
+  // 命令式选中切换：算出下一集合 → 仅回调 onSelectionChange（受控不回写，红线 #1）。
+  function toggleKey(key: ListKey, shiftKey: boolean): void {
+    if (!selectMode) return;
+    let next: Set<ListKey>;
+    if (shiftKey && selectMode === 'multiple' && anchorIndex >= 0) {
+      const orderedKeys = dataSource.map((it, i) => keyOf(it, i));
+      const targetIndex = orderedKeys.indexOf(key);
+      next = rangeSelection(selectedSet, orderedKeys, anchorIndex, targetIndex);
+    } else {
+      next = toggleSelection(selectedSet, key, selectMode);
+      // 仅非 shift 单击更新锚点。
+      if (selectMode === 'multiple') {
+        anchorIndex = dataSource.findIndex((it, i) => keyOf(it, i) === key);
+      }
+    }
+    const selected = next.has(key);
+    if (!isSelectControlled) innerSelected = [...next];
+    onSelectionChange?.([...next], { item: keyToItem(key), key, selected });
+  }
+
+  // 向声明式 <List.Item> 暴露 selectable 状态（getter 保持响应性；红线 #2：子项不写 $state）。
+  setListContext({
+    getSelectable: () => selectable,
+    isSelected: (key) => selectedSet.has(key),
+    toggle: (key, shiftKey) => toggleKey(key, shiftKey),
+    getSize: () => size,
+  });
+
+  // --- 虚拟化几何（复用 core 区间数学；红线 #2/#3） ---
+  const virtualOn = $derived(virtualized !== false && virtualized !== undefined);
+  const vCfg = $derived<VirtualConfig>(
+    virtualized && virtualized !== undefined
+      ? virtualized
+      : { height: 400 },
+  );
+  const vDynamic = $derived(virtualOn && vCfg.itemSize === 'auto');
+  const vItemSize = $derived(typeof vCfg.itemSize === 'number' ? vCfg.itemSize : 40);
+  const vEstimated = $derived(vCfg.estimatedItemSize ?? 40);
+  const vOverscan = $derived(vCfg.overscan ?? 3);
+  const vHeightStyle = $derived(
+    typeof vCfg.height === 'number' ? `${vCfg.height}px` : vCfg.height,
+  );
+
+  // viewport 元素普通引用（bind:this），不参与响应式几何读取。
+  let viewportEl = $state<HTMLDivElement | null>(null);
+  // 本地响应式状态：仅由命令式回调 / ResizeObserver 写入，render 期只读。
+  let vScrollTop = $state(0);
+  let vMeasuredH = $state(0);
+  let vHeights = $state<Record<number, number>>({});
+  let vRafId = 0;
+
+  // 有效视口高：number 直接用，字符串用测量值。
+  const vViewportH = $derived(
+    typeof vCfg.height === 'number' ? vCfg.height : vMeasuredH,
+  );
+
+  // dynamic：合并实测/估算每项高度 → 前缀和 offsets（render-safe，仅依赖 $state）。
+  const vOffsets = $derived.by(() => {
+    if (!vDynamic) return [] as number[];
+    const arr = new Array<number>(dataSource.length);
+    for (let i = 0; i < dataSource.length; i += 1) arr[i] = vHeights[i] ?? vEstimated;
+    return buildOffsets(arr);
+  });
+  const vTotalHeight = $derived(
+    vDynamic ? totalFromOffsets(vOffsets) : dataSource.length * vItemSize,
+  );
+  const vRange = $derived(
+    vDynamic
+      ? dynamicRange(vOffsets, vScrollTop, vViewportH, vOverscan)
+      : fixedRange(vScrollTop, vViewportH, vItemSize, dataSource.length, vOverscan),
+  );
+  const vStart = $derived(vRange.startIndex);
+  const vEnd = $derived(vRange.endIndex);
+  const vVisible = $derived(dataSource.slice(vStart, vEnd));
+
+  function vItemOffset(index: number): number {
+    if (vDynamic) return vOffsets[index] ?? index * vEstimated;
+    return index * vItemSize;
+  }
+  function vItemMainSize(index: number): number {
+    if (vDynamic) return vHeights[index] ?? vEstimated;
+    return vItemSize;
+  }
+  function vItemStyle(index: number): string {
+    const off = vItemOffset(index);
+    if (vDynamic) return `transform:translateY(${off}px)`;
+    return `transform:translateY(${off}px); block-size:${vItemSize}px`;
+  }
+
+  /**
+   * 命令式滚动到指定索引项（红线 #3：直接写 DOM scrollTop，非 render 期）。
+   */
+  export function scrollToIndex(
+    index: number,
+    opts?: { align?: ScrollAlign },
+  ): void {
+    const el = viewportEl;
+    if (!el || !virtualOn || dataSource.length === 0) return;
+    const i = Math.max(0, Math.min(dataSource.length - 1, Math.floor(index)));
+    const totalMain = vDynamic ? totalFromOffsets(vOffsets) : dataSource.length * vItemSize;
+    const target = scrollOffsetForIndex(
+      vItemOffset(i),
+      vItemMainSize(i),
+      el.clientHeight,
+      totalMain,
+      opts?.align ?? 'start',
+    );
+    el.scrollTop = target;
+    vScrollTop = target;
+  }
+
+  // 虚拟化滚动监听（命令式 + rAF 节流 + cleanup；红线 #3）。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !virtualOn) return;
+    function onScroll() {
+      if (vRafId) return;
+      vRafId = requestAnimationFrame(() => {
+        vRafId = 0;
+        if (el) vScrollTop = el.scrollTop;
+      });
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (vRafId) {
+        cancelAnimationFrame(vRafId);
+        vRafId = 0;
+      }
+    };
+  });
+
+  // 视口高度测量：仅 height 非数字（字符串）时启用 ResizeObserver。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !virtualOn || typeof vCfg.height === 'number') return;
+    vMeasuredH = el.clientHeight;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) vMeasuredH = entry.contentRect.height;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  // dynamic 行高实测 + 偏移补偿（命令式 ResizeObserver，cleanup disconnect；红线 #2/#3）。
+  $effect(() => {
+    const el = viewportEl;
+    if (!el || !virtualOn || !vDynamic) return;
+    void vVisible; // 依赖渲染行集合变化重建 observer。
+
+    function measure(node: Element) {
+      const idx = Number((node as HTMLElement).dataset.vindex);
+      if (Number.isNaN(idx)) return;
+      const h = (node as HTMLElement).getBoundingClientRect().height;
+      if (h <= 0) return;
+      const prev = vHeights[idx];
+      if (prev !== undefined && Math.abs(prev - h) < 0.5) return;
+      const before = prev ?? vEstimated;
+      const delta = h - before;
+      vHeights[idx] = h;
+      if (delta !== 0 && el && vItemOffset(idx) < vScrollTop) {
+        el.scrollTop += delta;
+        vScrollTop = el.scrollTop;
+      }
+    }
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) measure(entry.target);
+    });
+    const rows = el.querySelectorAll<HTMLElement>('[data-vindex]');
+    rows.forEach((node) => {
+      measure(node);
+      ro.observe(node);
+    });
+    return () => ro.disconnect();
+  });
+
+  // selectable 行点击/键盘（dataSource 模式用；声明式由 List.Item 自身处理）。
+  function onRowActivate(item: T, index: number, shiftKey: boolean): void {
+    toggleKey(keyOf(item, index), shiftKey);
+  }
+  function onRowKeydown(e: KeyboardEvent, item: T, index: number): void {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      onRowActivate(item, index, e.shiftKey);
+    }
+  }
 
   // --- 分页：受控 current 不回写 (红线 #1)，本地 inner 兜底 ---
   const paginationOn = $derived(pagination !== undefined && pagination !== false);
@@ -128,11 +395,16 @@
       `cd-list--${size}`,
       bordered && 'cd-list--bordered',
       split && 'cd-list--split',
+      selectMode && 'cd-list--selectable',
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // selectable 列表语义：role=listbox（multiple 时 aria-multiselectable），否则原生 list。
+  const itemsRole = $derived(selectMode ? 'listbox' : undefined);
+  const itemsMultiselect = $derived(selectMode === 'multiple' ? true : undefined);
 </script>
 
 <div class={cls} aria-busy={loading || undefined}>
@@ -165,12 +437,91 @@
           <Empty image="noData" />
         {/if}
       </div>
+    {:else if useDeclarative}
+      <!-- 声明式：渲染内嵌 <List.Item>（selectable 状态经 context 下发）。 -->
+      <ul
+        class="cd-list__items"
+        role={itemsRole}
+        aria-multiselectable={itemsMultiselect}
+      >
+        {@render children?.()}
+      </ul>
+    {:else if virtualOn}
+      <!-- 虚拟化：仅渲染视口内行，复用 core 区间数学；命令式滚动监听（红线 #2/#3）。 -->
+      <div
+        class="cd-list__virtual"
+        bind:this={viewportEl}
+        role={itemsRole ?? 'list'}
+        aria-multiselectable={itemsMultiselect}
+        style={`block-size:${vHeightStyle}; overflow:auto`}
+      >
+        <div class="cd-list__virtual-spacer" style={`block-size:${vTotalHeight}px`}>
+          {#each vVisible as item, i (keyOf(item, vStart + i))}
+            {@const index = vStart + i}
+            {@const k = keyOf(item, index)}
+            {@const sel = selectMode ? selectedSet.has(k) : false}
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div
+              class="cd-list__item cd-list__virtual-item"
+              class:cd-list__item--selectable={!!selectMode}
+              class:cd-list__item--selected={sel}
+              data-vindex={index}
+              role={selectMode ? 'option' : 'listitem'}
+              aria-selected={selectMode ? sel : undefined}
+              aria-setsize={dataSource.length}
+              aria-posinset={index + 1}
+              tabindex={selectMode ? 0 : undefined}
+              style={vItemStyle(index)}
+              onclick={selectMode ? (e) => onRowActivate(item, index, e.shiftKey) : undefined}
+              onkeydown={selectMode ? (e) => onRowKeydown(e, item, index) : undefined}
+            >
+              {#if selectMode}
+                <span class="cd-list__item-selector" aria-hidden="true">
+                  <Checkbox checked={sel} />
+                </span>
+              {/if}
+              <div class="cd-list__item-content">
+                {#if renderItem}{@render renderItem(item, index)}{/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
     {:else}
-      <ul class="cd-list__items" class:cd-list__items--grid={gridOn} style={gridStyle}>
+      <ul
+        class="cd-list__items"
+        class:cd-list__items--grid={gridOn}
+        style={gridStyle}
+        role={itemsRole}
+        aria-multiselectable={itemsMultiselect}
+      >
         {#each pagedData as item, index (keyOf(item, index))}
-          <li class="cd-list__item" class:cd-list__item--grid={gridOn}>
-            {#if renderItem}{@render renderItem(item, index)}{/if}
-          </li>
+          {@const realIndex = paginationOn ? (currentPage - 1) * pageSize + index : index}
+          {@const k = keyOf(item, realIndex)}
+          {@const sel = selectMode ? selectedSet.has(k) : false}
+          {#if selectMode}
+            <li
+              class="cd-list__item cd-list__item--selectable"
+              class:cd-list__item--selected={sel}
+              class:cd-list__item--grid={gridOn}
+              role="option"
+              aria-selected={sel}
+              tabindex="0"
+              onclick={(e) => onRowActivate(item, realIndex, e.shiftKey)}
+              onkeydown={(e) => onRowKeydown(e, item, realIndex)}
+            >
+              <span class="cd-list__item-selector" aria-hidden="true">
+                <Checkbox checked={sel} />
+              </span>
+              <div class="cd-list__item-content">
+                {#if renderItem}{@render renderItem(item, realIndex)}{/if}
+              </div>
+            </li>
+          {:else}
+            <li class="cd-list__item" class:cd-list__item--grid={gridOn}>
+              {#if renderItem}{@render renderItem(item, realIndex)}{/if}
+            </li>
+          {/if}
         {/each}
       </ul>
 
@@ -255,6 +606,50 @@
   }
   .cd-list__item--grid {
     padding: 0;
+  }
+
+  /* selectable 行：内置 checkbox + 主内容横向布局，选中/hover/focus 强调。 */
+  .cd-list__item--selectable {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cd-spacing-2, 8px);
+    cursor: pointer;
+    outline: none;
+  }
+  .cd-list__item--selectable:hover {
+    background: var(--cd-color-fill-0, rgba(0, 0, 0, 0.03));
+  }
+  .cd-list__item--selectable:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--cd-color-primary, #0066ff);
+  }
+  .cd-list__item--selected {
+    background: var(--cd-color-primary-light-default, rgba(0, 102, 255, 0.1));
+  }
+  .cd-list__item-selector {
+    flex: none;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+  .cd-list__item-content {
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  /* 虚拟化：视口自身滚动，撑高占位 + 绝对定位行。 */
+  .cd-list__virtual {
+    position: relative;
+    inline-size: 100%;
+    scrollbar-color: var(--cd-virtual-list-scrollbar, currentColor) transparent;
+  }
+  .cd-list__virtual-spacer {
+    position: relative;
+    inline-size: 100%;
+  }
+  .cd-list__virtual-item {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
   }
 
   .cd-list__load-more {

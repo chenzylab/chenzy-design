@@ -417,6 +417,20 @@
     }, 800);
   }
 
+  // List 虚拟化 demo：5000 行大数据，仅渲染视口内行。
+  const listVirtualData = Array.from({ length: 5000 }, (_, i) => ({
+    key: i,
+    name: `虚拟行 ${i}`,
+  }));
+  // List selectable demo：多选受控选中态（仅回调，不回写）。
+  let listSelectedKeys = $state<(string | number)[]>([2]);
+  const listSelectData = [
+    { key: 1, name: '设计评审' },
+    { key: 2, name: '前端开发' },
+    { key: 3, name: '联调测试' },
+    { key: 4, name: '上线发布' },
+  ];
+
   // Calendar：锚定到固定月份（2026-06）便于演示事件
   const calAnchor = new Date(2026, 5, 1);
   const calEvents = [
@@ -2723,6 +2737,55 @@ let pageSize2 = $state(10);
         {#snippet renderItem(item)}
           <span>{(item as { name: string }).name}</span>
         {/snippet}
+      </List>
+    </div>
+
+    <Text type="tertiary">虚拟化（5000 行，仅渲染视口内）：</Text>
+    <div style="width: 320px" data-testid="list-virtual">
+      <List
+        bordered
+        dataSource={listVirtualData}
+        virtualized={{ itemSize: 40, height: 240 }}
+      >
+        {#snippet renderItem(item)}
+          <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+    </div>
+
+    <Text type="tertiary">selectable 多选（受控选中，仅回调不回写）：</Text>
+    <div style="width: 320px" data-testid="list-selectable">
+      <List
+        bordered
+        dataSource={listSelectData}
+        selectable="multiple"
+        selectedKeys={listSelectedKeys}
+        onSelectionChange={(keys) => (listSelectedKeys = keys)}
+      >
+        {#snippet renderItem(item)}
+          <span>{(item as { name: string }).name}</span>
+        {/snippet}
+      </List>
+      <Text type="tertiary">已选 {listSelectedKeys.length} 项</Text>
+    </div>
+
+    <Text type="tertiary">声明式 List.Item / List.Item.Meta：</Text>
+    <div style="width: 360px" data-testid="list-declarative">
+      <List bordered>
+        <List.Item>
+          <List.Item.Meta
+            avatar="🦊"
+            title="Ant Fox"
+            description="资深前端工程师 · 设计系统"
+          />
+        </List.Item>
+        <List.Item>
+          <List.Item.Meta
+            avatar="🐼"
+            title="Panda Zhang"
+            description="交互设计师 · 无障碍方向"
+          />
+        </List.Item>
       </List>
     </div>
 
