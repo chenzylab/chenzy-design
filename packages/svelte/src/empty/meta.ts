@@ -10,7 +10,7 @@ export const meta = {
   props: [
     {
       name: 'image',
-      type: "'noData'|'noResult'|'error'|(string&{})",
+      type: "'noData'|'noResult'|'error'|'construction'|'success'|'noAccess'|(string&{})",
       default: "'noData'",
       desc: '内置预设插画名，或外部图片 URL（非预设字符串按 URL 渲染 img）',
     },

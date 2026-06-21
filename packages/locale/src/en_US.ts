@@ -35,6 +35,9 @@ export const en_US: Locale = {
     noData: 'No data',
     noResult: 'No results',
     error: 'Failed to load',
+    construction: 'Under construction',
+    success: 'All done',
+    noAccess: 'No access',
   },
   Descriptions: { empty: '-' },
   OverflowList: {
