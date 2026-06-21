@@ -3,25 +3,39 @@
   输入联想 + 本地过滤 + 键盘选择。Token-driven, a11y-correct (combobox + listbox)。
   remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 data；loading 显示 spinner。
   remote 模式本地不再过滤（外部已按 query 准备 data）。maxCount：建议项最多渲染条数（0=不限）。
-  TODO(延后): insetLabel、triggerRender=focus、分组。
+  insetLabel：输入框内嵌前缀标签（string | Snippet）。openOnFocus：聚焦即展开建议列表。
+  分组：data 支持 { label, options }[]，逻辑/键盘/maxCount 基于扁平序列（红线 #2 派生纯函数）。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useId, useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type ItemValue = string | number;
   type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
+  /** 分组项：含 options 即为分组 */
+  type ItemGroup = { label: string; options: Item[] };
+  type ItemOrGroup = Item | ItemGroup;
   type NormalizedItem = { value: ItemValue; label: string; disabled: boolean };
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
+  function isGroup(o: ItemOrGroup): o is ItemGroup {
+    return typeof o === 'object' && o !== null && Array.isArray((o as ItemGroup).options);
+  }
+
   interface Props {
     value?: string;
     defaultValue?: string;
-    data?: Item[];
+    /** 候选数据；可含分组项 { label, options: [] } */
+    data?: ItemOrGroup[];
     open?: boolean;
     defaultOpen?: boolean;
     placeholder?: string;
+    /** 输入框内嵌前缀标签 */
+    insetLabel?: string | Snippet;
+    /** 聚焦即展开建议列表（默认 false，仅输入时展开） */
+    openOnFocus?: boolean;
     size?: Size;
     status?: Status;
     disabled?: boolean;
@@ -48,6 +62,8 @@
     open = $bindable(),
     defaultOpen = false,
     placeholder = '',
+    insetLabel,
+    openOnFocus = false,
     size = 'default',
     status = 'default',
     disabled = false,
@@ -107,20 +123,51 @@
   // remote 模式：外部已按 query 更新 data，本地不再过滤。
   const isRemote = $derived(onSearch !== undefined);
 
-  const options = $derived.by<NormalizedItem[]>(() => {
-    const all = data.map(normalize);
-    const matched =
-      isRemote || !filter || currentValue === ''
-        ? all
-        : (() => {
-            const q = currentValue.toLowerCase();
-            return all.filter(
-              (o) =>
-                o.label.toLowerCase().includes(q) ||
-                String(o.value).toLowerCase().includes(q),
-            );
-          })();
+  // 是否含分组：决定渲染走分组结构还是扁平。
+  const hasGroups = $derived(data.some(isGroup));
+
+  // 过滤纯函数：复用于扁平序列与分组视图，保证两者一致。
+  function matchOption(o: NormalizedItem): boolean {
+    if (isRemote || !filter || currentValue === '') return true;
+    const q = currentValue.toLowerCase();
+    return (
+      o.label.toLowerCase().includes(q) || String(o.value).toLowerCase().includes(q)
+    );
+  }
+
+  // 候选条目：归一化 + 记录所属组（groupKey：组序号，无组为 -1），用于分组视图重组。
+  type FlatItem = NormalizedItem & { groupKey: number };
+
+  // 扁平候选序列（拍平分组并过滤/截断）——逻辑/键盘/maxCount/高亮统一基于它（红线 #2）。
+  const options = $derived.by<FlatItem[]>(() => {
+    const all: FlatItem[] = [];
+    data.forEach((o, gi) => {
+      if (isGroup(o)) {
+        for (const child of o.options) all.push({ ...normalize(child), groupKey: gi });
+      } else {
+        all.push({ ...normalize(o), groupKey: -1 });
+      }
+    });
+    const matched = all.filter(matchOption);
     return maxCount > 0 ? matched.slice(0, maxCount) : matched;
+  });
+
+  // 分组渲染视图：按原始组顺序聚合过滤后的候选 + 全局扁平索引（与 activeIndex 对齐）。
+  // 仅 hasGroups 时使用；纯派生，无副作用（红线 #2）。
+  const groupedView = $derived.by<{ key: number; label: string | null; items: { opt: FlatItem; flatIndex: number }[] }[]>(() => {
+    if (!hasGroups) return [];
+    const out: { key: number; label: string | null; items: { opt: FlatItem; flatIndex: number }[] }[] = [];
+    options.forEach((opt, flatIndex) => {
+      const label = opt.groupKey >= 0 ? (data[opt.groupKey] as ItemGroup).label : null;
+      const last = out[out.length - 1];
+      // 连续同组合并为同一段，保留原始相邻关系。
+      if (last && last.key === opt.groupKey) {
+        last.items.push({ opt, flatIndex });
+      } else {
+        out.push({ key: opt.groupKey, label, items: [{ opt, flatIndex }] });
+      }
+    });
+    return out;
   });
 
   // --- roving 高亮 (红线 #2): activeIndex 本地 $state，不依赖挂载 registry ---
@@ -171,6 +218,11 @@
     openWithOptions();
     // remote：防抖回调外部更新 data（受控值红线 #1：仅 onSearch，不回写）。
     if (isRemote) scheduleSearch(next);
+  }
+
+  function handleFocus() {
+    if (disabled || !openOnFocus) return;
+    openWithOptions();
   }
 
   function commit(opt: NormalizedItem) {
@@ -256,8 +308,32 @@
   );
 </script>
 
+{#snippet optionRow(opt: NormalizedItem, i: number)}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="cd-autocomplete__option"
+    class:cd-autocomplete__option--active={i === activeIndex}
+    id={`${listId}-opt-${i}`}
+    role="option"
+    aria-selected={i === activeIndex}
+    aria-disabled={opt.disabled || undefined}
+    tabindex="-1"
+    onpointerenter={() => {
+      if (!opt.disabled) activeIndex = i;
+    }}
+    onclick={() => commit(opt)}
+  >
+    {opt.label}
+  </div>
+{/snippet}
+
 <div class={cls} bind:this={rootEl}>
   <div class="cd-autocomplete__control">
+    {#if insetLabel}
+      <span class="cd-autocomplete__inset-label">
+        {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
+      </span>
+    {/if}
     <input
       class="cd-autocomplete__input"
       type="text"
@@ -272,6 +348,7 @@
       aria-invalid={status === 'error' || undefined}
       oninput={handleInput}
       onkeydown={handleKeydown}
+      onfocus={handleFocus}
     />
 
     {#if showClear}
@@ -296,25 +373,20 @@
       {/if}
       {#if options.length === 0 && !loading}
         <div class="cd-autocomplete__empty">{loc().t('AutoComplete.emptyText')}</div>
+      {:else if hasGroups}
+        {#each groupedView as group, gi (group.label === null ? `g-${gi}` : `${group.key}-${group.label}`)}
+          {#if group.label !== null}
+            <div class="cd-autocomplete__group-label" role="presentation">{group.label}</div>
+          {/if}
+          {#each group.items as it (it.opt.value)}
+            {@render optionRow(it.opt, it.flatIndex)}
+          {/each}
+        {/each}
+      {:else}
+        {#each options as opt, i (opt.value)}
+          {@render optionRow(opt, i)}
+        {/each}
       {/if}
-      {#each options as opt, i (opt.value)}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div
-          class="cd-autocomplete__option"
-          class:cd-autocomplete__option--active={i === activeIndex}
-          id={`${listId}-opt-${i}`}
-          role="option"
-          aria-selected={i === activeIndex}
-          aria-disabled={opt.disabled || undefined}
-          tabindex="-1"
-          onpointerenter={() => {
-            if (!opt.disabled) activeIndex = i;
-          }}
-          onclick={() => commit(opt)}
-        >
-          {opt.label}
-        </div>
-      {/each}
     </div>
   {/if}
 </div>
@@ -358,6 +430,14 @@
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+  }
+  .cd-autocomplete__inset-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+    user-select: none;
+    white-space: nowrap;
   }
   .cd-autocomplete__input {
     flex: 1 1 auto;
@@ -414,6 +494,13 @@
   .cd-autocomplete__option[aria-disabled='true'] {
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+  }
+  .cd-autocomplete__group-label {
+    padding: var(--cd-spacing-1) var(--cd-select-option-padding, var(--cd-spacing-2));
+    color: var(--cd-color-text-3);
+    font-size: var(--cd-font-size-1);
+    font-weight: var(--cd-font-weight-medium, 500);
+    user-select: none;
   }
   .cd-autocomplete__empty {
     padding: var(--cd-select-option-padding);
