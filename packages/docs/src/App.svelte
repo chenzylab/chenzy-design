@@ -2553,6 +2553,20 @@ let pageSize2 = $state(10);
       />
     </div>
 
+    <Text type="tertiary">响应式图源 srcset/sizes + 跨域 crossorigin（属性透传到原生 img）：</Text>
+    <div data-testid="image-srcset">
+      <Image
+        src={demoImageSrc}
+        srcset={`${demoImageSrc} 1x, ${demoImageSrc} 2x`}
+        sizes="(max-width: 600px) 120px, 160px"
+        crossorigin="anonymous"
+        alt="响应式示例"
+        width={160}
+        height={120}
+        lazy={false}
+      />
+    </div>
+
     <Highlight
       sourceString="chenzy-design 是一套对标 Semi 的 Svelte 组件库"
       searchWords={['design', 'Svelte']}

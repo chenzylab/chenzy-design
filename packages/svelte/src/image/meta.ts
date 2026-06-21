@@ -20,6 +20,24 @@ export const meta = {
       desc: 'object-fit',
     },
     { name: 'position', type: 'string', default: "'center'", desc: 'object-position' },
+    {
+      name: 'crossorigin',
+      type: "'anonymous'|'use-credentials'",
+      default: 'undefined',
+      desc: '原生 crossorigin 属性透传（跨域取图 CORS 模式）',
+    },
+    {
+      name: 'srcset',
+      type: 'string',
+      default: 'undefined',
+      desc: '原生 srcset 响应式图源集透传（observer 懒加载下与 src 同步延迟设置）',
+    },
+    {
+      name: 'sizes',
+      type: 'string',
+      default: 'undefined',
+      desc: '原生 sizes 属性透传，配合 srcset 声明视口对应的图片显示尺寸',
+    },
     { name: 'lazy', type: 'boolean', default: 'true', desc: '是否懒加载' },
     {
       name: 'lazyMode',
@@ -96,6 +114,14 @@ export const meta = {
     {
       title: 'LQIP 模糊占位',
       code: '<Image src="/hi-res.jpg" placeholder="/lqip-tiny.jpg" alt="高清图" />',
+    },
+    {
+      title: '响应式图源 srcset/sizes',
+      code: '<Image\n  src="/img-800.jpg"\n  srcset="/img-400.jpg 400w, /img-800.jpg 800w, /img-1600.jpg 1600w"\n  sizes="(max-width: 600px) 400px, 800px"\n  alt="响应式图"\n/>',
+    },
+    {
+      title: '跨域 crossorigin',
+      code: '<Image src="https://cdn.example.com/a.jpg" crossorigin="anonymous" alt="跨域图" />',
     },
     {
       title: '预览组多图切换',
