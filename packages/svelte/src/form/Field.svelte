@@ -33,8 +33,27 @@
     field: string;
     label?: string;
     rules?: Rule[];
+    /** field-level initial value; overrides the container's initValues (spec §4.2 L79). */
+    initValue?: unknown;
     required?: boolean;
+    /**
+     * externally forced validate status (spec §4.2 L81). A controlled DISPLAY
+     * state only — it never feeds the internal validation engine and is never
+     * written back (red line #1). When set it takes precedence over the
+     * internally computed status for visuals/aria.
+     */
+    validateStatus?: 'default' | 'warning' | 'error';
     extraText?: string;
+    /**
+     * register & collect only, render no layout DOM (spec §4.2 L85 / §190). The
+     * control snippet is still rendered (so it can bind), but the label / status
+     * text / field wrapper chrome are skipped.
+     */
+    noStyle?: boolean;
+    /** number of columns this field spans inside a grid parent / Form.Section (spec §4.2 L86). */
+    span?: number;
+    /** pure value transform applied at collect/submit time (spec §4.2 L88). */
+    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
     /**
      * Name of the control's value prop. Default 'value'. For boolean controls
      * such as Checkbox/Switch pass 'checked'; the snippet then exposes a
@@ -52,8 +71,13 @@
     field,
     label,
     rules = [],
+    initValue,
     required = false,
+    validateStatus,
     extraText,
+    noStyle = false,
+    span,
+    transform,
     valuePropName = 'value',
     dependencies,
     trigger,
@@ -78,14 +102,18 @@
     const config: {
       rules: Rule[];
       label?: string;
+      initialValue?: unknown;
       dependencies?: string[];
       trigger?: ValidateTrigger | ValidateTrigger[];
+      transform?: (value: unknown, values: Record<string, unknown>) => unknown;
     } = {
       rules: effectiveRules,
     };
     if (label !== undefined) config.label = label;
+    if (initValue !== undefined) config.initialValue = initValue;
     if (dependencies !== undefined) config.dependencies = dependencies;
     if (trigger !== undefined) config.trigger = trigger;
+    if (transform !== undefined) config.transform = transform;
     const unregister = form.registerField(field, config);
     // spec §2 L26: a `mount` trigger validates once right after registration.
     // Imperative one-shot (not a render read) so it cannot loop.
@@ -100,9 +128,16 @@
   const validating = $derived(getFormState().validating[field] === true);
   const touched = $derived(getFormState().touched[field]);
 
-  const showError = $derived(error !== undefined && error !== '');
+  // `validateStatus` is a controlled display override (spec §4.2 L81): it forces
+  // the visual status without touching the internal validation engine (red line
+  // #1 — never written back). When set, it wins over the computed status.
+  const forcedError = $derived(validateStatus === 'error');
+  const forcedWarning = $derived(validateStatus === 'warning');
+  const showError = $derived(forcedError || (error !== undefined && error !== ''));
   // a warning only surfaces when there is no blocking error to show
-  const showWarning = $derived(!showError && warning !== undefined && warning !== '');
+  const showWarning = $derived(
+    !showError && (forcedWarning || (warning !== undefined && warning !== '')),
+  );
   const status = $derived<FieldStatus>(showError ? 'error' : showWarning ? 'warning' : 'default');
 
   const showRequiredMark = $derived(ctx.getRequiredMark() && required);
@@ -136,7 +171,16 @@
   }
 
   const describedBy = $derived(
-    showError ? errorId : showWarning ? warningId : showExtra ? extraId : undefined,
+    // noStyle renders no status/extra elements, so there is nothing to point at
+    noStyle
+      ? undefined
+      : showError
+        ? errorId
+        : showWarning
+          ? warningId
+          : showExtra
+            ? extraId
+            : undefined,
   );
 
   const labelWidth = $derived(ctx.getLabelWidth());
@@ -171,9 +215,31 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // `span` (spec §4.2 L86): occupy N columns of a grid parent (e.g. Form.Section).
+  // Pure inline `grid-column` — inert when the parent isn't a grid.
+  const wrapStyle = $derived(span !== undefined ? `grid-column:span ${span}` : undefined);
 </script>
 
-<div class={cls} data-field={field}>
+{#if noStyle}
+  <!--
+    noStyle (spec §4.2 L85 / §190): register & collect only, render no layout
+    chrome. The control snippet is still rendered so it can bind to the field;
+    label / status text / wrapper DOM are skipped. `validateStatus`/error still
+    flow into `status` so a custom control can style itself.
+  -->
+  {@render children?.({
+    value,
+    [valuePropName]: value,
+    onChange: handleChange,
+    onBlur: handleBlur,
+    status,
+    id,
+    describedBy,
+    disabled: ctx.getDisabled(),
+  })}
+{:else}
+<div class={cls} data-field={field} style={wrapStyle}>
   {#if label !== undefined && !isInset}
     <label
       class="cd-form-field__label cd-form-field__label--align-{labelAlign}"
@@ -264,6 +330,7 @@
     {/if}
   </div>
 </div>
+{/if}
 
 <style>
   .cd-form-field {
