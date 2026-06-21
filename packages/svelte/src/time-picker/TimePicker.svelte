@@ -1,9 +1,12 @@
 <!--
   TimePicker — see specs/components/input/TimePicker.spec.md
   单选 type='time'，HH:mm:ss 三列滚动选择 (+ 12h 制 AM/PM 列)。受控/非受控。
-  显示走 Intl.DateTimeFormat (不手拼时间串)。scrollIntoView 命令式调用 (非响应式 attachment)。
-  列项/禁用集生成走 @chenzy-design/core 纯函数 (红线 #2)。
-  TODO(延后): timeRange、format 字符串、字符串入参。
+  type='timeRange' (或 range)：选起止两个时间，值为 [start, end] (双面板)。
+  value/defaultValue 支持 Date | string (如 '12:30:45')，字符串经 core parseTimeString 解析。
+  format 字符串 (如 'HH:mm' / 'hh:mm A')：经 core parseFormatSpec 决定显示哪些列 + 12h，
+    显示经 core formatTime 序列化 (有 format 时)，否则走 Intl.DateTimeFormat (不手拼时间串)。
+  scrollIntoView 命令式调用 (非响应式 attachment)。
+  列项/禁用集生成 + 格式解析/序列化走 @chenzy-design/core 纯函数 (红线 #2)。
 -->
 <script lang="ts">
   import { tick } from 'svelte';
@@ -17,6 +20,9 @@
     to12Hour,
     meridiemOf,
     from12Hour,
+    parseFormatSpec,
+    formatTime,
+    parseTimeString,
     type Meridiem,
     type TimeOption,
   } from '@chenzy-design/core';
@@ -25,9 +31,17 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
+  /** 单选入参：Date 或时间字符串 (如 '12:30:45')。 */
+  type TimeInput = Date | string | null;
+
   interface Props {
-    value?: Date | null;
-    defaultValue?: Date | null;
+    /** 单选时 Date|string；范围时 [start, end] (各自 Date|string)。 */
+    value?: TimeInput | [TimeInput, TimeInput] | null;
+    defaultValue?: TimeInput | [TimeInput, TimeInput] | null;
+    /** 'time' 单选 (默认) / 'timeRange' 范围选择 (等价 range=true)。 */
+    type?: 'time' | 'timeRange';
+    /** range=true 等价 type='timeRange'。 */
+    range?: boolean;
     open?: boolean;
     defaultOpen?: boolean;
     placeholder?: string;
@@ -40,12 +54,15 @@
     secondStep?: number;
     showSecond?: boolean;
     use12Hours?: boolean;
+    /** 格式串 (如 'HH:mm' / 'hh:mm A' / 'HH:mm:ss')：决定显示列与 12h，并作为展示/字符串值序列化格式。 */
+    format?: string;
     disabledHours?: () => number[];
     disabledMinutes?: (hour: number) => number[];
     disabledSeconds?: (hour: number, minute: number) => number[];
     hideDisabledOptions?: boolean;
     locale?: string;
-    onChange?: (v: Date | null) => void;
+    /** 单选回调 Date|null；范围回调 [Date|null, Date|null]。 */
+    onChange?: (v: (Date | null) | [Date | null, Date | null]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
   }
@@ -53,6 +70,8 @@
   let {
     value,
     defaultValue = null,
+    type = 'time',
+    range = false,
     open,
     defaultOpen = false,
     placeholder,
@@ -65,6 +84,7 @@
     secondStep = 1,
     showSecond = true,
     use12Hours = false,
+    format,
     disabledHours,
     disabledMinutes,
     disabledSeconds,
@@ -75,22 +95,68 @@
     ariaLabel,
   }: Props = $props();
 
+  const isRange = $derived(range || type === 'timeRange');
+
+  // --- format 串解析 (红线 #2 经 core 纯函数)：决定列与 12h；无 format 时回退 props ---
+  const formatSpec = $derived(format ? parseFormatSpec(format) : null);
+  const effShowSecond = $derived(formatSpec ? formatSpec.showSecond : showSecond);
+  const effUse12Hours = $derived(formatSpec ? formatSpec.use12Hours : use12Hours);
+
+  // --- 字符串/Date 入参归一化为 Date|null (字符串经 core parseTimeString) ---
+  function toDate(input: TimeInput): Date | null {
+    if (input == null) return null;
+    if (input instanceof Date) return input;
+    const parts = parseTimeString(input);
+    if (!parts) return null;
+    const d = new Date();
+    d.setHours(parts.hour, parts.minute, parts.second, 0);
+    return d;
+  }
+
   const loc = useLocale();
 
   const baseId = useId('cd-time-picker-panel');
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
-  const isValueControlled = $derived(value !== undefined);
-  let innerValue = $state<Date | null>(getInitialValue());
-  const current = $derived<Date | null>(isValueControlled ? (value ?? null) : innerValue);
+  // 内部统一用 [start, end] 元组表示 (单选只用 [0])，避免双分支。
+  type Pair = [Date | null, Date | null];
 
-  function getInitialValue(): Date | null {
-    return defaultValue ?? null;
+  function toPair(input: Props['value']): Pair {
+    if (Array.isArray(input)) return [toDate(input[0] ?? null), toDate(input[1] ?? null)];
+    return [toDate((input ?? null) as TimeInput), null];
   }
 
-  function setValue(next: Date | null) {
+  const isValueControlled = $derived(value !== undefined);
+  // eslint-disable-next-line svelte/no-state-referencing-locally -- 仅捕获初始 defaultValue (非受控初值)
+  let innerValue = $state<Pair>(getInitialPair());
+
+  function getInitialPair(): Pair {
+    return toPair(defaultValue);
+  }
+  const currentPair = $derived<Pair>(isValueControlled ? toPair(value) : innerValue);
+
+  // 单选视图：始终读 [0]
+  const current = $derived<Date | null>(currentPair[0]);
+
+  // 范围当前正在编辑的一端 (0=start, 1=end)；打开时重置为 start
+  let activeIndex = $state<0 | 1>(0);
+  const activeDate = $derived<Date | null>(isRange ? currentPair[activeIndex] : currentPair[0]);
+
+  function emit(next: Pair) {
     if (!isValueControlled) innerValue = next;
-    onChange?.(next);
+    onChange?.(isRange ? next : next[0]);
+  }
+
+  // 单选 setValue：写 [0]
+  function setValue(next: Date | null) {
+    emit([next, currentPair[1]]);
+  }
+
+  // 范围 setValue：写当前 activeIndex 端
+  function setRangeValue(next: Date | null) {
+    const pair: Pair = [...currentPair];
+    pair[activeIndex] = next;
+    emit(pair);
   }
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
@@ -113,19 +179,19 @@
     setOpen(!isOpen);
   }
 
-  // --- 选中的 h/m/s 派生 (24h 内部表示)；从 current 读取 ---
-  const selectedHour = $derived(current ? current.getHours() : 0);
-  const selectedMinute = $derived(current ? current.getMinutes() : 0);
-  const selectedSecond = $derived(current ? current.getSeconds() : 0);
+  // --- 选中的 h/m/s 派生 (24h 内部表示)；从当前编辑端 activeDate 读取 ---
+  const selectedHour = $derived(activeDate ? activeDate.getHours() : 0);
+  const selectedMinute = $derived(activeDate ? activeDate.getMinutes() : 0);
+  const selectedSecond = $derived(activeDate ? activeDate.getSeconds() : 0);
 
   // --- 12h 制派生：当前 meridiem + 小时列显示值 (红线 #2 经 core 纯函数) ---
   const selectedMeridiem = $derived<Meridiem>(meridiemOf(selectedHour));
-  const selectedHourDisplay = $derived(use12Hours ? to12Hour(selectedHour) : selectedHour);
+  const selectedHourDisplay = $derived(effUse12Hours ? to12Hour(selectedHour) : selectedHour);
 
   // --- 列项 + 禁用集生成 (红线 #2: 派生纯函数) ---
   const hours = $derived(
     applyHideDisabled(
-      buildHourOptions(hourStep, use12Hours, selectedMeridiem, disabledHours),
+      buildHourOptions(hourStep, effUse12Hours, selectedMeridiem, disabledHours),
       hideDisabledOptions,
     ),
   );
@@ -146,30 +212,50 @@
     return n < 10 ? `0${n}` : `${n}`;
   }
 
-  // --- Intl 本地化展示 (不手拼时间串)；12h 制由 hour12 驱动 AM/PM ---
+  // --- Intl 本地化展示 (无 format 时；不手拼时间串)；12h 制由 hour12 驱动 AM/PM ---
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
-      second: showSecond ? '2-digit' : undefined,
-      hour12: use12Hours,
+      second: effShowSecond ? '2-digit' : undefined,
+      hour12: effUse12Hours,
     }),
   );
 
-  const displayText = $derived(current ? triggerFormat.format(current) : (placeholder ?? loc().t('TimePicker.placeholder')));
+  // 单个 Date 的展示串：有 format 走 core formatTime (红线 #2)，否则 Intl 本地化
+  function displayOne(d: Date): string {
+    if (format) {
+      return formatTime({ hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() }, format);
+    }
+    return triggerFormat.format(d);
+  }
 
-  const showClear = $derived(clearable && !disabled && current !== null);
+  const placeholderText = $derived(placeholder ?? loc().t('TimePicker.placeholder'));
 
-  // 合成 Date: 基于 current 或今天，写入 h/m/s
+  const displayText = $derived.by(() => {
+    if (isRange) {
+      const [s, e] = currentPair;
+      if (!s && !e) return placeholderText;
+      const sep = ' ~ ';
+      return `${s ? displayOne(s) : ''}${sep}${e ? displayOne(e) : ''}`;
+    }
+    return current ? displayOne(current) : placeholderText;
+  });
+
+  const hasValue = $derived(isRange ? currentPair[0] !== null || currentPair[1] !== null : current !== null);
+  const showClear = $derived(clearable && !disabled && hasValue);
+
+  // 合成 Date: 基于当前编辑端或今天，写入 h/m/s；按模式写单选/范围端
   function commit(h: number, m: number, s: number) {
-    const base = current ? new Date(current) : new Date();
+    const base = activeDate ? new Date(activeDate) : new Date();
     base.setHours(h, m, s, 0);
-    setValue(base);
+    if (isRange) setRangeValue(base);
+    else setValue(base);
   }
 
   // 12h 制下小时列的值是显示小时 (1-12)，按当前 meridiem 转回 24h 内部表示
   function pickHour(h: number) {
-    const hour24 = use12Hours ? from12Hour(h, selectedMeridiem) : h;
+    const hour24 = effUse12Hours ? from12Hour(h, selectedMeridiem) : h;
     commit(hour24, selectedMinute, selectedSecond);
   }
   function pickMinute(m: number) {
@@ -190,13 +276,19 @@
   }
 
   function confirm() {
+    // 范围：在 start 端确认后切到 end 端继续选；end 端确认后关闭
+    if (isRange && activeIndex === 0) {
+      activeIndex = 1;
+      return;
+    }
     setOpen(false);
   }
 
   function clear(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
-    setValue(null);
+    if (isRange) emit([null, null]);
+    else setValue(null);
   }
 
   function onTriggerKeydown(e: KeyboardEvent) {
@@ -233,13 +325,19 @@
     target?.scrollIntoView({ block: 'center' });
   }
 
-  // 打开时把三列各自滚到选中项 (命令式，不放响应式 attachment)
+  // 打开时重置范围编辑端为 start
+  $effect(() => {
+    if (isOpen) activeIndex = 0;
+  });
+
+  // 打开 / 切换编辑端时把列各自滚到选中项 (命令式，不放响应式 attachment)
   $effect(() => {
     if (!isOpen) return;
+    void activeIndex; // 切端时重滚
     void tick().then(() => {
       scrollColToSelected(hourCol);
       scrollColToSelected(minuteCol);
-      if (showSecond) scrollColToSelected(secondCol);
+      if (effShowSecond) scrollColToSelected(secondCol);
     });
   });
 
@@ -315,6 +413,33 @@
       aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
     >
+      {#if isRange}
+        <div class="cd-time-picker__range-tabs" role="tablist" aria-label={loc().t('TimePicker.triggerLabel')}>
+          <button
+            type="button"
+            role="tab"
+            class="cd-time-picker__range-tab"
+            class:cd-time-picker__range-tab--active={activeIndex === 0}
+            aria-selected={activeIndex === 0}
+            onclick={() => (activeIndex = 0)}
+          >
+            {loc().t('TimePicker.rangeStart')}
+            <span class="cd-time-picker__range-preview">{currentPair[0] ? displayOne(currentPair[0]) : '--'}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="cd-time-picker__range-tab"
+            class:cd-time-picker__range-tab--active={activeIndex === 1}
+            aria-selected={activeIndex === 1}
+            onclick={() => (activeIndex = 1)}
+          >
+            {loc().t('TimePicker.rangeEnd')}
+            <span class="cd-time-picker__range-preview">{currentPair[1] ? displayOne(currentPair[1]) : '--'}</span>
+          </button>
+        </div>
+      {/if}
+
       <div class="cd-time-picker__columns">
         <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
           {#each hours as h (h.value)}
@@ -362,7 +487,7 @@
           {/each}
         </ul>
 
-        {#if showSecond}
+        {#if effShowSecond}
           <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
             {#each seconds as s (s.value)}
               <li
@@ -387,7 +512,7 @@
           </ul>
         {/if}
 
-        {#if use12Hours}
+        {#if effUse12Hours}
           <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.triggerLabel')}>
             {#each ['am', 'pm'] as const as mer (mer)}
               <li
@@ -527,6 +652,37 @@
   }
   .cd-time-picker__panel:focus-visible {
     outline: none;
+  }
+  .cd-time-picker__range-tabs {
+    display: flex;
+    border-block-end: 1px solid var(--cd-color-border);
+  }
+  .cd-time-picker__range-tab {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    padding: var(--cd-spacing-2);
+    color: var(--cd-color-text-2);
+    border-block-end: 2px solid transparent;
+  }
+  .cd-time-picker__range-tab--active {
+    color: var(--cd-color-primary);
+    border-block-end-color: var(--cd-color-primary);
+  }
+  .cd-time-picker__range-tab:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-time-picker__range-preview {
+    font-size: var(--cd-font-size-1);
+    color: var(--cd-color-text-0);
+    font-variant-numeric: tabular-nums;
   }
   .cd-time-picker__columns {
     display: flex;

@@ -210,6 +210,8 @@ export interface Locale {
     second: string;
     am: string;
     pm: string;
+    rangeStart: string;
+    rangeEnd: string;
   };
   Transfer: {
     searchPlaceholder: string;

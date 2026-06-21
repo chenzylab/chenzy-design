@@ -181,6 +181,8 @@ export const zh_CN: Locale = {
     second: '秒',
     am: '上午',
     pm: '下午',
+    rangeStart: '开始时间',
+    rangeEnd: '结束时间',
   },
   Transfer: {
     searchPlaceholder: '搜索',
