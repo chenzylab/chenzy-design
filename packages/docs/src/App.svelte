@@ -498,6 +498,8 @@
   }
   let multiVal = $state<(string | number)[]>([]);
   let acVal = $state('');
+  let acInsetVal = $state('');
+  let acGroupVal = $state('');
   let acRemoteVal = $state('');
   let acRemoteData = $state<{ label: string; value: string }[]>([]);
   let acRemoteLoading = $state(false);
@@ -1337,6 +1339,32 @@ let pageSize2 = $state(10);
         onChange={(v) => (acVal = v)}
       />
       <Text type="tertiary">输入：{acVal || '（空）'}</Text>
+    </div>
+
+    <div style="width: 220px" data-testid="autocomplete-inset">
+      <AutoComplete
+        data={['gmail.com', 'outlook.com', 'qq.com', '163.com']}
+        insetLabel="https://"
+        openOnFocus
+        value={acInsetVal}
+        placeholder="聚焦展开 + 内嵌标签"
+        onChange={(v) => (acInsetVal = v)}
+      />
+      <Text type="tertiary">内嵌：{acInsetVal || '（空）'}</Text>
+    </div>
+
+    <div style="width: 220px" data-testid="autocomplete-group">
+      <AutoComplete
+        data={[
+          { label: '热门', options: ['gmail.com', 'outlook.com'] },
+          { label: '国内', options: ['qq.com', '163.com', '126.com'] },
+        ]}
+        openOnFocus
+        value={acGroupVal}
+        placeholder="分组候选"
+        onChange={(v) => (acGroupVal = v)}
+      />
+      <Text type="tertiary">分组：{acGroupVal || '（空）'}</Text>
     </div>
 
     <div style="width: 220px" data-testid="autocomplete-remote">

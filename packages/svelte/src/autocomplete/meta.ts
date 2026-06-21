@@ -5,14 +5,16 @@
 export const meta = {
   name: 'AutoComplete',
   category: 'input',
-  description: '输入联想框，支持本地过滤候选、远程异步搜索与键盘选择。',
+  description: '输入联想框，支持本地过滤候选、远程异步搜索、选项分组、内嵌标签与键盘选择。',
   props: [
     { name: 'value', type: 'string', default: 'undefined' },
     { name: 'defaultValue', type: 'string', default: "''" },
-    { name: 'data', type: 'Item[]', default: '[]' },
+    { name: 'data', type: 'ItemOrGroup[]', default: '[]' },
     { name: 'open', type: 'boolean', default: 'undefined' },
     { name: 'defaultOpen', type: 'boolean', default: 'false' },
     { name: 'placeholder', type: 'string', default: "''" },
+    { name: 'insetLabel', type: 'string|Snippet', default: 'undefined' },
+    { name: 'openOnFocus', type: 'boolean', default: 'false' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'status', type: "'default'|'warning'|'error'", default: 'default' },
     { name: 'disabled', type: 'boolean', default: 'false' },
