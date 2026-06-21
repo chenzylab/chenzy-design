@@ -3,7 +3,7 @@
   Pure presentational primitive. Token-driven size/color, a11y-correct.
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import type { Component, Snippet } from 'svelte';
 
   type IconSize = 'extra-small' | 'small' | 'default' | 'large' | 'extra-large' | number;
   type IconStatus = 'default' | 'warning' | 'error' | 'success' | 'info';
@@ -14,8 +14,14 @@
     rotate?: number;
     status?: IconStatus;
     color?: string;
+    /** 直接传入 SVG 字符串，内部用 {@html} 渲染。来源须可信（构建期 SVGO 净化）。 */
+    svg?: string;
+    /** 传入一个 Svelte 图标组件作为渲染源。 */
+    component?: Component;
     label?: string;
     class?: string;
+    /** 透传到根元素的内联样式。 */
+    style?: string;
     children?: Snippet;
   }
 
@@ -25,10 +31,16 @@
     rotate = 0,
     status = 'default',
     color,
+    svg,
+    component,
     label,
     class: className = '',
+    style = '',
     children,
   }: Props = $props();
+
+  // 渲染源派生：优先级 svg > component > children。
+  const SvgComponent = $derived(component);
 
   const isNumericSize = $derived(typeof size === 'number');
 
@@ -50,6 +62,7 @@
       isNumericSize && `height:${size}px`,
       color && `color:${color}`,
       rotate && `transform:rotate(${rotate}deg)`,
+      style,
     ]
       .filter(Boolean)
       .join(';'),
@@ -63,7 +76,14 @@
   aria-label={label}
   aria-hidden={label ? undefined : 'true'}
 >
-  {@render children?.()}
+  {#if svg}
+    <!-- 渲染源 svg：信任来源（构建期 SVGO 净化），运行时不做净化；用户传入的运行时 svg 须自行确保可信。 -->
+    {@html svg}
+  {:else if SvgComponent}
+    <SvgComponent />
+  {:else}
+    {@render children?.()}
+  {/if}
 </span>
 
 <style>

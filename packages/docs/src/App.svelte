@@ -88,6 +88,10 @@
     LottieIcon,
   } from '@chenzy-design/svelte';
   import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem, Locale } from '@chenzy-design/svelte';
+  import StarIcon from './StarIcon.svelte';
+
+  // Icon svg 字符串渲染源演示（来源可信）。
+  const heartSvg = '<svg viewBox="0 0 24 24" fill="currentColor" focusable="false"><path d="M12 21s-7.5-4.9-10-9.4C.6 8.9 2 5.5 5.2 5.1 7 4.9 8.7 5.8 12 9c3.3-3.2 5-4.1 6.8-3.9 3.2.4 4.6 3.8 3.2 6.5C19.5 16.1 12 21 12 21z"/></svg>';
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
@@ -1116,6 +1120,15 @@ let pageSize2 = $state(10);
         <path d="M12 3a9 9 0 1 0 9 9" stroke-linecap="round" />
       </svg>
     </Icon>
+  </Space>
+
+  <div style="margin-top: 12px;">
+    <Paragraph type="tertiary">svg 字符串渲染源 + component 组件渲染源 + style 透传：</Paragraph>
+  </div>
+  <Space>
+    <Icon svg={heartSvg} status="error" label="收藏" />
+    <Icon component={StarIcon} status="warning" size="large" label="评分" />
+    <Icon svg={heartSvg} style="color: var(--cd-color-primary); transform: scale(1.3);" />
   </Space>
 
   <Divider>分割线带文字</Divider>
