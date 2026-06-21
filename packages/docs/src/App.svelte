@@ -1016,6 +1016,7 @@ let pageSize2 = $state(10);
   let checks = $state<(string | number)[]>(['a']);
   let cardChecks = $state<(string | number)[]>(['pro']);
   let radioVal = $state<string | number | boolean>('1');
+  let radioStatusVal = $state<string | number | boolean>('warn');
   let numVal = $state<number | null>(3);
   let amountVal = $state<number | null>(12000);
   let rateVal = $state(2.5);
@@ -1314,6 +1315,17 @@ let pageSize2 = $state(10);
       ]}
     />
     <Text type="tertiary">当前：{radioVal}</Text>
+
+    <Text type="tertiary">Group status 透传（warning / error），单项可覆盖：</Text>
+    <RadioGroup
+      status="error"
+      value={radioStatusVal}
+      onChange={(v) => (radioStatusVal = v)}
+    >
+      <Radio value="warn" status="warning">本项覆盖为 warning</Radio>
+      <Radio value="err">继承 Group 的 error</Radio>
+      <Radio value="ok">同样继承 error</Radio>
+    </RadioGroup>
   </Space>
 
   <Divider />

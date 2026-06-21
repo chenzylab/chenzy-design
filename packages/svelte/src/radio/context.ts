@@ -2,6 +2,7 @@ import { getContext, setContext } from 'svelte';
 
 export type RadioValue = string | number | boolean;
 export type RadioSize = 'small' | 'default' | 'large';
+export type RadioStatus = 'default' | 'warning' | 'error';
 
 export interface RadioRegistration {
   value: RadioValue;
@@ -15,6 +16,8 @@ export interface RadioGroupContext {
   getSelected: () => RadioValue | undefined;
   getDisabled: () => boolean;
   getSize: () => RadioSize;
+  /** group-level validation status; per-item non-default status overrides it */
+  getStatus: () => RadioStatus;
   select: (v: RadioValue) => void;
   /** register a radio's input element + meta for roving focus management */
   register: (reg: RadioRegistration) => () => void;

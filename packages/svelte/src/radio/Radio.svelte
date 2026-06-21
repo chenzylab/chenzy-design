@@ -6,7 +6,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
-  import { getRadioGroupContext, type RadioValue, type RadioSize } from './context.js';
+  import {
+    getRadioGroupContext,
+    type RadioValue,
+    type RadioSize,
+    type RadioStatus,
+  } from './context.js';
 
   interface Props {
     value: RadioValue;
@@ -14,6 +19,7 @@
     defaultChecked?: boolean;
     disabled?: boolean;
     size?: RadioSize;
+    status?: RadioStatus;
     name?: string;
     extra?: string | undefined;
     children?: Snippet;
@@ -26,6 +32,7 @@
     defaultChecked = false,
     disabled = false,
     size = 'default',
+    status = 'default',
     name,
     extra,
     children,
@@ -46,6 +53,8 @@
 
   const resolvedDisabled = $derived(disabled || (group ? group.getDisabled() : false));
   const resolvedSize = $derived(group ? group.getSize() : size);
+  // Group transparently provides `status`; a per-item non-default `status` overrides it.
+  const resolvedStatus = $derived(status !== 'default' ? status : (group?.getStatus() ?? 'default'));
   const resolvedName = $derived(group ? group.name : name);
 
   const isChecked = $derived(
@@ -84,6 +93,7 @@
     [
       'cd-radio',
       `cd-radio--${resolvedSize}`,
+      resolvedStatus !== 'default' && `cd-radio--${resolvedStatus}`,
       isChecked && 'cd-radio--checked',
       resolvedDisabled && 'cd-radio--disabled',
     ]
@@ -171,6 +181,13 @@
     transform: translate(-50%, -50%);
     background: var(--cd-radio-dot-color);
     border-radius: var(--cd-radius-full);
+  }
+  /* 校验态：边框改用 warning/error，覆盖默认与 checked 描边（token 驱动） */
+  .cd-radio--warning .cd-radio__circle {
+    border-color: var(--cd-radio-color-warning);
+  }
+  .cd-radio--error .cd-radio__circle {
+    border-color: var(--cd-radio-color-error);
   }
   .cd-radio__input:focus-visible + .cd-radio__circle {
     outline: none;
