@@ -45,6 +45,12 @@ export const meta = {
       default: 'scroll',
       desc: '横向溢出处理：scroll 前/后滚动箭头；dropdown 收纳进末尾「更多」下拉（仅 top/bottom 生效，纵向始终滚动）',
     },
+    {
+      name: 'collapsible',
+      type: 'boolean',
+      default: 'false',
+      desc: 'line 风格横向溢出时启用折叠收纳（便捷开关，等价 overflow=dropdown：放不下的标签进末尾「更多」下拉，仅 top/bottom 生效）',
+    },
     { name: 'onChange', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onTabClose', type: '(key: string|number) => void', default: 'undefined' },
     {

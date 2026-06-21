@@ -22,6 +22,7 @@
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
+  type TriggerSubMenuAction = 'hover' | 'click';
 
   interface Props {
     items?: MenuItemDef[];
@@ -36,6 +37,21 @@
     inlineCollapsed?: boolean;
     /** 多选模式：点击叶子项 toggle 其选中态，selectedKeys 可含多项同时高亮（默认单选） */
     multiple?: boolean;
+    /**
+     * 浮层子菜单触发方式（仅 vertical/horizontal/collapsed 浮层模式生效）：
+     * 'hover'（默认推导）= 鼠标悬停带 open/close 延迟展开/收起；
+     * 'click' = 点击 title 切换浮层（不随 hover 开合）。
+     * 缺省时按 mode 推导：horizontal 默认 hover，其余 hover（inline 内联不涉及浮层）。
+     */
+    triggerSubMenuAction?: TriggerSubMenuAction;
+    /** hover 触发时子菜单浮层展开延迟(ms) */
+    subMenuOpenDelay?: number;
+    /** hover 触发时子菜单浮层收起延迟(ms) */
+    subMenuCloseDelay?: number;
+    /** 浮层子菜单挂载容器，缺省 document.body（透传 floating action getContainer） */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 整体禁用：所有项不可交互（叶子/子菜单 title 均 disabled） */
+    disabled?: boolean;
     /**
      * 语义用途（默认 'menu'）：
      * 'menu' = 命令式菜单（role=menu/menuitem + roving，执行操作）；
@@ -58,11 +74,19 @@
     inlineIndent = 24,
     inlineCollapsed = false,
     multiple = false,
+    triggerSubMenuAction,
+    subMenuOpenDelay = 100,
+    subMenuCloseDelay = 100,
+    getPopupContainer,
+    disabled = false,
     purpose = 'menu',
     onSelect,
     onOpenChange,
     ariaLabel,
   }: Props = $props();
+
+  // 浮层子菜单触发方式：未显式指定时按 mode 推导（全部默认 hover；inline 走内联不涉及浮层）。
+  const subTrigger = $derived<TriggerSubMenuAction>(triggerSubMenuAction ?? 'hover');
 
   // 折叠仅在 inline 模式生效；其它模式忽略以保持向后兼容。
   const collapsed = $derived(mode === 'inline' && inlineCollapsed);
@@ -104,8 +128,13 @@
     return !!item.children && item.children.length > 0;
   }
 
+  // 整体 disabled 叠加单项 disabled：模板据此渲染 aria-disabled/disabled。
+  function isItemDisabled(item: MenuItemNode): boolean {
+    return disabled || !!item.disabled;
+  }
+
   function selectLeaf(item: MenuItemNode) {
-    if (item.disabled) return;
+    if (disabled || item.disabled) return;
     // 非受控才回写内部 Set：multiple 下 toggle（已选取消/未选加入），单选下替换。
     if (!isSelectControlled) {
       if (multiple) {
@@ -121,7 +150,7 @@
   }
 
   function toggleSub(item: MenuItemNode) {
-    if (item.disabled) return;
+    if (disabled || item.disabled) return;
     const willOpen = !currentOpen.has(item.key);
     const next = [...currentOpen].filter((k) => k !== item.key);
     if (willOpen) next.push(item.key);
@@ -197,8 +226,8 @@
           role={sem.submenuTitleRole}
           aria-haspopup="true"
           aria-expanded={open}
-          aria-disabled={item.disabled || undefined}
-          disabled={item.disabled || undefined}
+          aria-disabled={isItemDisabled(item) || undefined}
+          disabled={isItemDisabled(item) || undefined}
           style="padding-inline-start: {indent}"
           onclick={() => toggleSub(item)}
         >
@@ -228,11 +257,11 @@
           <a
             class="cd-menu__link"
             class:cd-menu__link--selected={selected}
-            href={item.disabled ? undefined : item.href}
+            href={isItemDisabled(item) ? undefined : item.href}
             target={item.target}
             rel={item.rel}
             aria-current={selected ? 'page' : undefined}
-            aria-disabled={item.disabled || undefined}
+            aria-disabled={isItemDisabled(item) || undefined}
             style="padding-inline-start: {indent}"
             onclick={() => selectLeaf(item)}
           >
@@ -247,8 +276,8 @@
             role={sem.leafRole}
             aria-current={!sem.navigation && !multiple && selected ? 'true' : undefined}
             aria-checked={multiple ? selected : undefined}
-            aria-disabled={item.disabled || undefined}
-            disabled={item.disabled || undefined}
+            aria-disabled={isItemDisabled(item) || undefined}
+            disabled={isItemDisabled(item) || undefined}
             style="padding-inline-start: {indent}"
             onclick={() => selectLeaf(item)}
           >
@@ -287,6 +316,11 @@
           {multiple}
           {navigation}
           {isSelected}
+          trigger={subTrigger}
+          openDelay={subMenuOpenDelay}
+          closeDelay={subMenuCloseDelay}
+          {getPopupContainer}
+          parentDisabled={disabled}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />
@@ -299,6 +333,11 @@
           {multiple}
           {navigation}
           {isSelected}
+          trigger={subTrigger}
+          openDelay={subMenuOpenDelay}
+          closeDelay={subMenuCloseDelay}
+          {getPopupContainer}
+          parentDisabled={disabled}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />

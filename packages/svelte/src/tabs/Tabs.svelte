@@ -49,6 +49,11 @@
      * 仅 top/bottom 横向标签栏生效；纵向（left/right）始终走滚动。
      */
     overflow?: OverflowMode;
+    /**
+     * line 风格横向溢出时启用折叠收纳（与 overflow='dropdown' 同效：放不下的标签进末尾「更多」下拉）。
+     * 便捷开关：为 true 时强制走 dropdown 收纳（仅 top/bottom 横向生效）。默认 false。
+     */
+    collapsible?: boolean;
     /** 首次激活后才挂载面板内容 */
     lazy?: boolean;
     /** 激活过的面板切走后保留 DOM（display:none），而非卸载 */
@@ -79,6 +84,7 @@
     closable = false,
     keyboardActivation = 'auto',
     overflow = 'scroll',
+    collapsible = false,
     lazy = false,
     keepDOM = false,
     addable = false,
@@ -159,7 +165,8 @@
 
   // dropdown 收纳仅在横向标签栏生效；纵向（left/right）始终走滚动（红线 #4 向后兼容：
   // 不传 overflow 时为 'scroll'，行为与旧版完全一致）。
-  const dropdownMode = $derived(overflow === 'dropdown' && !isVertical);
+  // collapsible 为便捷开关：等价于 overflow='dropdown'（line 溢出折叠收纳）。
+  const dropdownMode = $derived((overflow === 'dropdown' || collapsible) && !isVertical);
 
   // --- 受控 value (红线 #1)：不无条件回写 value，仅 onChange ---
   const isControlled = $derived(value !== undefined);
