@@ -7,8 +7,13 @@ export const meta = {
   category: 'other',
   renderless: true,
   description:
-    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；SSR/老浏览器静默降级；另导出 resize action 供轻量 use:resize 用法。本子集 content-box/border-box + 单目标，throttle/debounce/多目标/device-pixel-content-box/单例池延后。',
-  exports: ['ResizeObserver', 'resize', 'createResizeObserver'],
+    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；内置 throttle/debounce 节流去抖与 multiple 多目标观测；SSR/老浏览器静默降级；另导出 resize action 供轻量 use:resize 用法、getGlobalResizeObserver 单例池供大列表共享。本子集 content-box/border-box，device-pixel-content-box 延后。',
+  exports: [
+    'ResizeObserver',
+    'resize',
+    'createResizeObserver',
+    'getGlobalResizeObserver',
+  ],
   props: [
     {
       name: 'box',
@@ -21,6 +26,24 @@ export const meta = {
       type: 'boolean',
       default: 'false',
       desc: '暂停尺寸分发，observer 仍监听但不向 slot/回调通知',
+    },
+    {
+      name: 'throttle',
+      type: 'number',
+      default: '0',
+      desc: '节流间隔(ms)，leading+trailing，0 即原生即时。与 debounce 互斥（同时 >0 时 debounce 优先）',
+    },
+    {
+      name: 'debounce',
+      type: 'number',
+      default: '0',
+      desc: '防抖等待(ms)，trailing-only，0 关闭。与 throttle 互斥（优先于 throttle）',
+    },
+    {
+      name: 'multiple',
+      type: 'boolean',
+      default: 'false',
+      desc: '多目标：观测包裹元素的所有直接子元素，onResize 逐个抛出，用 entry.target 区分',
     },
     {
       name: 'observeOnMount',

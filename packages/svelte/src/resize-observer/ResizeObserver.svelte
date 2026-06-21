@@ -4,12 +4,13 @@
   通过 @chenzy-design/core 的 createResizeObserver 监听其尺寸，
   slot 暴露归一化的 width/height/entry。
 
-  基础子集：content-box / border-box + 单目标。
+  子集：content-box / border-box，单目标 + 多目标（multiple）+ throttle/debounce 节流去抖。
   TODO(延后):
-    - throttle / debounce 节流去抖
-    - 多目标 / device-pixel-content-box
-    - 单例 observer 池
+    - device-pixel-content-box
     - tag 自定义包裹元素标签（本子集固定 div）
+    - 单例 observer 池：core 已导出 getGlobalResizeObserver()，
+      但本组件每实例自管一个原生 observer（多目标时复用同一实例观测多元素，
+      已满足"不为每个元素新建 observer"）；跨组件级全局池由大列表场景按需接入。
 
   ⚠️ 死循环红线：
     - 红线 #1：无受控回写，尺寸只向 slot / 回调单向分发。
@@ -31,6 +32,19 @@
     box?: ResizeBox;
     /** 暂停尺寸分发，默认 false（observer 仍在监听，仅不向外通知） */
     disabled?: boolean;
+    /**
+     * 节流间隔(ms)，leading+trailing，默认 0 即原生即时回调。
+     * 与 debounce 互斥（同时 >0 时 debounce 优先）。
+     */
+    throttle?: number;
+    /** 防抖等待(ms)，trailing-only，默认 0 关闭。与 throttle 互斥（优先）。 */
+    debounce?: number;
+    /**
+     * 多目标：true 时观测包裹元素内所有直接子元素（而非包裹元素本身），
+     * onResize 逐个抛出，用 entry.target 区分。默认 false（观测包裹元素）。
+     * 注意：多目标模式下 slot 的 width/height 反映最后一次变化的目标。
+     */
+    multiple?: boolean;
     /** 挂载后立即测量一次，默认 true（ResizeObserver 原生在 observe 时触发首次回调，天然满足） */
     observeOnMount?: boolean;
     /** 包裹元素标签，默认 'div'（本子集固定 div，tag 自定义延后） */
@@ -49,6 +63,9 @@
   let {
     box = 'content-box',
     disabled = false,
+    throttle = 0,
+    debounce = 0,
+    multiple = false,
     observeOnMount = true,
     onResize,
     onFirstMeasure,
@@ -68,7 +85,7 @@
   let firstFired = false;
 
   // observer 命令式创建 + observe + cleanup disconnect（红线 #3）。
-  // 依赖 el + box：el 就绪或 box 变更时重建 observer。
+  // 依赖 el + box + throttle + debounce + multiple：变更时重建 observer。
   // disabled 不进依赖（避免暂停/恢复时丢失监听重建）——在回调内读最新 prop 值。
   $effect(() => {
     if (!el) return;
@@ -76,6 +93,8 @@
     const node = el;
     const ro = createResizeObserver({
       box,
+      throttle,
+      debounce,
       onResize: (e) => {
         // disabled 在回调内读 prop 最新值（Svelte 5 解构 prop 在闭包内访问是响应式最新值）。
         if (disabled) return;
@@ -93,7 +112,14 @@
     // SSR / 老浏览器静默降级。
     if (!ro.supported) return;
 
-    ro.observe(node);
+    if (multiple) {
+      // 多目标：观测包裹元素的所有直接子元素（同一 observer 实例复用）。
+      const targets = Array.from(node.children);
+      for (const child of targets) ro.observe(child);
+    } else {
+      ro.observe(node);
+    }
+
     return () => ro.disconnect();
   });
 
