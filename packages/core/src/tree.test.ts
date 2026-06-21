@@ -94,6 +94,15 @@ describe('findNode / collectExpandable', () => {
     expect(collectExpandableToDepth(data, 1)).toEqual(['1']);
     expect(collectExpandableToDepth(data, 2).sort()).toEqual(['1', '1-2']);
   });
+
+  it('depth 0 (or below) expands nothing', () => {
+    expect(collectExpandableToDepth(data, 0)).toEqual([]);
+    expect(collectExpandableToDepth(data, -1)).toEqual([]);
+  });
+
+  it('depth beyond tree height is clamped to every parent', () => {
+    expect(collectExpandableToDepth(data, 99).sort()).toEqual(collectExpandable(data).sort());
+  });
 });
 
 describe('conduct (related mode)', () => {
@@ -195,6 +204,16 @@ describe('computeFilteredKeys', () => {
     const { matched, expand } = computeFilteredKeys(data, () => false);
     expect(matched.size).toBe(0);
     expect(expand.size).toBe(0);
+  });
+
+  it('works with an arbitrary custom predicate (filterTreeNode 谓词)', () => {
+    // a predicate keying off something other than label substring
+    const { matched, expand } = computeFilteredKeys(data, (n) => String(n.key).endsWith('-1'));
+    expect(matched.has('1-1')).toBe(true);
+    expect(matched.has('1-2-1')).toBe(true);
+    // ancestor chain of every match is expanded
+    expect(expand.has('1')).toBe(true);
+    expect(expand.has('1-2')).toBe(true);
   });
 });
 

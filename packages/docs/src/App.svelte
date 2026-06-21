@@ -208,6 +208,8 @@
   ];
   let treeSel = $state<string | number>('figma');
   let treeChecked = $state<(string | number)[]>([]);
+  // checkRelation='unRelated' demo：父子勾选互不联动、无半选。
+  let treeUnrelatedChecked = $state<(string | number)[]>([]);
 
   // fieldNames 字段映射 demo：后端原始数据使用 { id, name, sub } 字段
   const treeFieldData = [
@@ -3877,6 +3879,35 @@ let pageSize2 = $state(10);
         ariaLabel="字段映射树"
       />
       <Text type="tertiary">已选：{treeFieldSel ?? '（未选）'}，已勾选 {treeFieldChecked.length} 项</Text>
+    </div>
+
+    <div style="width: 240px" data-testid="tree-checkrelation">
+      <Text type="tertiary">checkRelation="unRelated"（父子勾选互不联动、无半选）</Text>
+      <Tree
+        {treeData}
+        checkable
+        checkRelation="unRelated"
+        defaultExpandAll
+        checkedKeys={treeUnrelatedChecked}
+        onCheck={(info) => (treeUnrelatedChecked = info.checked)}
+        ariaLabel="非联动勾选树"
+      />
+      <Text type="tertiary">已勾选 {treeUnrelatedChecked.length} 项（无半选）</Text>
+    </div>
+
+    <div style="width: 240px" data-testid="tree-expandeddepth">
+      <Text type="tertiary">expandedDepth=&#123;1&#125;（默认仅展开第 1 层）</Text>
+      <Tree {treeData} expandedDepth={1} ariaLabel="按层展开树" />
+    </div>
+
+    <div style="width: 240px" data-testid="tree-filtertreenode">
+      <Text type="tertiary">filterTreeNode 自定义谓词（仅匹配以关键词开头的节点）</Text>
+      <Tree
+        {treeData}
+        filterTreeNode={(input, node) => node.label.startsWith(input)}
+        defaultExpandAll
+        ariaLabel="自定义过滤树"
+      />
     </div>
   </div>
 
