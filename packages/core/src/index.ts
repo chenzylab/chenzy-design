@@ -331,6 +331,8 @@ export {
   isPageInRange,
   clampPageSize,
   parseJumpInput,
+  pageRange,
+  type PageCell,
 } from './pagination.js';
 export {
   clamp01 as colorClamp01,

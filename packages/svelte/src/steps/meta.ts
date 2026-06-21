@@ -32,6 +32,17 @@ export const meta = {
     { name: 'onChange', type: '(current: number) => void', default: 'undefined' },
     { name: 'class', type: 'string', default: "''" },
   ],
+  stepItemProps: [
+    { name: 'title', type: 'string', default: 'undefined', desc: '步骤标题' },
+    { name: 'description', type: 'string', default: 'undefined', desc: '步骤描述（次要信息）' },
+    {
+      name: 'status',
+      type: "'wait'|'process'|'finish'|'error'|'warning'",
+      default: 'undefined',
+      desc: '显式覆盖该步状态；不传时由 current 推断',
+    },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用该步：不可点击、不可聚焦、置灰' },
+  ],
   a11y: {
     role: 'list',
     keyboard: ['Tab', 'Enter', 'Space'],

@@ -14,6 +14,8 @@
     clampPage,
     clampPageSize,
     parseJumpInput,
+    pageRange,
+    type PageCell as CorePageCell,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Select } from '../select/index.js';
@@ -21,6 +23,8 @@
 
   type PaginationSize = 'small' | 'default' | 'large';
   type PaginationMode = 'default' | 'simple';
+  type PaginationStatus = 'default' | 'warning' | 'error';
+  type PopoverPosition = 'top' | 'bottom';
 
   interface Props {
     total?: number;
@@ -33,11 +37,21 @@
     pageSizeOptions?: number[];
     size?: PaginationSize;
     mode?: PaginationMode;
+    /** quick-jumper validation state (透传 Input) */
+    status?: PaginationStatus;
     showTotal?: boolean;
     /** show the page-size selector (reuses Select) */
     showSizeChanger?: boolean;
     /** show the quick-jump input (reuses Input) */
     showQuickJumper?: boolean;
+    /** hide the whole pager when there is only one page */
+    hideOnSinglePage?: boolean;
+    /** pages kept on each side of the current page */
+    siblingCount?: number;
+    /** pages kept fixed at each boundary (head/tail) */
+    boundaryCount?: number;
+    /** size-changer dropdown placement (透传 Select) */
+    popoverPosition?: PopoverPosition;
     disabled?: boolean;
     locale?: string;
     /** fires on page OR page-size change; receives the resolved (page, pageSize) */
@@ -55,9 +69,14 @@
     pageSizeOptions = [10, 20, 50, 100],
     size = 'default',
     mode = 'default',
+    status = 'default',
     showTotal = false,
     showSizeChanger = false,
     showQuickJumper = false,
+    hideOnSinglePage = false,
+    siblingCount = 1,
+    boundaryCount = 1,
+    popoverPosition = 'bottom',
     disabled = false,
     locale = 'zh-CN',
     onChange,
@@ -122,25 +141,20 @@
 
   const nf = $derived(new Intl.NumberFormat(locale));
 
-  // Page list with ellipsis: always show first & last, ±1 around current,
-  // '…' (non-interactive) elsewhere. Pure function of current/pageCount → render-safe.
-  type PageCell = { type: 'page'; value: number } | { type: 'ellipsis'; key: string };
+  // Page list with ellipsis folding via core pure function (red line #2):
+  // boundaryCount pages kept at each end, siblingCount around current, gaps
+  // collapse into '…'. Cell count is bounded → million pages stay O(1) DOM.
+  const pages = $derived<CorePageCell[]>(
+    pageRange(current, pageCount, siblingCount, boundaryCount),
+  );
 
-  const pages = $derived.by<PageCell[]>(() => {
-    const cells: PageCell[] = [];
-    const last = pageCount;
-    const candidates = new Set<number>([1, last, current - 1, current, current + 1]);
-    const sorted = [...candidates].filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
-    let prev = 0;
-    for (const p of sorted) {
-      if (p - prev > 1) {
-        cells.push({ type: 'ellipsis', key: `gap-${prev}-${p}` });
-      }
-      cells.push({ type: 'page', value: p });
-      prev = p;
-    }
-    return cells;
-  });
+  // hideOnSinglePage: collapse the whole pager when there is only one page.
+  const hidden = $derived(hideOnSinglePage && pageCount <= 1);
+
+  // map popoverPosition → Select placement
+  const sizeChangerPlacement = $derived(
+    popoverPosition === 'top' ? ('topStart' as const) : ('bottomStart' as const),
+  );
 
   const isFirst = $derived(current <= 1);
   const isLast = $derived(current >= pageCount);
@@ -158,6 +172,7 @@
   const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));
 </script>
 
+{#if !hidden}
 <nav class={cls} aria-label={ariaLabel ?? loc().t('Pagination.ariaLabel')}>
   {#if showTotal}
     <span class="cd-pagination__total">{totalText}</span>
@@ -179,7 +194,7 @@
     </span>
   {:else}
     <ul class="cd-pagination__list">
-      {#each pages as cell (cell.type === 'page' ? `p-${cell.value}` : cell.key)}
+      {#each pages as cell (cell.type === 'page' ? `p-${cell.value}` : `e-${cell.position}`)}
         <li class="cd-pagination__item">
           {#if cell.type === 'ellipsis'}
             <span class="cd-pagination__ellipsis" aria-hidden="true">…</span>
@@ -212,6 +227,7 @@
       <Select
         {size}
         {disabled}
+        placement={sizeChangerPlacement}
         options={sizeOptions}
         value={currentSize}
         onChange={(v) => changePageSize(Number(v))}
@@ -225,6 +241,7 @@
       <span class="cd-pagination__jumper-input">
         <Input
           {size}
+          {status}
           {disabled}
           value={jumpValue}
           onInput={(v) => (jumpValue = v)}
@@ -237,6 +254,7 @@
     </span>
   {/if}
 </nav>
+{/if}
 
 <style>
   .cd-pagination {
