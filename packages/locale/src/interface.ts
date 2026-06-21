@@ -128,6 +128,7 @@ export interface Locale {
   ScrollList: {
     ariaLabel: string;
     empty: string;
+    loading: string;
     /** uses {label} */
     announceSelected: string;
   };

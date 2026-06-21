@@ -108,9 +108,16 @@ export {
   firstEnabledIndex,
   lastEnabledIndex,
   keyboardTarget,
+  wrapIndex,
+  cyclicVirtualCount,
+  cyclicCenterIndex,
+  cyclicRecenter,
+  momentumStep,
+  projectSettleIndex,
   type ScrollListValue,
   type ScrollListItem,
   type ScrollListKey,
+  type MomentumStep,
 } from './scroll-list.js';
 export {
   computeVisibleCount,
