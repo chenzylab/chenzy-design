@@ -16,6 +16,8 @@ export const meta = {
     { name: 'maxSize', type: 'number', default: 'undefined', desc: '单文件最大体积（KB）；超限标记 error' },
     { name: 'minSize', type: 'number', default: 'undefined', desc: '单文件最小体积（KB）；过小标记 error' },
     { name: 'disabled', type: 'boolean', default: 'false' },
+    { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '组件级尺寸（触发按钮/拖拽区/列表项），区别于文件项的 file.size 体积' },
+    { name: 'status', type: "'default'|'warning'|'error'", default: "'default'", desc: '组件级校验态（表单联动，影响上传区/边框色），区别于文件项的 file.status 上传进度态' },
     { name: 'listType', type: "'text'|'image'|'picture-card'|'none'", default: 'text', desc: 'image/picture-card 显示缩略图网格' },
     { name: 'drag', type: 'boolean', default: 'false', desc: 'true 渲染拖拽区，false 渲染按钮' },
     { name: 'action', type: 'string', default: 'undefined', desc: '上传地址；有则选文件后自动 XHR 上传' },
@@ -36,5 +38,5 @@ export const meta = {
     keyboard: ['Enter', 'Space'],
     notes: ['隐藏的 file input（visually-hidden）', '触发器为 button', '移除按钮 aria-label「移除」', 'dragger role=button + tabindex + 键盘 Enter/Space'],
   },
-  tokens: ['--cd-upload-*', '--cd-focus-ring', '--cd-color-danger', '--cd-spacing-*'],
+  tokens: ['--cd-upload-*', '--cd-upload-border-warning', '--cd-upload-border-error', '--cd-button-height-*', '--cd-focus-ring', '--cd-color-warning', '--cd-color-danger', '--cd-spacing-*'],
 } as const;

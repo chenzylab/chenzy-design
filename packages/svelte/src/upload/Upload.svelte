@@ -38,6 +38,16 @@
     /** Min size per file, in KB. 小于此值的文件校验失败（error）。 */
     minSize?: number;
     disabled?: boolean;
+    /**
+     * 组件级尺寸（触发按钮/列表项），与其它表单控件一致。
+     * 注意：区别于每个文件项的 file.size（字节体积）。
+     */
+    size?: 'small' | 'default' | 'large';
+    /**
+     * 组件级校验态（表单联动），影响上传区/边框色。
+     * 注意：区别于每个文件项的 file.status（ready/uploading/error 上传进度态）。
+     */
+    status?: 'default' | 'warning' | 'error';
     listType?: 'text' | 'image' | 'picture-card' | 'none';
     drag?: boolean;
     /** 上传地址；提供且无 customRequest 时选文件后自动 XHR 上传 */
@@ -74,6 +84,8 @@
     maxSize,
     minSize,
     disabled = false,
+    size = 'default',
+    status = 'default',
     listType = 'text',
     drag = false,
     action,
@@ -355,7 +367,11 @@
   }
 </script>
 
-<div class="cd-upload" class:cd-upload--disabled={disabled}>
+<div
+  class="cd-upload cd-upload--{size} cd-upload--{status}"
+  class:cd-upload--disabled={disabled}
+  data-status={status !== 'default' ? status : undefined}
+>
   <input
     bind:this={inputEl}
     class="cd-upload__input"
@@ -499,6 +515,15 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* 组件级 size：触发按钮高度/字号档（区别于 file.size 体积）。 */
+  .cd-upload--small .cd-upload__trigger {
+    height: var(--cd-button-height-small);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-upload--large .cd-upload__trigger {
+    height: var(--cd-button-height-large);
+    font-size: var(--cd-font-size-3);
+  }
   .cd-upload__trigger:disabled {
     cursor: not-allowed;
     opacity: 0.5;
@@ -527,6 +552,35 @@
   .cd-upload--disabled .cd-upload__dragger {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+  /* 组件级 size：拖拽区内边距/字号档。 */
+  .cd-upload--small .cd-upload__dragger {
+    padding-block: var(--cd-spacing-4);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-upload--large .cd-upload__dragger {
+    padding-block: var(--cd-spacing-8, var(--cd-spacing-6));
+    font-size: var(--cd-font-size-3);
+  }
+  /* 组件级 status：校验态影响上传区/卡片边框色（区别于 file.status 进度态）。 */
+  .cd-upload--warning .cd-upload__dragger {
+    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+  }
+  .cd-upload--error .cd-upload__dragger {
+    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+  }
+  .cd-upload--warning .cd-upload__trigger {
+    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+  }
+  .cd-upload--error .cd-upload__trigger {
+    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+  }
+  .cd-upload--warning .cd-upload__card,
+  .cd-upload--error .cd-upload__card {
+    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+  }
+  .cd-upload--error .cd-upload__card {
+    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
   }
   .cd-upload__list {
     display: flex;
