@@ -10,13 +10,25 @@ export const meta = {
   props: [
     {
       name: 'image',
-      type: "'noData'|'noResult'|'error'",
+      type: "'noData'|'noResult'|'error'|(string&{})",
       default: "'noData'",
-      desc: '内置预设插画',
+      desc: '内置预设插画名，或外部图片 URL（非预设字符串按 URL 渲染 img）',
     },
     { name: 'title', type: 'string', default: 'undefined', desc: '标题，默认按 image 取内置文案' },
     { name: 'description', type: 'string', default: 'undefined' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    {
+      name: 'layout',
+      type: "'vertical'|'horizontal'",
+      default: "'vertical'",
+      desc: '排布方向；horizontal 在窄容器自动降级为 vertical',
+    },
+    {
+      name: 'responsive',
+      type: 'boolean',
+      default: 'true',
+      desc: '启用容器宽度自适应收缩（CSS 容器查询，纯样式）',
+    },
     { name: 'class', type: 'string', default: "''" },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '动作区（如按钮）' },
     { name: 'imageSlot', type: 'Snippet', default: 'undefined', desc: '自定义插画' },
