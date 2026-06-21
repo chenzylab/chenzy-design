@@ -8,16 +8,19 @@
   溢出收纳：overflow='dropdown' 时把放不下的标签收进末尾「更多」下拉（复用 Dropdown），
   离屏测量层命令式测宽 + computeTabOverflow（core 纯函数）算可见/溢出集，激活标签始终保持可见。
   type='button'：分段按钮组样式（外包 fill 底，选中段填主色）。
-  TODO(延后): renderTabBar、纯声明式自动收集标签。
+  纯声明式自动收集：未传 tabList 时，从子 <Tabs.Pane> 的 tab/itemKey/disabled/closable
+    自动收集推导 tabList（按源码顺序）；TabPane 在 mount/unmount/同步副作用里写父级簿记
+    普通数组 + bump version $state，父 render 据 version 重建快照（红线 #2：副作用写 /
+    渲染读分离，子 effect 绝不读快照 → 无 effect_update_depth_exceeded 自循环）。
+  renderTabBar：Snippet 完全自绘标签栏（接收 tab 列表 + 当前激活 key + 切换回调），
+    自定义渲染时跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。
 
-  约束：声明式 TabPane 仅提供「内容」，标签栏始终由 tabList 数据驱动；
-  使用声明式 TabPane 时同样需传 tabList 定义标签（避免挂载时写响应式数组 → render 期读取
-  造成 effect_update_depth_exceeded 死循环，见红线 #2）。
+  约束：传 tabList 时标签栏数据驱动（与旧版完全一致）；仅当不传 tabList 时才走声明式收集。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, computeTabOverflow } from '@chenzy-design/core';
-  import { setTabsContext } from './context.js';
+  import { setTabsContext, type TabPaneRegistration } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
   import Dropdown from '../dropdown/Dropdown.svelte';
   import type { DropdownItem } from '../dropdown/types.js';
@@ -56,6 +59,13 @@
     onTabClose?: (key: TabKey) => void;
     /** addable=true 时点击「+」按钮回调（红线 #1：组件内部不改 tabList） */
     onAdd?: () => void;
+    /**
+     * 自定义整个标签栏的渲染（调用方完全自绘标签栏）。
+     * 接收：当前 tab 列表（数据驱动 tabList 或声明式收集结果）、当前激活 key、
+     * 切换回调 setActive（受控时仅触发 onChange，不回写 value，红线 #1）。
+     * 传入时跳过内置标签栏与溢出处理；面板内容仍按 activeKey 显隐。
+     */
+    renderTabBar?: Snippet<[TabItem[], TabKey | undefined, (key: TabKey) => void]>;
     children?: Snippet;
   }
 
@@ -65,7 +75,7 @@
     type = 'line',
     size = 'default',
     tabPosition = 'top',
-    tabList = [],
+    tabList: tabListProp,
     closable = false,
     keyboardActivation = 'auto',
     overflow = 'scroll',
@@ -75,11 +85,74 @@
     onChange,
     onTabClose,
     onAdd,
+    renderTabBar,
     children,
   }: Props = $props();
 
   const baseId = useId('cd-tabs');
   const loc = useLocale();
+
+  // --- 纯声明式自动收集 (红线 #2) ---
+  // 仅当父未传 tabList（undefined）时启用：子 <Tabs.Pane> 在 mount/unmount/同步副作用里
+  // 注册标签元数据。簿记 `paneOrder` 为普通数组（非 $state），避免在子注册 $effect 内
+  // 既「读」又「写」同一 $state 数组（代理 push 读 length 再写元素）形成自循环；render 真正
+  // 需要的「收集结果快照」仅由单独的 version $state 触发重建——子 effect 只 bump version，
+  // 绝不读快照 → 副作用写 / 渲染读分离，无 effect_update_depth_exceeded。
+  const usesDeclarativeTabs = $derived(tabListProp === undefined);
+
+  interface PaneEntry extends TabPaneRegistration {
+    id: number;
+  }
+  let paneNextId = 0;
+  const paneOrder: PaneEntry[] = [];
+  let paneVersion = $state(0);
+
+  function bumpPaneVersion(): void {
+    paneVersion += 1;
+  }
+
+  function registerPane(reg: TabPaneRegistration): number {
+    const id = paneNextId++;
+    paneOrder.push({ id, ...reg });
+    bumpPaneVersion();
+    return id;
+  }
+  function updatePane(id: number, reg: TabPaneRegistration): void {
+    const entry = paneOrder.find((p) => p.id === id);
+    if (!entry) return;
+    // 仅在元数据实际变化时 bump（去重，避免无谓 render）。
+    if (
+      entry.itemKey === reg.itemKey &&
+      entry.tab === reg.tab &&
+      entry.disabled === reg.disabled &&
+      entry.closable === reg.closable
+    )
+      return;
+    Object.assign(entry, reg);
+    bumpPaneVersion();
+  }
+  function unregisterPane(id: number): void {
+    const i = paneOrder.findIndex((p) => p.id === id);
+    if (i !== -1) {
+      paneOrder.splice(i, 1);
+      bumpPaneVersion();
+    }
+  }
+
+  // 收集结果快照（纯派生，render 期只读）：仅依赖 version（重建触发器）。
+  // 重建只读普通数组 paneOrder，绝不在此写任何 $state。
+  const collectedTabs = $derived.by<TabItem[]>(() => {
+    void paneVersion; // 收集顺序/内容变化触发重建
+    return paneOrder.map((p) => ({
+      tab: p.tab,
+      itemKey: p.itemKey,
+      ...(p.disabled !== undefined ? { disabled: p.disabled } : {}),
+      ...(p.closable !== undefined ? { closable: p.closable } : {}),
+    }));
+  });
+
+  // 标签栏实际数据源：传 tabList 用之（数据驱动，向后兼容）；否则用声明式收集结果。
+  const tabList = $derived<TabItem[]>(usesDeclarativeTabs ? collectedTabs : (tabListProp ?? []));
 
   // top/bottom 为横向滚动（主轴 = inline / scrollLeft）；left/right 为纵向（scrollTop）。
   const isVertical = $derived(tabPosition === 'left' || tabPosition === 'right');
@@ -90,14 +163,25 @@
 
   // --- 受控 value (红线 #1)：不无条件回写 value，仅 onChange ---
   const isControlled = $derived(value !== undefined);
+  // inner 初值：defaultValue 优先，否则数据驱动取首项 key（声明式收集首项需待 pane 注册，
+  // 故此处不读 derived tabList，初值可能为 undefined，由 activeKey 派生兜底首个可用标签）。
   let inner = $state<TabKey | undefined>(getInitialValue());
 
   function getInitialValue(): TabKey | undefined {
     if (defaultValue !== undefined) return defaultValue;
-    return tabList[0]?.itemKey;
+    return tabListProp?.[0]?.itemKey;
   }
 
-  const activeKey = $derived<TabKey | undefined>(isControlled ? value : inner);
+  // activeKey 纯派生（红线 #1/#2，render 期只读）：
+  // 受控取 value；非受控取 inner，inner 未定（如声明式首帧或被关闭后失效）则兜底首个标签 key。
+  const activeKey = $derived<TabKey | undefined>(
+    isControlled ? value : (resolveUncontrolledKey()),
+  );
+
+  function resolveUncontrolledKey(): TabKey | undefined {
+    if (inner !== undefined && tabList.some((t) => t.itemKey === inner)) return inner;
+    return tabList[0]?.itemKey;
+  }
 
   function setActive(key: TabKey) {
     if (key === activeKey) return;
@@ -111,6 +195,9 @@
     getActiveKey: () => activeKey,
     getLazy: () => lazy,
     getKeepDOM: () => keepDOM,
+    registerPane,
+    updatePane,
+    unregisterPane,
   });
 
   function tabId(key: TabKey): string {
@@ -497,7 +584,10 @@
 {/snippet}
 
 <div class={cls}>
-  {#if dropdownMode}
+  {#if renderTabBar}
+    <!-- renderTabBar：调用方完全自绘标签栏；跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。 -->
+    {@render renderTabBar(tabList, activeKey, setActive)}
+  {:else if dropdownMode}
     <!-- dropdown 收纳：只渲染可见标签，溢出标签进末尾「更多」下拉。 -->
     <div class="cd-tabs__bar" bind:this={barEl}>
       <div class="cd-tabs__list" role="tablist">
