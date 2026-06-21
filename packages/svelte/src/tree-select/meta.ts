@@ -30,6 +30,15 @@ export const meta = {
     { name: 'filterable', type: 'boolean', default: 'false', desc: '面板搜索框过滤节点 + 高亮命中' },
     { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位（icon 提供时渲染在 label 前），与 Tree 对齐' },
     {
+      name: 'loadData',
+      type: '(node: TreeNode) => Promise<TreeNode[]>',
+      default: 'undefined',
+      desc: '异步加载子节点：展开未加载的非叶子节点时调用，返回该节点子节点数组（加载中显示 spinner，竞态去重，不写回 treeData）。与 Tree 的 loadData 对齐',
+    },
+    { name: 'virtualized', type: 'boolean', default: 'false', desc: '虚拟滚动：仅渲染视口内可见行，适合大数据树。复用 Tree 范式（core fixedRange），保持 role=tree/treeitem 语义' },
+    { name: 'height', type: 'number', default: '224', desc: '虚拟滚动视口高度（px），virtualized 时生效' },
+    { name: 'itemHeight', type: 'number', default: '32', desc: '虚拟滚动行高（px），virtualized 时生效' },
+    {
       name: 'icon',
       type: 'Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>',
       default: 'undefined',
