@@ -159,6 +159,7 @@ export {
   type NotificationPlacement,
   type NotificationCloseReason,
   type NotificationTheme,
+  type NotificationDirection,
 } from './notification.js';
 export { easeInOutCubic, isAboveThreshold, scrollPositionAt } from './back-top.js';
 export {

@@ -6,9 +6,14 @@ export const meta = {
   name: 'Notification',
   category: 'feedback',
   description:
-    '通知提醒框：命令式全局反馈 API（notification.open/success/info/warning/error/close/update/destroyAll）。比 Toast 更丰富——标题 + 内容 + 图标；6 方位独立堆叠；单例容器惰性挂载到 body；自动关闭 + 悬停暂停 + maxCount 按方位 FIFO 淘汰 + 同 id 去重更新；error/warning role=alert(assertive)、其余 role=status(polite)；可选 showProgress 倒计时进度条（命令式 rAF + 悬停同步暂停）、footer 操作区 Snippet、theme(light/dark)。本子集：RTL/Esc 关闭/portal getPopupContainer 延后。',
+    '通知提醒框：命令式全局反馈 API（notification.open/success/info/warning/error/close/update/destroyAll）。比 Toast 更丰富——标题 + 内容 + 图标；6 方位独立堆叠；单例容器惰性挂载到 body；自动关闭 + 悬停暂停 + maxCount 按方位 FIFO 淘汰 + 同 id 去重更新；error/warning role=alert(assertive)、其余 role=status(polite)；可选 showProgress 倒计时进度条（命令式 rAF + 悬停同步暂停）、footer 操作区 Snippet、theme(light/dark)；RTL（direction=rtl 镜像卡片布局并左右互换方位）、Esc 关闭最近一条（window keydown + cleanup）、notification.config({ direction, getPopupContainer }) 配置全局方向与容器挂载点（默认 ltr + body，对齐 Modal/Dropdown getContainer）。',
   exports: ['notification'],
   imperative: true,
+  config: {
+    direction: "全局默认书写方向 'ltr'|'rtl'（per-item direction 优先）",
+    getPopupContainer:
+      '() => HTMLElement，容器宿主挂载目标（默认 body）；须在首条通知前调用方生效',
+  },
   props: [
     { name: 'id', type: 'string', default: 'undefined', desc: '指定 id；已存在则原地更新' },
     { name: 'title', type: 'string', default: '—', desc: '通知标题' },
@@ -44,6 +49,12 @@ export const meta = {
       type: "'light'|'dark'",
       default: "'light'",
       desc: '卡片主题；dark 为深色卡片',
+    },
+    {
+      name: 'direction',
+      type: "'ltr'|'rtl'",
+      default: "'ltr'（可经 notification.config 改默认）",
+      desc: 'RTL 时镜像卡片布局（关闭按钮/图标/文案/进度方向翻转）并左右互换方位',
     },
     {
       name: 'footer',
@@ -100,5 +111,10 @@ export const meta = {
     { title: '成功', code: "notification.success({ title: '已上传', content: '文件保存成功' })" },
     { title: '错误', code: "notification.error({ title: '保存失败', content: '网络中断' })" },
     { title: '常驻', code: "notification.open({ title: '提醒', duration: 0 })" },
+    { title: 'RTL', code: "notification.info({ title: 'مرحبا', content: 'نص', direction: 'rtl' })" },
+    {
+      title: '全局配置',
+      code: "notification.config({ direction: 'rtl', getPopupContainer: () => document.getElementById('app')! })",
+    },
   ],
 } as const;
