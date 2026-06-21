@@ -1,8 +1,8 @@
 <!--
   Image — see specs/components/show/Image.spec.md
   基础子集：src + 懒加载(native/observer) + fit/position + 占位 + 失败降级 +
-    点击预览(全屏遮罩 portal + 缩放/旋转/重置工具栏 + 多图左右切换) + LQIP 模糊占位。
-  TODO(延后): crossorigin/srcset 细节。
+    点击预览(全屏遮罩 portal + 缩放/旋转/重置工具栏 + 多图左右切换) + LQIP 模糊占位 +
+    crossorigin/srcset/sizes 原生属性透传(响应式图源)。
 
   红线遵守：
    - observer 模式 IntersectionObserver 在 $effect 内命令式创建 + cleanup disconnect；
@@ -29,6 +29,9 @@
     height?: number | string;
     fit?: ImageFit;
     position?: string;
+    crossorigin?: 'anonymous' | 'use-credentials';
+    srcset?: string;
+    sizes?: string;
     lazy?: boolean;
     lazyMode?: LazyMode;
     rootMargin?: string;
@@ -47,6 +50,9 @@
     height,
     fit = 'fill',
     position = 'center',
+    crossorigin,
+    srcset,
+    sizes,
     lazy = true,
     lazyMode = 'native',
     rootMargin = '200px',
@@ -73,6 +79,8 @@
 
   // observer 模式下，进入视口前不设真实 src
   const resolvedSrc = $derived(useObserver && !inView ? undefined : src);
+  // srcset 与 src 同步延迟：observer 未进视口前不设，避免浏览器提前选源加载。
+  const resolvedSrcset = $derived(useObserver && !inView ? undefined : srcset);
 
   // placeholder 是字符串时当作 LQIP 低质占位图 src（loading/pending 阶段显示，CSS blur 模糊）。
   // 主图 onload 前显示模糊占位，加载完成后主图淡入清晰、占位淡出。
@@ -228,6 +236,9 @@
           bind:this={imgNode}
           class={imgCls}
           src={resolvedSrc}
+          srcset={resolvedSrcset}
+          {sizes}
+          {crossorigin}
           {alt}
           loading={nativeLoading}
           style={imgStyle}
@@ -241,6 +252,9 @@
         bind:this={imgNode}
         class={imgCls}
         src={resolvedSrc}
+        srcset={resolvedSrcset}
+        {sizes}
+        {crossorigin}
         {alt}
         loading={nativeLoading}
         style={imgStyle}
