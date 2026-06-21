@@ -461,6 +461,7 @@
   ];
   let calSelectedText = $state('（未选）');
   let calRangeText = $state('（未选）');
+  let calPopupText = $state('（未选）');
   function fmtDay(d: Date) {
     return d.toLocaleDateString('zh-CN');
   }
@@ -3429,6 +3430,36 @@ let pageSize2 = $state(10);
     />
   </div>
   <Text type="tertiary">选中范围：{calRangeText}</Text>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（弹层模式）</Title>
+  <Text type="tertiary">popup：点击 trigger 弹出日历浮层，外部点击 / Esc 关闭</Text>
+  <div data-testid="calendar-popup">
+    <Calendar
+      popup
+      defaultValue={calAnchor}
+      events={calEvents}
+      onSelect={(info) => (calPopupText = info.date.toLocaleDateString('zh-CN'))}
+    />
+  </div>
+  <Text type="tertiary">弹层选中：{calPopupText}</Text>
+
+  <Divider />
+
+  <Title heading={5}>Calendar（roving 键盘焦点 + 虚拟化日轴）</Title>
+  <Text type="tertiary">
+    月视图聚焦日格后方向键移动焦点（←→天 / ↑↓周 / PageUp-Down月 / Home-End），Enter 选中；day 视图 0–23 时虚拟化滚动
+  </Text>
+  <div data-testid="calendar-virtual">
+    <Calendar
+      mode="day"
+      defaultValue={calDayAnchor}
+      dayStartHour={0}
+      dayEndHour={23}
+      events={calDayEvents}
+    />
+  </div>
 
   <Divider />
 

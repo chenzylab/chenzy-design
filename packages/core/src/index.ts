@@ -46,7 +46,9 @@ export {
   daysBetween,
   formatDate,
   parseDateString,
+  gridFocusMove,
   type DayCell,
+  type GridFocusKey,
 } from './date.js';
 export {
   flattenVisible,

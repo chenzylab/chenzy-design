@@ -6,7 +6,7 @@ export const meta = {
   name: 'Calendar',
   category: 'show',
   description:
-    '月/周/日视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、导航（上一/今天/下一，月或周或天）；mode 切换月(6×7)/周(1×7)/日(单日时间轴)视图，day 模式纵向列出小时段(dayStartHour~dayEndHour)，带时间的事件按起始小时入对应时段、全天或跨天延续事件入顶部「全天」区，selectionMode 切换单选(selectedDate)/范围(rangeValue，起止+区间高亮+hover 预览)。受控 value(锚点)/selectedDate/rangeValue 不回写，仅通过 onChange/onSelect/onRangeChange/onDateClick/onMoreClick 通知。弹层、虚拟化延后。',
+    '月/周/日视图日历：日格网格 + 事件展示与 +N 折叠，today/selected/outside/weekend/disabled 态、导航（上一/今天/下一，月或周或天）；mode 切换月(6×7)/周(1×7)/日(单日时间轴)视图，day 模式纵向列出小时段(dayStartHour~dayEndHour)，带时间的事件按起始小时入对应时段、全天或跨天延续事件入顶部「全天」区，selectionMode 切换单选(selectedDate)/范围(rangeValue，起止+区间高亮+hover 预览)。受控 value(锚点)/selectedDate/rangeValue 不回写，仅通过 onChange/onSelect/onRangeChange/onDateClick/onMoreClick 通知。完整 WAI-ARIA grid roving 键盘焦点（方向键/PageUp-Down/Home-End/Enter-Space），popup 弹层模式（复用 _floating 门户 + 外部点击/Esc 关闭），day 视图时间轴虚拟化（复用 core fixedRange）。',
   exports: ['Calendar'],
   props: [
     { name: 'value', type: 'Date', default: 'undefined', desc: '受控锚点日期(决定展示月份/周)，受控时不回写' },
@@ -27,6 +27,16 @@ export const meta = {
     { name: 'defaultRangeValue', type: '[Date, Date] | null', default: 'undefined', desc: '非受控范围初值' },
     { name: 'locale', type: 'string', default: "'zh-CN'", desc: 'Intl 月份/星期名格式化语言' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '网格 aria-label，默认取月份标题' },
+    { name: 'popup', type: 'boolean', default: 'false', desc: '弹层模式：渲染 trigger，日历作为浮层弹出（复用 _floating 门户定位）' },
+    { name: 'open', type: 'boolean', default: 'undefined', desc: '受控展开态(popup)，受控时不回写仅 onOpenChange' },
+    { name: 'defaultOpen', type: 'boolean', default: 'false', desc: '非受控初始展开态' },
+    { name: 'onOpenChange', type: '(info: { open: boolean }) => void', default: 'undefined', desc: '展开态变化回调' },
+    { name: 'placement', type: 'Placement', default: "'bottomStart'", desc: '浮层相对 trigger 的位置' },
+    { name: 'getContainer', type: '() => HTMLElement | null', default: 'undefined', desc: '浮层门户挂载容器(默认 body)' },
+    { name: 'trigger', type: 'Snippet', default: 'undefined', desc: 'popup 模式 trigger 自定义内容 { open, toggle }' },
+    { name: 'virtualizeDay', type: "boolean | 'auto'", default: "'auto'", desc: 'day 时间轴虚拟化：auto 按阈值/true 强制/false 关闭' },
+    { name: 'virtualizeThreshold', type: 'number', default: '18', desc: '触发虚拟化的最少小时行数(auto 生效)' },
+    { name: 'timelineViewportHeight', type: 'number', default: '360', desc: 'day 时间轴虚拟化视口高度(px)' },
     { name: 'onChange', type: '(info: { value: Date }) => void', default: 'undefined' },
     { name: 'onSelect', type: '(info: { date: Date }) => void', default: 'undefined' },
     { name: 'onRangeChange', type: '(info: { range: [Date, Date] }) => void', default: 'undefined' },
@@ -49,11 +59,12 @@ export const meta = {
   slots: [
     { name: 'dateCell', desc: '自定义整格内容 { date, events, isToday, isOutside, disabled }' },
     { name: 'event', desc: '自定义事件块 { event }' },
+    { name: 'trigger', desc: 'popup 模式 trigger 自定义内容 { open, toggle }' },
   ],
   a11y: {
     hasRole: true,
     focusable: true,
-    note: '网格 role=grid，星期表头行 role=row 含 role=columnheader，每周一行 role=row 含 role=gridcell；today 设 aria-current=date，选中设 aria-selected，禁用设 aria-disabled；可交互格 Enter/Space 触发点击与选中。',
+    note: '网格 role=grid，星期表头行 role=row 含 role=columnheader，每周一行 role=row 含 role=gridcell；today 设 aria-current=date，选中设 aria-selected，禁用设 aria-disabled。完整 WAI-ARIA grid roving 焦点：网格内仅活动格 tabindex=0（余 -1），方向键移动焦点（←→ 天、↑↓ 周、PageUp/Down 月、Home/End 周首末），跨月/周自动翻页并落焦，Enter/Space 选中。popup 模式：trigger aria-haspopup=dialog/aria-expanded，浮层 role=dialog，外部点击/Esc 关闭并归还焦点。',
   },
   tokens: [
     '--cd-calendar-bg',
@@ -93,6 +104,14 @@ export const meta = {
     {
       title: '范围选择',
       code: '<Calendar selectionMode="range" onRangeChange={(i) => console.log(i.range)} />',
+    },
+    {
+      title: '弹层模式',
+      code: '<Calendar popup defaultOpen onSelect={(i) => console.log(i.date)} />',
+    },
+    {
+      title: '弹层模式（自定义 trigger）',
+      code: '<Calendar popup>{#snippet trigger({ toggle })}<button onclick={toggle}>选择日期</button>{/snippet}</Calendar>',
     },
   ],
 } as const;
