@@ -80,11 +80,12 @@
     LocaleProvider,
     zh_CN,
     en_US,
+    registerLocale,
     ConfigProvider,
     ResizeObserver,
     LottieIcon,
   } from '@chenzy-design/svelte';
-  import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem, Locale } from '@chenzy-design/svelte';
 
   // 演示用 mock player（真实场景注入 lottie-web 的 loadAnimation 包装）。
   // 这里用一个 CSS 旋转的方块模拟动画播放/暂停。
@@ -506,6 +507,14 @@
   let popContainerEl = $state<HTMLDivElement | null>(null);
 
   let localeIsZh = $state(true);
+
+  // registerLocale 演示：注册一个法语自定义包，之后可用字符串码 'fr_FR' 引用。
+  registerLocale('fr_FR', {
+    ...en_US,
+    code: 'fr-FR',
+    Modal: { okText: 'Confirmer', cancelText: 'Annuler', close: 'Fermer' },
+  });
+  let localeCode = $state<'zh_CN' | 'en_US' | 'fr_FR'>('zh_CN');
 
   let submitted = $state('');
   let warnSubmitted = $state('');
@@ -4010,6 +4019,50 @@ let pageSize2 = $state(10);
           <TagInput value={tagsI18n} onChange={(t) => (tagsI18n = t)} />
         </div>
       </div>
+    </LocaleProvider>
+  </div>
+
+  <div style="margin-top:16px" data-testid="locale-string-code-demo">
+    <Text type="tertiary">字符串码解析（内置 zh_CN/en_US + registerLocale 注册的 fr_FR）：</Text>
+    <div style="margin-top:8px; display:flex; gap:8px">
+      <Button size="small" onclick={() => (localeCode = 'zh_CN')}>zh_CN</Button>
+      <Button size="small" onclick={() => (localeCode = 'en_US')}>en_US</Button>
+      <Button size="small" onclick={() => (localeCode = 'fr_FR')}>fr_FR（自定义）</Button>
+    </div>
+    <LocaleProvider locale={localeCode}>
+      {#snippet children({ locale, t })}
+        <div style="margin-top:8px; line-height:2">
+          <div>locale 码 <strong>"{localeCode}"</strong> → 生效 <strong data-testid="locale-code-out">{locale}</strong></div>
+          <div>Modal.okText：<strong data-testid="locale-code-ok">{t('Modal.okText')}</strong></div>
+        </div>
+      {/snippet}
+    </LocaleProvider>
+  </div>
+
+  <div style="margin-top:16px" data-testid="locale-inherit-demo">
+    <Text type="tertiary">嵌套 inherit 深合并：外层 zh_CN，内层仅覆盖 Modal.okText，其余继承外层。</Text>
+    <LocaleProvider locale="zh_CN">
+      <LocaleProvider locale={{ Modal: { okText: '好的（覆盖）' } } as unknown as Locale}>
+        {#snippet children({ locale, t })}
+          <div style="margin-top:8px; line-height:2">
+            <div>生效 locale：<strong data-testid="inherit-code">{locale}</strong>（继承外层）</div>
+            <div>Modal.okText（覆盖）：<strong data-testid="inherit-ok">{t('Modal.okText')}</strong></div>
+            <div>Modal.cancelText（继承）：<strong data-testid="inherit-cancel">{t('Modal.cancelText')}</strong></div>
+          </div>
+        {/snippet}
+      </LocaleProvider>
+    </LocaleProvider>
+  </div>
+
+  <div style="margin-top:16px" data-testid="locale-tz-currency-demo">
+    <Text type="tertiary">timeZone / currency：注入 formatDate / currency 风格 formatNumber。</Text>
+    <LocaleProvider locale="zh_CN" timeZone="Asia/Shanghai" currency="CNY">
+      {#snippet children({ formatDate, formatNumber })}
+        <div style="margin-top:8px; line-height:2">
+          <div>UTC 2026-01-01T00:00 在 Asia/Shanghai：<strong data-testid="tz-out">{formatDate(new Date(Date.UTC(2026, 0, 1, 0, 0)), { hour: '2-digit', minute: '2-digit', hour12: false })}</strong></div>
+          <div>货币 1234.5（默认 CNY）：<strong data-testid="currency-out">{formatNumber(1234.5, { style: 'currency' })}</strong></div>
+        </div>
+      {/snippet}
     </LocaleProvider>
   </div>
 

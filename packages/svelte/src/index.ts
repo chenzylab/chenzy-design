@@ -194,5 +194,14 @@ export {
   type FloatingHandle,
 } from './_floating/use-floating.js';
 export { computePosition, type Placement } from '@chenzy-design/core';
-// 内置语言包重导出，供 LocaleProvider 直接使用
-export { zh_CN, en_US, type Locale } from '@chenzy-design/locale';
+// 内置语言包 + 注册/解析/合并工具重导出，供 LocaleProvider 直接使用
+export {
+  zh_CN,
+  en_US,
+  type Locale,
+  registerLocale,
+  unregisterLocale,
+  resolveLocale,
+  mergeLocale,
+  type PartialLocale,
+} from '@chenzy-design/locale';
