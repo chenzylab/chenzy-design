@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeVisibleCount, applyHysteresis, computeTabOverflow } from './overflow-list.js';
+import {
+  computeVisibleCount,
+  computeOverflowPartition,
+  applyHysteresis,
+  computeTabOverflow,
+} from './overflow-list.js';
 
 // five items, each 100px wide, gap 0 for easy arithmetic
 const sizes = [100, 100, 100, 100, 100];
@@ -73,6 +78,122 @@ describe('computeVisibleCount', () => {
     expect(computeVisibleCount({ itemSizes: [], containerSize: 500, overflowSize: 40, gap: 0 })).toEqual({
       visibleCount: 0,
       overflowCount: 0,
+    });
+  });
+});
+
+describe('computeOverflowPartition', () => {
+  it('end (default): collapses trailing items, leading stay visible', () => {
+    // 360, gap 10, overflow 40 → 2 leading fit (same math as computeVisibleCount)
+    const r = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 360,
+      overflowSize: 40,
+      gap: 10,
+    });
+    expect(r).toEqual({
+      visibleCount: 2,
+      overflowCount: 3,
+      visibleIndexes: [0, 1],
+      overflowIndexes: [2, 3, 4],
+    });
+  });
+
+  it('start: collapses leading items, trailing stay visible', () => {
+    // same fit (2 items), but kept window is the *last* two → [3,4] visible
+    const r = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 360,
+      overflowSize: 40,
+      gap: 10,
+      collapseFrom: 'start',
+    });
+    expect(r).toEqual({
+      visibleCount: 2,
+      overflowCount: 3,
+      visibleIndexes: [3, 4],
+      overflowIndexes: [0, 1, 2],
+    });
+  });
+
+  it('start: uneven sizes fit from the tail, not the head', () => {
+    // tail two are tiny, head three are huge. container only fits the tail.
+    // sizes reversed = [20,20,300,300,300]; container 60 gap 10 overflow 40:
+    // reserved 50; n=1 →20+50=70>60 → 0?  use container 80: n=1→20+50=70≤80, n=2→20+20+10+50=100>80 → 1 visible.
+    const r = computeOverflowPartition({
+      itemSizes: [300, 300, 300, 20, 20],
+      containerSize: 80,
+      overflowSize: 40,
+      gap: 10,
+      collapseFrom: 'start',
+    });
+    expect(r.visibleCount).toBe(1);
+    expect(r.visibleIndexes).toEqual([4]);
+    expect(r.overflowIndexes).toEqual([0, 1, 2, 3]);
+  });
+
+  it('start: mirrors alwaysVisible indexes (index 0 must stay → floor)', () => {
+    // only 1 fits normally, but index 0 must stay visible. mirrored → keeps a
+    // window large enough to include index 0, i.e. all items visible.
+    const r = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 150,
+      overflowSize: 40,
+      gap: 0,
+      collapseFrom: 'start',
+      alwaysVisible: [0],
+    });
+    expect(r.visibleIndexes).toContain(0);
+    expect(r.visibleCount).toBe(5);
+  });
+
+  it('respects minVisibleItems in start mode', () => {
+    const r = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 150,
+      overflowSize: 40,
+      gap: 0,
+      collapseFrom: 'start',
+      minVisibleItems: 3,
+    });
+    expect(r.visibleCount).toBe(3);
+    expect(r.visibleIndexes).toEqual([2, 3, 4]);
+    expect(r.overflowIndexes).toEqual([0, 1]);
+  });
+
+  it('everything fits → no overflow, both directions', () => {
+    const end = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 500,
+      overflowSize: 40,
+      gap: 0,
+    });
+    const start = computeOverflowPartition({
+      itemSizes: sizes,
+      containerSize: 500,
+      overflowSize: 40,
+      gap: 0,
+      collapseFrom: 'start',
+    });
+    expect(end.visibleIndexes).toEqual([0, 1, 2, 3, 4]);
+    expect(start.visibleIndexes).toEqual([0, 1, 2, 3, 4]);
+    expect(end.overflowCount).toBe(0);
+    expect(start.overflowCount).toBe(0);
+  });
+
+  it('empty input', () => {
+    const r = computeOverflowPartition({
+      itemSizes: [],
+      containerSize: 500,
+      overflowSize: 40,
+      gap: 0,
+      collapseFrom: 'start',
+    });
+    expect(r).toEqual({
+      visibleCount: 0,
+      overflowCount: 0,
+      visibleIndexes: [],
+      overflowIndexes: [],
     });
   });
 });
