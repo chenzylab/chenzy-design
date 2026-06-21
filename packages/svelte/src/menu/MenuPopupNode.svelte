@@ -35,6 +35,8 @@
     getPopupContainer?: (() => HTMLElement | null | undefined) | undefined;
     /** 整体禁用（来自父 Menu disabled）：叠加单项 disabled */
     parentDisabled?: boolean;
+    /** 浮层隐藏时是否卸载内容 DOM（默认 false：保留 DOM 仅隐藏，重显不重建） */
+    destroyOnHide?: boolean;
   }
 
   let {
@@ -51,6 +53,7 @@
     trigger = 'hover',
     getPopupContainer,
     parentDisabled = false,
+    destroyOnHide = false,
   }: Props = $props();
 
   // 分隔符/分组在模板顶层单独处理；此处统一窄化为普通项节点供后续派生使用。
@@ -64,6 +67,16 @@
 
   let titleEl = $state<HTMLButtonElement | null>(null);
   let open = $state(false);
+
+  // destroyOnHide=false（默认）时浮层首开后保留 DOM 仅隐藏；true 时随 open 卸载/重建。
+  let hasOpened = $state(false);
+  $effect(() => {
+    if (open) hasOpened = true;
+  });
+  // 浮层是否渲染：destroyOnHide=true 仅 open 时渲染；false 时首开后持续渲染（隐藏由 class 控制）。
+  const shouldRenderSub = $derived(
+    !!titleEl && (destroyOnHide ? open : open || hasOpened),
+  );
 
   let openTimer: ReturnType<typeof setTimeout> | undefined;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -153,6 +166,7 @@
           {trigger}
           {getPopupContainer}
           {parentDisabled}
+          {destroyOnHide}
           {onSelectLeaf}
           {onCloseAll}
           {openDelay}
@@ -199,11 +213,13 @@
       </span>{/if}
     </button>
 
-    {#if open && titleEl}
+    {#if shouldRenderSub}
       <ul
         class="cd-menu__sub cd-menu__sub--popup"
+        class:cd-menu__sub--hidden={!open}
         role={navigation ? undefined : 'menu'}
-        use:floating={{ trigger: titleEl, placement, offset: 2, autoAdjust: true, getContainer: getPopupContainer }}
+        aria-hidden={!open || undefined}
+        use:floating={{ trigger: titleEl, placement, offset: 2, autoAdjust: true, getContainer: getPopupContainer, open }}
         onpointerenter={keepOpen}
         onpointerleave={scheduleClose}
       >
@@ -216,6 +232,7 @@
             {navigation}
             {trigger}
             {getPopupContainer}
+            {destroyOnHide}
             parentDisabled={parentDisabled}
             {onSelectLeaf}
             onCloseAll={() => {
@@ -415,6 +432,10 @@
     border-radius: var(--cd-select-dropdown-radius, 6px);
     box-shadow: var(--cd-select-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));
     z-index: var(--cd-select-dropdown-z, 1050);
+  }
+  /* destroyOnHide=false 隐藏浮层时保留 DOM 但不可见、不可交互、不占位 */
+  .cd-menu__sub--hidden {
+    display: none;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-menu__link,

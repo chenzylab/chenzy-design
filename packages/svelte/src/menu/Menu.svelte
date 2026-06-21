@@ -22,6 +22,7 @@
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
+  type Status = 'default' | 'warning' | 'error';
   type TriggerSubMenuAction = 'hover' | 'click';
 
   interface Props {
@@ -50,6 +51,18 @@
     subMenuCloseDelay?: number;
     /** 浮层子菜单挂载容器，缺省 document.body（透传 floating action getContainer） */
     getPopupContainer?: () => HTMLElement | null | undefined;
+    /**
+     * 校验态（用于表单内菜单选择，少见）：'default' | 'warning' | 'error'。
+     * 非 default 时给根节点加 cd-menu--{status} 类并以 token 着色选中指示条/边框，
+     * error 时根节点 aria-invalid=true。默认 'default'。
+     */
+    status?: Status;
+    /**
+     * 浮层子菜单隐藏时是否卸载其内容 DOM（默认 false：保留 DOM 仅隐藏，重显不重建）。
+     * 仅作用于 vertical/horizontal/collapsed 浮层模式的 hover/click 子菜单浮层；
+     * inline 内联展开不涉及浮层，始终随展开态挂载/卸载。
+     */
+    destroyOnHide?: boolean;
     /** 整体禁用：所有项不可交互（叶子/子菜单 title 均 disabled） */
     disabled?: boolean;
     /**
@@ -77,6 +90,8 @@
     triggerSubMenuAction,
     subMenuOpenDelay = 100,
     subMenuCloseDelay = 100,
+    status = 'default',
+    destroyOnHide = false,
     getPopupContainer,
     disabled = false,
     purpose = 'menu',
@@ -166,6 +181,7 @@
       'cd-menu',
       `cd-menu--${mode}`,
       `cd-menu--${size}`,
+      status !== 'default' ? `cd-menu--${status}` : '',
       collapsed ? 'cd-menu--collapsed' : '',
     ]
       .filter(Boolean)
@@ -304,6 +320,7 @@
     role={sem.listRole}
     aria-label={sem.navigation ? undefined : ariaLabel}
     aria-orientation={!sem.navigation && mode === 'horizontal' ? 'horizontal' : undefined}
+    aria-invalid={status === 'error' || undefined}
     bind:this={rootEl}
     onkeydown={onMenubarKeydown}
   >
@@ -319,6 +336,7 @@
           trigger={subTrigger}
           openDelay={subMenuOpenDelay}
           closeDelay={subMenuCloseDelay}
+          {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
           onSelectLeaf={selectLeaf}
@@ -336,6 +354,7 @@
           trigger={subTrigger}
           openDelay={subMenuOpenDelay}
           closeDelay={subMenuCloseDelay}
+          {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
           onSelectLeaf={selectLeaf}
@@ -478,6 +497,21 @@
   .cd-menu__title[aria-disabled='true'] {
     color: var(--cd-menu-item-color-disabled);
     cursor: not-allowed;
+  }
+  /* 校验态：用 token 着色选中指示条与选中文字（表单内菜单少见场景）。
+     选中叶子可能由子组件 MenuPopupNode 渲染（vertical/horizontal/collapsed 浮层模式），
+     故用 :global 穿透 scoped 边界匹配后代 link。 */
+  .cd-menu--warning :global(.cd-menu__link--selected) {
+    color: var(--cd-menu-color-warning, var(--cd-color-warning));
+  }
+  .cd-menu--warning :global(.cd-menu__link--selected::before) {
+    background: var(--cd-menu-color-warning, var(--cd-color-warning));
+  }
+  .cd-menu--error :global(.cd-menu__link--selected) {
+    color: var(--cd-menu-color-danger, var(--cd-color-danger));
+  }
+  .cd-menu--error :global(.cd-menu__link--selected::before) {
+    background: var(--cd-menu-color-danger, var(--cd-color-danger));
   }
   .cd-menu__label {
     flex: 1 1 auto;

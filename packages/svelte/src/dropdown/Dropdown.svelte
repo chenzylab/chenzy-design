@@ -39,6 +39,24 @@
     closeOnEsc?: boolean;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
+    /**
+     * 浮层与触发元素的间距(px)。数值映射到 floating 主轴 offset；
+     * 传 { x, y } 时按当前 position 主轴方向取值（上下取 y、左右取 x）。默认 4。
+     */
+    spacing?: number | { x: number; y: number };
+    /**
+     * hover 模式下点击菜单项是否关闭浮层（默认 true）。
+     * 设为 false 时 hover 触发下点击项不关闭，仅靠移出/Esc/外部点击收起。
+     * 仅影响 hover 触发；click/contextMenu 触发的关闭仍由 closeOnSelect 决定。
+     */
+    clickToHide?: boolean;
+    /** 浮层层级（z-index），默认 1050。写入浮层内联 style 覆盖 token 默认值。 */
+    zIndex?: number;
+    /**
+     * 空间不足时自动翻转/移位到可视区（默认 true）。
+     * 透传 floating action autoAdjust：false 时严格按 position 定位不翻转。
+     */
+    autoAdjustOverflow?: boolean;
     /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
     destroyOnClose?: boolean;
     /**
@@ -71,6 +89,10 @@
     closeOnEsc = true,
     mouseEnterDelay = 150,
     mouseLeaveDelay = 150,
+    spacing = 4,
+    clickToHide = true,
+    zIndex = 1050,
+    autoAdjustOverflow = true,
     destroyOnClose = false,
     lazyRender = true,
     keepDOM = false,
@@ -88,6 +110,14 @@
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
   const menuId = useId('cd-dropdown-menu');
+
+  // spacing → floating 主轴 offset：number 直用；{ x, y } 按 position 主轴方向取值
+  // （top/bottom 系主轴是垂直取 y；left/right 系主轴是水平取 x）。
+  const offset = $derived.by(() => {
+    if (typeof spacing === 'number') return spacing;
+    const horizontal = position.startsWith('left') || position.startsWith('right');
+    return horizontal ? spacing.x : spacing.y;
+  });
 
   // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）。
   setContext<DropdownContext>(DROPDOWN_CTX, {
@@ -130,6 +160,9 @@
 
   function selectLeaf(key: ItemKey) {
     onSelect?.(key);
+    // hover 模式下 clickToHide=false 时点击项不关闭浮层（仅靠移出/Esc/外部点击收起）；
+    // click/contextMenu 触发不受 clickToHide 影响，关闭仍由 closeOnSelect 决定。
+    if (trigger === 'hover' && !clickToHide) return;
     if (closeOnSelect) setOpen(false);
   }
 
@@ -415,6 +448,7 @@
       class="cd-dropdown__menu"
       id={menuId}
       bind:this={menuEl}
+      style="z-index: {zIndex}"
       use:cursorFloating={{ x: cursorX, y: cursorY }}
       role="menu"
       tabindex="-1"
@@ -429,7 +463,8 @@
       class:cd-dropdown__menu--hidden={!isOpen}
       id={menuId}
       bind:this={menuEl}
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: true, offset: 4, getContainer: resolvePopupContainer, open: isOpen }}
+      style="z-index: {zIndex}"
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset, getContainer: resolvePopupContainer, open: isOpen }}
       role="menu"
       tabindex="-1"
       aria-hidden={!isOpen || undefined}
