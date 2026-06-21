@@ -5,6 +5,7 @@
   受控 value=[start,end]（Date|null 元组）不回写 (红线 #1)，仅 onChange。
   本地化走 Intl.DateTimeFormat。useDismiss / 几何由 $effect 管理 (红线 #3)。
   复用 @chenzy-design/core 日期纯函数（getMonthGrid/addMonths/isSameDay/startOfDay/weekdayOrder）。
+  maxRange: 起止跨度上限（天）。选定起始后，超出 maxRange 天的日期置灰禁用（daysBetween 纯函数判定，红线 #2）。
 -->
 <script lang="ts">
   import { untrack } from 'svelte';
@@ -16,6 +17,7 @@
     addMonths,
     getMonthGrid,
     weekdayOrder,
+    daysBetween,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -36,6 +38,8 @@
     disabled?: boolean;
     clearable?: boolean;
     disabledDate?: (date: Date) => boolean;
+    /** 起止跨度上限（天）。选定起始后，超出该跨度的日期被禁用。 */
+    maxRange?: number;
     weekStart?: WeekStart;
     locale?: string;
     onChange?: (v: RangeValue | null) => void;
@@ -55,6 +59,7 @@
     disabled = false,
     clearable = true,
     disabledDate,
+    maxRange,
     weekStart = 0,
     locale = 'zh-CN',
     onChange,
@@ -169,8 +174,21 @@
     return isSameDay(date, rangeStart) || isSameDay(date, rangeEnd);
   }
 
+  // maxRange：选定起始(phase==='end')后，离 pendingStart 超过 maxRange-1 天的日期禁用
+  // （跨度含两端，故 maxRange=7 表示最多 7 天，即间隔 ≤ 6）
+  function exceedsMaxRange(date: Date): boolean {
+    if (maxRange == null || maxRange <= 0) return false;
+    if (phase !== 'end' || !pendingStart) return false;
+    return Math.abs(daysBetween(pendingStart, date)) > maxRange - 1;
+  }
+
+  // 单元格综合禁用：外部 disabledDate 或 超出 maxRange
+  function isCellDisabled(date: Date): boolean {
+    return (disabledDate?.(date) ?? false) || exceedsMaxRange(date);
+  }
+
   function selectDate(date: Date) {
-    if (disabledDate?.(date)) return;
+    if (isCellDisabled(date)) return;
     const day = startOfDay(date);
     if (phase === 'start') {
       pendingStart = day;
@@ -189,7 +207,7 @@
   }
 
   function onCellHover(date: Date) {
-    if (phase === 'end' && !disabledDate?.(date)) previewEnd = startOfDay(date);
+    if (phase === 'end' && !isCellDisabled(date)) previewEnd = startOfDay(date);
   }
 
   function clear(e: MouseEvent) {
@@ -296,7 +314,7 @@
               {@const edge = isEdge(cell.date)}
               {@const within = inRange(cell.date)}
               {@const isToday = isSameDay(cell.date, today)}
-              {@const isDisabled = disabledDate?.(cell.date) ?? false}
+              {@const isDisabled = isCellDisabled(cell.date)}
               <button
                 type="button"
                 class="cd-range-picker__cell"
@@ -340,7 +358,7 @@
               {@const edge = isEdge(cell.date)}
               {@const within = inRange(cell.date)}
               {@const isToday = isSameDay(cell.date, today)}
-              {@const isDisabled = disabledDate?.(cell.date) ?? false}
+              {@const isDisabled = isCellDisabled(cell.date)}
               <button
                 type="button"
                 class="cd-range-picker__cell"

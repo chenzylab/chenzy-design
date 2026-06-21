@@ -3,11 +3,12 @@
   基础子集: 单选 type='date' 日历面板 / type='dateTime' 日期+时间。Token-driven, a11y-correct, 受控/非受控。
   本地化全部走 Intl.DateTimeFormat (不手拼日期串)。dateTime 复用 TimePicker 的时/分/秒列逻辑。
   disabledTime: dateTime 时/分/秒列按日期禁用值置灰跳过；presets: 面板侧边快捷日期按钮。
-  TODO(延后): maxRange、自定义 format 解析手输。
+  format: 传 token 串（YYYY/MM/DD/HH/mm/ss）时，触发器变可输入文本框，显示与手输解析均走
+  core 的 formatDate/parseDateString 纯函数（红线 #2）；不传则沿用 Intl.DateTimeFormat 显示（向后兼容）。
 -->
 <script lang="ts">
   import { tick } from 'svelte';
-  import { useId, useDismiss, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder } from '@chenzy-design/core';
+  import { useId, useDismiss, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, formatDate, parseDateString } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -45,6 +46,8 @@
     weekStart?: WeekStart;
     showSecond?: boolean;
     locale?: string;
+    /** token 格式串 (YYYY/MM/DD/HH/mm/ss)。传入则触发器变可输入文本框，显示+手输解析按此格式。 */
+    format?: string;
     onChange?: (v: Date | null) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -67,6 +70,7 @@
     weekStart = 0,
     showSecond = true,
     locale = 'zh-CN',
+    format,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -152,7 +156,52 @@
   const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
 
-  const displayText = $derived(current ? triggerFormat.format(current) : (placeholder ?? loc().t('DatePicker.placeholder')));
+  // format 串优先用 core 纯函数序列化；否则沿用 Intl (向后兼容)
+  const formattedValue = $derived(
+    current ? (format ? formatDate(current, format) : triggerFormat.format(current)) : '',
+  );
+  const displayText = $derived(formattedValue || (placeholder ?? loc().t('DatePicker.placeholder')));
+
+  // --- 可输入模式 (format 串)：本地草稿文本 + 按格式解析 ---
+  const editable = $derived(!!format);
+  let inputText = $state('');
+  // 非编辑期同步草稿到受控显示值 (打开输入时让用户继续编辑当前文本)
+  $effect(() => {
+    if (!editable) return;
+    inputText = formattedValue;
+  });
+
+  function commitInput() {
+    if (!editable || !format) return;
+    const raw = inputText.trim();
+    if (raw === '') {
+      if (current !== null) setValue(null);
+      return;
+    }
+    const parsed = parseDateString(raw, format);
+    if (parsed && !(disabledDate?.(parsed) ?? false)) {
+      setValue(combine(parsed));
+    } else {
+      // 解析失败：回退到当前值的规范文本
+      inputText = formattedValue;
+    }
+  }
+
+  function onInputKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInput();
+      setOpen(false);
+    } else if (e.key === 'ArrowDown' && !isOpen) {
+      e.preventDefault();
+      setOpen(true);
+    } else if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      inputText = formattedValue;
+      setOpen(false);
+    }
+  }
 
   // --- 十年范围 (year 面板)：以 cursor 年所在的十年起点对齐 ---
   const decadeStart = $derived(Math.floor(cursor.getFullYear() / 10) * 10);
@@ -467,21 +516,39 @@
 
 <div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
   <div class="cd-date-picker__control">
-    <button
-      type="button"
-      class="cd-date-picker__trigger"
-      aria-haspopup="dialog"
-      aria-expanded={isOpen}
-      aria-controls={dialogId}
-      aria-label={ariaLabel}
-      {disabled}
-      onclick={toggleOpen}
-      onkeydown={onTriggerKeydown}
-    >
-      <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={current === null}>
-        {displayText}
-      </span>
-    </button>
+    {#if editable}
+      <input
+        type="text"
+        class="cd-date-picker__trigger cd-date-picker__input"
+        role="combobox"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-controls={dialogId}
+        aria-label={ariaLabel}
+        placeholder={placeholder ?? format}
+        {disabled}
+        bind:value={inputText}
+        onclick={() => setOpen(true)}
+        onkeydown={onInputKeydown}
+        onblur={commitInput}
+      />
+    {:else}
+      <button
+        type="button"
+        class="cd-date-picker__trigger"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-controls={dialogId}
+        aria-label={ariaLabel}
+        {disabled}
+        onclick={toggleOpen}
+        onkeydown={onTriggerKeydown}
+      >
+        <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={current === null}>
+          {displayText}
+        </span>
+      </button>
+    {/if}
 
     {#if showClear}
       <button type="button" class="cd-date-picker__clear" aria-label={loc().t('DatePicker.clear')} onclick={clear}>
@@ -794,6 +861,15 @@
   }
   .cd-date-picker__value--placeholder {
     color: var(--cd-input-color-placeholder);
+  }
+  /* format 可输入模式：原生 input 复用 trigger 外观 */
+  .cd-date-picker__input::placeholder {
+    color: var(--cd-input-color-placeholder);
+  }
+  .cd-date-picker__input:disabled {
+    background: var(--cd-color-fill-0);
+    color: var(--cd-color-text-3);
+    cursor: not-allowed;
   }
   .cd-date-picker__clear,
   .cd-date-picker__icon {

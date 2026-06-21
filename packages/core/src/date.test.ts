@@ -9,6 +9,9 @@ import {
   getWeekGrid,
   getDayHours,
   weekdayOrder,
+  daysBetween,
+  formatDate,
+  parseDateString,
 } from './date.js';
 
 describe('date utils', () => {
@@ -106,5 +109,59 @@ describe('date utils', () => {
     expect(slots.map((s) => s.hour)).toEqual([9, 10, 11]);
     // out-of-bounds clamps into 0..23
     expect(getDayHours(new Date(2024, 5, 15), -5, 30)).toHaveLength(24);
+  });
+
+  it('daysBetween counts whole days ignoring time-of-day', () => {
+    expect(daysBetween(new Date(2024, 0, 1, 23), new Date(2024, 0, 2, 1))).toBe(1);
+    expect(daysBetween(new Date(2024, 0, 1), new Date(2024, 0, 1, 23))).toBe(0);
+    expect(daysBetween(new Date(2024, 0, 10), new Date(2024, 0, 1))).toBe(-9);
+    // crosses month boundary
+    expect(daysBetween(new Date(2024, 0, 31), new Date(2024, 1, 2))).toBe(2);
+  });
+});
+
+describe('formatDate', () => {
+  it('formats common patterns with zero-padding', () => {
+    const d = new Date(2024, 2, 7, 9, 5, 3);
+    expect(formatDate(d, 'YYYY-MM-DD')).toBe('2024-03-07');
+    expect(formatDate(d, 'YYYY/MM/DD HH:mm')).toBe('2024/03/07 09:05');
+    expect(formatDate(d, 'YYYY-MM-DD HH:mm:ss')).toBe('2024-03-07 09:05:03');
+  });
+
+  it('emits non-token characters verbatim', () => {
+    const d = new Date(2024, 11, 25);
+    expect(formatDate(d, 'YYYY 年 MM 月 DD 日')).toBe('2024 年 12 月 25 日');
+  });
+});
+
+describe('parseDateString', () => {
+  it('round-trips with formatDate', () => {
+    const d = new Date(2024, 2, 7, 9, 5, 0);
+    const s = formatDate(d, 'YYYY-MM-DD HH:mm');
+    const back = parseDateString(s, 'YYYY-MM-DD HH:mm');
+    expect(back?.getTime()).toBe(d.getTime());
+  });
+
+  it('parses date-only patterns to start of day', () => {
+    const r = parseDateString('2024/03/07', 'YYYY/MM/DD');
+    expect(r?.getFullYear()).toBe(2024);
+    expect(r?.getMonth()).toBe(2);
+    expect(r?.getDate()).toBe(7);
+    expect(r?.getHours()).toBe(0);
+  });
+
+  it('accepts single-digit fields where the pattern allows', () => {
+    const r = parseDateString('2024-3-7', 'YYYY-MM-DD');
+    expect(r?.getMonth()).toBe(2);
+    expect(r?.getDate()).toBe(7);
+  });
+
+  it('rejects non-matching input and out-of-range fields', () => {
+    expect(parseDateString('', 'YYYY-MM-DD')).toBeNull();
+    expect(parseDateString('not a date', 'YYYY-MM-DD')).toBeNull();
+    expect(parseDateString('2024-13-01', 'YYYY-MM-DD')).toBeNull();
+    expect(parseDateString('2024-02-30', 'YYYY-MM-DD')).toBeNull(); // overflow rejected
+    expect(parseDateString('2024-03-07 25:00', 'YYYY-MM-DD HH:mm')).toBeNull();
+    expect(parseDateString('2024/03/07', 'YYYY-MM-DD')).toBeNull(); // wrong separators
   });
 });

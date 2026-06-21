@@ -43,6 +43,9 @@ export {
   getWeekGrid,
   getDayHours,
   weekdayOrder,
+  daysBetween,
+  formatDate,
+  parseDateString,
   type DayCell,
 } from './date.js';
 export {

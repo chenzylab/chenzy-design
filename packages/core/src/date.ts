@@ -94,6 +94,83 @@ export function getDayHours(cursor: Date, from = 0, to = 23): { hour: number; da
 }
 
 /**
+ * Whole calendar days between two dates (b - a), ignoring time-of-day.
+ * Positive when `b` is after `a`. Order-independent magnitude via Math.abs.
+ */
+export function daysBetween(a: Date, b: Date): number {
+  const ms = startOfDay(b).getTime() - startOfDay(a).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+/**
+ * Token-based date formatting. Supported tokens (longest-match first):
+ *   YYYY year (4)   MM month (01-12)   DD day (01-31)
+ *   HH hour (00-23) mm minute (00-59)  ss second (00-59)
+ * Any other characters in the pattern are emitted verbatim (separators,
+ * literals). No locale/timezone math — uses the Date's local fields.
+ */
+export function formatDate(date: Date, pattern: string): string {
+  const pad = (n: number, len = 2) => String(n).padStart(len, '0');
+  const map: Record<string, string> = {
+    YYYY: pad(date.getFullYear(), 4),
+    MM: pad(date.getMonth() + 1),
+    DD: pad(date.getDate()),
+    HH: pad(date.getHours()),
+    mm: pad(date.getMinutes()),
+    ss: pad(date.getSeconds()),
+  };
+  return pattern.replace(/YYYY|MM|DD|HH|mm|ss/g, (t) => map[t] ?? t);
+}
+
+/**
+ * Parse a string against a token pattern (mirror of {@link formatDate}).
+ * Returns a local Date on success, or null when the input doesn't match the
+ * pattern or yields an out-of-range field. Missing time tokens default to 0.
+ * Non-token characters in the pattern must appear literally in the input.
+ */
+export function parseDateString(input: string, pattern: string): Date | null {
+  if (!input) return null;
+  const tokenRe = /YYYY|MM|DD|HH|mm|ss/g;
+  const order: string[] = [];
+  let regexSrc = '';
+  let last = 0;
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (let m = tokenRe.exec(pattern); m; m = tokenRe.exec(pattern)) {
+    regexSrc += escape(pattern.slice(last, m.index));
+    const tok = m[0];
+    order.push(tok);
+    regexSrc += tok === 'YYYY' ? '(\\d{4})' : '(\\d{1,2})';
+    last = tokenRe.lastIndex;
+  }
+  regexSrc += escape(pattern.slice(last));
+  const match = new RegExp(`^${regexSrc}$`).exec(input.trim());
+  if (!match) return null;
+
+  const parts: Record<string, number> = {};
+  order.forEach((tok, i) => {
+    parts[tok] = Number(match[i + 1]);
+  });
+
+  const year = parts.YYYY ?? new Date().getFullYear();
+  const month = parts.MM != null ? parts.MM - 1 : 0;
+  const day = parts.DD ?? 1;
+  const hour = parts.HH ?? 0;
+  const minute = parts.mm ?? 0;
+  const second = parts.ss ?? 0;
+
+  if (month < 0 || month > 11) return null;
+  if (day < 1 || day > 31) return null;
+  if (hour > 23 || minute > 59 || second > 59) return null;
+
+  const d = new Date(year, month, day, hour, minute, second, 0);
+  // reject overflow normalization (e.g. Feb 30 → Mar 2)
+  if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) {
+    return null;
+  }
+  return d;
+}
+
+/**
  * Build a single-week (7-cell) grid for the week containing `cursor`.
  * Every cell `inMonth` is relative to the month of `cursor`.
  * @param weekStart 0 = Sunday (default), 1 = Monday
