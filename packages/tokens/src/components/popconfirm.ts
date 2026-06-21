@@ -18,4 +18,5 @@ export const popconfirmTokens = {
   'popconfirm-gap-footer': 'var(--cd-spacing-2)',
   'popconfirm-arrow-size': '8px',
   'popconfirm-motion-duration': 'var(--cd-motion-duration-fast)',
+  'popconfirm-motion-easing': 'var(--cd-motion-ease-standard)',
 } as const;
