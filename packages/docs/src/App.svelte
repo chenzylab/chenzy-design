@@ -2360,6 +2360,39 @@ let pageSize2 = $state(10);
       </Descriptions>
     </div>
 
+    <Text type="tertiary">响应式 column 断点对象（缩放窗口宽度，列数随视口断点变化）：</Text>
+    <div data-testid="descriptions-responsive">
+      <Descriptions
+        bordered
+        column={{ xs: 1, sm: 2, lg: 3, xl: 4 }}
+        data={[
+          { label: '姓名', value: '陈某' },
+          { label: '年龄', value: 28 },
+          { label: '邮箱', value: 'a@b.com' },
+          { label: '城市', value: '杭州' },
+          { label: '部门', value: '设计' },
+          { label: '职级', value: 'P7' },
+          { label: '入职', value: '2020' },
+          { label: '状态', value: '在职' },
+        ]}
+      />
+    </div>
+
+    <Text type="tertiary">align（value 右对齐）+ justify（label/value 两端对齐）：</Text>
+    <div style="width: 420px" data-testid="descriptions-align">
+      <Descriptions
+        bordered
+        column={1}
+        align="right"
+        justify="between"
+        data={[
+          { label: '订单号', value: 'NO.20240620' },
+          { label: '金额', value: '¥1,280.00' },
+          { label: '状态', value: '已支付' },
+        ]}
+      />
+    </div>
+
     <div style="width: 420px">
       <Collapse panels={[{ key: 'p1', header: '面板一' }, { key: 'p2', header: '面板二' }]}>
         {#snippet children({ key })}
