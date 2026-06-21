@@ -5,7 +5,7 @@
 export const meta = {
   name: 'Transfer',
   category: 'input',
-  description: '穿梭框，双栏列表间移动条目，支持多选、移动按钮、本地搜索过滤、分组（groupList）、树状源面板（treeList）与单向迁移（oneWay）。',
+  description: '穿梭框，双栏列表间移动条目，支持多选、移动按钮、本地搜索过滤、分组（groupList）、树状源面板（treeList）、单向迁移（oneWay）、目标列拖拽重排（draggable）、虚拟化（virtualize）与远程搜索（onSearch）。',
   props: [
     { name: 'value', type: '(string|number)[]', default: 'undefined', desc: '受控已选 key 数组；提供则为受控' },
     { name: 'defaultValue', type: '(string|number)[]', default: '[]', desc: '非受控初始已选 key' },
@@ -18,6 +18,12 @@ export const meta = {
     { name: 'showPanelTitle', type: 'boolean', default: 'true', desc: '是否显示面板标题与计数' },
     { name: 'titles', type: '[string, string]', default: "['源', '已选']" },
     { name: 'oneWay', type: 'boolean', default: 'false', desc: '单向迁移：仅左→右；目标项各带「移除」按钮移回左侧，不显示右→左批量按钮' },
+    { name: 'draggable', type: 'boolean', default: 'false', desc: '目标（已选）列项可鼠标拖拽重排（HTML5 DnD）；新顺序经 reorder 纯函数算出仅通过 onChange 通知，受控 value 不回写' },
+    { name: 'virtualize', type: 'boolean', default: 'false', desc: '虚拟化两侧平铺面板：大数据下仅渲染视口内项（复用 core fixedRange）；分组/树源面板回退全量渲染' },
+    { name: 'itemHeight', type: 'number', default: '32', desc: '虚拟化行高（px），需与实际行高一致' },
+    { name: 'onSearch', type: "(query: string, direction: 'left'|'right') => void", default: 'undefined', desc: '远程搜索：提供后切换远程模式，输入防抖（searchDebounce ms）回调并由外部更新 dataSource，本地不再过滤' },
+    { name: 'loading', type: 'boolean', default: 'false', desc: '远程加载中：每侧列表顶部显示 spinner 行' },
+    { name: 'searchDebounce', type: 'number', default: '300', desc: 'onSearch 防抖毫秒' },
     { name: 'onChange', type: '(targetKeys: (string|number)[]) => void', default: 'undefined' },
   ],
   a11y: {

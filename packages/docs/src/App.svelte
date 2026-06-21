@@ -814,6 +814,36 @@ let pageSize2 = $state(10);
     { key: 'c', label: '广州' },
     { key: 'd', label: '深圳' },
   ];
+  // 大数据集：验证虚拟化（视口内仅渲染少量 DOM）。
+  const transferBigData = Array.from({ length: 2000 }, (_, i) => ({
+    key: `n${i}`,
+    label: `选项 ${i}`,
+  }));
+  let transferBigVal = $state<(string | number)[]>([]);
+  // draggable：右列已选项拖拽重排。
+  let transferDragVal = $state<(string | number)[]>(['a', 'b', 'c', 'd']);
+  // remote onSearch：模拟异步搜索（loading + 防抖）。
+  const transferRemoteAll = Array.from({ length: 50 }, (_, i) => ({
+    key: `r${i}`,
+    label: `远程城市 ${i}`,
+  }));
+  let transferRemoteData = $state<{ key: string; label: string }[]>(
+    transferRemoteAll.slice(0, 8),
+  );
+  let transferRemoteVal = $state<(string | number)[]>([]);
+  let transferRemoteLoading = $state(false);
+  let transferRemoteTimer: ReturnType<typeof setTimeout> | undefined;
+  function transferRemoteSearch(q: string) {
+    transferRemoteLoading = true;
+    if (transferRemoteTimer) clearTimeout(transferRemoteTimer);
+    transferRemoteTimer = setTimeout(() => {
+      const kw = q.trim().toLowerCase();
+      transferRemoteData = kw
+        ? transferRemoteAll.filter((o) => o.label.toLowerCase().includes(kw))
+        : transferRemoteAll.slice(0, 8);
+      transferRemoteLoading = false;
+    }, 500);
+  }
   const transferGroupData = [
     {
       title: '华东',
@@ -1791,6 +1821,43 @@ let pageSize2 = $state(10);
       />
     </div>
     <Text type="tertiary">单向已选：{transferOneWayVal.join(', ') || '（无）'}</Text>
+
+    <Text type="tertiary">virtualize 虚拟化（2000 项，仅渲染视口内）：</Text>
+    <div data-testid="transfer-virtual">
+      <Transfer
+        virtualize
+        dataSource={transferBigData}
+        value={transferBigVal}
+        titles={['可选（2000）', '已选']}
+        onChange={(keys) => (transferBigVal = keys)}
+      />
+    </div>
+
+    <Text type="tertiary">draggable 目标列拖拽重排：</Text>
+    <div data-testid="transfer-drag">
+      <Transfer
+        draggable
+        filter={false}
+        dataSource={transferData}
+        value={transferDragVal}
+        titles={['可选城市', '已选（可拖拽）']}
+        onChange={(keys) => (transferDragVal = keys)}
+      />
+    </div>
+    <Text type="tertiary">拖拽后顺序：{transferDragVal.join(', ') || '（无）'}</Text>
+
+    <Text type="tertiary">remote onSearch 远程搜索（防抖 + loading）：</Text>
+    <div data-testid="transfer-remote">
+      <Transfer
+        dataSource={transferRemoteData}
+        value={transferRemoteVal}
+        loading={transferRemoteLoading}
+        onSearch={transferRemoteSearch}
+        titles={['远程结果', '已选']}
+        onChange={(keys) => (transferRemoteVal = keys)}
+      />
+    </div>
+    <Text type="tertiary">远程已选：{transferRemoteVal.join(', ') || '（无）'}</Text>
 
     <Upload multiple drag accept="image/*" />
 

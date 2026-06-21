@@ -193,6 +193,7 @@ export const en_US: Locale = {
     moveToRight: 'Move to right',
     moveToLeft: 'Move to left',
     remove: 'Remove',
+    loading: 'Loading…',
   },
   Upload: {
     trigger: 'Select file',
