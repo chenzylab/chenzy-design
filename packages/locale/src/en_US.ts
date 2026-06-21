@@ -304,6 +304,10 @@ export const en_US: Locale = {
     warningLabel: 'Warning',
     errorLabel: 'Error',
   },
+  Popover: {
+    close: 'Close',
+    dialogLabel: 'Dialog',
+  },
   Typography: {
     copy: 'Copy',
     copied: 'Copied',
