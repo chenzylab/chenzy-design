@@ -8,4 +8,7 @@ export const typographyTokens = {
   'typography-mark-bg': 'var(--cd-color-warning)',
   'typography-code-bg': 'var(--cd-color-fill-1)',
   'typography-code-font-size': 'var(--cd-font-size-1)',
+  'typography-font-size-small': 'var(--cd-font-size-1)',
+  'typography-font-size-default': 'var(--cd-font-size-2)',
+  'typography-font-size-large': 'var(--cd-font-size-3)',
 } as const;

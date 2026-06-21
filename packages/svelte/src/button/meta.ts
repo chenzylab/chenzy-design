@@ -13,6 +13,7 @@ export const meta = {
     { name: 'block', type: 'boolean', default: 'false' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'loading', type: 'boolean', default: 'false' },
+    { name: 'iconPosition', type: "'left'|'right'", default: 'left', desc: '图标相对文字位置' },
     { name: 'href', type: 'string', default: 'undefined', desc: '提供则渲染为链接' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '仅图标按钮必填' },
   ],
