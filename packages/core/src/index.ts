@@ -23,6 +23,7 @@ export {
   type FieldErrors,
   type Rule,
   type MessageDescriptor,
+  type ValidateTrigger,
 } from './form.js';
 export {
   findRanges,

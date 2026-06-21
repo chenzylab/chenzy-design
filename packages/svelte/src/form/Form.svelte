@@ -5,9 +5,21 @@
 -->
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
-  import { createForm, type FormValues, type FieldErrors, type MessageDescriptor } from '@chenzy-design/core';
+  import {
+    createForm,
+    type FormValues,
+    type FieldErrors,
+    type MessageDescriptor,
+    type ValidateTrigger,
+  } from '@chenzy-design/core';
   import { interpolate } from '@chenzy-design/locale';
-  import { setFormContext, type FormLayout, type FormLabelPosition, type FormSize } from './context.js';
+  import {
+    setFormContext,
+    type FormLayout,
+    type FormLabelPosition,
+    type FormSize,
+    type FormLabelAlign,
+  } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalValidateMessages } from '../config-provider/index.js';
 
@@ -19,12 +31,24 @@
     /** 'top' | 'left' | 'inset'（inset：label 浮入控件，聚焦/有值时上浮变小） */
     labelPosition?: FormLabelPosition;
     labelWidth?: number | string;
+    /** Label 文本对齐（spec §4 L60，默认 'left'）。 */
+    labelAlign?: FormLabelAlign;
     size?: FormSize;
     disabled?: boolean;
     requiredMark?: boolean;
     colon?: boolean;
     /** on failed submit, scroll to and focus the first errored field */
     scrollToError?: boolean;
+    /** 全局默认校验时机（spec §4 L65，默认 ['blur','change']），字段可覆盖。 */
+    validateTrigger?: ValidateTrigger | ValidateTrigger[];
+    /** 错误/警告文案是否带状态图标（spec §4 L66，默认 true）。 */
+    showValidateIcon?: boolean;
+    /** 字段命中首条错误即停止该字段后续 rule（spec §4 L68，默认 false）。 */
+    stopValidateWithError?: boolean;
+    /** 是否拦截原生 submit 默认行为（spec §4 L69，默认 true）。 */
+    preventDefault?: boolean;
+    /** 收集值时是否保留空值字段键（spec §4 L70，默认 false）。 */
+    allowEmpty?: boolean;
     onSubmit?: (r: { valid: boolean; values: FormValues; errors: FieldErrors }) => void;
     onChange?: (values: FormValues) => void;
     children?: Snippet;
@@ -37,11 +61,17 @@
     layout = 'vertical',
     labelPosition = 'top',
     labelWidth,
+    labelAlign = 'left',
     size = 'default',
     disabled = false,
     requiredMark = true,
     colon = false,
     scrollToError = false,
+    validateTrigger = ['blur', 'change'],
+    showValidateIcon = true,
+    stopValidateWithError = false,
+    preventDefault = true,
+    allowEmpty = false,
     onSubmit,
     onChange,
     children,
@@ -68,7 +98,16 @@
   // non-reactive seed read explicit (later prop changes flow via the controlled
   // `value` effect / onChange, not by re-seeding the form).
   const seedValues: FormValues = untrack(() => value ?? initValues);
-  const form = createForm({ initialValues: seedValues, resolveMessage });
+  // validateTrigger / stopValidateWithError / allowEmpty are construction-time
+  // config of the headless form (read once, like initialValues). untrack keeps
+  // the read non-reactive — the form instance is created exactly once.
+  const form = createForm({
+    initialValues: seedValues,
+    resolveMessage,
+    validateTrigger: untrack(() => validateTrigger),
+    stopValidateWithError: untrack(() => stopValidateWithError),
+    allowEmpty: untrack(() => allowEmpty),
+  });
 
   // Bridge: callback-subscribe → runes. core returns a STABLE state object whose
   // sub-objects are replaced immutably; we take a fresh shallow snapshot on every
@@ -98,10 +137,12 @@
     getFormState: () => formState,
     getLabelPosition: () => labelPosition,
     getLabelWidth: () => labelWidth,
+    getLabelAlign: () => labelAlign,
     getSize: () => size,
     getDisabled: () => disabled,
     getRequiredMark: () => requiredMark,
     getColon: () => colon,
+    getShowValidateIcon: () => showValidateIcon,
   });
 
   // ref to the <form> element — used imperatively (red line #3: DOM ops live in
@@ -127,7 +168,9 @@
   }
 
   async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
+    // spec §4 L69 / §6 L140: preventDefault is now prop-controlled (default true
+    // = previous hardcoded behavior, backward compatible).
+    if (preventDefault) e.preventDefault();
     const r = await form.submit();
     if (!r.valid && scrollToError) focusFirstError(r.errors);
     onSubmit?.(r);

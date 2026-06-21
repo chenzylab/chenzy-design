@@ -34,6 +34,14 @@ export interface Rule {
   warningOnly?: boolean;
 }
 
+/**
+ * When validation should run. Spec §2 L26 / §4 L65. A single trigger or a list.
+ * `mount` runs once at registration; `change`/`blur` run on the matching event;
+ * `submit` only runs during submit(). The render layer reads `getFieldTrigger`
+ * to decide which DOM events to wire — core stays framework-free.
+ */
+export type ValidateTrigger = 'change' | 'blur' | 'submit' | 'mount';
+
 export interface FieldConfig {
   rules?: Rule[];
   initialValue?: unknown;
@@ -45,6 +53,11 @@ export interface FieldConfig {
    * e.g. a "confirm password" field depends on ["password"].
    */
   dependencies?: string[];
+  /**
+   * field-level override of the form's `validateTrigger` (spec §4 L84). When
+   * omitted the field inherits the form default.
+   */
+  trigger?: ValidateTrigger | ValidateTrigger[];
 }
 
 export type FieldErrors = Record<string, string | undefined>;
@@ -73,6 +86,23 @@ export interface FormOptions {
   initialValues?: FormValues;
   /** resolve a MessageDescriptor to a display string (i18n). Defaults to key. */
   resolveMessage?: (d: MessageDescriptor) => string;
+  /**
+   * default validation trigger(s) for every field (spec §4 L65). Fields may
+   * override via `FieldConfig.trigger`. Defaults to `['blur','change']`.
+   */
+  validateTrigger?: ValidateTrigger | ValidateTrigger[];
+  /**
+   * stop running a field's rules at the first blocking error (spec §4 L68).
+   * Default `false`: every rule runs (so warnings keep accumulating and a later
+   * blocking rule can still win); the first blocking error is the surfaced one.
+   */
+  stopValidateWithError?: boolean;
+  /**
+   * keep empty-value field keys when collecting values for submit (spec §4 L70).
+   * Default `false`: keys whose value is `undefined`/`null`/`''` are dropped
+   * from the collected `values` payload.
+   */
+  allowEmpty?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -82,6 +112,12 @@ export interface FormApi {
   getState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
   registerField(name: string, config?: FieldConfig): () => void;
+  /**
+   * resolved validation triggers for a field: its own `trigger` override, else
+   * the form default. Always a normalized array (spec §4 L65/L84). The render
+   * layer uses this to decide which DOM events to wire.
+   */
+  getFieldTrigger(name: string): ValidateTrigger[];
   getFieldValue(name: string): unknown;
   setFieldValue(name: string, value: unknown, opts?: { validate?: boolean }): void;
   setFieldsValue(values: FormValues): void;
@@ -94,13 +130,32 @@ export interface FormApi {
   /** validate all (or given) fields; resolves to true when valid */
   validate(names?: string[]): Promise<boolean>;
   resetFields(): void;
+  /**
+   * collected values honoring `allowEmpty` (spec §4 L70): with `allowEmpty:false`
+   * keys whose value is empty (`undefined`/`null`/`''`) are dropped.
+   */
+  getFieldsValue(): FormValues;
   /** run validation then resolve { valid, values, errors } */
   submit(): Promise<{ valid: boolean; values: FormValues; errors: FieldErrors }>;
 }
 
+/** the canonical "value is empty" predicate shared by required-rules and allowEmpty. */
+function isEmptyValue(v: unknown): boolean {
+  return v === undefined || v === null || v === '';
+}
+
+const DEFAULT_TRIGGER: ValidateTrigger[] = ['blur', 'change'];
+
 export function createForm(options: FormOptions = {}): FormApi {
   const resolve = options.resolveMessage ?? ((d) => d.text ?? d.key);
   const initial: FormValues = { ...(options.initialValues ?? {}) };
+  const defaultTrigger: ValidateTrigger[] = Array.isArray(options.validateTrigger)
+    ? options.validateTrigger
+    : options.validateTrigger
+      ? [options.validateTrigger]
+      : DEFAULT_TRIGGER;
+  const stopWithError = options.stopValidateWithError ?? false;
+  const allowEmpty = options.allowEmpty ?? false;
 
   const fields = new Map<string, FieldConfig>();
   // per-field async race token: only the latest validation may write the error
@@ -129,6 +184,19 @@ export function createForm(options: FormOptions = {}): FormApi {
   }
 
   /**
+   * snapshot of values honoring `allowEmpty` (spec §4 L70). With the default
+   * `allowEmpty:false`, keys whose value is empty are omitted from the payload.
+   */
+  function collectValues(): FormValues {
+    if (allowEmpty) return { ...state.values };
+    const out: FormValues = {};
+    for (const [k, v] of Object.entries(state.values)) {
+      if (!isEmptyValue(v)) out[k] = v;
+    }
+    return out;
+  }
+
+  /**
    * run all rules for a field. Returns the first blocking error and the first
    * warning (from a `warningOnly` rule), if any. A failing `warningOnly` rule
    * records a warning but does NOT halt evaluation — later rules still run, so a
@@ -142,9 +210,14 @@ export function createForm(options: FormOptions = {}): FormApi {
     if (!cfg?.rules) return {};
     const label = labelOf(name);
     let warning: string | undefined;
+    // first blocking error seen. With stopValidateWithError we return on it
+    // immediately; otherwise we keep scanning (so warnings accumulate and the
+    // semantics of "run all rules" hold) but still surface this first one.
+    let firstError: string | undefined;
 
     // route a failed rule's message: warningOnly → record warning & continue;
-    // otherwise return it as the blocking error.
+    // otherwise capture it as the blocking error. Returns a result object only
+    // when evaluation must halt (stopValidateWithError + a blocking error).
     const fail = (
       rule: Rule,
       d: MessageDescriptor,
@@ -154,11 +227,13 @@ export function createForm(options: FormOptions = {}): FormApi {
         if (warning === undefined) warning = text;
         return undefined; // keep scanning subsequent rules
       }
-      return { error: text, warning };
+      if (firstError === undefined) firstError = text;
+      if (stopWithError) return { error: firstError, warning };
+      return undefined; // keep scanning subsequent rules
     };
 
     for (const rule of cfg.rules) {
-      const isEmpty = value === undefined || value === null || value === '';
+      const isEmpty = isEmptyValue(value);
 
       if (rule.required && isEmpty) {
         const r = fail(rule, { key: 'Form.required', params: { label } });
@@ -199,7 +274,7 @@ export function createForm(options: FormOptions = {}): FormApi {
         }
       }
     }
-    return { warning };
+    return { error: firstError, warning };
   }
 
   async function validateField(name: string): Promise<string | undefined> {
@@ -245,6 +320,11 @@ export function createForm(options: FormOptions = {}): FormApi {
         for (const dep of config.dependencies ?? []) dependents.get(dep)?.delete(name);
       };
     },
+    getFieldTrigger(name) {
+      const t = fields.get(name)?.trigger;
+      if (t === undefined) return defaultTrigger;
+      return Array.isArray(t) ? t : [t];
+    },
     getFieldValue: (name) => state.values[name],
     setFieldValue(name, value, opts) {
       state.values = { ...state.values, [name]: value };
@@ -286,6 +366,7 @@ export function createForm(options: FormOptions = {}): FormApi {
       state.validating = {};
       emit();
     },
+    getFieldsValue: () => collectValues(),
     async submit() {
       state.submitting = true;
       state.submitCount += 1;
@@ -295,7 +376,7 @@ export function createForm(options: FormOptions = {}): FormApi {
       const valid = targets.every((n) => !state.errors[n]);
       state.submitting = false;
       emit();
-      return { valid, values: { ...state.values }, errors: { ...state.errors } };
+      return { valid, values: collectValues(), errors: { ...state.errors } };
     },
   };
 }

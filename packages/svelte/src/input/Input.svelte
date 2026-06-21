@@ -31,6 +31,7 @@
     onInput?: (v: string) => void;
     onClear?: () => void;
     onEnter?: (e: KeyboardEvent) => void;
+    onBlur?: (e: FocusEvent) => void;
   }
 
   let {
@@ -55,6 +56,7 @@
     onInput,
     onClear,
     onEnter,
+    onBlur,
   }: Props = $props();
 
   const loc = useLocale();
@@ -149,6 +151,7 @@
     onkeydown={handleKeydown}
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
+    onblur={onBlur}
   />
 
   {#if showClear}
