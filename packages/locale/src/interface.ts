@@ -333,4 +333,15 @@ export interface Locale {
     warningLabel: string;
     errorLabel: string;
   };
+  Typography: {
+    copy: string;
+    copied: string;
+    copyFailed: string;
+    edit: string;
+    editConfirm: string;
+    editCancel: string;
+    expand: string;
+    collapse: string;
+    ellipsisSuffix: string;
+  };
 }

@@ -285,4 +285,15 @@ export const zh_CN: Locale = {
     warningLabel: '警告',
     errorLabel: '错误',
   },
+  Typography: {
+    copy: '复制',
+    copied: '已复制',
+    copyFailed: '复制失败',
+    edit: '编辑',
+    editConfirm: '完成',
+    editCancel: '取消',
+    expand: '展开',
+    collapse: '收起',
+    ellipsisSuffix: '…',
+  },
 };

@@ -1,10 +1,16 @@
 <!--
   Typography.Link — see specs/components/basic/Typography.spec.md
-  Renders an <a>. Shares the cd-typography base style class.
-  NOTE: ellipsis/copyable/editable interactions are not implemented this round.
+  Renders an <a>. 外链 target=_blank 自动补 rel="noopener noreferrer"；
+  disabled 移除 href + aria-disabled + tabindex=-1。
+  ellipsis / copyable / editable 经 TypographyBase 组合 core 原语。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import TypographyBase, {
+    type EllipsisConfig,
+    type CopyableConfig,
+    type EditableConfig,
+  } from './TypographyBase.svelte';
 
   type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
@@ -18,9 +24,21 @@
     weight?: TypoWeight;
     disabled?: boolean;
     mark?: boolean;
+    /** Link 默认带下划线 */
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    component?: string;
+    ellipsis?: boolean | EllipsisConfig;
+    copyable?: boolean | CopyableConfig;
+    editable?: boolean | EditableConfig;
+    value?: string;
+    onChange?: (value: string) => void;
+    onCopy?: (content: string) => void;
+    onEditStart?: () => void;
+    onEditCancel?: () => void;
+    onExpand?: (expanded: boolean) => void;
+    onClick?: (e: MouseEvent) => void;
     class?: string;
     children?: Snippet;
   }
@@ -37,123 +55,66 @@
     underline = false,
     delete: del = false,
     code = false,
+    component = 'a',
+    ellipsis = false,
+    copyable = false,
+    editable = false,
+    value,
+    onChange,
+    onCopy,
+    onEditStart,
+    onEditCancel,
+    onExpand,
+    onClick,
     class: className = '',
     children,
   }: Props = $props();
 
-  const weightMap: Record<string, string> = {
-    regular: 'var(--cd-font-weight-regular)',
-    medium: 'var(--cd-font-weight-medium)',
-    semibold: 'var(--cd-font-weight-semibold)',
-    bold: '700',
-  };
-
-  const resolvedWeight = $derived.by(() => {
-    if (weight === undefined) return undefined;
-    return typeof weight === 'number' ? String(weight) : weightMap[weight];
-  });
-
-  // target=_blank without explicit rel → auto noopener noreferrer
+  // target=_blank 且未显式 rel → 自动 noopener noreferrer
   const resolvedRel = $derived(rel ?? (target === '_blank' ? 'noopener noreferrer' : undefined));
-
-  // disabled removes href behavior
+  // disabled 移除 href 行为
   const resolvedHref = $derived(disabled ? undefined : href);
 
-  const cls = $derived(
-    [
-      'cd-typography',
-      'cd-typography--link',
-      type !== 'default' && `cd-typography--${type}`,
-      strong && 'cd-typography--strong',
-      disabled && 'cd-typography--disabled',
-      mark && 'cd-typography--mark',
-      underline && 'cd-typography--underline',
-      del && 'cd-typography--delete',
-      code && 'cd-typography--code',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
+  function handleClick(e: MouseEvent): void {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    onClick?.(e);
+  }
 
-  const inlineStyle = $derived(resolvedWeight ? `font-weight:${resolvedWeight}` : undefined);
+  const hostAttrs = $derived({
+    href: resolvedHref,
+    target,
+    rel: resolvedRel,
+    tabindex: disabled ? -1 : undefined,
+    onclick: handleClick,
+  });
 </script>
 
-<a
-  class={cls}
-  href={resolvedHref}
-  {target}
-  rel={resolvedRel}
-  style={inlineStyle}
-  aria-disabled={disabled || undefined}
+<TypographyBase
+  element={component}
+  baseClass="cd-typography"
+  extraClass="cd-typography--link"
+  {type}
+  {strong}
+  {weight}
+  {disabled}
+  {mark}
+  {underline}
+  delete={del}
+  {code}
+  class={className}
+  {ellipsis}
+  {copyable}
+  {editable}
+  {value}
+  {onChange}
+  {onCopy}
+  {onEditStart}
+  {onEditCancel}
+  {onExpand}
+  {hostAttrs}
 >
   {@render children?.()}
-</a>
-
-<style>
-  .cd-typography {
-    color: var(--cd-typography-color);
-  }
-  .cd-typography--link {
-    color: var(--cd-typography-color-link);
-    text-decoration: none;
-    cursor: pointer;
-    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-typography--link:hover {
-    color: var(--cd-typography-color-link-hover);
-  }
-  .cd-typography--link:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-    border-radius: 2px;
-  }
-  .cd-typography--secondary {
-    color: var(--cd-typography-color-secondary);
-  }
-  .cd-typography--tertiary {
-    color: var(--cd-typography-color-tertiary);
-  }
-  .cd-typography--warning {
-    color: var(--cd-color-warning);
-  }
-  .cd-typography--danger {
-    color: var(--cd-color-danger);
-  }
-  .cd-typography--success {
-    color: var(--cd-color-success);
-  }
-  .cd-typography--strong {
-    font-weight: var(--cd-font-weight-semibold);
-  }
-  .cd-typography--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-  .cd-typography--mark {
-    background-color: var(--cd-typography-mark-bg);
-  }
-  .cd-typography--underline {
-    text-decoration-line: underline;
-  }
-  .cd-typography--delete {
-    text-decoration-line: line-through;
-  }
-  .cd-typography--underline.cd-typography--delete {
-    text-decoration-line: underline line-through;
-  }
-  .cd-typography--code {
-    font-family: var(--cd-font-family-mono, monospace);
-    font-size: var(--cd-typography-code-font-size);
-    background-color: var(--cd-typography-code-bg);
-    padding-inline: 0.4em;
-    padding-block: 0.1em;
-    border-radius: 3px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-typography--link {
-      transition: none;
-    }
-  }
-</style>
+</TypographyBase>

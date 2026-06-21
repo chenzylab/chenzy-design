@@ -242,6 +242,33 @@ export {
   type AutosizeResult,
 } from './textarea.js';
 export {
+  createCopyable,
+  writeClipboard,
+  type CopyableApi,
+  type CopyableOptions,
+} from './copyable.js';
+export {
+  createEditable,
+  clampLength,
+  resolveEditableKey,
+  type EditableApi,
+  type EditableOptions,
+  type EditableSnapshot,
+  type EditableTrigger,
+  type EditableKeyEvent,
+  type EditableKeyAction,
+} from './editable.js';
+export {
+  createEllipsis,
+  isOverflowing,
+  truncateText,
+  type EllipsisApi,
+  type EllipsisOptions,
+  type EllipsisSnapshot,
+  type EllipsisMeasureInput,
+  type EllipsisPos,
+} from './ellipsis.js';
+export {
   computeUploadPercent,
   isUploadOk,
   createUploadQueue,
