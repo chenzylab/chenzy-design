@@ -1,8 +1,11 @@
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import {
   normalizeEntry,
   isResizeObserverSupported,
   createResizeObserver,
+  resolveSchedule,
+  createScheduler,
+  getGlobalResizeObserver,
 } from './resize-observer.js';
 
 function makeEntry(over: Partial<ResizeObserverEntry>): ResizeObserverEntry {
@@ -87,5 +90,180 @@ describe('createResizeObserver (unsupported degrade)', () => {
     expect(observe).toHaveBeenCalledWith(el, { box: 'content-box' });
     api.disconnect();
     expect(disconnect).toHaveBeenCalled();
+  });
+});
+
+describe('resolveSchedule', () => {
+  it('defaults to none when neither set', () => {
+    expect(resolveSchedule({})).toEqual({ strategy: 'none' });
+    expect(resolveSchedule({ throttle: 0, debounce: 0 })).toEqual({ strategy: 'none' });
+  });
+
+  it('maps throttle when only throttle > 0', () => {
+    expect(resolveSchedule({ throttle: 16 })).toEqual({ strategy: 'throttle', wait: 16 });
+  });
+
+  it('maps debounce when only debounce > 0', () => {
+    expect(resolveSchedule({ debounce: 100 })).toEqual({ strategy: 'debounce', wait: 100 });
+  });
+
+  it('debounce wins when both set (mutually exclusive)', () => {
+    expect(resolveSchedule({ throttle: 16, debounce: 100 })).toEqual({
+      strategy: 'debounce',
+      wait: 100,
+    });
+  });
+});
+
+describe('createScheduler', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('none: invokes synchronously every time', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'none' });
+    s.run(fn);
+    s.run(fn);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('throttle: leading fire then trailing, drops middle frames', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'throttle', wait: 100 });
+    s.run(() => fn(1)); // leading — fires now
+    expect(fn).toHaveBeenCalledTimes(1);
+    s.run(() => fn(2)); // within window — scheduled trailing
+    s.run(() => fn(3)); // within window — replaces pending
+    expect(fn).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(100);
+    // trailing fires with the latest (3)
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenLastCalledWith(3);
+  });
+
+  it('throttle: respects wait between leading fires', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'throttle', wait: 100 });
+    s.run(fn);
+    expect(fn).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(100); // trailing window passes (no extra pending after fire? pending was same)
+    // advance real-ish clock so next run is a fresh leading
+    vi.advanceTimersByTime(200);
+    s.run(fn);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('debounce: only trailing fires after silence', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'debounce', wait: 100 });
+    s.run(() => fn(1));
+    s.run(() => fn(2));
+    s.run(() => fn(3));
+    expect(fn).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(99);
+    expect(fn).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenLastCalledWith(3);
+  });
+
+  it('cancel clears the pending timer (no fire)', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'debounce', wait: 100 });
+    s.run(fn);
+    s.cancel();
+    vi.advanceTimersByTime(200);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('flush fires the pending commit immediately', () => {
+    const fn = vi.fn();
+    const s = createScheduler({ strategy: 'debounce', wait: 100 });
+    s.run(fn);
+    s.flush();
+    expect(fn).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(200);
+    expect(fn).toHaveBeenCalledTimes(1); // not fired twice
+  });
+});
+
+describe('createResizeObserver (scheduling)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('debounces native callbacks', () => {
+    vi.useFakeTimers();
+    let trigger!: (entries: ResizeObserverEntry[]) => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (e: ResizeObserverEntry[]) => void) {
+          trigger = cb;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    const onResize = vi.fn();
+    createResizeObserver({ onResize, debounce: 100 });
+    const e = makeEntry({ contentRect: { width: 10, height: 10 } as DOMRectReadOnly });
+    trigger([e]);
+    trigger([e]);
+    expect(onResize).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(100);
+    expect(onResize).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getGlobalResizeObserver (singleton pool)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('degrades to no-op when unsupported', () => {
+    vi.stubGlobal('ResizeObserver', undefined);
+    const pool = getGlobalResizeObserver('content-box');
+    expect(pool.supported).toBe(false);
+    const off = pool.subscribe({} as Element, () => {});
+    expect(() => off()).not.toThrow();
+  });
+
+  it('reuses one native observer for N targets and routes by target', () => {
+    const observe = vi.fn();
+    const unobserve = vi.fn();
+    let instances = 0;
+    let trigger!: (entries: ResizeObserverEntry[]) => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (e: ResizeObserverEntry[]) => void) {
+          instances += 1;
+          trigger = cb;
+        }
+        observe = observe;
+        unobserve = unobserve;
+        disconnect = vi.fn();
+      },
+    );
+    // fresh box bucket to avoid cross-test cache (border-box unused elsewhere)
+    const pool = getGlobalResizeObserver('border-box');
+    const a = { id: 'a' } as unknown as Element;
+    const b = { id: 'b' } as unknown as Element;
+    const onA = vi.fn();
+    const onB = vi.fn();
+    const offA = pool.subscribe(a, onA);
+    pool.subscribe(b, onB);
+    expect(observe).toHaveBeenCalledTimes(2);
+    expect(instances).toBe(1);
+
+    trigger([
+      makeEntry({ target: a, borderBoxSize: [{ inlineSize: 1, blockSize: 2 }] as never }),
+    ]);
+    expect(onA).toHaveBeenCalledTimes(1);
+    expect(onB).not.toHaveBeenCalled();
+
+    offA();
+    expect(unobserve).toHaveBeenCalledWith(a);
   });
 });

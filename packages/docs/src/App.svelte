@@ -124,6 +124,11 @@
   );
   // 受控 visible 演示开关。
   let lottieVisible = $state(true);
+  // ResizeObserver 节流/去抖/多目标 demo 计数
+  let roThrottleCount = $state(0);
+  let roInstantCount = $state(0);
+  let roMultiLast = $state('—');
+  let roMultiCount = $state(0);
 
   const bigData = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `第 ${i + 1} 行` }));
   // dynamic 不定高数据：不同行数文本（1~5 行），高度不一。
@@ -4063,6 +4068,39 @@ let pageSize2 = $state(10);
         </div>
       {/snippet}
     </ResizeObserver>
+  </div>
+
+  <div style="margin-top:16px"><Text type="tertiary">throttle 节流（200ms，leading+trailing）：拖拽时回调计数受控，对比下方即时</Text></div>
+  <div style="display:flex; gap:16px; margin-top:8px">
+    <div style="resize:both; overflow:auto; width:240px; height:110px; min-width:140px; min-height:70px; border:1px dashed var(--cd-color-border); border-radius:8px">
+      <ResizeObserver throttle={200} onResize={() => (roThrottleCount += 1)}>
+        {#snippet children({ width, height })}
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:4px; color:var(--cd-color-text-1)">
+            <span>{Math.round(width)} × {Math.round(height)}</span>
+            <span data-testid="ro-throttle-count">throttle 回调：{roThrottleCount}</span>
+          </div>
+        {/snippet}
+      </ResizeObserver>
+    </div>
+    <div style="resize:both; overflow:auto; width:240px; height:110px; min-width:140px; min-height:70px; border:1px dashed var(--cd-color-border); border-radius:8px">
+      <ResizeObserver onResize={() => (roInstantCount += 1)}>
+        {#snippet children({ width, height })}
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:4px; color:var(--cd-color-text-1)">
+            <span>{Math.round(width)} × {Math.round(height)}</span>
+            <span data-testid="ro-instant-count">即时 回调：{roInstantCount}</span>
+          </div>
+        {/snippet}
+      </ResizeObserver>
+    </div>
+  </div>
+
+  <div style="margin-top:16px"><Text type="tertiary">multiple 多目标 + debounce（150ms trailing）：观测两个子元素，停止拖拽后才更新</Text></div>
+  <div style="margin-top:8px; border:1px dashed var(--cd-color-border); border-radius:8px; padding:8px">
+    <ResizeObserver multiple debounce={150} onResize={(e) => { roMultiLast = `${Math.round(e.width)}×${Math.round(e.height)}`; roMultiCount += 1; }}>
+      <div style="resize:horizontal; overflow:auto; width:160px; height:40px; min-width:80px; background:var(--cd-color-fill-0); border-radius:6px; margin-bottom:8px; display:flex; align-items:center; padding-left:8px; color:var(--cd-color-text-1)">子元素 A（横向可拖）</div>
+      <div style="resize:horizontal; overflow:auto; width:200px; height:40px; min-width:80px; background:var(--cd-color-fill-0); border-radius:6px; display:flex; align-items:center; padding-left:8px; color:var(--cd-color-text-1)">子元素 B（横向可拖）</div>
+    </ResizeObserver>
+    <div style="margin-top:8px"><Text type="tertiary"><span data-testid="ro-multi">最后变化：{roMultiLast}（debounced 回调 {roMultiCount} 次）</span></Text></div>
   </div>
 
   <Divider />
