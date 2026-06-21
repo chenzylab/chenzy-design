@@ -90,19 +90,28 @@
 
   // 声明式 <Breadcrumb.Item> 注册：按 mount 顺序（= 源码顺序）收集 id，
   // 据此派生「最后一项」。分隔符本身由纯 CSS 插入，无需 JS。
+  //
+  // 红线 #2：注册顺序簿记 `order` 用普通数组（非 $state），避免在 Item 的注册
+  // $effect 内 push 时既「读」又「写」同一块 $state（数组代理 push 会读 length
+  // 再写元素）形成 effect_update_depth_exceeded 自循环。render 真正需要的只有
+  // 「末项 id」，单独用 $state `lastId` 承载：register/unregister 仅写它（Item 的
+  // effect 不读它），isLast 在 render 期只读，副作用写 / 渲染读分离，无环。
   let nextId = 0;
-  let registered = $state<number[]>([]);
+  const order: number[] = [];
+  let lastId = $state<number>(-1);
   setBreadcrumbContext({
     register: () => {
       const id = nextId++;
-      registered.push(id);
+      order.push(id);
+      lastId = order[order.length - 1] ?? -1;
       return id;
     },
     unregister: (id: number) => {
-      const i = registered.indexOf(id);
-      if (i !== -1) registered.splice(i, 1);
+      const i = order.indexOf(id);
+      if (i !== -1) order.splice(i, 1);
+      lastId = order.length > 0 ? (order[order.length - 1] ?? -1) : -1;
     },
-    isLast: (id: number) => registered.length > 0 && registered[registered.length - 1] === id,
+    isLast: (id: number) => lastId !== -1 && id === lastId,
   });
 </script>
 
