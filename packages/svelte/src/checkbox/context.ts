@@ -3,6 +3,7 @@ import { getContext, setContext } from 'svelte';
 export type CheckboxValue = string | number;
 export type CheckboxSize = 'small' | 'default' | 'large';
 export type CheckboxType = 'default' | 'card' | 'pureCard';
+export type CheckboxStatus = 'default' | 'warning' | 'error';
 
 export interface CheckboxGroupContext {
   isChecked: (v: CheckboxValue) => boolean;
@@ -15,6 +16,8 @@ export interface CheckboxGroupContext {
   getName: () => string | undefined;
   /** getter to stay reactive across the context boundary */
   getType: () => CheckboxType;
+  /** getter to stay reactive across the context boundary */
+  getStatus: () => CheckboxStatus;
 }
 
 const KEY = Symbol('cd-checkbox-group');

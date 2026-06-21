@@ -39,6 +39,12 @@ export const meta = {
       { name: 'disabled', type: 'boolean', default: 'false' },
       { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
       {
+        name: 'status',
+        type: "'default'|'warning'|'error'",
+        default: 'default',
+        desc: '统一校验态透传子项，单项可覆盖',
+      },
+      {
         name: 'type',
         type: "'default'|'card'|'pureCard'",
         default: 'default',

@@ -1304,6 +1304,15 @@ let pageSize2 = $state(10);
     </div>
     <Text type="tertiary">卡片已选：{cardChecks.join(', ') || '（无）'}</Text>
 
+    <Text type="tertiary">status 校验态（Group 透传，单项可覆盖）：</Text>
+    <div data-testid="checkbox-status">
+      <CheckboxGroup status="error" defaultValue={['a']}>
+        <Checkbox value="a">error 透传</Checkbox>
+        <Checkbox value="b">error 透传</Checkbox>
+        <Checkbox value="c" status="warning">单项覆盖 warning</Checkbox>
+      </CheckboxGroup>
+    </div>
+
     <RadioGroup
       value={radioVal}
       onChange={(v) => (radioVal = v)}
@@ -1354,6 +1363,12 @@ let pageSize2 = $state(10);
         onChange={(v) => (rangeVal = v as [number, number])}
       />
       <Text type="tertiary">区间：{rangeVal[0]} – {rangeVal[1]}</Text>
+    </div>
+
+    <div style="width: 280px" data-testid="slider-status">
+      <Text type="tertiary">status 校验态：</Text>
+      <Slider status="warning" defaultValue={40} />
+      <Slider status="error" defaultValue={70} />
     </div>
   </Space>
 
@@ -1806,6 +1821,14 @@ let pageSize2 = $state(10);
       </span>
       <Text type="tertiary">内联 + format 切换：{colorInline}</Text>
     </Space>
+
+    <div data-testid="colorpicker-status">
+      <Space>
+        <ColorPicker status="warning" defaultValue="#f59e0b" />
+        <ColorPicker status="error" defaultValue="#ef4444" />
+        <Text type="tertiary">status 校验态（仅触发器边框）</Text>
+      </Space>
+    </div>
   </Space>
 
   <Divider />
