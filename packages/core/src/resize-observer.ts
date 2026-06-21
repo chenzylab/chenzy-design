@@ -336,6 +336,9 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
 
     const onWindowResize = () => measureAll();
 
+    // 初始测量异步定时器集合（observeOnMount 近似）。须在 disconnect 时清理（红线 #3）。
+    const initialTimers = new Set<ReturnType<typeof setTimeout>>();
+
     return {
       supported: false, // 降级模式：原生 RO 不可用，supported 仍报 false（语义一致）
       observe(el) {
@@ -344,9 +347,19 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
         if (first) {
           win.addEventListener('resize', onWindowResize);
         }
-        // 近似 observeOnMount：注册后立即测一次当前尺寸。
-        const rect = el.getBoundingClientRect();
-        dispatch({ target: el, width: rect.width, height: rect.height, box });
+        // 近似 observeOnMount：注册后测一次当前尺寸。
+        // 红线 #2：observe() 由 svelte 层在挂载 $effect 内同步调用，若此处同步 dispatch
+        // 会在该 effect 执行期内写入组件 width/height $state（且用户 onResize 常回写父级
+        // $state），与原生 ResizeObserver「observe 时不同步回调」语义不符，且会触发
+        // effect_update_depth_exceeded 自循环。故首测延后到下一宏任务（脱离当前 effect 的
+        // 同步执行栈），与原生异步首帧语义对齐。
+        const t = setTimeout(() => {
+          initialTimers.delete(t);
+          if (!targets.has(el)) return;
+          const rect = el.getBoundingClientRect();
+          dispatch({ target: el, width: rect.width, height: rect.height, box });
+        }, 0);
+        initialTimers.add(t);
       },
       unobserve(el) {
         targets.delete(el);
@@ -357,6 +370,8 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
       disconnect() {
         scheduler.cancel();
         clearEndTimer();
+        for (const t of initialTimers) clearTimeout(t);
+        initialTimers.clear();
         targets.clear();
         win.removeEventListener('resize', onWindowResize);
       },

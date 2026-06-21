@@ -322,7 +322,11 @@ describe('createResizeObserver (start/end events)', () => {
 });
 
 describe('createResizeObserver (fallbackToWindow)', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('uses window.resize when native is absent', () => {
     vi.stubGlobal('ResizeObserver', undefined);
@@ -339,12 +343,17 @@ describe('createResizeObserver (fallbackToWindow)', () => {
       getBoundingClientRect: () => ({ width: 42, height: 24 }),
     } as unknown as Element;
     api.observe(el);
-    // observe measures immediately
+    // 红线 #2：observe() 不同步回调（与原生 RO 一致，避免在挂载 effect 内同步写 state
+    // 形成 effect_update_depth_exceeded）；首测延后到下一宏任务。
+    expect(onResize).not.toHaveBeenCalled();
+    expect(addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+
+    // 推进宏任务 → 初始测量到达
+    vi.runAllTimers();
     expect(onResize).toHaveBeenCalledTimes(1);
     expect(onResize).toHaveBeenLastCalledWith(
       expect.objectContaining({ width: 42, height: 24 }),
     );
-    expect(addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
 
     // simulate a window resize → re-measure
     const handler = addEventListener.mock.calls[0]![1] as () => void;
