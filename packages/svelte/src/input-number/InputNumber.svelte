@@ -7,6 +7,7 @@
   mouseWheel/selectOnFocus/autofocus 命令式监听挂在 action 上并 cleanup（红线 #3）。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import {
     useId,
     clampWithMode,
@@ -45,6 +46,10 @@
     /** 聚焦时滚轮步进 */
     mouseWheel?: boolean;
     placeholder?: string;
+    /** 输入框前置内容（如货币符号 ¥、单位）；传 Snippet 可自定义渲染 */
+    prefix?: string | Snippet;
+    /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染 */
+    suffix?: string | Snippet;
     name?: string;
     /** input 元素 id，关联外部 label；不传自动生成 */
     id?: string;
@@ -83,6 +88,8 @@
     keyboard = true,
     mouseWheel = false,
     placeholder,
+    prefix,
+    suffix,
     name,
     id,
     ariaLabel,
@@ -96,6 +103,9 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // prefix/suffix 可传 string 或 Snippet；函数即视为 Snippet。
+  const prefixSnippet = $derived(typeof prefix === 'function' ? (prefix as Snippet) : undefined);
+  const suffixSnippet = $derived(typeof suffix === 'function' ? (suffix as Snippet) : undefined);
   // 生成一次稳定回退 id（在 $derived 里调 useId 会每次产生新 id）。
   const autoId = useId('cd-input-number');
   const inputId = $derived(id ?? autoId);
@@ -292,6 +302,8 @@
       `cd-input-number--${status}`,
       `cd-input-number--controls-${controlsPosition}`,
       innerButtons && 'cd-input-number--inner',
+      prefix != null && 'cd-input-number--has-prefix',
+      suffix != null && 'cd-input-number--has-suffix',
       disabled && 'cd-input-number--disabled',
     ]
       .filter(Boolean)
@@ -300,6 +312,12 @@
 </script>
 
 <div class={cls} aria-invalid={status === 'error' || undefined}>
+  {#if prefix != null}
+    <span class="cd-input-number__affix cd-input-number__prefix">
+      {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefix}{/if}
+    </span>
+  {/if}
+
   <input
     use:inputActions
     class="cd-input-number__native"
@@ -323,6 +341,12 @@
     onblur={handleBlur}
     onkeydown={handleKeydown}
   />
+
+  {#if suffix != null}
+    <span class="cd-input-number__affix cd-input-number__suffix">
+      {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
+    </span>
+  {/if}
 
   {#if controls}
     <span class="cd-input-number__actions">
@@ -407,8 +431,29 @@
     font: inherit;
     outline: none;
   }
+  /* 有前/后缀时，由 affix 承担该侧边距，避免双重留白。 */
+  .cd-input-number--has-prefix .cd-input-number__native {
+    padding-inline-start: var(--cd-spacing-1);
+  }
+  .cd-input-number--has-suffix .cd-input-number__native {
+    padding-inline-end: var(--cd-spacing-1);
+  }
   .cd-input-number__native::placeholder {
     color: var(--cd-input-color-placeholder);
+  }
+  .cd-input-number__affix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .cd-input-number__prefix {
+    padding-inline-start: var(--cd-input-padding-x);
+  }
+  .cd-input-number__suffix {
+    padding-inline-end: var(--cd-input-padding-x);
   }
   .cd-input-number__native:disabled {
     cursor: not-allowed;
@@ -470,6 +515,13 @@
   }
   .cd-input-number--controls-sides .cd-input-number__action {
     inline-size: var(--cd-spacing-6, 28px);
+  }
+  /* sides 布局：前缀紧贴减号右、后缀紧贴加号左，包裹中央输入。 */
+  .cd-input-number--controls-sides .cd-input-number__prefix {
+    order: 1;
+  }
+  .cd-input-number--controls-sides .cd-input-number__suffix {
+    order: 1;
   }
 
   /* --- innerButtons：按钮悬浮于右内侧，hover/focus 显形 --- */

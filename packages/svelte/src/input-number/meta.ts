@@ -27,6 +27,8 @@ export const meta = {
     { name: 'keyboard', type: 'boolean', default: 'true', desc: '是否启用 ↑↓/PageUp·Down 步进' },
     { name: 'mouseWheel', type: 'boolean', default: 'false', desc: '聚焦时滚轮步进' },
     { name: 'placeholder', type: 'string', default: 'undefined' },
+    { name: 'prefix', type: 'string | Snippet', default: 'undefined', desc: '输入框前置内容（如货币符号、单位）' },
+    { name: 'suffix', type: 'string | Snippet', default: 'undefined', desc: '输入框后置内容（如单位 %、kg）' },
     { name: 'name', type: 'string', default: 'undefined' },
     { name: 'id', type: 'string', default: '自动生成', desc: 'input 元素 id，关联外部 label' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
