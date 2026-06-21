@@ -171,6 +171,81 @@ export function parseDateString(input: string, pattern: string): Date | null {
 }
 
 /**
+ * Shift by whole months while preserving the day-of-month, clamping to the
+ * target month's length (e.g. Jan 31 + 1mo → Feb 28). Unlike {@link addMonths}
+ * (which snaps to the 1st for view-anchor navigation), this keeps the focused
+ * day so PageUp/PageDown move focus to "the same date next/prev month".
+ */
+function shiftMonthKeepDay(d: Date, delta: number): Date {
+  const day = d.getDate();
+  const target = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(day, lastDay));
+  return target;
+}
+
+/** Keys a calendar date grid responds to for roving focus navigation. */
+export type GridFocusKey =
+  | 'ArrowLeft'
+  | 'ArrowRight'
+  | 'ArrowUp'
+  | 'ArrowDown'
+  | 'PageUp'
+  | 'PageDown'
+  | 'Home'
+  | 'End';
+
+/**
+ * Pure roving-focus navigation for a day grid (WAI-ARIA grid pattern).
+ * Returns the day that focus should move to for the given key, or `null` if the
+ * key is not a navigation key (caller leaves focus untouched).
+ *
+ *   ArrowLeft/Right  ∓1 day        ArrowUp/Down  ∓1 week (7 days)
+ *   PageUp/Down      ∓1 month      Home/End      first/last day of that week
+ *
+ * `mode` constrains vertical/page motion:
+ *   - 'week': Up/Down/PageUp/Down step by a single day (single-row grid) — the
+ *     grid is one row, so vertical motion has no row to move to; we degrade to
+ *     ±1 day so arrow keys still traverse the visible week.
+ *   - 'month': full 2-D motion as described above.
+ *
+ * Pure: no DOM, no clamping to a visible window — the render layer re-derives
+ * the grid from the returned date (which may shift the displayed month/week).
+ * @param weekStart 0 = Sunday (default), 1 = Monday — anchors Home/End.
+ */
+export function gridFocusMove(
+  date: Date,
+  key: GridFocusKey,
+  mode: 'month' | 'week' = 'month',
+  weekStart = 0,
+): Date | null {
+  switch (key) {
+    case 'ArrowLeft':
+      return addDays(date, -1);
+    case 'ArrowRight':
+      return addDays(date, 1);
+    case 'ArrowUp':
+      return mode === 'week' ? addDays(date, -1) : addDays(date, -7);
+    case 'ArrowDown':
+      return mode === 'week' ? addDays(date, 1) : addDays(date, 7);
+    case 'PageUp':
+      return mode === 'week' ? addWeeks(date, -1) : shiftMonthKeepDay(date, -1);
+    case 'PageDown':
+      return mode === 'week' ? addWeeks(date, 1) : shiftMonthKeepDay(date, 1);
+    case 'Home': {
+      const lead = (date.getDay() - weekStart + 7) % 7;
+      return addDays(date, -lead);
+    }
+    case 'End': {
+      const lead = (date.getDay() - weekStart + 7) % 7;
+      return addDays(date, 6 - lead);
+    }
+    default:
+      return null;
+  }
+}
+
+/**
  * Build a single-week (7-cell) grid for the week containing `cursor`.
  * Every cell `inMonth` is relative to the month of `cursor`.
  * @param weekStart 0 = Sunday (default), 1 = Monday

@@ -12,6 +12,7 @@ import {
   daysBetween,
   formatDate,
   parseDateString,
+  gridFocusMove,
 } from './date.js';
 
 describe('date utils', () => {
@@ -163,5 +164,47 @@ describe('parseDateString', () => {
     expect(parseDateString('2024-02-30', 'YYYY-MM-DD')).toBeNull(); // overflow rejected
     expect(parseDateString('2024-03-07 25:00', 'YYYY-MM-DD HH:mm')).toBeNull();
     expect(parseDateString('2024/03/07', 'YYYY-MM-DD')).toBeNull(); // wrong separators
+  });
+});
+
+describe('gridFocusMove (roving focus navigation)', () => {
+  const base = new Date(2026, 5, 15); // 2026-06-15 (Mon)
+
+  it('arrow left/right step ±1 day', () => {
+    expect(isSameDay(gridFocusMove(base, 'ArrowLeft')!, new Date(2026, 5, 14))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'ArrowRight')!, new Date(2026, 5, 16))).toBe(true);
+  });
+
+  it('arrow up/down step ±1 week in month mode', () => {
+    expect(isSameDay(gridFocusMove(base, 'ArrowUp', 'month')!, new Date(2026, 5, 8))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'ArrowDown', 'month')!, new Date(2026, 5, 22))).toBe(true);
+  });
+
+  it('arrow up/down degrade to ±1 day in week mode (single row)', () => {
+    expect(isSameDay(gridFocusMove(base, 'ArrowUp', 'week')!, new Date(2026, 5, 14))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'ArrowDown', 'week')!, new Date(2026, 5, 16))).toBe(true);
+  });
+
+  it('page up/down step ±1 month in month mode, ±1 week in week mode', () => {
+    expect(isSameDay(gridFocusMove(base, 'PageUp', 'month')!, new Date(2026, 4, 15))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'PageDown', 'month')!, new Date(2026, 6, 15))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'PageUp', 'week')!, new Date(2026, 5, 8))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'PageDown', 'week')!, new Date(2026, 5, 22))).toBe(true);
+  });
+
+  it('Home/End go to first/last day of the visible week (week start aware)', () => {
+    // Sunday-start: week of 2026-06-15 (Mon) is Sun 14 .. Sat 20
+    expect(isSameDay(gridFocusMove(base, 'Home', 'month', 0)!, new Date(2026, 5, 14))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'End', 'month', 0)!, new Date(2026, 5, 20))).toBe(true);
+    // Monday-start: week is Mon 15 .. Sun 21
+    expect(isSameDay(gridFocusMove(base, 'Home', 'month', 1)!, new Date(2026, 5, 15))).toBe(true);
+    expect(isSameDay(gridFocusMove(base, 'End', 'month', 1)!, new Date(2026, 5, 21))).toBe(true);
+  });
+
+  it('crosses month boundary purely (caller re-derives the grid)', () => {
+    const firstOfMonth = new Date(2026, 5, 1); // Mon Jun 1
+    expect(isSameDay(gridFocusMove(firstOfMonth, 'ArrowLeft')!, new Date(2026, 4, 31))).toBe(true);
+    const lastOfMonth = new Date(2026, 5, 30);
+    expect(isSameDay(gridFocusMove(lastOfMonth, 'ArrowRight')!, new Date(2026, 6, 1))).toBe(true);
   });
 });
