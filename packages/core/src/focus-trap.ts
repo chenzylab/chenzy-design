@@ -10,7 +10,19 @@ export interface FocusTrap {
   deactivate(): void;
 }
 
-export function useFocusTrap(container: HTMLElement): FocusTrap {
+export interface FocusTrapOptions {
+  /**
+   * 是否捕获 Tab/Shift+Tab 做焦点循环。false 时仍执行进场聚焦与归还焦点，
+   * 但不拦截键盘 Tab（供 keyboard 总开关关闭键盘交互时使用）。默认 true。
+   */
+  trapTab?: boolean;
+}
+
+export function useFocusTrap(
+  container: HTMLElement,
+  options: FocusTrapOptions = {},
+): FocusTrap {
+  const { trapTab = true } = options;
   let previouslyFocused: HTMLElement | null = null;
 
   function getFocusable(): HTMLElement[] {
@@ -41,11 +53,11 @@ export function useFocusTrap(container: HTMLElement): FocusTrap {
   return {
     activate() {
       previouslyFocused = document.activeElement as HTMLElement | null;
-      container.addEventListener('keydown', onKeydown);
+      if (trapTab) container.addEventListener('keydown', onKeydown);
       getFocusable()[0]?.focus();
     },
     deactivate() {
-      container.removeEventListener('keydown', onKeydown);
+      if (trapTab) container.removeEventListener('keydown', onKeydown);
       previouslyFocused?.focus();
       previouslyFocused = null;
     },

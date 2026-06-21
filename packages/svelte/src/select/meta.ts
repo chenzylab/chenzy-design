@@ -20,6 +20,7 @@ export const meta = {
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'clearable', type: 'boolean', default: 'false' },
     { name: 'maxTagCount', type: 'number', default: '0', desc: '多选 tag 超出折叠为 +N（0=不折叠）' },
+    { name: 'maxTagTextLength', type: 'number', default: 'undefined', desc: '单个 Tag 文本最大长度，超出截断为「前缀…」，完整文本经 title 查看' },
     { name: 'allowCreate', type: 'boolean', default: 'false', desc: 'filter 无匹配时可创建新选项' },
     { name: 'onSearch', type: '(query: string) => void', default: 'undefined', desc: '远程搜索（防抖回调，外部更新 options）' },
     { name: 'loading', type: 'boolean', default: 'false', desc: '远程加载中（显示 spinner）' },

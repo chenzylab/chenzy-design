@@ -567,6 +567,7 @@
   let drawerDestroy = $state(false);
   let drawerNestOuter = $state(false);
   let drawerNestInner = $state(false);
+  let drawerNoKbd = $state(false);
   let ssRight = $state(false);
   let ssLeft = $state(false);
   let ssTop = $state(false);
@@ -1001,6 +1002,14 @@ let pageSize2 = $state(10);
     { label: '橙子', value: 'orange' },
     { label: '葡萄', value: 'grape' },
   ];
+
+  // 长文本选项：演示 maxTagTextLength 单 tag 截断。
+  const longTagOptions = [
+    { label: '人工智能与机器学习', value: 'ai' },
+    { label: '云原生基础设施', value: 'cloud' },
+    { label: '前端工程化', value: 'fe' },
+  ];
+  let multiTruncVal = $state<(string | number)[]>(['ai', 'cloud']);
 
   // 虚拟化大数据：1000+ 选项，下拉只渲染视口内 ~15 个。
   const bigOptions = Array.from({ length: 2000 }, (_, i) => ({
@@ -1694,6 +1703,17 @@ let pageSize2 = $state(10);
         onChange={(v) => (multiVal = v as (string | number)[])}
       />
       <Text type="tertiary">多选（折叠 2 / 可创建）：{multiVal.join(', ') || '（无）'}</Text>
+    </div>
+
+    <div style="width: 260px" data-testid="select-multi-trunc">
+      <Select
+        options={longTagOptions}
+        multiple
+        maxTagTextLength={4}
+        value={multiTruncVal}
+        onChange={(v) => (multiTruncVal = v as (string | number)[])}
+      />
+      <Text type="tertiary">多选单 tag 截断（maxTagTextLength=4）：{multiTruncVal.join(', ') || '（无）'}</Text>
     </div>
 
     <div style="width: 260px" data-testid="select-virtualized">
@@ -4238,6 +4258,7 @@ let pageSize2 = $state(10);
     <Button onclick={() => (drawerBottom = true)}>底部抽屉</Button>
     <Button onclick={() => (drawerDestroy = true)}>destroyOnClose</Button>
     <Button onclick={() => (drawerNestOuter = true)}>嵌套抽屉</Button>
+    <Button onclick={() => (drawerNoKbd = true)}>keyboard=false（禁键盘）</Button>
   </div>
 
   <Drawer
@@ -4316,6 +4337,19 @@ let pageSize2 = $state(10);
     onOpenChange={(o) => (drawerNestInner = o)}
   >
     <p style="margin:0; line-height:1.8">内层抽屉叠在外层之上，关闭后回收 z-index。</p>
+  </Drawer>
+
+  <Drawer
+    open={drawerNoKbd}
+    placement="right"
+    title="keyboard=false 总开关"
+    keyboard={false}
+    onOpenChange={(o) => (drawerNoKbd = o)}
+  >
+    <p style="margin:0 0 12px; line-height:1.8">
+      keyboard=false 停用全部键盘交互：按 Esc 不会关闭（覆盖 closeOnEsc），Tab/Shift+Tab 也不做焦点循环捕获。请用关闭按钮或点击遮罩关闭。
+    </p>
+    <Input placeholder="Tab 不被锁在面板内" />
   </Drawer>
 
   <Divider />
