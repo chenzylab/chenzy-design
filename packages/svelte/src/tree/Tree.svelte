@@ -24,6 +24,7 @@
     useId,
     flattenVisible,
     collectExpandable,
+    collectExpandableToDepth,
     conduct,
     toggleCheck,
     computeFilteredKeys,
@@ -72,10 +73,23 @@
     checkable?: boolean;
     checkedKeys?: TreeKey[];
     defaultCheckedKeys?: TreeKey[];
+    /**
+     * 父子勾选是否联动。'related'（默认）：勾选父全选子、子全选则父选中、部分选中半选；
+     * 'unRelated'：父子勾选互不影响，每个节点独立勾选、无半选态。
+     * 与 checkStrictly 的关系：两者都旁路 conduct 联动算法，效果上 unRelated ≡ checkStrictly 的
+     * 「父子状态独立」。checkRelation 是枚举（对齐 Semi 语义），checkStrictly 是 boolean；
+     * 任一开启（unRelated 或 checkStrictly=true）即关闭父子联动。默认 related + checkStrictly=false 保持联动。
+     */
+    checkRelation?: 'related' | 'unRelated';
     checkStrictly?: boolean;
     expandedKeys?: TreeKey[];
     defaultExpandedKeys?: TreeKey[];
     defaultExpandAll?: boolean;
+    /**
+     * 默认展开到第 N 层（仅初始化非受控展开集时生效，1 表示展开根层使其子节点可见）。
+     * 优先级低于 defaultExpandAll；与 defaultExpandedKeys 取并集。受控 expandedKeys 时忽略（红线 #1）。
+     */
+    expandedDepth?: number;
     /**
      * 手风琴模式：同一层级最多展开一个节点。展开某节点时自动收起其同父级（siblings）
      * 的其它已展开节点；不同层级互不影响。受控 expandedKeys 同样生效（通过 onExpandedChange
@@ -93,6 +107,12 @@
     /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32 */
     itemHeight?: number;
     filterable?: boolean;
+    /**
+     * 自定义搜索过滤谓词。`(input, node) => boolean` 返回该节点是否命中关键词；
+     * 命中节点的祖先链自动展开（沿用内置过滤行为）。传函数即开启搜索（无需再传 filterable）；
+     * 不传时回退到内置「label 包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
+     */
+    filterTreeNode?: boolean | ((input: string, node: TreeNodeData) => boolean);
     blockNode?: boolean;
     disabled?: boolean;
     size?: Size;
@@ -124,10 +144,12 @@
     checkable = false,
     checkedKeys,
     defaultCheckedKeys = [],
+    checkRelation = 'related',
     checkStrictly = false,
     expandedKeys,
     defaultExpandedKeys = [],
     defaultExpandAll = false,
+    expandedDepth,
     accordion = false,
     selectable = true,
     showIcon = true,
@@ -136,6 +158,7 @@
     height = 320,
     itemHeight = 32,
     filterable = false,
+    filterTreeNode,
     blockNode = false,
     disabled = false,
     size = 'default',
@@ -265,9 +288,11 @@
   const currentCheckedBase = $derived(
     isCheckControlled ? new Set(checkedKeys ?? []) : innerCheckedBase,
   );
-  // checkStrictly 下直接用 base 当 checked，无半选；否则用 conduct 归一
+  // 父子是否联动：checkStrictly 或 checkRelation==='unRelated' 任一开启即解耦（无联动、无半选）。
+  const checkLinked = $derived(!checkStrictly && checkRelation !== 'unRelated');
+  // 解耦时直接用 base 当 checked，无半选；联动时用 conduct 归一
   const checkState = $derived.by(() => {
-    if (checkStrictly) {
+    if (!checkLinked) {
       return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     }
     return conduct(mergedData, currentCheckedBase);
@@ -275,12 +300,17 @@
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
   function initExpanded(): Set<TreeKey> {
-    // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时 collectExpandable 才能识别 children）。
+    // 需用标准化后的 key（fieldNames 自定义时 collectExpandable* 才能识别 children）。
+    const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
     if (defaultExpandAll) {
-      const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
       return new Set(collectExpandable(base));
     }
-    return new Set(defaultExpandedKeys);
+    // expandedDepth：展开 ≤N 层的有子节点（与 defaultExpandedKeys 取并集）。优先级低于 defaultExpandAll。
+    const init = new Set<TreeKey>(defaultExpandedKeys);
+    if (typeof expandedDepth === 'number' && expandedDepth > 0) {
+      for (const k of collectExpandableToDepth(base, expandedDepth)) init.add(k);
+    }
+    return init;
   }
   const isExpandControlled = $derived(expandedKeys !== undefined);
   let innerExpanded = $state<Set<TreeKey>>(initExpanded());
@@ -291,11 +321,22 @@
   // --- 搜索：本地状态，派生临时叠加展开集，不回写受控 expandedKeys (红线 #1) ---
   let searchValue = $state('');
   const trimmedSearch = $derived(searchValue.trim());
-  const searchActive = $derived(filterable && trimmedSearch.length > 0);
+  // 搜索框是否渲染/启用：filterable 或 filterTreeNode（true 或自定义谓词函数）任一开启。
+  const searchEnabled = $derived(filterable || filterTreeNode === true || typeof filterTreeNode === 'function');
+  const searchActive = $derived(searchEnabled && trimmedSearch.length > 0);
+  // 过滤谓词：传函数则用自定义 (input, node)；否则内置 label 包含（不区分大小写）。
+  const matchPredicate = $derived.by(() => {
+    if (typeof filterTreeNode === 'function') {
+      const fn = filterTreeNode;
+      // 回传原始节点（fieldNames 自定义时），与其它回调一致。
+      return (node: TreeNodeData) => fn(trimmedSearch, toOrig(node));
+    }
+    const lower = trimmedSearch.toLowerCase();
+    return (node: TreeNodeData) => node.label.toLowerCase().includes(lower);
+  });
   const filterResult = $derived.by(() => {
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
-    const lower = trimmedSearch.toLowerCase();
-    return computeFilteredKeys(mergedData, (node) => node.label.toLowerCase().includes(lower));
+    return computeFilteredKeys(mergedData, matchPredicate);
   });
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回）
   const effectiveExpanded = $derived.by(() => {
@@ -439,7 +480,8 @@
   function emitCheck(node: TreeNodeData) {
     if (!isCheckableNode(node)) return;
     let nextBase: Set<TreeKey>;
-    if (checkStrictly) {
+    if (!checkLinked) {
+      // 解耦（checkStrictly 或 unRelated）：仅翻转该节点自身，不触达父子。
       nextBase = new Set(currentCheckedBase);
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
@@ -447,7 +489,7 @@
       nextBase = toggleCheck(mergedData, currentCheckedBase, node.key);
     }
     if (!isCheckControlled) innerCheckedBase = nextBase;
-    const resolved = checkStrictly
+    const resolved = !checkLinked
       ? { checked: new Set(nextBase), half: new Set<TreeKey>() }
       : conduct(mergedData, nextBase);
     onCheck?.({
@@ -752,7 +794,7 @@
 </script>
 
 <div class={cls}>
-  {#if filterable}
+  {#if searchEnabled}
     <div class="cd-tree__search">
       <input
         class="cd-tree__search-input"
