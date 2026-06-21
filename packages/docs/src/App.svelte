@@ -1449,6 +1449,24 @@ let pageSize2 = $state(10);
       <Text type="tertiary">innerButtons 内嵌按钮（hover/聚焦显形）</Text>
     </div>
 
+    <div data-testid="inputnumber-affix">
+      <div style="width: 200px">
+        <InputNumber defaultValue={100} min={0} step={10} prefix="¥" suffix="元" />
+      </div>
+      <Text type="tertiary">prefix/suffix 前后缀（string）</Text>
+    </div>
+
+    <div data-testid="inputnumber-affix-snippet">
+      <div style="width: 200px">
+        <InputNumber defaultValue={50} min={0} max={100}>
+          {#snippet suffix()}
+            <span style="color: var(--cd-color-primary)">%</span>
+          {/snippet}
+        </InputNumber>
+      </div>
+      <Text type="tertiary">suffix 用 Snippet 自定义渲染</Text>
+    </div>
+
     <div data-testid="inputnumber-locale">
       <InputNumber defaultValue={1234567} locale="de-DE" />
       <Text type="tertiary">locale=de-DE 千分位（无 formatter 时走 Intl）</Text>
