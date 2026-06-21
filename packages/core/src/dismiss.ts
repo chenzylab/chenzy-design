@@ -1,8 +1,13 @@
 /**
  * useDismiss — close-on-outside-click and close-on-Escape for overlays.
  */
+
+/** 关闭来源：Esc 键 / 外部点击 */
+export type DismissReason = 'esc' | 'outsideClick';
+
 export interface DismissOptions {
-  onDismiss: () => void;
+  /** 关闭回调，附带来源 reason（'esc' | 'outsideClick'） */
+  onDismiss: (reason: DismissReason) => void;
   /** close when Escape pressed (default true) */
   escape?: boolean;
   /** close when clicking outside the element (default true) */
@@ -32,11 +37,11 @@ export function useDismiss(
   }
 
   function onKeydown(e: KeyboardEvent): void {
-    if (escape && e.key === 'Escape') onDismiss();
+    if (escape && e.key === 'Escape') onDismiss('esc');
   }
   function onPointer(e: PointerEvent): void {
     if (!outsideClick) return;
-    if (!isInside(e.target as Node)) onDismiss();
+    if (!isInside(e.target as Node)) onDismiss('outsideClick');
   }
 
   document.addEventListener('keydown', onKeydown);
