@@ -4,6 +4,16 @@
  * See specs/00-foundation/mvvm-adapter.spec.md.
  */
 export { useId, __resetIdCounter } from './id.js';
+export {
+  clampWithMode,
+  boundaryHitOf,
+  roundToPrecision,
+  decimalsOf as decimalsOfNumber,
+  addStep as addNumberStep,
+  formatWithLocale,
+  __resetNumberFormatCache,
+  type BoundaryMode,
+} from './input-number.js';
 export { useFocusTrap, type FocusTrap } from './focus-trap.js';
 export { useDismiss, type DismissOptions, type DismissReason } from './dismiss.js';
 export { useScrollLock, __resetScrollLock } from './scroll-lock.js';
