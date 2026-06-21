@@ -151,6 +151,7 @@ export {
   type ToastOptions,
   type ToastType,
   type ToastPosition,
+  type ToastTheme,
   type ToastCloseReason,
 } from './toast.js';
 export {

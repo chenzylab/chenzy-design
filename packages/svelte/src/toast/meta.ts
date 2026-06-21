@@ -6,8 +6,8 @@ export const meta = {
   name: 'Toast',
   category: 'feedback',
   description:
-    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/loading/open/close/update/destroyAll）。单例容器惰性挂载到 body；类型预设图标 + 自动消失 + 悬停暂停 + maxCount FIFO 淘汰 + 同 id 去重更新；a11y 播报走单例 ARIA live region（error->assertive、其余->polite），卡片本身纯视觉无 role/aria-live。本子集：6 方位仅 top/bottom，promise/stack/theme 延后。',
-  exports: ['Toast'],
+    '轻提示：命令式全局反馈 API（Toast.info/success/warning/error/loading/open/promise/close/update/destroyAll）。单例容器惰性挂载到 body；类型预设图标 + 自动消失 + 悬停暂停 + 按方位 maxCount FIFO 淘汰 + 同 id 去重更新；6 方位独立堆叠（topLeft/top/topRight/bottomLeft/bottom/bottomRight，对齐 Notification）多条同方位纵向堆叠不重叠；theme(light/dark) 卡片主题；Toast.promise(promise, { loading, success, error }) 传入 Promise 自动 pending→resolve/reject 切文案（success/error 可为函数接收值，默认文案经 @chenzy-design/locale）；a11y 播报走单例 ARIA live region（error->assertive、其余->polite），卡片本身纯视觉无 role/aria-live。',
+  exports: ['Toast', 'ToastPromiseMessages'],
   imperative: true,
   props: [
     { name: 'content', type: 'string', default: '—', desc: '提示文本（必填）' },
@@ -24,9 +24,20 @@ export const meta = {
       default: '3',
       desc: '自动消失秒数；0 持久。loading 默认 0',
     },
-    { name: 'position', type: "'top'|'bottom'", default: "'top'", desc: '出现方位' },
+    {
+      name: 'position',
+      type: "'topLeft'|'top'|'topRight'|'bottomLeft'|'bottom'|'bottomRight'",
+      default: "'top'",
+      desc: '出现方位，每方位独立纵向堆叠',
+    },
     { name: 'closable', type: 'boolean', default: 'true', desc: '是否显示关闭按钮' },
     { name: 'pauseOnHover', type: 'boolean', default: 'true', desc: '悬停/聚焦时暂停定时器' },
+    {
+      name: 'theme',
+      type: "'light'|'dark'",
+      default: "'light'",
+      desc: '卡片主题；dark 为深色卡片',
+    },
     {
       name: 'onClose',
       type: "(id: string, reason: 'timeout'|'manual'|'replace'|'destroyAll') => void",
@@ -60,11 +71,21 @@ export const meta = {
     '--cd-toast-stack-gap',
     '--cd-toast-z',
     '--cd-toast-motion-duration',
+    '--cd-toast-bg-dark',
+    '--cd-toast-color-text-dark',
+    '--cd-toast-color-close-dark',
+    '--cd-toast-color-close-hover-dark',
   ],
   responsive: false,
   examples: [
     { title: '成功', code: "Toast.success('已保存')" },
     { title: '错误', code: "Toast.error('保存失败')" },
     { title: '加载（持久）', code: "Toast.loading('上传中', { duration: 0 })" },
+    { title: '右下角', code: "Toast.info('已同步', { position: 'bottomRight' })" },
+    { title: '深色主题', code: "Toast.success('已保存', { theme: 'dark' })" },
+    {
+      title: 'promise',
+      code: "Toast.promise(save(), { loading: '保存中…', success: '已保存', error: (e) => `失败：${e.message}` })",
+    },
   ],
 } as const;

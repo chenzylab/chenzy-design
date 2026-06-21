@@ -107,4 +107,34 @@ describe('createToastStore', () => {
     expect(counts).toEqual([1, 0]);
     s.destroy();
   });
+
+  it('defaults position to top and theme to light', () => {
+    const s = createToastStore();
+    s.add({ content: 'x', duration: 0 });
+    const [t] = s.getToasts();
+    expect(t!.position).toBe('top');
+    expect(t!.theme).toBe('light');
+    s.destroy();
+  });
+
+  it('supports 6 positions and carries theme through', () => {
+    const s = createToastStore();
+    s.add({ content: 'a', duration: 0, position: 'bottomRight', theme: 'dark' });
+    const [t] = s.getToasts();
+    expect(t!.position).toBe('bottomRight');
+    expect(t!.theme).toBe('dark');
+    s.destroy();
+  });
+
+  it('maxCount evicts FIFO per position independently', () => {
+    const s = createToastStore({ maxCount: 1 });
+    s.add({ content: 'top1', duration: 0, position: 'top' });
+    s.add({ content: 'bottom1', duration: 0, position: 'bottom' });
+    // different positions: neither evicts the other
+    expect(s.getToasts().map((t) => t.content)).toEqual(['top1', 'bottom1']);
+    // adding a second top evicts only the older top
+    s.add({ content: 'top2', duration: 0, position: 'top' });
+    expect(s.getToasts().map((t) => t.content)).toEqual(['bottom1', 'top2']);
+    s.destroy();
+  });
 });

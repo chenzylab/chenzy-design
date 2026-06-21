@@ -18,4 +18,9 @@ export const toastTokens = {
   'toast-stack-gap': 'var(--cd-spacing-2)',
   'toast-z': '1100',
   'toast-motion-duration': 'var(--cd-motion-duration-fast)',
+  // dark 主题卡片（对齐 Notification dark theme）
+  'toast-bg-dark': 'var(--cd-color-text-0)',
+  'toast-color-text-dark': 'var(--cd-color-bg-0)',
+  'toast-color-close-dark': 'var(--cd-color-bg-2)',
+  'toast-color-close-hover-dark': 'var(--cd-color-bg-0)',
 } as const;
