@@ -237,6 +237,25 @@
   let treeSelectIconVal = $state<string | number | null>(null);
   let treeSelectAsyncVal = $state<string | number | null>(null);
   let treeSelectVirtualVal = $state<string | number | null>(null);
+  // spec §4 补齐 prop 演示状态
+  let treeStrategyVal = $state<(string | number)[]>([]);
+  let treeMaxTagVal = $state<(string | number)[]>([]);
+  let treeRemoteVal = $state<string | number | null>(null);
+  let treeRemoteData = $state<TreeNode[]>([]);
+  let treeRemoteLoading = $state(false);
+  let treeRemoteTimer: ReturnType<typeof setTimeout> | undefined;
+  function treeRemoteSearch(q: string) {
+    if (treeRemoteTimer !== undefined) clearTimeout(treeRemoteTimer);
+    if (!q) { treeRemoteData = []; treeRemoteLoading = false; return; }
+    treeRemoteLoading = true;
+    treeRemoteTimer = setTimeout(() => {
+      treeRemoteData = [
+        { key: `${q}-1`, label: `${q} 部门一`, children: [{ key: `${q}-1-1`, label: `${q} 小组A` }] },
+        { key: `${q}-2`, label: `${q} 部门二` },
+      ];
+      treeRemoteLoading = false;
+    }, 200);
+  }
 
   // Tree 异步加载：根节点无 children，展开时按 key 拉取子节点；'leaf-x' 标记叶子。
   const treeAsyncRoots = [
@@ -2330,6 +2349,55 @@ let pageSize2 = $state(10);
         onChange={(k) => (treeSelectVirtualVal = Array.isArray(k) ? (k[0] ?? null) : k)}
       />
       <Text type="tertiary">virtualized 1050 节点：仅渲染视口内行</Text>
+    </div>
+    <div style="width: 280px" data-testid="treeselect-strategy">
+      <TreeSelect
+        treeData={orgTree}
+        multiple
+        clearable
+        defaultExpandAll
+        showCheckedStrategy="parent"
+        placeholder="收敛策略=parent"
+        value={treeStrategyVal}
+        onChange={(k) => (treeStrategyVal = Array.isArray(k) ? k : k === null ? [] : [k])}
+      />
+      <Text type="tertiary">showCheckedStrategy=parent：回填 {treeStrategyVal.length} 项</Text>
+    </div>
+    <div style="width: 280px" data-testid="treeselect-maxtag">
+      <TreeSelect
+        treeData={orgTree}
+        multiple
+        clearable
+        defaultExpandAll
+        checkRelation="unRelated"
+        maxTagCount={2}
+        placeholder="maxTagCount=2"
+        value={treeMaxTagVal}
+        onChange={(k) => (treeMaxTagVal = Array.isArray(k) ? k : k === null ? [] : [k])}
+      />
+      <Text type="tertiary">maxTagCount=2 + checkRelation=unRelated</Text>
+    </div>
+    <div style="width: 260px" data-testid="treeselect-remote">
+      <TreeSelect
+        treeData={treeRemoteData}
+        remote
+        clearable
+        onSearch={treeRemoteSearch}
+        placeholder="远程搜索（输入触发）"
+        value={treeRemoteVal}
+        onChange={(k) => (treeRemoteVal = Array.isArray(k) ? (k[0] ?? null) : k)}
+      />
+      <Text type="tertiary">remote：{treeRemoteLoading ? '加载中…' : '输入防抖触发 onSearch'}</Text>
+    </div>
+    <div style="width: 240px" data-testid="treeselect-keepdom">
+      <TreeSelect
+        treeData={orgTree}
+        clearable
+        destroyOnClose
+        treeDefaultExpandedKeys={['eng']}
+        placeholder="destroyOnClose + 默认展开"
+      />
+      <Text type="tertiary">destroyOnClose 关闭卸载浮层；treeDefaultExpandedKeys 默认展开</Text>
     </div>
   </Space>
 

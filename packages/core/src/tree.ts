@@ -380,3 +380,46 @@ export function isAncestorOrSelf(
   if (!ancestor || !ancestor.children) return false;
   return !!findNode(ancestor.children, key);
 }
+
+/** Strategy for converging a fully-checked set into a回填/Tag value set. */
+export type CheckedStrategy = 'all' | 'parent' | 'child';
+
+/**
+ * Collapse a fully-checked set (the `checked` output of {@link conduct}, which
+ * contains every node — parents and children — that is completely checked) into
+ * the value set to surface as回填 value / Tags, per `showCheckedStrategy`:
+ *
+ * - `'all'`    → every checked node (input unchanged, in document order).
+ * - `'parent'` → only the top-most fully-checked nodes; a checked node whose
+ *                parent is also checked is dropped (parent represents subtree).
+ * - `'child'`  → only checked leaf nodes (no parents).
+ *
+ * Pure: derives solely from `data` + `checked`, document-ordered, no mutation.
+ */
+export function collectCheckedByStrategy(
+  data: TreeNodeData[],
+  checked: ReadonlySet<TreeKey>,
+  strategy: CheckedStrategy,
+): TreeKey[] {
+  const out: TreeKey[] = [];
+  const walk = (nodes: TreeNodeData[], parentChecked: boolean): void => {
+    for (const node of nodes) {
+      const isChecked = checked.has(node.key);
+      const kids = node.children;
+      const isLeaf = !kids || kids.length === 0;
+      if (isChecked) {
+        if (strategy === 'all') out.push(node.key);
+        else if (strategy === 'parent' && !parentChecked) out.push(node.key);
+        else if (strategy === 'child' && isLeaf) out.push(node.key);
+      }
+      if (kids && kids.length > 0) {
+        // For 'parent', once a checked ancestor is emitted we stop descending
+        // (its subtree is fully represented); otherwise keep walking.
+        if (strategy === 'parent' && isChecked) continue;
+        walk(kids, isChecked);
+      }
+    }
+  };
+  walk(data, false);
+  return out;
+}
