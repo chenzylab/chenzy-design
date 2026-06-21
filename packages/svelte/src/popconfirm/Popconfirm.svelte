@@ -9,7 +9,9 @@
   （对齐 ConfirmModal 的异步编排）。
   复用 core 原语：useId、useDismiss（外部点击/Esc 关闭，popup 列入 extraTargets）、
   useFocusTrap（焦点捕获+归还）、computePosition/useFloating（container 选项接 getPopupContainer）。
-  浮层静态显示（{#if isOpen} 直接挂载），无入场动画，reduced-motion 友好。
+  浮层惰性挂载（首开才挂）；destroyOnClose 默认 true 关闭即卸载，false 时保留 DOM（--hidden 隐藏）。
+  motion 默认开（淡入+轻缩放），reduced-motion 退化为无动效。arrowPointAtCenter 透传 floating。
+  okButtonProps/cancelButtonProps 透传额外按钮属性（onclick/loading/disabled 由组件托管，不被覆盖）。
   关闭回调 reason 来源细分：'confirm'（确认按钮）| 'cancel'（取消按钮）| 'trigger'（点击/键盘/hover toggle）
   | 'esc'（Esc 键）| 'outsideClick'（外部点击）；esc/outsideClick 由 useDismiss 的 DismissReason 透传。
 -->
@@ -33,6 +35,23 @@
   type TriggerType = 'click' | 'hover';
   type DismissReason = 'trigger' | 'confirm' | 'cancel' | 'esc' | 'outsideClick';
 
+  /** 透传给确认/取消 Button 的额外属性（type/theme/size/block/disabled/ariaLabel 等，不含 onclick/loading：由组件托管） */
+  type ExtraButtonProps = {
+    type?: 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
+    theme?: 'solid' | 'borderless' | 'light' | 'outline';
+    size?: 'small' | 'default' | 'large';
+    block?: boolean;
+    disabled?: boolean;
+    htmlType?: 'button' | 'submit' | 'reset';
+    ariaLabel?: string;
+  };
+
+  /** motion 配置：传 number 覆盖时长（ms），传 false 关闭过渡 */
+  interface MotionConfig {
+    /** 过渡时长（ms），缺省走 token --cd-popconfirm-motion-duration */
+    duration?: number;
+  }
+
   interface Props {
     open?: boolean;
     defaultOpen?: boolean;
@@ -45,11 +64,21 @@
     okText?: string;
     cancelText?: string;
     okType?: OkType;
+    /** 透传确认按钮额外属性（onclick/loading 由组件托管，传入会被忽略） */
+    okButtonProps?: ExtraButtonProps;
+    /** 透传取消按钮额外属性（onclick/disabled 由组件托管，传入会被忽略） */
+    cancelButtonProps?: ExtraButtonProps;
     showCancel?: boolean;
     placement?: Placement;
     disabled?: boolean;
     closeOnEsc?: boolean;
     closeOnOutsideClick?: boolean;
+    /** 关闭时销毁浮层 DOM，默认 true（卸载释放内存）；false 时首开后保留（--hidden 隐藏） */
+    destroyOnClose?: boolean;
+    /** 箭头是否指向触发元素中心，默认 false */
+    arrowPointAtCenter?: boolean;
+    /** 入场动效开关/配置，默认 true（受 prefers-reduced-motion 覆盖） */
+    motion?: boolean | MotionConfig;
     /** 触发方式：'click' 点击 toggle（默认）| 'hover' 悬停开关 */
     triggerType?: TriggerType;
     /** hover 触发：指针进入到打开的延迟（ms） */
@@ -78,11 +107,16 @@
     okText,
     cancelText,
     okType,
+    okButtonProps,
+    cancelButtonProps,
     showCancel = true,
     placement = 'top',
     disabled = false,
     closeOnEsc = true,
     closeOnOutsideClick = true,
+    destroyOnClose = true,
+    arrowPointAtCenter = false,
+    motion = true,
     triggerType = 'click',
     mouseEnterDelay = 150,
     mouseLeaveDelay = 150,
@@ -109,11 +143,35 @@
     return defaultOpen;
   }
 
-  const resolvedOkType = $derived<OkType>(
-    okType ?? (type === 'danger' ? 'danger' : 'primary'),
+  // 确认按钮 type 优先级：显式 okType > okButtonProps.type > 由 type 推导默认（兜底必为非空值）。
+  type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
+  const resolvedOkType = $derived<ButtonType>(
+    okType ?? okButtonProps?.type ?? (type === 'danger' ? 'danger' : 'primary'),
   );
 
   const hasContent = $derived(Boolean(contentSnippet) || Boolean(content));
+
+  // motion：false（或 {duration:0}）关闭过渡；number/object.duration 覆盖 token 时长。
+  const motionEnabled = $derived(motion !== false);
+  const motionDuration = $derived(
+    typeof motion === 'object' && typeof motion.duration === 'number'
+      ? motion.duration
+      : undefined,
+  );
+
+  // --- destroyOnClose / 惰性挂载（红线 #2 纯派生）：首开才挂；关闭后 destroyOnClose=false 保留 DOM（--hidden），true 卸载。 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(isOpen || (hasBeenOpened && !destroyOnClose));
+
+  // 浮层根内联样式：motion duration 覆盖 token 时长。
+  const popupStyle = $derived(
+    motionDuration !== undefined
+      ? `--cd-popconfirm-motion-duration:${motionDuration}ms`
+      : undefined,
+  );
 
   // flip 后的实际方位（驱动箭头朝向）+ 箭头交叉轴偏移
   let resolvedPlacement = $state<Placement>(untrack(() => placement));
@@ -289,16 +347,21 @@
     {@render trigger?.()}
   </div>
 
-  {#if isOpen}
+  {#if shouldRender}
+    <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
     <div
       class={popupCls}
+      class:cd-popconfirm__popup--hidden={!isOpen}
+      class:cd-popconfirm__popup--motion={motionEnabled}
       id={popupId}
+      style={popupStyle}
       bind:this={popupEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, getContainer: getPopupContainer, onPlacement }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, arrowPointAtCenter, getContainer: getPopupContainer, onPlacement, open: isOpen }}
       role="dialog"
       tabindex="-1"
       aria-labelledby={titleId}
       aria-describedby={hasContent ? contentId : undefined}
+      aria-hidden={!isOpen || undefined}
       onpointerenter={onPopupPointerEnter}
       onpointerleave={onPopupPointerLeave}
     >
@@ -373,11 +436,17 @@
       </div>
       <div class="cd-popconfirm__footer">
         {#if showCancel}
-          <Button size="small" disabled={confirmLoading} onclick={cancel}>
+          <Button size="small" {...cancelButtonProps} disabled={confirmLoading} onclick={cancel}>
             {cancelText ?? loc().t('Popconfirm.cancel')}
           </Button>
         {/if}
-        <Button size="small" type={resolvedOkType} loading={confirmLoading} onclick={confirm}>
+        <Button
+          size="small"
+          {...okButtonProps}
+          type={resolvedOkType}
+          loading={confirmLoading}
+          onclick={confirm}
+        >
           {okText ?? loc().t('Popconfirm.confirm')}
         </Button>
       </div>
@@ -413,6 +482,25 @@
     background: var(--cd-popconfirm-bg);
     border-radius: var(--cd-popconfirm-radius);
     box-shadow: var(--cd-popconfirm-shadow);
+  }
+  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
+  .cd-popconfirm__popup--hidden {
+    display: none;
+  }
+  /* motion：进场淡入 + 轻微缩放，token 时长/缓动；reduced-motion 退化 */
+  .cd-popconfirm__popup--motion {
+    animation: cd-popconfirm-in var(--cd-popconfirm-motion-duration)
+      var(--cd-popconfirm-motion-easing, ease) both;
+  }
+  @keyframes cd-popconfirm-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   /* arrow：旋转 45° 的纯色方块，交叉轴偏移由内联 style 控制 */
@@ -488,10 +576,10 @@
     margin-block-start: var(--cd-spacing-3);
   }
 
-  /* 本子集无入场动画；reduced-motion 下同样无过渡 */
+  /* reduced-motion：禁用进场动画 */
   @media (prefers-reduced-motion: reduce) {
-    .cd-popconfirm__popup {
-      transition: none;
+    .cd-popconfirm__popup--motion {
+      animation: none;
     }
   }
 </style>

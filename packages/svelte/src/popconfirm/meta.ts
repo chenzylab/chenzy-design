@@ -6,7 +6,7 @@ export const meta = {
   name: 'Popconfirm',
   category: 'feedback',
   description:
-    '气泡确认：锚定触发元素的就地二次确认。支持 title/content、危险分级 type（default/warning/danger）、确认/取消双按钮、placement 4 向；triggerType=click/hover、onConfirm 返回 Promise 时确认按钮 loading（resolve 关闭 / reject 保持）、getPopupContainer 自定义浮层容器；role=dialog non-modal，复用 useDismiss/useFocusTrap/useFloating。',
+    '气泡确认：锚定触发元素的就地二次确认。支持 title/content、危险分级 type（default/warning/danger）、确认/取消双按钮、placement 4 向；triggerType=click/hover、onConfirm 返回 Promise 时确认按钮 loading（resolve 关闭 / reject 保持）、getPopupContainer 自定义浮层容器；destroyOnClose 关闭卸载浮层、arrowPointAtCenter 箭头指向中心、okButtonProps/cancelButtonProps 透传按钮属性、motion 入场动效（reduced-motion 退化）；role=dialog non-modal，复用 useDismiss/useFocusTrap/useFloating。',
   exports: ['Popconfirm'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写，仅 onOpenChange' },
@@ -35,6 +35,18 @@ export const meta = {
       default: 'undefined',
       desc: '覆盖确认按钮类型；缺省 type=danger→danger 否则 primary',
     },
+    {
+      name: 'okButtonProps',
+      type: 'Partial<ButtonProps>',
+      default: 'undefined',
+      desc: '透传确认按钮额外属性（type/theme/size 等；onclick/loading 由组件托管，不被覆盖）',
+    },
+    {
+      name: 'cancelButtonProps',
+      type: 'Partial<ButtonProps>',
+      default: 'undefined',
+      desc: '透传取消按钮额外属性（type/theme/size 等；onclick/disabled 由组件托管，不被覆盖）',
+    },
     { name: 'showCancel', type: 'boolean', default: 'true', desc: '是否显示取消按钮' },
     {
       name: 'placement',
@@ -49,6 +61,24 @@ export const meta = {
       type: 'boolean',
       default: 'true',
       desc: '外部点击是否关闭',
+    },
+    {
+      name: 'destroyOnClose',
+      type: 'boolean',
+      default: 'true',
+      desc: '关闭时销毁浮层 DOM（卸载释放内存）；false 时首开后保留，仅 --hidden 隐藏',
+    },
+    {
+      name: 'arrowPointAtCenter',
+      type: 'boolean',
+      default: 'false',
+      desc: 'start/end 对齐时箭头指向触发元素中心',
+    },
+    {
+      name: 'motion',
+      type: 'boolean | { duration?: number }',
+      default: 'true',
+      desc: '入场动效开关/配置（淡入+轻缩放）；传 number duration 覆盖时长，false 关闭；受 prefers-reduced-motion 覆盖',
     },
     {
       name: 'triggerType',
@@ -122,6 +152,8 @@ export const meta = {
     '--cd-popconfirm-z',
     '--cd-popconfirm-gap-footer',
     '--cd-popconfirm-arrow-size',
+    '--cd-popconfirm-motion-duration',
+    '--cd-popconfirm-motion-easing',
   ],
   responsive: false,
   examples: [

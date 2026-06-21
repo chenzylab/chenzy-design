@@ -4780,6 +4780,65 @@ let pageSize2 = $state(10);
       {/snippet}
     </Popconfirm>
   </div>
+
+  <!-- spec §4 新增 prop 演示：destroyOnClose / motion / arrowPointAtCenter / ok|cancelButtonProps -->
+  <div style="display:flex; gap:24px; flex-wrap:wrap; padding:12px 0">
+    <span data-testid="pc-destroy-keep">
+      <Popconfirm
+        title="保留浮层 DOM"
+        content="destroyOnClose=false：关闭后浮层不卸载，仅隐藏。"
+        destroyOnClose={false}
+        onConfirm={() => { popResult = 'keep-DOM 确认'; }}
+      >
+        {#snippet trigger()}
+          <Button>destroyOnClose=false</Button>
+        {/snippet}
+      </Popconfirm>
+    </span>
+
+    <span data-testid="pc-no-motion">
+      <Popconfirm
+        title="关闭入场动效"
+        content="motion=false：直接出现，无淡入缩放。"
+        motion={false}
+        onConfirm={() => { popResult = 'no-motion 确认'; }}
+      >
+        {#snippet trigger()}
+          <Button>motion=false</Button>
+        {/snippet}
+      </Popconfirm>
+    </span>
+
+    <span data-testid="pc-arrow-center">
+      <Popconfirm
+        title="箭头指向中心"
+        content="arrowPointAtCenter：箭头对准触发元素中心。"
+        placement="bottomStart"
+        arrowPointAtCenter
+        onConfirm={() => { popResult = 'arrow-center 确认'; }}
+      >
+        {#snippet trigger()}
+          <Button>arrowPointAtCenter</Button>
+        {/snippet}
+      </Popconfirm>
+    </span>
+
+    <span data-testid="pc-button-props">
+      <Popconfirm
+        title="透传按钮属性"
+        content="okButtonProps/cancelButtonProps：确认按钮 danger，取消按钮 large。"
+        okText="删除"
+        okButtonProps={{ type: 'danger' }}
+        cancelButtonProps={{ size: 'large', theme: 'outline' }}
+        onConfirm={() => { popResult = 'button-props 确认'; }}
+      >
+        {#snippet trigger()}
+          <Button>ok/cancelButtonProps</Button>
+        {/snippet}
+      </Popconfirm>
+    </span>
+  </div>
+
   <Text type="tertiary">操作结果：{popResult}</Text>
 
   <Divider />
