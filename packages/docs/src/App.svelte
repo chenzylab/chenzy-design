@@ -3161,6 +3161,33 @@ let pageSize2 = $state(10);
   </div>
   <Text type="tertiary">容器宽 {overflowWidth}px，已折叠 {overflowHidden} 项</Text>
 
+  <div style="margin-top:12px"><Text type="tertiary">collapseFrom="start"（从头部折叠，尾部最新项保留）</Text></div>
+  <div style="width: {overflowWidth}px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px">
+    <OverflowList items={overflowTags} collapseFrom="start" ariaLabel="部门标签（头部折叠）">
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+
+  <div style="margin-top:12px"><Text type="tertiary">mode="scroll"（不折叠，横向滚动查看）</Text></div>
+  <div style="width: {overflowWidth}px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px">
+    <OverflowList items={overflowTags} mode="scroll" ariaLabel="部门标签（滚动）">
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+
+  <div style="margin-top:12px"><Text type="tertiary">direction="vertical"（纵向折叠，容器高 120px）</Text></div>
+  <div style="height:120px; width:160px; border: 1px dashed var(--cd-color-border); padding: 8px; border-radius: 6px">
+    <OverflowList items={overflowTags} direction="vertical" ariaLabel="部门标签（纵向）">
+      {#snippet item({ item })}
+        <span style="display:inline-block;padding:2px 10px;background:var(--cd-color-fill-1);border-radius:4px;white-space:nowrap">{item}</span>
+      {/snippet}
+    </OverflowList>
+  </div>
+
   <Divider />
 
   <Title heading={5}>Spin（加载指示器）</Title>

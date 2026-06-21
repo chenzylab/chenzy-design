@@ -3,8 +3,10 @@
  * Pure functions only: given measured item widths + container width, compute
  * how many leading items fit before the rest collapse into a "+N" node. No DOM,
  * no framework deps, no internal mutable state — the svelte layer measures DOM
- * (ResizeObserver) and feeds widths in. See specs/components/show/OverflowList.spec.md §3
- * (collapse / end-direction subset; scroll mode & start-direction deferred).
+ * (ResizeObserver) and feeds widths in. See specs/components/show/OverflowList.spec.md §3.
+ * The fit math is axis-agnostic — horizontal/vertical only changes which DOM
+ * dimension the svelte layer measures — and `computeOverflowPartition` adds
+ * `collapseFrom: 'start' | 'end'` for head- vs tail-collapse.
  */
 
 export interface OverflowComputeInput {
@@ -81,6 +83,71 @@ export function computeVisibleCount(input: OverflowComputeInput): OverflowComput
   if (visible >= count) return { visibleCount: count, overflowCount: 0 };
 
   return { visibleCount: visible, overflowCount: count - visible };
+}
+
+/** which end the overflow node collapses from: trailing (`end`) or leading (`start`) */
+export type CollapseFrom = 'end' | 'start';
+
+export interface OverflowPartitionInput extends OverflowComputeInput {
+  /** collapse trailing items (`end`, default) or leading items (`start`) */
+  collapseFrom?: CollapseFrom;
+}
+
+export interface OverflowPartitionResult extends OverflowComputeResult {
+  /** indexes rendered visibly, in document order */
+  visibleIndexes: number[];
+  /** indexes collapsed into the overflow node, in document order */
+  overflowIndexes: number[];
+}
+
+/**
+ * Partition items into visible + overflow honoring `collapseFrom`. The fit math
+ * is direction-agnostic (the svelte layer feeds the main-axis sizes regardless
+ * of horizontal/vertical), so the same {@link computeVisibleCount} drives both
+ * ends — for `start` we mirror the size array, fit the same number of items, and
+ * map the kept window back to the trailing positions.
+ *
+ * `end`  → visible = leading [0..k), overflow = trailing [k..count)
+ * `start`→ visible = trailing [count-k..count), overflow = leading [0..count-k)
+ *
+ * `alwaysVisible` indexes and `minVisibleItems` raise the visible-count floor in
+ * both directions (mirrored for `start`).
+ */
+export function computeOverflowPartition(
+  input: OverflowPartitionInput,
+): OverflowPartitionResult {
+  const { itemSizes, collapseFrom = 'end', alwaysVisible = [] } = input;
+  const count = itemSizes.length;
+
+  if (collapseFrom === 'end') {
+    const { visibleCount, overflowCount } = computeVisibleCount(input);
+    const visibleIndexes: number[] = [];
+    const overflowIndexes: number[] = [];
+    for (let i = 0; i < count; i += 1) {
+      if (i < visibleCount) visibleIndexes.push(i);
+      else overflowIndexes.push(i);
+    }
+    return { visibleCount, overflowCount, visibleIndexes, overflowIndexes };
+  }
+
+  // start: mirror so the same leading-fit math keeps the *trailing* window.
+  const mirroredSizes = [...itemSizes].reverse();
+  // mirror alwaysVisible indexes too (i → count-1-i).
+  const mirroredAlways = alwaysVisible.map((i) => count - 1 - i);
+  const { visibleCount } = computeVisibleCount({
+    ...input,
+    itemSizes: mirroredSizes,
+    alwaysVisible: mirroredAlways,
+  });
+  const overflowCount = count - visibleCount;
+  const firstVisible = overflowCount; // [overflowCount .. count) stay visible
+  const visibleIndexes: number[] = [];
+  const overflowIndexes: number[] = [];
+  for (let i = 0; i < count; i += 1) {
+    if (i < firstVisible) overflowIndexes.push(i);
+    else visibleIndexes.push(i);
+  }
+  return { visibleCount, overflowCount, visibleIndexes, overflowIndexes };
 }
 
 /**

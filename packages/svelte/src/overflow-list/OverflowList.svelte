@@ -1,12 +1,12 @@
 <!--
   OverflowList — see specs/components/show/OverflowList.spec.md
-  基础子集：collapse 折叠模式 + end 方向（尾部溢出收纳进 +N 折叠节点）。
-  复用 @chenzy-design/core 收纳算法（computeVisibleCount / applyHysteresis）。
-  TODO(延后):
-    - scroll 模式（横向滚动而非折叠）
-    - vertical 纵向方向
-    - start 方向折叠（把头部溢出项收进折叠节点）
-    - 命令式方法（forceMeasure / scrollTo 等）
+  collapse 折叠模式（尾部 end / 头部 start 方向）+ scroll 滚动模式，
+  horizontal 横向 / vertical 纵向两种排列。
+  复用 @chenzy-design/core 收纳算法（computeOverflowPartition / applyHysteresis）。
+  - mode='collapse'：容器放不下时把溢出项收纳进 +N 折叠节点（collapseFrom 决定从尾/头折叠）。
+  - mode='scroll'：不折叠，可见层变可滚动容器，溢出项靠滚动查看。
+  - direction='horizontal'|'vertical'：主轴方向；几何测量读对应维度（宽/高）。
+  TODO(延后): 命令式方法（forceMeasure / scrollTo 等）。
 
   ⚠️ 三条死循环红线（本组件最易爆，严格遵守）：
     1. onOverflowChange 去重：只在 overflowCount/visibleCount 实际变化时调，
@@ -31,11 +31,14 @@
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import { computeVisibleCount, applyHysteresis } from '@chenzy-design/core';
+  import { computeOverflowPartition, applyHysteresis } from '@chenzy-design/core';
 
   let {
     items = [],
     size = 'default',
+    mode = 'collapse',
+    direction = 'horizontal',
+    collapseFrom = 'end',
     gap,
     minVisibleItems = 0,
     alwaysVisibleIndexes = [],
@@ -48,6 +51,12 @@
   }: {
     items?: T[];
     size?: 'small' | 'default' | 'large';
+    /** collapse 折叠溢出项为 +N（默认）；scroll 不折叠，可见层可滚动查看 */
+    mode?: 'collapse' | 'scroll';
+    /** 主轴方向：horizontal 横向（默认）/ vertical 纵向 */
+    direction?: 'horizontal' | 'vertical';
+    /** collapse 模式下从尾部（end，默认）还是头部（start）折叠 */
+    collapseFrom?: 'end' | 'start';
     gap?: number;
     minVisibleItems?: number;
     alwaysVisibleIndexes?: number[];
@@ -88,12 +97,41 @@
     gap ?? (size === 'small' ? 4 : size === 'large' ? 12 : 8),
   );
 
-  // 可见层切片：纯 $derived，仅依赖 items + visibleCount（render-safe，不读 DOM）。
-  const visibleItems = $derived(items.slice(0, Math.max(0, visibleCount)));
-  const overflowItems = $derived(items.slice(Math.max(0, visibleCount)));
+  // scroll 模式：永不折叠，全部可见、可见层可滚动。collapse 模式才按几何收纳。
+  const isScroll = $derived(mode === 'scroll');
+
+  // 可见层切片：纯 $derived，仅依赖 items + visibleCount + collapseFrom + mode（render-safe，不读 DOM）。
+  // collapseFrom='end'：可见 = 前 visibleCount 项，溢出 = 其余尾部项。
+  // collapseFrom='start'：可见 = 后 visibleCount 项，溢出 = 其余头部项（折叠节点渲染在头部）。
+  const vc = $derived(Math.max(0, visibleCount));
+  const visibleItems = $derived(
+    isScroll
+      ? items
+      : collapseFrom === 'start'
+        ? items.slice(items.length - vc)
+        : items.slice(0, vc),
+  );
+  const overflowItems = $derived(
+    isScroll
+      ? []
+      : collapseFrom === 'start'
+        ? items.slice(0, items.length - vc)
+        : items.slice(vc),
+  );
+  // 首个可见项在原 items 中的索引：start 折叠时可见窗口在尾部，从此偏移开始；
+  // 否则（end / scroll）从 0 开始。snippet 的 index 始终映射回原始下标。
+  const visibleBaseIndex = $derived(
+    !isScroll && collapseFrom === 'start' ? items.length - vc : 0,
+  );
 
   const cls = $derived(
-    ['cd-overflow-list', `cd-overflow-list--${size}`, className]
+    [
+      'cd-overflow-list',
+      `cd-overflow-list--${size}`,
+      `cd-overflow-list--${direction}`,
+      `cd-overflow-list--${mode}`,
+      className,
+    ]
       .filter(Boolean)
       .join(' '),
   );
@@ -103,34 +141,61 @@
    * 只由 RO 回调（容器尺寸变）和 items effect（内容变）通过 rAF 调用。
    */
   function measure(): void {
+    // scroll 模式不折叠：可见层渲染全部、靠滚动查看，无几何收纳计算。
+    if (isScroll) {
+      if (visibleCount !== items.length) visibleCount = items.length;
+      if (overflowCount !== 0) overflowCount = 0;
+      if (
+        onOverflowChange &&
+        (items.length !== prevReportedVisible || 0 !== prevReportedOverflow)
+      ) {
+        prevReportedVisible = items.length;
+        prevReportedOverflow = 0;
+        onOverflowChange({
+          overflowCount: 0,
+          visibleCount: items.length,
+          overflowItems: [],
+        });
+      }
+      return;
+    }
+
     const container = containerEl;
     const measureRoot = measureEl;
     if (!container || !measureRoot) return;
 
-    // 1. 容器主轴可用尺寸：读根容器 clientWidth（block，随父宽变化；已扣 padding）。
-    const containerSize = container.clientWidth;
+    const vertical = direction === 'vertical';
 
-    // 2. 遍历测量层项子元素，读真实宽度 → itemSizes[]。
+    // 1. 容器主轴可用尺寸：横向读 clientWidth，纵向读 clientHeight（block，已扣 padding）。
+    const containerSize = vertical ? container.clientHeight : container.clientWidth;
+
+    // 2. 遍历测量层项子元素，读真实主轴尺寸 → itemSizes[]。
     const itemNodes = measureRoot.querySelectorAll<HTMLElement>(
       '[data-cd-measure-item]',
     );
     const itemSizes: number[] = [];
-    for (const node of itemNodes) itemSizes.push(node.offsetWidth);
+    for (const node of itemNodes)
+      itemSizes.push(vertical ? node.offsetHeight : node.offsetWidth);
 
-    // 3. 折叠节点样本宽度 → overflowSize。
+    // 3. 折叠节点样本主轴尺寸 → overflowSize。
     const overflowNode = measureRoot.querySelector<HTMLElement>(
       '[data-cd-measure-overflow]',
     );
-    const overflowSize = overflowNode ? overflowNode.offsetWidth : 0;
+    const overflowSize = overflowNode
+      ? vertical
+        ? overflowNode.offsetHeight
+        : overflowNode.offsetWidth
+      : 0;
 
-    // 4. 复用 core 收纳算法。
-    const r = computeVisibleCount({
+    // 4. 复用 core 收纳算法（collapseFrom 决定从尾/头折叠；方向已折算进 itemSizes/containerSize）。
+    const r = computeOverflowPartition({
       itemSizes,
       containerSize,
       overflowSize,
       gap: gapPx,
       alwaysVisible: alwaysVisibleIndexes,
       minVisibleItems,
+      collapseFrom,
     });
 
     // 5. hysteresis 防边界抖动（prevContainerSize 普通变量）。
@@ -150,6 +215,7 @@
     if (nextOverflow !== overflowCount) overflowCount = nextOverflow;
 
     // 7. 去重通知 onOverflowChange（与上次上报值比较）。
+    //    start 折叠时溢出项在头部 [0, count-next)，end 折叠时在尾部 [next, count)。
     if (
       onOverflowChange &&
       (next !== prevReportedVisible || nextOverflow !== prevReportedOverflow)
@@ -159,7 +225,10 @@
       onOverflowChange({
         overflowCount: nextOverflow,
         visibleCount: next,
-        overflowItems: items.slice(next),
+        overflowItems:
+          collapseFrom === 'start'
+            ? items.slice(0, items.length - next)
+            : items.slice(next),
       });
     }
   }
@@ -195,24 +264,46 @@
     };
   });
 
-  // items 内容变化时重测：effect 仅依赖 items（读 items.length / items），
-  // 绝不依赖 visibleCount，故 measure 写 visibleCount 不会重跑此 effect → 零循环。
+  // items 内容 / 模式参数变化时重测：effect 依赖 items.length + mode/direction/
+  // collapseFrom/gap 等配置（render 安全，均非几何 $state），绝不依赖 visibleCount，
+  // 故 measure 写 visibleCount 不会重跑此 effect → 零循环。
   $effect(() => {
-    // 显式建立对 items 的依赖（长度/内容变即重测）；不依赖 visibleCount。
+    // 显式建立依赖：内容长度 + 影响收纳结果的配置项变化即重测。
     void items.length;
+    void mode;
+    void direction;
+    void collapseFrom;
+    void gapPx;
+    void minVisibleItems;
+    void threshold;
     scheduleMeasure();
   });
 </script>
 
 <div class={cls} role="group" aria-label={ariaLabel} bind:this={containerEl}>
-  <!-- 可见层：实际渲染，用户所见。 -->
+  <!-- 可见层：实际渲染，用户所见。scroll 模式下可滚动；collapse 模式下溢出收纳为 +N。 -->
   <div class="cd-overflow-list__visible">
-    {#each visibleItems as it, i (i)}
+    <!-- start 折叠：折叠节点在头部（溢出项是前面的项）。scroll 模式 overflowCount 恒为 0。 -->
+    {#if overflowCount > 0 && collapseFrom === 'start'}
+      {#if overflow}
+        {@render overflow({ overflowItems, overflowCount })}
+      {:else}
+        <button
+          type="button"
+          class="cd-overflow-list__more"
+          aria-label={`显示其余 ${overflowCount} 项`}
+        >
+          +{overflowCount}
+        </button>
+      {/if}
+    {/if}
+    {#each visibleItems as it, i (visibleBaseIndex + i)}
       <div class="cd-overflow-list__item">
-        {#if item}{@render item({ item: it, index: i })}{/if}
+        {#if item}{@render item({ item: it, index: visibleBaseIndex + i })}{/if}
       </div>
     {/each}
-    {#if overflowCount > 0}
+    <!-- end 折叠（默认）：折叠节点在尾部。 -->
+    {#if overflowCount > 0 && collapseFrom === 'end'}
       {#if overflow}
         {@render overflow({ overflowItems, overflowCount })}
       {:else}
@@ -263,6 +354,11 @@
     box-sizing: border-box;
   }
 
+  /* 纵向根容器：撑满父高，几何测量读 clientHeight。 */
+  .cd-overflow-list--vertical {
+    block-size: 100%;
+  }
+
   /* 可见层：单行 flex，超出裁剪；折叠节点不被裁。 */
   .cd-overflow-list__visible {
     display: flex;
@@ -274,6 +370,23 @@
     box-sizing: border-box;
   }
 
+  /* 纵向：主轴改为列方向，可见层撑满高。 */
+  .cd-overflow-list--vertical .cd-overflow-list__visible {
+    flex-direction: column;
+    align-items: stretch;
+    block-size: 100%;
+  }
+
+  /* scroll 模式：不折叠，可见层沿主轴可滚动。 */
+  .cd-overflow-list--scroll.cd-overflow-list--horizontal .cd-overflow-list__visible {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .cd-overflow-list--scroll.cd-overflow-list--vertical .cd-overflow-list__visible {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
   .cd-overflow-list--small .cd-overflow-list__visible {
     gap: var(--cd-overflow-list-gap-small);
   }
@@ -281,7 +394,7 @@
     gap: var(--cd-overflow-list-gap-large);
   }
 
-  /* 单项不收缩，保持真实宽度（测量与可见层一致）。 */
+  /* 单项不收缩，保持真实尺寸（测量与可见层一致）。 */
   .cd-overflow-list__item {
     flex: 0 0 auto;
     min-inline-size: 0;
@@ -327,6 +440,11 @@
     pointer-events: none;
     z-index: -1;
     box-sizing: border-box;
+  }
+  /* 纵向测量层：列方向布局，测项高度。 */
+  .cd-overflow-list--vertical .cd-overflow-list__measure {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .cd-overflow-list--small .cd-overflow-list__measure {
     gap: var(--cd-overflow-list-gap-small);
