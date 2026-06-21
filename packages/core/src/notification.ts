@@ -17,6 +17,7 @@ export type NotificationPlacement =
   | 'bottomRight';
 export type NotificationCloseReason = 'timeout' | 'manual' | 'replace' | 'destroyAll';
 export type NotificationTheme = 'light' | 'dark';
+export type NotificationDirection = 'ltr' | 'rtl';
 
 export interface NotificationOptions {
   id?: string;
@@ -32,6 +33,8 @@ export interface NotificationOptions {
   showProgress?: boolean;
   /** visual theme of the card */
   theme?: NotificationTheme;
+  /** writing direction; 'rtl' mirrors the card layout and swaps left/right placement */
+  direction?: NotificationDirection;
   /**
    * footer action area. Opaque to core (framework-agnostic) — the render layer
    * (svelte) treats it as a Snippet. Typed `unknown` here to avoid a framework dep.
@@ -51,6 +54,7 @@ export interface NotificationItem {
   pauseOnHover: boolean;
   showProgress: boolean;
   theme: NotificationTheme;
+  direction: NotificationDirection;
   footer: unknown;
   onClose: ((id: string, reason: NotificationCloseReason) => void) | undefined;
 }
@@ -58,6 +62,8 @@ export interface NotificationItem {
 export interface NotificationStoreOptions {
   maxCount?: number;
   defaultDuration?: number;
+  /** default writing direction applied to items that don't specify one */
+  defaultDirection?: NotificationDirection;
 }
 
 export interface NotificationStore {
@@ -81,7 +87,7 @@ interface TimerRecord {
 export function createNotificationStore(
   storeOptions: NotificationStoreOptions = {},
 ): NotificationStore {
-  const { maxCount = 5, defaultDuration = 4.5 } = storeOptions;
+  const { maxCount = 5, defaultDuration = 4.5, defaultDirection = 'ltr' } = storeOptions;
 
   let items: NotificationItem[] = [];
   const timers = new Map<string, TimerRecord>();
@@ -132,6 +138,7 @@ export function createNotificationStore(
       pauseOnHover: options.pauseOnHover ?? true,
       showProgress: options.showProgress ?? false,
       theme: options.theme ?? 'light',
+      direction: options.direction ?? defaultDirection,
       footer: options.footer,
       onClose: options.onClose,
     };

@@ -3781,6 +3781,11 @@ let pageSize2 = $state(10);
     <Button onclick={() => notification.open({ title: '深色通知', content: 'theme=dark 深色卡片。', theme: 'dark', duration: 0 })}>theme dark</Button>
     <Button onclick={() => notification.open({ title: '收到协作邀请', content: 'Alice 邀请你加入「设计系统」项目。', duration: 0, footer: notifFooter })}>footer（操作区）</Button>
   </div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px">
+    <Button onclick={() => notification.info({ title: 'مرحبا بك', content: 'هذا إشعار باتجاه من اليمين إلى اليسار.', direction: 'rtl', duration: 0 })}>RTL（右上→镜像左上）</Button>
+    <Button onclick={() => notification.success({ title: 'تم الحفظ', content: 'شريط التقدم ينكمش من اليمين.', direction: 'rtl', showProgress: true, duration: 6, placement: 'topLeft' })}>RTL + 进度（左上→镜像右上）</Button>
+    <Button onclick={() => notification.open({ title: '按 Esc 关闭', content: '弹出后按 Esc 键关闭最近一条。', duration: 0 })}>Esc 关闭</Button>
+  </div>
   {#snippet notifFooter()}
     <Button size="small" type="primary" onclick={() => notification.destroyAll()}>接受</Button>
     <Button size="small" onclick={() => notification.destroyAll()}>忽略</Button>

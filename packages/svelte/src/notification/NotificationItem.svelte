@@ -266,9 +266,14 @@
     block-size: 100%;
     inline-size: 100%;
     background: var(--cd-notification-progress-color);
+    /* 倒计时从起始边收缩：LTR 自左、RTL 自右（随 dir 翻转 transform-origin）。 */
     transform-origin: left center;
     /* 初始满格；命令式 rAF 写 scaleX 递减 */
     transform: scaleX(1);
+  }
+
+  :global([dir='rtl']) .cd-notification-item__progress-bar {
+    transform-origin: right center;
   }
 
   .cd-notification-item--success .cd-notification-item__progress-bar {

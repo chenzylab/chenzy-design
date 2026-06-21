@@ -1,11 +1,14 @@
 <!--
   NotificationContainer — 单例容器，订阅 store 渲染全部通知。
-  由 store.ts 惰性 mount 到 body 下的宿主节点；仅此一个实例。
+  由 store.ts 惰性 mount 到 body（或 getPopupContainer）下的宿主节点；仅此一个实例。
   按 6 placement（topLeft/top/topRight/bottomLeft/bottom/bottomRight）分组渲染独立堆叠列。
+  RTL：item.direction==='rtl' 时左右方位互换（topRight→topLeft 视觉镜像），堆叠列写 dir=rtl
+  令卡片整体镜像（关闭按钮、图标、文案方向、内边距均经逻辑属性自动翻转）；进出场水平偏移随之取反。
+  Esc 关闭（红线 #3）：$effect 命令式挂 window keydown，按 Esc 关闭最近一条通知；cleanup 移除监听。
   进出场用 svelte/transition fly（运行时驱动，退场后 DOM 正常卸载，不卡 from 帧）；
   重排用 animate:flip。reduced-motion 时 fly duration 降为 0。
   红线：render 不读 effect 写的状态——items 初始同步读一次（拿到惰性挂载前已入队的首条），
-  $effect 仅做订阅 + cleanup 退订。
+  $effect 仅做订阅 + cleanup 退订 / keydown 监听 + cleanup。
 -->
 <script lang="ts">
   import { fly } from 'svelte/transition';
@@ -41,6 +44,19 @@
     return unsub;
   });
 
+  // Esc 关闭（红线 #3）：命令式挂 window keydown，关闭最近一条（最后入队）通知；cleanup 移除。
+  // 直接读 store.getItems()（快照），不读 effect 写的 items state，避免 effect 自依赖重订阅。
+  $effect(() => {
+    function onKeydown(e: KeyboardEvent): void {
+      if (e.key !== 'Escape') return;
+      const current = store.getItems();
+      const last = current[current.length - 1];
+      if (last) store.close(last.id, 'manual');
+    }
+    window.addEventListener('keydown', onKeydown);
+    return () => window.removeEventListener('keydown', onKeydown);
+  });
+
   const placements: NotificationPlacement[] = [
     'topLeft',
     'top',
@@ -50,13 +66,26 @@
     'bottomRight',
   ];
 
+  // RTL 方位镜像：rtl 通知的左右方位视觉互换（topRight→topLeft 等），居中不变。
+  const RTL_SWAP: Record<NotificationPlacement, NotificationPlacement> = {
+    topLeft: 'topRight',
+    topRight: 'topLeft',
+    bottomLeft: 'bottomRight',
+    bottomRight: 'bottomLeft',
+    top: 'top',
+    bottom: 'bottom',
+  };
+  function effectivePlacement(item: NotificationItem): NotificationPlacement {
+    return item.direction === 'rtl' ? RTL_SWAP[item.placement] : item.placement;
+  }
+
   const flyDuration = $derived(prefersReducedMotion.current ? 0 : 220);
   const flipDuration = $derived(prefersReducedMotion.current ? 0 : 200);
 
   const grouped = $derived(
     placements.map((p) => ({
       placement: p,
-      items: items.filter((i) => i.placement === p),
+      items: items.filter((i) => effectivePlacement(i) === p),
     })),
   );
 
@@ -84,6 +113,7 @@
       {#each group.items as item (item.id)}
         <div
           class="cd-notification-stack__item"
+          dir={item.direction}
           in:fly={{ ...flyParams(group.placement), duration: flyDuration }}
           out:fly={{ ...flyParams(group.placement), duration: flyDuration }}
           animate:flip={{ duration: flipDuration }}
