@@ -6,9 +6,27 @@ export const meta = {
   name: 'BackTop',
   category: 'other',
   description:
-    '回到顶部悬浮按钮：滚动超阈值显隐 + 平滑缓动(easeInOutCubic)回顶，三尺寸(small/default/large)，原生 button 支持 Enter/Space，prefers-reduced-motion 下瞬时回顶，RTL 友好(inset-inline-end)。本子集监听 window 滚动；自定义 target 元素、受控 visible、announceOnArrive 延后。',
+    '回到顶部悬浮按钮：滚动超阈值显隐 + 平滑缓动(easeInOutCubic)回顶，三尺寸(small/default/large)，原生 button 支持 Enter/Space，prefers-reduced-motion 下瞬时回顶，RTL 友好(inset-inline-end)。默认监听 window 滚动，可经 target 指定自定义滚动容器；支持受控 visible 与 announceOnArrive 到顶 ARIA live 播报。',
   exports: ['BackTop'],
   props: [
+    {
+      name: 'target',
+      type: '() => HTMLElement | string | Window | null',
+      default: 'undefined',
+      desc: '监听并回顶的滚动容器，返回元素/CSS 选择器/window；不传监听 window',
+    },
+    {
+      name: 'visible',
+      type: 'boolean',
+      default: 'undefined',
+      desc: '受控显隐：传入则由外部控制按钮显隐（仅读不回写），不传按 visibilityHeight 自动',
+    },
+    {
+      name: 'announceOnArrive',
+      type: 'boolean',
+      default: 'false',
+      desc: '回到顶部后经 ARIA live region 播报（文案取 locale BackTop.arrived）',
+    },
     {
       name: 'visibilityHeight',
       type: 'number',

@@ -87,7 +87,7 @@ export const en_US: Locale = {
   },
   BackTop: {
     ariaLabel: 'Back to top',
-    arrived: 'Back to top',
+    arrived: 'Returned to top',
   },
   LottieIcon: {
     loading: 'Loading animation',

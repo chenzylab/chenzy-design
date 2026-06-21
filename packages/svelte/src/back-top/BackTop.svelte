@@ -1,16 +1,14 @@
 <!--
   BackTop — 回到顶部悬浮按钮。
-  基础子集：window target + 阈值显隐 + 平滑缓动回顶 + 三尺寸。
-  TODO(延后):
-    - 自定义 target 元素（监听指定容器滚动）
-    - 受控 visible
-    - announceOnArrive（到顶后 live region 播报）
+  支持：自定义 target 滚动容器 / window + 阈值显隐 + 受控 visible + 平滑缓动回顶
+        + announceOnArrive 到顶播报 + 三尺寸。
 
   ⚠️ 死循环红线：
     - 滚动监听用 $effect 内命令式 addEventListener('scroll', ..., {passive:true})
-      + rAF 节流，cleanup 时 removeEventListener + cancelAnimationFrame。
-    - visible 仅在 scroll 回调（非 render 期）写入本地 $state。
-    - render 期只读 visible $state，绝不读 scrollTop 几何。
+      + rAF 节流，cleanup 时 removeEventListener + cancelAnimationFrame；target 变化时重绑。
+    - autoVisible 仅在 scroll 回调（非 render 期）写入本地 $state。
+    - render 期只读派生的 visible（受控值或 autoVisible），绝不读 scrollTop 几何。
+    - 受控 visible：仅读 prop + 触发 onVisibleChange 回调，绝不回写。
     - 回顶动画亦为命令式 rAF 循环；卸载时在 $effect cleanup 中 cancel。
 -->
 <script lang="ts">
@@ -21,6 +19,18 @@
   type Size = 'small' | 'default' | 'large';
 
   interface Props {
+    /**
+     * 监听并回顶的滚动容器。返回 HTMLElement | CSS 选择器字符串 | null。
+     * 不传或返回 null/window 时监听 window（默认行为，向后兼容）。
+     */
+    target?: () => HTMLElement | string | Window | null;
+    /**
+     * 受控显隐：传入时由外部决定按钮显隐（内部阈值判定仅用于触发 onVisibleChange）；
+     * 不传则内部按 visibilityHeight 阈值自动显隐。
+     */
+    visible?: boolean;
+    /** 回到顶部后用 ARIA live region 播报（文案经 locale BackTop.arrived）。 */
+    announceOnArrive?: boolean;
     /** 滚动超过此高度(px)显示按钮 */
     visibilityHeight?: number;
     /** 回顶动画时长(ms)，0 表示瞬时 */
@@ -42,6 +52,9 @@
   }
 
   let {
+    target,
+    visible: controlledVisible,
+    announceOnArrive = false,
     visibilityHeight = 400,
     duration = 450,
     bottom = 40,
@@ -58,12 +71,48 @@
 
   const loc = useLocale();
 
-  // 本地响应式状态：仅由命令式 scroll 回调写入，render 期只读。
-  let visible = $state(false);
+  // 本地响应式状态：仅由命令式 scroll 回调写入，render 期只读（非受控时驱动显隐）。
+  let autoVisible = $state(false);
+
+  // 派生显隐（红线 #2 纯函数）：受控时取 prop，否则取内部阈值态。render 期只读。
+  const visible = $derived(controlledVisible ?? autoVisible);
+
+  // 到顶播报文案（live region 命令式写入，初始为空）。
+  let announceText = $state('');
 
   // 偏移样式：number → px。
   const bottomPx = $derived(typeof bottom === 'number' ? `${bottom}px` : bottom);
   const rightPx = $derived(typeof right === 'number' ? `${right}px` : right);
+
+  /**
+   * 把 target 原始返回值规整为「滚动元素 | window」。null 视为 window；
+   * 选择器字符串经 querySelector 解析，解析失败回退 window。
+   */
+  function normalizeScroller(raw: HTMLElement | string | Window | null | undefined): HTMLElement | Window {
+    if (raw == null || raw === window) return window;
+    if (typeof raw === 'string') {
+      if (typeof document === 'undefined') return window;
+      return (document.querySelector<HTMLElement>(raw)) ?? window;
+    }
+    return raw;
+  }
+
+  /**
+   * 响应式解析的滚动容器：在 $derived 内调用 target?.()，使其依赖被追踪——
+   * target 通常 `() => someBoundEl`，bind:this 在挂载后才赋值，借此让监听 $effect
+   * 在元素就绪后重新求值并重绑（红线 #3）。无 target 时恒为 window。
+   */
+  const scroller = $derived(normalizeScroller(target?.()));
+
+  /** scrollToTop 等命令式路径用：即时解析（不依赖响应式快照）。 */
+  function resolveScroller(): HTMLElement | Window {
+    return normalizeScroller(target?.());
+  }
+
+  /** 读取某滚动容器当前 scrollTop（window 走 scrollY）。命令式，仅回调期调用。 */
+  function getScrollTop(scroller: HTMLElement | Window): number {
+    return scroller === window ? window.scrollY : (scroller as HTMLElement).scrollTop;
+  }
 
   // 减弱动效偏好（命令式读取，仅 client）。
   const reduced =
@@ -71,7 +120,10 @@
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
   // 滚动监听（命令式 + rAF 节流 + cleanup）。$effect 仅 client 运行，SSR 安全。
+  // 依赖 scroller（含 target 求值）/ visibilityHeight：变化时 cleanup 旧绑定并重绑（红线 #3）。
   $effect(() => {
+    const node = scroller; // 响应式：容器(或 window)变化时重绑
+    const threshold = visibilityHeight; // 追踪阈值
     let rafId = 0;
 
     function onScroll() {
@@ -79,19 +131,20 @@
       rafId = requestAnimationFrame(() => {
         rafId = 0;
         // scrollTop 读取发生在回调中（非 render 期）。
-        const top = window.scrollY;
-        const next = isAboveThreshold(top, visibilityHeight);
-        if (next !== visible) {
-          visible = next;
+        const top = getScrollTop(node);
+        const next = isAboveThreshold(top, threshold);
+        // 内部阈值态：受控时不驱动 render，但仍维护以触发 onVisibleChange。
+        if (next !== autoVisible) {
+          autoVisible = next;
           onVisibleChange?.({ visible: next });
         }
       });
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    node.addEventListener('scroll', onScroll, { passive: true });
     onScroll(); // 初始判定一次
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      node.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
   });
@@ -106,24 +159,46 @@
     };
   });
 
+  /** 把容器/window 滚到指定 y（命令式）。 */
+  function scrollToY(scroller: HTMLElement | Window, y: number) {
+    if (scroller === window) window.scrollTo(0, y);
+    else (scroller as HTMLElement).scrollTop = y;
+  }
+
+  /** 到顶后写入 live region 播报（announceOnArrive 开启时）。先清空确保重复可重播。 */
+  function announceArrived() {
+    if (!announceOnArrive) return;
+    announceText = '';
+    // 微任务后再写入，确保 DOM 先清空再赋值，触发 AT 重新播报。
+    queueMicrotask(() => {
+      announceText = loc().t('BackTop.arrived');
+    });
+  }
+
+  function finishScroll() {
+    scrollRaf = 0;
+    onScrollEnd?.();
+    announceArrived();
+  }
+
   function scrollToTop(e: MouseEvent) {
     onClick?.(e);
-    const from = window.scrollY;
+    const scroller = resolveScroller();
+    const from = getScrollTop(scroller);
     if (duration <= 0 || reduced) {
-      window.scrollTo(0, 0);
-      onScrollEnd?.();
+      scrollToY(scroller, 0);
+      finishScroll();
       return;
     }
     if (scrollRaf) cancelAnimationFrame(scrollRaf);
     const start = performance.now();
     const step = (now: number) => {
       const elapsed = now - start;
-      window.scrollTo(0, scrollPositionAt(from, elapsed, duration));
+      scrollToY(scroller, scrollPositionAt(from, elapsed, duration));
       if (elapsed < duration) {
         scrollRaf = requestAnimationFrame(step);
       } else {
-        scrollRaf = 0;
-        onScrollEnd?.();
+        finishScroll();
       }
     };
     scrollRaf = requestAnimationFrame(step);
@@ -157,6 +232,13 @@
     </svg>
   {/if}
 </button>
+
+{#if announceOnArrive}
+  <!-- 到顶播报 live region：视觉隐藏，仅供辅助技术读取（红线 #2：render 期只读 $state）。 -->
+  <div class="cd-backtop__sr-live" role="status" aria-live="polite" aria-atomic="true">
+    {announceText}
+  </div>
+{/if}
 
 <style>
   .cd-backtop {
@@ -220,6 +302,20 @@
   .cd-backtop__icon {
     inline-size: 50%;
     block-size: 50%;
+  }
+
+  /* 视觉隐藏但对辅助技术可见（不可用 display:none / visibility:hidden）。 */
+  .cd-backtop__sr-live {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {

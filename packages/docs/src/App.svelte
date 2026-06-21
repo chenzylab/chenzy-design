@@ -800,6 +800,9 @@ let pageSize2 = $state(10);
   let uploadDirVal = $state<UploadFileItem[]>([]);
   let uploadConcActive = $state(0);
   let uploadConcPeak = $state(0);
+  // BackTop：自定义 target 容器 + 受控 visible + announceOnArrive 演示
+  let backtopBox = $state<HTMLElement | null>(null);
+  let backtopControlled = $state(false);
   // 模拟上传：每个请求 ~800ms 完成，返回 Promise 让 concurrency 调度（完成才补位）。
   function mockUpload(item: UploadFileItem): Promise<void> {
     uploadConcActive += 1;
@@ -3571,6 +3574,50 @@ let pageSize2 = $state(10);
         value={uploadDirVal}
         onChange={(list) => (uploadDirVal = list)}
       />
+    </div>
+  </Space>
+
+  <Divider />
+
+  <Title heading={5}>BackTop：自定义 target 滚动容器 + 受控 visible + announceOnArrive</Title>
+  <Space direction="vertical" align="start">
+    <Text type="tertiary">
+      下方滚动盒为自定义滚动容器：BackTop 监听该容器（而非 window）的滚动，回顶也滚该容器；右侧按钮受控显隐；回到顶部经 ARIA live 播报。
+    </Text>
+    <Switch
+      value={backtopControlled}
+      onChange={(v) => (backtopControlled = v)}
+      checkedChildren="受控显示"
+      uncheckedChildren="阈值自动"
+    />
+    <div
+      bind:this={backtopBox}
+      data-testid="backtop-scrollbox"
+      style="position:relative;inline-size:320px;block-size:200px;overflow:auto;border:1px solid var(--cd-color-border);border-radius:6px;padding:12px"
+    >
+      <div style="block-size:1200px">
+        <Text>容器顶部（向下滚动 ≥ 120px 触发按钮）</Text>
+      </div>
+      {#if backtopControlled}
+        <BackTop
+          target={() => backtopBox}
+          visible={true}
+          visibilityHeight={120}
+          announceOnArrive
+          bottom={16}
+          right={16}
+          size="small"
+        />
+      {:else}
+        <BackTop
+          target={() => backtopBox}
+          visibilityHeight={120}
+          announceOnArrive
+          bottom={16}
+          right={16}
+          size="small"
+        />
+      {/if}
     </div>
   </Space>
 </main>
