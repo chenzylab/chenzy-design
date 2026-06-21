@@ -3509,6 +3509,15 @@ let pageSize2 = $state(10);
     <Button type="danger" onclick={() => notification.error({ title: '保存失败', content: '网络中断，未保存的更改已暂存本地。', duration: 0 })}>error（常驻）</Button>
     <Button onclick={() => notification.destroyAll()}>清空全部</Button>
   </div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px">
+    <Button onclick={() => notification.info({ title: '同步中', content: '将在倒计时结束后自动关闭，悬停暂停。', showProgress: true, duration: 6 })}>showProgress（进度条）</Button>
+    <Button onclick={() => notification.open({ title: '深色通知', content: 'theme=dark 深色卡片。', theme: 'dark', duration: 0 })}>theme dark</Button>
+    <Button onclick={() => notification.open({ title: '收到协作邀请', content: 'Alice 邀请你加入「设计系统」项目。', duration: 0, footer: notifFooter })}>footer（操作区）</Button>
+  </div>
+  {#snippet notifFooter()}
+    <Button size="small" type="primary" onclick={() => notification.destroyAll()}>接受</Button>
+    <Button size="small" onclick={() => notification.destroyAll()}>忽略</Button>
+  {/snippet}
 
   <Divider />
 

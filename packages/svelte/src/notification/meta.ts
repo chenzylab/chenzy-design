@@ -6,7 +6,7 @@ export const meta = {
   name: 'Notification',
   category: 'feedback',
   description:
-    '通知提醒框：命令式全局反馈 API（notification.open/success/info/warning/error/close/update/destroyAll）。比 Toast 更丰富——标题 + 内容 + 图标；6 方位独立堆叠；单例容器惰性挂载到 body；自动关闭 + 悬停暂停 + maxCount 按方位 FIFO 淘汰 + 同 id 去重更新；error/warning role=alert(assertive)、其余 role=status(polite)。本子集：showProgress/footer 操作区/theme/RTL/Esc 关闭/portal getPopupContainer 延后。',
+    '通知提醒框：命令式全局反馈 API（notification.open/success/info/warning/error/close/update/destroyAll）。比 Toast 更丰富——标题 + 内容 + 图标；6 方位独立堆叠；单例容器惰性挂载到 body；自动关闭 + 悬停暂停 + maxCount 按方位 FIFO 淘汰 + 同 id 去重更新；error/warning role=alert(assertive)、其余 role=status(polite)；可选 showProgress 倒计时进度条（命令式 rAF + 悬停同步暂停）、footer 操作区 Snippet、theme(light/dark)。本子集：RTL/Esc 关闭/portal getPopupContainer 延后。',
   exports: ['notification'],
   imperative: true,
   props: [
@@ -33,6 +33,24 @@ export const meta = {
     },
     { name: 'closable', type: 'boolean', default: 'true', desc: '是否显示关闭按钮' },
     { name: 'pauseOnHover', type: 'boolean', default: 'true', desc: '悬停/聚焦时暂停定时器' },
+    {
+      name: 'showProgress',
+      type: 'boolean',
+      default: 'false',
+      desc: '底部倒计时进度条，随 duration 递减；悬停/聚焦时与定时器同步暂停（duration=0 时不显示）',
+    },
+    {
+      name: 'theme',
+      type: "'light'|'dark'",
+      default: "'light'",
+      desc: '卡片主题；dark 为深色卡片',
+    },
+    {
+      name: 'footer',
+      type: 'Snippet',
+      default: 'undefined',
+      desc: '底部操作区插槽（按钮等），渲染在内容下方',
+    },
     {
       name: 'onClose',
       type: "(id: string, reason: 'timeout'|'manual'|'replace'|'destroyAll') => void",
@@ -68,6 +86,14 @@ export const meta = {
     '--cd-notification-z',
     '--cd-notification-offset',
     '--cd-notification-motion-duration',
+    '--cd-notification-progress-height',
+    '--cd-notification-progress-color',
+    '--cd-notification-bg-dark',
+    '--cd-notification-border-dark',
+    '--cd-notification-color-title-dark',
+    '--cd-notification-color-content-dark',
+    '--cd-notification-close-color-dark',
+    '--cd-notification-close-color-hover-dark',
   ],
   responsive: false,
   examples: [

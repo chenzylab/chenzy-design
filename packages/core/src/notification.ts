@@ -16,6 +16,7 @@ export type NotificationPlacement =
   | 'bottom'
   | 'bottomRight';
 export type NotificationCloseReason = 'timeout' | 'manual' | 'replace' | 'destroyAll';
+export type NotificationTheme = 'light' | 'dark';
 
 export interface NotificationOptions {
   id?: string;
@@ -27,6 +28,15 @@ export interface NotificationOptions {
   placement?: NotificationPlacement;
   closable?: boolean;
   pauseOnHover?: boolean;
+  /** show a countdown progress bar that tracks the remaining auto-dismiss time */
+  showProgress?: boolean;
+  /** visual theme of the card */
+  theme?: NotificationTheme;
+  /**
+   * footer action area. Opaque to core (framework-agnostic) — the render layer
+   * (svelte) treats it as a Snippet. Typed `unknown` here to avoid a framework dep.
+   */
+  footer?: unknown;
   onClose?: (id: string, reason: NotificationCloseReason) => void;
 }
 
@@ -39,6 +49,9 @@ export interface NotificationItem {
   placement: NotificationPlacement;
   closable: boolean;
   pauseOnHover: boolean;
+  showProgress: boolean;
+  theme: NotificationTheme;
+  footer: unknown;
   onClose: ((id: string, reason: NotificationCloseReason) => void) | undefined;
 }
 
@@ -117,6 +130,9 @@ export function createNotificationStore(
       placement,
       closable: options.closable ?? true,
       pauseOnHover: options.pauseOnHover ?? true,
+      showProgress: options.showProgress ?? false,
+      theme: options.theme ?? 'light',
+      footer: options.footer,
       onClose: options.onClose,
     };
 

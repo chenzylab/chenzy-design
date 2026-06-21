@@ -20,4 +20,14 @@ export const notificationTokens = {
   'notification-z': '1100',
   'notification-offset': 'var(--cd-spacing-6)',
   'notification-motion-duration': 'var(--cd-motion-duration-mid)',
+  // showProgress 倒计时进度条
+  'notification-progress-height': '3px',
+  'notification-progress-color': 'var(--cd-color-primary)',
+  // dark 主题卡片
+  'notification-bg-dark': 'var(--cd-color-text-0)',
+  'notification-border-dark': 'var(--cd-color-text-0)',
+  'notification-color-title-dark': 'var(--cd-color-bg-0)',
+  'notification-color-content-dark': 'var(--cd-color-bg-1)',
+  'notification-close-color-dark': 'var(--cd-color-bg-2)',
+  'notification-close-color-hover-dark': 'var(--cd-color-bg-0)',
 } as const;

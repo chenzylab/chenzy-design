@@ -1,11 +1,15 @@
 <!--
   NotificationItem — 单条通知卡片。
-  类型图标（可选）+ 主体（title + content）+ 可选关闭按钮（右上角绝对定位）。
+  类型图标（可选）+ 主体（title + content）+ 可选关闭按钮（右上角绝对定位）+ 可选 footer 操作区。
   pauseOnHover 经 mouseenter/leave + focusin/out 暂停/恢复定时器。
+  showProgress：底部倒计时进度条，随 duration 递减；hover/聚焦时暂停（与定时器同步）。
+    命令式 rAF 驱动（红线 #3）——effect 启动循环、cleanup 取消帧并清空 ref；duration<=0 时不渲染。
+  theme：light（默认，与卡片背景一致）/ dark（深色卡片）。
   a11y：error/warning -> role=alert + aria-live=assertive；其余 -> role=status + aria-live=polite。
   title/content 经 useId 关联 aria-labelledby / aria-describedby；关闭按钮 aria-label「关闭」，不抢焦点。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
   import type { NotificationItem, NotificationType } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -28,12 +32,50 @@
   const ariaLive = $derived(isAlert ? 'assertive' : 'polite');
   const hasIcon = $derived(item.type !== 'default');
 
+  // footer 是渲染层 Snippet（core 用 unknown 透传，无框架依赖）。
+  const footer = $derived(item.footer as Snippet | undefined);
+
+  // showProgress 仅在有限 duration 下有意义；duration<=0（常驻）无倒计时可显示。
+  const hasProgress = $derived(item.showProgress && item.duration > 0);
+
+  // 本地暂停态：与 store 定时器的暂停/恢复严格同源（同一组 hover/focus 处理器）。
+  // 用普通变量（非 $state）让 rAF 循环直接读取，避免 effect 重订阅/重启而丢失进度。
+  let paused = false;
+  // 进度条 DOM 引用；命令式驱动 scaleX，避免每帧触发 Svelte 响应式。
+  let progressEl = $state<HTMLDivElement | null>(null);
+
   function handlePause() {
-    if (item.pauseOnHover) onPause(item.id);
+    if (item.pauseOnHover) {
+      paused = true;
+      onPause(item.id);
+    }
   }
   function handleResume() {
-    if (item.pauseOnHover) onResume(item.id);
+    if (item.pauseOnHover) {
+      paused = false;
+      onResume(item.id);
+    }
   }
+
+  // 命令式 rAF 倒计时进度（红线 #3）：effect 仅依赖 duration/progressEl 启动单条循环，
+  // 循环内直接读 paused（普通变量）冻结/推进剩余时间，直接写 DOM scaleX；cleanup 取消帧。
+  $effect(() => {
+    if (!hasProgress || !progressEl) return;
+    const totalMs = item.duration * 1000;
+    const el = progressEl;
+    let raf = 0;
+    let remaining = totalMs;
+    let last = performance.now();
+
+    function tick(t: number): void {
+      if (!paused) remaining = Math.max(0, remaining - (t - last));
+      last = t;
+      el.style.transform = `scaleX(${remaining / totalMs})`;
+      if (remaining > 0) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  });
 </script>
 
 {#snippet typeIcon(type: NotificationType)}
@@ -81,7 +123,7 @@
 {/snippet}
 
 <div
-  class="cd-notification-item cd-notification-item--{item.type}"
+  class="cd-notification-item cd-notification-item--{item.type} cd-notification-item--{item.theme}"
   {role}
   aria-live={ariaLive}
   aria-labelledby={item.title ? titleId : undefined}
@@ -103,6 +145,11 @@
     {#if item.content}
       <div class="cd-notification-item__content" id={contentId}>{item.content}</div>
     {/if}
+    {#if footer}
+      <div class="cd-notification-item__footer">
+        {@render footer()}
+      </div>
+    {/if}
   </div>
   {#if item.closable}
     <button
@@ -120,6 +167,11 @@
         />
       </svg>
     </button>
+  {/if}
+  {#if hasProgress}
+    <div class="cd-notification-item__progress" aria-hidden="true">
+      <div class="cd-notification-item__progress-bar" bind:this={progressEl}></div>
+    </div>
   {/if}
 </div>
 
@@ -189,6 +241,65 @@
     line-height: 1.5;
     color: var(--cd-notification-color-content);
     overflow-wrap: anywhere;
+  }
+
+  .cd-notification-item__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-2);
+    align-items: center;
+    margin-block-start: var(--cd-spacing-3);
+  }
+
+  .cd-notification-item__progress {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: var(--cd-notification-progress-height);
+    overflow: hidden;
+    border-end-start-radius: var(--cd-notification-radius);
+    border-end-end-radius: var(--cd-notification-radius);
+    pointer-events: none;
+  }
+
+  .cd-notification-item__progress-bar {
+    block-size: 100%;
+    inline-size: 100%;
+    background: var(--cd-notification-progress-color);
+    transform-origin: left center;
+    /* 初始满格；命令式 rAF 写 scaleX 递减 */
+    transform: scaleX(1);
+  }
+
+  .cd-notification-item--success .cd-notification-item__progress-bar {
+    background: var(--cd-notification-icon-success);
+  }
+  .cd-notification-item--info .cd-notification-item__progress-bar {
+    background: var(--cd-notification-icon-info);
+  }
+  .cd-notification-item--warning .cd-notification-item__progress-bar {
+    background: var(--cd-notification-icon-warning);
+  }
+  .cd-notification-item--error .cd-notification-item__progress-bar {
+    background: var(--cd-notification-icon-error);
+  }
+
+  /* dark 主题：深色卡片，文案/边框/关闭色覆盖为 token */
+  .cd-notification-item--dark {
+    background: var(--cd-notification-bg-dark);
+    border-color: var(--cd-notification-border-dark);
+  }
+  .cd-notification-item--dark .cd-notification-item__title {
+    color: var(--cd-notification-color-title-dark);
+  }
+  .cd-notification-item--dark .cd-notification-item__content {
+    color: var(--cd-notification-color-content-dark);
+  }
+  .cd-notification-item--dark .cd-notification-item__close {
+    color: var(--cd-notification-close-color-dark);
+  }
+  .cd-notification-item--dark .cd-notification-item__close:hover {
+    color: var(--cd-notification-close-color-hover-dark);
   }
 
   .cd-notification-item__close {

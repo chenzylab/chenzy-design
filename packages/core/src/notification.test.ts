@@ -89,4 +89,25 @@ describe('createNotificationStore', () => {
     expect(item.placement).toBe('topRight');
     s.destroy();
   });
+
+  it('showProgress/theme/footer default to off/light/undefined', () => {
+    const s = createNotificationStore();
+    s.open({ title: 'x', duration: 0 });
+    const item = s.getItems()[0]!;
+    expect(item.showProgress).toBe(false);
+    expect(item.theme).toBe('light');
+    expect(item.footer).toBeUndefined();
+    s.destroy();
+  });
+
+  it('carries showProgress/theme/footer through to the item', () => {
+    const s = createNotificationStore();
+    const footer = { __snippet: true };
+    s.open({ title: 'x', duration: 0, showProgress: true, theme: 'dark', footer });
+    const item = s.getItems()[0]!;
+    expect(item.showProgress).toBe(true);
+    expect(item.theme).toBe('dark');
+    expect(item.footer).toBe(footer);
+    s.destroy();
+  });
 });
