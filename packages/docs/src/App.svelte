@@ -593,6 +593,10 @@ let pageSize2 = $state(10);
     addableTabs = [...addableTabs, { tab: `标签 ${addableSeq}`, itemKey: key }];
     addableActive = key;
   }
+  // 纯声明式自动收集 demo：不传 tabList，仅写 <Tabs.Pane>，标签栏自动推导
+  let declActive = $state<string | number>('d1');
+  // renderTabBar demo：完全自绘标签栏
+  let renderBarActive = $state<string | number>('a');
   const dropdownItems = [
     { key: 'edit', label: '编辑' },
     { key: 'copy', label: '复制' },
@@ -1954,6 +1958,44 @@ let pageSize2 = $state(10);
         onChange={(k) => (addableActive = k)}
       />
     </div>
+
+    <Text type="tertiary">纯声明式自动收集（不传 tabList，仅写 &lt;Tabs.Pane&gt;，标签栏自动推导）：</Text>
+    <div style="width: 360px" data-testid="tabs-declarative">
+      <Tabs value={declActive} onChange={(k) => (declActive = k)}>
+        <TabPane itemKey="d1" tab="文档">
+          <div class="tab-pane-demo">文档内容（声明式收集）</div>
+        </TabPane>
+        <TabPane itemKey="d2" tab="评论">
+          <div class="tab-pane-demo">评论内容（声明式收集）</div>
+        </TabPane>
+        <TabPane itemKey="d3" tab="设置" disabled>
+          <div class="tab-pane-demo">设置内容（禁用项）</div>
+        </TabPane>
+      </Tabs>
+    </div>
+    <Text type="tertiary">当前声明式标签：{declActive}</Text>
+
+    <Text type="tertiary">renderTabBar（完全自绘标签栏）：</Text>
+    <div style="width: 360px" data-testid="tabs-render-bar">
+      <Tabs {tabList} value={renderBarActive} onChange={(k) => (renderBarActive = k)}>
+        {#snippet renderTabBar(items, active, setActive)}
+          <div style="display:flex; gap:8px; padding:4px 0;">
+            {#each items as it (it.itemKey)}
+              <Button
+                size="small"
+                type={it.itemKey === active ? 'primary' : 'tertiary'}
+                disabled={it.disabled ?? false}
+                onclick={() => setActive(it.itemKey)}
+              >{it.tab}</Button>
+            {/each}
+          </div>
+        {/snippet}
+        <TabPane itemKey="a"><div class="tab-pane-demo">账户内容</div></TabPane>
+        <TabPane itemKey="b"><div class="tab-pane-demo">安全内容</div></TabPane>
+        <TabPane itemKey="c"><div class="tab-pane-demo">通知内容</div></TabPane>
+      </Tabs>
+    </div>
+    <Text type="tertiary">当前自绘标签：{renderBarActive}</Text>
 
     <Dropdown
       items={dropdownItems}

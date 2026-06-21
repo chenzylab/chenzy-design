@@ -6,7 +6,7 @@ export const meta = {
   name: 'Tabs',
   category: 'navigation',
   description:
-    '标签页，在同一区域内组织并切换多组对等内容。支持 line/card/button 类型、数据驱动 tabList、声明式 TabPane、roving tabindex 键盘导航、可关闭标签与溢出滚动/下拉收纳（overflow）。',
+    '标签页，在同一区域内组织并切换多组对等内容。支持 line/card/button 类型、数据驱动 tabList 或纯声明式 <Tabs.Pane> 自动收集、renderTabBar 自定义标签栏、roving tabindex 键盘导航、可关闭标签与溢出滚动/下拉收纳（overflow）。',
   props: [
     { name: 'value', type: 'string|number', default: 'undefined', desc: '受控选中标签 key' },
     { name: 'defaultValue', type: 'string|number', default: '首个标签', desc: '非受控初始 key' },
@@ -20,7 +20,12 @@ export const meta = {
     },
     { name: 'lazy', type: 'boolean', default: 'false', desc: '首次激活后才挂载面板' },
     { name: 'keepDOM', type: 'boolean', default: 'false', desc: '激活过的面板保留 DOM' },
-    { name: 'tabList', type: 'TabItem[]', default: '[]', desc: '数据驱动标签定义' },
+    {
+      name: 'tabList',
+      type: 'TabItem[]',
+      default: 'undefined',
+      desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/disabled/closable 纯声明式自动收集',
+    },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
     {
       name: 'addable',
@@ -48,7 +53,13 @@ export const meta = {
       default: 'undefined',
       desc: 'addable=true 时点击「+」按钮回调（受控数据，组件内不改 tabList）',
     },
-    { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 TabPane 内容' },
+    {
+      name: 'renderTabBar',
+      type: 'Snippet<[TabItem[], string|number|undefined, (key) => void]>',
+      default: 'undefined',
+      desc: '自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐',
+    },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 TabPane 内容（<Tabs.Pane>）' },
   ],
   a11y: {
     role: 'tablist',
@@ -61,6 +72,7 @@ export const meta = {
       '标签溢出时出现前/后滚动箭头（带 aria-label，tabindex=-1 不入 Tab 序），激活标签自动滚到可视区',
       'overflow=dropdown 时溢出标签收进末尾「更多」下拉（aria-haspopup=menu，带 aria-label），激活标签始终保持可见',
       'addable 的「+」为带 aria-label 的原生 button',
+      'renderTabBar 自定义标签栏时由调用方负责无障碍语义（role=tab/aria-selected 等）',
     ],
   },
   tokens: ['--cd-tabs-*', '--cd-focus-ring', '--cd-radius-1', '--cd-spacing-*'],
