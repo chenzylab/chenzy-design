@@ -10,7 +10,8 @@
   复用 core 原语：useId、useDismiss（外部点击/Esc 关闭，popup 列入 extraTargets）、
   useFocusTrap（焦点捕获+归还）、computePosition/useFloating（container 选项接 getPopupContainer）。
   浮层静态显示（{#if isOpen} 直接挂载），无入场动画，reduced-motion 友好。
-  TODO(延后): Esc 与 outsideClick 来源细分。
+  关闭回调 reason 来源细分：'confirm'（确认按钮）| 'cancel'（取消按钮）| 'trigger'（点击/键盘/hover toggle）
+  | 'esc'（Esc 键）| 'outsideClick'（外部点击）；esc/outsideClick 由 useDismiss 的 DismissReason 透传。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -223,11 +224,11 @@
     setOpen(false, 'cancel');
   }
 
-  // 外部点击/Esc 统一按取消处理（reason 暂统一 outsideClick，来源细分 TODO）
-  function dismiss() {
+  // 外部点击/Esc 统一按取消处理，reason 由 useDismiss 细分（'esc' | 'outsideClick'）
+  function dismiss(reason: DismissReason) {
     if (confirmLoading) return; // 异步确认进行中不被外部点击/Esc 打断
     onCancel?.();
-    setOpen(false, 'outsideClick');
+    setOpen(false, reason);
   }
 
   // --- 浮层命令式编排 (红线 #3)：open 且浮层就绪时，
