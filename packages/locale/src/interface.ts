@@ -359,6 +359,12 @@ export interface Locale {
     warningLabel: string;
     errorLabel: string;
   };
+  Popover: {
+    /** 关闭按钮 aria-label（destroyOnClose/带关闭图标时） */
+    close: string;
+    /** dialog 模式无标题时的兜底 aria-label */
+    dialogLabel: string;
+  };
   Typography: {
     copy: string;
     copied: string;

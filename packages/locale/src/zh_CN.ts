@@ -304,6 +304,10 @@ export const zh_CN: Locale = {
     warningLabel: '警告',
     errorLabel: '错误',
   },
+  Popover: {
+    close: '关闭',
+    dialogLabel: '对话框',
+  },
   Typography: {
     copy: '复制',
     copied: '已复制',

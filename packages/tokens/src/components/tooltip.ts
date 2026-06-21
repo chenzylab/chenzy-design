@@ -18,10 +18,16 @@ export const tooltipTokens = {
   'popover-bg': 'var(--cd-color-bg-0)',
   'popover-color': 'var(--cd-color-text-0)',
   'popover-radius': 'var(--cd-radius-3)',
+  // size 档内边距：small/default/large（spec §5）。popover-padding 兼容旧别名，等同 default。
   'popover-padding': 'var(--cd-spacing-3) var(--cd-spacing-4)',
+  'popover-padding-small': 'var(--cd-spacing-2) var(--cd-spacing-3)',
+  'popover-padding-default': 'var(--cd-spacing-3) var(--cd-spacing-4)',
+  'popover-padding-large': 'var(--cd-spacing-4) var(--cd-spacing-5)',
   'popover-shadow': 'var(--cd-shadow-3)',
   'popover-z': 'var(--cd-z-popover)',
   'popover-title-color': 'var(--cd-color-text-0)',
   'popover-title-border': 'var(--cd-color-border)',
   'popover-arrow-size': '8px',
+  'popover-motion-duration': 'var(--cd-motion-duration-fast)',
+  'popover-motion-easing': 'var(--cd-motion-ease-standard)',
 } as const;
