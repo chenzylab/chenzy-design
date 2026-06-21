@@ -120,3 +120,43 @@ CSS 变量分三层（详见 `specs/00-foundation/theming.spec.md`）：
 - 组件 SPEC：见 `specs/components/<category>/<Component>.spec.md`
 - 组件 SPEC 模板：`specs/components/_TEMPLATE.spec.md`
 - 完整组件清单与阶段映射：`specs/00-foundation/00-overview.spec.md`
+
+## 9. 工作经验与已知陷阱（实战沉淀，动手前务必看）
+
+> 以下是大规模特性补全（含 130+ PR）中反复踩出来的坑与有效做法，违反它们会重复浪费大量时间。
+
+### 9.1 「某组件特性是否齐全」的唯一判据 = spec §4 API 全表
+
+- **判据**：逐个对照该组件 `specs/.../<Component>.spec.md` 的 **§4 API（Props/Events）全表**，逐 prop/event 在 `packages/svelte/src/<组件>/` 整目录 `grep` 确认实现。
+- **不可靠的信号（别用来下结论）**：源码里的 `TODO`/`延后` 注释、`meta.ts` 的 description 文字——它们**经常过期或缺失**。真实缺口常常**没有任何 TODO 标记**：整个组件缺失（如曾缺 SideSheet）、藏在源码注释 "not implemented this round"（如曾缺 Typography 的 ellipsis/copyable/editable）、或只是 §4 表里列了但实现只覆盖核心子集的长尾 prop（曾累计补 200+ 个）。
+- **正则批量提取 §4 prop 不可靠**：会大量误报（曾报 222 个缺口，亲验后绝大多数是假阳）。**必须人工读 §4 表 + 对每个候选 prop `grep -rc <prop> packages/svelte/src/<组件>/` 整目录验证**（grep 到即视为已实现：可能在子组件 / context / types.ts / 别名）。盘点结论务必抽样亲验后再行动。
+- 长尾 prop 高发区：`getPopupContainer` / `destroyOnClose` / `zIndex` / `status` / `size` / 各类格式化回调（`tipFormatter` 等）/ 受控辅助（`initValue` / `validateStatus`）/ 边缘模式开关。补这类时优先复用已实现同类组件的范式（如浮层类复用 Modal/Drawer 的 `useFocusTrap`/`useDismiss`/`useScrollLock`/`acquireZIndex`）。
+
+### 9.2 非缺口（别误补）
+
+- **`onXxx` callback vs spec 写的 `on:xxx`**：全库统一用 Svelte 5 的 callback props（`onChange`/`onOpenChange`…），spec 里的 `on:xxx` 是旧记法。这是**架构决策，不是缺口**，不要改。
+- **已实现的别名差异**（如 `aria-label` ↔ `ariaLabel`、`visibleChange` ↔ `onOpenChange`）：功能已覆盖即不算缺口。
+
+### 9.3 Svelte 5 effect 无限循环（`effect_update_depth_exceeded`）
+
+红线 #2 的两种高发形态，CI（typecheck/test/build）**抓不到**，只在浏览器运行时炸，且会拖垮整页（连无关的 Modal/Drawer 都打不开）：
+
+1. **声明式子组件注册收集**：子项 `$effect` 内对父级 `$state` 数组 `push`/`splice`（数组代理 push 先读 length 再写 → 同一 effect 读写自身）。**正确做法**：注册顺序用**普通数组**（非 $state）簿记，render 真正需要的派生量（如末项 id）单独用一个 `$state` 承载，副作用写与渲染读分离；能用纯 CSS（`:not(:last-child)::after`）就别用 JS 收集。
+2. **命令式订阅器同步首帧回调**：自建 ResizeObserver/Observer 在 `observe()` 注册时**同步**派发首帧（如同步 `getBoundingClientRect()` → dispatch → 写组件 `$state`），而组件又在挂载 `$effect` 内同步 `observe()` → 首帧落在挂载 effect 同步栈内读写自身。**正确做法**：注册时的首帧测量/派发**延后到下一宏任务**（`setTimeout(…,0)`），并把 timer 纳入 cleanup（对齐原生 Observer「首帧异步」语义）。
+
+新增声明式复合组件 / 命令式订阅器时务必规避；浏览器验证一定要读 console 确认无此错误。
+
+### 9.4 验证与测试坑
+
+- **docs typecheck 是独立门禁**，且常因 dist 过期或 demo 写法报错。完成前必须 `pnpm -r build` 刷新 dist 后再 `--filter @chenzy-design/docs typecheck`，确认 **0 errors**（CI 的 quality job 会跑它）。
+- **docs demo 的 `data-testid` 要放在原生 `<div>`/`<span>` 上**，不能直接放组件 props（组件不接受 → docs typecheck 报错）。
+- **DOM 测试需 jsdom 时**，`core` 包已声明 `jsdom` devDep；测试首行用 `// @vitest-environment jsdom`。core 其余纯函数测试保持纯 node。
+- `<select onchange>` 在 Svelte 5 编译成委托事件，合成事件 / 浏览器自动化**触发不了**——别误判为 bug，改用 compile 静态验证 + 初始渲染验证管线。
+- 浏览器自动化标签页 `document.hidden=true` 时 **rAF/ResizeObserver 被节流不触发**——滚动驱动的虚拟化/动画无法在后台标签观测；改用同步几何 + core 单测佐证。
+
+### 9.5 并行多 agent 工作纪律
+
+- 并行改同一 repo 的多个 agent **必须各自独立 `git worktree`**（`git worktree add /tmp/cd-<feature> -b feat/<feature> origin/main`），否则共享单一 HEAD 会互相 `checkout` 污染、commit 落错分支。绝不 `pkill -f vite`（会杀别的 agent 的 dev server），只 kill 自己启的进程 PID。
+- 公共文件（`docs/src/App.svelte`、`packages/locale/*`、`packages/core/src/index.ts`）多分支同改 → 串行合并，逐个合并前 rebase `origin/main` 解冲突（多为「双方各自追加」，并列保留即可）。
+- 合并前确认 CI 双绿（`label` + `quality`）；`quality` 非 GitHub required check，`label` 过即可被 squash 接受，但仍应等 `quality` pass 再合以防回归。
+- 子代理在长任务末尾偶发「代码已完成但 commit/push/建 PR 未落实，却回报已建 PR」。核验时若 `gh pr view` 与 `git ls-remote` 重试后仍查无该 PR/分支，则进入其 worktree 接管：验门禁 → commit → rebase 最新 main → push → 真正 `gh pr create`（代码在 worktree 里是真实的）。注意：刚 came-to-rest 时 GitHub API 可能短暂假阴性，先重 fetch / `gh pr view` 复查再判定。
