@@ -7,7 +7,7 @@ export const meta = {
   category: 'other',
   renderless: true,
   description:
-    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；内置 throttle/debounce 节流去抖与 multiple 多目标观测；SSR/老浏览器静默降级；另导出 resize action 供轻量 use:resize 用法、getGlobalResizeObserver 单例池供大列表共享。盒模型支持 content-box/border-box/device-pixel-content-box，包裹元素标签可经 tag 自定义。',
+    '尺寸监听工具组件，封装原生 ResizeObserver（经 @chenzy-design/core 归一化），渲染一个无视觉样式的包裹元素作为观测容器，slot 暴露 width/height/entry，onResize 分发归一化尺寸事件；内置 throttle/debounce 节流去抖与 multiple 多目标观测；SSR/老浏览器静默降级，fallbackToWindow 可降级为 window.resize 近似监听；onResizeStart/onResizeEnd 暴露连续变化的首帧与静默结束边界事件；另导出 resize action 供轻量 use:resize 用法、getGlobalResizeObserver 单例池供大列表共享。盒模型支持 content-box/border-box/device-pixel-content-box，包裹元素标签可经 tag 自定义。',
   exports: [
     'ResizeObserver',
     'resize',
@@ -57,10 +57,21 @@ export const meta = {
       default: "'div'",
       desc: '包裹元素标签，经 svelte:element 渲染；须为可生成盒子的元素（勿用 display:contents 类标签）',
     },
+    {
+      name: 'fallbackToWindow',
+      type: 'boolean',
+      default: 'false',
+      desc: '原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize 并用 getBoundingClientRect 近似重测（精度较低）',
+    },
   ],
   events: [
     { name: 'onResize', desc: '尺寸变化时分发归一化 entry（受控，不回写）' },
     { name: 'onFirstMeasure', desc: '首次测量完成时分发归一化 entry' },
+    { name: 'onResizeStart', desc: '一段连续尺寸变化的首帧触发（"调整中"态）' },
+    {
+      name: 'onResizeEnd',
+      desc: '连续变化静默结束后触发，payload 为最后一帧（"调整完成"）',
+    },
   ],
   slots: [
     {

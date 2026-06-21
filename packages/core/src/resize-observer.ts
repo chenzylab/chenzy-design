@@ -8,7 +8,8 @@
  *   - throttle / debounce 节流去抖（命令式定时器 + cleanup，红线 #3）
  *   - 多目标（observe/unobserve 多个元素，回调按 target 路由）
  *   - 单例 observer 池 getGlobalResizeObserver()（多元素复用 1 个原生 observer）
- * 仍延后：window.resize 降级。
+ *   - window.resize 降级（fallbackToWindow：原生不可用或显式开启时近似监听）
+ *   - onResizeStart / onResizeEnd：连续变化首帧 / 静默结束（纯状态机 + 命令式静默计时器）
  */
 
 export type ResizeBox =
@@ -40,7 +41,31 @@ export interface ResizeObserverOptions {
   throttle?: number;
   /** 防抖等待(ms)，trailing-only，0 关闭。与 throttle 互斥（优先于 throttle）。 */
   debounce?: number;
+  /**
+   * 一段连续尺寸变化的首帧触发（不在 resizing 态时收到首个 resize）。
+   * 用于"调整中"态（如显示尺寸 badge）。
+   */
+  onResizeStart?: ((entry: CDResizeEntry) => void) | undefined;
+  /**
+   * 连续变化结束后（静默 resizeEndDelay 无新 resize）触发，payload 为最后一帧。
+   * 用于"调整完成"提交。
+   */
+  onResizeEnd?: ((entry: CDResizeEntry) => void) | undefined;
+  /**
+   * onResizeEnd 静默判定窗口(ms)，0 表示沿用 schedule wait（无则默认 RESIZE_END_DELAY）。
+   * 仅当传了 onResizeStart / onResizeEnd 时生效。
+   */
+  resizeEndDelay?: number;
+  /**
+   * 原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize，
+   * 在每次 window resize 用 getBoundingClientRect 重新测量已注册目标并上报（精度较低）。
+   * 默认 false：不支持环境静默降级（不监听、不抛错）。
+   */
+  fallbackToWindow?: boolean;
 }
+
+/** onResizeEnd 默认静默窗口(ms)，约一次拖拽停顿。 */
+const RESIZE_END_DELAY = 150;
 
 export interface ResizeObserverApi {
   readonly supported: boolean;
@@ -103,6 +128,34 @@ export function resolveSchedule(opts: {
   if (debounce > 0) return { strategy: 'debounce', wait: debounce };
   if (throttle > 0) return { strategy: 'throttle', wait: throttle };
   return { strategy: 'none' };
+}
+
+/**
+ * advanceResizePhase — start/end 状态机的纯函数核心（红线 #2，不依赖时钟/计时器）。
+ * 给定"当前是否处于 resizing 态"与一个新到达的 resize 事件，返回新状态及应派发的
+ * 边界事件标记。计时器（决定何时进入 'end'）由命令式调用方持有，本函数只描述跃迁：
+ *   - 不在 resizing 态收到 resize → start，进入 resizing 态。
+ *   - 已在 resizing 态收到 resize → 无边界事件（仅续期，态不变）。
+ * 'end' 的跃迁见 endResizePhase（由静默计时器触发）。
+ */
+export function advanceResizePhase(resizing: boolean): {
+  resizing: boolean;
+  emitStart: boolean;
+} {
+  if (!resizing) return { resizing: true, emitStart: true };
+  return { resizing: true, emitStart: false };
+}
+
+/**
+ * endResizePhase — 静默计时器到点时的纯跃迁：若处于 resizing 态则结束并标记派发 end。
+ * 非 resizing 态（无在途变化）则不派发，幂等。
+ */
+export function endResizePhase(resizing: boolean): {
+  resizing: boolean;
+  emitEnd: boolean;
+} {
+  if (resizing) return { resizing: false, emitEnd: true };
+  return { resizing: false, emitEnd: false };
 }
 
 /**
@@ -195,10 +248,18 @@ export function createScheduler(schedule: ResizeSchedule): {
 }
 
 export function createResizeObserver(options: ResizeObserverOptions): ResizeObserverApi {
-  const { box = 'content-box', onResize } = options;
-  const supported = isResizeObserverSupported();
+  const { box = 'content-box', onResize, onResizeStart, onResizeEnd } = options;
+  const nativeSupported = isResizeObserverSupported();
+  const hasWindow =
+    typeof globalThis !== 'undefined' &&
+    typeof (globalThis as { addEventListener?: unknown }).addEventListener ===
+      'function';
+  // 走 window.resize 降级的条件：环境有 window，且（显式开启 fallbackToWindow 或原生不可用）。
+  const useWindowFallback =
+    hasWindow && (options.fallbackToWindow === true || !nativeSupported);
 
-  if (!supported) {
+  // SSR / 既无原生 RO 又无 window（或未开启 fallback）：静默 no-op。
+  if (!nativeSupported && !useWindowFallback) {
     return {
       supported: false,
       observe() {},
@@ -210,11 +271,101 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
   const schedule = resolveSchedule(options);
   const scheduler = createScheduler(schedule);
 
+  /* ---- start/end 状态机：纯跃迁 + 命令式静默计时器（红线 #2/#3） ---- */
+  const wantBoundary = !!onResizeStart || !!onResizeEnd;
+  const endDelay =
+    (options.resizeEndDelay && options.resizeEndDelay > 0
+      ? options.resizeEndDelay
+      : schedule.strategy !== 'none'
+        ? schedule.wait
+        : 0) || RESIZE_END_DELAY;
+  let resizing = false;
+  let lastEntry: CDResizeEntry | null = null;
+  let endTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearEndTimer = () => {
+    if (endTimer !== null) {
+      clearTimeout(endTimer);
+      endTimer = null;
+    }
+  };
+
+  const fireEnd = () => {
+    endTimer = null;
+    const next = endResizePhase(resizing);
+    resizing = next.resizing;
+    if (next.emitEnd && lastEntry) onResizeEnd?.(lastEntry);
+  };
+
+  // 经调度后真正向外提交一帧：onResize + 维护 start/end 边界。
+  const commit = (entry: CDResizeEntry) => {
+    onResize(entry);
+    if (!wantBoundary) return;
+    lastEntry = entry;
+    const next = advanceResizePhase(resizing);
+    resizing = next.resizing;
+    if (next.emitStart) onResizeStart?.(entry);
+    clearEndTimer();
+    endTimer = setTimeout(fireEnd, endDelay);
+  };
+
+  const dispatch = (entry: CDResizeEntry) => {
+    // 调度器只决定"何时"，commit 闭包持有这一帧最新值。
+    scheduler.run(() => commit(entry));
+  };
+
+  /* ---- 降级路径：监听 window.resize，对已注册目标 getBoundingClientRect 重测 ---- */
+  if (useWindowFallback) {
+    const win = globalThis as {
+      addEventListener(type: 'resize', cb: () => void): void;
+      removeEventListener(type: 'resize', cb: () => void): void;
+    };
+    const targets = new Set<Element>();
+
+    const measureAll = () => {
+      for (const el of targets) {
+        const rect = el.getBoundingClientRect();
+        dispatch({
+          target: el,
+          width: rect.width,
+          height: rect.height,
+          box,
+        });
+      }
+    };
+
+    const onWindowResize = () => measureAll();
+
+    return {
+      supported: false, // 降级模式：原生 RO 不可用，supported 仍报 false（语义一致）
+      observe(el) {
+        const first = targets.size === 0;
+        targets.add(el);
+        if (first) {
+          win.addEventListener('resize', onWindowResize);
+        }
+        // 近似 observeOnMount：注册后立即测一次当前尺寸。
+        const rect = el.getBoundingClientRect();
+        dispatch({ target: el, width: rect.width, height: rect.height, box });
+      },
+      unobserve(el) {
+        targets.delete(el);
+        if (targets.size === 0) {
+          win.removeEventListener('resize', onWindowResize);
+        }
+      },
+      disconnect() {
+        scheduler.cancel();
+        clearEndTimer();
+        targets.clear();
+        win.removeEventListener('resize', onWindowResize);
+      },
+    };
+  }
+
   const ro = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      const normalized = normalizeEntry(entry, box);
-      // 调度器只决定"何时"，commit 闭包持有这一帧最新值。
-      scheduler.run(() => onResize(normalized));
+      dispatch(normalizeEntry(entry, box));
     }
   });
 
@@ -228,6 +379,7 @@ export function createResizeObserver(options: ResizeObserverOptions): ResizeObse
     },
     disconnect() {
       scheduler.cancel();
+      clearEndTimer();
       ro.disconnect();
     },
   };
