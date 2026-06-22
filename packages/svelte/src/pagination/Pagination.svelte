@@ -16,6 +16,8 @@
     parseJumpInput,
     pageRange,
     useLiveAnnouncer,
+    nextRovingIndex,
+    rovingKeyFromEvent,
     type PageCell as CorePageCell,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -181,6 +183,34 @@
   }
 
   const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));
+
+  // --- roving tabindex（页码按钮，红线 #2/#3）---
+  // 仅 `type === 'page'` 的单元格参与漫游；省略号/prev/next 不在序列内。
+  const pageValues = $derived(pages.filter((c) => c.type === 'page').map((c) => c.value));
+  let listEl = $state<HTMLElement | null>(null);
+  // focusedPage 为 null 时，tab 落点回退到当前激活页（current）。
+  let focusedPage = $state<number | null>(null);
+
+  // 纯函数 tabindex：焦点项 0，其余 -1（无焦点项时 current 接收 Tab）。
+  function pageTabindex(value: number): 0 | -1 {
+    const stop = focusedPage ?? current;
+    return value === stop ? 0 : -1;
+  }
+
+  // 方向键漫游：移动焦点，不切页；Enter/Space 交给原生 button click → goto。
+  function onPageKeydown(e: KeyboardEvent, value: number) {
+    const intent = rovingKeyFromEvent(e.key);
+    if (!intent) return;
+    e.preventDefault();
+    const vals = pageValues;
+    const idx = vals.indexOf(value);
+    const nextIdx = nextRovingIndex(idx, vals.length, intent, false);
+    const nextVal = vals[nextIdx];
+    if (nextVal !== undefined) {
+      focusedPage = nextVal;
+      listEl?.querySelector<HTMLElement>(`[data-page="${nextVal}"]`)?.focus();
+    }
+  }
 </script>
 
 {#if !hidden}
@@ -204,7 +234,7 @@
       <span class="cd-pagination__simple-total">{nf.format(pageCount)}</span>
     </span>
   {:else}
-    <ul class="cd-pagination__list">
+    <ul class="cd-pagination__list" bind:this={listEl}>
       {#each pages as cell (cell.type === 'page' ? `p-${cell.value}` : `e-${cell.position}`)}
         <li class="cd-pagination__item">
           {#if cell.type === 'ellipsis'}
@@ -216,8 +246,13 @@
               class:cd-pagination__page--active={cell.value === current}
               aria-current={cell.value === current ? 'page' : undefined}
               aria-label={loc().t('Pagination.pageLabel', { page: cell.value })}
+              data-page={cell.value}
+              tabindex={pageTabindex(cell.value)}
               {disabled}
-              onclick={() => goto(cell.value)}>{nf.format(cell.value)}</button
+              onclick={() => goto(cell.value)}
+              onfocus={() => (focusedPage = cell.value)}
+              onkeydown={(e) => onPageKeydown(e, cell.value)}
+              >{nf.format(cell.value)}</button
             >
           {/if}
         </li>

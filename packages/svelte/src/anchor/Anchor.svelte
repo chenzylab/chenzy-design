@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import type { AnchorLink } from './types.js';
+  import { nextRovingIndex, rovingKeyFromEvent } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
@@ -160,6 +161,11 @@
 
   function handleClick(e: MouseEvent, link: AnchorLink) {
     e.preventDefault();
+    activateLink(link);
+  }
+
+  // 滚动 + setActive + writeHash 主体（与 handleClick 解耦，供 Space 键复用，无 event）。
+  function activateLink(link: AnchorLink) {
     const el = document.querySelector(link.href);
     if (el) {
       const smooth = scrollMotion && !prefersReducedMotion();
@@ -183,9 +189,57 @@
     setActive(link.key);
     writeHash(link.href);
   }
+
+  // --- roving tabindex（a11y §6）：链接列表为单一 Tab 停靠点。 ---
+  // rootEl 普通引用，命令式 focus() 用（非 render 期）。
+  let rootEl = $state<HTMLElement | null>(null);
+  // 当前焦点链接 key；null = 尚无焦点 -> 首链接作为 Tab 停靠点。
+  let focusedKey = $state<string | null>(null);
+
+  // 纯派生 tabindex：焦点链接（或无焦点时的首链接）为 0，其余 -1。
+  // 不在 render 期写 $state（红线 #2）。
+  function linkTabindex(key: string): 0 | -1 {
+    return (focusedKey ?? flatLinks[0]?.key) === key ? 0 : -1;
+  }
+
+  // 链接 keydown：方向键 roving（纯函数 nextRovingIndex 派生）、Home/End 跳首尾、
+  // Space 显式激活（原生 <a> 不响应 Space）。Enter 交给原生 <a> 点击（向后兼容）。
+  function onLinkKeydown(e: KeyboardEvent, link: AnchorLink) {
+    const intent = rovingKeyFromEvent(e.key);
+    if (intent) {
+      e.preventDefault();
+      const idx = flatLinks.findIndex((l) => l.key === link.key);
+      const next = nextRovingIndex(idx, flatLinks.length, intent, false);
+      const nextKey = flatLinks[next]?.key;
+      if (nextKey != null) {
+        focusedKey = nextKey;
+        rootEl
+          ?.querySelector<HTMLElement>(`[data-anchor-key="${CSS.escape(nextKey)}"]`)
+          ?.focus();
+      }
+      return;
+    }
+    if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      const nextKey = (e.key === 'Home' ? flatLinks[0] : flatLinks[flatLinks.length - 1])
+        ?.key;
+      if (nextKey != null) {
+        focusedKey = nextKey;
+        rootEl
+          ?.querySelector<HTMLElement>(`[data-anchor-key="${CSS.escape(nextKey)}"]`)
+          ?.focus();
+      }
+      return;
+    }
+    if (e.key === ' ') {
+      e.preventDefault();
+      activateLink(link);
+    }
+  }
 </script>
 
 <nav
+  bind:this={rootEl}
   class="cd-anchor"
   class:cd-anchor--no-ink={!showInk}
   class:cd-anchor--affix={affix}
@@ -206,7 +260,13 @@
           class:cd-anchor__link--active={active}
           href={link.href}
           aria-current={active ? 'true' : undefined}
+          tabindex={linkTabindex(link.key)}
+          data-anchor-key={link.key}
           onclick={(e) => handleClick(e, link)}
+          onkeydown={(e) => onLinkKeydown(e, link)}
+          onfocus={() => {
+            focusedKey = link.key;
+          }}
         >
           {link.title}
         </a>
