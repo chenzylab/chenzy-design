@@ -111,10 +111,12 @@
     }
   }
   function srLabel(index: number, st: DerivedStatus): string {
+    // 分隔符 ofTotal 已带（zh「，共 N 步」/ en「 of N」），状态前再以 locale 分隔符停顿。
+    const sep = loc().t('Steps.statusSeparator');
     return (
       loc().t('Steps.stepLabel', { index: index + 1 + initial }) +
       loc().t('Steps.ofTotal', { total: steps.length }) +
-      '，' +
+      sep +
       statusText(st)
     );
   }

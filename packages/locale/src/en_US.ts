@@ -289,6 +289,7 @@ export const en_US: Locale = {
     navAriaLabel: 'Steps',
     stepLabel: 'Step {index}',
     ofTotal: ' of {total}',
+    statusSeparator: ', ',
     statusWait: 'Waiting',
     statusProcess: 'In progress',
     statusFinish: 'Completed',

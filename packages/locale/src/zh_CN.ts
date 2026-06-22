@@ -289,6 +289,7 @@ export const zh_CN: Locale = {
     navAriaLabel: '步骤导航',
     stepLabel: '步骤 {index}',
     ofTotal: '，共 {total} 步',
+    statusSeparator: '，',
     statusWait: '未开始',
     statusProcess: '进行中',
     statusFinish: '已完成',

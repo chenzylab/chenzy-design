@@ -353,6 +353,8 @@ export interface Locale {
     stepLabel: string;
     /** 总数后缀，uses {total} */
     ofTotal: string;
+    /** 状态前的朗读分隔符（zh「，」/ en「, 」） */
+    statusSeparator: string;
     /** wait 状态朗读 */
     statusWait: string;
     /** process 状态朗读 */
