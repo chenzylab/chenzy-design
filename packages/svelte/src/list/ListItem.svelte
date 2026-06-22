@@ -45,11 +45,19 @@
     activate(e.shiftKey);
   }
 
+  // roving tabindex 由父派生（红线 #2：本组件只读不写父级 $state）。
+  const tabindex = $derived(
+    selectable && itemKey !== undefined ? (ctx?.rowTabindex(itemKey) ?? 0) : undefined,
+  );
+
   function onKeydown(e: KeyboardEvent) {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       activate(e.shiftKey);
+      return;
     }
+    // ↑↓ / Home/End / PageUp/Down roving 交父按 DOM 顺序处理。
+    if (itemKey !== undefined) ctx?.onRowKeydown(e, itemKey);
   }
 
   const cls = $derived(
@@ -69,9 +77,11 @@
     class={cls}
     role="option"
     aria-selected={selected}
-    tabindex="0"
+    data-list-key={itemKey}
+    {tabindex}
     onclick={onClick}
     onkeydown={onKeydown}
+    onfocus={() => itemKey !== undefined && ctx?.onRowFocus(itemKey)}
   >
     <span class="cd-list__item-selector" aria-hidden="true">
       <Checkbox checked={selected} />

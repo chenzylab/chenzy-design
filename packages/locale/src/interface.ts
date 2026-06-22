@@ -352,6 +352,26 @@ export interface Locale {
   Anchor: {
     ariaLabel: string;
   };
+  Steps: {
+    /** nav 类型外层 <nav> 的 aria-label */
+    navAriaLabel: string;
+    /** 视觉隐藏的步骤序号标签，uses {index} */
+    stepLabel: string;
+    /** 总数后缀，uses {total} */
+    ofTotal: string;
+    /** 状态前的朗读分隔符（zh「，」/ en「, 」） */
+    statusSeparator: string;
+    /** wait 状态朗读 */
+    statusWait: string;
+    /** process 状态朗读 */
+    statusProcess: string;
+    /** finish 状态朗读 */
+    statusFinish: string;
+    /** error 状态朗读 */
+    statusError: string;
+    /** warning 状态朗读 */
+    statusWarning: string;
+  };
   ColorPicker: {
     saturation: string;
     hue: string;

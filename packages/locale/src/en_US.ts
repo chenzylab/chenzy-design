@@ -289,6 +289,17 @@ export const en_US: Locale = {
   Anchor: {
     ariaLabel: 'Page navigation',
   },
+  Steps: {
+    navAriaLabel: 'Steps',
+    stepLabel: 'Step {index}',
+    ofTotal: ' of {total}',
+    statusSeparator: ', ',
+    statusWait: 'Waiting',
+    statusProcess: 'In progress',
+    statusFinish: 'Completed',
+    statusError: 'Error',
+    statusWarning: 'Warning',
+  },
   ColorPicker: {
     saturation: 'Saturation and brightness',
     hue: 'Hue',

@@ -17,6 +17,15 @@ export interface ListContext {
   toggle: (key: ListKey, shiftKey: boolean) => void;
   /** Row vertical padding size class suffix. */
   getSize: () => 'small' | 'default' | 'large';
+  /**
+   * roving tabindex (pure derived): focused row / first DOM row is 0, others -1.
+   * Red line #2: read-only during render, never writes parent $state.
+   */
+  rowTabindex: (key: ListKey) => 0 | -1;
+  /** Row keydown: ↑↓ roving + Home/End + PageUp/Down (imperative focus()). */
+  onRowKeydown: (event: KeyboardEvent, key: ListKey) => void;
+  /** Sync focusedRowKey when a row gains focus. */
+  onRowFocus: (key: ListKey) => void;
 }
 
 const KEY = Symbol('cd-list');
