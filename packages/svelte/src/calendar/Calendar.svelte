@@ -63,6 +63,8 @@
     onRangeChange?: (info: { range: RangeValue }) => void;
     onDateClick?: (info: { date: Date }) => void;
     onMoreClick?: (info: { date: Date; events: CalendarEvent[] }) => void;
+    /** 点击/键盘激活事件块（spec §a11y：事件块 role=button + Enter/Space 触发）。 */
+    onEventClick?: (info: { event: CalendarEvent; nativeEvent: Event }) => void;
     dateCell?: Snippet<
       [{ date: Date; events: CalendarEvent[]; isToday: boolean; isOutside: boolean; disabled: boolean }]
     >;
@@ -118,6 +120,7 @@
     onRangeChange,
     onDateClick,
     onMoreClick,
+    onEventClick,
     dateCell,
     event,
     ariaLabel,
@@ -433,6 +436,16 @@
       onCellActivate(activeDate);
       return;
     }
+    // Shift+PageUp/Down：切年（gridFocusMove 不含年级，组件层 ±12 月）
+    if (e.shiftKey && (key === 'PageUp' || key === 'PageDown')) {
+      e.preventDefault();
+      const nextYearDate = addMonths(activeDate, key === 'PageUp' ? -12 : 12);
+      focusedDate = nextYearDate;
+      const stillVisible = cells.some((c) => isSameDay(c.date, nextYearDate));
+      if (!stillVisible) setAnchor(nextYearDate);
+      pendingFocus = true;
+      return;
+    }
     if (!NAV_KEYS.has(key)) return;
     e.preventDefault();
     const next = gridFocusMove(
@@ -482,6 +495,19 @@
 
   function onMore(date: Date, total: CalendarEvent[]) {
     onMoreClick?.({ date, events: total });
+  }
+
+  // 事件块激活（点击或 Enter/Space）。阻止冒泡避免连带触发日格选择。
+  function activateEvent(ev: CalendarEvent, e: Event) {
+    e.stopPropagation();
+    if (ev.disabled) return;
+    onEventClick?.({ event: ev, nativeEvent: e });
+  }
+  function onEventKeydown(ev: CalendarEvent, e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activateEvent(ev, e);
+    }
   }
 
   // --- popup 外部点击 / Esc 关闭（红线 #3：open 时绑、cleanup 解绑）---
@@ -586,7 +612,13 @@
                   class="cd-calendar__event"
                   class:cd-calendar__event--disabled={ev.disabled}
                   style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                  role="button"
+                  tabindex={ev.disabled ? -1 : 0}
+                  aria-disabled={ev.disabled || undefined}
+                  aria-label={ev.title}
                   title={ev.title}
+                  onclick={(e) => activateEvent(ev, e)}
+                  onkeydown={(e) => onEventKeydown(ev, e)}
                 >
                   <span class="cd-calendar__event-bar" aria-hidden="true"></span>
                   <span class="cd-calendar__event-title">{ev.title}</span>
@@ -622,7 +654,13 @@
                           class="cd-calendar__event cd-calendar__event--timed"
                           class:cd-calendar__event--disabled={ev.disabled}
                           style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                          role="button"
+                          tabindex={ev.disabled ? -1 : 0}
+                          aria-disabled={ev.disabled || undefined}
+                          aria-label={`${hourLabelFormatter.format(ev.start)} ${ev.title}`}
                           title={ev.title}
+                          onclick={(e) => activateEvent(ev, e)}
+                          onkeydown={(e) => onEventKeydown(ev, e)}
                         >
                           <span class="cd-calendar__event-bar" aria-hidden="true"></span>
                           <span class="cd-calendar__event-time">{hourLabelFormatter.format(ev.start)}</span>
@@ -739,7 +777,13 @@
                       class="cd-calendar__event"
                       class:cd-calendar__event--disabled={ev.disabled}
                       style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                      role="button"
+                      tabindex={ev.disabled ? -1 : 0}
+                      aria-disabled={ev.disabled || undefined}
+                      aria-label={ev.title}
                       title={ev.title}
+                      onclick={(e) => activateEvent(ev, e)}
+                      onkeydown={(e) => onEventKeydown(ev, e)}
                     >
                       <span class="cd-calendar__event-bar" aria-hidden="true"></span>
                       <span class="cd-calendar__event-title">{ev.title}</span>
@@ -975,6 +1019,18 @@
   }
   .cd-calendar__event--disabled {
     opacity: 0.5;
+  }
+  /* 事件块作为 role=button：键盘焦点环可见 */
+  .cd-calendar__event[role='button'] {
+    cursor: pointer;
+    text-align: start;
+  }
+  .cd-calendar__event[role='button']:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--cd-focus-ring);
+  }
+  .cd-calendar__event--disabled[role='button'] {
+    cursor: not-allowed;
   }
   .cd-calendar__event-bar {
     flex: 0 0 auto;
