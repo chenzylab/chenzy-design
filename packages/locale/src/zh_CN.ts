@@ -20,6 +20,8 @@ export const zh_CN: Locale = {
     pageSize: '{size} 条/页',
     jumpTo: '跳至',
     jumpToSuffix: '页',
+    pageChangeAnnounce: '第 {page} 页，共 {count} 页',
+    pageSizeChangeAnnounce: '每页 {size} 条，第 {page} 页',
   },
   Table: {
     emptyText: '暂无数据',
@@ -36,6 +38,10 @@ export const zh_CN: Locale = {
     filterReset: '重置',
     filterConfirm: '确定',
     resizeColumn: '拖拽调整列宽',
+    sortedAnnounce: '已按 {column} {order}排序',
+    sortClearedAnnounce: '已取消 {column} 排序',
+    sortOrderAscend: '升序',
+    sortOrderDescend: '降序',
   },
   Empty: {
     noData: '暂无数据',
