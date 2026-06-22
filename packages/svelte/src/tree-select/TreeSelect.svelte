@@ -900,18 +900,28 @@
     aria-haspopup="tree"
     aria-expanded={isOpen}
     aria-controls={treeId}
+    aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
     aria-label={ariaLabel}
     aria-invalid={status === 'error' || undefined}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
     onkeydown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (!disabled) setOpen(true);
-      } else if (e.key === 'Escape') {
-        setOpen(false);
+      if (disabled) return;
+      if (!isOpen) {
+        // 关闭态：Enter/Space/Down 打开浮层。
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setOpen(true);
+        }
+        return;
       }
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      // 打开态：搜索激活时焦点在搜索框，由其处理；否则触发器（焦点宿主）驱动树 roving。
+      if (!searchActive) onTreeKeydown(e);
     }}
   >
     <span class="cd-tree-select__content">
@@ -992,10 +1002,22 @@
           <input
             class="cd-tree-select__search-input"
             type="text"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-controls={treeId}
+            aria-activedescendant={activeDescId}
             placeholder={loc().t('TreeSelect.searchPlaceholder')}
             aria-label={loc().t('TreeSelect.searchPlaceholder')}
             value={searchValue}
             oninput={onSearchInput}
+            onkeydown={(e) => {
+              if (e.key === 'Escape') {
+                setOpen(false);
+                return;
+              }
+              // 搜索框聚焦时方向键/Home/End/Enter 在过滤后的可见树上 roving。
+              onTreeKeydown(e);
+            }}
           />
         </div>
       {/if}
