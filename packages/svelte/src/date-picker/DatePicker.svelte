@@ -50,6 +50,20 @@
     format?: string;
     onChange?: (v: Date | null) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 手动键入解析失败 (editable 模式)。 */
+    onParseError?: (e: { text: string }) => void;
+    /** 可见年月切换 (头部导航)。 */
+    onPanelChange?: (e: { panelDate: Date }) => void;
+    /** 点击快捷选项。 */
+    onPresetClick?: (e: { preset: Preset }) => void;
+    /** 点击清除。 */
+    onClear?: (e: Record<string, never>) => void;
+    /** 点击确认按钮 (dateTime)。 */
+    onConfirm?: (e: { value: Date | null }) => void;
+    /** 触发器获得焦点。 */
+    onFocus?: (e: FocusEvent) => void;
+    /** 触发器失去焦点。 */
+    onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
   }
 
@@ -73,6 +87,13 @@
     format,
     onChange,
     onOpenChange,
+    onParseError,
+    onPanelChange,
+    onPresetClick,
+    onClear,
+    onConfirm,
+    onFocus,
+    onBlur,
     ariaLabel,
   }: Props = $props();
 
@@ -184,6 +205,7 @@
     } else {
       // 解析失败：回退到当前值的规范文本
       inputText = formattedValue;
+      onParseError?.({ text: raw });
     }
   }
 
@@ -239,25 +261,30 @@
 
   const showClear = $derived(clearable && !disabled && current !== null);
 
+  // 头部导航切换可见年月：更新游标并通知 onPanelChange（红线 #1：panelDate 是面板视图态，非 value）
+  function setCursor(next: Date) {
+    cursor = next;
+    onPanelChange?.({ panelDate: next });
+  }
   function prevMonth() {
-    cursor = addMonths(cursor, -1);
+    setCursor(addMonths(cursor, -1));
   }
   function nextMonth() {
-    cursor = addMonths(cursor, 1);
+    setCursor(addMonths(cursor, 1));
   }
   // month 面板：切年（±12 个月）
   function prevYear() {
-    cursor = addMonths(cursor, -12);
+    setCursor(addMonths(cursor, -12));
   }
   function nextYear() {
-    cursor = addMonths(cursor, 12);
+    setCursor(addMonths(cursor, 12));
   }
   // year 面板：切十年
   function prevDecade() {
-    cursor = new Date(cursor.getFullYear() - 10, cursor.getMonth(), 1);
+    setCursor(new Date(cursor.getFullYear() - 10, cursor.getMonth(), 1));
   }
   function nextDecade() {
-    cursor = new Date(cursor.getFullYear() + 10, cursor.getMonth(), 1);
+    setCursor(new Date(cursor.getFullYear() + 10, cursor.getMonth(), 1));
   }
 
   // 选中某个月：保留年+月，归一到该月 1 号起始
@@ -369,6 +396,7 @@
 
   // --- presets：点击快捷项直接选中 (惰性 value 即时求值) ---
   function selectPreset(preset: Preset) {
+    onPresetClick?.({ preset });
     const date = typeof preset.value === 'function' ? preset.value() : preset.value;
     if (disabledDate?.(date)) return;
     if (isMonth) {
@@ -387,6 +415,7 @@
   }
 
   function confirm() {
+    onConfirm?.({ value: current });
     setOpen(false);
   }
 
@@ -415,6 +444,7 @@
     e.stopPropagation();
     if (disabled) return;
     setValue(null);
+    onClear?.({});
   }
 
   function onTriggerKeydown(e: KeyboardEvent) {
@@ -530,7 +560,11 @@
         bind:value={inputText}
         onclick={() => setOpen(true)}
         onkeydown={onInputKeydown}
-        onblur={commitInput}
+        onfocus={onFocus}
+        onblur={(e) => {
+          commitInput();
+          onBlur?.(e);
+        }}
       />
     {:else}
       <button
@@ -543,6 +577,8 @@
         {disabled}
         onclick={toggleOpen}
         onkeydown={onTriggerKeydown}
+        onfocus={onFocus}
+        onblur={onBlur}
       >
         <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={current === null}>
           {displayText}

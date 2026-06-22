@@ -44,6 +44,14 @@
     locale?: string;
     onChange?: (v: RangeValue | null) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 可见年月切换 (头部导航)。panelDate 为左面板月份。 */
+    onPanelChange?: (e: { panelDate: Date }) => void;
+    /** 点击清除。 */
+    onClear?: (e: Record<string, never>) => void;
+    /** 触发器获得焦点。 */
+    onFocus?: (e: FocusEvent) => void;
+    /** 触发器失去焦点。 */
+    onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
   }
 
@@ -64,6 +72,10 @@
     locale = 'zh-CN',
     onChange,
     onOpenChange,
+    onPanelChange,
+    onClear,
+    onFocus,
+    onBlur,
     ariaLabel,
   }: Props = $props();
 
@@ -145,11 +157,15 @@
   const showClear = $derived(clearable && !disabled && (startVal !== null || endVal !== null));
 
   // 整体左右翻一个月（左面板 −1 / 右面板 +1 联动，两面板始终相邻）
+  function setCursor(next: Date) {
+    cursor = next;
+    onPanelChange?.({ panelDate: next });
+  }
   function prevMonth() {
-    cursor = addMonths(cursor, -1);
+    setCursor(addMonths(cursor, -1));
   }
   function nextMonth() {
-    cursor = addMonths(cursor, 1);
+    setCursor(addMonths(cursor, 1));
   }
 
   // 选区端点（选择中用 pendingStart + previewEnd，否则用已提交值）
@@ -217,6 +233,7 @@
     phase = 'start';
     pendingStart = null;
     previewEnd = null;
+    onClear?.({});
   }
 
   function onTriggerKeydown(e: KeyboardEvent) {
@@ -266,6 +283,8 @@
       {disabled}
       onclick={toggleOpen}
       onkeydown={onTriggerKeydown}
+      onfocus={onFocus}
+      onblur={onBlur}
     >
       <span class="cd-range-picker__value" class:cd-range-picker__value--placeholder={startVal === null}>
         {startText}

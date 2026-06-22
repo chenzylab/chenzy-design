@@ -35,6 +35,17 @@ export const meta = {
     { name: 'format', type: 'string', default: 'undefined' },
     { name: 'onChange', type: '(v: Date | null) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
+    { name: 'onParseError', type: '(e: { text: string }) => void', default: 'undefined' },
+    { name: 'onPanelChange', type: '(e: { panelDate: Date }) => void', default: 'undefined' },
+    {
+      name: 'onPresetClick',
+      type: '(e: { preset: { label: string; value: Date | (() => Date) } }) => void',
+      default: 'undefined',
+    },
+    { name: 'onClear', type: '(e: {}) => void', default: 'undefined' },
+    { name: 'onConfirm', type: '(e: { value: Date | null }) => void', default: 'undefined' },
+    { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
+    { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
   ],
   a11y: {
