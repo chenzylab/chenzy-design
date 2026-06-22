@@ -7,6 +7,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { nextRovingIndex, rovingKeyFromEvent, type RovingKey } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
   import type { StepItem } from './types.js';
 
   type StepDirection = 'horizontal' | 'vertical';
@@ -89,6 +91,80 @@
     if (!isControlled) inner = index;
     onChange?.(index);
   }
+
+  const loc = useLocale();
+
+  // 视觉隐藏的状态文本（WCAG 1.4.1：颜色非唯一信息载体）。
+  // 组合「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读。
+  function statusText(st: DerivedStatus): string {
+    switch (st) {
+      case 'finish':
+        return loc().t('Steps.statusFinish');
+      case 'process':
+        return loc().t('Steps.statusProcess');
+      case 'error':
+        return loc().t('Steps.statusError');
+      case 'warning':
+        return loc().t('Steps.statusWarning');
+      default:
+        return loc().t('Steps.statusWait');
+    }
+  }
+  function srLabel(index: number, st: DerivedStatus): string {
+    return (
+      loc().t('Steps.stepLabel', { index: index + 1 + initial }) +
+      loc().t('Steps.ofTotal', { total: steps.length }) +
+      '，' +
+      statusText(st)
+    );
+  }
+
+  // --- roving tabindex（a11y §6）：可点击步骤组为单一 Tab 停靠点。 ---
+  // rootEl 普通引用（bind:this），命令式 focus() 用，非 render 期读 DOM。
+  let rootEl = $state<HTMLElement | null>(null);
+  // 当前焦点步索引；-1 = 尚无焦点 -> 首个可点击步作为 Tab 停靠点。
+  let focusedIndex = $state(-1);
+
+  // 可点击（且未禁用）的步骤索引序列；roving 在其中漫游，跳过 disabled（红线 #2：纯派生）。
+  const focusableIndices = $derived<number[]>(
+    isClickable
+      ? steps.map((s, i) => (s.disabled ? -1 : i)).filter((i) => i >= 0)
+      : [],
+  );
+
+  // 纯派生 tabindex：当前焦点步（或无焦点时回退到 activeIndex/首个可点击步）为 0，其余 -1。
+  // 不在 render 期写 $state（红线 #2）。
+  function stepTabindex(index: number): 0 | -1 {
+    if (!isClickable || steps[index]?.disabled) return -1;
+    const anchor =
+      focusedIndex >= 0
+        ? focusedIndex
+        : focusableIndices.includes(activeIndex)
+          ? activeIndex
+          : (focusableIndices[0] ?? -1);
+    return index === anchor ? 0 : -1;
+  }
+
+  function focusStep(index: number): void {
+    focusedIndex = index;
+    rootEl
+      ?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)
+      ?.focus();
+  }
+
+  // 步骤 keydown：方向键 roving（纯函数 nextRovingIndex 派生，仅在可点击步间移动）、
+  // Home/End 跳首尾可点击步。Enter/Space 交给原生 <button>（向后兼容）。
+  function onStepKeydown(e: KeyboardEvent, index: number): void {
+    const intent: RovingKey | null = rovingKeyFromEvent(e.key);
+    if (!intent) return;
+    e.preventDefault();
+    const list = focusableIndices;
+    if (list.length === 0) return;
+    const cur = list.indexOf(index);
+    const next = nextRovingIndex(cur, list.length, intent, false);
+    const target = list[next];
+    if (target != null) focusStep(target);
+  }
 </script>
 
 {#snippet head(step: StepItem, index: number, st: DerivedStatus)}
@@ -101,46 +177,76 @@
       <span class="cd-steps__desc">{step.description}</span>
     {/if}
   </span>
+  <!-- WCAG 1.4.1：视觉隐藏的「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读，颜色非唯一信息载体。 -->
+  <span class="cd-sr-only">{srLabel(index, st)}</span>
 {/snippet}
 
-<ol class={cls}>
-  {#each steps as step, index (index)}
-    {@const st = statusOf(index)}
-    {@const last = index === steps.length - 1}
-    {@const isDisabled = step.disabled === true}
-    <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--disabled={isDisabled}>
-      {#if isClickable}
-        <button
-          type="button"
-          class="cd-steps__head"
-          aria-current={index === activeIndex ? 'step' : undefined}
-          disabled={isDisabled}
-          aria-disabled={isDisabled || undefined}
-          onclick={() => select(index)}
-        >
-          {@render head(step, index, st)}
-        </button>
-      {:else}
-        <div
-          class="cd-steps__head"
-          aria-current={index === activeIndex ? 'step' : undefined}
-          aria-disabled={isDisabled || undefined}
-        >
-          {@render head(step, index, st)}
-        </div>
-      {/if}
-      {#if !last}
-        <span
-          class="cd-steps__line"
-          class:cd-steps__line--finish={index < activeIndex}
-          aria-hidden="true"
-        ></span>
-      {/if}
-    </li>
-  {/each}
-</ol>
+{#snippet stepsList()}
+  <ol class={cls} bind:this={rootEl}>
+    {#each steps as step, index (index)}
+      {@const st = statusOf(index)}
+      {@const last = index === steps.length - 1}
+      {@const isDisabled = step.disabled === true}
+      <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--disabled={isDisabled}>
+        {#if isClickable}
+          <button
+            type="button"
+            class="cd-steps__head"
+            data-step-index={index}
+            aria-current={index === activeIndex ? 'step' : undefined}
+            disabled={isDisabled}
+            aria-disabled={isDisabled || undefined}
+            tabindex={stepTabindex(index)}
+            onclick={() => select(index)}
+            onkeydown={(e) => onStepKeydown(e, index)}
+            onfocus={() => {
+              focusedIndex = index;
+            }}
+          >
+            {@render head(step, index, st)}
+          </button>
+        {:else}
+          <div
+            class="cd-steps__head"
+            aria-current={index === activeIndex ? 'step' : undefined}
+            aria-disabled={isDisabled || undefined}
+          >
+            {@render head(step, index, st)}
+          </div>
+        {/if}
+        {#if !last}
+          <span
+            class="cd-steps__line"
+            class:cd-steps__line--finish={index < activeIndex}
+            aria-hidden="true"
+          ></span>
+        {/if}
+      </li>
+    {/each}
+  </ol>
+{/snippet}
+
+{#if type === 'nav'}
+  <nav aria-label={loc().t('Steps.navAriaLabel')}>
+    {@render stepsList()}
+  </nav>
+{:else}
+  {@render stepsList()}
+{/if}
 
 <style>
+  /* WCAG 1.4.1：视觉隐藏但可被屏幕阅读器读取的状态文本。 */
+  .cd-sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .cd-steps {
     display: flex;
     margin: 0;

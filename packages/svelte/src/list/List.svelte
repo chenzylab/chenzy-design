@@ -194,6 +194,9 @@
     isSelected: (key) => selectedSet.has(key),
     toggle: (key, shiftKey) => toggleKey(key, shiftKey),
     getSize: () => size,
+    rowTabindex: (key) => itemTabindex(key),
+    onRowKeydown: (e, key) => onItemKeydown(e, key),
+    onRowFocus: (key) => onRowFocus(key),
   });
 
   // --- 虚拟化几何（复用 core 区间数学；红线 #2/#3） ---
@@ -349,11 +352,116 @@
   function onRowActivate(item: T, index: number, shiftKey: boolean): void {
     toggleKey(keyOf(item, index), shiftKey);
   }
+
+  // --- roving tabindex（a11y §6 / Listbox APG）：selectable 行组为单一 Tab 停靠点。 ---
+  // rootEl 普通引用（bind:this），命令式 focus() 用，非 render 期读 DOM；
+  // 声明式 / 虚拟化 / 普通三种渲染路径的行都带 data-list-key，统一按 DOM 顺序漫游
+  // （红线 #2：不用 $state 数组收集子项，避免 effect 自循环）。
+  let rootEl = $state<HTMLElement | null>(null);
+  // 当前焦点行的 key；null = 尚无焦点 -> 首行作为 Tab 停靠点。
+  let focusedRowKey = $state<ListKey | null>(null);
+
+  // selectable 模式下行的有序 key 列表（用于 roving 首末 / PageUp/Down 计算）。
+  const rowKeys = $derived<ListKey[]>(
+    selectMode ? dataSource.map((it, i) => keyOf(it, i)) : [],
+  );
+
+  // 纯派生 tabindex：焦点行（或无焦点时首行）为 0，其余 -1（红线 #2：render 期只读）。
+  function rowTabindex(key: ListKey): 0 | -1 {
+    if (!selectMode) return 0;
+    return (focusedRowKey ?? rowKeys[0]) === key ? 0 : -1;
+  }
+
+  function focusRowByKey(key: ListKey): void {
+    rootEl
+      ?.querySelector<HTMLElement>(
+        `[data-list-key="${CSS.escape(String(key))}"]`,
+      )
+      ?.focus();
+  }
+
+  // DOM 顺序的行 key 列表（声明式 <List.Item> 用：行不在 dataSource 内，按 DOM 漫游）。
+  function domRowKeys(): string[] {
+    if (!rootEl) return [];
+    return [...rootEl.querySelectorAll<HTMLElement>('[data-list-key]')].map(
+      (el) => el.dataset.listKey ?? '',
+    );
+  }
+
+  // 翻一屏的行数（虚拟化按可视区估算，否则固定 10 行兜底）。
+  function pageStep(): number {
+    if (virtualOn && vItemSize > 0) {
+      return Math.max(1, Math.floor(vViewportH / vItemSize));
+    }
+    return 10;
+  }
+
+  // 行 keydown：↑↓ roving、Home/End 跳首末、PageUp/Down 翻屏、Space/Enter 激活。
+  // Shift+↑↓（multiple）连选。命令式 focus() 在事件回调（非 render 期）。
   function onRowKeydown(e: KeyboardEvent, item: T, index: number): void {
+    const key = keyOf(item, index);
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       onRowActivate(item, index, e.shiftKey);
+      return;
     }
+    if (!selectMode) return;
+    const keys = rowKeys;
+    if (keys.length === 0) return;
+    const cur = keys.indexOf(key);
+    let target = -1;
+    if (e.key === 'ArrowDown') target = Math.min(keys.length - 1, cur + 1);
+    else if (e.key === 'ArrowUp') target = Math.max(0, cur - 1);
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = keys.length - 1;
+    else if (e.key === 'PageDown') target = Math.min(keys.length - 1, cur + pageStep());
+    else if (e.key === 'PageUp') target = Math.max(0, cur - pageStep());
+    else return;
+    e.preventDefault();
+    const targetKey = keys[target];
+    if (targetKey == null) return;
+    focusedRowKey = targetKey;
+    // multiple 模式 Shift+方向键：移动焦点同时连选（范围以锚点为基准）。
+    if (e.shiftKey && selectMode === 'multiple') {
+      toggleKey(targetKey, true);
+    }
+    focusRowByKey(targetKey);
+  }
+  function onRowFocus(key: ListKey): void {
+    focusedRowKey = key;
+  }
+
+  // 声明式 <List.Item> keydown：按 DOM 顺序 roving（行不在 dataSource 内）。
+  // Space/Enter 由 List.Item 自身的 activate 处理，这里只管方向键 / Home/End / PageUp/Down。
+  function onItemKeydown(e: KeyboardEvent, key: ListKey): void {
+    if (!selectMode) return;
+    const keys = domRowKeys();
+    if (keys.length === 0) return;
+    const cur = keys.indexOf(String(key));
+    if (cur < 0) return;
+    let target = -1;
+    if (e.key === 'ArrowDown') target = Math.min(keys.length - 1, cur + 1);
+    else if (e.key === 'ArrowUp') target = Math.max(0, cur - 1);
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = keys.length - 1;
+    else if (e.key === 'PageDown') target = Math.min(keys.length - 1, cur + pageStep());
+    else if (e.key === 'PageUp') target = Math.max(0, cur - pageStep());
+    else return;
+    e.preventDefault();
+    const targetKey = keys[target];
+    if (targetKey == null) return;
+    focusedRowKey = targetKey;
+    if (e.shiftKey && selectMode === 'multiple') toggleKey(targetKey, true);
+    focusRowByKey(targetKey);
+  }
+  // 声明式行 tabindex：焦点行 / 首个 DOM 行为 0，其余 -1（红线 #2：render 期只读）。
+  // 挂载前 rootEl 为空、DOM 顺序未知，回退为 0 保证可 Tab 进入；挂载后由 DOM 查询收敛为单一停靠点。
+  function itemTabindex(key: ListKey): 0 | -1 {
+    if (!selectMode) return 0;
+    if (focusedRowKey != null) return focusedRowKey === key ? 0 : -1;
+    const keys = domRowKeys();
+    if (keys.length === 0) return 0;
+    return keys[0] === String(key) ? 0 : -1;
   }
 
   // --- 分页：受控 current 不回写 (红线 #1)，本地 inner 兜底 ---
@@ -407,7 +515,7 @@
   const itemsMultiselect = $derived(selectMode === 'multiple' ? true : undefined);
 </script>
 
-<div class={cls} aria-busy={loading || undefined}>
+<div class={cls} aria-busy={loading || undefined} bind:this={rootEl}>
   {#if header !== undefined}
     <div class="cd-list__header">
       {#if isSnippet(header)}{@render header()}{:else}{header}{/if}
@@ -466,14 +574,16 @@
               class:cd-list__item--selectable={!!selectMode}
               class:cd-list__item--selected={sel}
               data-vindex={index}
+              data-list-key={selectMode ? k : undefined}
               role={selectMode ? 'option' : 'listitem'}
               aria-selected={selectMode ? sel : undefined}
               aria-setsize={dataSource.length}
               aria-posinset={index + 1}
-              tabindex={selectMode ? 0 : undefined}
+              tabindex={selectMode ? rowTabindex(k) : undefined}
               style={vItemStyle(index)}
               onclick={selectMode ? (e) => onRowActivate(item, index, e.shiftKey) : undefined}
               onkeydown={selectMode ? (e) => onRowKeydown(e, item, index) : undefined}
+              onfocus={selectMode ? () => onRowFocus(k) : undefined}
             >
               {#if selectMode}
                 <span class="cd-list__item-selector" aria-hidden="true">
@@ -504,11 +614,13 @@
               class="cd-list__item cd-list__item--selectable"
               class:cd-list__item--selected={sel}
               class:cd-list__item--grid={gridOn}
+              data-list-key={k}
               role="option"
               aria-selected={sel}
-              tabindex="0"
+              tabindex={rowTabindex(k)}
               onclick={(e) => onRowActivate(item, realIndex, e.shiftKey)}
               onkeydown={(e) => onRowKeydown(e, item, realIndex)}
+              onfocus={() => onRowFocus(k)}
             >
               <span class="cd-list__item-selector" aria-hidden="true">
                 <Checkbox checked={sel} />

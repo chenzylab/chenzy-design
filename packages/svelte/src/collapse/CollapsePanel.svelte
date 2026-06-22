@@ -34,17 +34,27 @@
   const idBase = $derived(ctx?.getIdBase() ?? 'cd-collapse');
   const headerId = $derived(`${idBase}-h-${itemKey}`);
   const regionId = $derived(`${idBase}-r-${itemKey}`);
+  const headingLevel = $derived(ctx?.getHeadingLevel() ?? 3);
+  // roving tabindex 由父派生（红线 #2：本组件只读不写父级 $state）。
+  const tabindex = $derived(ctx?.headerTabindex(itemKey, disabled) ?? 0);
 </script>
 
 <div class="cd-collapse__item" class:cd-collapse__item--active={active}>
+  <!-- APG Accordion：Header 触发器外层 role=heading + aria-level。 -->
+  <span role="heading" aria-level={headingLevel} class="cd-collapse__heading">
   <button
     type="button"
     id={headerId}
     class="cd-collapse__header"
+    data-collapse-key={itemKey}
     aria-expanded={active}
     aria-controls={regionId}
+    aria-disabled={itemDisabled || undefined}
     disabled={itemDisabled || undefined}
+    {tabindex}
     onclick={(e) => ctx?.headerClick(e, itemKey, disabled)}
+    onkeydown={(e) => ctx?.onHeaderKeydown(e, itemKey)}
+    onfocus={() => ctx?.onHeaderFocus(itemKey)}
   >
     <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
       <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
@@ -55,6 +65,7 @@
       {#if head}{@render head()}{:else}{header}{/if}
     </span>
   </button>
+  </span>
   <div
     id={regionId}
     class="cd-collapse__region"

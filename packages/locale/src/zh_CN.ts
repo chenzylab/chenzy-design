@@ -285,6 +285,16 @@ export const zh_CN: Locale = {
   Anchor: {
     ariaLabel: '页面导航',
   },
+  Steps: {
+    navAriaLabel: '步骤导航',
+    stepLabel: '步骤 {index}',
+    ofTotal: '，共 {total} 步',
+    statusWait: '未开始',
+    statusProcess: '进行中',
+    statusFinish: '已完成',
+    statusError: '错误',
+    statusWarning: '警告',
+  },
   ColorPicker: {
     saturation: '饱和度与明度',
     hue: '色相',

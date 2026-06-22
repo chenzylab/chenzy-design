@@ -17,7 +17,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { useId } from '@chenzy-design/core';
+  import { useId, nextRovingIndex, rovingKeyFromEvent } from '@chenzy-design/core';
   import type { CollapsePanel } from './types.js';
   import { setCollapseContext } from './context.js';
 
@@ -34,6 +34,8 @@
     bordered?: boolean;
     disabled?: boolean;
     motion?: boolean;
+    /** Header 包裹元素的 aria-level（role=heading），默认 3。 */
+    headingLevel?: number;
     /** 首次展开后才渲染面板内容 */
     lazyRender?: boolean;
     /** 展开过的面板内容保留 DOM（收起后不卸载），与 lazyRender 配合 */
@@ -62,6 +64,7 @@
     bordered = true,
     disabled = false,
     motion = true,
+    headingLevel = 3,
     lazyRender = false,
     keepDOM = true,
     onChange,
@@ -162,6 +165,72 @@
   // 声明式优先级低于 panels：仅在未传 panels 时渲染 children 内的 <Collapse.Panel>。
   const useDeclarative = $derived(panels.length === 0 && children != null);
 
+  // --- roving tabindex（a11y §6 / APG Accordion）：Header 组为单一 Tab 停靠点。 ---
+  // rootEl 普通引用（bind:this），命令式 focus() 用，非 render 期读 DOM；
+  // 声明式 <Collapse.Panel> 也渲染进同一 rootEl，故按 DOM 顺序统一漫游（红线 #2：
+  // 不用 $state 数组收集子项，避免 effect 自循环）。
+  let rootEl = $state<HTMLElement | null>(null);
+  // 当前焦点 Header 的 key；null = 尚无焦点 -> 首个未禁用 Header 作为 Tab 停靠点。
+  let focusedKey = $state<string | null>(null);
+
+  // 查询 rootEl 下所有未禁用的 Header 按钮（DOM 顺序），roving 在其中漫游。
+  function focusableHeaders(): HTMLButtonElement[] {
+    if (!rootEl) return [];
+    return [
+      ...rootEl.querySelectorAll<HTMLButtonElement>(
+        '.cd-collapse__header[data-collapse-key]:not([disabled])',
+      ),
+    ];
+  }
+
+  // 纯派生 tabindex：焦点 Header（或无焦点时首个未禁用 Header）为 0，其余 -1。
+  // 不在 render 期写 $state（红线 #2）。整体 disabled 时所有 Header tabindex=-1。
+  function headerTabindex(key: string, panelDisabled?: boolean): 0 | -1 {
+    if (disabled || panelDisabled) return -1;
+    if (focusedKey != null) return focusedKey === key ? 0 : -1;
+    // 无焦点：首个未禁用 Header 为停靠点。数据驱动模式下用 panels 推断首个可聚焦项。
+    const firstKey = firstFocusableKey();
+    return firstKey === key ? 0 : -1;
+  }
+
+  // 首个未禁用 Header 的 key：数据驱动用 panels 派生；声明式回退到 DOM 查询。
+  function firstFocusableKey(): string | undefined {
+    if (panels.length > 0) {
+      return panels.find((p) => !(disabled || p.disabled))?.key;
+    }
+    return focusableHeaders()[0]?.dataset.collapseKey;
+  }
+
+  function focusHeaderByKey(key: string): void {
+    rootEl
+      ?.querySelector<HTMLElement>(
+        `.cd-collapse__header[data-collapse-key="${CSS.escape(key)}"]`,
+      )
+      ?.focus();
+  }
+
+  // Header keydown：↑↓ roving（纯函数 nextRovingIndex 派生，跳过禁用项）、Home/End 跳首尾。
+  // Enter/Space 交给原生 <button>（向后兼容 toggle）。
+  function onHeaderKeydown(e: KeyboardEvent, key: string): void {
+    const intent = rovingKeyFromEvent(e.key);
+    if (!intent) return;
+    const headers = focusableHeaders();
+    if (headers.length === 0) return;
+    e.preventDefault();
+    const keys = headers.map((h) => h.dataset.collapseKey ?? '');
+    const cur = keys.indexOf(key);
+    const next = nextRovingIndex(cur, keys.length, intent, false);
+    const nextKey = keys[next];
+    if (nextKey) {
+      focusedKey = nextKey;
+      focusHeaderByKey(nextKey);
+    }
+  }
+
+  function onHeaderFocus(key: string): void {
+    focusedKey = key;
+  }
+
   // 经 context 暴露给子 Panel：全部 getter / 纯派生函数，红线 #1#2 落实在父级。
   setCollapseContext({
     isActive,
@@ -172,10 +241,14 @@
     getSize: () => size,
     getIconPosition: () => expandIconPosition,
     getIdBase: () => idBase,
+    getHeadingLevel: () => headingLevel,
+    headerTabindex,
+    onHeaderKeydown,
+    onHeaderFocus,
   });
 </script>
 
-<div class={cls}>
+<div class={cls} bind:this={rootEl}>
   {#if useDeclarative}
     {@render (children as Snippet)?.()}
   {:else}
@@ -185,14 +258,21 @@
     {@const headerId = `${idBase}-h-${panel.key}`}
     {@const regionId = `${idBase}-r-${panel.key}`}
     <div class="cd-collapse__item" class:cd-collapse__item--active={active}>
+      <!-- APG Accordion：Header 触发器外层 role=heading + aria-level。 -->
+      <span role="heading" aria-level={headingLevel} class="cd-collapse__heading">
       <button
         type="button"
         id={headerId}
         class="cd-collapse__header"
+        data-collapse-key={panel.key}
         aria-expanded={active}
         aria-controls={regionId}
+        aria-disabled={itemDisabled || undefined}
         disabled={itemDisabled || undefined}
+        tabindex={headerTabindex(panel.key, panel.disabled)}
         onclick={(e) => headerClick(e, panel.key, panel.disabled)}
+        onkeydown={(e) => onHeaderKeydown(e, panel.key)}
+        onfocus={() => onHeaderFocus(panel.key)}
       >
         <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
           <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
@@ -201,6 +281,7 @@
         </span>
         <span class="cd-collapse__title">{panel.header}</span>
       </button>
+      </span>
       <div
         id={regionId}
         class="cd-collapse__region"
@@ -236,6 +317,12 @@
   }
   .cd-collapse :global(.cd-collapse__item + .cd-collapse__item) {
     border-block-start: 1px solid var(--cd-collapse-border);
+  }
+  /* role=heading 包裹元素：消除 inline 默认行为，让内部 button 占满宽度。 */
+  .cd-collapse :global(.cd-collapse__heading) {
+    display: block;
+    margin: 0;
+    font: inherit;
   }
   .cd-collapse :global(.cd-collapse__header) {
     display: flex;
