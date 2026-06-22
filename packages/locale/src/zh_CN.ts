@@ -56,6 +56,9 @@ export const zh_CN: Locale = {
     moreLabel: '+{count}',
     moreAriaLabel: '显示其余 {count} 项',
   },
+  Avatar: {
+    moreAlt: '还有 {count} 个',
+  },
   Spin: {
     loading: '加载中',
     loaded: '加载完成',
@@ -274,6 +277,7 @@ export const zh_CN: Locale = {
     prev: '上一张',
     next: '下一张',
     indicators: '轮播指示器',
+    slideLabel: '第 {index} 张',
   },
   TagInput: {
     remove: '删除',
@@ -293,6 +297,7 @@ export const zh_CN: Locale = {
     eyeDropper: '屏幕取色',
     recent: '最近使用',
     format: '颜色格式',
+    panelLabel: '颜色选择',
   },
   Tag: {
     close: '关闭',
@@ -305,6 +310,7 @@ export const zh_CN: Locale = {
     scrollNext: '向后滚动',
     add: '新增标签',
     more: '更多',
+    closeTab: '关闭 {tab}',
   },
   Tooltip: {
     warningLabel: '警告',

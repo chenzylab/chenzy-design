@@ -297,7 +297,7 @@
           class:cd-carousel__dot--active={p === activePage}
           role="tab"
           aria-selected={p === activePage}
-          aria-label={`第 ${p + 1} 张`}
+          aria-label={loc().t('Carousel.slideLabel', { index: p + 1 })}
           onclick={() => goToPage(p)}
         ></button>
       {/each}

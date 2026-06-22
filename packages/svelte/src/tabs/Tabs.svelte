@@ -576,7 +576,7 @@
       <button
         type="button"
         class="cd-tabs__close"
-        aria-label={`关闭 ${item.tab}`}
+        aria-label={loc().t('Tabs.closeTab', { tab: item.tab })}
         tabindex={selected ? 0 : -1}
         onclick={(e) => closeTab(e, item)}
       >

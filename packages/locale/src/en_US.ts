@@ -56,6 +56,9 @@ export const en_US: Locale = {
     moreLabel: '+{count}',
     moreAriaLabel: 'Show {count} more items',
   },
+  Avatar: {
+    moreAlt: '{count} more',
+  },
   Spin: {
     loading: 'Loading',
     loaded: 'Loaded',
@@ -274,6 +277,7 @@ export const en_US: Locale = {
     prev: 'Previous slide',
     next: 'Next slide',
     indicators: 'Carousel indicators',
+    slideLabel: 'Slide {index}',
   },
   TagInput: {
     remove: 'Remove',
@@ -293,6 +297,7 @@ export const en_US: Locale = {
     eyeDropper: 'Pick color from screen',
     recent: 'Recently used',
     format: 'Color format',
+    panelLabel: 'Color picker',
   },
   Tag: {
     close: 'Close',
@@ -305,6 +310,7 @@ export const en_US: Locale = {
     scrollNext: 'Scroll forward',
     add: 'Add tab',
     more: 'More',
+    closeTab: 'Close {tab}',
   },
   Tooltip: {
     warningLabel: 'Warning',

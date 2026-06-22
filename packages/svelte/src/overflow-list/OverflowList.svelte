@@ -35,6 +35,7 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import { computeOverflowPartition, applyHysteresis } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
 
   let {
     items = [],
@@ -79,6 +80,8 @@
   // containerEl = 最外层根容器（block，宽度随父）。RO 观测它，clientWidth 当 containerSize。
   // 内层可见层 .cd-overflow-list__visible 是 flex + overflow:hidden，其 border-box 不随父宽
   // 变化上报 RO（bug 根因），故几何测量改用根容器。
+  const loc = useLocale();
+
   let containerEl = $state<HTMLElement | null>(null); // 根容器，RO 观测对象 + containerSize 来源
   let visibleEl = $state<HTMLElement | null>(null); // 可见层（scroll 模式即滚动容器，scrollTo 目标）
   let measureEl = $state<HTMLElement | null>(null); // 离屏测量层容器
@@ -355,7 +358,7 @@
         <button
           type="button"
           class="cd-overflow-list__more"
-          aria-label={`显示其余 ${overflowCount} 项`}
+          aria-label={loc().t('OverflowList.moreAriaLabel', { count: overflowCount })}
         >
           +{overflowCount}
         </button>
@@ -374,7 +377,7 @@
         <button
           type="button"
           class="cd-overflow-list__more"
-          aria-label={`显示其余 ${overflowCount} 项`}
+          aria-label={loc().t('OverflowList.moreAriaLabel', { count: overflowCount })}
         >
           +{overflowCount}
         </button>

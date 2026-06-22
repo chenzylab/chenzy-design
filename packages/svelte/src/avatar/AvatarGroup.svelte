@@ -10,6 +10,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Avatar from './Avatar.svelte';
+  import { useLocale } from '../locale-provider/index.js';
   import {
     setAvatarGroupContext,
     type AvatarShape,
@@ -53,6 +54,8 @@
     children,
   }: Props = $props();
 
+  const loc = useLocale();
+
   // share group config with descendant Avatars across the context boundary
   setAvatarGroupContext({
     getShape: () => shape,
@@ -84,10 +87,10 @@
       <span class="cd-avatar-group__item">
         {#if onMore}
           <button type="button" class="cd-avatar-group__more-btn" onclick={onMore}>
-            <Avatar color="grey" alt={`还有 ${restCount} 个`}>+{restCount}</Avatar>
+            <Avatar color="grey" alt={loc().t('Avatar.moreAlt', { count: restCount })}>+{restCount}</Avatar>
           </button>
         {:else}
-          <Avatar color="grey" alt={`还有 ${restCount} 个`}>+{restCount}</Avatar>
+          <Avatar color="grey" alt={loc().t('Avatar.moreAlt', { count: restCount })}>+{restCount}</Avatar>
         {/if}
       </span>
     {/if}
