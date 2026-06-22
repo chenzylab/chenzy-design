@@ -43,6 +43,12 @@
       v: boolean,
       detail?: { value: boolean; nativeValue: NativeValue; event: Event },
     ) => void;
+    /** 获得焦点。 */
+    onFocus?: (event: FocusEvent) => void;
+    /** 失去焦点。 */
+    onBlur?: (event: FocusEvent) => void;
+    /** 键盘按下（可用于自定义快捷键扩展）。 */
+    onKeydown?: (event: KeyboardEvent) => void;
   }
 
   let {
@@ -62,6 +68,9 @@
     announceOnChange = false,
     autofocus = false,
     onChange,
+    onFocus,
+    onBlur,
+    onKeydown,
   }: Props = $props();
 
   const loc = useLocale();
@@ -137,6 +146,9 @@
   aria-invalid={status === 'error' || undefined}
   disabled={disabled || loading}
   onclick={toggle}
+  onfocus={onFocus}
+  onblur={onBlur}
+  onkeydown={onKeydown}
 >
   {#if name}<input type="hidden" {name} value={submitValue} {required} />{/if}
   {#if activeChildren !== undefined}
