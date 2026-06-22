@@ -30,6 +30,14 @@ export const meta = {
     { name: 'lazyRender', type: 'boolean', default: 'false', desc: '首次展开后才渲染内容' },
     { name: 'keepDOM', type: 'boolean', default: 'true', desc: '展开过的内容保留 DOM' },
     { name: 'onChange', type: '(keys: string[]) => void', default: 'undefined' },
+    { name: 'onExpand', type: '(detail: { key: string }) => void', default: 'undefined', desc: '某面板被展开后触发' },
+    { name: 'onCollapse', type: '(detail: { key: string }) => void', default: 'undefined', desc: '某面板被收起后触发' },
+    {
+      name: 'onHeaderClick',
+      type: '(detail: { key: string; event: MouseEvent }) => void',
+      default: 'undefined',
+      desc: 'Header 被点击触发（disabled 拦截前发出，可用于埋点）',
+    },
     {
       name: 'children',
       type: 'Snippet<[{ key: string }]> | Snippet',

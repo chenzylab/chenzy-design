@@ -16,6 +16,11 @@ export interface CollapseContext {
   shouldRender: (key: string) => boolean;
   /** 点击 header 切换展开态；panelDisabled 为该面板自身 disabled。 */
   toggle: (key: string, panelDisabled?: boolean) => void;
+  /**
+   * Header 点击入口：先发 on:headerClick（埋点，disabled 拦截前），再 toggle。
+   * 声明式 <Collapse.Panel> 的 header onclick 应调此，保证 headerClick 事件统一从父发出。
+   */
+  headerClick: (event: MouseEvent, key: string, panelDisabled?: boolean) => void;
   /** 父级整体 disabled。 */
   getDisabled: () => boolean;
   getSize: () => CollapseSize;
