@@ -39,6 +39,12 @@
     /** 展开过的面板内容保留 DOM（收起后不卸载），与 lazyRender 配合 */
     keepDOM?: boolean;
     onChange?: (keys: string[]) => void;
+    /** 某面板被展开后触发（spec §4：on:expand）。 */
+    onExpand?: (detail: { key: string }) => void;
+    /** 某面板被收起后触发（spec §4：on:collapse）。 */
+    onCollapse?: (detail: { key: string }) => void;
+    /** Header 被点击时触发（spec §4：on:headerClick，在 disabled 拦截前发出，可用于埋点）。 */
+    onHeaderClick?: (detail: { key: string; event: MouseEvent }) => void;
     /**
      * 数据驱动模式：按 key 渲染面板内容 Snippet<[{ key }]>。
      * 声明式模式（不传 panels）：内嵌 <Collapse.Panel> 列表，普通 Snippet。
@@ -59,6 +65,9 @@
     lazyRender = false,
     keepDOM = true,
     onChange,
+    onExpand,
+    onCollapse,
+    onHeaderClick,
     children,
   }: Props = $props();
 
@@ -125,6 +134,16 @@
       for (const k of nextArr) innerKeys.add(k);
     }
     onChange?.(nextArr);
+    // spec §4：展开/收起后分别发出 on:expand / on:collapse（key 级语义事件）。
+    if (isOpen) onCollapse?.({ key });
+    else onExpand?.({ key });
+  }
+
+  // spec §4 on:headerClick：Header 被点击即发出（在 disabled 拦截前，可用于埋点），
+  // 随后再走 toggle（disabled / panelDisabled 在 toggle 内拦截，不影响本事件发出）。
+  function headerClick(event: MouseEvent, key: string, panelDisabled?: boolean) {
+    onHeaderClick?.({ key, event });
+    toggle(key, panelDisabled);
   }
 
   const cls = $derived(
@@ -148,6 +167,7 @@
     isActive,
     shouldRender,
     toggle,
+    headerClick,
     getDisabled: () => disabled,
     getSize: () => size,
     getIconPosition: () => expandIconPosition,
@@ -172,7 +192,7 @@
         aria-expanded={active}
         aria-controls={regionId}
         disabled={itemDisabled || undefined}
-        onclick={() => toggle(panel.key, panel.disabled)}
+        onclick={(e) => headerClick(e, panel.key, panel.disabled)}
       >
         <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
           <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">

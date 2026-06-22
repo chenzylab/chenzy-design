@@ -54,6 +54,12 @@ export const meta = {
     { name: 'onChange', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onTabClose', type: '(key: string|number) => void', default: 'undefined' },
     {
+      name: 'onTabClick',
+      type: '(key: string|number, event: MouseEvent) => void',
+      default: 'undefined',
+      desc: '标签被点击触发（含已选中标签，未必触发 onChange；disabled 拦截前发出，可用于埋点）',
+    },
+    {
       name: 'onAdd',
       type: '() => void',
       default: 'undefined',

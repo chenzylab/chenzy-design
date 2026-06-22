@@ -44,7 +44,7 @@
     aria-expanded={active}
     aria-controls={regionId}
     disabled={itemDisabled || undefined}
-    onclick={() => ctx?.toggle(itemKey, disabled)}
+    onclick={(e) => ctx?.headerClick(e, itemKey, disabled)}
   >
     <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
       <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">

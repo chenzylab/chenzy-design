@@ -62,6 +62,11 @@
     addable?: boolean;
     onChange?: (key: TabKey) => void;
     onTabClose?: (key: TabKey) => void;
+    /**
+     * 标签被点击回调（spec §4：on:tabClick）。含已选中标签（未必触发 onChange），
+     * 在 disabled 拦截前发出，可用于埋点。
+     */
+    onTabClick?: (key: TabKey, event: MouseEvent) => void;
     /** addable=true 时点击「+」按钮回调（红线 #1：组件内部不改 tabList） */
     onAdd?: () => void;
     /**
@@ -90,6 +95,7 @@
     addable = false,
     onChange,
     onTabClose,
+    onTabClick,
     onAdd,
     renderTabBar,
     children,
@@ -218,9 +224,16 @@
     return item.closable ?? closable;
   }
 
-  function onTabClick(item: TabItem) {
+  // 内部激活：仅切换激活态（disabled 拦截），不发 on:tabClick（无原始事件来源）。
+  function activateTab(item: TabItem) {
     if (item.disabled) return;
     setActive(item.itemKey);
+  }
+
+  // 标签按钮点击：先发 spec §4 on:tabClick（含已选中、disabled 拦截前，可埋点），再激活。
+  function handleTabClick(event: MouseEvent, item: TabItem) {
+    onTabClick?.(item.itemKey, event);
+    activateTab(item);
   }
 
   function closeTab(e: MouseEvent, item: TabItem) {
@@ -515,7 +528,8 @@
 
   function onMoreSelect(key: string | number): void {
     const item = tabList.find((t) => t.itemKey === key);
-    if (item) onTabClick(item);
+    // 「更多」下拉项选择无原始 MouseEvent，仅激活（不发 on:tabClick）。
+    if (item) activateTab(item);
   }
 
   const cls = $derived(
@@ -551,7 +565,7 @@
       aria-controls={panelId(item.itemKey)}
       tabindex={selected ? 0 : -1}
       disabled={item.disabled ?? false}
-      onclick={() => onTabClick(item)}
+      onclick={(e) => handleTabClick(e, item)}
       onkeydown={(e) => onTabKeydown(e, item)}
     >
       {item.tab}
