@@ -23,6 +23,9 @@ export const meta = {
     { name: 'announceOnChange', type: 'boolean', default: 'false', desc: '切换后用 live region 播报新状态' },
     { name: 'autofocus', type: 'boolean', default: 'false', desc: '挂载后自动聚焦' },
     { name: 'onChange', type: '(v: boolean, detail?: { value: boolean; nativeValue: string|number|boolean; event: Event }) => void', default: 'undefined' },
+    { name: 'onFocus', type: '(event: FocusEvent) => void', default: 'undefined', desc: '获得焦点' },
+    { name: 'onBlur', type: '(event: FocusEvent) => void', default: 'undefined', desc: '失去焦点' },
+    { name: 'onKeydown', type: '(event: KeyboardEvent) => void', default: 'undefined', desc: '键盘按下（自定义快捷键扩展）' },
   ],
   i18nKeys: [
     'Switch.on',

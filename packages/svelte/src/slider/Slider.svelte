@@ -43,6 +43,14 @@
     id?: string;
     ariaLabel?: string;
     onChange?: (v: SliderValue) => void;
+    /** 拖拽结束（pointerup）或键盘操作落定时触发，适合做请求节流。 */
+    onChangeComplete?: (v: SliderValue) => void;
+    /** 与 change 同步的低级输入信号（拖动中每次值变化实时触发，表单绑定用）。 */
+    onInput?: (v: SliderValue) => void;
+    /** 手柄获得焦点，附带手柄索引（0/1）。 */
+    onFocus?: (detail: { index: number }) => void;
+    /** 手柄失焦，附带手柄索引（0/1）。 */
+    onBlur?: (detail: { index: number }) => void;
   }
 
   let {
@@ -71,6 +79,10 @@
     id,
     ariaLabel,
     onChange,
+    onChangeComplete,
+    onInput,
+    onFocus,
+    onBlur,
   }: Props = $props();
 
   const isControlled = $derived(value !== undefined);
@@ -141,10 +153,15 @@
     return ((n - min) / (max - min)) * 100;
   }
 
-  function commit(next: SliderValue) {
+  function commit(next: SliderValue, complete = false) {
     // Controlled: never write the prop; propagate only via onChange.
     if (!isControlled) inner = next;
     onChange?.(next);
+    // onInput: low-level input signal, kept in sync with change.
+    onInput?.(next);
+    // onChangeComplete: only when the interaction settles (pointerup / keyboard),
+    // for request throttling on the consumer side.
+    if (complete) onChangeComplete?.(next);
   }
 
   // Build the next value for a given handle index, keeping range handles ordered.
@@ -194,7 +211,11 @@
 
   function onPointerMove(e: PointerEvent) {
     const raw = rawFromClient(e.clientX, e.clientY);
-    dragValue = withHandle(activeIndex, raw);
+    const next = withHandle(activeIndex, raw);
+    // Fire onInput on every live value change during the drag; only emit when the
+    // value actually moved to avoid spamming identical values per pixel.
+    if (!sameValue(next, dragValue)) onInput?.(next);
+    dragValue = next;
   }
 
   function onPointerUp() {
@@ -203,9 +224,18 @@
     if (dragValue !== null) {
       const finalValue = dragValue;
       dragValue = null;
-      commit(finalValue);
+      // Drag settled: emit change + changeComplete (onInput already fired live).
+      if (!isControlled) inner = finalValue;
+      onChange?.(finalValue);
+      onChangeComplete?.(finalValue);
     }
     railRect = null;
+  }
+
+  function sameValue(a: SliderValue, b: SliderValue | null): boolean {
+    if (b === null) return false;
+    if (Array.isArray(a) && Array.isArray(b)) return a[0] === b[0] && a[1] === b[1];
+    return a === b;
   }
 
   function beginDrag(index: number, e: PointerEvent) {
@@ -261,7 +291,8 @@
         return;
     }
     e.preventDefault();
-    commit(withHandle(index, next));
+    // Keyboard step settles immediately: change + input + changeComplete.
+    commit(withHandle(index, next), true);
   }
 
   // Track geometry (percent) for the filled segment.
@@ -385,8 +416,14 @@
         onkeydown={(e) => handleKeydown(index, e)}
         onpointerenter={() => (hoverIndex = index)}
         onpointerleave={() => (hoverIndex = null)}
-        onfocus={() => (focusIndex = index)}
-        onblur={() => (focusIndex = null)}
+        onfocus={() => {
+          focusIndex = index;
+          onFocus?.({ index });
+        }}
+        onblur={() => {
+          focusIndex = null;
+          onBlur?.({ index });
+        }}
       >
         {#if tipShown(index)}
           <span class="cd-slider__tip" role="tooltip" aria-hidden="true">{tipText(index)}</span>
