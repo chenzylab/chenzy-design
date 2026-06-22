@@ -8,16 +8,19 @@
   maxRange: 起止跨度上限（天）。选定起始后，超出 maxRange 天的日期置灰禁用（daysBetween 纯函数判定，红线 #2）。
 -->
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack, tick } from 'svelte';
   import {
     useId,
     useDismiss,
+    useFocusTrap,
     isSameDay,
     startOfDay,
     addMonths,
     getMonthGrid,
     weekdayOrder,
+    gridFocusMove,
     daysBetween,
+    type GridFocusKey,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -81,6 +84,9 @@
 
   const loc = useLocale();
   const dialogId = useId('cd-range-picker-panel');
+  // 左右两个日期网格容器 id（aria-activedescendant 指向其中的 cell id 前缀）
+  const leftGridId = useId('cd-range-picker-grid-l');
+  const rightGridId = useId('cd-range-picker-grid-r');
 
   function normPair(v: RangeValue | null | undefined): RangeValue {
     if (!v) return [null, null];
@@ -123,12 +129,17 @@
 
   // --- 面板游标月份 ---
   let cursor = $state(untrack(() => startOfDay(normPair(defaultValue)[0] ?? new Date())));
+  // 键盘高亮日 (网格 roving 焦点；aria-activedescendant 指向它)
+  let highlight = $state<Date | null>(null);
   $effect(() => {
     if (isOpen) {
       cursor = startOfDay(startVal ?? new Date());
       phase = 'start';
       pendingStart = null;
       previewEnd = null;
+      highlight = startOfDay(startVal ?? new Date());
+    } else {
+      highlight = null;
     }
   });
 
@@ -138,6 +149,7 @@
   );
   const headerFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
+  const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 
   const startText = $derived(
     startVal ? triggerFormat.format(startVal) : (startPlaceholder ?? loc().t('DatePicker.startPlaceholder')),
@@ -152,8 +164,17 @@
   const weekdayNames = $derived(
     weekdayOrder(weekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
   );
+  const weekdayLongNames = $derived(
+    weekdayOrder(weekStart).map((dow) => weekdayLongFormat.format(new Date(2023, 0, 1 + dow))),
+  );
   const leftGrid = $derived(getMonthGrid(cursor, weekStart));
   const rightGrid = $derived(getMonthGrid(rightCursor, weekStart));
+  // 6×7 行结构 (role=row / gridcell)。getMonthGrid 固定返回 42 格。
+  const leftRows = $derived(Array.from({ length: 6 }, (_, r) => leftGrid.slice(r * 7, r * 7 + 7)));
+  const rightRows = $derived(Array.from({ length: 6 }, (_, r) => rightGrid.slice(r * 7, r * 7 + 7)));
+  function cellId(prefix: string, date: Date): string {
+    return `${prefix}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
   const showClear = $derived(clearable && !disabled && (startVal !== null || endVal !== null));
 
   // 整体左右翻一个月（左面板 −1 / 右面板 +1 联动，两面板始终相邻）
@@ -236,6 +257,70 @@
     onClear?.({});
   }
 
+  // 高亮所在面板：在左面板月份则左，否则右（决定 aria-activedescendant 落哪个网格）
+  const highlightInLeft = $derived(
+    !!highlight &&
+      highlight.getFullYear() === cursor.getFullYear() &&
+      highlight.getMonth() === cursor.getMonth(),
+  );
+  const leftActiveId = $derived(
+    highlight && highlightInLeft ? cellId(leftGridId, highlight) : undefined,
+  );
+  const rightActiveId = $derived(
+    highlight && !highlightInLeft ? cellId(rightGridId, highlight) : undefined,
+  );
+
+  // 把高亮移到 next，跨出双面板可见范围时整体翻页（cursor=左面板月份）
+  function setHighlight(next: Date) {
+    highlight = startOfDay(next);
+    // 双面板显示 cursor 月 + cursor+1 月；高亮落在其中一个则不翻页
+    const inLeft = next.getFullYear() === cursor.getFullYear() && next.getMonth() === cursor.getMonth();
+    const inRight =
+      next.getFullYear() === rightCursor.getFullYear() && next.getMonth() === rightCursor.getMonth();
+    if (!inLeft && !inRight) {
+      setCursor(startOfDay(new Date(next.getFullYear(), next.getMonth(), 1)));
+    }
+  }
+
+  const GRID_NAV_KEYS = new Set<string>([
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'PageUp',
+    'PageDown',
+    'Home',
+    'End',
+  ]);
+
+  // 日期网格键盘导航 (WAI-ARIA grid，红线 #2：方向用纯 gridFocusMove)
+  function onGridKeydown(e: KeyboardEvent) {
+    const key = e.key;
+    if (key === 'Enter' || key === ' ') {
+      e.preventDefault();
+      if (highlight) selectDate(highlight);
+      return;
+    }
+    if (key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
+    const base = highlight ?? today;
+    if (e.shiftKey && (key === 'PageUp' || key === 'PageDown')) {
+      e.preventDefault();
+      setHighlight(addMonths(base, key === 'PageUp' ? -12 : 12));
+      return;
+    }
+    if (!GRID_NAV_KEYS.has(key)) return;
+    e.preventDefault();
+    const next = gridFocusMove(base, key as GridFocusKey, 'month', weekStart);
+    if (next) {
+      setHighlight(next);
+      if (phase === 'end' && !isCellDisabled(next)) previewEnd = startOfDay(next);
+    }
+  }
+
   function onTriggerKeydown(e: KeyboardEvent) {
     if (disabled) return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
@@ -249,6 +334,9 @@
 
   // --- useDismiss (红线 #3) ---
   let rootEl = $state<HTMLDivElement | null>(null);
+  let panelEl = $state<HTMLDivElement | null>(null);
+  let leftGridEl = $state<HTMLDivElement | null>(null);
+  let rightGridEl = $state<HTMLDivElement | null>(null);
   $effect(() => {
     if (!isOpen || !rootEl) return;
     return useDismiss(rootEl, {
@@ -256,6 +344,18 @@
       escape: true,
       outsideClick: true,
     });
+  });
+
+  // --- focus trap (红线 #3): 困住 Tab、关闭归还焦点；进场落焦高亮所在网格 ---
+  $effect(() => {
+    if (!isOpen || !panelEl) return;
+    const trap = useFocusTrap(panelEl, { trapTab: true, returnFocus: true });
+    trap.activate();
+    void tick().then(() => {
+      const target = highlightInLeft ? leftGridEl : rightGridEl;
+      target?.focus();
+    });
+    return () => trap.deactivate();
   });
 
   const cls = $derived(
@@ -308,7 +408,7 @@
   </div>
 
   {#if isOpen}
-    <div class="cd-range-picker__panel" id={dialogId} role="dialog" aria-label={loc().t('DatePicker.rangeTriggerLabel')} tabindex="-1">
+    <div bind:this={panelEl} class="cd-range-picker__panel" id={dialogId} role="dialog" aria-modal="false" aria-label={loc().t('DatePicker.rangeTriggerLabel')} tabindex="-1">
       <div class="cd-range-picker__panels">
         <!-- 左面板 -->
         <div class="cd-range-picker__month">
@@ -322,34 +422,50 @@
             <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
           </div>
 
-          <div class="cd-range-picker__weekdays" aria-hidden="true">
-            {#each weekdayNames as name, i (i)}
-              <span class="cd-range-picker__weekday">{name}</span>
-            {/each}
-          </div>
-
-          <div class="cd-range-picker__grid" role="grid" aria-label={leftHeaderText}>
-            {#each leftGrid as cell (cell.date.getTime())}
-              {@const edge = isEdge(cell.date)}
-              {@const within = inRange(cell.date)}
-              {@const isToday = isSameDay(cell.date, today)}
-              {@const isDisabled = isCellDisabled(cell.date)}
-              <button
-                type="button"
-                class="cd-range-picker__cell"
-                class:cd-range-picker__cell--muted={!cell.inMonth}
-                class:cd-range-picker__cell--edge={edge}
-                class:cd-range-picker__cell--in-range={within}
-                class:cd-range-picker__cell--today={isToday}
-                role="gridcell"
-                aria-selected={edge}
-                aria-disabled={isDisabled || undefined}
-                disabled={isDisabled}
-                onclick={() => selectDate(cell.date)}
-                onpointerenter={() => onCellHover(cell.date)}
-              >
-                {cell.date.getDate()}
-              </button>
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          <div
+            bind:this={leftGridEl}
+            class="cd-range-picker__grid"
+            role="grid"
+            tabindex="0"
+            aria-label={leftHeaderText}
+            aria-activedescendant={leftActiveId}
+            onkeydown={onGridKeydown}
+          >
+            <div class="cd-range-picker__row cd-range-picker__row--head" role="row">
+              {#each weekdayNames as name, i (i)}
+                <span class="cd-range-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>{name}</span>
+              {/each}
+            </div>
+            {#each leftRows as row, wi (wi)}
+              <div class="cd-range-picker__row" role="row">
+                {#each row as cell (cell.date.getTime())}
+                  {@const edge = isEdge(cell.date)}
+                  {@const within = inRange(cell.date)}
+                  {@const isToday = isSameDay(cell.date, today)}
+                  {@const isHighlight = isSameDay(cell.date, highlight)}
+                  {@const isDisabled = isCellDisabled(cell.date)}
+                  <button
+                    type="button"
+                    id={cellId(leftGridId, cell.date)}
+                    class="cd-range-picker__cell"
+                    class:cd-range-picker__cell--muted={!cell.inMonth}
+                    class:cd-range-picker__cell--edge={edge}
+                    class:cd-range-picker__cell--in-range={within}
+                    class:cd-range-picker__cell--today={isToday}
+                    class:cd-range-picker__cell--highlight={isHighlight}
+                    role="gridcell"
+                    aria-selected={edge}
+                    aria-disabled={isDisabled || undefined}
+                    disabled={isDisabled}
+                    tabindex={-1}
+                    onclick={() => selectDate(cell.date)}
+                    onpointerenter={() => onCellHover(cell.date)}
+                  >
+                    {cell.date.getDate()}
+                  </button>
+                {/each}
+              </div>
             {/each}
           </div>
         </div>
@@ -366,34 +482,50 @@
             </button>
           </div>
 
-          <div class="cd-range-picker__weekdays" aria-hidden="true">
-            {#each weekdayNames as name, i (i)}
-              <span class="cd-range-picker__weekday">{name}</span>
-            {/each}
-          </div>
-
-          <div class="cd-range-picker__grid" role="grid" aria-label={rightHeaderText}>
-            {#each rightGrid as cell (cell.date.getTime())}
-              {@const edge = isEdge(cell.date)}
-              {@const within = inRange(cell.date)}
-              {@const isToday = isSameDay(cell.date, today)}
-              {@const isDisabled = isCellDisabled(cell.date)}
-              <button
-                type="button"
-                class="cd-range-picker__cell"
-                class:cd-range-picker__cell--muted={!cell.inMonth}
-                class:cd-range-picker__cell--edge={edge}
-                class:cd-range-picker__cell--in-range={within}
-                class:cd-range-picker__cell--today={isToday}
-                role="gridcell"
-                aria-selected={edge}
-                aria-disabled={isDisabled || undefined}
-                disabled={isDisabled}
-                onclick={() => selectDate(cell.date)}
-                onpointerenter={() => onCellHover(cell.date)}
-              >
-                {cell.date.getDate()}
-              </button>
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          <div
+            bind:this={rightGridEl}
+            class="cd-range-picker__grid"
+            role="grid"
+            tabindex="0"
+            aria-label={rightHeaderText}
+            aria-activedescendant={rightActiveId}
+            onkeydown={onGridKeydown}
+          >
+            <div class="cd-range-picker__row cd-range-picker__row--head" role="row">
+              {#each weekdayNames as name, i (i)}
+                <span class="cd-range-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>{name}</span>
+              {/each}
+            </div>
+            {#each rightRows as row, wi (wi)}
+              <div class="cd-range-picker__row" role="row">
+                {#each row as cell (cell.date.getTime())}
+                  {@const edge = isEdge(cell.date)}
+                  {@const within = inRange(cell.date)}
+                  {@const isToday = isSameDay(cell.date, today)}
+                  {@const isHighlight = isSameDay(cell.date, highlight)}
+                  {@const isDisabled = isCellDisabled(cell.date)}
+                  <button
+                    type="button"
+                    id={cellId(rightGridId, cell.date)}
+                    class="cd-range-picker__cell"
+                    class:cd-range-picker__cell--muted={!cell.inMonth}
+                    class:cd-range-picker__cell--edge={edge}
+                    class:cd-range-picker__cell--in-range={within}
+                    class:cd-range-picker__cell--today={isToday}
+                    class:cd-range-picker__cell--highlight={isHighlight}
+                    role="gridcell"
+                    aria-selected={edge}
+                    aria-disabled={isDisabled || undefined}
+                    disabled={isDisabled}
+                    tabindex={-1}
+                    onclick={() => selectDate(cell.date)}
+                    onpointerenter={() => onCellHover(cell.date)}
+                  >
+                    {cell.date.getDate()}
+                  </button>
+                {/each}
+              </div>
             {/each}
           </div>
         </div>
@@ -563,8 +695,15 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-range-picker__weekdays,
   .cd-range-picker__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cd-range-picker__grid:focus-visible {
+    outline: none;
+  }
+  .cd-range-picker__row {
     display: grid;
     grid-template-columns: repeat(7, var(--cd-date-picker-cell-size));
     gap: 2px;
@@ -605,6 +744,10 @@
   }
   .cd-range-picker__cell--today {
     border-block-end: 2px solid var(--cd-date-picker-cell-bg-selected);
+  }
+  /* 键盘高亮格（aria-activedescendant 当前格）：浅底提示 */
+  .cd-range-picker__cell--highlight {
+    background: var(--cd-date-picker-cell-bg-hover);
   }
   /* 区间内：浅底连续条 */
   .cd-range-picker__cell--in-range {

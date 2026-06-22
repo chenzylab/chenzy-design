@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { tick } from 'svelte';
-  import { useId, useDismiss, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, formatDate, parseDateString } from '@chenzy-design/core';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -104,6 +104,8 @@
   const loc = useLocale();
 
   const dialogId = useId('cd-date-picker-panel');
+  // 日期网格容器 id（aria-activedescendant 指向其中的 cell id 前缀）
+  const gridId = useId('cd-date-picker-grid');
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
   const isValueControlled = $derived(value !== undefined);
@@ -176,6 +178,8 @@
   // 月格短名 (month 面板 12 格)
   const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
+  // 完整星期名 (columnheader aria-label，朗读用)
+  const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 
   // format 串优先用 core 纯函数序列化；否则沿用 Intl (向后兼容)
   const formattedValue = $derived(
@@ -256,8 +260,25 @@
   const weekdayNames = $derived(
     weekdayOrder(weekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
   );
+  // 完整星期名 (columnheader aria-label)，顺序与 weekdayNames 一致
+  const weekdayLongNames = $derived(
+    weekdayOrder(weekStart).map((dow) => weekdayLongFormat.format(new Date(2023, 0, 1 + dow))),
+  );
+
+  // 面板内键盘高亮日 (highlight 为本地 $state；aria-activedescendant 指向它)
+  let highlight = $state<Date | null>(null);
 
   const grid = $derived(getMonthGrid(cursor, weekStart));
+  // 6×7 行结构 (role=row / gridcell)。getMonthGrid 固定返回 42 格。
+  const weekRows = $derived(
+    Array.from({ length: 6 }, (_, r) => grid.slice(r * 7, r * 7 + 7)),
+  );
+  // 每个日期格的稳定 id（aria-activedescendant 指向当前高亮格）
+  function cellId(date: Date): string {
+    return `${gridId}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
+  // 当前高亮格 id（aria-activedescendant）
+  const activeCellId = $derived(highlight ? cellId(highlight) : undefined);
 
   const showClear = $derived(clearable && !disabled && current !== null);
 
@@ -470,9 +491,7 @@
     }
   }
 
-  // 面板内方向键: 移动游标高亮日 (highlight 为本地 $state)
-  let highlight = $state<Date | null>(null);
-
+  // 打开时把高亮对齐当前选中值或今天，关闭清空
   $effect(() => {
     if (isOpen) {
       highlight = startOfDay(current ?? today);
@@ -481,46 +500,55 @@
     }
   });
 
-  function moveHighlight(deltaDays: number) {
-    const base = highlight ?? today;
-    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + deltaDays);
+  // 把高亮移到 next，并让游标随动到 next 所在月份（跨月自动翻页）
+  function setHighlight(next: Date) {
     highlight = startOfDay(next);
     cursor = startOfDay(new Date(next.getFullYear(), next.getMonth(), 1));
   }
 
-  function onPanelKeydown(e: KeyboardEvent) {
-    switch (e.key) {
-      case 'ArrowLeft':
-        e.preventDefault();
-        moveHighlight(-1);
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        moveHighlight(1);
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        moveHighlight(-7);
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        moveHighlight(7);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlight) selectDate(highlight);
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setOpen(false);
-        break;
-      default:
-        break;
+  const GRID_NAV_KEYS = new Set<string>([
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'PageUp',
+    'PageDown',
+    'Home',
+    'End',
+  ]);
+
+  // 日期网格键盘导航 (WAI-ARIA grid，红线 #2：方向用纯 gridFocusMove 派生)
+  // 方向键 ∓1 天 / ∓1 周；Home/End 本周首末；PageUp/Down ∓1 月；Shift+PageUp/Down ∓1 年。
+  function onGridKeydown(e: KeyboardEvent) {
+    const key = e.key;
+    if (key === 'Enter' || key === ' ') {
+      e.preventDefault();
+      if (highlight) selectDate(highlight);
+      return;
     }
+    if (key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      return;
+    }
+    const base = highlight ?? today;
+    // Shift+PageUp/Down：切年（gridFocusMove 不含年级，组件层 ±12 月）
+    if (e.shiftKey && (key === 'PageUp' || key === 'PageDown')) {
+      e.preventDefault();
+      setHighlight(addMonths(base, key === 'PageUp' ? -12 : 12));
+      return;
+    }
+    if (!GRID_NAV_KEYS.has(key)) return;
+    e.preventDefault();
+    const next = gridFocusMove(base, key as GridFocusKey, 'month', weekStart);
+    if (next) setHighlight(next);
   }
 
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
+  // 浮层 + 日期网格容器引用 (focus trap / 进场落焦，红线 #3 命令式 + cleanup)
+  let panelEl = $state<HTMLDivElement | null>(null);
+  let gridEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -529,6 +557,18 @@
       escape: true,
       outsideClick: true,
     });
+  });
+
+  // --- focus trap (红线 #3): 打开时困住 Tab，关闭归还焦点到触发器；进场落焦到日期网格 ---
+  $effect(() => {
+    if (!isOpen || !panelEl) return;
+    const trap = useFocusTrap(panelEl, { trapTab: true, returnFocus: true });
+    trap.activate();
+    // aria-activedescendant 模型：焦点落在网格容器（非单格），用 tick 等渲染完成
+    void tick().then(() => {
+      if (gridEl) gridEl.focus();
+    });
+    return () => trap.deactivate();
   });
 
   const cls = $derived(
@@ -609,13 +649,14 @@
 
   {#if isOpen}
     <div
+      bind:this={panelEl}
       class="cd-date-picker__panel"
       class:cd-date-picker__panel--datetime={isDateTime}
       id={dialogId}
       role="dialog"
+      aria-modal="false"
       aria-label={loc().t('DatePicker.triggerLabel')}
       tabindex="-1"
-      onkeydown={onPanelKeydown}
     >
       <div class="cd-date-picker__layout" class:cd-date-picker__layout--presets={presets && presets.length > 0}>
       {#if presets && presets.length > 0}
@@ -708,34 +749,52 @@
           {/each}
         </div>
       {:else}
-        <div class="cd-date-picker__weekdays" aria-hidden="true">
-          {#each weekdayNames as name, i (i)}
-            <span class="cd-date-picker__weekday">{name}</span>
-          {/each}
-        </div>
-
-        <div class="cd-date-picker__grid" role="grid">
-          {#each grid as cell (cell.date.getTime())}
-            {@const isSelected = isSameDay(cell.date, current)}
-            {@const isToday = isSameDay(cell.date, today)}
-            {@const isHighlight = isSameDay(cell.date, highlight)}
-            {@const isDisabled = disabledDate?.(cell.date) ?? false}
-            <button
-              type="button"
-              class="cd-date-picker__cell"
-              class:cd-date-picker__cell--muted={!cell.inMonth}
-              class:cd-date-picker__cell--selected={isSelected}
-              class:cd-date-picker__cell--today={isToday}
-              class:cd-date-picker__cell--highlight={isHighlight}
-              role="gridcell"
-              aria-selected={isSelected}
-              aria-disabled={isDisabled || undefined}
-              disabled={isDisabled}
-              tabindex={isHighlight ? 0 : -1}
-              onclick={() => selectDate(cell.date)}
-            >
-              {cell.date.getDate()}
-            </button>
+        <!-- WAI-ARIA grid：role=grid 容器 (aria-activedescendant 指当前高亮格)
+             + 表头行 columnheader + 每周一行 row，格 role=gridcell。
+             焦点落在容器，方向键经 onGridKeydown → gridFocusMove 移动高亮 (红线 #2)。 -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+          bind:this={gridEl}
+          class="cd-date-picker__grid"
+          role="grid"
+          tabindex="0"
+          aria-activedescendant={activeCellId}
+          aria-label={headerText}
+          onkeydown={onGridKeydown}
+        >
+          <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
+            {#each weekdayNames as name, i (i)}
+              <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>
+                {name}
+              </span>
+            {/each}
+          </div>
+          {#each weekRows as row, wi (wi)}
+            <div class="cd-date-picker__row" role="row">
+              {#each row as cell (cell.date.getTime())}
+                {@const isSelected = isSameDay(cell.date, current)}
+                {@const isToday = isSameDay(cell.date, today)}
+                {@const isHighlight = isSameDay(cell.date, highlight)}
+                {@const isDisabled = disabledDate?.(cell.date) ?? false}
+                <button
+                  type="button"
+                  id={cellId(cell.date)}
+                  class="cd-date-picker__cell"
+                  class:cd-date-picker__cell--muted={!cell.inMonth}
+                  class:cd-date-picker__cell--selected={isSelected}
+                  class:cd-date-picker__cell--today={isToday}
+                  class:cd-date-picker__cell--highlight={isHighlight}
+                  role="gridcell"
+                  aria-selected={isSelected}
+                  aria-disabled={isDisabled || undefined}
+                  disabled={isDisabled}
+                  tabindex={-1}
+                  onclick={() => selectDate(cell.date)}
+                >
+                  {cell.date.getDate()}
+                </button>
+              {/each}
+            </div>
           {/each}
         </div>
       {/if}
@@ -1093,15 +1152,24 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-date-picker__weekdays,
+  /* 日期网格：role=grid 容器纵向堆行，每行 7 列 */
   .cd-date-picker__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .cd-date-picker__grid:focus-visible {
+    outline: none;
+  }
+  .cd-date-picker__row {
     display: grid;
     grid-template-columns: repeat(7, var(--cd-date-picker-cell-size));
     gap: 2px;
   }
-  /* month/year 面板：3 列大格 */
+  /* month/year 面板：3 列大格 (仍用 grid 容器) */
   .cd-date-picker__grid--month,
   .cd-date-picker__grid--year {
+    display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--cd-spacing-1);
     inline-size: calc(var(--cd-date-picker-cell-size) * 7 + 2px * 6);
