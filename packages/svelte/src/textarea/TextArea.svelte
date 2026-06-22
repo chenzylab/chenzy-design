@@ -52,6 +52,14 @@
     onChange?: (v: string) => void;
     onInput?: (v: string) => void;
     onClear?: () => void;
+    onFocus?: (e: FocusEvent) => void;
+    onBlur?: (e: FocusEvent) => void;
+    /** 按下 Enter（含修饰键信息，供「Ctrl+Enter 提交」场景）。composition 中不触发。 */
+    onEnterPress?: (payload: { value: string; event: KeyboardEvent }) => void;
+    /** autosize 高度变化（命令式重测后触发，高度无变化不触发）。 */
+    onResize?: (payload: { height: number }) => void;
+    onCompositionStart?: (e: CompositionEvent) => void;
+    onCompositionEnd?: (e: CompositionEvent) => void;
   }
 
   let {
@@ -82,6 +90,12 @@
     onChange,
     onInput,
     onClear,
+    onFocus,
+    onBlur,
+    onEnterPress,
+    onResize,
+    onCompositionStart,
+    onCompositionEnd,
   }: Props = $props();
 
   const loc = useLocale();
@@ -118,14 +132,24 @@
     if (!composing) onChange?.(next);
   }
 
-  function handleCompositionStart() {
+  function handleCompositionStart(e: CompositionEvent) {
     composing = true;
+    onCompositionStart?.(e);
   }
-  function handleCompositionEnd(e: Event & { currentTarget: HTMLTextAreaElement }) {
+  function handleCompositionEnd(
+    e: CompositionEvent & { currentTarget: HTMLTextAreaElement },
+  ) {
     composing = false;
     const next = e.currentTarget.value;
     setValue(next);
     onChange?.(next);
+    onCompositionEnd?.(e);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    // Textarea 的 Enter 默认换行；onEnterPress 透传事件，由调用方判断修饰键
+    // （Ctrl/Cmd+Enter 提交等）。composition 中（IME 选词回车）不触发。
+    if (e.key === 'Enter' && !composing) onEnterPress?.({ value: current, event: e });
   }
 
   function clear() {
@@ -150,6 +174,8 @@
 
   // --- autosize 命令式测量 (红线 #3)：current 变化时测 scrollHeight 设高度 ---
   let taEl = $state<HTMLTextAreaElement | null>(null);
+  // 上一次上报的 autosize 高度；仅在高度真正变化时触发 onResize（避免重复）。
+  let lastReportedHeight = -1;
 
   $effect(() => {
     if (!autosizeOn || !taEl) return;
@@ -176,6 +202,12 @@
     });
     el.style.height = `${result.height}px`;
     el.style.overflowY = result.overflow ? 'auto' : 'hidden';
+
+    // 高度变化时上报（{height}），首次测量也上报一次。
+    if (result.height !== lastReportedHeight) {
+      lastReportedHeight = result.height;
+      onResize?.({ height: result.height });
+    }
 
     return () => {
       el.style.height = prevHeight;
@@ -224,8 +256,11 @@
     aria-describedby={ariaDescribedby}
     aria-invalid={effectiveStatus === 'error' || undefined}
     oninput={handleInput}
+    onkeydown={handleKeydown}
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
+    onfocus={onFocus}
+    onblur={onBlur}
   ></textarea>
 
   {#if canClear}

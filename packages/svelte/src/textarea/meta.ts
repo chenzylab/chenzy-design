@@ -53,6 +53,32 @@ export const meta = {
     { name: 'onChange', type: '(v: string) => void', default: 'undefined' },
     { name: 'onInput', type: '(v: string) => void', default: 'undefined' },
     { name: 'onClear', type: '() => void', default: 'undefined', desc: '点击清除按钮' },
+    { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '获得焦点' },
+    { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '失去焦点' },
+    {
+      name: 'onEnterPress',
+      type: '(p: { value: string; event: KeyboardEvent }) => void',
+      default: 'undefined',
+      desc: '按下 Enter（含修饰键信息，供 Ctrl+Enter 提交）',
+    },
+    {
+      name: 'onResize',
+      type: '(p: { height: number }) => void',
+      default: 'undefined',
+      desc: 'autosize 高度变化',
+    },
+    {
+      name: 'onCompositionStart',
+      type: '(e: CompositionEvent) => void',
+      default: 'undefined',
+      desc: 'IME 开始',
+    },
+    {
+      name: 'onCompositionEnd',
+      type: '(e: CompositionEvent) => void',
+      default: 'undefined',
+      desc: 'IME 结束',
+    },
   ],
   slots: [
     { name: 'count', scope: '{ count, maxCount, overLimit }', desc: '自定义计数器渲染（覆盖内建）' },

@@ -27,7 +27,10 @@ export const meta = {
     { name: 'onChange', type: '(v: string) => void', default: 'undefined' },
     { name: 'onInput', type: '(v: string) => void', default: 'undefined' },
     { name: 'onClear', type: '() => void', default: 'undefined' },
-    { name: 'onEnter', type: '(e: KeyboardEvent) => void', default: 'undefined' },
+    { name: 'onEnterPress', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '回车按下（spec on:enterPress）' },
+    { name: 'onEnter', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '已废弃，改用 onEnterPress' },
+    { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
+    { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined' },
   ],
   a11y: {
     role: 'textbox',

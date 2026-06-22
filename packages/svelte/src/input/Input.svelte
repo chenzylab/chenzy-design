@@ -30,7 +30,11 @@
     onChange?: (v: string) => void;
     onInput?: (v: string) => void;
     onClear?: () => void;
+    /** 回车按下（spec §4 on:enterPress）。Enter 触发，composition 中不触发。 */
+    onEnterPress?: (e: KeyboardEvent) => void;
+    /** @deprecated 改用 onEnterPress（保留向后兼容）。 */
     onEnter?: (e: KeyboardEvent) => void;
+    onFocus?: (e: FocusEvent) => void;
     onBlur?: (e: FocusEvent) => void;
   }
 
@@ -55,7 +59,9 @@
     onChange,
     onInput,
     onClear,
+    onEnterPress,
     onEnter,
+    onFocus,
     onBlur,
   }: Props = $props();
 
@@ -108,7 +114,10 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !composing) onEnter?.(e);
+    if (e.key === 'Enter' && !composing) {
+      onEnterPress?.(e);
+      onEnter?.(e);
+    }
   }
 
   function clear() {
@@ -151,6 +160,7 @@
     onkeydown={handleKeydown}
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
+    onfocus={onFocus}
     onblur={onBlur}
   />
 
