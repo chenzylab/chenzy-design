@@ -26,6 +26,8 @@
     conduct,
     toggleCheck,
     resolveColumnWidth,
+    rovingKeyFromEvent,
+    nextRovingIndex,
     type TreeNodeData,
     type CascaderFlatPath,
   } from '@chenzy-design/core';
@@ -149,6 +151,15 @@
   }
 
   const listId = useId('cd-cascader-panel');
+  const flatListId = useId('cd-cascader-flat');
+  // 列项 / 扁平结果项 id 基（aria-activedescendant 指向当前键盘高亮项）。
+  const itemBaseId = useId('cd-cascader-item');
+  function colItemId(colIndex: number, value: Key): string {
+    return `${itemBaseId}-c${colIndex}-${String(value)}`;
+  }
+  function flatItemId(values: Key[]): string {
+    return `${itemBaseId}-f-${values.join('-')}`;
+  }
 
   // --- 纯函数: 按 key 路径取节点链 (用于回显 label) ---
   function findPath(data: CascaderNode[], valuePath: Key[]): CascaderNode[] {
@@ -222,6 +233,26 @@
   let activePath = $state<Key[]>(getInitialPath());
 
   const columns = $derived(columnsFor(treeData, activePath));
+
+  // --- 键盘 roving 高亮（aria-activedescendant 模型）：焦点留触发器，方向键移动高亮 ---
+  // kbCol：当前高亮所在列；kbValue：该列内高亮节点 value。render 不读 DOM（红线 #2）。
+  let kbCol = $state(0);
+  let kbValue = $state<Key | null>(null);
+  // 扁平搜索结果高亮索引。
+  let kbFlatIndex = $state(-1);
+  const activeDescId = $derived.by(() => {
+    if (searchActive) {
+      if (kbFlatIndex < 0 || kbFlatIndex >= filteredPaths.length) return undefined;
+      return flatItemId((filteredPaths[kbFlatIndex] as FlatPath).values);
+    }
+    if (kbValue === null) return undefined;
+    const col = columns[kbCol];
+    if (!col || !col.some((n) => n.value === kbValue)) return undefined;
+    return colItemId(kbCol, kbValue);
+  });
+  function isKbActive(colIndex: number, node: CascaderNode): boolean {
+    return !searchActive && kbCol === colIndex && kbValue === node.value;
+  }
 
   // --- 多选：合并树（含异步缓存）转 core TreeNodeData（以 value 为 key），跑 conduct ---
   function toTreeData(nodes: CascaderNode[]): TreeNodeData[] {
@@ -456,6 +487,14 @@
     if (next) {
       // 打开时同步 activePath 到当前选中路径
       activePath = currentValue.slice();
+      // 复位键盘高亮（首次方向键再起步）。
+      kbCol = 0;
+      kbValue = null;
+      kbFlatIndex = -1;
+    } else {
+      kbCol = 0;
+      kbValue = null;
+      kbFlatIndex = -1;
     }
   }
 
@@ -566,6 +605,128 @@
     activePath = [];
   }
 
+  // --- 键盘 roving 导航（aria-activedescendant 模型）---
+  // 列内 ↑↓ 移动、→ 进下一列、← 回上一列、Home/End 跳列首尾；
+  // Enter 在叶子（或 changeOnSelect 任意级）确认，多选 Space 切换勾选；焦点留触发器。
+  function colNodes(colIndex: number): CascaderNode[] {
+    return columns[colIndex] ?? [];
+  }
+  function indexInCol(colIndex: number, value: Key | null): number {
+    if (value === null) return -1;
+    return colNodes(colIndex).findIndex((n) => n.value === value);
+  }
+  function moveInCol(colIndex: number, intent: 'prev' | 'next' | 'first' | 'last') {
+    const nodes = colNodes(colIndex);
+    if (nodes.length === 0) return;
+    let i = nextRovingIndex(indexInCol(colIndex, kbValue), nodes.length, intent);
+    // 跳过禁用项，朝移动方向继续。
+    const step = intent === 'prev' || intent === 'last' ? -1 : 1;
+    while (i >= 0 && i < nodes.length && (nodes[i] as CascaderNode).disabled) i += step;
+    if (i < 0 || i >= nodes.length) return;
+    kbCol = colIndex;
+    kbValue = (nodes[i] as CascaderNode).value;
+  }
+  // 进入某列：高亮该列首个未禁用项（若该列已有 activePath 选中项则高亮它）。
+  function enterCol(colIndex: number) {
+    const nodes = colNodes(colIndex);
+    if (nodes.length === 0) return;
+    kbCol = colIndex;
+    const fromPath = activePath[colIndex];
+    if (fromPath !== undefined && nodes.some((n) => n.value === fromPath)) {
+      kbValue = fromPath;
+    } else {
+      kbValue = null;
+      moveInCol(colIndex, 'first');
+    }
+  }
+  function kbCurrentNode(): CascaderNode | undefined {
+    return colNodes(kbCol).find((n) => n.value === kbValue);
+  }
+
+  function onFlatKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    const count = filteredPaths.length;
+    if (count === 0) return;
+    const intent = rovingKeyFromEvent(e.key);
+    if (intent === 'prev' || intent === 'next' || intent === 'first' || intent === 'last') {
+      e.preventDefault();
+      let i = nextRovingIndex(kbFlatIndex, count, intent);
+      const step = intent === 'prev' || intent === 'last' ? -1 : 1;
+      while (i >= 0 && i < count && (filteredPaths[i] as FlatPath).disabled) i += step;
+      if (i >= 0 && i < count) kbFlatIndex = i;
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (kbFlatIndex >= 0 && kbFlatIndex < count) selectFlatPath(filteredPaths[kbFlatIndex] as FlatPath);
+    }
+  }
+
+  function onPanelKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    if (searchActive) {
+      onFlatKeydown(e);
+      return;
+    }
+    // 列模式：首次方向键从首列首项起步。
+    if (kbValue === null && rovingKeyFromEvent(e.key)) {
+      e.preventDefault();
+      enterCol(0);
+      return;
+    }
+    const node = kbCurrentNode();
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        moveInCol(kbCol, 'prev');
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        moveInCol(kbCol, 'next');
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveInCol(kbCol, 'first');
+        break;
+      case 'End':
+        e.preventDefault();
+        moveInCol(kbCol, 'last');
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        // 展开高亮节点的下一列并进入它。
+        if (node && canExpand(node)) {
+          selectNode(kbCol, node);
+          enterCol(kbCol + 1);
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (kbCol > 0) enterCol(kbCol - 1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (node) selectNode(kbCol, node);
+        break;
+      case ' ':
+        e.preventDefault();
+        if (node) {
+          if (multiple) toggleCheckNode(node);
+          else selectNode(kbCol, node);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
@@ -616,18 +777,26 @@
     aria-haspopup="listbox"
     aria-expanded={isOpen}
     aria-controls={listId}
+    aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
     aria-label={ariaLabel}
     aria-invalid={status === 'error' || undefined}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
     onkeydown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (!disabled) setOpen(true);
-      } else if (e.key === 'Escape') {
-        setOpen(false);
+      if (disabled) return;
+      if (!isOpen) {
+        // 关闭态：Enter/Space/Down 打开浮层。
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          setOpen(true);
+        }
+        return;
       }
+      // 打开态：搜索激活时由搜索框处理 roving，焦点不在触发器；
+      // 否则触发器（焦点宿主）驱动列 roving（aria-activedescendant 模型）。
+      if (!searchActive) onPanelKeydown(e);
+      else if (e.key === 'Escape') setOpen(false);
     }}
   >
     <span class="cd-cascader__content">
@@ -708,14 +877,19 @@
           <input
             class="cd-cascader__search-input"
             type="text"
+            role="combobox"
+            aria-expanded={searchActive}
+            aria-controls={flatListId}
+            aria-activedescendant={searchActive ? activeDescId : undefined}
             placeholder={loc().t('Cascader.searchPlaceholder')}
             aria-label={loc().t('Cascader.searchPlaceholder')}
             bind:value={searchValue}
+            onkeydown={onFlatKeydown}
           />
         </div>
       {/if}
       {#if searchActive}
-        <ul class="cd-cascader__flat" role="listbox">
+        <ul class="cd-cascader__flat" role="listbox" id={flatListId}>
           {#if filteredPaths.length === 0}
             {#if isEmptySnippet}
               <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
@@ -723,20 +897,18 @@
               <li class="cd-cascader__empty">{emptyText}</li>
             {/if}
           {:else}
-            {#each filteredPaths as p (p.values.join('/'))}
+            {#each filteredPaths as p, fi (p.values.join('/'))}
+              <!-- 键盘经搜索框 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
               <li
+                id={flatItemId(p.values)}
                 class="cd-cascader__option cd-cascader__flat-option"
+                class:cd-cascader__option--active={kbFlatIndex === fi}
                 role="option"
-                aria-selected={false}
+                aria-selected={kbFlatIndex === fi}
                 aria-disabled={p.disabled || undefined}
                 onclick={() => selectFlatPath(p)}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    selectFlatPath(p);
-                  }
-                }}
-                tabindex={p.disabled ? -1 : 0}
+                tabindex={-1}
               >
                 <span class="cd-cascader__option-label">
                   {#each highlightParts(p.labels.join(separator)) as part, i (i)}
@@ -763,22 +935,20 @@
             {/if}
           {/if}
           {#each column as node (node.value)}
+            <!-- 键盘经触发器 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
             <li
+              id={colItemId(colIndex, node.value)}
               class="cd-cascader__option"
               class:cd-cascader__option--active={isActiveAt(colIndex, node)}
+              class:cd-cascader__option--kbactive={isKbActive(colIndex, node)}
               class:cd-cascader__option--selected={isSelectedLeaf(colIndex, node)}
               role="option"
               aria-selected={isActiveAt(colIndex, node)}
               aria-disabled={node.disabled || undefined}
               onclick={() => selectNode(colIndex, node)}
               onpointerenter={() => hoverExpand(colIndex, node)}
-              onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  selectNode(colIndex, node);
-                }
-              }}
-              tabindex={node.disabled ? -1 : 0}
+              tabindex={-1}
             >
               {#if multiple}
                 {@const cs = nodeCheck(node)}
@@ -988,6 +1158,10 @@
   }
   .cd-cascader__option--active {
     background: var(--cd-tree-node-bg-active);
+  }
+  /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
+  .cd-cascader__option--kbactive {
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-cascader__option--selected {
     color: var(--cd-tree-node-color-selected);
