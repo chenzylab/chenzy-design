@@ -15,6 +15,12 @@ export {
   type BoundaryMode,
 } from './input-number.js';
 export { useFocusTrap, type FocusTrap } from './focus-trap.js';
+export {
+  useLiveAnnouncer,
+  __resetLiveAnnouncer,
+  type LiveAnnouncer,
+  type Politeness,
+} from './live-announcer.js';
 export { useDismiss, type DismissOptions, type DismissReason } from './dismiss.js';
 export { useScrollLock, __resetScrollLock } from './scroll-lock.js';
 export {

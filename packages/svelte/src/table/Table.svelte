@@ -33,6 +33,7 @@
     conductRows,
     toggleRowCheck,
     fixedRange,
+    useLiveAnnouncer,
     type RowKey,
     type SortState,
     type FlatRow,
@@ -143,6 +144,8 @@
   } = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：排序结果播报给屏幕阅读器（命令式写入在事件回调，红线 #3）。
+  const announcer = useLiveAnnouncer();
 
   // --- 键解析 ---
   const getKey = (record: T): RowKey =>
@@ -665,6 +668,25 @@
     if (!isSortControlled) innerSort = next;
     onSortChange?.(next);
     emitChange('sort', next);
+    announceSort(col, next);
+  }
+
+  // 排序变化播报：升/降序播 sortedAnnounce（含列名 + 方向），三态循环到 null 播 sortClearedAnnounce。
+  function announceSort(col: ColumnDef<T>, next: SortState) {
+    const column = columnLabel(col);
+    if (next.order) {
+      const order = loc().t(
+        next.order === 'ascend' ? 'Table.sortOrderAscend' : 'Table.sortOrderDescend',
+      );
+      announcer.announce(loc().t('Table.sortedAnnounce', { column, order }));
+    } else {
+      announcer.announce(loc().t('Table.sortClearedAnnounce', { column }));
+    }
+  }
+
+  // 列的可读名：title 为字符串时直接用，否则回退列 key（snippet/复杂 title 无文本可取）。
+  function columnLabel(col: ColumnDef<T>): string {
+    return typeof col.title === 'string' ? col.title : String(col.dataIndex ?? col.key ?? '');
   }
 
   function ariaSortFor(col: ColumnDef<T>, index: number): 'ascending' | 'descending' | 'none' {

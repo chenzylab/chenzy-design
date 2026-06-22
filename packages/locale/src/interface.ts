@@ -39,6 +39,10 @@ export interface Locale {
     pageSize: string;
     jumpTo: string;
     jumpToSuffix: string;
+    /** live-region 翻页播报，uses {page} and {count} */
+    pageChangeAnnounce: string;
+    /** live-region 每页条数变更播报，uses {size} and {page} */
+    pageSizeChangeAnnounce: string;
   };
   Table: {
     emptyText: string;
@@ -57,6 +61,14 @@ export interface Locale {
     filterReset: string;
     filterConfirm: string;
     resizeColumn: string;
+    /** live-region 排序播报，uses {column} and {order} */
+    sortedAnnounce: string;
+    /** live-region 取消排序播报，uses {column} */
+    sortClearedAnnounce: string;
+    /** 升序（用于 sortedAnnounce 的 {order}） */
+    sortOrderAscend: string;
+    /** 降序（用于 sortedAnnounce 的 {order}） */
+    sortOrderDescend: string;
   };
   Empty: {
     noData: string;

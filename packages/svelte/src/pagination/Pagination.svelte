@@ -15,6 +15,7 @@
     clampPageSize,
     parseJumpInput,
     pageRange,
+    useLiveAnnouncer,
     type PageCell as CorePageCell,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -85,6 +86,9 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：翻页 / pageSize 变更播报给屏幕阅读器。
+  // 命令式写入在事件回调里（非 render 期），符合红线 #3。
+  const announcer = useLiveAnnouncer();
 
   // --- pageSize 受控/非受控 (红线 #1)：不回写 prop ---
   const isSizeControlled = $derived(pageSize !== undefined);
@@ -128,6 +132,9 @@
     if (!isControlled && nextPage !== inner) inner = nextPage;
     onPageSizeChange?.(nextSize);
     onChange?.(nextPage, nextSize);
+    announcer.announce(
+      loc().t('Pagination.pageSizeChangeAnnounce', { size: nextSize, page: nextPage }),
+    );
   }
 
   // 快速跳页：解析输入，越界静默钳入 [1, pageCount]；非数字/空输入忽略。
@@ -167,6 +174,10 @@
     if (next === current) return;
     if (!isControlled) inner = next;
     onChange?.(next, currentSize);
+    // 用「即将生效」的 next/pageCount 播报（$derived 在同步回调内尚未重算；受控时本就不回写）。
+    announcer.announce(
+      loc().t('Pagination.pageChangeAnnounce', { page: next, count: pageCount }),
+    );
   }
 
   const totalText = $derived(loc().t('Pagination.total', { total: nf.format(total) }));

@@ -20,6 +20,8 @@ export const en_US: Locale = {
     pageSize: '{size} / page',
     jumpTo: 'Go to',
     jumpToSuffix: '',
+    pageChangeAnnounce: 'Page {page} of {count}',
+    pageSizeChangeAnnounce: '{size} per page, page {page}',
   },
   Table: {
     emptyText: 'No data',
@@ -36,6 +38,10 @@ export const en_US: Locale = {
     filterReset: 'Reset',
     filterConfirm: 'OK',
     resizeColumn: 'Drag to resize column',
+    sortedAnnounce: 'Sorted by {column}, {order}',
+    sortClearedAnnounce: 'Sorting cleared for {column}',
+    sortOrderAscend: 'ascending',
+    sortOrderDescend: 'descending',
   },
   Empty: {
     noData: 'No data',
