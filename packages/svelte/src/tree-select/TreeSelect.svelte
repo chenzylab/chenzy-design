@@ -26,6 +26,8 @@
     collectCheckedByStrategy,
     flattenVisible,
     fixedRange,
+    scrollOffsetForIndex,
+    rovingKeyFromEvent,
     type TreeNodeData,
     type FlatNode,
     type CheckedStrategy,
@@ -168,6 +170,11 @@
   const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
 
   const treeId = useId('cd-tree-select-panel');
+  // treeitem 行 id 基（aria-activedescendant 指向当前高亮行）。
+  const itemBaseId = useId('cd-tree-select-item');
+  function itemId(key: TreeKey): string {
+    return `${itemBaseId}-${String(key)}`;
+  }
 
   // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
   // 默认（全标准名）时直接返回原 treeData 引用，零额外开销；映射为纯 $derived（红线 #2），不写回（红线 #1）。
@@ -485,11 +492,9 @@
     return n;
   });
   const useVirtual = $derived(virtualized || totalNodeCount >= virtualizeThreshold);
-  // 可见扁平节点（仅虚拟化时计算，非虚拟化沿用递归 snippet 零额外开销）。
+  // 可见扁平节点：虚拟化用于视口切片，非虚拟化也用于键盘 roving 导航（红线 #2 纯派生）。
   const flat = $derived(
-    useVirtual
-      ? flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded)
-      : [],
+    flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded),
   );
   // 搜索时仅保留命中或祖先链上的行（与递归 snippet 的 nodeVisible 一致）。
   const visibleFlat = $derived.by<FlatNode[]>(() => {
@@ -497,6 +502,19 @@
     return flat.filter(
       (f) => filterResult.matched.has(f.node.key) || filterResult.expand.has(f.node.key),
     );
+  });
+
+  // --- roving 焦点：activeKey + 派生高亮（aria-activedescendant）；render 不读 DOM（红线 #2）---
+  let activeKey = $state<TreeKey | null>(null);
+  const activeDescId = $derived.by(() => {
+    if (activeKey === null) return undefined;
+    const exists = visibleFlat.some((f) => f.node.key === activeKey);
+    return exists ? itemId(activeKey) : undefined;
+  });
+
+  // 面板关闭时复位高亮，避免下次打开停在旧项。
+  $effect(() => {
+    if (!isOpen) activeKey = null;
   });
 
   const VIRTUAL_OVERSCAN = 4;
@@ -598,6 +616,117 @@
     }
   }
 
+  // --- 键盘 roving 导航（aria-activedescendant 模型）：焦点留 role=tree 容器，
+  //     方向键移动 activeKey 高亮，全部基于派生 visibleFlat 与 activeKey（红线 #2）---
+  function isRowDisabled(node: TreeNode): boolean {
+    return disabled || !!node.disabled;
+  }
+  function activeIndex(): number {
+    if (activeKey === null) return -1;
+    return visibleFlat.findIndex((f) => f.node.key === activeKey);
+  }
+  function moveNext() {
+    const cur = activeIndex();
+    let i = cur < 0 ? 0 : cur + 1;
+    while (i < visibleFlat.length && isRowDisabled((visibleFlat[i] as FlatNode).node as unknown as TreeNode)) i++;
+    if (i < visibleFlat.length) activeKey = (visibleFlat[i] as FlatNode).node.key;
+  }
+  function movePrev() {
+    const cur = activeIndex();
+    let i = cur < 0 ? visibleFlat.length - 1 : cur - 1;
+    while (i >= 0 && isRowDisabled((visibleFlat[i] as FlatNode).node as unknown as TreeNode)) i--;
+    if (i >= 0) activeKey = (visibleFlat[i] as FlatNode).node.key;
+  }
+  function moveFirst() {
+    let i = 0;
+    while (i < visibleFlat.length && isRowDisabled((visibleFlat[i] as FlatNode).node as unknown as TreeNode)) i++;
+    if (i < visibleFlat.length) activeKey = (visibleFlat[i] as FlatNode).node.key;
+  }
+  function moveLast() {
+    let i = visibleFlat.length - 1;
+    while (i >= 0 && isRowDisabled((visibleFlat[i] as FlatNode).node as unknown as TreeNode)) i--;
+    if (i >= 0) activeKey = (visibleFlat[i] as FlatNode).node.key;
+  }
+  function currentFlat(): FlatNode | undefined {
+    const i = activeIndex();
+    return i >= 0 ? visibleFlat[i] : undefined;
+  }
+
+  // 命令式滚到指定行索引使其落入视口（虚拟化时键盘移动 activeKey 后调用）。
+  function scrollIndexIntoView(index: number) {
+    const el = viewportEl;
+    if (!el || !useVirtual || index < 0) return;
+    const itemStart = index * rowHeight;
+    const top = el.scrollTop;
+    const bottom = top + el.clientHeight;
+    if (itemStart >= top && itemStart + rowHeight <= bottom) return;
+    const align = itemStart < top ? 'start' : 'end';
+    const target = scrollOffsetForIndex(itemStart, rowHeight, el.clientHeight, totalHeight, align);
+    el.scrollTop = target;
+    scrollTop = target;
+  }
+  function scrollActiveIntoView() {
+    if (!useVirtual || activeKey === null) return;
+    scrollIndexIntoView(visibleFlat.findIndex((f) => f.node.key === activeKey));
+  }
+
+  function onTreeKeydown(e: KeyboardEvent) {
+    if (disabled || visibleFlat.length === 0) return;
+    const intent = rovingKeyFromEvent(e.key);
+    // 首次方向键：从首项起步。
+    if (activeKey === null && intent) {
+      e.preventDefault();
+      moveFirst();
+      scrollActiveIntoView();
+      return;
+    }
+    const f = currentFlat();
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        moveNext();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        movePrev();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (f && isExpandable(f.node as unknown as TreeNode)) {
+          if (!isExpanded(f.node.key)) toggleExpand(f.node as unknown as TreeNode);
+          else moveNext();
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (f && isExpandable(f.node as unknown as TreeNode) && isExpanded(f.node.key)) {
+          toggleExpand(f.node as unknown as TreeNode);
+        } else if (f && f.parentKey !== null) {
+          activeKey = f.parentKey;
+        }
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveFirst();
+        break;
+      case 'End':
+        e.preventDefault();
+        moveLast();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (f) selectNode(f.node as unknown as TreeNode);
+        break;
+      case ' ':
+        e.preventDefault();
+        if (f) selectNode(f.node as unknown as TreeNode);
+        break;
+      default:
+        return;
+    }
+    scrollActiveIntoView();
+  }
+
   // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
   function scheduleSearch(q: string) {
@@ -651,16 +780,30 @@
   );
 </script>
 
-{#snippet nodeRow(node: TreeNode, level: number, posStyle: string | undefined)}
+{#snippet nodeRow(
+  node: TreeNode,
+  level: number,
+  posStyle: string | undefined,
+  setSize: number,
+  posInSet: number,
+)}
   {@const expandable = isExpandable(node)}
   {@const loading = loadingKeys.has(node.key)}
   {@const nodeOpen = expandable && isExpanded(node.key)}
   {@const cs = nodeCheckState(node)}
   {@const selected = multiple ? cs.checked : currentValue === node.key}
+  {@const active = activeKey === node.key}
+  <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
+    id={itemId(node.key)}
     class="cd-tree-select__node"
     class:cd-tree-select__node--selected={!multiple && selected}
+    class:cd-tree-select__node--active={active}
     role="treeitem"
+    aria-level={level + 1}
+    aria-setsize={setSize}
+    aria-posinset={posInSet}
     aria-selected={selected}
     aria-checked={multiple ? (cs.checked ? true : cs.half ? 'mixed' : false) : undefined}
     aria-expanded={expandable ? nodeOpen : undefined}
@@ -669,13 +812,7 @@
       .filter(Boolean)
       .join('; ')}
     onclick={() => selectNode(node)}
-    onkeydown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        selectNode(node);
-      }
-    }}
-    tabindex={node.disabled ? -1 : 0}
+    tabindex={-1}
   >
     {#if loading}
       <span class="cd-tree-select__expand cd-tree-select__expand--loading" aria-hidden="true">
@@ -743,10 +880,11 @@
 {/snippet}
 
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
-  {#each nodes as node (node.key)}
+  {@const setSize = nodes.length}
+  {#each nodes as node, i (node.key)}
     {#if nodeVisible(node.key)}
       {@const nodeOpen = isExpandable(node) && isExpanded(node.key)}
-      {@render nodeRow(node, level, undefined)}
+      {@render nodeRow(node, level, undefined, setSize, i + 1)}
       {#if nodeOpen}
         {@render treeNodes(node.children ?? [], level + 1)}
       {/if}
@@ -871,8 +1009,13 @@
         <div
           class="cd-tree-select__tree cd-tree-select__tree--virtual"
           role="tree"
+          aria-multiselectable={multiple || undefined}
+          aria-activedescendant={activeDescId}
+          aria-disabled={disabled || undefined}
+          tabindex={disabled ? -1 : 0}
           bind:this={viewportEl}
           style={`block-size:${height}px`}
+          onkeydown={onTreeKeydown}
         >
           {#if visibleFlat.length === 0}
             <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
@@ -880,16 +1023,26 @@
             <div class="cd-tree-select__spacer" style={`block-size:${totalHeight}px`}>
               {#each renderFlat as f, i (f.node.key)}
                 {@render nodeRow(
-                  f.node,
+                  f.node as unknown as TreeNode,
                   f.level,
                   `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); block-size:${rowHeight}px`,
+                  f.setSize,
+                  f.posInSet,
                 )}
               {/each}
             </div>
           {/if}
         </div>
       {:else}
-        <div class="cd-tree-select__tree" role="tree">
+        <div
+          class="cd-tree-select__tree"
+          role="tree"
+          aria-multiselectable={multiple || undefined}
+          aria-activedescendant={activeDescId}
+          aria-disabled={disabled || undefined}
+          tabindex={disabled ? -1 : 0}
+          onkeydown={onTreeKeydown}
+        >
           {@render treeNodes(mergedTree, 0)}
           {#if searchActive && filterResult.matched.size === 0}
             <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
@@ -1044,6 +1197,10 @@
   .cd-tree-select__node--selected {
     color: var(--cd-tree-node-color-selected);
     background: var(--cd-tree-node-bg-active);
+  }
+  /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
+  .cd-tree-select__node--active {
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-tree-select__node:focus-visible {
     outline: none;
