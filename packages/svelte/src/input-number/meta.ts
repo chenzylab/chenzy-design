@@ -41,6 +41,14 @@ export const meta = {
   events: [
     { name: 'change', payload: '{ value: number | null }', desc: '归一化后值变化（受控核心事件）' },
     { name: 'boundaryHit', payload: "{ boundary: 'min'|'max'; value: number }", desc: '触达/试图越过边界' },
+    {
+      name: 'step',
+      payload: "{ value: number; direction: 'up'|'down'; source: 'button'|'keyboard'|'wheel' }",
+      desc: '任一步进动作完成',
+    },
+    { name: 'focus', payload: 'FocusEvent', desc: '聚焦' },
+    { name: 'blur', payload: 'FocusEvent', desc: '失焦（已完成 commit 归一化）' },
+    { name: 'keydown', payload: 'KeyboardEvent', desc: '透传原生 keydown' },
   ],
   a11y: {
     role: 'spinbutton',

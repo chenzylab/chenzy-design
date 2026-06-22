@@ -67,6 +67,18 @@
     onChange?: (v: number | null) => void;
     /** 触达/试图越过边界 */
     onBoundaryHit?: (e: { boundary: 'min' | 'max'; value: number }) => void;
+    /** 任一步进动作完成（按钮 / 键盘 / 滚轮） */
+    onStep?: (e: {
+      value: number;
+      direction: 'up' | 'down';
+      source: 'button' | 'keyboard' | 'wheel';
+    }) => void;
+    /** 聚焦 */
+    onFocus?: (e: FocusEvent) => void;
+    /** 失焦（已完成 commit 归一化） */
+    onBlur?: (e: FocusEvent) => void;
+    /** 透传原生 keydown（便于扩展，如 Enter 提交表单） */
+    onKeydown?: (e: KeyboardEvent) => void;
   }
 
   let {
@@ -100,6 +112,10 @@
     parser,
     onChange,
     onBoundaryHit,
+    onStep,
+    onFocus,
+    onBlur,
+    onKeydown,
   }: Props = $props();
 
   const loc = useLocale();
@@ -189,11 +205,13 @@
     if (normalized !== current) commitValue(normalized);
   }
 
-  function handleBlur() {
+  function handleBlur(e: FocusEvent) {
     commitFromText();
+    // commit 归一化后再上报失焦（spec：blur 时已完成 commit）。
+    onBlur?.(e);
   }
 
-  function stepBy(dir: 1 | -1, large: boolean) {
+  function stepBy(dir: 1 | -1, large: boolean, source: 'button' | 'keyboard' | 'wheel') {
     if (disabled || readonly) return;
     const delta = (large ? effectiveShiftStep : step) * dir;
     const base = current ?? (Number.isFinite(min) ? min : 0);
@@ -202,6 +220,8 @@
     // strict 越界回滚：保持 current。
     if (next === null) return;
     if (next !== current) commitValue(next);
+    // 步进动作完成上报（即便钳制后值未变也算一次步进尝试，但仅在落到有效值时触发）。
+    onStep?.({ value: next, direction: dir === 1 ? 'up' : 'down', source });
   }
 
   // --- 长按连续增减：首延迟 400ms 后以 60ms 间隔重复，cleanup 清理（红线 #3）---
@@ -222,9 +242,9 @@
   function startHold(dir: 1 | -1, e: MouseEvent) {
     preventBlurSteal(e);
     if (disabled || readonly) return;
-    stepBy(dir, false);
+    stepBy(dir, false, 'button');
     holdTimer = setTimeout(() => {
-      holdInterval = setInterval(() => stepBy(dir, false), 60);
+      holdInterval = setInterval(() => stepBy(dir, false, 'button'), 60);
     }, 400);
   }
 
@@ -232,19 +252,21 @@
   $effect(() => stopHold);
 
   function handleKeydown(e: KeyboardEvent) {
+    // 始终透传原生 keydown（即便 keyboard 关闭/禁用，便于使用方扩展，如 Enter 提交表单）。
+    onKeydown?.(e);
     if (!keyboard || disabled || readonly) return;
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      stepBy(1, e.shiftKey);
+      stepBy(1, e.shiftKey, 'keyboard');
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      stepBy(-1, e.shiftKey);
+      stepBy(-1, e.shiftKey, 'keyboard');
     } else if (e.key === 'PageUp') {
       e.preventDefault();
-      stepBy(1, true);
+      stepBy(1, true, 'keyboard');
     } else if (e.key === 'PageDown') {
       e.preventDefault();
-      stepBy(-1, true);
+      stepBy(-1, true, 'keyboard');
     } else if (e.key === 'Enter') {
       commitFromText();
     }
@@ -270,7 +292,8 @@
       requestAnimationFrame(() => node.focus());
     }
 
-    function onFocus() {
+    function handleFocus(e: FocusEvent) {
+      onFocus?.(e);
       // 推迟到下一帧：浏览器在 focus 后才放置默认光标，立即 select 会被覆盖。
       if (selectOnFocus) requestAnimationFrame(() => node.select());
     }
@@ -280,15 +303,15 @@
       if (!mouseWheel || disabled || readonly) return;
       if (document.activeElement !== node) return;
       e.preventDefault();
-      stepBy(e.deltaY < 0 ? 1 : -1, e.shiftKey);
+      stepBy(e.deltaY < 0 ? 1 : -1, e.shiftKey, 'wheel');
     }
 
-    node.addEventListener('focus', onFocus);
+    node.addEventListener('focus', handleFocus);
     node.addEventListener('wheel', onWheel, { passive: false });
 
     return {
       destroy() {
-        node.removeEventListener('focus', onFocus);
+        node.removeEventListener('focus', handleFocus);
         node.removeEventListener('wheel', onWheel);
         if (inputEl === node) inputEl = undefined;
       },

@@ -92,6 +92,15 @@
     /** 确认回调；返回 Promise 时确认按钮 loading，resolve 关闭 / reject 保持打开 */
     onConfirm?: () => void | Promise<unknown>;
     onCancel?: () => void;
+    /**
+     * 点击浮层外部，在关闭逻辑前触发（区别于 onOpenChange 的 outsideClick reason）。
+     * 调用 `event.preventDefault()` 可阻止默认关闭。
+     */
+    onClickOutside?: (event: MouseEvent) => void;
+    /** 入场动效结束、浮层完全可见 */
+    onAfterOpen?: () => void;
+    /** 出场动效结束、DOM 卸载后 */
+    onAfterClose?: () => void;
     class?: string;
   }
 
@@ -125,6 +134,9 @@
     onOpenChange,
     onConfirm,
     onCancel,
+    onClickOutside,
+    onAfterOpen,
+    onAfterClose,
     class: className,
   }: Props = $props();
 
@@ -315,6 +327,13 @@
         escape: closeOnEsc,
         outsideClick: closeOnOutsideClick,
         extraTargets: [popupEl],
+        // 外部点击：在 useDismiss 关闭判定之前触发 onClickOutside（关闭逻辑前）。
+        // 调用方 preventDefault() 即阻止默认关闭（返回 false 跳过 onDismiss）。
+        onOutsidePointer: (e) => {
+          if (!onClickOutside) return;
+          onClickOutside(e);
+          if (e.defaultPrevented) return false;
+        },
       });
     }
     return () => {
@@ -323,6 +342,39 @@
       // 浮层关闭即复位 loading（覆盖受控 open 在 loading 中被外部关闭的边界）。
       confirmLoading = false;
     };
+  });
+
+  // --- onAfterOpen / onAfterClose (红线 #3)：入场/出场动效结束钩子 ---
+  // onAfterOpen：浮层挂载 + 入场动画 animationend；motion 关闭时下一帧即触发。
+  $effect(() => {
+    if (!isOpen || !popupEl) return;
+    if (!onAfterOpen) return;
+    const node = popupEl;
+    let raf = 0;
+    // 是否真正有入场动画：motion 开启且非 reduced-motion。
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (motionEnabled && !reduced) {
+      const onEnd = (e: AnimationEvent) => {
+        if (e.target !== node || e.animationName !== 'cd-popconfirm-in') return;
+        onAfterOpen?.();
+      };
+      node.addEventListener('animationend', onEnd, { once: true });
+      return () => node.removeEventListener('animationend', onEnd);
+    }
+    // 无动画：下一帧（确保已绘制）即视为完全可见。
+    raf = requestAnimationFrame(() => onAfterOpen?.());
+    return () => cancelAnimationFrame(raf);
+  });
+
+  // onAfterClose：open 由 true→false 后触发（当前无出场动画，关闭即卸载/隐藏）。
+  // 簿记用普通变量避免 $state 自循环（按记忆教训）。
+  let wasOpen = false;
+  $effect(() => {
+    const openNow = isOpen;
+    if (wasOpen && !openNow) onAfterClose?.();
+    wasOpen = openNow;
   });
 </script>
 
