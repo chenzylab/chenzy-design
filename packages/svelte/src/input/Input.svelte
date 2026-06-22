@@ -27,6 +27,8 @@
     id?: string;
     ariaLabel?: string;
     ariaDescribedby?: string;
+    /** 必填语义（Form.Field required 透传）：输出 aria-required="true"。 */
+    ariaRequired?: boolean;
     onChange?: (v: string) => void;
     onInput?: (v: string) => void;
     onClear?: () => void;
@@ -56,6 +58,7 @@
     id,
     ariaLabel,
     ariaDescribedby,
+    ariaRequired,
     onChange,
     onInput,
     onClear,
@@ -154,6 +157,7 @@
     value={current}
     aria-label={ariaLabel}
     aria-describedby={ariaDescribedby}
+    aria-required={ariaRequired || undefined}
     aria-invalid={status === 'error' || undefined}
     oninput={handleInput}
     onchange={handleChange}

@@ -158,13 +158,16 @@
     arrowOffset = info.arrowOffset;
   }
 
-  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc；popup portal 列入 extraTargets ---
+  // --- useDismiss (红线 #3)：Esc 对所有触发模式生效（WCAG 1.4.13 Content on Hover：
+  // hover/focus 浮层也须可由 Esc 关闭）；外部点击关闭仅 click 触发需要（hover/focus 自然关）。
+  // popup portal 列入 extraTargets。
   $effect(() => {
-    if (!isOpen || !rootEl || !triggers.includes('click')) return;
+    if (!isOpen || !rootEl) return;
+    const allowOutsideClick = triggers.includes('click');
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
-      outsideClick: true,
+      outsideClick: allowOutsideClick,
       extraTargets: [popEl],
     });
     return cleanup;
