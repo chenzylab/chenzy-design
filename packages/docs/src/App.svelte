@@ -1047,6 +1047,10 @@ let pageSize2 = $state(10);
   let editableText = $state('双击或点击编辑图标修改这段文字');
   let inputVal = $state('');
   let taVal = $state('受控多行文本');
+  // 事件回调演示状态（spec §4 Events 验证）
+  let inputEvtLog = $state('');
+  let taEvtLog = $state('');
+  let taResizeH = $state(0);
   let switchOn = $state(true);
   let checks = $state<(string | number)[]>(['a']);
   let cardChecks = $state<(string | number)[]>(['pro']);
@@ -1336,6 +1340,36 @@ let pageSize2 = $state(10);
     </div>
     <div data-testid="textarea-autofocus" style="margin-top:12px">
       <TextArea placeholder="status=error + autoFocus" status="error" autoFocus />
+    </div>
+
+    <div data-testid="input-events" style="margin-top:12px">
+      <Input
+        placeholder="onFocus/onBlur/onEnterPress 演示"
+        onFocus={() => (inputEvtLog = 'focus')}
+        onBlur={() => (inputEvtLog = 'blur')}
+        onEnterPress={() => (inputEvtLog = 'enterPress')}
+      />
+      <Text type="tertiary">
+        <span data-testid="input-evt-log">input 事件：{inputEvtLog || '（无）'}</span>
+      </Text>
+    </div>
+
+    <div data-testid="textarea-events" style="margin-top:12px">
+      <TextArea
+        placeholder="onFocus/onBlur/onEnterPress/onResize/onComposition 演示"
+        autosize={{ minRows: 1, maxRows: 6 }}
+        onFocus={() => (taEvtLog = 'focus')}
+        onBlur={() => (taEvtLog = 'blur')}
+        onEnterPress={({ event }) =>
+          (taEvtLog = event.ctrlKey || event.metaKey ? 'enterPress+mod' : 'enterPress')}
+        onResize={({ height }) => (taResizeH = height)}
+        onCompositionStart={() => (taEvtLog = 'compositionStart')}
+        onCompositionEnd={() => (taEvtLog = 'compositionEnd')}
+      />
+      <Text type="tertiary">
+        <span data-testid="textarea-evt-log">textarea 事件：{taEvtLog || '（无）'}</span>
+        <span data-testid="textarea-resize-h"> | autosize 高度：{taResizeH}</span>
+      </Text>
     </div>
 
     <Space>
