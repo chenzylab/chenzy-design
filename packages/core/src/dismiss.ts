@@ -18,13 +18,21 @@ export interface DismissOptions {
    * click inside the portaled popup is not treated as an outside click.
    */
   extraTargets?: Array<HTMLElement | null | undefined>;
+  /**
+   * Fired when an outside pointerdown is detected, *before* `onDismiss`. Receives
+   * the original PointerEvent. Return `false` (or call `preventDefault()`) to keep
+   * the overlay open — the dismiss is then skipped. Useful for an interceptable
+   * "clickOutside" hook distinct from the actual close.
+   */
+  onOutsidePointer?: (event: PointerEvent) => boolean | void;
 }
 
 export function useDismiss(
   element: HTMLElement,
   options: DismissOptions,
 ): () => void {
-  const { onDismiss, escape = true, outsideClick = true, extraTargets } = options;
+  const { onDismiss, escape = true, outsideClick = true, extraTargets, onOutsidePointer } =
+    options;
 
   function isInside(target: Node | null): boolean {
     if (element.contains(target)) return true;
@@ -41,7 +49,14 @@ export function useDismiss(
   }
   function onPointer(e: PointerEvent): void {
     if (!outsideClick) return;
-    if (!isInside(e.target as Node)) onDismiss('outsideClick');
+    if (isInside(e.target as Node)) return;
+    // Interceptable hook: fire before the dismiss decision. Returning false or
+    // calling preventDefault() keeps the overlay open.
+    if (onOutsidePointer) {
+      const keep = onOutsidePointer(e) === false || e.defaultPrevented;
+      if (keep) return;
+    }
+    onDismiss('outsideClick');
   }
 
   document.addEventListener('keydown', onKeydown);

@@ -123,6 +123,9 @@ export const meta = {
     { name: 'onOpenChange', desc: '显隐变化，附带 reason 来源' },
     { name: 'onConfirm', desc: '确认按钮点击' },
     { name: 'onCancel', desc: '取消按钮点击或外部关闭' },
+    { name: 'onClickOutside', desc: '点击浮层外部（关闭前触发，可 preventDefault 阻止默认关闭）' },
+    { name: 'onAfterOpen', desc: '入场动效结束、浮层完全可见' },
+    { name: 'onAfterClose', desc: '出场动效结束、DOM 卸载后' },
   ],
   slots: [
     { name: 'trigger', desc: '触发元素（被包裹）' },
