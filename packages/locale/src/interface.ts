@@ -87,6 +87,10 @@ export interface Locale {
     /** uses {count} */
     moreAriaLabel: string;
   };
+  Avatar: {
+    /** AvatarGroup 折叠 +N 头像的可访问名，uses {count} */
+    moreAlt: string;
+  };
   Spin: {
     loading: string;
     loaded: string;
@@ -334,6 +338,8 @@ export interface Locale {
     prev: string;
     next: string;
     indicators: string;
+    /** 指示器/单张幻灯片可访问名，uses {index} */
+    slideLabel: string;
   };
   TagInput: {
     remove: string;
@@ -354,6 +360,8 @@ export interface Locale {
     eyeDropper: string;
     recent: string;
     format: string;
+    /** 面板无显式 ariaLabel 时的兜底可访问名 */
+    panelLabel: string;
   };
   Tag: {
     close: string;
@@ -366,6 +374,8 @@ export interface Locale {
     scrollNext: string;
     add: string;
     more: string;
+    /** 关闭标签按钮 aria-label，uses {tab} */
+    closeTab: string;
   };
   Tooltip: {
     warningLabel: string;

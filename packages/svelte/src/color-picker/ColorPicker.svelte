@@ -570,7 +570,7 @@
 
 {#if inline}
   <div class={cls} bind:this={rootEl}>
-    <div class="cd-color-picker__panel cd-color-picker__panel--inline" role="group" aria-label={ariaLabel ?? '颜色选择'}>
+    <div class="cd-color-picker__panel cd-color-picker__panel--inline" role="group" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
       {@render panelBody()}
     </div>
   </div>
@@ -588,7 +588,7 @@
     ></button>
 
     {#if isOpen}
-      <div class="cd-color-picker__panel" role="dialog" aria-label={ariaLabel ?? '颜色选择'}>
+      <div class="cd-color-picker__panel" role="dialog" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
         {@render panelBody()}
       </div>
     {/if}
