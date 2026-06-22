@@ -27,6 +27,9 @@
   const active = $derived(ctx?.getActiveKey() === itemKey);
   const lazy = $derived(ctx?.getLazy() ?? false);
   const keepDOM = $derived(ctx?.getKeepDOM() ?? false);
+  // 与 tab 按钮双向关联的稳定 id（aria-controls ↔ id / aria-labelledby）。
+  const panelId = $derived(ctx?.getPanelId(itemKey));
+  const labelledBy = $derived(ctx?.getTabId(itemKey));
 
   // 纯声明式自动收集：mount 注册自身标签元数据、unmount 注销；元数据变化时 update 同步。
   // 红线 #2：注册 $effect 只向父写（普通数组 + version bump），绝不读父收集快照 → 无自循环。
@@ -70,7 +73,14 @@
 </script>
 
 {#if shouldMount}
-  <div class="cd-tabs__panel" role="tabpanel" hidden={!active}>
+  <div
+    class="cd-tabs__panel"
+    role="tabpanel"
+    id={panelId}
+    aria-labelledby={labelledBy}
+    tabindex="0"
+    hidden={!active}
+  >
     {@render children?.()}
   </div>
 {/if}

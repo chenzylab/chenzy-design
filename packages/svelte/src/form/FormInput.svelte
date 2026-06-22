@@ -67,7 +67,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy })}
+  {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy, required })}
     <!--
       `id` is wired to the native <input> so Field's visible <label for={id}>
       precisely targets the control (WAI-ARIA preferred association): clicking the
@@ -87,6 +87,7 @@
       {...(maxLength !== undefined ? { maxLength } : {})}
       {...(label !== undefined ? { ariaLabel: label } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

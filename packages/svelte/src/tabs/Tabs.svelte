@@ -208,6 +208,8 @@
     getActiveKey: () => activeKey,
     getLazy: () => lazy,
     getKeepDOM: () => keepDOM,
+    getTabId: tabId,
+    getPanelId: panelId,
     registerPane,
     updatePane,
     unregisterPane,

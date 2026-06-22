@@ -22,6 +22,12 @@
     describedBy: string | undefined;
     disabled: boolean;
     /**
+     * whether this field is required (spec §138). Controls should expose it as
+     * `aria-required="true"` so the required semantic reaches screen readers —
+     * the visible star is `aria-hidden` and thus inaudible on its own.
+     */
+    required: boolean;
+    /**
      * Convenience alias keyed by `valuePropName` (default 'value'), carrying the
      * same value as `value`. Lets non-`value` controls (e.g. Checkbox/Switch use
      * `checked`) destructure `{ checked, onChange }` directly from the snippet.
@@ -237,6 +243,7 @@
     id,
     describedBy,
     disabled: ctx.getDisabled(),
+    required,
   })}
 {:else}
 <div class={cls} data-field={field} style={wrapStyle}>
@@ -278,6 +285,7 @@
       id,
       describedBy,
       disabled: ctx.getDisabled(),
+      required,
     })}
 
     {#if validating}

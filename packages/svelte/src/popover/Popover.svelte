@@ -288,8 +288,14 @@
       .join(';'),
   );
 
-  // dialog 兜底 aria-label（无标题时）。
-  const dialogLabel = $derived(hasTitle ? undefined : loc().t('Popover.dialogLabel'));
+  // --- role 派生（纯函数，红线 #2）：依触发模式区分（spec §6）---
+  // 内容信息性 + hover/focus → role="tooltip"，触发器 aria-describedby 关联浮层；
+  // 内容可交互 + click/custom → role="dialog"，aria-modal=false + aria-haspopup/expanded/controls。
+  const isTooltipRole = $derived(trigger === 'hover' || trigger === 'focus');
+  // dialog 兜底 aria-label（无标题时，仅 dialog 模式需要）。
+  const dialogLabel = $derived(
+    isTooltipRole || hasTitle ? undefined : loc().t('Popover.dialogLabel'),
+  );
 </script>
 
 <!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children；自身无障碍语义忽略 -->
@@ -306,9 +312,10 @@
 >
   <span
     class="cd-popover__trigger"
-    aria-haspopup="dialog"
-    aria-expanded={isOpen}
-    aria-controls={isOpen ? popId : undefined}
+    aria-haspopup={isTooltipRole ? undefined : 'dialog'}
+    aria-expanded={isTooltipRole ? undefined : isOpen}
+    aria-controls={!isTooltipRole && isOpen ? popId : undefined}
+    aria-describedby={isTooltipRole && isOpen ? popId : undefined}
   >
     {@render children?.()}
   </span>
@@ -317,9 +324,9 @@
     <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
     <div
       id={popId}
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby={hasTitle ? titleId : undefined}
+      role={isTooltipRole ? 'tooltip' : 'dialog'}
+      aria-modal={isTooltipRole ? undefined : 'false'}
+      aria-labelledby={!isTooltipRole && hasTitle ? titleId : undefined}
       aria-label={dialogLabel}
       aria-hidden={!isOpen || undefined}
       tabindex="-1"

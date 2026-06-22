@@ -17,6 +17,10 @@ export interface TabsContext {
   getLazy: () => boolean;
   /** 是否保留激活过的面板 DOM（display:none 隐藏而非卸载） */
   getKeepDOM: () => boolean;
+  /** 稳定 tab 按钮 id（与 panel 的 aria-labelledby 双向关联）。 */
+  getTabId: (key: string | number) => string;
+  /** 稳定 tabpanel id（与 tab 的 aria-controls 双向关联）。 */
+  getPanelId: (key: string | number) => string;
   /**
    * 纯声明式自动收集：父未传 tabList 时，TabPane 挂载时注册自身标签元数据（按源码顺序）。
    * 返回稳定 id，TabPane 卸载时用它注销；元数据变化时调用 update 同步。
