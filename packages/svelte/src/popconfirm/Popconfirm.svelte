@@ -351,11 +351,17 @@
     if (!onAfterOpen) return;
     const node = popupEl;
     let raf = 0;
-    // 是否真正有入场动画：motion 开启且非 reduced-motion。
+    // 是否真正有入场动画：motion 开启、非 reduced-motion、且实际解析出非零时长。
     const reduced =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (motionEnabled && !reduced) {
+    // token 未注入或时长为 0 时 animationend 不会触发，退回下一帧判定（避免钩子丢失）。
+    const dur =
+      typeof window !== 'undefined'
+        ? parseFloat(getComputedStyle(node).animationDuration || '0')
+        : 0;
+    const hasAnim = motionEnabled && !reduced && dur > 0;
+    if (hasAnim) {
       const onEnd = (e: AnimationEvent) => {
         if (e.target !== node || e.animationName !== 'cd-popconfirm-in') return;
         onAfterOpen?.();
@@ -363,9 +369,20 @@
       node.addEventListener('animationend', onEnd, { once: true });
       return () => node.removeEventListener('animationend', onEnd);
     }
-    // 无动画：下一帧（确保已绘制）即视为完全可见。
-    raf = requestAnimationFrame(() => onAfterOpen?.());
-    return () => cancelAnimationFrame(raf);
+    // 无动画：下一帧（确保已绘制）即视为完全可见。后台标签页 rAF 会被挂起，
+    // 补一个 setTimeout 兜底确保钩子最终触发（取先到者，避免重复）。
+    let done = false;
+    const fire = () => {
+      if (done) return;
+      done = true;
+      onAfterOpen?.();
+    };
+    raf = requestAnimationFrame(fire);
+    const t = setTimeout(fire, 32);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   });
 
   // onAfterClose：open 由 true→false 后触发（当前无出场动画，关闭即卸载/隐藏）。
