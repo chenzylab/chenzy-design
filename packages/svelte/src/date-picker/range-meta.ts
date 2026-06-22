@@ -24,6 +24,10 @@ export const meta = {
     { name: 'locale', type: 'string', default: "'zh-CN'" },
     { name: 'onChange', type: '(v: [Date|null,Date|null] | null) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
+    { name: 'onPanelChange', type: '(e: { panelDate: Date }) => void', default: 'undefined' },
+    { name: 'onClear', type: '(e: {}) => void', default: 'undefined' },
+    { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
+    { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
   ],
   a11y: {
