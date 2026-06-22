@@ -42,7 +42,17 @@
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import type { ColumnDef, RowSelection, Expandable, TreeTable, Align, TableSize } from './types.js';
+  import type {
+    ColumnDef,
+    RowSelection,
+    Expandable,
+    TreeTable,
+    Align,
+    TableSize,
+    TableChangeInfo,
+    TableChangeAction,
+    TableScrollInfo,
+  } from './types.js';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -65,6 +75,14 @@
     empty,
     ariaLabel,
     onRowClick,
+    onChange,
+    onFilterChange,
+    onPaginationChange,
+    onSelectChange,
+    onExpandChange,
+    onScroll,
+    onReachBottom,
+    reachBottomThreshold = 0,
     virtualized = false,
     height = 400,
     rowHeight = 48,
@@ -94,6 +112,26 @@
     empty?: string;
     ariaLabel?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
+    /** 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流）。spec §4 */
+    onChange?: (info: TableChangeInfo) => void;
+    /** 筛选状态变化（含重置）。spec §4 */
+    onFilterChange?: (info: { dataIndex: string; values: (string | number)[] }) => void;
+    /** 分页变化。spec §4 */
+    onPaginationChange?: (info: { current: number; pageSize: number }) => void;
+    /** 选择集变化（与 rowSelection.onChange 同时触发）。spec §4 */
+    onSelectChange?: (info: { selectedRowKeys: RowKey[]; selectedRows: T[] }) => void;
+    /** 行展开/收起（展开行与树形行均触发）。spec §4 */
+    onExpandChange?: (info: {
+      expanded: boolean;
+      record: T;
+      expandedRowKeys: RowKey[];
+    }) => void;
+    /** 滚动位置（含触底，用于无限加载）。命令式监听滚动容器。spec §4 */
+    onScroll?: (info: TableScrollInfo) => void;
+    /** 纵向触底（懒加载触发）。距底 reachBottomThreshold 像素内触发一次。spec §4 */
+    onReachBottom?: () => void;
+    /** onReachBottom 触发阈值（距底像素），默认 0（精确触底） */
+    reachBottomThreshold?: number;
     /** 行虚拟滚动：仅渲染视口内行，适合大数据（1000+ 行）。默认 false（行为不变）。
      *  启用时忽略 pagination（全量滚动），表头 sticky 固定于滚动容器顶部。
      *  假定行等高（rowHeight）；与 expandable 同用时展开内容行不计入高度，故不建议混用。 */
@@ -211,10 +249,18 @@
     if (cur.has(value)) cur.delete(value);
     else cur.add(value);
     filterState.set(colKey, cur);
+    emitFilterChange(colKey, [...cur]);
   }
   function resetFilter(colKey: string) {
     filterState.set(colKey, new Set());
     openFilterKey = null;
+    emitFilterChange(colKey, []);
+  }
+  // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
+  function emitFilterChange(colKey: string, values: (string | number)[]) {
+    const col = columns.find((c, i) => colKeyOf(c, i) === colKey);
+    onFilterChange?.({ dataIndex: col?.dataIndex ?? colKey, values });
+    emitChange('filter');
   }
   // 行是否通过某列筛选：选中值任一 onFilter 命中（缺省按 dataIndex 全等）。
   function rowPassesColumn(col: ColumnDef<T>, colKey: string, record: T): boolean {
@@ -347,6 +393,7 @@
     else next.delete(key);
     if (!isTreeExpandControlled) innerTreeExpanded = [...next];
     treeOpts.onExpand?.(willExpand, key);
+    onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
   }
 
   // 扁平化可见行：纯 $derived，不读 effect 写的状态 (红线 #2)。
@@ -374,6 +421,8 @@
   let scrollTop = $state(0);
   // rAF 节流句柄（非响应式）。
   let rafId = 0;
+  // onReachBottom 去抖：仅在「进入触底区」的那一帧触发一次，离开后复位（非响应式）。
+  let reachedBottom = false;
 
   const vRowHeight = $derived(rowHeight > 0 ? rowHeight : 48);
   const vTotalHeight = $derived(displayRows.length * vRowHeight);
@@ -392,20 +441,50 @@
     virtualized ? Math.max(0, (displayRows.length - vRange.endIndex) * vRowHeight) : 0,
   );
 
+  // 滚动监听需附着的容器是否需要纵向滚动能力：
+  // 非虚拟化但提供了 onScroll/onReachBottom 时，约束高度并 overflow:auto，
+  // 使表体可纵向滚动从而能上报位置/触底（虚拟化已自带固定高度滚动）。
+  const scrollBody = $derived(!virtualized && (!!onScroll || !!onReachBottom));
+
   // 滚动监听（命令式 + rAF 节流 + cleanup）（红线 #3）。
+  // 同时服务：① virtualized 视口区间计算（写 scrollTop）② onScroll 位置回调 ③ onReachBottom 触底。
   $effect(() => {
     const el = scrollEl;
-    if (!el || !virtualized) return;
-    function onScroll() {
+    const needScroll = virtualized || !!onScroll || !!onReachBottom;
+    if (!el || !needScroll) return;
+    const handleScroll = () => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
-        if (el) scrollTop = el.scrollTop;
+        if (!el) return;
+        if (virtualized) scrollTop = el.scrollTop;
+        const { scrollLeft, scrollTop: sTop, scrollWidth, clientWidth, scrollHeight, clientHeight } = el;
+        const atBottom = sTop + clientHeight >= scrollHeight - Math.max(0, reachBottomThreshold) - 1;
+        if (onScroll) {
+          onScroll({
+            scrollLeft,
+            scrollTop: sTop,
+            atLeft: scrollLeft <= 0,
+            atRight: scrollLeft + clientWidth >= scrollWidth - 1,
+            atTop: sTop <= 0,
+            atBottom,
+          });
+        }
+        // 触底懒加载：仅在「刚进入触底区」触发一次，离开后复位（避免持续滚动重复触发）。
+        if (onReachBottom) {
+          if (atBottom && !reachedBottom) {
+            reachedBottom = true;
+            onReachBottom();
+          } else if (!atBottom) {
+            reachedBottom = false;
+          }
+        }
       });
-    }
-    el.addEventListener('scroll', onScroll, { passive: true });
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('scroll', handleScroll);
+      reachedBottom = false;
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
@@ -473,6 +552,7 @@
     else next.delete(key);
     if (!isExpandControlled) innerExpanded = [...next];
     expandable?.onExpand?.(willExpand, record);
+    onExpandChange?.({ expanded: willExpand, record, expandedRowKeys: [...next] });
   }
 
   // --- 选择变更：回调取对应行对象 ---
@@ -508,10 +588,14 @@
     if (treeCheckable) {
       const { checked } = conductRows(visibleRows, next, getKey, getChildren, rowDisabledFn);
       const keys = [...checked];
-      rowSelection?.onChange?.(keys, rowsForKeys(keys));
+      const rows = rowsForKeys(keys);
+      rowSelection?.onChange?.(keys, rows);
+      onSelectChange?.({ selectedRowKeys: keys, selectedRows: rows });
     } else {
       const keys = [...next];
-      rowSelection?.onChange?.(keys, rowsForKeys(keys));
+      const rows = rowsForKeys(keys);
+      rowSelection?.onChange?.(keys, rows);
+      onSelectChange?.({ selectedRowKeys: keys, selectedRows: rows });
     }
   }
 
@@ -545,12 +629,42 @@
     emitSelection(toggleRow(selectedSet, getKey(record)));
   }
 
+  // --- 聚合 onChange 载荷快照（读 render 期派生态，仅在事件回调内调用，红线 #2）---
+  // 当前各列筛选选中值（colKey → values[]），仅含非空筛选列。
+  function snapshotFilters(): Record<string, (string | number)[]> {
+    const out: Record<string, (string | number)[]> = {};
+    columns.forEach((col, i) => {
+      const ck = colKeyOf(col, i);
+      const vals = filterState.get(ck);
+      if (vals && vals.size > 0) out[ck] = [...vals];
+    });
+    return out;
+  }
+  // 触发聚合 onChange：sorterOverride/pageOverride 让排序/分页变化时用「即将生效」的值，
+  // 因 $derived 在同步事件回调内尚未重算（受控时本就不回写）。
+  function emitChange(
+    action: TableChangeAction,
+    sorterOverride?: SortState,
+    pageOverride?: number,
+  ) {
+    onChange?.({
+      pagination: {
+        current: pageOverride ?? currentPage,
+        pageSize,
+      },
+      filters: snapshotFilters(),
+      sorter: sorterOverride ?? currentSort,
+      extra: { action },
+    });
+  }
+
   // --- 排序点击 ---
   function onSort(col: ColumnDef<T>, index: number) {
     const key = colKeyOf(col, index);
     const next = toggleSort(currentSort, key);
     if (!isSortControlled) innerSort = next;
     onSortChange?.(next);
+    emitChange('sort', next);
   }
 
   function ariaSortFor(col: ColumnDef<T>, index: number): 'ascending' | 'descending' | 'none' {
@@ -562,6 +676,8 @@
   function onPageChange(page: number) {
     if (!isPageControlled) innerPage = page;
     if (pagination) pagination.onChange?.(page);
+    onPaginationChange?.({ current: page, pageSize });
+    emitChange('paginate', undefined, page);
   }
 
   // --- 单元格取值 ---
@@ -694,11 +810,12 @@
 <div
   class="cd-table-wrap"
   class:cd-table-wrap--virtual={virtualized}
+  class:cd-table-wrap--scroll-body={scrollBody}
   bind:this={scrollEl}
-  style={virtualized ? `block-size:${height}px; overflow:auto` : undefined}
+  style={virtualized || scrollBody ? `block-size:${height}px; overflow:auto` : undefined}
 >
   <table class={cls} style={tableStyle} aria-label={ariaLabel}>
-    <thead class="cd-table__head" class:cd-table__head--sticky={virtualized}>
+    <thead class="cd-table__head" class:cd-table__head--sticky={virtualized || scrollBody}>
       <tr>
         {#if hasExpand}
           <th class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" scope="col" style={leadingStyle('expand')}></th>
@@ -975,6 +1092,10 @@
 
   /* 行虚拟滚动：容器自身纵向滚动，表头 sticky 固定于顶部 */
   .cd-table-wrap--virtual {
+    overflow: auto;
+  }
+  /* 非虚拟化的可滚动表体（onScroll/onReachBottom）：约束高度纵向滚动，表头 sticky */
+  .cd-table-wrap--scroll-body {
     overflow: auto;
   }
   .cd-table__head--sticky th {
