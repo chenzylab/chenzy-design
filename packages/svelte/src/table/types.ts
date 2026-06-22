@@ -79,5 +79,29 @@ export interface RowSelection<T> {
   checkStrictly?: boolean;
 }
 
+/** 聚合 onChange 的 extra.action 取值 */
+export type TableChangeAction = 'paginate' | 'sort' | 'filter';
+
+/** 聚合 onChange 载荷（排序/筛选/分页任一变化的主入口，spec §4） */
+export interface TableChangeInfo {
+  pagination: { current: number; pageSize: number };
+  filters: Record<string, (string | number)[]>;
+  sorter: SortStateLike;
+  extra: { action: TableChangeAction };
+}
+
+/** onScroll 载荷（spec §4，含触底用于无限加载） */
+export interface TableScrollInfo {
+  scrollLeft: number;
+  scrollTop: number;
+  atLeft: boolean;
+  atRight: boolean;
+  atTop: boolean;
+  atBottom: boolean;
+}
+
+// 局部别名，避免在本文件引入对 SortState 的运行期依赖说明
+type SortStateLike = import('@chenzy-design/core').SortState;
+
 export type { RowKey } from '@chenzy-design/core';
 export type { SortState, SortOrder } from '@chenzy-design/core';
