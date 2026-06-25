@@ -215,7 +215,8 @@
   }
   .cd-badge__sup--solid.cd-badge__sup--warning {
     background: var(--cd-color-warning);
-    color: var(--cd-color-text-inverse);
+    /* warning on yellow: dark text reaches WCAG AA (white cannot) */
+    color: var(--cd-color-text-on-warning);
   }
   .cd-badge__sup--solid.cd-badge__sup--danger {
     background: var(--cd-color-danger);
