@@ -1,11 +1,9 @@
 // AutoComplete a11y：combobox 文本输入 + 内联 listbox/option 下拉（非 portal）。
 // 只断言静态 ARIA + axe，不测真实键盘/焦点（jsdom 限制）。下拉内联在 root 子树，扫 container。
 //
-// 发现的组件 a11y bug（待修）：input role="combobox" 没有可访问名（无 aria-label，
-//   placeholder 不算可访问名）。关闭态 axe 不报（无活动 aria-controls），但打开态
-//   （aria-expanded=true）axe 报 aria-input-field-name (serious)。AutoComplete 当前
-//   未暴露 ariaLabel prop，无法经 props 修复；应补 ariaLabel / aria-labelledby。
-//   故打开态 axe 用例 it.skip，结构断言保留。
+// 修复记录：input role="combobox" 现经 ariaLabel/ariaLabelledby prop 或
+//   placeholder(非空) / locale AutoComplete.ariaLabel 回退获可访问名，
+//   打开态 axe aria-input-field-name 消除。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AutoComplete from './AutoComplete.svelte';
@@ -40,11 +38,12 @@ describe('AutoComplete a11y', () => {
     expect(combobox?.getAttribute('aria-controls')).toBe(listbox?.getAttribute('id'));
   });
 
-  // SKIP（组件 a11y bug，待修）：打开态 combobox input 缺可访问名 → aria-input-field-name。
-  it.skip('打开态：axe 0 violations（待 AutoComplete 补 ariaLabel 后启用）', async () => {
+  // combobox input 可访问名缺省走 locale AutoComplete.ariaLabel（placeholder 此处为空）。
+  it('打开态：axe 0 violations（combobox input 经 locale 获可访问名）', async () => {
     const { container } = renderWithLocale(AutoComplete, {
       props: { data, defaultOpen: true, defaultValue: 'a' },
     });
+    expect(container.querySelector('[role="combobox"]')?.getAttribute('aria-label')).toBeTruthy();
     await expectNoAxeViolations(container);
   });
 });

@@ -18,6 +18,7 @@ export const en_US: Locale = {
     nextPage: 'Next page',
     pageLabel: 'Page {page}',
     pageSize: '{size} / page',
+    itemsPerPage: 'Items per page',
     jumpTo: 'Go to',
     jumpToSuffix: '',
     pageChangeAnnounce: 'Page {page} of {count}',
@@ -196,6 +197,7 @@ export const en_US: Locale = {
   },
   Select: {
     placeholder: 'Please select',
+    ariaLabel: 'Select',
     emptyText: 'No matches',
     searchPlaceholder: 'Search',
     loading: 'Loading',
@@ -275,6 +277,7 @@ export const en_US: Locale = {
     searchPlaceholder: 'Search',
   },
   AutoComplete: {
+    ariaLabel: 'Autocomplete',
     clear: 'Clear',
     loading: 'Loading',
     emptyText: 'No matches',
@@ -293,6 +296,8 @@ export const en_US: Locale = {
     loading: 'Loading',
     searchPlaceholder: 'Search',
     emptyText: 'No match',
+    columnLabel: 'Level {level} options',
+    searchResults: 'Search results',
   },
   Carousel: {
     prev: 'Previous slide',

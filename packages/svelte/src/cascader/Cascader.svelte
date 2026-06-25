@@ -889,7 +889,12 @@
         </div>
       {/if}
       {#if searchActive}
-        <ul class="cd-cascader__flat" role="listbox" id={flatListId}>
+        <ul
+          class="cd-cascader__flat"
+          role="listbox"
+          id={flatListId}
+          aria-label={loc().t('Cascader.searchResults')}
+        >
           {#if filteredPaths.length === 0}
             {#if isEmptySnippet}
               <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
@@ -925,6 +930,7 @@
         <ul
           class="cd-cascader__column"
           role="listbox"
+          aria-label={loc().t('Cascader.columnLabel', { level: colIndex + 1 })}
           style:inline-size="{resolveColumnWidth(columnWidth, colIndex, 180)}px"
         >
           {#if column.length === 0}

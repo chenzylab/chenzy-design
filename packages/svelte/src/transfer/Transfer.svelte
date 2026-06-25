@@ -698,6 +698,7 @@
       dropSide === 'after'}
     {style}
     role={asOption ? 'option' : undefined}
+    aria-label={asOption ? item.label : undefined}
     aria-selected={asOption ? (side === 'right' && oneWay ? true : isChecked) : undefined}
     aria-disabled={asOption ? rowDisabled || undefined : undefined}
     data-transfer-key={asOption ? item.key : undefined}
@@ -792,16 +793,20 @@
   {@const vItems = side === 'left' ? leftVItems : rightVItems}
   {@const vRange = side === 'left' ? leftVRange : rightVRange}
   {@const vTotal = side === 'left' ? leftVTotal : rightVTotal}
+  <!-- 空态（仅含 cd-transfer__empty 占位 li）时 listbox 无 option 子节点 → 违反
+       aria-required-children；空态下退化为普通容器（无 role/listbox ARIA），按 APG
+       处理空 listbox。loading 时仍非空（spinner li）但同样不是 option，故并入判定。 -->
+  {@const isEmptyPanel = !loading && visible.length === 0}
   <ul
     class="cd-transfer__list"
-    role="listbox"
-    aria-multiselectable="true"
-    aria-labelledby={showPanelTitle
+    role={isEmptyPanel ? undefined : 'listbox'}
+    aria-multiselectable={isEmptyPanel ? undefined : 'true'}
+    aria-labelledby={!isEmptyPanel && showPanelTitle
       ? (side === 'left' ? leftTitleId : rightTitleId)
       : undefined}
-    aria-label={showPanelTitle
-      ? undefined
-      : (side === 'left' ? sourceFallback : targetFallback)}
+    aria-label={!isEmptyPanel && !showPanelTitle
+      ? (side === 'left' ? sourceFallback : targetFallback)
+      : undefined}
     aria-disabled={disabled || undefined}
     {@attach captureList(side)}
     {@attach side === 'left' ? leftScrollAttach : rightScrollAttach}

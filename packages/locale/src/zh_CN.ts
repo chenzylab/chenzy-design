@@ -18,6 +18,7 @@ export const zh_CN: Locale = {
     nextPage: '下一页',
     pageLabel: '第 {page} 页',
     pageSize: '{size} 条/页',
+    itemsPerPage: '每页条数',
     jumpTo: '跳至',
     jumpToSuffix: '页',
     pageChangeAnnounce: '第 {page} 页，共 {count} 页',
@@ -196,6 +197,7 @@ export const zh_CN: Locale = {
   },
   Select: {
     placeholder: '请选择',
+    ariaLabel: '选择框',
     emptyText: '无匹配项',
     searchPlaceholder: '搜索',
     loading: '加载中',
@@ -275,6 +277,7 @@ export const zh_CN: Locale = {
     searchPlaceholder: '搜索',
   },
   AutoComplete: {
+    ariaLabel: '自动完成输入框',
     clear: '清除',
     loading: '加载中',
     emptyText: '无匹配项',
@@ -293,6 +296,8 @@ export const zh_CN: Locale = {
     loading: '加载中',
     searchPlaceholder: '搜索',
     emptyText: '无匹配项',
+    columnLabel: '第 {level} 级选项',
+    searchResults: '搜索结果',
   },
   Carousel: {
     prev: '上一张',
