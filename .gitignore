@@ -7,5 +7,10 @@ coverage/
 .vite/
 *.log
 
+# vitest browser mode：测试失败时生成的对比截图与附件
+**/__screenshots__/
+test-results/
+.vitest-attachments/
+
 # Claude Code runtime
 .claude/scheduled_tasks.lock
