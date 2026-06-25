@@ -32,6 +32,10 @@
     open?: boolean;
     defaultOpen?: boolean;
     placeholder?: string;
+    /** combobox 输入框可访问名；缺省回退到 placeholder 或 locale 默认 */
+    ariaLabel?: string;
+    /** 关联外部 label 的 id（优先于 ariaLabel） */
+    ariaLabelledby?: string;
     /** 输入框内嵌前缀标签 */
     insetLabel?: string | Snippet;
     /** 聚焦即展开建议列表（默认 false，仅输入时展开） */
@@ -62,6 +66,8 @@
     open = $bindable(),
     defaultOpen = false,
     placeholder = '',
+    ariaLabel,
+    ariaLabelledby,
     insetLabel,
     openOnFocus = false,
     size = 'default',
@@ -306,6 +312,11 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // combobox 输入框可访问名：ariaLabelledby > ariaLabel > placeholder(非空) > locale 默认
+  const inputAriaLabel = $derived(
+    ariaLabelledby ? undefined : (ariaLabel || placeholder || loc().t('AutoComplete.ariaLabel')),
+  );
 </script>
 
 {#snippet optionRow(opt: NormalizedItem, i: number)}
@@ -341,6 +352,8 @@
       value={currentValue}
       {placeholder}
       {disabled}
+      aria-label={inputAriaLabel}
+      aria-labelledby={ariaLabelledby}
       aria-expanded={showDropdown}
       aria-controls={listId}
       aria-autocomplete="list"

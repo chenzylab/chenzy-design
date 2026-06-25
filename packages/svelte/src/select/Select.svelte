@@ -48,6 +48,10 @@
     /** 下拉浮层 placement（默认 bottomStart，自动避让仍生效） */
     placement?: Placement;
     placeholder?: string;
+    /** combobox 触发器可访问名；缺省回退到 placeholder 或 locale 默认 */
+    ariaLabel?: string;
+    /** 关联外部 label 的 id（优先于 ariaLabel） */
+    ariaLabelledby?: string;
     disabled?: boolean;
     clearable?: boolean;
     /** 多选 tag 最大显示数，超出折叠为 +N（0=不折叠） */
@@ -84,6 +88,8 @@
     status = 'default',
     placement = 'bottomStart',
     placeholder,
+    ariaLabel,
+    ariaLabelledby,
     disabled = false,
     clearable = false,
     maxTagCount = 0,
@@ -490,12 +496,19 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // combobox 可访问名：ariaLabelledby > ariaLabel > placeholder > locale 默认
+  const triggerAriaLabel = $derived(
+    ariaLabelledby ? undefined : (ariaLabel || placeholder || loc().t('Select.ariaLabel')),
+  );
 </script>
 
 <div class={cls} bind:this={rootEl}>
   <div
     class="cd-select__trigger"
     role="combobox"
+    aria-label={triggerAriaLabel}
+    aria-labelledby={ariaLabelledby}
     aria-expanded={isOpen}
     aria-haspopup="listbox"
     aria-controls={listId}
