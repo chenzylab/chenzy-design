@@ -152,12 +152,16 @@
   {/if}
 {/snippet}
 
-<!-- 折叠 ... 触发器（Tooltip/Popover 的 child） -->
-{#snippet moreTrigger(count: number)}
+<!-- 折叠 ... 触发器（Tooltip/Popover 的 child）。
+     menu=true（popover 模式）时声明 disclosure 语义：aria-haspopup="menu"，
+     展开态 aria-expanded 由父 Popover 的 trigger 包裹同步（这里补 haspopup=menu，
+     使浮层菜单角色与触发器声明一致，符合 WAI-ARIA APG Breadcrumb 折叠节点）。 -->
+{#snippet moreTrigger(count: number, menu: boolean)}
   <button
     type="button"
     class="cd-breadcrumb__more"
     aria-label={loc().t('Breadcrumb.moreLabel', { count })}
+    aria-haspopup={menu ? 'menu' : undefined}
   >…</button>
 {/snippet}
 
@@ -170,21 +174,23 @@
           {#if cell.type === 'ellipsis'}
             {#if moreType === 'popover'}
               <Popover trigger="click" position="bottom" align="start">
-                {@render moreTrigger(cell.count)}
+                {@render moreTrigger(cell.count, true)}
                 {#snippet contentSlot()}
-                  <ul class="cd-breadcrumb__more-list">
+                  <!-- 折叠节点展开浮层：WAI-ARIA APG menu 角色，项为 menuitem。 -->
+                  <ul class="cd-breadcrumb__more-list" role="menu">
                     {#each cell.collapsed as c (c.index)}
-                      <li class="cd-breadcrumb__more-list-item">
+                      <li class="cd-breadcrumb__more-list-item" role="none">
                         {#if c.route.href}
                           <a
                             class="cd-breadcrumb__link"
+                            role="menuitem"
                             href={c.route.href}
                             onclick={() => handleClick(c.route, c.index)}>{c.route.label}</a
                           >
                         {:else}
                           <span
                             class="cd-breadcrumb__text"
-                            role="link"
+                            role="menuitem"
                             tabindex="0"
                             onclick={() => handleClick(c.route, c.index)}
                             onkeydown={(e) => {
@@ -202,7 +208,7 @@
               </Popover>
             {:else if moreType === 'tooltip'}
               <Tooltip placement="bottom">
-                {@render moreTrigger(cell.count)}
+                {@render moreTrigger(cell.count, false)}
                 {#snippet content()}
                   <span class="cd-breadcrumb__more-tip">
                     {cell.collapsed.map((c) => c.route.label).join(` ${separator} `)}
@@ -210,10 +216,12 @@
                 {/snippet}
               </Tooltip>
             {:else}
+              <!-- 默认模式（无 moreType）：点击就地展开整条 ol，disclosure 语义用 aria-expanded。 -->
               <button
                 type="button"
                 class="cd-breadcrumb__more"
                 aria-label={loc().t('Breadcrumb.moreLabel', { count: cell.count })}
+                aria-expanded={expanded}
                 onclick={() => (expanded = true)}
               >…</button>
             {/if}
