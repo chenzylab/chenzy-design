@@ -34,15 +34,24 @@
     toggleRowCheck,
     fixedRange,
     useLiveAnnouncer,
+    useId,
     type RowKey,
     type SortState,
     type FlatRow,
   } from '@chenzy-design/core';
+  import { tick } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import {
+    buildGridCols,
+    nextGridCoord,
+    isFocusCell as isFocusCellPure,
+    rovingTabindexAt,
+    type GridCol,
+  } from './grid-nav.js';
   import type {
     ColumnDef,
     RowSelection,
@@ -87,6 +96,7 @@
     virtualized = false,
     height = 400,
     rowHeight = 48,
+    gridNav,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -141,6 +151,14 @@
     height?: number;
     /** 虚拟滚动行高（px）。virtualized 时生效，默认 48 */
     rowHeight?: number;
+    /**
+     * 交互态 WAI-ARIA Grid Pattern 开关（role=grid + 单元格二维方向键漫游 +
+     * roving tabindex + 虚拟化焦点回收）。
+     * - 缺省（undefined）：当存在交互能力（排序/筛选/行选择/展开/树形/行点击）时自动启用 grid，
+     *   纯展示表保持 role=table，省去漫游逻辑（spec §3 纯展示降级）。
+     * - 显式 true/false：强制启用/关闭 grid 漫游。
+     */
+    gridNav?: boolean;
   } = $props();
 
   const loc = useLocale();
@@ -632,6 +650,201 @@
     emitSelection(toggleRow(selectedSet, getKey(record)));
   }
 
+  // ===================================================================
+  //  交互态 WAI-ARIA Grid Pattern：role=grid + 二维方向键漫游 + roving
+  //  tabindex + 虚拟化焦点回收。
+  //
+  //  焦点模型（红线 #2/#3）：
+  //  - 焦点坐标 focusRow/focusCol 为「逻辑索引」存本地 $state：
+  //      focusRow = -1 表示表头行，0..displayRows.length-1 表示数据行（逻辑序，
+  //      与虚拟化是否渲染无关）；focusCol 索引进「网格列」扁平表
+  //      [expand?, selection?, ...dataColumns]。
+  //  - 每个渲染单元格的 tabindex 由纯派生函数 rovingTabindex(row,col) 计算：
+  //      命中焦点坐标 → 0，否则 -1；整个 grid 只有一个 tabbable 入口（APG）。
+  //  - 方向键算下一坐标（纯函数 nextRovingIndex），命令式 focusCell() 聚焦：
+  //      虚拟化下目标行未渲染先滚动进视口 + tick() 再 focus（render 期不写 $state）。
+  //  - 被虚拟化回收的焦点行：$effect 监测，焦点回退到 grid 容器并 announce，
+  //      不让焦点掉到 <body>。
+  // ===================================================================
+
+  // grid 是否启用：缺省自动检测交互能力；显式 gridNav 覆盖。
+  const isInteractive = $derived(
+    hasSelection ||
+      hasExpand ||
+      treeEnabled ||
+      !!onRowClick ||
+      columns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
+  );
+  const gridEnabled = $derived(gridNav !== undefined ? gridNav : isInteractive);
+
+  // grid 单元格 id 前缀（稳定、SSR 安全）。
+  const gridId = useId('cd-table-grid');
+  // 网格列扁平表：前置 expand/selection 占位列 + 数据列（纯函数 buildGridCols）。
+  const gridCols = $derived<GridCol[]>(
+    buildGridCols({ hasExpand, hasSelection, dataColumnCount: columns.length }),
+  );
+  const gridColCount = $derived(gridCols.length);
+  // 总行数（含表头行）= aria-rowcount，虚拟化时为逻辑总数而非渲染数（spec §6）。
+  const gridRowCount = $derived(displayRows.length + 1);
+
+  // 焦点坐标（逻辑索引）。-1 行 = 表头；col 索引进 gridCols。
+  // 初始未聚焦时为 null，首个 tab 停靠点回退到表头首格。
+  let focusRow = $state(-1);
+  let focusCol = $state(0);
+  let hasFocused = $state(false);
+
+  // 当前是否处于「单元格交互模式」（Enter/F2 进入，Esc 退出）。
+  // 交互模式下单元格内可聚焦控件参与 Tab；导航模式下它们 tabindex=-1。
+  let cellInteractive = $state(false);
+
+  // 某 (row,col) 是否为当前 roving 焦点格（纯派生，render 期只读）。
+  function isFocusCell(row: number, col: number): boolean {
+    if (!gridEnabled) return false;
+    return isFocusCellPure(row, col, { row: focusRow, col: focusCol, hasFocused });
+  }
+  // 单元格 roving tabindex：焦点格 0，其余 -1（仅 grid 启用时）。
+  function rovingTabindex(row: number, col: number): 0 | -1 | undefined {
+    if (!gridEnabled) return undefined;
+    return rovingTabindexAt(row, col, { row: focusRow, col: focusCol, hasFocused });
+  }
+  // 单元格内交互控件的 tabindex：导航模式下 -1（不参与 Tab，靠 Enter/F2 进入），
+  // 交互模式下当前焦点格内控件恢复 0。非 grid 时不接管（undefined）。
+  function childTabindex(row: number, col: number): 0 | -1 | undefined {
+    if (!gridEnabled) return undefined;
+    if (cellInteractive && isFocusCell(row, col)) return 0;
+    return -1;
+  }
+  // 单元格稳定 id（focusCell 命令式聚焦目标）。row=-1 表头记作 'h'。
+  function cellId(row: number, col: number): string {
+    return `${gridId}-r${row === -1 ? 'h' : row}-c${col}`;
+  }
+
+  // grid 容器（table 元素）引用 —— 焦点回收落点。
+  let gridEl = $state<HTMLTableElement | null>(null);
+
+  // 命令式聚焦某逻辑坐标的单元格：虚拟化下若行未渲染先滚动进视口 + tick 再聚焦。
+  async function focusCell(row: number, col: number) {
+    focusRow = row;
+    focusCol = col;
+    hasFocused = true;
+    cellInteractive = false;
+    // 数据行在虚拟化视口外：先滚动使其进入视口（render 期外，事件回调内，红线 #3）。
+    if (virtualized && row >= 0 && scrollEl) {
+      const inView = row >= vRange.startIndex && row < vRange.endIndex;
+      if (!inView) {
+        // 目标行顶部对齐到视口（留一行余量），写 scrollEl.scrollTop 触发 scroll 回调更新区间。
+        const target = Math.max(0, row * vRowHeight);
+        scrollEl.scrollTop = target;
+        scrollTop = target;
+        await tick();
+      }
+    }
+    await tick();
+    const el = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(row, col))}`);
+    if (el) el.focus();
+    else if (gridEl) gridEl.focus(); // 兜底：目标仍不可用，焦点回收到 grid 容器（不掉 body）。
+  }
+
+  // CSS.escape 兜底（id 仅含字母数字与 '-'，本不需转义，留作健壮性）。
+  function cssEscape(id: string): string {
+    return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id;
+  }
+
+  // 二维方向键漫游 keydown（绑定在 grid table 上，事件委托冒泡）。
+  function onGridKeydown(e: KeyboardEvent) {
+    if (!gridEnabled) return;
+    const key = e.key;
+
+    // 交互模式：Esc 退出回导航模式并聚焦当前格；其余按键交给单元格内控件处理。
+    if (cellInteractive) {
+      if (key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        cellInteractive = false;
+        void focusCellSameCoord();
+      }
+      return;
+    }
+
+    // Enter/F2：进入交互模式（聚焦当前格内首个可聚焦控件，无则不拦截）。
+    if (key === 'Enter' || key === 'F2') {
+      const entered = enterCellInteractive();
+      if (entered) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      return;
+    }
+
+    // 导航模式：用纯函数算下一坐标（PageUp/Down 翻一屏行数）。
+    const pageRows = Math.max(1, Math.floor(height / vRowHeight) || 10);
+    const next = nextGridCoord(
+      key,
+      { ctrl: e.ctrlKey, meta: e.metaKey },
+      {
+        current: { row: focusRow, col: focusCol },
+        rowCount: displayRows.length,
+        colCount: gridColCount,
+        pageRows,
+      },
+    );
+    if (!next) return; // 非漫游键
+    e.preventDefault();
+    e.stopPropagation();
+    if (next.row !== focusRow || next.col !== focusCol || !hasFocused) {
+      void focusCell(next.row, next.col);
+    }
+  }
+
+  // 重聚焦当前坐标（退出交互模式时用，避免改坐标）。
+  async function focusCellSameCoord() {
+    await tick();
+    const el = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(focusRow, focusCol))}`);
+    if (el) el.focus();
+  }
+
+  // 进入交互模式：聚焦当前焦点格内首个可聚焦元素。返回是否成功进入。
+  function enterCellInteractive(): boolean {
+    const cell = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(focusRow, focusCol))}`);
+    if (!cell) return false;
+    const focusable = cell.querySelector<HTMLElement>(
+      'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]):not(.cd-table__cell)',
+    );
+    if (!focusable) return false;
+    cellInteractive = true;
+    // tabindex 由 childTabindex 派生切到 0；命令式聚焦控件。
+    void tick().then(() => focusable.focus());
+    return true;
+  }
+
+  // 单元格被点击/获得焦点时，同步焦点坐标（鼠标与键盘一致）。
+  function syncFocusCoord(row: number, col: number) {
+    if (!gridEnabled) return;
+    focusRow = row;
+    focusCol = col;
+    hasFocused = true;
+  }
+
+  // --- 虚拟化焦点回收 ---
+  // 当聚焦数据行被滚出渲染区间（虚拟化卸载），焦点会掉到 <body>。监测并回收：
+  // 把焦点移到 grid 容器（table，tabindex=-1）并 announce，保证键盘用户不丢失上下文。
+  $effect(() => {
+    if (!gridEnabled || !virtualized || !hasFocused) return;
+    // 仅当焦点落在数据行、且该行不在渲染区间时回收。
+    const row = focusRow;
+    if (row < 0) return;
+    const inView = row >= vRange.startIndex && row < vRange.endIndex;
+    if (inView) return;
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    // 仅当焦点确实在本 grid 内（即将随卸载丢失）时回收。
+    if (gridEl && active && gridEl.contains(active)) {
+      gridEl.focus();
+      announcer.announce(
+        loc().t('Table.rowCount', { count: displayRows.length }),
+      );
+    }
+  });
+
   // --- 聚合 onChange 载荷快照（读 render 期派生态，仅在事件回调内调用，红线 #2）---
   // 当前各列筛选选中值（colKey → values[]），仅含非空筛选列。
   function snapshotFilters(): Record<string, (string | number)[]> {
@@ -836,25 +1049,59 @@
   bind:this={scrollEl}
   style={virtualized || scrollBody ? `block-size:${height}px; overflow:auto` : undefined}
 >
-  <table class={cls} style={tableStyle} aria-label={ariaLabel}>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- role=grid 是交互容器；tabindex=-1 仅作虚拟化焦点回收落点，不进 Tab 序列 -->
+  <table
+    bind:this={gridEl}
+    class={cls}
+    style={tableStyle}
+    aria-label={ariaLabel}
+    role={gridEnabled ? 'grid' : undefined}
+    aria-rowcount={gridEnabled ? gridRowCount : undefined}
+    aria-colcount={gridEnabled ? gridColCount : undefined}
+    tabindex={gridEnabled ? -1 : undefined}
+    onkeydown={gridEnabled ? onGridKeydown : undefined}
+  >
     <thead class="cd-table__head" class:cd-table__head--sticky={virtualized || scrollBody}>
-      <tr>
+      <tr role={gridEnabled ? 'row' : undefined} aria-rowindex={gridEnabled ? 1 : undefined}>
         {#if hasExpand}
-          <th class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" scope="col" style={leadingStyle('expand')}></th>
+          {@const gc = 0}
+          <th
+            class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+            scope="col"
+            style={leadingStyle('expand')}
+            role={gridEnabled ? 'columnheader' : undefined}
+            id={gridEnabled ? cellId(-1, gc) : undefined}
+            tabindex={rovingTabindex(-1, gc)}
+            aria-colindex={gridEnabled ? gc + 1 : undefined}
+            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
+          ></th>
         {/if}
         {#if hasSelection}
-          <th class="cd-table__cell cd-table__cell--selection {leadingFixedClass}" scope="col" style={leadingStyle('selection')}>
+          {@const gc = hasExpand ? 1 : 0}
+          <th
+            class="cd-table__cell cd-table__cell--selection {leadingFixedClass}"
+            scope="col"
+            style={leadingStyle('selection')}
+            role={gridEnabled ? 'columnheader' : undefined}
+            id={gridEnabled ? cellId(-1, gc) : undefined}
+            tabindex={rovingTabindex(-1, gc)}
+            aria-colindex={gridEnabled ? gc + 1 : undefined}
+            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
+          >
             <input
               type="checkbox"
               class="cd-table__checkbox"
               aria-label={loc().t('Table.selectAll')}
               checked={headerSelect.checked}
+              tabindex={childTabindex(-1, gc)}
               {@attach indeterminate(headerSelect.indeterminate)}
               onchange={onToggleAll}
             />
           </th>
         {/if}
         {#each columns as col, i (colKeyOf(col, i))}
+          {@const gc = (hasExpand ? 1 : 0) + (hasSelection ? 1 : 0) + i}
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
           {@const hasFilter = !!col.filters && col.filters.length > 0}
@@ -868,12 +1115,18 @@
             scope="col"
             style={cellStyle(col, i)}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
+            role={gridEnabled ? 'columnheader' : undefined}
+            id={gridEnabled ? cellId(-1, gc) : undefined}
+            tabindex={rovingTabindex(-1, gc)}
+            aria-colindex={gridEnabled ? gc + 1 : undefined}
+            onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
           >
             {#if sortable}
               {@const order = currentSort.key === colKeyOf(col, i) ? currentSort.order : null}
               <button
                 type="button"
                 class="cd-table__sort-btn"
+                tabindex={childTabindex(-1, gc)}
                 onclick={() => onSort(col, i)}
               >
                 <span class="cd-table__title">{col.title}</span>
@@ -911,6 +1164,7 @@
                 class:cd-table__filter-btn--active={isFiltered(colKey)}
                 aria-label={loc().t('Table.filter')}
                 aria-expanded={openFilterKey === colKey}
+                tabindex={childTabindex(-1, gc)}
                 bind:this={filterTriggers[colKey]}
                 onclick={(e) => {
                   e.stopPropagation();
@@ -969,8 +1223,13 @@
     </thead>
     <tbody class="cd-table__body">
       {#if visibleRows.length === 0}
-        <tr class="cd-table__row cd-table__row--empty">
-          <td class="cd-table__cell cd-table__cell--empty" colspan={colSpan}>
+        <tr class="cd-table__row cd-table__row--empty" role={gridEnabled ? 'row' : undefined}>
+          <td
+            class="cd-table__cell cd-table__cell--empty"
+            colspan={colSpan}
+            role={gridEnabled ? 'gridcell' : undefined}
+            aria-colindex={gridEnabled ? 1 : undefined}
+          >
             {empty ?? loc().t('Table.emptyText')}
           </td>
         </tr>
@@ -980,10 +1239,11 @@
             <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
-        {#each renderRows as row (row.key)}
+        {#each renderRows as row, ri (row.key)}
           {@const record = row.record}
           {@const key = row.key}
           {@const index = row.topIndex}
+          {@const gridRow = (virtualized ? vRange.startIndex : 0) + ri}
           {@const selected = treeCheckable ? conducted.checked.has(key) : selectedSet.has(key)}
           {@const rowHalf = treeCheckable && conducted.half.has(key)}
           {@const rowDisabled = disabledSet.has(key)}
@@ -995,10 +1255,22 @@
             class:cd-table__row--stripe={stripe && index % 2 === 1}
             class:cd-table__row--clickable={clickable}
             class:cd-table__row--child={treeEnabled && row.level > 0}
+            role={gridEnabled ? 'row' : undefined}
+            aria-rowindex={gridEnabled ? gridRow + 2 : undefined}
+            aria-selected={gridEnabled && hasSelection ? selected : undefined}
             onclick={clickable ? () => onRowClick?.({ record, index }) : undefined}
           >
             {#if hasExpand}
-              <td class="cd-table__cell cd-table__cell--expand {leadingFixedClass}" style={leadingStyle('expand')}>
+              {@const gc = 0}
+              <td
+                class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+                style={leadingStyle('expand')}
+                role={gridEnabled ? 'gridcell' : undefined}
+                id={gridEnabled ? cellId(gridRow, gc) : undefined}
+                tabindex={rovingTabindex(gridRow, gc)}
+                aria-colindex={gridEnabled ? gc + 1 : undefined}
+                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
+              >
                 {#if canExpand(record)}
                   <button
                     type="button"
@@ -1006,6 +1278,7 @@
                     class:cd-table__expand-btn--open={expandedSet.has(key)}
                     aria-expanded={expandedSet.has(key)}
                     aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                    tabindex={childTabindex(gridRow, gc)}
                     onclick={(e) => {
                       e.stopPropagation();
                       toggleExpand(record);
@@ -1019,13 +1292,23 @@
               </td>
             {/if}
             {#if hasSelection}
-              <td class="cd-table__cell cd-table__cell--selection {leadingFixedClass}" style={leadingStyle('selection')}>
+              {@const gc = hasExpand ? 1 : 0}
+              <td
+                class="cd-table__cell cd-table__cell--selection {leadingFixedClass}"
+                style={leadingStyle('selection')}
+                role={gridEnabled ? 'gridcell' : undefined}
+                id={gridEnabled ? cellId(gridRow, gc) : undefined}
+                tabindex={rovingTabindex(gridRow, gc)}
+                aria-colindex={gridEnabled ? gc + 1 : undefined}
+                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
+              >
                 <input
                   type="checkbox"
                   class="cd-table__checkbox"
                   aria-label={loc().t('Table.selectRow')}
                   checked={selected}
                   disabled={rowDisabled}
+                  tabindex={childTabindex(gridRow, gc)}
                   {@attach indeterminate(rowHalf)}
                   onclick={(e) => e.stopPropagation()}
                   onchange={() => onToggleRow(record)}
@@ -1034,10 +1317,17 @@
             {/if}
             {#each columns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
+              {@const gc = (hasExpand ? 1 : 0) + (hasSelection ? 1 : 0) + i}
+              {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !hasExpand}
               <td
                 class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
                 class:cd-table__cell--ellipsis={col.ellipsis}
                 style={cellStyle(col, i)}
+                role={gridEnabled ? (isRowHeader ? 'rowheader' : 'gridcell') : undefined}
+                id={gridEnabled ? cellId(gridRow, gc) : undefined}
+                tabindex={rovingTabindex(gridRow, gc)}
+                aria-colindex={gridEnabled ? gc + 1 : undefined}
+                onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
                 {#if treeEnabled && i === 0}
                   <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
@@ -1048,6 +1338,7 @@
                       class:cd-table__tree-toggle--open={treeExpandedSet.has(key)}
                       aria-expanded={treeExpandedSet.has(key)}
                       aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                      tabindex={childTabindex(gridRow, gc)}
                       onclick={(e) => {
                         e.stopPropagation();
                         toggleTreeExpand(record);
@@ -1070,8 +1361,13 @@
             {/each}
           </tr>
           {#if hasExpand && expandedSet.has(key) && canExpand(record)}
-            <tr class="cd-table__row cd-table__row--expanded">
-              <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan}>
+            <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
+              <td
+                class="cd-table__cell cd-table__cell--expanded-content"
+                colspan={colSpan}
+                role={gridEnabled ? 'gridcell' : undefined}
+                aria-colindex={gridEnabled ? 1 : undefined}
+              >
                 {@render expandable!.expandedRowRender({ record, index })}
               </td>
             </tr>

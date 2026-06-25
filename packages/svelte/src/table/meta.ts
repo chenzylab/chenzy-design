@@ -64,7 +64,9 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: true,
-    note: '原生 <table><thead><tbody> 语义；th scope=col，可排序列加 aria-sort(ascending/descending/none)；行选择用原生 checkbox，全选 aria-label「全选」、行选 aria-label「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；排序为 <button>，焦点环用 --cd-focus-ring；reduced-motion 下关闭 spinner 与图标过渡。',
+    pattern: 'grid|table',
+    keyboard: '↑↓ 行 / ←→ 列 / Home·End 行内首末 / Ctrl·Cmd+Home·End 表首末 / PageUp·PageDown 翻屏 / Enter·F2 进入单元格交互、Esc 退出',
+    note: '交互态(排序/筛选/行选择/展开/树形/行点击任一)遵循 WAI-ARIA APG Grid Pattern：role=grid + aria-rowcount/colcount(虚拟化为逻辑总数) + role=row(aria-rowindex 真实序) + role=columnheader/rowheader/gridcell + aria-colindex；单元格 roving tabindex(整 grid 单一 Tab 停靠点，纯派生)，二维方向键漫游(纯函数 nextGridCoord)，命令式 focusCell 聚焦；虚拟化下方向键移到未渲染行先滚动进视口再 tick 后聚焦，焦点行被回收时回退到 grid 容器并 announce(不掉 body)；Enter/F2 进入单元格内控件交互模式、Esc 退出回导航(导航模式下单元格内控件 tabindex=-1 不破坏 roving)。纯展示表(无交互)降级为 role=table 省漫游。可排序列 aria-sort(ascending/descending/none)；行选择原生 checkbox，全选 aria-label「全选」、行选「选择此行」，半选经 attachment 命令式设 input.indeterminate(只写属性、不读几何、无响应式循环)；焦点环 --cd-focus-ring；reduced-motion 关闭 spinner 与图标过渡。',
   },
   tokens: [
     '--cd-table-bg',
