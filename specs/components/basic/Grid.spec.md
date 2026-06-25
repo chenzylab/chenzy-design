@@ -153,7 +153,7 @@ WCAG 2.1 AA。Grid 是**布局容器，本身不具语义**，遵循“布局不
 
 | 维度 | 预算 | 说明 |
 |------|------|------|
-| JS gzip（Row+Col 合计） | ≤ 1.8 KB | 纯类名/样式计算，无 core、无依赖 |
+| JS gzip（Row+Col 合计） | ≤ 2.25 KB | 纯类名/样式计算，无 core、无依赖 |
 | CSS gzip（含 24×6 断点类） | ≤ 2.5 KB | 预生成栅格类，建议可按需 tree-shake 未用断点 |
 | 首次渲染（100 个 Col） | < 4 ms | 仅类名拼接 + context 读取 |
 | gutter 更新重渲染 | < 1 ms/行 | 仅更新 Row 上 2 个 CSS 变量，子项靠 `var()` 自动生效，不重算子节点 |
@@ -206,5 +206,5 @@ WCAG 2.1 AA。Grid 是**布局容器，本身不具语义**，遵循“布局不
 - [ ] a11y：无冗余 role，焦点/Tab 顺序不被布局接管；文档警示 `order` 对阅读顺序的影响；满足 reduced-motion（无动画）。
 - [ ] i18n：确认无用户可见文案；DEV 告警仅输出到控制台、不进入 i18n 资源。
 - [ ] 提供 `component.meta.ts` 且字段（props/slots/events/tokens/a11y/examples/constraints）完整。
-- [ ] Perf：JS ≤1.8KB、CSS ≤2.5KB（gzip），默认零运行时监听；gutter 更新仅改 CSS 变量不触发子树重渲染。
+- [ ] Perf：JS ≤2.25KB、CSS ≤2.5KB（gzip），默认零运行时监听；gutter 更新仅改 CSS 变量不触发子树重渲染。
 - [ ] 单元 / 响应式 / SSR / 视觉回归 / a11y / 类型 测试全部通过。

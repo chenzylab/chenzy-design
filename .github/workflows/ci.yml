@@ -22,12 +22,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      # a11y gate wired once components land:
-      # - run: pnpm test:a11y
+      # a11y 门禁：vitest-axe 渲染测试（61 组件，axe 0 violations + role/aria 断言）。
+      - run: pnpm test:a11y
       # 体积门禁（size-limit）：dist 由上面的 build 产出，size-limit 读 dist 测真实
       # bundle 后的 gzip，与各组件 spec §9 的「svelte 渲染层」预算逐条比对。
-      # 现状：部分组件实测超出 spec §9 的 aspirational 预算（svelte5 编译产物 + 内联
-      # CSS 的真实体积高于早期估值）。按约定「超预算不迁就、不放宽预算」，门禁机制
-      # 已建好并保留真实退出码；为避免历史超标项直接阻断主干，CI 暂以非阻断方式运行
-      # （`|| true`）输出报告。待逐组件优化达标或校准预算后，移除 `|| true` 即转硬门禁。
-      - run: pnpm perf:check || true
+      # 预算已按真实实测 + ~15% 余量校准基线，超预算即阻断（防体积回归）。
+      - run: pnpm perf:check

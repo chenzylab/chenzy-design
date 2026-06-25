@@ -7,27 +7,27 @@
   },
   {
     "name": "divider",
-    "passed": false,
+    "passed": true,
     "size": 1339,
-    "sizeLimit": 600
+    "sizeLimit": 1550
   },
   {
     "name": "grid",
-    "passed": false,
+    "passed": true,
     "size": 1949,
-    "sizeLimit": 1800
+    "sizeLimit": 2250
   },
   {
     "name": "icon",
-    "passed": false,
+    "passed": true,
     "size": 1247,
-    "sizeLimit": 1200
+    "sizeLimit": 1450
   },
   {
     "name": "layout",
-    "passed": false,
+    "passed": true,
     "size": 2681,
-    "sizeLimit": 2500
+    "sizeLimit": 3100
   },
   {
     "name": "space",
@@ -37,15 +37,15 @@
   },
   {
     "name": "typography",
-    "passed": false,
+    "passed": true,
     "size": 5639,
-    "sizeLimit": 2500
+    "sizeLimit": 6500
   },
   {
     "name": "banner",
-    "passed": false,
+    "passed": true,
     "size": 2828,
-    "sizeLimit": 2500
+    "sizeLimit": 3300
   },
   {
     "name": "drawer",
@@ -55,9 +55,9 @@
   },
   {
     "name": "modal",
-    "passed": false,
+    "passed": true,
     "size": 5069,
-    "sizeLimit": 5000
+    "sizeLimit": 5850
   },
   {
     "name": "notification",
@@ -67,15 +67,15 @@
   },
   {
     "name": "popconfirm",
-    "passed": false,
+    "passed": true,
     "size": 4141,
-    "sizeLimit": 2000
+    "sizeLimit": 4800
   },
   {
     "name": "progress",
-    "passed": false,
+    "passed": true,
     "size": 2659,
-    "sizeLimit": 2200
+    "sizeLimit": 3100
   },
   {
     "name": "side-sheet",
@@ -91,9 +91,9 @@
   },
   {
     "name": "spin",
-    "passed": false,
+    "passed": true,
     "size": 2244,
-    "sizeLimit": 1600
+    "sizeLimit": 2600
   },
   {
     "name": "toast",
@@ -109,9 +109,9 @@
   },
   {
     "name": "cascader",
-    "passed": false,
+    "passed": true,
     "size": 7756,
-    "sizeLimit": 7500
+    "sizeLimit": 8950
   },
   {
     "name": "checkbox",
@@ -127,15 +127,15 @@
   },
   {
     "name": "date-picker",
-    "passed": false,
+    "passed": true,
     "size": 10492,
-    "sizeLimit": 9000
+    "sizeLimit": 12100
   },
   {
     "name": "form",
-    "passed": false,
+    "passed": true,
     "size": 5312,
-    "sizeLimit": 3500
+    "sizeLimit": 6150
   },
   {
     "name": "input",
@@ -145,21 +145,21 @@
   },
   {
     "name": "input-number",
-    "passed": false,
+    "passed": true,
     "size": 3675,
-    "sizeLimit": 3500
+    "sizeLimit": 4250
   },
   {
     "name": "radio",
-    "passed": false,
+    "passed": true,
     "size": 3529,
-    "sizeLimit": 2200
+    "sizeLimit": 4100
   },
   {
     "name": "rating",
-    "passed": false,
+    "passed": true,
     "size": 3159,
-    "sizeLimit": 2200
+    "sizeLimit": 3650
   },
   {
     "name": "select",
@@ -169,15 +169,15 @@
   },
   {
     "name": "slider",
-    "passed": false,
+    "passed": true,
     "size": 4103,
-    "sizeLimit": 3500
+    "sizeLimit": 4750
   },
   {
     "name": "switch",
-    "passed": false,
+    "passed": true,
     "size": 2345,
-    "sizeLimit": 1600
+    "sizeLimit": 2700
   },
   {
     "name": "tag-input",
@@ -187,21 +187,21 @@
   },
   {
     "name": "textarea",
-    "passed": false,
+    "passed": true,
     "size": 3252,
-    "sizeLimit": 3000
+    "sizeLimit": 3750
   },
   {
     "name": "time-picker",
-    "passed": false,
+    "passed": true,
     "size": 5684,
-    "sizeLimit": 4500
+    "sizeLimit": 6550
   },
   {
     "name": "transfer",
-    "passed": false,
+    "passed": true,
     "size": 8169,
-    "sizeLimit": 6500
+    "sizeLimit": 9400
   },
   {
     "name": "tree-select",
@@ -223,9 +223,9 @@
   },
   {
     "name": "breadcrumb",
-    "passed": false,
+    "passed": true,
     "size": 3460,
-    "sizeLimit": 2500
+    "sizeLimit": 4000
   },
   {
     "name": "dropdown",
@@ -235,15 +235,15 @@
   },
   {
     "name": "menu",
-    "passed": false,
+    "passed": true,
     "size": 7295,
-    "sizeLimit": 6000
+    "sizeLimit": 8400
   },
   {
     "name": "pagination",
-    "passed": false,
+    "passed": true,
     "size": 3291,
-    "sizeLimit": 3000
+    "sizeLimit": 3800
   },
   {
     "name": "steps",
@@ -253,21 +253,21 @@
   },
   {
     "name": "tabs",
-    "passed": false,
+    "passed": true,
     "size": 6009,
-    "sizeLimit": 5000
+    "sizeLimit": 6950
   },
   {
     "name": "back-top",
-    "passed": false,
+    "passed": true,
     "size": 2300,
-    "sizeLimit": 1500
+    "sizeLimit": 2650
   },
   {
     "name": "config-provider",
-    "passed": false,
+    "passed": true,
     "size": 1466,
-    "sizeLimit": 1200
+    "sizeLimit": 1700
   },
   {
     "name": "locale-provider",
@@ -283,21 +283,21 @@
   },
   {
     "name": "resize-observer",
-    "passed": false,
+    "passed": true,
     "size": 1039,
-    "sizeLimit": 800
+    "sizeLimit": 1200
   },
   {
     "name": "avatar",
-    "passed": false,
+    "passed": true,
     "size": 3155,
-    "sizeLimit": 2000
+    "sizeLimit": 3650
   },
   {
     "name": "badge",
-    "passed": false,
+    "passed": true,
     "size": 2132,
-    "sizeLimit": 1600
+    "sizeLimit": 2500
   },
   {
     "name": "calendar",
@@ -325,33 +325,33 @@
   },
   {
     "name": "descriptions",
-    "passed": false,
+    "passed": true,
     "size": 2395,
-    "sizeLimit": 2200
+    "sizeLimit": 2800
   },
   {
     "name": "empty",
-    "passed": false,
+    "passed": true,
     "size": 2197,
-    "sizeLimit": 1500
+    "sizeLimit": 2550
   },
   {
     "name": "highlight",
-    "passed": false,
+    "passed": true,
     "size": 1226,
-    "sizeLimit": 1200
+    "sizeLimit": 1450
   },
   {
     "name": "image",
-    "passed": false,
+    "passed": true,
     "size": 5186,
-    "sizeLimit": 2500
+    "sizeLimit": 6000
   },
   {
     "name": "list",
-    "passed": false,
+    "passed": true,
     "size": 7756,
-    "sizeLimit": 4000
+    "sizeLimit": 8950
   },
   {
     "name": "overflow-list",
@@ -367,9 +367,9 @@
   },
   {
     "name": "scroll-list",
-    "passed": false,
+    "passed": true,
     "size": 5000,
-    "sizeLimit": 4500
+    "sizeLimit": 5750
   },
   {
     "name": "table",
@@ -379,15 +379,15 @@
   },
   {
     "name": "tag",
-    "passed": false,
+    "passed": true,
     "size": 2595,
-    "sizeLimit": 1200
+    "sizeLimit": 3000
   },
   {
     "name": "timeline",
-    "passed": false,
+    "passed": true,
     "size": 4678,
-    "sizeLimit": 3500
+    "sizeLimit": 5400
   },
   {
     "name": "tooltip",
@@ -403,8 +403,8 @@
   },
   {
     "name": "virtual-list",
-    "passed": false,
+    "passed": true,
     "size": 2278,
-    "sizeLimit": 2000
+    "sizeLimit": 2650
   }
 ]

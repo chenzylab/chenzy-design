@@ -176,7 +176,7 @@
 | 维度 | 预算 / 策略 |
 |------|------|
 | gzip 体积（仅 Image，无预览） | ≤ 2.5 KB（core 状态机 + svelte 渲染） |
-| gzip 体积（含 ImagePreview + PreviewGroup） | ≤ 7 KB（含 focus trap / dismiss / scroll lock 复用，不额外打包） |
+| gzip 体积（含 ImagePreview + PreviewGroup） | ≤ 6 KB（含 focus trap / dismiss / scroll lock 复用，不额外打包） |
 | 首屏 CLS | `width/height` 显式时 = 0；强约束以 `aspect-ratio` 占位 |
 | 懒加载 | 默认原生 `loading=lazy`；observer 模式单例共享 IntersectionObserver（按 root+rootMargin 分组） |
 | 预览灯箱 | `destroyOnClose` 默认 true，关闭即卸载工具栏与大图 DOM |
@@ -234,6 +234,6 @@
 - [ ] `prefers-reduced-motion` 下关闭淡入与缩放/旋转动效。
 - [ ] RTL 下翻页方向与按钮位置正确镜像。
 - [ ] `destroyOnClose` 默认开启，关闭后大图与工具栏 DOM 卸载。
-- [ ] gzip 体积满足 Perf Budget（无预览 ≤ 2.5KB / 含预览 ≤ 7KB）。
+- [ ] gzip 体积满足 Perf Budget（无预览 ≤ 2.5KB / 含预览 ≤ 6KB）。
 - [ ] 提供 `component.meta.ts`，字段完整（tokens/i18nKeys/a11yRoles/props/events/slots）。
 - [ ] 单元 / 组件 / a11y / 视觉回归测试全部通过。

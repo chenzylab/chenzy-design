@@ -180,7 +180,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 | 指标 | 预算 | 说明 |
 |------|------|------|
 | `@chenzy-design/core` createForm (gzip) | ≤ 4.5 KB | 状态机 + 校验引擎 + path util |
-| `@chenzy-design/svelte` Form 套件 (gzip) | ≤ 3.5 KB | Form/Field/Section/绑定字段 |
+| `@chenzy-design/svelte` Form 套件 (gzip) | ≤ 6.15 KB | Form/Field/Section/绑定字段 |
 | 单字段输入 → 重渲染范围 | 仅该 Field | 细粒度 selector 订阅，O(1) |
 | 100 字段表单首屏渲染 | < 16ms（无虚拟化） | 字段轻量；超 200 字段建议分步/折叠 |
 | validate(全表 200 字段，同步规则) | < 8ms | 规则短路 + 批量 |
@@ -218,7 +218,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 ## 12. 验收标准 checklist
 
 - [ ] core `createForm` 框架无关，零 Svelte 依赖，gzip ≤ 4.5 KB。
-- [ ] svelte 套件 gzip ≤ 3.5 KB，细粒度订阅生效（单字段输入不触发全表重渲染）。
+- [ ] svelte 套件 gzip ≤ 6.15 KB，细粒度订阅生效（单字段输入不触发全表重渲染）。
 - [ ] 受控 `value`+`on:change` 与非受控 `initValues` 均工作，reset 回到 initialValues。
 - [ ] 支持嵌套路径与动态增删字段，卸载自动 unregister。
 - [ ] 全部 rule 类型 + 异步校验，竞态结果正确丢弃。

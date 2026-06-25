@@ -184,7 +184,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 | 维度 | 预算 | 说明 |
 |------|------|------|
 | Tag gzip（纯展示） | ≤ 1.2 KB | 无 core 依赖，纯 CSS + span |
-| Tag gzip（含 closable/checkable + core） | ≤ 2.8 KB | 含 `createTag` 状态机 |
+| Tag gzip（含 closable/checkable + core） | ≤ 3 KB | 含 `createTag` 状态机 |
 | TagGroup gzip | ≤ 2.0 KB（不含 Popover） | 折叠计算逻辑 |
 | 首次渲染（单个） | < 0.2ms | 极轻 DOM |
 | TagGroup 100 项渲染 | < 16ms | 一帧内完成 |

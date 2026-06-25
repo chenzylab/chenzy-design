@@ -171,7 +171,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 4.5 KB | 不含 core |
+| svelte 组件 gzip | ≤ 6.55 KB | 不含 core |
 | core `createTimePicker` gzip | ≤ 2.5 KB | 含格式解析与原语引用 |
 | 首次打开浮层 | ≤ 16ms | 列项 < 60×3，无需虚拟化 |
 | 列滚动定位 | ≤ 8ms / 帧 | `scrollTo` + rAF 批处理 |

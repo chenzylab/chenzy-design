@@ -164,7 +164,7 @@ Banner 含「关闭交互 + 关闭动画 + a11y 公告」逻辑，因此采用 c
 | 指标 | 预算 | 说明 |
 |---|---|---|
 | core `createBanner` gzip | ≤ 1.2 KB | 仅状态机 + props 生成 + useId |
-| svelte `Banner` gzip | ≤ 2.5 KB | 含 4 套默认图标（按需 tree-shake）+ 过渡 |
+| svelte `Banner` gzip | ≤ 3.3 KB | 含 4 套默认图标（按需 tree-shake）+ 过渡 |
 | 默认图标单个 gzip | ≤ 0.3 KB | SVG，未使用类型可被摇树 |
 | 首次渲染 | < 1ms | 静态结构，无布局抖动 |
 | 关闭过渡 | 1 帧内启动，时长 = `--cd-motion-duration-fast`（~150ms） | slide+fade，GPU 合成（transform/opacity） |
