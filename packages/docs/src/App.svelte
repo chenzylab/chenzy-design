@@ -1207,11 +1207,34 @@ let pageSize2 = $state(10);
       这是一段很长很长很长很长很长很长很长很长很长很长很长很长的单行文本会被省略
     </Text>
   </div>
-  <div style="margin-top: 12px;"><Paragraph type="tertiary">多行省略 + 展开/收起（rows=2, expandable）：</Paragraph></div>
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">多行省略 + 展开/折叠（rows=2, expandable + collapsible）：</Paragraph></div>
   <div style="max-width: 360px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
-    <Paragraph ellipsis={{ rows: 2, expandable: true }}>
+    <Paragraph ellipsis={{ rows: 2, expandable: true, collapsible: true, collapseText: '收起' }}>
       多行省略示例：这是一段较长的段落文本，超过两行后会被截断并显示展开按钮。点击展开查看完整内容，再次点击收起。
       省略逻辑由 @chenzy-design/core 的 createEllipsis 提供，CSS line-clamp 为默认路径，expandable/showTooltip/suffix 才启用 ResizeObserver 测量路径。
+    </Paragraph>
+  </div>
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">showTooltip 自定义浮层内容（opts.content）：</Paragraph></div>
+  <div style="max-width: 320px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
+    <Text ellipsis={{ showTooltip: { opts: { content: '这是自定义要展示的内容' } } }}>
+      可以自定义浮层里的展示内容试试看吧鼠标悬浮看效果
+    </Text>
+  </div>
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">showTooltip 用 Popover（type: 'popover'）：</Paragraph></div>
+  <div style="max-width: 320px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
+    <Paragraph ellipsis={{ rows: 2, showTooltip: { type: 'popover' } }}>
+      多行截断，悬浮展示 Popover：Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统，包含设计语言以及一整套可复用的前端组件。
+    </Paragraph>
+  </div>
+  <div style="margin-top: 12px;"><Paragraph type="tertiary">中间截断（pos: 'middle'）+ suffix 后缀：</Paragraph></div>
+  <div style="max-width: 240px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px;">
+    <Text ellipsis={{ showTooltip: true, pos: 'middle' }}>
+      ssssssssssssssssssssssssssssssssssss
+    </Text>
+  </div>
+  <div style="max-width: 300px; border: 1px dashed var(--cd-color-border, #ddd); padding: 8px; margin-top: 8px;">
+    <Paragraph ellipsis={{ suffix: '小尾巴' }}>
+      有后缀的情况：Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统。
     </Paragraph>
   </div>
 

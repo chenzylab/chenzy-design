@@ -57,12 +57,31 @@ describe('createEllipsis', () => {
     expect(onExpand).not.toHaveBeenCalled();
   });
 
-  it('toggle flips expanded and fires onExpand when expandable', () => {
+  it('expandable allows expanding but not collapsing back (no collapsible)', () => {
     const onExpand = vi.fn();
     const e = createEllipsis({ rows: 2, expandable: true, onExpand });
     e.toggle();
     expect(e.expanded).toBe(true);
     expect(onExpand).toHaveBeenCalledWith(true);
+    // without collapsible, collapsing back is a no-op (Semi semantics)
+    e.toggle();
+    expect(e.expanded).toBe(true);
+    expect(onExpand).toHaveBeenCalledTimes(1);
+  });
+
+  it('collapsible allows collapsing back after expansion', () => {
+    const onExpand = vi.fn();
+    const e = createEllipsis({ rows: 2, expandable: true, collapsible: true, onExpand });
+    e.toggle();
+    expect(e.expanded).toBe(true);
+    e.toggle();
+    expect(e.expanded).toBe(false);
+    expect(onExpand).toHaveBeenLastCalledWith(false);
+    expect(onExpand).toHaveBeenCalledTimes(2);
+  });
+
+  it('collapsible without expandable cannot expand initially', () => {
+    const e = createEllipsis({ rows: 2, collapsible: true });
     e.toggle();
     expect(e.expanded).toBe(false);
   });

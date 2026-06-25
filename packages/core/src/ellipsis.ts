@@ -78,8 +78,10 @@ export function truncateText(
 export interface EllipsisOptions {
   /** clamp rows (default 1) */
   rows?: number;
-  /** whether an expand/collapse toggle is offered */
+  /** whether an expand toggle is offered */
   expandable?: boolean;
+  /** whether a collapse toggle is offered after expansion (Semi `collapsible`) */
+  collapsible?: boolean;
   /** truncation position (single-line precise path); default 'end' */
   pos?: EllipsisPos;
   /** initial expanded state */
@@ -119,7 +121,10 @@ export function createEllipsis(options: EllipsisOptions = {}): EllipsisApi {
   }
 
   function setExpanded(next: boolean): void {
-    if (!options.expandable || expanded === next) return;
+    if (expanded === next) return;
+    // expanding requires `expandable`; collapsing back requires `collapsible`.
+    if (next && !options.expandable) return;
+    if (!next && !options.collapsible) return;
     expanded = next;
     options.onExpand?.(expanded);
     emit();

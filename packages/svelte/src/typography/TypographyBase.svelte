@@ -24,19 +24,51 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import Tooltip from '../tooltip/Tooltip.svelte';
+  import Popover from '../popover/Popover.svelte';
 
   type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
   type TypoSize = 'small' | 'default' | 'large';
 
+  /**
+   * showTooltip 浮层透传选项（对齐 Semi opts）。content 指定浮层显示的自定义内容
+   * （非原文）；theme/placement/maxWidth 透传 Tooltip；popover 额外接受 title。
+   */
+  export interface EllipsisTooltipOpts {
+    /** 浮层显示的内容；缺省用完整原文（fullText） */
+    content?: string;
+    /** Popover 模式标题 */
+    title?: string;
+    theme?: 'dark' | 'light';
+    placement?: string;
+    position?: 'top' | 'bottom' | 'left' | 'right';
+    maxWidth?: number | string;
+  }
+  /**
+   * showTooltip 配置（对齐 Semi）：
+   *  - `true`：默认 Tooltip，浮层 = 完整原文。
+   *  - `{ opts: { content } }`：浮层显示自定义内容。
+   *  - `{ type: 'popover', opts }`：用 Popover 而非 Tooltip。
+   *  - `{ renderTooltip }`：完全自定义浮层。Semi 的 `(content, children) => VNode`
+   *    在 Svelte 中表达为 snippet `(fullText, trigger) => 浮层`，其中 trigger 是
+   *    渲染好的截断文本（须作为浮层触发器渲染出来），fullText 为完整原文。
+   */
+  export interface EllipsisShowTooltip {
+    type?: 'tooltip' | 'popover';
+    opts?: EllipsisTooltipOpts;
+    renderTooltip?: Snippet<[string, Snippet]>;
+  }
+
   export interface EllipsisConfig {
     rows?: number;
     expandable?: boolean;
+    /** 展开后是否可折叠回去（Semi collapsible）；默认 false */
+    collapsible?: boolean;
     expandText?: string;
     collapseText?: string;
     suffix?: string;
     pos?: EllipsisPos;
-    showTooltip?: boolean | { type?: 'tooltip' | 'popover' };
+    showTooltip?: boolean | EllipsisShowTooltip;
     onExpand?: (expanded: boolean) => void;
   }
   export interface CopyableConfig {
@@ -142,8 +174,18 @@
 
   const rows = $derived(ellipsisCfg?.rows ?? 1);
   const expandable = $derived(ellipsisCfg?.expandable ?? false);
+  const collapsible = $derived(ellipsisCfg?.collapsible ?? false);
   const pos = $derived(ellipsisCfg?.pos ?? 'end');
   const showTooltip = $derived(Boolean(ellipsisCfg?.showTooltip));
+  // 归一化 showTooltip 配置（对齐 Semi：true → 默认 tooltip）。
+  const tooltipCfg = $derived.by<EllipsisShowTooltip | null>(() => {
+    const st = ellipsisCfg?.showTooltip;
+    if (!st) return null;
+    return st === true ? {} : st;
+  });
+  const tooltipType = $derived(tooltipCfg?.type ?? 'tooltip');
+  const tooltipOpts = $derived(tooltipCfg?.opts ?? {});
+  const renderTooltip = $derived(tooltipCfg?.renderTooltip);
 
   // 纯文本快路径：三特性全关 → 不实例化任何 core hook / observer / timer。
   const isInteractive = $derived(
@@ -184,6 +226,7 @@
     ? createEllipsis({
         rows: initEllipsis.rows ?? 1,
         expandable: initEllipsis.expandable ?? false,
+        collapsible: initEllipsis.collapsible ?? false,
         pos: initEllipsis.pos ?? 'end',
         onExpand: (e) => {
           expanded = e;
@@ -406,7 +449,14 @@
 
   // tooltip: 仅在确实溢出且 showTooltip 时启用
   const tooltipEnabled = $derived(showTooltip && truncated === true && !expanded);
-  const fullText = $derived(textContent());
+  // textContent() 非响应式：用 truncated/expanded 变化作为重算触发器（measure 写 state 后重新取 DOM 全文）。
+  const fullText = $derived.by(() => {
+    void truncated;
+    void expanded;
+    return textContent();
+  });
+  // 浮层显示内容：opts.content 自定义优先，否则用完整原文。
+  const tooltipContent = $derived(tooltipOpts.content ?? fullText);
 
   const copyLabel = $derived(loc().t('Typography.copy'));
   const editLabel = $derived(loc().t('Typography.edit'));
@@ -481,21 +531,41 @@
     {@render children?.()}
   </svelte:element>
 {:else}
-  <svelte:element
-    this={element}
-    bind:this={hostEl}
-    class={cls}
-    style={hostStyle || undefined}
-    aria-disabled={disabled || undefined}
-    {...hostAttrs}
-    onclick={hostClick}
-    ondblclick={onTriggerHost}
-  >
-    {@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
- -->{ellipsisCfg.suffix}{/if}
-  </svelte:element>
+  <!-- showTooltip: 把截断后的文本宿主（hostNode，触发器）用 Tooltip/Popover 包裹，
+       浮层 content = 完整原文 / 自定义内容（Semi renderTipWrapper 模式）。
+       注意：以 showTooltip（静态配置）而非 tooltipEnabled（随 truncated 变化）决定是否包裹，
+       使 hostNode 在浮层内位置稳定，避免 truncated 翻转时 host 被 {#if} 销毁重建、
+       导致 onMount 建立的 ResizeObserver 观察到失效节点（测量永不再落地）。
+       未溢出/展开时用浮层 disabled / 空内容关闭浮层，不渲染浮层。 -->
+  {#if showTooltip}
+    {#if renderTooltip}
+      {@render renderTooltip(fullText, hostNode)}
+    {:else if tooltipType === 'popover'}
+      <Popover
+        content={tooltipEnabled ? tooltipContent : ''}
+        title={tooltipOpts.title ?? ''}
+        position={tooltipOpts.position ?? 'top'}
+        trigger="hover"
+        disabled={!tooltipEnabled}
+      >
+        {@render hostNode()}
+      </Popover>
+    {:else}
+      <Tooltip
+        content={tooltipEnabled ? tooltipContent : ''}
+        placement={(tooltipOpts.placement ?? 'top') as never}
+        theme={tooltipOpts.theme ?? 'dark'}
+        maxWidth={tooltipOpts.maxWidth ?? 300}
+        disabled={!tooltipEnabled}
+      >
+        {@render hostNode()}
+      </Tooltip>
+    {/if}
+  {:else}
+    {@render hostNode()}
+  {/if}
 
-  {#if expandable && (truncated === true || expanded)}
+  {#if (expandable && !expanded && truncated === true) || (collapsible && expanded)}
     <button
       type="button"
       class="{baseClass}__expand"
@@ -509,10 +579,21 @@
   {@render actions()}
 {/if}
 
-{#if tooltipEnabled && hostEl}
-  <!-- showTooltip: 溢出时悬浮显示完整内容 (复用 Tooltip 浮层管理) -->
-  <Tooltip content={fullText} />
-{/if}
+{#snippet hostNode()}
+  <svelte:element
+    this={element}
+    bind:this={hostEl}
+    class={cls}
+    style={hostStyle || undefined}
+    aria-disabled={disabled || undefined}
+    {...hostAttrs}
+    onclick={hostClick}
+    ondblclick={onTriggerHost}
+  >
+    {@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
+ -->{ellipsisCfg.suffix}{/if}
+  </svelte:element>
+{/snippet}
 
 <style>
   /* ── 基础排版样式 (统一源, 因实际元素由本组件渲染, 子组件 scoped 不生效) ── */
@@ -638,6 +719,23 @@
     line-clamp: var(--cd-typo-clamp, 1);
     white-space: normal;
     overflow: hidden;
+  }
+  /* showTooltip：Tooltip/Popover 触发包裹默认 inline-block 收缩到内容宽，
+     会让被包裹宿主的 max-inline-size:100% 退化为内容宽（永不溢出、tooltip 永不触发）。
+     当包裹的是省略宿主时，让包裹层撑满父容器宽度，使宽度约束正确传递到宿主。 */
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis)),
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi)),
+  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis)),
+  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis-multi)) {
+    display: block;
+    max-inline-size: 100%;
+  }
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis) > .cd-tooltip__trigger),
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi) > .cd-tooltip__trigger),
+  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis) > .cd-popover__trigger),
+  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis-multi) > .cd-popover__trigger) {
+    display: block;
+    max-inline-size: 100%;
   }
   :global(.cd-typography__action) {
     display: inline-flex;
