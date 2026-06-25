@@ -158,7 +158,7 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 | 指标 | 预算 | 说明 |
 |---|---|---|
 | 纯展示路径 gzip | ≤ 2.5 KB | 无折叠/下拉时不引入 core 与 Dropdown/Tooltip |
-| 含 core + 折叠 gzip | ≤ 6 KB | 含 `createBreadcrumb` 与 dismiss/roving 原语 |
+| 含 core + 折叠 gzip | ≤ 4 KB | 含 `createBreadcrumb` 与 dismiss/roving 原语 |
 | 首次渲染（20 项） | < 4 ms | 同步渲染，无折叠计算开销 |
 | 折叠菜单首开 | < 16 ms（1 帧） | 浮层惰性挂载 |
 | 折叠重算 | O(n)，n=项数 | 仅在 `routes`/`maxItemCount` 变更时重算 |
@@ -204,6 +204,6 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 - [ ] 键盘交互、焦点归还、`Esc`/外点击关闭、roving 菜单符合 WAI-ARIA APG。
 - [ ] 对比度 AA、focus-visible ≥ 3:1、reduced-motion、RTL 镜像均通过。
 - [ ] 折叠/下拉浮层 `destroyOnClose` 惰性挂载；纯展示路径不引入 core。
-- [ ] gzip 预算达标（纯展示 ≤ 2.5KB，含折叠 ≤ 6KB）。
+- [ ] gzip 预算达标（纯展示 ≤ 2.5KB，含折叠 ≤ 4KB）。
 - [ ] 提供 `component.meta.ts`，schema/tokens/a11y/i18n/examples 完整。
 - [ ] axe 无障碍、视觉回归、bundle-size 守卫 CI 全绿。

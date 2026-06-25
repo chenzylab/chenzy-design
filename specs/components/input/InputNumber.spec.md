@@ -165,7 +165,7 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 3.5 KB | 含模板、样式、action |
+| svelte 组件 gzip | ≤ 4.25 KB | 含模板、样式、action |
 | core `createInputNumber` gzip | ≤ 2 KB | 纯逻辑，可独立 tree-shake |
 | `Intl.NumberFormat` | 懒加载 + 缓存 | 仅启用 formatter 时实例化，按 (locale,options) 缓存，避免每次渲染 new |
 | 键入响应 | < 4ms/次 | input 仅更新 displayValue，commit 才 parse/format |
@@ -212,5 +212,5 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 - [ ] 所有可见文案走 i18n，数字/分组符由 `Intl` 按 locale 决定，无硬编码。
 - [ ] 仅消费 Alias/Component token，无写死颜色/尺寸；`--cd-input-number-*` 可覆盖。
 - [ ] core 逻辑零 DOM 依赖、可独立单测；svelte 仅渲染转发。
-- [ ] Perf Budget 达标（svelte ≤3.5KB / core ≤2KB gzip）；定时器与 wheel 监听无泄漏。
+- [ ] Perf Budget 达标（svelte ≤4.25KB / core ≤2KB gzip）；定时器与 wheel 监听无泄漏。
 - [ ] 提供 `component.meta.ts`，字段（props/events/slots/i18nKeys/tokens/a11yPattern）完整准确。

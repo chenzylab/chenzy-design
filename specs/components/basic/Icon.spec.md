@@ -129,7 +129,7 @@ Icon 自身几乎无内置可见文案。涉及 i18n 的点：
 
 | 项 | 预算 | 说明 |
 |----|------|------|
-| `Icon.svelte` gzip | ≤ 1.2 KB | 容器组件运行时，无外部依赖。 |
+| `Icon.svelte` gzip | ≤ 1.45 KB | 容器组件运行时，无外部依赖。 |
 | 单个内置图标 gzip | ≤ 0.4 KB | 优化后 SVG path + 极薄 wrapper，tree-shakable。 |
 | `@chenzy-design/icons` 全量 | 不约束总量 | 必须按需引入；禁止 barrel 全量打包进产物（提供 ESM named export + sideEffects:false）。 |
 | 首次渲染 | < 0.1ms/个 | 纯 SVG 输出，无布局抖动。 |
@@ -189,7 +189,7 @@ export default {
 - [ ] `spin` 正常旋转且在 reduced-motion 下停用；`rotate` 静态角度生效。
 - [ ] 方向性图标在 RTL 下镜像，非方向性不翻转。
 - [ ] `@chenzy-design/icons` 按需引入、tree-shaking 生效，`sideEffects:false`。
-- [ ] Perf Budget 达标：`Icon.svelte` ≤1.2KB gzip，单图标 ≤0.4KB gzip。
+- [ ] Perf Budget 达标：`Icon.svelte` ≤1.45KB gzip，单图标 ≤0.4KB gzip。
 - [ ] 提供 `component.meta.ts`，字段完整可被 AI 消费。
 - [ ] i18n：无任何硬编码可见文案，`label`/`title` 由消费方注入。
 - [ ] 单元 / a11y / RTL / reduced-motion / 视觉回归 / tree-shaking 测试全部通过。

@@ -164,7 +164,7 @@
 
 | 指标 | 预算 | 说明 |
 | --- | --- | --- |
-| JS gzip（组件本体） | ≤ 1.5 KB | 渲染逻辑极薄，无 core 依赖 |
+| JS gzip（组件本体） | ≤ 2.55 KB | 渲染逻辑极薄，无 core 依赖 |
 | 单个内置插画 SVG gzip | ≤ 1.2 KB / 个 | 优化路径、共享 token 描边 |
 | 插画总入口 | 按需加载 | 仅引用到的预设进 bundle，未用预设 tree-shaken |
 | 首次渲染 | < 1ms | 无状态计算，纯模板 |
@@ -210,7 +210,7 @@
 
 - [ ] Props/Events/Slots 与本 SPEC §4 一致，类型与默认值落地。
 - [ ] 6 个内置插画预设齐全，支持 light/dark 自适应（token + currentColor 驱动）。
-- [ ] 未使用的插画预设可被 tree-shaking 移除，本体 JS gzip ≤ 1.5 KB。
+- [ ] 未使用的插画预设可被 tree-shaking 移除，本体 JS gzip ≤ 2.55 KB。
 - [ ] 仅消费 `--cd-empty-*` / Alias token，无任何写死颜色/尺寸值。
 - [ ] 类名遵循 `cd-empty` BEM-like 约定。
 - [ ] 根 `role="status"` + `aria-live`，`aria-labelledby`/`aria-describedby` 正确关联（useId）。

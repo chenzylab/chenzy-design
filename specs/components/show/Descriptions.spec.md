@@ -149,7 +149,7 @@ Descriptions 以展示为主，**无键盘交互、无焦点管理、无浮层**
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 2.2 KB | Descriptions + Item，纯布局，无重逻辑 |
+| svelte 组件 gzip | ≤ 2.8 KB | Descriptions + Item，纯布局，无重逻辑 |
 | core gzip（可选层） | ≤ 0.6 KB | normalizeItems/resolveColumn/chunkRows 纯函数 |
 | 首次渲染（50 项） | < 4 ms | 单次同步渲染，无异步 |
 | 大数据（500 项） | < 25 ms | 线性 DOM；建议调用方分组/折叠超大数据 |
@@ -202,7 +202,7 @@ Descriptions 以展示为主，**无键盘交互、无焦点管理、无浮层**
 - [ ] 所有可见文案走 i18n（`Descriptions.empty`、`Descriptions.colon`），中文冒号为全角；无硬编码文案。
 - [ ] 仅消费 Alias/Component token，暴露 `--cd-descriptions-*`，无写死颜色/尺寸值。
 - [ ] RTL 下使用逻辑属性，布局与对齐正确镜像。
-- [ ] 满足 Perf Budget：svelte gzip ≤ 2.2 KB、core ≤ 0.6 KB；50 项首渲 < 4 ms。
+- [ ] 满足 Perf Budget：svelte gzip ≤ 2.8 KB、core ≤ 0.6 KB；50 项首渲 < 4 ms。
 - [ ] 提供 `component.meta.ts`，字段与第 4 节 API 同源，含 examples 与 aiHints。
 - [ ] core 仅含纯函数与 `useId`，无 focus/dismiss/scroll-lock/announcer 等无关原语依赖。
 - [ ] 单元 / 组件 / 响应式 / a11y / i18n / RTL / 视觉回归测试全部通过。

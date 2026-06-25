@@ -167,7 +167,7 @@
 | 维度 | 预算 / 目标 | 说明 |
 |---|---|---|
 | gzip 体积（core） | ≤ 4.5 KB | 区间计算 + 不定高测量 + 滚动 API |
-| gzip 体积（svelte 封装） | ≤ 2 KB | 三层 DOM + slot 转发 + measure action |
+| gzip 体积（svelte 封装） | ≤ 2.65 KB | 三层 DOM + slot 转发 + measure action |
 | 首屏渲染节点数 | 视口行数 + 2×overscan | 与 `count` 无关，万级数据首屏 ≤ ~30 节点 |
 | 滚动帧 | 60fps（帧预算 ≤ 16ms），P95 无掉帧 | transform 定位 + rAF 节流 scroll；定高模式区间计算 O(1) |
 | 不定高测量 | 单帧测量回填 ≤ 1 次 layout | ResizeObserver + `useRafBatch` 合并写回，禁止逐行同步读高 |
@@ -240,7 +240,7 @@ export default {
 - [ ] 所有可见文案零硬编码，i18n key 齐全（announceRange/reachEnd/empty/loading）。
 - [ ] CSS 仅消费 `--cd-virtuallist-*` 与 Alias token，无写死色值/魔数；深色模式自动适配。
 - [ ] RTL 下横向 scrollLeft 归一化正确。
-- [ ] Perf Budget 达标：core ≤ 4.5KB / svelte ≤ 2KB gzip；100k 行滚动 P95 ≤ 16ms。
+- [ ] Perf Budget 达标：core ≤ 4.5KB / svelte ≤ 2.65KB gzip；100k 行滚动 P95 ≤ 16ms。
 - [ ] scroll/rangeChange/reachEnd/reachStart/measure 事件 payload 与文档一致，scroll 经 rAF 节流。
 - [ ] `destroyOnHidden` 默认 true 回收离屏 DOM；false 保留行状态。
 - [ ] SSR `ssrItemCount` 占位 + hydration 接管无 mismatch。

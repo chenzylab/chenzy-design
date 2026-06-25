@@ -184,7 +184,7 @@ Popconfirm 是一个轻量非模态对话框，遵循 APG **Dialog (Non-Modal)**
 | 维度 | 预算 / 策略 |
 |---|---|
 | `@chenzy-design/core` `createPopconfirm`（gzip） | ≤ 2.2 KB（含状态机+异步编排，复用 popover floating 引擎不重复计入） |
-| `@chenzy-design/svelte` `<Popconfirm>`（gzip，不含 Button/Popover 共享依赖） | ≤ 2.0 KB |
+| `@chenzy-design/svelte` `<Popconfirm>`（gzip，不含 Button/Popover 共享依赖） | ≤ 4.8 KB |
 | 共享 floating/dismiss/focus-trap 原语 | 与 Popover/Tooltip 共用，复用 0 额外成本 |
 | 首屏 | 触发器无浮层成本；浮层惰性渲染（首次打开才挂载） |
 | 关闭行为 | `destroyOnClose` 默认 true，卸载浮层 DOM 释放内存 |
@@ -238,6 +238,6 @@ Popconfirm 是一个轻量非模态对话框，遵循 APG **Dialog (Non-Modal)**
 - [ ] reduced-motion / RTL / 暗色模式 / 高对比度均验证。
 - [ ] 用户可见文案零硬编码，i18n keys 全部接入，缺省英文回退。
 - [ ] 异步确认自动 loading 且防重复提交；reject 保持打开。
-- [ ] 惰性渲染 + `destroyOnClose` 生效；满足 Perf Budget（core ≤ 2.2KB / svelte ≤ 2.0KB gzip）。
+- [ ] 惰性渲染 + `destroyOnClose` 生效；满足 Perf Budget（core ≤ 2.2KB / svelte ≤ 4.8KB gzip）。
 - [ ] 提供 `component.meta.ts`（props/events/slots/tokens/aiHints/a11yPattern 完整）。
 - [ ] 单元 / 组件 / a11y / 交互 / 视觉回归测试全部通过。

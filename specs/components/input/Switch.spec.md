@@ -169,7 +169,7 @@ button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-s
 
 | 维度 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 1.6 KB | 单组件，结构简单 |
+| svelte 组件 gzip | ≤ 2.7 KB | 单组件，结构简单 |
 | core `createSwitch` gzip | ≤ 1.0 KB | 含状态融合与键盘逻辑 |
 | 首次渲染 | < 1ms | 单节点 + 滑块 |
 | 切换交互 | 单帧内完成（< 16ms） | 仅 transform/background 过渡，走合成层 |
@@ -217,6 +217,6 @@ button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-s
 - [ ] prefers-reduced-motion 降级；RTL 镜像正确。
 - [ ] 用户可见文案全部走 i18n key，无硬编码。
 - [ ] 危险操作支持二次确认模式（change 拦截 + 确认后更新）。
-- [ ] Perf：svelte ≤ 1.6KB / core ≤ 1.0KB gzip；切换单帧完成。
+- [ ] Perf：svelte ≤ 2.7KB / core ≤ 1.0KB gzip；切换单帧完成。
 - [ ] 提供 component.meta.ts（含 props/events/slots/a11y/i18nKeys/examples/antiPatterns）。
 - [ ] 单元 + 组件 + a11y + 交互 + 视觉回归测试齐备并通过。

@@ -200,7 +200,7 @@ Pagination 含分页算法、键盘导航、跳页解析、a11y 通告，属"有
 |---|---|---|
 | core gzip | ≤ 2.0 KB | 纯算法 + 原语引用，无渲染 |
 | svelte gzip（不含 Select/InputNumber） | ≤ 3.0 KB | 基础分页渲染 |
-| svelte gzip（含 sizeChanger + jumper） | ≤ 6.5 KB | 复用现有 Select/InputNumber，按需引入 |
+| svelte gzip（含 sizeChanger + jumper） | ≤ 3.8 KB | 复用现有 Select/InputNumber，按需引入 |
 | 首次渲染（100 页，default） | ≤ 1ms | 省略号折叠后实际 DOM 节点 ≤ ~11 项 |
 | 翻页重算 + patch | ≤ 0.5ms | 序列纯函数 memo，仅 diff 变更项 |
 

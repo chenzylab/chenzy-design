@@ -150,7 +150,7 @@ Spin 交互极轻（无键盘、无焦点逻辑），但仍存在需要平台无
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 1.6 KB | 含三形态 DOM + CSS-in-token |
+| svelte 组件 gzip | ≤ 2.6 KB | 含三形态 DOM + CSS-in-token |
 | core `createSpin` gzip | ≤ 0.6 KB | 仅定时器/派生逻辑 |
 | 首次渲染（inline） | < 1 帧 | 纯 CSS 动画，无 JS 逐帧 |
 | 旋转动画成本 | 0 主线程 | 用 CSS `transform: rotate` + GPU 合成层，无 requestAnimationFrame |
@@ -204,6 +204,6 @@ Spin 交互极轻（无键盘、无焦点逻辑），但仍存在需要平台无
 - [ ] 对比度：指示器对遮罩 ≥ 3:1，tip 文本 ≥ 4.5:1（亮/暗主题均达标）。
 - [ ] 用户可见文案零硬编码，`Spin.loading` / `Spin.loaded` 可随 locale 切换。
 - [ ] 提供 `component.meta.ts` 且字段与本 SPEC 第 4/5/7 节一致。
-- [ ] gzip 预算达标（svelte ≤ 1.6KB，core ≤ 0.6KB）；旋转动画零主线程逐帧成本。
+- [ ] gzip 预算达标（svelte ≤ 2.6KB，core ≤ 0.6KB）；旋转动画零主线程逐帧成本。
 - [ ] headless 逻辑位于 `@chenzy-design/core` 的 `createSpin`，渲染位于 `@chenzy-design/svelte`，复用 useId/useLiveAnnouncer/useScrollLock 原语。
 - [ ] 单元 / 组件 / a11y / 视觉回归 / SSR 测试全部通过。

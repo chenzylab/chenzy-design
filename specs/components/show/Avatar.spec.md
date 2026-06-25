@@ -147,7 +147,7 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 | 维度 | 预算 / 策略 |
 |------|------------|
 | gzip 体积（Avatar 单体） | ≤ 2.0 KB（CSS+JS，不含 core） |
-| gzip 体积（含 AvatarGroup + core 原语） | ≤ 4.5 KB |
+| gzip 体积（含 AvatarGroup + core 原语） | ≤ 3.65 KB |
 | 图片加载 | 默认 `loading="lazy"` + `decoding="async"`；失败状态机零额外重排 |
 | 文字缩放测量 | 仅 2+ 字符时一次性测量，使用 `transform: scale` 避免重排；缓存结果 |
 | AvatarGroup 大列表 | 仅渲染 `maxCount + 1`（折叠头像）个 DOM 节点，溢出成员不渲染，天然“虚拟化” |
@@ -192,5 +192,5 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 - [ ] reduced-motion 关闭动效；RTL 镜像正确
 - [ ] i18n 文案零硬编码，key 齐全，`+N` 用 Intl.NumberFormat 与 ICU 复数
 - [ ] 提供 `component.meta.ts`，含 props/events/slots/examples/relatedComponents
-- [ ] Perf：Avatar ≤ 2.0KB、含 Group+core ≤ 4.5KB gzip，100 组渲染 ≤ 16ms
+- [ ] Perf：Avatar ≤ 2.0KB、含 Group+core ≤ 3.65KB gzip，100 组渲染 ≤ 16ms
 - [ ] 单元/组件/a11y/i18n/视觉回归测试全部通过

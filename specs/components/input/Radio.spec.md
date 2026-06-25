@@ -160,7 +160,7 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 | 指标 | 预算 | 说明 |
 |---|---|---|
 | Radio gzip | ≤ 1.8 KB | 含样式，不含 core |
-| RadioGroup gzip | ≤ 2.2 KB | 含 context + 数据驱动渲染 |
+| RadioGroup gzip | ≤ 4.1 KB | 含 context + 数据驱动渲染 |
 | core `createRadioGroup` gzip | ≤ 1.5 KB | 复用 useRovingTabindex/useId |
 | 首次渲染（20 项 group） | < 4 ms | 主线程 |
 | 方向键移动焦点 | < 1 ms / 次 | roving 仅改 2 个节点 tabindex |

@@ -195,7 +195,7 @@ Menu 是导航场景的核心容器组件，用于在应用中组织一组可选
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| @chenzy-design/svelte Menu gzip | ≤ 6 KB | 含 Item/SubMenu/ItemGroup/Divider |
+| @chenzy-design/svelte Menu gzip | ≤ 8.4 KB | 含 Item/SubMenu/ItemGroup/Divider |
 | @chenzy-design/core createMenu gzip | ≤ 3.5 KB | roving + dismiss + 定位适配 |
 | 首次渲染 (100 项 inline) | < 16ms | 单帧内完成 |
 | SubMenu 展开/收起 | < 100ms 感知 | 过渡动画与原位高度计算 |

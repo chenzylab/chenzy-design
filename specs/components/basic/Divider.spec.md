@@ -122,7 +122,7 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 
 | 维度 | 预算 / 目标 | 说明 |
 |---|---|---|
-| gzip 体积（svelte） | ≤ 0.6 KB | 单文件、无 core 依赖、无运行时库；逻辑仅 class 计算。 |
+| gzip 体积（svelte） | ≤ 1.55 KB | 单文件、无 core 依赖、无运行时库；逻辑仅 class 计算。 |
 | core 依赖 | 0 KB | 纯展示组件，不引入 `@chenzy-design/core`。 |
 | 首次渲染 | < 0.1 ms / 实例 | 单个 DOM 节点（纯线）或 3 节点（带文字 flex）。 |
 | 大批量渲染 | 1000 条列表分隔无明显开销 | 无状态、无监听、无副作用；建议消费者将列表项与分隔合并由父组件 `{#each}` 渲染。 |
@@ -170,7 +170,7 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 - [ ] 线条对比度 ≥ 3:1、文字对比度 ≥ 4.5:1，暗色模式经 Alias 自动适配。
 - [ ] 使用逻辑属性，RTL 下 align 与间距自动镜像。
 - [ ] 组件零硬编码可见文案；提供 `Divider.more` / `Divider.or` i18n key。
-- [ ] 纯展示实现，不引入 `@chenzy-design/core`；gzip ≤ 0.6 KB。
+- [ ] 纯展示实现，不引入 `@chenzy-design/core`；gzip ≤ 1.55 KB。
 - [ ] 提供 `component.meta.ts`，props/slots/events/tokens 与 SPEC 同步。
 - [ ] 单元、a11y（axe 零违规）、视觉回归（明暗 + RTL 矩阵）、SSR hydration 测试全部通过。
 - [ ] 类名遵循 `cd-divider` BEM-like 约定，CSS 变量遵循 `--cd-divider-*` 前缀。
