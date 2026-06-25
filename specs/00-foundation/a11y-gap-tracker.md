@@ -64,3 +64,10 @@
 - [x] **Transfer** option aria-label（移出 aria-hidden 影响）+ 空 listbox 退化为普通容器
 - [x] **Pagination** 内置 Select/跳页 input 补 ariaLabel（itemsPerPage / jumpTo）
 - [x] **Popover** dialog 模式触发器承载 role=button + tabindex + 键盘（tooltip 模式不变）
+
+## axe 第二批（展示/结构组件铺测暴露）— 待修，当前 it.skip
+> 来源：axe 测试铺到剩余 ~38 个组件时新暴露的 violation，对应 axe 用例 it.skip，保留结构断言。
+- [ ] **Skeleton** 占位 div 带 aria-label/aria-live 但无 role → aria-prohibited-attr（需给 div 加 role=status 或移除 aria-label 改 sr-only 文本）
+- [ ] **Timeline** interactive 模式 `<li>` role 改 button 后 `<ul>` 直含非 listitem → list 违规（需包一层或调整列表语义）
+- [ ] **Upload** uploading 项内嵌 Progress（role=progressbar）无可访问名 → aria-progressbar-name（Upload 渲染 Progress 时传关联文件名的 aria-label）
+- [ ] **List** selectable 的 listbox 无可访问名（aria-input-field-name）+ option(li tabindex=0) 内嵌 Checkbox（nested-interactive）
