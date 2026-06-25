@@ -1,11 +1,10 @@
 // Pagination a11y：分页器。
 // nav[aria-label] 包裹，页码为原生 button，当前页 aria-current=page。
 //
-// 已知组件 a11y 缺口（均需改组件源码，超出「只写测试」范围，对应 axe 用例 it.skip）：
-//   1. showSizeChanger 渲染的 Select 触发器（div[role=combobox]）缺可访问名
-//      → axe [aria-input-field-name]（serious）。需给内置 Select 传 ariaLabel。
-//   2. showQuickJumper 渲染的快速跳页 <input> 缺 label/aria-label
-//      → axe [label]（critical）。需给该 Input 传可访问名。
+// 修复记录：
+//   1. showSizeChanger 内置 Select 现经 ariaLabel=Pagination.itemsPerPage 获可访问名。
+//   2. showQuickJumper 跳页 Input 现经 ariaLabel=Pagination.jumpTo 获可访问名。
+//   两处 axe aria-input-field-name / label 均消除。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Pagination from './Pagination.svelte';
@@ -45,16 +44,16 @@ describe('Pagination a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  // axe 0 violations：被 showSizeChanger 的 Select combobox 缺可访问名阻塞（见文件头 1）。
-  it.skip('showSizeChanger axe（阻塞于 aria-input-field-name：内置 Select 无 aria-label）', async () => {
+  // 内置 Select 经 ariaLabel=Pagination.itemsPerPage 获可访问名。
+  it('showSizeChanger axe 0 violations（内置 Select 有 aria-label）', async () => {
     const { container } = renderWithLocale(Pagination, {
       props: { total: 200, defaultPageSize: 20, showSizeChanger: true },
     });
     await expectNoAxeViolations(container);
   });
 
-  // axe 0 violations：被 showQuickJumper 的跳页 <input> 缺 label 阻塞（见文件头 2）。
-  it.skip('showQuickJumper axe（阻塞于 label：跳页 input 无可访问名）', async () => {
+  // 跳页 input 经 ariaLabel=Pagination.jumpTo 获可访问名。
+  it('showQuickJumper axe 0 violations（跳页 input 有 aria-label）', async () => {
     const { container } = renderWithLocale(Pagination, {
       props: { total: 200, defaultPageSize: 20, showQuickJumper: true },
     });

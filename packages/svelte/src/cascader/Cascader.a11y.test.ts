@@ -33,22 +33,20 @@ describe('Cascader a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  // SKIP（组件 a11y bug，待修）：打开态每列 `<ul role="listbox">` 没有可访问名，
-  // axe 报 aria-input-field-name (serious)。Cascader 无逐列 aria-label，应给每列
-  // 加 aria-label（如「第 N 级」或父节点名）。role/option 渲染断言本身能过。
-  it.skip('打开态：面板列 listbox + option 渲染（portal 到 body），无 axe violations', async () => {
+  // 每列 listbox 经 locale Cascader.columnLabel 获可访问名（「第 N 级选项」）。
+  it('打开态：面板列 listbox + option 渲染（portal 到 body），无 axe violations', async () => {
     renderWithLocale(Cascader, {
       props: { treeData, defaultOpen: true, ariaLabel: 'Region' },
     });
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
+    expect(listbox?.getAttribute('aria-label')).toBeTruthy();
     const optionEls = document.querySelectorAll('[role="option"]');
     expect(optionEls.length).toBeGreaterThan(0);
     await expectNoAxeViolations(document.body);
   });
 
-  // SKIP（同上组件 a11y bug）：打开态列 listbox 缺可访问名触发 aria-input-field-name。
-  it.skip('已选路径：触发器 aria-expanded 切换，选中 option 标记 aria-selected', async () => {
+  it('已选路径：触发器 aria-expanded 切换，选中 option 标记 aria-selected', async () => {
     renderWithLocale(Cascader, {
       props: { treeData, defaultOpen: true, defaultValue: ['zj', 'hz', 'xh'], ariaLabel: 'Region' },
     });

@@ -273,6 +273,7 @@
       <Select
         {size}
         {disabled}
+        ariaLabel={loc().t('Pagination.itemsPerPage')}
         placement={sizeChangerPlacement}
         options={sizeOptions}
         value={currentSize}
@@ -289,6 +290,7 @@
           {size}
           {status}
           {disabled}
+          ariaLabel={loc().t('Pagination.jumpTo')}
           value={jumpValue}
           onInput={(v) => (jumpValue = v)}
           onEnter={jump}

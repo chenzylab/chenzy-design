@@ -37,6 +37,8 @@ export interface Locale {
     pageLabel: string;
     /** uses {size} */
     pageSize: string;
+    /** showSizeChanger 内置 Select 的可访问名 */
+    itemsPerPage: string;
     jumpTo: string;
     jumpToSuffix: string;
     /** live-region 翻页播报，uses {page} and {count} */
@@ -248,6 +250,8 @@ export interface Locale {
   };
   Select: {
     placeholder: string;
+    /** combobox 触发器缺省可访问名 */
+    ariaLabel: string;
     emptyText: string;
     searchPlaceholder: string;
     loading: string;
@@ -349,6 +353,8 @@ export interface Locale {
     searchPlaceholder: string;
   };
   AutoComplete: {
+    /** combobox 输入框缺省可访问名 */
+    ariaLabel: string;
     clear: string;
     loading: string;
     emptyText: string;
@@ -370,6 +376,10 @@ export interface Locale {
     loading: string;
     searchPlaceholder: string;
     emptyText: string;
+    /** 每列 listbox 可访问名，uses {level} */
+    columnLabel: string;
+    /** 搜索结果 listbox 可访问名 */
+    searchResults: string;
   };
   Carousel: {
     prev: string;

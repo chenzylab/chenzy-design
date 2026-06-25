@@ -1,11 +1,8 @@
 // Select a11y：combobox 触发器 + listbox/option 浮层（use:floating portal 到 body）。
 // 只断言静态 ARIA + axe，不测真实键盘/焦点（jsdom 限制）。
 //
-// 发现的组件 a11y bug（待修，故含 axe 的用例 it.skip）：
-//   根 `<div role="combobox">` 没有可访问名（无 aria-label / aria-labelledby /
-//   title），axe 报 aria-input-field-name (serious)。Select 当前未暴露 ariaLabel
-//   prop，无法经 props 修复；应给 Select 增加 ariaLabel（或 aria-labelledby）。
-//   role/option 结构断言本身能过，下方保留一个非 axe 结构用例守护。
+// 修复记录：根 `<div role="combobox">` 现经 ariaLabel/ariaLabelledby prop 或
+//   placeholder / locale Select.ariaLabel 回退获可访问名，axe aria-input-field-name 消除。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Select from './Select.svelte';
@@ -51,11 +48,12 @@ describe('Select a11y', () => {
     expect(document.querySelector('[role="listbox"]')?.getAttribute('aria-multiselectable')).toBe('true');
   });
 
-  // SKIP（组件 a11y bug，待修）：根 combobox 缺可访问名 → aria-input-field-name (serious)。
-  it.skip('打开态：axe 0 violations（待 Select 补 ariaLabel 后启用）', async () => {
+  // combobox 可访问名回退到 placeholder（缺省走 locale Select.ariaLabel）。
+  it('打开态：axe 0 violations（combobox 经 placeholder/locale 获可访问名）', async () => {
     renderWithLocale(Select, {
       props: { options, defaultOpen: true, placeholder: 'Pick a fruit' },
     });
+    expect(document.querySelector('[role="combobox"]')?.getAttribute('aria-label')).toBe('Pick a fruit');
     await expectNoAxeViolations(document.body);
   });
 });
