@@ -259,7 +259,7 @@
           class="cd-anchor__link cd-anchor__link--level-{level}"
           class:cd-anchor__link--active={active}
           href={link.href}
-          aria-current={active ? 'true' : undefined}
+          aria-current={active ? 'location' : undefined}
           tabindex={linkTabindex(link.key)}
           data-anchor-key={link.key}
           onclick={(e) => handleClick(e, link)}

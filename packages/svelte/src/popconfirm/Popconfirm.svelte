@@ -22,6 +22,7 @@
     useId,
     useDismiss,
     useFocusTrap,
+    useLiveAnnouncer,
     parsePlacement,
     type Placement,
     type Side,
@@ -141,6 +142,9 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：异步确认进入 loading 时播报「处理中」给屏幕阅读器。
+  // 命令式写入在事件回调里（confirm()，非 render 期），符合红线 #3。
+  const announcer = useLiveAnnouncer();
 
   const popupId = useId('cd-popconfirm-popup');
   const titleId = useId('cd-popconfirm-title');
@@ -276,6 +280,7 @@
     const result = onConfirm?.();
     if (result instanceof Promise) {
       confirmLoading = true;
+      announcer.announce(loc().t('Popconfirm.confirming'));
       try {
         await result;
         confirmLoading = false;
