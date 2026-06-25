@@ -13,7 +13,13 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
+  import {
+    useId,
+    useFocusTrap,
+    useDismiss,
+    useScrollLock,
+    useInertBackground,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { acquireZIndex } from '../modal/z-stack.js';
 
@@ -277,6 +283,10 @@
     // scroll lock 仅 mask=true 且未 disableScrollLock。
     const releaseScroll = mask && !disableScrollLock ? useScrollLock() : () => {};
 
+    // 模态（mask=true）时背景内容对 SR/键盘 inert+aria-hidden（spec §6）；
+    // 以 portal 根 rootEl 为锚隐藏其兄弟。非模态不抢占背景，跳过。
+    const releaseInert = mask && rootEl ? useInertBackground(rootEl) : () => {};
+
     // dismiss：Esc（closeOnEsc）+ 非模态外部点击（outsideClosable）。
     const wantOutside = !mask && outsideClosable;
     let undismiss = () => {};
@@ -290,6 +300,7 @@
 
     return () => {
       undismiss();
+      releaseInert();
       releaseScroll();
       if (trap) {
         // 归还焦点：默认触发元素 / returnFocusTo。trap.deactivate 默认归还到

@@ -9,7 +9,13 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
+  import {
+    useId,
+    useFocusTrap,
+    useDismiss,
+    useScrollLock,
+    useInertBackground,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { acquireZIndex } from '../modal/z-stack.js';
 
@@ -201,6 +207,9 @@
     const trap = useFocusTrap(panelEl, { trapTab: keyboard });
     trap.activate();
     const releaseScroll = mask ? useScrollLock() : () => {};
+    // 模态（mask=true）时背景内容对 SR/键盘 inert+aria-hidden（spec §6）；
+    // 以 portal 根 rootEl 为锚隐藏其兄弟。非模态（mask=false）不抢占背景，跳过。
+    const releaseInert = mask && rootEl ? useInertBackground(rootEl) : () => {};
     let undismiss = () => {};
     // keyboard 总开关节制 Esc：keyboard=false 时即便 closeOnEsc=true 也不绑 Esc。
     if (keyboard && closeOnEsc) {
@@ -212,6 +221,7 @@
     }
     return () => {
       undismiss();
+      releaseInert();
       releaseScroll();
       trap.deactivate();
     };

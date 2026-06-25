@@ -24,6 +24,10 @@ export {
 export { useDismiss, type DismissOptions, type DismissReason } from './dismiss.js';
 export { useScrollLock, __resetScrollLock } from './scroll-lock.js';
 export {
+  useInertBackground,
+  __resetInertBackground,
+} from './inert-background.js';
+export {
   createSider,
   type SiderApi,
   type SiderOptions,

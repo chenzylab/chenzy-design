@@ -28,6 +28,10 @@
     direction?: 'horizontal' | 'vertical';
     onChange?: (v: CheckboxValue[]) => void;
     children?: Snippet;
+    /** 无可见标题时的可访问名称（role=group）。 */
+    ariaLabel?: string;
+    /** 关联组的可见标题元素 id（优先于 ariaLabel 体现可访问名）。 */
+    ariaLabelledby?: string;
   }
 
   let {
@@ -42,6 +46,8 @@
     direction = 'horizontal',
     onChange,
     children,
+    ariaLabel,
+    ariaLabelledby,
   }: Props = $props();
 
   const isControlled = $derived(value !== undefined);
@@ -83,7 +89,12 @@
   const cls = $derived(`cd-checkbox-group cd-checkbox-group--${direction}`);
 </script>
 
-<div class={cls} role="group">
+<div
+  class={cls}
+  role="group"
+  aria-labelledby={ariaLabelledby}
+  aria-label={ariaLabelledby ? undefined : ariaLabel}
+>
   {#if options}
     {#each options as opt (normalize(opt).value)}
       {@const o = normalize(opt)}

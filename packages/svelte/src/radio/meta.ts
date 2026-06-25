@@ -48,6 +48,7 @@ export const meta = {
       { name: 'onChange', type: '(v: string|number|boolean) => void', default: 'undefined' },
       { name: 'children', type: 'Snippet', default: 'undefined' },
       { name: 'ariaLabel', type: 'string', default: 'undefined' },
+      { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联组可见标题 id（优先于 ariaLabel）' },
     ],
   },
   a11y: {

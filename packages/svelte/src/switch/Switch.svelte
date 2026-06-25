@@ -35,6 +35,8 @@
     /** 表单必填校验（须为开态）。 */
     required?: boolean;
     ariaLabel?: string;
+    /** 关联外部可见文本（如 Label 组件）的 id，体现可访问名（优先于 ariaLabel）。 */
+    ariaLabelledby?: string;
     /** 切换后是否用 live region 播报新状态（文案经 locale）。 */
     announceOnChange?: boolean;
     /** 挂载后自动聚焦。 */
@@ -65,6 +67,7 @@
     name,
     required = false,
     ariaLabel,
+    ariaLabelledby,
     announceOnChange = false,
     autofocus = false,
     onChange,
@@ -140,7 +143,8 @@
   role="switch"
   class={cls}
   aria-checked={on}
-  aria-label={ariaLabel}
+  aria-labelledby={ariaLabelledby}
+  aria-label={ariaLabelledby ? undefined : ariaLabel}
   aria-busy={loading || undefined}
   aria-required={required || undefined}
   aria-invalid={status === 'error' || undefined}
