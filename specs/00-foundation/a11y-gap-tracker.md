@@ -54,3 +54,13 @@
 ## 待人工/运行时复核（未计入）
 - 对比度 ≥4.5:1 / 焦点环 ≥3:1 / prefers-reduced-motion / RTL 镜像（token/CSS 层）
 - Drawer/SideSheet 嵌套仅顶层响应 Esc
+
+## axe 自动化测试暴露的待修缺陷（vitest-axe 套件 it.skip 标记，待修组件源码）
+> 来源：a11y 渲染测试套件（`*.a11y.test.ts`）。这些是 axe 在 jsdom 下抓到的真实 violation，
+> 当前对应 axe 用例 `it.skip` 并保留 role/aria 静态断言；修组件源码后启用。
+- [ ] **Select** 根 `div[role=combobox]` 无可访问名（aria-input-field-name, serious）— 需暴露/接入 ariaLabel
+- [ ] **AutoComplete** `input[role=combobox]` 无可访问名（placeholder 不算）— 需 ariaLabel
+- [ ] **Cascader** 打开态每列 `ul[role=listbox]` 无可访问名 — 列需 aria-label
+- [ ] **Transfer** `role=option` label 文本在 `aria-hidden` 子树内 → option 无可访问名（aria-toggle-field-name）；空目标 listbox 仅空态 li（aria-required-children）
+- [ ] **Pagination** showSizeChanger 内置 Select 触发器缺可访问名；showQuickJumper 跳页 input 缺 label（critical）
+- [ ] **Popover** dialog 模式（click/custom 触发）触发器是无 role 的 span 却挂 aria-haspopup/expanded/controls（aria-allowed-attr, critical）— 触发器需承载 button 角色
