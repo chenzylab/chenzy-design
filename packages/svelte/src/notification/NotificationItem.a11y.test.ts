@@ -67,7 +67,7 @@ describe('Notification a11y', () => {
     expect(card?.getAttribute('role')).toBe('alert');
     expect(card?.getAttribute('aria-live')).toBe('assertive');
     // 类型前缀（如「Error:」）以视觉隐藏文本注入，非空。
-    expect(container.querySelector('.cd-notification-item__sr-prefix')?.textContent?.trim()).toBeTruthy();
+    expect(container.querySelector('.cd-sr-only')?.textContent?.trim()).toBeTruthy();
     await expectNoAxeViolations(container);
   });
 });

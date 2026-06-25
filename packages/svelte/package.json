@@ -10,17 +10,25 @@
       "types": "./dist/index.d.ts",
       "svelte": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./components.json": {
+      "types": "./dist/components.d.ts",
+      "default": "./dist/components.json"
     }
   },
   "files": ["src", "dist"],
   "scripts": {
-    "build": "svelte-package -i src -o dist",
+    "build": "svelte-package -i src -o dist && pnpm build:meta",
+    "build:meta": "tsx scripts/build-components-json.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@chenzy-design/core": "workspace:*",
     "@chenzy-design/locale": "workspace:*",
     "@chenzy-design/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
   },
   "peerDependencies": {
     "svelte": ">=5.0.0"

@@ -29,7 +29,8 @@ export const palette = {
   // Yellow (warning)
   'yellow-5': '#f59e0b',
   'yellow-6': '#d97706',
-  // Red (danger)
+  // Red (danger) — red-4 is a light tint for dark-mode solid surfaces (dark text needs a brighter danger bg to reach AA)
+  'red-4': '#ff7875',
   'red-5': '#ef4444',
   'red-6': '#dc2626',
 } as const;

@@ -68,6 +68,21 @@ ${darkVars.join('\n')}
   ${PREFIX}motion-duration-mid: 0ms;
   ${PREFIX}motion-duration-slow: 0ms;
 }
+
+/* 屏幕阅读器专用文本工具类（a11y.spec §全局规则）：
+   视觉隐藏但屏幕阅读器可读。不可用 display:none / visibility:hidden，
+   否则辅助技术也读不到。WCAG 1.4.1 等场景下令颜色/图标非唯一信息载体。 */
+.cd-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 `;
 writeFileSync(resolve(dist, 'tokens.css'), css);
 console.log('[tokens] built dist/tokens.css');
