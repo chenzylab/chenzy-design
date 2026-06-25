@@ -17,22 +17,22 @@
 - [x] Form 必填 aria-required（#225）
 
 ## 剩余逐组件高缺口（键盘体系/role 缺失，高严重度）
-- [ ] Transfer — 双列 listbox/option role + 全键盘（↑↓/Home/End/Space/Shift 范围/Enter 移动）+ 移动后焦点保留（几乎从零）
+- [x] Transfer — 双列 listbox/option role + 全键盘（↑↓/Home/End/Space/Shift 范围/Enter 移动）+ 移动后焦点保留
 - [ ] Table — Grid Pattern：role=grid/row/gridcell/columnheader + 方向键漫游 + roving + 虚拟化焦点回收（**待定：产品是否需交互态 grid，纯展示则免**）
 - [x] Cascader — 列内方向键 roving + Home/End + aria-activedescendant（#229）
 - [x] TreeSelect — 浮层方向键/Home/End roving + aria-activedescendant（#229）
 - [x] Select — Home/End 跳首末
 - [x] Tree — `*` 展开同级 + typeahead
-- [ ] ColorPicker — 打开聚焦/关闭归还 + focus trap + 滑块 Home/End + 预设 listbox 方向键
+- [x] ColorPicker — 打开聚焦/关闭归还 + focus trap + 滑块 Home/End + 预设 listbox 方向键
 - [x] TimePicker — 列内 ↑↓/Home/End + roving + 打开聚焦当前列
-- [ ] Radio — Home/End + button/card 型 role=radio
+- [x] Radio — Home/End + button/card 型 role=radio + RTL 镜像
 - [x] Menu — vertical/inline roving + 方向键/Home/End/typeahead/Esc
 - [x] Steps — 视觉隐藏状态文本（WCAG 1.4.1）+ clickable/nav roving（#231）
 - [x] Carousel — 键盘 ←→/Home/End/Enter + 非 active slide inert + play/pause 按钮（WCAG 2.2.2）
-- [ ] Breadcrumb — 折叠触发器 disclosure ARIA + 浮层 menu 角色
-- [ ] Collapse — Header role=heading + aria-level
+- [x] Breadcrumb — 折叠触发器 disclosure ARIA + 浮层 menu 角色
+- [x] Collapse — Header role=heading + aria-level（#231 已实现）
 - [x] Image — 预览灯箱 focus trap + 关闭归还焦点
-- [ ] Avatar — 可交互头像 a/button role + 键盘
+- [x] Avatar — 可交互头像 a/button role + 键盘
 - [x] List — selectable 方向键 + roving（#231）
 - [ ] OverflowList — scroll 模式滚动锚点键盘可达
 
@@ -41,11 +41,11 @@
 - [ ] Dropdown 菜单 aria-labelledby
 - [ ] Switch/Slider/Radio/CheckboxGroup group 容器 aria-labelledby（非仅 label）
 - [ ] Slider 双滑块 valuemin/max 钳为对方值 + 键盘 RTL/vertical 翻转
-- [ ] Radio/Rating 方向键 RTL 镜像；Rating 数字键定位
+- [~] Radio/Rating 方向键 RTL 镜像；Rating 数字键定位（Radio RTL 已做，Rating 数字键待办）
 - [ ] InputNumber aria-valuetext
 - [ ] Badge status role=status；Tag close aria-label 含文本；Card loading aria-busy
 - [ ] Image 装饰图 role=presentation + loading aria-busy；Tabs 纵向 aria-orientation
-- [ ] Anchor aria-current="location"；Collapse disabled aria-disabled
+- [~] Anchor aria-current="location"；Collapse disabled aria-disabled（Collapse 已做，Anchor 待办）
 - [ ] Popconfirm loading 播报
 
 ## 待人工/运行时复核（未计入）
