@@ -19,6 +19,12 @@
     dot?: boolean;
     dotColor?: string;
     gap?: number;
+    /** 可交互：跳转链接，渲染为 <a>（优先于 onClick 的 button 语义）。 */
+    href?: string;
+    /** 链接 target（仅 href 时生效）。 */
+    target?: string;
+    /** 可交互：点击回调；无 href 时根元素取 role=button + 键盘 Enter/Space 激活。 */
+    onClick?: (event: MouseEvent | KeyboardEvent) => void;
     children?: Snippet;
   }
 
@@ -33,6 +39,9 @@
     dot = false,
     dotColor,
     gap = 3,
+    href,
+    target,
+    onClick,
     children,
   }: Props = $props();
 
@@ -107,16 +116,48 @@
   const textStyle = $derived(gap !== 0 ? `padding-inline:${gap}px` : '');
   const ariaLabel = $derived(alt ?? fallbackText ?? undefined);
 
+  // 可交互语义（spec §6）：href→<a>；仅 onClick→role=button + tabindex=0 + 键盘激活；
+  // 纯展示头像不可聚焦。纯派生（红线 #2，render 期只读）。
+  const isLink = $derived(href != null);
+  const isButton = $derived(!isLink && onClick != null);
+  const interactive = $derived(isLink || isButton);
+  // 根元素标签：链接 a，可点击但非链接保持 span（role=button），纯展示 span。
+  const rootTag = $derived(isLink ? 'a' : 'span');
+
   function handleError() {
     failed = true;
   }
+
+  function handleClick(event: MouseEvent) {
+    onClick?.(event);
+  }
+
+  // role=button 时键盘 Enter/Space 激活（<a> 由原生处理，不接管）。
+  function handleKeydown(event: KeyboardEvent) {
+    if (!isButton) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.(event);
+    }
+  }
 </script>
 
-<span
-  class={cls}
+<!--
+  根元素：可交互时为 <a>（href）或带 role=button 的 <span>（onClick），并进入 Tab 序列；
+  纯展示时为 <span>，文字/图标头像取 role=img（避免逐字读缩写）。
+  交互根统一用 aria-label 命名（图片头像 alt 已在 <img>，文字头像取 ariaLabel）。
+-->
+<svelte:element
+  this={rootTag}
+  class={[cls, interactive && 'cd-avatar--interactive'].filter(Boolean).join(' ')}
   style={rootStyle || undefined}
-  role={showImage ? undefined : 'img'}
-  aria-label={showImage ? undefined : ariaLabel}
+  href={isLink ? href : undefined}
+  target={isLink ? target : undefined}
+  role={isButton ? 'button' : !interactive && !showImage ? 'img' : undefined}
+  tabindex={isButton ? 0 : undefined}
+  aria-label={interactive ? ariaLabel : showImage ? undefined : ariaLabel}
+  onclick={interactive ? handleClick : undefined}
+  onkeydown={isButton ? handleKeydown : undefined}
 >
   {#if showImage}
     <img
@@ -135,7 +176,7 @@
   {#if dot}
     <span class="cd-avatar__dot" style="background:{dotBg}" aria-hidden="true"></span>
   {/if}
-</span>
+</svelte:element>
 
 <style>
   .cd-avatar {
@@ -157,6 +198,16 @@
   }
   .cd-avatar--circle {
     border-radius: var(--cd-radius-full);
+  }
+  /* 可交互头像：指针手势 + 可见焦点环（<a> 还需重置文字装饰/继承色）。 */
+  .cd-avatar--interactive {
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--cd-avatar-color);
+  }
+  .cd-avatar--interactive:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-avatar--extra-small {
     inline-size: var(--cd-avatar-size-extra-small);
