@@ -36,6 +36,11 @@
     avatarShape?: 'square' | 'circle';
     /** 自定义关闭图标（默认内置 X） */
     closeIcon?: Snippet;
+    /**
+     * 标签纯文本，仅用于派生 closable 关闭按钮的无障碍名（如「移除 已完成」）。
+     * children 为 Snippet 无法取文本，故由调用方显式提供；缺省时关闭按钮退回通用「关闭」标签。
+     */
+    tagText?: string;
     /** 在 TagGroup 中的稳定标识 */
     tagKey?: string | number;
     /** 透传根类名 */
@@ -62,11 +67,20 @@
     avatarSrc,
     avatarShape = 'square',
     closeIcon,
+    tagText,
     class: className,
     style,
   }: Props = $props();
 
   const loc = useLocale();
+
+  // closable 关闭按钮无障碍名：有 tagText 时派生「移除 <文本>」（i18n Tag.closeAriaLabel），
+  // 缺省退回通用「关闭」（Tag.close），保证按钮永远有可读名。
+  const closeLabel = $derived(
+    tagText !== undefined && tagText !== ''
+      ? loc().t('Tag.closeAriaLabel', { label: tagText })
+      : loc().t('Tag.close'),
+  );
 
   // --- visible: controlled vs uncontrolled (never write the prop back) ---
   const visibleControlled = $derived(visible !== undefined);
@@ -150,7 +164,7 @@
         <button
           type="button"
           class="cd-tag__close"
-          aria-label={loc().t('Tag.close')}
+          aria-label={closeLabel}
           disabled={disabled || undefined}
           onclick={handleClose}
         >

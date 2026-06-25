@@ -318,6 +318,7 @@ export const en_US: Locale = {
   },
   Tag: {
     close: 'Close',
+    closeAriaLabel: 'Remove {label}',
   },
   Dropdown: {
     trigger: 'Menu',

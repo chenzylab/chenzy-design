@@ -318,6 +318,7 @@ export const zh_CN: Locale = {
   },
   Tag: {
     close: '关闭',
+    closeAriaLabel: '移除 {label}',
   },
   Dropdown: {
     trigger: '菜单',

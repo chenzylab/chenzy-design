@@ -105,7 +105,7 @@
 </script>
 
 {#if standalone}
-  <span class="cd-badge cd-badge--status">
+  <span class="cd-badge cd-badge--status" role="status">
     <span
       class="cd-badge__status-dot"
       class:cd-badge__status-dot--processing={status === 'processing'}

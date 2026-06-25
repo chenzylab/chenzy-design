@@ -397,6 +397,8 @@ export interface Locale {
   };
   Tag: {
     close: string;
+    /** closable 关闭按钮无障碍名，uses {label}（标签文本） */
+    closeAriaLabel: string;
   };
   Dropdown: {
     trigger: string;
