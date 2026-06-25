@@ -30,6 +30,8 @@
     onChange?: (v: RadioValue) => void;
     children?: Snippet;
     ariaLabel?: string;
+    /** 关联组的可见标题元素 id（无内置标题时用，优先于 ariaLabel 体现可访问名）。 */
+    ariaLabelledby?: string;
   }
 
   let {
@@ -45,6 +47,7 @@
     onChange,
     children,
     ariaLabel,
+    ariaLabelledby,
   }: Props = $props();
 
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -165,7 +168,8 @@
   class={cls}
   bind:this={rootEl}
   role="radiogroup"
-  aria-label={ariaLabel}
+  aria-labelledby={ariaLabelledby}
+  aria-label={ariaLabelledby ? undefined : ariaLabel}
   aria-invalid={status === 'error' ? 'true' : undefined}
 >
   {#if options}

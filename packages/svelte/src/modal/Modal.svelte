@@ -11,7 +11,13 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, useFocusTrap, useDismiss, useScrollLock } from '@chenzy-design/core';
+  import {
+    useId,
+    useFocusTrap,
+    useDismiss,
+    useScrollLock,
+    useInertBackground,
+  } from '@chenzy-design/core';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
@@ -128,12 +134,16 @@
   //     activate focus-trap、绑 dismiss(Esc)、加 scroll-lock；
   //     cleanup 里 deactivate(归还焦点)、解绑 dismiss、release scroll-lock ---
   let panelEl = $state<HTMLElement | null>(null);
+  // portal 根（遮罩）—— 背景 inert 以它为锚，对兄弟节点（页面其余内容/下层浮层）生效。
+  let maskEl = $state<HTMLElement | null>(null);
 
   $effect(() => {
     if (!isOpen || !panelEl) return;
     const trap = useFocusTrap(panelEl);
     trap.activate();
     const releaseScroll = useScrollLock();
+    // 背景内容对 SR/键盘 inert+aria-hidden（spec §6）；以遮罩为锚隐藏其兄弟节点。
+    const releaseInert = maskEl ? useInertBackground(maskEl) : () => {};
     let undismiss = () => {};
     if (keyboard) {
       undismiss = useDismiss(panelEl, {
@@ -144,6 +154,7 @@
     }
     return () => {
       undismiss();
+      releaseInert();
       releaseScroll();
       trap.deactivate();
     };
@@ -247,6 +258,7 @@
     class="cd-modal-mask"
     class:cd-modal-mask--centered={centered}
     class:cd-modal-mask--hidden={!isOpen}
+    bind:this={maskEl}
     style={stackZ !== undefined ? `--cd-modal-z:${stackZ}` : undefined}
     onclick={onMaskClick}
     role="presentation"
