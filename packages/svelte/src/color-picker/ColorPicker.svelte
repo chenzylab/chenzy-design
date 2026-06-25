@@ -11,9 +11,13 @@
   inline：不渲染 trigger 浮层，直接内联渲染选色面板（设置页嵌入）。
 -->
 <script lang="ts">
+  import { tick } from 'svelte';
   import {
     useId,
     useDismiss,
+    useFocusTrap,
+    nextRovingIndex,
+    rovingKeyFromEvent,
     hexToHsv as coreHexToHsv,
     hsvToHex as coreHsvToHex,
     formatColor,
@@ -229,9 +233,42 @@
     recordColor(hsvToHex({ h, s, v, a }));
   }
 
-  // ---------- presets ----------
+  // ---------- presets (role=listbox + 方向键漫游) ----------
   function applyPreset(preset: string) {
     applyHex(preset);
+  }
+
+  // 当前高亮的预设索引（roving）。render 期只读此 $state，焦点由 effect 命令式移动。
+  let presetActiveIndex = $state(0);
+  let presetsEl = $state<HTMLElement | null>(null);
+
+  function focusPresetAt(index: number) {
+    void tick().then(() => {
+      const opts = presetsEl?.querySelectorAll<HTMLElement>('[role="option"]');
+      opts?.[index]?.focus();
+    });
+  }
+
+  function onPresetsKeydown(e: KeyboardEvent) {
+    if (disabled || presets.length === 0) return;
+    // RTL：水平方向键语义翻转，使视觉移动方向与按键一致。
+    const rtl = isRtl(e.currentTarget);
+    let key = e.key;
+    if (rtl && key === 'ArrowRight') key = 'ArrowLeft';
+    else if (rtl && key === 'ArrowLeft') key = 'ArrowRight';
+    const intent = rovingKeyFromEvent(key);
+    if (intent) {
+      e.preventDefault();
+      const next = nextRovingIndex(presetActiveIndex, presets.length, intent, true);
+      presetActiveIndex = next;
+      focusPresetAt(next);
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const preset = presets[presetActiveIndex];
+      if (preset) applyPreset(preset);
+    }
   }
 
   // ---------- recentColors ----------
@@ -349,11 +386,32 @@
   }
 
   // ---------- 键盘微调 ----------
+  // RTL：滑块视觉方向翻转（视觉左仍为低值），故水平方向键语义随之翻转。
+  // 在事件处理里读 getComputedStyle，render 期不依赖（红线）。
+  function isRtl(el: EventTarget | null): boolean {
+    return el instanceof HTMLElement && getComputedStyle(el).direction === 'rtl';
+  }
+
   function onHueKeydown(e: KeyboardEvent) {
     if (disabled) return;
+    if (e.key === 'Home') {
+      e.preventDefault();
+      h = 0;
+      commitHsv();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      h = 360;
+      commitHsv();
+      return;
+    }
+    const rtl = isRtl(e.currentTarget);
     let delta = 0;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = 1;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -1;
+    if (e.key === 'ArrowUp') delta = 1;
+    else if (e.key === 'ArrowDown') delta = -1;
+    else if (e.key === 'ArrowRight') delta = rtl ? -1 : 1;
+    else if (e.key === 'ArrowLeft') delta = rtl ? 1 : -1;
     else return;
     e.preventDefault();
     h = (h + delta + 360) % 360;
@@ -362,9 +420,24 @@
 
   function onAlphaKeydown(e: KeyboardEvent) {
     if (disabled) return;
+    if (e.key === 'Home') {
+      e.preventDefault();
+      a = 0;
+      commitHsv();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      a = 1;
+      commitHsv();
+      return;
+    }
+    const rtl = isRtl(e.currentTarget);
     let delta = 0;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') delta = 0.01;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') delta = -0.01;
+    if (e.key === 'ArrowUp') delta = 0.01;
+    else if (e.key === 'ArrowDown') delta = -0.01;
+    else if (e.key === 'ArrowRight') delta = rtl ? -0.01 : 0.01;
+    else if (e.key === 'ArrowLeft') delta = rtl ? 0.01 : -0.01;
     else return;
     e.preventDefault();
     a = clamp01(a + delta);
@@ -373,11 +446,25 @@
 
   function onSatKeydown(e: KeyboardEvent) {
     if (disabled) return;
+    // Home/End 跳饱和度极值（首=0%，末=100%），明度不变。
+    if (e.key === 'Home') {
+      e.preventDefault();
+      s = 0;
+      commitHsv();
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      s = 1;
+      commitHsv();
+      return;
+    }
+    const rtl = isRtl(e.currentTarget);
     let ds = 0;
     let dv = 0;
     switch (e.key) {
-      case 'ArrowRight': ds = 0.01; break;
-      case 'ArrowLeft': ds = -0.01; break;
+      case 'ArrowRight': ds = rtl ? -0.01 : 0.01; break;
+      case 'ArrowLeft': ds = rtl ? 0.01 : -0.01; break;
       case 'ArrowUp': dv = 0.01; break;
       case 'ArrowDown': dv = -0.01; break;
       default: return;
@@ -390,6 +477,8 @@
 
   // ---------- useDismiss (红线 #3): 放 $effect ----------
   let rootEl = $state<HTMLDivElement | null>(null);
+  // 浮层面板节点：用于 focus trap（打开聚焦面板内首个控件，关闭归还 trigger）。
+  let panelEl = $state<HTMLElement | null>(null);
 
   $effect(() => {
     // inline 模式无浮层，不挂 dismiss。
@@ -400,6 +489,15 @@
       outsideClick: true,
     });
     return cleanup;
+  });
+
+  // ---------- useFocusTrap (红线 #3)：浮层模式打开时陷入焦点，关闭归还 trigger ----------
+  // 复用 core 同一原语（与 Modal/Drawer/Popover 一致，不重造）。
+  $effect(() => {
+    if (inline || !isOpen || !panelEl) return;
+    const trap = useFocusTrap(panelEl);
+    trap.activate();
+    return () => trap.deactivate();
   });
 
   // ---------- 派生展示数据 ----------
@@ -537,14 +635,27 @@
       </div>
 
       {#if presets.length > 0}
-        <div class="cd-color-picker__presets">
-          {#each presets as preset (preset)}
+        <div
+          class="cd-color-picker__presets"
+          bind:this={presetsEl}
+          role="listbox"
+          tabindex={-1}
+          aria-label={loc().t('ColorPicker.presets')}
+          onkeydown={onPresetsKeydown}
+        >
+          {#each presets as preset, i (preset)}
             <button
               type="button"
               class="cd-color-picker__preset"
+              role="option"
+              aria-selected={currentHex.toLowerCase() === preset.toLowerCase()}
               aria-label={preset}
+              tabindex={i === presetActiveIndex ? 0 : -1}
               style="background:{preset}"
-              onclick={() => applyPreset(preset)}
+              onclick={() => {
+                presetActiveIndex = i;
+                applyPreset(preset);
+              }}
             ></button>
           {/each}
         </div>
@@ -588,7 +699,7 @@
     ></button>
 
     {#if isOpen}
-      <div class="cd-color-picker__panel" role="dialog" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
+      <div class="cd-color-picker__panel" bind:this={panelEl} role="dialog" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
         {@render panelBody()}
       </div>
     {/if}

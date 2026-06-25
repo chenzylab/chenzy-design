@@ -3,11 +3,13 @@ import { getContext, setContext } from 'svelte';
 export type RadioValue = string | number | boolean;
 export type RadioSize = 'small' | 'default' | 'large';
 export type RadioStatus = 'default' | 'warning' | 'error';
+export type RadioType = 'default' | 'button' | 'card' | 'pureCard';
 
 export interface RadioRegistration {
   value: RadioValue;
   disabled: boolean;
-  el: HTMLInputElement;
+  /** focusable element to receive roving focus: native input (default) or role=radio container (button/card) */
+  el: HTMLElement;
 }
 
 export interface RadioGroupContext {
@@ -18,6 +20,8 @@ export interface RadioGroupContext {
   getSize: () => RadioSize;
   /** group-level validation status; per-item non-default status overrides it */
   getStatus: () => RadioStatus;
+  /** group-level render form (default/button/card/pureCard) */
+  getType: () => RadioType;
   select: (v: RadioValue) => void;
   /** register a radio's input element + meta for roving focus management */
   register: (reg: RadioRegistration) => () => void;

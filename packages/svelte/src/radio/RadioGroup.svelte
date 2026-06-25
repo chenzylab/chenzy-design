@@ -11,6 +11,7 @@
     type RadioValue,
     type RadioSize,
     type RadioStatus,
+    type RadioType,
     type RadioRegistration,
   } from './context.js';
 
@@ -24,6 +25,7 @@
     disabled?: boolean;
     size?: RadioSize;
     status?: RadioStatus;
+    type?: RadioType;
     direction?: 'horizontal' | 'vertical';
     onChange?: (v: RadioValue) => void;
     children?: Snippet;
@@ -38,11 +40,14 @@
     disabled = false,
     size = 'default',
     status = 'default',
+    type = 'default',
     direction = 'horizontal',
     onChange,
     children,
     ariaLabel,
   }: Props = $props();
+
+  let rootEl = $state<HTMLDivElement | null>(null);
 
   const groupName = resolveName();
 
@@ -108,7 +113,13 @@
     const enabled = registry.filter((r) => !r.disabled);
     const idx = enabled.findIndex((r) => r.value === current);
     if (idx === -1) return;
-    switch (e.key) {
+    // RTL：水平方向键语义翻转（左右镜像）。读 getComputedStyle 仅在事件里，render 不依赖。
+    const rtl =
+      rootEl != null && getComputedStyle(rootEl).direction === 'rtl';
+    let key = e.key;
+    if (rtl && key === 'ArrowRight') key = 'ArrowLeft';
+    else if (rtl && key === 'ArrowLeft') key = 'ArrowRight';
+    switch (key) {
       case 'ArrowDown':
       case 'ArrowRight':
         e.preventDefault();
@@ -118,6 +129,14 @@
       case 'ArrowLeft':
         e.preventDefault();
         moveTo(idx - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        moveTo(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        moveTo(enabled.length - 1);
         break;
       default:
         break;
@@ -130,17 +149,21 @@
     getDisabled: () => disabled,
     getSize: () => size,
     getStatus: () => status,
+    getType: () => type,
     select,
     register,
     onKeydown,
     isTabStop,
   });
 
-  const cls = $derived(`cd-radio-group cd-radio-group--${direction}`);
+  const cls = $derived(
+    `cd-radio-group cd-radio-group--${direction} cd-radio-group--${type}`,
+  );
 </script>
 
 <div
   class={cls}
+  bind:this={rootEl}
   role="radiogroup"
   aria-label={ariaLabel}
   aria-invalid={status === 'error' ? 'true' : undefined}
