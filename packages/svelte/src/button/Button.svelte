@@ -150,7 +150,8 @@
   }
   .cd-button--warning {
     background: var(--cd-color-warning);
-    color: var(--cd-color-text-inverse);
+    /* warning yellow is too bright for white text to reach AA — use dark on-warning text */
+    color: var(--cd-color-text-on-warning);
   }
   .cd-button--danger {
     background: var(--cd-color-danger);

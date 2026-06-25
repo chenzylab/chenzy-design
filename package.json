@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build:tokens": "pnpm --filter @chenzy-design/tokens build",
+    "a11y:contrast": "pnpm --filter @chenzy-design/tokens a11y:contrast",
     "build": "pnpm build:tokens && pnpm -r --filter './packages/*' build",
     "dev": "pnpm --filter @chenzy-design/docs dev",
     "play": "pnpm --filter @chenzy-design/playground dev",
@@ -19,7 +20,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:a11y": "vitest run --project dom",
-    "a11y:contrast": "pnpm --filter @chenzy-design/tokens a11y:contrast",
     "perf:size": "size-limit",
     "perf:bench": "vitest bench --run",
     "perf:baseline": "size-limit --json > perf/baseline.json || true",
