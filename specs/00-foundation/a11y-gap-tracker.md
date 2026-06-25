@@ -5,7 +5,7 @@
 
 ## 跨组件根因（修一处消解多组件）
 
-- [~] **根因#1 useLiveAnnouncer 原语**（core 缺失）— #224 已建 core/live-announcer.ts + 接入 Table/Pagination/Rating/Switch/Typography。**剩余接入**：Toast 极性修正、Notification 类型前缀、Slider/InputNumber 越界、Upload 进度、Calendar、List、Carousel、Image 的播报。
+- [x] **根因#1 useLiveAnnouncer 原语**（core 缺失）— #224 已建 core/live-announcer.ts + 接入 Table/Pagination/Rating/Switch/Typography；后续补齐 Toast 极性、Notification 类型前缀、Upload 进度、Slider/InputNumber 越界、Calendar、List、Carousel、Image 播报。**全部接入完成。**
 - [x] **根因#2 roving.ts 接入**（已有原语，组件未用）— #226 已接 Anchor/Pagination；#231 接 Collapse/List/Steps。**剩余**：Menu(vertical/inline)、TimePicker、TagInput。
 - [x] **根因#3 DatePicker/Calendar 网格键盘**（#230）— DatePicker/RangePicker role=grid/row + aria-activedescendant + Home/End/PageUp/Shift+PageUp + Esc 归还焦点；Calendar 切年、事件块 role=button。
 - [x] **根因#4 i18n 可访问名硬编码中文**（#228）— OverflowList `+N`、Tag close、AvatarGroup `+N`、Avatar `+N`、Carousel、ColorPicker、Tabs 走 locale。
