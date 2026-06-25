@@ -53,6 +53,10 @@ export default defineConfig({
           name: 'bench',
           environment: 'jsdom',
           setupFiles: ['./vitest.dom-setup.ts'],
+          // 关键：bench project 只跑 benchmark，不跑普通单测。缺省 include 会让
+          // `vitest run` 把全仓（含 dist 编译副本）测试在 jsdom+svelte 下重跑一遍
+          // （CI test 步骤曾因此从 ~1min 膨胀到 7.5min）。显式 include:[] 关闭单测扫描。
+          include: [],
           benchmark: {
             include: ['packages/**/*.bench.ts'],
             exclude: ['**/node_modules/**', '**/dist/**'],
