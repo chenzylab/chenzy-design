@@ -41,10 +41,15 @@ const ellipsisConfig = {
   fields: [
     { name: 'rows', type: 'number', default: '1' },
     { name: 'expandable', type: 'boolean', default: 'false' },
+    { name: 'collapsible', type: 'boolean', default: 'false' },
     { name: 'expandText / collapseText', type: 'string', default: 'i18n' },
     { name: 'suffix', type: 'string', default: 'undefined' },
     { name: 'pos', type: "'end'|'middle'|'start'", default: "'end'" },
-    { name: 'showTooltip', type: "boolean | { type?: 'tooltip'|'popover' }", default: 'false' },
+    {
+      name: 'showTooltip',
+      type: "boolean | { type?: 'tooltip'|'popover'; opts?: { content?; title?; theme?; placement?; position?; maxWidth? }; renderTooltip?: Snippet<[fullText, trigger]> }",
+      default: 'false',
+    },
     { name: 'onExpand', type: '(expanded: boolean) => void', default: 'undefined' },
   ],
 } as const;
