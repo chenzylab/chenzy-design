@@ -55,6 +55,7 @@ export const zh_CN: Locale = {
   OverflowList: {
     moreLabel: '+{count}',
     moreAriaLabel: '显示其余 {count} 项',
+    scrollAriaLabel: '可滚动列表',
   },
   Avatar: {
     moreAlt: '还有 {count} 个',

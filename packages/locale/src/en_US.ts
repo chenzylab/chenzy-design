@@ -55,6 +55,7 @@ export const en_US: Locale = {
   OverflowList: {
     moreLabel: '+{count}',
     moreAriaLabel: 'Show {count} more items',
+    scrollAriaLabel: 'Scrollable list',
   },
   Avatar: {
     moreAlt: '{count} more',

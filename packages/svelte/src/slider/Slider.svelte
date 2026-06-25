@@ -42,6 +42,8 @@
     handleStyle?: string;
     id?: string;
     ariaLabel?: string;
+    /** group 容器与各手柄的 aria-labelledby（指向外部 label 的 id）。 */
+    ariaLabelledby?: string;
     onChange?: (v: SliderValue) => void;
     /** 拖拽结束（pointerup）或键盘操作落定时触发，适合做请求节流。 */
     onChangeComplete?: (v: SliderValue) => void;
@@ -78,6 +80,7 @@
     handleStyle,
     id,
     ariaLabel,
+    ariaLabelledby,
     onChange,
     onChangeComplete,
     onInput,
@@ -261,19 +264,46 @@
     beginDrag(nearestHandle(raw), e);
   }
 
+  // RTL detection for keyboard mapping (SSR-safe). Mirrors the pointer path which
+  // reads documentElement direction.
+  function isRtl(): boolean {
+    if (typeof document === 'undefined') return false;
+    return getComputedStyle(document.documentElement).direction === 'rtl';
+  }
+
+  // Map an arrow key to +1 / -1 / 0 (other) so the *visual* direction always
+  // matches increase/decrease, honoring vertical + verticalReverse + RTL.
+  // Horizontal: Right increases, Left decreases — flipped under RTL.
+  // Vertical: Up increases, Down decreases — flipped under verticalReverse.
+  // (The cross-axis arrows stay consistent with APG: Right/Up increase.)
+  function arrowDirection(key: string): -1 | 0 | 1 {
+    const rtl = isRtl();
+    switch (key) {
+      case 'ArrowUp':
+        return vertical && verticalReverse ? -1 : 1;
+      case 'ArrowDown':
+        return vertical && verticalReverse ? 1 : -1;
+      case 'ArrowRight':
+        return rtl ? -1 : 1;
+      case 'ArrowLeft':
+        return rtl ? 1 : -1;
+      default:
+        return 0;
+    }
+  }
+
   function handleKeydown(index: number, e: KeyboardEvent) {
     if (disabled) return;
     const cur = handleValue(index);
-    const bigStep = (step ?? 1) * 10;
+    const stepSize = step ?? 1;
+    const bigStep = stepSize * 10;
     let next = cur;
     switch (e.key) {
       case 'ArrowRight':
       case 'ArrowUp':
-        next = cur + (step ?? 1);
-        break;
       case 'ArrowLeft':
       case 'ArrowDown':
-        next = cur - (step ?? 1);
+        next = cur + arrowDirection(e.key) * stepSize;
         break;
       case 'PageUp':
         next = cur + bigStep;
@@ -303,6 +333,19 @@
   function handleValue(index: number): number {
     if (!range) return current as number;
     return (current as Pair)[index] ?? min;
+  }
+
+  // Per-handle aria-valuemin/max. In range mode the two handles must not report
+  // ranges that allow crossing: the low handle (0) caps its max at the high
+  // handle's current value, and the high handle (1) floors its min at the low
+  // handle's current value (防越界的可达性表达 — spec §6).
+  function handleMin(index: number): number {
+    if (range && index === 1) return (current as Pair)[0] ?? min;
+    return min;
+  }
+  function handleMax(index: number): number {
+    if (range && index === 0) return (current as Pair)[1] ?? max;
+    return max;
   }
 
   // A dot sits inside the filled segment (active) when between trackStart/End.
@@ -368,7 +411,8 @@
   class={cls}
   class:cd-slider--vertical={vertical}
   role="group"
-  aria-label={ariaLabel}
+  aria-label={ariaLabelledby ? undefined : ariaLabel}
+  aria-labelledby={ariaLabelledby}
   aria-disabled={disabled || undefined}
   style={vertical ? `block-size: ${height}px` : undefined}
 >
@@ -404,10 +448,11 @@
         class="cd-slider__handle"
         role="slider"
         tabindex={disabled ? -1 : 0}
-        aria-label={ariaLabel}
+        aria-label={ariaLabelledby ? undefined : ariaLabel}
+        aria-labelledby={ariaLabelledby}
         aria-orientation={vertical ? 'vertical' : 'horizontal'}
-        aria-valuemin={min}
-        aria-valuemax={max}
+        aria-valuemin={handleMin(index)}
+        aria-valuemax={handleMax(index)}
         aria-valuenow={hv}
         aria-valuetext={ariaValueText(index)}
         aria-disabled={disabled || undefined}
