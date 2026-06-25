@@ -18,6 +18,8 @@ export default defineConfig({
           include: ['packages/**/*.{test,spec}.ts'],
           // a11y 渲染测试只在 dom project 跑，不在 node 跑。
           exclude: ['**/node_modules/**', '**/dist/**', '**/*.a11y.test.ts'],
+          // bench 文件只在 bench project 跑（需 svelte 编译，node 下会解析失败）。
+          benchmark: { include: [] },
         },
       },
       {
@@ -34,6 +36,27 @@ export default defineConfig({
           include: ['packages/**/*.a11y.test.ts'],
           exclude: ['**/node_modules/**', '**/dist/**'],
           setupFiles: ['./vitest.dom-setup.ts'],
+          // bench 文件只在 bench project 跑，dom project 不重复执行。
+          benchmark: { include: [] },
+        },
+      },
+      {
+        // 运行时基准（perf:bench）：最小骨架，仅趋势参考，不接 CI 门禁。
+        // 与 dom project 一样需要 jsdom + svelte 编译，才能真实 mount 组件测渲染耗时。
+        // benchmark.include 只匹配 *.bench.ts，故 `vitest run`（单测）不会跑到它，
+        // 只有 `vitest bench` 才执行；不影响现有 unit/dom project。
+        plugins: [svelte({ compilerOptions: { dev: false } })],
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'bench',
+          environment: 'jsdom',
+          setupFiles: ['./vitest.dom-setup.ts'],
+          benchmark: {
+            include: ['packages/**/*.bench.ts'],
+            exclude: ['**/node_modules/**', '**/dist/**'],
+          },
         },
       },
     ],
