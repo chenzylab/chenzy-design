@@ -213,6 +213,16 @@
     setOpen(!isOpen);
   }
 
+  // dialog 模式（click）触发器承载 button 角色：Enter/Space 键盘激活（与原生 button 一致）。
+  // tooltip 模式（hover/focus）不挂键盘处理，触发器保持纯 generic span。
+  function onTriggerKeydown(e: KeyboardEvent) {
+    if (disabled || trigger !== 'click') return;
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      setOpen(!isOpen);
+    }
+  }
+
   // --- DOM 引用：触发包裹（浮层定位由 use:floating action 接管）---
   let rootEl = $state<HTMLSpanElement | null>(null);
   let popEl = $state<HTMLDivElement | null>(null);
@@ -310,12 +320,22 @@
   onfocusout={onFocusOut}
   onclick={onClick}
 >
+  <!-- dialog 模式（click/custom）触发器承载 button 角色，让 aria-haspopup/expanded/controls
+       挂在合法宿主上（axe aria-allowed-attr）；可聚焦 + Enter/Space 激活。
+       tooltip 模式（hover/focus）保持纯 span，仅 aria-describedby（generic 上合法）。 -->
+  <!-- role/tabindex 动态（dialog 模式才 button），静态分析看不出 → 抑制两条误报。 -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
     class="cd-popover__trigger"
+    role={isTooltipRole ? undefined : 'button'}
+    tabindex={isTooltipRole ? undefined : 0}
     aria-haspopup={isTooltipRole ? undefined : 'dialog'}
     aria-expanded={isTooltipRole ? undefined : isOpen}
     aria-controls={!isTooltipRole && isOpen ? popId : undefined}
     aria-describedby={isTooltipRole && isOpen ? popId : undefined}
+    aria-disabled={!isTooltipRole && disabled ? 'true' : undefined}
+    onkeydown={isTooltipRole ? undefined : onTriggerKeydown}
   >
     {@render children?.()}
   </span>
