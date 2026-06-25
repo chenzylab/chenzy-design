@@ -31,6 +31,7 @@ export const meta = {
     { name: 'handleStyle', type: 'string', default: 'undefined', desc: '透传手柄内联样式' },
     { name: 'id', type: 'string', default: 'undefined', desc: '根节点 id，关联表单 label' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: 'group 与各手柄 aria-labelledby（指向外部 label id）' },
     { name: 'onChange', type: '(v: number | [number, number]) => void', default: 'undefined', desc: '值变化（拖拽落定/键盘/点击）' },
     { name: 'onChangeComplete', type: '(v: number | [number, number]) => void', default: 'undefined', desc: '拖拽结束或键盘落定时触发，适合请求节流' },
     { name: 'onInput', type: '(v: number | [number, number]) => void', default: 'undefined', desc: '与 change 同步的低级输入信号（拖动中实时触发）' },
