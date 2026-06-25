@@ -1,0 +1,410 @@
+[
+  {
+    "name": "button",
+    "passed": true,
+    "size": 1517,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "divider",
+    "passed": false,
+    "size": 1339,
+    "sizeLimit": 600
+  },
+  {
+    "name": "grid",
+    "passed": false,
+    "size": 1949,
+    "sizeLimit": 1800
+  },
+  {
+    "name": "icon",
+    "passed": false,
+    "size": 1247,
+    "sizeLimit": 1200
+  },
+  {
+    "name": "layout",
+    "passed": false,
+    "size": 2681,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "space",
+    "passed": true,
+    "size": 967,
+    "sizeLimit": 1200
+  },
+  {
+    "name": "typography",
+    "passed": false,
+    "size": 5639,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "banner",
+    "passed": false,
+    "size": 2828,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "drawer",
+    "passed": true,
+    "size": 3129,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "modal",
+    "passed": false,
+    "size": 5069,
+    "sizeLimit": 5000
+  },
+  {
+    "name": "notification",
+    "passed": true,
+    "size": 4469,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "popconfirm",
+    "passed": false,
+    "size": 4141,
+    "sizeLimit": 2000
+  },
+  {
+    "name": "progress",
+    "passed": false,
+    "size": 2659,
+    "sizeLimit": 2200
+  },
+  {
+    "name": "side-sheet",
+    "passed": true,
+    "size": 3862,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "skeleton",
+    "passed": true,
+    "size": 3121,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "spin",
+    "passed": false,
+    "size": 2244,
+    "sizeLimit": 1600
+  },
+  {
+    "name": "toast",
+    "passed": true,
+    "size": 3908,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "autocomplete",
+    "passed": true,
+    "size": 4179,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "cascader",
+    "passed": false,
+    "size": 7756,
+    "sizeLimit": 7500
+  },
+  {
+    "name": "checkbox",
+    "passed": true,
+    "size": 3064,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "color-picker",
+    "passed": true,
+    "size": 5924,
+    "sizeLimit": 7500
+  },
+  {
+    "name": "date-picker",
+    "passed": false,
+    "size": 10492,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "form",
+    "passed": false,
+    "size": 5312,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "input",
+    "passed": true,
+    "size": 2725,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "input-number",
+    "passed": false,
+    "size": 3675,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "radio",
+    "passed": false,
+    "size": 3529,
+    "sizeLimit": 2200
+  },
+  {
+    "name": "rating",
+    "passed": false,
+    "size": 3159,
+    "sizeLimit": 2200
+  },
+  {
+    "name": "select",
+    "passed": true,
+    "size": 6136,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "slider",
+    "passed": false,
+    "size": 4103,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "switch",
+    "passed": false,
+    "size": 2345,
+    "sizeLimit": 1600
+  },
+  {
+    "name": "tag-input",
+    "passed": true,
+    "size": 3042,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "textarea",
+    "passed": false,
+    "size": 3252,
+    "sizeLimit": 3000
+  },
+  {
+    "name": "time-picker",
+    "passed": false,
+    "size": 5684,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "transfer",
+    "passed": false,
+    "size": 8169,
+    "sizeLimit": 6500
+  },
+  {
+    "name": "tree-select",
+    "passed": true,
+    "size": 8268,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "upload",
+    "passed": true,
+    "size": 4791,
+    "sizeLimit": 6000
+  },
+  {
+    "name": "anchor",
+    "passed": true,
+    "size": 2549,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "breadcrumb",
+    "passed": false,
+    "size": 3460,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "dropdown",
+    "passed": true,
+    "size": 4982,
+    "sizeLimit": 5000
+  },
+  {
+    "name": "menu",
+    "passed": false,
+    "size": 7295,
+    "sizeLimit": 6000
+  },
+  {
+    "name": "pagination",
+    "passed": false,
+    "size": 3291,
+    "sizeLimit": 3000
+  },
+  {
+    "name": "steps",
+    "passed": true,
+    "size": 3107,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "tabs",
+    "passed": false,
+    "size": 6009,
+    "sizeLimit": 5000
+  },
+  {
+    "name": "back-top",
+    "passed": false,
+    "size": 2300,
+    "sizeLimit": 1500
+  },
+  {
+    "name": "config-provider",
+    "passed": false,
+    "size": 1466,
+    "sizeLimit": 1200
+  },
+  {
+    "name": "locale-provider",
+    "passed": true,
+    "size": 768,
+    "sizeLimit": 1000
+  },
+  {
+    "name": "lottie-icon",
+    "passed": true,
+    "size": 2128,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "resize-observer",
+    "passed": false,
+    "size": 1039,
+    "sizeLimit": 800
+  },
+  {
+    "name": "avatar",
+    "passed": false,
+    "size": 3155,
+    "sizeLimit": 2000
+  },
+  {
+    "name": "badge",
+    "passed": false,
+    "size": 2132,
+    "sizeLimit": 1600
+  },
+  {
+    "name": "calendar",
+    "passed": true,
+    "size": 7749,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "card",
+    "passed": true,
+    "size": 2535,
+    "sizeLimit": 3000
+  },
+  {
+    "name": "carousel",
+    "passed": true,
+    "size": 4087,
+    "sizeLimit": 5500
+  },
+  {
+    "name": "collapse",
+    "passed": true,
+    "size": 3458,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "descriptions",
+    "passed": false,
+    "size": 2395,
+    "sizeLimit": 2200
+  },
+  {
+    "name": "empty",
+    "passed": false,
+    "size": 2197,
+    "sizeLimit": 1500
+  },
+  {
+    "name": "highlight",
+    "passed": false,
+    "size": 1226,
+    "sizeLimit": 1200
+  },
+  {
+    "name": "image",
+    "passed": false,
+    "size": 5186,
+    "sizeLimit": 2500
+  },
+  {
+    "name": "list",
+    "passed": false,
+    "size": 7756,
+    "sizeLimit": 4000
+  },
+  {
+    "name": "overflow-list",
+    "passed": true,
+    "size": 3047,
+    "sizeLimit": 3200
+  },
+  {
+    "name": "popover",
+    "passed": true,
+    "size": 3216,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "scroll-list",
+    "passed": false,
+    "size": 5000,
+    "sizeLimit": 4500
+  },
+  {
+    "name": "table",
+    "passed": true,
+    "size": 11615,
+    "sizeLimit": 14000
+  },
+  {
+    "name": "tag",
+    "passed": false,
+    "size": 2595,
+    "sizeLimit": 1200
+  },
+  {
+    "name": "timeline",
+    "passed": false,
+    "size": 4678,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "tooltip",
+    "passed": true,
+    "size": 2811,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "tree",
+    "passed": true,
+    "size": 7606,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "virtual-list",
+    "passed": false,
+    "size": 2278,
+    "sizeLimit": 2000
+  }
+]
