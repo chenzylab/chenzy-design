@@ -111,6 +111,10 @@ export const en_US: Locale = {
   Notification: {
     closeText: 'Close',
     notification: 'Notification',
+    success: 'Success',
+    info: 'Info',
+    warning: 'Warning',
+    error: 'Error',
   },
   BackTop: {
     ariaLabel: 'Back to top',
@@ -142,6 +146,8 @@ export const en_US: Locale = {
   },
   List: {
     loadMore: 'Load more',
+    selectAnnounce: 'Selected {label}',
+    deselectAnnounce: 'Deselected {label}',
   },
   Calendar: {
     today: 'Today',
@@ -150,6 +156,7 @@ export const en_US: Locale = {
     moreCount: '+{count} more',
     noEvents: 'No events',
     allDay: 'All day',
+    selectedDateAnnounce: 'Selected {date}',
   },
   Tree: {
     emptyText: 'No data',
@@ -174,6 +181,7 @@ export const en_US: Locale = {
     reset: 'Reset',
     prev: 'Previous',
     next: 'Next',
+    previewCount: '{index} of {total}',
   },
   Timeline: {
     pending: 'Loading…',
@@ -242,6 +250,9 @@ export const en_US: Locale = {
     minSizeError: 'File must be at least {size}',
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
+    announceUploading: '{name} uploading {percent}%',
+    announceSuccess: '{name} uploaded successfully',
+    announceError: '{name} upload failed',
   },
   Form: {
     required: '{label} is required',
@@ -269,6 +280,11 @@ export const en_US: Locale = {
   InputNumber: {
     increase: 'Increase',
     decrease: 'Decrease',
+    clampedAnnounce: 'Adjusted to {value}',
+  },
+  Slider: {
+    minReachedAnnounce: 'Minimum value reached',
+    maxReachedAnnounce: 'Maximum value reached',
   },
   Cascader: {
     clear: 'Clear',
@@ -284,6 +300,7 @@ export const en_US: Locale = {
     ariaLabel: 'Carousel',
     play: 'Start automatic slide show',
     pause: 'Pause automatic slide show',
+    slideAnnounce: '{index} of {total}',
   },
   TagInput: {
     remove: 'Remove',

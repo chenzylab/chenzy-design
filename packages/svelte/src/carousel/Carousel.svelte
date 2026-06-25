@@ -15,6 +15,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
+  import { useLiveAnnouncer } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Animation = 'slide' | 'fade';
@@ -69,6 +70,8 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：手动切换 slide 时播报「第 N 张，共 M 张」（红线 #3：命令式）。
+  const announcer = useLiveAnnouncer();
 
   // 受控 / 非受控（红线 #1）：永不回写 prop。
   const isControlled = $derived(value !== undefined);
@@ -147,6 +150,14 @@
     if (next === current) return;
     if (!isControlled) inner = next;
     onChange?.(next);
+    // 手动切换时 polite 播报「第 N 张，共 M 张」；autoplay 实际运行中不播，避免噪音（§6）。
+    // 用即将生效的 next 计算页码（$derived 在同步回调内尚未重算）。
+    if (!isPlaying && pageCount > 0) {
+      const nextPage = step > 0 ? Math.round(next / step) : 0;
+      announcer.announce(
+        loc().t('Carousel.slideAnnounce', { index: nextPage + 1, total: pageCount }),
+      );
+    }
   }
 
   function prev() {

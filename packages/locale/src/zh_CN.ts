@@ -111,6 +111,10 @@ export const zh_CN: Locale = {
   Notification: {
     closeText: '关闭',
     notification: '通知',
+    success: '成功',
+    info: '提示',
+    warning: '警告',
+    error: '错误',
   },
   BackTop: {
     ariaLabel: '回到顶部',
@@ -142,6 +146,8 @@ export const zh_CN: Locale = {
   },
   List: {
     loadMore: '加载更多',
+    selectAnnounce: '已选中 {label}',
+    deselectAnnounce: '已取消选中 {label}',
   },
   Calendar: {
     today: '今天',
@@ -150,6 +156,7 @@ export const zh_CN: Locale = {
     moreCount: '还有 {count} 项',
     noEvents: '暂无日程',
     allDay: '全天',
+    selectedDateAnnounce: '已选择 {date}',
   },
   Tree: {
     emptyText: '暂无数据',
@@ -174,6 +181,7 @@ export const zh_CN: Locale = {
     reset: '重置',
     prev: '上一张',
     next: '下一张',
+    previewCount: '第 {index} 张，共 {total} 张',
   },
   Timeline: {
     pending: '加载中…',
@@ -242,6 +250,9 @@ export const zh_CN: Locale = {
     minSizeError: '文件大小不能小于 {size}',
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
+    announceUploading: '{name} 上传中 {percent}%',
+    announceSuccess: '{name} 上传成功',
+    announceError: '{name} 上传失败',
   },
   Form: {
     required: '{label}为必填项',
@@ -269,6 +280,11 @@ export const zh_CN: Locale = {
   InputNumber: {
     increase: '增加',
     decrease: '减少',
+    clampedAnnounce: '已调整为 {value}',
+  },
+  Slider: {
+    minReachedAnnounce: '已是最小值',
+    maxReachedAnnounce: '已是最大值',
   },
   Cascader: {
     clear: '清除',
@@ -284,6 +300,7 @@ export const zh_CN: Locale = {
     ariaLabel: '走马灯',
     play: '播放',
     pause: '暂停',
+    slideAnnounce: '第 {index} 张，共 {total} 张',
   },
   TagInput: {
     remove: '删除',

@@ -25,6 +25,7 @@
     scrollOffsetForIndex,
     toggleSelection,
     rangeSelection,
+    useLiveAnnouncer,
     type ScrollAlign,
     type ListKey,
   } from '@chenzy-design/core';
@@ -128,6 +129,8 @@
   } = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：selectable 模式选中/取消时播报（红线 #3：命令式）。
+  const announcer = useLiveAnnouncer();
 
   function isSnippet(v: unknown): v is Snippet {
     return typeof v === 'function';
@@ -186,6 +189,21 @@
     const selected = next.has(key);
     if (!isSelectControlled) innerSelected = [...next];
     onSelectionChange?.([...next], { item: keyToItem(key), key, selected });
+    // polite 播报当前操作项的选中/取消状态。label 取常见文本字段，回退到 key。
+    const label = selectionLabel(key);
+    announcer.announce(
+      loc().t(selected ? 'List.selectAnnounce' : 'List.deselectAnnounce', { label }),
+    );
+  }
+
+  // 选中播报用可读名：优先 item 的字符串本体或 label/title/name 字段，回退到 key。
+  function selectionLabel(key: ListKey): string {
+    const item = keyToItem(key);
+    if (typeof item === 'string' || typeof item === 'number') return String(item);
+    const rec = item as unknown as Record<string, unknown> | undefined;
+    const text = rec?.label ?? rec?.title ?? rec?.name;
+    if (typeof text === 'string' || typeof text === 'number') return String(text);
+    return String(key);
   }
 
   // 向声明式 <List.Item> 暴露 selectable 状态（getter 保持响应性；红线 #2：子项不写 $state）。

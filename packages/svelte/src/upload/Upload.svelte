@@ -14,6 +14,7 @@
   import type { Snippet } from 'svelte';
   import {
     useId,
+    useLiveAnnouncer,
     computeUploadPercent,
     isUploadOk,
     createUploadQueue,
@@ -103,6 +104,11 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 屏幕阅读器播报（spec §6）：进度 polite（节流，避免每 1% 刷屏），成功 polite、失败 assertive。
+  // 命令式调用在 XHR 事件回调里（非 render 期），符合红线 #3。
+  const announcer = useLiveAnnouncer();
+  // 每个文件上次播报的进度档（每 25% 一档），避免逐 % 重复播报。
+  const announcedBucket = new Map<string, number>();
 
   const isControlled = $derived(value !== undefined);
   let inner = $state<UploadFileItem[]>(getInitialValue());
@@ -167,8 +173,19 @@
       xhrMap.clear();
       for (const u of objectUrls.values()) URL.revokeObjectURL(u);
       objectUrls.clear();
+      announcedBucket.clear();
     };
   });
+
+  // 进度播报节流：每跨过一个 25% 档位才播一次（25/50/75），避免逐 % 刷屏。
+  // 0% 与 100% 不在此播报（开始无意义、完成走 success 文案）。
+  function announceProgress(item: UploadFileItem, percent: number) {
+    const bucket = Math.floor(percent / 25);
+    if (bucket <= 0 || bucket >= 4) return;
+    if (announcedBucket.get(item.uid) === bucket) return;
+    announcedBucket.set(item.uid, bucket);
+    announcer.announce(loc().t('Upload.announceUploading', { name: item.name, percent }));
+  }
 
   // XHR 上传单个文件项：uploading → onprogress 更新 percent → success/error。
   // 返回 Promise，在 load/error/abort 任一终态 resolve，供并发队列释放槽位。
@@ -191,29 +208,39 @@
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          patchItem(item.uid, { percent: computeUploadPercent(e.loaded, e.total) });
+          const percent = computeUploadPercent(e.loaded, e.total);
+          patchItem(item.uid, { percent });
+          announceProgress(item, percent);
         }
       };
       xhr.onload = () => {
         xhrMap.delete(item.uid);
+        announcedBucket.delete(item.uid);
         if (isUploadOk(xhr.status)) {
           patchItem(item.uid, { status: 'success', percent: 100 });
+          // 完成必播（polite，不抢断）。
+          announcer.announce(loc().t('Upload.announceSuccess', { name: item.name }));
           onSuccess?.(xhr.responseText, item);
         } else {
           patchItem(item.uid, { status: 'error' });
+          // 失败必播（assertive，立即打断）。
+          announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
           onError?.(item);
         }
         done();
       };
       xhr.onerror = () => {
         xhrMap.delete(item.uid);
+        announcedBucket.delete(item.uid);
         patchItem(item.uid, { status: 'error' });
+        announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
         onError?.(item);
         done();
       };
       // abort（remove/卸载）也要释放槽位，否则队列卡死。
       xhr.onabort = () => {
         xhrMap.delete(item.uid);
+        announcedBucket.delete(item.uid);
         done();
       };
 
@@ -337,6 +364,7 @@
       xhrMap.delete(uid);
     }
     revokeUrl(uid);
+    announcedBucket.delete(uid);
     commit(current.filter((item) => item.uid !== uid));
   }
 

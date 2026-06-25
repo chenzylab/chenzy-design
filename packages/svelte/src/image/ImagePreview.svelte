@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { useFocusTrap } from '@chenzy-design/core';
+  import { useFocusTrap, useLiveAnnouncer } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   interface PreviewImage {
@@ -25,6 +25,8 @@
   let { images, current, onClose, onChange }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：灯箱翻页时播报「第 m 张，共 n 张」（红线 #3：命令式，在切换 effect 内）。
+  const announcer = useLiveAnnouncer();
 
   const count = $derived(images.length);
   const safeIndex = $derived(Math.min(Math.max(current, 0), Math.max(count - 1, 0)));
@@ -71,6 +73,12 @@
     if (safeIndex !== lastIndex) {
       lastIndex = safeIndex;
       resetTransform();
+      // 翻页（上一张/下一张）后 polite 播报当前序号；多图时才有意义。
+      if (count > 1) {
+        announcer.announce(
+          loc().t('Image.previewCount', { index: safeIndex + 1, total: count }),
+        );
+      }
     }
   });
 
