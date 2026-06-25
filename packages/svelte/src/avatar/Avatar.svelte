@@ -63,7 +63,7 @@
   const palette = [
     'var(--cd-color-blue-5)',
     'var(--cd-color-green-5)',
-    'var(--cd-color-yellow-6)',
+    'var(--cd-color-orange-6)',
     'var(--cd-color-red-5)',
     'var(--cd-color-primary)',
   ];

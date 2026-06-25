@@ -202,9 +202,8 @@
   .cd-switch--warning.cd-switch--on {
     background: var(--cd-color-warning);
   }
-  /* warning on yellow: dark label text reaches WCAG AA (white cannot) */
   .cd-switch--warning.cd-switch--on .cd-switch__label {
-    color: var(--cd-color-text-on-warning);
+    color: var(--cd-color-text-inverse);
   }
   .cd-switch--error.cd-switch--on {
     background: var(--cd-color-danger);
