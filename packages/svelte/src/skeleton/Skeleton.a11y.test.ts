@@ -19,15 +19,14 @@ describe('Skeleton a11y', () => {
     expect(root?.getAttribute('aria-label')).toBeTruthy();
   });
 
-  // SKIP 原因：占位 <div> 带 aria-label 但无 role → axe [aria-prohibited-attr]。源码缺口，本批不改。
-  it.skip('loading：无 axe violations（阻塞于 aria-prohibited-attr：div 带 aria-label 无 role）', async () => {
+  it('loading：无 axe violations（占位容器 role=status）', async () => {
     const { container } = renderWithLocale(Skeleton, {
       props: { loading: true },
     });
     await expectNoAxeViolations(container);
   });
 
-  it.skip('active：无 axe violations（同上 aria-prohibited-attr）', async () => {
+  it('active：无 axe violations（占位容器 role=status）', async () => {
     const { container } = renderWithLocale(Skeleton, {
       props: { loading: true, active: true },
     });

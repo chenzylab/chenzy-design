@@ -313,20 +313,25 @@
         {@const index = vStart + i}
         {@const isLastData = index === ordered.length - 1 && !hasPending}
         {#if interactive}
+          <!-- listitem 包 button：li 保持 list 语义，交互/roving 焦点落在内层 button（避免 ul 直含非 listitem）。 -->
           <div
             class="cd-timeline__item cd-timeline__virtual-item"
             class:cd-timeline__item--last={isLastData}
-            class:cd-timeline__item--interactive={true}
-            role="button"
-            tabindex={dsTabindex(index)}
-            data-tindex={index}
-            aria-label={item.content}
+            role="listitem"
             style={`transform:translateY(${index * vItemHeight}px); block-size:${vItemHeight}px`}
-            onclick={() => onDsItemActivate(item, index)}
-            onkeydown={(e) => onDsItemKeydown(e, index, item)}
           >
-            <span class="cd-timeline__tail" aria-hidden="true"></span>
-            {@render itemBody(item)}
+            <div
+              class="cd-timeline__item-interactive cd-timeline__item--interactive"
+              role="button"
+              tabindex={dsTabindex(index)}
+              data-tindex={index}
+              aria-label={item.content}
+              onclick={() => onDsItemActivate(item, index)}
+              onkeydown={(e) => onDsItemKeydown(e, index, item)}
+            >
+              <span class="cd-timeline__tail" aria-hidden="true"></span>
+              {@render itemBody(item)}
+            </div>
           </div>
         {:else}
           <div
@@ -349,18 +354,20 @@
     {:else}
       {#each ordered as item, index (item.key ?? index)}
         {#if interactive}
-          <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
-          <li
-            class="cd-timeline__item cd-timeline__item--interactive"
-            role="button"
-            tabindex={dsTabindex(index)}
-            data-tindex={index}
-            aria-label={item.content}
-            onclick={() => onDsItemActivate(item, index)}
-            onkeydown={(e) => onDsItemKeydown(e, index, item)}
-          >
-            <span class="cd-timeline__tail" aria-hidden="true"></span>
-            {@render itemBody(item)}
+          <!-- listitem 包 button：li 保持 list 语义，role=button + roving 焦点落在内层 div（避免 ul 直含非 listitem）。 -->
+          <li class="cd-timeline__item">
+            <div
+              class="cd-timeline__item-interactive cd-timeline__item--interactive"
+              role="button"
+              tabindex={dsTabindex(index)}
+              data-tindex={index}
+              aria-label={item.content}
+              onclick={() => onDsItemActivate(item, index)}
+              onkeydown={(e) => onDsItemKeydown(e, index, item)}
+            >
+              <span class="cd-timeline__tail" aria-hidden="true"></span>
+              {@render itemBody(item)}
+            </div>
           </li>
         {:else}
           <li class="cd-timeline__item">
@@ -562,7 +569,22 @@
     display: none;
   }
 
-  /* --- interactive：roving 焦点项可聚焦，焦点高亮。 --- */
+  /* --- interactive：listitem 包 button，交互/roving 焦点落在内层 .cd-timeline__item-interactive。 --- */
+  /* 内层交互元素接管原 .cd-timeline__item 的 flex 布局与定位（tail 绝对定位需 position:relative 锚点）。
+     外层 li 让出 padding/定位给内层，自身只作单纯 list 容器。 */
+  .cd-timeline--interactive :global(.cd-timeline__item) {
+    padding-inline-start: 0;
+    padding-block-end: 0;
+  }
+  .cd-timeline :global(.cd-timeline__item-interactive) {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    gap: var(--cd-timeline-gap);
+    min-inline-size: 0;
+    padding-inline-start: var(--cd-timeline-dot-size);
+    padding-block-end: var(--cd-timeline-gap);
+  }
   .cd-timeline--interactive :global(.cd-timeline__item--interactive) {
     cursor: pointer;
     outline: none;

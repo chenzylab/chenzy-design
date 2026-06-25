@@ -151,6 +151,7 @@ export const en_US: Locale = {
     loadMore: 'Load more',
     selectAnnounce: 'Selected {label}',
     deselectAnnounce: 'Deselected {label}',
+    selectableLabel: 'Selectable list',
   },
   Calendar: {
     today: 'Today',
@@ -257,6 +258,7 @@ export const en_US: Locale = {
     announceUploading: '{name} uploading {percent}%',
     announceSuccess: '{name} uploaded successfully',
     announceError: '{name} upload failed',
+    uploadingProgress: '{name} upload progress',
   },
   Form: {
     required: '{label} is required',
