@@ -7,8 +7,8 @@
  * 红线 #3：region DOM 命令式创建/挂载到 body + 写入 + cleanup。模块级单例，
  * 多次 toast 复用同一对节点；__resetLiveRegion 供测试清理。客户端 only（守 document）。
  *
- * 级别策略（参考 WAI-ARIA APG / Semi）：error -> assertive（立即打断），其余 -> polite。
- * region 视觉隐藏（sr-only），仅供辅助技术读取。
+ * 级别策略（参考 WAI-ARIA APG / Semi，对齐 spec §6）：error / warning -> assertive
+ * （立即打断），info / success / loading -> polite。region 视觉隐藏（sr-only），仅供辅助技术读取。
  */
 import type { ToastType } from '@chenzy-design/core';
 
@@ -60,7 +60,8 @@ function ensureRegions(): LiveRegions | null {
 export function announce(message: string, type: ToastType): void {
   const r = ensureRegions();
   if (!r || !message) return;
-  const target = type === 'error' ? r.assertive : r.polite;
+  // spec §6：error / warning 立即打断（assertive），其余排队播报（polite）。
+  const target = type === 'error' || type === 'warning' ? r.assertive : r.polite;
   // 先清空，确保重复文案也会触发新一次播报。
   target.textContent = '';
   // 同步直接写入即可被 AT 捕获；保持纯命令式、无 effect。

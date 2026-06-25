@@ -111,6 +111,10 @@ export const zh_CN: Locale = {
   Notification: {
     closeText: '关闭',
     notification: '通知',
+    success: '成功',
+    info: '提示',
+    warning: '警告',
+    error: '错误',
   },
   BackTop: {
     ariaLabel: '回到顶部',
@@ -242,6 +246,9 @@ export const zh_CN: Locale = {
     minSizeError: '文件大小不能小于 {size}',
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
+    announceUploading: '{name} 上传中 {percent}%',
+    announceSuccess: '{name} 上传成功',
+    announceError: '{name} 上传失败',
   },
   Form: {
     required: '{label}为必填项',
