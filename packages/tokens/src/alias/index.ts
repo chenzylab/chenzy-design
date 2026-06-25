@@ -55,6 +55,9 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-info': palette['blue-4'],
   // danger needs a light tint (red-4) so dark text-inverse reaches AA; red-5/6 are too dark.
   'color-danger': palette['red-4'],
+  // success likewise needs the brighter green-5 (4.89:1 vs dark text-inverse);
+  // green-6 inherited from light is too dark (3.22:1) for a solid surface.
+  'color-success': palette['green-5'],
   // warning surface stays bright yellow; its dark on-warning text is theme-agnostic.
   'color-text-on-warning': palette['grey-9'],
   'color-bg-0': '#16161a',

@@ -76,11 +76,30 @@ const PAIRS: Pair[] = [
   { theme: 'dark', label: 'text-inverse on primary-hover', fg: 'color-text-inverse', bg: 'color-primary-hover' },
   { theme: 'dark', label: 'text-inverse on primary-active', fg: 'color-text-inverse', bg: 'color-primary-active' },
   { theme: 'dark', label: 'text-inverse on info', fg: 'color-text-inverse', bg: 'color-info' },
+  { theme: 'dark', label: 'text-inverse on success', fg: 'color-text-inverse', bg: 'color-success' },
   { theme: 'dark', label: 'text-inverse on danger', fg: 'color-text-inverse', bg: 'color-danger' },
   { theme: 'dark', label: 'text-on-warning on warning', fg: 'color-text-on-warning', bg: 'color-warning' },
   // --- dark: primary as link/foreground on surfaces ---
   { theme: 'dark', label: 'primary link on bg-0', fg: 'color-primary', bg: 'color-bg-0' },
   { theme: 'dark', label: 'primary link on bg-1', fg: 'color-primary', bg: 'color-bg-1' },
+
+  // --- component consumption: solid status fills (Switch / Tag / Badge) ---
+  // These mirror the foreground/background each component actually renders for
+  // its solid status variants (the bright fills used in the default/light
+  // theme). White (inverse) text is AA on the primary/success/danger fills, but
+  // NOT on the bright yellow warning fill — warning must consume the dark
+  // `color-text-on-warning`. If a component regresses warning back to white
+  // text, the warning pair below will FAIL the build.
+  { theme: 'light', label: 'solid primary fill text', fg: 'color-text-inverse', bg: 'color-primary' },
+  { theme: 'light', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success' },
+  { theme: 'light', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger' },
+  { theme: 'light', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
+  // dark theme: solid status fills use brighter tints (success→green-5,
+  // danger→red-4, primary→blue-4) so dark inverse text clears AA; warning fill
+  // is not re-toned, so the dark-text rule must still hold there.
+  { theme: 'dark', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success' },
+  { theme: 'dark', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger' },
+  { theme: 'dark', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
 ];
 
 let bodyFailures = 0;

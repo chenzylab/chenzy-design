@@ -265,6 +265,10 @@
     background: var(--cd-color-text-2);
     color: var(--cd-color-text-inverse);
   }
+  /* warning on yellow: dark text reaches WCAG AA (white cannot) */
+  .cd-tag--solid.cd-tag--warning {
+    color: var(--cd-color-text-on-warning);
+  }
 
   /* ghost: transparent background + border */
   .cd-tag--ghost {
@@ -297,6 +301,10 @@
   }
   .cd-tag--checkable.cd-tag--checked.cd-tag--grey {
     background: var(--cd-color-primary);
+  }
+  /* warning on yellow: dark text reaches WCAG AA (white cannot) */
+  .cd-tag--checkable.cd-tag--checked.cd-tag--warning {
+    color: var(--cd-color-text-on-warning);
   }
   .cd-tag--checkable:focus-visible {
     outline: none;
