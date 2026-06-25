@@ -278,6 +278,9 @@ export const en_US: Locale = {
     next: 'Next slide',
     indicators: 'Carousel indicators',
     slideLabel: 'Slide {index}',
+    ariaLabel: 'Carousel',
+    play: 'Start automatic slide show',
+    pause: 'Pause automatic slide show',
   },
   TagInput: {
     remove: 'Remove',

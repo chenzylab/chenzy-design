@@ -278,6 +278,9 @@ export const zh_CN: Locale = {
     next: '下一张',
     indicators: '轮播指示器',
     slideLabel: '第 {index} 张',
+    ariaLabel: '走马灯',
+    play: '播放',
+    pause: '暂停',
   },
   TagInput: {
     remove: '删除',

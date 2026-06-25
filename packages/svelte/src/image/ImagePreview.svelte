@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { useFocusTrap } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   interface PreviewImage {
@@ -73,15 +74,20 @@
     }
   });
 
-  // 浮层根节点：portal 到 body + 进入时聚焦，命令式 + cleanup。
+  // 浮层根节点：portal 到 body + focus trap（焦点锁定灯箱内 + 关闭归还触发元素），
+  // 命令式 + cleanup。复用 core useFocusTrap（与 Modal/Drawer 同一原语，不重造）。
+  // activate() 会记下打开前的触发元素并聚焦灯箱内首个可聚焦项（关闭按钮）；
+  // deactivate() 拦截 Tab 循环、归还焦点给触发元素。
   let overlay = $state<HTMLDivElement | null>(null);
   $effect(() => {
     const node = overlay;
     if (!node) return;
     const body = document.body;
     body.appendChild(node);
-    node.focus();
+    const trap = useFocusTrap(node);
+    trap.activate();
     return () => {
+      trap.deactivate();
       if (node.parentNode === body) body.removeChild(node);
     };
   });
