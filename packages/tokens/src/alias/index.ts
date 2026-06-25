@@ -1,6 +1,11 @@
 /**
  * Alias / Semantic tokens. Express intent, bind to Global palette.
  * Dark mode ONLY remaps this layer. Components consume these (or Component tokens).
+ *
+ * Values follow Semi Design semantics (100% Semi color parity). Semi text colors
+ * are grey-9 / grey-0 with opacity steps; we encode those as rgba literals.
+ * Tradeoff: Semi status fills (success/warning/danger) carry white text and do
+ * NOT clear WCAG AA — accepted to match Semi exactly (see contrast-check.ts).
  */
 import { palette } from '../global/color.js';
 
@@ -10,29 +15,27 @@ export const aliasLight = {
   'color-primary': palette['blue-5'],
   'color-primary-hover': palette['blue-6'],
   'color-primary-active': palette['blue-7'],
-  // status — success/danger use the -6 step so white text on the solid surface clears WCAG AA (4.5:1)
-  'color-success': palette['green-6'],
-  'color-warning': palette['yellow-5'],
-  'color-danger': palette['red-6'],
+  // status (Semi: success=green-5, warning=orange-5, danger=red-5)
+  'color-success': palette['green-5'],
+  'color-warning': palette['orange-5'],
+  'color-danger': palette['red-5'],
   'color-info': palette['blue-5'],
-  // text (0 strongest → 3 weakest)
+  'color-link': palette['blue-5'],
+  // text — Semi uses grey-9 with opacity: 100% / 80% / 62% / 35%
   'color-text-0': palette['grey-9'],
-  'color-text-1': palette['grey-8'],
-  // text-2 = grey-7 (≈4.5:1 on bg-0/bg-1) per Semi secondary; grey-6 only reached 3.2:1
-  'color-text-2': palette['grey-7'],
-  'color-text-3': palette['grey-5'],
-  'color-text-inverse': palette['grey-0'],
-  // dark text on warning's bright-yellow surface — white can never reach AA on yellow, so warning uses dark text
-  'color-text-on-warning': palette['grey-9'],
-  // background (0 base → higher elevations)
-  'color-bg-0': palette['grey-0'],
-  'color-bg-1': palette['grey-1'],
-  'color-bg-2': palette['grey-2'],
-  'color-bg-3': palette['grey-3'],
-  // border / fill
-  'color-border': palette['grey-3'],
-  'color-fill-0': palette['grey-1'],
-  'color-fill-1': palette['grey-2'],
+  'color-text-1': 'rgba(28, 31, 35, 0.8)',
+  'color-text-2': 'rgba(28, 31, 35, 0.62)',
+  'color-text-3': 'rgba(28, 31, 35, 0.35)',
+  'color-text-inverse': '#ffffff',
+  // background — Semi bg-0 is white; keep our light-grey elevation layering above it
+  'color-bg-0': '#ffffff',
+  'color-bg-1': palette['grey-0'],
+  'color-bg-2': palette['grey-1'],
+  'color-bg-3': palette['grey-2'],
+  // border / fill — Semi fill-0 is a low-alpha dark wash
+  'color-border': palette['grey-1'],
+  'color-fill-0': 'rgba(46, 50, 56, 0.05)',
+  'color-fill-1': 'rgba(46, 50, 56, 0.09)',
   // focus
   'color-focus': palette['blue-5'],
   'focus-ring': `0 0 0 2px ${palette['blue-2']}`,
@@ -42,29 +45,27 @@ export type AliasKey = keyof typeof aliasLight;
 
 /** dark theme: remap a subset; unspecified keys inherit light */
 export const aliasDark: Partial<Record<AliasKey, string>> = {
-  'color-text-0': palette['grey-1'],
-  'color-text-1': palette['grey-3'],
-  'color-text-2': palette['grey-5'],
-  'color-text-3': palette['grey-6'],
-  'color-text-inverse': palette['grey-9'],
-  // dark text-inverse is dark grey, so solid surfaces must be BRIGHT to clear AA.
-  // primary ramps brighter as it activates (4.93→7.83→11.07:1 vs dark text-inverse).
-  'color-primary': palette['blue-4'],
-  'color-primary-hover': palette['blue-3'],
-  'color-primary-active': palette['blue-2'],
-  'color-info': palette['blue-4'],
-  // danger needs a light tint (red-4) so dark text-inverse reaches AA; red-5/6 are too dark.
-  'color-danger': palette['red-4'],
-  // success likewise needs the brighter green-5 (4.89:1 vs dark text-inverse);
-  // green-6 inherited from light is too dark (3.22:1) for a solid surface.
-  'color-success': palette['green-5'],
-  // warning surface stays bright yellow; its dark on-warning text is theme-agnostic.
-  'color-text-on-warning': palette['grey-9'],
+  // text — Semi dark uses grey-0 (#f9f9f9) with opacity
+  'color-text-0': '#f9f9f9',
+  'color-text-1': 'rgba(249, 249, 249, 0.8)',
+  'color-text-2': 'rgba(249, 249, 249, 0.6)',
+  'color-text-3': 'rgba(249, 249, 249, 0.35)',
+  'color-text-inverse': '#ffffff',
+  // brand / status — Semi dark brightens these for visibility on dark surfaces
+  'color-primary': '#54a9ff',
+  'color-primary-hover': '#3295fb',
+  'color-primary-active': '#65b2fc',
+  'color-info': '#54a9ff',
+  'color-link': '#54a9ff',
+  'color-success': '#5dc264',
+  'color-warning': '#ffae43',
+  'color-danger': '#fc725a',
+  // surfaces
   'color-bg-0': '#16161a',
-  'color-bg-1': '#1d1d22',
-  'color-bg-2': '#26262c',
-  'color-bg-3': '#303038',
-  'color-border': '#3a3a42',
-  'color-fill-0': '#1d1d22',
-  'color-fill-1': '#26262c',
+  'color-bg-1': '#232429',
+  'color-bg-2': '#2e3238',
+  'color-bg-3': '#41464c',
+  'color-border': '#41464c',
+  'color-fill-0': 'rgba(249, 249, 249, 0.08)',
+  'color-fill-1': 'rgba(249, 249, 249, 0.12)',
 };
