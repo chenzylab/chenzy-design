@@ -76,6 +76,7 @@ const PAIRS: Pair[] = [
   { theme: 'dark', label: 'text-inverse on primary-hover', fg: 'color-text-inverse', bg: 'color-primary-hover' },
   { theme: 'dark', label: 'text-inverse on primary-active', fg: 'color-text-inverse', bg: 'color-primary-active' },
   { theme: 'dark', label: 'text-inverse on info', fg: 'color-text-inverse', bg: 'color-info' },
+  { theme: 'dark', label: 'text-inverse on success', fg: 'color-text-inverse', bg: 'color-success' },
   { theme: 'dark', label: 'text-inverse on danger', fg: 'color-text-inverse', bg: 'color-danger' },
   { theme: 'dark', label: 'text-on-warning on warning', fg: 'color-text-on-warning', bg: 'color-warning' },
   // --- dark: primary as link/foreground on surfaces ---
@@ -93,8 +94,11 @@ const PAIRS: Pair[] = [
   { theme: 'light', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success' },
   { theme: 'light', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger' },
   { theme: 'light', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
-  // dark theme: the warning fill is not re-toned, so the dark-text rule must
-  // still hold there (guards the warning regression in both themes).
+  // dark theme: solid status fills use brighter tints (success→green-5,
+  // danger→red-4, primary→blue-4) so dark inverse text clears AA; warning fill
+  // is not re-toned, so the dark-text rule must still hold there.
+  { theme: 'dark', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success' },
+  { theme: 'dark', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger' },
   { theme: 'dark', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
 ];
 
