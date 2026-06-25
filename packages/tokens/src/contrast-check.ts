@@ -81,6 +81,21 @@ const PAIRS: Pair[] = [
   // --- dark: primary as link/foreground on surfaces ---
   { theme: 'dark', label: 'primary link on bg-0', fg: 'color-primary', bg: 'color-bg-0' },
   { theme: 'dark', label: 'primary link on bg-1', fg: 'color-primary', bg: 'color-bg-1' },
+
+  // --- component consumption: solid status fills (Switch / Tag / Badge) ---
+  // These mirror the foreground/background each component actually renders for
+  // its solid status variants (the bright fills used in the default/light
+  // theme). White (inverse) text is AA on the primary/success/danger fills, but
+  // NOT on the bright yellow warning fill — warning must consume the dark
+  // `color-text-on-warning`. If a component regresses warning back to white
+  // text, the warning pair below will FAIL the build.
+  { theme: 'light', label: 'solid primary fill text', fg: 'color-text-inverse', bg: 'color-primary' },
+  { theme: 'light', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success' },
+  { theme: 'light', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger' },
+  { theme: 'light', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
+  // dark theme: the warning fill is not re-toned, so the dark-text rule must
+  // still hold there (guards the warning regression in both themes).
+  { theme: 'dark', label: 'solid warning fill text', fg: 'color-text-on-warning', bg: 'color-warning' },
 ];
 
 let bodyFailures = 0;
