@@ -28,7 +28,14 @@ export const meta = {
   ],
   a11y: {
     role: 'group',
-    notes: ['容器 role=group', '列表项复用 Checkbox（已带 a11y）', '移动按钮有 aria-label'],
+    pattern: 'dual-listbox',
+    notes: [
+      '容器 role=group；每侧平铺列表 role=listbox + aria-multiselectable，aria-labelledby 指向栏标题',
+      '条目 role=option + aria-selected + aria-disabled，roving tabindex（每个 listbox 单一 Tab 停靠点）',
+      '列内键盘：↑↓ 漫游、Home/End 跳首末、Space 切换勾选、Shift+↑↓/Shift+Click 范围选择、Enter 移动到对侧',
+      '移动后焦点保留在源列表相邻 option；移动经 useLiveAnnouncer 播报',
+      '移动按钮有 aria-label；分组/树面板保留原 Checkbox 语义',
+    ],
   },
   tokens: ['--cd-transfer-*', '--cd-focus-ring', '--cd-color-*', '--cd-spacing-*'],
 } as const;

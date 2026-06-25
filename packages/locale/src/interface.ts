@@ -280,6 +280,10 @@ export interface Locale {
     remove: string;
     /** remote onSearch 加载中提示 */
     loading: string;
+    /** 移动后 live 播报，uses {count} */
+    movedToRight: string;
+    /** 移动后 live 播报，uses {count} */
+    movedToLeft: string;
   };
   Upload: {
     trigger: string;
@@ -386,6 +390,8 @@ export interface Locale {
     eyeDropper: string;
     recent: string;
     format: string;
+    /** 预设色板列表的可访问名 */
+    presets: string;
     /** 面板无显式 ariaLabel 时的兜底可访问名 */
     panelLabel: string;
   };

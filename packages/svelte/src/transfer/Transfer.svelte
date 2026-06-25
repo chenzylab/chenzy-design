@@ -23,6 +23,7 @@
   updates `dataSource`, local filtering is skipped, `loading` shows a spinner.
 -->
 <script lang="ts">
+  import { tick } from 'svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
   import Button from '../button/Button.svelte';
@@ -33,6 +34,10 @@
     flattenVisible,
     collectExpandable,
     computeFilteredKeys,
+    useId,
+    useLiveAnnouncer,
+    rovingKeyFromEvent,
+    nextRovingIndex,
     type TreeNodeData,
     type FlatNode,
   } from '@chenzy-design/core';
@@ -114,6 +119,11 @@
 
   const loc = useLocale();
 
+  const announcer = useLiveAnnouncer();
+  const baseId = useId('cd-transfer');
+  const leftTitleId = `${baseId}-left-title`;
+  const rightTitleId = `${baseId}-right-title`;
+
   const searchPlaceholderText = $derived(
     searchPlaceholder ?? loc().t('Transfer.searchPlaceholder'),
   );
@@ -133,6 +143,18 @@
   // core `conduct`/`toggleCheck`.
   let leftChecked = $state<TransferKey[]>([]);
   let rightChecked = $state<TransferKey[]>([]);
+
+  // --- Listbox roving focus + range-select anchors (a11y §6 / Listbox APG) ---
+  // Roving focus key per panel (single Tab stop each). null => first visible row
+  // is the Tab stop. Owned as $state here; DOM focus() happens in event handlers.
+  let leftFocusKey = $state<TransferKey | null>(null);
+  let rightFocusKey = $state<TransferKey | null>(null);
+  // Shift range-select anchors (plain bookkeeping, not reactive — 红线 #2).
+  let leftAnchor = -1;
+  let rightAnchor = -1;
+  // List roots captured via {@attach} for command focus() (非 render 期读 DOM).
+  let leftListEl = $state<HTMLUListElement | null>(null);
+  let rightListEl = $state<HTMLUListElement | null>(null);
 
   // Local search queries — local UI state.
   let leftQuery = $state('');
@@ -173,6 +195,133 @@
       ? rightItems.filter((i) => matches(i.label, rightQuery))
       : rightItems,
   );
+
+  // --- Listbox roving math (flat panels only; tree/group panels stay non-listbox) ---
+  // Ordered visible row keys per panel — pure derivations (红线 #2: render 期只读).
+  const leftRowKeys = $derived(leftVisible.map((i) => i.key));
+  const rightRowKeys = $derived(rightVisible.map((i) => i.key));
+
+  function panelItems(side: 'left' | 'right'): TransferItem[] {
+    return side === 'left' ? leftVisible : rightVisible;
+  }
+
+  // 纯派生 tabindex：焦点行（或无焦点/失效时首行）为 0，其余 -1。失效焦点回退首行。
+  function rowTabindex(side: 'left' | 'right', key: TransferKey): 0 | -1 {
+    const focus = side === 'left' ? leftFocusKey : rightFocusKey;
+    const keys = side === 'left' ? leftRowKeys : rightRowKeys;
+    const active = focus != null && keys.includes(focus) ? focus : keys[0];
+    return active === key ? 0 : -1;
+  }
+
+  // 命令式 focus()（事件回调内，非 render 期读 DOM）。
+  function focusRow(side: 'left' | 'right', key: TransferKey): void {
+    const root = side === 'left' ? leftListEl : rightListEl;
+    root
+      ?.querySelector<HTMLElement>(`[data-transfer-key="${CSS.escape(String(key))}"]`)
+      ?.focus();
+  }
+
+  // Shift 连选：把 [from, to] 闭区间内非禁用项 toggle-on 进 checked 集合。
+  function setRangeChecked(side: 'left' | 'right', from: number, to: number): void {
+    const list = panelItems(side);
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const cur = side === 'left' ? leftChecked : rightChecked;
+    const set = new Set(cur);
+    for (let i = lo; i <= hi; i += 1) {
+      const it = list[i];
+      if (it && !it.disabled && !disabled) set.add(it.key);
+    }
+    if (side === 'left') leftChecked = [...set];
+    else rightChecked = [...set];
+  }
+
+  // 行 keydown：↑↓/Home/End roving、Space 勾选、Enter 移动本面板已勾选、Shift+↑↓ 连选。
+  // 焦点 $state 在此写、命令式 focus() 也在此（非 render 期）。
+  function onRowKeydown(e: KeyboardEvent, side: 'left' | 'right', key: TransferKey): void {
+    const keys = side === 'left' ? leftRowKeys : rightRowKeys;
+    const list = panelItems(side);
+    const cur = keys.indexOf(key);
+    if (cur < 0) return;
+    const item = list[cur];
+    // Space：切换当前行勾选（禁用项为 no-op）。
+    if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      if (item && !item.disabled && !disabled) {
+        toggleChecked(side, key);
+        if (side === 'left') leftAnchor = cur;
+        else rightAnchor = cur;
+      }
+      return;
+    }
+    // Enter：把本面板已勾选项移到对侧。
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (side === 'left') moveToRight();
+      else moveToLeft();
+      return;
+    }
+    const intent = rovingKeyFromEvent(e.key);
+    if (!intent) return;
+    e.preventDefault();
+    const next = nextRovingIndex(cur, keys.length, intent);
+    const nextKey = keys[next];
+    if (nextKey == null) return;
+    if (side === 'left') leftFocusKey = nextKey;
+    else rightFocusKey = nextKey;
+    // Shift+方向键（仅 prev/next，不含 Home/End）：以锚点为基准范围连选。
+    if (e.shiftKey && (intent === 'prev' || intent === 'next')) {
+      const anchor = side === 'left' ? leftAnchor : rightAnchor;
+      const base = anchor >= 0 ? anchor : cur;
+      if (side === 'left') leftAnchor = base;
+      else rightAnchor = base;
+      setRangeChecked(side, base, next);
+    } else if (!e.shiftKey) {
+      if (side === 'left') leftAnchor = next;
+      else rightAnchor = next;
+    }
+    focusRow(side, nextKey);
+  }
+
+  function onRowFocus(side: 'left' | 'right', key: TransferKey): void {
+    if (side === 'left') leftFocusKey = key;
+    else rightFocusKey = key;
+  }
+
+  // 选项行点击：单击 toggle，Shift+click 以锚点为基准范围连选（与键盘一致）。
+  function onRowOptionClick(e: MouseEvent, side: 'left' | 'right', item: TransferItem): void {
+    if (disabled || item.disabled) return;
+    const keys = side === 'left' ? leftRowKeys : rightRowKeys;
+    const idx = keys.indexOf(item.key);
+    if (e.shiftKey) {
+      const anchor = side === 'left' ? leftAnchor : rightAnchor;
+      if (anchor >= 0) {
+        setRangeChecked(side, anchor, idx);
+      } else {
+        toggleChecked(side, item.key);
+        if (side === 'left') leftAnchor = idx;
+        else rightAnchor = idx;
+      }
+    } else {
+      toggleChecked(side, item.key);
+      if (side === 'left') leftAnchor = idx;
+      else rightAnchor = idx;
+    }
+    if (side === 'left') leftFocusKey = item.key;
+    else rightFocusKey = item.key;
+  }
+
+  // 选项行 root 捕获（多个 {@attach} 合法；避免 bind:this 三元）。
+  function captureList(side: 'left' | 'right'): Attachment<HTMLUListElement> {
+    return (el) => {
+      if (side === 'left') leftListEl = el;
+      else rightListEl = el;
+      return () => {
+        if (side === 'left') leftListEl = null;
+        else rightListEl = null;
+      };
+    };
+  }
 
   // Render groups — pure derivations. Empty groups vanish because the input is
   // the post-filter visible list. Fallback bucket reuses the panel title.
@@ -308,6 +457,21 @@
     if (movable.length === 0) return;
     commit([...current, ...movable]);
     leftChecked = leftChecked.filter((k) => !movable.includes(k));
+    // Focus retention (spec §6)：移动后焦点留在 SOURCE 列相邻选项 + live 播报。
+    const count = movable.length;
+    const oldKeys = leftRowKeys;
+    const firstMovedIdx = oldKeys.findIndex((k) => movable.includes(k));
+    announcer.announce(loc().t('Transfer.movedToRight', { count }));
+    void tick().then(() => {
+      const keys = leftRowKeys;
+      if (keys.length === 0) return;
+      const idx = Math.min(Math.max(firstMovedIdx, 0), keys.length - 1);
+      const k = keys[idx];
+      if (k == null) return;
+      leftFocusKey = k;
+      leftAnchor = idx;
+      focusRow('left', k);
+    });
   }
 
   function moveToLeft() {
@@ -317,8 +481,23 @@
       .map((i) => i.key);
     if (movable.length === 0) return;
     const remove = new Set(movable);
+    const count = movable.length;
+    const oldKeys = rightRowKeys;
+    const firstMovedIdx = oldKeys.findIndex((k) => movable.includes(k));
     commit(current.filter((k) => !remove.has(k)));
     rightChecked = [];
+    // Focus retention (spec §6)：移动后焦点留在 SOURCE（右）列相邻选项 + live 播报。
+    announcer.announce(loc().t('Transfer.movedToLeft', { count }));
+    void tick().then(() => {
+      const keys = rightRowKeys;
+      if (keys.length === 0) return;
+      const idx = Math.min(Math.max(firstMovedIdx, 0), keys.length - 1);
+      const k = keys[idx];
+      if (k == null) return;
+      rightFocusKey = k;
+      rightAnchor = idx;
+      focusRow('right', k);
+    });
   }
 
   /** oneWay: remove a single target item back to the source. */
@@ -501,9 +680,12 @@
   );
 </script>
 
-{#snippet itemRow(side: 'left' | 'right', item: TransferItem, style = '')}
+{#snippet itemRow(side: 'left' | 'right', item: TransferItem, style = '', asOption = false)}
   {@const tIndex = side === 'right' ? targetIndexOf(item.key) : -1}
   {@const dragRow = side === 'right' && canDrag && !(item.disabled ?? false)}
+  {@const isChecked = (side === 'left' ? leftChecked : rightChecked).includes(item.key)}
+  {@const rowDisabled = disabled || (item.disabled ?? false)}
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <li
     class="cd-transfer__item"
     class:cd-transfer__item--draggable={dragRow}
@@ -515,6 +697,16 @@
       dropIndex === tIndex &&
       dropSide === 'after'}
     {style}
+    role={asOption ? 'option' : undefined}
+    aria-selected={asOption ? (side === 'right' && oneWay ? true : isChecked) : undefined}
+    aria-disabled={asOption ? rowDisabled || undefined : undefined}
+    data-transfer-key={asOption ? item.key : undefined}
+    tabindex={asOption ? rowTabindex(side, item.key) : undefined}
+    onkeydown={asOption ? (e) => onRowKeydown(e, side, item.key) : undefined}
+    onfocus={asOption ? () => onRowFocus(side, item.key) : undefined}
+    onclick={asOption && !(side === 'right' && oneWay)
+      ? (e) => onRowOptionClick(e, side, item)
+      : undefined}
     draggable={dragRow}
     ondragstart={dragRow ? (e) => onRowDragStart(e, item.key) : undefined}
     ondragover={side === 'right' && canDrag ? (e) => onRowDragOver(e, item.key) : undefined}
@@ -535,10 +727,22 @@
           <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8" />
         </svg>
       </button>
+    {:else if asOption}
+      <!-- 选项行：单一 Tab 停靠点（行本身可聚焦），勾选框为纯视觉，无 input/无第二停靠点。 -->
+      <span class="cd-transfer__option-control" aria-hidden="true">
+        <span class="cd-transfer__check" class:cd-transfer__check--on={isChecked}>
+          {#if isChecked}
+            <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+            </svg>
+          {/if}
+        </span>
+        <span class="cd-transfer__option-label">{item.label}</span>
+      </span>
     {:else}
       <Checkbox
         {size}
-        checked={(side === 'left' ? leftChecked : rightChecked).includes(item.key)}
+        checked={isChecked}
         disabled={disabled || (item.disabled ?? false)}
         onChange={() => toggleChecked(side, item.key)}
       >
@@ -588,7 +792,20 @@
   {@const vItems = side === 'left' ? leftVItems : rightVItems}
   {@const vRange = side === 'left' ? leftVRange : rightVRange}
   {@const vTotal = side === 'left' ? leftVTotal : rightVTotal}
-  <ul class="cd-transfer__list" {@attach side === 'left' ? leftScrollAttach : rightScrollAttach}>
+  <ul
+    class="cd-transfer__list"
+    role="listbox"
+    aria-multiselectable="true"
+    aria-labelledby={showPanelTitle
+      ? (side === 'left' ? leftTitleId : rightTitleId)
+      : undefined}
+    aria-label={showPanelTitle
+      ? undefined
+      : (side === 'left' ? sourceFallback : targetFallback)}
+    aria-disabled={disabled || undefined}
+    {@attach captureList(side)}
+    {@attach side === 'left' ? leftScrollAttach : rightScrollAttach}
+  >
     {#if loading}
       <li class="cd-transfer__loading" aria-live="polite">
         <span class="cd-transfer__spinner" aria-hidden="true"></span>
@@ -638,6 +855,7 @@
           side,
           item,
           `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * vItemHeight}px); block-size:${vItemHeight}px`,
+          true,
         )}
       {/each}
       {#if visible.length === 0 && !loading}
@@ -645,7 +863,7 @@
       {/if}
     {:else}
       {#each visible as item (item.key)}
-        {@render itemRow(side, item)}
+        {@render itemRow(side, item, '', true)}
       {:else}
         {#if !loading}
           <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
@@ -659,7 +877,7 @@
   <div class="cd-transfer__panel">
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
-        <span class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
+        <span id={leftTitleId} class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
         <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: leftItems.length })}</span>
       </div>
     {/if}
@@ -705,7 +923,7 @@
   <div class="cd-transfer__panel">
     {#if showPanelTitle}
       <div class="cd-transfer__panel-header">
-        <span class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
+        <span id={rightTitleId} class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
         <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: rightItems.length })}</span>
       </div>
     {/if}
@@ -799,6 +1017,50 @@
   }
   .cd-transfer__item--drop-after {
     box-shadow: inset 0 -2px 0 0 var(--cd-color-primary);
+  }
+  /* 选项行（listbox option）：可聚焦、选中/禁用强调、纯视觉勾选框。 */
+  .cd-transfer__item[role='option'] {
+    cursor: pointer;
+    outline: none;
+  }
+  .cd-transfer__item[role='option']:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--cd-color-primary);
+  }
+  .cd-transfer__item[aria-selected='true'] {
+    background: var(--cd-transfer-item-bg-checked, var(--cd-color-primary-light-default));
+  }
+  .cd-transfer__item[aria-disabled='true'] {
+    color: var(--cd-transfer-item-disabled-text, var(--cd-color-text-2));
+    cursor: not-allowed;
+  }
+  .cd-transfer__option-control {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-2);
+    pointer-events: none;
+    min-inline-size: 0;
+    flex: 1 1 auto;
+  }
+  .cd-transfer__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: 16px;
+    block-size: 16px;
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-small, 4px);
+    color: var(--cd-color-bg-0, #fff);
+    background: var(--cd-color-bg-0);
+  }
+  .cd-transfer__check--on {
+    background: var(--cd-color-primary);
+    border-color: var(--cd-color-primary);
+  }
+  .cd-transfer__option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .cd-transfer__loading {
     display: flex;

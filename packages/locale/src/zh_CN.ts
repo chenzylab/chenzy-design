@@ -231,6 +231,8 @@ export const zh_CN: Locale = {
     moveToLeft: '移到左侧',
     remove: '移除',
     loading: '加载中…',
+    movedToRight: '已移动 {count} 项到已选',
+    movedToLeft: '已移动 {count} 项到候选',
   },
   Upload: {
     trigger: '选择文件',
@@ -311,6 +313,7 @@ export const zh_CN: Locale = {
     eyeDropper: '屏幕取色',
     recent: '最近使用',
     format: '颜色格式',
+    presets: '预设颜色',
     panelLabel: '颜色选择',
   },
   Tag: {

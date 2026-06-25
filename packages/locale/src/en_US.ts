@@ -231,6 +231,8 @@ export const en_US: Locale = {
     moveToLeft: 'Move to left',
     remove: 'Remove',
     loading: 'Loading…',
+    movedToRight: 'Moved {count} item(s) to selected',
+    movedToLeft: 'Moved {count} item(s) to source',
   },
   Upload: {
     trigger: 'Select file',
@@ -311,6 +313,7 @@ export const en_US: Locale = {
     eyeDropper: 'Pick color from screen',
     recent: 'Recently used',
     format: 'Color format',
+    presets: 'Preset colors',
     panelLabel: 'Color picker',
   },
   Tag: {
