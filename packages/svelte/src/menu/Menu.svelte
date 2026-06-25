@@ -188,26 +188,171 @@
       .join(' '),
   );
 
-  // horizontal menubar：←→ 在顶层项间 roving 移动焦点（顶层是 li 直下的可聚焦元素）
+  // --- roving tabindex / 键盘导航（a11y §6 / WAI-ARIA APG Menu）---
+  // rootEl 普通引用（bind:this），命令式 focus()/tabindex 写入用，非 render 期读 DOM。
   let rootEl = $state<HTMLUListElement | null>(null);
-  function onMenubarKeydown(e: KeyboardEvent) {
-    // navigation 用途用原生链接 + Tab 键序，不接管 ←→ roving（红线: 不破坏原生导航）。
-    if (sem.navigation || mode !== 'horizontal') return;
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
-    if (!rootEl) return;
-    // 顶层可聚焦项：每个顶层 li 内的第一个 menuitem 按钮/链接
-    const tops = [...rootEl.children]
+
+  // horizontal menubar 顶层项：每个顶层 li 内第一个 menuitem（←→ roving 用）。
+  function menubarTops(): HTMLElement[] {
+    if (!rootEl) return [];
+    return [...rootEl.children]
       .map((li) => li.querySelector<HTMLElement>('[role="menuitem"]'))
       .filter((el): el is HTMLElement => el !== null);
-    if (tops.length === 0) return;
-    const cur = tops.findIndex((el) => el === document.activeElement);
-    e.preventDefault();
-    let next = cur;
-    if (e.key === 'ArrowRight') next = cur < 0 ? 0 : (cur + 1) % tops.length;
-    else if (e.key === 'ArrowLeft') next = cur < 0 ? tops.length - 1 : (cur - 1 + tops.length) % tops.length;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = tops.length - 1;
-    tops[next]?.focus();
+  }
+
+  // vertical/inline：当前可见、可聚焦的 menuitem，按 DOM 顺序漫游
+  // （inline renderItems 与 vertical MenuPopupNode 均产出 [role="menuitem"] 按钮）。
+  // 排除 disabled（原生 disabled 已移出焦点序）与隐藏浮层内的项（仅漫游当前可见层）。
+  function verticalItems(): HTMLElement[] {
+    if (!rootEl) return [];
+    return [...rootEl.querySelectorAll<HTMLElement>('[role="menuitem"]')].filter(
+      (el) =>
+        !el.hasAttribute('disabled') &&
+        // 隐藏浮层子菜单（cd-menu__sub--hidden / aria-hidden）内的项不参与漫游
+        el.closest('[aria-hidden="true"]') === null &&
+        el.offsetParent !== null,
+    );
+  }
+
+  // 把 roving tabindex 收敛到单一停靠点：仅 active 项 tabindex=0，其余 -1
+  // （命令式写 DOM，非 render 期；红线 #2：不在 render 期写状态）。
+  function applyRovingTabindex(items: HTMLElement[], active: HTMLElement | null) {
+    const stop = active ?? items[0] ?? null;
+    for (const el of items) el.tabIndex = el === stop ? 0 : -1;
+  }
+
+  // 挂载后 / items 变化后：vertical/inline 模式收敛 roving 停靠点为首项。
+  $effect(() => {
+    if (sem.navigation || mode === 'horizontal') return;
+    void items; // items 变化重算
+    const list = verticalItems();
+    if (list.length === 0) return;
+    const focused = list.find((el) => el === document.activeElement) ?? null;
+    applyRovingTabindex(list, focused);
+  });
+
+  // typeahead 缓冲（普通簿记变量，不参与 render 响应式；红线 #2）。
+  let typeBuffer = '';
+  let typeTimer: ReturnType<typeof setTimeout> | undefined;
+  function pushType(ch: string): string {
+    if (typeTimer !== undefined) clearTimeout(typeTimer);
+    typeBuffer += ch.toLowerCase();
+    typeTimer = setTimeout(() => {
+      typeBuffer = '';
+      typeTimer = undefined;
+    }, 500);
+    return typeBuffer;
+  }
+  $effect(() => () => {
+    if (typeTimer !== undefined) clearTimeout(typeTimer);
+  });
+
+  function itemText(el: HTMLElement): string {
+    return (el.querySelector('.cd-menu__label')?.textContent ?? el.textContent ?? '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function onMenuKeydown(e: KeyboardEvent) {
+    // navigation 用途用原生链接 + Tab 键序，不接管 roving（红线: 不破坏原生导航）。
+    if (sem.navigation) return;
+
+    if (mode === 'horizontal') {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+      const tops = menubarTops();
+      if (tops.length === 0) return;
+      const cur = tops.findIndex((el) => el === document.activeElement);
+      e.preventDefault();
+      let next = cur;
+      if (e.key === 'ArrowRight') next = cur < 0 ? 0 : (cur + 1) % tops.length;
+      else if (e.key === 'ArrowLeft') next = cur < 0 ? tops.length - 1 : (cur - 1 + tops.length) % tops.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tops.length - 1;
+      tops[next]?.focus();
+      applyRovingTabindex(tops, tops[next] ?? null);
+      return;
+    }
+
+    // vertical / inline：↑↓ 漫游、Home/End 跳首末、typeahead 首字母、Esc 收起/关闭子菜单。
+    const list = verticalItems();
+    if (list.length === 0) return;
+    const cur = list.findIndex((el) => el === document.activeElement);
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      let next = cur;
+      if (e.key === 'ArrowDown') next = cur < 0 ? 0 : (cur + 1) % list.length;
+      else if (e.key === 'ArrowUp') next = cur < 0 ? list.length - 1 : (cur - 1 + list.length) % list.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = list.length - 1;
+      const target = list[next];
+      if (target) {
+        target.focus();
+        applyRovingTabindex(list, target);
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      // 收起当前聚焦项所在的展开子菜单，焦点返回其触发器（APG）。
+      const active = document.activeElement as HTMLElement | null;
+      const titleEl = active?.closest<HTMLElement>('.cd-menu__item--submenu')?.querySelector<HTMLElement>('.cd-menu__title[aria-expanded="true"]');
+      const sub = active?.closest<HTMLElement>('.cd-menu__sub');
+      const parentTitle = sub?.previousElementSibling as HTMLElement | null;
+      if (parentTitle?.matches('.cd-menu__title')) {
+        // 焦点在子列表内：收起父级子菜单并把焦点返回父触发器。
+        const key = parentTitle.dataset.menuKey;
+        if (key !== undefined) {
+          collapseByKey(key);
+          parentTitle.focus();
+          e.preventDefault();
+        }
+        return;
+      }
+      if (titleEl?.dataset.menuKey !== undefined) {
+        // 焦点在已展开的 SubMenu 触发器上：收起自身。
+        collapseByKey(titleEl.dataset.menuKey);
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // typeahead：单字符（可打印、非组合键）→ 跳到首字母匹配项。
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && /\S/.test(e.key)) {
+      const buf = pushType(e.key);
+      const start = cur < 0 ? 0 : cur;
+      // 从当前项之后开始环绕查找，单字符重复时跳到下一个同首字母项。
+      const offset = buf.length === 1 ? 1 : 0;
+      for (let i = 0; i < list.length; i += 1) {
+        const idx = (start + offset + i) % list.length;
+        if (itemText(list[idx]!).startsWith(buf)) {
+          e.preventDefault();
+          list[idx]!.focus();
+          applyRovingTabindex(list, list[idx]!);
+          return;
+        }
+      }
+    }
+  }
+
+  // 焦点进入某 menuitem（含鼠标点击）→ 把 roving 停靠点同步到它（单一 Tab 停靠点）。
+  function onMenuFocusin(e: FocusEvent) {
+    if (sem.navigation || mode === 'horizontal') return;
+    const t = e.target as HTMLElement | null;
+    if (!t || t.getAttribute('role') !== 'menuitem') return;
+    applyRovingTabindex(verticalItems(), t);
+  }
+
+  // 按 key 收起内联展开的 SubMenu（data-menu-key 为字符串，需按 String 匹配原 key）。
+  function collapseByKey(key: string) {
+    const matched = [...currentOpen].find((k) => String(k) === key);
+    if (matched === undefined) return;
+    const next = [...currentOpen].filter((k) => k !== matched);
+    if (!isOpenControlled) {
+      innerOpen.clear();
+      for (const k of next) innerOpen.add(k);
+    }
+    onOpenChange?.(next);
   }
 </script>
 
@@ -240,12 +385,27 @@
           type="button"
           class="cd-menu__title"
           role={sem.submenuTitleRole}
+          data-menu-key={String(item.key)}
           aria-haspopup="true"
           aria-expanded={open}
           aria-disabled={isItemDisabled(item) || undefined}
           disabled={isItemDisabled(item) || undefined}
           style="padding-inline-start: {indent}"
           onclick={() => toggleSub(item)}
+          onkeydown={(e) => {
+            // 内联 SubMenu 触发器：→/Enter/Space 展开，←/Esc 收起（APG disclosure）。
+            if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+              if (!isItemDisabled(item) && !isOpen(item.key)) {
+                e.preventDefault();
+                toggleSub(item);
+              }
+            } else if (e.key === 'ArrowLeft') {
+              if (isOpen(item.key)) {
+                e.preventDefault();
+                toggleSub(item);
+              }
+            }
+          }}
         >
           {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
           <span class="cd-menu__label">{item.label}</span>
@@ -322,7 +482,8 @@
     aria-orientation={!sem.navigation && mode === 'horizontal' ? 'horizontal' : undefined}
     aria-invalid={status === 'error' || undefined}
     bind:this={rootEl}
-    onkeydown={onMenubarKeydown}
+    onkeydown={onMenuKeydown}
+    onfocusin={onMenuFocusin}
   >
     {#if collapsed}
       {#each items as item, i (item.key ?? `__cd-menu-top-${i}`)}

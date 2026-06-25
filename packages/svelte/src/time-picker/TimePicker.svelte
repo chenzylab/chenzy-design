@@ -318,12 +318,96 @@
   let hourCol = $state<HTMLUListElement | null>(null);
   let minuteCol = $state<HTMLUListElement | null>(null);
   let secondCol = $state<HTMLUListElement | null>(null);
+  let meridiemCol = $state<HTMLUListElement | null>(null);
 
   function scrollColToSelected(col: HTMLUListElement | null) {
     if (!col) return;
     const target = col.querySelector<HTMLElement>('[aria-selected="true"]');
     target?.scrollIntoView({ block: 'center' });
   }
+
+  // --- 列内 roving 键盘导航（a11y §6 / WAI-ARIA APG listbox）---
+  // 每列单一 Tab 停靠点：选中项（或首个可选项）tabindex=0，其余 -1。
+  // 列间用 Tab/Shift+Tab（原生焦点序，停靠点即为各列入口）。
+
+  // 列内可聚焦（非 disabled）选项，按 DOM 顺序漫游。
+  function colOptions(col: HTMLUListElement | null): HTMLElement[] {
+    if (!col) return [];
+    return [...col.querySelectorAll<HTMLElement>('[role="option"]')].filter(
+      (el) => el.getAttribute('aria-disabled') !== 'true',
+    );
+  }
+
+  // 纯派生 tabindex：列内选中项（无选中时首个可选项）为停靠点 0，其余 -1（红线 #2：render 期只读）。
+  // selected 为该列当前选中值的 option（传 isSelected 布尔），col 标识用于「无选中回退首项」。
+  function colItemTabindex(isSelectedOpt: boolean, isFirst: boolean, anySelected: boolean): 0 | -1 {
+    if (anySelected) return isSelectedOpt ? 0 : -1;
+    return isFirst ? 0 : -1;
+  }
+
+  // 各列是否存在可聚焦的选中项（决定 roving 停靠点是选中项还是回退首项；红线 #2：纯派生）。
+  const hourSelected = $derived(hours.some((h) => h.value === selectedHourDisplay && !h.disabled));
+  const minuteSelected = $derived(minutes.some((m) => m.value === selectedMinute && !m.disabled));
+
+  // 列内 keydown：↑↓ 漫游（循环）、Home/End 跳首末、Enter/Space 选中。
+  function onColKeydown(e: KeyboardEvent, col: HTMLUListElement | null, pick: (v: number) => void, value: number) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      pick(value);
+      return;
+    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
+    const opts = colOptions(col);
+    if (opts.length === 0) return;
+    const cur = opts.findIndex((el) => el === document.activeElement);
+    e.preventDefault();
+    let next = cur;
+    if (e.key === 'ArrowDown') next = cur < 0 ? 0 : (cur + 1) % opts.length;
+    else if (e.key === 'ArrowUp') next = cur < 0 ? opts.length - 1 : (cur - 1 + opts.length) % opts.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = opts.length - 1;
+    const target = opts[next];
+    if (!target) return;
+    // 收敛 roving 停靠点到目标项（命令式写 DOM，非 render 期；红线 #2）。
+    for (const el of opts) el.tabIndex = el === target ? 0 : -1;
+    target.focus();
+  }
+
+  // meridiem 列（值为 'am'/'pm' 字符串）的 keydown：导航同 onColKeydown，激活走 pickMeridiem。
+  function onMeridiemKeydown(e: KeyboardEvent, mer: Meridiem) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      pickMeridiem(mer);
+      return;
+    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Home' && e.key !== 'End') return;
+    const opts = colOptions(meridiemCol);
+    if (opts.length === 0) return;
+    const cur = opts.findIndex((el) => el === document.activeElement);
+    e.preventDefault();
+    let next = cur;
+    if (e.key === 'ArrowDown') next = cur < 0 ? 0 : (cur + 1) % opts.length;
+    else if (e.key === 'ArrowUp') next = cur < 0 ? opts.length - 1 : (cur - 1 + opts.length) % opts.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = opts.length - 1;
+    const target = opts[next];
+    if (!target) return;
+    for (const el of opts) el.tabIndex = el === target ? 0 : -1;
+    target.focus();
+  }
+
+  // 打开后把焦点送进当前小时列的选中项（APG：打开浮层并聚焦当前小时列）。
+  $effect(() => {
+    if (!isOpen) return;
+    void activeIndex;
+    void tick().then(() => {
+      const target =
+        hourCol?.querySelector<HTMLElement>('[aria-selected="true"]') ??
+        colOptions(hourCol)[0] ??
+        null;
+      target?.focus();
+    });
+  });
 
   // 打开时重置范围编辑端为 start
   $effect(() => {
@@ -442,7 +526,7 @@
 
       <div class="cd-time-picker__columns">
         <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
-          {#each hours as h (h.value)}
+          {#each hours as h, hi (h.value)}
             <li
               class="cd-time-picker__item"
               class:cd-time-picker__item--selected={h.value === selectedHourDisplay}
@@ -450,14 +534,9 @@
               role="option"
               aria-selected={h.value === selectedHourDisplay}
               aria-disabled={h.disabled || undefined}
-              tabindex="-1"
+              tabindex={h.disabled ? -1 : colItemTabindex(h.value === selectedHourDisplay, hi === 0, hourSelected)}
               onclick={() => !h.disabled && pickHour(h.value)}
-              onkeydown={(e) => {
-                if (!h.disabled && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  pickHour(h.value);
-                }
-              }}
+              onkeydown={(e) => !h.disabled && onColKeydown(e, hourCol, pickHour, h.value)}
             >
               {pad2(h.value)}
             </li>
@@ -465,7 +544,7 @@
         </ul>
 
         <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
-          {#each minutes as m (m.value)}
+          {#each minutes as m, mi (m.value)}
             <li
               class="cd-time-picker__item"
               class:cd-time-picker__item--selected={m.value === selectedMinute}
@@ -473,14 +552,9 @@
               role="option"
               aria-selected={m.value === selectedMinute}
               aria-disabled={m.disabled || undefined}
-              tabindex="-1"
+              tabindex={m.disabled ? -1 : colItemTabindex(m.value === selectedMinute, mi === 0, minuteSelected)}
               onclick={() => !m.disabled && pickMinute(m.value)}
-              onkeydown={(e) => {
-                if (!m.disabled && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  pickMinute(m.value);
-                }
-              }}
+              onkeydown={(e) => !m.disabled && onColKeydown(e, minuteCol, pickMinute, m.value)}
             >
               {pad2(m.value)}
             </li>
@@ -488,8 +562,9 @@
         </ul>
 
         {#if effShowSecond}
+          {@const secondSelected = seconds.some((s) => s.value === selectedSecond && !s.disabled)}
           <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
-            {#each seconds as s (s.value)}
+            {#each seconds as s, si (s.value)}
               <li
                 class="cd-time-picker__item"
                 class:cd-time-picker__item--selected={s.value === selectedSecond}
@@ -497,14 +572,9 @@
                 role="option"
                 aria-selected={s.value === selectedSecond}
                 aria-disabled={s.disabled || undefined}
-                tabindex="-1"
+                tabindex={s.disabled ? -1 : colItemTabindex(s.value === selectedSecond, si === 0, secondSelected)}
                 onclick={() => !s.disabled && pickSecond(s.value)}
-                onkeydown={(e) => {
-                  if (!s.disabled && (e.key === 'Enter' || e.key === ' ')) {
-                    e.preventDefault();
-                    pickSecond(s.value);
-                  }
-                }}
+                onkeydown={(e) => !s.disabled && onColKeydown(e, secondCol, pickSecond, s.value)}
               >
                 {pad2(s.value)}
               </li>
@@ -513,21 +583,16 @@
         {/if}
 
         {#if effUse12Hours}
-          <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.triggerLabel')}>
-            {#each ['am', 'pm'] as const as mer (mer)}
+          <ul class="cd-time-picker__col" role="listbox" aria-label={loc().t('TimePicker.triggerLabel')} bind:this={meridiemCol}>
+            {#each ['am', 'pm'] as const as mer, meri (mer)}
               <li
                 class="cd-time-picker__item"
                 class:cd-time-picker__item--selected={mer === selectedMeridiem}
                 role="option"
                 aria-selected={mer === selectedMeridiem}
-                tabindex="-1"
+                tabindex={colItemTabindex(mer === selectedMeridiem, meri === 0, true)}
                 onclick={() => pickMeridiem(mer)}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    pickMeridiem(mer);
-                  }
-                }}
+                onkeydown={(e) => onMeridiemKeydown(e, mer)}
               >
                 {loc().t(`TimePicker.${mer}`)}
               </li>
