@@ -88,7 +88,7 @@ export const meta = {
     notes: [
       'img 必传 alt 语义；默认破图占位用 role=img + aria-label',
       'preview 触发器为原生 button，可键盘聚焦与触发',
-      '预览遮罩 role=dialog、aria-modal=true，portal 到 body 并自动聚焦，Esc 关闭，关闭按钮有 aria-label',
+      '预览遮罩 role=dialog、aria-modal=true，portal 到 body；useFocusTrap 锁定焦点（Tab 循环不外泄）、进入聚焦关闭按钮、关闭后焦点归还触发元素；Esc 关闭，关闭按钮有 aria-label',
       '组预览左右切换：← → 按钮（aria-label 经 locale）+ 键盘左右箭头，到边界按钮 disabled',
       '装饰性占位/遮罩文案、页码计数器 aria-hidden=true',
     ],

@@ -38,7 +38,9 @@
     showArrow?: boolean;
     hoverToPause?: boolean;
     height?: number | string;
+    ariaLabel?: string;
     onChange?: (index: number) => void;
+    onPlayStateChange?: (playing: boolean) => void;
     class?: string;
   }
 
@@ -60,7 +62,9 @@
     showArrow = true,
     hoverToPause = true,
     height = 240,
+    ariaLabel,
     onChange,
+    onPlayStateChange,
     class: className = '',
   }: Props = $props();
 
@@ -94,9 +98,27 @@
 
   // hover 暂停状态（本地）。
   let paused = $state(false);
+  // 键盘焦点进入容器时暂停 autoplay（无障碍：WCAG 2.2.2，焦点态不应继续移动）。
+  let focused = $state(false);
+  // 用户经播放/暂停按钮显式切换的状态。默认按 autoplay prop 推断初值。
+  // userPaused=true 即用户主动暂停；与 hover/focus 暂停叠加判定是否实际运行。
+  let userPaused = $state(false);
 
   // reduced-motion：matchMedia 监听，开启时暂停 autoplay（无障碍）。
   let reducedMotion = $state(false);
+
+  // 是否「想要」自动播放（用户意图）：autoplay 开 且 未被用户显式暂停。
+  const wantsPlaying = $derived(autoplay && !userPaused);
+  // 实际是否在播放（叠加 hover/focus/reduced-motion 等运行时抑制）。
+  const isPlaying = $derived(
+    wantsPlaying && !paused && !focused && !reducedMotion && count > perView,
+  );
+
+  function togglePlay() {
+    userPaused = !userPaused;
+    onPlayStateChange?.(!userPaused);
+  }
+
   $effect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -136,12 +158,54 @@
   function goToPage(p: number) {
     go(p * step);
   }
+  // Home/End：跳到第一/最后一张（非 loop 时止于 maxIndex）。
+  function goFirst() {
+    go(0);
+  }
+  function goLast() {
+    go(loop ? count - 1 : maxIndex);
+  }
+
+  // 视口键盘导航（§6）：←/→ 切换，Home/End 跳首末。
+  // RTL 下 ←/→ 物理键语义镜像（←=next、→=prev）。
+  function onViewportKeydown(e: KeyboardEvent) {
+    if (count <= perView) return;
+    const rtl = viewportEl?.matches(':dir(rtl)') ?? false;
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        rtl ? next() : prev();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        rtl ? prev() : next();
+        break;
+      case 'ArrowUp':
+        if (!vertical) return;
+        e.preventDefault();
+        prev();
+        break;
+      case 'ArrowDown':
+        if (!vertical) return;
+        e.preventDefault();
+        next();
+        break;
+      case 'Home':
+        e.preventDefault();
+        goFirst();
+        break;
+      case 'End':
+        e.preventDefault();
+        goLast();
+        break;
+    }
+  }
 
   // autoplay：$effect 内 setInterval，普通变量句柄 + cleanup（红线 #3）。
   // 用 untrack 读 current，避免 effect 依赖 current 而每次切换都重建定时器（计时被重置）；
   // effect 仅依赖 autoplay/paused/count/interval/reducedMotion/step，定时器在一次播放周期内稳定。
   $effect(() => {
-    if (!autoplay || paused || reducedMotion || count <= perView) return;
+    if (!isPlaying) return;
     const id = setInterval(() => {
       go(untrack(() => current) + step);
     }, interval);
@@ -153,6 +217,17 @@
   }
   function onMouseLeave() {
     if (hoverToPause) paused = false;
+  }
+  // 键盘焦点进入/离开容器：暂停/恢复 autoplay（§6）。
+  function onFocusIn() {
+    focused = true;
+  }
+  function onFocusOut(e: FocusEvent) {
+    // 仅当焦点真正移出容器时恢复（忽略容器内部移动）。
+    const next = e.relatedTarget as Node | null;
+    if (!next || !(e.currentTarget as HTMLElement).contains(next)) {
+      focused = false;
+    }
   }
 
   // ---- 命令式 pointer 拖拽（红线 #3）----
@@ -223,17 +298,30 @@
   class={cls}
   role="region"
   aria-roledescription="carousel"
+  aria-label={ariaLabel ?? loc().t('Carousel.ariaLabel')}
   style="block-size:{heightStyle}"
   onmouseenter={onMouseEnter}
   onmouseleave={onMouseLeave}
+  onfocusin={onFocusIn}
+  onfocusout={onFocusOut}
 >
+  <!--
+    viewport 可聚焦（tabindex=0）以承接 ←/→/Home/End 键盘导航；
+    autoplay 实际运行时 aria-live=off（避免每次自动切换都打断屏幕阅读器），
+    暂停/手动态切到 polite，配合计数文本播报「第 X 张」。
+    APG carousel：role=group 的轮播视口承载方向键导航属预期模式，故抑制以下两条 a11y 警告。
+  -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     bind:this={viewportEl}
     class="cd-carousel__viewport"
     role="group"
     aria-roledescription="slides"
-    aria-live={autoplay && !paused ? 'off' : 'polite'}
+    tabindex={count > perView ? 0 : undefined}
+    aria-live={isPlaying ? 'off' : 'polite'}
     onpointerdown={onPointerDown}
+    onkeydown={onViewportKeydown}
   >
     {#if mode === 'slide'}
       <div
@@ -245,7 +333,9 @@
             class="cd-carousel__slide"
             role="group"
             aria-roledescription="slide"
+            aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
             aria-hidden={(i < current || i >= current + perView) || undefined}
+            inert={(i < current || i >= current + perView) || undefined}
           >
             {@render slide()}
           </div>
@@ -259,7 +349,9 @@
             class:cd-carousel__slide--active={i === current}
             role="group"
             aria-roledescription="slide"
+            aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
             aria-hidden={i !== current || undefined}
+            inert={i !== current || undefined}
             style="transition-duration:{speed}ms"
           >
             {@render slide()}
@@ -282,6 +374,20 @@
       aria-label={loc().t('Carousel.next')}
       onclick={next}
     >{vertical ? '∨' : '›'}</button>
+  {/if}
+
+  <!--
+    播放/暂停按钮（WCAG 2.2.2）：autoplay 开启时常驻，可见且可键盘操作。
+    label 随 userPaused 切换（播放 ↔ 暂停）。
+  -->
+  {#if autoplay && count > perView}
+    <button
+      type="button"
+      class="cd-carousel__play"
+      aria-label={userPaused ? loc().t('Carousel.play') : loc().t('Carousel.pause')}
+      aria-pressed={!userPaused}
+      onclick={togglePlay}
+    >{userPaused ? '▶' : '❚❚'}</button>
   {/if}
 
   {#if showIndicator && pageCount > 1}
@@ -317,6 +423,10 @@
     inline-size: 100%;
     block-size: 100%;
     overflow: hidden;
+  }
+  .cd-carousel__viewport:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--cd-color-primary, currentColor);
   }
   /* 可拖拽时禁用文本/图片选中与浏览器原生平移手势，确保 pointer 跟手。 */
   .cd-carousel--draggable .cd-carousel__viewport {
@@ -416,6 +526,31 @@
   }
   .cd-carousel--vertical .cd-carousel__arrow--next {
     inset-block-end: var(--cd-spacing-2);
+  }
+
+  /* 播放/暂停按钮：左下角常驻，命中区 ≥ 32px。 */
+  .cd-carousel__play {
+    position: absolute;
+    inset-block-end: var(--cd-spacing-2);
+    inset-inline-start: var(--cd-spacing-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--cd-carousel-arrow-size);
+    block-size: var(--cd-carousel-arrow-size);
+    padding: 0;
+    border: none;
+    border-radius: var(--cd-radius-full);
+    background: var(--cd-carousel-arrow-bg);
+    color: var(--cd-carousel-arrow-color);
+    font-size: calc(var(--cd-carousel-arrow-size) * 0.4);
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .cd-carousel__play:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
 
   .cd-carousel__indicators {

@@ -324,6 +324,22 @@
     }
   }
 
+  // Home/End：从列表首/末向内找首个可用（非禁用）选项作为活动项（spec §6 键盘）。
+  function moveActiveEdge(edge: 'first' | 'last') {
+    const len = filteredOptions.length;
+    if (len === 0) return;
+    const step = edge === 'first' ? 1 : -1;
+    let i = edge === 'first' ? 0 : len - 1;
+    while (i >= 0 && i < len) {
+      if (!filteredOptions[i]?.disabled) {
+        activeIndex = i;
+        scrollIndexIntoView(i);
+        return;
+      }
+      i += step;
+    }
+  }
+
   // 命令式滚到指定选项索引使其落入视口（虚拟化键盘导航时调用）。
   // 未渲染的 active option 经此滚入视口后才会渲染（a11y 取舍同 Tree 虚拟化）。
   function scrollIndexIntoView(index: number) {
@@ -358,6 +374,19 @@
         e.preventDefault();
         if (!isOpen) setOpen(true);
         else moveActive(-1);
+        break;
+      case 'Home':
+        // 打开态下跳到列表首项；未打开则不拦截（让文本输入光标行为默认）。
+        if (isOpen) {
+          e.preventDefault();
+          moveActiveEdge('first');
+        }
+        break;
+      case 'End':
+        if (isOpen) {
+          e.preventDefault();
+          moveActiveEdge('last');
+        }
         break;
       case 'Enter':
         e.preventDefault();

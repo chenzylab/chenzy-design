@@ -340,6 +340,12 @@ export interface Locale {
     indicators: string;
     /** 指示器/单张幻灯片可访问名，uses {index} */
     slideLabel: string;
+    /** 走马灯整体可访问名（role=region） */
+    ariaLabel: string;
+    /** 开始自动播放按钮 */
+    play: string;
+    /** 暂停自动播放按钮 */
+    pause: string;
   };
   TagInput: {
     remove: string;
