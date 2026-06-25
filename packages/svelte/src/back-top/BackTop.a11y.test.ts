@@ -32,7 +32,7 @@ describe('BackTop a11y', () => {
     const { container } = renderWithLocale(BackTop, {
       props: { announceOnArrive: true },
     });
-    const live = container.querySelector('.cd-backtop__sr-live');
+    const live = container.querySelector('.cd-sr-only');
     expect(live?.getAttribute('role')).toBe('status');
     expect(live?.getAttribute('aria-live')).toBe('polite');
     await expectNoAxeViolations(container);

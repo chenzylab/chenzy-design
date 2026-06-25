@@ -235,7 +235,7 @@
 
 {#if announceOnArrive}
   <!-- 到顶播报 live region：视觉隐藏，仅供辅助技术读取（红线 #2：render 期只读 $state）。 -->
-  <div class="cd-backtop__sr-live" role="status" aria-live="polite" aria-atomic="true">
+  <div class="cd-sr-only" role="status" aria-live="polite" aria-atomic="true">
     {announceText}
   </div>
 {/if}
@@ -304,19 +304,7 @@
     block-size: 50%;
   }
 
-  /* 视觉隐藏但对辅助技术可见（不可用 display:none / visibility:hidden）。 */
-  .cd-backtop__sr-live {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
+  /* 到顶播报 live region 复用 tokens.css 全局 .cd-sr-only：视觉隐藏但 AT 可读。 */
 
   @media (prefers-reduced-motion: reduce) {
     .cd-backtop {

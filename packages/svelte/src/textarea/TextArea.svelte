@@ -303,7 +303,7 @@
   {/if}
 
   {#if overLimit}
-    <span class="cd-textarea__sr-only" aria-live="polite">
+    <span class="cd-sr-only" aria-live="polite">
       {loc().t('Textarea.overLimitAnnounce', { over: loc().formatNumber(over) })}
     </span>
   {/if}
@@ -398,17 +398,6 @@
   }
   .cd-textarea__count--over {
     color: var(--cd-input-border-error);
-  }
-  .cd-textarea__sr-only {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-textarea {

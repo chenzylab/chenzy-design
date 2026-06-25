@@ -237,18 +237,8 @@
 {/if}
 
 <style>
-  /* WCAG 1.4.1：视觉隐藏但可被屏幕阅读器读取的状态文本。 */
-  .cd-sr-only {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
+  /* 视觉隐藏的状态文本（class="cd-sr-only"）复用 tokens.css 全局工具类，
+     令颜色非唯一信息载体（WCAG 1.4.1）。 */
   .cd-steps {
     display: flex;
     margin: 0;
