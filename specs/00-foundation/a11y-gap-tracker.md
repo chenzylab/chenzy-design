@@ -5,10 +5,10 @@
 
 ## 跨组件根因（修一处消解多组件）
 
-- [x] **根因#1 useLiveAnnouncer 原语**（core 缺失）— #224 已建 core/live-announcer.ts + 接入 Table/Pagination。**剩余接入**：Toast 极性修正、Notification 类型前缀、Slider/InputNumber 越界、Upload 进度、Calendar、List、Carousel、Image 的播报。
-- [~] **根因#2 roving.ts 接入**（已有原语，组件未用）— #226 已接 Anchor/Pagination。**剩余**：Collapse、List、Steps、Menu(vertical/inline)、TimePicker、TagInput。
-- [ ] **根因#3 DatePicker/Calendar 网格键盘**（gridFocusMove 未消费）— grid 半成品已弃，需重做：DatePicker/RangePicker role=grid/row/columnheader + aria-activedescendant + Home/End/PageUp/Shift+PageUp + Esc 归还焦点 + focus trap；Calendar Shift+PageUp/Down 切年、事件块 role=button。
-- [ ] **根因#4 i18n 可访问名硬编码中文**— OverflowList `+N`、Tag close、AvatarGroup `+N`、Avatar `+N` 走 locale。
+- [~] **根因#1 useLiveAnnouncer 原语**（core 缺失）— #224 已建 core/live-announcer.ts + 接入 Table/Pagination/Rating/Switch/Typography。**剩余接入**：Toast 极性修正、Notification 类型前缀、Slider/InputNumber 越界、Upload 进度、Calendar、List、Carousel、Image 的播报。
+- [x] **根因#2 roving.ts 接入**（已有原语，组件未用）— #226 已接 Anchor/Pagination；#231 接 Collapse/List/Steps。**剩余**：Menu(vertical/inline)、TimePicker、TagInput。
+- [x] **根因#3 DatePicker/Calendar 网格键盘**（#230）— DatePicker/RangePicker role=grid/row + aria-activedescendant + Home/End/PageUp/Shift+PageUp + Esc 归还焦点；Calendar 切年、事件块 role=button。
+- [x] **根因#4 i18n 可访问名硬编码中文**（#228）— OverflowList `+N`、Tag close、AvatarGroup `+N`、Avatar `+N`、Carousel、ColorPicker、Tabs 走 locale。
 
 ## 已修的高缺口
 - [x] Tooltip 所有触发模式 Esc 可关闭（#225）
@@ -19,21 +19,21 @@
 ## 剩余逐组件高缺口（键盘体系/role 缺失，高严重度）
 - [ ] Transfer — 双列 listbox/option role + 全键盘（↑↓/Home/End/Space/Shift 范围/Enter 移动）+ 移动后焦点保留（几乎从零）
 - [ ] Table — Grid Pattern：role=grid/row/gridcell/columnheader + 方向键漫游 + roving + 虚拟化焦点回收（**待定：产品是否需交互态 grid，纯展示则免**）
-- [ ] Cascader — 列内方向键 roving + Home/End + aria-activedescendant
-- [ ] TreeSelect — 浮层方向键/Home/End roving + aria-activedescendant + treeitem aria-level/setsize/posinset
-- [ ] Select — Home/End 跳首末
-- [ ] Tree — `*` 展开同级 + typeahead
+- [x] Cascader — 列内方向键 roving + Home/End + aria-activedescendant（#229）
+- [x] TreeSelect — 浮层方向键/Home/End roving + aria-activedescendant（#229）
+- [x] Select — Home/End 跳首末
+- [x] Tree — `*` 展开同级 + typeahead
 - [ ] ColorPicker — 打开聚焦/关闭归还 + focus trap + 滑块 Home/End + 预设 listbox 方向键
-- [ ] TimePicker — 列内 ↑↓/Home/End + roving + 打开聚焦当前列
+- [x] TimePicker — 列内 ↑↓/Home/End + roving + 打开聚焦当前列
 - [ ] Radio — Home/End + button/card 型 role=radio
-- [ ] Menu — vertical/inline roving + 方向键/Home/End/typeahead/Esc
-- [ ] Steps — 视觉隐藏状态文本（WCAG 1.4.1）+ clickable/nav roving
-- [ ] Carousel — 键盘 ←→/Home/End/Enter + 非 active slide inert + play/pause 按钮（WCAG 2.2.2）
+- [x] Menu — vertical/inline roving + 方向键/Home/End/typeahead/Esc
+- [x] Steps — 视觉隐藏状态文本（WCAG 1.4.1）+ clickable/nav roving（#231）
+- [x] Carousel — 键盘 ←→/Home/End/Enter + 非 active slide inert + play/pause 按钮（WCAG 2.2.2）
 - [ ] Breadcrumb — 折叠触发器 disclosure ARIA + 浮层 menu 角色
 - [ ] Collapse — Header role=heading + aria-level
-- [ ] Image — 预览灯箱 focus trap + 关闭归还焦点
+- [x] Image — 预览灯箱 focus trap + 关闭归还焦点
 - [ ] Avatar — 可交互头像 a/button role + 键盘
-- [ ] List — selectable 方向键 + roving（与根因#2 合并做）
+- [x] List — selectable 方向键 + roving（#231）
 - [ ] OverflowList — scroll 模式滚动锚点键盘可达
 
 ## 剩余中严重度（单个 aria，逐组）
