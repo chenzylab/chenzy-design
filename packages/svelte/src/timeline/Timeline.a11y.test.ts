@@ -20,7 +20,7 @@ describe('Timeline a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('interactive：项 role=button + roving tabindex（首项 0）结构正确', () => {
+  it('interactive：listitem 包内层 role=button + roving tabindex（首项 0）结构正确', () => {
     const { container } = renderWithLocale(Timeline, {
       props: {
         interactive: true,
@@ -31,17 +31,17 @@ describe('Timeline a11y', () => {
         ],
       },
     });
-    const items = container.querySelectorAll('li.cd-timeline__item--interactive');
-    expect(items.length).toBe(2);
-    expect(items[0]?.getAttribute('role')).toBe('button');
-    expect(items[0]?.getAttribute('tabindex')).toBe('0');
-    expect(items[1]?.getAttribute('tabindex')).toBe('-1');
+    // li 保持原生 list 语义，role=button + roving 落在内层 .cd-timeline__item-interactive。
+    const lis = container.querySelectorAll('li.cd-timeline__item');
+    expect(lis.length).toBe(2);
+    const buttons = container.querySelectorAll('.cd-timeline__item-interactive[role="button"]');
+    expect(buttons.length).toBe(2);
+    expect(buttons[0]?.getAttribute('tabindex')).toBe('0');
+    expect(buttons[1]?.getAttribute('tabindex')).toBe('-1');
   });
 
-  // SKIP 原因：interactive 把 <li> 的 role 改为 button，导致 <ul> 直接子元素非 listitem，
-  // axe [list] 报「<ul> must only directly contain <li>...」。修复需调整 interactive 列表结构
-  // （如 role=list/listitem 重映射或包一层），属组件改动，本批不改源码。
-  it.skip('interactive：无 axe violations（阻塞于 [list]：ul 直含 role=button 的 li）', async () => {
+  // interactive 用 listitem 包内层 role=button：ul 直含 li（保 list 语义），交互落内层，无 [list] 违规。
+  it('interactive：无 axe violations（listitem 包 button）', async () => {
     const { container } = renderWithLocale(Timeline, {
       props: {
         interactive: true,

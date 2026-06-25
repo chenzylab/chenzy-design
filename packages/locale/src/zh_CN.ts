@@ -151,6 +151,7 @@ export const zh_CN: Locale = {
     loadMore: '加载更多',
     selectAnnounce: '已选中 {label}',
     deselectAnnounce: '已取消选中 {label}',
+    selectableLabel: '可选择列表',
   },
   Calendar: {
     today: '今天',
@@ -257,6 +258,7 @@ export const zh_CN: Locale = {
     announceUploading: '{name} 上传中 {percent}%',
     announceSuccess: '{name} 上传成功',
     announceError: '{name} 上传失败',
+    uploadingProgress: '{name} 上传进度',
   },
   Form: {
     required: '{label}为必填项',

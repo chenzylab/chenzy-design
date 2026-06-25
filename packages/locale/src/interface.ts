@@ -198,6 +198,8 @@ export interface Locale {
     selectAnnounce: string;
     /** LiveAnnouncer：取消选中行，uses {label} */
     deselectAnnounce: string;
+    /** selectable 模式 listbox 容器缺省可访问名 */
+    selectableLabel: string;
   };
   Calendar: {
     today: string;
@@ -324,6 +326,8 @@ export interface Locale {
     announceSuccess: string;
     /** live 播报：上传失败，uses {name} */
     announceError: string;
+    /** 上传中进度条可访问名，uses {name} */
+    uploadingProgress: string;
   };
   Form: {
     /** uses {label} */

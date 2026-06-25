@@ -31,7 +31,6 @@
   } from '@chenzy-design/core';
   import Empty from '../empty/Empty.svelte';
   import { Button } from '../button/index.js';
-  import { Checkbox } from '../checkbox/index.js';
   import { Pagination } from '../pagination/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { setListContext } from './context.js';
@@ -76,6 +75,7 @@
     selectedKeys,
     defaultSelectedKeys = [],
     onSelectionChange,
+    ariaLabel,
     children,
     class: className = '',
   }: {
@@ -123,6 +123,8 @@
       keys: ListKey[],
       info: { item: T | undefined; key: ListKey; selected: boolean },
     ) => void;
+    /** selectable 模式 listbox 容器可访问名（缺省回退 i18n List.selectableLabel）。 */
+    ariaLabel?: string;
     /** 声明式用法：内嵌 <List.Item>（不传 dataSource 时生效）。 */
     children?: Snippet;
     class?: string;
@@ -531,7 +533,34 @@
   // selectable 列表语义：role=listbox（multiple 时 aria-multiselectable），否则原生 list。
   const itemsRole = $derived(selectMode ? 'listbox' : undefined);
   const itemsMultiselect = $derived(selectMode === 'multiple' ? true : undefined);
+  // listbox 可访问名（aria-input-field-name）：缺省回退 i18n。非 selectable 时不设。
+  const itemsLabel = $derived(
+    selectMode ? (ariaLabel ?? loc().t('List.selectableLabel')) : undefined,
+  );
 </script>
+
+<!--
+  selectable 行的勾选指示器：纯视觉（aria-hidden + 无 input），避免 option 内嵌可聚焦控件
+  导致 axe nested-interactive。选中态由行 aria-selected 表达，勾选/取消走行的 Space/Enter。
+-->
+{#snippet selectorMark(sel: boolean)}
+  <span class="cd-list__item-selector" aria-hidden="true">
+    <span class="cd-list__check" class:cd-list__check--on={sel}>
+      {#if sel}
+        <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3.5 8.5 6.5 11.5 12.5 4.5"
+          />
+        </svg>
+      {/if}
+    </span>
+  </span>
+{/snippet}
 
 <div class={cls} aria-busy={loading || undefined} bind:this={rootEl}>
   {#if header !== undefined}
@@ -569,6 +598,7 @@
         class="cd-list__items"
         role={itemsRole}
         aria-multiselectable={itemsMultiselect}
+        aria-label={itemsLabel}
       >
         {@render children?.()}
       </ul>
@@ -579,6 +609,7 @@
         bind:this={viewportEl}
         role={itemsRole ?? 'list'}
         aria-multiselectable={itemsMultiselect}
+        aria-label={itemsLabel}
         style={`block-size:${vHeightStyle}; overflow:auto`}
       >
         <div class="cd-list__virtual-spacer" style={`block-size:${vTotalHeight}px`}>
@@ -604,9 +635,7 @@
               onfocus={selectMode ? () => onRowFocus(k) : undefined}
             >
               {#if selectMode}
-                <span class="cd-list__item-selector" aria-hidden="true">
-                  <Checkbox checked={sel} />
-                </span>
+                {@render selectorMark(sel)}
               {/if}
               <div class="cd-list__item-content">
                 {#if renderItem}{@render renderItem(item, index)}{/if}
@@ -622,6 +651,7 @@
         style={gridStyle}
         role={itemsRole}
         aria-multiselectable={itemsMultiselect}
+        aria-label={itemsLabel}
       >
         {#each pagedData as item, index (keyOf(item, index))}
           {@const realIndex = paginationOn ? (currentPage - 1) * pageSize + index : index}
@@ -640,9 +670,7 @@
               onkeydown={(e) => onRowKeydown(e, item, realIndex)}
               onfocus={() => onRowFocus(k)}
             >
-              <span class="cd-list__item-selector" aria-hidden="true">
-                <Checkbox checked={sel} />
-              </span>
+              {@render selectorMark(sel)}
               <div class="cd-list__item-content">
                 {#if renderItem}{@render renderItem(item, realIndex)}{/if}
               </div>
@@ -760,6 +788,23 @@
     display: flex;
     align-items: center;
     pointer-events: none;
+  }
+  /* 纯视觉勾选框（无 input；选中态走行 aria-selected，避免 nested-interactive）。 */
+  .cd-list__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: 16px;
+    block-size: 16px;
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-small, 4px);
+    color: var(--cd-color-bg-0, #fff);
+    background: var(--cd-color-bg-0, #fff);
+  }
+  .cd-list__check--on {
+    background: var(--cd-color-primary, #0066ff);
+    border-color: var(--cd-color-primary, #0066ff);
   }
   .cd-list__item-content {
     flex: 1;

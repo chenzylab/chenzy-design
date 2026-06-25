@@ -51,20 +51,16 @@ describe('List a11y', () => {
     expect(selected.length).toBe(2);
   });
 
-  // SKIP（真实组件 a11y 缺口，非测试问题，未改源码迁就）：selectable 模式 axe 报 2 条 serious 违规：
-  //  1) [aria-input-field-name] role=listbox 的 <ul> 无可访问名（缺 aria-label/aria-labelledby）。
-  //     组件未给 listbox 容器提供可访问名；header 文本也未经 aria-labelledby 关联到 listbox。
-  //  2) [nested-interactive] role=option 的 <li>（tabindex=0）内嵌了可聚焦的 <Checkbox>（input），
-  //     交互控件嵌套交互控件。选择指示器应改用 aria-hidden 的非聚焦呈现，或重构选择语义。
-  // 修复需改组件源码（List.svelte），超出本测试任务范围；留待后续 a11y 修复 PR。
-  it.skip('selectable=single：axe 0 violations（待组件修复 listbox 可访问名 + 嵌套交互）', async () => {
+  // 修复后：listbox 经 aria-label（List.selectableLabel）有可访问名；option 内勾选框改纯视觉
+  // （aria-hidden + 无 input），选中态由行 aria-selected 表达，无 nested-interactive。
+  it('selectable=single：axe 0 violations（listbox 可访问名 + 纯视觉勾选框）', async () => {
     const { container } = renderWithLocale(ListFixture, {
       props: { selectable: 'single', defaultSelectedKeys: ['u2'] },
     });
     await expectNoAxeViolations(container);
   });
 
-  it.skip('selectable=multiple：axe 0 violations（待组件修复 listbox 可访问名 + 嵌套交互）', async () => {
+  it('selectable=multiple：axe 0 violations（listbox 可访问名 + 纯视觉勾选框）', async () => {
     const { container } = renderWithLocale(ListFixture, {
       props: { selectable: 'multiple', defaultSelectedKeys: ['u1', 'u3'] },
     });
