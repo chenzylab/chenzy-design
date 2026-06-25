@@ -576,6 +576,73 @@
     activeKey = f.parentKey;
   }
 
+  // `*`：展开当前层级（与活动节点同 parentKey）的全部可展开同级节点（APG 推荐，spec §6）。
+  // 基于可见扁平节点定位同级，逐个展开未展开者（不收起已展开），合并为一次状态写入。
+  function expandSiblings() {
+    const f = currentFlat();
+    if (!f) return;
+    const targetParent = f.parentKey;
+    const siblings = visibleFlat.filter(
+      (x) => x.parentKey === targetParent && isExpandable(x.node, x.hasChildren),
+    );
+    let changed = false;
+    let next = new Set(currentExpandedSet);
+    let lastNode: TreeNodeData | null = null;
+    for (const sib of siblings) {
+      if (next.has(sib.node.key)) continue;
+      // 触发未加载异步节点的子节点拉取（数据到位后合并树派生显示）。
+      const hasOwnKids = (sib.node.children?.length ?? 0) > 0;
+      if (!hasOwnKids && loadData && !loadedKeys.has(sib.node.key)) {
+        void loadChildren(sib.node);
+      }
+      next.add(sib.node.key);
+      lastNode = sib.node;
+      changed = true;
+    }
+    if (!changed || lastNode === null) return;
+    if (!isExpandControlled) innerExpanded = next;
+    // 一次性回调（node 取最后展开者，expand=true）；受控时不回写（红线 #1）。
+    onExpandedChange?.({ expanded: [...next], node: toOrig(lastNode), expand: true });
+  }
+
+  // typeahead：连续输入字符在可见节点间按 label 前缀跳转（APG，spec §6）。
+  // 缓冲命令式（非响应式），超时清空；同字符重复则在匹配项间循环。
+  let typeaheadBuffer = '';
+  let typeaheadTimer: ReturnType<typeof setTimeout> | undefined;
+  const TYPEAHEAD_TIMEOUT = 600;
+
+  function clearTypeahead() {
+    typeaheadBuffer = '';
+    typeaheadTimer = undefined;
+  }
+
+  // 卸载兜底清理 typeahead 计时器（红线 #3）。
+  $effect(() => () => {
+    if (typeaheadTimer !== undefined) clearTimeout(typeaheadTimer);
+  });
+
+  function typeahead(char: string) {
+    if (typeaheadTimer !== undefined) clearTimeout(typeaheadTimer);
+    typeaheadTimer = setTimeout(clearTypeahead, TYPEAHEAD_TIMEOUT);
+    // 同一字符重复输入：从当前项之后开始找下一个该字母开头者（在匹配项间循环）。
+    const repeat = typeaheadBuffer.length === 1 && typeaheadBuffer === char.toLowerCase();
+    typeaheadBuffer = repeat ? typeaheadBuffer : typeaheadBuffer + char.toLowerCase();
+    const prefix = typeaheadBuffer;
+    const len = visibleFlat.length;
+    if (len === 0) return;
+    const cur = activeIndex();
+    const start = cur < 0 ? 0 : (repeat ? cur + 1 : cur);
+    for (let n = 0; n < len; n += 1) {
+      const i = (start + n) % len;
+      const fn = visibleFlat[i] as FlatNode;
+      if (isNodeDisabled(fn.node)) continue;
+      if (fn.node.label.toLowerCase().startsWith(prefix)) {
+        activeKey = fn.node.key;
+        return;
+      }
+    }
+  }
+
   function onKeydown(e: KeyboardEvent) {
     if (disabled || visibleFlat.length === 0) return;
     if (activeKey === null) {
@@ -588,7 +655,22 @@
         e.preventDefault();
         moveFirst();
         scrollActiveIntoView();
+        return;
       }
+      // 无活动项时也支持 typeahead：从首项起按前缀跳转（activeIndex() 返回 -1 时从 0 开始）。
+      if (
+        e.key.length === 1 &&
+        e.key !== ' ' &&
+        e.key !== '*' &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
+        e.preventDefault();
+        typeahead(e.key);
+        scrollActiveIntoView();
+      }
+      // 其它键（含 `*`：无活动项无明确层级）不处理。
       return;
     }
     const f = currentFlat();
@@ -633,7 +715,22 @@
           else emitSelect(f.node);
         }
         break;
+      case '*':
+        e.preventDefault();
+        expandSiblings();
+        break;
       default:
+        // typeahead：单个可打印字符（非修饰键）→ 按 label 前缀跳转。
+        if (
+          e.key.length === 1 &&
+          e.key !== ' ' &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey
+        ) {
+          e.preventDefault();
+          typeahead(e.key);
+        }
         break;
     }
     // 移动 activeKey 后若目标行不在视口（虚拟化）则滚到可见。
