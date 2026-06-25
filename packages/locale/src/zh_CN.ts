@@ -42,6 +42,8 @@ export const zh_CN: Locale = {
     sortClearedAnnounce: '已取消 {column} 排序',
     sortOrderAscend: '升序',
     sortOrderDescend: '降序',
+    rowCount: '{count} 行',
+    columnCount: '{count} 列',
   },
   Empty: {
     noData: '暂无数据',

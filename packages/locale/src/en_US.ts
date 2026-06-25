@@ -42,6 +42,8 @@ export const en_US: Locale = {
     sortClearedAnnounce: 'Sorting cleared for {column}',
     sortOrderAscend: 'ascending',
     sortOrderDescend: 'descending',
+    rowCount: '{count} rows',
+    columnCount: '{count} columns',
   },
   Empty: {
     noData: 'No data',

@@ -2,6 +2,9 @@
 
 > spec §4 Props/Events 已全部补齐后，对各组件 spec a11y 章节做的系统核查清单。
 > 约 122 处缺口，按「跨组件根因」+「逐组件」组织。已修的划掉。
+>
+> **状态（2026-06-25）：清单全部消解。** 4 个根因 + 全部逐组件高/中缺口已实现（PR #235–238 + Table Grid Pattern）。
+> 仅「待人工/运行时复核」章节（对比度/焦点环/reduced-motion/RTL token 层）需在 Playwright+axe 套件落地后核验。
 
 ## 跨组件根因（修一处消解多组件）
 
@@ -18,7 +21,7 @@
 
 ## 剩余逐组件高缺口（键盘体系/role 缺失，高严重度）
 - [x] Transfer — 双列 listbox/option role + 全键盘（↑↓/Home/End/Space/Shift 范围/Enter 移动）+ 移动后焦点保留
-- [ ] Table — Grid Pattern：role=grid/row/gridcell/columnheader + 方向键漫游 + roving + 虚拟化焦点回收（**待定：产品是否需交互态 grid，纯展示则免**）
+- [x] Table — Grid Pattern：role=grid/row/gridcell/columnheader + 二维方向键漫游 + roving + 虚拟化焦点回收 + F2/Enter 交互模式（产品已确认实现；纯展示表自动降级 role=table）
 - [x] Cascader — 列内方向键 roving + Home/End + aria-activedescendant（#229）
 - [x] TreeSelect — 浮层方向键/Home/End roving + aria-activedescendant（#229）
 - [x] Select — Home/End 跳首末
