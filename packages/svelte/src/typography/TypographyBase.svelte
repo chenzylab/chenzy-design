@@ -621,6 +621,12 @@
 
   /* ── 交互态样式 ── */
   :global(.cd-typography--ellipsis) {
+    /* Text 渲染为 <span>（display:inline）；text-overflow/overflow 在 inline 上不生效，
+       需 inline-block 才能截断。max-inline-size 令其受父容器宽度约束，
+       vertical-align 避免 inline-block 基线下沉。 */
+    display: inline-block;
+    max-inline-size: 100%;
+    vertical-align: bottom;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

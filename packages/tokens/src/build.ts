@@ -53,6 +53,17 @@ ${componentVars.join('\n')}
 ${darkVars.join('\n')}
 }
 
+/* Base：把页面背景/前景绑到主题 token，使暗色模式开箱即用（对齐 Semi —— Semi 同样
+   在 body 上应用主题背景）。消费方若要自管 body 背景，可不引入此规则（见 base 单独导出）
+   或用更高优先级覆盖。过渡令亮/暗切换平滑，prefers-reduced-motion 下自动归零。 */
+body {
+  background-color: var(${PREFIX}color-bg-0);
+  color: var(${PREFIX}color-text-0);
+  transition:
+    background-color var(${PREFIX}motion-duration-mid) var(${PREFIX}motion-ease-standard),
+    color var(${PREFIX}motion-duration-mid) var(${PREFIX}motion-ease-standard);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     ${PREFIX}motion-duration-fast: 0ms;
