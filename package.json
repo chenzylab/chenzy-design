@@ -17,9 +17,10 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "typecheck": "pnpm -r --filter './packages/*' typecheck",
-    "test": "vitest run",
+    "test": "vitest run --project unit --project dom",
     "test:watch": "vitest",
     "test:a11y": "vitest run --project dom",
+    "test:e2e": "vitest run --project browser",
     "perf:size": "size-limit",
     "perf:bench": "vitest bench --run",
     "perf:baseline": "size-limit --json > perf/baseline.json || true",
@@ -38,10 +39,13 @@
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@testing-library/svelte": "^5.4.2",
     "@types/node": "^25.9.3",
+    "@vitest/browser": "^4.1.9",
+    "@vitest/browser-playwright": "^4.1.9",
     "axe-core": "^4.12.1",
     "esbuild-svelte": "^0.9.5",
     "eslint": "^10.5.0",
     "jsdom": "^27.4.0",
+    "playwright": "^1.61.1",
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^4.1.1",
     "size-limit": "^12.1.0",
@@ -51,7 +55,8 @@
     "typescript-eslint": "^8.61.1",
     "unocss": "^66.7.2",
     "vite": "^8.0.16",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "vitest-browser-svelte": "^2.1.1"
   },
   "pnpm": {
     "overrides": {
