@@ -45,11 +45,9 @@ describe('Upload a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  // SKIP：uploading 文件项渲染内嵌 Progress（role=progressbar），但该 progressbar
-  // 没有可访问名（无 aria-label/labelledby），axe `aria-progressbar-name` 报 serious。
-  // 这是 Upload↔Progress 集成的真实 a11y 缺口（进度条未关联文件名/状态作为名称），
-  // 非测试可迁就项；按约束不改组件源码，记录待修。
-  it.skip('uploading 项：内嵌 Progress 缺可访问名（aria-progressbar-name，待修组件）', async () => {
+  // uploading 文件项内嵌 Progress 现传入关联文件名的 ariaLabel（Upload.uploadingProgress），
+  // progressbar 有可访问名，无 aria-progressbar-name 违规。
+  it('uploading 项：内嵌 Progress 有文件名关联可访问名，无 axe violations', async () => {
     const files: UploadFileItem[] = [
       { uid: 'u1', name: 'photo.png', size: 2048, status: 'uploading', percent: 40 },
     ];

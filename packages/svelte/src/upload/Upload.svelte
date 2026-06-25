@@ -460,7 +460,11 @@
             </button>
           </div>
           {#if item.status === 'uploading'}
-            <Progress percent={item.percent ?? 0} size="small" />
+            <Progress
+              percent={item.percent ?? 0}
+              size="small"
+              ariaLabel={loc().t('Upload.uploadingProgress', { name: item.name })}
+            />
           {/if}
         </li>
       {/each}
@@ -486,7 +490,11 @@
           {/if}
           {#if item.status === 'uploading'}
             <div class="cd-upload__card-progress">
-              <Progress percent={item.percent ?? 0} size="small" />
+              <Progress
+                percent={item.percent ?? 0}
+                size="small"
+                ariaLabel={loc().t('Upload.uploadingProgress', { name: item.name })}
+              />
             </div>
           {/if}
           <div class="cd-upload__card-overlay">
