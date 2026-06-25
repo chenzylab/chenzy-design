@@ -20,6 +20,7 @@ export const meta = {
     { name: 'name', type: 'string', default: 'undefined' },
     { name: 'required', type: 'boolean', default: 'false', desc: '表单必填校验（须为开态）' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联外部可见文本 id（优先于 ariaLabel）' },
     { name: 'announceOnChange', type: 'boolean', default: 'false', desc: '切换后用 live region 播报新状态' },
     { name: 'autofocus', type: 'boolean', default: 'false', desc: '挂载后自动聚焦' },
     { name: 'onChange', type: '(v: boolean, detail?: { value: boolean; nativeValue: string|number|boolean; event: Event }) => void', default: 'undefined' },

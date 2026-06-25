@@ -148,6 +148,16 @@
   const atMin = $derived(current !== null && current <= min);
   const atMax = $derived(current !== null && current >= max);
 
+  // aria-valuetext：当存在 formatter / locale 使显示值不同于裸数字时，向屏幕阅读器
+  // 播报格式化后的可读文本（如「1,234」「¥1,200」）。无格式化时省略，让 AT 直接读 valuenow。
+  const ariaValueText = $derived.by<string | undefined>(() => {
+    if (current === null) return undefined;
+    if (!formatter && !locale) return undefined;
+    const display = formatDisplay(current);
+    if (display === '' || display === String(current)) return undefined;
+    return display;
+  });
+
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
     if (formatter) return formatter(n);
@@ -355,6 +365,7 @@
     value={text}
     aria-label={ariaLabel}
     aria-valuenow={current ?? undefined}
+    aria-valuetext={ariaValueText}
     aria-valuemin={Number.isFinite(min) ? min : undefined}
     aria-valuemax={Number.isFinite(max) ? max : undefined}
     aria-invalid={status === 'error' || undefined}

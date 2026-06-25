@@ -108,6 +108,9 @@
 
   const imgStyle = $derived(`object-fit:${fit};object-position:${position}`);
 
+  // 装饰性图片（明确传 alt=''）：role="presentation" 让读屏跳过，不当作有意义内容。
+  const presentationRole = $derived(alt === '' ? 'presentation' : undefined);
+
   // 主图类名：LQIP 场景下未加载完成时透明，加载完成淡入清晰。
   const imgCls = $derived(
     ['cd-image__img', isLqip && 'cd-image__img--fade', isLqip && imgLoaded && 'cd-image__img--in']
@@ -214,7 +217,7 @@
     {/if}
   {:else}
     {#if showPlaceholder}
-      <div class="cd-image__placeholder" aria-hidden="true">
+      <div class="cd-image__placeholder" aria-hidden="true" aria-busy="true">
         {#if placeholderSrc}
           <img class="cd-image__img cd-image__placeholder-img cd-image__placeholder-img--blur" src={placeholderSrc} alt="" style={imgStyle} />
         {:else if placeholderSlot}
@@ -240,6 +243,7 @@
           {sizes}
           {crossorigin}
           {alt}
+          role={presentationRole}
           loading={nativeLoading}
           style={imgStyle}
           onload={handleLoad}
@@ -256,6 +260,7 @@
         {sizes}
         {crossorigin}
         {alt}
+        role={presentationRole}
         loading={nativeLoading}
         style={imgStyle}
         onload={handleLoad}

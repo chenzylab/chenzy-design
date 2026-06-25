@@ -676,7 +676,12 @@
       {/if}
 
       <div class="cd-tabs__nav" bind:this={navEl}>
-        <div class="cd-tabs__list" role="tablist" bind:this={listEl}>
+        <div
+          class="cd-tabs__list"
+          role="tablist"
+          aria-orientation={isVertical ? 'vertical' : undefined}
+          bind:this={listEl}
+        >
           {#each tabList as item (item.itemKey)}
             {@render tabNode(item)}
           {/each}

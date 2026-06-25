@@ -348,8 +348,18 @@
 </script>
 
 <div class={cls} role="group" aria-label={ariaLabel} bind:this={containerEl}>
-  <!-- 可见层：实际渲染，用户所见。scroll 模式下可滚动；collapse 模式下溢出收纳为 +N。 -->
-  <div class="cd-overflow-list__visible" bind:this={visibleEl}>
+  <!-- 可见层：实际渲染，用户所见。scroll 模式下可滚动；collapse 模式下溢出收纳为 +N。
+       scroll 模式下可见层即滚动容器：设 tabindex=0 让键盘用户可聚焦后用方向键滚动
+       （WCAG 2.1.1，浏览器对聚焦的滚动容器原生支持方向键滚动），并提供可访问名。
+       group 角色为非交互元素，故 tabindex 显式抑制 lint（同 Card/Carousel/DatePicker）。 -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="cd-overflow-list__visible"
+    bind:this={visibleEl}
+    tabindex={isScroll ? 0 : undefined}
+    role={isScroll ? 'group' : undefined}
+    aria-label={isScroll ? (ariaLabel ?? loc().t('OverflowList.scrollAriaLabel')) : undefined}
+  >
     <!-- start 折叠：折叠节点在头部（溢出项是前面的项）。scroll 模式 overflowCount 恒为 0。 -->
     {#if overflowCount > 0 && collapseFrom === 'start'}
       {#if overflow}
@@ -444,7 +454,14 @@
     block-size: 100%;
   }
 
-  /* scroll 模式：不折叠，可见层沿主轴可滚动。 */
+  /* scroll 模式：不折叠，可见层沿主轴可滚动。容器可聚焦，键盘焦点环可见。 */
+  .cd-overflow-list--scroll .cd-overflow-list__visible {
+    outline: none;
+  }
+  .cd-overflow-list--scroll .cd-overflow-list__visible:focus-visible {
+    outline: 2px solid var(--cd-overflow-list-focus-ring);
+    outline-offset: 1px;
+  }
   .cd-overflow-list--scroll.cd-overflow-list--horizontal .cd-overflow-list__visible {
     overflow-x: auto;
     overflow-y: hidden;

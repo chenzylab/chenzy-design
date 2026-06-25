@@ -46,6 +46,12 @@ export const meta = {
       desc: '头像形状',
     },
     { name: 'closeIcon', type: 'Snippet', default: 'undefined', desc: '自定义关闭图标（默认内置 X）' },
+    {
+      name: 'tagText',
+      type: 'string',
+      default: 'undefined',
+      desc: '标签纯文本，用于派生 closable 关闭按钮无障碍名（移除 <文本>）',
+    },
     { name: 'tagKey', type: 'string|number', default: 'undefined', desc: '在 TagGroup 中的稳定标识' },
     { name: 'class', type: 'string', default: 'undefined', desc: '透传根类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '透传根内联样式' },

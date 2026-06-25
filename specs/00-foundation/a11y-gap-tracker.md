@@ -34,19 +34,19 @@
 - [x] Image — 预览灯箱 focus trap + 关闭归还焦点
 - [x] Avatar — 可交互头像 a/button role + 键盘
 - [x] List — selectable 方向键 + roving（#231）
-- [ ] OverflowList — scroll 模式滚动锚点键盘可达
+- [x] OverflowList — scroll 模式滚动锚点键盘可达
 
 ## 剩余中严重度（单个 aria，逐组）
-- [ ] Modal/Drawer/SideSheet 背景兄弟 inert/aria-hidden
-- [ ] Dropdown 菜单 aria-labelledby
-- [ ] Switch/Slider/Radio/CheckboxGroup group 容器 aria-labelledby（非仅 label）
-- [ ] Slider 双滑块 valuemin/max 钳为对方值 + 键盘 RTL/vertical 翻转
-- [~] Radio/Rating 方向键 RTL 镜像；Rating 数字键定位（Radio RTL 已做，Rating 数字键待办）
-- [ ] InputNumber aria-valuetext
-- [ ] Badge status role=status；Tag close aria-label 含文本；Card loading aria-busy
-- [ ] Image 装饰图 role=presentation + loading aria-busy；Tabs 纵向 aria-orientation
-- [~] Anchor aria-current="location"；Collapse disabled aria-disabled（Collapse 已做，Anchor 待办）
-- [ ] Popconfirm loading 播报
+- [x] Modal/Drawer/SideSheet 背景兄弟 inert/aria-hidden（新建 core inert-background.ts 原语）
+- [x] Dropdown 菜单 aria-labelledby
+- [x] Switch/Slider/Radio/CheckboxGroup group 容器 aria-labelledby（非仅 label）
+- [x] Slider 双滑块 valuemin/max 钳为对方值 + 键盘 RTL/vertical 翻转
+- [x] Radio/Rating 方向键 RTL 镜像；Rating 数字键定位
+- [x] InputNumber aria-valuetext
+- [x] Badge status role=status；Tag close aria-label 含文本；Card loading aria-busy
+- [x] Image 装饰图 role=presentation + loading aria-busy；Tabs 纵向 aria-orientation
+- [x] Anchor aria-current="location"；Collapse disabled aria-disabled
+- [x] Popconfirm loading 播报
 
 ## 待人工/运行时复核（未计入）
 - 对比度 ≥4.5:1 / 焦点环 ≥3:1 / prefers-reduced-motion / RTL 镜像（token/CSS 层）

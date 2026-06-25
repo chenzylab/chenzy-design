@@ -177,8 +177,16 @@
       case 'Backspace':
         if (allowClear) next = 0;
         break;
-      default:
-        return;
+      default: {
+        // 数字键 1–9：直接定位到对应整数分值（钳到 [1, count]）。
+        if (e.key >= '1' && e.key <= '9') {
+          const n = Number(e.key);
+          if (n <= count) next = n;
+          else return;
+        } else {
+          return;
+        }
+      }
     }
     e.preventDefault();
     if (next !== current) commit(next);

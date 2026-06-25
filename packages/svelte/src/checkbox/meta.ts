@@ -54,6 +54,8 @@ export const meta = {
       { name: 'direction', type: "'horizontal'|'vertical'", default: 'horizontal' },
       { name: 'onChange', type: '(v: (string|number)[]) => void', default: 'undefined' },
       { name: 'children', type: 'Snippet', default: 'undefined' },
+      { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可见标题时的可访问名（role=group）' },
+      { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联组可见标题 id（优先于 ariaLabel）' },
     ],
   },
   a11y: {

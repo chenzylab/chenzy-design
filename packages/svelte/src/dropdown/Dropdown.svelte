@@ -110,6 +110,8 @@
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
   const menuId = useId('cd-dropdown-menu');
+  // 触发元素 id：菜单浮层 aria-labelledby 指向它，让 AT 用触发文案命名菜单（spec §6）。
+  const triggerId = useId('cd-dropdown-trigger');
 
   // spacing → floating 主轴 offset：number 直用；{ x, y } 按 position 主轴方向取值
   // （top/bottom 系主轴是垂直取 y；left/right 系主轴是水平取 x）。
@@ -412,6 +414,7 @@
 >
   <div
     class="cd-dropdown__trigger"
+    id={triggerId}
     role="button"
     tabindex={disabled ? -1 : 0}
     aria-haspopup="menu"
@@ -451,6 +454,7 @@
       style="z-index: {zIndex}"
       use:cursorFloating={{ x: cursorX, y: cursorY }}
       role="menu"
+      aria-labelledby={triggerId}
       tabindex="-1"
       onkeydown={onMenuKeydown}
     >
@@ -466,6 +470,7 @@
       style="z-index: {zIndex}"
       use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset, getContainer: resolvePopupContainer, open: isOpen }}
       role="menu"
+      aria-labelledby={triggerId}
       tabindex="-1"
       aria-hidden={!isOpen || undefined}
       onkeydown={onMenuKeydown}

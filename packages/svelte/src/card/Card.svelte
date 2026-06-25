@@ -124,6 +124,7 @@
   class={cls}
   role={clickable ? 'button' : hasTitle ? 'region' : undefined}
   aria-labelledby={titleIsString ? titleId : undefined}
+  aria-busy={loading || undefined}
   aria-disabled={clickable && disabled ? 'true' : undefined}
   tabindex={clickable ? (disabled ? -1 : 0) : undefined}
   onclick={clickable ? handleClick : undefined}

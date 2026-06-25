@@ -86,6 +86,8 @@ export interface Locale {
     moreLabel: string;
     /** uses {count} */
     moreAriaLabel: string;
+    /** scroll 模式可滚动可见层的可访问名 */
+    scrollAriaLabel: string;
   };
   Avatar: {
     /** AvatarGroup 折叠 +N 头像的可访问名，uses {count} */
@@ -397,6 +399,8 @@ export interface Locale {
   };
   Tag: {
     close: string;
+    /** closable 关闭按钮无障碍名，uses {label}（标签文本） */
+    closeAriaLabel: string;
   };
   Dropdown: {
     trigger: string;
