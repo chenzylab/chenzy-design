@@ -34,9 +34,10 @@ export const meta = {
     role: 'dialog',
     notes: [
       'trigger 含 aria-haspopup=dialog / aria-expanded',
-      '浮层 role=dialog',
+      '浮层 role=dialog，打开经 useFocusTrap 陷入焦点、关闭归还 trigger',
       'saturation / hue / alpha handle 为 role=slider，含 aria-label 与 aria-valuenow',
-      'hue / alpha / saturation 支持方向键微调',
+      'hue / alpha / saturation 支持方向键微调；Home/End 跳极值；RTL 下水平方向键语义镜像',
+      'presets 为 role=listbox + role=option，方向键漫游、Enter/Space 选中、Home/End 首末',
       'hex 输入含 label 与 aria-label',
       '格式切换为 select，含 aria-label',
       'Esc 与外部点击经 useDismiss 关闭浮层（inline 模式无浮层不挂 dismiss）',

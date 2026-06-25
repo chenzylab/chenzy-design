@@ -390,6 +390,8 @@ export interface Locale {
     eyeDropper: string;
     recent: string;
     format: string;
+    /** 预设色板列表的可访问名 */
+    presets: string;
     /** 面板无显式 ariaLabel 时的兜底可访问名 */
     panelLabel: string;
   };

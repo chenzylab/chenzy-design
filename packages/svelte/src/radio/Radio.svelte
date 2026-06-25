@@ -11,6 +11,7 @@
     type RadioValue,
     type RadioSize,
     type RadioStatus,
+    type RadioType,
   } from './context.js';
 
   interface Props {
@@ -20,6 +21,7 @@
     disabled?: boolean;
     size?: RadioSize;
     status?: RadioStatus;
+    type?: RadioType;
     name?: string;
     extra?: string | undefined;
     children?: Snippet;
@@ -33,6 +35,7 @@
     disabled = false,
     size = 'default',
     status = 'default',
+    type,
     name,
     extra,
     children,
@@ -56,6 +59,10 @@
   // Group transparently provides `status`; a per-item non-default `status` overrides it.
   const resolvedStatus = $derived(status !== 'default' ? status : (group?.getStatus() ?? 'default'));
   const resolvedName = $derived(group ? group.name : name);
+  // type 优先取本项显式值，否则继承 Group，再退 default。
+  const resolvedType = $derived<RadioType>(type ?? group?.getType() ?? 'default');
+  // button/card/pureCard 用 role=radio 容器（非原生 input），其余用隐藏 input。
+  const isFancy = $derived(resolvedType !== 'default');
 
   const isChecked = $derived(
     group ? group.getSelected() === value : isControlled ? !!checked : inner,
@@ -82,8 +89,35 @@
     group?.onKeydown(e, value);
   }
 
-  /** Register this radio's input with the group for roving focus management. */
-  function registerAttach(node: HTMLInputElement) {
+  // role=radio 容器（button/card 型）：方向键交给 group，Space/Enter 选中本项。
+  function handleFancyKeydown(e: KeyboardEvent) {
+    if (resolvedDisabled) return;
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      activate();
+      return;
+    }
+    group?.onKeydown(e, value);
+  }
+
+  function handleFancyClick() {
+    if (resolvedDisabled) return;
+    activate();
+  }
+
+  // 选中本项（用于 role=radio 容器的点击/键盘），同 handleChange 的提交逻辑。
+  function activate() {
+    if (group) {
+      group.select(value);
+      onChange?.(true);
+      return;
+    }
+    if (!isControlled) inner = true;
+    onChange?.(true);
+  }
+
+  /** Register this radio's focusable element with the group for roving focus management. */
+  function registerAttach(node: HTMLElement) {
     if (!group) return;
     // read deps so registration metadata stays current
     return group.register({ value, disabled: resolvedDisabled, el: node });
@@ -93,6 +127,7 @@
     [
       'cd-radio',
       `cd-radio--${resolvedSize}`,
+      `cd-radio--${resolvedType}`,
       resolvedStatus !== 'default' && `cd-radio--${resolvedStatus}`,
       isChecked && 'cd-radio--checked',
       resolvedDisabled && 'cd-radio--disabled',
@@ -102,29 +137,54 @@
   );
 </script>
 
-<label class={cls} for={fieldId}>
-  <input
+{#if isFancy}
+  <!-- button/card/pureCard 型：role=radio 容器承载 aria-checked，参与 roving。 -->
+  <div
     {@attach registerAttach}
-    id={fieldId}
-    class="cd-radio__input"
-    type="radio"
-    name={resolvedName}
-    value={String(value)}
-    checked={isChecked}
-    disabled={resolvedDisabled}
-    {tabindex}
+    class={cls}
+    role="radio"
+    aria-checked={isChecked}
+    aria-disabled={resolvedDisabled ? 'true' : undefined}
     aria-describedby={extraId}
-    onchange={handleChange}
-    onkeydown={handleKeydown}
-  />
-  <span class="cd-radio__circle" aria-hidden="true"></span>
-  {#if children || extra}
-    <span class="cd-radio__content">
-      {#if children}<span class="cd-radio__label">{@render children()}</span>{/if}
-      {#if extra}<span class="cd-radio__extra" id={extraId}>{extra}</span>{/if}
-    </span>
-  {/if}
-</label>
+    {tabindex}
+    onclick={handleFancyClick}
+    onkeydown={handleFancyKeydown}
+  >
+    {#if resolvedType !== 'pureCard'}
+      <span class="cd-radio__circle" aria-hidden="true"></span>
+    {/if}
+    {#if children || extra}
+      <span class="cd-radio__content">
+        {#if children}<span class="cd-radio__label">{@render children()}</span>{/if}
+        {#if extra}<span class="cd-radio__extra" id={extraId}>{extra}</span>{/if}
+      </span>
+    {/if}
+  </div>
+{:else}
+  <label class={cls} for={fieldId}>
+    <input
+      {@attach registerAttach}
+      id={fieldId}
+      class="cd-radio__input"
+      type="radio"
+      name={resolvedName}
+      value={String(value)}
+      checked={isChecked}
+      disabled={resolvedDisabled}
+      {tabindex}
+      aria-describedby={extraId}
+      onchange={handleChange}
+      onkeydown={handleKeydown}
+    />
+    <span class="cd-radio__circle" aria-hidden="true"></span>
+    {#if children || extra}
+      <span class="cd-radio__content">
+        {#if children}<span class="cd-radio__label">{@render children()}</span>{/if}
+        {#if extra}<span class="cd-radio__extra" id={extraId}>{extra}</span>{/if}
+      </span>
+    {/if}
+  </label>
+{/if}
 
 <style>
   .cd-radio {
@@ -202,6 +262,66 @@
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-1);
   }
+  /* ---- button / card / pureCard 型：role=radio 容器 ---- */
+  .cd-radio--button,
+  .cd-radio--card,
+  .cd-radio--pureCard {
+    box-sizing: border-box;
+    outline: none;
+  }
+  .cd-radio--button:focus-visible,
+  .cd-radio--card:focus-visible,
+  .cd-radio--pureCard:focus-visible {
+    box-shadow: var(--cd-focus-ring);
+  }
+  /* button 型：矩形分段按钮，隐藏圆点 indicator */
+  .cd-radio--button {
+    gap: 0;
+    block-size: var(--cd-radio-button-height);
+    padding-inline: var(--cd-spacing-3);
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-color-text-0);
+    background: var(--cd-radio-bg);
+    border: 1px solid var(--cd-radio-border);
+    border-radius: var(--cd-radius-2);
+  }
+  .cd-radio--button.cd-radio--small {
+    block-size: var(--cd-radio-button-height-small);
+  }
+  .cd-radio--button.cd-radio--large {
+    block-size: var(--cd-radio-button-height-large);
+  }
+  .cd-radio--button .cd-radio__circle {
+    display: none;
+  }
+  .cd-radio--button.cd-radio--checked {
+    color: var(--cd-radio-color-checked);
+    border-color: var(--cd-radio-color-checked);
+  }
+  /* card / pureCard 型：带边框卡片，选中高亮边框 */
+  .cd-radio--card,
+  .cd-radio--pureCard {
+    padding: var(--cd-spacing-3);
+    background: var(--cd-radio-bg);
+    border: 1px solid var(--cd-radio-border);
+    border-radius: var(--cd-radio-card-radius);
+  }
+  .cd-radio--card.cd-radio--checked,
+  .cd-radio--pureCard.cd-radio--checked {
+    border-color: var(--cd-radio-card-border-checked);
+  }
+  .cd-radio--card.cd-radio--warning,
+  .cd-radio--pureCard.cd-radio--warning,
+  .cd-radio--button.cd-radio--warning {
+    border-color: var(--cd-radio-color-warning);
+  }
+  .cd-radio--card.cd-radio--error,
+  .cd-radio--pureCard.cd-radio--error,
+  .cd-radio--button.cd-radio--error {
+    border-color: var(--cd-radio-color-error);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cd-radio__circle {
       transition: none;
