@@ -15,6 +15,7 @@
     roundToPrecision,
     addNumberStep,
     formatWithLocale,
+    useLiveAnnouncer,
     type BoundaryMode,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -119,6 +120,8 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值（红线 #3：命令式）。
+  const announcer = useLiveAnnouncer();
   // prefix/suffix 可传 string 或 Snippet；函数即视为 Snippet。
   const prefixSnippet = $derived(typeof prefix === 'function' ? (prefix as Snippet) : undefined);
   const suffixSnippet = $derived(typeof suffix === 'function' ? (suffix as Snippet) : undefined);
@@ -183,7 +186,12 @@
     const rounded = applyPrecision(n);
     const hit = boundaryHitOf(rounded, min, max);
     if (hit) onBoundaryHit?.({ boundary: hit, value: rounded });
-    return clampWithMode(rounded, min, max, boundaryMode);
+    const clamped = clampWithMode(rounded, min, max, boundaryMode);
+    // clamp 模式越界回弹：实际生效值与输入不同 → polite 播报生效值（strict 模式返回 null 拒绝，不播）。
+    if (hit && clamped !== null && clamped !== rounded) {
+      announcer.announce(loc().t('InputNumber.clampedAnnounce', { value: formatDisplay(clamped) }));
+    }
+    return clamped;
   }
 
   function commitValue(next: number | null) {

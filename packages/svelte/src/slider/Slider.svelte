@@ -11,6 +11,9 @@
   No floating library is pulled in: percent layout already gives the position.
 -->
 <script lang="ts">
+  import { useLiveAnnouncer } from '@chenzy-design/core';
+  import { useLocale } from '../locale-provider/index.js';
+
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type Single = number;
@@ -88,6 +91,28 @@
     onBlur,
   }: Props = $props();
 
+  const loc = useLocale();
+  // 单例 live region（polite）：值到达 min/max 边界时播报一次（红线 #3：命令式、事件回调内）。
+  const announcer = useLiveAnnouncer();
+  // 节流：记住上次播报的边界，连续停在同一边界不重复播；离开后再回到才重播。
+  let lastBoundary: 'min' | 'max' | null = null;
+
+  // 任一手柄到达 min/max 时 polite 播报一次（拖拽落定 / 键盘步进后调用）。
+  function maybeAnnounceBoundary(v: SliderValue) {
+    const reachesMin = Array.isArray(v) ? v[0] <= min : v <= min;
+    const reachesMax = Array.isArray(v) ? v[1] >= max : v >= max;
+    const boundary: 'min' | 'max' | null = reachesMax ? 'max' : reachesMin ? 'min' : null;
+    if (boundary === null) {
+      lastBoundary = null;
+      return;
+    }
+    if (boundary === lastBoundary) return;
+    lastBoundary = boundary;
+    announcer.announce(
+      loc().t(boundary === 'max' ? 'Slider.maxReachedAnnounce' : 'Slider.minReachedAnnounce'),
+    );
+  }
+
   const isControlled = $derived(value !== undefined);
   let inner = $state<SliderValue>(getInitialValue());
   // While dragging, a local override gives instant visual feedback without
@@ -164,7 +189,10 @@
     onInput?.(next);
     // onChangeComplete: only when the interaction settles (pointerup / keyboard),
     // for request throttling on the consumer side.
-    if (complete) onChangeComplete?.(next);
+    if (complete) {
+      onChangeComplete?.(next);
+      maybeAnnounceBoundary(next);
+    }
   }
 
   // Build the next value for a given handle index, keeping range handles ordered.
@@ -231,6 +259,7 @@
       if (!isControlled) inner = finalValue;
       onChange?.(finalValue);
       onChangeComplete?.(finalValue);
+      maybeAnnounceBoundary(finalValue);
     }
     railRect = null;
   }

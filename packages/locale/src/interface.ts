@@ -188,6 +188,10 @@ export interface Locale {
   };
   List: {
     loadMore: string;
+    /** LiveAnnouncer：选中行，uses {label} */
+    selectAnnounce: string;
+    /** LiveAnnouncer：取消选中行，uses {label} */
+    deselectAnnounce: string;
   };
   Calendar: {
     today: string;
@@ -197,6 +201,8 @@ export interface Locale {
     moreCount: string;
     noEvents: string;
     allDay: string;
+    /** LiveAnnouncer：选中日期，uses {date} */
+    selectedDateAnnounce: string;
   };
   Tree: {
     emptyText: string;
@@ -224,6 +230,8 @@ export interface Locale {
     reset: string;
     prev: string;
     next: string;
+    /** LiveAnnouncer：预览翻页计数，uses {index} / {total} */
+    previewCount: string;
   };
   Timeline: {
     pending: string;
@@ -344,6 +352,14 @@ export interface Locale {
   InputNumber: {
     increase: string;
     decrease: string;
+    /** LiveAnnouncer：越界钳制后实际生效值，uses {value} */
+    clampedAnnounce: string;
+  };
+  Slider: {
+    /** LiveAnnouncer：值到达最小边界 */
+    minReachedAnnounce: string;
+    /** LiveAnnouncer：值到达最大边界 */
+    maxReachedAnnounce: string;
   };
   Cascader: {
     clear: string;
@@ -363,6 +379,8 @@ export interface Locale {
     play: string;
     /** 暂停自动播放按钮 */
     pause: string;
+    /** LiveAnnouncer：手动切换播报，uses {index} / {total} */
+    slideAnnounce: string;
   };
   TagInput: {
     remove: string;

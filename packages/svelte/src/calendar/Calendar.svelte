@@ -28,6 +28,7 @@
     gridFocusMove,
     fixedRange,
     useDismiss,
+    useLiveAnnouncer,
     type GridFocusKey,
     type CalendarEvent,
     type Placement,
@@ -137,6 +138,8 @@
   }: Props = $props();
 
   const loc = useLocale();
+  // 单例 live region（polite）：切月/年、移动焦点、选中日期时播报可读文本（红线 #3：命令式）。
+  const announcer = useLiveAnnouncer();
 
   // 一次性常量：今天（render 用于派生 today/past 态，不放 $state 反复 new）
   const today = new Date();
@@ -350,19 +353,33 @@
     if (mode === 'week') return addWeeks(currentValue, delta);
     return addMonths(currentValue, delta);
   }
+  // 切月/年/今日：把焦点带到新锚点并 polite 播报其可读全文（formatter 仅依赖 locale，可安全用于任意日期）。
+  function announceFocusDate(date: Date) {
+    announcer.announce(dayTitleFullFormatter.format(date));
+  }
   function goPrev() {
-    setAnchor(step(-1));
+    const next = step(-1);
+    setAnchor(next);
+    announceFocusDate(next);
   }
   function goNext() {
-    setAnchor(step(1));
+    const next = step(1);
+    setAnchor(next);
+    announceFocusDate(next);
   }
   function goToday() {
-    setAnchor(new Date());
+    const next = new Date();
+    setAnchor(next);
+    announceFocusDate(next);
   }
 
   function setSelected(date: Date) {
     if (!isSelectedControlled) innerSelected = date;
     onSelect?.({ date });
+    // 选中日期 polite 播报可读全文。
+    announcer.announce(
+      loc().t('Calendar.selectedDateAnnounce', { date: dayTitleFullFormatter.format(date) }),
+    );
   }
 
   function setRange(next: RangeValue) {
@@ -444,6 +461,7 @@
       const stillVisible = cells.some((c) => isSameDay(c.date, nextYearDate));
       if (!stillVisible) setAnchor(nextYearDate);
       pendingFocus = true;
+      announceFocusDate(nextYearDate);
       return;
     }
     if (!NAV_KEYS.has(key)) return;
@@ -460,6 +478,7 @@
     const stillVisible = cells.some((c) => isSameDay(c.date, next));
     if (!stillVisible) setAnchor(next);
     pendingFocus = true;
+    announceFocusDate(next);
   }
 
   // 焦点落格：activeDate / 网格内容变化后，若有待定焦点则把 DOM 焦点移到活动格
