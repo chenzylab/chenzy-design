@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build:tokens": "pnpm --filter @chenzy-design/tokens build",
+    "a11y:contrast": "pnpm --filter @chenzy-design/tokens a11y:contrast",
     "build": "pnpm build:tokens && pnpm -r --filter './packages/*' build",
     "dev": "pnpm --filter @chenzy-design/docs dev",
     "play": "pnpm --filter @chenzy-design/playground dev",
