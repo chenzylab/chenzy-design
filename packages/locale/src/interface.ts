@@ -148,6 +148,11 @@ export interface Locale {
   Notification: {
     closeText: string;
     notification: string;
+    /** 视觉隐藏类型前缀（屏幕阅读器先播报极性） */
+    success: string;
+    info: string;
+    warning: string;
+    error: string;
   };
   BackTop: {
     ariaLabel: string;
@@ -297,6 +302,12 @@ export interface Locale {
     /** uses {limit} */
     limitError: string;
     remove: string;
+    /** live 播报：上传中，uses {name} {percent} */
+    announceUploading: string;
+    /** live 播报：上传成功，uses {name} */
+    announceSuccess: string;
+    /** live 播报：上传失败，uses {name} */
+    announceError: string;
   };
   Form: {
     /** uses {label} */

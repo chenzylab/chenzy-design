@@ -111,6 +111,10 @@ export const en_US: Locale = {
   Notification: {
     closeText: 'Close',
     notification: 'Notification',
+    success: 'Success',
+    info: 'Info',
+    warning: 'Warning',
+    error: 'Error',
   },
   BackTop: {
     ariaLabel: 'Back to top',
@@ -242,6 +246,9 @@ export const en_US: Locale = {
     minSizeError: 'File must be at least {size}',
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
+    announceUploading: '{name} uploading {percent}%',
+    announceSuccess: '{name} uploaded successfully',
+    announceError: '{name} upload failed',
   },
   Form: {
     required: '{label} is required',

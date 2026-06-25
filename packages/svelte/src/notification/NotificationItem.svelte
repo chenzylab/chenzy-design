@@ -7,6 +7,7 @@
   theme：light（默认，与卡片背景一致）/ dark（深色卡片）。
   a11y：error/warning -> role=alert + aria-live=assertive；其余 -> role=status + aria-live=polite。
   title/content 经 useId 关联 aria-labelledby / aria-describedby；关闭按钮 aria-label「关闭」，不抢焦点。
+  类型前缀（如「错误：」）以视觉隐藏文本注入卡片首部（spec §6），令屏幕阅读器先播报极性语义。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -31,6 +32,14 @@
   const role = $derived(isAlert ? 'alert' : 'status');
   const ariaLive = $derived(isAlert ? 'assertive' : 'polite');
   const hasIcon = $derived(item.type !== 'default');
+
+  // 视觉隐藏类型前缀（如「错误：」）：default 无前缀；其余走 i18n（colon 跟随 locale）。
+  // 注入卡片首部，令屏幕阅读器先读极性语义再读 title/content。
+  const typePrefix = $derived(
+    item.type === 'default'
+      ? ''
+      : `${loc().t(`Notification.${item.type}`)}${loc().t('Form.colon')}`,
+  );
 
   // footer 是渲染层 Snippet（core 用 unknown 透传，无框架依赖）。
   const footer = $derived(item.footer as Snippet | undefined);
@@ -133,6 +142,9 @@
   onfocusin={handlePause}
   onfocusout={handleResume}
 >
+  {#if typePrefix}
+    <span class="cd-notification-item__sr-prefix">{typePrefix}</span>
+  {/if}
   {#if hasIcon}
     <span class="cd-notification-item__icon">
       {@render typeIcon(item.type)}
@@ -190,6 +202,19 @@
     border-radius: var(--cd-notification-radius);
     box-shadow: var(--cd-notification-shadow);
     pointer-events: auto;
+  }
+
+  /* 视觉隐藏类型前缀：仅供屏幕阅读器读取极性语义，不占视觉空间。 */
+  .cd-notification-item__sr-prefix {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   .cd-notification-item__icon {
