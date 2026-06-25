@@ -231,6 +231,8 @@ export const en_US: Locale = {
     moveToLeft: 'Move to left',
     remove: 'Remove',
     loading: 'Loading…',
+    movedToRight: 'Moved {count} item(s) to selected',
+    movedToLeft: 'Moved {count} item(s) to source',
   },
   Upload: {
     trigger: 'Select file',

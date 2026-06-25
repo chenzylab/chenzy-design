@@ -280,6 +280,10 @@ export interface Locale {
     remove: string;
     /** remote onSearch 加载中提示 */
     loading: string;
+    /** 移动后 live 播报，uses {count} */
+    movedToRight: string;
+    /** 移动后 live 播报，uses {count} */
+    movedToLeft: string;
   };
   Upload: {
     trigger: string;
