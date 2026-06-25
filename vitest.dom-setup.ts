@@ -3,6 +3,14 @@
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/svelte';
 
+// jsdom 缺口 polyfill：jsdom 未实现 Element.prototype.scrollIntoView，
+// 而 TimePicker/DatePicker 等浮层打开时会调用它滚动选中项进入视口。
+// 不打桩会抛 "scrollIntoView is not a function" 的 unhandled rejection（污染测试运行）。
+// 这是 jsdom 的渲染/布局缺口，与组件逻辑无关，故在 dom setup 统一打无操作桩。
+if (typeof Element !== 'undefined' && typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+}
+
 afterEach(() => {
   cleanup();
   // 兜底：清空 body，移除 portal（Modal 等 appendChild 到 body 的节点）
