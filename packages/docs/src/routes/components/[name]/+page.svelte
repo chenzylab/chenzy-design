@@ -1,0 +1,165 @@
+<script lang="ts">
+  import type { Component } from 'svelte';
+  import type { PageData } from './$types';
+  import ApiTable from '$lib/components/ApiTable.svelte';
+  import TokenTable from '$lib/components/TokenTable.svelte';
+  import DemoBox from '$lib/components/DemoBox.svelte';
+
+  const { data }: { data: PageData } = $props();
+  const meta = $derived(data.meta);
+
+  // 组件名小写 → demo 目录名
+  const nameToDir: Record<string, string> = {
+    aichatdialogue: 'ai-chat-dialogue',
+    aichatinput: 'ai-chat-input',
+    audioplayer: 'audio-player',
+    autocomplete: 'autocomplete',
+    avatar: 'avatar',
+    avatargroup: 'avatar',
+    backtop: 'back-top',
+    badge: 'badge',
+    banner: 'banner',
+    breadcrumb: 'breadcrumb',
+    button: 'button',
+    calendar: 'calendar',
+    card: 'card',
+    carousel: 'carousel',
+    cascader: 'cascader',
+    chat: 'chat',
+    checkbox: 'checkbox',
+    codehighlight: 'code-highlight',
+    collapse: 'collapse',
+    collapsible: 'collapsible',
+    colorpicker: 'color-picker',
+    configprovider: 'config-provider',
+    cropper: 'cropper',
+    datepicker: 'date-picker',
+    descriptions: 'descriptions',
+    divider: 'divider',
+    dragmove: 'drag-move',
+    drawer: 'drawer',
+    dropdown: 'dropdown',
+    empty: 'empty',
+    floatbutton: 'float-button',
+    form: 'form',
+    grid: 'grid',
+    highlight: 'highlight',
+    hotkeys: 'hot-keys',
+    icon: 'icon',
+    iconbutton: 'icon-button',
+    image: 'image',
+    input: 'input',
+    inputnumber: 'input-number',
+    jsonviewer: 'json-viewer',
+    layout: 'layout',
+    list: 'list',
+    localeprovider: 'locale-provider',
+    lottieicon: 'lottie-icon',
+    markdownrender: 'markdown-render',
+    menu: 'menu',
+    modal: 'modal',
+    notification: 'notification',
+    overflowlist: 'overflow-list',
+    pagination: 'pagination',
+    pincode: 'pin-code',
+    popconfirm: 'popconfirm',
+    popover: 'popover',
+    progress: 'progress',
+    radio: 'radio',
+    rangepicker: 'date-picker',
+    rating: 'rating',
+    resizable: 'resizable',
+    resizeobserver: 'resize-observer',
+    scrolllist: 'scroll-list',
+    select: 'select',
+    sidesheet: 'side-sheet',
+    skeleton: 'skeleton',
+    slider: 'slider',
+    space: 'space',
+    spin: 'spin',
+    steps: 'steps',
+    switch: 'switch',
+    table: 'table',
+    tabs: 'tabs',
+    tag: 'tag',
+    taginput: 'tag-input',
+    textarea: 'input',
+    timepicker: 'time-picker',
+    timeline: 'timeline',
+    toast: 'toast',
+    tooltip: 'tooltip',
+    transfer: 'transfer',
+    tree: 'tree',
+    treeselect: 'tree-select',
+    typography: 'typography',
+    upload: 'upload',
+    userguide: 'user-guide',
+    videoplayer: 'video-player',
+    virtuallist: 'virtual-list',
+  };
+
+  // Vite glob — 静态路径，编译时分析
+  const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
+
+  let DemoComponent = $state<Component | null>(null);
+
+  $effect(() => {
+    const name = meta.name.toLowerCase();
+    const dir = nameToDir[name] ?? name;
+    const key = `../../../demos/${dir}/BasicDemo.svelte`;
+    DemoComponent = null;
+    if (demoModules[key]) {
+      (demoModules[key]() as Promise<{ default: Component }>).then((mod) => {
+        DemoComponent = mod.default;
+      }).catch(() => {
+        DemoComponent = null;
+      });
+    }
+  });
+</script>
+
+<svelte:head>
+  <title>{meta.name} — chenzy-design</title>
+</svelte:head>
+
+<div class="component-header">
+  <div class="breadcrumb">
+    <a href="/components">组件</a>
+    <span> / </span>
+    <span>{meta.category}</span>
+  </div>
+  <h1>{meta.name}</h1>
+  <p class="description">{meta.description}</p>
+</div>
+
+{#if DemoComponent}
+<section class="section">
+  <h2>代码演示</h2>
+  <DemoBox title="基本用法">
+    <DemoComponent />
+  </DemoBox>
+</section>
+{/if}
+
+<section class="section">
+  <h2>API 参考</h2>
+  <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
+</section>
+
+{#if meta.tokens?.length}
+<section class="section">
+  <h2>Design Tokens</h2>
+  <TokenTable tokens={meta.tokens} />
+</section>
+{/if}
+
+<style>
+  .component-header { margin-bottom: 32px; }
+  .breadcrumb { font-size: 12px; color: var(--cd-color-text-2, #86909c); margin-bottom: 8px; }
+  .breadcrumb a { color: inherit; text-decoration: none; }
+  .breadcrumb a:hover { color: var(--cd-color-primary, #165dff); }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  .description { color: var(--cd-color-text-1, #4e5969); margin: 0 0 24px; }
+  .section { margin-bottom: 40px; }
+  h2 { font-size: 18px; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--cd-color-border, #e5e7eb); }
+</style>
