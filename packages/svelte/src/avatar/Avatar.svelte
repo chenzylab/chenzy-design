@@ -25,6 +25,16 @@
     target?: string;
     /** 可交互：点击回调；无 href 时根元素取 role=button + 键盘 Enter/Space 激活。 */
     onClick?: (event: MouseEvent | KeyboardEvent) => void;
+    /** hover 时显示的遮罩层 Snippet。 */
+    hoverMask?: Snippet;
+    /** 右下角绝对定位标记 Snippet（如在线状态徽标）。 */
+    bottomSlot?: Snippet;
+    /** 右上角绝对定位标记 Snippet。 */
+    topSlot?: Snippet;
+    /** 额外传给 img 标签的属性（如 loading、decoding 等）。 */
+    imgAttr?: Record<string, string>;
+    /** img 加载失败回调。 */
+    onError?: (e: Event) => void;
     children?: Snippet;
   }
 
@@ -42,6 +52,11 @@
     href,
     target,
     onClick,
+    hoverMask,
+    bottomSlot,
+    topSlot,
+    imgAttr,
+    onError,
     children,
   }: Props = $props();
 
@@ -124,8 +139,9 @@
   // 根元素标签：链接 a，可点击但非链接保持 span（role=button），纯展示 span。
   const rootTag = $derived(isLink ? 'a' : 'span');
 
-  function handleError() {
+  function handleError(e: Event) {
     failed = true;
+    onError?.(e);
   }
 
   function handleClick(event: MouseEvent) {
@@ -165,6 +181,7 @@
       {src}
       {srcset}
       {alt}
+      {...(imgAttr ?? {})}
       onerror={handleError}
     />
   {:else if children}
@@ -173,8 +190,20 @@
     <span class="cd-avatar__text" style={textStyle || undefined}>{fallbackText}</span>
   {/if}
 
+  {#if hoverMask}
+    <span class="cd-avatar__hover-mask" aria-hidden="true">{@render hoverMask()}</span>
+  {/if}
+
+  {#if topSlot}
+    <span class="cd-avatar__slot cd-avatar__slot--top" aria-hidden="true">{@render topSlot()}</span>
+  {/if}
+
   {#if dot}
     <span class="cd-avatar__dot" style="background:{dotBg}" aria-hidden="true"></span>
+  {/if}
+
+  {#if bottomSlot}
+    <span class="cd-avatar__slot cd-avatar__slot--bottom" aria-hidden="true">{@render bottomSlot()}</span>
   {/if}
 </svelte:element>
 
@@ -256,5 +285,31 @@
     min-block-size: 6px;
     border-radius: var(--cd-radius-full);
     box-shadow: 0 0 0 2px var(--cd-color-bg-0);
+  }
+  .cd-avatar__hover-mask {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--cd-color-text-inverse);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    border-radius: inherit;
+  }
+  .cd-avatar:hover .cd-avatar__hover-mask {
+    opacity: 1;
+  }
+  .cd-avatar__slot {
+    position: absolute;
+    inset-inline-end: 0;
+    display: inline-flex;
+  }
+  .cd-avatar__slot--top {
+    inset-block-start: 0;
+  }
+  .cd-avatar__slot--bottom {
+    inset-block-end: 0;
   }
 </style>
