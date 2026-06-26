@@ -10,8 +10,21 @@
   纯 $derived render 期只读（红线 #2/#3）。键盘移动 activeIndex 时命令式 scrollOffsetForIndex 滚到可见
   （未渲染的 active option 移动后会被滚进视口而渲染，a11y 取舍同 Tree 虚拟化）。
   虚拟化仅作用于「非分组」扁平选项集（hasGroups 时回退全量渲染，忽略 virtualized）。
+  dropdownMatchSelectWidth：浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度。
+  destroyOnClose：关闭时销毁浮层 DOM（默认 false，保持挂载）。
+  getPopupContainer：浮层挂载目标容器（由 use:floating action 接管）。
+  emptyContent/empty snippet：空态自定义内容。
+  prefix/suffix/arrowIcon/clearIcon snippet：触发器前后缀与图标。
+  dropdownHeader/dropdownFooter snippet：浮层顶/底固定区。
+  option snippet：自定义单项渲染；label snippet：自定义选中值/Tag 渲染。
+  onSelect/onDeselect/onClear/onCreate/onFocus/onBlur/onScrollToBottom/onExceed/onChangeWithObject。
+  autoClearSearchValue：多选选中后自动清空搜索词（默认 true）。
+  showRestTagsPopover：+N tag 悬停展示剩余 tags（利用 title 属性）。
+  borderless：无边框模式；autoFocus：挂载自动聚焦；id：关联外部 label。
+  optionLabelProp：用作回显的字段名（默认 'label'，当前 OptionData 仅支持 label/value）。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import {
     useId,
     useDismiss,
@@ -23,7 +36,7 @@
   import { floating } from '../_floating/use-floating.js';
 
   type OptionValue = string | number;
-  type OptionData = { label: string; value: OptionValue; disabled?: boolean };
+  type OptionData = { label: string; value: OptionValue; disabled?: boolean; [key: string]: unknown };
   /** 选项分组：含 options 即为分组项 */
   type OptionGroup = { label: string; options: OptionData[] };
   type OptionOrGroup = OptionData | OptionGroup;
@@ -52,6 +65,8 @@
     ariaLabel?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel） */
     ariaLabelledby?: string;
+    /** 绑定到触发器的 id 属性，用于关联外部 <label for="..."> */
+    id?: string;
     disabled?: boolean;
     clearable?: boolean;
     /** 多选 tag 最大显示数，超出折叠为 +N（0=不折叠） */
@@ -72,8 +87,66 @@
     optionHeight?: number;
     /** 下拉最大高度（px，默认 256）；虚拟化时同时作为视口高度 */
     maxHeight?: number;
+    /** 浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度 */
+    dropdownMatchSelectWidth?: boolean;
+    /** 关闭时销毁浮层 DOM（默认 false，复用节点避免重建开销） */
+    destroyOnClose?: boolean;
+    /** 浮层挂载目标容器（默认 body） */
+    getPopupContainer?: () => HTMLElement;
+    /** 无边框模式：移除触发器边框 */
+    borderless?: boolean;
+    /** 挂载后自动聚焦触发器 */
+    autoFocus?: boolean;
+    /** 多选选中后自动清空搜索词（默认 true） */
+    autoClearSearchValue?: boolean;
+    /** 超出 maxTagCount 时，将 +N 悬停展示剩余 tags（title tooltip） */
+    showRestTagsPopover?: boolean;
+    /** 透传给 +N 悬停 popover 的参数（预留，当前通过 title 实现） */
+    restTagsPopoverProps?: Record<string, unknown>;
+    /** 用作回显的字段名（默认 'label'）；当选项含自定义字段时取对应值作显示文本 */
+    optionLabelProp?: string;
     onChange?: (v: OptionValue | OptionValue[]) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 选中某项时触发（多选：每次单个 toggle 选中时；单选：选中时） */
+    onSelect?: (value: OptionValue, option: OptionData) => void;
+    /** 多选取消某项时触发 */
+    onDeselect?: (value: OptionValue, option: OptionData) => void;
+    /** 点击清除按钮时触发 */
+    onClear?: () => void;
+    /** allowCreate 创建新项时触发 */
+    onCreate?: (value: string) => void;
+    /** 触发器获焦时触发 */
+    onFocus?: () => void;
+    /** 触发器失焦时触发 */
+    onBlur?: () => void;
+    /** 浮层列表滚动触底时触发 */
+    onScrollToBottom?: () => void;
+    /** 多选超出 maxTagCount 时触发（携带被隐藏的 option） */
+    onExceed?: (option: OptionData) => void;
+    /** 携带完整 option 对象的 change 回调（单选 OptionData；多选 OptionData[]） */
+    onChangeWithObject?: (option: OptionData | OptionData[]) => void;
+    /** 触发器左侧前缀 */
+    prefix?: Snippet;
+    /** 触发器右侧后缀（覆盖默认箭头区域） */
+    suffix?: Snippet;
+    /** 自定义清除按钮图标 */
+    clearIcon?: Snippet;
+    /** 自定义下拉箭头图标 */
+    arrowIcon?: Snippet;
+    /** 自定义空态内容（字符串或 Snippet 均可，为字符串时直接渲染文本） */
+    emptyContent?: string | Snippet;
+    /** 自定义空态 snippet（与 emptyContent 等价，优先级同） */
+    empty?: Snippet;
+    /** 浮层顶部固定区 */
+    dropdownHeader?: Snippet;
+    /** 浮层底部固定区 */
+    dropdownFooter?: Snippet;
+    /** 自定义单项渲染 */
+    option?: Snippet<[{ option: OptionData; selected: boolean; active: boolean }]>;
+    /** 自定义选中值/Tag 渲染 */
+    label?: Snippet<[{ option: OptionData }]>;
+    /** 自定义"创建xxx"项渲染 */
+    renderCreateItem?: Snippet<[string]>;
   }
 
   let {
@@ -90,6 +163,7 @@
     placeholder,
     ariaLabel,
     ariaLabelledby,
+    id,
     disabled = false,
     clearable = false,
     maxTagCount = 0,
@@ -101,8 +175,37 @@
     virtualized = false,
     optionHeight = 32,
     maxHeight = 256,
+    dropdownMatchSelectWidth = true,
+    destroyOnClose = false,
+    getPopupContainer,
+    borderless = false,
+    autoFocus = false,
+    autoClearSearchValue = true,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    optionLabelProp = 'label',
     onChange,
     onOpenChange,
+    onSelect,
+    onDeselect,
+    onClear,
+    onCreate,
+    onFocus,
+    onBlur,
+    onScrollToBottom,
+    onExceed,
+    onChangeWithObject,
+    prefix,
+    suffix,
+    clearIcon,
+    arrowIcon,
+    emptyContent,
+    empty,
+    dropdownHeader,
+    dropdownFooter,
+    option: optionSnippet,
+    label: labelSnippet,
+    renderCreateItem,
   }: Props = $props();
 
   const loc = useLocale();
@@ -150,6 +253,13 @@
       query = '';
     }
   }
+
+  // 挂载自动聚焦（autoFocus）。
+  $effect(() => {
+    if (!autoFocus || !rootEl) return;
+    const trigger = rootEl.querySelector<HTMLElement>('[role="combobox"]');
+    trigger?.focus();
+  });
 
   // --- 本地过滤搜索 ---
   let query = $state('');
@@ -214,6 +324,7 @@
     if (!label) return;
     const opt: OptionData = { label, value: label };
     createdOptions = [...createdOptions, opt];
+    onCreate?.(label);
     selectOption(opt);
     query = '';
   }
@@ -264,8 +375,9 @@
   const visibleTags = $derived(
     (maxTagCount > 0 ? selectedOptions.slice(0, maxTagCount) : selectedOptions).map(
       (opt) => {
-        const display = truncate(opt.label, maxTagTextLength);
-        return { opt, display, truncated: display !== opt.label };
+        const raw = getOptionLabel(opt);
+        const display = truncate(raw, maxTagTextLength);
+        return { opt, display, truncated: display !== raw };
       },
     ),
   );
@@ -273,8 +385,14 @@
     maxTagCount > 0 ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
   );
 
+  // optionLabelProp：取选项对应字段作为显示文本（默认 'label'）。
+  function getOptionLabel(opt: OptionData): string {
+    const val = opt[optionLabelProp];
+    return typeof val === 'string' ? val : opt.label;
+  }
+
   const singleLabel = $derived(
-    !multiple && selectedOptions.length > 0 ? selectedOptions[0]!.label : '',
+    !multiple && selectedOptions.length > 0 ? getOptionLabel(selectedOptions[0]!) : '',
   );
 
   const hasSelection = $derived(selectedValues.length > 0);
@@ -289,12 +407,34 @@
     if (multiple) {
       const set = selectedValues.slice();
       const idx = set.indexOf(opt.value);
-      if (idx === -1) set.push(opt.value);
-      else set.splice(idx, 1);
+      const isAdd = idx === -1;
+      if (isAdd) {
+        set.push(opt.value);
+        onSelect?.(opt.value, opt);
+        // onExceed：新增后超出 maxTagCount 时，把被隐藏的 option 逐个通知
+        if (onExceed && maxTagCount > 0 && set.length > maxTagCount) {
+          // 新加入的 opt 将落入隐藏区（set 已包含 opt，取其后面被挤出的部分）
+          const hiddenValues = set.slice(maxTagCount);
+          for (const v of hiddenValues) {
+            const hiddenOpt = mergedOptions.find((o) => o.value === v);
+            if (hiddenOpt) onExceed(hiddenOpt);
+          }
+        }
+      } else {
+        set.splice(idx, 1);
+        onDeselect?.(opt.value, opt);
+      }
       setValue(set);
+      // 多选携带完整对象回调：按新选中集合取 option
+      const newSelected = mergedOptions.filter((o) => set.includes(o.value));
+      onChangeWithObject?.(newSelected);
+      // 多选选中后自动清空搜索词
+      if (autoClearSearchValue && isAdd) query = '';
       // 多选不关闭
     } else {
+      onSelect?.(opt.value, opt);
       setValue(opt.value);
+      onChangeWithObject?.(opt);
       setOpen(false);
     }
   }
@@ -309,6 +449,7 @@
     e.stopPropagation();
     if (disabled) return;
     setValue(multiple ? [] : '');
+    onClear?.();
   }
 
   function toggleOpen() {
@@ -450,17 +591,27 @@
 
   // --- 虚拟化滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）---
   // 开启下拉后绑定到滚动容器；scrollTop 写本地 $state 驱动 vRange 派生。
+  // 同时处理 onScrollToBottom（无论是否虚拟化）。
   $effect(() => {
     const el = dropdownEl;
-    if (!el || !isOpen || !isVirtual) return;
-    // 重新打开时复位滚动位置，避免沿用上次 scrollTop。
-    scrollTop = el.scrollTop;
+    if (!el || !isOpen) return;
+    if (isVirtual) {
+      // 重新打开时复位滚动位置，避免沿用上次 scrollTop。
+      scrollTop = el.scrollTop;
+    }
     function onScroll() {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        if (el) scrollTop = el.scrollTop;
-      });
+      if (isVirtual) {
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          if (el) scrollTop = el.scrollTop;
+        });
+      }
+      // 触底检测（1px 容差）
+      if (onScrollToBottom && el) {
+        const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+        if (atBottom) onScrollToBottom();
+      }
     }
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => {
@@ -492,6 +643,7 @@
       disabled && 'cd-select--disabled',
       isOpen && 'cd-select--open',
       multiple && 'cd-select--multiple',
+      borderless && 'cd-select--borderless',
     ]
       .filter(Boolean)
       .join(' '),
@@ -507,6 +659,7 @@
   <div
     class="cd-select__trigger"
     role="combobox"
+    {id}
     aria-label={triggerAriaLabel}
     aria-labelledby={ariaLabelledby}
     aria-expanded={isOpen}
@@ -518,19 +671,29 @@
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
     onkeydown={onTriggerKeydown}
+    onfocus={() => onFocus?.()}
+    onblur={() => onBlur?.()}
   >
+    {#if prefix}
+      <span class="cd-select__prefix">{@render prefix()}</span>
+    {/if}
+
     <div class="cd-select__content">
       {#if multiple && selectedOptions.length > 0}
         {#each visibleTags as tag (tag.opt.value)}
           <span class="cd-select__tag">
-            <span
-              class="cd-select__tag-label"
-              title={tag.truncated ? tag.opt.label : undefined}
-            >{tag.display}</span>
+            {#if labelSnippet}
+              {@render labelSnippet({ option: tag.opt })}
+            {:else}
+              <span
+                class="cd-select__tag-label"
+                title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
+              >{tag.display}</span>
+            {/if}
             <button
               type="button"
               class="cd-select__tag-close"
-              aria-label={loc().t('Select.removeItem', { label: tag.opt.label })}
+              aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
               onclick={(e) => {
                 e.stopPropagation();
                 removeTag(tag.opt.value);
@@ -546,7 +709,11 @@
           </span>
         {/each}
         {#if hiddenTagCount > 0}
-          <span class="cd-select__tag cd-select__tag--rest">+{hiddenTagCount}</span>
+          {@const hiddenOpts = selectedOptions.slice(maxTagCount)}
+          <span
+            class="cd-select__tag cd-select__tag--rest"
+            title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
+          >+{hiddenTagCount}</span>
         {/if}
         {#if filter}
           <input
@@ -571,7 +738,11 @@
           onclick={(e) => e.stopPropagation()}
         />
       {:else if hasSelection}
-        <span class="cd-select__value">{singleLabel}</span>
+        {#if labelSnippet}
+          {@render labelSnippet({ option: selectedOptions[0]! })}
+        {:else}
+          <span class="cd-select__value">{singleLabel}</span>
+        {/if}
       {:else}
         <span class="cd-select__placeholder">{placeholder ?? loc().t('Select.placeholder')}</span>
       {/if}
@@ -584,33 +755,49 @@
         aria-label={loc().t('Select.clear')}
         onclick={clearAll}
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        {#if clearIcon}
+          {@render clearIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+            />
+          </svg>
+        {/if}
       </button>
     {/if}
 
-    <span class="cd-select__arrow" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-      </svg>
-    </span>
+    {#if suffix}
+      <span class="cd-select__suffix">{@render suffix()}</span>
+    {:else}
+      <span class="cd-select__arrow" aria-hidden="true">
+        {#if arrowIcon}
+          {@render arrowIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+            <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
+          </svg>
+        {/if}
+      </span>
+    {/if}
   </div>
 
-  {#if isOpen}
+  {#if isOpen || !destroyOnClose}
     <div
       class="cd-select__dropdown"
       bind:this={dropdownEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 4, matchWidth: true }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 4, matchWidth: dropdownMatchSelectWidth }}
       role="listbox"
       id={listId}
       aria-multiselectable={multiple}
       aria-busy={loading || undefined}
       style={`max-block-size:${maxHeight}px`}
+      hidden={!isOpen || undefined}
     >
+      {#if dropdownHeader}
+        <div class="cd-select__dropdown-header">{@render dropdownHeader()}</div>
+      {/if}
       {#if loading}
         <div class="cd-select__loading">
           <span class="cd-select__spinner" aria-hidden="true"></span>
@@ -626,11 +813,27 @@
           tabindex="-1"
           onclick={createOption}
         >
-          <span class="cd-select__option-label">{loc().t('Select.create', { label: query.trim() })}</span>
+          {#if renderCreateItem}
+            {@render renderCreateItem(query.trim())}
+          {:else}
+            <span class="cd-select__option-label">{loc().t('Select.create', { label: query.trim() })}</span>
+          {/if}
         </div>
       {/if}
       {#if filteredOptions.length === 0 && !canCreate && !loading}
-        <div class="cd-select__empty">{loc().t('Select.emptyText')}</div>
+        <div class="cd-select__empty">
+          {#if empty}
+            {@render empty()}
+          {:else if emptyContent !== undefined}
+            {#if typeof emptyContent === 'string'}
+              {emptyContent}
+            {:else}
+              {@render emptyContent()}
+            {/if}
+          {:else}
+            {loc().t('Select.emptyText')}
+          {/if}
+        </div>
       {:else if hasGroups}
         {#each groupedView as group, gi (group.label ?? `g-${gi}`)}
           {#if group.label !== null}
@@ -656,6 +859,9 @@
           {@render optionRow(opt, i)}
         {/each}
       {/if}
+      {#if dropdownFooter}
+        <div class="cd-select__dropdown-footer">{@render dropdownFooter()}</div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -678,19 +884,23 @@
     }}
     onclick={() => selectOption(opt)}
   >
-    {#if multiple}
-      <span class="cd-select__check" aria-hidden="true">
-        {#if isSelected(opt.value)}
-          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-            <path
-              fill="currentColor"
-              d="M6.2 11.2 2.9 7.9l1.1-1.1 2.2 2.2 5-5L12.3 5l-6.1 6.2Z"
-            />
-          </svg>
-        {/if}
-      </span>
+    {#if optionSnippet}
+      {@render optionSnippet({ option: opt, selected: isSelected(opt.value), active: i === activeIndex })}
+    {:else}
+      {#if multiple}
+        <span class="cd-select__check" aria-hidden="true">
+          {#if isSelected(opt.value)}
+            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+              <path
+                fill="currentColor"
+                d="M6.2 11.2 2.9 7.9l1.1-1.1 2.2 2.2 5-5L12.3 5l-6.1 6.2Z"
+              />
+            </svg>
+          {/if}
+        </span>
+      {/if}
+      <span class="cd-select__option-label">{getOptionLabel(opt)}</span>
     {/if}
-    <span class="cd-select__option-label">{opt.label}</span>
   </div>
 {/snippet}
 
@@ -895,6 +1105,43 @@
     to {
       transform: rotate(360deg);
     }
+  }
+  /* 无边框模式：移除触发器边框与背景 */
+  .cd-select--borderless .cd-select__trigger {
+    border-color: transparent;
+    background: transparent;
+  }
+  .cd-select--borderless .cd-select__trigger:focus-visible {
+    border-color: transparent;
+    box-shadow: var(--cd-focus-ring);
+  }
+  /* 前缀 / 后缀插槽 */
+  .cd-select__prefix,
+  .cd-select__suffix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+  }
+  .cd-select__prefix {
+    margin-inline-end: var(--cd-spacing-1);
+  }
+  .cd-select__suffix {
+    margin-inline-start: var(--cd-spacing-1);
+  }
+  /* 浮层顶/底固定区 */
+  .cd-select__dropdown-header,
+  .cd-select__dropdown-footer {
+    padding: var(--cd-spacing-1) var(--cd-select-option-padding, var(--cd-spacing-2));
+    border-block-color: var(--cd-color-border);
+  }
+  .cd-select__dropdown-header {
+    border-block-end-width: 1px;
+    border-block-end-style: solid;
+  }
+  .cd-select__dropdown-footer {
+    border-block-start-width: 1px;
+    border-block-start-style: solid;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-select__spinner {
