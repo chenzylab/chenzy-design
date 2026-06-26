@@ -40,6 +40,7 @@
     type FlatRow,
   } from '@chenzy-design/core';
   import { tick } from 'svelte';
+  import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -62,6 +63,7 @@
     TableChangeInfo,
     TableChangeAction,
     TableScrollInfo,
+    ScrollConfig,
   } from './types.js';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
@@ -97,6 +99,21 @@
     height = 400,
     rowHeight = 48,
     gridNav,
+    scroll,
+    sticky = false,
+    showHeader = true,
+    defaultExpandAllRows = false,
+    getPopupContainer,
+    onRow,
+    onHeaderRow,
+    expandRowByClick = false,
+    expandCellFixed,
+    keepDOM = false,
+    indentSize: indentSizeProp = 20,
+    groupBy,
+    renderGroupSection,
+    titleSnippet,
+    footerSnippet,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -159,6 +176,36 @@
      * - 显式 true/false：强制启用/关闭 grid 漫游。
      */
     gridNav?: boolean;
+    /** 横/纵向滚动配置，x 设最小宽度并横向溢出，y 设最大高度并纵向溢出 */
+    scroll?: ScrollConfig;
+    /** 表头吸顶：true 时表头 sticky 定位；对象时可指定 offsetHeader（px） */
+    sticky?: boolean | { offsetHeader?: number };
+    /** 是否显示表头，默认 true */
+    showHeader?: boolean;
+    /** 默认展开全部行（包含树形行），默认 false */
+    defaultExpandAllRows?: boolean;
+    /** 筛选浮层挂载容器，默认跟随触发按钮 */
+    getPopupContainer?: () => HTMLElement;
+    /** 行级事件与属性（返回 onClick/onDoubleClick/className/style） */
+    onRow?: (record: T, index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    /** 表头行级事件与属性 */
+    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    /** 点击行体时触发展开/收起，默认 false */
+    expandRowByClick?: boolean;
+    /** 展开图标列固定方向 */
+    expandCellFixed?: boolean | 'left' | 'right';
+    /** keepDOM=true 时保留已展开行 DOM 但隐藏（display:none），默认 false */
+    keepDOM?: boolean;
+    /** 树形缩进像素，默认 20（tree.indentSize 优先） */
+    indentSize?: number;
+    /** 按字段名或函数对数据行分组，插入分组标题行 */
+    groupBy?: string | ((record: T) => string);
+    /** 自定义分组标题渲染 */
+    renderGroupSection?: Snippet<[{ groupKey: string; group: T[] }]>;
+    /** 表格顶部标题区域 */
+    titleSnippet?: Snippet;
+    /** 表格底部内容区域（接收 currentData） */
+    footerSnippet?: Snippet<[{ currentData: T[] }]>;
   } = $props();
 
   const loc = useLocale();
@@ -235,6 +282,13 @@
     isSortControlled ? (sortState as SortState) : innerSort,
   );
   function initSort(): SortState {
+    // Check for per-column defaultSortOrder
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i] as ColumnDef<T>;
+      if (col.defaultSortOrder != null) {
+        return { key: colKeyOf(col, i), order: col.defaultSortOrder };
+      }
+    }
     return { ...defaultSortState };
   }
 
@@ -297,6 +351,18 @@
     return false;
   }
 
+  // 合并某列的有效筛选值：filteredValue（受控）优先，否则本地 filterState。
+  function effectiveFilterValues(col: ColumnDef<T>, colKey: string): Set<string | number> {
+    if (col.filteredValue !== undefined) {
+      if (col.filteredValue === null) return new Set();
+      return new Set(col.filteredValue);
+    }
+    return filterState.get(colKey) ?? new Set();
+  }
+  function isEffectivelyFiltered(col: ColumnDef<T>, colKey: string): boolean {
+    return effectiveFilterValues(col, colKey).size > 0;
+  }
+
   // --- 数据管道：列筛选 → 排序（客户端）。状态全来自 props / 本地 $state，派生安全 (红线 #2) ---
   const processed = $derived.by(() => {
     let data = [...dataSource];
@@ -304,8 +370,18 @@
     for (let i = 0; i < columns.length; i++) {
       const col = columns[i] as ColumnDef<T>;
       const ck = colKeyOf(col, i);
-      if (isFiltered(ck)) {
-        data = data.filter((rec) => rowPassesColumn(col, ck, rec));
+      if (isEffectivelyFiltered(col, ck)) {
+        const selected = effectiveFilterValues(col, ck);
+        const test =
+          col.onFilter ??
+          ((value: string | number, rec: T): boolean =>
+            col.dataIndex ? rec[col.dataIndex] === value : false);
+        data = data.filter((rec) => {
+          for (const v of selected) {
+            if (test(v, rec)) return true;
+          }
+          return false;
+        });
       }
     }
     const { key, order } = currentSort;
@@ -375,7 +451,7 @@
   const treeEnabled = $derived(tree !== undefined && tree !== false);
   const treeOpts = $derived<TreeTable>(typeof tree === 'object' ? tree : {});
   const childrenColumnName = $derived(treeOpts.childrenColumnName ?? 'children');
-  const indentSize = $derived(treeOpts.indentSize ?? 16);
+  const indentSize = $derived(treeOpts.indentSize ?? indentSizeProp);
 
   function getChildren(record: T): T[] | undefined {
     const kids = record[childrenColumnName];
@@ -400,7 +476,27 @@
   const isTreeExpandControlled = $derived(treeOpts.expandedRowKeys !== undefined);
   let innerTreeExpanded = $state<RowKey[]>(initTreeExpanded());
   function initTreeExpanded(): RowKey[] {
-    return [...(typeof tree === 'object' ? (tree.defaultExpandedRowKeys ?? []) : [])];
+    if (typeof tree === 'object' && tree.defaultExpandedRowKeys) {
+      return [...tree.defaultExpandedRowKeys];
+    }
+    if (defaultExpandAllRows) {
+      // 递归收集所有含子行的行 key
+      const keys: RowKey[] = [];
+      const col = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : 'children';
+      const walk = (records: T[]): void => {
+        for (const r of records) {
+          const k = typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey);
+          const kids = r[col];
+          if (Array.isArray(kids) && kids.length > 0) {
+            keys.push(k);
+            walk(kids as T[]);
+          }
+        }
+      };
+      walk(dataSource);
+      return keys;
+    }
+    return [];
   }
   const treeExpandedSet = $derived<Set<RowKey>>(
     new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
@@ -550,7 +646,15 @@
   const isExpandControlled = $derived(expandable?.expandedRowKeys !== undefined);
   let innerExpanded = $state<RowKey[]>(initExpanded());
   function initExpanded(): RowKey[] {
-    return [...(expandable?.defaultExpandedRowKeys ?? [])];
+    if (expandable?.defaultExpandedRowKeys) {
+      return [...expandable.defaultExpandedRowKeys];
+    }
+    if (defaultExpandAllRows && expandable) {
+      return dataSource.map((r) =>
+        typeof rowKey === 'function' ? rowKey(r) : (r[rowKey as string] as RowKey),
+      );
+    }
+    return [];
   }
   const expandedSet = $derived<Set<RowKey>>(
     new Set(
@@ -621,6 +725,8 @@
   }
 
   function onToggleAll() {
+    // radio 模式无全选
+    if (rowSelection?.type === 'radio') return;
     if (treeCheckable) {
       // 全选：勾全部可见顶层行（连带后代叶子）；已全选则清空。
       const tops = topKeys.filter((k) => !disabledSet.has(k));
@@ -633,21 +739,59 @@
           next = toggleRowCheck(visibleRows, next, k, getKey, getChildren, rowDisabledFn);
         }
       }
+      const wasSelected = allChecked;
       emitSelection(next);
+      // onSelectAll 回调
+      if (rowSelection?.onSelectAll) {
+        const { checked } = treeCheckable
+          ? conductRows(visibleRows, next, getKey, getChildren, rowDisabledFn)
+          : { checked: next };
+        const selectedRows = rowsForKeys([...checked]);
+        // changedRows: 非 disabled 的顶层行对应记录
+        const changedRows = tops.map((k) => keyRecordMap.get(k)).filter((r): r is T => r !== undefined);
+        rowSelection.onSelectAll(!wasSelected, selectedRows, changedRows);
+      }
       return;
     }
-    emitSelection(toggleSelectAll(visibleKeys, selectedSet, disabledSet));
+    const prevKeys = [...selectedSet];
+    const next = toggleSelectAll(visibleKeys, selectedSet, disabledSet);
+    emitSelection(next);
+    // onSelectAll 回调
+    if (rowSelection?.onSelectAll) {
+      const nextKeys = [...next];
+      const isNowSelected = nextKeys.length > prevKeys.length;
+      const selectedRows = rowsForKeys(nextKeys);
+      const changedKeys = isNowSelected
+        ? nextKeys.filter((k) => !selectedSet.has(k))
+        : prevKeys.filter((k) => !next.has(k));
+      const changedRows = rowsForKeys(changedKeys);
+      rowSelection.onSelectAll(isNowSelected, selectedRows, changedRows);
+    }
   }
 
   function onToggleRow(record: T) {
-    if (disabledSet.has(getKey(record))) return;
-    if (treeCheckable) {
-      emitSelection(
-        toggleRowCheck(visibleRows, selectedSet, getKey(record), getKey, getChildren, rowDisabledFn),
-      );
+    const key = getKey(record);
+    if (disabledSet.has(key)) return;
+    const isRadio = rowSelection?.type === 'radio';
+    if (isRadio) {
+      // 单选：直接将选中集设为该行
+      const next = new Set<RowKey>([key]);
+      const wasSelected = selectedSet.has(key);
+      emitSelection(next);
+      rowSelection?.onSelect?.(record, !wasSelected, rowsForKeys([...next]));
       return;
     }
-    emitSelection(toggleRow(selectedSet, getKey(record)));
+    const wasSelected = selectedSet.has(key);
+    if (treeCheckable) {
+      const next = toggleRowCheck(visibleRows, selectedSet, key, getKey, getChildren, rowDisabledFn);
+      emitSelection(next);
+      const { checked } = conductRows(visibleRows, next, getKey, getChildren, rowDisabledFn);
+      rowSelection?.onSelect?.(record, !wasSelected, rowsForKeys([...checked]));
+      return;
+    }
+    const next = toggleRow(selectedSet, key);
+    emitSelection(next);
+    rowSelection?.onSelect?.(record, !wasSelected, rowsForKeys([...next]));
   }
 
   // ===================================================================
@@ -903,8 +1047,11 @@
   }
 
   function ariaSortFor(col: ColumnDef<T>, index: number): 'ascending' | 'descending' | 'none' {
-    if (currentSort.key !== colKeyOf(col, index) || !currentSort.order) return 'none';
-    return currentSort.order === 'ascend' ? 'ascending' : 'descending';
+    const order = col.sortOrder !== undefined
+      ? col.sortOrder
+      : (currentSort.key === colKeyOf(col, index) ? currentSort.order : null);
+    if (!order) return 'none';
+    return order === 'ascend' ? 'ascending' : 'descending';
   }
 
   // --- 分页变更 ---
@@ -1040,21 +1187,121 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // --- scroll prop: wrapper container style ---
+  // scroll.y → max-height + overflow-y:auto; scroll.x → min-width on table
+  const scrollWrapStyle = $derived.by(() => {
+    const parts: string[] = [];
+    if (virtualized || scrollBody) {
+      parts.push(`block-size:${height}px`, 'overflow:auto');
+    }
+    if (scroll?.y != null) {
+      const yVal = typeof scroll.y === 'number' ? `${scroll.y}px` : scroll.y;
+      parts.push(`max-block-size:${yVal}`, 'overflow-y:auto');
+    }
+    if (scroll?.x != null) {
+      parts.push('overflow-x:auto');
+    }
+    return parts.length ? parts.join(';') : undefined;
+  });
+
+  const scrollTableStyle = $derived.by(() => {
+    const parts: string[] = [];
+    if (tableStyle) parts.push(tableStyle);
+    if (scroll?.x != null) {
+      const xVal = typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x;
+      parts.push(`min-inline-size:${xVal}`);
+    }
+    return parts.length ? parts.join(';') : undefined;
+  });
+
+  // --- sticky prop: thead top offset ---
+  const stickyOffset = $derived.by((): number => {
+    if (!sticky) return 0;
+    if (typeof sticky === 'object' && sticky.offsetHeader != null) return sticky.offsetHeader;
+    return 0;
+  });
+  const isStickyHead = $derived(!!sticky || virtualized || scrollBody || scroll?.y != null);
+
+  // --- selection column width style ---
+  const selectionColStyle = $derived.by((): string | undefined => {
+    const parts: string[] = [];
+    if (rowSelection?.columnWidth != null) {
+      const w = rowSelection.columnWidth;
+      parts.push(`inline-size:${typeof w === 'number' ? `${w}px` : w}`);
+    }
+    if (rowSelection?.fixed) {
+      // fixed selection column — sticky at start of row
+      parts.push('position:sticky', 'inset-inline-start:0');
+    }
+    return parts.length ? parts.join(';') : undefined;
+  });
+  const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
+
+  // --- groupBy: build grouped display rows ---
+  type GroupRow = { type: 'group'; groupKey: string; group: T[] };
+  type DataDisplayRow = FlatRow<T> & { type: 'data' };
+  type RenderRow = DataDisplayRow | GroupRow;
+
+  const groupedDisplayRows = $derived.by<RenderRow[]>(() => {
+    if (!groupBy) {
+      return displayRows.map((r) => ({ ...r, type: 'data' as const }));
+    }
+    const getGroupKey = (record: T): string => {
+      if (typeof groupBy === 'function') return groupBy(record);
+      return String(record[groupBy as string] ?? '');
+    };
+    // Build ordered group buckets (only top-level rows are grouped)
+    const groupOrder: string[] = [];
+    const groupMap = new Map<string, T[]>();
+    for (const row of displayRows) {
+      if (row.level === 0) {
+        const gk = getGroupKey(row.record);
+        if (!groupMap.has(gk)) {
+          groupOrder.push(gk);
+          groupMap.set(gk, []);
+        }
+        groupMap.get(gk)!.push(row.record);
+      }
+    }
+    const result: RenderRow[] = [];
+    for (const gk of groupOrder) {
+      const group = groupMap.get(gk)!;
+      result.push({ type: 'group', groupKey: gk, group });
+      // Include all displayRows belonging to this group (incl. tree children)
+      let inGroup = false;
+      for (const row of displayRows) {
+        if (row.level === 0) {
+          inGroup = getGroupKey(row.record) === gk;
+        }
+        if (inGroup) result.push({ ...row, type: 'data' as const });
+      }
+    }
+    return result;
+  });
+
+  // For render purposes when no groupBy: cast displayRows to RenderRow[]
+  const isGrouped = $derived(groupBy !== undefined);
 </script>
 
+{#if titleSnippet}
+  <div class="cd-table__title-area">
+    {@render titleSnippet()}
+  </div>
+{/if}
 <div
   class="cd-table-wrap"
   class:cd-table-wrap--virtual={virtualized}
   class:cd-table-wrap--scroll-body={scrollBody}
   bind:this={scrollEl}
-  style={virtualized || scrollBody ? `block-size:${height}px; overflow:auto` : undefined}
+  style={scrollWrapStyle}
 >
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- role=grid 是交互容器；tabindex=-1 仅作虚拟化焦点回收落点，不进 Tab 序列 -->
   <table
     bind:this={gridEl}
     class={cls}
-    style={tableStyle}
+    style={scrollTableStyle}
     aria-label={ariaLabel}
     role={gridEnabled ? 'grid' : undefined}
     aria-rowcount={gridEnabled ? gridRowCount : undefined}
@@ -1062,8 +1309,20 @@
     tabindex={gridEnabled ? -1 : undefined}
     onkeydown={gridEnabled ? onGridKeydown : undefined}
   >
-    <thead class="cd-table__head" class:cd-table__head--sticky={virtualized || scrollBody}>
-      <tr role={gridEnabled ? 'row' : undefined} aria-rowindex={gridEnabled ? 1 : undefined}>
+    {#if showHeader}
+      {@const headerRowProps = onHeaderRow ? onHeaderRow(columns, 0) : undefined}
+    <thead
+      class="cd-table__head"
+      class:cd-table__head--sticky={isStickyHead}
+      style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
+    >
+      <tr
+        role={gridEnabled ? 'row' : undefined}
+        aria-rowindex={gridEnabled ? 1 : undefined}
+        class={headerRowProps?.className ?? undefined}
+        style={headerRowProps?.style ?? undefined}
+        onclick={headerRowProps?.onClick ?? undefined}
+      >
         {#if hasExpand}
           {@const gc = 0}
           <th
@@ -1079,25 +1338,29 @@
         {/if}
         {#if hasSelection}
           {@const gc = hasExpand ? 1 : 0}
+          {@const isRadio = rowSelection?.type === 'radio'}
+          {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
           <th
-            class="cd-table__cell cd-table__cell--selection {leadingFixedClass}"
+            class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
             scope="col"
-            style={leadingStyle('selection')}
+            style={selectionColStyle ?? leadingStyle('selection')}
             role={gridEnabled ? 'columnheader' : undefined}
             id={gridEnabled ? cellId(-1, gc) : undefined}
             tabindex={rovingTabindex(-1, gc)}
             aria-colindex={gridEnabled ? gc + 1 : undefined}
             onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
           >
-            <input
-              type="checkbox"
-              class="cd-table__checkbox"
-              aria-label={loc().t('Table.selectAll')}
-              checked={headerSelect.checked}
-              tabindex={childTabindex(-1, gc)}
-              {@attach indeterminate(headerSelect.indeterminate)}
-              onchange={onToggleAll}
-            />
+            {#if showSelectAll}
+              <input
+                type="checkbox"
+                class="cd-table__checkbox"
+                aria-label={loc().t('Table.selectAll')}
+                checked={headerSelect.checked}
+                tabindex={childTabindex(-1, gc)}
+                {@attach indeterminate(headerSelect.indeterminate)}
+                onchange={onToggleAll}
+              />
+            {/if}
           </th>
         {/if}
         {#each columns as col, i (colKeyOf(col, i))}
@@ -1122,7 +1385,7 @@
             onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
           >
             {#if sortable}
-              {@const order = currentSort.key === colKeyOf(col, i) ? currentSort.order : null}
+              {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
               <button
                 type="button"
                 class="cd-table__sort-btn"
@@ -1161,7 +1424,7 @@
               <button
                 type="button"
                 class="cd-table__filter-btn"
-                class:cd-table__filter-btn--active={isFiltered(colKey)}
+                class:cd-table__filter-btn--active={isEffectivelyFiltered(col, colKey)}
                 aria-label={loc().t('Table.filter')}
                 aria-expanded={openFilterKey === colKey}
                 tabindex={childTabindex(-1, gc)}
@@ -1176,20 +1439,33 @@
                 </svg>
               </button>
               {#if openFilterKey === colKey && filterTriggers[colKey]}
+                {@const filterMultiple = col.filterMultiple !== false}
                 <div
                   class="cd-table__filter-panel"
-                  use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4 }}
+                  use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
                   bind:this={filterPanelEl}
                 >
                   <ul class="cd-table__filter-list">
                     {#each col.filters ?? [] as f (f.value)}
                       <li class="cd-table__filter-option">
                         <label class="cd-table__filter-label">
-                          <input
-                            type="checkbox"
-                            checked={activeFilterValues(colKey).has(f.value)}
-                            onchange={() => toggleFilterValue(colKey, f.value)}
-                          />
+                          {#if filterMultiple}
+                            <input
+                              type="checkbox"
+                              checked={activeFilterValues(colKey).has(f.value)}
+                              onchange={() => toggleFilterValue(colKey, f.value)}
+                            />
+                          {:else}
+                            <input
+                              type="radio"
+                              name="cd-filter-{colKey}"
+                              checked={activeFilterValues(colKey).has(f.value)}
+                              onchange={() => {
+                                filterState.set(colKey, new Set([f.value]));
+                                emitFilterChange(colKey, [f.value]);
+                              }}
+                            />
+                          {/if}
                           <span>{f.text}</span>
                         </label>
                       </li>
@@ -1221,6 +1497,7 @@
         {/each}
       </tr>
     </thead>
+    {/if}
     <tbody class="cd-table__body">
       {#if visibleRows.length === 0}
         <tr class="cd-table__row cd-table__row--empty" role={gridEnabled ? 'row' : undefined}>
@@ -1234,6 +1511,153 @@
           </td>
         </tr>
       {:else}
+        {#if isGrouped}
+          {#each groupedDisplayRows as groupRow (groupRow.type === 'group' ? `__group__${(groupRow as GroupRow).groupKey}` : (groupRow as DataDisplayRow).key)}
+            {#if groupRow.type === 'group'}
+              {@const gRow = groupRow as GroupRow}
+              <tr class="cd-table__row cd-table__row--group-header" role={gridEnabled ? 'row' : undefined}>
+                <td class="cd-table__cell cd-table__cell--group-header" colspan={colSpan}>
+                  {#if renderGroupSection}
+                    {@render renderGroupSection({ groupKey: gRow.groupKey, group: gRow.group })}
+                  {:else}
+                    {gRow.groupKey}
+                  {/if}
+                </td>
+              </tr>
+            {:else}
+              {@const row = groupRow as DataDisplayRow}
+              {@const record = row.record}
+              {@const key = row.key}
+              {@const index = row.topIndex}
+              {@const gridRow = index}
+              {@const selected = treeCheckable ? conducted.checked.has(key) : selectedSet.has(key)}
+              {@const rowHalf = treeCheckable && conducted.half.has(key)}
+              {@const rowDisabled = disabledSet.has(key)}
+              {@const extra = rowClassName ? rowClassName(record, index) : ''}
+              {@const clickable = !!onRowClick || expandRowByClick}
+              {@const rowProps = onRow ? onRow(record, index) : undefined}
+              <tr
+                class="cd-table__row {extra} {rowProps?.className ?? ''}"
+                class:cd-table__row--selected={selected}
+                class:cd-table__row--stripe={stripe && index % 2 === 1}
+                class:cd-table__row--clickable={clickable}
+                class:cd-table__row--child={treeEnabled && row.level > 0}
+                role={gridEnabled ? 'row' : undefined}
+                style={rowProps?.style ?? undefined}
+                onclick={(e) => {
+                  if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
+                  if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
+                  if (onRowClick) onRowClick({ record, index });
+                  if (rowProps?.onClick) rowProps.onClick(e);
+                }}
+                ondblclick={rowProps?.onDoubleClick ?? undefined}
+              >
+                {#if hasExpand}
+                  {@const gc = 0}
+                  <td
+                    class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+                    style={leadingStyle('expand')}
+                    role={gridEnabled ? 'gridcell' : undefined}
+                  >
+                    {#if canExpand(record)}
+                      <button
+                        type="button"
+                        class="cd-table__expand-btn"
+                        class:cd-table__expand-btn--open={expandedSet.has(key)}
+                        aria-expanded={expandedSet.has(key)}
+                        aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                        onclick={(e) => { e.stopPropagation(); toggleExpand(record); }}
+                      >
+                        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                          <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+                        </svg>
+                      </button>
+                    {/if}
+                  </td>
+                {/if}
+                {#if hasSelection}
+                  {@const isRadio = rowSelection?.type === 'radio'}
+                  <td
+                    class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
+                    style={selectionColStyle ?? leadingStyle('selection')}
+                    role={gridEnabled ? 'gridcell' : undefined}
+                  >
+                    {#if isRadio}
+                      <input
+                        type="radio"
+                        class="cd-table__checkbox"
+                        aria-label={loc().t('Table.selectRow')}
+                        checked={selected}
+                        disabled={rowDisabled}
+                        onclick={(e) => e.stopPropagation()}
+                        onchange={() => onToggleRow(record)}
+                      />
+                    {:else}
+                      <input
+                        type="checkbox"
+                        class="cd-table__checkbox"
+                        aria-label={loc().t('Table.selectRow')}
+                        checked={selected}
+                        disabled={rowDisabled}
+                        {@attach indeterminate(rowHalf)}
+                        onclick={(e) => e.stopPropagation()}
+                        onchange={() => onToggleRow(record)}
+                      />
+                    {/if}
+                  </td>
+                {/if}
+                {#each columns as col, i (colKeyOf(col, i))}
+                  {@const value = cellValue(col, record)}
+                  <td
+                    class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
+                    class:cd-table__cell--ellipsis={col.ellipsis}
+                    style={cellStyle(col, i)}
+                  >
+                    {#if treeEnabled && i === 0}
+                      <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                      {#if row.hasChildren}
+                        <button
+                          type="button"
+                          class="cd-table__tree-toggle"
+                          class:cd-table__tree-toggle--open={treeExpandedSet.has(key)}
+                          aria-expanded={treeExpandedSet.has(key)}
+                          aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                          onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
+                        >
+                          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+                          </svg>
+                        </button>
+                      {:else}
+                        <span class="cd-table__tree-toggle cd-table__tree-toggle--placeholder" aria-hidden="true"></span>
+                      {/if}
+                    {/if}
+                    {#if col.render}
+                      {@render col.render({ value, record, index })}
+                    {:else}
+                      {cellText(value)}
+                    {/if}
+                  </td>
+                {/each}
+              </tr>
+              {#if hasExpand && canExpand(record)}
+                {#if keepDOM}
+                  <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined} style={expandedSet.has(key) ? undefined : 'display:none'}>
+                    <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
+                      {@render expandable!.expandedRowRender({ record, index })}
+                    </td>
+                  </tr>
+                {:else if expandedSet.has(key)}
+                  <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
+                    <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
+                      {@render expandable!.expandedRowRender({ record, index })}
+                    </td>
+                  </tr>
+                {/if}
+              {/if}
+            {/if}
+          {/each}
+        {:else}
         {#if virtualized && vTopPad > 0}
           <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
             <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
@@ -1248,9 +1672,10 @@
           {@const rowHalf = treeCheckable && conducted.half.has(key)}
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
-          {@const clickable = !!onRowClick}
+          {@const clickable = !!onRowClick || expandRowByClick}
+          {@const rowProps = onRow ? onRow(record, index) : undefined}
           <tr
-            class="cd-table__row {extra}"
+            class="cd-table__row {extra} {rowProps?.className ?? ''}"
             class:cd-table__row--selected={selected}
             class:cd-table__row--stripe={stripe && index % 2 === 1}
             class:cd-table__row--clickable={clickable}
@@ -1258,7 +1683,14 @@
             role={gridEnabled ? 'row' : undefined}
             aria-rowindex={gridEnabled ? gridRow + 2 : undefined}
             aria-selected={gridEnabled && hasSelection ? selected : undefined}
-            onclick={clickable ? () => onRowClick?.({ record, index }) : undefined}
+            style={rowProps?.style ?? undefined}
+            onclick={(e) => {
+              if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
+              if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
+              if (onRowClick) onRowClick({ record, index });
+              if (rowProps?.onClick) rowProps.onClick(e);
+            }}
+            ondblclick={rowProps?.onDoubleClick ?? undefined}
           >
             {#if hasExpand}
               {@const gc = 0}
@@ -1293,26 +1725,40 @@
             {/if}
             {#if hasSelection}
               {@const gc = hasExpand ? 1 : 0}
+              {@const isRadio = rowSelection?.type === 'radio'}
               <td
-                class="cd-table__cell cd-table__cell--selection {leadingFixedClass}"
-                style={leadingStyle('selection')}
+                class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
+                style={selectionColStyle ?? leadingStyle('selection')}
                 role={gridEnabled ? 'gridcell' : undefined}
                 id={gridEnabled ? cellId(gridRow, gc) : undefined}
                 tabindex={rovingTabindex(gridRow, gc)}
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
-                <input
-                  type="checkbox"
-                  class="cd-table__checkbox"
-                  aria-label={loc().t('Table.selectRow')}
-                  checked={selected}
-                  disabled={rowDisabled}
-                  tabindex={childTabindex(gridRow, gc)}
-                  {@attach indeterminate(rowHalf)}
-                  onclick={(e) => e.stopPropagation()}
-                  onchange={() => onToggleRow(record)}
-                />
+                {#if isRadio}
+                  <input
+                    type="radio"
+                    class="cd-table__checkbox"
+                    aria-label={loc().t('Table.selectRow')}
+                    checked={selected}
+                    disabled={rowDisabled}
+                    tabindex={childTabindex(gridRow, gc)}
+                    onclick={(e) => e.stopPropagation()}
+                    onchange={() => onToggleRow(record)}
+                  />
+                {:else}
+                  <input
+                    type="checkbox"
+                    class="cd-table__checkbox"
+                    aria-label={loc().t('Table.selectRow')}
+                    checked={selected}
+                    disabled={rowDisabled}
+                    tabindex={childTabindex(gridRow, gc)}
+                    {@attach indeterminate(rowHalf)}
+                    onclick={(e) => e.stopPropagation()}
+                    onchange={() => onToggleRow(record)}
+                  />
+                {/if}
               </td>
             {/if}
             {#each columns as col, i (colKeyOf(col, i))}
@@ -1360,23 +1806,41 @@
               </td>
             {/each}
           </tr>
-          {#if hasExpand && expandedSet.has(key) && canExpand(record)}
-            <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
-              <td
-                class="cd-table__cell cd-table__cell--expanded-content"
-                colspan={colSpan}
-                role={gridEnabled ? 'gridcell' : undefined}
-                aria-colindex={gridEnabled ? 1 : undefined}
+          {#if hasExpand && canExpand(record)}
+            {#if keepDOM}
+              <tr
+                class="cd-table__row cd-table__row--expanded"
+                role={gridEnabled ? 'row' : undefined}
+                style={expandedSet.has(key) ? undefined : 'display:none'}
               >
-                {@render expandable!.expandedRowRender({ record, index })}
-              </td>
-            </tr>
+                <td
+                  class="cd-table__cell cd-table__cell--expanded-content"
+                  colspan={colSpan}
+                  role={gridEnabled ? 'gridcell' : undefined}
+                  aria-colindex={gridEnabled ? 1 : undefined}
+                >
+                  {@render expandable!.expandedRowRender({ record, index })}
+                </td>
+              </tr>
+            {:else if expandedSet.has(key)}
+              <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
+                <td
+                  class="cd-table__cell cd-table__cell--expanded-content"
+                  colspan={colSpan}
+                  role={gridEnabled ? 'gridcell' : undefined}
+                  aria-colindex={gridEnabled ? 1 : undefined}
+                >
+                  {@render expandable!.expandedRowRender({ record, index })}
+                </td>
+              </tr>
+            {/if}
           {/if}
         {/each}
         {#if virtualized && vBottomPad > 0}
           <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
             <td colspan={colSpan} style="block-size:{vBottomPad}px; padding:0; border:0"></td>
           </tr>
+        {/if}
         {/if}
       {/if}
     </tbody>
@@ -1400,6 +1864,12 @@
     </div>
   {/if}
 </div>
+
+{#if footerSnippet}
+  <div class="cd-table__footer">
+    {@render footerSnippet({ currentData: visibleRows })}
+  </div>
+{/if}
 
 <style>
   .cd-table-wrap {
@@ -1833,5 +2303,25 @@
     .cd-table__sort-down {
       transition: none;
     }
+  }
+
+  /* --- 分组标题行 --- */
+  .cd-table__row--group-header {
+    background: var(--cd-table-header-bg);
+  }
+  .cd-table__cell--group-header {
+    padding-block: var(--cd-table-cell-padding-y);
+    padding-inline: var(--cd-table-cell-padding-x);
+    font-weight: 600;
+    color: var(--cd-table-header-text);
+    border-block-end: 1px solid var(--cd-table-border-color);
+  }
+
+  /* --- 表格顶部标题/底部区域 --- */
+  .cd-table__title-area {
+    margin-block-end: var(--cd-spacing-2, 8px);
+  }
+  .cd-table__footer {
+    margin-block-start: var(--cd-spacing-3, 12px);
   }
 </style>

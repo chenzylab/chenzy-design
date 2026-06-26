@@ -28,8 +28,16 @@ export interface ColumnDef<T> {
   ellipsis?: boolean;
   /** true 按 dataIndex 默认比较；或自定义比较器 */
   sorter?: boolean | ((a: T, b: T) => number);
+  /** 受控排序状态（当前列）*/
+  sortOrder?: 'ascend' | 'descend' | null;
+  /** 默认排序状态 */
+  defaultSortOrder?: 'ascend' | 'descend' | null;
   /** 列头筛选项（下拉多选）；配合 onFilter 过滤数据 */
   filters?: { text: string; value: string | number }[];
+  /** 受控列筛选值 */
+  filteredValue?: (string | number)[] | null;
+  /** 是否多选筛选，默认 true */
+  filterMultiple?: boolean;
   /** 行是否匹配某筛选值；缺省时按 dataIndex 全等比较 */
   onFilter?: (value: string | number, record: T) => boolean;
   /** 单元格自定义渲染 */
@@ -77,6 +85,24 @@ export interface RowSelection<T> {
    * （等同非树形表逐行选择，向后兼容）。仅在 tree 启用时生效。
    */
   checkStrictly?: boolean;
+  /** 选择方式: checkbox（多选）或 radio（单选），默认 checkbox */
+  type?: 'checkbox' | 'radio';
+  /** 单行选择回调 */
+  onSelect?: (record: T, selected: boolean, selectedRows: T[]) => void;
+  /** 全选回调 */
+  onSelectAll?: (selected: boolean, selectedRows: T[], changedRows: T[]) => void;
+  /** 选择列固定 */
+  fixed?: boolean | 'left';
+  /** 选择列宽度 */
+  columnWidth?: number | string;
+  /** 隐藏全选框 */
+  hideSelectAll?: boolean;
+}
+
+export interface ScrollConfig {
+  x?: number | string;
+  y?: number | string;
+  scrollToFirstRowOnChange?: boolean;
 }
 
 /** 聚合 onChange 的 extra.action 取值 */
