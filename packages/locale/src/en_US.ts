@@ -364,6 +364,8 @@ export const en_US: Locale = {
   Popover: {
     close: 'Close',
     dialogLabel: 'Dialog',
+    okText: 'OK',
+    cancelText: 'Cancel',
   },
   Typography: {
     copy: 'Copy',
