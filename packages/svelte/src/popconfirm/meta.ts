@@ -10,6 +10,7 @@ export const meta = {
   exports: ['Popconfirm'],
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写，仅 onOpenChange' },
+    { name: 'visible', type: 'boolean', default: 'undefined', desc: 'open 别名（Semi 原始拼写）；open 优先' },
     { name: 'defaultOpen', type: 'boolean', default: 'false', desc: '非受控初始显隐' },
     { name: 'defaultVisible', type: 'boolean', default: 'undefined', desc: 'defaultOpen 别名（优先于 defaultOpen）' },
     { name: 'title', type: 'string', default: 'undefined', desc: '确认标题' },
@@ -37,6 +38,12 @@ export const meta = {
       desc: '覆盖确认按钮类型；缺省 type=danger→danger 否则 primary',
     },
     {
+      name: 'cancelType',
+      type: "'primary'|'secondary'|'tertiary'|'warning'|'danger'",
+      default: "'secondary'",
+      desc: '取消按钮 type；优先级高于 cancelButtonProps.type',
+    },
+    {
       name: 'okButtonProps',
       type: 'Partial<ButtonProps>',
       default: 'undefined',
@@ -54,6 +61,12 @@ export const meta = {
       type: "'top'|'bottom'|'left'|'right'",
       default: "'top'",
       desc: '浮层方向',
+    },
+    {
+      name: 'position',
+      type: "'top'|'bottom'|'left'|'right'",
+      default: 'undefined',
+      desc: 'placement 别名（Semi 原始拼写）；placement 优先',
     },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用触发' },
     { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 是否关闭' },

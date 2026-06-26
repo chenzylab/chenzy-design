@@ -55,6 +55,8 @@
 
   interface Props {
     open?: boolean;
+    /** open 别名（Semi 原始拼写） */
+    visible?: boolean;
     defaultOpen?: boolean;
     /** 非受控初始显隐（defaultOpen 别名，优先级低于 open） */
     defaultVisible?: boolean;
@@ -67,12 +69,16 @@
     okText?: string;
     cancelText?: string;
     okType?: OkType;
+    /** 取消按钮类型（对应 okType 的取消侧），透传给取消 Button 的 type；优先级高于 cancelButtonProps.type */
+    cancelType?: 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
     /** 透传确认按钮额外属性（onclick/loading 由组件托管，传入会被忽略） */
     okButtonProps?: ExtraButtonProps;
     /** 透传取消按钮额外属性（onclick/disabled 由组件托管，传入会被忽略） */
     cancelButtonProps?: ExtraButtonProps;
     showCancel?: boolean;
     placement?: Placement;
+    /** placement 别名（Semi 原始拼写） */
+    position?: Placement;
     disabled?: boolean;
     closeOnEsc?: boolean;
     closeOnOutsideClick?: boolean;
@@ -123,6 +129,7 @@
 
   let {
     open,
+    visible,
     defaultOpen = false,
     defaultVisible,
     title,
@@ -134,10 +141,12 @@
     okText,
     cancelText,
     okType,
+    cancelType,
     okButtonProps,
     cancelButtonProps,
     showCancel = true,
-    placement = 'top',
+    placement,
+    position,
     disabled = false,
     closeOnEsc = true,
     closeOnOutsideClick = true,
@@ -174,10 +183,15 @@
   const titleId = useId('cd-popconfirm-title');
   const contentId = useId('cd-popconfirm-content');
 
+  // visible 为 open 别名；open 优先。
+  const resolvedOpen = $derived(open ?? visible);
+  // position 为 placement 别名；placement 优先，缺省 'top'。
+  const resolvedPlacementProp = $derived<Placement>(placement ?? position ?? 'top');
+
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
-  const isControlled = $derived(open !== undefined);
+  const isControlled = $derived(resolvedOpen !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isControlled ? !!open : innerOpen);
+  const isOpen = $derived(isControlled ? !!resolvedOpen : innerOpen);
 
   function getInitialOpen(): boolean {
     // defaultVisible 为 defaultOpen 的别名，优先于 defaultOpen
@@ -188,6 +202,10 @@
   type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
   const resolvedOkType = $derived<ButtonType>(
     okType ?? okButtonProps?.type ?? (type === 'danger' ? 'danger' : 'primary'),
+  );
+  // 取消按钮 type 优先级：显式 cancelType > cancelButtonProps.type > 'secondary'（默认）。
+  const resolvedCancelType = $derived<ButtonType>(
+    cancelType ?? cancelButtonProps?.type ?? 'secondary',
   );
 
   const hasContent = $derived(Boolean(contentSnippet) || Boolean(content));
@@ -216,7 +234,7 @@
   });
 
   // flip 后的实际方位（驱动箭头朝向）+ 箭头交叉轴偏移
-  let resolvedPlacement = $state<Placement>(untrack(() => placement));
+  let resolvedPlacement = $state<Placement>(untrack(() => resolvedPlacementProp));
   const resolvedSide = $derived<Side>(parsePlacement(resolvedPlacement).side);
   let arrowOffset = $state(0);
 
@@ -474,7 +492,7 @@
       id={popupId}
       style={popupStyle}
       bind:this={popupEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, arrowPointAtCenter, getContainer: getPopupContainer, onPlacement, open: isOpen }}
+      use:floating={{ trigger: rootEl, placement: resolvedPlacementProp, autoAdjust: true, offset: 8, arrowPointAtCenter, getContainer: getPopupContainer, onPlacement, open: isOpen }}
       role="dialog"
       tabindex="-1"
       aria-labelledby={titleId}
@@ -557,7 +575,7 @@
       </div>
       <div class="cd-popconfirm__footer">
         {#if showCancel}
-          <Button size="small" {...cancelButtonProps} disabled={confirmLoading} onclick={cancel}>
+          <Button size="small" {...cancelButtonProps} type={resolvedCancelType} disabled={confirmLoading} onclick={cancel}>
             {cancelText ?? loc().t('Popconfirm.cancel')}
           </Button>
         {/if}
