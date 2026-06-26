@@ -79,13 +79,31 @@ export const meta = {
       desc: '声明式面包屑项；项间分隔符由父级纯 CSS 自动插入，最后一项自动渲染为当前页（不可点 + aria-current=page）',
       props: [
         { name: 'href', type: 'string', default: 'undefined', desc: '链接地址；最后一项忽略 href' },
+        {
+          name: 'separator',
+          type: 'string',
+          default: 'undefined',
+          desc: '覆盖父级 separator，仅对本项末尾分隔符生效（通过内联 CSS 变量实现）',
+        },
+        {
+          name: 'noLink',
+          type: 'boolean',
+          default: 'false',
+          desc: '禁止链接/按钮行为，渲染为普通 span（不可点击）；忽略 href 和 onClick；末项始终无链接',
+        },
+        {
+          name: 'icon',
+          type: 'Snippet',
+          default: 'undefined',
+          desc: '项前置图标 snippet，渲染在 children 之前',
+        },
         { name: 'class', type: 'string', default: "''" },
         { name: 'children', type: 'Snippet', default: 'undefined' },
         {
           name: 'onClick',
           type: '(e: MouseEvent) => void',
           default: 'undefined',
-          desc: '点击/键盘激活回调；最后一项不触发',
+          desc: '点击/键盘激活回调；最后一项及 noLink=true 时不触发',
         },
       ],
     },
