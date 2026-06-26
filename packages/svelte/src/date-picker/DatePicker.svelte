@@ -7,13 +7,13 @@
   core 的 formatDate/parseDateString 纯函数（红线 #2）；不传则沿用 Intl.DateTimeFormat 显示（向后兼容）。
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, type Snippet } from 'svelte';
   import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
-  type WeekStart = 0 | 1;
+  type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
   type PickerType = 'date' | 'dateTime' | 'month' | 'year';
 
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值
@@ -65,6 +65,32 @@
     /** 触发器失去焦点。 */
     onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
+    /** 用 Snippet 自定义范围分隔符，优先于 rangeSeparator 字符串。 */
+    rangeSeparatorNode?: Snippet;
+    /** 范围模式分隔符字符串（默认 '~'）。 */
+    rangeSeparator?: string;
+    /** 选完月/年后自动切换到日视图（默认 true）。 */
+    autoSwitchDate?: boolean;
+    /** 浮层自动调整位置防溢出（默认 true）。 */
+    autoAdjustOverflow?: boolean;
+    /** 范围模式下在面板内嵌输入框（默认 false）。 */
+    insetInput?: boolean;
+    /** 浮层弹出位置（默认 'bottomLeft'）。 */
+    position?: string;
+    /** 触发器与浮层间距。 */
+    spacing?: number;
+    /** 浮层挂载容器。 */
+    getPopupContainer?: () => HTMLElement;
+    /** weekStart 别名。 */
+    weekStartsOn?: WeekStart;
+    /** 年月滚轮配置。 */
+    yearAndMonthOpts?: { yearCyclic?: boolean; monthCyclic?: boolean };
+    /** 点击取消按钮。 */
+    onCancel?: () => void;
+    /** onChange 参数改为 dateFirst（仅声明，透传语义）。 */
+    onChangeWithDateFirst?: boolean;
+    /** 点击外部关闭时触发。 */
+    onClickOutSide?: (e: MouseEvent) => void;
   }
 
   let {
@@ -95,11 +121,27 @@
     onFocus,
     onBlur,
     ariaLabel,
+    rangeSeparatorNode,
+    rangeSeparator,
+    autoSwitchDate = true,
+    autoAdjustOverflow = true,
+    insetInput = false,
+    position = 'bottomLeft',
+    spacing,
+    getPopupContainer,
+    weekStartsOn,
+    yearAndMonthOpts,
+    onCancel,
+    onChangeWithDateFirst = false,
+    onClickOutSide,
   }: Props = $props();
 
   const isDateTime = $derived(type === 'dateTime');
   const isMonth = $derived(type === 'month');
   const isYear = $derived(type === 'year');
+
+  // weekStartsOn 是 weekStart 的别名，weekStart 优先
+  const effWeekStart = $derived(weekStart ?? weekStartsOn ?? 0);
 
   const loc = useLocale();
 
@@ -258,17 +300,17 @@
 
   // 星期名: 用 weekdayOrder + 一个已知周日基准 (2023-01-01 是星期日) 经 Intl 本地化
   const weekdayNames = $derived(
-    weekdayOrder(weekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
+    weekdayOrder(effWeekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
   );
   // 完整星期名 (columnheader aria-label)，顺序与 weekdayNames 一致
   const weekdayLongNames = $derived(
-    weekdayOrder(weekStart).map((dow) => weekdayLongFormat.format(new Date(2023, 0, 1 + dow))),
+    weekdayOrder(effWeekStart).map((dow) => weekdayLongFormat.format(new Date(2023, 0, 1 + dow))),
   );
 
   // 面板内键盘高亮日 (highlight 为本地 $state；aria-activedescendant 指向它)
   let highlight = $state<Date | null>(null);
 
-  const grid = $derived(getMonthGrid(cursor, weekStart));
+  const grid = $derived(getMonthGrid(cursor, effWeekStart));
   // 6×7 行结构 (role=row / gridcell)。getMonthGrid 固定返回 42 格。
   const weekRows = $derived(
     Array.from({ length: 6 }, (_, r) => grid.slice(r * 7, r * 7 + 7)),
@@ -540,7 +582,7 @@
     }
     if (!GRID_NAV_KEYS.has(key)) return;
     e.preventDefault();
-    const next = gridFocusMove(base, key as GridFocusKey, 'month', weekStart);
+    const next = gridFocusMove(base, key as GridFocusKey, 'month', effWeekStart);
     if (next) setHighlight(next);
   }
 
@@ -571,6 +613,18 @@
     return () => trap.deactivate();
   });
 
+  // onClickOutSide: 监听 document mousedown，点击不在 rootEl 内时触发
+  $effect(() => {
+    if (!onClickOutSide) return;
+    function handler(e: MouseEvent) {
+      if (rootEl && !rootEl.contains(e.target as Node)) {
+        onClickOutSide!(e);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  });
+
   const cls = $derived(
     [
       'cd-date-picker',
@@ -578,13 +632,15 @@
       `cd-date-picker--${status}`,
       disabled && 'cd-date-picker--disabled',
       isOpen && 'cd-date-picker--open',
+      insetInput && 'cd-date-picker--inset-input',
+      position && `cd-date-picker--${position}`,
     ]
       .filter(Boolean)
       .join(' '),
   );
 </script>
 
-<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
+<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
   <div class="cd-date-picker__control">
     {#if editable}
       <input

@@ -23,6 +23,8 @@ export interface FormContext {
   getColon: () => boolean;
   /** whether error/warning text carries a status icon (spec §4 L66). */
   getShowValidateIcon: () => boolean;
+  /** extra text position: 'middle' | 'bottom' (default 'bottom'). */
+  getExtraTextPosition: () => 'middle' | 'bottom';
 }
 
 const KEY = Symbol('cd-form');

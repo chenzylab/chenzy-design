@@ -193,6 +193,7 @@
   const labelPosition = $derived(ctx.getLabelPosition());
   const labelAlign = $derived(ctx.getLabelAlign());
   const showValidateIcon = $derived(ctx.getShowValidateIcon());
+  const extraTextPosition = $derived(ctx.getExtraTextPosition?.() ?? 'bottom');
   // label style: fixed width in `left` mode + text-align from labelAlign (§4 L60)
   const labelStyle = $derived(
     [
@@ -334,7 +335,7 @@
         <span>{warning}</span>
       </div>
     {:else if showExtra}
-      <div id={extraId} class="cd-form-field__extra">{extraText}</div>
+      <div id={extraId} class="cd-form-field__extra" class:cd-form-field__extra--middle={extraTextPosition === 'middle'} class:cd-form-field__extra--bottom={extraTextPosition === 'bottom'}>{extraText}</div>
     {/if}
   </div>
 </div>
@@ -430,6 +431,12 @@
   .cd-form-field__extra {
     color: var(--cd-form-extra-color, var(--cd-color-text-3));
     font-size: var(--cd-form-error-font-size, var(--cd-font-size-1, 0.75rem));
+  }
+  .cd-form-field__extra--middle {
+    order: -1;
+  }
+  .cd-form-field__extra--bottom {
+    order: 0;
   }
   /* async-validation indicator (red line #3: pure-CSS spin, no JS geometry) */
   .cd-form-field__validating {

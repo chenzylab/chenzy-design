@@ -9,7 +9,7 @@
   列项/禁用集生成 + 格式解析/序列化走 @chenzy-design/core 纯函数 (红线 #2)。
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, type Snippet } from 'svelte';
   import {
     useId,
     useDismiss,
@@ -65,6 +65,50 @@
     onChange?: (v: (Date | null) | [Date | null, Date | null]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
+    /** 浮层溢出自动调整（默认 true）。 */
+    autoAdjustOverflow?: boolean;
+    /** 挂载时自动聚焦触发器。 */
+    autoFocus?: boolean;
+    /** 自定义清除按钮图标。 */
+    clearIcon?: Snippet;
+    /** 是否显示清除按钮（clearable 别名）。 */
+    showClear?: boolean;
+    /** 浮层 className。 */
+    dropdownClassName?: string;
+    /** 浮层溢出冗余。 */
+    dropdownMargin?: number | { x?: number; y?: number };
+    /** 浮层内联样式。 */
+    dropdownStyle?: string | Record<string, string>;
+    /** 打开面板时自动聚焦第一列（默认 true）。 */
+    focusOnOpen?: boolean;
+    /** 浮层挂载容器。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 面板展开动画（默认 true）。 */
+    motion?: boolean;
+    /** 面板顶部自定义内容。 */
+    panelHeader?: string | Snippet;
+    /** 浮层弹出位置（默认 'bottomLeft'）。 */
+    position?: string;
+    /** 触发器前缀内容。 */
+    prefix?: string | Snippet;
+    /** 范围模式分隔符（默认 '~'）。 */
+    rangeSeparator?: string;
+    /** 滚动列 item 属性透传。 */
+    scrollItemProps?: Record<string, unknown>;
+    /** 阻止浮层点击事件冒泡（默认 true）。 */
+    stopPropagation?: boolean;
+    /** 浮层 z-index（默认 1030）。 */
+    zIndex?: number;
+    /** 触发器失焦。 */
+    onBlur?: (e: FocusEvent) => void;
+    /** 触发器聚焦。 */
+    onFocus?: (e: FocusEvent) => void;
+    /** onChange 参数 dateFirst 模式。 */
+    onChangeWithDateFirst?: boolean;
+    /** 点击外部触发。 */
+    onClickOutSide?: (e: MouseEvent) => void;
+    /** 范围模式禁用函数。 */
+    disabledTime?: (date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] };
   }
 
   let {
@@ -93,9 +137,34 @@
     onChange,
     onOpenChange,
     ariaLabel,
+    autoAdjustOverflow = true,
+    autoFocus = false,
+    clearIcon,
+    showClear,
+    dropdownClassName,
+    dropdownMargin,
+    dropdownStyle,
+    focusOnOpen = true,
+    getPopupContainer,
+    motion = true,
+    panelHeader,
+    position = 'bottomLeft',
+    prefix,
+    rangeSeparator = '~',
+    scrollItemProps,
+    stopPropagation = true,
+    zIndex = 1030,
+    onBlur,
+    onFocus,
+    onChangeWithDateFirst = false,
+    onClickOutSide,
+    disabledTime,
   }: Props = $props();
 
   const isRange = $derived(range || type === 'timeRange');
+
+  // showClear 是 clearable 别名
+  const effClearable = $derived(clearable ?? showClear ?? true);
 
   // --- format 串解析 (红线 #2 经 core 纯函数)：决定列与 12h；无 format 时回退 props ---
   const formatSpec = $derived(format ? parseFormatSpec(format) : null);
@@ -243,7 +312,7 @@
   });
 
   const hasValue = $derived(isRange ? currentPair[0] !== null || currentPair[1] !== null : current !== null);
-  const showClear = $derived(clearable && !disabled && hasValue);
+  const showClearBtn = $derived(effClearable && !disabled && hasValue);
 
   // 合成 Date: 基于当前编辑端或今天，写入 h/m/s；按模式写单选/范围端
   function commit(h: number, m: number, s: number) {
@@ -427,6 +496,7 @@
 
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
+  let triggerEl = $state<HTMLButtonElement | null>(null);
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -437,6 +507,25 @@
     });
   });
 
+  // autoFocus: 挂载时自动聚焦触发器
+  $effect(() => {
+    if (autoFocus && triggerEl) {
+      triggerEl.focus({ preventScroll: true });
+    }
+  });
+
+  // onClickOutSide: 监听 document mousedown，点击不在 rootEl 内时触发
+  $effect(() => {
+    if (!onClickOutSide) return;
+    function handler(e: MouseEvent) {
+      if (rootEl && !rootEl.contains(e.target as Node)) {
+        onClickOutSide!(e);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  });
+
   const cls = $derived(
     [
       'cd-time-picker',
@@ -444,13 +533,14 @@
       `cd-time-picker--${status}`,
       disabled && 'cd-time-picker--disabled',
       isOpen && 'cd-time-picker--open',
+      !motion && 'cd-time-picker--no-motion',
     ]
       .filter(Boolean)
       .join(' '),
   );
 </script>
 
-<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
+<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
   <div class="cd-time-picker__control">
     <button
       type="button"
@@ -460,22 +550,38 @@
       aria-controls={baseId}
       aria-label={ariaLabel}
       {disabled}
+      bind:this={triggerEl}
       onclick={toggleOpen}
       onkeydown={onTriggerKeydown}
+      onfocus={onFocus}
+      onblur={onBlur}
     >
+      {#if prefix}
+        <span class="cd-time-picker__prefix">
+          {#if typeof prefix === 'string'}
+            {prefix}
+          {:else}
+            {@render prefix()}
+          {/if}
+        </span>
+      {/if}
       <span class="cd-time-picker__value" class:cd-time-picker__value--placeholder={current === null}>
         {displayText}
       </span>
     </button>
 
-    {#if showClear}
+    {#if showClearBtn}
       <button type="button" class="cd-time-picker__clear" aria-label={loc().t('TimePicker.clear')} onclick={clear}>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        {#if clearIcon}
+          {@render clearIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+            />
+          </svg>
+        {/if}
       </button>
     {/if}
 
@@ -497,6 +603,15 @@
       aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
     >
+      {#if panelHeader}
+        <div class="cd-time-picker__panel-header">
+          {#if typeof panelHeader === 'string'}
+            {panelHeader}
+          {:else}
+            {@render panelHeader()}
+          {/if}
+        </div>
+      {/if}
       {#if isRange}
         <div class="cd-time-picker__range-tabs" role="tablist" aria-label={loc().t('TimePicker.triggerLabel')}>
           <button
@@ -717,6 +832,19 @@
   }
   .cd-time-picker__panel:focus-visible {
     outline: none;
+  }
+  .cd-time-picker__panel-header {
+    padding: var(--cd-spacing-2) var(--cd-spacing-2);
+    border-block-end: 1px solid var(--cd-color-border);
+    color: var(--cd-color-text-0);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-time-picker__prefix {
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+  }
+  .cd-time-picker--no-motion .cd-time-picker__panel {
+    transition: none;
   }
   .cd-time-picker__range-tabs {
     display: flex;
