@@ -9,6 +9,7 @@
   is only surfaced through onChange.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import {
     paginationPageCount as computePageCount,
     clampPage,
@@ -42,7 +43,7 @@
     mode?: PaginationMode;
     /** quick-jumper validation state (透传 Input) */
     status?: PaginationStatus;
-    showTotal?: boolean;
+    showTotal?: boolean | ((total: number, range: [number, number]) => string);
     /** show the page-size selector (reuses Select) */
     showSizeChanger?: boolean;
     /** show the quick-jump input (reuses Input) */
@@ -61,6 +62,14 @@
     onChange?: (page: number, pageSize: number) => void;
     onPageSizeChange?: (pageSize: number) => void;
     ariaLabel?: string;
+    /** 自定义页码按钮内容，接收 { page, isCurrent } */
+    renderPage?: Snippet<[{ page: number; isCurrent: boolean }]>;
+    /** size-changer 浮层层叠顺序（透传 CSS 变量 --cd-select-dropdown-z） */
+    popoverZIndex?: number;
+    /** 上一页按钮内容，可为字符串或 Snippet */
+    prevText?: string | Snippet;
+    /** 下一页按钮内容，可为字符串或 Snippet */
+    nextText?: string | Snippet;
   }
 
   let {
@@ -85,6 +94,10 @@
     onChange,
     onPageSizeChange,
     ariaLabel,
+    renderPage,
+    popoverZIndex,
+    prevText,
+    nextText,
   }: Props = $props();
 
   const loc = useLocale();
@@ -216,7 +229,13 @@
 {#if !hidden}
 <nav class={cls} aria-label={ariaLabel ?? loc().t('Pagination.ariaLabel')}>
   {#if showTotal}
-    <span class="cd-pagination__total">{totalText}</span>
+    <span class="cd-pagination__total">
+      {#if typeof showTotal === 'function'}
+        {showTotal(total, [(current - 1) * currentSize + 1, Math.min(current * currentSize, total)])}
+      {:else}
+        {totalText}
+      {/if}
+    </span>
   {/if}
 
   <button
@@ -224,7 +243,8 @@
     class="cd-pagination__prev"
     disabled={disabled || isFirst}
     aria-label={loc().t('Pagination.prevPage')}
-    onclick={() => goto(current - 1)}>‹</button
+    onclick={() => goto(current - 1)}
+  >{#if prevText}{#if typeof prevText === 'function'}{@render prevText()}{:else}{prevText}{/if}{:else}‹{/if}</button
   >
 
   {#if mode === 'simple'}
@@ -252,7 +272,7 @@
               onclick={() => goto(cell.value)}
               onfocus={() => (focusedPage = cell.value)}
               onkeydown={(e) => onPageKeydown(e, cell.value)}
-              >{nf.format(cell.value)}</button
+              >{#if renderPage}{@render renderPage({ page: cell.value, isCurrent: cell.value === current })}{:else}{nf.format(cell.value)}{/if}</button
             >
           {/if}
         </li>
@@ -265,11 +285,12 @@
     class="cd-pagination__next"
     disabled={disabled || isLast}
     aria-label={loc().t('Pagination.nextPage')}
-    onclick={() => goto(current + 1)}>›</button
+    onclick={() => goto(current + 1)}
+  >{#if nextText}{#if typeof nextText === 'function'}{@render nextText()}{:else}{nextText}{/if}{:else}›{/if}</button
   >
 
   {#if showSizeChanger}
-    <span class="cd-pagination__size-changer">
+    <span class="cd-pagination__size-changer" style={popoverZIndex != null ? `--cd-select-dropdown-z:${popoverZIndex}` : undefined}>
       <Select
         {size}
         {disabled}

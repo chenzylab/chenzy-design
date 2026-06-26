@@ -93,6 +93,18 @@ export const meta = {
       default: 'undefined',
     },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    {
+      name: 'tooltipProps',
+      type: '{ content?: string; position?: string; theme?: "dark"|"light"; mouseEnterDelay?: number; mouseLeaveDelay?: number }',
+      default: 'undefined',
+      desc: '折叠模式（inlineCollapsed=true）下顶层项的 Tooltip 配置。content 默认为项 label；position→placement 透传给 Tooltip。未提供时用原生 title 属性降级。',
+    },
+    {
+      name: 'renderWrapper',
+      type: 'Snippet<[{ item: MenuItemNode; children: Snippet }]>',
+      default: 'undefined',
+      desc: '自定义叶子项内容包裹 Snippet，接收 { item, children }。children 为默认的 <a> 或 <button>，可在外层加徽标/标签等装饰。inline/vertical/horizontal/collapsed 模式下均生效。',
+    },
   ],
   a11y: {
     role: 'menu',

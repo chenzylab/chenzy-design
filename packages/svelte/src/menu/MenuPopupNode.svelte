@@ -7,11 +7,21 @@
   定时器/floating 均命令式管理 + cleanup (红线 #3)。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
   import { isDivider, isGroup } from './types.js';
   import type { MenuItemDef, MenuItemNode, MenuKey } from './types.js';
   import Self from './MenuPopupNode.svelte';
+  import { Tooltip } from '../tooltip/index.js';
+
+  interface TooltipProps {
+    content?: string;
+    position?: string;
+    theme?: 'dark' | 'light';
+    mouseEnterDelay?: number;
+    mouseLeaveDelay?: number;
+  }
 
   interface Props {
     item: MenuItemDef;
@@ -37,6 +47,16 @@
     parentDisabled?: boolean;
     /** 浮层隐藏时是否卸载内容 DOM（默认 false：保留 DOM 仅隐藏，重显不重建） */
     destroyOnHide?: boolean;
+    /**
+     * 折叠模式下顶层项的 Tooltip 配置。content 默认为项 label；
+     * position→placement、theme、mouseEnterDelay、mouseLeaveDelay 透传给 Tooltip。
+     */
+    tooltipProps?: TooltipProps;
+    /**
+     * 自定义每个叶子项内容的包裹 Snippet，接收 { item, children }。
+     * children 为默认的 <a> 或 <button> 内容 snippet。
+     */
+    renderWrapper?: Snippet<[{ item: MenuItemNode; children: Snippet }]>;
   }
 
   let {
@@ -54,6 +74,8 @@
     getPopupContainer,
     parentDisabled = false,
     destroyOnHide = false,
+    tooltipProps,
+    renderWrapper,
   }: Props = $props();
 
   // 分隔符/分组在模板顶层单独处理；此处统一窄化为普通项节点供后续派生使用。
@@ -167,6 +189,8 @@
           {getPopupContainer}
           {parentDisabled}
           {destroyOnHide}
+          {tooltipProps}
+          {renderWrapper}
           {onSelectLeaf}
           {onCloseAll}
           {openDelay}
@@ -182,36 +206,50 @@
     onpointerenter={scheduleOpen}
     onpointerleave={scheduleClose}
   >
-    <button
-      type="button"
-      class="cd-menu__title"
-      class:cd-menu__title--collapsed={collapsed}
-      role={navigation ? undefined : 'menuitem'}
-      aria-haspopup="true"
-      aria-expanded={open}
-      aria-disabled={itemDisabled || undefined}
-      aria-label={collapsed ? node.label : undefined}
-      title={collapsed ? node.label : undefined}
-      disabled={itemDisabled || undefined}
-      bind:this={titleEl}
-      onclick={onTitleClick}
-      onkeydown={(e) => {
-        if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if (hasChildren && !itemDisabled) open = true;
-        } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
-          closeNow();
-        }
-      }}
-    >
-      {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-      {#if !collapsed}<span class="cd-menu__label">{node.label}</span>
-      <span class="cd-menu__arrow cd-menu__arrow--popup" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-          <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-        </svg>
-      </span>{/if}
-    </button>
+    {#snippet titleButton()}
+      <button
+        type="button"
+        class="cd-menu__title"
+        class:cd-menu__title--collapsed={collapsed}
+        role={navigation ? undefined : 'menuitem'}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-disabled={itemDisabled || undefined}
+        aria-label={collapsed ? node.label : undefined}
+        disabled={itemDisabled || undefined}
+        bind:this={titleEl}
+        onclick={onTitleClick}
+        onkeydown={(e) => {
+          if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (hasChildren && !itemDisabled) open = true;
+          } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+            closeNow();
+          }
+        }}
+      >
+        {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+        {#if !collapsed}<span class="cd-menu__label">{node.label}</span>
+        <span class="cd-menu__arrow cd-menu__arrow--popup" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+            <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+          </svg>
+        </span>{/if}
+      </button>
+    {/snippet}
+    {#if collapsed}
+      <Tooltip
+        content={tooltipProps?.content ?? node.label}
+        placement={tooltipProps?.position ?? 'right'}
+        theme={tooltipProps?.theme}
+        mouseEnterDelay={tooltipProps?.mouseEnterDelay}
+        mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
+      >
+        {@render titleButton()}
+      </Tooltip>
+    {:else}
+      {@render titleButton()}
+    {/if}
 
     {#if shouldRenderSub}
       <ul
@@ -235,6 +273,7 @@
             {destroyOnHide}
             parentDisabled={parentDisabled}
             {onSelectLeaf}
+            {renderWrapper}
             onCloseAll={() => {
               closeNow();
               onCloseAll();
@@ -251,47 +290,87 @@
   <li class="cd-menu__item" role={navigation ? undefined : 'none'}>
     {#if navigation && node.href !== undefined}
       <!-- navigation 用途：含 href 叶子渲染原生 <a>，原生链接 + Tab 键序 -->
-      <a
-        class="cd-menu__link"
-        class:cd-menu__link--selected={selected}
-        class:cd-menu__link--collapsed={collapsed}
-        href={itemDisabled ? undefined : node.href}
-        target={node.target}
-        rel={node.rel}
-        aria-current={selected ? 'page' : undefined}
-        aria-disabled={itemDisabled || undefined}
-        aria-label={collapsed ? node.label : undefined}
-        title={collapsed ? node.label : undefined}
-        onclick={onLeafClick}
-      >
-        {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-        {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
-      </a>
+      {#snippet leafLink()}
+        <a
+          class="cd-menu__link"
+          class:cd-menu__link--selected={selected}
+          class:cd-menu__link--collapsed={collapsed}
+          href={itemDisabled ? undefined : node.href}
+          target={node.target}
+          rel={node.rel}
+          aria-current={selected ? 'page' : undefined}
+          aria-disabled={itemDisabled || undefined}
+          aria-label={collapsed ? node.label : undefined}
+          onclick={onLeafClick}
+        >
+          {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+          {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
+        </a>
+      {/snippet}
+      {#if collapsed}
+        <Tooltip
+          content={tooltipProps?.content ?? node.label}
+          placement={tooltipProps?.position ?? 'right'}
+          theme={tooltipProps?.theme}
+          mouseEnterDelay={tooltipProps?.mouseEnterDelay}
+          mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
+        >
+          {#if renderWrapper}
+            {@render renderWrapper({ item: node, children: leafLink })}
+          {:else}
+            {@render leafLink()}
+          {/if}
+        </Tooltip>
+      {:else if renderWrapper}
+        {@render renderWrapper({ item: node, children: leafLink })}
+      {:else}
+        {@render leafLink()}
+      {/if}
     {:else}
-      <button
-        type="button"
-        class="cd-menu__link"
-        class:cd-menu__link--selected={selected}
-        class:cd-menu__link--collapsed={collapsed}
-        role={navigation ? undefined : multiple ? 'menuitemcheckbox' : 'menuitem'}
-        aria-current={!navigation && !multiple && selected ? 'true' : undefined}
-        aria-checked={!navigation && multiple ? selected : undefined}
-        aria-disabled={itemDisabled || undefined}
-        aria-label={collapsed ? node.label : undefined}
-        title={collapsed ? node.label : undefined}
-        disabled={itemDisabled || undefined}
-        onclick={onLeafClick}
-      >
-        {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
-        {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
-        {#if multiple && !collapsed && !navigation}
-          <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-              <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
-            </svg>
-          </span>
-        {/if}
-      </button>
+      {#snippet leafButton()}
+        <button
+          type="button"
+          class="cd-menu__link"
+          class:cd-menu__link--selected={selected}
+          class:cd-menu__link--collapsed={collapsed}
+          role={navigation ? undefined : multiple ? 'menuitemcheckbox' : 'menuitem'}
+          aria-current={!navigation && !multiple && selected ? 'true' : undefined}
+          aria-checked={!navigation && multiple ? selected : undefined}
+          aria-disabled={itemDisabled || undefined}
+          aria-label={collapsed ? node.label : undefined}
+          disabled={itemDisabled || undefined}
+          onclick={onLeafClick}
+        >
+          {#if node.icon}<span class="cd-menu__icon" aria-hidden="true">{@render node.icon()}</span>{:else if collapsed}<span class="cd-menu__icon cd-menu__icon--char" aria-hidden="true">{firstChar}</span>{/if}
+          {#if !collapsed}<span class="cd-menu__label">{node.label}</span>{/if}
+          {#if multiple && !collapsed && !navigation}
+            <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+              <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+              </svg>
+            </span>
+          {/if}
+        </button>
+      {/snippet}
+      {#if collapsed}
+        <Tooltip
+          content={tooltipProps?.content ?? node.label}
+          placement={tooltipProps?.position ?? 'right'}
+          theme={tooltipProps?.theme}
+          mouseEnterDelay={tooltipProps?.mouseEnterDelay}
+          mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
+        >
+          {#if renderWrapper}
+            {@render renderWrapper({ item: node, children: leafButton })}
+          {:else}
+            {@render leafButton()}
+          {/if}
+        </Tooltip>
+      {:else if renderWrapper}
+        {@render renderWrapper({ item: node, children: leafButton })}
+      {:else}
+        {@render leafButton()}
+      {/if}
     {/if}
   </li>
 {/if}
