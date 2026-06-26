@@ -19,6 +19,7 @@
     type FormLabelPosition,
     type FormSize,
     type FormLabelAlign,
+    type GridCol,
   } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalValidateMessages } from '../config-provider/index.js';
@@ -50,7 +51,15 @@
     /** 收集值时是否保留空值字段键（spec §4 L70，默认 false）。 */
     allowEmpty?: boolean;
     onSubmit?: (r: { valid: boolean; values: FormValues; errors: FieldErrors }) => void;
+    /** 任意字段值变化时触发（不同于 onChange 的纯值快照，此回调额外携带变更字段信息）。 */
+    onValueChange?: (values: FormValues, changedValues: Record<string, unknown>) => void;
+    /** 表单校验失败时独立回调（onSubmit 只在 valid 时调用时可用此做失败分支）。 */
+    onSubmitFail?: (errors: FieldErrors, values: FormValues) => void;
     onChange?: (values: FormValues) => void;
+    /** 控件布局列配置（Grid 布局时）。 */
+    wrapperCol?: GridCol;
+    /** 标签布局列配置（Grid 布局时）。 */
+    labelCol?: GridCol;
     children?: Snippet;
     footer?: Snippet<[{ submitting: boolean }]>;
   }
@@ -73,7 +82,11 @@
     preventDefault = true,
     allowEmpty = false,
     onSubmit,
+    onValueChange,
+    onSubmitFail,
     onChange,
+    wrapperCol,
+    labelCol,
     children,
     footer,
   }: Props = $props();
@@ -124,8 +137,17 @@
   const unsub = form.subscribe((s) => {
     formState = { ...s };
     if (s.values !== lastValues) {
+      const prev = lastValues;
       lastValues = s.values;
       onChange?.(s.values);
+      if (onValueChange) {
+        // Compute changedValues: fields whose reference differs from previous snapshot.
+        const changed: Record<string, unknown> = {};
+        for (const k of Object.keys(s.values)) {
+          if (s.values[k] !== prev[k]) changed[k] = s.values[k];
+        }
+        onValueChange(s.values, changed);
+      }
     }
   });
   $effect(() => unsub);
@@ -148,6 +170,8 @@
     getRequiredMark: () => requiredMark,
     getColon: () => colon,
     getShowValidateIcon: () => showValidateIcon,
+    getWrapperCol: () => wrapperCol,
+    getLabelCol: () => labelCol,
   });
 
   // ref to the <form> element — used imperatively (red line #3: DOM ops live in
@@ -178,6 +202,7 @@
     if (preventDefault) e.preventDefault();
     const r = await form.submit();
     if (!r.valid && scrollToError) focusFirstError(r.errors);
+    if (!r.valid) onSubmitFail?.(r.errors, r.values);
     onSubmit?.(r);
   }
 
