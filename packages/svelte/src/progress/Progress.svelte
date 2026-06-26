@@ -23,6 +23,8 @@
 
   type Size = 'small' | 'default' | 'large';
 
+  type StrokeColorGradient = { from: string; to: string; direction?: string };
+
   interface Props {
     percent?: number;
     type?: ProgressType;
@@ -37,6 +39,10 @@
     gapDegree?: number;
     gapPosition?: GapPosition;
     successWhenFull?: boolean;
+    /** 进度条颜色：字符串直接用作颜色，对象 {from, to, direction?} 生成渐变。 */
+    strokeColor?: string | StrokeColorGradient;
+    /** 轨道（背景）颜色。 */
+    trailColor?: string;
     motion?: boolean;
     ariaLabel?: string;
     formatSnippet?: Snippet<[{ percent: number; status: ProgressStatus }]>;
@@ -58,6 +64,8 @@
     gapDegree,
     gapPosition = 'bottom',
     successWhenFull = false,
+    strokeColor,
+    trailColor,
     motion = true,
     ariaLabel,
     formatSnippet,
@@ -100,6 +108,24 @@
     indeterminate ? null : format ? format(pct, effStatus) : `${pct}%`,
   );
   const showCheck = $derived(isCircle && effStatus === 'success');
+
+  // strokeColor 处理：字符串直接用，对象生成渐变
+  const isGradientStroke = $derived(typeof strokeColor === 'object' && strokeColor !== null);
+  const gradientId = $derived(isGradientStroke ? `cd-progress-grad-${Math.abs(hashStr(JSON.stringify(strokeColor)))}` : '');
+  const strokeColorValue = $derived(
+    !strokeColor
+      ? undefined
+      : typeof strokeColor === 'string'
+        ? strokeColor
+        : `url(#${gradientId})`
+  );
+  const trailColorValue = $derived(trailColor ?? undefined);
+
+  function hashStr(s: string): number {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
+    return h;
+  }
 
   // onComplete：percent 首达 100 触发一次；回落到 <100 后重置可再次触发。
   let firedComplete = false;
@@ -166,13 +192,27 @@
       viewBox="0 0 {diameter} {diameter}"
       aria-hidden="true"
     >
+      {#if isGradientStroke && strokeColor && typeof strokeColor === 'object'}
+        <defs>
+          <linearGradient
+            id={gradientId}
+            x1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
+            y1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
+            x2={strokeColor.direction === 'to bottom' ? '0%' : '100%'}
+            y2={strokeColor.direction === 'to bottom' ? '100%' : '0%'}
+          >
+            <stop offset="0%" stop-color={strokeColor.from} />
+            <stop offset="100%" stop-color={strokeColor.to} />
+          </linearGradient>
+        </defs>
+      {/if}
       <circle
         class="cd-progress__circle-track"
         cx={circle.center}
         cy={circle.center}
         r={circle.radius}
         fill="none"
-        stroke="var(--cd-progress-track-color)"
+        stroke={trailColorValue ?? 'var(--cd-progress-track-color)'}
         stroke-width={sw}
         stroke-dasharray={circle.trackDash}
         transform="rotate({circle.rotation} {circle.center} {circle.center})"
@@ -183,6 +223,7 @@
         cy={circle.center}
         r={circle.radius}
         fill="none"
+        stroke={strokeColorValue}
         stroke-width={sw}
         stroke-linecap={strokeLinecap}
         stroke-dasharray={circle.fillDash}
@@ -194,16 +235,35 @@
     {/if}
   </div>
 {:else}
+  {#if isGradientStroke && strokeColor && typeof strokeColor === 'object'}
+    <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
+          y1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
+          x2={strokeColor.direction === 'to bottom' ? '0%' : '100%'}
+          y2={strokeColor.direction === 'to bottom' ? '100%' : '0%'}
+        >
+          <stop offset="0%" stop-color={strokeColor.from} />
+          <stop offset="100%" stop-color={strokeColor.to} />
+        </linearGradient>
+      </defs>
+    </svg>
+  {/if}
   <div
     class="cd-progress cd-progress--line cd-progress--{size} cd-progress--{effStatus}"
     class:cd-progress--no-motion={!motion}
     {...aria}
   >
-    <div class="cd-progress__track">
+    <div class="cd-progress__track" style={trailColorValue ? `background:${trailColorValue}` : undefined}>
       <div
         class="cd-progress__fill"
         class:cd-progress__fill--indeterminate={indeterminate}
-        style="inline-size: {indeterminate ? 100 : pct}%"
+        style={[
+          `inline-size: ${indeterminate ? 100 : pct}%`,
+          strokeColorValue ? `background:${strokeColorValue}` : '',
+        ].filter(Boolean).join(';')}
       ></div>
     </div>
     {#if showInfo && infoText !== null}
