@@ -8,6 +8,8 @@
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
 
+  let activeTab = $state<'api' | 'usage'>('api');
+
   // 组件名小写 → demo 目录名
   const nameToDir: Record<string, string> = {
     aichatdialogue: 'ai-chat-dialogue',
@@ -100,8 +102,10 @@
 
   // Vite glob — 静态路径，编译时分析
   const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
+  const contentModules = import.meta.glob('../../../content/components/*.md');
 
   let DemoComponent = $state<Component | null>(null);
+  let ContentComponent = $state<Component | null>(null);
 
   $effect(() => {
     const name = meta.name.toLowerCase();
@@ -113,6 +117,19 @@
         DemoComponent = mod.default;
       }).catch(() => {
         DemoComponent = null;
+      });
+    }
+  });
+
+  $effect(() => {
+    const name = meta.name.toLowerCase();
+    const key = `../../../content/components/${name}.md`;
+    ContentComponent = null;
+    if (contentModules[key]) {
+      (contentModules[key]() as Promise<{ default: Component }>).then((mod) => {
+        ContentComponent = mod.default;
+      }).catch(() => {
+        ContentComponent = null;
       });
     }
   });
@@ -132,25 +149,44 @@
   <p class="description">{meta.description}</p>
 </div>
 
-{#if DemoComponent}
-<section class="section">
-  <h2>代码演示</h2>
-  <DemoBox title="基本用法">
-    <DemoComponent />
-  </DemoBox>
-</section>
-{/if}
+<div class="tabs">
+  <button class="tab" class:active={activeTab === 'api'} onclick={() => activeTab = 'api'}>
+    API 文档
+  </button>
+  <button class="tab" class:active={activeTab === 'usage'} onclick={() => activeTab = 'usage'}>
+    使用场景
+  </button>
+</div>
 
-<section class="section">
-  <h2>API 参考</h2>
-  <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
-</section>
+{#if activeTab === 'api'}
+  {#if DemoComponent}
+  <section class="section">
+    <h2>代码演示</h2>
+    <DemoBox title="基本用法">
+      <DemoComponent />
+    </DemoBox>
+  </section>
+  {/if}
 
-{#if meta.tokens?.length}
-<section class="section">
-  <h2>Design Tokens</h2>
-  <TokenTable tokens={meta.tokens} />
-</section>
+  <section class="section">
+    <h2>API 参考</h2>
+    <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
+  </section>
+
+  {#if meta.tokens?.length}
+  <section class="section">
+    <h2>Design Tokens</h2>
+    <TokenTable tokens={meta.tokens} />
+  </section>
+  {/if}
+{:else}
+  {#if ContentComponent}
+    <div class="content-body">
+      <ContentComponent />
+    </div>
+  {:else}
+    <p class="no-content">暂无使用场景文档。</p>
+  {/if}
 {/if}
 
 <style>
@@ -162,4 +198,17 @@
   .description { color: var(--cd-color-text-1, #4e5969); margin: 0 0 24px; }
   .section { margin-bottom: 40px; }
   h2 { font-size: 18px; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--cd-color-border, #e5e7eb); }
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--cd-color-border, #e5e7eb); margin-bottom: 24px; }
+  .tab {
+    padding: 8px 20px; background: none; border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; font-size: 14px; color: var(--cd-color-text-1, #4e5969);
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--cd-color-primary, #165dff); border-bottom-color: var(--cd-color-primary, #165dff); }
+  .content-body :global(h2) { font-size: 18px; margin: 24px 0 12px; }
+  .content-body :global(h3) { font-size: 15px; margin: 16px 0 8px; }
+  .content-body :global(p) { line-height: 1.7; color: var(--cd-color-text-0, #1f2329); margin: 0 0 12px; }
+  .content-body :global(ul), .content-body :global(ol) { padding-left: 20px; margin: 0 0 12px; }
+  .content-body :global(li) { line-height: 1.7; margin-bottom: 4px; }
+  .no-content { color: var(--cd-color-text-2, #86909c); font-size: 14px; padding: 24px 0; }
 </style>
