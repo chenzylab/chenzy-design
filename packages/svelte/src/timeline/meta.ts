@@ -79,6 +79,14 @@ export const meta = {
       desc: '声明式单项，渲染 dot/line/内容（children），与 dataSource 项视觉一致',
       props: [
         { name: 'dotColor', type: 'string', default: 'undefined', desc: '圆点颜色' },
+        { name: 'color', type: 'string', default: 'undefined', desc: '圆点颜色别名（与 dotColor 等价，dotColor 优先）' },
+        {
+          name: 'type',
+          type: "'default'|'ongoing'|'success'|'warning'|'error'",
+          default: 'undefined',
+          desc: '语义类型，给圆点附加 cd-timeline__dot--{type} class',
+        },
+        { name: 'dot', type: 'Snippet', default: 'undefined', desc: '自定义圆点 snippet，提供时替代默认圆点' },
         {
           name: 'lineStyle',
           type: "'solid'|'dashed'",
@@ -86,6 +94,18 @@ export const meta = {
           desc: '单项连接线样式',
         },
         { name: 'time', type: 'string', default: 'undefined', desc: '时间文本' },
+        {
+          name: 'position',
+          type: "'left'|'right'",
+          default: 'undefined',
+          desc: '覆盖父 Timeline mode 的单项定位',
+        },
+        {
+          name: 'extra',
+          type: 'string | Snippet',
+          default: 'undefined',
+          desc: '时间旁辅助内容',
+        },
         {
           name: 'onClick',
           type: '() => void',
