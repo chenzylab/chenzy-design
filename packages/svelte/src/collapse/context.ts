@@ -1,4 +1,5 @@
 import { getContext, setContext } from 'svelte';
+import type { Snippet } from 'svelte';
 
 export type CollapseSize = 'small' | 'default' | 'large';
 export type CollapseIconPosition = 'left' | 'right';
@@ -38,6 +39,8 @@ export interface CollapseContext {
   onHeaderKeydown: (event: KeyboardEvent, key: string) => void;
   /** Header 获得焦点时同步 focusedKey。 */
   onHeaderFocus: (key: string) => void;
+  /** 自定义展开图标 Snippet，参数为 {isExpanded}；undefined 时渲染默认箭头 SVG。 */
+  getExpandIcon: () => Snippet<[{ isExpanded: boolean }]> | undefined;
 }
 
 const KEY = Symbol('cd-collapse');
