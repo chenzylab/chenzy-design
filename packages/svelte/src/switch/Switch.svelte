@@ -51,6 +51,18 @@
     onBlur?: (event: FocusEvent) => void;
     /** 键盘按下（可用于自定义快捷键扩展）。 */
     onKeydown?: (event: KeyboardEvent) => void;
+    /** checked 时显示的文字（checkedChildren 的字符串别名） */
+    checkedText?: string;
+    /** unchecked 时显示的文字 */
+    uncheckedText?: string;
+    /** checked 时的 Snippet（checkedChildren 的 Snippet 别名） */
+    checkedContent?: Snippet;
+    /** unchecked 时的 Snippet */
+    uncheckedContent?: Snippet;
+    /** 鼠标进入 */
+    onMouseEnter?: (e: MouseEvent) => void;
+    /** 鼠标离开 */
+    onMouseLeave?: (e: MouseEvent) => void;
   }
 
   let {
@@ -74,6 +86,12 @@
     onFocus,
     onBlur,
     onKeydown,
+    checkedText,
+    uncheckedText,
+    checkedContent,
+    uncheckedContent,
+    onMouseEnter,
+    onMouseLeave,
   }: Props = $props();
 
   const loc = useLocale();
@@ -122,7 +140,16 @@
     announce(next);
   }
 
-  const activeChildren = $derived(on ? checkedChildren : uncheckedChildren);
+  // checkedText / uncheckedText 是 checkedChildren / uncheckedChildren 的字符串别名；
+  // checkedContent / uncheckedContent 是 Snippet 别名。
+  // 优先级：checkedChildren > checkedContent > checkedText（同理 unchecked）。
+  const resolvedChecked = $derived<string | Snippet | undefined>(
+    checkedChildren ?? checkedContent ?? checkedText,
+  );
+  const resolvedUnchecked = $derived<string | Snippet | undefined>(
+    uncheckedChildren ?? uncheckedContent ?? uncheckedText,
+  );
+  const activeChildren = $derived(on ? resolvedChecked : resolvedUnchecked);
   const isSnippet = (c: string | Snippet | undefined): c is Snippet => typeof c === 'function';
 
   // 隐藏 input 提交值：boolean → 'true'/'false'，其余按原值字符串化。
@@ -153,6 +180,8 @@
   onfocus={onFocus}
   onblur={onBlur}
   onkeydown={onKeydown}
+  onmouseenter={onMouseEnter}
+  onmouseleave={onMouseLeave}
 >
   {#if name}<input type="hidden" {name} value={submitValue} {required} />{/if}
   {#if activeChildren !== undefined}
