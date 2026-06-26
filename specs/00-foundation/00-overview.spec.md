@@ -58,6 +58,7 @@
 | MVVM 适配 | `mvvm-adapter.spec.md` | 需求 3 |
 | AI 友好 | `ai-friendly.spec.md` | 需求 6 |
 | 文案规范 | `content-guidelines.spec.md` | 需求 8 |
+| **文档站** | `docs.spec.md` | M0 基建，4 个 Phase 分步实施 |
 
 ## 4. 每个组件 SPEC 的统一结构
 
