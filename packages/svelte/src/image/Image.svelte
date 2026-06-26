@@ -38,6 +38,12 @@
     placeholder?: string | boolean;
     fallback?: string | boolean;
     preview?: boolean;
+    /** 自定义预览图 URL，不传时用 src。 */
+    previewSrc?: string;
+    /** img 加载失败回调。 */
+    onError?: (e: Event) => void;
+    /** img 加载成功回调。 */
+    onLoad?: (e: Event) => void;
     class?: string;
     errorSlot?: Snippet;
     placeholderSlot?: Snippet;
@@ -59,6 +65,9 @@
     placeholder = true,
     fallback = true,
     preview = false,
+    previewSrc,
+    onError,
+    onLoad,
     class: className = '',
     errorSlot,
     placeholderSlot,
@@ -126,19 +135,21 @@
 
   const canPreview = $derived(preview && status === 'loaded');
 
-  function handleLoad() {
+  function handleLoad(e: Event) {
     status = 'loaded';
+    onLoad?.(e);
   }
 
-  function handleError() {
+  function handleError(e: Event) {
     status = 'error';
+    onError?.(e);
   }
 
   // 预览组上下文：存在则把预览态交给组共享浮层（多图切换）；否则用本地单图浮层。
   const group = getImageGroupContext();
   // 在组内注册自身（注册顺序 = 组内稳定槽位索引）。注册是一次性的（非响应式），
   // src/alt 经 getter 暴露给组以保持响应性。卸载时经 $effect cleanup 注销。
-  const groupSlot = group ? group.register({ getSrc: () => src, getAlt: () => alt }) : -1;
+  const groupSlot = group ? group.register({ getSrc: () => previewSrc ?? src, getAlt: () => alt }) : -1;
   if (group) {
     $effect(() => () => group.unregister(groupSlot));
   }
@@ -157,7 +168,8 @@
   }
 
   // 单图浮层只有一张图，索引恒为 0；onChange 无实际切换（满足共享组件接口）。
-  const singleImages = $derived([{ src, alt }]);
+  // previewSrc 指定自定义预览图（缩略图与预览图可不同）。
+  const singleImages = $derived([{ src: previewSrc ?? src, alt }]);
 
   // IntersectionObserver：命令式创建 + cleanup，进入视口才放行真实 src
   $effect(() => {

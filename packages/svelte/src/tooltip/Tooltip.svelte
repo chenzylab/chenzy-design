@@ -10,7 +10,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import { useId, useDismiss, type Placement } from '@chenzy-design/core';
+  import { useId, useDismiss, useScrollLock, type Placement } from '@chenzy-design/core';
+  import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { resolveSide } from './placement.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -37,6 +38,16 @@
     status?: Status;
     maxWidth?: number | string;
     disabled?: boolean;
+    /** 浮层 z-index（覆盖 CSS token --cd-tooltip-z） */
+    zIndex?: number;
+    /** 阻止浮层上的点击事件冒泡，默认 true */
+    stopPropagation?: boolean;
+    /** 显示时阻止页面滚动 */
+    preventScroll?: boolean;
+    /** 浮层完全关闭（动画结束）后的回调 */
+    afterClose?: () => void;
+    /** 自定义浮层挂载容器（缺省回退 ConfigProvider 全局，再回退 body） */
+    getPopupContainer?: () => HTMLElement | null | undefined;
     onOpenChange?: (open: boolean) => void;
     children?: Snippet;
   }
@@ -56,12 +67,21 @@
     status = 'default',
     maxWidth = 300,
     disabled = false,
+    zIndex,
+    stopPropagation = true,
+    preventScroll = false,
+    afterClose,
+    getPopupContainer,
     onOpenChange,
     children,
   }: Props = $props();
 
   const tipId = useId('cd-tooltip');
   const loc = useLocale();
+
+  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先。
+  const globalPopupContainer = getGlobalPopupContainer();
+  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
   const isControlled = $derived(open !== undefined);
@@ -176,6 +196,40 @@
   // cleanup hover 定时器
   $effect(() => clearTimers);
 
+  // --- preventScroll：显示时锁定背景滚动（红线 #3：命令式 + cleanup）---
+  $effect(() => {
+    if (!isOpen || !preventScroll) return;
+    const release = useScrollLock();
+    return release;
+  });
+
+  // --- afterClose：浮层关闭后（isOpen 变 false）异步回调，确保动画有机会结束 ---
+  // 记录上一帧 isOpen，避免首次挂载时误触发（初始值与 isOpen 一致不触发）。
+  let prevOpenRef = { value: false };
+  $effect(() => {
+    const current = isOpen;
+    if (prevOpenRef.value && !current) {
+      // 用 requestAnimationFrame 延后一帧，让 CSS 过渡先触发
+      requestAnimationFrame(() => afterClose?.());
+    }
+    prevOpenRef.value = current;
+  });
+
+  // 浮层根内联样式：自定义 zIndex 覆盖 token 层级。
+  const popStyle = $derived(
+    [
+      `max-inline-size:${maxWidthCss}`,
+      zIndex !== undefined ? `z-index:${zIndex}` : '',
+    ]
+      .filter(Boolean)
+      .join(';'),
+  );
+
+  // stopPropagation：浮层内点击停止冒泡。
+  function onPopClick(e: MouseEvent) {
+    if (stopPropagation) e.stopPropagation();
+  }
+
   // 箭头沿交叉轴的定位样式：top/bottom 用 inline-start，left/right 用 block-start。
   const arrowStyle = $derived(
     resolvedSide === 'top' || resolvedSide === 'bottom'
@@ -204,15 +258,19 @@
   </span>
 
   {#if isOpen}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       id={tipId}
       role="tooltip"
       bind:this={popEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, arrowPointAtCenter, onPlacement }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer }}
       class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
       class:cd-tooltip__pop--with-status={hasStatusIcon}
-      style="max-inline-size:{maxWidthCss}"
+      style={popStyle}
+      onclick={onPopClick}
     >
       {#if hasStatusIcon}
         <span class="cd-tooltip__status cd-tooltip__status--{status}" aria-label={statusLabel} role="img">

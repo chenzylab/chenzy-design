@@ -60,6 +60,8 @@
     onResize?: (payload: { height: number }) => void;
     onCompositionStart?: (e: CompositionEvent) => void;
     onCompositionEnd?: (e: CompositionEvent) => void;
+    /** 无边框模式 */
+    borderless?: boolean;
   }
 
   let {
@@ -96,6 +98,7 @@
     onResize,
     onCompositionStart,
     onCompositionEnd,
+    borderless = false,
   }: Props = $props();
 
   const loc = useLocale();
@@ -231,6 +234,7 @@
       readonly && 'cd-textarea--readonly',
       autosizeOn && 'cd-textarea--autosize',
       overLimit && 'cd-textarea--over-limit',
+      borderless && 'cd-textarea--borderless',
       className,
     ]
       .filter(Boolean)
@@ -342,6 +346,15 @@
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+  }
+  .cd-textarea--borderless {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+  .cd-textarea--borderless:focus-within {
+    border-color: transparent;
+    box-shadow: none;
   }
   .cd-textarea__native {
     inline-size: 100%;

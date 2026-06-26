@@ -119,6 +119,101 @@
     ariaLabel?: string;
     /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态，与 Tree 的 icon 对齐。 */
     icon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+
+    // --- Appearance ---
+    /** 无边框模式：trigger 边框透明。默认 false。 */
+    borderless?: boolean;
+    /** trigger 前缀（Snippet 或字符串）。 */
+    prefix?: Snippet | string;
+    /** trigger 后缀（Snippet 或字符串）。 */
+    suffix?: Snippet | string;
+    /** 自定义清除按钮图标 Snippet。 */
+    clearIcon?: Snippet;
+    /**
+     * 自定义展开图标 Snippet（参数 { node, expanded, level }）。
+     * 也可传普通 Snippet（无参数），此时统一渲染同一图标。
+     */
+    expandIcon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+    /** 显示节点连接线（垂直导引线）。默认 false。 */
+    showLine?: boolean;
+    /** 节点 label 单行省略截断。默认 true（保持原有行为，可关闭以允许换行）。 */
+    labelEllipsis?: boolean;
+
+    // --- Slots ---
+    /** 面板顶部外层 slot（在搜索框之上）。 */
+    outerTopSlot?: Snippet;
+    /** 面板底部外层 slot（在树之下）。 */
+    outerBottomSlot?: Snippet;
+
+    // --- Search enhancements ---
+    /** 面板打开时搜索框自动获焦。默认 false。 */
+    searchAutoFocus?: boolean;
+    /** 搜索框位置：'dropdown'（面板内，默认）或 'trigger'（trigger 内）。 */
+    searchPosition?: 'dropdown' | 'trigger';
+    /** 搜索框右侧显示清除按钮（有内容时）。默认 true。 */
+    showSearchClear?: boolean;
+    /** 搜索激活时仅显示命中节点，不显示祖先链。默认 false。 */
+    showFilteredOnly?: boolean;
+
+    // --- Expand control ---
+    /** 动态全部展开（与 defaultExpandAll 不同，此为受控/动态）。默认 false。 */
+    expandAll?: boolean;
+    /** 行点击展开方式：false（仅展开按钮触发）、'click'（单击行）、'doubleClick'（双击行）。默认 false。 */
+    expandAction?: false | 'click' | 'doubleClick';
+    /** 展开节点时自动展开其所有祖先链。默认 false。 */
+    autoExpandParent?: boolean;
+    /** 展开/折叠动画。默认 true。 */
+    motionExpand?: boolean;
+
+    // --- Multi-select enhancements ---
+    /**
+     * 自动合并值：父节点全选时 value 不再包含其后代（等价 showCheckedStrategy='parent'）。
+     * 默认 true。autoMergeValue=false 时 showCheckedStrategy 原始生效。
+     */
+    autoMergeValue?: boolean;
+    /** onChange 回调携带完整节点对象而非仅 key。默认 false。 */
+    onChangeWithObject?: boolean;
+    /** 超出 maxTagCount 折叠的 tag 以 popover 形式展示剩余项。默认 false。 */
+    showRestTagsPopover?: boolean;
+    /** 传给剩余 tags popover 的额外 props。 */
+    restTagsPopoverProps?: Record<string, unknown>;
+    /** trigger 多选 tags 换行显示（默认单行截断折叠）。默认 false。 */
+    triggerTagWrap?: boolean;
+
+    // --- Node rendering ---
+    /** 自定义节点 label 渲染（仅替换文字部分，保留 checkbox/icon/expand 等）。 */
+    renderLabel?: Snippet<[{ label: string; data: TreeNode; searchWord: string }]>;
+    /** 完全自定义节点行渲染（替换整行内容）。 */
+    renderFullLabel?: Snippet<[{ node: TreeNode; expanded: boolean; level: number; checked: boolean; halfChecked: boolean; selected: boolean }]>;
+    /** 自定义 trigger 已选 tag 渲染（多选时每个 tag 独立渲染）。 */
+    renderSelectedItem?: Snippet<[{ node: TreeNode; onRemove: () => void }]>;
+    /** 节点数据中用作显示 label 的字段名（默认 'label'）。 */
+    treeNodeLabelProp?: string;
+    /** 自定义 key/label/value 字段映射（优先级高于 fieldNames 的 key/label 部分）。 */
+    keyMaps?: { key?: string; label?: string; value?: string };
+    /** 选项列表容器的内联 style（字符串或对象形式）。 */
+    optionListStyle?: string | Record<string, string>;
+
+    // --- Behavior ---
+    /** 单选选中后自动关闭面板。默认 true。 */
+    clickToHide?: boolean;
+    /** 面板开启时点击 trigger 关闭面板。默认 true。 */
+    clickTriggerToHide?: boolean;
+    /**
+     * 严格禁用：disabled 节点不因父节点联动而影响，禁用态独立（不传播给子节点）。
+     * 默认 false（父禁用 conduct 不检查子）。
+     */
+    disableStrictly?: boolean;
+    /** 浮层与 trigger 的额外间距（px），数字或四方向对象。 */
+    dropdownMargin?: number | { marginTop?: number; marginBottom?: number; marginLeft?: number; marginRight?: number };
+
+    // --- Events ---
+    /** 点击清除按钮回调。 */
+    onClear?: (e: MouseEvent) => void;
+    /** 异步加载完成回调（含已加载 key 集合与当前节点）。 */
+    onLoad?: (loadedKeys: TreeKey[], treeNode: TreeNode) => void;
+    /** 面板可见性变化回调（与 onOpenChange 语义相同，Semi 风格别名）。 */
+    onVisibleChange?: (isVisible: boolean) => void;
   }
 
   let {
@@ -158,6 +253,42 @@
     onOpenChange,
     ariaLabel,
     icon,
+    // --- New props ---
+    borderless = false,
+    prefix,
+    suffix,
+    clearIcon,
+    expandIcon,
+    showLine = false,
+    labelEllipsis = true,
+    outerTopSlot,
+    outerBottomSlot,
+    searchAutoFocus = false,
+    searchPosition = 'dropdown',
+    showSearchClear = true,
+    showFilteredOnly = false,
+    expandAll = false,
+    expandAction = false,
+    autoExpandParent = false,
+    motionExpand = true,
+    autoMergeValue = true,
+    onChangeWithObject = false,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    triggerTagWrap = false,
+    renderLabel,
+    renderFullLabel,
+    renderSelectedItem,
+    treeNodeLabelProp = 'label',
+    keyMaps,
+    optionListStyle,
+    clickToHide = true,
+    clickTriggerToHide = true,
+    disableStrictly = false,
+    dropdownMargin,
+    onClear,
+    onLoad,
+    onVisibleChange,
   }: Props = $props();
 
   const loc = useLocale();
@@ -179,8 +310,9 @@
   // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
   // 默认（全标准名）时直接返回原 treeData 引用，零额外开销；映射为纯 $derived（红线 #2），不写回（红线 #1）。
   // 节点 key 取自原始 key 字段，故 onChange 回传的 value（key）即用户原始 id，无需额外映射回原节点。
-  const keyField = $derived(fieldNames?.key ?? 'key');
-  const labelField = $derived(fieldNames?.label ?? 'label');
+  // keyMaps 优先级高于 fieldNames（key/label 部分）；keyMaps.value 作为 key 字段别名。
+  const keyField = $derived(keyMaps?.key ?? keyMaps?.value ?? fieldNames?.key ?? 'key');
+  const labelField = $derived(keyMaps?.label ?? fieldNames?.label ?? 'label');
   const childrenField = $derived(fieldNames?.children ?? 'children');
   const fieldNamesDefault = $derived(
     keyField === 'key' && labelField === 'label' && childrenField === 'children',
@@ -190,6 +322,7 @@
     const kf = keyField;
     const lf = labelField;
     const cf = childrenField;
+    const tnlp = treeNodeLabelProp;
     return nodes.map((raw) => {
       const r = raw as unknown as Record<string, unknown>;
       const kids = r[cf] as TreeNode[] | undefined;
@@ -198,6 +331,10 @@
         key: r[kf] as TreeKey,
         label: r[lf] as string,
       };
+      // treeNodeLabelProp 优先覆盖 label（当与 labelField 不同时）。
+      if (tnlp !== 'label' && tnlp !== lf && r[tnlp] !== undefined) {
+        out.label = r[tnlp] as string;
+      }
       if (kids) out.children = normalizeNodes(kids);
       else delete out.children;
       return out;
@@ -239,6 +376,7 @@
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
+      onLoad?.([...loadedKeys], node);
     }
   }
 
@@ -312,14 +450,23 @@
     if (isUnRelated) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     return conduct(mergedTree as unknown as TreeNodeData[], currentCheckedBase);
   });
-  // 回填值/Tag 收敛集（showCheckedStrategy）：unRelated 无父子关系故策略不生效（取全 checked）。
+  // autoMergeValue=true 时把 showCheckedStrategy='all' 升级为 'parent'（父选不含后代）。
+  const effectiveStrategy = $derived<CheckedStrategy>(
+    !autoMergeValue
+      ? showCheckedStrategy
+      : showCheckedStrategy === 'all'
+        ? 'parent'
+        : showCheckedStrategy,
+  );
+
+  // 回填值/Tag 收敛集（effectiveStrategy）：unRelated 无父子关系故策略不生效（取全 checked）。
   const strategyKeys = $derived.by<TreeKey[]>(() => {
     if (!multiple) return [];
     if (isUnRelated) return [...checkState.checked];
     return collectCheckedByStrategy(
       mergedTree as unknown as TreeNodeData[],
       checkState.checked,
-      showCheckedStrategy,
+      effectiveStrategy,
     );
   });
   // trigger 回显的已选节点（按收敛策略，树序）
@@ -370,7 +517,7 @@
     onChange?.(next);
   }
 
-  // 多选：勾选 base 变更 → conduct 归一 → 按 showCheckedStrategy 收敛后回调
+  // 多选：勾选 base 变更 → conduct 归一 → 按 effectiveStrategy 收敛后回调
   function setChecked(nextBase: Set<TreeKey>) {
     if (!isValueControlled) innerChecked = nextBase;
     if (isUnRelated) {
@@ -382,7 +529,7 @@
       collectCheckedByStrategy(
         mergedTree as unknown as TreeNodeData[],
         resolved,
-        showCheckedStrategy,
+        effectiveStrategy,
       ),
     );
   }
@@ -426,10 +573,12 @@
     if (!next) searchValue = '';
     if (!isOpenControlled) innerOpen = next;
     onOpenChange?.(next);
+    onVisibleChange?.(next);
   }
 
   function toggleOpen() {
     if (disabled) return;
+    if (isOpen && !clickTriggerToHide) return;
     setOpen(!isOpen);
   }
 
@@ -460,8 +609,10 @@
     );
   });
   // 节点在搜索结果可见：命中本身、或在祖先链/含命中后代（expand 集）。
+  // showFilteredOnly=true 时只显示精确命中节点，不显示祖先链。
   function nodeVisible(key: TreeKey): boolean {
     if (!searchActive) return true;
+    if (showFilteredOnly) return filterResult.matched.has(key);
     return filterResult.matched.has(key) || filterResult.expand.has(key);
   }
 
@@ -473,7 +624,23 @@
 
   // --- 虚拟滚动（复用 Tree 范式）：派生展开集 → flattenVisible 扁平可见行 → fixedRange 视口切片 ---
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回受控 expandedKeys，红线 #1/#2）。
+  // expandAll=true 时动态收集所有可展开节点 key。
   const effectiveExpanded = $derived.by(() => {
+    if (expandAll) {
+      const set = new Set<TreeKey>();
+      const walk = (nodes: TreeNode[]) => {
+        for (const n of nodes) {
+          if (n.children && n.children.length > 0) {
+            set.add(n.key);
+            walk(n.children);
+          }
+        }
+      };
+      walk(mergedTree);
+      // 同时并入搜索展开链。
+      if (searchActive) for (const k of filterResult.expand) set.add(k);
+      return set;
+    }
     if (!searchActive) return expandedKeys;
     const merged = new Set(expandedKeys);
     for (const k of filterResult.expand) merged.add(k);
@@ -585,6 +752,21 @@
       next.delete(key);
     } else {
       next.add(key);
+      // autoExpandParent：展开时同时展开所有祖先链。
+      if (autoExpandParent) {
+        const findAncestors = (nodes: TreeNode[], target: TreeKey, path: TreeKey[]): TreeKey[] | null => {
+          for (const n of nodes) {
+            if (n.key === target) return path;
+            if (n.children) {
+              const found = findAncestors(n.children, target, [...path, n.key]);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const ancestors = findAncestors(mergedTree, key, []);
+        if (ancestors) for (const ak of ancestors) next.add(ak);
+      }
       // 展开未加载的异步节点：先取数据（数据到位后合并树派生即显示子节点）。
       if (!hasChildren(node) && loadData && !loadedKeys.has(key)) void loadChildren(node);
     }
@@ -603,7 +785,31 @@
       return;
     }
     setValue(node.key);
-    setOpen(false);
+    if (clickToHide) setOpen(false);
+  }
+
+  // 行点击处理器：expandAction 控制行点击是否展开。
+  function handleRowClick(node: TreeNode) {
+    if (node.disabled || disabled) return;
+    if (multiple) {
+      toggleCheckNode(node);
+      return;
+    }
+    if (leafOnly && isExpandable(node)) {
+      if (expandAction !== false) toggleExpand(node);
+      return;
+    }
+    // expandAction='click' 时行点击也展开。
+    if (expandAction === 'click' && isExpandable(node)) {
+      toggleExpand(node);
+    }
+    setValue(node.key);
+    if (clickToHide) setOpen(false);
+  }
+
+  // 行双击处理器：expandAction='doubleClick' 时双击展开/折叠。
+  function handleRowDoubleClick(node: TreeNode) {
+    if (expandAction === 'doubleClick' && isExpandable(node)) toggleExpand(node);
   }
 
   function clearAll(e: MouseEvent) {
@@ -614,6 +820,7 @@
     } else {
       setValue(null);
     }
+    onClear?.(e);
   }
 
   // --- 键盘 roving 导航（aria-activedescendant 模型）：焦点留 role=tree 容器，
@@ -774,9 +981,24 @@
       `cd-tree-select--${status}`,
       disabled && 'cd-tree-select--disabled',
       isOpen && 'cd-tree-select--open',
+      borderless && 'cd-tree-select--borderless',
+      showLine && 'cd-tree-select--show-line',
+      !motionExpand && 'cd-tree-select--no-motion-expand',
+      triggerTagWrap && 'cd-tree-select--tag-wrap',
     ]
       .filter(Boolean)
       .join(' '),
+  );
+
+  // optionListStyle 规范化为 style 字符串。
+  const optionListStyleStr = $derived(
+    typeof optionListStyle === 'string'
+      ? optionListStyle
+      : optionListStyle
+        ? Object.entries(optionListStyle)
+            .map(([k, v]) => `${k}:${v}`)
+            .join(';')
+        : undefined,
   );
 </script>
 
@@ -794,7 +1016,7 @@
   {@const selected = multiple ? cs.checked : currentValue === node.key}
   {@const active = activeKey === node.key}
   <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
     id={itemId(node.key)}
     class="cd-tree-select__node"

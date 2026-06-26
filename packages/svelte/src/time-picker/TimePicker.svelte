@@ -109,6 +109,18 @@
     onClickOutSide?: (e: MouseEvent) => void;
     /** 范围模式禁用函数。 */
     disabledTime?: (date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] };
+    /** 面板底部自定义内容（在"此刻"/"确定"按钮上方插入）。 */
+    panelFooter?: string | Snippet;
+    /** 输入框样式（透传到触发器 button）。 */
+    inputStyle?: string | Record<string, string>;
+    /** 输入框 readonly 属性（仅允许通过面板选择，不可键盘输入触发器文本）。 */
+    inputReadOnly?: boolean;
+    /** 完全自定义触发器渲染（替换默认 input + 图标区域）。 */
+    triggerRender?: Snippet<[{ value: Date | null; placeholder: string; open: boolean; disabled: boolean }]>;
+    /** 无边框模式。 */
+    borderless?: boolean;
+    /** focus 时阻止滚动（传给 focus({ preventScroll }) 调用）。 */
+    preventScroll?: boolean;
   }
 
   let {
@@ -159,6 +171,12 @@
     onChangeWithDateFirst = false,
     onClickOutSide,
     disabledTime,
+    panelFooter,
+    inputStyle,
+    inputReadOnly = false,
+    triggerRender,
+    borderless = false,
+    preventScroll = false,
   }: Props = $props();
 
   const isRange = $derived(range || type === 'timeRange');
@@ -474,7 +492,7 @@
         hourCol?.querySelector<HTMLElement>('[aria-selected="true"]') ??
         colOptions(hourCol)[0] ??
         null;
-      target?.focus();
+      target?.focus({ preventScroll });
     });
   });
 
@@ -526,6 +544,18 @@
     return () => document.removeEventListener('mousedown', handler);
   });
 
+  function isSnippet(v: unknown): v is Snippet {
+    return typeof v === 'function';
+  }
+
+  const inputStyleStr = $derived.by(() => {
+    if (!inputStyle) return undefined;
+    if (typeof inputStyle === 'string') return inputStyle;
+    return Object.entries(inputStyle)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(';');
+  });
+
   const cls = $derived(
     [
       'cd-time-picker',
@@ -534,6 +564,7 @@
       disabled && 'cd-time-picker--disabled',
       isOpen && 'cd-time-picker--open',
       !motion && 'cd-time-picker--no-motion',
+      borderless && 'cd-time-picker--borderless',
     ]
       .filter(Boolean)
       .join(' '),
@@ -541,59 +572,68 @@
 </script>
 
 <div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
-  <div class="cd-time-picker__control">
-    <button
-      type="button"
-      class="cd-time-picker__trigger"
-      aria-haspopup="dialog"
-      aria-expanded={isOpen}
-      aria-controls={baseId}
-      aria-label={ariaLabel}
-      {disabled}
-      bind:this={triggerEl}
-      onclick={toggleOpen}
-      onkeydown={onTriggerKeydown}
-      onfocus={onFocus}
-      onblur={onBlur}
-    >
-      {#if prefix}
-        <span class="cd-time-picker__prefix">
-          {#if typeof prefix === 'string'}
-            {prefix}
-          {:else}
-            {@render prefix()}
-          {/if}
-        </span>
-      {/if}
-      <span class="cd-time-picker__value" class:cd-time-picker__value--placeholder={current === null}>
-        {displayText}
-      </span>
-    </button>
-
-    {#if showClearBtn}
-      <button type="button" class="cd-time-picker__clear" aria-label={loc().t('TimePicker.clear')} onclick={clear}>
-        {#if clearIcon}
-          {@render clearIcon()}
-        {:else}
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-            />
-          </svg>
+  {#if triggerRender}
+    <!-- 自定义触发器：完全替换默认 input + 图标区域 -->
+    <div class="cd-time-picker__control" onclick={toggleOpen} onkeydown={onTriggerKeydown} role="button" tabindex={disabled ? -1 : 0} aria-haspopup="dialog" aria-expanded={isOpen}>
+      {@render triggerRender({ value: current, placeholder: placeholderText, open: isOpen, disabled })}
+    </div>
+  {:else}
+    <div class="cd-time-picker__control">
+      <button
+        type="button"
+        class="cd-time-picker__trigger"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-controls={baseId}
+        aria-label={ariaLabel}
+        {disabled}
+        readonly={inputReadOnly || undefined}
+        style={inputStyleStr}
+        bind:this={triggerEl}
+        onclick={toggleOpen}
+        onkeydown={onTriggerKeydown}
+        onfocus={onFocus}
+        onblur={onBlur}
+      >
+        {#if prefix}
+          <span class="cd-time-picker__prefix">
+            {#if typeof prefix === 'string'}
+              {prefix}
+            {:else}
+              {@render prefix()}
+            {/if}
+          </span>
         {/if}
+        <span class="cd-time-picker__value" class:cd-time-picker__value--placeholder={current === null}>
+          {displayText}
+        </span>
       </button>
-    {/if}
 
-    <span class="cd-time-picker__icon" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="14" height="14" focusable="false">
-        <path
-          fill="currentColor"
-          d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8.5 4.5h-1v4l3 1.8.5-.85L8.5 8V4.5Z"
-        />
-      </svg>
-    </span>
-  </div>
+      {#if showClearBtn}
+        <button type="button" class="cd-time-picker__clear" aria-label={loc().t('TimePicker.clear')} onclick={clear}>
+          {#if clearIcon}
+            {@render clearIcon()}
+          {:else}
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+              />
+            </svg>
+          {/if}
+        </button>
+      {/if}
+
+      <span class="cd-time-picker__icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="14" height="14" focusable="false">
+          <path
+            fill="currentColor"
+            d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8.5 4.5h-1v4l3 1.8.5-.85L8.5 8V4.5Z"
+          />
+        </svg>
+      </span>
+    </div>
+  {/if}
 
   {#if isOpen}
     <div
@@ -716,6 +756,11 @@
         {/if}
       </div>
 
+      {#if panelFooter !== undefined}
+        <div class="cd-time-picker__panel-footer-extra">
+          {#if isSnippet(panelFooter)}{@render panelFooter()}{:else}{panelFooter}{/if}
+        </div>
+      {/if}
       <div class="cd-time-picker__footer">
         <button type="button" class="cd-time-picker__now" onclick={setNow}>{loc().t('TimePicker.now')}</button>
         <button type="button" class="cd-time-picker__ok" onclick={confirm}>{loc().t('TimePicker.confirm')}</button>
@@ -778,6 +823,15 @@
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+  }
+  /* 无边框模式 */
+  .cd-time-picker--borderless .cd-time-picker__trigger {
+    border-color: transparent;
+    background: transparent;
+  }
+  .cd-time-picker--borderless .cd-time-picker__trigger:focus-visible {
+    border-color: var(--cd-input-border-active);
+    background: var(--cd-input-color-bg);
   }
   .cd-time-picker__value {
     flex: 1 1 auto;
@@ -918,6 +972,10 @@
     color: var(--cd-color-text-3);
     background: transparent;
     cursor: not-allowed;
+  }
+  .cd-time-picker__panel-footer-extra {
+    padding: var(--cd-spacing-2);
+    border-block-start: 1px solid var(--cd-color-border);
   }
   .cd-time-picker__footer {
     display: flex;

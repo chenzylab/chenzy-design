@@ -18,12 +18,21 @@
   import { SvelteSet } from 'svelte/reactivity';
   import MenuPopupNode from './MenuPopupNode.svelte';
   import { deriveMenuSemantics, isDivider, isGroup } from './types.js';
+  import type { Snippet } from 'svelte';
   import type { MenuItemDef, MenuItemNode, MenuKey, MenuPurpose } from './types.js';
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type TriggerSubMenuAction = 'hover' | 'click';
+
+  interface TooltipProps {
+    content?: string;
+    position?: string;
+    theme?: 'dark' | 'light';
+    mouseEnterDelay?: number;
+    mouseLeaveDelay?: number;
+  }
 
   interface Props {
     items?: MenuItemDef[];
@@ -74,6 +83,16 @@
     onSelect?: (key: MenuKey) => void;
     onOpenChange?: (keys: MenuKey[]) => void;
     ariaLabel?: string;
+    /**
+     * 折叠模式（inlineCollapsed=true）下顶层项的 Tooltip 配置。
+     * content 默认为项 label；position→placement、theme、mouseEnterDelay、mouseLeaveDelay 透传给 Tooltip。
+     */
+    tooltipProps?: TooltipProps;
+    /**
+     * 自定义叶子项内容包裹 Snippet，接收 { item, children }。
+     * children 为默认的 <a> 或 <button>，可在外层包一层自定义容器。
+     */
+    renderWrapper?: Snippet<[{ item: MenuItemNode; children: Snippet }]>;
   }
 
   let {
@@ -98,6 +117,8 @@
     onSelect,
     onOpenChange,
     ariaLabel,
+    tooltipProps,
+    renderWrapper,
   }: Props = $props();
 
   // 浮层子菜单触发方式：未显式指定时按 mode 推导（全部默认 hover；inline 走内联不涉及浮层）。
@@ -430,43 +451,57 @@
       <li class="cd-menu__item" role={sem.structuralRole}>
         {#if sem.navigation && item.href !== undefined}
           <!-- navigation 用途：含 href 叶子渲染原生 <a>，走浏览器链接 + Tab 键序 -->
-          <a
-            class="cd-menu__link"
-            class:cd-menu__link--selected={selected}
-            href={isItemDisabled(item) ? undefined : item.href}
-            target={item.target}
-            rel={item.rel}
-            aria-current={selected ? 'page' : undefined}
-            aria-disabled={isItemDisabled(item) || undefined}
-            style="padding-inline-start: {indent}"
-            onclick={() => selectLeaf(item)}
-          >
-            {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
-            <span class="cd-menu__label">{item.label}</span>
-          </a>
+          {#snippet inlineLeafLink()}
+            <a
+              class="cd-menu__link"
+              class:cd-menu__link--selected={selected}
+              href={isItemDisabled(item) ? undefined : item.href}
+              target={item.target}
+              rel={item.rel}
+              aria-current={selected ? 'page' : undefined}
+              aria-disabled={isItemDisabled(item) || undefined}
+              style="padding-inline-start: {indent}"
+              onclick={() => selectLeaf(item)}
+            >
+              {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
+              <span class="cd-menu__label">{item.label}</span>
+            </a>
+          {/snippet}
+          {#if renderWrapper}
+            {@render renderWrapper({ item: item as MenuItemNode, children: inlineLeafLink })}
+          {:else}
+            {@render inlineLeafLink()}
+          {/if}
         {:else}
-          <button
-            type="button"
-            class="cd-menu__link"
-            class:cd-menu__link--selected={selected}
-            role={sem.leafRole}
-            aria-current={!sem.navigation && !multiple && selected ? 'true' : undefined}
-            aria-checked={multiple ? selected : undefined}
-            aria-disabled={isItemDisabled(item) || undefined}
-            disabled={isItemDisabled(item) || undefined}
-            style="padding-inline-start: {indent}"
-            onclick={() => selectLeaf(item)}
-          >
-            {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
-            <span class="cd-menu__label">{item.label}</span>
-            {#if multiple}
-              <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
-                <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-                  <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
-                </svg>
-              </span>
-            {/if}
-          </button>
+          {#snippet inlineLeafButton()}
+            <button
+              type="button"
+              class="cd-menu__link"
+              class:cd-menu__link--selected={selected}
+              role={sem.leafRole}
+              aria-current={!sem.navigation && !multiple && selected ? 'true' : undefined}
+              aria-checked={multiple ? selected : undefined}
+              aria-disabled={isItemDisabled(item) || undefined}
+              disabled={isItemDisabled(item) || undefined}
+              style="padding-inline-start: {indent}"
+              onclick={() => selectLeaf(item)}
+            >
+              {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
+              <span class="cd-menu__label">{item.label}</span>
+              {#if multiple}
+                <span class="cd-menu__check" class:cd-menu__check--on={selected} aria-hidden="true">
+                  <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="2" d="M3 8.5l3.5 3.5L13 5" />
+                  </svg>
+                </span>
+              {/if}
+            </button>
+          {/snippet}
+          {#if renderWrapper}
+            {@render renderWrapper({ item: item as MenuItemNode, children: inlineLeafButton })}
+          {:else}
+            {@render inlineLeafButton()}
+          {/if}
         {/if}
       </li>
     {/if}
@@ -500,6 +535,8 @@
           {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
+          {tooltipProps}
+          {renderWrapper}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />
@@ -518,6 +555,7 @@
           {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
+          {renderWrapper}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />

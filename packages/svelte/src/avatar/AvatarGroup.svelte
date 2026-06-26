@@ -40,6 +40,8 @@
     overlapFrom?: number;
     /** click handler for the "+M" overflow avatar */
     onMore?: () => void;
+    /** 自定义溢出头像渲染，参数为 {overlapList, count}。 */
+    renderMore?: Snippet<[{ overlapList: AvatarGroupItem[]; count: number }]>;
     /** free-form avatars when not using `items` */
     children?: Snippet;
   }
@@ -51,6 +53,7 @@
     size,
     overlapFrom = 8,
     onMore,
+    renderMore,
     children,
   }: Props = $props();
 
@@ -64,6 +67,7 @@
 
   // pure collapse computation — slice visible items and count the rest.
   const list = $derived(items ?? []);
+  const overlapList = $derived(list.slice(limit));
   const limit = $derived(
     typeof maxCount === 'number' && maxCount >= 0 ? maxCount : list.length,
   );
@@ -85,7 +89,9 @@
     {/each}
     {#if restCount > 0}
       <span class="cd-avatar-group__item">
-        {#if onMore}
+        {#if renderMore}
+          {@render renderMore({ overlapList, count: restCount })}
+        {:else if onMore}
           <button type="button" class="cd-avatar-group__more-btn" onclick={onMore}>
             <Avatar color="grey" alt={loc().t('Avatar.moreAlt', { count: restCount })}>+{restCount}</Avatar>
           </button>

@@ -71,6 +71,21 @@
     keepDOM?: boolean;
     /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
+    /**
+     * 已选中的 Item 右侧显示 ✓ 勾选标记（默认 false）。
+     * 通过 context 透传给 DropdownItemNode 渲染。
+     */
+    showTick?: boolean;
+    /**
+     * 下拉动画开关（默认 true）。
+     * false 时禁用菜单展开/收起过渡动画。
+     */
+    motion?: boolean;
+    /**
+     * 阻断下拉框内点击事件冒泡（默认 true）。
+     * 包裹菜单的 onclick/pointerdown 停止冒泡，防止触发上层监听器。
+     */
+    stopPropagation?: boolean;
     onSelect?: (key: ItemKey) => void;
     onOpenChange?: (open: boolean) => void;
     triggerContent?: Snippet;
@@ -97,6 +112,9 @@
     lazyRender = true,
     keepDOM = false,
     getPopupContainer,
+    showTick = false,
+    motion = true,
+    stopPropagation = true,
     onSelect,
     onOpenChange,
     triggerContent,
@@ -121,10 +139,14 @@
     return horizontal ? spacing.x : spacing.y;
   });
 
-  // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）。
+  // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）；
+  // showTick 透传给叶子 DropdownItemNode 渲染勾选标记。
   setContext<DropdownContext>(DROPDOWN_CTX, {
     get getContainer() {
       return resolvePopupContainer;
+    },
+    get showTick() {
+      return showTick;
     },
   });
 
@@ -403,6 +425,11 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  // stopPropagation：菜单内 click/pointerdown 停止冒泡（防触发上层监听器）。
+  function onMenuEvent(e: Event) {
+    if (stopPropagation) e.stopPropagation();
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -449,6 +476,7 @@
     <!-- contextMenu：浮层 portal 到 body 并定位到光标 x/y -->
     <ul
       class="cd-dropdown__menu"
+      class:cd-dropdown__menu--motion={motion}
       id={menuId}
       bind:this={menuEl}
       style="z-index: {zIndex}"
@@ -457,6 +485,8 @@
       aria-labelledby={triggerId}
       tabindex="-1"
       onkeydown={onMenuKeydown}
+      onclick={onMenuEvent}
+      onpointerdown={onMenuEvent}
     >
       {@render menuBody()}
     </ul>
@@ -465,6 +495,7 @@
     <ul
       class="cd-dropdown__menu"
       class:cd-dropdown__menu--hidden={!isOpen}
+      class:cd-dropdown__menu--motion={motion && isOpen}
       id={menuId}
       bind:this={menuEl}
       style="z-index: {zIndex}"
@@ -476,6 +507,8 @@
       onkeydown={onMenuKeydown}
       onpointerenter={onMenuPointerEnter}
       onpointerleave={onMenuPointerLeave}
+      onclick={onMenuEvent}
+      onpointerdown={onMenuEvent}
     >
       {@render menuBody()}
     </ul>
@@ -516,5 +549,25 @@
   /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
   .cd-dropdown__menu--hidden {
     display: none;
+  }
+  /* motion：进场淡入 + 轻微下移；reduced-motion 退化 */
+  .cd-dropdown__menu--motion {
+    animation: cd-dropdown-in var(--cd-dropdown-motion-duration, 120ms)
+      var(--cd-dropdown-motion-easing, ease) both;
+  }
+  @keyframes cd-dropdown-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-dropdown__menu--motion {
+      animation: none;
+    }
   }
 </style>

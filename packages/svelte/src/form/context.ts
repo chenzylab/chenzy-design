@@ -6,6 +6,11 @@ export type FormLabelPosition = 'top' | 'left' | 'inset';
 export type FormSize = 'small' | 'default' | 'large';
 export type FormLabelAlign = 'left' | 'right';
 
+export interface GridCol {
+  span?: number;
+  offset?: number;
+}
+
 export interface FormContext {
   /** the headless form instance from @chenzy-design/core */
   form: FormApi;
@@ -25,6 +30,10 @@ export interface FormContext {
   getShowValidateIcon: () => boolean;
   /** extra text position: 'middle' | 'bottom' (default 'bottom'). */
   getExtraTextPosition: () => 'middle' | 'bottom';
+  /** 控件布局列配置（Grid 布局时）。 */
+  getWrapperCol: () => GridCol | undefined;
+  /** 标签布局列配置（Grid 布局时）。 */
+  getLabelCol: () => GridCol | undefined;
 }
 
 const KEY = Symbol('cd-form');

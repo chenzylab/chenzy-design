@@ -41,6 +41,8 @@
     type TreeNodeData,
     type FlatNode,
   } from '@chenzy-design/core';
+  import type { Snippet } from 'svelte';
+  import Pagination from '../pagination/Pagination.svelte';
   import type {
     TransferGroup,
     TransferItem,
@@ -56,11 +58,65 @@
   type TransferKey = string | number;
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
+  type TransferType = 'list' | 'groupList' | 'treeList';
+
+  /** emptyContent: custom empty state renderers */
+  interface EmptyContent {
+    left?: Snippet | string;
+    right?: Snippet | string;
+    search?: Snippet | string;
+  }
+
+  /** pagination config for left panel */
+  interface PaginationConfig {
+    pageSize?: number;
+    currentPage?: number;
+    defaultCurrentPage?: number;
+    onPageChange?: (page: number) => void;
+  }
+
+  /** Source panel header render args */
+  interface SourceHeaderProps {
+    totalContent: string;
+    allContent: string;
+    onAllClick: () => void;
+    title: string;
+    allChecked: boolean;
+    showButton: boolean;
+    leafOnlyNum?: number | undefined;
+  }
+
+  /** Selected panel header render args */
+  interface SelectedHeaderProps {
+    totalContent: string;
+    allContent: string;
+    onAllClick: () => void;
+    title: string;
+  }
+
+  /** renderSourcePanel args */
+  interface SourcePanelProps {
+    dataSource: TransferItem[];
+    selectedItems: TransferItem[];
+    onChange: (keys: TransferKey[]) => void;
+    onSearch: (v: string) => void;
+    inputValue: string;
+    searchResult: TransferItem[];
+  }
+
+  /** renderSelectedPanel args */
+  interface SelectedPanelProps {
+    selectedItems: TransferItem[];
+    onRemove: (key: TransferKey) => void;
+    onSortEnd: (keys: TransferKey[]) => void;
+  }
 
   interface Props {
     value?: TransferKey[];
     defaultValue?: TransferKey[];
     dataSource?: TransferItem[] | TransferGroup[] | TransferTreeNode[];
+    /** 'list' | 'groupList' | 'treeList' — controls source panel render mode. */
+    type?: TransferType;
     filter?: boolean;
     searchPlaceholder?: string;
     size?: Size;
@@ -94,12 +150,39 @@
     /** onSearch debounce in ms (default 300). */
     searchDebounce?: number;
     onChange?: (targetKeys: TransferKey[]) => void;
+    /** Custom empty state renderers for left/right/search empty states. */
+    emptyContent?: EmptyContent;
+    /** Extra props passed to the search Input component. */
+    inputProps?: Record<string, unknown>;
+    /** Props passed to the Tree component when type='treeList'. */
+    treeProps?: Record<string, unknown>;
+    /** When type='treeList', show full path in right panel selected items. */
+    showPath?: boolean;
+    /** Left panel pagination config (only for list/groupList). */
+    pagination?: PaginationConfig;
+    /** Called when a single item is checked (not bulk select). */
+    onSelect?: (item: TransferItem) => void;
+    /** Called when a single item is unchecked (not bulk select). */
+    onDeselect?: (item: TransferItem) => void;
+    /** Custom render for left panel source items. */
+    renderSourceItem?: Snippet<[{ item: TransferItem; onChange: () => void; checked: boolean }]>;
+    /** Custom render for right panel selected items. */
+    renderSelectedItem?: Snippet<[{ item: TransferItem; onRemove: () => void; sortableHandle?: unknown }]>;
+    /** Custom render for left panel header. */
+    renderSourceHeader?: Snippet<[SourceHeaderProps]>;
+    /** Custom render for right panel header. */
+    renderSelectedHeader?: Snippet<[SelectedHeaderProps]>;
+    /** Fully custom left panel renderer. */
+    renderSourcePanel?: Snippet<[SourcePanelProps]>;
+    /** Fully custom right panel renderer. */
+    renderSelectedPanel?: Snippet<[SelectedPanelProps]>;
   }
 
   let {
     value,
     defaultValue = [],
     dataSource = [],
+    type = 'list',
     filter = true,
     searchPlaceholder,
     size = 'default',
@@ -115,6 +198,19 @@
     loading = false,
     searchDebounce = 300,
     onChange,
+    emptyContent,
+    inputProps,
+    treeProps: _treeProps,
+    showPath = false,
+    pagination,
+    onSelect,
+    onDeselect,
+    renderSourceItem,
+    renderSelectedItem,
+    renderSourceHeader,
+    renderSelectedHeader,
+    renderSourcePanel,
+    renderSelectedPanel,
   }: Props = $props();
 
   const loc = useLocale();
@@ -161,7 +257,8 @@
   let rightQuery = $state('');
 
   // --- Tree mode detection (treeList) -------------------------------------
-  const isTree = $derived(isTreeData(dataSource as readonly unknown[]));
+  // type='treeList' OR auto-detect via data shape (backward compat).
+  const isTree = $derived(type === 'treeList' || isTreeData(dataSource as readonly unknown[]));
   const treeData = $derived(isTree ? (dataSource as TransferTreeNode[]) : []);
 
   // Tree leaves flattened to flat items (the migratable units) for the target
@@ -173,7 +270,8 @@
   const items = $derived(
     isTree ? treeLeaves : normalizeData(dataSource as TransferItem[] | TransferGroup[]),
   );
-  const grouped = $derived(!isTree && hasGroups(items));
+  // type='groupList' forces grouped render; also auto-detect via data shape.
+  const grouped = $derived(!isTree && (type === 'groupList' || hasGroups(items)));
 
   const leftItems = $derived(items.filter((item) => !current.includes(item.key)));
   const rightItems = $derived(items.filter((item) => current.includes(item.key)));
@@ -437,14 +535,26 @@
   }
 
   function toggleChecked(side: 'left' | 'right', key: TransferKey) {
+    const list = side === 'left' ? leftVisible : rightVisible;
+    const item = list.find((i) => i.key === key);
     if (side === 'left') {
-      leftChecked = leftChecked.includes(key)
+      const wasChecked = leftChecked.includes(key);
+      leftChecked = wasChecked
         ? leftChecked.filter((k) => k !== key)
         : [...leftChecked, key];
+      if (item) {
+        if (wasChecked) onDeselect?.(item);
+        else onSelect?.(item);
+      }
     } else {
-      rightChecked = rightChecked.includes(key)
+      const wasChecked = rightChecked.includes(key);
+      rightChecked = wasChecked
         ? rightChecked.filter((k) => k !== key)
         : [...rightChecked, key];
+      if (item) {
+        if (wasChecked) onDeselect?.(item);
+        else onSelect?.(item);
+      }
     }
   }
 
@@ -664,6 +774,56 @@
       : noopAttach,
   );
 
+  // --- showPath: build label path for tree leaves in right panel ---------------
+  // Map leaf key → ancestor-path label string (e.g. "Parent / Child").
+  function buildPathMap(
+    nodes: TransferTreeNode[],
+    ancestors: string[] = [],
+  ): Map<TransferKey, string> {
+    const map = new Map<TransferKey, string>();
+    for (const node of nodes) {
+      const path = [...ancestors, node.label];
+      if (node.children && node.children.length > 0) {
+        const childMap = buildPathMap(node.children, path);
+        childMap.forEach((v, k) => map.set(k, v));
+      } else {
+        map.set(node.key, path.join(' / '));
+      }
+    }
+    return map;
+  }
+  const treePathMap = $derived(isTree && showPath ? buildPathMap(treeData) : new Map<TransferKey, string>());
+
+  function itemDisplayLabel(item: TransferItem, side: 'left' | 'right'): string {
+    if (side === 'right' && isTree && showPath) {
+      return treePathMap.get(item.key) ?? item.label;
+    }
+    return item.label;
+  }
+
+  // --- Pagination (left panel, list/groupList only) -------------------------
+  // Use a plain getter to extract defaultCurrentPage once at init time, avoiding
+  // the "state_referenced_locally" reactive-capture warning.
+  function getInitialPage(): number {
+    return pagination?.defaultCurrentPage ?? 1;
+  }
+  let paginationPage = $state(getInitialPage());
+  const isControlledPage = $derived(pagination?.currentPage !== undefined);
+  const activePage = $derived(isControlledPage ? (pagination!.currentPage ?? 1) : paginationPage);
+  const pageSize = $derived(pagination?.pageSize ?? 0);
+  const hasPagination = $derived(!!pagination && pageSize > 0 && !isTree);
+
+  const leftVisiblePaged = $derived(
+    hasPagination
+      ? leftVisible.slice((activePage - 1) * pageSize, activePage * pageSize)
+      : leftVisible,
+  );
+
+  function onPageChange(page: number) {
+    if (!isControlledPage) paginationPage = page;
+    pagination?.onPageChange?.(page);
+  }
+
   const moveRightDisabled = $derived(
     disabled ||
       leftItems.filter((i) => !i.disabled && leftChecked.includes(i.key)).length === 0,
@@ -685,6 +845,7 @@
   {@const dragRow = side === 'right' && canDrag && !(item.disabled ?? false)}
   {@const isChecked = (side === 'left' ? leftChecked : rightChecked).includes(item.key)}
   {@const rowDisabled = disabled || (item.disabled ?? false)}
+  {@const displayLabel = itemDisplayLabel(item, side)}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <li
     class="cd-transfer__item"
@@ -698,7 +859,7 @@
       dropSide === 'after'}
     {style}
     role={asOption ? 'option' : undefined}
-    aria-label={asOption ? item.label : undefined}
+    aria-label={asOption ? displayLabel : undefined}
     aria-selected={asOption ? (side === 'right' && oneWay ? true : isChecked) : undefined}
     aria-disabled={asOption ? rowDisabled || undefined : undefined}
     data-transfer-key={asOption ? item.key : undefined}
@@ -716,39 +877,53 @@
     ondragend={side === 'right' && canDrag ? resetDrag : undefined}
   >
     {#if side === 'right' && oneWay}
-      <span class="cd-transfer__item-label">{item.label}</span>
-      <button
-        type="button"
-        class="cd-transfer__remove"
-        aria-label={loc().t('Transfer.remove')}
-        disabled={disabled || (item.disabled ?? false)}
-        onclick={() => removeOne(item.key)}
-      >
-        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-          <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8" />
-        </svg>
-      </button>
+      {#if renderSelectedItem}
+        {@render renderSelectedItem({ item, onRemove: () => removeOne(item.key) })}
+      {:else}
+        <span class="cd-transfer__item-label">{displayLabel}</span>
+        <button
+          type="button"
+          class="cd-transfer__remove"
+          aria-label={loc().t('Transfer.remove')}
+          disabled={disabled || (item.disabled ?? false)}
+          onclick={() => removeOne(item.key)}
+        >
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      {/if}
     {:else if asOption}
-      <!-- 选项行：单一 Tab 停靠点（行本身可聚焦），勾选框为纯视觉，无 input/无第二停靠点。 -->
-      <span class="cd-transfer__option-control" aria-hidden="true">
-        <span class="cd-transfer__check" class:cd-transfer__check--on={isChecked}>
-          {#if isChecked}
-            <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-              <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5 6.5 11.5 12.5 4.5" />
-            </svg>
-          {/if}
+      {#if side === 'right' && renderSelectedItem}
+        {@render renderSelectedItem({ item, onRemove: () => removeOne(item.key) })}
+      {:else if side === 'left' && renderSourceItem}
+        {@render renderSourceItem({ item, onChange: () => toggleChecked(side, item.key), checked: isChecked })}
+      {:else}
+        <!-- 选项行：单一 Tab 停靠点（行本身可聚焦），勾选框为纯视觉，无 input/无第二停靠点。 -->
+        <span class="cd-transfer__option-control" aria-hidden="true">
+          <span class="cd-transfer__check" class:cd-transfer__check--on={isChecked}>
+            {#if isChecked}
+              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+              </svg>
+            {/if}
+          </span>
+          <span class="cd-transfer__option-label">{displayLabel}</span>
         </span>
-        <span class="cd-transfer__option-label">{item.label}</span>
-      </span>
+      {/if}
     {:else}
-      <Checkbox
-        {size}
-        checked={isChecked}
-        disabled={disabled || (item.disabled ?? false)}
-        onChange={() => toggleChecked(side, item.key)}
-      >
-        {item.label}
-      </Checkbox>
+      {#if side === 'left' && renderSourceItem}
+        {@render renderSourceItem({ item, onChange: () => toggleChecked(side, item.key), checked: isChecked })}
+      {:else}
+        <Checkbox
+          {size}
+          checked={isChecked}
+          disabled={disabled || (item.disabled ?? false)}
+          onChange={() => toggleChecked(side, item.key)}
+        >
+          {displayLabel}
+        </Checkbox>
+      {/if}
     {/if}
   </li>
 {/snippet}
@@ -788,11 +963,30 @@
   </li>
 {/snippet}
 
+{#snippet emptyNode(side: 'left' | 'right', isSearch = false)}
+  {@const customEmpty = isSearch ? emptyContent?.search : (side === 'left' ? emptyContent?.left : emptyContent?.right)}
+  <li class="cd-transfer__empty">
+    {#if customEmpty}
+      {#if typeof customEmpty === 'string'}
+        {customEmpty}
+      {:else}
+        {@render customEmpty()}
+      {/if}
+    {:else}
+      {isSearch ? loc().t('Transfer.searchEmpty') : loc().t('Transfer.empty')}
+    {/if}
+  </li>
+{/snippet}
+
 {#snippet panelList(side: 'left' | 'right', visible: TransferItem[], groups: TransferRenderGroup[])}
   {@const isVirtual = side === 'left' ? leftVirtual : rightVirtual}
   {@const vItems = side === 'left' ? leftVItems : rightVItems}
   {@const vRange = side === 'left' ? leftVRange : rightVRange}
   {@const vTotal = side === 'left' ? leftVTotal : rightVTotal}
+  <!-- For left panel with pagination, use paged slice. -->
+  {@const displayVisible = side === 'left' && hasPagination ? leftVisiblePaged : visible}
+  <!-- empty state: search-filtered vs truly empty -->
+  {@const isSearchFiltered = side === 'left' ? (leftQuery.trim() !== '') : (rightQuery.trim() !== '')}
   <!-- 空态（仅含 cd-transfer__empty 占位 li）时 listbox 无 option 子节点 → 违反
        aria-required-children；空态下退化为普通容器（无 role/listbox ARIA），按 APG
        处理空 listbox。loading 时仍非空（spinner li）但同样不是 option，故并入判定。 -->
@@ -822,7 +1016,7 @@
         {@render treeRow(f)}
       {:else}
         {#if !loading}
-          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+          {@render emptyNode(side, isSearchFiltered)}
         {/if}
       {/each}
     {:else if grouped}
@@ -849,7 +1043,7 @@
         </li>
       {:else}
         {#if !loading}
-          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+          {@render emptyNode(side, isSearchFiltered)}
         {/if}
       {/each}
     {:else if isVirtual}
@@ -864,14 +1058,14 @@
         )}
       {/each}
       {#if visible.length === 0 && !loading}
-        <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+        {@render emptyNode(side, isSearchFiltered)}
       {/if}
     {:else}
-      {#each visible as item (item.key)}
+      {#each displayVisible as item (item.key)}
         {@render itemRow(side, item, '', true)}
       {:else}
         {#if !loading}
-          <li class="cd-transfer__empty">{loc().t('Transfer.empty')}</li>
+          {@render emptyNode(side, isSearchFiltered)}
         {/if}
       {/each}
     {/if}
@@ -880,26 +1074,61 @@
 
 <div class={cls} role="group" aria-disabled={disabled || undefined}>
   <div class="cd-transfer__panel">
-    {#if showPanelTitle}
-      <div class="cd-transfer__panel-header">
-        <span id={leftTitleId} class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
-        <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: leftItems.length })}</span>
-      </div>
+    {#if renderSourcePanel}
+      {@render renderSourcePanel({
+        dataSource: leftItems,
+        selectedItems: rightItems,
+        onChange: commit,
+        onSearch: (v) => onQueryInput('left', v),
+        inputValue: leftQuery,
+        searchResult: leftVisible,
+      })}
+    {:else}
+      {#if showPanelTitle}
+        <div class="cd-transfer__panel-header">
+          {#if renderSourceHeader}
+            {@render renderSourceHeader({
+              totalContent: loc().t('Transfer.itemsUnit', { count: leftItems.length }),
+              allContent: loc().t('Transfer.itemsUnit', { count: items.length }),
+              onAllClick: () => {},
+              title: titles?.[0] ?? loc().t('Transfer.titleSource'),
+              allChecked: leftItems.length > 0 && leftItems.filter((i) => !i.disabled).every((i) => leftChecked.includes(i.key)),
+              showButton: true,
+              leafOnlyNum: isTree ? leftVisible.filter((i) => !current.includes(i.key)).length : undefined,
+            })}
+          {:else}
+            <span id={leftTitleId} class="cd-transfer__panel-title">{titles?.[0] ?? loc().t('Transfer.titleSource')}</span>
+            <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: leftItems.length })}</span>
+          {/if}
+        </div>
+      {/if}
+      {#if filter}
+        <div class="cd-transfer__panel-search">
+          <Input
+            {size}
+            value={leftQuery}
+            placeholder={searchPlaceholderText}
+            clearable
+            disabled={disabled}
+            ariaLabel={searchPlaceholderText}
+            onInput={(v) => onQueryInput('left', v)}
+            {...(inputProps ?? {})}
+          />
+        </div>
+      {/if}
+      {@render panelList('left', leftVisible, leftGroups)}
+      {#if hasPagination}
+        <div class="cd-transfer__pagination">
+          <Pagination
+            total={leftVisible.length}
+            currentPage={activePage}
+            pageSize={pageSize}
+            onChange={(page) => onPageChange(page)}
+            size="small"
+          />
+        </div>
+      {/if}
     {/if}
-    {#if filter}
-      <div class="cd-transfer__panel-search">
-        <Input
-          {size}
-          value={leftQuery}
-          placeholder={searchPlaceholderText}
-          clearable
-          disabled={disabled}
-          ariaLabel={searchPlaceholderText}
-          onInput={(v) => onQueryInput('left', v)}
-        />
-      </div>
-    {/if}
-    {@render panelList('left', leftVisible, leftGroups)}
   </div>
 
   <div class="cd-transfer__ops">
@@ -926,26 +1155,44 @@
   </div>
 
   <div class="cd-transfer__panel">
-    {#if showPanelTitle}
-      <div class="cd-transfer__panel-header">
-        <span id={rightTitleId} class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
-        <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: rightItems.length })}</span>
-      </div>
+    {#if renderSelectedPanel}
+      {@render renderSelectedPanel({
+        selectedItems: rightItems,
+        onRemove: removeOne,
+        onSortEnd: commit,
+      })}
+    {:else}
+      {#if showPanelTitle}
+        <div class="cd-transfer__panel-header">
+          {#if renderSelectedHeader}
+            {@render renderSelectedHeader({
+              totalContent: loc().t('Transfer.itemsUnit', { count: rightItems.length }),
+              allContent: loc().t('Transfer.itemsUnit', { count: items.length }),
+              onAllClick: () => {},
+              title: titles?.[1] ?? loc().t('Transfer.titleTarget'),
+            })}
+          {:else}
+            <span id={rightTitleId} class="cd-transfer__panel-title">{titles?.[1] ?? loc().t('Transfer.titleTarget')}</span>
+            <span class="cd-transfer__panel-count">{loc().t('Transfer.itemsUnit', { count: rightItems.length })}</span>
+          {/if}
+        </div>
+      {/if}
+      {#if filter}
+        <div class="cd-transfer__panel-search">
+          <Input
+            {size}
+            value={rightQuery}
+            placeholder={searchPlaceholderText}
+            clearable
+            disabled={disabled}
+            ariaLabel={searchPlaceholderText}
+            onInput={(v) => onQueryInput('right', v)}
+            {...(inputProps ?? {})}
+          />
+        </div>
+      {/if}
+      {@render panelList('right', rightVisible, rightGroups)}
     {/if}
-    {#if filter}
-      <div class="cd-transfer__panel-search">
-        <Input
-          {size}
-          value={rightQuery}
-          placeholder={searchPlaceholderText}
-          clearable
-          disabled={disabled}
-          ariaLabel={searchPlaceholderText}
-          onInput={(v) => onQueryInput('right', v)}
-        />
-      </div>
-    {/if}
-    {@render panelList('right', rightVisible, rightGroups)}
   </div>
 </div>
 
@@ -1194,5 +1441,11 @@
     flex-direction: column;
     justify-content: center;
     gap: var(--cd-spacing-2);
+  }
+  .cd-transfer__pagination {
+    display: flex;
+    justify-content: center;
+    padding-block: var(--cd-spacing-2);
+    border-block-start: 1px solid var(--cd-transfer-panel-border);
   }
 </style>

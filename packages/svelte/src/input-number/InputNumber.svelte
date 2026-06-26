@@ -80,6 +80,16 @@
     onBlur?: (e: FocusEvent) => void;
     /** 透传原生 keydown（便于扩展，如 Enter 提交表单） */
     onKeydown?: (e: KeyboardEvent) => void;
+    /** 无边框模式 */
+    borderless?: boolean;
+    /** 显示清除按钮（有值时出现 ×） */
+    showClear?: boolean;
+    /** 自定义清除图标 */
+    clearIcon?: Snippet;
+    /** 点击 +/- 按钮后保持输入框聚焦（默认 false） */
+    keepFocus?: boolean;
+    /** 携带 number 类型的变化回调（区别于 onChange 返回 number | null） */
+    onNumberChange?: (value: number | null) => void;
   }
 
   let {
@@ -117,6 +127,11 @@
     onFocus,
     onBlur,
     onKeydown,
+    borderless = false,
+    showClear = false,
+    clearIcon,
+    keepFocus = false,
+    onNumberChange,
   }: Props = $props();
 
   const loc = useLocale();
@@ -199,7 +214,16 @@
     // Uncontrolled: keep local state in sync. (Avoids the value->onChange->value loop.)
     if (!isControlled) inner = next;
     onChange?.(next);
+    onNumberChange?.(next);
   }
+
+  function clearValue() {
+    commitValue(null);
+    editingText = null;
+    inputEl?.focus({ preventScroll: true });
+  }
+
+  const canClear = $derived(showClear && !disabled && !readonly && current !== null);
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     editingText = e.currentTarget.value;
@@ -258,7 +282,9 @@
   }
 
   function startHold(dir: 1 | -1, e: MouseEvent) {
+    // 始终阻止 mousedown 失焦（现有行为），keepFocus 进一步确保聚焦保持。
     preventBlurSteal(e);
+    if (keepFocus && inputEl) inputEl.focus({ preventScroll: true });
     if (disabled || readonly) return;
     stepBy(dir, false, 'button');
     holdTimer = setTimeout(() => {
@@ -346,6 +372,7 @@
       prefix != null && 'cd-input-number--has-prefix',
       suffix != null && 'cd-input-number--has-suffix',
       disabled && 'cd-input-number--disabled',
+      borderless && 'cd-input-number--borderless',
     ]
       .filter(Boolean)
       .join(' '),
@@ -388,6 +415,28 @@
     <span class="cd-input-number__affix cd-input-number__suffix">
       {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
     </span>
+  {/if}
+
+  {#if canClear}
+    <button
+      type="button"
+      class="cd-input-number__clear"
+      tabindex="-1"
+      aria-label={loc().t('InputNumber.clear')}
+      onmousedown={(e) => e.preventDefault()}
+      onclick={clearValue}
+    >
+      {#if clearIcon}
+        {@render clearIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+          <path
+            fill="currentColor"
+            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+          />
+        </svg>
+      {/if}
+    </button>
   {/if}
 
   {#if controls}
@@ -460,6 +509,35 @@
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+  }
+  .cd-input-number--borderless {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+  .cd-input-number--borderless:focus-within {
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .cd-input-number__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0;
+    padding-inline-end: var(--cd-spacing-1);
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-input-number__clear:hover {
+    color: var(--cd-color-text-0);
+  }
+  .cd-input-number__clear:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-input-number__native {
     flex: 1 1 auto;

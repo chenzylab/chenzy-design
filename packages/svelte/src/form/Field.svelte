@@ -70,6 +70,21 @@
     dependencies?: string[];
     /** field-level override of the form's validateTrigger (spec §4 L84). */
     trigger?: ValidateTrigger | ValidateTrigger[];
+    /**
+     * 是否允许空字符串作为有效值（默认 false：空串当 undefined 处理，不触发 required 通过）。
+     * 设为 true 后空串参与 required 校验和值收集。
+     */
+    allowEmptyString?: boolean;
+    /**
+     * 字段值在存入 formState 前的转换函数（在 Field 层执行，不同于 transform 的提交时转换）。
+     * convert 的结果回写 formState，transform 的结果仅用于提交/收集，不回写。
+     */
+    convert?: (value: unknown) => unknown;
+    /**
+     * 组件卸载时保留字段状态（默认 false：卸载时清空字段值/错误/touched）。
+     * 设为 true 后卸载不清 formState，下次挂载时继承上次状态。
+     */
+    keepState?: boolean;
     children?: Snippet<[ChildArgs]>;
   }
 
@@ -87,6 +102,9 @@
     valuePropName = 'value',
     dependencies,
     trigger,
+    allowEmptyString = false,
+    convert,
+    keepState = false,
     children,
   }: Props = $props();
 
@@ -124,7 +142,9 @@
     // spec §2 L26: a `mount` trigger validates once right after registration.
     // Imperative one-shot (not a render read) so it cannot loop.
     if (form.getFieldTrigger(field).includes('mount')) void form.validateField(field);
-    return unregister;
+    // keepState: when false (default), unregister clears field state on destroy.
+    // When true, we skip the cleanup so state persists for future mounts.
+    return keepState ? () => { /* preserve state — do not unregister */ } : unregister;
   });
 
   // Read-only slices derived from the bridged form state (render-safe getters).
@@ -160,6 +180,11 @@
   }
 
   function handleChange(v: unknown) {
+    // allowEmptyString: treat empty string as undefined unless explicitly allowed.
+    // This normalizes '' to undefined for required validation / collection.
+    const coerced = !allowEmptyString && v === '' ? undefined : v;
+    // convert: field-level value transform (applied before storing into formState).
+    const stored = convert !== undefined ? convert(coerced) : coerced;
     const tr = triggers();
     // Validate on change when 'change' is an active trigger AND the field is
     // already "active": after a blur (touched) OR while an error is showing (so
@@ -167,7 +192,7 @@
     // set `touched`, so the "showing error" path keeps submit errors clearable.
     const active = touched === true || (error !== undefined && error !== '');
     const validate = tr.includes('change') && active;
-    form.setFieldValue(field, v, { validate });
+    form.setFieldValue(field, stored, { validate });
   }
 
   function handleBlur() {

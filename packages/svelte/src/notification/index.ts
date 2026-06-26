@@ -1,4 +1,4 @@
-export { notification, type NotificationConfig } from './store.js';
+export { notification, type NotificationConfig, type SvelteNotificationOptions } from './store.js';
 export { meta as notificationMeta } from './meta.js';
 export type {
   NotificationType,

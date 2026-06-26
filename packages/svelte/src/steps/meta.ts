@@ -30,6 +30,8 @@ export const meta = {
       desc: '自定义图标渲染器，提供时替代默认序号/✓/✕',
     },
     { name: 'onChange', type: '(current: number) => void', default: 'undefined' },
+    { name: 'onClick', type: '(e: MouseEvent) => void', default: 'undefined', desc: '步骤 button 点击事件（仅 clickable 模式下渲染 button 时触发）' },
+    { name: 'onKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '步骤 button 键盘按下事件（仅 clickable 模式下渲染 button 时触发）' },
     { name: 'class', type: 'string', default: "''" },
   ],
   stepItemProps: [

@@ -20,6 +20,7 @@
     NotificationPlacement,
   } from '@chenzy-design/core';
   import NotificationItemView from './NotificationItem.svelte';
+  import { onCloseClickMap } from './store.js';
 
   interface Props {
     store: NotificationStore;
@@ -99,6 +100,11 @@
   function handleClose(id: string) {
     store.close(id, 'manual');
   }
+
+  function handleCloseClick(id: string) {
+    onCloseClickMap.get(id)?.(id);
+    store.close(id, 'manual');
+  }
   function handlePause(id: string) {
     store.pause(id);
   }
@@ -121,6 +127,7 @@
           <NotificationItemView
             {item}
             onClose={handleClose}
+            onCloseClick={handleCloseClick}
             onPause={handlePause}
             onResume={handleResume}
           />

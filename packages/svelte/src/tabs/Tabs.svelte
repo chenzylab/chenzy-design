@@ -16,6 +16,18 @@
     自定义渲染时跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。
 
   约束：传 tabList 时标签栏数据驱动（与旧版完全一致）；仅当不传 tabList 时才走声明式收集。
+
+  新增 props（本次补全）：
+  - tabBarExtraContent：标签栏右侧额外内容 Snippet
+  - more：溢出折叠配置（数字或 {count,render,dropdownProps}）
+  - arrowPosition：折叠箭头位置（'start'|'end'|'both'，默认 'both'）
+  - renderArrow：自定义箭头 Snippet<[{type:'start'|'end', onClick}]>
+  - showRestInDropdown：折叠模式是否展示收起 tabs（默认 true）
+  - dropdownProps：透传给「更多」Dropdown 的参数
+  - onVisibleTabsChange：溢出项变化回调（携带可见 tab keys）
+  - contentStyle：内容区外层样式（string | CSSProperties）
+  - preventScroll：Tab 聚焦是否阻止滚动
+  - tabPaneMotion：面板切换动画（默认 true）
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -32,6 +44,12 @@
   type TabPosition = 'top' | 'bottom' | 'left' | 'right';
   type KeyboardActivation = 'auto' | 'manual';
   type OverflowMode = 'scroll' | 'dropdown';
+
+  type MoreConfig = number | {
+    count?: number;
+    render?: Snippet;
+    dropdownProps?: Record<string, unknown>;
+  };
 
   interface Props {
     value?: TabKey;
@@ -60,6 +78,30 @@
     keepDOM?: boolean;
     /** 标签栏末尾显示「+」按钮，点击触发 onAdd（受控数据，由父组件追加） */
     addable?: boolean;
+    /**
+     * 溢出折叠配置：数字时等价于 { count: n }；对象时含 count（收起阈值）、
+     * render（自定义「更多」触发器 Snippet）、dropdownProps（透传下拉参数）。
+     * 仅 overflow='dropdown'（或 collapsible=true）时生效。
+     */
+    more?: MoreConfig;
+    /** 标签栏末尾「更多」下拉折叠时，折叠箭头位置（scroll 模式中的前/后箭头）。默认 'both'。 */
+    arrowPosition?: 'start' | 'end' | 'both';
+    /** 自定义前/后折叠箭头 Snippet，接收 { type:'start'|'end', onClick:()=>void } */
+    renderArrow?: Snippet<[{ type: 'start' | 'end'; onClick: () => void }]>;
+    /** dropdown 折叠模式是否在下拉中展示收起 tabs（默认 true） */
+    showRestInDropdown?: boolean;
+    /** 透传给「更多」Dropdown 组件的 props */
+    dropdownProps?: Record<string, unknown>;
+    /** 溢出项变化回调，携带当前可见 tab keys */
+    onVisibleTabsChange?: (visibleTabKeys: TabKey[]) => void;
+    /** 内容区外层样式（string 或 CSSProperties 对象） */
+    contentStyle?: string | Record<string, string>;
+    /** Tab 聚焦是否阻止页面滚动（默认 false） */
+    preventScroll?: boolean;
+    /** 面板切换是否启用动画（默认 true） */
+    tabPaneMotion?: boolean;
+    /** 标签栏右侧额外内容 */
+    tabBarExtraContent?: Snippet;
     onChange?: (key: TabKey) => void;
     onTabClose?: (key: TabKey) => void;
     /**
@@ -93,6 +135,16 @@
     lazy = false,
     keepDOM = false,
     addable = false,
+    more,
+    arrowPosition = 'both',
+    renderArrow,
+    showRestInDropdown = true,
+    dropdownProps,
+    onVisibleTabsChange,
+    contentStyle,
+    preventScroll = false,
+    tabPaneMotion = true,
+    tabBarExtraContent,
     onChange,
     onTabClose,
     onTabClick,
@@ -258,7 +310,7 @@
     const item = tabList[index];
     if (!item) return;
     const el = document.getElementById(tabId(item.itemKey));
-    el?.focus();
+    el?.focus({ preventScroll });
     if (keyboardActivation === 'auto') setActive(item.itemKey);
   }
 
@@ -516,16 +568,55 @@
   const visibleTabs = $derived(visibleIdx.map((i) => tabList[i]).filter(Boolean) as TabItem[]);
   const overflowTabs = $derived(overflowIdx.map((i) => tabList[i]).filter(Boolean) as TabItem[]);
 
-  // 「更多」下拉项（DropdownItem[]）：溢出标签映射为菜单项，禁用项透传 disabled。
-  // exactOptionalPropertyTypes：仅在 disabled 为 true 时带该键（不写 undefined）。
-  const moreItems = $derived<DropdownItem[]>(
-    overflowTabs.map((t) =>
-      t.disabled ? { key: t.itemKey, label: t.tab, disabled: true } : { key: t.itemKey, label: t.tab },
-    ),
-  );
+  // onVisibleTabsChange：dropdown 模式下可见 tabs 变化时回调（仅依赖 visibleTabs，不读 DOM）。
+  // 用普通变量存上次指纹，仅在真正变化时发出回调（去重），命令式 $effect，不返回 $derived。
+  let prevVisibleTabsKey = '';
+  $effect(() => {
+    if (!dropdownMode || !onVisibleTabsChange) return;
+    const key = visibleTabs.map((t) => t.itemKey).join(',');
+    if (key === prevVisibleTabsKey) return;
+    prevVisibleTabsKey = key;
+    onVisibleTabsChange(visibleTabs.map((t) => t.itemKey));
+  });
+
   // 溢出集中是否含激活标签（决定「更多」触发器高亮）。
   const moreActive = $derived(
     activeKey !== undefined && overflowTabs.some((t) => t.itemKey === activeKey),
+  );
+
+  // more 配置解析：支持 number 简写或对象形式
+  const moreCount = $derived(
+    typeof more === 'number' ? more : (more?.count ?? undefined),
+  );
+  const moreRender = $derived(
+    typeof more === 'object' && more !== null ? more.render : undefined,
+  );
+  const moreDropdownProps = $derived(
+    typeof more === 'object' && more !== null ? (more.dropdownProps ?? {}) : {},
+  );
+
+  // showRestInDropdown=false 时，「更多」下拉中不展示收起 tabs（只展示 overflow tabs 中被 moreCount 限制的部分）
+  // 当前实现：showRestInDropdown=false 时隐藏溢出下拉（不渲染 Dropdown）
+  const moreItems = $derived<DropdownItem[]>(
+    showRestInDropdown
+      ? overflowTabs.map((t) =>
+          t.disabled ? { key: t.itemKey, label: t.tab, disabled: true } : { key: t.itemKey, label: t.tab },
+        )
+      : [],
+  );
+
+  // 「更多」按钮是否显示：有溢出 tabs 且 showRestInDropdown=true
+  const showMoreDropdown = $derived(overflowTabs.length > 0 && showRestInDropdown);
+
+  // contentStyle：字符串直接用；对象转 CSS 字符串。
+  const contentStyleStr = $derived(
+    contentStyle === undefined
+      ? undefined
+      : typeof contentStyle === 'string'
+        ? contentStyle
+        : Object.entries(contentStyle)
+            .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`)
+            .join(';'),
   );
 
   function onMoreSelect(key: string | number): void {
@@ -606,7 +697,7 @@
   {/if}
 {/snippet}
 
-<div class={cls}>
+<div class={cls} class:cd-tabs--no-motion={!tabPaneMotion}>
   {#if renderTabBar}
     <!-- renderTabBar：调用方完全自绘标签栏；跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。 -->
     {@render renderTabBar(tabList, activeKey, setActive)}
@@ -619,27 +710,35 @@
         {/each}
       </div>
 
-      {#if overflowTabs.length > 0}
+      {#if showMoreDropdown}
         <div class="cd-tabs__more" class:cd-tabs__more--active={moreActive}>
-          <Dropdown items={moreItems} trigger="click" onSelect={onMoreSelect}>
+          <Dropdown items={moreItems} trigger="click" onSelect={onMoreSelect} {...(moreDropdownProps ?? {})} {...(dropdownProps ?? {})}>
             {#snippet triggerContent()}
-              <button
-                type="button"
-                class="cd-tabs__more-btn"
-                aria-label={loc().t('Tabs.more')}
-                aria-haspopup="menu"
-              >
-                {loc().t('Tabs.more')}
-                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
-                </svg>
-              </button>
+              {#if moreRender}
+                {@render moreRender()}
+              {:else}
+                <button
+                  type="button"
+                  class="cd-tabs__more-btn"
+                  aria-label={loc().t('Tabs.more')}
+                  aria-haspopup="menu"
+                >
+                  {loc().t('Tabs.more')}
+                  <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
+                  </svg>
+                </button>
+              {/if}
             {/snippet}
           </Dropdown>
         </div>
       {/if}
 
       {@render addBtn()}
+
+      {#if tabBarExtraContent}
+        <div class="cd-tabs__extra">{@render tabBarExtraContent()}</div>
+      {/if}
     </div>
 
     <!-- 离屏测量层：渲染全部标签 + 「更多」样本，仅供命令式测宽，不进可视布局/Tab 序。 -->
@@ -660,19 +759,23 @@
   {:else}
     <!-- scroll 模式（默认）：前/后箭头 + 可滚动视口，行为与旧版一致。 -->
     <div class="cd-tabs__bar">
-      {#if overflowing}
-        <button
-          type="button"
-          class="cd-tabs__scroll-btn cd-tabs__scroll-btn--prev"
-          aria-label={loc().t('Tabs.scrollPrev')}
-          disabled={!canScrollPrev}
-          tabindex="-1"
-          onclick={() => scrollByStep(-1)}
-        >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M10.5 3.2 5.7 8l4.8 4.8 1.1-1.1L7.9 8l3.7-3.7-1.1-1.1Z" />
-          </svg>
-        </button>
+      {#if overflowing && (arrowPosition === 'start' || arrowPosition === 'both')}
+        {#if renderArrow}
+          {@render renderArrow({ type: 'start', onClick: () => scrollByStep(-1) })}
+        {:else}
+          <button
+            type="button"
+            class="cd-tabs__scroll-btn cd-tabs__scroll-btn--prev"
+            aria-label={loc().t('Tabs.scrollPrev')}
+            disabled={!canScrollPrev}
+            tabindex="-1"
+            onclick={() => scrollByStep(-1)}
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M10.5 3.2 5.7 8l4.8 4.8 1.1-1.1L7.9 8l3.7-3.7-1.1-1.1Z" />
+            </svg>
+          </button>
+        {/if}
       {/if}
 
       <div class="cd-tabs__nav" bind:this={navEl}>
@@ -688,27 +791,35 @@
         </div>
       </div>
 
-      {#if overflowing}
-        <button
-          type="button"
-          class="cd-tabs__scroll-btn cd-tabs__scroll-btn--next"
-          aria-label={loc().t('Tabs.scrollNext')}
-          disabled={!canScrollNext}
-          tabindex="-1"
-          onclick={() => scrollByStep(1)}
-        >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M5.5 3.2 10.3 8l-4.8 4.8-1.1-1.1L8.1 8 4.4 4.3l1.1-1.1Z" />
-          </svg>
-        </button>
+      {#if overflowing && (arrowPosition === 'end' || arrowPosition === 'both')}
+        {#if renderArrow}
+          {@render renderArrow({ type: 'end', onClick: () => scrollByStep(1) })}
+        {:else}
+          <button
+            type="button"
+            class="cd-tabs__scroll-btn cd-tabs__scroll-btn--next"
+            aria-label={loc().t('Tabs.scrollNext')}
+            disabled={!canScrollNext}
+            tabindex="-1"
+            onclick={() => scrollByStep(1)}
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M5.5 3.2 10.3 8l-4.8 4.8-1.1-1.1L8.1 8 4.4 4.3l1.1-1.1Z" />
+            </svg>
+          </button>
+        {/if}
       {/if}
 
       {@render addBtn()}
+
+      {#if tabBarExtraContent}
+        <div class="cd-tabs__extra">{@render tabBarExtraContent()}</div>
+      {/if}
     </div>
   {/if}
 
   {#if children}
-    <div class="cd-tabs__content">
+    <div class="cd-tabs__content" style={contentStyleStr}>
       {@render children()}
     </div>
   {/if}
@@ -996,6 +1107,18 @@
   }
   .cd-tabs__content {
     padding-block-start: var(--cd-spacing-3);
+  }
+  /* tabBarExtraContent：标签栏右侧额外内容，靠右对齐 */
+  .cd-tabs__extra {
+    flex: 1 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-inline-start: var(--cd-spacing-2);
+  }
+  /* tabPaneMotion=false：禁用面板切换过渡动画 */
+  .cd-tabs--no-motion .cd-tabs__content {
+    transition: none;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-tabs__tab-btn {

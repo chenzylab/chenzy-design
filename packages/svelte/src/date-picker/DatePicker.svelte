@@ -15,6 +15,8 @@
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
   type PickerType = 'date' | 'dateTime' | 'month' | 'year';
+  type CSSProperties = Record<string, string | number>;
+  type PresetPosition = 'left' | 'right' | 'top' | 'bottom';
 
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值
   interface DisabledTime {
@@ -29,10 +31,17 @@
     value: Date | (() => Date);
   }
 
+  interface DayStatus {
+    isSelected: boolean;
+    isToday: boolean;
+    isDisabled: boolean;
+    isInMonth: boolean;
+  }
+
   interface Props {
     type?: PickerType;
-    value?: Date | null;
-    defaultValue?: Date | null;
+    value?: Date | Date[] | null;
+    defaultValue?: Date | Date[] | null;
     open?: boolean;
     defaultOpen?: boolean;
     placeholder?: string;
@@ -48,7 +57,7 @@
     locale?: string;
     /** token 格式串 (YYYY/MM/DD/HH/mm/ss)。传入则触发器变可输入文本框，显示+手输解析按此格式。 */
     format?: string;
-    onChange?: (v: Date | null) => void;
+    onChange?: (v: Date | Date[] | null) => void;
     onOpenChange?: (open: boolean) => void;
     /** 手动键入解析失败 (editable 模式)。 */
     onParseError?: (e: { text: string }) => void;
@@ -58,8 +67,8 @@
     onPresetClick?: (e: { preset: Preset }) => void;
     /** 点击清除。 */
     onClear?: (e: Record<string, never>) => void;
-    /** 点击确认按钮 (dateTime)。 */
-    onConfirm?: (e: { value: Date | null }) => void;
+    /** 点击确认按钮 (dateTime / needConfirm)。 */
+    onConfirm?: (e: { value: Date | Date[] | null }) => void;
     /** 触发器获得焦点。 */
     onFocus?: (e: FocusEvent) => void;
     /** 触发器失去焦点。 */
@@ -67,8 +76,6 @@
     ariaLabel?: string;
     /** 用 Snippet 自定义范围分隔符，优先于 rangeSeparator 字符串。 */
     rangeSeparatorNode?: Snippet;
-    /** 范围模式分隔符字符串（默认 '~'）。 */
-    rangeSeparator?: string;
     /** 选完月/年后自动切换到日视图（默认 true）。 */
     autoSwitchDate?: boolean;
     /** 浮层自动调整位置防溢出（默认 true）。 */
@@ -83,14 +90,100 @@
     getPopupContainer?: () => HTMLElement;
     /** weekStart 别名。 */
     weekStartsOn?: WeekStart;
-    /** 年月滚轮配置。 */
-    yearAndMonthOpts?: { yearCyclic?: boolean; monthCyclic?: boolean };
     /** 点击取消按钮。 */
-    onCancel?: () => void;
+    onCancel?: (date: Date | Date[] | null, dateStr: string) => void;
     /** onChange 参数改为 dateFirst（仅声明，透传语义）。 */
     onChangeWithDateFirst?: boolean;
     /** 点击外部关闭时触发。 */
     onClickOutSide?: (e: MouseEvent) => void;
+
+    // --- 外观类 ---
+    /** 无边框模式 */
+    borderless?: boolean;
+    /** 面板尺寸 compact 时面板更紧凑 */
+    density?: 'default' | 'compact';
+    /** 触发器前缀内容，渲染在 input 左侧 */
+    prefix?: Snippet | string;
+    /** 自定义清除按钮图标 */
+    clearIcon?: Snippet;
+    /** 是否显示清除按钮（默认 true，受 clearable 控制） */
+    showClear?: boolean;
+    /** 输入框 readonly 属性 */
+    inputReadOnly?: boolean;
+    /** 输入框内联样式 */
+    inputStyle?: CSSProperties | string;
+    /** 挂载时自动聚焦 */
+    autoFocus?: boolean;
+
+    // --- 浮层类 ---
+    /** 下拉浮层 className */
+    dropdownClassName?: string;
+    /** 下拉浮层样式 */
+    dropdownStyle?: CSSProperties | string;
+    /** 浮层溢出冗余值 */
+    dropdownMargin?: number | { x?: number; y?: number };
+    /** 浮层 z-index（默认 1030） */
+    zIndex?: number;
+    /** 面板展开动画，false 时添加 cd-date-picker--no-motion（默认 true） */
+    motion?: boolean;
+    /** 聚焦时阻止滚动 */
+    preventScroll?: boolean;
+    /** 阻止浮层点击事件冒泡（默认 true） */
+    stopPropagation?: boolean;
+
+    // --- 插槽类 ---
+    /** 面板顶部额外区域 */
+    topSlot?: Snippet;
+    /** 面板底部额外区域 */
+    bottomSlot?: Snippet;
+    /** 面板左侧额外区域 */
+    leftSlot?: Snippet;
+    /** 面板右侧额外区域 */
+    rightSlot?: Snippet;
+
+    // --- 日期范围增强 ---
+    /** 多选（仅 type='date'），value 变为 Date[] */
+    multiple?: boolean;
+    /** multiple=true 时最多选择数量 */
+    max?: number;
+    /** 范围日期分隔符（默认 '~'） */
+    rangeSeparator?: string;
+    /** 单击选择范围的起始偏移 */
+    startDateOffset?: (date: Date) => Date;
+    /** 单击选择范围的结束偏移 */
+    endDateOffset?: (date: Date) => Date;
+    /** 年份滚轮最小年 */
+    startYear?: number;
+    /** 年份滚轮最大年 */
+    endYear?: number;
+    /** 范围选择双面板同步切换月份（默认 false） */
+    syncSwitchMonth?: boolean;
+
+    // --- 自定义渲染 ---
+    /** 自定义日期单元格内容 */
+    renderDate?: Snippet<[{ day: number; fullDate: string }]>;
+    /** 完全自定义日期格子 */
+    renderFullDate?: Snippet<[{ day: number; fullDate: string; dayStatus: DayStatus }]>;
+    /** 完全自定义触发器 */
+    triggerRender?: Snippet<[{ value: Date | Date[] | null; placeholder: string }]>;
+
+    // --- 时间相关 ---
+    /** 透传给内部 TimePicker 的参数 */
+    timePickerOpts?: Record<string, unknown>;
+    /** 隐藏禁止的时间选项 */
+    hideDisabledOptions?: boolean;
+    /** 禁止时间选择 */
+    disabledTimePicker?: boolean;
+    /** dateTime/dateTimeRange 时需要点击确认才写入 */
+    needConfirm?: boolean;
+
+    // --- 快捷选项 ---
+    /** 快捷选项列表位置（默认 'bottom'） */
+    presetPosition?: PresetPosition;
+
+    // --- 年月滚轮配置 ---
+    /** 透传给年月 ScrollList 的参数 */
+    yearAndMonthOpts?: { yearCyclic?: boolean; monthCyclic?: boolean } | Record<string, unknown>;
   }
 
   let {
@@ -122,7 +215,7 @@
     onBlur,
     ariaLabel,
     rangeSeparatorNode,
-    rangeSeparator,
+    rangeSeparator = '~',
     autoSwitchDate = true,
     autoAdjustOverflow = true,
     insetInput = false,
@@ -134,6 +227,47 @@
     onCancel,
     onChangeWithDateFirst = false,
     onClickOutSide,
+    // 外观类
+    borderless = false,
+    density = 'default',
+    prefix,
+    clearIcon,
+    showClear: showClearProp = true,
+    inputReadOnly = false,
+    inputStyle,
+    autoFocus = false,
+    // 浮层类
+    dropdownClassName,
+    dropdownStyle,
+    dropdownMargin,
+    zIndex = 1030,
+    motion = true,
+    preventScroll = false,
+    stopPropagation = true,
+    // 插槽类
+    topSlot,
+    bottomSlot,
+    leftSlot,
+    rightSlot,
+    // 日期范围增强
+    multiple = false,
+    max,
+    startDateOffset,
+    endDateOffset,
+    startYear,
+    endYear,
+    syncSwitchMonth = false,
+    // 自定义渲染
+    renderDate,
+    renderFullDate,
+    triggerRender,
+    // 时间相关
+    timePickerOpts,
+    hideDisabledOptions = false,
+    disabledTimePicker = false,
+    needConfirm = false,
+    // 快捷选项
+    presetPosition = 'bottom',
   }: Props = $props();
 
   const isDateTime = $derived(type === 'dateTime');
@@ -151,14 +285,27 @@
 
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
   const isValueControlled = $derived(value !== undefined);
-  let innerValue = $state<Date | null>(getInitialValue());
-  const current = $derived<Date | null>(isValueControlled ? (value ?? null) : innerValue);
 
-  function getInitialValue(): Date | null {
+  // multiple 模式下 value 为 Date[]，单选为 Date | null
+  function getInitialValue(): Date | Date[] | null {
+    if (multiple) {
+      if (Array.isArray(defaultValue)) return defaultValue;
+      if (defaultValue instanceof Date) return [defaultValue];
+      return [];
+    }
+    if (Array.isArray(defaultValue)) return defaultValue[0] ?? null;
     return defaultValue ?? null;
   }
 
-  function setValue(next: Date | null) {
+  let innerValue = $state<Date | Date[] | null>(getInitialValue());
+  const current = $derived<Date | Date[] | null>(isValueControlled ? (value ?? null) : innerValue);
+
+  // 单一 Date 视图（multiple 时取第一个，非 multiple 直接用）
+  const currentSingle = $derived<Date | null>(
+    Array.isArray(current) ? (current[0] ?? null) : current,
+  );
+
+  function setValue(next: Date | Date[] | null) {
     if (!isValueControlled) innerValue = next;
     onChange?.(next);
   }
@@ -185,12 +332,25 @@
 
   // --- 面板游标月份 (本地 $state)，打开时同步到 value/today 月份 ---
   const today = startOfDay(new Date());
-  let cursor = $state(startOfDay(getInitialValue() ?? new Date()));
+  // 初始化游标用 defaultValue（不依赖 $derived 的 currentSingle 避免 state_referenced_locally）
+  const _initCursorDate: Date | null = Array.isArray(defaultValue)
+    ? (defaultValue[0] ?? null)
+    : (defaultValue instanceof Date ? defaultValue : null);
+  let cursor = $state(startOfDay(_initCursorDate ?? new Date()));
 
   // 当面板打开时把游标对齐到当前选中值(或今天)所在月份
   $effect(() => {
     if (isOpen) {
-      cursor = startOfDay(current ?? new Date());
+      cursor = startOfDay(currentSingle ?? new Date());
+    }
+  });
+
+  // --- needConfirm 暂存值：点确认才写入 ---
+  let pendingValue = $state<Date | Date[] | null>(null);
+
+  $effect(() => {
+    if (isOpen) {
+      pendingValue = current;
     }
   });
 
@@ -224,13 +384,20 @@
   const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 
   // format 串优先用 core 纯函数序列化；否则沿用 Intl (向后兼容)
+  function formatSingle(d: Date | null): string {
+    if (!d) return '';
+    return format ? formatDate(d, format) : triggerFormat.format(d);
+  }
+
   const formattedValue = $derived(
-    current ? (format ? formatDate(current, format) : triggerFormat.format(current)) : '',
+    multiple
+      ? (Array.isArray(current) ? current.map(formatSingle).join(` ${rangeSeparator} `) : '')
+      : formatSingle(currentSingle),
   );
   const displayText = $derived(formattedValue || (placeholder ?? loc().t('DatePicker.placeholder')));
 
   // --- 可输入模式 (format 串)：本地草稿文本 + 按格式解析 ---
-  const editable = $derived(!!format);
+  const editable = $derived(!!format && !multiple);
   let inputText = $state('');
   // 非编辑期同步草稿到受控显示值 (打开输入时让用户继续编辑当前文本)
   $effect(() => {
@@ -242,7 +409,7 @@
     if (!editable || !format) return;
     const raw = inputText.trim();
     if (raw === '') {
-      if (current !== null) setValue(null);
+      if (currentSingle !== null) setValue(null);
       return;
     }
     const parsed = parseDateString(raw, format);
@@ -294,7 +461,8 @@
     Array.from({ length: 12 }, (_, i) => {
       const year = decadeStart - 1 + i;
       const date = new Date(year, 0, 1);
-      return { date, year, inDecade: year >= decadeStart && year <= decadeStart + 9 };
+      const inRange = (startYear === undefined || year >= startYear) && (endYear === undefined || year <= endYear);
+      return { date, year, inDecade: year >= decadeStart && year <= decadeStart + 9, inRange };
     }),
   );
 
@@ -322,7 +490,13 @@
   // 当前高亮格 id（aria-activedescendant）
   const activeCellId = $derived(highlight ? cellId(highlight) : undefined);
 
-  const showClear = $derived(clearable && !disabled && current !== null);
+  // showClear 综合判断：clearable & !disabled & 有值 & showClearProp=true
+  const showClearDerived = $derived(
+    clearable &&
+    showClearProp &&
+    !disabled &&
+    (multiple ? (Array.isArray(current) && current.length > 0) : currentSingle !== null),
+  );
 
   // 头部导航切换可见年月：更新游标并通知 onPanelChange（红线 #1：panelDate 是面板视图态，非 value）
   function setCursor(next: Date) {
@@ -382,9 +556,9 @@
   );
 
   // --- 时间部分 (dateTime)：复用 TimePicker 的列逻辑 ---
-  const selectedHour = $derived(current ? current.getHours() : 0);
-  const selectedMinute = $derived(current ? current.getMinutes() : 0);
-  const selectedSecond = $derived(current ? current.getSeconds() : 0);
+  const selectedHour = $derived(currentSingle ? currentSingle.getHours() : 0);
+  const selectedMinute = $derived(currentSingle ? currentSingle.getMinutes() : 0);
+  const selectedSecond = $derived(currentSingle ? currentSingle.getSeconds() : 0);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
@@ -397,7 +571,7 @@
   // --- disabledTime (dateTime)：按当前日期解析各列禁用值集合 ---
   // 基准日期取当前选中值(无则今天)；时/分依赖已选时分以联动下游列。
   const disabledTimeCfg = $derived(
-    isDateTime && disabledTime ? disabledTime(current ?? today) : undefined,
+    isDateTime && disabledTime ? disabledTime(currentSingle ?? today) : undefined,
   );
   const disabledHourSet = $derived(new Set(disabledTimeCfg?.disabledHours?.() ?? []));
   const disabledMinuteSet = $derived(
@@ -417,9 +591,36 @@
 
   function selectDate(date: Date) {
     if (disabledDate?.(date)) return;
-    setValue(combine(date));
-    // dateTime：选日期后保留面板，让用户继续选时间，点确定再关
-    if (!isDateTime) setOpen(false);
+
+    if (multiple) {
+      const arr = Array.isArray(current) ? [...current] : [];
+      const idx = arr.findIndex((d) => isSameDay(d, date));
+      let next: Date[];
+      if (idx >= 0) {
+        // 取消选中
+        next = arr.filter((_, i) => i !== idx);
+      } else {
+        // 新增选中（max 限制）
+        if (max !== undefined && arr.length >= max) return;
+        next = [...arr, startOfDay(date)];
+      }
+      if (needConfirm) {
+        pendingValue = next;
+      } else {
+        setValue(next);
+      }
+      return;
+    }
+
+    const combined = combine(date);
+    if (needConfirm) {
+      pendingValue = combined;
+      // dateTime needConfirm：选日期后保留面板
+    } else {
+      setValue(combined);
+      // dateTime：选日期后保留面板，让用户继续选时间，点确定再关
+      if (!isDateTime) setOpen(false);
+    }
   }
 
   function selectToday() {
@@ -440,9 +641,13 @@
 
   // 时间列：基于 current（无则今天）写入 h/m/s，不关面板
   function commitTime(h: number, m: number, s: number) {
-    const base = current ? new Date(current) : startOfDay(today);
+    const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
     base.setHours(h, m, s, 0);
-    setValue(base);
+    if (needConfirm) {
+      pendingValue = base;
+    } else {
+      setValue(base);
+    }
   }
   function pickHour(h: number) {
     if (disabledHourSet.has(h)) return;
@@ -478,7 +683,20 @@
   }
 
   function confirm() {
-    onConfirm?.({ value: current });
+    const val = needConfirm ? pendingValue : current;
+    onConfirm?.({ value: val });
+    if (needConfirm && pendingValue !== null) {
+      setValue(pendingValue);
+    }
+    setOpen(false);
+  }
+
+  function cancelConfirm() {
+    const dateStr = Array.isArray(current)
+      ? current.map(formatSingle).join(` ${rangeSeparator} `)
+      : formatSingle(currentSingle);
+    onCancel?.(current, dateStr);
+    pendingValue = current;
     setOpen(false);
   }
 
@@ -506,7 +724,8 @@
   function clear(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
-    setValue(null);
+    const emptyVal = multiple ? [] : null;
+    setValue(emptyVal);
     onClear?.({});
   }
 
@@ -536,7 +755,7 @@
   // 打开时把高亮对齐当前选中值或今天，关闭清空
   $effect(() => {
     if (isOpen) {
-      highlight = startOfDay(current ?? today);
+      highlight = startOfDay(currentSingle ?? today);
     } else {
       highlight = null;
     }
@@ -591,14 +810,39 @@
   // 浮层 + 日期网格容器引用 (focus trap / 进场落焦，红线 #3 命令式 + cleanup)
   let panelEl = $state<HTMLDivElement | null>(null);
   let gridEl = $state<HTMLDivElement | null>(null);
+  let triggerEl = $state<HTMLButtonElement | HTMLInputElement | null>(null);
+
+  // autoFocus: 挂载后聚焦触发器
+  $effect(() => {
+    if (autoFocus && triggerEl) {
+      void tick().then(() => {
+        triggerEl?.focus({ preventScroll });
+      });
+    }
+  });
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
-    return useDismiss(rootEl, {
+    // onClickOutSide 额外监听
+    function handleDocClick(e: MouseEvent) {
+      if (rootEl && !rootEl.contains(e.target as Node)) {
+        onClickOutSide?.(e);
+      }
+    }
+    if (onClickOutSide) {
+      document.addEventListener('click', handleDocClick, true);
+    }
+    const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
     });
+    return () => {
+      if (onClickOutSide) {
+        document.removeEventListener('click', handleDocClick, true);
+      }
+      cleanup?.();
+    };
   });
 
   // --- focus trap (红线 #3): 打开时困住 Tab，关闭归还焦点到触发器；进场落焦到日期网格 ---
@@ -625,6 +869,28 @@
     return () => document.removeEventListener('mousedown', handler);
   });
 
+  // stopPropagation：面板点击阻止冒泡
+  function onPanelClick(e: MouseEvent) {
+    if (stopPropagation) e.stopPropagation();
+  }
+
+  // --- 样式工具函数 ---
+  function styleToString(s: CSSProperties | string | undefined): string | undefined {
+    if (!s) return undefined;
+    if (typeof s === 'string') return s;
+    return Object.entries(s)
+      .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`)
+      .join(';');
+  }
+
+  const dropdownStyleStr = $derived(styleToString(dropdownStyle));
+  const inputStyleStr = $derived(styleToString(inputStyle));
+
+  // z-index CSS variable 注入到 panel
+  const panelStyle = $derived(
+    [dropdownStyleStr, `z-index:${zIndex}`].filter(Boolean).join(';'),
+  );
+
   const cls = $derived(
     [
       'cd-date-picker',
@@ -634,15 +900,36 @@
       isOpen && 'cd-date-picker--open',
       insetInput && 'cd-date-picker--inset-input',
       position && `cd-date-picker--${position}`,
+      borderless && 'cd-date-picker--borderless',
+      density === 'compact' && 'cd-date-picker--compact',
+      !motion && 'cd-date-picker--no-motion',
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // multiple 模式下是否选中某天
+  function isDateSelected(date: Date): boolean {
+    if (multiple) {
+      return Array.isArray(current) && current.some((d) => isSameDay(d, date));
+    }
+    return isSameDay(date, currentSingle);
+  }
+
+  // fullDate 字符串工具
+  function fullDateStr(date: Date): string {
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  }
+
+  // presets 布局：left/right 时垂直在侧边；top/bottom 时水平在上下
+  const presetsVertical = $derived(presetPosition === 'left' || presetPosition === 'right');
 </script>
 
 <div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
   <div class="cd-date-picker__control">
-    {#if editable}
+    {#if triggerRender}
+      {@render triggerRender({ value: current, placeholder: placeholder ?? loc().t('DatePicker.placeholder') })}
+    {:else if editable}
       <input
         type="text"
         class="cd-date-picker__trigger cd-date-picker__input"
@@ -653,6 +940,9 @@
         aria-label={ariaLabel}
         placeholder={placeholder ?? format}
         {disabled}
+        readonly={inputReadOnly}
+        style={inputStyleStr}
+        bind:this={triggerEl as HTMLInputElement}
         bind:value={inputText}
         onclick={() => setOpen(true)}
         onkeydown={onInputKeydown}
@@ -671,25 +961,40 @@
         aria-controls={dialogId}
         aria-label={ariaLabel}
         {disabled}
+        style={inputStyleStr}
+        bind:this={triggerEl as HTMLButtonElement}
         onclick={toggleOpen}
         onkeydown={onTriggerKeydown}
         onfocus={onFocus}
         onblur={onBlur}
       >
-        <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={current === null}>
+        {#if prefix}
+          <span class="cd-date-picker__prefix">
+            {#if typeof prefix === 'string'}
+              {prefix}
+            {:else}
+              {@render prefix()}
+            {/if}
+          </span>
+        {/if}
+        <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={!formattedValue}>
           {displayText}
         </span>
       </button>
     {/if}
 
-    {#if showClear}
+    {#if showClearDerived}
       <button type="button" class="cd-date-picker__clear" aria-label={loc().t('DatePicker.clear')} onclick={clear}>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        {#if clearIcon}
+          {@render clearIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+            />
+          </svg>
+        {/if}
       </button>
     {/if}
 
@@ -706,245 +1011,322 @@
   {#if isOpen}
     <div
       bind:this={panelEl}
-      class="cd-date-picker__panel"
+      class={['cd-date-picker__panel', dropdownClassName].filter(Boolean).join(' ')}
       class:cd-date-picker__panel--datetime={isDateTime}
       id={dialogId}
       role="dialog"
       aria-modal="false"
       aria-label={loc().t('DatePicker.triggerLabel')}
       tabindex="-1"
+      style={panelStyle}
+      onclick={onPanelClick}
+      onkeydown={undefined}
     >
-      <div class="cd-date-picker__layout" class:cd-date-picker__layout--presets={presets && presets.length > 0}>
-      {#if presets && presets.length > 0}
-        <div class="cd-date-picker__presets" role="group" aria-label={loc().t('DatePicker.triggerLabel')}>
-          {#each presets as preset, i (i)}
-            <button
-              type="button"
-              class="cd-date-picker__preset"
-              onclick={() => selectPreset(preset)}
-            >
-              {preset.label}
-            </button>
-          {/each}
+      {#if topSlot}
+        <div class="cd-date-picker__slot cd-date-picker__slot--top">
+          {@render topSlot()}
         </div>
       {/if}
-      <div class="cd-date-picker__main">
-      <div class="cd-date-picker__body">
-      <div class="cd-date-picker__calendar">
-      <div class="cd-date-picker__header">
-        <button
-          type="button"
-          class="cd-date-picker__nav"
-          aria-label={prevLabel}
-          onclick={onPrev}
-        >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
-          </svg>
-        </button>
-        <span class="cd-date-picker__title">{headerText}</span>
-        <button
-          type="button"
-          class="cd-date-picker__nav"
-          aria-label={nextLabel}
-          onclick={onNext}
-        >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
-          </svg>
-        </button>
-      </div>
 
-      {#if isMonth}
-        <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid">
-          {#each monthCells as cell (cell.month)}
-            {@const isSelected =
-              current !== null &&
-              current.getFullYear() === cell.date.getFullYear() &&
-              current.getMonth() === cell.month}
-            {@const isCurrent =
-              today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
-            {@const isDisabled = disabledDate?.(cell.date) ?? false}
-            <button
-              type="button"
-              class="cd-date-picker__cell cd-date-picker__cell--block"
-              class:cd-date-picker__cell--selected={isSelected}
-              class:cd-date-picker__cell--today={isCurrent}
-              role="gridcell"
-              aria-selected={isSelected}
-              aria-disabled={isDisabled || undefined}
-              disabled={isDisabled}
-              tabindex={-1}
-              onclick={() => selectMonth(cell.date)}
-            >
-              {cell.label}
-            </button>
-          {/each}
-        </div>
-      {:else if isYear}
-        <div class="cd-date-picker__grid cd-date-picker__grid--year" role="grid">
-          {#each yearCells as cell (cell.year)}
-            {@const isSelected = current !== null && current.getFullYear() === cell.year}
-            {@const isCurrent = today.getFullYear() === cell.year}
-            {@const isDisabled = disabledDate?.(cell.date) ?? false}
-            <button
-              type="button"
-              class="cd-date-picker__cell cd-date-picker__cell--block"
-              class:cd-date-picker__cell--muted={!cell.inDecade}
-              class:cd-date-picker__cell--selected={isSelected}
-              class:cd-date-picker__cell--today={isCurrent}
-              role="gridcell"
-              aria-selected={isSelected}
-              aria-disabled={isDisabled || undefined}
-              disabled={isDisabled}
-              tabindex={-1}
-              onclick={() => selectYear(cell.date)}
-            >
-              {cell.year}
-            </button>
-          {/each}
-        </div>
-      {:else}
-        <!-- WAI-ARIA grid：role=grid 容器 (aria-activedescendant 指当前高亮格)
-             + 表头行 columnheader + 每周一行 row，格 role=gridcell。
-             焦点落在容器，方向键经 onGridKeydown → gridFocusMove 移动高亮 (红线 #2)。 -->
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-        <div
-          bind:this={gridEl}
-          class="cd-date-picker__grid"
-          role="grid"
-          tabindex="0"
-          aria-activedescendant={activeCellId}
-          aria-label={headerText}
-          onkeydown={onGridKeydown}
-        >
-          <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
-            {#each weekdayNames as name, i (i)}
-              <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>
-                {name}
-              </span>
+      <div
+        class="cd-date-picker__layout"
+        class:cd-date-picker__layout--presets={presets && presets.length > 0}
+        class:cd-date-picker__layout--presets-top={presets && presets.length > 0 && presetPosition === 'top'}
+        class:cd-date-picker__layout--presets-bottom={presets && presets.length > 0 && presetPosition === 'bottom'}
+        class:cd-date-picker__layout--presets-left={presets && presets.length > 0 && presetPosition === 'left'}
+        class:cd-date-picker__layout--presets-right={presets && presets.length > 0 && presetPosition === 'right'}
+      >
+        {#if leftSlot}
+          <div class="cd-date-picker__slot cd-date-picker__slot--left">
+            {@render leftSlot()}
+          </div>
+        {/if}
+
+        {#if presets && presets.length > 0 && (presetPosition === 'left' || presetPosition === 'top')}
+          <div
+            class="cd-date-picker__presets"
+            class:cd-date-picker__presets--vertical={presetsVertical}
+            role="group"
+            aria-label={loc().t('DatePicker.triggerLabel')}
+          >
+            {#each presets as preset, i (i)}
+              <button
+                type="button"
+                class="cd-date-picker__preset"
+                onclick={() => selectPreset(preset)}
+              >
+                {preset.label}
+              </button>
             {/each}
           </div>
-          {#each weekRows as row, wi (wi)}
-            <div class="cd-date-picker__row" role="row">
-              {#each row as cell (cell.date.getTime())}
-                {@const isSelected = isSameDay(cell.date, current)}
-                {@const isToday = isSameDay(cell.date, today)}
-                {@const isHighlight = isSameDay(cell.date, highlight)}
-                {@const isDisabled = disabledDate?.(cell.date) ?? false}
+        {/if}
+
+        <div class="cd-date-picker__main">
+          <div class="cd-date-picker__body">
+            <div class="cd-date-picker__calendar">
+              <div class="cd-date-picker__header">
                 <button
                   type="button"
-                  id={cellId(cell.date)}
-                  class="cd-date-picker__cell"
-                  class:cd-date-picker__cell--muted={!cell.inMonth}
-                  class:cd-date-picker__cell--selected={isSelected}
-                  class:cd-date-picker__cell--today={isToday}
-                  class:cd-date-picker__cell--highlight={isHighlight}
-                  role="gridcell"
-                  aria-selected={isSelected}
-                  aria-disabled={isDisabled || undefined}
-                  disabled={isDisabled}
-                  tabindex={-1}
-                  onclick={() => selectDate(cell.date)}
+                  class="cd-date-picker__nav"
+                  aria-label={prevLabel}
+                  onclick={onPrev}
                 >
-                  {cell.date.getDate()}
+                  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
+                  </svg>
                 </button>
-              {/each}
-            </div>
-          {/each}
-        </div>
-      {/if}
-      </div>
-
-      {#if isDateTime}
-        <div class="cd-date-picker__time">
-          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
-            {#each hours as h (h)}
-              {@const isHourDisabled = disabledHourSet.has(h)}
-              <li
-                class="cd-date-picker__time-item"
-                class:cd-date-picker__time-item--selected={h === selectedHour}
-                class:cd-date-picker__time-item--disabled={isHourDisabled}
-                role="option"
-                aria-selected={h === selectedHour}
-                aria-disabled={isHourDisabled || undefined}
-                tabindex="-1"
-                onclick={() => pickHour(h)}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    pickHour(h);
-                  }
-                }}
-              >
-                {pad2(h)}
-              </li>
-            {/each}
-          </ul>
-          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
-            {#each minutes as m (m)}
-              {@const isMinuteDisabled = disabledMinuteSet.has(m)}
-              <li
-                class="cd-date-picker__time-item"
-                class:cd-date-picker__time-item--selected={m === selectedMinute}
-                class:cd-date-picker__time-item--disabled={isMinuteDisabled}
-                role="option"
-                aria-selected={m === selectedMinute}
-                aria-disabled={isMinuteDisabled || undefined}
-                tabindex="-1"
-                onclick={() => pickMinute(m)}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    pickMinute(m);
-                  }
-                }}
-              >
-                {pad2(m)}
-              </li>
-            {/each}
-          </ul>
-          {#if showSecond}
-            <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
-              {#each seconds as s (s)}
-                {@const isSecondDisabled = disabledSecondSet.has(s)}
-                <li
-                  class="cd-date-picker__time-item"
-                  class:cd-date-picker__time-item--selected={s === selectedSecond}
-                  class:cd-date-picker__time-item--disabled={isSecondDisabled}
-                  role="option"
-                  aria-selected={s === selectedSecond}
-                  aria-disabled={isSecondDisabled || undefined}
-                  tabindex="-1"
-                  onclick={() => pickSecond(s)}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      pickSecond(s);
-                    }
-                  }}
+                <span class="cd-date-picker__title">{headerText}</span>
+                <button
+                  type="button"
+                  class="cd-date-picker__nav"
+                  aria-label={nextLabel}
+                  onclick={onNext}
                 >
-                  {pad2(s)}
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </div>
-      {/if}
-      </div>
+                  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
+                  </svg>
+                </button>
+              </div>
 
-      <div class="cd-date-picker__footer">
-        <button type="button" class="cd-date-picker__today" onclick={selectToday}>
-          {loc().t('DatePicker.today')}
-        </button>
-        {#if isDateTime}
-          <button type="button" class="cd-date-picker__ok" onclick={confirm}>
-            {loc().t('TimePicker.confirm')}
-          </button>
+              {#if isMonth}
+                <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid">
+                  {#each monthCells as cell (cell.month)}
+                    {@const isSelected =
+                      currentSingle !== null &&
+                      currentSingle.getFullYear() === cell.date.getFullYear() &&
+                      currentSingle.getMonth() === cell.month}
+                    {@const isCurrent =
+                      today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+                    {@const isDisabled = disabledDate?.(cell.date) ?? false}
+                    <button
+                      type="button"
+                      class="cd-date-picker__cell cd-date-picker__cell--block"
+                      class:cd-date-picker__cell--selected={isSelected}
+                      class:cd-date-picker__cell--today={isCurrent}
+                      role="gridcell"
+                      aria-selected={isSelected}
+                      aria-disabled={isDisabled || undefined}
+                      disabled={isDisabled}
+                      tabindex={-1}
+                      onclick={() => selectMonth(cell.date)}
+                    >
+                      {cell.label}
+                    </button>
+                  {/each}
+                </div>
+              {:else if isYear}
+                <div class="cd-date-picker__grid cd-date-picker__grid--year" role="grid">
+                  {#each yearCells as cell (cell.year)}
+                    {@const isSelected = currentSingle !== null && currentSingle.getFullYear() === cell.year}
+                    {@const isCurrent = today.getFullYear() === cell.year}
+                    {@const isDisabled = (disabledDate?.(cell.date) ?? false) || !cell.inRange}
+                    <button
+                      type="button"
+                      class="cd-date-picker__cell cd-date-picker__cell--block"
+                      class:cd-date-picker__cell--muted={!cell.inDecade}
+                      class:cd-date-picker__cell--selected={isSelected}
+                      class:cd-date-picker__cell--today={isCurrent}
+                      role="gridcell"
+                      aria-selected={isSelected}
+                      aria-disabled={isDisabled || undefined}
+                      disabled={isDisabled}
+                      tabindex={-1}
+                      onclick={() => selectYear(cell.date)}
+                    >
+                      {cell.year}
+                    </button>
+                  {/each}
+                </div>
+              {:else}
+                <!-- WAI-ARIA grid：role=grid 容器 (aria-activedescendant 指当前高亮格)
+                     + 表头行 columnheader + 每周一行 row，格 role=gridcell。
+                     焦点落在容器，方向键经 onGridKeydown → gridFocusMove 移动高亮 (红线 #2)。 -->
+                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                <div
+                  bind:this={gridEl}
+                  class="cd-date-picker__grid"
+                  role="grid"
+                  tabindex="0"
+                  aria-activedescendant={activeCellId}
+                  aria-label={headerText}
+                  onkeydown={onGridKeydown}
+                >
+                  <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
+                    {#each weekdayNames as name, i (i)}
+                      <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>
+                        {name}
+                      </span>
+                    {/each}
+                  </div>
+                  {#each weekRows as row, wi (wi)}
+                    <div class="cd-date-picker__row" role="row">
+                      {#each row as cell (cell.date.getTime())}
+                        {@const isSelected = isDateSelected(cell.date)}
+                        {@const isToday = isSameDay(cell.date, today)}
+                        {@const isHighlight = isSameDay(cell.date, highlight)}
+                        {@const isDisabled = disabledDate?.(cell.date) ?? false}
+                        {@const dayStatus = { isSelected, isToday, isDisabled, isInMonth: cell.inMonth }}
+                        <button
+                          type="button"
+                          id={cellId(cell.date)}
+                          class="cd-date-picker__cell"
+                          class:cd-date-picker__cell--muted={!cell.inMonth}
+                          class:cd-date-picker__cell--selected={isSelected}
+                          class:cd-date-picker__cell--today={isToday}
+                          class:cd-date-picker__cell--highlight={isHighlight}
+                          role="gridcell"
+                          aria-selected={isSelected}
+                          aria-disabled={isDisabled || undefined}
+                          disabled={isDisabled}
+                          tabindex={-1}
+                          onclick={() => selectDate(cell.date)}
+                        >
+                          {#if renderFullDate}
+                            {@render renderFullDate({ day: cell.date.getDate(), fullDate: fullDateStr(cell.date), dayStatus })}
+                          {:else if renderDate}
+                            {@render renderDate({ day: cell.date.getDate(), fullDate: fullDateStr(cell.date) })}
+                          {:else}
+                            {cell.date.getDate()}
+                          {/if}
+                        </button>
+                      {/each}
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+
+            {#if isDateTime && !disabledTimePicker}
+              <div class="cd-date-picker__time">
+                <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
+                  {#each hours as h (h)}
+                    {@const isHourDisabled = disabledHourSet.has(h)}
+                    {#if !(hideDisabledOptions && isHourDisabled)}
+                      <li
+                        class="cd-date-picker__time-item"
+                        class:cd-date-picker__time-item--selected={h === selectedHour}
+                        class:cd-date-picker__time-item--disabled={isHourDisabled}
+                        role="option"
+                        aria-selected={h === selectedHour}
+                        aria-disabled={isHourDisabled || undefined}
+                        tabindex="-1"
+                        onclick={() => pickHour(h)}
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            pickHour(h);
+                          }
+                        }}
+                      >
+                        {pad2(h)}
+                      </li>
+                    {/if}
+                  {/each}
+                </ul>
+                <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
+                  {#each minutes as m (m)}
+                    {@const isMinuteDisabled = disabledMinuteSet.has(m)}
+                    {#if !(hideDisabledOptions && isMinuteDisabled)}
+                      <li
+                        class="cd-date-picker__time-item"
+                        class:cd-date-picker__time-item--selected={m === selectedMinute}
+                        class:cd-date-picker__time-item--disabled={isMinuteDisabled}
+                        role="option"
+                        aria-selected={m === selectedMinute}
+                        aria-disabled={isMinuteDisabled || undefined}
+                        tabindex="-1"
+                        onclick={() => pickMinute(m)}
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            pickMinute(m);
+                          }
+                        }}
+                      >
+                        {pad2(m)}
+                      </li>
+                    {/if}
+                  {/each}
+                </ul>
+                {#if showSecond}
+                  <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
+                    {#each seconds as s (s)}
+                      {@const isSecondDisabled = disabledSecondSet.has(s)}
+                      {#if !(hideDisabledOptions && isSecondDisabled)}
+                        <li
+                          class="cd-date-picker__time-item"
+                          class:cd-date-picker__time-item--selected={s === selectedSecond}
+                          class:cd-date-picker__time-item--disabled={isSecondDisabled}
+                          role="option"
+                          aria-selected={s === selectedSecond}
+                          aria-disabled={isSecondDisabled || undefined}
+                          tabindex="-1"
+                          onclick={() => pickSecond(s)}
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              pickSecond(s);
+                            }
+                          }}
+                        >
+                          {pad2(s)}
+                        </li>
+                      {/if}
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
+            {/if}
+          </div>
+
+          <div class="cd-date-picker__footer">
+            <button type="button" class="cd-date-picker__today" onclick={selectToday}>
+              {loc().t('DatePicker.today')}
+            </button>
+            {#if isDateTime || needConfirm}
+              {#if needConfirm}
+                <button type="button" class="cd-date-picker__cancel" onclick={cancelConfirm}>
+                  {loc().t('DatePicker.cancel') ?? '取消'}
+                </button>
+              {/if}
+              <button type="button" class="cd-date-picker__ok" onclick={confirm}>
+                {loc().t('TimePicker.confirm')}
+              </button>
+            {/if}
+          </div>
+        </div>
+
+        {#if presets && presets.length > 0 && (presetPosition === 'right' || presetPosition === 'bottom')}
+          <div
+            class="cd-date-picker__presets"
+            class:cd-date-picker__presets--vertical={presetsVertical}
+            role="group"
+            aria-label={loc().t('DatePicker.triggerLabel')}
+          >
+            {#each presets as preset, i (i)}
+              <button
+                type="button"
+                class="cd-date-picker__preset"
+                onclick={() => selectPreset(preset)}
+              >
+                {preset.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+
+        {#if rightSlot}
+          <div class="cd-date-picker__slot cd-date-picker__slot--right">
+            {@render rightSlot()}
+          </div>
         {/if}
       </div>
-      </div>
-      </div>
+
+      {#if bottomSlot}
+        <div class="cd-date-picker__slot cd-date-picker__slot--bottom">
+          {@render bottomSlot()}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -1004,6 +1386,28 @@
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
+  /* borderless 模式 */
+  .cd-date-picker--borderless .cd-date-picker__trigger {
+    border-color: transparent;
+    background: transparent;
+  }
+  /* compact 密度 */
+  .cd-date-picker--compact .cd-date-picker__panel {
+    padding: var(--cd-spacing-2);
+  }
+  .cd-date-picker--compact .cd-date-picker__cell {
+    inline-size: calc(var(--cd-date-picker-cell-size) * 0.85);
+    block-size: calc(var(--cd-date-picker-cell-size) * 0.85);
+    font-size: var(--cd-font-size-1);
+  }
+  .cd-date-picker--compact .cd-date-picker__weekday {
+    block-size: calc(var(--cd-date-picker-cell-size) * 0.85);
+    font-size: var(--cd-font-size-0);
+  }
+  /* no-motion */
+  .cd-date-picker--no-motion .cd-date-picker__panel {
+    animation: none;
+  }
   .cd-date-picker__value {
     flex: 1 1 auto;
     overflow: hidden;
@@ -1012,6 +1416,10 @@
   }
   .cd-date-picker__value--placeholder {
     color: var(--cd-input-color-placeholder);
+  }
+  .cd-date-picker__prefix {
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
   }
   /* format 可输入模式：原生 input 复用 trigger 外观 */
   .cd-date-picker__input::placeholder {
@@ -1059,7 +1467,7 @@
     position: absolute;
     inset-block-start: calc(100% + var(--cd-spacing-1));
     inset-inline-start: 0;
-    z-index: var(--cd-date-picker-panel-z);
+    z-index: var(--cd-date-picker-panel-z, 1030);
     padding: var(--cd-spacing-3);
     background: var(--cd-date-picker-panel-bg);
     border-radius: var(--cd-date-picker-panel-radius);
@@ -1068,9 +1476,27 @@
   .cd-date-picker__panel:focus-visible {
     outline: none;
   }
+  /* 顶部/底部插槽 */
+  .cd-date-picker__slot--top {
+    margin-block-end: var(--cd-spacing-2);
+  }
+  .cd-date-picker__slot--bottom {
+    margin-block-start: var(--cd-spacing-2);
+  }
+  .cd-date-picker__slot--left {
+    margin-inline-end: var(--cd-spacing-2);
+  }
+  .cd-date-picker__slot--right {
+    margin-inline-start: var(--cd-spacing-2);
+  }
   .cd-date-picker__layout {
     display: flex;
     align-items: stretch;
+  }
+  /* presets top/bottom 时竖向排列整体 */
+  .cd-date-picker__layout--presets-top,
+  .cd-date-picker__layout--presets-bottom {
+    flex-direction: column;
   }
   .cd-date-picker__main {
     display: flex;
@@ -1085,6 +1511,36 @@
     padding-inline-end: var(--cd-spacing-3);
     border-inline-end: 1px solid var(--cd-color-border);
     min-inline-size: 5rem;
+  }
+  /* top/bottom 时横向排列 presets */
+  .cd-date-picker__presets:not(.cd-date-picker__presets--vertical) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-inline-end: 0;
+    padding-inline-end: 0;
+    border-inline-end: none;
+    margin-block-end: var(--cd-spacing-2);
+    padding-block-end: var(--cd-spacing-2);
+    border-block-end: 1px solid var(--cd-color-border);
+    min-inline-size: unset;
+  }
+  /* right 侧预设：切换 margin/border 方向 */
+  .cd-date-picker__layout--presets-right .cd-date-picker__presets {
+    margin-inline-end: 0;
+    padding-inline-end: 0;
+    border-inline-end: none;
+    margin-inline-start: var(--cd-spacing-3);
+    padding-inline-start: var(--cd-spacing-3);
+    border-inline-start: 1px solid var(--cd-color-border);
+  }
+  /* bottom 预sets */
+  .cd-date-picker__layout--presets-bottom .cd-date-picker__presets {
+    margin-block-end: 0;
+    padding-block-end: 0;
+    border-block-end: none;
+    margin-block-start: var(--cd-spacing-2);
+    padding-block-start: var(--cd-spacing-2);
+    border-block-start: 1px solid var(--cd-color-border);
   }
   .cd-date-picker__preset {
     padding-inline: var(--cd-spacing-2);
@@ -1170,6 +1626,24 @@
     background: var(--cd-color-primary-hover, var(--cd-color-primary));
   }
   .cd-date-picker__ok:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-date-picker__cancel {
+    padding-inline: var(--cd-spacing-2);
+    padding-block: var(--cd-spacing-1);
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-radius-1);
+    background: transparent;
+    color: var(--cd-color-text-0);
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-date-picker__cancel:hover {
+    border-color: var(--cd-color-primary);
+    color: var(--cd-color-primary);
+  }
+  .cd-date-picker__cancel:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
@@ -1293,7 +1767,8 @@
     padding-block-start: var(--cd-spacing-2);
     border-block-start: 1px solid var(--cd-color-border);
   }
-  .cd-date-picker__panel--datetime .cd-date-picker__footer {
+  .cd-date-picker__panel--datetime .cd-date-picker__footer,
+  .cd-date-picker__footer:has(.cd-date-picker__ok) {
     justify-content: space-between;
   }
   .cd-date-picker__today {

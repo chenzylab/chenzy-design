@@ -30,6 +30,10 @@
     height?: number | string;
     title?: string;
     titleSnippet?: Snippet;
+    /** Header 右侧额外操作区域（关闭按钮左侧）。 */
+    extra?: Snippet;
+    /** 自定义关闭图标；null 时隐藏关闭按钮。 */
+    closeIcon?: Snippet | null;
     mask?: boolean;
     maskClosable?: boolean;
     closeOnEsc?: boolean;
@@ -38,8 +42,22 @@
     closable?: boolean;
     /** 关闭即卸载内部内容；重开重建。默认 false（保留 DOM 仅隐藏）。 */
     destroyOnClose?: boolean;
+    /** 关闭时保留 DOM（destroyOnClose 的反义别名）；true 时覆盖 destroyOnClose=true。 */
+    keepDOM?: boolean;
     /** Portal 容器，缺省 document.body。脱离父层叠上下文。 */
     getContainer?: () => HTMLElement | null;
+    /** 弹层 z-index 基准值，传给最外层容器。 */
+    zIndex?: number;
+    /** 是否启用动画过渡。false 时等价于强制 reduced-motion。默认 true。 */
+    motion?: boolean;
+    /** 打开时给 body 加 overflow:hidden 防背景滚动。默认 true。 */
+    disableScroll?: boolean;
+    /** 内容区域 style 字符串。 */
+    bodyStyle?: string;
+    /** Header 区域 style 字符串。 */
+    headerStyle?: string;
+    /** 遮罩 style 字符串。 */
+    maskStyle?: string;
     footer?: Snippet | null;
     children?: Snippet;
     ariaLabel?: string;
@@ -47,6 +65,8 @@
     onClose?: () => void;
     /** 出场过渡结束（DOM 卸载后）触发，适合配合 destroyOnClose 清理。 */
     onAfterClose?: () => void;
+    /** 动画结束后（入场或出场）触发，isVisible 为当前可见状态。 */
+    afterVisibleChange?: (isVisible: boolean) => void;
     class?: string;
   }
 
@@ -58,19 +78,29 @@
     height,
     title,
     titleSnippet,
+    extra,
+    closeIcon = undefined,
     mask = true,
     maskClosable = true,
     closeOnEsc = true,
     keyboard = true,
     closable = true,
     destroyOnClose = false,
+    keepDOM = false,
     getContainer,
+    zIndex,
+    motion = true,
+    disableScroll = true,
+    bodyStyle,
+    headerStyle,
+    maskStyle,
     footer,
     children,
     ariaLabel,
     onOpenChange,
     onClose,
     onAfterClose,
+    afterVisibleChange,
     class: className,
   }: Props = $props();
 
@@ -88,6 +118,9 @@
   }
 
   const hasTitle = $derived(Boolean(titleSnippet) || Boolean(title));
+
+  // keepDOM=true 覆盖 destroyOnClose：保留 DOM 优先。
+  const effectiveDestroyOnClose = $derived(keepDOM ? false : destroyOnClose);
 
   const isHorizontal = $derived(placement === 'left' || placement === 'right');
 
@@ -129,6 +162,7 @@
   let rootEl = $state<HTMLElement | null>(null);
 
   function motionDurationMs(): number {
+    if (!motion) return 0;
     if (typeof window === 'undefined' || !rootEl) return 0;
     const raw = getComputedStyle(rootEl)
       .getPropertyValue('--cd-drawer-motion-duration')
@@ -151,37 +185,57 @@
   $effect(() => {
     const opening = isOpen;
     let raf = 0;
+    let openTimer: ReturnType<typeof setTimeout> | undefined;
     let closeTimer: ReturnType<typeof setTimeout> | undefined;
     if (opening) {
       hasBeenOpened = true;
       exiting = false;
-      // 下一帧再切到开启态，确保起始（贴边收起）态先绘制再过渡
-      raf = requestAnimationFrame(() => {
+      if (!motion) {
+        entered = true;
+        afterVisibleChange?.(true);
+      } else {
+        // 下一帧再切到开启态，确保起始（贴边收起）态先绘制再过渡
         raf = requestAnimationFrame(() => {
-          entered = true;
+          raf = requestAnimationFrame(() => {
+            entered = true;
+            const ms = motionDurationMs();
+            openTimer = setTimeout(() => afterVisibleChange?.(true), ms);
+          });
         });
-      });
+      }
     } else {
       entered = false;
       if (hasBeenOpened) {
         const ms = motionDurationMs();
         closeTimer = setTimeout(() => {
-          if (destroyOnClose) hasBeenOpened = false;
+          if (effectiveDestroyOnClose) hasBeenOpened = false;
           exiting = false;
           onAfterClose?.();
+          afterVisibleChange?.(false);
         }, ms);
-        if (destroyOnClose) exiting = true;
+        if (effectiveDestroyOnClose) exiting = true;
       }
     }
     return () => {
       if (raf) cancelAnimationFrame(raf);
+      if (openTimer) clearTimeout(openTimer);
       if (closeTimer) clearTimeout(closeTimer);
     };
   });
 
-  // destroyOnClose=true：仅在开/出场期间渲染；false：首开后常驻
+  // disableScroll：打开时给 body 加 overflow:hidden，关闭时还原。
+  $effect(() => {
+    if (!isOpen || !disableScroll || typeof document === 'undefined') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  });
+
+  // effectiveDestroyOnClose=true：仅在开/出场期间渲染；false：首开后常驻
   const shouldRender = $derived(
-    destroyOnClose ? isOpen || exiting : isOpen || hasBeenOpened,
+    effectiveDestroyOnClose ? isOpen || exiting : isOpen || hasBeenOpened,
   );
 
   function close() {
@@ -206,7 +260,7 @@
     // keyboard 总开关：false 时停用 Tab 焦点循环捕获（仍保留进场聚焦与归还焦点）。
     const trap = useFocusTrap(panelEl, { trapTab: keyboard });
     trap.activate();
-    const releaseScroll = mask ? useScrollLock() : () => {};
+    const releaseScroll = (mask && disableScroll) ? useScrollLock() : () => {};
     // 模态（mask=true）时背景内容对 SR/键盘 inert+aria-hidden（spec §6）；
     // 以 portal 根 rootEl 为锚隐藏其兄弟。非模态（mask=false）不抢占背景，跳过。
     const releaseInert = mask && rootEl ? useInertBackground(rootEl) : () => {};
@@ -228,18 +282,30 @@
   });
 
   // --- 堆叠 z-index (红线 #3)：每次打开向 modal/z-stack 计数器申请一层，关闭回收。
-  //     与 Modal、命令式 modal.confirm 共享同一计数器，多层叠放后开者在上。 ---
+  //     与 Modal、命令式 modal.confirm 共享同一计数器，多层叠放后开者在上。
+  //     zIndex prop 作为 CSS var 基准（栈内自动递增叠加）。 ---
   let stackZ = $state<number | undefined>(undefined);
 
   $effect(() => {
     if (!isOpen) return;
-    const { zIndex, release } = acquireZIndex();
-    stackZ = zIndex;
+    const { zIndex: z, release } = acquireZIndex();
+    stackZ = z;
     return () => {
       stackZ = undefined;
       release();
     };
   });
+
+  const rootStyle = $derived(
+    [
+      stackZ !== undefined ? `--cd-drawer-z:${stackZ}` : undefined,
+      zIndex !== undefined && stackZ === undefined
+        ? `--cd-drawer-z:${zIndex}`
+        : undefined,
+    ]
+      .filter(Boolean)
+      .join('; ') || undefined,
+  );
 
   // --- portal action (红线 #3)：命令式 appendChild 到 getContainer()/body，
   //     脱离父 DOM 层叠上下文；destroy 时 removeChild 归还/清理。 ---
@@ -266,12 +332,18 @@
     class="cd-drawer cd-drawer--{placement}"
     class:cd-drawer--open={isOpen && entered}
     class:cd-drawer--no-mask={!mask}
-    style={stackZ !== undefined ? `--cd-drawer-z:${stackZ}` : undefined}
+    class:cd-drawer--no-motion={!motion}
+    style={rootStyle}
     use:portal
   >
     {#if mask}
       <!-- 遮罩 role=presentation：点击关闭为鼠标增强，键盘等价为 Esc -->
-      <div class="cd-drawer__mask" onclick={onMaskClick} role="presentation"></div>
+      <div
+        class="cd-drawer__mask"
+        style={maskStyle}
+        onclick={onMaskClick}
+        role="presentation"
+      ></div>
     {/if}
     <div
       class={panelCls}
@@ -282,7 +354,7 @@
       aria-label={hasTitle ? undefined : ariaLabel}
       style={panelStyle}
     >
-      <header class="cd-drawer__header">
+      <header class="cd-drawer__header" style={headerStyle}>
         <h2 id={titleId} class="cd-drawer__title">
           {#if titleSnippet}
             {@render titleSnippet()}
@@ -290,32 +362,41 @@
             {title}
           {/if}
         </h2>
-        {#if closable}
-          <button
-            type="button"
-            class="cd-drawer__close"
-            aria-label={loc().t('Drawer.close')}
-            onclick={close}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-hidden="true"
+        <div class="cd-drawer__header-actions">
+          {#if extra}
+            {@render extra()}
+          {/if}
+          {#if closable && closeIcon !== null}
+            <button
+              type="button"
+              class="cd-drawer__close"
+              aria-label={loc().t('Drawer.close')}
+              onclick={close}
             >
-              <path
-                d="M3 3l10 10M13 3L3 13"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
-        {/if}
+              {#if closeIcon}
+                {@render closeIcon()}
+              {:else}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 3l10 10M13 3L3 13"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              {/if}
+            </button>
+          {/if}
+        </div>
       </header>
 
-      <div class="cd-drawer__body">
+      <div class="cd-drawer__body" style={bodyStyle}>
         {@render children?.()}
       </div>
 
@@ -417,6 +498,12 @@
     font-weight: 600;
     line-height: 1.4;
   }
+  .cd-drawer__header-actions {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--cd-spacing-2, 8px);
+  }
   .cd-drawer__close {
     display: inline-flex;
     align-items: center;
@@ -450,6 +537,11 @@
     gap: var(--cd-drawer-footer-gap, 8px);
     padding: var(--cd-drawer-footer-padding);
     border-block-start: 1px solid var(--cd-drawer-border);
+  }
+
+  /* motion=false：强制禁用所有过渡动画 */
+  .cd-drawer--no-motion * {
+    transition: none !important;
   }
 
   /* reduced-motion：禁用位移过渡，仅保留极短透明度切换，打开后立即可用 */

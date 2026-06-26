@@ -57,10 +57,20 @@
     zIndex?: number;
     /** 强制不锁背景滚动（即便 mask=true）。 */
     disableScrollLock?: boolean;
+    /** 打开时给 body 加 overflow:hidden 防背景滚动。默认 true。false 等价于 disableScrollLock=true。 */
+    disableScroll?: boolean;
     /** 关闭后焦点返回目标，缺省为打开时的触发元素。 */
     returnFocusTo?: HTMLElement | (() => HTMLElement | null) | null;
     /** 关闭进出动效（独立于 reduced-motion）。 */
     motionDisabled?: boolean;
+    /** 是否启用动画过渡。false 等价于 motionDisabled=true。默认 true。 */
+    motion?: boolean;
+    /** Header 区域 style 字符串。 */
+    headerStyle?: string;
+    /** 内容区域 style 字符串。 */
+    bodyStyle?: string;
+    /** 遮罩 style 字符串。 */
+    maskStyle?: string;
     /** Footer 操作区；提供 close() 以便按钮关闭面板。未提供不渲染。 */
     footer?: Snippet<[{ close: () => void }]> | null;
     children?: Snippet;
@@ -75,6 +85,8 @@
     onAfterOpen?: () => void;
     /** 退出动效结束、DOM 卸载（如适用）后触发。 */
     onAfterClose?: () => void;
+    /** 动画结束后（入场或出场）触发，isVisible 为当前可见状态。 */
+    afterVisibleChange?: (isVisible: boolean) => void;
     /** 用户主动取消（Esc/遮罩/外部/关闭按钮）的语义快捷事件。 */
     onCancel?: (e: { reason: Reason }) => void;
   }
@@ -100,8 +112,13 @@
     getContainer,
     zIndex,
     disableScrollLock = false,
+    disableScroll = true,
     returnFocusTo,
     motionDisabled = false,
+    motion = true,
+    headerStyle,
+    bodyStyle,
+    maskStyle,
     footer,
     children,
     ariaLabel,
@@ -111,6 +128,7 @@
     onOpenChange,
     onAfterOpen,
     onAfterClose,
+    afterVisibleChange,
     onCancel,
   }: Props = $props();
 
@@ -162,9 +180,9 @@
 
   let rootEl = $state<HTMLElement | null>(null);
 
-  // 出场过渡时长：从 CSS 读取 token（reduced-motion 下为 0）；motionDisabled 强制 0。
+  // 出场过渡时长：从 CSS 读取 token（reduced-motion 下为 0）；motionDisabled/motion=false 强制 0。
   function motionDurationMs(): number {
-    if (motionDisabled) return 0;
+    if (motionDisabled || !motion) return 0;
     if (typeof window === 'undefined' || !rootEl) return 0;
     const raw = getComputedStyle(rootEl)
       .getPropertyValue('--cd-sidesheet-motion-duration')
@@ -193,9 +211,10 @@
     if (opening) {
       hasBeenOpened = true;
       exiting = false;
-      if (motionDisabled) {
+      if (motionDisabled || !motion) {
         entered = true;
         onAfterOpen?.();
+        afterVisibleChange?.(true);
       } else {
         // 下一帧再切到开启态，确保起始（贴边收起）态先绘制再过渡。
         // motionDurationMs() 读 rootEl，必须在 raf 回调（非响应式作用域）内调用，
@@ -204,18 +223,22 @@
           raf = requestAnimationFrame(() => {
             entered = true;
             const ms = motionDurationMs();
-            openTimer = setTimeout(() => onAfterOpen?.(), ms);
+            openTimer = setTimeout(() => {
+              onAfterOpen?.();
+              afterVisibleChange?.(true);
+            }, ms);
           });
         });
       }
     } else {
       entered = false;
       if (hasBeenOpened) {
-        const ms = motionDisabled ? 0 : motionDurationMs();
+        const ms = (motionDisabled || !motion) ? 0 : motionDurationMs();
         closeTimer = setTimeout(() => {
           if (destroyOnClose) hasBeenOpened = false;
           exiting = false;
           onAfterClose?.();
+          afterVisibleChange?.(false);
         }, ms);
         if (destroyOnClose) exiting = true;
       }
@@ -280,8 +303,8 @@
     const trap = mask ? useFocusTrap(el) : null;
     trap?.activate();
 
-    // scroll lock 仅 mask=true 且未 disableScrollLock。
-    const releaseScroll = mask && !disableScrollLock ? useScrollLock() : () => {};
+    // scroll lock 仅 mask=true 且未 disableScrollLock，且 disableScroll=true（默认）。
+    const releaseScroll = (mask && !disableScrollLock && disableScroll) ? useScrollLock() : () => {};
 
     // 模态（mask=true）时背景内容对 SR/键盘 inert+aria-hidden（spec §6）；
     // 以 portal 根 rootEl 为锚隐藏其兄弟。非模态不抢占背景，跳过。
@@ -310,6 +333,16 @@
         if (target && target !== triggerEl) target.focus();
       }
       triggerEl = null;
+    };
+  });
+
+  // disableScroll：mask=false 时 useScrollLock 不生效，手动给 body 加 overflow:hidden。
+  $effect(() => {
+    if (!isOpen || !disableScroll || mask || typeof document === 'undefined') return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
     };
   });
 
@@ -370,13 +403,13 @@
     class="cd-sidesheet cd-sidesheet--{placement}"
     class:cd-sidesheet--open={isOpen && entered}
     class:cd-sidesheet--no-mask={!mask}
-    class:cd-sidesheet--no-motion={motionDisabled}
+    class:cd-sidesheet--no-motion={motionDisabled || !motion}
     style={rootStyle}
     use:portal
   >
     {#if mask}
       <!-- 遮罩 role=presentation：点击关闭为鼠标增强，键盘等价为 Esc -->
-      <div class={maskCls} onclick={onMaskClick} role="presentation"></div>
+      <div class={maskCls} style={maskStyle} onclick={onMaskClick} role="presentation"></div>
     {/if}
     <div
       class={panelCls}
@@ -388,7 +421,7 @@
       style={panelStyle}
     >
       {#if hasTitle || closable || headerExtra}
-        <header class="cd-sidesheet__header">
+        <header class="cd-sidesheet__header" style={headerStyle}>
           {#if hasTitle}
             <h2 id={titleId} class="cd-sidesheet__title">
               {#if titleSnippet}
@@ -435,7 +468,7 @@
         </header>
       {/if}
 
-      <div class={bodyCls}>
+      <div class={bodyCls} style={bodyStyle}>
         {@render children?.()}
       </div>
 
