@@ -105,14 +105,32 @@
     suffix?: Snippet | string;
     /** 自定义清除图标 */
     clearIcon?: Snippet;
-    /** 自定义展开图标 */
+    /** 自定义展开图标（expandIcon / arrowIcon 均可，expandIcon 优先） */
     expandIcon?: Snippet;
-    /** 是否启用动画，默认 true */
+    /** 自定义右侧下拉箭头（expandIcon 的别名） */
+    arrowIcon?: Snippet;
+    /** 下拉框展开动画（默认 true） */
     motion?: boolean;
     /** 鼠标移入延迟（ms），默认 50 */
     mouseEnterDelay?: number;
     /** 鼠标移出延迟（ms），默认 50 */
     mouseLeaveDelay?: number;
+    /** 下拉框自动调整方向（默认 true） */
+    autoAdjustOverflow?: boolean;
+    /** 下拉框方向（默认 'bottomStart'） */
+    position?: string;
+    /** 选择框样式 */
+    style?: string;
+    /** 下拉菜单样式 */
+    dropdownStyle?: string | Record<string, string>;
+    /** 失焦回调 */
+    onBlur?: (e: MouseEvent) => void;
+    /** 聚焦回调 */
+    onFocus?: (e: MouseEvent) => void;
+    /** 聚焦时阻止滚动 */
+    preventScroll?: boolean;
+    /** 阻止下拉框点击冒泡（默认 true） */
+    stopPropagation?: boolean;
 
     // --- 插槽 ---
     /** 面板顶部插槽 */
@@ -123,6 +141,10 @@
     // --- 搜索增强 ---
     /** 搜索框位置：'trigger'（默认，内置）；'custom'（自定义，不渲染内置搜索框） */
     searchPosition?: 'trigger' | 'custom';
+    /** 搜索框占位文字 */
+    searchPlaceholder?: string;
+    /** 搜索时过滤的属性（默认 'label'） */
+    treeNodeFilterProp?: string;
     /** 自定义搜索结果项渲染 */
     filterRender?: Snippet<[{ path: FlatPath }]>;
     /** 搜索结果自定义排序 */
@@ -141,10 +163,14 @@
     checkRelation?: 'related' | 'unRelated';
     /** onChange 回调是否返回完整 option 对象 */
     onChangeWithObject?: boolean;
+    /** 超出 max 时回调 */
+    onExceed?: (items: unknown[]) => void;
     /** 超出 maxTagCount 时是否显示 popover */
     showRestTagsPopover?: boolean;
     /** 超出 tag popover 的 props */
     restTagsPopoverProps?: Record<string, unknown>;
+    /** 是否显示清除按钮（clearable 的别名） */
+    showClear?: boolean;
 
     // --- 节点配置 ---
     /** 自定义字段名映射 */
@@ -211,12 +237,23 @@
     suffix,
     clearIcon,
     expandIcon,
+    arrowIcon,
     motion = true,
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
+    autoAdjustOverflow = true,
+    position,
+    style,
+    dropdownStyle,
+    onBlur,
+    onFocus,
+    preventScroll = false,
+    stopPropagation = true,
     topSlot,
     bottomSlot,
     searchPosition = 'trigger',
+    searchPlaceholder,
+    treeNodeFilterProp = 'label',
     filterRender,
     filterSorter,
     onSearch,
@@ -225,8 +262,10 @@
     autoMergeValue = true,
     checkRelation = 'related',
     onChangeWithObject = false,
+    onExceed,
     showRestTagsPopover = false,
     restTagsPopoverProps,
+    showClear: showClearProp,
     keyMaps,
     clickToSelect = false,
     enableLeafClick = false,
@@ -577,12 +616,17 @@
       : 0,
   );
 
+  // clearable / showClear 别名归一（showClear prop 优先 clearable）
+  const effClearable = $derived(showClearProp ?? clearable ?? false);
+  // expandIcon / arrowIcon 别名归一
+  const effExpandIcon = $derived(expandIcon ?? arrowIcon);
+
   const selectedChain = $derived(findPath(normalizedTreeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
-  const showClear = $derived(clearable && !disabled && hasSelection);
+  const showClear = $derived(effClearable && !disabled && hasSelection);
 
   // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
   // 否则按 displayProp 取 label 或 value 链，用 separator 连接。
@@ -985,6 +1029,7 @@
       `cd-cascader--${status}`,
       disabled && 'cd-cascader--disabled',
       isOpen && 'cd-cascader--open',
+      position && `cd-cascader--${position}`,
       borderless && 'cd-cascader--borderless',
       motion === false && 'cd-cascader--no-motion',
     ]
@@ -993,7 +1038,7 @@
   );
 </script>
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
   {#if triggerRender}
     {@render triggerRender({ value, placeholder, isOpen, disabled })}
@@ -1010,6 +1055,8 @@
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
+    onfocus={(e) => onFocus?.(e as unknown as MouseEvent)}
+    onblur={(e) => onBlur?.(e as unknown as MouseEvent)}
     onkeydown={(e) => {
       if (disabled) return;
       if (!isOpen) {
@@ -1093,9 +1140,13 @@
     {/if}
 
     <span class="cd-cascader__arrow" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-      </svg>
+      {#if effExpandIcon}
+        {@render effExpandIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+          <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
+        </svg>
+      {/if}
     </span>
   </div>
   {/if}

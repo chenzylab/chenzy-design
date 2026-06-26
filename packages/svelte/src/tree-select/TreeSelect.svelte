@@ -134,10 +134,24 @@
      * 也可传普通 Snippet（无参数），此时统一渲染同一图标。
      */
     expandIcon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+    /** 自定义右侧下拉箭头（expandIcon 的别名） */
+    arrowIcon?: Snippet;
     /** 显示节点连接线（垂直导引线）。默认 false。 */
     showLine?: boolean;
     /** 节点 label 单行省略截断。默认 true（保持原有行为，可关闭以允许换行）。 */
     labelEllipsis?: boolean;
+    /** 选择框样式 */
+    style?: string;
+    /** 浮层遮挡时自动调整方向（默认 true） */
+    autoAdjustOverflow?: boolean;
+    /** status 的别名 */
+    validateStatus?: 'default' | 'error' | 'warning';
+    /** 失焦回调 */
+    onBlur?: (e: FocusEvent) => void;
+    /** 聚焦回调 */
+    onFocus?: (e: FocusEvent) => void;
+    /** 聚焦时阻止滚动 */
+    preventScroll?: boolean;
 
     // --- Slots ---
     /** 面板顶部外层 slot（在搜索框之上）。 */
@@ -150,12 +164,18 @@
     searchAutoFocus?: boolean;
     /** 搜索框位置：'dropdown'（面板内，默认）或 'trigger'（trigger 内）。 */
     searchPosition?: 'dropdown' | 'trigger';
+    /** 搜索框占位文字 */
+    searchPlaceholder?: string;
+    /** 搜索过滤属性（默认 'label'） */
+    treeNodeFilterProp?: string;
     /** 搜索框右侧显示清除按钮（有内容时）。默认 true。 */
     showSearchClear?: boolean;
     /** 搜索激活时仅显示命中节点，不显示祖先链。默认 false。 */
     showFilteredOnly?: boolean;
 
     // --- Expand control ---
+    /** 受控展开的节点 keys */
+    expandedKeys?: TreeKey[];
     /** 动态全部展开（与 defaultExpandAll 不同，此为受控/动态）。默认 false。 */
     expandAll?: boolean;
     /** 行点击展开方式：false（仅展开按钮触发）、'click'（单击行）、'doubleClick'（双击行）。默认 false。 */
@@ -164,6 +184,8 @@
     autoExpandParent?: boolean;
     /** 展开/折叠动画。默认 true。 */
     motionExpand?: boolean;
+    /** 节点展开回调 */
+    onExpand?: (expandedKeys: TreeKey[], info: { expanded: boolean; node: unknown }) => void;
 
     // --- Multi-select enhancements ---
     /**
@@ -193,6 +215,8 @@
     keyMaps?: { key?: string; label?: string; value?: string };
     /** 选项列表容器的内联 style（字符串或对象形式）。 */
     optionListStyle?: string | Record<string, string>;
+    /** 受控已加载的节点 keys */
+    loadedKeys?: Set<TreeKey>;
 
     // --- Behavior ---
     /** 单选选中后自动关闭面板。默认 true。 */
@@ -210,6 +234,8 @@
     // --- Events ---
     /** 点击清除按钮回调。 */
     onClear?: (e: MouseEvent) => void;
+    /** 节点选中回调 */
+    onSelect?: (selectedKey: TreeKey, selected: boolean, node: unknown) => void;
     /** 异步加载完成回调（含已加载 key 集合与当前节点）。 */
     onLoad?: (loadedKeys: TreeKey[], treeNode: TreeNode) => void;
     /** 面板可见性变化回调（与 onOpenChange 语义相同，Semi 风格别名）。 */
@@ -253,24 +279,34 @@
     onOpenChange,
     ariaLabel,
     icon,
-    // --- New props ---
     borderless = false,
     prefix,
     suffix,
     clearIcon,
     expandIcon,
+    arrowIcon,
     showLine = false,
     labelEllipsis = true,
+    style,
+    autoAdjustOverflow = true,
+    validateStatus,
+    onBlur,
+    onFocus,
+    preventScroll = false,
     outerTopSlot,
     outerBottomSlot,
     searchAutoFocus = false,
     searchPosition = 'dropdown',
+    searchPlaceholder,
+    treeNodeFilterProp = 'label',
     showSearchClear = true,
     showFilteredOnly = false,
+    expandedKeys: expandedKeysProp,
     expandAll = false,
     expandAction = false,
     autoExpandParent = false,
     motionExpand = true,
+    onExpand,
     autoMergeValue = true,
     onChangeWithObject = false,
     showRestTagsPopover = false,
@@ -282,11 +318,13 @@
     treeNodeLabelProp = 'label',
     keyMaps,
     optionListStyle,
+    loadedKeys: loadedKeysProp,
     clickToHide = true,
     clickTriggerToHide = true,
     disableStrictly = false,
     dropdownMargin,
     onClear,
+    onSelect,
     onLoad,
     onVisibleChange,
   }: Props = $props();
@@ -299,6 +337,9 @@
   // remote 隐含可搜索（显示搜索框）；checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
   const isFilterable = $derived(filterable || remote);
   const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
+
+  // validateStatus 是 status 别名；效值以 validateStatus 优先（未传时回退 status）。
+  const effStatus = $derived(validateStatus ?? status ?? 'default');
 
   const treeId = useId('cd-tree-select-panel');
   // treeitem 行 id 基（aria-activedescendant 指向当前高亮行）。
@@ -499,6 +540,11 @@
   const isOpenControlled = $derived(open !== undefined);
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+
+  // onVisibleChange 是 onOpenChange 别名：isOpen 变化时同步触发。
+  $effect(() => {
+    onVisibleChange?.(isOpen);
+  });
 
   // --- 本地展开状态 (红线 #2): expandedKeys 本地 $state Set，不依赖挂载 registry ---
   let expandedKeys = $state<Set<TreeKey>>(getInitialExpanded());
@@ -978,7 +1024,7 @@
     [
       'cd-tree-select',
       `cd-tree-select--${size}`,
-      `cd-tree-select--${status}`,
+      `cd-tree-select--${effStatus}`,
       disabled && 'cd-tree-select--disabled',
       isOpen && 'cd-tree-select--open',
       borderless && 'cd-tree-select--borderless',
@@ -1114,7 +1160,7 @@
   {/each}
 {/snippet}
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
   <div
     class="cd-tree-select__trigger"
@@ -1124,10 +1170,12 @@
     aria-controls={treeId}
     aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
     aria-label={ariaLabel}
-    aria-invalid={status === 'error' || undefined}
+    aria-invalid={effStatus === 'error' || undefined}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
+    onfocus={(e) => onFocus?.(e)}
+    onblur={(e) => onBlur?.(e)}
     onkeydown={(e) => {
       if (disabled) return;
       if (!isOpen) {
@@ -1146,6 +1194,11 @@
       if (!searchActive) onTreeKeydown(e);
     }}
   >
+    {#if prefix}
+      <span class="cd-tree-select__prefix">
+        {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+      </span>
+    {/if}
     <span class="cd-tree-select__content">
       {#if multiple}
         {#if checkedNodes.length > 0}
@@ -1179,10 +1232,11 @@
         role="button"
         tabindex="-1"
         aria-label={loc().t('TreeSelect.clear')}
-        onclick={clearAll}
+        onclick={(e) => { onClear?.(e); clearAll(e); }}
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            onClear?.(e);
             clearAll(e as unknown as MouseEvent);
           }
         }}
@@ -1196,10 +1250,19 @@
       </span>
     {/if}
 
+    {#if suffix}
+      <span class="cd-tree-select__suffix">
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+      </span>
+    {/if}
     <span class="cd-tree-select__arrow" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-      </svg>
+      {#if arrowIcon}
+        {@render arrowIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+          <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
+        </svg>
+      {/if}
     </span>
   </div>
 
