@@ -11,6 +11,7 @@ export const meta = {
   props: [
     { name: 'open', type: 'boolean', default: 'undefined', desc: '受控显隐；受控时不回写，仅 onOpenChange' },
     { name: 'defaultOpen', type: 'boolean', default: 'false', desc: '非受控初始显隐' },
+    { name: 'defaultVisible', type: 'boolean', default: 'undefined', desc: 'defaultOpen 别名（优先于 defaultOpen）' },
     { name: 'title', type: 'string', default: 'undefined', desc: '确认标题' },
     { name: 'titleSnippet', type: 'Snippet', default: 'undefined', desc: '覆盖 title' },
     { name: 'content', type: 'string', default: 'undefined', desc: '补充说明' },
@@ -104,6 +105,11 @@ export const meta = {
       default: 'undefined',
       desc: '浮层 portal 容器，缺省 document.body；脱离 overflow 裁剪与父层叠上下文',
     },
+    { name: 'zIndex', type: 'number', default: '1030', desc: '浮层 z-index，覆盖 --cd-popconfirm-z token' },
+    { name: 'guardFocus', type: 'boolean', default: 'true', desc: 'Tab 键是否在浮层内循环（焦点陷阱）' },
+    { name: 'returnFocusOnClose', type: 'boolean', default: 'true', desc: 'Esc/外部点击关闭时是否将焦点归还给触发元素' },
+    { name: 'showArrow', type: 'boolean', default: 'false', desc: '是否显示箭头三角' },
+    { name: 'stopPropagation', type: 'boolean', default: 'true', desc: '点击浮层内容是否阻止事件冒泡到文档' },
     { name: 'trigger', type: 'Snippet', default: 'undefined', desc: '触发元素（被包裹）' },
     {
       name: 'onOpenChange',
@@ -117,6 +123,9 @@ export const meta = {
       desc: '点击确认回调；返回 Promise 时确认按钮进入 loading，resolve 后关闭、reject 保持打开',
     },
     { name: 'onCancel', type: '() => void', default: 'undefined', desc: '点击取消/外部关闭回调' },
+    { name: 'onClickOutside', type: '(e: MouseEvent) => void', default: 'undefined', desc: '点击浮层外部时触发（关闭前，可 preventDefault 阻止关闭）' },
+    { name: 'onClickOutSide', type: '(e: MouseEvent) => void', default: 'undefined', desc: 'onClickOutside 别名（Semi 大写 S 拼写）' },
+    { name: 'onEscKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: 'Esc 键按下时触发（在 closeOnEsc 关闭之前）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '附加到浮层的类名' },
   ],
   events: [
@@ -124,6 +133,8 @@ export const meta = {
     { name: 'onConfirm', desc: '确认按钮点击' },
     { name: 'onCancel', desc: '取消按钮点击或外部关闭' },
     { name: 'onClickOutside', desc: '点击浮层外部（关闭前触发，可 preventDefault 阻止默认关闭）' },
+    { name: 'onClickOutSide', desc: 'onClickOutside 别名（Semi 原始大写 S 拼写）' },
+    { name: 'onEscKeyDown', desc: 'Esc 键按下时触发（在 closeOnEsc 关闭之前）' },
     { name: 'onAfterOpen', desc: '入场动效结束、浮层完全可见' },
     { name: 'onAfterClose', desc: '出场动效结束、DOM 卸载后' },
   ],
