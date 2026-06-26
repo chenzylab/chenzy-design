@@ -1,10 +1,121 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
   import type { PageData } from './$types';
   import ApiTable from '$lib/components/ApiTable.svelte';
   import TokenTable from '$lib/components/TokenTable.svelte';
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
   const { data }: { data: PageData } = $props();
-  const { meta } = data;
+  const meta = $derived(data.meta);
+
+  // 组件名小写 → demo 目录名
+  const nameToDir: Record<string, string> = {
+    aichatdialogue: 'ai-chat-dialogue',
+    aichatinput: 'ai-chat-input',
+    audioplayer: 'audio-player',
+    autocomplete: 'autocomplete',
+    avatar: 'avatar',
+    avatargroup: 'avatar',
+    backtop: 'back-top',
+    badge: 'badge',
+    banner: 'banner',
+    breadcrumb: 'breadcrumb',
+    button: 'button',
+    calendar: 'calendar',
+    card: 'card',
+    carousel: 'carousel',
+    cascader: 'cascader',
+    chat: 'chat',
+    checkbox: 'checkbox',
+    codehighlight: 'code-highlight',
+    collapse: 'collapse',
+    collapsible: 'collapsible',
+    colorpicker: 'color-picker',
+    configprovider: 'config-provider',
+    cropper: 'cropper',
+    datepicker: 'date-picker',
+    descriptions: 'descriptions',
+    divider: 'divider',
+    dragmove: 'drag-move',
+    drawer: 'drawer',
+    dropdown: 'dropdown',
+    empty: 'empty',
+    floatbutton: 'float-button',
+    form: 'form',
+    grid: 'grid',
+    highlight: 'highlight',
+    hotkeys: 'hot-keys',
+    icon: 'icon',
+    iconbutton: 'icon-button',
+    image: 'image',
+    input: 'input',
+    inputnumber: 'input-number',
+    jsonviewer: 'json-viewer',
+    layout: 'layout',
+    list: 'list',
+    localeprovider: 'locale-provider',
+    lottieicon: 'lottie-icon',
+    markdownrender: 'markdown-render',
+    menu: 'menu',
+    modal: 'modal',
+    notification: 'notification',
+    overflowlist: 'overflow-list',
+    pagination: 'pagination',
+    pincode: 'pin-code',
+    popconfirm: 'popconfirm',
+    popover: 'popover',
+    progress: 'progress',
+    radio: 'radio',
+    rangepicker: 'date-picker',
+    rating: 'rating',
+    resizable: 'resizable',
+    resizeobserver: 'resize-observer',
+    scrolllist: 'scroll-list',
+    select: 'select',
+    sidesheet: 'side-sheet',
+    skeleton: 'skeleton',
+    slider: 'slider',
+    space: 'space',
+    spin: 'spin',
+    steps: 'steps',
+    switch: 'switch',
+    table: 'table',
+    tabs: 'tabs',
+    tag: 'tag',
+    taginput: 'tag-input',
+    textarea: 'input',
+    timepicker: 'time-picker',
+    timeline: 'timeline',
+    toast: 'toast',
+    tooltip: 'tooltip',
+    transfer: 'transfer',
+    tree: 'tree',
+    treeselect: 'tree-select',
+    typography: 'typography',
+    upload: 'upload',
+    userguide: 'user-guide',
+    videoplayer: 'video-player',
+    virtuallist: 'virtual-list',
+  };
+
+  // Vite glob — 静态路径，编译时分析
+  const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
+
+  let DemoComponent = $state<Component | null>(null);
+
+  $effect(() => {
+    const name = meta.name.toLowerCase();
+    const dir = nameToDir[name] ?? name;
+    const key = `../../../demos/${dir}/BasicDemo.svelte`;
+    DemoComponent = null;
+    if (demoModules[key]) {
+      (demoModules[key]() as Promise<{ default: Component }>).then((mod) => {
+        DemoComponent = mod.default;
+      }).catch(() => {
+        DemoComponent = null;
+      });
+    }
+  });
 </script>
 
 <svelte:head>
@@ -20,6 +131,15 @@
   <h1>{meta.name}</h1>
   <p class="description">{meta.description}</p>
 </div>
+
+{#if DemoComponent}
+<section class="section">
+  <h2>代码演示</h2>
+  <DemoBox title="基本用法">
+    <DemoComponent />
+  </DemoBox>
+</section>
+{/if}
 
 <section class="section">
   <h2>API 参考</h2>
