@@ -77,6 +77,8 @@
     onSelectionChange,
     ariaLabel,
     children,
+    layout = 'vertical',
+    onListScroll,
     class: className = '',
   }: {
     dataSource?: T[];
@@ -127,6 +129,10 @@
     ariaLabel?: string;
     /** 声明式用法：内嵌 <List.Item>（不传 dataSource 时生效）。 */
     children?: Snippet;
+    /** 整体布局方向：'vertical'（默认）每 item 内容纵向排列；'horizontal' 横向排列。 */
+    layout?: 'horizontal' | 'vertical';
+    /** 列表容器滚动事件。 */
+    onListScroll?: (e: Event) => void;
     class?: string;
   } = $props();
 
@@ -524,6 +530,7 @@
       bordered && 'cd-list--bordered',
       split && 'cd-list--split',
       selectMode && 'cd-list--selectable',
+      layout === 'horizontal' && 'cd-list--horizontal',
       className,
     ]
       .filter(Boolean)
@@ -562,7 +569,7 @@
   </span>
 {/snippet}
 
-<div class={cls} aria-busy={loading || undefined} bind:this={rootEl}>
+<div class={cls} aria-busy={loading || undefined} bind:this={rootEl} onscroll={onListScroll}>
   {#if header !== undefined}
     <div class="cd-list__header">
       {#if isSnippet(header)}{@render header()}{:else}{header}{/if}
@@ -729,6 +736,14 @@
     border: 1px solid var(--cd-list-border);
     border-radius: var(--cd-list-radius);
     overflow: hidden;
+  }
+
+  /* horizontal layout: item 内容横向排列 */
+  .cd-list--horizontal .cd-list__item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--cd-spacing-3, 12px);
   }
 
   .cd-list__header {
