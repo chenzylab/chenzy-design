@@ -368,6 +368,8 @@ export interface Locale {
     decrease: string;
     /** LiveAnnouncer：越界钳制后实际生效值，uses {value} */
     clampedAnnounce: string;
+    /** 清除按钮 aria-label */
+    clear: string;
   };
   Slider: {
     /** LiveAnnouncer：值到达最小边界 */
