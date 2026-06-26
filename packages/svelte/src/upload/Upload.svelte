@@ -73,6 +73,50 @@
     onSuccess?: (response: string, item: UploadFileItem) => void;
     onError?: (item: UploadFileItem) => void;
     children?: Snippet;
+    /** 上传失败是否显示重试按钮。默认 true */
+    showRetry?: boolean;
+    /** 是否允许替换已有文件（单文件模式下显示"替换"而不是"添加"）。默认 false */
+    showReplace?: boolean;
+    /** 是否显示批量清除按钮。默认 false */
+    showClear?: boolean;
+    /** 清除按钮点击回调 */
+    onClear?: () => void;
+    /** 文件列表标题文字；false 则不渲染。默认 undefined（不渲染） */
+    fileListTitle?: string | false;
+    /** 文件名超长是否展示 Tooltip（简单实现：title 属性）。true=展示 title；false=不展示。默认 true */
+    showTooltip?: boolean;
+    /** 上传区提示内容（文字或 Snippet） */
+    prompt?: string | Snippet;
+    /** 提示位置：left/right 为水平排列，bottom 为下方。默认 'bottom' */
+    promptPosition?: 'left' | 'right' | 'bottom';
+    /** 拖拽放下回调 */
+    onDrop?: (e: DragEvent, files: File[], rejectFiles: File[]) => void;
+    /** 打开文件选择弹窗时回调 */
+    onOpenFileDialog?: () => void;
+    /** 预览图点击回调（image/picture-card listType） */
+    onPreviewClick?: (fileItem: UploadFileItem) => void;
+    /** accept 校验失败（文件类型不符）的回调 */
+    onAcceptInvalid?: (files: File[]) => void;
+    /** 重试回调 */
+    onRetry?: (file: UploadFileItem) => void;
+    /** 大小校验失败回调 */
+    onSizeError?: (file: UploadFileItem, validResult: 'max' | 'min') => void;
+    /** 校验失败统一文案（覆盖 i18n 默认文案） */
+    validateMessage?: string;
+    /** XHR withCredentials（跨域凭证） */
+    withCredentials?: boolean;
+    /** 上传前文件转换（async，返回转换后的 File） */
+    transformFile?: (file: File) => Promise<File>;
+    /** 拖拽区自定义图标 Snippet */
+    dragIcon?: Snippet;
+    /** 拖拽区主文案（Snippet 或 string） */
+    dragMainText?: string | Snippet;
+    /** 拖拽区副文案（Snippet 或 string） */
+    dragSubText?: string | Snippet;
+    /** 粘贴添加文件（监听 document paste） */
+    addOnPasting?: boolean;
+    /** 触发热点位置（拖拽区时无效）。'start'=前置，'end'=后置，'none'=隐藏触发器。默认 'start' */
+    hotSpotLocation?: 'start' | 'end' | 'none';
   }
 
   let {
@@ -101,6 +145,28 @@
     onSuccess,
     onError,
     children,
+    showRetry = true,
+    showReplace = false,
+    showClear = false,
+    onClear,
+    fileListTitle,
+    showTooltip = true,
+    prompt,
+    promptPosition = 'bottom',
+    onDrop,
+    onOpenFileDialog,
+    onPreviewClick,
+    onAcceptInvalid,
+    onRetry,
+    onSizeError,
+    validateMessage,
+    withCredentials = false,
+    transformFile,
+    dragIcon,
+    dragMainText,
+    dragSubText,
+    addOnPasting = false,
+    hotSpotLocation = 'start',
   }: Props = $props();
 
   const loc = useLocale();
@@ -177,6 +243,25 @@
     };
   });
 
+  // 粘贴监听：addOnPasting 时挂载 document paste。
+  $effect(() => {
+    if (!addOnPasting || disabled) return;
+    function handlePaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) files.push(f);
+        }
+      }
+      if (files.length > 0) addFiles(files);
+    }
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  });
+
   // 进度播报节流：每跨过一个 25% 档位才播一次（25/50/75），避免逐 % 刷屏。
   // 0% 与 100% 不在此播报（开始无意义、完成走 success 文案）。
   function announceProgress(item: UploadFileItem, percent: number) {
@@ -250,6 +335,7 @@
         for (const [k, v] of Object.entries(uploadData)) form.append(k, v);
       }
       xhr.open('POST', action);
+      if (withCredentials) xhr.withCredentials = true;
       if (headers) {
         for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
       }
@@ -269,6 +355,26 @@
     onChange?.(next);
   }
 
+  /** accept 过滤：返回通过和拒绝两组文件。 */
+  function filterByAccept(files: File[]): { accepted: File[]; rejected: File[] } {
+    if (!accept) return { accepted: files, rejected: [] };
+    const acceptList = accept.split(',').map((s) => s.trim().toLowerCase());
+    const accepted: File[] = [];
+    const rejected: File[] = [];
+    for (const f of files) {
+      const ext = '.' + f.name.split('.').pop()!.toLowerCase();
+      const mime = f.type.toLowerCase();
+      const ok = acceptList.some((a) => {
+        if (a.startsWith('.')) return ext === a;
+        if (a.endsWith('/*')) return mime.startsWith(a.slice(0, -1));
+        return mime === a;
+      });
+      if (ok) accepted.push(f);
+      else rejected.push(f);
+    }
+    return { accepted, rejected };
+  }
+
   function buildItem(file: File): UploadFileItem {
     // 纯函数校验大小（KB），min/max 同源；超限 → error + 本地化提示。
     const sizeError = validateFileSize(file.size, { minSize, maxSize });
@@ -284,7 +390,7 @@
     if (relativePath) item.relativePath = relativePath;
     if (sizeError) {
       const limitKB = sizeError === 'max' ? maxSize! : minSize!;
-      item.error = loc().t(sizeError === 'max' ? 'Upload.sizeError' : 'Upload.minSizeError', {
+      item.error = validateMessage ?? loc().t(sizeError === 'max' ? 'Upload.sizeError' : 'Upload.minSizeError', {
         size: formatSize(limitKB * 1024),
       });
     }
@@ -293,24 +399,37 @@
 
   function addFiles(fileList: FileList | File[]) {
     if (disabled) return;
-    const files = Array.from(fileList);
-    if (files.length === 0) return;
+    const allFiles = Array.from(fileList);
+    if (allFiles.length === 0) return;
 
-    let accepted = files;
+    // accept 校验
+    const { accepted: afterAccept, rejected } = filterByAccept(allFiles);
+    if (rejected.length > 0) onAcceptInvalid?.(rejected);
+    if (afterAccept.length === 0) return;
+
+    let accepted = afterAccept;
     if (limit !== undefined) {
       const room = limit - current.length;
       if (room <= 0) {
-        onExceed?.(files);
+        onExceed?.(accepted);
         return;
       }
-      if (files.length > room) {
-        onExceed?.(files.slice(room));
-        accepted = files.slice(0, room);
+      if (accepted.length > room) {
+        onExceed?.(accepted.slice(room));
+        accepted = accepted.slice(0, room);
       }
     }
 
     const newItems = accepted.map(buildItem);
     commit([...current, ...newItems]);
+
+    // onSizeError 回调：大小校验失败项通知外部
+    for (const item of newItems) {
+      if (item.status === 'error' && item.file) {
+        const result = validateFileSize(item.file.size, { minSize, maxSize });
+        if (result) onSizeError?.(item, result);
+      }
+    }
 
     // beforeUpload 通过的项才进队列受 concurrency 调度。
     // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅处理无尺寸错误的项。
@@ -344,6 +463,14 @@
       if (file !== original) patchItem(item.uid, { name: file.name, size: file.size, file });
     }
     if (!mounted) return;
+
+    // transformFile：上传前文件转换
+    if (transformFile) {
+      file = await transformFile(file);
+      if (!mounted) return;
+      patchItem(item.uid, { name: file.name, size: file.size, file });
+    }
+
     // 入队受 concurrency 调度：customRequest 返回 Promise 时队列会 await 其完成
     // 来释放槽位（同步返回则立即释放，由其自管生命周期）；否则由队列 await XHR。
     queue.add(() => {
@@ -368,8 +495,35 @@
     commit(current.filter((item) => item.uid !== uid));
   }
 
+  /** 重试失败项：重置状态后重新派发上传。 */
+  function retryItem(item: UploadFileItem) {
+    onRetry?.(item);
+    if (!item.file) return;
+    // Drop `percent` and `error` keys entirely (exactOptionalPropertyTypes: true requires
+    // omission rather than explicit undefined assignment).
+    commit(current.map((it) => {
+      if (it.uid !== item.uid) return it;
+      const { percent: _p, error: _e, ...rest } = it;
+      return { ...rest, status: 'ready' };
+    }));
+    dispatch(item, item.file, [item.file]);
+  }
+
+  /** 清除所有文件：中止进行中的上传，释放 objectURL，清空列表。 */
+  function clearAll() {
+    if (disabled) return;
+    for (const xhr of xhrMap.values()) xhr.abort();
+    xhrMap.clear();
+    for (const u of objectUrls.values()) URL.revokeObjectURL(u);
+    objectUrls.clear();
+    announcedBucket.clear();
+    commit([]);
+    onClear?.();
+  }
+
   function openPicker() {
     if (disabled) return;
+    onOpenFileDialog?.();
     inputEl?.click();
   }
 
@@ -384,7 +538,13 @@
     e.preventDefault();
     if (disabled) return;
     const dt = e.dataTransfer;
-    if (dt?.files && dt.files.length > 0) addFiles(dt.files);
+    if (dt?.files && dt.files.length > 0) {
+      const files = Array.from(dt.files);
+      // accept 过滤
+      const { accepted, rejected } = filterByAccept(files);
+      onDrop?.(e, files, rejected);
+      if (accepted.length > 0) addFiles(accepted);
+    }
   }
 
   function handleDragKeydown(e: KeyboardEvent) {
@@ -393,6 +553,9 @@
       openPicker();
     }
   }
+
+  // 是否水平布局 prompt（left 或 right）
+  const promptRow = $derived(promptPosition === 'left' || promptPosition === 'right');
 </script>
 
 <div
@@ -412,42 +575,95 @@
     onchange={handleInputChange}
   />
 
-  {#if drag}
+  {#snippet triggerArea()}
     <div
-      class="cd-upload__dragger"
-      role="button"
-      tabindex={disabled ? -1 : 0}
-      aria-disabled={disabled || undefined}
-      ondragover={(e) => e.preventDefault()}
-      ondrop={handleDrop}
-      onclick={openPicker}
-      onkeydown={handleDragKeydown}
+      class="cd-upload__trigger-wrap"
+      class:cd-upload__trigger-wrap--row={promptRow}
+      class:cd-upload__trigger-wrap--row-reverse={promptPosition === 'left'}
     >
-      {#if children}
-        {@render children()}
+      {#if drag}
+        <div
+          class="cd-upload__dragger"
+          role="button"
+          tabindex={disabled ? -1 : 0}
+          aria-disabled={disabled || undefined}
+          ondragover={(e) => e.preventDefault()}
+          ondrop={handleDrop}
+          onclick={openPicker}
+          onkeydown={handleDragKeydown}
+        >
+          {#if children}
+            {@render children()}
+          {:else}
+            {#if dragIcon}{@render dragIcon()}{/if}
+            {#if dragMainText}
+              <span class="cd-upload__dragger-main">
+                {#if typeof dragMainText === 'string'}{dragMainText}{:else}{@render dragMainText()}{/if}
+              </span>
+            {:else}
+              <span class="cd-upload__dragger-text">{loc().t('Upload.draggerText')}</span>
+            {/if}
+            {#if dragSubText}
+              <span class="cd-upload__dragger-sub">
+                {#if typeof dragSubText === 'string'}{dragSubText}{:else}{@render dragSubText()}{/if}
+              </span>
+            {/if}
+          {/if}
+        </div>
       {:else}
-        <span class="cd-upload__dragger-text">{loc().t('Upload.draggerText')}</span>
+        <button type="button" class="cd-upload__trigger" {disabled} onclick={openPicker}>
+          {#if children}
+            {@render children()}
+          {:else}
+            {loc().t('Upload.trigger')}
+          {/if}
+        </button>
+      {/if}
+
+      {#if prompt}
+        <div class="cd-upload__prompt">
+          {#if typeof prompt === 'string'}{prompt}{:else}{@render prompt()}{/if}
+        </div>
       {/if}
     </div>
-  {:else}
-    <button type="button" class="cd-upload__trigger" {disabled} onclick={openPicker}>
-      {#if children}
-        {@render children()}
-      {:else}
-        {loc().t('Upload.trigger')}
-      {/if}
-    </button>
+  {/snippet}
+
+  {#if hotSpotLocation !== 'none' && hotSpotLocation !== 'end'}
+    {@render triggerArea()}
+  {/if}
+
+  {#if showClear && current.length > 0}
+    <button
+      type="button"
+      class="cd-upload__clear-btn"
+      {disabled}
+      onclick={clearAll}
+    >清除全部</button>
   {/if}
 
   {#if listType === 'text' && current.length > 0}
+    {#if fileListTitle !== false && fileListTitle}
+      <div class="cd-upload__list-title">{fileListTitle}</div>
+    {/if}
     <ul class="cd-upload__list">
       {#each current as item (item.uid)}
         <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'}>
           <div class="cd-upload__item-main">
-            <span class="cd-upload__item-name">{item.name}</span>
+            <span
+              class="cd-upload__item-name"
+              title={showTooltip !== false ? item.name : undefined}
+            >{item.name}</span>
             <span class="cd-upload__item-size">{formatSize(item.size)}</span>
             {#if item.status !== 'uploading'}
               <span class="cd-upload__item-status">{item.error ?? item.status}</span>
+            {/if}
+            {#if item.status === 'error' && showRetry !== false}
+              <button
+                type="button"
+                class="cd-upload__retry-btn"
+                {disabled}
+                onclick={() => retryItem(item)}
+              >重试</button>
             {/if}
             <button
               type="button"
@@ -484,7 +700,18 @@
           class:cd-upload__card--uploading={item.status === 'uploading'}
         >
           {#if url}
-            <img class="cd-upload__thumb" src={url} alt={item.name} />
+            {#if onPreviewClick}
+              <button
+                type="button"
+                class="cd-upload__thumb-btn"
+                aria-label={item.name}
+                onclick={() => onPreviewClick(item)}
+              >
+                <img class="cd-upload__thumb" src={url} alt="" aria-hidden="true" />
+              </button>
+            {:else}
+              <img class="cd-upload__thumb" src={url} alt={item.name} />
+            {/if}
           {:else}
             <span class="cd-upload__thumb cd-upload__thumb--placeholder" aria-hidden="true"></span>
           {/if}
@@ -513,6 +740,10 @@
       {/each}
     </ul>
   {/if}
+
+  {#if hotSpotLocation === 'end'}
+    {@render triggerArea()}
+  {/if}
 </div>
 
 <style>
@@ -532,6 +763,22 @@
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
+  }
+  .cd-upload__trigger-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-2);
+  }
+  .cd-upload__trigger-wrap--row {
+    flex-direction: row;
+    align-items: center;
+  }
+  .cd-upload__trigger-wrap--row-reverse {
+    flex-direction: row-reverse;
+  }
+  .cd-upload__prompt {
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-1);
   }
   .cd-upload__trigger {
     align-self: flex-start;
@@ -566,6 +813,7 @@
   }
   .cd-upload__dragger {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding-block: var(--cd-spacing-6);
@@ -617,6 +865,12 @@
   }
   .cd-upload--error .cd-upload__card {
     border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+  }
+  .cd-upload__list-title {
+    font-size: var(--cd-font-size-1);
+    color: var(--cd-color-text-1);
+    font-weight: 500;
+    margin-block-end: var(--cd-spacing-1);
   }
   .cd-upload__list {
     display: flex;
@@ -686,6 +940,56 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
+  .cd-upload__retry-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--cd-spacing-1);
+    border: none;
+    background: transparent;
+    color: var(--cd-color-primary);
+    cursor: pointer;
+    font-size: var(--cd-font-size-1);
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-upload__retry-btn:hover {
+    text-decoration: underline;
+  }
+  .cd-upload__retry-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .cd-upload__clear-btn {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-1);
+    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    font-size: var(--cd-font-size-1);
+    border-radius: var(--cd-radius-1);
+  }
+  .cd-upload__clear-btn:hover {
+    color: var(--cd-color-danger);
+    background: var(--cd-color-fill-1);
+  }
+  .cd-upload__clear-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .cd-upload__dragger-main {
+    display: block;
+    font-size: var(--cd-font-size-2);
+    color: var(--cd-color-text-1);
+  }
+  .cd-upload__dragger-sub {
+    display: block;
+    font-size: var(--cd-font-size-1);
+    color: var(--cd-color-text-2);
+  }
 
   /* --- image / picture-card 缩略图网格 --- */
   .cd-upload__grid {
@@ -707,6 +1011,19 @@
   }
   .cd-upload__card--error {
     border-color: var(--cd-upload-item-color-error, var(--cd-color-danger));
+  }
+  .cd-upload__thumb-btn {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .cd-upload__thumb-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-upload__thumb {
     inline-size: 100%;

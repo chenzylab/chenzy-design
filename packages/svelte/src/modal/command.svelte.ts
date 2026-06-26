@@ -10,6 +10,9 @@ import { acquireZIndex } from './z-stack.js';
 
 type ConfirmType = 'confirm' | 'info' | 'success' | 'warning' | 'error';
 
+// Module-level registry of all active handles for destroyAll()
+const activeHandles = new Set<ModalCommandHandle>();
+
 export interface ModalCommandConfig {
   title?: string;
   content?: string;
@@ -52,6 +55,7 @@ function spawn(type: ConfirmType, config: ModalCommandConfig): ModalCommandHandl
     release();
     api?.destroy();
     if (host.parentNode) host.parentNode.removeChild(host);
+    activeHandles.delete(handle);
   }
 
   void (async () => {
@@ -74,10 +78,18 @@ function spawn(type: ConfirmType, config: ModalCommandConfig): ModalCommandHandl
     };
   })();
 
-  return {
+  const handle: ModalCommandHandle = {
     destroy: cleanup,
     update: (next) => api?.update(next),
   };
+  activeHandles.add(handle);
+  return handle;
+}
+
+export function destroyAll(): void {
+  for (const handle of [...activeHandles]) {
+    handle.destroy();
+  }
 }
 
 export const modal = {
@@ -87,4 +99,5 @@ export const modal = {
   success: (config: ModalCommandConfig): ModalCommandHandle => spawn('success', config),
   warning: (config: ModalCommandConfig): ModalCommandHandle => spawn('warning', config),
   error: (config: ModalCommandConfig): ModalCommandHandle => spawn('error', config),
+  destroyAll,
 };
