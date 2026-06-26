@@ -20,11 +20,30 @@
 
   type Animation = 'slide' | 'fade';
   type IndicatorType = 'dot' | 'line' | 'columnar';
+  type IndicatorPosition = 'left' | 'center' | 'right';
+  type IndicatorSize = 'small' | 'medium';
+  type Theme = 'primary' | 'light' | 'dark';
+  type ArrowType = 'hover' | 'always';
+  type SlideDirection = 'left' | 'right';
+  type TriggerType = 'hover' | 'click';
+
+  /** autoPlay 对象形式：{ interval?, hoverToPause? } */
+  type AutoPlayConfig = { interval?: number; hoverToPause?: boolean };
+
+  interface ArrowSlotProps {
+    children?: Snippet;
+    onClick?: () => void;
+  }
 
   interface Props {
     slides?: Snippet[];
+    /** 受控当前激活索引（Semi API: activeIndex） */
+    activeIndex?: number;
     value?: number;
     defaultActiveIndex?: number;
+    /** 自动播放；支持布尔或对象形式 { interval?, hoverToPause? } */
+    autoPlay?: boolean | AutoPlayConfig;
+    /** @deprecated 请用 autoPlay */
     autoplay?: boolean;
     interval?: number;
     loop?: boolean;
@@ -36,8 +55,25 @@
     draggable?: boolean;
     showIndicator?: boolean;
     indicatorType?: IndicatorType;
+    /** 指示器位置（横向：left/center/right） */
+    indicatorPosition?: IndicatorPosition;
+    /** 指示器尺寸 */
+    indicatorSize?: IndicatorSize;
     showArrow?: boolean;
+    /** 箭头展示时机：hover=悬停时显示，always=始终显示 */
+    arrowType?: ArrowType;
+    /** 自定义箭头内容与点击回调 */
+    arrowProps?: {
+      leftArrow?: ArrowSlotProps;
+      rightArrow?: ArrowSlotProps;
+    };
     hoverToPause?: boolean;
+    /** 主题 */
+    theme?: Theme;
+    /** 动画滑动方向 */
+    slideDirection?: SlideDirection;
+    /** 指示器触发切换的交互方式 */
+    trigger?: TriggerType;
     height?: number | string;
     ariaLabel?: string;
     onChange?: (index: number) => void;
@@ -47,8 +83,10 @@
 
   let {
     slides = [],
+    activeIndex,
     value,
     defaultActiveIndex = 0,
+    autoPlay,
     autoplay = false,
     interval = 3000,
     loop = true,
@@ -60,8 +98,15 @@
     draggable = true,
     showIndicator = true,
     indicatorType = 'dot',
+    indicatorPosition = 'center',
+    indicatorSize = 'medium',
     showArrow = true,
+    arrowType = 'always',
+    arrowProps,
     hoverToPause = true,
+    theme,
+    slideDirection,
+    trigger = 'click',
     height = 240,
     ariaLabel,
     onChange,
@@ -69,14 +114,37 @@
     class: className = '',
   }: Props = $props();
 
+  // 解析 autoPlay：对象形式覆盖 interval / hoverToPause
+  const resolvedAutoPlay = $derived.by<boolean>(() => {
+    if (autoPlay !== undefined) {
+      return typeof autoPlay === 'boolean' ? autoPlay : true;
+    }
+    return autoplay;
+  });
+  const resolvedInterval = $derived.by<number>(() => {
+    if (autoPlay && typeof autoPlay === 'object' && autoPlay.interval !== undefined) {
+      return autoPlay.interval;
+    }
+    return interval;
+  });
+  const resolvedHoverToPause = $derived.by<boolean>(() => {
+    if (autoPlay && typeof autoPlay === 'object' && autoPlay.hoverToPause !== undefined) {
+      return autoPlay.hoverToPause;
+    }
+    return hoverToPause;
+  });
+
+  // 受控索引：activeIndex 优先于 value（Semi API activeIndex 是主 prop）
+  const controlledIndex = $derived(activeIndex !== undefined ? activeIndex : value);
+
   const loc = useLocale();
   // 单例 live region（polite）：手动切换 slide 时播报「第 N 张，共 M 张」（红线 #3：命令式）。
   const announcer = useLiveAnnouncer();
 
   // 受控 / 非受控（红线 #1）：永不回写 prop。
-  const isControlled = $derived(value !== undefined);
+  const isControlled = $derived(controlledIndex !== undefined);
   let inner = $state(getInitialIndex());
-  const current = $derived(isControlled ? (value as number) : inner);
+  const current = $derived(isControlled ? (controlledIndex as number) : inner);
 
   function getInitialIndex(): number {
     return defaultActiveIndex;
@@ -110,8 +178,8 @@
   // reduced-motion：matchMedia 监听，开启时暂停 autoplay（无障碍）。
   let reducedMotion = $state(false);
 
-  // 是否「想要」自动播放（用户意图）：autoplay 开 且 未被用户显式暂停。
-  const wantsPlaying = $derived(autoplay && !userPaused);
+  // 是否「想要」自动播放（用户意图）：autoPlay/autoplay 开 且 未被用户显式暂停。
+  const wantsPlaying = $derived(resolvedAutoPlay && !userPaused);
   // 实际是否在播放（叠加 hover/focus/reduced-motion 等运行时抑制）。
   const isPlaying = $derived(
     wantsPlaying && !paused && !focused && !reducedMotion && count > perView,
@@ -219,15 +287,15 @@
     if (!isPlaying) return;
     const id = setInterval(() => {
       go(untrack(() => current) + step);
-    }, interval);
+    }, resolvedInterval);
     return () => clearInterval(id);
   });
 
   function onMouseEnter() {
-    if (hoverToPause) paused = true;
+    if (resolvedHoverToPause) paused = true;
   }
   function onMouseLeave() {
-    if (hoverToPause) paused = false;
+    if (resolvedHoverToPause) paused = false;
   }
   // 键盘焦点进入/离开容器：暂停/恢复 autoplay（§6）。
   function onFocusIn() {
@@ -298,6 +366,9 @@
       vertical && 'cd-carousel--vertical',
       dragging && 'cd-carousel--dragging',
       draggable && mode === 'slide' && count > perView && 'cd-carousel--draggable',
+      theme && `cd-carousel--${theme}`,
+      arrowType && `cd-carousel--arrow-${arrowType}`,
+      slideDirection && `cd-carousel--slide-${slideDirection}`,
       className,
     ]
       .filter(Boolean)
@@ -377,21 +448,33 @@
       type="button"
       class="cd-carousel__arrow cd-carousel__arrow--prev"
       aria-label={loc().t('Carousel.prev')}
-      onclick={prev}
-    >{vertical ? '∧' : '‹'}</button>
+      onclick={() => { arrowProps?.leftArrow?.onClick?.(); prev(); }}
+    >
+      {#if arrowProps?.leftArrow?.children}
+        {@render arrowProps.leftArrow.children()}
+      {:else}
+        {vertical ? '∧' : '‹'}
+      {/if}
+    </button>
     <button
       type="button"
       class="cd-carousel__arrow cd-carousel__arrow--next"
       aria-label={loc().t('Carousel.next')}
-      onclick={next}
-    >{vertical ? '∨' : '›'}</button>
+      onclick={() => { arrowProps?.rightArrow?.onClick?.(); next(); }}
+    >
+      {#if arrowProps?.rightArrow?.children}
+        {@render arrowProps.rightArrow.children()}
+      {:else}
+        {vertical ? '∨' : '›'}
+      {/if}
+    </button>
   {/if}
 
   <!--
-    播放/暂停按钮（WCAG 2.2.2）：autoplay 开启时常驻，可见且可键盘操作。
+    播放/暂停按钮（WCAG 2.2.2）：autoPlay/autoplay 开启时常驻，可见且可键盘操作。
     label 随 userPaused 切换（播放 ↔ 暂停）。
   -->
-  {#if autoplay && count > perView}
+  {#if resolvedAutoPlay && count > perView}
     <button
       type="button"
       class="cd-carousel__play"
@@ -403,7 +486,7 @@
 
   {#if showIndicator && pageCount > 1}
     <div
-      class="cd-carousel__indicators cd-carousel__indicators--{indicatorType}"
+      class="cd-carousel__indicators cd-carousel__indicators--{indicatorType} cd-carousel__indicators--{indicatorPosition} cd-carousel__indicators--{indicatorSize}"
       role="tablist"
       aria-label={loc().t('Carousel.indicators')}
     >
@@ -415,7 +498,8 @@
           role="tab"
           aria-selected={p === activePage}
           aria-label={loc().t('Carousel.slideLabel', { index: p + 1 })}
-          onclick={() => goToPage(p)}
+          onclick={trigger === 'click' ? () => goToPage(p) : undefined}
+          onmouseenter={trigger === 'hover' ? () => goToPage(p) : undefined}
         ></button>
       {/each}
     </div>
@@ -653,6 +737,63 @@
   }
   .cd-carousel--vertical .cd-carousel__indicators--columnar {
     align-items: flex-start;
+  }
+
+  /* arrowType=hover：默认隐藏箭头，鼠标悬停 carousel 时显示 */
+  .cd-carousel--arrow-hover .cd-carousel__arrow {
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-carousel--arrow-hover:hover .cd-carousel__arrow,
+  .cd-carousel--arrow-hover:focus-within .cd-carousel__arrow {
+    opacity: 1;
+  }
+
+  /* indicatorPosition */
+  .cd-carousel__indicators--left {
+    justify-content: flex-start;
+    padding-inline-start: var(--cd-spacing-2);
+  }
+  .cd-carousel__indicators--right {
+    justify-content: flex-end;
+    padding-inline-end: var(--cd-spacing-2);
+  }
+
+  /* indicatorSize=small：缩小指示器尺寸 */
+  .cd-carousel__indicators--small .cd-carousel__dot {
+    inline-size: 6px;
+    block-size: 6px;
+  }
+  .cd-carousel__indicators--small .cd-carousel__indicator--line {
+    inline-size: 10px;
+    block-size: 3px;
+  }
+  .cd-carousel__indicators--small .cd-carousel__indicator--line.cd-carousel__dot--active {
+    inline-size: 16px;
+  }
+  .cd-carousel__indicators--small .cd-carousel__indicator--columnar {
+    inline-size: 3px;
+    block-size: 6px;
+  }
+  .cd-carousel__indicators--small .cd-carousel__indicator--columnar.cd-carousel__dot--active {
+    block-size: 10px;
+  }
+
+  /* theme */
+  .cd-carousel--primary {
+    --cd-carousel-arrow-bg: var(--cd-color-primary);
+    --cd-carousel-arrow-color: #fff;
+    --cd-carousel-indicator-color-active: var(--cd-color-primary);
+  }
+  .cd-carousel--light {
+    --cd-carousel-arrow-bg: rgba(255, 255, 255, 0.85);
+    --cd-carousel-arrow-color: var(--cd-color-text-1);
+  }
+  .cd-carousel--dark {
+    --cd-carousel-arrow-bg: rgba(0, 0, 0, 0.5);
+    --cd-carousel-arrow-color: #fff;
+    --cd-carousel-indicator-color: rgba(255, 255, 255, 0.5);
+    --cd-carousel-indicator-color-active: #fff;
   }
 
   @media (prefers-reduced-motion: reduce) {
