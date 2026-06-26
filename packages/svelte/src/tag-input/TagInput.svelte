@@ -10,6 +10,7 @@
   拖拽是鼠标增强，键盘增删标签交互不受影响。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
   import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
 
@@ -37,6 +38,30 @@
     onChange?: (tags: string[]) => void;
     onInputChange?: (value: string) => void;
     ariaLabel?: string;
+    /** 透传给内部 input 的额外属性（除 value/onChange/onKeyDown 外） */
+    inputProps?: Record<string, unknown>;
+    /** 完全自定义 tag 渲染 */
+    renderTagItem?: Snippet<[{ value: string; index: number; onClose: () => void }]>;
+    /** 超出可见时 hover 显示 Popover（预留，当前仅存储，浮层功能可后续扩展） */
+    showRestTagsPopover?: boolean;
+    /** Popover 配置（预留） */
+    restTagsPopoverProps?: Record<string, unknown>;
+    /** 显示清除全部按钮 */
+    showClear?: boolean;
+    /** 自定义清除图标 */
+    clearIcon?: Snippet;
+    /** 超出 max 时触发 */
+    onExceed?: (value: string) => void;
+    /** 单 tag 超出 maxLength 时触发 */
+    onInputExceed?: (value: string) => void;
+    /** 输入框失焦 */
+    onBlur?: (e: FocusEvent) => void;
+    /** 输入框聚焦 */
+    onFocus?: (e: FocusEvent) => void;
+    /** focus 时阻止滚动 */
+    preventScroll?: boolean;
+    /** 挂载自动聚焦 */
+    autoFocus?: boolean;
   }
 
   let {
@@ -60,6 +85,18 @@
     onChange,
     onInputChange,
     ariaLabel,
+    inputProps,
+    renderTagItem,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    showClear = false,
+    clearIcon,
+    onExceed,
+    onInputExceed,
+    onBlur,
+    onFocus,
+    preventScroll = false,
+    autoFocus = false,
   }: Props = $props();
 
   const loc = useLocale();
@@ -115,6 +152,11 @@
     onChange?.(next);
   }
 
+  function clearAll() {
+    if (disabled || readonly) return;
+    setTags([]);
+  }
+
   function commitInput() {
     if (disabled || readonly) return;
     let text = currentInput;
@@ -123,7 +165,10 @@
       setInput('');
       return;
     }
-    if (atMax) return;
+    if (atMax) {
+      onExceed?.(text);
+      return;
+    }
     if (!allowDuplicates && current.includes(text)) {
       setInput('');
       return;
@@ -216,7 +261,13 @@
   }
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
-    setInput(e.currentTarget.value);
+    const val = e.currentTarget.value;
+    // onInputExceed：单 tag 超出 maxLength 时触发（maxLength 本身已由 input[maxlength] 截断，
+    // 此处检测输入值长度超过 maxLength 的情况并回调）。
+    if (maxLength !== undefined && val.length > maxLength) {
+      onInputExceed?.(val);
+    }
+    setInput(val);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -232,11 +283,23 @@
     }
   }
 
-  function handleBlur() {
+  function handleBlur(e: FocusEvent) {
     if (addOnBlur) commitInput();
+    onBlur?.(e);
+  }
+
+  function handleFocus(e: FocusEvent) {
+    onFocus?.(e);
   }
 
   let inputEl = $state<HTMLInputElement | null>(null);
+
+  // autoFocus：命令式聚焦一次（$effect 仅 client，SSR 安全）。
+  $effect(() => {
+    if (autoFocus && inputEl && !disabled) {
+      inputEl.focus({ preventScroll });
+    }
+  });
 
   function focusInput() {
     if (disabled) return;
@@ -254,6 +317,8 @@
       .filter(Boolean)
       .join(' '),
   );
+
+  const hasClear = $derived(showClear && !disabled && !readonly && current.length > 0);
 </script>
 
 <!-- 点击容器聚焦输入框；容器本身非交互控件，仅做转发 -->
@@ -280,23 +345,27 @@
       ondrop={(e) => onTagDrop(e, i)}
       ondragend={onTagDragEnd}
     >
-      <span
-        class="cd-tag-input__text"
-        title={tag.truncated ? tag.value : undefined}
-      >{tag.label}</span>
-      {#if !readonly && !disabled}
-        <button
-          type="button"
-          class="cd-tag-input__remove"
-          aria-label={loc().t('TagInput.remove')}
-          tabindex={-1}
-          onclick={(e) => {
-            e.stopPropagation();
-            removeAt(i);
-          }}
-        >
-          ×
-        </button>
+      {#if renderTagItem}
+        {@render renderTagItem({ value: tag.value, index: i, onClose: () => removeAt(i) })}
+      {:else}
+        <span
+          class="cd-tag-input__text"
+          title={tag.truncated ? tag.value : undefined}
+        >{tag.label}</span>
+        {#if !readonly && !disabled}
+          <button
+            type="button"
+            class="cd-tag-input__remove"
+            aria-label={loc().t('TagInput.remove')}
+            tabindex={-1}
+            onclick={(e) => {
+              e.stopPropagation();
+              removeAt(i);
+            }}
+          >
+            ×
+          </button>
+        {/if}
       {/if}
     </span>
   {/each}
@@ -314,7 +383,33 @@
     oninput={handleInput}
     onkeydown={handleKeydown}
     onblur={handleBlur}
+    onfocus={handleFocus}
+    {...(inputProps ?? {})}
   />
+
+  {#if hasClear}
+    <button
+      type="button"
+      class="cd-tag-input__clear"
+      aria-label={loc().t('TagInput.clear')}
+      tabindex={-1}
+      onclick={(e) => {
+        e.stopPropagation();
+        clearAll();
+      }}
+    >
+      {#if clearIcon}
+        {@render clearIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+          <path
+            fill="currentColor"
+            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+          />
+        </svg>
+      {/if}
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -426,6 +521,20 @@
   }
   .cd-tag-input__input:disabled {
     cursor: not-allowed;
+  }
+  .cd-tag-input__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+  }
+  .cd-tag-input__clear:hover {
+    color: var(--cd-color-text-0);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-tag-input {
