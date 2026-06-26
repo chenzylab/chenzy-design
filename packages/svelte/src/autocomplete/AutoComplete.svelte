@@ -19,6 +19,7 @@
   type NormalizedItem = { value: ItemValue; label: string; disabled: boolean };
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
+  type Position = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
   function isGroup(o: ItemOrGroup): o is ItemGroup {
     return typeof o === 'object' && o !== null && Array.isArray((o as ItemGroup).options);
@@ -57,6 +58,39 @@
     onChange?: (v: string) => void;
     onSelect?: (value: ItemValue) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 浮层宽度与触发器同宽（默认 true） */
+    dropdownMatchSelectWidth?: boolean;
+    /** 浮层挂载容器 */
+    getPopupContainer?: () => HTMLElement;
+    /** 浮层 className */
+    dropdownClassName?: string;
+    /** 浮层样式 */
+    dropdownStyle?: string | Record<string, string>;
+    /** 完全自定义触发器 */
+    triggerRender?: Snippet<[{ value: string; placeholder: string; disabled: boolean }]>;
+    /** 自定义候选项渲染 */
+    renderItem?: Snippet<[{ item: NormalizedItem; isSelected: boolean }]>;
+    /** 自定义已选项显示 */
+    renderSelectedItem?: Snippet<[{ item: NormalizedItem }]>;
+    /** 无候选时展示内容 */
+    emptyContent?: Snippet | string;
+    /** 输入框前缀 */
+    prefix?: Snippet | string;
+    /** 输入框后缀 */
+    suffix?: Snippet | string;
+    /** 显示清除按钮（clearable 的别名，showClear 优先） */
+    showClear?: boolean;
+    /** 自定义清除图标 */
+    clearIcon?: Snippet;
+    onBlur?: (e: FocusEvent) => void;
+    onFocus?: (e: FocusEvent) => void;
+    onClear?: () => void;
+    /** 显式远程模式（关闭本地过滤），不依赖 onSearch 是否存在 */
+    remote?: boolean;
+    /** 挂载自动聚焦 */
+    autoFocus?: boolean;
+    /** 浮层位置 */
+    position?: Position;
   }
 
   let {
@@ -83,6 +117,24 @@
     onChange,
     onSelect,
     onOpenChange,
+    dropdownMatchSelectWidth = true,
+    getPopupContainer,
+    dropdownClassName,
+    dropdownStyle,
+    triggerRender,
+    renderItem,
+    renderSelectedItem,
+    emptyContent,
+    prefix,
+    suffix,
+    showClear,
+    clearIcon,
+    onBlur,
+    onFocus,
+    onClear,
+    remote = false,
+    autoFocus = false,
+    position = 'bottomLeft',
   }: Props = $props();
 
   const loc = useLocale();
@@ -127,7 +179,8 @@
   }
 
   // remote 模式：外部已按 query 更新 data，本地不再过滤。
-  const isRemote = $derived(onSearch !== undefined);
+  // remote prop 显式开启时也禁用本地过滤，无需 onSearch。
+  const isRemote = $derived(remote || onSearch !== undefined);
 
   // 是否含分组：决定渲染走分组结构还是扁平。
   const hasGroups = $derived(data.some(isGroup));
@@ -187,7 +240,15 @@
 
   // remote 模式下即便暂无候选也展开（显示 spinner / 空文案）；本地模式无候选则不展开。
   const showDropdown = $derived(isOpen && (options.length > 0 || isRemote));
-  const showClear = $derived(clearable && !disabled && currentValue.length > 0);
+
+  // showClear 优先，clearable 兜底；两者任一为 true 时显示清除按钮。
+  const effectiveClearable = $derived(showClear ?? clearable);
+  const showClearBtn = $derived(effectiveClearable && !disabled && currentValue.length > 0);
+
+  // 已选项：options 里找到与 currentValue 匹配的 label 对应项。
+  const selectedItem = $derived(
+    options.find((o) => o.label === currentValue) ?? null,
+  );
 
   function openWithOptions() {
     if (!isRemote && options.length === 0) {
@@ -223,12 +284,16 @@
     // 它在本次更新已随 currentValue 变化；调用在事件处理器内，非 render 期。
     openWithOptions();
     // remote：防抖回调外部更新 data（受控值红线 #1：仅 onSearch，不回写）。
-    if (isRemote) scheduleSearch(next);
+    if (onSearch) scheduleSearch(next);
   }
 
-  function handleFocus() {
-    if (disabled || !openOnFocus) return;
-    openWithOptions();
+  function handleFocus(e: FocusEvent) {
+    if (!disabled && openOnFocus) openWithOptions();
+    onFocus?.(e);
+  }
+
+  function handleBlur(e: FocusEvent) {
+    onBlur?.(e);
   }
 
   function commit(opt: NormalizedItem) {
@@ -242,6 +307,7 @@
     if (disabled) return;
     setValue('');
     setOpen(false);
+    onClear?.();
   }
 
   function moveActive(delta: number) {
@@ -288,6 +354,14 @@
     }
   }
 
+  // autoFocus：命令式聚焦一次（红线 #3，SSR 安全）。
+  let inputEl = $state<HTMLInputElement | null>(null);
+  $effect(() => {
+    if (autoFocus && inputEl && !disabled) {
+      inputEl.focus();
+    }
+  });
+
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
 
@@ -299,6 +373,29 @@
       outsideClick: true,
     });
     return cleanup;
+  });
+
+  // 浮层样式：dropdownMatchSelectWidth 时宽度与触发器同宽（inline-size: 100%）。
+  const dropdownStyleStr = $derived.by(() => {
+    const base = dropdownMatchSelectWidth ? 'inline-size: 100%' : '';
+    if (!dropdownStyle) return base;
+    if (typeof dropdownStyle === 'string') return base ? `${base}; ${dropdownStyle}` : dropdownStyle;
+    const obj = Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; ');
+    return base ? `${base}; ${obj}` : obj;
+  });
+
+  // 浮层位置映射到 CSS 定位。
+  const dropdownPositionStyle = $derived.by(() => {
+    switch (position) {
+      case 'bottomRight':
+        return 'inset-block-start: calc(100% + var(--cd-spacing-1)); inset-inline-end: 0; inset-inline-start: auto';
+      case 'topLeft':
+        return 'inset-block-end: calc(100% + var(--cd-spacing-1)); inset-block-start: auto; inset-inline-start: 0';
+      case 'topRight':
+        return 'inset-block-end: calc(100% + var(--cd-spacing-1)); inset-block-start: auto; inset-inline-end: 0; inset-inline-start: auto';
+      default: // bottomLeft
+        return '';
+    }
   });
 
   const cls = $derived(
@@ -334,50 +431,87 @@
     }}
     onclick={() => commit(opt)}
   >
-    {opt.label}
+    {#if renderItem}
+      {@render renderItem({ item: opt, isSelected: opt.label === currentValue })}
+    {:else}
+      {opt.label}
+    {/if}
   </div>
 {/snippet}
 
 <div class={cls} bind:this={rootEl}>
-  <div class="cd-autocomplete__control">
-    {#if insetLabel}
-      <span class="cd-autocomplete__inset-label">
-        {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
-      </span>
-    {/if}
-    <input
-      class="cd-autocomplete__input"
-      type="text"
-      role="combobox"
-      value={currentValue}
-      {placeholder}
-      {disabled}
-      aria-label={inputAriaLabel}
-      aria-labelledby={ariaLabelledby}
-      aria-expanded={showDropdown}
-      aria-controls={listId}
-      aria-autocomplete="list"
-      aria-activedescendant={activeOptionId}
-      aria-invalid={status === 'error' || undefined}
-      oninput={handleInput}
-      onkeydown={handleKeydown}
-      onfocus={handleFocus}
-    />
+  {#if triggerRender}
+    {@render triggerRender({ value: currentValue, placeholder, disabled })}
+  {:else}
+    <div class="cd-autocomplete__control">
+      {#if prefix}
+        <span class="cd-autocomplete__prefix">
+          {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+        </span>
+      {/if}
+      {#if insetLabel}
+        <span class="cd-autocomplete__inset-label">
+          {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
+        </span>
+      {/if}
+      <input
+        class="cd-autocomplete__input"
+        bind:this={inputEl}
+        type="text"
+        role="combobox"
+        value={currentValue}
+        {placeholder}
+        {disabled}
+        aria-label={inputAriaLabel}
+        aria-labelledby={ariaLabelledby}
+        aria-expanded={showDropdown}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={activeOptionId}
+        aria-invalid={status === 'error' || undefined}
+        oninput={handleInput}
+        onkeydown={handleKeydown}
+        onfocus={handleFocus}
+        onblur={handleBlur}
+      />
 
-    {#if showClear}
-      <button type="button" class="cd-autocomplete__clear" aria-label={loc().t('AutoComplete.clear')} onclick={clearAll}>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
-      </button>
-    {/if}
-  </div>
+      {#if renderSelectedItem && selectedItem}
+        <span class="cd-autocomplete__selected">
+          {@render renderSelectedItem({ item: selectedItem })}
+        </span>
+      {/if}
+
+      {#if showClearBtn}
+        <button type="button" class="cd-autocomplete__clear" aria-label={loc().t('AutoComplete.clear')} onclick={clearAll}>
+          {#if clearIcon}
+            {@render clearIcon()}
+          {:else}
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+              />
+            </svg>
+          {/if}
+        </button>
+      {/if}
+
+      {#if suffix}
+        <span class="cd-autocomplete__suffix">
+          {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+        </span>
+      {/if}
+    </div>
+  {/if}
 
   {#if showDropdown}
-    <div class="cd-autocomplete__dropdown" role="listbox" id={listId} aria-busy={loading || undefined}>
+    <div
+      class={['cd-autocomplete__dropdown', dropdownClassName].filter(Boolean).join(' ')}
+      role="listbox"
+      id={listId}
+      aria-busy={loading || undefined}
+      style={[dropdownPositionStyle, dropdownStyleStr].filter(Boolean).join('; ')}
+    >
       {#if loading}
         <div class="cd-autocomplete__loading">
           <span class="cd-autocomplete__spinner" aria-hidden="true"></span>
@@ -385,7 +519,13 @@
         </div>
       {/if}
       {#if options.length === 0 && !loading}
-        <div class="cd-autocomplete__empty">{loc().t('AutoComplete.emptyText')}</div>
+        <div class="cd-autocomplete__empty">
+          {#if emptyContent}
+            {#if typeof emptyContent === 'string'}{emptyContent}{:else}{@render emptyContent()}{/if}
+          {:else}
+            {loc().t('AutoComplete.emptyText')}
+          {/if}
+        </div>
       {:else if hasGroups}
         {#each groupedView as group, gi (group.label === null ? `g-${gi}` : `${group.key}-${group.label}`)}
           {#if group.label !== null}
@@ -452,6 +592,15 @@
     user-select: none;
     white-space: nowrap;
   }
+  .cd-autocomplete__prefix,
+  .cd-autocomplete__suffix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+    user-select: none;
+    white-space: nowrap;
+  }
   .cd-autocomplete__input {
     flex: 1 1 auto;
     inline-size: 100%;
@@ -484,6 +633,11 @@
   }
   .cd-autocomplete__clear:hover {
     color: var(--cd-color-text-0);
+  }
+  .cd-autocomplete__selected {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
   }
   .cd-autocomplete__dropdown {
     position: absolute;
