@@ -33,6 +33,15 @@ export interface ToastOptions {
   /** visual theme of the card */
   theme?: ToastTheme;
   onClose?: (id: string, reason: ToastCloseReason) => void;
+  /** 自定义图标（Snippet 或 false 隐藏图标），框架层消费。 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon?: any;
+  /** 是否显示关闭按钮（与 closable 等价，框架层别名）。 */
+  showClose?: boolean;
+  /** 内容区最大宽度（px 数字或 CSS 字符串），默认 450。 */
+  textMaxWidth?: number | string;
+  /** 堆叠显示模式（所有 toast 叠成一个卡片样式）。 */
+  stack?: boolean;
 }
 
 export interface ToastItem {
@@ -45,6 +54,11 @@ export interface ToastItem {
   pauseOnHover: boolean;
   theme: ToastTheme;
   onClose: ((id: string, reason: ToastCloseReason) => void) | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any;
+  showClose: boolean;
+  textMaxWidth: number | string;
+  stack: boolean;
 }
 
 export interface ToastStoreOptions {
@@ -129,6 +143,10 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
       pauseOnHover: options.pauseOnHover ?? true,
       theme: options.theme ?? 'light',
       onClose: options.onClose,
+      icon: options.icon,
+      showClose: options.showClose ?? options.closable ?? true,
+      textMaxWidth: options.textMaxWidth ?? 450,
+      stack: options.stack ?? false,
     };
 
     const existingIndex = toasts.findIndex((t) => t.id === id);

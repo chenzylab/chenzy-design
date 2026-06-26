@@ -16,6 +16,29 @@ import { announce } from './live-region.js';
 let store: ToastStore | null = null;
 let containerMounted = false;
 
+/** Toast.config() 全局配置。 */
+export interface ToastConfig {
+  /** 卡片主题（全局默认值）。 */
+  theme?: 'light' | 'dark';
+  /** 容器层级。 */
+  zIndex?: number;
+  /** 容器距顶部偏移（px 数字或 CSS 字符串）。 */
+  top?: number | string;
+  /** 容器距底部偏移（px 数字或 CSS 字符串）。 */
+  bottom?: number | string;
+  /** 容器距左侧偏移（px 数字或 CSS 字符串）。 */
+  left?: number | string;
+  /** 容器距右侧偏移（px 数字或 CSS 字符串）。 */
+  right?: number | string;
+}
+
+let globalConfig: ToastConfig = {};
+
+/** 读取当前全局配置（供 ToastContainer 消费）。 */
+export function getToastConfig(): ToastConfig {
+  return globalConfig;
+}
+
 // promise 默认文案的回退 locale（与 useLocale 一致用 en_US 构造，模块级单例）。
 // 命令式入口在组件树之外，拿不到 LocaleProvider context，故默认文案走此回退实例；
 // 调用方可经 messages 显式覆盖任一文案。
@@ -157,4 +180,8 @@ export const Toast = {
   },
   /** 清空全部 toast。 */
   destroyAll: (): void => ensureStore().removeAll(),
+  /** 设置全局配置（theme/zIndex/top/bottom/left/right 位置偏移）。 */
+  config: (cfg: ToastConfig): void => {
+    globalConfig = { ...globalConfig, ...cfg };
+  },
 };
