@@ -92,6 +92,64 @@
     onChange?: (value: Key[] | Key[][]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
+    /** 自定义右侧下拉箭头（expandIcon 的别名） */
+    arrowIcon?: Snippet;
+    /** 下拉框自动调整方向（默认 true） */
+    autoAdjustOverflow?: boolean;
+    /** 父节点选中时 value 不含子孙（默认 true，多选） */
+    autoMergeValue?: boolean;
+    /** 多选节点选中关系（默认 'related'） */
+    checkRelation?: 'related' | 'unRelated';
+    /** 下拉菜单样式 */
+    dropdownStyle?: string | Record<string, string>;
+    /** 自定义渲染筛选选项 */
+    filterRender?: Snippet<[{ option: unknown; inputValue: string }]>;
+    /** 筛选后排序 */
+    filterSorter?: (a: unknown, b: unknown, input: string) => number;
+    /** 下拉框展开动画（默认 true） */
+    motion?: boolean;
+    /** 鼠标移入展示延迟（ms，默认 50） */
+    mouseEnterDelay?: number;
+    /** 鼠标移出消失延迟（ms，默认 50） */
+    mouseLeaveDelay?: number;
+    /** 失焦回调 */
+    onBlur?: (e: MouseEvent) => void;
+    /** 聚焦回调 */
+    onFocus?: (e: MouseEvent) => void;
+    /** onChange 入参含完整节点对象（默认 false） */
+    onChangeWithObject?: boolean;
+    /** 超出 max 时回调 */
+    onExceed?: (items: unknown[]) => void;
+    /** 下拉框方向（默认 'bottomStart'） */
+    position?: string;
+    /** 聚焦时阻止滚动 */
+    preventScroll?: boolean;
+    /** 远程搜索模式（默认 false） */
+    remote?: boolean;
+    /** 剩余 tags popover 配置 */
+    restTagsPopoverProps?: Record<string, unknown>;
+    /** 搜索框占位文字 */
+    searchPlaceholder?: string;
+    /** 搜索框位置（默认 'trigger'） */
+    searchPosition?: 'trigger' | 'custom';
+    /** 是否显示清除按钮（clearable 的别名） */
+    showClear?: boolean;
+    /** +N 时是否 popover 展示剩余（默认 false） */
+    showRestTagsPopover?: boolean;
+    /** 阻止下拉框点击冒泡（默认 true） */
+    stopPropagation?: boolean;
+    /** 选择框样式 */
+    style?: string;
+    /** 搜索时过滤的属性（默认 'label'） */
+    treeNodeFilterProp?: string;
+    /** 面板顶部插槽 */
+    topSlot?: Snippet;
+    /** 面板底部插槽 */
+    bottomSlot?: Snippet;
+    /** 搜索结果虚拟化 */
+    virtualizeInSearch?: { height?: number; width?: number; itemSize: number };
+    /** 自定义右侧展开图标 */
+    expandIcon?: Snippet;
   }
 
   let {
@@ -125,6 +183,35 @@
     onChange,
     onOpenChange,
     ariaLabel,
+    arrowIcon,
+    autoAdjustOverflow = true,
+    autoMergeValue = true,
+    checkRelation = 'related',
+    dropdownStyle,
+    filterRender,
+    filterSorter,
+    motion = true,
+    mouseEnterDelay = 50,
+    mouseLeaveDelay = 50,
+    onBlur,
+    onFocus,
+    onChangeWithObject = false,
+    onExceed,
+    position,
+    preventScroll = false,
+    remote = false,
+    restTagsPopoverProps,
+    searchPlaceholder,
+    searchPosition = 'trigger',
+    showClear: showClearProp,
+    showRestTagsPopover = false,
+    stopPropagation = true,
+    style,
+    treeNodeFilterProp = 'label',
+    topSlot,
+    bottomSlot,
+    virtualizeInSearch,
+    expandIcon,
   }: Props = $props();
 
   const loc = useLocale();
@@ -406,12 +493,17 @@
       : 0,
   );
 
+  // clearable / showClear 别名归一（showClear prop 优先 clearable）
+  const effClearable = $derived(showClearProp ?? clearable ?? false);
+  // expandIcon / arrowIcon 别名归一
+  const effExpandIcon = $derived(expandIcon ?? arrowIcon);
+
   const selectedChain = $derived(findPath(treeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
-  const showClear = $derived(clearable && !disabled && hasSelection);
+  const showClear = $derived(effClearable && !disabled && hasSelection);
 
   // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
   // 否则按 displayProp 取 label 或 value 链，用 separator 连接。
@@ -763,13 +855,14 @@
       `cd-cascader--${status}`,
       disabled && 'cd-cascader--disabled',
       isOpen && 'cd-cascader--open',
+      position && `cd-cascader--${position}`,
     ]
       .filter(Boolean)
       .join(' '),
   );
 </script>
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
   <div
     class="cd-cascader__trigger"
@@ -783,6 +876,8 @@
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
+    onfocus={(e) => onFocus?.(e as unknown as MouseEvent)}
+    onblur={(e) => onBlur?.(e as unknown as MouseEvent)}
     onkeydown={(e) => {
       if (disabled) return;
       if (!isOpen) {
@@ -850,9 +945,13 @@
     {/if}
 
     <span class="cd-cascader__arrow" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-      </svg>
+      {#if effExpandIcon}
+        {@render effExpandIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+          <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
+        </svg>
+      {/if}
     </span>
   </div>
 
@@ -872,6 +971,9 @@
       id={listId}
       style:z-index={zIndex}
     >
+      {#if topSlot}
+        <div class="cd-cascader__top-slot">{@render topSlot()}</div>
+      {/if}
       {#if isFilterable}
         <div class="cd-cascader__search">
           <input
@@ -992,6 +1094,9 @@
         </ul>
       {/each}
       </div>
+      {/if}
+      {#if bottomSlot}
+        <div class="cd-cascader__bottom-slot">{@render bottomSlot()}</div>
       {/if}
     </div>
   {/if}

@@ -119,6 +119,46 @@
     ariaLabel?: string;
     /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态，与 Tree 的 icon 对齐。 */
     icon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+    /** 自定义右侧下拉箭头 */
+    arrowIcon?: Snippet;
+    /** 浮层遮挡时自动调整方向（默认 true） */
+    autoAdjustOverflow?: boolean;
+    /** 受控展开的节点 keys */
+    expandedKeys?: TreeKey[];
+    /** 受控已加载的节点 keys */
+    loadedKeys?: Set<TreeKey>;
+    /** 前缀标签 */
+    prefix?: string | Snippet;
+    /** 后缀标签 */
+    suffix?: string | Snippet;
+    /** 聚焦时阻止滚动 */
+    preventScroll?: boolean;
+    /** 搜索框占位文字 */
+    searchPlaceholder?: string;
+    /** 选项面板节点连接线（默认 false） */
+    showLine?: boolean;
+    /** 选择框样式 */
+    style?: string;
+    /** 搜索过滤属性（默认 'label'） */
+    treeNodeFilterProp?: string;
+    /** status 的别名 */
+    validateStatus?: 'default' | 'error' | 'warning';
+    /** 失焦回调 */
+    onBlur?: (e: FocusEvent) => void;
+    /** 聚焦回调 */
+    onFocus?: (e: FocusEvent) => void;
+    /** onChange 入参含节点对象 */
+    onChangeWithObject?: boolean;
+    /** 点击清除按钮回调 */
+    onClear?: (e: Event) => void;
+    /** 节点展开回调 */
+    onExpand?: (expandedKeys: TreeKey[], info: { expanded: boolean; node: unknown }) => void;
+    /** 节点加载完毕回调 */
+    onLoad?: (loadedKeys: Set<TreeKey>, treeNode: unknown) => void;
+    /** 节点选中回调 */
+    onSelect?: (selectedKey: TreeKey, selected: boolean, node: unknown) => void;
+    /** 弹出层展示/隐藏回调（onOpenChange 的别名） */
+    onVisibleChange?: (visible: boolean) => void;
   }
 
   let {
@@ -158,6 +198,26 @@
     onOpenChange,
     ariaLabel,
     icon,
+    arrowIcon,
+    autoAdjustOverflow = true,
+    expandedKeys: expandedKeysProp,
+    loadedKeys: loadedKeysProp,
+    prefix,
+    suffix,
+    preventScroll = false,
+    searchPlaceholder,
+    showLine = false,
+    style,
+    treeNodeFilterProp = 'label',
+    validateStatus,
+    onBlur,
+    onFocus,
+    onChangeWithObject = false,
+    onClear,
+    onExpand,
+    onLoad,
+    onSelect,
+    onVisibleChange,
   }: Props = $props();
 
   const loc = useLocale();
@@ -168,6 +228,9 @@
   // remote 隐含可搜索（显示搜索框）；checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
   const isFilterable = $derived(filterable || remote);
   const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
+
+  // validateStatus 是 status 别名；效值以 validateStatus 优先（未传时回退 status）。
+  const effStatus = $derived(validateStatus ?? status ?? 'default');
 
   const treeId = useId('cd-tree-select-panel');
   // treeitem 行 id 基（aria-activedescendant 指向当前高亮行）。
@@ -352,6 +415,11 @@
   const isOpenControlled = $derived(open !== undefined);
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+
+  // onVisibleChange 是 onOpenChange 别名：isOpen 变化时同步触发。
+  $effect(() => {
+    onVisibleChange?.(isOpen);
+  });
 
   // --- 本地展开状态 (红线 #2): expandedKeys 本地 $state Set，不依赖挂载 registry ---
   let expandedKeys = $state<Set<TreeKey>>(getInitialExpanded());
@@ -771,7 +839,7 @@
     [
       'cd-tree-select',
       `cd-tree-select--${size}`,
-      `cd-tree-select--${status}`,
+      `cd-tree-select--${effStatus}`,
       disabled && 'cd-tree-select--disabled',
       isOpen && 'cd-tree-select--open',
     ]
@@ -892,7 +960,7 @@
   {/each}
 {/snippet}
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
   <div
     class="cd-tree-select__trigger"
@@ -902,10 +970,12 @@
     aria-controls={treeId}
     aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
     aria-label={ariaLabel}
-    aria-invalid={status === 'error' || undefined}
+    aria-invalid={effStatus === 'error' || undefined}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
+    onfocus={(e) => onFocus?.(e)}
+    onblur={(e) => onBlur?.(e)}
     onkeydown={(e) => {
       if (disabled) return;
       if (!isOpen) {
@@ -924,6 +994,11 @@
       if (!searchActive) onTreeKeydown(e);
     }}
   >
+    {#if prefix}
+      <span class="cd-tree-select__prefix">
+        {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+      </span>
+    {/if}
     <span class="cd-tree-select__content">
       {#if multiple}
         {#if checkedNodes.length > 0}
@@ -957,10 +1032,11 @@
         role="button"
         tabindex="-1"
         aria-label={loc().t('TreeSelect.clear')}
-        onclick={clearAll}
+        onclick={(e) => { onClear?.(e); clearAll(e); }}
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            onClear?.(e);
             clearAll(e as unknown as MouseEvent);
           }
         }}
@@ -974,10 +1050,19 @@
       </span>
     {/if}
 
+    {#if suffix}
+      <span class="cd-tree-select__suffix">
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+      </span>
+    {/if}
     <span class="cd-tree-select__arrow" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-      </svg>
+      {#if arrowIcon}
+        {@render arrowIcon()}
+      {:else}
+        <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+          <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
+        </svg>
+      {/if}
     </span>
   </div>
 
