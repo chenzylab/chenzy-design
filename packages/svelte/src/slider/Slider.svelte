@@ -56,6 +56,14 @@
     onFocus?: (detail: { index: number }) => void;
     /** 手柄失焦，附带手柄索引（0/1）。 */
     onBlur?: (detail: { index: number }) => void;
+    /** 已选轨道段自定义样式（range 时为数组，各段对应一个样式对象） */
+    trackStyle?: Record<string, string> | Record<string, string>[];
+    /** range 模式下两手柄是否可相互推动（true=最小间距 0，number=最小间距值） */
+    pushable?: boolean | number;
+    /** range 模式下是否允许交叉（默认 true，false 时强制 left <= right） */
+    allowCross?: boolean;
+    /** 拖拽/点击结束时触发（onChangeComplete 的别名，语义更明确） */
+    onAfterChange?: (v: SliderValue) => void;
   }
 
   let {
@@ -89,6 +97,10 @@
     onInput,
     onFocus,
     onBlur,
+    trackStyle,
+    pushable = false,
+    allowCross = true,
+    onAfterChange,
   }: Props = $props();
 
   const loc = useLocale();
@@ -187,23 +199,42 @@
     onChange?.(next);
     // onInput: low-level input signal, kept in sync with change.
     onInput?.(next);
-    // onChangeComplete: only when the interaction settles (pointerup / keyboard),
+    // onChangeComplete / onAfterChange: only when the interaction settles (pointerup / keyboard),
     // for request throttling on the consumer side.
     if (complete) {
       onChangeComplete?.(next);
+      onAfterChange?.(next);
       maybeAnnounceBoundary(next);
     }
   }
 
-  // Build the next value for a given handle index, keeping range handles ordered.
+  // Build the next value for a given handle index, honoring allowCross and pushable.
   function withHandle(index: number, raw: number): SliderValue {
     const snapped = snap(raw);
     if (!range) return snapped;
     const pair: Pair = [...(current as Pair)] as Pair;
     pair[index] = snapped;
-    if (pair[0] > pair[1]) {
-      // Swap so handles never cross.
-      return [pair[1], pair[0]];
+
+    if (!allowCross) {
+      // Enforce left <= right; clamp instead of swap.
+      if (index === 0 && pair[0] > pair[1]) pair[0] = pair[1];
+      if (index === 1 && pair[1] < pair[0]) pair[1] = pair[0];
+    } else if (pushable !== false) {
+      // pushable: minimum gap between handles.
+      const minGap = typeof pushable === 'number' ? pushable : 0;
+      if (index === 0 && pair[0] > pair[1] - minGap) {
+        pair[1] = snap(pair[0] + minGap);
+        if (pair[1] > max) { pair[1] = max; pair[0] = snap(max - minGap); }
+      }
+      if (index === 1 && pair[1] < pair[0] + minGap) {
+        pair[0] = snap(pair[1] - minGap);
+        if (pair[0] < min) { pair[0] = min; pair[1] = snap(min + minGap); }
+      }
+    } else {
+      // Default: swap so handles never cross.
+      if (pair[0] > pair[1]) {
+        return [pair[1], pair[0]];
+      }
     }
     return pair;
   }
@@ -259,6 +290,7 @@
       if (!isControlled) inner = finalValue;
       onChange?.(finalValue);
       onChangeComplete?.(finalValue);
+      onAfterChange?.(finalValue);
       maybeAnnounceBoundary(finalValue);
     }
     railRect = null;
@@ -433,6 +465,16 @@
     }
     return `inset-inline-start: ${trackStart}%; inline-size: ${segSize}`;
   });
+
+  // trackStyle: merge user-provided custom track styles into the segment style string.
+  // In range mode trackStyle may be an array; index 0 applies to the single segment
+  // (the filled area between the two handles). Single mode uses index 0 or the object directly.
+  function getTrackStyleStr(segIndex: number): string {
+    if (!trackStyle) return '';
+    const styleObj = Array.isArray(trackStyle) ? trackStyle[segIndex] : trackStyle;
+    if (!styleObj) return '';
+    return Object.entries(styleObj).map(([k, v]) => `${k}: ${v}`).join('; ');
+  }
 </script>
 
 <div
@@ -453,7 +495,10 @@
     onpointerdown={handleRailPointerDown}
   >
     {#if included}
-      <div class="cd-slider__track" style={trackSegStyle}></div>
+      <div
+        class="cd-slider__track"
+        style={[trackSegStyle, getTrackStyleStr(0)].filter(Boolean).join('; ')}
+      ></div>
     {/if}
 
     {#each dotValues as dv (dv)}
