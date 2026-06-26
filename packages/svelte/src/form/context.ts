@@ -28,6 +28,8 @@ export interface FormContext {
   getColon: () => boolean;
   /** whether error/warning text carries a status icon (spec §4 L66). */
   getShowValidateIcon: () => boolean;
+  /** extra text position: 'middle' | 'bottom' (default 'bottom'). */
+  getExtraTextPosition: () => 'middle' | 'bottom';
   /** 控件布局列配置（Grid 布局时）。 */
   getWrapperCol: () => GridCol | undefined;
   /** 标签布局列配置（Grid 布局时）。 */

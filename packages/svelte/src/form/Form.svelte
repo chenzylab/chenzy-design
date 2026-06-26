@@ -50,6 +50,10 @@
     preventDefault?: boolean;
     /** 收集值时是否保留空值字段键（spec §4 L70，默认 false）。 */
     allowEmpty?: boolean;
+    /** scrollToError 别名（优先级低于 scrollToError）。 */
+    autoScrollToError?: boolean;
+    /** 额外说明文本位置（默认 'bottom'，经 context 传给 FormField）。 */
+    extraTextPosition?: 'middle' | 'bottom';
     onSubmit?: (r: { valid: boolean; values: FormValues; errors: FieldErrors }) => void;
     /** 任意字段值变化时触发（不同于 onChange 的纯值快照，此回调额外携带变更字段信息）。 */
     onValueChange?: (values: FormValues, changedValues: Record<string, unknown>) => void;
@@ -76,6 +80,8 @@
     requiredMark = true,
     colon = false,
     scrollToError = false,
+    autoScrollToError = false,
+    extraTextPosition = 'bottom',
     validateTrigger = ['blur', 'change'],
     showValidateIcon = true,
     stopValidateWithError = false,
@@ -170,9 +176,13 @@
     getRequiredMark: () => requiredMark,
     getColon: () => colon,
     getShowValidateIcon: () => showValidateIcon,
+    getExtraTextPosition: () => extraTextPosition,
     getWrapperCol: () => wrapperCol,
     getLabelCol: () => labelCol,
   });
+
+  // autoScrollToError 是 scrollToError 别名（scrollToError 优先）
+  const effScrollToError = $derived(scrollToError || autoScrollToError || false);
 
   // ref to the <form> element — used imperatively (red line #3: DOM ops live in
   // the event handler, never in render) to locate the first errored field.
@@ -201,7 +211,7 @@
     // = previous hardcoded behavior, backward compatible).
     if (preventDefault) e.preventDefault();
     const r = await form.submit();
-    if (!r.valid && scrollToError) focusFirstError(r.errors);
+    if (!r.valid && effScrollToError) focusFirstError(r.errors);
     if (!r.valid) onSubmitFail?.(r.errors, r.values);
     onSubmit?.(r);
   }
