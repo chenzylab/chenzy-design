@@ -32,6 +32,8 @@
     /** 自定义图标渲染器，提供时替代默认序号/✓/✕（dot 模式不渲染图标） */
     icon?: Snippet<[{ step: StepItem; index: number; status: DerivedStatus }]>;
     onChange?: (current: number) => void;
+    onClick?: (e: MouseEvent) => void;
+    onKeyDown?: (e: KeyboardEvent) => void;
     class?: string;
   }
 
@@ -48,6 +50,8 @@
     dot = false,
     icon,
     onChange,
+    onClick,
+    onKeyDown,
     class: className = '',
   }: Props = $props();
 
@@ -199,8 +203,8 @@
             disabled={isDisabled}
             aria-disabled={isDisabled || undefined}
             tabindex={stepTabindex(index)}
-            onclick={() => select(index)}
-            onkeydown={(e) => onStepKeydown(e, index)}
+            onclick={(e) => { select(index); onClick?.(e); }}
+            onkeydown={(e) => { onStepKeydown(e, index); onKeyDown?.(e); }}
             onfocus={() => {
               focusedIndex = index;
             }}
