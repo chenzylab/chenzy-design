@@ -90,7 +90,8 @@
 {/snippet}
 
 <div
-  class="cd-toast-item cd-toast-item--{toast.type} cd-toast-item--{toast.theme}"
+  class={['cd-toast-item', `cd-toast-item--${toast.type}`, `cd-toast-item--${toast.theme}`, toast.theme === 'light' && 'cd-toast-item--light']}
+  style={toast.textMaxWidth !== 450 ? `max-inline-size: ${typeof toast.textMaxWidth === 'number' ? `${toast.textMaxWidth}px` : toast.textMaxWidth}` : undefined}
   role="presentation"
   aria-live="off"
   onmouseenter={handlePause}
@@ -98,11 +99,17 @@
   onfocusin={handlePause}
   onfocusout={handleResume}
 >
-  <span class="cd-toast-item__icon">
-    {@render typeIcon(toast.type)}
-  </span>
+  {#if toast.icon !== false}
+    <span class="cd-toast-item__icon">
+      {#if toast.icon && toast.icon !== true}
+        {@render toast.icon()}
+      {:else}
+        {@render typeIcon(toast.type)}
+      {/if}
+    </span>
+  {/if}
   <span class="cd-toast-item__content">{toast.content}</span>
-  {#if toast.closable}
+  {#if toast.showClose}
     <button
       type="button"
       class="cd-toast-item__close"

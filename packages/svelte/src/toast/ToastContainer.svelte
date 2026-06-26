@@ -15,6 +15,7 @@
   import { prefersReducedMotion } from 'svelte/motion';
   import type { ToastStore, ToastItem, ToastPosition } from '@chenzy-design/core';
   import ToastItemView from './ToastItem.svelte';
+  import { getToastConfig } from './store.js';
 
   interface Props {
     store: ToastStore;
@@ -75,11 +76,34 @@
   function handleResume(id: string) {
     store.resume(id);
   }
+
+  // 全局配置衍生样式变量（应用到容器的 CSS 自定义属性）。
+  function toPx(v: number | string | undefined): string | undefined {
+    if (v === undefined) return undefined;
+    return typeof v === 'number' ? `${v}px` : v;
+  }
+
+  const cfg = $derived(getToastConfig());
+  const configStyle = $derived(() => {
+    const parts: string[] = [];
+    if (cfg.zIndex !== undefined) parts.push(`--cd-toast-z: ${cfg.zIndex}`);
+    if (cfg.top !== undefined) parts.push(`--cd-toast-config-top: ${toPx(cfg.top)}`);
+    if (cfg.bottom !== undefined) parts.push(`--cd-toast-config-bottom: ${toPx(cfg.bottom)}`);
+    if (cfg.left !== undefined) parts.push(`--cd-toast-config-left: ${toPx(cfg.left)}`);
+    if (cfg.right !== undefined) parts.push(`--cd-toast-config-right: ${toPx(cfg.right)}`);
+    return parts.length > 0 ? parts.join('; ') : undefined;
+  });
+
+  // 任一 toast 带 stack 标志时，整组容器附加 stacked class。
+  const hasStack = $derived(toasts.some((t) => t.stack));
 </script>
 
 {#each grouped as group (group.position)}
   {#if group.items.length > 0}
-    <div class="cd-toast-stack cd-toast-stack--{group.position}">
+    <div
+      class={['cd-toast-stack', `cd-toast-stack--${group.position}`, hasStack && 'cd-toast-wrapper--stacked']}
+      style={configStyle()}
+    >
       {#each group.items as t (t.id)}
         <div
           class="cd-toast-stack__item"
