@@ -122,7 +122,7 @@
   <title>{meta.name} — chenzy-design</title>
 </svelte:head>
 
-<div class="component-header">
+<div class="component-header" data-pagefind-meta="title:{meta.name}">
   <div class="breadcrumb">
     <a href="/components">组件</a>
     <span> / </span>

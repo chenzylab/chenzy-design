@@ -1,10 +1,12 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { browser } from '$app/environment';
   import type { Snippet } from 'svelte';
   import componentsJson from '@chenzy-design/svelte/components.json';
   import '@chenzy-design/tokens/tokens.css';
   import 'uno.css';
   import '../app.css';
+  import Search from '$lib/components/Search.svelte';
 
   const { children }: { children: Snippet } = $props();
 
@@ -29,6 +31,29 @@
   );
 
   const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
+
+  let theme = $state('light');
+
+  if (browser) {
+    const saved = localStorage.getItem('cd-theme');
+    if (saved) {
+      theme = saved;
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      theme = 'dark';
+    }
+  }
+
+  function toggleTheme() {
+    theme = theme === 'light' ? 'dark' : 'light';
+    if (browser) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('cd-theme', theme);
+    }
+  }
+
+  $effect(() => {
+    if (browser) document.documentElement.setAttribute('data-theme', theme);
+  });
 </script>
 
 <div class="docs-layout">
@@ -37,6 +62,12 @@
     <nav class="docs-header-nav">
       <a href="/components">组件</a>
     </nav>
+    <div class="docs-header-actions">
+      <Search />
+      <button class="theme-toggle" onclick={toggleTheme} aria-label="切换主题">
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
+    </div>
   </header>
 
   <div class="docs-body">
@@ -60,7 +91,7 @@
       {/each}
     </aside>
 
-    <main class="docs-main">
+    <main class="docs-main" data-pagefind-body>
       {@render children()}
     </main>
   </div>
@@ -95,6 +126,25 @@
     text-decoration: none;
     color: var(--cd-color-text-1, #4e5969);
     font-size: 14px;
+  }
+  .docs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--cd-color-border, #e5e7eb);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--cd-color-text-1, #4e5969);
+  }
+  .theme-toggle:hover {
+    background: var(--cd-color-fill-1, #f2f3f5);
   }
   .docs-body {
     display: flex;
