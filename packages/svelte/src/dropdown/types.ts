@@ -14,6 +14,8 @@ export interface DropdownItemNode {
   label: string;
   disabled?: boolean;
   danger?: boolean;
+  /** 是否选中（showTick=true 时在右侧渲染 ✓ 勾选标记） */
+  selected?: boolean;
   /** 含子项即为可展开的子菜单（SubMenu），可多层嵌套 */
   children?: DropdownItem[];
 }

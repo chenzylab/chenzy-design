@@ -365,6 +365,8 @@ export const zh_CN: Locale = {
   Popover: {
     close: '关闭',
     dialogLabel: '对话框',
+    okText: '确定',
+    cancelText: '取消',
   },
   Typography: {
     copy: '复制',
