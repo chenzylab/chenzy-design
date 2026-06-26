@@ -18,11 +18,16 @@
   interface Props {
     item: NotificationItem;
     onClose: (id: string) => void;
+    /**
+     * 仅在用户点击关闭按钮时触发（与 onClose 区分：onClose 在任何关闭方式时触发）。
+     * 由 NotificationContainer 传入，从 onCloseClickMap 中查找并调用对应回调。
+     */
+    onCloseClick?: (id: string) => void;
     onPause: (id: string) => void;
     onResume: (id: string) => void;
   }
 
-  let { item, onClose, onPause, onResume }: Props = $props();
+  let { item, onClose, onCloseClick, onPause, onResume }: Props = $props();
   const loc = useLocale();
 
   const titleId = useId('cd-notification-title');
@@ -168,7 +173,7 @@
       type="button"
       class="cd-notification-item__close"
       aria-label={loc().t('Notification.closeText')}
-      onclick={() => onClose(item.id)}
+      onclick={() => { onCloseClick?.(item.id); onClose(item.id); }}
     >
       <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path

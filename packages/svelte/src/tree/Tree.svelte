@@ -91,6 +91,12 @@
      */
     expandedDepth?: number;
     /**
+     * 受控展开时自动展开父节点：expandedKeys 更新时若 autoExpandParent=true，
+     * 自动把所有展开节点的祖先链也加入展开集（派生，不写回受控 expandedKeys，红线 #1）。
+     * 默认 true，与 Semi Design 行为一致。
+     */
+    autoExpandParent?: boolean;
+    /**
      * 手风琴模式：同一层级最多展开一个节点。展开某节点时自动收起其同父级（siblings）
      * 的其它已展开节点；不同层级互不影响。受控 expandedKeys 同样生效（通过 onExpandedChange
      * 回传收起 siblings 后的新展开集，不自行回写——红线 #1）。默认 false（展开行为不变）。
@@ -113,6 +119,17 @@
      * 不传时回退到内置「label 包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
      */
     filterTreeNode?: boolean | ((input: string, node: TreeNodeData) => boolean);
+    /**
+     * 受控搜索关键词。传入时走受控模式：搜索框 value 绑定到此 prop，
+     * 输入变化仅触发 onSearch 回调，不更新内部 state。不传则保留内部非受控 state。
+     */
+    searchValue?: string;
+    /**
+     * 搜索关键词变化回调。参数 (value, filteredKeys)：
+     *  - value：当前搜索词；
+     *  - filteredKeys：所有命中节点（matched）的 key 列表，供受控外层决定渲染。
+     */
+    onSearch?: (value: string, filteredKeys: string[]) => void;
     blockNode?: boolean;
     disabled?: boolean;
     size?: Size;
@@ -121,18 +138,32 @@
     ariaLabel?: string;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组 */
     loadData?: (node: TreeNodeData) => Promise<TreeNodeData[]>;
+    /** 异步加载完成回调 */
+    onLoad?: (loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void;
     /** 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序。默认 false（行为不变） */
     draggable?: boolean;
     /** 放下时回调（受控数据，组件不内部改 treeData，由父组件按 info 重排）。 */
     onDrop?: (info: DropInfo) => void;
+    /** 节点右键菜单回调 */
+    onRightClick?: (e: MouseEvent, node: TreeNodeData) => void;
+    /** 开始拖拽节点 */
+    onDragStart?: (node: TreeNodeData) => void;
+    /** 拖拽进入候选目标节点 */
+    onDragEnter?: (info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void;
     onChange?: (info: ChangeInfo) => void;
     onCheck?: (info: CheckInfo) => void;
     onExpandedChange?: (info: ExpandInfo) => void;
     label?: Snippet<
       [{ node: TreeNodeData; level: number; searchValue: string; selected: boolean; checked: boolean }]
     >;
-    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态 */
-    icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; level: number }]>;
+    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点、展开态与是否叶子 */
+    icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; isLeaf: boolean }]>;
+    /** 自定义展开/收起箭头；参数含节点、展开态与加载态 */
+    switcher?: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>;
+    /** 节点尾部操作区（渲染在 label 右侧） */
+    suffix?: Snippet<[{ node: TreeNodeData }]>;
+    /** 自定义拖拽幽灵节点 */
+    dragGhost?: Snippet<[{ node: TreeNodeData }]>;
   }
 
   let {
@@ -150,6 +181,7 @@
     defaultExpandedKeys = [],
     defaultExpandAll = false,
     expandedDepth,
+    autoExpandParent = true,
     accordion = false,
     selectable = true,
     showIcon = true,
@@ -159,6 +191,8 @@
     itemHeight = 32,
     filterable = false,
     filterTreeNode,
+    searchValue: searchValueProp,
+    onSearch,
     blockNode = false,
     disabled = false,
     size = 'default',
@@ -166,13 +200,20 @@
     emptyContent,
     ariaLabel,
     loadData,
+    onLoad,
     draggable = false,
     onDrop,
+    onRightClick,
+    onDragStart,
+    onDragEnter,
     onChange,
     onCheck,
     onExpandedChange,
     label,
     icon,
+    switcher,
+    suffix,
+    dragGhost,
   }: Props = $props();
 
   const loc = useLocale();
@@ -261,6 +302,7 @@
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
+      onLoad?.([...loadedKeys].map(String), { event: 'load', node: toOrig(node) });
     }
   }
 
@@ -314,12 +356,36 @@
   }
   const isExpandControlled = $derived(expandedKeys !== undefined);
   let innerExpanded = $state<Set<TreeKey>>(initExpanded());
-  const currentExpandedSet = $derived(
+  const baseExpandedSet = $derived(
     isExpandControlled ? new Set(expandedKeys ?? []) : innerExpanded,
   );
+  // autoExpandParent：展开节点的所有祖先也纳入展开集（派生，不写回，红线 #1）。
+  // 实现：对 baseExpandedSet 中每个 key，递归向上收集祖先 key（深度优先搜索）。
+  function collectAncestors(data: TreeNodeData[], targetKey: TreeKey, acc: Set<TreeKey>): boolean {
+    for (const node of data) {
+      if (node.key === targetKey) return true;
+      if (node.children && collectAncestors(node.children, targetKey, acc)) {
+        acc.add(node.key);
+        return true;
+      }
+    }
+    return false;
+  }
+  const currentExpandedSet = $derived.by(() => {
+    if (!autoExpandParent || baseExpandedSet.size === 0) return baseExpandedSet;
+    const withAncestors = new Set(baseExpandedSet);
+    for (const key of baseExpandedSet) {
+      collectAncestors(mergedData, key, withAncestors);
+    }
+    return withAncestors;
+  });
 
-  // --- 搜索：本地状态，派生临时叠加展开集，不回写受控 expandedKeys (红线 #1) ---
-  let searchValue = $state('');
+  // --- 搜索：支持受控（searchValueProp）和非受控（内部 state）两种模式 ---
+  // 受控：searchValueProp 传入时直接用，input 事件仅触发 onSearch 回调，不更新内部 state（红线 #1）。
+  // 非受控：用内部 state，input 事件更新 innerSearchValue 并触发 onSearch。
+  const isSearchControlled = $derived(searchValueProp !== undefined);
+  let innerSearchValue = $state('');
+  const searchValue = $derived(isSearchControlled ? (searchValueProp ?? '') : innerSearchValue);
   const trimmedSearch = $derived(searchValue.trim());
   // 搜索框是否渲染/启用：filterable 或 filterTreeNode（true 或自定义谓词函数）任一开启。
   const searchEnabled = $derived(filterable || filterTreeNode === true || typeof filterTreeNode === 'function');
@@ -338,6 +404,32 @@
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     return computeFilteredKeys(mergedData, matchPredicate);
   });
+
+  // 搜索输入处理：受控时只触发 onSearch，非受控时同时更新 innerSearchValue。
+  function handleSearchInput(e: Event) {
+    const val = (e.target as HTMLInputElement).value;
+    if (!isSearchControlled) innerSearchValue = val;
+    // 计算 filteredKeys 并回调（基于当前 filterResult，但此时 val 可能还未更新到 derived）。
+    // 为使 filteredKeys 与新 val 同步，临时基于新 val 计算一次。
+    if (onSearch) {
+      const trimmed = val.trim();
+      let fKeys: string[] = [];
+      if (trimmed.length > 0 && searchEnabled) {
+        let pred: (node: TreeNodeData) => boolean;
+        if (typeof filterTreeNode === 'function') {
+          const fn = filterTreeNode;
+          pred = (node: TreeNodeData) => fn(trimmed, toOrig(node));
+        } else {
+          const lower = trimmed.toLowerCase();
+          pred = (node: TreeNodeData) => node.label.toLowerCase().includes(lower);
+        }
+        const result = computeFilteredKeys(mergedData, pred);
+        fKeys = [...result.matched].map(String);
+      }
+      onSearch(val, fKeys);
+    }
+  }
+
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回）
   const effectiveExpanded = $derived.by(() => {
     if (!searchActive) return currentExpandedSet;
@@ -775,6 +867,7 @@
       // 必须 setData 否则部分浏览器不触发 drop。
       e.dataTransfer.setData('text/plain', String(node.key));
     }
+    onDragStart?.(toOrig(node));
   }
 
   function onNodeDragOver(e: DragEvent, f: FlatNode) {
@@ -790,8 +883,15 @@
     // 叶子且无 loadData → 不允许 inside（不会有子节点容器）。
     const allowInside = f.hasChildren || (!!loadData && node.isLeaf !== true);
     const pos = computeDropPosition(offsetY, rect.height || rowHeight, allowInside);
-    // 切换目标行时重置 inside 自动展开计时器。
-    if (dropKey !== node.key) clearExpandTimer();
+    // 切换目标行时重置 inside 自动展开计时器，并触发 onDragEnter。
+    if (dropKey !== node.key) {
+      clearExpandTimer();
+      // 通知拖拽进入新目标节点
+      if (dragKey !== null) {
+        const dragNode = findFlatNode(dragKey);
+        if (dragNode) onDragEnter?.({ dragNode: toOrig(dragNode), dropNode: toOrig(node) });
+      }
+    }
     dropKey = node.key;
     dropPos = pos;
     // 拖到内部时自动展开目标（便于放入），延时避免误触。
@@ -898,7 +998,8 @@
         type="text"
         placeholder={loc().t('Tree.searchPlaceholder')}
         aria-label={loc().t('Tree.searchPlaceholder')}
-        bind:value={searchValue}
+        value={searchValue}
+        oninput={handleSearchInput}
         {disabled}
       />
     </div>
@@ -982,6 +1083,7 @@
           aria-disabled={nodeDisabled || undefined}
           style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
+          oncontextmenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(e, toOrig(node)); } : undefined}
           ondragstart={draggable ? (e) => onNodeDragStart(e, node) : undefined}
           ondragover={draggable ? (e) => onNodeDragOver(e, f) : undefined}
           ondragleave={draggable ? (e) => onNodeDragLeave(e, node) : undefined}
@@ -1002,28 +1104,51 @@
             {/each}
           {/if}
           {#if loading}
-            <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
-              <span class="cd-tree__spinner"></span>
-            </span>
+            {#if switcher}
+              {@render switcher({ node, expanded: false, loading: true })}
+            {:else}
+              <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
+                <span class="cd-tree__spinner"></span>
+              </span>
+            {/if}
           {:else if expandable}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <span
-              class="cd-tree__switcher"
-              class:cd-tree__switcher--open={expanded}
-              role="button"
-              tabindex="-1"
-              aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
-              onclick={(e) => {
-                e.stopPropagation();
-                if (!nodeDisabled) toggleExpand(node);
-              }}
-            >
-              <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-              </svg>
-            </span>
+            {#if switcher}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <span
+                role="button"
+                tabindex="-1"
+                aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (!nodeDisabled) toggleExpand(node);
+                }}
+              >
+                {@render switcher({ node, expanded, loading: false })}
+              </span>
+            {:else}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <span
+                class="cd-tree__switcher"
+                class:cd-tree__switcher--open={expanded}
+                role="button"
+                tabindex="-1"
+                aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (!nodeDisabled) toggleExpand(node);
+                }}
+              >
+                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+                </svg>
+              </span>
+            {/if}
           {:else}
-            <span class="cd-tree__switcher cd-tree__switcher--leaf" aria-hidden="true"></span>
+            {#if switcher}
+              {@render switcher({ node, expanded: false, loading: false })}
+            {:else}
+              <span class="cd-tree__switcher cd-tree__switcher--leaf" aria-hidden="true"></span>
+            {/if}
           {/if}
 
           {#if checkable}
@@ -1060,8 +1185,9 @@
           {/if}
 
           {#if showIcon}
+            {@const isLeaf = !expandable}
             <span class="cd-tree__icon" aria-hidden="true">
-              {#if icon}{@render icon({ node, expanded, level: f.level })}{/if}
+              {#if icon}{@render icon({ node, expanded, isLeaf })}{/if}
             </span>
           {/if}
 
@@ -1076,6 +1202,18 @@
               {/each}
             {/if}
           </span>
+
+          {#if suffix}
+            <span class="cd-tree__suffix">
+              {@render suffix({ node })}
+            </span>
+          {/if}
+
+          {#if dragGhost && dragging}
+            <span class="cd-tree__drag-ghost" aria-hidden="true">
+              {@render dragGhost({ node })}
+            </span>
+          {/if}
         </div>
 {/snippet}
 
@@ -1319,6 +1457,23 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  .cd-tree__suffix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-inline-start: var(--cd-spacing-1);
+  }
+
+  /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
+  .cd-tree__drag-ghost {
+    position: absolute;
+    inset-inline-start: -9999px;
+    inset-block-start: 0;
+    pointer-events: none;
   }
 
   .cd-tree__highlight {
