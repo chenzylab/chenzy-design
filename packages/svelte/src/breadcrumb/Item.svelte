@@ -9,12 +9,18 @@
 
   interface Props {
     href?: string;
+    /** 覆盖父级 separator，仅对本项末尾的分隔符生效（声明式 CSS 模式用 --cd-breadcrumb-separator-content 注入） */
+    separator?: string;
+    /** 禁止链接/按钮行为：渲染为普通 span（不可点击），忽略 href 和 onClick；末项始终 noLink */
+    noLink?: boolean;
+    /** 项前置图标 snippet */
+    icon?: Snippet;
     class?: string;
     children?: Snippet;
     onClick?: (e: MouseEvent) => void;
   }
 
-  let { href, class: className = '', children, onClick }: Props = $props();
+  let { href, separator, noLink = false, icon, class: className = '', children, onClick }: Props = $props();
 
   const ctx = getBreadcrumbContext();
 
@@ -33,11 +39,26 @@
   const cls = $derived(['cd-breadcrumb__item', className].filter(Boolean).join(' '));
 </script>
 
-<li class={cls}>
-  {#if isLast}
-    <span class="cd-breadcrumb__current" aria-current="page">{@render children?.()}</span>
+<!--
+  separator prop：传入时以内联 CSS 变量 --cd-breadcrumb-separator-content 覆盖本项分隔符（仅声明式 CSS 模式）。
+  noLink：非最后一项也渲染为普通 span（不可点击/键盘激活）；语义上表示该层级无可导航地址。
+  icon：前置图标 snippet，渲染在 children 前。
+-->
+<li
+  class={cls}
+  style={separator !== undefined ? `--cd-breadcrumb-separator-content: '${separator}'` : undefined}
+>
+  {#if isLast || noLink}
+    <span
+      class="cd-breadcrumb__current"
+      aria-current={isLast ? 'page' : undefined}
+    >
+      {#if icon}{@render icon()}{/if}{@render children?.()}
+    </span>
   {:else if href}
-    <a class="cd-breadcrumb__link" {href} onclick={onClick}>{@render children?.()}</a>
+    <a class="cd-breadcrumb__link" {href} onclick={onClick}>
+      {#if icon}{@render icon()}{/if}{@render children?.()}
+    </a>
   {:else}
     <span
       class="cd-breadcrumb__text"
@@ -49,7 +70,8 @@
           e.preventDefault();
           onClick?.(e as unknown as MouseEvent);
         }
-      }}>{@render children?.()}</span
+      }}
+    >{#if icon}{@render icon()}{/if}{@render children?.()}</span
     >
   {/if}
 </li>
