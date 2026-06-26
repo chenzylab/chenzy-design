@@ -49,6 +49,8 @@
     justify?: Justify;
     title?: string;
     emptyText?: string;
+    /** 双行显示：label 与 value 各占一行（同 Semi Design row prop） */
+    row?: boolean;
     class?: string;
     /** 声明式用法：内嵌 <Descriptions.Item> 列表（不传 data 时生效）。 */
     children?: Snippet;
@@ -66,6 +68,7 @@
     justify = 'start',
     title,
     emptyText = '-',
+    row = false,
     class: className = '',
     children,
   }: Props = $props();
@@ -140,6 +143,7 @@
       `cd-descriptions--align-${align}`,
       `cd-descriptions--justify-${justify}`,
       bordered && 'cd-descriptions--bordered',
+      row && 'cd-descriptions--row-mode',
       className,
     ]
       .filter(Boolean)
@@ -273,5 +277,11 @@
   }
   .cd-descriptions--bordered.cd-descriptions--horizontal :global(.cd-descriptions__value) {
     flex: 1 1 auto;
+  }
+
+  /* row=true：双行显示，每项 label 与 value 纵向叠放（覆盖 direction 横向排列） */
+  .cd-descriptions--row-mode :global(.cd-descriptions__item) {
+    flex-direction: column;
+    gap: var(--cd-spacing-1);
   }
 </style>
