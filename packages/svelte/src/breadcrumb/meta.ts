@@ -29,6 +29,36 @@ export const meta = {
       desc: '折叠 … 的浮层类型：tooltip 悬浮列出被折叠项文本；popover 点击展开可点击跳转的折叠项列表。不设时点击 … 直接展开全部（向后兼容）',
     },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    {
+      name: 'compact',
+      type: 'boolean',
+      default: 'true',
+      desc: '紧凑模式；false 时根元素附加 cd-breadcrumb--loose 类（更大字号/间距）',
+    },
+    {
+      name: 'autoCollapse',
+      type: 'boolean',
+      default: 'true',
+      desc: '超出 maxItemCount 时是否自动折叠；false 时始终展示全部项',
+    },
+    {
+      name: 'activeIndex',
+      type: 'number',
+      default: 'undefined',
+      desc: '受控选中项索引（配合 onClick 使用，令对应项高亮）',
+    },
+    {
+      name: 'renderItem',
+      type: '(route: BreadcrumbRoute, index: number, isLast: boolean) => Snippet',
+      default: 'undefined',
+      desc: '自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑',
+    },
+    {
+      name: 'renderMore',
+      type: '(restItems: CollapsedRoute[]) => Snippet',
+      default: 'undefined',
+      desc: '自定义折叠 … 区域渲染；传入时接管折叠展示（替代 moreType 内置浮层），参数为被折叠路由列表',
+    },
     { name: 'class', type: 'string', default: "''" },
     {
       name: 'children',
