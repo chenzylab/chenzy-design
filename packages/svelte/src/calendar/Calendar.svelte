@@ -66,10 +66,36 @@
     onMoreClick?: (info: { date: Date; events: CalendarEvent[] }) => void;
     /** 点击/键盘激活事件块（spec §a11y：事件块 role=button + Enter/Space 触发）。 */
     onEventClick?: (info: { event: CalendarEvent; nativeEvent: Event }) => void;
+    /** 关闭回调（popup 模式） */
+    onClose?: () => void;
     dateCell?: Snippet<
       [{ date: Date; events: CalendarEvent[]; isToday: boolean; isOutside: boolean; disabled: boolean }]
     >;
     event?: Snippet<[{ event: CalendarEvent }]>;
+    /** 自定义头部内容，替换默认头部 */
+    header?: Snippet;
+    /** 自定义单元格额外内容 (dateString: 'YYYY-MM-DD', date: Date) */
+    dateGridRender?: (dateString: string, date: Date) => Snippet | null | undefined;
+    /** 自定义全天事件区域渲染 */
+    allDayEventsRender?: (events: CalendarEvent[]) => Snippet | null | undefined;
+    /** 自定义时间文案 (hour: 0-23) */
+    renderTimeDisplay?: (hour: number) => string;
+    /** 自定义日期文案 */
+    renderDateDisplay?: (date: Date) => string;
+    /** 是否显示当前时间红线（day/week 视图，默认 true） */
+    showCurrTime?: boolean;
+    /** day/week 视图默认滚动高度（px，默认 400） */
+    scrollTop?: number;
+    /** 事件块最小高度（px） */
+    minEventHeight?: number;
+    /** 日历整体宽度 */
+    width?: number | string;
+    /** 日历整体高度 */
+    height?: number | string;
+    /** 范围选择的日期区间（mode='range' 时用于初始化，同 rangeValue） */
+    range?: [Date, Date] | null;
+    /** 受控展示锚点（Semi API: displayValue，等同于 value） */
+    displayValue?: Date;
     ariaLabel?: string;
     // --- 弹层模式 (popup) ---
     /** 弹层模式：渲染 trigger，日历作为浮层弹出（复用 _floating 门户定位） */
@@ -101,6 +127,7 @@
   let {
     value,
     defaultValue,
+    displayValue,
     mode = 'month',
     selectionMode = 'single',
     events = [],
@@ -115,6 +142,7 @@
     defaultSelectedDate,
     rangeValue,
     defaultRangeValue,
+    range,
     locale = 'zh-CN',
     onChange,
     onSelect,
@@ -122,8 +150,19 @@
     onDateClick,
     onMoreClick,
     onEventClick,
+    onClose,
     dateCell,
     event,
+    header,
+    dateGridRender,
+    allDayEventsRender,
+    renderTimeDisplay,
+    renderDateDisplay,
+    showCurrTime = true,
+    scrollTop = 400,
+    minEventHeight,
+    width,
+    height,
     ariaLabel,
     popup = false,
     open,
@@ -137,6 +176,12 @@
     timelineViewportHeight = 360,
   }: Props = $props();
 
+  // displayValue 作为 value 的别名（Semi API），优先级低于 value
+  const resolvedValue = $derived(value ?? displayValue);
+
+  // range 作为 rangeValue 的别名（Semi API），优先级低于 rangeValue
+  const resolvedRangeValue = $derived(rangeValue ?? range);
+
   const loc = useLocale();
   // 单例 live region（polite）：切月/年、移动焦点、选中日期时播报可读文本（红线 #3：命令式）。
   const announcer = useLiveAnnouncer();
@@ -145,12 +190,13 @@
   const today = new Date();
 
   // --- 锚点 value：受控不回写 (红线 #1) ---
+  // resolvedValue = value ?? displayValue（displayValue 是 Semi API 的别名）
   function initValue(): Date {
     return defaultValue ?? new Date();
   }
-  const isValueControlled = $derived(value !== undefined);
+  const isValueControlled = $derived(resolvedValue !== undefined);
   let innerValue = $state<Date>(initValue());
-  const currentValue = $derived(isValueControlled ? (value as Date) : innerValue);
+  const currentValue = $derived(isValueControlled ? (resolvedValue as Date) : innerValue);
 
   // --- 选中日 selectedDate：受控不回写 (红线 #1) ---
   function initSelected(): Date | null {
@@ -169,10 +215,11 @@
     const b = startOfDay(r[1]);
     return a.getTime() <= b.getTime() ? [a, b] : [b, a];
   }
-  const isRangeControlled = $derived(rangeValue !== undefined);
+  // resolvedRangeValue = rangeValue ?? range（range 是 Semi API 的别名）
+  const isRangeControlled = $derived(resolvedRangeValue !== undefined);
   let innerRange = $state<RangeValue | null>(untrack(() => normRange(defaultRangeValue)));
   const currentRange = $derived(
-    isRangeControlled ? normRange(rangeValue) : innerRange,
+    isRangeControlled ? normRange(resolvedRangeValue) : innerRange,
   );
 
   // --- range 选择状态机：'start'=待选起点；'end'=已选起点待选终点 ---
@@ -260,6 +307,48 @@
 
   // 命令式滚动监听 + cleanup（红线 #3）：只在虚拟化时绑定
   let timelineEl = $state<HTMLElement | null>(null);
+
+  // scrollTop：day 视图初始滚动位置（命令式，红线 #3）
+  $effect(() => {
+    if (mode !== 'day' || !timelineEl) return;
+    // 使用 untrack 避免把 scrollTop prop 加入 effect 依赖，只在 timelineEl mount 时执行一次
+    const top = scrollTop;
+    timelineEl.scrollTop = top;
+  });
+
+  // showCurrTime：当前时间红线，每分钟更新一次（命令式定时器，红线 #3）
+  let currTimePercent = $state<number | null>(null);
+  $effect(() => {
+    if (mode !== 'day' || !showCurrTime) {
+      currTimePercent = null;
+      return;
+    }
+    const compute = () => {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const totalHours = dayEndHour - dayStartHour + 1;
+      if (h < dayStartHour || h > dayEndHour) {
+        currTimePercent = null;
+        return;
+      }
+      currTimePercent = ((h - dayStartHour + m / 60) / totalHours) * 100;
+    };
+    compute();
+    // 剩余秒数到下一分钟
+    const now = new Date();
+    const msToNextMin = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+    let timer: ReturnType<typeof setTimeout>;
+    let interval: ReturnType<typeof setInterval>;
+    timer = setTimeout(() => {
+      compute();
+      interval = setInterval(compute, 60_000);
+    }, msToNextMin);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  });
   $effect(() => {
     if (!useVirtual || !timelineEl) return;
     const el = timelineEl;
@@ -535,6 +624,7 @@
     return useDismiss(triggerEl, {
       onDismiss: (reason) => {
         setOpen(false);
+        onClose?.();
         // 仅 Esc 归还焦点到 trigger（外部点击焦点应留在点击处）
         if (reason === 'esc') {
           const btn = triggerEl?.querySelector<HTMLElement>(
@@ -578,6 +668,9 @@
 </script>
 
 {#snippet calendarBody()}
+  {#if header}
+    {@render header()}
+  {:else}
   <div class="cd-calendar__toolbar">
     <button
       type="button"
@@ -597,7 +690,7 @@
       </svg>
     </button>
     <button type="button" class="cd-calendar__today" onclick={goToday}>{loc().t('Calendar.today')}</button>
-    <div class="cd-calendar__title">{title}</div>
+    <div class="cd-calendar__title">{renderDateDisplay ? renderDateDisplay(currentValue) : title}</div>
     <button
       type="button"
       class="cd-calendar__nav"
@@ -616,12 +709,16 @@
       </svg>
     </button>
   </div>
+  {/if}
 
   {#if mode === 'day'}
     <div class="cd-calendar__timeline" aria-label={ariaLabel ?? title}>
       {#if dayTimeline.allDay.length > 0}
         <div class="cd-calendar__allday">
           <div class="cd-calendar__allday-label">{loc().t('Calendar.allDay')}</div>
+          {#if allDayEventsRender}
+            {@render allDayEventsRender(dayTimeline.allDay)?.()}
+          {:else}
           <div class="cd-calendar__allday-events">
             {#each dayTimeline.allDay as ev (ev.key)}
               {#if event}
@@ -645,6 +742,7 @@
               {/if}
             {/each}
           </div>
+          {/if}
         </div>
       {/if}
       <div
@@ -653,7 +751,16 @@
         role="list"
         bind:this={timelineEl}
         style:max-block-size={useVirtual ? `${timelineViewportHeight}px` : undefined}
+        style:position="relative"
       >
+        <!-- showCurrTime 红线：绝对定位，top% 由派生纯函数算出（红线 #2） -->
+        {#if showCurrTime && currTimePercent !== null}
+          <div
+            class="cd-calendar__curr-time"
+            aria-hidden="true"
+            style:top={`${currTimePercent}%`}
+          ></div>
+        {/if}
         {#if useVirtual}
           <!-- 撑高占位 + 上空白 padding，仅渲染视口行（复用 core fixedRange）-->
           <div class="cd-calendar__hours-spacer" style:block-size={`${totalHeight}px`}>
@@ -662,7 +769,7 @@
                 {@const hourEvents = dayTimeline.byHour.get(slot.hour) ?? []}
                 <div class="cd-calendar__hour" role="listitem" style:min-block-size={`${ROW_H}px`}>
                   <div class="cd-calendar__hour-label" aria-hidden="true">
-                    {hourLabelFormatter.format(slot.date)}
+                    {renderTimeDisplay ? renderTimeDisplay(slot.hour) : hourLabelFormatter.format(slot.date)}
                   </div>
                   <div class="cd-calendar__hour-slot">
                     {#each hourEvents as ev (ev.key)}
@@ -673,6 +780,7 @@
                           class="cd-calendar__event cd-calendar__event--timed"
                           class:cd-calendar__event--disabled={ev.disabled}
                           style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                          style:min-block-size={minEventHeight ? `${minEventHeight}px` : undefined}
                           role="button"
                           tabindex={ev.disabled ? -1 : 0}
                           aria-disabled={ev.disabled || undefined}
@@ -697,7 +805,7 @@
             {@const hourEvents = dayTimeline.byHour.get(slot.hour) ?? []}
             <div class="cd-calendar__hour" role="listitem">
               <div class="cd-calendar__hour-label" aria-hidden="true">
-                {hourLabelFormatter.format(slot.date)}
+                {renderTimeDisplay ? renderTimeDisplay(slot.hour) : hourLabelFormatter.format(slot.date)}
               </div>
               <div class="cd-calendar__hour-slot">
                 {#each hourEvents as ev (ev.key)}
@@ -708,6 +816,7 @@
                       class="cd-calendar__event cd-calendar__event--timed"
                       class:cd-calendar__event--disabled={ev.disabled}
                       style:--cd-calendar-event-accent={ev.color ?? 'var(--cd-calendar-event-default-bg)'}
+                      style:min-block-size={minEventHeight ? `${minEventHeight}px` : undefined}
                       title={ev.title}
                     >
                       <span class="cd-calendar__event-bar" aria-hidden="true"></span>
@@ -787,6 +896,10 @@
               {@render dateCell({ date, events: total, isToday, isOutside: outside, disabled })}
             {:else}
               <div class="cd-calendar__date">{dayNumber(date)}</div>
+              {#if dateGridRender}
+                {@const extraSnippet = dateGridRender(dayKey(date), date)}
+                {#if extraSnippet}{@render extraSnippet()}{/if}
+              {/if}
               <div class="cd-calendar__events">
                 {#each visible as ev (ev.key)}
                   {#if event}
@@ -856,13 +969,20 @@
         role="dialog"
         aria-label={ariaLabel ?? title}
         use:floating={{ trigger: triggerEl, placement, offset: 8, autoAdjust: true, getContainer }}
+        style:inline-size={width ? (typeof width === 'number' ? `${width}px` : width) : undefined}
+        style:block-size={height ? (typeof height === 'number' ? `${height}px` : height) : undefined}
       >
         {@render calendarBody()}
       </div>
     {/if}
   </div>
 {:else}
-  <div class="cd-calendar" bind:this={rootEl}>
+  <div
+    class="cd-calendar"
+    bind:this={rootEl}
+    style:inline-size={width ? (typeof width === 'number' ? `${width}px` : width) : undefined}
+    style:block-size={height ? (typeof height === 'number' ? `${height}px` : height) : undefined}
+  >
     {@render calendarBody()}
   </div>
 {/if}
@@ -1191,6 +1311,27 @@
     z-index: var(--cd-z-popover, 1050);
     inline-size: max-content;
     box-shadow: var(--cd-shadow-elevated, 0 4px 16px rgb(0 0 0 / 0.12));
+  }
+
+  /* showCurrTime 当前时间红线：绝对定位，跨越整个小时列区域 */
+  .cd-calendar__curr-time {
+    position: absolute;
+    inset-inline: 0;
+    block-size: 2px;
+    background: var(--cd-calendar-curr-time-color, var(--cd-color-danger, #f5222d));
+    z-index: 1;
+    pointer-events: none;
+  }
+  .cd-calendar__curr-time::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: var(--cd-calendar-hour-label-w, 56px);
+    transform: translateY(-50%);
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: 50%;
+    background: var(--cd-calendar-curr-time-color, var(--cd-color-danger, #f5222d));
   }
 
   @media (prefers-reduced-motion: reduce) {

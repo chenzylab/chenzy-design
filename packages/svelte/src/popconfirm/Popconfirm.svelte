@@ -55,7 +55,11 @@
 
   interface Props {
     open?: boolean;
+    /** open 别名（Semi 原始拼写） */
+    visible?: boolean;
     defaultOpen?: boolean;
+    /** 非受控初始显隐（defaultOpen 别名，优先级低于 open） */
+    defaultVisible?: boolean;
     title?: string;
     titleSnippet?: Snippet;
     content?: string;
@@ -65,12 +69,16 @@
     okText?: string;
     cancelText?: string;
     okType?: OkType;
+    /** 取消按钮类型（对应 okType 的取消侧），透传给取消 Button 的 type；优先级高于 cancelButtonProps.type */
+    cancelType?: 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
     /** 透传确认按钮额外属性（onclick/loading 由组件托管，传入会被忽略） */
     okButtonProps?: ExtraButtonProps;
     /** 透传取消按钮额外属性（onclick/disabled 由组件托管，传入会被忽略） */
     cancelButtonProps?: ExtraButtonProps;
     showCancel?: boolean;
     placement?: Placement;
+    /** placement 别名（Semi 原始拼写） */
+    position?: Placement;
     disabled?: boolean;
     closeOnEsc?: boolean;
     closeOnOutsideClick?: boolean;
@@ -78,6 +86,8 @@
     destroyOnClose?: boolean;
     /** 箭头是否指向触发元素中心，默认 false */
     arrowPointAtCenter?: boolean;
+    /** 是否显示箭头三角，默认 false（浮层与触发器间无连接箭头） */
+    showArrow?: boolean;
     /** 入场动效开关/配置，默认 true（受 prefers-reduced-motion 覆盖） */
     motion?: boolean | MotionConfig;
     /** 触发方式：'click' 点击 toggle（默认）| 'hover' 悬停开关 */
@@ -88,6 +98,14 @@
     mouseLeaveDelay?: number;
     /** 浮层 portal 容器，缺省 document.body */
     getPopupContainer?: () => HTMLElement | null;
+    /** 浮层 z-index，默认 1030 */
+    zIndex?: number;
+    /** Tab 键是否在浮层内循环（焦点陷阱），默认 true */
+    guardFocus?: boolean;
+    /** Esc 关闭时是否将焦点归还给触发元素，默认 true */
+    returnFocusOnClose?: boolean;
+    /** 点击浮层内事件是否阻止冒泡到文档，默认 true */
+    stopPropagation?: boolean;
     trigger?: Snippet;
     onOpenChange?: (info: { open: boolean; reason: DismissReason }) => void;
     /** 确认回调；返回 Promise 时确认按钮 loading，resolve 关闭 / reject 保持打开 */
@@ -98,6 +116,10 @@
      * 调用 `event.preventDefault()` 可阻止默认关闭。
      */
     onClickOutside?: (event: MouseEvent) => void;
+    /** onClickOutside 别名（Semi 原始大写 S 拼写） */
+    onClickOutSide?: (event: MouseEvent) => void;
+    /** Esc 键按下时触发（在 closeOnEsc 关闭之前） */
+    onEscKeyDown?: (e: KeyboardEvent) => void;
     /** 入场动效结束、浮层完全可见 */
     onAfterOpen?: () => void;
     /** 出场动效结束、DOM 卸载后 */
@@ -107,7 +129,9 @@
 
   let {
     open,
+    visible,
     defaultOpen = false,
+    defaultVisible,
     title,
     titleSnippet,
     content,
@@ -117,25 +141,34 @@
     okText,
     cancelText,
     okType,
+    cancelType,
     okButtonProps,
     cancelButtonProps,
     showCancel = true,
-    placement = 'top',
+    placement,
+    position,
     disabled = false,
     closeOnEsc = true,
     closeOnOutsideClick = true,
     destroyOnClose = true,
     arrowPointAtCenter = false,
+    showArrow = false,
     motion = true,
     triggerType = 'click',
     mouseEnterDelay = 150,
     mouseLeaveDelay = 150,
     getPopupContainer,
+    zIndex,
+    guardFocus = true,
+    returnFocusOnClose = true,
+    stopPropagation = true,
     trigger,
     onOpenChange,
     onConfirm,
     onCancel,
     onClickOutside,
+    onClickOutSide,
+    onEscKeyDown,
     onAfterOpen,
     onAfterClose,
     class: className,
@@ -150,19 +183,29 @@
   const titleId = useId('cd-popconfirm-title');
   const contentId = useId('cd-popconfirm-content');
 
+  // visible 为 open 别名；open 优先。
+  const resolvedOpen = $derived(open ?? visible);
+  // position 为 placement 别名；placement 优先，缺省 'top'。
+  const resolvedPlacementProp = $derived<Placement>(placement ?? position ?? 'top');
+
   // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
-  const isControlled = $derived(open !== undefined);
+  const isControlled = $derived(resolvedOpen !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isControlled ? !!open : innerOpen);
+  const isOpen = $derived(isControlled ? !!resolvedOpen : innerOpen);
 
   function getInitialOpen(): boolean {
-    return defaultOpen;
+    // defaultVisible 为 defaultOpen 的别名，优先于 defaultOpen
+    return defaultVisible ?? defaultOpen;
   }
 
   // 确认按钮 type 优先级：显式 okType > okButtonProps.type > 由 type 推导默认（兜底必为非空值）。
   type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
   const resolvedOkType = $derived<ButtonType>(
     okType ?? okButtonProps?.type ?? (type === 'danger' ? 'danger' : 'primary'),
+  );
+  // 取消按钮 type 优先级：显式 cancelType > cancelButtonProps.type > 'secondary'（默认）。
+  const resolvedCancelType = $derived<ButtonType>(
+    cancelType ?? cancelButtonProps?.type ?? 'secondary',
   );
 
   const hasContent = $derived(Boolean(contentSnippet) || Boolean(content));
@@ -182,15 +225,16 @@
   });
   const shouldRender = $derived(isOpen || (hasBeenOpened && !destroyOnClose));
 
-  // 浮层根内联样式：motion duration 覆盖 token 时长。
-  const popupStyle = $derived(
-    motionDuration !== undefined
-      ? `--cd-popconfirm-motion-duration:${motionDuration}ms`
-      : undefined,
-  );
+  // 浮层根内联样式：motion duration 覆盖 token 时长；zIndex 覆盖 CSS 变量。
+  const popupStyle = $derived.by(() => {
+    const parts: string[] = [];
+    if (motionDuration !== undefined) parts.push(`--cd-popconfirm-motion-duration:${motionDuration}ms`);
+    if (zIndex !== undefined) parts.push(`z-index:${zIndex}`);
+    return parts.length > 0 ? parts.join(';') : undefined;
+  });
 
   // flip 后的实际方位（驱动箭头朝向）+ 箭头交叉轴偏移
-  let resolvedPlacement = $state<Placement>(untrack(() => placement));
+  let resolvedPlacement = $state<Placement>(untrack(() => resolvedPlacementProp));
   const resolvedSide = $derived<Side>(parsePlacement(resolvedPlacement).side);
   let arrowOffset = $state(0);
 
@@ -321,29 +365,47 @@
   // --- focus-trap + dismiss (红线 #3)：open 且浮层就绪时绑定，cleanup 解绑/归还焦点 ---
   $effect(() => {
     if (!isOpen || !popupEl) return;
-    const trap = useFocusTrap(popupEl);
-    trap.activate();
+    // guardFocus=true（默认）激活 Tab 循环焦点陷阱；false 时跳过（允许 Tab 离开浮层）。
+    const trap = guardFocus ? useFocusTrap(popupEl) : null;
+    trap?.activate();
     let undismiss = () => {};
     // popup portal 到 body 后不在 rootEl 子树内：把 popupEl 列为 extraTargets，
     // 否则点击浮层内部会被误判为 outsideClick。点触发器在 rootEl 内由 onclick toggle。
     if (closeOnEsc || closeOnOutsideClick) {
       undismiss = useDismiss(rootEl ?? popupEl, {
-        onDismiss: dismiss,
+        onDismiss: (reason) => {
+          // onEscKeyDown：Esc 按下时先触发回调（在 dismiss 关闭前）。
+          if (reason === 'esc' && onEscKeyDown) {
+            // useDismiss 的 onDismiss 不直接传 KeyboardEvent，
+            // 以合成空事件触发回调（符合接口契约）。
+            const syntheticEv = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+            onEscKeyDown(syntheticEv);
+          }
+          dismiss(reason);
+        },
         escape: closeOnEsc,
         outsideClick: closeOnOutsideClick,
         extraTargets: [popupEl],
-        // 外部点击：在 useDismiss 关闭判定之前触发 onClickOutside（关闭逻辑前）。
+        // 外部点击：在 useDismiss 关闭判定之前触发 onClickOutside / onClickOutSide（关闭逻辑前）。
         // 调用方 preventDefault() 即阻止默认关闭（返回 false 跳过 onDismiss）。
         onOutsidePointer: (e) => {
-          if (!onClickOutside) return;
-          onClickOutside(e);
+          const handler = onClickOutside ?? onClickOutSide;
+          if (!handler) return;
+          handler(e);
           if (e.defaultPrevented) return false;
         },
       });
     }
     return () => {
       undismiss();
-      trap.deactivate();
+      // returnFocusOnClose=true（默认）时归还焦点给触发元素；false 时不归还。
+      if (trap) {
+        if (returnFocusOnClose) {
+          trap.deactivate();
+        } else {
+          trap.deactivate({ returnFocus: false });
+        }
+      }
       // 浮层关闭即复位 loading（覆盖受控 open 在 loading 中被外部关闭的边界）。
       confirmLoading = false;
     };
@@ -430,7 +492,7 @@
       id={popupId}
       style={popupStyle}
       bind:this={popupEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 8, arrowPointAtCenter, getContainer: getPopupContainer, onPlacement, open: isOpen }}
+      use:floating={{ trigger: rootEl, placement: resolvedPlacementProp, autoAdjust: true, offset: 8, arrowPointAtCenter, getContainer: getPopupContainer, onPlacement, open: isOpen }}
       role="dialog"
       tabindex="-1"
       aria-labelledby={titleId}
@@ -438,8 +500,11 @@
       aria-hidden={!isOpen || undefined}
       onpointerenter={onPopupPointerEnter}
       onpointerleave={onPopupPointerLeave}
+      onclick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
-      <div class="cd-popconfirm__arrow" style={arrowStyle} aria-hidden="true"></div>
+      {#if showArrow}
+        <div class="cd-popconfirm__arrow" style={arrowStyle} aria-hidden="true"></div>
+      {/if}
       <div class="cd-popconfirm__body">
         {#if icon !== false}
           <span
@@ -510,7 +575,7 @@
       </div>
       <div class="cd-popconfirm__footer">
         {#if showCancel}
-          <Button size="small" {...cancelButtonProps} disabled={confirmLoading} onclick={cancel}>
+          <Button size="small" {...cancelButtonProps} type={resolvedCancelType} disabled={confirmLoading} onclick={cancel}>
             {cancelText ?? loc().t('Popconfirm.cancel')}
           </Button>
         {/if}

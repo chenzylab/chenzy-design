@@ -288,6 +288,7 @@ export const zh_CN: Locale = {
     increase: '增加',
     decrease: '减少',
     clampedAnnounce: '已调整为 {value}',
+    clear: '清除',
   },
   Slider: {
     minReachedAnnounce: '已是最小值',
@@ -364,6 +365,8 @@ export const zh_CN: Locale = {
   Popover: {
     close: '关闭',
     dialogLabel: '对话框',
+    okText: '确定',
+    cancelText: '取消',
   },
   Typography: {
     copy: '复制',

@@ -85,6 +85,22 @@
     size?: Size;
     /** 动画开关/配置，默认 true */
     motion?: boolean | MotionConfig;
+    /** 浮层右上角显示关闭按钮，默认 false */
+    showCloseButton?: boolean;
+    /** 自定义关闭按钮图标（showCloseButton=true 时有效） */
+    closeIcon?: Snippet;
+    /** 确定按钮文案（默认来自 locale） */
+    okText?: string;
+    /** 取消按钮文案（默认来自 locale） */
+    cancelText?: string;
+    /** 透传给确定 Button 的 props */
+    okButtonProps?: Record<string, unknown>;
+    /** 透传给取消 Button 的 props */
+    cancelButtonProps?: Record<string, unknown>;
+    /** 点击确定按钮回调 */
+    onOk?: () => void;
+    /** 点击取消按钮回调 */
+    onCancel?: () => void;
     onOpenChange?: (open: boolean) => void;
     children?: Snippet;
     contentSlot?: Snippet;
@@ -117,6 +133,14 @@
     stopPropagation = false,
     size = 'default',
     motion = true,
+    showCloseButton = false,
+    closeIcon,
+    okText,
+    cancelText,
+    okButtonProps,
+    cancelButtonProps,
+    onOk,
+    onCancel,
     onOpenChange,
     children,
     contentSlot,
@@ -306,6 +330,30 @@
   const dialogLabel = $derived(
     isTooltipRole || hasTitle ? undefined : loc().t('Popover.dialogLabel'),
   );
+
+  // 按钮文案：prop 优先，否则取 locale。
+  const resolvedOkText = $derived(okText ?? loc().t('Popover.okText'));
+  const resolvedCancelText = $derived(cancelText ?? loc().t('Popover.cancelText'));
+
+  // 是否渲染底部按钮区。
+  const hasFooter = $derived(onOk !== undefined || onCancel !== undefined);
+
+  // 关闭按钮处理：调用 setOpen(false) 并触发 onCancel。
+  function handleClose() {
+    setOpen(false);
+    onCancel?.();
+  }
+
+  // 确定按钮处理。
+  function handleOk() {
+    onOk?.();
+  }
+
+  // 取消按钮处理：同关闭。
+  function handleCancel() {
+    setOpen(false);
+    onCancel?.();
+  }
 </script>
 
 <!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children；自身无障碍语义忽略 -->
@@ -361,6 +409,23 @@
       onkeydown={onPopEvent}
       onpointerdown={onPopEvent}
     >
+      {#if showCloseButton}
+        <!-- svelte-ignore a11y_consider_explicit_label -->
+        <button
+          type="button"
+          class="cd-popover__close-btn"
+          aria-label={loc().t('Popover.close')}
+          onclick={handleClose}
+        >
+          {#if closeIcon}
+            {@render closeIcon()}
+          {:else}
+            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false" aria-hidden="true">
+              <path stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 3l10 10M13 3L3 13" />
+            </svg>
+          {/if}
+        </button>
+      {/if}
       {#if hasTitle}
         <div class="cd-popover__title" id={titleId}>
           {#if titleSnippet}
@@ -379,6 +444,32 @@
           {contentText}
         {/if}
       </div>
+      {#if hasFooter}
+        <div class="cd-popover__footer">
+          {#if onCancel !== undefined}
+            <!-- svelte-ignore a11y_consider_explicit_label -->
+            <button
+              type="button"
+              class="cd-popover__btn cd-popover__btn--cancel"
+              onclick={handleCancel}
+              {...(cancelButtonProps ?? {})}
+            >
+              {resolvedCancelText}
+            </button>
+          {/if}
+          {#if onOk !== undefined}
+            <!-- svelte-ignore a11y_consider_explicit_label -->
+            <button
+              type="button"
+              class="cd-popover__btn cd-popover__btn--ok"
+              onclick={handleOk}
+              {...(okButtonProps ?? {})}
+            >
+              {resolvedOkText}
+            </button>
+          {/if}
+        </div>
+      {/if}
       {#if showArrow}
         <span class="cd-popover__arrow" style={arrowStyle} aria-hidden="true"></span>
       {/if}
@@ -396,6 +487,7 @@
   }
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-popover__pop {
+    position: relative;
     z-index: var(--cd-popover-z);
     inline-size: max-content;
     max-inline-size: 20rem;
@@ -434,6 +526,71 @@
       transform: scale(1);
     }
   }
+  /* 关闭按钮：绝对定位于浮层右上角 */
+  .cd-popover__close-btn {
+    position: absolute;
+    inset-block-start: var(--cd-spacing-2);
+    inset-inline-end: var(--cd-spacing-2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--cd-spacing-1);
+    border: none;
+    border-radius: var(--cd-radius-1);
+    background: transparent;
+    color: var(--cd-color-text-2);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .cd-popover__close-btn:hover {
+    background: var(--cd-color-fill-2, rgba(0, 0, 0, 0.06));
+    color: var(--cd-color-text-1);
+  }
+  .cd-popover__close-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+
+  /* 底部按钮区 */
+  .cd-popover__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--cd-spacing-2);
+    margin-block-start: var(--cd-spacing-3);
+  }
+  .cd-popover__btn {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--cd-spacing-1) var(--cd-spacing-3);
+    border-radius: var(--cd-radius-1);
+    border: 1px solid transparent;
+    font: inherit;
+    font-size: var(--cd-font-size-2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .cd-popover__btn--cancel {
+    background: var(--cd-color-bg-2, #f2f3f5);
+    color: var(--cd-color-text-1);
+    border-color: var(--cd-color-border, #e5e6eb);
+  }
+  .cd-popover__btn--cancel:hover {
+    background: var(--cd-color-bg-3, #e5e6eb);
+  }
+  .cd-popover__btn--ok {
+    background: var(--cd-color-primary, #165dff);
+    color: #fff;
+    border-color: var(--cd-color-primary, #165dff);
+  }
+  .cd-popover__btn--ok:hover {
+    background: var(--cd-color-primary-6, #4080ff);
+    border-color: var(--cd-color-primary-6, #4080ff);
+  }
+  .cd-popover__btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+
   .cd-popover__title {
     margin-block-end: var(--cd-spacing-2);
     padding-block-end: var(--cd-spacing-2);

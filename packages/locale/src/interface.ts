@@ -368,6 +368,8 @@ export interface Locale {
     decrease: string;
     /** LiveAnnouncer：越界钳制后实际生效值，uses {value} */
     clampedAnnounce: string;
+    /** 清除按钮 aria-label */
+    clear: string;
   };
   Slider: {
     /** LiveAnnouncer：值到达最小边界 */
@@ -469,6 +471,10 @@ export interface Locale {
     close: string;
     /** dialog 模式无标题时的兜底 aria-label */
     dialogLabel: string;
+    /** 确定按钮默认文案 */
+    okText: string;
+    /** 取消按钮默认文案 */
+    cancelText: string;
   };
   Typography: {
     copy: string;

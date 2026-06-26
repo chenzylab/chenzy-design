@@ -18,6 +18,9 @@
   filterLeafOnly（搜索是否仅到叶子）、emptyContent（空态 string|Snippet）、
   destroyOnClose（关闭保留/卸载浮层 DOM）、zIndex、getPopupContainer（浮层容器）、
   columnWidth（列宽 number|number[]）。
+  新增：borderless/prefix/suffix/clearIcon/expandIcon/motion/keyMaps/remote/
+  checkRelation/autoMergeValue/showNext/triggerRender/filterRender/filterSorter/
+  topSlot/bottomSlot/onClear/onLoad/onSelect/onDropdownVisibleChange/onListScroll 等。
 -->
 <script lang="ts">
   import {
@@ -58,7 +61,7 @@
     disabled?: boolean;
     clearable?: boolean;
     changeOnSelect?: boolean;
-    /** 展开触发方式：'click' 点击展开（默认）；'hover' 悬停非叶子节点即展开子级列 */
+    /** 展开触发方式：'click' 点击展开（默认）；'hover' 悬停非叶子节点即展开子级列（legacy alias，推荐用 showNext） */
     expandTrigger?: 'click' | 'hover';
     /** 多选时只回传/计数叶子节点（父节点不进 value、tag、计数） */
     leafOnly?: boolean;
@@ -92,64 +95,110 @@
     onChange?: (value: Key[] | Key[][]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
+
+    // --- 外观 ---
+    /** 无边框模式 */
+    borderless?: boolean;
+    /** 前置内容（Snippet 或 string） */
+    prefix?: Snippet | string;
+    /** 后置内容（Snippet 或 string） */
+    suffix?: Snippet | string;
+    /** 自定义清除图标 */
+    clearIcon?: Snippet;
+    /** 自定义展开图标（expandIcon / arrowIcon 均可，expandIcon 优先） */
+    expandIcon?: Snippet;
     /** 自定义右侧下拉箭头（expandIcon 的别名） */
     arrowIcon?: Snippet;
-    /** 下拉框自动调整方向（默认 true） */
-    autoAdjustOverflow?: boolean;
-    /** 父节点选中时 value 不含子孙（默认 true，多选） */
-    autoMergeValue?: boolean;
-    /** 多选节点选中关系（默认 'related'） */
-    checkRelation?: 'related' | 'unRelated';
-    /** 下拉菜单样式 */
-    dropdownStyle?: string | Record<string, string>;
-    /** 自定义渲染筛选选项 */
-    filterRender?: Snippet<[{ option: unknown; inputValue: string }]>;
-    /** 筛选后排序 */
-    filterSorter?: (a: unknown, b: unknown, input: string) => number;
     /** 下拉框展开动画（默认 true） */
     motion?: boolean;
-    /** 鼠标移入展示延迟（ms，默认 50） */
+    /** 鼠标移入延迟（ms），默认 50 */
     mouseEnterDelay?: number;
-    /** 鼠标移出消失延迟（ms，默认 50） */
+    /** 鼠标移出延迟（ms），默认 50 */
     mouseLeaveDelay?: number;
+    /** 下拉框自动调整方向（默认 true） */
+    autoAdjustOverflow?: boolean;
+    /** 下拉框方向（默认 'bottomStart'） */
+    position?: string;
+    /** 选择框样式 */
+    style?: string;
+    /** 下拉菜单样式 */
+    dropdownStyle?: string | Record<string, string>;
     /** 失焦回调 */
     onBlur?: (e: MouseEvent) => void;
     /** 聚焦回调 */
     onFocus?: (e: MouseEvent) => void;
-    /** onChange 入参含完整节点对象（默认 false） */
-    onChangeWithObject?: boolean;
-    /** 超出 max 时回调 */
-    onExceed?: (items: unknown[]) => void;
-    /** 下拉框方向（默认 'bottomStart'） */
-    position?: string;
     /** 聚焦时阻止滚动 */
     preventScroll?: boolean;
-    /** 远程搜索模式（默认 false） */
-    remote?: boolean;
-    /** 剩余 tags popover 配置 */
-    restTagsPopoverProps?: Record<string, unknown>;
-    /** 搜索框占位文字 */
-    searchPlaceholder?: string;
-    /** 搜索框位置（默认 'trigger'） */
-    searchPosition?: 'trigger' | 'custom';
-    /** 是否显示清除按钮（clearable 的别名） */
-    showClear?: boolean;
-    /** +N 时是否 popover 展示剩余（默认 false） */
-    showRestTagsPopover?: boolean;
     /** 阻止下拉框点击冒泡（默认 true） */
     stopPropagation?: boolean;
-    /** 选择框样式 */
-    style?: string;
-    /** 搜索时过滤的属性（默认 'label'） */
-    treeNodeFilterProp?: string;
+
+    // --- 插槽 ---
     /** 面板顶部插槽 */
     topSlot?: Snippet;
     /** 面板底部插槽 */
     bottomSlot?: Snippet;
-    /** 搜索结果虚拟化 */
-    virtualizeInSearch?: { height?: number; width?: number; itemSize: number };
-    /** 自定义右侧展开图标 */
-    expandIcon?: Snippet;
+
+    // --- 搜索增强 ---
+    /** 搜索框位置：'trigger'（默认，内置）；'custom'（自定义，不渲染内置搜索框） */
+    searchPosition?: 'trigger' | 'custom';
+    /** 搜索框占位文字 */
+    searchPlaceholder?: string;
+    /** 搜索时过滤的属性（默认 'label'） */
+    treeNodeFilterProp?: string;
+    /** 自定义搜索结果项渲染 */
+    filterRender?: Snippet<[{ path: FlatPath }]>;
+    /** 搜索结果自定义排序 */
+    filterSorter?: (a: FlatPath, b: FlatPath, input: string) => number;
+    /** 搜索输入回调 */
+    onSearch?: (value: string) => void;
+    /** 远程搜索模式：跳过本地过滤，只触发 onSearch */
+    remote?: boolean;
+    /** 搜索结果虚拟滚动配置 */
+    virtualizeInSearch?: { height: number; width: number; itemSize: number };
+
+    // --- 多选增强 ---
+    /** 选中父节点时 value 不包含后代（默认 true） */
+    autoMergeValue?: boolean;
+    /** 勾选关系：'related' 父子联动（默认）；'unRelated' 独立 */
+    checkRelation?: 'related' | 'unRelated';
+    /** onChange 回调是否返回完整 option 对象 */
+    onChangeWithObject?: boolean;
+    /** 超出 max 时回调 */
+    onExceed?: (items: unknown[]) => void;
+    /** 超出 maxTagCount 时是否显示 popover */
+    showRestTagsPopover?: boolean;
+    /** 超出 tag popover 的 props */
+    restTagsPopoverProps?: Record<string, unknown>;
+    /** 是否显示清除按钮（clearable 的别名） */
+    showClear?: boolean;
+
+    // --- 节点配置 ---
+    /** 自定义字段名映射 */
+    keyMaps?: { value?: string; label?: string; children?: string; disabled?: string; isLeaf?: string };
+    /** 点击任意节点即选中（含非叶子） */
+    clickToSelect?: boolean;
+    /** 多选模式下点击叶子节点触发勾选 */
+    enableLeafClick?: boolean;
+    /** 禁用不从父节点继承（严格禁用） */
+    disableStrictly?: boolean;
+    /** 展开触发方式（新版 canonical prop，优先于 expandTrigger） */
+    showNext?: 'click' | 'hover';
+
+    // --- 事件 ---
+    /** 清空回调 */
+    onClear?: () => void;
+    /** 异步加载完成回调 */
+    onLoad?: (loadedKeys: Key[], data: CascaderNode) => void;
+    /** 节点选中回调（单选叶子选中时） */
+    onSelect?: (value: Key) => void;
+    /** 下拉面板显隐回调 */
+    onDropdownVisibleChange?: (visible: boolean) => void;
+    /** 列滚动回调 */
+    onListScroll?: (e: Event, info: { panelIndex: number; activeNode: CascaderNode | null }) => void;
+
+    // --- 自定义渲染 ---
+    /** 完全自定义触发器渲染 */
+    triggerRender?: Snippet<[{ value: Key[] | Key[][] | undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>;
   }
 
   let {
@@ -183,35 +232,51 @@
     onChange,
     onOpenChange,
     ariaLabel,
+    borderless = false,
+    prefix,
+    suffix,
+    clearIcon,
+    expandIcon,
     arrowIcon,
-    autoAdjustOverflow = true,
-    autoMergeValue = true,
-    checkRelation = 'related',
-    dropdownStyle,
-    filterRender,
-    filterSorter,
     motion = true,
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
+    autoAdjustOverflow = true,
+    position,
+    style,
+    dropdownStyle,
     onBlur,
     onFocus,
-    onChangeWithObject = false,
-    onExceed,
-    position,
     preventScroll = false,
-    remote = false,
-    restTagsPopoverProps,
-    searchPlaceholder,
-    searchPosition = 'trigger',
-    showClear: showClearProp,
-    showRestTagsPopover = false,
     stopPropagation = true,
-    style,
-    treeNodeFilterProp = 'label',
     topSlot,
     bottomSlot,
+    searchPosition = 'trigger',
+    searchPlaceholder,
+    treeNodeFilterProp = 'label',
+    filterRender,
+    filterSorter,
+    onSearch,
+    remote = false,
     virtualizeInSearch,
-    expandIcon,
+    autoMergeValue = true,
+    checkRelation = 'related',
+    onChangeWithObject = false,
+    onExceed,
+    showRestTagsPopover = false,
+    restTagsPopoverProps,
+    showClear: showClearProp,
+    keyMaps,
+    clickToSelect = false,
+    enableLeafClick = false,
+    disableStrictly = false,
+    showNext = 'click',
+    onClear,
+    onLoad,
+    onSelect,
+    onDropdownVisibleChange,
+    onListScroll,
+    triggerRender,
   }: Props = $props();
 
   const loc = useLocale();
@@ -219,12 +284,55 @@
   const globalPopupContainer = getGlobalPopupContainer();
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
+  // --- keyMaps: 字段名映射，规整 treeData ---
+  const kmValue = $derived(keyMaps?.value ?? 'value');
+  const kmLabel = $derived(keyMaps?.label ?? 'label');
+  const kmChildren = $derived(keyMaps?.children ?? 'children');
+  const kmDisabled = $derived(keyMaps?.disabled ?? 'disabled');
+  const kmIsLeaf = $derived(keyMaps?.isLeaf ?? 'isLeaf');
+  const keyMapsDefault = $derived(
+    kmValue === 'value' &&
+    kmLabel === 'label' &&
+    kmChildren === 'children' &&
+    kmDisabled === 'disabled' &&
+    kmIsLeaf === 'isLeaf',
+  );
+  function normalizeNodes(nodes: CascaderNode[]): CascaderNode[] {
+    if (keyMapsDefault) return nodes;
+    return nodes.map((raw) => {
+      const r = raw as unknown as Record<string, unknown>;
+      const kids = r[kmChildren] as CascaderNode[] | undefined;
+      const rawDisabled = r[kmDisabled];
+      const rawIsLeaf = r[kmIsLeaf];
+      const out = {
+        ...raw,
+        value: r[kmValue] as Key,
+        label: r[kmLabel] as string,
+      } as CascaderNode;
+      if (rawDisabled !== undefined) out.disabled = rawDisabled as boolean;
+      if (rawIsLeaf !== undefined) out.isLeaf = rawIsLeaf as boolean;
+      if (kids) out.children = normalizeNodes(kids);
+      else delete out.children;
+      return out;
+    });
+  }
+  const normalizedTreeData = $derived(keyMapsDefault ? treeData : normalizeNodes(treeData));
+
+  // showNext 是 canonical prop；expandTrigger 是 legacy alias。showNext 优先。
+  const effectiveExpandTrigger = $derived(
+    showNext === 'hover' || expandTrigger === 'hover' ? 'hover' : 'click',
+  );
+
   // filterTreeNode 优先；未显式传时回退 filterable 别名（向后兼容）。
   // 归一为：是否可搜索 + 实际谓词（true=默认子串匹配，函数=自定义）。
   const filterSpec = $derived<boolean | ((q: string, p: CascaderFlatPath<CascaderNode>) => boolean)>(
-    filterTreeNode !== undefined ? filterTreeNode : filterable,
+    remote ? true : (filterTreeNode !== undefined ? filterTreeNode : filterable),
   );
-  const isFilterable = $derived(filterSpec !== false);
+  const isFilterable = $derived(filterSpec !== false || remote);
+  const showBuiltinSearch = $derived(isFilterable && searchPosition !== 'custom');
+
+  // unRelated 勾选模式
+  const isUnRelated = $derived(checkRelation === 'unRelated');
 
   // 异步加载：已加载子节点缓存（node.value → children）+ 加载中节点集合。
   // 不写回 treeData prop（红线 #1：不改受控数据源）。
@@ -319,7 +427,7 @@
   // --- 本地展开状态 (红线 #2): activePath 本地 $state，不依赖挂载 registry ---
   let activePath = $state<Key[]>(getInitialPath());
 
-  const columns = $derived(columnsFor(treeData, activePath));
+  const columns = $derived(columnsFor(normalizedTreeData, activePath));
 
   // --- 键盘 roving 高亮（aria-activedescendant 模型）：焦点留触发器，方向键移动高亮 ---
   // kbCol：当前高亮所在列；kbValue：该列内高亮节点 value。render 不读 DOM（红线 #2）。
@@ -351,12 +459,19 @@
       return td;
     });
   }
-  const mergedTreeData = $derived(toTreeData(treeData));
+  const mergedTreeData = $derived(toTreeData(normalizedTreeData));
 
   // --- filterable：扁平路径列表 + 搜索过滤 ---
   let searchValue = $state('');
   const trimmedSearch = $derived(searchValue.trim());
   const searchActive = $derived(isFilterable && trimmedSearch.length > 0);
+
+  // onSearch 回调：搜索值变化时触发
+  $effect(() => {
+    if (isFilterable && trimmedSearch) {
+      onSearch?.(trimmedSearch);
+    }
+  });
 
   interface FlatPath {
     values: Key[];
@@ -382,27 +497,35 @@
         const nv = [...vals, n.value];
         const nl = [...labels, n.label];
         const nc = [...chain, n];
-        const dis = parentDisabled || !!n.disabled;
+        const dis = disableStrictly ? !!n.disabled : (parentDisabled || !!n.disabled);
         if (isLeaf || changeOnSelect || !filterLeafOnly)
           out.push({ values: nv, labels: nl, nodes: nc, isLeaf, disabled: dis });
         if (!isLeaf) walk(kids, nv, nl, nc, dis);
       }
     };
-    walk(treeData, [], [], [], false);
+    walk(normalizedTreeData, [], [], [], false);
     return out;
   });
+
   const filteredPaths = $derived.by<FlatPath[]>(() => {
     if (!searchActive) return [];
+    if (remote) return flatPaths; // remote: 显示全部，onSearch 负责外部更新
     const spec = filterSpec;
     if (spec === false) return [];
+    let results: FlatPath[];
     if (typeof spec === 'function') {
-      return flatPaths.filter((p) => spec(trimmedSearch, p));
+      results = flatPaths.filter((p) => spec(trimmedSearch, p));
+    } else {
+      const lower = trimmedSearch.toLowerCase();
+      results = flatPaths.filter((p) => {
+        if (filterLeafOnly && !p.isLeaf) return false;
+        return p.labels.join(separator).toLowerCase().includes(lower);
+      });
     }
-    const lower = trimmedSearch.toLowerCase();
-    return flatPaths.filter((p) => {
-      if (filterLeafOnly && !p.isLeaf) return false;
-      return p.labels.join(separator).toLowerCase().includes(lower);
-    });
+    if (filterSorter) {
+      results = [...results].sort((a, b) => filterSorter(a, b, trimmedSearch));
+    }
+    return results;
   });
 
   // 命中文本高亮（作用于整条 label 链字符串）
@@ -477,7 +600,7 @@
         }
       }
     };
-    walk(treeData, [], [], []);
+    walk(normalizedTreeData, [], [], []);
     return out;
   });
 
@@ -498,7 +621,7 @@
   // expandIcon / arrowIcon 别名归一
   const effExpandIcon = $derived(expandIcon ?? arrowIcon);
 
-  const selectedChain = $derived(findPath(treeData, currentValue));
+  const selectedChain = $derived(findPath(normalizedTreeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
@@ -520,7 +643,8 @@
   }
 
   // 多选：由 conduct 解析后的 checked 全集生成多条路径回调。
-  //   leafOnly=false（默认）：仅叶子路径（现状不变）。
+  //   autoMergeValue=true（默认）：选中父节点时 value 不包含后代。
+  //   autoMergeValue=false：包含父节点 AND 所有后代路径。
   //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻。
   function leafBaseToPaths(checkedSet: Set<Key>): Key[][] {
     const out: Key[][] = [];
@@ -531,14 +655,21 @@
         const isLeaf = !kids || kids.length === 0;
         if (isLeaf) {
           if (checkedSet.has(n.value)) out.push(np);
+        } else if (autoMergeValue && checkedSet.has(n.value)) {
+          // 父级完全勾选，不展开后代（合并）
+          out.push(np);
+        } else if (!autoMergeValue && checkedSet.has(n.value)) {
+          // 包含父节点 + 继续下钻后代
+          out.push(np);
+          walk(kids ?? [], np);
         } else if (leafOnly && checkedSet.has(n.value)) {
           out.push(np);
         } else {
-          walk(kids, np);
+          walk(kids ?? [], np);
         }
       }
     };
-    walk(treeData, []);
+    walk(normalizedTreeData, []);
     return out;
   }
 
@@ -547,9 +678,28 @@
     onChange?.(nextPaths);
   }
 
-  // 切换某节点勾选（父子联动），由 nextBase → conduct → 叶子路径回调
+  // 切换某节点勾选（支持 related/unRelated 两种模式）
   function toggleCheckNode(node: CascaderNode) {
     if (node.disabled || disabled) return;
+    if (isUnRelated) {
+      // unRelated: 独立切换，不联动父子
+      const nextPaths = currentPaths.slice();
+      const nodeVal = node.value;
+      const idx = nextPaths.findIndex((p) => p.length > 0 && p[p.length - 1] === nodeVal);
+      if (idx >= 0) {
+        nextPaths.splice(idx, 1);
+      } else {
+        // 从 activePath 构建完整路径
+        const colIdx = activePath.indexOf(nodeVal);
+        if (colIdx >= 0) {
+          nextPaths.push(activePath.slice(0, colIdx + 1));
+        } else {
+          nextPaths.push([nodeVal]);
+        }
+      }
+      setPaths(nextPaths);
+      return;
+    }
     const nextBase = toggleCheck(mergedTreeData, checkedBase, node.value);
     const resolved = conduct(mergedTreeData, nextBase);
     setPaths(leafBaseToPaths(resolved.checked));
@@ -558,6 +708,11 @@
   // 移除某 tag（按叶子 value 取消勾选，联动祖先半选更新）
   function removeLeaf(leafValue: Key) {
     if (disabled) return;
+    if (isUnRelated) {
+      const nextPaths = currentPaths.filter((p) => p.length === 0 || p[p.length - 1] !== leafValue);
+      setPaths(nextPaths);
+      return;
+    }
     const nextBase = new Set(checkedBase);
     nextBase.delete(leafValue);
     const resolved = conduct(mergedTreeData, nextBase);
@@ -565,6 +720,10 @@
   }
 
   function nodeCheck(node: CascaderNode): { checked: boolean; half: boolean } {
+    if (isUnRelated) {
+      const checked = currentPaths.some((p) => p.length > 0 && p[p.length - 1] === node.value);
+      return { checked, half: false };
+    }
     return {
       checked: checkState.checked.has(node.value),
       half: !checkState.checked.has(node.value) && checkState.half.has(node.value),
@@ -576,6 +735,7 @@
     if (!next) searchValue = '';
     if (!isOpenControlled) innerOpen = next;
     onOpenChange?.(next);
+    onDropdownVisibleChange?.(next);
     if (next) {
       // 打开时同步 activePath 到当前选中路径
       activePath = currentValue.slice();
@@ -628,6 +788,7 @@
     try {
       const kids = await loadData(node);
       extraChildren.set(node.value, kids);
+      onLoad?.(Array.from(extraChildren.keys()), node);
       return kids.length > 0;
     } catch {
       return false;
@@ -651,7 +812,18 @@
         void loadChildren(node);
         return;
       }
-      toggleCheckNode(node);
+      // enableLeafClick: 只有 true 时叶子点击触发勾选
+      if (enableLeafClick || !node.isLeaf) {
+        toggleCheckNode(node);
+      }
+      return;
+    }
+
+    // clickToSelect：点击任意节点（含非叶子）立即选中
+    if (clickToSelect) {
+      setValue(nextPath.slice());
+      onSelect?.(node.value);
+      if (!hasChildren(node)) setOpen(false);
       return;
     }
 
@@ -669,14 +841,15 @@
     } else {
       // 叶子: 提交完整路径并关闭
       setValue(nextPath.slice());
+      onSelect?.(node.value);
       setOpen(false);
     }
   }
 
-  // expandTrigger='hover'：悬停非叶子（或可异步加载）节点即展开其子级列。
+  // effectiveExpandTrigger='hover'：悬停非叶子（或可异步加载）节点即展开其子级列。
   // 仅设 activePath + 触发 loadData，不做选中（选中仍走 click）。
   function hoverExpand(colIndex: number, node: CascaderNode) {
-    if (expandTrigger !== 'hover' || disabled || node.disabled) return;
+    if (effectiveExpandTrigger !== 'hover' || disabled || node.disabled) return;
     if (!canExpand(node)) return;
     const nextPath = activePath.slice(0, colIndex);
     nextPath.push(node.value);
@@ -695,6 +868,7 @@
       setValue([]);
     }
     activePath = [];
+    onClear?.();
   }
 
   // --- 键盘 roving 导航（aria-activedescendant 模型）---
@@ -856,6 +1030,8 @@
       disabled && 'cd-cascader--disabled',
       isOpen && 'cd-cascader--open',
       position && `cd-cascader--${position}`,
+      borderless && 'cd-cascader--borderless',
+      motion === false && 'cd-cascader--no-motion',
     ]
       .filter(Boolean)
       .join(' '),
@@ -864,6 +1040,9 @@
 
 <div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
+  {#if triggerRender}
+    {@render triggerRender({ value, placeholder, isOpen, disabled })}
+  {:else}
   <div
     class="cd-cascader__trigger"
     role="combobox"
@@ -894,6 +1073,12 @@
       else if (e.key === 'Escape') setOpen(false);
     }}
   >
+    {#if prefix}
+      <span class="cd-cascader__prefix" aria-hidden="true">
+        {#if typeof prefix === 'string'}{prefix}{:else}{@render (prefix as Snippet)()}{/if}
+      </span>
+    {/if}
+
     <span class="cd-cascader__content">
       {#if multiple}
         {#if checkedLeafPaths.length > 0}
@@ -921,6 +1106,12 @@
       {/if}
     </span>
 
+    {#if suffix}
+      <span class="cd-cascader__suffix" aria-hidden="true">
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render (suffix as Snippet)()}{/if}
+      </span>
+    {/if}
+
     {#if showClear}
       <span
         class="cd-cascader__clear"
@@ -935,12 +1126,16 @@
           }
         }}
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        {#if clearIcon}
+          {@render clearIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+            />
+          </svg>
+        {/if}
       </span>
     {/if}
 
@@ -954,6 +1149,7 @@
       {/if}
     </span>
   </div>
+  {/if}
 
   {#if shouldRender}
     <div
@@ -971,10 +1167,9 @@
       id={listId}
       style:z-index={zIndex}
     >
-      {#if topSlot}
-        <div class="cd-cascader__top-slot">{@render topSlot()}</div>
-      {/if}
-      {#if isFilterable}
+      {#if topSlot}{@render topSlot()}{/if}
+
+      {#if showBuiltinSearch}
         <div class="cd-cascader__search">
           <input
             class="cd-cascader__search-input"
@@ -1017,11 +1212,15 @@
                 onclick={() => selectFlatPath(p)}
                 tabindex={-1}
               >
-                <span class="cd-cascader__option-label">
-                  {#each highlightParts(p.labels.join(separator)) as part, i (i)}
-                    {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
-                  {/each}
-                </span>
+                {#if filterRender}
+                  {@render filterRender({ path: p })}
+                {:else}
+                  <span class="cd-cascader__option-label">
+                    {#each highlightParts(p.labels.join(separator)) as part, i (i)}
+                      {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
+                    {/each}
+                  </span>
+                {/if}
               </li>
             {/each}
           {/if}
@@ -1034,6 +1233,10 @@
           role="listbox"
           aria-label={loc().t('Cascader.columnLabel', { level: colIndex + 1 })}
           style:inline-size="{resolveColumnWidth(columnWidth, colIndex, 180)}px"
+          onscroll={(e) => onListScroll?.(e, {
+            panelIndex: colIndex,
+            activeNode: columns[colIndex]?.find((n) => isActiveAt(colIndex, n)) ?? null,
+          })}
         >
           {#if column.length === 0}
             {#if isEmptySnippet}
@@ -1087,7 +1290,9 @@
               {#if isLoading(node)}
                 <span class="cd-cascader__option-loading" aria-label={loc().t('Cascader.loading')}></span>
               {:else if canExpand(node)}
-                <span class="cd-cascader__option-expand" aria-hidden="true">›</span>
+                <span class="cd-cascader__option-expand" aria-hidden="true">
+                  {#if expandIcon}{@render expandIcon()}{:else}›{/if}
+                </span>
               {/if}
             </li>
           {/each}
@@ -1095,9 +1300,8 @@
       {/each}
       </div>
       {/if}
-      {#if bottomSlot}
-        <div class="cd-cascader__bottom-slot">{@render bottomSlot()}</div>
-      {/if}
+
+      {#if bottomSlot}{@render bottomSlot()}{/if}
     </div>
   {/if}
 </div>
@@ -1342,5 +1546,25 @@
     .cd-cascader__arrow {
       transition: none;
     }
+  }
+  /* --- 新增样式 --- */
+  .cd-cascader--borderless .cd-cascader__trigger {
+    border-color: transparent;
+    background: transparent;
+  }
+  .cd-cascader--borderless .cd-cascader__trigger:focus-visible {
+    border-color: var(--cd-select-border-active);
+    background: var(--cd-select-bg);
+  }
+  .cd-cascader--no-motion .cd-cascader__trigger,
+  .cd-cascader--no-motion .cd-cascader__arrow {
+    transition: none;
+  }
+  .cd-cascader__prefix,
+  .cd-cascader__suffix {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
   }
 </style>

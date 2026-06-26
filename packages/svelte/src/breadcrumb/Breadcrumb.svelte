@@ -35,6 +35,26 @@
     showTooltip?: boolean;
     /** 折叠 ... 的浮层类型；不设则点击 ... 直接展开全部 */
     moreType?: MoreType;
+    /** 紧凑模式，默认 true；false 时根元素附加 cd-breadcrumb--loose 类（更大字号/间距） */
+    compact?: boolean;
+    /**
+     * 是否在超出 maxItemCount 时自动折叠，默认 true。
+     * false 时即使超出 maxItemCount 也不折叠（始终展示全部项）。
+     */
+    autoCollapse?: boolean;
+    /** 受控选中项索引（配合 onClick 使用，令对应项高亮） */
+    activeIndex?: number;
+    /**
+     * 自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑。
+     * Svelte 5 Snippet：{@render renderItem(route, index, isLast)}
+     */
+    renderItem?: Snippet<[BreadcrumbRoute, number, boolean]>;
+    /**
+     * 自定义折叠 … 区域渲染（替代 moreType 内置浮层）。
+     * 传入时接管折叠展示，参数为被折叠的路由列表。
+     * Svelte 5 Snippet：{@render renderMore(collapsed)}
+     */
+    renderMore?: Snippet<[CollapsedRoute[]]>;
     class?: string;
     children?: Snippet;
     onClick?: (route: BreadcrumbRoute, index: number) => void;
@@ -47,6 +67,11 @@
     maxItemCount = 0,
     showTooltip = false,
     moreType,
+    compact = true,
+    autoCollapse = true,
+    activeIndex,
+    renderItem,
+    renderMore,
     class: className = '',
     children,
     onClick,
@@ -55,7 +80,14 @@
   const loc = useLocale();
 
   const cls = $derived(
-    ['cd-breadcrumb', `cd-breadcrumb--${size}`, className].filter(Boolean).join(' '),
+    [
+      'cd-breadcrumb',
+      `cd-breadcrumb--${size}`,
+      !compact ? 'cd-breadcrumb--loose' : '',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 
   const hasRoutes = $derived(routes.length > 0);
@@ -63,7 +95,7 @@
   // 折叠：展开后显示全部；本地 $state。
   let expanded = $state(false);
 
-  // 折叠生效：maxItemCount>0、未展开、路由数超上限。
+  // 折叠生效：autoCollapse=true、maxItemCount>0、未展开、路由数超上限。
   // 折叠后展示：首项 + ellipsis + 末 (maxItemCount-1) 项。
   const cells = $derived.by<DisplayCell[]>(() => {
     const all: DisplayCell[] = routes.map((route, index) => ({
@@ -71,7 +103,7 @@
       route,
       index,
     }));
-    if (expanded || maxItemCount <= 0 || routes.length <= maxItemCount) return all;
+    if (!autoCollapse || expanded || maxItemCount <= 0 || routes.length <= maxItemCount) return all;
     const tail = Math.max(1, maxItemCount - 1);
     const head = all.slice(0, 1);
     const rest = all.slice(1, routes.length - tail);
@@ -115,19 +147,23 @@
   });
 </script>
 
-<!-- 单个路由项内容：末项=当前页（不可点），有 href=链接，否则可点文本。 -->
+<!-- 单个路由项内容：末项=当前页（不可点），有 href=链接，否则可点文本。
+     renderItem 优先：传入时直接渲染自定义内容。
+     activeIndex 对应项附加 cd-breadcrumb__link--active / cd-breadcrumb__text--active 类。 -->
 {#snippet routeItem(route: BreadcrumbRoute, index: number, last: boolean)}
-  {#if last}
+  {#if renderItem}
+    {@render renderItem(route, index, last)}
+  {:else if last}
     <span class="cd-breadcrumb__current" aria-current="page">{route.label}</span>
   {:else if route.href}
     <a
-      class="cd-breadcrumb__link"
+      class={['cd-breadcrumb__link', activeIndex === index ? 'cd-breadcrumb__link--active' : ''].filter(Boolean).join(' ')}
       href={route.href}
       onclick={() => handleClick(route, index)}>{route.label}</a
     >
   {:else}
     <span
-      class="cd-breadcrumb__text"
+      class={['cd-breadcrumb__text', activeIndex === index ? 'cd-breadcrumb__text--active' : ''].filter(Boolean).join(' ')}
       role="link"
       tabindex="0"
       onclick={() => handleClick(route, index)}
@@ -172,7 +208,10 @@
         {@const isLast = cellIndex === cells.length - 1}
         <li class="cd-breadcrumb__item">
           {#if cell.type === 'ellipsis'}
-            {#if moreType === 'popover'}
+            {#if renderMore}
+              <!-- renderMore 接管折叠区域渲染，参数为被折叠路由列表。 -->
+              {@render renderMore(cell.collapsed)}
+            {:else if moreType === 'popover'}
               <Popover trigger="click" position="bottom" align="start">
                 {@render moreTrigger(cell.count, true)}
                 {#snippet contentSlot()}
@@ -255,6 +294,14 @@
   .cd-breadcrumb--large {
     font-size: var(--cd-font-size-3);
   }
+  /* compact=false：宽松模式，字号略大、项间距增加 */
+  .cd-breadcrumb--loose {
+    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-font-size-3));
+    letter-spacing: var(--cd-breadcrumb-loose-letter-spacing, 0.01em);
+  }
+  .cd-breadcrumb--loose .cd-breadcrumb__list {
+    gap: var(--cd-breadcrumb-loose-gap, calc(var(--cd-breadcrumb-gap, 0.5em) * 1.5));
+  }
   .cd-breadcrumb__list {
     display: flex;
     flex-wrap: wrap;
@@ -300,6 +347,12 @@
   }
   .cd-breadcrumb :global(.cd-breadcrumb__current) {
     color: var(--cd-breadcrumb-color-active);
+  }
+  /* activeIndex：选中项高亮（配合 onClick 受控选中） */
+  .cd-breadcrumb :global(.cd-breadcrumb__link--active),
+  .cd-breadcrumb :global(.cd-breadcrumb__text--active) {
+    color: var(--cd-breadcrumb-color-active);
+    font-weight: 600;
   }
   .cd-breadcrumb__more {
     display: inline-flex;

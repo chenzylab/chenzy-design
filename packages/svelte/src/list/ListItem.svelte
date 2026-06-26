@@ -17,16 +17,24 @@
   interface Props {
     /** selectable 模式下本项的唯一 key（用于选中态判定与回调）。 */
     itemKey?: ListKey;
-    /** 右侧附加区（如缩略图、统计数字）。 */
+    /** item 头部（字符串或 Snippet）。 */
+    header?: string | Snippet;
+    /** item 主要内容区（语义化 slot，与 children 不互斥）。 */
+    main?: Snippet;
+    /** 右侧附加内容区（如缩略图、统计数字）。 */
     extra?: Snippet;
     /** 底部操作区（按钮组）。 */
     actions?: Snippet;
     class?: string;
-    /** 主内容。 */
+    /** 主内容（通用插槽）。 */
     children?: Snippet;
   }
 
-  let { itemKey, extra, actions, class: className = '', children }: Props = $props();
+  let { itemKey, header, main, extra, actions, class: className = '', children }: Props = $props();
+
+  function isSnippet(v: unknown): v is Snippet {
+    return typeof v === 'function';
+  }
 
   const ctx = getListContext();
 
@@ -72,6 +80,22 @@
   );
 </script>
 
+{#snippet itemInner()}
+  {#if header !== undefined}
+    <div class="cd-list__item-header">
+      {#if isSnippet(header)}{@render header()}{:else}{header}{/if}
+    </div>
+  {/if}
+  <div class="cd-list__item-row">
+    <div class="cd-list__item-content">
+      {#if main}{@render main()}{/if}
+      {@render children?.()}
+    </div>
+    {#if extra}<div class="cd-list__item-extra">{@render extra()}</div>{/if}
+  </div>
+  {#if actions}<div class="cd-list__item-actions">{@render actions()}</div>{/if}
+{/snippet}
+
 {#if selectable}
   <li
     class={cls}
@@ -87,21 +111,13 @@
       <Checkbox checked={selected} />
     </span>
     <div class="cd-list__item-main">
-      <div class="cd-list__item-row">
-        <div class="cd-list__item-content">{@render children?.()}</div>
-        {#if extra}<div class="cd-list__item-extra">{@render extra()}</div>{/if}
-      </div>
-      {#if actions}<div class="cd-list__item-actions">{@render actions()}</div>{/if}
+      {@render itemInner()}
     </div>
   </li>
 {:else}
   <li class={cls}>
     <div class="cd-list__item-main">
-      <div class="cd-list__item-row">
-        <div class="cd-list__item-content">{@render children?.()}</div>
-        {#if extra}<div class="cd-list__item-extra">{@render extra()}</div>{/if}
-      </div>
-      {#if actions}<div class="cd-list__item-actions">{@render actions()}</div>{/if}
+      {@render itemInner()}
     </div>
   </li>
 {/if}
@@ -110,6 +126,11 @@
   .cd-list__item-main {
     flex: 1;
     min-inline-size: 0;
+  }
+  .cd-list__item-header {
+    font-weight: var(--cd-font-weight-medium, 500);
+    margin-block-end: var(--cd-spacing-1, 4px);
+    color: var(--cd-color-text-0);
   }
   .cd-list__item-row {
     display: flex;

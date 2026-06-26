@@ -1,4 +1,4 @@
-export { Toast, type ToastPromiseMessages } from './store.js';
+export { Toast, type ToastPromiseMessages, type ToastConfig } from './store.js';
 export { meta as toastMeta } from './meta.js';
 export type {
   ToastType,

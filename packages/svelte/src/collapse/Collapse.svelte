@@ -47,6 +47,8 @@
     onCollapse?: (detail: { key: string }) => void;
     /** Header 被点击时触发（spec §4：on:headerClick，在 disabled 拦截前发出，可用于埋点）。 */
     onHeaderClick?: (detail: { key: string; event: MouseEvent }) => void;
+    /** 自定义展开图标，替换默认箭头 SVG；参数为 {isExpanded: boolean}。 */
+    expandIcon?: Snippet<[{ isExpanded: boolean }]>;
     /**
      * 数据驱动模式：按 key 渲染面板内容 Snippet<[{ key }]>。
      * 声明式模式（不传 panels）：内嵌 <Collapse.Panel> 列表，普通 Snippet。
@@ -71,6 +73,7 @@
     onExpand,
     onCollapse,
     onHeaderClick,
+    expandIcon,
     children,
   }: Props = $props();
 
@@ -245,6 +248,7 @@
     headerTabindex,
     onHeaderKeydown,
     onHeaderFocus,
+    getExpandIcon: () => expandIcon,
   });
 </script>
 
@@ -274,11 +278,17 @@
         onkeydown={(e) => onHeaderKeydown(e, panel.key)}
         onfocus={() => onHeaderFocus(panel.key)}
       >
-        <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-            <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-          </svg>
-        </span>
+        {#if expandIcon}
+          <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
+            {@render expandIcon({ isExpanded: active })}
+          </span>
+        {:else}
+          <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+              <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+            </svg>
+          </span>
+        {/if}
         <span class="cd-collapse__title">{panel.header}</span>
       </button>
       </span>

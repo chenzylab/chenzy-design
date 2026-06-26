@@ -36,8 +36,10 @@
     closeDelay = 200,
   }: Props = $props();
 
-  // 子菜单浮层挂同顶层容器（getPopupContainer，经 Dropdown context 透传）。
+  // 子菜单浮层挂同顶层容器（getPopupContainer，经 Dropdown context 透传）；
+  // showTick 控制叶子项是否显示勾选标记。
   const ddCtx = getContext<DropdownContext | undefined>(DROPDOWN_CTX);
+  const showTick = $derived(ddCtx?.showTick ?? false);
 
   // 分隔符/分组在模板顶层单独处理；此处窄化为普通项节点供派生使用。
   const node = $derived(item as DropdownItemNode);
@@ -224,13 +226,24 @@
       type="button"
       class="cd-dropdown__item"
       class:cd-dropdown__item--danger={node.danger}
-      role="menuitem"
+      class:cd-dropdown__item--selected={node.selected}
+      role={showTick ? 'menuitemcheckbox' : 'menuitem'}
       tabindex="-1"
+      aria-checked={showTick ? (node.selected ?? false) : undefined}
       aria-disabled={node.disabled || undefined}
       disabled={node.disabled || undefined}
       onclick={onLeafClick}
     >
       <span class="cd-dropdown__label">{node.label}</span>
+      {#if showTick}
+        <span class="cd-dropdown__tick" aria-hidden="true">
+          {#if node.selected}
+            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M2.5 8.5l4 4 7-8" />
+            </svg>
+          {/if}
+        </span>
+      {/if}
     </button>
   </li>
 {/if}
@@ -306,6 +319,19 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  /* showTick：勾选标记占位区，保证宽度一致（有/无标记时均保留空间） */
+  .cd-dropdown__tick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    inline-size: 14px;
+    block-size: 14px;
+    color: var(--cd-color-primary, #165dff);
+  }
+  .cd-dropdown__item--selected {
+    color: var(--cd-color-primary, #165dff);
   }
   .cd-dropdown__arrow {
     display: inline-flex;

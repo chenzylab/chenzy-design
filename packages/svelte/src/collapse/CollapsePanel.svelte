@@ -18,10 +18,14 @@
     disabled?: boolean;
     /** 头部富内容插槽，优先于 header 文本。 */
     head?: Snippet;
+    /** 头部右侧额外内容（不触发展开/收起），可为字符串或 Snippet。 */
+    extra?: Snippet | string;
+    /** 是否显示箭头区域，默认 true。 */
+    showArrow?: boolean;
     children?: Snippet;
   }
 
-  let { itemKey, header, disabled = false, head, children }: Props = $props();
+  let { itemKey, header, disabled = false, head, extra, showArrow = true, children }: Props = $props();
 
   const ctx = getCollapseContext();
 
@@ -37,6 +41,7 @@
   const headingLevel = $derived(ctx?.getHeadingLevel() ?? 3);
   // roving tabindex 由父派生（红线 #2：本组件只读不写父级 $state）。
   const tabindex = $derived(ctx?.headerTabindex(itemKey, disabled) ?? 0);
+  const expandIcon = $derived(ctx?.getExpandIcon());
 </script>
 
 <div class="cd-collapse__item" class:cd-collapse__item--active={active}>
@@ -56,14 +61,27 @@
     onkeydown={(e) => ctx?.onHeaderKeydown(e, itemKey)}
     onfocus={() => ctx?.onHeaderFocus(itemKey)}
   >
-    <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-        <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-      </svg>
-    </span>
+    {#if showArrow}
+      {#if expandIcon}
+        <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
+          {@render expandIcon({ isExpanded: active })}
+        </span>
+      {:else}
+        <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+            <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+          </svg>
+        </span>
+      {/if}
+    {/if}
     <span class="cd-collapse__title">
       {#if head}{@render head()}{:else}{header}{/if}
     </span>
+    {#if extra !== undefined}
+      <span class="cd-collapse__extra" onclick={(e) => e.stopPropagation()} role="none">
+        {#if typeof extra === 'string'}{extra}{:else}{@render extra()}{/if}
+      </span>
+    {/if}
   </button>
   </span>
   <div

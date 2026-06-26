@@ -8,5 +8,6 @@ export type {
   TableChangeInfo,
   TableChangeAction,
   TableScrollInfo,
+  ScrollConfig,
 } from './types.js';
 export type { RowKey, SortState, SortOrder } from '@chenzy-design/core';

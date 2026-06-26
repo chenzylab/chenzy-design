@@ -4,6 +4,7 @@
   resolve 后关闭、reject 复位保持打开。仅供 command.ts mount 使用，不在 barrel 暴露为组件。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { Modal } from './index.js';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -26,6 +27,8 @@
     onCancel?: () => void;
     /** 关闭动画结束后由宿主卸载用 */
     onClose?: () => void;
+    /** 自定义图标（Snippet），覆盖内置类型图标 */
+    icon?: Snippet;
   }
 
   let {
@@ -41,6 +44,7 @@
     onOk,
     onCancel,
     onClose,
+    icon,
   }: Props = $props();
 
   const loc = useLocale();
@@ -104,7 +108,9 @@
     {/snippet}
     <div class="cd-confirm-modal__body">
       <span class="cd-confirm-modal__icon cd-confirm-modal__icon--{type}" aria-hidden="true">
-        {#if type === 'success'}
+        {#if icon}
+          {@render icon()}
+        {:else if type === 'success'}
           <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
             <path d="M5 8.2 7 10.2 11 5.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />

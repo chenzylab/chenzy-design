@@ -52,6 +52,34 @@
     onOpenChange?: (open: boolean) => void;
     onAfterClose?: () => void;
     class?: string;
+    /** 透传给确定按钮的额外 props（如 disabled、size 等）。loading 由 confirmLoading 控制，此处不重复。 */
+    okButtonProps?: Record<string, unknown>;
+    /** 透传给取消按钮的额外 props */
+    cancelButtonProps?: Record<string, unknown>;
+    /** 是否显示取消按钮。默认 true */
+    hasCancel?: boolean;
+    /** 预设宽度枚举，优先级低于 width prop */
+    size?: 'small' | 'medium' | 'large' | 'full-width';
+    /** 全屏模式 */
+    fullScreen?: boolean;
+    /** 关闭时保留 DOM（用 display:none 隐藏）。与 destroyOnClose 反义；默认 false（不保留，即关闭卸载） */
+    keepDOM?: boolean;
+    /** 配合 keepDOM 的懒挂载：true 时首次打开前不渲染内容。默认 true */
+    lazyRender?: boolean;
+    /** 内容区内联 style 字符串 */
+    bodyStyle?: string;
+    /** 遮罩层内联 style 字符串 */
+    maskStyle?: string;
+    /** Modal 高度 */
+    height?: number | string;
+    /** 底部按钮撑满宽度 */
+    footerFill?: boolean;
+    /** 内容区域额外 class */
+    modalContentClass?: string;
+    /** 自定义关闭图标（Snippet） */
+    closeIcon?: Snippet;
+    /** 是否显示遮罩。默认 true */
+    mask?: boolean;
   }
 
   let {
@@ -78,6 +106,20 @@
     onOpenChange,
     onAfterClose,
     class: className,
+    okButtonProps,
+    cancelButtonProps,
+    hasCancel,
+    size,
+    fullScreen = false,
+    keepDOM = false,
+    lazyRender = true,
+    bodyStyle,
+    maskStyle,
+    height,
+    footerFill = false,
+    modalContentClass,
+    closeIcon,
+    mask = true,
   }: Props = $props();
 
   const titleId = useId('cd-modal-title');
@@ -96,17 +138,22 @@
 
   const hasTitle = $derived(Boolean(titleSnippet) || Boolean(title));
 
-  const widthStyle = $derived(typeof width === 'number' ? `${width}px` : width);
+  const SIZE_MAP = { small: '480px', medium: '600px', large: '800px', 'full-width': '100vw' } as const;
+  const effectiveWidth = $derived(size ? SIZE_MAP[size] : (typeof width === 'number' ? `${width}px` : width));
+  const heightStyle = $derived(height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : '');
 
-  const panelCls = $derived(['cd-modal', className].filter(Boolean).join(' '));
+  const panelCls = $derived(['cd-modal', fullScreen ? 'cd-modal--fullscreen' : '', className].filter(Boolean).join(' '));
 
   // --- destroyOnClose：默认 false 时首开后保留 DOM（仅 isOpen 切换显隐），
-  //     true 时关闭即从 DOM 卸载（{#if isOpen}），重开重建。 ---
+  //     true 时关闭即从 DOM 卸载（{#if isOpen}），重开重建。
+  //     keepDOM=true 或 lazyRender=false 时，首开前亦渲染。 ---
   let hasBeenOpened = $state(false);
   $effect(() => {
     if (isOpen) hasBeenOpened = true;
   });
-  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+  const shouldRender = $derived(
+    destroyOnClose ? isOpen : (keepDOM || !lazyRender || hasBeenOpened)
+  );
 
   function cancel() {
     if (!isControlled) innerOpen = false;
@@ -258,8 +305,9 @@
     class="cd-modal-mask"
     class:cd-modal-mask--centered={centered}
     class:cd-modal-mask--hidden={!isOpen}
+    class:cd-modal-mask--no-mask={!mask}
     bind:this={maskEl}
-    style={stackZ !== undefined ? `--cd-modal-z:${stackZ}` : undefined}
+    style={[stackZ !== undefined ? `--cd-modal-z:${stackZ}` : '', maskStyle ?? ''].filter(Boolean).join('; ') || undefined}
     onclick={onMaskClick}
     role="presentation"
     use:portal
@@ -271,7 +319,7 @@
       aria-modal="true"
       aria-labelledby={hasTitle ? titleId : undefined}
       aria-label={hasTitle ? undefined : ariaLabel}
-      style="inline-size: {widthStyle}{panelTransform ? `; ${panelTransform}` : ''}"
+      style="inline-size: {effectiveWidth}{heightStyle ? `; block-size: ${heightStyle}` : ''}{panelTransform ? `; ${panelTransform}` : ''}"
     >
       {#if hasTitle || closable}
         <!-- draggable：标题栏起拖。pointerdown 命令式绑 window move/up（见脚本）。
@@ -301,36 +349,42 @@
               aria-label={loc().t('Modal.close')}
               onclick={cancel}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M3 3l10 10M13 3L3 13"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
+              {#if closeIcon}
+                {@render closeIcon()}
+              {:else}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 3l10 10M13 3L3 13"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              {/if}
             </button>
           {/if}
         </header>
       {/if}
 
-      <div class="cd-modal__body">
+      <div class={['cd-modal__body', modalContentClass].filter(Boolean).join(' ')} style={bodyStyle ?? undefined}>
         {@render children?.()}
       </div>
 
       {#if footer !== null}
-        <footer class="cd-modal__footer">
+        <footer class="cd-modal__footer" class:cd-modal__footer--fill={footerFill}>
           {#if footer}
             {@render footer({ ok, cancel })}
           {:else}
-            <Button onclick={cancel}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
-            <Button type={okType} onclick={ok} loading={confirmLoading}>
+            {#if hasCancel !== false}
+              <Button onclick={cancel} {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
+            {/if}
+            <Button type={okType} onclick={ok} loading={confirmLoading} {...(okButtonProps ?? {})}>
               {okText ?? loc().t('Modal.okText')}
             </Button>
           {/if}
@@ -424,6 +478,28 @@
     justify-content: flex-end;
     gap: var(--cd-modal-footer-gap);
     margin-block-start: var(--cd-modal-padding);
+  }
+
+  .cd-modal--fullscreen {
+    inline-size: 100vw !important;
+    block-size: 100vh !important;
+    max-inline-size: none !important;
+    max-block-size: none !important;
+    margin: 0 !important;
+    border-radius: 0;
+  }
+  .cd-modal-mask--no-mask {
+    background: transparent;
+    pointer-events: none;
+  }
+  .cd-modal-mask--no-mask .cd-modal {
+    pointer-events: auto;
+  }
+  .cd-modal__footer--fill {
+    justify-content: stretch;
+  }
+  .cd-modal__footer--fill > :global(*) {
+    flex: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {

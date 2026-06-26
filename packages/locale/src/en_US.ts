@@ -288,6 +288,7 @@ export const en_US: Locale = {
     increase: 'Increase',
     decrease: 'Decrease',
     clampedAnnounce: 'Adjusted to {value}',
+    clear: 'Clear',
   },
   Slider: {
     minReachedAnnounce: 'Minimum value reached',
@@ -364,6 +365,8 @@ export const en_US: Locale = {
   Popover: {
     close: 'Close',
     dialogLabel: 'Dialog',
+    okText: 'OK',
+    cancelText: 'Cancel',
   },
   Typography: {
     copy: 'Copy',
