@@ -28,6 +28,8 @@
     headerLine?: boolean;
     /** actions 区上方是否显示分隔线 */
     footerLine?: boolean;
+    /** actions/footer 区内联样式透传 */
+    footerStyle?: string;
     /** 整卡可点击：合并 hoverable 视觉并启用键盘/点击激活与 role=button */
     clickable?: boolean;
     /** 仅在 clickable 时生效，禁用点击与 hover 反馈 */
@@ -54,6 +56,7 @@
     bodyStyle,
     headerLine = true,
     footerLine = true,
+    footerStyle,
     clickable = false,
     disabled = false,
     class: className,
@@ -175,6 +178,7 @@
       class={['cd-card__actions', !footerLine && 'cd-card__actions--no-line']
         .filter(Boolean)
         .join(' ')}
+      style={footerStyle}
     >
       {@render actions()}
     </div>
