@@ -28,6 +28,8 @@
     offset?: [number, number];
     size?: BadgeSize;
     status?: BadgeStatus;
+    /** count 变化时播放滚动数字动画，默认 true。 */
+    scrollNumberMotion?: boolean;
     children?: Snippet;
     countContent?: Snippet;
   }
@@ -43,9 +45,27 @@
     offset = [0, 0],
     size = 'default',
     status,
+    scrollNumberMotion = true,
     children,
     countContent,
   }: Props = $props();
+
+  // count 变化时触发滚动动画
+  let motionActive = $state(false);
+  let prevDisplayCount = $state(displayCount);
+
+  $effect(() => {
+    const current = displayCount;
+    if (!scrollNumberMotion || dot || !showCount) return;
+    if (current !== prevDisplayCount) {
+      prevDisplayCount = current;
+      motionActive = false;
+      // 用微任务触发重排，确保 class 移除后再加回来
+      Promise.resolve().then(() => {
+        motionActive = true;
+      });
+    }
+  });
 
   const isNumber = $derived(typeof count === 'number');
 
@@ -96,6 +116,7 @@
       `cd-badge__sup--${size}`,
       `cd-badge__sup--${position}`,
       dot && 'cd-badge__sup--dot',
+      scrollNumberMotion && motionActive && !dot && 'cd-badge__count--motion',
     ]
       .filter(Boolean)
       .join(' '),
@@ -282,8 +303,25 @@
       opacity: 0;
     }
   }
+  @keyframes cd-badge-count-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  :global(.cd-badge__count--motion) {
+    animation: cd-badge-count-up 0.2s var(--cd-motion-ease-standard, ease) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cd-badge__status-dot--processing::after {
+      animation: none;
+    }
+    :global(.cd-badge__count--motion) {
       animation: none;
     }
   }
