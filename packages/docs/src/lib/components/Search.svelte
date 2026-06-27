@@ -10,11 +10,13 @@
   onMount(async () => {
     if (!browser) return;
     try {
-      // @ts-ignore
-      pagefind = await import('/pagefind/pagefind.js');
+      // 用 new Function 包裹动态 import，阻止 Vite/Rollup 在构建期静态解析
+      // `/pagefind/pagefind.js`（该文件由 pagefind 在 build 之后生成，构建期不存在）。
+      const dynamicImport = new Function('p', 'return import(p)');
+      pagefind = await dynamicImport('/pagefind/pagefind.js');
       await pagefind.init();
     } catch {
-      // pagefind 仅在 build 后可用，dev 模式跳过
+      // pagefind 仅在 build 后可用，dev 模式静默跳过
     }
   });
 
