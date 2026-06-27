@@ -1,15 +1,10 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import componentsJson from '@chenzy-design/svelte/components.json';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
 
-  const categoryLabels: Record<string, string> = {
-    basic: '基础',
-    input: '输入',
-    navigation: '导航',
-    show: '展示',
-    feedback: '反馈',
-    other: '其他',
-  };
+  const lang = $derived(locale.value);
 
   const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
 
@@ -25,14 +20,14 @@
 </script>
 
 <svelte:head>
-  <title>组件总览 — chenzy-design</title>
+  <title>{t('components.headTitle', lang)}</title>
 </svelte:head>
 
-<h1>组件总览</h1>
+<h1>{t('components.title', lang)}</h1>
 
 {#each categoryOrder as cat}
   {#if grouped[cat]}
-    <h2>{categoryLabels[cat] ?? cat}</h2>
+    <h2>{t(`cat.${cat}`, lang)}</h2>
     <div class="component-grid">
       {#each grouped[cat] as comp}
         <a href="{base}/components/{comp.name.toLowerCase()}" class="component-card">

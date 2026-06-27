@@ -1,6 +1,10 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
 
   let query = $state('');
   let results = $state<any[]>([]);
@@ -28,14 +32,14 @@
 </script>
 
 <div class="search-wrap">
-  <button class="search-trigger" onclick={() => open = !open} aria-label="搜索">
-    🔍 搜索
+  <button class="search-trigger" onclick={() => open = !open} aria-label={t('nav.search', lang)}>
+    🔍 {t('nav.search', lang)}
   </button>
   {#if open}
   <div class="search-panel">
     <input
       type="search"
-      placeholder="搜索组件..."
+      placeholder={t('search.placeholder', lang)}
       bind:value={query}
       oninput={search}
       class="search-input"
@@ -52,7 +56,7 @@
       {/each}
     </ul>
     {:else if query}
-    <p class="search-empty">未找到相关结果</p>
+    <p class="search-empty">{t('search.empty', lang)}</p>
     {/if}
   </div>
   {/if}
