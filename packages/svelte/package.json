@@ -1,5 +1,11 @@
 {
   "name": "@chenzy-design/svelte",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/svelte"
+  },
   "version": "0.0.0",
   "type": "module",
   "sideEffects": ["*.css", "*.svelte"],
