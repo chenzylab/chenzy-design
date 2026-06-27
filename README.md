@@ -4,6 +4,36 @@
 
 > 架构与约定见 [`AGENTS.md`](./AGENTS.md)。需求规格见 [`specs/`](./specs)。执行手册见 [`.claude/skills/`](./.claude/skills)。
 
+📖 在线文档：<https://chenzylab.github.io/chenzy-design/>
+
+## 安装使用
+
+```bash
+pnpm add @chenzy-design/svelte @chenzy-design/tokens
+```
+
+```svelte
+<!-- 应用入口（如 +layout.svelte）引入设计令牌 CSS —— 必须，否则组件无样式 -->
+<script>
+  import '@chenzy-design/tokens/tokens.css';
+  let { children } = $props();
+</script>
+{@render children()}
+```
+
+```svelte
+<!-- 任意页面使用组件 -->
+<script lang="ts">
+  import { Button, Input } from '@chenzy-design/svelte';
+  let text = $state('');
+</script>
+
+<Button type="primary">主要按钮</Button>
+<Input bind:value={text} placeholder="请输入" />
+```
+
+要求 Svelte 5（runes）。暗色模式：给 `<html>` 设 `data-theme="dark"`。完整接入见 [`packages/svelte/README.md`](./packages/svelte/README.md)。
+
 ## 技术栈
 Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript(strict)
 
@@ -34,11 +64,8 @@ pnpm verify           # lint + typecheck + test + build
 - 需发版的改动附 changeset：`pnpm changeset`；维护者 `pnpm version-packages` → `pnpm release`。
 - 依赖更新由 **Dependabot** 每周自动开 PR；PR 由 **labeler** 按改动路径自动打标签。
 
-## 当前进度（M0 基建）
-- [x] monorepo 脚手架、根配置、CI
-- [x] tokens 三层体系 + 暗色 + reduced-motion
-- [x] unocss-preset
-- [x] core 原语：useId / useFocusTrap / useDismiss
-- [x] locale：zh_CN / en_US + Intl 格式化
-- [x] 示范组件 Button（含 meta、token、a11y）落地 + 文档演示
-- [ ] 其余组件按 `specs/components/**` 逐个实现
+## 当前进度
+- [x] M0 基建：monorepo、tokens 三层体系（暗色 + reduced-motion）、unocss-preset、core 原语、locale（zh_CN / en_US）、CI/质量门禁
+- [x] **69 个组件**实现（基础 / 输入 / 导航 / 展示 / 反馈 / 其他），含 meta、token、a11y
+- [x] 文档站（SvelteKit SSG）：API 表自动生成、调试面板、使用场景、暗色模式、Pagefind 搜索 → [在线访问](https://chenzylab.github.io/chenzy-design/)
+- [x] npm 发布：6 个包 `@chenzy-design/*`，Changesets 自动化版本管理
