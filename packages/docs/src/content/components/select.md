@@ -32,3 +32,18 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 - 触发器使用 `role="combobox"`，配合 `aria-haspopup="listbox"`、`aria-expanded`、`aria-controls`、`aria-activedescendant`（焦点常驻触发器，活动项靠 activedescendant 指示）。
 - 浮层使用 `role="listbox"`，多选时 `aria-multiselectable="true"`；选项使用 `role="option"` + `aria-selected`；分组使用 `role="group"` + `aria-label`。
 - 键盘交互：`Enter`/`Space`/`Alt+ArrowDown` 打开浮层；`↓/↑` 移动活动项（跳过禁用）；`Home/End` 首/末项；`Enter` 选中；`Esc` 关闭；`Backspace`（多选搜索框为空时）删除最后 Tag；`Tab` 关闭并移交焦点。
+
+## 文案规范
+
+- **占位符用动词短语**「请选择」，避免「选择一个选项…」冗余。
+- **空态区分语境**：用「无匹配选项」而非「没有数据」，区分「未搜索到」与「列表为空」。
+- **创建项保留引号高亮**用户输入，如 `创建 "xxx"`。
+- **计数文案简洁**：用「已选 3 项」，不写「您已经选择了 3 个选项」。
+
+| ✅ 推荐用法 | ❌ 不推荐用法 |
+| --- | --- |
+| 请选择 | 选择一个选项… |
+| 无匹配选项 | 没有数据 |
+| 已选 3 项 | 您已经选择了 3 个选项 |
+
+- 清除全部不可撤销地移除所有选中值，若需二次确认应在外层包裹弹窗，组件本身保持轻量不弹确认。

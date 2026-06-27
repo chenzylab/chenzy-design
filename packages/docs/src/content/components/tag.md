@@ -21,3 +21,17 @@ Tag 默认是纯展示组件，但提供两种可交互形态：可关闭（clos
 - closable Tag 的关闭区为独立 `<button type="button">`，`aria-label` 插值标签文本（如"移除 已完成"），Tab 可达，Enter/Space 触发关闭。
 - checkable Tag 根元素使用 `role="checkbox"` + `aria-checked` + `tabindex="0"`，Space/Enter 切换选中态；`disabled` 时设 `aria-disabled="true"` 并移出 Tab 序。
 - TagGroup 的 +N 按钮使用 `<button>` 并设置 `aria-label`（插值数量）；`prefers-reduced-motion` 时禁用选中/关闭过渡。
+
+## 文案规范
+
+- **简短**：标签文本建议 ≤ 4 字 / 1-2 词，名词或形容词，无句子与句末标点。
+- **大小写规范**：英文用 Sentence case 或既定术语，不全大写（品牌缩写除外）。
+- **状态语义一致**：成功类统一"已完成/Active"，失败类统一"失败/Failed"，避免同义混用。
+
+| ✅ 推荐用法 | ❌ 不推荐用法 |
+| --- | --- |
+| 已完成 | 该任务已经完成了。 |
+| Active | ACTIVE |
+| 失败 | 失败 / 错误 / 未通过（混用） |
+
+- closable Tag 的关闭为轻量可逆操作，无需确认；若移除触发不可逆业务，应在 `on:close` 中拦截弹确认。
