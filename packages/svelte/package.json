@@ -6,13 +6,13 @@
     "*.css",
     "*.svelte"
   ],
-  "svelte": "./src/index.ts",
+  "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "svelte": "./src/index.ts",
-      "default": "./src/index.ts"
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./components.json": {
       "types": "./dist/components.d.ts",
@@ -20,7 +20,6 @@
     }
   },
   "files": [
-    "src",
     "dist"
   ],
   "scripts": {
