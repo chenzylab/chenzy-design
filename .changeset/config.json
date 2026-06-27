@@ -9,5 +9,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@chenzy-design/docs", "chenzy-design"]
+  "ignore": ["@chenzy-design/docs"]
 }
