@@ -16,7 +16,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 - 受控/非受控值，`disabledHours`/`disabledMinutes`/`disabledSeconds` 禁用项。
 - 「此刻」快捷按钮、清除按钮、范围选择（`type="timeRange"`）。
 
-不在范围内：日期选择（由 DatePicker 负责）、倒计时/计时（由 Statistic.Timer 负责）。
+不在范围内：日期选择（由 DatePicker 负责）、倒计时/计时（由 `Statistic.Timer` 负责）。
 
 ## 何时使用
 
