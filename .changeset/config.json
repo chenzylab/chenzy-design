@@ -3,9 +3,11 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [],
+  "linked": [
+    ["@chenzy-design/core", "@chenzy-design/locale", "@chenzy-design/tokens", "@chenzy-design/icons", "@chenzy-design/svelte", "@chenzy-design/unocss-preset"]
+  ],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@chenzy-design/docs"]
+  "ignore": ["@chenzy-design/docs", "chenzy-design"]
 }
