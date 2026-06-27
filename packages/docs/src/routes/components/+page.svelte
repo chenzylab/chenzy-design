@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import componentsJson from '@chenzy-design/svelte/components.json';
 
   const categoryLabels: Record<string, string> = {
@@ -34,7 +35,7 @@
     <h2>{categoryLabels[cat] ?? cat}</h2>
     <div class="component-grid">
       {#each grouped[cat] as comp}
-        <a href="/components/{comp.name.toLowerCase()}" class="component-card">
+        <a href="{base}/components/{comp.name.toLowerCase()}" class="component-card">
           <div class="card-name">{comp.name}</div>
           <div class="card-desc">{comp.description}</div>
         </a>

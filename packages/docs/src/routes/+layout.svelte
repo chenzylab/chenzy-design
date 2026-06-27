@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { base } from '$app/paths';
   import { browser } from '$app/environment';
   import type { Snippet } from 'svelte';
   import componentsJson from '@chenzy-design/svelte/components.json';
@@ -58,9 +59,9 @@
 
 <div class="docs-layout">
   <header class="docs-header">
-    <a href="/" class="docs-logo">chenzy-design</a>
+    <a href="{base}/" class="docs-logo">chenzy-design</a>
     <nav class="docs-header-nav">
-      <a href="/components">组件</a>
+      <a href="{base}/components">组件</a>
     </nav>
     <div class="docs-header-actions">
       <Search />
@@ -79,9 +80,9 @@
             {#each grouped[cat] as comp}
               {@const name = comp.name.toLowerCase()}
               <a
-                href="/components/{name}"
+                href="{base}/components/{name}"
                 class="sidebar-item"
-                class:active={$page.url.pathname === `/components/${name}`}
+                class:active={$page.url.pathname === `${base}/components/${name}`}
               >
                 {comp.name}
               </a>

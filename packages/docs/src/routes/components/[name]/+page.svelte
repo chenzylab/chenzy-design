@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { Component } from 'svelte';
   import type { PageData } from './$types';
   import ApiTable from '$lib/components/ApiTable.svelte';
@@ -154,7 +155,7 @@
 
 <div class="component-header" data-pagefind-meta="title:{meta.name}">
   <div class="breadcrumb">
-    <a href="/components">组件</a>
+    <a href="{base}/components">组件</a>
     <span> / </span>
     <span>{meta.category}</span>
   </div>

@@ -10,7 +10,14 @@ export default {
   ],
   kit: {
     adapter: adapter({ fallback: '404.html' }),
-    prerender: { entries: ['*'] },
+    prerender: {
+      entries: ['*'],
+      // GitHub Pages 子路径部署时，fallback 404 页内对根 `/` 的引用不应阻断构建。
+      handleHttpError: ({ path, message }) => {
+        if (path === '/') return;
+        throw new Error(message);
+      },
+    },
     paths: {
       base: process.env.BASE_PATH ?? '',
     },
