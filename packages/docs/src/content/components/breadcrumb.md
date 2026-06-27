@@ -1,0 +1,25 @@
+---
+title: Breadcrumb 面包屑
+name: breadcrumb
+category: navigation
+brief: 展示当前页面在系统层级结构中的位置，并提供逐级回退的导航能力。
+---
+
+## 使用场景
+
+Breadcrumb（面包屑）用于展示当前页面在系统层级结构中的位置，并提供逐级回退的导航能力。它是一种次级导航控件，典型场景是多层级页面（如「首页 / 商品管理 / 商品详情」），帮助用户理解"我在哪里"以及"如何返回上层"。
+
+核心能力：声明式/数据驱动双模式（支持以 `Breadcrumb.Item` 子组件逐项声明，也支持通过 `routes` 数据数组渲染）；自定义分隔符（默认 `/`，可通过 `separator` 全局替换或单项级覆盖，支持图标）；中间省略折叠（当层级过深时将中间项折叠为 `...`，悬浮/点击展开为下拉菜单）；单项下拉（某一层级可附带 Dropdown，用于在同级页面间切换）；文本溢出省略（单项文本过长时截断并附 Tooltip）。
+
+## 何时使用
+
+适用于多层级页面，展示当前层级位置并提供逐级回退导航。
+
+Breadcrumb 不负责路由跳转本身（仅产出 `href`/`on:click` 事件，由宿主路由消费）；不承担页面级标题（那是 PageHeader 的职责）。
+
+## 无障碍
+
+- 容器 `<nav aria-label>`（文案来自 i18n），内部 `<ol>` 有序列表，每项 `<li>`；末项使用 `aria-current="page"`，渲染为非链接 `<span>`。
+- 分隔符：纯 CSS 伪元素或带 `aria-hidden="true"` 的节点，不进入无障碍树/Tab 序列。
+- 折叠节点：`<button aria-haspopup="menu" aria-expanded aria-controls>`；菜单内 `↑/↓` roving 移动焦点，`Esc` 关闭并归还焦点到触发器。
+- 键盘：`Tab` 在各可聚焦项间移动；`Enter`/`Space`/`↓` 打开下拉菜单并聚焦首项。

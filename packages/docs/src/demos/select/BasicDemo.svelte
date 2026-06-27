@@ -1,6 +1,16 @@
 <script lang="ts">
   import { Select, Text } from '@chenzy-design/svelte';
 
+  const {
+    disabled = false,
+    size = 'default',
+    placeholder = '请选择',
+  }: {
+    disabled?: boolean;
+    size?: 'small' | 'default' | 'large';
+    placeholder?: string;
+  } = $props();
+
   const fruitOptions = [
     { label: '苹果', value: 'apple' },
     { label: '香蕉', value: 'banana' },
@@ -51,6 +61,9 @@
     options={fruitOptions}
     value={selVal}
     clearable
+    {disabled}
+    {size}
+    {placeholder}
     onChange={(v) => (selVal = v as string | number)}
   />
   <Text type="tertiary">单选：{selVal || '（未选）'}</Text>

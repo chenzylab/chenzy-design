@@ -1,6 +1,16 @@
 <script lang="ts">
   import { Input, TextArea, Text } from '@chenzy-design/svelte';
 
+  const {
+    disabled = false,
+    size = 'default',
+    placeholder = '请输入',
+  }: {
+    disabled?: boolean;
+    size?: 'small' | 'default' | 'large';
+    placeholder?: string;
+  } = $props();
+
   let inputVal = $state('');
   let taVal = $state('受控多行文本');
   let inputEvtLog = $state('');
@@ -11,14 +21,16 @@
 <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px;">
   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
     <Input
-      placeholder="请输入"
+      {placeholder}
+      {disabled}
+      {size}
       clearable
       value={inputVal}
       onChange={(v) => (inputVal = v)}
     />
-    <Input type="password" placeholder="密码" />
-    <Input status="error" placeholder="错误态" />
-    <Input disabled placeholder="禁用" />
+    <Input type="password" placeholder="密码" {disabled} {size} />
+    <Input status="error" placeholder="错误态" {disabled} {size} />
+    <Input disabled={disabled || true} placeholder="禁用" {size} />
   </div>
   <Text type="tertiary">受控值：{inputVal || '（空）'}</Text>
 
