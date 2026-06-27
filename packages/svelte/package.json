@@ -1,8 +1,11 @@
 {
   "name": "@chenzy-design/svelte",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "sideEffects": ["*.css", "*.svelte"],
+  "sideEffects": [
+    "*.css",
+    "*.svelte"
+  ],
   "svelte": "./src/index.ts",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -16,7 +19,10 @@
       "default": "./dist/components.json"
     }
   },
-  "files": ["src", "dist"],
+  "files": [
+    "src",
+    "dist"
+  ],
   "scripts": {
     "build": "svelte-package -i src -o dist && pnpm build:meta",
     "build:meta": "tsx scripts/build-components-json.ts",
