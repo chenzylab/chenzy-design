@@ -33,6 +33,26 @@
 
   const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
 
+  // 全局文档分组（对齐 Semi 左侧「开始 / 体验增强」）
+  const guideGroups = [
+    {
+      title: '开始',
+      items: [
+        { label: 'Introduction 介绍', href: '/guide/introduction' },
+        { label: 'Getting Started 快速开始', href: '/guide/getting-started' },
+        { label: 'Overview 组件总览', href: '/guide/overview' },
+      ],
+    },
+    {
+      title: '体验增强',
+      items: [
+        { label: 'Accessibility 无障碍', href: '/guide/accessibility' },
+        { label: 'Internationalization 国际化', href: '/guide/i18n' },
+        { label: 'Content Guidelines 文案规范', href: '/guide/content-guidelines' },
+      ],
+    },
+  ];
+
   let theme = $state('light');
 
   if (browser) {
@@ -73,6 +93,20 @@
 
   <div class="docs-body">
     <aside class="docs-sidebar">
+      {#each guideGroups as group (group.title)}
+        <div class="sidebar-group">
+          <div class="sidebar-group-title">{group.title}</div>
+          {#each group.items as item (item.href)}
+            <a
+              href="{base}{item.href}"
+              class="sidebar-item"
+              class:active={$page.url.pathname === `${base}${item.href}`}
+            >
+              {item.label}
+            </a>
+          {/each}
+        </div>
+      {/each}
       {#each categoryOrder as cat}
         {#if grouped[cat]}
           <div class="sidebar-group">

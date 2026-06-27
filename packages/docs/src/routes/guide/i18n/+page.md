@@ -1,0 +1,39 @@
+# Internationalization 国际化
+
+延续 Semi 思路：组件内置文案集中到 **Locale 包**，通过 **LocaleProvider / ConfigProvider** 注入，运行时切换。交付包为 `@chenzy-design/locale`。
+
+## 架构
+
+```
+packages/locale/
+  src/
+    interface.ts        # Locale 类型（按组件分组的所有 key）
+    zh_CN.ts en_US.ts ja_JP.ts ...   # 各语言包
+    context.ts          # getLocale/setLocale + Svelte context
+    format.ts           # 日期/数字/货币（基于 Intl）+ 复数/占位符插值
+```
+
+## 规则
+
+- **零硬编码**：组件中任何用户可见字符串必须经 `t('Component.key')`，禁止字面量。
+- **key 规范**：`Component.field`，如 `Modal.confirm`、`Pagination.total`、`Table.emptyText`。
+- **插值与复数**：`t('Pagination.total', { total })`；复数走 `Intl.PluralRules`。
+- **日期 / 数字 / 货币**：统一用 `Intl.*`，受当前 locale 控制；DatePicker / Calendar / TimePicker 必须接 locale 的首日、星期名、AM/PM。
+- **RTL**：locale 标注 `rtl: boolean`，联动 `dir` 与逻辑属性（见无障碍）。
+- **按需加载**：语言包可 tree-shake / 动态 import，默认只打包 `zh_CN`。
+- **默认值兜底**：缺 key 时回退默认 locale 并 warn（dev 环境）。
+
+## 使用示例
+
+```svelte
+<ConfigProvider locale={en_US}>
+  <App />
+</ConfigProvider>
+```
+
+## 验收标准
+
+- 切换 locale，所有内置文案、日期 / 数字格式即时更新。
+- 全库扫描无硬编码用户可见字符串（lint 规则）。
+- 新增语言只需新增一个语言包文件。
+- RTL 语言下布局与文案方向正确。
