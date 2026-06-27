@@ -4,6 +4,7 @@
   import ApiTable from '$lib/components/ApiTable.svelte';
   import TokenTable from '$lib/components/TokenTable.svelte';
   import DemoBox from '$lib/components/DemoBox.svelte';
+  import PropPlayground from '$lib/components/PropPlayground.svelte';
 
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
@@ -106,6 +107,7 @@
 
   let DemoComponent = $state<Component | null>(null);
   let ContentComponent = $state<Component | null>(null);
+  let playgroundValues = $state<Record<string, unknown>>({});
 
   $effect(() => {
     const name = meta.name.toLowerCase();
@@ -132,6 +134,17 @@
         ContentComponent = null;
       });
     }
+  });
+
+  $effect(() => {
+    const init: Record<string, unknown> = {};
+    for (const p of (meta.props ?? [])) {
+      const d = p.default ?? '';
+      if (d === 'true') init[p.name] = true;
+      else if (d === 'false') init[p.name] = false;
+      else { const n = Number(d); init[p.name] = (!isNaN(n) && d !== '') ? n : d.replace(/^['"]|['"]$/g, ''); }
+    }
+    playgroundValues = init;
   });
 </script>
 
@@ -162,9 +175,25 @@
   {#if DemoComponent}
   <section class="section">
     <h2>代码演示</h2>
-    <DemoBox title="基本用法">
-      <DemoComponent />
-    </DemoBox>
+    <div class="demo-with-playground">
+      <div class="demo-main">
+        <DemoBox title="基本用法">
+          <DemoComponent {...playgroundValues} />
+        </DemoBox>
+      </div>
+      {#if (meta.props ?? []).some(p => {
+        const t = p.type ?? '';
+        return t === 'boolean' || t === 'number' || t === 'string' || (t.includes("'") && t.includes('|'));
+      })}
+      <div class="demo-sidebar">
+        <PropPlayground
+          props={meta.props ?? []}
+          values={playgroundValues}
+          onchange={(v) => { playgroundValues = v; }}
+        />
+      </div>
+      {/if}
+    </div>
   </section>
   {/if}
 
@@ -211,4 +240,15 @@
   .content-body :global(ul), .content-body :global(ol) { padding-left: 20px; margin: 0 0 12px; }
   .content-body :global(li) { line-height: 1.7; margin-bottom: 4px; }
   .no-content { color: var(--cd-color-text-2, #86909c); font-size: 14px; padding: 24px 0; }
+  .demo-with-playground {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .demo-main { flex: 1; min-width: 0; }
+  .demo-sidebar { width: 260px; flex-shrink: 0; position: sticky; top: 16px; }
+  @media (max-width: 960px) {
+    .demo-with-playground { flex-direction: column; }
+    .demo-sidebar { width: 100%; position: static; }
+  }
 </style>
