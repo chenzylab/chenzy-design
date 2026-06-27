@@ -10,12 +10,11 @@
   onMount(async () => {
     if (!browser) return;
     try {
-      // 用 new Function 绕过 Vite 静态分析，pagefind 仅 build 后存在
-      const dynamicImport = new Function('path', 'return import(path)');
-      pagefind = await dynamicImport('/pagefind/pagefind.js');
+      // @ts-ignore
+      pagefind = await import('/pagefind/pagefind.js');
       await pagefind.init();
     } catch {
-      // pagefind 仅在 build 后可用，dev 模式静默跳过
+      // pagefind 仅在 build 后可用，dev 模式跳过
     }
   });
 
