@@ -59,6 +59,16 @@ pnpm dev              # 启动文档站（演示组件 + 主题切换）
 pnpm verify           # lint + typecheck + test + build
 ```
 
+### 视觉回归测试
+基于 vitest 4 的 `toMatchScreenshot`（真实 chromium，复用 playwright provider），基线存各组件 `__screenshots__/`。
+
+```bash
+pnpm test:visual          # 对比当前渲染与基线
+pnpm test:visual:update   # 改动组件外观后更新基线
+```
+
+> ⚠️ 基线带平台后缀（如 `-chromium-darwin.png`）。字体抗锯齿在 macOS / Linux 间有差异，跨平台基线不通用——基线当前在 macOS 生成，**未接入 CI 门禁**（接入需在 Linux/Docker 生成对应基线）。本地作为外观回归工具使用。
+
 ## 提交与发版
 - 提交信息遵循 Conventional Commits，且**不得包含任何 AI/助手字样**（由 `.githooks/commit-msg` 强制，规则见 AGENTS.md §7.1）。
 - 需发版的改动附 changeset：`pnpm changeset`；维护者 `pnpm version-packages` → `pnpm release`。

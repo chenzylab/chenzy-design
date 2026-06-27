@@ -50,9 +50,12 @@
     countContent,
   }: Props = $props();
 
-  // count 变化时触发滚动动画
+  // count 变化时触发滚动动画。
+  // 注意：prevDisplayCount 不能在声明处用 $state(displayCount) 预填——displayCount
+  // 是下方声明的 $derived，提前读会触发 TDZ（Cannot access 'displayCount' before
+  // initialization）。改为 undefined 起始，首个 effect 跑时再 seed。
   let motionActive = $state(false);
-  let prevDisplayCount = $state(displayCount);
+  let prevDisplayCount = $state<string | number | undefined>(undefined);
 
   $effect(() => {
     const current = displayCount;

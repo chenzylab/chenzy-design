@@ -7,8 +7,7 @@ coverage/
 .vite/
 *.log
 
-# vitest browser mode：测试失败时生成的对比截图与附件
-**/__screenshots__/
+# vitest browser mode：测试失败时的对比截图与附件（基线 __screenshots__ 需提交，故不忽略）
 test-results/
 .vitest-attachments/
 

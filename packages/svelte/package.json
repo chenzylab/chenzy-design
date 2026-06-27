@@ -24,7 +24,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "svelte-package -i src -o dist && pnpm build:meta",
+    "build": "svelte-package -i src -o dist && node scripts/clean-dist.mjs && pnpm build:meta",
     "build:meta": "tsx scripts/build-components-json.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
