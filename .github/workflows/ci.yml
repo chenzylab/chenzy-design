@@ -18,7 +18,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # build first so downstream packages' dist/*.d.ts exist before typecheck
-      - run: pnpm build
+      # docs excluded: it requires pagefind (post-build) and is deployed separately
+      - run: pnpm --filter=!@chenzy-design/docs build
       # WCAG AA 对比度门禁：审计 alias token 的正文级前景/背景对，
       # 任一非豁免对 < 4.5:1 即阻断（防 token 改色引入 a11y 回归）。
       - run: pnpm a11y:contrast
@@ -49,5 +50,5 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       # browser project 复用 src 源码（非 dist），但被测组件依赖 @chenzy-design/core 等
       # workspace 包的 dist，故先 build 产出依赖。
-      - run: pnpm build
+      - run: pnpm --filter=!@chenzy-design/docs build
       - run: pnpm test:e2e

@@ -11,5 +11,8 @@ export default {
   kit: {
     adapter: adapter({ fallback: '404.html' }),
     prerender: { entries: ['*'] },
+    paths: {
+      base: process.env.BASE_PATH ?? '',
+    },
   },
 };
