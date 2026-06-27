@@ -275,6 +275,34 @@
   .content-body :global(p) { line-height: 1.7; color: var(--cd-color-text-0, #1f2329); margin: 0 0 12px; }
   .content-body :global(ul), .content-body :global(ol) { padding-left: 20px; margin: 0 0 12px; }
   .content-body :global(li) { line-height: 1.7; margin-bottom: 4px; }
+  .content-body :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 16px;
+    font-size: 13px;
+  }
+  .content-body :global(th), .content-body :global(td) {
+    border: 1px solid var(--cd-color-border, #e5e7eb);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .content-body :global(th) {
+    background: var(--cd-color-fill-1, #f7f8fa);
+    font-weight: 600;
+    color: var(--cd-color-text-0, #1f2329);
+  }
+  /* ✅/❌ 对照表：首列推荐绿底、次列不推荐红底（仅文案规范表） */
+  .content-body :global(td:first-child) { background: rgba(0, 180, 42, 0.04); }
+  .content-body :global(td:last-child) { background: rgba(245, 63, 63, 0.04); }
+  .content-body :global(code) {
+    background: var(--cd-color-fill-1, #f2f3f5);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+  }
   .no-content { color: var(--cd-color-text-2, #86909c); font-size: 14px; padding: 24px 0; }
   .demo-with-playground {
     display: flex;
