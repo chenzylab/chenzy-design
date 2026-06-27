@@ -106,21 +106,46 @@
   const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
   const contentModules = import.meta.glob('../../../content/components/*.md');
 
+  // 多 demo 结构：试点组件目录下有 demos.ts，懒加载
+  type DemoEntry = {
+    title: string;
+    description?: string;
+    component: Component;
+    code: string;
+  };
+  const demosModules = import.meta.glob('../../../demos/*/demos.ts');
+
   let DemoComponent = $state<Component | null>(null);
+  let demoList = $state<DemoEntry[] | null>(null);
   let ContentComponent = $state<Component | null>(null);
   let playgroundValues = $state<Record<string, unknown>>({});
 
   $effect(() => {
     const name = meta.name.toLowerCase();
     const dir = nameToDir[name] ?? name;
-    const key = `../../../demos/${dir}/BasicDemo.svelte`;
+    const demosKey = `../../../demos/${dir}/demos.ts`;
+    const basicKey = `../../../demos/${dir}/BasicDemo.svelte`;
     DemoComponent = null;
-    if (demoModules[key]) {
-      (demoModules[key]() as Promise<{ default: Component }>).then((mod) => {
-        DemoComponent = mod.default;
-      }).catch(() => {
-        DemoComponent = null;
-      });
+    demoList = null;
+
+    if (demosModules[demosKey]) {
+      // 新结构：多 demo
+      (demosModules[demosKey]() as Promise<{ demos: DemoEntry[] }>)
+        .then((mod) => {
+          demoList = mod.demos;
+        })
+        .catch(() => {
+          demoList = null;
+        });
+    } else if (demoModules[basicKey]) {
+      // 回退：单 BasicDemo
+      (demoModules[basicKey]() as Promise<{ default: Component }>)
+        .then((mod) => {
+          DemoComponent = mod.default;
+        })
+        .catch(() => {
+          DemoComponent = null;
+        });
     }
   });
 
@@ -173,7 +198,17 @@
 </div>
 
 {#if activeTab === 'api'}
-  {#if DemoComponent}
+  {#if demoList}
+  <section class="section">
+    <h2>代码演示</h2>
+    {#each demoList as d (d.title)}
+      {@const Demo = d.component}
+      <DemoBox title={d.title} description={d.description} code={d.code}>
+        <Demo />
+      </DemoBox>
+    {/each}
+  </section>
+  {:else if DemoComponent}
   <section class="section">
     <h2>代码演示</h2>
     <div class="demo-with-playground">
