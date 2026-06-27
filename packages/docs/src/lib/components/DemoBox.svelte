@@ -1,17 +1,41 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { highlight } from '$lib/highlight';
 
   const {
     title,
     description,
+    code,
     children,
   }: {
     title?: string;
     description?: string;
+    code?: string;
     children: Snippet;
   } = $props();
 
   let showCode = $state(false);
+  let highlighted = $state<string | null>(null);
+  let copied = $state(false);
+
+  $effect(() => {
+    if (showCode && code && highlighted === null) {
+      highlight(code).then((html) => {
+        highlighted = html;
+      });
+    }
+  });
+
+  async function copyCode() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch {
+      copied = false;
+    }
+  }
 </script>
 
 <div class="demo-box">
@@ -25,10 +49,26 @@
     {@render children()}
   </div>
   <div class="demo-box__footer">
-    <button class="demo-box__toggle" onclick={() => (showCode = !showCode)}>
-      {showCode ? '收起代码 ▲' : '查看源码 ▼'}
-    </button>
+    {#if code}
+      <button class="demo-box__toggle" onclick={() => (showCode = !showCode)}>
+        {showCode ? '收起代码 ▲' : '查看源码 ▼'}
+      </button>
+      {#if showCode}
+        <button class="demo-box__toggle" onclick={copyCode}>
+          {copied ? '已复制 ✓' : '复制'}
+        </button>
+      {/if}
+    {/if}
   </div>
+  {#if showCode && code}
+    <div class="demo-box__code">
+      {#if highlighted}
+        {@html highlighted}
+      {:else}
+        <pre class="demo-box__raw">{code}</pre>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -56,6 +96,8 @@
   .demo-box__footer {
     border-top: 1px solid var(--cd-color-border, #e5e7eb);
     padding: 8px 16px;
+    display: flex;
+    gap: 16px;
   }
   .demo-box__toggle {
     background: none;
@@ -67,5 +109,27 @@
   }
   .demo-box__toggle:hover {
     color: var(--cd-color-primary, #165dff);
+  }
+  .demo-box__code {
+    border-top: 1px solid var(--cd-color-border, #e5e7eb);
+    background: var(--cd-color-fill-0, #f7f8fa);
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .demo-box__code :global(.shiki) {
+    margin: 0;
+    padding: 16px;
+    background-color: transparent !important;
+  }
+  .demo-box__raw {
+    margin: 0;
+    padding: 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre;
+  }
+  :global([data-theme='dark']) .demo-box__code :global(.shiki),
+  :global([data-theme='dark']) .demo-box__code :global(.shiki span) {
+    color: var(--shiki-dark, inherit) !important;
+    background-color: var(--shiki-dark-bg, transparent) !important;
   }
 </style>
