@@ -1,6 +1,10 @@
 <script lang="ts">
   import { base } from '$app/paths';
   import componentsJson from '@chenzy-design/svelte/components.json';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
 
   const installCmd = 'pnpm add @chenzy-design/svelte @chenzy-design/tokens';
 
@@ -27,56 +31,54 @@
 </script>
 
 <svelte:head>
-  <title>chenzy-design — 基于 Svelte 5 的企业级组件库</title>
+  <title>{t('home.headTitle', lang)}</title>
 </svelte:head>
 
 <div class="hero">
   <h1>chenzy-design</h1>
-  <p class="tagline">基于 Svelte 5 的企业级组件库，对标 Semi Design。</p>
-  <p class="meta">共 {componentsJson.count} 个组件 · 无障碍 · 主题化 · i18n · 性能基准</p>
+  <p class="tagline">{t('home.tagline', lang)}</p>
+  <p class="meta">{t('home.metaTags', lang, { n: componentsJson.count })}</p>
   <div class="actions">
-    <a class="btn btn--primary" href="{base}/components">浏览所有组件 →</a>
+    <a class="btn btn--primary" href="{base}/components">{t('home.browseAll', lang)}</a>
     <a class="btn" href="https://github.com/chenzylab/chenzy-design" target="_blank" rel="noreferrer">GitHub</a>
   </div>
 </div>
 
 <section class="quickstart">
-  <h2>快速开始</h2>
+  <h2>{t('home.quickstart', lang)}</h2>
 
   <div class="step">
-    <h3><span class="step-num">1</span> 安装</h3>
+    <h3><span class="step-num">1</span> {t('home.step1', lang)}</h3>
     <div class="code-block">
       <pre><code>{installCmd}</code></pre>
       <button class="copy-btn" onclick={() => copy(installCmd, 'install')}>
-        {copied === 'install' ? '已复制' : '复制'}
+        {copied === 'install' ? t('home.copied', lang) : t('home.copy', lang)}
       </button>
     </div>
   </div>
 
   <div class="step">
-    <h3><span class="step-num">2</span> 引入设计令牌 CSS（必须）</h3>
-    <p class="hint">在应用入口（如 SvelteKit 的 <code>+layout.svelte</code>）引入一次。不引入组件将没有样式。</p>
+    <h3><span class="step-num">2</span> {t('home.step2', lang)}</h3>
+    <p class="hint">{@html t('home.step2Hint', lang)}</p>
     <div class="code-block">
       <pre><code>{importCss}</code></pre>
       <button class="copy-btn" onclick={() => copy(importCss, 'css')}>
-        {copied === 'css' ? '已复制' : '复制'}
+        {copied === 'css' ? t('home.copied', lang) : t('home.copy', lang)}
       </button>
     </div>
   </div>
 
   <div class="step">
-    <h3><span class="step-num">3</span> 使用组件</h3>
+    <h3><span class="step-num">3</span> {t('home.step3', lang)}</h3>
     <div class="code-block">
       <pre><code>{usage}</code></pre>
       <button class="copy-btn" onclick={() => copy(usage, 'usage')}>
-        {copied === 'usage' ? '已复制' : '复制'}
+        {copied === 'usage' ? t('home.copied', lang) : t('home.copy', lang)}
       </button>
     </div>
   </div>
 
-  <p class="note">
-    要求 <strong>Svelte 5</strong>（runes）。暗色模式：给 <code>&lt;html&gt;</code> 设置 <code>data-theme="dark"</code>。
-  </p>
+  <p class="note">{@html t('home.note', lang)}</p>
 </section>
 
 <style>

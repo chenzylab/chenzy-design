@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
+
   interface TocSection {
     id: string;
     title: string;
@@ -58,8 +63,8 @@
 </script>
 
 {#if sections.length}
-  <nav class="toc" aria-label="目录">
-    <div class="toc-title">本页目录</div>
+  <nav class="toc" aria-label={t('toc.title', lang)}>
+    <div class="toc-title">{t('toc.title', lang)}</div>
     <ul>
       {#each sections as section (section.id)}
         <li>

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
+
   interface PropMeta {
     name: string;
     type: string;
@@ -28,18 +33,18 @@
 
 {#if props.length}
 <div class="api-table-wrap">
-  <h3>Props</h3>
+  <h3>{t('api.props', lang)}</h3>
   <table class="api-table">
     <thead>
       <tr>
-        <th>属性</th>
-        <th>类型</th>
-        <th>默认值</th>
-        <th>说明</th>
+        <th>{t('api.name', lang)}</th>
+        <th>{t('api.type', lang)}</th>
+        <th>{t('api.default', lang)}</th>
+        <th>{t('api.desc', lang)}</th>
       </tr>
     </thead>
     <tbody>
-      {#each props as prop}
+      {#each props as prop (prop.name)}
         <tr>
           <td><code>{prop.name}</code></td>
           <td><code class="type">{prop.type}</code></td>
@@ -54,13 +59,13 @@
 
 {#if events.length}
 <div class="api-table-wrap">
-  <h3>Events</h3>
+  <h3>{t('api.events', lang)}</h3>
   <table class="api-table">
     <thead>
-      <tr><th>事件</th><th>载荷</th><th>说明</th></tr>
+      <tr><th>{t('api.event', lang)}</th><th>{t('api.payload', lang)}</th><th>{t('api.desc', lang)}</th></tr>
     </thead>
     <tbody>
-      {#each events as evt}
+      {#each events as evt (evt.name)}
         <tr>
           <td><code>{evt.name}</code></td>
           <td><code class="type">{evt.payload ?? '—'}</code></td>
@@ -74,13 +79,13 @@
 
 {#if slots.length}
 <div class="api-table-wrap">
-  <h3>Slots</h3>
+  <h3>{t('api.slots', lang)}</h3>
   <table class="api-table">
     <thead>
-      <tr><th>名称</th><th>说明</th></tr>
+      <tr><th>{t('api.slotName', lang)}</th><th>{t('api.desc', lang)}</th></tr>
     </thead>
     <tbody>
-      {#each slots as slot}
+      {#each slots as slot (slot.name)}
         <tr>
           <td><code>{slot.name}</code></td>
           <td>{slot.desc ?? '—'}</td>

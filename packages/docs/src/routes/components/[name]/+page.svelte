@@ -7,9 +7,17 @@
   import DemoBox from '$lib/components/DemoBox.svelte';
   import PropPlayground from '$lib/components/PropPlayground.svelte';
   import Toc from '$lib/components/Toc.svelte';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+  import { componentBriefsEn } from '$lib/component-briefs';
 
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
+  const lang = $derived(locale.value);
+  // brief：英文版用翻译表，缺失则回退中文
+  const brief = $derived(
+    lang === 'en' ? (componentBriefsEn[meta.name] ?? meta.description) : meta.description,
+  );
 
   let activeTab = $state<'api' | 'usage'>('api');
 
@@ -201,16 +209,16 @@
   const sections = $derived.by<{ id: string; title: string }[]>(() => {
     if (activeTab === 'api') {
       const list: { id: string; title: string }[] = [];
-      if (hasDemo) list.push({ id: 'demo', title: '代码演示' });
-      if (hasApi) list.push({ id: 'api', title: 'API 参考' });
+      if (hasDemo) list.push({ id: 'demo', title: t('section.demo', lang) });
+      if (hasApi) list.push({ id: 'api', title: t('section.api', lang) });
       for (const sub of subComponents) {
         list.push({ id: `api-${slugify(sub.name)}`, title: sub.name });
       }
-      if (meta.tokens?.length) list.push({ id: 'tokens', title: '设计变量' });
+      if (meta.tokens?.length) list.push({ id: 'tokens', title: t('section.tokens', lang) });
       return list;
     }
     // usage tab：content md 整体渲染，无法可靠拆分，给单一锚点
-    if (ContentComponent) return [{ id: 'usage', title: '使用场景' }];
+    if (ContentComponent) return [{ id: 'usage', title: t('tab.usage', lang) }];
     return [];
   });
 
@@ -225,20 +233,20 @@
 
 <div class="component-header" data-pagefind-meta="title:{meta.name}">
   <div class="breadcrumb">
-    <a href="{base}/components">组件</a>
+    <a href="{base}/components">{t('nav.components', lang)}</a>
     <span> / </span>
-    <span>{meta.category}</span>
+    <span>{t('cat.' + meta.category, lang)}</span>
   </div>
   <h1>{meta.name}</h1>
-  <p class="description">{meta.description}</p>
+  <p class="description">{brief}</p>
 </div>
 
 <div class="tabs">
   <button class="tab" class:active={activeTab === 'api'} onclick={() => activeTab = 'api'}>
-    API 文档
+    {t('tab.api', lang)}
   </button>
   <button class="tab" class:active={activeTab === 'usage'} onclick={() => activeTab = 'usage'}>
-    使用场景
+    {t('tab.usage', lang)}
   </button>
 </div>
 
@@ -248,7 +256,7 @@
       {#if demoList}
       <section class="section" id="demo">
         <h2 class="section-heading">
-          代码演示
+          {t('section.demo', lang)}
           <a href="#demo" class="anchor-link" aria-label="锚点链接">🔗</a>
         </h2>
         {#each demoList as d (d.title)}
@@ -261,12 +269,12 @@
       {:else if DemoComponent}
       <section class="section" id="demo">
         <h2 class="section-heading">
-          代码演示
+          {t('section.demo', lang)}
           <a href="#demo" class="anchor-link" aria-label="锚点链接">🔗</a>
         </h2>
         <div class="demo-with-playground">
           <div class="demo-main">
-            <DemoBox title="基本用法">
+            <DemoBox title={lang === "en" ? "Basic" : "基本用法"}>
               <DemoComponent {...playgroundValues} />
             </DemoBox>
           </div>
@@ -289,7 +297,7 @@
       {#if hasApi}
       <section class="section" id="api">
         <h2 class="section-heading">
-          API 参考
+          {t('section.api', lang)}
           <a href="#api" class="anchor-link" aria-label="锚点链接">🔗</a>
         </h2>
         <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
@@ -309,7 +317,7 @@
       {#if meta.tokens?.length}
       <section class="section" id="tokens">
         <h2 class="section-heading">
-          设计变量
+          {t('section.tokens', lang)}
           <a href="#tokens" class="anchor-link" aria-label="锚点链接">🔗</a>
         </h2>
         <TokenTable tokens={meta.tokens} />
@@ -323,7 +331,7 @@
           </div>
         </section>
       {:else}
-        <p class="no-content">暂无使用场景文档。</p>
+        <p class="no-content">{t('usage.empty', lang)}</p>
       {/if}
     {/if}
   </div>

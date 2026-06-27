@@ -8,17 +8,21 @@
   import 'uno.css';
   import '../app.css';
   import Search from '$lib/components/Search.svelte';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
 
   const { children }: { children: Snippet } = $props();
 
-  // 按 category 分组
-  const categoryLabels: Record<string, string> = {
-    basic: '基础',
-    input: '输入',
-    navigation: '导航',
-    show: '展示',
-    feedback: '反馈',
-    other: '其他',
+  const lang = $derived(locale.value);
+
+  // 按 category 分组（label key 走 i18n）
+  const categoryKey: Record<string, string> = {
+    basic: 'cat.basic',
+    input: 'cat.input',
+    navigation: 'cat.navigation',
+    show: 'cat.show',
+    feedback: 'cat.feedback',
+    other: 'cat.other',
   };
 
   const grouped = Object.entries(componentsJson.components).reduce(
@@ -33,22 +37,22 @@
 
   const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
 
-  // 全局文档分组（对齐 Semi 左侧「开始 / 体验增强」）
+  // 全局文档分组（对齐 Semi 左侧「开始 / 体验增强」）。label 中英双版。
   const guideGroups = [
     {
-      title: '开始',
+      titleKey: 'group.start',
       items: [
-        { label: 'Introduction 介绍', href: '/guide/introduction' },
-        { label: 'Getting Started 快速开始', href: '/guide/getting-started' },
-        { label: 'Overview 组件总览', href: '/guide/overview' },
+        { zh: 'Introduction 介绍', en: 'Introduction', href: '/guide/introduction' },
+        { zh: 'Getting Started 快速开始', en: 'Getting Started', href: '/guide/getting-started' },
+        { zh: 'Overview 组件总览', en: 'Overview', href: '/guide/overview' },
       ],
     },
     {
-      title: '体验增强',
+      titleKey: 'group.experience',
       items: [
-        { label: 'Accessibility 无障碍', href: '/guide/accessibility' },
-        { label: 'Internationalization 国际化', href: '/guide/i18n' },
-        { label: 'Content Guidelines 文案规范', href: '/guide/content-guidelines' },
+        { zh: 'Accessibility 无障碍', en: 'Accessibility', href: '/guide/accessibility' },
+        { zh: 'Internationalization 国际化', en: 'Internationalization', href: '/guide/i18n' },
+        { zh: 'Content Guidelines 文案规范', en: 'Content Guidelines', href: '/guide/content-guidelines' },
       ],
     },
   ];
@@ -81,10 +85,13 @@
   <header class="docs-header">
     <a href="{base}/" class="docs-logo">chenzy-design</a>
     <nav class="docs-header-nav">
-      <a href="{base}/components">组件</a>
+      <a href="{base}/components">{t('nav.components', lang)}</a>
     </nav>
     <div class="docs-header-actions">
       <Search />
+      <button class="lang-toggle" onclick={() => locale.toggle()} aria-label="切换语言 / Switch language">
+        {lang === 'zh' ? 'EN' : '中'}
+      </button>
       <button class="theme-toggle" onclick={toggleTheme} aria-label="切换主题">
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
@@ -93,16 +100,16 @@
 
   <div class="docs-body">
     <aside class="docs-sidebar">
-      {#each guideGroups as group (group.title)}
+      {#each guideGroups as group (group.titleKey)}
         <div class="sidebar-group">
-          <div class="sidebar-group-title">{group.title}</div>
+          <div class="sidebar-group-title">{t(group.titleKey, lang)}</div>
           {#each group.items as item (item.href)}
             <a
               href="{base}{item.href}"
               class="sidebar-item"
               class:active={$page.url.pathname === `${base}${item.href}`}
             >
-              {item.label}
+              {lang === 'zh' ? item.zh : item.en}
             </a>
           {/each}
         </div>
@@ -110,7 +117,7 @@
       {#each categoryOrder as cat}
         {#if grouped[cat]}
           <div class="sidebar-group">
-            <div class="sidebar-group-title">{categoryLabels[cat] ?? cat}</div>
+            <div class="sidebar-group-title">{t(categoryKey[cat] ?? cat, lang)}</div>
             {#each grouped[cat] as comp}
               {@const name = comp.name.toLowerCase()}
               <a
@@ -168,7 +175,7 @@
     gap: 8px;
     margin-left: auto;
   }
-  .theme-toggle {
+  .theme-toggle, .lang-toggle {
     background: none;
     border: 1px solid var(--cd-color-border, #e5e7eb);
     border-radius: 6px;
@@ -178,7 +185,12 @@
     line-height: 1;
     color: var(--cd-color-text-1, #4e5969);
   }
-  .theme-toggle:hover {
+  .lang-toggle {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 36px;
+  }
+  .theme-toggle:hover, .lang-toggle:hover {
     background: var(--cd-color-fill-1, #f2f3f5);
   }
   .docs-body {

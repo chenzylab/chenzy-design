@@ -1,16 +1,21 @@
 <script lang="ts">
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
+
   const { tokens = [] }: { tokens?: string[] } = $props();
 </script>
 
 <table class="token-table">
   <thead>
-    <tr><th>Token 前缀</th><th>说明</th></tr>
+    <tr><th>{t('token.prefix', lang)}</th><th>{t('api.desc', lang)}</th></tr>
   </thead>
   <tbody>
-    {#each tokens as token}
+    {#each tokens as token (token)}
       <tr>
         <td><code>{token}</code></td>
-        <td>组件样式变量，可通过 CSS 自定义属性覆盖</td>
+        <td>{t('token.desc', lang)}</td>
       </tr>
     {/each}
   </tbody>

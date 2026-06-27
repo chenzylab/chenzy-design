@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { highlight } from '$lib/highlight';
+  import { locale } from '$lib/locale.svelte';
+  import { t } from '$lib/i18n';
+
+  const lang = $derived(locale.value);
 
   const {
     title,
@@ -51,11 +55,11 @@
   <div class="demo-box__footer">
     {#if code}
       <button class="demo-box__toggle" onclick={() => (showCode = !showCode)}>
-        {showCode ? '收起代码 ▲' : '查看源码 ▼'}
+        {showCode ? `${t('demo.hideSource', lang)} ▲` : `${t('demo.viewSource', lang)} ▼`}
       </button>
       {#if showCode}
         <button class="demo-box__toggle" onclick={copyCode}>
-          {copied ? '已复制 ✓' : '复制'}
+          {copied ? `${t('demo.copied', lang)} ✓` : t('demo.copy', lang)}
         </button>
       {/if}
     {/if}
