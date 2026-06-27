@@ -21,6 +21,8 @@
     "test:watch": "vitest",
     "test:a11y": "vitest run --project dom",
     "test:e2e": "vitest run --project browser",
+    "test:visual": "vitest run --project visual",
+    "test:visual:update": "vitest run --project visual --update",
     "perf:size": "size-limit",
     "perf:bench": "vitest bench --run",
     "perf:baseline": "size-limit --json > perf/baseline.json || true",

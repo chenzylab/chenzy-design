@@ -23,8 +23,15 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['packages/**/*.{test,spec}.ts'],
-          // a11y 渲染测试只在 dom project 跑；键盘 e2e 只在 browser project 跑。
-          exclude: ['**/node_modules/**', '**/dist/**', '**/*.a11y.test.ts', '**/*.kbd.test.ts'],
+          // a11y 渲染测试只在 dom project 跑；键盘 e2e 只在 browser project 跑；
+          // 视觉回归只在 visual project 跑。
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/*.a11y.test.ts',
+            '**/*.kbd.test.ts',
+            '**/*.visual.test.ts',
+          ],
           // bench 文件只在 bench project 跑（需 svelte 编译，node 下会解析失败）。
           benchmark: { include: [] },
         },
@@ -41,8 +48,13 @@ export default defineConfig({
           name: 'dom',
           environment: 'jsdom',
           include: ['packages/**/*.a11y.test.ts'],
-          // 键盘 e2e 只在 browser project 跑，dom project 不碰。
-          exclude: ['**/node_modules/**', '**/dist/**', '**/*.kbd.test.ts'],
+          // 键盘 e2e 只在 browser project 跑；视觉回归只在 visual project 跑，dom 不碰。
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/*.kbd.test.ts',
+            '**/*.visual.test.ts',
+          ],
           setupFiles: ['./vitest.dom-setup.ts'],
           // bench 文件只在 bench project 跑，dom project 不重复执行。
           benchmark: { include: [] },
@@ -67,7 +79,12 @@ export default defineConfig({
           include: [],
           benchmark: {
             include: ['packages/**/*.bench.ts'],
-            exclude: ['**/node_modules/**', '**/dist/**', '**/*.kbd.test.ts'],
+            exclude: [
+              '**/node_modules/**',
+              '**/dist/**',
+              '**/*.kbd.test.ts',
+              '**/*.visual.test.ts',
+            ],
           },
         },
       },
@@ -85,7 +102,12 @@ export default defineConfig({
           // browser project 不在 vitest run 默认范围跑（只在 `--project browser` / test:e2e 跑），
           // 但仍显式收紧 include 到 kbd，且 exclude 掉 a11y/单测，杜绝交叉。
           include: ['packages/**/*.kbd.test.ts'],
-          exclude: ['**/node_modules/**', '**/dist/**', '**/*.a11y.test.ts'],
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/*.a11y.test.ts',
+            '**/*.visual.test.ts',
+          ],
           benchmark: { include: [] },
           browser: {
             enabled: true,
@@ -93,6 +115,38 @@ export default defineConfig({
             provider: playwright(),
             headless: true,
             // vitest 4 browser API：多浏览器用 instances 数组，这里只跑 chromium。
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+      {
+        // 视觉回归（test:visual）：真实 chromium headless（playwright provider）+
+        // vitest 4.1 内置 toMatchScreenshot。只跑 *.visual.test.ts。
+        // 复用 browser project 的浏览器配置；额外注入 token CSS（visual-setup）
+        // 并固定 viewport，保证截图基线在同一平台下可复现。
+        plugins: [svelte({ compilerOptions: { dev: true } })],
+        // 同 dom/browser project：走 svelte 的 browser/client 导出，
+        // 否则 mount 解析到 server 构建会抛 lifecycle_function_unavailable。
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'visual',
+          include: ['packages/**/*.visual.test.ts'],
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            '**/*.a11y.test.ts',
+            '**/*.kbd.test.ts',
+          ],
+          setupFiles: ['./vitest.visual-setup.ts'],
+          benchmark: { include: [] },
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            // 固定 viewport，避免窗口尺寸变化影响截图（像素对比稳定性）。
+            viewport: { width: 800, height: 600 },
             instances: [{ browser: 'chromium' }],
           },
         },
