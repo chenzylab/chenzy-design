@@ -13,7 +13,7 @@ Spin 支持三种形态：独立态（inline，自由摆放）、包裹态（wra
 
 ## 何时使用
 
-当异步操作耗时较短（< 300ms）时可配合 delay 参数避免闪烁。内容结构已知时优先使用 Skeleton；进度百分比展示使用 Progress；按钮内联 loading 由 Button.loading 自带，不需要 Spin。
+当异步操作耗时较短（&lt; 300ms）时可配合 delay 参数避免闪烁。内容结构已知时优先使用 Skeleton；进度百分比展示使用 Progress；按钮内联 loading 由 Button.loading 自带，不需要 Spin。
 
 ## 无障碍
 
