@@ -10,6 +10,7 @@
   import Search from '$lib/components/Search.svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
+  import { componentNamesZh } from '$lib/component-names-zh';
 
   const { children }: { children: Snippet } = $props();
 
@@ -159,7 +160,7 @@
                 class="sidebar-item"
                 class:active={$page.url.pathname === `${base}/components/${name}`}
               >
-                {comp.name}
+                {comp.name}{#if lang === 'zh' && componentNamesZh[name]}<span class="sidebar-item-zh">{componentNamesZh[name]}</span>{/if}
               </a>
             {/each}
           </div>
@@ -300,6 +301,16 @@
     background: var(--cd-color-primary-light-1, #e8f3ff);
     color: var(--cd-color-primary, #165dff);
     font-weight: 500;
+  }
+  /* 中文环境下的中文名：弱化的次要色，跟在英文名后（对齐 Semi 双名侧栏） */
+  .sidebar-item-zh {
+    margin-left: 6px;
+    color: var(--cd-color-text-3, #a9aeb8);
+    font-size: 12px;
+  }
+  .sidebar-item.active .sidebar-item-zh {
+    color: var(--cd-color-primary, #165dff);
+    opacity: 0.7;
   }
   .docs-main {
     flex: 1;
