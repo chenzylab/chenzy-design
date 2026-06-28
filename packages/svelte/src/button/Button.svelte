@@ -66,6 +66,19 @@
   }
 </script>
 
+<!-- loading 时显示旋转加载图标（优先于用户 icon）；否则渲染用户 icon -->
+{#snippet leadingIcon()}
+  {#if loading}
+    <span class="cd-button__icon cd-button__icon--spin" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 3a9 9 0 1 0 9 9" />
+      </svg>
+    </span>
+  {:else if icon}
+    <span class="cd-button__icon">{@render icon()}</span>
+  {/if}
+{/snippet}
+
 {#if href}
   <a
     class={cls}
@@ -76,7 +89,7 @@
     aria-label={ariaLabel}
     onclick={handleClick}
   >
-    {#if icon}<span class="cd-button__icon">{@render icon()}</span>{/if}
+    {@render leadingIcon()}
     {@render children?.()}
   </a>
 {:else}
@@ -88,7 +101,7 @@
     aria-label={ariaLabel}
     onclick={handleClick}
   >
-    {#if icon}<span class="cd-button__icon">{@render icon()}</span>{/if}
+    {@render leadingIcon()}
     {@render children?.()}
   </button>
 {/if}
@@ -225,6 +238,15 @@
   .cd-button__icon {
     display: inline-flex;
   }
+  /* loading 旋转图标 */
+  .cd-button__icon--spin {
+    animation: cd-button-spin 0.7s linear infinite;
+  }
+  @keyframes cd-button-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   /* iconPosition=right: 纯 CSS flex order, DOM 顺序不变 (spec §4 L27) */
   .cd-button--icon-right .cd-button__icon {
     order: 1;
@@ -232,6 +254,10 @@
   @media (prefers-reduced-motion: reduce) {
     .cd-button {
       transition: none;
+    }
+    /* 降级：不旋转，避免眩晕 */
+    .cd-button__icon--spin {
+      animation: none;
     }
   }
 </style>
