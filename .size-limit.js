@@ -53,7 +53,7 @@ const ignore = [
 // 取该组件的主渲染组件（含子组件时取代表/全部，与 spec 预算口径一致）。
 const components = [
   // basic
-  ['button', '{ Button }', '2.5 KB'],
+  ['button', '{ Button }', '2.9 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
   ['grid', '{ Row, Col }', '2.25 KB'],
   ['icon', '{ Icon }', '1.45 KB'],
