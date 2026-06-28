@@ -2,7 +2,7 @@
  * @chenzy-design/svelte — Svelte 5 component implementations.
  * Each component is its own entry for tree-shaking.
  */
-export { Button, buttonMeta } from './button/index.js';
+export { Button, ButtonGroup, SplitButtonGroup, buttonMeta } from './button/index.js';
 export { Icon, iconMeta } from './icon/index.js';
 export { Divider, dividerMeta } from './divider/index.js';
 export { Space, spaceMeta } from './space/index.js';
