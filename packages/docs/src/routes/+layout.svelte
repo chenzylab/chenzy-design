@@ -11,6 +11,7 @@
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
   import { componentNamesZh } from '$lib/component-names-zh';
+  import SidebarIcon from '$lib/components/SidebarIcon.svelte';
 
   const { children }: { children: Snippet } = $props();
 
@@ -160,7 +161,10 @@
                 class="sidebar-item"
                 class:active={$page.url.pathname === `${base}/components/${name}`}
               >
-                {comp.name}{#if lang === 'zh' && componentNamesZh[name]}<span class="sidebar-item-zh">{componentNamesZh[name]}</span>{/if}
+                <SidebarIcon {name} category={comp.category ?? 'other'} />
+                <span class="sidebar-item-label"
+                  >{comp.name}{#if lang === 'zh' && componentNamesZh[name]}<span class="sidebar-item-zh">{componentNamesZh[name]}</span>{/if}</span
+                >
               </a>
             {/each}
           </div>
@@ -285,14 +289,22 @@
     letter-spacing: 0.05em;
   }
   .sidebar-item {
-    display: block;
-    padding: 6px 16px 6px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px 6px 16px;
     font-size: 13px;
     text-decoration: none;
     color: var(--cd-color-text-1, #4e5969);
     border-radius: 0 20px 20px 0;
     margin-right: 12px;
     transition: background 0.15s;
+  }
+  .sidebar-item-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .sidebar-item:hover {
     background: var(--cd-color-fill-1, #f2f3f5);
