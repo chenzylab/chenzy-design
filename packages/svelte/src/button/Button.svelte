@@ -4,10 +4,12 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-
-  type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
-  type ButtonTheme = 'solid' | 'borderless' | 'light' | 'outline';
-  type ButtonSize = 'small' | 'default' | 'large';
+  import {
+    getButtonGroupContext,
+    type ButtonType,
+    type ButtonTheme,
+    type ButtonSize,
+  } from './context.js';
 
   interface Props {
     type?: ButtonType;
@@ -16,6 +18,8 @@
     block?: boolean;
     disabled?: boolean;
     loading?: boolean;
+    /** AI 多彩按钮：solid/light 主题下用品牌渐变背景（对齐 Semi AI 风格）。 */
+    colorful?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
     href?: string;
     /** required for icon-only buttons */
@@ -28,12 +32,13 @@
   }
 
   let {
-    type = 'secondary',
-    theme = 'light',
-    size = 'default',
+    type: typeProp,
+    theme: themeProp,
+    size: sizeProp,
     block = false,
-    disabled = false,
+    disabled: disabledProp,
     loading = false,
+    colorful = false,
     htmlType = 'button',
     href,
     ariaLabel,
@@ -43,6 +48,13 @@
     onclick,
   }: Props = $props();
 
+  // ButtonGroup 上下文：仅在未显式设置对应 prop 时作为默认回退（显式 prop 始终优先）。
+  const group = getButtonGroupContext();
+  const type = $derived<ButtonType>(typeProp ?? group?.type ?? 'secondary');
+  const theme = $derived<ButtonTheme>(themeProp ?? group?.theme ?? 'light');
+  const size = $derived<ButtonSize>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
+
   const cls = $derived(
     [
       'cd-button',
@@ -51,6 +63,7 @@
       `cd-button--${size}`,
       block && 'cd-button--block',
       loading && 'cd-button--loading',
+      colorful && 'cd-button--colorful',
       icon && iconPosition === 'right' && 'cd-button--icon-right',
     ]
       .filter(Boolean)
@@ -234,6 +247,44 @@
   }
   .cd-button--outline:active:not(:disabled):not([aria-disabled='true']) {
     background: color-mix(in srgb, var(--btn-hue) 14%, transparent);
+  }
+  /*
+    colorful (AI 多彩)：品牌色到蓝/紫的渐变。
+    - colorful + solid: 渐变实心背景 + 白字
+    - colorful + light: 浅色渐变底 + 主色文字
+    仅这两种 theme 下生效；其余 theme 不变。
+  */
+  .cd-button--colorful.cd-button--solid {
+    background: linear-gradient(
+      135deg,
+      var(--cd-button-colorful-from) 0%,
+      var(--cd-button-colorful-to) 100%
+    );
+    color: var(--cd-color-text-inverse);
+    border-color: transparent;
+  }
+  .cd-button--colorful.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 88%, #000) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 88%, #000) 100%
+    );
+  }
+  .cd-button--colorful.cd-button--light {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 14%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 14%, transparent) 100%
+    );
+    color: var(--cd-button-colorful-from);
+    border-color: transparent;
+  }
+  .cd-button--colorful.cd-button--light:hover:not(:disabled):not([aria-disabled='true']) {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 22%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 22%, transparent) 100%
+    );
   }
   .cd-button__icon {
     display: inline-flex;
