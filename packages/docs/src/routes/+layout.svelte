@@ -149,9 +149,9 @@
   .docs-header {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 40px;
     padding: 0 24px;
-    height: 56px;
+    height: 60px;
     border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
     position: sticky;
     top: 0;
@@ -159,20 +159,31 @@
     z-index: 100;
   }
   .docs-logo {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     text-decoration: none;
     color: var(--cd-color-text-0, #1f2329);
+    /* 与左侧栏宽度对齐：logo 区占据侧栏列宽，一级导航从内容区起始处开始（对齐 Semi） */
+    width: calc(260px - 24px);
+    flex-shrink: 0;
+  }
+  .docs-header-nav {
+    display: flex;
+    gap: 28px;
   }
   .docs-header-nav a {
     text-decoration: none;
     color: var(--cd-color-text-1, #4e5969);
-    font-size: 14px;
+    font-size: 15px;
+    transition: color 0.15s;
+  }
+  .docs-header-nav a:hover {
+    color: var(--cd-color-text-0, #1f2329);
   }
   .docs-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin-left: auto;
   }
   .theme-toggle, .lang-toggle {
@@ -198,14 +209,14 @@
     flex: 1;
   }
   .docs-sidebar {
-    width: 220px;
+    width: 260px;
     flex-shrink: 0;
     border-right: 1px solid var(--cd-color-border, #e5e7eb);
     padding: 16px 0;
     overflow-y: auto;
     position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
+    top: 60px;
+    height: calc(100vh - 60px);
   }
   .sidebar-group {
     margin-bottom: 8px;
@@ -238,8 +249,8 @@
   }
   .docs-main {
     flex: 1;
-    padding: 32px 48px;
-    max-width: 900px;
+    padding: 32px 56px;
+    max-width: 1440px;
     min-width: 0;
   }
 </style>
