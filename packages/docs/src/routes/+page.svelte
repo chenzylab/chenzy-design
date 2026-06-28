@@ -126,8 +126,13 @@
     padding: 72px 24px 64px;
     margin-bottom: 24px;
     border-radius: 16px;
+    /* 用品牌色低透明度做柔光，亮/暗模式都自适应（避免暗色下 primary-light 变成刺眼白光） */
     background:
-      radial-gradient(60% 80% at 50% 0%, var(--cd-color-primary-light-1, #eaf5ff) 0%, transparent 70%),
+      radial-gradient(
+        56% 78% at 50% -8%,
+        color-mix(in srgb, var(--cd-color-primary, #0064fa) 16%, transparent) 0%,
+        transparent 68%
+      ),
       var(--cd-color-bg-0, #fff);
   }
   .hero h1 {
@@ -219,7 +224,8 @@
     height: 44px;
     border-radius: 10px;
     margin-bottom: 14px;
-    background: var(--cd-color-primary-light-1, #eaf5ff);
+    /* 品牌色低透明度底，亮/暗模式自适应 */
+    background: color-mix(in srgb, var(--cd-color-primary, #0064fa) 14%, transparent);
     color: var(--cd-color-primary, #0064fa);
   }
   .feature-card h3 {
