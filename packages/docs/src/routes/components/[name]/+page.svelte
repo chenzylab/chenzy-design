@@ -110,9 +110,19 @@
 
   // Vite glob — 静态路径，编译时分析
   const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
+  // 每个组件 demos 目录的 demos.ts（导出 demos: DemoEntry[]），用于「代码演示」区铺开全部场景
+  const demoListModules = import.meta.glob('../../../demos/*/demos.ts');
   const contentModules = import.meta.glob('../../../content/components/*.md');
 
+  interface DemoEntry {
+    title: string;
+    description?: string;
+    component: Component;
+    code: string;
+  }
+
   let DemoComponent = $state<Component | null>(null);
+  let demoList = $state<DemoEntry[]>([]);
   let ContentComponent = $state<Component | null>(null);
   let playgroundValues = $state<Record<string, unknown>>({});
 
@@ -178,6 +188,9 @@
     (meta.relatedComponents ?? []).filter((rc: string) => validNames.has(rc.toLowerCase())),
   );
 
+  // 场景 demo：demos.ts 全部条目，但剔除与交互式 BasicDemo 同源的那项（避免重复展示）
+  const sceneDemos = $derived(demoList.filter((d) => d.component !== DemoComponent));
+
   const hasA11y = $derived(!!(a11yRole || a11yKeyboard.length || a11yNotes.length || a11yPattern));
   const hasContent = $derived(!!(usageHints || dangerousActions || relatedComponents.length));
   const hasTokens = $derived(tokenComponent.length > 0);
@@ -211,6 +224,23 @@
         })
         .catch(() => {
           DemoComponent = null;
+        });
+    }
+  });
+
+  // 加载该组件的多场景 demo 列表（demos.ts）。首项默认作为可调试的 playground 演示，
+  // 其余按顺序铺开为带源码的 DemoBox（对齐 Semi 的多场景代码演示）。
+  $effect(() => {
+    const dir = nameToDir[lowerName] ?? lowerName;
+    const key = `../../../demos/${dir}/demos.ts`;
+    demoList = [];
+    if (demoListModules[key]) {
+      (demoListModules[key]() as Promise<{ demos: DemoEntry[] }>)
+        .then((mod) => {
+          demoList = mod.demos ?? [];
+        })
+        .catch(() => {
+          demoList = [];
         });
     }
   });
@@ -275,25 +305,37 @@
 
     {#if activeTab === 'api'}
       <!-- 代码演示 -->
-      {#if DemoComponent}
+      {#if DemoComponent || demoList.length}
         <section class="section" id="demo">
           <h2>{t('section.demo', lang)}</h2>
-          <div class="demo-with-playground">
-            <div class="demo-main">
-              <DemoBox title="基本用法">
-                <DemoComponent {...playgroundValues} />
-              </DemoBox>
-            </div>
-            {#if hasPlayground(meta.props ?? [])}
-              <div class="demo-sidebar">
-                <PropPlayground
-                  props={meta.props ?? []}
-                  values={playgroundValues}
-                  onchange={(v) => (playgroundValues = v)}
-                />
+
+          <!-- 交互式调试：BasicDemo + PropPlayground 实时改 props -->
+          {#if DemoComponent}
+            <div class="demo-with-playground">
+              <div class="demo-main">
+                <DemoBox title={t('demo.interactive', lang)}>
+                  <DemoComponent {...playgroundValues} />
+                </DemoBox>
               </div>
-            {/if}
-          </div>
+              {#if hasPlayground(meta.props ?? [])}
+                <div class="demo-sidebar">
+                  <PropPlayground
+                    props={meta.props ?? []}
+                    values={playgroundValues}
+                    onchange={(v) => (playgroundValues = v)}
+                  />
+                </div>
+              {/if}
+            </div>
+          {/if}
+
+          <!-- 多场景 demo：逐项铺开，带标题/描述/源码（对齐 Semi） -->
+          {#each sceneDemos as demo (demo.title)}
+            {@const SceneComp = demo.component}
+            <DemoBox title={demo.title} description={demo.description} code={demo.code}>
+              <SceneComp />
+            </DemoBox>
+          {/each}
         </section>
       {/if}
 

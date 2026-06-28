@@ -61,6 +61,7 @@ const dict: Dict = {
   // FAQ 区
   'faq.empty': { zh: '暂无常见问题。', en: 'No FAQ yet.' },
   'design.openInNew': { zh: '设计文档（新窗口打开）', en: 'Design docs (opens in new tab)' },
+  'demo.interactive': { zh: '交互演示（可调试）', en: 'Interactive (playground)' },
   'demo.viewSource': { zh: '查看源码', en: 'View source' },
   'demo.hideSource': { zh: '收起代码', en: 'Hide source' },
   'demo.copy': { zh: '复制', en: 'Copy' },
