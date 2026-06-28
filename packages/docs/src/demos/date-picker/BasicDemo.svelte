@@ -1,14 +1,14 @@
 <script lang="ts">
   import { DatePicker, RangePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let dateVal = $state<Date | null>(null);
-  let dateTimeVal = $state<Date | null>(null);
+  let dateVal = $state<Date | Date[] | null>(null);
+  let dateTimeVal = $state<Date | Date[] | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
-  let monthVal = $state<Date | null>(null);
-  let yearVal = $state<Date | null>(null);
-  let disabledTimeVal = $state<Date | null>(null);
-  let presetVal = $state<Date | null>(null);
-  let formatVal = $state<Date | null>(null);
+  let monthVal = $state<Date | Date[] | null>(null);
+  let yearVal = $state<Date | Date[] | null>(null);
+  let disabledTimeVal = $state<Date | Date[] | null>(null);
+  let presetVal = $state<Date | Date[] | null>(null);
+  let formatVal = $state<Date | Date[] | null>(null);
   let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
 </script>
 
@@ -16,7 +16,7 @@
   <Space>
     <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
     <Text type="tertiary">
-      日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+      日期：{dateVal instanceof Date ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
     </Text>
   </Space>
   <Space>
@@ -24,7 +24,7 @@
       <DatePicker type="dateTime" value={dateTimeVal} onChange={(d) => (dateTimeVal = d)} />
     </span>
     <Text type="tertiary">
-      日期时间：{dateTimeVal ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
+      日期时间：{dateTimeVal instanceof Date ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
     </Text>
   </Space>
   <Space>
@@ -32,7 +32,7 @@
       <DatePicker type="month" value={monthVal} onChange={(d) => (monthVal = d)} />
     </span>
     <Text type="tertiary">
-      月份：{monthVal ? `${monthVal.getFullYear()}-${monthVal.getMonth() + 1}` : '（未选）'}
+      月份：{monthVal instanceof Date ? `${monthVal.getFullYear()}-${monthVal.getMonth() + 1}` : '（未选）'}
     </Text>
   </Space>
   <Space>
@@ -40,7 +40,7 @@
       <DatePicker type="year" value={yearVal} onChange={(d) => (yearVal = d)} />
     </span>
     <Text type="tertiary">
-      年份：{yearVal ? yearVal.getFullYear() : '（未选）'}
+      年份：{yearVal instanceof Date ? yearVal.getFullYear() : '（未选）'}
     </Text>
   </Space>
   <Space>
@@ -67,7 +67,7 @@
       />
     </span>
     <Text type="tertiary">
-      快捷：{presetVal ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}
+      快捷：{presetVal instanceof Date ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}
     </Text>
   </Space>
   <Space>
@@ -85,7 +85,7 @@
       <DatePicker format="YYYY-MM-DD" value={formatVal} onChange={(d) => (formatVal = d)} />
     </span>
     <Text type="tertiary">
-      自定义 format（可手输 YYYY-MM-DD）：{formatVal
+      自定义 format（可手输 YYYY-MM-DD）：{formatVal instanceof Date
         ? formatVal.toLocaleDateString('zh-CN')
         : '（未选）'}
     </Text>

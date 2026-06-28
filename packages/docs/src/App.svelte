@@ -87,7 +87,7 @@
     resize,
     LottieIcon,
   } from '@chenzy-design/svelte';
-  import type { LottiePlayerFactory, TreeNode, DropdownItem, UploadFileItem, Locale } from '@chenzy-design/svelte';
+  import type { LottiePlayerFactory, TreeNode, UploadFileItem, Locale } from '@chenzy-design/svelte';
   import StarIcon from './StarIcon.svelte';
 
   // Icon svg 字符串渲染源演示（来源可信）。
@@ -669,14 +669,16 @@ let tagsDrag = $state<string[]>(['一', '二', '三', '四']);
   let tagInputCtrl = $state('');
   let color = $state('#3366ff');
 let colorInline = $state('#16a34a');
-  let dateVal = $state<Date | null>(null);
-  let dateTimeVal = $state<Date | null>(null);
+  // DatePicker 的 value/onChange 类型为 Date | Date[] | null（兼容单选/范围），
+  // 单选 demo 实际只产出 Date，但类型需与组件签名一致，故放宽并在读取处用 instanceof Date 收窄。
+  let dateVal = $state<Date | Date[] | null>(null);
+  let dateTimeVal = $state<Date | Date[] | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
-let monthVal = $state<Date | null>(null);
-let yearVal = $state<Date | null>(null);
-let disabledTimeVal = $state<Date | null>(null);
-let presetVal = $state<Date | null>(null);
-let formatVal = $state<Date | null>(null);
+let monthVal = $state<Date | Date[] | null>(null);
+let yearVal = $state<Date | Date[] | null>(null);
+let disabledTimeVal = $state<Date | Date[] | null>(null);
+let presetVal = $state<Date | Date[] | null>(null);
+let formatVal = $state<Date | Date[] | null>(null);
 let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
   let timeVal = $state<Date | null>(null);
   let timeVal12 = $state<Date | null>(null);
@@ -754,7 +756,7 @@ let pageSize2 = $state(10);
     { key: 'delete', label: '删除', danger: true },
   ];
   // 嵌套子菜单 + divider + group demo（多层嵌套）
-  const dropdownTreeItems: DropdownItem[] = [
+  const dropdownTreeItems = [
     { key: 'new', label: '新建' },
     {
       key: 'export',
@@ -772,16 +774,16 @@ let pageSize2 = $state(10);
         },
       ],
     },
-    { type: 'divider' },
+    { type: 'divider' as const },
     {
-      type: 'group',
+      type: 'group' as const,
       label: '编辑操作',
       children: [
         { key: 'cut', label: '剪切' },
         { key: 'paste', label: '粘贴', disabled: true },
       ],
     },
-    { type: 'divider' },
+    { type: 'divider' as const },
     { key: 'remove', label: '删除', danger: true },
   ];
   let menuSelected = $state<string | number>('overview');
@@ -2113,7 +2115,7 @@ let pageSize2 = $state(10);
     <Space>
       <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
       <Text type="tertiary">
-        日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+        日期：{dateVal instanceof Date ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
       </Text>
     </Space>
     <Space>
@@ -2121,7 +2123,7 @@ let pageSize2 = $state(10);
         <DatePicker type="dateTime" value={dateTimeVal} onChange={(d) => (dateTimeVal = d)} />
       </span>
       <Text type="tertiary">
-        日期时间：{dateTimeVal ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
+        日期时间：{dateTimeVal instanceof Date ? dateTimeVal.toLocaleString('zh-CN') : '（未选）'}
       </Text>
     </Space>
     <Space>
@@ -2129,7 +2131,7 @@ let pageSize2 = $state(10);
         <DatePicker type="month" value={monthVal} onChange={(d) => (monthVal = d)} />
       </span>
       <Text type="tertiary">
-        月份：{monthVal ? `${monthVal.getFullYear()}-${monthVal.getMonth() + 1}` : '（未选）'}
+        月份：{monthVal instanceof Date ? `${monthVal.getFullYear()}-${monthVal.getMonth() + 1}` : '（未选）'}
       </Text>
     </Space>
     <Space>
@@ -2137,7 +2139,7 @@ let pageSize2 = $state(10);
         <DatePicker type="year" value={yearVal} onChange={(d) => (yearVal = d)} />
       </span>
       <Text type="tertiary">
-        年份：{yearVal ? yearVal.getFullYear() : '（未选）'}
+        年份：{yearVal instanceof Date ? yearVal.getFullYear() : '（未选）'}
       </Text>
     </Space>
     <Space>
@@ -2164,7 +2166,7 @@ let pageSize2 = $state(10);
         />
       </span>
       <Text type="tertiary">
-        快捷：{presetVal ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}
+        快捷：{presetVal instanceof Date ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}
       </Text>
     </Space>
     <Space>
@@ -2185,7 +2187,7 @@ let pageSize2 = $state(10);
         <DatePicker format="YYYY-MM-DD" value={formatVal} onChange={(d) => (formatVal = d)} />
       </span>
       <Text type="tertiary">
-        自定义 format（可手输 YYYY-MM-DD）：{formatVal
+        自定义 format（可手输 YYYY-MM-DD）：{formatVal instanceof Date
           ? formatVal.toLocaleDateString('zh-CN')
           : '（未选）'}
       </Text>

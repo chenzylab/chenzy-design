@@ -6,7 +6,7 @@
 </script>
 
 <!-- 弹出触发 + presets + recentColors -->
-<Space data-testid="colorpicker-demo">
+<Space>
   <ColorPicker
     value={color}
     presets={['#3366ff', '#16a34a', '#ef4444', '#f59e0b']}
@@ -17,16 +17,18 @@
 </Space>
 
 <!-- inline 模式 + defaultFormat -->
-<Space align="start" style="margin-top: 12px" data-testid="colorpicker-inline">
-  <ColorPicker
-    inline
-    value={colorInline}
-    defaultFormat="rgb"
-    presets={['#3366ff', '#16a34a', '#ef4444']}
-    onChange={(c) => (colorInline = c)}
-  />
-  <Text type="tertiary">内联 + format 切换：{colorInline}</Text>
-</Space>
+<div style="margin-top: 12px">
+  <Space align="start">
+    <ColorPicker
+      inline
+      value={colorInline}
+      defaultFormat="rgb"
+      presets={['#3366ff', '#16a34a', '#ef4444']}
+      onChange={(c) => (colorInline = c)}
+    />
+    <Text type="tertiary">内联 + format 切换：{colorInline}</Text>
+  </Space>
+</div>
 
 <!-- status 校验态 -->
 <div style="margin-top: 12px" data-testid="colorpicker-status">

@@ -17,6 +17,12 @@
   <Button onclick={() => openDrawer('bottom')}>从底部</Button>
 </div>
 
-<Drawer title="抽屉" {placement} bind:visible={open} onClose={() => (open = false)}>
+<Drawer
+  title="抽屉"
+  {placement}
+  open={open}
+  onOpenChange={(v) => (open = v)}
+  onClose={() => (open = false)}
+>
   <p>从 {placement} 方向滑入的抽屉</p>
 </Drawer>

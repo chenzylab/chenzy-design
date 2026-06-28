@@ -9,11 +9,13 @@
   .demo-footer { background: #e0e7ff; padding: 10px 24px; font-size: 12px; color: #6366f1; }
 </style>
 
-<Layout style="min-height: 240px;">
-  <Layout.Header class="demo-header">Header</Layout.Header>
-  <Layout hasSider>
-    <Layout.Sider class="demo-sider">Sider</Layout.Sider>
-    <Layout.Content class="demo-content">Content</Layout.Content>
+<div style="min-height: 240px; display: flex; flex-direction: column;">
+  <Layout>
+    <Layout.Header class="demo-header">Header</Layout.Header>
+    <Layout hasSider>
+      <Layout.Sider class="demo-sider">Sider</Layout.Sider>
+      <Layout.Content class="demo-content">Content</Layout.Content>
+    </Layout>
+    <Layout.Footer class="demo-footer">Footer</Layout.Footer>
   </Layout>
-  <Layout.Footer class="demo-footer">Footer</Layout.Footer>
-</Layout>
+</div>

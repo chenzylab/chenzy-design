@@ -1,9 +1,11 @@
 <script lang="ts">
   import { Image } from '@chenzy-design/svelte';
+
+  const fits = ['fill', 'contain', 'cover', 'scale-down'] as const;
 </script>
 
 <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-  {#each ['fill', 'contain', 'cover', 'scale-down'] as fit}
+  {#each fits as fit (fit)}
     <div>
       <p style="font-size: 12px; color: #888; margin: 0 0 4px; text-align: center;">{fit}</p>
       <Image

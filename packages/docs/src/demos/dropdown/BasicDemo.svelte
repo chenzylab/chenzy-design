@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Dropdown, Button, Text } from '@chenzy-design/svelte';
-  import type { DropdownItem } from '@chenzy-design/svelte';
 
   let lastDropdown = $state('');
   let dropdownPopupContainer = $state<HTMLDivElement | null>(null);
@@ -12,7 +11,7 @@
   ];
 
   // 嵌套子菜单 + divider + group demo（多层嵌套）
-  const dropdownTreeItems: DropdownItem[] = [
+  const dropdownTreeItems = [
     { key: 'new', label: '新建' },
     {
       key: 'export',
@@ -30,16 +29,16 @@
         },
       ],
     },
-    { type: 'divider' },
+    { type: 'divider' as const },
     {
-      type: 'group',
+      type: 'group' as const,
       label: '编辑操作',
       children: [
         { key: 'cut', label: '剪切' },
         { key: 'paste', label: '粘贴', disabled: true },
       ],
     },
-    { type: 'divider' },
+    { type: 'divider' as const },
     { key: 'remove', label: '删除', danger: true },
   ];
 </script>

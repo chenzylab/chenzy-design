@@ -4,7 +4,7 @@
   let open = $state(false);
 </script>
 
-<Popover trigger="click" title="用户信息" bind:open>
+<Popover trigger="click" title="用户信息" open={open} onOpenChange={(v) => (open = v)}>
   {#snippet contentSlot()}
     <div style="min-width: 200px;">
       <p style="margin: 0 0 8px;">姓名：张三</p>
