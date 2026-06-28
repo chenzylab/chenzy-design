@@ -170,7 +170,15 @@
   // 注意 hasRole 是布尔标记（「是否有 role」），不是 role 值本身，故只取字符串 role。
   const a11y = $derived(meta.a11y ?? null);
   const a11yRole = $derived(typeof a11y?.role === 'string' ? a11y.role : null);
-  const a11yKeyboard = $derived<string[]>(a11y?.keyboard ?? []);
+  // keyboard 形态不统一：多数组件是 string[]（按键芯片），少数是单条 string（用 / 分隔的说明）。
+  // 归一为数组：string 按 / 切分为多段，避免 {#each} 误把字符串按字符迭代（重复空格 key 崩溃）。
+  const a11yKeyboard = $derived<string[]>(
+    Array.isArray(a11y?.keyboard)
+      ? a11y.keyboard
+      : typeof a11y?.keyboard === 'string'
+        ? a11y.keyboard.split('/').map((s: string) => s.trim()).filter(Boolean)
+        : [],
+  );
   const a11yNotes = $derived<string[]>(
     a11y?.notes ?? (a11y?.note ? [a11y.note] : []),
   );
@@ -431,7 +439,7 @@
                   <tr>
                     <td class="a11y-key">{t('a11y.keyboard', lang)}</td>
                     <td>
-                      {#each a11yKeyboard as k (k)}<kbd>{k}</kbd>{/each}
+                      {#each a11yKeyboard as k, i (i)}<kbd>{k}</kbd>{/each}
                     </td>
                   </tr>
                 {/if}

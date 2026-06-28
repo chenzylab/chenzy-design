@@ -25,5 +25,21 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 
 export const demos: DemoEntry[] = [
   entry('01-basic.svelte', '基础用法', '平铺列表穿梭框，支持搜索过滤。'),
+  entry('02-group.svelte', '分组数据', "type='groupList'：源数据按分组渲染分组头与计数。"),
+  entry(
+    '03-custom-render.svelte',
+    '自定义渲染 / 禁用项',
+    'renderSourceItem / renderSelectedItem 自定义行内容，disabled 标记不可迁移项，onSelect / onDeselect 跟踪勾选。',
+  ),
+  entry(
+    '04-tree-path.svelte',
+    '树状面板 / 显示路径',
+    "type='treeList' 树状源面板，勾父连带勾叶；showPath 让已选项显示完整路径。",
+  ),
+  entry(
+    '05-pagination.svelte',
+    '分页 / 自定义空态',
+    'pagination 让源面板分页，emptyContent 自定义两侧空态文案。',
+  ),
   entry('BasicDemo.svelte', '完整示例', '分组、树状面板、单向迁移、虚拟化、拖拽重排、远程搜索等高级用法。'),
 ];
