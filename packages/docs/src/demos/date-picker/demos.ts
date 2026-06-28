@@ -26,4 +26,8 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 export const demos: DemoEntry[] = [
   entry('BasicDemo.svelte', '基础用法', '支持日期、日期时间、月份、年份类型，含范围选择、快捷预设、禁用时间。'),
   entry('01-basic.svelte', '基础日期选择', '单日期选择与范围选择器的基础用法。'),
+  entry('02-type.svelte', '日期类型', 'type 切换日期时间、月份、年份选择。'),
+  entry('03-range.svelte', '范围选择', 'RangePicker 配合 disabledDate 与 maxRange 限制可选区间。'),
+  entry('04-disabled-presets.svelte', '禁用日期与快捷预设', 'disabledDate 禁用周末，presets/presetPosition 提供快捷选项。'),
+  entry('05-format-appearance.svelte', '自定义格式与外观', 'format 自定义解析格式，size/status/disabled 控制外观状态。'),
 ];
