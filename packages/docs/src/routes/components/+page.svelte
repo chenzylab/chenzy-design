@@ -56,7 +56,7 @@
     transition: box-shadow 0.15s, border-color 0.15s;
   }
   .component-card:hover {
-    border-color: var(--cd-color-primary, #165dff);
+    border-color: var(--cd-color-primary, #0064fa);
     box-shadow: 0 2px 8px rgba(22,93,255,0.12);
   }
   .card-name {

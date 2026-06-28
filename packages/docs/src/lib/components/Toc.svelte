@@ -126,11 +126,11 @@
     text-overflow: ellipsis;
   }
   .toc-link:hover {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
   }
   .toc-link.active {
-    color: var(--cd-color-primary, #165dff);
-    border-left-color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
+    border-left-color: var(--cd-color-primary, #0064fa);
     font-weight: 500;
   }
   @media (max-width: 1100px) {

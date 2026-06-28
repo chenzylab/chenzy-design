@@ -535,7 +535,7 @@
     text-decoration: none;
   }
   .breadcrumb a:hover {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
   }
   h1 {
     font-size: 28px;
@@ -601,15 +601,15 @@
     gap: 4px;
   }
   .tab.active {
-    color: var(--cd-color-primary, #165dff);
-    border-bottom-color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
+    border-bottom-color: var(--cd-color-primary, #0064fa);
   }
   .tab-link {
     margin-left: auto;
     color: var(--cd-color-text-2, #86909c);
   }
   .tab-link:hover {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
   }
   .ext-icon {
     font-size: 12px;
@@ -637,7 +637,7 @@
     margin-bottom: 4px;
   }
   .content-body :global(a) {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     text-decoration: none;
   }
   .content-body :global(a:hover) {
@@ -719,7 +719,7 @@
     border-radius: 3px;
   }
   .api-table code.type {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     background: transparent;
   }
 
@@ -793,8 +793,8 @@
     color: var(--cd-color-text-1, #4e5969);
   }
   .related-chip:hover {
-    border-color: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-primary, #165dff);
+    border-color: var(--cd-color-primary, #0064fa);
+    color: var(--cd-color-primary, #0064fa);
   }
   .guide-link {
     margin-top: 20px;
@@ -802,7 +802,7 @@
     color: var(--cd-color-text-2, #86909c);
   }
   .guide-link a {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     text-decoration: none;
   }
 

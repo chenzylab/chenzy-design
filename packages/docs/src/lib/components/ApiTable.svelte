@@ -124,5 +124,5 @@
     padding: 1px 4px;
     border-radius: 3px;
   }
-  code.type { color: var(--cd-color-primary, #165dff); background: transparent; }
+  code.type { color: var(--cd-color-primary, #0064fa); background: transparent; }
 </style>

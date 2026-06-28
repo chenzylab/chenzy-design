@@ -184,8 +184,8 @@
     color: var(--cd-color-text-0, #1f2329);
   }
   .dtt-tab.active {
-    color: var(--cd-color-primary, #165dff);
-    border-bottom-color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
+    border-bottom-color: var(--cd-color-primary, #0064fa);
     font-weight: 500;
   }
   .dtt-table {
@@ -264,12 +264,12 @@
     cursor: pointer;
   }
   .pager-btn:hover:not(:disabled) {
-    border-color: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-primary, #165dff);
+    border-color: var(--cd-color-primary, #0064fa);
+    color: var(--cd-color-primary, #0064fa);
   }
   .pager-btn.active {
-    border-color: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-primary, #165dff);
+    border-color: var(--cd-color-primary, #0064fa);
+    color: var(--cd-color-primary, #0064fa);
     font-weight: 600;
   }
   .pager-btn:disabled {

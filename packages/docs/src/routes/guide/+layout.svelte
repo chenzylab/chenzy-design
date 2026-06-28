@@ -31,7 +31,7 @@
     margin: 0 0 12px;
   }
   .guide-content :global(a) {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     text-decoration: none;
   }
   .guide-content :global(a:hover) {
