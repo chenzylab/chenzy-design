@@ -11,6 +11,26 @@
   let pagefind: any = null;
   let open = $state(false);
 
+  // 快捷键提示：mac 显示 ⌘，其余平台显示 Ctrl
+  const shortcutKey = $derived(
+    browser && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl',
+  );
+
+  // ⌘K / Ctrl+K 唤起搜索，Esc 关闭（独立 effect 管理监听挂卸）
+  $effect(() => {
+    if (!browser) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        open = true;
+      } else if (e.key === 'Escape') {
+        open = false;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   onMount(async () => {
     if (!browser) return;
     try {
@@ -33,7 +53,12 @@
 
 <div class="search-wrap">
   <button class="search-trigger" onclick={() => open = !open} aria-label={t('nav.search', lang)}>
-    🔍 {t('nav.search', lang)}
+    <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
+    </svg>
+    <span class="search-label">{t('nav.search', lang)}</span>
+    <kbd class="search-kbd">{shortcutKey} K</kbd>
   </button>
   {#if open}
   <div class="search-panel">
@@ -65,8 +90,33 @@
 <style>
   .search-wrap { position: relative; }
   .search-trigger {
-    background: none; border: 1px solid var(--cd-color-border, #e5e7eb);
-    border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cd-color-fill-1, #f2f3f5);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 7px 10px 7px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--cd-color-text-2, #86909c);
+    min-width: 180px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .search-trigger:hover {
+    border-color: var(--cd-color-border, #e5e7eb);
+    background: var(--cd-color-bg-0, #fff);
+  }
+  .search-icon { flex-shrink: 0; }
+  .search-label { margin-right: auto; }
+  .search-kbd {
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: var(--cd-color-bg-0, #fff);
+    border: 1px solid var(--cd-color-border, #e5e7eb);
     color: var(--cd-color-text-2, #86909c);
   }
   .search-panel {
