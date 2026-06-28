@@ -76,17 +76,17 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
     <Slider
-      value={value as SliderProps['value']}
-      {min}
-      {max}
-      {step}
-      {range}
-      {marks}
+      {...(value !== undefined ? { value: value as NonNullable<SliderProps['value']> } : {})}
+      {...(min !== undefined ? { min } : {})}
+      {...(max !== undefined ? { max } : {})}
+      {...(step !== undefined ? { step } : {})}
+      {...(range !== undefined ? { range } : {})}
+      {...(marks !== undefined ? { marks } : {})}
       disabled={disabled ?? fieldDisabled}
-      {vertical}
-      {size}
-      {tooltipVisible}
-      {tipFormatter}
+      {...(vertical !== undefined ? { vertical } : {})}
+      {...(size !== undefined ? { size } : {})}
+      {...(tooltipVisible !== undefined ? { tooltipVisible } : {})}
+      {...(tipFormatter !== undefined ? { tipFormatter } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}

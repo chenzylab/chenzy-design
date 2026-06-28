@@ -19,6 +19,7 @@
   import MenuPopupNode from './MenuPopupNode.svelte';
   import { deriveMenuSemantics, isDivider, isGroup } from './types.js';
   import type { Snippet } from 'svelte';
+  import type { Placement } from '@chenzy-design/core';
   import type { MenuItemDef, MenuItemNode, MenuKey, MenuPurpose } from './types.js';
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
@@ -28,7 +29,7 @@
 
   interface TooltipProps {
     content?: string;
-    position?: string;
+    position?: Placement;
     theme?: 'dark' | 'light';
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
@@ -535,8 +536,8 @@
           {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
-          {tooltipProps}
-          {renderWrapper}
+          {...(tooltipProps !== undefined ? { tooltipProps } : {})}
+          {...(renderWrapper !== undefined ? { renderWrapper } : {})}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />
@@ -555,7 +556,7 @@
           {destroyOnHide}
           {getPopupContainer}
           parentDisabled={disabled}
-          {renderWrapper}
+          {...(renderWrapper !== undefined ? { renderWrapper } : {})}
           onSelectLeaf={selectLeaf}
           onCloseAll={() => {}}
         />

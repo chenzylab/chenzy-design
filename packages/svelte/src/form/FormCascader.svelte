@@ -68,13 +68,13 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Cascader
-      value={value as CascaderProps['value']}
-      {treeData}
-      {multiple}
-      {placeholder}
+      {...(value !== undefined ? { value: value as NonNullable<CascaderProps['value']> } : {})}
+      {...(treeData !== undefined ? { treeData } : {})}
+      {...(multiple !== undefined ? { multiple } : {})}
+      {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {displayProp}
+      {...(size !== undefined ? { size } : {})}
+      {...(displayProp !== undefined ? { displayProp } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
     />

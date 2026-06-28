@@ -9,7 +9,7 @@
   type CardSize = 'small' | 'default' | 'large';
   type CardShadow = 'never' | 'hover' | 'always';
 
-  interface Props {
+  export interface Props {
     title?: string | Snippet;
     extra?: Snippet;
     cover?: Snippet;

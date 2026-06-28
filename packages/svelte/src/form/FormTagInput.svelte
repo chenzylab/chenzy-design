@@ -66,12 +66,12 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <TagInput
-      value={Array.isArray(value) ? (value as string[]) : undefined}
-      {placeholder}
+      {...(Array.isArray(value) ? { value: value as string[] } : {})}
+      {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {maxLength}
-      {allowDuplicates}
+      {...(size !== undefined ? { size } : {})}
+      {...(maxLength !== undefined ? { maxLength } : {})}
+      {...(allowDuplicates !== undefined ? { allowDuplicates } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(tags) => onChange(tags)}
     />

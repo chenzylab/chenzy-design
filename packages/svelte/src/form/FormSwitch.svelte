@@ -68,12 +68,12 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
     <Switch
-      value={typeof value === 'boolean' ? value : undefined}
+      {...(typeof value === 'boolean' ? { value } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {loading}
-      {checkedChildren}
-      {uncheckedChildren}
+      {...(size !== undefined ? { size } : {})}
+      {...(loading !== undefined ? { loading } : {})}
+      {...(checkedChildren !== undefined ? { checkedChildren } : {})}
+      {...(uncheckedChildren !== undefined ? { uncheckedChildren } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}

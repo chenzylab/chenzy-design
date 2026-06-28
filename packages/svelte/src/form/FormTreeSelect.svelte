@@ -70,14 +70,14 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <TreeSelect
-      value={value as TreeSelectProps['value']}
-      {treeData}
-      {multiple}
-      {placeholder}
+      {...(value !== undefined ? { value: value as NonNullable<TreeSelectProps['value']> } : {})}
+      {...(treeData !== undefined ? { treeData } : {})}
+      {...(multiple !== undefined ? { multiple } : {})}
+      {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {clearable}
-      {size}
-      {maxTagCount}
+      {...(clearable !== undefined ? { clearable } : {})}
+      {...(size !== undefined ? { size } : {})}
+      {...(maxTagCount !== undefined ? { maxTagCount } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
     />

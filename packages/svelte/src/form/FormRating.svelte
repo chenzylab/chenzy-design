@@ -70,14 +70,14 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Rating
-      value={typeof value === 'number' ? value : undefined}
-      {count}
-      {allowHalf}
-      {allowClear}
+      {...(typeof value === 'number' ? { value } : {})}
+      {...(count !== undefined ? { count } : {})}
+      {...(allowHalf !== undefined ? { allowHalf } : {})}
+      {...(allowClear !== undefined ? { allowClear } : {})}
       disabled={disabled ?? fieldDisabled}
-      {readonly}
-      {size}
-      {tooltips}
+      {...(readonly !== undefined ? { readonly } : {})}
+      {...(size !== undefined ? { size } : {})}
+      {...(tooltips !== undefined ? { tooltips } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
     />

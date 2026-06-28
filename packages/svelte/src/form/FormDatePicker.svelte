@@ -66,12 +66,12 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id })}
     <DatePicker
-      value={value instanceof Date || value === null || value === undefined ? (value as DatePickerProps['value']) : undefined}
-      {placeholder}
+      {...(value instanceof Date || value === null ? { value: value as NonNullable<DatePickerProps['value']> } : {})}
+      {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {format}
-      {disabledDate}
+      {...(size !== undefined ? { size } : {})}
+      {...(format !== undefined ? { format } : {})}
+      {...(disabledDate !== undefined ? { disabledDate } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}

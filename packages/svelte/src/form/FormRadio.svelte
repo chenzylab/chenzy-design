@@ -47,7 +47,7 @@
     disabled,
     size,
     type,
-    children,
+    children: slotChildren,
   }: Props = $props();
 
   const fieldProps = $derived<ComponentProps<typeof Field>>({
@@ -70,14 +70,14 @@
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Radio
       value={radioValue}
-      checked={typeof value === 'boolean' ? value : undefined}
+      {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {type}
+      {...(size !== undefined ? { size } : {})}
+      {...(type !== undefined ? { type } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(checked) => onChange(checked)}
     >
-      {@render children?.()}
+      {@render slotChildren?.()}
     </Radio>
   {/snippet}
 </Field>

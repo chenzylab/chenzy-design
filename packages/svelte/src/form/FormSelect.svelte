@@ -74,21 +74,21 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy })}
     <Select
-      value={value as SelectProps['value']}
-      {options}
-      {multiple}
-      {filter}
-      {placeholder}
+      {...(value !== undefined ? { value: value as NonNullable<SelectProps['value']> } : {})}
+      {...(options !== undefined ? { options } : {})}
+      {...(multiple !== undefined ? { multiple } : {})}
+      {...(filter !== undefined ? { filter } : {})}
+      {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {clearable}
-      {size}
-      {maxTagCount}
-      {allowCreate}
-      {virtualized}
+      {...(clearable !== undefined ? { clearable } : {})}
+      {...(size !== undefined ? { size } : {})}
+      {...(maxTagCount !== undefined ? { maxTagCount } : {})}
+      {...(allowCreate !== undefined ? { allowCreate } : {})}
+      {...(virtualized !== undefined ? { virtualized } : {})}
       status={status === 'error' ? 'error' : 'default'}
-      ariaLabelledby={label !== undefined ? undefined : id}
+      {...(label !== undefined ? {} : { ariaLabelledby: id })}
       {...(describedBy !== undefined ? { ariaLabel: describedBy } : {})}
       onChange={(v) => onChange(v)}
     />

@@ -587,7 +587,7 @@
         aria-controls={baseId}
         aria-label={ariaLabel}
         {disabled}
-        readonly={inputReadOnly || undefined}
+        data-readonly={inputReadOnly || undefined}
         style={inputStyleStr}
         bind:this={triggerEl}
         onclick={toggleOpen}

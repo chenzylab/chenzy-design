@@ -5,7 +5,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  interface Props {
+  export interface Props {
     avatar?: Snippet;
     title?: Snippet | string;
     description?: Snippet | string;

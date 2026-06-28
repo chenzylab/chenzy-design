@@ -53,7 +53,7 @@
     drag,
     action,
     size,
-    children,
+    children: slotChildren,
   }: Props = $props();
 
   const fieldProps = $derived<ComponentProps<typeof Field>>({
@@ -74,19 +74,19 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Upload
-      value={Array.isArray(value) ? (value as UploadProps['value']) : undefined}
-      {accept}
-      {multiple}
-      {limit}
+      {...(Array.isArray(value) ? { value: value as NonNullable<UploadProps['value']> } : {})}
+      {...(accept !== undefined ? { accept } : {})}
+      {...(multiple !== undefined ? { multiple } : {})}
+      {...(limit !== undefined ? { limit } : {})}
       disabled={disabled ?? fieldDisabled}
-      {listType}
-      {drag}
-      {action}
-      {size}
+      {...(listType !== undefined ? { listType } : {})}
+      {...(drag !== undefined ? { drag } : {})}
+      {...(action !== undefined ? { action } : {})}
+      {...(size !== undefined ? { size } : {})}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(list) => onChange(list)}
     >
-      {@render children?.()}
+      {@render slotChildren?.()}
     </Upload>
   {/snippet}
 </Field>

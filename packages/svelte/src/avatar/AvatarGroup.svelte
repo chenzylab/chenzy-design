@@ -67,10 +67,10 @@
 
   // pure collapse computation — slice visible items and count the rest.
   const list = $derived(items ?? []);
-  const overlapList = $derived(list.slice(limit));
   const limit = $derived(
     typeof maxCount === 'number' && maxCount >= 0 ? maxCount : list.length,
   );
+  const overlapList = $derived(list.slice(limit));
   const visible = $derived(list.slice(0, limit));
   const restCount = $derived(Math.max(0, list.length - visible.length));
 
