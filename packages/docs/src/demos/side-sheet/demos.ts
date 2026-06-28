@@ -24,6 +24,9 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('BasicDemo.svelte', '基础用法', '支持四个方向、多种尺寸、非模态、自定义 Footer。'),
   entry('01-basic.svelte', '基础侧边栏', '右侧滑入面板，受控 open，支持 Esc/遮罩关闭并回调关闭原因。'),
+  entry('02-placement.svelte', '弹出方位', 'placement 控制从 left/right/top/bottom 四边滑入。'),
+  entry('03-size.svelte', '尺寸控制', 'size 预设（small/large）或 width 显式数值，显式优先于预设。'),
+  entry('04-no-mask.svelte', '非模态协作', 'mask=false：无遮罩、不锁滚动、不抢焦点，可与主页面同时操作，outsideClosable 点击外部关闭。'),
+  entry('05-footer.svelte', '带 Footer 操作', 'footer 暴露 close()，由取消/应用按钮关闭面板。'),
 ];
