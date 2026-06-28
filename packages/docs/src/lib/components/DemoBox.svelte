@@ -114,9 +114,11 @@
   .demo-box__toggle:hover {
     color: var(--cd-color-primary, #0064fa);
   }
+  /* 代码块底色用 shiki 主题自带背景（与 token 配色同源，最协调）；
+     fallback 到 fill-0 以防变量缺失 */
   .demo-box__code {
     border-top: 1px solid var(--cd-color-border, #e5e7eb);
-    background: var(--cd-color-fill-0, #f7f8fa);
+    background: var(--shiki-light-bg, var(--cd-color-fill-0, #f7f8fa));
     font-size: 13px;
     overflow-x: auto;
   }
@@ -125,15 +127,23 @@
     padding: 16px;
     background-color: transparent !important;
   }
+  /* shiki 用 defaultColor:false 输出 --shiki-light / --shiki-dark 变量，
+     由 CSS 消费 token 颜色（亮色取 light），否则 token 无色 = 看起来没高亮 */
+  .demo-box__code :global(.shiki),
+  .demo-box__code :global(.shiki span) {
+    color: var(--shiki-light, inherit);
+  }
   .demo-box__raw {
     margin: 0;
     padding: 16px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     white-space: pre;
   }
+  :global([data-theme='dark']) .demo-box__code {
+    background: var(--shiki-dark-bg, var(--cd-color-fill-0, #1f1f1f));
+  }
   :global([data-theme='dark']) .demo-box__code :global(.shiki),
   :global([data-theme='dark']) .demo-box__code :global(.shiki span) {
-    color: var(--shiki-dark, inherit) !important;
-    background-color: var(--shiki-dark-bg, transparent) !important;
+    color: var(--shiki-dark, inherit);
   }
 </style>
