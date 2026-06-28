@@ -631,6 +631,42 @@
     line-height: 1.7;
     margin-bottom: 4px;
   }
+  .content-body :global(a) {
+    color: var(--cd-color-primary, #165dff);
+    text-decoration: none;
+  }
+  .content-body :global(a:hover) {
+    text-decoration: underline;
+  }
+  .content-body :global(code) {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--cd-color-fill-1, #f2f3f5);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .content-body :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 0 0 16px;
+  }
+  .content-body :global(th) {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--cd-color-fill-1, #f2f3f5);
+    font-weight: 600;
+    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
+  }
+  .content-body :global(td) {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
+    vertical-align: top;
+  }
+  .content-body :global(strong) {
+    font-weight: 600;
+    color: var(--cd-color-text-0, #1f2329);
+  }
   .no-content {
     color: var(--cd-color-text-2, #86909c);
     font-size: 14px;
