@@ -24,6 +24,9 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('BasicDemo.svelte', '基础用法', '点击触发下拉菜单，支持子菜单、分隔线、分组和危险项。'),
-  entry('01-basic.svelte', '基础下拉', '最常用的点击触发下拉，支持危险项高亮。'),
+  entry('01-basic.svelte', '基础用法', '点击触发器唤起一组可操作命令项，danger 项高亮为危险色。'),
+  entry('02-trigger.svelte', '触发方式', 'trigger 支持 hover 悬浮、click 点击、contextMenu 右键三种唤起方式。'),
+  entry('03-position.svelte', '弹出位置', 'position 控制浮层相对触发器的方位，空间不足时自动翻转。'),
+  entry('04-nested.svelte', '嵌套子菜单', '菜单项含 children 即展开为子菜单，支持多层嵌套，→ 进入、← / Esc 返回。'),
+  entry('05-group.svelte', '分组与分隔', 'type:"group" 分组标题、type:"divider" 分隔符组合出结构化菜单。'),
 ];
