@@ -23,11 +23,44 @@ const dict: Dict = {
 
   // 组件详情页
   'tab.api': { zh: 'API 文档', en: 'API' },
+  'tab.design': { zh: '设计文档', en: 'Design' },
   'tab.usage': { zh: '使用场景', en: 'Usage' },
   'section.demo': { zh: '代码演示', en: 'Demos' },
   'section.api': { zh: 'API 参考', en: 'API Reference' },
+  'section.subapi': { zh: '子组件', en: 'Sub-components' },
+  'section.a11y': { zh: 'Accessibility', en: 'Accessibility' },
+  'section.content': { zh: '文案规范', en: 'Content Guidelines' },
   'section.tokens': { zh: '设计变量', en: 'Design Tokens' },
+  'section.faq': { zh: 'FAQ', en: 'FAQ' },
   'toc.title': { zh: '本页目录', en: 'On this page' },
+  // Accessibility 区
+  'a11y.role': { zh: 'ARIA role', en: 'ARIA role' },
+  'a11y.keyboard': { zh: '键盘交互', en: 'Keyboard' },
+  'a11y.notes': { zh: '说明', en: 'Notes' },
+  'a11y.apg': { zh: '参考 WAI-ARIA APG 模式', en: 'See WAI-ARIA APG pattern' },
+  // 文案规范区
+  'content.usage': { zh: '使用建议', en: 'Usage' },
+  'content.danger': { zh: '危险操作', en: 'Dangerous actions' },
+  'content.related': { zh: '相关组件', en: 'Related components' },
+  'content.guideLink': {
+    zh: '更多通用文案规范见',
+    en: 'For general content guidelines, see',
+  },
+  'content.guideLinkText': { zh: '文案规范指南', en: 'Content Guidelines' },
+  // 设计变量表格
+  'token.var': { zh: '变量', en: 'Variable' },
+  'token.value': { zh: '默认值', en: 'Default' },
+  'token.usage': { zh: '用法', en: 'Usage' },
+  'token.empty': { zh: '该组件暂无专属设计变量。', en: 'No component-specific design tokens.' },
+  'token.scopeComponent': { zh: '组件变量', en: 'Component' },
+  'token.scopeGlobal': { zh: '全局变量', en: 'Global' },
+  'token.range': {
+    zh: '显示第 {from} 条-第 {to} 条，共 {total} 条',
+    en: 'Showing {from}-{to} of {total}',
+  },
+  // FAQ 区
+  'faq.empty': { zh: '暂无常见问题。', en: 'No FAQ yet.' },
+  'design.openInNew': { zh: '设计文档（新窗口打开）', en: 'Design docs (opens in new tab)' },
   'demo.viewSource': { zh: '查看源码', en: 'View source' },
   'demo.hideSource': { zh: '收起代码', en: 'Hide source' },
   'demo.copy': { zh: '复制', en: 'Copy' },
