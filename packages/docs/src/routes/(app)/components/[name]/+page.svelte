@@ -109,10 +109,10 @@
   };
 
   // Vite glob — 静态路径，编译时分析
-  const demoModules = import.meta.glob('../../../demos/*/BasicDemo.svelte');
+  const demoModules = import.meta.glob('../../../../demos/*/BasicDemo.svelte');
   // 每个组件 demos 目录的 demos.ts（导出 demos: DemoEntry[]），用于「代码演示」区铺开全部场景
-  const demoListModules = import.meta.glob('../../../demos/*/demos.ts');
-  const contentModules = import.meta.glob('../../../content/components/*.md');
+  const demoListModules = import.meta.glob('../../../../demos/*/demos.ts');
+  const contentModules = import.meta.glob('../../../../content/components/*.md');
 
   interface DemoEntry {
     title: string;
@@ -223,7 +223,7 @@
 
   $effect(() => {
     const dir = nameToDir[lowerName] ?? lowerName;
-    const key = `../../../demos/${dir}/BasicDemo.svelte`;
+    const key = `../../../../demos/${dir}/BasicDemo.svelte`;
     DemoComponent = null;
     if (demoModules[key]) {
       (demoModules[key]() as Promise<{ default: Component }>)
@@ -240,7 +240,7 @@
   // 其余按顺序铺开为带源码的 DemoBox（对齐 Semi 的多场景代码演示）。
   $effect(() => {
     const dir = nameToDir[lowerName] ?? lowerName;
-    const key = `../../../demos/${dir}/demos.ts`;
+    const key = `../../../../demos/${dir}/demos.ts`;
     demoList = [];
     if (demoListModules[key]) {
       (demoListModules[key]() as Promise<{ demos: DemoEntry[] }>)
@@ -254,7 +254,7 @@
   });
 
   $effect(() => {
-    const key = `../../../content/components/${lowerName}.md`;
+    const key = `../../../../content/components/${lowerName}.md`;
     ContentComponent = null;
     if (contentModules[key]) {
       (contentModules[key]() as Promise<{ default: Component }>)
