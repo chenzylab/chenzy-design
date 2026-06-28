@@ -13,7 +13,7 @@
         <div>Modal.okText：<strong>{t('Modal.okText')}</strong></div>
         <div>格式化数字 1234567.89：<strong>{formatNumber(1234567.89)}</strong></div>
       </div>
+      <Pagination total={200} showTotal currentPage={1} pageSize={10} />
     {/snippet}
-    <Pagination total={200} showTotal currentPage={1} pageSize={10} />
   </LocaleProvider>
 </div>

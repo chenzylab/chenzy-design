@@ -16,6 +16,6 @@
     {/snippet}
   </Form>
   {#if result}
-    <Text type="tertiary" style="margin-top: 8px;">{result}</Text>
+    <div style="margin-top: 8px;"><Text type="tertiary">{result}</Text></div>
   {/if}
 </div>

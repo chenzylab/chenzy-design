@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DatePicker, RangePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let dateVal = $state<Date | null>(null);
+  let dateVal = $state<Date | Date[] | null>(null);
   let rangeVal = $state<[Date | null, Date | null] | null>(null);
 </script>
 
@@ -9,7 +9,7 @@
   <Space>
     <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
     <Text type="tertiary">
-      日期：{dateVal ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
+      日期：{dateVal instanceof Date ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
     </Text>
   </Space>
   <Space>

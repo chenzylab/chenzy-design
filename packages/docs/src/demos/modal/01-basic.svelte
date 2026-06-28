@@ -8,7 +8,8 @@
 
 <Modal
   title="对话框标题"
-  bind:visible={open}
+  open={open}
+  onOpenChange={(v) => (open = v)}
   onOk={() => (open = false)}
   onCancel={() => (open = false)}
 >
