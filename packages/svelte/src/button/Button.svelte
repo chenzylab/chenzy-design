@@ -109,7 +109,8 @@
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-button:focus-visible {
     outline: none;
@@ -135,31 +136,91 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
-  /* primary / solid */
+  /*
+    type 决定「色相」(--btn-hue 系列变量)，theme 决定「填充方式」，两者正交组合。
+    - --btn-hue:       该 type 的语义主色 (solid 背景 / light·borderless·outline 文字与边框)
+    - --btn-hue-hover: solid 背景 hover 加深一档
+    - --btn-hue-text:  solid 文字色 (语义色用白字，中性色用反相文字)
+    light/borderless/outline 的浅色背景统一用 color-mix 由 --btn-hue 派生，
+    避免依赖尚未定义的 *-light-* token。
+  */
   .cd-button--primary {
-    background: var(--cd-button-color-bg-primary);
-    color: var(--cd-button-color-text-primary);
+    --btn-hue: var(--cd-color-primary);
+    --btn-hue-hover: var(--cd-color-primary-hover);
+    --btn-hue-text: var(--cd-color-text-inverse);
   }
   .cd-button--secondary {
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-0);
+    /* 中性 type：solid=深灰底白字 */
+    --btn-hue: var(--cd-color-text-0);
+    --btn-hue-hover: var(--cd-color-text-1);
+    --btn-hue-text: var(--cd-color-text-inverse);
   }
   .cd-button--tertiary {
-    background: transparent;
-    color: var(--cd-color-text-1);
+    /* 中性更弱：solid=中灰底白字、light/borderless 用次级文字色 */
+    --btn-hue: var(--cd-color-text-2);
+    --btn-hue-hover: var(--cd-color-text-1);
+    --btn-hue-text: var(--cd-color-text-inverse);
   }
   .cd-button--warning {
-    background: var(--cd-color-warning);
-    color: var(--cd-color-text-inverse);
+    --btn-hue: var(--cd-color-warning);
+    --btn-hue-hover: color-mix(in srgb, var(--cd-color-warning) 88%, #000);
+    --btn-hue-text: var(--cd-color-text-inverse);
   }
   .cd-button--danger {
-    background: var(--cd-color-danger);
-    color: var(--cd-color-text-inverse);
+    --btn-hue: var(--cd-color-danger);
+    --btn-hue-hover: color-mix(in srgb, var(--cd-color-danger) 88%, #000);
+    --btn-hue-text: var(--cd-color-text-inverse);
   }
+
+  /* theme: solid — type 色相实心背景 + 反相/白字 */
+  .cd-button--solid {
+    background: var(--btn-hue);
+    color: var(--btn-hue-text);
+  }
+  .cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--btn-hue-hover);
+  }
+  .cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 82%, #000);
+  }
+
+  /* theme: light — type 色相浅色背景 + 色相文字 */
+  .cd-button--light {
+    background: color-mix(in srgb, var(--btn-hue) 12%, transparent);
+    color: var(--btn-hue);
+  }
+  .cd-button--light:hover:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 20%, transparent);
+  }
+  .cd-button--light:active:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 28%, transparent);
+  }
+
+  /* theme: borderless — 透明背景 + 色相文字，无边框 */
+  .cd-button--borderless {
+    background: transparent;
+    color: var(--btn-hue);
+  }
+  .cd-button--borderless:hover:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 12%, transparent);
+  }
+  .cd-button--borderless:active:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 20%, transparent);
+  }
+
+  /* theme: outline — 透明背景 + 色相边框 + 色相文字 */
   .cd-button--outline {
     background: transparent;
-    border-color: var(--cd-color-border);
-    color: var(--cd-color-text-0);
+    border-color: var(--btn-hue);
+    color: var(--btn-hue);
+  }
+  .cd-button--outline:hover:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 8%, transparent);
+    border-color: var(--btn-hue-hover);
+    color: var(--btn-hue-hover);
+  }
+  .cd-button--outline:active:not(:disabled):not([aria-disabled='true']) {
+    background: color-mix(in srgb, var(--btn-hue) 14%, transparent);
   }
   .cd-button__icon {
     display: inline-flex;
