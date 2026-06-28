@@ -13,7 +13,7 @@ Skeleton（骨架屏）是在内容加载完成前，以占位灰块预渲染页
 
 ## 何时使用
 
-当内容结构已知、加载时间较长时使用 Skeleton 代替空白或纯 Spinner，以减少布局抖动和用户等待焦虑。加载时间极短（< 300ms）时无需 Skeleton；错误态使用 Empty；连续进度指示使用 Spin/Progress。
+当内容结构已知、加载时间较长时使用 Skeleton 代替空白或纯 Spinner，以减少布局抖动和用户等待焦虑。加载时间极短（＜300ms）时无需 Skeleton；错误态使用 Empty；连续进度指示使用 Spin/Progress。
 
 ## 无障碍
 

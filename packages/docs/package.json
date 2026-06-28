@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && pagefind --site build",
+    "build:tokens": "tsx scripts/build-tokens-detail.ts",
+    "build": "pnpm build:tokens && vite build && pagefind --site build",
     "search": "pagefind --site build",
     "preview": "vite preview",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
