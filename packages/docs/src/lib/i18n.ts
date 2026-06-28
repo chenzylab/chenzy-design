@@ -93,6 +93,13 @@ const dict: Dict = {
   },
   'home.browseAll': { zh: '浏览所有组件 →', en: 'Browse all components →' },
   'home.componentsCount': { zh: '共 {n} 个组件', en: '{n} components' },
+  // 组件总览 Overview
+  'overview.headTitle': { zh: '组件总览', en: 'Overview' },
+  'overview.title': { zh: 'Overview 组件总览', en: 'Components Overview' },
+  'overview.intro': {
+    zh: 'chenzy-design 当前共实现 {n} 个组件，按 6 大分类组织。点击任意组件进入详情。',
+    en: 'chenzy-design currently ships {n} components organized into 6 categories. Click any component for details.',
+  },
   // 首页 hero + 特性区（对齐 Semi 落地页）
   'home.heroTitle': {
     zh: '让企业级应用界面\n更一致、更优雅',
