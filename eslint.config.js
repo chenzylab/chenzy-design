@@ -27,8 +27,9 @@ export default tseslint.config(
     },
   },
   {
-    // 构建/配置类 JS（无 TS 类型兜底）：声明 Node 全局，避免 no-undef 误报。
-    files: ['**/*.config.{js,mjs,cjs}'],
+    // 构建/配置类 JS 脚本（无 TS 类型兜底）：声明 Node 全局，避免 no-undef 误报。
+    // 覆盖 *.config.* 与各包 scripts/ 下的 Node 脚本（如 clean-dist.mjs）。
+    files: ['**/*.config.{js,mjs,cjs}', '**/scripts/**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
         process: 'readonly',
