@@ -7,6 +7,8 @@
   interface TocSection {
     id: string;
     title: string;
+    /** 1=顶级章节，2=子项（如代码演示下的各场景），用于缩进 */
+    level?: number;
   }
 
   const { sections = [] }: { sections?: TocSection[] } = $props();
@@ -72,6 +74,7 @@
             href="#{section.id}"
             class="toc-link"
             class:active={activeId === section.id}
+            class:toc-link--sub={section.level === 2}
             onclick={(e) => {
               e.preventDefault();
               scrollTo(section.id);
@@ -124,6 +127,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* 子项（场景 demo）：缩进 + 略小字号，弱化层级 */
+  .toc-link--sub {
+    padding-left: 24px;
+    font-size: 12px;
+    color: var(--cd-color-text-2, #86909c);
   }
   .toc-link:hover {
     color: var(--cd-color-primary, #0064fa);
