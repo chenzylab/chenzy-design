@@ -9,7 +9,7 @@
     "build": "pnpm build:tokens && vite build && pagefind --site build",
     "search": "pagefind --site build",
     "preview": "vite preview",
-    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@chenzy-design/svelte": "workspace:*",
