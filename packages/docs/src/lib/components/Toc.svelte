@@ -88,7 +88,7 @@
 <style>
   .toc {
     position: sticky;
-    top: 24px;
+    top: 84px;
     width: 180px;
     flex-shrink: 0;
     align-self: flex-start;

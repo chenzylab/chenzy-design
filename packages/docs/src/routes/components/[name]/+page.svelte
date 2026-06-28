@@ -510,12 +510,17 @@
 <style>
   .page {
     display: flex;
-    gap: 40px;
+    gap: 48px;
     align-items: flex-start;
   }
   .page-main {
     flex: 1;
     min-width: 0;
+    /* 内容保持可读宽度，TOC 由 margin-left:auto 推到主区最右侧（对齐 Semi） */
+    max-width: 860px;
+  }
+  .page > :global(.toc) {
+    margin-left: auto;
   }
   .component-header {
     margin-bottom: 32px;
