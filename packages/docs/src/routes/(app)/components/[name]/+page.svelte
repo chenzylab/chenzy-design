@@ -197,21 +197,35 @@
   );
 
   // 场景 demo：demos.ts 全部条目，但剔除与交互式 BasicDemo 同源的那项（避免重复展示）
-  const sceneDemos = $derived(demoList.filter((d) => d.component !== DemoComponent));
+  // 每个场景 demo 生成稳定锚点 id（按序号 + title slug），供 TOC 跳转
+  const sceneDemos = $derived(
+    demoList
+      .filter((d) => d.component !== DemoComponent)
+      .map((d, i) => ({ ...d, anchorId: `demo-${i}` })),
+  );
 
   const hasA11y = $derived(!!(a11yRole || a11yKeyboard.length || a11yNotes.length || a11yPattern));
   const hasContent = $derived(!!(usageHints || dangerousActions || relatedComponents.length));
   const hasTokens = $derived(tokenComponent.length > 0);
 
-  // TOC 章节：仅列出实际渲染的区块
+  interface TocItem {
+    id: string;
+    title: string;
+    level?: number;
+  }
+
+  // TOC 章节：仅列出实际渲染的区块；代码演示下逐个场景作为子项（对齐 Semi 章节目录）
   const tocSections = $derived(
     [
-      DemoComponent ? { id: 'demo', title: t('section.demo', lang) } : null,
+      DemoComponent || sceneDemos.length
+        ? { id: 'demo', title: t('section.demo', lang) }
+        : null,
+      ...sceneDemos.map((d) => ({ id: d.anchorId, title: d.title, level: 2 })),
       { id: 'api', title: t('section.api', lang) },
       hasA11y ? { id: 'a11y', title: t('section.a11y', lang) } : null,
       hasContent ? { id: 'content', title: t('section.content', lang) } : null,
       hasTokens ? { id: 'tokens', title: t('section.tokens', lang) } : null,
-    ].filter((s): s is { id: string; title: string } => s !== null),
+    ].filter((s): s is TocItem => s !== null),
   );
 
   function hasPlayground(props: any[]): boolean {
@@ -340,9 +354,11 @@
           <!-- 多场景 demo：逐项铺开，带标题/描述/源码（对齐 Semi） -->
           {#each sceneDemos as demo (demo.title)}
             {@const SceneComp = demo.component}
-            <DemoBox title={demo.title} description={demo.description} code={demo.code}>
-              <SceneComp />
-            </DemoBox>
+            <div id={demo.anchorId} class="scene-anchor">
+              <DemoBox title={demo.title} description={demo.description} code={demo.code}>
+                <SceneComp />
+              </DemoBox>
+            </div>
           {/each}
         </section>
       {/if}
@@ -547,6 +563,10 @@
   }
   .section {
     margin-bottom: 48px;
+    scroll-margin-top: 80px;
+  }
+  /* 场景 demo 锚点：跳转时避让 sticky 顶栏 */
+  .scene-anchor {
     scroll-margin-top: 80px;
   }
   h2 {
