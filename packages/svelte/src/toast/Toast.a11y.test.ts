@@ -29,6 +29,10 @@ function makeToast(overrides: Partial<ToastItemData> = {}): ToastItemData {
     pauseOnHover: true,
     theme: 'light',
     onClose: undefined,
+    icon: undefined,
+    showClose: true,
+    textMaxWidth: 450,
+    stack: false,
     ...overrides,
   };
 }

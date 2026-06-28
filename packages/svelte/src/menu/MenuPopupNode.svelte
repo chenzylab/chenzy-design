@@ -17,7 +17,7 @@
 
   interface TooltipProps {
     content?: string;
-    position?: string;
+    position?: Placement;
     theme?: 'dark' | 'light';
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
@@ -86,6 +86,20 @@
   const hasChildren = $derived(!!node.children && node.children.length > 0);
   // 整体 disabled（parentDisabled）叠加单项 disabled。
   const itemDisabled = $derived(parentDisabled || !!node.disabled);
+
+  // 折叠 Tooltip 的可选透传项：exactOptionalPropertyTypes 下不能把 undefined 显式传给
+  // 值域不含 undefined 的可选 prop，故仅在有值时纳入（content/placement 始终有兜底另传）。
+  const tooltipPass = $derived({
+    content: tooltipProps?.content ?? node.label,
+    placement: tooltipProps?.position ?? ('right' as Placement),
+    ...(tooltipProps?.theme !== undefined ? { theme: tooltipProps.theme } : {}),
+    ...(tooltipProps?.mouseEnterDelay !== undefined
+      ? { mouseEnterDelay: tooltipProps.mouseEnterDelay }
+      : {}),
+    ...(tooltipProps?.mouseLeaveDelay !== undefined
+      ? { mouseLeaveDelay: tooltipProps.mouseLeaveDelay }
+      : {}),
+  });
 
   let titleEl = $state<HTMLButtonElement | null>(null);
   let open = $state(false);
@@ -189,8 +203,8 @@
           {getPopupContainer}
           {parentDisabled}
           {destroyOnHide}
-          {tooltipProps}
-          {renderWrapper}
+          {...(tooltipProps !== undefined ? { tooltipProps } : {})}
+          {...(renderWrapper !== undefined ? { renderWrapper } : {})}
           {onSelectLeaf}
           {onCloseAll}
           {openDelay}
@@ -238,13 +252,7 @@
       </button>
     {/snippet}
     {#if collapsed}
-      <Tooltip
-        content={tooltipProps?.content ?? node.label}
-        placement={tooltipProps?.position ?? 'right'}
-        theme={tooltipProps?.theme}
-        mouseEnterDelay={tooltipProps?.mouseEnterDelay}
-        mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
-      >
+      <Tooltip {...tooltipPass}>
         {@render titleButton()}
       </Tooltip>
     {:else}
@@ -273,7 +281,7 @@
             {destroyOnHide}
             parentDisabled={parentDisabled}
             {onSelectLeaf}
-            {renderWrapper}
+            {...(renderWrapper !== undefined ? { renderWrapper } : {})}
             onCloseAll={() => {
               closeNow();
               onCloseAll();
@@ -308,13 +316,7 @@
         </a>
       {/snippet}
       {#if collapsed}
-        <Tooltip
-          content={tooltipProps?.content ?? node.label}
-          placement={tooltipProps?.position ?? 'right'}
-          theme={tooltipProps?.theme}
-          mouseEnterDelay={tooltipProps?.mouseEnterDelay}
-          mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
-        >
+        <Tooltip {...tooltipPass}>
           {#if renderWrapper}
             {@render renderWrapper({ item: node, children: leafLink })}
           {:else}
@@ -353,13 +355,7 @@
         </button>
       {/snippet}
       {#if collapsed}
-        <Tooltip
-          content={tooltipProps?.content ?? node.label}
-          placement={tooltipProps?.position ?? 'right'}
-          theme={tooltipProps?.theme}
-          mouseEnterDelay={tooltipProps?.mouseEnterDelay}
-          mouseLeaveDelay={tooltipProps?.mouseLeaveDelay}
-        >
+        <Tooltip {...tooltipPass}>
           {#if renderWrapper}
             {@render renderWrapper({ item: node, children: leafButton })}
           {:else}

@@ -366,7 +366,8 @@
   $effect(() => {
     if (!isOpen || !popupEl) return;
     // guardFocus=true（默认）激活 Tab 循环焦点陷阱；false 时跳过（允许 Tab 离开浮层）。
-    const trap = guardFocus ? useFocusTrap(popupEl) : null;
+    // returnFocusOnClose 在构造期决定 deactivate 是否归还焦点（true 默认归还）。
+    const trap = guardFocus ? useFocusTrap(popupEl, { returnFocus: returnFocusOnClose }) : null;
     trap?.activate();
     let undismiss = () => {};
     // popup portal 到 body 后不在 rootEl 子树内：把 popupEl 列为 extraTargets，
@@ -398,14 +399,9 @@
     }
     return () => {
       undismiss();
-      // returnFocusOnClose=true（默认）时归还焦点给触发元素；false 时不归还。
-      if (trap) {
-        if (returnFocusOnClose) {
-          trap.deactivate();
-        } else {
-          trap.deactivate({ returnFocus: false });
-        }
-      }
+      // returnFocusOnClose=true（默认）时归还焦点给触发元素；false 时不归还
+      // （归还策略已在 useFocusTrap 构造期通过 returnFocus 选项决定）。
+      trap?.deactivate();
       // 浮层关闭即复位 loading（覆盖受控 open 在 loading 中被外部关闭的边界）。
       confirmLoading = false;
     };

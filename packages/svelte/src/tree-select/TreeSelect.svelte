@@ -1236,7 +1236,7 @@
         onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            onClear?.(e);
+            onClear?.(e as unknown as MouseEvent);
             clearAll(e as unknown as MouseEvent);
           }
         }}

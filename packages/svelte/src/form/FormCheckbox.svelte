@@ -46,7 +46,7 @@
     size,
     indeterminate,
     type,
-    children,
+    children: slotChildren,
   }: Props = $props();
 
   const fieldProps = $derived<ComponentProps<typeof Field>>({
@@ -68,16 +68,16 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, required: fieldRequired })}
     <Checkbox
-      checked={typeof value === 'boolean' ? value : undefined}
+      {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={disabled ?? fieldDisabled}
-      {size}
-      {indeterminate}
-      {type}
+      {...(size !== undefined ? { size } : {})}
+      {...(indeterminate !== undefined ? { indeterminate } : {})}
+      {...(type !== undefined ? { type } : {})}
       {id}
       status={status === 'error' ? 'error' : 'default'}
       onChange={(checked) => onChange(checked)}
     >
-      {@render children?.()}
+      {@render slotChildren?.()}
     </Checkbox>
   {/snippet}
 </Field>
