@@ -87,10 +87,10 @@
   <header class="docs-header">
     <a href="{base}/" class="docs-logo">
       <svg class="logo-mark" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-        <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #165dff)" />
-        <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #165dff)" opacity="0.55" />
-        <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #165dff)" opacity="0.55" />
-        <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #165dff)" />
+        <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
+        <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
+        <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
+        <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
       </svg>
       <span class="logo-text">chenzy-design</span>
     </a>
@@ -310,8 +310,8 @@
     background: var(--cd-color-fill-1, #f2f3f5);
   }
   .sidebar-item.active {
-    background: var(--cd-color-primary-light-1, #e8f3ff);
-    color: var(--cd-color-primary, #165dff);
+    background: var(--cd-color-primary-light-1, #eaf5ff);
+    color: var(--cd-color-primary, #0064fa);
     font-weight: 500;
   }
   /* 中文环境下的中文名：弱化的次要色，跟在英文名后（对齐 Semi 双名侧栏） */
@@ -321,7 +321,7 @@
     font-size: 12px;
   }
   .sidebar-item.active .sidebar-item-zh {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     opacity: 0.7;
   }
   .docs-main {

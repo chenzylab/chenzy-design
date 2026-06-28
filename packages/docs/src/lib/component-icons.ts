@@ -5,13 +5,13 @@
 
 // 分类配色（对齐 token 色系，各分类一色）
 export const categoryColor: Record<string, string> = {
-  basic: '#165dff', // 蓝
+  basic: '#0064fa', // 蓝
   input: '#00b42a', // 绿
   navigation: '#ff7d00', // 橙
   show: '#722ed1', // 紫
   feedback: '#f53f3f', // 红
   other: '#86909c', // 灰
-  _default: '#165dff',
+  _default: '#0064fa',
 };
 
 export const componentIcons: Record<string, string> = {

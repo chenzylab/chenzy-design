@@ -116,7 +116,7 @@
     text-decoration: none;
   }
   .breadcrumb a:hover {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
   }
   h1 {
     font-size: 28px;
@@ -135,7 +135,7 @@
   }
   .back-api {
     font-size: 13px;
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
     text-decoration: none;
   }
   .dd-section {
@@ -190,7 +190,7 @@
     color: var(--cd-color-text-1, #4e5969);
   }
   .related-chip:hover {
-    border-color: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-primary, #165dff);
+    border-color: var(--cd-color-primary, #0064fa);
+    color: var(--cd-color-primary, #0064fa);
   }
 </style>

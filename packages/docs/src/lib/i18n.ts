@@ -93,6 +93,48 @@ const dict: Dict = {
   },
   'home.browseAll': { zh: '浏览所有组件 →', en: 'Browse all components →' },
   'home.componentsCount': { zh: '共 {n} 个组件', en: '{n} components' },
+  // 首页 hero + 特性区（对齐 Semi 落地页）
+  'home.heroTitle': {
+    zh: '让企业级应用界面\n更一致、更优雅',
+    en: 'Build consistent, elegant\nenterprise UI',
+  },
+  'home.heroSubtitle': {
+    zh: '基于 Svelte 5 runes 的现代组件库，从复杂中后台场景提炼而来 —— 开箱即用的优质默认基础，需要时充分开放定制。',
+    en: 'A modern Svelte 5 (runes) component library distilled from complex enterprise scenarios — high-quality defaults out of the box, fully customizable when you need it.',
+  },
+  'home.getStarted': { zh: '快速开始', en: 'Get Started' },
+  'home.viewComponents': { zh: '浏览组件', en: 'Browse Components' },
+  'home.featuresTitle': { zh: '核心特性', en: 'Core Features' },
+  'home.feat.ready.t': { zh: '开箱即用', en: 'Ready to Use' },
+  'home.feat.ready.d': {
+    zh: '{n}+ 高质量组件，覆盖中后台全场景，优质默认基础保证天生一致的体验。',
+    en: '{n}+ quality components covering all enterprise scenarios, with consistent defaults built in.',
+  },
+  'home.feat.theme.t': { zh: '主题化定制', en: 'Themeable' },
+  'home.feat.theme.d': {
+    zh: '数百个分层 Design Token，全局到组件级深度定制，不懂 CSS 也能换肤。',
+    en: 'Hundreds of layered design tokens for deep customization from global to component level — no CSS required.',
+  },
+  'home.feat.dark.t': { zh: '深色模式', en: 'Dark Mode' },
+  'home.feat.dark.d': {
+    zh: '任意主题自动支持暗色，运行时动态切换，亦可局部区域开启。',
+    en: 'Every theme supports dark mode automatically, switchable at runtime, even for local regions.',
+  },
+  'home.feat.i18n.t': { zh: '国际化', en: 'Internationalization' },
+  'home.feat.i18n.d': {
+    zh: '多语言文案、日期时区与 RTL 布局开箱支持，站点与文档双语适配。',
+    en: 'Built-in multi-language, date/timezone, and RTL layout support, with bilingual site and docs.',
+  },
+  'home.feat.a11y.t': { zh: '无障碍', en: 'Accessibility' },
+  'home.feat.a11y.d': {
+    zh: '语义化标签、WAI-ARIA、键盘交互与焦点管理，每个组件附 a11y 说明与测试。',
+    en: 'Semantic markup, WAI-ARIA, keyboard interaction and focus management, with a11y notes and tests per component.',
+  },
+  'home.feat.svelte.t': { zh: 'Svelte 5 原生', en: 'Native Svelte 5' },
+  'home.feat.svelte.d': {
+    zh: '基于 runes 构建，headless 与渲染分层，体积小、类型完备、性能有基准门禁。',
+    en: 'Built on runes with headless/render layering — small bundle, full types, perf budgets gated in CI.',
+  },
   'home.headTitle': {
     zh: 'chenzy-design — 基于 Svelte 5 的企业级组件库',
     en: 'chenzy-design — Enterprise-grade Svelte 5 component library',

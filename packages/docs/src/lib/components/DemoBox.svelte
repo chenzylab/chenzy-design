@@ -112,7 +112,7 @@
     padding: 0;
   }
   .demo-box__toggle:hover {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary, #0064fa);
   }
   .demo-box__code {
     border-top: 1px solid var(--cd-color-border, #e5e7eb);
