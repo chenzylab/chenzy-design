@@ -27,6 +27,12 @@
     onSelect?: (key: string | number) => void;
     /** 主按钮点击回调。 */
     onclick?: (e: MouseEvent) => void;
+    /** 分裂按钮组语义标签（root aria-label，对齐 Semi）。 */
+    ariaLabel?: string;
+    /** 根元素自定义类名（透传）。 */
+    class?: string;
+    /** 根元素自定义内联样式（透传）。 */
+    style?: string;
     /** 左侧主按钮内容。 */
     children?: Snippet;
     /** 自定义下拉菜单体（替代 items）。 */
@@ -44,12 +50,15 @@
     triggerAriaLabel = '更多操作',
     onSelect,
     onclick,
+    ariaLabel,
+    class: className,
+    style,
     children,
     menu,
   }: Props = $props();
 </script>
 
-<div class="cd-split-button" role="group">
+<div class={['cd-split-button', className].filter(Boolean).join(' ')} {style} role="group" aria-label={ariaLabel}>
   <Button {type} {theme} {size} {disabled} {loading} onclick={(e) => onclick?.(e)}>
     {@render children?.()}
   </Button>

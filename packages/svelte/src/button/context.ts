@@ -15,6 +15,7 @@ export interface ButtonGroupContext {
   theme?: ButtonTheme | undefined;
   size?: ButtonSize | undefined;
   disabled?: boolean | undefined;
+  colorful?: boolean | undefined;
 }
 
 export const BUTTON_GROUP_CTX = Symbol('cd-button-group');
