@@ -15,14 +15,22 @@ export interface DemoEntry {
   description?: LocalizedText;
   component: Component;
   code: string;
+  /** 描述后追加「详见 X」链接，指向另一个组件页 */
+  seeAlso?: { text: LocalizedText; component: string };
 }
 
-function entry(file: string, title: LocalizedText, description?: LocalizedText): DemoEntry {
+function entry(
+  file: string,
+  title: LocalizedText,
+  description?: LocalizedText,
+  seeAlso?: DemoEntry['seeAlso'],
+): DemoEntry {
   return {
     title,
     description,
     component: mods[`./${file}`].default,
     code: (sources[`./${file}`] as string).trim(),
+    seeAlso,
   };
 }
 
@@ -108,9 +116,10 @@ export const demos: DemoEntry[] = [
     '06-link.svelte',
     { zh: '链接按钮', en: 'Link' },
     {
-      zh: '提供 href 时渲染为 <a>，禁用时移除 href 不可激活。',
-      en: 'With href it renders as <a>; when disabled the href is removed.',
+      zh: '链接型文字按钮推荐用 Typography.Link 实现（而非 Button），支持 href / target / underline，具体用法详见',
+      en: 'For link-style text buttons, use Typography.Link (not Button) — it supports href / target / underline. See',
     },
+    { text: { zh: 'Typography', en: 'Typography' }, component: 'Typography' },
   ),
   entry(
     '07-disabled.svelte',
