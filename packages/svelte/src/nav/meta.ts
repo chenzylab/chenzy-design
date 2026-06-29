@@ -24,6 +24,13 @@ export const meta = {
     { name: 'header', type: '{ logo?: Snippet; text?: string }', default: 'undefined', desc: '头部配置（logo + 文案）' },
     { name: 'footer', type: '{ collapseButton?: boolean }', default: 'undefined', desc: '底部配置（收起按钮，仅 vertical）' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '整体禁用' },
+    { name: 'inlineIndent', type: 'number', default: '24', desc: '子级缩进像素（透传 Menu）' },
+    { name: 'limitIndent', type: 'boolean', default: 'true', desc: '仅一级缩进；false 时逐级缩进' },
+    { name: 'toggleIconPosition', type: "'left'|'right'", default: "'right'", desc: '子导航展开箭头位置' },
+    { name: 'subNavOpenDelay', type: 'number', default: 'undefined', desc: '浮层子导航展开延迟 ms' },
+    { name: 'subNavCloseDelay', type: 'number', default: 'undefined', desc: '浮层子导航关闭延迟 ms' },
+    { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '浮层挂载容器' },
+    { name: 'renderWrapper', type: 'Snippet', default: 'undefined', desc: '自定义导航项外层包裹' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
     { name: 'bodyStyle', type: 'string', default: 'undefined', desc: '导航项列表容器样式（对齐 Semi bodyStyle）' },
@@ -37,6 +44,7 @@ export const meta = {
   slots: [
     { name: 'headerSlot', desc: '自定义头部（覆盖 header 配置对象）' },
     { name: 'footerSlot', desc: '自定义底部（覆盖 footer 配置对象）' },
+    { name: 'children', desc: '声明式子项（<Nav.Item>/<Nav.Sub>），与 items 二选一' },
   ],
   subComponents: [
     {
@@ -56,6 +64,30 @@ export const meta = {
         { name: 'collapseButton', type: 'boolean', default: 'false', desc: '收起按钮（仅 vertical 生效）' },
         { name: 'class', type: 'string', default: 'undefined', desc: '自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '自定义内联样式' },
+      ],
+    },
+    {
+      name: 'Nav.Item',
+      element: '—',
+      props: [
+        { name: 'itemKey', type: 'NavKey', default: '—', desc: '导航项唯一标识（必填）' },
+        { name: 'text', type: 'string', default: '—', desc: '导航项文案' },
+        { name: 'icon', type: 'Snippet', default: 'undefined', desc: '项前置图标' },
+        { name: 'disabled', type: 'boolean', default: 'undefined', desc: '是否禁用' },
+        { name: 'link', type: 'string', default: 'undefined', desc: '链接地址（渲染原生 <a>）' },
+        { name: 'target', type: 'string', default: 'undefined', desc: '链接 target' },
+        { name: 'rel', type: 'string', default: 'undefined', desc: '链接 rel' },
+      ],
+    },
+    {
+      name: 'Nav.Sub',
+      element: '—',
+      props: [
+        { name: 'itemKey', type: 'NavKey', default: '—', desc: '子导航唯一标识（必填）' },
+        { name: 'text', type: 'string', default: '—', desc: '子导航标题文案' },
+        { name: 'icon', type: 'Snippet', default: 'undefined', desc: '标题前置图标' },
+        { name: 'disabled', type: 'boolean', default: 'undefined', desc: '是否禁用' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 Nav.Item / Nav.Sub' },
       ],
     },
   ],

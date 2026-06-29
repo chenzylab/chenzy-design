@@ -71,6 +71,8 @@ export {
   Nav,
   NavHeader,
   NavFooter,
+  NavItem,
+  NavSub,
   navMeta,
   type NavItemDef,
   type NavKey,

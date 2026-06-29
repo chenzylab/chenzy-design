@@ -19,7 +19,7 @@
   import type { Snippet } from 'svelte';
   import { setContext, untrack } from 'svelte';
   import Menu from '../menu/Menu.svelte';
-  import type { MenuKey } from '../menu/types.js';
+  import type { MenuKey, MenuItemNode } from '../menu/types.js';
   import {
     navItemsToMenuItems,
     type NavItemDef,
@@ -28,7 +28,12 @@
     type NavHeaderConfig,
     type NavFooterConfig,
   } from './types.js';
-  import { NAV_CONTEXT_KEY, type NavContext } from './context.js';
+  import {
+    NAV_CONTEXT_KEY,
+    NAV_COLLECTOR_KEY,
+    type NavContext,
+    type NavCollector,
+  } from './context.js';
   import NavHeader from './NavHeader.svelte';
   import NavFooter from './NavFooter.svelte';
 
@@ -55,6 +60,20 @@
     footer?: NavFooterConfig;
     /** 整体禁用。 */
     disabled?: boolean;
+    /** 子级缩进像素（透传 Menu inlineIndent）。 */
+    inlineIndent?: number;
+    /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进（透传 Menu limitIndent）。 */
+    limitIndent?: boolean;
+    /** 含子导航项的展开箭头位置（透传 Menu toggleIconPosition）。 */
+    toggleIconPosition?: 'left' | 'right';
+    /** 浮层子导航展开延迟 ms（透传 Menu subMenuOpenDelay）。对齐 Semi subNavOpenDelay。 */
+    subNavOpenDelay?: number;
+    /** 浮层子导航关闭延迟 ms（透传 Menu subMenuCloseDelay）。对齐 Semi subNavCloseDelay。 */
+    subNavCloseDelay?: number;
+    /** 浮层挂载容器（透传 Menu getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 自定义导航项外层包裹（透传 Menu renderWrapper）。 */
+    renderWrapper?: Snippet<[{ item: MenuItemNode; children: Snippet }]>;
     /** 根元素自定义类名（透传）。 */
     class?: string;
     /** 根元素自定义内联样式（透传）。 */
@@ -73,6 +92,8 @@
     headerSlot?: Snippet;
     /** 自定义底部（覆盖 footer 配置对象）。 */
     footerSlot?: Snippet;
+    /** 声明式子项（<Nav.Item>/<Nav.Sub>）。与 items 二选一，items 优先。 */
+    children?: Snippet;
   }
 
   let {
@@ -87,6 +108,13 @@
     header,
     footer,
     disabled = false,
+    inlineIndent,
+    limitIndent,
+    toggleIconPosition,
+    subNavOpenDelay,
+    subNavCloseDelay,
+    getPopupContainer,
+    renderWrapper,
     class: className = '',
     style,
     bodyStyle,
@@ -96,6 +124,7 @@
     onCollapseChange,
     headerSlot,
     footerSlot,
+    children,
   }: Props = $props();
 
   // --- 受控/非受控折叠态（仅 vertical 有意义）；受控 prop 优先，变化走回调不回写 ---
@@ -122,8 +151,40 @@
     toggleCollapsed,
   });
 
+  // --- 声明式子项收集（<Nav.Item>/<Nav.Sub>）---
+  // 普通数组承接注册（非 $state，避免子项 init push 触发反应自循环）。
+  let declared: NavItemDef[] = [];
+  // 唯一反应量：子项挂载后异步 bump，触发一次 items 重建。
+  let revision = $state(0);
+  let bumpScheduled = false;
+
+  setContext<NavCollector>(NAV_COLLECTOR_KEY, {
+    add: (item: NavItemDef) => {
+      declared.push(item);
+      return item;
+    },
+    bump: () => {
+      // 合并同一帧的多次 bump 为一次；异步脱离挂载 effect 同步栈。
+      if (bumpScheduled) return;
+      bumpScheduled = true;
+      queueMicrotask(() => {
+        bumpScheduled = false;
+        revision += 1;
+      });
+    },
+  });
+
+  // items prop 优先；否则用声明式收集结果。
+  // 必须真正使用 revision 的值（裸读语句会被编译器优化掉、断开依赖）；
+  // 返回浅拷贝确保 Menu 每次收到新数组引用而重渲染。
+  const resolvedItems = $derived.by(() => {
+    if (items.length) return items;
+    const r = revision;
+    return r >= 0 ? declared.slice() : [];
+  });
+
   // --- items（Semi 形）→ Menu items ---
-  const menuItems = $derived(navItemsToMenuItems(items));
+  const menuItems = $derived(navItemsToMenuItems(resolvedItems));
 
   // --- mode 映射到 Menu ---
   const menuMode = $derived<'inline' | 'horizontal'>(
@@ -166,10 +227,23 @@
       {...defaultSelectedKeys !== undefined ? { defaultSelectedKeys } : {}}
       {...openKeys !== undefined ? { openKeys } : {}}
       {...defaultOpenKeys !== undefined ? { defaultOpenKeys } : {}}
+      {...inlineIndent !== undefined ? { inlineIndent } : {}}
+      {...limitIndent !== undefined ? { limitIndent } : {}}
+      {...toggleIconPosition !== undefined ? { toggleIconPosition } : {}}
+      {...subNavOpenDelay !== undefined ? { subMenuOpenDelay: subNavOpenDelay } : {}}
+      {...subNavCloseDelay !== undefined ? { subMenuCloseDelay: subNavCloseDelay } : {}}
+      {...getPopupContainer !== undefined ? { getPopupContainer } : {}}
+      {...renderWrapper !== undefined ? { renderWrapper } : {}}
       onSelect={(key: MenuKey) => onSelect?.(key)}
       onOpenChange={(keys: MenuKey[]) => onOpenChange?.(keys)}
     />
   </div>
+
+  <!-- 声明式子项注册宿主：仅当未传 items 且有 children 时挂载。
+       Nav.Item/Nav.Sub 渲染无可见 DOM，只在此注册描述符；display:none 不占位。 -->
+  {#if !items.length && children}
+    <div hidden style="display:none">{@render children()}</div>
+  {/if}
 
   {#if hasFooter}
     {#if footerSlot}
