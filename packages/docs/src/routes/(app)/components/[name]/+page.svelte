@@ -214,13 +214,12 @@
     level?: number;
   }
 
-  // TOC 章节：仅列出实际渲染的区块；代码演示下逐个场景作为子项（对齐 Semi 章节目录）
+  // TOC 章节：每个 demo 场景都是顶级章节（对齐 Semi——按钮类型/主题/尺寸… 平铺，
+  // 不再统一收进「代码演示」一节）。交互式 playground 作为首个「代码演示」节。
   const tocSections = $derived(
     [
-      DemoComponent || sceneDemos.length
-        ? { id: 'demo', title: t('section.demo', lang) }
-        : null,
-      ...sceneDemos.map((d) => ({ id: d.anchorId, title: d.title, level: 2 })),
+      DemoComponent ? { id: 'demo', title: t('section.demo', lang) } : null,
+      ...sceneDemos.map((d) => ({ id: d.anchorId, title: d.title })),
       { id: 'api', title: t('section.api', lang) },
       hasA11y ? { id: 'a11y', title: t('section.a11y', lang) } : null,
       hasContent ? { id: 'content', title: t('section.content', lang) } : null,
@@ -326,42 +325,40 @@
     </div>
 
     {#if activeTab === 'api'}
-      <!-- 代码演示 -->
-      {#if DemoComponent || demoList.length}
+      <!-- 交互式调试：BasicDemo + PropPlayground 实时改 props（作为首个「代码演示」节）-->
+      {#if DemoComponent}
         <section class="section" id="demo">
           <h2>{t('section.demo', lang)}</h2>
-
-          <!-- 交互式调试：BasicDemo + PropPlayground 实时改 props -->
-          {#if DemoComponent}
-            <div class="demo-with-playground">
-              <div class="demo-main">
-                <DemoBox title={t('demo.interactive', lang)}>
-                  <DemoComponent {...playgroundValues} />
-                </DemoBox>
-              </div>
-              {#if hasPlayground(meta.props ?? [])}
-                <div class="demo-sidebar">
-                  <PropPlayground
-                    props={meta.props ?? []}
-                    values={playgroundValues}
-                    onchange={(v) => (playgroundValues = v)}
-                  />
-                </div>
-              {/if}
-            </div>
-          {/if}
-
-          <!-- 多场景 demo：逐项铺开，带标题/描述/源码（对齐 Semi） -->
-          {#each sceneDemos as demo (demo.title)}
-            {@const SceneComp = demo.component}
-            <div id={demo.anchorId} class="scene-anchor">
-              <DemoBox title={demo.title} description={demo.description} code={demo.code}>
-                <SceneComp />
+          <div class="demo-with-playground">
+            <div class="demo-main">
+              <DemoBox title={t('demo.interactive', lang)}>
+                <DemoComponent {...playgroundValues} />
               </DemoBox>
             </div>
-          {/each}
+            {#if hasPlayground(meta.props ?? [])}
+              <div class="demo-sidebar">
+                <PropPlayground
+                  props={meta.props ?? []}
+                  values={playgroundValues}
+                  onchange={(v) => (playgroundValues = v)}
+                />
+              </div>
+            {/if}
+          </div>
         </section>
       {/if}
+
+      <!-- 每个场景都是顶级章节：标题作 h2，与 API/Accessibility 同级（对齐 Semi）-->
+      {#each sceneDemos as demo (demo.title)}
+        {@const SceneComp = demo.component}
+        <section class="section" id={demo.anchorId}>
+          <h2>{demo.title}</h2>
+          {#if demo.description}<p class="section-desc">{demo.description}</p>{/if}
+          <DemoBox code={demo.code}>
+            <SceneComp />
+          </DemoBox>
+        </section>
+      {/each}
 
       <!-- API 参考：主组件 + 子组件 + 配置对象 + 方法 -->
       <section class="section" id="api">
@@ -565,9 +562,12 @@
     margin-bottom: 48px;
     scroll-margin-top: 80px;
   }
-  /* 场景 demo 锚点：跳转时避让 sticky 顶栏 */
-  .scene-anchor {
-    scroll-margin-top: 80px;
+  /* 场景章节描述：h2 与 DemoBox 之间的说明文字 */
+  .section-desc {
+    font-size: 14px;
+    color: var(--cd-color-text-1, #4e5969);
+    margin: 0 0 16px;
+    line-height: 1.7;
   }
   h2 {
     font-size: 18px;
