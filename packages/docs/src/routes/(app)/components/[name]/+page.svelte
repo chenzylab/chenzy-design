@@ -6,7 +6,7 @@
   import ApiTable from '$lib/components/ApiTable.svelte';
   import DesignTokenTable from '$lib/components/DesignTokenTable.svelte';
   import DemoBox from '$lib/components/DemoBox.svelte';
-  import PropPlayground from '$lib/components/PropPlayground.svelte';
+  import CodeBlock from '$lib/components/CodeBlock.svelte';
   import Toc from '$lib/components/Toc.svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
@@ -108,9 +108,7 @@
     virtuallist: 'virtual-list',
   };
 
-  // Vite glob — 静态路径，编译时分析
-  const demoModules = import.meta.glob('../../../../demos/*/BasicDemo.svelte');
-  // 每个组件 demos 目录的 demos.ts（导出 demos: DemoEntry[]），用于「代码演示」区铺开全部场景
+  // 每个组件 demos 目录的 demos.ts（导出 demos: DemoEntry[]），逐个场景铺开为顶级章节
   const demoListModules = import.meta.glob('../../../../demos/*/demos.ts');
   const contentModules = import.meta.glob('../../../../content/components/*.md');
 
@@ -121,10 +119,8 @@
     code: string;
   }
 
-  let DemoComponent = $state<Component | null>(null);
   let demoList = $state<DemoEntry[]>([]);
   let ContentComponent = $state<Component | null>(null);
-  let playgroundValues = $state<Record<string, unknown>>({});
 
   const lowerName = $derived(meta.name.toLowerCase());
   // token 归属前缀：用数据集真实存在的前缀匹配，避免命名漂移（见 token-prefix.ts）
@@ -196,17 +192,21 @@
     (meta.relatedComponents ?? []).filter((rc: string) => validNames.has(rc.toLowerCase())),
   );
 
-  // 场景 demo：demos.ts 全部条目，但剔除与交互式 BasicDemo 同源的那项（避免重复展示）
-  // 每个场景 demo 生成稳定锚点 id（按序号 + title slug），供 TOC 跳转
-  const sceneDemos = $derived(
-    demoList
-      .filter((d) => d.component !== DemoComponent)
-      .map((d, i) => ({ ...d, anchorId: `demo-${i}` })),
-  );
+  // 场景 demo：demos.ts 全部条目，逐个作为顶级章节
+  // 每个场景生成稳定锚点 id（按序号），供 TOC 跳转
+  const sceneDemos = $derived(demoList.map((d, i) => ({ ...d, anchorId: `demo-${i}` })));
 
   const hasA11y = $derived(!!(a11yRole || a11yKeyboard.length || a11yNotes.length || a11yPattern));
   const hasContent = $derived(!!(usageHints || dangerousActions || relatedComponents.length));
   const hasTokens = $derived(tokenComponent.length > 0);
+
+  // 「如何引入」import 片段：主组件 + 子组件具名导入（对齐 Semi 的安装/引入节）
+  const importNames = $derived(
+    [meta.name, ...subComponents.map((s) => s.name)]
+      .filter((n, i, arr) => n && arr.indexOf(n) === i)
+      .join(', '),
+  );
+  const importCode = $derived(`import { ${importNames} } from '@chenzy-design/svelte';`);
 
   interface TocItem {
     id: string;
@@ -218,7 +218,7 @@
   // 不再统一收进「代码演示」一节）。交互式 playground 作为首个「代码演示」节。
   const tocSections = $derived(
     [
-      DemoComponent ? { id: 'demo', title: t('section.demo', lang) } : null,
+      { id: 'install', title: t('section.install', lang) },
       ...sceneDemos.map((d) => ({ id: d.anchorId, title: d.title })),
       { id: 'api', title: t('section.api', lang) },
       hasA11y ? { id: 'a11y', title: t('section.a11y', lang) } : null,
@@ -227,30 +227,7 @@
     ].filter((s): s is TocItem => s !== null),
   );
 
-  function hasPlayground(props: any[]): boolean {
-    return props.some((p) => {
-      const ty = p.type ?? '';
-      return ty === 'boolean' || ty === 'number' || ty === 'string' || (ty.includes("'") && ty.includes('|'));
-    });
-  }
-
-  $effect(() => {
-    const dir = nameToDir[lowerName] ?? lowerName;
-    const key = `../../../../demos/${dir}/BasicDemo.svelte`;
-    DemoComponent = null;
-    if (demoModules[key]) {
-      (demoModules[key]() as Promise<{ default: Component }>)
-        .then((mod) => {
-          DemoComponent = mod.default;
-        })
-        .catch(() => {
-          DemoComponent = null;
-        });
-    }
-  });
-
-  // 加载该组件的多场景 demo 列表（demos.ts）。首项默认作为可调试的 playground 演示，
-  // 其余按顺序铺开为带源码的 DemoBox（对齐 Semi 的多场景代码演示）。
+  // 加载该组件的多场景 demo 列表（demos.ts），逐项铺开为带源码的顶级章节。
   $effect(() => {
     const dir = nameToDir[lowerName] ?? lowerName;
     const key = `../../../../demos/${dir}/demos.ts`;
@@ -278,20 +255,6 @@
           ContentComponent = null;
         });
     }
-  });
-
-  $effect(() => {
-    const init: Record<string, unknown> = {};
-    for (const p of meta.props ?? []) {
-      const d = p.default ?? '';
-      if (d === 'true') init[p.name] = true;
-      else if (d === 'false') init[p.name] = false;
-      else {
-        const n = Number(d);
-        init[p.name] = !isNaN(n) && d !== '' ? n : d.replace(/^['"]|['"]$/g, '');
-      }
-    }
-    playgroundValues = init;
   });
 </script>
 
@@ -325,28 +288,11 @@
     </div>
 
     {#if activeTab === 'api'}
-      <!-- 交互式调试：BasicDemo + PropPlayground 实时改 props（作为首个「代码演示」节）-->
-      {#if DemoComponent}
-        <section class="section" id="demo">
-          <h2>{t('section.demo', lang)}</h2>
-          <div class="demo-with-playground">
-            <div class="demo-main">
-              <DemoBox title={t('demo.interactive', lang)}>
-                <DemoComponent {...playgroundValues} />
-              </DemoBox>
-            </div>
-            {#if hasPlayground(meta.props ?? [])}
-              <div class="demo-sidebar">
-                <PropPlayground
-                  props={meta.props ?? []}
-                  values={playgroundValues}
-                  onchange={(v) => (playgroundValues = v)}
-                />
-              </div>
-            {/if}
-          </div>
-        </section>
-      {/if}
+      <!-- 如何引入：具名导入片段（首节，对齐 Semi 的引入说明）-->
+      <section class="section" id="install">
+        <h2>{t('section.install', lang)}</h2>
+        <CodeBlock code={importCode} codeLang="typescript" />
+      </section>
 
       <!-- 每个场景都是顶级章节：标题作 h2，与 API/Accessibility 同级（对齐 Semi）-->
       {#each sceneDemos as demo (demo.title)}
@@ -697,22 +643,6 @@
     font-size: 14px;
     padding: 24px 0;
   }
-  .demo-with-playground {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-  }
-  .demo-main {
-    flex: 1;
-    min-width: 0;
-  }
-  .demo-sidebar {
-    width: 260px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 16px;
-  }
-
   /* inline api/config/method 表（与 ApiTable 视觉一致） */
   .api-table {
     width: 100%;
@@ -824,15 +754,5 @@
   .guide-link a {
     color: var(--cd-color-primary, #0064fa);
     text-decoration: none;
-  }
-
-  @media (max-width: 960px) {
-    .demo-with-playground {
-      flex-direction: column;
-    }
-    .demo-sidebar {
-      width: 100%;
-      position: static;
-    }
   }
 </style>
