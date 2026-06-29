@@ -2,32 +2,56 @@
   import { Button } from '@chenzy-design/svelte';
 </script>
 
-<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  <Button type="primary">
-    {#snippet icon()}
-      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M5 12h14" /><path d="M12 5v14" />
-      </svg>
-    {/snippet}
-    新建
-  </Button>
+{#snippet camera()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+    <circle cx="12" cy="13" r="3" />
+  </svg>
+{/snippet}
+{#snippet sidebar()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" />
+  </svg>
+{/snippet}
+{#snippet chevronDown()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+{/snippet}
 
-  <Button type="primary" iconPosition="right">
-    {#snippet icon()}
-      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m9 18 6-6-6-6" />
-      </svg>
-    {/snippet}
-    下一步
-  </Button>
+<div style="display: flex; flex-direction: column; gap: 16px;">
+  <!-- 默认状态：纯图标按钮 -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <strong style="width: 96px;">默认状态：</strong>
+    <Button type="primary" icon={camera} ariaLabel="拍照" />
+  </div>
 
-  <!-- 纯图标按钮：必须提供 ariaLabel -->
-  <Button type="tertiary" theme="borderless" ariaLabel="设置">
-    {#snippet icon()}
-      <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    {/snippet}
-  </Button>
+  <!-- 禁用状态 -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <strong style="width: 96px;">禁用状态：</strong>
+    <Button type="primary" icon={camera} disabled ariaLabel="拍照" />
+  </div>
+
+  <!-- 复合类型：四种 type 的纯图标 -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <strong style="width: 96px;">复合类型：</strong>
+    <Button type="primary" icon={camera} ariaLabel="主要" />
+    <Button type="secondary" icon={camera} ariaLabel="次要" />
+    <Button type="warning" icon={camera} ariaLabel="警告" />
+    <Button type="danger" icon={camera} ariaLabel="危险" />
+  </div>
+
+  <!-- 更改主题：同一图标在 solid / light 下 -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <strong style="width: 96px;">更改主题：</strong>
+    <Button type="primary" theme="solid" icon={camera} ariaLabel="实底" />
+    <Button type="primary" theme="light" icon={camera} ariaLabel="浅色" />
+  </div>
+
+  <!-- 更改图标位置：图标在左 / 在右 -->
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <strong style="width: 96px;">更改图标位置：</strong>
+    <Button type="primary" theme="solid" icon={sidebar}>收起</Button>
+    <Button type="primary" theme="solid" icon={chevronDown} iconPosition="right">展开选项</Button>
+  </div>
 </div>
