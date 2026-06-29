@@ -5,11 +5,12 @@ import { browser } from '$app/environment';
 export type Lang = 'zh' | 'en';
 
 function readInitial(): Lang {
+  // 默认恒中文（本设计系统以中文为主）；仅当用户显式切换并持久化后才用其偏好。
+  // 不再跟随 navigator.language——避免英文浏览器下与 SSR(zh) 不一致造成首屏闪烁/中英混排。
   if (!browser) return 'zh';
   const saved = localStorage.getItem('cd-lang');
   if (saved === 'zh' || saved === 'en') return saved;
-  // 浏览器语言非中文则默认英文
-  return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  return 'zh';
 }
 
 let current = $state<Lang>(readInitial());

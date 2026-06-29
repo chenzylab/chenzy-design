@@ -9,7 +9,7 @@
   import CodeBlock from '$lib/components/CodeBlock.svelte';
   import Toc from '$lib/components/Toc.svelte';
   import { locale } from '$lib/locale.svelte';
-  import { t } from '$lib/i18n';
+  import { t, localize, type LocalizedText } from '$lib/i18n';
   import { resolveTokenPrefix } from '$lib/token-prefix';
 
   const { data }: { data: PageData } = $props();
@@ -113,8 +113,8 @@
   const contentModules = import.meta.glob('../../../../content/components/*.md');
 
   interface DemoEntry {
-    title: string;
-    description?: string;
+    title: LocalizedText;
+    description?: LocalizedText;
     component: Component;
     code: string;
   }
@@ -219,7 +219,7 @@
   const tocSections = $derived(
     [
       { id: 'install', title: t('section.install', lang) },
-      ...sceneDemos.map((d) => ({ id: d.anchorId, title: d.title })),
+      ...sceneDemos.map((d) => ({ id: d.anchorId, title: localize(d.title, lang) })),
       { id: 'api', title: t('section.api', lang) },
       hasA11y ? { id: 'a11y', title: t('section.a11y', lang) } : null,
       hasContent ? { id: 'content', title: t('section.content', lang) } : null,
@@ -295,11 +295,11 @@
       </section>
 
       <!-- 每个场景都是顶级章节：标题作 h2，与 API/Accessibility 同级（对齐 Semi）-->
-      {#each sceneDemos as demo (demo.title)}
+      {#each sceneDemos as demo (demo.anchorId)}
         {@const SceneComp = demo.component}
         <section class="section" id={demo.anchorId}>
-          <h2>{demo.title}</h2>
-          {#if demo.description}<p class="section-desc">{demo.description}</p>{/if}
+          <h2>{localize(demo.title, lang)}</h2>
+          {#if demo.description}<p class="section-desc">{localize(demo.description, lang)}</p>{/if}
           <DemoBox code={demo.code}>
             <SceneComp />
           </DemoBox>
