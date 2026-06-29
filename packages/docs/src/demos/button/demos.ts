@@ -147,10 +147,26 @@ export const demos: DemoEntry[] = [
   ),
   entry(
     '10-group.svelte',
-    { zh: '按钮组合', en: 'ButtonGroup' },
+    { zh: '组合尺寸', en: 'Group size' },
     {
-      zh: 'ButtonGroup 横向拼接多个 Button，组级 type/theme/size 经 context 透传，单个按钮仍可覆盖。',
-      en: 'ButtonGroup joins buttons horizontally; group-level type/theme/size flow via context, each button can override.',
+      zh: 'ButtonGroup 横向拼接多个 Button；组级 size 经 context 透传，组内按钮统一尺寸。',
+      en: 'ButtonGroup joins buttons horizontally; group-level size flows via context to unify sizing.',
+    },
+  ),
+  entry(
+    '10b-group-disabled.svelte',
+    { zh: '组合禁用', en: 'Group disabled' },
+    {
+      zh: '组级 disabled 透传，整组按钮一并禁用。',
+      en: 'Group-level disabled propagates to disable every button at once.',
+    },
+  ),
+  entry(
+    '10c-group-type.svelte',
+    { zh: '组合类型', en: 'Group type' },
+    {
+      zh: '组级 type 经 context 透传统一语义类型，组内单个按钮仍可单独覆盖。',
+      en: 'Group-level type unifies the semantic type via context; each button can still override it.',
     },
   ),
   entry(
