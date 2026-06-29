@@ -38,6 +38,8 @@ export const meta = {
     { name: 'inlineIndent', type: 'number', default: '24', desc: '子级缩进像素' },
     { name: 'limitIndent', type: 'boolean', default: 'true', desc: '仅一级缩进；false 时逐级缩进' },
     { name: 'toggleIconPosition', type: "'left'|'right'", default: "'right'", desc: 'inline 子菜单箭头位置' },
+    { name: 'expandIcon', type: 'Snippet', default: 'undefined', desc: '自定义展开箭头图标' },
+    { name: 'motion', type: 'boolean', default: 'true', desc: '子菜单展开动画开关' },
     {
       name: 'inlineCollapsed',
       type: 'boolean',

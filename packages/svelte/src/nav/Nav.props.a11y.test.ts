@@ -90,3 +90,41 @@ describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {
     expect(text).toContain('角色');
   });
 });
+
+describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
+  it('onClick：点击叶子项触发，载荷为 itemKey', async () => {
+    const onClick = vi.fn();
+    const onSelect = vi.fn();
+    const { container } = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items, onClick, onSelect },
+    });
+    const leaf = container.querySelector<HTMLElement>('.cd-nav__body .cd-menu__link');
+    leaf?.click();
+    expect(onSelect).toHaveBeenCalledWith('home');
+    expect(onClick).toHaveBeenCalledWith('home');
+  });
+
+  it('项级 onClick：NavItemDef.onClick 点击时触发', () => {
+    const itemOnClick = vi.fn();
+    const localItems = [{ itemKey: 'home', text: '首页', onClick: itemOnClick }];
+    const { container } = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items: localItems },
+    });
+    const leaf = container.querySelector<HTMLElement>('.cd-nav__body .cd-menu__link');
+    leaf?.click();
+    expect(itemOnClick).toHaveBeenCalledOnce();
+  });
+
+  it('subNavMotion=true：展开的内联子菜单带 motion 类；false 时无', () => {
+    const open = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: true },
+    });
+    expect(open.container.querySelector('.cd-menu__sub--motion')).not.toBeNull();
+
+    const noMotion = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: false },
+    });
+    expect(noMotion.container.querySelector('.cd-menu__sub--motion')).toBeNull();
+    expect(noMotion.container.querySelector('.cd-menu__sub')).not.toBeNull();
+  });
+});

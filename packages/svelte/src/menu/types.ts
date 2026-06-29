@@ -22,6 +22,12 @@ export interface MenuItemNode {
   target?: string;
   /** 链接 rel（如 'noopener noreferrer'）；仅 navigation + href 渲染 `<a>` 时透传。 */
   rel?: string;
+  /** 项级点击回调（叶子项；在 Menu onSelect 之外额外触发）。 */
+  onClick?: (e: MouseEvent) => void;
+  /** 项级鼠标移入回调。 */
+  onMouseEnter?: (e: MouseEvent) => void;
+  /** 项级鼠标移出回调。 */
+  onMouseLeave?: (e: MouseEvent) => void;
 }
 
 /**

@@ -26,6 +26,12 @@ export interface NavItemDef {
   target?: string;
   /** 链接 rel（如 'noopener noreferrer'）。 */
   rel?: string;
+  /** 项级点击回调（叶子项）。 */
+  onClick?: (e: MouseEvent) => void;
+  /** 项级鼠标移入回调。 */
+  onMouseEnter?: (e: MouseEvent) => void;
+  /** 项级鼠标移出回调。 */
+  onMouseLeave?: (e: MouseEvent) => void;
   /** 子导航项；含 items 即为可展开子导航。 */
   items?: NavItemDef[];
 }
@@ -59,6 +65,9 @@ export function navItemsToMenuItems(items: NavItemDef[] = []): MenuItemDef[] {
     if (it.link) node.href = it.link;
     if (it.target) node.target = it.target;
     if (it.rel) node.rel = it.rel;
+    if (it.onClick) node.onClick = it.onClick;
+    if (it.onMouseEnter) node.onMouseEnter = it.onMouseEnter;
+    if (it.onMouseLeave) node.onMouseLeave = it.onMouseLeave;
     if (it.items && it.items.length) node.children = navItemsToMenuItems(it.items);
     return node;
   });

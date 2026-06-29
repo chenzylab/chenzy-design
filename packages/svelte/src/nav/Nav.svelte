@@ -66,6 +66,10 @@
     limitIndent?: boolean;
     /** 含子导航项的展开箭头位置（透传 Menu toggleIconPosition）。 */
     toggleIconPosition?: 'left' | 'right';
+    /** 自定义展开箭头图标（透传 Menu expandIcon）。 */
+    expandIcon?: Snippet;
+    /** 子导航展开动画开关（默认 true，透传 Menu motion）。对齐 Semi subNavMotion。 */
+    subNavMotion?: boolean;
     /** 浮层子导航展开延迟 ms（透传 Menu subMenuOpenDelay）。对齐 Semi subNavOpenDelay。 */
     subNavOpenDelay?: number;
     /** 浮层子导航关闭延迟 ms（透传 Menu subMenuCloseDelay）。对齐 Semi subNavCloseDelay。 */
@@ -84,6 +88,8 @@
     ariaLabel?: string;
     /** 选中导航项回调。 */
     onSelect?: (key: NavKey) => void;
+    /** 点击任意导航项回调（对齐 Semi onClick，在 onSelect 之外亦对已选项触发）。 */
+    onClick?: (key: NavKey) => void;
     /** 展开/收起子导航回调。 */
     onOpenChange?: (keys: NavKey[]) => void;
     /** 折叠态变化回调。 */
@@ -111,6 +117,8 @@
     inlineIndent,
     limitIndent,
     toggleIconPosition,
+    expandIcon,
+    subNavMotion,
     subNavOpenDelay,
     subNavCloseDelay,
     getPopupContainer,
@@ -120,6 +128,7 @@
     bodyStyle,
     ariaLabel,
     onSelect,
+    onClick,
     onOpenChange,
     onCollapseChange,
     headerSlot,
@@ -230,11 +239,16 @@
       {...inlineIndent !== undefined ? { inlineIndent } : {}}
       {...limitIndent !== undefined ? { limitIndent } : {}}
       {...toggleIconPosition !== undefined ? { toggleIconPosition } : {}}
+      {...expandIcon !== undefined ? { expandIcon } : {}}
+      {...subNavMotion !== undefined ? { motion: subNavMotion } : {}}
       {...subNavOpenDelay !== undefined ? { subMenuOpenDelay: subNavOpenDelay } : {}}
       {...subNavCloseDelay !== undefined ? { subMenuCloseDelay: subNavCloseDelay } : {}}
       {...getPopupContainer !== undefined ? { getPopupContainer } : {}}
       {...renderWrapper !== undefined ? { renderWrapper } : {}}
-      onSelect={(key: MenuKey) => onSelect?.(key)}
+      onSelect={(key: MenuKey) => {
+        onSelect?.(key);
+        onClick?.(key);
+      }}
       onOpenChange={(keys: MenuKey[]) => onOpenChange?.(keys)}
     />
   </div>

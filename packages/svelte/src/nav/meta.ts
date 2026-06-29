@@ -27,6 +27,8 @@ export const meta = {
     { name: 'inlineIndent', type: 'number', default: '24', desc: '子级缩进像素（透传 Menu）' },
     { name: 'limitIndent', type: 'boolean', default: 'true', desc: '仅一级缩进；false 时逐级缩进' },
     { name: 'toggleIconPosition', type: "'left'|'right'", default: "'right'", desc: '子导航展开箭头位置' },
+    { name: 'expandIcon', type: 'Snippet', default: 'undefined', desc: '自定义展开箭头图标' },
+    { name: 'subNavMotion', type: 'boolean', default: 'true', desc: '子导航展开动画开关' },
     { name: 'subNavOpenDelay', type: 'number', default: 'undefined', desc: '浮层子导航展开延迟 ms' },
     { name: 'subNavCloseDelay', type: 'number', default: 'undefined', desc: '浮层子导航关闭延迟 ms' },
     { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '浮层挂载容器' },
@@ -38,6 +40,7 @@ export const meta = {
   ],
   events: [
     { name: 'onSelect', payload: 'NavKey', desc: '选中导航项时触发' },
+    { name: 'onClick', payload: 'NavKey', desc: '点击任意导航项时触发' },
     { name: 'onOpenChange', payload: 'NavKey[]', desc: '展开/收起子导航时触发' },
     { name: 'onCollapseChange', payload: 'boolean', desc: '折叠态变化时触发' },
   ],
@@ -77,6 +80,9 @@ export const meta = {
         { name: 'link', type: 'string', default: 'undefined', desc: '链接地址（渲染原生 <a>）' },
         { name: 'target', type: 'string', default: 'undefined', desc: '链接 target' },
         { name: 'rel', type: 'string', default: 'undefined', desc: '链接 rel' },
+        { name: 'onClick', type: '(e: MouseEvent) => void', default: 'undefined', desc: '项级点击回调' },
+        { name: 'onMouseEnter', type: '(e: MouseEvent) => void', default: 'undefined', desc: '鼠标移入' },
+        { name: 'onMouseLeave', type: '(e: MouseEvent) => void', default: 'undefined', desc: '鼠标移出' },
       ],
     },
     {
