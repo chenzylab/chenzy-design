@@ -680,6 +680,14 @@
   :global(.cd-typography--underline) {
     text-decoration-line: underline;
   }
+  /* 链接 + underline 变体：平时无下划线，hover 才出（对齐 Semi，仅作用于 link）。
+     非链接的 underline 文本仍常显下划线。 */
+  :global(.cd-typography--link.cd-typography--underline) {
+    text-decoration-line: none;
+  }
+  :global(.cd-typography--link.cd-typography--underline:hover) {
+    text-decoration-line: underline;
+  }
   :global(.cd-typography--delete) {
     text-decoration-line: line-through;
   }
