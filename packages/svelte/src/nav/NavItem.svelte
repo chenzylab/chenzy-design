@@ -24,9 +24,26 @@
     target?: string;
     /** 链接 rel。 */
     rel?: string;
+    /** 项级点击回调。 */
+    onClick?: (e: MouseEvent) => void;
+    /** 项级鼠标移入回调。 */
+    onMouseEnter?: (e: MouseEvent) => void;
+    /** 项级鼠标移出回调。 */
+    onMouseLeave?: (e: MouseEvent) => void;
   }
 
-  let { itemKey, text, icon, disabled, link, target, rel }: Props = $props();
+  let {
+    itemKey,
+    text,
+    icon,
+    disabled,
+    link,
+    target,
+    rel,
+    onClick,
+    onMouseEnter,
+    onMouseLeave,
+  }: Props = $props();
 
   const collector = getNavCollector();
   // 声明式项为「声明时读取一次」语义（对齐 Semi Nav.Item，不支持运行时改 prop）。
@@ -41,6 +58,9 @@
       ...(link !== undefined ? { link } : {}),
       ...(target !== undefined ? { target } : {}),
       ...(rel !== undefined ? { rel } : {}),
+      ...(onClick !== undefined ? { onClick } : {}),
+      ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),
+      ...(onMouseLeave !== undefined ? { onMouseLeave } : {}),
     });
   }
   // 挂载后异步 bump，脱离挂载 effect 同步栈。

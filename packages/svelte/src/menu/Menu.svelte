@@ -54,6 +54,10 @@
      * 仅 inline 模式（内联展开的 SubMenu title）生效。
      */
     toggleIconPosition?: 'left' | 'right';
+    /** 自定义展开箭头图标（Snippet，替代默认三角形）。 */
+    expandIcon?: Snippet;
+    /** 子菜单展开/浮层动画开关（默认 true）。false 时去除展开过渡与浮层动画。 */
+    motion?: boolean;
     /** inline 模式下折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层 */
     inlineCollapsed?: boolean;
     /** 多选模式：点击叶子项 toggle 其选中态，selectedKeys 可含多项同时高亮（默认单选） */
@@ -117,6 +121,8 @@
     inlineIndent = 24,
     limitIndent = true,
     toggleIconPosition = 'right',
+    expandIcon,
+    motion = true,
     inlineCollapsed = false,
     multiple = false,
     triggerSubMenuAction,
@@ -448,9 +454,11 @@
               class:cd-menu__arrow--open={open}
               aria-hidden="true"
             >
-              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-                <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-              </svg>
+              {#if expandIcon}{@render expandIcon()}{:else}
+                <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+                  <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+                </svg>
+              {/if}
             </span>
           {/if}
           {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
@@ -461,14 +469,20 @@
               class:cd-menu__arrow--open={open}
               aria-hidden="true"
             >
-              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-                <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-              </svg>
+              {#if expandIcon}{@render expandIcon()}{:else}
+                <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+                  <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+                </svg>
+              {/if}
             </span>
           {/if}
         </button>
         {#if open}
-          <ul class="cd-menu__sub" role={sem.subListRole}>
+          <ul
+            class="cd-menu__sub"
+            class:cd-menu__sub--motion={motion}
+            role={sem.subListRole}
+          >
             {@render renderItems(item.children ?? [], level + 1)}
           </ul>
         {/if}
@@ -488,7 +502,12 @@
               aria-current={selected ? 'page' : undefined}
               aria-disabled={isItemDisabled(item) || undefined}
               style="padding-inline-start: {indent}"
-              onclick={() => selectLeaf(item)}
+              onclick={(e) => {
+                item.onClick?.(e);
+                selectLeaf(item);
+              }}
+              onmouseenter={item.onMouseEnter}
+              onmouseleave={item.onMouseLeave}
             >
               {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
               <span class="cd-menu__label">{item.label}</span>
@@ -511,7 +530,12 @@
               aria-disabled={isItemDisabled(item) || undefined}
               disabled={isItemDisabled(item) || undefined}
               style="padding-inline-start: {indent}"
-              onclick={() => selectLeaf(item)}
+              onclick={(e) => {
+                item.onClick?.(e);
+                selectLeaf(item);
+              }}
+              onmouseenter={item.onMouseEnter}
+              onmouseleave={item.onMouseLeave}
             >
               {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
               <span class="cd-menu__label">{item.label}</span>
@@ -649,6 +673,25 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  /* motion=true 时内联子菜单展开动画（淡入 + 轻微下移）；motion=false 关闭 */
+  .cd-menu__sub--motion {
+    animation: cd-menu-sub-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
+  }
+  @keyframes cd-menu-sub-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-menu__sub--motion {
+      animation: none;
+    }
   }
   /* 分隔符：水平细线，不可交互 */
   .cd-menu__divider {

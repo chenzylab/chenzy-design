@@ -35,6 +35,8 @@
 | inlineIndent | `number` | `24` | 子级缩进像素（透传 Menu）|
 | limitIndent | `boolean` | `true` | 仅一级缩进；false 时逐级缩进 |
 | toggleIconPosition | `'left'\|'right'` | `'right'` | 子导航展开箭头位置 |
+| expandIcon | `Snippet` | — | 自定义展开箭头图标 |
+| subNavMotion | `boolean` | `true` | 子导航展开动画开关 |
 | subNavOpenDelay / subNavCloseDelay | `number` | — | 浮层子导航展开/关闭延迟 ms |
 | getPopupContainer | `() => HTMLElement` | — | 浮层挂载容器 |
 | renderWrapper | `Snippet` | — | 自定义导航项外层包裹 |
@@ -44,6 +46,7 @@
 | 事件 | 载荷 | 说明 |
 |---|---|---|
 | onSelect | `NavKey` | 选中导航项 |
+| onClick | `NavKey` | 点击任意导航项 |
 | onOpenChange | `NavKey[]` | 展开/收起子导航 |
 | onCollapseChange | `boolean` | 折叠态变化 |
 
@@ -53,16 +56,18 @@
 
 ### 4.4 Nav.Item / Nav.Sub（声明式写法）
 JSX 式子组件，作为 Nav 的 children（与 `items` 二选一，items 优先）：
-- **Nav.Item**：`{ itemKey, text, icon?, disabled?, link?, target?, rel? }`。叶子导航项。
+- **Nav.Item**：`{ itemKey, text, icon?, disabled?, link?, target?, rel?, onClick?, onMouseEnter?, onMouseLeave? }`。叶子导航项。
 - **Nav.Sub**：`{ itemKey, text, icon?, disabled?, children }`。可展开子导航，children 内嵌 Nav.Item/Nav.Sub。
 
 > 实现：子组件经 context 注册描述符进【普通数组】（非 $state），挂载后【异步】bump 单个 $state revision
 > 触发一次 Nav 重建（见记忆 svelte5-child-register-state-array-loop，避免 effect 自循环）。
 
 ### 4.5 NavItemDef
-`{ itemKey, text, icon?: Snippet, disabled?, link?, target?, rel?, items?: NavItemDef[] }`
+`{ itemKey, text, icon?, disabled?, link?, target?, rel?, onClick?, onMouseEnter?, onMouseLeave?, items? }`
 
-> 范围：上述全部已实现。**仍未实现（TODO）**：subNavMotion（Menu 无 motion 开关，动画走 CSS + prefers-reduced-motion）。
+> 范围：全部 Semi 对齐项已实现（含 onClick/expandIcon/subNavMotion + 项级 onClick/hover）。
+> 未实现（刻意舍弃，最边角）：Nav.Sub 的 `dropdownProps`/`dropdownStyle`/`maxHeight`（Menu 不支持 per-Sub 浮层配置，
+> 用 Nav 级 `getPopupContainer`/`subNavOpen|CloseDelay` 替代）；Nav.Item 的 `indent`/`level`（自定义缩进用 `limitIndent`+`inlineIndent`）。
 
 ## 5. 主题 / Token
 | Token | 默认 | 用途 |
