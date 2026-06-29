@@ -133,8 +133,8 @@ export const demos: DemoEntry[] = [
     '08-loading.svelte',
     { zh: '加载状态', en: 'Loading' },
     {
-      zh: 'loading 自动带旋转图标并禁止点击，可与文字或纯图标组合。',
-      en: 'loading shows a spinner and blocks clicks; works with text or icon-only.',
+      zh: '设置 loading 为 true 即进入加载态，自动带旋转图标并禁止点击；可受控切换，注意 loading 时按钮不可点击。',
+      en: 'Set loading to true for the loading state — shows a spinner and blocks clicks; can be toggled. Buttons are non-clickable while loading.',
     },
   ),
   entry(
