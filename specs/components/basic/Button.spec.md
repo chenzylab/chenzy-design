@@ -28,14 +28,19 @@
 | iconPosition | `'left'\|'right'` | `'left'` | 图标位置 |
 | ariaLabel | `string` | — | 无障碍名；纯图标按钮必填 |
 | htmlType | `'button'\|'submit'\|'reset'` | `'button'` | 原生 type |
-| href | `string` | — | 提供则渲染为 `<a>` |
+| noHorizontalPadding | `boolean\|'left'\|'right'\|('left'\|'right')[]` | `false` | 仅 `icon` 时去单/双侧水平内距 |
+| class | `string` | — | 根元素自定义类名（透传） |
+| style | `string` | — | 根元素自定义内联样式（透传） |
+| contentClassName | `string` | — | 内容区自定义类名（仅传入时包裹 `display:contents` 层） |
 
 > 纯图标按钮：仅传 `icon`（无默认插槽文本）时自动收成正方形（宽=高、去水平内距），应提供 `ariaLabel`。
+> 链接式跳转不再由 Button 承担（已移除 `href`），统一用 `Typography.Link`（对齐 Semi）。
 
 ### Events
 | 事件 | 载荷 | 说明 |
 |---|---|---|
 | on:click | `MouseEvent` | disabled/loading 时不触发 |
+| on:mousedown / on:mouseenter / on:mouseleave | `MouseEvent` | 鼠标按下/移入/移出 |
 ### Slots
 | 名称 | 说明 |
 |---|---|
@@ -53,8 +58,8 @@
 | --cd-button-font-size | var(--cd-font-size-2) | 字号 |
 
 ## 6. 无障碍
-- 渲染原生 `<button>`（或 `href` 时 `<a role=button?>` 用真链接语义）。
-- 键盘：Enter/Space 触发；`href` 形态用浏览器原生链接行为。
+- 渲染原生 `<button>`（链接式跳转用 `Typography.Link`，不再由 Button 承担）。
+- 键盘：Enter/Space 触发原生 button 行为。
 - `disabled` → 原生 disabled + `aria-disabled`；loading → `aria-busy="true"`。
 - `:focus-visible` 焦点环用 `--cd-focus-ring`。
 - 仅图标按钮必须有 `aria-label`（缺失则 dev 警告）。

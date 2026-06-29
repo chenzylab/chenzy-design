@@ -24,14 +24,27 @@
      */
     colorful?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
-    href?: string;
     /** required for icon-only buttons */
     ariaLabel?: string;
     icon?: Snippet;
     /** 图标相对文字位置。spec §4 L27 */
     iconPosition?: 'left' | 'right';
+    /**
+     * 设置水平方向是否去掉内边距，仅在设置了 icon 时有效（对齐 Semi）。
+     * true 等效 ['left','right']；'left'/'right' 去单侧；数组组合去两侧。
+     */
+    noHorizontalPadding?: boolean | 'left' | 'right' | Array<'left' | 'right'>;
+    /** 根元素自定义类名（透传，叠加在内置 class 之后）。 */
+    class?: string;
+    /** 根元素自定义内联样式（透传）。 */
+    style?: string;
+    /** 内容区（文本 + 图标包裹）自定义类名（对齐 Semi contentClassName）。 */
+    contentClassName?: string;
     children?: Snippet;
     onclick?: (e: MouseEvent) => void;
+    onmousedown?: (e: MouseEvent) => void;
+    onmouseenter?: (e: MouseEvent) => void;
+    onmouseleave?: (e: MouseEvent) => void;
   }
 
   let {
@@ -41,14 +54,20 @@
     block = false,
     disabled: disabledProp,
     loading = false,
-    colorful = false,
+    colorful: colorfulProp,
     htmlType = 'button',
-    href,
     ariaLabel,
     icon,
     iconPosition = 'left',
+    noHorizontalPadding = false,
+    class: className,
+    style,
+    contentClassName,
     children,
     onclick,
+    onmousedown,
+    onmouseenter,
+    onmouseleave,
   }: Props = $props();
 
   // ButtonGroup 上下文：仅在未显式设置对应 prop 时作为默认回退（显式 prop 始终优先）。
@@ -57,6 +76,7 @@
   const theme = $derived<ButtonTheme>(themeProp ?? group?.theme ?? 'light');
   const size = $derived<ButtonSize>(sizeProp ?? group?.size ?? 'default');
   const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
+  const colorful = $derived<boolean>(colorfulProp ?? group?.colorful ?? false);
 
   // colorful 仅支持 primary / tertiary；其余 type 回退为 primary。
   const type = $derived<ButtonType>(
@@ -65,6 +85,16 @@
 
   // 无 children（仅 icon 或 loading 旋转图标）时为纯图标按钮，收成方形。
   const iconOnly = $derived(!children && (!!icon || loading));
+
+  // noHorizontalPadding 规整为 {left,right}，仅在有 icon 时生效（对齐 Semi）。
+  const noPad = $derived.by(() => {
+    if (!icon || !noHorizontalPadding) return { left: false, right: false };
+    if (noHorizontalPadding === true) return { left: true, right: true };
+    const arr = Array.isArray(noHorizontalPadding)
+      ? noHorizontalPadding
+      : [noHorizontalPadding];
+    return { left: arr.includes('left'), right: arr.includes('right') };
+  });
 
   const cls = $derived(
     [
@@ -77,6 +107,9 @@
       colorful && 'cd-button--colorful',
       iconOnly && 'cd-button--icon-only',
       icon && iconPosition === 'right' && 'cd-button--icon-right',
+      noPad.left && 'cd-button--no-pad-left',
+      noPad.right && 'cd-button--no-pad-right',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -104,32 +137,28 @@
   {/if}
 {/snippet}
 
-{#if href}
-  <a
-    class={cls}
-    href={disabled ? undefined : href}
-    role="button"
-    aria-disabled={disabled || undefined}
-    aria-busy={loading || undefined}
-    aria-label={ariaLabel}
-    onclick={handleClick}
-  >
+<button
+  class={cls}
+  {style}
+  type={htmlType}
+  {disabled}
+  aria-busy={loading || undefined}
+  aria-label={ariaLabel}
+  onclick={handleClick}
+  {onmousedown}
+  {onmouseenter}
+  {onmouseleave}
+>
+  {#if contentClassName}
+    <span class={contentClassName} style="display: contents;">
+      {@render leadingIcon()}
+      {@render children?.()}
+    </span>
+  {:else}
     {@render leadingIcon()}
     {@render children?.()}
-  </a>
-{:else}
-  <button
-    class={cls}
-    type={htmlType}
-    {disabled}
-    aria-busy={loading || undefined}
-    aria-label={ariaLabel}
-    onclick={handleClick}
-  >
-    {@render leadingIcon()}
-    {@render children?.()}
-  </button>
-{/if}
+  {/if}
+</button>
 
 <style>
   .cd-button {
@@ -177,12 +206,18 @@
   .cd-button--icon-only.cd-button--large {
     width: var(--cd-button-height-large);
   }
+  /* noHorizontalPadding：仅 icon 按钮去单/双侧水平内距（对齐 Semi） */
+  .cd-button--no-pad-left {
+    padding-inline-start: 0;
+  }
+  .cd-button--no-pad-right {
+    padding-inline-end: 0;
+  }
   .cd-button--loading {
     cursor: default;
     opacity: 0.75;
   }
-  .cd-button:disabled,
-  .cd-button[aria-disabled='true'] {
+  .cd-button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }

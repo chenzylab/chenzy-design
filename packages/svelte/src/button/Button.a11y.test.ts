@@ -41,14 +41,4 @@ describe('Button a11y', () => {
     expect(btn?.getAttribute('aria-busy')).toBe('true');
     await expectNoAxeViolations(container);
   });
-
-  it('链接按钮（href）：role=button 的 <a>，无 axe violations', async () => {
-    const { container } = renderWithLocale(Button, {
-      props: { href: 'https://example.com', ariaLabel: 'Open docs' },
-    });
-    const link = container.querySelector('a');
-    expect(link?.getAttribute('role')).toBe('button');
-    expect(link?.getAttribute('href')).toBe('https://example.com');
-    await expectNoAxeViolations(container);
-  });
 });

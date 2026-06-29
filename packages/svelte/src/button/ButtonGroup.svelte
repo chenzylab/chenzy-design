@@ -18,12 +18,28 @@
     type?: ButtonType;
     theme?: ButtonTheme;
     disabled?: boolean;
+    /** 组级多彩开关，透传给组内 Button（对齐 Semi）。 */
+    colorful?: boolean;
     /** 按钮组语义标签（aria-label）。 */
     ariaLabel?: string;
+    /** 根元素自定义类名（透传）。 */
+    class?: string;
+    /** 根元素自定义内联样式（透传）。 */
+    style?: string;
     children?: Snippet;
   }
 
-  let { size, type, theme, disabled, ariaLabel, children }: Props = $props();
+  let {
+    size,
+    type,
+    theme,
+    disabled,
+    colorful,
+    ariaLabel,
+    class: className,
+    style,
+    children,
+  }: Props = $props();
 
   // 透传组级默认给组内 Button（getButtonGroupContext 读取）。
   // 用 getter 暴露 live 值，使组内 Button 始终读到最新的组级默认（context 本身不可重赋值）。
@@ -40,11 +56,14 @@
     get disabled() {
       return disabled;
     },
+    get colorful() {
+      return colorful;
+    },
   };
   setContext(BUTTON_GROUP_CTX, ctx);
 </script>
 
-<div class="cd-button-group" role="group" aria-label={ariaLabel}>
+<div class={['cd-button-group', className].filter(Boolean).join(' ')} {style} role="group" aria-label={ariaLabel}>
   {@render children?.()}
 </div>
 
