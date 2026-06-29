@@ -21,6 +21,7 @@ import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
 import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
+import { navTokens } from './nav.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { dataDisplayTokens } from './data-display.js';
@@ -66,6 +67,7 @@ export const componentTokens = {
   ...navigationTokens,
   ...tabsTokens,
   ...menuTokens,
+  ...navTokens,
   ...displayTokens,
   ...tooltipTokens,
   ...dataDisplayTokens,
