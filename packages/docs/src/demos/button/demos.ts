@@ -100,8 +100,8 @@ export const demos: DemoEntry[] = [
     '05-icon.svelte',
     { zh: '图标按钮', en: 'Icon' },
     {
-      zh: '通过 icon snippet 加图标，iconPosition 控制左右；纯图标按钮需提供 ariaLabel。',
-      en: 'Add an icon via the icon snippet; iconPosition sets side. Icon-only buttons need ariaLabel.',
+      zh: '可定义按钮的图标：通过 icon snippet 传入，iconPosition 控制左右；纯图标按钮（无文字）自动收成方形，需提供 ariaLabel。',
+      en: 'Customize the button icon via the icon snippet; iconPosition sets the side. Icon-only buttons auto-square and need ariaLabel.',
     },
   ),
   entry(
