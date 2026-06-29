@@ -255,11 +255,18 @@
       outline: 透明 + 渐变边框（border-image）+ 紫字；borderless: 透明 + 紫字。
   */
   .cd-button--colorful {
+    /* 实心渐变 + hover 加深版（向蓝/紫各深一档），各 theme 复用 */
     --cf: linear-gradient(
       120deg,
       var(--cd-button-colorful-from) 0%,
       var(--cd-button-colorful-via) 52%,
       var(--cd-button-colorful-to) 100%
+    );
+    --cf-hover: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 85%, #000) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-via) 85%, #000) 52%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 85%, #000) 100%
     );
     --cf-text: var(--cd-button-colorful-via);
   }
@@ -269,7 +276,8 @@
     border-color: transparent;
   }
   .cd-button--colorful.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
-    filter: brightness(0.93);
+    background: var(--cf-hover);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--cd-button-colorful-via) 35%, transparent);
   }
   .cd-button--colorful.cd-button--light {
     background: linear-gradient(
@@ -282,7 +290,12 @@
     border-color: transparent;
   }
   .cd-button--colorful.cd-button--light:hover:not(:disabled):not([aria-disabled='true']) {
-    filter: brightness(0.97) saturate(1.2);
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 28%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-via) 28%, transparent) 52%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 28%, transparent) 100%
+    );
   }
   .cd-button--colorful.cd-button--borderless {
     background: transparent;
@@ -291,11 +304,11 @@
   .cd-button--colorful.cd-button--borderless:hover:not(:disabled):not([aria-disabled='true']) {
     background: linear-gradient(
       120deg,
-      color-mix(in srgb, var(--cd-button-colorful-from) 12%, transparent) 0%,
-      color-mix(in srgb, var(--cd-button-colorful-to) 12%, transparent) 100%
+      color-mix(in srgb, var(--cd-button-colorful-from) 16%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 16%, transparent) 100%
     );
   }
-  /* outline: 渐变边框 + 渐变文字（背景裁切到文字） */
+  /* outline: 渐变边框 + 渐变文字色 */
   .cd-button--colorful.cd-button--outline {
     background: transparent;
     border: 1px solid transparent;
@@ -305,8 +318,8 @@
   .cd-button--colorful.cd-button--outline:hover:not(:disabled):not([aria-disabled='true']) {
     background: linear-gradient(
       120deg,
-      color-mix(in srgb, var(--cd-button-colorful-from) 8%, transparent) 0%,
-      color-mix(in srgb, var(--cd-button-colorful-to) 8%, transparent) 100%
+      color-mix(in srgb, var(--cd-button-colorful-from) 12%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 12%, transparent) 100%
     );
   }
   .cd-button__icon {

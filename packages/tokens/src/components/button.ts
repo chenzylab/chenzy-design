@@ -13,8 +13,8 @@ export const buttonTokens = {
   'button-color-text-primary': 'var(--cd-color-text-inverse)',
   // ButtonGroup：组内分隔线颜色（相邻按钮共享边框时的细分隔）
   'button-group-divider': 'var(--cd-color-border)',
-  // colorful（AI 多彩）：蓝 → 紫 → 粉 三段多彩渐变（对齐 Semi AI 风格）
-  'button-colorful-from': 'var(--cd-color-primary)',
+  // colorful（AI 多彩）：蓝 → 紫 双色渐变（对齐 Semi AI 风格，冷色调，无粉）
+  'button-colorful-from': '#4d6bff',
   'button-colorful-via': '#7b5cff',
-  'button-colorful-to': '#e052b0',
+  'button-colorful-to': '#a64dff',
 } as const;
