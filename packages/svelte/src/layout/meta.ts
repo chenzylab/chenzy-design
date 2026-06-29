@@ -17,7 +17,10 @@ export const meta = {
           default: 'undefined',
           desc: '显式声明含侧边栏→row 方向；不传则由 Sider 挂载时自动检测',
         },
-        { name: 'class', type: 'string', default: "''" },
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
       ],
     },
     {
@@ -26,7 +29,10 @@ export const meta = {
       props: [
         { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky top:0' },
         { name: 'height', type: 'string|number', default: 'undefined', desc: 'number→px，覆盖 token 高度' },
-        { name: 'class', type: 'string', default: "''" },
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
       ],
     },
     {
@@ -35,7 +41,10 @@ export const meta = {
       props: [
         { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky bottom:0' },
         { name: 'height', type: 'string|number', default: 'undefined' },
-        { name: 'class', type: 'string', default: "''" },
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
       ],
     },
     {
@@ -48,7 +57,10 @@ export const meta = {
           default: 'false',
           desc: 'true→token padding；number→px；string→原样；false→0',
         },
-        { name: 'class', type: 'string', default: "''" },
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
       ],
     },
     {
@@ -63,14 +75,19 @@ export const meta = {
         { name: 'breakpoint', type: "'xs'|'sm'|'md'|'lg'|'xl'|'xxl'", default: 'undefined', desc: '低于断点自动收起' },
         { name: 'reverseArrow', type: 'boolean', default: 'false', desc: '反转触发器箭头方向' },
         { name: 'placement', type: "'left'|'right'", default: "'left'" },
-        { name: 'class', type: 'string', default: "''" },
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签，描述该 Sider 作用' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
         { name: 'onCollapse', type: "(collapsed, trigger:'click'|'breakpoint')=>void", default: 'undefined' },
+        { name: 'onBreakpoint', type: '(matched: boolean, breakpoint) => void', default: 'undefined', desc: '命中响应式断点时回调' },
         { name: 'trigger', type: 'Snippet<[{collapsed,toggle}]>', default: 'undefined', desc: '自定义触发器' },
       ],
     },
   ],
   events: [
     { name: 'onCollapse', desc: 'Sider 收起状态变化，第二参数区分 click / breakpoint 触发来源' },
+    { name: 'onBreakpoint', desc: 'Sider 命中响应式断点时触发，(matched, breakpoint)' },
   ],
   slots: [
     { name: 'children', desc: '各子组件内容' },

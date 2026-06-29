@@ -9,10 +9,24 @@
     /** override height; number→px, string→raw */
     height?: string | number;
     class?: string;
+    /** 根元素自定义内联样式（透传，叠加在 height 之后）。 */
+    style?: string;
+    /** 可访问性标签（透传到根元素 aria-label）。 */
+    ariaLabel?: string;
+    /** 可访问性 role（透传到根元素）。 */
+    role?: string;
     children?: Snippet;
   }
 
-  let { sticky = false, height, class: className = '', children }: Props = $props();
+  let {
+    sticky = false,
+    height,
+    class: className = '',
+    style,
+    ariaLabel,
+    role,
+    children,
+  }: Props = $props();
 
   const heightCss = $derived.by(() => {
     if (height === undefined) return undefined;
@@ -23,10 +37,13 @@
     ['cd-layout-footer', sticky && 'cd-layout-footer--sticky', className].filter(Boolean).join(' '),
   );
 
-  const inlineStyle = $derived(heightCss ? `height:${heightCss}` : undefined);
+  // height 派生样式在前，用户 style 在后（可覆盖）。
+  const inlineStyle = $derived(
+    [heightCss ? `height:${heightCss}` : '', style ?? ''].filter(Boolean).join(';') || undefined,
+  );
 </script>
 
-<footer class={cls} style={inlineStyle}>
+<footer class={cls} style={inlineStyle} aria-label={ariaLabel} {role}>
   {@render children?.()}
 </footer>
 
