@@ -23,10 +23,15 @@
 | block | `boolean` | `false` | 撑满宽度 |
 | disabled | `boolean` | `false` | 禁用 |
 | loading | `boolean` | `false` | 加载态（带 Spin，禁用点击）|
+| colorful | `boolean` | `false` | AI 多彩：所有 theme 下蓝→紫渐变；type 仅 `primary`/`tertiary` 有意义（其余回退 `primary`）|
 | icon | `Snippet` | — | 图标插槽 |
 | iconPosition | `'left'\|'right'` | `'left'` | 图标位置 |
+| ariaLabel | `string` | — | 无障碍名；纯图标按钮必填 |
 | htmlType | `'button'\|'submit'\|'reset'` | `'button'` | 原生 type |
 | href | `string` | — | 提供则渲染为 `<a>` |
+
+> 纯图标按钮：仅传 `icon`（无默认插槽文本）时自动收成正方形（宽=高、去水平内距），应提供 `ariaLabel`。
+
 ### Events
 | 事件 | 载荷 | 说明 |
 |---|---|---|

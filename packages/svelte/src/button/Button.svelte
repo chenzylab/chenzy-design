@@ -18,7 +18,10 @@
     block?: boolean;
     disabled?: boolean;
     loading?: boolean;
-    /** AI 多彩按钮：solid/light 主题下用品牌渐变背景（对齐 Semi AI 风格）。 */
+    /**
+     * AI 多彩按钮：所有 theme 下用品牌蓝→紫渐变（对齐 Semi AI 风格）。
+     * type 仅 primary / tertiary 有意义（其余 type 回退为 primary）。
+     */
     colorful?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
     href?: string;
@@ -50,10 +53,18 @@
 
   // ButtonGroup 上下文：仅在未显式设置对应 prop 时作为默认回退（显式 prop 始终优先）。
   const group = getButtonGroupContext();
-  const type = $derived<ButtonType>(typeProp ?? group?.type ?? 'secondary');
+  const typeRaw = $derived<ButtonType>(typeProp ?? group?.type ?? 'secondary');
   const theme = $derived<ButtonTheme>(themeProp ?? group?.theme ?? 'light');
   const size = $derived<ButtonSize>(sizeProp ?? group?.size ?? 'default');
   const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
+
+  // colorful 仅支持 primary / tertiary；其余 type 回退为 primary。
+  const type = $derived<ButtonType>(
+    colorful && typeRaw !== 'primary' && typeRaw !== 'tertiary' ? 'primary' : typeRaw,
+  );
+
+  // 无 children（仅 icon 或 loading 旋转图标）时为纯图标按钮，收成方形。
+  const iconOnly = $derived(!children && (!!icon || loading));
 
   const cls = $derived(
     [
@@ -64,6 +75,7 @@
       block && 'cd-button--block',
       loading && 'cd-button--loading',
       colorful && 'cd-button--colorful',
+      iconOnly && 'cd-button--icon-only',
       icon && iconPosition === 'right' && 'cd-button--icon-right',
     ]
       .filter(Boolean)
@@ -152,6 +164,18 @@
   }
   .cd-button--block {
     width: 100%;
+  }
+  /* 纯图标（无文字）：收成正方形，宽=高，去除水平内距 */
+  .cd-button--icon-only {
+    width: var(--cd-button-height-default);
+    padding-inline: 0;
+    gap: 0;
+  }
+  .cd-button--icon-only.cd-button--small {
+    width: var(--cd-button-height-small);
+  }
+  .cd-button--icon-only.cd-button--large {
+    width: var(--cd-button-height-large);
   }
   .cd-button--loading {
     cursor: default;
@@ -249,8 +273,9 @@
     background: color-mix(in srgb, var(--btn-hue) 14%, transparent);
   }
   /*
-    colorful (AI 多彩)：蓝 → 紫 → 粉 三段多彩渐变（对齐 Semi AI 风格）。
-    - 局部变量 --cf / --cf-soft 复用同一渐变，各 theme 按填充方式取用。
+    colorful (AI 多彩)：蓝 → 紫 双色渐变（对齐 Semi AI 风格，冷色调）。
+    - 支持所有 theme；type 仅 primary/tertiary（脚本里已收窄回退）。
+    - 局部变量 --cf / --cf-hover / --cf-text 复用同一渐变，各 theme 按填充方式取用。
     - solid: 多彩实心 + 白字；light: 浅多彩底 + 紫字；
       outline: 透明 + 渐变边框（border-image）+ 紫字；borderless: 透明 + 紫字。
   */
