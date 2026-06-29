@@ -53,27 +53,36 @@
   <Button {type} {theme} {size} {disabled} {loading} onclick={(e) => onclick?.(e)}>
     {@render children?.()}
   </Button>
-  <Dropdown
-    trigger="click"
-    {items}
-    {position}
-    {disabled}
-    onSelect={(key) => onSelect?.(key)}
-  >
-    {#snippet triggerContent()}
-      <Button
-        {type}
-        {theme}
-        {size}
-        {disabled}
-        ariaLabel={triggerAriaLabel}
-        icon={caret}
-      ></Button>
-    {/snippet}
-    {#if menu}
+  <!-- 有自定义 menu 时把它作为 children 透传给 Dropdown；
+       否则不传 children，让 Dropdown 走内置 items 渲染分支。
+       注意：标签体内即便是空 {#if} 也会被 Svelte 收集成 children snippet，
+       从而覆盖 items 导致菜单为空，故必须按 menu 是否存在分叉两个调用。 -->
+  {#if menu}
+    <Dropdown
+      trigger="click"
+      {items}
+      {position}
+      {disabled}
+      onSelect={(key) => onSelect?.(key)}
+    >
+      {#snippet triggerContent()}
+        <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
+      {/snippet}
       {@render menu()}
-    {/if}
-  </Dropdown>
+    </Dropdown>
+  {:else}
+    <Dropdown
+      trigger="click"
+      {items}
+      {position}
+      {disabled}
+      onSelect={(key) => onSelect?.(key)}
+    >
+      {#snippet triggerContent()}
+        <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
+      {/snippet}
+    </Dropdown>
+  {/if}
 </div>
 
 {#snippet caret()}

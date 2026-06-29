@@ -550,7 +550,10 @@
   .cd-dropdown__menu--hidden {
     display: none;
   }
-  /* motion：进场淡入 + 轻微下移；reduced-motion 退化 */
+  /* motion：进场淡入；reduced-motion 退化。
+     注意：定位 transform 由 use:floating 写入 inline style，动画 keyframe
+     绝不能设置 transform（CSS animation 优先级高于 inline style，会把
+     floating 的 translate(x,y) 覆盖成 0，浮层飘到容器左上角）。故只动 opacity。 */
   .cd-dropdown__menu--motion {
     animation: cd-dropdown-in var(--cd-dropdown-motion-duration, 120ms)
       var(--cd-dropdown-motion-easing, ease) both;
@@ -558,11 +561,9 @@
   @keyframes cd-dropdown-in {
     from {
       opacity: 0;
-      transform: translateY(-4px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
   @media (prefers-reduced-motion: reduce) {
