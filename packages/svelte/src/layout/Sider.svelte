@@ -26,7 +26,15 @@
     reverseArrow?: boolean;
     placement?: 'left' | 'right';
     class?: string;
+    /** 根元素自定义内联样式（透传，叠加在宽度样式之后）。 */
+    style?: string;
+    /** 可访问性标签（透传到 aside 的 aria-label，描述该 Sider 作用）。 */
+    ariaLabel?: string;
+    /** 可访问性 role（透传到根元素）。 */
+    role?: string;
     onCollapse?: (collapsed: boolean, trigger: SiderTrigger) => void;
+    /** 触发响应式断点时的回调（matched=是否命中 max-width 断点）。 */
+    onBreakpoint?: (matched: boolean, breakpoint: Breakpoint) => void;
     children?: Snippet;
     /** custom trigger; receives current collapsed + toggle */
     trigger?: Snippet<[{ collapsed: boolean; toggle: () => void }]>;
@@ -42,7 +50,11 @@
     reverseArrow = false,
     placement = 'left',
     class: className = '',
+    style,
+    ariaLabel,
+    role,
     onCollapse,
+    onBreakpoint,
     children,
     trigger,
   }: Props = $props();
@@ -60,6 +72,7 @@
     const options: SiderOptions = {
       defaultCollapsed,
       onChange: (value, t) => onCollapse?.(value, t),
+      onBreakpoint: (matched, bp) => onBreakpoint?.(matched, bp),
     };
     if (collapsed !== undefined) options.collapsed = collapsed;
     if (breakpoint !== undefined) options.breakpoint = breakpoint;
@@ -115,7 +128,12 @@
       .join(' '),
   );
 
-  const inlineStyle = $derived(`flex: 0 0 ${widthCss}; width: ${widthCss}; max-width: ${widthCss}`);
+  // 宽度派生样式在前，用户 style 在后（可覆盖）。
+  const inlineStyle = $derived(
+    [`flex: 0 0 ${widthCss}; width: ${widthCss}; max-width: ${widthCss}`, style ?? '']
+      .filter(Boolean)
+      .join('; '),
+  );
 
   // Arrow direction: point "outward" to expand, "inward" to collapse.
   // placement + reverseArrow flip which glyph means which.
@@ -125,7 +143,7 @@
   });
 </script>
 
-<aside class={cls} style={inlineStyle}>
+<aside class={cls} style={inlineStyle} aria-label={ariaLabel} {role}>
   <div
     id={sider.id}
     class="cd-layout-sider__children"
