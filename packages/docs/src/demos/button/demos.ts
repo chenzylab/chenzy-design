@@ -47,8 +47,40 @@ export const demos: DemoEntry[] = [
     '02-theme.svelte',
     { zh: '按钮主题', en: 'Theme' },
     {
-      zh: 'solid / light / borderless / outline 四种主题（填充方式），与类型正交组合。',
-      en: 'Four themes (fill modes): solid / light / borderless / outline, orthogonal to type.',
+      zh: '目前可用的主题（theme）为：light（浅色背景）、solid（深色背景）、borderless（无背景）、outline（边框模式），与类型正交组合。默认主题为 light。',
+      en: 'Available themes: light (light background), solid (dark background), borderless (no background), outline (bordered), orthogonal to type. Default is light.',
+    },
+  ),
+  entry(
+    '02a-theme-light.svelte',
+    { zh: '浅色背景', en: 'Light' },
+    {
+      zh: 'theme="light"：浅色语义底 + 语义文字，适合次级/常规操作。',
+      en: 'theme="light": tinted semantic background with semantic text, for secondary/regular actions.',
+    },
+  ),
+  entry(
+    '02b-theme-solid.svelte',
+    { zh: '深色背景', en: 'Solid' },
+    {
+      zh: 'theme="solid"：语义实心底 + 反相文字，视觉最强，适合主操作。',
+      en: 'theme="solid": solid semantic fill with inverse text, the strongest emphasis for primary actions.',
+    },
+  ),
+  entry(
+    '02c-theme-borderless.svelte',
+    { zh: '无背景', en: 'Borderless' },
+    {
+      zh: 'theme="borderless"：透明底 + 语义文字，无边框，最轻量。',
+      en: 'theme="borderless": transparent background with semantic text and no border, the lightest weight.',
+    },
+  ),
+  entry(
+    '02d-theme-outline.svelte',
+    { zh: '边框模式', en: 'Outline' },
+    {
+      zh: 'theme="outline"：透明底 + 语义边框 + 语义文字，介于 light 与 borderless 之间。',
+      en: 'theme="outline": transparent background with a semantic border and text, between light and borderless.',
     },
   ),
   entry(
