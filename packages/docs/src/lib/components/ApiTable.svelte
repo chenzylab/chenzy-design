@@ -38,18 +38,18 @@
     <thead>
       <tr>
         <th>{t('api.name', lang)}</th>
+        <th>{t('api.desc', lang)}</th>
         <th>{t('api.type', lang)}</th>
         <th>{t('api.default', lang)}</th>
-        <th>{t('api.desc', lang)}</th>
       </tr>
     </thead>
     <tbody>
       {#each props as prop (prop.name)}
         <tr>
           <td><code>{prop.name}</code></td>
+          <td>{prop.desc ?? '—'}</td>
           <td><code class="type">{prop.type}</code></td>
           <td>{prop.default ?? '—'}</td>
-          <td>{prop.desc ?? '—'}</td>
         </tr>
       {/each}
     </tbody>
