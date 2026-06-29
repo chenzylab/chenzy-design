@@ -104,7 +104,14 @@
   });
 
   function toggle(): void {
-    sider.toggle();
+    // 受控模式：headless 在构造时捕获了初始 collapsed，其 current() 是陈旧值，
+    // 直接 sider.toggle() 会一直按初值翻转。故用 Svelte 侧 live 的 collapsedState
+    // 计算目标并 setCollapsed（仅触发 onChange，受控不自改）。非受控走 headless toggle。
+    if (collapsed !== undefined) {
+      sider.setCollapsed(!collapsedState, 'click');
+    } else {
+      sider.toggle();
+    }
   }
 
   function toCss(value: string | number): string {

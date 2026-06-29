@@ -2,12 +2,14 @@
 // 覆盖 Layout / Header / Content / Footer / Sider 五个组件的根元素透传。
 // 命名 *.a11y.test.ts 以进入 dom(jsdom) project。
 import { describe, it, expect } from 'vitest';
+import { tick } from 'svelte';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import Layout from './Layout.svelte';
 import Header from './Header.svelte';
 import Content from './Content.svelte';
 import Footer from './Footer.svelte';
 import Sider from './Sider.svelte';
+import SiderControlledFixture from './SiderControlledFixture.svelte';
 
 describe('Layout 家族 props 透传（对齐 Semi）', () => {
   it('Layout：style / aria-label / role 落到 section', () => {
@@ -61,5 +63,23 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
     expect(style).toContain('background: gold');
     expect(el.getAttribute('aria-label')).toBe('侧栏');
     expect(el.getAttribute('role')).toBe('navigation');
+  });
+});
+
+describe('Sider 受控折叠 toggle 往返（回归 #350 后）', () => {
+  it('受控模式下触发器可反复折叠/展开（不卡在折叠态）', async () => {
+    const { container } = renderWithLocale(SiderControlledFixture, {});
+    const sider = container.querySelector('.cd-layout-sider')!;
+    const trigger = container.querySelector<HTMLButtonElement>('.cd-layout-sider__trigger')!;
+    // 初始展开
+    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(false);
+    // 第一次点击 → 折叠
+    trigger.click();
+    await tick();
+    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(true);
+    // 第二次点击 → 展开（曾因 headless 捕获陈旧受控值而卡住）
+    trigger.click();
+    await tick();
+    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(false);
   });
 });
