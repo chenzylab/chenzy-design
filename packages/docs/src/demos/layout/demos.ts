@@ -82,4 +82,68 @@ export const demos: DemoEntry[] = [
       en: 'Full admin skeleton: top global nav + collapsible side nav + breadcrumb content.',
     },
   ),
+  entry(
+    '08-responsive-sider.svelte',
+    { zh: '响应式侧栏', en: 'Responsive sider' },
+    {
+      zh: 'Sider breakpoint + onBreakpoint：视口跨断点（md）时自动折叠/展开并回调。',
+      en: 'Sider breakpoint + onBreakpoint: auto collapse/expand across the md breakpoint with a callback.',
+    },
+  ),
+  entry(
+    '09-custom-trigger.svelte',
+    { zh: '自定义折叠触发器', en: 'Custom trigger' },
+    {
+      zh: 'Sider collapsible + 自定义 trigger snippet（接收 collapsed/toggle），用任意组件替代默认箭头。',
+      en: 'Sider collapsible + custom trigger snippet (receives collapsed/toggle), any component instead of the default arrow.',
+    },
+  ),
+  entry(
+    '10-sticky-scroll.svelte',
+    { zh: '吸顶吸底滚动', en: 'Sticky header/footer' },
+    {
+      zh: 'Header/Footer sticky + height：内容滚动时头尾固定。',
+      en: 'Header/Footer sticky + height: header and footer stay fixed while content scrolls.',
+    },
+  ),
+  entry(
+    '11-content-padding.svelte',
+    { zh: '内容内边距档位', en: 'Content padding' },
+    {
+      zh: 'Content padding 四档：false=0 / true=token / number=px / string=原样。',
+      en: 'Content padding tiers: false=0 / true=token / number=px / string=raw.',
+    },
+  ),
+  entry(
+    '12-right-collapsible.svelte',
+    { zh: '右置可折叠侧栏', en: 'Right collapsible sider' },
+    {
+      zh: 'placement="right" + collapsible + reverseArrow：右侧辅助面板可折叠，箭头方向反转。',
+      en: 'placement="right" + collapsible + reverseArrow: a collapsible right panel with flipped arrow.',
+    },
+  ),
+  entry(
+    '13-dual-sider.svelte',
+    { zh: '双侧栏布局', en: 'Dual sider' },
+    {
+      zh: '左导航 + 中内容 + 右辅助面板：一行内双侧栏。',
+      en: 'Left nav + center content + right panel: two siders in one row.',
+    },
+  ),
+  entry(
+    '14-fullscreen-app.svelte',
+    { zh: '全屏应用布局', en: 'Full-screen app' },
+    {
+      zh: '固定头/侧/底，仅内容区滚动——典型全屏控制台外壳。',
+      en: 'Fixed header/sider/footer with only the content scrolling — a typical full-screen console shell.',
+    },
+  ),
+  entry(
+    '15-docs-layout.svelte',
+    { zh: '文档站布局', en: 'Docs layout' },
+    {
+      zh: '顶栏 + 左目录 + 中正文 + 右页内锚点：三栏文档结构，正文独立滚动。',
+      en: 'Top bar + left TOC + content + right anchors: a three-column docs layout with its own scroll.',
+    },
+  ),
 ];
