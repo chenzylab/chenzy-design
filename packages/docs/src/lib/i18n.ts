@@ -180,3 +180,13 @@ export function t(key: string, lang: Lang, params?: Record<string, string | numb
   }
   return s;
 }
+
+/** 可本地化文本：纯字符串（仅中文）或 { zh, en } 双语对象。用于 demo 标题/描述等内容文案。 */
+export type LocalizedText = string | { zh: string; en: string };
+
+/** 取本地化文本：字符串原样返回；双语对象按 lang 取值，缺失回退 zh。 */
+export function localize(text: LocalizedText | undefined, lang: Lang): string {
+  if (text == null) return '';
+  if (typeof text === 'string') return text;
+  return text[lang] ?? text.zh;
+}
