@@ -25,6 +25,7 @@ const dict: Dict = {
   'tab.api': { zh: 'API 文档', en: 'API' },
   'tab.design': { zh: '设计文档', en: 'Design' },
   'tab.usage': { zh: '使用场景', en: 'Usage' },
+  'section.install': { zh: '如何引入', en: 'Import' },
   'section.demo': { zh: '代码演示', en: 'Demos' },
   'section.api': { zh: 'API 参考', en: 'API Reference' },
   'section.subapi': { zh: '子组件', en: 'Sub-components' },
