@@ -1,12 +1,12 @@
 <script lang="ts">
   import { Button } from '@chenzy-design/svelte';
-
-  const themes = ['solid', 'light', 'outline', 'borderless'] as const;
 </script>
 
-<!-- 禁用态：各 theme 下统一降低不透明度、禁止交互 -->
+<!-- 禁用态：各 theme/type 组合下统一降低不透明度、禁止交互（对齐 Semi） -->
 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  {#each themes as theme (theme)}
-    <Button type="primary" {theme} disabled>{theme}</Button>
-  {/each}
+  <Button disabled>禁用</Button>
+  <Button disabled theme="borderless">无背景禁用</Button>
+  <Button disabled theme="light">浅色禁用</Button>
+  <Button disabled theme="borderless" type="primary">无背景主要禁用</Button>
+  <Button disabled theme="solid" type="warning">深色警告禁用</Button>
 </div>
