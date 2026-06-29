@@ -117,6 +117,8 @@
     description?: LocalizedText;
     component: Component;
     code: string;
+    /** 描述后追加「详见 X」链接，指向另一个组件页 */
+    seeAlso?: { text: LocalizedText; component: string };
   }
 
   let demoList = $state<DemoEntry[]>([]);
@@ -299,7 +301,16 @@
         {@const SceneComp = demo.component}
         <section class="section" id={demo.anchorId}>
           <h2>{localize(demo.title, lang)}</h2>
-          {#if demo.description}<p class="section-desc">{localize(demo.description, lang)}</p>{/if}
+          {#if demo.description || demo.seeAlso}
+            <p class="section-desc">
+              {#if demo.description}{localize(demo.description, lang)}{/if}
+              {#if demo.seeAlso}<a
+                  class="see-also"
+                  href="{base}/components/{demo.seeAlso.component.toLowerCase()}"
+                >{localize(demo.seeAlso.text, lang)}</a
+                >{/if}
+            </p>
+          {/if}
           <DemoBox code={demo.code}>
             <SceneComp />
           </DemoBox>
@@ -514,6 +525,13 @@
     color: var(--cd-color-text-1, #4e5969);
     margin: 0 0 16px;
     line-height: 1.7;
+  }
+  .see-also {
+    color: var(--cd-color-primary, #0064fa);
+    text-decoration: none;
+  }
+  .see-also:hover {
+    text-decoration: underline;
   }
   h2 {
     font-size: 18px;
