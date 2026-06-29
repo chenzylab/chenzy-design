@@ -36,6 +36,14 @@ export const demos: DemoEntry[] = [
     },
   ),
   entry(
+    '01b-type-colors.svelte',
+    { zh: '关于类型字体色值', en: 'Type Color Variables' },
+    {
+      zh: '每种 type 的语义色都是 CSS 变量，可直接用于自定义元素：--cd-color-primary（主要）、--cd-color-secondary（次要）、--cd-color-tertiary（第三）、--cd-color-warning（警告）、--cd-color-danger（危险）。',
+      en: 'Each type maps to a semantic color CSS variable you can reuse: --cd-color-primary (primary), --cd-color-secondary (secondary), --cd-color-tertiary (tertiary), --cd-color-warning (warning), --cd-color-danger (danger).',
+    },
+  ),
+  entry(
     '02-theme.svelte',
     { zh: '按钮主题', en: 'Theme' },
     {

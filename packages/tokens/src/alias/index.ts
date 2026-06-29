@@ -21,6 +21,10 @@ export const aliasLight = {
   'color-danger': palette['red-5'],
   'color-info': palette['blue-5'],
   'color-link': palette['blue-5'],
+  // neutral semantic（secondary/tertiary type 的语义色，与 Button --btn-hue 同源）：
+  // secondary=强中性（深灰），tertiary=弱中性（更浅灰）
+  'color-secondary': palette['grey-9'],
+  'color-tertiary': 'rgba(28, 31, 35, 0.62)',
   // text — Semi uses grey-9 with opacity: 100% / 80% / 62% / 35%
   'color-text-0': palette['grey-9'],
   'color-text-1': 'rgba(28, 31, 35, 0.8)',
@@ -60,6 +64,9 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-success': '#5dc264',
   'color-warning': '#ffae43',
   'color-danger': '#fc725a',
+  // neutral semantic（暗色：用亮灰阶，对齐 dark text-0 / text-2）
+  'color-secondary': '#f9f9f9',
+  'color-tertiary': 'rgba(249, 249, 249, 0.6)',
   // surfaces
   'color-bg-0': '#16161a',
   'color-bg-1': '#232429',
