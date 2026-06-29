@@ -36,6 +36,8 @@ export const meta = {
     { name: 'defaultOpenKeys', type: '(string|number)[]', default: '[]' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'inlineIndent', type: 'number', default: '24', desc: '子级缩进像素' },
+    { name: 'limitIndent', type: 'boolean', default: 'true', desc: '仅一级缩进；false 时逐级缩进' },
+    { name: 'toggleIconPosition', type: "'left'|'right'", default: "'right'", desc: 'inline 子菜单箭头位置' },
     {
       name: 'inlineCollapsed',
       type: 'boolean',

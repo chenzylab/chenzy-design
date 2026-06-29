@@ -42,4 +42,12 @@ export const demos: DemoEntry[] = [
       en: 'Top nav: mode="horizontal" with hover popup sub-nav.',
     },
   ),
+  entry(
+    '03-declarative.svelte',
+    { zh: '声明式写法', en: 'Declarative' },
+    {
+      zh: 'JSX 式 <Nav.Item> / <Nav.Sub> 子组件声明导航树，替代 items 数据驱动。',
+      en: 'Declarative <Nav.Item> / <Nav.Sub> children instead of data-driven items.',
+    },
+  ),
 ];

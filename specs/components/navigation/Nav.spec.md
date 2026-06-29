@@ -32,6 +32,12 @@
 | header | `{ logo?: Snippet; text?: string }` | — | 头部（logo + 文案）|
 | footer | `{ collapseButton?: boolean }` | — | 底部（收起按钮，仅 vertical）|
 | disabled | `boolean` | `false` | 整体禁用 |
+| inlineIndent | `number` | `24` | 子级缩进像素（透传 Menu）|
+| limitIndent | `boolean` | `true` | 仅一级缩进；false 时逐级缩进 |
+| toggleIconPosition | `'left'\|'right'` | `'right'` | 子导航展开箭头位置 |
+| subNavOpenDelay / subNavCloseDelay | `number` | — | 浮层子导航展开/关闭延迟 ms |
+| getPopupContainer | `() => HTMLElement` | — | 浮层挂载容器 |
+| renderWrapper | `Snippet` | — | 自定义导航项外层包裹 |
 | class / style / bodyStyle / ariaLabel | `string` | — | 透传 |
 
 ### 4.2 Events
@@ -45,11 +51,18 @@
 - **Nav.Header**：`logo?: Snippet`、`text?: string`、`class`、`style`。折叠时隐藏文案仅留 logo。
 - **Nav.Footer**：`collapseButton?: boolean`（仅 vertical 生效，点击 toggle 折叠）、`class`、`style`。
 
-### 4.4 NavItemDef
+### 4.4 Nav.Item / Nav.Sub（声明式写法）
+JSX 式子组件，作为 Nav 的 children（与 `items` 二选一，items 优先）：
+- **Nav.Item**：`{ itemKey, text, icon?, disabled?, link?, target?, rel? }`。叶子导航项。
+- **Nav.Sub**：`{ itemKey, text, icon?, disabled?, children }`。可展开子导航，children 内嵌 Nav.Item/Nav.Sub。
+
+> 实现：子组件经 context 注册描述符进【普通数组】（非 $state），挂载后【异步】bump 单个 $state revision
+> 触发一次 Nav 重建（见记忆 svelte5-child-register-state-array-loop，避免 effect 自循环）。
+
+### 4.5 NavItemDef
 `{ itemKey, text, icon?: Snippet, disabled?, link?, target?, rel?, items?: NavItemDef[] }`
 
-> 范围（MVP）：上述 props。**未实现（TODO）**：limitIndent / toggleIconPosition / subNavMotion /
-> tooltipShow/HideDelay / renderWrapper / getPopupContainer / Nav.Item 声明式写法。
+> 范围：上述全部已实现。**仍未实现（TODO）**：subNavMotion（Menu 无 motion 开关，动画走 CSS + prefers-reduced-motion）。
 
 ## 5. 主题 / Token
 | Token | 默认 | 用途 |

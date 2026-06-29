@@ -44,6 +44,16 @@
     defaultOpenKeys?: MenuKey[];
     size?: Size;
     inlineIndent?: number;
+    /**
+     * 缩进限制（默认 true）：仅一级导航缩进，深层子项不按层级累加缩进。
+     * 设为 false 时按 level × inlineIndent 逐级缩进。仅 inline 模式有意义。
+     */
+    limitIndent?: boolean;
+    /**
+     * 含子菜单项的展开箭头位置（默认 'right'）：'left' 置于 label 前、'right' 置于末尾。
+     * 仅 inline 模式（内联展开的 SubMenu title）生效。
+     */
+    toggleIconPosition?: 'left' | 'right';
     /** inline 模式下折叠为图标轨：仅显图标、容器变窄，有子菜单的项 hover 向右弹浮层 */
     inlineCollapsed?: boolean;
     /** 多选模式：点击叶子项 toggle 其选中态，selectedKeys 可含多项同时高亮（默认单选） */
@@ -105,6 +115,8 @@
     defaultOpenKeys = [],
     size = 'default',
     inlineIndent = 24,
+    limitIndent = true,
+    toggleIconPosition = 'right',
     inlineCollapsed = false,
     multiple = false,
     triggerSubMenuAction,
@@ -380,7 +392,8 @@
 
 {#snippet renderItems(list: MenuItemDef[], level: number)}
   {#each list as item, i (item.key ?? `__cd-menu-${level}-${i}`)}
-    {@const indent = `calc(var(--cd-menu-item-padding) + ${level} * ${inlineIndent}px)`}
+    {@const indentLevel = limitIndent ? Math.min(level, 1) : level}
+    {@const indent = `calc(var(--cd-menu-item-padding) + ${indentLevel} * ${inlineIndent}px)`}
     {#if isDivider(item)}
       <li class="cd-menu__divider" role={sem.navigation ? undefined : 'separator'}></li>
     {:else if isGroup(item)}
@@ -429,17 +442,30 @@
             }
           }}
         >
+          {#if toggleIconPosition === 'left'}
+            <span
+              class="cd-menu__arrow cd-menu__arrow--left"
+              class:cd-menu__arrow--open={open}
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+                <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+              </svg>
+            </span>
+          {/if}
           {#if item.icon}<span class="cd-menu__icon" aria-hidden="true">{@render item.icon()}</span>{/if}
           <span class="cd-menu__label">{item.label}</span>
-          <span
-            class="cd-menu__arrow"
-            class:cd-menu__arrow--open={open}
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-              <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-            </svg>
-          </span>
+          {#if toggleIconPosition === 'right'}
+            <span
+              class="cd-menu__arrow"
+              class:cd-menu__arrow--open={open}
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
+                <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+              </svg>
+            </span>
+          {/if}
         </button>
         {#if open}
           <ul class="cd-menu__sub" role={sem.subListRole}>
@@ -752,6 +778,10 @@
   }
   .cd-menu__arrow--open {
     transform: rotate(90deg);
+  }
+  /* toggleIconPosition='left'：箭头置于 label 前，与后续内容留出间距 */
+  .cd-menu__arrow--left {
+    margin-inline-end: var(--cd-spacing-1);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-menu__link,
