@@ -249,41 +249,64 @@
     background: color-mix(in srgb, var(--btn-hue) 14%, transparent);
   }
   /*
-    colorful (AI 多彩)：品牌色到蓝/紫的渐变。
-    - colorful + solid: 渐变实心背景 + 白字
-    - colorful + light: 浅色渐变底 + 主色文字
-    仅这两种 theme 下生效；其余 theme 不变。
+    colorful (AI 多彩)：蓝 → 紫 → 粉 三段多彩渐变（对齐 Semi AI 风格）。
+    - 局部变量 --cf / --cf-soft 复用同一渐变，各 theme 按填充方式取用。
+    - solid: 多彩实心 + 白字；light: 浅多彩底 + 紫字；
+      outline: 透明 + 渐变边框（border-image）+ 紫字；borderless: 透明 + 紫字。
   */
-  .cd-button--colorful.cd-button--solid {
-    background: linear-gradient(
-      135deg,
+  .cd-button--colorful {
+    --cf: linear-gradient(
+      120deg,
       var(--cd-button-colorful-from) 0%,
+      var(--cd-button-colorful-via) 52%,
       var(--cd-button-colorful-to) 100%
     );
+    --cf-text: var(--cd-button-colorful-via);
+  }
+  .cd-button--colorful.cd-button--solid {
+    background: var(--cf);
     color: var(--cd-color-text-inverse);
     border-color: transparent;
   }
   .cd-button--colorful.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cd-button-colorful-from) 88%, #000) 0%,
-      color-mix(in srgb, var(--cd-button-colorful-to) 88%, #000) 100%
-    );
+    filter: brightness(0.93);
   }
   .cd-button--colorful.cd-button--light {
     background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cd-button-colorful-from) 14%, transparent) 0%,
-      color-mix(in srgb, var(--cd-button-colorful-to) 14%, transparent) 100%
+      120deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 16%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-via) 16%, transparent) 52%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 16%, transparent) 100%
     );
-    color: var(--cd-button-colorful-from);
+    color: var(--cf-text);
     border-color: transparent;
   }
   .cd-button--colorful.cd-button--light:hover:not(:disabled):not([aria-disabled='true']) {
+    filter: brightness(0.97) saturate(1.2);
+  }
+  .cd-button--colorful.cd-button--borderless {
+    background: transparent;
+    color: var(--cf-text);
+  }
+  .cd-button--colorful.cd-button--borderless:hover:not(:disabled):not([aria-disabled='true']) {
     background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cd-button-colorful-from) 22%, transparent) 0%,
-      color-mix(in srgb, var(--cd-button-colorful-to) 22%, transparent) 100%
+      120deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 12%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 12%, transparent) 100%
+    );
+  }
+  /* outline: 渐变边框 + 渐变文字（背景裁切到文字） */
+  .cd-button--colorful.cd-button--outline {
+    background: transparent;
+    border: 1px solid transparent;
+    border-image: var(--cf) 1;
+    color: var(--cf-text);
+  }
+  .cd-button--colorful.cd-button--outline:hover:not(:disabled):not([aria-disabled='true']) {
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--cd-button-colorful-from) 8%, transparent) 0%,
+      color-mix(in srgb, var(--cd-button-colorful-to) 8%, transparent) 100%
     );
   }
   .cd-button__icon {
