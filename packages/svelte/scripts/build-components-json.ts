@@ -48,6 +48,7 @@ import { meta as stepsMeta } from '../src/steps/meta.ts';
 import { meta as tabsMeta } from '../src/tabs/meta.ts';
 import { meta as dropdownMeta } from '../src/dropdown/meta.ts';
 import { meta as menuMeta } from '../src/menu/meta.ts';
+import { meta as navMeta } from '../src/nav/meta.ts';
 import { meta as anchorMeta } from '../src/anchor/meta.ts';
 import { meta as tagMeta } from '../src/tag/meta.ts';
 import { meta as avatarMeta } from '../src/avatar/meta.ts';
@@ -124,6 +125,7 @@ const metas = [
   tabsMeta,
   dropdownMeta,
   menuMeta,
+  navMeta,
   anchorMeta,
   tagMeta,
   avatarMeta,
