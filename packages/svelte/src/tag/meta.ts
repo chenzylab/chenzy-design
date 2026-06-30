@@ -76,6 +76,8 @@ export const meta = {
     '--cd-tag-height-small',
     '--cd-tag-height-large',
     '--cd-tag-padding-x',
+    '--cd-tag-padding-y',
+    '--cd-tag-padding-y-large',
     '--cd-tag-radius',
     '--cd-tag-font-size',
     '--cd-tag-gap',
