@@ -754,6 +754,7 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
+    border-radius: var(--cd-menu-item-radius);
     transition: background var(--cd-motion-duration-fast)
       var(--cd-motion-ease-standard);
   }

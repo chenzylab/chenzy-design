@@ -2,8 +2,9 @@
 export const menuTokens = {
   // Menu
   'menu-bg': 'var(--cd-color-bg-0)',
-  'menu-item-height': '40px',
+  'menu-item-height': '36px', // 对齐 Semi navigation_item_base（40 → 36）
   'menu-item-padding': 'var(--cd-spacing-base-tight)',
+  'menu-item-radius': 'var(--cd-border-radius-small)', // 对齐 Semi 菜单项圆角
   'menu-item-color': 'var(--cd-color-text-1)',
   'menu-item-color-selected': 'var(--cd-color-primary)',
   'menu-item-color-disabled': 'var(--cd-color-text-3)',

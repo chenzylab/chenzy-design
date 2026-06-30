@@ -447,7 +447,7 @@
     margin: 0;
     color: var(--cd-modal-title-color);
     font-size: var(--cd-modal-title-size);
-    font-weight: 600;
+    font-weight: var(--cd-modal-title-weight);
     line-height: 1.4;
   }
   .cd-modal__close {
