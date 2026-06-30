@@ -1,7 +1,7 @@
 /** Component tokens for DatePicker & TimePicker. See specs/components/input/DatePicker.spec.md. */
 export const datePickerTokens = {
   'date-picker-panel-bg': 'var(--cd-color-bg-0)',
-  'date-picker-panel-shadow': 'var(--cd-shadow-2)',
+  'date-picker-panel-shadow': 'var(--cd-shadow-elevated)',
   'date-picker-panel-radius': 'var(--cd-border-radius-large)',
   'date-picker-panel-z': 'var(--cd-z-popover)',
   'date-picker-cell-size': '32px',

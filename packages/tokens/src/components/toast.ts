@@ -9,7 +9,7 @@ export const toastTokens = {
   'toast-color-close': 'var(--cd-color-text-2)',
   'toast-color-close-hover': 'var(--cd-color-text-0)',
   'toast-radius': 'var(--cd-border-radius-medium)',
-  'toast-shadow': 'var(--cd-shadow-3)',
+  'toast-shadow': 'var(--cd-shadow-elevated)',
   'toast-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-base)',
   'toast-gap': 'var(--cd-spacing-tight)',
   'toast-font-size': 'var(--cd-font-size-regular)',

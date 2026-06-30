@@ -2,7 +2,7 @@
 export const modalTokens = {
   'modal-radius': 'var(--cd-border-radius-large)',
   'modal-bg': 'var(--cd-color-bg-0)',
-  'modal-shadow': 'var(--cd-shadow-3)',
+  'modal-shadow': 'var(--cd-shadow-elevated)',
   'modal-mask-bg': 'rgba(0, 0, 0, 0.45)',
   'modal-padding': 'var(--cd-spacing-loose)',
   'modal-header-gap': 'var(--cd-spacing-base-tight)',

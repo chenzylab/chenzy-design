@@ -21,7 +21,7 @@ export const tabsTokens = {
   'tabs-button-pad': '2px',
   // Dropdown
   'dropdown-bg': 'var(--cd-color-bg-0)',
-  'dropdown-shadow': 'var(--cd-shadow-2)',
+  'dropdown-shadow': 'var(--cd-shadow-elevated)',
   'dropdown-radius': 'var(--cd-border-radius-medium)',
   'dropdown-z': 'var(--cd-z-dropdown)',
   'dropdown-min-width': '120px',

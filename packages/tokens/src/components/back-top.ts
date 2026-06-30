@@ -8,7 +8,7 @@ export const backTopTokens = {
   'backtop-bg-active': 'var(--cd-color-fill-1)',
   'backtop-color': 'var(--cd-color-text-0)',
   'backtop-border': 'var(--cd-color-border)',
-  'backtop-shadow': 'var(--cd-shadow-3)',
+  'backtop-shadow': 'var(--cd-shadow-elevated)',
   'backtop-radius': 'var(--cd-border-radius-full)',
   'backtop-z': '900',
   'backtop-focus-ring': 'var(--cd-color-primary)',

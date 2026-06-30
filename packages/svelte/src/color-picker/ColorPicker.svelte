@@ -795,7 +795,7 @@
     block-size: var(--cd-color-picker-handle-size);
     border: 2px solid var(--cd-color-picker-handle-border);
     border-radius: var(--cd-border-radius-full);
-    box-shadow: var(--cd-shadow-1);
+    box-shadow: var(--cd-shadow-elevated);
     transform: translate(-50%, -50%);
     pointer-events: none;
   }
@@ -868,7 +868,7 @@
     background: var(--cd-color-picker-handle-border);
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-full);
-    box-shadow: var(--cd-shadow-1);
+    box-shadow: var(--cd-shadow-elevated);
     transform: translate(-50%, -50%);
     pointer-events: none;
   }

@@ -5,7 +5,7 @@ export const sideSheetTokens = {
   'sidesheet-mask-bg': 'rgba(0, 0, 0, 0.6)',
   'sidesheet-border': 'var(--cd-color-border)',
   'sidesheet-radius': 'var(--cd-border-radius-large)',
-  'sidesheet-shadow': 'var(--cd-shadow-3)',
+  'sidesheet-shadow': 'var(--cd-shadow-elevated)',
   'sidesheet-padding': 'var(--cd-spacing-base-loose)',
   'sidesheet-header-padding': 'var(--cd-spacing-base) var(--cd-spacing-base-loose)',
   'sidesheet-footer-padding': 'var(--cd-spacing-base) var(--cd-spacing-base-loose)',

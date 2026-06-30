@@ -6,7 +6,7 @@ export const notificationTokens = {
   'notification-color-content': 'var(--cd-color-text-1)',
   'notification-border': 'var(--cd-color-border)',
   'notification-radius': 'var(--cd-border-radius-large)',
-  'notification-shadow': 'var(--cd-shadow-3)',
+  'notification-shadow': 'var(--cd-shadow-elevated)',
   'notification-padding': 'var(--cd-spacing-base)',
   'notification-gap': 'var(--cd-spacing-base-tight)',
   'notification-icon-success': 'var(--cd-color-success)',

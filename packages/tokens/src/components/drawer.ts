@@ -5,7 +5,7 @@ export const drawerTokens = {
   'drawer-color-title': 'var(--cd-color-text-0)',
   'drawer-border': 'var(--cd-color-border)',
   'drawer-mask-bg': 'rgba(0, 0, 0, 0.45)',
-  'drawer-shadow': 'var(--cd-shadow-3)',
+  'drawer-shadow': 'var(--cd-shadow-elevated)',
   'drawer-width': '448px',
   'drawer-width-small': '320px',
   'drawer-width-large': '720px',

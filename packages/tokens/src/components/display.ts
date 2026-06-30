@@ -32,6 +32,6 @@ export const displayTokens = {
   'card-padding-small': 'var(--cd-spacing-base-tight)',
   'card-header-border': 'var(--cd-color-border)',
   'card-title-color': 'var(--cd-color-text-0)',
-  'card-shadow': 'var(--cd-shadow-1)',
-  'card-shadow-hover': 'var(--cd-shadow-2)',
+  'card-shadow': 'var(--cd-shadow-elevated)',
+  'card-shadow-hover': 'var(--cd-shadow-elevated)',
 } as const;
