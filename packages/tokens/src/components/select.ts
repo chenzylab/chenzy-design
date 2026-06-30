@@ -11,7 +11,7 @@ export const selectTokens = {
   'select-bg': 'var(--cd-color-bg-0)',
   'select-font-size': 'var(--cd-font-size-regular)',
   'select-dropdown-bg': 'var(--cd-color-bg-0)',
-  'select-dropdown-shadow': 'var(--cd-shadow-2)',
+  'select-dropdown-shadow': 'var(--cd-shadow-elevated)',
   'select-dropdown-radius': 'var(--cd-border-radius-medium)',
   'select-dropdown-z': 'var(--cd-z-dropdown)',
   'select-option-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',

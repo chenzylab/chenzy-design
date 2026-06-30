@@ -617,7 +617,7 @@
     transform: translate(-50%, -50%);
   }
   .cd-slider__handle:hover {
-    box-shadow: var(--cd-shadow-1);
+    box-shadow: var(--cd-shadow-elevated);
   }
   .cd-slider__handle:active {
     cursor: grabbing;

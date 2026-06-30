@@ -4,7 +4,7 @@ export const popconfirmTokens = {
   'popconfirm-color-text': 'var(--cd-color-text-0)',
   'popconfirm-color-text-secondary': 'var(--cd-color-text-1)',
   'popconfirm-border': 'var(--cd-color-border)',
-  'popconfirm-shadow': 'var(--cd-shadow-3)',
+  'popconfirm-shadow': 'var(--cd-shadow-elevated)',
   'popconfirm-radius': 'var(--cd-border-radius-medium)',
   'popconfirm-padding': 'var(--cd-spacing-base)',
   'popconfirm-icon-color-danger': 'var(--cd-color-danger)',

@@ -46,17 +46,20 @@ export const fontWeight = {
   bold: '600', // 对齐 Semi $font-weight-bold（原 semibold）
 } as const;
 
+// 对齐 Semi _font.scss 的 font-size↔line-height 像素绑定
 export const lineHeight = {
-  tight: '1.3',
-  normal: '1.5',
-  loose: '1.7',
+  small: '16px',
+  regular: '20px',
+  'header-6': '22px',
+  'header-5': '24px',
+  'header-4': '28px',
+  'header-3': '32px',
+  'header-2': '40px',
+  'header-1': '44px',
 } as const;
 
+// 对齐 Semi $shadow-elevated 单值体系（弃我们的 1/2/3 三档）
 export const shadow = {
-  '1': '0 1px 2px rgba(0,0,0,.08)',
-  '2': '0 4px 12px rgba(0,0,0,.12)',
-  '3': '0 8px 24px rgba(0,0,0,.16)',
-  // PR1 additive: align Semi $shadow-elevated（toast/modal/popover 提升层级）
   elevated: '0 0 1px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.1)',
 } as const;
 

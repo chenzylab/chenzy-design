@@ -51,5 +51,5 @@ export const meta = {
       '数值气泡：hover/focus/拖拽显示，alwaysShowTip 常驻，tooltipVisible 强制受控',
     ],
   },
-  tokens: ['--cd-slider-*', '--cd-color-text-3', '--cd-spacing-*', '--cd-border-radius-full', '--cd-shadow-1', '--cd-focus-ring', '--cd-motion-*'],
+  tokens: ['--cd-slider-*', '--cd-color-text-3', '--cd-spacing-*', '--cd-border-radius-full', '--cd-shadow-elevated', '--cd-focus-ring', '--cd-motion-*'],
 } as const;
