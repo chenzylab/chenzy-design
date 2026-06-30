@@ -93,5 +93,5 @@ export const meta = {
       'useDismiss 处理外部点击与 Escape 关闭',
     ],
   },
-  tokens: ['--cd-dropdown-*', '--cd-focus-ring', '--cd-radius-1', '--cd-spacing-*', '--cd-color-danger'],
+  tokens: ['--cd-dropdown-*', '--cd-focus-ring', '--cd-border-radius-small', '--cd-spacing-*', '--cd-color-danger'],
 } as const;

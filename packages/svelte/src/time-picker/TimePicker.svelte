@@ -783,7 +783,7 @@
   .cd-time-picker__trigger {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-input-height-default);
     padding-inline-start: var(--cd-input-padding-x);
@@ -799,11 +799,11 @@
   }
   .cd-time-picker--small .cd-time-picker__trigger {
     block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-time-picker--large .cd-time-picker__trigger {
     block-size: var(--cd-input-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-time-picker__trigger:focus-visible {
     outline: none;
@@ -870,14 +870,14 @@
   .cd-time-picker__clear:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-time-picker__clear:hover {
     color: var(--cd-color-text-0);
   }
   .cd-time-picker__panel {
     position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
+    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
     inset-inline-start: 0;
     z-index: var(--cd-date-picker-panel-z);
     background: var(--cd-date-picker-panel-bg);
@@ -888,10 +888,10 @@
     outline: none;
   }
   .cd-time-picker__panel-header {
-    padding: var(--cd-spacing-2) var(--cd-spacing-2);
+    padding: var(--cd-spacing-tight) var(--cd-spacing-tight);
     border-block-end: 1px solid var(--cd-color-border);
     color: var(--cd-color-text-0);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-time-picker__prefix {
     flex: 0 0 auto;
@@ -914,7 +914,7 @@
     background: transparent;
     font: inherit;
     cursor: pointer;
-    padding: var(--cd-spacing-2);
+    padding: var(--cd-spacing-tight);
     color: var(--cd-color-text-2);
     border-block-end: 2px solid transparent;
   }
@@ -927,7 +927,7 @@
     box-shadow: var(--cd-focus-ring);
   }
   .cd-time-picker__range-preview {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     color: var(--cd-color-text-0);
     font-variant-numeric: tabular-nums;
   }
@@ -974,15 +974,15 @@
     cursor: not-allowed;
   }
   .cd-time-picker__panel-footer-extra {
-    padding: var(--cd-spacing-2);
+    padding: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-color-border);
   }
   .cd-time-picker__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-color-border);
   }
   .cd-time-picker__now,
@@ -991,9 +991,9 @@
     background: transparent;
     font: inherit;
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
-    padding-inline: var(--cd-spacing-2);
-    padding-block: var(--cd-spacing-1);
+    border-radius: var(--cd-border-radius-small);
+    padding-inline: var(--cd-spacing-tight);
+    padding-block: var(--cd-spacing-extra-tight);
   }
   .cd-time-picker__now {
     color: var(--cd-color-primary);

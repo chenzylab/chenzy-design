@@ -234,10 +234,10 @@
   .cd-form {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-form-item-gap, var(--cd-spacing-4));
+    gap: var(--cd-form-item-gap, var(--cd-spacing-base));
   }
   .cd-form__footer {
     display: flex;
-    gap: var(--cd-spacing-3);
+    gap: var(--cd-spacing-base-tight);
   }
 </style>

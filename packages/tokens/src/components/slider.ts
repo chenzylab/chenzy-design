@@ -7,7 +7,7 @@ export const sliderTokens = {
   'slider-handle-bg': 'var(--cd-color-bg-0)',
   'slider-handle-border': 'var(--cd-color-primary)',
   'slider-mark-color': 'var(--cd-color-text-2)',
-  'slider-radius': 'var(--cd-radius-full)',
+  'slider-radius': 'var(--cd-border-radius-full)',
   'slider-status-warning': 'var(--cd-color-warning)',
   'slider-status-error': 'var(--cd-color-danger)',
 } as const;

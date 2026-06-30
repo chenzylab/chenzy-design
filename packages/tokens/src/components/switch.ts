@@ -9,5 +9,5 @@ export const switchTokens = {
   'switch-bg-off': 'var(--cd-color-fill-1)',
   'switch-bg-on': 'var(--cd-color-primary)',
   'switch-knob-bg': 'var(--cd-color-bg-0)',
-  'switch-radius': 'var(--cd-radius-full)',
+  'switch-radius': 'var(--cd-border-radius-full)',
 } as const;

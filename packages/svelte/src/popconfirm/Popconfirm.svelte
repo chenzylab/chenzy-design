@@ -602,7 +602,7 @@
   .cd-popconfirm__trigger:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-popconfirm__trigger[aria-disabled='true'] {
     cursor: not-allowed;
@@ -671,7 +671,7 @@
 
   .cd-popconfirm__body {
     display: flex;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
   .cd-popconfirm__icon {
     display: inline-flex;
@@ -698,7 +698,7 @@
     line-height: 1.4;
   }
   .cd-popconfirm__content {
-    margin-block-start: var(--cd-spacing-1);
+    margin-block-start: var(--cd-spacing-extra-tight);
     color: var(--cd-popconfirm-color-text-secondary);
     font-size: var(--cd-popconfirm-content-size);
     line-height: 1.5;
@@ -708,7 +708,7 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--cd-popconfirm-gap-footer);
-    margin-block-start: var(--cd-spacing-3);
+    margin-block-start: var(--cd-spacing-base-tight);
   }
 
   /* reduced-motion：禁用进场动画 */

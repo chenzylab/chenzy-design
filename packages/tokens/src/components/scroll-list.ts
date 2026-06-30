@@ -10,6 +10,6 @@ export const scrollListTokens = {
   'scrolllist-mask-border': 'var(--cd-color-border)',
   'scrolllist-gradient-color': 'var(--cd-color-bg-0)',
   'scrolllist-border-color': 'var(--cd-color-border)',
-  'scrolllist-radius': 'var(--cd-radius-2)',
+  'scrolllist-radius': 'var(--cd-border-radius-medium)',
   'scrolllist-transition': 'var(--cd-motion-duration-mid)',
 } as const;

@@ -261,7 +261,7 @@
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
   .cd-steps--vertical .cd-steps__item {
     flex-direction: column;
@@ -270,7 +270,7 @@
   .cd-steps__head {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     margin: 0;
     padding: 0;
     border: none;
@@ -293,7 +293,7 @@
   button.cd-steps__head:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-steps__icon {
     display: inline-flex;
@@ -301,7 +301,7 @@
     justify-content: center;
     inline-size: var(--cd-steps-icon-size);
     block-size: var(--cd-steps-icon-size);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-steps-icon-bg);
     color: var(--cd-steps-icon-color);
     flex: 0 0 auto;
@@ -327,7 +327,7 @@
   }
   .cd-steps__desc {
     color: var(--cd-steps-desc-color);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-steps__line {
     flex: 1 1 auto;
@@ -335,11 +335,11 @@
   }
   .cd-steps--horizontal .cd-steps__line {
     block-size: 1px;
-    min-inline-size: var(--cd-spacing-4);
+    min-inline-size: var(--cd-spacing-base);
   }
   .cd-steps--vertical .cd-steps__line {
     inline-size: 1px;
-    min-block-size: var(--cd-spacing-4);
+    min-block-size: var(--cd-spacing-base);
     margin-inline-start: calc(var(--cd-steps-icon-size) / 2);
   }
   .cd-steps__line--finish {

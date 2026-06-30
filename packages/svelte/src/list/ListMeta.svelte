@@ -46,7 +46,7 @@
   .cd-list__meta {
     display: flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-3, 12px);
+    gap: var(--cd-spacing-base-tight, 12px);
     flex: 1;
     min-inline-size: 0;
   }

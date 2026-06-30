@@ -217,7 +217,7 @@
     block-size: var(--cd-radio-size-default);
     background: var(--cd-radio-bg);
     border: 1px solid var(--cd-radio-border);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     transition:
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
@@ -240,7 +240,7 @@
     block-size: 50%;
     transform: translate(-50%, -50%);
     background: var(--cd-radio-dot-color);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
   /* 校验态：边框改用 warning/error，覆盖默认与 checked 描边（token 驱动） */
   .cd-radio--warning .cd-radio__circle {
@@ -256,11 +256,11 @@
   .cd-radio__content {
     display: inline-flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-radio__extra {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   /* ---- button / card / pureCard 型：role=radio 容器 ---- */
   .cd-radio--button,
@@ -278,13 +278,13 @@
   .cd-radio--button {
     gap: 0;
     block-size: var(--cd-radio-button-height);
-    padding-inline: var(--cd-spacing-3);
+    padding-inline: var(--cd-spacing-base-tight);
     align-items: center;
     justify-content: center;
     color: var(--cd-color-text-0);
     background: var(--cd-radio-bg);
     border: 1px solid var(--cd-radio-border);
-    border-radius: var(--cd-radius-2);
+    border-radius: var(--cd-border-radius-medium);
   }
   .cd-radio--button.cd-radio--small {
     block-size: var(--cd-radio-button-height-small);
@@ -302,7 +302,7 @@
   /* card / pureCard 型：带边框卡片，选中高亮边框 */
   .cd-radio--card,
   .cd-radio--pureCard {
-    padding: var(--cd-spacing-3);
+    padding: var(--cd-spacing-base-tight);
     background: var(--cd-radio-bg);
     border: 1px solid var(--cd-radio-border);
     border-radius: var(--cd-radio-card-radius);

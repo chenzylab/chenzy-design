@@ -102,7 +102,7 @@ export const meta = {
     '--cd-image-preview-overlay',
     '--cd-image-preview-z',
     '--cd-focus-ring',
-    '--cd-radius-full',
+    '--cd-border-radius-full',
     '--cd-motion-duration-fast',
   ],
   examples: [

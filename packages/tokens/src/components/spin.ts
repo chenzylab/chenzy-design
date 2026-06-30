@@ -7,7 +7,7 @@ export const spinTokens = {
   'spin-size-large': '32px',
   'spin-duration': '1s',
   'spin-duration-reduced': '1.5s',
-  'spin-tip-gap': 'var(--cd-spacing-2)',
+  'spin-tip-gap': 'var(--cd-spacing-tight)',
   'spin-tip-color': 'var(--cd-color-text-1)',
   'spin-mask-bg': 'rgba(255, 255, 255, 0.8)',
   'spin-z': '10',

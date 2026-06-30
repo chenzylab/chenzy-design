@@ -254,7 +254,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-switch-knob-bg);
     transition: inset-inline-start var(--cd-motion-duration-mid) var(--cd-motion-ease-standard);
   }
@@ -264,20 +264,20 @@
   }
   .cd-switch__label {
     color: var(--cd-color-text-inverse);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     line-height: 1;
-    padding-inline: var(--cd-spacing-2);
+    padding-inline: var(--cd-spacing-tight);
   }
   .cd-switch--on .cd-switch__label {
-    padding-inline-start: var(--cd-spacing-3);
-    padding-inline-end: var(--cd-spacing-5);
+    padding-inline-start: var(--cd-spacing-base-tight);
+    padding-inline-end: var(--cd-spacing-base-loose);
   }
   .cd-switch__spinner {
     inline-size: 60%;
     aspect-ratio: 1;
     border: 2px solid var(--cd-color-grey-3);
     border-block-start-color: var(--cd-color-primary);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     animation: cd-switch-spin var(--cd-motion-duration-slow) linear infinite;
   }
   @keyframes cd-switch-spin {

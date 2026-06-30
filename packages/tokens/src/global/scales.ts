@@ -2,49 +2,48 @@
  * Global non-color scales — spacing, radius, typography, shadow, motion, z-index.
  * Atomic values only. Consume via Alias / Component tokens.
  */
+// 命名对齐 Semi $spacing-*（emit 时 category=spacing → --cd-spacing-tight 等）
 export const spacing = {
-  // PR1 additive: align Semi $spacing-none / $spacing-super-tight（重命名留 PR2）
   none: '0',
   'super-tight': '2px',
-  '1': '4px',
-  '2': '8px',
-  '3': '12px',
-  '4': '16px',
-  '5': '20px',
-  '6': '24px',
-  '8': '32px',
-  '10': '40px',
-  '12': '48px',
+  'extra-tight': '4px',
+  tight: '8px',
+  'base-tight': '12px',
+  base: '16px',
+  'base-loose': '20px',
+  loose: '24px',
+  'extra-loose': '32px',
+  'super-loose': '40px',
+  '12': '48px', // Semi 无 48px 档，保留数字名
 } as const;
 
+// 命名对齐 Semi $border-radius-*（build.ts category 改为 border-radius）
 export const radius = {
-  '1': '3px',
-  '2': '6px',
-  '3': '12px',
-  full: '9999px',
-  // PR1 additive: align Semi $border-radius-circle / extra-small（重命名留 PR2）
-  circle: '50%',
   'extra-small': '3px',
+  small: '3px',
+  medium: '6px',
+  large: '12px',
+  circle: '50%',
+  full: '9999px',
 } as const;
 
+// 命名对齐 Semi $font-size-*（category=font-size → --cd-font-size-header-1 等）
 export const fontSize = {
-  '1': '12px',
-  '2': '14px',
-  '3': '16px',
-  '4': '20px',
-  '5': '24px',
-  '6': '32px',
-  // PR1 additive: align Semi header-5(18) / header-2(28)（重命名留 PR2）
-  '18': '18px',
-  '28': '28px',
+  small: '12px',
+  regular: '14px',
+  'header-6': '16px',
+  'header-5': '18px',
+  'header-4': '20px',
+  'header-3': '24px',
+  'header-2': '28px',
+  'header-1': '32px',
 } as const;
 
 export const fontWeight = {
-  regular: '400',
-  medium: '500',
-  semibold: '600',
-  // PR1 additive: align Semi $font-weight-light（重命名留 PR2）
   light: '200',
+  regular: '400',
+  medium: '500', // Semi 无 500，PR3 清理
+  bold: '600', // 对齐 Semi $font-weight-bold（原 semibold）
 } as const;
 
 export const lineHeight = {

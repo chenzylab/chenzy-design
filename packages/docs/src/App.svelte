@@ -5597,25 +5597,25 @@ let pageSize2 = $state(10);
     background: var(--cd-color-primary);
     color: var(--cd-color-text-inverse);
     text-align: center;
-    padding: var(--cd-spacing-2);
-    border-radius: var(--cd-radius-1);
-    font-size: var(--cd-font-size-1);
+    padding: var(--cd-spacing-tight);
+    border-radius: var(--cd-border-radius-small);
+    font-size: var(--cd-font-size-small);
   }
   .demo-layout {
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-2);
+    border-radius: var(--cd-border-radius-medium);
     overflow: hidden;
     height: 220px;
   }
   .demo-sider-body {
-    padding: var(--cd-spacing-3);
+    padding: var(--cd-spacing-base-tight);
     color: var(--cd-color-text-1);
   }
   .demo-bar {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-3);
-    padding-inline: var(--cd-spacing-3);
+    gap: var(--cd-spacing-base-tight);
+    padding-inline: var(--cd-spacing-base-tight);
     height: 100%;
   }
 </style>

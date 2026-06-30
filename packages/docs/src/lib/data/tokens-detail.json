@@ -1,6 +1,6 @@
 {
   "generated": "由 scripts/build-tokens-detail.ts 生成，请勿手改",
-  "count": 773,
+  "count": 868,
   "tokens": [
     {
       "name": "--cd-anchor-ink-color",
@@ -32,7 +32,7 @@
     },
     {
       "name": "--cd-anchor-link-padding",
-      "value": "var(--cd-spacing-1) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "anchor",
       "usage": "anchor · link内边距"
@@ -60,7 +60,7 @@
     },
     {
       "name": "--cd-avatar-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "avatar",
       "usage": "avatar · 圆角"
@@ -151,7 +151,7 @@
     },
     {
       "name": "--cd-backtop-radius",
-      "value": "var(--cd-radius-full)",
+      "value": "var(--cd-border-radius-full)",
       "category": "radius",
       "component": "backtop",
       "usage": "backtop · 圆角"
@@ -214,7 +214,7 @@
     },
     {
       "name": "--cd-badge-font-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "badge",
       "usage": "badge · font尺寸"
@@ -277,14 +277,14 @@
     },
     {
       "name": "--cd-banner-desc-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "height",
       "component": "banner",
       "usage": "banner · 描述尺寸"
     },
     {
       "name": "--cd-banner-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "banner",
       "usage": "banner · 间距"
@@ -319,21 +319,21 @@
     },
     {
       "name": "--cd-banner-padding-x",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "banner",
       "usage": "banner · 内边距水平"
     },
     {
       "name": "--cd-banner-padding-y",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "banner",
       "usage": "banner · 内边距垂直"
     },
     {
       "name": "--cd-banner-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "banner",
       "usage": "banner · 圆角"
@@ -361,7 +361,7 @@
     },
     {
       "name": "--cd-banner-title-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "height",
       "component": "banner",
       "usage": "banner · 标题尺寸"
@@ -379,6 +379,62 @@
       "category": "color",
       "component": "banner",
       "usage": "banner · 警告背景色"
+    },
+    {
+      "name": "--cd-border-radius-circle",
+      "value": "50%",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角circle"
+    },
+    {
+      "name": "--cd-border-radius-extra-small",
+      "value": "3px",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角extra小尺寸"
+    },
+    {
+      "name": "--cd-border-radius-full",
+      "value": "9999px",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角full"
+    },
+    {
+      "name": "--cd-border-radius-large",
+      "value": "12px",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角大尺寸"
+    },
+    {
+      "name": "--cd-border-radius-medium",
+      "value": "6px",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角medium"
+    },
+    {
+      "name": "--cd-border-radius-small",
+      "value": "3px",
+      "category": "radius",
+      "component": null,
+      "usage": "全局 · 边框圆角小尺寸"
+    },
+    {
+      "name": "--cd-border-thickness",
+      "value": "0",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 边框thickness"
+    },
+    {
+      "name": "--cd-border-thickness-control",
+      "value": "1px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 边框thicknesscontrol"
     },
     {
       "name": "--cd-breadcrumb-color",
@@ -403,14 +459,14 @@
     },
     {
       "name": "--cd-breadcrumb-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "breadcrumb",
       "usage": "breadcrumb · font尺寸"
     },
     {
       "name": "--cd-breadcrumb-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "breadcrumb",
       "usage": "breadcrumb · 间距"
@@ -472,11 +528,39 @@
       "usage": "button · 颜色文本主色"
     },
     {
+      "name": "--cd-button-colorful-from",
+      "value": "#4d6bff",
+      "category": "color",
+      "component": "button",
+      "usage": "button · colorfulfrom"
+    },
+    {
+      "name": "--cd-button-colorful-to",
+      "value": "#a64dff",
+      "category": "color",
+      "component": "button",
+      "usage": "button · colorfulto"
+    },
+    {
+      "name": "--cd-button-colorful-via",
+      "value": "#7b5cff",
+      "category": "color",
+      "component": "button",
+      "usage": "button · colorfulvia"
+    },
+    {
       "name": "--cd-button-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "button",
       "usage": "button · font尺寸"
+    },
+    {
+      "name": "--cd-button-group-divider",
+      "value": "var(--cd-color-border)",
+      "category": "other",
+      "component": "button",
+      "usage": "button · groupdivider"
     },
     {
       "name": "--cd-button-height-default",
@@ -501,14 +585,14 @@
     },
     {
       "name": "--cd-button-padding-x",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "button",
       "usage": "button · 内边距水平"
     },
     {
       "name": "--cd-button-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "button",
       "usage": "button · 圆角"
@@ -578,7 +662,7 @@
     },
     {
       "name": "--cd-calendar-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "calendar",
       "usage": "calendar · 圆角"
@@ -669,21 +753,21 @@
     },
     {
       "name": "--cd-card-padding",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "card",
       "usage": "card · 内边距"
     },
     {
       "name": "--cd-card-padding-small",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "card",
       "usage": "card · 内边距小尺寸"
     },
     {
       "name": "--cd-card-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "card",
       "usage": "card · 圆角"
@@ -746,14 +830,14 @@
     },
     {
       "name": "--cd-carousel-indicator-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "carousel",
       "usage": "carousel · indicator间距"
     },
     {
       "name": "--cd-carousel-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "carousel",
       "usage": "carousel · 圆角"
@@ -830,21 +914,21 @@
     },
     {
       "name": "--cd-checkbox-card-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "checkbox",
       "usage": "checkbox · card内边距"
     },
     {
       "name": "--cd-checkbox-card-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "checkbox",
       "usage": "checkbox · card圆角"
     },
     {
       "name": "--cd-checkbox-label-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "checkbox",
       "usage": "checkbox · label间距"
@@ -858,7 +942,7 @@
     },
     {
       "name": "--cd-checkbox-radius",
-      "value": "var(--cd-radius-1)",
+      "value": "var(--cd-border-radius-small)",
       "category": "radius",
       "component": "checkbox",
       "usage": "checkbox · 圆角"
@@ -907,7 +991,7 @@
     },
     {
       "name": "--cd-collapse-content-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "collapse",
       "usage": "collapse · content内边距"
@@ -928,7 +1012,7 @@
     },
     {
       "name": "--cd-collapse-header-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "collapse",
       "usage": "collapse · 头部内边距"
@@ -949,24 +1033,38 @@
     },
     {
       "name": "--cd-color-bg-1",
-      "value": "#f9f9f9",
+      "value": "#ffffff",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色背景色1"
     },
     {
       "name": "--cd-color-bg-2",
-      "value": "#e6e8ea",
+      "value": "#ffffff",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色背景色2"
     },
     {
       "name": "--cd-color-bg-3",
-      "value": "#c6cacd",
+      "value": "#ffffff",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色背景色3"
+    },
+    {
+      "name": "--cd-color-bg-4",
+      "value": "#ffffff",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色背景色4"
+    },
+    {
+      "name": "--cd-color-bg-inverse",
+      "value": "#1c1f23",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色背景色inverse"
     },
     {
       "name": "--cd-color-blue-0",
@@ -1040,7 +1138,7 @@
     },
     {
       "name": "--cd-color-border",
-      "value": "#e6e8ea",
+      "value": "rgba(28, 31, 35, 0.08)",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色边框"
@@ -1051,6 +1149,76 @@
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色危险"
+    },
+    {
+      "name": "--cd-color-danger-active",
+      "value": "#b2140c",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险激活态"
+    },
+    {
+      "name": "--cd-color-danger-disabled",
+      "value": "#fdb7a5",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险禁用态"
+    },
+    {
+      "name": "--cd-color-danger-hover",
+      "value": "#d52515",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险悬浮态"
+    },
+    {
+      "name": "--cd-color-danger-light-active",
+      "value": "#fdb7a5",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险light激活态"
+    },
+    {
+      "name": "--cd-color-danger-light-default",
+      "value": "#fef2ed",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险light默认"
+    },
+    {
+      "name": "--cd-color-danger-light-hover",
+      "value": "#feddd2",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色危险light悬浮态"
+    },
+    {
+      "name": "--cd-color-disabled-bg",
+      "value": "#e6e8ea",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色禁用态背景色"
+    },
+    {
+      "name": "--cd-color-disabled-border",
+      "value": "#e6e8ea",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色禁用态边框"
+    },
+    {
+      "name": "--cd-color-disabled-fill",
+      "value": "rgba(46, 50, 56, 0.04)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色禁用态填充"
+    },
+    {
+      "name": "--cd-color-disabled-text",
+      "value": "rgba(28, 31, 35, 0.35)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色禁用态文本"
     },
     {
       "name": "--cd-color-fill-0",
@@ -1067,11 +1235,25 @@
       "usage": "全局 · 颜色填充1"
     },
     {
+      "name": "--cd-color-fill-2",
+      "value": "rgba(46, 50, 56, 0.13)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色填充2"
+    },
+    {
       "name": "--cd-color-focus",
       "value": "#0064fa",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色聚焦态"
+    },
+    {
+      "name": "--cd-color-focus-border",
+      "value": "#0064fa",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色聚焦态边框"
     },
     {
       "name": "--cd-color-green-0",
@@ -1221,11 +1403,81 @@
       "usage": "全局 · 颜色信息"
     },
     {
+      "name": "--cd-color-info-active",
+      "value": "#004fb3",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息激活态"
+    },
+    {
+      "name": "--cd-color-info-disabled",
+      "value": "#98cdfd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息禁用态"
+    },
+    {
+      "name": "--cd-color-info-hover",
+      "value": "#0062d6",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息悬浮态"
+    },
+    {
+      "name": "--cd-color-info-light-active",
+      "value": "#98cdfd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息light激活态"
+    },
+    {
+      "name": "--cd-color-info-light-default",
+      "value": "#eaf5ff",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息light默认"
+    },
+    {
+      "name": "--cd-color-info-light-hover",
+      "value": "#cbe7fe",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色信息light悬浮态"
+    },
+    {
       "name": "--cd-color-link",
       "value": "#0064fa",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色link"
+    },
+    {
+      "name": "--cd-color-link-active",
+      "value": "#004fb3",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色link激活态"
+    },
+    {
+      "name": "--cd-color-link-hover",
+      "value": "#0062d6",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色link悬浮态"
+    },
+    {
+      "name": "--cd-color-link-visited",
+      "value": "#0064fa",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色linkvisited"
+    },
+    {
+      "name": "--cd-color-nav-bg",
+      "value": "#ffffff",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色nav背景色"
     },
     {
       "name": "--cd-color-orange-0",
@@ -1298,6 +1550,13 @@
       "usage": "全局 · 颜色orange9"
     },
     {
+      "name": "--cd-color-overlay-bg",
+      "value": "rgba(22, 22, 26, 0.6)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色overlay背景色"
+    },
+    {
       "name": "--cd-color-picker-handle-border",
       "value": "var(--cd-color-bg-0)",
       "category": "color",
@@ -1320,7 +1579,7 @@
     },
     {
       "name": "--cd-color-picker-panel-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": null,
       "usage": "全局 · 颜色pickerpanel圆角"
@@ -1390,7 +1649,7 @@
     },
     {
       "name": "--cd-color-picker-trigger-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": null,
       "usage": "全局 · 颜色pickertrigger圆角"
@@ -1417,11 +1676,39 @@
       "usage": "全局 · 颜色主色激活态"
     },
     {
+      "name": "--cd-color-primary-disabled",
+      "value": "#98cdfd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色主色禁用态"
+    },
+    {
       "name": "--cd-color-primary-hover",
       "value": "#0062d6",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色主色悬浮态"
+    },
+    {
+      "name": "--cd-color-primary-light-active",
+      "value": "#98cdfd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色主色light激活态"
+    },
+    {
+      "name": "--cd-color-primary-light-default",
+      "value": "#eaf5ff",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色主色light默认"
+    },
+    {
+      "name": "--cd-color-primary-light-hover",
+      "value": "#cbe7fe",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色主色light悬浮态"
     },
     {
       "name": "--cd-color-red-0",
@@ -1494,11 +1781,151 @@
       "usage": "全局 · 颜色red9"
     },
     {
+      "name": "--cd-color-secondary",
+      "value": "#0095ee",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要"
+    },
+    {
+      "name": "--cd-color-secondary-active",
+      "value": "#0063a7",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要激活态"
+    },
+    {
+      "name": "--cd-color-secondary-disabled",
+      "value": "#95d8f8",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要禁用态"
+    },
+    {
+      "name": "--cd-color-secondary-hover",
+      "value": "#007bca",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要悬浮态"
+    },
+    {
+      "name": "--cd-color-secondary-light-active",
+      "value": "#95d8f8",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要light激活态"
+    },
+    {
+      "name": "--cd-color-secondary-light-default",
+      "value": "#e9f7fd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要light默认"
+    },
+    {
+      "name": "--cd-color-secondary-light-hover",
+      "value": "#c9ecfc",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色次要light悬浮态"
+    },
+    {
+      "name": "--cd-color-shadow",
+      "value": "rgba(0, 0, 0, 0.04)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色阴影"
+    },
+    {
       "name": "--cd-color-success",
       "value": "#3bb346",
       "category": "color",
       "component": null,
       "usage": "全局 · 颜色成功"
+    },
+    {
+      "name": "--cd-color-success-active",
+      "value": "#25772f",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功激活态"
+    },
+    {
+      "name": "--cd-color-success-disabled",
+      "value": "#a4e0a7",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功禁用态"
+    },
+    {
+      "name": "--cd-color-success-hover",
+      "value": "#30953b",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功悬浮态"
+    },
+    {
+      "name": "--cd-color-success-light-active",
+      "value": "#a4e0a7",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功light激活态"
+    },
+    {
+      "name": "--cd-color-success-light-default",
+      "value": "#ecf7ec",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功light默认"
+    },
+    {
+      "name": "--cd-color-success-light-hover",
+      "value": "#d0f0d1",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色成功light悬浮态"
+    },
+    {
+      "name": "--cd-color-tertiary",
+      "value": "#6b7075",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiary"
+    },
+    {
+      "name": "--cd-color-tertiary-active",
+      "value": "#41464c",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiary激活态"
+    },
+    {
+      "name": "--cd-color-tertiary-hover",
+      "value": "#555b61",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiary悬浮态"
+    },
+    {
+      "name": "--cd-color-tertiary-light-active",
+      "value": "#c6cacd",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiarylight激活态"
+    },
+    {
+      "name": "--cd-color-tertiary-light-default",
+      "value": "#f9f9f9",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiarylight默认"
+    },
+    {
+      "name": "--cd-color-tertiary-light-hover",
+      "value": "#e6e8ea",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色tertiarylight悬浮态"
     },
     {
       "name": "--cd-color-text-0",
@@ -1543,6 +1970,69 @@
       "usage": "全局 · 颜色警告"
     },
     {
+      "name": "--cd-color-warning-active",
+      "value": "#a84a00",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告激活态"
+    },
+    {
+      "name": "--cd-color-warning-disabled",
+      "value": "#fed998",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告禁用态"
+    },
+    {
+      "name": "--cd-color-warning-hover",
+      "value": "#d26700",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告悬浮态"
+    },
+    {
+      "name": "--cd-color-warning-light-active",
+      "value": "#fed998",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告light激活态"
+    },
+    {
+      "name": "--cd-color-warning-light-default",
+      "value": "#fff8ea",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告light默认"
+    },
+    {
+      "name": "--cd-color-warning-light-hover",
+      "value": "#feeecc",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 颜色警告light悬浮态"
+    },
+    {
+      "name": "--cd-control-height-default",
+      "value": "32px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · control高度默认"
+    },
+    {
+      "name": "--cd-control-height-large",
+      "value": "40px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · control高度大尺寸"
+    },
+    {
+      "name": "--cd-control-height-small",
+      "value": "24px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · control高度小尺寸"
+    },
+    {
       "name": "--cd-date-picker-cell-bg-hover",
       "value": "var(--cd-color-fill-0)",
       "category": "color",
@@ -1572,7 +2062,7 @@
     },
     {
       "name": "--cd-date-picker-cell-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "date",
       "usage": "date · picker单元格圆角"
@@ -1600,7 +2090,7 @@
     },
     {
       "name": "--cd-date-picker-panel-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "date",
       "usage": "date · pickerpanel圆角"
@@ -1649,7 +2139,7 @@
     },
     {
       "name": "--cd-descriptions-cell-padding",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "descriptions",
       "usage": "descriptions · 单元格内边距"
@@ -1670,7 +2160,7 @@
     },
     {
       "name": "--cd-descriptions-row-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "descriptions",
       "usage": "descriptions · row间距"
@@ -1691,7 +2181,7 @@
     },
     {
       "name": "--cd-divider-spacing",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "divider",
       "usage": "divider · spacing"
@@ -1705,14 +2195,14 @@
     },
     {
       "name": "--cd-divider-text-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "divider",
       "usage": "divider · 文本font尺寸"
     },
     {
       "name": "--cd-divider-text-gap",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "divider",
       "usage": "divider · 文本间距"
@@ -1733,7 +2223,7 @@
     },
     {
       "name": "--cd-drawer-body-padding",
-      "value": "var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "drawer",
       "usage": "drawer · body内边距"
@@ -1782,14 +2272,14 @@
     },
     {
       "name": "--cd-drawer-footer-padding",
-      "value": "var(--cd-spacing-4) var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base) var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "drawer",
       "usage": "drawer · 底部内边距"
     },
     {
       "name": "--cd-drawer-header-padding",
-      "value": "var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "drawer",
       "usage": "drawer · 头部内边距"
@@ -1845,7 +2335,7 @@
     },
     {
       "name": "--cd-drawer-title-size",
-      "value": "var(--cd-font-size-3)",
+      "value": "var(--cd-font-size-header-6)",
       "category": "height",
       "component": "drawer",
       "usage": "drawer · 标题尺寸"
@@ -1901,7 +2391,7 @@
     },
     {
       "name": "--cd-dropdown-item-padding",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "dropdown",
       "usage": "dropdown · 项内边距"
@@ -1915,7 +2405,7 @@
     },
     {
       "name": "--cd-dropdown-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "dropdown",
       "usage": "dropdown · 圆角"
@@ -1943,7 +2433,7 @@
     },
     {
       "name": "--cd-empty-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "empty",
       "usage": "empty · 间距"
@@ -1970,46 +2460,74 @@
       "usage": "全局 · 聚焦态焦点环"
     },
     {
-      "name": "--cd-font-size-1",
-      "value": "12px",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · font尺寸1"
-    },
-    {
-      "name": "--cd-font-size-2",
-      "value": "14px",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · font尺寸2"
-    },
-    {
-      "name": "--cd-font-size-3",
-      "value": "16px",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · font尺寸3"
-    },
-    {
-      "name": "--cd-font-size-4",
-      "value": "20px",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · font尺寸4"
-    },
-    {
-      "name": "--cd-font-size-5",
-      "value": "24px",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · font尺寸5"
-    },
-    {
-      "name": "--cd-font-size-6",
+      "name": "--cd-font-size-header-1",
       "value": "32px",
       "category": "font",
       "component": null,
-      "usage": "全局 · font尺寸6"
+      "usage": "全局 · font尺寸头部1"
+    },
+    {
+      "name": "--cd-font-size-header-2",
+      "value": "28px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸头部2"
+    },
+    {
+      "name": "--cd-font-size-header-3",
+      "value": "24px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸头部3"
+    },
+    {
+      "name": "--cd-font-size-header-4",
+      "value": "20px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸头部4"
+    },
+    {
+      "name": "--cd-font-size-header-5",
+      "value": "18px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸头部5"
+    },
+    {
+      "name": "--cd-font-size-header-6",
+      "value": "16px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸头部6"
+    },
+    {
+      "name": "--cd-font-size-regular",
+      "value": "14px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸regular"
+    },
+    {
+      "name": "--cd-font-size-small",
+      "value": "12px",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · font尺寸小尺寸"
+    },
+    {
+      "name": "--cd-font-weight-bold",
+      "value": "600",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · fontweightbold"
+    },
+    {
+      "name": "--cd-font-weight-light",
+      "value": "200",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · fontweightlight"
     },
     {
       "name": "--cd-font-weight-medium",
@@ -2026,13 +2544,6 @@
       "usage": "全局 · fontweightregular"
     },
     {
-      "name": "--cd-font-weight-semibold",
-      "value": "600",
-      "category": "font",
-      "component": null,
-      "usage": "全局 · fontweightsemibold"
-    },
-    {
       "name": "--cd-form-error-color",
       "value": "var(--cd-color-danger)",
       "category": "color",
@@ -2041,7 +2552,7 @@
     },
     {
       "name": "--cd-form-error-font-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "form",
       "usage": "form · errorfont尺寸"
@@ -2055,7 +2566,7 @@
     },
     {
       "name": "--cd-form-item-gap",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "form",
       "usage": "form · 项间距"
@@ -2069,7 +2580,7 @@
     },
     {
       "name": "--cd-form-label-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "form",
       "usage": "form · label间距"
@@ -2090,7 +2601,7 @@
     },
     {
       "name": "--cd-form-section-gap",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "form",
       "usage": "form · section间距"
@@ -2265,7 +2776,7 @@
     },
     {
       "name": "--cd-image-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "image",
       "usage": "image · 圆角"
@@ -2321,7 +2832,7 @@
     },
     {
       "name": "--cd-input-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "input",
       "usage": "input · font尺寸"
@@ -2349,14 +2860,14 @@
     },
     {
       "name": "--cd-input-padding-x",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "input",
       "usage": "input · 内边距水平"
     },
     {
       "name": "--cd-input-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "input",
       "usage": "input · 圆角"
@@ -2377,7 +2888,7 @@
     },
     {
       "name": "--cd-layout-content-padding",
-      "value": "var(--cd-spacing-6)",
+      "value": "var(--cd-spacing-loose)",
       "category": "spacing",
       "component": "layout",
       "usage": "layout · content内边距"
@@ -2531,21 +3042,21 @@
     },
     {
       "name": "--cd-list-item-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "list",
       "usage": "list · 项内边距"
     },
     {
       "name": "--cd-list-item-padding-small",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "list",
       "usage": "list · 项内边距小尺寸"
     },
     {
       "name": "--cd-list-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "list",
       "usage": "list · 圆角"
@@ -2587,7 +3098,7 @@
     },
     {
       "name": "--cd-lottieicon-radius",
-      "value": "var(--cd-radius-1)",
+      "value": "var(--cd-border-radius-small)",
       "category": "radius",
       "component": "lottieicon",
       "usage": "lottieicon · 圆角"
@@ -2636,7 +3147,7 @@
     },
     {
       "name": "--cd-menu-item-bg-selected",
-      "value": "var(--cd-color-fill-0)",
+      "value": "var(--cd-color-primary-light-default)",
       "category": "color",
       "component": "menu",
       "usage": "menu · 项背景色选中态"
@@ -2678,7 +3189,7 @@
     },
     {
       "name": "--cd-menu-item-padding",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "menu",
       "usage": "menu · 项内边距"
@@ -2720,14 +3231,14 @@
     },
     {
       "name": "--cd-modal-footer-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "modal",
       "usage": "modal · 底部间距"
     },
     {
       "name": "--cd-modal-header-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "modal",
       "usage": "modal · 头部间距"
@@ -2748,14 +3259,14 @@
     },
     {
       "name": "--cd-modal-padding",
-      "value": "var(--cd-spacing-6)",
+      "value": "var(--cd-spacing-loose)",
       "category": "spacing",
       "component": "modal",
       "usage": "modal · 内边距"
     },
     {
       "name": "--cd-modal-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "modal",
       "usage": "modal · 圆角"
@@ -2776,7 +3287,7 @@
     },
     {
       "name": "--cd-modal-title-size",
-      "value": "var(--cd-font-size-3)",
+      "value": "var(--cd-font-size-header-6)",
       "category": "height",
       "component": "modal",
       "usage": "modal · 标题尺寸"
@@ -2815,6 +3326,97 @@
       "category": "animation",
       "component": null,
       "usage": "全局 · motion缓动standard"
+    },
+    {
+      "name": "--cd-nav-bg",
+      "value": "transparent",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · nav背景色"
+    },
+    {
+      "name": "--cd-nav-collapse-btn-color",
+      "value": "var(--cd-color-text-2)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · navcollapsebtn颜色"
+    },
+    {
+      "name": "--cd-nav-collapse-btn-height",
+      "value": "36px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · navcollapsebtn高度"
+    },
+    {
+      "name": "--cd-nav-collapse-btn-hover-bg",
+      "value": "var(--cd-color-fill-1)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · navcollapsebtn悬浮态背景色"
+    },
+    {
+      "name": "--cd-nav-color",
+      "value": "inherit",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · nav颜色"
+    },
+    {
+      "name": "--cd-nav-footer-border",
+      "value": "var(--cd-color-border)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · nav底部边框"
+    },
+    {
+      "name": "--cd-nav-footer-padding",
+      "value": "var(--cd-spacing-tight)",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · nav底部内边距"
+    },
+    {
+      "name": "--cd-nav-header-gap",
+      "value": "var(--cd-spacing-tight)",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · nav头部间距"
+    },
+    {
+      "name": "--cd-nav-header-height",
+      "value": "60px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · nav头部高度"
+    },
+    {
+      "name": "--cd-nav-header-padding-x",
+      "value": "var(--cd-spacing-base)",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · nav头部内边距水平"
+    },
+    {
+      "name": "--cd-nav-header-text-color",
+      "value": "var(--cd-color-text-0)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · nav头部文本颜色"
+    },
+    {
+      "name": "--cd-nav-header-text-size",
+      "value": "var(--cd-font-size-header-6)",
+      "category": "font",
+      "component": null,
+      "usage": "全局 · nav头部文本尺寸"
+    },
+    {
+      "name": "--cd-nav-horizontal-height",
+      "value": "60px",
+      "category": "height",
+      "component": null,
+      "usage": "全局 · navhorizontal高度"
     },
     {
       "name": "--cd-notification-bg",
@@ -2902,14 +3504,14 @@
     },
     {
       "name": "--cd-notification-content-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "height",
       "component": "notification",
       "usage": "notification · content尺寸"
     },
     {
       "name": "--cd-notification-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "notification",
       "usage": "notification · 间距"
@@ -2951,14 +3553,14 @@
     },
     {
       "name": "--cd-notification-offset",
-      "value": "var(--cd-spacing-6)",
+      "value": "var(--cd-spacing-loose)",
       "category": "spacing",
       "component": "notification",
       "usage": "notification · offset"
     },
     {
       "name": "--cd-notification-padding",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "notification",
       "usage": "notification · 内边距"
@@ -2979,7 +3581,7 @@
     },
     {
       "name": "--cd-notification-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "notification",
       "usage": "notification · 圆角"
@@ -2993,7 +3595,7 @@
     },
     {
       "name": "--cd-notification-title-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "height",
       "component": "notification",
       "usage": "notification · 标题尺寸"
@@ -3021,21 +3623,21 @@
     },
     {
       "name": "--cd-overflow-list-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "overflow",
       "usage": "overflow · list间距"
     },
     {
       "name": "--cd-overflow-list-gap-large",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "overflow",
       "usage": "overflow · list间距大尺寸"
     },
     {
       "name": "--cd-overflow-list-gap-small",
-      "value": "var(--cd-spacing-1)",
+      "value": "var(--cd-spacing-extra-tight)",
       "category": "spacing",
       "component": "overflow",
       "usage": "overflow · list间距小尺寸"
@@ -3070,14 +3672,14 @@
     },
     {
       "name": "--cd-overflow-list-overflow-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "overflow",
       "usage": "overflow · listoverflow圆角"
     },
     {
       "name": "--cd-pagination-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "pagination",
       "usage": "pagination · 间距"
@@ -3112,7 +3714,7 @@
     },
     {
       "name": "--cd-pagination-item-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "pagination",
       "usage": "pagination · 项圆角"
@@ -3161,14 +3763,14 @@
     },
     {
       "name": "--cd-popconfirm-content-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "height",
       "component": "popconfirm",
       "usage": "popconfirm · content尺寸"
     },
     {
       "name": "--cd-popconfirm-gap-footer",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "popconfirm",
       "usage": "popconfirm · 间距底部"
@@ -3217,14 +3819,14 @@
     },
     {
       "name": "--cd-popconfirm-padding",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "popconfirm",
       "usage": "popconfirm · 内边距"
     },
     {
       "name": "--cd-popconfirm-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "popconfirm",
       "usage": "popconfirm · 圆角"
@@ -3245,7 +3847,7 @@
     },
     {
       "name": "--cd-popconfirm-title-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "height",
       "component": "popconfirm",
       "usage": "popconfirm · 标题尺寸"
@@ -3294,35 +3896,35 @@
     },
     {
       "name": "--cd-popover-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "popover",
       "usage": "popover · 内边距"
     },
     {
       "name": "--cd-popover-padding-default",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "popover",
       "usage": "popover · 内边距默认"
     },
     {
       "name": "--cd-popover-padding-large",
-      "value": "var(--cd-spacing-4) var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base) var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "popover",
       "usage": "popover · 内边距大尺寸"
     },
     {
       "name": "--cd-popover-padding-small",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "popover",
       "usage": "popover · 内边距小尺寸"
     },
     {
       "name": "--cd-popover-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "popover",
       "usage": "popover · 圆角"
@@ -3469,21 +4071,21 @@
     },
     {
       "name": "--cd-radio-button-height",
-      "value": "var(--cd-control-height-md, 32px)",
+      "value": "var(--cd-control-height-default, 32px)",
       "category": "height",
       "component": "radio",
       "usage": "radio · button高度"
     },
     {
       "name": "--cd-radio-button-height-large",
-      "value": "var(--cd-control-height-lg, 40px)",
+      "value": "var(--cd-control-height-large, 40px)",
       "category": "height",
       "component": "radio",
       "usage": "radio · button高度大尺寸"
     },
     {
       "name": "--cd-radio-button-height-small",
-      "value": "var(--cd-control-height-sm, 24px)",
+      "value": "var(--cd-control-height-small, 24px)",
       "category": "height",
       "component": "radio",
       "usage": "radio · button高度小尺寸"
@@ -3497,7 +4099,7 @@
     },
     {
       "name": "--cd-radio-card-radius",
-      "value": "var(--cd-radius-medium, var(--cd-radius-2))",
+      "value": "var(--cd-radius-medium, var(--cd-border-radius-medium))",
       "category": "radius",
       "component": "radio",
       "usage": "radio · card圆角"
@@ -3532,7 +4134,7 @@
     },
     {
       "name": "--cd-radio-label-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "radio",
       "usage": "radio · label间距"
@@ -3559,34 +4161,6 @@
       "usage": "radio · 尺寸小尺寸"
     },
     {
-      "name": "--cd-radius-1",
-      "value": "3px",
-      "category": "radius",
-      "component": null,
-      "usage": "全局 · 圆角1"
-    },
-    {
-      "name": "--cd-radius-2",
-      "value": "6px",
-      "category": "radius",
-      "component": null,
-      "usage": "全局 · 圆角2"
-    },
-    {
-      "name": "--cd-radius-3",
-      "value": "12px",
-      "category": "radius",
-      "component": null,
-      "usage": "全局 · 圆角3"
-    },
-    {
-      "name": "--cd-radius-full",
-      "value": "9999px",
-      "category": "radius",
-      "component": null,
-      "usage": "全局 · 圆角full"
-    },
-    {
       "name": "--cd-rating-color-active",
       "value": "var(--cd-color-warning)",
       "category": "color",
@@ -3602,7 +4176,7 @@
     },
     {
       "name": "--cd-rating-gap",
-      "value": "var(--cd-spacing-1)",
+      "value": "var(--cd-spacing-extra-tight)",
       "category": "spacing",
       "component": "rating",
       "usage": "rating · 间距"
@@ -3700,7 +4274,7 @@
     },
     {
       "name": "--cd-scrolllist-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "scrolllist",
       "usage": "scrolllist · 圆角"
@@ -3749,7 +4323,7 @@
     },
     {
       "name": "--cd-select-dropdown-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "select",
       "usage": "select · dropdown圆角"
@@ -3770,7 +4344,7 @@
     },
     {
       "name": "--cd-select-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "select",
       "usage": "select · font尺寸"
@@ -3819,21 +4393,21 @@
     },
     {
       "name": "--cd-select-option-padding",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "select",
       "usage": "select · option内边距"
     },
     {
       "name": "--cd-select-padding-x",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "select",
       "usage": "select · 内边距水平"
     },
     {
       "name": "--cd-select-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "select",
       "usage": "select · 圆角"
@@ -3858,6 +4432,13 @@
       "category": "color",
       "component": null,
       "usage": "全局 · 阴影3"
+    },
+    {
+      "name": "--cd-shadow-elevated",
+      "value": "0 0 1px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.1)",
+      "category": "color",
+      "component": null,
+      "usage": "全局 · 阴影elevated"
     },
     {
       "name": "--cd-sidesheet-bg",
@@ -3903,14 +4484,14 @@
     },
     {
       "name": "--cd-sidesheet-footer-padding",
-      "value": "var(--cd-spacing-4) var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base) var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "sidesheet",
       "usage": "sidesheet · 底部内边距"
     },
     {
       "name": "--cd-sidesheet-header-padding",
-      "value": "var(--cd-spacing-4) var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base) var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "sidesheet",
       "usage": "sidesheet · 头部内边距"
@@ -3952,14 +4533,14 @@
     },
     {
       "name": "--cd-sidesheet-padding",
-      "value": "var(--cd-spacing-5)",
+      "value": "var(--cd-spacing-base-loose)",
       "category": "spacing",
       "component": "sidesheet",
       "usage": "sidesheet · 内边距"
     },
     {
       "name": "--cd-sidesheet-radius",
-      "value": "var(--cd-radius-3)",
+      "value": "var(--cd-border-radius-large)",
       "category": "radius",
       "component": "sidesheet",
       "usage": "sidesheet · 圆角"
@@ -3980,7 +4561,7 @@
     },
     {
       "name": "--cd-sidesheet-title-size",
-      "value": "var(--cd-font-size-3)",
+      "value": "var(--cd-font-size-header-6)",
       "category": "height",
       "component": "sidesheet",
       "usage": "sidesheet · 标题尺寸"
@@ -4043,7 +4624,7 @@
     },
     {
       "name": "--cd-skeleton-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "skeleton",
       "usage": "skeleton · 间距"
@@ -4057,14 +4638,14 @@
     },
     {
       "name": "--cd-skeleton-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "skeleton",
       "usage": "skeleton · 圆角"
     },
     {
       "name": "--cd-skeleton-radius-pill",
-      "value": "var(--cd-radius-full)",
+      "value": "var(--cd-border-radius-full)",
       "category": "radius",
       "component": "skeleton",
       "usage": "skeleton · 圆角pill"
@@ -4106,7 +4687,7 @@
     },
     {
       "name": "--cd-slider-radius",
-      "value": "var(--cd-radius-full)",
+      "value": "var(--cd-border-radius-full)",
       "category": "radius",
       "component": "slider",
       "usage": "slider · 圆角"
@@ -4148,38 +4729,24 @@
     },
     {
       "name": "--cd-space-loose",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "other",
       "component": "space",
       "usage": "space · loose"
     },
     {
       "name": "--cd-space-medium",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "other",
       "component": "space",
       "usage": "space · medium"
     },
     {
       "name": "--cd-space-tight",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "other",
       "component": "space",
       "usage": "space · tight"
-    },
-    {
-      "name": "--cd-spacing-1",
-      "value": "4px",
-      "category": "spacing",
-      "component": null,
-      "usage": "全局 · spacing1"
-    },
-    {
-      "name": "--cd-spacing-10",
-      "value": "40px",
-      "category": "spacing",
-      "component": null,
-      "usage": "全局 · spacing10"
     },
     {
       "name": "--cd-spacing-12",
@@ -4189,46 +4756,74 @@
       "usage": "全局 · spacing12"
     },
     {
-      "name": "--cd-spacing-2",
-      "value": "8px",
-      "category": "spacing",
-      "component": null,
-      "usage": "全局 · spacing2"
-    },
-    {
-      "name": "--cd-spacing-3",
-      "value": "12px",
-      "category": "spacing",
-      "component": null,
-      "usage": "全局 · spacing3"
-    },
-    {
-      "name": "--cd-spacing-4",
+      "name": "--cd-spacing-base",
       "value": "16px",
       "category": "spacing",
       "component": null,
-      "usage": "全局 · spacing4"
+      "usage": "全局 · spacingbase"
     },
     {
-      "name": "--cd-spacing-5",
+      "name": "--cd-spacing-base-loose",
       "value": "20px",
       "category": "spacing",
       "component": null,
-      "usage": "全局 · spacing5"
+      "usage": "全局 · spacingbaseloose"
     },
     {
-      "name": "--cd-spacing-6",
-      "value": "24px",
+      "name": "--cd-spacing-base-tight",
+      "value": "12px",
       "category": "spacing",
       "component": null,
-      "usage": "全局 · spacing6"
+      "usage": "全局 · spacingbasetight"
     },
     {
-      "name": "--cd-spacing-8",
+      "name": "--cd-spacing-extra-loose",
       "value": "32px",
       "category": "spacing",
       "component": null,
-      "usage": "全局 · spacing8"
+      "usage": "全局 · spacingextraloose"
+    },
+    {
+      "name": "--cd-spacing-extra-tight",
+      "value": "4px",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingextratight"
+    },
+    {
+      "name": "--cd-spacing-loose",
+      "value": "24px",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingloose"
+    },
+    {
+      "name": "--cd-spacing-none",
+      "value": "0",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingnone"
+    },
+    {
+      "name": "--cd-spacing-super-loose",
+      "value": "40px",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingsuperloose"
+    },
+    {
+      "name": "--cd-spacing-super-tight",
+      "value": "2px",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingsupertight"
+    },
+    {
+      "name": "--cd-spacing-tight",
+      "value": "8px",
+      "category": "spacing",
+      "component": null,
+      "usage": "全局 · spacingtight"
     },
     {
       "name": "--cd-spin-color",
@@ -4295,7 +4890,7 @@
     },
     {
       "name": "--cd-spin-tip-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "spin",
       "usage": "spin · tip间距"
@@ -4442,7 +5037,7 @@
     },
     {
       "name": "--cd-switch-radius",
-      "value": "var(--cd-radius-full)",
+      "value": "var(--cd-border-radius-full)",
       "category": "radius",
       "component": "switch",
       "usage": "switch · 圆角"
@@ -4484,28 +5079,28 @@
     },
     {
       "name": "--cd-table-cell-padding-x",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "table",
       "usage": "table · 单元格内边距水平"
     },
     {
       "name": "--cd-table-cell-padding-y",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "table",
       "usage": "table · 单元格内边距垂直"
     },
     {
       "name": "--cd-table-cell-padding-y-large",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "table",
       "usage": "table · 单元格内边距垂直大尺寸"
     },
     {
       "name": "--cd-table-cell-padding-y-small",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "table",
       "usage": "table · 单元格内边距垂直小尺寸"
@@ -4547,7 +5142,7 @@
     },
     {
       "name": "--cd-table-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "table",
       "usage": "table · 圆角"
@@ -4652,7 +5247,7 @@
     },
     {
       "name": "--cd-tabs-card-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "tabs",
       "usage": "tabs · card圆角"
@@ -4694,28 +5289,28 @@
     },
     {
       "name": "--cd-tabs-tab-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "tabs",
       "usage": "tabs · tabfont尺寸"
     },
     {
       "name": "--cd-tabs-tab-padding",
-      "value": "var(--cd-spacing-2) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "tabs",
       "usage": "tabs · tab内边距"
     },
     {
       "name": "--cd-tag-font-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "tag",
       "usage": "tag · font尺寸"
     },
     {
       "name": "--cd-tag-gap",
-      "value": "var(--cd-spacing-1)",
+      "value": "var(--cd-spacing-extra-tight)",
       "category": "spacing",
       "component": "tag",
       "usage": "tag · 间距"
@@ -4743,14 +5338,14 @@
     },
     {
       "name": "--cd-tag-padding-x",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "tag",
       "usage": "tag · 内边距水平"
     },
     {
       "name": "--cd-tag-radius",
-      "value": "var(--cd-radius-1)",
+      "value": "var(--cd-border-radius-small)",
       "category": "radius",
       "component": "tag",
       "usage": "tag · 圆角"
@@ -4778,7 +5373,7 @@
     },
     {
       "name": "--cd-timeline-gap",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "spacing",
       "component": "timeline",
       "usage": "timeline · 间距"
@@ -4883,14 +5478,14 @@
     },
     {
       "name": "--cd-toast-font-size",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "toast",
       "usage": "toast · font尺寸"
     },
     {
       "name": "--cd-toast-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "toast",
       "usage": "toast · 间距"
@@ -4918,14 +5513,14 @@
     },
     {
       "name": "--cd-toast-padding",
-      "value": "var(--cd-spacing-3) var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base-tight) var(--cd-spacing-base)",
       "category": "spacing",
       "component": "toast",
       "usage": "toast · 内边距"
     },
     {
       "name": "--cd-toast-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "toast",
       "usage": "toast · 圆角"
@@ -4939,7 +5534,7 @@
     },
     {
       "name": "--cd-toast-stack-gap",
-      "value": "var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "toast",
       "usage": "toast · stack间距"
@@ -4988,21 +5583,21 @@
     },
     {
       "name": "--cd-tooltip-font-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "tooltip",
       "usage": "tooltip · font尺寸"
     },
     {
       "name": "--cd-tooltip-padding",
-      "value": "var(--cd-spacing-1) var(--cd-spacing-2)",
+      "value": "var(--cd-spacing-extra-tight) var(--cd-spacing-tight)",
       "category": "spacing",
       "component": "tooltip",
       "usage": "tooltip · 内边距"
     },
     {
       "name": "--cd-tooltip-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "tooltip",
       "usage": "tooltip · 圆角"
@@ -5037,7 +5632,7 @@
     },
     {
       "name": "--cd-transfer-gap",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "transfer",
       "usage": "transfer · 间距"
@@ -5079,7 +5674,7 @@
     },
     {
       "name": "--cd-transfer-panel-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "transfer",
       "usage": "transfer · panel圆角"
@@ -5128,7 +5723,7 @@
     },
     {
       "name": "--cd-tree-indent",
-      "value": "var(--cd-spacing-4)",
+      "value": "var(--cd-spacing-base)",
       "category": "other",
       "component": "tree",
       "usage": "tree · indent"
@@ -5198,7 +5793,7 @@
     },
     {
       "name": "--cd-tree-node-padding-x",
-      "value": "var(--cd-spacing-3)",
+      "value": "var(--cd-spacing-base-tight)",
       "category": "spacing",
       "component": "tree",
       "usage": "tree · node内边距水平"
@@ -5226,7 +5821,7 @@
     },
     {
       "name": "--cd-typography-code-font-size",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "typography",
       "usage": "typography · codefont尺寸"
@@ -5268,21 +5863,21 @@
     },
     {
       "name": "--cd-typography-font-size-default",
-      "value": "var(--cd-font-size-2)",
+      "value": "var(--cd-font-size-regular)",
       "category": "font",
       "component": "typography",
       "usage": "typography · font尺寸默认"
     },
     {
       "name": "--cd-typography-font-size-large",
-      "value": "var(--cd-font-size-3)",
+      "value": "var(--cd-font-size-header-6)",
       "category": "font",
       "component": "typography",
       "usage": "typography · font尺寸大尺寸"
     },
     {
       "name": "--cd-typography-font-size-small",
-      "value": "var(--cd-font-size-1)",
+      "value": "var(--cd-font-size-small)",
       "category": "font",
       "component": "typography",
       "usage": "typography · font尺寸小尺寸"
@@ -5331,7 +5926,7 @@
     },
     {
       "name": "--cd-upload-dragger-radius",
-      "value": "var(--cd-radius-2)",
+      "value": "var(--cd-border-radius-medium)",
       "category": "radius",
       "component": "upload",
       "usage": "upload · dragger圆角"
@@ -5365,11 +5960,53 @@
       "usage": "virtual · listscrollbar"
     },
     {
+      "name": "--cd-width-icon-extra-large",
+      "value": "24px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 宽度图标extra大尺寸"
+    },
+    {
+      "name": "--cd-width-icon-extra-small",
+      "value": "8px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 宽度图标extra小尺寸"
+    },
+    {
+      "name": "--cd-width-icon-large",
+      "value": "20px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 宽度图标大尺寸"
+    },
+    {
+      "name": "--cd-width-icon-medium",
+      "value": "16px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 宽度图标medium"
+    },
+    {
+      "name": "--cd-width-icon-small",
+      "value": "12px",
+      "category": "width",
+      "component": null,
+      "usage": "全局 · 宽度图标小尺寸"
+    },
+    {
       "name": "--cd-z-affix",
       "value": "10",
       "category": "other",
       "component": null,
       "usage": "全局 · 层级affix"
+    },
+    {
+      "name": "--cd-z-drag",
+      "value": "2000",
+      "category": "other",
+      "component": null,
+      "usage": "全局 · 层级drag"
     },
     {
       "name": "--cd-z-dropdown",
@@ -5379,11 +6016,32 @@
       "usage": "全局 · 层级dropdown"
     },
     {
+      "name": "--cd-z-image-preview",
+      "value": "1070",
+      "category": "other",
+      "component": null,
+      "usage": "全局 · 层级imagepreview"
+    },
+    {
       "name": "--cd-z-modal",
       "value": "1000",
       "category": "other",
       "component": null,
       "usage": "全局 · 层级modal"
+    },
+    {
+      "name": "--cd-z-modal-mask",
+      "value": "1000",
+      "category": "other",
+      "component": null,
+      "usage": "全局 · 层级modalmask"
+    },
+    {
+      "name": "--cd-z-notification",
+      "value": "1010",
+      "category": "other",
+      "component": null,
+      "usage": "全局 · 层级notification"
     },
     {
       "name": "--cd-z-popover",
@@ -5400,15 +6058,22 @@
       "usage": "全局 · 层级sticky"
     },
     {
+      "name": "--cd-z-table-fixed",
+      "value": "101",
+      "category": "other",
+      "component": null,
+      "usage": "全局 · 层级tablefixed"
+    },
+    {
       "name": "--cd-z-toast",
-      "value": "1080",
+      "value": "1010",
       "category": "other",
       "component": null,
       "usage": "全局 · 层级toast"
     },
     {
       "name": "--cd-z-tooltip",
-      "value": "1070",
+      "value": "1060",
       "category": "other",
       "component": null,
       "usage": "全局 · 层级tooltip"

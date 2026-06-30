@@ -7,8 +7,8 @@ export const typographyTokens = {
   'typography-color-link-hover': 'var(--cd-color-primary-hover)',
   'typography-mark-bg': 'var(--cd-color-warning)',
   'typography-code-bg': 'var(--cd-color-fill-1)',
-  'typography-code-font-size': 'var(--cd-font-size-1)',
-  'typography-font-size-small': 'var(--cd-font-size-1)',
-  'typography-font-size-default': 'var(--cd-font-size-2)',
-  'typography-font-size-large': 'var(--cd-font-size-3)',
+  'typography-code-font-size': 'var(--cd-font-size-small)',
+  'typography-font-size-small': 'var(--cd-font-size-small)',
+  'typography-font-size-default': 'var(--cd-font-size-regular)',
+  'typography-font-size-large': 'var(--cd-font-size-header-6)',
 } as const;

@@ -417,7 +417,7 @@
     inset-inline-start: 0;
     inline-size: var(--cd-timeline-dot-size);
     block-size: var(--cd-timeline-dot-size);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color));
   }
   .cd-timeline :global(.cd-timeline__dot--pending) {
@@ -450,9 +450,9 @@
     color: var(--cd-timeline-content-color);
   }
   .cd-timeline :global(.cd-timeline__time) {
-    margin-block-start: var(--cd-spacing-1);
+    margin-block-start: var(--cd-spacing-extra-tight);
     color: var(--cd-timeline-time-color);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
 
   /* alternate / center: 轴线居中，奇偶项左右交替 */

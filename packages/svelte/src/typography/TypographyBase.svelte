@@ -149,7 +149,7 @@
   const weightMap: Record<string, string> = {
     regular: 'var(--cd-font-weight-regular)',
     medium: 'var(--cd-font-weight-medium)',
-    semibold: 'var(--cd-font-weight-semibold)',
+    semibold: 'var(--cd-font-weight-bold)',
     bold: '700',
   };
   const resolvedWeight = $derived.by(() => {
@@ -605,28 +605,28 @@
     margin: 0;
   }
   :global(.cd-typography--paragraph) {
-    margin-block-end: var(--cd-spacing-4);
+    margin-block-end: var(--cd-spacing-base);
   }
   :global(.cd-typography--title) {
-    font-weight: var(--cd-font-weight-semibold);
+    font-weight: var(--cd-font-weight-bold);
   }
   :global(.cd-typography--h1) {
-    font-size: var(--cd-font-size-6);
+    font-size: var(--cd-font-size-header-1);
   }
   :global(.cd-typography--h2) {
-    font-size: var(--cd-font-size-5);
+    font-size: var(--cd-font-size-header-3);
   }
   :global(.cd-typography--h3) {
-    font-size: var(--cd-font-size-4);
+    font-size: var(--cd-font-size-header-4);
   }
   :global(.cd-typography--h4) {
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   :global(.cd-typography--h5) {
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
   }
   :global(.cd-typography--h6) {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   :global(.cd-typography--link) {
     color: var(--cd-typography-color-link);
@@ -661,14 +661,14 @@
     color: var(--cd-color-success);
   }
   :global(.cd-typography--strong) {
-    font-weight: var(--cd-font-weight-semibold);
+    font-weight: var(--cd-font-weight-bold);
   }
   /* 字号档 (Text/Paragraph) — spec §4.1 size + §5 token 表; default 沿用继承字号保持向后兼容 */
   :global(.cd-typography--size-small) {
-    font-size: var(--cd-typography-font-size-small, var(--cd-font-size-1));
+    font-size: var(--cd-typography-font-size-small, var(--cd-font-size-small));
   }
   :global(.cd-typography--size-large) {
-    font-size: var(--cd-typography-font-size-large, var(--cd-font-size-3));
+    font-size: var(--cd-typography-font-size-large, var(--cd-font-size-header-6));
   }
   :global(.cd-typography--disabled) {
     opacity: 0.5;

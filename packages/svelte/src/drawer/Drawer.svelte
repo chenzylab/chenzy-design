@@ -502,7 +502,7 @@
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
-    gap: var(--cd-spacing-2, 8px);
+    gap: var(--cd-spacing-tight, 8px);
   }
   .cd-drawer__close {
     display: inline-flex;

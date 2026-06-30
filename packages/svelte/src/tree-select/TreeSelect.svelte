@@ -1370,7 +1370,7 @@
   .cd-tree-select__trigger {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     min-block-size: var(--cd-select-height-default);
     padding-inline: var(--cd-select-padding-x);
@@ -1442,7 +1442,7 @@
   /* 面板 portal 到容器，由 use:floating action 写 position:fixed + transform 定位 */
   .cd-tree-select__panel {
     z-index: var(--cd-select-dropdown-z);
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
@@ -1452,8 +1452,8 @@
     display: none;
   }
   .cd-tree-select__search {
-    padding-block-end: var(--cd-spacing-1);
-    padding-inline: var(--cd-spacing-2);
+    padding-block-end: var(--cd-spacing-extra-tight);
+    padding-inline: var(--cd-spacing-tight);
   }
   .cd-tree-select__search-input {
     inline-size: 100%;
@@ -1464,7 +1464,7 @@
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
     font: inherit;
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-tree-select__search-input:focus-visible {
     outline: none;
@@ -1493,7 +1493,7 @@
   .cd-tree-select__node {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     block-size: var(--cd-tree-node-height);
     padding-inline-end: var(--cd-tree-node-padding-x);
     cursor: pointer;
@@ -1589,7 +1589,7 @@
   .cd-tree-select__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     align-items: center;
     min-inline-size: 0;
   }

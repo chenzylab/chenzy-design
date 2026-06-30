@@ -351,7 +351,7 @@
     justify-content: center;
     min-inline-size: var(--cd-pagination-item-size);
     block-size: var(--cd-pagination-item-size);
-    padding-inline: var(--cd-spacing-2);
+    padding-inline: var(--cd-spacing-tight);
     border: var(--cd-pagination-item-border);
     border-radius: var(--cd-pagination-item-radius);
     background: transparent;
@@ -392,7 +392,7 @@
   .cd-pagination__simple {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-pagination__size-changer {
     display: inline-flex;
@@ -401,7 +401,7 @@
   .cd-pagination__jumper {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-pagination__jumper-input {
     inline-size: var(--cd-pagination-jumper-width, 3.5rem);
@@ -410,13 +410,13 @@
   .cd-pagination--small .cd-pagination__prev,
   .cd-pagination--small .cd-pagination__next,
   .cd-pagination--small .cd-pagination__ellipsis {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-pagination--large .cd-pagination__page,
   .cd-pagination--large .cd-pagination__prev,
   .cd-pagination--large .cd-pagination__next,
   .cd-pagination--large .cd-pagination__ellipsis {
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-pagination__page,

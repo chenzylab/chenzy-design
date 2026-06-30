@@ -688,7 +688,7 @@
      min 用 token 兜底，避免容器未限宽时塌成 0。 */
   .cd-menu--collapsed {
     inline-size: 100%;
-    min-inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-2)));
+    min-inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-tight)));
   }
   .cd-menu__item {
     margin: 0;
@@ -721,7 +721,7 @@
   /* 分隔符：水平细线，不可交互 */
   .cd-menu__divider {
     block-size: 1px;
-    margin-block: var(--cd-spacing-1);
+    margin-block: var(--cd-spacing-extra-tight);
     background: var(--cd-menu-border-color, var(--cd-color-border));
   }
   /* 分组：始终展开的分区标题 + 组内项列表 */
@@ -736,7 +736,7 @@
     block-size: var(--cd-menu-item-height);
     padding-inline: var(--cd-menu-item-padding);
     color: var(--cd-menu-item-color-disabled);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     cursor: default;
     user-select: none;
   }
@@ -744,7 +744,7 @@
   .cd-menu__title {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-menu-item-height);
     padding-inline: var(--cd-menu-item-padding);
@@ -759,11 +759,11 @@
   }
   .cd-menu--small .cd-menu__link,
   .cd-menu--small .cd-menu__title {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-menu--large .cd-menu__link,
   .cd-menu--large .cd-menu__title {
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-menu__link:hover,
   .cd-menu__title:hover {
@@ -849,7 +849,7 @@
   }
   /* toggleIconPosition='left'：箭头置于 label 前，与后续内容留出间距 */
   .cd-menu__arrow--left {
-    margin-inline-end: var(--cd-spacing-1);
+    margin-inline-end: var(--cd-spacing-extra-tight);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-menu__link,

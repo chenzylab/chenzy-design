@@ -207,11 +207,11 @@
   .cd-descriptions--horizontal :global(.cd-descriptions__item) {
     flex-direction: row;
     align-items: baseline;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-descriptions--vertical :global(.cd-descriptions__item) {
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-descriptions :global(.cd-descriptions__label) {
     color: var(--cd-descriptions-label-color);
@@ -282,6 +282,6 @@
   /* row=true：双行显示，每项 label 与 value 纵向叠放（覆盖 direction 横向排列） */
   .cd-descriptions--row-mode :global(.cd-descriptions__item) {
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
 </style>

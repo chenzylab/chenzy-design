@@ -991,7 +991,7 @@
   .cd-calendar {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     color: var(--cd-calendar-text);
     background: var(--cd-calendar-bg);
     border: 1px solid var(--cd-calendar-border);
@@ -1002,8 +1002,8 @@
   .cd-calendar__toolbar {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-2) var(--cd-spacing-3);
+    gap: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-tight) var(--cd-spacing-base-tight);
     background: var(--cd-calendar-header-bg);
     border-bottom: 1px solid var(--cd-calendar-border);
     border-start-start-radius: var(--cd-calendar-radius);
@@ -1020,7 +1020,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     color: inherit;
     background: transparent;
     border: 1px solid var(--cd-calendar-border);
@@ -1050,7 +1050,7 @@
   }
 
   .cd-calendar__weekday {
-    padding: var(--cd-spacing-1);
+    padding: var(--cd-spacing-extra-tight);
     color: var(--cd-calendar-text-secondary);
     text-align: center;
     font-weight: 500;
@@ -1063,9 +1063,9 @@
   .cd-calendar__cell {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     min-block-size: var(--cd-calendar-cell-min-h);
-    padding: var(--cd-spacing-1);
+    padding: var(--cd-spacing-extra-tight);
     border-inline-end: 1px solid var(--cd-calendar-border);
     border-block-end: 1px solid var(--cd-calendar-border);
     cursor: pointer;
@@ -1146,10 +1146,10 @@
   .cd-calendar__event {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     min-inline-size: 0;
     padding-block: 1px;
-    padding-inline: var(--cd-spacing-1);
+    padding-inline: var(--cd-spacing-extra-tight);
     color: var(--cd-calendar-text);
     background: var(--cd-calendar-cell-bg-hover);
     border-radius: var(--cd-calendar-radius);
@@ -1213,8 +1213,8 @@
   .cd-calendar__allday {
     display: flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     border-block-end: 1px solid var(--cd-calendar-border);
     background: var(--cd-calendar-header-bg);
   }
@@ -1239,7 +1239,7 @@
   .cd-calendar__hour {
     display: flex;
     align-items: stretch;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     min-block-size: var(--cd-calendar-hour-min-h, 40px);
     border-block-end: 1px solid var(--cd-calendar-border);
   }
@@ -1248,7 +1248,7 @@
   }
   .cd-calendar__hour-label {
     flex: 0 0 var(--cd-calendar-hour-label-w, 56px);
-    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     color: var(--cd-calendar-text-secondary);
     text-align: end;
     font-variant-numeric: tabular-nums;
@@ -1260,7 +1260,7 @@
     gap: 2px;
     flex: 1 1 auto;
     min-inline-size: 0;
-    padding: var(--cd-spacing-1);
+    padding: var(--cd-spacing-extra-tight);
   }
   .cd-calendar__event--timed {
     padding-block: 2px;
@@ -1291,8 +1291,8 @@
   .cd-calendar-popup__trigger {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-1) var(--cd-spacing-3);
+    gap: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
     color: var(--cd-calendar-text);
     background: var(--cd-calendar-bg);
     border: 1px solid var(--cd-calendar-border);

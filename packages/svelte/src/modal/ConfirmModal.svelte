@@ -144,7 +144,7 @@
 <style>
   .cd-confirm-modal__body {
     display: flex;
-    gap: var(--cd-spacing-3);
+    gap: var(--cd-spacing-base-tight);
     align-items: flex-start;
   }
   .cd-confirm-modal__icon {

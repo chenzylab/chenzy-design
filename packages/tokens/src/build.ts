@@ -26,7 +26,7 @@ function vars(group: Record<string, string>, category = ''): string[] {
 const globalVars = [
   ...vars(palette, 'color'),
   ...vars(scales.spacing, 'spacing'),
-  ...vars(scales.radius, 'radius'),
+  ...vars(scales.radius, 'border-radius'),
   ...vars(scales.fontSize, 'font-size'),
   ...vars(scales.fontWeight, 'font-weight'),
   ...vars(scales.lineHeight, 'line-height'),

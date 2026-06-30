@@ -53,8 +53,8 @@
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    padding-block: var(--cd-spacing-4);
-    padding-inline: var(--cd-spacing-6);
+    padding-block: var(--cd-spacing-base);
+    padding-inline: var(--cd-spacing-loose);
     background: var(--cd-layout-footer-bg);
     color: var(--cd-layout-footer-color);
     text-align: center;

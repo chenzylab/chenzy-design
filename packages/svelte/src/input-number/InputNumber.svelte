@@ -489,11 +489,11 @@
   }
   .cd-input-number--small {
     block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-input-number--large {
     block-size: var(--cd-input-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-input-number:focus-within {
     border-color: var(--cd-input-border-active);
@@ -525,12 +525,12 @@
     justify-content: center;
     flex: 0 0 auto;
     padding: 0;
-    padding-inline-end: var(--cd-spacing-1);
+    padding-inline-end: var(--cd-spacing-extra-tight);
     border: none;
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-input-number__clear:hover {
     color: var(--cd-color-text-0);
@@ -553,10 +553,10 @@
   }
   /* 有前/后缀时，由 affix 承担该侧边距，避免双重留白。 */
   .cd-input-number--has-prefix .cd-input-number__native {
-    padding-inline-start: var(--cd-spacing-1);
+    padding-inline-start: var(--cd-spacing-extra-tight);
   }
   .cd-input-number--has-suffix .cd-input-number__native {
-    padding-inline-end: var(--cd-spacing-1);
+    padding-inline-end: var(--cd-spacing-extra-tight);
   }
   .cd-input-number__native::placeholder {
     color: var(--cd-input-color-placeholder);
@@ -582,7 +582,7 @@
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
-    inline-size: var(--cd-spacing-5);
+    inline-size: var(--cd-spacing-base-loose);
     border-inline-start: 1px solid var(--cd-input-border);
   }
   .cd-input-number__action {
@@ -634,7 +634,7 @@
     text-align: center;
   }
   .cd-input-number--controls-sides .cd-input-number__action {
-    inline-size: var(--cd-spacing-6, 28px);
+    inline-size: var(--cd-spacing-loose, 28px);
   }
   /* sides 布局：前缀紧贴减号右、后缀紧贴加号左，包裹中央输入。 */
   .cd-input-number--controls-sides .cd-input-number__prefix {

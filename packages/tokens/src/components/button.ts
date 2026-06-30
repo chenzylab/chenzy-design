@@ -6,9 +6,9 @@ export const buttonTokens = {
   'button-height-default': '32px',
   'button-height-small': '24px',
   'button-height-large': '40px',
-  'button-padding-x': 'var(--cd-spacing-4)',
-  'button-radius': 'var(--cd-radius-2)',
-  'button-font-size': 'var(--cd-font-size-2)',
+  'button-padding-x': 'var(--cd-spacing-base)',
+  'button-radius': 'var(--cd-border-radius-medium)',
+  'button-font-size': 'var(--cd-font-size-regular)',
   'button-color-bg-primary': 'var(--cd-color-primary)',
   'button-color-text-primary': 'var(--cd-color-text-inverse)',
   // ButtonGroup：组内分隔线颜色（相邻按钮共享边框时的细分隔）

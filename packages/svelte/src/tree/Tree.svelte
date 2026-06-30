@@ -1222,7 +1222,7 @@
     --cd-tree-row-height: var(--cd-tree-node-height);
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     color: var(--cd-tree-node-color);
     font-size: var(--cd-font-size-body);
   }
@@ -1239,7 +1239,7 @@
   .cd-tree__search-input {
     inline-size: 100%;
     block-size: var(--cd-tree-row-height);
-    padding-inline: var(--cd-spacing-2);
+    padding-inline: var(--cd-spacing-tight);
     color: inherit;
     background: var(--cd-color-bg-1, transparent);
     border: 1px solid var(--cd-tree-border-color);
@@ -1280,9 +1280,9 @@
   .cd-tree__node {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     block-size: var(--cd-tree-row-height);
-    padding-inline-end: var(--cd-spacing-2);
+    padding-inline-end: var(--cd-spacing-tight);
     border-radius: var(--cd-radius-small, 4px);
     cursor: pointer;
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -1465,7 +1465,7 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    margin-inline-start: var(--cd-spacing-1);
+    margin-inline-start: var(--cd-spacing-extra-tight);
   }
 
   /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
@@ -1483,7 +1483,7 @@
   }
 
   .cd-tree__empty {
-    padding: var(--cd-spacing-3);
+    padding: var(--cd-spacing-base-tight);
     color: var(--cd-tree-node-color-disabled);
     text-align: center;
   }

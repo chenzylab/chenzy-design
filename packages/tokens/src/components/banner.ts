@@ -1,14 +1,14 @@
 /** Component tokens for Banner (M5 Feedback). 回退 Alias，禁写死。 */
 export const bannerTokens = {
-  'banner-radius': 'var(--cd-radius-2)',
-  'banner-padding-y': 'var(--cd-spacing-3)',
-  'banner-padding-x': 'var(--cd-spacing-4)',
-  'banner-gap': 'var(--cd-spacing-3)',
+  'banner-radius': 'var(--cd-border-radius-medium)',
+  'banner-padding-y': 'var(--cd-spacing-base-tight)',
+  'banner-padding-x': 'var(--cd-spacing-base)',
+  'banner-gap': 'var(--cd-spacing-base-tight)',
   'banner-icon-size': '20px',
   'banner-title-color': 'var(--cd-color-text-0)',
   'banner-desc-color': 'var(--cd-color-text-1)',
-  'banner-title-size': 'var(--cd-font-size-2)',
-  'banner-desc-size': 'var(--cd-font-size-1)',
+  'banner-title-size': 'var(--cd-font-size-regular)',
+  'banner-desc-size': 'var(--cd-font-size-small)',
   'banner-accent-width': '4px',
   // four-type tints via color-mix (success/danger lack a light alias; primary/warning use theirs)
   'banner-info-bg': 'var(--cd-color-primary-light-default)',

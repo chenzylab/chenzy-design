@@ -125,5 +125,5 @@ export const meta = {
       'interactive：项 role=button + roving tabindex（焦点项 tabindex=0 其余 -1），↑↓/←→ 移动焦点、Home/End 跳首尾、Enter/Space 激活，aria-label 取节点内容',
     ],
   },
-  tokens: ['--cd-timeline-*', '--cd-radius-full', '--cd-spacing-1', '--cd-font-size-1'],
+  tokens: ['--cd-timeline-*', '--cd-border-radius-full', '--cd-spacing-extra-tight', '--cd-font-size-small'],
 } as const;

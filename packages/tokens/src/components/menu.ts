@@ -3,7 +3,7 @@ export const menuTokens = {
   // Menu
   'menu-bg': 'var(--cd-color-bg-0)',
   'menu-item-height': '40px',
-  'menu-item-padding': 'var(--cd-spacing-3)',
+  'menu-item-padding': 'var(--cd-spacing-base-tight)',
   'menu-item-color': 'var(--cd-color-text-1)',
   'menu-item-color-selected': 'var(--cd-color-primary)',
   'menu-item-color-disabled': 'var(--cd-color-text-3)',
@@ -15,7 +15,7 @@ export const menuTokens = {
   // Anchor
   'anchor-link-color': 'var(--cd-color-text-2)',
   'anchor-link-color-active': 'var(--cd-color-primary)',
-  'anchor-link-padding': 'var(--cd-spacing-1) var(--cd-spacing-3)',
+  'anchor-link-padding': 'var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight)',
   'anchor-rail-color': 'var(--cd-color-border)',
   'anchor-ink-color': 'var(--cd-color-primary)',
   'anchor-ink-width': '2px',

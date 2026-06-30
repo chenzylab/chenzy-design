@@ -220,7 +220,7 @@
   }
   .cd-layout-sider__arrow {
     display: inline-flex;
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
     line-height: 1;
   }
   @media (prefers-reduced-motion: reduce) {

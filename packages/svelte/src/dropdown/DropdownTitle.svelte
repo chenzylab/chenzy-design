@@ -27,7 +27,7 @@
     align-items: center;
     padding: var(--cd-dropdown-item-padding);
     color: var(--cd-dropdown-item-color-disabled);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     cursor: default;
     user-select: none;
   }

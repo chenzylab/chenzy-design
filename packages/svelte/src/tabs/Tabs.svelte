@@ -860,7 +860,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 var(--cd-spacing-1);
+    padding: 0 var(--cd-spacing-extra-tight);
     border: none;
     background: transparent;
     color: var(--cd-tabs-tab-color);
@@ -879,7 +879,7 @@
   .cd-tabs__add:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
 
   /* --- overflow=dropdown：bar 为可换行无关的单行 flex，溢出标签收进「更多」--- */
@@ -901,7 +901,7 @@
   .cd-tabs__more-btn {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     margin: 0;
     padding: var(--cd-tabs-tab-padding);
     border: none;
@@ -921,7 +921,7 @@
   .cd-tabs__more-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   /* 离屏测量层：渲染全部标签，不可见、不可点、不进 Tab 序、不参与可视布局。 */
   .cd-tabs__measure {
@@ -981,7 +981,7 @@
   }
   .cd-tabs--bottom .cd-tabs__content {
     padding-block-start: 0;
-    padding-block-end: var(--cd-spacing-3);
+    padding-block-end: var(--cd-spacing-base-tight);
   }
 
   /* --- tabPosition: left / right（bar 竖向在侧）--- */
@@ -1042,13 +1042,13 @@
   .cd-tabs--right .cd-tabs__content {
     flex: 1 1 auto;
     padding-block-start: 0;
-    padding-inline: var(--cd-spacing-4);
+    padding-inline: var(--cd-spacing-base);
   }
   .cd-tabs__tab {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     white-space: nowrap;
   }
   .cd-tabs--card .cd-tabs__tab {
@@ -1080,7 +1080,7 @@
   .cd-tabs__tab-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-tabs__tab--disabled .cd-tabs__tab-btn {
     color: var(--cd-tabs-tab-color-disabled);
@@ -1090,7 +1090,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-end: var(--cd-spacing-2);
+    margin-inline-end: var(--cd-spacing-tight);
     padding: 0;
     border: none;
     background: transparent;
@@ -1103,10 +1103,10 @@
   .cd-tabs__close:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-tabs__content {
-    padding-block-start: var(--cd-spacing-3);
+    padding-block-start: var(--cd-spacing-base-tight);
   }
   /* tabBarExtraContent：标签栏右侧额外内容，靠右对齐 */
   .cd-tabs__extra {
@@ -1114,7 +1114,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-inline-start: var(--cd-spacing-2);
+    padding-inline-start: var(--cd-spacing-tight);
   }
   /* tabPaneMotion=false：禁用面板切换过渡动画 */
   .cd-tabs--no-motion .cd-tabs__content {

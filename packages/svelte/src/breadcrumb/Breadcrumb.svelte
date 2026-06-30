@@ -289,14 +289,14 @@
     color: var(--cd-breadcrumb-color);
   }
   .cd-breadcrumb--small {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-breadcrumb--large {
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   /* compact=false：宽松模式，字号略大、项间距增加 */
   .cd-breadcrumb--loose {
-    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-font-size-3));
+    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-font-size-header-6));
     letter-spacing: var(--cd-breadcrumb-loose-letter-spacing, 0.01em);
   }
   .cd-breadcrumb--loose .cd-breadcrumb__list {
@@ -334,7 +334,7 @@
     color: var(--cd-breadcrumb-color-link);
     text-decoration: none;
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-breadcrumb :global(.cd-breadcrumb__link:hover),
   .cd-breadcrumb :global(.cd-breadcrumb__text:hover) {
@@ -359,14 +359,14 @@
     align-items: center;
     justify-content: center;
     min-inline-size: 1.5em;
-    padding: 0 var(--cd-spacing-1);
+    padding: 0 var(--cd-spacing-extra-tight);
     border: none;
     background: transparent;
     color: var(--cd-breadcrumb-color-link);
     font: inherit;
     line-height: 1;
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-breadcrumb__more:hover {
     background: var(--cd-color-fill-1);
@@ -399,7 +399,7 @@
   .cd-breadcrumb__more-list {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     margin: 0;
     padding: 0;
     list-style: none;

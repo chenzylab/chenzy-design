@@ -404,7 +404,7 @@
   .cd-input {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-input-height-default);
     padding-inline: var(--cd-input-padding-x);
@@ -417,11 +417,11 @@
   }
   .cd-input--small {
     block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-input--large {
     block-size: var(--cd-input-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-input:focus-within {
     border-color: var(--cd-input-border-active);
@@ -482,7 +482,7 @@
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-input__action:hover {
     color: var(--cd-color-text-0);
@@ -494,7 +494,7 @@
   .cd-input__count {
     flex: 0 0 auto;
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     white-space: nowrap;
   }
   @media (prefers-reduced-motion: reduce) {

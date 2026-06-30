@@ -1316,7 +1316,7 @@
   .cd-cascader__trigger {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     min-block-size: var(--cd-select-height-default);
     padding-inline: var(--cd-select-padding-x);
@@ -1405,7 +1405,7 @@
     max-block-size: 16rem;
   }
   .cd-cascader__search {
-    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     border-block-end: 1px solid var(--cd-cascader-column-border);
   }
   .cd-cascader__search-input {
@@ -1417,7 +1417,7 @@
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
     font: inherit;
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-cascader__search-input:focus-visible {
     outline: none;
@@ -1427,7 +1427,7 @@
   /* 搜索结果：扁平路径列表（单列纵向滚动） */
   .cd-cascader__flat {
     margin: 0;
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     padding-inline: 0;
     list-style: none;
     max-block-size: 16rem;
@@ -1449,7 +1449,7 @@
   }
   .cd-cascader__column {
     margin: 0;
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     padding-inline: 0;
     list-style: none;
     overflow-y: auto;
@@ -1463,7 +1463,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     block-size: var(--cd-tree-node-height);
     padding-inline: var(--cd-tree-node-padding-x);
     cursor: pointer;
@@ -1516,7 +1516,7 @@
   .cd-cascader__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     align-items: center;
     min-inline-size: 0;
   }
@@ -1530,7 +1530,7 @@
     block-size: 12px;
     border: 2px solid var(--cd-tree-expand-icon-color, currentColor);
     border-block-start-color: transparent;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     animation: cd-cascader-spin 0.7s linear infinite;
   }
   @keyframes cd-cascader-spin {

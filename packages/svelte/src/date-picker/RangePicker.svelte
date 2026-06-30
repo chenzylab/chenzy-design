@@ -548,7 +548,7 @@
   .cd-range-picker__trigger {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-input-height-default);
     padding-inline: var(--cd-input-padding-x);
@@ -563,11 +563,11 @@
   }
   .cd-range-picker--small .cd-range-picker__trigger {
     block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-range-picker--large .cd-range-picker__trigger {
     block-size: var(--cd-input-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-range-picker__trigger:focus-visible {
     outline: none;
@@ -628,14 +628,14 @@
   .cd-range-picker__clear:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-range-picker__panel {
     position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
+    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
     inset-inline-start: 0;
     z-index: var(--cd-date-picker-panel-z);
-    padding: var(--cd-spacing-3);
+    padding: var(--cd-spacing-base-tight);
     background: var(--cd-date-picker-panel-bg);
     border-radius: var(--cd-date-picker-panel-radius);
     box-shadow: var(--cd-date-picker-panel-shadow);
@@ -647,7 +647,7 @@
   .cd-range-picker__panels {
     display: flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-4);
+    gap: var(--cd-spacing-base);
   }
   .cd-range-picker__month {
     flex: 0 0 auto;
@@ -664,8 +664,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--cd-spacing-2);
-    margin-block-end: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
+    margin-block-end: var(--cd-spacing-tight);
   }
   .cd-range-picker__title {
     flex: 1 1 auto;
@@ -714,7 +714,7 @@
     justify-content: center;
     block-size: var(--cd-date-picker-cell-size);
     color: var(--cd-date-picker-weekday-color);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-range-picker__cell {
     position: relative;

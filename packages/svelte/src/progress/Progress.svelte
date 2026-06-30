@@ -277,7 +277,7 @@
   .cd-progress--line {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2, 8px);
+    gap: var(--cd-spacing-tight, 8px);
     inline-size: 100%;
   }
 

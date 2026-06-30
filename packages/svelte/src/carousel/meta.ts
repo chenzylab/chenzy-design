@@ -58,11 +58,11 @@ export const meta = {
     '--cd-carousel-arrow-bg',
     '--cd-carousel-arrow-color',
     '--cd-carousel-arrow-size',
-    '--cd-radius-full',
+    '--cd-border-radius-full',
     '--cd-focus-ring',
     '--cd-motion-duration-fast',
     '--cd-motion-ease-standard',
-    '--cd-spacing-2',
+    '--cd-spacing-tight',
   ],
   examples: [
     {

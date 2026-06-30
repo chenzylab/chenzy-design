@@ -40,5 +40,5 @@ export const meta = {
     keyboard: ['Enter', 'Space'],
     notes: ['原生 button role=switch', 'aria-checked 反映状态', 'loading 时 aria-busy'],
   },
-  tokens: ['--cd-switch-*', '--cd-focus-ring', '--cd-motion-*', '--cd-radius-full'],
+  tokens: ['--cd-switch-*', '--cd-focus-ring', '--cd-motion-*', '--cd-border-radius-full'],
 } as const;

@@ -133,7 +133,7 @@
     border: 0;
     background: transparent;
     cursor: pointer;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
   .cd-avatar-group__more-btn:focus-visible {
     outline: 2px solid var(--cd-color-primary);

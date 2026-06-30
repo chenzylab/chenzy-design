@@ -316,7 +316,7 @@
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
 
   .cd-banner__title {

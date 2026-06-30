@@ -18,5 +18,5 @@ export const calendarTokens = {
   'calendar-disabled-bg': 'var(--cd-color-fill-0)',
   'calendar-more-color': 'var(--cd-color-text-2)',
   'calendar-cell-min-h': '96px',
-  'calendar-radius': 'var(--cd-radius-2)',
+  'calendar-radius': 'var(--cd-border-radius-medium)',
 } as const;

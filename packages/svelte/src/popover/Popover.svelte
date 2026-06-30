@@ -529,14 +529,14 @@
   /* 关闭按钮：绝对定位于浮层右上角 */
   .cd-popover__close-btn {
     position: absolute;
-    inset-block-start: var(--cd-spacing-2);
-    inset-inline-end: var(--cd-spacing-2);
+    inset-block-start: var(--cd-spacing-tight);
+    inset-inline-end: var(--cd-spacing-tight);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--cd-spacing-1);
+    padding: var(--cd-spacing-extra-tight);
     border: none;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
@@ -555,17 +555,17 @@
   .cd-popover__footer {
     display: flex;
     justify-content: flex-end;
-    gap: var(--cd-spacing-2);
-    margin-block-start: var(--cd-spacing-3);
+    gap: var(--cd-spacing-tight);
+    margin-block-start: var(--cd-spacing-base-tight);
   }
   .cd-popover__btn {
     display: inline-flex;
     align-items: center;
-    padding: var(--cd-spacing-1) var(--cd-spacing-3);
-    border-radius: var(--cd-radius-1);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
+    border-radius: var(--cd-border-radius-small);
     border: 1px solid transparent;
     font: inherit;
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
     cursor: pointer;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
@@ -592,8 +592,8 @@
   }
 
   .cd-popover__title {
-    margin-block-end: var(--cd-spacing-2);
-    padding-block-end: var(--cd-spacing-2);
+    margin-block-end: var(--cd-spacing-tight);
+    padding-block-end: var(--cd-spacing-tight);
     border-block-end: 1px solid var(--cd-popover-title-border);
     color: var(--cd-popover-title-color);
     font-weight: var(--cd-font-weight-medium, 600);

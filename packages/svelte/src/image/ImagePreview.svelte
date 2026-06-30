@@ -216,7 +216,7 @@
     block-size: 36px;
     padding: 0;
     border: 0;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-image-mask-bg);
     color: var(--cd-image-mask-color);
     font-size: 24px;
@@ -237,7 +237,7 @@
     block-size: 44px;
     padding: 0;
     border: 0;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-image-mask-bg);
     color: var(--cd-image-mask-color);
     font-size: 28px;
@@ -268,13 +268,13 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
-    padding: var(--cd-spacing-2);
-    border-radius: var(--cd-radius-full);
+    gap: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-tight);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-image-mask-bg);
   }
   .cd-image__preview-counter {
-    padding-inline: var(--cd-spacing-2);
+    padding-inline: var(--cd-spacing-tight);
     color: var(--cd-image-mask-color);
     font-size: 13px;
     line-height: 1;
@@ -287,7 +287,7 @@
     block-size: 32px;
     padding: 0;
     border: 0;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: transparent;
     color: var(--cd-image-mask-color);
     font-size: 18px;

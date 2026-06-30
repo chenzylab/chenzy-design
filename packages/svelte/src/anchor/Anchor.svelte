@@ -321,7 +321,7 @@
   .cd-anchor__link:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-anchor__link--active {
     color: var(--cd-anchor-link-color-active);

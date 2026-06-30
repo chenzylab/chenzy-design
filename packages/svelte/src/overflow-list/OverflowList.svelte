@@ -415,9 +415,9 @@
 
 <style>
   .cd-overflow-list {
-    --cd-overflow-list-gap: var(--cd-spacing-2, 8px);
-    --cd-overflow-list-gap-small: var(--cd-spacing-1, 4px);
-    --cd-overflow-list-gap-large: var(--cd-spacing-3, 12px);
+    --cd-overflow-list-gap: var(--cd-spacing-tight, 8px);
+    --cd-overflow-list-gap-small: var(--cd-spacing-extra-tight, 4px);
+    --cd-overflow-list-gap-large: var(--cd-spacing-base-tight, 12px);
     --cd-overflow-list-overflow-color: var(--cd-color-text-1, #4e5969);
     --cd-overflow-list-overflow-color-hover: var(--cd-color-text-0, #1d2129);
     --cd-overflow-list-overflow-bg: var(--cd-color-fill-0, #f2f3f5);
