@@ -135,7 +135,6 @@ export const meta = {
     '--cd-menu-item-color-disabled',
     '--cd-menu-item-bg-hover',
     '--cd-menu-item-bg-selected',
-    '--cd-menu-item-indicator',
     '--cd-menu-submenu-arrow-color',
     '--cd-focus-ring',
     '--cd-motion-*',

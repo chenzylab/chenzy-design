@@ -658,7 +658,7 @@
     display: flex;
   }
   /* 水平导航配色对齐 Semi：默认项文字浅(text-2)、hover 文字变深(text-1) 且无背景、
-     选中文字最深(text-0) + 无背景块、仅底部 2px 下划线指示。 */
+     选中文字最深(text-0) + 无背景块、无下划线（Semi 顶部导航选中态仅靠文字深浅区分）。 */
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link),
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title) {
     inline-size: auto;
@@ -673,18 +673,6 @@
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected) {
     background: transparent;
     color: var(--cd-color-text-0);
-  }
-  /* 选中下划线：压在菜单底部边框上（-1px 抵消 border-block-end）对齐成一条线；
-     左右内缩到 item 内边距，使下划线对齐文字内容区（不盖到 padding 留白），更精致。 */
-  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected)::before {
-    content: '';
-    position: absolute;
-    inset-block: auto -1px;
-    inset-inline: var(--cd-menu-item-padding);
-    inline-size: auto;
-    block-size: 2px;
-    background: var(--cd-menu-item-indicator);
-    border-radius: 1px;
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
   /* 折叠图标轨：撑满容器宽度（如 Nav/Sider 的折叠宽度），使图标居中、选中背景填满。
