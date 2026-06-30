@@ -9,76 +9,194 @@
  */
 import { palette } from '../global/color.js';
 
-/** light theme semantic mapping */
+/**
+ * light theme semantic mapping — 1:1 对齐 Semi global.scss（semi-theme-default）。
+ * 状态色四档：base / hover / active / disabled + 浅版 light-default/hover/active。
+ * 未纳入（无组件消费，避免膨胀）：data-*（vchart）、ai-*、highlight、default-*。
+ */
 export const aliasLight = {
-  // brand
+  // —— primary（主要，blue）——
   'color-primary': palette['blue-5'],
   'color-primary-hover': palette['blue-6'],
   'color-primary-active': palette['blue-7'],
-  // 浅蓝（选中态背景，对齐 Semi primary-light-default）：被 Menu/Table/Tree/Calendar/Banner 选中态引用
+  'color-primary-disabled': palette['blue-2'],
   'color-primary-light-default': palette['blue-0'],
-  // status (Semi: success=green-5, warning=orange-5, danger=red-5)
-  'color-success': palette['green-5'],
-  'color-warning': palette['orange-5'],
-  'color-danger': palette['red-5'],
+  'color-primary-light-hover': palette['blue-1'],
+  'color-primary-light-active': palette['blue-2'],
+  // —— secondary（次要，Semi = light-blue 青蓝）——
+  'color-secondary': '#0095ee', // light-blue-5
+  'color-secondary-hover': '#007bca', // light-blue-6
+  'color-secondary-active': '#0063a7', // light-blue-7
+  'color-secondary-disabled': '#95d8f8', // light-blue-2
+  'color-secondary-light-default': '#e9f7fd', // light-blue-0
+  'color-secondary-light-hover': '#c9ecfc', // light-blue-1
+  'color-secondary-light-active': '#95d8f8', // light-blue-2
+  // —— tertiary（第三，grey）——
+  'color-tertiary': palette['grey-5'],
+  'color-tertiary-hover': palette['grey-6'],
+  'color-tertiary-active': palette['grey-7'],
+  'color-tertiary-light-default': palette['grey-0'],
+  'color-tertiary-light-hover': palette['grey-1'],
+  'color-tertiary-light-active': palette['grey-2'],
+  // —— info（信息，blue）——
   'color-info': palette['blue-5'],
+  'color-info-hover': palette['blue-6'],
+  'color-info-active': palette['blue-7'],
+  'color-info-disabled': palette['blue-2'],
+  'color-info-light-default': palette['blue-0'],
+  'color-info-light-hover': palette['blue-1'],
+  'color-info-light-active': palette['blue-2'],
+  // —— success（成功，green）——
+  'color-success': palette['green-5'],
+  'color-success-hover': palette['green-6'],
+  'color-success-active': palette['green-7'],
+  'color-success-disabled': palette['green-2'],
+  'color-success-light-default': palette['green-0'],
+  'color-success-light-hover': palette['green-1'],
+  'color-success-light-active': palette['green-2'],
+  // —— warning（警示，orange）——
+  'color-warning': palette['orange-5'],
+  'color-warning-hover': palette['orange-6'],
+  'color-warning-active': palette['orange-7'],
+  'color-warning-disabled': palette['orange-2'],
+  'color-warning-light-default': palette['orange-0'],
+  'color-warning-light-hover': palette['orange-1'],
+  'color-warning-light-active': palette['orange-2'],
+  // —— danger（危险，red）——
+  'color-danger': palette['red-5'],
+  'color-danger-hover': palette['red-6'],
+  'color-danger-active': palette['red-7'],
+  'color-danger-disabled': palette['red-2'],
+  'color-danger-light-default': palette['red-0'],
+  'color-danger-light-hover': palette['red-1'],
+  'color-danger-light-active': palette['red-2'],
+  // —— link（链接，blue）——
   'color-link': palette['blue-5'],
-  // neutral semantic（secondary/tertiary type 的语义色，与 Button --btn-hue 同源）：
-  // secondary=强中性（深灰），tertiary=弱中性（更浅灰）
-  'color-secondary': palette['grey-9'],
-  'color-tertiary': 'rgba(28, 31, 35, 0.62)',
-  // text — Semi uses grey-9 with opacity: 100% / 80% / 62% / 35%
+  'color-link-hover': palette['blue-6'],
+  'color-link-active': palette['blue-7'],
+  'color-link-visited': palette['blue-5'],
+  // —— disabled（禁用态）——
+  'color-disabled-text': 'rgba(28, 31, 35, 0.35)',
+  'color-disabled-border': palette['grey-1'],
+  'color-disabled-bg': palette['grey-1'],
+  'color-disabled-fill': 'rgba(46, 50, 56, 0.04)',
+  // text — Semi grey-9 + 不透明度 100/80/62/35
   'color-text-0': palette['grey-9'],
   'color-text-1': 'rgba(28, 31, 35, 0.8)',
   'color-text-2': 'rgba(28, 31, 35, 0.62)',
   'color-text-3': 'rgba(28, 31, 35, 0.35)',
   'color-text-inverse': '#ffffff',
-  // background — 对齐 Semi：浅色 4 层背景全为纯白，层级靠 border/fill 半透明叠加 + 阴影区分
+  // background — Semi 浅色 5 层全白，层级靠 border/fill 半透明 + 阴影
   'color-bg-0': '#ffffff',
   'color-bg-1': '#ffffff',
   'color-bg-2': '#ffffff',
   'color-bg-3': '#ffffff',
-  // border / fill — 对齐 Semi：border=rgba(grey-9,.08)，fill=rgba(grey-8,.05/.09/.13)
+  'color-bg-4': '#ffffff',
+  'color-nav-bg': '#ffffff',
+  'color-bg-inverse': palette['grey-9'],
+  'color-overlay-bg': 'rgba(22, 22, 26, 0.6)',
+  // border / fill / shadow — 对齐 Semi
   'color-border': 'rgba(28, 31, 35, 0.08)',
   'color-fill-0': 'rgba(46, 50, 56, 0.05)',
   'color-fill-1': 'rgba(46, 50, 56, 0.09)',
   'color-fill-2': 'rgba(46, 50, 56, 0.13)',
+  'color-shadow': 'rgba(0, 0, 0, 0.04)',
   // focus
   'color-focus': palette['blue-5'],
+  'color-focus-border': palette['blue-5'],
   'focus-ring': `0 0 0 2px ${palette['blue-2']}`,
 } as const;
 
 export type AliasKey = keyof typeof aliasLight;
 
-/** dark theme: remap a subset; unspecified keys inherit light */
+/**
+ * dark theme — 1:1 对齐 Semi 暗色（palette 在暗色下整体反转：blue-5=84,169,255 …）。
+ * 未指定的键继承 light。状态浅版在暗色用 rgba(主色, .2/.3/.4)。
+ */
 export const aliasDark: Partial<Record<AliasKey, string>> = {
-  // text — Semi dark uses grey-0 (#f9f9f9) with opacity
+  // text — Semi 暗色 grey-9=#f9f9f9 + 不透明度
   'color-text-0': '#f9f9f9',
   'color-text-1': 'rgba(249, 249, 249, 0.8)',
-  'color-text-2': 'rgba(249, 249, 249, 0.6)',
+  'color-text-2': 'rgba(249, 249, 249, 0.62)',
   'color-text-3': 'rgba(249, 249, 249, 0.35)',
   'color-text-inverse': '#ffffff',
-  // brand / status — Semi dark brightens these for visibility on dark surfaces
-  'color-primary': '#54a9ff',
-  'color-primary-hover': '#3295fb',
-  'color-primary-active': '#65b2fc',
-  // 暗色浅蓝选中背景：用低透明度品牌蓝在深色面上做轻提亮（对齐 Semi 暗色 primary-light）
+  // —— primary（暗色 blue 反转）——
+  'color-primary': 'rgb(84, 169, 255)', // blue-5
+  'color-primary-hover': 'rgb(127, 193, 255)', // blue-6
+  'color-primary-active': 'rgb(169, 215, 255)', // blue-7
+  'color-primary-disabled': 'rgb(19, 92, 184)', // blue-2
   'color-primary-light-default': 'rgba(84, 169, 255, 0.2)',
-  'color-info': '#54a9ff',
-  'color-link': '#54a9ff',
-  'color-success': '#5dc264',
-  'color-warning': '#ffae43',
-  'color-danger': '#fc725a',
-  // neutral semantic（暗色：用亮灰阶，对齐 dark text-0 / text-2）
-  'color-secondary': '#f9f9f9',
-  'color-tertiary': 'rgba(249, 249, 249, 0.6)',
-  // surfaces — 对齐 Semi 暗色 bg/border/fill
+  'color-primary-light-hover': 'rgba(84, 169, 255, 0.3)',
+  'color-primary-light-active': 'rgba(84, 169, 255, 0.4)',
+  // —— secondary（暗色 light-blue）——
+  'color-secondary': 'rgb(72, 179, 245)',
+  'color-secondary-hover': 'rgb(120, 199, 247)',
+  'color-secondary-active': 'rgb(168, 219, 250)',
+  'color-secondary-disabled': 'rgb(3, 102, 169)',
+  'color-secondary-light-default': 'rgba(72, 179, 245, 0.2)',
+  'color-secondary-light-hover': 'rgba(72, 179, 245, 0.3)',
+  'color-secondary-light-active': 'rgba(72, 179, 245, 0.4)',
+  // —— tertiary（暗色 grey 反转）——
+  'color-tertiary': 'rgb(136, 141, 146)', // grey-5
+  'color-tertiary-hover': 'rgb(167, 171, 176)', // grey-6
+  'color-tertiary-active': 'rgb(198, 202, 205)', // grey-7
+  'color-tertiary-light-default': 'rgb(28, 31, 35)', // grey-0
+  'color-tertiary-light-hover': 'rgb(46, 50, 56)', // grey-1
+  'color-tertiary-light-active': 'rgb(65, 70, 76)', // grey-2
+  // —— info / success / warning / danger（暗色主色反转 + 浅版半透明）——
+  'color-info': 'rgb(84, 169, 255)',
+  'color-info-hover': 'rgb(127, 193, 255)',
+  'color-info-active': 'rgb(169, 215, 255)',
+  'color-info-disabled': 'rgb(19, 92, 184)',
+  'color-info-light-default': 'rgba(84, 169, 255, 0.2)',
+  'color-info-light-hover': 'rgba(84, 169, 255, 0.3)',
+  'color-info-light-active': 'rgba(84, 169, 255, 0.4)',
+  'color-success': 'rgb(93, 194, 100)',
+  'color-success-hover': 'rgb(127, 209, 132)',
+  'color-success-active': 'rgb(166, 225, 168)',
+  'color-success-disabled': 'rgb(39, 119, 49)',
+  'color-success-light-default': 'rgba(93, 194, 100, 0.2)',
+  'color-success-light-hover': 'rgba(93, 194, 100, 0.3)',
+  'color-success-light-active': 'rgba(93, 194, 100, 0.4)',
+  'color-warning': 'rgb(255, 174, 67)',
+  'color-warning-hover': 'rgb(255, 199, 114)',
+  'color-warning-active': 'rgb(255, 221, 161)',
+  'color-warning-disabled': 'rgb(170, 80, 10)',
+  'color-warning-light-default': 'rgba(255, 174, 67, 0.2)',
+  'color-warning-light-hover': 'rgba(255, 174, 67, 0.3)',
+  'color-warning-light-active': 'rgba(255, 174, 67, 0.4)',
+  'color-danger': 'rgb(252, 114, 90)',
+  'color-danger-hover': 'rgb(253, 153, 131)',
+  'color-danger-active': 'rgb(253, 190, 172)',
+  'color-danger-disabled': 'rgb(180, 32, 25)',
+  'color-danger-light-default': 'rgba(252, 114, 90, 0.2)',
+  'color-danger-light-hover': 'rgba(252, 114, 90, 0.3)',
+  'color-danger-light-active': 'rgba(252, 114, 90, 0.4)',
+  // —— link ——
+  'color-link': 'rgb(84, 169, 255)',
+  'color-link-hover': 'rgb(127, 193, 255)',
+  'color-link-active': 'rgb(169, 215, 255)',
+  'color-link-visited': 'rgb(84, 169, 255)',
+  // —— disabled ——
+  'color-disabled-text': 'rgba(249, 249, 249, 0.35)',
+  'color-disabled-border': 'rgb(46, 50, 56)', // dark grey-1
+  'color-disabled-bg': 'rgb(46, 50, 56)',
+  'color-disabled-fill': 'rgba(230, 232, 234, 0.04)', // dark grey-8
+  // surfaces — Semi 暗色 bg/border/fill
   'color-bg-0': '#16161a',
   'color-bg-1': '#232429',
   'color-bg-2': '#35363c',
   'color-bg-3': '#43444a',
+  'color-bg-4': '#4a4d56',
+  'color-nav-bg': '#232429',
+  'color-bg-inverse': '#f9f9f9',
+  'color-overlay-bg': 'rgba(22, 22, 26, 0.6)',
   'color-border': 'rgba(255, 255, 255, 0.08)',
   'color-fill-0': 'rgba(255, 255, 255, 0.12)',
   'color-fill-1': 'rgba(255, 255, 255, 0.16)',
   'color-fill-2': 'rgba(255, 255, 255, 0.2)',
+  'color-shadow': 'rgba(0, 0, 0, 0.04)',
+  // focus
+  'color-focus': 'rgb(84, 169, 255)',
+  'color-focus-border': 'rgb(84, 169, 255)',
 };
