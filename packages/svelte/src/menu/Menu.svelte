@@ -674,11 +674,14 @@
     background: transparent;
     color: var(--cd-color-text-0);
   }
+  /* 选中下划线：压在菜单底部边框上（-1px 抵消 border-block-end）对齐成一条线；
+     左右内缩到 item 内边距，使下划线对齐文字内容区（不盖到 padding 留白），更精致。 */
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected)::before {
-    inset-block: auto 0;
-    inset-inline: 0;
+    inset-block: auto -1px;
+    inset-inline: var(--cd-menu-item-padding);
     inline-size: auto;
     block-size: 2px;
+    border-radius: 1px;
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
   /* 折叠图标轨：撑满容器宽度（如 Nav/Sider 的折叠宽度），使图标居中、选中背景填满。
