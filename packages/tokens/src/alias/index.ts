@@ -33,15 +33,16 @@ export const aliasLight = {
   'color-text-2': 'rgba(28, 31, 35, 0.62)',
   'color-text-3': 'rgba(28, 31, 35, 0.35)',
   'color-text-inverse': '#ffffff',
-  // background — Semi bg-0 is white; keep our light-grey elevation layering above it
+  // background — 对齐 Semi：浅色 4 层背景全为纯白，层级靠 border/fill 半透明叠加 + 阴影区分
   'color-bg-0': '#ffffff',
-  'color-bg-1': palette['grey-0'],
-  'color-bg-2': palette['grey-1'],
-  'color-bg-3': palette['grey-2'],
-  // border / fill — Semi fill-0 is a low-alpha dark wash
-  'color-border': palette['grey-1'],
+  'color-bg-1': '#ffffff',
+  'color-bg-2': '#ffffff',
+  'color-bg-3': '#ffffff',
+  // border / fill — 对齐 Semi：border=rgba(grey-9,.08)，fill=rgba(grey-8,.05/.09/.13)
+  'color-border': 'rgba(28, 31, 35, 0.08)',
   'color-fill-0': 'rgba(46, 50, 56, 0.05)',
   'color-fill-1': 'rgba(46, 50, 56, 0.09)',
+  'color-fill-2': 'rgba(46, 50, 56, 0.13)',
   // focus
   'color-focus': palette['blue-5'],
   'focus-ring': `0 0 0 2px ${palette['blue-2']}`,
@@ -71,12 +72,13 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   // neutral semantic（暗色：用亮灰阶，对齐 dark text-0 / text-2）
   'color-secondary': '#f9f9f9',
   'color-tertiary': 'rgba(249, 249, 249, 0.6)',
-  // surfaces
+  // surfaces — 对齐 Semi 暗色 bg/border/fill
   'color-bg-0': '#16161a',
   'color-bg-1': '#232429',
-  'color-bg-2': '#2e3238',
-  'color-bg-3': '#41464c',
-  'color-border': '#41464c',
-  'color-fill-0': 'rgba(249, 249, 249, 0.08)',
-  'color-fill-1': 'rgba(249, 249, 249, 0.12)',
+  'color-bg-2': '#35363c',
+  'color-bg-3': '#43444a',
+  'color-border': 'rgba(255, 255, 255, 0.08)',
+  'color-fill-0': 'rgba(255, 255, 255, 0.12)',
+  'color-fill-1': 'rgba(255, 255, 255, 0.16)',
+  'color-fill-2': 'rgba(255, 255, 255, 0.2)',
 };
