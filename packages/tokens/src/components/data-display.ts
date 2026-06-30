@@ -12,11 +12,14 @@ export const dataDisplayTokens = {
   'descriptions-label-bg': 'var(--cd-color-fill-0)',
   'descriptions-cell-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',
   'descriptions-row-gap': 'var(--cd-spacing-base-tight)',
-  // Collapse
-  'collapse-header-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-base)',
+  // Collapse（对齐 Semi：header 字重 bold、header padding tight、content padding base）
+  'collapse-header-padding': 'var(--cd-spacing-tight)', // 对齐 Semi header padding 8（原 12/16）
   'collapse-header-color': 'var(--cd-color-text-0)',
+  'collapse-header-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 标题字重 bold
   'collapse-header-bg-hover': 'var(--cd-color-fill-0)',
-  'collapse-content-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-base)',
+  'collapse-header-bg-active': 'var(--cd-color-fill-1)', // 对齐 Semi header 按下背景
+  'collapse-content-padding':
+    'var(--cd-spacing-extra-tight) var(--cd-spacing-base) var(--cd-spacing-tight)', // 对齐 Semi content padding（top 4 / x 16 / bottom 8）
   'collapse-content-color': 'var(--cd-color-text-1)',
   'collapse-border': 'var(--cd-color-border)',
   'collapse-arrow-color': 'var(--cd-color-text-2)',

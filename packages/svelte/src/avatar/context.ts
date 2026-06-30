@@ -1,7 +1,13 @@
 import { getContext, setContext } from 'svelte';
 
 export type AvatarShape = 'circle' | 'square';
-export type AvatarSizeEnum = 'extra-small' | 'small' | 'default' | 'large' | 'extra-large';
+export type AvatarSizeEnum =
+  | 'extra-small'
+  | 'small'
+  | 'default'
+  | 'medium'
+  | 'large'
+  | 'extra-large';
 
 export interface AvatarGroupContext {
   // getters keep the shared config reactive to Group prop changes across the
