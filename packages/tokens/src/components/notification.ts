@@ -5,7 +5,7 @@ export const notificationTokens = {
   'notification-color-title': 'var(--cd-color-text-0)',
   'notification-color-content': 'var(--cd-color-text-1)',
   'notification-border': 'var(--cd-color-border)',
-  'notification-radius': 'var(--cd-border-radius-large)',
+  'notification-radius': 'var(--cd-border-radius-medium)', // 对齐 Semi（large 12 → medium 6）
   'notification-shadow': 'var(--cd-shadow-elevated)',
   'notification-padding': 'var(--cd-spacing-base)',
   'notification-gap': 'var(--cd-spacing-base-tight)',
@@ -16,6 +16,7 @@ export const notificationTokens = {
   'notification-close-color': 'var(--cd-color-text-2)',
   'notification-close-color-hover': 'var(--cd-color-text-0)',
   'notification-title-size': 'var(--cd-font-size-regular)',
+  'notification-title-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 标题字重 bold
   'notification-content-size': 'var(--cd-font-size-small)',
   'notification-z': '1100',
   'notification-offset': 'var(--cd-spacing-loose)',

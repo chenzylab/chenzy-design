@@ -248,7 +248,7 @@
 
   .cd-notification-item__title {
     font-size: var(--cd-notification-title-size);
-    font-weight: 600;
+    font-weight: var(--cd-notification-title-weight);
     line-height: 1.4;
     color: var(--cd-notification-color-title);
     overflow-wrap: anywhere;

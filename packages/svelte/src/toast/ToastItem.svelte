@@ -140,6 +140,7 @@
     background: var(--cd-toast-bg);
     color: var(--cd-toast-color-text);
     font-size: var(--cd-toast-font-size);
+    font-weight: var(--cd-toast-font-weight);
     line-height: 1.5;
     border-radius: var(--cd-toast-radius);
     box-shadow: var(--cd-toast-shadow);

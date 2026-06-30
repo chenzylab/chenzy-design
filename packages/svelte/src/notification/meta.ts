@@ -93,6 +93,7 @@ export const meta = {
     '--cd-notification-close-color',
     '--cd-notification-close-color-hover',
     '--cd-notification-title-size',
+    '--cd-notification-title-weight',
     '--cd-notification-content-size',
     '--cd-notification-z',
     '--cd-notification-offset',

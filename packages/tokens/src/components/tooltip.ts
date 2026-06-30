@@ -6,8 +6,8 @@ export const tooltipTokens = {
   'tooltip-bg-light': 'var(--cd-color-bg-0)',
   'tooltip-color-light': 'var(--cd-color-text-0)',
   'tooltip-radius': 'var(--cd-border-radius-medium)',
-  'tooltip-padding': 'var(--cd-spacing-extra-tight) var(--cd-spacing-tight)',
-  'tooltip-font-size': 'var(--cd-font-size-small)',
+  'tooltip-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', // 对齐 Semi（4/8 → 8/12）
+  'tooltip-font-size': 'var(--cd-font-size-regular)', // 对齐 Semi（small 12 → regular 14）
   'tooltip-shadow': 'var(--cd-shadow-elevated)',
   'tooltip-z': 'var(--cd-z-tooltip)',
   'tooltip-arrow-size': '6px',
@@ -17,7 +17,7 @@ export const tooltipTokens = {
   // Popover
   'popover-bg': 'var(--cd-color-bg-0)',
   'popover-color': 'var(--cd-color-text-0)',
-  'popover-radius': 'var(--cd-border-radius-large)',
+  'popover-radius': 'var(--cd-border-radius-medium)', // 对齐 Semi（large 12 → medium 6）
   // size 档内边距：small/default/large（spec §5）。popover-padding 兼容旧别名，等同 default。
   'popover-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-base)',
   'popover-padding-small': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',

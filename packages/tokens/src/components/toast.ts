@@ -10,9 +10,10 @@ export const toastTokens = {
   'toast-color-close-hover': 'var(--cd-color-text-0)',
   'toast-radius': 'var(--cd-border-radius-medium)',
   'toast-shadow': 'var(--cd-shadow-elevated)',
-  'toast-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-base)',
+  'toast-padding': 'var(--cd-spacing-base-tight) var(--cd-spacing-tight)', // 对齐 Semi（X 16 → 8）
   'toast-gap': 'var(--cd-spacing-tight)',
   'toast-font-size': 'var(--cd-font-size-regular)',
+  'toast-font-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 文本字重 bold
   'toast-max-width': '420px',
   'toast-min-width': '240px',
   'toast-stack-gap': 'var(--cd-spacing-tight)',
