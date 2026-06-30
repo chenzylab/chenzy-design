@@ -662,8 +662,11 @@
     inline-size: auto;
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
+  /* 折叠图标轨：撑满容器宽度（如 Nav/Sider 的折叠宽度），使图标居中、选中背景填满。
+     min 用 token 兜底，避免容器未限宽时塌成 0。 */
   .cd-menu--collapsed {
-    inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-2)));
+    inline-size: 100%;
+    min-inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-2)));
   }
   .cd-menu__item {
     margin: 0;

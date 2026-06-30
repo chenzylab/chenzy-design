@@ -68,7 +68,12 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
 
 describe('Sider 受控折叠 toggle 往返（回归 #350 后）', () => {
   it('受控模式下触发器可反复折叠/展开（不卡在折叠态）', async () => {
-    const { container } = renderWithLocale(SiderControlledFixture, {});
+    // 夹具无 props，类型为 Record<string, never>，与 helper 的 Record<string, unknown> 不兼容；
+    // 测试场景下安全 cast。
+    const { container } = renderWithLocale(
+      SiderControlledFixture as unknown as Parameters<typeof renderWithLocale>[0],
+      {},
+    );
     const sider = container.querySelector('.cd-layout-sider')!;
     const trigger = container.querySelector<HTMLButtonElement>('.cd-layout-sider__trigger')!;
     // 初始展开

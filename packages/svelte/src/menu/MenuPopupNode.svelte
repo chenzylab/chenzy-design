@@ -476,6 +476,14 @@
     gap: 0;
     padding-inline: 0;
   }
+  /* 折叠态项被 Tooltip 包裹，其触发器默认 inline-block 会收缩到图标宽度，
+     导致选中背景/点击区只有 16px。强制 Tooltip 链路撑满 li 宽度，
+     使图标居中、选中背景填满整条图标轨。 */
+  .cd-menu__item :global(.cd-tooltip),
+  .cd-menu__item :global(.cd-tooltip__trigger) {
+    display: block;
+    inline-size: 100%;
+  }
   .cd-menu__check {
     display: inline-flex;
     align-items: center;
