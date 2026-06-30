@@ -583,8 +583,8 @@
     border-color: var(--cd-color-primary, #165dff);
   }
   .cd-popover__btn--ok:hover {
-    background: var(--cd-color-primary-6, #4080ff);
-    border-color: var(--cd-color-primary-6, #4080ff);
+    background: var(--cd-color-primary-hover);
+    border-color: var(--cd-color-primary-hover);
   }
   .cd-popover__btn:focus-visible {
     outline: none;
