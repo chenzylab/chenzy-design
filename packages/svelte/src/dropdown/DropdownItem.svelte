@@ -77,7 +77,7 @@
   .cd-dropdown__item {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     margin: 0;
     padding: var(--cd-dropdown-item-padding);

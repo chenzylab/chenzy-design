@@ -64,5 +64,5 @@ export const meta = {
       'extra 经 aria-describedby 关联',
     ],
   },
-  tokens: ['--cd-radio-*', '--cd-focus-ring', '--cd-motion-*', '--cd-spacing-*', '--cd-radius-full'],
+  tokens: ['--cd-radio-*', '--cd-focus-ring', '--cd-motion-*', '--cd-spacing-*', '--cd-border-radius-full'],
 } as const;

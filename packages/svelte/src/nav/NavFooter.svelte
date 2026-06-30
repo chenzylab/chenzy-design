@@ -65,7 +65,7 @@
     background: transparent;
     color: var(--cd-nav-collapse-btn-color);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-nav__collapse-btn:hover {

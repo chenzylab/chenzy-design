@@ -226,7 +226,7 @@
     vertical-align: middle;
   }
   .cd-avatar--circle {
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
   /* 可交互头像：指针手势 + 可见焦点环（<a> 还需重置文字装饰/继承色）。 */
   .cd-avatar--interactive {
@@ -241,27 +241,27 @@
   .cd-avatar--extra-small {
     inline-size: var(--cd-avatar-size-extra-small);
     block-size: var(--cd-avatar-size-extra-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-avatar--small {
     inline-size: var(--cd-avatar-size-small);
     block-size: var(--cd-avatar-size-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-avatar--default {
     inline-size: var(--cd-avatar-size-default);
     block-size: var(--cd-avatar-size-default);
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
   }
   .cd-avatar--large {
     inline-size: var(--cd-avatar-size-large);
     block-size: var(--cd-avatar-size-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-avatar--extra-large {
     inline-size: var(--cd-avatar-size-extra-large);
     block-size: var(--cd-avatar-size-extra-large);
-    font-size: var(--cd-font-size-4);
+    font-size: var(--cd-font-size-header-4);
   }
   .cd-avatar__img {
     inline-size: 100%;
@@ -283,7 +283,7 @@
     block-size: 25%;
     min-inline-size: 6px;
     min-block-size: 6px;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     box-shadow: 0 0 0 2px var(--cd-color-bg-0);
   }
   .cd-avatar__hover-mask {

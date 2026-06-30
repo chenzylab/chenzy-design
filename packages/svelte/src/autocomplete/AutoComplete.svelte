@@ -388,11 +388,11 @@
   const dropdownPositionStyle = $derived.by(() => {
     switch (position) {
       case 'bottomRight':
-        return 'inset-block-start: calc(100% + var(--cd-spacing-1)); inset-inline-end: 0; inset-inline-start: auto';
+        return 'inset-block-start: calc(100% + var(--cd-spacing-extra-tight)); inset-inline-end: 0; inset-inline-start: auto';
       case 'topLeft':
-        return 'inset-block-end: calc(100% + var(--cd-spacing-1)); inset-block-start: auto; inset-inline-start: 0';
+        return 'inset-block-end: calc(100% + var(--cd-spacing-extra-tight)); inset-block-start: auto; inset-inline-start: 0';
       case 'topRight':
-        return 'inset-block-end: calc(100% + var(--cd-spacing-1)); inset-block-start: auto; inset-inline-end: 0; inset-inline-start: auto';
+        return 'inset-block-end: calc(100% + var(--cd-spacing-extra-tight)); inset-block-start: auto; inset-inline-end: 0; inset-inline-start: auto';
       default: // bottomLeft
         return '';
     }
@@ -554,7 +554,7 @@
   .cd-autocomplete__control {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-input-height-default);
     padding-inline: var(--cd-input-padding-x);
@@ -641,12 +641,12 @@
   }
   .cd-autocomplete__dropdown {
     position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-1));
+    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
     inset-inline: 0;
     z-index: var(--cd-select-dropdown-z);
     max-block-size: 16rem;
     overflow-y: auto;
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
@@ -663,9 +663,9 @@
     cursor: not-allowed;
   }
   .cd-autocomplete__group-label {
-    padding: var(--cd-spacing-1) var(--cd-select-option-padding, var(--cd-spacing-2));
+    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-medium, 500);
     user-select: none;
   }
@@ -678,7 +678,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     padding: var(--cd-select-option-padding);
     color: var(--cd-color-text-3);
   }
@@ -687,7 +687,7 @@
     block-size: 1em;
     border: 2px solid var(--cd-color-border);
     border-block-start-color: var(--cd-color-primary);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     animation: cd-autocomplete-spin 0.7s linear infinite;
   }
   @keyframes cd-autocomplete-spin {

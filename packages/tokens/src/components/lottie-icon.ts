@@ -6,7 +6,7 @@ export const lottieIconTokens = {
   'lottieicon-color': 'var(--cd-color-text-0)',
   'lottieicon-color-hover': 'var(--cd-color-primary)',
   'lottieicon-bg-skeleton': 'var(--cd-color-bg-1)',
-  'lottieicon-radius': 'var(--cd-radius-1)',
+  'lottieicon-radius': 'var(--cd-border-radius-small)',
   'lottieicon-error-color': 'var(--cd-color-danger)',
   'lottieicon-valign': '-0.125em',
 } as const;

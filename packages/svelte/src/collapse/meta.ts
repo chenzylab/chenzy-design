@@ -71,8 +71,8 @@ export const meta = {
   tokens: [
     '--cd-collapse-*',
     '--cd-focus-ring',
-    '--cd-radius-1',
-    '--cd-spacing-2',
+    '--cd-border-radius-small',
+    '--cd-spacing-tight',
     '--cd-motion-ease-standard',
     '--cd-color-text-3',
   ],

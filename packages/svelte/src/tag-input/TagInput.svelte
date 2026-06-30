@@ -417,11 +417,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     inline-size: 100%;
     min-block-size: var(--cd-input-height-default);
     padding-inline: var(--cd-input-padding-x);
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-input-bg);
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
@@ -431,11 +431,11 @@
   }
   .cd-tag-input--small {
     min-block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-tag-input--large {
     min-block-size: var(--cd-input-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-tag-input:focus-within {
     border-color: var(--cd-input-border-active);
@@ -456,11 +456,11 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
-    padding-inline: var(--cd-spacing-2);
+    gap: var(--cd-spacing-extra-tight);
+    padding-inline: var(--cd-spacing-tight);
     background: var(--cd-color-fill-1);
-    border-radius: var(--cd-radius-1);
-    font-size: var(--cd-font-size-1);
+    border-radius: var(--cd-border-radius-small);
+    font-size: var(--cd-font-size-small);
     white-space: nowrap;
   }
   .cd-tag-input__tag[draggable='true'] {
@@ -481,10 +481,10 @@
     border-radius: 1px;
   }
   .cd-tag-input__tag--drop-before::before {
-    inset-inline-start: calc(var(--cd-spacing-1) / -2 - 1px);
+    inset-inline-start: calc(var(--cd-spacing-extra-tight) / -2 - 1px);
   }
   .cd-tag-input__tag--drop-after::after {
-    inset-inline-end: calc(var(--cd-spacing-1) / -2 - 1px);
+    inset-inline-end: calc(var(--cd-spacing-extra-tight) / -2 - 1px);
   }
   .cd-tag-input__text {
     overflow: hidden;
@@ -498,7 +498,7 @@
     border: none;
     background: transparent;
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
     line-height: 1;
     cursor: pointer;
   }

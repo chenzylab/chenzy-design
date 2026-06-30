@@ -743,7 +743,7 @@
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    gap: var(--cd-spacing-3, 12px);
+    gap: var(--cd-spacing-base-tight, 12px);
   }
 
   .cd-list__header {
@@ -785,7 +785,7 @@
   .cd-list__item--selectable {
     display: flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-2, 8px);
+    gap: var(--cd-spacing-tight, 8px);
     cursor: pointer;
     outline: none;
   }
@@ -871,7 +871,7 @@
     block-size: 1.5em;
     border: 2px solid var(--cd-list-split-color);
     border-block-start-color: var(--cd-color-primary, currentColor);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     animation: cd-list-spin 0.7s linear infinite;
   }
 

@@ -323,7 +323,7 @@
   }
   .cd-collapse--bordered {
     border: 1px solid var(--cd-collapse-border);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-collapse :global(.cd-collapse__item + .cd-collapse__item) {
     border-block-start: 1px solid var(--cd-collapse-border);
@@ -337,7 +337,7 @@
   .cd-collapse :global(.cd-collapse__header) {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     padding: var(--cd-collapse-header-padding);
     border: none;

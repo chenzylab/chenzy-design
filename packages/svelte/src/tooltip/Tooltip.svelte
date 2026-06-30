@@ -337,7 +337,7 @@
   .cd-tooltip__pop--with-status {
     display: inline-flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-tooltip__status {
     display: inline-flex;

@@ -185,7 +185,7 @@
 <style>
   .cd-radio-group {
     display: inline-flex;
-    gap: var(--cd-spacing-4);
+    gap: var(--cd-spacing-base);
   }
   .cd-radio-group--horizontal {
     flex-direction: row;

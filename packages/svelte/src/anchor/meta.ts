@@ -64,7 +64,7 @@ export const meta = {
     '--cd-anchor-ink-color',
     '--cd-anchor-ink-width',
     '--cd-focus-ring',
-    '--cd-radius-1',
+    '--cd-border-radius-small',
     '--cd-motion-*',
   ],
 } as const;

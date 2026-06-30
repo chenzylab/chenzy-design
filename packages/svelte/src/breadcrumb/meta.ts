@@ -123,6 +123,6 @@ export const meta = {
     '--cd-breadcrumb-item-max-width',
     '--cd-focus-ring',
     '--cd-font-size-*',
-    '--cd-radius-1',
+    '--cd-border-radius-small',
   ],
 } as const;

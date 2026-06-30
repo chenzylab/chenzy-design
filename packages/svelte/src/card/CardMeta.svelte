@@ -38,7 +38,7 @@
   .cd-card__meta {
     display: flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-3);
+    gap: var(--cd-spacing-base-tight);
   }
   .cd-card__meta-avatar {
     flex: 0 0 auto;
@@ -49,12 +49,12 @@
   }
   .cd-card__meta-title {
     color: var(--cd-card-title-color);
-    font-weight: var(--cd-font-weight-semibold);
-    font-size: var(--cd-font-size-3);
-    margin-block-end: var(--cd-spacing-1);
+    font-weight: var(--cd-font-weight-bold);
+    font-size: var(--cd-font-size-header-6);
+    margin-block-end: var(--cd-spacing-extra-tight);
   }
   .cd-card__meta-description {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
   }
 </style>

@@ -223,16 +223,16 @@
     inline-size: 60%;
     block-size: 2px;
     background: currentColor;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
   .cd-checkbox__content {
     display: inline-flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
   }
   .cd-checkbox__extra {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
 
   /* card / pureCard 形态：整张卡片即命中区，hover 抬升背景，选中描边 primary。 */

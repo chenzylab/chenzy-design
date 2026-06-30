@@ -160,7 +160,7 @@
   .cd-dropdown__item {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     margin: 0;
     padding: var(--cd-dropdown-item-padding);
@@ -204,7 +204,7 @@
     list-style: none;
     z-index: var(--cd-dropdown-z);
     min-inline-size: var(--cd-dropdown-min-width);
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-dropdown-bg);
     border-radius: var(--cd-dropdown-radius);
     box-shadow: var(--cd-dropdown-shadow);

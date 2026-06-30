@@ -207,7 +207,7 @@
     background: transparent;
     color: var(--cd-toast-color-close);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
     transition: color var(--cd-toast-motion-duration) ease;
   }
 

@@ -554,7 +554,7 @@
     align-items: center;
     justify-content: center;
     block-size: var(--cd-sl-item-height);
-    padding-inline: var(--cd-spacing-2);
+    padding-inline: var(--cd-spacing-tight);
     cursor: pointer;
     color: var(--cd-scrolllist-color-text-adjacent);
     white-space: nowrap;

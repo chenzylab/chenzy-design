@@ -327,10 +327,10 @@
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-textarea--small {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-textarea--large {
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-textarea:focus-within {
     border-color: var(--cd-input-border-active);
@@ -381,8 +381,8 @@
   }
   .cd-textarea__clear {
     position: absolute;
-    inset-block-start: var(--cd-spacing-1);
-    inset-inline-end: var(--cd-spacing-1);
+    inset-block-start: var(--cd-spacing-extra-tight);
+    inset-inline-end: var(--cd-spacing-extra-tight);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -391,7 +391,7 @@
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-textarea__clear:hover {
     color: var(--cd-color-text-0);
@@ -402,10 +402,10 @@
   }
   .cd-textarea__count {
     position: absolute;
-    inset-block-end: var(--cd-spacing-1);
-    inset-inline-end: var(--cd-spacing-2);
+    inset-block-end: var(--cd-spacing-extra-tight);
+    inset-inline-end: var(--cd-spacing-tight);
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     white-space: nowrap;
     pointer-events: none;
   }

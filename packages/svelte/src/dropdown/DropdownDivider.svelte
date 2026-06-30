@@ -11,7 +11,7 @@
 <style>
   .cd-dropdown__divider {
     block-size: 1px;
-    margin-block: var(--cd-spacing-1);
+    margin-block: var(--cd-spacing-extra-tight);
     background: var(--cd-color-border);
   }
 </style>

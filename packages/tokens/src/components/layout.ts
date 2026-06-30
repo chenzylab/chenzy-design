@@ -7,7 +7,7 @@ export const layoutTokens = {
   'layout-footer-bg': 'var(--cd-color-bg-1)',
   'layout-footer-color': 'var(--cd-color-text-2)',
   'layout-content-bg': 'var(--cd-color-bg-0)',
-  'layout-content-padding': 'var(--cd-spacing-6)',
+  'layout-content-padding': 'var(--cd-spacing-loose)',
   'layout-sider-bg': 'var(--cd-color-bg-1)',
   'layout-sider-width': '200px',
   'layout-sider-collapsed-width': '60px',

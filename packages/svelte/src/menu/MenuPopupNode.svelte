@@ -380,7 +380,7 @@
   /* 分隔符：水平细线，不可交互 */
   .cd-menu__divider {
     block-size: 1px;
-    margin-block: var(--cd-spacing-1);
+    margin-block: var(--cd-spacing-extra-tight);
     background: var(--cd-menu-border-color, var(--cd-color-border));
   }
   /* 分组：始终展开的分区标题 + 组内项 */
@@ -395,7 +395,7 @@
     block-size: var(--cd-menu-item-height);
     padding-inline: var(--cd-menu-item-padding);
     color: var(--cd-menu-item-color-disabled);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     cursor: default;
     user-select: none;
   }
@@ -403,7 +403,7 @@
   .cd-menu__title {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-menu-item-height);
     padding-inline: var(--cd-menu-item-padding);
@@ -510,7 +510,7 @@
     padding: 0;
     list-style: none;
     min-inline-size: 8rem;
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-menu-bg);
     border-radius: var(--cd-select-dropdown-radius, 6px);
     box-shadow: var(--cd-select-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));

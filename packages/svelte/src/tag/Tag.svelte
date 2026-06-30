@@ -226,7 +226,7 @@
     block-size: var(--cd-tag-height-large);
   }
   .cd-tag--circle {
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
 
   /* color → semantic mapping */
@@ -340,7 +340,7 @@
     color: currentColor;
     cursor: pointer;
     opacity: 0.7;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
   }
   .cd-tag__close:hover {
     opacity: 1;

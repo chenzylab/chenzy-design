@@ -2,10 +2,10 @@
 export const datePickerTokens = {
   'date-picker-panel-bg': 'var(--cd-color-bg-0)',
   'date-picker-panel-shadow': 'var(--cd-shadow-2)',
-  'date-picker-panel-radius': 'var(--cd-radius-3)',
+  'date-picker-panel-radius': 'var(--cd-border-radius-large)',
   'date-picker-panel-z': 'var(--cd-z-popover)',
   'date-picker-cell-size': '32px',
-  'date-picker-cell-radius': 'var(--cd-radius-2)',
+  'date-picker-cell-radius': 'var(--cd-border-radius-medium)',
   'date-picker-cell-bg-hover': 'var(--cd-color-fill-0)',
   'date-picker-cell-bg-selected': 'var(--cd-color-primary)',
   'date-picker-cell-color-selected': 'var(--cd-color-text-inverse)',

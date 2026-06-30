@@ -37,10 +37,10 @@
 <style>
   .cd-form-field__label-optional {
     color: var(--cd-form-optional-color, var(--cd-color-text-3));
-    font-size: var(--cd-font-size-1, 0.75rem);
+    font-size: var(--cd-font-size-small, 0.75rem);
   }
   .cd-form-field__label-extra {
     color: var(--cd-form-extra-color, var(--cd-color-text-3));
-    font-size: var(--cd-font-size-1, 0.75rem);
+    font-size: var(--cd-font-size-small, 0.75rem);
   }
 </style>

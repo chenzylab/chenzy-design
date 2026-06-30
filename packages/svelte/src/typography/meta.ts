@@ -140,7 +140,7 @@ export const meta = {
     '--cd-typography-font-size-large',
     '--cd-typography-action-color',
     '--cd-typography-action-color-hover',
-    '--cd-font-size-1..6',
+    '--cd-font-size-small..6',
   ],
   relatedComponents: ['Tooltip', 'Highlight', 'Numeral'],
   aiHints: [

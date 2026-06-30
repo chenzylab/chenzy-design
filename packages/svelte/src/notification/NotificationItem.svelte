@@ -255,7 +255,7 @@
   }
 
   .cd-notification-item__content {
-    margin-block-start: var(--cd-spacing-1);
+    margin-block-start: var(--cd-spacing-extra-tight);
     font-size: var(--cd-notification-content-size);
     line-height: 1.5;
     color: var(--cd-notification-color-content);
@@ -265,9 +265,9 @@
   .cd-notification-item__footer {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     align-items: center;
-    margin-block-start: var(--cd-spacing-3);
+    margin-block-start: var(--cd-spacing-base-tight);
   }
 
   .cd-notification-item__progress {
@@ -342,7 +342,7 @@
     background: transparent;
     color: var(--cd-notification-close-color);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
     transition: color var(--cd-notification-motion-duration) ease;
   }
 

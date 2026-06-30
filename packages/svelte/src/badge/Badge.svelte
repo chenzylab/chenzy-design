@@ -165,7 +165,7 @@
   }
   .cd-badge--status {
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
 
   .cd-badge__sup {
@@ -177,8 +177,8 @@
     box-sizing: border-box;
     min-inline-size: var(--cd-badge-size);
     block-size: var(--cd-badge-size);
-    padding-inline: var(--cd-spacing-1);
-    border-radius: var(--cd-radius-full);
+    padding-inline: var(--cd-spacing-extra-tight);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-badge-bg);
     color: var(--cd-badge-color);
     font-size: var(--cd-badge-font-size);
@@ -277,7 +277,7 @@
     display: inline-block;
     inline-size: var(--cd-badge-dot-size);
     block-size: var(--cd-badge-dot-size);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     flex: 0 0 auto;
   }
   .cd-badge__status-dot--processing {
@@ -293,7 +293,7 @@
   }
   .cd-badge__status-text {
     color: var(--cd-color-text-1);
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
   }
 
   @keyframes cd-badge-pulse {

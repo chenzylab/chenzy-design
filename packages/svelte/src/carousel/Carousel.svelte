@@ -590,7 +590,7 @@
     block-size: var(--cd-carousel-arrow-size);
     padding: 0;
     border: none;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-carousel-arrow-bg);
     color: var(--cd-carousel-arrow-color);
     font-size: calc(var(--cd-carousel-arrow-size) * 0.6);
@@ -599,10 +599,10 @@
     z-index: 2;
   }
   .cd-carousel__arrow--prev {
-    inset-inline-start: var(--cd-spacing-2);
+    inset-inline-start: var(--cd-spacing-tight);
   }
   .cd-carousel__arrow--next {
-    inset-inline-end: var(--cd-spacing-2);
+    inset-inline-end: var(--cd-spacing-tight);
   }
   .cd-carousel__arrow:focus-visible {
     outline: none;
@@ -617,17 +617,17 @@
     transform: none;
   }
   .cd-carousel--vertical .cd-carousel__arrow--prev {
-    inset-block-start: var(--cd-spacing-2);
+    inset-block-start: var(--cd-spacing-tight);
   }
   .cd-carousel--vertical .cd-carousel__arrow--next {
-    inset-block-end: var(--cd-spacing-2);
+    inset-block-end: var(--cd-spacing-tight);
   }
 
   /* 播放/暂停按钮：左下角常驻，命中区 ≥ 32px。 */
   .cd-carousel__play {
     position: absolute;
-    inset-block-end: var(--cd-spacing-2);
-    inset-inline-start: var(--cd-spacing-2);
+    inset-block-end: var(--cd-spacing-tight);
+    inset-inline-start: var(--cd-spacing-tight);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -635,7 +635,7 @@
     block-size: var(--cd-carousel-arrow-size);
     padding: 0;
     border: none;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-carousel-arrow-bg);
     color: var(--cd-carousel-arrow-color);
     font-size: calc(var(--cd-carousel-arrow-size) * 0.4);
@@ -650,7 +650,7 @@
 
   .cd-carousel__indicators {
     position: absolute;
-    inset-block-end: var(--cd-spacing-2);
+    inset-block-end: var(--cd-spacing-tight);
     inset-inline: 0;
     display: flex;
     justify-content: center;
@@ -660,7 +660,7 @@
   /* vertical：指示器移至右侧纵向排列 */
   .cd-carousel--vertical .cd-carousel__indicators {
     inset-block: 0;
-    inset-inline-end: var(--cd-spacing-2);
+    inset-inline-end: var(--cd-spacing-tight);
     inset-inline-start: auto;
     flex-direction: column;
     justify-content: center;
@@ -670,7 +670,7 @@
     block-size: 8px;
     padding: 0;
     border: none;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     background: var(--cd-carousel-indicator-color);
     cursor: pointer;
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -687,7 +687,7 @@
   .cd-carousel__indicator--line {
     inline-size: 16px;
     block-size: 4px;
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     transition:
       background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       inline-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -752,11 +752,11 @@
   /* indicatorPosition */
   .cd-carousel__indicators--left {
     justify-content: flex-start;
-    padding-inline-start: var(--cd-spacing-2);
+    padding-inline-start: var(--cd-spacing-tight);
   }
   .cd-carousel__indicators--right {
     justify-content: flex-end;
-    padding-inline-end: var(--cd-spacing-2);
+    padding-inline-end: var(--cd-spacing-tight);
   }
 
   /* indicatorSize=small：缩小指示器尺寸 */

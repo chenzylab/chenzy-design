@@ -108,7 +108,7 @@
 <style>
   .cd-checkbox-group {
     display: inline-flex;
-    gap: var(--cd-spacing-4);
+    gap: var(--cd-spacing-base);
   }
   .cd-checkbox-group--horizontal {
     flex-direction: row;

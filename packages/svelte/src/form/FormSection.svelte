@@ -38,8 +38,8 @@
   .cd-form__section-legend {
     color: var(--cd-form-label-color, var(--cd-color-text-1));
     font-weight: var(--cd-font-weight-medium, 500);
-    font-size: var(--cd-font-size-2, 0.875rem);
+    font-size: var(--cd-font-size-regular, 0.875rem);
     padding: 0;
-    margin-block-end: var(--cd-spacing-2);
+    margin-block-end: var(--cd-spacing-tight);
   }
 </style>

@@ -55,5 +55,5 @@ export const meta = {
       '连接线 aria-hidden=true',
     ],
   },
-  tokens: ['--cd-steps-*', '--cd-focus-ring', '--cd-radius-full', '--cd-spacing-*', '--cd-font-size-1'],
+  tokens: ['--cd-steps-*', '--cd-focus-ring', '--cd-border-radius-full', '--cd-spacing-*', '--cd-font-size-small'],
 } as const;

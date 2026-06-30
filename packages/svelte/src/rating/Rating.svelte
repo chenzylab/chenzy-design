@@ -304,7 +304,7 @@
   }
   .cd-rating:focus-visible {
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-rating--disabled {
     opacity: 0.5;

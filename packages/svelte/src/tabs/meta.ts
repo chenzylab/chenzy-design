@@ -148,5 +148,5 @@ export const meta = {
       'preventScroll=true 时 Tab 聚焦不触发页面滚动',
     ],
   },
-  tokens: ['--cd-tabs-*', '--cd-focus-ring', '--cd-radius-1', '--cd-spacing-*'],
+  tokens: ['--cd-tabs-*', '--cd-focus-ring', '--cd-border-radius-small', '--cd-spacing-*'],
 } as const;

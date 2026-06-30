@@ -165,7 +165,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     height: var(--cd-button-height-default);
     padding-inline: var(--cd-button-padding-x);
     border: 1px solid transparent;
@@ -185,11 +185,11 @@
   }
   .cd-button--small {
     height: var(--cd-button-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-button--large {
     height: var(--cd-button-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-button--block {
     width: 100%;

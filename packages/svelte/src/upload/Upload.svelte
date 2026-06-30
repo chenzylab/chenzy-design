@@ -750,7 +750,7 @@
   .cd-upload {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-3);
+    gap: var(--cd-spacing-base-tight);
     color: var(--cd-color-text-0);
   }
   .cd-upload__input {
@@ -767,7 +767,7 @@
   .cd-upload__trigger-wrap {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
   .cd-upload__trigger-wrap--row {
     flex-direction: row;
@@ -778,13 +778,13 @@
   }
   .cd-upload__prompt {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-upload__trigger {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     height: var(--cd-button-height-default);
     padding-inline: var(--cd-button-padding-x);
     background: var(--cd-color-fill-0);
@@ -801,11 +801,11 @@
   /* 组件级 size：触发按钮高度/字号档（区别于 file.size 体积）。 */
   .cd-upload--small .cd-upload__trigger {
     height: var(--cd-button-height-small);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-upload--large .cd-upload__trigger {
     height: var(--cd-button-height-large);
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
   }
   .cd-upload__trigger:disabled {
     cursor: not-allowed;
@@ -816,8 +816,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-block: var(--cd-spacing-6);
-    padding-inline: var(--cd-spacing-4);
+    padding-block: var(--cd-spacing-loose);
+    padding-inline: var(--cd-spacing-base);
     background: var(--cd-upload-dragger-bg);
     border: 1px dashed var(--cd-upload-dragger-border);
     border-radius: var(--cd-upload-dragger-radius);
@@ -839,12 +839,12 @@
   }
   /* 组件级 size：拖拽区内边距/字号档。 */
   .cd-upload--small .cd-upload__dragger {
-    padding-block: var(--cd-spacing-4);
-    font-size: var(--cd-font-size-1);
+    padding-block: var(--cd-spacing-base);
+    font-size: var(--cd-font-size-small);
   }
   .cd-upload--large .cd-upload__dragger {
-    padding-block: var(--cd-spacing-8, var(--cd-spacing-6));
-    font-size: var(--cd-font-size-3);
+    padding-block: var(--cd-spacing-extra-loose, var(--cd-spacing-loose));
+    font-size: var(--cd-font-size-header-6);
   }
   /* 组件级 status：校验态影响上传区/卡片边框色（区别于 file.status 进度态）。 */
   .cd-upload--warning .cd-upload__dragger {
@@ -867,15 +867,15 @@
     border-color: var(--cd-upload-border-error, var(--cd-color-danger));
   }
   .cd-upload__list-title {
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     color: var(--cd-color-text-1);
     font-weight: 500;
-    margin-block-end: var(--cd-spacing-1);
+    margin-block-end: var(--cd-spacing-extra-tight);
   }
   .cd-upload__list {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -883,15 +883,15 @@
   .cd-upload__item {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-1);
-    padding-block: var(--cd-spacing-1);
-    padding-inline: var(--cd-spacing-2);
-    border-radius: var(--cd-radius-1);
+    gap: var(--cd-spacing-extra-tight);
+    padding-block: var(--cd-spacing-extra-tight);
+    padding-inline: var(--cd-spacing-tight);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-upload__item-main {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
   .cd-upload__item:hover {
     background: var(--cd-upload-item-bg-hover);
@@ -910,7 +910,7 @@
   .cd-upload__item-status {
     flex: 0 0 auto;
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-upload__item--error .cd-upload__item-status {
     color: var(--cd-upload-item-color-error);
@@ -925,8 +925,8 @@
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
-    border-radius: var(--cd-radius-1);
-    font-size: var(--cd-font-size-3);
+    border-radius: var(--cd-border-radius-small);
+    font-size: var(--cd-font-size-header-6);
     line-height: 1;
   }
   .cd-upload__item-remove:hover {
@@ -944,13 +944,13 @@
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    padding: 0 var(--cd-spacing-1);
+    padding: 0 var(--cd-spacing-extra-tight);
     border: none;
     background: transparent;
     color: var(--cd-color-primary);
     cursor: pointer;
-    font-size: var(--cd-font-size-1);
-    border-radius: var(--cd-radius-1);
+    font-size: var(--cd-font-size-small);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-upload__retry-btn:hover {
     text-decoration: underline;
@@ -963,14 +963,14 @@
     align-self: flex-end;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
-    padding: var(--cd-spacing-1) var(--cd-spacing-2);
+    gap: var(--cd-spacing-extra-tight);
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     border: none;
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
-    font-size: var(--cd-font-size-1);
-    border-radius: var(--cd-radius-1);
+    font-size: var(--cd-font-size-small);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-upload__clear-btn:hover {
     color: var(--cd-color-danger);
@@ -982,12 +982,12 @@
   }
   .cd-upload__dragger-main {
     display: block;
-    font-size: var(--cd-font-size-2);
+    font-size: var(--cd-font-size-regular);
     color: var(--cd-color-text-1);
   }
   .cd-upload__dragger-sub {
     display: block;
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     color: var(--cd-color-text-2);
   }
 
@@ -995,7 +995,7 @@
   .cd-upload__grid {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1005,7 +1005,7 @@
     inline-size: 96px;
     block-size: 96px;
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-2);
+    border-radius: var(--cd-border-radius-medium);
     overflow: hidden;
     background: var(--cd-color-fill-0);
   }
@@ -1036,8 +1036,8 @@
   }
   .cd-upload__card-progress {
     position: absolute;
-    inset-inline: var(--cd-spacing-1);
-    inset-block-end: var(--cd-spacing-1);
+    inset-inline: var(--cd-spacing-extra-tight);
+    inset-block-end: var(--cd-spacing-extra-tight);
   }
   .cd-upload__card-overlay {
     position: absolute;
@@ -1045,8 +1045,8 @@
     inset-inline: 0;
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-1);
-    padding: var(--cd-spacing-1);
+    gap: var(--cd-spacing-extra-tight);
+    padding: var(--cd-spacing-extra-tight);
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
     opacity: 0;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -1062,7 +1062,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #fff;
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-upload__card-remove {
     flex: 0 0 auto;
@@ -1076,7 +1076,7 @@
     background: transparent;
     color: #fff;
     cursor: pointer;
-    font-size: var(--cd-font-size-3);
+    font-size: var(--cd-font-size-header-6);
     line-height: 1;
   }
   .cd-upload__card-remove:focus-visible {

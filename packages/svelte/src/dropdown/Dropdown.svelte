@@ -528,7 +528,7 @@
   .cd-dropdown__trigger:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-1);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-dropdown--disabled .cd-dropdown__trigger {
     color: var(--cd-color-text-3);
@@ -537,7 +537,7 @@
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
   .cd-dropdown__menu {
     margin: 0;
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     padding-inline: 0;
     list-style: none;
     z-index: var(--cd-dropdown-z);

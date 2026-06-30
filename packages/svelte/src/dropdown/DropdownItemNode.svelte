@@ -261,7 +261,7 @@
   /* 分隔符：水平细线，不可交互 */
   .cd-dropdown__divider {
     block-size: 1px;
-    margin-block: var(--cd-spacing-1);
+    margin-block: var(--cd-spacing-extra-tight);
     background: var(--cd-color-border);
   }
   /* 分组：始终展开的分区标题 + 组内项 */
@@ -275,14 +275,14 @@
     align-items: center;
     padding: var(--cd-dropdown-item-padding);
     color: var(--cd-dropdown-item-color-disabled);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     cursor: default;
     user-select: none;
   }
   .cd-dropdown__item {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     margin: 0;
     padding: var(--cd-dropdown-item-padding);
@@ -347,7 +347,7 @@
     list-style: none;
     z-index: var(--cd-dropdown-z);
     min-inline-size: var(--cd-dropdown-min-width);
-    padding-block: var(--cd-spacing-1);
+    padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-dropdown-bg);
     border-radius: var(--cd-dropdown-radius);
     box-shadow: var(--cd-dropdown-shadow);

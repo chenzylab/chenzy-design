@@ -1219,19 +1219,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-block: var(--cd-spacing-2);
-    padding-inline: var(--cd-spacing-3);
+    padding-block: var(--cd-spacing-tight);
+    padding-inline: var(--cd-spacing-base-tight);
     background: var(--cd-transfer-panel-header-bg);
     border-block-end: 1px solid var(--cd-transfer-panel-border);
     font-weight: var(--cd-font-weight-medium);
   }
   .cd-transfer__panel-count {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-regular);
   }
   .cd-transfer__panel-search {
-    padding: var(--cd-spacing-2);
+    padding: var(--cd-spacing-tight);
     border-block-end: 1px solid var(--cd-transfer-panel-border);
   }
   .cd-transfer__list {
@@ -1250,9 +1250,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     min-block-size: var(--cd-transfer-item-height);
-    padding-inline: var(--cd-spacing-3);
+    padding-inline: var(--cd-spacing-base-tight);
   }
   .cd-transfer__item:hover {
     background: var(--cd-transfer-item-bg-hover);
@@ -1288,7 +1288,7 @@
   .cd-transfer__option-control {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
     pointer-events: none;
     min-inline-size: 0;
     flex: 1 1 auto;
@@ -1318,17 +1318,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--cd-spacing-2);
-    padding-block: var(--cd-spacing-3);
+    gap: var(--cd-spacing-tight);
+    padding-block: var(--cd-spacing-base-tight);
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-transfer__spinner {
     inline-size: 1em;
     block-size: 1em;
     border: 2px solid var(--cd-color-border);
     border-block-start-color: var(--cd-color-primary);
-    border-radius: var(--cd-radius-full);
+    border-radius: var(--cd-border-radius-full);
     animation: cd-transfer-spin 0.7s linear infinite;
   }
   @keyframes cd-transfer-spin {
@@ -1356,7 +1356,7 @@
     block-size: 18px;
     padding: 0;
     border: none;
-    border-radius: var(--cd-radius-1, 4px);
+    border-radius: var(--cd-border-radius-small, 4px);
     background: transparent;
     color: var(--cd-color-text-2);
     cursor: pointer;
@@ -1377,7 +1377,7 @@
     display: flex;
     align-items: center;
     min-block-size: var(--cd-transfer-item-height);
-    padding-inline-end: var(--cd-spacing-3);
+    padding-inline-end: var(--cd-spacing-base-tight);
   }
   .cd-transfer__tree-node:hover {
     background: var(--cd-transfer-item-bg-hover);
@@ -1414,13 +1414,13 @@
     align-items: center;
     justify-content: space-between;
     min-block-size: var(--cd-transfer-item-height);
-    padding-inline: var(--cd-spacing-3);
+    padding-inline: var(--cd-spacing-base-tight);
     background: var(--cd-transfer-panel-header-bg);
     font-weight: var(--cd-font-weight-medium);
   }
   .cd-transfer__group-count {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-regular);
   }
   .cd-transfer__group-list {
@@ -1432,20 +1432,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-block: var(--cd-spacing-4);
+    padding-block: var(--cd-spacing-base);
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-1);
+    font-size: var(--cd-font-size-small);
   }
   .cd-transfer__ops {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: var(--cd-spacing-2);
+    gap: var(--cd-spacing-tight);
   }
   .cd-transfer__pagination {
     display: flex;
     justify-content: center;
-    padding-block: var(--cd-spacing-2);
+    padding-block: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-transfer-panel-border);
   }
 </style>

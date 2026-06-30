@@ -9,7 +9,7 @@ export const backTopTokens = {
   'backtop-color': 'var(--cd-color-text-0)',
   'backtop-border': 'var(--cd-color-border)',
   'backtop-shadow': 'var(--cd-shadow-3)',
-  'backtop-radius': 'var(--cd-radius-full)',
+  'backtop-radius': 'var(--cd-border-radius-full)',
   'backtop-z': '900',
   'backtop-focus-ring': 'var(--cd-color-primary)',
   'backtop-motion-duration': 'var(--cd-motion-duration-fast)',
