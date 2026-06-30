@@ -171,7 +171,7 @@
     border: 1px solid transparent;
     border-radius: var(--cd-button-radius);
     font-size: var(--cd-button-font-size);
-    font-weight: var(--cd-font-weight-medium);
+    font-weight: var(--cd-font-weight-bold);
     line-height: 1;
     cursor: pointer;
     transition:
@@ -183,13 +183,13 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* Semi：全尺寸字号统一 regular(14)，仅高度/内边距随尺寸变化 */
   .cd-button--small {
     height: var(--cd-button-height-small);
-    font-size: var(--cd-font-size-small);
   }
   .cd-button--large {
     height: var(--cd-button-height-large);
-    font-size: var(--cd-font-size-header-6);
+    padding-inline: var(--cd-button-padding-x-large);
   }
   .cd-button--block {
     width: 100%;

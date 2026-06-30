@@ -11,7 +11,7 @@ export const tabsTokens = {
   'tabs-bar-border': 'var(--cd-color-border)',
   'tabs-card-bg': 'var(--cd-color-fill-0)',
   'tabs-card-bg-active': 'var(--cd-color-bg-0)',
-  'tabs-card-radius': 'var(--cd-border-radius-medium)',
+  'tabs-card-radius': 'var(--cd-border-radius-small)', // 对齐 Semi 卡片式页签圆角（small 3px）
   // type=button（分段按钮组）
   'tabs-button-bg': 'var(--cd-color-fill-0)',
   'tabs-button-bg-hover': 'var(--cd-color-fill-1)',

@@ -9,7 +9,7 @@ export const navigationTokens = {
   'breadcrumb-font-size': 'var(--cd-font-size-regular)',
   // Pagination
   'pagination-item-size': '32px',
-  'pagination-item-radius': 'var(--cd-border-radius-medium)',
+  'pagination-item-radius': 'var(--cd-border-radius-small)', // 对齐 Semi 页码圆角（small 3px）
   'pagination-item-border': 'var(--cd-color-border)',
   'pagination-item-bg-active': 'var(--cd-color-primary)',
   'pagination-item-color-active': 'var(--cd-color-text-inverse)',
