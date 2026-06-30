@@ -433,18 +433,14 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* 对齐 Semi：选中态深色文字 + 蓝底块，无左侧指示条 */
   .cd-menu__link--selected {
     position: relative;
     color: var(--cd-menu-item-color-selected);
     background: var(--cd-menu-item-bg-selected);
   }
-  .cd-menu__link--selected::before {
-    content: '';
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    inline-size: 3px;
-    background: var(--cd-menu-item-indicator);
+  .cd-menu__link--selected :global(.cd-menu__icon) {
+    color: var(--cd-menu-item-icon-color-selected);
   }
   .cd-menu__link[aria-disabled='true'],
   .cd-menu__title[aria-disabled='true'] {
@@ -491,7 +487,7 @@
     flex: 0 0 auto;
     inline-size: 1rem;
     block-size: 1rem;
-    color: var(--cd-menu-item-color-selected);
+    color: var(--cd-menu-item-icon-color-selected);
     opacity: 0;
   }
   .cd-menu__check--on {

@@ -677,10 +677,13 @@
   /* 选中下划线：压在菜单底部边框上（-1px 抵消 border-block-end）对齐成一条线；
      左右内缩到 item 内边距，使下划线对齐文字内容区（不盖到 padding 留白），更精致。 */
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected)::before {
+    content: '';
+    position: absolute;
     inset-block: auto -1px;
     inset-inline: var(--cd-menu-item-padding);
     inline-size: auto;
     block-size: 2px;
+    background: var(--cd-menu-item-indicator);
     border-radius: 1px;
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
@@ -775,38 +778,28 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* 对齐 Semi：选中态深色文字 + 蓝底块，无左侧指示条，靠蓝底/蓝图标区分 */
   .cd-menu__link--selected {
     position: relative;
     color: var(--cd-menu-item-color-selected);
     background: var(--cd-menu-item-bg-selected);
   }
-  .cd-menu__link--selected::before {
-    content: '';
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    inline-size: 3px;
-    background: var(--cd-menu-item-indicator);
+  .cd-menu__link--selected :global(.cd-menu__icon) {
+    color: var(--cd-menu-item-icon-color-selected);
   }
   .cd-menu__link[aria-disabled='true'],
   .cd-menu__title[aria-disabled='true'] {
     color: var(--cd-menu-item-color-disabled);
     cursor: not-allowed;
   }
-  /* 校验态：用 token 着色选中指示条与选中文字（表单内菜单少见场景）。
+  /* 校验态：用 token 着色选中文字（表单内菜单少见场景）。
      选中叶子可能由子组件 MenuPopupNode 渲染（vertical/horizontal/collapsed 浮层模式），
      故用 :global 穿透 scoped 边界匹配后代 link。 */
   .cd-menu--warning :global(.cd-menu__link--selected) {
     color: var(--cd-menu-color-warning, var(--cd-color-warning));
   }
-  .cd-menu--warning :global(.cd-menu__link--selected::before) {
-    background: var(--cd-menu-color-warning, var(--cd-color-warning));
-  }
   .cd-menu--error :global(.cd-menu__link--selected) {
     color: var(--cd-menu-color-danger, var(--cd-color-danger));
-  }
-  .cd-menu--error :global(.cd-menu__link--selected::before) {
-    background: var(--cd-menu-color-danger, var(--cd-color-danger));
   }
   .cd-menu__label {
     flex: 1 1 auto;
@@ -830,7 +823,7 @@
     flex: 0 0 auto;
     inline-size: 1rem;
     block-size: 1rem;
-    color: var(--cd-menu-item-color-selected);
+    color: var(--cd-menu-item-icon-color-selected);
     opacity: 0;
   }
   .cd-menu__check--on {
