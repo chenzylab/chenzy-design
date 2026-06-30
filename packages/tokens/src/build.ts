@@ -34,6 +34,7 @@ const globalVars = [
   ...vars(scales.motion, 'motion'),
   ...vars(scales.zIndex, 'z'),
   ...vars(scales.breakpoint, 'breakpoint'),
+  ...vars(scales.sizing),
 ];
 const aliasVars = vars(aliasLight);
 const componentVars = vars(componentTokens);

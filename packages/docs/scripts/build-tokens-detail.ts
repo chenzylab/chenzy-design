@@ -62,6 +62,15 @@ const GLOBAL_SEGMENTS = new Set([
   'warning',
   'danger',
   'link',
+  // foundation 尺寸（PR1 新增全局 token）
+  'control',
+  'width',
+  'nav',
+  'overlay',
+  'disabled',
+  'secondary',
+  'tertiary',
+  'info',
 ]);
 
 /** 仅在 :root { ... } 块内解析（排除 [data-theme='dark'] 等覆盖块，避免重复）。 */
