@@ -657,9 +657,28 @@
   .cd-menu--horizontal > :global(.cd-menu__item) {
     display: flex;
   }
+  /* 水平导航配色对齐 Semi：默认项文字浅(text-2)、hover 文字变深(text-1) 且无背景、
+     选中文字最深(text-0) + 无背景块、仅底部 2px 下划线指示。 */
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link),
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title) {
     inline-size: auto;
+    background: transparent;
+    color: var(--cd-color-text-2);
+  }
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link:hover),
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title:hover) {
+    background: transparent;
+    color: var(--cd-color-text-1);
+  }
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected) {
+    background: transparent;
+    color: var(--cd-color-text-0);
+  }
+  .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected)::before {
+    inset-block: auto 0;
+    inset-inline: 0;
+    inline-size: auto;
+    block-size: 2px;
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
   /* 折叠图标轨：撑满容器宽度（如 Nav/Sider 的折叠宽度），使图标居中、选中背景填满。

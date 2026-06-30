@@ -1,7 +1,7 @@
 /** Component tokens for Nav. See specs/components/navigation/Nav.spec.md. */
 export const navTokens = {
-  'nav-bg': 'var(--cd-color-bg-1)',
-  'nav-color': 'var(--cd-color-text-1)',
+  'nav-bg': 'transparent',
+  'nav-color': 'inherit',
   'nav-horizontal-height': '60px',
   'nav-header-height': '60px',
   'nav-header-padding-x': 'var(--cd-spacing-4)',

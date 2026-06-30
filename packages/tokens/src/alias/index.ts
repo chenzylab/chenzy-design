@@ -15,6 +15,8 @@ export const aliasLight = {
   'color-primary': palette['blue-5'],
   'color-primary-hover': palette['blue-6'],
   'color-primary-active': palette['blue-7'],
+  // 浅蓝（选中态背景，对齐 Semi primary-light-default）：被 Menu/Table/Tree/Calendar/Banner 选中态引用
+  'color-primary-light-default': palette['blue-0'],
   // status (Semi: success=green-5, warning=orange-5, danger=red-5)
   'color-success': palette['green-5'],
   'color-warning': palette['orange-5'],
@@ -59,6 +61,8 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-primary': '#54a9ff',
   'color-primary-hover': '#3295fb',
   'color-primary-active': '#65b2fc',
+  // 暗色浅蓝选中背景：用低透明度品牌蓝在深色面上做轻提亮（对齐 Semi 暗色 primary-light）
+  'color-primary-light-default': 'rgba(84, 169, 255, 0.2)',
   'color-info': '#54a9ff',
   'color-link': '#54a9ff',
   'color-success': '#5dc264',

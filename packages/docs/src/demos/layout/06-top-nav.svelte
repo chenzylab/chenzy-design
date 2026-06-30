@@ -36,10 +36,19 @@
     </Layout.Header>
     <Layout.Content padding style="background: var(--cd-color-bg-0);">
       <Breadcrumb routes={[{ label: '首页' }, { label: '组件' }, { label: '详情页' }]} />
+      <!-- 顶栏导航的典型内容：一排概览卡 + 主内容卡，避免空旷 -->
+      <div style="margin-top:16px; display:flex; gap:12px;">
+        {#each [{ k: '今日访问', v: '8,492' }, { k: '订单', v: '326' }, { k: '转化率', v: '4.7%' }] as s (s.k)}
+          <div style="flex:1; padding:14px 16px; border-radius:8px; background: var(--cd-color-fill-1);">
+            <div style="font-size:12px; color: var(--cd-color-text-3);">{s.k}</div>
+            <div style="font-size:20px; font-weight:600; color: var(--cd-color-text-0); margin-top:4px;">{s.v}</div>
+          </div>
+        {/each}
+      </div>
       <div
-        style="margin-top:16px; border-radius:10px; border:1px solid var(--cd-color-border); height:180px; display:flex; align-items:center; justify-content:center; color: var(--cd-color-text-2);"
+        style="margin-top:12px; border-radius:8px; border:1px solid var(--cd-color-border); height:96px; display:flex; align-items:center; justify-content:center; color: var(--cd-color-text-3);"
       >
-        顶部导航布局：Nav horizontal 放在 Header 内，配合 logo 与 Avatar。
+        主内容区
       </div>
     </Layout.Content>
   </Layout>
