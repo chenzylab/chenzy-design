@@ -229,6 +229,11 @@
     inline-size: var(--cd-radio-size-large);
     block-size: var(--cd-radio-size-large);
   }
+  /* 未选中态悬浮：对齐 Semi（描边 focus-border、背景 fill-0） */
+  .cd-radio:hover:not(.cd-radio--disabled):not(.cd-radio--checked) .cd-radio__circle {
+    background: var(--cd-radio-bg-hover);
+    border-color: var(--cd-radio-border-hover);
+  }
   .cd-radio--checked .cd-radio__circle {
     border-color: var(--cd-radio-color-checked);
   }

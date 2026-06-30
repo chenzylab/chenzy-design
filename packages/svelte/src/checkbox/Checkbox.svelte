@@ -200,6 +200,12 @@
     inline-size: var(--cd-checkbox-size-large);
     block-size: var(--cd-checkbox-size-large);
   }
+  /* 未选中态悬浮：对齐 Semi（描边 focus-border、背景 fill-0） */
+  .cd-checkbox:hover:not(.cd-checkbox--disabled):not(.cd-checkbox--checked):not(.cd-checkbox--indeterminate)
+    .cd-checkbox__box {
+    background: var(--cd-checkbox-bg-hover);
+    border-color: var(--cd-checkbox-border-hover);
+  }
   .cd-checkbox--checked .cd-checkbox__box,
   .cd-checkbox--indeterminate .cd-checkbox__box {
     background: var(--cd-checkbox-bg-checked);
@@ -260,6 +266,7 @@
   .cd-checkbox--pureCard.cd-checkbox--checked,
   .cd-checkbox--pureCard.cd-checkbox--indeterminate {
     border-color: var(--cd-checkbox-card-border-checked);
+    background: var(--cd-checkbox-card-bg-checked); /* 对齐 Semi 卡片选中 primary-light-default */
   }
   .cd-checkbox--card .cd-checkbox__input:focus-visible ~ .cd-checkbox__box,
   .cd-checkbox--pureCard .cd-checkbox__input:focus-visible ~ .cd-checkbox__box {
