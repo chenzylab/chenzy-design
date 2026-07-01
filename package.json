@@ -30,7 +30,7 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm -r publish --access public"
+    "release": "pnpm build && pnpm -r publish --access public --no-git-checks"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.11",
