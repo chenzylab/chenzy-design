@@ -11,7 +11,7 @@
   inline：不渲染 trigger 浮层，直接内联渲染选色面板（设置页嵌入）。
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, type Snippet } from 'svelte';
   import {
     useId,
     useDismiss,
@@ -50,6 +50,18 @@
     showFormatToggle?: boolean;
     /** 内联渲染选色面板，不使用 trigger 浮层（默认 false） */
     inline?: boolean;
+    /** 等价于 !inline，使用 trigger 浮层（默认 false） */
+    usePopover?: boolean;
+    /** 面板顶部 slot */
+    topSlot?: Snippet;
+    /** 面板底部 slot */
+    bottomSlot?: Snippet;
+    /** 根元素内联样式 */
+    style?: string;
+    /** 面板高度 px（默认 280） */
+    height?: number;
+    /** 面板宽度 px（默认 280） */
+    width?: number;
     /** 支持浏览器 EyeDropper 时显示吸管按钮（默认 true，不支持自动隐藏） */
     eyeDropper?: boolean;
     /** 显示最近使用颜色行（默认 false） */
@@ -78,6 +90,12 @@
     defaultFormat = 'hex',
     showFormatToggle = true,
     inline = false,
+    usePopover = false,
+    topSlot,
+    bottomSlot,
+    style,
+    height = 280,
+    width = 280,
     eyeDropper = true,
     recentColors = false,
     recentMax = 8,
@@ -116,11 +134,14 @@
     onChange?.(hex);
   }
 
+  // usePopover 等价于 !inline：显式启用浮层则覆盖 inline。
+  const effectiveInline = $derived(usePopover ? false : inline);
+
   // ---------- 受控 open (红线 #1) ----------
   // inline 模式：面板常驻渲染，不受 open 控制。
   const isOpenControlled = $derived(open !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(inline ? true : isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(effectiveInline ? true : isOpenControlled ? !!open : innerOpen);
 
   // ---------- 受控 format (红线 #1) ----------
   const isFormatControlled = $derived(format !== undefined);
@@ -482,7 +503,7 @@
 
   $effect(() => {
     // inline 模式无浮层，不挂 dismiss。
-    if (inline || !isOpen || !rootEl) return;
+    if (effectiveInline || !isOpen || !rootEl) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
@@ -494,7 +515,7 @@
   // ---------- useFocusTrap (红线 #3)：浮层模式打开时陷入焦点，关闭归还 trigger ----------
   // 复用 core 同一原语（与 Modal/Drawer/Popover 一致，不重造）。
   $effect(() => {
-    if (inline || !isOpen || !panelEl) return;
+    if (effectiveInline || !isOpen || !panelEl) return;
     const trap = useFocusTrap(panelEl);
     trap.activate();
     return () => trap.deactivate();
@@ -513,7 +534,7 @@
       'cd-color-picker',
       `cd-color-picker--${size}`,
       status !== 'default' && `cd-color-picker--${status}`,
-      inline && 'cd-color-picker--inline',
+      effectiveInline && 'cd-color-picker--inline',
       disabled && 'cd-color-picker--disabled',
       isOpen && 'cd-color-picker--open',
     ]
@@ -523,6 +544,7 @@
 </script>
 
 {#snippet panelBody()}
+      {@render topSlot?.()}
       <div
         class="cd-color-picker__saturation"
         bind:this={satEl}
@@ -677,16 +699,30 @@
           </div>
         </div>
       {/if}
+
+      {@render bottomSlot?.()}
 {/snippet}
 
-{#if inline}
-  <div class={cls} bind:this={rootEl}>
+{#if effectiveInline}
+  <div
+    class={cls}
+    bind:this={rootEl}
+    style={[style, width ? `width:${width}px` : '', height ? `height:${height}px` : '']
+      .filter(Boolean)
+      .join(';')}
+  >
     <div class="cd-color-picker__panel cd-color-picker__panel--inline" role="group" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
       {@render panelBody()}
     </div>
   </div>
 {:else}
-  <div class={cls} bind:this={rootEl}>
+  <div
+    class={cls}
+    bind:this={rootEl}
+    style={[style, width ? `width:${width}px` : '', height ? `height:${height}px` : '']
+      .filter(Boolean)
+      .join(';')}
+  >
     <button
       type="button"
       class="cd-color-picker__trigger"
