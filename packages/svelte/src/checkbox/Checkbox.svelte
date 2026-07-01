@@ -28,6 +28,9 @@
     name?: string;
     extra?: string | undefined;
     id?: string;
+    addonId?: string;
+    extraId?: string;
+    preventScroll?: boolean;
     onChange?: (checked: boolean) => void;
     children?: Snippet;
   }
@@ -44,6 +47,9 @@
     name,
     extra,
     id,
+    addonId,
+    extraId: extraIdProp,
+    preventScroll,
     onChange,
     children,
   }: Props = $props();
@@ -51,7 +57,7 @@
   const group = getCheckboxGroupContext();
 
   const fieldId = resolveId();
-  const extraId = $derived(extra ? `${fieldId}-extra` : undefined);
+  const extraId = $derived(extraIdProp ?? (extra ? `${fieldId}-extra` : undefined));
 
   function resolveId(): string {
     return id ?? useId('cd-checkbox');
@@ -125,6 +131,7 @@
     checked={isChecked}
     disabled={resolvedDisabled}
     aria-invalid={resolvedStatus === 'error' || undefined}
+    aria-labelledby={addonId}
     aria-describedby={extraId}
     onchange={handleChange}
   />
@@ -145,7 +152,7 @@
     {/if}
   </span>
   {#if children || extra}
-    <span class="cd-checkbox__content">
+    <span class="cd-checkbox__content" id={addonId}>
       {#if children}<span class="cd-checkbox__label">{@render children()}</span>{/if}
       {#if extra}<span class="cd-checkbox__extra" id={extraId}>{extra}</span>{/if}
     </span>

@@ -36,8 +36,13 @@
     /** 根元素 id，关联 aria；不传自动生成。 */
     id?: string;
     ariaLabel?: string;
+    style?: string;
     onChange?: (v: number) => void;
     onHoverChange?: (v: number) => void;
+    onBlur?: () => void;
+    onFocus?: () => void;
+    onKeyDown?: (e: KeyboardEvent) => void;
+    preventScroll?: boolean;
   }
 
   let {
@@ -56,8 +61,13 @@
     name,
     id,
     ariaLabel,
+    style,
     onChange,
     onHoverChange,
+    onBlur,
+    onFocus,
+    onKeyDown,
+    preventScroll,
   }: Props = $props();
 
   const loc = useLocale();
@@ -223,7 +233,8 @@
   let rootEl: HTMLDivElement | undefined;
   // autoFocus：命令式聚焦一次（红线 #3，SSR 安全）。
   $effect(() => {
-    if (autoFocus && rootEl && interactive) rootEl.focus();
+    if (autoFocus && rootEl && interactive)
+      rootEl.focus(preventScroll === undefined ? undefined : { preventScroll });
   });
 </script>
 
@@ -241,8 +252,13 @@
   aria-readonly={readonly || undefined}
   aria-invalid={status === 'error' || undefined}
   tabindex={interactive ? 0 : -1}
-  style={sizePx ? `--cd-rating-size-active: ${sizePx}` : undefined}
-  onkeydown={handleKeydown}
+  style={[sizePx ? `--cd-rating-size-active: ${sizePx}` : '', style ?? ''].filter(Boolean).join(';') || undefined}
+  onkeydown={(e) => {
+    handleKeydown(e);
+    onKeyDown?.(e);
+  }}
+  onfocus={() => onFocus?.()}
+  onblur={() => onBlur?.()}
   onmouseleave={handleLeave}
 >
   {#if name}<input type="hidden" {name} value={current} />{/if}

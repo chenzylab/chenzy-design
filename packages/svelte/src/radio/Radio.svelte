@@ -26,6 +26,17 @@
     extra?: string | undefined;
     children?: Snippet;
     onChange?: (checked: boolean) => void;
+    addonId?: string;
+    addonClassName?: string;
+    addonStyle?: string;
+    autoFocus?: boolean;
+    extraId?: string;
+    mode?: 'advanced' | '';
+    style?: string;
+    onMouseEnter?: (e: MouseEvent) => void;
+    onMouseLeave?: (e: MouseEvent) => void;
+    ariaLabel?: string;
+    preventScroll?: boolean;
   }
 
   let {
@@ -40,15 +51,31 @@
     extra,
     children,
     onChange,
+    addonId,
+    addonClassName,
+    addonStyle,
+    autoFocus = false,
+    extraId: extraIdProp,
+    mode = '',
+    style,
+    onMouseEnter,
+    onMouseLeave,
+    ariaLabel,
+    preventScroll = false,
   }: Props = $props();
 
   const group = getRadioGroupContext();
 
   const fieldId = useId('cd-radio-item');
-  const extraId = $derived(extra ? `${fieldId}-extra` : undefined);
+  const extraId = $derived(extraIdProp ?? (extra ? `${fieldId}-extra` : undefined));
 
   const isControlled = $derived(checked !== undefined);
   let inner = $state(getInitialChecked());
+
+  let inputEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (autoFocus) inputEl?.focus({ preventScroll });
+  });
 
   function getInitialChecked(): boolean {
     return defaultChecked;
@@ -94,6 +121,10 @@
     if (resolvedDisabled) return;
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
+      if (mode === 'advanced' && isChecked) {
+        onChange?.(false);
+        return;
+      }
       activate();
       return;
     }
@@ -102,6 +133,10 @@
 
   function handleFancyClick() {
     if (resolvedDisabled) return;
+    if (mode === 'advanced' && isChecked) {
+      onChange?.(false);
+      return;
+    }
     activate();
   }
 
@@ -142,28 +177,33 @@
   <div
     {@attach registerAttach}
     class={cls}
+    {style}
     role="radio"
     aria-checked={isChecked}
     aria-disabled={resolvedDisabled ? 'true' : undefined}
     aria-describedby={extraId}
+    aria-label={ariaLabel}
     {tabindex}
     onclick={handleFancyClick}
     onkeydown={handleFancyKeydown}
+    onmouseenter={onMouseEnter}
+    onmouseleave={onMouseLeave}
   >
     {#if resolvedType !== 'pureCard'}
       <span class="cd-radio__circle" aria-hidden="true"></span>
     {/if}
     {#if children || extra}
-      <span class="cd-radio__content">
+      <span class={['cd-radio__content', addonClassName].filter(Boolean).join(' ')} id={addonId} style={addonStyle}>
         {#if children}<span class="cd-radio__label">{@render children()}</span>{/if}
         {#if extra}<span class="cd-radio__extra" id={extraId}>{extra}</span>{/if}
       </span>
     {/if}
   </div>
 {:else}
-  <label class={cls} for={fieldId}>
+  <label class={cls} for={fieldId} {style} onmouseenter={onMouseEnter} onmouseleave={onMouseLeave}>
     <input
       {@attach registerAttach}
+      bind:this={inputEl}
       id={fieldId}
       class="cd-radio__input"
       type="radio"
@@ -173,12 +213,14 @@
       disabled={resolvedDisabled}
       {tabindex}
       aria-describedby={extraId}
+      aria-labelledby={addonId ?? fieldId}
+      aria-label={ariaLabel}
       onchange={handleChange}
       onkeydown={handleKeydown}
     />
     <span class="cd-radio__circle" aria-hidden="true"></span>
     {#if children || extra}
-      <span class="cd-radio__content">
+      <span class={['cd-radio__content', addonClassName].filter(Boolean).join(' ')} id={addonId} style={addonStyle}>
         {#if children}<span class="cd-radio__label">{@render children()}</span>{/if}
         {#if extra}<span class="cd-radio__extra" id={extraId}>{extra}</span>{/if}
       </span>

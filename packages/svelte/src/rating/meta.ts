@@ -22,8 +22,13 @@ export const meta = {
     { name: 'name', type: 'string', default: 'undefined' },
     { name: 'id', type: 'string', default: '自动生成', desc: '根元素 id，关联 aria' },
     { name: 'ariaLabel', type: 'string', default: 'i18n 默认', desc: '无可视标签时的辅助名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根元素内联样式，与内部 token 样式合并' },
+    { name: 'preventScroll', type: 'boolean', default: 'undefined', desc: 'autoFocus 聚焦时是否阻止滚动' },
     { name: 'onChange', type: '(v: number) => void', default: 'undefined' },
     { name: 'onHoverChange', type: '(v: number) => void', default: 'undefined', desc: '悬停预览值变化；移出时为当前 value' },
+    { name: 'onFocus', type: '() => void', default: 'undefined', desc: '根元素获得焦点' },
+    { name: 'onBlur', type: '() => void', default: 'undefined', desc: '根元素失去焦点' },
+    { name: 'onKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '按键事件（内部处理后透传）' },
   ],
   i18nKeys: ['Rating.ariaLabel', 'Rating.valueText', 'Rating.cleared', 'Rating.unrated'],
   a11y: {

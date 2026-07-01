@@ -37,6 +37,13 @@ export const meta = {
     { name: 'onInput', type: '(v: number | [number, number]) => void', default: 'undefined', desc: '与 change 同步的低级输入信号（拖动中实时触发）' },
     { name: 'onFocus', type: '(detail: { index: number }) => void', default: 'undefined', desc: '手柄获得焦点，附带手柄索引' },
     { name: 'onBlur', type: '(detail: { index: number }) => void', default: 'undefined', desc: '手柄失焦，附带手柄索引' },
+    { name: 'showBoundary', type: 'boolean', default: 'false', desc: '显示轨道两端边界值标签' },
+    { name: 'showArrow', type: 'boolean', default: 'true', desc: 'tooltip 是否显示箭头' },
+    { name: 'showMarkLabel', type: 'boolean', default: 'true', desc: '显示标记文本标签' },
+    { name: 'tooltipOnMark', type: 'boolean', default: 'false', desc: 'tooltip 跟随标记位置' },
+    { name: 'handleDot', type: '{ color: string; size: string } | { color: string; size: string }[]', default: 'undefined', desc: '自定义手柄圆点样式，range 时为数组' },
+    { name: 'onMouseUp', type: '(e: MouseEvent) => void', default: 'undefined', desc: 'pointerup 时触发' },
+    { name: 'ariaValuetext', type: 'string', default: 'undefined', desc: '覆盖 getAriaValueText 的 aria-valuetext 文案' },
   ],
   a11y: {
     role: 'slider',

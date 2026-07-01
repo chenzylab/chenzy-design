@@ -64,6 +64,20 @@
     allowCross?: boolean;
     /** 拖拽/点击结束时触发（onChangeComplete 的别名，语义更明确） */
     onAfterChange?: (v: SliderValue) => void;
+    /** 显示轨道两端边界值标签 */
+    showBoundary?: boolean;
+    /** tooltip 是否显示箭头 */
+    showArrow?: boolean;
+    /** 显示标记文本标签 */
+    showMarkLabel?: boolean;
+    /** tooltip 跟随标记位置 */
+    tooltipOnMark?: boolean;
+    /** 自定义手柄圆点样式，range 时为数组 */
+    handleDot?: { color: string; size: string } | { color: string; size: string }[];
+    /** pointerup 时触发 */
+    onMouseUp?: (e: MouseEvent) => void;
+    /** 覆盖 getAriaValueText 的 aria-valuetext 文案 */
+    ariaValuetext?: string;
   }
 
   let {
@@ -101,6 +115,13 @@
     pushable = false,
     allowCross = true,
     onAfterChange,
+    showBoundary = false,
+    showArrow = true,
+    showMarkLabel = true,
+    tooltipOnMark = false,
+    handleDot,
+    onMouseUp,
+    ariaValuetext,
   }: Props = $props();
 
   const loc = useLocale();
@@ -280,9 +301,10 @@
     dragValue = next;
   }
 
-  function onPointerUp() {
+  function onPointerUp(e?: PointerEvent) {
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
+    if (e) onMouseUp?.(e as MouseEvent);
     if (dragValue !== null) {
       const finalValue = dragValue;
       dragValue = null;
@@ -442,6 +464,16 @@
     return `inset-inline-start: ${pct}%`;
   }
 
+  function handleDotStyle(index: number): string {
+    if (!handleDot) return '';
+    const dot = Array.isArray(handleDot) ? handleDot[index] : handleDot;
+    if (!dot) return '';
+    const parts: string[] = [];
+    if (dot.color) parts.push(`--cd-slider-dot-color:${dot.color}`);
+    if (dot.size) parts.push(`--cd-slider-dot-size:${dot.size}`);
+    return parts.join(';');
+  }
+
   const cls = $derived(
     [
       'cd-slider',
@@ -481,12 +513,14 @@
   {id}
   class={cls}
   class:cd-slider--vertical={vertical}
+  class:cd-slider--tooltip-on-mark={tooltipOnMark}
   role="group"
   aria-label={ariaLabelledby ? undefined : ariaLabel}
   aria-labelledby={ariaLabelledby}
   aria-disabled={disabled || undefined}
   style={vertical ? `block-size: ${height}px` : undefined}
 >
+  {#if showBoundary}<span class="cd-slider__boundary-min">{min}</span>{/if}
   <div
     class="cd-slider__rail"
     role="presentation"
@@ -512,7 +546,11 @@
 
     {#each markKeys as mk (mk)}
       {@const pct = valueToPercent(mk)}
-      <span class="cd-slider__mark" style={posStyle(pct)}>{marks?.[mk]}</span>
+      <span
+        class="cd-slider__mark"
+        class:cd-slider__mark-label--hidden={!showMarkLabel}
+        style={posStyle(pct)}
+      >{marks?.[mk]}</span>
     {/each}
 
     {#each handleList as index (index)}
@@ -528,9 +566,10 @@
         aria-valuemin={handleMin(index)}
         aria-valuemax={handleMax(index)}
         aria-valuenow={hv}
-        aria-valuetext={ariaValueText(index)}
+        aria-valuetext={ariaValuetext ?? ariaValueText(index)}
         aria-disabled={disabled || undefined}
-        style={`${posStyle(pct)};${handleStyle ?? ''}`}
+        data-show-arrow={showArrow}
+        style={[posStyle(pct), handleStyle ?? '', handleDotStyle(index)].filter(Boolean).join(';')}
         onpointerdown={(e) => handleHandlePointerDown(index, e)}
         onkeydown={(e) => handleKeydown(index, e)}
         onpointerenter={() => (hoverIndex = index)}
@@ -550,6 +589,7 @@
       </span>
     {/each}
   </div>
+  {#if showBoundary}<span class="cd-slider__boundary-max">{max}</span>{/if}
 </div>
 
 <style>
@@ -615,6 +655,19 @@
   /* Reverse vertical: handle anchored from the top, offset upward by half. */
   .cd-slider--vertical.cd-slider--reverse .cd-slider__handle {
     transform: translate(-50%, -50%);
+  }
+  /* Custom handle dot (only rendered when handleDot sets the color variable). */
+  .cd-slider__handle[style*='--cd-slider-dot-color']::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: var(--cd-slider-dot-size, 6px);
+    block-size: var(--cd-slider-dot-size, 6px);
+    background: var(--cd-slider-dot-color);
+    border-radius: var(--cd-border-radius-full);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
   .cd-slider__handle:hover {
     box-shadow: var(--cd-shadow-elevated);
@@ -684,6 +737,29 @@
   }
   .cd-slider--vertical.cd-slider--reverse .cd-slider__mark {
     transform: translateY(-50%);
+  }
+  /* showMarkLabel=false: keep the tick dot but hide its text label. */
+  .cd-slider__mark-label--hidden {
+    visibility: hidden;
+  }
+  /* Boundary value labels flanking the rail (showBoundary). */
+  .cd-slider__boundary-min,
+  .cd-slider__boundary-max {
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-small);
+    white-space: nowrap;
+  }
+  .cd-slider__boundary-min {
+    margin-inline-end: var(--cd-spacing-base, var(--cd-spacing-tight));
+  }
+  .cd-slider__boundary-max {
+    margin-inline-start: var(--cd-spacing-base, var(--cd-spacing-tight));
+  }
+  .cd-slider--vertical .cd-slider__boundary-min,
+  .cd-slider--vertical .cd-slider__boundary-max {
+    margin-inline: 0;
+    margin-block: var(--cd-spacing-tight);
   }
   .cd-slider--disabled {
     opacity: 0.5;
