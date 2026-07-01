@@ -25,7 +25,7 @@ export const tabsTokens = {
   'dropdown-radius': 'var(--cd-border-radius-medium)',
   'dropdown-z': 'var(--cd-z-dropdown)',
   'dropdown-min-width': '120px',
-  'dropdown-item-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',
+  'dropdown-item-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base)', // 对齐 Semi 菜单项 X 内边距（base-tight 12 → base 16）
   'dropdown-item-bg-hover': 'var(--cd-color-fill-0)',
   'dropdown-item-color-disabled': 'var(--cd-color-text-3)',
 } as const;

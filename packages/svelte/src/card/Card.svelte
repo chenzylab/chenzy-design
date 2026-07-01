@@ -253,8 +253,8 @@
   }
   .cd-card__title {
     color: var(--cd-card-title-color);
-    font-weight: var(--cd-font-weight-bold);
-    font-size: var(--cd-font-size-header-6);
+    font-weight: var(--cd-card-title-weight);
+    font-size: var(--cd-card-title-size);
     min-inline-size: 0;
   }
   .cd-card--small .cd-card__title {

@@ -578,12 +578,14 @@
   .cd-input-number__native:disabled {
     cursor: not-allowed;
   }
+  /* 步进器：对齐 Semi inputNumber，实底 bg-2 按钮 + 描边 + small 圆角，按钮间留 1px 缝 */
   .cd-input-number__actions {
     display: flex;
     flex-direction: column;
     flex: 0 0 auto;
-    inline-size: var(--cd-spacing-base-loose);
-    border-inline-start: 1px solid var(--cd-input-border);
+    inline-size: var(--cd-input-number-step-width);
+    gap: 1px;
+    margin-inline-start: 4px; /* Semi button-marginLeft */
   }
   .cd-input-number__action {
     display: inline-flex;
@@ -592,21 +594,25 @@
     flex: 1 1 50%;
     min-block-size: 0;
     padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--cd-color-text-2);
+    border: 1px solid var(--cd-input-number-step-border);
+    border-radius: var(--cd-input-number-step-radius);
+    background: var(--cd-input-number-step-bg);
+    color: var(--cd-input-number-step-color);
     cursor: pointer;
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-input-number__increment {
-    border-block-end: 1px solid var(--cd-input-border);
+    transition:
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-input-number__action:hover:not(:disabled) {
-    color: var(--cd-color-primary);
-    background: var(--cd-color-fill-1);
+    background: var(--cd-input-number-step-bg-hover);
+    border-color: var(--cd-color-fill-2);
+  }
+  .cd-input-number__action:active:not(:disabled) {
+    background: var(--cd-input-number-step-bg-active);
   }
   .cd-input-number__action:disabled {
-    color: var(--cd-color-text-3);
+    color: var(--cd-input-number-step-color-disabled);
+    background: var(--cd-input-number-step-bg-disabled);
     cursor: not-allowed;
   }
   /* --- controlsPosition="sides"：减/输入/加 横向排布，按钮分居两侧 --- */

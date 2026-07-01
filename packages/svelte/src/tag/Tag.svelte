@@ -211,6 +211,7 @@
     gap: var(--cd-tag-gap);
     block-size: var(--cd-tag-height-default);
     padding-inline: var(--cd-tag-padding-x);
+    padding-block: var(--cd-tag-padding-y);
     border: 1px solid transparent;
     border-radius: var(--cd-tag-radius);
     font-size: var(--cd-tag-font-size);
@@ -224,6 +225,7 @@
   }
   .cd-tag--large {
     block-size: var(--cd-tag-height-large);
+    padding-block: var(--cd-tag-padding-y-large);
   }
   .cd-tag--circle {
     border-radius: var(--cd-border-radius-full);

@@ -70,6 +70,7 @@ export const meta = {
     '--cd-toast-padding',
     '--cd-toast-gap',
     '--cd-toast-font-size',
+    '--cd-toast-font-weight',
     '--cd-toast-max-width',
     '--cd-toast-min-width',
     '--cd-toast-stack-gap',

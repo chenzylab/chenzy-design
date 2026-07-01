@@ -253,6 +253,11 @@
     block-size: var(--cd-avatar-size-default);
     font-size: var(--cd-font-size-regular);
   }
+  .cd-avatar--medium {
+    inline-size: var(--cd-avatar-size-medium);
+    block-size: var(--cd-avatar-size-medium);
+    font-size: var(--cd-font-size-header-6);
+  }
   .cd-avatar--large {
     inline-size: var(--cd-avatar-size-large);
     block-size: var(--cd-avatar-size-large);

@@ -8,9 +8,9 @@ export const tableTokens = {
   'table-row-hover-bg': 'var(--cd-color-fill-0)',
   'table-row-selected-bg': 'var(--cd-color-primary-light-default)',
   'table-row-stripe-bg': 'var(--cd-color-fill-0)',
-  'table-cell-padding-y': 'var(--cd-spacing-base-tight)',
+  'table-cell-padding-y': 'var(--cd-spacing-base)', // 对齐 Semi 默认行单元格内边距（base-tight 12 → base 16）
   'table-cell-padding-x': 'var(--cd-spacing-base)',
-  'table-cell-padding-y-small': 'var(--cd-spacing-tight)',
+  'table-cell-padding-y-small': 'var(--cd-spacing-tight)', // 小尺寸 8（Semi small）
   'table-cell-padding-y-large': 'var(--cd-spacing-base)',
   'table-sort-active-color': 'var(--cd-color-primary)',
   'table-sort-icon-color': 'var(--cd-color-text-3)',

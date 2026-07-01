@@ -344,11 +344,15 @@
     background: transparent;
     color: var(--cd-collapse-header-color);
     font: inherit;
+    font-weight: var(--cd-collapse-header-weight); /* 对齐 Semi 标题字重 bold */
     text-align: start;
     cursor: pointer;
   }
   .cd-collapse :global(.cd-collapse__header:hover:not(:disabled)) {
     background: var(--cd-collapse-header-bg-hover);
+  }
+  .cd-collapse :global(.cd-collapse__header:active:not(:disabled)) {
+    background: var(--cd-collapse-header-bg-active);
   }
   .cd-collapse :global(.cd-collapse__header:focus-visible) {
     outline: none;
