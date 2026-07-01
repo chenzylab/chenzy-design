@@ -422,7 +422,7 @@
     --cd-overflow-list-overflow-color-hover: var(--cd-color-text-0, #1d2129);
     --cd-overflow-list-overflow-bg: var(--cd-color-fill-0, #f2f3f5);
     --cd-overflow-list-overflow-bg-hover: var(--cd-color-fill-1, #e5e6eb);
-    --cd-overflow-list-overflow-radius: var(--cd-radius-default, 4px);
+    --cd-overflow-list-overflow-radius: var(--cd-border-radius-small);
     --cd-overflow-list-focus-ring: var(--cd-color-primary, #165dff);
 
     position: relative;

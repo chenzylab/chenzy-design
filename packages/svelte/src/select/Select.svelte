@@ -1086,7 +1086,7 @@
     justify-content: center;
     inline-size: 1rem;
     flex: 0 0 auto;
-    color: var(--cd-select-option-color-selected);
+    color: var(--cd-select-option-check-color);
   }
   .cd-select__empty {
     padding: var(--cd-select-option-padding);

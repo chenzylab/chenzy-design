@@ -86,7 +86,7 @@ export const meta = {
     '--cd-list-header-color',
     '--cd-list-item-color',
     '--cd-border-radius-full',
-    '--cd-radius-small',
+    '--cd-border-radius-small',
     '--cd-color-primary',
   ],
   examples: [
