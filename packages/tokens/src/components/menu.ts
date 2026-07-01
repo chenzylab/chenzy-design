@@ -16,7 +16,7 @@ export const menuTokens = {
   'menu-submenu-arrow-color': 'var(--cd-color-text-2)',
   // Anchor
   'anchor-link-color': 'var(--cd-color-text-2)',
-  'anchor-link-color-active': 'var(--cd-color-primary)',
+  'anchor-link-color-active': 'var(--cd-color-text-0)', // 对齐 Semi 选中文字 text-0（原 primary；ink 滑轨仍 primary）
   'anchor-link-padding': 'var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight)',
   'anchor-rail-color': 'var(--cd-color-border)',
   'anchor-ink-color': 'var(--cd-color-primary)',

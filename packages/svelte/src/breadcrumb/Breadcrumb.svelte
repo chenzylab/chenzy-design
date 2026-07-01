@@ -347,12 +347,13 @@
   }
   .cd-breadcrumb :global(.cd-breadcrumb__current) {
     color: var(--cd-breadcrumb-color-active);
+    font-weight: var(--cd-breadcrumb-active-weight); /* 对齐 Semi 当前项字重 bold */
   }
   /* activeIndex：选中项高亮（配合 onClick 受控选中） */
   .cd-breadcrumb :global(.cd-breadcrumb__link--active),
   .cd-breadcrumb :global(.cd-breadcrumb__text--active) {
     color: var(--cd-breadcrumb-color-active);
-    font-weight: 600;
+    font-weight: var(--cd-breadcrumb-active-weight);
   }
   .cd-breadcrumb__more {
     display: inline-flex;

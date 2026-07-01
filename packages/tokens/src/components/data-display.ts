@@ -28,7 +28,7 @@ export const dataDisplayTokens = {
   // Timeline
   'timeline-dot-size': '10px',
   'timeline-dot-color': 'var(--cd-color-primary)',
-  'timeline-line-color': 'var(--cd-color-border)',
+  'timeline-line-color': 'var(--cd-color-text-3)', // 对齐 Semi 连线颜色 text-3（原 border）
   'timeline-content-color': 'var(--cd-color-text-0)',
   'timeline-time-color': 'var(--cd-color-text-2)',
   'timeline-gap': 'var(--cd-spacing-base)',
