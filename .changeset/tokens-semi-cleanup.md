@@ -1,5 +1,5 @@
 ---
-"@chenzy-design/tokens": major
+"@chenzy-design/tokens": minor
 "@chenzy-design/svelte": patch
 ---
 
