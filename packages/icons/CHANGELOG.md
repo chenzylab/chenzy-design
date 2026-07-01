@@ -1,5 +1,7 @@
 # @chenzy-design/icons
 
+## 0.3.1
+
 ## 0.2.1
 
 ### Patch Changes

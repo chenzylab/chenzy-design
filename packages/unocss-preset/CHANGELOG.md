@@ -1,5 +1,11 @@
 # @chenzy-design/unocss-preset
 
+## 0.3.1
+
+### Patch Changes
+
+- @chenzy-design/tokens@0.3.1
+
 ## 0.3.0
 
 ### Patch Changes
