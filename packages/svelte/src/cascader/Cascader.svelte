@@ -1327,7 +1327,9 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-cascader--small .cd-cascader__trigger {
     min-block-size: var(--cd-select-height-small);
@@ -1335,19 +1337,25 @@
   .cd-cascader--large .cd-cascader__trigger {
     min-block-size: var(--cd-select-height-large);
   }
+  /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
+  .cd-cascader:not(.cd-cascader--open):not(.cd-cascader--disabled) .cd-cascader__trigger:hover {
+    background: var(--cd-select-bg-hover);
+  }
   .cd-cascader__trigger:focus-visible {
     outline: none;
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-cascader--open .cd-cascader__trigger {
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
   .cd-cascader--error .cd-cascader__trigger {
     border-color: var(--cd-select-border-error);
   }
   .cd-cascader__trigger[aria-disabled='true'] {
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }

@@ -413,7 +413,9 @@
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
     font-size: var(--cd-input-font-size);
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-input--small {
     block-size: var(--cd-input-height-small);
@@ -423,7 +425,12 @@
     block-size: var(--cd-input-height-large);
     font-size: var(--cd-font-size-header-6);
   }
+  /* 对齐 Semi 填充式：悬浮加深底色 */
+  .cd-input:hover:not(.cd-input--disabled):not(:focus-within) {
+    background: var(--cd-input-bg-hover);
+  }
   .cd-input:focus-within {
+    background: var(--cd-input-color-bg);
     border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
   }
@@ -434,7 +441,7 @@
     border-color: var(--cd-input-border-error);
   }
   .cd-input--disabled {
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }

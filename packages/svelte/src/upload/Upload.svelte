@@ -823,11 +823,14 @@
     border-radius: var(--cd-upload-dragger-radius);
     color: var(--cd-color-text-2);
     cursor: pointer;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-upload__dragger:hover,
   .cd-upload__dragger:focus-visible {
     border-color: var(--cd-upload-dragger-border-active);
+    background: var(--cd-upload-dragger-bg-active); /* 对齐 Semi 拖拽区 hover 背景 */
   }
   .cd-upload__dragger:focus-visible {
     outline: none;
