@@ -1381,7 +1381,9 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tree-select--small .cd-tree-select__trigger {
     min-block-size: var(--cd-select-height-small);
@@ -1389,19 +1391,25 @@
   .cd-tree-select--large .cd-tree-select__trigger {
     min-block-size: var(--cd-select-height-large);
   }
+  /* 对齐 Semi 填充式：悬浮加深底色 fill-1（非展开/禁用态） */
+  .cd-tree-select:not(.cd-tree-select--open):not(.cd-tree-select--disabled) .cd-tree-select__trigger:hover {
+    background: var(--cd-select-bg-hover);
+  }
   .cd-tree-select__trigger:focus-visible {
     outline: none;
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-tree-select--open .cd-tree-select__trigger {
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
   .cd-tree-select--error .cd-tree-select__trigger {
     border-color: var(--cd-select-border-error);
   }
   .cd-tree-select__trigger[aria-disabled='true'] {
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
@@ -1417,7 +1425,8 @@
     text-overflow: ellipsis;
   }
   .cd-tree-select__placeholder {
-    color: var(--cd-input-color-placeholder);
+    /* 对齐 Semi treeSelect 占位符 text-2（原共享 input-placeholder = text-3） */
+    color: var(--cd-color-text-2);
   }
   .cd-tree-select__clear,
   .cd-tree-select__arrow {

@@ -422,12 +422,15 @@
     min-block-size: var(--cd-input-height-default);
     padding-inline: var(--cd-input-padding-x);
     padding-block: var(--cd-spacing-extra-tight);
-    background: var(--cd-input-bg);
+    /* 对齐 Semi 填充式：默认灰底(fill-0) + 无边框，hover fill-1，聚焦 fill-0 + 蓝边框 */
+    background: var(--cd-input-color-bg);
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
     font-size: var(--cd-input-font-size);
     cursor: text;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tag-input--small {
     min-block-size: var(--cd-input-height-small);
@@ -437,15 +440,23 @@
     min-block-size: var(--cd-input-height-large);
     font-size: var(--cd-font-size-header-6);
   }
+  /* 对齐 Semi 填充式：悬浮加深底色 */
+  .cd-tag-input:hover:not(.cd-tag-input--disabled):not(:focus-within) {
+    background: var(--cd-input-bg-hover);
+  }
   .cd-tag-input:focus-within {
+    background: var(--cd-input-color-bg);
     border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
+  }
+  .cd-tag-input--warning {
+    border-color: var(--cd-input-border-warning);
   }
   .cd-tag-input--error {
     border-color: var(--cd-input-border-error);
   }
   .cd-tag-input--disabled {
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }

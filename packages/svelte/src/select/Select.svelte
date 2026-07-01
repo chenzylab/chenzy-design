@@ -922,7 +922,9 @@
     border: 1px solid var(--cd-select-border);
     border-radius: var(--cd-select-radius);
     cursor: pointer;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-select--small .cd-select__trigger {
     min-block-size: var(--cd-select-height-small);
@@ -930,19 +932,25 @@
   .cd-select--large .cd-select__trigger {
     min-block-size: var(--cd-select-height-large);
   }
+  /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
+  .cd-select:not(.cd-select--open):not(.cd-select--disabled) .cd-select__trigger:hover {
+    background: var(--cd-select-bg-hover);
+  }
   .cd-select__trigger:focus-visible {
     outline: none;
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-select--open .cd-select__trigger {
+    background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
   .cd-select--error .cd-select__trigger {
     border-color: var(--cd-select-border-error);
   }
   .cd-select--disabled .cd-select__trigger {
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
