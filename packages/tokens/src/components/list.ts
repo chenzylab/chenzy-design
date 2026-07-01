@@ -17,7 +17,8 @@ export const listTokens = {
   'image-mask-color': 'var(--cd-color-text-inverse)',
   'image-preview-overlay': 'rgba(0, 0, 0, 0.7)',
   'image-preview-z': 'var(--cd-z-modal)',
-  // Highlight
-  'highlight-bg': 'var(--cd-color-warning)',
-  'highlight-color': 'var(--cd-color-text-0)',
+  // Highlight（镜像 Semi：黄底黑字 + 字重 600）
+  'highlight-bg': 'var(--cd-color-highlight-bg)',
+  'highlight-color': 'var(--cd-color-highlight)',
+  'highlight-weight': 'var(--cd-font-weight-bold)',
 } as const;

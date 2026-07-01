@@ -1,8 +1,8 @@
 /** Component tokens for Tabs & Dropdown (M3 Navigation). */
 export const tabsTokens = {
-  // Tabs
-  'tabs-tab-color': 'var(--cd-color-text-1)',
-  'tabs-tab-color-active': 'var(--cd-color-primary)',
+  // Tabs（对齐 Semi 线条式：默认 text-2、选中 text-0 深字，标示线 ink 才是 primary）
+  'tabs-tab-color': 'var(--cd-color-text-2)',
+  'tabs-tab-color-active': 'var(--cd-color-text-0)',
   'tabs-tab-color-disabled': 'var(--cd-color-text-3)',
   'tabs-tab-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base)',
   'tabs-tab-font-size': 'var(--cd-font-size-regular)',

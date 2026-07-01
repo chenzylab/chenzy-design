@@ -69,7 +69,12 @@ export const meta = {
       '语义+背景双通道区分，不仅靠颜色（WCAG 1.4.1）',
     ],
   },
-  tokens: ['--cd-highlight-bg', '--cd-highlight-color', '--cd-radius-small'],
+  tokens: [
+    '--cd-highlight-bg',
+    '--cd-highlight-color',
+    '--cd-highlight-weight',
+    '--cd-border-radius-small',
+  ],
   examples: [
     { title: '基础', code: '<Highlight sourceString="hello world" searchWords="world" />' },
     {
