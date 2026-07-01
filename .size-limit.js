@@ -83,7 +83,7 @@ const components = [
   ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
   ['rating', '{ Rating }', '3.65 KB'],
   ['select', '{ Select }', '9 KB'],
-  ['slider', '{ Slider }', '4.75 KB'],
+  ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '4.25 KB'],
   ['textarea', '{ TextArea }', '3.75 KB'],
