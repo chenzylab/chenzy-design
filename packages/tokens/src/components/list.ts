@@ -11,7 +11,7 @@ export const listTokens = {
   'list-item-color': 'var(--cd-color-text-1)',
   // Image
   'image-bg': 'var(--cd-color-fill-0)',
-  'image-radius': 'var(--cd-border-radius-medium)',
+  'image-radius': 'var(--cd-border-radius-small)', // Semi $radius-image = small（原 medium）
   'image-placeholder-color': 'var(--cd-color-text-3)',
   'image-mask-bg': 'rgba(0, 0, 0, 0.5)',
   'image-mask-color': 'var(--cd-color-text-inverse)',

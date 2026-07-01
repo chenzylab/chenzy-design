@@ -5,8 +5,8 @@ export const calendarTokens = {
   'calendar-header-bg': 'var(--cd-color-bg-1)',
   'calendar-text': 'var(--cd-color-text-0)',
   'calendar-text-secondary': 'var(--cd-color-text-2)',
-  'calendar-today-bg': 'var(--cd-color-primary-light-default)',
-  'calendar-today-fg': 'var(--cd-color-primary)',
+  'calendar-today-bg': 'var(--cd-color-primary)', // Semi $color-calendar-bg-active（今日实底 primary）
+  'calendar-today-fg': 'var(--cd-color-bg-1)', // Semi $color-calendar-text-active（今日浅字 bg-1）
   'calendar-selected-border': 'var(--cd-color-primary)',
   'calendar-range-bg': 'var(--cd-color-primary-light-default)',
   'calendar-range-edge-bg': 'var(--cd-color-primary-light-default)',
