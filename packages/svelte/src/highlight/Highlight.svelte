@@ -86,10 +86,10 @@
   }
   .cd-highlight__mark {
     padding-inline: 2px;
-    border-radius: var(--cd-radius-small);
+    border-radius: var(--cd-border-radius-small);
     background: var(--cd-highlight-bg);
     color: var(--cd-highlight-color);
-    font-weight: inherit;
+    font-weight: var(--cd-highlight-weight); /* 对齐 Semi 高亮字重 600 */
   }
   .cd-highlight__mark--unstyled {
     padding-inline: 0;

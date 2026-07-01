@@ -60,6 +60,9 @@ export const aliasLight = {
   'color-warning-active': palette['orange-7'],
   // 镜像 Semi $color-rating-icon-default（评分已填星色）= yellow-5
   'color-rating-icon-default': palette['yellow-5'],
+  // 镜像 Semi $color-highlight / $color-highlight-bg（文本搜索高亮）：亮色 black 字 + yellow-4 底
+  'color-highlight': '#000000',
+  'color-highlight-bg': palette['yellow-4'],
   'color-warning-disabled': palette['orange-2'],
   'color-warning-light-default': palette['orange-0'],
   'color-warning-light-hover': palette['orange-1'],
@@ -124,6 +127,9 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-text-inverse': '#ffffff',
   // Rating 星色 — Semi 暗色 yellow-5 = rgb(253,222,67)
   'color-rating-icon-default': '#fdde43',
+  // Highlight — Semi 暗色 white 字 + yellow-2 底（yellow-2 = #fdf398）
+  'color-highlight': '#ffffff',
+  'color-highlight-bg': '#fdf398',
   // —— primary（暗色 blue 反转）——
   'color-primary': 'rgb(84, 169, 255)', // blue-5
   'color-primary-hover': 'rgb(127, 193, 255)', // blue-6
