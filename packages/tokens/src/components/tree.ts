@@ -13,8 +13,9 @@ export const treeTokens = {
   'tree-node-color': 'var(--cd-color-text-0)',
   'tree-node-color-disabled': 'var(--cd-color-text-2)',
   'tree-node-bg-selected': 'var(--cd-color-primary-light-default)',
-  'tree-search-highlight-bg': 'var(--cd-color-warning-light-default)',
-  'tree-search-highlight-color': 'var(--cd-color-warning)',
+  'tree-search-highlight-bg': 'transparent', // Semi tree 高亮无背景（原 warning-light）
+  'tree-search-highlight-color': 'var(--cd-color-primary)', // Semi tree 高亮文本 primary（原 warning）
+  'tree-search-highlight-weight': 'var(--cd-font-weight-bold)', // Semi 高亮字重 bold
   'tree-focus-ring': 'var(--cd-color-primary)',
   'tree-border-color': 'var(--cd-color-border)',
   'tree-border-color-warning': 'var(--cd-color-warning)',

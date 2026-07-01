@@ -1402,7 +1402,7 @@
   }
   .cd-date-picker--compact .cd-date-picker__weekday {
     block-size: calc(var(--cd-date-picker-cell-size) * 0.85);
-    font-size: var(--cd-font-size-0);
+    font-size: var(--cd-font-size-small);
   }
   /* no-motion */
   .cd-date-picker--no-motion .cd-date-picker__panel {

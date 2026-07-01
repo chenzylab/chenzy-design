@@ -1480,6 +1480,7 @@
     padding: 0;
     color: var(--cd-tree-search-highlight-color);
     background: var(--cd-tree-search-highlight-bg);
+    font-weight: var(--cd-tree-search-highlight-weight); /* 对齐 Semi 高亮字重 bold */
   }
 
   .cd-tree__empty {

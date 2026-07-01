@@ -19,5 +19,6 @@ export const selectTokens = {
   'select-option-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',
   'select-option-bg-hover': 'var(--cd-color-fill-0)',
   'select-option-bg-active': 'var(--cd-color-fill-1)',
-  'select-option-color-selected': 'var(--cd-color-primary)',
+  'select-option-color-selected': 'var(--cd-color-text-0)',
+  'select-option-check-color': 'var(--cd-color-primary)',
 } as const;
