@@ -1,5 +1,14 @@
 # @chenzy-design/svelte
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [db168b0]
+  - @chenzy-design/core@0.3.1
+  - @chenzy-design/locale@0.3.1
+  - @chenzy-design/tokens@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
