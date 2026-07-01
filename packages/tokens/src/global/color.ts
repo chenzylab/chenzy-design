@@ -63,6 +63,17 @@ export const palette = {
   'orange-7': '#a84a00',
   'orange-8': '#7e3100',
   'orange-9': '#541d00',
+  // Yellow — 镜像 Semi yellow ramp（Rating 星色 yellow-5 用；warning 走 orange，二者独立）
+  'yellow-0': '#fffdea',
+  'yellow-1': '#fefbcb',
+  'yellow-2': '#fdf398',
+  'yellow-3': '#fce865',
+  'yellow-4': '#fbda32',
+  'yellow-5': '#fac800',
+  'yellow-6': '#d0aa00',
+  'yellow-7': '#a78b00',
+  'yellow-8': '#7d6a00',
+  'yellow-9': '#534800',
 } as const;
 
 export type GlobalColorKey = keyof typeof palette;

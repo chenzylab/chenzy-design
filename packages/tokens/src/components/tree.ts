@@ -4,7 +4,7 @@ export const treeTokens = {
   'tree-node-padding-x': 'var(--cd-spacing-base-tight)',
   'tree-node-bg-hover': 'var(--cd-color-fill-0)',
   'tree-node-bg-active': 'var(--cd-color-fill-1)',
-  'tree-node-color-selected': 'var(--cd-color-primary)',
+  'tree-node-color-selected': 'var(--cd-color-text-0)', // Semi 树选中态深字（bg primary-light-default 区分，同 Menu）
   'tree-indent': 'var(--cd-spacing-base)',
   'tree-expand-icon-color': 'var(--cd-color-text-2)',
   // standalone Tree component (M4 Show)
