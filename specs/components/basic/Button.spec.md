@@ -75,7 +75,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | ≤ 2.9 KB（含 ButtonGroup/SplitButtonGroup/colorful）|
+| gzip 体积 | ≤ 3.4 KB（含 ButtonGroup/SplitButtonGroup/colorful；#338/#361 对齐 Semi 后按实测 +15% 校准）|
 | 状态切换 | 纯 class 切换，无重排抖动 |
 - 不需要虚拟化/惰性渲染。
 
