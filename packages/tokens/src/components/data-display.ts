@@ -1,9 +1,10 @@
 /** Component tokens for Empty / Descriptions / Collapse / Timeline (M4 Show). */
 export const dataDisplayTokens = {
-  // Empty
+  // Empty（对齐 Semi：描述文字 text-1、标题字重 bold）
   'empty-image-color': 'var(--cd-color-fill-1)',
   'empty-title-color': 'var(--cd-color-text-1)',
-  'empty-desc-color': 'var(--cd-color-text-2)',
+  'empty-title-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 标题字重 600
+  'empty-desc-color': 'var(--cd-color-text-1)', // 对齐 Semi 描述文字 text-1（原 text-2）
   'empty-gap': 'var(--cd-spacing-base-tight)',
   // Descriptions
   'descriptions-label-color': 'var(--cd-color-text-2)',

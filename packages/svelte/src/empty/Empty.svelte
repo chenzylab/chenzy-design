@@ -263,6 +263,7 @@
   .cd-empty__title {
     margin: 0;
     color: var(--cd-empty-title-color);
+    font-weight: var(--cd-empty-title-weight);
   }
   .cd-empty__description {
     margin: 0;
