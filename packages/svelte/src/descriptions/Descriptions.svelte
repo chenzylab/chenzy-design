@@ -259,6 +259,10 @@
   .cd-descriptions--row :global(.cd-descriptions__item) {
     align-items: stretch;
   }
+  /* 双行显示：value 字重 bold（对齐 Semi $font-descriptions_value-fontWeight） */
+  .cd-descriptions--row-mode :global(.cd-descriptions__value) {
+    font-weight: var(--cd-descriptions-value-weight-row);
+  }
 
   /* bordered cells */
   .cd-descriptions--bordered .cd-descriptions__content {
