@@ -698,6 +698,7 @@
     font-family: var(--cd-font-family-mono, monospace);
     font-size: var(--cd-typography-code-font-size);
     background-color: var(--cd-typography-code-bg);
+    color: var(--cd-typography-code-color); /* 对齐 Semi code 文字 text-2 */
     padding-inline: 0.4em;
     padding-block: 0.1em;
     border-radius: 3px;

@@ -9,6 +9,8 @@ export const dataDisplayTokens = {
   // Descriptions
   'descriptions-label-color': 'var(--cd-color-text-2)',
   'descriptions-value-color': 'var(--cd-color-text-0)',
+  'descriptions-value-weight-row': 'var(--cd-font-weight-bold)', // Semi 双行显示 value 字重 bold
+
   'descriptions-border': 'var(--cd-color-border)',
   'descriptions-label-bg': 'var(--cd-color-fill-0)',
   'descriptions-cell-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',
