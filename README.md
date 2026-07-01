@@ -1,19 +1,21 @@
 # chenzy-design
 
-对标 Semi Design 的高质量 Svelte 组件库。无障碍 · 主题化 · i18n · 多框架适配 · 性能基准 · AI 友好。
+**English** · [简体中文](./README.zh-CN.md)
 
-> 架构与约定见 [`AGENTS.md`](./AGENTS.md)。需求规格见 [`specs/`](./specs)。执行手册见 [`.claude/skills/`](./.claude/skills)。
+A high-quality Svelte component library benchmarked against Semi Design. Accessible · Themeable · i18n · Multi-framework-ready · Performance-benched · AI-friendly.
 
-📖 在线文档：<https://chenzylab.github.io/chenzy-design/>
+> Architecture & conventions: [`AGENTS.md`](./AGENTS.md). Requirement specs: [`specs/`](./specs). Runbooks: [`.claude/skills/`](./.claude/skills).
 
-## 安装使用
+📖 Live docs: <https://chenzylab.github.io/chenzy-design/>
+
+## Installation
 
 ```bash
 pnpm add @chenzy-design/svelte @chenzy-design/tokens
 ```
 
 ```svelte
-<!-- 应用入口（如 +layout.svelte）引入设计令牌 CSS —— 必须，否则组件无样式 -->
+<!-- App entry (e.g. +layout.svelte): import the design-token CSS — required, or components render unstyled -->
 <script>
   import '@chenzy-design/tokens/tokens.css';
   let { children } = $props();
@@ -22,60 +24,69 @@ pnpm add @chenzy-design/svelte @chenzy-design/tokens
 ```
 
 ```svelte
-<!-- 任意页面使用组件 -->
+<!-- Use components on any page -->
 <script lang="ts">
   import { Button, Input } from '@chenzy-design/svelte';
   let text = $state('');
 </script>
 
-<Button type="primary">主要按钮</Button>
-<Input bind:value={text} placeholder="请输入" />
+<Button type="primary">Primary</Button>
+<Input bind:value={text} placeholder="Type here" />
 ```
 
-要求 Svelte 5（runes）。暗色模式：给 `<html>` 设 `data-theme="dark"`。完整接入见 [`packages/svelte/README.md`](./packages/svelte/README.md)。
+Requires Svelte 5 (runes). Dark mode: set `data-theme="dark"` on `<html>`. Full integration guide: [`packages/svelte/README.md`](./packages/svelte/README.md).
 
-## 技术栈
-Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript(strict)
+## Tech stack
+
+Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript (strict)
 
 ## Monorepo
+
 ```
 packages/
-  tokens/         @chenzy-design/tokens          设计令牌（源真相，三层）
-  unocss-preset/  @chenzy-design/unocss-preset   token → UnoCSS theme
-  core/           @chenzy-design/core            headless 原语（框架无关）
-  locale/         @chenzy-design/locale          i18n 语言包与格式化
-  icons/          @chenzy-design/icons           图标
-  svelte/         @chenzy-design/svelte          Svelte 组件实现（主包）
-  docs/           文档/演示站（私有）
+  tokens/         @chenzy-design/tokens          Design tokens (source of truth, 3 layers)
+  unocss-preset/  @chenzy-design/unocss-preset   token -> UnoCSS theme
+  core/           @chenzy-design/core            Headless primitives (framework-agnostic)
+  locale/         @chenzy-design/locale          i18n language packs & formatting
+  icons/          @chenzy-design/icons           Icons
+  svelte/         @chenzy-design/svelte          Svelte component implementation (main package)
+  docs/           Docs / demo site (private)
 ```
-依赖方向：`tokens → unocss-preset → core → svelte`；`icons`/`locale` 被 `svelte` 依赖。
 
-## 开发
+Dependency direction: `tokens -> unocss-preset -> core -> svelte`; `icons` / `locale` are consumed by `svelte`.
+
+## Development
+
 ```bash
 pnpm install
-git config core.hooksPath .githooks   # 启用提交钩子（拦截违规 commit message）
-pnpm build:tokens     # 先生成 tokens.css / 类型
-pnpm dev              # 启动文档站（演示组件 + 主题切换）
+git config core.hooksPath .githooks   # enable commit hooks
+pnpm build:tokens     # generate tokens.css / types first
+pnpm dev              # start the docs site (component demos + theme toggle)
 pnpm verify           # lint + typecheck + test + build
 ```
 
-### 视觉回归测试
-基于 vitest 4 的 `toMatchScreenshot`（真实 chromium，复用 playwright provider），基线存各组件 `__screenshots__/`。
+### Visual regression tests
+
+Based on vitest 4's `toMatchScreenshot` (real chromium via the playwright provider); baselines live in each component's `__screenshots__/`.
 
 ```bash
-pnpm test:visual          # 对比当前渲染与基线
-pnpm test:visual:update   # 改动组件外观后更新基线
+pnpm test:visual          # compare current render against baselines
+pnpm test:visual:update   # update baselines after intentional visual changes
 ```
 
-> ⚠️ 基线带平台后缀（如 `-chromium-darwin.png`）。字体抗锯齿在 macOS / Linux 间有差异，跨平台基线不通用——基线当前在 macOS 生成，**未接入 CI 门禁**（接入需在 Linux/Docker 生成对应基线）。本地作为外观回归工具使用。
+> Baselines carry a platform suffix (e.g. `-chromium-darwin.png`). Font antialiasing differs between macOS / Linux, so baselines are not cross-platform and are not wired into the CI gate. Used locally as a visual-regression tool.
 
-## 提交与发版
-- 提交信息遵循 Conventional Commits，且**不得包含任何 AI/助手字样**（由 `.githooks/commit-msg` 强制，规则见 AGENTS.md §7.1）。
-- 需发版的改动附 changeset：`pnpm changeset`；维护者 `pnpm version-packages` → `pnpm release`。
-- 依赖更新由 **Dependabot** 每周自动开 PR；PR 由 **labeler** 按改动路径自动打标签。
+## Contributing
 
-## 当前进度
-- [x] M0 基建：monorepo、tokens 三层体系（暗色 + reduced-motion）、unocss-preset、core 原语、locale（zh_CN / en_US）、CI/质量门禁
-- [x] **69 个组件**实现（基础 / 输入 / 导航 / 展示 / 反馈 / 其他），含 meta、token、a11y
-- [x] 文档站（SvelteKit SSG）：API 表自动生成、调试面板、使用场景、暗色模式、Pagefind 搜索 → [在线访问](https://chenzylab.github.io/chenzy-design/)
-- [x] npm 发布：6 个包 `@chenzy-design/*`，Changesets 自动化版本管理
+Contributions go through **pull requests only** — `main` is protected and requires review + passing CI before merge. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow.
+
+- Commit messages follow Conventional Commits and must not contain any AI/assistant references (enforced by `.githooks/commit-msg`, see AGENTS.md §7.1).
+- Changes that need a release must include a changeset: `pnpm changeset`. Maintainers run `pnpm version-packages` -> `pnpm release`.
+- Dependency updates are opened weekly by **Dependabot**; PRs are auto-labeled by path via the **labeler**.
+
+## Status
+
+- [x] M0 foundation: monorepo, 3-layer token system (dark + reduced-motion), unocss-preset, core primitives, locale (zh_CN / en_US), CI / quality gates
+- [x] **69 components** implemented (basic / input / navigation / display / feedback / others), with meta, tokens, a11y
+- [x] Docs site (SvelteKit SSG): auto-generated API tables, debug panel, usage scenarios, dark mode, Pagefind search -> [visit online](https://chenzylab.github.io/chenzy-design/)
+- [x] npm published: 6 `@chenzy-design/*` packages, automated versioning via Changesets (fixed lockstep versions)
