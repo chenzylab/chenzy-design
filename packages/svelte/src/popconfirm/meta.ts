@@ -174,6 +174,7 @@ export const meta = {
     '--cd-popconfirm-icon-color-info',
     '--cd-popconfirm-title-color',
     '--cd-popconfirm-title-size',
+    '--cd-popconfirm-title-weight',
     '--cd-popconfirm-content-size',
     '--cd-popconfirm-max-width',
     '--cd-popconfirm-z',
