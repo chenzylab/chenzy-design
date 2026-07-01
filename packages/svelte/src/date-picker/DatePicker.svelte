@@ -1766,6 +1766,7 @@
     margin-block-start: var(--cd-spacing-tight);
     padding-block-start: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-color-border);
+    background: var(--cd-date-picker-footer-bg); /* 对齐 Semi footer 背景 fill-0 */
   }
   .cd-date-picker__panel--datetime .cd-date-picker__footer,
   .cd-date-picker__footer:has(.cd-date-picker__ok) {
