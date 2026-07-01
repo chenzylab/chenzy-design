@@ -2,10 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
-  "linked": [
+  "fixed": [
     ["@chenzy-design/core", "@chenzy-design/locale", "@chenzy-design/tokens", "@chenzy-design/icons", "@chenzy-design/svelte", "@chenzy-design/unocss-preset"]
   ],
+  "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
