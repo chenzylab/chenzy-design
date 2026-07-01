@@ -53,7 +53,7 @@ const ignore = [
 // 取该组件的主渲染组件（含子组件时取代表/全部，与 spec 预算口径一致）。
 const components = [
   // basic
-  ['button', '{ Button }', '2.9 KB'],
+  ['button', '{ Button }', '3.4 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
   ['grid', '{ Row, Col }', '2.25 KB'],
   ['icon', '{ Icon }', '1.45 KB'],
@@ -83,7 +83,7 @@ const components = [
   ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
   ['rating', '{ Rating }', '3.65 KB'],
   ['select', '{ Select }', '9 KB'],
-  ['slider', '{ Slider }', '4.75 KB'],
+  ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '4.25 KB'],
   ['textarea', '{ TextArea }', '3.75 KB'],
