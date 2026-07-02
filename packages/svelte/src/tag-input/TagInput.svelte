@@ -419,7 +419,7 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     inline-size: 100%;
-    min-block-size: var(--cd-input-height-default);
+    min-block-size: var(--cd-height-input-default);
     padding-inline: var(--cd-input-padding-x);
     padding-block: var(--cd-spacing-extra-tight);
     /* 对齐 Semi 填充式：默认灰底(fill-0) + 无边框，hover fill-1，聚焦 fill-0 + 蓝边框 */
@@ -433,11 +433,11 @@
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tag-input--small {
-    min-block-size: var(--cd-input-height-small);
+    min-block-size: var(--cd-height-input-small);
     font-size: var(--cd-font-size-small);
   }
   .cd-tag-input--large {
-    min-block-size: var(--cd-input-height-large);
+    min-block-size: var(--cd-height-input-large);
     font-size: var(--cd-font-size-header-6);
   }
   /* 对齐 Semi 填充式：悬浮加深底色 */

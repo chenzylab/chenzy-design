@@ -1466,7 +1466,7 @@
   }
   .cd-tree-select__search-input {
     inline-size: 100%;
-    block-size: var(--cd-input-height-small);
+    block-size: var(--cd-height-input-small);
     padding-inline: var(--cd-input-padding-x);
     background: var(--cd-input-bg, transparent);
     color: inherit;

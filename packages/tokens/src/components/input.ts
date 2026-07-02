@@ -80,9 +80,8 @@ export const inputTokens = {
   'width-input-append-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '后置标签描边宽度', usage: '后置标签描边宽度' },
   'width-input-prepend-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '前置标签描边宽度', usage: '前置标签描边宽度' },
   'width-input-group-pseudo-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '组合分割线宽度', usage: '输入框组合分割线宽度' },
-  // Semi 源为 $border-thickness-control-focus（default 主题同为 1px）；我们无该 alias，暂用 border-thickness-control
-  'width-input-wrapper-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '输入框描边宽度', usage: '输入框描边宽度' },
-  'width-input-wrapper-focus-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '输入框描边宽度', usage: '输入框描边宽度 - 选中态' },
+  'width-input-wrapper-border': { value: 'var(--cd-border-thickness-control-focus)', category: 'width', label: '输入框描边宽度', usage: '输入框描边宽度' },
+  'width-input-wrapper-focus-border': { value: 'var(--cd-border-thickness-control-focus)', category: 'width', label: '输入框描边宽度', usage: '输入框描边宽度 - 选中态' },
   'width-input-icon-outline': { value: '2px', category: 'width', label: '图标轮廓宽度', usage: '输入框 icon outline 宽度' },
   'width-input-icon-outlineoffset': { value: '-1px', category: 'width', label: '图标轮廓偏移', usage: '输入框 icon outline-offset 宽度' },
 
@@ -135,9 +134,6 @@ export const inputTokens = {
   'transform-scale-input': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '输入框放大', usage: '输入框-变大' },
 
   // —— chenzy-design 组件实际消费的补充 token（Semi 无；Input/TextArea/Select/DatePicker 等共用）——
-  'input-height-default': { value: 'var(--cd-height-input-wrapper-default)', category: 'height', label: '输入框高度', usage: '输入框高度 - 默认（组件消费）' },
-  'input-height-small': { value: 'var(--cd-height-input-wrapper-small)', category: 'height', label: '输入框高度', usage: '输入框高度 - 小尺寸（组件消费）' },
-  'input-height-large': { value: 'var(--cd-height-input-wrapper-large)', category: 'height', label: '输入框高度', usage: '输入框高度 - 大尺寸（组件消费）' },
   'input-padding-x': { value: 'var(--cd-spacing-input-paddingleft)', category: 'spacing', label: '输入框水平内边距', usage: '输入框水平内边距（组件消费）' },
   'input-border': { value: 'var(--cd-color-input-default-border-default)', category: 'color', label: '输入框描边色', usage: '输入框描边颜色 - 默认（组件消费）' },
   'input-radius': { value: 'var(--cd-radius-input-wrapper)', category: 'radius', label: '输入框圆角', usage: '输入框圆角（组件消费）' },
