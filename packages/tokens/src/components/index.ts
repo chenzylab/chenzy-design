@@ -7,6 +7,7 @@ import { typographyTokens } from './typography.js';
 import { gridTokens } from './grid.js';
 import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
+import { inputNumberTokens } from './input-number.js';
 import { tagInputTokens } from './tag-input.js';
 import { switchTokens } from './switch.js';
 import { checkboxTokens } from './checkbox.js';
@@ -18,6 +19,7 @@ import { selectTokens } from './select.js';
 import { autocompleteTokens } from './autocomplete.js';
 import { colorPickerTokens } from './color-picker.js';
 import { datePickerTokens } from './date-picker.js';
+import { timePickerTokens } from './time-picker.js';
 import { treeTokens } from './tree.js';
 import { treeSelectTokens } from './tree-select.js';
 import { transferTokens } from './transfer.js';
@@ -56,6 +58,7 @@ export const componentTokens = {
   ...gridTokens,
   ...layoutTokens,
   ...inputTokens,
+  ...inputNumberTokens,
   ...tagInputTokens,
   ...switchTokens,
   ...checkboxTokens,
@@ -67,6 +70,7 @@ export const componentTokens = {
   ...autocompleteTokens,
   ...colorPickerTokens,
   ...datePickerTokens,
+  ...timePickerTokens,
   ...treeTokens,
   ...treeSelectTokens,
   ...transferTokens,

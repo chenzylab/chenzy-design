@@ -14,6 +14,6 @@ export const datePickerTokens = {
   'date-picker-quick-color': 'var(--cd-color-primary)', // Semi 快捷操作按钮文字 primary
   'date-picker-header-color': 'var(--cd-color-text-0)',
   'date-picker-weekday-color': 'var(--cd-color-text-2)',
-  'date-picker-time-col-width': '56px',
-  'date-picker-time-item-height': '28px',
+  // time-col-width / time-item-height 孤儿项已删：组件实际消费的是 --cd-time-picker-time-*
+  // （前缀不一致导致此前是无 fallback 悬空 bug，已由 time-picker.ts 定义修复）。
 } as const;

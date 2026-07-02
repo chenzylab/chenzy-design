@@ -60,5 +60,30 @@ export const meta = {
     ],
   },
   i18nKeys: ['TimePicker.placeholder', 'TimePicker.now', 'TimePicker.confirm', 'TimePicker.clear', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.am', 'TimePicker.pm', 'TimePicker.rangeStart', 'TimePicker.rangeEnd'],
-  tokens: ['--cd-time-picker-*', '--cd-date-picker-panel-*', '--cd-input-*', '--cd-focus-ring', '--cd-motion-*'],
+  // 全量对齐 Semi timePicker/variables.scss 的组件 token（面板分割线/描边/列宽/项高/圆角/阴影）。
+  // 触发输入框复用 Input（--cd-input-* / --cd-height-input-*）、面板容器与单元格复用 DatePicker
+  // （--cd-date-picker-panel-* / --cd-date-picker-cell-*），滚动列项高复用 ScrollList（--cd-scrolllist-item-height）。
+  tokens: [
+    '--cd-color-time-picker-range-picker-panel-split-border',
+    '--cd-color-time-picker-range-panel-border',
+    '--cd-width-time-picker-range-panel-border',
+    '--cd-height-time-picker-panel-body',
+    '--cd-height-time-picker-scrolllist-item',
+    '--cd-width-time-picker-panel-list-ampm',
+    '--cd-width-time-picker-panel-list-hour',
+    '--cd-width-time-picker-panel-list-minute',
+    '--cd-width-time-picker-panel-list-second',
+    '--cd-width-time-picker-range-panel-scrolllist-body-border',
+    '--cd-spacing-time-picker-range-panel-scrolllist-header-body-padding',
+    '--cd-radius-time-picker-range-panel',
+    '--cd-radius-time-picker-input',
+    '--cd-shadow-time-picker-range-panel',
+    '--cd-time-picker-time-col-width',
+    '--cd-time-picker-time-item-height',
+    '--cd-date-picker-panel-*',
+    '--cd-date-picker-cell-*',
+    '--cd-input-*',
+    '--cd-focus-ring',
+    '--cd-motion-*',
+  ],
 } as const;

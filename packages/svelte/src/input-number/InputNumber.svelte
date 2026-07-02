@@ -584,8 +584,8 @@
     flex-direction: column;
     flex: 0 0 auto;
     inline-size: var(--cd-input-number-step-width);
-    gap: 1px;
-    margin-inline-start: 4px; /* Semi button-marginLeft */
+    gap: var(--cd-width-input-number-button-border); /* Semi button-border 1px 缝 */
+    margin-inline-start: var(--cd-spacing-input-number-button-marginleft); /* Semi button-marginLeft */
   }
   .cd-input-number__action {
     display: inline-flex;
@@ -594,7 +594,7 @@
     flex: 1 1 50%;
     min-block-size: 0;
     padding: 0;
-    border: 1px solid var(--cd-input-number-step-border);
+    border: var(--cd-width-input-number-button-border) solid var(--cd-input-number-step-border);
     border-radius: var(--cd-input-number-step-radius);
     background: var(--cd-input-number-step-bg);
     color: var(--cd-input-number-step-color);
@@ -605,7 +605,7 @@
   }
   .cd-input-number__action:hover:not(:disabled) {
     background: var(--cd-input-number-step-bg-hover);
-    border-color: var(--cd-color-fill-2);
+    border-color: var(--cd-color-input-number-button-border-hover);
   }
   .cd-input-number__action:active:not(:disabled) {
     background: var(--cd-input-number-step-bg-active);
