@@ -556,7 +556,7 @@
     align-items: center;
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
-    block-size: var(--cd-input-height-default);
+    block-size: var(--cd-height-input-default);
     padding-inline: var(--cd-input-padding-x);
     background: var(--cd-input-color-bg);
     border: 1px solid var(--cd-input-border);
@@ -564,10 +564,10 @@
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-autocomplete--small .cd-autocomplete__control {
-    block-size: var(--cd-input-height-small);
+    block-size: var(--cd-height-input-small);
   }
   .cd-autocomplete--large .cd-autocomplete__control {
-    block-size: var(--cd-input-height-large);
+    block-size: var(--cd-height-input-large);
   }
   .cd-autocomplete__control:focus-within {
     border-color: var(--cd-input-border-active);

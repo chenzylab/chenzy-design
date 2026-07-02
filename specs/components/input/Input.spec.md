@@ -45,7 +45,7 @@
 ## 5. 主题 / Token
 | Token | 默认 | 用途 |
 |---|---|---|
-| --cd-input-height-default | 32px | 高度 |
+| --cd-height-input-default | calc(var(--cd-control-height-default) - 2px) | 高度 |
 | --cd-input-padding-x | var(--cd-spacing-3) | 内距 |
 | --cd-input-border | var(--cd-color-border) | 边框 |
 | --cd-input-radius | var(--cd-radius-2) | 圆角 |

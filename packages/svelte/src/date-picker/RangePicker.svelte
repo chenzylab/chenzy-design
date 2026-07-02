@@ -550,7 +550,7 @@
     align-items: center;
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
-    block-size: var(--cd-input-height-default);
+    block-size: var(--cd-height-input-default);
     padding-inline: var(--cd-input-padding-x);
     background: var(--cd-input-color-bg);
     color: var(--cd-input-color-text);
@@ -562,11 +562,11 @@
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-range-picker--small .cd-range-picker__trigger {
-    block-size: var(--cd-input-height-small);
+    block-size: var(--cd-height-input-small);
     font-size: var(--cd-font-size-small);
   }
   .cd-range-picker--large .cd-range-picker__trigger {
-    block-size: var(--cd-input-height-large);
+    block-size: var(--cd-height-input-large);
     font-size: var(--cd-font-size-header-6);
   }
   .cd-range-picker__trigger:focus-visible {

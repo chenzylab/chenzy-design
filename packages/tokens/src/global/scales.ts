@@ -108,6 +108,9 @@ export const sizing = {
   'width-icon-extra-large': '24px',
   'border-thickness': '0',
   'border-thickness-control': '1px',
+  // 描边宽度 - focus 状态。对齐 Semi $border-thickness-control-focus（默认主题同为 1px），
+  // 独立 alias 让主题/DSM 可单独调聚焦态边框粗细（input/checkbox/select 等聚焦边框消费）。
+  'border-thickness-control-focus': '1px',
 } as const;
 
 /** Responsive breakpoints (min-width). Emitted as CSS vars AND used as build-time
