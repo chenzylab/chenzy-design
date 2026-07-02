@@ -1409,7 +1409,7 @@
     border-color: var(--cd-select-border-error);
   }
   .cd-tree-select__trigger[aria-disabled='true'] {
-    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
+    background: var(--cd-color-tree-select-input-disabled-bg-default, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
@@ -1425,8 +1425,8 @@
     text-overflow: ellipsis;
   }
   .cd-tree-select__placeholder {
-    /* 对齐 Semi treeSelect 占位符 text-2（原共享 input-placeholder = text-3） */
-    color: var(--cd-color-text-2);
+    /* 对齐 Semi treeSelect 占位符 input-placeholder-text-default = text-2 */
+    color: var(--cd-color-tree-select-input-placeholder-text-default);
   }
   .cd-tree-select__clear,
   .cd-tree-select__arrow {
@@ -1434,7 +1434,8 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    color: var(--cd-color-text-2);
+    /* 对齐 Semi treeSelect default-icon-default = text-2 */
+    color: var(--cd-color-tree-select-default-icon-default);
   }
   .cd-tree-select__clear {
     cursor: pointer;

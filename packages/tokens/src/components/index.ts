@@ -19,6 +19,7 @@ import { autocompleteTokens } from './autocomplete.js';
 import { colorPickerTokens } from './color-picker.js';
 import { datePickerTokens } from './date-picker.js';
 import { treeTokens } from './tree.js';
+import { treeSelectTokens } from './tree-select.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
 import { tabsTokens } from './tabs.js';
@@ -67,6 +68,7 @@ export const componentTokens = {
   ...colorPickerTokens,
   ...datePickerTokens,
   ...treeTokens,
+  ...treeSelectTokens,
   ...transferTokens,
   ...navigationTokens,
   ...tabsTokens,
