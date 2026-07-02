@@ -43,7 +43,12 @@
     getPopupContainer?: GetPopupContainer;
     /** 全局表单校验文案覆盖；按 `Form.*` 键返回模板（支持 {label}/{min}/{max} 插值），仅覆盖列出键、其余回退 locale；undefined 继承父级。 */
     getValidateMessages?: GetValidateMessages;
-    /** 默认 false：true 时渲染包裹元素（display:contents）建立主题/方向作用域。 */
+    /** 局部 token 覆写（DSM / 品牌定制）：{ 'color-primary': '#f00', 'button-color-bg-primary': '#0af' }。
+     * 提供时在包裹元素上注入 scoped CSS 变量（--cd-<key>），仅作用于子树、不污染全局，
+     * 未覆写的 token 继续继承上层。键不含 --cd- 前缀。见 dsm.spec.md §地基2。 */
+    tokens?: Record<string, string>;
+    /** 默认 false：true 时渲染包裹元素（display:contents）建立主题/方向作用域。
+     * 提供 tokens 时自动启用（scoped 变量需挂载点）。 */
     wrap?: boolean;
     /** wrap 元素标签，默认 'div'；可设 section/article/main 等语义标签。 */
     as?: string;
@@ -70,6 +75,7 @@
     transition,
     getPopupContainer,
     getValidateMessages,
+    tokens,
     wrap = false,
     as = 'div',
     onThemeChange,
@@ -79,6 +85,15 @@
     onConfigChange,
     children,
   }: Props = $props();
+
+  // 局部 token 覆写：提供 tokens 时必须 wrap（scoped 变量需挂载元素）。
+  const effectiveWrap = $derived(wrap || (tokens != null && Object.keys(tokens).length > 0));
+  // 拼成内联 style：--cd-<key>: <value>。key 已是无前缀语义名。
+  const tokenStyle = $derived.by(() => {
+    if (!tokens) return undefined;
+    const decls = Object.entries(tokens).map(([k, v]) => `--cd-${k}: ${v}`);
+    return decls.length ? decls.join('; ') : undefined;
+  });
 
   // 读父级 config（嵌套支持）：init 期调 getContext，无父级用 DEFAULT_CONFIG。
   const parentCfg = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
@@ -147,7 +162,7 @@
   // 令全库 reduced-motion 退化生效；wrap=true 时改写在包裹 div 上（见模板）。
   // 仅显式 reducedMotion 才接管全局标记（'auto' 沿用系统 CSS @media，避免误置）。
   $effect(() => {
-    if (wrap || typeof document === 'undefined') return;
+    if (effectiveWrap || typeof document === 'undefined') return;
     if (resolved.reducedMotion === 'auto') return; // auto 留给原生 @media
     const root = document.documentElement;
     if (reduced) root.setAttribute('data-reduced-motion', '');
@@ -206,10 +221,12 @@
   });
 </script>
 
-{#if wrap}
+{#if effectiveWrap}
   <svelte:element
     this={as}
     class="cd-config-provider cd-config-provider--{resolved.size}"
+    class:cd-config-provider--tokens={tokenStyle != null}
+    style={tokenStyle}
     data-theme={appliedTheme === 'dark' ? 'dark' : undefined}
     data-reduced-motion={resolved.reducedMotion !== 'auto' && reduced ? '' : undefined}
     dir={resolved.dir}
@@ -223,5 +240,11 @@
 <style>
   .cd-config-provider {
     display: contents;
+  }
+  /* 注入 scoped token 覆写时不能用 display:contents —— 该盒被移除后，
+     CSS 自定义属性无法可靠传递到子树（Chrome 实测不继承）。改用 display:block
+     的常规盒承载变量。仅在有 tokens 覆写时生效，纯主题/方向 wrap 仍用 contents。 */
+  .cd-config-provider--tokens {
+    display: block;
   }
 </style>
