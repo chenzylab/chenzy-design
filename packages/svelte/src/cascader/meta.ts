@@ -48,8 +48,20 @@ export const meta = {
     ],
   },
   tokens: [
+    // 触发器复用 Input/Select 填充式 token（背景/描边/圆角/内边距/状态描边）
     '--cd-select-*',
-    '--cd-tree-*',
+    '--cd-input-*',
+    // 菜单节点尺寸复用 Tree（节点高度/内边距）
+    '--cd-tree-node-height',
+    '--cd-tree-node-padding-x',
+    // Cascader 专属 token（全量对齐 Semi cascader/variables.scss）
+    '--cd-color-cascader-option-bg-hover',
+    '--cd-color-cascader-option-bg-active',
+    '--cd-color-cascader-option-main-text-default',
+    '--cd-color-cascader-option-icon-default',
+    '--cd-color-cascader-icon-default',
+    '--cd-color-cascader-prefix-suffix-text-default',
+    '--cd-color-cascader-select-highlight',
     '--cd-cascader-column-width',
     '--cd-cascader-column-border',
     '--cd-focus-ring',

@@ -1379,7 +1379,7 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-cascader-icon-default);
   }
   .cd-cascader__clear {
     cursor: pointer;
@@ -1452,8 +1452,8 @@
   }
   .cd-cascader__highlight {
     padding: 0;
-    color: var(--cd-tree-search-highlight-color);
-    background: var(--cd-tree-search-highlight-bg);
+    color: var(--cd-color-cascader-select-highlight);
+    background: transparent;
   }
   .cd-cascader__column {
     margin: 0;
@@ -1477,17 +1477,17 @@
     cursor: pointer;
   }
   .cd-cascader__option:hover {
-    background: var(--cd-tree-node-bg-hover);
+    background: var(--cd-color-cascader-option-bg-hover);
   }
   .cd-cascader__option--active {
-    background: var(--cd-tree-node-bg-active);
+    background: var(--cd-color-cascader-option-bg-active);
   }
   /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
   .cd-cascader__option--kbactive {
     box-shadow: var(--cd-focus-ring);
   }
   .cd-cascader__option--selected {
-    color: var(--cd-tree-node-color-selected);
+    color: var(--cd-color-cascader-option-main-text-default);
   }
   .cd-cascader__option:focus-visible {
     outline: none;
@@ -1513,7 +1513,7 @@
     color: #fff;
     background: var(--cd-color-bg-1, #fff);
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-small, 3px);
+    border-radius: var(--cd-border-radius-small, 3px);
     cursor: pointer;
   }
   .cd-cascader__checkbox--checked,
@@ -1530,13 +1530,13 @@
   }
   .cd-cascader__option-expand {
     flex: 0 0 auto;
-    color: var(--cd-tree-expand-icon-color);
+    color: var(--cd-color-cascader-option-icon-default);
   }
   .cd-cascader__option-loading {
     flex: 0 0 auto;
     inline-size: 12px;
     block-size: 12px;
-    border: 2px solid var(--cd-tree-expand-icon-color, currentColor);
+    border: 2px solid var(--cd-color-cascader-option-icon-default, currentColor);
     border-block-start-color: transparent;
     border-radius: var(--cd-border-radius-full);
     animation: cd-cascader-spin 0.7s linear infinite;
@@ -1573,6 +1573,6 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-cascader-prefix-suffix-text-default);
   }
 </style>

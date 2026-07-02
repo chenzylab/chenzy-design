@@ -22,6 +22,7 @@ import { datePickerTokens } from './date-picker.js';
 import { timePickerTokens } from './time-picker.js';
 import { treeTokens } from './tree.js';
 import { treeSelectTokens } from './tree-select.js';
+import { cascaderTokens } from './cascader.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
 import { tabsTokens } from './tabs.js';
@@ -73,6 +74,7 @@ export const componentTokens = {
   ...timePickerTokens,
   ...treeTokens,
   ...treeSelectTokens,
+  ...cascaderTokens,
   ...transferTokens,
   ...navigationTokens,
   ...tabsTokens,
