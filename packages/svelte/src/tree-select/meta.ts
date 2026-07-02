@@ -69,5 +69,5 @@ export const meta = {
       'leafOnly 时非叶子节点仅切换展开，不可选',
     ],
   },
-  tokens: ['--cd-select-*', '--cd-tree-*', '--cd-focus-ring'],
+  tokens: ['--cd-tree-select-*', '--cd-select-*', '--cd-tree-*', '--cd-focus-ring'],
 } as const;
