@@ -15,6 +15,7 @@ import { ratingTokens } from './rating.js';
 import { sliderTokens } from './slider.js';
 import { formTokens } from './form.js';
 import { selectTokens } from './select.js';
+import { autocompleteTokens } from './autocomplete.js';
 import { colorPickerTokens } from './color-picker.js';
 import { datePickerTokens } from './date-picker.js';
 import { treeTokens } from './tree.js';
@@ -62,6 +63,7 @@ export const componentTokens = {
   ...sliderTokens,
   ...formTokens,
   ...selectTokens,
+  ...autocompleteTokens,
   ...colorPickerTokens,
   ...datePickerTokens,
   ...treeTokens,

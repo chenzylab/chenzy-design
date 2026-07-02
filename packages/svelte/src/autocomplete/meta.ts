@@ -37,5 +37,5 @@ export const meta = {
       '键盘：↑↓ 移动、Enter 选中、Esc 关闭',
     ],
   },
-  tokens: ['--cd-input-*', '--cd-select-dropdown-*', '--cd-focus-ring', '--cd-motion-*'],
+  tokens: ['--cd-autocomplete-*', '--cd-focus-ring', '--cd-motion-*'],
 } as const;
