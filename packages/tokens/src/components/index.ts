@@ -7,6 +7,7 @@ import { typographyTokens } from './typography.js';
 import { gridTokens } from './grid.js';
 import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
+import { tagInputTokens } from './tag-input.js';
 import { switchTokens } from './switch.js';
 import { checkboxTokens } from './checkbox.js';
 import { radioTokens } from './radio.js';
@@ -14,6 +15,7 @@ import { ratingTokens } from './rating.js';
 import { sliderTokens } from './slider.js';
 import { formTokens } from './form.js';
 import { selectTokens } from './select.js';
+import { autocompleteTokens } from './autocomplete.js';
 import { colorPickerTokens } from './color-picker.js';
 import { datePickerTokens } from './date-picker.js';
 import { treeTokens } from './tree.js';
@@ -53,6 +55,7 @@ export const componentTokens = {
   ...gridTokens,
   ...layoutTokens,
   ...inputTokens,
+  ...tagInputTokens,
   ...switchTokens,
   ...checkboxTokens,
   ...radioTokens,
@@ -60,6 +63,7 @@ export const componentTokens = {
   ...sliderTokens,
   ...formTokens,
   ...selectTokens,
+  ...autocompleteTokens,
   ...colorPickerTokens,
   ...datePickerTokens,
   ...treeTokens,
