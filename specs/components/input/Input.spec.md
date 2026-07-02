@@ -43,15 +43,26 @@
 | prefix / suffix | 前后缀内容 |
 
 ## 5. 主题 / Token
+
+Input 已全量对齐 Semi 填充式（DSM P2）：容器走 `--cd-color-input-*` 填充式
+token（灰底 + 透明描边，聚焦换 focus 边框），全表见 `packages/tokens/src/components/input.ts`
+（102 token）与 docs 组件页「设计变量」。以下为代表性 token（值均取自 token 源）：
+
 | Token | 默认 | 用途 |
 |---|---|---|
-| --cd-height-input-default | calc(var(--cd-control-height-default) - 2px) | 高度 |
-| --cd-input-padding-x | var(--cd-spacing-3) | 内距 |
-| --cd-input-border | var(--cd-color-border) | 边框 |
-| --cd-input-radius | var(--cd-radius-2) | 圆角 |
-| --cd-input-color-bg | var(--cd-color-bg-0) | 底色 |
-| --cd-input-border-active | var(--cd-color-primary) | 聚焦边框 |
-| --cd-input-border-error | var(--cd-color-danger) | 错误态 |
+| --cd-color-input-default-bg-default | var(--cd-color-fill-0) | 容器背景（填充式灰底） |
+| --cd-color-input-default-border-default | transparent | 容器描边（默认透明） |
+| --cd-color-input-default-bg-hover | var(--cd-color-fill-1) | 背景 - 悬浮 |
+| --cd-color-input-default-border-focus | var(--cd-color-focus-border) | 聚焦边框 |
+| --cd-color-input-danger-border-focus | var(--cd-color-danger) | 错误态聚焦边框 |
+| --cd-color-input-warning-border-focus | var(--cd-color-warning) | 警告态聚焦边框 |
+| --cd-height-input-wrapper-default | var(--cd-control-height-default) | 容器高度 |
+| --cd-radius-input-wrapper | var(--cd-border-radius-small) | 圆角 |
+| --cd-width-input-wrapper-border | var(--cd-border-thickness-control-focus) | 描边宽度 |
+
+组件消费别名（跨表单控件共用，默认值 = 对应填充式 token）：`--cd-input-color-bg`
+`--cd-input-border` `--cd-input-radius` `--cd-input-border-active` `--cd-input-border-error`
+`--cd-input-padding-x` `--cd-input-font-size`。
 
 ## 6. 无障碍
 - 渲染原生 `<input>`，由 Form 关联 `<label>`（`for`/`aria-labelledby`）。
