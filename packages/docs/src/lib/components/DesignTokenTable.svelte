@@ -1,7 +1,9 @@
 <script lang="ts">
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
-  import tokensDetail from '$lib/data/tokens-detail.json';
+  // 数据源：tokens 包构建产出的结构化 manifest（从 TS token 源直接生成，
+  // 取代旧 build-tokens-detail.ts 的正则事后解析）。见 dsm.spec.md §地基1。
+  import manifest from '@chenzy-design/tokens/token-manifest.json';
 
   const lang = $derived(locale.value);
 
@@ -16,7 +18,7 @@
   // component：组件名（小写，如 'dropdown'）。仅展示该组件专属变量；null 时展示全部。
   const { component = null }: { component?: string | null } = $props();
 
-  const allTokens = (tokensDetail as { tokens: TokenDetail[] }).tokens;
+  const allTokens = (manifest as { tokens: TokenDetail[] }).tokens;
 
   // 该页相关 token：组件专属变量。
   // component 为 null → 展示全部；为 '' → 视为「无专属变量」展示空态（区别于 null）。
