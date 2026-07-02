@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build:tokens": "tsx scripts/build-tokens-detail.ts",
-    "build": "pnpm build:tokens && vite build && pagefind --site build",
+    "build": "vite build && pagefind --site build",
     "search": "pagefind --site build",
     "preview": "vite preview",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
@@ -21,7 +20,6 @@
     "@sveltejs/kit": "^2.68.0",
     "mdsvex": "^0.11.2",
     "pagefind": "^1.0.0",
-    "shiki": "^1.29.2",
-    "tsx": "^4.19.2"
+    "shiki": "^1.29.2"
   }
 }

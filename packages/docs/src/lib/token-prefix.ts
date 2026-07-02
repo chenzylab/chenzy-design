@@ -1,11 +1,11 @@
 // 组件名 → 设计变量(token)组件前缀的解析。
-// tokens-detail.json 里的 component 字段是 --cd-<seg>-* 的 <seg>（去连字符首段），
+// token-manifest.json 里的 component 字段是变量名剥掉 category 前缀后的组件段，
 // 与组件小写名/目录名并不总是一致（如 date-picker→date、overflow-list→overflow、
 // virtual-list→virtual）。这里用「数据里真实存在的前缀集合」做匹配，避免硬编码漂移。
-import tokensDetail from './data/tokens-detail.json';
+import manifest from '@chenzy-design/tokens/token-manifest.json';
 
 const KNOWN_PREFIXES = new Set(
-  (tokensDetail as { tokens: { component: string | null }[] }).tokens
+  (manifest as { tokens: { component: string | null }[] }).tokens
     .map((t) => t.component)
     .filter((c): c is string => !!c),
 );
