@@ -174,10 +174,65 @@
     font-weight: var(--cd-font-button-fontweight);
     line-height: 1;
     cursor: pointer;
+    /* 过渡/变换由各 type/theme 的专属 transition/transform token 接管（见下），
+       对齐 Semi animation.scss：默认 duration=0ms（无过渡），主题/DSM 可按类型开启。 */
+  }
+
+  /* —— animation：背景/边框过渡 + 按压变换（每 type/theme 独立 token，对齐 Semi）—— */
+  .cd-button--primary {
     transition:
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+      background-color var(--cd-transition-duration-button-primary-bg)
+        var(--cd-transition-function-button-primary-bg) var(--cd-transition-delay-button-primary-bg),
+      border-color var(--cd-transition-duration-button-primary-border)
+        var(--cd-transition-function-button-primary-border) var(--cd-transition-delay-button-primary-border);
+    transform: var(--cd-transform-scale-button-primary);
+  }
+  .cd-button--secondary {
+    transition:
+      background-color var(--cd-transition-duration-button-secondary-bg)
+        var(--cd-transition-function-button-secondary-bg) var(--cd-transition-delay-button-secondary-bg),
+      border-color var(--cd-transition-duration-button-secondary-border)
+        var(--cd-transition-function-button-secondary-border) var(--cd-transition-delay-button-secondary-border);
+    transform: var(--cd-transform-scale-button-secondary);
+  }
+  .cd-button--tertiary {
+    transition:
+      background-color var(--cd-transition-duration-button-tertiary-bg)
+        var(--cd-transition-function-button-tertiary-bg) var(--cd-transition-delay-button-tertiary-bg),
+      border-color var(--cd-transition-duration-button-tertiary-border)
+        var(--cd-transition-function-button-tertiary-border) var(--cd-transition-delay-button-tertiary-border);
+    transform: var(--cd-transform-scale-button-tertiary);
+  }
+  .cd-button--warning {
+    transition:
+      background-color var(--cd-transition-duration-button-warning-bg)
+        var(--cd-transition-function-button-warning-bg) var(--cd-transition-delay-button-warning-bg),
+      border-color var(--cd-transition-duration-button-warning-border)
+        var(--cd-transition-function-button-warning-border) var(--cd-transition-delay-button-warning-border);
+    transform: var(--cd-transform-scale-button-warning);
+  }
+  .cd-button--danger {
+    transition:
+      background-color var(--cd-transition-duration-button-danger-bg)
+        var(--cd-transition-function-button-danger-bg) var(--cd-transition-delay-button-danger-bg),
+      border-color var(--cd-transition-duration-button-danger-border)
+        var(--cd-transition-function-button-danger-border) var(--cd-transition-delay-button-danger-border);
+    transform: var(--cd-transform-scale-button-danger);
+  }
+  /* theme 级：light/borderless 覆盖 type 级过渡（对齐 Semi 的 light/borderless 独立组；
+     borderless 无边框，故仅背景过渡） */
+  .cd-button--light {
+    transition:
+      background-color var(--cd-transition-duration-button-light-bg)
+        var(--cd-transition-function-button-light-bg) var(--cd-transition-delay-button-light-bg),
+      border-color var(--cd-transition-duration-button-light-border)
+        var(--cd-transition-function-button-light-border) var(--cd-transition-delay-button-light-border);
+    transform: var(--cd-transform-scale-button-light);
+  }
+  .cd-button--borderless {
+    transition: background-color var(--cd-transition-duration-button-borderless-bg)
+      var(--cd-transition-function-button-borderless-bg) var(--cd-transition-delay-button-borderless-bg);
+    transform: var(--cd-transform-scale-button-borderless);
   }
   .cd-button:focus-visible {
     outline: none;

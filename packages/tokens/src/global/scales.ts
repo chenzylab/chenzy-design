@@ -68,6 +68,12 @@ export const motion = {
   'duration-mid': '200ms',
   'duration-slow': '320ms',
   'ease-standard': 'cubic-bezier(.4,0,.2,1)',
+  // 组件 transition/transform token 的默认档（对齐 Semi --semi-transition_*-none /
+  // --semi-transform_scale-none）：默认无动画，主题/DSM 可统一开启。
+  'duration-none': '0ms',
+  'delay-none': '0ms',
+  'ease-in': 'ease-in',
+  'scale-none': 'scale(1, 1)',
 } as const;
 
 export const zIndex = {
