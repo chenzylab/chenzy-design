@@ -1410,7 +1410,7 @@
   }
   .cd-tree-select__trigger[aria-disabled='true'] {
     background: var(--cd-color-tree-select-input-disabled-bg-default, var(--cd-color-fill-0));
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-tree-select-input-disabled-text-default);
     cursor: not-allowed;
   }
   .cd-tree-select__content {
@@ -1441,7 +1441,7 @@
     cursor: pointer;
   }
   .cd-tree-select__clear:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-tree-select-default-icon-hover);
   }
   .cd-tree-select__arrow {
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
