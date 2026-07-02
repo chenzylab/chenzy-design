@@ -366,27 +366,30 @@
     align-items: stretch;
     inline-size: 100%;
   }
+  /* 前/后置标签 —— 对齐 Semi input-prepend/append：灰底 + text-2 + 透明分隔描边 */
   .cd-input__addon {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-2);
-    border: 1px solid var(--cd-input-border);
+    padding-block: var(--cd-spacing-input-prepend-paddingy);
+    padding-inline: var(--cd-spacing-input-prepend-paddingx);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-prefix-text-default);
     font-size: var(--cd-input-font-size);
     white-space: nowrap;
     user-select: none;
   }
   .cd-input__addon--before {
-    border-inline-end: none;
-    border-start-start-radius: var(--cd-input-radius);
-    border-end-start-radius: var(--cd-input-radius);
+    border-inline-end: var(--cd-width-input-prepend-border) solid
+      var(--cd-color-input-default-border-default);
+    border-start-start-radius: var(--cd-radius-input-wrapper);
+    border-end-start-radius: var(--cd-radius-input-wrapper);
   }
   .cd-input__addon--after {
-    border-inline-start: none;
-    border-start-end-radius: var(--cd-input-radius);
-    border-end-end-radius: var(--cd-input-radius);
+    border-inline-start: var(--cd-width-input-append-border) solid
+      var(--cd-color-input-default-border-default);
+    border-start-end-radius: var(--cd-radius-input-wrapper);
+    border-end-end-radius: var(--cd-radius-input-wrapper);
   }
   /* 有 addon 时，input wrapper 的圆角需要调整 */
   .cd-input-group .cd-input {
@@ -401,58 +404,116 @@
     border-start-end-radius: 0;
     border-end-end-radius: 0;
   }
+  /* 输入框容器 —— 对齐 Semi input-wrapper：填充式灰底 + 透明描边，聚焦换 focus 边框 */
   .cd-input {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-tight);
+    gap: var(--cd-spacing-input-prefix-icon-marginx);
     inline-size: 100%;
-    block-size: var(--cd-input-height-default);
-    padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    color: var(--cd-input-color-text);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
+    block-size: var(--cd-height-input-wrapper-default);
+    padding-inline-start: var(--cd-spacing-input-paddingleft);
+    padding-inline-end: var(--cd-spacing-input-paddingright);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-default-text-default);
+    border: var(--cd-width-input-wrapper-border) solid var(--cd-color-input-default-border-default);
+    border-radius: var(--cd-radius-input-wrapper);
     font-size: var(--cd-input-font-size);
+    line-height: var(--cd-height-input-default);
+    /* 过渡/变换由 input 专属 transition/transform token 接管（对齐 Semi animation.scss）：
+       默认 duration=0ms（无过渡），主题/DSM 可开启。 */
     transition:
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+      background-color var(--cd-transition-duration-input-bg)
+        var(--cd-transition-function-input-bg) var(--cd-transition-delay-input-bg),
+      border var(--cd-transition-duration-input-border)
+        var(--cd-transition-function-input-border) var(--cd-transition-delay-input-border);
+    transform: var(--cd-transform-scale-input);
   }
+  /* Semi：small/default 字号统一 regular，仅 large 用 header-6 */
   .cd-input--small {
-    block-size: var(--cd-input-height-small);
-    font-size: var(--cd-font-size-small);
+    block-size: var(--cd-height-input-wrapper-small);
+    line-height: var(--cd-height-input-small);
   }
   .cd-input--large {
-    block-size: var(--cd-input-height-large);
+    block-size: var(--cd-height-input-wrapper-large);
     font-size: var(--cd-font-size-header-6);
+    line-height: var(--cd-height-input-large);
   }
   /* 对齐 Semi 填充式：悬浮加深底色 */
   .cd-input:hover:not(.cd-input--disabled):not(:focus-within) {
-    background: var(--cd-input-bg-hover);
+    background: var(--cd-color-input-default-bg-hover);
+    border-color: var(--cd-color-input-default-border-hover);
   }
   .cd-input:focus-within {
-    background: var(--cd-input-color-bg);
-    border-color: var(--cd-input-border-active);
-    box-shadow: var(--cd-focus-ring);
+    background: var(--cd-color-input-default-bg-focus);
+    border-color: var(--cd-color-input-default-border-focus);
   }
+  .cd-input:focus-within:hover:not(.cd-input--warning):not(.cd-input--error) {
+    background: var(--cd-color-input-default-bg-focus-hover);
+  }
+  .cd-input:focus-within:active {
+    background: var(--cd-color-input-default-bg-active);
+    border-color: var(--cd-color-input-default-border-focus);
+  }
+  /* warning / error —— 对齐 Semi：浅色状态底 + 同色描边，聚焦换实色描边 */
   .cd-input--warning {
-    border-color: var(--cd-input-border-warning);
+    background: var(--cd-color-input-warning-bg-default);
+    border-color: var(--cd-color-input-warning-border-default);
+  }
+  .cd-input--warning:hover:not(.cd-input--disabled):not(:focus-within) {
+    background: var(--cd-color-input-warning-bg-hover);
+    border-color: var(--cd-color-input-warning-border-hover);
+  }
+  .cd-input--warning:focus-within {
+    background: var(--cd-color-input-warning-bg-focus);
+    border-color: var(--cd-color-input-warning-border-focus);
+  }
+  .cd-input--warning:active:not(.cd-input--disabled) {
+    background: var(--cd-color-input-warning-bg-active);
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-input--error {
-    border-color: var(--cd-input-border-error);
+    background: var(--cd-color-input-danger-bg-default);
+    border-color: var(--cd-color-input-danger-border-default);
+  }
+  .cd-input--error:hover:not(.cd-input--disabled):not(:focus-within) {
+    background: var(--cd-color-input-danger-bg-hover);
+    border-color: var(--cd-color-input-danger-border-hover);
+  }
+  .cd-input--error:focus-within {
+    background: var(--cd-color-input-danger-bg-focus);
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input--error:active:not(.cd-input--disabled) {
+    background: var(--cd-color-input-danger-bg-active);
+    border-color: var(--cd-color-input-danger-border-focus);
   }
   .cd-input--disabled {
-    background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
-    color: var(--cd-color-text-3);
+    background: var(--cd-color-input-disabled-bg-default);
+    color: var(--cd-color-input-disabled-text-default);
+    /* fix：Safari 下禁用态文字颜色（对齐 Semi） */
+    -webkit-text-fill-color: var(--cd-color-input-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-input--borderless {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
+  .cd-input--disabled:hover {
+    background: var(--cd-color-input-disabled-bg-default);
   }
-  .cd-input--borderless:focus-within {
+  .cd-input--disabled .cd-input__affix,
+  .cd-input--disabled .cd-input__action {
+    color: var(--cd-color-input-disabled-text-default);
+  }
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边 */
+  .cd-input--borderless:not(:focus-within):not(:hover) {
+    background: transparent;
     border-color: transparent;
-    box-shadow: none;
+  }
+  .cd-input--borderless:focus-within:not(:active) {
+    background: transparent;
+  }
+  .cd-input--borderless.cd-input--error:not(:focus-within) {
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input--borderless.cd-input--warning:not(:focus-within) {
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-input__native {
     flex: 1 1 auto;
@@ -468,17 +529,23 @@
     outline: none;
   }
   .cd-input__native::placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-input__native:disabled {
     cursor: not-allowed;
   }
+  .cd-input--disabled .cd-input__native::placeholder {
+    color: var(--cd-color-input-disabled-text-default);
+  }
+  /* prefix/suffix —— 对齐 Semi：text-2 + bold 字重（图标不受 font-weight 影响） */
   .cd-input__affix {
     display: inline-flex;
     align-items: center;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-input-prefix-text-default);
+    font-weight: var(--cd-font-input-prefix-suffix-fontweight);
     flex: 0 0 auto;
   }
+  /* clear / 密码显隐按钮 —— 对齐 Semi clearbtn/modebtn 图标三态 + outline 聚焦 */
   .cd-input__action {
     display: inline-flex;
     align-items: center;
@@ -487,20 +554,23 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-input-icon-default);
     cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
+    border-radius: var(--cd-radius-input-wrapper);
   }
   .cd-input__action:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-input-icon-hover);
+  }
+  .cd-input__action:active {
+    color: var(--cd-color-input-icon-active);
   }
   .cd-input__action:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+    outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
+    outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
   .cd-input__count {
     flex: 0 0 auto;
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-input-counter-text-default);
     font-size: var(--cd-font-size-small);
     white-space: nowrap;
   }
