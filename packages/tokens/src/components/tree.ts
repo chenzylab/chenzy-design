@@ -20,6 +20,5 @@ export const treeTokens = {
   'tree-border-color': 'var(--cd-color-border)',
   'tree-border-color-warning': 'var(--cd-color-warning)',
   'tree-border-color-error': 'var(--cd-color-danger)',
-  'cascader-column-width': '160px',
-  'cascader-column-border': 'var(--cd-color-border)',
+  // cascader-column-* 已迁移至 cascader.ts（归属更正确，值不变）
 } as const;
