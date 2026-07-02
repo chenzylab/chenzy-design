@@ -39,5 +39,5 @@ export const meta = {
     ],
   },
   i18nKeys: ['TagInput.remove'],
-  tokens: ['--cd-input-*', '--cd-focus-ring', '--cd-motion-*', '--cd-color-fill-*'],
+  tokens: ['--cd-tag-input-*', '--cd-input-*', '--cd-focus-ring', '--cd-motion-*', '--cd-color-fill-*'],
 } as const;

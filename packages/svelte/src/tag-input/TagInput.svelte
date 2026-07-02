@@ -467,11 +467,11 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding-inline: var(--cd-spacing-tight);
-    background: var(--cd-color-fill-1);
-    border-radius: var(--cd-border-radius-small);
-    font-size: var(--cd-font-size-small);
+    gap: var(--cd-tag-input-tag-gap);
+    padding-inline: var(--cd-tag-input-tag-paddingx);
+    background: var(--cd-tag-input-tag-bg);
+    border-radius: var(--cd-tag-input-tag-radius);
+    font-size: var(--cd-tag-input-tag-font-size);
     white-space: nowrap;
   }
   .cd-tag-input__tag[draggable='true'] {
@@ -488,7 +488,7 @@
     position: absolute;
     inset-block: 0;
     inline-size: 2px;
-    background: var(--cd-input-border-active);
+    background: var(--cd-tag-input-drop-indicator-color);
     border-radius: 1px;
   }
   .cd-tag-input__tag--drop-before::before {
@@ -508,13 +508,13 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-tag-input-remove-color);
     font-size: var(--cd-font-size-header-6);
     line-height: 1;
     cursor: pointer;
   }
   .cd-tag-input__remove:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-tag-input-remove-color-hover);
   }
   .cd-tag-input__input {
     flex: 1 1 auto;
@@ -541,11 +541,11 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-tag-input-clear-color);
     cursor: pointer;
   }
   .cd-tag-input__clear:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-tag-input-clear-color-hover);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-tag-input {

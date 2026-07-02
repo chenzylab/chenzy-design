@@ -7,6 +7,7 @@ import { typographyTokens } from './typography.js';
 import { gridTokens } from './grid.js';
 import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
+import { tagInputTokens } from './tag-input.js';
 import { switchTokens } from './switch.js';
 import { checkboxTokens } from './checkbox.js';
 import { radioTokens } from './radio.js';
@@ -53,6 +54,7 @@ export const componentTokens = {
   ...gridTokens,
   ...layoutTokens,
   ...inputTokens,
+  ...tagInputTokens,
   ...switchTokens,
   ...checkboxTokens,
   ...radioTokens,
