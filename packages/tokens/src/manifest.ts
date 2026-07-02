@@ -118,8 +118,9 @@ const GLOBAL_SEGMENTS = new Set([
   // scale 修饰词（--cd-spacing-base-tight / --cd-font-size-* / --cd-shadow-elevated 等的第二段）
   'base', 'tight', 'loose', 'extra', 'super', 'none', 'elevated', 'thickness',
   'size', 'height', 'weight', 'duration', 'ease', 'delay',
-  // motion 档位/缓动名（--cd-motion-duration-fast / --cd-motion-ease-standard 循环剥后的段）
-  'fast', 'slow', 'mid', 'standard', 'spring', 'linear',
+  // motion 档位/缓动名（--cd-motion-duration-fast / --cd-motion-ease-standard /
+  // --cd-motion-ease-in 循环剥后的段）
+  'fast', 'slow', 'mid', 'standard', 'spring', 'linear', 'in', 'out',
   // 尺寸/形状档位（--cd-border-radius-small / --cd-line-height-header-N 循环剥后的段）
   'small', 'large', 'medium', 'regular', 'circle', 'full', 'header',
   // 断点名（--cd-breakpoint-* 剥掉 breakpoint 后）
@@ -132,8 +133,9 @@ const CATEGORY_SEGMENTS = new Set([
   'border', 'line', 'shadow', 'motion', 'transform', 'transition', 'z', 'breakpoint',
 ]);
 
-// category 之后还可能跟的修饰段（--cd-animation-duration-button-* 的 duration）。
-const CATEGORY_MODIFIERS = new Set(['duration', 'delay', 'ease', 'function']);
+// category 之后还可能跟的修饰段（--cd-animation-duration-button-* 的 duration、
+// --cd-transform-scale-button-* 的 scale）。
+const CATEGORY_MODIFIERS = new Set(['duration', 'delay', 'ease', 'function', 'scale']);
 
 /**
  * 取组件归属。token 名可能的组织：

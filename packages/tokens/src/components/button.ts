@@ -196,7 +196,60 @@ export const buttonTokens = {
   'radius-button-splitbuttongroup-last-topright': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '组合按钮末尾右上圆角', usage: '组合按钮(Split) - 末尾按钮右上圆角' },
   'radius-button-splitbuttongroup-last-bottomright': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '组合按钮末尾右下圆角', usage: '组合按钮(Split) - 末尾按钮右下圆角' },
 
-  // —— animation ——
+  // —— animation：背景色过渡（7 类型 × duration/function/delay，对齐 Semi animation.scss）——
+  // 默认无动画（duration/delay=0ms），主题或 DSM 可按类型单独开启过渡。
+  'transition-duration-button-primary-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '主要按钮背景过渡时长', usage: '主要按钮-背景色-动画持续时间' },
+  'transition-function-button-primary-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '主要按钮背景过渡曲线', usage: '主要按钮-背景色-过渡曲线' },
+  'transition-delay-button-primary-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '主要按钮背景过渡延迟', usage: '主要按钮-背景色-延迟时间' },
+  'transition-duration-button-secondary-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '次要按钮背景过渡时长', usage: '次要按钮-背景色-动画持续时间' },
+  'transition-function-button-secondary-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '次要按钮背景过渡曲线', usage: '次要按钮-背景色-过渡曲线' },
+  'transition-delay-button-secondary-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '次要按钮背景过渡延迟', usage: '次要按钮-背景色-延迟时间' },
+  'transition-duration-button-tertiary-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '三级按钮背景过渡时长', usage: '三级按钮-背景色-动画持续时间' },
+  'transition-function-button-tertiary-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '三级按钮背景过渡曲线', usage: '三级按钮-背景色-过渡曲线' },
+  'transition-delay-button-tertiary-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '三级按钮背景过渡延迟', usage: '三级按钮-背景色-延迟时间' },
+  'transition-duration-button-light-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '浅色按钮背景过渡时长', usage: '浅色按钮-背景色-动画持续时间' },
+  'transition-function-button-light-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '浅色按钮背景过渡曲线', usage: '浅色按钮-背景色-过渡曲线' },
+  'transition-delay-button-light-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '浅色按钮背景过渡延迟', usage: '浅色按钮-背景色-延迟时间' },
+  'transition-duration-button-warning-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '警告按钮背景过渡时长', usage: '警告按钮-背景色-动画持续时间' },
+  'transition-function-button-warning-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '警告按钮背景过渡曲线', usage: '警告按钮-背景色-过渡曲线' },
+  'transition-delay-button-warning-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '警告按钮背景过渡延迟', usage: '警告按钮-背景色-延迟时间' },
+  'transition-duration-button-danger-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '危险按钮背景过渡时长', usage: '危险按钮-背景色-动画持续时间' },
+  'transition-function-button-danger-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '危险按钮背景过渡曲线', usage: '危险按钮-背景色-过渡曲线' },
+  'transition-delay-button-danger-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '危险按钮背景过渡延迟', usage: '危险按钮-背景色-延迟时间' },
+  'transition-duration-button-borderless-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '无边框按钮背景过渡时长', usage: '无边框按钮-背景色-动画持续时间' },
+  'transition-function-button-borderless-bg': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '无边框按钮背景过渡曲线', usage: '无边框按钮-背景色-过渡曲线' },
+  'transition-delay-button-borderless-bg': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '无边框按钮背景过渡延迟', usage: '无边框按钮-背景色-延迟时间' },
+
+  // —— animation：边框过渡（6 类型 × duration/function/delay）——
+  'transition-duration-button-primary-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '主要按钮边框过渡时长', usage: '主要按钮-边框-动画持续时间' },
+  'transition-function-button-primary-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '主要按钮边框过渡曲线', usage: '主要按钮-边框-过渡曲线' },
+  'transition-delay-button-primary-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '主要按钮边框过渡延迟', usage: '主要按钮-边框-延迟时间' },
+  'transition-duration-button-secondary-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '次要按钮边框过渡时长', usage: '次要按钮-边框-动画持续时间' },
+  'transition-function-button-secondary-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '次要按钮边框过渡曲线', usage: '次要按钮-边框-过渡曲线' },
+  'transition-delay-button-secondary-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '次要按钮边框过渡延迟', usage: '次要按钮-边框-延迟时间' },
+  'transition-duration-button-tertiary-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '三级按钮边框过渡时长', usage: '三级按钮-边框-动画持续时间' },
+  'transition-function-button-tertiary-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '三级按钮边框过渡曲线', usage: '三级按钮-边框-过渡曲线' },
+  'transition-delay-button-tertiary-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '三级按钮边框过渡延迟', usage: '三级按钮-边框-延迟时间' },
+  'transition-duration-button-light-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '浅色按钮边框过渡时长', usage: '浅色按钮-边框-动画持续时间' },
+  'transition-function-button-light-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '浅色按钮边框过渡曲线', usage: '浅色按钮-边框-过渡曲线' },
+  'transition-delay-button-light-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '浅色按钮边框过渡延迟', usage: '浅色按钮-边框-延迟时间' },
+  'transition-duration-button-warning-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '警告按钮边框过渡时长', usage: '警告按钮-边框-动画持续时间' },
+  'transition-function-button-warning-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '警告按钮边框过渡曲线', usage: '警告按钮-边框-过渡曲线' },
+  'transition-delay-button-warning-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '警告按钮边框过渡延迟', usage: '警告按钮-边框-延迟时间' },
+  'transition-duration-button-danger-border': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '危险按钮边框过渡时长', usage: '危险按钮-边框-动画持续时间' },
+  'transition-function-button-danger-border': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '危险按钮边框过渡曲线', usage: '危险按钮-边框-过渡曲线' },
+  'transition-delay-button-danger-border': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '危险按钮边框过渡延迟', usage: '危险按钮-边框-延迟时间' },
+
+  // —— other：按压放大（7 类型，对齐 Semi transform token；归 other tab 对齐 Semi）——
+  'transform-scale-button-primary': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '主要按钮放大', usage: '主要按钮-放大' },
+  'transform-scale-button-secondary': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '次要按钮放大', usage: '次要按钮-放大' },
+  'transform-scale-button-tertiary': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '三级按钮放大', usage: '三级按钮-放大' },
+  'transform-scale-button-light': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '浅色按钮放大', usage: '浅色按钮-放大' },
+  'transform-scale-button-warning': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '警告按钮放大', usage: '警告按钮-放大' },
+  'transform-scale-button-danger': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '危险按钮放大', usage: '危险按钮-放大' },
+  'transform-scale-button-borderless': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '无边框按钮放大', usage: '无边框按钮-放大' },
+
+  // —— animation：图标旋转 ——
   'animation-duration-button-icon-loading': { value: '600ms', category: 'animation', label: '加载图标旋转时长', usage: '加载图标容器旋转一周时长' },
   'animation-duration-button-icon-customicon-loading': { value: '1600ms', category: 'animation', label: '自定义指示器旋转时长', usage: '自定义指示器时旋转一周时长' },
 
