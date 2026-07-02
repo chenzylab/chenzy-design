@@ -314,17 +314,23 @@
 </div>
 
 <style>
+  /* 输入框容器 —— 对齐 Semi textarea：复用 input 填充式 token（灰底 + 透明描边，
+     聚焦换 focus 边框），textarea 专属项走 textarea token。 */
   .cd-textarea {
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    padding: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    color: var(--cd-input-color-text);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
+    padding: var(--cd-spacing-textarea-paddingy) var(--cd-spacing-textarea-paddingx);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-default-text-default);
+    border: var(--cd-width-input-wrapper-border) solid var(--cd-color-input-default-border-default);
+    border-radius: var(--cd-radius-input-wrapper);
     font-size: var(--cd-input-font-size);
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition:
+      background-color var(--cd-transition-duration-input-bg)
+        var(--cd-transition-function-input-bg) var(--cd-transition-delay-input-bg),
+      border var(--cd-transition-duration-input-border)
+        var(--cd-transition-function-input-border) var(--cd-transition-delay-input-border);
   }
   .cd-textarea--small {
     font-size: var(--cd-font-size-small);
@@ -332,29 +338,54 @@
   .cd-textarea--large {
     font-size: var(--cd-font-size-header-6);
   }
-  .cd-textarea:focus-within {
-    border-color: var(--cd-input-border-active);
-    box-shadow: var(--cd-focus-ring);
+  .cd-textarea:hover:not(.cd-textarea--disabled):not(:focus-within) {
+    background: var(--cd-color-input-default-bg-hover);
+    border-color: var(--cd-color-input-default-border-hover);
   }
+  .cd-textarea:focus-within {
+    background: var(--cd-color-input-default-bg-focus);
+    border-color: var(--cd-color-input-default-border-focus);
+  }
+  /* warning / error —— 对齐 Semi：浅色状态底 + 同色描边，聚焦换实色描边 */
   .cd-textarea--warning {
-    border-color: var(--cd-input-border-warning);
+    background: var(--cd-color-input-warning-bg-default);
+    border-color: var(--cd-color-input-warning-border-default);
+  }
+  .cd-textarea--warning:hover:not(.cd-textarea--disabled):not(:focus-within) {
+    background: var(--cd-color-input-warning-bg-hover);
+    border-color: var(--cd-color-input-warning-border-hover);
+  }
+  .cd-textarea--warning:focus-within {
+    background: var(--cd-color-input-warning-bg-focus);
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-textarea--error {
-    border-color: var(--cd-input-border-error);
+    background: var(--cd-color-input-danger-bg-default);
+    border-color: var(--cd-color-input-danger-border-default);
+  }
+  .cd-textarea--error:hover:not(.cd-textarea--disabled):not(:focus-within) {
+    background: var(--cd-color-input-danger-bg-hover);
+    border-color: var(--cd-color-input-danger-border-hover);
+  }
+  .cd-textarea--error:focus-within {
+    background: var(--cd-color-input-danger-bg-focus);
+    border-color: var(--cd-color-input-danger-border-focus);
   }
   .cd-textarea--disabled {
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-3);
+    background: var(--cd-color-input-disabled-bg-default);
+    color: var(--cd-color-input-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-textarea--borderless {
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边 */
+  .cd-textarea--borderless:not(:focus-within):not(:hover) {
     border-color: transparent;
     background: transparent;
-    box-shadow: none;
   }
-  .cd-textarea--borderless:focus-within {
-    border-color: transparent;
-    box-shadow: none;
+  .cd-textarea--borderless.cd-textarea--error:not(:focus-within) {
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-textarea--borderless.cd-textarea--warning:not(:focus-within) {
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-textarea__native {
     inline-size: 100%;
@@ -374,7 +405,10 @@
     overflow-y: hidden;
   }
   .cd-textarea__native::placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
+  }
+  .cd-textarea--disabled .cd-textarea__native::placeholder {
+    color: var(--cd-color-input-disabled-text-default);
   }
   .cd-textarea__native:disabled {
     cursor: not-allowed;
@@ -389,28 +423,28 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-textarea-icon-default);
     cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
+    border-radius: var(--cd-radius-input-wrapper);
   }
   .cd-textarea__clear:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-textarea-icon-hover);
   }
   .cd-textarea__clear:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+    outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
+    outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
   .cd-textarea__count {
     position: absolute;
     inset-block-end: var(--cd-spacing-extra-tight);
     inset-inline-end: var(--cd-spacing-tight);
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-input-counter-text-default);
     font-size: var(--cd-font-size-small);
     white-space: nowrap;
     pointer-events: none;
   }
   .cd-textarea__count--over {
-    color: var(--cd-input-border-error);
+    color: var(--cd-color-input-counter-danger-text-default);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-textarea {
