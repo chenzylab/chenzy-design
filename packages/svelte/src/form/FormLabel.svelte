@@ -36,11 +36,11 @@
 
 <style>
   .cd-form-field__label-optional {
-    color: var(--cd-form-optional-color, var(--cd-color-text-3));
-    font-size: var(--cd-font-size-small, 0.75rem);
+    color: var(--cd-form-optional-color);
+    font-size: var(--cd-form-error-font-size);
   }
   .cd-form-field__label-extra {
-    color: var(--cd-form-extra-color, var(--cd-color-text-3));
-    font-size: var(--cd-font-size-small, 0.75rem);
+    color: var(--cd-form-extra-color);
+    font-size: var(--cd-form-error-font-size);
   }
 </style>

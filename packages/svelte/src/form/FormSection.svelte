@@ -36,7 +36,7 @@
     margin: 0;
   }
   .cd-form__section-legend {
-    color: var(--cd-form-label-color, var(--cd-color-text-1));
+    color: var(--cd-form-label-color);
     font-weight: var(--cd-font-weight-medium, 500);
     font-size: var(--cd-font-size-regular, 0.875rem);
     padding: 0;
