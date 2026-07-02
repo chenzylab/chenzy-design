@@ -100,5 +100,4 @@ export const tagInputTokens = {
   'tag-input-remove-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: '删除按钮悬浮色', usage: '标签删除按钮颜色 - 悬浮（组件消费）' },
   'tag-input-clear-color': { value: 'var(--cd-color-tag-input-icon-default)', category: 'color', label: '清除按钮色', usage: '清除全部按钮颜色（组件消费）' },
   'tag-input-clear-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: '清除按钮悬浮色', usage: '清除全部按钮颜色 - 悬浮（组件消费）' },
-  'tag-input-drop-indicator-color': { value: 'var(--cd-color-tag-input-border-focus)', category: 'color', label: '拖拽指示线色', usage: '拖拽插入指示线颜色（组件消费）' },
 } satisfies TokenGroup;
