@@ -129,7 +129,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 16px 6px 16px;
+    /* 每项统一高度，行内垂直居中（对齐 Semi 侧栏节奏） */
+    min-height: 40px;
+    padding: 0 16px;
     font-size: 13px;
     text-decoration: none;
     color: var(--cd-color-text-1, #4e5969);
