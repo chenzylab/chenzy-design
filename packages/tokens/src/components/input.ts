@@ -145,14 +145,5 @@ export const inputTokens = {
   'input-border-warning': { value: 'var(--cd-color-input-warning-border-focus)', category: 'color', label: '警告描边色', usage: '输入框描边颜色 - 警告（组件消费）' },
   'input-border-error': { value: 'var(--cd-color-input-danger-border-focus)', category: 'color', label: '错误描边色', usage: '输入框描边颜色 - 错误（组件消费）' },
   'input-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '输入框字号', usage: '输入框文字字号（组件消费）' },
-  // InputNumber 步进器按钮（对齐 Semi inputNumber：实底 bg-2 按钮 + 描边 + small 圆角）
-  'input-number-step-width': { value: '14px', category: 'width', label: '步进按钮宽度', usage: 'InputNumber 步进按钮宽度（组件消费，Semi width-inputNumber_button）' },
-  'input-number-step-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色（组件消费）' },
-  'input-number-step-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 悬浮（组件消费）' },
-  'input-number-step-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 按下（组件消费）' },
-  'input-number-step-bg-disabled': { value: 'var(--cd-color-fill-0)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 禁用（组件消费）' },
-  'input-number-step-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '步进按钮图标色', usage: 'InputNumber 步进按钮图标颜色（组件消费）' },
-  'input-number-step-color-disabled': { value: 'var(--cd-color-text-3)', category: 'color', label: '步进按钮图标色', usage: 'InputNumber 步进按钮图标颜色 - 禁用（组件消费）' },
-  'input-number-step-border': { value: 'var(--cd-color-border)', category: 'color', label: '步进按钮描边色', usage: 'InputNumber 步进按钮描边颜色（组件消费）' },
-  'input-number-step-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '步进按钮圆角', usage: 'InputNumber 步进按钮圆角（组件消费）' },
+  // InputNumber 步进器补充 token 已迁至 components/input-number.ts（组件消费，Semi inputNumber）。
 } satisfies TokenGroup;

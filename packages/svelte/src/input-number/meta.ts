@@ -61,5 +61,5 @@ export const meta = {
       'disabled→aria-disabled，readonly→aria-readonly，error→aria-invalid',
     ],
   },
-  tokens: ['--cd-input-*', '--cd-color-*', '--cd-spacing-*', '--cd-focus-ring', '--cd-motion-*'],
+  tokens: ['--cd-input-number-*', '--cd-input-*', '--cd-color-*', '--cd-spacing-*', '--cd-focus-ring', '--cd-motion-*'],
 } as const;
