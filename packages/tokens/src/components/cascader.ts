@@ -177,7 +177,8 @@ export const cascaderTokens = {
 
   // —— chenzy-design Cascader 实际消费的补充 token（Semi 无独立变量；组件面板消费）——
   // 列宽 / 列分割线：Cascader.svelte 面板列 .cd-cascader__column / __flat / __search 直接消费。
-  // 从 tree.ts 迁移至此（归属更正确）；保持原值 160px / color-border 不改视觉。
-  'cascader-column-width': { value: '160px', category: 'width', label: '列宽', usage: '级联选择各级菜单列宽（组件消费）' },
-  'cascader-column-border': { value: 'var(--cd-color-border)', category: 'color', label: '列分割线色', usage: '级联选择各级菜单分割线颜色（组件消费）' },
+  // 从 tree.ts 迁移至此（归属更正确），值对齐 Semi：$width-cascader_option（150px）/
+  // $color-cascader_option_list-border-default（fill-0）。
+  'cascader-column-width': { value: 'var(--cd-width-cascader-option)', category: 'width', label: '列宽', usage: '级联选择各级菜单列宽（组件消费）' },
+  'cascader-column-border': { value: 'var(--cd-color-cascader-option-list-border-default)', category: 'color', label: '列分割线色', usage: '级联选择各级菜单分割线颜色（组件消费）' },
 } satisfies TokenGroup;
