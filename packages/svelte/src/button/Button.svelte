@@ -166,12 +166,12 @@
     align-items: center;
     justify-content: center;
     gap: var(--cd-spacing-tight);
-    height: var(--cd-button-height-default);
-    padding-inline: var(--cd-button-padding-x);
-    border: 1px solid transparent;
-    border-radius: var(--cd-button-radius);
-    font-size: var(--cd-button-font-size);
-    font-weight: var(--cd-font-weight-bold);
+    height: var(--cd-height-button-default);
+    padding-inline: var(--cd-spacing-button-default-paddingleft);
+    border: var(--cd-width-button-border) solid transparent;
+    border-radius: var(--cd-radius-button);
+    font-size: var(--cd-font-button-fontsize);
+    font-weight: var(--cd-font-button-fontweight);
     line-height: 1;
     cursor: pointer;
     transition:
@@ -185,26 +185,27 @@
   }
   /* Semi：全尺寸字号统一 regular(14)，仅高度/内边距随尺寸变化 */
   .cd-button--small {
-    height: var(--cd-button-height-small);
+    height: var(--cd-height-button-small);
+    padding-inline: var(--cd-spacing-button-small-paddingleft);
   }
   .cd-button--large {
-    height: var(--cd-button-height-large);
-    padding-inline: var(--cd-button-padding-x-large);
+    height: var(--cd-height-button-large);
+    padding-inline: var(--cd-spacing-button-large-paddingleft);
   }
   .cd-button--block {
     width: 100%;
   }
   /* 纯图标（无文字）：收成正方形，宽=高，去除水平内距 */
   .cd-button--icon-only {
-    width: var(--cd-button-height-default);
+    width: var(--cd-height-button-default);
     padding-inline: 0;
     gap: 0;
   }
   .cd-button--icon-only.cd-button--small {
-    width: var(--cd-button-height-small);
+    width: var(--cd-height-button-small);
   }
   .cd-button--icon-only.cd-button--large {
-    width: var(--cd-button-height-large);
+    width: var(--cd-height-button-large);
   }
   /* noHorizontalPadding：仅 icon 按钮去单/双侧水平内距（对齐 Semi） */
   .cd-button--no-pad-left {
@@ -222,90 +223,160 @@
     opacity: 0.5;
   }
   /*
-    type 决定「色相」(--btn-hue 系列变量)，theme 决定「填充方式」，两者正交组合。
-    - --btn-hue:       该 type 的语义主色 (solid 背景 / light·borderless·outline 文字与边框)
-    - --btn-hue-hover: solid 背景 hover 加深一档
-    - --btn-hue-text:  solid 文字色 (语义色用白字，中性色用反相文字)
-    light/borderless/outline 的浅色背景统一用 color-mix 由 --btn-hue 派生，
-    避免依赖尚未定义的 *-light-* token。
+    收敛：每个 type × theme × state 组合直接读独立消费组件级 token（对齐 Semi
+    semi-foundation/button/button.scss）。不再用 --btn-hue + color-mix 派生。
+    - solid（实心主题）：读 --cd-color-button-<type>-{bg,text}-{default,hover,active}
+    - light/borderless/outline：读共享的 light/borderless/outline 背景 token +
+      type 各自的 borderless-text token 作为文字色（对齐 Semi 三主题共用文字规则）。
   */
-  .cd-button--primary {
-    --btn-hue: var(--cd-color-primary);
-    --btn-hue-hover: var(--cd-color-primary-hover);
-    --btn-hue-text: var(--cd-color-text-inverse);
+
+  /* —— theme: solid —— type 实心背景 + 文字（各 type 独立 token） */
+  .cd-button--primary.cd-button--solid {
+    background: var(--cd-color-button-primary-bg-default);
+    color: var(--cd-color-button-primary-text-default);
   }
-  .cd-button--secondary {
-    /* 中性 type：solid=深灰底白字 */
-    --btn-hue: var(--cd-color-text-0);
-    --btn-hue-hover: var(--cd-color-text-1);
-    --btn-hue-text: var(--cd-color-text-inverse);
+  .cd-button--primary.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-primary-bg-hover);
+    color: var(--cd-color-button-primary-text-hover);
   }
-  .cd-button--tertiary {
-    /* 中性更弱：solid=中灰底白字、light/borderless 用次级文字色 */
-    --btn-hue: var(--cd-color-text-2);
-    --btn-hue-hover: var(--cd-color-text-1);
-    --btn-hue-text: var(--cd-color-text-inverse);
+  .cd-button--primary.cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-primary-bg-active);
+    color: var(--cd-color-button-primary-text-active);
   }
-  .cd-button--warning {
-    --btn-hue: var(--cd-color-warning);
-    --btn-hue-hover: color-mix(in srgb, var(--cd-color-warning) 88%, #000);
-    --btn-hue-text: var(--cd-color-text-inverse);
+  .cd-button--secondary.cd-button--solid {
+    background: var(--cd-color-button-secondary-bg-default);
+    color: var(--cd-color-button-secondary-text-default);
   }
-  .cd-button--danger {
-    --btn-hue: var(--cd-color-danger);
-    --btn-hue-hover: color-mix(in srgb, var(--cd-color-danger) 88%, #000);
-    --btn-hue-text: var(--cd-color-text-inverse);
+  .cd-button--secondary.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-secondary-bg-hover);
+    color: var(--cd-color-button-secondary-text-hover);
+  }
+  .cd-button--secondary.cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-secondary-bg-active);
+    color: var(--cd-color-button-secondary-text-active);
+  }
+  .cd-button--tertiary.cd-button--solid {
+    background: var(--cd-color-button-tertiary-bg-default);
+    color: var(--cd-color-button-tertiary-text-default);
+  }
+  .cd-button--tertiary.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-tertiary-bg-hover);
+    color: var(--cd-color-button-tertiary-text-hover);
+  }
+  .cd-button--tertiary.cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-tertiary-bg-active);
+    color: var(--cd-color-button-tertiary-text-active);
+  }
+  .cd-button--warning.cd-button--solid {
+    background: var(--cd-color-button-warning-bg-default);
+    color: var(--cd-color-button-warning-text-default);
+  }
+  .cd-button--warning.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-warning-bg-hover);
+    color: var(--cd-color-button-warning-text-hover);
+  }
+  .cd-button--warning.cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-warning-bg-active);
+    color: var(--cd-color-button-warning-text-active);
+  }
+  .cd-button--danger.cd-button--solid {
+    background: var(--cd-color-button-danger-bg-default);
+    color: var(--cd-color-button-danger-text-default);
+  }
+  .cd-button--danger.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-danger-bg-hover);
+    color: var(--cd-color-button-danger-text-hover);
+  }
+  .cd-button--danger.cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
+    background: var(--cd-color-button-danger-bg-active);
+    color: var(--cd-color-button-danger-text-active);
   }
 
-  /* theme: solid — type 色相实心背景 + 反相/白字 */
-  .cd-button--solid {
-    background: var(--btn-hue);
-    color: var(--btn-hue-text);
+  /*
+    light / borderless / outline 文字色：对齐 Semi，三主题共用各 type 的
+    borderless-text token（tertiary 用 solid-text token）。
+  */
+  .cd-button--primary.cd-button--light,
+  .cd-button--primary.cd-button--borderless,
+  .cd-button--primary.cd-button--outline {
+    color: var(--cd-color-button-primary-borderless-text-default);
   }
-  .cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
-    background: var(--btn-hue-hover);
+  .cd-button--secondary.cd-button--light,
+  .cd-button--secondary.cd-button--borderless,
+  .cd-button--secondary.cd-button--outline {
+    color: var(--cd-color-button-secondary-borderless-text-default);
   }
-  .cd-button--solid:active:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 82%, #000);
+  .cd-button--tertiary.cd-button--light,
+  .cd-button--tertiary.cd-button--borderless,
+  .cd-button--tertiary.cd-button--outline {
+    color: var(--cd-color-button-tertiary-solid-text-default);
+  }
+  .cd-button--warning.cd-button--light,
+  .cd-button--warning.cd-button--borderless,
+  .cd-button--warning.cd-button--outline {
+    color: var(--cd-color-button-warning-borderless-text-default);
+  }
+  .cd-button--danger.cd-button--light,
+  .cd-button--danger.cd-button--borderless,
+  .cd-button--danger.cd-button--outline {
+    color: var(--cd-color-button-danger-borderless-text-default);
   }
 
-  /* theme: light — type 色相浅色背景 + 色相文字 */
+  /* theme: light — 共享浅色背景（fill 阶梯），文字色由上方 type 规则决定 */
   .cd-button--light {
-    background: color-mix(in srgb, var(--btn-hue) 12%, transparent);
-    color: var(--btn-hue);
+    background: var(--cd-color-button-light-bg-default);
+    border: var(--cd-width-button-light-border) solid
+      var(--cd-color-button-light-border-default);
   }
   .cd-button--light:hover:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 20%, transparent);
+    background: var(--cd-color-button-light-bg-hover);
+    border-color: var(--cd-color-button-light-border-hover);
   }
   .cd-button--light:active:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 28%, transparent);
+    background: var(--cd-color-button-light-bg-active);
+    border-color: var(--cd-color-button-light-border-active);
   }
 
-  /* theme: borderless — 透明背景 + 色相文字，无边框 */
+  /* theme: borderless — 透明背景 + 共享浅色 hover/active 背景，无边框 */
   .cd-button--borderless {
     background: transparent;
-    color: var(--btn-hue);
+    border: var(--cd-width-button-borderless-border) solid
+      var(--cd-color-button-borderless-border-default);
   }
   .cd-button--borderless:hover:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 12%, transparent);
+    background: var(--cd-color-button-borderless-bg-hover);
+    border-color: var(--cd-color-button-borderless-border-hover);
   }
   .cd-button--borderless:active:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 20%, transparent);
+    background: var(--cd-color-button-borderless-bg-active);
+    border-color: var(--cd-color-button-borderless-border-active);
   }
 
-  /* theme: outline — 透明背景 + 色相边框 + 色相文字 */
+  /* theme: outline — 透明背景 + type 各自边框色 + 共享 hover/active 背景 */
   .cd-button--outline {
     background: transparent;
-    border-color: var(--btn-hue);
-    color: var(--btn-hue);
+    border-width: var(--cd-width-button-outline-border);
+  }
+  .cd-button--primary.cd-button--outline {
+    border-color: var(--cd-color-button-primary-outline-border-default);
+  }
+  .cd-button--secondary.cd-button--outline {
+    border-color: var(--cd-color-button-secondary-outline-border-default);
+  }
+  .cd-button--tertiary.cd-button--outline {
+    border-color: var(--cd-color-button-tertiary-outline-border-default);
+  }
+  .cd-button--warning.cd-button--outline {
+    border-color: var(--cd-color-button-warning-outline-border-default);
+  }
+  .cd-button--danger.cd-button--outline {
+    border-color: var(--cd-color-button-danger-outline-border-default);
   }
   .cd-button--outline:hover:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 8%, transparent);
-    border-color: var(--btn-hue-hover);
-    color: var(--btn-hue-hover);
+    background: var(--cd-color-button-outline-bg-hover);
   }
   .cd-button--outline:active:not(:disabled):not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--btn-hue) 14%, transparent);
+    background: var(--cd-color-button-outline-bg-active);
   }
   /*
     colorful (AI 多彩)：蓝 → 紫 双色渐变（对齐 Semi AI 风格，冷色调）。

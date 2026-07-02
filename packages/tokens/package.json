@@ -15,7 +15,8 @@
       "types": "./dist/uno-theme.d.ts",
       "import": "./dist/uno-theme.js"
     },
-    "./tokens.css": "./dist/tokens.css"
+    "./tokens.css": "./dist/tokens.css",
+    "./token-manifest.json": "./dist/token-manifest.json"
   },
   "files": [
     "dist"

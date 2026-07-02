@@ -11,6 +11,8 @@ import { palette } from './global/color.js';
 import * as scales from './global/scales.js';
 import { aliasLight, aliasDark } from './alias/index.js';
 import { componentTokens } from './components/index.js';
+import { tokenValue, type TokenGroup } from './components/token-def.js';
+import { buildManifest } from './manifest.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, '../dist');
@@ -18,9 +20,12 @@ mkdirSync(dist, { recursive: true });
 
 const PREFIX = '--cd-';
 
-function vars(group: Record<string, string>, category = ''): string[] {
+// 组件 token 值可能是裸字符串或 TokenDef（DSM 元数据）；归一化取 CSS 值。
+function vars(group: Record<string, string | { value: string }>, category = ''): string[] {
   const cat = category ? `${category}-` : '';
-  return Object.entries(group).map(([k, v]) => `  ${PREFIX}${cat}${k}: ${v};`);
+  return Object.entries(group).map(
+    ([k, v]) => `  ${PREFIX}${cat}${k}: ${tokenValue(v)};`,
+  );
 }
 
 const globalVars = [
@@ -98,3 +103,36 @@ body {
 `;
 writeFileSync(resolve(dist, 'tokens.css'), css);
 console.log('[tokens] built dist/tokens.css');
+
+// --- DSM manifest（结构化 token 元数据，供可视化编辑器消费）---
+// 把各 group 展开成带前缀的 { '--cd-xxx': value } map（复用与 vars() 相同的前缀规则）。
+function toMap(group: Record<string, string>, category = ''): Record<string, string> {
+  const cat = category ? `${category}-` : '';
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(group)) out[`${PREFIX}${cat}${k}`] = v;
+  return out;
+}
+const globalMap: Record<string, string> = {
+  ...toMap(palette, 'color'),
+  ...toMap(scales.spacing, 'spacing'),
+  ...toMap(scales.radius, 'border-radius'),
+  ...toMap(scales.fontSize, 'font-size'),
+  ...toMap(scales.fontWeight, 'font-weight'),
+  ...toMap(scales.lineHeight, 'line-height'),
+  ...toMap(scales.shadow, 'shadow'),
+  ...toMap(scales.motion, 'motion'),
+  ...toMap(scales.zIndex, 'z'),
+  ...toMap(scales.breakpoint, 'breakpoint'),
+  ...toMap(scales.sizing),
+};
+const manifest = buildManifest({
+  global: globalMap,
+  aliasLight: toMap(aliasLight),
+  aliasDark: toMap(aliasDark as Record<string, string>),
+  component: componentTokens as TokenGroup,
+});
+writeFileSync(
+  resolve(dist, 'token-manifest.json'),
+  JSON.stringify({ generated: '由 @chenzy-design/tokens build 生成', ...manifest }, null, 2),
+);
+console.log(`[tokens] built dist/token-manifest.json — ${manifest.count} tokens`);
