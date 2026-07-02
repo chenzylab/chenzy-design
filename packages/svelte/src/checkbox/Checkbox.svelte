@@ -164,7 +164,7 @@
     display: inline-flex;
     align-items: flex-start;
     gap: var(--cd-checkbox-label-gap);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-checkbox-label-text-default);
     cursor: pointer;
     line-height: 1.4;
   }
@@ -196,8 +196,10 @@
     border-radius: var(--cd-checkbox-radius);
     color: var(--cd-checkbox-mark-color);
     transition:
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+      background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
+        var(--cd-transition-delay-checkbox-bg),
+      border-color var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
+        var(--cd-transition-delay-checkbox-border);
   }
   .cd-checkbox--small .cd-checkbox__box {
     inline-size: var(--cd-checkbox-size-small);
@@ -241,10 +243,10 @@
   .cd-checkbox__content {
     display: inline-flex;
     flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-spacing-checkbox-extra-margintop);
   }
   .cd-checkbox__extra {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-checkbox-extra-text-default);
     font-size: var(--cd-font-size-small);
   }
 
@@ -255,8 +257,10 @@
     border-radius: var(--cd-checkbox-card-radius);
     background: var(--cd-checkbox-card-bg);
     transition:
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+      background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
+        var(--cd-transition-delay-checkbox-bg),
+      border-color var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
+        var(--cd-transition-delay-checkbox-border);
   }
   .cd-checkbox--card {
     border: 1px solid var(--cd-checkbox-card-border);

@@ -108,15 +108,18 @@
 <style>
   .cd-checkbox-group {
     display: inline-flex;
-    gap: var(--cd-spacing-base);
   }
   .cd-checkbox-group--horizontal {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
+    /* 对齐 Semi 水平组间距 spacing-base */
+    gap: var(--cd-spacing-checkbox-group-horizontal-marginright);
   }
   .cd-checkbox-group--vertical {
     flex-direction: column;
     align-items: flex-start;
+    /* 对齐 Semi 垂直组项间距 spacing-base-tight（比水平更紧） */
+    gap: var(--cd-spacing-checkbox-group-vertical-item-marginbottom);
   }
 </style>
