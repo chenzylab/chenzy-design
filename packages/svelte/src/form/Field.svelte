@@ -369,7 +369,7 @@
 <style>
   .cd-form-field {
     display: flex;
-    gap: var(--cd-form-label-gap, var(--cd-spacing-tight));
+    gap: var(--cd-form-label-gap);
   }
   .cd-form-field--label-top {
     flex-direction: column;
@@ -382,7 +382,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-label-color, var(--cd-color-text-1));
+    color: var(--cd-form-label-color);
   }
   /* labelAlign (§4 L60): justify the label's inline content within its box */
   .cd-form-field__label--align-left {
@@ -395,7 +395,7 @@
     padding-block-start: var(--cd-spacing-extra-tight);
   }
   .cd-form-field__required {
-    color: var(--cd-form-required-color, var(--cd-color-danger, #e54848));
+    color: var(--cd-form-required-color);
   }
   .cd-form-field__control {
     display: flex;
@@ -420,7 +420,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-input-color-placeholder, var(--cd-color-text-3));
+    color: var(--cd-input-color-placeholder);
     pointer-events: none;
     transition:
       transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
@@ -429,7 +429,7 @@
   }
   .cd-form-field--floated .cd-form-field__inset-label {
     transform: translateY(calc(-50% - 0.85rem)) scale(0.85);
-    color: var(--cd-form-label-color, var(--cd-color-text-1));
+    color: var(--cd-form-label-color);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-form-field__inset-label {
@@ -440,22 +440,22 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-error-color, var(--cd-color-danger, #e54848));
-    font-size: var(--cd-form-error-font-size, var(--cd-font-size-small, 0.75rem));
+    color: var(--cd-form-error-color);
+    font-size: var(--cd-form-error-font-size);
   }
   .cd-form-field__warning {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-warning-color, var(--cd-color-warning, #fa8c16));
-    font-size: var(--cd-form-error-font-size, var(--cd-font-size-small, 0.75rem));
+    color: var(--cd-form-warning-color);
+    font-size: var(--cd-form-error-font-size);
   }
   .cd-form-field__status-icon {
     flex: 0 0 auto;
   }
   .cd-form-field__extra {
-    color: var(--cd-form-extra-color, var(--cd-color-text-3));
-    font-size: var(--cd-form-error-font-size, var(--cd-font-size-small, 0.75rem));
+    color: var(--cd-form-extra-color);
+    font-size: var(--cd-form-error-font-size);
   }
   .cd-form-field__extra--middle {
     order: -1;
@@ -468,14 +468,14 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-extra-color, var(--cd-color-text-3));
-    font-size: var(--cd-form-error-font-size, var(--cd-font-size-small, 0.75rem));
+    color: var(--cd-form-extra-color);
+    font-size: var(--cd-form-error-font-size);
   }
   .cd-form-field__spinner {
     inline-size: 0.85em;
     block-size: 0.85em;
-    border: 2px solid var(--cd-color-fill-2, rgba(0, 0, 0, 0.1));
-    border-block-start-color: var(--cd-color-primary, #3370ff);
+    border: 2px solid var(--cd-form-spinner-track-color);
+    border-block-start-color: var(--cd-form-spinner-active-color);
     border-radius: 50%;
     animation: cd-form-field-spin 0.7s linear infinite;
   }

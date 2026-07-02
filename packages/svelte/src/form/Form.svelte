@@ -234,7 +234,7 @@
   .cd-form {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-form-item-gap, var(--cd-spacing-base));
+    gap: var(--cd-form-item-gap);
   }
   .cd-form__footer {
     display: flex;
