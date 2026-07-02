@@ -120,7 +120,7 @@ const GLOBAL_SEGMENTS = new Set([
   'size', 'height', 'weight', 'duration', 'ease', 'delay',
   // motion 档位/缓动名（--cd-motion-duration-fast / --cd-motion-ease-standard /
   // --cd-motion-ease-in 循环剥后的段）
-  'fast', 'slow', 'mid', 'standard', 'spring', 'linear', 'in', 'out',
+  'fast', 'slow', 'mid', 'standard', 'spring', 'linear', 'in', 'out', 'rotate',
   // 尺寸/形状档位（--cd-border-radius-small / --cd-line-height-header-N 循环剥后的段）
   'small', 'large', 'medium', 'regular', 'circle', 'full', 'header',
   // 断点名（--cd-breakpoint-* 剥掉 breakpoint 后）

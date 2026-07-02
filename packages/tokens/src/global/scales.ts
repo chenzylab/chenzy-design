@@ -74,6 +74,7 @@ export const motion = {
   'delay-none': '0ms',
   'ease-in': 'ease-in',
   'scale-none': 'scale(1, 1)',
+  'rotate-none': 'rotate(0deg)', // 对齐 Semi --semi-transform-rotate-none（如 Select 箭头默认态）
 } as const;
 
 export const zIndex = {
