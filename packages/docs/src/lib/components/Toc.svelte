@@ -1,6 +1,7 @@
 <script lang="ts">
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
+  import { saveScrollSection } from '$lib/scroll-restore';
 
   const lang = $derived(locale.value);
 
@@ -19,48 +20,62 @@
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // 记住当前章节以便刷新恢复（存 sessionStorage，不污染 URL）。
+      saveScrollSection(id);
       // 立即高亮，避免等待 observer 回调的延迟
       activeId = id;
     }
   }
 
+  // 顶部激活线：标题滚到距视口顶 <= 此值即视为「当前章节」（与 section
+  // 的 scroll-margin-top:80px 对齐，略放宽避免临界抖动）。
+  const ACTIVATE_OFFSET = 88;
+
   $effect(() => {
-    // 依赖 sections，sections 变化时重建 observer
+    // 依赖 sections，sections 变化时重新绑定
     const ids = sections.map((s) => s.id);
     if (ids.length === 0) return;
 
-    const elements = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
+    // 用滚动位置直接判定「当前章节」：取顶部已越过激活线的最后一个 section。
+    // 比 IntersectionObserver 的窄带更稳——章节很高时不会出现整段都不命中
+    // 观察带、导致无高亮的空窗。
+    function computeActive() {
+      const els = ids
+        .map((id) => ({ id, el: document.getElementById(id) }))
+        .filter((x): x is { id: string; el: HTMLElement } => x.el !== null);
+      if (els.length === 0) return;
 
-    if (elements.length === 0) return;
+      let current = els[0].id;
+      for (const { id, el } of els) {
+        if (el.getBoundingClientRect().top <= ACTIVATE_OFFSET) current = id;
+        else break;
+      }
 
-    // 记录每个 section 的可见情况，取最靠上的可见 section 为 active
-    const visible = new Set<string>();
+      activeId = current;
+      // 记住当前章节以便刷新恢复（存 sessionStorage，不污染 URL）。
+      saveScrollSection(current);
+    }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) visible.add(entry.target.id);
-          else visible.delete(entry.target.id);
-        }
-        // 按 sections 顺序取第一个可见项
-        const firstVisible = ids.find((id) => visible.has(id));
-        if (firstVisible) activeId = firstVisible;
-      },
-      {
-        // 顶部留出空间，使标题滚到接近视口顶部时即激活
-        rootMargin: '-80px 0px -60% 0px',
-        threshold: 0,
-      },
-    );
+    // rAF 节流：滚动高频，合并到下一帧计算一次。
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        computeActive();
+      });
+    }
 
-    for (const el of elements) observer.observe(el);
+    window.addEventListener('scroll', onScroll, { passive: true });
 
-    // 初始化 active：默认第一个
-    if (!activeId) activeId = ids[0];
+    // 初始化：分享链接带 hash 时先预置高亮，避免异步内容就位前错位；
+    // 否则按当前滚动位置算一次（恢复逻辑在 +page.svelte，这里只对齐高亮）。
+    const hashId = decodeURIComponent(location.hash.slice(1));
+    if (hashId && ids.includes(hashId)) activeId = hashId;
+    else computeActive();
 
-    return () => observer.disconnect();
+    return () => window.removeEventListener('scroll', onScroll);
   });
 </script>
 

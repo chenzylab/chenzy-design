@@ -1,16 +1,23 @@
 <script lang="ts">
   import type { Component } from 'svelte';
+  import { tick } from 'svelte';
   import type { PageData } from './$types';
   import { base } from '$app/paths';
+  import { replaceState } from '$app/navigation';
+  import { loadScrollSection, beginRestore, endRestore } from '$lib/scroll-restore';
+  import { browser } from '$app/environment';
   import componentsJson from '@chenzy-design/svelte/components.json';
+  import type { DemoEntry } from './+page.ts';
   import ApiTable from '$lib/components/ApiTable.svelte';
   import DesignTokenTable from '$lib/components/DesignTokenTable.svelte';
   import DemoBox from '$lib/components/DemoBox.svelte';
   import CodeBlock from '$lib/components/CodeBlock.svelte';
   import Toc from '$lib/components/Toc.svelte';
+  import SectionAnchor from '$lib/components/SectionAnchor.svelte';
   import { locale } from '$lib/locale.svelte';
-  import { t, localize, type LocalizedText } from '$lib/i18n';
+  import { t, localize } from '$lib/i18n';
   import { resolveTokenPrefix } from '$lib/token-prefix';
+  import { nameToDir } from '$lib/component-dir';
 
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
@@ -18,111 +25,10 @@
 
   let activeTab = $state<'api' | 'usage'>('api');
 
-  // 组件名小写 → demo 目录名
-  const nameToDir: Record<string, string> = {
-    aichatdialogue: 'ai-chat-dialogue',
-    aichatinput: 'ai-chat-input',
-    audioplayer: 'audio-player',
-    autocomplete: 'autocomplete',
-    avatar: 'avatar',
-    avatargroup: 'avatar',
-    backtop: 'back-top',
-    badge: 'badge',
-    banner: 'banner',
-    breadcrumb: 'breadcrumb',
-    button: 'button',
-    calendar: 'calendar',
-    card: 'card',
-    carousel: 'carousel',
-    cascader: 'cascader',
-    chat: 'chat',
-    checkbox: 'checkbox',
-    codehighlight: 'code-highlight',
-    collapse: 'collapse',
-    collapsible: 'collapsible',
-    colorpicker: 'color-picker',
-    configprovider: 'config-provider',
-    cropper: 'cropper',
-    datepicker: 'date-picker',
-    descriptions: 'descriptions',
-    divider: 'divider',
-    dragmove: 'drag-move',
-    drawer: 'drawer',
-    dropdown: 'dropdown',
-    empty: 'empty',
-    floatbutton: 'float-button',
-    form: 'form',
-    grid: 'grid',
-    highlight: 'highlight',
-    hotkeys: 'hot-keys',
-    icon: 'icon',
-    iconbutton: 'icon-button',
-    image: 'image',
-    input: 'input',
-    inputnumber: 'input-number',
-    jsonviewer: 'json-viewer',
-    layout: 'layout',
-    list: 'list',
-    localeprovider: 'locale-provider',
-    lottieicon: 'lottie-icon',
-    markdownrender: 'markdown-render',
-    menu: 'menu',
-    modal: 'modal',
-    notification: 'notification',
-    overflowlist: 'overflow-list',
-    pagination: 'pagination',
-    pincode: 'pin-code',
-    popconfirm: 'popconfirm',
-    popover: 'popover',
-    progress: 'progress',
-    radio: 'radio',
-    rangepicker: 'date-picker',
-    rating: 'rating',
-    resizable: 'resizable',
-    resizeobserver: 'resize-observer',
-    scrolllist: 'scroll-list',
-    select: 'select',
-    sidesheet: 'side-sheet',
-    skeleton: 'skeleton',
-    slider: 'slider',
-    space: 'space',
-    spin: 'spin',
-    steps: 'steps',
-    switch: 'switch',
-    table: 'table',
-    tabs: 'tabs',
-    tag: 'tag',
-    taginput: 'tag-input',
-    textarea: 'input',
-    timepicker: 'time-picker',
-    timeline: 'timeline',
-    toast: 'toast',
-    tooltip: 'tooltip',
-    transfer: 'transfer',
-    tree: 'tree',
-    treeselect: 'tree-select',
-    typography: 'typography',
-    upload: 'upload',
-    userguide: 'user-guide',
-    videoplayer: 'video-player',
-    virtuallist: 'virtual-list',
-  };
-
-  // 每个组件 demos 目录的 demos.ts（导出 demos: DemoEntry[]），逐个场景铺开为顶级章节
-  const demoListModules = import.meta.glob('../../../../demos/*/demos.ts');
-  const contentModules = import.meta.glob('../../../../content/components/*.md');
-
-  interface DemoEntry {
-    title: LocalizedText;
-    description?: LocalizedText;
-    component: Component;
-    code: string;
-    /** 描述后追加「详见 X」链接，指向另一个组件页 */
-    seeAlso?: { text: LocalizedText; component: string };
-  }
-
-  let demoList = $state<DemoEntry[]>([]);
-  let ContentComponent = $state<Component | null>(null);
+  // demo 场景与「使用场景」正文改由 load（+page.ts）同步预取，页面首帧即完整。
+  // 不再客户端异步加载，避免 TOC/锚点/页面高度在渲染后才变化导致的滚动错位。
+  const demoList = $derived<DemoEntry[]>(data.demos ?? []);
+  const ContentComponent = $derived<Component | null>(data.Content ?? null);
 
   const lowerName = $derived(meta.name.toLowerCase());
   // token 归属前缀：用数据集真实存在的前缀匹配，避免命名漂移（见 token-prefix.ts）
@@ -229,34 +135,41 @@
     ].filter((s): s is TocItem => s !== null),
   );
 
-  // 加载该组件的多场景 demo 列表（demos.ts），逐项铺开为带源码的顶级章节。
+  // 恢复滚动位置。demo/正文已由 load 同步预取，页面首帧即完整——锚点从一开始
+  // 就在 DOM 里、页面高度稳定，故恢复简单可靠。两种来源：
+  //  1) URL 带 #demo-N —— 分享链接场景。滚到锚点后把 hash 从地址栏清掉。
+  //  2) 无 hash —— 普通刷新场景，读 sessionStorage 里记住的上次章节。
+  // 用 beginRestore/endRestore 闸门包住程序化滚动，避免其触发的 onScroll
+  // 把 sessionStorage 覆盖成落点。
   $effect(() => {
-    const dir = nameToDir[lowerName] ?? lowerName;
-    const key = `../../../../demos/${dir}/demos.ts`;
-    demoList = [];
-    if (demoListModules[key]) {
-      (demoListModules[key]() as Promise<{ demos: DemoEntry[] }>)
-        .then((mod) => {
-          demoList = mod.demos ?? [];
-        })
-        .catch(() => {
-          demoList = [];
-        });
-    }
-  });
+    if (!browser) return;
+    lowerName; // 依赖组件名：SPA 切换组件时按新页重新恢复
+    const hashId = decodeURIComponent(location.hash.slice(1));
+    const fromHash = !!hashId;
+    const targetId = hashId || loadScrollSection(location.pathname) || '';
+    if (!targetId) return;
 
-  $effect(() => {
-    const key = `../../../../content/components/${lowerName}.md`;
-    ContentComponent = null;
-    if (contentModules[key]) {
-      (contentModules[key]() as Promise<{ default: Component }>)
-        .then((mod) => {
-          ContentComponent = mod.default;
-        })
-        .catch(() => {
-          ContentComponent = null;
-        });
-    }
+    // 接管滚动：关原生恢复、开闸门。
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    beginRestore();
+
+    // 等首次挂载的 DOM 就绪再定位（数据同步，tick 一次即可）。
+    tick().then(() => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ block: 'start' });
+        if (fromHash) {
+          // 分享链接：定位后清掉 hash，保留 path/query。
+          try {
+            replaceState(location.pathname + location.search, {});
+          } catch {
+            // 路由未就绪时静默跳过
+          }
+        }
+      }
+      // 两帧后放开闸门，确保 scrollIntoView 引发的 scroll 回调已过去。
+      requestAnimationFrame(() => requestAnimationFrame(() => endRestore()));
+    });
   });
 </script>
 
@@ -292,7 +205,7 @@
     {#if activeTab === 'api'}
       <!-- 如何引入：具名导入片段（首节，对齐 Semi 的引入说明）-->
       <section class="section" id="install">
-        <h2>{t('section.install', lang)}</h2>
+        <h2>{t('section.install', lang)}<SectionAnchor id="install" /></h2>
         <CodeBlock code={importCode} codeLang="typescript" />
       </section>
 
@@ -300,7 +213,7 @@
       {#each sceneDemos as demo (demo.anchorId)}
         {@const SceneComp = demo.component}
         <section class="section" id={demo.anchorId}>
-          <h2>{localize(demo.title, lang)}</h2>
+          <h2>{localize(demo.title, lang)}<SectionAnchor id={demo.anchorId} /></h2>
           {#if demo.description || demo.seeAlso}
             <p class="section-desc">
               {#if demo.description}{localize(demo.description, lang)}{/if}
@@ -319,7 +232,7 @@
 
       <!-- API 参考：主组件 + 子组件 + 配置对象 + 方法 -->
       <section class="section" id="api">
-        <h2>{t('section.api', lang)}</h2>
+        <h2>{t('section.api', lang)}<SectionAnchor id="api" /></h2>
 
         <h3 class="api-group-title">{meta.name}</h3>
         <ApiTable props={meta.props ?? []} events={meta.events ?? []} slots={meta.slots ?? []} />
@@ -389,7 +302,7 @@
       <!-- Accessibility -->
       {#if hasA11y}
         <section class="section" id="a11y">
-          <h2>{t('section.a11y', lang)}</h2>
+          <h2>{t('section.a11y', lang)}<SectionAnchor id="a11y" /></h2>
           {#if a11yRole || a11yPattern || a11yKeyboard.length}
             <table class="api-table a11y-table">
               <tbody>
@@ -432,7 +345,7 @@
       <!-- 文案规范 -->
       {#if hasContent}
         <section class="section" id="content">
-          <h2>{t('section.content', lang)}</h2>
+          <h2>{t('section.content', lang)}<SectionAnchor id="content" /></h2>
           {#if usageHints}
             <h3 class="content-sub">{t('content.usage', lang)}</h3>
             <p class="content-text">{usageHints}</p>
@@ -459,7 +372,7 @@
       <!-- 设计变量 -->
       {#if hasTokens}
         <section class="section" id="tokens">
-          <h2>{t('section.tokens', lang)}</h2>
+          <h2>{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
           <DesignTokenTable component={tokenComponent} />
         </section>
       {/if}
@@ -538,6 +451,11 @@
     margin: 0 0 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
+  }
+  /* hover 标题时淡入「复制链接」按钮；键盘聚焦时也显示（可达性） */
+  h2:hover :global(.section-anchor),
+  h2 :global(.section-anchor:focus-visible) {
+    opacity: 1;
   }
   .api-group-title {
     font-size: 15px;
