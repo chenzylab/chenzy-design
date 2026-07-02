@@ -40,7 +40,7 @@
     "@sveltejs/package": "^2.3.7",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@testing-library/svelte": "^5.4.2",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.1.0",
     "@vitest/browser": "^4.1.9",
     "@vitest/browser-playwright": "^4.1.9",
     "axe-core": "^4.12.1",
