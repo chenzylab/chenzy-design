@@ -1509,7 +1509,7 @@
     gap: var(--cd-spacing-extra-tight);
     margin-inline-end: var(--cd-spacing-base-tight);
     padding-inline-end: var(--cd-spacing-base-tight);
-    border-inline-end: 1px solid var(--cd-color-border);
+    border-inline-end: 1px solid var(--cd-color-date-picker-border-bg-default);
     min-inline-size: 5rem;
   }
   /* top/bottom 时横向排列 presets */
@@ -1521,7 +1521,7 @@
     border-inline-end: none;
     margin-block-end: var(--cd-spacing-tight);
     padding-block-end: var(--cd-spacing-tight);
-    border-block-end: 1px solid var(--cd-color-border);
+    border-block-end: 1px solid var(--cd-color-date-picker-border-bg-default);
     min-inline-size: unset;
   }
   /* right 侧预设：切换 margin/border 方向 */
@@ -1531,7 +1531,7 @@
     border-inline-end: none;
     margin-inline-start: var(--cd-spacing-base-tight);
     padding-inline-start: var(--cd-spacing-base-tight);
-    border-inline-start: 1px solid var(--cd-color-border);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
   /* bottom 预sets */
   .cd-date-picker__layout--presets-bottom .cd-date-picker__presets {
@@ -1540,15 +1540,15 @@
     border-block-end: none;
     margin-block-start: var(--cd-spacing-tight);
     padding-block-start: var(--cd-spacing-tight);
-    border-block-start: 1px solid var(--cd-color-border);
+    border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
   .cd-date-picker__preset {
     padding-inline: var(--cd-spacing-tight);
     padding-block: var(--cd-spacing-extra-tight);
     border: none;
-    border-radius: var(--cd-border-radius-small);
-    background: transparent;
-    color: var(--cd-color-text-0);
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
+    background: var(--cd-color-date-picker-quick-bg-default);
+    color: var(--cd-color-date-picker-date-text-default);
     font: inherit;
     text-align: start;
     white-space: nowrap;
@@ -1557,7 +1557,7 @@
   }
   .cd-date-picker__preset:hover {
     background: var(--cd-date-picker-cell-bg-hover);
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-quick-button-text-default);
   }
   .cd-date-picker__preset:focus-visible {
     outline: none;
@@ -1571,7 +1571,7 @@
     display: flex;
     margin-inline-start: var(--cd-spacing-tight);
     padding-inline-start: var(--cd-spacing-tight);
-    border-inline-start: 1px solid var(--cd-color-border);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
   .cd-date-picker__time-col {
     inline-size: var(--cd-time-picker-time-col-width);
@@ -1583,14 +1583,14 @@
     scrollbar-width: thin;
   }
   .cd-date-picker__time-col + .cd-date-picker__time-col {
-    border-inline-start: 1px solid var(--cd-color-border);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
   .cd-date-picker__time-item {
     display: flex;
     align-items: center;
     justify-content: center;
     block-size: var(--cd-time-picker-time-item-height);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-date-text-default);
     cursor: pointer;
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
@@ -1608,7 +1608,7 @@
   }
   .cd-date-picker__time-item--disabled,
   .cd-date-picker__time-item--disabled:hover {
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-date-picker-date-disabled-text-default);
     cursor: not-allowed;
     background: transparent;
   }
@@ -1616,9 +1616,9 @@
     padding-inline: var(--cd-spacing-tight);
     padding-block: var(--cd-spacing-extra-tight);
     border: none;
-    border-radius: var(--cd-border-radius-small);
-    background: var(--cd-color-primary);
-    color: var(--cd-color-white, #fff);
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
+    background: var(--cd-color-date-picker-date-selected-bg-default);
+    color: var(--cd-color-date-picker-date-selected-text-default);
     font: inherit;
     cursor: pointer;
   }
@@ -1632,16 +1632,16 @@
   .cd-date-picker__cancel {
     padding-inline: var(--cd-spacing-tight);
     padding-block: var(--cd-spacing-extra-tight);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-small);
+    border: 1px solid var(--cd-color-date-picker-border-bg-default);
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
     background: transparent;
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-date-text-default);
     font: inherit;
     cursor: pointer;
   }
   .cd-date-picker__cancel:hover {
-    border-color: var(--cd-color-primary);
-    color: var(--cd-color-primary);
+    border-color: var(--cd-color-date-picker-quick-button-text-default);
+    color: var(--cd-color-date-picker-quick-button-text-default);
   }
   .cd-date-picker__cancel:focus-visible {
     outline: none;
@@ -1670,13 +1670,13 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-date-picker-nav-icon-text-default);
     border-radius: var(--cd-date-picker-cell-radius);
     cursor: pointer;
   }
   .cd-date-picker__nav:hover {
     background: var(--cd-date-picker-cell-bg-hover);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-nav-month-icon-text-default);
   }
   .cd-date-picker__nav:focus-visible {
     outline: none;
@@ -1726,7 +1726,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-date-text-default);
     border-radius: var(--cd-date-picker-cell-radius);
     font: inherit;
     cursor: pointer;
@@ -1754,7 +1754,7 @@
     color: var(--cd-date-picker-cell-color-selected);
   }
   .cd-date-picker__cell:disabled {
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-date-picker-date-disabled-text-default);
     cursor: not-allowed;
     background: transparent;
   }
@@ -1765,7 +1765,7 @@
     gap: var(--cd-spacing-tight);
     margin-block-start: var(--cd-spacing-tight);
     padding-block-start: var(--cd-spacing-tight);
-    border-block-start: 1px solid var(--cd-color-border);
+    border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
     background: var(--cd-date-picker-footer-bg); /* 对齐 Semi footer 背景 fill-0 */
   }
   .cd-date-picker__panel--datetime .cd-date-picker__footer,
@@ -1776,7 +1776,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-date-today-text-default);
     font: inherit;
     cursor: pointer;
   }

@@ -683,13 +683,13 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-date-picker-nav-icon-text-default);
     border-radius: var(--cd-date-picker-cell-radius);
     cursor: pointer;
   }
   .cd-range-picker__nav:hover {
     background: var(--cd-date-picker-cell-bg-hover);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-nav-month-icon-text-default);
   }
   .cd-range-picker__nav:focus-visible {
     outline: none;
@@ -726,7 +726,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-date-picker-date-text-default);
     border-radius: var(--cd-date-picker-cell-radius);
     font: inherit;
     cursor: pointer;
@@ -749,19 +749,19 @@
   .cd-range-picker__cell--highlight {
     background: var(--cd-date-picker-cell-bg-hover);
   }
-  /* 区间内：浅底连续条 */
+  /* 区间内：浅底连续条（对齐 Semi primary-light 区间底色） */
   .cd-range-picker__cell--in-range {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-in-hover-bg-default);
     border-radius: 0;
   }
   /* 端点：实心高亮 */
   .cd-range-picker__cell--edge,
   .cd-range-picker__cell--edge:hover {
-    background: var(--cd-date-picker-cell-bg-selected);
-    color: var(--cd-date-picker-cell-color-selected);
+    background: var(--cd-color-date-picker-date-selected-bg-default);
+    color: var(--cd-color-date-picker-date-selected-text-default);
   }
   .cd-range-picker__cell:disabled {
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-date-picker-date-disabled-text-default);
     cursor: not-allowed;
     background: transparent;
   }
