@@ -487,8 +487,8 @@
     content: '';
     position: absolute;
     inset-block: 0;
-    inline-size: 2px;
-    background: var(--cd-tag-input-drop-indicator-color);
+    inline-size: var(--cd-width-tag-input-sortable-item-over);
+    background: var(--cd-color-tag-input-sortable-item-over-bg);
     border-radius: 1px;
   }
   .cd-tag-input__tag--drop-before::before {
