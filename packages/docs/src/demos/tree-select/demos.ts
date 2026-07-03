@@ -29,4 +29,5 @@ export const demos: DemoEntry[] = [
   entry('03-leaf-only.svelte', '仅选叶子节点', 'leafOnly 让父节点只展开不选中，仅叶子可作为最终值'),
   entry('04-disabled.svelte', '禁用状态', '禁用单个节点（disabled 字段）或整体禁用选择器'),
   entry('05-prefix-clear.svelte', '前缀与清除', '自定义 prefix 图标、large 尺寸、默认展开指定节点并可一键清除'),
+  entry('06-inset-trigger.svelte', '内嵌标签与自定义触发器', 'insetLabel 触发器内嵌标签；triggerRender 完全替换默认选择框（与 Cascader 一致）'),
 ];
