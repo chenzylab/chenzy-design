@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [
-    ["@chenzy-design/core", "@chenzy-design/locale", "@chenzy-design/tokens", "@chenzy-design/icons", "@chenzy-design/svelte", "@chenzy-design/unocss-preset"]
+    ["@chenzy-design/core", "@chenzy-design/locale", "@chenzy-design/tokens", "@chenzy-design/icons", "@chenzy-design/svelte", "@chenzy-design/unocss-preset", "@chenzy-design/theme-cli"]
   ],
   "linked": [],
   "access": "public",
