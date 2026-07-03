@@ -6,9 +6,9 @@ export const meta = {
   name: 'RangePicker',
   category: 'input',
   description:
-    '日期范围选择器，双面板（两个月并排，右面板=左面板+1）序列选择（点起始→点结束，自动排序、起止可跨面板、hover 跨面板预览区间），受控/非受控；显示与星期/月份均经 Intl.DateTimeFormat 本地化。type=dateTimeRange 时在双日期面板右侧各挂一组时/分/秒时间列（复用 DatePicker dateTime 列逻辑），起止各自携带时分秒；needConfirm（dateTimeRange 默认 true）时选择进 pending 缓冲，点确定才提交。支持 showSecond/disabledTime/disabledTimePicker/hideDisabledOptions（语义与 DatePicker dateTime 一致）。',
+    '日期范围选择器，双面板（两个月并排，右面板=左面板+1）序列选择（点起始→点结束，自动排序、起止可跨面板、hover 跨面板预览区间），受控/非受控；显示与星期/月份均经 Intl.DateTimeFormat 本地化。type=dateTimeRange 时在双日期面板右侧各挂一组时/分/秒时间列（复用 DatePicker dateTime 列逻辑），起止各自携带时分秒；needConfirm（dateTimeRange 默认 true）时选择进 pending 缓冲，点确定才提交。支持 showSecond/disabledTime/disabledTimePicker/hideDisabledOptions（语义与 DatePicker dateTime 一致）。type=monthRange（对齐 Semi）时改用双「月份」面板（各 12 个月格，头部年份 + 左右切年、左右面板相邻两年）选起止月，value=[起始月, 结束月]（Date 落在该月 1 号），区间高亮/hover 预览按月粒度；不含时间列，maxRange 不适用。',
   props: [
-    { name: 'type', type: "'dateRange'|'dateTimeRange'", default: "'dateRange'", desc: 'dateRange 纯日期范围 / dateTimeRange 带时间范围（每端时/分/秒列 + 确认）' },
+    { name: 'type', type: "'dateRange'|'dateTimeRange'|'monthRange'", default: "'dateRange'", desc: 'dateRange 纯日期范围 / dateTimeRange 带时间范围（每端时/分/秒列 + 确认）/ monthRange 月份范围（双月份面板选起止月）' },
     { name: 'value', type: '[Date|null, Date|null] | null', default: 'undefined' },
     { name: 'defaultValue', type: '[Date|null, Date|null] | null', default: 'null' },
     { name: 'open', type: 'boolean', default: 'undefined' },
@@ -54,6 +54,7 @@ export const meta = {
       'type=dateTimeRange：面板右侧挂起/止两组时/分/秒列 role=listbox + option；时间列作用于当前激活端 activeEnd（选起始日/点左侧列=start，选结束日/点右侧列=end），激活端有 --active 底色标示',
       'dateTimeRange 默认 needConfirm=true：选择进 pending 缓冲，footer「确定」提交、「取消」回退并关闭',
       'disabledTime：dateTimeRange 时/分/秒列被禁用值 aria-disabled、点击/键盘无效（分/秒列联动激活端已选时/分）',
+      'type=monthRange：左右各一 role=grid 的 12 月格（3 列大格），头部显示年份 + 左右按钮切年（左右面板相邻两年）；点起始月→点结束月自动排序、起止可跨面板、hover 跨面板预览区间；单元格 role=gridcell + aria-selected（端点）。选完即提交 onChange（无确认、无时间列）',
     ],
   },
   tokens: [
