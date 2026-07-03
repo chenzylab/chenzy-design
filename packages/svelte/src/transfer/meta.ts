@@ -51,5 +51,30 @@ export const meta = {
       '移动按钮有 aria-label；分组/树面板保留原 Checkbox 语义',
     ],
   },
-  tokens: ['--cd-transfer-*', '--cd-focus-ring', '--cd-color-*', '--cd-spacing-*'],
+  tokens: [
+    // 对齐 Semi transfer/variables.scss（47）；下列为组件当前实际消费的一批
+    '--cd-color-transfer-border',
+    '--cd-color-transfer-header-text',
+    '--cd-color-transfer-empty-text',
+    '--cd-color-transfer-group-title-text',
+    '--cd-color-transfer-close-icon-icon',
+    '--cd-color-transfer-item-bg-hover',
+    '--cd-radius-transfer',
+    // chenzy-design 组件消费补充 token
+    '--cd-transfer-panel-width',
+    '--cd-transfer-panel-height',
+    '--cd-transfer-panel-border',
+    '--cd-transfer-panel-radius',
+    '--cd-transfer-panel-header-bg',
+    '--cd-transfer-item-height',
+    '--cd-transfer-item-bg-hover',
+    '--cd-transfer-item-bg-checked',
+    '--cd-transfer-item-disabled-text',
+    '--cd-transfer-tree-indent',
+    '--cd-transfer-gap',
+    // 复用 alias
+    '--cd-focus-ring',
+    '--cd-color-*',
+    '--cd-spacing-*',
+  ],
 } as const;

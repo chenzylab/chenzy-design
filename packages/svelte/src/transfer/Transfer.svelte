@@ -934,7 +934,7 @@
   {@const half = !checked && conducted.half.has(node.key)}
   <li
     class="cd-transfer__tree-node"
-    style="padding-inline-start: calc({f.level} * var(--cd-transfer-tree-indent, 18px))"
+    style="padding-inline-start: calc({f.level} * var(--cd-transfer-tree-indent))"
   >
     {#if f.hasChildren}
       <button
@@ -1226,7 +1226,7 @@
     font-weight: var(--cd-font-weight-medium);
   }
   .cd-transfer__panel-count {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-transfer-header-text);
     font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-regular);
   }
@@ -1279,10 +1279,10 @@
     box-shadow: inset 0 0 0 2px var(--cd-color-primary);
   }
   .cd-transfer__item[aria-selected='true'] {
-    background: var(--cd-transfer-item-bg-checked, var(--cd-color-primary-light-default));
+    background: var(--cd-transfer-item-bg-checked);
   }
   .cd-transfer__item[aria-disabled='true'] {
-    color: var(--cd-transfer-item-disabled-text, var(--cd-color-text-2));
+    color: var(--cd-transfer-item-disabled-text);
     cursor: not-allowed;
   }
   .cd-transfer__option-control {
@@ -1301,8 +1301,8 @@
     inline-size: 16px;
     block-size: 16px;
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-small, 4px);
-    color: var(--cd-color-bg-0, #fff);
+    border-radius: var(--cd-border-radius-small);
+    color: var(--cd-color-bg-0);
     background: var(--cd-color-bg-0);
   }
   .cd-transfer__check--on {
@@ -1356,9 +1356,9 @@
     block-size: 18px;
     padding: 0;
     border: none;
-    border-radius: var(--cd-border-radius-small, 4px);
+    border-radius: var(--cd-border-radius-small);
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-transfer-close-icon-icon);
     cursor: pointer;
   }
   .cd-transfer__remove:hover:not(:disabled) {
@@ -1419,7 +1419,7 @@
     font-weight: var(--cd-font-weight-medium);
   }
   .cd-transfer__group-count {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-transfer-group-title-text);
     font-size: var(--cd-font-size-small);
     font-weight: var(--cd-font-weight-regular);
   }
@@ -1433,7 +1433,7 @@
     align-items: center;
     justify-content: center;
     padding-block: var(--cd-spacing-base);
-    color: var(--cd-color-text-3);
+    color: var(--cd-color-transfer-empty-text);
     font-size: var(--cd-font-size-small);
   }
   .cd-transfer__ops {
