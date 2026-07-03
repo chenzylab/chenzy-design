@@ -575,7 +575,7 @@
     align-items: center;
     justify-content: center;
     color: var(--cd-scrolllist-color-text-disabled);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-font-size-regular);
   }
   .cd-scroll-list__status {
     block-size: 100%;
