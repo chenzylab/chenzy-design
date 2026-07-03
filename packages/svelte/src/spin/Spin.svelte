@@ -221,7 +221,7 @@
     transition: opacity var(--cd-spin-fade-duration) var(--cd-motion-ease-standard);
   }
   .cd-spin__content--blur {
-    opacity: 0.5;
+    opacity: var(--cd-spin-opacity-children);
     pointer-events: none;
     user-select: none;
   }

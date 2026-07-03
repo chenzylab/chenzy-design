@@ -7,17 +7,13 @@
  * （如 popover_withArrow → popover-witharrow）。
  * 映射：--semi-color-* → --cd-color-*；var(--semi-border-radius-*) → var(--cd-border-radius-*)；
  * $spacing 字面量映射到最近的 --cd-spacing-* 全局档（无对应档的保留字面量，如 6px）。
- * filter 归 other；$horizontal-rate 是矫正因子（非 CSS 变量）归 other。
- *
- * 注：Semi 的 tooltip_arrow_adjusted_offset-x = round($horizontal-rate * $width-tooltip_arrow)
- * = round(0.24 * 24px) = round(5.76) = 6px，忠实翻译为字面量 6px。
+ * 箭头偏移的 Semi 计算 round($horizontal-rate * $width-tooltip_arrow) = round(0.24 * 24px)
+ * = 6px，忠实翻译为字面量 6px（矫正因子本身非 CSS 变量，不建 token；tooltip 侧另有
+ * tooltip-horizontal-rate 参与 calc）。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const popoverTokens = {
-  // —— 矫正因子（非 CSS 变量，供箭头偏移计算，Semi ignore-semi-css-trans） ——
-  'horizontal-rate': { value: '0.24', category: 'other', label: '水平矫正因子', usage: '水平方向矫正因子' },
-
   // —— Color ——
   'color-tooltip-arrow-icon-default': { value: 'unset', category: 'color', label: '箭头图标色', usage: '箭头图标' },
   'color-popover-bg-default': { value: 'var(--cd-color-bg-3)', category: 'color', label: '默认背景色', usage: '默认背景色' },

@@ -19,7 +19,7 @@ export const spinTokens = {
   'width-spin-middle': { value: '20px', category: 'width', label: '加载图标尺寸-中', usage: '加载图标尺寸 - 中' },
   'width-spin-small': { value: '14px', category: 'width', label: '加载图标尺寸-小', usage: '加载图标尺寸 - 小' },
   // Other
-  'opacity-spin-children': { value: '0.5', category: 'other', label: '加载图标透明度', usage: '加载图标透明度' },
+  'spin-opacity-children': { value: '0.5', category: 'other', label: '内容加载遮罩透明度', usage: 'loading 时被遮盖内容的半透明度（组件消费）' },
 
   // —— chenzy-design Spin 实际消费的补充 token（Semi 无 / 命名差异；组件消费） ——
   'spin-color': { value: 'var(--cd-color-spin-bg)', category: 'color', label: '指示器主色', usage: '加载指示器旋转弧线颜色（组件消费）' },
