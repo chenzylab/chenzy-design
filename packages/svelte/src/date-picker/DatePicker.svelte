@@ -438,6 +438,97 @@
     }
   }
 
+  // --- insetInput 面板内嵌输入 (对齐 Semi InsetDateInput / InsetTimeInput) ---
+  // 面板顶部渲染可编辑输入框：date 一个日期框；dateTime 日期框 + 时间框。
+  // 与面板选择双向同步：点日历/选时间 → currentSingle 变 → 派生文本刷新；键入 → 解析 → 写回。
+  // 解析/序列化复用 core 纯函数 formatDate/parseDateString（红线 #2），不重写解析。
+  // insetInput 仅在 date / dateTime 面板生效（month/year 无内嵌输入，对齐 Semi）。
+  const insetEnabled = $derived(insetInput && !multiple && (type === 'date' || type === 'dateTime'));
+  // 内嵌输入用的日期/时间格式串：优先复用用户 format（拆出日期段与时间段），否则用默认。
+  const insetDateFormat = $derived(deriveInsetDateFormat());
+  const insetTimeFormat = $derived(deriveInsetTimeFormat());
+
+  // 从 format 提取「日期部分」token（YYYY/MM/DD 及其分隔符），无 format 时回退 YYYY-MM-DD。
+  function deriveInsetDateFormat(): string {
+    if (format) {
+      const m = format.match(/^[^Hms]*(?=(?:\s+)?(?:HH|mm|ss)|$)/);
+      const datePart = (m?.[0] ?? '').trim();
+      if (datePart) return datePart;
+    }
+    return 'YYYY-MM-DD';
+  }
+  // 从 format 提取「时间部分」token（HH/mm/ss），无 format 时按 showSecond 回退。
+  function deriveInsetTimeFormat(): string {
+    if (format) {
+      const idx = format.search(/HH|mm|ss/);
+      if (idx >= 0) return format.slice(idx).trim();
+    }
+    return showSecond ? 'HH:mm:ss' : 'HH:mm';
+  }
+
+  // 内嵌输入草稿文本：从当前值派生（非编辑态跟随面板选择刷新）。
+  let insetDateText = $state('');
+  let insetTimeText = $state('');
+  $effect(() => {
+    if (!insetEnabled) return;
+    insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
+    insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+  });
+
+  // 提交内嵌日期输入：解析日期段，保留已选时间（combine），写回。
+  function commitInsetDate() {
+    if (!insetEnabled) return;
+    const raw = insetDateText.trim();
+    if (raw === '') return;
+    const parsed = parseDateString(raw, insetDateFormat);
+    if (parsed && !(disabledDate?.(parsed) ?? false)) {
+      const next = combine(parsed);
+      if (needConfirm) pendingValue = next;
+      else setValue(next);
+    } else {
+      insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
+      onParseError?.({ text: raw });
+    }
+  }
+
+  // 提交内嵌时间输入：解析时/分/秒，合并到当前日期（无则今天），写回。
+  function commitInsetTime() {
+    if (!insetEnabled || !isDateTime) return;
+    const raw = insetTimeText.trim();
+    if (raw === '') return;
+    const parsedTime = parseDateString(raw, insetTimeFormat);
+    if (parsedTime) {
+      const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
+      base.setHours(parsedTime.getHours(), parsedTime.getMinutes(), parsedTime.getSeconds(), 0);
+      if (needConfirm) pendingValue = base;
+      else setValue(base);
+    } else {
+      insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+      onParseError?.({ text: raw });
+    }
+  }
+
+  function onInsetDateKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInsetDate();
+    } else if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }
+  function onInsetTimeKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInsetTime();
+    } else if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }
+
   // --- 十年范围 (year 面板)：以 cursor 年所在的十年起点对齐 ---
   const decadeStart = $derived(Math.floor(cursor.getFullYear() / 10) * 10);
   const headerText = $derived(
@@ -1062,6 +1153,32 @@
         {/if}
 
         <div class="cd-date-picker__main">
+          {#if insetEnabled}
+            <div class="cd-date-picker__inset-input" class:cd-date-picker__inset-input--datetime={isDateTime}>
+              <input
+                type="text"
+                class="cd-date-picker__inset-field cd-date-picker__inset-field--date"
+                aria-label={loc().t('DatePicker.triggerLabel')}
+                placeholder={insetDateFormat}
+                {disabled}
+                bind:value={insetDateText}
+                onkeydown={onInsetDateKeydown}
+                onblur={commitInsetDate}
+              />
+              {#if isDateTime}
+                <input
+                  type="text"
+                  class="cd-date-picker__inset-field cd-date-picker__inset-field--time"
+                  aria-label={loc().t('TimePicker.hour')}
+                  placeholder={insetTimeFormat}
+                  {disabled}
+                  bind:value={insetTimeText}
+                  onkeydown={onInsetTimeKeydown}
+                  onblur={commitInsetTime}
+                />
+              {/if}
+            </div>
+          {/if}
           <div class="cd-date-picker__body">
             <div class="cd-date-picker__calendar">
               <div class="cd-date-picker__header">
@@ -1788,11 +1905,68 @@
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
+  /* insetInput 面板内嵌输入框（对齐 Semi InsetDateInput / InsetTimeInput） */
+  .cd-date-picker__inset-input {
+    display: flex;
+    gap: var(--cd-spacing-date-picker-inset-input-separator-padding-x);
+    box-sizing: border-box;
+    inline-size: var(--cd-width-date-picker-inset-input-date-type-wrapper);
+    max-inline-size: 100%;
+    margin-block-end: var(--cd-spacing-date-picker-inset-input-wrapper-margin);
+    padding-block: var(--cd-spacing-date-picker-inset-input-wrapper-padding-y)
+      var(--cd-spacing-date-picker-inset-input-wrapper-padding-bottom);
+    padding-inline: var(--cd-spacing-date-picker-inset-input-wrapper-padding-x);
+  }
+  .cd-date-picker__inset-field {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: var(--cd-height-date-picker-range-input-default);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-color-date-picker-range-input-bg-default);
+    color: var(--cd-input-color-text);
+    border: var(--cd-width-date-picker-range-input-border) solid var(--cd-color-date-picker-range-input-border-default);
+    border-radius: var(--cd-radius-date-picker-range-input-input-wrapper);
+    font: inherit;
+    transition: var(--cd-transition-date-picker-range-input);
+  }
+  .cd-date-picker__inset-field:hover {
+    background: var(--cd-color-date-picker-range-input-bg-hover);
+  }
+  .cd-date-picker__inset-field:focus-visible {
+    outline: none;
+    border-color: var(--cd-color-date-picker-range-input-border-active);
+    background: var(--cd-color-date-picker-range-input-input-wrapper-bg-focus);
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-date-picker__inset-field::placeholder {
+    color: var(--cd-input-color-placeholder);
+  }
+  .cd-date-picker__inset-field:disabled {
+    color: var(--cd-color-date-picker-range-input-disabled-text-default);
+    background: var(--cd-color-date-picker-range-input-disabled-bg-default);
+    cursor: not-allowed;
+  }
+  .cd-date-picker__inset-field--time {
+    flex: 0 0 auto;
+    inline-size: 40%;
+  }
+  .cd-date-picker--compact .cd-date-picker__inset-input {
+    inline-size: var(--cd-width-date-picker-inset-input-date-type-wrapper-compact);
+    margin-block-end: var(--cd-spacing-date-picker-inset-input-wrapper-compact-margin);
+    padding-block: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-y)
+      var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-bottom);
+    padding-inline: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-x);
+  }
+  .cd-date-picker--compact .cd-date-picker__inset-field {
+    block-size: var(--cd-height-date-picker-inset-input-wrapper-compact);
+    font-size: var(--cd-font-size-date-picker-inset-input-compact-font-size);
+  }
   @media (prefers-reduced-motion: reduce) {
     .cd-date-picker__trigger,
     .cd-date-picker__clear,
     .cd-date-picker__cell,
-    .cd-date-picker__preset {
+    .cd-date-picker__preset,
+    .cd-date-picker__inset-field {
       transition: none;
     }
   }

@@ -51,7 +51,7 @@ export const meta = {
     { name: 'rangeSeparator', type: 'string', default: "'~'", desc: '范围日期分隔符' },
     { name: 'autoSwitchDate', type: 'boolean', default: 'true', desc: '选完月/年后自动切换到日视图' },
     { name: 'autoAdjustOverflow', type: 'boolean', default: 'true', desc: '浮层自动调整位置防溢出' },
-    { name: 'insetInput', type: 'boolean', default: 'false', desc: '范围模式下在面板内嵌输入框' },
+    { name: 'insetInput', type: 'boolean', default: 'false', desc: "在面板顶部内嵌可编辑输入框（仅 type=date/dateTime）：date 一个日期框，dateTime 日期框+时间框；与面板选择双向同步，键入解析复用 formatDate/parseDateString" },
     { name: 'position', type: 'string', default: "'bottomLeft'", desc: '浮层弹出位置' },
     { name: 'spacing', type: 'number', default: 'undefined', desc: '触发器与浮层间距' },
     { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '浮层挂载容器' },
@@ -108,6 +108,7 @@ export const meta = {
       'type=month：12 个月格，头部显示年份 + 左右切年；点月份选中并关闭',
       'type=year：一页 12 年（一十年 + 前后各 1 占位），头部显示十年范围 + 左右切十年；点年份选中并关闭',
       'format：传 token 串（YYYY/MM/DD/HH/mm/ss）时触发器变 text 输入框，显示+手输解析均走 formatDate/parseDateString；不传沿用 Intl 显示',
+      'insetInput：面板顶部渲染可编辑输入框（date 一个日期框；dateTime 日期框+时间框），键盘用户可直接键入起止日期；Enter/blur 提交解析，Esc 关闭；与日历/时间列选择双向同步',
     ],
   },
   tokens: [
