@@ -208,7 +208,7 @@
     background: transparent;
     color: var(--cd-toast-color-close);
     cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
+    border-radius: var(--cd-toast-close-radius);
     transition: color var(--cd-toast-motion-duration) ease;
   }
 
@@ -217,7 +217,7 @@
   }
 
   .cd-toast-item__close:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
+    outline: 2px solid var(--cd-toast-outline-focus-color);
     outline-offset: 1px;
   }
 

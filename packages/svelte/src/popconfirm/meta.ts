@@ -182,6 +182,9 @@ export const meta = {
     '--cd-popconfirm-arrow-size',
     '--cd-popconfirm-motion-duration',
     '--cd-popconfirm-motion-easing',
+    '--cd-popconfirm-body-gap',
+    '--cd-popconfirm-title-gap',
+    '--cd-popconfirm-footer-margin-top',
   ],
   responsive: false,
   examples: [

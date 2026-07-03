@@ -328,7 +328,7 @@
     padding: var(--cd-tooltip-padding);
     border-radius: var(--cd-tooltip-radius);
     font-size: var(--cd-tooltip-font-size);
-    line-height: var(--cd-line-height-1, 1.5);
+    line-height: var(--cd-tooltip-line-height);
     word-wrap: break-word;
     pointer-events: none;
   }
@@ -337,7 +337,7 @@
   .cd-tooltip__pop--with-status {
     display: inline-flex;
     align-items: flex-start;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-tooltip-status-gap);
   }
   .cd-tooltip__status {
     display: inline-flex;

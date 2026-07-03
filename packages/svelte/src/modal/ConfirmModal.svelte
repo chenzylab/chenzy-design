@@ -144,7 +144,7 @@
 <style>
   .cd-confirm-modal__body {
     display: flex;
-    gap: var(--cd-spacing-base-tight);
+    gap: var(--cd-spacing-modal-confirm-icon-wrapper-marginright);
     align-items: flex-start;
   }
   .cd-confirm-modal__icon {
@@ -153,21 +153,21 @@
     line-height: 1;
   }
   .cd-confirm-modal__icon--success {
-    color: var(--cd-color-success);
+    color: var(--cd-color-modal-success-icon);
   }
   .cd-confirm-modal__icon--error {
-    color: var(--cd-color-danger);
+    color: var(--cd-color-modal-danger-icon);
   }
   .cd-confirm-modal__icon--warning,
   .cd-confirm-modal__icon--confirm {
-    color: var(--cd-color-warning);
+    color: var(--cd-color-modal-warning-icon);
   }
   .cd-confirm-modal__icon--info {
-    color: var(--cd-color-primary);
+    color: var(--cd-color-modal-primary-icon);
   }
   .cd-confirm-modal__content {
     margin: 0;
-    color: var(--cd-color-text-1);
+    color: var(--cd-modal-body-color);
     line-height: 1.6;
   }
 </style>

@@ -46,6 +46,13 @@ export const meta = {
     note: 'role=status + aria-live=polite（隐式 aria-atomic）公布加载；无 tip 时 aria-label，有 tip 时 tip 文本即可访问名；wrapper 内容 effectiveSpinning 时 aria-busy=true 并 inert 阻断交互；内置 SVG aria-hidden；不捕获焦点；reduced-motion 旋转退化为 opacity 呼吸。',
   },
   tokens: [
+    // Semi 全量对齐（spin/variables.scss）
+    '--cd-color-spin-bg',
+    '--cd-width-spin-large',
+    '--cd-width-spin-middle',
+    '--cd-width-spin-small',
+    '--cd-opacity-spin-children',
+    // chenzy-design 补充（组件消费）
     '--cd-spin-color',
     '--cd-spin-track-color',
     '--cd-spin-size-small',
@@ -55,6 +62,7 @@ export const meta = {
     '--cd-spin-duration-reduced',
     '--cd-spin-tip-gap',
     '--cd-spin-tip-color',
+    '--cd-spin-tip-font-size',
     '--cd-spin-mask-bg',
     '--cd-spin-z',
     '--cd-spin-z-fullscreen',

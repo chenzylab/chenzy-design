@@ -594,7 +594,7 @@
   .cd-popover__title {
     margin-block-end: var(--cd-spacing-tight);
     padding-block-end: var(--cd-spacing-tight);
-    border-block-end: 1px solid var(--cd-popover-title-border);
+    border-block-end: var(--cd-width-popover-title-border) solid var(--cd-popover-title-border);
     color: var(--cd-popover-title-color);
     font-weight: var(--cd-font-weight-medium, 600);
   }
