@@ -109,6 +109,7 @@ export const meta = {
       'type=year：一页 12 年（一十年 + 前后各 1 占位），头部显示十年范围 + 左右切十年；点年份选中并关闭',
       'format：传 token 串（YYYY/MM/DD/HH/mm/ss）时触发器变 text 输入框，显示+手输解析均走 formatDate/parseDateString；不传沿用 Intl 显示',
       'insetInput：面板顶部渲染可编辑输入框（date 一个日期框；dateTime 日期框+时间框），键盘用户可直接键入起止日期；Enter/blur 提交解析，Esc 关闭；与日历/时间列选择双向同步',
+      '年月滚轮快速跳转（PANEL_YAM，对齐 Semi）：点头部年/月标题（button aria-expanded）展开年 + 月两列 ScrollList（复用 ScrollList，role=listbox 逐列），选中即跳转面板游标（不写 value），「返回」按钮回日期网格；yearAndMonthOpts.yearCyclic/monthCyclic 控制列循环滚动；type=year 面板仍走十年格，不进滚轮',
     ],
   },
   tokens: [

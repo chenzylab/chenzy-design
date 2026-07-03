@@ -277,6 +277,14 @@ export interface Locale {
     startPlaceholder: string;
     endPlaceholder: string;
     rangeTriggerLabel: string;
+    /** 年月滚轮标题按钮 aria-label */
+    switchYearMonth: string;
+    /** 年月滚轮返回日期面板按钮文案 */
+    backToDate: string;
+    /** 年月滚轮年份列 aria-label */
+    yearColumnLabel: string;
+    /** 年月滚轮月份列 aria-label */
+    monthColumnLabel: string;
   };
   TimePicker: {
     placeholder: string;

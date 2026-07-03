@@ -220,6 +220,10 @@ export const zh_CN: Locale = {
     startPlaceholder: '开始日期',
     endPlaceholder: '结束日期',
     rangeTriggerLabel: '选择日期范围',
+    switchYearMonth: '快速选择年月',
+    backToDate: '返回',
+    yearColumnLabel: '年份',
+    monthColumnLabel: '月份',
   },
   TimePicker: {
     placeholder: '请选择时间',

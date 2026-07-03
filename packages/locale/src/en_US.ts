@@ -220,6 +220,10 @@ export const en_US: Locale = {
     startPlaceholder: 'Start date',
     endPlaceholder: 'End date',
     rangeTriggerLabel: 'Select date range',
+    switchYearMonth: 'Quick select year and month',
+    backToDate: 'Back',
+    yearColumnLabel: 'Year',
+    monthColumnLabel: 'Month',
   },
   TimePicker: {
     placeholder: 'Select time',
