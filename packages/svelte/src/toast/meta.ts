@@ -65,6 +65,8 @@ export const meta = {
     '--cd-toast-color-icon-error',
     '--cd-toast-color-close',
     '--cd-toast-color-close-hover',
+    '--cd-toast-close-radius',
+    '--cd-toast-outline-focus-color',
     '--cd-toast-radius',
     '--cd-toast-shadow',
     '--cd-toast-padding',
