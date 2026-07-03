@@ -37,5 +37,19 @@ export const meta = {
     role: 'none',
     notes: ['插画 aria-hidden=true', '标题与描述为可读文本'],
   },
-  tokens: ['--cd-empty-*'],
+  tokens: [
+    // Semi empty/variables.scss 全量对齐（6）
+    '--cd-spacing-empty-content-vertical-margintop',
+    '--cd-spacing-empty-content-horizontal-marginleft',
+    '--cd-spacing-empty-title-margintop',
+    '--cd-spacing-empty-footer-margintop',
+    '--cd-font-empty-title-fontweight',
+    '--cd-color-empty-description-text-default',
+    // 组件消费
+    '--cd-empty-image-color',
+    '--cd-empty-title-color',
+    '--cd-empty-title-weight',
+    '--cd-empty-desc-color',
+    '--cd-empty-gap',
+  ],
 } as const;

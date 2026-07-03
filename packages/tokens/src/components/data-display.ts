@@ -1,37 +1,166 @@
-/** Component tokens for Empty / Descriptions / Collapse / Timeline (M4 Show). */
-export const dataDisplayTokens = {
-  // Empty（对齐 Semi：描述文字 text-1、标题字重 bold）
-  'empty-image-color': 'var(--cd-color-fill-1)',
-  'empty-title-color': 'var(--cd-color-text-1)',
-  'empty-title-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 标题字重 600
-  'empty-desc-color': 'var(--cd-color-text-1)', // 对齐 Semi 描述文字 text-1（原 text-2）
-  'empty-gap': 'var(--cd-spacing-base-tight)',
-  // Descriptions
-  'descriptions-label-color': 'var(--cd-color-text-2)',
-  'descriptions-value-color': 'var(--cd-color-text-0)',
-  'descriptions-value-weight-row': 'var(--cd-font-weight-bold)', // Semi 双行显示 value 字重 bold
+/**
+ * Component tokens for Empty / Descriptions / Collapse / Timeline（M4 Show）。
+ * 四组件共用本文件，全量对齐 Semi Design：
+ *   - empty/variables.scss（6）
+ *   - descriptions/variables.scss（19）
+ *   - collapse/variables.scss（20）
+ *   - timeline/variables.scss（42）
+ * 升级为带元数据的 TokenDef 结构以支持 DSM。Semi $xxx-comp_yyy 全量按
+ * kebab（组件各自前缀）翻译；var(--semi-color-*) → var(--cd-color-*)；
+ * $spacing-* → var(--cd-spacing-*)、var(--semi-border-radius-*) → var(--cd-border-radius-*)、
+ * $font-weight-bold → var(--cd-font-weight-bold)、$font-size-* → var(--cd-font-size-*)、
+ * $border-thickness-* → var(--cd-border-thickness-*)、$width-icon-* → var(--cd-width-icon-*)。
+ * calc / 字面量忠实保留。
+ *
+ * 末尾各段保留 chenzy-design 组件实际消费的补充 token（原名，Semi 无 / 命名差异；
+ * 组件消费），值对齐 Semi。组件 token 名与 alias / global 层不同名，var() 无自引用死循环。
+ */
+import type { TokenGroup } from './token-def.js';
 
-  'descriptions-border': 'var(--cd-color-border)',
-  'descriptions-label-bg': 'var(--cd-color-fill-0)',
-  'descriptions-cell-padding': 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)',
-  'descriptions-row-gap': 'var(--cd-spacing-base-tight)',
-  // Collapse（对齐 Semi：header 字重 bold、header padding tight、content padding base）
-  'collapse-header-padding': 'var(--cd-spacing-tight)', // 对齐 Semi header padding 8（原 12/16）
-  'collapse-header-color': 'var(--cd-color-text-0)',
-  'collapse-header-weight': 'var(--cd-font-weight-bold)', // 对齐 Semi 标题字重 bold
-  'collapse-header-bg-hover': 'var(--cd-color-fill-0)',
-  'collapse-header-bg-active': 'var(--cd-color-fill-1)', // 对齐 Semi header 按下背景
-  'collapse-content-padding':
-    'var(--cd-spacing-extra-tight) var(--cd-spacing-base) var(--cd-spacing-tight)', // 对齐 Semi content padding（top 4 / x 16 / bottom 8）
-  'collapse-content-color': 'var(--cd-color-text-1)',
-  'collapse-border': 'var(--cd-color-border)',
-  'collapse-arrow-color': 'var(--cd-color-text-2)',
-  'collapse-motion-duration': 'var(--cd-motion-duration-mid)',
-  // Timeline
-  'timeline-dot-size': '10px',
-  'timeline-dot-color': 'var(--cd-color-primary)',
-  'timeline-line-color': 'var(--cd-color-text-3)', // 对齐 Semi 连线颜色 text-3（原 border）
-  'timeline-content-color': 'var(--cd-color-text-0)',
-  'timeline-time-color': 'var(--cd-color-text-2)',
-  'timeline-gap': 'var(--cd-spacing-base)',
-} as const;
+export const dataDisplayTokens = {
+  // ============================================================
+  // Empty —— semi-foundation/empty/variables.scss（6）
+  // ============================================================
+  'spacing-empty-content-vertical-margintop': { value: '24px', category: 'spacing', label: '内容顶部外边距', usage: '垂直布局内容顶部外边距' },
+  'spacing-empty-content-horizontal-marginleft': { value: '32px', category: 'spacing', label: '内容左侧外边距', usage: '水平布局内容左侧外边距' },
+  'spacing-empty-title-margintop': { value: '16px', category: 'spacing', label: '标题顶部外边距', usage: '标题内容顶部外边距' },
+  'spacing-empty-footer-margintop': { value: '24px', category: 'spacing', label: '操作区顶部外边距', usage: '操作 footer 顶部外边距' },
+  'font-empty-title-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '标题字重' },
+  'color-empty-description-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '描述文字颜色', usage: '描述文字颜色' },
+
+  // ============================================================
+  // Descriptions —— semi-foundation/descriptions/variables.scss（19）
+  // ============================================================
+  'font-descriptions-lineheight': { value: '20px', category: 'font', label: '文字行高', usage: '文字行高' },
+  'font-descriptions-value-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '双行 value 字重', usage: '双行显示 value 文字字重' },
+  'spacing-descriptions-th-paddingright': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: 'key 右内边距', usage: '普通显示 key 右侧内边距' },
+  'spacing-descriptions-item-paddingbottom': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'item 底部内边距', usage: '普通显示 item 底部内边距' },
+  'spacing-descriptions-item-small-paddingright': { value: '48px', category: 'spacing', label: 'item 右内边距-小', usage: '双行显示 item 右侧内边距 - 小尺寸' },
+  'spacing-descriptions-item-medium-paddingright': { value: '60px', category: 'spacing', label: 'item 右内边距-中', usage: '双行显示 item 右侧内边距 - 中尺寸' },
+  'spacing-descriptions-item-large-paddingright': { value: '80px', category: 'spacing', label: 'item 右内边距-大', usage: '双行显示 item 右侧内边距 - 大尺寸' },
+  'spacing-descriptions-key-medium-paddingbottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: 'key 底部内边距-中', usage: '双行显示 key 底部内边距 - 中尺寸' },
+  'spacing-descriptions-key-large-paddingbottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: 'key 底部内边距-大', usage: '双行显示 key 底部内边距 - 大尺寸' },
+  'color-descriptions-key-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: 'key 文字颜色', usage: 'key 文字颜色' },
+  'color-descriptions-value-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: 'value 文字颜色', usage: 'value 文字颜色' },
+  'spacing-descriptions-value-plain-paddingleft': { value: '8px', category: 'spacing', label: 'plain value 左内边距', usage: '普通显示 plain 模式下 value 左侧内边距' },
+  'spacing-descriptions-item-double-padding': { value: '0', category: 'spacing', label: '双行右侧 item 内边距', usage: '双行显示右侧 item 内边距' },
+  'font-descriptions-key-small-fontsize': { value: 'var(--cd-font-size-small)', category: 'font', label: 'key 字号-小', usage: '双行显示 key 文字大小 - 小尺寸' },
+  'font-descriptions-value-small-fontsize': { value: 'var(--cd-font-size-header-6)', category: 'font', label: 'value 字号-小', usage: '双行显示 value 文字大小 - 小尺寸' },
+  'font-descriptions-key-medium-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: 'key 字号-中', usage: '双行显示 key 文字大小 - 中尺寸' },
+  'font-descriptions-value-medium-fontsize': { value: 'var(--cd-font-size-header-4)', category: 'font', label: 'value 字号-中', usage: '双行显示 value 文字大小 - 中尺寸' },
+  'font-descriptions-key-large-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: 'key 字号-大', usage: '双行显示 key 文字大小 - 大尺寸' },
+  'font-descriptions-value-large-fontsize': { value: 'var(--cd-font-size-header-2)', category: 'font', label: 'value 字号-大', usage: '双行显示 value 文字大小 - 大尺寸' },
+
+  // ============================================================
+  // Collapse —— semi-foundation/collapse/variables.scss（20）
+  // ============================================================
+  'color-collapse-item-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '分割线颜色', usage: '分割线颜色' },
+  'color-collapse-header-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题文字颜色', usage: '标题文字颜色' },
+  'color-collapse-header-text-disabled': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '标题文字颜色-禁用', usage: '标题文字颜色 禁用' },
+  'color-collapse-header-icon-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '展开箭头颜色', usage: '展开箭头图标颜色' },
+  'color-collapse-header-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '标题背景-悬浮', usage: '菜单项背景颜色 - 悬浮' },
+  'color-collapse-header-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '标题背景-按下', usage: '菜单项背景颜色 - 按下' },
+  'color-collapse-content-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '内容文字颜色', usage: '内容文字颜色' },
+  'font-collapse-header-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '标题字重' },
+  'spacing-collapse-header-marginx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '标题水平外边距', usage: '标题水平外边距' },
+  'spacing-collapse-header-marginy': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '标题垂直外边距', usage: '标题垂直外边距' },
+  'spacing-collapse-header-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '标题内边距', usage: '标题内边距' },
+  'spacing-collapse-right-paddingright': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标右内边距', usage: '图标右侧内边距' },
+  'spacing-collapse-header-iconleft-marginright': { value: '8px', category: 'spacing', label: '左置图标右外边距', usage: '标题左置图标右侧外边距' },
+  'spacing-collapse-content-paddingtop': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '内容顶部内边距', usage: '内容顶部内边距' },
+  'spacing-collapse-content-paddingright': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '内容右侧内边距', usage: '内容右侧内边距' },
+  'spacing-collapse-content-paddingbottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '内容底部内边距', usage: '内容底部内边距' },
+  'spacing-collapse-content-paddingleft': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '内容左侧内边距', usage: '内容左侧内边距' },
+  'radius-collapse-header': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '标题圆角', usage: '内容圆角大小' },
+  'width-collapse-item-border': { value: '1px', category: 'width', label: '分割线宽度', usage: '分割线宽度' },
+  'size-collapse-icon-default': { value: 'var(--cd-width-icon-medium)', category: 'width', label: '图标尺寸', usage: '图标尺寸' },
+
+  // ============================================================
+  // Timeline —— semi-foundation/timeline/variables.scss（42）
+  // ============================================================
+  'color-timeline-dot-default-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '圆点背景-进行中', usage: '时间轴节点圆点背景色 - 进行中' },
+  'color-timeline-dot-success-bg-default': { value: 'var(--cd-color-success)', category: 'color', label: '圆点背景-成功', usage: '时间轴节点圆点背景色 - 成功' },
+  'color-timeline-dot-warning-bg-default': { value: 'var(--cd-color-warning)', category: 'color', label: '圆点背景-警告', usage: '时间轴节点圆点背景色 - 警告' },
+  'color-timeline-dot-error-bg-default': { value: 'var(--cd-color-danger)', category: 'color', label: '圆点背景-错误', usage: '时间轴节点圆点背景色 - 错误' },
+  'color-timeline-dot-info-bg-default': { value: 'var(--cd-color-tertiary-light-active)', category: 'color', label: '圆点背景-默认', usage: '时间轴节点圆点背景色 - 默认' },
+  'color-timeline-tail-border': { value: 'var(--cd-color-text-3)', category: 'color', label: '连线颜色', usage: '时间轴连线颜色' },
+  'color-timeline-time-default-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '文字颜色-默认', usage: '时间轴文字颜色 - 默认' },
+  'color-timeline-item-head-bg': { value: 'transparent', category: 'color', label: '头部背景色', usage: '时间轴头部背景颜色' },
+  'color-timeline-item-content-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题文字颜色', usage: '时间轴标题文字颜色' },
+  'spacing-timeline-margin': { value: '0', category: 'spacing', label: '整体外边距', usage: '时间轴整体外边距' },
+  'spacing-timeline-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '整体内边距', usage: '时间轴整体内边距' },
+  'spacing-timeline-tail-top': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '连线顶部位置', usage: '时间轴连线顶部位置' },
+  'spacing-timeline-tail-left': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '连线左侧位置', usage: '时间轴连线左侧位置' },
+  'spacing-timeline-head-top': { value: '5px', category: 'spacing', label: '圆点顶部位置', usage: '时间轴节点圆点顶部位置' },
+  'spacing-timeline-head-custom-top': { value: '10px', category: 'spacing', label: '自定义图标顶部位置', usage: '时间轴自定义图标节点圆点顶部位置' },
+  'spacing-timeline-head-custom-left': { value: '5px', category: 'spacing', label: '自定义图标左侧位置', usage: '时间轴自定义图标节点圆点左侧位置' },
+  'spacing-timeline-content-marginleft': { value: '25px', category: 'spacing', label: '内容左外边距', usage: '时间轴内容左侧外边距' },
+  'spacing-timeline-time-margintop': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '时间文本顶部外边距', usage: '时间轴时间文本顶部外边距' },
+  'spacing-timeline-time-top': { value: '-2px', category: 'spacing', label: '时间文本顶部位置', usage: '时间轴时间文本顶部位置' },
+  'spacing-timeline-item-margin': { value: '0', category: 'spacing', label: '各节点外边距', usage: '时间轴各节点外边距' },
+  'spacing-timeline-item-paddingbottom': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: '各节点底部外边距', usage: '时间轴各节点底部外边距' },
+  'spacing-timeline-item-content-time-marginleft': { value: 'calc(-40px - 100%)', category: 'spacing', label: '时间文本左外边距', usage: '时间轴时间文本左侧外边距' },
+  'spacing-timeline-item-right-item-left': { value: 'calc(100% - 9px)', category: 'spacing', label: '右侧节点左位置', usage: '时间轴在右侧时，各节点左侧位置' },
+  'spacing-timeline-item-right-item-content': { value: '0', category: 'spacing', label: '右侧节点内容外边距', usage: '时间轴在右侧时，各节点内容外边距' },
+  'spacing-timeline-item-left-item-content-left': { value: 'calc(50% - 4px)', category: 'spacing', label: '左侧节点内容左位置', usage: '时间轴在左侧时，各节点内容左侧位置' },
+  'spacing-timeline-item-head-custom-left': { value: '50%', category: 'spacing', label: '自定义头部左位置', usage: '时间轴自定义图标节点左侧位置' },
+  'spacing-timeline-item-head-marginleft': { value: '-4px', category: 'spacing', label: '头部左外边距', usage: '时间轴节点头部左侧外边距' },
+  'width-timeline': { value: '100%', category: 'width', label: '整体宽度', usage: '时间轴整体宽度' },
+  'width-timeline-dot': { value: '9px', category: 'width', label: '圆点宽度', usage: '时间轴节点圆点宽度' },
+  'width-timeline-head-custom': { value: 'auto', category: 'width', label: '自定义图标宽度', usage: '时间轴节点自定义图标宽度' },
+  'width-timeline-tail-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '连线宽度', usage: '时间轴连线宽度' },
+  'width-timeline-head-custom-border': { value: 'var(--cd-border-thickness)', category: 'width', label: '自定义连线宽度', usage: '时间轴自定义连线宽度' },
+  'width-timeline-item-content-time': { value: '100%', category: 'width', label: '时间文本宽度', usage: '时间轴时间文本宽度' },
+  'width-timeline-item-right-content': { value: 'calc(100% - 28px)', category: 'width', label: '右侧内容宽度', usage: '时间轴在右侧时，各节点内容宽度' },
+  'width-timeline-item-left-item-content': { value: 'calc(50% - 14px)', category: 'width', label: '左侧节点内容宽度', usage: '时间轴在左侧时，各节点内容宽度' },
+  'width-timeline-item-right-item-content': { value: 'calc(50% - 20px)', category: 'width', label: '右侧节点内容宽度', usage: '时间轴在右侧时，右侧各节点内容宽度' },
+  'height-timline-tail': { value: 'calc(100% - 20px)', category: 'height', label: '连线高度', usage: '时间轴连线高度' },
+  'height-timeline-head-custom': { value: 'auto', category: 'height', label: '自定义连线高度', usage: '时间轴自定义连线高度' },
+  'radius-timeline-head': { value: 'var(--cd-border-radius-circle)', category: 'radius', label: '圆点圆角', usage: '时间轴节点圆点圆角' },
+  'radius-timeline-head-custom': { value: '0', category: 'radius', label: '自定义图标圆角', usage: '时间轴节点自定义图标圆角' },
+  'motion-timeline-head-custom-transform': { value: 'translate(-50%, -50%)', category: 'other', label: '自定义图标位移', usage: '时间轴自定义图标节点位移' },
+  'motion-timeline-head-custom-transform-rtl': { value: 'translate(50%, -50%)', category: 'other', label: '自定义图标位移-RTL', usage: '时间轴自定义图标节点位移 - RTL' },
+
+  // ============================================================
+  // chenzy-design 组件实际消费的补充 token（原名保留，值对齐 Semi；组件消费）
+  // ============================================================
+  // —— Empty ——
+  'empty-image-color': { value: 'var(--cd-color-fill-1)', category: 'color', label: '插画颜色', usage: '空状态插画颜色（组件消费）' },
+  'empty-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '空状态标题颜色（组件消费）' },
+  'empty-title-weight': { value: 'var(--cd-font-empty-title-fontweight)', category: 'font', label: '标题字重', usage: '空状态标题字重（组件消费，对齐 Semi 600）' },
+  'empty-desc-color': { value: 'var(--cd-color-empty-description-text-default)', category: 'color', label: '描述颜色', usage: '空状态描述文字颜色（组件消费，对齐 Semi text-1）' },
+  'empty-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '间距', usage: '空状态各区块间距（组件消费）' },
+
+  // —— Descriptions ——
+  'descriptions-label-color': { value: 'var(--cd-color-descriptions-key-text-default)', category: 'color', label: 'label 颜色', usage: 'label 文字颜色（组件消费）' },
+  'descriptions-value-color': { value: 'var(--cd-color-descriptions-value-text-default)', category: 'color', label: 'value 颜色', usage: 'value 文字颜色（组件消费）' },
+  'descriptions-value-weight-row': { value: 'var(--cd-font-descriptions-value-fontweight)', category: 'font', label: '双行 value 字重', usage: '双行显示 value 字重（组件消费）' },
+  'descriptions-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框颜色', usage: 'bordered 边框颜色（组件消费）' },
+  'descriptions-label-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'label 背景色', usage: 'bordered label 单元格背景（组件消费）' },
+  'descriptions-cell-padding': { value: 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', category: 'spacing', label: '单元格内边距', usage: 'bordered 单元格内边距（组件消费）' },
+  'descriptions-row-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '行间距', usage: '描述项行间距（组件消费，对齐 Semi item-paddingBottom）' },
+
+  // —— Collapse ——
+  'collapse-header-padding': { value: 'var(--cd-spacing-collapse-header-padding)', category: 'spacing', label: '标题内边距', usage: 'header 内边距（组件消费，对齐 Semi 8）' },
+  'collapse-header-color': { value: 'var(--cd-color-collapse-header-text-default)', category: 'color', label: '标题颜色', usage: 'header 文字颜色（组件消费）' },
+  'collapse-header-weight': { value: 'var(--cd-font-collapse-header-fontweight)', category: 'font', label: '标题字重', usage: 'header 字重（组件消费，对齐 Semi bold）' },
+  'collapse-header-bg-hover': { value: 'var(--cd-color-collapse-header-bg-hover)', category: 'color', label: '标题悬浮背景', usage: 'header 悬浮背景（组件消费）' },
+  'collapse-header-bg-active': { value: 'var(--cd-color-collapse-header-bg-active)', category: 'color', label: '标题按下背景', usage: 'header 按下背景（组件消费）' },
+  'collapse-content-padding': { value: 'var(--cd-spacing-collapse-content-paddingtop) var(--cd-spacing-collapse-content-paddingright) var(--cd-spacing-collapse-content-paddingbottom)', category: 'spacing', label: '内容内边距', usage: 'content 内边距（组件消费，对齐 Semi top 4 / x 16 / bottom 8）' },
+  'collapse-content-color': { value: 'var(--cd-color-collapse-content-text-default)', category: 'color', label: '内容颜色', usage: 'content 文字颜色（组件消费）' },
+  'collapse-border': { value: 'var(--cd-color-collapse-item-border-default)', category: 'color', label: '边框颜色', usage: '边框 / 分割线颜色（组件消费）' },
+  'collapse-arrow-color': { value: 'var(--cd-color-collapse-header-icon-default)', category: 'color', label: '箭头颜色', usage: '展开箭头颜色（组件消费）' },
+  'collapse-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '动画时长', usage: '展开动画时长（组件消费）' },
+
+  // —— Timeline ——
+  'timeline-dot-size': { value: 'var(--cd-width-timeline-dot)', category: 'width', label: '圆点尺寸', usage: '圆点尺寸（组件消费，对齐 Semi 9px）' },
+  'timeline-dot-color': { value: 'var(--cd-color-timeline-dot-default-bg-default)', category: 'color', label: '圆点颜色', usage: '默认圆点颜色 - 进行中（组件消费）' },
+  'timeline-dot-color-success': { value: 'var(--cd-color-timeline-dot-success-bg-default)', category: 'color', label: '圆点颜色-成功', usage: '成功态圆点颜色（组件消费）' },
+  'timeline-dot-color-warning': { value: 'var(--cd-color-timeline-dot-warning-bg-default)', category: 'color', label: '圆点颜色-警告', usage: '警告态圆点颜色（组件消费）' },
+  'timeline-dot-color-error': { value: 'var(--cd-color-timeline-dot-error-bg-default)', category: 'color', label: '圆点颜色-错误', usage: '错误态圆点颜色（组件消费）' },
+  'timeline-dot-color-ongoing': { value: 'var(--cd-color-timeline-dot-default-bg-default)', category: 'color', label: '圆点颜色-进行中', usage: '进行中态圆点颜色（组件消费）' },
+  'timeline-line-color': { value: 'var(--cd-color-timeline-tail-border)', category: 'color', label: '连线颜色', usage: '连线颜色（组件消费，对齐 Semi text-3）' },
+  'timeline-content-color': { value: 'var(--cd-color-timeline-item-content-text-default)', category: 'color', label: '内容颜色', usage: '内容文字颜色（组件消费）' },
+  'timeline-time-color': { value: 'var(--cd-color-timeline-time-default-text-default)', category: 'color', label: '时间文字颜色', usage: '时间文字颜色（组件消费）' },
+  'timeline-gap': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '间距', usage: '节点内容间距（组件消费）' },
+} satisfies TokenGroup;
