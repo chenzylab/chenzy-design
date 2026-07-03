@@ -115,6 +115,14 @@ const GLOBAL_SEGMENTS = new Set([
   'tertiary', 'info',
   // 色板（--cd-color-<hue>-N 剥掉 color 后的第二段）
   'blue', 'green', 'grey', 'red', 'orange', 'yellow',
+  'amber', 'cyan', 'indigo', 'lime', 'pink', 'purple', 'teal', 'violet',
+  // 复合色系（--cd-color-light-blue-N / --cd-color-light-green-N 剥 color 后首段是 light）
+  'light',
+  // 全局间距刻度（--cd-space-loose / --cd-space-medium 等）
+  'space',
+  // z-index 阶名（--cd-z-sticky / --cd-z-affix / --cd-z-drag，均非组件；
+  // 组件名的 z 阶如 --cd-z-modal 归各自组件，故此处只列无同名组件的阶）
+  'sticky', 'affix', 'drag',
   // scale 修饰词（--cd-spacing-base-tight / --cd-font-size-* / --cd-shadow-elevated 等的第二段）
   'base', 'tight', 'loose', 'extra', 'super', 'none', 'elevated', 'thickness',
   'size', 'height', 'weight', 'duration', 'ease', 'delay',
@@ -137,6 +145,24 @@ const CATEGORY_SEGMENTS = new Set([
 // --cd-transform-scale-button-* 的 scale）。
 const CATEGORY_MODIFIERS = new Set(['duration', 'delay', 'ease', 'function', 'scale']);
 
+// 多段组件名（连字符组件名）。剥掉 category 前缀后，优先在剩余段开头做最长匹配，
+// 命中则整体作为组件归属，避免 --cd-color-date-picker-* 被误判成组件 `date`。
+// 注意 scroll-list / scrolllist、side-sheet / sidesheet 是同组件的两套并存命名，
+// 归一到连字符形态（scroll-list / side-sheet）统一归属。
+const MULTI_SEGMENT_COMPONENTS: string[][] = [
+  ['date', 'picker'],
+  ['time', 'picker'],
+  ['color', 'picker'],
+  ['scroll', 'list'],
+  ['side', 'sheet'],
+  ['overflow', 'list'],
+];
+// 无连字符别名 → 规范组件名（同组件的另一套命名收归同一归属）。
+const COMPONENT_ALIASES: Record<string, string> = {
+  scrolllist: 'scroll-list',
+  sidesheet: 'side-sheet',
+};
+
 /**
  * 取组件归属。token 名可能的组织：
  *   --cd-button-height-default                  → 首段即组件
@@ -146,14 +172,29 @@ const CATEGORY_MODIFIERS = new Set(['duration', 'delay', 'ease', 'function', 'sc
  */
 function componentOf(name: string): string | null {
   const segs = name.replace(/^--cd-/, '').split('-');
+  // 剥 category/修饰前缀。每剥一步前先尝试多段组件名匹配——因为组件名首段
+  // 可能与 category 同名（如 color-picker 的 color 也是 category），贪婪剥壳
+  // 会把组件名的 color 当 category 剥掉，故须在剥之前就地探测。
   let i = 0;
+  const tryMulti = (from: number): string | null => {
+    for (const parts of MULTI_SEGMENT_COMPONENTS) {
+      if (parts.every((p, k) => segs[from + k] === p)) return parts.join('-');
+    }
+    return null;
+  };
   while (i < segs.length - 1 && (CATEGORY_SEGMENTS.has(segs[i]!) || CATEGORY_MODIFIERS.has(segs[i]!))) {
+    // 当前位置起若已是完整多段组件名（如 rest=[color,picker,...]），停止剥壳并归属。
+    const hit = tryMulti(i);
+    if (hit) return hit;
     i++;
   }
+  const hit = tryMulti(i);
+  if (hit) return hit;
   const seg = segs[i];
   if (!seg) return null;
   if (/^\d+$/.test(seg)) return null; // 纯数字段（如 z 阶、断点值）非组件
-  return GLOBAL_SEGMENTS.has(seg) ? null : seg;
+  if (GLOBAL_SEGMENTS.has(seg)) return null;
+  return COMPONENT_ALIASES[seg] ?? seg; // 无连字符别名收归规范组件名
 }
 
 interface RawEntry {

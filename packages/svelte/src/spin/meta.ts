@@ -51,7 +51,7 @@ export const meta = {
     '--cd-width-spin-large',
     '--cd-width-spin-middle',
     '--cd-width-spin-small',
-    '--cd-opacity-spin-children',
+    '--cd-spin-opacity-children',
     // chenzy-design 补充（组件消费）
     '--cd-spin-color',
     '--cd-spin-track-color',
