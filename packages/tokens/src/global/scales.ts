@@ -39,6 +39,11 @@ export const fontSize = {
   'header-1': '32px',
 } as const;
 
+// 等宽字体族（code/kbd 等消费；跨组件共享的设计基元，直引 alias 不组件化）
+export const fontFamily = {
+  code: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
+} as const;
+
 export const fontWeight = {
   light: '200',
   regular: '400',

@@ -679,7 +679,7 @@
      min 用 token 兜底，避免容器未限宽时塌成 0。 */
   .cd-menu--collapsed {
     inline-size: 100%;
-    min-inline-size: var(--cd-menu-collapsed-width, calc(var(--cd-menu-item-height) + var(--cd-spacing-tight)));
+    min-inline-size: var(--cd-menu-collapsed-width);
   }
   .cd-menu__item {
     margin: 0;
@@ -784,10 +784,10 @@
      选中叶子可能由子组件 MenuPopupNode 渲染（vertical/horizontal/collapsed 浮层模式），
      故用 :global 穿透 scoped 边界匹配后代 link。 */
   .cd-menu--warning :global(.cd-menu__link--selected) {
-    color: var(--cd-menu-color-warning, var(--cd-color-warning));
+    color: var(--cd-menu-color-warning);
   }
   .cd-menu--error :global(.cd-menu__link--selected) {
-    color: var(--cd-menu-color-danger, var(--cd-color-danger));
+    color: var(--cd-menu-color-danger);
   }
   .cd-menu__label {
     flex: 1 1 auto;

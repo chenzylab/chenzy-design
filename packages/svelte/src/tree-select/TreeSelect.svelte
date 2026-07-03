@@ -1526,7 +1526,7 @@
     inline-size: 100%;
     block-size: var(--cd-height-input-small);
     padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-bg, transparent);
+    background: var(--cd-input-color-bg);
     color: inherit;
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
@@ -1646,7 +1646,7 @@
     color: #fff;
     background: var(--cd-color-bg-1, #fff);
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-small, 3px);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-tree-select__checkbox--checked,
   .cd-tree-select__checkbox--half {

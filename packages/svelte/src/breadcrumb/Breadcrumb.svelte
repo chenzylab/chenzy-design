@@ -296,11 +296,11 @@
   }
   /* compact=false：宽松模式，字号对齐 Semi loose（regular），项间距增加 */
   .cd-breadcrumb--loose {
-    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-breadcrumb-font-size));
-    letter-spacing: var(--cd-breadcrumb-loose-letter-spacing, 0.01em);
+    font-size: var(--cd-breadcrumb-loose-font-size);
+    letter-spacing: var(--cd-breadcrumb-loose-letter-spacing);
   }
   .cd-breadcrumb--loose .cd-breadcrumb__list {
-    gap: var(--cd-breadcrumb-loose-gap, calc(var(--cd-breadcrumb-gap, 0.5em) * 1.5));
+    gap: var(--cd-breadcrumb-loose-gap);
   }
   .cd-breadcrumb__list {
     display: flex;

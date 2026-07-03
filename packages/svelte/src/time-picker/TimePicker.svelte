@@ -1002,7 +1002,7 @@
     text-decoration: underline;
   }
   .cd-time-picker__ok {
-    color: var(--cd-color-white, #fff);
+    color: var(--cd-color-text-inverse);
     background: var(--cd-color-primary);
   }
   .cd-time-picker__ok:hover {

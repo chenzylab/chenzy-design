@@ -145,6 +145,9 @@ export const meta = {
     '--cd-breadcrumb-gap',
     '--cd-breadcrumb-font-size',
     '--cd-breadcrumb-font-size-compact',
+    '--cd-breadcrumb-loose-font-size',
+    '--cd-breadcrumb-loose-letter-spacing',
+    '--cd-breadcrumb-loose-gap',
     '--cd-breadcrumb-item-max-width',
     // 通用
     '--cd-focus-ring',

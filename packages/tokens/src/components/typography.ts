@@ -27,6 +27,10 @@ export const typographyTokens = {
   'color-typography-link-text-default': { value: 'var(--cd-color-link)', category: 'color', label: '链接文本颜色', usage: '链接文本颜色 - 默认' },
   'color-typography-link-text-hover': { value: 'var(--cd-color-link-hover)', category: 'color', label: '链接文本颜色', usage: '链接文本颜色 - 悬浮' },
 
+  // —— 操作图标（复制/展开等按钮） ——
+  'typography-action-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '操作图标颜色', usage: '复制/展开等操作图标按钮默认色' },
+  'typography-action-color-hover': { value: 'var(--cd-color-primary)', category: 'color', label: '操作图标悬浮颜色', usage: '复制/展开等操作图标按钮悬浮色' },
+
   // —— 复制 ——
   'color-typography-copied-icon-success': { value: 'var(--cd-color-success)', category: 'color', label: '可复制文本复制成功图标颜色', usage: '可复制文本复制成功图标颜色' },
   'color-typography-code-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '代码文本描边颜色', usage: '代码文本描边颜色' },

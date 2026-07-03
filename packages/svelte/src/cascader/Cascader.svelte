@@ -1467,7 +1467,7 @@
     inline-size: 100%;
     block-size: var(--cd-height-input-small);
     padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-bg, transparent);
+    background: var(--cd-input-color-bg);
     color: inherit;
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
