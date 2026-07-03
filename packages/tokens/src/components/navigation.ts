@@ -152,38 +152,4 @@ export const navigationTokens = {
   'font-navigation-sub-item-fontweight': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '子级项标题字重', usage: '导航栏子级菜单项标题字重' },
   'font-navigation-header-item-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: 'header 标题字重', usage: '导航栏 header 标题字重' },
 
-  // ============================================================
-  // chenzy-design Breadcrumb / Pagination / Steps（M3 导航族，组件消费）
-  // ============================================================
-
-  // —— Breadcrumb ——
-  'breadcrumb-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '面包屑文字色', usage: '面包屑普通项文字颜色' },
-  'breadcrumb-color-active': { value: 'var(--cd-color-text-0)', category: 'color', label: '面包屑当前项色', usage: '面包屑当前项文字颜色' },
-  'breadcrumb-color-link': { value: 'var(--cd-color-primary)', category: 'color', label: '面包屑链接色', usage: '面包屑链接文字颜色' },
-  'breadcrumb-active-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '当前项字重', usage: '对齐 Semi 当前项字重 bold' },
-  'breadcrumb-separator-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '分割符色', usage: '对齐 Semi 分割符 text-2（原 text-3）' },
-  'breadcrumb-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '面包屑间距', usage: '面包屑项间距' },
-  'breadcrumb-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '面包屑字号', usage: '面包屑文字大小' },
-
-  // —— Pagination（对齐 Semi：选中态浅蓝底蓝字、无边框） ——
-  'pagination-item-size': { value: '32px', category: 'width', label: '页码尺寸', usage: '页码按钮边长' },
-  'pagination-item-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '页码圆角', usage: '对齐 Semi 页码圆角（small 3px）' },
-  'pagination-item-border': { value: 'transparent', category: 'color', label: '页码边框', usage: '对齐 Semi 页码无边框（原 color-border）' },
-  'pagination-item-bg-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '选中背景', usage: '对齐 Semi 选中背景浅蓝（原 primary 实底）' },
-  'pagination-item-color-active': { value: 'var(--cd-color-primary)', category: 'color', label: '选中文字', usage: '对齐 Semi 选中文字蓝（原 text-inverse 白）' },
-  'pagination-item-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '悬浮背景', usage: '页码悬浮背景颜色' },
-  'pagination-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '页码间距', usage: '页码项间距' },
-
-  // —— Steps ——
-  'steps-icon-size': { value: '28px', category: 'width', label: '步骤图标尺寸', usage: '步骤图标边长' },
-  'steps-icon-bg': { value: 'var(--cd-color-text-2)', category: 'color', label: '未到达图标背景', usage: '对齐 Semi 未到达图标背景 text-2（原 fill-1）' },
-  'steps-icon-bg-process': { value: 'var(--cd-color-primary)', category: 'color', label: '进行中图标背景', usage: '进行中步骤图标背景颜色' },
-  'steps-icon-bg-finish': { value: 'var(--cd-color-primary)', category: 'color', label: '完成图标背景', usage: '已完成步骤图标背景颜色' },
-  'steps-icon-bg-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误图标背景', usage: '错误步骤图标背景颜色' },
-  'steps-icon-color': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '图标文本色', usage: '对齐 Semi 图标文本 white（未到达底色 text-2 上用白字）' },
-  'steps-icon-color-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '激活图标文本色', usage: '激活步骤图标文本颜色' },
-  'steps-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题文字色', usage: '步骤标题文字颜色' },
-  'steps-desc-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '描述文字色', usage: '步骤描述文字颜色' },
-  'steps-line-color': { value: 'var(--cd-color-fill-2)', category: 'color', label: '未完成连接线', usage: '对齐 Semi 未完成连接线 fill-2（原 border）' },
-  'steps-line-color-finish': { value: 'var(--cd-color-primary)', category: 'color', label: '已完成连接线', usage: '已完成步骤连接线颜色' },
 } satisfies TokenGroup;
