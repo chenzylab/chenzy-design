@@ -711,7 +711,7 @@
   .cd-carousel__indicator--columnar {
     inline-size: 4px;
     block-size: 8px;
-    border-radius: var(--cd-radius-sm, 2px);
+    border-radius: var(--cd-border-radius-small, 3px);
     transition:
       background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       block-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
