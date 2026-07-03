@@ -18,6 +18,14 @@ export const meta = {
   events: [],
   slots: [{ name: 'children', desc: '横向分隔线中间/侧边文字（vertical 忽略）' }],
   a11y: { role: 'separator', orientation: 'aria-orientation for vertical' },
-  tokens: ['--cd-divider-color', '--cd-divider-thickness', '--cd-divider-spacing', '--cd-divider-text-*'],
+  tokens: [
+    '--cd-divider-color',
+    '--cd-divider-thickness',
+    '--cd-divider-spacing',
+    '--cd-divider-text-color',
+    '--cd-divider-text-font-size',
+    '--cd-divider-text-gap',
+    '--cd-divider-text-weight',
+  ],
   examples: [{ title: '带文字', code: '<Divider>章节</Divider>' }],
 } as const;
