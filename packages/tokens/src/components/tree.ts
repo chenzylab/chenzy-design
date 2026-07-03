@@ -64,6 +64,7 @@ export const treeTokens = {
   'tree-row-height': { value: 'var(--cd-tree-node-height)', category: 'height', label: '当前行高', usage: '当前尺寸行高基线（组件按 size 覆盖为 small/large；引 tree-node-height）' },
   // 缩进：对齐 Semi 选项缩进增量 20px。
   'tree-indent': { value: 'var(--cd-spacing-tree-option-level-paddingleft)', category: 'spacing', label: '层级缩进', usage: '每层缩进增量（组件消费；引 spacing-tree-option-level-paddingleft）' },
+  'tree-node-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '节点水平内边距', usage: '树节点水平内边距（组件消费；TreeSelect/Cascader 下拉节点复用；收敛改名时遗漏，补回原值 base-tight）' },
   // 文字 / 图标色（引 Semi 语义 token）。
   'tree-node-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '文字字号', usage: '树选项文字字号（组件消费；对齐 Semi 常规正文 14px）' },
   'tree-node-color': { value: 'var(--cd-color-tree-option-text-default)', category: 'color', label: '文字色', usage: '树选项文字颜色（组件消费；引 color-tree-option-text-default）' },
