@@ -751,7 +751,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-base-tight);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-upload-text);
   }
   .cd-upload__input {
     position: absolute;
@@ -777,7 +777,7 @@
     flex-direction: row-reverse;
   }
   .cd-upload__prompt {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-assist-text);
     font-size: var(--cd-font-size-small);
   }
   .cd-upload__trigger {
@@ -787,9 +787,9 @@
     gap: var(--cd-spacing-tight);
     height: var(--cd-button-height-default);
     padding-inline: var(--cd-button-padding-x);
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-0);
-    border: 1px solid var(--cd-color-border);
+    background: var(--cd-color-upload-pic-add-bg);
+    color: var(--cd-color-upload-text);
+    border: 1px solid var(--cd-color-upload-border);
     border-radius: var(--cd-button-radius);
     font-size: var(--cd-button-font-size);
     cursor: pointer;
@@ -819,9 +819,9 @@
     padding-block: var(--cd-spacing-loose);
     padding-inline: var(--cd-spacing-base);
     background: var(--cd-upload-dragger-bg);
-    border: 1px dashed var(--cd-upload-dragger-border);
+    border: var(--cd-width-upload-drag-area-border) dashed var(--cd-upload-dragger-border);
     border-radius: var(--cd-upload-dragger-radius);
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-assist-text);
     cursor: pointer;
     transition:
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
@@ -851,29 +851,29 @@
   }
   /* 组件级 status：校验态影响上传区/卡片边框色（区别于 file.status 进度态）。 */
   .cd-upload--warning .cd-upload__dragger {
-    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+    border-color: var(--cd-upload-border-warning);
   }
   .cd-upload--error .cd-upload__dragger {
-    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+    border-color: var(--cd-upload-border-error);
   }
   .cd-upload--warning .cd-upload__trigger {
-    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+    border-color: var(--cd-upload-border-warning);
   }
   .cd-upload--error .cd-upload__trigger {
-    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+    border-color: var(--cd-upload-border-error);
   }
   .cd-upload--warning .cd-upload__card,
   .cd-upload--error .cd-upload__card {
-    border-color: var(--cd-upload-border-warning, var(--cd-color-warning));
+    border-color: var(--cd-upload-border-warning);
   }
   .cd-upload--error .cd-upload__card {
-    border-color: var(--cd-upload-border-error, var(--cd-color-danger));
+    border-color: var(--cd-upload-border-error);
   }
   .cd-upload__list-title {
     font-size: var(--cd-font-size-small);
-    color: var(--cd-color-text-1);
+    color: var(--cd-color-upload-assist-text);
     font-weight: 500;
-    margin-block-end: var(--cd-spacing-extra-tight);
+    margin-block-end: var(--cd-spacing-upload-title-marginbottom);
   }
   .cd-upload__list {
     display: flex;
@@ -912,7 +912,7 @@
   .cd-upload__item-size,
   .cd-upload__item-status {
     flex: 0 0 auto;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-assist-text);
     font-size: var(--cd-font-size-small);
   }
   .cd-upload__item--error .cd-upload__item-status {
@@ -926,14 +926,14 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-assist-text);
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
     font-size: var(--cd-font-size-header-6);
     line-height: 1;
   }
   .cd-upload__item-remove:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-upload-text);
   }
   .cd-upload__item-remove:focus-visible {
     outline: none;
@@ -950,7 +950,7 @@
     padding: 0 var(--cd-spacing-extra-tight);
     border: none;
     background: transparent;
-    color: var(--cd-color-primary);
+    color: var(--cd-color-upload-retry-text);
     cursor: pointer;
     font-size: var(--cd-font-size-small);
     border-radius: var(--cd-border-radius-small);
@@ -970,14 +970,14 @@
     padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
     border: none;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-clear-text);
     cursor: pointer;
     font-size: var(--cd-font-size-small);
     border-radius: var(--cd-border-radius-small);
   }
   .cd-upload__clear-btn:hover {
     color: var(--cd-color-danger);
-    background: var(--cd-color-fill-1);
+    background: var(--cd-color-upload-card-bg-hover);
   }
   .cd-upload__clear-btn:disabled {
     cursor: not-allowed;
@@ -986,34 +986,35 @@
   .cd-upload__dragger-main {
     display: block;
     font-size: var(--cd-font-size-regular);
-    color: var(--cd-color-text-1);
+    color: var(--cd-color-upload-drag-area-main-text-default);
+    margin-block-end: var(--cd-spacing-upload-drag-area-main-text-marginbottom);
   }
   .cd-upload__dragger-sub {
     display: block;
     font-size: var(--cd-font-size-small);
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-upload-drag-area-sub-text-default);
   }
 
   /* --- image / picture-card 缩略图网格 --- */
   .cd-upload__grid {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-spacing-tight);
+    gap: var(--cd-spacing-upload-picture-file-card-gap);
     margin: 0;
     padding: 0;
     list-style: none;
   }
   .cd-upload__card {
     position: relative;
-    inline-size: 96px;
-    block-size: 96px;
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
+    inline-size: var(--cd-width-upload-file-pic-card);
+    block-size: var(--cd-height-upload-file-pic-card);
+    border: 1px solid var(--cd-color-upload-border);
+    border-radius: var(--cd-radius-upload-picture-file-card-img);
     overflow: hidden;
-    background: var(--cd-color-fill-0);
+    background: var(--cd-color-upload-pic-add-bg);
   }
   .cd-upload__card--error {
-    border-color: var(--cd-upload-item-color-error, var(--cd-color-danger));
+    border-color: var(--cd-color-upload-picture-file-card-error-border);
   }
   .cd-upload__thumb-btn {
     display: block;
@@ -1035,7 +1036,7 @@
     display: block;
   }
   .cd-upload__thumb--placeholder {
-    background: var(--cd-color-fill-1);
+    background: var(--cd-color-upload-file-card-preview-placeholder-bg);
   }
   .cd-upload__card-progress {
     position: absolute;
@@ -1064,7 +1065,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #fff;
+    color: var(--cd-color-upload-picture-file-card-pic-info-text);
     font-size: var(--cd-font-size-small);
   }
   .cd-upload__card-remove {
@@ -1077,7 +1078,7 @@
     block-size: 1.25rem;
     border: none;
     background: transparent;
-    color: #fff;
+    color: var(--cd-color-upload-picture-file-card-close-icon);
     cursor: pointer;
     font-size: var(--cd-font-size-header-6);
     line-height: 1;

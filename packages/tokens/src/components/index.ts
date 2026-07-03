@@ -9,6 +9,7 @@ import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
 import { inputNumberTokens } from './input-number.js';
 import { tagInputTokens } from './tag-input.js';
+import { uploadTokens } from './upload.js';
 import { switchTokens } from './switch.js';
 import { checkboxTokens } from './checkbox.js';
 import { radioTokens } from './radio.js';
@@ -67,6 +68,7 @@ export const componentTokens = {
   ...inputTokens,
   ...inputNumberTokens,
   ...tagInputTokens,
+  ...uploadTokens,
   ...switchTokens,
   ...checkboxTokens,
   ...radioTokens,
