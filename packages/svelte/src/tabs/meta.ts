@@ -155,8 +155,6 @@ export const meta = {
     '--cd-color-tabs-tab-button-*', // 按钮式各状态
     '--cd-color-tabs-tab-icon-*',
     '--cd-color-tabs-tab-pane-arrow-*', // 滚动折叠箭头
-    '--cd-color-tabs-tab-slash-line',
-    '--cd-color-tabs-tab-outline-focus',
     '--cd-font-tabs-*', // 字重 / 字号 / 行高
     '--cd-width-tabs-*',
     '--cd-height-tabs-*',
