@@ -608,7 +608,7 @@
     margin-block-end: var(--cd-spacing-base);
   }
   :global(.cd-typography--title) {
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-font-typography_title-fontweight);
   }
   :global(.cd-typography--h1) {
     font-size: var(--cd-font-size-header-1);
@@ -652,16 +652,16 @@
     color: var(--cd-typography-color-tertiary);
   }
   :global(.cd-typography--warning) {
-    color: var(--cd-color-warning);
+    color: var(--cd-color-typography_warning-text-default);
   }
   :global(.cd-typography--danger) {
-    color: var(--cd-color-danger);
+    color: var(--cd-color-typography_danger-text-default);
   }
   :global(.cd-typography--success) {
-    color: var(--cd-color-success);
+    color: var(--cd-color-typography_success-text-default);
   }
   :global(.cd-typography--strong) {
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-font-typography_strong-fontweight);
   }
   /* 字号档 (Text/Paragraph) — spec §4.1 size + §5 token 表; default 沿用继承字号保持向后兼容 */
   :global(.cd-typography--size-small) {
@@ -701,7 +701,9 @@
     color: var(--cd-typography-code-color); /* 对齐 Semi code 文字 text-2 */
     padding-inline: 0.4em;
     padding-block: 0.1em;
-    border-radius: 3px;
+    /* 对齐 Semi：code 描边 + 圆角 token */
+    border: var(--cd-width-typography_code-border) solid var(--cd-color-typography_code-border-default);
+    border-radius: var(--cd-radius-typography_code);
   }
   @media (prefers-reduced-motion: reduce) {
     :global(.cd-typography--link) {
@@ -750,7 +752,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-start: 4px;
+    margin-inline-start: var(--cd-spacing-typography_copyicon-marginleft);
     padding: 2px;
     border: 0;
     background: transparent;
@@ -768,19 +770,19 @@
     box-shadow: var(--cd-focus-ring);
   }
   :global(.cd-typography__action--copy.is-copied) {
-    color: var(--cd-color-success);
+    color: var(--cd-color-typography_copied-icon-success);
   }
   :global(.cd-typography__expand) {
-    margin-inline-start: 4px;
+    margin-inline-start: var(--cd-spacing-typography_expandtext-marginleft);
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--cd-color-link, var(--cd-color-primary));
+    color: var(--cd-color-typography_link-text-default);
     cursor: pointer;
     font: inherit;
   }
   :global(.cd-typography__expand:hover) {
-    color: var(--cd-color-link-hover, var(--cd-color-primary));
+    color: var(--cd-color-typography_link-text-hover);
   }
   :global(.cd-typography__expand:focus-visible) {
     outline: none;
