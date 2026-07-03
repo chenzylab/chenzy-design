@@ -31,7 +31,6 @@ import { navTokens } from './nav.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { popoverTokens } from './popover.js';
-import { dropdownTokens } from './dropdown.js';
 import { dataDisplayTokens } from './data-display.js';
 import { listTokens } from './list.js';
 import { virtualTokens } from './virtual.js';
@@ -51,7 +50,7 @@ import { toastTokens } from './toast.js';
 import { notificationTokens } from './notification.js';
 import { backTopTokens } from './back-top.js';
 import { lottieIconTokens } from './lottie-icon.js';
-import { anchorTokens } from './anchor.js';
+import { stepsTokens } from './steps.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -86,7 +85,6 @@ export const componentTokens = {
   ...displayTokens,
   ...tooltipTokens,
   ...popoverTokens,
-  ...dropdownTokens,
   ...dataDisplayTokens,
   ...listTokens,
   ...virtualTokens,
@@ -106,5 +104,5 @@ export const componentTokens = {
   ...notificationTokens,
   ...backTopTokens,
   ...lottieIconTokens,
-  ...anchorTokens,
+  ...stepsTokens,
 } as const;

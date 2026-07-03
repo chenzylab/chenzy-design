@@ -55,5 +55,45 @@ export const meta = {
       '连接线 aria-hidden=true',
     ],
   },
-  tokens: ['--cd-steps-*', '--cd-focus-ring', '--cd-border-radius-full', '--cd-spacing-*', '--cd-font-size-small'],
+  // Component token 全量对齐 Semi steps/variables.scss（94 个 color/width/height/spacing/radius/font）
+  // + chenzy-design 实际消费的补充 token（basic/nav/fill + wait/process/finish/error + dot）。
+  // 见 packages/tokens/src/components/steps.ts。
+  tokens: [
+    // —— 组件消费（Steps.svelte 直接读）——
+    '--cd-steps-icon-size',
+    '--cd-steps-icon-bg',
+    '--cd-steps-icon-color',
+    '--cd-steps-icon-color-active',
+    '--cd-steps-icon-bg-process',
+    '--cd-steps-icon-bg-finish',
+    '--cd-steps-icon-bg-error',
+    '--cd-steps-title-color',
+    '--cd-steps-desc-color',
+    '--cd-steps-line-color',
+    '--cd-steps-line-color-finish',
+    '--cd-steps-basic-color',
+    '--cd-steps-basic-border',
+    '--cd-steps-basic-color-process',
+    '--cd-steps-basic-border-process',
+    '--cd-steps-basic-color-finish',
+    '--cd-steps-basic-border-finish',
+    '--cd-steps-basic-color-error',
+    '--cd-steps-basic-border-error',
+    '--cd-steps-dot-size',
+    '--cd-steps-dot-size-active',
+    // —— Semi 全量对齐（DSM 可编辑，色/尺寸族）——
+    '--cd-color-steps-*',
+    '--cd-width-steps-*',
+    '--cd-height-steps-*',
+    '--cd-spacing-steps-*',
+    '--cd-radius-steps-*',
+    '--cd-font-steps-*',
+    // —— 全局/别名（结构性消费）——
+    '--cd-focus-ring',
+    '--cd-border-radius-full',
+    '--cd-border-radius-small',
+    '--cd-spacing-tight',
+    '--cd-spacing-base',
+    '--cd-font-size-small',
+  ],
 } as const;
