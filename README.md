@@ -36,6 +36,14 @@ pnpm add @chenzy-design/svelte @chenzy-design/tokens
 
 Requires Svelte 5 (runes). Dark mode: set `data-theme="dark"` on `<html>`. Full integration guide: [`packages/svelte/README.md`](./packages/svelte/README.md).
 
+## Theming
+
+Tokens are runtime CSS variables (3 layers: global → alias → component), so theming needs no SCSS compile or npm-pack step. Three paths:
+
+- **Scoped** — `<ConfigProvider tokens={{ 'color-primary': '#0af' }}>` injects overrides into a subtree only.
+- **Visual editor** — the docs site `/dsm` page: tweak tokens with live preview across components, export a `:root{}` CSS snippet.
+- **Brand pack** — `@chenzy-design/theme-cli`: `chenzy-theme init` + `chenzy-theme build` turn a `theme.config.ts` into a distributable `theme.css` (with dark-mode section). See the [Theming guide](./packages/docs/src/routes/(app)/guide/theming/+page.md).
+
 ## Tech stack
 
 Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript (strict)
@@ -46,6 +54,7 @@ Svelte 5 · Vite · UnoCSS · pnpm monorepo · TypeScript (strict)
 packages/
   tokens/         @chenzy-design/tokens          Design tokens (source of truth, 3 layers)
   unocss-preset/  @chenzy-design/unocss-preset   token -> UnoCSS theme
+  theme-cli/      @chenzy-design/theme-cli       CLI: theme config -> theme.css (brand packs)
   core/           @chenzy-design/core            Headless primitives (framework-agnostic)
   locale/         @chenzy-design/locale          i18n language packs & formatting
   icons/          @chenzy-design/icons           Icons
