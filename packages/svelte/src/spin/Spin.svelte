@@ -209,7 +209,7 @@
 
   .cd-spin__tip {
     color: var(--cd-spin-tip-color);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-spin-tip-font-size);
     text-align: center;
   }
 
