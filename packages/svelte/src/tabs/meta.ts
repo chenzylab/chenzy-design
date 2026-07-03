@@ -24,7 +24,7 @@ export const meta = {
       name: 'tabList',
       type: 'TabItem[]',
       default: 'undefined',
-      desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/disabled/closable 纯声明式自动收集',
+      desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。TabItem 支持 icon?: Snippet（标签文字前渲染的图标）',
     },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
     {
@@ -131,7 +131,7 @@ export const meta = {
       default: 'undefined',
       desc: '自定义整个标签栏渲染（接收 tab 列表、当前激活 key、切换回调 setActive）；传入时跳过内置标签栏与溢出处理，面板内容仍按 activeKey 显隐',
     },
-    { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 TabPane 内容（<Tabs.Pane>）' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '声明式 TabPane 内容（<Tabs.Pane>），<Tabs.Pane> 支持 icon?: Snippet（标签文字前渲染的图标）' },
   ],
   a11y: {
     role: 'tablist',

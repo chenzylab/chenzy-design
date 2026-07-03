@@ -184,10 +184,11 @@
   function updatePane(id: number, reg: TabPaneRegistration): void {
     const entry = paneOrder.find((p) => p.id === id);
     if (!entry) return;
-    // 仅在元数据实际变化时 bump（去重，避免无谓 render）。
+    // 仅在元数据实际变化时 bump（去重，避免无谓 render）。icon 为 Snippet，按引用比较。
     if (
       entry.itemKey === reg.itemKey &&
       entry.tab === reg.tab &&
+      entry.icon === reg.icon &&
       entry.disabled === reg.disabled &&
       entry.closable === reg.closable
     )
@@ -210,6 +211,7 @@
     return paneOrder.map((p) => ({
       tab: p.tab,
       itemKey: p.itemKey,
+      ...(p.icon !== undefined ? { icon: p.icon } : {}),
       ...(p.disabled !== undefined ? { disabled: p.disabled } : {}),
       ...(p.closable !== undefined ? { closable: p.closable } : {}),
     }));
@@ -661,6 +663,9 @@
       onclick={(e) => handleTabClick(e, item)}
       onkeydown={(e) => onTabKeydown(e, item)}
     >
+      {#if item.icon}
+        <span class="cd-tabs__tab-icon" aria-hidden="true">{@render item.icon()}</span>
+      {/if}
       {item.tab}
     </button>
     {#if isClosable(item)}
@@ -745,7 +750,12 @@
     <div class="cd-tabs__measure" bind:this={measureEl} aria-hidden="true">
       {#each tabList as item (item.itemKey)}
         <div class="cd-tabs__tab" data-cd-measure-tab>
-          <span class="cd-tabs__tab-btn">{item.tab}</span>
+          <span class="cd-tabs__tab-btn">
+            {#if item.icon}
+              <span class="cd-tabs__tab-icon" aria-hidden="true">{@render item.icon()}</span>
+            {/if}
+            {item.tab}
+          </span>
           {#if isClosable(item)}<span class="cd-tabs__close" style="width:18px"></span>{/if}
         </div>
       {/each}
@@ -1070,6 +1080,26 @@
   }
   .cd-tabs--line .cd-tabs__tab-btn {
     border-block-end: var(--cd-tabs-ink-height) solid transparent;
+  }
+  /* 标签图标：文字前渲染，消费 tabs icon token（对齐 Semi 各状态色 + 右间距）。 */
+  .cd-tabs__tab-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: var(--cd-spacing-tabs-tab-icon-marginright);
+    color: var(--cd-color-tabs-tab-icon-default);
+    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled) .cd-tabs__tab-icon {
+    color: var(--cd-color-tabs-tab-icon-hover);
+  }
+  .cd-tabs__tab:active:not(.cd-tabs__tab--disabled) .cd-tabs__tab-icon {
+    color: var(--cd-color-tabs-tab-icon-active);
+  }
+  .cd-tabs__tab--active .cd-tabs__tab-icon {
+    color: var(--cd-color-tabs-tab-selected-icon-default);
+  }
+  .cd-tabs__tab--disabled .cd-tabs__tab-icon {
+    color: var(--cd-tabs-tab-color-disabled);
   }
   .cd-tabs__tab--active .cd-tabs__tab-btn {
     color: var(--cd-tabs-tab-color-active);
