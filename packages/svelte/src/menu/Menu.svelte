@@ -652,7 +652,7 @@
   .cd-menu--horizontal {
     display: flex;
     align-items: stretch;
-    border-block-end: 1px solid var(--cd-menu-border-color, var(--cd-color-border));
+    border-block-end: 1px solid var(--cd-menu-border-color);
   }
   .cd-menu--horizontal > :global(.cd-menu__item) {
     display: flex;
@@ -663,16 +663,16 @@
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title) {
     inline-size: auto;
     background: transparent;
-    color: var(--cd-color-text-2);
+    color: var(--cd-menu-horizontal-item-color);
   }
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link:hover),
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__title:hover) {
     background: transparent;
-    color: var(--cd-color-text-1);
+    color: var(--cd-menu-horizontal-item-color-hover);
   }
   .cd-menu--horizontal > :global(.cd-menu__item) > :global(.cd-menu__link--selected) {
     background: transparent;
-    color: var(--cd-color-text-0);
+    color: var(--cd-menu-horizontal-item-color-selected);
   }
   /* 折叠图标轨：容器收窄到仅容图标 + padding */
   /* 折叠图标轨：撑满容器宽度（如 Nav/Sider 的折叠宽度），使图标居中、选中背景填满。
@@ -713,7 +713,7 @@
   .cd-menu__divider {
     block-size: 1px;
     margin-block: var(--cd-spacing-extra-tight);
-    background: var(--cd-menu-border-color, var(--cd-color-border));
+    background: var(--cd-menu-border-color);
   }
   /* 分组：始终展开的分区标题 + 组内项列表 */
   .cd-menu__group-list {
