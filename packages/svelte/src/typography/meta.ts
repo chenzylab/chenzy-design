@@ -138,6 +138,8 @@ export const meta = {
     '--cd-color-typography-link-text-hover',
     // —— 复制 ——
     '--cd-color-typography-copied-icon-success',
+    '--cd-typography-action-color',
+    '--cd-typography-action-color-hover',
     // —— 字重（基础组 + title 默认/light/regular/medium/semibold/bold × 1..6）——
     '--cd-font-typography-title-fontweight',
     '--cd-font-typography-strong-fontweight',

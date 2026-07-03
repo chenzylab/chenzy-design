@@ -128,6 +128,9 @@ export const meta = {
   tokens: [
     '--cd-menu-bg',
     '--cd-menu-item-height',
+    '--cd-menu-collapsed-width',
+    '--cd-menu-color-warning',
+    '--cd-menu-color-danger',
     '--cd-menu-item-padding',
     '--cd-menu-item-radius',
     '--cd-menu-item-color',

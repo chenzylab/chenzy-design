@@ -712,7 +712,7 @@
     pointer-events: none;
   }
   .cd-slider__dot--active {
-    border-color: var(--cd-slider-dot-color-active, var(--cd-slider-dot-border-active));
+    border-color: var(--cd-slider-dot-border-active);
   }
   .cd-slider--vertical .cd-slider__dot {
     inset-block-start: auto;

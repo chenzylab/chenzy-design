@@ -1176,7 +1176,7 @@
     inline-size: 3px;
     align-self: stretch;
     min-block-size: 0.9em;
-    background: var(--cd-calendar-event-accent, var(--cd-calendar-event-default-bg));
+    background: var(--cd-calendar-event-default-bg);
     border-radius: 2px;
   }
   .cd-calendar__event-title {

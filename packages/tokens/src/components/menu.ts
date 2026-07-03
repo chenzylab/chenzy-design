@@ -10,6 +10,10 @@ export const menuTokens = {
   // —— Menu（转引 navigation 主 token） ——
   'menu-bg': { value: 'var(--cd-color-navigation-bg-default)', category: 'color', label: '菜单背景', usage: '菜单容器背景色（转引 navigation-bg-default）' },
   'menu-item-height': { value: 'var(--cd-height-navigation-item-base)', category: 'height', label: '菜单项高度', usage: '菜单项高度（转引 navigation-item-base = 36px）' },
+  'menu-collapsed-width': { value: 'calc(var(--cd-menu-item-height) + var(--cd-spacing-tight))', category: 'width', label: '折叠态宽度', usage: '折叠模式菜单最小宽度（组件消费）' },
+  // 语义变体（warning / error）选中项文字色
+  'menu-color-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警告变体选中色', usage: 'warning 变体选中项文字色（组件消费）' },
+  'menu-color-danger': { value: 'var(--cd-color-danger)', category: 'color', label: '危险变体选中色', usage: 'error 变体选中项文字色（组件消费）' },
   'menu-item-padding': { value: 'var(--cd-spacing-navigation-item-paddingx)', category: 'spacing', label: '菜单项水平内边距', usage: '菜单项水平内边距（转引 navigation-item-paddingX）' },
   'menu-item-radius': { value: 'var(--cd-width-navigation-item-borderradius)', category: 'radius', label: '菜单项圆角', usage: '菜单项圆角（转引 navigation-item-borderRadius）' },
   // 对齐 Semi navigation itemL1-text-default（text-0；原 text-1，视觉略深）

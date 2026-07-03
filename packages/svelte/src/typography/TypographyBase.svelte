@@ -695,7 +695,7 @@
     text-decoration-line: underline line-through;
   }
   :global(.cd-typography--code) {
-    font-family: var(--cd-font-family-mono, monospace);
+    font-family: var(--cd-font-family-code);
     font-size: var(--cd-typography-code-font-size);
     background-color: var(--cd-typography-code-bg);
     color: var(--cd-typography-code-color); /* 对齐 Semi code 文字 text-2 */
@@ -756,14 +756,14 @@
     padding: 2px;
     border: 0;
     background: transparent;
-    color: var(--cd-typography-action-color, var(--cd-color-text-2));
+    color: var(--cd-typography-action-color);
     cursor: pointer;
     border-radius: 3px;
     vertical-align: middle;
     transition: color var(--cd-motion-duration-fast, 120ms) ease;
   }
   :global(.cd-typography-_action:hover) {
-    color: var(--cd-typography-action-color-hover, var(--cd-color-primary));
+    color: var(--cd-typography-action-color-hover);
   }
   :global(.cd-typography-_action:focus-visible) {
     outline: none;
@@ -799,9 +799,9 @@
     font: inherit;
     color: inherit;
     padding: 2px 6px;
-    border: 1px solid var(--cd-color-border, #d9d9d9);
-    border-radius: var(--cd-border-radius, 4px);
-    background: var(--cd-color-bg-1, #fff);
+    border: 1px solid var(--cd-color-border);
+    border-radius: var(--cd-border-radius-small);
+    background: var(--cd-color-bg-1);
     resize: none;
     overflow: hidden;
   }
