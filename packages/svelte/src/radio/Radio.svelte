@@ -233,7 +233,7 @@
     display: inline-flex;
     align-items: flex-start;
     gap: var(--cd-radio-label-gap);
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-radio-default-text-default);
     cursor: pointer;
     line-height: 1.4;
   }
@@ -303,10 +303,10 @@
   .cd-radio__content {
     display: inline-flex;
     flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-spacing-radio-content-rowgap);
   }
   .cd-radio__extra {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-radio-extra-text-default);
     font-size: var(--cd-font-size-small);
   }
   /* ---- button / card / pureCard 型：role=radio 容器 ---- */
@@ -325,13 +325,13 @@
   .cd-radio--button {
     gap: 0;
     block-size: var(--cd-radio-button-height);
-    padding-inline: var(--cd-spacing-base-tight);
+    padding-inline: var(--cd-spacing-radio-addon-buttonradio-middle-paddingx);
     align-items: center;
     justify-content: center;
-    color: var(--cd-color-text-0);
-    background: var(--cd-radio-bg);
+    color: var(--cd-color-radio-buttonradio-text-default);
+    background: var(--cd-color-radio-buttonradio-bg-default);
     border: 1px solid var(--cd-radio-border);
-    border-radius: var(--cd-border-radius-medium);
+    border-radius: var(--cd-radius-radio-buttonradio);
   }
   .cd-radio--button.cd-radio--small {
     block-size: var(--cd-radio-button-height-small);
@@ -349,7 +349,7 @@
   /* card / pureCard 型：带边框卡片，选中高亮边框 */
   .cd-radio--card,
   .cd-radio--pureCard {
-    padding: var(--cd-spacing-base-tight);
+    padding: var(--cd-spacing-radio-cardradiogroup-paddingy) var(--cd-spacing-radio-cardradiogroup-paddingx);
     background: var(--cd-radio-bg);
     border: 1px solid var(--cd-radio-border);
     border-radius: var(--cd-radio-card-radius);
