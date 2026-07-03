@@ -25,6 +25,7 @@ import { treeSelectTokens } from './tree-select.js';
 import { cascaderTokens } from './cascader.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
+import { breadcrumbTokens } from './breadcrumb.js';
 import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
 import { navTokens } from './nav.js';
@@ -81,6 +82,7 @@ export const componentTokens = {
   ...cascaderTokens,
   ...transferTokens,
   ...navigationTokens,
+  ...breadcrumbTokens,
   ...tabsTokens,
   ...menuTokens,
   ...navTokens,
