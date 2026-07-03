@@ -254,7 +254,7 @@
     border-radius: var(--cd-banner-radius);
   }
   .cd-banner--bordered {
-    border: 1px solid var(--cd-color-border);
+    border: var(--cd-banner-border-width) solid var(--cd-banner-border-color);
   }
 
   /* 语义背景 + accent（图标 / full 竖条） */
@@ -316,13 +316,13 @@
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-banner-content-gap);
   }
 
   .cd-banner__title {
     color: var(--cd-banner-title-color);
     font-size: var(--cd-banner-title-size);
-    font-weight: var(--cd-font-weight-medium, 500);
+    font-weight: var(--cd-banner-title-weight);
     line-height: 1.4;
   }
   .cd-banner__description {
@@ -342,13 +342,13 @@
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: var(--cd-width-banner-closebtn);
+    block-size: var(--cd-height-banner-closebtn);
     padding: 0;
     color: var(--cd-banner-close-color);
     background: transparent;
     border: none;
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-banner-close-radius);
     cursor: pointer;
     transition: background-color var(--cd-banner-motion-duration) var(--cd-motion-ease-standard);
   }
