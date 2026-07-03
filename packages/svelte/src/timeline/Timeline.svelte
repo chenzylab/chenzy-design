@@ -417,12 +417,25 @@
     inset-inline-start: 0;
     inline-size: var(--cd-timeline-dot-size);
     block-size: var(--cd-timeline-dot-size);
-    border-radius: var(--cd-border-radius-full);
+    border-radius: var(--cd-radius-timeline-head);
     background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color));
   }
   .cd-timeline :global(.cd-timeline__dot--pending) {
     background: transparent;
     border: 1px dashed var(--cd-timeline-dot-color);
+  }
+  /* 语义类型圆点色（对齐 Semi dot state 色）；自定义 dotColor 经 --cd-timeline-dot-current 优先覆盖 */
+  .cd-timeline :global(.cd-timeline__dot--ongoing) {
+    background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color-ongoing));
+  }
+  .cd-timeline :global(.cd-timeline__dot--success) {
+    background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color-success));
+  }
+  .cd-timeline :global(.cd-timeline__dot--warning) {
+    background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color-warning));
+  }
+  .cd-timeline :global(.cd-timeline__dot--error) {
+    background: var(--cd-timeline-dot-current, var(--cd-timeline-dot-color-error));
   }
   .cd-timeline :global(.cd-timeline__tail) {
     position: absolute;
@@ -588,7 +601,7 @@
   .cd-timeline--interactive :global(.cd-timeline__item--interactive) {
     cursor: pointer;
     outline: none;
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-border-radius-small);
   }
   .cd-timeline--interactive :global(.cd-timeline__item--interactive:hover) {
     background: var(--cd-color-fill-0, rgba(0, 0, 0, 0.03));

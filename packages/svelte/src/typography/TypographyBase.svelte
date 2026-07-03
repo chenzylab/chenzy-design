@@ -608,7 +608,7 @@
     margin-block-end: var(--cd-spacing-base);
   }
   :global(.cd-typography--title) {
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-font-typography-title-fontweight);
   }
   :global(.cd-typography--h1) {
     font-size: var(--cd-font-size-header-1);
@@ -652,16 +652,16 @@
     color: var(--cd-typography-color-tertiary);
   }
   :global(.cd-typography--warning) {
-    color: var(--cd-color-warning);
+    color: var(--cd-color-typography-warning-text-default);
   }
   :global(.cd-typography--danger) {
-    color: var(--cd-color-danger);
+    color: var(--cd-color-typography-danger-text-default);
   }
   :global(.cd-typography--success) {
-    color: var(--cd-color-success);
+    color: var(--cd-color-typography-success-text-default);
   }
   :global(.cd-typography--strong) {
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-font-typography-strong-fontweight);
   }
   /* 字号档 (Text/Paragraph) — spec §4.1 size + §5 token 表; default 沿用继承字号保持向后兼容 */
   :global(.cd-typography--size-small) {
@@ -701,7 +701,9 @@
     color: var(--cd-typography-code-color); /* 对齐 Semi code 文字 text-2 */
     padding-inline: 0.4em;
     padding-block: 0.1em;
-    border-radius: 3px;
+    /* 对齐 Semi：code 描边 + 圆角 token */
+    border: var(--cd-width-typography-code-border) solid var(--cd-color-typography-code-border-default);
+    border-radius: var(--cd-radius-typography-code);
   }
   @media (prefers-reduced-motion: reduce) {
     :global(.cd-typography--link) {
@@ -746,11 +748,11 @@
     display: block;
     max-inline-size: 100%;
   }
-  :global(.cd-typography__action) {
+  :global(.cd-typography-_action) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-start: 4px;
+    margin-inline-start: var(--cd-spacing-typography-copyicon-marginleft);
     padding: 2px;
     border: 0;
     background: transparent;
@@ -760,38 +762,38 @@
     vertical-align: middle;
     transition: color var(--cd-motion-duration-fast, 120ms) ease;
   }
-  :global(.cd-typography__action:hover) {
+  :global(.cd-typography-_action:hover) {
     color: var(--cd-typography-action-color-hover, var(--cd-color-primary));
   }
-  :global(.cd-typography__action:focus-visible) {
+  :global(.cd-typography-_action:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  :global(.cd-typography__action--copy.is-copied) {
-    color: var(--cd-color-success);
+  :global(.cd-typography-_action--copy.is-copied) {
+    color: var(--cd-color-typography-copied-icon-success);
   }
-  :global(.cd-typography__expand) {
-    margin-inline-start: 4px;
+  :global(.cd-typography-_expand) {
+    margin-inline-start: var(--cd-spacing-typography-expandtext-marginleft);
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--cd-color-link, var(--cd-color-primary));
+    color: var(--cd-color-typography-link-text-default);
     cursor: pointer;
     font: inherit;
   }
-  :global(.cd-typography__expand:hover) {
-    color: var(--cd-color-link-hover, var(--cd-color-primary));
+  :global(.cd-typography-_expand:hover) {
+    color: var(--cd-color-typography-link-text-hover);
   }
-  :global(.cd-typography__expand:focus-visible) {
+  :global(.cd-typography-_expand:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: 2px;
   }
-  :global(.cd-typography__edit-wrap) {
+  :global(.cd-typography-_edit-wrap) {
     display: inline-block;
     width: 100%;
   }
-  :global(.cd-typography__edit-input) {
+  :global(.cd-typography-_edit-input) {
     width: 100%;
     box-sizing: border-box;
     font: inherit;
@@ -803,13 +805,13 @@
     resize: none;
     overflow: hidden;
   }
-  :global(.cd-typography__edit-input:focus-visible) {
+  :global(.cd-typography-_edit-input:focus-visible) {
     outline: none;
     border-color: var(--cd-color-primary);
     box-shadow: var(--cd-focus-ring);
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-typography__action) {
+    :global(.cd-typography-_action) {
       transition: none;
     }
   }

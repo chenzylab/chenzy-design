@@ -122,7 +122,7 @@
   /* ring so overlapping avatars read as separated */
   .cd-avatar-group > :global(.cd-avatar),
   .cd-avatar-group__item :global(.cd-avatar) {
-    box-shadow: 0 0 0 2px var(--cd-color-bg-0);
+    box-shadow: 0 0 0 2px var(--cd-avatar-border);
   }
   .cd-avatar-group__item :global(.cd-avatar) {
     display: inline-flex;

@@ -1224,7 +1224,7 @@
     flex-direction: column;
     gap: var(--cd-spacing-extra-tight);
     color: var(--cd-tree-node-color);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-tree-node-font-size);
   }
   .cd-tree--small {
     --cd-tree-row-height: var(--cd-tree-node-height-small);
@@ -1243,7 +1243,7 @@
     color: inherit;
     background: var(--cd-color-bg-1, transparent);
     border: 1px solid var(--cd-tree-border-color);
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-tree-radius);
     font: inherit;
   }
   .cd-tree--warning .cd-tree__search-input {
@@ -1265,7 +1265,7 @@
   }
   .cd-tree__list:focus-visible {
     box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-tree-radius);
   }
   /* 虚拟滚动：容器自身滚动，display block 以便 spacer 绝对定位行布局生效 */
   .cd-tree__list--virtual {
@@ -1283,7 +1283,7 @@
     gap: var(--cd-spacing-extra-tight);
     block-size: var(--cd-tree-row-height);
     padding-inline-end: var(--cd-spacing-tight);
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-tree-radius);
     cursor: pointer;
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
@@ -1315,8 +1315,8 @@
     content: '';
     position: absolute;
     inset-inline: 0;
-    block-size: 2px;
-    background: var(--cd-tree-focus-ring, var(--cd-color-primary));
+    block-size: var(--cd-width-tree-option-draggable-border);
+    background: var(--cd-color-tree-option-draggable-insert-border-default);
     border-radius: 1px;
     pointer-events: none;
   }
@@ -1329,7 +1329,7 @@
   /* inside：成为子节点 → 整行高亮框 */
   .cd-tree__node--drop-inside {
     background: var(--cd-tree-node-bg-hover);
-    box-shadow: inset 0 0 0 1px var(--cd-tree-focus-ring, var(--cd-color-primary));
+    box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
   }
   /* 节点需相对定位以承载绝对定位的指示线；虚拟化行已 position:absolute，非虚拟行设 relative */
   .cd-tree__node {
@@ -1350,7 +1350,7 @@
     inset-block: 0;
     inset-inline-start: 50%;
     inline-size: 1px;
-    background: var(--cd-tree-line-color, var(--cd-color-border));
+    background: var(--cd-tree-line-color);
   }
   /* ├ 形：竖线贯穿 + 横线到右 */
   .cd-tree__line--tee::before {
@@ -1359,7 +1359,7 @@
     inset-block: 0;
     inset-inline-start: 50%;
     inline-size: 1px;
-    background: var(--cd-tree-line-color, var(--cd-color-border));
+    background: var(--cd-tree-line-color);
   }
   /* └ 形：竖线 top→中 + 横线到右 */
   .cd-tree__line--elbow::before {
@@ -1369,7 +1369,7 @@
     block-size: 50%;
     inset-inline-start: 50%;
     inline-size: 1px;
-    background: var(--cd-tree-line-color, var(--cd-color-border));
+    background: var(--cd-tree-line-color);
   }
   .cd-tree__line--tee::after,
   .cd-tree__line--elbow::after {
@@ -1379,7 +1379,7 @@
     inset-inline-start: 50%;
     inset-inline-end: 0;
     block-size: 1px;
-    background: var(--cd-tree-line-color, var(--cd-color-border));
+    background: var(--cd-tree-line-color);
   }
 
   .cd-tree__switcher {
@@ -1405,8 +1405,8 @@
   .cd-tree__spinner {
     inline-size: 0.75rem;
     block-size: 0.75rem;
-    border: 2px solid var(--cd-color-border, currentColor);
-    border-block-start-color: var(--cd-color-primary);
+    border: 2px solid var(--cd-tree-border-color);
+    border-block-start-color: var(--cd-color-tree-option-loading-icon-default);
     border-radius: 50%;
     animation: cd-tree-spin 0.7s linear infinite;
   }
@@ -1425,8 +1425,8 @@
     block-size: 1rem;
     color: #fff;
     background: var(--cd-color-bg-1, #fff);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-small, 3px);
+    border: 1px solid var(--cd-tree-border-color);
+    border-radius: var(--cd-radius-tree-checkbox-addon);
     cursor: pointer;
   }
   .cd-tree__checkbox--checked,

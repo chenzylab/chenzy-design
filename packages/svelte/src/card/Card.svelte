@@ -265,14 +265,14 @@
   }
   .cd-card__extra {
     flex: 0 0 auto;
-    color: var(--cd-color-text-2);
+    color: var(--cd-card-desc-color);
     font-size: var(--cd-font-size-regular);
   }
 
   .cd-card__body {
     flex: 1 1 auto;
     padding: var(--cd-card-padding);
-    color: var(--cd-color-text-0);
+    color: var(--cd-card-body-color);
   }
   .cd-card--small .cd-card__body {
     padding: var(--cd-card-padding-small);

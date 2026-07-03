@@ -813,7 +813,7 @@
     inline-size: 16px;
     block-size: 16px;
     border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-border-radius-small);
     color: var(--cd-color-bg-0, #fff);
     background: var(--cd-color-bg-0, #fff);
   }
@@ -855,7 +855,9 @@
   }
 
   .cd-list__empty {
-    padding-block: var(--cd-list-item-padding);
+    padding-block: var(--cd-spacing-list-empty-paddingy);
+    padding-inline: var(--cd-spacing-list-empty-paddingx);
+    color: var(--cd-color-list-empty-text-default);
     display: flex;
     justify-content: center;
   }
@@ -879,7 +881,7 @@
     display: block;
     block-size: 1em;
     inline-size: 100%;
-    border-radius: var(--cd-radius-small);
+    border-radius: var(--cd-border-radius-small);
     background: var(--cd-list-split-color);
     position: relative;
     overflow: hidden;
