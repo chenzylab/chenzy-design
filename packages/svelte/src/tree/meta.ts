@@ -194,8 +194,7 @@ export const meta = {
     focusable: true,
     note: 'role=tree（aria-multiselectable）容器为单一 tab stop，焦点通过 aria-activedescendant 指向当前高亮 treeitem；每行 role=treeitem 含 aria-level/setsize/posinset/expanded/selected/disabled，可勾选时 aria-checked 支持 true/false/"mixed"（半选）。方向键导航：↑↓ 移动、→ 展开/进入子、← 折叠/回父、Home/End 首末、Enter 选中、Space 勾选或选中。',
   },
-  // 组件消费的 Tree token（原名保留，值全量对齐 Semi tree/variables.scss；
-  // 另有 29 个 Semi 语义 token color-tree-option-* / spacing-tree-* / width-tree-* 等被这些间接引用）。
+  // 组件消费的 Tree token（原名保留，值对齐 Semi tree/variables.scss；孤儿 token 已按精简原则清理）。
   tokens: [
     '--cd-tree-node-height',
     '--cd-tree-node-height-small',
