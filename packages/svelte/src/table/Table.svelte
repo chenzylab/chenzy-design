@@ -1903,7 +1903,7 @@
     background: var(--cd-table-bg);
     color: var(--cd-table-cell-text);
     border-radius: var(--cd-table-radius);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-font-table-base-fontsize);
   }
   /* 固定列：用 fixed 布局让列宽精确生效，min-width 撑过容器以触发横滚 */
   .cd-table--fixed {
@@ -1959,13 +1959,13 @@
     justify-content: center;
     padding: 0;
     border: none;
-    background: transparent;
-    color: var(--cd-color-text-2);
+    background: var(--cd-color-table-expanded-bg-default);
+    color: var(--cd-color-table-expanded-icon-default);
     cursor: pointer;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-table__expand-btn:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-table-text-default);
   }
   .cd-table__expand-btn:focus-visible {
     outline: none;
@@ -1976,8 +1976,8 @@
     transform: rotate(90deg);
   }
   .cd-table__cell--expanded-content {
-    padding: var(--cd-table-cell-padding, var(--cd-spacing-base-tight));
-    background: var(--cd-color-fill-0);
+    padding: var(--cd-table-cell-padding);
+    background: var(--cd-color-table-row-expanded-bg-default);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-table__expand-btn {
@@ -2002,17 +2002,17 @@
     justify-content: center;
     inline-size: 16px;
     block-size: 16px;
-    margin-inline-end: var(--cd-spacing-extra-tight);
+    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright);
     padding: 0;
     border: none;
-    background: transparent;
-    color: var(--cd-color-text-2);
+    background: var(--cd-color-table-expanded-bg-default);
+    color: var(--cd-color-table-expanded-icon-default);
     cursor: pointer;
     vertical-align: middle;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-table__tree-toggle:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-table-text-default);
   }
   .cd-table__tree-toggle:focus-visible {
     outline: none;
@@ -2067,7 +2067,7 @@
     inset-inline-end: -6px;
     background: linear-gradient(
       to right,
-      var(--cd-table-fixed-shadow, rgba(0, 0, 0, 0.12)),
+      var(--cd-table-fixed-shadow),
       transparent
     );
   }
@@ -2075,7 +2075,7 @@
     inset-inline-start: -6px;
     background: linear-gradient(
       to left,
-      var(--cd-table-fixed-shadow, rgba(0, 0, 0, 0.12)),
+      var(--cd-table-fixed-shadow),
       transparent
     );
   }
@@ -2109,7 +2109,7 @@
   }
 
   .cd-table__cell--empty {
-    padding-block: var(--cd-spacing-loose, 32px);
+    padding-block: var(--cd-spacing-loose);
     color: var(--cd-table-empty-color);
     text-align: center;
   }
@@ -2122,20 +2122,20 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-start: var(--cd-spacing-extra-tight);
+    margin-inline-start: var(--cd-spacing-table-column-filter-marginleft);
     padding: 2px;
     border: none;
     background: transparent;
-    color: var(--cd-table-sort-icon-color);
+    color: var(--cd-color-table-filter-text-default);
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
     vertical-align: middle;
   }
   .cd-table__filter-btn:hover {
-    color: var(--cd-color-text-0);
+    color: var(--cd-color-table-text-default);
   }
   .cd-table__filter-btn--active {
-    color: var(--cd-color-primary);
+    color: var(--cd-color-table-filter-on-text-default);
   }
   .cd-table__filter-btn:focus-visible {
     outline: none;
@@ -2184,10 +2184,10 @@
     cursor: pointer;
   }
   .cd-table__filter-reset {
-    color: var(--cd-color-text-2);
+    color: var(--cd-color-table-filter-text-default);
   }
   .cd-table__filter-confirm {
-    color: var(--cd-color-primary);
+    color: var(--cd-color-table-filter-on-text-default);
   }
 
   /* --- 列宽拖拽手柄 --- */
@@ -2216,7 +2216,7 @@
   }
   .cd-table__resize-handle:hover::after,
   .cd-table__cell--resizing .cd-table__resize-handle::after {
-    background: var(--cd-color-primary);
+    background: var(--cd-color-table-resizer-bg-default);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-table__resize-handle::after {
@@ -2227,7 +2227,7 @@
   .cd-table__sort-btn {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-spacing-table-column-sorter-marginleft);
     padding: 0;
     color: inherit;
     font: inherit;
@@ -2239,7 +2239,7 @@
   .cd-table__sort-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-radius-small, 4px);
+    border-radius: var(--cd-border-radius-small);
   }
 
   .cd-table__sort-icons {
