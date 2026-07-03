@@ -124,6 +124,7 @@ export const meta = {
     note: 'role=dialog + aria-modal=true；有 title 用 aria-labelledby，无则 aria-label；useFocusTrap 捕获 Tab 焦点并在关闭时归还触发元素；Esc 关闭受 keyboard 控制；useScrollLock 锁背景滚动；关闭按钮 aria-label「关闭」。',
   },
   tokens: [
+    // 组件消费补充 token（modal-*）
     '--cd-modal-radius',
     '--cd-modal-bg',
     '--cd-modal-shadow',
@@ -133,11 +134,19 @@ export const meta = {
     '--cd-modal-footer-gap',
     '--cd-modal-title-color',
     '--cd-modal-title-size',
+    '--cd-modal-title-weight',
     '--cd-modal-body-color',
     '--cd-modal-close-color',
     '--cd-modal-close-hover-bg',
     '--cd-modal-z',
     '--cd-modal-motion-duration',
+    // 直接消费的对齐 Semi token
+    '--cd-spacing-modal-marginy',
+    '--cd-color-modal-success-icon',
+    '--cd-color-modal-danger-icon',
+    '--cd-color-modal-warning-icon',
+    '--cd-color-modal-primary-icon',
+    '--cd-spacing-modal-confirm-icon-wrapper-marginright',
   ],
   responsive: false,
   examples: [

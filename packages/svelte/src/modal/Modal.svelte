@@ -417,7 +417,7 @@
     box-sizing: border-box;
     max-inline-size: 90vw;
     max-block-size: 90vh;
-    margin-block-start: 100px;
+    margin-block-start: var(--cd-spacing-modal-marginy);
     padding: var(--cd-modal-padding);
     background: var(--cd-modal-bg);
     border-radius: var(--cd-modal-radius);
