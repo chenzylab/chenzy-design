@@ -996,7 +996,7 @@
     background: var(--cd-calendar-bg);
     border: 1px solid var(--cd-calendar-border);
     border-radius: var(--cd-calendar-radius);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-font-size-regular);
   }
 
   .cd-calendar__toolbar {
@@ -1132,7 +1132,7 @@
 
   .cd-calendar__date {
     align-self: flex-end;
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-font-size-regular);
     line-height: 1.2;
   }
 
@@ -1193,7 +1193,7 @@
     border: none;
     cursor: pointer;
     font: inherit;
-    font-size: var(--cd-font-size-caption, 0.85em);
+    font-size: var(--cd-font-size-small);
   }
   .cd-calendar__more:hover {
     text-decoration: underline;
