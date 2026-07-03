@@ -671,7 +671,7 @@
 
   .cd-popconfirm__body {
     display: flex;
-    gap: var(--cd-spacing-tight);
+    gap: var(--cd-popconfirm-body-gap);
   }
   .cd-popconfirm__icon {
     display: inline-flex;
@@ -698,7 +698,7 @@
     line-height: 1.4;
   }
   .cd-popconfirm__content {
-    margin-block-start: var(--cd-spacing-extra-tight);
+    margin-block-start: var(--cd-popconfirm-title-gap);
     color: var(--cd-popconfirm-color-text-secondary);
     font-size: var(--cd-popconfirm-content-size);
     line-height: 1.5;
@@ -708,7 +708,7 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--cd-popconfirm-gap-footer);
-    margin-block-start: var(--cd-spacing-base-tight);
+    margin-block-start: var(--cd-popconfirm-footer-margin-top);
   }
 
   /* reduced-motion：禁用进场动画 */
