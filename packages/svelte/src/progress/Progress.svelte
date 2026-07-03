@@ -277,7 +277,7 @@
   .cd-progress--line {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-tight, 8px);
+    gap: var(--cd-progress-info-gap);
     inline-size: 100%;
   }
 
@@ -325,7 +325,7 @@
     flex: 0 0 auto;
     min-inline-size: 3em;
     color: var(--cd-progress-info-color);
-    font-size: var(--cd-font-size-body, 14px);
+    font-size: var(--cd-progress-info-font-size);
     text-align: end;
     white-space: nowrap;
   }
@@ -365,8 +365,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--cd-progress-info-color);
-    font-size: var(--cd-font-size-h4, 20px);
+    color: var(--cd-progress-info-color-circle);
+    font-size: var(--cd-progress-info-font-size-circle);
     line-height: 1;
   }
   .cd-progress--success .cd-progress__circle-info {
