@@ -495,7 +495,7 @@
     margin: 0;
     color: var(--cd-drawer-title-color);
     font-size: var(--cd-drawer-title-size);
-    font-weight: 600;
+    font-weight: var(--cd-drawer-title-weight);
     line-height: 1.4;
   }
   .cd-drawer__header-actions {
@@ -512,7 +512,7 @@
     block-size: 28px;
     padding: 0;
     border: none;
-    border-radius: var(--cd-radius-sm, 4px);
+    border-radius: var(--cd-drawer-close-radius);
     background: transparent;
     color: var(--cd-drawer-close-color);
     cursor: pointer;

@@ -82,6 +82,8 @@ export const meta = {
     '--cd-sidesheet-footer-padding',
     '--cd-sidesheet-title-color',
     '--cd-sidesheet-title-size',
+    '--cd-sidesheet-title-weight',
+    '--cd-sidesheet-close-radius',
     '--cd-sidesheet-close-color',
     '--cd-sidesheet-close-color-hover',
     '--cd-sidesheet-close-hover-bg',
