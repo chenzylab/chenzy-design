@@ -148,5 +148,27 @@ export const meta = {
       'preventScroll=true 时 Tab 聚焦不触发页面滚动',
     ],
   },
-  tokens: ['--cd-tabs-*', '--cd-focus-ring', '--cd-border-radius-small', '--cd-spacing-*'],
+  tokens: [
+    // 全量对齐 Semi tabs/variables.scss（121 变量）的语义层：
+    '--cd-color-tabs-tab-line-*', // 线条式各状态文本/背景/标示线
+    '--cd-color-tabs-tab-card-*', // 卡片式各状态
+    '--cd-color-tabs-tab-button-*', // 按钮式各状态
+    '--cd-color-tabs-tab-icon-*',
+    '--cd-color-tabs-tab-pane-arrow-*', // 滚动折叠箭头
+    '--cd-color-tabs-tab-slash-line',
+    '--cd-color-tabs-tab-outline-focus',
+    '--cd-font-tabs-*', // 字重 / 字号 / 行高
+    '--cd-width-tabs-*',
+    '--cd-height-tabs-*',
+    '--cd-spacing-tabs-*', // 各类型内/外边距 + 内容区
+    '--cd-radius-tabs-*',
+    // 组件实际消费的老 token（值对齐 Semi）：
+    '--cd-tabs-tab-color', '--cd-tabs-tab-color-active', '--cd-tabs-tab-color-disabled',
+    '--cd-tabs-tab-padding', '--cd-tabs-tab-font-size',
+    '--cd-tabs-ink-color', '--cd-tabs-ink-height', '--cd-tabs-bar-border',
+    '--cd-tabs-card-bg', '--cd-tabs-card-bg-active', '--cd-tabs-card-radius',
+    '--cd-tabs-button-bg', '--cd-tabs-button-bg-hover', '--cd-tabs-button-bg-active',
+    '--cd-tabs-button-color-active', '--cd-tabs-button-gap', '--cd-tabs-button-pad',
+    '--cd-focus-ring', '--cd-border-radius-small', '--cd-spacing-*',
+  ],
 } as const;

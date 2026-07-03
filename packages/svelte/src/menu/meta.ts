@@ -124,6 +124,7 @@ export const meta = {
       "purpose='menu'（默认）：role=menu/menubar + menuitem，叶子 button + onClick，行为完全向后兼容；role 集合由 deriveMenuSemantics(purpose, mode, multiple) 纯函数派生（红线 #2）",
     ],
   },
+  // Menu token 转引 navigation.ts（Semi navigation/variables.scss 全量对齐）为主 token 源。
   tokens: [
     '--cd-menu-bg',
     '--cd-menu-item-height',
@@ -136,6 +137,10 @@ export const meta = {
     '--cd-menu-item-bg-hover',
     '--cd-menu-item-bg-selected',
     '--cd-menu-submenu-arrow-color',
+    '--cd-menu-border-color',
+    '--cd-menu-horizontal-item-color',
+    '--cd-menu-horizontal-item-color-hover',
+    '--cd-menu-horizontal-item-color-selected',
     '--cd-focus-ring',
     '--cd-motion-*',
   ],

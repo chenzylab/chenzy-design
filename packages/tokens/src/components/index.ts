@@ -25,6 +25,7 @@ import { treeSelectTokens } from './tree-select.js';
 import { cascaderTokens } from './cascader.js';
 import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
+import { breadcrumbTokens } from './breadcrumb.js';
 import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
 import { navTokens } from './nav.js';
@@ -50,6 +51,10 @@ import { toastTokens } from './toast.js';
 import { notificationTokens } from './notification.js';
 import { backTopTokens } from './back-top.js';
 import { lottieIconTokens } from './lottie-icon.js';
+import { stepsTokens } from './steps.js';
+import { anchorTokens } from './anchor.js';
+import { dropdownTokens } from './dropdown.js';
+import { paginationTokens } from './pagination.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -78,6 +83,7 @@ export const componentTokens = {
   ...cascaderTokens,
   ...transferTokens,
   ...navigationTokens,
+  ...breadcrumbTokens,
   ...tabsTokens,
   ...menuTokens,
   ...navTokens,
@@ -103,4 +109,8 @@ export const componentTokens = {
   ...notificationTokens,
   ...backTopTokens,
   ...lottieIconTokens,
+  ...stepsTokens,
+  ...anchorTokens,
+  ...dropdownTokens,
+  ...paginationTokens,
 } as const;

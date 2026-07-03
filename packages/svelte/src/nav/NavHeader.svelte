@@ -59,7 +59,7 @@
   }
   .cd-nav__header-text {
     font-size: var(--cd-nav-header-text-size);
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-nav-header-text-weight);
     white-space: nowrap;
     color: var(--cd-nav-header-text-color);
   }

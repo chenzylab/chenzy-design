@@ -981,7 +981,7 @@
   }
   .cd-tabs--bottom .cd-tabs__content {
     padding-block-start: 0;
-    padding-block-end: var(--cd-spacing-base-tight);
+    padding-block-end: var(--cd-spacing-tabs-content-paddingy);
   }
 
   /* --- tabPosition: left / right（bar 竖向在侧）--- */
@@ -1042,7 +1042,7 @@
   .cd-tabs--right .cd-tabs__content {
     flex: 1 1 auto;
     padding-block-start: 0;
-    padding-inline: var(--cd-spacing-base);
+    padding-inline: var(--cd-spacing-tabs-content-left-paddingx);
   }
   .cd-tabs__tab {
     flex: 0 0 auto;
@@ -1106,7 +1106,7 @@
     border-radius: var(--cd-border-radius-small);
   }
   .cd-tabs__content {
-    padding-block-start: var(--cd-spacing-base-tight);
+    padding-block-start: var(--cd-spacing-tabs-content-paddingy);
   }
   /* tabBarExtraContent：标签栏右侧额外内容，靠右对齐 */
   .cd-tabs__extra {

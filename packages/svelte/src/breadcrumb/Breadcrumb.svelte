@@ -289,14 +289,14 @@
     color: var(--cd-breadcrumb-color);
   }
   .cd-breadcrumb--small {
-    font-size: var(--cd-font-size-small);
+    font-size: var(--cd-breadcrumb-font-size-compact);
   }
   .cd-breadcrumb--large {
     font-size: var(--cd-font-size-header-6);
   }
-  /* compact=false：宽松模式，字号略大、项间距增加 */
+  /* compact=false：宽松模式，字号对齐 Semi loose（regular），项间距增加 */
   .cd-breadcrumb--loose {
-    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-font-size-header-6));
+    font-size: var(--cd-breadcrumb-loose-font-size, var(--cd-breadcrumb-font-size));
     letter-spacing: var(--cd-breadcrumb-loose-letter-spacing, 0.01em);
   }
   .cd-breadcrumb--loose .cd-breadcrumb__list {
@@ -360,7 +360,7 @@
     align-items: center;
     justify-content: center;
     min-inline-size: 1.5em;
-    padding: 0 var(--cd-spacing-extra-tight);
+    padding: 0 var(--cd-spacing-breadcrumb-item-marginright);
     border: none;
     background: transparent;
     color: var(--cd-breadcrumb-color-link);
@@ -380,7 +380,7 @@
   /* showTooltip：截断包裹——超过 max-inline-size 时省略号，hover 由 Tooltip 显示完整文本 */
   .cd-breadcrumb__ellipsis-wrap {
     display: inline-block;
-    max-inline-size: var(--cd-breadcrumb-item-max-width, 12em);
+    max-inline-size: var(--cd-breadcrumb-item-max-width);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -400,7 +400,7 @@
   .cd-breadcrumb__more-list {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+    gap: var(--cd-spacing-breadcrumb-item-marginright);
     margin: 0;
     padding: 0;
     list-style: none;

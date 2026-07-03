@@ -381,7 +381,7 @@
   .cd-menu__divider {
     block-size: 1px;
     margin-block: var(--cd-spacing-extra-tight);
-    background: var(--cd-menu-border-color, var(--cd-color-border));
+    background: var(--cd-menu-border-color);
   }
   /* 分组：始终展开的分区标题 + 组内项 */
   .cd-menu__group-list {

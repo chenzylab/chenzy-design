@@ -349,34 +349,34 @@
   /* --- basic 线框型：节点圆圈用描边而非实心填充 --- */
   .cd-steps--basic .cd-steps__icon {
     background: transparent;
-    color: var(--cd-steps-basic-color, var(--cd-color-text-2));
-    border: 1px solid var(--cd-steps-basic-border, var(--cd-color-border));
+    color: var(--cd-steps-basic-color);
+    border: 1px solid var(--cd-steps-basic-border);
   }
   .cd-steps--basic .cd-steps__item--process .cd-steps__icon {
     background: transparent;
-    color: var(--cd-steps-basic-color-process, var(--cd-color-primary));
-    border-color: var(--cd-steps-basic-border-process, var(--cd-color-primary));
+    color: var(--cd-steps-basic-color-process);
+    border-color: var(--cd-steps-basic-border-process);
   }
   .cd-steps--basic .cd-steps__item--finish .cd-steps__icon {
     background: transparent;
-    color: var(--cd-steps-basic-color-finish, var(--cd-color-primary));
-    border-color: var(--cd-steps-basic-border-finish, var(--cd-color-primary));
+    color: var(--cd-steps-basic-color-finish);
+    border-color: var(--cd-steps-basic-border-finish);
   }
   .cd-steps--basic .cd-steps__item--error .cd-steps__icon {
     background: transparent;
-    color: var(--cd-steps-basic-color-error, var(--cd-color-danger));
-    border-color: var(--cd-steps-basic-border-error, var(--cd-color-danger));
+    color: var(--cd-steps-basic-color-error);
+    border-color: var(--cd-steps-basic-border-error);
   }
 
   /* --- dot 模式：图标缩为小圆点，process 态放大高亮 --- */
   .cd-steps--dot .cd-steps__icon {
-    inline-size: var(--cd-steps-dot-size, 8px);
-    block-size: var(--cd-steps-dot-size, 8px);
+    inline-size: var(--cd-steps-dot-size);
+    block-size: var(--cd-steps-dot-size);
     background: var(--cd-steps-line-color);
   }
   .cd-steps--dot .cd-steps__item--process .cd-steps__icon {
-    inline-size: var(--cd-steps-dot-size-active, 10px);
-    block-size: var(--cd-steps-dot-size-active, 10px);
+    inline-size: var(--cd-steps-dot-size-active);
+    block-size: var(--cd-steps-dot-size-active);
     background: var(--cd-steps-icon-bg-process);
   }
   .cd-steps--dot .cd-steps__item--finish .cd-steps__icon {
@@ -387,6 +387,6 @@
   }
   /* dot 模式垂直对齐 line 与圆点中心 */
   .cd-steps--dot.cd-steps--vertical .cd-steps__line {
-    margin-inline-start: calc(var(--cd-steps-dot-size, 8px) / 2);
+    margin-inline-start: calc(var(--cd-steps-dot-size) / 2);
   }
 </style>
