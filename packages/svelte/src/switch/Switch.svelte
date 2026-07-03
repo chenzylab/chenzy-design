@@ -214,7 +214,7 @@
     border-radius: var(--cd-switch-radius);
     background: var(--cd-switch-bg-off);
     cursor: pointer;
-    transition: background-color var(--cd-motion-duration-mid) var(--cd-motion-ease-standard);
+    transition: background-color var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
   }
   .cd-switch--small {
     inline-size: var(--cd-switch-width-small);
@@ -229,17 +229,17 @@
     justify-content: flex-end;
   }
   .cd-switch--warning.cd-switch--on {
-    background: var(--cd-color-warning);
+    background: var(--cd-switch-bg-on-warning);
   }
   .cd-switch--warning.cd-switch--on .cd-switch__label {
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-switch-label-color);
   }
   .cd-switch--error.cd-switch--on {
-    background: var(--cd-color-danger);
+    background: var(--cd-switch-bg-on-error);
   }
   .cd-switch:focus-visible {
     outline: none;
-    box-shadow: var(--cd-focus-ring);
+    box-shadow: var(--cd-switch-outline-focus);
   }
   .cd-switch:disabled {
     cursor: not-allowed;
@@ -254,31 +254,31 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--cd-border-radius-full);
+    border-radius: var(--cd-switch-radius);
     background: var(--cd-switch-knob-bg);
-    transition: inset-inline-start var(--cd-motion-duration-mid) var(--cd-motion-ease-standard);
+    transition: inset-inline-start var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
   }
   .cd-switch--on .cd-switch__knob {
     inset-inline-start: calc(100% - 2px);
     transform: translateX(-100%);
   }
   .cd-switch__label {
-    color: var(--cd-color-text-inverse);
-    font-size: var(--cd-font-size-small);
+    color: var(--cd-switch-label-color);
+    font-size: var(--cd-switch-label-font-size);
     line-height: 1;
-    padding-inline: var(--cd-spacing-tight);
+    padding-inline: var(--cd-switch-label-padding);
   }
   .cd-switch--on .cd-switch__label {
-    padding-inline-start: var(--cd-spacing-base-tight);
-    padding-inline-end: var(--cd-spacing-base-loose);
+    padding-inline-start: var(--cd-switch-label-padding-start);
+    padding-inline-end: var(--cd-switch-label-padding-end);
   }
   .cd-switch__spinner {
     inline-size: 60%;
     aspect-ratio: 1;
-    border: 2px solid var(--cd-color-grey-3);
-    border-block-start-color: var(--cd-color-primary);
-    border-radius: var(--cd-border-radius-full);
-    animation: cd-switch-spin var(--cd-motion-duration-slow) linear infinite;
+    border: 2px solid var(--cd-switch-spinner-track);
+    border-block-start-color: var(--cd-switch-spinner-indicator);
+    border-radius: var(--cd-switch-radius);
+    animation: cd-switch-spin var(--cd-switch-spinner-duration) linear infinite;
   }
   @keyframes cd-switch-spin {
     to {
