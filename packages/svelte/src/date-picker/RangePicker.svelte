@@ -6,6 +6,11 @@
   本地化走 Intl.DateTimeFormat。useDismiss / 几何由 $effect 管理 (红线 #3)。
   复用 @chenzy-design/core 日期纯函数（getMonthGrid/addMonths/isSameDay/startOfDay/weekdayOrder）。
   maxRange: 起止跨度上限（天）。选定起始后，超出 maxRange 天的日期置灰禁用（daysBetween 纯函数判定，红线 #2）。
+
+  type='dateTimeRange'：在双日期面板右侧各挂一组时/分/秒时间列（复用 DatePicker dateTime 的列逻辑/token）。
+  起止各自携带时分秒；needConfirm（dateTimeRange 默认 true）时选择进入 pending 缓冲，点「确定」才提交。
+  时间列作用于「当前激活端」activeEnd（选起始日或点左侧时间列 = start；选结束日或点右侧时间列 = end）。
+  showSecond/disabledTime/disabledTimePicker/hideDisabledOptions 与 DatePicker dateTime 语义一致。
 -->
 <script lang="ts">
   import { untrack, tick } from 'svelte';
@@ -27,9 +32,19 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
+  type RangeType = 'dateRange' | 'dateTimeRange';
   type RangeValue = [Date | null, Date | null];
 
+  // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值。与 DatePicker 一致。
+  interface DisabledTime {
+    disabledHours?: () => number[];
+    disabledMinutes?: (hour: number) => number[];
+    disabledSeconds?: (hour: number, minute: number) => number[];
+  }
+
   interface Props {
+    /** dateRange 纯日期范围 / dateTimeRange 带时间范围（每端时/分/秒列 + 确认）。 */
+    type?: RangeType;
     value?: RangeValue | null;
     defaultValue?: RangeValue | null;
     open?: boolean;
@@ -41,6 +56,16 @@
     disabled?: boolean;
     clearable?: boolean;
     disabledDate?: (date: Date) => boolean;
+    /** dateTimeRange：按日期返回各时间列禁用值（分/秒列联动已选时/分）。 */
+    disabledTime?: (date: Date) => DisabledTime;
+    /** dateTimeRange：是否显示秒列（默认 true）。 */
+    showSecond?: boolean;
+    /** dateTimeRange：隐藏被禁用的时间选项（默认 false，仅置灰）。 */
+    hideDisabledOptions?: boolean;
+    /** dateTimeRange：禁止时间列（只保留日期面板 + 确认）。 */
+    disabledTimePicker?: boolean;
+    /** 需点击确认才提交（dateTimeRange 默认 true，dateRange 默认 false）。 */
+    needConfirm?: boolean;
     /** 起止跨度上限（天）。选定起始后，超出该跨度的日期被禁用。 */
     maxRange?: number;
     weekStart?: WeekStart;
@@ -51,6 +76,10 @@
     onPanelChange?: (e: { panelDate: Date }) => void;
     /** 点击清除。 */
     onClear?: (e: Record<string, never>) => void;
+    /** 点击确认按钮（needConfirm）。 */
+    onConfirm?: (e: { value: RangeValue | null }) => void;
+    /** 点击取消按钮（needConfirm）。 */
+    onCancel?: (e: { value: RangeValue | null }) => void;
     /** 触发器获得焦点。 */
     onFocus?: (e: FocusEvent) => void;
     /** 触发器失去焦点。 */
@@ -59,6 +88,7 @@
   }
 
   let {
+    type = 'dateRange',
     value,
     defaultValue = null,
     open,
@@ -70,6 +100,11 @@
     disabled = false,
     clearable = true,
     disabledDate,
+    disabledTime,
+    showSecond = true,
+    hideDisabledOptions = false,
+    disabledTimePicker = false,
+    needConfirm,
     maxRange,
     weekStart = 0,
     locale = 'zh-CN',
@@ -77,10 +112,16 @@
     onOpenChange,
     onPanelChange,
     onClear,
+    onConfirm,
+    onCancel,
     onFocus,
     onBlur,
     ariaLabel,
   }: Props = $props();
+
+  const isDateTime = $derived(type === 'dateTimeRange');
+  // needConfirm：显式传优先；否则 dateTimeRange 默认 true、dateRange 默认 false。
+  const effNeedConfirm = $derived(needConfirm ?? isDateTime);
 
   const loc = useLocale();
   const dialogId = useId('cd-range-picker-panel');
@@ -88,15 +129,24 @@
   const leftGridId = useId('cd-range-picker-grid-l');
   const rightGridId = useId('cd-range-picker-grid-r');
 
-  function normPair(v: RangeValue | null | undefined): RangeValue {
+  // dateRange 归一到当天起始；dateTimeRange 保留时分秒。
+  function normOne(d: Date | null | undefined, keepTime: boolean): Date | null {
+    if (!d) return null;
+    return keepTime ? new Date(d) : startOfDay(d);
+  }
+  function normPair(v: RangeValue | null | undefined, keepTime: boolean): RangeValue {
     if (!v) return [null, null];
-    return [v[0] ? startOfDay(v[0]) : null, v[1] ? startOfDay(v[1]) : null];
+    return [normOne(v[0], keepTime), normOne(v[1], keepTime)];
   }
 
   // --- 受控 value (红线 #1) ---
   const isValueControlled = $derived(value !== undefined);
-  let innerValue = $state<RangeValue>(untrack(() => normPair(defaultValue)));
-  const current = $derived<RangeValue>(isValueControlled ? normPair(value) : innerValue);
+  let innerValue = $state<RangeValue>(
+    untrack(() => normPair(defaultValue, type === 'dateTimeRange')),
+  );
+  const current = $derived<RangeValue>(
+    isValueControlled ? normPair(value, isDateTime) : innerValue,
+  );
   const startVal = $derived(current[0]);
   const endVal = $derived(current[1]);
 
@@ -121,14 +171,26 @@
     setOpen(!isOpen);
   }
 
-  // --- 选择状态机：null=待选起始；'end'=已选起始待选结束 ---
+  // --- 选择状态机：phase='start' 待选起始；'end' 已选起始待选结束 ---
   const today = startOfDay(new Date());
   let phase = $state<'start' | 'end'>('start');
   let pendingStart = $state<Date | null>(null);
   let previewEnd = $state<Date | null>(null);
 
+  // dateTimeRange needConfirm：pending 缓冲的起止（含时间），点确定才提交。
+  // 面板打开时同步为当前 value；选日期/时间只改 pending。
+  let pendingValue = $state<RangeValue>([null, null]);
+  // 时间列作用的当前端：选起始日 / 点左侧时间列 = 'start'；选结束日 / 点右侧时间列 = 'end'。
+  let activeEnd = $state<'start' | 'end'>('start');
+
+  // 面板内某一端「当前生效」的 Date（needConfirm 用 pending，否则用已提交 value）。
+  const panelStart = $derived(effNeedConfirm ? pendingValue[0] : startVal);
+  const panelEnd = $derived(effNeedConfirm ? pendingValue[1] : endVal);
+
   // --- 面板游标月份 ---
-  let cursor = $state(untrack(() => startOfDay(normPair(defaultValue)[0] ?? new Date())));
+  let cursor = $state(
+    untrack(() => startOfDay(normPair(defaultValue, false)[0] ?? new Date())),
+  );
   // 键盘高亮日 (网格 roving 焦点；aria-activedescendant 指向它)
   let highlight = $state<Date | null>(null);
   $effect(() => {
@@ -138,15 +200,23 @@
       pendingStart = null;
       previewEnd = null;
       highlight = startOfDay(startVal ?? new Date());
+      pendingValue = [startVal, endVal];
+      activeEnd = 'start';
     } else {
       highlight = null;
     }
   });
 
   // --- Intl 格式化 ---
-  const triggerFormat = $derived(
-    new Intl.DateTimeFormat(locale, { year: 'numeric', month: '2-digit', day: '2-digit' }),
-  );
+  const dateOpts = $derived<Intl.DateTimeFormatOptions>({
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    ...(isDateTime
+      ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+      : {}),
+  });
+  const triggerFormat = $derived(new Intl.DateTimeFormat(locale, dateOpts));
   const headerFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
   const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
@@ -189,16 +259,16 @@
     setCursor(addMonths(cursor, 1));
   }
 
-  // 选区端点（选择中用 pendingStart + previewEnd，否则用已提交值）
-  const rangeStart = $derived(phase === 'end' ? pendingStart : startVal);
-  const rangeEnd = $derived(phase === 'end' ? previewEnd : endVal);
-  // 归一后的 [lo, hi]（用于区间内判定）
+  // 选区端点（选择中用 pendingStart + previewEnd，否则用面板生效值）
+  const rangeStart = $derived(phase === 'end' ? pendingStart : panelStart);
+  const rangeEnd = $derived(phase === 'end' ? previewEnd : panelEnd);
+  // 归一后的 [lo, hi]（用于区间内判定，按天比较）
   const span = $derived.by<[number, number] | null>(() => {
     const a = rangeStart;
     const b = rangeEnd;
     if (!a || !b) return null;
-    const ta = a.getTime();
-    const tb = b.getTime();
+    const ta = startOfDay(a).getTime();
+    const tb = startOfDay(b).getTime();
     return ta <= tb ? [ta, tb] : [tb, ta];
   });
 
@@ -212,16 +282,22 @@
   }
 
   // maxRange：选定起始(phase==='end')后，离 pendingStart 超过 maxRange-1 天的日期禁用
-  // （跨度含两端，故 maxRange=7 表示最多 7 天，即间隔 ≤ 6）
   function exceedsMaxRange(date: Date): boolean {
     if (maxRange == null || maxRange <= 0) return false;
     if (phase !== 'end' || !pendingStart) return false;
     return Math.abs(daysBetween(pendingStart, date)) > maxRange - 1;
   }
 
-  // 单元格综合禁用：外部 disabledDate 或 超出 maxRange
   function isCellDisabled(date: Date): boolean {
     return (disabledDate?.(date) ?? false) || exceedsMaxRange(date);
+  }
+
+  // 把 day 与某端已有的时分秒合并（dateTime 保留时间，dateRange 归零到当天起始）。
+  function combineDay(day: Date, base: Date | null): Date {
+    if (!isDateTime) return startOfDay(day);
+    const next = startOfDay(day);
+    if (base) next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), 0);
+    return next;
   }
 
   function selectDate(date: Date) {
@@ -231,16 +307,33 @@
       pendingStart = day;
       previewEnd = day;
       phase = 'end';
+      activeEnd = 'start';
+      // needConfirm：起始日进 pending（保留起端已有时间）。
+      if (effNeedConfirm) {
+        pendingValue = [combineDay(day, pendingValue[0]), pendingValue[1]];
+      }
       return;
     }
-    // phase === 'end'：定第二端，排序后提交
+    // phase === 'end'：定第二端，排序后（含时间）提交或进 pending。
     const a = pendingStart ?? day;
-    const [lo, hi] = a.getTime() <= day.getTime() ? [a, day] : [day, a];
-    setValue([lo, hi]);
-    phase = 'start';
-    pendingStart = null;
-    previewEnd = null;
-    setOpen(false);
+    const [loDay, hiDay] = a.getTime() <= day.getTime() ? [a, day] : [day, a];
+    // 起端时间取 pendingValue[0]（若为对应端），结束端取 pendingValue[1]。
+    const lo = combineDay(loDay, isDateTime ? pendingValue[0] : null);
+    const hi = combineDay(hiDay, isDateTime ? pendingValue[1] : null);
+    activeEnd = 'end';
+    if (effNeedConfirm) {
+      pendingValue = [lo, hi];
+      phase = 'start';
+      pendingStart = null;
+      previewEnd = null;
+      // needConfirm：不自动关闭，等用户调时间 + 点确定。
+    } else {
+      setValue([lo, hi]);
+      phase = 'start';
+      pendingStart = null;
+      previewEnd = null;
+      setOpen(false);
+    }
   }
 
   function onCellHover(date: Date) {
@@ -251,10 +344,106 @@
     e.stopPropagation();
     if (disabled) return;
     setValue([null, null]);
+    pendingValue = [null, null];
     phase = 'start';
     pendingStart = null;
     previewEnd = null;
     onClear?.({});
+  }
+
+  // ---------- 时间列（dateTimeRange，复用 DatePicker dateTime 列逻辑） ----------
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const minutes = Array.from({ length: 60 }, (_, i) => i);
+  const seconds = Array.from({ length: 60 }, (_, i) => i);
+  function pad2(n: number): string {
+    return n < 10 ? `0${n}` : `${n}`;
+  }
+
+  // 当前激活端的 Date（用于时间列选中态与禁用联动基准）。
+  const activeDate = $derived<Date | null>(activeEnd === 'start' ? pendingValue[0] : pendingValue[1]);
+  const activeHour = $derived(activeDate ? activeDate.getHours() : 0);
+  const activeMinute = $derived(activeDate ? activeDate.getMinutes() : 0);
+  const activeSecond = $derived(activeDate ? activeDate.getSeconds() : 0);
+
+  const disabledTimeCfg = $derived(
+    isDateTime && disabledTime ? disabledTime(activeDate ?? today) : undefined,
+  );
+  const disabledHourSet = $derived(new Set(disabledTimeCfg?.disabledHours?.() ?? []));
+  const disabledMinuteSet = $derived(
+    new Set(disabledTimeCfg?.disabledMinutes?.(activeHour) ?? []),
+  );
+  const disabledSecondSet = $derived(
+    new Set(disabledTimeCfg?.disabledSeconds?.(activeHour, activeMinute) ?? []),
+  );
+
+  // 把 h/m/s 写入激活端 Date（无日期则以今天为底），只改 pending（needConfirm）或提交。
+  function commitTime(h: number, m: number, s: number) {
+    const baseSrc = activeDate ?? startOfDay(today);
+    const base = new Date(baseSrc);
+    base.setHours(h, m, s, 0);
+    const nextPair: RangeValue =
+      activeEnd === 'start' ? [base, pendingValue[1]] : [pendingValue[0], base];
+    if (effNeedConfirm) {
+      pendingValue = nextPair;
+    } else {
+      pendingValue = nextPair;
+      setValue(nextPair);
+    }
+  }
+  function pickHour(h: number) {
+    if (disabledHourSet.has(h)) return;
+    commitTime(h, activeMinute, activeSecond);
+  }
+  function pickMinute(m: number) {
+    if (disabledMinuteSet.has(m)) return;
+    commitTime(activeHour, m, activeSecond);
+  }
+  function pickSecond(s: number) {
+    if (disabledSecondSet.has(s)) return;
+    commitTime(activeHour, activeMinute, s);
+  }
+  function focusEnd(which: 'start' | 'end') {
+    activeEnd = which;
+  }
+
+  // 时间列容器引用（scrollIntoView 命令式，红线 #3）。start/end 各一组。
+  let startHourCol = $state<HTMLUListElement | null>(null);
+  let startMinuteCol = $state<HTMLUListElement | null>(null);
+  let startSecondCol = $state<HTMLUListElement | null>(null);
+  let endHourCol = $state<HTMLUListElement | null>(null);
+  let endMinuteCol = $state<HTMLUListElement | null>(null);
+  let endSecondCol = $state<HTMLUListElement | null>(null);
+
+  function scrollColToSelected(col: HTMLUListElement | null) {
+    if (!col) return;
+    const target = col.querySelector<HTMLElement>('[aria-selected="true"]');
+    target?.scrollIntoView({ block: 'center' });
+  }
+  $effect(() => {
+    if (!isOpen || !isDateTime || disabledTimePicker) return;
+    // 依赖 pendingValue 以在时间变化后重新滚动到选中项。
+    void pendingValue;
+    void tick().then(() => {
+      scrollColToSelected(startHourCol);
+      scrollColToSelected(startMinuteCol);
+      if (showSecond) scrollColToSelected(startSecondCol);
+      scrollColToSelected(endHourCol);
+      scrollColToSelected(endMinuteCol);
+      if (showSecond) scrollColToSelected(endSecondCol);
+    });
+  });
+
+  // 确认 / 取消（needConfirm）。
+  function confirm() {
+    const val: RangeValue = pendingValue;
+    onConfirm?.({ value: val[0] === null && val[1] === null ? null : val });
+    setValue(val);
+    setOpen(false);
+  }
+  function cancelConfirm() {
+    onCancel?.({ value: startVal === null && endVal === null ? null : [startVal, endVal] });
+    pendingValue = [startVal, endVal];
+    setOpen(false);
   }
 
   // 高亮所在面板：在左面板月份则左，否则右（决定 aria-activedescendant 落哪个网格）
@@ -273,7 +462,6 @@
   // 把高亮移到 next，跨出双面板可见范围时整体翻页（cursor=左面板月份）
   function setHighlight(next: Date) {
     highlight = startOfDay(next);
-    // 双面板显示 cursor 月 + cursor+1 月；高亮落在其中一个则不翻页
     const inLeft = next.getFullYear() === cursor.getFullYear() && next.getMonth() === cursor.getMonth();
     const inRight =
       next.getFullYear() === rightCursor.getFullYear() && next.getMonth() === rightCursor.getMonth();
@@ -365,10 +553,13 @@
       `cd-range-picker--${status}`,
       disabled && 'cd-range-picker--disabled',
       isOpen && 'cd-range-picker--open',
+      isDateTime && 'cd-range-picker--datetime',
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  const showFooter = $derived(isDateTime || effNeedConfirm);
 </script>
 
 <div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
@@ -529,7 +720,223 @@
             {/each}
           </div>
         </div>
+
+        {#if isDateTime && !disabledTimePicker}
+          <!-- 起止两组时/分/秒时间列（复用 DatePicker dateTime 列 token/结构） -->
+          <div class="cd-range-picker__times">
+            <div
+              class="cd-range-picker__time"
+              class:cd-range-picker__time--active={activeEnd === 'start'}
+              role="group"
+              aria-label={loc().t('DatePicker.startPlaceholder')}
+            >
+              <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={startHourCol}>
+                {#each hours as h (h)}
+                  {@const isHourDisabled = activeEnd === 'start' && disabledHourSet.has(h)}
+                  {@const isSel = activeEnd === 'start' && h === activeHour && pendingValue[0] !== null}
+                  {#if !(hideDisabledOptions && isHourDisabled)}
+                    <li
+                      class="cd-range-picker__time-item"
+                      class:cd-range-picker__time-item--selected={isSel}
+                      class:cd-range-picker__time-item--disabled={isHourDisabled}
+                      role="option"
+                      aria-selected={isSel}
+                      aria-disabled={isHourDisabled || undefined}
+                      tabindex="-1"
+                      onclick={() => {
+                        focusEnd('start');
+                        pickHour(h);
+                      }}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          focusEnd('start');
+                          pickHour(h);
+                        }
+                      }}
+                    >
+                      {pad2(h)}
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
+              <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={startMinuteCol}>
+                {#each minutes as m (m)}
+                  {@const isMinDisabled = activeEnd === 'start' && disabledMinuteSet.has(m)}
+                  {@const isSel = activeEnd === 'start' && m === activeMinute && pendingValue[0] !== null}
+                  {#if !(hideDisabledOptions && isMinDisabled)}
+                    <li
+                      class="cd-range-picker__time-item"
+                      class:cd-range-picker__time-item--selected={isSel}
+                      class:cd-range-picker__time-item--disabled={isMinDisabled}
+                      role="option"
+                      aria-selected={isSel}
+                      aria-disabled={isMinDisabled || undefined}
+                      tabindex="-1"
+                      onclick={() => {
+                        focusEnd('start');
+                        pickMinute(m);
+                      }}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          focusEnd('start');
+                          pickMinute(m);
+                        }
+                      }}
+                    >
+                      {pad2(m)}
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
+              {#if showSecond}
+                <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={startSecondCol}>
+                  {#each seconds as s (s)}
+                    {@const isSecDisabled = activeEnd === 'start' && disabledSecondSet.has(s)}
+                    {@const isSel = activeEnd === 'start' && s === activeSecond && pendingValue[0] !== null}
+                    {#if !(hideDisabledOptions && isSecDisabled)}
+                      <li
+                        class="cd-range-picker__time-item"
+                        class:cd-range-picker__time-item--selected={isSel}
+                        class:cd-range-picker__time-item--disabled={isSecDisabled}
+                        role="option"
+                        aria-selected={isSel}
+                        aria-disabled={isSecDisabled || undefined}
+                        tabindex="-1"
+                        onclick={() => {
+                          focusEnd('start');
+                          pickSecond(s);
+                        }}
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            focusEnd('start');
+                            pickSecond(s);
+                          }
+                        }}
+                      >
+                        {pad2(s)}
+                      </li>
+                    {/if}
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+
+            <div
+              class="cd-range-picker__time"
+              class:cd-range-picker__time--active={activeEnd === 'end'}
+              role="group"
+              aria-label={loc().t('DatePicker.endPlaceholder')}
+            >
+              <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={endHourCol}>
+                {#each hours as h (h)}
+                  {@const isHourDisabled = activeEnd === 'end' && disabledHourSet.has(h)}
+                  {@const isSel = activeEnd === 'end' && h === activeHour && pendingValue[1] !== null}
+                  {#if !(hideDisabledOptions && isHourDisabled)}
+                    <li
+                      class="cd-range-picker__time-item"
+                      class:cd-range-picker__time-item--selected={isSel}
+                      class:cd-range-picker__time-item--disabled={isHourDisabled}
+                      role="option"
+                      aria-selected={isSel}
+                      aria-disabled={isHourDisabled || undefined}
+                      tabindex="-1"
+                      onclick={() => {
+                        focusEnd('end');
+                        pickHour(h);
+                      }}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          focusEnd('end');
+                          pickHour(h);
+                        }
+                      }}
+                    >
+                      {pad2(h)}
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
+              <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={endMinuteCol}>
+                {#each minutes as m (m)}
+                  {@const isMinDisabled = activeEnd === 'end' && disabledMinuteSet.has(m)}
+                  {@const isSel = activeEnd === 'end' && m === activeMinute && pendingValue[1] !== null}
+                  {#if !(hideDisabledOptions && isMinDisabled)}
+                    <li
+                      class="cd-range-picker__time-item"
+                      class:cd-range-picker__time-item--selected={isSel}
+                      class:cd-range-picker__time-item--disabled={isMinDisabled}
+                      role="option"
+                      aria-selected={isSel}
+                      aria-disabled={isMinDisabled || undefined}
+                      tabindex="-1"
+                      onclick={() => {
+                        focusEnd('end');
+                        pickMinute(m);
+                      }}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          focusEnd('end');
+                          pickMinute(m);
+                        }
+                      }}
+                    >
+                      {pad2(m)}
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
+              {#if showSecond}
+                <ul class="cd-range-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={endSecondCol}>
+                  {#each seconds as s (s)}
+                    {@const isSecDisabled = activeEnd === 'end' && disabledSecondSet.has(s)}
+                    {@const isSel = activeEnd === 'end' && s === activeSecond && pendingValue[1] !== null}
+                    {#if !(hideDisabledOptions && isSecDisabled)}
+                      <li
+                        class="cd-range-picker__time-item"
+                        class:cd-range-picker__time-item--selected={isSel}
+                        class:cd-range-picker__time-item--disabled={isSecDisabled}
+                        role="option"
+                        aria-selected={isSel}
+                        aria-disabled={isSecDisabled || undefined}
+                        tabindex="-1"
+                        onclick={() => {
+                          focusEnd('end');
+                          pickSecond(s);
+                        }}
+                        onkeydown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            focusEnd('end');
+                            pickSecond(s);
+                          }
+                        }}
+                      >
+                        {pad2(s)}
+                      </li>
+                    {/if}
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
+
+      {#if showFooter}
+        <div class="cd-range-picker__footer">
+          <button type="button" class="cd-range-picker__cancel" onclick={cancelConfirm}>
+            {loc().t('DatePicker.cancel') ?? '取消'}
+          </button>
+          <button type="button" class="cd-range-picker__ok" onclick={confirm}>
+            {loc().t('TimePicker.confirm')}
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -765,10 +1172,118 @@
     cursor: not-allowed;
     background: transparent;
   }
+
+  /* --- 时间列（dateTimeRange，复用 DatePicker dateTime 列 token） --- */
+  .cd-range-picker__times {
+    display: flex;
+    margin-inline-start: var(--cd-spacing-tight);
+    padding-inline-start: var(--cd-spacing-tight);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+    gap: var(--cd-spacing-tight);
+  }
+  .cd-range-picker__time {
+    display: flex;
+  }
+  .cd-range-picker__time + .cd-range-picker__time {
+    padding-inline-start: var(--cd-spacing-tight);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  }
+  /* 当前激活端：轻微高亮标示时间列作用于哪一端 */
+  .cd-range-picker__time--active {
+    background: var(--cd-color-date-picker-date-in-hover-bg-default);
+    border-radius: var(--cd-date-picker-cell-radius);
+  }
+  .cd-range-picker__time-col {
+    inline-size: var(--cd-time-picker-time-col-width);
+    block-size: calc(var(--cd-time-picker-time-item-height) * 7);
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+  }
+  .cd-range-picker__time-col + .cd-range-picker__time-col {
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  }
+  .cd-range-picker__time-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--cd-time-picker-time-item-height);
+    color: var(--cd-color-date-picker-date-text-default);
+    cursor: pointer;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-range-picker__time-item:hover {
+    background: var(--cd-date-picker-cell-bg-hover);
+  }
+  .cd-range-picker__time-item:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-range-picker__time-item--selected,
+  .cd-range-picker__time-item--selected:hover {
+    background: var(--cd-date-picker-cell-bg-selected);
+    color: var(--cd-date-picker-cell-color-selected);
+  }
+  .cd-range-picker__time-item--disabled,
+  .cd-range-picker__time-item--disabled:hover {
+    color: var(--cd-color-date-picker-date-disabled-text-default);
+    cursor: not-allowed;
+    background: transparent;
+  }
+
+  /* --- footer（确认 / 取消） --- */
+  .cd-range-picker__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--cd-spacing-tight);
+    margin-block-start: var(--cd-spacing-tight);
+    padding-block-start: var(--cd-spacing-tight);
+    border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+    background: var(--cd-date-picker-footer-bg);
+  }
+  .cd-range-picker__ok {
+    padding-inline: var(--cd-spacing-tight);
+    padding-block: var(--cd-spacing-extra-tight);
+    border: none;
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
+    background: var(--cd-color-date-picker-date-selected-bg-default);
+    color: var(--cd-color-date-picker-date-selected-text-default);
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-range-picker__ok:hover {
+    background: var(--cd-color-primary-hover, var(--cd-color-primary));
+  }
+  .cd-range-picker__ok:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-range-picker__cancel {
+    padding-inline: var(--cd-spacing-tight);
+    padding-block: var(--cd-spacing-extra-tight);
+    border: 1px solid var(--cd-color-date-picker-border-bg-default);
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
+    background: transparent;
+    color: var(--cd-color-date-picker-date-text-default);
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-range-picker__cancel:hover {
+    border-color: var(--cd-color-date-picker-quick-button-text-default);
+    color: var(--cd-color-date-picker-quick-button-text-default);
+  }
+  .cd-range-picker__cancel:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
   @media (prefers-reduced-motion: reduce) {
     .cd-range-picker__trigger,
     .cd-range-picker__clear,
-    .cd-range-picker__cell {
+    .cd-range-picker__cell,
+    .cd-range-picker__time-item {
       transition: none;
     }
   }
