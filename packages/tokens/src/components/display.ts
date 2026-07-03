@@ -56,22 +56,22 @@ export const displayTokens = {
   'motion-avatar-additional-border-scale-end': { value: '1.15', category: 'other', label: '额外描边动画终态缩放', usage: '额外描边呼吸动画结束缩放比例' },
 
   // —— Avatar 16 档语义色板（对齐 Semi avatar/mixin.scss：bg=<color>-3, text=white）——
-  // 已有的全局色阶直接引用 --cd-color-<c>-3；Semi 独有的 10 档以 Semi -3 实测 hex 内联。
-  'color-avatar-amber-bg': { value: '#f6d86f', category: 'color', label: 'amber 头像背景', usage: 'amber 头像背景色（Semi amber-3）' },
+  // 全部引用全局色阶 --cd-color-<c>-3（暗色模式随 global palette 切换）。
+  'color-avatar-amber-bg': { value: 'var(--cd-color-amber-3)', category: 'color', label: 'amber 头像背景', usage: 'amber 头像背景色（Semi amber-3）' },
   'color-avatar-blue-bg': { value: 'var(--cd-color-blue-3)', category: 'color', label: 'blue 头像背景', usage: 'blue 头像背景色（blue-3）' },
-  'color-avatar-cyan-bg': { value: '#58cbd3', category: 'color', label: 'cyan 头像背景', usage: 'cyan 头像背景色（Semi cyan-3）' },
+  'color-avatar-cyan-bg': { value: 'var(--cd-color-cyan-3)', category: 'color', label: 'cyan 头像背景', usage: 'cyan 头像背景色（Semi cyan-3）' },
   'color-avatar-green-bg': { value: 'var(--cd-color-green-3)', category: 'color', label: 'green 头像背景', usage: 'green 头像背景色（green-3）' },
   'color-avatar-grey-bg': { value: 'var(--cd-color-grey-3)', category: 'color', label: 'grey 头像背景', usage: 'grey 头像背景色（grey-3）' },
-  'color-avatar-indigo-bg': { value: '#8090d3', category: 'color', label: 'indigo 头像背景', usage: 'indigo 头像背景色（Semi indigo-3）' },
-  'color-avatar-light-blue-bg': { value: '#62c3f5', category: 'color', label: 'light-blue 头像背景', usage: 'light-blue 头像背景色（Semi light-blue-3）' },
-  'color-avatar-light-green-bg': { value: '#add37e', category: 'color', label: 'light-green 头像背景', usage: 'light-green 头像背景色（Semi light-green-3）' },
-  'color-avatar-lime-bg': { value: '#b7e35b', category: 'color', label: 'lime 头像背景', usage: 'lime 头像背景色（Semi lime-3）' },
+  'color-avatar-indigo-bg': { value: 'var(--cd-color-indigo-3)', category: 'color', label: 'indigo 头像背景', usage: 'indigo 头像背景色（Semi indigo-3）' },
+  'color-avatar-light-blue-bg': { value: 'var(--cd-color-light-blue-3)', category: 'color', label: 'light-blue 头像背景', usage: 'light-blue 头像背景色（Semi light-blue-3）' },
+  'color-avatar-light-green-bg': { value: 'var(--cd-color-light-green-3)', category: 'color', label: 'light-green 头像背景', usage: 'light-green 头像背景色（Semi light-green-3）' },
+  'color-avatar-lime-bg': { value: 'var(--cd-color-lime-3)', category: 'color', label: 'lime 头像背景', usage: 'lime 头像背景色（Semi lime-3）' },
   'color-avatar-orange-bg': { value: 'var(--cd-color-orange-3)', category: 'color', label: 'orange 头像背景', usage: 'orange 头像背景色（orange-3）' },
-  'color-avatar-pink-bg': { value: '#f27396', category: 'color', label: 'pink 头像背景', usage: 'pink 头像背景色（Semi pink-3）' },
-  'color-avatar-purple-bg': { value: '#c96fd1', category: 'color', label: 'purple 头像背景', usage: 'purple 头像背景色（Semi purple-3）' },
+  'color-avatar-pink-bg': { value: 'var(--cd-color-pink-3)', category: 'color', label: 'pink 头像背景', usage: 'pink 头像背景色（Semi pink-3）' },
+  'color-avatar-purple-bg': { value: 'var(--cd-color-purple-3)', category: 'color', label: 'purple 头像背景', usage: 'purple 头像背景色（Semi purple-3）' },
   'color-avatar-red-bg': { value: 'var(--cd-color-red-3)', category: 'color', label: 'red 头像背景', usage: 'red 头像背景色（red-3）' },
-  'color-avatar-teal-bg': { value: '#54d1c1', category: 'color', label: 'teal 头像背景', usage: 'teal 头像背景色（Semi teal-3）' },
-  'color-avatar-violet-bg': { value: '#a67fdd', category: 'color', label: 'violet 头像背景', usage: 'violet 头像背景色（Semi violet-3）' },
+  'color-avatar-teal-bg': { value: 'var(--cd-color-teal-3)', category: 'color', label: 'teal 头像背景', usage: 'teal 头像背景色（Semi teal-3）' },
+  'color-avatar-violet-bg': { value: 'var(--cd-color-violet-3)', category: 'color', label: 'violet 头像背景', usage: 'violet 头像背景色（Semi violet-3）' },
   'color-avatar-yellow-bg': { value: 'var(--cd-color-yellow-3)', category: 'color', label: 'yellow 头像背景', usage: 'yellow 头像背景色（yellow-3）' },
   'color-avatar-palette-text': { value: '#fff', category: 'color', label: '语义色板头像文字色', usage: '16 档语义色头像文字色（对齐 Semi：统一白字）' },
 
