@@ -81,6 +81,8 @@ export const meta = {
     '--cd-tag-radius',
     '--cd-tag-font-size',
     '--cd-tag-gap',
+    '--cd-tag-close-color',
+    '--cd-tag-close-color-hover',
   ],
   responsive: false,
   examples: [

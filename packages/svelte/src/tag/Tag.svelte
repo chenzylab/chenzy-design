@@ -339,12 +339,13 @@
     margin: 0;
     border: 0;
     background: transparent;
-    color: currentColor;
+    color: var(--cd-tag-close-color);
     cursor: pointer;
     opacity: 0.7;
     border-radius: var(--cd-border-radius-full);
   }
   .cd-tag__close:hover {
+    color: var(--cd-tag-close-color-hover);
     opacity: 1;
   }
   .cd-tag__close:disabled {
