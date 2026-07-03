@@ -5,11 +5,13 @@
   disabledTime: dateTime 时/分/秒列按日期禁用值置灰跳过；presets: 面板侧边快捷日期按钮。
   format: 传 token 串（YYYY/MM/DD/HH/mm/ss）时，触发器变可输入文本框，显示与手输解析均走
   core 的 formatDate/parseDateString 纯函数（红线 #2）；不传则沿用 Intl.DateTimeFormat 显示（向后兼容）。
+  年月滚轮（PANEL_YAM，对齐 Semi）：点头部年/月标题展开年 + 月两列 ScrollList 快速跳转面板游标（复用 scroll-list，不重写滚轮）。
 -->
 <script lang="ts">
   import { tick, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey } from '@chenzy-design/core';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey, type ScrollListValue } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import ScrollList from '../scroll-list/ScrollList.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -438,6 +440,97 @@
     }
   }
 
+  // --- insetInput 面板内嵌输入 (对齐 Semi InsetDateInput / InsetTimeInput) ---
+  // 面板顶部渲染可编辑输入框：date 一个日期框；dateTime 日期框 + 时间框。
+  // 与面板选择双向同步：点日历/选时间 → currentSingle 变 → 派生文本刷新；键入 → 解析 → 写回。
+  // 解析/序列化复用 core 纯函数 formatDate/parseDateString（红线 #2），不重写解析。
+  // insetInput 仅在 date / dateTime 面板生效（month/year 无内嵌输入，对齐 Semi）。
+  const insetEnabled = $derived(insetInput && !multiple && (type === 'date' || type === 'dateTime'));
+  // 内嵌输入用的日期/时间格式串：优先复用用户 format（拆出日期段与时间段），否则用默认。
+  const insetDateFormat = $derived(deriveInsetDateFormat());
+  const insetTimeFormat = $derived(deriveInsetTimeFormat());
+
+  // 从 format 提取「日期部分」token（YYYY/MM/DD 及其分隔符），无 format 时回退 YYYY-MM-DD。
+  function deriveInsetDateFormat(): string {
+    if (format) {
+      const m = format.match(/^[^Hms]*(?=(?:\s+)?(?:HH|mm|ss)|$)/);
+      const datePart = (m?.[0] ?? '').trim();
+      if (datePart) return datePart;
+    }
+    return 'YYYY-MM-DD';
+  }
+  // 从 format 提取「时间部分」token（HH/mm/ss），无 format 时按 showSecond 回退。
+  function deriveInsetTimeFormat(): string {
+    if (format) {
+      const idx = format.search(/HH|mm|ss/);
+      if (idx >= 0) return format.slice(idx).trim();
+    }
+    return showSecond ? 'HH:mm:ss' : 'HH:mm';
+  }
+
+  // 内嵌输入草稿文本：从当前值派生（非编辑态跟随面板选择刷新）。
+  let insetDateText = $state('');
+  let insetTimeText = $state('');
+  $effect(() => {
+    if (!insetEnabled) return;
+    insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
+    insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+  });
+
+  // 提交内嵌日期输入：解析日期段，保留已选时间（combine），写回。
+  function commitInsetDate() {
+    if (!insetEnabled) return;
+    const raw = insetDateText.trim();
+    if (raw === '') return;
+    const parsed = parseDateString(raw, insetDateFormat);
+    if (parsed && !(disabledDate?.(parsed) ?? false)) {
+      const next = combine(parsed);
+      if (needConfirm) pendingValue = next;
+      else setValue(next);
+    } else {
+      insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
+      onParseError?.({ text: raw });
+    }
+  }
+
+  // 提交内嵌时间输入：解析时/分/秒，合并到当前日期（无则今天），写回。
+  function commitInsetTime() {
+    if (!insetEnabled || !isDateTime) return;
+    const raw = insetTimeText.trim();
+    if (raw === '') return;
+    const parsedTime = parseDateString(raw, insetTimeFormat);
+    if (parsedTime) {
+      const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
+      base.setHours(parsedTime.getHours(), parsedTime.getMinutes(), parsedTime.getSeconds(), 0);
+      if (needConfirm) pendingValue = base;
+      else setValue(base);
+    } else {
+      insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+      onParseError?.({ text: raw });
+    }
+  }
+
+  function onInsetDateKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInsetDate();
+    } else if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }
+  function onInsetTimeKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInsetTime();
+    } else if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      setOpen(false);
+    }
+  }
+
   // --- 十年范围 (year 面板)：以 cursor 年所在的十年起点对齐 ---
   const decadeStart = $derived(Math.floor(cursor.getFullYear() / 10) * 10);
   const headerText = $derived(
@@ -554,6 +647,82 @@
         ? loc().t('DatePicker.nextYear')
         : loc().t('DatePicker.nextMonth'),
   );
+
+  // --- 年月滚轮快速跳转 (PANEL_YAM，对齐 Semi)：点头部年/月标题展开年+月滚轮列 ---
+  // yearAndMonthOpts 归一化：仅取 yearCyclic/monthCyclic（其余键透传语义暂不消费）。
+  const yamYearCyclic = $derived(
+    typeof (yearAndMonthOpts as { yearCyclic?: boolean } | undefined)?.yearCyclic === 'boolean'
+      ? (yearAndMonthOpts as { yearCyclic: boolean }).yearCyclic
+      : false,
+  );
+  const yamMonthCyclic = $derived(
+    typeof (yearAndMonthOpts as { monthCyclic?: boolean } | undefined)?.monthCyclic === 'boolean'
+      ? (yearAndMonthOpts as { monthCyclic: boolean }).monthCyclic
+      : false,
+  );
+
+  // 滚轮展开态（本地 $state）；面板关闭时复位（红线 #2 在 isOpen effect 内一并处理）。
+  let yamOpen = $state(false);
+
+  // 年份滚轮范围：对齐 Semi getYears（默认 今年±100，可用 startYear/endYear 收窄）。
+  const yamYears = $derived.by(() => {
+    const cur = new Date().getFullYear();
+    let start = typeof startYear === 'number' ? startYear : cur - 100;
+    let end = typeof endYear === 'number' ? endYear : cur + 100;
+    if (end < start) [start, end] = [end, start];
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  });
+
+  // 月份全名（Intl 本地化，朗读/显示用）。
+  const monthLongFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'long' }));
+
+  // 年列 ScrollListItem：value=年份数字，label 本地化（中文加「年」）。
+  const isCJK = $derived(locale.startsWith('zh') || locale.startsWith('ja') || locale.startsWith('ko'));
+  const yamYearItems = $derived(
+    yamYears.map((y) => ({
+      value: y,
+      label: isCJK ? `${y}年` : `${y}`,
+      // 该年 12 个月全被禁用 → 整年禁用（对齐 Semi isAllMonthDisabled）。
+      disabled: Array.from({ length: 12 }, (_, m) => new Date(y, m, 1)).every(
+        (d) => disabledDate?.(d) ?? false,
+      ),
+    })),
+  );
+  // 月列 ScrollListItem：value=0..11 月序，label 本地化月名。
+  const yamMonthItems = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const d = new Date(cursor.getFullYear(), m, 1);
+      return {
+        value: m,
+        label: monthLongFormat.format(d),
+        disabled: disabledDate?.(d) ?? false,
+      };
+    }),
+  );
+  // 滚轮当前值：[cursor 年, cursor 月]（受控给 ScrollList）。
+  const yamValue = $derived<ScrollListValue[]>([cursor.getFullYear(), cursor.getMonth()]);
+  const yamColumns = $derived([
+    { data: yamYearItems, cyclic: yamYearCyclic, ariaLabel: loc().t('DatePicker.yearColumnLabel') },
+    { data: yamMonthItems, cyclic: yamMonthCyclic, ariaLabel: loc().t('DatePicker.monthColumnLabel') },
+  ]);
+
+  // 滚轮选中 → 只跳转面板游标（不写 value，对齐 Semi「选完回主面板继续选日」）。
+  function onYamChange(info: { value: ScrollListValue | ScrollListValue[] }): void {
+    const vals = Array.isArray(info.value) ? info.value : [info.value];
+    const year = typeof vals[0] === 'number' ? vals[0] : cursor.getFullYear();
+    const month = typeof vals[1] === 'number' ? vals[1] : cursor.getMonth();
+    setCursor(new Date(year, month, 1));
+  }
+
+  // 点头部标题：year 面板仍用十年格切换（不进滚轮），其余面板进年月滚轮。
+  const yamEnabled = $derived(!isYear);
+  function toggleYam(): void {
+    if (!yamEnabled) return;
+    yamOpen = !yamOpen;
+  }
+  function backToMain(): void {
+    yamOpen = false;
+  }
 
   // --- 时间部分 (dateTime)：复用 TimePicker 的列逻辑 ---
   const selectedHour = $derived(currentSingle ? currentSingle.getHours() : 0);
@@ -758,6 +927,8 @@
       highlight = startOfDay(currentSingle ?? today);
     } else {
       highlight = null;
+      // 关闭面板复位年月滚轮展开态（红线 #2）。
+      yamOpen = false;
     }
   });
 
@@ -1062,6 +1233,32 @@
         {/if}
 
         <div class="cd-date-picker__main">
+          {#if insetEnabled}
+            <div class="cd-date-picker__inset-input" class:cd-date-picker__inset-input--datetime={isDateTime}>
+              <input
+                type="text"
+                class="cd-date-picker__inset-field cd-date-picker__inset-field--date"
+                aria-label={loc().t('DatePicker.triggerLabel')}
+                placeholder={insetDateFormat}
+                {disabled}
+                bind:value={insetDateText}
+                onkeydown={onInsetDateKeydown}
+                onblur={commitInsetDate}
+              />
+              {#if isDateTime}
+                <input
+                  type="text"
+                  class="cd-date-picker__inset-field cd-date-picker__inset-field--time"
+                  aria-label={loc().t('TimePicker.hour')}
+                  placeholder={insetTimeFormat}
+                  {disabled}
+                  bind:value={insetTimeText}
+                  onkeydown={onInsetTimeKeydown}
+                  onblur={commitInsetTime}
+                />
+              {/if}
+            </div>
+          {/if}
           <div class="cd-date-picker__body">
             <div class="cd-date-picker__calendar">
               <div class="cd-date-picker__header">
@@ -1075,7 +1272,19 @@
                     <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
                   </svg>
                 </button>
-                <span class="cd-date-picker__title">{headerText}</span>
+                {#if yamEnabled}
+                  <button
+                    type="button"
+                    class="cd-date-picker__title cd-date-picker__title--button"
+                    aria-label={loc().t('DatePicker.switchYearMonth')}
+                    aria-expanded={yamOpen}
+                    onclick={toggleYam}
+                  >
+                    {headerText}
+                  </button>
+                {:else}
+                  <span class="cd-date-picker__title">{headerText}</span>
+                {/if}
                 <button
                   type="button"
                   class="cd-date-picker__nav"
@@ -1088,7 +1297,21 @@
                 </button>
               </div>
 
-              {#if isMonth}
+              {#if yamOpen && yamEnabled}
+                <!-- 年月滚轮快速跳转面板 (PANEL_YAM)：复用 ScrollList 多列（年 + 月），
+                     选中即跳转 cursor（不写 value）；yearCyclic/monthCyclic 控制循环滚动。 -->
+                <div class="cd-date-picker__yam" role="group" aria-label={loc().t('DatePicker.switchYearMonth')}>
+                  <ScrollList
+                    columns={yamColumns}
+                    value={yamValue}
+                    rows={5}
+                    onChange={onYamChange}
+                  />
+                  <button type="button" class="cd-date-picker__yam-back" onclick={backToMain}>
+                    {loc().t('DatePicker.backToDate')}
+                  </button>
+                </div>
+              {:else if isMonth}
                 <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid">
                   {#each monthCells as cell (cell.month)}
                     {@const isSelected =
@@ -1788,11 +2011,125 @@
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
+  /* insetInput 面板内嵌输入框（对齐 Semi InsetDateInput / InsetTimeInput） */
+  .cd-date-picker__inset-input {
+    display: flex;
+    gap: var(--cd-spacing-date-picker-inset-input-separator-padding-x);
+    box-sizing: border-box;
+    inline-size: var(--cd-width-date-picker-inset-input-date-type-wrapper);
+    max-inline-size: 100%;
+    margin-block-end: var(--cd-spacing-date-picker-inset-input-wrapper-margin);
+    padding-block: var(--cd-spacing-date-picker-inset-input-wrapper-padding-y)
+      var(--cd-spacing-date-picker-inset-input-wrapper-padding-bottom);
+    padding-inline: var(--cd-spacing-date-picker-inset-input-wrapper-padding-x);
+  }
+  .cd-date-picker__inset-field {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: var(--cd-height-date-picker-range-input-default);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-color-date-picker-range-input-bg-default);
+    color: var(--cd-input-color-text);
+    border: var(--cd-width-date-picker-range-input-border) solid var(--cd-color-date-picker-range-input-border-default);
+    border-radius: var(--cd-radius-date-picker-range-input-input-wrapper);
+    font: inherit;
+    transition: var(--cd-transition-date-picker-range-input);
+  }
+  .cd-date-picker__inset-field:hover {
+    background: var(--cd-color-date-picker-range-input-bg-hover);
+  }
+  .cd-date-picker__inset-field:focus-visible {
+    outline: none;
+    border-color: var(--cd-color-date-picker-range-input-border-active);
+    background: var(--cd-color-date-picker-range-input-input-wrapper-bg-focus);
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-date-picker__inset-field::placeholder {
+    color: var(--cd-input-color-placeholder);
+  }
+  .cd-date-picker__inset-field:disabled {
+    color: var(--cd-color-date-picker-range-input-disabled-text-default);
+    background: var(--cd-color-date-picker-range-input-disabled-bg-default);
+    cursor: not-allowed;
+  }
+  .cd-date-picker__inset-field--time {
+    flex: 0 0 auto;
+    inline-size: 40%;
+  }
+  .cd-date-picker--compact .cd-date-picker__inset-input {
+    inline-size: var(--cd-width-date-picker-inset-input-date-type-wrapper-compact);
+    margin-block-end: var(--cd-spacing-date-picker-inset-input-wrapper-compact-margin);
+    padding-block: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-y)
+      var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-bottom);
+    padding-inline: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-x);
+  }
+  .cd-date-picker--compact .cd-date-picker__inset-field {
+    block-size: var(--cd-height-date-picker-inset-input-wrapper-compact);
+    font-size: var(--cd-font-size-date-picker-inset-input-compact-font-size);
+  }
+  /* 头部标题可点（进年月滚轮）时的按钮样式 */
+  .cd-date-picker__title--button {
+    padding-inline: var(--cd-spacing-date-picker-yam-header-padding-x);
+    padding-block: var(--cd-spacing-date-picker-yam-header-padding-y);
+    border: none;
+    background: transparent;
+    color: var(--cd-color-date-picker-nav-month-icon-text-default);
+    border-radius: var(--cd-width-date-picker-yam-header-border-radius);
+    font: inherit;
+    font-weight: var(--cd-font-weight-medium);
+    cursor: pointer;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-date-picker__title--button:hover {
+    background: var(--cd-date-picker-cell-bg-hover);
+  }
+  .cd-date-picker__title--button:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  /* 年月滚轮面板 (PANEL_YAM)：年 + 月两列 ScrollList，消费 yam token */
+  .cd-date-picker__yam {
+    display: flex;
+    flex-direction: column;
+    inline-size: var(--cd-width-date-picker-yam-showing-min);
+    max-inline-size: 100%;
+    min-block-size: var(--cd-height-date-picker-yam-showing-min);
+    padding: var(--cd-spacing-date-picker-scrolllist-body-padding);
+  }
+  .cd-date-picker__yam :global(.cd-scroll-list) {
+    block-size: var(--cd-height-date-picker-panel-yam-scrolllist);
+    border: none;
+  }
+  .cd-date-picker__yam :global(.cd-scroll-list__item) {
+    min-inline-size: var(--cd-width-date-picker-panel-yam-scrolllist-li-min);
+  }
+  .cd-date-picker__yam-back {
+    margin-block-start: auto;
+    padding: var(--cd-spacing-date-picker-scrolllist-header-padding);
+    min-block-size: var(--cd-height-date-picker-timepicker-header-min);
+    border: none;
+    border-block-start: var(--cd-width-date-picker-border) solid var(--cd-color-date-picker-border-bg-default);
+    background: transparent;
+    color: var(--cd-color-date-picker-quick-button-text-default);
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-date-picker__yam-back:hover {
+    text-decoration: underline;
+  }
+  .cd-date-picker__yam-back:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-border-radius-small);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cd-date-picker__trigger,
     .cd-date-picker__clear,
     .cd-date-picker__cell,
-    .cd-date-picker__preset {
+    .cd-date-picker__preset,
+    .cd-date-picker__inset-field,
+    .cd-date-picker__title--button {
       transition: none;
     }
   }

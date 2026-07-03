@@ -595,7 +595,7 @@
           {#if children}
             {@render children()}
           {:else}
-            {#if dragIcon}{@render dragIcon()}{/if}
+            {#if dragIcon}<span class="cd-upload__dragger-icon">{@render dragIcon()}</span>{/if}
             {#if dragMainText}
               <span class="cd-upload__dragger-main">
                 {#if typeof dragMainText === 'string'}{dragMainText}{:else}{@render dragMainText()}{/if}
@@ -663,7 +663,7 @@
                 class="cd-upload__retry-btn"
                 {disabled}
                 onclick={() => retryItem(item)}
-              >重试</button>
+              >{loc().t('Upload.retry')}</button>
             {/if}
             <button
               type="button"
@@ -724,6 +724,10 @@
               />
             </div>
           {/if}
+          {#if item.status === 'error'}
+            <!-- 失败状态角标（对齐 Semi picture-file-card-icon-error）。 -->
+            <span class="cd-upload__card-error-icon" aria-hidden="true">!</span>
+          {/if}
           <div class="cd-upload__card-overlay">
             <span class="cd-upload__card-name">{item.name}</span>
             <button
@@ -736,6 +740,18 @@
               &times;
             </button>
           </div>
+          {#if item.status === 'error' && showRetry !== false && item.file}
+            <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）。 -->
+            <button
+              type="button"
+              class="cd-upload__card-retry"
+              aria-label={loc().t('Upload.retry')}
+              {disabled}
+              onclick={() => retryItem(item)}
+            >
+              &#8635;
+            </button>
+          {/if}
         </li>
       {/each}
     </ul>
@@ -794,6 +810,13 @@
     font-size: var(--cd-button-font-size);
     cursor: pointer;
   }
+  /* 添加按钮 hover/active 背景（对齐 Semi picture-add:hover / :active）。 */
+  .cd-upload__trigger:hover:not(:disabled) {
+    background: var(--cd-color-upload-pic-add-bg-hover);
+  }
+  .cd-upload__trigger:active:not(:disabled) {
+    background: var(--cd-color-upload-pic-add-bg-active);
+  }
   .cd-upload__trigger:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
@@ -816,11 +839,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-block: var(--cd-spacing-loose);
-    padding-inline: var(--cd-spacing-base);
-    background: var(--cd-upload-dragger-bg);
-    border: var(--cd-width-upload-drag-area-border) dashed var(--cd-upload-dragger-border);
-    border-radius: var(--cd-upload-dragger-radius);
+    padding: var(--cd-spacing-upload-drag-area-padding);
+    background: var(--cd-color-upload-drag-area-bg);
+    border: var(--cd-width-upload-drag-area-border) dashed var(--cd-color-upload-border);
+    border-radius: var(--cd-radius-upload-drag-area);
     color: var(--cd-color-upload-assist-text);
     cursor: pointer;
     transition:
@@ -829,16 +851,35 @@
   }
   .cd-upload__dragger:hover,
   .cd-upload__dragger:focus-visible {
-    border-color: var(--cd-upload-dragger-border-active);
-    background: var(--cd-upload-dragger-bg-active); /* 对齐 Semi 拖拽区 hover 背景 */
+    /* 对齐 Semi drag-area hover：背景 + 描边同时变化 */
+    border-color: var(--cd-color-upload-drag-area-border-hover);
+    background: var(--cd-color-upload-drag-area-bg-hover);
   }
   .cd-upload__dragger:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* 拖拽区图标色（对齐 Semi drag-area-icon）。 */
+  .cd-upload__dragger-icon {
+    display: inline-flex;
+    color: var(--cd-color-upload-drag-area-icon);
+  }
+  /* disabled：拖拽区文字/图标统一置灰（对齐 Semi drag-area disabled-text），
+     不加 opacity（Semi 用专用 disabled-text token 而非透明度）。 */
   .cd-upload--disabled .cd-upload__dragger {
     cursor: not-allowed;
-    opacity: 0.5;
+    color: var(--cd-color-upload-drag-area-disabled-text);
+  }
+  .cd-upload--disabled .cd-upload__dragger:hover,
+  .cd-upload--disabled .cd-upload__dragger:focus-visible {
+    /* disabled 时 hover 不变背景/描边（对齐 Semi disabled drag-area:hover 保持默认背景）。 */
+    background: var(--cd-color-upload-drag-area-bg);
+    border-color: var(--cd-color-upload-border);
+  }
+  .cd-upload--disabled .cd-upload__dragger-main,
+  .cd-upload--disabled .cd-upload__dragger-sub,
+  .cd-upload--disabled .cd-upload__dragger-icon {
+    color: var(--cd-color-upload-drag-area-disabled-text);
   }
   /* 组件级 size：拖拽区内边距/字号档。 */
   .cd-upload--small .cd-upload__dragger {
@@ -889,7 +930,10 @@
     gap: var(--cd-spacing-extra-tight);
     padding-block: var(--cd-spacing-extra-tight);
     padding-inline: var(--cd-spacing-tight);
-    border-radius: var(--cd-border-radius-small);
+    /* 默认卡片背景（对齐 Semi file-card bg，与 hover/fail 态成组）。 */
+    background: var(--cd-color-upload-card-bg);
+    border-radius: var(--cd-radius-upload-file-card);
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-upload__item-main {
     display: flex;
@@ -897,10 +941,15 @@
     gap: var(--cd-spacing-tight);
   }
   .cd-upload__item:hover {
-    background: var(--cd-upload-item-bg-hover);
+    background: var(--cd-color-upload-card-bg-hover);
   }
   .cd-upload__item--error {
     color: var(--cd-upload-item-color-error);
+    /* 失败态卡片红底（对齐 Semi file-card-fail bg）。 */
+    background: var(--cd-color-upload-card-fail-bg);
+  }
+  .cd-upload__item--error:hover {
+    background: var(--cd-color-upload-card-fail-bg-hover);
   }
   .cd-upload__item-name {
     flex: 1 1 auto;
@@ -908,6 +957,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    /* 文件名字重（对齐 Semi file-card-info-name）。 */
+    font-weight: var(--cd-font-upload-file-card-info-name-fontweight);
   }
   .cd-upload__item-size,
   .cd-upload__item-status {
@@ -915,8 +966,14 @@
     color: var(--cd-color-upload-assist-text);
     font-size: var(--cd-font-size-small);
   }
+  .cd-upload__item-size {
+    /* 文件尺寸字重（对齐 Semi file-card-info-size）。 */
+    font-weight: var(--cd-font-upload-file-card-info-size-fontweight);
+    margin-inline-start: var(--cd-spacing-upload-file-card-info-size-marginleft);
+  }
   .cd-upload__item--error .cd-upload__item-status {
-    color: var(--cd-upload-item-color-error);
+    /* 失败提示文本色（对齐 Semi file-card-fail info-validate-message）。 */
+    color: var(--cd-color-upload-file-card-fail-info-text);
   }
   .cd-upload__item-remove {
     flex: 0 0 auto;
@@ -948,6 +1005,8 @@
     display: inline-flex;
     align-items: center;
     padding: 0 var(--cd-spacing-extra-tight);
+    /* 重试按钮左边距（对齐 Semi file-card-info-retry marginLeft）。 */
+    margin-inline-start: var(--cd-spacing-upload-file-card-info-retry-marginleft);
     border: none;
     background: transparent;
     color: var(--cd-color-upload-retry-text);
@@ -989,10 +1048,24 @@
     color: var(--cd-color-upload-drag-area-main-text-default);
     margin-block-end: var(--cd-spacing-upload-drag-area-main-text-marginbottom);
   }
+  /* 主/副文本 hover/active 态（对齐 Semi drag-area-main-text / -sub-text）。
+     文字挂在拖拽区内，故用拖拽区 :hover/:active 驱动其子文本换色。 */
+  .cd-upload__dragger:hover .cd-upload__dragger-main {
+    color: var(--cd-color-upload-drag-area-main-text-hover);
+  }
+  .cd-upload__dragger:active .cd-upload__dragger-main {
+    color: var(--cd-color-upload-drag-area-main-text-active);
+  }
   .cd-upload__dragger-sub {
     display: block;
     font-size: var(--cd-font-size-small);
     color: var(--cd-color-upload-drag-area-sub-text-default);
+  }
+  .cd-upload__dragger:hover .cd-upload__dragger-sub {
+    color: var(--cd-color-upload-drag-area-sub-text-hover);
+  }
+  .cd-upload__dragger:active .cd-upload__dragger-sub {
+    color: var(--cd-color-upload-drag-area-sub-text-active);
   }
 
   /* --- image / picture-card 缩略图网格 --- */
@@ -1043,6 +1116,22 @@
     inset-inline: var(--cd-spacing-extra-tight);
     inset-block-end: var(--cd-spacing-extra-tight);
   }
+  /* hover 遮罩（对齐 Semi picture-file-card::before hover-bg）：覆盖整卡的半透明层，
+     hover/focus 时可见，承托关闭/重试等操作。 */
+  .cd-upload__card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cd-color-upload-picture-file-card-hover-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-upload__card:hover::before,
+  .cd-upload__card:focus-within::before,
+  .cd-upload__card--uploading::before {
+    opacity: 1;
+  }
   .cd-upload__card-overlay {
     position: absolute;
     inset-block-start: 0;
@@ -1051,7 +1140,6 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     padding: var(--cd-spacing-extra-tight);
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
     opacity: 0;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
@@ -1066,7 +1154,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--cd-color-upload-picture-file-card-pic-info-text);
-    font-size: var(--cd-font-size-small);
+    /* 图片信息文字字号/字重（对齐 Semi picture-file-card-pic-info）。 */
+    font-size: var(--cd-font-upload-picture-file-card-pic-info-fontsize);
+    font-weight: var(--cd-font-upload-picture-file-card-pic-info-fontweight);
   }
   .cd-upload__card-remove {
     flex: 0 0 auto;
@@ -1074,12 +1164,14 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    inline-size: 1.25rem;
-    block-size: 1.25rem;
+    inline-size: var(--cd-width-upload-picture-file-card-close);
+    block-size: var(--cd-width-upload-picture-file-card-close);
     border: none;
-    background: transparent;
+    /* 移除图标背景（对齐 Semi pic-remove-bg overlay 底）。 */
+    background: var(--cd-color-upload-pic-remove-bg);
     color: var(--cd-color-upload-picture-file-card-close-icon);
     cursor: pointer;
+    border-radius: var(--cd-radius-upload-picture-file-card-close);
     font-size: var(--cd-font-size-header-6);
     line-height: 1;
   }
@@ -1087,10 +1179,65 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  .cd-upload__card-remove:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  /* 失败角标（对齐 Semi picture-file-card-icon-error）：定位到卡片右下。 */
+  .cd-upload__card-error-icon {
+    position: absolute;
+    inset-block-end: var(--cd-spacing-upload-picture-file-card-loading-error-bottom);
+    inset-inline-end: var(--cd-spacing-upload-picture-file-card-loading-error-right);
+    inline-size: var(--cd-width-upload-picture-file-card-loading-icon);
+    block-size: var(--cd-width-upload-picture-file-card-loading-icon);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-color-upload-picture-file-card-loading-error-icon);
+    font-weight: var(--cd-font-weight-bold);
+    line-height: 1;
+    z-index: 2;
+  }
+  /* 图片卡失败重试按钮（对齐 Semi picture-file-card-retry）：hover/focus 时居中显现。 */
+  .cd-upload__card-retry {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%);
+    inline-size: var(--cd-width-upload-file-card-retry);
+    block-size: var(--cd-width-upload-file-card-retry);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: var(--cd-color-upload-file-card-retry-bg);
+    color: var(--cd-color-upload-file-card-retry-text);
+    border-radius: var(--cd-radius-upload-file-card-retry);
+    font-size: var(--cd-width-upload-file-card-retry-icon);
+    line-height: var(--cd-height-upload-file-card-retry-icon);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    z-index: 3;
+  }
+  .cd-upload__card:hover .cd-upload__card-retry,
+  .cd-upload__card:focus-within .cd-upload__card-retry {
+    opacity: 1;
+  }
+  .cd-upload__card-retry:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-upload__card-retry:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .cd-upload__card-overlay {
-      transition: none;
-    }
+    .cd-upload__card-overlay,
+    .cd-upload__card::before,
+    .cd-upload__card-retry,
+    .cd-upload__item,
     .cd-upload__dragger {
       transition: none;
     }

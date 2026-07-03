@@ -29,5 +29,6 @@ export const demos: DemoEntry[] = [
   entry('03-picture-card.svelte', '图片卡片列表', 'listType="picture-card" 缩略图网格，受控管理图片列表。'),
   entry('04-limit-accept.svelte', '限制数量与类型', '用 limit 限制数量、accept 限制类型，超限/不符触发回调提示。'),
   entry('05-manual.svelte', '手动上传', '不传 action，仅收集文件，点击按钮统一手动触发上传。'),
+  entry('06-fail-retry.svelte', '失败态与重试', '文本列表红底失败卡片、图片卡片失败角标/描边，hover 显示重试按钮（对齐 Semi 状态态）。'),
   entry('BasicDemo.svelte', '完整示例', '尺寸变体、校验态、并发控制、beforeUpload 拦截、目录上传等高级用法。'),
 ];

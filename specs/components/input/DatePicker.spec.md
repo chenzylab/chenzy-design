@@ -176,7 +176,7 @@ i18n keys：
 
 | 指标 | 预算 | 说明 |
 |---|---|---|
-| svelte 组件 gzip | ≤ 12.1 KB | 含触发器+面板+时间列 |
+| svelte 组件 gzip（DatePicker+RangePicker 含 core，size-limit 口径） | ≤ 18 KB | 含触发器+面板+时间列+年月滚轮(PANEL_YAM)+dateTimeRange/monthRange+insetInput（实测 17.43 KB）|
 | core `createDatePicker` gzip | ≤ 5 KB | 含 roving/dismiss/focus-trap 复用引用 |
 | 内置日期工具 gzip | ≤ 2 KB | 或外接 dayjs 适配器（不计入默认包） |
 | 首次打开面板 | ≤ 16 ms | 单面板 6 周网格 ≈ 42 格 |

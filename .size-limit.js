@@ -76,7 +76,7 @@ const components = [
   ['cascader', '{ Cascader }', '10.6 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '3.5 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
-  ['date-picker', '{ DatePicker, RangePicker }', '14.9 KB'],
+  ['date-picker', '{ DatePicker, RangePicker }', '18 KB'],
   ['form', '{ FormField, FormInput, FieldArray }', '6.15 KB'],
   ['input', '{ Input }', '4.3 KB'],
   ['input-number', '{ InputNumber }', '4.25 KB'],

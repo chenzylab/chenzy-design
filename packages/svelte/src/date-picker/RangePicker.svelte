@@ -11,7 +11,12 @@
   起止各自携带时分秒；needConfirm（dateTimeRange 默认 true）时选择进入 pending 缓冲，点「确定」才提交。
   时间列作用于「当前激活端」activeEnd（选起始日或点左侧时间列 = start；选结束日或点右侧时间列 = end）。
   showSecond/disabledTime/disabledTimePicker/hideDisabledOptions 与 DatePicker dateTime 语义一致。
+
+  type='monthRange'（对齐 Semi，>=2.32）：双「月份」面板（各 12 个月格，头部显示年份 + 左右切年，左右面板年份相邻）
+  选起止「月」。粒度从「日」变「月」：value=[起始月, 结束月]（Date 落在该月 1 号起始），区间高亮/hover 预览按月比较。
+  复用 dateRange 的双面板范围状态机（phase='start'/'end'、pendingStart/previewEnd、自动排序）；不支持时间列。
 -->
+
 <script lang="ts">
   import { untrack, tick } from 'svelte';
   import {
@@ -32,7 +37,7 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
-  type RangeType = 'dateRange' | 'dateTimeRange';
+  type RangeType = 'dateRange' | 'dateTimeRange' | 'monthRange';
   type RangeValue = [Date | null, Date | null];
 
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值。与 DatePicker 一致。
@@ -43,7 +48,7 @@
   }
 
   interface Props {
-    /** dateRange 纯日期范围 / dateTimeRange 带时间范围（每端时/分/秒列 + 确认）。 */
+    /** dateRange 纯日期范围 / dateTimeRange 带时间范围（每端时/分/秒列 + 确认）/ monthRange 月份范围（双月份面板选起止月）。 */
     type?: RangeType;
     value?: RangeValue | null;
     defaultValue?: RangeValue | null;
@@ -120,8 +125,14 @@
   }: Props = $props();
 
   const isDateTime = $derived(type === 'dateTimeRange');
-  // needConfirm：显式传优先；否则 dateTimeRange 默认 true、dateRange 默认 false。
+  const isMonth = $derived(type === 'monthRange');
+  // needConfirm：显式传优先；否则 dateTimeRange 默认 true、其它默认 false。
   const effNeedConfirm = $derived(needConfirm ?? isDateTime);
+
+  // monthRange：把任意日期归一到该月 1 号起始。
+  function startOfMonth(d: Date): Date {
+    return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+  }
 
   const loc = useLocale();
   const dialogId = useId('cd-range-picker-panel');
@@ -129,23 +140,25 @@
   const leftGridId = useId('cd-range-picker-grid-l');
   const rightGridId = useId('cd-range-picker-grid-r');
 
-  // dateRange 归一到当天起始；dateTimeRange 保留时分秒。
-  function normOne(d: Date | null | undefined, keepTime: boolean): Date | null {
+  // dateRange 归一到当天起始；dateTimeRange 保留时分秒；monthRange 归一到该月 1 号起始。
+  function normOne(d: Date | null | undefined, t: RangeType): Date | null {
     if (!d) return null;
-    return keepTime ? new Date(d) : startOfDay(d);
+    if (t === 'dateTimeRange') return new Date(d);
+    if (t === 'monthRange') return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+    return startOfDay(d);
   }
-  function normPair(v: RangeValue | null | undefined, keepTime: boolean): RangeValue {
+  function normPair(v: RangeValue | null | undefined, t: RangeType): RangeValue {
     if (!v) return [null, null];
-    return [normOne(v[0], keepTime), normOne(v[1], keepTime)];
+    return [normOne(v[0], t), normOne(v[1], t)];
   }
 
   // --- 受控 value (红线 #1) ---
   const isValueControlled = $derived(value !== undefined);
   let innerValue = $state<RangeValue>(
-    untrack(() => normPair(defaultValue, type === 'dateTimeRange')),
+    untrack(() => normPair(defaultValue, type)),
   );
   const current = $derived<RangeValue>(
-    isValueControlled ? normPair(value, isDateTime) : innerValue,
+    isValueControlled ? normPair(value, type) : innerValue,
   );
   const startVal = $derived(current[0]);
   const endVal = $derived(current[1]);
@@ -189,7 +202,7 @@
 
   // --- 面板游标月份 ---
   let cursor = $state(
-    untrack(() => startOfDay(normPair(defaultValue, false)[0] ?? new Date())),
+    untrack(() => startOfDay(normPair(defaultValue, type)[0] ?? new Date())),
   );
   // 键盘高亮日 (网格 roving 焦点；aria-activedescendant 指向它)
   let highlight = $state<Date | null>(null);
@@ -208,16 +221,24 @@
   });
 
   // --- Intl 格式化 ---
-  const dateOpts = $derived<Intl.DateTimeFormatOptions>({
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    ...(isDateTime
-      ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
-      : {}),
-  });
+  // monthRange：触发器仅显示年+月；日/时列不需要。
+  const dateOpts = $derived<Intl.DateTimeFormatOptions>(
+    isMonth
+      ? { year: 'numeric', month: '2-digit' }
+      : {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          ...(isDateTime
+            ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+            : {}),
+        },
+  );
   const triggerFormat = $derived(new Intl.DateTimeFormat(locale, dateOpts));
   const headerFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }));
+  // monthRange 头部仅显示年份，月格用短名。
+  const yearFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric' }));
+  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
   const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
   const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 
@@ -227,10 +248,24 @@
   const endText = $derived(
     endVal ? triggerFormat.format(endVal) : (endPlaceholder ?? loc().t('DatePicker.endPlaceholder')),
   );
-  // --- 双面板：cursor = 左面板月份，右面板 = 左 + 1 ---
-  const rightCursor = $derived(addMonths(cursor, 1));
-  const leftHeaderText = $derived(headerFormat.format(cursor));
-  const rightHeaderText = $derived(headerFormat.format(rightCursor));
+  // --- 双面板：dateRange/dateTimeRange 时 cursor=左面板月份、右=左+1 月；
+  //     monthRange 时 cursor=左面板年份、右=左+1 年（各显示 12 个月格）。 ---
+  const rightCursor = $derived(addMonths(cursor, isMonth ? 12 : 1));
+  const leftHeaderText = $derived(isMonth ? yearFormat.format(cursor) : headerFormat.format(cursor));
+  const rightHeaderText = $derived(isMonth ? yearFormat.format(rightCursor) : headerFormat.format(rightCursor));
+  // monthRange：左右面板各 12 个月格（用 cursor/rightCursor 的年份 + 0..11 月）。
+  const leftMonthCells = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const date = new Date(cursor.getFullYear(), m, 1);
+      return { date, label: monthShortFormat.format(date), month: m };
+    }),
+  );
+  const rightMonthCells = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const date = new Date(rightCursor.getFullYear(), m, 1);
+      return { date, label: monthShortFormat.format(date), month: m };
+    }),
+  );
   const weekdayNames = $derived(
     weekdayOrder(weekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
   );
@@ -252,37 +287,50 @@
     cursor = next;
     onPanelChange?.({ panelDate: next });
   }
+  // dateRange 翻月（±1）；monthRange 翻年（±12 个月）。
   function prevMonth() {
-    setCursor(addMonths(cursor, -1));
+    setCursor(addMonths(cursor, isMonth ? -12 : -1));
   }
   function nextMonth() {
-    setCursor(addMonths(cursor, 1));
+    setCursor(addMonths(cursor, isMonth ? 12 : 1));
   }
 
   // 选区端点（选择中用 pendingStart + previewEnd，否则用面板生效值）
   const rangeStart = $derived(phase === 'end' ? pendingStart : panelStart);
   const rangeEnd = $derived(phase === 'end' ? previewEnd : panelEnd);
-  // 归一后的 [lo, hi]（用于区间内判定，按天比较）
+  // 比较基准：dateRange 按「天」；monthRange 按「月」（归一到月 1 号起始）。
+  function normUnit(d: Date): Date {
+    return isMonth ? startOfMonth(d) : startOfDay(d);
+  }
+  // 同一「单位」（同日 / 同月）判定。
+  function isSameUnit(a: Date | null | undefined, b: Date | null | undefined): boolean {
+    if (!a || !b) return false;
+    return isMonth
+      ? a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
+      : isSameDay(a, b);
+  }
+  // 归一后的 [lo, hi]（用于区间内判定，按当前单位比较）
   const span = $derived.by<[number, number] | null>(() => {
     const a = rangeStart;
     const b = rangeEnd;
     if (!a || !b) return null;
-    const ta = startOfDay(a).getTime();
-    const tb = startOfDay(b).getTime();
+    const ta = normUnit(a).getTime();
+    const tb = normUnit(b).getTime();
     return ta <= tb ? [ta, tb] : [tb, ta];
   });
 
   function inRange(date: Date): boolean {
     if (!span) return false;
-    const t = startOfDay(date).getTime();
+    const t = normUnit(date).getTime();
     return t > span[0] && t < span[1];
   }
   function isEdge(date: Date): boolean {
-    return isSameDay(date, rangeStart) || isSameDay(date, rangeEnd);
+    return isSameUnit(date, rangeStart) || isSameUnit(date, rangeEnd);
   }
 
   // maxRange：选定起始(phase==='end')后，离 pendingStart 超过 maxRange-1 天的日期禁用
   function exceedsMaxRange(date: Date): boolean {
+    if (isMonth) return false; // monthRange 暂不支持按天的 maxRange
     if (maxRange == null || maxRange <= 0) return false;
     if (phase !== 'end' || !pendingStart) return false;
     return Math.abs(daysBetween(pendingStart, date)) > maxRange - 1;
@@ -292,8 +340,9 @@
     return (disabledDate?.(date) ?? false) || exceedsMaxRange(date);
   }
 
-  // 把 day 与某端已有的时分秒合并（dateTime 保留时间，dateRange 归零到当天起始）。
+  // 把 day 与某端已有的时分秒合并（dateTime 保留时间，dateRange 归零到当天起始，monthRange 归到月 1 号）。
   function combineDay(day: Date, base: Date | null): Date {
+    if (isMonth) return startOfMonth(day);
     if (!isDateTime) return startOfDay(day);
     const next = startOfDay(day);
     if (base) next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), 0);
@@ -302,7 +351,7 @@
 
   function selectDate(date: Date) {
     if (isCellDisabled(date)) return;
-    const day = startOfDay(date);
+    const day = isMonth ? startOfMonth(date) : startOfDay(date);
     if (phase === 'start') {
       pendingStart = day;
       previewEnd = day;
@@ -337,7 +386,7 @@
   }
 
   function onCellHover(date: Date) {
-    if (phase === 'end' && !isCellDisabled(date)) previewEnd = startOfDay(date);
+    if (phase === 'end' && !isCellDisabled(date)) previewEnd = isMonth ? startOfMonth(date) : startOfDay(date);
   }
 
   function clear(e: MouseEvent) {
@@ -601,6 +650,80 @@
   {#if isOpen}
     <div bind:this={panelEl} class="cd-range-picker__panel" id={dialogId} role="dialog" aria-modal="false" aria-label={loc().t('DatePicker.rangeTriggerLabel')} tabindex="-1">
       <div class="cd-range-picker__panels">
+        {#if isMonth}
+          <!-- monthRange：左右各一「月份」面板（12 个月格），头部显示年份 + 左右切年 -->
+          <!-- 左面板（年份 = cursor） -->
+          <div class="cd-range-picker__month">
+            <div class="cd-range-picker__header">
+              <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.prevYear')} onclick={prevMonth}>
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
+                </svg>
+              </button>
+              <span class="cd-range-picker__title">{leftHeaderText}</span>
+              <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
+            </div>
+            <div class="cd-range-picker__grid cd-range-picker__grid--month" role="grid" aria-label={leftHeaderText}>
+              {#each leftMonthCells as cell (cell.month)}
+                {@const edge = isEdge(cell.date)}
+                {@const within = inRange(cell.date)}
+                {@const isCurrentMonth = today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+                {@const isDisabled = isCellDisabled(cell.date)}
+                <button
+                  type="button"
+                  class="cd-range-picker__cell cd-range-picker__cell--block"
+                  class:cd-range-picker__cell--edge={edge}
+                  class:cd-range-picker__cell--in-range={within}
+                  class:cd-range-picker__cell--today={isCurrentMonth}
+                  role="gridcell"
+                  aria-selected={edge}
+                  aria-disabled={isDisabled || undefined}
+                  disabled={isDisabled}
+                  onclick={() => selectDate(cell.date)}
+                  onpointerenter={() => onCellHover(cell.date)}
+                >
+                  {cell.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <!-- 右面板（年份 = cursor + 1 年） -->
+          <div class="cd-range-picker__month">
+            <div class="cd-range-picker__header">
+              <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
+              <span class="cd-range-picker__title">{rightHeaderText}</span>
+              <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.nextYear')} onclick={nextMonth}>
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
+                </svg>
+              </button>
+            </div>
+            <div class="cd-range-picker__grid cd-range-picker__grid--month" role="grid" aria-label={rightHeaderText}>
+              {#each rightMonthCells as cell (cell.month)}
+                {@const edge = isEdge(cell.date)}
+                {@const within = inRange(cell.date)}
+                {@const isCurrentMonth = today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+                {@const isDisabled = isCellDisabled(cell.date)}
+                <button
+                  type="button"
+                  class="cd-range-picker__cell cd-range-picker__cell--block"
+                  class:cd-range-picker__cell--edge={edge}
+                  class:cd-range-picker__cell--in-range={within}
+                  class:cd-range-picker__cell--today={isCurrentMonth}
+                  role="gridcell"
+                  aria-selected={edge}
+                  aria-disabled={isDisabled || undefined}
+                  disabled={isDisabled}
+                  onclick={() => selectDate(cell.date)}
+                  onpointerenter={() => onCellHover(cell.date)}
+                >
+                  {cell.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else}
         <!-- 左面板 -->
         <div class="cd-range-picker__month">
           <div class="cd-range-picker__header">
@@ -720,6 +843,7 @@
             {/each}
           </div>
         </div>
+        {/if}
 
         {#if isDateTime && !disabledTimePicker}
           <!-- 起止两组时/分/秒时间列（复用 DatePicker dateTime 列 token/结构） -->
@@ -1171,6 +1295,19 @@
     color: var(--cd-color-date-picker-date-disabled-text-default);
     cursor: not-allowed;
     background: transparent;
+  }
+
+  /* --- monthRange：3 列月份大格（对齐 DatePicker type=month 的 month 面板） --- */
+  .cd-range-picker__grid--month {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--cd-spacing-extra-tight);
+    inline-size: calc(var(--cd-date-picker-cell-size) * 7 + 2px * 6);
+  }
+  .cd-range-picker__cell--block {
+    inline-size: auto;
+    padding-inline: var(--cd-spacing-tight);
+    block-size: calc(var(--cd-date-picker-cell-size) * 1.4);
   }
 
   /* --- 时间列（dateTimeRange，复用 DatePicker dateTime 列 token） --- */

@@ -220,6 +220,10 @@ export const zh_CN: Locale = {
     startPlaceholder: '开始日期',
     endPlaceholder: '结束日期',
     rangeTriggerLabel: '选择日期范围',
+    switchYearMonth: '快速选择年月',
+    backToDate: '返回',
+    yearColumnLabel: '年份',
+    monthColumnLabel: '月份',
   },
   TimePicker: {
     placeholder: '请选择时间',
@@ -255,6 +259,7 @@ export const zh_CN: Locale = {
     minSizeError: '文件大小不能小于 {size}',
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
+    retry: '重试',
     announceUploading: '{name} 上传中 {percent}%',
     announceSuccess: '{name} 上传成功',
     announceError: '{name} 上传失败',

@@ -220,6 +220,10 @@ export const en_US: Locale = {
     startPlaceholder: 'Start date',
     endPlaceholder: 'End date',
     rangeTriggerLabel: 'Select date range',
+    switchYearMonth: 'Quick select year and month',
+    backToDate: 'Back',
+    yearColumnLabel: 'Year',
+    monthColumnLabel: 'Month',
   },
   TimePicker: {
     placeholder: 'Select time',
@@ -255,6 +259,7 @@ export const en_US: Locale = {
     minSizeError: 'File must be at least {size}',
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
+    retry: 'Retry',
     announceUploading: '{name} uploading {percent}%',
     announceSuccess: '{name} uploaded successfully',
     announceError: '{name} upload failed',
