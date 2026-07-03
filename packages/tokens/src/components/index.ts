@@ -54,6 +54,7 @@ import { lottieIconTokens } from './lottie-icon.js';
 import { stepsTokens } from './steps.js';
 import { anchorTokens } from './anchor.js';
 import { dropdownTokens } from './dropdown.js';
+import { paginationTokens } from './pagination.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -111,4 +112,5 @@ export const componentTokens = {
   ...stepsTokens,
   ...anchorTokens,
   ...dropdownTokens,
+  ...paginationTokens,
 } as const;
