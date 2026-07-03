@@ -106,7 +106,7 @@ const components = [
   ['lottie-icon', '{ LottieIcon }', '2.5 KB'],
   ['resize-observer', '{ ResizeObserver }', '1.2 KB'],
   // show
-  ['avatar', '{ AvatarGroup }', '3.65 KB'],
+  ['avatar', '{ AvatarGroup }', '4.95 KB'],
   ['badge', '{ Badge }', '2.5 KB'],
   ['calendar', '{ Calendar }', '9 KB'],
   ['card', '{ Card }', '3.0 KB'],

@@ -147,7 +147,7 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 | 维度 | 预算 / 策略 |
 |------|------------|
 | gzip 体积（Avatar 单体） | ≤ 2.0 KB（CSS+JS，不含 core） |
-| gzip 体积（含 AvatarGroup + core 原语） | ≤ 3.65 KB |
+| gzip 体积（含 AvatarGroup + core 原语） | ≤ 4.95 KB（含 16 档预设语义色板 + border 呼吸环，按实测 4.29 KB +15% 校准） |
 | 图片加载 | 默认 `loading="lazy"` + `decoding="async"`；失败状态机零额外重排 |
 | 文字缩放测量 | 仅 2+ 字符时一次性测量，使用 `transform: scale` 避免重排；缓存结果 |
 | AvatarGroup 大列表 | 仅渲染 `maxCount + 1`（折叠头像）个 DOM 节点，溢出成员不渲染，天然“虚拟化” |
