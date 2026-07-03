@@ -255,6 +255,7 @@ export const en_US: Locale = {
     minSizeError: 'File must be at least {size}',
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
+    retry: 'Retry',
     announceUploading: '{name} uploading {percent}%',
     announceSuccess: '{name} uploaded successfully',
     announceError: '{name} upload failed',

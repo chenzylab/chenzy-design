@@ -118,14 +118,8 @@ export const uploadTokens = {
   'font-upload-picture-file-card-pic-info-fontweight': { value: '600', category: 'font', label: '图片信息字重', usage: '图片墙图片信息文本字重' },
 
   // —— chenzy-design 补充别名（Semi 无同名；组件当前 DOM 直接消费的语义别名） ——
-  // 拖拽区：映射到 Semi 拖拽区 token，供 Upload.svelte .cd-upload__dragger 使用。
-  'upload-dragger-bg': { value: 'var(--cd-color-upload-drag-area-bg)', category: 'color', label: '拖拽区背景色', usage: '拖拽区默认背景（→ drag-area-bg）' },
-  'upload-dragger-bg-active': { value: 'var(--cd-color-upload-drag-area-bg-hover)', category: 'color', label: '拖拽区激活背景色', usage: '拖拽区 hover/focus 背景（→ drag-area-bg-hover）' },
-  'upload-dragger-border': { value: 'var(--cd-color-upload-border)', category: 'color', label: '拖拽区描边色', usage: '拖拽区默认描边（→ upload-border）' },
-  'upload-dragger-border-active': { value: 'var(--cd-color-upload-drag-area-border-hover)', category: 'color', label: '拖拽区激活描边色', usage: '拖拽区 hover/focus 描边（→ drag-area-border-hover）' },
-  'upload-dragger-radius': { value: 'var(--cd-radius-upload-drag-area)', category: 'radius', label: '拖拽区圆角', usage: '拖拽区圆角（→ radius-drag-area）' },
-  // 文件列表项：映射到 Semi 文件卡片 token。
-  'upload-item-bg-hover': { value: 'var(--cd-color-upload-card-bg-hover)', category: 'color', label: '列表项悬浮背景色', usage: '文件列表项 hover 背景（→ card-bg-hover）' },
+  // 注：拖拽区背景/描边/圆角、列表项 hover 背景等原转发别名已退役，
+  // 组件改为直接消费对应 Semi token（color-upload-drag-area-* / -card-bg-hover 等）。
   'upload-item-color-error': { value: 'var(--cd-color-upload-file-card-fail-info-text)', category: 'color', label: '列表项错误色', usage: '文件列表项错误态文本/描边（→ file-card-fail-info-text）' },
   // 组件级校验态边框（表单联动，Semi Upload 无独立 token，落语义别名）。
   'upload-border-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警告态边框色', usage: '组件级 status=warning 时上传区/卡片边框色' },

@@ -320,6 +320,8 @@ export interface Locale {
     /** uses {limit} */
     limitError: string;
     remove: string;
+    /** 重试按钮/失败重传 */
+    retry: string;
     /** live 播报：上传中，uses {name} {percent} */
     announceUploading: string;
     /** live 播报：上传成功，uses {name} */

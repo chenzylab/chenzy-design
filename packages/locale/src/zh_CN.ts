@@ -255,6 +255,7 @@ export const zh_CN: Locale = {
     minSizeError: '文件大小不能小于 {size}',
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
+    retry: '重试',
     announceUploading: '{name} 上传中 {percent}%',
     announceSuccess: '{name} 上传成功',
     announceError: '{name} 上传失败',
