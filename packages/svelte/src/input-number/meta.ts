@@ -35,7 +35,12 @@ export const meta = {
     { name: 'autofocus', type: 'boolean', default: 'false', desc: '挂载自动聚焦' },
     { name: 'selectOnFocus', type: 'boolean', default: 'false', desc: '聚焦时全选文本' },
     { name: 'locale', type: 'string', default: 'undefined', desc: '数字格式化 locale（仅未提供 formatter 时生效）' },
+    { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式' },
+    { name: 'showClear', type: 'boolean', default: 'false', desc: '显示清除按钮（有值时出现 ×）' },
+    { name: 'clearIcon', type: 'Snippet', default: 'undefined', desc: '自定义清除图标' },
+    { name: 'keepFocus', type: 'boolean', default: 'false', desc: '点击 +/- 按钮后保持输入框聚焦' },
     { name: 'onChange', type: '(v: number | null) => void', default: 'undefined', desc: '归一化后值变化' },
+    { name: 'onNumberChange', type: '(v: number | null) => void', default: 'undefined', desc: '携带 number 类型的变化回调（区别于 onChange）' },
     { name: 'onBoundaryHit', type: "(e: { boundary: 'min'|'max'; value: number }) => void", default: 'undefined', desc: '触达/试图越过边界' },
   ],
   events: [

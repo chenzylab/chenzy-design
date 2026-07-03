@@ -44,6 +44,12 @@ export const meta = {
       desc: 'true 时父子解耦，仅切换单节点',
     },
     {
+      name: 'checkRelation',
+      type: "'related' | 'unRelated'",
+      default: "'related'",
+      desc: "父子勾选是否联动。'related'（默认）联动含半选；'unRelated' 父子独立无半选（效果同 checkStrictly=true）",
+    },
+    {
       name: 'expandedKeys',
       type: 'TreeKey[]',
       default: 'undefined',
@@ -51,6 +57,18 @@ export const meta = {
     },
     { name: 'defaultExpandedKeys', type: 'TreeKey[]', default: '[]', desc: '非受控初始展开' },
     { name: 'defaultExpandAll', type: 'boolean', default: 'false', desc: '初始展开全部' },
+    {
+      name: 'expandedDepth',
+      type: 'number',
+      default: 'undefined',
+      desc: '默认展开到第 N 层（仅初始化非受控展开集时生效，优先级低于 defaultExpandAll，与 defaultExpandedKeys 取并集）',
+    },
+    {
+      name: 'autoExpandParent',
+      type: 'boolean',
+      default: 'true',
+      desc: '受控展开时自动展开父节点（派生祖先链，不写回受控 expandedKeys）',
+    },
     {
       name: 'accordion',
       type: 'boolean',
@@ -69,6 +87,18 @@ export const meta = {
     { name: 'height', type: 'number', default: '320', desc: '虚拟滚动视口高度（px），virtualized 时生效' },
     { name: 'itemHeight', type: 'number', default: '32', desc: '虚拟滚动行高（px），virtualized 时生效' },
     { name: 'filterable', type: 'boolean', default: 'false', desc: '渲染内置搜索框' },
+    {
+      name: 'filterTreeNode',
+      type: 'boolean | ((input: string, node: TreeNodeData) => boolean)',
+      default: 'undefined',
+      desc: '自定义搜索过滤谓词；传函数即开启搜索，boolean 形态等价 filterable，不传回退内置 label 包含匹配',
+    },
+    {
+      name: 'searchValue',
+      type: 'string',
+      default: 'undefined',
+      desc: '受控搜索关键词；传入走受控模式，输入变化仅触发 onSearch 不更新内部 state',
+    },
     { name: 'blockNode', type: 'boolean', default: 'false', desc: '整行点击选中' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '整树禁用' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
@@ -82,6 +112,12 @@ export const meta = {
       desc: '异步加载子节点：展开未加载的非叶子节点时调用',
     },
     {
+      name: 'onLoad',
+      type: "(loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void",
+      default: 'undefined',
+      desc: '异步加载完成回调',
+    },
+    {
       name: 'draggable',
       type: 'boolean',
       default: 'false',
@@ -93,6 +129,30 @@ export const meta = {
       default: 'undefined',
       desc: '放下时回调；受控数据由父组件按 info 重排 treeData，组件不内部改',
     },
+    {
+      name: 'onDragStart',
+      type: '(node: TreeNodeData) => void',
+      default: 'undefined',
+      desc: '开始拖拽节点',
+    },
+    {
+      name: 'onDragEnter',
+      type: '(info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void',
+      default: 'undefined',
+      desc: '拖拽进入候选目标节点',
+    },
+    {
+      name: 'onRightClick',
+      type: '(e: MouseEvent, node: TreeNodeData) => void',
+      default: 'undefined',
+      desc: '节点右键菜单回调',
+    },
+    {
+      name: 'onSearch',
+      type: '(value: string, filteredKeys: string[]) => void',
+      default: 'undefined',
+      desc: '搜索关键词变化回调，附命中节点 key 列表',
+    },
     { name: 'onChange', type: '(info) => void', default: 'undefined', desc: '选中变更' },
     { name: 'onCheck', type: '(info) => void', default: 'undefined', desc: '勾选变更' },
     {
@@ -103,6 +163,24 @@ export const meta = {
     },
     { name: 'label', type: 'Snippet', default: 'undefined', desc: '自定义节点内容' },
     { name: 'icon', type: 'Snippet<[{ node, expanded, level }]>', default: 'undefined', desc: '自定义节点图标（showIcon 时渲染在 label 前）' },
+    {
+      name: 'switcher',
+      type: 'Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>',
+      default: 'undefined',
+      desc: '自定义展开/收起箭头；参数含节点、展开态与加载态',
+    },
+    {
+      name: 'suffix',
+      type: 'Snippet<[{ node: TreeNodeData }]>',
+      default: 'undefined',
+      desc: '节点尾部操作区（渲染在 label 右侧）',
+    },
+    {
+      name: 'dragGhost',
+      type: 'Snippet<[{ node: TreeNodeData }]>',
+      default: 'undefined',
+      desc: '自定义拖拽幽灵节点',
+    },
   ],
   events: [
     { name: 'onChange', desc: '选中节点变更：{ value, node, selected }' },
