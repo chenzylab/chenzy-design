@@ -319,8 +319,8 @@
     outline: none;
   }
   .cd-rating:focus-visible {
-    box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-border-radius-small);
+    box-shadow: var(--cd-rating-outline-focus);
+    border-radius: var(--cd-rating-radius);
   }
   .cd-rating--disabled {
     opacity: 0.5;
@@ -361,7 +361,7 @@
     inline-size: 0;
     overflow: hidden;
     color: var(--cd-rating-color-active);
-    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: color var(--cd-rating-transition-duration) var(--cd-rating-transition-easing);
   }
   .cd-rating__icon--fg {
     inline-size: var(--cd-rating-size-default);
@@ -377,10 +377,10 @@
     inline-size: var(--cd-rating-size-active);
   }
   .cd-rating--warning .cd-rating__fg {
-    color: var(--cd-color-warning);
+    color: var(--cd-rating-color-warning);
   }
   .cd-rating--error .cd-rating__fg {
-    color: var(--cd-color-danger);
+    color: var(--cd-rating-color-error);
   }
   /* 自定义字符（字符串）：以文本承载，撑满星位，垂直水平居中。 */
   .cd-rating__text {
