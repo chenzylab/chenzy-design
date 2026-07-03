@@ -52,6 +52,15 @@ export const meta = {
       desc: '自定义节点图标，showIcon 为真时渲染在 label 前；参数含节点与展开态，与 Tree 的 icon API 对齐',
     },
     {
+      name: 'triggerRender',
+      type: 'Snippet<[{ value: TreeKey|TreeKey[]|null|undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>',
+      default: 'undefined',
+      desc: '完全自定义触发器渲染（替换默认选择框）；参数含当前 value/placeholder/isOpen/disabled，与 Cascader.triggerRender 对齐',
+    },
+    { name: 'insetLabel', type: 'Snippet | string', default: 'undefined', desc: '触发器内嵌标签，渲染在回填值/占位符之前（对齐 Semi insetLabel），消费 --cd-color/font-tree-select-label token' },
+    { name: 'insetLabelId', type: 'string', default: 'undefined', desc: '内嵌标签的 id（a11y 关联用），对齐 Semi insetLabelId' },
+    { name: 'motion', type: 'boolean', default: 'true', desc: '下拉浮层开合动画（淡入）；与 Cascader/Dropdown 的 motion 对齐。reduced-motion 退化' },
+    {
       name: 'onChange',
       type: '(value: TreeKey|TreeKey[]|null) => void',
       default: 'undefined',
@@ -121,5 +130,5 @@ export const meta = {
       'leafOnly 时非叶子节点仅切换展开，不可选',
     ],
   },
-  tokens: ['--cd-tree-select-*', '--cd-select-*', '--cd-tree-*', '--cd-focus-ring'],
+  tokens: ['--cd-tree-select-*', '--cd-color-tree-select-label', '--cd-font-tree-select-label', '--cd-dropdown-motion-*', '--cd-select-*', '--cd-tree-*', '--cd-focus-ring'],
 } as const;

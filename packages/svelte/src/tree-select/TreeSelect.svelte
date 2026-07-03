@@ -119,6 +119,17 @@
     ariaLabel?: string;
     /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态，与 Tree 的 icon 对齐。 */
     icon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+    /**
+     * 完全自定义触发器渲染（替换默认选择框）。与 Cascader.triggerRender 对齐：
+     * 参数含当前 value / placeholder / isOpen / disabled，由使用方决定如何呈现。
+     */
+    triggerRender?: Snippet<[{ value: TreeKey | TreeKey[] | null | undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>;
+    /** 触发器内嵌标签：渲染在回填值/占位符之前（Snippet 或字符串）。对齐 Semi insetLabel。 */
+    insetLabel?: Snippet | string;
+    /** 内嵌标签的 id（a11y 关联用），对齐 Semi insetLabelId。 */
+    insetLabelId?: string;
+    /** 下拉浮层开合动画（淡入）。默认 true。与 Cascader/Dropdown 的 motion 对齐。 */
+    motion?: boolean;
 
     // --- Appearance ---
     /** 无边框模式：trigger 边框透明。默认 false。 */
@@ -279,6 +290,10 @@
     onOpenChange,
     ariaLabel,
     icon,
+    triggerRender,
+    insetLabel,
+    insetLabelId,
+    motion = true,
     borderless = false,
     prefix,
     suffix,
@@ -1036,6 +1051,11 @@
       .join(' '),
   );
 
+  // triggerRender 的 value 参数：多选给收敛后的 key 数组，单选给单 key（对齐 onChange 语义）。
+  const triggerValue = $derived<TreeKey | TreeKey[] | null>(
+    multiple ? strategyKeys : currentValue,
+  );
+
   // optionListStyle 规范化为 style 字符串。
   const optionListStyleStr = $derived(
     typeof optionListStyle === 'string'
@@ -1162,6 +1182,9 @@
 
 <div class={cls} bind:this={rootEl} {style}>
   <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
+  {#if triggerRender}
+    {@render triggerRender({ value: triggerValue, placeholder, isOpen, disabled })}
+  {:else}
   <div
     class="cd-tree-select__trigger"
     role="combobox"
@@ -1197,6 +1220,11 @@
     {#if prefix}
       <span class="cd-tree-select__prefix">
         {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+      </span>
+    {/if}
+    {#if insetLabel}
+      <span class="cd-tree-select__inset-label" id={insetLabelId}>
+        {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
       </span>
     {/if}
     <span class="cd-tree-select__content">
@@ -1265,11 +1293,13 @@
       {/if}
     </span>
   </div>
+  {/if}
 
   {#if shouldRender}
     <div
       class="cd-tree-select__panel"
       class:cd-tree-select__panel--hidden={!isOpen}
+      class:cd-tree-select__panel--motion={motion && isOpen}
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
@@ -1461,6 +1491,33 @@
   .cd-tree-select__panel--hidden {
     display: none;
   }
+  /* motion：下拉浮层开合进场淡入；reduced-motion 退化。
+     注意：定位 transform 由 use:floating 写入 inline style，动画 keyframe
+     绝不能设 transform（CSS animation 优先级高于 inline style，会把 floating 的
+     translate(x,y) 覆盖成 0，浮层飘到容器左上角）。故仅动 opacity（与 Dropdown 一致）。 */
+  .cd-tree-select__panel--motion {
+    animation: cd-tree-select-in var(--cd-dropdown-motion-duration, 120ms)
+      var(--cd-dropdown-motion-easing, ease) both;
+  }
+  @keyframes cd-tree-select-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  /* insetLabel 内嵌标签：回填值前的标签文本，消费 tree-select label token */
+  .cd-tree-select__inset-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-inline-end: var(--cd-spacing-tight);
+    color: var(--cd-color-tree-select-label);
+    font-weight: var(--cd-font-tree-select-label);
+    white-space: nowrap;
+    user-select: none;
+  }
   .cd-tree-select__search {
     padding-block-end: var(--cd-spacing-extra-tight);
     padding-inline: var(--cd-spacing-tight);
@@ -1614,7 +1671,8 @@
     .cd-tree-select__expand {
       transition: none;
     }
-    .cd-tree-select__spinner {
+    .cd-tree-select__spinner,
+    .cd-tree-select__panel--motion {
       animation: none;
     }
   }

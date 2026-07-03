@@ -101,6 +101,10 @@
     borderless?: boolean;
     /** 前置内容（Snippet 或 string） */
     prefix?: Snippet | string;
+    /** 内嵌标签：触发器在值前渲染的标签（如「地区：」），Semi 中为 prefix 的别名 */
+    insetLabel?: Snippet | string;
+    /** 内嵌标签的 DOM id（供外部 aria-labelledby 引用） */
+    insetLabelId?: string;
     /** 后置内容（Snippet 或 string） */
     suffix?: Snippet | string;
     /** 自定义清除图标 */
@@ -163,8 +167,10 @@
     checkRelation?: 'related' | 'unRelated';
     /** onChange 回调是否返回完整 option 对象 */
     onChangeWithObject?: boolean;
-    /** 超出 max 时回调 */
-    onExceed?: (items: unknown[]) => void;
+    /** 多选可勾选数量上限；超出时不选入并触发 onExceed（减少始终允许） */
+    max?: number;
+    /** 超出 max 时回调，传当前（含超出项）勾选的节点集合 */
+    onExceed?: (items: CascaderNode[]) => void;
     /** 超出 maxTagCount 时是否显示 popover */
     showRestTagsPopover?: boolean;
     /** 超出 tag popover 的 props */
@@ -234,6 +240,8 @@
     ariaLabel,
     borderless = false,
     prefix,
+    insetLabel,
+    insetLabelId,
     suffix,
     clearIcon,
     expandIcon,
@@ -262,6 +270,7 @@
     autoMergeValue = true,
     checkRelation = 'related',
     onChangeWithObject = false,
+    max,
     onExceed,
     showRestTagsPopover = false,
     restTagsPopoverProps,
@@ -554,7 +563,9 @@
       const leaf = p.values[p.values.length - 1] as Key;
       const nextBase = toggleCheck(mergedTreeData, checkedBase, leaf);
       const resolved = conduct(mergedTreeData, nextBase);
-      setPaths(leafBaseToPaths(resolved.checked));
+      const nextPaths = leafBaseToPaths(resolved.checked);
+      if (exceedsMax(currentPaths.length, nextPaths.length, resolved.checked)) return;
+      setPaths(nextPaths);
       searchValue = '';
     } else {
       setValue(p.values.slice());
@@ -678,6 +689,32 @@
     onChange?.(nextPaths);
   }
 
+  // 由 value 集合收集对应节点对象（用于 onExceed 回调）。
+  function nodesForKeys(keys: Set<Key>): CascaderNode[] {
+    const out: CascaderNode[] = [];
+    const walk = (nodes: CascaderNode[]) => {
+      for (const n of nodes) {
+        if (keys.has(n.value)) out.push(n);
+        const kids = childrenOf(n);
+        if (kids && kids.length > 0) walk(kids);
+      }
+    };
+    walk(normalizedTreeData);
+    return out;
+  }
+
+  // max 数量上限（对齐 Semi）：仅在「增加勾选」且结果超出 max 时拦截并调 onExceed；
+  // 减少勾选始终放行。prevSize/nextSize 为归一后的对外 value 计数（related=已解析集，
+  // unRelated=显式勾选集），保持与 Semi「resolved/checked size」一致。
+  function exceedsMax(prevSize: number, nextSize: number, nextKeys: Set<Key>): boolean {
+    if (max === undefined || max < 0) return false;
+    if (nextSize > prevSize && nextSize > max) {
+      onExceed?.(nodesForKeys(nextKeys));
+      return true;
+    }
+    return false;
+  }
+
   // 切换某节点勾选（支持 related/unRelated 两种模式）
   function toggleCheckNode(node: CascaderNode) {
     if (node.disabled || disabled) return;
@@ -697,12 +734,16 @@
           nextPaths.push([nodeVal]);
         }
       }
+      const nextKeys = pathsToLeafBase(nextPaths);
+      if (exceedsMax(currentPaths.length, nextPaths.length, nextKeys)) return;
       setPaths(nextPaths);
       return;
     }
     const nextBase = toggleCheck(mergedTreeData, checkedBase, node.value);
     const resolved = conduct(mergedTreeData, nextBase);
-    setPaths(leafBaseToPaths(resolved.checked));
+    const nextPaths = leafBaseToPaths(resolved.checked);
+    if (exceedsMax(currentPaths.length, nextPaths.length, resolved.checked)) return;
+    setPaths(nextPaths);
   }
 
   // 移除某 tag（按叶子 value 取消勾选，联动祖先半选更新）
@@ -1076,6 +1117,12 @@
     {#if prefix}
       <span class="cd-cascader__prefix" aria-hidden="true">
         {#if typeof prefix === 'string'}{prefix}{:else}{@render (prefix as Snippet)()}{/if}
+      </span>
+    {/if}
+
+    {#if insetLabel}
+      <span class="cd-cascader__inset-label" id={insetLabelId}>
+        {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render (insetLabel as Snippet)()}{/if}
       </span>
     {/if}
 
@@ -1574,5 +1621,13 @@
     align-items: center;
     flex: 0 0 auto;
     color: var(--cd-color-cascader-prefix-suffix-text-default);
+  }
+  /* insetLabel：值前内嵌标签，消费 cascader label token */
+  .cd-cascader__inset-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    color: var(--cd-color-cascader-label-text-default);
+    font-weight: var(--cd-font-cascader-label-fontweight);
   }
 </style>

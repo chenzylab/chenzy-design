@@ -106,6 +106,10 @@ export const treeSelectTokens = {
   'color-tree-select-inputtrigger-bg-default': { value: 'transparent', category: 'color', label: '触发器背景色', usage: '带搜索的树选择器触发器背景颜色' },
   'color-tree-select-prefix-suffix-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '前后缀文本色', usage: '带搜索的树选择器前后缀文本颜色' },
 
+  // —— insetLabel 内嵌标签（触发器值前的内嵌标签文本）——
+  'color-tree-select-label': { value: 'var(--cd-color-text-2)', category: 'color', label: '内嵌标签文本色', usage: '树选择器触发器内嵌标签（insetLabel）文本颜色' },
+  'font-tree-select-label': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '内嵌标签字重', usage: '树选择器触发器内嵌标签（insetLabel）文本字重' },
+
   // —— 箭头 / 菜单项 / 菜单高度 / 多选搜索框最小高度 ——
   'width-tree-select-arrow': { value: '32px', category: 'width', label: '展开箭头宽度', usage: '树选择器展开箭头宽度' },
   'width-tree-select-option': { value: '230px', category: 'width', label: '菜单项宽度', usage: '树选择器菜单项宽度' },
