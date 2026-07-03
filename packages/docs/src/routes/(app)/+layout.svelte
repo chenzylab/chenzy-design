@@ -46,6 +46,7 @@
     {
       titleKey: 'group.experience',
       items: [
+        { zh: 'Theming 主题定制', en: 'Theming', href: '/guide/theming' },
         { zh: 'Accessibility 无障碍', en: 'Accessibility', href: '/guide/accessibility' },
         { zh: 'Internationalization 国际化', en: 'Internationalization', href: '/guide/i18n' },
         { zh: 'Content Guidelines 文案规范', en: 'Content Guidelines', href: '/guide/content-guidelines' },
