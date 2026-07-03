@@ -595,7 +595,7 @@
     overflow: hidden;
     color: var(--cd-sidesheet-title-color);
     font-size: var(--cd-sidesheet-title-size);
-    font-weight: 600;
+    font-weight: var(--cd-sidesheet-title-weight);
     line-height: 1.4;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -614,7 +614,7 @@
     block-size: 28px;
     padding: 0;
     border: none;
-    border-radius: var(--cd-border-radius-medium, 4px);
+    border-radius: var(--cd-sidesheet-close-radius);
     background: transparent;
     color: var(--cd-sidesheet-close-color);
     cursor: pointer;

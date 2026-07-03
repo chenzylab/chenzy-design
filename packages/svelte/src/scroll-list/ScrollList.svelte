@@ -212,7 +212,7 @@
     border: 1px solid var(--cd-scrolllist-border-color);
     border-radius: var(--cd-scrolllist-radius);
     color: var(--cd-scrolllist-color-text-adjacent);
-    font-size: var(--cd-font-size-body);
+    font-size: var(--cd-font-size-regular);
   }
 
   .cd-scroll-list__cols {

@@ -130,7 +130,7 @@
     padding-inline: var(--cd-divider-text-gap);
   }
   .cd-divider--bold .cd-divider__text {
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-divider-text-weight);
   }
   .cd-divider--align-left::before {
     flex: 0 0 5%;

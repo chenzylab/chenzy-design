@@ -49,6 +49,7 @@ export const meta = {
     '--cd-skeleton-paragraph-height',
     '--cd-skeleton-anim-duration',
     '--cd-skeleton-anim-timing',
+    '--cd-skeleton-image-icon-color',
   ],
   responsive: false,
   examples: [

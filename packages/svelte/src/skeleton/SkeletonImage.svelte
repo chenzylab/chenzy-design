@@ -62,7 +62,7 @@
     justify-content: center;
   }
   .cd-skeleton__image-icon {
-    color: var(--cd-color-text-3);
+    color: var(--cd-skeleton-image-icon-color);
   }
 
   .cd-skeleton__block {
