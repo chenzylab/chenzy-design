@@ -51,6 +51,8 @@ import { notificationTokens } from './notification.js';
 import { backTopTokens } from './back-top.js';
 import { lottieIconTokens } from './lottie-icon.js';
 import { stepsTokens } from './steps.js';
+import { anchorTokens } from './anchor.js';
+import { dropdownTokens } from './dropdown.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -105,4 +107,6 @@ export const componentTokens = {
   ...backTopTokens,
   ...lottieIconTokens,
   ...stepsTokens,
+  ...anchorTokens,
+  ...dropdownTokens,
 } as const;
