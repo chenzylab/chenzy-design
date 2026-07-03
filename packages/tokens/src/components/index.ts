@@ -50,6 +50,7 @@ import { toastTokens } from './toast.js';
 import { notificationTokens } from './notification.js';
 import { backTopTokens } from './back-top.js';
 import { lottieIconTokens } from './lottie-icon.js';
+import { anchorTokens } from './anchor.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -103,4 +104,5 @@ export const componentTokens = {
   ...notificationTokens,
   ...backTopTokens,
   ...lottieIconTokens,
+  ...anchorTokens,
 } as const;
