@@ -16,12 +16,14 @@
   interface Props {
     itemKey: TabKey;
     tab?: string;
+    /** 标签文字前的图标 Snippet（对齐 Semi PlainTab.icon）。 */
+    icon?: Snippet;
     disabled?: boolean;
     closable?: boolean;
     children?: Snippet;
   }
 
-  let { itemKey, tab, disabled, closable, children }: Props = $props();
+  let { itemKey, tab, icon, disabled, closable, children }: Props = $props();
 
   const ctx = getTabsContext();
   const active = $derived(ctx?.getActiveKey() === itemKey);
@@ -39,6 +41,7 @@
     return {
       itemKey,
       tab: tab ?? String(itemKey),
+      ...(icon !== undefined ? { icon } : {}),
       ...(disabled !== undefined ? { disabled } : {}),
       ...(closable !== undefined ? { closable } : {}),
     };

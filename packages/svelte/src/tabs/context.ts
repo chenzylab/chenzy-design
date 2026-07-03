@@ -1,4 +1,4 @@
-import { getContext, setContext } from 'svelte';
+import { getContext, setContext, type Snippet } from 'svelte';
 
 const KEY = Symbol('cd-tabs');
 
@@ -6,6 +6,8 @@ const KEY = Symbol('cd-tabs');
 export interface TabPaneRegistration {
   itemKey: string | number;
   tab: string;
+  /** 标签文字前的图标 Snippet（对齐 Semi PlainTab.icon）。 */
+  icon?: Snippet;
   disabled?: boolean;
   closable?: boolean;
 }
