@@ -53,13 +53,10 @@ export const meta = {
   },
   tokens: [
     // 对齐 Semi transfer/variables.scss（47）；下列为组件当前实际消费的一批
-    '--cd-color-transfer-border',
     '--cd-color-transfer-header-text',
     '--cd-color-transfer-empty-text',
     '--cd-color-transfer-group-title-text',
     '--cd-color-transfer-close-icon-icon',
-    '--cd-color-transfer-item-bg-hover',
-    '--cd-radius-transfer',
     // chenzy-design 组件消费补充 token
     '--cd-transfer-panel-width',
     '--cd-transfer-panel-height',

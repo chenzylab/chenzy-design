@@ -139,7 +139,6 @@ export const meta = {
     '--cd-modal-close-color',
     '--cd-modal-close-hover-bg',
     '--cd-modal-z',
-    '--cd-modal-motion-duration',
     // 直接消费的对齐 Semi token
     '--cd-spacing-modal-marginy',
     '--cd-color-modal-success-icon',
