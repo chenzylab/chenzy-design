@@ -12,9 +12,9 @@
     /** 提示文本列表。 */
     hints?: string[];
     /** 点击某项回调，参数为提示文本。 */
-    onHintClick?: (hint: string) => void;
+    onHintClick?: ((hint: string) => void) | undefined;
     /** 自定义单项渲染（对齐 Semi renderHintBox）。 */
-    renderHintBox?: Snippet<[RenderHintBoxProps]>;
+    renderHintBox?: Snippet<[RenderHintBoxProps]> | undefined;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */

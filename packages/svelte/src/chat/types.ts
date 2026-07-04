@@ -26,13 +26,13 @@ export interface RenderInputAreaProps {
   /** 触发发送。 */
   onSend: (content?: string, attachment?: UploadFileItem[]) => void;
   /** 触发清除上下文。 */
-  onClear?: () => void;
+  onClear?: (() => void) | undefined;
 }
 
 /** renderChatBoxTitle snippet 参数。 */
 export interface RenderTitleProps {
   message?: Message;
-  role?: Metadata;
+  role?: Metadata | undefined;
   /** 默认标题节点。 */
   defaultTitle?: Snippet;
 }
@@ -40,7 +40,7 @@ export interface RenderTitleProps {
 /** renderChatBoxAvatar snippet 参数。 */
 export interface RenderAvatarProps {
   message?: Message;
-  role?: Metadata;
+  role?: Metadata | undefined;
   /** 默认头像节点。 */
   defaultAvatar?: Snippet;
 }
@@ -48,7 +48,7 @@ export interface RenderAvatarProps {
 /** renderChatBoxContent snippet 参数。 */
 export interface RenderContentProps {
   message?: Message;
-  role?: Metadata;
+  role?: Metadata | undefined;
   /** 默认内容节点。 */
   defaultContent?: Snippet;
   className?: string;
@@ -84,7 +84,7 @@ export interface FullChatBoxNodes {
 /** renderFullChatBox snippet 参数。 */
 export interface RenderFullChatBoxProps {
   message?: Message;
-  role?: Metadata;
+  role?: Metadata | undefined;
   defaultNodes?: FullChatBoxNodes;
   className?: string;
 }

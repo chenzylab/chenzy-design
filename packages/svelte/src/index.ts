@@ -137,6 +137,22 @@ export {
   type LabeledOption,
 } from './video-player/index.js';
 export { AudioPlayer, audioPlayerMeta } from './audio-player/index.js';
+export {
+  Chat,
+  ChatBox,
+  ChatInputBox,
+  ChatHint,
+  chatMeta,
+  type Message as ChatMessage,
+  type Metadata as ChatMetadata,
+  type RoleConfig as ChatRoleConfig,
+  type Content as ChatContent,
+  type ChatAttachment,
+  type ChatAlign,
+  type ChatMode,
+  type SendHotKey,
+  type EnableUploadProps as ChatEnableUploadProps,
+} from './chat/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';

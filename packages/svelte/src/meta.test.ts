@@ -72,6 +72,7 @@ import { meta as lottieIconMeta } from './lottie-icon/meta.js';
 import { meta as markdownRenderMeta } from './markdown-render/meta.js';
 import { meta as videoPlayerMeta } from './video-player/meta.js';
 import { meta as jsonViewerMeta } from './json-viewer/meta.js';
+import { meta as chatMeta } from './chat/meta.js';
 
 const metas = {
   buttonMeta,
@@ -147,6 +148,7 @@ const metas = {
   markdownRenderMeta,
   videoPlayerMeta,
   jsonViewerMeta,
+  chatMeta,
 };
 
 type PropEntry = { name?: string; type?: string };
