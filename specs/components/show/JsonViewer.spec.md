@@ -82,7 +82,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积（组件壳，不含内核） | ≤ 4kb |
+| gzip 体积（组件壳，内核动态 import 不计入） | ≤ 4 KB（实测 3.21 KB，2026-07-04 校准） |
 | `@douyinfe/semi-json-viewer-core` | 内核体积较大（Semi 标称 ~203kb/gzip 51kb）；作为 dep，**建议动态 import** 内核，首次挂载异步加载，避免拖累主包 |
 | 运行时 | 依赖内核虚拟化（300w 行内 1s，Semi 实测） |
 - **必须动态 import 内核**，不进主 bundle。

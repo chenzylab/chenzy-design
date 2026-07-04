@@ -59,7 +59,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积（不含 prismjs core） | ≤ 3kb |
+| gzip 体积（含 prismjs core） | ≤ 11 KB（实测 9.40 KB，2026-07-04 校准） |
 | prismjs core | 按需，作为 peer/optional，语言按需 import |
 - prismjs 语言包**不全量打进**组件：core 语言（js/css/clike/html/svg）随 prismjs 默认；其他语言由使用方 `import "prismjs/components/prism-<lang>.js"`（对齐 Semi 文档说明）。
 

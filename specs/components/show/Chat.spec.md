@@ -82,7 +82,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | 待实测校准（大组件，参照 Semi 体量设初值 +15%） |
+| gzip 体积（MarkdownRender/Upload 作兄弟组件不计入） | ≤ 8.5 KB（实测 7.17 KB，2026-07-04 校准） |
 | SSE 流式 | `chats` 高频更新时内容编译（MarkdownRender）需 debounce；滚动节流 |
 - 长会话考虑消息列表虚拟化（可作为后续增强，先对齐 Semi 的普通渲染 + 是否 Semi 已虚拟化以 foundation 为准）。
 

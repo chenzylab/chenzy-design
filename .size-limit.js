@@ -126,7 +126,24 @@ const components = [
   ['tooltip', '{ Tooltip }', '3.5 KB'],
   ['tree', '{ Tree }', '9 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
+  // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。
+  // code-highlight 含 prismjs core；markdown-render 的 unified/remark 与
+  // json-viewer 的内核均为动态 import，不计入组件壳（json-viewer ignore 内核）。
+  ['code-highlight', '{ CodeHighlight }', '11 KB'],
+  ['markdown-render', '{ MarkdownRender }', '3.5 KB'],
+  ['video-player', '{ VideoPlayer }', '9 KB'],
+  ['audio-player', '{ AudioPlayer }', '5 KB'],
+  ['json-viewer', '{ JsonViewer }', '4 KB'],
+  ['chat', '{ Chat }', '8.5 KB'],
 ];
+
+// JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载
+// （见 JsonViewer.svelte，spec §9 要求内核不进主 bundle），故 size-limit 度量
+// 组件壳时把内核 ignore —— 与「svelte 运行时不计入」同口径。内核体积单独在
+// spec §9 记录（gzip ~51KB，懒加载）。
+const perComponentIgnore = {
+  'json-viewer': [...ignore, '@douyinfe/semi-json-viewer-core'],
+};
 
 export default components.map(([dir, imports, limit]) => ({
   name: dir,
@@ -134,6 +151,6 @@ export default components.map(([dir, imports, limit]) => ({
   import: imports,
   limit,
   gzip: true,
-  ignore,
+  ignore: perComponentIgnore[dir] ?? ignore,
   modifyEsbuildConfig,
 }));

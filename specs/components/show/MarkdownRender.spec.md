@@ -69,7 +69,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积（组件层，不含 unified 生态） | ≤ 5kb |
+| gzip 体积（组件壳，unified 生态动态 import 不计入） | ≤ 3.5 KB（实测 2.88 KB，2026-07-04 校准） |
 | unified + remark + rehype | 作为 dep，按需；评估是否可 code-split（首次渲染前动态 import 编译器） |
 - 大文档：hast 递归渲染，超大文档考虑惰性；SSE 场景 `raw` 高频更新需 debounce 编译（Chat 层处理）。
 - 编译器（unified 生态）体积较大，**建议动态 import**，组件首次挂载时异步加载，避免拖累主包（对齐 Semi 也是异步 evaluate）。
