@@ -190,6 +190,12 @@ export {
   type ResolveCodeClassNameOptions,
 } from './code-highlight.js';
 export {
+  compileToHast,
+  type HastRoot,
+  type CompileToHastOptions,
+  type UnifiedPluginEntry,
+} from './markdown-render.js';
+export {
   createToastStore,
   type ToastStore,
   type ToastItem,

@@ -68,6 +68,7 @@ import { meta as localeProviderMeta } from './locale-provider/meta.js';
 import { meta as configProviderMeta } from './config-provider/meta.js';
 import { meta as resizeObserverMeta } from './resize-observer/meta.js';
 import { meta as lottieIconMeta } from './lottie-icon/meta.js';
+import { meta as markdownRenderMeta } from './markdown-render/meta.js';
 
 const metas = {
   buttonMeta,
@@ -139,6 +140,7 @@ const metas = {
   configProviderMeta,
   resizeObserverMeta,
   lottieIconMeta,
+  markdownRenderMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

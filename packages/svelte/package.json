@@ -32,9 +32,14 @@
     "@chenzy-design/core": "workspace:*",
     "@chenzy-design/locale": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
-    "prismjs": "^1.29.0"
+    "prismjs": "^1.29.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@types/hast": "^3.0.4",
     "@types/prismjs": "^1.26.5",
     "tsx": "^4.19.2"
   },

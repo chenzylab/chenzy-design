@@ -114,6 +114,14 @@ export { Highlight, highlightMeta } from './highlight/index.js';
 export { CodeHighlight, codeHighlightMeta } from './code-highlight/index.js';
 export { VirtualList, virtualListMeta } from './virtual-list/index.js';
 export { OverflowList, overflowListMeta } from './overflow-list/index.js';
+export {
+  MarkdownRender,
+  defaultComponents as markdownRenderDefaultComponents,
+  markdownRenderMeta,
+  type HastRoot,
+  type CompileToHastOptions,
+  type UnifiedPluginEntry,
+} from './markdown-render/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';
