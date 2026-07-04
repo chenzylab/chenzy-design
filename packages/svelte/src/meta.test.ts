@@ -71,6 +71,7 @@ import { meta as resizeObserverMeta } from './resize-observer/meta.js';
 import { meta as lottieIconMeta } from './lottie-icon/meta.js';
 import { meta as markdownRenderMeta } from './markdown-render/meta.js';
 import { meta as videoPlayerMeta } from './video-player/meta.js';
+import { meta as jsonViewerMeta } from './json-viewer/meta.js';
 
 const metas = {
   buttonMeta,
@@ -145,6 +146,7 @@ const metas = {
   lottieIconMeta,
   markdownRenderMeta,
   videoPlayerMeta,
+  jsonViewerMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

@@ -32,6 +32,7 @@
     "@chenzy-design/core": "workspace:*",
     "@chenzy-design/locale": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
+    "@douyinfe/semi-json-viewer-core": "^2.101.0",
     "prismjs": "^1.29.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",

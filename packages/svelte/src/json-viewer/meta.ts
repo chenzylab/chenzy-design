@@ -1,0 +1,126 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * JsonViewer — see specs/components/show/JsonViewer.spec.md
+ */
+export const meta = {
+  name: 'JsonViewer',
+  category: 'show',
+  description:
+    'JSON 预览 / 编辑器：底层直接引 Semi 自研框架无关内核 @douyinfe/semi-json-viewer-core（仿 VS Code text-buffer，虚拟化大数据、jsonc-parser 解析），内核经动态 import 异步加载（不进主 bundle，加载中 loading 态）。非受控（value 仅初始，不回写）。语法高亮全走 token（key/string/number/boolean·null/标点/注释/行号/搜索命中）深浅双主题。搜索/替换工具条由 Svelte 壳自渲染（内核仅提供检索 API），文案/aria 走 i18n。ref 暴露 getValue/format/search/getSearchResults/prevSearch/nextSearch/replace/replaceAll。options 支持 lineHeight/autoWrap/readOnly/customRenderRule（仅只读经 customRender 事件透出）/formatOptions。renderSearchButton 自定义搜索按钮（对齐 Semi ≥2.95）。',
+  exports: ['JsonViewer'],
+  props: [
+    {
+      name: 'value',
+      type: 'string',
+      default: "''",
+      desc: '展示内容（JSON 字符串）。非受控：仅初始建实例，后续变化不重建（对齐 Semi）',
+    },
+    { name: 'height', type: 'number | string', default: 'undefined', desc: '高度（number 记为 px）' },
+    { name: 'width', type: 'number | string', default: 'undefined', desc: '宽度（number 记为 px）' },
+    { name: 'showSearch', type: 'boolean', default: 'true', desc: '是否显示搜索入口' },
+    {
+      name: 'renderSearchButton',
+      type: 'Snippet<[Snippet, SearchControls]>',
+      default: 'undefined',
+      desc: '自定义渲染搜索按钮（传入默认按钮 snippet 与控制句柄，对齐 Semi ≥2.95）',
+    },
+    {
+      name: 'options',
+      type: 'JsonViewerOptions',
+      default: 'undefined',
+      desc: '编辑器配置：lineHeight(20)/autoWrap(true)/readOnly(false)/customRenderRule/formatOptions',
+    },
+    {
+      name: 'onChange',
+      type: '(value: string) => void',
+      default: 'undefined',
+      desc: '内容变化回调（非受控，不回写 value）',
+    },
+    {
+      name: 'onCustomRender',
+      type: '(map: Map<HTMLElement, unknown>) => void',
+      default: 'undefined',
+      desc: '只读模式命中 customRenderRule 时透出 customRenderMap',
+    },
+    { name: 'class', type: 'string', default: 'undefined', desc: '自定义类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '自定义内联样式' },
+  ],
+  events: [
+    { name: 'onChange', desc: '内容变化（非受控，不回写 value）' },
+    { name: 'onCustomRender', desc: '只读 + customRenderRule 命中，透出 customRenderMap' },
+  ],
+  methods: [
+    { name: 'getValue', signature: '() => string', desc: '取当前 JSON 字符串' },
+    { name: 'format', signature: '() => void', desc: '格式化当前内容' },
+    {
+      name: 'search',
+      signature: '(text, caseSensitive?, wholeWord?, regex?) => void',
+      desc: '检索文本',
+    },
+    { name: 'getSearchResults', signature: '() => FindMatch[]', desc: '取当前搜索命中列表' },
+    { name: 'prevSearch', signature: '(step?: number) => void', desc: '跳到上一个匹配' },
+    { name: 'nextSearch', signature: '(step?: number) => void', desc: '跳到下一个匹配' },
+    { name: 'replace', signature: '(text: string) => void', desc: '替换当前命中（只读时忽略）' },
+    { name: 'replaceAll', signature: '(text: string) => void', desc: '替换全部命中（只读时忽略）' },
+  ],
+  slots: [],
+  a11y: {
+    hasRole: true,
+    focusable: true,
+    note: '编辑器容器 role=textbox + aria-multiline + aria-label（i18n）；只读时 aria-readonly；容器 tabindex=0 可聚焦。搜索/替换工具条按钮均带 aria-label（i18n），选项切换按钮带 aria-pressed。编辑键位由内核处理，不覆盖。',
+  },
+  tokens: [
+    '--cd-color-json-viewer-bg',
+    '--cd-color-json-viewer-text',
+    '--cd-color-json-viewer-border',
+    '--cd-radius-json-viewer',
+    '--cd-font-json-viewer-fontsize',
+    '--cd-font-json-viewer-fontfamily',
+    '--cd-color-json-viewer-key',
+    '--cd-color-json-viewer-string',
+    '--cd-color-json-viewer-number',
+    '--cd-color-json-viewer-keyword',
+    '--cd-color-json-viewer-punctuation',
+    '--cd-color-json-viewer-comment',
+    '--cd-color-json-viewer-line-number',
+    '--cd-color-json-viewer-line-number-bg',
+    '--cd-color-json-viewer-search-highlight',
+    '--cd-color-json-viewer-search-current',
+    '--cd-color-json-viewer-error',
+    '--cd-color-json-viewer-toolbar-bg',
+    '--cd-color-json-viewer-toolbar-border',
+    '--cd-color-json-viewer-toolbar-shadow',
+    '--cd-radius-json-viewer-toolbar',
+    '--cd-spacing-json-viewer-toolbar-gap',
+    '--cd-spacing-json-viewer-toolbar-padding',
+    '--cd-color-json-viewer-toolbar-btn-hover',
+    '--cd-color-json-viewer-toolbar-btn-active',
+  ],
+  responsive: false,
+  examples: [
+    {
+      title: '基础预览',
+      code: '<JsonViewer value={JSON.stringify(data, null, 2)} />',
+    },
+    {
+      title: '只读',
+      code: '<JsonViewer value={json} options={{ readOnly: true }} />',
+    },
+    {
+      title: 'ref 取值 / 格式化',
+      code: 'let vw; ... vw.format(); const v = vw.getValue();',
+    },
+    {
+      title: '搜索',
+      code: 'vw.search("keyword"); vw.nextSearch();',
+    },
+    {
+      title: 'customRenderRule（仅只读）',
+      code: '<JsonViewer value={json} options={{ readOnly: true, customRenderRule: rules }} onCustomRender={handle} />',
+    },
+    {
+      title: '自定义搜索按钮',
+      code: '<JsonViewer value={json}>{#snippet renderSearchButton(def, ctrl)}...{/snippet}</JsonViewer>',
+    },
+  ],
+} as const;

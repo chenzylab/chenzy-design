@@ -424,5 +424,18 @@ export const zh_CN: Locale = {
     rateChange: '速度 {rate}',
     qualityChange: '清晰度 {quality}',
     routeChange: '线路 {route}',
+  JsonViewer: {
+    editor: 'JSON 编辑器',
+    search: '搜索',
+    replace: '替换',
+    replaceAll: '全部替换',
+    prev: '上一个匹配',
+    next: '下一个匹配',
+    caseSensitive: '区分大小写',
+    wholeWord: '全字匹配',
+    regex: '使用正则表达式',
+    searchTrigger: '搜索',
+    closeSearch: '关闭搜索',
+    replaceInput: '替换为',
   },
 };

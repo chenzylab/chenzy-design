@@ -60,6 +60,7 @@ import { codeHighlightTokens } from './code-highlight.js';
 import { markdownRenderTokens } from './markdown-render.js';
 import { videoPlayerTokens } from './video-player.js';
 import { audioPlayerTokens } from './audio-player.js';
+import { jsonViewerTokens } from './json-viewer.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -123,4 +124,5 @@ export const componentTokens = {
   ...markdownRenderTokens,
   ...videoPlayerTokens,
   ...audioPlayerTokens,
+  ...jsonViewerTokens,
 } as const;

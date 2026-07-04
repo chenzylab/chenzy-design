@@ -572,5 +572,30 @@ export interface Locale {
     qualityChange: string;
     /** route-change notification, uses {route} */
     routeChange: string;
+  JsonViewer: {
+    /** 编辑器容器 role=textbox 的可访问名 */
+    editor: string;
+    /** 搜索输入框占位/可访问名 */
+    search: string;
+    /** 单条替换按钮 aria-label */
+    replace: string;
+    /** 全部替换按钮 aria-label */
+    replaceAll: string;
+    /** 上一个匹配按钮 aria-label */
+    prev: string;
+    /** 下一个匹配按钮 aria-label */
+    next: string;
+    /** 区分大小写切换 aria-label */
+    caseSensitive: string;
+    /** 全字匹配切换 aria-label */
+    wholeWord: string;
+    /** 正则匹配切换 aria-label */
+    regex: string;
+    /** 打开搜索框按钮 aria-label */
+    searchTrigger: string;
+    /** 关闭搜索框按钮 aria-label */
+    closeSearch: string;
+    /** 替换输入框占位/可访问名 */
+    replaceInput: string;
   };
 }

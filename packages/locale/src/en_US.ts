@@ -424,5 +424,18 @@ export const en_US: Locale = {
     rateChange: 'Speed {rate}',
     qualityChange: 'Quality {quality}',
     routeChange: 'Route {route}',
+  JsonViewer: {
+    editor: 'JSON editor',
+    search: 'Search',
+    replace: 'Replace',
+    replaceAll: 'Replace all',
+    prev: 'Previous match',
+    next: 'Next match',
+    caseSensitive: 'Match case',
+    wholeWord: 'Match whole word',
+    regex: 'Use regular expression',
+    searchTrigger: 'Search',
+    closeSearch: 'Close search',
+    replaceInput: 'Replace with',
   },
 };
