@@ -44,6 +44,7 @@ import { meta as collapseMeta } from './collapse/meta.js';
 import { meta as timelineMeta } from './timeline/meta.js';
 import { meta as listMeta } from './list/meta.js';
 import { meta as imageMeta } from './image/meta.js';
+import { meta as cropperMeta } from './cropper/meta.js';
 import { meta as highlightMeta } from './highlight/meta.js';
 import { meta as codeHighlightMeta } from './code-highlight/meta.js';
 import { meta as virtualListMeta } from './virtual-list/meta.js';
@@ -120,6 +121,7 @@ const metas = {
   timelineMeta,
   listMeta,
   imageMeta,
+  cropperMeta,
   highlightMeta,
   codeHighlightMeta,
   virtualListMeta,

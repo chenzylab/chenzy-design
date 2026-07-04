@@ -204,6 +204,9 @@ export const zh_CN: Locale = {
   CodeHighlight: {
     codeBlock: '代码块',
   },
+  Cropper: {
+    container: '图片裁切',
+  },
   Timeline: {
     pending: '加载中…',
   },

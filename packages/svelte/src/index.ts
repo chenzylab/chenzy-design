@@ -153,6 +153,15 @@ export {
   type SendHotKey,
   type EnableUploadProps as ChatEnableUploadProps,
 } from './chat/index.js';
+export {
+  Cropper,
+  cropperMeta,
+  type CropperShape,
+  type CropperCorner,
+  type CropperBox,
+  type CropperImageState,
+  type CropperPoint,
+} from './cropper/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';

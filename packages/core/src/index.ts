@@ -232,6 +232,26 @@ export {
   type AudioPlayerApi,
 } from './audio-player.js';
 export {
+  createCropperFoundation,
+  getMiddle as getCropperMiddle,
+  getAspectHW,
+  getMoveParamByDir,
+  CROPPER_CORNERS,
+  CROPPER_ROUND_CORNERS,
+  CROPPER_SHAPES,
+  type CropperFoundation,
+  type CropperAdapter,
+  type CropperFoundationProps,
+  type CropperFoundationState,
+  type CropperImageData,
+  type CropperImageState,
+  type CropperBox,
+  type ContainerData as CropperContainerData,
+  type CropperCorner,
+  type CropperShape,
+  type Point as CropperPoint,
+} from './cropper.js';
+export {
   mergeConfig,
   DEFAULT_CONFIG,
   resolveAppliedTheme,

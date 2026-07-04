@@ -204,6 +204,9 @@ export const en_US: Locale = {
   CodeHighlight: {
     codeBlock: 'Code block',
   },
+  Cropper: {
+    container: 'Image cropper',
+  },
   Timeline: {
     pending: 'Loading…',
   },

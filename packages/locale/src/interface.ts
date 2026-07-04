@@ -271,6 +271,10 @@ export interface Locale {
     /** 代码块滚动区 aria-label（role=region 命名） */
     codeBlock: string;
   };
+  Cropper: {
+    /** 裁切容器 aria-label */
+    container: string;
+  };
   Timeline: {
     pending: string;
   };
