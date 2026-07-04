@@ -164,6 +164,32 @@ export interface Locale {
     ariaLabel: string;
     arrived: string;
   };
+  AudioPlayer: {
+    /** 播放按钮 aria-label */
+    play: string;
+    /** 暂停按钮 aria-label */
+    pause: string;
+    /** 上一曲 aria-label */
+    prev: string;
+    /** 下一曲 aria-label */
+    next: string;
+    /** 快进 aria-label（uses {seconds}） */
+    forward: string;
+    /** 快退 aria-label（uses {seconds}） */
+    backward: string;
+    /** 重播 aria-label */
+    refresh: string;
+    /** 音量 aria-label */
+    volume: string;
+    /** 进度条 aria-label */
+    progress: string;
+    /** 倍速 aria-label */
+    speed: string;
+    /** 加载中播报 */
+    loading: string;
+    /** 播放出错播报 */
+    error: string;
+  };
   Switch: {
     on: string;
     off: string;

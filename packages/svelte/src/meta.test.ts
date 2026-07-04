@@ -53,6 +53,7 @@ import { meta as tableMeta } from './table/meta.js';
 import { meta as calendarMeta } from './calendar/meta.js';
 import { meta as scrollListMeta } from './scroll-list/meta.js';
 import { meta as overflowListMeta } from './overflow-list/meta.js';
+import { meta as audioPlayerMeta } from './audio-player/meta.js';
 import { meta as spinMeta } from './spin/meta.js';
 import { meta as progressMeta } from './progress/meta.js';
 import { meta as skeletonMeta } from './skeleton/meta.js';
@@ -126,6 +127,7 @@ const metas = {
   calendarMeta,
   scrollListMeta,
   overflowListMeta,
+  audioPlayerMeta,
   spinMeta,
   progressMeta,
   skeletonMeta,

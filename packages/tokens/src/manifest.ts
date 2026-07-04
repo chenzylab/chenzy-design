@@ -159,6 +159,7 @@ const MULTI_SEGMENT_COMPONENTS: string[][] = [
   ['virtual', 'list'],
   ['code', 'highlight'],
   ['video', 'player'],
+  ['audio', 'player'],
 ];
 // 无连字符别名 → 规范组件名（同组件的另一套命名收归同一归属）。
 const COMPONENT_ALIASES: Record<string, string> = {

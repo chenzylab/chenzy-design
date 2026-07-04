@@ -129,6 +129,7 @@ export {
   type PlaybackRateOption,
   type LabeledOption,
 } from './video-player/index.js';
+export { AudioPlayer, audioPlayerMeta } from './audio-player/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';

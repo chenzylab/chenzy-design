@@ -218,6 +218,20 @@ export {
 } from './notification.js';
 export { easeInOutCubic, isAboveThreshold, scrollPositionAt } from './back-top.js';
 export {
+  createAudioPlayer,
+  normalizeAudioUrl,
+  clampVolume as clampAudioVolume,
+  clampTime as clampAudioTime,
+  type AudioInfo,
+  type AudioUrl,
+  type AudioTrack,
+  type PlaybackRate,
+  type AudioPlayerAdapter,
+  type AudioPlayerState,
+  type AudioPlayerOptions,
+  type AudioPlayerApi,
+} from './audio-player.js';
+export {
   mergeConfig,
   DEFAULT_CONFIG,
   resolveAppliedTheme,

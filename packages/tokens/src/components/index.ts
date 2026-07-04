@@ -59,6 +59,7 @@ import { paginationTokens } from './pagination.js';
 import { codeHighlightTokens } from './code-highlight.js';
 import { markdownRenderTokens } from './markdown-render.js';
 import { videoPlayerTokens } from './video-player.js';
+import { audioPlayerTokens } from './audio-player.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -121,4 +122,5 @@ export const componentTokens = {
   ...codeHighlightTokens,
   ...markdownRenderTokens,
   ...videoPlayerTokens,
+  ...audioPlayerTokens,
 } as const;
