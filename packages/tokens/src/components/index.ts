@@ -61,6 +61,7 @@ import { markdownRenderTokens } from './markdown-render.js';
 import { videoPlayerTokens } from './video-player.js';
 import { audioPlayerTokens } from './audio-player.js';
 import { jsonViewerTokens } from './json-viewer.js';
+import { chatTokens } from './chat.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -125,4 +126,5 @@ export const componentTokens = {
   ...videoPlayerTokens,
   ...audioPlayerTokens,
   ...jsonViewerTokens,
+  ...chatTokens,
 } as const;

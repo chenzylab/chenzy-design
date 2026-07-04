@@ -599,4 +599,36 @@ export interface Locale {
     /** 替换输入框占位/可访问名 */
     replaceInput: string;
   };
+  Chat: {
+    /** send button aria-label */
+    send: string;
+    /** stop-generate button aria-label */
+    stop: string;
+    /** clear-context button aria-label */
+    clear: string;
+    /** copy-message action aria-label */
+    copy: string;
+    /** delete-message action aria-label */
+    delete: string;
+    /** reset/regenerate-message action aria-label */
+    reset: string;
+    /** like/good-feedback action aria-label */
+    like: string;
+    /** dislike/bad-feedback action aria-label */
+    dislike: string;
+    /** upload-attachment button aria-label */
+    upload: string;
+    /** input placeholder */
+    placeholder: string;
+    /** loading message status text */
+    loading: string;
+    /** error message status text */
+    error: string;
+    /** clear-context divider text */
+    clearContext: string;
+    /** back-to-bottom button aria-label */
+    backToBottom: string;
+    /** message list region aria-label */
+    messageList: string;
+  };
 }
