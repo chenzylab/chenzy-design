@@ -55,6 +55,23 @@ export const meta = {
     { name: 'bottomSlot', type: 'Snippet', default: 'undefined', desc: '右下角绝对定位标记 Snippet（如在线状态徽标）' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '文字/图标内容' },
   ],
+  subComponents: [
+    {
+      name: 'AvatarGroup',
+      usage: '<Avatar.Group> 重叠排列多个头像；items+maxCount 折叠出「+M」溢出头像',
+      desc: '把多个头像重叠排列。可用 items 数据驱动（配合 maxCount 折叠溢出），或用 children 自由传入 <Avatar>。组级 shape/size 经 context 透传，子 Avatar 自身 prop 优先。',
+      props: [
+        { name: 'items', type: 'AvatarGroupItem[]', default: 'undefined', desc: '数据驱动成员；启用 maxCount 折叠' },
+        { name: 'maxCount', type: 'number', default: 'undefined', desc: '最多显示 N 个头像，其余折叠为「+M」溢出头像' },
+        { name: 'shape', type: "'circle'|'square'", default: 'undefined', desc: '组级形状，透传给子头像（子 prop 优先）' },
+        { name: 'size', type: 'AvatarSizeEnum | number', default: 'undefined', desc: '组级尺寸，透传给子头像（子 prop 优先）' },
+        { name: 'overlapFrom', type: 'number', default: 'undefined', desc: '相邻头像重叠距离（px）' },
+        { name: 'onMore', type: '() => void', default: 'undefined', desc: '「+M」溢出头像的点击回调' },
+        { name: 'renderMore', type: 'Snippet<[{ overlapList: AvatarGroupItem[]; count: number }]>', default: 'undefined', desc: '自定义溢出头像渲染' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '不用 items 时自由传入的头像' },
+      ],
+    },
+  ],
   events: [{ name: 'click', desc: '可交互头像（href/onClick）被点击或键盘激活' }],
   slots: [{ name: 'children', desc: '文字或图标降级内容' }],
   a11y: {
