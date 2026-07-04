@@ -136,6 +136,7 @@ const components = [
   ['json-viewer', '{ JsonViewer }', '4 KB'],
   ['chat', '{ Chat }', '8.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '6 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载

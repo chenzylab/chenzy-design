@@ -158,12 +158,18 @@ export {
   AIChatDialogueBox,
   AIChatDialogueContentItem,
   aiChatDialogueMeta,
+  responseToMessage,
+  chatCompletionToMessage,
+  contentItemType,
+  normalizeDialogueContent,
   type AIDialogueMessage,
   type AIDialogueMetadata,
   type AIDialogueRoleConfig,
   type AIDialogueReference,
   type ContentItem as AIDialogueContentItem,
   type AIMessageStatus,
+  type OpenAIResponseObject,
+  type ChatCompletionObject,
 } from './ai-chat-dialogue/index.js';
 export {
   Cropper,
