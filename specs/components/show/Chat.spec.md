@@ -4,6 +4,14 @@
 > 对标 Semi：[Chat](https://semi.design/zh-CN/plus/chat)
 > **最高约束：一切以 Semi 实现为准**。API 命名、prop 语义、默认值、消息模型、模式、快捷键、DOM/class 严格对齐 Semi。Semi 没有的行为默认不加；增强须登记偏离。
 > **依赖**：内容渲染复用本库 **MarkdownRender**（已合入，Chat 中默认 `format='md'`）；附件复用 **Upload**（已有）；代码块高亮走 **CodeHighlight/prismjs**（Semi 底层同）。
+>
+> **实现状态（2026-07-04 已落地）与对 Semi 的已知偏离/缺口**（后续可补）：
+> - **动画**：Semi 用 `@douyinfe/semi-animation`；本实现手写 rAF + easeInOutCubic（曲线一致，避免新依赖）。
+> - **附件模型**：Semi FileItem 有 `fileInstance`；本库 `UploadFileItem` 用 `file?: File`，Chat 内做 `file→fileInstance` 映射后喂 core。
+> - **上传**：已实现 clickUpload + pasteUpload；**dragUpload（整容器拖拽遮罩 handleContainerDragOver/Drop/DragLeave + uploadAreaVisible）未实现**，`resolveEnableUpload` 的 `dragUpload` 返回值当前未被消费 → **待补**。
+> - **canSend prop 覆盖未实现**（disableSend 仅按内容/附件推断）；`showStopGenerate` 已实现。
+> - **renderInputArea 的 detailProps**（clearContextNode/uploadNode/inputNode/sendNode 拆分节点）未提供，仅给 `defaultNode`/`onSend`/`onClear`。
+> - `escapeHtml`/`customMarkDownComponents`/`uploadTipProps` 未单列 prop（经 markdownRenderProps/uploadProps 透传）。
 
 ## 1. 概述
 快速搭建对话内容容器。用于普通会话与 AI 会话：消息流、SSE 流式更新、附件上传、角色配置、提示区、丰富的插槽自定义。
