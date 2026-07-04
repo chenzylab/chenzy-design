@@ -187,6 +187,9 @@ export const en_US: Locale = {
     next: 'Next',
     previewCount: '{index} of {total}',
   },
+  CodeHighlight: {
+    codeBlock: 'Code block',
+  },
   Timeline: {
     pending: 'Loading…',
   },

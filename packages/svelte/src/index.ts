@@ -111,6 +111,7 @@ export { Timeline, TimelineItem, timelineMeta, type TimelineItemData } from './t
 export { List, listMeta } from './list/index.js';
 export { Image, ImagePreviewGroup, imageMeta } from './image/index.js';
 export { Highlight, highlightMeta } from './highlight/index.js';
+export { CodeHighlight, codeHighlightMeta } from './code-highlight/index.js';
 export { VirtualList, virtualListMeta } from './virtual-list/index.js';
 export { OverflowList, overflowListMeta } from './overflow-list/index.js';
 

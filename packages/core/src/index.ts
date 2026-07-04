@@ -186,6 +186,10 @@ export {
   type BannerRoleProps,
 } from './banner.js';
 export {
+  resolveCodeClassName,
+  type ResolveCodeClassNameOptions,
+} from './code-highlight.js';
+export {
   createToastStore,
   type ToastStore,
   type ToastItem,

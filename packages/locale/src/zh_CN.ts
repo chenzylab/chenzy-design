@@ -187,6 +187,9 @@ export const zh_CN: Locale = {
     next: '下一张',
     previewCount: '第 {index} 张，共 {total} 张',
   },
+  CodeHighlight: {
+    codeBlock: '代码块',
+  },
   Timeline: {
     pending: '加载中…',
   },

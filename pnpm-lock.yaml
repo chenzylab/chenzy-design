@@ -152,10 +152,16 @@ importers:
       '@chenzy-design/tokens':
         specifier: workspace:*
         version: link:../tokens
+      prismjs:
+        specifier: ^1.29.0
+        version: 1.30.0
       svelte:
         specifier: '>=5.0.0'
         version: 5.56.3(@typescript-eslint/types@8.61.1)
     devDependencies:
+      '@types/prismjs':
+        specifier: ^1.26.5
+        version: 1.26.6
       tsx:
         specifier: ^4.19.2
         version: 4.22.4
@@ -1005,6 +1011,9 @@ packages:
 
   '@types/node@25.9.3':
     resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
+
+  '@types/prismjs@1.26.6':
+    resolution: {integrity: sha512-vqlvI7qlMvcCBbVe0AKAb4f97//Hy0EBTaiW8AalRnG/xAN5zOiWWyrNqNXeq8+KAuvRewjCVY1+IPxk4RdNYw==}
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
@@ -3227,6 +3236,8 @@ snapshots:
   '@types/node@25.9.3':
     dependencies:
       undici-types: 7.24.6
+
+  '@types/prismjs@1.26.6': {}
 
   '@types/trusted-types@2.0.7': {}
 

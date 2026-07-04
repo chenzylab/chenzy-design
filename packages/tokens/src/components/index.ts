@@ -56,6 +56,7 @@ import { stepsTokens } from './steps.js';
 import { anchorTokens } from './anchor.js';
 import { dropdownTokens } from './dropdown.js';
 import { paginationTokens } from './pagination.js';
+import { codeHighlightTokens } from './code-highlight.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -115,4 +116,5 @@ export const componentTokens = {
   ...anchorTokens,
   ...dropdownTokens,
   ...paginationTokens,
+  ...codeHighlightTokens,
 } as const;

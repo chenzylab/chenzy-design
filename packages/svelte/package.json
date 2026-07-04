@@ -31,9 +31,11 @@
   "dependencies": {
     "@chenzy-design/core": "workspace:*",
     "@chenzy-design/locale": "workspace:*",
-    "@chenzy-design/tokens": "workspace:*"
+    "@chenzy-design/tokens": "workspace:*",
+    "prismjs": "^1.29.0"
   },
   "devDependencies": {
+    "@types/prismjs": "^1.26.5",
     "tsx": "^4.19.2"
   },
   "peerDependencies": {
