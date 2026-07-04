@@ -5,6 +5,32 @@
 > 关注维度：**富媒体 / 内容展示类**组件——音视频、代码/数据/文档渲染、AI 会话、图像处理。
 > 结论：本仓库已覆盖 Semi 全部**基础/输入/导航/展示/反馈**组件，缺口集中在 Semi 的 `category: Plus`（进阶富媒体）一族，共 **7 个组件 + 2 个 AI 子件**，另 Lottie 需复核。
 
+## 0. 实施状态（2026-07-04 更新）
+
+**7 个富媒体组件全部已实现并合入 main**，每个均达发布级 DoD（测试 + typecheck + token 无悬空 + i18n + meta + size-limit 门禁 + docs demo）：
+
+| 组件 | 底层 | 组件壳 gzip | 测试 | 备注 |
+|---|---|---|---|---|
+| CodeHighlight | prismjs | 9.40 KB（含 core） | ✅ | |
+| MarkdownRender | unified(remark/rehype→hast) | 2.88 KB | ✅ | unified 动态 import |
+| VideoPlayer | 原生 `<video>` | 7.66 KB | 44+5 | 零第三方 |
+| AudioPlayer | 原生 `<audio>` | 4.26 KB | 24+7 | 零第三方 |
+| JsonViewer | @douyinfe/semi-json-viewer-core | 3.21 KB | 11+4skip | 内核动态 import；jsdom 无 Worker |
+| Chat | MarkdownRender+Upload+prismjs | 7.17 KB | 30+6 | dragUpload 未实现（见 Chat.spec 登记） |
+| Cropper | 原生 canvas 几何引擎 | 3.13 KB | 22+11 | 几何在 core；jsdom 无布局/canvas |
+
+全库 **1173 passed + 5 skip**、typecheck 0 errors、perf:check 75 组件全过。
+
+### Lottie 复核结论：不新建，登记取舍
+对比 Semi `Lottie`（Plus，lottie-web 极简封装：`params` 透传 + `getAnimationInstance`/`getLottie`）与本库 `lottie-icon`：
+- **`lottie-icon` 已覆盖 Lottie 播放核心**（core 的 resolveRenderer/segments/animated + play/pause/stop/playSegments），但定位偏**图标级**（`size` 三档、`color`、依赖注入式 `player` 工厂而非硬绑 lottie-web）。
+- **差异（非 bug，设计取向不同）**：Semi 是通用容器 + 硬绑 lottie-web + 暴露原始 animation 实例；`lottie-icon` 刻意做成 library-agnostic（不硬绑 lottie-web，体积友好），只暴露受控方法、不给原始实例。
+- **决定：不新建通用 Lottie 组件**。理由：① core 已能播 Lottie；② 硬绑 lottie-web 违反本库「core 库无关」原则；③ 需要通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。若未来有强需求，可考虑给 `lottie-icon` 增补「暴露原始实例」的可选 API，而非新组件。
+
+### 未做/后续
+- **AIChatInput / AIChatDialogue**（Chat 子件）：Semi 的独立 AI 输入/弹窗子件未单独实现，能力已被 Chat 的 InputBox + renderInputArea snippet 覆盖。
+- **Chat dragUpload**、canSend、renderInputArea detailProps：见 `Chat.spec.md` 偏离登记。
+
 ## 1. 交叉核对方法
 
 - Semi 全集 94 项，剔除内部原语（`_base`/`_portal`/`_sortable`/`_utils`/`_cssanimation`）、构建产物（`index.*`/`*-adapter.*`/`icons`/`locale`）、以及**已有对应实现**的组件。
