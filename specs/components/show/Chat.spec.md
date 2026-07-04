@@ -8,9 +8,9 @@
 > **实现状态（2026-07-04 已落地）与对 Semi 的已知偏离/缺口**（后续可补）：
 > - **动画**：Semi 用 `@douyinfe/semi-animation`；本实现手写 rAF + easeInOutCubic（曲线一致，避免新依赖）。
 > - **附件模型**：Semi FileItem 有 `fileInstance`；本库 `UploadFileItem` 用 `file?: File`，Chat 内做 `file→fileInstance` 映射后喂 core。
-> - **上传**：已实现 clickUpload + pasteUpload；**dragUpload（整容器拖拽遮罩 handleContainerDragOver/Drop/DragLeave + uploadAreaVisible）未实现**，`resolveEnableUpload` 的 `dragUpload` 返回值当前未被消费 → **待补**。
-> - **canSend prop 覆盖未实现**（disableSend 仅按内容/附件推断）；`showStopGenerate` 已实现。
-> - **renderInputArea 的 detailProps**（clearContextNode/uploadNode/inputNode/sendNode 拆分节点）未提供，仅给 `defaultNode`/`onSend`/`onClear`。
+> - **上传**：clickUpload + pasteUpload + **dragUpload 均已实现**（2026-07-04 补齐）。dragUpload 为整容器拖拽遮罩（dragenter/over/leave/drop + dragActive 显隐），drop 文件走 `Upload.addFiles`（已为此导出 Upload 的 `addFiles` 方法）复用校验/上传管线；clickUpload 关而 dragUpload 开时仍挂载隐藏 Upload 实例接住 drop。真实拖拽显隐留浏览器验证（jsdom 无 DataTransfer）。
+> - **canSend prop 已实现**（2026-07-04 补齐，对齐 Semi）：未设置时按内容/附件推断，显式设置时以此为准（覆盖推断）；`showStopGenerate` 已实现。
+> - **renderInputArea 的 detailProps 已实现**（2026-07-04 补齐）：提供 `clearContextNode`/`uploadNode`/`inputNode`/`sendNode` 拆分节点 + `defaultNode`/`onSend`/`onClear`，供自定义输入区自由组合。
 > - `escapeHtml`/`customMarkDownComponents`/`uploadTipProps` 未单列 prop（经 markdownRenderProps/uploadProps 透传）。
 
 ## 1. 概述

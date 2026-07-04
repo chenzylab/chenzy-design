@@ -97,4 +97,50 @@ describe('Chat a11y / 渲染', () => {
     expect(container.querySelector('.custom-content')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
+
+  it('canSend=false：即使有输入内容，发送按钮仍 disabled', async () => {
+    const { container } = renderWithLocale(Chat, {
+      props: { chats: baseChats, canSend: false },
+    });
+    const textarea = container.querySelector('.cd-chat-inputBox-textarea') as HTMLTextAreaElement;
+    await fireEvent.input(textarea, { target: { value: 'has content' } });
+    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    expect(sendBtn.disabled).toBe(true);
+  });
+
+  it('canSend=true：即使输入为空，发送按钮也可用', async () => {
+    const { container } = renderWithLocale(Chat, {
+      props: { chats: baseChats, canSend: true },
+    });
+    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    expect(sendBtn.disabled).toBe(false);
+  });
+
+  it('dragUpload 开启：容器绑定拖拽处理，初始态无遮罩', async () => {
+    // jsdom 无 DataTransfer 构造器，无法真实合成含 Files 的 drag 事件（真实拖拽显隐
+    // 遮罩留给浏览器）。这里断言：dragUpload 开启时容器为可拖入的 group、初始无遮罩，
+    // 拖拽逻辑（dragActive 显隐 + addFiles）由 core/组件逻辑保证，浏览器环境验证。
+    const { container } = renderWithLocale(Chat, {
+      props: {
+        chats: baseChats,
+        enableUpload: { dragUpload: true, clickUpload: true, pasteUpload: true },
+      },
+    });
+    const box = container.querySelector('.cd-chat-inputBox') as HTMLElement;
+    expect(box).not.toBeNull();
+    expect(box.getAttribute('role')).toBe('group');
+    // 初始未拖拽：无遮罩、无 drag-active。
+    expect(container.querySelector('.cd-chat-inputBox-dropmask')).toBeNull();
+    expect(box.classList.contains('cd-chat-inputBox--drag-active')).toBe(false);
+    // 用 plain 对象 mock 一个不含 Files 的 dragover（应被忽略，不阻止默认、不激活）。
+    await fireEvent.dragOver(box, { dataTransfer: { types: [] } });
+    expect(box.classList.contains('cd-chat-inputBox--drag-active')).toBe(false);
+  });
+
+  it('enableUpload=false：不渲染上传按钮', async () => {
+    const { container } = renderWithLocale(Chat, {
+      props: { chats: baseChats, enableUpload: false },
+    });
+    expect(container.querySelector('.cd-chat-inputBox-upload')).toBeNull();
+  });
 });

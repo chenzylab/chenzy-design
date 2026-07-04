@@ -29,7 +29,7 @@
 
 ### 未做/后续
 - **AIChatInput / AIChatDialogue**（Chat 子件）：Semi 的独立 AI 输入/弹窗子件未单独实现，能力已被 Chat 的 InputBox + renderInputArea snippet 覆盖。
-- **Chat dragUpload**、canSend、renderInputArea detailProps：见 `Chat.spec.md` 偏离登记。
+- ~~**Chat dragUpload**、canSend、renderInputArea detailProps~~：**已于 2026-07-04 补齐**（dragUpload 整容器拖拽 + Upload.addFiles 导出、canSend prop、detailProps 拆分节点），见 `Chat.spec.md`。
 
 ## 1. 交叉核对方法
 

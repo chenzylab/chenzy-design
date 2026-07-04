@@ -19,10 +19,27 @@ import type { UploadFileItem } from '../upload/types.js';
 export type { Message, Metadata, RoleConfig, Content, ChatAttachment };
 export type { ChatAlign, ChatMode, SendHotKey, EnableUploadProps };
 
+/**
+ * renderInputArea 的拆分节点（对齐 Semi detailProps）。
+ * 供自定义输入区时挑选内置的清除 / 上传 / 输入 / 发送节点自由组合。
+ */
+export interface RenderInputAreaDetailProps {
+  /** 清除上下文按钮节点（showClearContext 为 false 时为 undefined）。 */
+  clearContextNode?: Snippet | undefined;
+  /** 上传按钮节点（clickUpload/dragUpload 均关时为 undefined）。 */
+  uploadNode?: Snippet | undefined;
+  /** 文本输入（textarea）节点。 */
+  inputNode?: Snippet | undefined;
+  /** 发送按钮节点。 */
+  sendNode?: Snippet | undefined;
+}
+
 /** renderInputArea snippet 参数（对齐 Semi RenderInputAreaProps）。 */
 export interface RenderInputAreaProps {
   /** 默认输入区节点（供包裹）。 */
   defaultNode?: Snippet;
+  /** 拆分节点，供自定义布局时挑选组合（对齐 Semi detailProps）。 */
+  detailProps?: RenderInputAreaDetailProps;
   /** 触发发送。 */
   onSend: (content?: string, attachment?: UploadFileItem[]) => void;
   /** 触发清除上下文。 */

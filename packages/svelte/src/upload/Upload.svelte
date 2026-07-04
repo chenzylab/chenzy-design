@@ -397,7 +397,8 @@
     return item;
   }
 
-  function addFiles(fileList: FileList | File[]) {
+  // 导出：供外部程序化添加文件（如 Chat 整容器拖拽上传），走完整校验 / accept / limit 管线。
+  export function addFiles(fileList: FileList | File[]) {
     if (disabled) return;
     const allFiles = Array.from(fileList);
     if (allFiles.length === 0) return;

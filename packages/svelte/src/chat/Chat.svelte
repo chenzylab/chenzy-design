@@ -66,6 +66,11 @@
     showClearContext?: boolean;
     /** 是否展示停止生成按钮。 */
     showStopGenerate?: boolean;
+    /**
+     * 是否可以发送（对齐 Semi canSend）。未设置时由输入内容 / 附件推断；
+     * 显式设置时以此为准。
+     */
+    canSend?: boolean | undefined;
     /** 提示项列表。 */
     hints?: string[];
     /** 上传能力（true/false 或三态对象）。 */
@@ -115,6 +120,7 @@
     sendHotKey = 'enter',
     showClearContext = false,
     showStopGenerate = false,
+    canSend,
     hints,
     enableUpload = true,
     uploadProps,
@@ -382,8 +388,10 @@
     {sendHotKey}
     {placeholder}
     {showClearContext}
+    {canSend}
     clickUpload={uploadModes.clickUpload}
     pasteUpload={uploadModes.pasteUpload}
+    dragUpload={uploadModes.dragUpload}
     {uploadProps}
     onSend={doSend}
     onClearContext={doClearContext}
