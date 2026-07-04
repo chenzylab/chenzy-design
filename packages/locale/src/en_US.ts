@@ -424,6 +424,7 @@ export const en_US: Locale = {
     rateChange: 'Speed {rate}',
     qualityChange: 'Quality {quality}',
     routeChange: 'Route {route}',
+  },
   JsonViewer: {
     editor: 'JSON editor',
     search: 'Search',

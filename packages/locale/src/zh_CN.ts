@@ -424,6 +424,7 @@ export const zh_CN: Locale = {
     rateChange: '速度 {rate}',
     qualityChange: '清晰度 {quality}',
     routeChange: '线路 {route}',
+  },
   JsonViewer: {
     editor: 'JSON 编辑器',
     search: '搜索',

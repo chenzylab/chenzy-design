@@ -572,6 +572,7 @@ export interface Locale {
     qualityChange: string;
     /** route-change notification, uses {route} */
     routeChange: string;
+  };
   JsonViewer: {
     /** 编辑器容器 role=textbox 的可访问名 */
     editor: string;
