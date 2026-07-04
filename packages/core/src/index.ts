@@ -378,6 +378,25 @@ export {
   type FormatOptions,
 } from './color.js';
 export {
+  createVideoPlayerFoundation,
+  progressValueFromPointer,
+  segmentValueWidth,
+  buildMarkerSegments,
+  formatTimeDisplay,
+  DEFAULT_CONTROLS_LIST,
+  DEFAULT_PLAYBACK_RATE_LIST,
+  VIDEO_PLAYER_NUMBERS,
+  type VideoPlayerFoundation,
+  type VideoPlayerFoundationOptions,
+  type VideoPlayerAdapter,
+  type VideoPlayerState,
+  type VideoPlayerProps,
+  type VideoPlayerLocale,
+  type PlaybackRateOption,
+  type LabeledOption,
+  type VideoMarker,
+} from './video-player.js';
+export {
   buildRange as buildTimeRange,
   to12Hour,
   meridiemOf,

@@ -122,6 +122,13 @@ export {
   type CompileToHastOptions,
   type UnifiedPluginEntry,
 } from './markdown-render/index.js';
+export {
+  VideoPlayer,
+  videoPlayerMeta,
+  type VideoMarker,
+  type PlaybackRateOption,
+  type LabeledOption,
+} from './video-player/index.js';
 
 // --- M5 Feedback ---
 export { Spin, spinMeta } from './spin/index.js';

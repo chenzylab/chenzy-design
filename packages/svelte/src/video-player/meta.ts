@@ -1,0 +1,158 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * VideoPlayer — aligned to Semi Design VideoPlayer (native <video>, no media lib).
+ */
+export const meta = {
+  name: 'VideoPlayer',
+  category: 'show',
+  description:
+    '视频播放器：原生 <video> + 框架无关状态机（@chenzy-design/core），无第三方媒体库。支持播放/暂停、进度拖拽跳转（含章节标记）、缓冲/已播放双层进度、音量（0–100，静音派生）、倍率/清晰度/线路下拉切换（切换后回跳原播放位置）、镜像、画中画、全屏、瞬时通知（加载/卡顿/镜像/倍率）。controlsList 控制控件项增删，theme 仅切换容器背景。键盘：Space 播放/暂停、←/→ 按 seekTime 跳转（焦点在播放器内时）。',
+  exports: ['VideoPlayer'],
+  props: [
+    { name: 'src', type: 'string', default: 'undefined', desc: '视频播放地址' },
+    { name: 'poster', type: 'string', default: 'undefined', desc: '封面图地址' },
+    { name: 'captionsSrc', type: 'string', default: 'undefined', desc: '字幕/captions 轨道地址' },
+    { name: 'width', type: 'number|string', default: 'undefined', desc: '容器宽，number 视为 px' },
+    { name: 'height', type: 'number|string', default: 'undefined', desc: '容器高，number 视为 px' },
+    { name: 'autoPlay', type: 'boolean', default: 'false', desc: '是否自动播放' },
+    { name: 'loop', type: 'boolean', default: 'false', desc: '是否循环播放' },
+    { name: 'muted', type: 'boolean', default: 'false', desc: '是否静音播放（初始）' },
+    { name: 'clickToPlay', type: 'boolean', default: 'true', desc: '点击视频画面是否切换播放' },
+    { name: 'volume', type: 'number', default: '100', desc: '初始音量，区间 0–100' },
+    { name: 'seekTime', type: 'number', default: '10', desc: '←/→ 键快进快退时间（秒）' },
+    {
+      name: 'controlsList',
+      type: 'string[]',
+      default:
+        "['play','next','time','volume','playbackRate','quality','route','mirror','fullscreen','pictureInPicture']",
+      desc: '控件栏展示项（对齐 Semi shouldShowControlItem，控制增删）',
+    },
+    {
+      name: 'playbackRateList',
+      type: '{ label: string; value: number }[]',
+      default: '[2.0x,1.5x,1.25x,1.0x,0.75x]',
+      desc: '倍率菜单选项，默认 Semi 5 档',
+    },
+    { name: 'defaultPlaybackRate', type: 'number', default: '1', desc: '默认倍率' },
+    {
+      name: 'qualityList',
+      type: '{ label: string; value: string }[]',
+      default: 'undefined',
+      desc: '清晰度菜单选项',
+    },
+    { name: 'defaultQuality', type: 'string', default: 'undefined', desc: '默认清晰度' },
+    {
+      name: 'routeList',
+      type: '{ label: string; value: string }[]',
+      default: 'undefined',
+      desc: '线路菜单选项',
+    },
+    { name: 'defaultRoute', type: 'string', default: 'undefined', desc: '默认线路' },
+    {
+      name: 'markers',
+      type: '{ start: number; title?: string }[]',
+      default: '[]',
+      desc: '进度条章节标记点',
+    },
+    {
+      name: 'theme',
+      type: "'dark'|'light'",
+      default: "'dark'",
+      desc: '主题，仅影响容器背景色（对齐 Semi）',
+    },
+    {
+      name: 'crossOrigin',
+      type: "'anonymous'|'use-credentials'",
+      default: 'undefined',
+      desc: '原生 crossorigin，CORS 取视频',
+    },
+    { name: 'class', type: 'string', default: "''", desc: '根类名透传' },
+    {
+      name: 'videoRef',
+      type: 'HTMLVideoElement|null',
+      default: 'null',
+      desc: 'bindable：拿到原生 video 元素以做更灵活的控制（如多视频同步）',
+    },
+    { name: 'onPlay', type: '() => void', default: 'undefined', desc: '播放回调' },
+    { name: 'onPause', type: '() => void', default: 'undefined', desc: '暂停回调' },
+    {
+      name: 'onVolumeChange',
+      type: '(volume: number) => void',
+      default: 'undefined',
+      desc: '调整音量回调',
+    },
+    { name: 'onRateChange', type: '(rate: number) => void', default: 'undefined', desc: '切换倍率回调' },
+    {
+      name: 'onQualityChange',
+      type: '(quality: string) => void',
+      default: 'undefined',
+      desc: '切换清晰度回调（在此更新 src）',
+    },
+    {
+      name: 'onRouteChange',
+      type: '(route: string) => void',
+      default: 'undefined',
+      desc: '切换线路回调（在此更新 src）',
+    },
+  ],
+  events: [
+    { name: 'onPlay', desc: '开始播放' },
+    { name: 'onPause', desc: '暂停' },
+    { name: 'onVolumeChange', desc: '音量变化' },
+    { name: 'onRateChange', desc: '倍率变化' },
+    { name: 'onQualityChange', desc: '清晰度变化' },
+    { name: 'onRouteChange', desc: '线路变化' },
+  ],
+  slots: [],
+  a11y: {
+    role: 'application',
+    keyboard: ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Escape'],
+    focusable: true,
+    notes: [
+      'Space 播放/暂停、←/→ 按 seekTime 跳转，仅当焦点在播放器容器内时响应（Semi handleBodyKeyDown，避免劫持页面其他控件键位）',
+      '所有控件为原生 <button>，aria-label 走 locale（play/pause/mute/unmute/fullscreen/exitFullscreen/pictureInPicture/mirror/playbackRate/quality/route/volume）',
+      '进度条 role=slider，aria-valuemin/max/now 为秒；Home/End 跳到首尾；章节标记 aria-hidden',
+      '音量条 role=slider（0–100），↑/↓ 步进 10；静音按钮 aria-pressed',
+      '倍率/清晰度/线路为菜单按钮：aria-haspopup=menu、aria-expanded、role=menuitemradio + aria-checked，↑/↓ 漫游、Enter/Space 选择、Esc/外点关闭',
+      '加载/卡顿通知 aria-live=polite；错误态 role=alert；时间显示 aria-hidden（视觉冗余）',
+    ],
+  },
+  tokens: [
+    '--cd-video-player-bg-dark',
+    '--cd-video-player-bg-light',
+    '--cd-video-player-controls-bg',
+    '--cd-video-player-icon-color',
+    '--cd-video-player-text-color',
+    '--cd-video-player-progress-track',
+    '--cd-video-player-progress-buffered',
+    '--cd-video-player-progress-played',
+    '--cd-video-player-progress-handle',
+    '--cd-video-player-marker-color',
+    '--cd-video-player-notification-bg',
+    '--cd-video-player-menu-bg',
+    '--cd-video-player-menu-item-color-active',
+    '--cd-video-player-radius',
+  ],
+  examples: [
+    {
+      title: '基础',
+      code: '<VideoPlayer src="/demo.mp4" poster="/poster.jpg" height={360} />',
+    },
+    {
+      title: '设置控件栏 + 循环',
+      code: "<VideoPlayer\n  src=\"/demo.mp4\"\n  loop\n  controlsList={['play', 'time', 'volume', 'playbackRate', 'fullscreen']}\n/>",
+    },
+    {
+      title: '清晰度切换',
+      code: '<VideoPlayer\n  src={src}\n  defaultQuality="1080p"\n  qualityList={[{ label: \'1080p\', value: \'1080p\' }, { label: \'480p\', value: \'480p\' }]}\n  onQualityChange={(q) => (src = pick(q))}\n/>',
+    },
+    {
+      title: '章节标记',
+      code: "<VideoPlayer src=\"/demo.mp4\" markers={[{ start: 0, title: '片头' }, { start: 38, title: '正片' }]} />",
+    },
+    {
+      title: 'ref 控制多视频同步',
+      code: '<VideoPlayer bind:videoRef={v1} src="/a.mp4" />\n<VideoPlayer bind:videoRef={v2} src="/a.mp4" />\n<button onclick={() => { v1?.play(); v2?.play(); }}>同时播放</button>',
+    },
+  ],
+} as const;

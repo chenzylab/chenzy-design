@@ -501,4 +501,50 @@ export interface Locale {
     collapse: string;
     ellipsisSuffix: string;
   };
+  VideoPlayer: {
+    /** play button aria-label */
+    play: string;
+    /** pause button aria-label */
+    pause: string;
+    /** replay button aria-label (after ended) */
+    replay: string;
+    /** mute button aria-label */
+    mute: string;
+    /** unmute button aria-label */
+    unmute: string;
+    /** volume slider aria-label */
+    volume: string;
+    /** enter-fullscreen button aria-label */
+    fullscreen: string;
+    /** exit-fullscreen button aria-label */
+    exitFullscreen: string;
+    /** picture-in-picture button aria-label */
+    pictureInPicture: string;
+    /** mirror button aria-label */
+    mirror: string;
+    /** playback-rate menu aria-label */
+    playbackRate: string;
+    /** quality menu aria-label */
+    quality: string;
+    /** route menu aria-label */
+    route: string;
+    /** progress slider aria-label */
+    progress: string;
+    /** buffering notification text */
+    loading: string;
+    /** stalled notification text */
+    stall: string;
+    /** error state text */
+    error: string;
+    /** mirror-on transient notification */
+    mirrorOn: string;
+    /** mirror-off transient notification */
+    mirrorOff: string;
+    /** rate-change notification, uses {rate} */
+    rateChange: string;
+    /** quality-change notification, uses {quality} */
+    qualityChange: string;
+    /** route-change notification, uses {route} */
+    routeChange: string;
+  };
 }
