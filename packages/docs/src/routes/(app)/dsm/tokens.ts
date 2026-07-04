@@ -119,24 +119,11 @@ export function groupAlias(): AliasGroup[] {
 
 // ── 组件层 ────────────────────────────────────────────────────────
 
-// 组件名规整：把 manifest 里因多词前缀而碎裂的段合并到规范组件目录。
-// 例：date/picker/time → date-picker；side/sidesheet → side-sheet；
-//     scroll/scrolllist → scroll-list；virtual → virtual-list。
-const COMPONENT_ALIAS: Record<string, string> = {
-  date: 'date-picker',
-  picker: 'date-picker',
-  time: 'time-picker',
-  side: 'side-sheet',
-  sidesheet: 'side-sheet',
-  scroll: 'scroll-list',
-  scrolllist: 'scroll-list',
-  virtual: 'virtual-list',
-  horizontal: 'grid',
-  overflow: 'overflow-list',
-};
-
+// 组件名规整已下沉到 tokens 包 manifest.ts 的 componentOf（多段组件名 date-picker /
+// color-picker / scroll-list / side-sheet / overflow-list / virtual-list 在源头即产出
+// 规范名），此处仅保留恒等兜底：manifest 若未来再冒出碎片段可在此临时映射。
 function normalizeComponent(c: string): string {
-  return COMPONENT_ALIAS[c] ?? c;
+  return c;
 }
 
 export interface ComponentEntry {
