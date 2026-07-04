@@ -28,7 +28,8 @@
 - **决定：不新建通用 Lottie 组件**。理由：① core 已能播 Lottie；② 硬绑 lottie-web 违反本库「core 库无关」原则；③ 需要通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。若未来有强需求，可考虑给 `lottie-icon` 增补「暴露原始实例」的可选 API，而非新组件。
 
 ### 未做/后续
-- **AIChatInput / AIChatDialogue**（Chat 子件）：Semi 的独立 AI 输入/弹窗子件未单独实现，能力已被 Chat 的 InputBox + renderInputArea snippet 覆盖。
+- **AIChatDialogue**：**已于 2026-07-04 落地**（core OpenAI 消息类型全谱 + 非流式 Adapter responseToMessage/chatCompletionToMessage + 渲染层 ContentItem 分块 + 选择/提示 + 16 测试 + demo + 门禁 4.82KB）。**P1 后续**：streaming Adapter（streamingResponseToMessage 25K / streamingChatCompletionToMessage）、消息编辑、tool_call/MCP 完整块渲染，见 `AIChatDialogue.spec.md §13`。
+- **AIChatInput**：**未实现**——tiptap 富文本巨型组件（13 个 @tiptap 包，Semi 用 @tiptap/react，Svelte 需引 @tiptap/core + 手写响应式绑定 + input-slot/select-slot/skill-slot 三种自定义节点 + 技能/模版/建议/配置区/MCP）。工程量超前 8 组件总和，**建议独立立项**。
 - ~~**Chat dragUpload**、canSend、renderInputArea detailProps~~：**已于 2026-07-04 补齐**（dragUpload 整容器拖拽 + Upload.addFiles 导出、canSend prop、detailProps 拆分节点），见 `Chat.spec.md`。
 
 ## 1. 交叉核对方法
