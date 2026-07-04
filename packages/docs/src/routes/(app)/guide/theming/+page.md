@@ -1,3 +1,7 @@
+<script>
+  import { base } from '$app/paths';
+</script>
+
 # Theming 主题定制
 
 chenzy-design 的 token 是**运行时 CSS 变量**（三层：global 原子 → alias 语义 → component 组件）。这带来相对 Semi 的关键优势：改一个值 `setProperty` 即时生效，导出主题就是一段 CSS —— **无需 SCSS 编译、无需生成 npm 包**。
@@ -25,7 +29,7 @@ chenzy-design 的 token 是**运行时 CSS 变量**（三层：global 原子 →
 
 ## 2. 可视化编辑 · DSM 主题编辑器
 
-访问文档站 [`/dsm`](/dsm) —— 在界面里拖调 token、实时预览、导出主题 CSS。
+访问文档站 <a href="{base}/dsm"><code>/dsm</code></a> —— 在界面里拖调 token、实时预览、导出主题 CSS。
 
 - **全局层**：编辑品牌色/状态色/背景/文本等 alias 语义色。改 `color-primary`，预览里所有引用它的组件主色联动变，其他语义色保持隔离。
 - **组件层**：下钻到单个组件（64 个），按分类精细编辑该组件的 token。
