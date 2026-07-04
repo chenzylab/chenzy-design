@@ -74,6 +74,7 @@ import { meta as markdownRenderMeta } from './markdown-render/meta.js';
 import { meta as videoPlayerMeta } from './video-player/meta.js';
 import { meta as jsonViewerMeta } from './json-viewer/meta.js';
 import { meta as chatMeta } from './chat/meta.js';
+import { meta as aiChatDialogueMeta } from './ai-chat-dialogue/meta.js';
 
 const metas = {
   buttonMeta,
@@ -151,6 +152,7 @@ const metas = {
   videoPlayerMeta,
   jsonViewerMeta,
   chatMeta,
+  aiChatDialogueMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

@@ -154,6 +154,18 @@ export {
   type EnableUploadProps as ChatEnableUploadProps,
 } from './chat/index.js';
 export {
+  AIChatDialogue,
+  AIChatDialogueBox,
+  AIChatDialogueContentItem,
+  aiChatDialogueMeta,
+  type AIDialogueMessage,
+  type AIDialogueMetadata,
+  type AIDialogueRoleConfig,
+  type AIDialogueReference,
+  type ContentItem as AIDialogueContentItem,
+  type AIMessageStatus,
+} from './ai-chat-dialogue/index.js';
+export {
   Cropper,
   cropperMeta,
   type CropperShape,

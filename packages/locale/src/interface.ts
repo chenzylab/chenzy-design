@@ -635,4 +635,34 @@ export interface Locale {
     /** message list region aria-label */
     messageList: string;
   };
+  AIChatDialogue: {
+    /** message list region aria-label */
+    messageList: string;
+    /** back-to-bottom button aria-label */
+    backToBottom: string;
+    /** select-message checkbox aria-label */
+    selectMessage: string;
+    /** copy action aria-label */
+    copy: string;
+    /** reset action aria-label */
+    reset: string;
+    /** delete action aria-label */
+    delete: string;
+    /** good-feedback action aria-label */
+    like: string;
+    /** bad-feedback action aria-label */
+    dislike: string;
+    /** loading status text */
+    loading: string;
+    /** error status text */
+    error: string;
+    /** reasoning block toggle label */
+    reasoning: string;
+    /** tool-call block fallback name */
+    toolCall: string;
+    /** audio block placeholder */
+    audio: string;
+    /** file item fallback name */
+    file: string;
+  };
 }
