@@ -3,8 +3,12 @@
  * 对齐 Semi AIChatInput，纯逻辑（可单测），tiptap Editor 实例与 DOM 归 svelte 渲染层：
  * - 阶段 1：发送态判定（canSend）、快捷键判定（sendHotKey）、MessageContent 组装、doc→Content[] 归一。
  * - 阶段 2：suggestion 面板键盘导航（环绕 index）、suggestion/reference 显示文本归一。
- * 见 specs/components/show/AIChatInput.spec.md §2/§4。
+ * - 阶段 3：skill 归一 / getSkillSlotHTML / skillHotKey 判定。
+ * - 阶段 4：配置区 setField/removeField（不可变）。
+ * - 阶段 5：Adapter 桥（messageToChatInput / chatInputToChatCompletion）接 AIChatDialogue / OpenAI API。
+ * 见 specs/components/show/AIChatInput.spec.md §2/§4/§5。
  */
+import type { AIDialogueMessage, ContentItem } from './ai-chat-dialogue.js';
 
 /** 富文本输出块（tiptap JSON 经 transformer 归一后的一段内容）。阶段 1 为纯文本段。 */
 export interface AIChatInputContent {
@@ -271,4 +275,81 @@ export function removeConfigureField(
     if (key !== field) next[key] = value[key];
   }
   return next;
+}
+
+// ————————————————————————————————————————————————————————————————
+// 阶段 5 · Adapter 桥（AIChatInput → AIChatDialogue / OpenAI API）
+// ————————————————————————————————————————————————————————————————
+
+/**
+ * 附件是否应按图片处理。Attachment.type 是 'file'|'directory'（非 mime），故按
+ * name/url 的图片扩展名判定。
+ */
+function isImageAttachment(att: AIChatInputAttachment): boolean {
+  const s = `${att.url ?? ''} ${att.name ?? ''}`;
+  return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|\s|$)/i.test(s);
+}
+
+/**
+ * messageToChatInput —— 把 AIChatInput 的 onMessageSend 载荷转成一条 AIDialogueMessage（user 角色），
+ * 供直接 push 进 AIChatDialogue 的 chats 展示。对齐 OpenAI Response 输入消息形态：
+ * content 为单个 InputMessage 块，其 content 数组含 input_text / input_image / input_file。
+ *
+ * @param message AIChatInput onMessageSend 载荷
+ * @param opts.id  消息 id（AIChatDialogue 需唯一 id；调用方应提供，缺省 ''）
+ * @param opts.model 可选模型标记
+ */
+export function messageToChatInput(
+  message: AIChatInputMessageContent,
+  opts: { id?: string; model?: string } = {},
+): AIDialogueMessage {
+  const parts: Array<Record<string, unknown>> = [];
+
+  for (const c of message.inputContents ?? []) {
+    const text = typeof c.text === 'string' ? c.text : '';
+    if (text.length > 0) parts.push({ type: 'input_text', text });
+  }
+  for (const att of message.attachments ?? []) {
+    if (isImageAttachment(att)) {
+      parts.push({ type: 'input_image', image_url: att.url, file_id: att.uid });
+    } else {
+      parts.push({ type: 'input_file', filename: att.name, file_url: att.url, file_id: att.uid });
+    }
+  }
+
+  const inputMessage: ContentItem = { type: 'message', role: 'user', content: parts } as ContentItem;
+  const msg: AIDialogueMessage = { id: opts.id ?? '', role: 'user', content: [inputMessage] };
+  if (opts.model !== undefined) msg.model = opts.model;
+  return msg;
+}
+
+/** OpenAI ChatCompletion 请求里的一条 message（user）。content 为多模态 parts。 */
+export interface ChatCompletionInputMessage {
+  role: 'user';
+  content: Array<Record<string, unknown>>;
+}
+
+/**
+ * chatInputToChatCompletion —— 把 onMessageSend 载荷转成 OpenAI ChatCompletion 请求的 user message，
+ * content 为多模态 parts（text / image_url / file）。供直接放进 messages 数组喂 API。
+ * 纯文本可由调用方按需扁平化；这里统一产出 parts 数组，保真多模态。
+ */
+export function chatInputToChatCompletion(
+  message: AIChatInputMessageContent,
+): ChatCompletionInputMessage {
+  const content: Array<Record<string, unknown>> = [];
+
+  for (const c of message.inputContents ?? []) {
+    const text = typeof c.text === 'string' ? c.text : '';
+    if (text.length > 0) content.push({ type: 'text', text });
+  }
+  for (const att of message.attachments ?? []) {
+    if (isImageAttachment(att)) {
+      content.push({ type: 'image_url', image_url: { url: att.url } });
+    } else {
+      content.push({ type: 'file', file: { filename: att.name, file_data: att.url } });
+    }
+  }
+
+  return { role: 'user', content };
 }

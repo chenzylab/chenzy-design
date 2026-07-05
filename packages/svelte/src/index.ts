@@ -190,6 +190,8 @@ export {
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
+  messageToChatInput,
+  chatInputToChatCompletion,
   type AIChatInputContent,
   type AIChatInputAttachment,
   type AIChatInputReference,
@@ -199,6 +201,7 @@ export {
   type AIChatInputSuggestion,
   type AIChatInputSkill,
   type AIChatInputConfigureValue,
+  type ChatCompletionInputMessage,
 } from './ai-chat-input/index.js';
 export {
   Cropper,

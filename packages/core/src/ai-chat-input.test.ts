@@ -13,6 +13,8 @@ import {
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
+  messageToChatInput,
+  chatInputToChatCompletion,
   type AIChatInputContent,
 } from './ai-chat-input.js';
 
@@ -230,5 +232,65 @@ describe('ai-chat-input · removeConfigureField', () => {
   });
   it('移除不存在的字段无副作用', () => {
     expect(removeConfigureField({ a: 1 }, 'b')).toEqual({ a: 1 });
+  });
+});
+
+describe('ai-chat-input · messageToChatInput', () => {
+  it('inputContents → input_text，附件按类型 → input_image/input_file', () => {
+    const msg = messageToChatInput(
+      {
+        inputContents: [{ type: 'text', text: '你好' }],
+        attachments: [
+          { uid: '1', name: 'a.png', url: 'https://x/a.png' },
+          { uid: '2', name: 'doc.pdf', url: 'https://x/doc.pdf' },
+        ],
+      },
+      { id: 'm1', model: 'gpt-5' },
+    );
+    expect(msg.role).toBe('user');
+    expect(msg.id).toBe('m1');
+    expect(msg.model).toBe('gpt-5');
+    const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
+    expect(inner).toEqual([
+      { type: 'input_text', text: '你好' },
+      { type: 'input_image', image_url: 'https://x/a.png', file_id: '1' },
+      { type: 'input_file', filename: 'doc.pdf', file_url: 'https://x/doc.pdf', file_id: '2' },
+    ]);
+  });
+  it('缺 id 默认空串；空文本段丢弃', () => {
+    const msg = messageToChatInput({ inputContents: [{ type: 'text', text: '' }] });
+    expect(msg.id).toBe('');
+    const inner = (msg.content as { content: unknown[] }[])[0]!.content;
+    expect(inner).toEqual([]);
+  });
+  it('按 url 图片扩展名判图（attachment.type 是 file/directory 非 mime）', () => {
+    const msg = messageToChatInput({ attachments: [{ uid: '1', url: 'https://x/pic.webp' }] });
+    const inner = (msg.content as { content: Record<string, unknown>[] }[])[0]!.content;
+    expect(inner[0]!.type).toBe('input_image');
+  });
+});
+
+describe('ai-chat-input · chatInputToChatCompletion', () => {
+  it('转成 OpenAI user message 多模态 parts', () => {
+    const m = chatInputToChatCompletion({
+      inputContents: [{ type: 'text', text: 'hi' }],
+      attachments: [{ uid: '1', name: 'a.jpg', url: 'https://x/a.jpg' }],
+    });
+    expect(m.role).toBe('user');
+    expect(m.content).toEqual([
+      { type: 'text', text: 'hi' },
+      { type: 'image_url', image_url: { url: 'https://x/a.jpg' } },
+    ]);
+  });
+  it('非图附件 → file part', () => {
+    const m = chatInputToChatCompletion({
+      attachments: [{ uid: '1', name: 'r.pdf', url: 'https://x/r.pdf' }],
+    });
+    expect(m.content).toEqual([
+      { type: 'file', file: { filename: 'r.pdf', file_data: 'https://x/r.pdf' } },
+    ]);
+  });
+  it('空载荷 → 空 content', () => {
+    expect(chatInputToChatCompletion({}).content).toEqual([]);
   });
 });

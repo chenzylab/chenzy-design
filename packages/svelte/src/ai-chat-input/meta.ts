@@ -5,14 +5,15 @@
  * 阶段 2（引用/建议）：references 引用条 + suggestions 建议浮层 + 自定义渲染插槽。
  * 阶段 3（技能/模版）：skill-slot 自定义 NodeView（svelte-tiptap SvelteNodeViewRenderer）+ skillHotKey 面板 + renderTemplate。
  * 阶段 4（配置区）：renderConfigureArea + Configure 子组件（Select/Button/RadioButton，context+field 绑定）+ setup。
+ * 阶段 5（Adapter 桥）：messageToChatInput / chatInputToChatCompletion 把 onMessageSend 载荷转成
+ * AIDialogueMessage / OpenAI ChatCompletion，接 AIChatDialogue 展示或喂 API（core 纯函数透传）。
  * tiptap 内核 + svelte-tiptap 动态 import（不进主 bundle）。headless 判定在 @chenzy-design/core。
- * 阶段 5（adapter 桥）见 spec §6。
  */
 export const meta = {
   name: 'AIChatInput',
   category: 'show',
   description:
-    'AI 聊天输入框：基于 tiptap 富文本编辑器（内核 + svelte-tiptap 动态 import 懒加载，绝不进主 bundle）。阶段 1 富文本输入 + 发送（sendHotKey、canSend、generating 停止键）+ Upload 附件。阶段 2 references 引用条（可点击/删除/renderReference 覆盖）+ suggestions 建议浮层（聚焦弹出，↑↓/Enter/Esc/点击外部，renderSuggestionItem 覆盖）+ renderTopSlot。阶段 3 skills 技能面板（空编辑区按 skillHotKey 弹出，↑↓/Enter/Esc，选中插入 skill-slot 自定义节点并 onSkillChange）+ skill-slot NodeView（inline atom chip，含删除，用 svelte-tiptap SvelteNodeViewRenderer 渲染 SkillSlotNode.svelte）+ renderTemplate 模版面板（当前技能 hasTemplate 时展示模版按钮，点击弹出，setContent 填入）。阶段 4 renderConfigureArea 配置区（footer 左侧，放 AIChatInputConfigureSelect/Button/RadioButton 经 configure context 用 field 绑定）+ configureDefaultValue + onConfigureChange，配置值发送时并入 MessageContent.setup。onMessageSend 载荷对齐 Semi MessageContent（inputContents/attachments/references/setup）。headless（canSend/sendHotKey/MessageContent/doc→contents/suggestion 键盘/reference 归一/skill 归一/getSkillSlotHTML/skillHotKey 判定/configure setField-removeField）在 @chenzy-design/core，可单测。ref 方法 setContent/focusEditor/getText/getHTML/getEditor/clearContent/changeTemplateVisible/getConfigureValue。adapter 桥为 P5。',
+    'AI 聊天输入框：基于 tiptap 富文本编辑器（内核 + svelte-tiptap 动态 import 懒加载，绝不进主 bundle）。阶段 1 富文本输入 + 发送（sendHotKey、canSend、generating 停止键）+ Upload 附件。阶段 2 references 引用条（可点击/删除/renderReference 覆盖）+ suggestions 建议浮层（聚焦弹出，↑↓/Enter/Esc/点击外部，renderSuggestionItem 覆盖）+ renderTopSlot。阶段 3 skills 技能面板（空编辑区按 skillHotKey 弹出，↑↓/Enter/Esc，选中插入 skill-slot 自定义节点并 onSkillChange）+ skill-slot NodeView（inline atom chip，含删除，用 svelte-tiptap SvelteNodeViewRenderer 渲染 SkillSlotNode.svelte）+ renderTemplate 模版面板（当前技能 hasTemplate 时展示模版按钮，点击弹出，setContent 填入）。阶段 4 renderConfigureArea 配置区（footer 左侧，放 AIChatInputConfigureSelect/Button/RadioButton 经 configure context 用 field 绑定）+ configureDefaultValue + onConfigureChange，配置值发送时并入 MessageContent.setup。onMessageSend 载荷对齐 Semi MessageContent（inputContents/attachments/references/setup）。headless（canSend/sendHotKey/MessageContent/doc→contents/suggestion 键盘/reference 归一/skill 归一/getSkillSlotHTML/skillHotKey 判定/configure setField-removeField）在 @chenzy-design/core，可单测。ref 方法 setContent/focusEditor/getText/getHTML/getEditor/clearContent/changeTemplateVisible/getConfigureValue。阶段 5 Adapter 桥（messageToChatInput → AIDialogueMessage 喂 AIChatDialogue；chatInputToChatCompletion → OpenAI ChatCompletion user message）为 core 纯函数，从 svelte 包透传。',
   exports: [
     'AIChatInput',
     'AIChatInputConfigureSelect',
@@ -85,5 +86,6 @@ export const meta = {
     { title: '技能', desc: 'skills + skillHotKey + onSkillChange（选中插入 skill-slot 节点）' },
     { title: '模版', desc: 'skill.hasTemplate + renderTemplate（模版按钮弹面板 setContent）' },
     { title: '配置区', desc: 'renderConfigureArea + ConfigureSelect/Button/RadioButton + onConfigureChange（值进 setup）' },
+    { title: '接入对话', desc: 'messageToChatInput 把发送载荷转 Message 喂 AIChatDialogue（Adapter 桥）' },
   ],
 } as const;
