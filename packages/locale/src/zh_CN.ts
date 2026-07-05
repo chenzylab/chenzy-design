@@ -483,5 +483,8 @@ export const zh_CN: Locale = {
     upload: '上传附件',
     deleteReference: '删除引用',
     suggestions: '建议',
+    skills: '技能',
+    deleteSkill: '删除技能',
+    template: '模版',
   },
 };

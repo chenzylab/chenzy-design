@@ -194,6 +194,44 @@ export const aiChatInputTokens = {
     label: '建议项背景（激活）',
     usage: '建议项高亮/悬浮背景',
   },
+  // skill-slot 编辑器内技能 chip（阶段 3）
+  'ai-chat-input-skill-bg': {
+    value: 'var(--cd-color-primary-light-default)',
+    category: 'color',
+    label: '技能块背景',
+    usage: '编辑器内 skill-slot chip 背景（品牌浅色）',
+  },
+  'ai-chat-input-skill-color': {
+    value: 'var(--cd-color-primary)',
+    category: 'color',
+    label: '技能块文本',
+    usage: 'skill-slot chip 文本/图标色',
+  },
+  'ai-chat-input-skill-delete': {
+    value: 'var(--cd-color-primary)',
+    category: 'color',
+    label: '技能块删除图标',
+    usage: 'skill-slot 删除图标默认色',
+  },
+  'ai-chat-input-skill-radius': {
+    value: 'var(--cd-border-radius-small)',
+    category: 'radius',
+    label: '技能块圆角',
+    usage: 'skill-slot chip 圆角',
+  },
+  // 模版按钮（阶段 3）
+  'ai-chat-input-template-color': {
+    value: 'var(--cd-color-text-1)',
+    category: 'color',
+    label: '模版按钮文本',
+    usage: '模版按钮文本/图标色',
+  },
+  'ai-chat-input-template-bg-hover': {
+    value: 'var(--cd-color-fill-1)',
+    category: 'color',
+    label: '模版按钮背景（悬浮）',
+    usage: '模版按钮悬浮背景',
+  },
   // 动效
   'ai-chat-input-motion-duration': {
     value: 'var(--cd-motion-duration-fast)',

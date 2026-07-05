@@ -23,6 +23,9 @@
     nextSuggestionIndex,
     referenceLabel,
     isImageReference,
+    skillLabel,
+    getSkillSlotHTML,
+    shouldOpenSkillPanel,
     useDismiss,
     type AIChatInputSendHotKey,
     type AIChatInputMessageContent,
@@ -31,6 +34,7 @@
     type AIChatInputAttachment,
     type AIChatInputReference,
     type AIChatInputSuggestion,
+    type AIChatInputSkill,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
@@ -95,6 +99,24 @@
     renderTopSlot?: Snippet<[{ references: AIChatInputReference[]; attachments: AIChatInputAttachment[] }]> | undefined;
     /** top slot 相对引用条的位置（对齐 Semi topSlotPosition，默认 top）。 */
     topSlotPosition?: 'top' | 'bottom';
+    // —— 阶段 3 · 技能 + 模版 ——
+    /** 技能列表：空编辑区按 skillHotKey 弹出面板，选中后插入 skillSlot 节点（对齐 Semi skills）。 */
+    skills?: AIChatInputSkill[];
+    /** 触发技能面板的按键（对齐 Semi skillHotKey，默认 '/'）。 */
+    skillHotKey?: string;
+    /** 自定义单条技能渲染（对齐 Semi renderSkillItem）。 */
+    renderSkillItem?: Snippet<[{ skill: AIChatInputSkill; active: boolean }]> | undefined;
+    /** 技能选中回调。 */
+    onSkillChange?: ((skill: AIChatInputSkill) => void) | undefined;
+    /**
+     * 模版面板渲染（对齐 Semi renderTemplate）：当前技能 hasTemplate 时，点击模版按钮弹出，
+     * 参数 (skill, setContent)——调 setContent 把模版内容填入编辑器。
+     */
+    renderTemplate?: Snippet<[{ skill: AIChatInputSkill; setContent: (html: string) => void }]> | undefined;
+    /** 是否展示模版按钮（对齐 Semi showTemplateButton，默认 true；仅当前技能 hasTemplate 时生效）。 */
+    showTemplateButton?: boolean;
+    /** 模版面板显隐变化回调。 */
+    onTemplateVisibleChange?: ((visible: boolean) => void) | undefined;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -127,6 +149,13 @@
     onSuggestClick,
     renderTopSlot,
     topSlotPosition = 'top',
+    skills = [],
+    skillHotKey = '/',
+    renderSkillItem,
+    onSkillChange,
+    renderTemplate,
+    showTemplateButton = true,
+    onTemplateVisibleChange,
     class: className = '',
     style,
   }: Props = $props();
@@ -144,6 +173,13 @@
   let suggestionOpen = $state(false);
   let activeSuggestionIndex = $state(-1);
 
+  // —— 技能面板 / 模版状态（阶段 3）——
+  let skillPanelOpen = $state(false);
+  let activeSkillIndex = $state(-1);
+  // 当前已选技能（决定是否展示模版按钮）。
+  let currentSkill = $state<AIChatInputSkill>();
+  let templateOpen = $state(false);
+
   const placeholderText = $derived(placeholder ?? loc().t('AIChatInput.placeholder'));
 
   // 当前是否可发送（headless 判定；显式 canSend 优先）。
@@ -153,6 +189,12 @@
 
   // 建议面板可见性：显式 open 且有建议项。空编辑区聚焦/点击时开，选中/失焦/Esc 时关。
   const showSuggestionPanel = $derived(suggestionOpen && suggestions.length > 0);
+  // 技能面板可见性：显式 open 且有技能项（skillHotKey 触发）。
+  const showSkillPanel = $derived(skillPanelOpen && skills.length > 0);
+  // 模版按钮可见性：开关开、有 renderTemplate、当前技能 hasTemplate。
+  const showTemplate = $derived(
+    showTemplateButton && !!renderTemplate && !!currentSkill?.hasTemplate,
+  );
   // top area 是否有内容（引用条 / topSlot），无则不渲染容器。
   const hasReferences = $derived(showReference && references.length > 0);
   const hasTopSlot = $derived(!!renderTopSlot);
@@ -165,20 +207,35 @@
     let ed: Editor | undefined;
     let destroyed = false;
 
-    // 动态 import 整个 editor 内核（gzip ~126KB），像 JsonViewer/MarkdownRender 那样懒加载。
+    // 动态 import 整个 editor 内核（gzip ~126KB）+ svelte-tiptap（NodeView 适配）+
+    // skillSlot 扩展工厂，像 JsonViewer/MarkdownRender 那样懒加载（内核不进主 bundle）。
     void (async () => {
-      const [{ Editor: TiptapEditor }, { default: StarterKit }, { Placeholder }] = await Promise.all([
+      const [
+        tiptapCore,
+        { default: StarterKit },
+        { Placeholder },
+        { SvelteNodeViewRenderer },
+        { createSkillSlotExtension },
+      ] = await Promise.all([
         import('@tiptap/core'),
         import('@tiptap/starter-kit'),
         import('@tiptap/extensions'),
+        import('svelte-tiptap'),
+        import('./skill-slot-extension.js'),
       ]);
       if (destroyed) return;
+
+      const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
+      // skillSlot 自定义节点始终注册（编辑器需能渲染/序列化 skill-slot），
+      // 面板是否弹出另由 skills 数量决定，故 extension 不随 skills 变化重建。
+      const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
 
       ed = new TiptapEditor({
         element: host,
         extensions: [
           StarterKit,
           Placeholder.configure({ placeholder: placeholderText }),
+          skillSlot as never,
           ...(extensions as never[]),
         ],
         content: defaultContent,
@@ -223,6 +280,39 @@
   // 否则走发送快捷键判定（generating/IME 中不发送）。返回 true = 已处理，tiptap 停止默认行为。
   function handleEditorKeyDown(event: KeyboardEvent): boolean {
     if (event.isComposing) return false;
+
+    // 空编辑区按下 skillHotKey → 弹技能面板（对齐 Semi）。
+    if (!showSkillPanel && shouldOpenSkillPanel({
+      key: event.key,
+      skillHotKey,
+      isEmpty,
+      skillCount: skills.length,
+    })) {
+      openSkillPanel();
+      return true;
+    }
+
+    if (showSkillPanel) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        activeSkillIndex = nextSuggestionIndex(
+          activeSkillIndex,
+          skills.length,
+          event.key === 'ArrowDown' ? 1 : -1,
+        );
+        return true;
+      }
+      if (event.key === 'Enter') {
+        const picked = skills[activeSkillIndex];
+        if (picked !== undefined) {
+          selectSkill(picked);
+          return true;
+        }
+      }
+      if (event.key === 'Escape') {
+        closeSkillPanel();
+        return true;
+      }
+    }
 
     if (showSuggestionPanel) {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -283,6 +373,51 @@
     }
   }
 
+  // —— 技能面板 / 模版（阶段 3）——
+  function openSkillPanel(): void {
+    if (skills.length === 0) return;
+    skillPanelOpen = true;
+    activeSkillIndex = 0;
+    // 打开技能面板时先关掉建议面板，避免两个浮层叠加。
+    closeSuggestions();
+  }
+  function closeSkillPanel(): void {
+    skillPanelOpen = false;
+    activeSkillIndex = -1;
+  }
+  function selectSkill(skill: AIChatInputSkill): void {
+    closeSkillPanel();
+    currentSkill = skill;
+    onSkillChange?.(skill);
+    // 把技能作为 skillSlot 节点插入编辑器（对齐 Semi setContent(getSkillSlotString)）。
+    editor?.commands.setContent(getSkillSlotHTML(skill));
+    editor?.commands.focus('end');
+  }
+  function toggleTemplate(): void {
+    setTemplateVisible(!templateOpen);
+  }
+  function setTemplateVisible(visible: boolean): void {
+    if (templateOpen === visible) return;
+    templateOpen = visible;
+    onTemplateVisibleChange?.(visible);
+  }
+  // 模版面板里 renderTemplate 回调用的 setContent（填入模版内容并关闭面板）。
+  function applyTemplate(html: string): void {
+    editor?.commands.setContent(html);
+    editor?.commands.focus('end');
+    setTemplateVisible(false);
+  }
+
+  // 点击外部关闭技能面板 / 模版面板。
+  $effect(() => {
+    if (!showSkillPanel || !rootEl) return;
+    return useDismiss(rootEl, { escape: false, onDismiss: () => closeSkillPanel() });
+  });
+  $effect(() => {
+    if (!templateOpen || !rootEl) return;
+    return useDismiss(rootEl, { escape: true, onDismiss: () => setTemplateVisible(false) });
+  });
+
   // —— 引用条（阶段 2）——
   function handleReferenceClick(reference: AIChatInputReference): void {
     onReferenceClick?.(reference);
@@ -332,6 +467,10 @@
   }
   export function clearContent(): void {
     editor?.commands.clearContent(true);
+  }
+  /** 显隐模版面板（对齐 Semi changeTemplateVisible）。仅当前技能 hasTemplate 时有效。 */
+  export function changeTemplateVisible(visible: boolean): void {
+    setTemplateVisible(visible);
   }
 </script>
 
@@ -413,9 +552,55 @@
         {/each}
       </div>
     {/if}
+
+    {#if showSkillPanel}
+      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
+        {#each skills as skill, i (skillLabel(skill) + i)}
+          <div
+            class="cd-ai-chat-input-suggestion"
+            class:cd-ai-chat-input-suggestion--active={i === activeSkillIndex}
+            role="option"
+            aria-selected={i === activeSkillIndex}
+            tabindex="-1"
+            onmousedown={(e) => {
+              e.preventDefault();
+              selectSkill(skill);
+            }}
+            onmouseenter={() => (activeSkillIndex = i)}
+          >
+            {#if renderSkillItem}
+              {@render renderSkillItem({ skill, active: i === activeSkillIndex })}
+            {:else}
+              {skillLabel(skill)}
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#if templateOpen && currentSkill && renderTemplate}
+      <div class="cd-ai-chat-input-template">
+        {@render renderTemplate({ skill: currentSkill, setContent: applyTemplate })}
+      </div>
+    {/if}
   </div>
 
   <div class="cd-ai-chat-input-footer">
+    {#if showTemplate}
+      <button
+        type="button"
+        class="cd-ai-chat-input-template-btn"
+        class:cd-ai-chat-input-template-btn--active={templateOpen}
+        aria-expanded={templateOpen}
+        aria-label={loc().t('AIChatInput.template')}
+        onclick={toggleTemplate}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+          <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span>{loc().t('AIChatInput.template')}</span>
+      </button>
+    {/if}
     {#if showUploadButton}
       <div class="cd-ai-chat-input-upload">
         <Upload
@@ -604,6 +789,46 @@
 
   .cd-ai-chat-input-suggestion--active {
     background: var(--cd-ai-chat-input-suggestion-bg-active);
+  }
+
+  /* —— 模版面板 / 按钮（阶段 3）—— */
+  .cd-ai-chat-input-template {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + var(--cd-spacing-extra-tight));
+    z-index: 10;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: var(--cd-spacing-tight);
+    background: var(--cd-ai-chat-input-suggestions-bg);
+    border-radius: var(--cd-ai-chat-input-suggestions-radius);
+    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
+  }
+
+  .cd-ai-chat-input-template-btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    padding: var(--cd-ai-chat-input-action-padding) var(--cd-spacing-tight);
+    border-radius: var(--cd-ai-chat-input-action-radius);
+    background: transparent;
+    color: var(--cd-ai-chat-input-template-color);
+    font: inherit;
+    transition: background var(--cd-ai-chat-input-motion-duration) ease;
+  }
+
+  .cd-ai-chat-input-template-btn:hover,
+  .cd-ai-chat-input-template-btn--active {
+    background: var(--cd-ai-chat-input-template-bg-hover);
+  }
+
+  .cd-ai-chat-input-template-btn:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: 2px;
   }
 
   .cd-ai-chat-input-editor {

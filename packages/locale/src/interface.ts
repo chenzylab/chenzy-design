@@ -680,5 +680,11 @@ export interface Locale {
     deleteReference: string;
     /** suggestions listbox aria-label */
     suggestions: string;
+    /** skill list listbox aria-label */
+    skills: string;
+    /** delete-skill button aria-label */
+    deleteSkill: string;
+    /** template button label / toggle aria-label */
+    template: string;
   };
 }

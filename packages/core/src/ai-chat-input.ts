@@ -181,3 +181,62 @@ export function isImageReference(ref: AIChatInputReference): boolean {
   const url = ref.url ?? '';
   return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|$)/i.test(url);
 }
+
+// ————————————————————————————————————————————————————————————————
+// 阶段 3 · 技能 + 模版
+// ————————————————————————————————————————————————————————————————
+
+/**
+ * 技能项（对齐 Semi Skill/BaseSkill）：空编辑区按 skillHotKey 触发面板，选中后
+ * 作为 skillSlot 节点插入编辑器。hasTemplate=true 的技能选中后可展开模版面板。
+ * icon 由渲染层提供（Snippet/组件），此处只管数据。
+ */
+export interface AIChatInputSkill {
+  /** 展示标签（skillSlot chip 显示，缺省回退 value）。 */
+  label?: string;
+  /** 技能值（唯一标识/插入值）。 */
+  value?: string;
+  /** 是否有配套模版（选中后展示模版按钮）。 */
+  hasTemplate?: boolean;
+  [key: string]: unknown;
+}
+
+/** 取技能项的显示文本（label 优先，回退 value，再回退空串）。 */
+export function skillLabel(skill: AIChatInputSkill): string {
+  return skill.label ?? skill.value ?? '';
+}
+
+/**
+ * 生成 skillSlot 节点的 HTML（供 editor.setContent 插入）。对齐 Semi getSkillSlotString：
+ * `<skill-slot data-label data-value data-template>`。属性值做 HTML 转义防注入。
+ */
+export function getSkillSlotHTML(skill: AIChatInputSkill): string {
+  const attrs: string[] = [];
+  if (skill.label) attrs.push(`data-label="${escapeAttr(skill.label)}"`);
+  if (skill.value) attrs.push(`data-value="${escapeAttr(skill.value)}"`);
+  if (typeof skill.hasTemplate === 'boolean') attrs.push(`data-template="${skill.hasTemplate}"`);
+  return `<skill-slot ${attrs.join(' ')}></skill-slot>`;
+}
+
+/** HTML 属性值转义（双引号上下文）。 */
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * 是否应触发技能面板：编辑区为空、按下的键等于 skillHotKey、且有技能项。
+ * 对齐 Semi：`oldValue === '' && e.key === skillHotKey && skills.length`。
+ */
+export function shouldOpenSkillPanel(params: {
+  key: string;
+  skillHotKey: string;
+  isEmpty: boolean;
+  skillCount: number;
+}): boolean {
+  const { key, skillHotKey, isEmpty, skillCount } = params;
+  return isEmpty && key === skillHotKey && skillCount > 0;
+}

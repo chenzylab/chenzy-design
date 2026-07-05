@@ -483,5 +483,8 @@ export const en_US: Locale = {
     upload: 'Upload attachment',
     deleteReference: 'Delete reference',
     suggestions: 'Suggestions',
+    skills: 'Skills',
+    deleteSkill: 'Delete skill',
+    template: 'Template',
   },
 };

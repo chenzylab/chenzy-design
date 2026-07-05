@@ -182,6 +182,9 @@ export {
   nextSuggestionIndex,
   referenceLabel,
   isImageReference,
+  skillLabel,
+  getSkillSlotHTML,
+  shouldOpenSkillPanel,
   type AIChatInputContent,
   type AIChatInputAttachment,
   type AIChatInputReference,
@@ -189,6 +192,7 @@ export {
   type AIChatInputSendHotKey,
   type AIChatInputChangePayload,
   type AIChatInputSuggestion,
+  type AIChatInputSkill,
 } from './ai-chat-input/index.js';
 export {
   Cropper,

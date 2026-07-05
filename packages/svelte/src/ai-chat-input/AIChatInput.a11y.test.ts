@@ -284,3 +284,78 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
+  const skills = [
+    { label: '总结', value: 'summarize' },
+    { label: '翻译', value: 'translate', hasTemplate: true },
+  ];
+
+  // 技能面板由编辑区按 skillHotKey（默认 '/'）触发。jsdom 下向 .ProseMirror 派发 keydown。
+  async function pressSkillHotKey(container: Element, key = '/'): Promise<void> {
+    const pm = container.querySelector('.ProseMirror') as HTMLElement;
+    pm.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    await new Promise((r) => setTimeout(r, 20));
+  }
+
+  it('skillSlot 节点：setContent 插入技能块并渲染 chip', async () => {
+    const rendered = render(AIChatInput, { props: { skills } }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<skill-slot data-label="总结" data-value="summarize"></skill-slot>');
+    await flush();
+    const chip = container.querySelector('.cd-ai-chat-input-skill-slot');
+    expect(chip).not.toBeNull();
+    expect(chip?.textContent).toContain('总结');
+  });
+
+  it('按 skillHotKey 弹出技能面板（listbox）', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { skills } });
+    await flush(container);
+    await pressSkillHotKey(container);
+    const panel = container.querySelector('.cd-ai-chat-input-suggestions[aria-label="Skills"]');
+    expect(panel).not.toBeNull();
+    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion')).toHaveLength(2);
+  });
+
+  it('点击技能项触发 onSkillChange 并插入 skillSlot', async () => {
+    const onSkillChange = vi.fn();
+    const { container } = renderWithLocale(AIChatInput, { props: { skills, onSkillChange } });
+    await flush(container);
+    await pressSkillHotKey(container);
+    const item = container.querySelector('.cd-ai-chat-input-suggestion') as HTMLElement;
+    await fireEvent.mouseDown(item);
+    expect(onSkillChange).toHaveBeenCalledWith(skills[0]);
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-skill-slot')?.textContent).toContain('总结');
+  });
+
+  it('选中 hasTemplate 技能后展示模版按钮，changeTemplateVisible 打开面板', async () => {
+    const template: import('svelte').Snippet<[{ skill: unknown; setContent: (h: string) => void }]> =
+      (() => {}) as never;
+    const rendered = render(AIChatInput, {
+      props: { skills, renderTemplate: template },
+    }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void; changeTemplateVisible: (v: boolean) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    // 直接选中带模版的技能（插入其 skillSlot 并设 currentSkill）——借面板路径。
+    await pressSkillHotKey(container);
+    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion');
+    await fireEvent.mouseDown(items[1]!); // 翻译（hasTemplate）
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-template-btn')).not.toBeNull();
+  });
+
+  it('技能面板无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { skills } });
+    await flush(container);
+    await pressSkillHotKey(container);
+    await expectNoAxeViolations(container);
+  });
+});

@@ -8,6 +8,9 @@ import {
   nextSuggestionIndex,
   referenceLabel,
   isImageReference,
+  skillLabel,
+  getSkillSlotHTML,
+  shouldOpenSkillPanel,
   type AIChatInputContent,
 } from './ai-chat-input.js';
 
@@ -163,5 +166,43 @@ describe('ai-chat-input · isImageReference', () => {
     expect(isImageReference({ type: 'file', id: '1', url: 'https://x/y.JPG?v=2' })).toBe(true);
     expect(isImageReference({ type: 'file', id: '1', url: 'doc.pdf' })).toBe(false);
     expect(isImageReference({ type: 'file', id: '1' })).toBe(false);
+  });
+});
+
+describe('ai-chat-input · skillLabel', () => {
+  it('label 优先，回退 value，再回退空串', () => {
+    expect(skillLabel({ label: '总结', value: 'summarize' })).toBe('总结');
+    expect(skillLabel({ value: 'summarize' })).toBe('summarize');
+    expect(skillLabel({})).toBe('');
+  });
+});
+
+describe('ai-chat-input · getSkillSlotHTML', () => {
+  it('生成 skill-slot 节点 HTML，带 data 属性', () => {
+    const html = getSkillSlotHTML({ label: '总结', value: 'sum', hasTemplate: true });
+    expect(html).toBe('<skill-slot data-label="总结" data-value="sum" data-template="true"></skill-slot>');
+  });
+  it('省略未提供的属性', () => {
+    expect(getSkillSlotHTML({ label: '仅标签' })).toBe('<skill-slot data-label="仅标签"></skill-slot>');
+  });
+  it('转义属性值防注入', () => {
+    const html = getSkillSlotHTML({ label: '"><img>&' });
+    expect(html).toContain('data-label="&quot;&gt;&lt;img&gt;&amp;"');
+    expect(html).not.toContain('<img>');
+  });
+});
+
+describe('ai-chat-input · shouldOpenSkillPanel', () => {
+  it('空编辑区 + 命中 skillHotKey + 有技能 → true', () => {
+    expect(shouldOpenSkillPanel({ key: '/', skillHotKey: '/', isEmpty: true, skillCount: 2 })).toBe(true);
+  });
+  it('非空编辑区不触发', () => {
+    expect(shouldOpenSkillPanel({ key: '/', skillHotKey: '/', isEmpty: false, skillCount: 2 })).toBe(false);
+  });
+  it('键不匹配不触发', () => {
+    expect(shouldOpenSkillPanel({ key: 'a', skillHotKey: '/', isEmpty: true, skillCount: 2 })).toBe(false);
+  });
+  it('无技能不触发', () => {
+    expect(shouldOpenSkillPanel({ key: '/', skillHotKey: '/', isEmpty: true, skillCount: 0 })).toBe(false);
   });
 });
