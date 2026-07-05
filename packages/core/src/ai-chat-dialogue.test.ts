@@ -6,6 +6,9 @@ import {
   streamingResponseToMessage,
   streamingChatCompletionToMessage,
   dialogueMessageToInput,
+  formatToolArguments,
+  toolCallStatus,
+  toolCallView,
   contentItemType,
   normalizeDialogueContent,
   type OpenAIResponseObject,
@@ -337,5 +340,59 @@ describe('ai-chat-dialogue · dialogueMessageToInput', () => {
     } as any);
     expect(payload.attachments).toHaveLength(1);
     expect(payload.references).toHaveLength(1);
+  });
+});
+
+describe('ai-chat-dialogue · 工具块 helpers', () => {
+  it('formatToolArguments：JSON 字符串美化', () => {
+    expect(formatToolArguments('{"a":1,"b":2}')).toBe('{\n  "a": 1,\n  "b": 2\n}');
+  });
+  it('formatToolArguments：对象美化', () => {
+    expect(formatToolArguments({ x: 1 })).toBe('{\n  "x": 1\n}');
+  });
+  it('formatToolArguments：未完成 JSON 片段原样返回', () => {
+    expect(formatToolArguments('{"a":')).toBe('{"a":');
+  });
+  it('formatToolArguments：null/undefined → 空串', () => {
+    expect(formatToolArguments(null)).toBe('');
+    expect(formatToolArguments(undefined)).toBe('');
+  });
+
+  it('toolCallStatus：归一各状态', () => {
+    expect(toolCallStatus({ status: 'in_progress' } as any)).toBe('in_progress');
+    expect(toolCallStatus({ status: 'queued' } as any)).toBe('in_progress');
+    expect(toolCallStatus({ status: 'failed' } as any)).toBe('failed');
+    expect(toolCallStatus({ status: 'incomplete' } as any)).toBe('incomplete');
+    expect(toolCallStatus({} as any)).toBe('completed');
+  });
+
+  it('toolCallView：抽取 name/arguments/output/callId', () => {
+    const view = toolCallView({
+      type: 'function_call',
+      name: 'get_weather',
+      arguments: '{"city":"SF"}',
+      output: '{"temp":20}',
+      call_id: 'call_1',
+      status: 'completed',
+    } as any);
+    expect(view.name).toBe('get_weather');
+    expect(view.arguments).toBe('{\n  "city": "SF"\n}');
+    expect(view.output).toBe('{\n  "temp": 20\n}');
+    expect(view.callId).toBe('call_1');
+    expect(view.status).toBe('completed');
+  });
+
+  it('toolCallView：MCP serverLabel + custom input', () => {
+    const view = toolCallView({
+      type: 'mcp_call',
+      name: 'search',
+      arguments: '{}',
+      input: '{"q":"x"}',
+      server_label: 'fs-server',
+      id: 'mcp_1',
+    } as any);
+    expect(view.serverLabel).toBe('fs-server');
+    expect(view.input).toBe('{\n  "q": "x"\n}');
+    expect(view.callId).toBe('mcp_1');
   });
 });
