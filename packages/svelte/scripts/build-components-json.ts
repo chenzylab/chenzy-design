@@ -85,6 +85,16 @@ import { meta as localeProviderMeta } from '../src/locale-provider/meta.ts';
 import { meta as configProviderMeta } from '../src/config-provider/meta.ts';
 import { meta as resizeObserverMeta } from '../src/resize-observer/meta.ts';
 import { meta as lottieIconMeta } from '../src/lottie-icon/meta.ts';
+// 富媒体 / AI 组件（M4+）——补齐生成器缺口，使其详情页 API 表有数据源。
+import { meta as codeHighlightMeta } from '../src/code-highlight/meta.ts';
+import { meta as markdownRenderMeta } from '../src/markdown-render/meta.ts';
+import { meta as videoPlayerMeta } from '../src/video-player/meta.ts';
+import { meta as audioPlayerMeta } from '../src/audio-player/meta.ts';
+import { meta as jsonViewerMeta } from '../src/json-viewer/meta.ts';
+import { meta as chatMeta } from '../src/chat/meta.ts';
+import { meta as cropperMeta } from '../src/cropper/meta.ts';
+import { meta as aiChatDialogueMeta } from '../src/ai-chat-dialogue/meta.ts';
+import { meta as aiChatInputMeta } from '../src/ai-chat-input/meta.ts';
 
 /**
  * Full list of component metas. Mirrors the import set validated in
@@ -162,6 +172,16 @@ const metas = [
   configProviderMeta,
   resizeObserverMeta,
   lottieIconMeta,
+  // 富媒体 / AI 组件（M4+）
+  codeHighlightMeta,
+  markdownRenderMeta,
+  videoPlayerMeta,
+  audioPlayerMeta,
+  jsonViewerMeta,
+  chatMeta,
+  cropperMeta,
+  aiChatDialogueMeta,
+  aiChatInputMeta,
 ] as const;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
