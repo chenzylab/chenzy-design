@@ -16,7 +16,7 @@
 | VideoPlayer | 原生 `<video>` | 7.66 KB | 44+5 | 零第三方 |
 | AudioPlayer | 原生 `<audio>` | 4.26 KB | 24+7 | 零第三方 |
 | JsonViewer | @douyinfe/semi-json-viewer-core | 3.21 KB | 11+4skip | 内核动态 import；jsdom 无 Worker |
-| Chat | MarkdownRender+Upload+prismjs | 7.17 KB | 30+6 | dragUpload 未实现（见 Chat.spec 登记） |
+| Chat | MarkdownRender+Upload+prismjs | 7.17 KB | 30+6 | 完整（dragUpload/canSend/detailProps 已补齐，见「未做/后续」） |
 | Cropper | 原生 canvas 几何引擎 | 3.13 KB | 22+11 | 几何在 core；jsdom 无布局/canvas |
 
 全库 **1173 passed + 5 skip**、typecheck 0 errors、perf:check 75 组件全过。
@@ -29,7 +29,7 @@
 
 ### 未做/后续
 - **AIChatDialogue**：**已于 2026-07-04 落地**（core OpenAI 消息类型全谱 + 非流式 Adapter responseToMessage/chatCompletionToMessage + 渲染层 ContentItem 分块 + 选择/提示 + 16 测试 + demo + 门禁 4.82KB）。**P1 后续**：streaming Adapter（streamingResponseToMessage 25K / streamingChatCompletionToMessage）、消息编辑、tool_call/MCP 完整块渲染，见 `AIChatDialogue.spec.md §13`。
-- **AIChatInput**：**未实现**——tiptap 富文本巨型组件（13 个 @tiptap 包，Semi 用 @tiptap/react，Svelte 需引 @tiptap/core + 手写响应式绑定 + input-slot/select-slot/skill-slot 三种自定义节点 + 技能/模版/建议/配置区/MCP）。工程量超前 8 组件总和，**建议独立立项**。
+- **AIChatInput**：**已于 2026-07-05 完整落地**（PR #425）——tiptap 富文本巨型组件，独立立项分阶段交付：阶段 1~5（基础输入/引用+建议/技能+模版/配置区/Adapter 桥）+ 收尾 DoD + 三种自定义节点（skill-slot/select-slot/input-slot，input-slot 含全套零宽锚点+光标 plugin ~400 行）+ Configure 全族（Select/Button/RadioButton/Mcp/Item）+ 双 Adapter（messageToChatInput/chatInputToChatCompletion 接 AIChatDialogue/OpenAI）。**与 Semi 公开 API 全面对齐，无未实现功能**。tiptap 内核+pm+svelte-tiptap 全程动态 import（主壳 gzip 10.44KB）；core 50 单测 + dom/axe 44 测 + 9 demo。详见 `AIChatInput.spec.md`（§0.1~§0.8）。
 - ~~**Chat dragUpload**、canSend、renderInputArea detailProps~~：**已于 2026-07-04 补齐**（dragUpload 整容器拖拽 + Upload.addFiles 导出、canSend prop、detailProps 拆分节点），见 `Chat.spec.md`。
 
 ## 1. 交叉核对方法
