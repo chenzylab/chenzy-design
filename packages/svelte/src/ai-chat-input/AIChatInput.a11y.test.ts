@@ -351,11 +351,8 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
       (() => {}) as never;
     const rendered = render(AIChatInput, {
       props: { skills, renderTemplate: template },
-    }) as unknown as {
-      container: Element;
-      component: { setContent: (s: string) => void; changeTemplateVisible: (v: boolean) => void };
-    };
-    const { container, component } = rendered;
+    }) as unknown as { container: Element };
+    const { container } = rendered;
     await flush(container);
     // 直接选中带模版的技能（插入其 skillSlot 并设 currentSkill）——借面板路径。
     await pressSkillHotKey(container);
