@@ -593,7 +593,7 @@ export function streamingResponseToMessage(
 
   // 顺序处理：从 lastProcessedSeq+1 开始，处理连续块（含无 seq 的 N.5 块）。
   let nextExpected = state.lastProcessedSeq + 1;
-  let processed = false;
+  let processed: boolean;
   do {
     processed = false;
     const chunk = state.buffer.get(nextExpected);
