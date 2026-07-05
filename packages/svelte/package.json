@@ -35,6 +35,7 @@
     "@douyinfe/semi-json-viewer-core": "^2.101.0",
     "@floating-ui/dom": "^1.0.0",
     "@tiptap/core": "^3.0.0",
+    "@tiptap/extensions": "^3.27.1",
     "@tiptap/pm": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
     "prismjs": "^1.29.0",

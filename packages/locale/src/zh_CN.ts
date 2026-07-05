@@ -475,4 +475,17 @@ export const zh_CN: Locale = {
     audio: '音频',
     file: '文件',
   },
+  AIChatInput: {
+    editor: '消息输入框',
+    placeholder: '输入消息…',
+    send: '发送',
+    stop: '停止生成',
+    upload: '上传附件',
+    deleteReference: '删除引用',
+    deleteAttachment: '删除附件',
+    suggestions: '建议',
+    skills: '技能',
+    deleteSkill: '删除技能',
+    template: '模版',
+  },
 };

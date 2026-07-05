@@ -137,6 +137,15 @@ const components = [
   ['chat', '{ Chat }', '8.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   ['ai-chat-dialogue', '{ AIChatDialogue }', '6 KB'],
+  // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
+  // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
+  // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。
+  // 预算按实测 +~15% 校准：阶段1 2.9→阶段2 4.57→阶段3 6.08→阶段4 6.47→阶段5 6.48→
+  // select-slot 6.82→input-slot(全功能光标 plugin ~400 行)+Mcp 9.81KB。
+  // tiptap 内核/pm/svelte-tiptap 第三方均 per-component ignore；本组件自己的懒加载代码
+  // （input-slot-plugins 等本地相对 import）size-limit 的 esbuild 会内联进 entry 度量，
+  // 属组件功能成本正当计入。
+  ['ai-chat-input', '{ AIChatInput }', '12 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载
@@ -145,6 +154,14 @@ const components = [
 // spec §9 记录（gzip ~51KB，懒加载）。
 const perComponentIgnore = {
   'json-viewer': [...ignore, '@douyinfe/semi-json-viewer-core'],
+  'ai-chat-input': [
+    ...ignore,
+    '@tiptap/core',
+    '@tiptap/pm',
+    '@tiptap/starter-kit',
+    '@tiptap/extensions',
+    'svelte-tiptap',
+  ],
 };
 
 export default components.map(([dir, imports, limit]) => ({
