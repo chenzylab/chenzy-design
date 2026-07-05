@@ -252,6 +252,9 @@
         { SvelteNodeViewRenderer },
         { createSkillSlotExtension },
         { createSelectSlotExtension },
+        { createInputSlotExtension },
+        pmState,
+        inputSlotPlugins,
       ] = await Promise.all([
         import('@tiptap/core'),
         import('@tiptap/starter-kit'),
@@ -259,14 +262,25 @@
         import('svelte-tiptap'),
         import('./skill-slot-extension.js'),
         import('./select-slot-extension.js'),
+        import('./input-slot-extension.js'),
+        import('@tiptap/pm/state'),
+        import('./input-slot-plugins.js'),
       ]);
       if (destroyed) return;
 
       const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
-      // skillSlot / selectSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点），
-      // 面板/模版是否用到另由 props 决定，故 extension 不随 props 变化重建。
+      const { Plugin, PluginKey, TextSelection } = pmState;
+      const pmDeps = { Plugin, PluginKey, TextSelection } as never;
+      // skillSlot / selectSlot / inputSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点，
+      // 且 inputSlot 的光标 plugin 需识别全部 isCustomSlot 节点）；是否用到另由 props/模版决定。
       const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
       const selectSlot = createSelectSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
+      const inputSlot = createInputSlotExtension(
+        Node,
+        mergeAttributes,
+        SvelteNodeViewRenderer,
+        pmDeps,
+      );
 
       ed = new TiptapEditor({
         element: host,
@@ -275,6 +289,7 @@
           Placeholder.configure({ placeholder: placeholderText }),
           skillSlot as never,
           selectSlot as never,
+          inputSlot as never,
           ...(extensions as never[]),
         ],
         content: defaultContent,
@@ -285,16 +300,27 @@
             'aria-label': loc().t('AIChatInput.editor'),
           },
           handleKeyDown: (_view, event) => handleEditorKeyDown(event),
+          // inputSlot 的粘贴/文本输入零宽锚点清理（对齐 Semi editorProps）。
+          handlePaste: inputSlotPlugins.makeHandlePaste(pmDeps),
+          handleTextInput: inputSlotPlugins.makeHandleTextInput(),
           handleDOMEvents: {
             // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）。
             focus: () => {
               openSuggestions();
               return false;
             },
+            // IME 合成结束后清理 inputSlot 内残留零宽字符（延迟等 ProseMirror flush composition）。
+            compositionend: (view) => {
+              setTimeout(() => inputSlotPlugins.handleCompositionEndLogic(view), 60);
+              return false;
+            },
           },
         },
         onCreate: ({ editor: created }) => {
           isEmpty = created.isEmpty;
+          // 初次挂载补齐零宽锚点（若 defaultContent 含自定义节点）。
+          const tr = inputSlotPlugins.handleZeroWidthCharLogic(created.state);
+          if (tr) created.view.dispatch(tr);
         },
         onUpdate: ({ editor: updated }) => {
           isEmpty = updated.isEmpty;

@@ -135,18 +135,25 @@ export function transformDocToContents(
   return out;
 }
 
+/** 零宽字符（对齐 Semi ZERO_WIDTH_CHAR）：inputSlot 空态占位锚点，归一时剔除。 */
+export const AI_CHAT_INPUT_ZERO_WIDTH = '﻿';
+
 /**
  * 递归抽取一个块内的纯文本（含 hardBreak → 换行）。内联自定义 slot 节点归一：
  * - selectSlot：取 attrs.value（用户选中的选项值）。
  * - skillSlot：取 attrs.label ?? attrs.value（技能显示文本）。
- * 对齐 Semi transformSelectSlot / transformSkillSlot，使 slot 内容开箱即进 content。
+ * - inputSlot：取可编辑内容文本（剔零宽字符）；为空回退 attrs.placeholder。
+ * 对齐 Semi transformSelectSlot / transformSkillSlot / transformInputSlot，使 slot 内容开箱进 content。
  */
 function extractText(node: unknown): string {
   const n = node as
     | { type?: string; text?: string; content?: unknown[]; attrs?: Record<string, unknown> }
     | undefined;
   if (!n) return '';
-  if (n.type === 'text') return n.text ?? '';
+  if (n.type === 'text') {
+    const t = n.text ?? '';
+    return t === AI_CHAT_INPUT_ZERO_WIDTH ? '' : t;
+  }
   if (n.type === 'hardBreak') return '\n';
   if (n.type === 'selectSlot') {
     const v = n.attrs?.value;
@@ -155,6 +162,12 @@ function extractText(node: unknown): string {
   if (n.type === 'skillSlot') {
     const label = n.attrs?.label ?? n.attrs?.value;
     return typeof label === 'string' ? label : '';
+  }
+  if (n.type === 'inputSlot') {
+    const inner = Array.isArray(n.content) ? n.content.map(extractText).join('') : '';
+    if (inner.length > 0) return inner;
+    const ph = n.attrs?.placeholder;
+    return typeof ph === 'string' ? ph : '';
   }
   if (Array.isArray(n.content)) return n.content.map(extractText).join('');
   return '';
@@ -248,6 +261,23 @@ export function getSelectSlotHTML(options: string[], value = ''): string {
   const attrs = [`options="${optionsJson}"`];
   if (value) attrs.push(`value="${escapeAttr(value)}"`);
   return `<select-slot ${attrs.join(' ')}></select-slot>`;
+}
+
+/**
+ * 生成 inputSlot 节点的 HTML（供 editor.setContent 插入，用于 renderTemplate 模版填空的可编辑空格）。
+ * 对齐 Semi inputSlot：`<input-slot placeholder="...">` 内含零宽字符作为空态光标锚点。
+ * @param placeholder 空态占位提示
+ * @param value 初始内容（缺省仅零宽锚点）
+ */
+export function getInputSlotHTML(placeholder = '', value = ''): string {
+  const ph = placeholder ? ` placeholder="${escapeAttr(placeholder)}"` : '';
+  const inner = value ? escapeHTML(value) : AI_CHAT_INPUT_ZERO_WIDTH;
+  return `<input-slot${ph}>${inner}</input-slot>`;
+}
+
+/** HTML 文本内容转义（元素内容上下文）。 */
+function escapeHTML(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** HTML 属性值转义（双引号上下文）。 */

@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { untrack } from 'svelte';
   import { getConfigureContext } from './configure-context.js';
 
   interface Props {
@@ -24,9 +25,12 @@
 
   const ctx = getConfigureContext();
 
+  // untrack：切断对 configureValue 的追踪，避免 setField 写主组件 state → snippet 重渲染 → 自循环。
   $effect(() => {
-    if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
-    return () => ctx?.removeField(field);
+    untrack(() => {
+      if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
+    });
+    return () => untrack(() => ctx?.removeField(field));
   });
 
   const active = $derived(!!ctx?.getValue()[field]);

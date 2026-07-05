@@ -3,6 +3,7 @@
     AIChatInput,
     AIChatInputConfigureSelect,
     AIChatInputConfigureButton,
+    AIChatInputConfigureMcp,
   } from '@chenzy-design/svelte';
   import type {
     AIChatInputConfigureValue,
@@ -14,6 +15,11 @@
   const modelOptions = [
     { label: 'GPT-5', value: 'gpt-5' },
     { label: 'Opus 4.8', value: 'opus-4-8' },
+  ];
+  const mcpOptions = [
+    { label: '文件系统', value: 'fs' },
+    { label: '数据库', value: 'db' },
+    { label: '浏览器', value: 'browser' },
   ];
   let setup = $state<AIChatInputConfigureValue>({});
 
@@ -32,6 +38,7 @@
       <AIChatInputConfigureSelect field="model" options={modelOptions} style="width: 130px;" />
       <AIChatInputConfigureButton field="web">联网</AIChatInputConfigureButton>
       <AIChatInputConfigureButton field="think">深度思考</AIChatInputConfigureButton>
+      <AIChatInputConfigureMcp field="mcp" options={mcpOptions} />
     {/snippet}
   </AIChatInput>
   <p style="margin-top: 12px; color: var(--cd-color-text-2);">

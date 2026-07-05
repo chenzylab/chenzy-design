@@ -11,6 +11,18 @@ import { fireEvent, render } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatInput from './AIChatInput.svelte';
 import AIChatInputConfigureFixture from './AIChatInputConfigureFixture.svelte';
+import AIChatInputMcpFixture from './AIChatInputMcpFixture.svelte';
+
+// jsdom 对部分节点（floating-ui 的 target 可能是 Range/Element）未实现 getClientRects/
+// getBoundingClientRect —— Dropdown floating action 会调用。无条件补空实现，避免 Mcp 浮层
+// 挂载时抛 unhandled TypeError 污染测试输出（不影响断言）。
+const emptyRects = () => [] as unknown as DOMRectList;
+const emptyRect = () =>
+  ({ x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON: () => ({}) }) as DOMRect;
+for (const proto of [Element.prototype, Range.prototype]) {
+  proto.getClientRects = emptyRects;
+  proto.getBoundingClientRect = emptyRect;
+}
 
 // tiptap 内核动态 import + editor 创建是异步的（且并发跑测试时时序有波动）。
 // 用轮询等 .ProseMirror 真正挂载，而非固定 sleep —— 避免高并发下等待不足。
@@ -438,5 +450,76 @@ describe('AIChatInput · select-slot 自定义节点（可选补充）', () => {
     expect(onMessageSend).toHaveBeenCalledTimes(1);
     const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
     expect(text).toContain('上海');
+  });
+});
+
+describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
+  it('setContent 插入 input-slot → 渲染 + 空态显示 placeholder', async () => {
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<p>去 <input-slot placeholder="填城市">﻿</input-slot> 出差</p>');
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-input-slot')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-input-slot-placeholder')?.textContent).toBe(
+      '填城市',
+    );
+  });
+
+  it('input-slot 有内容时不显示 placeholder，且内容进 inputContents', async () => {
+    const onMessageSend = vi.fn();
+    const rendered = render(AIChatInput, { props: { onMessageSend } }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<p>去 <input-slot placeholder="填城市">北京</input-slot></p>');
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-input-slot-placeholder')).toBeNull();
+    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    await fireEvent.click(sendBtn);
+    const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
+    expect(text).toContain('北京');
+  });
+
+  it('input-slot 无 axe 违规', async () => {
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<p><input-slot placeholder="填空">﻿</input-slot></p>');
+    await flush();
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('AIChatInput · Configure.Mcp（可选补充）', () => {
+  it('渲染 MCP 触发器，显示已选数', async () => {
+    const { container } = renderWithLocale(AIChatInputMcpFixture);
+    await flush(container);
+    const trigger = container.querySelector('.cd-ai-chat-input-configure-mcp-trigger');
+    expect(trigger).not.toBeNull();
+    expect(trigger?.textContent).toContain('MCP · 0');
+  });
+
+  it('initValue 预设已选：触发器计数 + 发送并入 setup', async () => {
+    // Dropdown 浮层的完整点击流在 jsdom 下不稳（floating + lazyRender），
+    // 这里用 initValue 预设验证 configure context 绑定 + setup 并入的核心逻辑。
+    const onMessageSend = vi.fn();
+    const { container } = renderWithLocale(AIChatInputMcpFixture, {
+      props: { onMessageSend, initValue: ['fs'] },
+    });
+    await flush(container);
+    const trigger = container.querySelector('.cd-ai-chat-input-configure-mcp-trigger');
+    expect(trigger?.textContent).toContain('MCP · 1');
+    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    await fireEvent.click(sendBtn);
+    expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ mcp: ['fs'] });
   });
 });

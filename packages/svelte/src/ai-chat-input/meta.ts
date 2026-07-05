@@ -7,8 +7,10 @@
  * 阶段 4（配置区）：renderConfigureArea + Configure 子组件（Select/Button/RadioButton，context+field 绑定）+ setup。
  * 阶段 5（Adapter 桥）：messageToChatInput / chatInputToChatCompletion 把 onMessageSend 载荷转成
  * AIDialogueMessage / OpenAI ChatCompletion，接 AIChatDialogue 展示或喂 API（core 纯函数透传）。
- * 可选补充：select-slot 自定义节点（内联下拉，用于 renderTemplate 模版填空，getSelectSlotHTML 生成）。
- * tiptap 内核 + svelte-tiptap 动态 import（不进主 bundle）。headless 判定在 @chenzy-design/core。
+ * 可选补充（全部完成）：select-slot（内联下拉）+ input-slot（可编辑填空，全套零宽锚点 + 光标 plugin）
+ * 自定义节点，用于 renderTemplate 模版填空（getSelectSlotHTML/getInputSlotHTML 生成）；
+ * Configure.Mcp（MCP 服务多选下拉）。tiptap 内核 + pm + svelte-tiptap 动态 import（不进主 bundle）。
+ * headless 判定在 @chenzy-design/core。
  */
 export const meta = {
   name: 'AIChatInput',
@@ -20,6 +22,7 @@ export const meta = {
     'AIChatInputConfigureSelect',
     'AIChatInputConfigureButton',
     'AIChatInputConfigureRadioButton',
+    'AIChatInputConfigureMcp',
   ],
   props: [
     { name: 'defaultContent', type: 'string', default: "''", desc: '初始内容（HTML 或纯文本，tiptap Content）' },
@@ -73,7 +76,7 @@ export const meta = {
     { name: 'getConfigureValue', desc: '取当前配置区值（阶段 4）' },
   ],
   a11y: {
-    role: '编辑区 role=textbox aria-multiline；建议/技能面板 role=listbox / 项 role=option aria-selected；模版按钮 aria-expanded；引用 chip 名称与删除为平级 button（避免 nested-interactive）；skill-slot chip 含删除按钮；aria-label 全走 i18n',
+    role: '编辑区 role=textbox aria-multiline；建议/技能面板 role=listbox / 项 role=option aria-selected；模版按钮 aria-expanded；引用 chip 名称与删除为平级 button（避免 nested-interactive）；skill-slot chip 含删除按钮；input-slot 可编辑填空空态显示 placeholder（aria-hidden）；Configure.Mcp 下拉 role=menuitemcheckbox；aria-label 全走 i18n',
     keyboard: 'Enter 发送（sendHotKey=enter，Shift+Enter 换行）/ Shift+Enter 发送；建议/技能面板可见时 ↑↓ 环绕导航、Enter 选中高亮项、Esc 关闭；空编辑区按 skillHotKey 弹技能面板；IME 组字中不发送；generating 时 Enter 不发送',
   },
   tokens: ['--cd-ai-chat-input-*（容器/编辑区/占位符/上传图标/发送-停止/引用条/建议-技能面板/skill-slot chip/模版按钮，深浅双主题；配置区 Button 复用 template/primary token）'],
@@ -88,5 +91,7 @@ export const meta = {
     { title: '模版', desc: 'skill.hasTemplate + renderTemplate（模版按钮弹面板 setContent）' },
     { title: '配置区', desc: 'renderConfigureArea + ConfigureSelect/Button/RadioButton + onConfigureChange（值进 setup）' },
     { title: '接入对话', desc: 'messageToChatInput 把发送载荷转 Message 喂 AIChatDialogue（Adapter 桥）' },
+    { title: '模版填空节点', desc: 'getSelectSlotHTML/getInputSlotHTML 在模版嵌内联下拉/可编辑填空（select-slot/input-slot）' },
+    { title: 'MCP 配置', desc: 'AIChatInputConfigureMcp 多选 MCP 服务，选中集进 setup' },
   ],
 } as const;

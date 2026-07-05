@@ -3,6 +3,7 @@
   用 field 绑定，包裹项目 RadioGroup（type='button'）。放在 renderConfigureArea 里使用。
 -->
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { RadioGroup } from '../radio/index.js';
   import { getConfigureContext } from './configure-context.js';
   import type { RadioValue } from '../radio/context.js';
@@ -24,9 +25,12 @@
 
   const ctx = getConfigureContext();
 
+  // untrack：切断对 configureValue 的追踪，避免 setField 写主组件 state → snippet 重渲染 → 自循环。
   $effect(() => {
-    if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
-    return () => ctx?.removeField(field);
+    untrack(() => {
+      if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
+    });
+    return () => untrack(() => ctx?.removeField(field));
   });
 
   const value = $derived(ctx?.getValue()[field] as RadioValue | undefined);

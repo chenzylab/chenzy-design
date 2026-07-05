@@ -11,6 +11,8 @@ import {
   skillLabel,
   getSkillSlotHTML,
   getSelectSlotHTML,
+  getInputSlotHTML,
+  AI_CHAT_INPUT_ZERO_WIDTH as ZW,
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
@@ -334,5 +336,47 @@ describe('ai-chat-input · transformDocToContents · 内联 slot 归一', () => 
       content: [{ type: 'paragraph', content: [{ type: 'skillSlot', attrs: { value: 'sk' } }] }],
     };
     expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: 'sk' }]);
+  });
+});
+
+describe('ai-chat-input · getInputSlotHTML', () => {
+  it('生成 input-slot 节点，带 placeholder + 零宽锚点', () => {
+    const html = getInputSlotHTML('填城市');
+    expect(html).toBe(`<input-slot placeholder="填城市">${ZW}</input-slot>`);
+  });
+  it('有 value 时用转义内容', () => {
+    expect(getInputSlotHTML('', '<b>x</b>')).toBe('<input-slot>&lt;b&gt;x&lt;/b&gt;</input-slot>');
+  });
+});
+
+describe('ai-chat-input · transformDocToContents · inputSlot 归一', () => {
+  it('inputSlot 有内容取内容，剔零宽字符', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '去 ' },
+            { type: 'inputSlot', attrs: { placeholder: '城市' }, content: [{ type: 'text', text: '北京' }] },
+          ],
+        },
+      ],
+    };
+    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: '去 北京' }]);
+  });
+  it('inputSlot 空（仅零宽）回退 placeholder', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'inputSlot', attrs: { placeholder: '请输入城市' }, content: [{ type: 'text', text: ZW }] },
+          ],
+        },
+      ],
+    };
+    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: '请输入城市' }]);
   });
 });

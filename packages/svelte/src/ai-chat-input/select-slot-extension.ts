@@ -39,6 +39,8 @@ export function createSelectSlotExtension(
           renderHTML: (attrs: Record<string, unknown>) =>
             attrs.options ? { options: attrs.options } : {},
         },
+        // 光标处理 plugin 靠此标记识别自定义节点（与 input-slot/skill-slot 共用锚点逻辑）。
+        isCustomSlot: { default: true, rendered: false },
       };
     },
 

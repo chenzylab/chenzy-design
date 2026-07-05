@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AIChatInput, getSelectSlotHTML } from '@chenzy-design/svelte';
+  import { AIChatInput, getSelectSlotHTML, getInputSlotHTML } from '@chenzy-design/svelte';
   import type { AIChatInputSkill } from '@chenzy-design/svelte';
 
   // 空编辑区按 skillHotKey（默认 '/'）弹出技能面板：↑↓ 导航 / Enter 选中 / Esc 关闭。
@@ -16,8 +16,12 @@
   const templates: Record<string, { label: string; html: string }[]> = {
     translate: [
       {
-        label: '翻译成 <语言>（下拉可选）',
+        label: '翻译成 <语言>（select-slot 下拉可选）',
         html: `<p>把以下内容翻译成 ${getSelectSlotHTML(['英文', '日文', '法文'], '英文')}：</p>`,
+      },
+      {
+        label: '翻译到 <可编辑填空>（input-slot 可编辑）',
+        html: `<p>把以下内容翻译成 ${getInputSlotHTML('目标语言')}（语气正式）：</p>`,
       },
       { label: '把以下内容翻译成英文：', html: '<p>把以下内容翻译成英文：</p>' },
     ],

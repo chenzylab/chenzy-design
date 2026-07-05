@@ -4,6 +4,7 @@
   放在 AIChatInput 的 renderConfigureArea 里使用（外层需有 AIChatInput 提供的 configure context）。
 -->
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { Select } from '../select/index.js';
   import { getConfigureContext } from './configure-context.js';
 
@@ -25,9 +26,12 @@
   const ctx = getConfigureContext();
 
   // 注册初始值 + 卸载时清理该字段（对齐 Semi getConfigureItem 的 useEffect）。
+  // untrack：切断对 configureValue 的追踪，避免 setField 写主组件 state → snippet 重渲染 → 自循环。
   $effect(() => {
-    if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
-    return () => ctx?.removeField(field);
+    untrack(() => {
+      if (initValue !== undefined) ctx?.setField({ [field]: initValue }, true);
+    });
+    return () => untrack(() => ctx?.removeField(field));
   });
 
   const value = $derived(ctx?.getValue()[field]);

@@ -518,6 +518,8 @@ export {
   skillLabel,
   getSkillSlotHTML,
   getSelectSlotHTML,
+  getInputSlotHTML,
+  AI_CHAT_INPUT_ZERO_WIDTH,
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,

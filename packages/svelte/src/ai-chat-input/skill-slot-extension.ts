@@ -50,6 +50,8 @@ export function createSkillSlotExtension(
           parseHTML: (el: HTMLElement) => el.getAttribute('data-template') === 'true',
           renderHTML: (attrs: Record<string, unknown>) => ({ 'data-template': attrs.hasTemplate }),
         },
+        // 光标处理 plugin 靠此标记识别自定义节点（与 input-slot/select-slot 共用锚点逻辑）。
+        isCustomSlot: { default: true, rendered: false },
       };
     },
 

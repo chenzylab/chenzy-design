@@ -2,7 +2,7 @@
 
 > 分类：show（Semi 归 Ai） · 阶段：独立立项（M?）
 > 对标 Semi：[AIChatInput](https://semi.design/zh-CN/ai/aiChatInput)
-> **状态：阶段 0～5 全部 ✅ 已完成（技术验证/基础输入/引用+建议/技能+模版/配置区/Adapter 桥）。剩收尾（DoD 复核）。** 本文件是立项书 —— 记录技术路线、依赖、Semi 源码位置、分阶段计划，供后续会话从明确起点开工。
+> **状态：全部完成 ✅ —— 阶段 0～5（技术验证/基础输入/引用+建议/技能+模版/配置区/Adapter 桥）+ 收尾 DoD 复核 + 全部可选补充（三种 slot / Configure 全族含 Mcp）清零，无留后项。** 本文件是立项书 —— 记录技术路线、依赖、Semi 源码位置、分阶段计划，供后续会话查阅。
 > **为何独立**：这是本仓库最大的单组件工程 —— 基于 tiptap 富文本编辑器，40+ props，工程量超过前 8 个富媒体组件总和，无法在常规会话里可靠一次交付。
 
 ## 0. 阶段 0 验证结论（2026-07-05 已完成 ✅）
@@ -81,7 +81,20 @@ AIChatInput ↔ AIChatDialogue / OpenAI API 的桥（对齐 Semi dataAdapter 反
 
 - **用法**：renderTemplate 里 `setContent(\`...${getSelectSlotHTML(['英文','日文'],'英文')}...\`)`，模版中嵌可选参数下拉；发送时 select-slot 的 value 自动进 inputContents。
 - **测试**：core 42→46（getSelectSlotHTML + 内联 slot 归一）；dom 33→35（NodeView 渲染 + value 进 content）。壳 gzip 6.48→6.82KB（预算 7KB 内）。demo 06 模版含 select-slot。
-- **仍留后**：input-slot（content='inline*' 可编辑节点，需 NodeViewContent + ProseMirror 光标 plugins，复杂度高）、Configure.Mcp。
+## 0.7 可选补充 · input-slot 可编辑节点 + Configure.Mcp（已完成 ✅ —— 全部留后项清零）
+
+**input-slot（全功能，无简化）**：可编辑内联填空节点（content='inline*' + NodeViewContent），空态 placeholder，**全套零宽字符锚点 + 光标处理 ProseMirror plugin 逐条移植自 Semi**（约 400 行）。
+- `input-slot-plugins.ts`（svelte 侧，依赖 @tiptap/pm/state，随内核懒加载）：`handleZeroWidthCharLogic`（遍历补/清零宽锚点：自定义节点前后、空 inputSlot 内、相邻自定义节点间）、`ensureTrailingText`（appendTransaction 维护锚点 + synthetic-backspace guard：IME 合成期 monkey-patch `view.someProp` 忽略 ProseMirror 的 synthetic Backspace replay）、`keyDownHandlePlugin`（ArrowLeft/Right/Backspace 在自定义节点前后各边界的光标移动/删除，含 inputSlot 内部删最后字符→保留 ZW、仅 ZW→删空 slot、全选→替换 ZW）、`handlePaste`（inputSlot 内特判：仅 ZW/全选时用粘贴文本替换避免 slot 被删）、`handleCompositionEndLogic`、`handleTextInput`（插入前清理相邻 ZW）。
+- `InputSlotNode.svelte`（NodeViewWrapper + NodeViewContent + placeholder，IME 合成期跳 update）+ `input-slot-extension.ts`（node content='inline*' + isCustomSlot + addProseMirrorPlugins 挂全套）。三个 slot（skill/select/input）均补 `isCustomSlot: true` 供 plugin 识别。主组件动态 import 链加载 @tiptap/pm/state + input-slot-extension/plugins，editorProps 挂 handlePaste/handleTextInput/compositionend，onCreate 补锚点。
+- core `getInputSlotHTML(placeholder, value?)` + `AI_CHAT_INPUT_ZERO_WIDTH` 导出；transformDocToContents 内建 inputSlot 归一（取内容剔零宽，空则回退 placeholder）。
+
+**Configure.Mcp**：`AIChatInputConfigureMcp.svelte` —— Dropdown 触发器（「MCP · N」）+ 多选菜单（showTick），选中集写回 configure value[field]。所有 Configure 子组件（含既有 Button/Select/RadioButton）的 initValue 注册 effect **补 untrack**，切断「setField 写主组件 state → renderConfigureArea snippet 重渲染 → effect 重跑」自循环（Mcp 首次暴露此问题：effect_update_depth_exceeded）。
+
+- **体积**：主壳 gzip 6.82→**9.81KB**（预算校准 12KB）—— input-slot 全套光标 plugin（~400 行）经 size-limit esbuild 内联进 entry 度量，属组件功能成本正当计入；@tiptap/pm 加入 per-component ignore。
+- **测试**：core 46→50（getInputSlotHTML + inputSlot 归一）；dom 35→40（input-slot NodeView 渲染/placeholder/归一/axe、Mcp 触发器/setup 并入）。全量 1288 passed、svelte-check + docs typecheck 0 err。jsdom 补 Element/Range getClientRects 空实现消除 Dropdown floating 噪音。
+- **光标交互**：全套 plugin 逐条移植，jsdom 无法驱动真实光标/IME（记忆），故 dom 测覆盖渲染+归一+挂载不崩，真实光标行为靠 plugin 逻辑保真 + 浏览器验证。
+
+> **至此 AIChatInput 立项所有阶段 + 收尾 + 全部可选补充（三种 slot / Configure 全族含 Mcp / 双 Adapter）清零，无留后项。**
 
 ## 1. 概述
 AI 聊天场景的输入框：富文本输入（tiptap）+ 上传 + 引用 + 建议 + 技能/模版 + 配置区（模型参数/联网/深度思考/MCP）+ 丰富自定义渲染。搭配 AIChatDialogue（已落地）构建完整 AI 会话。
