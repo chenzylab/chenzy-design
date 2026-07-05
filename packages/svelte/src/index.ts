@@ -160,6 +160,8 @@ export {
   aiChatDialogueMeta,
   responseToMessage,
   chatCompletionToMessage,
+  streamingResponseToMessage,
+  streamingChatCompletionToMessage,
   contentItemType,
   normalizeDialogueContent,
   type AIDialogueMessage,
@@ -170,6 +172,10 @@ export {
   type AIMessageStatus,
   type OpenAIResponseObject,
   type ChatCompletionObject,
+  type ResponseStreamChunk,
+  type StreamingResponseState,
+  type ChatCompletionStreamChunk,
+  type StreamingChatCompletionState,
 } from './ai-chat-dialogue/index.js';
 export {
   AIChatInput,

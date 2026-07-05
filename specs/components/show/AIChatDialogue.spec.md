@@ -18,7 +18,7 @@
   - 类型：`Message`（id/content(string|ContentItem[])/role/status(queued|in_progress|incomplete|completed|failed|cancelled)/model/createdAt…）、`ContentItem`（对齐 Semi foundation：InputMessage/OutputMessage/OutputText/InputText/InputImage/InputFile/Reasoning/Annotation/ToolCall 等）、`RoleConfig`/`Metadata`/`Reference`。
   - **Adapter 转换函数**（对齐 Semi dataAdapter）：
     - **P0（本次做）**：`responseToMessage`（Response Object → Message，非流式，Semi 源码仅 322B，简单）、`chatCompletionToMessage`（ChatCompletion → Message[]，非流式）。
-    - **P1（本次登记为后续，Semi 源码流式解析各 6K/25K 极复杂）**：`streamingResponseToMessage`、`streamingChatCompletionToMessage` —— 流式状态机，**本次先不实现**，spec 登记；提供占位签名 + 抛「未实现」或先支持整块。
+    - ~~**P1（本次登记为后续）**~~ **✅ 已于 2026-07-05 落地**：`streamingResponseToMessage`、`streamingChatCompletionToMessage` —— 流式增量状态机，**全功能逐条移植自 Semi**（无序缓冲 + sequence_number 顺序处理 + MAX_GAP 容错 + 20+ chunk 类型 delta 累积 / choice.index 分组 + processedCount 增量 + tool_calls 累积）。core 纯 reducer，8 单测。
     - `messageToChatInput` / `chatInputToChatCompletion`（配合 AIChatInput，AIChatInput 落地后补）。
   - 消息增删/选择/滚动逻辑可复用 core/chat 的 helper。
 - **渲染（svelte/）**：
@@ -85,4 +85,5 @@
 
 ## 13. 本次范围与登记（务实分层）
 - **本次做**：Message/ContentItem 类型 + 非流式 Adapter（responseToMessage/chatCompletionToMessage）+ 渲染层（text/image/file/code/reasoning/annotation 分块，复用 MarkdownRender/CodeHighlight/Avatar）+ 选择/提示/操作 + a11y/i18n/token/meta/测试。
-- **本次登记为后续（P1）**：`streamingResponseToMessage`（Semi 25K 流式状态机）、`streamingChatCompletionToMessage`（6K）、messageToChatInput/chatInputToChatCompletion（待 AIChatInput）、消息编辑（messageEditRender）、tool_call/MCP 完整块（先基础展示）。
+- **已落地**：`streamingResponseToMessage` / `streamingChatCompletionToMessage`（流式 Adapter，全功能，2026-07-05，见 §13 上方）；`messageToChatInput` / `chatInputToChatCompletion`（随 AIChatInput PR #425 落地）。
+- **仍登记为后续（P1，可选）**：消息编辑（messageEditRender）、tool_call/MCP 完整块交互（当前基础展示已够）。
