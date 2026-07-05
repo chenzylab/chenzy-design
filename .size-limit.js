@@ -137,6 +137,10 @@ const components = [
   ['chat', '{ Chat }', '8.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   ['ai-chat-dialogue', '{ AIChatDialogue }', '6 KB'],
+  // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
+  // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
+  // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。
+  ['ai-chat-input', '{ AIChatInput }', '4 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载
@@ -145,6 +149,7 @@ const components = [
 // spec §9 记录（gzip ~51KB，懒加载）。
 const perComponentIgnore = {
   'json-viewer': [...ignore, '@douyinfe/semi-json-viewer-core'],
+  'ai-chat-input': [...ignore, '@tiptap/core', '@tiptap/starter-kit', '@tiptap/extensions'],
 };
 
 export default components.map(([dir, imports, limit]) => ({

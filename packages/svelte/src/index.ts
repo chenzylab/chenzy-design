@@ -172,6 +172,20 @@ export {
   type ChatCompletionObject,
 } from './ai-chat-dialogue/index.js';
 export {
+  AIChatInput,
+  aiChatInputMeta,
+  isSendHotKey,
+  resolveCanSend,
+  buildMessageContent,
+  transformDocToContents,
+  type AIChatInputContent,
+  type AIChatInputAttachment,
+  type AIChatInputReference,
+  type AIChatInputMessageContent,
+  type AIChatInputSendHotKey,
+  type AIChatInputChangePayload,
+} from './ai-chat-input/index.js';
+export {
   Cropper,
   cropperMeta,
   type CropperShape,

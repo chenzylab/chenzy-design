@@ -665,4 +665,16 @@ export interface Locale {
     /** file item fallback name */
     file: string;
   };
+  AIChatInput: {
+    /** rich-text editor region aria-label */
+    editor: string;
+    /** input placeholder */
+    placeholder: string;
+    /** send button aria-label */
+    send: string;
+    /** stop-generate button aria-label */
+    stop: string;
+    /** upload-attachment button aria-label */
+    upload: string;
+  };
 }

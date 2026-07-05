@@ -475,4 +475,11 @@ export const en_US: Locale = {
     audio: 'Audio',
     file: 'File',
   },
+  AIChatInput: {
+    editor: 'Message input',
+    placeholder: 'Type a message…',
+    send: 'Send',
+    stop: 'Stop generating',
+    upload: 'Upload attachment',
+  },
 };

@@ -1,0 +1,30 @@
+import type { Component } from 'svelte';
+
+const mods = import.meta.glob<{ default: Component }>('./*.svelte', { eager: true });
+const sources = import.meta.glob('./*.svelte', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+
+export interface DemoEntry {
+  title: string;
+  description?: string;
+  component: Component;
+  code: string;
+}
+
+function entry(file: string, title: string, description?: string): DemoEntry {
+  return {
+    title,
+    description,
+    component: mods[`./${file}`].default,
+    code: (sources[`./${file}`] as string).trim(),
+  };
+}
+
+export const demos: DemoEntry[] = [
+  entry('01-basic.svelte', '基础输入', 'tiptap 富文本输入 + Enter 发送，onMessageSend 拿到 MessageContent。'),
+  entry('02-generating.svelte', '生成态与停止', 'generating 时发送键变停止键、Enter 不发送，onStopGenerate 中断。'),
+  entry('03-hotkey-upload.svelte', '快捷键与附件', "sendHotKey='shift+enter' + round + Upload 附件（onUploadChange）。"),
+];

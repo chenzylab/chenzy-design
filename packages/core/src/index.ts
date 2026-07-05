@@ -506,3 +506,15 @@ export {
   type InputImage,
   type InputFile,
 } from './ai-chat-dialogue.js';
+export {
+  isSendHotKey,
+  resolveCanSend,
+  buildMessageContent,
+  transformDocToContents,
+  type AIChatInputContent,
+  type AIChatInputAttachment,
+  type AIChatInputReference,
+  type AIChatInputMessageContent,
+  type AIChatInputSendHotKey,
+  type AIChatInputChangePayload,
+} from './ai-chat-input.js';
