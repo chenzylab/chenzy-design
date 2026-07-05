@@ -4,10 +4,11 @@
 //  - 选择模式：checkbox 前置。
 //  - axe 0 violations。
 // jsdom 断言静态渲染 + ARIA + axe（真实滚动/回到底部留浏览器）。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fireEvent } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatDialogue from './AIChatDialogue.svelte';
+import AIChatDialogueEditFixture from './AIChatDialogueEditFixture.svelte';
 import type { AIDialogueMessage, AIDialogueRoleConfig } from '@chenzy-design/core';
 
 const roleConfig: AIDialogueRoleConfig = {
@@ -89,5 +90,49 @@ describe('AIChatDialogue a11y / 渲染', () => {
     const err = container.querySelector('.cd-ai-dialogue-box-error');
     expect(err?.textContent).toBeTruthy();
     expect(err?.textContent).not.toBe('AIChatDialogue.error');
+  });
+});
+
+describe('AIChatDialogue · 消息编辑（P1）', () => {
+  const editChats: AIDialogueMessage[] = [
+    {
+      id: 'u1',
+      role: 'user',
+      content: [{ type: 'message', content: [{ type: 'input_text', text: '原始消息' }] }],
+      status: 'completed',
+    },
+  ];
+
+  it('user 消息展示编辑按钮，点击触发 onMessageEdit', async () => {
+    const onMessageEdit = vi.fn();
+    const { container } = renderWithLocale(AIChatDialogueEditFixture, {
+      props: { chats: editChats, onMessageEdit },
+    });
+    const editBtn = container.querySelector('button[aria-label="Edit"]') as HTMLButtonElement;
+    expect(editBtn).not.toBeNull();
+    await fireEvent.click(editBtn);
+    expect(onMessageEdit).toHaveBeenCalledTimes(1);
+    expect(onMessageEdit.mock.calls[0]![0].id).toBe('u1');
+  });
+
+  it('message.editing=true 时用 messageEditRender 替代内容', async () => {
+    const editing: AIDialogueMessage[] = [{ ...editChats[0]!, editing: true }];
+    const { container } = renderWithLocale(AIChatDialogueEditFixture, {
+      props: { chats: editing },
+    });
+    const editor = container.querySelector('[data-testid="edit-editor"]');
+    expect(editor).not.toBeNull();
+    // 载荷含原消息文本（dialogueMessageToInput 抽取）
+    expect(editor?.textContent).toContain('原始消息');
+    // 编辑态不显示操作按钮
+    expect(container.querySelector('button[aria-label="Edit"]')).toBeNull();
+  });
+
+  it('editing 态无 axe 违规', async () => {
+    const editing: AIDialogueMessage[] = [{ ...editChats[0]!, editing: true }];
+    const { container } = renderWithLocale(AIChatDialogueEditFixture, {
+      props: { chats: editing },
+    });
+    await expectNoAxeViolations(container);
   });
 });

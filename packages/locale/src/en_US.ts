@@ -465,6 +465,7 @@ export const en_US: Locale = {
     selectMessage: 'Select message',
     copy: 'Copy',
     reset: 'Regenerate',
+    edit: 'Edit',
     delete: 'Delete',
     like: 'Good response',
     dislike: 'Bad response',

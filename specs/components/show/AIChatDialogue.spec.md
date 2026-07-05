@@ -86,4 +86,5 @@
 ## 13. 本次范围与登记（务实分层）
 - **本次做**：Message/ContentItem 类型 + 非流式 Adapter（responseToMessage/chatCompletionToMessage）+ 渲染层（text/image/file/code/reasoning/annotation 分块，复用 MarkdownRender/CodeHighlight/Avatar）+ 选择/提示/操作 + a11y/i18n/token/meta/测试。
 - **已落地**：`streamingResponseToMessage` / `streamingChatCompletionToMessage`（流式 Adapter，全功能，2026-07-05，见 §13 上方）；`messageToChatInput` / `chatInputToChatCompletion`（随 AIChatInput PR #425 落地）。
-- **仍登记为后续（P1，可选）**：消息编辑（messageEditRender）、tool_call/MCP 完整块交互（当前基础展示已够）。
+- **已落地**：消息编辑（2026-07-05）——`messageEditRender` + `message.editing`（受控，仅 user 消息）+ `onMessageEdit` + `editable`；`dialogueMessageToInput`（core，消息→MessageContent 供编辑器载入）。DialogueBox editing 态用 messageEditRender 替代内容（消费方放 AIChatInput）。demo 04 端到端。
+- **仍登记为后续（P1，可选）**：tool_call/MCP 完整块交互（当前基础展示已够，纯可选）。

@@ -465,6 +465,7 @@ export const zh_CN: Locale = {
     selectMessage: '选择消息',
     copy: '复制',
     reset: '重新生成',
+    edit: '编辑',
     delete: '删除',
     like: '有帮助',
     dislike: '无帮助',

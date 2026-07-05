@@ -8,9 +8,11 @@
   import type { Snippet } from 'svelte';
   import {
     normalizeDialogueContent,
+    dialogueMessageToInput,
     type AIDialogueMessage,
     type AIDialogueMetadata,
     type ContentItem,
+    type AIChatInputMessageContent,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
@@ -41,6 +43,16 @@
     onMessageBadFeedback?: ((message: AIDialogueMessage) => void) | undefined;
     onFileClick?: ((file: unknown) => void) | undefined;
     onImageClick?: ((image: unknown) => void) | undefined;
+    /**
+     * 消息编辑渲染（对齐 Semi messageEditRender）：message.editing=true 且 user 消息时，
+     * 用它替代正常内容渲染。参数为该消息转成的 MessageContent（messageToChatInput），
+     * 消费方通常在里面放 AIChatInput 编辑器。
+     */
+    messageEditRender?: Snippet<[AIChatInputMessageContent]> | undefined;
+    /** 点击编辑操作回调（对齐 Semi onMessageEdit）。 */
+    onMessageEdit?: ((message: AIDialogueMessage) => void) | undefined;
+    /** 是否展示编辑操作（默认 true；仅 user 消息显示编辑按钮）。 */
+    editable?: boolean;
   }
 
   let {
@@ -61,11 +73,20 @@
     onMessageBadFeedback,
     onFileClick,
     onImageClick,
+    messageEditRender,
+    onMessageEdit,
+    editable = true,
   }: Props = $props();
 
   const loc = useLocale();
 
   const isUser = $derived(message.role === 'user');
+  // 编辑态：message.editing 受控 + 仅 user 消息 + 提供了 messageEditRender（对齐 Semi）。
+  const isEditing = $derived(!!message.editing && message.role === 'user' && !!messageEditRender);
+  // 编辑态载荷：把 dialogue 消息抽取成 MessageContent（inputContents 文本段），喂给编辑器载入。
+  const editPayload = $derived<AIChatInputMessageContent>(
+    isEditing ? dialogueMessageToInput(message) : { inputContents: [] },
+  );
   const isLoading = $derived(
     message.status === 'in_progress' || message.status === 'queued',
   );
@@ -129,7 +150,10 @@
     {/if}
 
     <div class="cd-ai-dialogue-box-content" aria-busy={isLoading}>
-      {#if isLoading && items.length === 0}
+      {#if isEditing && messageEditRender}
+        <!-- 编辑态：用 messageEditRender 替代内容（对齐 Semi），消费方通常放 AIChatInput 编辑器。 -->
+        {@render messageEditRender(editPayload)}
+      {:else if isLoading && items.length === 0}
         <span class="cd-ai-dialogue-box-loading">{loc().t('AIChatDialogue.loading')}</span>
       {:else if isError}
         <span class="cd-ai-dialogue-box-error">{loc().t('AIChatDialogue.error')}</span>
@@ -140,9 +164,12 @@
       {/if}
     </div>
 
-    {#if !isLoading && !selecting}
+    {#if !isLoading && !selecting && !isEditing}
       <div class="cd-ai-dialogue-box-actions">
         <button type="button" onclick={handleCopy} aria-label={loc().t('AIChatDialogue.copy')} title={loc().t('AIChatDialogue.copy')}>⧉</button>
+        {#if editable && isUser && onMessageEdit}
+          <button type="button" onclick={() => onMessageEdit?.(message)} aria-label={loc().t('AIChatDialogue.edit')} title={loc().t('AIChatDialogue.edit')}>✎</button>
+        {/if}
         {#if showReset}
           <button type="button" onclick={() => onMessageReset?.(message)} aria-label={loc().t('AIChatDialogue.reset')} title={loc().t('AIChatDialogue.reset')}>↻</button>
         {/if}

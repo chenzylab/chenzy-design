@@ -162,6 +162,7 @@ export {
   chatCompletionToMessage,
   streamingResponseToMessage,
   streamingChatCompletionToMessage,
+  dialogueMessageToInput,
   contentItemType,
   normalizeDialogueContent,
   type AIDialogueMessage,

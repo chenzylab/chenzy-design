@@ -5,6 +5,7 @@ import {
   chatCompletionToMessage,
   streamingResponseToMessage,
   streamingChatCompletionToMessage,
+  dialogueMessageToInput,
   contentItemType,
   normalizeDialogueContent,
   type OpenAIResponseObject,
@@ -301,5 +302,40 @@ describe('ai-chat-dialogue · streamingChatCompletionToMessage', () => {
       ] },
     ]);
     expect(res.messages).toHaveLength(2);
+  });
+});
+
+describe('ai-chat-dialogue · dialogueMessageToInput', () => {
+  it('抽取 input_text/output_text → inputContents 文本段', () => {
+    const msg = {
+      id: 'm1',
+      role: 'user',
+      content: [
+        { type: 'message', content: [{ type: 'input_text', text: '你好' }] },
+        { type: 'message', content: [{ type: 'output_text', text: '世界' }] },
+      ],
+    };
+    const payload = dialogueMessageToInput(msg as any);
+    expect(payload.inputContents).toEqual([
+      { type: 'text', text: '你好' },
+      { type: 'text', text: '世界' },
+    ]);
+  });
+
+  it('string content → 用 output_text', () => {
+    const payload = dialogueMessageToInput({ id: 'm', role: 'user', content: 'hi', output_text: 'hi' } as any);
+    expect(payload.inputContents).toEqual([{ type: 'text', text: 'hi' }]);
+  });
+
+  it('携带 attachments/references 时透传', () => {
+    const payload = dialogueMessageToInput({
+      id: 'm',
+      role: 'user',
+      content: [{ type: 'message', content: [{ type: 'input_text', text: 'x' }] }],
+      attachments: [{ uid: '1' }],
+      references: [{ type: 'file', id: 'r' }],
+    } as any);
+    expect(payload.attachments).toHaveLength(1);
+    expect(payload.references).toHaveLength(1);
   });
 });
