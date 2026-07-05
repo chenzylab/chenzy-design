@@ -96,6 +96,19 @@ AIChatInput ↔ AIChatDialogue / OpenAI API 的桥（对齐 Semi dataAdapter 反
 
 > **至此 AIChatInput 立项所有阶段 + 收尾 + 全部可选补充（三种 slot / Configure 全族含 Mcp / 双 Adapter）清零，无留后项。**
 
+## 0.8 Semi 全 API 对齐补齐（已完成 ✅）
+
+逐条核对 Semi §4 props / methods 全表，补齐此前未实现项：
+
+- **props**：`showUploadFile`（top area 自绘附件列表，Upload 改 listType='none' 只做触发器+管线）、`renderUploadButton`（自定义上传按钮 UI，保留内置逻辑，openFileDialog）、`clearContentOnGenerating`（generating false→true 边沿 $effect 清空，untrack 追踪 prev）、`onFocus`/`onBlur`（editorProps.handleDOMEvents）、`onPaste`（handlePaste 抽剪贴板文件回调，与 inputSlot 粘贴逻辑组合）。
+- **methods**：`deleteContent`（按 content.text 遍历文档匹配删除段）、`setContentWhileSaveTool`（保留当前技能 skill-slot 前缀 + 新内容 setContent）、`deleteUploadFile`（从附件列表移除）。
+- **getConfigureItem 等价**：`AIChatInputConfigureItem.svelte` —— 通用 field 绑定 wrapper（children snippet 提供 {value,onChange}），把任意受控组件接入配置区（Semi HOC 的 Svelte 等价）。
+- i18n 加 `deleteAttachment`。core 无新增（纯渲染层）。
+- 主壳 gzip 9.81→**10.44KB**（预算 12KB 内）。dom 40→44（deleteContent/setContentWhileSaveTool/clearContentOnGenerating 两态）。全量 1292 passed、svelte-check 0 err。
+- **仅 setEditor（Semi 内部注入 editor 的 method）不做**——本组件自持 editor 实例，无此需求。
+
+> **AIChatInput 与 Semi AIChatInput 公开 API（props/events/slots/methods/Configure 全族）全面对齐，无未实现功能。**
+
 ## 1. 概述
 AI 聊天场景的输入框：富文本输入（tiptap）+ 上传 + 引用 + 建议 + 技能/模版 + 配置区（模型参数/联网/深度思考/MCP）+ 丰富自定义渲染。搭配 AIChatDialogue（已落地）构建完整 AI 会话。
 

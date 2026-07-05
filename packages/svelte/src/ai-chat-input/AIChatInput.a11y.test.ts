@@ -523,3 +523,58 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
     expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ mcp: ['fs'] });
   });
 });
+
+describe('AIChatInput · 补齐 Semi props/methods', () => {
+  it('ref deleteContent：删除匹配文本段', async () => {
+    const rendered = render(AIChatInput, { props: { defaultContent: '<p>hello world</p>' } }) as unknown as {
+      container: Element;
+      component: { deleteContent: (c: { text: string }) => void; getText: () => string };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.deleteContent({ text: 'world' });
+    await flush();
+    expect(component.getText()).not.toContain('world');
+    expect(component.getText()).toContain('hello');
+  });
+
+  it('ref setContentWhileSaveTool：保留当前技能 slot 前缀', async () => {
+    // 无技能时退化为普通 setContent。
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContentWhileSaveTool: (s: string) => void; getText: () => string };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContentWhileSaveTool('<p>新内容</p>');
+    await flush();
+    expect(component.getText()).toContain('新内容');
+  });
+
+  it('clearContentOnGenerating：generating false→true 时清空输入', async () => {
+    const { container, rerender } = render(AIChatInput, {
+      props: { defaultContent: '<p>草稿</p>', generating: false },
+    }) as unknown as {
+      container: Element;
+      rerender: (p: Record<string, unknown>) => Promise<void>;
+    };
+    await flush(container);
+    expect(container.querySelector('.ProseMirror')?.textContent).toContain('草稿');
+    await rerender({ defaultContent: '<p>草稿</p>', generating: true });
+    await flush();
+    expect(container.querySelector('.ProseMirror')?.textContent?.trim() ?? '').toBe('');
+  });
+
+  it('clearContentOnGenerating=false 时不清空', async () => {
+    const { container, rerender } = render(AIChatInput, {
+      props: { defaultContent: '<p>草稿</p>', generating: false, clearContentOnGenerating: false },
+    }) as unknown as {
+      container: Element;
+      rerender: (p: Record<string, unknown>) => Promise<void>;
+    };
+    await flush(container);
+    await rerender({ defaultContent: '<p>草稿</p>', generating: true, clearContentOnGenerating: false });
+    await flush();
+    expect(container.querySelector('.ProseMirror')?.textContent).toContain('草稿');
+  });
+});

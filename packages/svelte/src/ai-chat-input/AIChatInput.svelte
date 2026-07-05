@@ -133,6 +133,32 @@
     configureDefaultValue?: AIChatInputConfigureValue;
     /** 配置区变更回调（value 为全量，changed 为本次变更字段，对齐 Semi onConfigureChange）。 */
     onConfigureChange?: ((value: AIChatInputConfigureValue, changed: AIChatInputConfigureValue) => void) | undefined;
+    // —— 补齐 Semi 剩余 props ——
+    /** 是否在 top area 展示上传附件列表（对齐 Semi showUploadFile，默认 true）。 */
+    showUploadFile?: boolean;
+    /**
+     * 自定义上传按钮 UI（对齐 Semi renderUploadButton），保留内置上传/粘贴逻辑。
+     * 参数 defaultNode=默认按钮、openFileDialog=打开文件选择、disabled、attachments。
+     */
+    renderUploadButton?:
+      | Snippet<
+          [
+            {
+              openFileDialog: () => void;
+              disabled: boolean;
+              attachments: AIChatInputAttachment[];
+            },
+          ]
+        >
+      | undefined;
+    /** generating 从 false→true 时清空输入（对齐 Semi clearContentOnGenerating，默认 true）。 */
+    clearContentOnGenerating?: boolean;
+    /** 编辑区聚焦回调。 */
+    onFocus?: ((event: FocusEvent) => void) | undefined;
+    /** 编辑区失焦回调。 */
+    onBlur?: ((event: FocusEvent) => void) | undefined;
+    /** 粘贴回调（携带粘贴的文件，对齐 Semi onPaste；不改变默认粘贴行为）。 */
+    onPaste?: ((files: File[]) => void) | undefined;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -175,6 +201,12 @@
     renderConfigureArea,
     configureDefaultValue,
     onConfigureChange,
+    showUploadFile = true,
+    renderUploadButton,
+    clearContentOnGenerating = true,
+    onFocus,
+    onBlur,
+    onPaste,
     class: className = '',
     style,
   }: Props = $props();
@@ -230,9 +262,20 @@
   const showTemplate = $derived(
     showTemplateButton && !!renderTemplate && !!currentSkill?.hasTemplate,
   );
-  // top area 是否有内容（引用条 / topSlot），无则不渲染容器。
+  // top area 是否有内容（引用条 / topSlot / 附件列表），无则不渲染容器。
   const hasReferences = $derived(showReference && references.length > 0);
   const hasTopSlot = $derived(!!renderTopSlot);
+  const hasAttachments = $derived(showUploadFile && attachments.length > 0);
+
+  // clearContentOnGenerating：generating false→true 边沿时清空输入（对齐 Semi）。
+  let prevGenerating = untrack(() => generating);
+  $effect(() => {
+    const now = generating;
+    if (clearContentOnGenerating && now && !untrack(() => prevGenerating)) {
+      editor?.commands.clearContent(true);
+    }
+    prevGenerating = now;
+  });
 
   // —— tiptap 内核动态 import + editor 生命周期（体积约束：内核不进主 bundle）——
   $effect(() => {
@@ -271,6 +314,7 @@
       const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
       const { Plugin, PluginKey, TextSelection } = pmState;
       const pmDeps = { Plugin, PluginKey, TextSelection } as never;
+      const inputSlotHandlePaste = inputSlotPlugins.makeHandlePaste(pmDeps);
       // skillSlot / selectSlot / inputSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点，
       // 且 inputSlot 的光标 plugin 需识别全部 isCustomSlot 节点）；是否用到另由 props/模版决定。
       const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
@@ -300,13 +344,23 @@
             'aria-label': loc().t('AIChatInput.editor'),
           },
           handleKeyDown: (_view, event) => handleEditorKeyDown(event),
-          // inputSlot 的粘贴/文本输入零宽锚点清理（对齐 Semi editorProps）。
-          handlePaste: inputSlotPlugins.makeHandlePaste(pmDeps),
+          // inputSlot 的粘贴/文本输入零宽锚点清理（对齐 Semi editorProps）；
+          // 粘贴时先抽取剪贴板文件交给 onPaste（不改变默认粘贴行为）。
+          handlePaste: (view, event) => {
+            const files = extractClipboardFiles(event as ClipboardEvent);
+            if (files.length > 0) onPaste?.(files);
+            return inputSlotHandlePaste(view, event);
+          },
           handleTextInput: inputSlotPlugins.makeHandleTextInput(),
           handleDOMEvents: {
-            // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）。
-            focus: () => {
+            // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）+ onFocus 回调。
+            focus: (_view, event) => {
               openSuggestions();
+              onFocus?.(event as FocusEvent);
+              return false;
+            },
+            blur: (_view, event) => {
+              onBlur?.(event as FocusEvent);
               return false;
             },
             // IME 合成结束后清理 inputSlot 内残留零宽字符（延迟等 ProseMirror flush composition）。
@@ -520,7 +574,25 @@
     onUploadChange?.(attachments);
   }
 
-  // —— ref 方法（对齐 Semi Methods 子集）——
+  // 从剪贴板事件抽取文件（供 onPaste + 粘贴上传）。
+  function extractClipboardFiles(e: ClipboardEvent): File[] {
+    const items = e.clipboardData?.items;
+    if (!items) return [];
+    const files: File[] = [];
+    for (const it of items) {
+      const f = it.getAsFile();
+      if (f) files.push(f);
+    }
+    return files;
+  }
+
+  // 从附件列表移除一项（top area 附件列表删除按钮 + ref deleteUploadFile 共用）。
+  function removeAttachment(target: AIChatInputAttachment): void {
+    attachments = attachments.filter((a) => a.uid !== target.uid);
+    onUploadChange?.(attachments);
+  }
+
+  // —— ref 方法（对齐 Semi Methods）——
   export function setContent(next: string): void {
     editor?.commands.setContent(next);
   }
@@ -547,6 +619,41 @@
   export function getConfigureValue(): AIChatInputConfigureValue {
     return configureValue;
   }
+  /**
+   * 删除编辑器中匹配的一段内容（对齐 Semi deleteContent）。按 content.text 精确匹配删除，
+   * 用于外部（如工具卡片）联动移除某段输入。找不到则不动。
+   */
+  export function deleteContent(content: { type?: string; text?: string }): void {
+    if (!editor || !content?.text) return;
+    const target = content.text;
+    let found: { from: number; to: number } | undefined;
+    editor.state.doc.descendants((node, pos) => {
+      if (found) return false;
+      if (node.isText && node.text && node.text.includes(target)) {
+        const start = pos + node.text.indexOf(target);
+        found = { from: start, to: start + target.length };
+        return false;
+      }
+      return true;
+    });
+    if (found) editor.chain().focus().deleteRange(found).run();
+  }
+  /**
+   * 设置内容但保留已选技能标记（对齐 Semi setContentWhileSaveTool）：把当前技能作为
+   * skill-slot 前缀 + 新内容一起 setContent，避免覆盖技能选择。
+   */
+  export function setContentWhileSaveTool(next: string): void {
+    if (!editor) return;
+    if (currentSkill) {
+      editor.commands.setContent(getSkillSlotHTML(currentSkill) + next);
+    } else {
+      editor.commands.setContent(next);
+    }
+  }
+  /** 从附件列表删除一项（对齐 Semi deleteUploadFile）。 */
+  export function deleteUploadFile(attachment: AIChatInputAttachment): void {
+    removeAttachment(attachment);
+  }
 </script>
 
 <div
@@ -555,7 +662,7 @@
   {style}
   bind:this={rootEl}
 >
-  {#if hasReferences || hasTopSlot}
+  {#if hasReferences || hasTopSlot || hasAttachments}
     <div class="cd-ai-chat-input-top">
       {#if hasTopSlot && topSlotPosition === 'top'}
         {@render renderTopSlot?.({ references, attachments })}
@@ -590,6 +697,25 @@
                 </button>
               </div>
             {/if}
+          {/each}
+        </div>
+      {/if}
+      {#if hasAttachments}
+        <div class="cd-ai-chat-input-attachments">
+          {#each attachments as attachment (attachment.uid)}
+            <div class="cd-ai-chat-input-attachment">
+              <span class="cd-ai-chat-input-attachment-name">{attachment.name ?? attachment.uid}</span>
+              <button
+                type="button"
+                class="cd-ai-chat-input-attachment-delete"
+                aria-label={loc().t('AIChatInput.deleteAttachment')}
+                onclick={() => removeAttachment(attachment)}
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
           {/each}
         </div>
       {/if}
@@ -682,24 +808,33 @@
       </button>
     {/if}
     {#if showUploadButton}
+      <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
       <div class="cd-ai-chat-input-upload">
         <Upload
-          listType="picture-card"
+          listType="none"
           multiple
           {...uploadProps}
           onChange={handleAttachmentChange}
         >
-          <span class="cd-ai-chat-input-upload-trigger" aria-label={loc().t('AIChatInput.upload')}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-              <path
-                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 3v13m0-13-4 4m4-4 4 4"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </span>
+          {#if renderUploadButton}
+            {@render renderUploadButton({
+              openFileDialog: () => {},
+              disabled: generating,
+              attachments,
+            })}
+          {:else}
+            <span class="cd-ai-chat-input-upload-trigger" aria-label={loc().t('AIChatInput.upload')}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path
+                  d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 3v13m0-13-4 4m4-4 4 4"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          {/if}
         </Upload>
       </div>
     {/if}
@@ -769,6 +904,50 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-ai-chat-input-gap);
+  }
+
+  /* —— 附件列表（showUploadFile，复用引用条 chip 视觉）—— */
+  .cd-ai-chat-input-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-ai-chat-input-gap);
+  }
+
+  .cd-ai-chat-input-attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    max-width: 100%;
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
+    background: var(--cd-ai-chat-input-reference-bg);
+    color: var(--cd-ai-chat-input-reference-color);
+    border-radius: var(--cd-ai-chat-input-reference-radius);
+  }
+
+  .cd-ai-chat-input-attachment-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--cd-font-size-regular);
+  }
+
+  .cd-ai-chat-input-attachment-delete {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    padding: 0;
+    color: var(--cd-ai-chat-input-action-icon);
+  }
+
+  .cd-ai-chat-input-attachment-delete:hover {
+    color: var(--cd-ai-chat-input-action-icon-hover);
+  }
+
+  .cd-ai-chat-input-attachment-delete:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: 1px;
   }
 
   .cd-ai-chat-input-reference {

@@ -482,6 +482,7 @@ export const en_US: Locale = {
     stop: 'Stop generating',
     upload: 'Upload attachment',
     deleteReference: 'Delete reference',
+    deleteAttachment: 'Delete attachment',
     suggestions: 'Suggestions',
     skills: 'Skills',
     deleteSkill: 'Delete skill',

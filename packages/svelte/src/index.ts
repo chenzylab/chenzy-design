@@ -177,6 +177,7 @@ export {
   AIChatInputConfigureButton,
   AIChatInputConfigureRadioButton,
   AIChatInputConfigureMcp,
+  AIChatInputConfigureItem,
   aiChatInputMeta,
   isSendHotKey,
   resolveCanSend,

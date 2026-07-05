@@ -23,6 +23,7 @@ export const meta = {
     'AIChatInputConfigureButton',
     'AIChatInputConfigureRadioButton',
     'AIChatInputConfigureMcp',
+    'AIChatInputConfigureItem',
   ],
   props: [
     { name: 'defaultContent', type: 'string', default: "''", desc: '初始内容（HTML 或纯文本，tiptap Content）' },
@@ -43,6 +44,8 @@ export const meta = {
     { name: 'skillHotKey', type: 'string', default: "'/'", desc: '触发技能面板的按键（阶段 3）' },
     { name: 'showTemplateButton', type: 'boolean', default: 'true', desc: '是否展示模版按钮（仅当前技能 hasTemplate 时生效，阶段 3）' },
     { name: 'configureDefaultValue', type: 'Record<string, unknown>', default: 'undefined', desc: '配置区初始值（阶段 4）' },
+    { name: 'showUploadFile', type: 'boolean', default: 'true', desc: 'top area 展示上传附件列表' },
+    { name: 'clearContentOnGenerating', type: 'boolean', default: 'true', desc: 'generating false→true 时清空输入' },
   ],
   events: [
     { name: 'onContentChange', payload: '{ text, html, json }', desc: '内容变化' },
@@ -55,6 +58,9 @@ export const meta = {
     { name: 'onSkillChange', payload: 'skill', desc: '选中技能（阶段 3）' },
     { name: 'onTemplateVisibleChange', payload: 'visible', desc: '模版面板显隐变化（阶段 3）' },
     { name: 'onConfigureChange', payload: '(value, changed)', desc: '配置区变更（阶段 4）' },
+    { name: 'onFocus', payload: 'event', desc: '编辑区聚焦' },
+    { name: 'onBlur', payload: 'event', desc: '编辑区失焦' },
+    { name: 'onPaste', payload: 'files', desc: '粘贴（携带剪贴板文件）' },
   ],
   slots: [
     { name: 'renderActionArea', payload: '{ canSend, generating }', desc: '自定义发送/停止按钮区' },
@@ -64,6 +70,7 @@ export const meta = {
     { name: 'renderSkillItem', payload: '{ skill, active }', desc: '自定义单条技能渲染（阶段 3）' },
     { name: 'renderTemplate', payload: '{ skill, setContent }', desc: '模版面板渲染（阶段 3）' },
     { name: 'renderConfigureArea', payload: '()', desc: 'footer 配置区渲染（放 Configure 子组件，阶段 4）' },
+    { name: 'renderUploadButton', payload: '{ openFileDialog, disabled, attachments }', desc: '自定义上传按钮 UI（保留内置上传/粘贴逻辑）' },
   ],
   methods: [
     { name: 'setContent', desc: '设置编辑器内容' },
@@ -74,6 +81,9 @@ export const meta = {
     { name: 'clearContent', desc: '清空编辑器内容' },
     { name: 'changeTemplateVisible', desc: '显隐模版面板（阶段 3）' },
     { name: 'getConfigureValue', desc: '取当前配置区值（阶段 4）' },
+    { name: 'deleteContent', desc: '删除编辑器中匹配 content.text 的一段' },
+    { name: 'setContentWhileSaveTool', desc: '设置内容但保留当前技能 slot 前缀' },
+    { name: 'deleteUploadFile', desc: '从附件列表删除一项' },
   ],
   a11y: {
     role: '编辑区 role=textbox aria-multiline；建议/技能面板 role=listbox / 项 role=option aria-selected；模版按钮 aria-expanded；引用 chip 名称与删除为平级 button（避免 nested-interactive）；skill-slot chip 含删除按钮；input-slot 可编辑填空空态显示 placeholder（aria-hidden）；Configure.Mcp 下拉 role=menuitemcheckbox；aria-label 全走 i18n',

@@ -3,6 +3,7 @@ export { default as AIChatInputConfigureSelect } from './AIChatInputConfigureSel
 export { default as AIChatInputConfigureButton } from './AIChatInputConfigureButton.svelte';
 export { default as AIChatInputConfigureRadioButton } from './AIChatInputConfigureRadioButton.svelte';
 export { default as AIChatInputConfigureMcp } from './AIChatInputConfigureMcp.svelte';
+export { default as AIChatInputConfigureItem } from './AIChatInputConfigureItem.svelte';
 export { meta as aiChatInputMeta } from './meta.js';
 // headless 逻辑与类型从 core 透传，供消费方直接从 svelte 包使用。
 export {
