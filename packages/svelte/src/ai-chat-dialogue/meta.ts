@@ -1,14 +1,14 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
  * AIChatDialogue — aligned to Semi Design AIChatDialogue（OpenAI Response Object
- * 消息格式 + ContentItem 分块渲染 + 非流式 Adapter）。headless 类型与转换在
+ * 消息格式 + ContentItem 分块渲染 + 非流式/流式 Adapter）。headless 类型与转换在
  * @chenzy-design/core（ai-chat-dialogue）。
  */
 export const meta = {
   name: 'AIChatDialogue',
   category: 'show',
   description:
-    'AI 对话展示：消息格式以 OpenAI Response Object 为原型，content 支持 ContentItem[]（output_text/input_text 走 MarkdownRender、image、file、reasoning 折叠块、function_call/tool_call 工具块、refusal、audio）。逐条 DialogueBox 渲染，ContentItemRenderer 按 type 分派、renderDialogueContentItem 可覆盖。消息流 role=log/aria-live=polite；滚动出现回到底部；选择模式 checkbox。ref 方法 selectAll/deselectAll/scrollToBottom/scrollToTop。core 提供类型全谱与非流式 Adapter（responseToMessage / chatCompletionToMessage）；流式 Adapter 为 P1。',
+    'AI 对话展示：消息格式以 OpenAI Response Object 为原型，content 支持 ContentItem[]（output_text/input_text 走 MarkdownRender、image、file、reasoning 折叠块、function_call/tool_call 工具块、refusal、audio）。逐条 DialogueBox 渲染，ContentItemRenderer 按 type 分派、renderDialogueContentItem 可覆盖。消息流 role=log/aria-live=polite；滚动出现回到底部；选择模式 checkbox。ref 方法 selectAll/deselectAll/scrollToBottom/scrollToTop。core 提供类型全谱 + 非流式 Adapter（responseToMessage / chatCompletionToMessage）+ 流式 Adapter（streamingResponseToMessage 全功能增量状态机：sequence_number 顺序处理/无序缓冲/MAX_GAP 容错/20+ chunk 类型 delta 累积；streamingChatCompletionToMessage：choice.index 分组/processedCount 增量/tool_calls 累积），全功能对齐 Semi。',
   exports: ['AIChatDialogue'],
   props: [
     { name: 'chats', type: 'AIDialogueMessage[]', default: '[]', desc: '受控对话列表（OpenAI 消息格式）' },

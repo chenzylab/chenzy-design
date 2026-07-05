@@ -6,6 +6,8 @@ export { meta as aiChatDialogueMeta } from './meta.js';
 export {
   responseToMessage,
   chatCompletionToMessage,
+  streamingResponseToMessage,
+  streamingChatCompletionToMessage,
   contentItemType,
   normalizeDialogueContent,
 } from '@chenzy-design/core';
@@ -18,4 +20,8 @@ export type {
   AIMessageStatus,
   OpenAIResponseObject,
   ChatCompletionObject,
+  ResponseStreamChunk,
+  StreamingResponseState,
+  ChatCompletionStreamChunk,
+  StreamingChatCompletionState,
 } from '@chenzy-design/core';
