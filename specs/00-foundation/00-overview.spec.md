@@ -23,11 +23,13 @@
 
 ### Basic（基础）
 - [x] Button · [x] Icon · [x] Typography · [x] Layout · [x] Grid(Row/Col) · [x] Space · [x] Divider
+- [ ] FloatButton · [ ] IconButton（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
 
 ### Input（输入）
 - [x] Input · [x] InputNumber · [x] Textarea · [x] Form · [x] Select · [x] AutoComplete
 - [x] Cascader · [x] Checkbox · [x] Radio · [x] Switch · [x] Slider · [x] Rating
 - [x] DatePicker · [x] TimePicker · [x] Upload · [x] TreeSelect · [x] Transfer · [x] ColorPicker · [x] TagInput
+- [ ] PinCode（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
 
 ### Navigation（导航）
 - [x] Anchor · [x] Breadcrumb · [x] Dropdown · [x] Menu · [x] Navigation(SideSheet 导航)
@@ -38,6 +40,7 @@
 - [x] Collapse · [x] Descriptions · [x] Empty · [x] Highlight · [x] Image · [x] List
 - [x] Popover · [x] OverflowList · [x] ScrollList · [x] Table · [x] Tag · [x] Timeline
 - [x] Tooltip · [x] Tree · [x] VirtualList
+- [ ] UserGuide · [ ] SideBar（AI 侧边信息栏，分阶段）（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
 
 ### Feedback（反馈）
 - [x] Modal · [x] Banner · [x] Notification · [x] Popconfirm · [x] Progress
@@ -45,6 +48,7 @@
 
 ### Other（其他）
 - [x] ConfigProvider · [x] LocaleProvider · [x] BackTop · [x] ResizeObserver · [x] LottieIcon
+- [ ] HotKeys（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
 
 ## 3. 横切能力 SPEC 索引（M0 必须先完成）
 
