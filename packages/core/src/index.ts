@@ -519,6 +519,20 @@ export {
   type InputFile,
 } from './ai-chat-dialogue.js';
 export {
+  validateChar,
+  inputModeForFormat,
+  toValueList,
+  fromValueList,
+  isComplete,
+  completeSingleInput,
+  handleKeyDown as pinCodeHandleKeyDown,
+  distributePaste,
+  type PinCodeFormat,
+  type CompleteSingleResult,
+  type PinCodeKeyAction,
+  type DistributePasteResult,
+} from './pincode.js';
+export {
   isSendHotKey,
   resolveCanSend,
   buildMessageContent,

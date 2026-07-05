@@ -150,6 +150,10 @@ export const zh_CN: Locale = {
     cleared: '已清除评分',
     unrated: '未评分',
   },
+  PinCode: {
+    ariaLabel: '验证码',
+    cellAriaLabel: '第 {index} 位，共 {count} 位',
+  },
   LottieIcon: {
     loading: '动画加载中',
     loadError: '动画加载失败',

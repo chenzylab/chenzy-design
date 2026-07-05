@@ -80,6 +80,7 @@ const components = [
   ['form', '{ FormField, FormInput, FieldArray }', '6.15 KB'],
   ['input', '{ Input }', '4.3 KB'],
   ['input-number', '{ InputNumber }', '4.25 KB'],
+  ['pincode', '{ PinCode }', '3.5 KB'],
   ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
   ['rating', '{ Rating }', '3.65 KB'],
   ['select', '{ Select }', '9 KB'],

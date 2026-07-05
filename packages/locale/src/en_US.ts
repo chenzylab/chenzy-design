@@ -150,6 +150,10 @@ export const en_US: Locale = {
     cleared: 'Rating cleared',
     unrated: 'Not rated',
   },
+  PinCode: {
+    ariaLabel: 'Verification code',
+    cellAriaLabel: 'Digit {index} of {count}',
+  },
   LottieIcon: {
     loading: 'Loading animation',
     loadError: 'Failed to load animation',

@@ -206,6 +206,12 @@ export interface Locale {
     cleared: string;
     unrated: string;
   };
+  PinCode: {
+    /** 分组无可视标签时的辅助名 */
+    ariaLabel: string;
+    /** 单格位次模板，uses {index} and {count} */
+    cellAriaLabel: string;
+  };
   LottieIcon: {
     loading: string;
     loadError: string;
