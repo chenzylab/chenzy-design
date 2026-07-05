@@ -36,6 +36,12 @@ function walk(dir) {
       removed += 1;
       continue;
     }
+    // _experiments 目录（技术验证/POC 代码，不该进发布包）
+    if (isDir && entry === '_experiments') {
+      rmSync(full, { recursive: true, force: true });
+      removed += 1;
+      continue;
+    }
 
     if (isDir) {
       walk(full);
