@@ -13,7 +13,12 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { contentItemType, type ContentItem } from '@chenzy-design/core';
+  import {
+    contentItemType,
+    toolCallView,
+    type ContentItem,
+    type ToolCallView,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { MarkdownRender } from '../markdown-render/index.js';
 
@@ -54,6 +59,10 @@
       .filter((t): t is string => typeof t === 'string')
       .join('\n\n');
   }
+
+  // 工具调用块折叠态 + 归一视图（core toolCallView：name/status/arguments/output/callId/serverLabel）。
+  let toolOpen = $state(false);
+  const toolView = $derived<ToolCallView>(toolCallView(item));
 
   function partText(part: Record<string, unknown>): string {
     return typeof part.text === 'string' ? part.text : '';
@@ -107,12 +116,50 @@
     {/if}
   </div>
 {:else if type === 'function_call' || type === 'custom_call' || type.endsWith('_call')}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block--tool">
-    <span class="cd-ai-dialogue-tool-name"
-      >{(item as { name?: string }).name ?? loc().t('AIChatDialogue.toolCall')}</span
+  <!-- 完整工具调用块：状态图标 + 折叠展开（参数/输出格式化 + call_id + MCP server）。 -->
+  <div
+    class="cd-ai-dialogue-block cd-ai-dialogue-block--tool"
+    class:cd-ai-dialogue-tool--running={toolView.status === 'in_progress'}
+    class:cd-ai-dialogue-tool--failed={toolView.status === 'failed'}
+  >
+    <button
+      type="button"
+      class="cd-ai-dialogue-tool-header"
+      aria-expanded={toolOpen}
+      onclick={() => (toolOpen = !toolOpen)}
     >
-    {#if (item as { arguments?: string }).arguments}
-      <pre class="cd-ai-dialogue-tool-args">{(item as { arguments?: string }).arguments}</pre>
+      <span class="cd-ai-dialogue-tool-status" aria-hidden="true">
+        {#if toolView.status === 'in_progress'}⟳{:else if toolView.status === 'failed'}✗{:else}✓{/if}
+      </span>
+      <span class="cd-ai-dialogue-tool-name">{toolView.name || loc().t('AIChatDialogue.toolCall')}</span>
+      {#if toolView.serverLabel}
+        <span class="cd-ai-dialogue-tool-server">{toolView.serverLabel}</span>
+      {/if}
+    </button>
+    {#if toolOpen}
+      <div class="cd-ai-dialogue-tool-body">
+        {#if toolView.arguments}
+          <div class="cd-ai-dialogue-tool-section">
+            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolArguments')}</span>
+            <pre class="cd-ai-dialogue-tool-args">{toolView.arguments}</pre>
+          </div>
+        {/if}
+        {#if toolView.input}
+          <div class="cd-ai-dialogue-tool-section">
+            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolInput')}</span>
+            <pre class="cd-ai-dialogue-tool-args">{toolView.input}</pre>
+          </div>
+        {/if}
+        {#if toolView.output}
+          <div class="cd-ai-dialogue-tool-section">
+            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolOutput')}</span>
+            <pre class="cd-ai-dialogue-tool-args">{toolView.output}</pre>
+          </div>
+        {/if}
+        {#if toolView.callId}
+          <div class="cd-ai-dialogue-tool-callid">{toolView.callId}</div>
+        {/if}
+      </div>
     {/if}
   </div>
 {:else if type === 'audio'}
@@ -179,10 +226,46 @@
   }
 
   .cd-ai-dialogue-block--tool {
-    padding: var(--cd-spacing-tight);
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-medium);
     background: var(--cd-color-fill-0);
+    overflow: hidden;
+  }
+
+  .cd-ai-dialogue-tool-header {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    width: 100%;
+    padding: var(--cd-spacing-tight);
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+  }
+
+  .cd-ai-dialogue-tool-header:hover {
+    background: var(--cd-color-fill-1);
+  }
+
+  .cd-ai-dialogue-tool-header:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: -2px;
+  }
+
+  .cd-ai-dialogue-tool-status {
+    color: var(--cd-color-text-2);
+  }
+
+  .cd-ai-dialogue-tool--running .cd-ai-dialogue-tool-status {
+    color: var(--cd-color-primary);
+  }
+
+  .cd-ai-dialogue-tool--failed .cd-ai-dialogue-tool-status {
+    color: var(--cd-color-danger);
   }
 
   .cd-ai-dialogue-tool-name {
@@ -190,11 +273,42 @@
     color: var(--cd-color-text-0);
   }
 
+  .cd-ai-dialogue-tool-server {
+    padding: 0 var(--cd-spacing-extra-tight);
+    border-radius: var(--cd-border-radius-small);
+    background: var(--cd-color-fill-2);
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+  }
+
+  .cd-ai-dialogue-tool-body {
+    padding: 0 var(--cd-spacing-tight) var(--cd-spacing-tight);
+  }
+
+  .cd-ai-dialogue-tool-section {
+    margin-top: var(--cd-spacing-extra-tight);
+  }
+
+  .cd-ai-dialogue-tool-label {
+    display: block;
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+  }
+
   .cd-ai-dialogue-tool-args {
     margin: var(--cd-spacing-extra-tight) 0 0;
+    padding: var(--cd-spacing-extra-tight);
+    border-radius: var(--cd-border-radius-small);
+    background: var(--cd-color-fill-1);
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--cd-color-text-1);
+    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+  }
+
+  .cd-ai-dialogue-tool-callid {
+    margin-top: var(--cd-spacing-extra-tight);
+    color: var(--cd-color-text-3);
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 

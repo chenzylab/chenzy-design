@@ -136,3 +136,68 @@ describe('AIChatDialogue · 消息编辑（P1）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+describe('AIChatDialogue · 工具块完整交互（P1）', () => {
+  const toolChats: AIDialogueMessage[] = [
+    {
+      id: 'a1',
+      role: 'assistant',
+      content: [
+        {
+          type: 'function_call',
+          name: 'get_weather',
+          arguments: '{"city":"SF"}',
+          output: '{"temp":20}',
+          call_id: 'call_1',
+          status: 'completed',
+        },
+      ],
+      status: 'completed',
+    },
+  ];
+
+  it('工具块默认折叠：header 显示名称 + 状态图标，body 未展开', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: toolChats, roleConfig },
+    });
+    const header = container.querySelector('.cd-ai-dialogue-tool-header');
+    expect(header?.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('.cd-ai-dialogue-tool-name')?.textContent).toBe('get_weather');
+    expect(container.querySelector('.cd-ai-dialogue-tool-status')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-dialogue-tool-body')).toBeNull();
+  });
+
+  it('点击展开：显示格式化参数 + 输出 + call_id', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: toolChats, roleConfig },
+    });
+    const header = container.querySelector('.cd-ai-dialogue-tool-header') as HTMLButtonElement;
+    await fireEvent.click(header);
+    expect(header.getAttribute('aria-expanded')).toBe('true');
+    const args = container.querySelectorAll('.cd-ai-dialogue-tool-args');
+    // 参数 + 输出各一个 pre，且 JSON 已格式化（含换行缩进）
+    expect(args.length).toBe(2);
+    expect(args[0]!.textContent).toContain('"city": "SF"');
+    expect(args[1]!.textContent).toContain('"temp": 20');
+    expect(container.querySelector('.cd-ai-dialogue-tool-callid')?.textContent).toBe('call_1');
+  });
+
+  it('in_progress 状态：running 标记', async () => {
+    const running: AIDialogueMessage[] = [
+      { id: 'a', role: 'assistant', content: [{ type: 'mcp_call', name: 'search', arguments: '{', status: 'in_progress', server_label: 'fs' }], status: 'in_progress' },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats: running, roleConfig } });
+    expect(container.querySelector('.cd-ai-dialogue-tool--running')).not.toBeNull();
+    // MCP server 标识渲染
+    expect(container.querySelector('.cd-ai-dialogue-tool-server')?.textContent).toBe('fs');
+  });
+
+  it('工具块展开态无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: toolChats, roleConfig },
+    });
+    const header = container.querySelector('.cd-ai-dialogue-tool-header') as HTMLButtonElement;
+    await fireEvent.click(header);
+    await expectNoAxeViolations(container);
+  });
+});

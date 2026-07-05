@@ -858,3 +858,72 @@ export function dialogueMessageToInput(message: AIDialogueMessage): AIChatInputM
   if (Array.isArray(refs) && refs.length > 0) payload.references = refs as never;
   return payload;
 }
+
+// ————————————————————————————————————————————————
+// 工具调用块 helpers（P1 完整块交互）
+// ————————————————————————————————————————————————
+
+/**
+ * formatToolArguments —— 把工具调用的 arguments/input（JSON 字符串或对象）美化成缩进 JSON 文本。
+ * 解析失败（未完成的流式片段）时原样返回，保证增量流式下不抛错。
+ */
+export function formatToolArguments(raw: unknown): string {
+  if (raw == null) return '';
+  if (typeof raw === 'object') {
+    try {
+      return JSON.stringify(raw, null, 2);
+    } catch {
+      return String(raw);
+    }
+  }
+  const s = String(raw);
+  try {
+    return JSON.stringify(JSON.parse(s), null, 2);
+  } catch {
+    return s; // 未完成的流式 JSON 片段，原样展示
+  }
+}
+
+/** 工具调用块的状态归一（对齐 OpenAI status；缺省视作 completed）。 */
+export type ToolCallStatus = 'in_progress' | 'completed' | 'failed' | 'incomplete';
+
+export function toolCallStatus(item: ContentItem): ToolCallStatus {
+  const s = (item as { status?: string }).status;
+  if (s === 'in_progress' || s === 'queued') return 'in_progress';
+  if (s === 'failed' || s === 'cancelled') return 'failed';
+  if (s === 'incomplete') return 'incomplete';
+  return 'completed';
+}
+
+/**
+ * 从工具调用块抽取展示字段（对齐 core ToolCallContentItem + MCP 特有字段）。
+ * name/arguments/output/callId/serverLabel（MCP）等，供渲染层统一消费。
+ */
+export interface ToolCallView {
+  name: string;
+  status: ToolCallStatus;
+  arguments: string;
+  /** 工具输出/结果（若有）。 */
+  output?: string;
+  callId?: string;
+  /** MCP 服务标识（若有）。 */
+  serverLabel?: string;
+  /** custom_tool_call 的 input（若有，与 arguments 互补）。 */
+  input?: string;
+}
+
+export function toolCallView(item: ContentItem): ToolCallView {
+  const it = item as Record<string, unknown>;
+  const view: ToolCallView = {
+    name: typeof it.name === 'string' ? it.name : '',
+    status: toolCallStatus(item),
+    arguments: formatToolArguments(it.arguments),
+  };
+  if (it.input != null) view.input = formatToolArguments(it.input);
+  const out = it.output ?? it.result ?? it.code;
+  if (out != null) view.output = formatToolArguments(out);
+  if (typeof it.call_id === 'string') view.callId = it.call_id;
+  else if (typeof it.id === 'string') view.callId = it.id;
+  if (typeof it.server_label === 'string') view.serverLabel = it.server_label;
+  return view;
+}

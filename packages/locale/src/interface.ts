@@ -662,6 +662,12 @@ export interface Locale {
     reasoning: string;
     /** tool-call block fallback name */
     toolCall: string;
+    /** tool-call arguments section label */
+    toolArguments: string;
+    /** tool-call input section label (custom tool) */
+    toolInput: string;
+    /** tool-call output/result section label */
+    toolOutput: string;
     /** audio block placeholder */
     audio: string;
     /** file item fallback name */

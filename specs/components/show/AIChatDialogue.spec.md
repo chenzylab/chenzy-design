@@ -87,4 +87,5 @@
 - **本次做**：Message/ContentItem 类型 + 非流式 Adapter（responseToMessage/chatCompletionToMessage）+ 渲染层（text/image/file/code/reasoning/annotation 分块，复用 MarkdownRender/CodeHighlight/Avatar）+ 选择/提示/操作 + a11y/i18n/token/meta/测试。
 - **已落地**：`streamingResponseToMessage` / `streamingChatCompletionToMessage`（流式 Adapter，全功能，2026-07-05，见 §13 上方）；`messageToChatInput` / `chatInputToChatCompletion`（随 AIChatInput PR #425 落地）。
 - **已落地**：消息编辑（2026-07-05）——`messageEditRender` + `message.editing`（受控，仅 user 消息）+ `onMessageEdit` + `editable`；`dialogueMessageToInput`（core，消息→MessageContent 供编辑器载入）。DialogueBox editing 态用 messageEditRender 替代内容（消费方放 AIChatInput）。demo 04 端到端。
-- **仍登记为后续（P1，可选）**：tool_call/MCP 完整块交互（当前基础展示已够，纯可选）。
+- **已落地**：tool_call/MCP 完整块交互（2026-07-05）——状态图标（in_progress/completed/failed）+ 折叠展开 + 参数/输入/输出 JSON 格式化 + call_id + MCP server 标识。core `formatToolArguments`/`toolCallStatus`/`toolCallView` helpers。**超越 Semi 基础展示**。
+- **P1 全部完成**：AIChatDialogue 无未实现功能（流式 Adapter + 消息编辑 + 工具块完整交互均已落地）。

@@ -56,5 +56,6 @@ export const meta = {
     { title: 'Adapter', desc: 'responseToMessage / chatCompletionToMessage 把 OpenAI 返回转 Message' },
     { title: '流式 Adapter', desc: 'streamingResponseToMessage / streamingChatCompletionToMessage 增量归约流式块' },
     { title: '消息编辑', desc: 'onMessageEdit + message.editing + messageEditRender（放 AIChatInput 编辑器）' },
+    { title: '工具块完整交互', desc: 'function_call/tool_call/mcp 块状态图标 + 折叠展开 + 参数/输出 JSON 格式化 + call_id/MCP server' },
   ],
 } as const;
