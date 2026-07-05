@@ -28,7 +28,7 @@
 - **决定：不新建通用 Lottie 组件**。理由：① core 已能播 Lottie；② 硬绑 lottie-web 违反本库「core 库无关」原则；③ 需要通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。若未来有强需求，可考虑给 `lottie-icon` 增补「暴露原始实例」的可选 API，而非新组件。
 
 ### 未做/后续
-- **AIChatDialogue**：**已于 2026-07-04 落地 + 2026-07-05 补齐 P1 大部**（core OpenAI 消息类型全谱 + 非流式/流式 Adapter + 消息编辑 + 渲染层 ContentItem 分块 + 选择/提示 + demo + 门禁 5.13KB）。**已补 P1**：streaming Adapter（streamingResponseToMessage/streamingChatCompletionToMessage 全功能，PR #427）、消息编辑（messageEditRender + editing 态 + dialogueMessageToInput，PR #428）。**仅剩 P1 可选**：tool_call/MCP 完整块交互（当前基础展示已够）。见 `AIChatDialogue.spec.md §13`。
+- **AIChatDialogue**：**已于 2026-07-04 落地 + 2026-07-05 补齐 P1 大部**（core OpenAI 消息类型全谱 + 非流式/流式 Adapter + 消息编辑 + 渲染层 ContentItem 分块 + 选择/提示 + demo + 门禁 5.13KB）。**P1 全部完成**：streaming Adapter（PR #427）、消息编辑（PR #428）、tool_call/MCP 完整块交互（状态/折叠/JSON 格式化/MCP server，超越 Semi，PR #430）。**AIChatDialogue 无未实现功能**。见 `AIChatDialogue.spec.md §13`。
 - **AIChatInput**：**已于 2026-07-05 完整落地**（PR #425）——tiptap 富文本巨型组件，独立立项分阶段交付：阶段 1~5（基础输入/引用+建议/技能+模版/配置区/Adapter 桥）+ 收尾 DoD + 三种自定义节点（skill-slot/select-slot/input-slot，input-slot 含全套零宽锚点+光标 plugin ~400 行）+ Configure 全族（Select/Button/RadioButton/Mcp/Item）+ 双 Adapter（messageToChatInput/chatInputToChatCompletion 接 AIChatDialogue/OpenAI）。**与 Semi 公开 API 全面对齐，无未实现功能**。tiptap 内核+pm+svelte-tiptap 全程动态 import（主壳 gzip 10.44KB）；core 50 单测 + dom/axe 44 测 + 9 demo。详见 `AIChatInput.spec.md`（§0.1~§0.8）。
 - ~~**Chat dragUpload**、canSend、renderInputArea detailProps~~：**已于 2026-07-04 补齐**（dragUpload 整容器拖拽 + Upload.addFiles 导出、canSend prop、detailProps 拆分节点），见 `Chat.spec.md`。
 
