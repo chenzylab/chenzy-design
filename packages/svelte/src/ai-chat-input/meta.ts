@@ -7,6 +7,7 @@
  * 阶段 4（配置区）：renderConfigureArea + Configure 子组件（Select/Button/RadioButton，context+field 绑定）+ setup。
  * 阶段 5（Adapter 桥）：messageToChatInput / chatInputToChatCompletion 把 onMessageSend 载荷转成
  * AIDialogueMessage / OpenAI ChatCompletion，接 AIChatDialogue 展示或喂 API（core 纯函数透传）。
+ * 可选补充：select-slot 自定义节点（内联下拉，用于 renderTemplate 模版填空，getSelectSlotHTML 生成）。
  * tiptap 内核 + svelte-tiptap 动态 import（不进主 bundle）。headless 判定在 @chenzy-design/core。
  */
 export const meta = {

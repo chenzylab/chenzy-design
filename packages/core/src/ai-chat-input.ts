@@ -135,12 +135,27 @@ export function transformDocToContents(
   return out;
 }
 
-/** 递归抽取一个块内的纯文本（含 hardBreak → 换行）。 */
+/**
+ * 递归抽取一个块内的纯文本（含 hardBreak → 换行）。内联自定义 slot 节点归一：
+ * - selectSlot：取 attrs.value（用户选中的选项值）。
+ * - skillSlot：取 attrs.label ?? attrs.value（技能显示文本）。
+ * 对齐 Semi transformSelectSlot / transformSkillSlot，使 slot 内容开箱即进 content。
+ */
 function extractText(node: unknown): string {
-  const n = node as { type?: string; text?: string; content?: unknown[] } | undefined;
+  const n = node as
+    | { type?: string; text?: string; content?: unknown[]; attrs?: Record<string, unknown> }
+    | undefined;
   if (!n) return '';
   if (n.type === 'text') return n.text ?? '';
   if (n.type === 'hardBreak') return '\n';
+  if (n.type === 'selectSlot') {
+    const v = n.attrs?.value;
+    return typeof v === 'string' ? v : '';
+  }
+  if (n.type === 'skillSlot') {
+    const label = n.attrs?.label ?? n.attrs?.value;
+    return typeof label === 'string' ? label : '';
+  }
   if (Array.isArray(n.content)) return n.content.map(extractText).join('');
   return '';
 }
@@ -220,6 +235,19 @@ export function getSkillSlotHTML(skill: AIChatInputSkill): string {
   if (skill.value) attrs.push(`data-value="${escapeAttr(skill.value)}"`);
   if (typeof skill.hasTemplate === 'boolean') attrs.push(`data-template="${skill.hasTemplate}"`);
   return `<skill-slot ${attrs.join(' ')}></skill-slot>`;
+}
+
+/**
+ * 生成 selectSlot 节点的 HTML（供 editor.setContent 插入，通常用于 renderTemplate 模版填空）。
+ * 对齐 Semi selectSlot：`<select-slot options='["a","b"]' value="a">`。options 为 JSON 字符串。
+ * @param options 可选项（string[]）
+ * @param value   默认选中值（缺省空）
+ */
+export function getSelectSlotHTML(options: string[], value = ''): string {
+  const optionsJson = escapeAttr(JSON.stringify(options));
+  const attrs = [`options="${optionsJson}"`];
+  if (value) attrs.push(`value="${escapeAttr(value)}"`);
+  return `<select-slot ${attrs.join(' ')}></select-slot>`;
 }
 
 /** HTML 属性值转义（双引号上下文）。 */

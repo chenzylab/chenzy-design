@@ -75,6 +75,14 @@ AIChatInput ↔ AIChatDialogue / OpenAI API 的桥（对齐 Semi dataAdapter 反
 - **测试**：core 42 单测（含两 Adapter 各分支）。全量 svelte-check 0 err。
 - **阶段 5 范围外（留后）**：input-slot/select-slot 节点、Configure.Mcp 为可选补充；references 未进 Adapter 输出（Semi 也未固定其位置，留消费方按需并入）。
 
+## 0.6 可选补充 · select-slot 自定义节点（已完成 ✅）
+
+照阶段 3 skill-slot 同一 SvelteNodeViewRenderer 路线补 **select-slot**（内联下拉，用于 renderTemplate 模版填空）。落地：core `getSelectSlotHTML(options, value?)`（生成 `<select-slot options='JSON' value>`，转义防注入）；`transformDocToContents` 内建 selectSlot（取 attrs.value）/skillSlot（取 label）归一 —— 内联 slot 文本开箱进 content，无需消费方传 transformer；`SelectSlotNode.svelte`（NodeView 渲染项目 Select，`updateAttributes({value})` 写回）+ `select-slot-extension.ts`（atom node 工厂）；主组件动态 import 链注册 selectSlot（与 skillSlot 并列，始终注册不重建 editor）。
+
+- **用法**：renderTemplate 里 `setContent(\`...${getSelectSlotHTML(['英文','日文'],'英文')}...\`)`，模版中嵌可选参数下拉；发送时 select-slot 的 value 自动进 inputContents。
+- **测试**：core 42→46（getSelectSlotHTML + 内联 slot 归一）；dom 33→35（NodeView 渲染 + value 进 content）。壳 gzip 6.48→6.82KB（预算 7KB 内）。demo 06 模版含 select-slot。
+- **仍留后**：input-slot（content='inline*' 可编辑节点，需 NodeViewContent + ProseMirror 光标 plugins，复杂度高）、Configure.Mcp。
+
 ## 1. 概述
 AI 聊天场景的输入框：富文本输入（tiptap）+ 上传 + 引用 + 建议 + 技能/模版 + 配置区（模型参数/联网/深度思考/MCP）+ 丰富自定义渲染。搭配 AIChatDialogue（已落地）构建完整 AI 会话。
 

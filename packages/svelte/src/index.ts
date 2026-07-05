@@ -187,6 +187,7 @@ export {
   isImageReference,
   skillLabel,
   getSkillSlotHTML,
+  getSelectSlotHTML,
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,

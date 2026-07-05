@@ -403,3 +403,40 @@ describe('AIChatInput · 配置区（阶段 4）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+describe('AIChatInput · select-slot 自定义节点（可选补充）', () => {
+  it('setContent 插入 select-slot → 渲染内联 Select', async () => {
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent(
+      '<p>去 <select-slot options=\'["北京","上海"]\' value="北京"></select-slot> 出差</p>',
+    );
+    await flush();
+    // NodeView 渲染出 select-slot wrapper + 内部 Select 触发器
+    expect(container.querySelector('.cd-ai-chat-input-select-slot-wrap')).not.toBeNull();
+    expect(container.querySelector('.cd-select')).not.toBeNull();
+  });
+
+  it('select-slot 的 value 经发送进入 inputContents（内建归一）', async () => {
+    const onMessageSend = vi.fn();
+    const rendered = render(AIChatInput, { props: { onMessageSend } }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent(
+      '<p>去 <select-slot options=\'["北京","上海"]\' value="上海"></select-slot></p>',
+    );
+    await flush();
+    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    await fireEvent.click(sendBtn);
+    expect(onMessageSend).toHaveBeenCalledTimes(1);
+    const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
+    expect(text).toContain('上海');
+  });
+});

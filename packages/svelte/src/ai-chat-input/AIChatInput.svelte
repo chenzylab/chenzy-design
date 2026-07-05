@@ -251,19 +251,22 @@
         { Placeholder },
         { SvelteNodeViewRenderer },
         { createSkillSlotExtension },
+        { createSelectSlotExtension },
       ] = await Promise.all([
         import('@tiptap/core'),
         import('@tiptap/starter-kit'),
         import('@tiptap/extensions'),
         import('svelte-tiptap'),
         import('./skill-slot-extension.js'),
+        import('./select-slot-extension.js'),
       ]);
       if (destroyed) return;
 
       const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
-      // skillSlot 自定义节点始终注册（编辑器需能渲染/序列化 skill-slot），
-      // 面板是否弹出另由 skills 数量决定，故 extension 不随 skills 变化重建。
+      // skillSlot / selectSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点），
+      // 面板/模版是否用到另由 props 决定，故 extension 不随 props 变化重建。
       const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
+      const selectSlot = createSelectSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
 
       ed = new TiptapEditor({
         element: host,
@@ -271,6 +274,7 @@
           StarterKit,
           Placeholder.configure({ placeholder: placeholderText }),
           skillSlot as never,
+          selectSlot as never,
           ...(extensions as never[]),
         ],
         content: defaultContent,

@@ -10,6 +10,7 @@ import {
   isImageReference,
   skillLabel,
   getSkillSlotHTML,
+  getSelectSlotHTML,
   shouldOpenSkillPanel,
   setConfigureField,
   removeConfigureField,
@@ -292,5 +293,46 @@ describe('ai-chat-input · chatInputToChatCompletion', () => {
   });
   it('空载荷 → 空 content', () => {
     expect(chatInputToChatCompletion({}).content).toEqual([]);
+  });
+});
+
+describe('ai-chat-input · getSelectSlotHTML', () => {
+  it('生成 select-slot 节点 HTML，options 为转义 JSON', () => {
+    const html = getSelectSlotHTML(['北京', '上海'], '北京');
+    expect(html).toContain('<select-slot ');
+    expect(html).toContain('value="北京"');
+    // options 是 JSON 且引号被转义
+    expect(html).toContain('options="[&quot;北京&quot;,&quot;上海&quot;]"');
+  });
+  it('无默认值时省略 value', () => {
+    const html = getSelectSlotHTML(['a']);
+    expect(html).not.toContain('value=');
+  });
+});
+
+describe('ai-chat-input · transformDocToContents · 内联 slot 归一', () => {
+  it('selectSlot 取 attrs.value，skillSlot 取 label', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '去 ' },
+            { type: 'selectSlot', attrs: { value: '上海' } },
+            { type: 'text', text: ' 出差，用 ' },
+            { type: 'skillSlot', attrs: { label: '总结', value: 'sum' } },
+          ],
+        },
+      ],
+    };
+    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: '去 上海 出差，用 总结' }]);
+  });
+  it('skillSlot 无 label 回退 value', () => {
+    const doc = {
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'skillSlot', attrs: { value: 'sk' } }] }],
+    };
+    expect(transformDocToContents(doc)).toEqual([{ type: 'text', text: 'sk' }]);
   });
 });
