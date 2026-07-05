@@ -178,12 +178,17 @@ export {
   resolveCanSend,
   buildMessageContent,
   transformDocToContents,
+  suggestionContent,
+  nextSuggestionIndex,
+  referenceLabel,
+  isImageReference,
   type AIChatInputContent,
   type AIChatInputAttachment,
   type AIChatInputReference,
   type AIChatInputMessageContent,
   type AIChatInputSendHotKey,
   type AIChatInputChangePayload,
+  type AIChatInputSuggestion,
 } from './ai-chat-input/index.js';
 export {
   Cropper,

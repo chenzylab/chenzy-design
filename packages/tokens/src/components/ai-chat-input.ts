@@ -138,6 +138,62 @@ export const aiChatInputTokens = {
     label: '停止按钮背景',
     usage: '生成中停止按钮背景',
   },
+  // 引用条（阶段 2）
+  'ai-chat-input-reference-bg': {
+    value: 'var(--cd-color-fill-0)',
+    category: 'color',
+    label: '引用项背景',
+    usage: '引用条单项背景',
+  },
+  'ai-chat-input-reference-bg-hover': {
+    value: 'var(--cd-color-fill-1)',
+    category: 'color',
+    label: '引用项背景（悬浮）',
+    usage: '引用条单项悬浮背景',
+  },
+  'ai-chat-input-reference-color': {
+    value: 'var(--cd-color-text-1)',
+    category: 'color',
+    label: '引用项文本',
+    usage: '引用条单项文本色',
+  },
+  'ai-chat-input-reference-radius': {
+    value: 'var(--cd-border-radius-small)',
+    category: 'radius',
+    label: '引用项圆角',
+    usage: '引用条单项圆角',
+  },
+  // 建议面板（阶段 2）
+  'ai-chat-input-suggestions-bg': {
+    value: 'var(--cd-color-bg-2)',
+    category: 'color',
+    label: '建议面板背景',
+    usage: '建议浮层面板背景',
+  },
+  'ai-chat-input-suggestions-radius': {
+    value: 'var(--cd-border-radius-medium)',
+    category: 'radius',
+    label: '建议面板圆角',
+    usage: '建议浮层面板圆角',
+  },
+  'ai-chat-input-suggestions-shadow': {
+    value: 'var(--cd-shadow-elevated)',
+    category: 'other',
+    label: '建议面板阴影',
+    usage: '建议浮层投影',
+  },
+  'ai-chat-input-suggestion-color': {
+    value: 'var(--cd-color-text-0)',
+    category: 'color',
+    label: '建议项文本',
+    usage: '建议项文本色',
+  },
+  'ai-chat-input-suggestion-bg-active': {
+    value: 'var(--cd-color-fill-1)',
+    category: 'color',
+    label: '建议项背景（激活）',
+    usage: '建议项高亮/悬浮背景',
+  },
   // 动效
   'ai-chat-input-motion-duration': {
     value: 'var(--cd-motion-duration-fast)',

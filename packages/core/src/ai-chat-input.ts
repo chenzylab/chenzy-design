@@ -1,7 +1,8 @@
 /**
- * createAIChatInput headless — framework-agnostic logic for AIChatInput 阶段 1（基础输入）。
- * 对齐 Semi AIChatInput：发送态判定（canSend）、快捷键判定（sendHotKey）、
- * MessageContent 组装。tiptap Editor 实例与 DOM 归 svelte 渲染层，这里只做纯逻辑，可单测。
+ * createAIChatInput headless — framework-agnostic logic for AIChatInput。
+ * 对齐 Semi AIChatInput，纯逻辑（可单测），tiptap Editor 实例与 DOM 归 svelte 渲染层：
+ * - 阶段 1：发送态判定（canSend）、快捷键判定（sendHotKey）、MessageContent 组装、doc→Content[] 归一。
+ * - 阶段 2：suggestion 面板键盘导航（环绕 index）、suggestion/reference 显示文本归一。
  * 见 specs/components/show/AIChatInput.spec.md §2/§4。
  */
 
@@ -22,10 +23,19 @@ export interface AIChatInputAttachment {
   [key: string]: unknown;
 }
 
-/** 引用块（阶段 2 引入渲染，阶段 1 仅作为 MessageContent 透传占位）。 */
+/**
+ * 引用块（阶段 2 渲染于编辑区上方 top area）。对齐 Semi Reference：
+ * type='text' 时显示 content，其它类型显示 name；图片类型（type='image' 或 url 是图）显示缩略图。
+ */
 export interface AIChatInputReference {
   type: string;
   id: string;
+  /** type='text' 时的文本内容。 */
+  content?: string;
+  /** 非文本类型的显示名。 */
+  name?: string;
+  /** 图片/文件的 URL（图片类型用作缩略图 src）。 */
+  url?: string;
   [key: string]: unknown;
 }
 
@@ -129,4 +139,45 @@ function extractText(node: unknown): string {
   if (n.type === 'hardBreak') return '\n';
   if (Array.isArray(n.content)) return n.content.map(extractText).join('');
   return '';
+}
+
+// ————————————————————————————————————————————————————————————————
+// 阶段 2 · 引用 + 建议
+// ————————————————————————————————————————————————————————————————
+
+/**
+ * 建议项（对齐 Semi Suggestion）：纯字符串或含 content 字段的对象。
+ * 面板点击/回车后把它交给 onSuggestClick，由消费方决定如何用（通常插入编辑器）。
+ */
+export type AIChatInputSuggestion = string | { content: string; [key: string]: unknown };
+
+/** 取建议项的显示文本（string 直接返回，对象取 content）。 */
+export function suggestionContent(suggestion: AIChatInputSuggestion): string {
+  return typeof suggestion === 'string' ? suggestion : (suggestion?.content ?? '');
+}
+
+/**
+ * 建议面板键盘导航：从 current 沿 dir（-1=上 / +1=下）环绕移动，返回新 activeIndex。
+ * - len<=0 返回 -1（无项）。
+ * - current<0（未选中）时：向下从 0 开始、向上从末项开始。
+ */
+export function nextSuggestionIndex(current: number, len: number, dir: -1 | 1): number {
+  if (len <= 0) return -1;
+  if (current < 0) return dir === 1 ? 0 : len - 1;
+  return (current + dir + len) % len;
+}
+
+/**
+ * 取引用项的显示文本：type='text' 用 content，否则用 name（缺省回退到 id）。
+ */
+export function referenceLabel(ref: AIChatInputReference): string {
+  if (ref.type === 'text') return ref.content ?? '';
+  return ref.name ?? ref.id;
+}
+
+/** 该引用是否应按图片渲染（type='image' 或 url 以常见图片扩展名结尾）。 */
+export function isImageReference(ref: AIChatInputReference): boolean {
+  if (ref.type === 'image') return true;
+  const url = ref.url ?? '';
+  return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|$)/i.test(url);
 }

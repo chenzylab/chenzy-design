@@ -21,7 +21,11 @@ async function flush(container?: Element): Promise<void> {
     return;
   }
   while (Date.now() < deadline) {
-    if (container.querySelector('.ProseMirror')) return;
+    if (container.querySelector('.ProseMirror')) {
+      // ProseMirror DOM 已挂载，但 onCreate（设 isEmpty）可能晚一拍落定 —— 再等一小拍。
+      await new Promise((r) => setTimeout(r, 20));
+      return;
+    }
     await new Promise((r) => setTimeout(r, 15));
   }
 }
@@ -104,7 +108,7 @@ describe('AIChatInput · 发送 / 停止回调', () => {
     const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
     await fireEvent.click(btn);
     expect(onMessageSend).toHaveBeenCalledTimes(1);
-    const payload = onMessageSend.mock.calls[0][0];
+    const payload = onMessageSend.mock.calls[0]![0];
     expect(payload.inputContents).toEqual([{ type: 'text', text: 'send me' }]);
   });
 
@@ -168,6 +172,115 @@ describe('AIChatInput · axe', () => {
   it('generating 态无 axe 违规', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { generating: true } });
     await flush(container);
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('AIChatInput · 引用条（阶段 2）', () => {
+  const refs = [
+    { type: 'text' as const, id: 'r1', content: '引用一段话' },
+    { type: 'file' as const, id: 'r2', name: 'spec.pdf' },
+    { type: 'image' as const, id: 'r3', name: '图', url: 'https://x/y.png' },
+  ];
+
+  it('渲染每条引用：text→content、file→name、image→缩略图', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { references: refs } });
+    const items = container.querySelectorAll('.cd-ai-chat-input-reference');
+    expect(items).toHaveLength(3);
+    expect(items[0]!.textContent).toContain('引用一段话');
+    expect(items[1]!.textContent).toContain('spec.pdf');
+    expect(container.querySelector('.cd-ai-chat-input-reference-img')).not.toBeNull();
+  });
+
+  it('showReference=false 不渲染引用条', async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { references: refs, showReference: false },
+    });
+    expect(container.querySelector('.cd-ai-chat-input-references')).toBeNull();
+  });
+
+  it('点击引用触发 onReferenceClick', async () => {
+    const onReferenceClick = vi.fn();
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { references: refs, onReferenceClick },
+    });
+    const first = container.querySelector('.cd-ai-chat-input-reference-main') as HTMLElement;
+    await fireEvent.click(first);
+    expect(onReferenceClick).toHaveBeenCalledWith(refs[0]);
+  });
+
+  it('点击删除触发 onReferenceDelete，不冒泡到 click', async () => {
+    const onReferenceClick = vi.fn();
+    const onReferenceDelete = vi.fn();
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { references: refs, onReferenceClick, onReferenceDelete },
+    });
+    const del = container.querySelector('.cd-ai-chat-input-reference-delete') as HTMLElement;
+    await fireEvent.click(del);
+    expect(onReferenceDelete).toHaveBeenCalledWith(refs[0]);
+    expect(onReferenceClick).not.toHaveBeenCalled();
+  });
+
+  it('引用条无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { references: refs } });
+    await flush(container);
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('AIChatInput · 建议面板（阶段 2）', () => {
+  const suggestions = ['帮我写代码', { content: '翻译成英文' }, '总结要点'];
+
+  // 建议面板由编辑区 focus 打开；jsdom 下向 .ProseMirror 派发原生 focus 事件触发。
+  async function openPanel(container: Element): Promise<void> {
+    const pm = container.querySelector('.ProseMirror') as HTMLElement;
+    pm.dispatchEvent(new FocusEvent('focus', { bubbles: false }));
+    await new Promise((r) => setTimeout(r, 20));
+  }
+
+  it('聚焦编辑区弹出建议面板（listbox + options）', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
+    await flush(container);
+    await openPanel(container);
+    const panel = container.querySelector('.cd-ai-chat-input-suggestions');
+    expect(panel?.getAttribute('role')).toBe('listbox');
+    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion')).toHaveLength(3);
+  });
+
+  it('无 suggestions 时聚焦不弹面板', async () => {
+    const { container } = renderWithLocale(AIChatInput);
+    await flush(container);
+    await openPanel(container);
+    expect(container.querySelector('.cd-ai-chat-input-suggestions')).toBeNull();
+  });
+
+  it('点击建议项触发 onSuggestClick', async () => {
+    const onSuggestClick = vi.fn();
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { suggestions, onSuggestClick },
+    });
+    await flush(container);
+    await openPanel(container);
+    const item = container.querySelector('.cd-ai-chat-input-suggestion') as HTMLElement;
+    await fireEvent.mouseDown(item);
+    expect(onSuggestClick).toHaveBeenCalledWith('帮我写代码');
+    // 选中后面板关闭
+    expect(container.querySelector('.cd-ai-chat-input-suggestions')).toBeNull();
+  });
+
+  it('鼠标悬浮高亮建议项（aria-selected）', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
+    await flush(container);
+    await openPanel(container);
+    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion');
+    await fireEvent.mouseEnter(items[1]!);
+    expect(items[1]!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('建议面板无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
+    await flush(container);
+    await openPanel(container);
     await expectNoAxeViolations(container);
   });
 });

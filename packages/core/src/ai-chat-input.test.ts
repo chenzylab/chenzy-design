@@ -4,6 +4,10 @@ import {
   resolveCanSend,
   buildMessageContent,
   transformDocToContents,
+  suggestionContent,
+  nextSuggestionIndex,
+  referenceLabel,
+  isImageReference,
   type AIChatInputContent,
 } from './ai-chat-input.js';
 
@@ -109,5 +113,55 @@ describe('ai-chat-input · transformDocToContents', () => {
     expect(transformDocToContents(undefined)).toEqual([]);
     expect(transformDocToContents({})).toEqual([]);
     expect(transformDocToContents({ content: null })).toEqual([]);
+  });
+});
+
+describe('ai-chat-input · suggestionContent', () => {
+  it('string 直接返回', () => {
+    expect(suggestionContent('帮我写代码')).toBe('帮我写代码');
+  });
+  it('对象取 content', () => {
+    expect(suggestionContent({ content: '翻译', lang: 'en' })).toBe('翻译');
+  });
+});
+
+describe('ai-chat-input · nextSuggestionIndex', () => {
+  it('len<=0 返回 -1', () => {
+    expect(nextSuggestionIndex(0, 0, 1)).toBe(-1);
+    expect(nextSuggestionIndex(2, -1, -1)).toBe(-1);
+  });
+  it('未选中（current<0）：向下从 0、向上从末项', () => {
+    expect(nextSuggestionIndex(-1, 3, 1)).toBe(0);
+    expect(nextSuggestionIndex(-1, 3, -1)).toBe(2);
+  });
+  it('向下环绕', () => {
+    expect(nextSuggestionIndex(0, 3, 1)).toBe(1);
+    expect(nextSuggestionIndex(2, 3, 1)).toBe(0);
+  });
+  it('向上环绕', () => {
+    expect(nextSuggestionIndex(1, 3, -1)).toBe(0);
+    expect(nextSuggestionIndex(0, 3, -1)).toBe(2);
+  });
+});
+
+describe('ai-chat-input · referenceLabel', () => {
+  it("type='text' 用 content", () => {
+    expect(referenceLabel({ type: 'text', id: '1', content: '引用文本' })).toBe('引用文本');
+  });
+  it('非文本用 name，缺省回退 id', () => {
+    expect(referenceLabel({ type: 'file', id: '1', name: 'a.pdf' })).toBe('a.pdf');
+    expect(referenceLabel({ type: 'file', id: 'fallback-id' })).toBe('fallback-id');
+  });
+});
+
+describe('ai-chat-input · isImageReference', () => {
+  it("type='image' 判图", () => {
+    expect(isImageReference({ type: 'image', id: '1' })).toBe(true);
+  });
+  it('url 图片扩展名判图（含 query/hash）', () => {
+    expect(isImageReference({ type: 'file', id: '1', url: 'a.png' })).toBe(true);
+    expect(isImageReference({ type: 'file', id: '1', url: 'https://x/y.JPG?v=2' })).toBe(true);
+    expect(isImageReference({ type: 'file', id: '1', url: 'doc.pdf' })).toBe(false);
+    expect(isImageReference({ type: 'file', id: '1' })).toBe(false);
   });
 });

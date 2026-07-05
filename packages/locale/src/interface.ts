@@ -676,5 +676,9 @@ export interface Locale {
     stop: string;
     /** upload-attachment button aria-label */
     upload: string;
+    /** delete-reference button aria-label */
+    deleteReference: string;
+    /** suggestions listbox aria-label */
+    suggestions: string;
   };
 }

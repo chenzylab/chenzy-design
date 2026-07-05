@@ -481,5 +481,7 @@ export const en_US: Locale = {
     send: 'Send',
     stop: 'Stop generating',
     upload: 'Upload attachment',
+    deleteReference: 'Delete reference',
+    suggestions: 'Suggestions',
   },
 };

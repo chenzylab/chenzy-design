@@ -1,14 +1,15 @@
 <!--
-  AIChatInput — AI 聊天输入框（阶段 1 · 基础输入）。对标 Semi AIChatInput 子集：
-  富文本输入（tiptap）+ 发送（sendHotKey / canSend / generating / stop）+ Upload 附件。
+  AIChatInput — AI 聊天输入框（阶段 1 基础输入 + 阶段 2 引用/建议）。对标 Semi AIChatInput 子集：
+  富文本输入（tiptap）+ 发送（sendHotKey / canSend / generating / stop）+ Upload 附件
+  + references 引用条 + suggestions 建议浮层 + 自定义渲染插槽（renderTopSlot/renderReference/renderSuggestionItem）。
 
   关键约束（见 spec §0）：@tiptap/core+pm+starter-kit gzip ~126KB，**动态 import 整个内核**，
   绝不进主 bundle。editor 是命令式实例（需 DOM host + 生命周期），用 $effect 动态 import 后
   new Editor() 创建、赋值给 $state，cleanup 销毁（MVVM 适配命令式库，autofixer「$effect 里
   赋值 $state」建议不适用；同 POC 已验证模式，此处不经 svelte-tiptap store 而直接持有实例）。
 
-  headless 逻辑（canSend/sendHotKey/MessageContent 组装）在 @chenzy-design/core，此处只做渲染 + tiptap 桥接。
-  全 token，类名前缀 cd-，aria-label 走 i18n。
+  headless 逻辑（canSend/sendHotKey/MessageContent/suggestion 键盘导航/reference 归一）在
+  @chenzy-design/core，此处只做渲染 + tiptap 桥接。全 token，类名前缀 cd-，aria-label 走 i18n。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -18,11 +19,18 @@
     resolveCanSend,
     buildMessageContent,
     transformDocToContents,
+    suggestionContent,
+    nextSuggestionIndex,
+    referenceLabel,
+    isImageReference,
+    useDismiss,
     type AIChatInputSendHotKey,
     type AIChatInputMessageContent,
     type AIChatInputContent,
     type AIChatInputChangePayload,
     type AIChatInputAttachment,
+    type AIChatInputReference,
+    type AIChatInputSuggestion,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
@@ -61,6 +69,32 @@
     onUploadChange?: ((attachments: AIChatInputAttachment[]) => void) | undefined;
     /** 自定义发送/停止按钮区渲染（对齐 Semi renderActionArea 子集）。 */
     renderActionArea?: Snippet<[{ canSend: boolean; generating: boolean }]> | undefined;
+    // —— 阶段 2 · 引用 ——
+    /** 受控引用列表，渲染于编辑区上方 top area（对齐 Semi references）。 */
+    references?: AIChatInputReference[];
+    /** 是否展示引用条（对齐 Semi showReference，默认 true）。 */
+    showReference?: boolean;
+    /** 自定义单条引用渲染（对齐 Semi renderReference）。 */
+    renderReference?: Snippet<[AIChatInputReference]> | undefined;
+    /** 引用点击回调。 */
+    onReferenceClick?: ((reference: AIChatInputReference) => void) | undefined;
+    /** 引用删除回调。 */
+    onReferenceDelete?: ((reference: AIChatInputReference) => void) | undefined;
+    // —— 阶段 2 · 建议 ——
+    /** 建议列表：聚焦空编辑区时弹出面板（对齐 Semi suggestions）。 */
+    suggestions?: AIChatInputSuggestion[];
+    /** 自定义单条建议渲染（对齐 Semi renderSuggestionItem）。 */
+    renderSuggestionItem?: Snippet<[{ suggestion: AIChatInputSuggestion; active: boolean }]> | undefined;
+    /**
+     * 建议点击/选中回调。未提供时默认把建议文本 setContent 进编辑器。
+     * 提供时以回调为准（不再默认插入）。
+     */
+    onSuggestClick?: ((suggestion: AIChatInputSuggestion) => void) | undefined;
+    // —— 阶段 2 · top 插槽 ——
+    /** 自定义 top slot 渲染（对齐 Semi renderTopSlot）。 */
+    renderTopSlot?: Snippet<[{ references: AIChatInputReference[]; attachments: AIChatInputAttachment[] }]> | undefined;
+    /** top slot 相对引用条的位置（对齐 Semi topSlotPosition，默认 top）。 */
+    topSlotPosition?: 'top' | 'bottom';
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -83,6 +117,16 @@
     onStopGenerate,
     onUploadChange,
     renderActionArea,
+    references = [],
+    showReference = true,
+    renderReference,
+    onReferenceClick,
+    onReferenceDelete,
+    suggestions = [],
+    renderSuggestionItem,
+    onSuggestClick,
+    renderTopSlot,
+    topSlotPosition = 'top',
     class: className = '',
     style,
   }: Props = $props();
@@ -94,6 +138,11 @@
   let isEmpty = $state(true);
   let attachments = $state<AIChatInputAttachment[]>([]);
   let editorHost = $state<HTMLDivElement>();
+  let rootEl = $state<HTMLDivElement>();
+
+  // —— 建议面板状态（阶段 2）——
+  let suggestionOpen = $state(false);
+  let activeSuggestionIndex = $state(-1);
 
   const placeholderText = $derived(placeholder ?? loc().t('AIChatInput.placeholder'));
 
@@ -101,6 +150,12 @@
   const computedCanSend = $derived(
     resolveCanSend({ canSend, isEmpty, attachments }),
   );
+
+  // 建议面板可见性：显式 open 且有建议项。空编辑区聚焦/点击时开，选中/失焦/Esc 时关。
+  const showSuggestionPanel = $derived(suggestionOpen && suggestions.length > 0);
+  // top area 是否有内容（引用条 / topSlot），无则不渲染容器。
+  const hasReferences = $derived(showReference && references.length > 0);
+  const hasTopSlot = $derived(!!renderTopSlot);
 
   // —— tiptap 内核动态 import + editor 生命周期（体积约束：内核不进主 bundle）——
   $effect(() => {
@@ -134,6 +189,13 @@
             'aria-label': loc().t('AIChatInput.editor'),
           },
           handleKeyDown: (_view, event) => handleEditorKeyDown(event),
+          handleDOMEvents: {
+            // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）。
+            focus: () => {
+              openSuggestions();
+              return false;
+            },
+          },
         },
         onCreate: ({ editor: created }) => {
           isEmpty = created.isEmpty;
@@ -157,9 +219,35 @@
     };
   });
 
-  // Enter 键：generating / IME 组字中不发送；命中 sendHotKey 则发送并阻止默认换行。
+  // 编辑区 keydown：建议面板可见时先拦截 ↑↓/Enter/Esc 用于面板导航（返回 true 阻断编辑器默认）；
+  // 否则走发送快捷键判定（generating/IME 中不发送）。返回 true = 已处理，tiptap 停止默认行为。
   function handleEditorKeyDown(event: KeyboardEvent): boolean {
-    if (event.key !== 'Enter' || event.isComposing) return false;
+    if (event.isComposing) return false;
+
+    if (showSuggestionPanel) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        activeSuggestionIndex = nextSuggestionIndex(
+          activeSuggestionIndex,
+          suggestions.length,
+          event.key === 'ArrowDown' ? 1 : -1,
+        );
+        return true;
+      }
+      if (event.key === 'Enter') {
+        const picked = suggestions[activeSuggestionIndex];
+        if (picked !== undefined) {
+          selectSuggestion(picked);
+          return true;
+        }
+        // 未高亮任何项时 Enter 落到发送判定。
+      }
+      if (event.key === 'Escape') {
+        closeSuggestions();
+        return true;
+      }
+    }
+
+    if (event.key !== 'Enter') return false;
     if (generating) return false;
     if (!isSendHotKey(event.key, event.shiftKey, sendHotKey)) return false;
     event.preventDefault();
@@ -170,9 +258,48 @@
   function doSend(): void {
     if (generating || !computedCanSend || !editor) return;
     const inputContents = transformDocToContents(editor.getJSON(), transformer);
-    const message = buildMessageContent({ inputContents, attachments });
+    const message = buildMessageContent({ inputContents, attachments, references });
     onMessageSend?.(message);
   }
+
+  // —— 建议面板（阶段 2）——
+  function openSuggestions(): void {
+    if (suggestions.length === 0) return;
+    suggestionOpen = true;
+    activeSuggestionIndex = -1;
+  }
+  function closeSuggestions(): void {
+    suggestionOpen = false;
+    activeSuggestionIndex = -1;
+  }
+  function selectSuggestion(suggestion: AIChatInputSuggestion): void {
+    closeSuggestions();
+    if (onSuggestClick) {
+      onSuggestClick(suggestion);
+    } else {
+      // 默认行为：把建议文本填入编辑器并聚焦。
+      editor?.commands.setContent(suggestionContent(suggestion));
+      editor?.commands.focus('end');
+    }
+  }
+
+  // —— 引用条（阶段 2）——
+  function handleReferenceClick(reference: AIChatInputReference): void {
+    onReferenceClick?.(reference);
+  }
+  function handleReferenceDelete(reference: AIChatInputReference, event: MouseEvent): void {
+    event.stopPropagation();
+    onReferenceDelete?.(reference);
+  }
+
+  // 点击外部关闭建议面板（Esc 已在编辑区 keydown 处理）。
+  $effect(() => {
+    if (!showSuggestionPanel || !rootEl) return;
+    return useDismiss(rootEl, {
+      escape: false,
+      onDismiss: () => closeSuggestions(),
+    });
+  });
 
   function handleActionClick(): void {
     if (generating) {
@@ -212,8 +339,81 @@
   class="cd-ai-chat-input {className}"
   class:cd-ai-chat-input--round={round}
   {style}
+  bind:this={rootEl}
 >
-  <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
+  {#if hasReferences || hasTopSlot}
+    <div class="cd-ai-chat-input-top">
+      {#if hasTopSlot && topSlotPosition === 'top'}
+        {@render renderTopSlot?.({ references, attachments })}
+      {/if}
+      {#if hasReferences}
+        <div class="cd-ai-chat-input-references">
+          {#each references as reference (reference.id)}
+            {#if renderReference}
+              {@render renderReference(reference)}
+            {:else}
+              <!-- chip 容器本身非交互（避免 nested-interactive）；名称按钮与删除按钮平级。 -->
+              <div class="cd-ai-chat-input-reference">
+                <button
+                  type="button"
+                  class="cd-ai-chat-input-reference-main"
+                  onclick={() => handleReferenceClick(reference)}
+                >
+                  {#if isImageReference(reference)}
+                    <img class="cd-ai-chat-input-reference-img" src={reference.url} alt="" />
+                  {/if}
+                  <span class="cd-ai-chat-input-reference-name">{referenceLabel(reference)}</span>
+                </button>
+                <button
+                  type="button"
+                  class="cd-ai-chat-input-reference-delete"
+                  aria-label={loc().t('AIChatInput.deleteReference')}
+                  onclick={(e) => handleReferenceDelete(reference, e)}
+                >
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+      {#if hasTopSlot && topSlotPosition === 'bottom'}
+        {@render renderTopSlot?.({ references, attachments })}
+      {/if}
+    </div>
+  {/if}
+
+  <div class="cd-ai-chat-input-editor-wrap">
+    <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
+
+    {#if showSuggestionPanel}
+      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
+        {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
+          <div
+            class="cd-ai-chat-input-suggestion"
+            class:cd-ai-chat-input-suggestion--active={i === activeSuggestionIndex}
+            role="option"
+            aria-selected={i === activeSuggestionIndex}
+            tabindex="-1"
+            onmousedown={(e) => {
+              // mousedown 而非 click：避免编辑器先 blur 触发 useDismiss 关闭面板。
+              e.preventDefault();
+              selectSuggestion(suggestion);
+            }}
+            onmouseenter={() => (activeSuggestionIndex = i)}
+          >
+            {#if renderSuggestionItem}
+              {@render renderSuggestionItem({ suggestion, active: i === activeSuggestionIndex })}
+            {:else}
+              {suggestionContent(suggestion)}
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 
   <div class="cd-ai-chat-input-footer">
     {#if showUploadButton}
@@ -291,6 +491,119 @@
 
   .cd-ai-chat-input:focus-within {
     border-color: var(--cd-ai-chat-input-border-focus);
+  }
+
+  /* —— top area · 引用条 / topSlot（阶段 2）—— */
+  .cd-ai-chat-input-top {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-ai-chat-input-gap);
+  }
+
+  .cd-ai-chat-input-references {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-ai-chat-input-gap);
+  }
+
+  .cd-ai-chat-input-reference {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    max-width: 100%;
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
+    background: var(--cd-ai-chat-input-reference-bg);
+    color: var(--cd-ai-chat-input-reference-color);
+    border-radius: var(--cd-ai-chat-input-reference-radius);
+    transition: background var(--cd-ai-chat-input-motion-duration) ease;
+  }
+
+  .cd-ai-chat-input-reference:hover {
+    background: var(--cd-ai-chat-input-reference-bg-hover);
+  }
+
+  /* chip 内的名称按钮：无边框透明，负责图标+名称布局与点击。 */
+  .cd-ai-chat-input-reference-main {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+  }
+
+  .cd-ai-chat-input-reference-main:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: 2px;
+  }
+
+  .cd-ai-chat-input-reference-img {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: var(--cd-border-radius-small);
+  }
+
+  .cd-ai-chat-input-reference-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--cd-font-size-regular);
+  }
+
+  .cd-ai-chat-input-reference-delete {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    padding: 0;
+    color: var(--cd-ai-chat-input-action-icon);
+  }
+
+  .cd-ai-chat-input-reference-delete:hover {
+    color: var(--cd-ai-chat-input-action-icon-hover);
+  }
+
+  .cd-ai-chat-input-reference-delete:focus-visible {
+    outline: 2px solid var(--cd-color-primary);
+    outline-offset: 1px;
+  }
+
+  /* —— 建议浮层面板（阶段 2）—— */
+  .cd-ai-chat-input-editor-wrap {
+    position: relative;
+  }
+
+  .cd-ai-chat-input-suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + var(--cd-spacing-extra-tight));
+    z-index: 10;
+    max-height: 270px;
+    overflow-y: auto;
+    padding: var(--cd-spacing-extra-tight);
+    background: var(--cd-ai-chat-input-suggestions-bg);
+    border-radius: var(--cd-ai-chat-input-suggestions-radius);
+    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
+  }
+
+  .cd-ai-chat-input-suggestion {
+    padding: var(--cd-spacing-tight);
+    border-radius: var(--cd-ai-chat-input-reference-radius);
+    color: var(--cd-ai-chat-input-suggestion-color);
+    cursor: pointer;
+  }
+
+  .cd-ai-chat-input-suggestion--active {
+    background: var(--cd-ai-chat-input-suggestion-bg-active);
   }
 
   .cd-ai-chat-input-editor {

@@ -481,5 +481,7 @@ export const zh_CN: Locale = {
     send: '发送',
     stop: '停止生成',
     upload: '上传附件',
+    deleteReference: '删除引用',
+    suggestions: '建议',
   },
 };
