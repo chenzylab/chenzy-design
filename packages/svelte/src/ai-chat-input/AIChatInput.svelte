@@ -26,6 +26,8 @@
     skillLabel,
     getSkillSlotHTML,
     shouldOpenSkillPanel,
+    setConfigureField,
+    removeConfigureField,
     useDismiss,
     type AIChatInputSendHotKey,
     type AIChatInputMessageContent,
@@ -35,10 +37,13 @@
     type AIChatInputReference,
     type AIChatInputSuggestion,
     type AIChatInputSkill,
+    type AIChatInputConfigureValue,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
   import type { UploadFileItem } from '../upload/types.js';
+  import { untrack } from 'svelte';
+  import { setConfigureContext } from './configure-context.js';
 
   interface Props {
     /** 初始内容（HTML 或纯文本，tiptap Content）。 */
@@ -117,6 +122,17 @@
     showTemplateButton?: boolean;
     /** 模版面板显隐变化回调。 */
     onTemplateVisibleChange?: ((visible: boolean) => void) | undefined;
+    // —— 阶段 4 · 配置区 ——
+    /**
+     * 配置区渲染（对齐 Semi renderConfigureArea）：渲染于 footer 左侧。里面放
+     * AIChatInputConfigureSelect/Button/RadioButton 等（经 configure context 绑定），
+     * 其值发送时并入 MessageContent.setup。
+     */
+    renderConfigureArea?: Snippet | undefined;
+    /** 配置区初始值（对齐 Semi Configure defaultValue）。 */
+    configureDefaultValue?: AIChatInputConfigureValue;
+    /** 配置区变更回调（value 为全量，changed 为本次变更字段，对齐 Semi onConfigureChange）。 */
+    onConfigureChange?: ((value: AIChatInputConfigureValue, changed: AIChatInputConfigureValue) => void) | undefined;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -156,6 +172,9 @@
     renderTemplate,
     showTemplateButton = true,
     onTemplateVisibleChange,
+    renderConfigureArea,
+    configureDefaultValue,
+    onConfigureChange,
     class: className = '',
     style,
   }: Props = $props();
@@ -179,6 +198,22 @@
   // 当前已选技能（决定是否展示模版按钮）。
   let currentSkill = $state<AIChatInputSkill>();
   let templateOpen = $state(false);
+
+  // —— 配置区状态（阶段 4）：value 供 Configure 子组件经 context 读写，发送时并入 setup ——
+  // 只取初始值（untrack 表明有意不追踪后续 prop 变化——配置区值由内部/onConfigureChange 管理）。
+  let configureValue = $state<AIChatInputConfigureValue>(
+    untrack(() => ({ ...(configureDefaultValue ?? {}) })),
+  );
+  setConfigureContext({
+    getValue: () => configureValue,
+    setField: (patch, init = false) => {
+      configureValue = setConfigureField(configureValue, patch);
+      if (!init) onConfigureChange?.(configureValue, patch);
+    },
+    removeField: (field) => {
+      configureValue = removeConfigureField(configureValue, field);
+    },
+  });
 
   const placeholderText = $derived(placeholder ?? loc().t('AIChatInput.placeholder'));
 
@@ -348,7 +383,13 @@
   function doSend(): void {
     if (generating || !computedCanSend || !editor) return;
     const inputContents = transformDocToContents(editor.getJSON(), transformer);
-    const message = buildMessageContent({ inputContents, attachments, references });
+    // 配置区值并入 setup（对齐 Semi getConfigureValue → MessageContent.setup）。
+    const message = buildMessageContent({
+      inputContents,
+      attachments,
+      references,
+      setup: configureValue,
+    });
     onMessageSend?.(message);
   }
 
@@ -472,6 +513,10 @@
   export function changeTemplateVisible(visible: boolean): void {
     setTemplateVisible(visible);
   }
+  /** 取当前配置区值（对齐 Semi getConfigureValue）。 */
+  export function getConfigureValue(): AIChatInputConfigureValue {
+    return configureValue;
+  }
 </script>
 
 <div
@@ -586,6 +631,11 @@
   </div>
 
   <div class="cd-ai-chat-input-footer">
+    {#if renderConfigureArea}
+      <div class="cd-ai-chat-input-configure">
+        {@render renderConfigureArea()}
+      </div>
+    {/if}
     {#if showTemplate}
       <button
         type="button"
@@ -829,6 +879,14 @@
   .cd-ai-chat-input-template-btn:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
+  }
+
+  /* —— 配置区（阶段 4）—— */
+  .cd-ai-chat-input-configure {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-ai-chat-input-gap);
+    flex-wrap: wrap;
   }
 
   .cd-ai-chat-input-editor {

@@ -518,6 +518,8 @@ export {
   skillLabel,
   getSkillSlotHTML,
   shouldOpenSkillPanel,
+  setConfigureField,
+  removeConfigureField,
   type AIChatInputContent,
   type AIChatInputAttachment,
   type AIChatInputReference,
@@ -526,4 +528,5 @@ export {
   type AIChatInputChangePayload,
   type AIChatInputSuggestion,
   type AIChatInputSkill,
+  type AIChatInputConfigureValue,
 } from './ai-chat-input.js';

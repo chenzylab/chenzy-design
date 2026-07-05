@@ -173,6 +173,9 @@ export {
 } from './ai-chat-dialogue/index.js';
 export {
   AIChatInput,
+  AIChatInputConfigureSelect,
+  AIChatInputConfigureButton,
+  AIChatInputConfigureRadioButton,
   aiChatInputMeta,
   isSendHotKey,
   resolveCanSend,
@@ -185,6 +188,8 @@ export {
   skillLabel,
   getSkillSlotHTML,
   shouldOpenSkillPanel,
+  setConfigureField,
+  removeConfigureField,
   type AIChatInputContent,
   type AIChatInputAttachment,
   type AIChatInputReference,
@@ -193,6 +198,7 @@ export {
   type AIChatInputChangePayload,
   type AIChatInputSuggestion,
   type AIChatInputSkill,
+  type AIChatInputConfigureValue,
 } from './ai-chat-input/index.js';
 export {
   Cropper,

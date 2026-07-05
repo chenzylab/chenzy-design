@@ -240,3 +240,35 @@ export function shouldOpenSkillPanel(params: {
   const { key, skillHotKey, isEmpty, skillCount } = params;
   return isEmpty && key === skillHotKey && skillCount > 0;
 }
+
+// ————————————————————————————————————————————————————————————————
+// 阶段 4 · 配置区（Configure）
+// ————————————————————————————————————————————————————————————————
+
+/** 配置区的值：字段名 → 任意值（对齐 Semi LeftMenuChangeProps / setup）。 */
+export type AIChatInputConfigureValue = Record<string, unknown>;
+
+/**
+ * 配置区状态计算（纯函数，框架无关）。渲染层持有 value（$state），
+ * 用这些函数算下一个 value —— 对齐 Semi Configure 的 onChange(obj)/onRemove(field)。
+ */
+
+/** 合并一个字段补丁到 value，返回新对象（不可变）。 */
+export function setConfigureField(
+  value: AIChatInputConfigureValue,
+  patch: AIChatInputConfigureValue,
+): AIChatInputConfigureValue {
+  return { ...value, ...patch };
+}
+
+/** 从 value 移除一个字段，返回新对象（不可变；对齐 Semi onRemove）。 */
+export function removeConfigureField(
+  value: AIChatInputConfigureValue,
+  field: string,
+): AIChatInputConfigureValue {
+  const next: AIChatInputConfigureValue = {};
+  for (const key of Object.keys(value)) {
+    if (key !== field) next[key] = value[key];
+  }
+  return next;
+}

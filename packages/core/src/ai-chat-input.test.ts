@@ -11,6 +11,8 @@ import {
   skillLabel,
   getSkillSlotHTML,
   shouldOpenSkillPanel,
+  setConfigureField,
+  removeConfigureField,
   type AIChatInputContent,
 } from './ai-chat-input.js';
 
@@ -204,5 +206,29 @@ describe('ai-chat-input · shouldOpenSkillPanel', () => {
   });
   it('无技能不触发', () => {
     expect(shouldOpenSkillPanel({ key: '/', skillHotKey: '/', isEmpty: true, skillCount: 0 })).toBe(false);
+  });
+});
+
+describe('ai-chat-input · setConfigureField', () => {
+  it('合并字段补丁，不可变', () => {
+    const v = { model: 'gpt-5' };
+    const next = setConfigureField(v, { web: true });
+    expect(next).toEqual({ model: 'gpt-5', web: true });
+    expect(v).toEqual({ model: 'gpt-5' }); // 原对象不变
+  });
+  it('同字段覆盖', () => {
+    expect(setConfigureField({ model: 'a' }, { model: 'b' })).toEqual({ model: 'b' });
+  });
+});
+
+describe('ai-chat-input · removeConfigureField', () => {
+  it('移除字段，不可变', () => {
+    const v = { model: 'gpt-5', web: true };
+    const next = removeConfigureField(v, 'web');
+    expect(next).toEqual({ model: 'gpt-5' });
+    expect(v).toEqual({ model: 'gpt-5', web: true });
+  });
+  it('移除不存在的字段无副作用', () => {
+    expect(removeConfigureField({ a: 1 }, 'b')).toEqual({ a: 1 });
   });
 });

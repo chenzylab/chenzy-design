@@ -30,4 +30,5 @@ export const demos: DemoEntry[] = [
   entry('04-references.svelte', '引用', 'references 引用条渲染于编辑区上方，可点击/删除（受控）。'),
   entry('05-suggestions.svelte', '建议', '聚焦弹出建议面板，↑↓ 导航 / Enter 选中 / Esc 关闭。'),
   entry('06-skills.svelte', '技能与模版', '按 skillHotKey 唤起技能面板，选中插入 skill-slot 节点；hasTemplate 弹模版。'),
+  entry('07-configure.svelte', '配置区', 'renderConfigureArea + Configure 子组件（模型/联网/深度思考），值发送时进 setup。'),
 ];

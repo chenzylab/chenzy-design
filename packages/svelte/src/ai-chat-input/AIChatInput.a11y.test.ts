@@ -10,6 +10,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatInput from './AIChatInput.svelte';
+import AIChatInputConfigureFixture from './AIChatInputConfigureFixture.svelte';
 
 // tiptap 内核动态 import + editor 创建是异步的（且并发跑测试时时序有波动）。
 // 用轮询等 .ProseMirror 真正挂载，而非固定 sleep —— 避免高并发下等待不足。
@@ -356,6 +357,49 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills } });
     await flush(container);
     await pressSkillHotKey(container);
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe('AIChatInput · 配置区（阶段 4）', () => {
+  it('renderConfigureArea 渲染配置项', async () => {
+    const { container } = renderWithLocale(AIChatInputConfigureFixture);
+    expect(container.querySelector('.cd-ai-chat-input-configure')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-configure-button')).not.toBeNull();
+  });
+
+  it('切换配置按钮：onConfigureChange 触发，aria-pressed 更新', async () => {
+    const onConfigureChange = vi.fn();
+    const { container } = renderWithLocale(AIChatInputConfigureFixture, {
+      props: { onConfigureChange },
+    });
+    await flush(container);
+    const btn = container.querySelector('.cd-ai-chat-input-configure-button') as HTMLButtonElement;
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    await fireEvent.click(btn);
+    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    expect(onConfigureChange).toHaveBeenCalledWith({ web: true }, { web: true });
+  });
+
+  it('配置值发送时并入 MessageContent.setup', async () => {
+    const onMessageSend = vi.fn();
+    const { container } = renderWithLocale(AIChatInputConfigureFixture, {
+      props: { onMessageSend },
+    });
+    await flush(container);
+    // 打开 web 开关
+    const cfgBtn = container.querySelector('.cd-ai-chat-input-configure-button') as HTMLButtonElement;
+    await fireEvent.click(cfgBtn);
+    // 发送
+    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    await fireEvent.click(sendBtn);
+    expect(onMessageSend).toHaveBeenCalledTimes(1);
+    expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ web: true });
+  });
+
+  it('配置区无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatInputConfigureFixture);
+    await flush(container);
     await expectNoAxeViolations(container);
   });
 });
