@@ -8,6 +8,8 @@
  * （responseToMessage / chatCompletionToMessage）。流式 Adapter 为 P1，见 spec 登记。
  */
 
+import type { AIChatInputMessageContent } from './ai-chat-input.js';
+
 // —— 消息状态（对齐 OpenAI Response API status）——
 export type AIMessageStatus =
   | 'queued'
@@ -111,6 +113,8 @@ export interface AIDialogueMessage {
   updatedAt?: number;
   model?: string;
   status?: AIMessageStatus | string;
+  /** 该消息是否处于编辑态（受控；仅 user 消息生效，编辑态用 messageEditRender 替代内容）。 */
+  editing?: boolean;
   [x: string]: unknown;
 }
 
@@ -820,4 +824,37 @@ export function streamingChatCompletionToMessage(
   if (!state) state = { processedCountByIndex: {} };
   state.previousResult = results.map((r) => deepCloneChunk(r));
   return { messages: results, state };
+}
+
+// ————————————————————————————————————————————————
+// 消息编辑桥（P1）：dialogue 消息 → AIChatInput MessageContent（供 messageEditRender 载入编辑器）
+// ————————————————————————————————————————————————
+
+/**
+ * dialogueMessageToInput —— 把 AIDialogueMessage 抽取成 AIChatInputMessageContent（inputContents 文本段），
+ * 供 AIChatDialogue 的 messageEditRender 把消息载入 AIChatInput 编辑器（对齐 Semi messageToChatInput 方向）。
+ * 抽取 message.content 里 input_text/output_text 文本；attachments/references 若消息带则透传。
+ */
+export function dialogueMessageToInput(message: AIDialogueMessage): AIChatInputMessageContent {
+  const items = normalizeDialogueContent(message.content);
+  const inputContents: { type: string; text: string }[] = [];
+  for (const item of items) {
+    const inner = (item as { content?: unknown }).content;
+    if (Array.isArray(inner)) {
+      for (const part of inner) {
+        const p = part as { type?: string; text?: string };
+        if ((p.type === 'input_text' || p.type === 'output_text') && p.text) {
+          inputContents.push({ type: 'text', text: p.text });
+        }
+      }
+    } else if (typeof (message.content as unknown) === 'string' && message.output_text) {
+      inputContents.push({ type: 'text', text: message.output_text });
+    }
+  }
+  const payload: AIChatInputMessageContent = { inputContents };
+  const atts = (message as { attachments?: unknown }).attachments;
+  if (Array.isArray(atts) && atts.length > 0) payload.attachments = atts as never;
+  const refs = (message as { references?: unknown }).references;
+  if (Array.isArray(refs) && refs.length > 0) payload.references = refs as never;
+  return payload;
 }

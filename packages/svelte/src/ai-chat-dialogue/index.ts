@@ -8,6 +8,7 @@ export {
   chatCompletionToMessage,
   streamingResponseToMessage,
   streamingChatCompletionToMessage,
+  dialogueMessageToInput,
   contentItemType,
   normalizeDialogueContent,
 } from '@chenzy-design/core';

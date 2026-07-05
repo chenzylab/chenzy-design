@@ -14,6 +14,7 @@
     type AIDialogueMetadata,
     type AIDialogueRoleConfig,
     type ContentItem,
+    type AIChatInputMessageContent,
   } from '@chenzy-design/core';
   import { SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
@@ -52,6 +53,12 @@
     onMessageBadFeedback?: ((message: AIDialogueMessage) => void) | undefined;
     onFileClick?: ((file: unknown) => void) | undefined;
     onImageClick?: ((image: unknown) => void) | undefined;
+    /** 消息编辑渲染（对齐 Semi messageEditRender）：user 消息 editing 态用它替代内容。 */
+    messageEditRender?: Snippet<[AIChatInputMessageContent]> | undefined;
+    /** 点击编辑操作回调（对齐 Semi onMessageEdit）。 */
+    onMessageEdit?: ((message: AIDialogueMessage) => void) | undefined;
+    /** 是否展示编辑操作（默认 true；仅 user 消息）。 */
+    editable?: boolean;
   }
 
   let {
@@ -77,6 +84,9 @@
     onMessageBadFeedback,
     onFileClick,
     onImageClick,
+    messageEditRender,
+    onMessageEdit,
+    editable = true,
   }: Props = $props();
 
   const loc = useLocale();
@@ -167,6 +177,9 @@
         {onMessageBadFeedback}
         {onFileClick}
         {onImageClick}
+        {messageEditRender}
+        {onMessageEdit}
+        {editable}
       />
     {/each}
   </div>

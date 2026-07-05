@@ -32,6 +32,11 @@ export const meta = {
     { name: 'onMessageBadFeedback', payload: 'message', desc: '负向反馈' },
     { name: 'onFileClick', payload: 'file', desc: '文件点击' },
     { name: 'onImageClick', payload: 'image', desc: '图片点击' },
+    { name: 'onMessageEdit', payload: 'message', desc: '点击编辑操作（P1）' },
+  ],
+  slots: [
+    { name: 'renderDialogueContentItem', payload: 'ContentItem（按 type 覆盖）', desc: '按 ContentItem.type 覆盖渲染' },
+    { name: 'messageEditRender', payload: 'AIChatInputMessageContent', desc: 'user 消息 editing 态替代内容（放 AIChatInput 编辑器，P1）' },
   ],
   methods: [
     { name: 'selectAll', desc: '全选所有消息' },
@@ -49,5 +54,7 @@ export const meta = {
   examples: [
     { title: '基础对话', desc: 'chats + roleConfig，ContentItem 分块渲染' },
     { title: 'Adapter', desc: 'responseToMessage / chatCompletionToMessage 把 OpenAI 返回转 Message' },
+    { title: '流式 Adapter', desc: 'streamingResponseToMessage / streamingChatCompletionToMessage 增量归约流式块' },
+    { title: '消息编辑', desc: 'onMessageEdit + message.editing + messageEditRender（放 AIChatInput 编辑器）' },
   ],
 } as const;

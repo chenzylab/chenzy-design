@@ -646,6 +646,8 @@ export interface Locale {
     copy: string;
     /** reset action aria-label */
     reset: string;
+    /** edit-message action aria-label */
+    edit: string;
     /** delete action aria-label */
     delete: string;
     /** good-feedback action aria-label */
