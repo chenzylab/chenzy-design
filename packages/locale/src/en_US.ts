@@ -511,6 +511,10 @@ export const en_US: Locale = {
   SideBar: {
     close: 'Close',
     back: 'Back',
+    annotationTitle: 'References',
+    annotationEmpty: 'No references',
+    videoDuration: 'Video duration {duration}',
+    citationOrder: 'Citation {order}',
   },
   UserGuide: {
     skip: 'Skip',

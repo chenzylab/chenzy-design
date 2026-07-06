@@ -45,4 +45,22 @@ export const sideBarTokens = {
   // —— 详情返回按钮（P1）——
   'sidebar-back-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '返回按钮色', usage: '详情视图返回按钮颜色（组件消费）' },
   'sidebar-back-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '返回按钮悬浮背景', usage: '详情视图返回按钮悬浮背景（组件消费）' },
+
+  // —— Annotation 引用溯源卡片（P2）——
+  'sidebar-annotation-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'Annotation 条目间距', usage: 'Annotation 分组内条目之间间距（组件消费）' },
+  'sidebar-annotation-card-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '卡片背景', usage: 'Annotation 引用卡片背景（组件消费）' },
+  'sidebar-annotation-card-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '卡片悬浮背景', usage: 'Annotation 引用卡片悬浮背景（组件消费）' },
+  'sidebar-annotation-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片边框', usage: 'Annotation 引用卡片边框（组件消费）' },
+  'sidebar-annotation-card-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: 'Annotation 引用卡片圆角（组件消费）' },
+  'sidebar-annotation-card-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '卡片内边距', usage: 'Annotation 引用卡片内边距（组件消费）' },
+  'sidebar-annotation-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '卡片标题色', usage: 'Annotation 卡片标题颜色（组件消费）' },
+  'sidebar-annotation-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '卡片标题字号', usage: 'Annotation 卡片标题字号（组件消费）' },
+  'sidebar-annotation-detail-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片摘要色', usage: 'Annotation 文本卡片摘要颜色（组件消费）' },
+  'sidebar-annotation-detail-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: '卡片摘要字号', usage: 'Annotation 文本卡片摘要字号（组件消费）' },
+  'sidebar-annotation-footer-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '页脚站点色', usage: 'Annotation 卡片页脚站点名颜色（组件消费）' },
+  'sidebar-annotation-order-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '序号色', usage: 'Annotation 卡片引用序号颜色（组件消费）' },
+  'sidebar-annotation-order-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '序号背景', usage: 'Annotation 卡片引用序号背景（组件消费）' },
+  'sidebar-annotation-duration-bg': { value: 'rgba(0, 0, 0, 0.6)', category: 'color', label: '时长遮罩背景', usage: 'Annotation 视频卡片时长标签背景（组件消费）' },
+  'sidebar-annotation-duration-color': { value: '#fff', category: 'color', label: '时长文字色', usage: 'Annotation 视频卡片时长标签文字色（组件消费）' },
+  'sidebar-annotation-cover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '封面占位背景', usage: 'Annotation 视频卡片封面占位背景（组件消费）' },
 } satisfies TokenGroup;

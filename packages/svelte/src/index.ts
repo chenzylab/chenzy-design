@@ -336,9 +336,12 @@ export {
 export {
   SideBar,
   SideBarContainer,
+  SideBarAnnotation,
   sideBarMeta,
   type SideBarOption,
   type SideBarMode,
+  type SideBarAnnotationItem,
+  type SideBarAnnotationGroup,
 } from './sidebar/index.js';
 // 浮层定位原语（Tooltip/Popover 等共用，未来 Dropdown/Popconfirm 复用）
 export {

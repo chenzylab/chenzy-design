@@ -723,6 +723,14 @@ export interface Locale {
     close: string;
     /** detail back button aria-label */
     back: string;
+    /** Annotation default panel title */
+    annotationTitle: string;
+    /** Annotation empty state text */
+    annotationEmpty: string;
+    /** video card duration accessible label; interpolates {duration} (mm:ss) */
+    videoDuration: string;
+    /** citation order accessible label; interpolates {order} */
+    citationOrder: string;
   };
   UserGuide: {
     /** skip button */
