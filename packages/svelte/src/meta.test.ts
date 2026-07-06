@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { meta as buttonMeta } from './button/meta.js';
 import { meta as iconButtonMeta } from './iconbutton/meta.js';
+import { meta as floatButtonMeta } from './float-button/meta.js';
 import { meta as iconMeta } from './icon/meta.js';
 import { meta as dividerMeta } from './divider/meta.js';
 import { meta as spaceMeta } from './space/meta.js';
@@ -83,6 +84,7 @@ import { meta as aiChatInputMeta } from './ai-chat-input/meta.js';
 const metas = {
   buttonMeta,
   iconButtonMeta,
+  floatButtonMeta,
   iconMeta,
   dividerMeta,
   spaceMeta,
