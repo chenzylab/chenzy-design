@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'SideSheet',
-  category: 'feedback',
+  category: 'show',
   stage: 'M5',
   semiEquivalent: 'SideSheet',
   description:

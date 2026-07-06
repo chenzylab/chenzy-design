@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'BackTop',
-  category: 'other',
+  category: 'navigation',
   description:
     '回到顶部悬浮按钮：滚动超阈值显隐 + 平滑缓动(easeInOutCubic)回顶，三尺寸(small/default/large)，原生 button 支持 Enter/Space，prefers-reduced-motion 下瞬时回顶，RTL 友好(inset-inline-end)。默认监听 window 滚动，可经 target 指定自定义滚动容器；支持受控 visible 与 announceOnArrive 到顶 ARIA live 播报。',
   exports: ['BackTop'],

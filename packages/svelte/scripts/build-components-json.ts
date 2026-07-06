@@ -267,7 +267,7 @@ const dtsLines: string[] = [
   '/** Aggregated metadata for one component. Mirrors `src/<comp>/meta.ts`. */',
   'export interface ComponentMeta {',
   '  name: string;',
-  "  category: 'basic' | 'input' | 'navigation' | 'show' | 'feedback' | 'other';",
+  "  category: 'ai' | 'basic' | 'plus' | 'input' | 'navigation' | 'show' | 'feedback' | 'other';",
   '  description: string;',
   '  props?: ComponentPropMeta[];',
   '  subComponents?: Array<{ name?: string; props?: ComponentPropMeta[]; [k: string]: unknown }>;',

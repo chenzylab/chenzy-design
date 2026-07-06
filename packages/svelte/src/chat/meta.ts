@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'Chat',
-  category: 'show',
+  category: 'plus',
   description:
     '对话/AI 聊天组件：消息流（头像/标题/内容/操作区，内容走 MarkdownRender）+ 输入区（textarea + Upload 附件 + 发送）+ 提示区（Hint）。框架无关逻辑在 @chenzy-design/core（buildSendContent/appendDivider/toggleLike/toggleDislike/resetLastMessage/shouldShowBackBottom/resolveEnableUpload/shouldSendOnEnter）。受控/非受控 chats（对齐 Upload value 模式），变换经 onChatsChange 回传。align(leftRight/leftAlign)、mode(bubble/noBubble/userBubble)、sendHotKey(enter/shift+enter)、enableUpload 三态。消息流 role=log/aria-live=polite；滚动出现回到底部悬浮按钮（SHOW_SCROLL_GAP=100）。ref 方法 resetMessage/scrollToBottom(animation)/clearContext/sendMessage。所有自定义渲染走 Svelte snippet（renderInputArea/renderChatBoxAvatar/Title/Content/Action/renderFullChatBox/renderHintBox/renderDivider）。',
   exports: ['Chat'],

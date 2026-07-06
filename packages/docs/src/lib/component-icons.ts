@@ -5,6 +5,8 @@
 
 // 分类配色（对齐 token 色系，各分类一色）
 export const categoryColor: Record<string, string> = {
+  ai: '#00b2b2', // 青
+  plus: '#d91ad9', // 品红
   basic: '#0064fa', // 蓝
   input: '#00b42a', // 绿
   navigation: '#ff7d00', // 橙

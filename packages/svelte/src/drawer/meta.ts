@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'Drawer',
-  category: 'feedback',
+  category: 'show',
   description:
     '抽屉浮层：四方向（left/right/top/bottom）贴边滑入面板，复用 Modal 浮层基建——portal 到 body（或 getContainer）脱离父层叠上下文，role=dialog aria-modal；useFocusTrap 焦点捕获与归还、useDismiss Esc 关闭（closeOnEsc）、mask 时 useScrollLock 锁背景滚动；mask/maskClosable 遮罩点击关闭、closable 右上角关闭按钮；size(small/default/large) 预设宽高，width/height 优先覆盖；头/体/尾结构。滑入过渡为 CSS transform/opacity（token 时长缓动，reduced-motion 退化）；destroyOnClose 关闭即卸载内容（重开重建），出场过渡结束后 onAfterClose。堆叠 z-index 与 Modal 共享 modal/z-stack 模块级计数器，多层叠放后开者在上。有 title 用 aria-labelledby，否则 aria-label。别名 SideSheet（行为一致）。受控 open 不回写，仅 onOpenChange/onClose 通知。',
   exports: ['Drawer', 'SideSheet'],

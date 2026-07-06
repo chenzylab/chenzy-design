@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'DragMove',
-  category: 'other',
+  category: 'plus',
   stage: 'M6',
   semiEquivalent: 'DragMove',
   description:

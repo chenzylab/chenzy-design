@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'MarkdownRender',
-  category: 'show',
+  category: 'plus',
   description:
     'Markdown 渲染组件：unified 管线（remark-parse + 条件 remark-gfm + remark-rehype + 透传 remark/rehype 插件）把 raw 编译成 hast，再由 Svelte 递归渲染成组件 / 原生标签。支持 components 覆盖元素与注册自定义标签对应的 Svelte 组件；默认剥离 raw HTML（对齐 Semi format=md，保留 HTML 需自传 rehype-raw 并自负 XSS）；代码块默认交给 CodeHighlight（存在则用，否则降级纯 <pre><code>）。不支持 md 正文里任意 JSX 表达式求值（Semi format=mdx 深度能力，Svelte 无 JSX runtime）。',
   exports: ['MarkdownRender', 'defaultComponents'],

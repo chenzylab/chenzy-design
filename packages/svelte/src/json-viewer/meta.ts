@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'JsonViewer',
-  category: 'show',
+  category: 'plus',
   description:
     'JSON 预览 / 编辑器：底层直接引 Semi 自研框架无关内核 @douyinfe/semi-json-viewer-core（仿 VS Code text-buffer，虚拟化大数据、jsonc-parser 解析），内核经动态 import 异步加载（不进主 bundle，加载中 loading 态）。非受控（value 仅初始，不回写）。语法高亮全走 token（key/string/number/boolean·null/标点/注释/行号/搜索命中）深浅双主题。搜索/替换工具条由 Svelte 壳自渲染（内核仅提供检索 API），文案/aria 走 i18n。ref 暴露 getValue/format/search/getSearchResults/prevSearch/nextSearch/replace/replaceAll。options 支持 lineHeight/autoWrap/readOnly/customRenderRule（仅只读经 customRender 事件透出）/formatOptions。renderSearchButton 自定义搜索按钮（对齐 Semi ≥2.95）。',
   exports: ['JsonViewer'],

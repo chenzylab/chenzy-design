@@ -9,7 +9,7 @@
  */
 export const meta = {
   name: 'SideBar',
-  category: 'show',
+  category: 'ai',
   stage: 'M4',
   semiEquivalent: 'Sidebar',
   aiScene: true,

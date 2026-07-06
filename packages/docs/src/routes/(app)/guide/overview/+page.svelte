@@ -9,7 +9,7 @@
   const lang = $derived(locale.value);
   const count = componentsJson.count;
 
-  const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
+  const categoryOrder = ['ai', 'basic', 'plus', 'input', 'navigation', 'show', 'feedback', 'other'];
 
   const grouped = Object.entries(componentsJson.components).reduce(
     (acc, [, meta]) => {

@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'CodeHighlight',
-  category: 'show',
+  category: 'plus',
   description:
     '代码语法高亮：底层用 prismjs（对齐 Semi Design），给 <code> 元素加 language-<lang> class 后 Prism.highlightElement 就地高亮，仅写纯文本节点规避 XSS（不用 {@html} 拼未处理内容）。支持 lineNumber 行号、defaultTheme 内置 token 驱动配色开关。语言包按需由使用方 import "prismjs/components/prism-<lang>.js"。长代码块可滚动、可键盘聚焦，role=region + i18n aria-label。',
   exports: ['CodeHighlight', 'resolveCodeClassName'],

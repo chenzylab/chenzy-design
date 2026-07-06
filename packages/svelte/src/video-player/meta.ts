@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'VideoPlayer',
-  category: 'show',
+  category: 'plus',
   description:
     '视频播放器：原生 <video> + 框架无关状态机（@chenzy-design/core），无第三方媒体库。支持播放/暂停、进度拖拽跳转（含章节标记）、缓冲/已播放双层进度、音量（0–100，静音派生）、倍率/清晰度/线路下拉切换（切换后回跳原播放位置）、镜像、画中画、全屏、瞬时通知（加载/卡顿/镜像/倍率）。controlsList 控制控件项增删，theme 仅切换容器背景。键盘：Space 播放/暂停、←/→ 按 seekTime 跳转（焦点在播放器内时）。',
   exports: ['VideoPlayer'],
