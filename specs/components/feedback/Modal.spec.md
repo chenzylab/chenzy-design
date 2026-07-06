@@ -28,7 +28,10 @@
 | okText / cancelText | `string` | i18n 默认 | 按钮文案 |
 | okType | Button type | `'primary'` | 确认按钮类型（危险用 danger）|
 | destroyOnClose | `boolean` | `false` | 关闭即卸载内容 |
-| getContainer | `() => HTMLElement` | `body` | Portal 容器 |
+| getContainer | `() => HTMLElement` | `body` | Portal 容器（对标 Semi getPopupContainer，含 getContainerContext 语义）|
+| modalRender | `Snippet<[Snippet]>` | — | 自定义包裹整个面板容器（对标 Semi modalRender），接收默认面板 Snippet |
+| cancelLoading | `boolean` | `false` | 取消按钮 loading（对称 confirmLoading）|
+| maskFixed | `boolean` | `true` | 遮罩 position:fixed；false 时 absolute 局部铺满 |
 ### Events
 | 事件 | 载荷 | 说明 |
 |---|---|---|

@@ -105,6 +105,24 @@ export const meta = {
     },
     { name: 'closeIcon', type: 'Snippet', default: 'undefined', desc: '自定义关闭图标' },
     { name: 'mask', type: 'boolean', default: 'true', desc: '是否显示遮罩' },
+    {
+      name: 'modalRender',
+      type: 'Snippet<[Snippet]>',
+      default: 'undefined',
+      desc: '自定义包裹整个面板容器（对标 Semi modalRender）；接收默认面板 Snippet，返回包装结构，用于自定义拖拽/包装',
+    },
+    {
+      name: 'cancelLoading',
+      type: 'boolean',
+      default: 'false',
+      desc: '取消按钮 loading 态（对称于 confirmLoading）',
+    },
+    {
+      name: 'maskFixed',
+      type: 'boolean',
+      default: 'true',
+      desc: '遮罩是否 position:fixed；false 时 position:absolute，配合 getContainer 局部铺满',
+    },
   ],
   events: [
     { name: 'onOk', desc: '确认按钮点击（非受控自动关闭）' },

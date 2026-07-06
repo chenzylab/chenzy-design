@@ -80,6 +80,18 @@
     closeIcon?: Snippet;
     /** 是否显示遮罩。默认 true */
     mask?: boolean;
+    /**
+     * 自定义渲染整个 Modal 面板容器。接收默认面板内容 Snippet，返回包裹后的结构，
+     * 用于自定义拖拽/包装等（对标 Semi modalRender）。返回内容仍在遮罩内、portal 到容器。
+     */
+    modalRender?: Snippet<[Snippet]>;
+    /** 取消按钮的 loading 态（对称于 confirmLoading）。默认 false */
+    cancelLoading?: boolean;
+    /**
+     * 遮罩是否 position:fixed（对标 Semi 默认固定遮罩）。默认 true；
+     * 为 false 时改为 position:absolute，配合 getContainer 的相对定位父级局部铺满。
+     */
+    maskFixed?: boolean;
   }
 
   let {
@@ -120,6 +132,9 @@
     modalContentClass,
     closeIcon,
     mask = true,
+    modalRender,
+    cancelLoading = false,
+    maskFixed = true,
   }: Props = $props();
 
   const titleId = useId('cd-modal-title');
@@ -306,12 +321,25 @@
     class:cd-modal-mask--centered={centered}
     class:cd-modal-mask--hidden={!isOpen}
     class:cd-modal-mask--no-mask={!mask}
+    class:cd-modal-mask--absolute={!maskFixed}
     bind:this={maskEl}
     style={[stackZ !== undefined ? `--cd-modal-z:${stackZ}` : '', maskStyle ?? ''].filter(Boolean).join('; ') || undefined}
     onclick={onMaskClick}
     role="presentation"
     use:portal
   >
+    <!-- modalRender：自定义包裹整个面板（对标 Semi）。传入默认面板 Snippet，
+         由用户返回包装结构；未传则直接渲染面板。panelEl 仍绑在 role=dialog 上，
+         focus-trap/aria 不受包装影响。 -->
+    {#if modalRender}
+      {@render modalRender(panelContent)}
+    {:else}
+      {@render panelContent()}
+    {/if}
+  </div>
+{/if}
+
+{#snippet panelContent()}
     <div
       class={panelCls}
       bind:this={panelEl}
@@ -382,7 +410,7 @@
             {@render footer({ ok, cancel })}
           {:else}
             {#if hasCancel !== false}
-              <Button onclick={cancel} {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
+              <Button onclick={cancel} loading={cancelLoading} {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
             {/if}
             <Button type={okType} onclick={ok} loading={confirmLoading} {...(okButtonProps ?? {})}>
               {okText ?? loc().t('Modal.okText')}
@@ -391,8 +419,7 @@
         </footer>
       {/if}
     </div>
-  </div>
-{/if}
+{/snippet}
 
 <style>
   .cd-modal-mask {
@@ -408,6 +435,10 @@
   }
   .cd-modal-mask--centered {
     align-items: center;
+  }
+  /* maskFixed=false：遮罩相对最近定位祖先铺满（配合 getContainer 局部弹层） */
+  .cd-modal-mask--absolute {
+    position: absolute;
   }
   /* destroyOnClose=false 时关闭仅隐藏、保留 DOM 与内部状态 */
   .cd-modal-mask--hidden {
