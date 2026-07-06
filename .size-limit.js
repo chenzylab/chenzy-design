@@ -147,7 +147,7 @@ const components = [
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
   // import（下方 ignore）。度量含各自壳；预算按实测校准（P3/P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent }', '18 KB'],
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMcpConfigure }', '14 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。

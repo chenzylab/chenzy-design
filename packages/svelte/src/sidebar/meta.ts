@@ -3,8 +3,9 @@
  * SideBar — see specs/components/show/SideBar.spec.md
  *
  * 分阶段交付：本 meta 覆盖已落地的 P0（SideBarContainer 可伸缩浮层壳）+ P1（SideBar 主壳
- * mode 路由 + Options 图标 tab 组）+ P4（SideBarCodeContent 代码/JSON 预览折叠列表）。
- * P2 Annotation / P3 MCPConfigure / P5 FileContent 后续阶段接续，届时补齐对应 subComponents。
+ * mode 路由 + Options 图标 tab 组）+ P2（Annotation）+ P3（SideBarMcpConfigure MCP 工具配置）
+ * + P4（SideBarCodeContent 代码/JSON 预览折叠列表）。
+ * P5 FileContent 后续阶段接续，届时补齐对应 subComponents。
  */
 export const meta = {
   name: 'SideBar',
@@ -13,8 +14,8 @@ export const meta = {
   semiEquivalent: 'Sidebar',
   aiScene: true,
   description:
-    'AI 侧边信息栏套件（重量级组合，分阶段交付）：P0 SideBarContainer 为可伸缩浮层壳——贴视口右侧（RTL 贴左），role=dialog + aria-labelledby(title)，打开移焦 + focus-trap 焦点捕获/归还 + Esc 关闭，堆叠 z-index 与 Modal/SideSheet 统一层栈（后开者在上），resizable 时左边缘（RTL 右边缘）把手拖拽调宽——复用 core createResizeDrag（axis:x 单轴 + clamp minWidth/maxWidth）与 Resizable 同套把手 a11y（role=separator + aria-orientation=vertical + aria-valuenow + 键盘 ←→/Home/End），motion 展开/收起为 CSS transition（reduced-motion / motion=false 退化即时显隐）。P1 SideBar 主壳按 mode 路由：main 渲染顶部 Options 图标 tab 组（role=tablist + roving tabindex + 键盘，name 作无障碍名）+ renderMainContent(activeKey)；detail（code/file/自定义）渲染 renderDetailHeader + 返回按钮（onBackWard 可异步，await 期间禁用防重触发）+ renderDetailContent(mode)。受控 visible / activeKey（不回写，仅回调通知）。P2 SideBarAnnotation 参考来源/引用溯源：外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n annotationTitle），内部用 Collapse 渲染 info 分组（每组一折叠面板 + aria-expanded），展开区渲染 video（封面/时长/播放态，duration 走 locale 数值格式化为 mm:ss）/text（站点 logo/名称/引用序号）卡片；可点击卡片（url 或 onClick）用原生 button（键盘 Enter/Space + focus 环 + 时长/序号本地化可访问文本），renderItem 可整条覆盖。P4 SideBarCodeContent 代码/JSON 预览：Collapse 折叠列表，每项按 isJson 分流 JsonViewer / CodeHighlight（透传 jsonViewerProps/codeHighlightProps），onExpand 全屏回调。P3/P5（MCPConfigure/FileContent）后续阶段接续。',
-  exports: ['SideBar', 'SideBarContainer', 'SideBarAnnotation', 'SideBarCodeContent'],
+    'AI 侧边信息栏套件（重量级组合，分阶段交付）：P0 SideBarContainer 为可伸缩浮层壳——贴视口右侧（RTL 贴左），role=dialog + aria-labelledby(title)，打开移焦 + focus-trap 焦点捕获/归还 + Esc 关闭，堆叠 z-index 与 Modal/SideSheet 统一层栈（后开者在上），resizable 时左边缘（RTL 右边缘）把手拖拽调宽——复用 core createResizeDrag（axis:x 单轴 + clamp minWidth/maxWidth）与 Resizable 同套把手 a11y（role=separator + aria-orientation=vertical + aria-valuenow + 键盘 ←→/Home/End），motion 展开/收起为 CSS transition（reduced-motion / motion=false 退化即时显隐）。P1 SideBar 主壳按 mode 路由：main 渲染顶部 Options 图标 tab 组（role=tablist + roving tabindex + 键盘，name 作无障碍名）+ renderMainContent(activeKey)；detail（code/file/自定义）渲染 renderDetailHeader + 返回按钮（onBackWard 可异步，await 期间禁用防重触发）+ renderDetailContent(mode)。受控 visible / activeKey（不回写，仅回调通知）。P2 SideBarAnnotation 参考来源/引用溯源：外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n annotationTitle），内部用 Collapse 渲染 info 分组（每组一折叠面板 + aria-expanded），展开区渲染 video（封面/时长/播放态，duration 走 locale 数值格式化为 mm:ss）/text（站点 logo/名称/引用序号）卡片；可点击卡片（url 或 onClick）用原生 button（键盘 Enter/Space + focus 环 + 时长/序号本地化可访问文本），renderItem 可整条覆盖。P4 SideBarCodeContent 代码/JSON 预览：Collapse 折叠列表，每项按 isJson 分流 JsonViewer / CodeHighlight（透传 jsonViewerProps/codeHighlightProps），onExpand 全屏回调。P3 SideBarMcpConfigure MCP 工具配置面板：外层复用 SideBarContainer（title 默认走 i18n mcpTitle），内部顶部已启用计数 + 搜索框（Input，前缀放大镜 + aria-label，headless filterMcpOptions 支持自定义 filter）+ 内置/自定义双列表并列（Semi 为 radio 二选一，本库改并列双列表更直观）；每项前置图标（string→img / Snippet）+ label + desc + 动作按钮（内置 configure 显示配置 / 自定义显示编辑，aria-label 含工具名）+ 启用开关（复用本库 Switch，原生 role=switch + aria-checked，disabled 预设项锁定 + title tooltip），启用变化经 core toggleMcpOptionActive 产出「下一份数组 + custom 标记」上抛 onStatusChange 不回写；自定义组空态显示添加按钮，无搜索结果显示提示。P5（FileContent）后续阶段接续。',
+  exports: ['SideBar', 'SideBarContainer', 'SideBarAnnotation', 'SideBarCodeContent', 'SideBarMcpConfigure'],
   a11yPattern: 'dialog + tablist',
   apgRef: 'dialog (modal) + tabs',
   relatedComponents: ['SideSheet', 'Resizable', 'Nav', 'Tabs'],
@@ -22,7 +23,7 @@ export const meta = {
     { phase: 'P0', name: 'Container', done: true, desc: '可伸缩浮层壳（resizable 复用 Resizable + 动画 + header/close + Esc + a11y）' },
     { phase: 'P1', name: '主壳 + Options', done: true, desc: 'SideBar 主组件 mode 路由（main/detail）+ 顶部 Options 图标 tab 组' },
     { phase: 'P2', name: 'Annotation', done: true, desc: '参考来源/引用溯源折叠列表（video/text 卡片，复用 Collapse）' },
-    { phase: 'P3', name: 'MCPConfigure', done: false, desc: 'MCP 工具配置面板' },
+    { phase: 'P3', name: 'MCPConfigure', done: true, desc: 'MCP 工具配置面板（内置/自定义双列表 + 搜索 + 启用开关 role=switch，复用 Input/Switch）' },
     { phase: 'P4', name: 'CodeContent', done: true, desc: '代码/JSON 预览折叠列表（复用 CodeHighlight/JsonViewer + Collapse）' },
     { phase: 'P5', name: 'FileContent', done: false, desc: '富文本查看/编辑列表（tiptap）' },
   ],
@@ -84,6 +85,22 @@ export const meta = {
         { name: 'style', type: 'string', default: 'undefined', desc: '根自定义内联样式' },
       ],
     },
+    {
+      name: 'SideBarMcpConfigure',
+      props: [
+        { name: 'options', type: 'SideBarMcpOption[]', default: '[]', desc: '内置 MCP 工具列表（受控）；每项 { value, label, icon?, desc?, active?, disabled?, configure? }' },
+        { name: 'customOptions', type: 'SideBarMcpOption[]', default: '[]', desc: '自定义 MCP 工具列表（受控）；空时显示添加入口' },
+        { name: 'filter', type: '(input: string, option: SideBarMcpOption) => boolean', default: 'undefined', desc: '自定义搜索过滤谓词（覆盖默认 label/value 大小写不敏感包含匹配）' },
+        { name: 'placeholder', type: 'string', default: 'undefined', desc: '搜索占位（覆盖 i18n mcpSearchPlaceholder，修 Semi 硬编码「请输入」）' },
+        { name: 'onSearch', type: '(input: string, custom: boolean) => void', default: 'undefined', desc: '搜索输入回调（custom 恒 false）' },
+        { name: 'onStatusChange', type: '(options: SideBarMcpOption[], custom: boolean) => void', default: 'undefined', desc: '启用/关闭变化：产出该组「下一份数组」+ custom 标记（不回写 prop）' },
+        { name: 'onAddClick', type: '(e: MouseEvent) => void', default: 'undefined', desc: '自定义组「添加」按钮回调' },
+        { name: 'onConfigureClick', type: '(e: MouseEvent, option: SideBarMcpOption) => void', default: 'undefined', desc: '内置工具（configure=true）「配置」按钮回调' },
+        { name: 'onEditClick', type: '(e: MouseEvent, option: SideBarMcpOption) => void', default: 'undefined', desc: '自定义工具「编辑」按钮回调' },
+        { name: 'renderItem', type: 'Snippet<[{ option; custom }]>', default: 'undefined', desc: '自定义单项渲染（覆盖默认项，custom 标记来自自定义组）' },
+        { name: '...Container', type: 'SideBarContainer props', default: '—', desc: '继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n mcpTitle' },
+      ],
+    },
   ],
   tokens: [
     '--cd-sidebar-bg',
@@ -137,5 +154,27 @@ export const meta = {
     '--cd-sidebar-code-expand-color',
     '--cd-sidebar-code-expand-hover-bg',
     '--cd-sidebar-code-body-padding',
+    '--cd-sidebar-mcp-gap',
+    '--cd-sidebar-mcp-count-color',
+    '--cd-sidebar-mcp-count-size',
+    '--cd-sidebar-mcp-group-title-color',
+    '--cd-sidebar-mcp-group-title-size',
+    '--cd-sidebar-mcp-item-gap',
+    '--cd-sidebar-mcp-item-padding',
+    '--cd-sidebar-mcp-item-gutter',
+    '--cd-sidebar-mcp-item-radius',
+    '--cd-sidebar-mcp-item-bg',
+    '--cd-sidebar-mcp-item-bg-hover',
+    '--cd-sidebar-mcp-item-border',
+    '--cd-sidebar-mcp-icon-size',
+    '--cd-sidebar-mcp-icon-radius',
+    '--cd-sidebar-mcp-icon-bg',
+    '--cd-sidebar-mcp-label-color',
+    '--cd-sidebar-mcp-label-size',
+    '--cd-sidebar-mcp-desc-color',
+    '--cd-sidebar-mcp-desc-size',
+    '--cd-sidebar-mcp-action-color',
+    '--cd-sidebar-mcp-action-hover-bg',
+    '--cd-sidebar-mcp-empty-color',
   ],
 } as const;
