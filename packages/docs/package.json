@@ -17,8 +17,8 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.68.0",
-    "mdsvex": "^0.11.2",
+    "@sveltejs/kit": "^2.69.1",
+    "mdsvex": "^0.12.7",
     "pagefind": "^1.0.0",
     "shiki": "^1.29.2"
   }
