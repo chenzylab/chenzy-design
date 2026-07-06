@@ -76,6 +76,8 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 | disabled | `boolean` | `false` | 禁用 |
 | clearable | `boolean` | `false` | 显示清除按钮 |
 | maxTagCount | `number` | — | 多选 Tag 溢出折叠阈值 |
+| showRestTagsPopover | `boolean` | `false` | 超出 maxTagCount 折叠的 tag 以 Popover 悬浮展示剩余项（hover +N） |
+| restTagsPopoverProps | `Record<string, unknown>` | — | 传给剩余 tags Popover 的额外 props（透传，可覆盖默认） |
 | emptyContent | `string \| Snippet` | i18n | 列为空时内容 |
 | destroyOnClose | `boolean` | `false` | 关闭时销毁浮层内容 |
 | zIndex | `number` | `1030` | 浮层层级 |

@@ -476,6 +476,8 @@ export interface Locale {
     columnLabel: string;
     /** 搜索结果 listbox 可访问名 */
     searchResults: string;
+    /** 折叠剩余 tag 的 +N 可访问名 / 浮层计数，uses {count} */
+    restTagsCount: string;
   };
   Carousel: {
     prev: string;

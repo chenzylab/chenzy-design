@@ -40,6 +40,7 @@
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
+  import Popover from '../popover/Popover.svelte';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
@@ -175,9 +176,9 @@
     max?: number;
     /** 超出 max 时回调，传当前（含超出项）勾选的节点集合 */
     onExceed?: (items: CascaderNode[]) => void;
-    /** 超出 maxTagCount 时是否显示 popover */
+    /** 超出 maxTagCount 折叠的 tag 以 Popover 悬浮展示剩余项（hover +N）。默认 false。 */
     showRestTagsPopover?: boolean;
-    /** 超出 tag popover 的 props */
+    /** 传给剩余 tags Popover 的额外 props（透传，可覆盖默认）。 */
     restTagsPopoverProps?: Record<string, unknown>;
     /** 是否显示清除按钮（clearable 的别名） */
     showClear?: boolean;
@@ -649,6 +650,12 @@
     maxTagCount !== undefined && maxTagCount >= 0
       ? Math.max(0, checkedLeafPaths.length - maxTagCount)
       : 0,
+  );
+  // 折叠隐藏的剩余项（showRestTagsPopover 时在 +N 浮层内列出，与可见 tag 相同的 label 取法）。
+  const hiddenTagPaths = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? checkedLeafPaths.slice(maxTagCount)
+      : [],
   );
 
   // clearable / showClear 别名归一（showClear prop 优先 clearable）
@@ -1164,7 +1171,31 @@
               </Tag>
             {/each}
             {#if hiddenTagCount > 0}
-              <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+              {#if showRestTagsPopover}
+                <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
+                  <span
+                    class="cd-cascader__rest-tags-trigger"
+                    aria-label={loc().t('Cascader.restTagsCount', { count: hiddenTagCount })}
+                  >
+                    <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+                  </span>
+                  {#snippet contentSlot()}
+                    <div class="cd-cascader__rest-tags">
+                      {#each hiddenTagPaths as leaf (leaf.path.join('/'))}
+                        <Tag
+                          size={size === 'large' ? 'default' : 'small'}
+                          closable={!disabled}
+                          onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
+                        >
+                          {renderPath(leaf.labels, leaf.nodes)}
+                        </Tag>
+                      {/each}
+                    </div>
+                  {/snippet}
+                </Popover>
+              {:else}
+                <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+              {/if}
             {/if}
           </span>
         {:else}
@@ -1598,6 +1629,17 @@
     gap: var(--cd-spacing-extra-tight);
     align-items: center;
     min-inline-size: 0;
+  }
+  .cd-cascader__rest-tags-trigger {
+    display: inline-flex;
+    align-items: center;
+  }
+  .cd-cascader__rest-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-extra-tight);
+    align-items: center;
+    max-inline-size: 240px;
   }
   .cd-cascader__option-expand {
     flex: 0 0 auto;
