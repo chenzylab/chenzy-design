@@ -50,7 +50,7 @@ default：子 Card。
 
 ## 9. 性能
 
-svelte gzip ≤ 1 KB。纯 CSS 布局，无运行时。
+svelte gzip ≤ 1 KB。纯 CSS 布局，无运行时。size-limit 与 Card 合并度量（dir `card`），预算按实测校准（`{ Card, CardGroup }` ≈ 3.41 KB → 预算 3.7 KB）。
 
 ## 10. AI 元数据
 

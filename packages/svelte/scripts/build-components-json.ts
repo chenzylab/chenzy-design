@@ -24,7 +24,7 @@ import { meta as spaceMeta } from '../src/space/meta.ts';
 import { meta as typographyMeta } from '../src/typography/meta.ts';
 import { meta as gridMeta } from '../src/grid/meta.ts';
 import { meta as layoutMeta } from '../src/layout/meta.ts';
-import { meta as inputMeta } from '../src/input/meta.ts';
+import { meta as inputMeta, inputGroupMeta } from '../src/input/meta.ts';
 import { meta as textareaMeta } from '../src/textarea/meta.ts';
 import { meta as switchMeta } from '../src/switch/meta.ts';
 import { meta as checkboxMeta } from '../src/checkbox/meta.ts';
@@ -59,7 +59,7 @@ import { meta as tagGroupMeta } from '../src/tag/taggroup-meta.ts';
 import { meta as splitTagGroupMeta } from '../src/tag/splittaggroup-meta.ts';
 import { meta as avatarMeta } from '../src/avatar/meta.ts';
 import { meta as badgeMeta } from '../src/badge/meta.ts';
-import { meta as cardMeta } from '../src/card/meta.ts';
+import { meta as cardMeta, cardGroupMeta } from '../src/card/meta.ts';
 import { meta as tooltipMeta } from '../src/tooltip/meta.ts';
 import { meta as popoverMeta } from '../src/popover/meta.ts';
 import { meta as emptyMeta } from '../src/empty/meta.ts';
@@ -127,6 +127,7 @@ const metas = [
   gridMeta,
   layoutMeta,
   inputMeta,
+  inputGroupMeta,
   textareaMeta,
   switchMeta,
   checkboxMeta,
@@ -162,6 +163,7 @@ const metas = [
   avatarMeta,
   badgeMeta,
   cardMeta,
+  cardGroupMeta,
   tooltipMeta,
   popoverMeta,
   emptyMeta,

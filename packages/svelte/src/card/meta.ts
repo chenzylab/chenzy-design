@@ -85,3 +85,42 @@ export const meta = {
     { title: '加载', code: '<Card loading loadingRows={3} />' },
   ],
 } as const;
+
+/**
+ * CardGroup — see specs/components/show/CardGroup.spec.md
+ * 把多个 Card 以网格方式成组排布，统一间距。纯 CSS 布局，无运行时。
+ */
+export const cardGroupMeta = {
+  name: 'CardGroup',
+  category: 'show',
+  relatedTo: 'Card',
+  semiEquivalent: 'CardGroup',
+  description:
+    '卡片组容器：将多个 Card 以网格（type=grid）成组排布，spacing 统一间距（number=水平/垂直一致；[x,y]=分别指定）。纯 CSS grid，无运行时。',
+  exports: ['CardGroup'],
+  props: [
+    {
+      name: 'spacing',
+      type: 'number | number[]',
+      default: 'undefined',
+      desc: '卡片间距；number 统一，[x,y] 分别指定水平/垂直（默认回退 --cd-cardgroup-spacing）',
+    },
+    { name: 'type', type: "'grid'", default: "'grid'", desc: '排布类型（当前仅 grid）' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '组语义标签（aria-label）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '子 Card' },
+  ],
+  slots: [{ name: 'children', desc: '子 Card' }],
+  a11y: {
+    hasRole: true,
+    focusable: false,
+    note: '根 role=group + 可选 aria-label；卡片本身 a11y 由 Card 提供。',
+  },
+  tokens: ['--cd-cardgroup-spacing', '--cd-cardgroup-min-column'],
+  responsive: true,
+  examples: [
+    { title: '网格', code: '<CardGroup><Card title="A" /><Card title="B" /></CardGroup>' },
+    { title: '自定义间距', code: '<CardGroup spacing={24}><Card title="A" /><Card title="B" /></CardGroup>' },
+  ],
+} as const;

@@ -176,4 +176,8 @@ export const displayTokens = {
   'card-body-color': { value: 'var(--cd-color-card-body-text)', category: 'color', label: '卡片正文色', usage: '卡片正文文字（组件消费）' },
   'card-shadow': { value: 'var(--cd-shadow-card)', category: 'other', label: '卡片阴影', usage: '卡片阴影（组件消费）' },
   'card-shadow-hover': { value: 'var(--cd-shadow-card)', category: 'other', label: '卡片悬浮阴影', usage: '卡片悬浮阴影（组件消费；对齐 Semi 单档 elevated）' },
+
+  // —— CardGroup（组件消费；网格排布默认间距，可被 spacing prop 覆盖） ——
+  'cardgroup-spacing': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '卡片组间距', usage: 'CardGroup 网格默认间距（组件消费）' },
+  'cardgroup-min-column': { value: '240px', category: 'width', label: '卡片组列最小宽度', usage: 'CardGroup 网格列最小宽度（auto-fill 阈值，组件消费）' },
 } satisfies TokenGroup;

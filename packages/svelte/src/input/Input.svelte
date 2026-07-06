@@ -6,6 +6,7 @@
   import type { Snippet } from 'svelte';
   import { tick } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
+  import { getInputGroupContext } from './context.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -58,8 +59,8 @@
   let {
     value = $bindable(),
     defaultValue = '',
-    size = 'default',
-    disabled = false,
+    size: sizeProp,
+    disabled: disabledProp,
     readonly = false,
     placeholder,
     clearable = false,
@@ -91,6 +92,11 @@
   }: Props = $props();
 
   const loc = useLocale();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const isControlled = $derived(value !== undefined);
   let inner = $state(getInitialValue());

@@ -8,7 +8,7 @@ import { meta as spaceMeta } from './space/meta.js';
 import { meta as typographyMeta } from './typography/meta.js';
 import { meta as gridMeta } from './grid/meta.js';
 import { meta as layoutMeta } from './layout/meta.js';
-import { meta as inputMeta } from './input/meta.js';
+import { meta as inputMeta, inputGroupMeta } from './input/meta.js';
 import { meta as textareaMeta } from './textarea/meta.js';
 import { meta as switchMeta } from './switch/meta.js';
 import { meta as checkboxMeta } from './checkbox/meta.js';
@@ -44,7 +44,7 @@ import { meta as tagGroupMeta } from './tag/taggroup-meta.js';
 import { meta as splitTagGroupMeta } from './tag/splittaggroup-meta.js';
 import { meta as avatarMeta } from './avatar/meta.js';
 import { meta as badgeMeta } from './badge/meta.js';
-import { meta as cardMeta } from './card/meta.js';
+import { meta as cardMeta, cardGroupMeta } from './card/meta.js';
 import { meta as tooltipMeta } from './tooltip/meta.js';
 import { meta as popoverMeta } from './popover/meta.js';
 import { meta as emptyMeta } from './empty/meta.js';
@@ -102,6 +102,7 @@ const metas = {
   gridMeta,
   layoutMeta,
   inputMeta,
+  inputGroupMeta,
   textareaMeta,
   switchMeta,
   checkboxMeta,
@@ -136,6 +137,7 @@ const metas = {
   avatarMeta,
   badgeMeta,
   cardMeta,
+  cardGroupMeta,
   tooltipMeta,
   popoverMeta,
   emptyMeta,
