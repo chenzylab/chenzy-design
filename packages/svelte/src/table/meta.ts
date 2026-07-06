@@ -76,8 +76,14 @@ export const meta = {
     { name: 'defaultExpandAllGroupRows', type: 'boolean', default: 'undefined', desc: '非受控：初始默认展开全部分组。缺省(未配置)时向后兼容为全展开；显式 false 初始全折。动态加载数据不生效' },
     { name: 'expandAllGroupRows', type: 'boolean', default: 'undefined', desc: '受控：true 展开全部分组、false 折叠全部分组；受控时不回写，仅经 onGroupExpandChange 通知' },
     { name: 'onGroupExpandChange', type: '(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void', default: 'undefined', desc: '分组展开/收起变化回调（点击分组标题行触发）' },
+    { name: 'onGroupedRow', type: '(group: T[], index: number) => { onClick?; onDoubleClick?; className?; style? }', default: 'undefined', desc: '分组标题行自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头 tr' },
     { name: 'titleSnippet', type: 'Snippet', default: 'undefined', desc: '表格顶部标题区域' },
     { name: 'footerSnippet', type: 'Snippet<[{ currentData: T[] }]>', default: 'undefined', desc: '表格底部内容区域（接收 currentData）' },
+    { name: 'renderPagination', type: 'Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>', default: 'undefined', desc: '自定义分页器渲染，替换内置 Pagination UI；调用 onChange(page) 触发内部翻页（受控 current 不回写）' },
+    { name: 'expandIcon', type: 'Snippet<[{ expanded: boolean; record: T }]>', default: 'undefined', desc: '自定义展开行的展开/收起图标（替换默认三角），仅 expandable 展开列生效' },
+    { name: 'hideExpandedColumn', type: 'boolean', default: 'true', desc: '展开按钮是否并入首列。默认 true（并入首列，对齐 Semi）；false 时展开按钮单独成列' },
+    { name: 'rowSpanHover', type: 'boolean', default: 'false', desc: '合并单元格（rowSpan）时 hover 高亮整个合并区（渐进能力，依赖单元格合并）' },
+    { name: 'headerStyle', type: 'string | Record<string, string>', default: 'undefined', desc: '表头单元格（所有 th，含 fixed 表头）自定义内联样式' },
   ],
   events: [
     { name: 'onChange', desc: '排序/筛选/分页任一变化的聚合主入口（受控数据回流）' },
@@ -98,6 +104,8 @@ export const meta = {
     { name: 'titleSnippet', desc: '表格顶部标题区域 Snippet' },
     { name: 'footerSnippet', desc: '表格底部内容区域 Snippet<[{ currentData: T[] }]>' },
     { name: 'renderGroupSection', desc: '分组标题渲染 Snippet<[{ groupKey, group }]>' },
+    { name: 'renderPagination', desc: '自定义分页器渲染 Snippet<[{ total, currentPage, pageSize, onChange }]>' },
+    { name: 'expandIcon', desc: '自定义展开图标 Snippet<[{ expanded, record }]>' },
     { name: 'empty', desc: '空态文案经 empty prop 配置(字符串)' },
   ],
   a11y: {
