@@ -85,6 +85,14 @@
     /** 面板顶部搜索框过滤节点（命中 + 祖先链可见、高亮命中文本） */
     filterable?: boolean;
     /**
+     * 是否按输入筛选节点（对齐 Semi filterTreeNode）：
+     * true 开启搜索框，默认对 treeNodeFilterProp（默认 'label'）做大小写不敏感包含匹配；
+     * 传函数则用作自定义匹配谓词 (inputValue, treeNodeString, data?) => boolean，
+     * treeNodeString 为按 treeNodeFilterProp 取到的节点文本，data 为节点原始数据。
+     * 与 filterable 二者其一为真即显示搜索框。
+     */
+    filterTreeNode?: boolean | ((inputValue: string, treeNodeString: string, data?: TreeNode) => boolean);
+    /**
      * 远程搜索：输入仅触发 onSearch（防抖后），不本地过滤（由外部更新 treeData）。
      * 隐含 filterable 行为（显示搜索框）。默认 false。
      */
@@ -130,6 +138,8 @@
     insetLabelId?: string;
     /** 下拉浮层开合动画（淡入）。默认 true。与 Cascader/Dropdown 的 motion 对齐。 */
     motion?: boolean;
+    // 注：Semi 的 mouseEnterDelay/mouseLeaveDelay 属 hover 触发浮层的进入/离开延迟；
+    // TreeSelect 为 click 触发（点击 trigger 开合），无 hover 触发路径，故此两项不适用，不提供。
 
     // --- Appearance ---
     /** 无边框模式：trigger 边框透明。默认 false。 */
@@ -183,6 +193,18 @@
     showSearchClear?: boolean;
     /** 搜索激活时仅显示命中节点，不显示祖先链。默认 false。 */
     showFilteredOnly?: boolean;
+    /**
+     * 无匹配/无数据时的占位内容（对齐 Semi emptyContent）：字符串或 Snippet。
+     * 未传时回退 i18n TreeSelect.emptyText。空 Snippet 场景可传 () => {} 自绘。
+     */
+    emptyContent?: string | Snippet;
+    /**
+     * 自定义搜索框渲染（渲染层扩展，非 Semi 原生 TreeSelect prop）：
+     * false 隐藏搜索框（即使 filterable/filterTreeNode 开启，也不显示内置搜索输入）；
+     * 传 Snippet 则完全接管搜索框渲染，参数含当前值与命令式回调，
+     * 使用方需自行把输入回填给 onInput（其余过滤/高亮/roving 逻辑不变）。
+     */
+    searchRender?: boolean | Snippet<[{ value: string; onInput: (v: string) => void; onKeydown: (e: KeyboardEvent) => void; placeholder: string }]>;
 
     // --- Expand control ---
     /** 受控展开的节点 keys */
@@ -280,6 +302,7 @@
     defaultExpandAll = false,
     treeDefaultExpandedKeys,
     filterable = false,
+    filterTreeNode,
     remote = false,
     searchDebounce = 300,
     onSearch,
@@ -322,6 +345,8 @@
     treeNodeFilterProp = 'label',
     showSearchClear = true,
     showFilteredOnly = false,
+    emptyContent,
+    searchRender,
     expandedKeys: expandedKeysProp,
     expandAll = false,
     expandAction = false,
@@ -358,8 +383,9 @@
   const globalPopupContainer = getGlobalPopupContainer();
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
-  // remote 隐含可搜索（显示搜索框）；checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
-  const isFilterable = $derived(filterable || remote);
+  // remote 隐含可搜索（显示搜索框）；filterTreeNode（bool 或函数）亦开启搜索；
+  // checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
+  const isFilterable = $derived(filterable || remote || filterTreeNode === true || typeof filterTreeNode === 'function');
   const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
 
   // validateStatus 是 status 别名；效值以 validateStatus 优先（未传时回退 status）。
@@ -689,13 +715,27 @@
   const trimmedSearch = $derived(searchValue.trim());
   // remote 模式不本地过滤（外部更新 treeData），仅本地 filterable 时高亮/收敛命中链。
   const searchActive = $derived(!remote && isFilterable && trimmedSearch.length > 0);
+  // 按 treeNodeFilterProp 取节点用于匹配的文本（默认 label；自定义字段回退 label）。
+  function nodeFilterText(node: TreeNodeData): string {
+    const raw = (node as unknown as Record<string, unknown>)[treeNodeFilterProp];
+    const v = raw ?? node.label;
+    return v == null ? '' : String(v);
+  }
   const filterResult = $derived.by(() => {
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
     const lower = trimmedSearch.toLowerCase();
-    return computeFilteredKeys(
-      mergedTree as unknown as TreeNodeData[],
-      (node) => node.label.toLowerCase().includes(lower),
-    );
+    // filterTreeNode 为函数时用作自定义匹配谓词（inputValue, treeNodeString, data?）；
+    // 否则默认对 treeNodeFilterProp 文本做大小写不敏感包含匹配。
+    const predicate =
+      typeof filterTreeNode === 'function'
+        ? (node: TreeNodeData) =>
+            (filterTreeNode as (i: string, s: string, d?: TreeNode) => boolean)(
+              trimmedSearch,
+              nodeFilterText(node),
+              node as unknown as TreeNode,
+            )
+        : (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
+    return computeFilteredKeys(mergedTree as unknown as TreeNodeData[], predicate);
   });
   // 节点在搜索结果可见：命中本身、或在祖先链/含命中后代（expand 集）。
   // showFilteredOnly=true 时只显示精确命中节点，不显示祖先链。
@@ -1040,6 +1080,23 @@
     searchValue = e.currentTarget.value;
     if (remote) scheduleSearch(searchValue.trim());
   }
+  // searchRender 自定义搜索框用的命令式回调（把外部输入回填给内部搜索态，复用过滤/防抖）。
+  function setSearchValue(v: string) {
+    searchValue = v;
+    if (remote) scheduleSearch(v.trim());
+  }
+  // 内置搜索框键盘处理（Escape 关闭，其余交给树 roving）。
+  function onSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    onTreeKeydown(e);
+  }
+  // searchRender=false 时隐藏内置搜索框（即使 filterable/filterTreeNode 开启）。
+  const showBuiltinSearch = $derived(isFilterable && searchRender !== false);
+  // 搜索框占位文案：searchPlaceholder prop 优先，回退 i18n。
+  const resolvedSearchPlaceholder = $derived(searchPlaceholder ?? loc().t('TreeSelect.searchPlaceholder'));
 
   // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -1095,6 +1152,16 @@
         : undefined,
   );
 </script>
+
+{#snippet emptyBlock()}
+  <div class="cd-tree-select__empty">
+    {#if emptyContent !== undefined}
+      {#if typeof emptyContent === 'string'}{emptyContent}{:else}{@render emptyContent()}{/if}
+    {:else}
+      {loc().t('TreeSelect.emptyText')}
+    {/if}
+  </div>
+{/snippet}
 
 {#snippet nodeRow(
   node: TreeNode,
@@ -1341,33 +1408,35 @@
       id={treeId}
       style={dropdownStyleStr}
     >
-      {#if isFilterable}
+      {#if showBuiltinSearch}
         <div class="cd-tree-select__search">
-          <input
-            class="cd-tree-select__search-input"
-            type="text"
-            role="combobox"
-            aria-expanded={isOpen}
-            aria-controls={treeId}
-            aria-activedescendant={activeDescId}
-            placeholder={loc().t('TreeSelect.searchPlaceholder')}
-            aria-label={loc().t('TreeSelect.searchPlaceholder')}
-            value={searchValue}
-            oninput={onSearchInput}
-            onkeydown={(e) => {
-              if (e.key === 'Escape') {
-                setOpen(false);
-                return;
-              }
-              // 搜索框聚焦时方向键/Home/End/Enter 在过滤后的可见树上 roving。
-              onTreeKeydown(e);
-            }}
-          />
+          {#if typeof searchRender === 'function'}
+            {@render searchRender({
+              value: searchValue,
+              onInput: setSearchValue,
+              onKeydown: onSearchKeydown,
+              placeholder: resolvedSearchPlaceholder,
+            })}
+          {:else}
+            <input
+              class="cd-tree-select__search-input"
+              type="text"
+              role="combobox"
+              aria-expanded={isOpen}
+              aria-controls={treeId}
+              aria-activedescendant={activeDescId}
+              placeholder={resolvedSearchPlaceholder}
+              aria-label={resolvedSearchPlaceholder}
+              value={searchValue}
+              oninput={onSearchInput}
+              onkeydown={onSearchKeydown}
+            />
+          {/if}
         </div>
       {/if}
       {#if mergedTree.length === 0}
         <div class="cd-tree-select__tree" role="tree">
-          <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+          {@render emptyBlock()}
         </div>
       {:else if useVirtual}
         <!-- 虚拟滚动（复用 Tree 范式）：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
@@ -1384,7 +1453,7 @@
           onkeydown={onTreeKeydown}
         >
           {#if visibleFlat.length === 0}
-            <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+            {@render emptyBlock()}
           {:else}
             <div class="cd-tree-select__spacer" style={`block-size:${totalHeight}px`}>
               {#each renderFlat as f, i (f.node.key)}
@@ -1411,7 +1480,7 @@
         >
           {@render treeNodes(mergedTree, 0)}
           {#if searchActive && filterResult.matched.size === 0}
-            <div class="cd-tree-select__empty">{loc().t('TreeSelect.emptyText')}</div>
+            {@render emptyBlock()}
           {/if}
         </div>
       {/if}

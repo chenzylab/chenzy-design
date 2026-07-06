@@ -65,6 +65,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | disabled | `boolean` | `false` | 整体禁用。 |
 | clearable | `boolean` | `false` | 是否可一键清空。 |
 | filterable | `boolean \| ((input, node) => boolean)` | `false` | 是否可搜索；可传自定义过滤函数。 |
+| filterTreeNode | `boolean \| ((inputValue, treeNodeString, data?) => boolean)` | — | 对齐 Semi：开启搜索并按 `treeNodeFilterProp` 匹配；函数则自定义匹配谓词。与 `filterable` 其一为真即显示搜索框。 |
 | remote | `boolean` | `false` | 远程搜索，输入仅触发 `on:search`，不本地过滤。 |
 | leafOnly | `boolean` | `false` | 仅允许选中叶子节点。 |
 | checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选父子是否级联联动。 |
@@ -81,6 +82,8 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | destroyOnClose | `boolean` | `false` | 关闭时销毁浮层 DOM。 |
 | loading | `boolean` | `false` | 触发器 loading 态。 |
 | emptyText | `string` | i18n | 无数据/无匹配文案。 |
+| emptyContent | `string \| Snippet` | i18n | 无数据/无匹配占位内容（对齐 Semi emptyContent）；未传回退 `emptyText` i18n。 |
+| searchRender | `boolean \| Snippet<[{ value; onInput; onKeydown; placeholder }]>` | — | 自定义搜索框渲染：`false` 隐藏内置搜索框；Snippet 完全接管渲染（回调回填输入）。 |
 | dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop。 |
 | dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存）。 |
 | dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式）。 |
