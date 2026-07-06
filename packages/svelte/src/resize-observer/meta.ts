@@ -63,6 +63,12 @@ export const meta = {
       default: 'false',
       desc: '原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize 并用 getBoundingClientRect 近似重测（精度较低）',
     },
+    {
+      name: 'observeParent',
+      type: 'boolean',
+      default: 'false',
+      desc: '观测包裹元素的父节点（parentElement）而非自身（对标 Semi observeParent）。与 multiple 互斥，同时为 true 时 multiple 优先；父节点缺失时静默不观测',
+    },
   ],
   events: [
     { name: 'onResize', desc: '尺寸变化时分发归一化 entry（受控，不回写）' },

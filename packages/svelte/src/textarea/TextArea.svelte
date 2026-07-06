@@ -7,7 +7,11 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { computeAutosizeHeight, countCharacters } from '@chenzy-design/core';
+  import {
+    computeAutosizeHeight,
+    countCharacters,
+    createResizeObserver,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -180,19 +184,15 @@
   // 上一次上报的 autosize 高度；仅在高度真正变化时触发 onResize（避免重复）。
   let lastReportedHeight = -1;
 
-  $effect(() => {
-    if (!autosizeOn || !taEl) return;
-    const el = taEl;
-    // 读 current 建立依赖：内容变化触发重测。
-    void current;
-
+  // 命令式测量并设定 autosize 高度（不写任何 $state，故不参与 effect 依赖，红线 #2/#3）。
+  // 返回本次测得的高度（用于宽度观测去重判断是否需重跑）。
+  function measureAutosize(el: HTMLTextAreaElement): number {
     const cs = getComputedStyle(el);
     const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
     const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const verticalBorder = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
 
     // 先重置 height 再读 scrollHeight，得到内容自然高度。
-    const prevHeight = el.style.height;
     el.style.height = 'auto';
     const scrollHeight = el.scrollHeight + verticalBorder; // scrollHeight 不含 border
     const result = computeAutosizeHeight({
@@ -211,8 +211,35 @@
       lastReportedHeight = result.height;
       onResize?.({ height: result.height });
     }
+    return result.height;
+  }
+
+  $effect(() => {
+    if (!autosizeOn || !taEl) return;
+    const el = taEl;
+    // 读 current 建立依赖：内容变化触发重测。
+    void current;
+
+    const prevHeight = el.style.height;
+    measureAutosize(el);
+
+    // 宽度变化重测（对标 Semi：容器变窄→换行增多→需更高）。core RO 观测
+    // content-box 宽度；宽度变了才重跑 measure（内容变化已由上面的 current 依赖覆盖）。
+    // 首帧 RO 立即 fire 一次，用 lastWidth 去重避免与上面的 measure 重复。
+    let lastWidth = -1;
+    const ro = createResizeObserver({
+      box: 'content-box',
+      onResize: (entry) => {
+        // 命令式回调：只读几何 + 写 el.style（非 $state），不触发本 effect 重跑。
+        if (entry.width === lastWidth) return;
+        lastWidth = entry.width;
+        measureAutosize(el);
+      },
+    });
+    ro.observe(el);
 
     return () => {
+      ro.disconnect();
       el.style.height = prevHeight;
     };
   });
