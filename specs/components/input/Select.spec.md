@@ -73,6 +73,8 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | maxTagCount | number | — | 多选 Tag 折叠阈值，超出显示 `+N`。 |
 | maxTagTextLength | number | — | 单个 Tag 文本最大长度，超出省略。 |
 | expandRestTagsOnClick | boolean | false | 多选 maxTagCount 折叠时，浮层打开态下点击 `+N` 就地展开剩余全部 Tag（纯展示，不改值；关闭复位）。 |
+| showRestTagsPopover | boolean | false | 多选 maxTagCount 折叠出 `+N` 时，hover `+N` 用 Popover 浮层展示剩余全部 Tag（对齐 Semi restTagsPopover）。可与 expandRestTagsOnClick 共存（hover 预览 + 点击展开）。 |
+| restTagsPopoverProps | Record<string, unknown> | — | 透传给 `+N` 悬停 Popover 浮层的配置（spread 到 Popover，可覆盖 position/trigger/spacing 等）。 |
 | ellipsisTrigger | boolean | false | 多选且有 maxTagCount 时，对溢出可见 Tag 文本作单行省略（完整文本经 title 查看）。 |
 | showArrow | boolean | true | 是否显示触发器右侧下拉箭头；false 隐藏（suffix 存在时以 suffix 为准）。 |
 | clickToHide | boolean | false | 浮层已展开时，点击触发器是否收起浮层。 |

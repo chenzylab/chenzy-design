@@ -19,7 +19,7 @@
   option snippet：自定义单项渲染；label snippet：自定义选中值/Tag 渲染。
   onSelect/onDeselect/onClear/onCreate/onFocus/onBlur/onScrollToBottom/onExceed/onChangeWithObject。
   autoClearSearchValue：多选选中后自动清空搜索词（默认 true）。
-  showRestTagsPopover：+N tag 悬停展示剩余 tags（利用 title 属性）。
+  showRestTagsPopover：+N tag 悬停用 Popover 浮层展示剩余全部 tags；restTagsPopoverProps 透传给该 Popover。
   borderless：无边框模式；autoFocus：挂载自动聚焦；id：关联外部 label。
   optionLabelProp：用作回显的字段名（默认 'label'，当前 OptionData 仅支持 label/value）。
 -->
@@ -35,6 +35,7 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import Popover from '../popover/Popover.svelte';
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean; [key: string]: unknown };
@@ -112,9 +113,9 @@
     autoFocus?: boolean;
     /** 多选选中后自动清空搜索词（默认 true） */
     autoClearSearchValue?: boolean;
-    /** 超出 maxTagCount 时，将 +N 悬停展示剩余 tags（title tooltip） */
+    /** 超出 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示剩余全部 Tag（对齐 Semi restTagsPopover） */
     showRestTagsPopover?: boolean;
-    /** 透传给 +N 悬停 popover 的参数（预留，当前通过 title 实现） */
+    /** 透传给 +N 悬停 Popover 浮层的配置（spread 到 Popover，可覆盖 position/trigger/spacing 等） */
     restTagsPopoverProps?: Record<string, unknown>;
     /**
      * 打开浮层时是否默认高亮第一个可用选项（键盘 Enter 可直接选中，对齐 Semi v2.17+ 默认 true）。
@@ -910,25 +911,22 @@
         {/each}
         {#if hiddenTagCount > 0}
           {@const hiddenOpts = selectedOptions.slice(maxTagCount)}
-          {#if expandRestTagsOnClick}
-            <!-- expandRestTagsOnClick：+N 可点击就地展开剩余 Tag（浮层打开态下，纯展示不改值） -->
-            <button
-              type="button"
-              class="cd-select__tag cd-select__tag--rest cd-select__tag--rest-clickable"
-              title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
-              aria-expanded={restTagsExpanded}
-              onclick={(e) => {
-                e.stopPropagation();
-                // 对齐 Semi：面板打开状态下展开剩余 Tag；未打开则先打开浮层再展开。
-                if (!isOpen) setOpen(true);
-                restTagsExpanded = true;
-              }}
-            >+{hiddenTagCount}</button>
+          <!--
+            +N 折叠元素：
+            - showRestTagsPopover=true 时用真正的 Popover 浮层包裹，hover +N 展示隐藏的剩余全部 Tag；
+              restTagsPopoverProps 透传给该 Popover（可覆盖 position/trigger/spacing 等）。
+            - expandRestTagsOnClick 与之兼容：控制点击 +N 就地展开（改本地展示态，不改值）。
+            两者可共存：hover 预览（Popover）+ 点击展开（expandRestTagsOnClick）。
+          -->
+          {#if showRestTagsPopover}
+            <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
+              {@render restTrigger(hiddenTagCount)}
+              {#snippet contentSlot()}
+                {@render restTagsContent(hiddenOpts)}
+              {/snippet}
+            </Popover>
           {:else}
-            <span
-              class="cd-select__tag cd-select__tag--rest"
-              title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
-            >+{hiddenTagCount}</span>
+            {@render restTrigger(hiddenTagCount)}
           {/if}
         {/if}
         {#if triggerSearch}
@@ -1157,6 +1155,42 @@
   </div>
 {/snippet}
 
+<!--
+  +N 折叠触发元素：expandRestTagsOnClick 时渲染为可点击 button（点击就地展开剩余 Tag），
+  否则渲染为普通 +N 元素。可访问名统一为「还有 N 项」（i18n Select.restTagsCount）。
+  外层若被 Popover 包裹（showRestTagsPopover），hover 该元素弹出剩余 Tag 浮层预览。
+-->
+{#snippet restTrigger(count: number)}
+  {#if expandRestTagsOnClick}
+    <button
+      type="button"
+      class="cd-select__tag cd-select__tag--rest cd-select__tag--rest-clickable"
+      aria-label={loc().t('Select.restTagsCount', { count })}
+      aria-expanded={restTagsExpanded}
+      onclick={(e) => {
+        e.stopPropagation();
+        // 对齐 Semi：面板打开状态下展开剩余 Tag；未打开则先打开浮层再展开。
+        if (!isOpen) setOpen(true);
+        restTagsExpanded = true;
+      }}
+    >+{count}</button>
+  {:else}
+    <span
+      class="cd-select__tag cd-select__tag--rest"
+      aria-label={loc().t('Select.restTagsCount', { count })}
+    >+{count}</span>
+  {/if}
+{/snippet}
+
+<!-- +N 悬停 Popover 浮层内容：逐行列出被折叠隐藏的剩余全部 Tag（走 token，样式简洁）。 -->
+{#snippet restTagsContent(hiddenOpts: OptionData[])}
+  <ul class="cd-select__rest-tags-list">
+    {#each hiddenOpts as opt (opt.value)}
+      <li class="cd-select__rest-tags-item">{getOptionLabel(opt)}</li>
+    {/each}
+  </ul>
+{/snippet}
+
 <style>
   .cd-select {
     position: relative;
@@ -1280,6 +1314,20 @@
   }
   .cd-select__tag--rest {
     color: var(--cd-color-select-prefix-suffix-text-default);
+  }
+  /* +N 悬停 Popover 浮层内容：剩余 Tag 逐行列表（走 token，简洁排版） */
+  .cd-select__rest-tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-extra-tight);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--cd-font-size-small);
+    color: var(--cd-color-select-main-text-default);
+  }
+  .cd-select__rest-tags-item {
+    white-space: nowrap;
   }
   /* expandRestTagsOnClick：+N 作为可点击按钮，去除原生 button 外观 */
   .cd-select__tag--rest-clickable {

@@ -250,6 +250,7 @@ export const en_US: Locale = {
     clear: 'Clear',
     removeItem: 'Remove {label}',
     create: 'Create "{label}"',
+    restTagsCount: '{count} more',
   },
   DatePicker: {
     placeholder: 'Select date',
