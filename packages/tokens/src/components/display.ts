@@ -117,6 +117,10 @@ export const displayTokens = {
   'tag-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '标签内元素间距', usage: '标签内 icon/文本间距（组件消费）' },
   'tag-close-color': { value: 'var(--cd-color-tag-close-icon-default)', category: 'color', label: '关闭按钮色', usage: '关闭按钮颜色（组件消费）' },
   'tag-close-color-hover': { value: 'var(--cd-color-tag-close-icon-hover)', category: 'color', label: '关闭按钮悬浮色', usage: '关闭按钮悬浮颜色（组件消费）' },
+  // colorful（AI 多彩标签）：蓝→紫渐变，与 Button/FloatButton colorful 同源，保持 AI 视觉统一。
+  'tag-colorful-from': { value: '#4d6bff', category: 'color', label: 'Colorful 渐变起始色', usage: 'colorful（AI 多彩）蓝→紫渐变起始色', editable: true },
+  'tag-colorful-via': { value: '#7b5cff', category: 'color', label: 'Colorful 渐变中间色', usage: 'colorful（AI 多彩）蓝→紫渐变中间色', editable: true },
+  'tag-colorful-to': { value: '#a64dff', category: 'color', label: 'Colorful 渐变结束色', usage: 'colorful（AI 多彩）蓝→紫渐变结束色', editable: true },
 
   // —— Avatar（组件消费；短名映射到 width-avatar-*） ——
   'avatar-size-extra-small': { value: 'var(--cd-width-avatar-extra-small)', category: 'width', label: '超小头像尺寸', usage: '超小头像尺寸（组件消费）' },

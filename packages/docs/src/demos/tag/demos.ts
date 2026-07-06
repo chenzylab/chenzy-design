@@ -28,4 +28,9 @@ export const demos: DemoEntry[] = [
   entry('02-color.svelte', '颜色', '内置 grey / primary / success / warning / danger 等语义色。'),
   entry('03-closable.svelte', '可关闭', '设置 closable 显示关闭按钮，配合 onClose 事件移除标签。'),
   entry('04-shape.svelte', '形状', '支持 square 直角与 circle 圆角两种形状。'),
+  entry(
+    '05-colorful.svelte',
+    'AI 多彩',
+    '设置 colorful 获得 AI 多彩标签（蓝→紫渐变，字重更重）；gradient 区分渐变色与单色紫，与 type 组合。',
+  ),
 ];

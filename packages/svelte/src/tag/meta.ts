@@ -33,6 +33,8 @@ export const meta = {
       desc: '受控选中态；受控时不回写，仅 onChange',
     },
     { name: 'disabled', type: 'boolean', default: 'false' },
+    { name: 'colorful', type: 'boolean', default: 'false', desc: 'AI 多彩标签：蓝→紫渐变（对齐 Semi AI 风格），字重更重' },
+    { name: 'gradient', type: 'boolean', default: 'false', desc: '渐变色，仅 colorful=true 时生效；false 用单色紫' },
     { name: 'onClose', type: '() => void', default: 'undefined', desc: '关闭点击回调' },
     { name: 'onChange', type: '(checked: boolean) => void', default: 'undefined' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '标签内容' },
@@ -83,6 +85,9 @@ export const meta = {
     '--cd-tag-gap',
     '--cd-tag-close-color',
     '--cd-tag-close-color-hover',
+    '--cd-tag-colorful-from',
+    '--cd-tag-colorful-via',
+    '--cd-tag-colorful-to',
   ],
   responsive: false,
   examples: [
@@ -92,5 +97,6 @@ export const meta = {
       title: '可选中',
       code: '<Tag checkable checked={on} onChange={(v) => (on = v)}>选中</Tag>',
     },
+    { title: 'AI 多彩', code: '<Tag colorful gradient type="solid" shape="circle">AI</Tag>' },
   ],
 } as const;
