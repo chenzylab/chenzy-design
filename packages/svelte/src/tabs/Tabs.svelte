@@ -96,6 +96,15 @@
     onVisibleTabsChange?: (visibleTabKeys: TabKey[]) => void;
     /** 内容区外层样式（string 或 CSSProperties 对象） */
     contentStyle?: string | Record<string, string>;
+    /** 标签栏（tab bar 容器 `.cd-tabs__bar`）自定义 class */
+    tabBarClassName?: string;
+    /** 标签栏（tab bar 容器 `.cd-tabs__bar`）自定义样式（string 或 CSSProperties 对象） */
+    tabBarStyle?: string | Record<string, string>;
+    /**
+     * 可见标签区域自定义样式（string 或 CSSProperties 对象）。
+     * scroll 模式作用于滚动视口 `.cd-tabs__nav`；dropdown 模式作用于可见标签容器 `.cd-tabs__list`。
+     */
+    visibleTabsStyle?: string | Record<string, string>;
     /** Tab 聚焦是否阻止页面滚动（默认 false） */
     preventScroll?: boolean;
     /** 面板切换是否启用动画（默认 true） */
@@ -144,6 +153,9 @@
     contentStyle,
     preventScroll = false,
     tabPaneMotion = true,
+    tabBarClassName,
+    tabBarStyle,
+    visibleTabsStyle,
     tabBarExtraContent,
     onChange,
     onTabClose,
@@ -610,16 +622,18 @@
   // 「更多」按钮是否显示：有溢出 tabs 且 showRestInDropdown=true
   const showMoreDropdown = $derived(overflowTabs.length > 0 && showRestInDropdown);
 
-  // contentStyle：字符串直接用；对象转 CSS 字符串。
-  const contentStyleStr = $derived(
-    contentStyle === undefined
-      ? undefined
-      : typeof contentStyle === 'string'
-        ? contentStyle
-        : Object.entries(contentStyle)
-            .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`)
-            .join(';'),
-  );
+  // 样式归一：字符串直接用；对象转 CSS 字符串（camelCase → kebab-case）。
+  function toStyleString(s: string | Record<string, string> | undefined): string | undefined {
+    if (s === undefined) return undefined;
+    if (typeof s === 'string') return s;
+    return Object.entries(s)
+      .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`)
+      .join(';');
+  }
+
+  const contentStyleStr = $derived(toStyleString(contentStyle));
+  const tabBarStyleStr = $derived(toStyleString(tabBarStyle));
+  const visibleTabsStyleStr = $derived(toStyleString(visibleTabsStyle));
 
   function onMoreSelect(key: string | number): void {
     const item = tabList.find((t) => t.itemKey === key);
@@ -708,8 +722,8 @@
     {@render renderTabBar(tabList, activeKey, setActive)}
   {:else if dropdownMode}
     <!-- dropdown 收纳：只渲染可见标签，溢出标签进末尾「更多」下拉。 -->
-    <div class="cd-tabs__bar" bind:this={barEl}>
-      <div class="cd-tabs__list" role="tablist">
+    <div class="cd-tabs__bar {tabBarClassName ?? ''}" style={tabBarStyleStr} bind:this={barEl}>
+      <div class="cd-tabs__list" role="tablist" style={visibleTabsStyleStr}>
         {#each visibleTabs as item (item.itemKey)}
           {@render tabNode(item)}
         {/each}
@@ -768,7 +782,7 @@
     </div>
   {:else}
     <!-- scroll 模式（默认）：前/后箭头 + 可滚动视口，行为与旧版一致。 -->
-    <div class="cd-tabs__bar">
+    <div class="cd-tabs__bar {tabBarClassName ?? ''}" style={tabBarStyleStr}>
       {#if overflowing && (arrowPosition === 'start' || arrowPosition === 'both')}
         {#if renderArrow}
           {@render renderArrow({ type: 'start', onClick: () => scrollByStep(-1) })}
@@ -788,7 +802,7 @@
         {/if}
       {/if}
 
-      <div class="cd-tabs__nav" bind:this={navEl}>
+      <div class="cd-tabs__nav" style={visibleTabsStyleStr} bind:this={navEl}>
         <div
           class="cd-tabs__list"
           role="tablist"

@@ -67,6 +67,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 | `scrollToError` | `boolean \| ScrollIntoViewOptions` | `true` | 提交失败时滚动到首个错误字段。 |
 | `stopValidateWithError` | `boolean` | `false` | 字段命中首条错误即停止该字段后续 rule。 |
 | `preventDefault` | `boolean` | `true` | 是否拦截原生 submit 默认行为。 |
+| `stopPropagation` | `boolean` | `false` | 提交时是否阻止 submit 事件冒泡。 |
 | `allowEmpty` | `boolean` | `false` | 收集值时是否保留空值字段键。 |
 | `getFormApi` | `(formApi: FormApi) => void` | — | Form 挂载后一次性回传内部 FormApi 句柄，供父组件在外部命令式 `setFieldsValue`/`validate`/`validateField`/`resetFields`（Semi getFormApi）。 |
 | `onReset` | `() => void` | — | 表单重置时回调（原生 `<button type="reset">` reset 或 `formApi.resetFields()`）。 |

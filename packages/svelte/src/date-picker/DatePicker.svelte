@@ -90,6 +90,13 @@
     /** 触发器失去焦点。 */
     onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
+    /** 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/解析）。 */
+    insetLabel?: string | Snippet;
+    /**
+     * insetLabel 的 id，挂到内嵌标签元素上并经 aria-labelledby 关联触发器 combobox，
+     * 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分。仅 insetLabel 存在时生效。
+     */
+    insetLabelId?: string;
     /** 用 Snippet 自定义范围分隔符，优先于 rangeSeparator 字符串。 */
     rangeSeparatorNode?: Snippet;
     /** 选完月/年后自动切换到日视图（默认 true）。 */
@@ -232,6 +239,8 @@
     onFocus,
     onBlur,
     ariaLabel,
+    insetLabel,
+    insetLabelId,
     rangeSeparatorNode,
     rangeSeparator = '~',
     autoSwitchDate = true,
@@ -1011,6 +1020,13 @@
   let gridEl = $state<HTMLDivElement | null>(null);
   let triggerEl = $state<HTMLButtonElement | HTMLInputElement | null>(null);
 
+  // insetLabel 提供 insetLabelId 时，把内嵌标签纳入 combobox 的 aria-labelledby，
+  // 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分（仅 insetLabel 存在时生效）。
+  const hasInsetLabel = $derived(insetLabel !== undefined);
+  const triggerLabelledby = $derived(hasInsetLabel && insetLabelId ? insetLabelId : undefined);
+  // aria-labelledby 存在时不再重复设 aria-label（避免可访问名冗余）。
+  const triggerAriaLabel = $derived(triggerLabelledby ? undefined : ariaLabel);
+
   // autoFocus: 挂载后聚焦触发器
   $effect(() => {
     if (autoFocus && triggerEl) {
@@ -1125,7 +1141,16 @@
 </script>
 
 <div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
-  <div class="cd-date-picker__control">
+  <div class="cd-date-picker__control" class:cd-date-picker__control--inset-label={hasInsetLabel}>
+    {#if hasInsetLabel}
+      <span class="cd-date-picker__inset-label" id={insetLabelId}>
+        {#if typeof insetLabel === 'string'}
+          {insetLabel}
+        {:else if insetLabel}
+          {@render insetLabel()}
+        {/if}
+      </span>
+    {/if}
     {#if triggerRender}
       {@render triggerRender({ value: current, placeholder: placeholder ?? loc().t('DatePicker.placeholder') })}
     {:else if editable}
@@ -1136,7 +1161,8 @@
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={dialogId}
-        aria-label={ariaLabel}
+        aria-label={triggerAriaLabel}
+        aria-labelledby={triggerLabelledby}
         placeholder={placeholder ?? format}
         {disabled}
         readonly={inputReadOnly}
@@ -1158,7 +1184,8 @@
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={dialogId}
-        aria-label={ariaLabel}
+        aria-label={triggerAriaLabel}
+        aria-labelledby={triggerLabelledby}
         {disabled}
         style={inputStyleStr}
         bind:this={triggerEl as HTMLButtonElement}
@@ -1592,6 +1619,27 @@
   .cd-date-picker__control {
     position: relative;
     inline-size: 100%;
+  }
+  /* insetLabel：内嵌标签浮入触发器左侧，与触发器同处一个边框内。 */
+  .cd-date-picker__control--inset-label {
+    display: flex;
+    align-items: center;
+    background: var(--cd-input-color-bg);
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+  }
+  .cd-date-picker__control--inset-label .cd-date-picker__trigger {
+    border: none;
+    background: transparent;
+  }
+  .cd-date-picker__inset-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding-inline-start: var(--cd-input-padding-x);
+    color: var(--cd-color-text-2);
+    user-select: none;
+    white-space: nowrap;
   }
   .cd-date-picker__trigger {
     display: flex;

@@ -23,6 +23,7 @@ export const meta = {
     { name: 'showValidateIcon', type: 'boolean', default: 'true', desc: '错误/警告文案是否带状态图标（spec §4）' },
     { name: 'stopValidateWithError', type: 'boolean', default: 'false', desc: '字段命中首条错误即停止该字段后续 rule（spec §4）' },
     { name: 'preventDefault', type: 'boolean', default: 'true', desc: '是否拦截原生 submit 默认行为（spec §4）' },
+    { name: 'stopPropagation', type: 'boolean', default: 'false', desc: '提交时是否阻止 submit 事件冒泡' },
     { name: 'allowEmpty', type: 'boolean', default: 'false', desc: '收集值时是否保留空值字段键（spec §4）' },
     { name: 'getFormApi', type: '(formApi: FormApi) => void', default: 'undefined', desc: 'Form 挂载后一次性回传内部 FormApi 句柄，供父级外部命令式 setFieldsValue/validate/resetFields（Semi getFormApi）' },
     { name: 'onSubmit', type: '(r: { valid; values; errors }) => void', default: 'undefined' },

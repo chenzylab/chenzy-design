@@ -49,6 +49,8 @@ export const meta = {
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'insetLabel', type: 'string | Snippet', default: 'undefined', desc: '内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/解析）' },
+    { name: 'insetLabelId', type: 'string', default: 'undefined', desc: 'insetLabel 的 id，经 aria-labelledby 关联触发器 combobox（仅 insetLabel 存在时生效）' },
     { name: 'rangeSeparatorNode', type: 'Snippet', default: 'undefined', desc: '用 Snippet 自定义范围分隔符，优先于 rangeSeparator 字符串' },
     { name: 'rangeSeparator', type: 'string', default: "'~'", desc: '范围日期分隔符' },
     { name: 'autoSwitchDate', type: 'boolean', default: 'true', desc: '选完月/年后自动切换到日视图' },

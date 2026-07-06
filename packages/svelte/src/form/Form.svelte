@@ -49,6 +49,8 @@
     stopValidateWithError?: boolean;
     /** 是否拦截原生 submit 默认行为（spec §4 L69，默认 true）。 */
     preventDefault?: boolean;
+    /** 提交时是否阻止 submit 事件冒泡（stopPropagation，默认 false）。 */
+    stopPropagation?: boolean;
     /** 收集值时是否保留空值字段键（spec §4 L70，默认 false）。 */
     allowEmpty?: boolean;
     /** scrollToError 别名（优先级低于 scrollToError）。 */
@@ -101,6 +103,7 @@
     showValidateIcon = true,
     stopValidateWithError = false,
     preventDefault = true,
+    stopPropagation = false,
     allowEmpty = false,
     getFormApi,
     onSubmit,
@@ -255,6 +258,8 @@
     // spec §4 L69 / §6 L140: preventDefault is now prop-controlled (default true
     // = previous hardcoded behavior, backward compatible).
     if (preventDefault) e.preventDefault();
+    // stopPropagation：阻止 submit 事件向上冒泡（默认 false，向后兼容）。
+    if (stopPropagation) e.stopPropagation();
     const r = await form.submit();
     if (!r.valid && effScrollToError) focusFirstError(r.errors);
     if (!r.valid) onSubmitFail?.(r.errors, r.values);

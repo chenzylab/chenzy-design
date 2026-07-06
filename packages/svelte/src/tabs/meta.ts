@@ -111,6 +111,24 @@ export const meta = {
       default: 'undefined',
       desc: '标签栏右侧额外内容',
     },
+    {
+      name: 'tabBarClassName',
+      type: 'string',
+      default: 'undefined',
+      desc: '标签栏容器（.cd-tabs__bar）自定义 class',
+    },
+    {
+      name: 'tabBarStyle',
+      type: 'string | Record<string, string>',
+      default: 'undefined',
+      desc: '标签栏容器（.cd-tabs__bar）自定义样式',
+    },
+    {
+      name: 'visibleTabsStyle',
+      type: 'string | Record<string, string>',
+      default: 'undefined',
+      desc: '可见标签区域自定义样式（scroll 模式作用于 .cd-tabs__nav，dropdown 模式作用于 .cd-tabs__list）',
+    },
     { name: 'onChange', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onTabClose', type: '(key: string|number) => void', default: 'undefined' },
     {
