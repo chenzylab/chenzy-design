@@ -14,7 +14,9 @@ const dict: Dict = {
   // 侧栏分组
   'group.start': { zh: '开始', en: 'Getting Started' },
   'group.experience': { zh: '体验增强', en: 'Experience' },
+  'cat.ai': { zh: 'AI 组件', en: 'AI' },
   'cat.basic': { zh: '基础', en: 'Basic' },
+  'cat.plus': { zh: 'Plus 组件', en: 'Plus' },
   'cat.input': { zh: '输入', en: 'Input' },
   'cat.navigation': { zh: '导航', en: 'Navigation' },
   'cat.show': { zh: '展示', en: 'Show' },

@@ -14,7 +14,9 @@
 
   // 按 category 分组（label key 走 i18n）
   const categoryKey: Record<string, string> = {
+    ai: 'cat.ai',
     basic: 'cat.basic',
+    plus: 'cat.plus',
     input: 'cat.input',
     navigation: 'cat.navigation',
     show: 'cat.show',
@@ -31,7 +33,7 @@
     {} as Record<string, { name: string; category?: string }[]>,
   );
 
-  const categoryOrder = ['basic', 'input', 'navigation', 'show', 'feedback', 'other'];
+  const categoryOrder = ['ai', 'basic', 'plus', 'input', 'navigation', 'show', 'feedback', 'other'];
 
   // 全局文档分组（对齐 Semi 左侧「开始 / 体验增强」）。label 中英双版。
   const guideGroups = [
@@ -75,6 +77,18 @@
       {#if grouped[cat]}
         <div class="sidebar-group">
           <div class="sidebar-group-title">{t(categoryKey[cat] ?? cat, lang)}</div>
+          {#if cat === 'ai'}
+            <a
+              href="{base}/guide/ai-component"
+              class="sidebar-item"
+              class:active={$page.url.pathname === `${base}/guide/ai-component`}
+            >
+              <SidebarIcon name="_fallback" category="ai" />
+              <span class="sidebar-item-label"
+                >AIComponent{#if lang === 'zh'}<span class="sidebar-item-zh">能力介绍</span>{/if}</span
+              >
+            </a>
+          {/if}
           {#each grouped[cat] as comp (comp.name)}
             {@const name = comp.name.toLowerCase()}
             <a

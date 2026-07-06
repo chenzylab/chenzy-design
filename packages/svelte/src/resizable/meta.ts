@@ -5,7 +5,7 @@
  */
 export const meta = {
   name: 'Resizable',
-  category: 'other',
+  category: 'basic',
   stage: 'M6',
   semiEquivalent: 'Resizable',
   description:

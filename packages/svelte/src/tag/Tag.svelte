@@ -24,6 +24,10 @@
     /** controlled checked state */
     checked?: boolean;
     disabled?: boolean;
+    /** AI 多彩标签：蓝→紫渐变（对齐 Semi AI 风格）。注意字重比非多彩更重。 */
+    colorful?: boolean;
+    /** 是否渐变色，仅在 colorful 为 true 时生效。false 时用单色紫。 */
+    gradient?: boolean;
     onClose?: () => void;
     onChange?: (checked: boolean) => void;
     children?: Snippet;
@@ -59,6 +63,8 @@
     checkable = false,
     checked,
     disabled = false,
+    colorful = false,
+    gradient = false,
     onClose,
     onChange,
     children,
@@ -101,6 +107,8 @@
       `cd-tag--${shape}`,
       checkable && 'cd-tag--checkable',
       checkable && currentChecked && 'cd-tag--checked',
+      colorful && 'cd-tag--colorful',
+      colorful && gradient && 'cd-tag--gradient',
       disabled && 'cd-tag--disabled',
       avatarSrc && 'cd-tag--has-avatar',
       className,
@@ -309,6 +317,58 @@
   .cd-tag--checkable:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
+  }
+
+  /*
+    colorful（AI 多彩标签）：蓝→紫渐变，对齐 Semi AI 风格。
+    - type（solid/light/ghost）仍生效，仅配色改用 AI 渐变，覆盖 color 语义色。
+    - gradient=true 用三段渐变；false 用中间紫单色（--ct-solid）。
+    - 多彩标签字重更重（对齐 Semi「字重与非多彩不同」）。
+  */
+  .cd-tag--colorful {
+    --ct: linear-gradient(
+      120deg,
+      var(--cd-tag-colorful-from) 0%,
+      var(--cd-tag-colorful-via) 52%,
+      var(--cd-tag-colorful-to) 100%
+    );
+    --ct-solid: var(--cd-tag-colorful-via);
+    --ct-fill: var(--ct-solid);
+    --ct-text: var(--cd-tag-colorful-via);
+    font-weight: var(--cd-font-weight-bold);
+  }
+  .cd-tag--colorful.cd-tag--gradient {
+    --ct-fill: var(--ct);
+  }
+  /* solid: 多彩实心 + 白字 */
+  .cd-tag--colorful.cd-tag--solid {
+    background: var(--ct-fill);
+    color: var(--cd-color-text-inverse);
+    border-color: transparent;
+  }
+  /* light: 浅多彩底 + 紫字 */
+  .cd-tag--colorful.cd-tag--light {
+    background: color-mix(in srgb, var(--ct-text) 12%, var(--cd-color-bg-0));
+    color: var(--ct-text);
+    border-color: transparent;
+  }
+  .cd-tag--colorful.cd-tag--gradient.cd-tag--light {
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--cd-tag-colorful-from) 14%, transparent) 0%,
+      color-mix(in srgb, var(--cd-tag-colorful-via) 14%, transparent) 52%,
+      color-mix(in srgb, var(--cd-tag-colorful-to) 14%, transparent) 100%
+    );
+  }
+  /* ghost: 透明 + 紫边框（gradient 用渐变边框）+ 紫字 */
+  .cd-tag--colorful.cd-tag--ghost {
+    background: transparent;
+    border-color: var(--ct-text);
+    color: var(--ct-text);
+  }
+  .cd-tag--colorful.cd-tag--gradient.cd-tag--ghost {
+    border-color: transparent;
+    border-image: var(--ct) 1;
   }
 
   .cd-tag--disabled {

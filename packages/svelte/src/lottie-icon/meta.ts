@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'LottieIcon',
-  category: 'other',
+  category: 'plus',
   description:
     'Lottie 动画图标：依赖注入 player 工厂（库不绑定 lottie-web，用户自带），data 内联 JSON 或 src URL 异步 fetch（AbortController + 加载中 skeleton / 失败 error 态），size/color/trigger(auto/hover/manual)/loop/speed 播放控制，segments 帧段([start,end]或命名 marker)，flipRtl RTL 水平镜像，visible 受控显隐（false 暂停+display:none），canvas/renderer 渲染后端(svg/canvas/html，经 adapter 透传)，命令式 play/pause/stop，prefers-reduced-motion 降级首帧静止，decorative aria-hidden / 功能性 role=img+label。',
   exports: ['LottieIcon'],

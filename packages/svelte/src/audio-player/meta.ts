@@ -4,7 +4,7 @@
  */
 export const meta = {
   name: 'AudioPlayer',
-  category: 'show',
+  category: 'plus',
   description:
     '基于原生 <audio> 的音频播放器（对齐 Semi，无第三方媒体库）。audioUrl 接受 string | string[] | AudioInfo | AudioInfo[] 四形态并归一为曲目列表；多曲显示上/下曲。工具栏含播放/暂停、快退/快进（按 skipDuration）、上/下曲、重播、进度、时间、倍速、音量；深/浅双主题（默认 dark）。',
   exports: ['AudioPlayer'],

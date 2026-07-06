@@ -199,7 +199,7 @@ function allProps(m: Record<string, unknown>): PropEntry[] {
 describe('component metadata', () => {
   it.each(Object.entries(metas))('%s is well-formed', (_name, m) => {
     expect(m.name).toBeTruthy();
-    expect(['basic', 'input', 'navigation', 'show', 'feedback', 'other']).toContain(
+    expect(['ai', 'basic', 'plus', 'input', 'navigation', 'show', 'feedback', 'other']).toContain(
       m.category,
     );
     expect(m.description).toBeTruthy();
