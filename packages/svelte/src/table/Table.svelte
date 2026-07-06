@@ -35,9 +35,11 @@
     fixedRange,
     useLiveAnnouncer,
     useId,
+    createResizeDrag,
     type RowKey,
     type SortState,
     type FlatRow,
+    type ResizeDragController,
   } from '@chenzy-design/core';
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
@@ -234,9 +236,11 @@
     return col.width;
   }
 
-  // 列头拖拽：命令式管理指针几何 (红线 #3)。
-  // pointerdown 一次性把起始宽度 / clientX 存普通变量，document 上手动绑定
-  // pointermove / pointerup，结束时解绑。绝不用响应式 attachment 读几何。
+  // 列头拖拽：收敛到 core 通用拖拽原语 createResizeDrag，命令式管理指针几何
+  // (红线 #3)。pointerdown 时以当前列 colKey / 起始宽度构建一次性拖拽实例，
+  // 由原语在 document 上绑定 pointermove/pointerup 并在结束/卸载时解绑；
+  // 绝不用响应式 attachment 读几何。
+  let activeDrag: ResizeDragController | null = null;
   function startResize(event: PointerEvent, col: ColumnDef<T>, index: number) {
     event.preventDefault();
     event.stopPropagation();
@@ -246,33 +250,31 @@
     const ov = widthOverrides.get(colKey);
     const startWidth =
       ov ?? (typeof col.width === 'number' ? col.width : (th?.getBoundingClientRect().width ?? MIN_COL_WIDTH));
-    const startX = event.clientX;
 
-    resizingKey = colKey;
-
-    const onMove = (e: PointerEvent) => {
-      const next = Math.max(MIN_COL_WIDTH, Math.round(startWidth + (e.clientX - startX)));
-      widthOverrides.set(colKey, next);
-    };
-    const onUp = () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      activeMove = null;
-      activeUp = null;
-      resizingKey = null;
-    };
-    activeMove = onMove;
-    activeUp = onUp;
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    activeDrag?.destroy();
+    const drag = createResizeDrag({
+      axis: 'x',
+      getStart: () => ({ width: startWidth }),
+      // 单数 min 作用于 x 轴：等价 Math.max(MIN_COL_WIDTH, ...)，原语内部再 Math.round
+      min: MIN_COL_WIDTH,
+      onStart: () => {
+        resizingKey = colKey;
+      },
+      onMove: (s) => {
+        widthOverrides.set(colKey, s.width);
+      },
+      onEnd: () => {
+        resizingKey = null;
+        activeDrag = null;
+      },
+    });
+    activeDrag = drag;
+    drag.start(event, 'right');
   }
 
-  // 卸载兜底：若拖拽未结束就卸载，清掉可能遗留的全局监听 (红线 #3)。
-  let activeMove: ((e: PointerEvent) => void) | null = null;
-  let activeUp: (() => void) | null = null;
+  // 卸载兜底：若拖拽未结束就卸载，销毁拖拽实例清掉可能遗留的全局监听 (红线 #3)。
   $effect(() => () => {
-    if (activeMove) document.removeEventListener('pointermove', activeMove);
-    if (activeUp) document.removeEventListener('pointerup', activeUp);
+    activeDrag?.destroy();
   });
 
   // --- 排序：受控 sortState 不回写 (红线 #1) ---
