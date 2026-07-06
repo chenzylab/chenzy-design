@@ -115,6 +115,8 @@ export interface AIDialogueMessage {
   status?: AIMessageStatus | string;
   /** 该消息是否处于编辑态（受控；仅 user 消息生效，编辑态用 messageEditRender 替代内容）。 */
   editing?: boolean;
+  /** 该消息引用的文件或文本（对齐 Semi references）。showReference 开启时在 user 消息展示。 */
+  references?: AIDialogueReference[];
   [x: string]: unknown;
 }
 

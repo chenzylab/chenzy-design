@@ -18,8 +18,11 @@ export const meta = {
     { name: 'hints', type: 'string[]', default: 'undefined', desc: '提示信息' },
     { name: 'selecting', type: 'boolean', default: 'false', desc: '选择模式（消息前置 checkbox）' },
     { name: 'showReset', type: 'boolean', default: 'true', desc: '展示重置操作' },
+    { name: 'showReference', type: 'boolean', default: 'false', desc: '在 user 消息展示引用区（message.references）' },
     { name: 'markdownRenderProps', type: 'object', default: 'undefined', desc: '透传内容渲染的 MarkdownRender props' },
     { name: 'renderDialogueContentItem', type: 'Record<string, Snippet<[ContentItem]>>', default: 'undefined', desc: '按 ContentItem.type 覆盖渲染' },
+    { name: 'renderHintBox', type: 'Snippet<[{ content; index; onHintClick }]>', default: 'undefined', desc: '自定义提示项渲染' },
+    { name: 'dialogueRenderConfig', type: 'DialogueRenderConfig', default: 'undefined', desc: '自定义会话框各区块渲染（头像/标题/内容/操作，或整块）' },
   ],
   events: [
     { name: 'onChatsChange', payload: 'chats: AIDialogueMessage[]', desc: '对话列表变更' },
@@ -33,9 +36,12 @@ export const meta = {
     { name: 'onFileClick', payload: 'file', desc: '文件点击' },
     { name: 'onImageClick', payload: 'image', desc: '图片点击' },
     { name: 'onMessageEdit', payload: 'message', desc: '点击编辑操作（P1）' },
+    { name: 'onReferenceClick', payload: 'item: AIDialogueReference', desc: '引用项点击' },
   ],
   slots: [
     { name: 'renderDialogueContentItem', payload: 'ContentItem（按 type 覆盖）', desc: '按 ContentItem.type 覆盖渲染' },
+    { name: 'renderHintBox', payload: '{ content; index; onHintClick }', desc: '自定义提示项渲染' },
+    { name: 'dialogueRenderConfig', payload: 'RenderAvatar/Title/Content/Action/FullDialogueProps', desc: '自定义会话框各区块渲染（含整块 renderFullDialogue）' },
     { name: 'messageEditRender', payload: 'AIChatInputMessageContent', desc: 'user 消息 editing 态替代内容（放 AIChatInput 编辑器，P1）' },
   ],
   methods: [

@@ -145,7 +145,8 @@ const components = [
   ['json-viewer', '{ JsonViewer }', '4 KB'],
   ['chat', '{ Chat }', '8.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '6 KB'],
+  // 引用区（references）+ dialogueRenderConfig 四区块 snippet 结构后实测 6.71 KB，预算按 +15% buffer 校准。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '7.7 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
