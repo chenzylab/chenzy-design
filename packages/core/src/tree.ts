@@ -169,11 +169,18 @@ function buildMeta(data: TreeNodeData[]): ParentMeta {
  * Conduction (related mode): given a base set of explicitly-checked keys,
  * derive the full checked set + half-checked (indeterminate) set with
  * bottom-up + top-down parent/child propagation.
- * Disabled nodes are excluded from auto-check.
+ *
+ * `disableStrictly`（对齐 Semi `disableStrictly`）改变 disabled 节点的语义：
+ *  - `false`（默认）：disabled 叶子被排除在父子联动与父级计数之外——父级勾选不会
+ *    影响它，其状态也不计入父级 checked/half 的判定（保持既有行为，向后兼容）。
+ *  - `true`：disabled 叶子的勾选态被「严格锁定」在 base 集里的原态——父级联动
+ *    不会改变它（既不会被父级勾上，也不会被父级取消），但它**仍参与**父级的
+ *    checked/half 计数（一个已勾的 disabled 叶子会让父级算作已勾其一）。
  */
 export function conduct(
   data: TreeNodeData[],
   checkedInput: ReadonlySet<TreeKey>,
+  disableStrictly = false,
 ): { checked: Set<TreeKey>; half: Set<TreeKey> } {
   const meta = buildMeta(data);
   const disabled = new Set<TreeKey>();
@@ -185,13 +192,28 @@ export function conduct(
     }
   })(data, false);
 
+  // 严格禁用时：先算出「哪些 disabled 叶子是被『直接』勾选的」——只认 checkedInput 里
+  // 本身就是叶子 key 的项，不含展开某父级得到的叶子（父级联动不该锁上 disabled 子节点），
+  // 供 disabled 叶子锁定其原态。
+  const explicitLeaves = new Set<TreeKey>();
+  for (const key of checkedInput) {
+    const ls = meta.leaves.get(key);
+    if (ls && ls.length === 1 && ls[0] === key) explicitLeaves.add(key); // key 本身是叶子
+  }
+
   // Top-down: a checked parent checks all enabled leaf descendants.
+  // 严格模式下 disabled 叶子不被父级联动，但若其自身已在显式勾选集内则保留其勾态。
   const leafChecked = new Set<TreeKey>();
   for (const key of checkedInput) {
     const ls = meta.leaves.get(key);
     if (!ls) continue;
     for (const leaf of ls) {
       if (!disabled.has(leaf)) leafChecked.add(leaf);
+    }
+  }
+  if (disableStrictly) {
+    for (const leaf of explicitLeaves) {
+      if (disabled.has(leaf)) leafChecked.add(leaf);
     }
   }
 
@@ -203,11 +225,12 @@ export function conduct(
   for (let i = meta.allKeys.length - 1; i >= 0; i--) {
     const key = meta.allKeys[i] as TreeKey;
     const leaves = meta.leaves.get(key) as TreeKey[];
-    const enabledLeaves = leaves.filter((l) => !disabled.has(l));
-    if (enabledLeaves.length === 0) continue;
-    const checkedCount = enabledLeaves.filter((l) => leafChecked.has(l)).length;
+    // 严格模式：disabled 叶子仍计入分母（参与父级计数）；非严格：排除 disabled。
+    const countedLeaves = disableStrictly ? leaves : leaves.filter((l) => !disabled.has(l));
+    if (countedLeaves.length === 0) continue;
+    const checkedCount = countedLeaves.filter((l) => leafChecked.has(l)).length;
     if (checkedCount === 0) continue;
-    if (checkedCount === enabledLeaves.length) checked.add(key);
+    if (checkedCount === countedLeaves.length) checked.add(key);
     else half.add(key);
   }
 
@@ -240,6 +263,10 @@ export function normalizeToLeaves(
  * (leaf-level) after toggling `key`. The input base is normalized to leaves
  * first, so passing `conduct`-output (with parent keys) round-trips correctly.
  * Feed the result through `conduct` to render.
+ *
+ * disabled 叶子始终从被切换的叶子集里排除——切换父节点时它们的原态被冻结
+ * （既不会被父级勾上，也不会被父级取消）。这与 `disableStrictly` 语义天然一致，
+ * 因此本函数无需额外参数即可正确处理严格禁用的锁定。
  */
 export function toggleCheck(
   data: TreeNodeData[],
@@ -263,6 +290,31 @@ export function toggleCheck(
   if (allChecked) for (const l of leaves) next.delete(l);
   else for (const l of leaves) next.add(l);
   return next;
+}
+
+/**
+ * Collect the leaf-node keys within a checked set, in document order.
+ * 用于 `leafOnly`：多选勾选输出只回传叶子节点 key（滤掉父/半选节点）。
+ * `checked` 通常是 {@link conduct} 的输出（含父节点 key）——本函数只保留其中
+ * 真正的叶子（无子节点）者，按文档序返回，纯派生无副作用。
+ */
+export function collectLeafKeys(
+  data: TreeNodeData[],
+  checked: ReadonlySet<TreeKey>,
+): TreeKey[] {
+  const out: TreeKey[] = [];
+  const walk = (nodes: TreeNodeData[]): void => {
+    for (const node of nodes) {
+      const isLeaf = !node.children || node.children.length === 0;
+      if (isLeaf) {
+        if (checked.has(node.key)) out.push(node.key);
+      } else {
+        walk(node.children as TreeNodeData[]);
+      }
+    }
+  };
+  walk(data);
+  return out;
 }
 
 /**

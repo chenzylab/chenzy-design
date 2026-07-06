@@ -18,15 +18,21 @@ export const meta = {
     },
     {
       name: 'value',
-      type: 'TreeKey | TreeKey[] | null',
+      type: 'TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null',
       default: 'undefined',
-      desc: '受控选中；multiple 时为数组。受控时不回写',
+      desc: '受控选中；multiple 时为数组。onChangeWithObject 时为节点对象形态。受控时不回写',
     },
     {
       name: 'defaultValue',
-      type: 'TreeKey | TreeKey[] | null',
+      type: 'TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null',
       default: 'null',
-      desc: '非受控初始选中',
+      desc: '非受控初始选中；onChangeWithObject 时为节点对象形态',
+    },
+    {
+      name: 'onChangeWithObject',
+      type: 'boolean',
+      default: 'false',
+      desc: '以对象形态收发选中项：开启后 onChange 的 value 及受控 value/defaultValue 均为节点对象（含 label/value/其它字段），对象标识优先取 key 缺省回退 value',
     },
     { name: 'multiple', type: 'boolean', default: 'false', desc: '多选模式' },
     { name: 'checkable', type: 'boolean', default: 'false', desc: '显示勾选框' },
@@ -42,6 +48,18 @@ export const meta = {
       type: 'boolean',
       default: 'false',
       desc: 'true 时父子解耦，仅切换单节点',
+    },
+    {
+      name: 'disableStrictly',
+      type: 'boolean',
+      default: 'false',
+      desc: '严格禁用：disabled 节点勾选态被锁定，不能通过父/子级联动改变（区别于普通 disabled 仅禁直接点击）。仅 checkable 联动下有意义',
+    },
+    {
+      name: 'leafOnly',
+      type: 'boolean',
+      default: 'false',
+      desc: '多选勾选时 onCheck 回传的 checked/halfChecked 只含叶子节点 key（滤掉父/半选节点）',
     },
     {
       name: 'checkRelation',
@@ -92,6 +110,12 @@ export const meta = {
       type: 'boolean | ((input: string, node: TreeNodeData) => boolean)',
       default: 'undefined',
       desc: '自定义搜索过滤谓词；传函数即开启搜索，boolean 形态等价 filterable，不传回退内置 label 包含匹配',
+    },
+    {
+      name: 'showFilteredOnly',
+      type: 'boolean',
+      default: 'false',
+      desc: '搜索状态下只渲染命中节点及其祖先链，隐藏其它未命中节点（默认 false 展示全树、命中高亮、祖先自动展开）',
     },
     {
       name: 'searchValue',

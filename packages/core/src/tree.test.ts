@@ -11,6 +11,7 @@ import {
   computeDropPosition,
   isAncestorOrSelf,
   collectCheckedByStrategy,
+  collectLeafKeys,
   siblingKeys,
   accordionExpand,
   type TreeNodeData,
@@ -143,6 +144,61 @@ describe('conduct (related mode)', () => {
     const { checked, half } = conduct(d, new Set(['a']));
     expect(checked.has('p')).toBe(true);
     expect(half.has('p')).toBe(false);
+  });
+});
+
+describe('conduct (disableStrictly)', () => {
+  const d: TreeNodeData[] = [
+    {
+      key: 'p',
+      label: 'P',
+      children: [
+        { key: 'a', label: 'A' },
+        { key: 'b', label: 'B', disabled: true },
+      ],
+    },
+  ];
+
+  it('strict: a disabled leaf still counts toward parent state', () => {
+    // enabled 'a' checked, disabled 'b' NOT in base → parent is half (b counts as unchecked).
+    const { checked, half } = conduct(d, new Set(['a']), true);
+    expect(checked.has('p')).toBe(false);
+    expect(half.has('p')).toBe(true);
+  });
+
+  it('strict: a checked disabled leaf is locked-on and counts', () => {
+    // both 'a' (enabled) and 'b' (disabled) explicitly in base → parent fully checked.
+    const { checked, half } = conduct(d, new Set(['a', 'b']), true);
+    expect(checked.has('p')).toBe(true);
+    expect(half.has('p')).toBe(false);
+    expect(checked.has('b')).toBe(true); // disabled leaf's checked state preserved
+  });
+
+  it('strict: parent check does not auto-check a disabled child', () => {
+    // checking parent 'p' → only enabled leaf 'a' gets auto-checked; 'b' stays off.
+    const { checked, half } = conduct(d, new Set(['p']), true);
+    expect(checked.has('a')).toBe(true);
+    expect(checked.has('b')).toBe(false);
+    // 'a' checked, 'b' unchecked → p half.
+    expect(half.has('p')).toBe(true);
+  });
+});
+
+describe('collectLeafKeys', () => {
+  it('keeps only leaf keys from a checked set (drops parents)', () => {
+    // conduct output contains parent keys; leafOnly must strip them.
+    const { checked } = conduct(data, new Set(['1-2']));
+    expect([...checked].sort()).toEqual(['1-2', '1-2-1', '1-2-2']);
+    expect(collectLeafKeys(data, checked)).toEqual(['1-2-1', '1-2-2']);
+  });
+
+  it('returns leaves in document order', () => {
+    const checked = new Set(['1-1', '1-2-2', '1-2-1', '2', '1']);
+    expect(collectLeafKeys(data, checked)).toEqual(['1-1', '1-2-1', '1-2-2', '2']);
+  });
+
+  it('empty when no leaves checked', () => {
+    expect(collectLeafKeys(data, new Set(['1']))).toEqual([]);
   });
 });
 
