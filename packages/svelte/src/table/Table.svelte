@@ -114,6 +114,10 @@
     indentSize: indentSizeProp = 20,
     groupBy,
     renderGroupSection,
+    clickGroupedRowToExpand = false,
+    defaultExpandAllGroupRows,
+    expandAllGroupRows,
+    onGroupExpandChange,
     titleSnippet,
     footerSnippet,
   }: {
@@ -204,6 +208,15 @@
     groupBy?: string | ((record: T) => string);
     /** 自定义分组标题渲染 */
     renderGroupSection?: Snippet<[{ groupKey: string; group: T[] }]>;
+    /** 点击分组标题行时折叠/展开该组内的数据行，默认 false（groupBy 时生效） */
+    clickGroupedRowToExpand?: boolean;
+    /** 非受控：初始默认展开全部分组。缺省（未配置任一分组展开 props）时向后兼容为全展开；
+     *  显式传 false 则初始全部折叠。动态加载数据时不生效。 */
+    defaultExpandAllGroupRows?: boolean;
+    /** 受控：为 true 展开全部分组、false 折叠全部分组。受控时不回写，仅经 onGroupExpandChange 通知（红线 #1） */
+    expandAllGroupRows?: boolean;
+    /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
+    onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
     /** 表格顶部标题区域 */
     titleSnippet?: Snippet;
     /** 表格底部内容区域（接收 currentData） */
@@ -1241,49 +1254,88 @@
   const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
 
   // --- groupBy: build grouped display rows ---
-  type GroupRow = { type: 'group'; groupKey: string; group: T[] };
+  type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean };
   type DataDisplayRow = FlatRow<T> & { type: 'data' };
   type RenderRow = DataDisplayRow | GroupRow;
+
+  const isGrouped = $derived(groupBy !== undefined);
+
+  const groupKeyOf = (record: T): string => {
+    if (typeof groupBy === 'function') return groupBy(record);
+    return String(record[groupBy as string] ?? '');
+  };
+
+  // 有序分组桶：仅顶层行参与分组。纯 $derived（红线 #2）。
+  const groupBuckets = $derived.by<{ order: string[]; map: Map<string, T[]> }>(() => {
+    const order: string[] = [];
+    const map = new Map<string, T[]>();
+    if (!groupBy) return { order, map };
+    for (const row of displayRows) {
+      if (row.level === 0) {
+        const gk = groupKeyOf(row.record);
+        if (!map.has(gk)) {
+          order.push(gk);
+          map.set(gk, []);
+        }
+        map.get(gk)!.push(row.record);
+      }
+    }
+    return { order, map };
+  });
+
+  // --- 可折叠分组：受控 expandAllGroupRows 不回写，仅经 onGroupExpandChange 通知 (红线 #1) ---
+  // 受控（expandAllGroupRows 定义）时展开态由该值统一决定（true 全展/false 全折）。
+  // 非受控时仅记录「用户显式切换过的分组 → 展开态」，未切换的分组回退到默认值：
+  // defaultExpandAllGroupRows 显式 false → 默认折叠；缺省(undefined)或 true → 默认展开
+  // （向后兼容既有「分组头+组内行都显示」）。默认值纯 $derived、不落地为 $state，
+  // 故数据变化产生的新分组自动继承默认展开态，无需 effect seed（红线 #2）。
+  const isGroupExpandControlled = $derived(expandAllGroupRows !== undefined);
+  const groupDefaultExpanded = $derived(defaultExpandAllGroupRows !== false);
+  // 用户显式覆盖：groupKey → 展开态（未在此表中的分组用 groupDefaultExpanded）。
+  const groupOverrides = new SvelteMap<string, boolean>();
+
+  // 某分组是否展开：受控看 expandAllGroupRows，非受控看覆盖表 → 默认值。
+  const isGroupExpanded = (groupKey: string): boolean => {
+    if (isGroupExpandControlled) return expandAllGroupRows === true;
+    return groupOverrides.get(groupKey) ?? groupDefaultExpanded;
+  };
+
+  function toggleGroupExpand(groupKey: string) {
+    const willExpand = !isGroupExpanded(groupKey);
+    if (!isGroupExpandControlled) {
+      groupOverrides.set(groupKey, willExpand);
+      const expandedKeys = groupBuckets.order.filter((gk) => isGroupExpanded(gk));
+      onGroupExpandChange?.({ groupKey, expanded: willExpand, expandedGroupKeys: expandedKeys });
+    } else {
+      // 受控：不回写，仅通知（回传「若操作生效」后的期望集合，由消费方决定）
+      const expandedKeys = expandAllGroupRows === true ? groupBuckets.order.slice() : [];
+      onGroupExpandChange?.({ groupKey, expanded: willExpand, expandedGroupKeys: expandedKeys });
+    }
+  }
 
   const groupedDisplayRows = $derived.by<RenderRow[]>(() => {
     if (!groupBy) {
       return displayRows.map((r) => ({ ...r, type: 'data' as const }));
     }
-    const getGroupKey = (record: T): string => {
-      if (typeof groupBy === 'function') return groupBy(record);
-      return String(record[groupBy as string] ?? '');
-    };
-    // Build ordered group buckets (only top-level rows are grouped)
-    const groupOrder: string[] = [];
-    const groupMap = new Map<string, T[]>();
-    for (const row of displayRows) {
-      if (row.level === 0) {
-        const gk = getGroupKey(row.record);
-        if (!groupMap.has(gk)) {
-          groupOrder.push(gk);
-          groupMap.set(gk, []);
-        }
-        groupMap.get(gk)!.push(row.record);
-      }
-    }
+    const { order, map } = groupBuckets;
     const result: RenderRow[] = [];
-    for (const gk of groupOrder) {
-      const group = groupMap.get(gk)!;
-      result.push({ type: 'group', groupKey: gk, group });
+    for (const gk of order) {
+      const group = map.get(gk)!;
+      const expanded = isGroupExpanded(gk);
+      result.push({ type: 'group', groupKey: gk, group, expanded });
+      // 折叠的分组只渲染分组头，不铺开组内数据行。
+      if (!expanded) continue;
       // Include all displayRows belonging to this group (incl. tree children)
       let inGroup = false;
       for (const row of displayRows) {
         if (row.level === 0) {
-          inGroup = getGroupKey(row.record) === gk;
+          inGroup = groupKeyOf(row.record) === gk;
         }
         if (inGroup) result.push({ ...row, type: 'data' as const });
       }
     }
     return result;
   });
-
-  // For render purposes when no groupBy: cast displayRows to RenderRow[]
-  const isGrouped = $derived(groupBy !== undefined);
 </script>
 
 {#if titleSnippet}
@@ -1517,8 +1569,38 @@
           {#each groupedDisplayRows as groupRow (groupRow.type === 'group' ? `__group__${(groupRow as GroupRow).groupKey}` : (groupRow as DataDisplayRow).key)}
             {#if groupRow.type === 'group'}
               {@const gRow = groupRow as GroupRow}
-              <tr class="cd-table__row cd-table__row--group-header" role={gridEnabled ? 'row' : undefined}>
-                <td class="cd-table__cell cd-table__cell--group-header" colspan={colSpan}>
+              <tr
+                class="cd-table__row cd-table__row--group-header"
+                class:cd-table__row--group-clickable={clickGroupedRowToExpand}
+                role={gridEnabled ? 'row' : undefined}
+              >
+                <td
+                  class="cd-table__cell cd-table__cell--group-header"
+                  colspan={colSpan}
+                  role={clickGroupedRowToExpand ? 'button' : undefined}
+                  tabindex={clickGroupedRowToExpand ? 0 : undefined}
+                  aria-expanded={clickGroupedRowToExpand ? gRow.expanded : undefined}
+                  onclick={clickGroupedRowToExpand ? () => toggleGroupExpand(gRow.groupKey) : undefined}
+                  onkeydown={clickGroupedRowToExpand
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleGroupExpand(gRow.groupKey);
+                        }
+                      }
+                    : undefined}
+                >
+                  {#if clickGroupedRowToExpand}
+                    <span
+                      class="cd-table__group-caret"
+                      class:cd-table__group-caret--open={gRow.expanded}
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+                      </svg>
+                    </span>
+                  {/if}
                   {#if renderGroupSection}
                     {@render renderGroupSection({ groupKey: gRow.groupKey, group: gRow.group })}
                   {:else}
@@ -2317,6 +2399,35 @@
     font-weight: 600;
     color: var(--cd-table-header-text);
     border-block-end: 1px solid var(--cd-table-border-color);
+  }
+  /* 可点击分组标题：disclosure 模式 */
+  .cd-table__row--group-clickable .cd-table__cell--group-header {
+    cursor: pointer;
+    user-select: none;
+  }
+  .cd-table__row--group-clickable .cd-table__cell--group-header:hover {
+    background: var(--cd-table-row-hover-bg);
+  }
+  .cd-table__cell--group-header:focus-visible {
+    outline: 2px solid var(--cd-focus-ring, currentColor);
+    outline-offset: -2px;
+  }
+  .cd-table__group-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright, 8px);
+    color: var(--cd-color-table-expanded-icon-default, currentColor);
+    transition: transform 0.2s ease;
+    vertical-align: middle;
+  }
+  .cd-table__group-caret--open {
+    transform: rotate(90deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-table__group-caret {
+      transition: none;
+    }
   }
 
   /* --- 表格顶部标题/底部区域 --- */

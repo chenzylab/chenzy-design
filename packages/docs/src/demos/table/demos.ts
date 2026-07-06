@@ -29,5 +29,6 @@ export const demos: DemoEntry[] = [
   entry('03-row-selection.svelte', '行选择', '受控复选行选择，所有者行禁用复选框。'),
   entry('04-pagination.svelte', '分页', '客户端分页 + 列排序，受控当前页。'),
   entry('05-fixed-render.svelte', '固定列与自定义渲染', '左右固定列、横向滚动，状态列用 Tag 自定义渲染。'),
+  entry('06-group-collapse.svelte', '可折叠分组', '按部门分组，点击分组标题行折叠/展开该组数据行。'),
   entry('BasicDemo.svelte', '完整示例', '行展开、固定列、列筛选、列宽拖拽、树形数据、虚拟滚动等高级用法。'),
 ];
