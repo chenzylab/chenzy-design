@@ -130,6 +130,29 @@ export function useFloating(
   window.addEventListener('scroll', schedule, true);
   window.addEventListener('resize', schedule);
 
+  // Size-aware repositioning (parity with Semi's tooltip ResizeObserver):
+  // window resize only catches viewport changes, not the trigger or popup
+  // resizing in place (async-loaded content growing taller, trigger text
+  // expanding, etc). Observe both elements and reposition on any size change.
+  // Reuse the existing rAF-throttled schedule(). Degrade silently when the
+  // native RO is unavailable — the window listeners above still work.
+  let ro: ResizeObserver | undefined;
+  if (typeof ResizeObserver === 'function') {
+    // RO fires an initial frame on observe(); position() already ran above,
+    // so the first callback is a redundant reposition. Swallow it to avoid a
+    // wasted rAF (and to match "no reposition on observe" intent).
+    let primed = false;
+    ro = new ResizeObserver(() => {
+      if (!primed) {
+        primed = true;
+        return;
+      }
+      schedule();
+    });
+    ro.observe(trigger);
+    ro.observe(popup);
+  }
+
   return {
     update: position,
     destroy() {
@@ -139,6 +162,8 @@ export function useFloating(
       }
       window.removeEventListener('scroll', schedule, true);
       window.removeEventListener('resize', schedule);
+      ro?.disconnect();
+      ro = undefined;
       // Svelte may have already run its {#if} unmount against the popup's
       // original slot (a no-op, since the node now lives in <body>), so the
       // action owns teardown: remove the portaled popup outright. On the next

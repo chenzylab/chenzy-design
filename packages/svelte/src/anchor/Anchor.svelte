@@ -18,7 +18,11 @@
 -->
 <script lang="ts">
   import type { AnchorLink } from './types.js';
-  import { nextRovingIndex, rovingKeyFromEvent } from '@chenzy-design/core';
+  import {
+    nextRovingIndex,
+    rovingKeyFromEvent,
+    createResizeObserver,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
@@ -153,9 +157,24 @@
     // 初始算一次。
     onScroll();
 
+    // 尺寸/可见性感知重算（对标 Semi）：内容高度变化，或某 section 从
+    // display:none 变可见但用户「没滚动」时，scroll 事件不触发，active 高亮/ink
+    // 位置会滞后。观测滚动容器（window 模式观测 documentElement）尺寸变化，
+    // 变化时复用同一套 scroll-spy 重算（onScroll，rAF 节流）。
+    // core RO 首帧异步派发（脱离本 effect 同步栈），且 onScroll→setActive 只在
+    // key 变化时写 innerActive（RO 观测的是尺寸而非该 state），不会自循环（红线 #2）。
+    const observed: HTMLElement | null =
+      getContainer?.() ??
+      (typeof document !== 'undefined' ? document.documentElement : null);
+    const ro = observed
+      ? createResizeObserver({ box: 'content-box', onResize: () => onScroll() })
+      : null;
+    if (observed && ro) ro.observe(observed);
+
     return () => {
       target.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
+      ro?.disconnect();
     };
   });
 

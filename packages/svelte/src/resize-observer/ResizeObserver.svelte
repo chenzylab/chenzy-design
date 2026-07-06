@@ -47,6 +47,13 @@
     /** 包裹元素标签，默认 'div'。须为可生成盒子的元素（勿用 display:contents 类标签）。 */
     tag?: string;
     /**
+     * 观测包裹元素的父节点（parentElement）而非自身，默认 false（对标 Semi observeParent）。
+     * 用于「监听我所处容器的尺寸」而无需再包一层被观测元素。
+     * 与 multiple 互斥（multiple 观测子元素，observeParent 观测父元素）；同时为 true 时
+     * multiple 优先，observeParent 被忽略。父节点缺失（无 parentElement）时静默不观测。
+     */
+    observeParent?: boolean;
+    /**
      * 原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize，
      * 用 getBoundingClientRect 近似重测（精度较低）。默认 false：不支持环境静默降级。
      */
@@ -74,6 +81,7 @@
     multiple = false,
     observeOnMount = true,
     tag = 'div',
+    observeParent = false,
     fallbackToWindow = false,
     onResize,
     onFirstMeasure,
@@ -141,6 +149,10 @@
       // 多目标：观测包裹元素的所有直接子元素（同一 observer 实例复用）。
       const targets = Array.from(node.children);
       for (const child of targets) ro.observe(child);
+    } else if (observeParent) {
+      // 观测父节点（对标 Semi observeParent）。父节点缺失时静默不观测。
+      const parent = node.parentElement;
+      if (parent) ro.observe(parent);
     } else {
       ro.observe(node);
     }
