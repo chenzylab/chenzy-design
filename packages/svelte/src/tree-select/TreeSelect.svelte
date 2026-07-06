@@ -239,8 +239,14 @@
      * 默认 false（父禁用 conduct 不检查子）。
      */
     disableStrictly?: boolean;
-    /** 浮层与 trigger 的额外间距（px），数字或四方向对象。 */
+    /** 浮层与 trigger 的额外间距（px），数字或四方向对象。数字映射到浮层 offset；对象形态仅取 marginTop（其余方向暂未接入定位）。 */
     dropdownMargin?: number | { marginTop?: number; marginBottom?: number; marginLeft?: number; marginRight?: number };
+    /** 追加到浮层根节点的自定义类名（与内置类名并存）。 */
+    dropdownClassName?: string;
+    /** 合并进浮层根节点的内联样式（与内置定位样式拼接，不覆盖 use:floating 写入的 transform/position）。 */
+    dropdownStyle?: string | Record<string, string>;
+    /** 浮层层级（z-index）。未传时由 CSS 层级控制。 */
+    zIndex?: number;
 
     // --- Events ---
     /** 点击清除按钮回调。 */
@@ -338,6 +344,9 @@
     clickTriggerToHide = true,
     disableStrictly = false,
     dropdownMargin,
+    dropdownClassName,
+    dropdownStyle,
+    zIndex,
     onClear,
     onSelect,
     onLoad,
@@ -357,6 +366,25 @@
   const effStatus = $derived(validateStatus ?? status ?? 'default');
 
   const treeId = useId('cd-tree-select-panel');
+
+  // 浮层与触发器间距：dropdownMargin 数字直接作 offset；对象形态取 marginTop（其余方向暂未接入）；未传回退默认 4。
+  const dropdownOffset = $derived.by(() => {
+    if (dropdownMargin == null) return 4;
+    if (typeof dropdownMargin === 'number') return dropdownMargin;
+    return dropdownMargin.marginTop ?? 4;
+  });
+
+  // 浮层自定义样式：合并 dropdownStyle（字符串或对象）与 zIndex，供拼接到浮层 inline style。
+  const dropdownStyleStr = $derived.by(() => {
+    const parts: string[] = [];
+    if (dropdownStyle) {
+      if (typeof dropdownStyle === 'string') parts.push(dropdownStyle);
+      else parts.push(Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; '));
+    }
+    if (zIndex != null) parts.push(`z-index: ${zIndex}`);
+    return parts.filter(Boolean).join('; ');
+  });
+
   // treeitem 行 id 基（aria-activedescendant 指向当前高亮行）。
   const itemBaseId = useId('cd-tree-select-item');
   function itemId(key: TreeKey): string {
@@ -1297,7 +1325,7 @@
 
   {#if shouldRender}
     <div
-      class="cd-tree-select__panel"
+      class={['cd-tree-select__panel', dropdownClassName].filter(Boolean).join(' ')}
       class:cd-tree-select__panel--hidden={!isOpen}
       class:cd-tree-select__panel--motion={motion && isOpen}
       bind:this={panelEl}
@@ -1305,12 +1333,13 @@
         trigger: rootEl,
         placement: 'bottomStart',
         autoAdjust: true,
-        offset: 4,
+        offset: dropdownOffset,
         matchWidth: dropdownMatchSelectWidth,
         getContainer: resolvePopupContainer,
         open: isOpen,
       }}
       id={treeId}
+      style={dropdownStyleStr}
     >
       {#if isFilterable}
         <div class="cd-tree-select__search">
