@@ -2,6 +2,15 @@ export { default as AIChatDialogue } from './AIChatDialogue.svelte';
 export { default as AIChatDialogueBox } from './DialogueBox.svelte';
 export { default as AIChatDialogueContentItem } from './ContentItemRenderer.svelte';
 export { meta as aiChatDialogueMeta } from './meta.js';
+export type {
+  DialogueRenderConfig,
+  RenderAvatarProps,
+  RenderTitleProps,
+  RenderContentProps,
+  RenderActionProps,
+  RenderFullDialogueProps,
+  FullDialogueNodes,
+} from './render-config.js';
 // 数据 Adapter 与 helpers 从 core 透传，供消费方直接从 svelte 包使用。
 export {
   responseToMessage,

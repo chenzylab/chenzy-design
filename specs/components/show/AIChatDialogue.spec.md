@@ -41,6 +41,8 @@
 | showReset | `boolean` | `true` | 展示重置操作 |
 | markdownRenderProps | `MarkdownRenderProps` | - | 透传内容渲染 |
 | renderDialogueContentItem | `DialogueContentItemRendererMap` | - | 按类型覆盖内容渲染 |
+| renderHintBox | `Snippet<[{content;index;onHintClick}]>` | - | 自定义提示项渲染 |
+| dialogueRenderConfig | `DialogueRenderConfig` | - | 自定义会话框各区块渲染（头像/标题/内容/操作/整块） |
 | escapeHtml | `boolean` | `true` | 转义用户消息 HTML |
 ### Events（对齐 Semi）
 `onChatsChange` / `onHintClick` / `onSelect` / `onMessageCopy` / `onMessageDelete` / `onMessageReset` / `onMessageEdit` / `onMessageShare` / `onMessageGoodFeedback` / `onMessageBadFeedback` / `onReferenceClick` / `onAnnotationClick` / `onFileClick` / `onImageClick`。

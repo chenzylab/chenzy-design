@@ -511,6 +511,7 @@ export const en_US: Locale = {
     toolOutput: 'Output',
     audio: 'Audio',
     file: 'File',
+    references: 'References',
   },
   AIChatInput: {
     editor: 'Message input',

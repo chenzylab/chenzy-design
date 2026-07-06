@@ -13,6 +13,7 @@
     type AIDialogueMessage,
     type AIDialogueMetadata,
     type AIDialogueRoleConfig,
+    type AIDialogueReference,
     type ContentItem,
     type AIChatInputMessageContent,
   } from '@chenzy-design/core';
@@ -20,6 +21,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import DialogueBox from './DialogueBox.svelte';
   import Hint from '../chat/Hint.svelte';
+  import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
     /** 受控对话列表。 */
@@ -59,6 +61,12 @@
     onMessageEdit?: ((message: AIDialogueMessage) => void) | undefined;
     /** 是否展示编辑操作（默认 true；仅 user 消息）。 */
     editable?: boolean;
+    /** 是否在 user 消息展示引用区（对齐 Semi showReference）。 */
+    showReference?: boolean;
+    /** 引用项点击回调（对齐 Semi onReferenceClick）。 */
+    onReferenceClick?: ((item: AIDialogueReference) => void) | undefined;
+    /** 自定义各区块渲染（对齐 Semi dialogueRenderConfig）。 */
+    dialogueRenderConfig?: DialogueRenderConfig | undefined;
   }
 
   let {
@@ -87,6 +95,9 @@
     messageEditRender,
     onMessageEdit,
     editable = true,
+    showReference = false,
+    onReferenceClick,
+    dialogueRenderConfig,
   }: Props = $props();
 
   const loc = useLocale();
@@ -180,6 +191,9 @@
         {messageEditRender}
         {onMessageEdit}
         {editable}
+        {showReference}
+        {onReferenceClick}
+        {dialogueRenderConfig}
       />
     {/each}
   </div>

@@ -193,6 +193,7 @@ export {
   type AIDialogueRoleConfig,
   type AIDialogueReference,
   type ContentItem as AIDialogueContentItem,
+  type ContentItem,
   type AIMessageStatus,
   type OpenAIResponseObject,
   type ChatCompletionObject,
@@ -200,6 +201,13 @@ export {
   type StreamingResponseState,
   type ChatCompletionStreamChunk,
   type StreamingChatCompletionState,
+  type DialogueRenderConfig,
+  type RenderAvatarProps,
+  type RenderTitleProps,
+  type RenderContentProps,
+  type RenderActionProps,
+  type RenderFullDialogueProps,
+  type FullDialogueNodes,
 } from './ai-chat-dialogue/index.js';
 export {
   AIChatInput,

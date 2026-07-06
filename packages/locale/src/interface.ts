@@ -724,6 +724,8 @@ export interface Locale {
     audio: string;
     /** file item fallback name */
     file: string;
+    /** references region label */
+    references: string;
   };
   AIChatInput: {
     /** rich-text editor region aria-label */
