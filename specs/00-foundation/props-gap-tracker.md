@@ -21,7 +21,7 @@
 **低**：renderPicPreviewIcon · renderPicClose · renderFileOperation · picHeight · picWidth · capture · itemStyle · onFileChange
 
 ### Tree（15）
-**中**：renderFullLabel · searchRender · showFilteredOnly · onChangeWithObject · leafOnly · disableStrictly
+**中**：renderFullLabel · searchRender · ✅ showFilteredOnly · ✅ onChangeWithObject · ✅ leafOnly · ✅ disableStrictly（批次2 已实现：core `conduct(disableStrictly)`+`collectLeafKeys`，Tree.svelte 接线）
 **低**：searchStyle · searchClassName · showClear · onDoubleClick · treeDataSimpleJson · treeNodeFilterProp · expandAction · autoExpandWhenDragEnter · hideDraggingNode · renderDraggingNode · labelEllipsis · autoMergeValue · preventScroll
 > 噪声（不计入）：`directory`（非 Tree prop，属 Upload）；`selectedKey`（≈ 现有 value 单选，已覆盖）。
 
@@ -30,7 +30,7 @@
 **低**：dropdownClassName · dropdownStyle · dropdownMargin · defaultActiveFirstOption · inputProps · showArrow（隐藏开关）· clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · zIndex · ellipsisTrigger · outerTopSlot · outerBottomSlot（inner 版已由 dropdownHeader/Footer 覆盖）
 
 ### Table（9）
-**中**：expandAllGroupRows+defaultExpandAllGroupRows+clickGroupedRowToExpand（可折叠分组，成套）· renderPagination
+**中**：✅ expandAllGroupRows+defaultExpandAllGroupRows+clickGroupedRowToExpand（可折叠分组，成套 — 批次2 已实现，纯 derived+SvelteMap，配套 onGroupExpandChange 受控通知）· renderPagination
 **低**：expandIcon · hideExpandedColumn · rowSpanHover · headerStyle · onGroupedRow
 
 ### TreeSelect（8，全低）
