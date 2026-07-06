@@ -718,6 +718,10 @@ export interface Locale {
     /** resize handle default aria-label */
     handleAriaLabel: string;
   };
+  DragMove: {
+    /** drag handle default aria-label (keyboard-accessible handle) */
+    handleAriaLabel: string;
+  };
   SideBar: {
     /** close button aria-label */
     close: string;

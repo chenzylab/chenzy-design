@@ -508,6 +508,9 @@ export const zh_CN: Locale = {
   Resizable: {
     handleAriaLabel: '调整大小',
   },
+  DragMove: {
+    handleAriaLabel: '拖动',
+  },
   SideBar: {
     close: '关闭',
     back: '返回',

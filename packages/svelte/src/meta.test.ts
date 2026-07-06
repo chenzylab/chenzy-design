@@ -19,6 +19,7 @@ import { meta as pinCodeMeta } from './pincode/meta.js';
 import { meta as hotKeysMeta } from './hotkeys/meta.js';
 import { meta as userGuideMeta } from './user-guide/meta.js';
 import { meta as resizableMeta } from './resizable/meta.js';
+import { meta as dragMoveMeta } from './drag-move/meta.js';
 import { meta as sliderMeta } from './slider/meta.js';
 import { meta as formMeta } from './form/meta.js';
 import { meta as selectMeta } from './select/meta.js';
@@ -89,6 +90,7 @@ const metas = {
   iconButtonMeta,
   floatButtonMeta,
   resizableMeta,
+  dragMoveMeta,
   iconMeta,
   dividerMeta,
   spaceMeta,

@@ -508,6 +508,9 @@ export const en_US: Locale = {
   Resizable: {
     handleAriaLabel: 'Resize',
   },
+  DragMove: {
+    handleAriaLabel: 'Drag to move',
+  },
   SideBar: {
     close: 'Close',
     back: 'Back',

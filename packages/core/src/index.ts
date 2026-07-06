@@ -618,6 +618,20 @@ export {
   type ComputeGroupResizeResult,
 } from './resizable.js';
 export {
+  createDragMove,
+  calcMoveRange,
+  computeNextPosition,
+  clampValueInRange,
+  type CreateDragMoveOptions,
+  type DragMoveController,
+  type DragMoveElementGetter,
+  type DragMoveHandlerGetter,
+  type DragMoveConstrainerGetter,
+  type DragMoveAllow,
+  type DragMoveCustomMove,
+  type MoveRange,
+} from './drag-move.js';
+export {
   parseSideBarWidth,
   clampSideBarWidth,
   filterMcpOptions,
