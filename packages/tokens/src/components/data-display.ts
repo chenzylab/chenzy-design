@@ -111,6 +111,10 @@ export const dataDisplayTokens = {
   'collapse-arrow-color': { value: 'var(--cd-color-collapse-header-icon-default)', category: 'color', label: '箭头颜色', usage: '展开箭头颜色（组件消费）' },
   'collapse-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '动画时长', usage: '展开动画时长（组件消费）' },
 
+  // —— Collapsible（折叠容器原语，Collapse 底层能力；高度过渡由内容决定，仅需 motion token）——
+  'collapsible-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '折叠动画时长', usage: '折叠/展开过渡时长默认值（可被 duration prop 覆盖，组件消费）' },
+  'collapsible-motion-ease': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '折叠动画曲线', usage: '折叠/展开过渡曲线（组件消费）' },
+
   // —— Timeline ——
   'timeline-dot-size': { value: '9px', category: 'width', label: '圆点尺寸', usage: '圆点尺寸（组件消费，对齐 Semi 9px）' },
   'timeline-dot-color': { value: 'var(--cd-color-primary)', category: 'color', label: '圆点颜色', usage: '默认圆点颜色 - 进行中（组件消费）' },
