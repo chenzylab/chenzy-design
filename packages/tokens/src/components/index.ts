@@ -71,6 +71,7 @@ import { userGuideTokens } from './user-guide.js';
 import { resizableTokens } from './resizable.js';
 import { dragMoveTokens } from './drag-move.js';
 import { sideBarTokens } from './sidebar.js';
+import { feedbackTokens } from './feedback.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -145,4 +146,5 @@ export const componentTokens = {
   ...resizableTokens,
   ...dragMoveTokens,
   ...sideBarTokens,
+  ...feedbackTokens,
 } as const;

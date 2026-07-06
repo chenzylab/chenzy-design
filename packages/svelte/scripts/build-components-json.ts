@@ -83,6 +83,7 @@ import { meta as modalMeta } from '../src/modal/meta.ts';
 import { meta as popconfirmMeta } from '../src/popconfirm/meta.ts';
 import { meta as drawerMeta } from '../src/drawer/meta.ts';
 import { meta as sideSheetMeta } from '../src/side-sheet/meta.ts';
+import { meta as feedbackMeta } from '../src/feedback/meta.ts';
 import { meta as toastMeta } from '../src/toast/meta.ts';
 import { meta as notificationMeta } from '../src/notification/meta.ts';
 import { meta as backTopMeta } from '../src/back-top/meta.ts';
@@ -182,6 +183,7 @@ const metas = [
   popconfirmMeta,
   drawerMeta,
   sideSheetMeta,
+  feedbackMeta,
   toastMeta,
   notificationMeta,
   backTopMeta,
