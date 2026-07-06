@@ -110,6 +110,24 @@
     showClear?: boolean;
     /** 清除按钮点击回调 */
     onClear?: () => void;
+    /**
+     * 批量清除前的钩子（对标 Semi beforeClear）：返回 false / Promise.resolve(false) / reject
+     * 会阻止清除；返回 true / 不返回则继续清除。支持异步（await）。入参为当前文件列表。
+     */
+    beforeClear?: (fileList: UploadFileItem[]) => boolean | Promise<boolean>;
+    /**
+     * 单个文件上传成功后的钩子（对标 Semi afterUpload）。在 XHR success（终态且无错误）后同步触发，
+     * 可据返回值更新该文件项：status（改状态，如标记 error）、validateMessage（校验文案）、
+     * name（重命名）、url（替换预览地址）、autoRemove（true 则自动移除该项）。
+     * 注意：与 Semi 一致，afterUpload 为同步返回，不支持异步。
+     */
+    afterUpload?: (payload: { response: unknown; file: UploadFileItem; fileList: UploadFileItem[] }) => {
+      autoRemove?: boolean;
+      status?: UploadFileItem['status'];
+      validateMessage?: string;
+      name?: string;
+      url?: string;
+    } | void;
     /** 文件列表标题文字；false 则不渲染。默认 undefined（不渲染） */
     fileListTitle?: string | false;
     /** 文件名超长是否展示 Tooltip（简单实现：title 属性）。true=展示 title；false=不展示。默认 true */
@@ -144,6 +162,11 @@
     dragSubText?: string | Snippet;
     /** 粘贴添加文件（监听 document paste） */
     addOnPasting?: boolean;
+    /**
+     * 粘贴上传出错时的回调（对标 Semi onPastingError）。addOnPasting 为 true 时，
+     * 读取剪贴板文件失败（如权限拒绝 / 读取异常）会触发。
+     */
+    onPastingError?: (error: unknown) => void;
     /** 触发热点位置（拖拽区时无效）。'start'=前置，'end'=后置，'none'=隐藏触发器。默认 'start' */
     hotSpotLocation?: 'start' | 'end' | 'none';
 
@@ -185,6 +208,49 @@
     showPicInfo?: boolean;
     /** 自定义 picture-card 图片信息浮层渲染（showPicInfo 为 true 时生效）。 */
     renderPicInfo?: Snippet<[{ fileItem: UploadFileItem }]>;
+    /**
+     * 自定义照片墙 hover 时展示的预览图标（对标 Semi renderPicPreviewIcon）。
+     * 只在 picture-card listType 有效。返回内容替换默认的预览热区/图标，
+     * 常配合 onPreviewClick 监听点击。入参含 fileItem 与操作回调。
+     */
+    renderPicPreviewIcon?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    /**
+     * 自定义照片墙的关闭（移除）按钮（对标 Semi renderPicClose）。
+     * 只在 picture-card listType 有效。入参 className 为默认关闭按钮类名，remove 为移除回调。
+     */
+    renderPicClose?: Snippet<[{ className: string; remove: () => void }]>;
+    /**
+     * 自定义文件列表项操作区（对标 Semi renderFileOperation）。
+     * 只在 text/list listType 有效。返回内容替换默认的重试/移除操作区，
+     * 入参含 fileItem 与操作回调（remove/retry/preview）。
+     */
+    renderFileOperation?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    /**
+     * 照片墙模式下自定义图片展示高度（对标 Semi picHeight）。number 视为像素。
+     * 只在 image/picture-card listType 有效，写入缩略图卡片 inline style。
+     */
+    picHeight?: number | string;
+    /**
+     * 照片墙模式下自定义图片展示宽度（对标 Semi picWidth）。number 视为像素。
+     * 只在 image/picture-card listType 有效，写入缩略图卡片 inline style。
+     */
+    picWidth?: number | string;
+    /**
+     * 透传给底层 file input 的 capture 属性（对标 Semi capture），移动端拍照/录像来源。
+     * boolean 或 'user'（前置）/'environment'（后置）。命令式设置到隐藏 input。
+     */
+    capture?: boolean | 'user' | 'environment';
+    /**
+     * 每个文件列表项的自定义 style（对标 Semi itemStyle）。合并进默认列表项/卡片容器 style。
+     * 支持字符串或对象（对象会拼成 style 字符串）。
+     */
+    itemStyle?: string | Record<string, string>;
+    /**
+     * 选中原始 File 列表变化的回调（对标 Semi onFileChange）。
+     * 区别于 onChange（回传 UploadFileItem 列表）：onFileChange 在用户每次选择/拖入/粘贴文件、
+     * 经 accept/limit 过滤后回传当次入列的原始 File 数组。
+     */
+    onFileChange?: (files: File[]) => void;
 
     // ——— 移除 / 超时 / 触发时机（对标 Semi onRemove/beforeRemove/timeout/uploadTrigger）———
     /**
@@ -242,6 +308,8 @@
     showReplace = false,
     showClear = false,
     onClear,
+    beforeClear,
+    afterUpload,
     fileListTitle,
     showTooltip = true,
     prompt,
@@ -259,6 +327,7 @@
     dragMainText,
     dragSubText,
     addOnPasting = false,
+    onPastingError,
     hotSpotLocation = 'start',
     crop = false,
     beforeCrop,
@@ -269,6 +338,14 @@
     renderThumbnail,
     showPicInfo = false,
     renderPicInfo,
+    renderPicPreviewIcon,
+    renderPicClose,
+    renderFileOperation,
+    picHeight,
+    picWidth,
+    capture,
+    itemStyle,
+    onFileChange,
     beforeRemove,
     onRemove,
     timeout = 0,
@@ -330,11 +407,49 @@
     commit(current.map((it) => (it.uid === uid ? { ...it, ...patch } : it)));
   }
 
+  // afterUpload（对标 Semi handleSuccess 的 notifyAfterUpload 分支）：上传成功后据回调返回值
+  // 更新该文件项。返回 { autoRemove } → 从列表移除；否则应用 status/validateMessage/name/url。
+  // 与 Semi 一致：response 优先按 JSON 解析，失败回退原始文本；afterUpload 为同步返回。
+  function applyAfterUpload(uid: string, responseText: string) {
+    if (!afterUpload) return;
+    const item = current.find((it) => it.uid === uid);
+    if (!item) return;
+    let response: unknown = responseText;
+    try {
+      response = JSON.parse(responseText);
+    } catch {
+      response = responseText;
+    }
+    const result = afterUpload({ response, file: item, fileList: current });
+    if (!result) return;
+    if (result.autoRemove) {
+      removeInternal(uid);
+      return;
+    }
+    const patch: Partial<UploadFileItem> = {};
+    if (result.status) patch.status = result.status;
+    if (result.validateMessage !== undefined) patch.error = result.validateMessage;
+    if (result.name !== undefined) patch.name = result.name;
+    if (result.url !== undefined) {
+      // 用户替换预览地址：释放本地 objectURL，改用返回的 url。
+      revokeUrl(uid);
+      patch.url = result.url;
+    }
+    if (Object.keys(patch).length > 0) patchItem(uid, patch);
+  }
+
   // directory 是非标准 input 属性（webkitdirectory），Svelte 模板不直接支持，
   // 故命令式 toggle（红线 #3）。directory 变化时同步增删。
+  // capture（移动端拍照来源）同为需命令式设置的 input 属性：true → 空串（默认来源），
+  // 'user'/'environment' 指定前/后置；false/undefined → 移除。
   $effect(() => {
     if (!inputEl) return;
     inputEl.toggleAttribute('webkitdirectory', directory);
+    if (capture === undefined || capture === false) {
+      inputEl.removeAttribute('capture');
+    } else {
+      inputEl.setAttribute('capture', capture === true ? '' : capture);
+    }
   });
 
   // 卸载时中止所有进行中的上传 + 释放预览 objectURL。
@@ -357,16 +472,21 @@
   $effect(() => {
     if (!addOnPasting || disabled) return;
     function handlePaste(e: ClipboardEvent) {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      const files: File[] = [];
-      for (const item of Array.from(items)) {
-        if (item.kind === 'file') {
-          const f = item.getAsFile();
-          if (f) files.push(f);
+      try {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        const files: File[] = [];
+        for (const item of Array.from(items)) {
+          if (item.kind === 'file') {
+            const f = item.getAsFile();
+            if (f) files.push(f);
+          }
         }
+        if (files.length > 0) addFiles(files);
+      } catch (error) {
+        // 读取剪贴板文件失败（如权限拒绝 / 读取异常）：通知外部（对标 Semi onPastingError）。
+        onPastingError?.(error);
       }
-      if (files.length > 0) addFiles(files);
     }
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
@@ -413,6 +533,8 @@
         announcedBucket.delete(item.uid);
         if (isUploadOk(xhr.status)) {
           patchItem(item.uid, { status: 'success', percent: 100 });
+          // afterUpload（对标 Semi）：成功终态后据返回值改该项状态/文案/名称/预览地址或自动移除。
+          applyAfterUpload(item.uid, xhr.responseText);
           // 完成必播（polite，不抢断）。
           announcer.announce(loc().t('Upload.announceSuccess', { name: item.name }));
           onSuccess?.(xhr.responseText, item);
@@ -554,6 +676,9 @@
         accepted = accepted.slice(0, room);
       }
     }
+
+    // onFileChange（对标 Semi notifyFileSelect）：回传当次经 accept/limit 过滤后入列的原始 File 数组。
+    if (accepted.length > 0) onFileChange?.(accepted);
 
     const newItems = accepted.map(buildItem);
     commit([...current, ...newItems]);
@@ -700,9 +825,23 @@
     dispatch(item, item.file, [item.file]);
   }
 
-  /** 清除所有文件：中止进行中的上传，释放 objectURL，清空列表。 */
-  function clearAll() {
+  /**
+   * 清除所有文件：先跑 beforeClear（false/reject 阻止清除），通过后中止进行中的上传、
+   * 释放 objectURL、清空列表。异步 await（对标 Semi handleClear）。
+   */
+  async function clearAll() {
     if (disabled) return;
+    if (beforeClear) {
+      let allow: boolean;
+      try {
+        allow = await beforeClear(current);
+      } catch {
+        // reject 视为阻止清除。
+        allow = false;
+      }
+      if (allow === false) return;
+      if (!mounted) return;
+    }
     for (const xhr of xhrMap.values()) xhr.abort();
     xhrMap.clear();
     for (const u of objectUrls.values()) URL.revokeObjectURL(u);
@@ -747,6 +886,25 @@
 
   // 是否水平布局 prompt（left 或 right）
   const promptRow = $derived(promptPosition === 'left' || promptPosition === 'right');
+
+  // itemStyle（对标 Semi）：每个文件列表项/卡片的自定义 style。对象形态拼成 style 字符串，
+  // 字符串形态原样透传；未提供则为 undefined（不加 style 属性）。
+  const itemStyleStr = $derived.by<string | undefined>(() => {
+    if (itemStyle === undefined) return undefined;
+    if (typeof itemStyle === 'string') return itemStyle;
+    const parts = Object.entries(itemStyle).map(([k, v]) => `${k}: ${v}`);
+    return parts.length > 0 ? parts.join('; ') : undefined;
+  });
+
+  // picWidth/picHeight（对标 Semi）：照片墙缩略图卡片自定义宽高。number → px。
+  // 与 itemStyle 合并写入卡片 inline style（itemStyle 在后，优先级更高）。
+  const cardStyleStr = $derived.by<string | undefined>(() => {
+    const parts: string[] = [];
+    if (picWidth !== undefined) parts.push(`inline-size: ${typeof picWidth === 'number' ? `${picWidth}px` : picWidth}`);
+    if (picHeight !== undefined) parts.push(`block-size: ${typeof picHeight === 'number' ? `${picHeight}px` : picHeight}`);
+    if (itemStyleStr) parts.push(itemStyleStr);
+    return parts.length > 0 ? parts.join('; ') : undefined;
+  });
 
   // ——— 裁剪流程 ———
   // 归一化 crop 配置：true → 默认对象；对象 → 原样。
@@ -970,7 +1128,7 @@
     <ul class="cd-upload__list">
       {#each current as item (item.uid)}
         {#if renderFileItem}
-          <li class="cd-upload__item cd-upload__item--custom">
+          <li class="cd-upload__item cd-upload__item--custom" style={itemStyleStr}>
             {@render renderFileItem({
               fileItem: item,
               remove: () => remove(item.uid),
@@ -979,7 +1137,7 @@
             })}
           </li>
         {:else}
-        <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'}>
+        <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'} style={itemStyleStr}>
           <div class="cd-upload__item-main">
             <span
               class="cd-upload__item-name"
@@ -989,23 +1147,35 @@
             {#if item.status !== 'uploading'}
               <span class="cd-upload__item-status">{item.error ?? item.status}</span>
             {/if}
-            {#if item.status === 'error' && showRetry !== false}
+            {#if renderFileOperation}
+              <!-- renderFileOperation：自定义列表项操作区（替换默认重试/移除）。 -->
+              <span class="cd-upload__item-operation">
+                {@render renderFileOperation({
+                  fileItem: item,
+                  remove: () => remove(item.uid),
+                  retry: () => retryItem(item),
+                  preview: () => onPreviewClick?.(item),
+                })}
+              </span>
+            {:else}
+              {#if item.status === 'error' && showRetry !== false}
+                <button
+                  type="button"
+                  class="cd-upload__retry-btn"
+                  {disabled}
+                  onclick={() => retryItem(item)}
+                >{loc().t('Upload.retry')}</button>
+              {/if}
               <button
                 type="button"
-                class="cd-upload__retry-btn"
+                class="cd-upload__item-remove"
+                aria-label={loc().t('Upload.remove')}
                 {disabled}
-                onclick={() => retryItem(item)}
-              >{loc().t('Upload.retry')}</button>
+                onclick={() => remove(item.uid)}
+              >
+                &times;
+              </button>
             {/if}
-            <button
-              type="button"
-              class="cd-upload__item-remove"
-              aria-label={loc().t('Upload.remove')}
-              {disabled}
-              onclick={() => remove(item.uid)}
-            >
-              &times;
-            </button>
           </div>
           {#if item.status === 'uploading'}
             <Progress
@@ -1031,6 +1201,7 @@
           class="cd-upload__card"
           class:cd-upload__card--error={item.status === 'error'}
           class:cd-upload__card--uploading={item.status === 'uploading'}
+          style={cardStyleStr}
         >
           {#if renderThumbnail}
             <!-- renderThumbnail：接管整个缩略图区域（含图片本身）。 -->
@@ -1081,16 +1252,35 @@
           {/if}
           <div class="cd-upload__card-overlay">
             <span class="cd-upload__card-name">{item.name}</span>
-            <button
-              type="button"
-              class="cd-upload__card-remove"
-              aria-label={loc().t('Upload.remove')}
-              {disabled}
-              onclick={() => remove(item.uid)}
-            >
-              &times;
-            </button>
+            {#if renderPicClose}
+              <!-- renderPicClose：自定义照片墙关闭（移除）按钮。 -->
+              {@render renderPicClose({
+                className: 'cd-upload__card-remove',
+                remove: () => remove(item.uid),
+              })}
+            {:else}
+              <button
+                type="button"
+                class="cd-upload__card-remove"
+                aria-label={loc().t('Upload.remove')}
+                {disabled}
+                onclick={() => remove(item.uid)}
+              >
+                &times;
+              </button>
+            {/if}
           </div>
+          {#if renderPicPreviewIcon}
+            <!-- renderPicPreviewIcon：照片墙 hover 预览图标（picture-card），常配合 onPreviewClick。 -->
+            <div class="cd-upload__pic-preview-icon">
+              {@render renderPicPreviewIcon({
+                fileItem: item,
+                remove: () => remove(item.uid),
+                retry: () => retryItem(item),
+                preview: () => onPreviewClick?.(item),
+              })}
+            </div>
+          {/if}
           {#if item.status === 'error' && showRetry !== false && item.file}
             <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）。 -->
             <button
@@ -1497,6 +1687,33 @@
     align-items: center;
     justify-content: center;
   }
+  /* renderFileOperation 自定义操作区：靠右排布，与默认操作区占位一致。 */
+  .cd-upload__item-operation {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    margin-inline-start: auto;
+  }
+  /* renderPicPreviewIcon 预览图标浮层（picture-card）：hover/focus 时居中显现（对齐 Semi preview-icon）。 */
+  .cd-upload__pic-preview-icon {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    z-index: 2;
+  }
+  .cd-upload__card:hover .cd-upload__pic-preview-icon,
+  .cd-upload__card:focus-within .cd-upload__pic-preview-icon {
+    opacity: 1;
+    pointer-events: auto;
+  }
   /* renderFileItem 自定义列表项：清空默认卡片内边距/背景，交由使用方渲染。 */
   .cd-upload__item--custom {
     padding: 0;
@@ -1653,6 +1870,7 @@
     .cd-upload__card-overlay,
     .cd-upload__card::before,
     .cd-upload__card-retry,
+    .cd-upload__pic-preview-icon,
     .cd-upload__item,
     .cd-upload__dragger {
       transition: none;
