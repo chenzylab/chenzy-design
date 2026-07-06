@@ -19,6 +19,14 @@ SideBar 不是单个组件，而是一个「基础浮层容器 + 4 类 AI 业务
 
 每阶段独立 PR、独立 DoD、逐步合入。P4 复用已实现的 CodeHighlight/JsonViewer；P5 复用 AIChatInput 已引入的 tiptap 动态 import 范式（见记忆 aichatinput-phased-build）。
 
+### P5 tiptap 实现指引（对标 Semi `sideBar/widget/file.js` + `imageSlot.js`，已核对）
+- **本库现状**：已装 `@tiptap/core` / `@tiptap/pm` / `@tiptap/starter-kit` / `svelte-tiptap`（AIChatInput 在用，动态 import 范式已成熟）。
+- **P5 需补装 3 个 tiptap 官方扩展**（框架无关，Semi FileContent 用到、本库尚未装）：`@tiptap/extension-text-style`、`@tiptap/extension-image`、`@tiptap/extension-text-align`。
+- **默认扩展集对齐 Semi**：`StarterKit`（configure link openOnClick:false）+ TextStyleKit + Image + TextAlign(types:['heading','paragraph']) + 自研 SelectionMark + 自研 ImageUploadNode，末尾拼接使用方传入的 `extensions`。
+- **编辑器**：`editable` / `content` / `onUpdate → onContentChange(editor.getHTML())`，对齐 Semi。
+- **imageSlot（ImageUploadNode）**：`Node.create({ name:'imageUpload' })`，Svelte 侧用 **svelte-tiptap 的 NodeViewRenderer**（替代 Semi 的 ReactNodeViewRenderer），节点视图内嵌本库 **Upload**（draggable），支持 `getUploadImageSrc`（继承 UploadProps + getUploadImageSrc = ImageUploadNodeOptions）。
+- **Svelte 适配差异**：Semi 用 `@tiptap/react` 的 useEditor/EditorContent/ReactNodeViewRenderer；本库用 `svelte-tiptap` 对应物。逻辑照搬，绑定层换 Svelte。
+
 ## 1. 概述
 
 SideBar 在 AI 对话/编辑器场景提供**右侧可伸缩浮层**，承载：MCP 工具配置、参考来源溯源、代码/JSON 预览、富文本查看编辑。通过 `mode` 在主视图与详情视图间路由。
