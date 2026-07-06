@@ -209,6 +209,7 @@ export const en_US: Locale = {
     a11yChecked: 'Checked {label}',
     expand: 'Expand',
     collapse: 'Collapse',
+    clear: 'Clear',
   },
   Image: {
     errorAlt: 'Failed to load image',

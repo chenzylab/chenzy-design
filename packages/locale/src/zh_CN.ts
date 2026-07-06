@@ -209,6 +209,7 @@ export const zh_CN: Locale = {
     a11yChecked: '已勾选 {label}',
     expand: '展开',
     collapse: '收起',
+    clear: '清除',
   },
   Image: {
     errorAlt: '图片加载失败',

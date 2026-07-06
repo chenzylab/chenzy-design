@@ -287,6 +287,7 @@ export interface Locale {
     a11yChecked: string;
     expand: string;
     collapse: string;
+    clear: string;
   };
   Image: {
     errorAlt: string;
