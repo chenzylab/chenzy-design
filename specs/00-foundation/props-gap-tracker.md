@@ -27,14 +27,14 @@
 
 ### Select（15）
 **中**：✅ triggerRender · ✅ searchPosition · ✅ insetLabel+insetLabelId（批次2 已实现）
-**低**：dropdownClassName · dropdownStyle · dropdownMargin · defaultActiveFirstOption · inputProps · showArrow（隐藏开关）· clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · zIndex · ellipsisTrigger · outerTopSlot · outerBottomSlot（inner 版已由 dropdownHeader/Footer 覆盖）
+**低**：✅ dropdownClassName · ✅ dropdownStyle · ✅ dropdownMargin · defaultActiveFirstOption · inputProps · showArrow（隐藏开关）· clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · ✅ zIndex · ellipsisTrigger · outerTopSlot · outerBottomSlot（批次3 浮层横扫补 dropdownClassName/dropdownStyle/dropdownMargin/zIndex）
 
 ### Table（9）
 **中**：✅ expandAllGroupRows+defaultExpandAllGroupRows+clickGroupedRowToExpand（可折叠分组，成套 — 批次2 已实现，纯 derived+SvelteMap，配套 onGroupExpandChange 受控通知）· renderPagination
 **低**：expandIcon · hideExpandedColumn · rowSpanHover · headerStyle · onGroupedRow
 
 ### TreeSelect（8，全低）
-filterTreeNode · emptyContent · dropdownClassName · dropdownStyle · zIndex · mouseEnterDelay · mouseLeaveDelay · searchRender
+filterTreeNode · emptyContent · ✅ dropdownClassName · ✅ dropdownStyle · ✅ zIndex · mouseEnterDelay · mouseLeaveDelay · searchRender（批次3 补浮层 4 件套，含真正接入此前仅声明的 dropdownMargin）
 
 ### DatePicker（4）
 **中**：✅ defaultPickerValue · ✅ timeZone（批次2 已实现；timeZone 仅格式化显示层）
@@ -53,10 +53,10 @@ modalRender · cancelLoading · maskFixed · getContainerContext（注：directi
 tabBarClassName · tabBarStyle · visibleTabsStyle
 
 ### Cascader（2，全低）
-dropdownClassName · dropdownMargin
+✅ dropdownClassName · ✅ dropdownMargin（批次3 已补，并真正接入此前仅声明的 dropdownStyle）
 
 ### Dropdown（3，全低）
-contentClassName · rePosKey · onEscKeyDown
+✅ contentClassName · ✅ rePosKey · ✅ onEscKeyDown（批次3 已补，浮层用 className/contentClassName 命名，非 dropdownClassName；zIndex/spacing 本已有）
 
 ## 2. 剔除的假阳（27，勿误报为缺口）
 
@@ -129,8 +129,11 @@ Upload/Select/DatePicker/Cascader 的 validateStatus → 本库统一 `status?: 
    > 注：Select searchPosition 默认取 'dropdown'（浮层内搜索），需触发器内联搜索者显式传 'trigger'（1.0 前无兼容包袱）。TreeSelect 的交互增强归入批次3 浮层横扫。
 
 **批次 3（低优先边角，统一收口）**
-7. 浮层通用属性横扫：给 Select/TreeSelect/Cascader/Dropdown 统一补 dropdownClassName/dropdownStyle/zIndex/dropdownMargin——**先确立库内统一浮层透传约定，再一次性铺开**，避免逐组件重复设计。
-8. 其余单点边角随手补或按需响应。
+7. ✅ 浮层通用属性横扫（已完成）：Select(dropdownClassName/dropdownStyle/zIndex/dropdownMargin)、Dropdown(className/contentClassName/style + rePosKey/onEscKeyDown)、TreeSelect+Cascader(4 件套补齐)。
+   > **统一约定**：库内浮层原语 `_floating/use-floating.ts` 的 `use:floating` action；各组件在 portal 浮层 div 上注入 class 追加 / style 合并 / z-index / offset(=dropdownMargin)。dropdownMargin 支持 number（映射 offset），对象形态仅接主轴（use:floating 单轴 offset 限制）。
+   > **命名以 Semi 各组件真实 API 为准**：Select 系用 dropdownClassName，Dropdown 用 className/contentClassName。
+   > **发现**：TreeSelect dropdownMargin、Cascader dropdownStyle 此前「仅声明未消费」，本次真正接入生效。
+8. 其余单点边角随手补或按需响应（Upload beforeClear/afterUpload/onPastingError；各组件低优先 render/样式/边角 prop）。
 
 ## 5. 优先级分布汇总
 
