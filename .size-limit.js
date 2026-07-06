@@ -143,9 +143,10 @@ const components = [
   ['chat', '{ Chat }', '8.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   ['ai-chat-dialogue', '{ AIChatDialogue }', '6 KB'],
-  // SideBar P0+P1（Container 浮层壳 + 主壳 mode 路由 + Options）；spec §9 Container ≤4KB + 主壳 ≤3KB。
-  // 预算按实测校准（P2~P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer }', '7 KB'],
+  // SideBar P0+P1+P2（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源）；
+  // spec §9 Container ≤4KB + 主壳 ≤3KB + Annotation ≤3KB。Annotation 复用 Collapse，
+  // 度量含其自身壳；预算按实测校准（P3~P5 后续阶段各自增量）。
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation }', '11 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。

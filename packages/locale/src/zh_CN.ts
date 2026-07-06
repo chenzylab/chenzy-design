@@ -511,6 +511,10 @@ export const zh_CN: Locale = {
   SideBar: {
     close: '关闭',
     back: '返回',
+    annotationTitle: '参考来源',
+    annotationEmpty: '暂无参考来源',
+    videoDuration: '视频时长 {duration}',
+    citationOrder: '第 {order} 条引用',
   },
   UserGuide: {
     skip: '跳过',
