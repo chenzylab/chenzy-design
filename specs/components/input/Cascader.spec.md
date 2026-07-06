@@ -81,6 +81,9 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 | zIndex | `number` | `1030` | 浮层层级 |
 | getPopupContainer | `() => HTMLElement` | `body` | 浮层挂载容器 |
 | columnWidth | `number \| number[]` | `180` | 列宽（统一或逐列） |
+| dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存） |
+| dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式） |
+| dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop |
 
 ### Events
 

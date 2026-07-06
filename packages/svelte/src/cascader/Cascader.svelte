@@ -125,8 +125,12 @@
     position?: string;
     /** 选择框样式 */
     style?: string;
-    /** 下拉菜单样式 */
+    /** 下拉菜单样式（合并进浮层根节点，不覆盖 use:floating 写入的定位样式） */
     dropdownStyle?: string | Record<string, string>;
+    /** 追加到浮层根节点的自定义类名（与内置类名并存） */
+    dropdownClassName?: string;
+    /** 浮层与 trigger 的额外间距（px），映射到浮层 offset；对象形态仅取 marginTop（其余方向暂未接入定位）。 */
+    dropdownMargin?: number | { marginTop?: number; marginBottom?: number; marginLeft?: number; marginRight?: number };
     /** 失焦回调 */
     onBlur?: (e: MouseEvent) => void;
     /** 聚焦回调 */
@@ -253,6 +257,8 @@
     position,
     style,
     dropdownStyle,
+    dropdownClassName,
+    dropdownMargin,
     onBlur,
     onFocus,
     preventScroll = false,
@@ -292,6 +298,24 @@
   // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
   const globalPopupContainer = getGlobalPopupContainer();
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
+
+  // 浮层与触发器间距：dropdownMargin 数字直接作 offset；对象形态取 marginTop（其余方向暂未接入）；未传回退默认 4。
+  const dropdownOffset = $derived.by(() => {
+    if (dropdownMargin == null) return 4;
+    if (typeof dropdownMargin === 'number') return dropdownMargin;
+    return dropdownMargin.marginTop ?? 4;
+  });
+
+  // 浮层自定义样式：合并 dropdownStyle（字符串或对象）与 zIndex，供拼接到浮层 inline style。
+  const dropdownStyleStr = $derived.by(() => {
+    const parts: string[] = [];
+    if (dropdownStyle) {
+      if (typeof dropdownStyle === 'string') parts.push(dropdownStyle);
+      else parts.push(Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; '));
+    }
+    if (zIndex != null) parts.push(`z-index: ${zIndex}`);
+    return parts.filter(Boolean).join('; ');
+  });
 
   // --- keyMaps: 字段名映射，规整 treeData ---
   const kmValue = $derived(keyMaps?.value ?? 'value');
@@ -1200,19 +1224,19 @@
 
   {#if shouldRender}
     <div
-      class="cd-cascader__panel"
+      class={['cd-cascader__panel', dropdownClassName].filter(Boolean).join(' ')}
       class:cd-cascader__panel--hidden={!isOpen}
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
         placement: 'bottomStart',
         autoAdjust: true,
-        offset: 4,
+        offset: dropdownOffset,
         getContainer: resolvePopupContainer,
         open: isOpen,
       }}
       id={listId}
-      style:z-index={zIndex}
+      style={dropdownStyleStr}
     >
       {#if topSlot}{@render topSlot()}{/if}
 
