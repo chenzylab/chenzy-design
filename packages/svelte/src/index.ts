@@ -35,7 +35,16 @@ export {
 } from './layout/index.js';
 
 // --- M2 Input ---
-export { Input, inputMeta } from './input/index.js';
+export {
+  Input,
+  InputGroup,
+  inputMeta,
+  inputGroupMeta,
+  INPUT_GROUP_CTX,
+  getInputGroupContext,
+  type InputGroupContext,
+  type InputGroupSize,
+} from './input/index.js';
 export { TextArea, textareaMeta } from './textarea/index.js';
 export { Switch, switchMeta } from './switch/index.js';
 export { Checkbox, CheckboxGroup, checkboxMeta } from './checkbox/index.js';
@@ -103,7 +112,7 @@ export {
 } from './scroll-list/index.js';
 export { Avatar, AvatarGroup, avatarMeta } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
-export { Card, cardMeta } from './card/index.js';
+export { Card, CardGroup, cardMeta, cardGroupMeta } from './card/index.js';
 export { Tooltip, tooltipMeta } from './tooltip/index.js';
 export { Popover, popoverMeta } from './popover/index.js';
 export { Empty, emptyMeta } from './empty/index.js';

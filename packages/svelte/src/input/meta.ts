@@ -51,3 +51,38 @@ export const meta = {
   },
   tokens: ['--cd-input-*', '--cd-focus-ring', '--cd-motion-*'],
 } as const;
+
+/**
+ * InputGroup — see specs/components/input/InputGroup.spec.md
+ * 把多个输入类控件无缝拼接为一组：相邻边框合并、首尾圆角、统一 size/disabled（context 回退透传）。
+ */
+export const inputGroupMeta = {
+  name: 'InputGroup',
+  category: 'input',
+  relatedTo: 'Input',
+  semiEquivalent: 'InputGroup',
+  description:
+    '输入组合容器：将多个输入类控件（Input/Select/DatePicker 等）拼接为一体（相邻边框合并、首尾圆角），统一 size/disabled 经 context 回退透传（控件显式 prop 优先），可选整组 label。',
+  exports: ['InputGroup'],
+  props: [
+    { name: 'size', type: "'small'|'default'|'large'", default: 'undefined', desc: '整组尺寸，回退透传子控件（子控件显式 size 优先）' },
+    { name: 'disabled', type: 'boolean', default: 'undefined', desc: '整组禁用，回退透传子控件（子控件显式 disabled 优先）' },
+    { name: 'label', type: 'string', default: 'undefined', desc: '整组标签，关联 aria-labelledby' },
+    { name: 'labelPosition', type: "'top'|'left'", default: "'top'", desc: '标签位置' },
+    { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '组级聚焦（子控件 focusin 冒泡）' },
+    { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '组级失焦（子控件 focusout 冒泡）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '子输入控件' },
+  ],
+  events: [
+    { name: 'onFocus', desc: '组内控件获得焦点' },
+    { name: 'onBlur', desc: '组内控件失去焦点' },
+  ],
+  slots: [{ name: 'children', desc: '子输入控件（Input/Select/DatePicker 等）' }],
+  a11y: {
+    role: 'group',
+    notes: ['组容器 role=group', '有 label 时经 useId 关联 aria-labelledby', '各子控件保留自身 a11y'],
+  },
+  tokens: ['--cd-inputgroup-border', '--cd-inputgroup-radius', '--cd-inputgroup-label-gap'],
+} as const;

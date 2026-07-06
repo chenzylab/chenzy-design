@@ -54,7 +54,7 @@ default：子输入控件（Input/Select/DatePicker 等）。
 
 ## 9. 性能
 
-svelte gzip ≤ 1.5 KB。CSS 拼接 + context 协调 size，无重运行时。
+svelte gzip ≤ 1.5 KB。CSS 拼接 + context 协调 size，无重运行时。size-limit 与 Input 合并度量（dir `input`），预算按实测校准（`{ Input, InputGroup }` ≈ 4.76 KB → 预算 5 KB）。
 
 ## 10. AI 元数据
 
