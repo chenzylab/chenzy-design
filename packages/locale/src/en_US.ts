@@ -508,6 +508,10 @@ export const en_US: Locale = {
   Resizable: {
     handleAriaLabel: 'Resize',
   },
+  SideBar: {
+    close: 'Close',
+    back: 'Back',
+  },
   UserGuide: {
     skip: 'Skip',
     next: 'Next',

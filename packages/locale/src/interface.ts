@@ -718,6 +718,12 @@ export interface Locale {
     /** resize handle default aria-label */
     handleAriaLabel: string;
   };
+  SideBar: {
+    /** close button aria-label */
+    close: string;
+    /** detail back button aria-label */
+    back: string;
+  };
   UserGuide: {
     /** skip button */
     skip: string;

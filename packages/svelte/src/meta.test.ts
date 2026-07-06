@@ -82,6 +82,7 @@ import { meta as jsonViewerMeta } from './json-viewer/meta.js';
 import { meta as chatMeta } from './chat/meta.js';
 import { meta as aiChatDialogueMeta } from './ai-chat-dialogue/meta.js';
 import { meta as aiChatInputMeta } from './ai-chat-input/meta.js';
+import { meta as sideBarMeta } from './sidebar/meta.js';
 
 const metas = {
   buttonMeta,
@@ -167,6 +168,7 @@ const metas = {
   chatMeta,
   aiChatDialogueMeta,
   aiChatInputMeta,
+  sideBarMeta,
 };
 
 type PropEntry = { name?: string; type?: string };

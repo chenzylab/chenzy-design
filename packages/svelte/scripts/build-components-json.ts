@@ -101,6 +101,7 @@ import { meta as aiChatDialogueMeta } from '../src/ai-chat-dialogue/meta.ts';
 import { meta as aiChatInputMeta } from '../src/ai-chat-input/meta.ts';
 import { meta as userGuideMeta } from '../src/user-guide/meta.ts';
 import { meta as resizableMeta } from '../src/resizable/meta.ts';
+import { meta as sideBarMeta } from '../src/sidebar/meta.ts';
 
 /**
  * Full list of component metas. Mirrors the import set validated in
@@ -194,6 +195,7 @@ const metas = [
   cropperMeta,
   aiChatDialogueMeta,
   aiChatInputMeta,
+  sideBarMeta,
 ] as const;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
