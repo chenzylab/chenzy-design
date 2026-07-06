@@ -441,6 +441,8 @@ export interface Locale {
     clear: string;
     emptyText: string;
     searchPlaceholder: string;
+    /** 多选 maxTagCount 折叠出的 +N 触发器可访问名（hover 弹出剩余 Tag 浮层），uses {count}（被折叠的标签数） */
+    restTagsCount: string;
   };
   AutoComplete: {
     /** combobox 输入框缺省可访问名 */

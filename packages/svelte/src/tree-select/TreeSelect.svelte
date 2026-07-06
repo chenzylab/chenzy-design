@@ -37,6 +37,7 @@
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
+  import Popover from '../popover/Popover.svelte';
   import type { TreeNode, TreeKey } from './types.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -228,9 +229,9 @@
     autoMergeValue?: boolean;
     /** onChange 回调携带完整节点对象而非仅 key。默认 false。 */
     onChangeWithObject?: boolean;
-    /** 超出 maxTagCount 折叠的 tag 以 popover 形式展示剩余项。默认 false。 */
+    /** 多选 maxTagCount 折叠出 +N 时，hover +N 用本库 Popover 浮层展示折叠掉的剩余全部 Tag。默认 false（静态 +N）。 */
     showRestTagsPopover?: boolean;
-    /** 传给剩余 tags popover 的额外 props。 */
+    /** 透传给剩余 Tag Popover 浮层的额外 props（在默认 trigger=hover/position=top 之后展开，可覆盖）。 */
     restTagsPopoverProps?: Record<string, unknown>;
     /** trigger 多选 tags 换行显示（默认单行截断折叠）。默认 false。 */
     triggerTagWrap?: boolean;
@@ -603,6 +604,12 @@
     maxTagCount !== undefined && maxTagCount >= 0
       ? Math.max(0, checkedNodes.length - maxTagCount)
       : 0,
+  );
+  // showRestTagsPopover：+N hover 时浮层展示的隐藏剩余节点（折叠掉的那部分）。
+  const hiddenTagNodes = $derived(
+    maxTagCount !== undefined && maxTagCount >= 0
+      ? checkedNodes.slice(maxTagCount)
+      : [],
   );
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
@@ -1262,6 +1269,16 @@
   </div>
 {/snippet}
 
+{#snippet restTagsTrigger()}
+  <!-- +N 折叠触发器：aria-label 走 i18n restTagsCount（「还有 {count} 项」/「{count} more」）供屏幕阅读器朗读折叠数 -->
+  <span
+    class="cd-tree-select__rest-trigger"
+    aria-label={loc().t('TreeSelect.restTagsCount', { count: hiddenTagCount })}
+  >
+    <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+  </span>
+{/snippet}
+
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {@const setSize = nodes.length}
   {#each nodes as node, i (node.key)}
@@ -1336,7 +1353,27 @@
               </Tag>
             {/each}
             {#if hiddenTagCount > 0}
-              <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
+              {#if showRestTagsPopover}
+                <!-- showRestTagsPopover：hover +N 用本库 Popover 展示折叠掉的剩余 Tag（restTagsPopoverProps 可覆盖默认 props） -->
+                <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
+                  {@render restTagsTrigger()}
+                  {#snippet contentSlot()}
+                    <span class="cd-tree-select__rest-tags">
+                      {#each hiddenTagNodes as node (node.key)}
+                        <Tag
+                          size={size === 'large' ? 'default' : 'small'}
+                          closable={!disabled}
+                          onClose={() => removeChecked(node)}
+                        >
+                          {node.label}
+                        </Tag>
+                      {/each}
+                    </span>
+                  {/snippet}
+                </Popover>
+              {:else}
+                {@render restTagsTrigger()}
+              {/if}
             {/if}
           </span>
         {:else}
@@ -1762,6 +1799,19 @@
     padding: var(--cd-tree-node-padding-x);
     color: var(--cd-color-text-3);
     text-align: center;
+  }
+  /* +N 折叠触发器：内联包裹 Tag，承载 aria-label（Popover trigger 宿主） */
+  .cd-tree-select__rest-trigger {
+    display: inline-flex;
+    align-items: center;
+  }
+  /* showRestTagsPopover 浮层内剩余 Tag 列表：换行铺排，限制最大宽避免过宽 */
+  .cd-tree-select__rest-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-extra-tight);
+    align-items: center;
+    max-inline-size: 240px;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-tree-select__trigger,

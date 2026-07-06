@@ -329,6 +329,7 @@ export const en_US: Locale = {
     clear: 'Clear',
     emptyText: 'No data',
     searchPlaceholder: 'Search',
+    restTagsCount: '{count} more',
   },
   AutoComplete: {
     ariaLabel: 'Autocomplete',

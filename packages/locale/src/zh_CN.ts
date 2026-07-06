@@ -329,6 +329,7 @@ export const zh_CN: Locale = {
     clear: '清除',
     emptyText: '无数据',
     searchPlaceholder: '搜索',
+    restTagsCount: '还有 {count} 项',
   },
   AutoComplete: {
     ariaLabel: '自动完成输入框',
