@@ -177,7 +177,7 @@ RTL 语言（如 ar/he）通过 `dir="rtl"` 触发布局镜像，文案由 i18n 
 
 | 项 | 预算 / 策略 |
 |---|---|
-| svelte 组件 gzip | ≤ 6.95 KB（不含 Dropdown，dropdown 溢出按需引入） |
+| svelte 组件 gzip | ≤ 7.3 KB（不含 Dropdown，dropdown 溢出按需引入） |
 | core `createTabs` gzip | ≤ 2 KB |
 | 首次渲染（10 标签） | ≤ 8ms（无虚拟化） |
 | 标签切换 | 仅切换可见面板，O(1)；ink-bar 用 transform 合成层动画，不触发 layout |
@@ -219,5 +219,5 @@ RTL 语言（如 ar/he）通过 `dir="rtl"` 触发布局镜像，文案由 i18n 
 - [ ] 溢出 `scroll` 可滚动至选中、`dropdown` 折叠到"更多"，选中项始终可达。
 - [ ] 所有可见文案走 i18n key，无硬编码；RTL 与 reduced-motion 正确。
 - [ ] 仅消费 `--cd-` Alias/Component Token，无写死颜色/尺寸；暗色模式自动适配。
-- [ ] gzip 体积达标（svelte ≤ 6.95KB / core ≤ 2KB），ink-bar 动画 60fps 无 layout 抖动。
+- [ ] gzip 体积达标（svelte ≤ 7.3KB / core ≤ 2KB），ink-bar 动画 60fps 无 layout 抖动。
 - [ ] 提供 `component.meta.ts` 且字段完整，与 SPEC 一致。

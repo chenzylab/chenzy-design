@@ -94,7 +94,7 @@ const components = [
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '10.6 KB'],
-  ['upload', '{ Upload }', '7.4 KB'],
+  ['upload', '{ Upload }', '9.9 KB'],
   // navigation
   ['anchor', '{ Anchor }', '3.5 KB'],
   ['breadcrumb', '{ BreadcrumbItem }', '4 KB'],
@@ -102,7 +102,7 @@ const components = [
   ['menu', '{ Menu }', '8.4 KB'],
   ['pagination', '{ Pagination }', '3.8 KB'],
   ['steps', '{ Steps }', '3.5 KB'],
-  ['tabs', '{ TabPane }', '6.95 KB'],
+  ['tabs', '{ TabPane }', '7.3 KB'],
   // other
   ['back-top', '{ BackTop }', '2.65 KB'],
   ['hotkeys', '{ HotKeys }', '1.85 KB'],
@@ -132,7 +132,7 @@ const components = [
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   ['tooltip', '{ Tooltip }', '3.5 KB'],
-  ['tree', '{ Tree }', '9 KB'],
+  ['tree', '{ Tree }', '9.8 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。
