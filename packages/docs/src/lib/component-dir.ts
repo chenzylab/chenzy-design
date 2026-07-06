@@ -64,6 +64,7 @@ export const nameToDir: Record<string, string> = {
   resizeobserver: 'resize-observer',
   scrolllist: 'scroll-list',
   select: 'select',
+  sidebar: 'sidebar',
   sidesheet: 'side-sheet',
   skeleton: 'skeleton',
   slider: 'slider',

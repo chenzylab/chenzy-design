@@ -617,3 +617,4 @@ export {
   type ComputeGroupResizeInput,
   type ComputeGroupResizeResult,
 } from './resizable.js';
+export { parseSideBarWidth, clampSideBarWidth } from './sidebar.js';

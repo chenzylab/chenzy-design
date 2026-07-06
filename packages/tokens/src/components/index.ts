@@ -69,6 +69,7 @@ import { hotKeysTokens } from './hotkeys.js';
 import { floatButtonTokens } from './float-button.js';
 import { userGuideTokens } from './user-guide.js';
 import { resizableTokens } from './resizable.js';
+import { sideBarTokens } from './sidebar.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -141,4 +142,5 @@ export const componentTokens = {
   ...floatButtonTokens,
   ...userGuideTokens,
   ...resizableTokens,
+  ...sideBarTokens,
 } as const;
