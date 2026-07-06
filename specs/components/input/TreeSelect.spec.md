@@ -81,6 +81,10 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | destroyOnClose | `boolean` | `false` | 关闭时销毁浮层 DOM。 |
 | loading | `boolean` | `false` | 触发器 loading 态。 |
 | emptyText | `string` | i18n | 无数据/无匹配文案。 |
+| dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop。 |
+| dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存）。 |
+| dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式）。 |
+| zIndex | `number` | — | 浮层层级（z-index），未传由 CSS 控制。 |
 
 ### Events
 
