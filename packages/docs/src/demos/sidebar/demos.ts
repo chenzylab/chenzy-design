@@ -29,4 +29,5 @@ export const demos: DemoEntry[] = [
   entry('03-main-options.svelte', '主视图 Options 切换', 'SideBar mode=main + 顶部 Options 图标 tab 组（roving tabindex）'),
   entry('04-detail-back.svelte', '详情返回', 'mode 路由 main↔detail，详情返回按钮 onBackWard（可异步）'),
   entry('05-annotation.svelte', '参考来源溯源', 'SideBarAnnotation：Collapse 分组折叠 + video/text 引用卡片（可点击打开来源，时长/序号本地化）'),
+  entry('05-code-content.svelte', '代码/JSON 预览', 'SideBarCodeContent 折叠列表：isJson 用 JsonViewer，否则 CodeHighlight；onExpand 全屏回调'),
 ];

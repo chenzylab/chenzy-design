@@ -515,6 +515,7 @@ export const zh_CN: Locale = {
     annotationEmpty: '暂无参考来源',
     videoDuration: '视频时长 {duration}',
     citationOrder: '第 {order} 条引用',
+    expand: '展开',
   },
   UserGuide: {
     skip: '跳过',

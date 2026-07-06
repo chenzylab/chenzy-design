@@ -63,4 +63,13 @@ export const sideBarTokens = {
   'sidebar-annotation-duration-bg': { value: 'rgba(0, 0, 0, 0.6)', category: 'color', label: '时长遮罩背景', usage: 'Annotation 视频卡片时长标签背景（组件消费）' },
   'sidebar-annotation-duration-color': { value: '#fff', category: 'color', label: '时长文字色', usage: 'Annotation 视频卡片时长标签文字色（组件消费）' },
   'sidebar-annotation-cover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '封面占位背景', usage: 'Annotation 视频卡片封面占位背景（组件消费）' },
+  // —— CodeContent 代码/JSON 预览列表（P4）——
+  'sidebar-code-head-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'CodeContent 头部图标间距', usage: 'CodeContent 折叠头图标与文本间距（组件消费）' },
+  'sidebar-code-head-icon-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'CodeContent 头部图标色', usage: 'CodeContent 折叠头前导图标颜色（组件消费）' },
+  'sidebar-code-head-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'CodeContent 头部文本色', usage: 'CodeContent 折叠头 name 文本颜色（组件消费）' },
+  'sidebar-code-head-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: 'CodeContent 头部字号', usage: 'CodeContent 折叠头 name 字号（组件消费）' },
+  'sidebar-code-head-weight': { value: 'var(--cd-font-weight-medium)', category: 'font', label: 'CodeContent 头部字重', usage: 'CodeContent 折叠头 name 字重（组件消费）' },
+  'sidebar-code-expand-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'CodeContent 展开按钮色', usage: 'CodeContent 全屏展开按钮图标颜色（组件消费）' },
+  'sidebar-code-expand-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'CodeContent 展开按钮悬浮背景', usage: 'CodeContent 全屏展开按钮悬浮背景（组件消费）' },
+  'sidebar-code-body-padding': { value: 'var(--cd-spacing-tight) 0', category: 'spacing', label: 'CodeContent 内容区内边距', usage: 'CodeContent 折叠内容区（代码/JSON）内边距（组件消费）' },
 } satisfies TokenGroup;

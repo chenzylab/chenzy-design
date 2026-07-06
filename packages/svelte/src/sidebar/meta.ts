@@ -3,8 +3,8 @@
  * SideBar — see specs/components/show/SideBar.spec.md
  *
  * 分阶段交付：本 meta 覆盖已落地的 P0（SideBarContainer 可伸缩浮层壳）+ P1（SideBar 主壳
- * mode 路由 + Options 图标 tab 组）。P2 Annotation / P3 MCPConfigure / P4 CodeContent /
- * P5 FileContent 后续阶段接续，届时补齐对应 subComponents。
+ * mode 路由 + Options 图标 tab 组）+ P4（SideBarCodeContent 代码/JSON 预览折叠列表）。
+ * P2 Annotation / P3 MCPConfigure / P5 FileContent 后续阶段接续，届时补齐对应 subComponents。
  */
 export const meta = {
   name: 'SideBar',
@@ -13,8 +13,8 @@ export const meta = {
   semiEquivalent: 'Sidebar',
   aiScene: true,
   description:
-    'AI 侧边信息栏套件（重量级组合，分阶段交付）：P0 SideBarContainer 为可伸缩浮层壳——贴视口右侧（RTL 贴左），role=dialog + aria-labelledby(title)，打开移焦 + focus-trap 焦点捕获/归还 + Esc 关闭，堆叠 z-index 与 Modal/SideSheet 统一层栈（后开者在上），resizable 时左边缘（RTL 右边缘）把手拖拽调宽——复用 core createResizeDrag（axis:x 单轴 + clamp minWidth/maxWidth）与 Resizable 同套把手 a11y（role=separator + aria-orientation=vertical + aria-valuenow + 键盘 ←→/Home/End），motion 展开/收起为 CSS transition（reduced-motion / motion=false 退化即时显隐）。P1 SideBar 主壳按 mode 路由：main 渲染顶部 Options 图标 tab 组（role=tablist + roving tabindex + 键盘，name 作无障碍名）+ renderMainContent(activeKey)；detail（code/file/自定义）渲染 renderDetailHeader + 返回按钮（onBackWard 可异步，await 期间禁用防重触发）+ renderDetailContent(mode)。受控 visible / activeKey（不回写，仅回调通知）。P2 SideBarAnnotation 参考来源/引用溯源：外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n annotationTitle），内部用 Collapse 渲染 info 分组（每组一折叠面板 + aria-expanded），展开区渲染 video（封面/时长/播放态，duration 走 locale 数值格式化为 mm:ss）/text（站点 logo/名称/引用序号）卡片；可点击卡片（url 或 onClick）用原生 button（键盘 Enter/Space + focus 环 + 时长/序号本地化可访问文本），renderItem 可整条覆盖。P3~P5（MCPConfigure/CodeContent/FileContent）后续阶段接续。',
-  exports: ['SideBar', 'SideBarContainer', 'SideBarAnnotation'],
+    'AI 侧边信息栏套件（重量级组合，分阶段交付）：P0 SideBarContainer 为可伸缩浮层壳——贴视口右侧（RTL 贴左），role=dialog + aria-labelledby(title)，打开移焦 + focus-trap 焦点捕获/归还 + Esc 关闭，堆叠 z-index 与 Modal/SideSheet 统一层栈（后开者在上），resizable 时左边缘（RTL 右边缘）把手拖拽调宽——复用 core createResizeDrag（axis:x 单轴 + clamp minWidth/maxWidth）与 Resizable 同套把手 a11y（role=separator + aria-orientation=vertical + aria-valuenow + 键盘 ←→/Home/End），motion 展开/收起为 CSS transition（reduced-motion / motion=false 退化即时显隐）。P1 SideBar 主壳按 mode 路由：main 渲染顶部 Options 图标 tab 组（role=tablist + roving tabindex + 键盘，name 作无障碍名）+ renderMainContent(activeKey)；detail（code/file/自定义）渲染 renderDetailHeader + 返回按钮（onBackWard 可异步，await 期间禁用防重触发）+ renderDetailContent(mode)。受控 visible / activeKey（不回写，仅回调通知）。P2 SideBarAnnotation 参考来源/引用溯源：外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n annotationTitle），内部用 Collapse 渲染 info 分组（每组一折叠面板 + aria-expanded），展开区渲染 video（封面/时长/播放态，duration 走 locale 数值格式化为 mm:ss）/text（站点 logo/名称/引用序号）卡片；可点击卡片（url 或 onClick）用原生 button（键盘 Enter/Space + focus 环 + 时长/序号本地化可访问文本），renderItem 可整条覆盖。P4 SideBarCodeContent 代码/JSON 预览：Collapse 折叠列表，每项按 isJson 分流 JsonViewer / CodeHighlight（透传 jsonViewerProps/codeHighlightProps），onExpand 全屏回调。P3/P5（MCPConfigure/FileContent）后续阶段接续。',
+  exports: ['SideBar', 'SideBarContainer', 'SideBarAnnotation', 'SideBarCodeContent'],
   a11yPattern: 'dialog + tablist',
   apgRef: 'dialog (modal) + tabs',
   relatedComponents: ['SideSheet', 'Resizable', 'Nav', 'Tabs'],
@@ -23,7 +23,7 @@ export const meta = {
     { phase: 'P1', name: '主壳 + Options', done: true, desc: 'SideBar 主组件 mode 路由（main/detail）+ 顶部 Options 图标 tab 组' },
     { phase: 'P2', name: 'Annotation', done: true, desc: '参考来源/引用溯源折叠列表（video/text 卡片，复用 Collapse）' },
     { phase: 'P3', name: 'MCPConfigure', done: false, desc: 'MCP 工具配置面板' },
-    { phase: 'P4', name: 'CodeContent', done: false, desc: '代码/JSON 预览列表' },
+    { phase: 'P4', name: 'CodeContent', done: true, desc: '代码/JSON 预览折叠列表（复用 CodeHighlight/JsonViewer + Collapse）' },
     { phase: 'P5', name: 'FileContent', done: false, desc: '富文本查看/编辑列表（tiptap）' },
   ],
   usageHints:
@@ -73,6 +73,17 @@ export const meta = {
         { name: '...Container', type: 'SideBarContainer props', default: '—', desc: '继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n annotationTitle' },
       ],
     },
+    {
+      name: 'SideBarCodeContent',
+      props: [
+        { name: 'codes', type: 'CodeItemProps[]', default: '[]', desc: '代码/JSON 预览项列表；每项按 isJson 分流 JsonViewer / CodeHighlight' },
+        { name: 'activeKey', type: 'string | string[]', default: 'undefined', desc: '受控展开项 key（受控，不回写；仅经 onChange 通知，内部兜底非受控）' },
+        { name: 'onChange', type: '(keys: string[]) => void', default: 'undefined', desc: '展开态变化回调（Collapse onChange）' },
+        { name: 'onExpand', type: '(e: MouseEvent, code: CodeItemProps, mode: string) => void', default: 'undefined', desc: '点击某项展开（全屏）按钮回调；mode 固定 "code"（对齐 Semi onExpand）' },
+        { name: 'class', type: 'string', default: 'undefined', desc: '根自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根自定义内联样式' },
+      ],
+    },
   ],
   tokens: [
     '--cd-sidebar-bg',
@@ -118,5 +129,13 @@ export const meta = {
     '--cd-sidebar-annotation-duration-bg',
     '--cd-sidebar-annotation-duration-color',
     '--cd-sidebar-annotation-cover-bg',
+    '--cd-sidebar-code-head-gap',
+    '--cd-sidebar-code-head-icon-color',
+    '--cd-sidebar-code-head-color',
+    '--cd-sidebar-code-head-size',
+    '--cd-sidebar-code-head-weight',
+    '--cd-sidebar-code-expand-color',
+    '--cd-sidebar-code-expand-hover-bg',
+    '--cd-sidebar-code-body-padding',
   ],
 } as const;
