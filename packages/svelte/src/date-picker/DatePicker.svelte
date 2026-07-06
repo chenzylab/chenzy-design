@@ -57,6 +57,20 @@
     weekStart?: WeekStart;
     showSecond?: boolean;
     locale?: string;
+    /**
+     * 面板初始定位日期（非受控，仅控制面板首次展开时显示哪个月/年）。
+     * 与 value 无关：不改变选中值，只 seed 面板游标。range 场景可传 Date[]（取首个）。
+     * 仅在无选中值时生效；有选中值时面板对齐到选中值所在月份（对齐 Semi）。
+     */
+    defaultPickerValue?: Date | Date[];
+    /**
+     * 按指定 IANA 时区显示/解析日期时间（如 'Asia/Tokyo'）。
+     * 实现边界：仅作用于「显示格式化层」——所有 Intl.DateTimeFormat 附加 { timeZone }，
+     * 使触发器/头部/内嵌输入的文案按该时区呈现。底层 value 仍是系统本地时钟的 Date 对象，
+     * 不做完整的跨时区值转换（选中/解析得到的 Date 其绝对时刻不变）。
+     * format 串走 core formatDate 的可编辑模式不受 timeZone 影响（按 Date 本地字段序列化）。
+     */
+    timeZone?: string;
     /** token 格式串 (YYYY/MM/DD/HH/mm/ss)。传入则触发器变可输入文本框，显示+手输解析按此格式。 */
     format?: string;
     onChange?: (v: Date | Date[] | null) => void;
@@ -205,6 +219,8 @@
     weekStart = 0,
     showSecond = true,
     locale = 'zh-CN',
+    defaultPickerValue,
+    timeZone,
     format,
     onChange,
     onOpenChange,
@@ -334,16 +350,21 @@
 
   // --- 面板游标月份 (本地 $state)，打开时同步到 value/today 月份 ---
   const today = startOfDay(new Date());
-  // 初始化游标用 defaultValue（不依赖 $derived 的 currentSingle 避免 state_referenced_locally）
+  // defaultPickerValue：面板初始定位日期（一次性初值），仅在无选中值时用于 seed 游标。
+  const _pickerSeed: Date | null = Array.isArray(defaultPickerValue)
+    ? (defaultPickerValue[0] ?? null)
+    : (defaultPickerValue instanceof Date ? defaultPickerValue : null);
+  // 初始化游标用 defaultValue（不依赖 $derived 的 currentSingle 避免 state_referenced_locally）；
+  // 无 defaultValue 时回退到 defaultPickerValue，再无则今天。
   const _initCursorDate: Date | null = Array.isArray(defaultValue)
     ? (defaultValue[0] ?? null)
     : (defaultValue instanceof Date ? defaultValue : null);
-  let cursor = $state(startOfDay(_initCursorDate ?? new Date()));
+  let cursor = $state(startOfDay(_initCursorDate ?? _pickerSeed ?? new Date()));
 
-  // 当面板打开时把游标对齐到当前选中值(或今天)所在月份
+  // 当面板打开时把游标对齐到当前选中值所在月份；无选中值时回退 defaultPickerValue（首次定位），再无则今天。
   $effect(() => {
     if (isOpen) {
-      cursor = startOfDay(currentSingle ?? new Date());
+      cursor = startOfDay(currentSingle ?? _pickerSeed ?? new Date());
     }
   });
 
@@ -357,31 +378,38 @@
   });
 
   // --- Intl 本地化格式化器 (不手拼日期串) ---
+  // timeZone 仅注入显示格式化层：把用户传入的 IANA 时区透传给每个 DateTimeFormat，
+  // 使显示文案按该时区呈现；不改变底层 Date 的绝对时刻（见 timeZone JSDoc 边界说明）。
+  function withTZ(opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormatOptions {
+    return timeZone ? { ...opts, timeZone } : opts;
+  }
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(
       locale,
-      isYear
-        ? { year: 'numeric' }
-        : isMonth
-          ? { year: 'numeric', month: '2-digit' }
-          : {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              ...(isDateTime
-                ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
-                : {}),
-            },
+      withTZ(
+        isYear
+          ? { year: 'numeric' }
+          : isMonth
+            ? { year: 'numeric', month: '2-digit' }
+            : {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                ...(isDateTime
+                  ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+                  : {}),
+              },
+      ),
     ),
   );
   const headerFormat = $derived(
-    new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
+    new Intl.DateTimeFormat(locale, withTZ({ year: 'numeric', month: 'long' })),
   );
   // 仅年份的头部文案 (month 面板头部 / year 面板基准)
-  const yearFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric' }));
+  const yearFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ year: 'numeric' })));
   // 月格短名 (month 面板 12 格)
-  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
-  const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
+  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ month: 'short' })));
+  const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ weekday: 'short' })));
   // 完整星期名 (columnheader aria-label，朗读用)
   const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 

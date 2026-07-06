@@ -32,6 +32,8 @@ export const meta = {
     { name: 'weekStart', type: '0|1|2|3|4|5|6', default: '0', desc: '一周起始日（0=周日 … 6=周六）' },
     { name: 'showSecond', type: 'boolean', default: 'true' },
     { name: 'locale', type: 'string', default: "'zh-CN'" },
+    { name: 'defaultPickerValue', type: 'Date | Date[]', default: 'undefined', desc: '面板初始定位日期（非受控，不改选中值）；仅无选中值时 seed 面板游标显示的月/年' },
+    { name: 'timeZone', type: 'string', default: 'undefined', desc: '按 IANA 时区显示（仅格式化层注入 Intl { timeZone }；不做完整跨时区值转换，底层 Date 绝对时刻不变）' },
     { name: 'format', type: 'string', default: 'undefined' },
     { name: 'onChange', type: '(v: Date | null) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
