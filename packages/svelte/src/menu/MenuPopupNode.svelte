@@ -508,8 +508,8 @@
     min-inline-size: 8rem;
     padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-menu-bg);
-    border-radius: var(--cd-select-dropdown-radius, 6px);
-    box-shadow: var(--cd-select-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));
+    border-radius: var(--cd-select-dropdown-radius, var(--cd-border-radius-medium));
+    box-shadow: var(--cd-select-dropdown-shadow, var(--cd-shadow-elevated));
     z-index: var(--cd-select-dropdown-z, 1050);
   }
   /* destroyOnHide=false 隐藏浮层时保留 DOM 但不可见、不可交互、不占位 */

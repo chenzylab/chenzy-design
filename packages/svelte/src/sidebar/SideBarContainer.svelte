@@ -418,7 +418,7 @@
   }
   .cd-sidebar-container__handle:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--cd-resizable-handle-color-focus);
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-sidebar-container__header {
     display: flex;
