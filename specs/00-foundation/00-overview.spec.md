@@ -40,16 +40,19 @@
 - [x] Collapse · [x] Descriptions · [x] Empty · [x] Highlight · [x] Image · [x] List
 - [x] Popover · [x] OverflowList · [x] ScrollList · [x] Table · [x] Tag · [x] Timeline
 - [x] Tooltip · [x] Tree · [x] VirtualList
-- [ ] UserGuide · [ ] SideBar（AI 侧边信息栏，分阶段）（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
+- [x] UserGuide · [x] SideBar（AI 侧边信息栏，P0~P5 全交付）（对标 Semi 2.101.0 增补，已实现）
+- [ ] Collapsible（折叠原语；全量核实发现漏判——Semi 正式导出组件，SPEC 已写，实现中）
 
 ### Feedback（反馈）
 - [x] Modal · [x] Banner · [x] Notification · [x] Popconfirm · [x] Progress
 - [x] Spin · [x] Toast · [x] SideSheet · [x] Drawer · [x] Skeleton
+- [ ] Feedback（反馈弹窗；全量核实发现漏判——Semi 正式导出组件，SPEC 已写，实现中）
 
 ### Other（其他）
 - [x] ConfigProvider · [x] LocaleProvider · [x] BackTop · [x] ResizeObserver · [x] LottieIcon
-- [ ] HotKeys（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
-- [ ] Resizable · ResizeGroup/ResizeItem/ResizeHandler（对标 Semi 2.101.0 增补——上次对标漏判为别名，实为正式组件族；core createResizeDrag 供 Table/SideBar 复用）
+- [x] HotKeys（对标 Semi 2.101.0 增补，已实现）
+- [x] Resizable · ResizeGroup/ResizeItem/ResizeHandler（对标 Semi 2.101.0 增补——曾漏判为别名，实为正式组件族；core createResizeDrag 供 Table/SideBar 复用）
+- [ ] DragMove（通用拖拽移动原语；全量核实发现漏判——Semi 正式导出组件，SPEC 已写，实现中；core createDragMove 供 Modal/Cropper 私有拖拽后续收敛）
 
 ## 3. 横切能力 SPEC 索引（M0 必须先完成）
 
