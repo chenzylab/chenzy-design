@@ -55,6 +55,8 @@ import { meta as menuMeta } from '../src/menu/meta.ts';
 import { meta as navMeta } from '../src/nav/meta.ts';
 import { meta as anchorMeta } from '../src/anchor/meta.ts';
 import { meta as tagMeta } from '../src/tag/meta.ts';
+import { meta as tagGroupMeta } from '../src/tag/taggroup-meta.ts';
+import { meta as splitTagGroupMeta } from '../src/tag/splittaggroup-meta.ts';
 import { meta as avatarMeta } from '../src/avatar/meta.ts';
 import { meta as badgeMeta } from '../src/badge/meta.ts';
 import { meta as cardMeta } from '../src/card/meta.ts';
@@ -155,6 +157,8 @@ const metas = [
   navMeta,
   anchorMeta,
   tagMeta,
+  tagGroupMeta,
+  splitTagGroupMeta,
   avatarMeta,
   badgeMeta,
   cardMeta,

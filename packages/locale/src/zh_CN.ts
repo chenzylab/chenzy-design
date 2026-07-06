@@ -397,6 +397,9 @@ export const zh_CN: Locale = {
     close: '关闭',
     closeAriaLabel: '移除 {label}',
   },
+  TagGroup: {
+    restTagsAriaLabel: '还有 {count} 个标签',
+  },
   Dropdown: {
     trigger: '菜单',
   },

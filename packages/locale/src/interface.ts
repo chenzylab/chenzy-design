@@ -532,6 +532,10 @@ export interface Locale {
     /** closable 关闭按钮无障碍名，uses {label}（标签文本） */
     closeAriaLabel: string;
   };
+  TagGroup: {
+    /** TagGroup +N 折叠标签的可访问名，uses {count}（被折叠的标签数） */
+    restTagsAriaLabel: string;
+  };
   Dropdown: {
     trigger: string;
   };

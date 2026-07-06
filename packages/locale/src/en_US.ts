@@ -397,6 +397,9 @@ export const en_US: Locale = {
     close: 'Close',
     closeAriaLabel: 'Remove {label}',
   },
+  TagGroup: {
+    restTagsAriaLabel: '{count} more tags',
+  },
   Dropdown: {
     trigger: 'Menu',
   },
