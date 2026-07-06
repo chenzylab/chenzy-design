@@ -147,7 +147,7 @@ const components = [
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
   // import（下方 ignore）。度量含各自壳；预算按实测校准（P3/P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMcpConfigure }', '14 KB'],
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMcpConfigure, SideBarFileContent }', '20 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。
@@ -166,7 +166,19 @@ const components = [
 const perComponentIgnore = {
   'json-viewer': [...ignore, '@douyinfe/semi-json-viewer-core'],
   // SideBar CodeContent（并入 sidebar 条目）复用 JsonViewer，其内核动态 import 惰性加载，度量壳时 ignore。
-  'sidebar': [...ignore, '@douyinfe/semi-json-viewer-core'],
+  // FileContent（P5）的 tiptap v3 内核 + 3 官方扩展 + svelte-tiptap 全程动态 import（不进主 bundle，
+  // 对齐 AIChatInput），度量壳时同样 ignore（内核体积单独在 spec §9 记录）。
+  'sidebar': [
+    ...ignore,
+    '@douyinfe/semi-json-viewer-core',
+    '@tiptap/core',
+    '@tiptap/pm',
+    '@tiptap/starter-kit',
+    '@tiptap/extension-text-style',
+    '@tiptap/extension-image',
+    '@tiptap/extension-text-align',
+    'svelte-tiptap',
+  ],
   'ai-chat-input': [
     ...ignore,
     '@tiptap/core',

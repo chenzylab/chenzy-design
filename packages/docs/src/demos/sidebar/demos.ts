@@ -31,4 +31,5 @@ export const demos: DemoEntry[] = [
   entry('05-annotation.svelte', '参考来源溯源', 'SideBarAnnotation：Collapse 分组折叠 + video/text 引用卡片（可点击打开来源，时长/序号本地化）'),
   entry('05-code-content.svelte', '代码/JSON 预览', 'SideBarCodeContent 折叠列表：isJson 用 JsonViewer，否则 CodeHighlight；onExpand 全屏回调'),
   entry('06-mcp-configure.svelte', 'MCP 工具配置', 'SideBarMcpConfigure：内置/自定义双列表 + 搜索过滤 + 启用开关（role=switch）+ 配置/编辑/添加动作'),
+  entry('07-file-content.svelte', '富文本查看/编辑', 'SideBarFileContent 折叠列表：每项 tiptap 编辑器（editable 控查看/编辑，编辑态带格式工具栏 + 图片上传节点），tiptap 全程动态 import'),
 ];
