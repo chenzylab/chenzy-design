@@ -45,8 +45,8 @@
   interface Props {
     /** 呈现形态：modal=Modal 弹窗；popup=SideSheet 抽屉。 */
     mode?: FeedbackMode;
-    /** 反馈类型。 */
-    type: FeedbackType;
+    /** 反馈类型。默认 text（最基础的文本反馈）。 */
+    type?: FeedbackType;
     /** 反馈值（受控）。 */
     value?: FeedbackValue;
     /** 反馈值变化。 */
@@ -82,7 +82,7 @@
 
   let {
     mode = 'modal',
-    type,
+    type = 'text',
     value,
     onValueChange,
     options,

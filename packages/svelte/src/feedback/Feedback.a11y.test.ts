@@ -90,7 +90,7 @@ describe('Feedback a11y', () => {
     (radios[4] as HTMLButtonElement).click();
     flushSync();
     expect(onValueChange).toHaveBeenCalledTimes(1);
-    const arg = onValueChange.mock.calls[0][0];
+    const arg = onValueChange.mock.calls[0]![0];
     expect(arg).toMatchObject({ emoji: expect.any(String) });
   });
 

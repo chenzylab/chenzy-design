@@ -16,7 +16,13 @@ describe('Feedback emoji 键盘 e2e（radiogroup 方向键选择）', () => {
     // Feedback portal 到 document.body；直接在全局查询 radio 项。
     renderKbdFixture(FeedbackKbdFixture);
 
-    const radios = Array.from(document.querySelectorAll('[role="radio"]')) as HTMLElement[];
+    const radios = Array.from(document.querySelectorAll('[role="radio"]')) as [
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+    ];
     expect(radios.length).toBe(5);
 
     // 未选中时首项 roving tabindex=0，聚焦它。
