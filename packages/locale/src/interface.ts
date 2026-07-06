@@ -733,6 +733,34 @@ export interface Locale {
     citationOrder: string;
     /** CodeContent item expand (fullscreen) button aria-label */
     expand: string;
+    /** MCPConfigure default panel title */
+    mcpTitle: string;
+    /** MCPConfigure search input placeholder (fixes Semi hardcoded "请输入") */
+    mcpSearchPlaceholder: string;
+    /** MCPConfigure search input aria-label */
+    mcpSearchLabel: string;
+    /** MCPConfigure built-in tools group heading */
+    mcpBuiltinGroup: string;
+    /** MCPConfigure custom tools group heading */
+    mcpCustomGroup: string;
+    /** MCPConfigure active count summary; interpolates {count} and {total} */
+    mcpActiveCount: string;
+    /** MCPConfigure enable switch aria-label; interpolates {name} */
+    mcpEnable: string;
+    /** MCPConfigure preset (locked) switch title/tooltip */
+    mcpPresetLocked: string;
+    /** MCPConfigure per-item configure button aria-label; interpolates {name} */
+    mcpConfigureItem: string;
+    /** MCPConfigure per-item edit button aria-label; interpolates {name} */
+    mcpEditItem: string;
+    /** MCPConfigure add-custom-tool button label */
+    mcpAddCustom: string;
+    /** MCPConfigure custom-group empty state text */
+    mcpEmptyCustom: string;
+    /** MCPConfigure built-in-group empty state text */
+    mcpEmptyBuiltin: string;
+    /** MCPConfigure no-search-result text */
+    mcpNoResult: string;
   };
   UserGuide: {
     /** skip button */

@@ -617,4 +617,11 @@ export {
   type ComputeGroupResizeInput,
   type ComputeGroupResizeResult,
 } from './resizable.js';
-export { parseSideBarWidth, clampSideBarWidth } from './sidebar.js';
+export {
+  parseSideBarWidth,
+  clampSideBarWidth,
+  filterMcpOptions,
+  toggleMcpOptionActive,
+  countActiveMcpOptions,
+} from './sidebar.js';
+export type { McpOptionCore } from './sidebar.js';

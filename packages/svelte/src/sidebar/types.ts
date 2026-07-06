@@ -41,6 +41,28 @@ export interface SideBarAnnotationItem {
   onClick?: (event: Event, item: SideBarAnnotationItem) => void;
 }
 
+/**
+ * 单个 MCP 工具项（P3 MCPConfigure）。对齐 Semi `MCPReactOption`
+ * （= foundation `MCPOption` + `icon`/`desc` 渲染槽）。core `McpOptionCore`
+ * 只承载 headless 逻辑读取的字段（value/label/active/disabled），此处扩展渲染槽。
+ */
+export interface SideBarMcpOption {
+  /** 唯一标识（列表 key + 过滤/label 兜底）。 */
+  value: string;
+  /** 展示名（过滤主目标）。 */
+  label: string;
+  /** 前置图标：字符串按图片 URL 渲染，Snippet 自定义渲染。 */
+  icon?: string | Snippet;
+  /** 描述文案（副标题）。 */
+  desc?: string;
+  /** 是否启用。默认 false。 */
+  active?: boolean;
+  /** 启用开关是否锁定（预设工具，不可关闭）。默认 false。 */
+  disabled?: boolean;
+  /** 是否显示「配置」动作按钮（内置工具）。默认 false。 */
+  configure?: boolean;
+}
+
 /** Annotation 分组（一个折叠面板）。对齐 Semi `info[]` 元素。 */
 export interface SideBarAnnotationGroup {
   /** 分组标题（折叠头部内容）。 */
