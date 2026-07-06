@@ -129,7 +129,7 @@ const components = [
   ['popover', '{ Popover }', '4.75 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],
   ['table', '{ Table }', '16.7 KB'],
-  ['tag', '{ Tag }', '3 KB'],
+  ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   ['tooltip', '{ Tooltip }', '3.5 KB'],
   ['tree', '{ Tree }', '9 KB'],
