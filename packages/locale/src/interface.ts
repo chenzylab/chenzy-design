@@ -761,6 +761,46 @@ export interface Locale {
     mcpEmptyBuiltin: string;
     /** MCPConfigure no-search-result text */
     mcpNoResult: string;
+    /** FileContent rich-text editor aria-label */
+    fileEditor: string;
+    /** FileContent toolbar aria-label */
+    fileToolbar: string;
+    /** toolbar undo */
+    undo: string;
+    /** toolbar redo */
+    redo: string;
+    /** toolbar heading level 1 */
+    heading1: string;
+    /** toolbar heading level 2 */
+    heading2: string;
+    /** toolbar heading level 3 */
+    heading3: string;
+    /** toolbar bullet list */
+    bulletList: string;
+    /** toolbar ordered list */
+    orderedList: string;
+    /** toolbar blockquote */
+    blockquote: string;
+    /** toolbar align left */
+    alignLeft: string;
+    /** toolbar align center */
+    alignCenter: string;
+    /** toolbar align right */
+    alignRight: string;
+    /** toolbar bold */
+    bold: string;
+    /** toolbar italic */
+    italic: string;
+    /** toolbar strikethrough */
+    strike: string;
+    /** toolbar inline code */
+    code: string;
+    /** toolbar insert image */
+    image: string;
+    /** image upload drop-zone hint */
+    uploadImage: string;
+    /** image upload failure hint */
+    uploadFail: string;
   };
   UserGuide: {
     /** skip button */
