@@ -57,6 +57,7 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | multiple | boolean | false | 多选模式。 |
 | filter | boolean \| (input, option) => boolean | false | 是否可搜索 / 自定义过滤函数。 |
 | searchPosition | 'dropdown' \| 'trigger' | 'dropdown' | 搜索框位置（仅 filter 生效）：dropdown=浮层顶部；trigger=内联触发器。 |
+| inputProps | Record<string, unknown> | — | 透传给搜索 input 的额外属性（勿传 value/onChange/onFocus 等会覆盖内部搜索回调的键）。 |
 | insetLabel | string \| Snippet | — | 内嵌标签，浮入触发器左侧（纯展示，不影响值/过滤）。 |
 | insetLabelId | string | — | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox。 |
 | remote | boolean | false | 远程搜索模式，过滤交由 `on:search`，内部不再本地过滤。 |
@@ -71,6 +72,12 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | allowCreate | boolean | false | 搜索无匹配时允许创建新项（tags 场景）。 |
 | maxTagCount | number | — | 多选 Tag 折叠阈值，超出显示 `+N`。 |
 | maxTagTextLength | number | — | 单个 Tag 文本最大长度，超出省略。 |
+| expandRestTagsOnClick | boolean | false | 多选 maxTagCount 折叠时，浮层打开态下点击 `+N` 就地展开剩余全部 Tag（纯展示，不改值；关闭复位）。 |
+| ellipsisTrigger | boolean | false | 多选且有 maxTagCount 时，对溢出可见 Tag 文本作单行省略（完整文本经 title 查看）。 |
+| showArrow | boolean | true | 是否显示触发器右侧下拉箭头；false 隐藏（suffix 存在时以 suffix 为准）。 |
+| clickToHide | boolean | false | 浮层已展开时，点击触发器是否收起浮层。 |
+| defaultActiveFirstOption | boolean | true | 打开浮层时默认高亮首个可用选项（键盘 Enter 可直接选中）。 |
+| preventScroll | boolean | false | autoFocus/命令式聚焦触发器时传入 `focus({ preventScroll })`，避免页面跳动。 |
 | virtualize | boolean \| { itemHeight: number } | 'auto' | 虚拟化；auto = 选项数超阈值自动开启。 |
 | dropdownMatchSelectWidth | boolean | true | 浮层宽度是否跟随触发器。 |
 | dropdownClassName | string | — | 浮层根 div 追加的自定义 className。 |
@@ -99,6 +106,7 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | on:focus | `FocusEvent` | 触发器获焦。 |
 | on:blur | `FocusEvent` | 触发器失焦。 |
 | on:scrollToBottom | `void` | 浮层滚动触底（远程分页加载用）。 |
+| on:listScroll | `Event` | 浮层选项列表滚动时派发（携带原生 scroll 事件）。 |
 
 ### 4.3 Slots / Snippets
 
@@ -112,8 +120,10 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | suffix | — | 触发器右侧后缀（覆盖默认箭头）。 |
 | empty | — | 自定义空态（等价 `emptyContent`）。 |
 | loading | — | 自定义加载态。 |
-| dropdownHeader | — | 浮层顶部固定区。 |
-| dropdownFooter | — | 浮层底部固定区（如"加载更多"）。 |
+| dropdownHeader | — | 浮层顶部固定区（inner：滚动列表内部顶端，随 optionList 滚动）。 |
+| dropdownFooter | — | 浮层底部固定区（inner：滚动列表内部底端，随 optionList 滚动；如"加载更多"）。 |
+| outerTopSlot | — | 浮层最外层顶部 slot（outer：与滚动列表平级、滚动区之外，始终固定展现）。 |
+| outerBottomSlot | — | 浮层最外层底部 slot（outer：与滚动列表平级、滚动区之外，始终固定展现）。 |
 
 ## 5. 主题 / Token 表
 

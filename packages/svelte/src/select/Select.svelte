@@ -25,6 +25,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { untrack } from 'svelte';
   import {
     useId,
     useDismiss,
@@ -115,6 +116,34 @@
     showRestTagsPopover?: boolean;
     /** 透传给 +N 悬停 popover 的参数（预留，当前通过 title 实现） */
     restTagsPopoverProps?: Record<string, unknown>;
+    /**
+     * 打开浮层时是否默认高亮第一个可用选项（键盘 Enter 可直接选中，对齐 Semi v2.17+ 默认 true）。
+     * 接入 activeIndex 初始化：打开时把 activeIndex 定位到首个非禁用选项（filter 输入变化后同样重定位）。
+     */
+    defaultActiveFirstOption?: boolean;
+    /**
+     * 透传给搜索 input 的额外属性（filter 搜索框；searchPosition='trigger' 内联 input 与 'dropdown' 浮层 input 均生效）。
+     * 对齐 Semi：勿传 value/onChange/onFocus 等会覆盖组件内部搜索回调的键（内部绑定优先，展开在前）。
+     */
+    inputProps?: Record<string, unknown>;
+    /** 是否显示触发器右侧下拉箭头（默认 true）；false 时隐藏箭头区（suffix 存在时以 suffix 为准） */
+    showArrow?: boolean;
+    /** 浮层已展开时，点击触发器是否收起浮层（默认 false；对齐 Semi clickToHide） */
+    clickToHide?: boolean;
+    /** 浮层选项列表滚动时的回调（对齐 Semi onListScroll，携带原生 scroll 事件） */
+    onListScroll?: (e: Event) => void;
+    /** autoFocus/命令式聚焦触发器时是否传入 focus({ preventScroll })，避免页面跳动（对齐 Semi preventScroll） */
+    preventScroll?: boolean;
+    /**
+     * 多选且 maxTagCount 折叠出 +N 时，浮层打开状态下点击 +N 是否就地展开剩余全部 Tag（对齐 Semi expandRestTagsOnClick）。
+     * 展开为纯展示态（本地 $state），不影响选中值；浮层关闭时自动复位为折叠。
+     */
+    expandRestTagsOnClick?: boolean;
+    /**
+     * 多选且存在 maxTagCount 时，对溢出部分的可见 Tag 做省略处理（最后一个可见 Tag 文本超出触发器宽度时截断为「前缀…」）。
+     * 对齐 Semi ellipsisTrigger：纯 CSS 单行省略，完整文本经 title 查看；不影响选中值。
+     */
+    ellipsisTrigger?: boolean;
     /** 用作回显的字段名（默认 'label'）；当选项含自定义字段时取对应值作显示文本 */
     optionLabelProp?: string;
     /**
@@ -165,10 +194,14 @@
     emptyContent?: string | Snippet;
     /** 自定义空态 snippet（与 emptyContent 等价，优先级同） */
     empty?: Snippet;
-    /** 浮层顶部固定区 */
+    /** 浮层顶部固定区（inner：渲染在滚动列表内部顶端，随 optionList 滚动，对齐 Semi innerTopSlot） */
     dropdownHeader?: Snippet;
-    /** 浮层底部固定区 */
+    /** 浮层底部固定区（inner：渲染在滚动列表内部底端，随 optionList 滚动，对齐 Semi innerBottomSlot） */
     dropdownFooter?: Snippet;
+    /** 浮层最外层顶部 slot（outer：与滚动列表平级、位于滚动区之外，始终固定展现，对齐 Semi outerTopSlot） */
+    outerTopSlot?: Snippet;
+    /** 浮层最外层底部 slot（outer：与滚动列表平级、位于滚动区之外，始终固定展现，对齐 Semi outerBottomSlot） */
+    outerBottomSlot?: Snippet;
     /** 自定义单项渲染 */
     option?: Snippet<[{ option: OptionData; selected: boolean; active: boolean }]>;
     /** 自定义选中值/Tag 渲染 */
@@ -235,6 +268,14 @@
     autoClearSearchValue = true,
     showRestTagsPopover = false,
     restTagsPopoverProps,
+    defaultActiveFirstOption = true,
+    inputProps,
+    showArrow = true,
+    clickToHide = false,
+    onListScroll,
+    preventScroll = false,
+    expandRestTagsOnClick = false,
+    ellipsisTrigger = false,
     optionLabelProp = 'label',
     searchPosition = 'dropdown',
     insetLabel,
@@ -258,6 +299,8 @@
     empty,
     dropdownHeader,
     dropdownFooter,
+    outerTopSlot,
+    outerBottomSlot,
     option: optionSnippet,
     label: labelSnippet,
     renderCreateItem,
@@ -307,14 +350,19 @@
     if (!next) {
       activeIndex = -1;
       query = '';
+      // 关闭浮层时复位 +N 展开态（展开仅在打开时生效，对齐 Semi expandRestTagsOnClick）。
+      restTagsExpanded = false;
     }
   }
 
-  // 挂载自动聚焦（autoFocus）。
+  // expandRestTagsOnClick：浮层打开态下点击 +N 就地展开剩余 Tag 的本地展示态（不影响选中值）。
+  let restTagsExpanded = $state(false);
+
+  // 挂载自动聚焦（autoFocus）；preventScroll 时透传给 focus 避免页面跳动。
   $effect(() => {
     if (!autoFocus || !rootEl) return;
     const trigger = rootEl.querySelector<HTMLElement>('[role="combobox"]');
-    trigger?.focus();
+    trigger?.focus({ preventScroll });
   });
 
   // --- 本地过滤搜索 ---
@@ -388,6 +436,20 @@
   // --- roving 高亮 (红线 #2): activeIndex 为本地 $state，不依赖挂载 registry ---
   let activeIndex = $state(-1);
 
+  // defaultActiveFirstOption（对齐 Semi 默认 true）：浮层打开时默认高亮首个可用选项，
+  // 使键盘 Enter 可直接选中；filter 输入变化导致选项集变更后同样重定位到首项。
+  // 依赖 isOpen + filteredOptions（选项集）触发；activeIndex 以 untrack 读取避免自触发循环
+  // （写回 activeIndex 不应再次调度本 effect —— 参考记忆「声明式子组件注册勿用 $state 数组」的自循环坑）。
+  $effect(() => {
+    if (!defaultActiveFirstOption || !isOpen) return;
+    const list = filteredOptions; // 显式建立依赖：选项集变化后重算
+    const len = list.length;
+    const cur = untrack(() => activeIndex);
+    if (cur < 0 || cur >= len) {
+      activeIndex = list.findIndex((o) => !o.disabled);
+    }
+  });
+
   const activeOptionId = $derived(
     activeIndex >= 0 && activeIndex < filteredOptions.length
       ? `${listId}-opt-${activeIndex}`
@@ -428,8 +490,12 @@
 
   // maxTagCount 折叠：显示前 N 个 tag + 隐藏数。
   // maxTagTextLength 仅影响 tag 显示文本（截断派生），实际值/回显不变（红线 #1/#2）。
+  // expandRestTagsOnClick 且已点击 +N 展开（restTagsExpanded）时，视为不折叠、全量展示（对齐 Semi）。
+  const tagsCollapsed = $derived(
+    maxTagCount > 0 && !(expandRestTagsOnClick && restTagsExpanded),
+  );
   const visibleTags = $derived(
-    (maxTagCount > 0 ? selectedOptions.slice(0, maxTagCount) : selectedOptions).map(
+    (tagsCollapsed ? selectedOptions.slice(0, maxTagCount) : selectedOptions).map(
       (opt) => {
         const raw = getOptionLabel(opt);
         const display = truncate(raw, maxTagTextLength);
@@ -438,7 +504,7 @@
     ),
   );
   const hiddenTagCount = $derived(
-    maxTagCount > 0 ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
+    tagsCollapsed ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
   );
 
   // optionLabelProp：取选项对应字段作为显示文本（默认 'label'）。
@@ -510,6 +576,9 @@
 
   function toggleOpen() {
     if (disabled) return;
+    // clickToHide（对齐 Semi，默认 false）：展开态下点击触发器默认不收起浮层，
+    // 仅 clickToHide=true 时点击收起；关闭态点击始终打开。
+    if (isOpen && !clickToHide) return;
     setOpen(!isOpen);
   }
 
@@ -641,8 +710,11 @@
     if (isRemote) scheduleSearch(query);
   }
 
-  // --- DOM 引用：触发根 + portal 下拉（定位由 use:floating action 接管）---
+  // --- DOM 引用：触发根 + portal 下拉外层容器 + 内层滚动列表（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
+  // dropdownRootEl：浮层最外层（use:floating 定位、outer slot 所在层）。
+  let dropdownRootEl = $state<HTMLDivElement | null>(null);
+  // dropdownEl：内层 role=listbox 滚动容器（onListScroll/虚拟化/触底/浮层搜索聚焦均以它为准）。
   let dropdownEl = $state<HTMLDivElement | null>(null);
 
   // --- 虚拟化滚动监听（命令式 + rAF 节流 + cleanup，红线 #3）---
@@ -655,7 +727,7 @@
       // 重新打开时复位滚动位置，避免沿用上次 scrollTop。
       scrollTop = el.scrollTop;
     }
-    function onScroll() {
+    function onScroll(e: Event) {
       if (isVirtual) {
         if (rafId) return;
         rafId = requestAnimationFrame(() => {
@@ -663,6 +735,8 @@
           if (el) scrollTop = el.scrollTop;
         });
       }
+      // 选项列表滚动回调（对齐 Semi onListScroll，携带原生事件）
+      onListScroll?.(e);
       // 触底检测（1px 容差）
       if (onScrollToBottom && el) {
         const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
@@ -686,7 +760,7 @@
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
-      extraTargets: [dropdownEl],
+      extraTargets: [dropdownRootEl],
     });
     return cleanup;
   });
@@ -705,17 +779,19 @@
     ['cd-select__dropdown', dropdownClassName].filter(Boolean).join(' '),
   );
 
-  // 浮层根 div 内联样式：内置 max-block-size + 可选 z-index + dropdownStyle。
+  // 浮层最外层 div 内联样式：可选 z-index + dropdownStyle（用户自定义样式，如 width）。
   // 注意 use:floating 后写 position/transform（inline 优先级更高），此串勿含二者。
-  const dropdownInlineStyle = $derived(
+  const dropdownRootInlineStyle = $derived(
     [
-      `max-block-size:${maxHeight}px`,
       zIndex !== undefined ? `z-index:${zIndex}` : undefined,
       dropdownStyle,
     ]
       .filter(Boolean)
-      .join(';'),
+      .join(';') || undefined,
   );
+
+  // 内层滚动列表内联样式：max-block-size 限高 + 溢出滚动（outer slot 不受此限高裁剪）。
+  const dropdownListInlineStyle = $derived(`max-block-size:${maxHeight}px`);
 
   const cls = $derived(
     [
@@ -726,6 +802,8 @@
       isOpen && 'cd-select--open',
       multiple && 'cd-select--multiple',
       borderless && 'cd-select--borderless',
+      // ellipsisTrigger：多选 tag 溢出时对可见 tag 文本作单行省略（对齐 Semi）。
+      ellipsisTrigger && multiple && 'cd-select--ellipsis-trigger',
     ]
       .filter(Boolean)
       .join(' '),
@@ -832,13 +910,30 @@
         {/each}
         {#if hiddenTagCount > 0}
           {@const hiddenOpts = selectedOptions.slice(maxTagCount)}
-          <span
-            class="cd-select__tag cd-select__tag--rest"
-            title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
-          >+{hiddenTagCount}</span>
+          {#if expandRestTagsOnClick}
+            <!-- expandRestTagsOnClick：+N 可点击就地展开剩余 Tag（浮层打开态下，纯展示不改值） -->
+            <button
+              type="button"
+              class="cd-select__tag cd-select__tag--rest cd-select__tag--rest-clickable"
+              title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
+              aria-expanded={restTagsExpanded}
+              onclick={(e) => {
+                e.stopPropagation();
+                // 对齐 Semi：面板打开状态下展开剩余 Tag；未打开则先打开浮层再展开。
+                if (!isOpen) setOpen(true);
+                restTagsExpanded = true;
+              }}
+            >+{hiddenTagCount}</button>
+          {:else}
+            <span
+              class="cd-select__tag cd-select__tag--rest"
+              title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
+            >+{hiddenTagCount}</span>
+          {/if}
         {/if}
         {#if triggerSearch}
           <input
+            {...inputProps}
             class="cd-select__search"
             type="text"
             value={query}
@@ -850,6 +945,7 @@
         {/if}
       {:else if triggerSearch}
         <input
+          {...inputProps}
           class="cd-select__search"
           type="text"
           value={query}
@@ -892,7 +988,7 @@
 
     {#if suffix}
       <span class="cd-select__suffix">{@render suffix()}</span>
-    {:else}
+    {:else if showArrow}
       <span class="cd-select__arrow" aria-hidden="true">
         {#if arrowIcon}
           {@render arrowIcon()}
@@ -907,21 +1003,35 @@
   {/if}
 
   {#if isOpen || !destroyOnClose}
+    <!--
+      浮层最外层容器（use:floating 定位）：承载 outerTopSlot / 滚动列表 / outerBottomSlot 三层。
+      outer slot 与滚动列表平级、位于滚动区之外，始终固定展现（对齐 Semi outer*Slot）；
+      滚动/虚拟化/onListScroll/触底检测均作用于内部 role=listbox 的滚动容器（dropdownEl）。
+    -->
     <div
       class={dropdownCls}
-      bind:this={dropdownEl}
+      bind:this={dropdownRootEl}
       use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth }}
-      role="listbox"
-      id={listId}
-      aria-multiselectable={multiple}
-      aria-busy={loading || undefined}
-      style={dropdownInlineStyle}
+      style={dropdownRootInlineStyle}
       hidden={!isOpen || undefined}
     >
+      {#if outerTopSlot}
+        <div class="cd-select__outer-top">{@render outerTopSlot()}</div>
+      {/if}
+      <div
+        class="cd-select__list"
+        bind:this={dropdownEl}
+        role="listbox"
+        id={listId}
+        aria-multiselectable={multiple}
+        aria-busy={loading || undefined}
+        style={dropdownListInlineStyle}
+      >
       {#if filter && !triggerSearch}
         <!-- searchPosition='dropdown'（默认）：搜索框在浮层顶部 -->
         <div class="cd-select__dropdown-search">
           <input
+            {...inputProps}
             class="cd-select__search cd-select__search--dropdown"
             type="text"
             value={query}
@@ -1000,6 +1110,10 @@
       {/if}
       {#if dropdownFooter}
         <div class="cd-select__dropdown-footer">{@render dropdownFooter()}</div>
+      {/if}
+      </div>
+      {#if outerBottomSlot}
+        <div class="cd-select__outer-bottom">{@render outerBottomSlot()}</div>
       {/if}
     </div>
   {/if}
@@ -1167,6 +1281,22 @@
   .cd-select__tag--rest {
     color: var(--cd-color-select-prefix-suffix-text-default);
   }
+  /* expandRestTagsOnClick：+N 作为可点击按钮，去除原生 button 外观 */
+  .cd-select__tag--rest-clickable {
+    border: none;
+    cursor: pointer;
+    font: inherit;
+  }
+  /* ellipsisTrigger：多选 tag 溢出时，对可见 tag 文本做单行省略（完整文本经 title 查看） */
+  .cd-select--ellipsis-trigger .cd-select__content {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .cd-select--ellipsis-trigger .cd-select__tag-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .cd-select__option--create {
     color: var(--cd-color-select-option-keyword-text);
   }
@@ -1209,15 +1339,27 @@
   .cd-select--open .cd-select__arrow {
     transform: rotate(180deg);
   }
-  /* 下拉 portal 到 body，由 JS 写 position:fixed + transform + matchWidth */
+  /* 下拉 portal 到 body，由 JS 写 position:fixed + transform + matchWidth。
+     外层容器只负责底色/圆角/阴影/层级；滚动限高在内层 .cd-select__list（使 outer slot 固定不滚） */
   .cd-select__dropdown {
     z-index: var(--cd-select-dropdown-z);
-    max-block-size: 16rem;
-    overflow-y: auto;
-    padding-block: var(--cd-spacing-extra-tight);
+    display: flex;
+    flex-direction: column;
     background: var(--cd-select-dropdown-bg);
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
+  }
+  /* 内层滚动列表：optionList + inner header/footer + 浮层搜索框，超出 maxHeight 时纵向滚动 */
+  .cd-select__list {
+    max-block-size: 16rem;
+    overflow-y: auto;
+    padding-block: var(--cd-spacing-extra-tight);
+  }
+  /* outer slot：与滚动列表平级、位于滚动区之外，始终固定展现 */
+  .cd-select__outer-top,
+  .cd-select__outer-bottom {
+    flex: 0 0 auto;
+    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
   }
   /* 虚拟化：spacer 撑出未渲染选项的总高，可见 option 绝对定位于其内 */
   .cd-select__spacer {

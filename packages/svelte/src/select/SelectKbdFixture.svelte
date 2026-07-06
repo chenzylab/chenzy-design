@@ -21,6 +21,7 @@
   <Select
     {options}
     ariaLabel="Fruit"
+    defaultActiveFirstOption={false}
     onChange={(v) => {
       lastValue = v;
     }}
