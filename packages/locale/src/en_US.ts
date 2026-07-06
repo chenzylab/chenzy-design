@@ -309,6 +309,7 @@ export const en_US: Locale = {
     announceError: '{name} upload failed',
     uploadingProgress: '{name} upload progress',
     cropTitle: 'Crop image',
+    timeoutError: 'Upload timed out',
   },
   Form: {
     required: '{label} is required',

@@ -411,6 +411,8 @@ export interface Locale {
     uploadingProgress: string;
     /** 裁切弹窗默认标题 */
     cropTitle: string;
+    /** 上传超时错误文案（列表项 error + live 播报，uses {name}） */
+    timeoutError: string;
   };
   Form: {
     /** uses {label} */
