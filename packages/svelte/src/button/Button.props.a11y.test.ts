@@ -36,6 +36,21 @@ describe('Button props（对齐 Semi）', () => {
     expect(btn.classList.contains('cd-button--no-pad-left')).toBe(false);
   });
 
+  it('circle 加 cd-button--circle class（含与 icon-only 组合）', () => {
+    const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
+    const { container } = render(Button, {
+      props: { ariaLabel: 'x', icon, circle: true },
+    });
+    const btn = container.querySelector('button')!;
+    expect(btn.classList.contains('cd-button--circle')).toBe(true);
+    expect(btn.classList.contains('cd-button--icon-only')).toBe(true);
+  });
+
+  it('circle 默认关闭', () => {
+    const { container } = render(Button, { props: { ariaLabel: 'x' } });
+    expect(container.querySelector('button')!.classList.contains('cd-button--circle')).toBe(false);
+  });
+
   it('已移除 href：不再渲染 <a>', () => {
     const { container } = render(Button, {
       // @ts-expect-error href 已从 Props 移除

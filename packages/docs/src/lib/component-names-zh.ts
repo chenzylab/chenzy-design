@@ -27,6 +27,7 @@ export const componentNamesZh: Record<string, string> = {
   grid: '栅格',
   highlight: '文本高亮',
   icon: '图标',
+  iconbutton: '图标按钮',
   image: '图片',
   input: '输入框',
   inputnumber: '数字输入框',

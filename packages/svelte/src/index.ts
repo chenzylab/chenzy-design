@@ -3,6 +3,7 @@
  * Each component is its own entry for tree-shaking.
  */
 export { Button, ButtonGroup, SplitButtonGroup, buttonMeta } from './button/index.js';
+export { IconButton, iconButtonMeta } from './iconbutton/index.js';
 export { Icon, iconMeta } from './icon/index.js';
 export { Divider, dividerMeta } from './divider/index.js';
 export { Space, spaceMeta } from './space/index.js';

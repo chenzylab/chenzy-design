@@ -14,6 +14,7 @@ export const meta = {
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用状态' },
     { name: 'loading', type: 'boolean', default: 'false', desc: '加载态（带 Spin，禁用点击）' },
     { name: 'colorful', type: 'boolean', default: 'false', desc: 'AI 多彩按钮：所有 theme 下品牌蓝→紫渐变；type 仅 primary/tertiary 有意义' },
+    { name: 'circle', type: 'boolean', default: 'false', desc: '圆形按钮（border-radius:50%），配合 icon-only 呈正圆' },
     { name: 'htmlType', type: "'button'|'submit'|'reset'", default: 'button', desc: '原生 button 的 type 值' },
     { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标插槽；纯图标按钮需提供 ariaLabel' },
     { name: 'iconPosition', type: "'left'|'right'", default: 'left', desc: '图标相对文字位置' },
