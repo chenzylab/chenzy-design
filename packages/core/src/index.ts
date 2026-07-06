@@ -352,6 +352,11 @@ export {
   resolveBeforeUpload,
   validateFileSize,
 } from './upload.js';
+export {
+  collapsibleShouldRender,
+  collapsibleCollapsedHeight,
+  type CollapsibleRenderInput,
+} from './collapsible.js';
 export type {
   UploadTask,
   UploadQueue,

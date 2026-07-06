@@ -63,6 +63,7 @@ import { meta as popoverMeta } from '../src/popover/meta.ts';
 import { meta as emptyMeta } from '../src/empty/meta.ts';
 import { meta as descriptionsMeta } from '../src/descriptions/meta.ts';
 import { meta as collapseMeta } from '../src/collapse/meta.ts';
+import { meta as collapsibleMeta } from '../src/collapsible/meta.ts';
 import { meta as timelineMeta } from '../src/timeline/meta.ts';
 import { meta as listMeta } from '../src/list/meta.ts';
 import { meta as imageMeta } from '../src/image/meta.ts';
@@ -161,6 +162,7 @@ const metas = [
   emptyMeta,
   descriptionsMeta,
   collapseMeta,
+  collapsibleMeta,
   timelineMeta,
   listMeta,
   imageMeta,

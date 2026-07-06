@@ -48,6 +48,7 @@ import { meta as popoverMeta } from './popover/meta.js';
 import { meta as emptyMeta } from './empty/meta.js';
 import { meta as descriptionsMeta } from './descriptions/meta.js';
 import { meta as collapseMeta } from './collapse/meta.js';
+import { meta as collapsibleMeta } from './collapsible/meta.js';
 import { meta as timelineMeta } from './timeline/meta.js';
 import { meta as listMeta } from './list/meta.js';
 import { meta as imageMeta } from './image/meta.js';
@@ -135,6 +136,7 @@ const metas = {
   emptyMeta,
   descriptionsMeta,
   collapseMeta,
+  collapsibleMeta,
   timelineMeta,
   listMeta,
   imageMeta,

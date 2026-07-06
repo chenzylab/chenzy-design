@@ -82,7 +82,7 @@ Collapsible 包裹任意内容，通过 `isOpen` 控制展开/折叠，带高度
 
 | 维度 | 预算 | 说明 |
 | --- | --- | --- |
-| svelte gzip | ≤ 1.5 KB | 复用 CSS grid 折叠方案，逻辑轻 |
+| svelte gzip | ≤ 2 KB | 默认 CSS grid 折叠；含 collapseHeight>0 的显式高度过渡 + JS 测高混合方案、fade/adaptive/reCalcKey（实测 1.77KB，预算按实测 +~15% 校准） |
 | core（如建） gzip | ≤ 0.8 KB | keepDOM/lazyRender/shouldRender 派生 |
 
 - 优先 CSS grid `0fr↔1fr`（无 JS 测高，无布局抖动）；仅 collapseHeight>0 时需 JS 测高（reCalcKey 触发，rAF 去抖）。
