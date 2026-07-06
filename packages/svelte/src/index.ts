@@ -334,6 +334,14 @@ export {
   type GroupDirection as ResizeGroupDirection,
 } from './resizable/index.js';
 export {
+  DragMove,
+  dragMoveMeta,
+  type CreateDragMoveOptions as DragMoveOptions,
+  type DragMoveController,
+  type DragMoveAllow,
+  type DragMoveCustomMove,
+} from './drag-move/index.js';
+export {
   SideBar,
   SideBarContainer,
   SideBarAnnotation,

@@ -110,6 +110,7 @@ const components = [
   ['lottie-icon', '{ LottieIcon }', '2.5 KB'],
   ['resize-observer', '{ ResizeObserver }', '1.2 KB'],
   ['resizable', '{ Resizable, ResizeGroup, ResizeItem, ResizeHandler }', '6 KB'],
+  ['drag-move', '{ DragMove }', '2 KB'],
   // show
   ['avatar', '{ AvatarGroup }', '4.95 KB'],
   ['badge', '{ Badge }', '2.5 KB'],
