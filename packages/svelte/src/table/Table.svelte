@@ -118,8 +118,14 @@
     defaultExpandAllGroupRows,
     expandAllGroupRows,
     onGroupExpandChange,
+    onGroupedRow,
     titleSnippet,
     footerSnippet,
+    renderPagination,
+    expandIcon,
+    hideExpandedColumn = true,
+    rowSpanHover = false,
+    headerStyle,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -217,10 +223,31 @@
     expandAllGroupRows?: boolean;
     /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
     onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
+    /** 分组标题行的自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头行 tr。groupBy 时生效 */
+    onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 表格顶部标题区域 */
     titleSnippet?: Snippet;
     /** 表格底部内容区域（接收 currentData） */
     footerSnippet?: Snippet<[{ currentData: T[] }]>;
+    /**
+     * 自定义分页器渲染，替换内置 Pagination UI。入参含分页状态与翻页回调（调用 onChange(page) 触发内部翻页，
+     * 受控 current 仍不回写，红线 #1）。仅在 paginationEnabled 且有数据时消费。
+     */
+    renderPagination?: Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>;
+    /**
+     * 自定义展开行的展开/收起图标（替换默认三角）。入参 { expanded, record }。
+     * 仅在 expandable 展开列生效（树形行的展开三角另有渲染，不受此影响）。
+     */
+    expandIcon?: Snippet<[{ expanded: boolean; record: T }]>;
+    /**
+     * 展开按钮是否与首列文案渲染在同一单元格。默认 true（并入首列，对齐 Semi）；
+     * 传 false 时展开按钮单独作为一列渲染（首列前的独立 expand 列）。仅 expandable 时生效。
+     */
+    hideExpandedColumn?: boolean;
+    /** 合并单元格（column.render 返回 rowSpan）时 hover 是否高亮整个合并区。默认 false */
+    rowSpanHover?: boolean;
+    /** 表头单元格（所有 th，含 fixed 表头）的自定义内联样式。字符串或键值对象 */
+    headerStyle?: string | Record<string, string>;
   } = $props();
 
   const loc = useLocale();
@@ -653,9 +680,20 @@
 
   const hasSelection = $derived(rowSelection !== undefined);
   const hasExpand = $derived(expandable !== undefined);
+  // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
+  const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
   const colSpan = $derived(
-    columns.length + (hasSelection ? 1 : 0) + (hasExpand ? 1 : 0),
+    columns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
   );
+
+  // 表头行内联 style：headerStyle 支持字符串或键值对象，统一序列化为 style 字符串。
+  const headerStyleStr = $derived.by(() => {
+    if (headerStyle == null) return undefined;
+    if (typeof headerStyle === 'string') return headerStyle;
+    return Object.entries(headerStyle)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(';');
+  });
 
   // --- 展开行：受控 expandedRowKeys 不回写 (红线 #1) ---
   const isExpandControlled = $derived(expandable?.expandedRowKeys !== undefined);
@@ -840,7 +878,7 @@
   const gridId = useId('cd-table-grid');
   // 网格列扁平表：前置 expand/selection 占位列 + 数据列（纯函数 buildGridCols）。
   const gridCols = $derived<GridCol[]>(
-    buildGridCols({ hasExpand, hasSelection, dataColumnCount: columns.length }),
+    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: columns.length }),
   );
   const gridColCount = $derived(gridCols.length);
   // 总行数（含表头行）= aria-rowcount，虚拟化时为逻辑总数而非渲染数（spec §6）。
@@ -1098,7 +1136,7 @@
   // selection / expand 前置列宽（与 CSS .cd-table__cell--selection/--expand 对齐）
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
-  const leadingWidth = $derived((hasExpand ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
+  const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
   const hasFixed = $derived(columns.some((c) => c.fixed));
   // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
   const totalMinWidth = $derived(
@@ -1178,10 +1216,17 @@
   // 前置 leading 列在存在左固定列时也需 sticky 锁定在最左
   function leadingStyle(slot: 'expand' | 'selection'): string | undefined {
     if (!hasFixed || lastLeftFixed < 0) return undefined;
-    const offset = slot === 'expand' ? 0 : hasExpand ? LEADING_W : 0;
+    const offset = slot === 'expand' ? 0 : expandAsColumn ? LEADING_W : 0;
     return `position:sticky;inset-inline-start:${offset}px`;
   }
   const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
+
+  // 表头单元格 style 合并：把 headerStyle（应用到所有 th）追加到该 th 已有的 sticky/宽度 style 之后。
+  function mergeHeaderStyle(base: string | undefined): string | undefined {
+    if (!headerStyleStr) return base;
+    if (!base) return headerStyleStr;
+    return `${base};${headerStyleStr}`;
+  }
 
   // --- 半选 indeterminate：用 attachment 命令式写具体 input 元素属性。
   //     仅读派生布尔值并写 DOM，不读几何，写属性不触发响应式，无循环风险 (不违反红线 #3)。
@@ -1198,6 +1243,7 @@
       bordered && 'cd-table--bordered',
       stripe && 'cd-table--stripe',
       hasFixed && 'cd-table--fixed',
+      rowSpanHover && 'cd-table--row-span-hover',
     ]
       .filter(Boolean)
       .join(' '),
@@ -1254,7 +1300,7 @@
   const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
 
   // --- groupBy: build grouped display rows ---
-  type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean };
+  type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean; groupIndex: number };
   type DataDisplayRow = FlatRow<T> & { type: 'data' };
   type RenderRow = DataDisplayRow | GroupRow;
 
@@ -1319,10 +1365,11 @@
     }
     const { order, map } = groupBuckets;
     const result: RenderRow[] = [];
+    let groupIndex = 0;
     for (const gk of order) {
       const group = map.get(gk)!;
       const expanded = isGroupExpanded(gk);
-      result.push({ type: 'group', groupKey: gk, group, expanded });
+      result.push({ type: 'group', groupKey: gk, group, expanded, groupIndex: groupIndex++ });
       // 折叠的分组只渲染分组头，不铺开组内数据行。
       if (!expanded) continue;
       // Include all displayRows belonging to this group (incl. tree children)
@@ -1337,6 +1384,30 @@
     return result;
   });
 </script>
+
+<!-- 展开按钮：expandIcon 自定义图标覆盖默认三角。gridTab 为 grid 模式下的 roving tabindex（非 grid 时传 undefined）。 -->
+{#snippet expandButton(record: T, key: RowKey, gridTab: number | undefined)}
+  <button
+    type="button"
+    class="cd-table__expand-btn"
+    class:cd-table__expand-btn--open={expandedSet.has(key)}
+    aria-expanded={expandedSet.has(key)}
+    aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+    tabindex={gridTab}
+    onclick={(e) => {
+      e.stopPropagation();
+      toggleExpand(record);
+    }}
+  >
+    {#if expandIcon}
+      {@render expandIcon({ expanded: expandedSet.has(key), record })}
+    {:else}
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
+      </svg>
+    {/if}
+  </button>
+{/snippet}
 
 {#if titleSnippet}
   <div class="cd-table__title-area">
@@ -1377,12 +1448,12 @@
         style={headerRowProps?.style ?? undefined}
         onclick={headerRowProps?.onClick ?? undefined}
       >
-        {#if hasExpand}
+        {#if expandAsColumn}
           {@const gc = 0}
           <th
             class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
             scope="col"
-            style={leadingStyle('expand')}
+            style={mergeHeaderStyle(leadingStyle('expand'))}
             role={gridEnabled ? 'columnheader' : undefined}
             id={gridEnabled ? cellId(-1, gc) : undefined}
             tabindex={rovingTabindex(-1, gc)}
@@ -1391,13 +1462,13 @@
           ></th>
         {/if}
         {#if hasSelection}
-          {@const gc = hasExpand ? 1 : 0}
+          {@const gc = expandAsColumn ? 1 : 0}
           {@const isRadio = rowSelection?.type === 'radio'}
           {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
           <th
             class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
             scope="col"
-            style={selectionColStyle ?? leadingStyle('selection')}
+            style={mergeHeaderStyle(selectionColStyle ?? leadingStyle('selection'))}
             role={gridEnabled ? 'columnheader' : undefined}
             id={gridEnabled ? cellId(-1, gc) : undefined}
             tabindex={rovingTabindex(-1, gc)}
@@ -1418,7 +1489,7 @@
           </th>
         {/if}
         {#each columns as col, i (colKeyOf(col, i))}
-          {@const gc = (hasExpand ? 1 : 0) + (hasSelection ? 1 : 0) + i}
+          {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
           {@const hasFilter = !!col.filters && col.filters.length > 0}
@@ -1430,7 +1501,7 @@
             class:cd-table__cell--resizable={resizable}
             class:cd-table__cell--resizing={resizingKey === colKey}
             scope="col"
-            style={cellStyle(col, i)}
+            style={mergeHeaderStyle(cellStyle(col, i))}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
             role={gridEnabled ? 'columnheader' : undefined}
             id={gridEnabled ? cellId(-1, gc) : undefined}
@@ -1569,10 +1640,13 @@
           {#each groupedDisplayRows as groupRow (groupRow.type === 'group' ? `__group__${(groupRow as GroupRow).groupKey}` : (groupRow as DataDisplayRow).key)}
             {#if groupRow.type === 'group'}
               {@const gRow = groupRow as GroupRow}
+              {@const groupedRowProps = onGroupedRow ? onGroupedRow(gRow.group, gRow.groupIndex) : undefined}
               <tr
-                class="cd-table__row cd-table__row--group-header"
+                class="cd-table__row cd-table__row--group-header {groupedRowProps?.className ?? ''}"
                 class:cd-table__row--group-clickable={clickGroupedRowToExpand}
                 role={gridEnabled ? 'row' : undefined}
+                style={groupedRowProps?.style ?? undefined}
+                ondblclick={groupedRowProps?.onDoubleClick ?? undefined}
               >
                 <td
                   class="cd-table__cell cd-table__cell--group-header"
@@ -1580,7 +1654,10 @@
                   role={clickGroupedRowToExpand ? 'button' : undefined}
                   tabindex={clickGroupedRowToExpand ? 0 : undefined}
                   aria-expanded={clickGroupedRowToExpand ? gRow.expanded : undefined}
-                  onclick={clickGroupedRowToExpand ? () => toggleGroupExpand(gRow.groupKey) : undefined}
+                  onclick={(e) => {
+                    if (clickGroupedRowToExpand) toggleGroupExpand(gRow.groupKey);
+                    groupedRowProps?.onClick?.(e);
+                  }}
                   onkeydown={clickGroupedRowToExpand
                     ? (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -1636,26 +1713,14 @@
                 }}
                 ondblclick={rowProps?.onDoubleClick ?? undefined}
               >
-                {#if hasExpand}
-                  {@const gc = 0}
+                {#if expandAsColumn}
                   <td
                     class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
                     style={leadingStyle('expand')}
                     role={gridEnabled ? 'gridcell' : undefined}
                   >
                     {#if canExpand(record)}
-                      <button
-                        type="button"
-                        class="cd-table__expand-btn"
-                        class:cd-table__expand-btn--open={expandedSet.has(key)}
-                        aria-expanded={expandedSet.has(key)}
-                        aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                        onclick={(e) => { e.stopPropagation(); toggleExpand(record); }}
-                      >
-                        <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                          <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-                        </svg>
-                      </button>
+                      {@render expandButton(record, key, undefined)}
                     {/if}
                   </td>
                 {/if}
@@ -1697,6 +1762,15 @@
                     class:cd-table__cell--ellipsis={col.ellipsis}
                     style={cellStyle(col, i)}
                   >
+                    {#if hasExpand && !expandAsColumn && i === 0}
+                      <span class="cd-table__expand-inline">
+                        {#if canExpand(record)}
+                          {@render expandButton(record, key, undefined)}
+                        {:else}
+                          <span class="cd-table__expand-btn cd-table__expand-btn--placeholder" aria-hidden="true"></span>
+                        {/if}
+                      </span>
+                    {/if}
                     {#if treeEnabled && i === 0}
                       <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
                       {#if row.hasChildren}
@@ -1776,7 +1850,7 @@
             }}
             ondblclick={rowProps?.onDoubleClick ?? undefined}
           >
-            {#if hasExpand}
+            {#if expandAsColumn}
               {@const gc = 0}
               <td
                 class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
@@ -1788,27 +1862,12 @@
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
                 {#if canExpand(record)}
-                  <button
-                    type="button"
-                    class="cd-table__expand-btn"
-                    class:cd-table__expand-btn--open={expandedSet.has(key)}
-                    aria-expanded={expandedSet.has(key)}
-                    aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                    tabindex={childTabindex(gridRow, gc)}
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      toggleExpand(record);
-                    }}
-                  >
-                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-                    </svg>
-                  </button>
+                  {@render expandButton(record, key, childTabindex(gridRow, gc))}
                 {/if}
               </td>
             {/if}
             {#if hasSelection}
-              {@const gc = hasExpand ? 1 : 0}
+              {@const gc = expandAsColumn ? 1 : 0}
               {@const isRadio = rowSelection?.type === 'radio'}
               <td
                 class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
@@ -1847,8 +1906,8 @@
             {/if}
             {#each columns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
-              {@const gc = (hasExpand ? 1 : 0) + (hasSelection ? 1 : 0) + i}
-              {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !hasExpand}
+              {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
+              {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !expandAsColumn}
               <td
                 class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
                 class:cd-table__cell--ellipsis={col.ellipsis}
@@ -1859,6 +1918,15 @@
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
+                {#if hasExpand && !expandAsColumn && i === 0}
+                  <span class="cd-table__expand-inline">
+                    {#if canExpand(record)}
+                      {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                    {:else}
+                      <span class="cd-table__expand-btn cd-table__expand-btn--placeholder" aria-hidden="true"></span>
+                    {/if}
+                  </span>
+                {/if}
                 {#if treeEnabled && i === 0}
                   <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
                   {#if row.hasChildren}
@@ -1931,15 +1999,19 @@
   </table>
 
   {#if paginationEnabled && total > 0}
-    <div class="cd-table__pagination">
-      <Pagination
-        {total}
-        currentPage={currentPage}
-        {pageSize}
-        size={size === 'large' ? 'default' : size}
-        onChange={onPageChange}
-      />
-    </div>
+    {#if renderPagination}
+      {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
+    {:else}
+      <div class="cd-table__pagination">
+        <Pagination
+          {total}
+          currentPage={currentPage}
+          {pageSize}
+          size={size === 'large' ? 'default' : size}
+          onChange={onPageChange}
+        />
+      </div>
+    {/if}
   {/if}
 
   {#if loading}
@@ -2058,6 +2130,19 @@
   }
   .cd-table__expand-btn--open {
     transform: rotate(90deg);
+  }
+  /* hideExpandedColumn: 展开按钮并入首列时的内联包裹（与内容同格） */
+  .cd-table__expand-inline {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright, 8px);
+    vertical-align: middle;
+  }
+  .cd-table__expand-btn--placeholder {
+    inline-size: 12px;
+    block-size: 12px;
+    background: transparent;
+    pointer-events: none;
   }
   .cd-table__cell--expanded-content {
     padding: var(--cd-table-cell-padding);
@@ -2182,6 +2267,13 @@
     background: var(--cd-table-row-stripe-bg);
   }
   .cd-table__row:hover {
+    background: var(--cd-table-row-hover-bg);
+  }
+  /* rowSpanHover: 合并单元格(rowSpan)时高亮整个合并区。
+     依赖 rowSpan 合并单元格（经 column.render 合并，与 Semi 同为渐进能力）；
+     hover 行内含 rowSpan 的单元格自身高亮，其纵向覆盖的行经原生 <td rowSpan> 天然共格，
+     此规则保证合并单元格在整行 hover 语境下与普通单元格一致高亮，不被 stripe/selected 背景压过。 */
+  .cd-table--row-span-hover .cd-table__row:hover :global(td[rowspan]) {
     background: var(--cd-table-row-hover-bg);
   }
   .cd-table__row--selected,
