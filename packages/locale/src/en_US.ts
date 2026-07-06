@@ -353,6 +353,7 @@ export const en_US: Locale = {
     emptyText: 'No match',
     columnLabel: 'Level {level} options',
     searchResults: 'Search results',
+    restTagsCount: '{count} more',
   },
   Carousel: {
     prev: 'Previous slide',

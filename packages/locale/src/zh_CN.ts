@@ -353,6 +353,7 @@ export const zh_CN: Locale = {
     emptyText: '无匹配项',
     columnLabel: '第 {level} 级选项',
     searchResults: '搜索结果',
+    restTagsCount: '还有 {count} 项',
   },
   Carousel: {
     prev: '上一张',
