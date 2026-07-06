@@ -250,6 +250,7 @@ export const zh_CN: Locale = {
     clear: '清除',
     removeItem: '移除 {label}',
     create: '创建 "{label}"',
+    restTagsCount: '还有 {count} 项',
   },
   DatePicker: {
     placeholder: '请选择日期',

@@ -334,6 +334,8 @@ export interface Locale {
     removeItem: string;
     /** uses {label} */
     create: string;
+    /** +N 折叠 Tag 的可访问名 / 悬停浮层标题，uses {count} */
+    restTagsCount: string;
   };
   DatePicker: {
     placeholder: string;
