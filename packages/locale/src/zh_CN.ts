@@ -505,6 +505,9 @@ export const zh_CN: Locale = {
     deleteSkill: '删除技能',
     template: '模版',
   },
+  Resizable: {
+    handleAriaLabel: '调整大小',
+  },
   UserGuide: {
     skip: '跳过',
     next: '下一步',

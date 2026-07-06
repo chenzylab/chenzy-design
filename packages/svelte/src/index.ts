@@ -323,6 +323,16 @@ export {
   type LottiePlayerFactory,
   type LottieSegments,
 } from './lottie-icon/index.js';
+export {
+  Resizable,
+  ResizeGroup,
+  ResizeItem,
+  ResizeHandler,
+  resizableMeta,
+  type Direction as ResizableDirection,
+  type Enable as ResizableEnable,
+  type GroupDirection as ResizeGroupDirection,
+} from './resizable/index.js';
 // 浮层定位原语（Tooltip/Popover 等共用，未来 Dropdown/Popconfirm 复用）
 export {
   useFloating,
