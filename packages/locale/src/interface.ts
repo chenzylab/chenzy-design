@@ -212,6 +212,13 @@ export interface Locale {
     /** 单格位次模板，uses {index} and {count} */
     cellAriaLabel: string;
   };
+  HotKeys: {
+    /** 修饰键在非 Apple 平台 / 屏幕阅读器可读的文字名（Apple 平台由组件替换为 ⌘⌥⌃⇧ 符号）。 */
+    ctrl: string;
+    meta: string;
+    alt: string;
+    shift: string;
+  };
   LottieIcon: {
     loading: string;
     loadError: string;

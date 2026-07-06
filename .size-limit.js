@@ -103,6 +103,7 @@ const components = [
   ['tabs', '{ TabPane }', '6.95 KB'],
   // other
   ['back-top', '{ BackTop }', '2.65 KB'],
+  ['hotkeys', '{ HotKeys }', '1.85 KB'],
   ['config-provider', '{ ConfigProvider }', '1.7 KB'],
   ['locale-provider', '{ LocaleProvider }', '1.0 KB'],
   ['lottie-icon', '{ LottieIcon }', '2.5 KB'],

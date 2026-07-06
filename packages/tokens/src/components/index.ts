@@ -65,6 +65,7 @@ import { audioPlayerTokens } from './audio-player.js';
 import { jsonViewerTokens } from './json-viewer.js';
 import { chatTokens } from './chat.js';
 import { aiChatInputTokens } from './ai-chat-input.js';
+import { hotKeysTokens } from './hotkeys.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -133,4 +134,5 @@ export const componentTokens = {
   ...jsonViewerTokens,
   ...chatTokens,
   ...aiChatInputTokens,
+  ...hotKeysTokens,
 } as const;
