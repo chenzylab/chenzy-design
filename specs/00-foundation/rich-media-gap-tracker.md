@@ -71,10 +71,10 @@
 
 ## 4. 复核项（非新增，需确认现状）
 
-- [ ] **Lottie**：Semi 用 `lottie-web@^5.13.0`。本仓库已有 `lottie-icon`——**先确认它是否已基于 lottie-web**；若是，评估是否只需从 `lottie-icon` 拆出/泛化一个通用 `Lottie` 容器（放开尺寸约束），而非新建。
-- [ ] **JsonViewer core 引入评估**：确认 `@douyinfe/semi-json-viewer-core` 是否真的框架无关、无 React 运行时耦合、体积（Semi 标称 203kb/gzip 51kb）可接受。可接受则走 §3 方案①。
-- [ ] **CodeHighlight 主题**：prismjs 主题是 CSS 文件。需将主题接入本仓库 token 体系 + 暗色模式，而非直接拷 prismjs 默认 theme。
-- [ ] **Image 裁剪**：现有 `image` 含预览灯箱、不含裁剪；Cropper（#7）为独立组件，不并入 Image。
+- [x] **Lottie**：结论**不新建，登记取舍**（见 §0「Lottie 复核结论」）——`lottie-icon` core 已覆盖 Lottie 播放，硬绑 lottie-web 违反「core 库无关」原则；通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。
+- [x] **JsonViewer core 引入评估**：确认 `@douyinfe/semi-json-viewer-core` 框架无关、无 React 耦合，走 §3 方案①**已落地**（§0 表格：组件壳 gzip 3.21 KB，内核动态 import；jsdom 无 Worker 故 4 测 skip）。
+- [x] **CodeHighlight 主题**：**已落地**——prismjs 高亮主题接入本仓库 token 体系 + 暗色模式（§0 表格：CodeHighlight ✅，9.40 KB 含 core）。
+- [x] **Image 裁剪**：**已按结论落地**——Cropper（#7）作独立组件实现（§0 表格：Cropper 3.13 KB ✅），未并入 Image；`image` 仍仅含预览灯箱。
 
 ## 5. 依赖链与建设次序
 
