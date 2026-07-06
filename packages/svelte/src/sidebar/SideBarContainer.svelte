@@ -81,8 +81,10 @@
   const hasTitle = $derived(Boolean(title));
 
   // —— 宽度：非受控本地宽（拖拽/键盘命令式写入）。默认取 defaultSize.width，否则 token 默认宽。——
+  // default 仅作一次性初值、后续不回写。
   const minPx = $derived(parseSideBarWidth(minWidth));
   const maxPx = $derived(parseSideBarWidth(maxWidth));
+  // svelte-ignore state_referenced_locally
   let localWidth = $state<number | undefined>(
     parseSideBarWidth(defaultSize?.width),
   );

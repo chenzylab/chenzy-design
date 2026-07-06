@@ -360,11 +360,13 @@
   // --- 面板游标月份 (本地 $state)，打开时同步到 value/today 月份 ---
   const today = startOfDay(new Date());
   // defaultPickerValue：面板初始定位日期（一次性初值），仅在无选中值时用于 seed 游标。
+  // svelte-ignore state_referenced_locally
   const _pickerSeed: Date | null = Array.isArray(defaultPickerValue)
     ? (defaultPickerValue[0] ?? null)
     : (defaultPickerValue instanceof Date ? defaultPickerValue : null);
-  // 初始化游标用 defaultValue（不依赖 $derived 的 currentSingle 避免 state_referenced_locally）；
+  // 初始化游标用 defaultValue（刻意静态读初值，default 语义仅取一次，不回写）；
   // 无 defaultValue 时回退到 defaultPickerValue，再无则今天。
+  // svelte-ignore state_referenced_locally
   const _initCursorDate: Date | null = Array.isArray(defaultValue)
     ? (defaultValue[0] ?? null)
     : (defaultValue instanceof Date ? defaultValue : null);
