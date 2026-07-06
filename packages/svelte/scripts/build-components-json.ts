@@ -37,6 +37,7 @@ import { meta as formMeta } from '../src/form/meta.ts';
 import { meta as selectMeta } from '../src/select/meta.ts';
 import { meta as autocompleteMeta } from '../src/autocomplete/meta.ts';
 import { meta as tagInputMeta } from '../src/tag-input/meta.ts';
+import { meta as pinCodeMeta } from '../src/pincode/meta.ts';
 import { meta as colorPickerMeta } from '../src/color-picker/meta.ts';
 import { meta as datePickerMeta } from '../src/date-picker/meta.ts';
 import { meta as rangePickerMeta } from '../src/date-picker/range-meta.ts';
@@ -127,6 +128,7 @@ const metas = [
   selectMeta,
   autocompleteMeta,
   tagInputMeta,
+  pinCodeMeta,
   colorPickerMeta,
   datePickerMeta,
   rangePickerMeta,
