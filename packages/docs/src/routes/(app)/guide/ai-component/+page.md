@@ -1,3 +1,7 @@
+<script>
+  import { base } from '$app/paths';
+</script>
+
 # AIComponent AI 组件能力介绍
 
 `chenzy-design` 的 AI 组件是一套面向 AI 应用场景的组件能力集合，以「人机智能协同」为理念，让用户与 AI 系统的协作更高效、可控、可感知。整体对标 Semi Design 的 AI 组件体系，并以 Svelte 5 与框架无关的 headless 内核（`@chenzy-design/core`）重新实现。
@@ -13,9 +17,9 @@
 
 AI 风格通过组件的 `colorful` 属性开启，底层用品牌蓝 → 紫的双色渐变（冷色调），与常规主题色区分，用于标记 AI 相关的操作入口。
 
-- **AI Button**：`colorful` 仅在 `type="primary"` / `type="tertiary"` 下生效，其余 type 回退为 primary。支持 `loading` / `disabled` 态，可纯图标或图标 + 文字。详见 [Button](/components/button)。
-- **AI Tag**：`colorful` 开启多彩标签，配合 `gradient` 区分渐变色与单色紫，与 `type`（solid/light/ghost）、`shape`、`prefixIcon` 组合；多彩标签字重比常规标签更重。详见 [Tag](/components/tag)。
-- **AI FloatButton**：悬浮按钮的 `colorful` 渐变形态，适合作为常驻的 AI 助手入口。详见 [FloatButton](/components/floatbutton)。
+- **AI Button**：`colorful` 仅在 `type="primary"` / `type="tertiary"` 下生效，其余 type 回退为 primary。支持 `loading` / `disabled` 态，可纯图标或图标 + 文字。详见 <a href="{base}/components/button">Button</a>。
+- **AI Tag**：`colorful` 开启多彩标签，配合 `gradient` 区分渐变色与单色紫，与 `type`（solid/light/ghost）、`shape`、`prefixIcon` 组合；多彩标签字重比常规标签更重。详见 <a href="{base}/components/tag">Tag</a>。
+- **AI FloatButton**：悬浮按钮的 `colorful` 渐变形态，适合作为常驻的 AI 助手入口。详见 <a href="{base}/components/floatbutton">FloatButton</a>。
 
 渐变色由各组件的 colorful 渐变 token 驱动（如 `--cd-button-colorful-from` / `--cd-tag-colorful-from` 等，同源蓝→紫），暗色模式与品牌定制均随 token 体系联动。
 
@@ -32,7 +36,7 @@ AI 风格通过组件的 `colorful` 属性开启，底层用品牌蓝 → 紫的
 - **引用**展示与删除。
 - 附件上传（复用 `Upload` 能力）。
 
-详见 [AIChatInput](/components/aichatinput)。
+详见 <a href="{base}/components/aichatinput">AIChatInput</a>。
 
 ### AIChatDialogue 会话展示
 
@@ -43,22 +47,22 @@ AI 风格通过组件的 `colorful` 属性开启，底层用品牌蓝 → 紫的
 - 消息**编辑**（`messageEditRender`）与转换。
 - 多角色（`roleConfig`）头像与名称标识，适用于 Multiple Agent 场景。
 
-详见 [AIChatDialogue](/components/aichatdialogue)。
+详见 <a href="{base}/components/aichatdialogue">AIChatDialogue</a>。
 
 ### SideBar 多功能侧边栏
 
-可伸缩的侧边信息栏套件（分阶段交付）：贴视口右侧的可伸缩浮层壳，用于承载产物编辑、产物查看、引用资料展示等内容，与对话区联动。详见 [SideBar](/components/sidebar)。
+可伸缩的侧边信息栏套件（分阶段交付）：贴视口右侧的可伸缩浮层壳，用于承载产物编辑、产物查看、引用资料展示等内容，与对话区联动。详见 <a href="{base}/components/sidebar">SideBar</a>。
 
 ### Chat 轻量对话
 
-`Chat` 组件默认集成输入与消息展示，内容走 `MarkdownRender`，适合仅需普通文字对话与简单图片、文件展示的轻量场景。详见 [Chat](/components/chat)。
+`Chat` 组件默认集成输入与消息展示，内容走 `MarkdownRender`，适合仅需普通文字对话与简单图片、文件展示的轻量场景。详见 <a href="{base}/components/chat">Chat</a>。
 
 ## FAQ
 
 **Chat 组件和 AI Chat 系列组件应该如何选型？**
 
-- **场景简单**（仅普通文字对话 + 简单图片/文件展示）：推荐 [Chat](/components/chat)。它默认集成 input 与消息展示，理解简单、上手快；缺点是复杂的输入框或消息展示定制相对困难。
-- **场景复杂**：推荐 [AIChatInput](/components/aichatinput) + [AIChatDialogue](/components/aichatdialogue) 搭配使用。
+- **场景简单**（仅普通文字对话 + 简单图片/文件展示）：推荐 <a href="{base}/components/chat">Chat</a>。它默认集成 input 与消息展示，理解简单、上手快；缺点是复杂的输入框或消息展示定制相对困难。
+- **场景复杂**：推荐 <a href="{base}/components/aichatinput">AIChatInput</a> + <a href="{base}/components/aichatdialogue">AIChatDialogue</a> 搭配使用。
   - `AIChatInput` 支持更复杂的样式定制：可定制配置区 / 操作区、富文本输入模板、引用展示、附件上传。
   - `AIChatDialogue` 消息展示的灵活性更高：兼容 OpenAI Response / Chat Completion 格式，支持按消息类型定制渲染、消息引用与选择、消息编辑。
 
