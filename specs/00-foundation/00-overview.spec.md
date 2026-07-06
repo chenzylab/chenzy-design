@@ -49,6 +49,7 @@
 ### Other（其他）
 - [x] ConfigProvider · [x] LocaleProvider · [x] BackTop · [x] ResizeObserver · [x] LottieIcon
 - [ ] HotKeys（对标 Semi 2.101.0 增补，SPEC 已写，实现中）
+- [ ] Resizable · ResizeGroup/ResizeItem/ResizeHandler（对标 Semi 2.101.0 增补——上次对标漏判为别名，实为正式组件族；core createResizeDrag 供 Table/SideBar 复用）
 
 ## 3. 横切能力 SPEC 索引（M0 必须先完成）
 
