@@ -505,4 +505,11 @@ export const en_US: Locale = {
     deleteSkill: 'Delete skill',
     template: 'Template',
   },
+  UserGuide: {
+    skip: 'Skip',
+    next: 'Next',
+    prev: 'Prev',
+    finish: 'Finish',
+    stepIndicator: 'Step {current} of {total}',
+  },
 };

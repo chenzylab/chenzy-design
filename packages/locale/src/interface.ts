@@ -714,4 +714,16 @@ export interface Locale {
     /** template button label / toggle aria-label */
     template: string;
   };
+  UserGuide: {
+    /** skip button */
+    skip: string;
+    /** next-step button */
+    next: string;
+    /** previous-step button */
+    prev: string;
+    /** finish button (last step) */
+    finish: string;
+    /** progress aria-label / indicator template, uses {current} and {total} */
+    stepIndicator: string;
+  };
 }

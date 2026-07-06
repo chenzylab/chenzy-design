@@ -67,6 +67,7 @@ import { chatTokens } from './chat.js';
 import { aiChatInputTokens } from './ai-chat-input.js';
 import { hotKeysTokens } from './hotkeys.js';
 import { floatButtonTokens } from './float-button.js';
+import { userGuideTokens } from './user-guide.js';
 
 export const componentTokens = {
   ...buttonTokens,
@@ -137,4 +138,5 @@ export const componentTokens = {
   ...aiChatInputTokens,
   ...hotKeysTokens,
   ...floatButtonTokens,
+  ...userGuideTokens,
 } as const;

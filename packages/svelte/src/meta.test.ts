@@ -17,6 +17,7 @@ import { meta as inputNumberMeta } from './input-number/meta.js';
 import { meta as ratingMeta } from './rating/meta.js';
 import { meta as pinCodeMeta } from './pincode/meta.js';
 import { meta as hotKeysMeta } from './hotkeys/meta.js';
+import { meta as userGuideMeta } from './user-guide/meta.js';
 import { meta as sliderMeta } from './slider/meta.js';
 import { meta as formMeta } from './form/meta.js';
 import { meta as selectMeta } from './select/meta.js';
@@ -100,6 +101,7 @@ const metas = {
   ratingMeta,
   pinCodeMeta,
   hotKeysMeta,
+  userGuideMeta,
   sliderMeta,
   formMeta,
   selectMeta,

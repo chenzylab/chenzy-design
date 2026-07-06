@@ -545,6 +545,23 @@ export {
   type AttachHotKeysOptions,
 } from './hotkeys.js';
 export {
+  createUserGuide,
+  getSpotlightRect,
+  isStepActive,
+  nextActiveIndex,
+  shouldShowSkip,
+  shouldShowPrev,
+  isLastStep,
+  type UserGuideMode,
+  type UserGuideTheme,
+  type UserGuidePosition,
+  type UserGuideStepData,
+  type CreateUserGuideOptions,
+  type SpotlightRect,
+  type UserGuideState,
+  type UserGuideController,
+} from './user-guide.js';
+export {
   isSendHotKey,
   resolveCanSend,
   buildMessageContent,

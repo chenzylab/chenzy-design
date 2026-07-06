@@ -505,4 +505,11 @@ export const zh_CN: Locale = {
     deleteSkill: '删除技能',
     template: '模版',
   },
+  UserGuide: {
+    skip: '跳过',
+    next: '下一步',
+    prev: '上一步',
+    finish: '完成',
+    stepIndicator: '第 {current} 步，共 {total} 步',
+  },
 };

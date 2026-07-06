@@ -99,6 +99,7 @@ import { meta as chatMeta } from '../src/chat/meta.ts';
 import { meta as cropperMeta } from '../src/cropper/meta.ts';
 import { meta as aiChatDialogueMeta } from '../src/ai-chat-dialogue/meta.ts';
 import { meta as aiChatInputMeta } from '../src/ai-chat-input/meta.ts';
+import { meta as userGuideMeta } from '../src/user-guide/meta.ts';
 
 /**
  * Full list of component metas. Mirrors the import set validated in
@@ -109,6 +110,7 @@ const metas = [
   buttonMeta,
   iconButtonMeta,
   floatButtonMeta,
+  userGuideMeta,
   iconMeta,
   dividerMeta,
   spaceMeta,
