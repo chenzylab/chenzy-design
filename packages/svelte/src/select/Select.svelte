@@ -105,6 +105,22 @@
     restTagsPopoverProps?: Record<string, unknown>;
     /** 用作回显的字段名（默认 'label'）；当选项含自定义字段时取对应值作显示文本 */
     optionLabelProp?: string;
+    /**
+     * 搜索框位置：'dropdown'（默认，浮层内独立搜索框）| 'trigger'（搜索输入内联在触发器上）。
+     * 仅在 filter=true 时生效。'trigger' 时输入框长驻触发器（单选选中值作 placeholder，
+     * 多选与 tags 并排），键入即在触发器上就地过滤，无需先打开浮层内的独立搜索框。
+     */
+    searchPosition?: 'dropdown' | 'trigger';
+    /**
+     * 内嵌标签：浮入触发器左侧的常驻标签（string 或 Snippet），用于「标签+值」一体式触发器。
+     * 渲染在前缀之后、内容之前，不影响选中值/过滤逻辑（纯展示，对齐 DatePicker insetInput 的展示层定位）。
+     */
+    insetLabel?: string | Snippet;
+    /**
+     * insetLabel 的 id，挂到内嵌标签元素上并经 aria-labelledby 关联触发器 combobox，
+     * 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分。仅 insetLabel 存在时生效。
+     */
+    insetLabelId?: string;
     onChange?: (v: OptionValue | OptionValue[]) => void;
     onOpenChange?: (open: boolean) => void;
     /** 选中某项时触发（多选：每次单个 toggle 选中时；单选：选中时） */
@@ -147,6 +163,26 @@
     label?: Snippet<[{ option: OptionData }]>;
     /** 自定义"创建xxx"项渲染 */
     renderCreateItem?: Snippet<[string]>;
+    /**
+     * 完全自定义触发器渲染，替换默认 combobox 触发框。
+     * 入参含当前 value/选中项/placeholder/open 态，供调用方自绘触发器。
+     * a11y 注意：默认触发框携带的 role=combobox / aria-expanded / 键盘（↑↓/Enter/Esc）随之移除；
+     * 自定义触发器需自行把必要 aria（role/aria-expanded/aria-controls）与聚焦/键盘事件挂到自绘元素上，
+     * 或复用 params 里透传的 open/toggle/onTriggerKeydown 保持键盘可达。
+     */
+    triggerRender?: Snippet<
+      [
+        {
+          value: OptionValue | OptionValue[] | undefined;
+          selectedOptions: OptionData[];
+          placeholder: string;
+          open: boolean;
+          disabled: boolean;
+          toggle: () => void;
+          onTriggerKeydown: (e: KeyboardEvent) => void;
+        },
+      ]
+    >;
   }
 
   let {
@@ -184,6 +220,9 @@
     showRestTagsPopover = false,
     restTagsPopoverProps,
     optionLabelProp = 'label',
+    searchPosition = 'dropdown',
+    insetLabel,
+    insetLabelId,
     onChange,
     onOpenChange,
     onSelect,
@@ -206,6 +245,7 @@
     option: optionSnippet,
     label: labelSnippet,
     renderCreateItem,
+    triggerRender,
   }: Props = $props();
 
   const loc = useLocale();
@@ -649,19 +689,49 @@
       .join(' '),
   );
 
-  // combobox 可访问名：ariaLabelledby > ariaLabel > placeholder > locale 默认
-  const triggerAriaLabel = $derived(
-    ariaLabelledby ? undefined : (ariaLabel || placeholder || loc().t('Select.ariaLabel')),
+  // insetLabel 提供 insetLabelId 时，把内嵌标签纳入 combobox 的 aria-labelledby，
+  // 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分（与外部 ariaLabelledby 拼接）。
+  const hasInsetLabel = $derived(insetLabel !== undefined);
+  const resolvedLabelledby = $derived(
+    [ariaLabelledby, hasInsetLabel && insetLabelId ? insetLabelId : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined,
   );
+
+  // combobox 可访问名：aria-labelledby（含内嵌标签）> ariaLabel > placeholder > locale 默认
+  const triggerAriaLabel = $derived(
+    resolvedLabelledby ? undefined : (ariaLabel || placeholder || loc().t('Select.ariaLabel')),
+  );
+
+  // searchPosition='trigger' 且 filter 时，搜索框内联在触发器上（无需浮层内独立搜索框）。
+  const triggerSearch = $derived(filter && searchPosition === 'trigger');
+
+  // searchPosition='dropdown' 时，打开浮层后自动聚焦浮层内搜索框，便于直接键入过滤。
+  $effect(() => {
+    if (!isOpen || triggerSearch || !filter || !dropdownEl) return;
+    const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select__search--dropdown');
+    searchEl?.focus();
+  });
 </script>
 
 <div class={cls} bind:this={rootEl}>
+  {#if triggerRender}
+    {@render triggerRender({
+      value: currentValue,
+      selectedOptions,
+      placeholder: placeholder ?? loc().t('Select.placeholder'),
+      open: isOpen,
+      disabled,
+      toggle: toggleOpen,
+      onTriggerKeydown,
+    })}
+  {:else}
   <div
     class="cd-select__trigger"
     role="combobox"
     {id}
     aria-label={triggerAriaLabel}
-    aria-labelledby={ariaLabelledby}
+    aria-labelledby={resolvedLabelledby}
     aria-expanded={isOpen}
     aria-haspopup="listbox"
     aria-controls={listId}
@@ -676,6 +746,16 @@
   >
     {#if prefix}
       <span class="cd-select__prefix">{@render prefix()}</span>
+    {/if}
+
+    {#if hasInsetLabel}
+      <span class="cd-select__inset-label" id={insetLabelId}>
+        {#if typeof insetLabel === 'string'}
+          {insetLabel}
+        {:else if insetLabel}
+          {@render insetLabel()}
+        {/if}
+      </span>
     {/if}
 
     <div class="cd-select__content">
@@ -715,7 +795,7 @@
             title={showRestTagsPopover ? hiddenOpts.map((o) => getOptionLabel(o)).join(', ') : undefined}
           >+{hiddenTagCount}</span>
         {/if}
-        {#if filter}
+        {#if triggerSearch}
           <input
             class="cd-select__search"
             type="text"
@@ -726,7 +806,7 @@
             onclick={(e) => e.stopPropagation()}
           />
         {/if}
-      {:else if filter}
+      {:else if triggerSearch}
         <input
           class="cd-select__search"
           type="text"
@@ -782,6 +862,7 @@
       </span>
     {/if}
   </div>
+  {/if}
 
   {#if isOpen || !destroyOnClose}
     <div
@@ -795,6 +876,22 @@
       style={`max-block-size:${maxHeight}px`}
       hidden={!isOpen || undefined}
     >
+      {#if filter && !triggerSearch}
+        <!-- searchPosition='dropdown'（默认）：搜索框在浮层顶部 -->
+        <div class="cd-select__dropdown-search">
+          <input
+            class="cd-select__search cd-select__search--dropdown"
+            type="text"
+            value={query}
+            placeholder={loc().t('Select.searchPlaceholder')}
+            aria-label={loc().t('Select.searchPlaceholder')}
+            aria-controls={listId}
+            oninput={onSearchInput}
+            onkeydown={onTriggerKeydown}
+            onclick={(e) => e.stopPropagation()}
+          />
+        </div>
+      {/if}
       {#if dropdownHeader}
         <div class="cd-select__dropdown-header">{@render dropdownHeader()}</div>
       {/if}
@@ -969,6 +1066,32 @@
   }
   .cd-select__placeholder {
     color: var(--cd-color-select-input-placeholder-text);
+  }
+  /* 内嵌标签：常驻触发器左侧的标签文本 */
+  .cd-select__inset-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-inline-end: var(--cd-spacing-extra-tight);
+    color: var(--cd-color-select-prefix-suffix-text-default);
+    user-select: none;
+  }
+  /* searchPosition='dropdown'：浮层顶部搜索框容器 */
+  .cd-select__dropdown-search {
+    padding: var(--cd-spacing-extra-tight) var(--cd-select-option-padding, var(--cd-spacing-tight));
+  }
+  .cd-select__search--dropdown {
+    inline-size: 100%;
+    box-sizing: border-box;
+    min-block-size: var(--cd-select-height-small);
+    padding-inline: var(--cd-select-padding-x);
+    border: 1px solid var(--cd-select-border);
+    border-radius: var(--cd-select-radius);
+    background: var(--cd-select-bg);
+  }
+  .cd-select__search--dropdown:focus-visible {
+    border-color: var(--cd-select-border-active);
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-select__value {
     overflow: hidden;

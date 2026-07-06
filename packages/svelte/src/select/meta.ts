@@ -31,6 +31,9 @@ export const meta = {
     { name: 'allowCreate', type: 'boolean', default: 'false', desc: 'filter 无匹配时可创建新选项' },
     { name: 'autoClearSearchValue', type: 'boolean', default: 'true', desc: '多选选中后自动清空搜索词' },
     { name: 'optionLabelProp', type: 'string', default: "'label'", desc: '用作回显的字段名' },
+    { name: 'searchPosition', type: "'dropdown' | 'trigger'", default: "'dropdown'", desc: "搜索框位置（仅 filter=true 生效）：dropdown=浮层顶部搜索框（打开自动聚焦）；trigger=输入内联在触发器上就地过滤" },
+    { name: 'insetLabel', type: 'string | Snippet', default: 'undefined', desc: '内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/过滤）' },
+    { name: 'insetLabelId', type: 'string', default: 'undefined', desc: 'insetLabel 的 id，经 aria-labelledby 关联触发器 combobox（仅 insetLabel 存在时生效）' },
     { name: 'onSearch', type: '(query: string) => void', default: 'undefined', desc: '远程搜索（防抖回调，外部更新 options）' },
     { name: 'loading', type: 'boolean', default: 'false', desc: '远程加载中（显示 spinner）' },
     { name: 'searchDebounce', type: 'number', default: '300', desc: 'onSearch 防抖毫秒' },
@@ -64,6 +67,7 @@ export const meta = {
     { name: 'option', params: '[{ option, selected, active }]', desc: '自定义单项渲染' },
     { name: 'label', params: '[{ option }]', desc: '自定义选中值/Tag 渲染' },
     { name: 'renderCreateItem', params: '[queryString]', desc: '自定义"创建xxx"项渲染' },
+    { name: 'triggerRender', params: '[{ value, selectedOptions, placeholder, open, disabled, toggle, onTriggerKeydown }]', desc: '完全自定义触发器渲染（替换默认 combobox 触发框）；需自挂 aria/键盘保持可达' },
   ],
   a11y: {
     role: 'combobox',

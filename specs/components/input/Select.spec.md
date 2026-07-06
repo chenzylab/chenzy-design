@@ -56,6 +56,9 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | options | Array<OptionData \| GroupData> | [] | 数据驱动选项；亦可用 `<Option>` 子节点声明式。 |
 | multiple | boolean | false | 多选模式。 |
 | filter | boolean \| (input, option) => boolean | false | 是否可搜索 / 自定义过滤函数。 |
+| searchPosition | 'dropdown' \| 'trigger' | 'dropdown' | 搜索框位置（仅 filter 生效）：dropdown=浮层顶部；trigger=内联触发器。 |
+| insetLabel | string \| Snippet | — | 内嵌标签，浮入触发器左侧（纯展示，不影响值/过滤）。 |
+| insetLabelId | string | — | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox。 |
 | remote | boolean | false | 远程搜索模式，过滤交由 `on:search`，内部不再本地过滤。 |
 | loading | boolean | false | 显示加载态（远程请求中）。 |
 | open | boolean | — | 受控浮层显隐，配合 `on:openChange`。 |
@@ -100,6 +103,7 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | default | — | 声明式 `<Option>` / `<OptGroup>` 子节点。 |
 | option | `{ option, selected, active }` | 自定义单项渲染。 |
 | label | `{ option }` | 自定义触发器内选中值/Tag 渲染。 |
+| triggerRender | `{ value, selectedOptions, placeholder, open, disabled, toggle, onTriggerKeydown }` | 完全自定义触发器（替换默认 combobox）；需自挂 aria/键盘保持可达。 |
 | prefix | — | 触发器左侧前缀（图标/文本）。 |
 | suffix | — | 触发器右侧后缀（覆盖默认箭头）。 |
 | empty | — | 自定义空态（等价 `emptyContent`）。 |
