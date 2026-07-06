@@ -71,6 +71,7 @@ import { meta as modalMeta } from './modal/meta.js';
 import { meta as popconfirmMeta } from './popconfirm/meta.js';
 import { meta as drawerMeta } from './drawer/meta.js';
 import { meta as sideSheetMeta } from './side-sheet/meta.js';
+import { meta as feedbackMeta } from './feedback/meta.js';
 import { meta as toastMeta } from './toast/meta.js';
 import { meta as notificationMeta } from './notification/meta.js';
 import { meta as backTopMeta } from './back-top/meta.js';
@@ -159,6 +160,7 @@ const metas = {
   popconfirmMeta,
   drawerMeta,
   sideSheetMeta,
+  feedbackMeta,
   toastMeta,
   notificationMeta,
   backTopMeta,

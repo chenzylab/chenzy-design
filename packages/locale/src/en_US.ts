@@ -153,6 +153,17 @@ export const en_US: Locale = {
     cleared: 'Rating cleared',
     unrated: 'Not rated',
   },
+  Feedback: {
+    submit: 'Submit',
+    cancel: 'Cancel',
+    placeholder: 'Tell us your feedback',
+    ratingLabel: 'Satisfaction rating',
+    emojiVeryBad: 'Very bad',
+    emojiBad: 'Bad',
+    emojiNeutral: 'Neutral',
+    emojiGood: 'Good',
+    emojiVeryGood: 'Very good',
+  },
   PinCode: {
     ariaLabel: 'Verification code',
     cellAriaLabel: 'Digit {index} of {count}',

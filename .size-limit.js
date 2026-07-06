@@ -70,6 +70,7 @@ const components = [
   ['popconfirm', '{ Popconfirm }', '4.8 KB'],
   ['progress', '{ Progress }', '3.8 KB'],
   ['side-sheet', '{ SideSheet }', '4.5 KB'],
+  ['feedback', '{ Feedback }', '3.5 KB'],
   ['skeleton', '{ Skeleton, SkeletonTitle, SkeletonParagraph, SkeletonAvatar, SkeletonImage, SkeletonButton }', '3.5 KB'],
   ['spin', '{ Spin }', '2.6 KB'],
   ['toast', '{ Toast }', '4.5 KB'],

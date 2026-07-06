@@ -32,6 +32,7 @@ export const nameToDir: Record<string, string> = {
   drawer: 'drawer',
   dropdown: 'dropdown',
   empty: 'empty',
+  feedback: 'feedback',
   floatbutton: 'float-button',
   form: 'form',
   grid: 'grid',

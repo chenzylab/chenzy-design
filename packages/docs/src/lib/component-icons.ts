@@ -56,6 +56,7 @@ export const componentIcons: Record<string, string> = {
   tooltip: `<rect x="4" y="4" width="16" height="11" rx="2"/><path d="M9 15l3 4 3-4"/>`,
   popover: `<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 9h8M8 12h5M10 17l2 4 2-4"/>`,
   empty: `<path d="M4 8l3-4h10l3 4M4 8v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h16"/>`,
+  feedback: `<path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3v-3H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M9 10v0M15 10v0M9 12.5c.8 1 2.2 1 3 0"/>`,
   descriptions: `<path d="M4 7h6M14 7h6M4 12h6M14 12h6M4 17h6M14 17h6"/>`,
   collapse: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M14 7l2 1.5-2 1.5"/>`,
   collapsible: `<path d="M4 6h16M4 18h16"/><path d="M9 10l3 3 3-3"/>`,
