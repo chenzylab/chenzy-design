@@ -42,10 +42,6 @@
     inputProps?: Record<string, unknown>;
     /** 完全自定义 tag 渲染 */
     renderTagItem?: Snippet<[{ value: string; index: number; onClose: () => void }]>;
-    /** 超出可见时 hover 显示 Popover（预留，当前仅存储，浮层功能可后续扩展） */
-    showRestTagsPopover?: boolean;
-    /** Popover 配置（预留） */
-    restTagsPopoverProps?: Record<string, unknown>;
     /** 显示清除全部按钮 */
     showClear?: boolean;
     /** 自定义清除图标 */
@@ -87,8 +83,6 @@
     ariaLabel,
     inputProps,
     renderTagItem,
-    showRestTagsPopover = false,
-    restTagsPopoverProps,
     showClear = false,
     clearIcon,
     onExceed,
