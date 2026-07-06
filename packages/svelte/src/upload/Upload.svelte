@@ -185,6 +185,31 @@
     showPicInfo?: boolean;
     /** 自定义 picture-card 图片信息浮层渲染（showPicInfo 为 true 时生效）。 */
     renderPicInfo?: Snippet<[{ fileItem: UploadFileItem }]>;
+
+    // ——— 移除 / 超时 / 触发时机（对标 Semi onRemove/beforeRemove/timeout/uploadTrigger）———
+    /**
+     * 移除文件前的钩子（对标 Semi beforeRemove）：返回 false / Promise.resolve(false) / reject
+     * 会阻止移除；返回 true / 不返回则继续移除。支持异步（await）。
+     * 入参为待移除的文件项与当前文件列表。
+     */
+    beforeRemove?: (file: UploadFileItem, fileList: UploadFileItem[]) => boolean | Promise<boolean>;
+    /**
+     * 文件被移除后的回调（对标 Semi onRemove）。在移除完成（从列表删除）后触发。
+     * 入参：currentFile 为被移除文件的原始 File（若存在），fileList 为移除后的文件列表，
+     * currentFileItem 为被移除的文件项。
+     */
+    onRemove?: (currentFile: File | undefined, fileList: UploadFileItem[], currentFileItem: UploadFileItem) => void;
+    /**
+     * 单文件上传超时（毫秒）。> 0 时为 XHR 设置 timeout，超时自动中止该请求并标记 error。
+     * 0 / 不传 = 不限制。仅对内置 XHR 上传（action）生效，customRequest 自管超时。
+     */
+    timeout?: number;
+    /**
+     * 上传触发时机（对标 Semi uploadTrigger）。'auto'（默认）=选中文件即自动上传；
+     * 'custom'=选中文件后不自动上传，文件进入列表并停在 ready 态，需通过 bind:this 命令式
+     * 调用 upload() 方法才批量上传所有 ready 文件。
+     */
+    uploadTrigger?: 'auto' | 'custom';
   }
 
   let {
@@ -244,6 +269,10 @@
     renderThumbnail,
     showPicInfo = false,
     renderPicInfo,
+    beforeRemove,
+    onRemove,
+    timeout = 0,
+    uploadTrigger = 'auto',
   }: Props = $props();
 
   const loc = useLocale();
@@ -409,6 +438,15 @@
         announcedBucket.delete(item.uid);
         done();
       };
+      // 超时：与 onerror 同处理（标 error + 播报），并释放槽位（同 onabort）。
+      xhr.ontimeout = () => {
+        xhrMap.delete(item.uid);
+        announcedBucket.delete(item.uid);
+        patchItem(item.uid, { status: 'error', error: loc().t('Upload.timeoutError') });
+        announcer.announce(loc().t('Upload.timeoutError', { name: item.name }), 'assertive');
+        onError?.(item);
+        done();
+      };
 
       const form = new FormData();
       form.append(uploadName, file, item.name);
@@ -416,6 +454,8 @@
         for (const [k, v] of Object.entries(uploadData)) form.append(k, v);
       }
       xhr.open('POST', action);
+      // 单文件上传超时（毫秒）：>0 时启用，超时触发 ontimeout（标 error）。
+      if (timeout > 0) xhr.timeout = timeout;
       if (withCredentials) xhr.withCredentials = true;
       if (headers) {
         for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
@@ -550,8 +590,8 @@
       if (!current.some((it) => it.uid === item.uid)) return;
       const decision = resolveBeforeUpload(original, result);
       if (!decision.upload) {
-        // 跳过该文件：从列表移除（受控仅 onChange，不回写）。
-        remove(item.uid);
+        // 跳过该文件：从列表移除（受控仅 onChange，不回写）。内部移除，不触发 beforeRemove/onRemove。
+        removeInternal(item.uid);
         return;
       }
       file = decision.file ?? original;
@@ -566,8 +606,23 @@
       patchItem(item.uid, { name: file.name, size: file.size, file });
     }
 
-    // 入队受 concurrency 调度：customRequest 返回 Promise 时队列会 await 其完成
-    // 来释放槽位（同步返回则立即释放，由其自管生命周期）；否则由队列 await XHR。
+    // uploadTrigger='custom'：不自动上传，文件停在 ready 态等待命令式 upload() 触发。
+    // 记录已通过 beforeUpload/transformFile 的最终 File，供 upload() 直接入队。
+    if (uploadTrigger === 'custom') {
+      pendingFiles.set(item.uid, file);
+      return;
+    }
+
+    enqueueUpload(item, file);
+  }
+
+  // 待手动上传的文件（uploadTrigger='custom' 时，dispatch 处理完 beforeUpload/transformFile
+  // 后暂存最终 File；调用 upload() 时逐个入队）。
+  const pendingFiles = new Map<string, File>();
+
+  // 将单个文件项入并发队列：customRequest 返回 Promise 时队列会 await 其完成来释放槽位
+  // （同步返回则立即释放，由其自管生命周期）；否则由队列 await XHR。
+  function enqueueUpload(item: UploadFileItem, file: File) {
     queue.add(() => {
       if (!mounted) return;
       if (!current.some((it) => it.uid === item.uid)) return;
@@ -578,8 +633,22 @@
     });
   }
 
-  function remove(uid: string) {
+  // 命令式手动触发上传（对标 Semi ref.upload）：配合 uploadTrigger='custom'，
+  // 将所有 ready 且已就绪的文件批量入队上传。命令式操作在 handler 内（红线 #3）。
+  export function upload() {
     if (disabled) return;
+    for (const it of current) {
+      if (it.status !== 'ready') continue;
+      const file = pendingFiles.get(it.uid) ?? it.file;
+      if (!file) continue;
+      pendingFiles.delete(it.uid);
+      enqueueUpload(it, file);
+    }
+  }
+
+  // 内部移除：中止 XHR、释放预览、从列表删除。不跑 beforeRemove/onRemove
+  // （供 beforeUpload 跳过等内部流程直接调用）。
+  function removeInternal(uid: string) {
     const xhr = xhrMap.get(uid);
     if (xhr) {
       xhr.abort();
@@ -587,7 +656,34 @@
     }
     revokeUrl(uid);
     announcedBucket.delete(uid);
+    pendingFiles.delete(uid);
     commit(current.filter((item) => item.uid !== uid));
+  }
+
+  // 用户发起的移除（点击移除按钮 / renderFileItem 的 remove 回调）：
+  // 先跑 beforeRemove（false/reject 阻止），移除后触发 onRemove。异步 await。
+  async function remove(uid: string) {
+    if (disabled) return;
+    const item = current.find((it) => it.uid === uid);
+    if (!item) return;
+    if (beforeRemove) {
+      let allow: boolean;
+      try {
+        allow = await beforeRemove(item, current);
+      } catch {
+        // reject 视为阻止移除。
+        allow = false;
+      }
+      if (allow === false) return;
+      if (!mounted) return;
+      // 异步期间可能已被其它路径移除。
+      if (!current.some((it) => it.uid === uid)) return;
+    }
+    // 移除后的列表（供 onRemove 精确入参，避免依赖 derived 的同步时机）。
+    const nextList = current.filter((it) => it.uid !== uid);
+    removeInternal(uid);
+    // 移除完成后通知（fileList 为移除后的列表）。
+    onRemove?.(item.file, nextList, item);
   }
 
   /** 重试失败项：重置状态后重新派发上传。 */

@@ -63,6 +63,14 @@ export const meta = {
     { name: 'renderThumbnail', type: 'Snippet<[{ fileItem }]>', default: 'undefined', desc: '自定义整个缩略图容器（picture-card），接管图片本身，常配合 Image 实现点击放大；对标 Semi renderThumbnail' },
     { name: 'showPicInfo', type: 'boolean', default: 'false', desc: '是否显示 picture-card 图片信息浮层（文件名等），只在 picture-card 有效' },
     { name: 'renderPicInfo', type: 'Snippet<[{ fileItem }]>', default: 'undefined', desc: '自定义 picture-card 图片信息浮层渲染（showPicInfo 为 true 时生效）' },
+    { name: 'beforeRemove', type: '(file: UploadFileItem, fileList: UploadFileItem[]) => boolean | Promise<boolean>', default: 'undefined', desc: '移除文件前钩子：返回 false/reject 阻止移除，支持异步。对标 Semi beforeRemove' },
+    { name: 'onRemove', type: '(currentFile: File | undefined, fileList: UploadFileItem[], currentFileItem: UploadFileItem) => void', default: 'undefined', desc: '文件被移除后的回调。对标 Semi onRemove' },
+    { name: 'timeout', type: 'number', default: '0', desc: '单文件上传超时（毫秒），>0 启用；超时中止 XHR 并标 error。仅对内置 XHR 上传生效' },
+    { name: 'uploadTrigger', type: "'auto' | 'custom'", default: "'auto'", desc: "上传触发时机：'auto'=选文件即传；'custom'=选文件后停 ready，需命令式 upload() 触发。对标 Semi uploadTrigger" },
+  ],
+  methods: [
+    { name: 'upload', type: '() => void', desc: '命令式手动触发上传（配合 uploadTrigger="custom"），批量上传所有 ready 文件。对标 Semi ref.upload' },
+    { name: 'addFiles', type: '(fileList: FileList | File[]) => void', desc: '命令式添加文件，走完整 accept/limit/校验/上传管线' },
   ],
   a11y: {
     role: 'button',

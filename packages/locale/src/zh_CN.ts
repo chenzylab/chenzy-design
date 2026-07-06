@@ -309,6 +309,7 @@ export const zh_CN: Locale = {
     announceError: '{name} 上传失败',
     uploadingProgress: '{name} 上传进度',
     cropTitle: '裁切图片',
+    timeoutError: '上传超时',
   },
   Form: {
     required: '{label}为必填项',
