@@ -69,7 +69,7 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | 待实测校准 |
+| gzip 体积 | 7.7 KB（实测 6.71 KB + 15% buffer；含引用区 + dialogueRenderConfig） |
 - 长会话考虑虚拟化（后续）；ContentItem 渲染按类型惰性。
 
 ## 10. AI 元数据
