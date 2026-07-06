@@ -71,6 +71,8 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选父子是否级联联动。 |
 | showCheckedStrategy | `'all' \| 'parent' \| 'child'` | `'all'` | 回填值/Tag 的收敛策略。 |
 | maxTagCount | `number` | — | 多选回填 Tag 最大展示数，超出折叠为 +N。 |
+| showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag。 |
+| restTagsPopoverProps | `Record<string, unknown>` | — | 透传给剩余 Tag Popover 浮层的额外 props（在默认 `trigger=hover`/`position=top` 之后展开，可覆盖）。 |
 | treeDefaultExpandAll | `boolean` | `false` | 默认全部展开。 |
 | treeDefaultExpandedKeys | `Key[]` | `[]` | 默认展开节点。 |
 | expandedKeys | `Key[]` | — | 受控展开，配合 `on:expand`。 |
