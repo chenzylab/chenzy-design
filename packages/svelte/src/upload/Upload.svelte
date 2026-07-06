@@ -24,7 +24,36 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Progress } from '../progress/index.js';
+  import { Modal } from '../modal/index.js';
+  import { Cropper } from '../cropper/index.js';
+  import type { CropperShape } from '../cropper/index.js';
   import type { UploadFileItem } from './types.js';
+
+  /**
+   * 裁剪配置（对标 Semi CropProps）。crop=true 时用默认配置；传对象覆盖。
+   */
+  export interface UploadCropProps {
+    /** 裁切框宽高比（w/h），如 16/9、1、4/3。 */
+    aspectRatio?: number;
+    /** 裁切框形状，默认 'rect'。round=圆形，roundRect=圆角矩形。 */
+    shape?: CropperShape;
+    /** 缩放下限。 */
+    minZoom?: number;
+    /** 缩放上限。 */
+    maxZoom?: number;
+    /** 滚轮缩放步长。 */
+    zoomStep?: number;
+    /** 输出图片质量 0-1，默认 0.92。 */
+    quality?: number;
+    /** 裁切结果非图片区域填充色，默认 '#fff'。 */
+    fill?: string;
+    /** 裁切弹窗标题。 */
+    modalTitle?: string;
+    /** 确认按钮文字。 */
+    modalOkText?: string;
+    /** 取消按钮文字。 */
+    modalCancelText?: string;
+  }
 
   interface Props {
     value?: UploadFileItem[];
@@ -117,6 +146,45 @@
     addOnPasting?: boolean;
     /** 触发热点位置（拖拽区时无效）。'start'=前置，'end'=后置，'none'=隐藏触发器。默认 'start' */
     hotSpotLocation?: 'start' | 'end' | 'none';
+
+    // ——— 裁剪集成（对标 Semi crop 家族）———
+    /**
+     * 启用图片裁切：选中 image/* 文件后先进裁切弹窗（Modal + Cropper），确认后用裁切结果
+     * （canvas → toBlob → File，保留原文件名/type）替换原文件再走上传流程。非图片文件正常上传。
+     * 传 true 用默认配置；传对象自定义裁切参数（宽高比/形状/质量等）。
+     */
+    crop?: boolean | UploadCropProps;
+    /**
+     * 裁切前钩子：返回 false / Promise<false> 跳过裁切直接上传该文件；返回 true / 不返回则继续裁切。
+     * 支持异步返回。
+     */
+    beforeCrop?: (file: File) => boolean | Promise<boolean>;
+    /** 裁切失败（如 canvas.toBlob 失败）时的回调。 */
+    onCropError?: (err: unknown) => void;
+    /** 透传给裁切 Modal 的额外 props（样式/宽度等）。loading/open 由内部控制。 */
+    cropModalProps?: Record<string, unknown>;
+
+    // ——— render 家族（对标 Semi render 函数，用 Svelte Snippet）———
+    /**
+     * 完全自定义单个文件项的渲染（替换默认列表项，list/text listType）。
+     * 入参含 fileItem 与操作回调（remove/retry/preview）。
+     */
+    renderFileItem?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    /**
+     * 自定义缩略图预览内容：返回内容替换默认的缩略图 <img>（image/picture-card listType）。
+     * 对标 Semi previewFile：按 fileItem 返回预览节点。
+     */
+    previewFile?: Snippet<[{ fileItem: UploadFileItem }]>;
+    /**
+     * 自定义整个缩略图容器（picture-card listType）。对标 Semi renderThumbnail：
+     * 与 previewFile 区别——previewFile 只替换缩略图内容（默认操作浮层/信息层保留），
+     * renderThumbnail 接管整个缩略图区域（含图片本身，常配合 Image 组件实现点击放大）。
+     */
+    renderThumbnail?: Snippet<[{ fileItem: UploadFileItem }]>;
+    /** 是否在 picture-card 上显示图片信息浮层（文件名等）。默认 false。只在 picture-card 有效。 */
+    showPicInfo?: boolean;
+    /** 自定义 picture-card 图片信息浮层渲染（showPicInfo 为 true 时生效）。 */
+    renderPicInfo?: Snippet<[{ fileItem: UploadFileItem }]>;
   }
 
   let {
@@ -167,6 +235,15 @@
     dragSubText,
     addOnPasting = false,
     hotSpotLocation = 'start',
+    crop = false,
+    beforeCrop,
+    onCropError,
+    cropModalProps,
+    renderFileItem,
+    previewFile,
+    renderThumbnail,
+    showPicInfo = false,
+    renderPicInfo,
   }: Props = $props();
 
   const loc = useLocale();
@@ -240,6 +317,10 @@
       for (const u of objectUrls.values()) URL.revokeObjectURL(u);
       objectUrls.clear();
       announcedBucket.clear();
+      // 裁切中卸载：revoke 当前裁切图并 settle 悬挂的 Promise（跳过该文件）。
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+      cropResolve?.(null);
+      cropResolve = null;
     };
   });
 
@@ -398,7 +479,20 @@
   }
 
   // 导出：供外部程序化添加文件（如 Chat 整容器拖拽上传），走完整校验 / accept / limit 管线。
+  // crop 开启时：image/* 文件先逐个进裁切弹窗，确认后用裁切结果 File 替换，再走上传管线；
+  // 非图片文件直接入管线。裁切是异步流程，故与同步的 addFilesInternal 分层。
   export function addFiles(fileList: FileList | File[]) {
+    if (disabled) return;
+    const allFiles = Array.from(fileList);
+    if (allFiles.length === 0) return;
+    if (crop) {
+      void runCropPipeline(allFiles);
+      return;
+    }
+    addFilesInternal(allFiles);
+  }
+
+  function addFilesInternal(fileList: FileList | File[]) {
     if (disabled) return;
     const allFiles = Array.from(fileList);
     if (allFiles.length === 0) return;
@@ -557,6 +651,137 @@
 
   // 是否水平布局 prompt（left 或 right）
   const promptRow = $derived(promptPosition === 'left' || promptPosition === 'right');
+
+  // ——— 裁剪流程 ———
+  // 归一化 crop 配置：true → 默认对象；对象 → 原样。
+  const cropConfig = $derived<UploadCropProps>(
+    crop === true ? {} : crop && typeof crop === 'object' ? crop : {},
+  );
+
+  // 裁切弹窗态：一次只裁一张。cropOpen 控制 Modal，cropSrc 为当前图 objectURL，
+  // cropResolve 在确认/取消/失败时 settle 当前图的 Promise（返回 File 或 null=跳过）。
+  let cropOpen = $state(false);
+  let cropSrc = $state<string | undefined>(undefined);
+  let cropperRef = $state<{ getCropperCanvas: () => HTMLCanvasElement } | null>(null);
+  let cropConfirming = $state(false);
+  let cropCurrentFile: File | null = null;
+  let cropResolve: ((file: File | null) => void) | null = null;
+
+  const isImageFile = (f: File) => f.type.startsWith('image/');
+
+  // 只挑出已定义的可选值透传给 Modal/Cropper（exactOptionalPropertyTypes 下不能显式传 undefined）。
+  const cropModalTextProps = $derived({
+    ...(cropConfig.modalOkText !== undefined ? { okText: cropConfig.modalOkText } : {}),
+    ...(cropConfig.modalCancelText !== undefined ? { cancelText: cropConfig.modalCancelText } : {}),
+  });
+  const cropperNumProps = $derived({
+    ...(cropConfig.aspectRatio !== undefined ? { aspectRatio: cropConfig.aspectRatio } : {}),
+    ...(cropConfig.minZoom !== undefined ? { minZoom: cropConfig.minZoom } : {}),
+    ...(cropConfig.maxZoom !== undefined ? { maxZoom: cropConfig.maxZoom } : {}),
+    ...(cropConfig.zoomStep !== undefined ? { zoomStep: cropConfig.zoomStep } : {}),
+  });
+
+  // 顺序处理选中文件：图片走裁切弹窗（beforeCrop 可跳过），非图片直接透传。
+  // 全部处理完后一次性把结果（裁切后/原始 File）喂回上传管线。
+  async function runCropPipeline(files: File[]) {
+    const out: File[] = [];
+    for (const file of files) {
+      if (!mounted) return;
+      if (!isImageFile(file)) {
+        out.push(file);
+        continue;
+      }
+      // beforeCrop 返回 false → 跳过裁切直接上传原文件。
+      if (beforeCrop) {
+        let skip = false;
+        try {
+          skip = (await beforeCrop(file)) === false;
+        } catch {
+          skip = false;
+        }
+        if (!mounted) return;
+        if (skip) {
+          out.push(file);
+          continue;
+        }
+      }
+      try {
+        const cropped = await cropOne(file);
+        if (!mounted) return;
+        // 取消裁切 → 丢弃该文件（不上传）。
+        if (cropped) out.push(cropped);
+      } catch (err) {
+        onCropError?.(err);
+        // 裁切失败：回退为原文件上传，避免静默丢弃。
+        out.push(file);
+      }
+    }
+    if (!mounted) return;
+    if (out.length > 0) addFilesInternal(out);
+  }
+
+  // 打开裁切弹窗处理单张图片，返回裁切后 File（取消返回 null）。
+  function cropOne(file: File): Promise<File | null> {
+    return new Promise<File | null>((resolve) => {
+      cropCurrentFile = file;
+      cropResolve = resolve;
+      cropSrc = URL.createObjectURL(file);
+      cropOpen = true;
+    });
+  }
+
+  // 确认裁切：取 canvas → toBlob → 构造新 File（保留原名/type）。
+  function confirmCrop() {
+    const canvas = cropperRef?.getCropperCanvas();
+    const original = cropCurrentFile;
+    if (!canvas || !original) {
+      settleCrop(null);
+      return;
+    }
+    cropConfirming = true;
+    const type = original.type || 'image/png';
+    const quality = cropConfig.quality ?? 0.92;
+    try {
+      canvas.toBlob(
+        (blob) => {
+          cropConfirming = false;
+          if (!blob) {
+            onCropError?.(new Error('Cropper toBlob returned null'));
+            settleCrop(original);
+            return;
+          }
+          const cropped = new File([blob], original.name, {
+            type,
+            lastModified: Date.now(),
+          });
+          settleCrop(cropped);
+        },
+        type,
+        quality,
+      );
+    } catch (err) {
+      cropConfirming = false;
+      onCropError?.(err);
+      settleCrop(original);
+    }
+  }
+
+  function cancelCrop() {
+    settleCrop(null);
+  }
+
+  // 收尾：关闭弹窗、revoke src、settle Promise。
+  function settleCrop(result: File | null) {
+    cropOpen = false;
+    if (cropSrc) {
+      URL.revokeObjectURL(cropSrc);
+      cropSrc = undefined;
+    }
+    const resolve = cropResolve;
+    cropResolve = null;
+    cropCurrentFile = null;
+    resolve?.(result);
+  }
 </script>
 
 <div
@@ -648,6 +873,16 @@
     {/if}
     <ul class="cd-upload__list">
       {#each current as item (item.uid)}
+        {#if renderFileItem}
+          <li class="cd-upload__item cd-upload__item--custom">
+            {@render renderFileItem({
+              fileItem: item,
+              remove: () => remove(item.uid),
+              retry: () => retryItem(item),
+              preview: () => onPreviewClick?.(item),
+            })}
+          </li>
+        {:else}
         <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'}>
           <div class="cd-upload__item-main">
             <span
@@ -684,6 +919,7 @@
             />
           {/if}
         </li>
+        {/if}
       {/each}
     </ul>
   {/if}
@@ -700,7 +936,15 @@
           class:cd-upload__card--error={item.status === 'error'}
           class:cd-upload__card--uploading={item.status === 'uploading'}
         >
-          {#if url}
+          {#if renderThumbnail}
+            <!-- renderThumbnail：接管整个缩略图区域（含图片本身）。 -->
+            {@render renderThumbnail({ fileItem: item })}
+          {:else if previewFile}
+            <!-- previewFile：替换默认缩略图内容（默认操作/信息浮层保留）。 -->
+            <div class="cd-upload__thumb cd-upload__thumb--custom">
+              {@render previewFile({ fileItem: item })}
+            </div>
+          {:else if url}
             {#if onPreviewClick}
               <button
                 type="button"
@@ -728,6 +972,16 @@
           {#if item.status === 'error'}
             <!-- 失败状态角标（对齐 Semi picture-file-card-icon-error）。 -->
             <span class="cd-upload__card-error-icon" aria-hidden="true">!</span>
+          {/if}
+          {#if listType === 'picture-card' && showPicInfo}
+            <!-- 图片信息浮层（对齐 Semi picture-file-card-pic-info），常显（非仅 hover）。 -->
+            <div class="cd-upload__pic-info">
+              {#if renderPicInfo}
+                {@render renderPicInfo({ fileItem: item })}
+              {:else}
+                <span class="cd-upload__pic-info-name">{item.name}</span>
+              {/if}
+            </div>
           {/if}
           <div class="cd-upload__card-overlay">
             <span class="cd-upload__card-name">{item.name}</span>
@@ -762,6 +1016,35 @@
     {@render triggerArea()}
   {/if}
 </div>
+
+{#if crop}
+  <Modal
+    open={cropOpen}
+    title={cropConfig.modalTitle ?? loc().t('Upload.cropTitle')}
+    confirmLoading={cropConfirming}
+    onOk={confirmCrop}
+    onCancel={cancelCrop}
+    onOpenChange={(o) => {
+      // 点遮罩/Esc 关闭时也视为取消。
+      if (!o && cropOpen) cancelCrop();
+    }}
+    {...cropModalTextProps}
+    {...cropModalProps}
+  >
+    {#if cropSrc}
+      <div class="cd-upload__crop-body">
+        <Cropper
+          bind:this={cropperRef}
+          src={cropSrc}
+          shape={cropConfig.shape ?? 'rect'}
+          fill={cropConfig.fill ?? '#fff'}
+          style="width: 100%; height: 320px;"
+          {...cropperNumProps}
+        />
+      </div>
+    {/if}
+  </Modal>
+{/if}
 
 <style>
   .cd-upload {
@@ -1111,6 +1394,42 @@
   }
   .cd-upload__thumb--placeholder {
     background: var(--cd-color-upload-file-card-preview-placeholder-bg);
+  }
+  /* previewFile 自定义缩略图容器：撑满卡片，内容居中。 */
+  .cd-upload__thumb--custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* renderFileItem 自定义列表项：清空默认卡片内边距/背景，交由使用方渲染。 */
+  .cd-upload__item--custom {
+    padding: 0;
+    background: transparent;
+  }
+  .cd-upload__item--custom:hover {
+    background: transparent;
+  }
+  /* showPicInfo 信息浮层（picture-card）：底部渐变条承托文件名。 */
+  .cd-upload__pic-info {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
+    background: var(--cd-color-upload-picture-file-card-hover-bg);
+    color: var(--cd-color-upload-picture-file-card-pic-info-text);
+    font-size: var(--cd-font-upload-picture-file-card-pic-info-fontsize);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .cd-upload__pic-info-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* 裁切弹窗内容容器：给 Cropper 一个明确的布局盒。 */
+  .cd-upload__crop-body {
+    inline-size: 100%;
   }
   .cd-upload__card-progress {
     position: absolute;

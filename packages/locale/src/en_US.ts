@@ -308,6 +308,7 @@ export const en_US: Locale = {
     announceSuccess: '{name} uploaded successfully',
     announceError: '{name} upload failed',
     uploadingProgress: '{name} upload progress',
+    cropTitle: 'Crop image',
   },
   Form: {
     required: '{label} is required',

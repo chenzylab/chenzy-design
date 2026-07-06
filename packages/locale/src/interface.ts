@@ -409,6 +409,8 @@ export interface Locale {
     announceError: string;
     /** 上传中进度条可访问名，uses {name} */
     uploadingProgress: string;
+    /** 裁切弹窗默认标题 */
+    cropTitle: string;
   };
   Form: {
     /** uses {label} */

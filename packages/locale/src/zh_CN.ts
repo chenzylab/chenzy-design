@@ -308,6 +308,7 @@ export const zh_CN: Locale = {
     announceSuccess: '{name} 上传成功',
     announceError: '{name} 上传失败',
     uploadingProgress: '{name} 上传进度',
+    cropTitle: '裁切图片',
   },
   Form: {
     required: '{label}为必填项',
