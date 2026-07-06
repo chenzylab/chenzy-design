@@ -17,7 +17,7 @@
 
 ### Upload（20）
 **高**：✅ 批次1 已实现 → previewFile · renderFileItem · renderThumbnail · showPicInfo+renderPicInfo（成套）· crop+beforeCrop+onCropError+cropModalProps（裁剪整套：addFiles 分流 runCropPipeline，Modal+Cropper，getCropperCanvas→toBlob→File 替换后走原上传管线）
-**中**：uploadTrigger · onRemove+beforeRemove · beforeClear · afterUpload · timeout · onPastingError
+**中**：✅ uploadTrigger · ✅ onRemove+beforeRemove · beforeClear · afterUpload · ✅ timeout · onPastingError（批次2 补 uploadTrigger/onRemove/beforeRemove/timeout；beforeClear/afterUpload/onPastingError 待批次3）
 **低**：renderPicPreviewIcon · renderPicClose · renderFileOperation · picHeight · picWidth · capture · itemStyle · onFileChange
 
 ### Tree（15）
@@ -26,7 +26,7 @@
 > 噪声（不计入）：`directory`（非 Tree prop，属 Upload）；`selectedKey`（≈ 现有 value 单选，已覆盖）。
 
 ### Select（15）
-**中**：triggerRender · searchPosition · insetLabel+insetLabelId
+**中**：✅ triggerRender · ✅ searchPosition · ✅ insetLabel+insetLabelId（批次2 已实现）
 **低**：dropdownClassName · dropdownStyle · dropdownMargin · defaultActiveFirstOption · inputProps · showArrow（隐藏开关）· clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · zIndex · ellipsisTrigger · outerTopSlot · outerBottomSlot（inner 版已由 dropdownHeader/Footer 覆盖）
 
 ### Table（9）
@@ -37,7 +37,7 @@
 filterTreeNode · emptyContent · dropdownClassName · dropdownStyle · zIndex · mouseEnterDelay · mouseLeaveDelay · searchRender
 
 ### DatePicker（4）
-**中**：defaultPickerValue · timeZone
+**中**：✅ defaultPickerValue · ✅ timeZone（批次2 已实现；timeZone 仅格式化显示层）
 **低**：insetLabel · insetLabelId
 
 ### Form（4）— 关键架构真缺口 ✅ 批次1 已实现（除 validateFields 见下）
@@ -122,10 +122,11 @@ Upload/Select/DatePicker/Cascader 的 validateStatus → 本库统一 `status?: 
 2. ✅ Upload 裁剪集成：crop/beforeCrop/onCropError/cropModalProps——复用库内 Cropper + Modal。
 3. ✅ Upload render 家族：renderFileItem/previewFile/renderThumbnail/showPicInfo+renderPicInfo。
 
-**批次 2（中优先成套/常用）**
-4. Table 可折叠分组：expandAllGroupRows/defaultExpandAllGroupRows/clickGroupedRowToExpand。
-5. Tree onChange 语义族：onChangeWithObject/leafOnly/disableStrictly/showFilteredOnly。
-6. Select/TreeSelect/DatePicker 交互增强：triggerRender/searchPosition/insetLabel；defaultPickerValue/timeZone；Upload uploadTrigger/onRemove/beforeRemove/timeout。
+**批次 2（中优先成套/常用）— ✅ 已完成（2026-07-06）**
+4. ✅ Table 可折叠分组：expandAllGroupRows/defaultExpandAllGroupRows/clickGroupedRowToExpand（+onGroupExpandChange 受控通知）。
+5. ✅ Tree onChange 语义族：onChangeWithObject/leafOnly/disableStrictly/showFilteredOnly（core conduct(disableStrictly)+collectLeafKeys）。
+6. ✅ Select/DatePicker/Upload 交互增强：triggerRender/searchPosition/insetLabel+insetLabelId；defaultPickerValue/timeZone（时区仅格式化显示层，非完整值转换）；Upload uploadTrigger('custom' 经 export upload() 命令式触发)/onRemove/beforeRemove/timeout。
+   > 注：Select searchPosition 默认取 'dropdown'（浮层内搜索），需触发器内联搜索者显式传 'trigger'（1.0 前无兼容包袱）。TreeSelect 的交互增强归入批次3 浮层横扫。
 
 **批次 3（低优先边角，统一收口）**
 7. 浮层通用属性横扫：给 Select/TreeSelect/Cascader/Dropdown 统一补 dropdownClassName/dropdownStyle/zIndex/dropdownMargin——**先确立库内统一浮层透传约定，再一次性铺开**，避免逐组件重复设计。
