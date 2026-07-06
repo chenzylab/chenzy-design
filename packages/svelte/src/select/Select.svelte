@@ -89,6 +89,18 @@
     maxHeight?: number;
     /** 浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度 */
     dropdownMatchSelectWidth?: boolean;
+    /** 浮层根 div 追加的自定义 className（与内置 cd-select__dropdown 并存） */
+    dropdownClassName?: string;
+    /** 浮层根 div 合并的自定义内联样式（拼在内置 style 之后；勿含 position/transform，会与定位冲突） */
+    dropdownStyle?: string;
+    /** 浮层层级（z-index）；不传时由 CSS 层级 token 控制 */
+    zIndex?: number;
+    /**
+     * 浮层与触发器的间距(px)，映射到 floating 主轴 offset；不传保持默认 4。
+     * 兼容 Semi object 形态 { top?, bottom?, left?, right? }：按 placement 主轴方向取值
+     * （bottom/top 系取 bottom/top，left/right 系取 left/right），缺项回退默认。
+     */
+    dropdownMargin?: number | { top?: number; bottom?: number; left?: number; right?: number };
     /** 关闭时销毁浮层 DOM（默认 false，复用节点避免重建开销） */
     destroyOnClose?: boolean;
     /** 浮层挂载目标容器（默认 body） */
@@ -212,6 +224,10 @@
     optionHeight = 32,
     maxHeight = 256,
     dropdownMatchSelectWidth = true,
+    dropdownClassName,
+    dropdownStyle,
+    zIndex,
+    dropdownMargin,
     destroyOnClose = false,
     getPopupContainer,
     borderless = false,
@@ -675,6 +691,32 @@
     return cleanup;
   });
 
+  // dropdownMargin → floating 主轴 offset：number 直用；object 按 placement 主轴取值（缺项回退 4）。
+  const dropdownOffset = $derived.by(() => {
+    if (dropdownMargin === undefined) return 4;
+    if (typeof dropdownMargin === 'number') return dropdownMargin;
+    const horizontal = placement.startsWith('left') || placement.startsWith('right');
+    if (horizontal) return (placement.startsWith('left') ? dropdownMargin.left : dropdownMargin.right) ?? 4;
+    return (placement.startsWith('top') ? dropdownMargin.top : dropdownMargin.bottom) ?? 4;
+  });
+
+  // 浮层根 div class：内置类名 + dropdownClassName。
+  const dropdownCls = $derived(
+    ['cd-select__dropdown', dropdownClassName].filter(Boolean).join(' '),
+  );
+
+  // 浮层根 div 内联样式：内置 max-block-size + 可选 z-index + dropdownStyle。
+  // 注意 use:floating 后写 position/transform（inline 优先级更高），此串勿含二者。
+  const dropdownInlineStyle = $derived(
+    [
+      `max-block-size:${maxHeight}px`,
+      zIndex !== undefined ? `z-index:${zIndex}` : undefined,
+      dropdownStyle,
+    ]
+      .filter(Boolean)
+      .join(';'),
+  );
+
   const cls = $derived(
     [
       'cd-select',
@@ -866,14 +908,14 @@
 
   {#if isOpen || !destroyOnClose}
     <div
-      class="cd-select__dropdown"
+      class={dropdownCls}
       bind:this={dropdownEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: 4, matchWidth: dropdownMatchSelectWidth }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth }}
       role="listbox"
       id={listId}
       aria-multiselectable={multiple}
       aria-busy={loading || undefined}
-      style={`max-block-size:${maxHeight}px`}
+      style={dropdownInlineStyle}
       hidden={!isOpen || undefined}
     >
       {#if filter && !triggerSearch}

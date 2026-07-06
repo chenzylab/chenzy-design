@@ -73,6 +73,10 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | maxTagTextLength | number | — | 单个 Tag 文本最大长度，超出省略。 |
 | virtualize | boolean \| { itemHeight: number } | 'auto' | 虚拟化；auto = 选项数超阈值自动开启。 |
 | dropdownMatchSelectWidth | boolean | true | 浮层宽度是否跟随触发器。 |
+| dropdownClassName | string | — | 浮层根 div 追加的自定义 className。 |
+| dropdownStyle | string | — | 浮层根 div 合并的自定义内联样式（勿含 position/transform）。 |
+| zIndex | number | — | 浮层层级（z-index）；不传由 CSS token 控制。 |
+| dropdownMargin | number \| { top?, bottom?, left?, right? } | — | 浮层与触发器间距(px)，映射到 floating offset。 |
 | destroyOnClose | boolean | false | 关闭时销毁浮层 DOM。 |
 | getPopupContainer | () => HTMLElement | body | 浮层挂载容器。 |
 | emptyContent | string \| Snippet | i18n `Select.empty` | 无数据内容。 |
