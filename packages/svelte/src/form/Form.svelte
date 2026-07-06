@@ -7,6 +7,7 @@
   import { untrack, type Snippet } from 'svelte';
   import {
     createForm,
+    type FormApi,
     type FormValues,
     type FieldErrors,
     type MessageDescriptor,
@@ -54,12 +55,26 @@
     autoScrollToError?: boolean;
     /** 额外说明文本位置（默认 'bottom'，经 context 传给 FormField）。 */
     extraTextPosition?: 'middle' | 'bottom';
+    /**
+     * Form 挂载后一次性回调，回传内部 headless FormApi 句柄（Semi getFormApi，
+     * props-gap-tracker §1 Form 高）。这是「渲染 <Form> 的父组件」唯一的命令式逃生舱：
+     * FormApi 经 context 只下发给后代 Field，父级够不到；拿到句柄后可在外部
+     * setFieldsValue / validate / validateField / resetFields。
+     * 注：Semi 的 `validateFields` 是 Form 级自定义校验器（validator 旧别名），
+     * 并非独立的外部触发校验入口——外部触发校验由本回调回传的 formApi.validate()
+     * / formApi.validateField() 直接覆盖，故不单列 prop。
+     */
+    getFormApi?: (formApi: FormApi) => void;
     onSubmit?: (r: { valid: boolean; values: FormValues; errors: FieldErrors }) => void;
     /** 任意字段值变化时触发（不同于 onChange 的纯值快照，此回调额外携带变更字段信息）。 */
     onValueChange?: (values: FormValues, changedValues: Record<string, unknown>) => void;
     /** 表单校验失败时独立回调（onSubmit 只在 valid 时调用时可用此做失败分支）。 */
     onSubmitFail?: (errors: FieldErrors, values: FormValues) => void;
     onChange?: (values: FormValues) => void;
+    /** 表单重置时回调（点击原生 reset 或 formApi.resetFields()）（Semi onReset，spec §4 Events reset）。 */
+    onReset?: () => void;
+    /** 任意字段错误集合变化时回调，入参为最新 formState.errors（Semi onErrorChange，props-gap-tracker §1 Form 中）。 */
+    onErrorChange?: (errors: FieldErrors) => void;
     /** 控件布局列配置（Grid 布局时）。 */
     wrapperCol?: GridCol;
     /** 标签布局列配置（Grid 布局时）。 */
@@ -87,10 +102,13 @@
     stopValidateWithError = false,
     preventDefault = true,
     allowEmpty = false,
+    getFormApi,
     onSubmit,
     onValueChange,
     onSubmitFail,
     onChange,
+    onReset,
+    onErrorChange,
     wrapperCol,
     labelCol,
     children,
@@ -134,6 +152,9 @@
   // formState — it never reads state that children write on mount, so no loop.
   let formState = $state({ ...form.getState() });
   let lastValues = form.getState().values;
+  // track the errors reference to fire onErrorChange only when the error set
+  // actually changes (same immutable-replacement pattern as lastValues).
+  let lastErrors = form.getState().errors;
   // Subscribe synchronously at component init (NOT inside an $effect): child
   // Field registration effects run after the parent's setup but emit on the core
   // bus; subscribing here guarantees we capture those early emits (e.g. a
@@ -155,8 +176,24 @@
         onValueChange(s.values, changed);
       }
     }
+    // errors is replaced immutably by core on every validate; a changed
+    // reference means the error set changed → notify (Semi onErrorChange).
+    if (s.errors !== lastErrors) {
+      lastErrors = s.errors;
+      onErrorChange?.(s.errors);
+    }
   });
   $effect(() => unsub);
+
+  // getFormApi (Semi): hand the internal headless FormApi to the parent exactly
+  // once, at mount. `form` is created synchronously above and never re-created,
+  // so this is a one-shot escape hatch — not reactive. untrack keeps the read
+  // non-reactive and guarantees the callback runs a single time even though it
+  // lives in an $effect (the runes equivalent of onMount). We invoke `form`
+  // methods only; we never write child-owned render state here → no effect loop.
+  $effect(() => {
+    untrack(() => getFormApi?.(form));
+  });
 
   // Controlled `value`: push into the form only when the prop reference changes.
   // We never write back to the prop (onChange is the only outward channel), so
@@ -206,6 +243,14 @@
     }
   }
 
+  // Native <form> reset (a `<button type="reset">` or form.reset()). Red line #3:
+  // this DOM-driven side effect lives in the event handler, never in render. We
+  // reset the headless state then notify (Semi onReset / spec §4 Events reset).
+  function handleReset() {
+    form.resetFields();
+    onReset?.();
+  }
+
   async function handleSubmit(e: SubmitEvent) {
     // spec §4 L69 / §6 L140: preventDefault is now prop-controlled (default true
     // = previous hardcoded behavior, backward compatible).
@@ -221,7 +266,7 @@
   );
 </script>
 
-<form bind:this={formEl} class={cls} onsubmit={handleSubmit}>
+<form bind:this={formEl} class={cls} onsubmit={handleSubmit} onreset={handleReset}>
   {@render children?.()}
   {#if footer}
     <div class="cd-form__footer">
