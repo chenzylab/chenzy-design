@@ -47,6 +47,11 @@
     tagText?: string;
     /** 在 TagGroup 中的稳定标识 */
     tagKey?: string | number;
+    /**
+     * 透传根元素的可访问名（aria-label）。当 children 为图标/纯符号（如折叠计数「+N」）
+     * 无有意义文本时，用它给整枚 Tag 一个屏幕阅读器可读的名字，省去外层再套 span 承载。
+     */
+    ariaLabel?: string;
     /** 透传根类名 */
     class?: string;
     /** 透传根内联样式 */
@@ -74,6 +79,7 @@
     avatarShape = 'square',
     closeIcon,
     tagText,
+    ariaLabel,
     class: className,
     style,
   }: Props = $props();
@@ -153,6 +159,7 @@
       class={cls}
       {style}
       role="checkbox"
+      aria-label={ariaLabel}
       aria-checked={currentChecked}
       aria-disabled={disabled || undefined}
       tabindex={disabled ? -1 : 0}
@@ -164,7 +171,7 @@
       {@render trailing()}
     </span>
   {:else}
-    <span class={cls} {style}>
+    <span class={cls} {style} aria-label={ariaLabel}>
       {@render leading()}
       {#if children}<span class="cd-tag__content">{@render children()}</span>{/if}
       {@render trailing()}

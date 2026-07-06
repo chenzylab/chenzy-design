@@ -57,6 +57,7 @@ export const listTokens = {
   'image-placeholder-color': { value: 'var(--cd-color-text-3)', category: 'color', label: '占位符颜色', usage: '图片占位/错误文字颜色' },
   'image-mask-bg': { value: 'rgba(0, 0, 0, 0.5)', category: 'color', label: '遮罩背景色', usage: '图片操作遮罩背景' },
   'image-mask-color': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '遮罩文字色', usage: '图片操作遮罩文字颜色' },
+  'image-mask-hover-bg': { value: 'rgba(255, 255, 255, 0.15)', category: 'color', label: '遮罩控件 hover 底', usage: '预览工具条/切换按钮 hover 时的浅色高亮叠层（浮在深色遮罩上）' },
   'image-preview-overlay': { value: 'rgba(0, 0, 0, 0.7)', category: 'color', label: '预览遮罩色', usage: '预览层背景遮罩' },
   'image-preview-z': { value: 'var(--cd-z-modal)', category: 'other', label: '预览层级', usage: '预览层 z-index' },
 

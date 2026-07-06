@@ -100,6 +100,9 @@ export const aliasLight = {
   'color-nav-bg': '#ffffff',
   'color-bg-inverse': palette['grey-9'],
   'color-overlay-bg': 'rgba(22, 22, 26, 0.6)',
+  // 内容遮罩：盖在内容/媒体上、hover 显露操作的深色轻遮罩（Avatar hover、图片操作蒙层等）。
+  // 比 overlay-bg（Modal 背景 0.6）更轻，语义为「就地遮罩」而非「全屏背景」。
+  'color-mask': 'rgba(0, 0, 0, 0.4)',
   // border / fill / shadow — 对齐 Semi
   'color-border': 'rgba(28, 31, 35, 0.08)',
   'color-fill-0': 'rgba(46, 50, 56, 0.05)',
@@ -201,6 +204,8 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-nav-bg': '#232429',
   'color-bg-inverse': '#f9f9f9',
   'color-overlay-bg': 'rgba(22, 22, 26, 0.6)',
+  // 内容遮罩暗色同值：语义即压暗内容显露操作，亮暗一致（对齐 overlay-bg 做法）。
+  'color-mask': 'rgba(0, 0, 0, 0.4)',
   'color-border': 'rgba(255, 255, 255, 0.08)',
   'color-fill-0': 'rgba(255, 255, 255, 0.12)',
   'color-fill-1': 'rgba(255, 255, 255, 0.16)',

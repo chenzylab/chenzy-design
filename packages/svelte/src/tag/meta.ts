@@ -55,6 +55,7 @@ export const meta = {
       desc: '标签纯文本，用于派生 closable 关闭按钮无障碍名（移除 <文本>）',
     },
     { name: 'tagKey', type: 'string|number', default: 'undefined', desc: '在 TagGroup 中的稳定标识' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '透传根元素可访问名（aria-label）；children 为图标/纯符号（如 +N）无有意义文本时用它给整枚 Tag 命名' },
     { name: 'class', type: 'string', default: 'undefined', desc: '透传根类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '透传根内联样式' },
   ],

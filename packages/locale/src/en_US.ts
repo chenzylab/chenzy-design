@@ -250,6 +250,7 @@ export const en_US: Locale = {
     clear: 'Clear',
     removeItem: 'Remove {label}',
     create: 'Create "{label}"',
+    restTagsCount: '{count} more',
   },
   DatePicker: {
     placeholder: 'Select date',
@@ -329,6 +330,7 @@ export const en_US: Locale = {
     clear: 'Clear',
     emptyText: 'No data',
     searchPlaceholder: 'Search',
+    restTagsCount: '{count} more',
   },
   AutoComplete: {
     ariaLabel: 'Autocomplete',
@@ -353,6 +355,7 @@ export const en_US: Locale = {
     emptyText: 'No match',
     columnLabel: 'Level {level} options',
     searchResults: 'Search results',
+    restTagsCount: '{count} more',
   },
   Carousel: {
     prev: 'Previous slide',

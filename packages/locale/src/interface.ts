@@ -334,6 +334,8 @@ export interface Locale {
     removeItem: string;
     /** uses {label} */
     create: string;
+    /** +N 折叠 Tag 的可访问名 / 悬停浮层标题，uses {count} */
+    restTagsCount: string;
   };
   DatePicker: {
     placeholder: string;
@@ -441,6 +443,8 @@ export interface Locale {
     clear: string;
     emptyText: string;
     searchPlaceholder: string;
+    /** 多选 maxTagCount 折叠出的 +N 触发器可访问名（hover 弹出剩余 Tag 浮层），uses {count}（被折叠的标签数） */
+    restTagsCount: string;
   };
   AutoComplete: {
     /** combobox 输入框缺省可访问名 */
@@ -472,6 +476,8 @@ export interface Locale {
     columnLabel: string;
     /** 搜索结果 listbox 可访问名 */
     searchResults: string;
+    /** 折叠剩余 tag 的 +N 可访问名 / 浮层计数，uses {count} */
+    restTagsCount: string;
   };
   Carousel: {
     prev: string;

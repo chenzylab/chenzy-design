@@ -81,8 +81,10 @@
   const hasTitle = $derived(Boolean(title));
 
   // —— 宽度：非受控本地宽（拖拽/键盘命令式写入）。默认取 defaultSize.width，否则 token 默认宽。——
+  // default 仅作一次性初值、后续不回写。
   const minPx = $derived(parseSideBarWidth(minWidth));
   const maxPx = $derived(parseSideBarWidth(maxWidth));
+  // svelte-ignore state_referenced_locally
   let localWidth = $state<number | undefined>(
     parseSideBarWidth(defaultSize?.width),
   );
@@ -418,7 +420,7 @@
   }
   .cd-sidebar-container__handle:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--cd-resizable-handle-color-focus);
+    box-shadow: var(--cd-focus-ring);
   }
   .cd-sidebar-container__header {
     display: flex;

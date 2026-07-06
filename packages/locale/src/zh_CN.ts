@@ -250,6 +250,7 @@ export const zh_CN: Locale = {
     clear: '清除',
     removeItem: '移除 {label}',
     create: '创建 "{label}"',
+    restTagsCount: '还有 {count} 项',
   },
   DatePicker: {
     placeholder: '请选择日期',
@@ -329,6 +330,7 @@ export const zh_CN: Locale = {
     clear: '清除',
     emptyText: '无数据',
     searchPlaceholder: '搜索',
+    restTagsCount: '还有 {count} 项',
   },
   AutoComplete: {
     ariaLabel: '自动完成输入框',
@@ -353,6 +355,7 @@ export const zh_CN: Locale = {
     emptyText: '无匹配项',
     columnLabel: '第 {level} 级选项',
     searchResults: '搜索结果',
+    restTagsCount: '还有 {count} 项',
   },
   Carousel: {
     prev: '上一张',

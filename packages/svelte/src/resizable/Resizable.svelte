@@ -90,8 +90,10 @@
     return Number.isNaN(n) ? undefined : n;
   };
 
-  // 非受控本地尺寸（拖拽/键盘时命令式写入）。
+  // 非受控本地尺寸（拖拽/键盘时命令式写入）。default 仅作一次性初值、后续不回写。
+  // svelte-ignore state_referenced_locally
   let localWidth = $state<string | number | undefined>(defaultSize?.width);
+  // svelte-ignore state_referenced_locally
   let localHeight = $state<string | number | undefined>(defaultSize?.height);
 
   const isControlled = $derived(size !== undefined);

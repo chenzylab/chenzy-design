@@ -28,8 +28,6 @@ export const meta = {
     { name: 'clearIcon', type: 'Snippet', default: 'undefined', desc: '自定义清除图标' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: 'focus 时阻止滚动' },
     { name: 'autoFocus', type: 'boolean', default: 'false', desc: '挂载自动聚焦' },
-    { name: 'showRestTagsPopover', type: 'boolean', default: 'false', desc: '超出可见时 hover 显示 Popover（预留）' },
-    { name: 'restTagsPopoverProps', type: 'Record<string, unknown>', default: 'undefined', desc: 'Popover 配置（预留）' },
     { name: 'inputProps', type: 'Record<string, unknown>', default: 'undefined', desc: '透传给内部 input 的额外属性' },
     {
       name: 'renderTagItem',

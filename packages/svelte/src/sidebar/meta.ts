@@ -2,10 +2,11 @@
  * Machine-readable component metadata for AI/docs consumption.
  * SideBar — see specs/components/show/SideBar.spec.md
  *
- * 分阶段交付：本 meta 覆盖已落地的 P0（SideBarContainer 可伸缩浮层壳）+ P1（SideBar 主壳
- * mode 路由 + Options 图标 tab 组）+ P2（Annotation）+ P3（SideBarMcpConfigure MCP 工具配置）
- * + P4（SideBarCodeContent 代码/JSON 预览折叠列表）。
- * P5 FileContent 后续阶段接续，届时补齐对应 subComponents。
+ * 分阶段交付（P0～P5 全部落地）：本 meta 覆盖 P0（SideBarContainer 可伸缩浮层壳）+ P1（SideBar
+ * 主壳 mode 路由 + Options 图标 tab 组）+ P2（Annotation 引用溯源）+ P3（SideBarMcpConfigure MCP
+ * 工具配置）+ P4（SideBarCodeContent 代码/JSON 预览折叠列表）+ P5（SideBarFileContent 富文本查看/
+ * 编辑折叠列表，含 SideBarFileItem tiptap 编辑器 + 内嵌 Upload 的 ImageUploadNode，全程动态 import）。
+ * 全部 subComponents 已补齐（见下 subComponents），无留后项。
  */
 export const meta = {
   name: 'SideBar',

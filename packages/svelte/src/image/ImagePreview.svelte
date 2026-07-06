@@ -251,7 +251,7 @@
     inset-inline-end: 16px;
   }
   .cd-image__preview-nav:hover:not(:disabled) {
-    background: rgb(255 255 255 / 0.15);
+    background: var(--cd-image-mask-hover-bg);
   }
   .cd-image__preview-nav:disabled {
     opacity: 0.35;
@@ -295,7 +295,7 @@
     cursor: pointer;
   }
   .cd-image__preview-tool:hover {
-    background: rgb(255 255 255 / 0.15);
+    background: var(--cd-image-mask-hover-bg);
   }
   .cd-image__preview-tool:focus-visible {
     outline: var(--cd-focus-ring);

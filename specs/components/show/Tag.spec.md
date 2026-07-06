@@ -65,6 +65,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 | `avatarShape` | `'square' \| 'circle'` | `'square'` | 头像形状 |
 | `closeIcon` | `Snippet \| Component` | 内置 X | 自定义关闭图标 |
 | `tagKey` | `string \| number` | — | 在 TagGroup 中的稳定标识 |
+| `ariaLabel` | `string` | — | 透传根元素可访问名（`aria-label`）；`children` 为图标/纯符号（如 `+N`）无有意义文本时用它给整枚 Tag 命名，省去外层再套 `span` 承载 |
 | `class` | `string` | — | 透传根类名 |
 | `style` | `string` | — | 透传根内联样式 |
 

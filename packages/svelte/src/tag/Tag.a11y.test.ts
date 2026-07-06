@@ -30,4 +30,23 @@ describe('Tag a11y', () => {
     expect(root?.getAttribute('aria-checked')).toBe('true');
     await expectNoAxeViolations(container);
   });
+
+  it('ariaLabel：透传到根元素（普通分支），给纯符号 Tag 命名', async () => {
+    const { container } = render(TagA11yFixture, {
+      props: { text: '+3', props: { ariaLabel: '还有 3 项' } },
+    });
+    const root = container.querySelector('.cd-tag');
+    expect(root?.getAttribute('aria-label')).toBe('还有 3 项');
+    await expectNoAxeViolations(container);
+  });
+
+  it('ariaLabel：透传到根元素（checkable 分支），与 role=checkbox 共存', async () => {
+    const { container } = render(TagA11yFixture, {
+      props: { text: '+3', props: { checkable: true, ariaLabel: '还有 3 项' } },
+    });
+    const root = container.querySelector('.cd-tag');
+    expect(root?.getAttribute('role')).toBe('checkbox');
+    expect(root?.getAttribute('aria-label')).toBe('还有 3 项');
+    await expectNoAxeViolations(container);
+  });
 });

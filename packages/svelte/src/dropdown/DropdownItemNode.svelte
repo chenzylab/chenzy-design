@@ -328,10 +328,10 @@
     flex: 0 0 auto;
     inline-size: 14px;
     block-size: 14px;
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary);
   }
   .cd-dropdown__item--selected {
-    color: var(--cd-color-primary, #165dff);
+    color: var(--cd-color-primary);
   }
   .cd-dropdown__arrow {
     display: inline-flex;
