@@ -515,6 +515,7 @@ export const en_US: Locale = {
     annotationEmpty: 'No references',
     videoDuration: 'Video duration {duration}',
     citationOrder: 'Citation {order}',
+    expand: 'Expand',
   },
   UserGuide: {
     skip: 'Skip',

@@ -731,6 +731,8 @@ export interface Locale {
     videoDuration: string;
     /** citation order accessible label; interpolates {order} */
     citationOrder: string;
+    /** CodeContent item expand (fullscreen) button aria-label */
+    expand: string;
   };
   UserGuide: {
     /** skip button */
