@@ -30,6 +30,7 @@ import { meta as checkboxMeta } from '../src/checkbox/meta.ts';
 import { meta as radioMeta } from '../src/radio/meta.ts';
 import { meta as inputNumberMeta } from '../src/input-number/meta.ts';
 import { meta as ratingMeta } from '../src/rating/meta.ts';
+import { meta as hotKeysMeta } from '../src/hotkeys/meta.ts';
 import { meta as sliderMeta } from '../src/slider/meta.ts';
 import { meta as formMeta } from '../src/form/meta.ts';
 import { meta as selectMeta } from '../src/select/meta.ts';
@@ -118,6 +119,7 @@ const metas = [
   radioMeta,
   inputNumberMeta,
   ratingMeta,
+  hotKeysMeta,
   sliderMeta,
   formMeta,
   selectMeta,

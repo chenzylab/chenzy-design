@@ -533,6 +533,18 @@ export {
   type DistributePasteResult,
 } from './pincode.js';
 export {
+  Keys as HotKeysKeys,
+  keyToCode,
+  isValidHotKeys,
+  matchHotKeys,
+  attachHotKeys,
+  isApplePlatform,
+  modifierSymbol,
+  type HotKey,
+  type MatchHotKeysOptions,
+  type AttachHotKeysOptions,
+} from './hotkeys.js';
+export {
   isSendHotKey,
   resolveCanSend,
   buildMessageContent,
