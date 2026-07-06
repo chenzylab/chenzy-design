@@ -27,6 +27,8 @@
     collectExpandableToDepth,
     conduct,
     toggleCheck,
+    collectLeafKeys,
+    findNode,
     computeFilteredKeys,
     fixedRange,
     scrollOffsetForIndex,
@@ -44,7 +46,11 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
-  type ChangeInfo = { value: TreeKey | TreeKey[]; node: TreeNodeData; selected: boolean };
+  type ChangeInfo = {
+    value: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[];
+    node: TreeNodeData;
+    selected: boolean;
+  };
   type CheckInfo = { checked: TreeKey[]; node: TreeNodeData; halfChecked: TreeKey[] };
   type ExpandInfo = { expanded: TreeKey[]; node: TreeNodeData; expand: boolean };
   type DropInfo = {
@@ -67,8 +73,17 @@
     treeData?: TreeNodeData[];
     /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
     fieldNames?: FieldNames;
-    value?: TreeKey | TreeKey[] | null;
-    defaultValue?: TreeKey | TreeKey[] | null;
+    value?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
+    defaultValue?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
+    /**
+     * 以对象形态回传/接收选中项（对齐 Semi `onChangeWithObject`）。开启后：
+     *  - `onChange` 回调 payload 的 `value` 从 key（或 key 数组）变为**节点对象**（含 label/value/其它字段，
+     *    即原始节点 `toOrig`），多选时为对象数组；
+     *  - 受控 `value` 与非受控 `defaultValue` 也须传对象形态（对象须含节点标识——优先取 `value` 字段，
+     *    缺省回退 `key`）。组件内部据此提取标识匹配节点。
+     * 默认 false（value 收发均为 key）。
+     */
+    onChangeWithObject?: boolean;
     multiple?: boolean;
     checkable?: boolean;
     checkedKeys?: TreeKey[];
@@ -82,6 +97,20 @@
      */
     checkRelation?: 'related' | 'unRelated';
     checkStrictly?: boolean;
+    /**
+     * 严格禁用（对齐 Semi `disableStrictly`）。开启后，disabled 节点的勾选态被「严格锁定」：
+     * 不能通过父级/子级联动改变——已勾选的 disabled 节点不会被父级取消，未勾选的不会被父级勾上。
+     * 与普通 `disabled` 的区别：普通 disabled 仅禁止直接点击该节点，其勾选态仍可能因父级联动被改；
+     * `disableStrictly` 则连联动也锁死。仅在 checkable 多选联动（related）下有意义。默认 false。
+     */
+    disableStrictly?: boolean;
+    /**
+     * 仅叶子回传（对齐 Semi `leafOnly`）。多选勾选（checkable）时，`onCheck` 回传的 `checked`
+     * 及 `halfChecked` 只含叶子节点 key，不含父/半选节点。适合「父节点仅作分组、值只关心叶子」的场景。
+     * 仅在 checkable 联动（related）下有意义；解耦（checkStrictly/unRelated）下 checked 本就是各节点独立态，
+     * leafOnly 仍会滤成只留叶子。默认 false（回传全部命中节点）。
+     */
+    leafOnly?: boolean;
     expandedKeys?: TreeKey[];
     defaultExpandedKeys?: TreeKey[];
     defaultExpandAll?: boolean;
@@ -119,6 +148,13 @@
      * 不传时回退到内置「label 包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
      */
     filterTreeNode?: boolean | ((input: string, node: TreeNodeData) => boolean);
+    /**
+     * 搜索状态下是否只展示过滤后的结果（对齐 Semi `showFilteredOnly`）。
+     * 默认 false：命中节点的祖先链自动展开，全树可见（未命中节点也渲染，仅命中项高亮）。
+     * true：搜索激活时只渲染命中节点及其祖先链，隐藏其它未命中且无命中后代的节点；
+     * 配合虚拟化可减少大数据树的多余渲染。默认 false（行为不变）。
+     */
+    showFilteredOnly?: boolean;
     /**
      * 受控搜索关键词。传入时走受控模式：搜索框 value 绑定到此 prop，
      * 输入变化仅触发 onSearch 回调，不更新内部 state。不传则保留内部非受控 state。
@@ -171,12 +207,15 @@
     fieldNames,
     value,
     defaultValue = null,
+    onChangeWithObject = false,
     multiple = false,
     checkable = false,
     checkedKeys,
     defaultCheckedKeys = [],
     checkRelation = 'related',
     checkStrictly = false,
+    disableStrictly = false,
+    leafOnly = false,
     expandedKeys,
     defaultExpandedKeys = [],
     defaultExpandAll = false,
@@ -191,6 +230,7 @@
     itemHeight = 32,
     filterable = false,
     filterTreeNode,
+    showFilteredOnly = false,
     searchValue: searchValueProp,
     onSearch,
     blockNode = false,
@@ -264,6 +304,11 @@
     return (orig as TreeNodeData | undefined) ?? node;
   }
 
+  /** 在合并树中按 key 查标准化节点（供 onChangeWithObject 还原节点对象等使用）。 */
+  function findMerged(key: TreeKey): TreeNodeData | undefined {
+    return findNode(mergedData, key);
+  }
+
   // --- 异步加载：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
   const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
   const loadingKeys = new SvelteSet<TreeKey>();
@@ -307,17 +352,51 @@
   }
 
   // --- selection: 受控 value 不回写 (红线 #1) ---
+  // onChangeWithObject 时 value/defaultValue 为节点对象（或对象数组）；内部 state 统一按 key 存储，
+  // 收发对象时用下面的 helper 在「对象 ↔ key」间转换。对象标识优先取 value 字段，缺省回退 key。
+  type ValueEntry = TreeKey | TreeNodeData;
+  /**
+   * 从一个 value 项（原始 key 或对象）提取内部节点标识 key。
+   * 本库节点身份为 key：对象优先取 `key`，缺省回退 `value`（对齐 Semi 对象含 value 键的约定）。
+   */
+  function entryToKey(entry: ValueEntry): TreeKey | null {
+    if (entry !== null && typeof entry === 'object') {
+      const obj = entry as unknown as Record<string, unknown>;
+      const id = (obj.key ?? obj.value) as TreeKey | undefined;
+      return id ?? null;
+    }
+    return entry as TreeKey;
+  }
+  /** 把内部 key 转成回调/受控所需的输出形态：onChangeWithObject 时回原始节点对象，否则回 key。 */
+  function keyToOutput(key: TreeKey): TreeKey | TreeNodeData {
+    if (!onChangeWithObject) return key;
+    const node = findMerged(key);
+    return node ? toOrig(node) : key;
+  }
   function initValue(): TreeKey | TreeKey[] | null {
-    if (multiple) return Array.isArray(defaultValue) ? [...defaultValue] : [];
-    return Array.isArray(defaultValue) ? (defaultValue[0] ?? null) : defaultValue;
+    const dv = defaultValue as ValueEntry | ValueEntry[] | null;
+    if (multiple) {
+      return Array.isArray(dv) ? dv.map(entryToKey).filter((k): k is TreeKey => k !== null) : [];
+    }
+    if (Array.isArray(dv)) return dv.length > 0 ? entryToKey(dv[0] as ValueEntry) : null;
+    return dv === null ? null : entryToKey(dv);
   }
   const isValueControlled = $derived(value !== undefined);
   let innerValue = $state<TreeKey | TreeKey[] | null>(initValue());
-  const currentValue = $derived(isValueControlled ? (value ?? null) : innerValue);
+  // 受控 value：onChangeWithObject 时为对象形态，统一归一为内部 key 集合。
   const selectedSet = $derived.by(() => {
     const set = new Set<TreeKey>();
-    if (Array.isArray(currentValue)) for (const k of currentValue) set.add(k);
-    else if (currentValue !== null) set.add(currentValue);
+    const src: TreeKey | TreeKey[] | null = isValueControlled
+      ? (() => {
+          const v = value as ValueEntry | ValueEntry[] | null | undefined;
+          if (v === undefined || v === null) return null;
+          if (Array.isArray(v))
+            return v.map(entryToKey).filter((k): k is TreeKey => k !== null);
+          return entryToKey(v);
+        })()
+      : innerValue;
+    if (Array.isArray(src)) for (const k of src) set.add(k);
+    else if (src !== null) set.add(src);
     return set;
   });
 
@@ -332,12 +411,12 @@
   );
   // 父子是否联动：checkStrictly 或 checkRelation==='unRelated' 任一开启即解耦（无联动、无半选）。
   const checkLinked = $derived(!checkStrictly && checkRelation !== 'unRelated');
-  // 解耦时直接用 base 当 checked，无半选；联动时用 conduct 归一
+  // 解耦时直接用 base 当 checked，无半选；联动时用 conduct 归一（disableStrictly 传入以锁定禁用节点）。
   const checkState = $derived.by(() => {
     if (!checkLinked) {
       return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     }
-    return conduct(mergedData, currentCheckedBase);
+    return conduct(mergedData, currentCheckedBase, disableStrictly);
   });
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
@@ -440,9 +519,10 @@
 
   // --- 可见扁平节点 ---
   const flat = $derived(flattenVisible(mergedData, effectiveExpanded));
-  // 搜索时仅保留命中或其祖先链上的节点（expand 集即祖先链 + 自身有命中后代者）
+  // showFilteredOnly（对齐 Semi）：搜索激活时仅保留命中节点及其祖先链（expand 集即祖先链 +
+  // 自身有命中后代者），隐藏其它未命中节点。默认 false 时展示全树（命中项高亮、祖先自动展开）。
   const visibleFlat = $derived.by(() => {
-    if (!searchActive) return flat;
+    if (!searchActive || !showFilteredOnly) return flat;
     return flat.filter(
       (f) => filterResult.matched.has(f.node.key) || filterResult.expand.has(f.node.key),
     );
@@ -547,10 +627,12 @@
   // --- 状态写入：仅非受控写 inner，受控只回调 (红线 #1) ---
   function emitSelect(node: TreeNodeData) {
     if (!isSelectable(node)) return;
-    let next: TreeKey | TreeKey[];
+    // 内部始终以 key 计算下一态（selectedSet 已把受控对象/key 归一为 key 集）。
+    let nextKeys: TreeKey | TreeKey[];
     let selected: boolean;
     if (multiple) {
-      const arr = Array.isArray(currentValue) ? [...currentValue] : [];
+      // 从当前选中 key 集派生数组，保持文档序不敏感（沿用原「切换」语义）。
+      const arr = [...selectedSet];
       const idx = arr.indexOf(node.key);
       if (idx >= 0) {
         arr.splice(idx, 1);
@@ -559,14 +641,18 @@
         arr.push(node.key);
         selected = true;
       }
-      next = arr;
+      nextKeys = arr;
     } else {
       // 单选：点击直接选中该节点（不取消），selected 恒为 true
-      next = node.key;
+      nextKeys = node.key;
       selected = true;
     }
-    if (!isValueControlled) innerValue = next;
-    onChange?.({ value: next, node: toOrig(node), selected });
+    if (!isValueControlled) innerValue = nextKeys;
+    // onChangeWithObject 时把 key 形态转成节点对象形态输出（数组内元素同型，非混合）。
+    const outValue: ChangeInfo['value'] = Array.isArray(nextKeys)
+      ? (nextKeys.map(keyToOutput) as TreeKey[] | TreeNodeData[])
+      : keyToOutput(nextKeys);
+    onChange?.({ value: outValue, node: toOrig(node), selected });
   }
 
   function emitCheck(node: TreeNodeData) {
@@ -583,11 +669,16 @@
     if (!isCheckControlled) innerCheckedBase = nextBase;
     const resolved = !checkLinked
       ? { checked: new Set(nextBase), half: new Set<TreeKey>() }
-      : conduct(mergedData, nextBase);
+      : conduct(mergedData, nextBase, disableStrictly);
+    // leafOnly：多选勾选输出只回传叶子节点 key（过滤父/半选节点）。
+    const checkedOut = leafOnly
+      ? collectLeafKeys(mergedData, resolved.checked)
+      : [...resolved.checked];
+    const halfOut = leafOnly ? [] : [...resolved.half];
     onCheck?.({
-      checked: [...resolved.checked],
+      checked: checkedOut,
       node: toOrig(node),
-      halfChecked: [...resolved.half],
+      halfChecked: halfOut,
     });
   }
 

@@ -83,6 +83,7 @@ export {
   computeDropPosition,
   isAncestorOrSelf,
   collectCheckedByStrategy,
+  collectLeafKeys,
   siblingKeys,
   accordionExpand,
   type CheckedStrategy,
