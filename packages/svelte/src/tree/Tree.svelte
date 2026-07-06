@@ -71,6 +71,13 @@
      * 用 fieldNames 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
      */
     treeData?: TreeNodeData[];
+    /**
+     * 简单 JSON 形式的树数据（对齐 Semi `treeDataSimpleJson`）。传入扁平 `{ key: value }` 键值对，
+     * key 同时作为 `TreeNodeData` 的 `key` 与 `label`，value 作为节点的 `value`；
+     * 嵌套对象自动转为子树。与 `treeData` 二选一，`treeData` 非空时优先，忽略此项。
+     * 例如 `{ 中国: { 北京: 'beijing', 上海: 'shanghai' } }` → 一层「中国」含两个叶子。
+     */
+    treeDataSimpleJson?: Record<string, unknown>;
     /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
     fieldNames?: FieldNames;
     value?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
@@ -132,6 +139,30 @@
      */
     accordion?: boolean;
     selectable?: boolean;
+    /**
+     * 展开触发方式（对齐 Semi `expandAction`）。
+     *  - `false`（默认）：仅点击展开箭头（switcher）才展开/收起，点击行只做选中；
+     *  - `'click'`：点击整行即展开/收起；
+     *  - `'doubleClick'`：双击整行才展开/收起。
+     * 注意：switcher 箭头在任意模式下都可点击展开。
+     */
+    expandAction?: false | 'click' | 'doubleClick';
+    /**
+     * 多选受控 value 自动合并父子（对齐 Semi `autoMergeValue`）。默认 true。
+     * 开启后，当某父节点被完全选中时，`onChange` 回传的 value 不再包含其子孙节点（仅保留父节点）；
+     * 关闭则回传全部命中节点。仅在 `multiple` + `checkable` 联动（related）且 `leafOnly=false` 时有意义。
+     */
+    autoMergeValue?: boolean;
+    /**
+     * label 超长省略（对齐 Semi `labelEllipsis`）。默认 false；`virtualized` 时默认 true。
+     * 开启后单行 label 超出容器宽度以省略号截断；关闭则不截断（可换行/溢出由外部控制）。
+     */
+    labelEllipsis?: boolean;
+    /**
+     * 聚焦组件内节点时是否阻止浏览器滚动文档（对齐 Semi `preventScroll`，作用于内部 focus 调用）。
+     * 默认 false（聚焦时按需滚动至可见）。
+     */
+    preventScroll?: boolean;
     showIcon?: boolean;
     /** 显示层级连接线（父子引导线） */
     showLine?: boolean;
@@ -145,9 +176,24 @@
     /**
      * 自定义搜索过滤谓词。`(input, node) => boolean` 返回该节点是否命中关键词；
      * 命中节点的祖先链自动展开（沿用内置过滤行为）。传函数即开启搜索（无需再传 filterable）；
-     * 不传时回退到内置「label 包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
+     * 不传时回退到内置「按 treeNodeFilterProp 字段包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
      */
     filterTreeNode?: boolean | ((input: string, node: TreeNodeData) => boolean);
+    /**
+     * 内置搜索过滤匹配节点的哪个字段（对齐 Semi `treeNodeFilterProp`）。默认 `'label'`。
+     * 仅在使用内置谓词（未传 filterTreeNode 函数）时生效；传自定义谓词时由该函数自行决定匹配逻辑。
+     * 例如设 `'value'` 则按节点 value 字段匹配关键词。
+     */
+    treeNodeFilterProp?: string;
+    /** 搜索框内联样式（对齐 Semi `searchStyle`，透传到搜索框 input 的 style）。 */
+    searchStyle?: string;
+    /** 搜索框附加 class（对齐 Semi `searchClassName`，追加到搜索框 input 的 class）。 */
+    searchClassName?: string;
+    /**
+     * 搜索框是否显示清除按钮（对齐 Semi `showClear`）。默认 true。
+     * 有输入内容时在搜索框尾部显示清除按钮，点击清空搜索词（受控时仅回调 onSearch 不写回，红线 #1）。
+     */
+    showClear?: boolean;
     /**
      * 搜索状态下是否只展示过滤后的结果（对齐 Semi `showFilteredOnly`）。
      * 默认 false：命中节点的祖先链自动展开，全树可见（未命中节点也渲染，仅命中项高亮）。
@@ -178,8 +224,26 @@
     onLoad?: (loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void;
     /** 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序。默认 false（行为不变） */
     draggable?: boolean;
+    /**
+     * 拖拽到节点上（inside）时是否自动展开该节点（对齐 Semi `autoExpandWhenDragEnter`）。默认 true。
+     * 关闭后拖到可展开节点内部时不再延时自动展开（需手动展开后再拖入）。仅 draggable 时有意义。
+     */
+    autoExpandWhenDragEnter?: boolean;
+    /**
+     * 是否隐藏拖拽时跟随光标的拖拽影像 dragImg（对齐 Semi `hideDraggingNode`）。默认 false。
+     * 开启后设置透明 drag image，只保留组件内的插入指示线/高亮，不显示浏览器默认幽灵。仅 draggable 时有意义。
+     */
+    hideDraggingNode?: boolean;
+    /**
+     * 自定义拖拽影像 dragImg 的 DOM 元素（对齐 Semi `renderDraggingNode`）。
+     * `(nodeInstance, node) => HTMLElement`：传入被拖拽行的 DOM 元素与节点数据，返回用作 drag image 的 HTML 元素。
+     * 优先级高于 `hideDraggingNode`；返回的元素须已在文档中（或离屏挂载）以便浏览器拾取。仅 draggable 时有意义。
+     */
+    renderDraggingNode?: (nodeInstance: HTMLElement, node: TreeNodeData) => HTMLElement;
     /** 放下时回调（受控数据，组件不内部改 treeData，由父组件按 info 重排）。 */
     onDrop?: (info: DropInfo) => void;
+    /** 节点双击回调（对齐 Semi `onDoubleClick`）。 */
+    onDoubleClick?: (e: MouseEvent, node: TreeNodeData) => void;
     /** 节点右键菜单回调 */
     onRightClick?: (e: MouseEvent, node: TreeNodeData) => void;
     /** 开始拖拽节点 */
@@ -204,6 +268,7 @@
 
   let {
     treeData = [],
+    treeDataSimpleJson,
     fieldNames,
     value,
     defaultValue = null,
@@ -223,6 +288,10 @@
     autoExpandParent = true,
     accordion = false,
     selectable = true,
+    expandAction = false,
+    autoMergeValue = true,
+    labelEllipsis,
+    preventScroll = false,
     showIcon = true,
     showLine = false,
     virtualized = false,
@@ -230,6 +299,10 @@
     itemHeight = 32,
     filterable = false,
     filterTreeNode,
+    treeNodeFilterProp = 'label',
+    searchStyle,
+    searchClassName,
+    showClear = true,
     showFilteredOnly = false,
     searchValue: searchValueProp,
     onSearch,
@@ -242,7 +315,11 @@
     loadData,
     onLoad,
     draggable = false,
+    autoExpandWhenDragEnter = true,
+    hideDraggingNode = false,
+    renderDraggingNode,
     onDrop,
+    onDoubleClick,
     onRightClick,
     onDragStart,
     onDragEnter,
@@ -274,6 +351,26 @@
     keyField === 'key' && labelField === 'label' && childrenField === 'children',
   );
 
+  // treeDataSimpleJson → TreeNodeData[]：扁平 { key: value } 转树（对齐 Semi）。
+  // key 同时作 key/label；原始值为对象则递归成子树，否则作叶子的 value。纯函数、不依赖响应式。
+  function simpleJsonToTree(json: Record<string, unknown>): TreeNodeData[] {
+    return Object.entries(json).map(([k, v]) => {
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+        return {
+          key: k,
+          label: k,
+          children: simpleJsonToTree(v as Record<string, unknown>),
+        } as TreeNodeData;
+      }
+      return { key: k, label: k, value: v } as unknown as TreeNodeData;
+    });
+  }
+
+  // 实际数据源：treeData 非空时优先用它；否则若传了 treeDataSimpleJson 则转换之。
+  const sourceData = $derived<TreeNodeData[]>(
+    treeData.length > 0 || !treeDataSimpleJson ? treeData : simpleJsonToTree(treeDataSimpleJson),
+  );
+
   function normalizeNodes(nodes: TreeNodeData[]): NormalizedNode[] {
     const kf = keyField;
     const lf = labelField;
@@ -293,9 +390,9 @@
     });
   }
 
-  // 标准化后的树：默认时即 treeData 原引用（零开销），否则递归映射字段名。
+  // 标准化后的树：默认时即数据源原引用（零开销），否则递归映射字段名。
   const normalizedData = $derived<TreeNodeData[]>(
-    fieldNamesDefault ? treeData : normalizeNodes(treeData),
+    fieldNamesDefault ? sourceData : normalizeNodes(sourceData),
   );
 
   /** 回调回传：自定义 fieldNames 时回原始节点，否则回标准节点本身。 */
@@ -422,7 +519,11 @@
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
   function initExpanded(): Set<TreeKey> {
     // 需用标准化后的 key（fieldNames 自定义时 collectExpandable* 才能识别 children）。
-    const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
+    const rawSource =
+      treeData.length > 0 || !treeDataSimpleJson
+        ? treeData
+        : simpleJsonToTree(treeDataSimpleJson);
+    const base = fieldNamesDefault ? rawSource : normalizeNodes(rawSource);
     if (defaultExpandAll) {
       return new Set(collectExpandable(base));
     }
@@ -470,6 +571,12 @@
   const searchEnabled = $derived(filterable || filterTreeNode === true || typeof filterTreeNode === 'function');
   const searchActive = $derived(searchEnabled && trimmedSearch.length > 0);
   // 过滤谓词：传函数则用自定义 (input, node)；否则内置 label 包含（不区分大小写）。
+  // 内置谓词按 treeNodeFilterProp 指定字段匹配（默认 label）；字段缺省回退 label。
+  function nodeFilterText(node: TreeNodeData): string {
+    const raw = (node as unknown as Record<string, unknown>)[treeNodeFilterProp];
+    const v = raw ?? node.label;
+    return v == null ? '' : String(v);
+  }
   const matchPredicate = $derived.by(() => {
     if (typeof filterTreeNode === 'function') {
       const fn = filterTreeNode;
@@ -477,7 +584,7 @@
       return (node: TreeNodeData) => fn(trimmedSearch, toOrig(node));
     }
     const lower = trimmedSearch.toLowerCase();
-    return (node: TreeNodeData) => node.label.toLowerCase().includes(lower);
+    return (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
   });
   const filterResult = $derived.by(() => {
     if (!searchActive) return { matched: new Set<TreeKey>(), expand: new Set<TreeKey>() };
@@ -500,7 +607,7 @@
           pred = (node: TreeNodeData) => fn(trimmed, toOrig(node));
         } else {
           const lower = trimmed.toLowerCase();
-          pred = (node: TreeNodeData) => node.label.toLowerCase().includes(lower);
+          pred = (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
         }
         const result = computeFilteredKeys(mergedData, pred);
         fKeys = [...result.matched].map(String);
@@ -508,6 +615,13 @@
       onSearch(val, fKeys);
     }
   }
+
+  // 清除搜索：非受控时清空内部 state；受控时仅回调 onSearch('') 让外层清（红线 #1）。
+  function clearSearch() {
+    if (!isSearchControlled) innerSearchValue = '';
+    onSearch?.('', []);
+  }
+  const showClearBtn = $derived(showClear && searchValue.length > 0 && !disabled);
 
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回）
   const effectiveExpanded = $derived.by(() => {
@@ -547,10 +661,24 @@
   const VIRTUAL_OVERSCAN = 4;
   // viewport 元素普通引用（bind:this），不参与响应式几何读取。
   let viewportEl = $state<HTMLDivElement | null>(null);
+  // 非虚拟化时的 role=tree 容器引用，供命令式 focus() 使用（preventScroll 传递给此处）。
+  let listEl = $state<HTMLDivElement | null>(null);
+
+  /**
+   * 命令式聚焦树容器（对齐 Semi 组件内 focus 方法）。
+   * 尊重 preventScroll：为 true 时聚焦不触发浏览器滚动文档。可经组件实例调用。
+   */
+  export function focus(): void {
+    const el = viewportEl ?? listEl;
+    el?.focus({ preventScroll });
+  }
   // 仅由命令式 scroll 回调写入的本地 scrollTop，render 期只读。
   let scrollTop = $state(0);
   // rAF 节流句柄（非响应式）。
   let rafId = 0;
+
+  // labelEllipsis：未显式传时默认跟随 virtualized（虚拟化下默认省略，对齐 Semi）。
+  const ellipsis = $derived(labelEllipsis ?? virtualized);
 
   const rowHeight = $derived(itemHeight > 0 ? itemHeight : 32);
   const totalHeight = $derived(visibleFlat.length * rowHeight);
@@ -624,6 +752,24 @@
     return effectiveExpanded.has(key);
   }
 
+  // autoMergeValue（对齐 Semi）：从 checked 集中剔除「有已选中祖先」的后代 key，
+  // 使某父节点被完全选中时输出仅保留该父节点，不含其子孙。纯函数，不修改入参。
+  function mergeCheckedKeys(data: TreeNodeData[], checked: Set<TreeKey>): TreeKey[] {
+    const out: TreeKey[] = [];
+    const walk = (nodes: TreeNodeData[], ancestorChecked: boolean) => {
+      for (const n of nodes) {
+        const selfChecked = checked.has(n.key);
+        // 仅当自身被选中且无已选中祖先时保留（顶层完全选中节点）。
+        if (selfChecked && !ancestorChecked) out.push(n.key);
+        if (n.children && n.children.length > 0) {
+          walk(n.children, ancestorChecked || selfChecked);
+        }
+      }
+    };
+    walk(data, false);
+    return out;
+  }
+
   // --- 状态写入：仅非受控写 inner，受控只回调 (红线 #1) ---
   function emitSelect(node: TreeNodeData) {
     if (!isSelectable(node)) return;
@@ -670,10 +816,16 @@
     const resolved = !checkLinked
       ? { checked: new Set(nextBase), half: new Set<TreeKey>() }
       : conduct(mergedData, nextBase, disableStrictly);
-    // leafOnly：多选勾选输出只回传叶子节点 key（过滤父/半选节点）。
-    const checkedOut = leafOnly
-      ? collectLeafKeys(mergedData, resolved.checked)
-      : [...resolved.checked];
+    // 输出优先级：leafOnly（只留叶子）> autoMergeValue（合并父子、剔除已选祖先的后代）> 全量。
+    // autoMergeValue 仅在联动（related）且非 leafOnly 下有意义（对齐 Semi）。
+    let checkedOut: TreeKey[];
+    if (leafOnly) {
+      checkedOut = collectLeafKeys(mergedData, resolved.checked);
+    } else if (autoMergeValue && checkLinked) {
+      checkedOut = mergeCheckedKeys(mergedData, resolved.checked);
+    } else {
+      checkedOut = [...resolved.checked];
+    }
     const halfOut = leafOnly ? [] : [...resolved.half];
     onCheck?.({
       checked: checkedOut,
@@ -712,8 +864,24 @@
   function onRowClick(node: TreeNodeData) {
     if (isNodeDisabled(node)) return;
     activeKey = node.key;
-    if (isSelectable(node)) emitSelect(node);
-    else if (isExpandable(node, (node.children?.length ?? 0) > 0)) toggleExpand(node);
+    const expandable = isExpandable(node, (node.children?.length ?? 0) > 0);
+    if (isSelectable(node)) {
+      emitSelect(node);
+      // expandAction='click'：可选中节点点击整行时，选中与展开同时发生（对齐 Semi）。
+      if (expandAction === 'click' && expandable) toggleExpand(node);
+    } else if (expandable) {
+      // 不可选中的可展开节点：默认点击即展开（沿用原行为），expandAction='click' 语义一致，不重复触发。
+      toggleExpand(node);
+    }
+  }
+
+  // 节点双击：先回调 onDoubleClick；expandAction='doubleClick' 时再触发展开/收起。
+  function onRowDblClick(e: MouseEvent, node: TreeNodeData) {
+    if (isNodeDisabled(node)) return;
+    onDoubleClick?.(e, toOrig(node));
+    if (expandAction === 'doubleClick' && isExpandable(node, (node.children?.length ?? 0) > 0)) {
+      toggleExpand(node);
+    }
   }
 
   // --- 键盘导航 (红线 #2: 全部基于派生 visibleFlat 与 activeKey) ---
@@ -957,6 +1125,18 @@
       e.dataTransfer.effectAllowed = 'move';
       // 必须 setData 否则部分浏览器不触发 drop。
       e.dataTransfer.setData('text/plain', String(node.key));
+      // 自定义拖拽影像：renderDraggingNode 优先，其次 hideDraggingNode 用透明图隐藏默认幽灵。
+      const rowEl = e.currentTarget as HTMLElement;
+      if (renderDraggingNode) {
+        const custom = renderDraggingNode(rowEl, toOrig(node));
+        if (custom) e.dataTransfer.setDragImage(custom, 0, 0);
+      } else if (hideDraggingNode) {
+        // 1x1 透明图片：绝大多数浏览器据此隐藏默认 dragImg。
+        const img = new Image();
+        img.src =
+          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        e.dataTransfer.setDragImage(img, 0, 0);
+      }
     }
     onDragStart?.(toOrig(node));
   }
@@ -985,8 +1165,13 @@
     }
     dropKey = node.key;
     dropPos = pos;
-    // 拖到内部时自动展开目标（便于放入），延时避免误触。
-    if (pos === 'inside' && isExpandable(node, f.hasChildren) && !isExpanded(node.key)) {
+    // 拖到内部时自动展开目标（便于放入），延时避免误触。autoExpandWhenDragEnter=false 时关闭。
+    if (
+      autoExpandWhenDragEnter &&
+      pos === 'inside' &&
+      isExpandable(node, f.hasChildren) &&
+      !isExpanded(node.key)
+    ) {
       if (expandTimer === undefined) {
         expandTimer = setTimeout(() => {
           expandTimer = undefined;
@@ -1083,16 +1268,35 @@
 
 <div class={cls}>
   {#if searchEnabled}
-    <div class="cd-tree__search">
+    <div class="cd-tree__search" class:cd-tree__search--clearable={showClearBtn}>
       <input
-        class="cd-tree__search-input"
+        class={['cd-tree__search-input', searchClassName].filter(Boolean).join(' ')}
         type="text"
         placeholder={loc().t('Tree.searchPlaceholder')}
         aria-label={loc().t('Tree.searchPlaceholder')}
         value={searchValue}
         oninput={handleSearchInput}
+        style={searchStyle}
         {disabled}
       />
+      {#if showClearBtn}
+        <button
+          type="button"
+          class="cd-tree__search-clear"
+          aria-label={loc().t('Tree.clear')}
+          onclick={clearSearch}
+        >
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              d="M4 4l8 8M12 4l-8 8"
+            />
+          </svg>
+        </button>
+      {/if}
     </div>
   {/if}
 
@@ -1128,6 +1332,7 @@
       aria-activedescendant={activeDescId}
       aria-disabled={disabled || undefined}
       tabindex={disabled ? -1 : 0}
+      bind:this={listEl}
       onkeydown={onKeydown}
     >
       {#each visibleFlat as f (f.node.key)}
@@ -1174,6 +1379,9 @@
           aria-disabled={nodeDisabled || undefined}
           style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
+          ondblclick={onDoubleClick || expandAction === 'doubleClick'
+            ? (e) => onRowDblClick(e, node)
+            : undefined}
           oncontextmenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(e, toOrig(node)); } : undefined}
           ondragstart={draggable ? (e) => onNodeDragStart(e, node) : undefined}
           ondragover={draggable ? (e) => onNodeDragOver(e, f) : undefined}
@@ -1282,7 +1490,7 @@
             </span>
           {/if}
 
-          <span class="cd-tree__label">
+          <span class="cd-tree__label" class:cd-tree__label--ellipsis={ellipsis}>
             {#if label}
               {@render label({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
             {:else}
@@ -1327,6 +1535,9 @@
     color: var(--cd-tree-node-color-disabled);
   }
 
+  .cd-tree__search {
+    position: relative;
+  }
   .cd-tree__search-input {
     inline-size: 100%;
     block-size: var(--cd-tree-row-height);
@@ -1336,6 +1547,35 @@
     border: 1px solid var(--cd-tree-border-color);
     border-radius: var(--cd-tree-radius);
     font: inherit;
+  }
+  /* 显示清除按钮时给输入框尾部留出空间（RTL 自适应 padding-inline-end） */
+  .cd-tree__search--clearable .cd-tree__search-input {
+    padding-inline-end: calc(var(--cd-spacing-tight) + 1.25rem);
+  }
+  .cd-tree__search-clear {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--cd-spacing-extra-tight);
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    padding: 0;
+    color: var(--cd-tree-node-color-disabled);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .cd-tree__search-clear:hover {
+    color: var(--cd-tree-node-color);
+    background: var(--cd-tree-node-bg-hover);
+  }
+  .cd-tree__search-clear:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
   }
   .cd-tree--warning .cd-tree__search-input {
     border-color: var(--cd-tree-border-color-warning);
@@ -1545,11 +1785,14 @@
   }
 
   .cd-tree__label {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+  /* labelEllipsis：超长单行省略（默认关闭；虚拟化下默认开启） */
+  .cd-tree__label--ellipsis {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    flex: 1 1 auto;
-    min-inline-size: 0;
   }
 
   .cd-tree__suffix {

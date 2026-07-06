@@ -11,6 +11,12 @@ export const meta = {
   props: [
     { name: 'treeData', type: 'TreeNodeData[]', default: '[]', desc: '树数据源；字段名可经 fieldNames 自定义' },
     {
+      name: 'treeDataSimpleJson',
+      type: 'Record<string, unknown>',
+      default: 'undefined',
+      desc: '简单 JSON 形式的树数据（对齐 Semi）：扁平 { key: value } 键值对，key 同时作 key/label，value 作节点 value，嵌套对象转子树。treeData 非空时优先，忽略此项',
+    },
+    {
       name: 'fieldNames',
       type: '{ key?: string; label?: string; children?: string }',
       default: "{ key:'key', label:'label', children:'children' }",
@@ -94,6 +100,30 @@ export const meta = {
       desc: '手风琴模式：同层级最多展开一个，展开节点时自动收起同父级其它节点（不同层级互不影响）。受控 expandedKeys 同样生效，仅经 onExpandedChange 回传新集不回写',
     },
     { name: 'selectable', type: 'boolean', default: 'true', desc: '节点是否可选中' },
+    {
+      name: 'expandAction',
+      type: "false | 'click' | 'doubleClick'",
+      default: 'false',
+      desc: "展开触发方式：false 仅点箭头；'click' 点整行展开；'doubleClick' 双击整行展开（箭头任意模式可点）",
+    },
+    {
+      name: 'autoMergeValue',
+      type: 'boolean',
+      default: 'true',
+      desc: '多选受控 value 自动合并父子：父节点完全选中时 onCheck 回传只保留父不含子孙。仅 multiple+checkable 联动且 leafOnly=false 时有意义',
+    },
+    {
+      name: 'labelEllipsis',
+      type: 'boolean',
+      default: 'false（virtualized 时 true）',
+      desc: 'label 超长单行省略；未显式传时跟随 virtualized',
+    },
+    {
+      name: 'preventScroll',
+      type: 'boolean',
+      default: 'false',
+      desc: '组件内 focus() 时是否阻止浏览器滚动文档（作用于导出的命令式 focus 方法）',
+    },
     { name: 'showIcon', type: 'boolean', default: 'true', desc: '是否预留节点图标位' },
     { name: 'showLine', type: 'boolean', default: 'false', desc: '显示层级连接线（├/└/竖线）' },
     {
@@ -109,7 +139,21 @@ export const meta = {
       name: 'filterTreeNode',
       type: 'boolean | ((input: string, node: TreeNodeData) => boolean)',
       default: 'undefined',
-      desc: '自定义搜索过滤谓词；传函数即开启搜索，boolean 形态等价 filterable，不传回退内置 label 包含匹配',
+      desc: '自定义搜索过滤谓词；传函数即开启搜索，boolean 形态等价 filterable，不传回退按 treeNodeFilterProp 字段包含匹配',
+    },
+    {
+      name: 'treeNodeFilterProp',
+      type: 'string',
+      default: "'label'",
+      desc: '内置搜索匹配节点的哪个字段（仅内置谓词生效，传自定义谓词时由函数决定）',
+    },
+    { name: 'searchStyle', type: 'string', default: 'undefined', desc: '搜索框内联样式（透传到 input style）' },
+    { name: 'searchClassName', type: 'string', default: 'undefined', desc: '搜索框附加 class（追加到 input）' },
+    {
+      name: 'showClear',
+      type: 'boolean',
+      default: 'true',
+      desc: '搜索框有内容时显示清除按钮，点击清空（受控时仅回调 onSearch 不写回）',
     },
     {
       name: 'showFilteredOnly',
@@ -146,6 +190,30 @@ export const meta = {
       type: 'boolean',
       default: 'false',
       desc: '启用 HTML5 拖拽排序：节点可拖动改变层级/顺序（before/inside/after）',
+    },
+    {
+      name: 'autoExpandWhenDragEnter',
+      type: 'boolean',
+      default: 'true',
+      desc: '拖拽到节点内部（inside）时是否延时自动展开该节点。仅 draggable 时有意义',
+    },
+    {
+      name: 'hideDraggingNode',
+      type: 'boolean',
+      default: 'false',
+      desc: '是否隐藏拖拽跟随的 dragImg（设透明 drag image）。仅 draggable 时有意义',
+    },
+    {
+      name: 'renderDraggingNode',
+      type: '(nodeInstance: HTMLElement, node: TreeNodeData) => HTMLElement',
+      default: 'undefined',
+      desc: '自定义拖拽 dragImg 元素，优先级高于 hideDraggingNode。仅 draggable 时有意义',
+    },
+    {
+      name: 'onDoubleClick',
+      type: '(e: MouseEvent, node: TreeNodeData) => void',
+      default: 'undefined',
+      desc: '节点双击回调',
     },
     {
       name: 'onDrop',
@@ -213,6 +281,7 @@ export const meta = {
     { name: 'onDrop', desc: '拖拽放下：{ dragNode, dropNode, dropPosition: before|inside|after }' },
   ],
   slots: [{ name: 'label', desc: '自定义节点渲染：{ node, level, searchValue, selected, checked }' }],
+  methods: [{ name: 'focus', desc: '命令式聚焦树容器（尊重 preventScroll）' }],
   a11y: {
     hasRole: true,
     focusable: true,
