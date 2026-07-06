@@ -8,6 +8,7 @@ import { gridTokens } from './grid.js';
 import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
 import { inputNumberTokens } from './input-number.js';
+import { pinCodeTokens } from './pincode.js';
 import { tagInputTokens } from './tag-input.js';
 import { uploadTokens } from './upload.js';
 import { switchTokens } from './switch.js';
@@ -75,6 +76,7 @@ export const componentTokens = {
   ...layoutTokens,
   ...inputTokens,
   ...inputNumberTokens,
+  ...pinCodeTokens,
   ...tagInputTokens,
   ...uploadTokens,
   ...switchTokens,

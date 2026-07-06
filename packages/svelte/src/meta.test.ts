@@ -13,6 +13,7 @@ import { meta as checkboxMeta } from './checkbox/meta.js';
 import { meta as radioMeta } from './radio/meta.js';
 import { meta as inputNumberMeta } from './input-number/meta.js';
 import { meta as ratingMeta } from './rating/meta.js';
+import { meta as pinCodeMeta } from './pincode/meta.js';
 import { meta as sliderMeta } from './slider/meta.js';
 import { meta as formMeta } from './form/meta.js';
 import { meta as selectMeta } from './select/meta.js';
@@ -92,6 +93,7 @@ const metas = {
   radioMeta,
   inputNumberMeta,
   ratingMeta,
+  pinCodeMeta,
   sliderMeta,
   formMeta,
   selectMeta,
