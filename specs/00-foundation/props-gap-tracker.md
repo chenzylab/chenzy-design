@@ -17,40 +17,40 @@
 
 ### Upload（20）
 **高**：✅ 批次1 已实现 → previewFile · renderFileItem · renderThumbnail · showPicInfo+renderPicInfo（成套）· crop+beforeCrop+onCropError+cropModalProps（裁剪整套：addFiles 分流 runCropPipeline，Modal+Cropper，getCropperCanvas→toBlob→File 替换后走原上传管线）
-**中**：✅ uploadTrigger · ✅ onRemove+beforeRemove · beforeClear · afterUpload · ✅ timeout · onPastingError（批次2 补 uploadTrigger/onRemove/beforeRemove/timeout；beforeClear/afterUpload/onPastingError 待批次3）
-**低**：renderPicPreviewIcon · renderPicClose · renderFileOperation · picHeight · picWidth · capture · itemStyle · onFileChange
+**中**：✅ 全部 uploadTrigger/onRemove/beforeRemove/timeout（批次2）+ beforeClear/afterUpload/onPastingError（批次3；afterUpload 同步返回 {autoRemove/status/validateMessage/name/url}）
+**低**：✅ 全部（批次3）renderPicPreviewIcon · renderPicClose · renderFileOperation · picHeight · picWidth · capture · itemStyle · onFileChange
 
 ### Tree（15）
 **中**：renderFullLabel · searchRender · ✅ showFilteredOnly · ✅ onChangeWithObject · ✅ leafOnly · ✅ disableStrictly（批次2 已实现：core `conduct(disableStrictly)`+`collectLeafKeys`，Tree.svelte 接线）
-**低**：searchStyle · searchClassName · showClear · onDoubleClick · treeDataSimpleJson · treeNodeFilterProp · expandAction · autoExpandWhenDragEnter · hideDraggingNode · renderDraggingNode · labelEllipsis · autoMergeValue · preventScroll
+**低**：✅ 全部（批次3）searchStyle · searchClassName · showClear · onDoubleClick · treeDataSimpleJson（仅输入侧扁平 JSON→树，选中输出仍走标准 onChange）· treeNodeFilterProp · expandAction · autoExpandWhenDragEnter · hideDraggingNode · renderDraggingNode · labelEllipsis · autoMergeValue · preventScroll（导出容器级 focus()）
 > 噪声（不计入）：`directory`（非 Tree prop，属 Upload）；`selectedKey`（≈ 现有 value 单选，已覆盖）。
 
 ### Select（15）
 **中**：✅ triggerRender · ✅ searchPosition · ✅ insetLabel+insetLabelId（批次2 已实现）
-**低**：✅ dropdownClassName · ✅ dropdownStyle · ✅ dropdownMargin · defaultActiveFirstOption · inputProps · showArrow（隐藏开关）· clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · ✅ zIndex · ellipsisTrigger · outerTopSlot · outerBottomSlot（批次3 浮层横扫补 dropdownClassName/dropdownStyle/dropdownMargin/zIndex）
+**低**：✅ 全部（批次3 浮层横扫 + 收口）dropdownClassName/dropdownStyle/dropdownMargin/zIndex · defaultActiveFirstOption · inputProps · showArrow · clickToHide · onListScroll · preventScroll · expandRestTagsOnClick · ellipsisTrigger · outerTopSlot · outerBottomSlot（浮层拆外/内层，outer slot 在滚动区外）
 
 ### Table（9）
-**中**：✅ expandAllGroupRows+defaultExpandAllGroupRows+clickGroupedRowToExpand（可折叠分组，成套 — 批次2 已实现，纯 derived+SvelteMap，配套 onGroupExpandChange 受控通知）· renderPagination
-**低**：expandIcon · hideExpandedColumn · rowSpanHover · headerStyle · onGroupedRow
+**中**：✅ expandAllGroupRows+defaultExpandAllGroupRows+clickGroupedRowToExpand（批次2，纯 derived+SvelteMap+onGroupExpandChange）· ✅ renderPagination（批次3 Snippet 替换内置分页）
+**低**：✅ 全部（批次3）expandIcon · hideExpandedColumn（默认 true 并入首列，对齐 Semi）· rowSpanHover（渐进：prop+CSS 就位，待单元格合并引擎）· headerStyle · onGroupedRow
 
-### TreeSelect（8，全低）
-filterTreeNode · emptyContent · ✅ dropdownClassName · ✅ dropdownStyle · ✅ zIndex · mouseEnterDelay · mouseLeaveDelay · searchRender（批次3 补浮层 4 件套，含真正接入此前仅声明的 dropdownMargin）
+### TreeSelect（8，全低）✅ 全部收口
+✅ filterTreeNode · ✅ emptyContent · ✅ dropdownClassName · ✅ dropdownStyle · ✅ zIndex · ~~mouseEnterDelay/mouseLeaveDelay~~（TreeSelect 为 click 触发，hover delay 不适用，Semi API 表本身亦无此二项）· ✅ searchRender（TreeSelect 自渲染树不委托 Tree；批次3 补浮层 4 件套 + filterTreeNode/emptyContent/searchRender）
 
 ### DatePicker（4）
 **中**：✅ defaultPickerValue · ✅ timeZone（批次2 已实现；timeZone 仅格式化显示层）
-**低**：insetLabel · insetLabelId
+**低**：✅ insetLabel · ✅ insetLabelId（批次3；镜像 Select inset 实现，aria-labelledby 关联）
 
 ### Form（4）— 关键架构真缺口 ✅ 批次1 已实现（除 validateFields 见下）
 > **重要**：FormApi 经 Svelte context 只能被后代 Field 消费，**渲染 `<Form>` 的父组件无法拿到 API 句柄**做命令式 setValues/validate/reset。故下列属真缺口非纯架构替代。
 **高**：✅ getFormApi（回传 FormApi 逃生舱，Form.svelte 一次性 $effect 回调）· ~~validateFields~~（**撤销**：Semi 中 validateFields 是 Form 级自定义校验器=废弃 `validator` 别名，非「外部触发字段校验」入口；本库无 Form 级 validator 故不加。外部触发校验能力已由 getFormApi 回传的 `formApi.validate(names?)` / `validateField(name)` 完整覆盖）
 **中**：✅ onErrorChange（subscribe 里 lastErrors 引用比对）· ✅ onReset（`<form onreset>` handler 调 resetFields）
-**低**：stopPropagation（未做，边角）
+**低**：✅ stopPropagation（批次3；handleSubmit 内 preventDefault 后加 e.stopPropagation()）
 
-### Modal（4，全低）
-modalRender · cancelLoading · maskFixed · getContainerContext（注：direction 已剔为架构替代=ConfigProvider dir）
+### Modal（4，全低）✅ 全部收口
+✅ modalRender（Snippet 包裹默认面板）· ✅ cancelLoading · ✅ maskFixed · ~~getContainerContext~~（已被既有 getContainer 架构替代覆盖，见 §2.B，不重复实现）（注：direction 已剔为架构替代=ConfigProvider dir）
 
-### Tabs（3，全低）
-tabBarClassName · tabBarStyle · visibleTabsStyle
+### Tabs（3，全低）✅ 全部收口
+✅ tabBarClassName · ✅ tabBarStyle · ✅ visibleTabsStyle（批次3；注入标签栏/可见标签区容器）
 
 ### Cascader（2，全低）
 ✅ dropdownClassName · ✅ dropdownMargin（批次3 已补，并真正接入此前仅声明的 dropdownStyle）
@@ -133,7 +133,8 @@ Upload/Select/DatePicker/Cascader 的 validateStatus → 本库统一 `status?: 
    > **统一约定**：库内浮层原语 `_floating/use-floating.ts` 的 `use:floating` action；各组件在 portal 浮层 div 上注入 class 追加 / style 合并 / z-index / offset(=dropdownMargin)。dropdownMargin 支持 number（映射 offset），对象形态仅接主轴（use:floating 单轴 offset 限制）。
    > **命名以 Semi 各组件真实 API 为准**：Select 系用 dropdownClassName，Dropdown 用 className/contentClassName。
    > **发现**：TreeSelect dropdownMargin、Cascader dropdownStyle 此前「仅声明未消费」，本次真正接入生效。
-8. 其余单点边角随手补或按需响应（Upload beforeClear/afterUpload/onPastingError；各组件低优先 render/样式/边角 prop）。
+8. ✅ 其余单点边角**全部清扫到零**（批次3，4 波 8 worktree agent）：Upload(11)、Tree(13)、Select(10)、Table(6)、TreeSelect(3 实现+2 判定不适用)、Modal(3 实现+1 架构替代覆盖)、Tabs(3)、DatePicker(insetLabel×2)、Form(stopPropagation)。
+   > **收口结论**：tracker §1 全部真缺口净单已实现或明确判定（架构替代覆盖/语义不适用），零遗漏。少数务实边界已就地注明：Table rowSpanHover（渐进，待合并引擎）、Tree treeDataSimpleJson（仅输入侧转换）/preventScroll（容器级 focus）、TreeSelect mouseEnter/LeaveDelay（click 触发不适用）、Modal getContainerContext（getContainer 已覆盖）、DatePicker timeZone（仅格式化层）。
 
 ## 5. 优先级分布汇总
 
