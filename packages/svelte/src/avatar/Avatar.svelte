@@ -392,7 +392,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--cd-color-mask);
     color: var(--cd-color-text-inverse);
     opacity: 0;
     transition: opacity 0.15s ease;
