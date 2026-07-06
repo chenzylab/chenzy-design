@@ -109,6 +109,7 @@ const components = [
   ['locale-provider', '{ LocaleProvider }', '1.0 KB'],
   ['lottie-icon', '{ LottieIcon }', '2.5 KB'],
   ['resize-observer', '{ ResizeObserver }', '1.2 KB'],
+  ['resizable', '{ Resizable, ResizeGroup, ResizeItem, ResizeHandler }', '6 KB'],
   // show
   ['avatar', '{ AvatarGroup }', '4.95 KB'],
   ['badge', '{ Badge }', '2.5 KB'],

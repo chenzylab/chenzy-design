@@ -714,6 +714,10 @@ export interface Locale {
     /** template button label / toggle aria-label */
     template: string;
   };
+  Resizable: {
+    /** resize handle default aria-label */
+    handleAriaLabel: string;
+  };
   UserGuide: {
     /** skip button */
     skip: string;

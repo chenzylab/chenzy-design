@@ -505,6 +505,9 @@ export const en_US: Locale = {
     deleteSkill: 'Delete skill',
     template: 'Template',
   },
+  Resizable: {
+    handleAriaLabel: 'Resize',
+  },
   UserGuide: {
     skip: 'Skip',
     next: 'Next',
