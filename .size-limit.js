@@ -54,6 +54,7 @@ const ignore = [
 const components = [
   // basic
   ['button', '{ Button }', '4 KB'],
+  ['iconbutton', '{ IconButton }', '0.6 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
   ['grid', '{ Row, Col }', '2.25 KB'],
   ['icon', '{ Icon }', '1.45 KB'],

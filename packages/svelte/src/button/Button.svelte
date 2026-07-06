@@ -24,6 +24,8 @@
      */
     colorful?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
+    /** 圆形按钮（border-radius:50%），配合 icon-only 呈正圆。spec §4 circle。 */
+    circle?: boolean;
     /** required for icon-only buttons */
     ariaLabel?: string;
     icon?: Snippet;
@@ -56,6 +58,7 @@
     loading = false,
     colorful: colorfulProp,
     htmlType = 'button',
+    circle = false,
     ariaLabel,
     icon,
     iconPosition = 'left',
@@ -105,6 +108,7 @@
       block && 'cd-button--block',
       loading && 'cd-button--loading',
       colorful && 'cd-button--colorful',
+      circle && 'cd-button--circle',
       iconOnly && 'cd-button--icon-only',
       icon && iconPosition === 'right' && 'cd-button--icon-right',
       noPad.left && 'cd-button--no-pad-left',
@@ -261,6 +265,10 @@
   }
   .cd-button--icon-only.cd-button--large {
     width: var(--cd-height-button-large);
+  }
+  /* 圆形按钮：正圆边框（配合 icon-only 的方形尺寸得到正圆）。仅形状 CSS，无新 token。 */
+  .cd-button--circle {
+    border-radius: 50%;
   }
   /* noHorizontalPadding：仅 icon 按钮去单/双侧水平内距（对齐 Semi） */
   .cd-button--no-pad-left {
