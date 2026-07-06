@@ -23,6 +23,7 @@ export const componentNamesZh: Record<string, string> = {
   drawer: '抽屉',
   dropdown: '下拉菜单',
   empty: '空状态',
+  floatbutton: '悬浮按钮',
   form: '表单',
   grid: '栅格',
   highlight: '文本高亮',

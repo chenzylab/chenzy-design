@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import { meta as buttonMeta } from '../src/button/meta.ts';
 import { meta as iconButtonMeta } from '../src/iconbutton/meta.ts';
+import { meta as floatButtonMeta } from '../src/float-button/meta.ts';
 import { meta as iconMeta } from '../src/icon/meta.ts';
 import { meta as dividerMeta } from '../src/divider/meta.ts';
 import { meta as spaceMeta } from '../src/space/meta.ts';
@@ -106,6 +107,7 @@ import { meta as aiChatInputMeta } from '../src/ai-chat-input/meta.ts';
 const metas = [
   buttonMeta,
   iconButtonMeta,
+  floatButtonMeta,
   iconMeta,
   dividerMeta,
   spaceMeta,

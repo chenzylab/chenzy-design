@@ -1,0 +1,91 @@
+/**
+ * Machine-readable component metadata for AI/docs consumption.
+ * FloatButton — see specs/components/basic/FloatButton.spec.md
+ */
+export const meta = {
+  name: 'FloatButton',
+  category: 'basic',
+  stage: 'M1',
+  semiEquivalent: 'FloatButton',
+  description:
+    '悬浮固定在视口的可操作按钮，用于承载全局快捷入口（AI 编辑、搜索、帮助、回到顶部等）。a11y 升级：无 href 渲染 <button type="button">，有 href 渲染 <a href target rel>（_blank 自动补 rel="noopener noreferrer"），天然键盘可达。icon-only 必须 ariaLabel（dev 缺失 warn）。可选包裹 Badge。形状 round(默认)/square、尺寸 small/default/large、colorful AI 渐变。定位靠 style 逻辑属性（inset-inline-end/inset-block-end），RTL 友好。FloatButtonGroup 将多个悬浮按钮平铺成一组（role="group"），统一分发点击回传 value。',
+  exports: ['FloatButton', 'FloatButtonGroup'],
+  props: [
+    { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标内容（Snippet）；icon-only 时需 ariaLabel' },
+    { name: 'badge', type: 'BadgeProps', default: 'undefined', desc: '徽章参数（复用本库 Badge：dot/count/overflowCount/showZero/type），有值时外层包裹 Badge' },
+    { name: 'shape', type: "'round'|'square'", default: "'round'", desc: '形状：round=圆角矩形，square=方形' },
+    { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '尺寸三档' },
+    { name: 'colorful', type: 'boolean', default: 'false', desc: 'AI 风格多彩渐变外观' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用（不触发跳转/onClick；button 用原生 disabled，a 用 aria-disabled 并移出 tab 序）' },
+    { name: 'href', type: 'string', default: 'undefined', desc: '有值时渲染为 <a>（语义化链接）' },
+    { name: 'target', type: 'string', default: 'undefined', desc: '链接打开目标；_blank 时自动补 rel="noopener noreferrer"' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可视文字时的可访问名（图标按钮必填，dev 缺失时 warn）' },
+    { name: 'onClick', type: '(e: MouseEvent) => void', default: 'undefined', desc: '点击回调；disabled 时不触发' },
+    { name: 'class', type: 'string', default: "''", desc: '根节点自定义类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '主要定位方式：设 inset-inline-end/inset-block-end（推荐，RTL 友好）或 bottom/right 等' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '按钮文字/内容（有则非 icon-only）' },
+  ],
+  events: [
+    { name: 'onClick', payload: 'MouseEvent', desc: '点击；disabled 时不触发' },
+  ],
+  slots: [
+    { name: 'icon', desc: '图标内容（也可用 icon prop）' },
+    { name: 'children', desc: '按钮文字/内容（有则非 icon-only）' },
+  ],
+  subComponents: [
+    {
+      name: 'FloatButtonGroup',
+      usage: '<FloatButtonGroup items={...} onClick={(value, e) => {}} />',
+      desc: '平铺容器（role="group" + aria-label），遍历 items 渲染多个 FloatButton，事件委托读 data-value 回传 value。各子项独立 button/a 逐个可 Tab。',
+      props: [
+        { name: 'items', type: 'FloatButtonGroupItem[]', default: '[]', desc: '子项数组；FloatButtonGroupItem = FloatButton 全部 props + { value: string; content?: Snippet|string }' },
+        { name: 'disabled', type: 'boolean', default: 'false', desc: '组级禁用样式' },
+        { name: 'ariaLabel', type: 'string', default: 'i18n 默认', desc: '组的可访问名；缺省取 locale FloatButton.groupAriaLabel' },
+        { name: 'onClick', type: '(value: string, e: MouseEvent) => void', default: 'undefined', desc: '组级点击委托，回传被点项 value' },
+        { name: 'class', type: 'string', default: "''", desc: '根节点自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '定位方式，同 FloatButton' },
+      ],
+    },
+  ],
+  a11y: {
+    role: 'button',
+    keyboard: ['Enter', 'Space'],
+    hasRole: true,
+    focusable: true,
+    note: '语义化元素：无 href → <button type=button>；有 href → <a href target rel>，_blank 补 rel=noopener noreferrer。icon-only 必须 aria-label（dev 缺失 warn）。Group role=group + aria-label，各子项逐个可 Tab。disabled：button 原生 disabled / a 用 aria-disabled + tabindex=-1。',
+  },
+  i18n: ['FloatButton.groupAriaLabel'],
+  tokens: [
+    '--cd-floatbutton-size-small',
+    '--cd-floatbutton-size-default',
+    '--cd-floatbutton-size-large',
+    '--cd-floatbutton-radius-round',
+    '--cd-floatbutton-radius-square',
+    '--cd-floatbutton-bg',
+    '--cd-floatbutton-bg-hover',
+    '--cd-floatbutton-bg-active',
+    '--cd-floatbutton-color',
+    '--cd-floatbutton-border',
+    '--cd-floatbutton-shadow',
+    '--cd-floatbutton-colorful-gradient',
+    '--cd-floatbutton-colorful-color',
+    '--cd-floatbutton-disabled-opacity',
+    '--cd-floatbutton-focus-ring',
+    '--cd-floatbutton-z',
+    '--cd-floatbutton-motion-duration',
+    '--cd-floatbutton-group-gap',
+  ],
+  responsive: false,
+  doNot: [
+    '不要用 div 假按钮（无键盘/无语义），本库用 <button>/<a> 语义化元素',
+    '不要漏 icon-only 的 aria-label（无可访问名，屏幕阅读器无法读出）',
+    '不要用物理属性定位（top/right），用逻辑属性 inset-inline-end/inset-block-end（RTL 友好）',
+  ],
+  examples: [
+    { title: '单悬浮按钮', code: '<FloatButton ariaLabel="帮助" style="inset-inline-end:24px; inset-block-end:24px">{#snippet icon()}?{/snippet}</FloatButton>' },
+    { title: '带徽章', code: '<FloatButton ariaLabel="通知，3 条未读" badge={{ count: 3 }} />' },
+    { title: 'colorful', code: '<FloatButton ariaLabel="AI 编辑" colorful />' },
+    { title: 'href 链接', code: '<FloatButton ariaLabel="文档" href="/docs" target="_blank" />' },
+    { title: 'Group 平铺', code: '<FloatButtonGroup items={[{ value: "help", ariaLabel: "帮助" }]} onClick={(v) => {}} />' },
+  ],
+} as const;
