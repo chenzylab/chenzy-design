@@ -182,6 +182,12 @@ export interface FloatingActionParams extends UseFloatingOptions {
    * reposition on re-show without rebuilding the portal.
    */
   open?: boolean;
+  /**
+   * Optional reposition key. Changing this value forces the action's `update`
+   * to run, which repositions the popup in place (parity with Semi `rePosKey`).
+   * The value itself is unused; only its identity change matters.
+   */
+  rePosKey?: string | number | undefined;
 }
 
 /**

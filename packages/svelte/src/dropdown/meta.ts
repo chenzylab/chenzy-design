@@ -47,6 +47,10 @@ export const meta = {
       desc: 'hover 模式下点击菜单项是否关闭浮层；false 时点击项不关闭（仅移出/Esc/外部点击收起），仅影响 hover 触发',
     },
     { name: 'zIndex', type: 'number', default: '1050', desc: '浮层层级（写入浮层内联 z-index）' },
+    { name: 'className', type: 'string', default: 'undefined', desc: '浮层根 <ul> 追加的自定义 className（下拉弹层外层）' },
+    { name: 'contentClassName', type: 'string', default: 'undefined', desc: '浮层内容根 className；本库浮层 <ul> 兼外层与内容根，与 className 并存' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '浮层根 <ul> 合并的自定义内联样式（勿含 position/transform）' },
+    { name: 'rePosKey', type: 'string | number', default: 'undefined', desc: '值变化时强制浮层重新定位（内容异步撑大等场景）' },
     {
       name: 'autoAdjustOverflow',
       type: 'boolean',
@@ -87,6 +91,7 @@ export const meta = {
     },
     { name: 'onSelect', type: '(key: string|number) => void', default: 'undefined' },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
+    { name: 'onEscKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '在 trigger 或浮层内按 Esc 键时触发（关闭逻辑之前）' },
     { name: 'triggerContent', type: 'Snippet', default: 'undefined', desc: '触发元素内容' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '自定义浮层内容（提供则忽略 items）' },
   ],

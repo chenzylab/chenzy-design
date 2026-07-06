@@ -52,6 +52,20 @@
     clickToHide?: boolean;
     /** 浮层层级（z-index），默认 1050。写入浮层内联 style 覆盖 token 默认值。 */
     zIndex?: number;
+    /** 浮层根 <ul> 追加的自定义 className（Semi Dropdown className，作用于下拉弹层外层）。 */
+    className?: string;
+    /**
+     * 浮层内容根 className（Semi Dropdown contentClassName）。
+     * 本库浮层 <ul> 同时是外层与内容根，故与 className 并存追加到同一 <ul>。
+     */
+    contentClassName?: string;
+    /** 浮层根 <ul> 合并的自定义内联样式（拼在内置 z-index 之后；勿含 position/transform，会与定位冲突）。 */
+    style?: string;
+    /**
+     * 值变化时强制浮层重新定位（Semi rePosKey）。透传 floating action，
+     * 值改变触发 action update → 重算位置（用于内容异步撑大等场景）。
+     */
+    rePosKey?: string | number;
     /**
      * 空间不足时自动翻转/移位到可视区（默认 true）。
      * 透传 floating action autoAdjust：false 时严格按 position 定位不翻转。
@@ -88,6 +102,8 @@
     stopPropagation?: boolean;
     onSelect?: (key: ItemKey) => void;
     onOpenChange?: (open: boolean) => void;
+    /** 在 trigger 或浮层内按下 Esc 键时触发（Semi onEscKeyDown），在关闭逻辑之前调用。 */
+    onEscKeyDown?: (e: KeyboardEvent) => void;
     triggerContent?: Snippet;
     children?: Snippet;
   }
@@ -107,6 +123,10 @@
     spacing = 4,
     clickToHide = true,
     zIndex = 1050,
+    className,
+    contentClassName,
+    style: overlayStyle,
+    rePosKey,
     autoAdjustOverflow = true,
     destroyOnClose = false,
     lazyRender = true,
@@ -117,6 +137,7 @@
     stopPropagation = true,
     onSelect,
     onOpenChange,
+    onEscKeyDown,
     triggerContent,
     children,
   }: Props = $props();
@@ -279,9 +300,12 @@
         }
         break;
       case 'Escape':
-        if (isOpen && closeOnEsc) {
-          e.preventDefault();
-          setOpen(false);
+        if (isOpen) {
+          onEscKeyDown?.(e);
+          if (closeOnEsc) {
+            e.preventDefault();
+            setOpen(false);
+          }
         }
         break;
       default:
@@ -309,6 +333,7 @@
         focusTopItem(-1);
         break;
       case 'Escape':
+        onEscKeyDown?.(e);
         if (closeOnEsc) {
           e.preventDefault();
           setOpen(false);
@@ -430,6 +455,16 @@
   function onMenuEvent(e: Event) {
     if (stopPropagation) e.stopPropagation();
   }
+
+  // 浮层根 <ul> 追加的 class：className（外层）+ contentClassName（内容根，本库同一 <ul>）。
+  const menuExtraCls = $derived(
+    [className, contentClassName].filter(Boolean).join(' '),
+  );
+
+  // 浮层根 <ul> 内联样式：内置 z-index + 可选 style（勿含 position/transform）。
+  const menuInlineStyle = $derived(
+    [`z-index:${zIndex}`, overlayStyle].filter(Boolean).join(';'),
+  );
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -475,11 +510,11 @@
   {#if isOpen && trigger === 'contextMenu'}
     <!-- contextMenu：浮层 portal 到 body 并定位到光标 x/y -->
     <ul
-      class="cd-dropdown__menu"
+      class="cd-dropdown__menu {menuExtraCls}"
       class:cd-dropdown__menu--motion={motion}
       id={menuId}
       bind:this={menuEl}
-      style="z-index: {zIndex}"
+      style={menuInlineStyle}
       use:cursorFloating={{ x: cursorX, y: cursorY }}
       role="menu"
       aria-labelledby={triggerId}
@@ -493,13 +528,13 @@
   {:else if shouldRender}
     <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
     <ul
-      class="cd-dropdown__menu"
+      class="cd-dropdown__menu {menuExtraCls}"
       class:cd-dropdown__menu--hidden={!isOpen}
       class:cd-dropdown__menu--motion={motion && isOpen}
       id={menuId}
       bind:this={menuEl}
-      style="z-index: {zIndex}"
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset, getContainer: resolvePopupContainer, open: isOpen }}
+      style={menuInlineStyle}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
       role="menu"
       aria-labelledby={triggerId}
       tabindex="-1"
