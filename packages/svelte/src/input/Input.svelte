@@ -183,7 +183,7 @@
   );
 
   // --- autoFocus 命令式（红线 #3）---
-  let inputEl: HTMLInputElement | undefined;
+  let inputEl = $state<HTMLInputElement | undefined>(undefined);
 
   $effect(() => {
     if (!autoFocus || !inputEl) return;

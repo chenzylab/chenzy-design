@@ -1,6 +1,6 @@
 // Input a11y 试点：使用 useLocale（clear/password 按钮的 aria-label 走 i18n）。
 // 验证 LocaleProvider wrapper 管线：clear 按钮可访问名来自 en_US 语言包。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Input from './Input.svelte';
 
@@ -54,5 +54,17 @@ describe('Input a11y', () => {
     expect(revealBtn?.getAttribute('aria-pressed')).toBe('false');
     expect(revealBtn?.getAttribute('aria-label')).toBeTruthy();
     await expectNoAxeViolations(container);
+  });
+
+  it('autoFocus：挂载后输入框获得焦点（inputEl 经 $state 绑定，effect 正确触发）', async () => {
+    const { container } = renderWithLocale(Input, {
+      props: { ariaLabel: 'Focused', autoFocus: true },
+    });
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+    // autoFocus 经 tick()+requestAnimationFrame 命令式 focus，异步等待焦点落定。
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(input);
+    });
   });
 });
