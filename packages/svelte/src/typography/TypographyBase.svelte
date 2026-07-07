@@ -532,6 +532,24 @@
       .join(' '),
   );
 
+  // 编辑态排版 class：继承宿主字号/字重/type 颜色（Title h1、Text small 等），
+  // 但剔除会干扰输入的修饰（ellipsis/mark/underline/delete/code/disabled），
+  // 编辑框需能换行、无省略、无背景高亮。
+  const editCls = $derived(
+    [
+      baseClass,
+      extraClass,
+      type !== 'default' && `${baseClass}--${type}`,
+      size !== 'default' && !extraClass?.includes(`${baseClass}--title`) && `${baseClass}--size-${size}`,
+      strong && `${baseClass}--strong`,
+      italic && `${baseClass}--italic`,
+      spacing === 'extended' && `${baseClass}--spacing-extended`,
+      `${baseClass}__edit-input`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
   // ellipsis 行内样式: 多行用 line-clamp; 单行用 text-overflow.
   const ellipsisStyle = $derived.by(() => {
     if (!ellipsisCfg || expanded) return '';
@@ -617,11 +635,11 @@
 {/snippet}
 
 {#if editApi && editing}
-  <!-- inline edit mode: textarea 替换文本 -->
+  <!-- inline edit mode: textarea 替换文本；textarea 挂宿主排版 class 继承字号/字重/type 颜色 -->
   <span class="{baseClass}__edit-wrap">
     <textarea
       bind:this={textareaEl}
-      class="{baseClass}__edit-input"
+      class={editCls}
       value={draft}
       maxlength={editableCfg?.maxLength}
       aria-label={editLabel}
@@ -876,7 +894,7 @@
     display: block;
     max-inline-size: 100%;
   }
-  :global(.cd-typography-_action) {
+  :global(.cd-typography__action) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -890,17 +908,17 @@
     vertical-align: middle;
     transition: color var(--cd-motion-duration-fast, 120ms) ease;
   }
-  :global(.cd-typography-_action:hover) {
+  :global(.cd-typography__action:hover) {
     color: var(--cd-typography-action-color-hover);
   }
-  :global(.cd-typography-_action:focus-visible) {
+  :global(.cd-typography__action:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  :global(.cd-typography-_action--copy.is-copied) {
+  :global(.cd-typography__action--copy.is-copied) {
     color: var(--cd-color-typography-copied-icon-success);
   }
-  :global(.cd-typography-_expand) {
+  :global(.cd-typography__expand) {
     margin-inline-start: var(--cd-spacing-typography-expandtext-marginleft);
     padding: 0;
     border: 0;
@@ -909,37 +927,48 @@
     cursor: pointer;
     font: inherit;
   }
-  :global(.cd-typography-_expand:hover) {
+  :global(.cd-typography__expand:hover) {
     color: var(--cd-color-typography-link-text-hover);
   }
-  :global(.cd-typography-_expand:focus-visible) {
+  :global(.cd-typography__expand:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: 2px;
   }
-  :global(.cd-typography-_edit-wrap) {
-    display: inline-block;
-    width: 100%;
+  /* ── 编辑态：对齐 Ant Design 内联编辑外观 ──
+     wrap 贴合内容宽（inline-flex，不撑满容器）；textarea 继承宿主排版 class
+     的字号/字重/type 颜色，仅补齐边框/内边距/换行行为，宽度随内容而非 100%。 */
+  :global(.cd-typography__edit-wrap) {
+    display: inline-flex;
+    max-inline-size: 100%;
+    vertical-align: bottom;
   }
-  :global(.cd-typography-_edit-input) {
-    width: 100%;
+  :global(.cd-typography__edit-input) {
     box-sizing: border-box;
-    font: inherit;
-    color: inherit;
+    inline-size: auto;
+    min-inline-size: 4em;
+    max-inline-size: 100%;
+    /* 现代浏览器：随内容伸缩宽度；不支持时退回 min/max 约束 + 容器宽度上限 */
+    field-sizing: content;
+    margin: 0;
     padding: 2px 6px;
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-color-bg-1);
+    color: inherit;
+    /* 编辑态需换行输入，覆盖可能来自排版 class 的 ellipsis 相关 white-space */
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
     resize: none;
     overflow: hidden;
   }
-  :global(.cd-typography-_edit-input:focus-visible) {
+  :global(.cd-typography__edit-input:focus-visible) {
     outline: none;
     border-color: var(--cd-color-primary);
     box-shadow: var(--cd-focus-ring);
   }
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-typography-_action) {
+    :global(.cd-typography__action) {
       transition: none;
     }
   }
