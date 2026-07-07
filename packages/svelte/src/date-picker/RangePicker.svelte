@@ -31,14 +31,22 @@
     gridFocusMove,
     daysBetween,
     type GridFocusKey,
+    type Placement,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1;
   type RangeType = 'dateRange' | 'dateTimeRange' | 'monthRange';
   type RangeValue = [Date | null, Date | null];
+  type PresetPosition = 'left' | 'right' | 'top' | 'bottom';
+  // 快捷区间：value 为 [start, end] 元组或惰性求值函数（点击时即时求值）。
+  interface RangePreset {
+    label: string;
+    value: [Date, Date] | (() => [Date, Date]);
+  }
 
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值。与 DatePicker 一致。
   interface DisabledTime {
@@ -73,14 +81,28 @@
     needConfirm?: boolean;
     /** 起止跨度上限（天）。选定起始后，超出该跨度的日期被禁用。 */
     maxRange?: number;
+    /**
+     * 单击范围选择：与 endDateOffset 同时提供后，用户单击某日即选定区间
+     * [startDateOffset(clicked), endDateOffset(clicked)]（如周选择：返回该周一/周日），一步完成、
+     * 不进「点起始→点结束」两步状态机。仅 dateRange/dateTimeRange 生效（monthRange 不适用）。
+     */
+    startDateOffset?: (date: Date) => Date;
+    /** 单击范围选择的结束偏移；与 startDateOffset 同时提供才生效。见 startDateOffset。 */
+    endDateOffset?: (date: Date) => Date;
     weekStart?: WeekStart;
     locale?: string;
+    /** 快捷区间列表（点击直接选定整段 [start, end]）。未传时面板与现状一致。 */
+    presets?: RangePreset[];
+    /** 快捷区间列表位置（默认 'bottom'）。 */
+    presetPosition?: PresetPosition;
     onChange?: (v: RangeValue | null) => void;
     onOpenChange?: (open: boolean) => void;
     /** 可见年月切换 (头部导航)。panelDate 为左面板月份。 */
     onPanelChange?: (e: { panelDate: Date }) => void;
     /** 点击清除。 */
     onClear?: (e: Record<string, never>) => void;
+    /** 点击快捷区间选项。 */
+    onPresetClick?: (e: { preset: RangePreset }) => void;
     /** 点击确认按钮（needConfirm）。 */
     onConfirm?: (e: { value: RangeValue | null }) => void;
     /** 点击取消按钮（needConfirm）。 */
@@ -90,13 +112,27 @@
     /** 触发器失去焦点。 */
     onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
+    /** 浮层弹出位置（默认 'bottomLeft'）。 */
+    position?: string;
+    /** 浮层自动调整位置防溢出（默认 true）。 */
+    autoAdjustOverflow?: boolean;
+    /** 触发器与浮层间距（px）。 */
+    spacing?: number;
+    /** 浮层挂载容器（默认 document.body）。 */
+    getPopupContainer?: () => HTMLElement;
+    /** 浮层相对触发器的额外偏移；number 叠加到间距，对象 { y } 叠加纵向间距（x 暂不支持）。 */
+    dropdownMargin?: number | { x?: number; y?: number };
+    /** 根节点额外 className */
+    class?: string;
+    /** 根节点内联样式 */
+    style?: string;
   }
 
   let {
     type = 'dateRange',
     value,
     defaultValue = null,
-    open,
+    open: openProp,
     defaultOpen = false,
     startPlaceholder,
     endPlaceholder,
@@ -111,21 +147,35 @@
     disabledTimePicker = false,
     needConfirm,
     maxRange,
+    startDateOffset,
+    endDateOffset,
     weekStart = 0,
     locale = 'zh-CN',
+    presets,
+    presetPosition = 'bottom',
     onChange,
     onOpenChange,
     onPanelChange,
     onClear,
+    onPresetClick,
     onConfirm,
     onCancel,
     onFocus,
     onBlur,
     ariaLabel,
+    position = 'bottomLeft',
+    autoAdjustOverflow = true,
+    spacing,
+    getPopupContainer,
+    dropdownMargin,
+    class: className = '',
+    style = undefined,
   }: Props = $props();
 
   const isDateTime = $derived(type === 'dateTimeRange');
   const isMonth = $derived(type === 'monthRange');
+  // 单击范围选择：start+end offset 都提供且非 monthRange 时启用（点一次即选定整个区间）。
+  const offsetSelect = $derived(!isMonth && !!startDateOffset && !!endDateOffset);
   // needConfirm：显式传优先；否则 dateTimeRange 默认 true、其它默认 false。
   const effNeedConfirm = $derived(needConfirm ?? isDateTime);
 
@@ -169,9 +219,9 @@
   }
 
   // --- 受控 open (红线 #1) ---
-  const isOpenControlled = $derived(open !== undefined);
+  const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(untrack(() => defaultOpen));
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
@@ -189,6 +239,9 @@
   let phase = $state<'start' | 'end'>('start');
   let pendingStart = $state<Date | null>(null);
   let previewEnd = $state<Date | null>(null);
+  // offsetSelect 模式的 hover 预览端点（单击范围选择时，悬停整段高亮 [start,end]）。
+  let offsetPreviewStart = $state<Date | null>(null);
+  let offsetPreviewEnd = $state<Date | null>(null);
 
   // dateTimeRange needConfirm：pending 缓冲的起止（含时间），点确定才提交。
   // 面板打开时同步为当前 value；选日期/时间只改 pending。
@@ -215,8 +268,12 @@
       highlight = startOfDay(startVal ?? new Date());
       pendingValue = [startVal, endVal];
       activeEnd = 'start';
+      offsetPreviewStart = null;
+      offsetPreviewEnd = null;
     } else {
       highlight = null;
+      offsetPreviewStart = null;
+      offsetPreviewEnd = null;
     }
   });
 
@@ -295,9 +352,13 @@
     setCursor(addMonths(cursor, isMonth ? 12 : 1));
   }
 
-  // 选区端点（选择中用 pendingStart + previewEnd，否则用面板生效值）
-  const rangeStart = $derived(phase === 'end' ? pendingStart : panelStart);
-  const rangeEnd = $derived(phase === 'end' ? previewEnd : panelEnd);
+  // 选区端点：offsetSelect hover 预览优先；否则选择中用 pendingStart + previewEnd，再否则用面板生效值。
+  const rangeStart = $derived(
+    offsetSelect && offsetPreviewStart ? offsetPreviewStart : phase === 'end' ? pendingStart : panelStart,
+  );
+  const rangeEnd = $derived(
+    offsetSelect && offsetPreviewEnd ? offsetPreviewEnd : phase === 'end' ? previewEnd : panelEnd,
+  );
   // 比较基准：dateRange 按「天」；monthRange 按「月」（归一到月 1 号起始）。
   function normUnit(d: Date): Date {
     return isMonth ? startOfMonth(d) : startOfDay(d);
@@ -351,6 +412,24 @@
 
   function selectDate(date: Date) {
     if (isCellDisabled(date)) return;
+    // 单击范围选择（startDateOffset/endDateOffset）：一步算出起止并提交，不进两步状态机。
+    if (offsetSelect && startDateOffset && endDateOffset) {
+      const s = startOfDay(startDateOffset(date));
+      const e = startOfDay(endDateOffset(date));
+      const [loDay, hiDay] = s.getTime() <= e.getTime() ? [s, e] : [e, s];
+      const lo = combineDay(loDay, isDateTime ? pendingValue[0] : null);
+      const hi = combineDay(hiDay, isDateTime ? pendingValue[1] : null);
+      phase = 'start';
+      pendingStart = null;
+      previewEnd = null;
+      if (effNeedConfirm) {
+        pendingValue = [lo, hi];
+      } else {
+        setValue([lo, hi]);
+        setOpen(false);
+      }
+      return;
+    }
     const day = isMonth ? startOfMonth(date) : startOfDay(date);
     if (phase === 'start') {
       pendingStart = day;
@@ -386,6 +465,13 @@
   }
 
   function onCellHover(date: Date) {
+    if (offsetSelect && startDateOffset && endDateOffset) {
+      // 单击范围选择：悬停即预览整段 [startDateOffset, endDateOffset]。
+      if (isCellDisabled(date)) return;
+      offsetPreviewStart = startOfDay(startDateOffset(date));
+      offsetPreviewEnd = startOfDay(endDateOffset(date));
+      return;
+    }
     if (phase === 'end' && !isCellDisabled(date)) previewEnd = isMonth ? startOfMonth(date) : startOfDay(date);
   }
 
@@ -397,6 +483,8 @@
     phase = 'start';
     pendingStart = null;
     previewEnd = null;
+    offsetPreviewStart = null;
+    offsetPreviewEnd = null;
     onClear?.({});
   }
 
@@ -495,6 +583,30 @@
     setOpen(false);
   }
 
+  // --- presets：点击快捷区间直接选定整段（惰性 value 即时求值）。复用现有区间提交路径。 ---
+  function selectRangePreset(preset: RangePreset) {
+    onPresetClick?.({ preset });
+    const raw = typeof preset.value === 'function' ? preset.value() : preset.value;
+    // 按 type 归一（dateRange 归零到当天起始 / dateTimeRange 保时分秒 / monthRange 落每月 1 号），
+    // 再自动排序确保 start<=end。
+    const s = normOne(raw[0], type);
+    const e = normOne(raw[1], type);
+    if (!s || !e) return;
+    const [lo, hi] = s.getTime() <= e.getTime() ? [s, e] : [e, s];
+    // 复位选择状态机（与 selectDate 提交分支一致）。
+    phase = 'start';
+    pendingStart = null;
+    previewEnd = null;
+    activeEnd = 'end';
+    if (effNeedConfirm) {
+      // needConfirm：进 pending 缓冲，等用户点确定。
+      pendingValue = [lo, hi];
+    } else {
+      setValue([lo, hi]);
+      setOpen(false);
+    }
+  }
+
   // 高亮所在面板：在左面板月份则左，否则右（决定 aria-activedescendant 落哪个网格）
   const highlightInLeft = $derived(
     !!highlight &&
@@ -572,15 +684,62 @@
   // --- useDismiss (红线 #3) ---
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+  let triggerEl = $state<HTMLButtonElement | null>(null);
+
+  // --- 命令式 Methods（对齐 Semi API 形状）---
+  export function open(): void {
+    setOpen(true);
+  }
+  export function close(): void {
+    setOpen(false);
+  }
+  // RangePicker 触发器为单个 button（非起止双输入框），focusType 无法精确落焦到起止端，
+  // 退化为聚焦整个触发器；保留签名以对齐 Semi API 形状。
+  export function focus(focusType?: 'rangeStart' | 'rangeEnd'): void {
+    void focusType;
+    triggerEl?.focus();
+  }
+  export function blur(): void {
+    triggerEl?.blur();
+  }
   let leftGridEl = $state<HTMLDivElement | null>(null);
   let rightGridEl = $state<HTMLDivElement | null>(null);
   $effect(() => {
     if (!isOpen || !rootEl) return;
+    // panel portal 出 root 子树后列入 extraTargets，否则面板内点击被误判为外部点击而误关。
     return useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [panelEl],
     });
+  });
+
+  // position（'bottomLeft'/'bottomRight'/'topLeft'/…）→ use:floating 的 Placement。
+  // 缺省或未知值回退 'bottomStart'（触发器正下方偏左，与原 CSS 视觉一致）。
+  const POSITION_TO_PLACEMENT: Record<string, Placement> = {
+    bottomLeft: 'bottomStart',
+    bottomRight: 'bottomEnd',
+    bottom: 'bottom',
+    topLeft: 'topStart',
+    topRight: 'topEnd',
+    top: 'top',
+    leftTop: 'leftStart',
+    leftBottom: 'leftEnd',
+    left: 'left',
+    rightTop: 'rightStart',
+    rightBottom: 'rightEnd',
+    right: 'right',
+  };
+  const resolvedPlacement = $derived<Placement>(POSITION_TO_PLACEMENT[position] ?? 'bottomStart');
+
+  // 触发器与浮层间距：spacing 优先，未传回退默认 4（近似原 calc(100% + extra-tight)）；
+  // 再叠加 dropdownMargin（number 直接加，对象取 y ?? 0；x 方向本 action 不单独支持，忽略）。
+  const resolvedOffset = $derived.by(() => {
+    const base = spacing ?? 4;
+    if (typeof dropdownMargin === 'number') return base + dropdownMargin;
+    if (dropdownMargin && typeof dropdownMargin === 'object') return base + (dropdownMargin.y ?? 0);
+    return base;
   });
 
   // --- focus trap (红线 #3): 困住 Tab、关闭归还焦点；进场落焦高亮所在网格 ---
@@ -603,17 +762,23 @@
       disabled && 'cd-range-picker--disabled',
       isOpen && 'cd-range-picker--open',
       isDateTime && 'cd-range-picker--datetime',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
   const showFooter = $derived(isDateTime || effNeedConfirm);
+  // presets 是否有效（有值时渲染；monthRange 仍渲染，value 落每月 1 号，与 monthRange 语义一致）。
+  const hasPresets = $derived(!!presets && presets.length > 0);
+  // left/right 竖排；top/bottom 横排。
+  const presetsVertical = $derived(presetPosition === 'left' || presetPosition === 'right');
 </script>
 
-<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
+<div class={cls} style={style || undefined} bind:this={rootEl} aria-invalid={status === 'error' || undefined}>
   <div class="cd-range-picker__control">
     <button
+      bind:this={triggerEl}
       type="button"
       class="cd-range-picker__trigger"
       aria-haspopup="dialog"
@@ -648,7 +813,24 @@
   </div>
 
   {#if isOpen}
-    <div bind:this={panelEl} class="cd-range-picker__panel" id={dialogId} role="dialog" aria-modal="false" aria-label={loc().t('DatePicker.rangeTriggerLabel')} tabindex="-1">
+    <div
+      bind:this={panelEl}
+      use:floating={{
+        trigger: rootEl,
+        placement: resolvedPlacement,
+        autoAdjust: autoAdjustOverflow,
+        offset: resolvedOffset,
+        getContainer: getPopupContainer,
+        open: isOpen,
+      }}
+      class="cd-range-picker__panel"
+      id={dialogId}
+      role="dialog"
+      aria-modal="false"
+      aria-label={loc().t('DatePicker.rangeTriggerLabel')}
+      tabindex="-1"
+    >
+      {#snippet panelsBlock()}
       <div class="cd-range-picker__panels">
         {#if isMonth}
           <!-- monthRange：左右各一「月份」面板（12 个月格），头部显示年份 + 左右切年 -->
@@ -1050,6 +1232,46 @@
           </div>
         {/if}
       </div>
+      {/snippet}
+
+      {#snippet presetGroup()}
+        <div
+          class="cd-range-picker__presets"
+          class:cd-range-picker__presets--vertical={presetsVertical}
+          role="group"
+          aria-label={loc().t('DatePicker.rangeTriggerLabel')}
+        >
+          {#each presets ?? [] as preset, i (i)}
+            <button
+              type="button"
+              class="cd-range-picker__preset"
+              onclick={() => selectRangePreset(preset)}
+            >
+              {preset.label}
+            </button>
+          {/each}
+        </div>
+      {/snippet}
+
+      {#if hasPresets}
+        <div
+          class="cd-range-picker__layout"
+          class:cd-range-picker__layout--presets-top={presetPosition === 'top'}
+          class:cd-range-picker__layout--presets-bottom={presetPosition === 'bottom'}
+          class:cd-range-picker__layout--presets-left={presetPosition === 'left'}
+          class:cd-range-picker__layout--presets-right={presetPosition === 'right'}
+        >
+          {#if presetPosition === 'left' || presetPosition === 'top'}
+            {@render presetGroup()}
+          {/if}
+          {@render panelsBlock()}
+          {#if presetPosition === 'right' || presetPosition === 'bottom'}
+            {@render presetGroup()}
+          {/if}
+        </div>
+      {:else}
+        {@render panelsBlock()}
+      {/if}
 
       {#if showFooter}
         <div class="cd-range-picker__footer">
@@ -1162,9 +1384,7 @@
     border-radius: var(--cd-border-radius-small);
   }
   .cd-range-picker__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
-    inset-inline-start: 0;
+    /* 定位（position/inset/transform）由 use:floating action 接管；此处仅保留视觉样式。 */
     z-index: var(--cd-date-picker-panel-z);
     padding: var(--cd-spacing-base-tight);
     background: var(--cd-date-picker-panel-bg);
@@ -1173,6 +1393,75 @@
   }
   .cd-range-picker__panel:focus-visible {
     outline: none;
+  }
+  /* presets 布局：left/right 时 presets 与面板横向并排；top/bottom 时整体竖排。 */
+  .cd-range-picker__layout {
+    display: flex;
+    align-items: stretch;
+  }
+  .cd-range-picker__layout--presets-top,
+  .cd-range-picker__layout--presets-bottom {
+    flex-direction: column;
+  }
+  .cd-range-picker__presets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-extra-tight);
+    margin-inline-end: var(--cd-spacing-base-tight);
+    padding-inline-end: var(--cd-spacing-base-tight);
+    border-inline-end: 1px solid var(--cd-color-date-picker-border-bg-default);
+    min-inline-size: 5rem;
+  }
+  /* top/bottom 时横向排列 presets */
+  .cd-range-picker__presets:not(.cd-range-picker__presets--vertical) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-inline-end: 0;
+    padding-inline-end: 0;
+    border-inline-end: none;
+    margin-block-end: var(--cd-spacing-tight);
+    padding-block-end: var(--cd-spacing-tight);
+    border-block-end: 1px solid var(--cd-color-date-picker-border-bg-default);
+    min-inline-size: unset;
+  }
+  /* right 侧预设：切换 margin/border 方向 */
+  .cd-range-picker__layout--presets-right .cd-range-picker__presets {
+    margin-inline-end: 0;
+    padding-inline-end: 0;
+    border-inline-end: none;
+    margin-inline-start: var(--cd-spacing-base-tight);
+    padding-inline-start: var(--cd-spacing-base-tight);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  }
+  /* bottom 侧预设 */
+  .cd-range-picker__layout--presets-bottom .cd-range-picker__presets {
+    margin-block-end: 0;
+    padding-block-end: 0;
+    border-block-end: none;
+    margin-block-start: var(--cd-spacing-tight);
+    padding-block-start: var(--cd-spacing-tight);
+    border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  }
+  .cd-range-picker__preset {
+    padding-inline: var(--cd-spacing-tight);
+    padding-block: var(--cd-spacing-extra-tight);
+    border: none;
+    border-radius: var(--cd-width-date-picker-quick-control-border-radius);
+    background: var(--cd-color-date-picker-quick-bg-default);
+    color: var(--cd-color-date-picker-date-text-default);
+    font: inherit;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-range-picker__preset:hover {
+    background: var(--cd-date-picker-cell-bg-hover);
+    color: var(--cd-color-date-picker-quick-button-text-default);
+  }
+  .cd-range-picker__preset:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
   /* 双面板：左右两个月历并排 */
   .cd-range-picker__panels {

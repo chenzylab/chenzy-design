@@ -11,6 +11,8 @@
   import { tick, type Snippet } from 'svelte';
   import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey, type ScrollListValue } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
+  import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
 
   type Size = 'small' | 'default' | 'large';
@@ -73,7 +75,12 @@
     timeZone?: string;
     /** token 格式串 (YYYY/MM/DD/HH/mm/ss)。传入则触发器变可输入文本框，显示+手输解析按此格式。 */
     format?: string;
-    onChange?: (v: Date | Date[] | null) => void;
+    /**
+     * 值变化回调。第二参 dateString 为按当前格式化规则得到的字符串（multiple/range 用
+     * rangeSeparator 连接）。参数顺序由 onChangeWithDateFirst 控制：默认 (value, dateString)；
+     * onChangeWithDateFirst=false 时 (dateString, value)。历史用法仅取第一参 value，故默认保持 value-first。
+     */
+    onChange?: (value: Date | Date[] | null, dateString: string) => void;
     onOpenChange?: (open: boolean) => void;
     /** 手动键入解析失败 (editable 模式)。 */
     onParseError?: (e: { text: string }) => void;
@@ -97,9 +104,7 @@
      * 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分。仅 insetLabel 存在时生效。
      */
     insetLabelId?: string;
-    /** 用 Snippet 自定义范围分隔符，优先于 rangeSeparator 字符串。 */
-    rangeSeparatorNode?: Snippet;
-    /** 选完月/年后自动切换到日视图（默认 true）。 */
+    /** 年月滚轮（PANEL_YAM）里选完年/月后自动切回日期网格视图（默认 true）。 */
     autoSwitchDate?: boolean;
     /** 浮层自动调整位置防溢出（默认 true）。 */
     autoAdjustOverflow?: boolean;
@@ -115,7 +120,10 @@
     weekStartsOn?: WeekStart;
     /** 点击取消按钮。 */
     onCancel?: (date: Date | Date[] | null, dateStr: string) => void;
-    /** onChange 参数改为 dateFirst（仅声明，透传语义）。 */
+    /**
+     * 控制 onChange 参数顺序。默认 true → (value, dateString)（对齐 Semi 默认，且与历史 value-first 用法一致）；
+     * 设为 false → (dateString, value)。
+     */
     onChangeWithDateFirst?: boolean;
     /** 点击外部关闭时触发。 */
     onClickOutSide?: (e: MouseEvent) => void;
@@ -153,6 +161,10 @@
     preventScroll?: boolean;
     /** 阻止浮层点击事件冒泡（默认 true） */
     stopPropagation?: boolean;
+    /** 根节点额外 className */
+    class?: string;
+    /** 根节点内联样式 */
+    style?: string;
 
     // --- 插槽类 ---
     /** 面板顶部额外区域 */
@@ -171,16 +183,10 @@
     max?: number;
     /** 范围日期分隔符（默认 '~'） */
     rangeSeparator?: string;
-    /** 单击选择范围的起始偏移 */
-    startDateOffset?: (date: Date) => Date;
-    /** 单击选择范围的结束偏移 */
-    endDateOffset?: (date: Date) => Date;
     /** 年份滚轮最小年 */
     startYear?: number;
     /** 年份滚轮最大年 */
     endYear?: number;
-    /** 范围选择双面板同步切换月份（默认 false） */
-    syncSwitchMonth?: boolean;
 
     // --- 自定义渲染 ---
     /** 自定义日期单元格内容 */
@@ -191,8 +197,6 @@
     triggerRender?: Snippet<[{ value: Date | Date[] | null; placeholder: string }]>;
 
     // --- 时间相关 ---
-    /** 透传给内部 TimePicker 的参数 */
-    timePickerOpts?: Record<string, unknown>;
     /** 隐藏禁止的时间选项 */
     hideDisabledOptions?: boolean;
     /** 禁止时间选择 */
@@ -213,7 +217,7 @@
     type = 'date',
     value,
     defaultValue = null,
-    open,
+    open: openProp,
     defaultOpen = false,
     placeholder,
     size = 'default',
@@ -241,7 +245,6 @@
     ariaLabel,
     insetLabel,
     insetLabelId,
-    rangeSeparatorNode,
     rangeSeparator = '~',
     autoSwitchDate = true,
     autoAdjustOverflow = true,
@@ -252,7 +255,7 @@
     weekStartsOn,
     yearAndMonthOpts,
     onCancel,
-    onChangeWithDateFirst = false,
+    onChangeWithDateFirst = true,
     onClickOutSide,
     // 外观类
     borderless = false,
@@ -271,6 +274,8 @@
     motion = true,
     preventScroll = false,
     stopPropagation = true,
+    class: className = '',
+    style = undefined,
     // 插槽类
     topSlot,
     bottomSlot,
@@ -279,17 +284,13 @@
     // 日期范围增强
     multiple = false,
     max,
-    startDateOffset,
-    endDateOffset,
     startYear,
     endYear,
-    syncSwitchMonth = false,
     // 自定义渲染
     renderDate,
     renderFullDate,
     triggerRender,
     // 时间相关
-    timePickerOpts,
     hideDisabledOptions = false,
     disabledTimePicker = false,
     needConfirm = false,
@@ -334,13 +335,22 @@
 
   function setValue(next: Date | Date[] | null) {
     if (!isValueControlled) innerValue = next;
-    onChange?.(next);
+    if (onChange) {
+      // 第二参 dateString：按当前格式化规则序列化 next（multiple 用 rangeSeparator 连接）。
+      const dateStr = Array.isArray(next)
+        ? next.map(formatSingle).join(` ${rangeSeparator} `)
+        : formatSingle(next);
+      // onChangeWithDateFirst 默认 true → (value, dateString)；false → (dateString, value)。
+      if (onChangeWithDateFirst) onChange(next, dateStr);
+      // onChangeWithDateFirst=false：故意反转为 (dateString, value)，类型以默认 value-first 声明，此处 cast。
+      else (onChange as (a: unknown, b: unknown) => void)(dateStr, next);
+    }
   }
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
+  const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
 
   function getInitialOpen(): boolean {
     return defaultOpen;
@@ -355,6 +365,20 @@
   function toggleOpen() {
     if (disabled) return;
     setOpen(!isOpen);
+  }
+
+  // --- 命令式 Methods（对齐 Semi API 形状）---
+  export function open(): void {
+    setOpen(true);
+  }
+  export function close(): void {
+    setOpen(false);
+  }
+  export function focus(): void {
+    triggerEl?.focus({ preventScroll });
+  }
+  export function blur(): void {
+    triggerEl?.blur();
   }
 
   // --- 面板游标月份 (本地 $state)，打开时同步到 value/today 月份 ---
@@ -746,11 +770,16 @@
   ]);
 
   // 滚轮选中 → 只跳转面板游标（不写 value，对齐 Semi「选完回主面板继续选日」）。
+  // autoSwitchDate=true 且当前面板存在日期网格（type='date'/'dateTime'）时，选完年/月
+  // 自动切回日期网格视图（关闭滚轮）；否则停留在滚轮（对齐 Semi autoSwitchDate）。
   function onYamChange(info: { value: ScrollListValue | ScrollListValue[] }): void {
     const vals = Array.isArray(info.value) ? info.value : [info.value];
     const year = typeof vals[0] === 'number' ? vals[0] : cursor.getFullYear();
     const month = typeof vals[1] === 'number' ? vals[1] : cursor.getMonth();
     setCursor(new Date(year, month, 1));
+    if (autoSwitchDate && (type === 'date' || type === 'dateTime')) {
+      yamOpen = false;
+    }
   }
 
   // 点头部标题：year 面板仍用十年格切换（不进滚轮），其余面板进年月滚轮。
@@ -1042,17 +1071,21 @@
     if (!isOpen || !rootEl) return;
     // onClickOutSide 额外监听
     function handleDocClick(e: MouseEvent) {
-      if (rootEl && !rootEl.contains(e.target as Node)) {
+      const target = e.target as Node;
+      // panel portal 出 root 子树，需一并排除，否则面板内点击被误判为外部点击。
+      if (rootEl && !rootEl.contains(target) && !panelEl?.contains(target)) {
         onClickOutSide?.(e);
       }
     }
     if (onClickOutSide) {
       document.addEventListener('click', handleDocClick, true);
     }
+    // panel portal 出 root 子树后列入 extraTargets，否则面板内点击被判为外部点击而误关。
     const cleanup = useDismiss(rootEl, {
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [panelEl],
     });
     return () => {
       if (onClickOutSide) {
@@ -1072,18 +1105,6 @@
       if (gridEl) gridEl.focus();
     });
     return () => trap.deactivate();
-  });
-
-  // onClickOutSide: 监听 document mousedown，点击不在 rootEl 内时触发
-  $effect(() => {
-    if (!onClickOutSide) return;
-    function handler(e: MouseEvent) {
-      if (rootEl && !rootEl.contains(e.target as Node)) {
-        onClickOutSide!(e);
-      }
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
   });
 
   // stopPropagation：面板点击阻止冒泡
@@ -1108,6 +1129,34 @@
     [dropdownStyleStr, `z-index:${zIndex}`].filter(Boolean).join(';'),
   );
 
+  // position（'bottomLeft'/'bottomRight'/'topLeft'/…）→ use:floating 的 Placement。
+  // 缺省或未知值回退 'bottomStart'（触发器正下方偏左，与原 CSS 视觉一致）。
+  const POSITION_TO_PLACEMENT: Record<string, Placement> = {
+    bottomLeft: 'bottomStart',
+    bottomRight: 'bottomEnd',
+    bottom: 'bottom',
+    topLeft: 'topStart',
+    topRight: 'topEnd',
+    top: 'top',
+    leftTop: 'leftStart',
+    leftBottom: 'leftEnd',
+    left: 'left',
+    rightTop: 'rightStart',
+    rightBottom: 'rightEnd',
+    right: 'right',
+  };
+  const resolvedPlacement = $derived<Placement>(POSITION_TO_PLACEMENT[position] ?? 'bottomStart');
+
+  // 触发器与浮层间距：spacing（number）优先，未传回退默认 4（近似原
+  // calc(100% + extra-tight) 的紧邻视觉）；再叠加 dropdownMargin（number 直接加，
+  // 对象取 y ?? 0；x 方向本 action 不单独支持，忽略）。
+  const resolvedOffset = $derived.by(() => {
+    const base = spacing ?? 4;
+    if (typeof dropdownMargin === 'number') return base + dropdownMargin;
+    if (dropdownMargin && typeof dropdownMargin === 'object') return base + (dropdownMargin.y ?? 0);
+    return base;
+  });
+
   const cls = $derived(
     [
       'cd-date-picker',
@@ -1120,6 +1169,7 @@
       borderless && 'cd-date-picker--borderless',
       density === 'compact' && 'cd-date-picker--compact',
       !motion && 'cd-date-picker--no-motion',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -1142,7 +1192,7 @@
   const presetsVertical = $derived(presetPosition === 'left' || presetPosition === 'right');
 </script>
 
-<div class={cls} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
+<div class={cls} style={style || undefined} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
   <div class="cd-date-picker__control" class:cd-date-picker__control--inset-label={hasInsetLabel}>
     {#if hasInsetLabel}
       <span class="cd-date-picker__inset-label" id={insetLabelId}>
@@ -1239,6 +1289,14 @@
   {#if isOpen}
     <div
       bind:this={panelEl}
+      use:floating={{
+        trigger: rootEl,
+        placement: resolvedPlacement,
+        autoAdjust: autoAdjustOverflow,
+        offset: resolvedOffset,
+        getContainer: getPopupContainer,
+        open: isOpen,
+      }}
       class={['cd-date-picker__panel', dropdownClassName].filter(Boolean).join(' ')}
       class:cd-date-picker__panel--datetime={isDateTime}
       id={dialogId}
@@ -1765,9 +1823,7 @@
     color: var(--cd-color-text-0);
   }
   .cd-date-picker__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
-    inset-inline-start: 0;
+    /* 定位（position/inset/transform）由 use:floating action 接管；此处仅保留视觉样式。 */
     z-index: var(--cd-date-picker-panel-z, 1030);
     padding: var(--cd-spacing-base-tight);
     background: var(--cd-date-picker-panel-bg);
