@@ -9,7 +9,12 @@ export interface FloatButtonBadgeProps {
   type?: 'primary' | 'secondary' | 'tertiary' | 'success' | 'warning' | 'danger';
 }
 
-export type FloatButtonShape = 'round' | 'square';
+/**
+ * 形状：`'round'`（正圆，默认，对齐 Semi）/ `'square'`（小圆角方形），
+ * 或任意 CSS border-radius 字符串（如 `'8px'` / `'30%'` / `'50%'`）自定义圆角
+ * （本库相较 Semi 额外提供的灵活性）。
+ */
+export type FloatButtonShape = 'round' | 'square' | (string & {});
 export type FloatButtonSize = 'small' | 'default' | 'large';
 
 export interface FloatButtonProps {
@@ -20,7 +25,7 @@ export interface FloatButtonProps {
   icon?: Snippet;
   /** 徽章参数（复用本库 Badge）；有值时外层包裹 Badge。 */
   badge?: FloatButtonBadgeProps;
-  /** 形状：round=圆角矩形（默认），square=方形。 */
+  /** 形状：round=正圆（默认），square=方形，或任意 CSS border-radius 字符串自定义。 */
   shape?: FloatButtonShape;
   /** 尺寸三档。 */
   size?: FloatButtonSize;

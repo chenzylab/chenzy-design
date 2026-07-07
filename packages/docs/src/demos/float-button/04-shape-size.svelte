@@ -2,10 +2,10 @@
   import { FloatButton, Text } from '@chenzy-design/svelte';
 </script>
 
-<Text type="tertiary">形状（round / square）与尺寸（small / default / large）。此处用 static 定位以便并排预览。</Text>
+<Text type="tertiary">形状（round=正圆 / square=方形）与尺寸（small / default / large）。此处用 static 定位以便并排预览。</Text>
 <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:8px">
   {#each [['small', '小'], ['default', '中'], ['large', '大']] as [size, label] (size)}
-    <FloatButton ariaLabel={`${label}圆角`} size={size as 'small' | 'default' | 'large'} shape="round" style="position:static">
+    <FloatButton ariaLabel={`${label}正圆`} size={size as 'small' | 'default' | 'large'} shape="round" style="position:static">
       {#snippet icon()}
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor" /></svg>
       {/snippet}

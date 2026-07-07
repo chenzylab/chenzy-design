@@ -12,7 +12,7 @@ export const floatButtonTokens = {
   'floatbutton-size-large': { value: '56px', category: 'width', label: '按钮尺寸（大）', usage: 'large 悬浮按钮宽高' },
 
   // —— 形状圆角 ——
-  'floatbutton-radius-round': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '圆角（round）', usage: 'round 形状圆角（圆角矩形）' },
+  'floatbutton-radius-round': { value: 'var(--cd-border-radius-circle)', category: 'radius', label: '圆角（round）', usage: 'round 形状圆角（正圆，对齐 Semi）' },
   'floatbutton-radius-square': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '圆角（square）', usage: 'square 形状圆角（方形）' },
 
   // —— 配色 ——
