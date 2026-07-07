@@ -27,7 +27,7 @@ Typography 是排版组件族，统一管理文本的字号、行高、字重、
 | 字号阶梯 | Title 按 heading 1–6 映射 6 档；Text/Paragraph 按 `size` = small/default/large 映射 3 档；全部消费 `--cd-font-size-*` 阶梯，禁止裸值 |
 | 行高 | 标题用紧凑行高 `--cd-typography-title-line-height`，正文用舒适行高 `--cd-typography-text-line-height`（≈1.5–1.6 保证可读性） |
 | 字重 | Title 默认 `--cd-font-weight-semibold`；Text `strong` → bold；`weight` 显式覆盖 |
-| 颜色语义 | `type`：default→`--cd-color-text-0`，secondary→`--cd-color-text-2`，tertiary→`--cd-color-text-3`，warning→`--cd-color-warning`，danger→`--cd-color-danger`，success→`--cd-color-success`；不允许任意 hex |
+| 颜色语义 | `type`：default→`--cd-color-text-0`，secondary→`--cd-color-text-1`，tertiary→`--cd-color-text-2`，quaternary→`--cd-color-text-3`，warning→`--cd-color-warning`，danger→`--cd-color-danger`，success→`--cd-color-success`；不允许任意 hex |
 | 链接态 | Link：默认 `--cd-color-link`，hover `--cd-color-link-hover`，active `--cd-color-link-active`，visited 可选 |
 | 交互可视 | copy / edit 图标默认弱化（text-2），hover 提升至 primary；展开/收起为 link 态 |
 | 状态语义 | disabled → text-disabled + `cursor: not-allowed`；mark（高亮）→ `--cd-color-warning-light-default` 背景 |
@@ -56,7 +56,7 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 
 | Prop | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `type` | `'default' \| 'secondary' \| 'tertiary' \| 'warning' \| 'danger' \| 'success'` | `'default'` | 颜色语义 |
+| `type` | `'default' \| 'secondary' \| 'tertiary' \| 'quaternary' \| 'warning' \| 'danger' \| 'success'` | `'default'` | 颜色语义 |
 | `size` | `'small' \| 'default' \| 'large'` | `'default'` | 字号档（Title 由 heading 决定，忽略 size） |
 | `strong` | `boolean` | `false` | 加粗 |
 | `weight` | `number \| 'regular' \| 'medium' \| 'semibold' \| 'bold'` | — | 显式字重，覆盖 strong |
@@ -95,6 +95,7 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 | CopyableConfig | `content` | `string` | 文本内容 | 实际复制内容（默认取节点文本） |
 | | `successText` | `string` | i18n | 复制成功提示 |
 | | `icon` / `successIcon` | `Snippet` | 内置图标 | 自定义图标 |
+| | `render` | `Snippet<[copied, doCopy, config]>` | — | 完全接管复制控件渲染（对齐 Semi）；提供后 icon/successIcon 及内置 button 不渲染 |
 | EditableConfig | `editing` | `boolean` | — | 受控编辑态 |
 | | `trigger` | `'click' \| 'dblclick' \| 'icon'` | `'icon'` | 进入编辑方式 |
 | | `maxLength` | `number` | — | 字符上限 |
@@ -127,8 +128,9 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 | Component Token | 默认引用（Alias） | 用途 |
 |---|---|---|
 | `--cd-typography-color` | `--cd-color-text-0` | 默认正文色 |
-| `--cd-typography-color-secondary` | `--cd-color-text-2` | secondary type |
-| `--cd-typography-color-tertiary` | `--cd-color-text-3` | tertiary type |
+| `--cd-typography-color-secondary` | `--cd-color-text-1` | secondary type |
+| `--cd-typography-color-tertiary` | `--cd-color-text-2` | tertiary type |
+| `--cd-typography-color-quaternary` | `--cd-color-text-3` | quaternary type |
 | `--cd-typography-color-disabled` | `--cd-color-text-disabled` | disabled |
 | `--cd-typography-color-warning` | `--cd-color-warning` | warning type |
 | `--cd-typography-color-danger` | `--cd-color-danger` | danger type |

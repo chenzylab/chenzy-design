@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Text, Paragraph } from '@chenzy-design/svelte';
+  import { Text, Paragraph, Button } from '@chenzy-design/svelte';
 
   let copied = $state(false);
 
@@ -22,4 +22,18 @@
       <Text type="success" size="small">已复制</Text>
     {/if}
   </div>
+  <Paragraph
+    copyable={{
+      content: 'Custom render!',
+      render: customRender,
+    }}
+  >
+    通过 render 完全自定义复制按钮
+  </Paragraph>
 </div>
+
+{#snippet customRender(isCopied: boolean, doCopy: () => void)}
+  <Button size="small" theme="light" onclick={doCopy}>
+    {isCopied ? '复制成功' : '点击复制'}
+  </Button>
+{/snippet}

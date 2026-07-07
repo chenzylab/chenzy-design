@@ -75,6 +75,45 @@ export function truncateText(
   return text.slice(0, budget) + ellipsis;
 }
 
+/**
+ * Pure: binary-search the largest visible-char budget whose `truncateText`
+ * output still fits, using a caller-supplied `fits(candidate)` predicate. The
+ * render layer owns DOM measurement (writes the candidate, reads scrollWidth);
+ * this keeps the search algorithm framework-agnostic and unit-testable.
+ *
+ * Returns the best-fitting truncated string. If the full text already fits
+ * (`fits(text)` true) it is returned unchanged; if not even the ellipsis alone
+ * fits, the ellipsis is returned as a floor.
+ *
+ * `pos` selects head/tail retention (start/middle/end). Single-line only.
+ */
+export function fitTruncatedText(
+  text: string,
+  pos: EllipsisPos,
+  fits: (candidate: string) => boolean,
+  ellipsis = '…',
+): string {
+  if (text.length === 0) return text;
+  // Fast path: nothing to truncate.
+  if (fits(text)) return text;
+  // Search the char budget in [1, text.length]. `truncateText` never yields a
+  // longer string than the budget, so a fitting budget yields a fitting string.
+  let lo = 1;
+  let hi = text.length;
+  let best = ellipsis; // floor: ellipsis alone
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const candidate = truncateText(text, mid, pos, ellipsis);
+    if (fits(candidate)) {
+      best = candidate;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return best;
+}
+
 export interface EllipsisOptions {
   /** clamp rows (default 1) */
   rows?: number;

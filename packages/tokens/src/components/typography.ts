@@ -61,6 +61,7 @@ export const typographyTokens = {
   'typography-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '默认文本色', usage: '文本默认色（组件消费）' },
   'typography-color-secondary': { value: 'var(--cd-color-text-1)', category: 'color', label: '次要文本色', usage: 'type=secondary 文本色（组件消费）' },
   'typography-color-tertiary': { value: 'var(--cd-color-text-2)', category: 'color', label: '三级文本色', usage: 'type=tertiary 文本色（组件消费）' },
+  'typography-color-quaternary': { value: 'var(--cd-color-text-3)', category: 'color', label: '四级文本色', usage: 'type=quaternary 文本色（组件消费）' },
   'typography-color-link': { value: 'var(--cd-color-typography-link-text-default)', category: 'color', label: '链接色', usage: '链接默认色（组件消费）' },
   'typography-color-link-hover': { value: 'var(--cd-color-typography-link-text-hover)', category: 'color', label: '链接悬浮色', usage: '链接悬浮色（组件消费）' },
   'typography-mark-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '标记背景色', usage: 'mark 高亮背景（组件消费）' },

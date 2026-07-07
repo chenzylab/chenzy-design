@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createEllipsis, isOverflowing, truncateText } from './ellipsis.js';
+import { createEllipsis, isOverflowing, truncateText, fitTruncatedText } from './ellipsis.js';
 
 describe('isOverflowing', () => {
   it('multi-row: scrollHeight exceeds clientHeight → true', () => {
@@ -40,6 +40,44 @@ describe('truncateText', () => {
   });
   it('maxChars <= 0 → ellipsis only', () => {
     expect(truncateText('abc', 0, 'end')).toBe('…');
+  });
+});
+
+describe('fitTruncatedText', () => {
+  // Model width as char count: candidate "fits" when its length <= capacity.
+  const fitsByLen = (capacity: number) => (candidate: string) => candidate.length <= capacity;
+
+  it('returns full text unchanged when it fits', () => {
+    expect(fitTruncatedText('abcdef', 'end', () => true)).toBe('abcdef');
+  });
+  it('empty text returned as-is', () => {
+    expect(fitTruncatedText('', 'middle', () => false)).toBe('');
+  });
+  it('end: binary-searches the largest fitting budget', () => {
+    // capacity 5 → truncateText('abcdefgh',5,'end') = 'abcd…'
+    expect(fitTruncatedText('abcdefgh', 'end', fitsByLen(5))).toBe('abcd…');
+  });
+  it('middle: keeps head + tail around ellipsis and fits capacity', () => {
+    const out = fitTruncatedText('abcdefghij', 'middle', fitsByLen(5));
+    expect(out).toContain('…');
+    expect(out.length).toBeLessThanOrEqual(5);
+    // head from start, tail from end
+    expect(out.startsWith('a')).toBe(true);
+    expect(out.endsWith('j')).toBe(true);
+  });
+  it('start: keeps tail after ellipsis', () => {
+    const out = fitTruncatedText('abcdefghij', 'start', fitsByLen(5));
+    expect(out.startsWith('…')).toBe(true);
+    expect(out.endsWith('j')).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(5);
+  });
+  it('nothing fits → ellipsis floor', () => {
+    expect(fitTruncatedText('abcdef', 'end', () => false)).toBe('…');
+  });
+  it('wider capacity yields more visible chars than a narrow one', () => {
+    const narrow = fitTruncatedText('abcdefghijklmnop', 'end', fitsByLen(4));
+    const wide = fitTruncatedText('abcdefghijklmnop', 'end', fitsByLen(9));
+    expect(wide.length).toBeGreaterThan(narrow.length);
   });
 });
 
