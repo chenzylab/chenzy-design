@@ -65,6 +65,17 @@
 
   const isControlled = $derived(checked !== undefined);
   let inner = $state(getInitialChecked());
+  let inputEl = $state<HTMLInputElement | null>(null);
+
+  /** Imperatively focus the native checkbox input (honors `preventScroll`). */
+  export function focus(): void {
+    inputEl?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+  }
+
+  /** Imperatively blur the native checkbox input. */
+  export function blur(): void {
+    inputEl?.blur();
+  }
 
   function getInitialChecked(): boolean {
     return defaultChecked;
@@ -122,6 +133,7 @@
 
 <label class={cls} for={fieldId}>
   <input
+    bind:this={inputEl}
     {@attach indeterminateAttach}
     id={fieldId}
     class="cd-checkbox__input"
