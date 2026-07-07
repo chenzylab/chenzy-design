@@ -3,7 +3,7 @@
 </script>
 
 <Space vertical>
-  <PinCode count={4} size="small" />
-  <PinCode count={4} size="default" />
-  <PinCode count={4} size="large" />
+  <PinCode autoFocus={false} count={4} size="small" />
+  <PinCode autoFocus={false} count={4} size="default" />
+  <PinCode autoFocus={false} count={4} size="large" />
 </Space>

@@ -24,8 +24,8 @@ export const meta = {
     {
       name: 'autoFocus',
       type: 'boolean',
-      default: 'false',
-      desc: '挂载聚焦第一格。默认偏离 Semi（Semi 为 true）：遵循全库不擅自抢焦点约定',
+      default: 'true',
+      desc: '挂载聚焦第一格（对齐 Semi）；验证码场景通常立即输入，如需关闭传 autoFocus={false}',
     },
     { name: 'name', type: 'string', default: 'undefined', desc: '表单字段名，透传隐藏聚合 input' },
     { name: 'id', type: 'string', default: '自动生成', desc: '根容器 id' },
@@ -85,7 +85,6 @@ export const meta = {
   ],
   doNot: [
     '不要写死格宽 / 颜色（用 token）',
-    '不要默认 autoFocus 抢焦点',
     '不要漏单格 aria 位次',
   ],
 } as const;

@@ -38,7 +38,8 @@
     /** 禁用全部格。 */
     disabled?: boolean;
     /**
-     * 挂载时聚焦第一格。默认 false（偏离 Semi 的 true）：遵循全库「不擅自抢焦点」的 a11y 约定。
+     * 挂载时聚焦第一格。默认 true（对齐 Semi）：验证码场景用户几乎总是立即输入，
+     * 自动聚焦第一格符合预期；如需关闭传 autoFocus={false}。
      */
     autoFocus?: boolean;
     /** 表单字段名，透传隐藏聚合 input 提交整串值。 */
@@ -68,7 +69,7 @@
     format = 'number',
     size = 'default',
     disabled = false,
-    autoFocus = false,
+    autoFocus = true,
     name,
     id,
     ariaLabel,
