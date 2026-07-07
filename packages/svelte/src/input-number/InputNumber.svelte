@@ -90,6 +90,17 @@
     keepFocus?: boolean;
     /** 携带 number 类型的变化回调（区别于 onChange 返回 number | null） */
     onNumberChange?: (value: number | null) => void;
+    /** focus() 命令式聚焦时是否阻止滚动（对齐 Semi，默认 false） */
+    preventScroll?: boolean;
+    /** 彻底隐藏步进按钮（对齐 Semi；优先级高于 controls） */
+    hideButtons?: boolean;
+    /** 长按后延迟多久开始连续触发（ms，对齐 Semi，默认 250） */
+    pressTimeout?: number;
+    /** 连续触发间隔（ms，对齐 Semi，默认 250） */
+    pressInterval?: number;
+    /** 失焦时大数值以科学计数法显示（对齐 Semi；聚焦编辑仍为完整数字）。
+     * 传对象可自定义有效位阈值 threshold（默认 15）。 */
+    scientificNotation?: boolean | { threshold?: number };
   }
 
   let {
@@ -132,6 +143,11 @@
     clearIcon,
     keepFocus = false,
     onNumberChange,
+    preventScroll = false,
+    hideButtons = false,
+    pressTimeout = 250,
+    pressInterval = 250,
+    scientificNotation = false,
   }: Props = $props();
 
   const loc = useLocale();
@@ -155,9 +171,17 @@
   // the formatted `current` — no $effect needed, so external value changes flow
   // straight through the derived display.
   let editingText = $state<string | null>(null);
+  // 是否聚焦（编辑态）：科学计数法仅在失焦显示态生效，聚焦时展示完整数字。
+  let focused = $state(false);
   const text = $derived(editingText ?? formatDisplay(current));
 
   const effectiveShiftStep = $derived(shiftStep ?? step * 10);
+
+  // 科学计数法：启用与阈值派生（对象可自定义 threshold，默认 15）。
+  const sciEnabled = $derived(!!scientificNotation);
+  const sciThreshold = $derived(
+    typeof scientificNotation === 'object' ? (scientificNotation.threshold ?? 15) : 15,
+  );
 
   function getInitialValue(): number | null {
     return defaultValue ?? null;
@@ -178,6 +202,11 @@
 
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
+    // 科学计数法：仅失焦显示态、且数量级达阈值时套用（聚焦编辑态展示完整数字）。
+    // 仅影响显示；current / onChange / onNumberChange 的值仍是完整 number。
+    if (sciEnabled && !focused && Math.abs(n) >= 10 ** sciThreshold) {
+      return n.toExponential();
+    }
     if (formatter) return formatter(n);
     // 未提供 formatter 时：仅当显式传入 locale 才走 Intl，否则保持现状 String(n)。
     if (locale) return formatWithLocale(n, locale);
@@ -248,6 +277,8 @@
   }
 
   function handleBlur(e: FocusEvent) {
+    // 先清 focused：commitFromText 后 text 派生走显示态，失焦时才套科学计数法。
+    focused = false;
     commitFromText();
     // commit 归一化后再上报失焦（spec：blur 时已完成 commit）。
     onBlur?.(e);
@@ -288,8 +319,8 @@
     if (disabled || readonly) return;
     stepBy(dir, false, 'button');
     holdTimer = setTimeout(() => {
-      holdInterval = setInterval(() => stepBy(dir, false, 'button'), 60);
-    }, 400);
+      holdInterval = setInterval(() => stepBy(dir, false, 'button'), pressInterval);
+    }, pressTimeout);
   }
 
   // 组件卸载兜底清理定时器。
@@ -324,6 +355,15 @@
   // --- 命令式监听：autofocus / selectOnFocus / mouseWheel + cleanup（红线 #3）---
   let inputEl: HTMLInputElement | undefined;
 
+  // 命令式 Methods（对齐 Semi）：focus() 尊重 preventScroll prop（默认 false）。
+  // 注意：内部 autofocus/keepFocus/clear 的 focus 仍用 preventScroll:true，保持既有行为。
+  export function focus(): void {
+    inputEl?.focus({ preventScroll });
+  }
+  export function blur(): void {
+    inputEl?.blur();
+  }
+
   // 受控值未变时（如 strict 越界拒绝），Svelte 不会重渲染 input.value，需命令式还原。
   function restoreDisplay() {
     if (inputEl) inputEl.value = formatDisplay(current);
@@ -337,6 +377,8 @@
     }
 
     function handleFocus(e: FocusEvent) {
+      // 进入编辑态：科学计数法退回完整数字显示（text 派生重算）。
+      focused = true;
       onFocus?.(e);
       // 推迟到下一帧：浏览器在 focus 后才放置默认光标，立即 select 会被覆盖。
       if (selectOnFocus) requestAnimationFrame(() => node.select());
@@ -439,7 +481,7 @@
     </button>
   {/if}
 
-  {#if controls}
+  {#if controls && !hideButtons}
     <span class="cd-input-number__actions">
       <button
         type="button"
