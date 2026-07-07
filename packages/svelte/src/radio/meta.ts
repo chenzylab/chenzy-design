@@ -35,6 +35,10 @@ export const meta = {
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍标签' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: 'autoFocus 时阻止滚动' },
   ],
+  methods: [
+    { name: 'focus', signature: '() => void', desc: '命令式聚焦内部 input（对齐 Semi）' },
+    { name: 'blur', signature: '() => void', desc: '命令式失焦内部 input（对齐 Semi）' },
+  ],
   group: {
     name: 'RadioGroup',
     props: [
@@ -48,6 +52,12 @@ export const meta = {
       },
       { name: 'disabled', type: 'boolean', default: 'false' },
       { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+      {
+        name: 'buttonSize',
+        type: "'small'|'middle'|'large'",
+        default: 'undefined',
+        desc: "对齐 Semi：仅 type='button' 时生效并优先于 size；middle→default 映射",
+      },
       {
         name: 'status',
         type: "'default'|'warning'|'error'",
