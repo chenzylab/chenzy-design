@@ -48,8 +48,8 @@
   let typoText = $state('设计即沟通');
 
   // ---- scene 3: Layout ----
-  let layoutDirection = $state<'horizontal' | 'vertical'>('horizontal');
-  let layoutSpacing = $state<'tight' | 'medium' | 'loose'>('medium');
+  let layoutVertical = $state<boolean>(false);
+  let layoutSpacing = $state<'tight' | 'medium' | 'loose'>('tight');
   let layoutAlign = $state<'start' | 'center' | 'end'>('center');
   let layoutWrap = $state(false);
   let layoutDashed = $state(false);
@@ -113,8 +113,8 @@
     `${buildCode(
       'Space',
       [
-        { key: 'direction', value: layoutDirection, def: 'horizontal' },
-        { key: 'spacing', value: layoutSpacing, def: 'medium' },
+        { key: 'vertical', value: layoutVertical, def: false },
+        { key: 'spacing', value: layoutSpacing, def: 'tight' },
         { key: 'align', value: layoutAlign, def: 'center' },
         { key: 'wrap', value: layoutWrap, def: false },
       ],
@@ -249,11 +249,8 @@
         </label>
       {:else}
         <label class="field">
-          <span class="label">direction</span>
-          <select bind:value={layoutDirection}>
-            <option value="horizontal">horizontal</option>
-            <option value="vertical">vertical</option>
-          </select>
+          <span class="label">vertical</span>
+          <input type="checkbox" bind:checked={layoutVertical} />
         </label>
         <label class="field">
           <span class="label">spacing</span>
@@ -344,7 +341,7 @@
           {/if}
         {:else}
           <Space
-            direction={layoutDirection}
+            vertical={layoutVertical}
             spacing={layoutSpacing}
             align={layoutAlign}
             wrap={layoutWrap}
