@@ -125,7 +125,7 @@ describe('FloatButtonGroup', () => {
     const { container } = renderWithLocale(FloatButtonGroup, { props: { items } });
     const group = container.querySelector('.cd-floatbutton-group')!;
     expect(group.getAttribute('role')).toBe('group');
-    expect(container.querySelectorAll('.cd-floatbutton').length).toBe(3);
+    expect(container.querySelectorAll('.cd-floatbutton-group__item').length).toBe(3);
   });
 
   it('content 为 string 时渲染文字', () => {
@@ -136,7 +136,7 @@ describe('FloatButtonGroup', () => {
   it('事件委托：点击子项回传 value', () => {
     const onClick = vi.fn();
     const { container } = renderWithLocale(FloatButtonGroup, { props: { items, onClick } });
-    const first = container.querySelector('.cd-floatbutton')! as HTMLElement;
+    const first = container.querySelector('.cd-floatbutton-group__item')! as HTMLElement;
     first.click();
     expect(onClick).toHaveBeenCalledTimes(1);
     expect(onClick.mock.calls[0]?.[0]).toBe('help');
@@ -146,7 +146,7 @@ describe('FloatButtonGroup', () => {
     const { container } = renderWithLocale(FloatButtonGroup, { props: { items, disabled: true } });
     expect(container.querySelector('.cd-floatbutton-group')!.classList.contains('cd-floatbutton-group--disabled')).toBe(true);
     // 子项 button 拿到 disabled
-    expect(container.querySelector('button.cd-floatbutton')!.hasAttribute('disabled')).toBe(true);
+    expect(container.querySelector('button.cd-floatbutton-group__item')!.hasAttribute('disabled')).toBe(true);
   });
 
   it('class / style 透传到根节点', () => {
