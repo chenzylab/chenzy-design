@@ -2,7 +2,7 @@
   import { PinCode, Text, Space } from '@chenzy-design/svelte';
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space>
     <PinCode count={4} status="warning" defaultValue="12" />
     <Text type="tertiary">warning 校验态</Text>

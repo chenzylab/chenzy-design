@@ -2,7 +2,7 @@
   import { HotKeys, Text, Space } from '@chenzy-design/svelte';
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space align="center">
     <Text>默认渲染（自动平台符号）：</Text>
     <HotKeys hotKeys={['Meta', 'K']} />

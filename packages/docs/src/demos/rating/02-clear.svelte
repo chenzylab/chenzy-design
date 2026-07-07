@@ -5,7 +5,7 @@
   let locked = $state(3);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space>
     <Rating value={clearable} allowClear onChange={(v) => (clearable = v)} />
     <Text type="tertiary">允许清除（再次点击当前值清零）：{clearable}</Text>

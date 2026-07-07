@@ -4,7 +4,7 @@
   let value = $state(3);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space>
     <Rating {value} onChange={(v) => (value = v)} />
     <Text type="tertiary">评分：{value}</Text>

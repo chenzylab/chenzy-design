@@ -13,7 +13,7 @@
   let timeFormatVal = $state<Date | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <TimePicker value={timeVal} onChange={(t) => (timeVal = Array.isArray(t) ? t[0] : t)} />
     <Text type="tertiary">

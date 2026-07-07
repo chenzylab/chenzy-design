@@ -43,7 +43,7 @@
   let cascaderLeafOnlyVal = $state<(string | number)[][]>([]);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <div style="width: 240px" data-testid="cascader-filter">
     <Cascader
       treeData={regionData}

@@ -4,7 +4,7 @@
   let value = $state('');
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <PinCode {value} onChange={(v) => (value = v)} />
   <Text type="tertiary">当前值：{value || '（空）'}</Text>
 </Space>

@@ -20,7 +20,7 @@
   <div style="height:100%;display:grid;place-items:center;background:var(--cd-color-tertiary);color:#fff;font-size:20px">幻灯片 5</div>
 {/snippet}
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">受控轮播（当前：{carouselIdx + 1}）：</Text>
   <div style="width: 360px">
     <Carousel

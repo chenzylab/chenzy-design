@@ -5,7 +5,7 @@
   let dateTimeVal = $state<Date | Date[] | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:240px; display:inline-block">
       <DatePicker insetInput value={dateVal} onChange={(d) => (dateVal = d)} />

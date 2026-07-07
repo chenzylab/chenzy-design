@@ -6,7 +6,7 @@
   let grade = $state(3);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space>
     <Rating value={heart} character="♥" {tooltips} onChange={(v) => (heart = v)} />
     <Text type="tertiary">自定义字符 + 逐项提示：{tooltips[grade - 1] ?? '未评'}</Text>

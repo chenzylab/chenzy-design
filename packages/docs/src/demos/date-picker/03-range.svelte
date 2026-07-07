@@ -17,7 +17,7 @@
   }
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:260px; display:inline-block">
       <RangePicker value={rangeVal} disabledDate={disablePast} onChange={(r) => (rangeVal = r)} />

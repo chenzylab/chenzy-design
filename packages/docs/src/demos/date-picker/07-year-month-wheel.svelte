@@ -6,7 +6,7 @@
   let cyclicVal = $state<Date | Date[] | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">点击面板头部的「年月」标题，展开年 + 月滚轮列，快速跳转到任意年月，再选具体日期。</Text>
   <Space>
     <span style="width:240px; display:inline-block">

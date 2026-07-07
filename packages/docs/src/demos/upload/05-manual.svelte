@@ -12,7 +12,7 @@
   }
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">选择文件后不会自动上传，点击下方按钮手动触发</Text>
   <Upload
     multiple

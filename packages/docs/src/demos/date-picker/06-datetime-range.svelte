@@ -17,7 +17,7 @@
   }
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:320px; display:inline-block">
       <RangePicker type="dateTimeRange" value={dtRange} onChange={(r) => (dtRange = r)} />

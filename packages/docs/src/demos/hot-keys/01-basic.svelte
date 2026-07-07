@@ -4,7 +4,7 @@
   let count = $state(0);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space align="center">
     <Text>按下</Text>
     <HotKeys hotKeys={['Control', 'Shift', 'A']} onHotKey={() => (count += 1)} />

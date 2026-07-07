@@ -84,7 +84,7 @@
   let transferRemoteVal = $state<(string | number)[]>([]);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Transfer
     dataSource={transferData}
     value={transferVal}
