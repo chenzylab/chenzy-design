@@ -33,4 +33,6 @@ export const demos: DemoEntry[] = [
   entry('06-buttons.svelte', '步进器显隐', 'innerButtons 内嵌步进器（hover/focus 显示），hideButtons 彻底隐藏。'),
   entry('07-number-change.svelte', '纯数字回调', 'onNumberChange 携带 number 类型的值，配合 formatter 实现千分位纯数字输入。'),
   entry('08-scientific.svelte', '科学计数法', 'scientificNotation 失焦显示科学计数法，聚焦显示完整数字；可自定义阈值。'),
+  entry('09-currency.svelte', '货币展示', 'currency + localeCode 按地区展示对应货币，currencyDisplay 控制符号/代码/名称。'),
+  entry('10-currency-symbol.svelte', '隐藏货币符号', 'showCurrencySymbol=false 隐藏内置符号，配合 prefix/suffix 自行展示货币。'),
 ];

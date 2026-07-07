@@ -80,6 +80,10 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 | `pressTimeout` | `number` | `250` | 长按后延迟多久开始连续步进（ms，对齐 Semi）。 |
 | `pressInterval` | `number` | `250` | 长按连续步进的间隔（ms，对齐 Semi）。 |
 | `scientificNotation` | `boolean \| { threshold?: number }` | `false` | 失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示，onChange/onNumberChange 仍为完整 number（对齐 Semi）。 |
+| `currency` | `boolean \| string` | `false` | 货币展示：`true` 按 localeCode 自动推断币种，字符串（`CNY`/`EUR`/`USD`/`JPY`…）指定币种码。用 `Intl.NumberFormat` currency 格式化，仅显示层，值仍为完整 number。与 scientificNotation 互斥（currency 优先）。（对齐 Semi） |
+| `currencyDisplay` | `'symbol' \| 'code' \| 'name'` | `'symbol'` | 货币展示方式：符号 ￥ / 代码 CNY / 名称 人民币（对齐 Semi）。 |
+| `localeCode` | `string` | — | 货币格式化 BCP-47 locale（`zh-CN`/`de-DE`/`ja-JP`…），决定千分位/小数位/符号位置；回退 `locale` 再回退 `zh-CN`（对齐 Semi）。 |
+| `showCurrencySymbol` | `boolean` | `true` | `false` 时隐藏内置货币符号/代码/名称（改用 decimal 千分位），供 prefix/suffix 自行展示（对齐 Semi）。 |
 
 ### Events
 
