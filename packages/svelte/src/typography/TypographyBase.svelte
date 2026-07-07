@@ -21,6 +21,7 @@
     createEllipsis,
     computeAutosizeHeight,
     fitTruncatedText,
+    isOverLimit,
     type EllipsisPos,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -90,9 +91,28 @@
   }
   export interface EditableConfig {
     editing?: boolean;
-    trigger?: 'click' | 'dblclick' | 'icon';
+    /**
+     * 进入编辑方式（对齐 Ant）：
+     *  - `'icon'`（默认）：仅点铅笔图标，宿主不响应；
+     *  - `'click'` / `'dblclick'`：点/双击宿主进入（不显示铅笔图标）；
+     *  - `'text'`：点文本进入（不显示铅笔图标）；
+     *  - `'both'`：文本与铅笔图标都能进入（图标仍显示）。
+     */
+    trigger?: 'click' | 'dblclick' | 'icon' | 'text' | 'both';
     maxLength?: number;
     autosize?: boolean;
+    /** 自定义编辑触发图标（替换默认铅笔）。对齐 Ant editIcon。 */
+    editIcon?: Snippet;
+    /**
+     * 编辑触发图标的 tooltip 文案（title）；`false` 隐藏 title，
+     * 缺省用 i18n 的 `Typography.edit`。aria-label 始终保留（隐藏 tooltip 不丢 a11y）。
+     */
+    tooltip?: string | false;
+    /**
+     * 编辑框右下角「回车确认」提示图标（对齐 Ant enterIcon）；点击 = 确认提交。
+     * `false` 隐藏；缺省用内置回车箭头图标。
+     */
+    enterIcon?: Snippet | false;
   }
 
   interface Props {
@@ -278,6 +298,10 @@
         onCancel: () => onEditCancel?.(),
       })
     : null;
+
+  // 超限判定（对齐 Ant）：draft 长度超过 maxLength 时 textarea 变红、禁止提交。
+  // core 已在 confirm 里拒绝超限提交；此处派生仅供渲染层加 --over-limit class。
+  const overLimit = $derived(isOverLimit(draft, editableCfg?.maxLength));
 
   // 受控 editing: 父传 editableCfg.editing 时与内部状态同步（命令式驱动 start/cancel）。
   $effect(() => {
@@ -490,7 +514,8 @@
   function onTriggerHost(e: Event): void {
     if (!editApi) return;
     const trig = editableCfg?.trigger ?? 'icon';
-    if (trig === 'click' && e.type === 'click') startEdit(e);
+    // click 进入宿主：click / text / both 均点宿主进编辑（text/both 对齐 Ant「点文本进编辑」）。
+    if (e.type === 'click' && (trig === 'click' || trig === 'text' || trig === 'both')) startEdit(e);
     else if (trig === 'dblclick' && e.type === 'dblclick') startEdit(e);
   }
   // 合并 hostAttrs.onclick (如 Link 的 handleClick) 与编辑 click 触发
@@ -506,6 +531,11 @@
     if (!editApi) return;
     const action = editApi.handleKey({ key: e.key, shiftKey: e.shiftKey });
     if (action === 'confirm' || action === 'cancel') e.preventDefault();
+  }
+  // enterIcon 点击确认（对齐 Ant）。onmousedown preventDefault 抑制 textarea 先 blur，
+  // 避免双重 confirm；core confirm 超限幂等 no-op，此处直接调用即可。
+  function confirmEdit(): void {
+    editApi?.confirm();
   }
 
   // --- class (与旧实现一致 + 交互修饰) ---
@@ -580,6 +610,22 @@
 
   const copyLabel = $derived(loc().t('Typography.copy'));
   const editLabel = $derived(loc().t('Typography.edit'));
+  // 编辑图标 tooltip：tooltip===false 隐藏 title；否则用自定义或缺省 editLabel。
+  // aria-label 始终 editLabel（隐藏 tooltip 不能丢 a11y）。
+  const editTooltip = $derived.by<string | undefined>(() => {
+    const t = editableCfg?.tooltip;
+    if (t === false) return undefined;
+    return t ?? editLabel;
+  });
+  // 回车确认图标 aria-label。
+  const enterLabel = $derived(loc().t('Typography.enter'));
+  // 是否显示编辑触发图标：icon / both 显示，click / dblclick / text 不显示。
+  const showEditIcon = $derived.by(() => {
+    const trig = editableCfg?.trigger ?? 'icon';
+    return trig === 'icon' || trig === 'both';
+  });
+  // enterIcon 是否渲染：默认渲染内置图标；enterIcon===false 隐藏。
+  const showEnterIcon = $derived(editableCfg?.enterIcon !== false);
   const expandLabel = $derived(ellipsisCfg?.expandText ?? loc().t('Typography.expand'));
   const collapseLabel = $derived(ellipsisCfg?.collapseText ?? loc().t('Typography.collapse'));
 </script>
@@ -599,6 +645,13 @@
   <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
     <path d="M4 20h4l10-10-4-4L4 16v4z" stroke-linejoin="round" />
     <path d="M13.5 6.5l4 4" stroke-linecap="round" />
+  </svg>
+{/snippet}
+{#snippet enterIconDefault()}
+  <!-- 回车箭头 ⏎：从右上折回左下 -->
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <path d="M20 5v6a2 2 0 0 1-2 2H5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M9 9l-4 4 4 4" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
 {/snippet}
 
@@ -621,33 +674,49 @@
       </button>
     {/if}
   {/if}
-  {#if editableCfg && (editableCfg.trigger ?? 'icon') === 'icon'}
+  {#if editableCfg && showEditIcon}
     <button
       type="button"
       class="{baseClass}__action {baseClass}__action--edit"
       aria-label={editLabel}
-      title={editLabel}
+      title={editTooltip}
       onclick={startEdit}
     >
-      {@render editIconDefault()}
+      {#if editableCfg.editIcon}{@render editableCfg.editIcon()}{:else}{@render editIconDefault()}{/if}
     </button>
   {/if}
 {/snippet}
 
 {#if editApi && editing}
-  <!-- inline edit mode: textarea 替换文本；textarea 挂宿主排版 class 继承字号/字重/type 颜色 -->
+  <!-- inline edit mode: textarea 替换文本；textarea 挂宿主排版 class 继承字号/字重/type 颜色。
+       maxLength 超限时加 --over-limit 变红、禁止提交（core confirm 已拦截，enter 图标 aria-disabled）。
+       注意 textarea 不加 maxlength 原生属性——对齐 Ant「允许超输入 + 变红」，硬 maxlength 会截断打不超。 -->
   <span class="{baseClass}__edit-wrap">
     <textarea
       bind:this={textareaEl}
       class={editCls}
+      class:cd-typography__edit-input--over-limit={overLimit}
       value={draft}
-      maxlength={editableCfg?.maxLength}
-      aria-label={editLabel}
+      aria-label={editTooltip ?? editLabel}
+      aria-invalid={overLimit || undefined}
       rows="1"
       oninput={onTextareaInput}
       onkeydown={onTextareaKeydown}
       onblur={() => editApi?.confirm()}
     ></textarea>
+    {#if showEnterIcon}
+      <button
+        type="button"
+        class="{baseClass}__edit-enter"
+        class:is-disabled={overLimit}
+        aria-label={enterLabel}
+        aria-disabled={overLimit || undefined}
+        onmousedown={(e) => e.preventDefault()}
+        onclick={confirmEdit}
+      >
+        {#if editableCfg?.enterIcon}{@render editableCfg.enterIcon()}{:else}{@render enterIconDefault()}{/if}
+      </button>
+    {/if}
   </span>
 {:else if !isInteractive}
   <!-- 纯文本快路径: 与旧实现完全一致 (向后兼容) -->
@@ -939,6 +1008,8 @@
      wrap 贴合内容宽（inline-flex，不撑满容器）；textarea 继承宿主排版 class
      的字号/字重/type 颜色，仅补齐边框/内边距/换行行为，宽度随内容而非 100%。 */
   :global(.cd-typography__edit-wrap) {
+    /* relative：作为 enterIcon 绝对定位（右下角）的定位上下文 */
+    position: relative;
     display: inline-flex;
     max-inline-size: 100%;
     vertical-align: bottom;
@@ -951,7 +1022,8 @@
     /* 现代浏览器：随内容伸缩宽度；不支持时退回 min/max 约束 + 容器宽度上限 */
     field-sizing: content;
     margin: 0;
-    padding: 2px 6px;
+    /* 右侧多留出 enterIcon 的空间，避免文字压到图标 */
+    padding: 2px 22px 2px 6px;
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-color-bg-1);
@@ -967,8 +1039,51 @@
     border-color: var(--cd-color-primary);
     box-shadow: var(--cd-focus-ring);
   }
+  /* maxLength 超限：文字与边框变红警示（对齐 Ant），提交被 core 拦截 */
+  :global(.cd-typography__edit-input--over-limit) {
+    color: var(--cd-color-typography-danger-text-default);
+    border-color: var(--cd-color-typography-danger-text-default);
+  }
+  :global(.cd-typography__edit-input--over-limit:focus-visible) {
+    border-color: var(--cd-color-typography-danger-text-default);
+  }
+  /* enterIcon：编辑框右下角回车确认按钮 */
+  :global(.cd-typography__edit-enter) {
+    position: absolute;
+    inset-block-end: 4px;
+    inset-inline-end: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 1.15em;
+    block-size: 1.15em;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--cd-typography-action-color);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: color var(--cd-motion-duration-fast, 120ms) ease;
+  }
+  :global(.cd-typography__edit-enter:hover) {
+    color: var(--cd-typography-action-color-hover);
+  }
+  :global(.cd-typography__edit-enter:focus-visible) {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  :global(.cd-typography__edit-enter.is-disabled) {
+    color: var(--cd-typography-action-color);
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  :global(.cd-typography__edit-enter svg) {
+    inline-size: 1em;
+    block-size: 1em;
+  }
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-typography__action) {
+    :global(.cd-typography__action),
+    :global(.cd-typography__edit-enter) {
       transition: none;
     }
   }

@@ -579,6 +579,8 @@ export interface Locale {
     edit: string;
     editConfirm: string;
     editCancel: string;
+    /** aria-label / tooltip for the in-editor enter-to-confirm icon */
+    enter: string;
     expand: string;
     collapse: string;
     ellipsisSuffix: string;

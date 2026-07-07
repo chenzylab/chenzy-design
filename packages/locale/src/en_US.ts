@@ -433,6 +433,7 @@ export const en_US: Locale = {
     edit: 'Edit',
     editConfirm: 'Save',
     editCancel: 'Cancel',
+    enter: 'Press Enter to confirm',
     expand: 'Expand',
     collapse: 'Collapse',
     ellipsisSuffix: '…',
