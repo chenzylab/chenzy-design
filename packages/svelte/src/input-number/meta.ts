@@ -47,6 +47,10 @@ export const meta = {
     { name: 'pressTimeout', type: 'number', default: '250', desc: '长按后延迟多久开始连续步进（ms，对齐 Semi）' },
     { name: 'pressInterval', type: 'number', default: '250', desc: '长按连续步进的间隔（ms，对齐 Semi）' },
     { name: 'scientificNotation', type: 'boolean | { threshold?: number }', default: 'false', desc: '失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示，onChange/onNumberChange 仍为完整 number（对齐 Semi）' },
+    { name: 'currency', type: 'boolean | string', default: 'false', desc: '货币展示：true 按 localeCode 自动推断币种，字符串（CNY/EUR/USD/JPY…）指定币种码；Intl.NumberFormat currency 格式化，仅显示层，值仍为完整 number（对齐 Semi）' },
+    { name: 'currencyDisplay', type: "'symbol'|'code'|'name'", default: "'symbol'", desc: '货币展示方式：符号 ￥ / 代码 CNY / 名称 人民币（对齐 Semi）' },
+    { name: 'localeCode', type: 'string', default: 'undefined', desc: '货币格式化 BCP-47 locale（zh-CN/de-DE/ja-JP…），决定千分位/小数位/符号位置；回退 locale 再回退 zh-CN（对齐 Semi）' },
+    { name: 'showCurrencySymbol', type: 'boolean', default: 'true', desc: 'false 时隐藏内置货币符号/代码/名称（用 decimal 千分位），供 prefix/suffix 自行展示（对齐 Semi）' },
   ],
   methods: [
     { name: 'focus()', desc: '命令式聚焦输入框（尊重 preventScroll，对齐 Semi）' },

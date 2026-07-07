@@ -101,6 +101,14 @@
     /** 失焦时大数值以科学计数法显示（对齐 Semi；聚焦编辑仍为完整数字）。
      * 传对象可自定义有效位阈值 threshold（默认 15）。 */
     scientificNotation?: boolean | { threshold?: number };
+    /** 货币展示（对齐 Semi）：true 按 localeCode 自动推断币种；字符串（如 'CNY'/'USD'）显式指定 ISO 4217 币种码。 */
+    currency?: boolean | string;
+    /** 货币显示形式：symbol（￥）/ code（CNY）/ name（人民币），默认 symbol。 */
+    currencyDisplay?: 'symbol' | 'code' | 'name';
+    /** 货币格式化 BCP-47 locale（如 'zh-CN'/'de-DE'）；未传回退 locale，再回退 'zh-CN'。 */
+    localeCode?: string;
+    /** 是否显示货币符号/代码/名称；false 时仅千分位（style:'decimal'），供用户自定义 prefix/suffix。默认 true。 */
+    showCurrencySymbol?: boolean;
   }
 
   let {
@@ -148,6 +156,10 @@
     pressTimeout = 250,
     pressInterval = 250,
     scientificNotation = false,
+    currency = false,
+    currencyDisplay = 'symbol',
+    localeCode,
+    showCurrencySymbol = true,
   }: Props = $props();
 
   const loc = useLocale();
@@ -183,8 +195,59 @@
     typeof scientificNotation === 'object' ? (scientificNotation.threshold ?? 15) : 15,
   );
 
+  // --- 货币展示（对齐 Semi currency）---
+  // 启用条件：currency 非 false/undefined（true 或币种码字符串）。
+  const currencyEnabled = $derived(currency !== false && currency !== undefined);
+  // 格式化 locale：localeCode 优先 → 组件 locale → 'zh-CN'。
+  const resolvedLocaleCode = $derived(localeCode ?? locale ?? 'zh-CN');
+  // 币种码：字符串直接用；currency===true 时按 locale 前缀映射到 ISO 4217，缺省回退 USD。
+  const resolvedCurrencyCode = $derived.by(() => {
+    if (typeof currency === 'string') return currency;
+    return localeToCurrency(resolvedLocaleCode);
+  });
+
   function getInitialValue(): number | null {
     return defaultValue ?? null;
+  }
+
+  // locale → ISO 4217 币种码映射（currency===true 时按 localeCode 推断）。
+  // 精确匹配优先，再按语言前缀匹配，最后回退 USD。
+  function localeToCurrency(code: string): string {
+    const lc = code.toLowerCase();
+    const exact: Record<string, string> = {
+      'zh-cn': 'CNY',
+      'zh-tw': 'TWD',
+      'en-us': 'USD',
+      'en-gb': 'GBP',
+      'ja-jp': 'JPY',
+      'ko-kr': 'KRW',
+      'vi-vn': 'VND',
+      'ru-ru': 'RUB',
+      'id-id': 'IDR',
+      'ms-my': 'MYR',
+      'th-th': 'THB',
+      'tr-tr': 'TRY',
+      'pt-br': 'BRL',
+      'sv-se': 'SEK',
+      'pl-pl': 'PLN',
+    };
+    if (exact[lc]) return exact[lc];
+    const lang = lc.split('-')[0] ?? lc;
+    const byLang: Record<string, string> = {
+      de: 'EUR',
+      fr: 'EUR',
+      it: 'EUR',
+      es: 'EUR',
+      nl: 'EUR',
+      ar: 'SAR',
+      ro: 'RON',
+      zh: 'CNY',
+      ja: 'JPY',
+      ko: 'KRW',
+      ru: 'RUB',
+      vi: 'VND',
+    };
+    return byLang[lang] ?? 'USD';
   }
 
   const atMin = $derived(current !== null && current <= min);
@@ -202,6 +265,18 @@
 
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
+    // 货币展示：仅失焦显示态套用（聚焦编辑态展示纯数字，便于解析）。
+    // currency 优先于科学计数法 —— 同时传时 currency 生效、sci 被忽略（对齐 Semi「currency 不支持 sci」）。
+    // 仅影响显示；current / onChange / onNumberChange 的值仍是完整 number。
+    if (currencyEnabled && !focused) {
+      // showCurrencySymbol=false → decimal（仅千分位，不显示符号/代码/名称，供用户自定义 prefix/suffix）。
+      // currency 模式由 Intl 决定小数位（如 JPY 0 位、CNY 2 位）。
+      return new Intl.NumberFormat(resolvedLocaleCode, {
+        style: showCurrencySymbol ? 'currency' : 'decimal',
+        currency: resolvedCurrencyCode,
+        currencyDisplay,
+      }).format(n);
+    }
     // 科学计数法：仅失焦显示态、且数量级达阈值时套用（聚焦编辑态展示完整数字）。
     // 仅影响显示；current / onChange / onNumberChange 的值仍是完整 number。
     if (sciEnabled && !focused && Math.abs(n) >= 10 ** sciThreshold) {
@@ -216,7 +291,18 @@
   function parseText(t: string): number | null {
     const trimmed = t.trim();
     if (trimmed === '') return null;
-    const n = parser ? parser(t) : Number(trimmed);
+    if (parser) {
+      const n = parser(t);
+      return Number.isNaN(n) ? null : n;
+    }
+    // 货币模式：即便聚焦态通常已展示纯数字，仍保险剥离货币符号/代码/名称/千分位分隔符，
+    // 仅保留数字、小数点、负号（编辑基准是标准 '.' 小数点，故足够）。
+    if (currencyEnabled) {
+      const cleaned = trimmed.replace(/[^\d.-]/g, '');
+      const n = Number(cleaned);
+      return Number.isNaN(n) ? null : n;
+    }
+    const n = Number(trimmed);
     return Number.isNaN(n) ? null : n;
   }
 
