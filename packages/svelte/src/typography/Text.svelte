@@ -11,9 +11,9 @@
     type EditableConfig,
   } from './TypographyBase.svelte';
 
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
+  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
-  type TypoSize = 'small' | 'default' | 'large';
+  type TypoSize = 'small' | 'default' | 'large' | 'inherit';
 
   interface Props {
     type?: TypoType;

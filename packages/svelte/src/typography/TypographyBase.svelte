@@ -26,9 +26,9 @@
   import Tooltip from '../tooltip/Tooltip.svelte';
   import Popover from '../popover/Popover.svelte';
 
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
+  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
   type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
-  type TypoSize = 'small' | 'default' | 'large';
+  type TypoSize = 'small' | 'default' | 'large' | 'inherit';
 
   /**
    * showTooltip 浮层透传选项（对齐 Semi opts）。content 指定浮层显示的自定义内容
@@ -43,6 +43,10 @@
     placement?: string;
     position?: 'top' | 'bottom' | 'left' | 'right';
     maxWidth?: number | string;
+    /** 浮层自定义类名（对齐 Semi opts.className）。 */
+    className?: string;
+    /** 浮层自定义内联样式（对齐 Semi opts.style）。 */
+    style?: string;
   }
   /**
    * showTooltip 配置（对齐 Semi）：
@@ -76,6 +80,12 @@
     successText?: string;
     icon?: Snippet;
     successIcon?: Snippet;
+    /**
+     * 完全接管复制控件渲染（对齐 Semi `copyable.render`）。
+     * 参数：`copied` 当前是否已复制、`doCopy` 触发复制、`config` 当前 CopyableConfig。
+     * 提供后 icon/successIcon 及内置 button 均不渲染，由使用方自绘。
+     */
+    render?: Snippet<[boolean, () => void, CopyableConfig]>;
   }
   export interface EditableConfig {
     editing?: boolean;
@@ -495,18 +505,22 @@
 
 {#snippet actions()}
   {#if copyableCfg}
-    <button
-      type="button"
-      class="{baseClass}__action {baseClass}__action--copy"
-      class:is-copied={copied}
-      aria-label={copyLabel}
-      title={copyLabel}
-      onclick={doCopy}
-    >
-      {#if copied}
-        {#if copyableCfg.successIcon}{@render copyableCfg.successIcon()}{:else}{@render copiedIconDefault()}{/if}
-      {:else if copyableCfg.icon}{@render copyableCfg.icon()}{:else}{@render copyIconDefault()}{/if}
-    </button>
+    {#if copyableCfg.render}
+      {@render copyableCfg.render(copied, doCopy, copyableCfg)}
+    {:else}
+      <button
+        type="button"
+        class="{baseClass}__action {baseClass}__action--copy"
+        class:is-copied={copied}
+        aria-label={copyLabel}
+        title={copyLabel}
+        onclick={doCopy}
+      >
+        {#if copied}
+          {#if copyableCfg.successIcon}{@render copyableCfg.successIcon()}{:else}{@render copiedIconDefault()}{/if}
+        {:else if copyableCfg.icon}{@render copyableCfg.icon()}{:else}{@render copyIconDefault()}{/if}
+      </button>
+    {/if}
   {/if}
   {#if editableCfg && (editableCfg.trigger ?? 'icon') === 'icon'}
     <button
@@ -567,6 +581,8 @@
         placement={(tooltipOpts.placement ?? 'top') as never}
         theme={tooltipOpts.theme ?? 'dark'}
         maxWidth={tooltipOpts.maxWidth ?? 300}
+        popClass={tooltipOpts.className ?? ''}
+        popStyleExtra={tooltipOpts.style ?? ''}
         disabled={!tooltipEnabled}
       >
         {@render hostNode()}
@@ -575,19 +591,6 @@
   {:else}
     {@render hostNode()}
   {/if}
-
-  {#if (expandable && !expanded && truncated === true) || (collapsible && expanded)}
-    <button
-      type="button"
-      class="{baseClass}__expand"
-      aria-expanded={expanded}
-      onclick={() => ellipsisApi?.toggle()}
-    >
-      {expanded ? collapseLabel : expandLabel}
-    </button>
-  {/if}
-
-  {@render actions()}
 {/if}
 
 {#snippet hostNode()}
@@ -602,7 +605,13 @@
     ondblclick={onTriggerHost}
   >
     {#if icon}<span class="cd-typography__icon">{@render icon()}</span>{/if}{@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
- -->{ellipsisCfg.suffix}{/if}
+ -->{ellipsisCfg.suffix}{/if}{#if (expandable && !expanded && truncated === true) || (collapsible && expanded)}<!--
+ --><button
+      type="button"
+      class="{baseClass}__expand"
+      aria-expanded={expanded}
+      onclick={() => ellipsisApi?.toggle()}
+    >{expanded ? collapseLabel : expandLabel}</button>{/if}{@render actions()}
   </svelte:element>
 {/snippet}
 
@@ -662,6 +671,9 @@
   :global(.cd-typography--tertiary) {
     color: var(--cd-typography-color-tertiary);
   }
+  :global(.cd-typography--quaternary) {
+    color: var(--cd-typography-color-quaternary);
+  }
   :global(.cd-typography--warning) {
     color: var(--cd-color-typography-warning-text-default);
   }
@@ -698,6 +710,10 @@
   }
   :global(.cd-typography--size-large) {
     font-size: var(--cd-typography-font-size-large, var(--cd-font-size-header-6));
+  }
+  /* size=inherit：继承外层字号（对齐 Semi），用于嵌套在更大/更小文本中 */
+  :global(.cd-typography--size-inherit) {
+    font-size: inherit;
   }
   :global(.cd-typography--disabled) {
     opacity: 0.5;

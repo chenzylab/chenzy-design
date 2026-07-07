@@ -8,8 +8,8 @@
   import type { Snippet } from 'svelte';
   import { formatNumeral, type NumeralRule, type NumeralTruncate } from '@chenzy-design/core';
 
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success';
-  type TypoSize = 'small' | 'default' | 'large';
+  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
+  type TypoSize = 'small' | 'default' | 'large' | 'inherit';
 
   interface Props {
     /** 解析规则（对齐 Semi）。 */
@@ -22,6 +22,8 @@
     parser?: (raw: string) => string;
     /** 渲染元素，默认 span。 */
     component?: string;
+    /** 渲染为链接样式（对齐 Semi Numeral link）。 */
+    link?: boolean;
     // —— 复用 Text 的样式 props ——
     type?: TypoType;
     size?: TypoSize;
@@ -41,6 +43,7 @@
     truncate = 'round',
     parser,
     component = 'span',
+    link = false,
     type = 'default',
     size = 'default',
     strong = false,
@@ -78,8 +81,9 @@
     [
       'cd-typography',
       'cd-typography--text',
-      `cd-typography--${type}`,
-      `cd-typography--${size}`,
+      type !== 'default' && `cd-typography--${type}`,
+      size !== 'default' && `cd-typography--size-${size}`,
+      link && 'cd-typography--link',
       strong && 'cd-typography--strong',
       mark && 'cd-typography--mark',
       underline && 'cd-typography--underline',

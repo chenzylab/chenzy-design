@@ -40,6 +40,10 @@
     disabled?: boolean;
     /** 浮层 z-index（覆盖 CSS token --cd-tooltip-z） */
     zIndex?: number;
+    /** 浮层自定义类名（追加到浮层元素） */
+    popClass?: string;
+    /** 浮层自定义内联样式（追加到浮层元素） */
+    popStyleExtra?: string;
     /** 阻止浮层上的点击事件冒泡，默认 true */
     stopPropagation?: boolean;
     /** 显示时阻止页面滚动 */
@@ -68,6 +72,8 @@
     maxWidth = 300,
     disabled = false,
     zIndex,
+    popClass = '',
+    popStyleExtra = '',
     stopPropagation = true,
     preventScroll = false,
     afterClose,
@@ -220,6 +226,7 @@
     [
       `max-inline-size:${maxWidthCss}`,
       zIndex !== undefined ? `z-index:${zIndex}` : '',
+      popStyleExtra,
     ]
       .filter(Boolean)
       .join(';'),
@@ -266,7 +273,7 @@
       role="tooltip"
       bind:this={popEl}
       use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: 8, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer }}
-      class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme}"
+      class="cd-tooltip__pop cd-tooltip__pop--{resolvedSide} cd-tooltip__pop--{theme} {popClass}"
       class:cd-tooltip__pop--no-arrow={!showArrow}
       class:cd-tooltip__pop--with-status={hasStatusIcon}
       style={popStyle}
