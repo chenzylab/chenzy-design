@@ -44,6 +44,18 @@ export const meta = {
     { name: 'onEnter', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '已废弃，改用 onEnterPress' },
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined' },
     { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined' },
+    { name: 'composition', type: 'boolean', default: 'false', desc: '输入法模式：开启后 IME 未确认期间不触发 onChange，确认后触发一次（对齐 Semi）' },
+    { name: 'clearIcon', type: 'Snippet', default: 'undefined', desc: '自定义清除图标（clearable 有值时替换默认图标，对齐 Semi）' },
+    { name: 'onKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '透传原生 keydown（对齐 Semi）' },
+    { name: 'onKeyUp', type: '(e: KeyboardEvent) => void', default: 'undefined' },
+    { name: 'onKeyPress', type: '(e: KeyboardEvent) => void', default: 'undefined' },
+    { name: 'onCompositionStart', type: '(e: CompositionEvent) => void', default: 'undefined' },
+    { name: 'onCompositionEnd', type: '(e: CompositionEvent) => void', default: 'undefined' },
+    { name: 'onCompositionUpdate', type: '(e: CompositionEvent) => void', default: 'undefined' },
+  ],
+  methods: [
+    { name: 'focus()', desc: '命令式聚焦输入框（尊重 preventScroll，对齐 Semi）' },
+    { name: 'blur()', desc: '命令式移除焦点（对齐 Semi）' },
   ],
   a11y: {
     role: 'textbox',
