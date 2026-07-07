@@ -4,6 +4,7 @@ import {
   computeGroupResize,
   clamp as clampResize,
   snapToGrid,
+  snapToPoints,
   hasDirection,
   getPixelSize,
   judgeConstraint,
@@ -44,6 +45,14 @@ describe('numeric helpers', () => {
     expect(snapToGrid(23, 10)).toBe(20);
     expect(snapToGrid(26, 10)).toBe(30);
     expect(snapToGrid(26, 0)).toBe(26); // no snap
+  });
+
+  it('snapToPoints', () => {
+    expect(snapToPoints(105, [100, 200], 20)).toBe(100); // within gap
+    expect(snapToPoints(160, [100, 200], 20)).toBe(160); // outside gap -> unchanged
+    expect(snapToPoints(160, [100, 200], 0)).toBe(200); // gap 0 -> always nearest
+    expect(snapToPoints(50, undefined, 10)).toBe(50); // no targets
+    expect(snapToPoints(50, [], 10)).toBe(50); // empty targets
   });
   it('hasDirection', () => {
     expect(hasDirection('topRight', 'top')).toBe(true);
@@ -138,6 +147,40 @@ describe('createResizeDrag — single axis x (Table column case)', () => {
     drag.start(pe(0, 0), 'right');
     doc.fire('pointermove', pe(100, 0)); // 100/2 = 50 -> 150
     expect(sizes).toEqual([150]);
+  });
+
+  it('snap sticks to the nearest target within snapGap', () => {
+    const doc = makeFakeDoc();
+    const sizes: number[] = [];
+    const drag = createResizeDrag({
+      axis: 'x',
+      getStart: () => ({ width: 100 }),
+      snap: { x: [100, 200, 300] },
+      snapGap: 20,
+      onMove: (s) => sizes.push(s.width),
+      ownerDocument: doc as unknown as Document,
+    });
+    drag.start(pe(0, 0), 'right');
+    doc.fire('pointermove', pe(90, 0)); // 190 within 20 of 200 -> 200
+    doc.fire('pointermove', pe(60, 0)); // 160 not within 20 of any -> 160
+    doc.fire('pointermove', pe(105, 0)); // 205 within 20 of 200 -> 200
+    expect(sizes).toEqual([200, 160, 200]);
+  });
+
+  it('getBoundMax caps the size at the bound element', () => {
+    const doc = makeFakeDoc();
+    const sizes: number[] = [];
+    const drag = createResizeDrag({
+      axis: 'x',
+      getStart: () => ({ width: 100 }),
+      getBoundMax: () => ({ maxWidth: 250 }),
+      onMove: (s) => sizes.push(s.width),
+      ownerDocument: doc as unknown as Document,
+    });
+    drag.start(pe(0, 0), 'right');
+    doc.fire('pointermove', pe(100, 0)); // 200 < 250 -> 200
+    doc.fire('pointermove', pe(300, 0)); // 400 capped at 250
+    expect(sizes).toEqual([200, 250]);
   });
 });
 

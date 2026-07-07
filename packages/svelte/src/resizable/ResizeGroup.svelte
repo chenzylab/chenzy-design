@@ -272,6 +272,32 @@
     next.onResizeEnd?.({ width: nextEl.offsetWidth, height: nextEl.offsetHeight }, event as unknown as PointerEvent, nextDir);
   }
 
+  // 折叠状态：item id → 折叠前的百分比（存在即处于折叠态）。本库独有增强。
+  const collapsedPercent = new Map<number, number>();
+
+  function toggleCollapse(handlerId: number): void {
+    const pair = neighboursOf(handlerId);
+    if (!pair) return;
+    const { last, next } = pair;
+    if (collapsedPercent.has(last.id)) {
+      // 展开：把之前折叠时腾出的百分比从邻居还回来。
+      const restored = collapsedPercent.get(last.id) ?? 0;
+      collapsedPercent.delete(last.id);
+      const nextPct = itemPercent.get(next.id) ?? 0;
+      itemPercent.set(last.id, restored);
+      itemPercent.set(next.id, Math.max(0, nextPct - restored));
+    } else {
+      // 折叠：记住当前百分比，设为 0，空间给下一项。
+      const lastPct = itemPercent.get(last.id) ?? 0;
+      const nextPct = itemPercent.get(next.id) ?? 0;
+      collapsedPercent.set(last.id, lastPct);
+      itemPercent.set(last.id, 0);
+      itemPercent.set(next.id, nextPct + lastPct);
+    }
+    applyBasis(last, itemPercent.get(last.id) ?? 0);
+    applyBasis(next, itemPercent.get(next.id) ?? 0);
+  }
+
   function itemSizeAround(handlerId: number): { last: number; next: number; parent: number } {
     const pair = neighboursOf(handlerId);
     const parent = groupSize();
@@ -309,6 +335,7 @@
     startHandlerDrag,
     keyboardAdjust,
     itemSizeAround,
+    toggleCollapse,
   };
 
   let measureQueued = false;
