@@ -55,7 +55,8 @@ const components = [
   // basic
   ['button', '{ Button }', '4 KB'],
   ['iconbutton', '{ IconButton }', '0.6 KB'],
-  ['float-button', '{ FloatButton, FloatButtonGroup }', '2.9 KB'],
+  // 徽章几何定位 + Group 胶囊工具条（bg/shadow/item 横排）后实测 2.94 KB，预算按 +15% buffer 校准。
+  ['float-button', '{ FloatButton, FloatButtonGroup }', '3.4 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
   ['grid', '{ Row, Col }', '2.25 KB'],
   ['icon', '{ Icon }', '1.45 KB'],

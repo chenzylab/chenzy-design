@@ -38,6 +38,17 @@ export const floatButtonTokens = {
   'floatbutton-z': { value: '900', category: 'other', label: '层级', usage: '悬浮按钮 z-index' },
   'floatbutton-motion-duration': { value: 'var(--cd-motion-duration-fast)', category: 'animation', label: '动画时长', usage: '悬浮 / 渐变过渡时长' },
 
-  // —— Group 布局 ——
-  'floatbutton-group-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '组内间距', usage: 'Group 相邻按钮间距' },
+  // —— Group 布局（胶囊工具条，对齐 Semi）——
+  'floatbutton-group-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '组内间距', usage: 'Group 相邻项间距' },
+  'floatbutton-group-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '组背景', usage: 'Group 胶囊条背景色' },
+  'floatbutton-group-shadow': { value: 'var(--cd-floatbutton-shadow)', category: 'other', label: '组阴影', usage: 'Group 胶囊条阴影' },
+  'floatbutton-group-radius': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '组圆角', usage: 'Group 胶囊条圆角' },
+  'floatbutton-group-padding': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '组内边距', usage: 'Group 胶囊条内边距' },
+  'floatbutton-group-item-padding-y': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '项纵向内边距', usage: 'Group item 纵向内边距' },
+  'floatbutton-group-item-padding-x': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '项横向内边距', usage: 'Group item 横向内边距' },
+  'floatbutton-group-item-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '项内图文间距', usage: 'Group item 图标与文字间距' },
+  'floatbutton-group-item-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '项圆角', usage: 'Group item 圆角' },
+  'floatbutton-group-item-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '项文字色', usage: 'Group item 文字颜色' },
+  'floatbutton-group-item-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '项背景（悬浮）', usage: 'Group item 悬浮背景' },
+  'floatbutton-group-item-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '项背景（按下）', usage: 'Group item 按下背景' },
 } satisfies TokenGroup;

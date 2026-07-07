@@ -60,6 +60,8 @@ export interface FloatButtonGroupItem extends FloatButtonProps {
 export interface FloatButtonGroupProps {
   /** 子项数组，遍历渲染。 */
   items?: FloatButtonGroupItem[];
+  /** 胶囊条排列方向（对齐 Semi，默认横向工具条）。 */
+  direction?: 'horizontal' | 'vertical';
   /** 组级禁用样式。 */
   disabled?: boolean;
   /** 组的可访问名（role="group"）；缺省取 i18n 默认。 */

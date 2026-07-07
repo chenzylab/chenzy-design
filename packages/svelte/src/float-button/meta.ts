@@ -36,9 +36,10 @@ export const meta = {
     {
       name: 'FloatButtonGroup',
       usage: '<FloatButtonGroup items={...} onClick={(value, e) => {}} />',
-      desc: '平铺容器（role="group" + aria-label），遍历 items 渲染多个 FloatButton，事件委托读 data-value 回传 value。各子项独立 button/a 逐个可 Tab。',
+      desc: '胶囊工具条（role="group" + aria-label，对齐 Semi）：一个背景圆角条内横排（或竖排）多个「图标+文字」项，事件委托读 data-value 回传 value。各项独立 button 逐个可 Tab。',
       props: [
-        { name: 'items', type: 'FloatButtonGroupItem[]', default: '[]', desc: '子项数组；FloatButtonGroupItem = FloatButton 全部 props + { value: string; content?: Snippet|string }' },
+        { name: 'items', type: 'FloatButtonGroupItem[]', default: '[]', desc: '子项数组；每项 { value: string; icon?: Snippet; content?: Snippet|string; ariaLabel?; disabled? }' },
+        { name: 'direction', type: "'horizontal'|'vertical'", default: "'horizontal'", desc: '胶囊条排列方向（对齐 Semi）' },
         { name: 'disabled', type: 'boolean', default: 'false', desc: '组级禁用样式' },
         { name: 'ariaLabel', type: 'string', default: 'i18n 默认', desc: '组的可访问名；缺省取 locale FloatButton.groupAriaLabel' },
         { name: 'onClick', type: '(value: string, e: MouseEvent) => void', default: 'undefined', desc: '组级点击委托，回传被点项 value' },
