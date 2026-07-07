@@ -46,6 +46,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 12px;
+    /* 卡片按自身内容高度，不被同行的最高卡片拉高。 */
+    align-items: start;
   }
   .component-card {
     display: block;
@@ -69,5 +71,11 @@
     font-size: 12px;
     color: var(--cd-color-text-2, #86909c);
     line-height: 1.5;
+    /* 描述限 3 行，超长描述（如 AIChatDialogue）不再撑爆卡片、拉高整行。 */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 </style>

@@ -1,6 +1,10 @@
 <script lang="ts">
   import { Layout, Nav, Avatar, Breadcrumb } from '@chenzy-design/svelte';
 
+  // Nav 折叠态用 inline-size:100% 吃满容器，需外层 Sider 同步收窄宽度，否则图标会浮在宽栏中间。
+  // 接 Nav 的 onCollapseChange → 联动 Sider 的 collapsed，使折叠时侧栏收到 collapsedWidth。
+  let sideCollapsed = $state(false);
+
   const topItems = [
     { itemKey: 'workbench', text: '工作台' },
     { itemKey: 'projects', text: '项目' },
@@ -53,13 +57,19 @@
       </div>
     </Layout.Header>
     <Layout hasSider>
-      <Layout.Sider width={200} style="background: var(--cd-color-bg-1); border-inline-end: 1px solid var(--cd-color-border);">
+      <Layout.Sider
+        width={200}
+        collapsedWidth={64}
+        collapsed={sideCollapsed}
+        style="background: var(--cd-color-bg-1); border-inline-end: 1px solid var(--cd-color-border);"
+      >
         <Nav
           mode="vertical"
           defaultSelectedKeys={['dashboard']}
           defaultOpenKeys={['tasks']}
           items={sideItems}
           footer={{ collapseButton: true }}
+          onCollapseChange={(c) => (sideCollapsed = c)}
           style="height: 100%;"
         />
       </Layout.Sider>
