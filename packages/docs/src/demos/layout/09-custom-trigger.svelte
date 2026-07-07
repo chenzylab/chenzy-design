@@ -6,8 +6,8 @@
     'display:flex; align-items:center; justify-content:center; color: var(--cd-color-text-2);';
 </script>
 
-<div style="border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
-  <Layout hasSider>
+<div style="height: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
+  <Layout hasSider style="height: 100%;">
     <Layout.Sider
       width={200}
       collapsedWidth={72}
@@ -27,7 +27,7 @@
         </div>
       {/snippet}
     </Layout.Sider>
-    <Layout.Content padding style="height: 200px; background: var(--cd-color-bg-0); color: var(--cd-color-text-2);">
+    <Layout.Content padding style="background: var(--cd-color-bg-0); color: var(--cd-color-text-2);">
       Sider 自身的 collapsible 折叠 + 自定义 trigger snippet（接收 collapsed/toggle），
       可用任意组件（这里用 Button）替代默认箭头。
     </Layout.Content>

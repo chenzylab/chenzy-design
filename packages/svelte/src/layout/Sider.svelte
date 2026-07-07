@@ -38,6 +38,12 @@
     children?: Snippet;
     /** custom trigger; receives current collapsed + toggle */
     trigger?: Snippet<[{ collapsed: boolean; toggle: () => void }]>;
+    /**
+     * 零宽触发器自定义样式（对齐 Ant zeroWidthTriggerStyle）。
+     * 仅在 collapsedWidth=0 且 collapsible 时，浮动触发块逸出 0 宽侧栏外缘，
+     * 使收起后仍可展开。此 style 叠加在内置定位样式之后，可覆盖位置/尺寸/配色。
+     */
+    zeroWidthTriggerStyle?: string;
   }
 
   let {
@@ -57,6 +63,7 @@
     onBreakpoint,
     children,
     trigger,
+    zeroWidthTriggerStyle,
   }: Props = $props();
 
   const loc = useLocale();
@@ -124,6 +131,10 @@
     collapsedState && (collapsedWidth === 0 || collapsedWidth === '0' || collapsedWidth === '0px'),
   );
 
+  // 零宽触发器：collapsible + 已收成 0 宽时，露出浮动块以便重新展开（对齐 Ant zeroWidthTrigger）。
+  // 无它时 0 宽侧栏没有任何可点区域，收起后无法恢复。
+  const showZeroTrigger = $derived(collapsible && isCollapsedToZero);
+
   const cls = $derived(
     [
       'cd-layout-sider',
@@ -161,6 +172,19 @@
 
   {#if trigger}
     {@render trigger({ collapsed: collapsedState, toggle })}
+  {:else if showZeroTrigger}
+    <!-- 零宽态：浮动触发块 position:absolute 逸出 0 宽侧栏外缘，收起后仍可展开。 -->
+    <button
+      type="button"
+      class="cd-layout-sider__trigger cd-layout-sider__trigger--zero"
+      style={zeroWidthTriggerStyle}
+      aria-expanded={false}
+      aria-controls={sider.id}
+      aria-label={loc().t('Sider.expand')}
+      onclick={toggle}
+    >
+      <span class="cd-layout-sider__arrow" aria-hidden="true">{pointsStart ? '‹' : '›'}</span>
+    </button>
   {:else if collapsible}
     <button
       type="button"
@@ -217,6 +241,24 @@
   .cd-layout-sider__trigger:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
+  }
+  /* 零宽浮动触发块：逸出 0 宽侧栏外缘。left 贴右外侧，right 贴左外侧。 */
+  .cd-layout-sider__trigger--zero {
+    position: absolute;
+    inset-block-start: var(--cd-spacing-base);
+    width: var(--cd-layout-sider-zero-trigger-width);
+    height: var(--cd-layout-sider-zero-trigger-height);
+    border: var(--cd-layout-sider-border);
+    border-radius: 0 var(--cd-border-radius-medium) var(--cd-border-radius-medium) 0;
+    box-shadow: var(--cd-shadow-elevated);
+    z-index: var(--cd-layout-header-z);
+  }
+  .cd-layout-sider--left .cd-layout-sider__trigger--zero {
+    inset-inline-start: 100%;
+  }
+  .cd-layout-sider--right .cd-layout-sider__trigger--zero {
+    inset-inline-end: 100%;
+    border-radius: var(--cd-border-radius-medium) 0 0 var(--cd-border-radius-medium);
   }
   .cd-layout-sider__arrow {
     display: inline-flex;

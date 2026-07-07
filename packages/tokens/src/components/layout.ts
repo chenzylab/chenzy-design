@@ -21,6 +21,8 @@ export const layoutTokens = {
   'layout-sider-trigger-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '收起触发器背景', usage: 'Sider 折叠触发器背景色' },
   'layout-sider-trigger-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '收起触发器图标色', usage: 'Sider 折叠触发器图标颜色' },
   'layout-sider-trigger-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '收起触发器背景（悬浮）', usage: 'Sider 折叠触发器背景 - 悬浮' },
+  'layout-sider-zero-trigger-width': { value: '24px', category: 'width', label: '零宽触发器宽度', usage: 'collapsedWidth=0 时浮动触发块宽度' },
+  'layout-sider-zero-trigger-height': { value: '48px', category: 'height', label: '零宽触发器高度', usage: 'collapsedWidth=0 时浮动触发块高度' },
   'layout-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '动画时长', usage: 'Sider 展开 / 收起过渡时长' },
   'layout-motion-ease': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '动画缓动', usage: 'Sider 展开 / 收起缓动函数' },
 } satisfies TokenGroup;

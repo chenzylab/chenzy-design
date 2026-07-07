@@ -5,14 +5,14 @@
     'display:flex; align-items:center; justify-content:center; color: var(--cd-color-text-2);';
 </script>
 
-<div style="border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
-  <Layout hasSider>
+<div style="height: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
+  <Layout hasSider style="height: 100%;">
     <Layout.Sider width={140} style="{cell} background: var(--cd-color-fill-1);">Sider</Layout.Sider>
     <Layout>
       <Layout.Header style="{cell} background: var(--cd-color-fill-0); font-weight:600; color: var(--cd-color-text-1);">
         Header
       </Layout.Header>
-      <Layout.Content style="{cell} height: 160px; background: var(--cd-color-bg-0);">Content</Layout.Content>
+      <Layout.Content style="{cell} background: var(--cd-color-bg-0);">Content</Layout.Content>
       <Layout.Footer style="{cell} background: var(--cd-color-fill-0);">Footer</Layout.Footer>
     </Layout>
   </Layout>
