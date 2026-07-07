@@ -30,4 +30,8 @@ export const demos: DemoEntry[] = [
   entry('03-alpha.svelte', '透明度 Alpha', 'alpha 开启时显示透明度滑条，关闭则强制不透明。'),
   entry('04-presets.svelte', '预设色板', 'presets 品牌色板 + recentColors 最近用色，受控值回显。'),
   entry('05-states.svelte', '尺寸与状态', 'size 三档尺寸、warning / error 校验态与 disabled 禁用态。'),
+  entry('06-eye-dropper.svelte', '滴管取色', 'eyeDropper 开启浏览器吸管，从屏幕任意位置取色（需安全上下文，不支持时自动隐藏）。'),
+  entry('07-slots.svelte', '顶部/底部插槽', 'topSlot / bottomSlot 在面板顶部、底部渲染额外内容。'),
+  entry('08-custom-trigger.svelte', '自定义触发器', 'usePopover 浮层模式下用 children 自定义触发器，替换默认色块。'),
+  entry('09-controlled.svelte', '受控', '外部持有 value 配合 onChange，按钮编程式设置颜色。'),
 ];

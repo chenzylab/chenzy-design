@@ -97,11 +97,9 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 
 | Slot | 作用域参数 | 说明 |
 | --- | --- | --- |
-| `trigger` | `{ value, hex, open, disabled }` | 自定义触发器，替换默认色块。 |
-| `panel-header` | `{ value, format }` | 面板顶部自定义区（如标题）。 |
-| `panel-footer` | `{ value, confirm, cancel }` | 面板底部（如确认/取消按钮）。 |
-| `preset` | `{ color, label, selected, select }` | 自定义单个预设项渲染。 |
-| `extra` | `{ value }` | 输入区与预设区之间的扩展插槽。 |
+| `children` | — | 自定义触发器内容，替换默认色块（仅浮层模式；对齐 Semi children）。 |
+| `topSlot` | — | 面板顶部自定义区（如标题）。 |
+| `bottomSlot` | — | 面板底部自定义区（如确认/取消按钮）。 |
 
 ## 5. 主题 / Token
 
