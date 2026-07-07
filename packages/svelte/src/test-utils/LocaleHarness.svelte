@@ -23,7 +23,11 @@
 </script>
 
 <LocaleProvider {locale}>
-  <Cmp {...props}>
-    {#if children}{@render children()}{/if}
-  </Cmp>
+  {#if children}
+    <Cmp {...props}>
+      {@render children()}
+    </Cmp>
+  {:else}
+    <Cmp {...props} />
+  {/if}
 </LocaleProvider>

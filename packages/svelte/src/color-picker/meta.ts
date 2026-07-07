@@ -35,6 +35,7 @@ export const meta = {
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
     { name: 'onFormatChange', type: "(format: 'hex'|'rgb'|'hsv'|'hsl') => void", default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '自定义触发器内容（提供时替换默认色块 trigger，仅浮层模式；对齐 Semi children）' },
   ],
   a11y: {
     role: 'dialog',

@@ -52,6 +52,8 @@
     inline?: boolean;
     /** 等价于 !inline，使用 trigger 浮层（默认 false） */
     usePopover?: boolean;
+    /** 自定义触发器内容（提供时替换默认色块 trigger，仅浮层模式） */
+    children?: Snippet;
     /** 面板顶部 slot */
     topSlot?: Snippet;
     /** 面板底部 slot */
@@ -91,6 +93,7 @@
     showFormatToggle = true,
     inline = false,
     usePopover = false,
+    children,
     topSlot,
     bottomSlot,
     style,
@@ -723,16 +726,37 @@
       .filter(Boolean)
       .join(';')}
   >
-    <button
-      type="button"
-      class="cd-color-picker__trigger"
-      aria-haspopup="dialog"
-      aria-expanded={isOpen}
-      aria-label={ariaLabel}
-      {disabled}
-      style="background:{displayHex}"
-      onclick={toggleOpen}
-    ></button>
+    {#if children}
+      <span
+        class="cd-color-picker__trigger--custom"
+        role="button"
+        tabindex={disabled ? -1 : 0}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        aria-disabled={disabled}
+        onclick={() => !disabled && toggleOpen()}
+        onkeydown={(e) => {
+          if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            toggleOpen();
+          }
+        }}
+      >
+        {@render children()}
+      </span>
+    {:else}
+      <button
+        type="button"
+        class="cd-color-picker__trigger"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={ariaLabel}
+        {disabled}
+        style="background:{displayHex}"
+        onclick={toggleOpen}
+      ></button>
+    {/if}
 
     {#if isOpen}
       <div class="cd-color-picker__panel" bind:this={panelEl} role="dialog" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
@@ -754,6 +778,13 @@
     border: 1px solid var(--cd-color-picker-trigger-border);
     border-radius: var(--cd-color-picker-trigger-radius);
     cursor: pointer;
+  }
+  .cd-color-picker__trigger--custom {
+    display: inline-flex;
+    cursor: pointer;
+  }
+  .cd-color-picker__trigger--custom[tabindex='-1'] {
+    cursor: not-allowed;
   }
   .cd-color-picker--small .cd-color-picker__trigger {
     inline-size: calc(var(--cd-color-picker-trigger-size) - 4px);
