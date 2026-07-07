@@ -14,7 +14,7 @@ Form 是表单容器组件，负责承载并编排一组输入控件（Input/Sel
 - `Form.Section` / `Form.Slot`：分组与自由插入。
 - `Form.ErrorMessage` / `Form.Label`：可独立组合的原子。
 
-为获得"开箱即用"体验，Form 同时提供已绑定的字段封装（如 `Form.Input`、`Form.Select`），等价于 `Form.Field` + 对应控件，自动接管 `value`/`on:change`/`status`。
+为获得"开箱即用"体验，Form 同时提供已绑定的字段封装，等价于 `Form.Field` + 对应控件，自动接管 `value`/`on:change`/`status`。全部挂载到 `Form.` 命名空间（对齐 Semi）：`Form.Input`、`Form.Select`、`Form.Checkbox`、`Form.Radio`、`Form.Switch`、`Form.Slider`、`Form.Rating`、`Form.DatePicker`、`Form.TagInput`、`Form.TreeSelect`、`Form.Cascader`、`Form.Upload`，以及动态字段 `Form.List`。
 
 非目标：不内置网络提交（仅暴露 `on:submit` 携带校验结果）；不内置复杂联动 DSL（通过 `dependencies` + 函数式 rules 表达）。
 
