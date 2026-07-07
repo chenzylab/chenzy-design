@@ -41,6 +41,7 @@
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
   import Popover from '../popover/Popover.svelte';
+  import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
@@ -92,12 +93,14 @@
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
     /** 自定义触发器选中路径的回显文本（单选 + 多选每个 tag 均走此函数） */
     displayRender?: (labels: string[], selectedNodes: CascaderNode[]) => string;
-    /** 单选回调单条路径；多选回调多条叶子路径 */
-    onChange?: (value: Key[] | Key[][]) => void;
+    /** 单选回调单条路径；多选回调多条叶子路径。onChangeWithObject=true 时改为回传节点对象（单选节点链 CascaderNode[]，多选每条路径节点链 CascaderNode[][]） */
+    onChange?: (value: Key[] | Key[][] | CascaderNode[] | CascaderNode[][]) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
 
     // --- 外观 ---
+    /** 附加到根节点的自定义 class */
+    class?: string;
     /** 无边框模式 */
     borderless?: boolean;
     /** 前置内容（Snippet 或 string） */
@@ -216,7 +219,7 @@
     value,
     defaultValue,
     treeData = [],
-    open,
+    open: openProp,
     defaultOpen = false,
     multiple = false,
     size = 'default',
@@ -243,6 +246,7 @@
     onChange,
     onOpenChange,
     ariaLabel,
+    class: className = '',
     borderless = false,
     prefix,
     insetLabel,
@@ -454,9 +458,9 @@
   );
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
+  const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
 
   // --- 本地展开状态 (红线 #2): activePath 本地 $state，不依赖挂载 registry ---
   let activePath = $state<Key[]>(getInitialPath());
@@ -553,7 +557,14 @@
       const lower = trimmedSearch.toLowerCase();
       results = flatPaths.filter((p) => {
         if (filterLeafOnly && !p.isLeaf) return false;
-        return p.labels.join(separator).toLowerCase().includes(lower);
+        // treeNodeFilterProp==='label'（默认）：按整条 label 链匹配（既有行为）。
+        // 其它字段：取路径末节点（目标节点）该字段值转字符串做子串匹配。
+        if (treeNodeFilterProp === 'label') {
+          return p.labels.join(separator).toLowerCase().includes(lower);
+        }
+        const lastNode = p.nodes[p.nodes.length - 1] as unknown as Record<string, unknown>;
+        const field = lastNode?.[treeNodeFilterProp];
+        return field != null && String(field).toLowerCase().includes(lower);
       });
     }
     if (filterSorter) {
@@ -681,7 +692,12 @@
 
   function setValue(next: Key[]) {
     if (!isValueControlled) innerValue = next;
-    onChange?.(next);
+    // onChangeWithObject=true：回传选中路径上每个节点的完整对象链，而非 value 数组。
+    if (onChangeWithObject) {
+      onChange?.(findPath(normalizedTreeData, next));
+    } else {
+      onChange?.(next);
+    }
   }
 
   // 多选：由 conduct 解析后的 checked 全集生成多条路径回调。
@@ -717,7 +733,12 @@
 
   function setPaths(nextPaths: Key[][]) {
     if (!isValueControlled) innerPaths = nextPaths;
-    onChange?.(nextPaths);
+    // onChangeWithObject=true：每条选中路径回传其完整节点链（CascaderNode[]），而非 value 链。
+    if (onChangeWithObject) {
+      onChange?.(nextPaths.map((p) => findPath(normalizedTreeData, p)));
+    } else {
+      onChange?.(nextPaths);
+    }
   }
 
   // 由 value 集合收集对应节点对象（用于 onExceed 回调）。
@@ -827,6 +848,29 @@
     setOpen(!isOpen);
   }
 
+  // --- 命令式 Methods（经 bind:this 组件实例调用）---
+  // 复用现成 setOpen（尊重受控/非受控 + onOpenChange/onDropdownVisibleChange 副作用）。
+  /** 打开下拉面板。 */
+  export function open() {
+    setOpen(true);
+  }
+  /** 关闭下拉面板。 */
+  export function close() {
+    setOpen(false);
+  }
+  /** 聚焦触发器可聚焦元素（消费 preventScroll）。 */
+  export function focus() {
+    (triggerEl ?? rootEl)?.focus({ preventScroll });
+  }
+  /** 触发器失焦。 */
+  export function blur() {
+    (triggerEl ?? rootEl)?.blur();
+  }
+  /** 以编程方式设置搜索值并触发搜索流程（等价用户在搜索框输入）。 */
+  export function search(value: string) {
+    searchValue = value;
+  }
+
   function isActiveAt(colIndex: number, node: CascaderNode): boolean {
     return activePath[colIndex] === node.value;
   }
@@ -930,6 +974,33 @@
       void loadChildren(node);
     }
   }
+
+  // hover 展开延迟：enter 延迟 mouseEnterDelay 后展开；leave 清除 pending enter
+  // 定时器（延迟 mouseLeaveDelay），避免鼠标划过瞬间抖动展开。timer 用普通变量。
+  let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+  function clearHoverTimer() {
+    if (hoverTimer !== undefined) {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+    }
+  }
+  function scheduleHoverExpand(colIndex: number, node: CascaderNode) {
+    if (effectiveExpandTrigger !== 'hover') return;
+    clearHoverTimer();
+    hoverTimer = setTimeout(() => {
+      hoverTimer = undefined;
+      hoverExpand(colIndex, node);
+    }, mouseEnterDelay);
+  }
+  function scheduleHoverLeave() {
+    if (effectiveExpandTrigger !== 'hover') return;
+    // 移出：仅清除 pending 的 enter 展开（延迟 mouseLeaveDelay），不主动收起已展开列。
+    if (hoverTimer === undefined) return;
+    const pending = hoverTimer;
+    hoverTimer = undefined;
+    setTimeout(() => clearTimeout(pending), mouseLeaveDelay);
+  }
+  $effect(() => () => clearHoverTimer());
 
   function clearAll(e: MouseEvent) {
     e.stopPropagation();
@@ -1068,6 +1139,8 @@
   // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
+  // 触发器可聚焦元素（combobox div / 自定义 triggerRender 时回退 rootEl）
+  let triggerEl = $state<HTMLDivElement | null>(null);
 
   // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 切显隐），
   //     true 时关闭即从 DOM 卸载（{#if shouldRender}），重开重建。 ---
@@ -1104,6 +1177,7 @@
       position && `cd-cascader--${position}`,
       borderless && 'cd-cascader--borderless',
       motion === false && 'cd-cascader--no-motion',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -1116,6 +1190,7 @@
     {@render triggerRender({ value, placeholder, isOpen, disabled })}
   {:else}
   <div
+    bind:this={triggerEl}
     class="cd-cascader__trigger"
     role="combobox"
     aria-haspopup="listbox"
@@ -1261,7 +1336,7 @@
       use:floating={{
         trigger: rootEl,
         placement: 'bottomStart',
-        autoAdjust: true,
+        autoAdjust: autoAdjustOverflow,
         offset: dropdownOffset,
         getContainer: resolvePopupContainer,
         open: isOpen,
@@ -1288,45 +1363,71 @@
         </div>
       {/if}
       {#if searchActive}
-        <ul
-          class="cd-cascader__flat"
-          role="listbox"
-          id={flatListId}
-          aria-label={loc().t('Cascader.searchResults')}
-        >
-          {#if filteredPaths.length === 0}
-            {#if isEmptySnippet}
-              <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+        <!-- 单条搜索结果项：virtualize 与非 virtualize 两路共用同一渲染，行为一致 -->
+        {#snippet flatOption(p: FlatPath, fi: number)}
+          <!-- 键盘经搜索框 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <li
+            id={flatItemId(p.values)}
+            class="cd-cascader__option cd-cascader__flat-option"
+            class:cd-cascader__option--active={kbFlatIndex === fi}
+            role="option"
+            aria-selected={kbFlatIndex === fi}
+            aria-disabled={p.disabled || undefined}
+            onclick={() => selectFlatPath(p)}
+            tabindex={-1}
+          >
+            {#if filterRender}
+              {@render filterRender({ path: p })}
             {:else}
-              <li class="cd-cascader__empty">{emptyText}</li>
+              <span class="cd-cascader__option-label">
+                {#each highlightParts(p.labels.join(separator)) as part, i (i)}
+                  {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
+                {/each}
+              </span>
             {/if}
-          {:else}
-            {#each filteredPaths as p, fi (p.values.join('/'))}
-              <!-- 键盘经搜索框 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <li
-                id={flatItemId(p.values)}
-                class="cd-cascader__option cd-cascader__flat-option"
-                class:cd-cascader__option--active={kbFlatIndex === fi}
-                role="option"
-                aria-selected={kbFlatIndex === fi}
-                aria-disabled={p.disabled || undefined}
-                onclick={() => selectFlatPath(p)}
-                tabindex={-1}
-              >
-                {#if filterRender}
-                  {@render filterRender({ path: p })}
-                {:else}
-                  <span class="cd-cascader__option-label">
-                    {#each highlightParts(p.labels.join(separator)) as part, i (i)}
-                      {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
-                    {/each}
-                  </span>
-                {/if}
-              </li>
-            {/each}
-          {/if}
-        </ul>
+          </li>
+        {/snippet}
+        {#if virtualizeInSearch && filteredPaths.length > 0}
+          <!-- 搜索结果虚拟滚动：仅在传入 virtualizeInSearch 且有命中时启用 -->
+          <div
+            class="cd-cascader__flat cd-cascader__flat--virtual"
+            role="listbox"
+            id={flatListId}
+            aria-label={loc().t('Cascader.searchResults')}
+            style:inline-size="{virtualizeInSearch.width}px"
+          >
+            <VirtualList
+              data={filteredPaths}
+              getKey={(p: FlatPath) => p.values.join('/')}
+              itemSize={virtualizeInSearch.itemSize}
+              height={virtualizeInSearch.height}
+            >
+              {#snippet renderItem(p: FlatPath, fi: number)}
+                {@render flatOption(p, fi)}
+              {/snippet}
+            </VirtualList>
+          </div>
+        {:else}
+          <ul
+            class="cd-cascader__flat"
+            role="listbox"
+            id={flatListId}
+            aria-label={loc().t('Cascader.searchResults')}
+          >
+            {#if filteredPaths.length === 0}
+              {#if isEmptySnippet}
+                <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+              {:else}
+                <li class="cd-cascader__empty">{emptyText}</li>
+              {/if}
+            {:else}
+              {#each filteredPaths as p, fi (p.values.join('/'))}
+                {@render flatOption(p, fi)}
+              {/each}
+            {/if}
+          </ul>
+        {/if}
       {:else}
       <div class="cd-cascader__columns">
       {#each columns as column, colIndex (colIndex)}
@@ -1360,7 +1461,8 @@
               aria-selected={isActiveAt(colIndex, node)}
               aria-disabled={node.disabled || undefined}
               onclick={() => selectNode(colIndex, node)}
-              onpointerenter={() => hoverExpand(colIndex, node)}
+              onpointerenter={() => scheduleHoverExpand(colIndex, node)}
+              onpointerleave={scheduleHoverLeave}
               tabindex={-1}
             >
               {#if multiple}
