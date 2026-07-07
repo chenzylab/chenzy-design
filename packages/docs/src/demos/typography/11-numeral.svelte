@@ -13,7 +13,7 @@
     <Numeral rule="bytes-decimal" precision={2} truncate="floor">已使用: 1500000</Numeral>
   </div>
   <div>
-    <Numeral rule="numbers" precision={0}>播放量 2.4444e2 万次</Numeral>
+    播放量 <Numeral rule="numbers" precision={0}>2.4444e2</Numeral> 万次
   </div>
   <div>
     <Numeral rule="exponential" precision={2}>10000</Numeral>
@@ -22,9 +22,9 @@
     <Numeral rule="bytes-binary" precision={2}>已使用: 1500000</Numeral>
   </div>
   <div>
-    <Numeral rule="numbers" precision={2} truncate="ceil">向上取整 ceil: 2.346</Numeral>
+    向上取整 ceil: <Numeral rule="numbers" precision={2} truncate="ceil">2.346</Numeral>
     <span style="margin: 0 8px;">·</span>
-    <Numeral rule="numbers" precision={2} truncate="round">四舍五入 round: 2.344</Numeral>
+    四舍五入 round: <Numeral rule="numbers" precision={2} truncate="round">2.344</Numeral>
   </div>
   <div>
     <Numeral parser={(raw) => raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}>自定义千分位: 1234567</Numeral>
@@ -33,6 +33,6 @@
     <Numeral component="strong" rule="percentages" precision={0}>加粗百分比: 0.86</Numeral>
   </div>
   <div>
-    <Numeral link rule="numbers" precision={0}>链接样式数值: 8.8e3</Numeral>
+    链接样式数值: <Numeral link rule="numbers" precision={0}>8.8e3</Numeral>
   </div>
 </div>

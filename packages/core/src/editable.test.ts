@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createEditable, clampLength, resolveEditableKey } from './editable.js';
+import { createEditable, clampLength, isOverLimit, resolveEditableKey } from './editable.js';
 
 describe('clampLength', () => {
   it('returns value unchanged when no maxLength', () => {
@@ -10,6 +10,24 @@ describe('clampLength', () => {
   });
   it('ignores maxLength <= 0', () => {
     expect(clampLength('hello', 0)).toBe('hello');
+  });
+});
+
+describe('isOverLimit', () => {
+  it('false when no maxLength', () => {
+    expect(isOverLimit('hello')).toBe(false);
+  });
+  it('false when within limit', () => {
+    expect(isOverLimit('hel', 3)).toBe(false);
+  });
+  it('false at exactly the limit', () => {
+    expect(isOverLimit('hel', 3)).toBe(false);
+  });
+  it('true when over the limit', () => {
+    expect(isOverLimit('hello', 3)).toBe(true);
+  });
+  it('false when maxLength <= 0', () => {
+    expect(isOverLimit('hello', 0)).toBe(false);
   });
 });
 
@@ -42,11 +60,52 @@ describe('createEditable', () => {
     expect(e.draft).toBe('other');
   });
 
-  it('setDraft clamps to maxLength', () => {
+  it('setDraft hard-clamps to maxLength (chars past the cap are dropped)', () => {
     const e = createEditable({ value: '', maxLength: 3 });
     e.start();
     e.setDraft('abcdef');
     expect(e.draft).toBe('abc');
+    expect(e.overLimit).toBe(false);
+  });
+
+  it('overLimit stays false since draft is always clamped', () => {
+    const e = createEditable({ value: '', maxLength: 3 });
+    e.start();
+    e.setDraft('abc');
+    expect(e.overLimit).toBe(false);
+  });
+
+  it('confirm commits the clamped draft', () => {
+    const onCommit = vi.fn();
+    const e = createEditable({ value: 'a', maxLength: 3, onCommit });
+    e.start();
+    e.setDraft('abcdef');
+    e.confirm();
+    expect(e.editing).toBe(false);
+    expect(onCommit).toHaveBeenCalledWith('abc');
+  });
+
+  it('handleKey Enter confirms the clamped draft', () => {
+    const onCommit = vi.fn();
+    const e = createEditable({ value: 'a', maxLength: 3, onCommit });
+    e.start();
+    e.setDraft('abcdef');
+    const action = e.handleKey({ key: 'Enter' });
+    expect(action).toBe('confirm');
+    expect(e.editing).toBe(false);
+    expect(onCommit).toHaveBeenCalledWith('abc');
+  });
+
+  it('start clamps an over-limit source to maxLength', () => {
+    const e = createEditable({ value: 'abcdef', maxLength: 3 });
+    e.start();
+    expect(e.draft).toBe('abc');
+    expect(e.overLimit).toBe(false);
+  });
+
+  it('accepts text / both triggers (informational)', () => {
+    expect(() => createEditable({ trigger: 'text' })).not.toThrow();
+    expect(() => createEditable({ trigger: 'both' })).not.toThrow();
   });
 
   it('confirm fires onCommit only when changed and exits editing', () => {

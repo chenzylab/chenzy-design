@@ -433,6 +433,7 @@ export const zh_CN: Locale = {
     edit: '编辑',
     editConfirm: '完成',
     editCancel: '取消',
+    enter: '回车确认',
     expand: '展开',
     collapse: '收起',
     ellipsisSuffix: '…',

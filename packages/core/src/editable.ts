@@ -17,7 +17,20 @@ export function clampLength(value: string, maxLength?: number): string {
   return value.length > maxLength ? value.slice(0, maxLength) : value;
 }
 
-export type EditableTrigger = 'click' | 'dblclick' | 'icon';
+/**
+ * over-limit predicate: true when `value` exceeds `maxLength` (in code units).
+ * undefined/0-or-less maxLength = no limit → never over.
+ *
+ * Aligns with Ant Design: the draft is allowed to exceed maxLength (turns red +
+ * blocks commit) instead of being hard-truncated. The render layer uses this to
+ * paint the textarea red; core uses it to refuse commit while over-limit.
+ */
+export function isOverLimit(value: string, maxLength?: number): boolean {
+  if (maxLength === undefined || maxLength <= 0) return false;
+  return value.length > maxLength;
+}
+
+export type EditableTrigger = 'click' | 'dblclick' | 'icon' | 'text' | 'both';
 
 export interface EditableKeyEvent {
   key: string;
@@ -43,7 +56,7 @@ export interface EditableOptions {
   trigger?: EditableTrigger;
   /** re-render hook fired whenever editing/draft changes */
   onChange?: (state: EditableSnapshot) => void;
-  /** fired on commit with the final (clamped) draft value */
+  /** fired on commit with the final draft value (only when within maxLength) */
   onCommit?: (value: string) => void;
   /** fired when entering edit mode */
   onStart?: () => void;
@@ -59,11 +72,22 @@ export interface EditableSnapshot {
 export interface EditableApi {
   readonly editing: boolean;
   readonly draft: string;
+  /**
+   * true when the current draft exceeds maxLength (Ant-style over-limit).
+   * The render layer paints the textarea red; confirm() is a no-op while over.
+   */
+  readonly overLimit: boolean;
   /** enter edit mode, seeding the draft from `source` (or the configured value) */
   start(source?: string): void;
-  /** update the draft (auto-clamped to maxLength) */
+  /**
+   * update the draft. NOT clamped to maxLength (red line: Ant allows over-input,
+   * then blocks commit + turns red — see `overLimit`).
+   */
   setDraft(next: string): void;
-  /** commit the current draft: leave edit mode + fire onCommit when changed */
+  /**
+   * commit the current draft: leave edit mode + fire onCommit when changed.
+   * No-op while `overLimit` is true (stays in edit mode, aligning with Ant).
+   */
   confirm(): void;
   /** discard the draft, leave edit mode, fire onCancel */
   cancel(): void;
@@ -86,14 +110,19 @@ export function createEditable(options: EditableOptions = {}): EditableApi {
     get draft() {
       return draft;
     },
+    get overLimit() {
+      return isOverLimit(draft, options.maxLength);
+    },
     start(source) {
       if (editing) return;
       editing = true;
+      // hard-clamp the seed to maxLength: input can never exceed the cap.
       draft = clampLength(source ?? options.value ?? '', options.maxLength);
       options.onStart?.();
       emit();
     },
     setDraft(next) {
+      // hard clamp: characters beyond maxLength are dropped (can't type past the cap).
       const clamped = clampLength(next, options.maxLength);
       if (clamped === draft) return;
       draft = clamped;

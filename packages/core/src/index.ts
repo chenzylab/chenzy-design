@@ -328,6 +328,7 @@ export {
 export {
   createEditable,
   clampLength,
+  isOverLimit,
   resolveEditableKey,
   type EditableApi,
   type EditableOptions,
