@@ -56,7 +56,10 @@
     /** 建议项最多渲染条数（0=不限制） */
     maxCount?: number;
     onChange?: (v: string) => void;
-    onSelect?: (value: ItemValue) => void;
+    /** onSelectWithObject 为 true 时入参为完整对象，否则为 value */
+    onSelect?: (value: ItemValue | NormalizedItem) => void;
+    /** 为 true 时 onSelect 回调入参从 value 变为完整候选对象 { value, label, disabled } */
+    onSelectWithObject?: boolean;
     onOpenChange?: (open: boolean) => void;
     /** 浮层宽度与触发器同宽（默认 true） */
     dropdownMatchSelectWidth?: boolean;
@@ -91,6 +94,16 @@
     autoFocus?: boolean;
     /** 浮层位置 */
     position?: Position;
+    /** 透传键盘原始事件（在内部键盘逻辑之前调用） */
+    onKeyDown?: (e: KeyboardEvent) => void;
+    /** 根节点自定义 class */
+    class?: string;
+    /** 根节点自定义 style */
+    style?: string;
+    /** 浮层最大高度（number→px，string 原样），覆盖默认 16rem */
+    maxHeight?: number | string;
+    /** 浮层 z-index，覆盖默认 token */
+    zIndex?: number;
   }
 
   let {
@@ -116,6 +129,7 @@
     maxCount = 0,
     onChange,
     onSelect,
+    onSelectWithObject = false,
     onOpenChange,
     dropdownMatchSelectWidth = true,
     getPopupContainer,
@@ -135,6 +149,11 @@
     remote = false,
     autoFocus = false,
     position = 'bottomLeft',
+    onKeyDown,
+    class: className = '',
+    style = '',
+    maxHeight,
+    zIndex,
   }: Props = $props();
 
   const loc = useLocale();
@@ -299,7 +318,7 @@
   function commit(opt: NormalizedItem) {
     if (opt.disabled || disabled) return;
     setValue(opt.label);
-    onSelect?.(opt.value);
+    onSelect?.(onSelectWithObject ? opt : opt.value);
     setOpen(false);
   }
 
@@ -324,6 +343,7 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    onKeyDown?.(e);
     if (disabled) return;
     switch (e.key) {
       case 'ArrowDown':
@@ -405,10 +425,21 @@
       `cd-autocomplete--${status}`,
       disabled && 'cd-autocomplete--disabled',
       isOpen && 'cd-autocomplete--open',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // 浮层最大高度：number→px，string 原样，内联下发覆盖 CSS 默认（fallback 保留）。
+  const maxHeightStyle = $derived.by(() => {
+    if (maxHeight === undefined) return '';
+    const v = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight;
+    return `max-block-size: ${v}`;
+  });
+
+  // 浮层 z-index：传入时内联覆盖默认 token。
+  const zIndexStyle = $derived(zIndex === undefined ? '' : `z-index: ${zIndex}`);
 
   // combobox 输入框可访问名：ariaLabelledby > ariaLabel > placeholder(非空) > locale 默认
   const inputAriaLabel = $derived(
@@ -439,7 +470,7 @@
   </div>
 {/snippet}
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} style={style || undefined} bind:this={rootEl}>
   {#if triggerRender}
     {@render triggerRender({ value: currentValue, placeholder, disabled })}
   {:else}
@@ -510,7 +541,7 @@
       role="listbox"
       id={listId}
       aria-busy={loading || undefined}
-      style={[dropdownPositionStyle, dropdownStyleStr].filter(Boolean).join('; ')}
+      style={[dropdownPositionStyle, dropdownStyleStr, maxHeightStyle, zIndexStyle].filter(Boolean).join('; ')}
     >
       {#if loading}
         <div class="cd-autocomplete__loading">
