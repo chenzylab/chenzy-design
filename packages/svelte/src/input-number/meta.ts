@@ -42,6 +42,15 @@ export const meta = {
     { name: 'onChange', type: '(v: number | null) => void', default: 'undefined', desc: '归一化后值变化' },
     { name: 'onNumberChange', type: '(v: number | null) => void', default: 'undefined', desc: '携带 number 类型的变化回调（区别于 onChange）' },
     { name: 'onBoundaryHit', type: "(e: { boundary: 'min'|'max'; value: number }) => void", default: 'undefined', desc: '触达/试图越过边界' },
+    { name: 'hideButtons', type: 'boolean', default: 'false', desc: '彻底隐藏步进按钮（对齐 Semi；优先于 controls）' },
+    { name: 'preventScroll', type: 'boolean', default: 'false', desc: '命令式 focus() 时是否阻止滚动文档（对齐 Semi）' },
+    { name: 'pressTimeout', type: 'number', default: '250', desc: '长按后延迟多久开始连续步进（ms，对齐 Semi）' },
+    { name: 'pressInterval', type: 'number', default: '250', desc: '长按连续步进的间隔（ms，对齐 Semi）' },
+    { name: 'scientificNotation', type: 'boolean | { threshold?: number }', default: 'false', desc: '失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示，onChange/onNumberChange 仍为完整 number（对齐 Semi）' },
+  ],
+  methods: [
+    { name: 'focus()', desc: '命令式聚焦输入框（尊重 preventScroll，对齐 Semi）' },
+    { name: 'blur()', desc: '命令式移除焦点（对齐 Semi）' },
   ],
   events: [
     { name: 'change', payload: '{ value: number | null }', desc: '归一化后值变化（受控核心事件）' },

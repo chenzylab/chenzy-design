@@ -75,6 +75,11 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 | `autofocus` | `boolean` | `false` | 挂载自动聚焦。 |
 | `selectOnFocus` | `boolean` | `false` | 聚焦时全选文本。 |
 | `locale` | `string` | 继承 ConfigProvider | 格式化 locale，传给内部 `Intl`。 |
+| `hideButtons` | `boolean` | `false` | 彻底隐藏步进按钮（对齐 Semi；优先于 controls）。 |
+| `preventScroll` | `boolean` | `false` | 命令式 `focus()` 时是否阻止滚动文档（对齐 Semi）。 |
+| `pressTimeout` | `number` | `250` | 长按后延迟多久开始连续步进（ms，对齐 Semi）。 |
+| `pressInterval` | `number` | `250` | 长按连续步进的间隔（ms，对齐 Semi）。 |
+| `scientificNotation` | `boolean \| { threshold?: number }` | `false` | 失焦时超阈值（默认 15 位）显示科学计数法，聚焦显示完整数字；仅影响显示，onChange/onNumberChange 仍为完整 number（对齐 Semi）。 |
 
 ### Events
 
@@ -96,6 +101,15 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 | `suffix` | — | 自定义后置区，覆盖 `suffix` prop。 |
 | `incrementIcon` | `{ disabled: boolean }` | 自定义「+」图标。 |
 | `decrementIcon` | `{ disabled: boolean }` | 自定义「−」图标。 |
+
+### Methods
+
+通过组件实例（`bind:this`）调用（对齐 Semi）：
+
+| 方法 | 说明 |
+|---|---|
+| `focus()` | 命令式聚焦输入框（尊重 preventScroll）。 |
+| `blur()` | 命令式移除焦点。 |
 
 ## 5. 主题 / Token
 
