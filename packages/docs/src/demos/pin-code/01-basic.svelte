@@ -5,6 +5,6 @@
 </script>
 
 <Space vertical>
-  <PinCode {value} onChange={(v) => (value = v)} />
+  <PinCode autoFocus={false} {value} onChange={(v) => (value = v)} />
   <Text type="tertiary">当前值：{value || '（空）'}</Text>
 </Space>

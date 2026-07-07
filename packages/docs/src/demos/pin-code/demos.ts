@@ -29,4 +29,7 @@ export const demos: DemoEntry[] = [
   entry('03-size.svelte', '尺寸', 'size 控制每格大小（small / default / large）。'),
   entry('04-status-disabled.svelte', '校验态与禁用', 'status 透传各格边框语义，disabled 置灰不可输入。'),
   entry('05-complete.svelte', '完成回调', '填满末格自动 blur 并触发 onComplete。'),
+  entry('06-format-advanced.svelte', '字符格式', 'format 四种：number / mixed / RegExp（只大写）/ 函数（只小写）逐字符校验。'),
+  entry('07-focus-method.svelte', '命令式聚焦', 'bind:this 拿组件实例，focus(index) / blur(index) 聚焦/失焦指定格。'),
+  entry('08-controlled-random.svelte', '受控', 'value 由外部持有，配合 onChange，可编程式随机填入。'),
 ];
