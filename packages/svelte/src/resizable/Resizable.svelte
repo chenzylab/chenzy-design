@@ -34,6 +34,12 @@
     lockAspectRatio?: boolean | number;
     /** 吸附网格步长 [x, y]。 */
     grid?: [number, number];
+    /** 吸附到指定像素尺寸（对齐 Semi snap）。 */
+    snap?: { x?: number[]; y?: number[] };
+    /** 吸附生效的最小间隙，0 表示总是吸附到最近目标（对齐 Semi snapGap）。 */
+    snapGap?: number;
+    /** 限制伸缩范围的边界元素（对齐 Semi boundElement）：'parent' | 'window' | HTMLElement。 */
+    boundElement?: 'parent' | 'window' | HTMLElement;
     /** 画布缩放系数（拖拽 delta 除以 scale）。 */
     scale?: number;
     /** 像素比修正（高分屏 delta）。 */
@@ -63,6 +69,9 @@
     maxHeight,
     lockAspectRatio = false,
     grid,
+    snap,
+    snapGap,
+    boundElement,
     scale = 1,
     ratio = 1,
     keyboardStep,
@@ -141,6 +150,25 @@
     return { width: w, height: h };
   }
 
+  // 依据 boundElement 计算当前可用的最大宽高（drag start 时读一次 DOM）。
+  // 盒子向右/下扩展时，上限 = 边界右/下沿 − 盒子左/上沿。
+  function computeBoundMax(): { maxWidth?: number; maxHeight?: number } {
+    if (!boundElement || !rootEl) return {};
+    const box = rootEl.getBoundingClientRect();
+    let right: number, bottom: number;
+    if (boundElement === 'window') {
+      right = window.innerWidth;
+      bottom = window.innerHeight;
+    } else {
+      const el = boundElement === 'parent' ? rootEl.parentElement : boundElement;
+      if (!el) return {};
+      const r = el.getBoundingClientRect();
+      right = r.right;
+      bottom = r.bottom;
+    }
+    return { maxWidth: right - box.left, maxHeight: bottom - box.top };
+  }
+
   function handlePointerDown(event: PointerEvent, dir: Direction): void {
     if (event.button !== 0) return;
     // onResizeStart 返回 false 取消。
@@ -154,6 +182,9 @@
       min: { min: toPx(minWidth) },
       max: { max: toPx(maxWidth) },
       ...(grid ? { grid } : {}),
+      ...(snap ? { snap } : {}),
+      ...(snapGap != null ? { snapGap } : {}),
+      ...(boundElement ? { getBoundMax: computeBoundMax } : {}),
       lockAspectRatio,
       scale,
       ratio,

@@ -15,12 +15,14 @@
     disabled?: boolean;
     /** 键盘步长（px），默认 10。 */
     keyboardStep?: number;
+    /** 允许双击把手折叠/展开左（上）侧面板（本库独有增强，Semi 无内建折叠）。 */
+    collapsible?: boolean;
     class?: string;
     style?: string;
     children?: Snippet;
   }
 
-  let { disabled = false, keyboardStep = 10, class: className = '', style, children }: Props = $props();
+  let { disabled = false, keyboardStep = 10, collapsible = false, class: className = '', style, children }: Props = $props();
 
   const group = getContext<ResizeGroupContext | undefined>(RESIZE_GROUP_KEY);
   const loc = useLocale();
@@ -47,6 +49,11 @@
   function onPointerDown(event: PointerEvent): void {
     if (disabled || event.button !== 0 || !group) return;
     group.startHandlerDrag(myId, event);
+  }
+
+  function onDblClick(): void {
+    if (disabled || !collapsible || !group) return;
+    group.toggleCollapse(myId);
   }
 
   function isRtl(): boolean {
@@ -118,6 +125,7 @@
   aria-disabled={disabled || undefined}
   aria-valuenow={ariaNow()}
   onpointerdown={onPointerDown}
+  ondblclick={onDblClick}
   onkeydown={onKeydown}
 >
   {@render children?.()}

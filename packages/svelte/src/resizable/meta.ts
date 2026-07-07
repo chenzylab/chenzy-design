@@ -34,6 +34,9 @@ export const meta = {
         { name: 'maxHeight', type: 'string | number', default: 'undefined' },
         { name: 'lockAspectRatio', type: 'boolean | number', default: 'false', desc: '锁定宽高比' },
         { name: 'grid', type: '[number, number]', default: 'undefined', desc: '吸附网格步长' },
+        { name: 'snap', type: '{ x?: number[]; y?: number[] }', default: 'undefined', desc: '吸附到指定像素尺寸（对齐 Semi）' },
+        { name: 'snapGap', type: 'number', default: '0', desc: '吸附生效的最小间隙，0=总吸附到最近目标' },
+        { name: 'boundElement', type: "'parent' | 'window' | HTMLElement", default: 'undefined', desc: '限制伸缩范围的边界元素（对齐 Semi boundElement）' },
         { name: 'scale', type: 'number', default: '1', desc: '画布缩放系数' },
         { name: 'ratio', type: 'number | [number, number]', default: '1', desc: '像素比修正' },
         { name: 'keyboardStep', type: 'number', default: '10 或 grid', desc: '键盘步长' },
@@ -65,6 +68,7 @@ export const meta = {
       props: [
         { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用该把手' },
         { name: 'keyboardStep', type: 'number', default: '10', desc: '键盘步长（px）' },
+        { name: 'collapsible', type: 'boolean', default: 'false', desc: '双击折叠/展开左（上）侧面板（本库独有增强）' },
       ],
     },
   ],

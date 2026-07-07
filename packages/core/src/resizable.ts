@@ -88,6 +88,24 @@ export const clamp = (n: number, min: number, max: number): number =>
 export const snapToGrid = (n: number, step: number): number =>
   step > 0 ? Math.round(n / step) * step : n;
 
+/**
+ * Snap `n` to the nearest value in `targets` (Semi `snap`). Only engages when
+ * `n` is within `gap` px of the nearest target; `gap = 0` always snaps to it.
+ */
+export const snapToPoints = (n: number, targets: number[] | undefined, gap: number): number => {
+  if (!targets || targets.length === 0) return n;
+  let nearest = n;
+  let best = Infinity;
+  for (const t of targets) {
+    const d = Math.abs(n - t);
+    if (d < best) {
+      best = d;
+      nearest = t;
+    }
+  }
+  return gap <= 0 || best <= gap ? nearest : n;
+};
+
 /** Does `dir` contain the edge `target` (case-insensitive substring)? */
 export const hasDirection = (
   target: Direction,
@@ -127,6 +145,20 @@ export interface CreateResizeDragOptions {
   max?: number | ResizeDragBound;
   /** Snap step `[x, y]` (or a single step for both). */
   grid?: number | [number, number];
+  /**
+   * Snap to specific absolute pixel sizes per axis (Semi `snap`). Combined with
+   * `snapGap`: the size sticks to the nearest listed target only when within
+   * `snapGap` px of it (0 = always snap to the nearest target).
+   */
+  snap?: { x?: number[]; y?: number[] };
+  /** Minimum gap to the next snap target before it engages (Semi `snapGap`). */
+  snapGap?: number;
+  /**
+   * Read the max allowable size at drag start, derived from a bound element
+   * (Semi `boundElement`). Kept in the svelte layer so core stays DOM-free;
+   * returns per-axis caps in px. Applied after min/max but before lock-ratio.
+   */
+  getBoundMax?: () => { maxWidth?: number; maxHeight?: number };
   /** Lock aspect ratio — `true` derives from start size, number = explicit w/h. */
   lockAspectRatio?: boolean | number;
   /** Canvas zoom factor — pointer delta is divided by scale. */
@@ -227,6 +259,13 @@ export function createResizeDrag(
     ? options.ratio
     : [options.ratio ?? 1, options.ratio ?? 1];
 
+  const snapX = options.snap?.x;
+  const snapY = options.snap?.y;
+  const snapGap = options.snapGap ?? 0;
+  // Bound-element caps, captured once at drag start (getBoundMax reads the DOM).
+  let boundMaxW = Infinity;
+  let boundMaxH = Infinity;
+
   function detach(): void {
     if (doc && moveHandler) doc.removeEventListener('pointermove', moveHandler);
     if (doc && upHandler) doc.removeEventListener('pointerup', upHandler);
@@ -256,14 +295,25 @@ export function createResizeDrag(
     if (gridX > 0) w = snapToGrid(w, gridX);
     if (gridY > 0) h = snapToGrid(h, gridY);
 
-    // clamp — per-axis bounds win, else the single-number bound
-    const lo_w = minW ?? (options.axis !== 'y' ? singleMin : undefined);
-    const hi_w = maxW ?? (options.axis !== 'y' ? singleMax : undefined);
-    const lo_h = minH ?? (options.axis === 'y' ? singleMin : undefined);
-    const hi_h = maxH ?? (options.axis === 'y' ? singleMax : undefined);
+    // snap to specific pixel targets (Semi snap/snapGap)
+    if (usesX) w = snapToPoints(w, snapX, snapGap);
+    if (usesY) h = snapToPoints(h, snapY, snapGap);
 
-    if (usesX) w = clamp(w, lo_w ?? -Infinity, hi_w ?? Infinity);
-    if (usesY) h = clamp(h, lo_h ?? -Infinity, hi_h ?? Infinity);
+    // clamp — per-axis bounds win, else the single-number bound.
+    // Bound-element caps (getBoundMax) fold into the upper limit.
+    const lo_w = minW ?? (options.axis !== 'y' ? singleMin : undefined);
+    const hi_w = Math.min(
+      maxW ?? (options.axis !== 'y' ? singleMax : undefined) ?? Infinity,
+      boundMaxW,
+    );
+    const lo_h = minH ?? (options.axis === 'y' ? singleMin : undefined);
+    const hi_h = Math.min(
+      maxH ?? (options.axis === 'y' ? singleMax : undefined) ?? Infinity,
+      boundMaxH,
+    );
+
+    if (usesX) w = clamp(w, lo_w ?? -Infinity, hi_w);
+    if (usesY) h = clamp(h, lo_h ?? -Infinity, hi_h);
 
     // lock aspect ratio (after individual clamps, derive the driven axis)
     if (options.lockAspectRatio) {
@@ -289,6 +339,10 @@ export function createResizeDrag(
       startH = s.height ?? 0;
       startX = event.clientX;
       startY = event.clientY;
+      // Capture bound-element caps once (reads the DOM at drag start).
+      const bound = options.getBoundMax?.();
+      boundMaxW = bound?.maxWidth ?? Infinity;
+      boundMaxH = bound?.maxHeight ?? Infinity;
       lockRatio =
         typeof options.lockAspectRatio === 'number'
           ? options.lockAspectRatio

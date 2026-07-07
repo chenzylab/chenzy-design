@@ -38,6 +38,11 @@ export interface ResizeGroupContext {
   keyboardAdjust: (handlerId: number, delta: number, event: KeyboardEvent) => void;
   /** Read the group's split-axis size for a handler's aria-value. */
   itemSizeAround: (handlerId: number) => { last: number; next: number; parent: number };
+  /**
+   * 双击把手：折叠/展开该把手左（上）侧面板（本库独有增强，Semi 无内建折叠）。
+   * 折叠时记住原尺寸、腾给邻居；再次双击恢复。返回折叠后状态。
+   */
+  toggleCollapse: (handlerId: number) => void;
 }
 
 export const RESIZE_GROUP_KEY = Symbol('cd-resize-group');
