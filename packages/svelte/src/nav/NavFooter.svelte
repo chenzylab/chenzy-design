@@ -27,8 +27,6 @@
     collapseButton && !children && nav?.mode === 'vertical',
   );
   const collapsed = $derived(nav?.collapsed ?? false);
-  // 折叠时箭头指向「展开」方向，反之指向「收起」。
-  const arrow = $derived(collapsed ? '›' : '‹');
 </script>
 
 <div class={['cd-nav__footer', className].filter(Boolean).join(' ')} {style}>
@@ -42,7 +40,22 @@
       aria-label={collapsed ? loc().t('Sider.expand') : loc().t('Sider.collapse')}
       onclick={() => nav?.toggleCollapsed()}
     >
-      <span class="cd-nav__collapse-arrow" aria-hidden="true">{arrow}</span>
+      <!-- 折叠时箭头指向「展开」（右），反之指向「收起」（左）。用 SVG 保证清晰可见。 -->
+      <svg
+        class="cd-nav__collapse-arrow"
+        class:cd-nav__collapse-arrow--collapsed={collapsed}
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
     </button>
   {/if}
 </div>
@@ -76,7 +89,16 @@
     box-shadow: var(--cd-focus-ring);
   }
   .cd-nav__collapse-arrow {
-    font-size: 18px;
-    line-height: 1;
+    flex: 0 0 auto;
+    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  /* 折叠态：箭头翻转指向「展开」方向（右）。 */
+  .cd-nav__collapse-arrow--collapsed {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-nav__collapse-arrow {
+      transition: none;
+    }
   }
 </style>

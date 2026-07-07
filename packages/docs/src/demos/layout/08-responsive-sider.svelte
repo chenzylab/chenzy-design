@@ -15,6 +15,7 @@
     </Layout.Header>
     <Layout hasSider>
       <Layout.Sider
+        collapsible
         width={200}
         collapsedWidth={64}
         breakpoint="md"
