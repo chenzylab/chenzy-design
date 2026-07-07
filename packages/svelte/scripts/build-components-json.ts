@@ -11,208 +11,57 @@
  * This script only reads the plain `as const` meta objects; it pulls in no
  * Svelte runtime, so it runs cleanly under `tsx`.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import { meta as buttonMeta } from '../src/button/meta.ts';
-import { meta as iconButtonMeta } from '../src/iconbutton/meta.ts';
-import { meta as floatButtonMeta } from '../src/float-button/meta.ts';
-import { meta as iconMeta } from '../src/icon/meta.ts';
-import { meta as dividerMeta } from '../src/divider/meta.ts';
-import { meta as spaceMeta } from '../src/space/meta.ts';
-import { meta as typographyMeta } from '../src/typography/meta.ts';
-import { meta as gridMeta } from '../src/grid/meta.ts';
-import { meta as layoutMeta } from '../src/layout/meta.ts';
-import { meta as inputMeta, inputGroupMeta } from '../src/input/meta.ts';
-import { meta as textareaMeta } from '../src/textarea/meta.ts';
-import { meta as switchMeta } from '../src/switch/meta.ts';
-import { meta as checkboxMeta } from '../src/checkbox/meta.ts';
-import { meta as radioMeta } from '../src/radio/meta.ts';
-import { meta as inputNumberMeta } from '../src/input-number/meta.ts';
-import { meta as ratingMeta } from '../src/rating/meta.ts';
-import { meta as hotKeysMeta } from '../src/hotkeys/meta.ts';
-import { meta as sliderMeta } from '../src/slider/meta.ts';
-import { meta as formMeta } from '../src/form/meta.ts';
-import { meta as selectMeta } from '../src/select/meta.ts';
-import { meta as autocompleteMeta } from '../src/autocomplete/meta.ts';
-import { meta as tagInputMeta } from '../src/tag-input/meta.ts';
-import { meta as pinCodeMeta } from '../src/pincode/meta.ts';
-import { meta as colorPickerMeta } from '../src/color-picker/meta.ts';
-import { meta as datePickerMeta } from '../src/date-picker/meta.ts';
-import { meta as rangePickerMeta } from '../src/date-picker/range-meta.ts';
-import { meta as timePickerMeta } from '../src/time-picker/meta.ts';
-import { meta as cascaderMeta } from '../src/cascader/meta.ts';
-import { meta as treeSelectMeta } from '../src/tree-select/meta.ts';
-import { meta as transferMeta } from '../src/transfer/meta.ts';
-import { meta as uploadMeta } from '../src/upload/meta.ts';
-import { meta as breadcrumbMeta } from '../src/breadcrumb/meta.ts';
-import { meta as paginationMeta } from '../src/pagination/meta.ts';
-import { meta as stepsMeta } from '../src/steps/meta.ts';
-import { meta as tabsMeta } from '../src/tabs/meta.ts';
-import { meta as dropdownMeta } from '../src/dropdown/meta.ts';
-import { meta as menuMeta } from '../src/menu/meta.ts';
-import { meta as navMeta } from '../src/nav/meta.ts';
-import { meta as anchorMeta } from '../src/anchor/meta.ts';
-import { meta as tagMeta } from '../src/tag/meta.ts';
-import { meta as tagGroupMeta } from '../src/tag/taggroup-meta.ts';
-import { meta as splitTagGroupMeta } from '../src/tag/splittaggroup-meta.ts';
-import { meta as avatarMeta } from '../src/avatar/meta.ts';
-import { meta as badgeMeta } from '../src/badge/meta.ts';
-import { meta as cardMeta, cardGroupMeta } from '../src/card/meta.ts';
-import { meta as tooltipMeta } from '../src/tooltip/meta.ts';
-import { meta as popoverMeta } from '../src/popover/meta.ts';
-import { meta as emptyMeta } from '../src/empty/meta.ts';
-import { meta as descriptionsMeta } from '../src/descriptions/meta.ts';
-import { meta as collapseMeta } from '../src/collapse/meta.ts';
-import { meta as collapsibleMeta } from '../src/collapsible/meta.ts';
-import { meta as timelineMeta } from '../src/timeline/meta.ts';
-import { meta as listMeta } from '../src/list/meta.ts';
-import { meta as imageMeta } from '../src/image/meta.ts';
-import { meta as highlightMeta } from '../src/highlight/meta.ts';
-import { meta as virtualListMeta } from '../src/virtual-list/meta.ts';
-import { meta as carouselMeta } from '../src/carousel/meta.ts';
-import { meta as treeMeta } from '../src/tree/meta.ts';
-import { meta as tableMeta } from '../src/table/meta.ts';
-import { meta as calendarMeta } from '../src/calendar/meta.ts';
-import { meta as scrollListMeta } from '../src/scroll-list/meta.ts';
-import { meta as overflowListMeta } from '../src/overflow-list/meta.ts';
-import { meta as spinMeta } from '../src/spin/meta.ts';
-import { meta as progressMeta } from '../src/progress/meta.ts';
-import { meta as skeletonMeta } from '../src/skeleton/meta.ts';
-import { meta as bannerMeta } from '../src/banner/meta.ts';
-import { meta as modalMeta } from '../src/modal/meta.ts';
-import { meta as popconfirmMeta } from '../src/popconfirm/meta.ts';
-import { meta as drawerMeta } from '../src/drawer/meta.ts';
-import { meta as sideSheetMeta } from '../src/side-sheet/meta.ts';
-import { meta as feedbackMeta } from '../src/feedback/meta.ts';
-import { meta as toastMeta } from '../src/toast/meta.ts';
-import { meta as notificationMeta } from '../src/notification/meta.ts';
-import { meta as backTopMeta } from '../src/back-top/meta.ts';
-import { meta as localeProviderMeta } from '../src/locale-provider/meta.ts';
-import { meta as configProviderMeta } from '../src/config-provider/meta.ts';
-import { meta as resizeObserverMeta } from '../src/resize-observer/meta.ts';
-import { meta as lottieIconMeta } from '../src/lottie-icon/meta.ts';
-// 富媒体 / AI 组件（M4+）——补齐生成器缺口，使其详情页 API 表有数据源。
-import { meta as codeHighlightMeta } from '../src/code-highlight/meta.ts';
-import { meta as markdownRenderMeta } from '../src/markdown-render/meta.ts';
-import { meta as videoPlayerMeta } from '../src/video-player/meta.ts';
-import { meta as audioPlayerMeta } from '../src/audio-player/meta.ts';
-import { meta as jsonViewerMeta } from '../src/json-viewer/meta.ts';
-import { meta as chatMeta } from '../src/chat/meta.ts';
-import { meta as cropperMeta } from '../src/cropper/meta.ts';
-import { meta as aiChatDialogueMeta } from '../src/ai-chat-dialogue/meta.ts';
-import { meta as aiChatInputMeta } from '../src/ai-chat-input/meta.ts';
-import { meta as userGuideMeta } from '../src/user-guide/meta.ts';
-import { meta as resizableMeta } from '../src/resizable/meta.ts';
-import { meta as dragMoveMeta } from '../src/drag-move/meta.ts';
-import { meta as sideBarMeta } from '../src/sidebar/meta.ts';
-
-/**
- * Full list of component metas. Mirrors the import set validated in
- * `src/meta.test.ts`, plus the standalone RangePicker meta. Each entry is a
- * plain `as const` object, so the aggregate is structurally faithful.
- */
-const metas = [
-  buttonMeta,
-  iconButtonMeta,
-  floatButtonMeta,
-  userGuideMeta,
-  resizableMeta,
-  dragMoveMeta,
-  iconMeta,
-  dividerMeta,
-  spaceMeta,
-  typographyMeta,
-  gridMeta,
-  layoutMeta,
-  inputMeta,
-  inputGroupMeta,
-  textareaMeta,
-  switchMeta,
-  checkboxMeta,
-  radioMeta,
-  inputNumberMeta,
-  ratingMeta,
-  hotKeysMeta,
-  sliderMeta,
-  formMeta,
-  selectMeta,
-  autocompleteMeta,
-  tagInputMeta,
-  pinCodeMeta,
-  colorPickerMeta,
-  datePickerMeta,
-  rangePickerMeta,
-  timePickerMeta,
-  cascaderMeta,
-  treeSelectMeta,
-  transferMeta,
-  uploadMeta,
-  breadcrumbMeta,
-  paginationMeta,
-  stepsMeta,
-  tabsMeta,
-  dropdownMeta,
-  menuMeta,
-  navMeta,
-  anchorMeta,
-  tagMeta,
-  tagGroupMeta,
-  splitTagGroupMeta,
-  avatarMeta,
-  badgeMeta,
-  cardMeta,
-  cardGroupMeta,
-  tooltipMeta,
-  popoverMeta,
-  emptyMeta,
-  descriptionsMeta,
-  collapseMeta,
-  collapsibleMeta,
-  timelineMeta,
-  listMeta,
-  imageMeta,
-  highlightMeta,
-  virtualListMeta,
-  carouselMeta,
-  treeMeta,
-  tableMeta,
-  calendarMeta,
-  scrollListMeta,
-  overflowListMeta,
-  spinMeta,
-  progressMeta,
-  skeletonMeta,
-  bannerMeta,
-  modalMeta,
-  popconfirmMeta,
-  drawerMeta,
-  sideSheetMeta,
-  feedbackMeta,
-  toastMeta,
-  notificationMeta,
-  backTopMeta,
-  localeProviderMeta,
-  configProviderMeta,
-  resizeObserverMeta,
-  lottieIconMeta,
-  // 富媒体 / AI 组件（M4+）
-  codeHighlightMeta,
-  markdownRenderMeta,
-  videoPlayerMeta,
-  audioPlayerMeta,
-  jsonViewerMeta,
-  chatMeta,
-  cropperMeta,
-  aiChatDialogueMeta,
-  aiChatInputMeta,
-  sideBarMeta,
-] as const;
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgRoot = resolve(__dirname, '..');
+const srcDir = resolve(pkgRoot, 'src');
 const outDir = resolve(pkgRoot, 'dist');
+
+/**
+ * Auto-discover every component meta by scanning `src/<comp>/*meta.ts` and
+ * collecting all exports that look like a component meta (an object with a
+ * string `name`). This captures both the default `meta` export and secondary
+ * metas in the same file (e.g. `inputGroupMeta`, `cardGroupMeta`) as well as
+ * sibling meta files (`taggroup-meta.ts`, `range-meta.ts`), with zero manual
+ * upkeep — a new component's `meta.ts` shows up automatically, so it can never
+ * silently go missing from docs (which previously caused 404 detail pages).
+ */
+function isComponentMeta(value: unknown): value is { name: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string' &&
+    // meta objects carry a `category`; this excludes unrelated string-named exports.
+    typeof (value as { category?: unknown }).category === 'string'
+  );
+}
+
+/** Every `*meta.ts` file under `src/<comp>/`, sorted for deterministic output. */
+function findMetaFiles(): string[] {
+  const files: string[] = [];
+  for (const comp of readdirSync(srcDir, { withFileTypes: true })) {
+    if (!comp.isDirectory()) continue;
+    const compDir = resolve(srcDir, comp.name);
+    for (const entry of readdirSync(compDir, { withFileTypes: true })) {
+      if (entry.isFile() && /meta\.ts$/.test(entry.name)) {
+        files.push(resolve(compDir, entry.name));
+      }
+    }
+  }
+  return files.sort();
+}
+
+const metaFiles = findMetaFiles();
+const metas: Array<{ name: string }> = [];
+for (const file of metaFiles) {
+  const mod = (await import(pathToFileURL(file).href)) as Record<string, unknown>;
+  for (const exported of Object.values(mod)) {
+    if (isComponentMeta(exported)) metas.push(exported);
+  }
+}
 
 /** Aggregate keyed by the component's display name (e.g. `Button`). */
 const components: Record<string, unknown> = {};

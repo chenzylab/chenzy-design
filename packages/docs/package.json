@@ -4,10 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "meta": "pnpm --filter @chenzy-design/svelte build:meta",
+    "predev": "pnpm run meta",
     "dev": "vite dev",
+    "prebuild": "pnpm run meta",
     "build": "vite build && pagefind --site build",
     "search": "pagefind --site build",
     "preview": "vite preview",
+    "pretypecheck": "pnpm run meta",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
