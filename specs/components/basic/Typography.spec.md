@@ -98,7 +98,7 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 | | `render` | `Snippet<[copied, doCopy, config]>` | — | 完全接管复制控件渲染（对齐 Semi）；提供后 icon/successIcon 及内置 button 不渲染 |
 | EditableConfig | `editing` | `boolean` | — | 受控编辑态 |
 | | `trigger` | `'click' \| 'dblclick' \| 'icon' \| 'text' \| 'both'` | `'icon'` | 进入编辑方式：`icon` 仅点铅笔图标；`click`/`dblclick` 点/双击宿主；`text` 点文本进入（不显图标）；`both` 文本与图标皆可（图标仍显示） |
-| | `maxLength` | `number` | — | 字符上限。**超限不硬截断**（对齐 Ant）：允许继续输入，textarea 变红且 Enter/blur 不提交（停留编辑态），需删回上限内才可提交 |
+| | `maxLength` | `number` | — | 字符上限。**硬截断**：超出的字符打不进去（textarea 原生 `maxlength` + core `setDraft`/`start` 双重 clamp） |
 | | `autosize` | `boolean` | `true` | textarea 自适应高度 |
 | | `editIcon` | `Snippet` | 内置铅笔 | 自定义编辑触发图标 |
 | | `tooltip` | `string \| false` | i18n `Typography.edit` | 编辑触发图标的 tooltip（title）；`false` 隐藏 title（`aria-label` 始终保留） |

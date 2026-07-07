@@ -21,7 +21,6 @@
     createEllipsis,
     computeAutosizeHeight,
     fitTruncatedText,
-    isOverLimit,
     type EllipsisPos,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -299,10 +298,6 @@
       })
     : null;
 
-  // 超限判定（对齐 Ant）：draft 长度超过 maxLength 时 textarea 变红、禁止提交。
-  // core 已在 confirm 里拒绝超限提交；此处派生仅供渲染层加 --over-limit class。
-  const overLimit = $derived(isOverLimit(draft, editableCfg?.maxLength));
-
   // 受控 editing: 父传 editableCfg.editing 时与内部状态同步（命令式驱动 start/cancel）。
   $effect(() => {
     if (!editApi || editableCfg?.editing === undefined) return;
@@ -533,7 +528,7 @@
     if (action === 'confirm' || action === 'cancel') e.preventDefault();
   }
   // enterIcon 点击确认（对齐 Ant）。onmousedown preventDefault 抑制 textarea 先 blur，
-  // 避免双重 confirm；core confirm 超限幂等 no-op，此处直接调用即可。
+  // 避免双重 confirm（core confirm 非编辑态幂等 no-op）。
   function confirmEdit(): void {
     editApi?.confirm();
   }
@@ -689,16 +684,14 @@
 
 {#if editApi && editing}
   <!-- inline edit mode: textarea 替换文本；textarea 挂宿主排版 class 继承字号/字重/type 颜色。
-       maxLength 超限时加 --over-limit 变红、禁止提交（core confirm 已拦截，enter 图标 aria-disabled）。
-       注意 textarea 不加 maxlength 原生属性——对齐 Ant「允许超输入 + 变红」，硬 maxlength 会截断打不超。 -->
+       maxLength 硬截断：加原生 maxlength 属性，超出的字符打不进去（core setDraft 也 clamp 兜底）。 -->
   <span class="{baseClass}__edit-wrap">
     <textarea
       bind:this={textareaEl}
       class={editCls}
-      class:cd-typography__edit-input--over-limit={overLimit}
       value={draft}
+      maxlength={editableCfg?.maxLength}
       aria-label={editTooltip ?? editLabel}
-      aria-invalid={overLimit || undefined}
       rows="1"
       oninput={onTextareaInput}
       onkeydown={onTextareaKeydown}
@@ -708,9 +701,7 @@
       <button
         type="button"
         class="{baseClass}__edit-enter"
-        class:is-disabled={overLimit}
         aria-label={enterLabel}
-        aria-disabled={overLimit || undefined}
         onmousedown={(e) => e.preventDefault()}
         onclick={confirmEdit}
       >
@@ -1013,6 +1004,10 @@
     /* relative：作为 enterIcon 绝对定位（右下角）的定位上下文 */
     position: relative;
     display: inline-flex;
+    /* 收缩贴合 textarea 宽度（而非撑满容器）：否则 wrap 被块级上下文拉满，
+       而 textarea 靠 field-sizing:content 只占内容宽，enterIcon 定位到 wrap 右缘
+       就会飘到 textarea 右侧很远处。fit-content 让 wrap = textarea 宽，图标贴右下角。 */
+    inline-size: fit-content;
     max-inline-size: 100%;
     vertical-align: bottom;
   }
@@ -1051,14 +1046,6 @@
     border-color: var(--cd-color-primary);
     box-shadow: var(--cd-focus-ring);
   }
-  /* maxLength 超限：文字与边框变红警示（对齐 Ant），提交被 core 拦截 */
-  :global(.cd-typography__edit-input--over-limit) {
-    color: var(--cd-color-typography-danger-text-default);
-    border-color: var(--cd-color-typography-danger-text-default);
-  }
-  :global(.cd-typography__edit-input--over-limit:focus-visible) {
-    border-color: var(--cd-color-typography-danger-text-default);
-  }
   /* enterIcon：编辑框右下角回车确认按钮 */
   :global(.cd-typography__edit-enter) {
     position: absolute;
@@ -1083,11 +1070,6 @@
   :global(.cd-typography__edit-enter:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
-  }
-  :global(.cd-typography__edit-enter.is-disabled) {
-    color: var(--cd-typography-action-color);
-    opacity: 0.4;
-    cursor: not-allowed;
   }
   :global(.cd-typography__edit-enter svg) {
     inline-size: 1em;

@@ -116,24 +116,20 @@ export function createEditable(options: EditableOptions = {}): EditableApi {
     start(source) {
       if (editing) return;
       editing = true;
-      // seed the draft verbatim (no hard clamp): Ant allows an over-limit source
-      // to enter edit mode already red rather than silently truncating.
-      draft = source ?? options.value ?? '';
+      // hard-clamp the seed to maxLength: input can never exceed the cap.
+      draft = clampLength(source ?? options.value ?? '', options.maxLength);
       options.onStart?.();
       emit();
     },
     setDraft(next) {
-      // NOT clamped (Ant over-input semantics): allow draft to exceed maxLength,
-      // over-limit is surfaced via `overLimit` and blocks confirm.
-      if (next === draft) return;
-      draft = next;
+      // hard clamp: characters beyond maxLength are dropped (can't type past the cap).
+      const clamped = clampLength(next, options.maxLength);
+      if (clamped === draft) return;
+      draft = clamped;
       emit();
     },
     confirm() {
       if (!editing) return;
-      // over-limit: refuse commit, stay in edit mode (aligns with Ant — the red
-      // textarea does not submit until trimmed back under the cap).
-      if (isOverLimit(draft, options.maxLength)) return;
       editing = false;
       const committed = draft;
       // red line #1: surface via callback only; never self-mutate `value`.

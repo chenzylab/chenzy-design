@@ -120,7 +120,7 @@
 
   <!-- 8. maxLength -->
   <section>
-    <Paragraph type="secondary" size="small">限长文本（maxLength=20，超过 20 字变红且不能提交）</Paragraph>
+    <Paragraph type="secondary" size="small">限长文本（maxLength=20，超过 20 字后打不进去）</Paragraph>
     <Text editable={{ maxLength: 20 }} value={limited} onChange={(v) => (limited = v)}>
       {limited}
     </Text>

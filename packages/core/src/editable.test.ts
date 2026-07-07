@@ -60,53 +60,47 @@ describe('createEditable', () => {
     expect(e.draft).toBe('other');
   });
 
-  it('setDraft does NOT clamp to maxLength (Ant over-input semantics)', () => {
+  it('setDraft hard-clamps to maxLength (chars past the cap are dropped)', () => {
     const e = createEditable({ value: '', maxLength: 3 });
     e.start();
     e.setDraft('abcdef');
-    expect(e.draft).toBe('abcdef');
-    expect(e.overLimit).toBe(true);
+    expect(e.draft).toBe('abc');
+    expect(e.overLimit).toBe(false);
   });
 
-  it('overLimit is false while within maxLength', () => {
+  it('overLimit stays false since draft is always clamped', () => {
     const e = createEditable({ value: '', maxLength: 3 });
     e.start();
     e.setDraft('abc');
     expect(e.overLimit).toBe(false);
   });
 
-  it('confirm is blocked while over-limit (stays editing, no onCommit)', () => {
+  it('confirm commits the clamped draft', () => {
     const onCommit = vi.fn();
     const e = createEditable({ value: 'a', maxLength: 3, onCommit });
     e.start();
     e.setDraft('abcdef');
-    e.confirm();
-    expect(e.editing).toBe(true);
-    expect(onCommit).not.toHaveBeenCalled();
-    // trim back under the cap → commit now succeeds
-    e.setDraft('abc');
     e.confirm();
     expect(e.editing).toBe(false);
     expect(onCommit).toHaveBeenCalledWith('abc');
   });
 
-  it('handleKey Enter does not confirm while over-limit', () => {
+  it('handleKey Enter confirms the clamped draft', () => {
     const onCommit = vi.fn();
     const e = createEditable({ value: 'a', maxLength: 3, onCommit });
     e.start();
     e.setDraft('abcdef');
     const action = e.handleKey({ key: 'Enter' });
-    // key still resolves to 'confirm', but confirm() no-ops while over-limit
     expect(action).toBe('confirm');
-    expect(e.editing).toBe(true);
-    expect(onCommit).not.toHaveBeenCalled();
+    expect(e.editing).toBe(false);
+    expect(onCommit).toHaveBeenCalledWith('abc');
   });
 
-  it('start seeds an over-limit source verbatim (no truncation)', () => {
+  it('start clamps an over-limit source to maxLength', () => {
     const e = createEditable({ value: 'abcdef', maxLength: 3 });
     e.start();
-    expect(e.draft).toBe('abcdef');
-    expect(e.overLimit).toBe(true);
+    expect(e.draft).toBe('abc');
+    expect(e.overLimit).toBe(false);
   });
 
   it('accepts text / both triggers (informational)', () => {
