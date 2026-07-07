@@ -12,6 +12,8 @@
     onchange: (values: Record<string, unknown>) => void;
   }
 
+  import { untrack } from 'svelte';
+
   const { props, values, onchange }: Props = $props();
 
   function getControlType(prop: Prop): 'boolean' | 'union' | 'number' | 'string' | 'skip' {
@@ -37,8 +39,8 @@
     return d.replace(/^['"]|['"]$/g, '');
   }
 
-  // 初始化 — 只在 props 身份变化时重设
-  let localValues = $state<Record<string, unknown>>({ ...values });
+  // 初始化 — 仅取父级 values 的初始快照，之后本地自持（untrack 明确不订阅后续更新）
+  let localValues = $state<Record<string, unknown>>(untrack(() => ({ ...values })));
 
   function update(name: string, val: unknown) {
     localValues = { ...localValues, [name]: val };
