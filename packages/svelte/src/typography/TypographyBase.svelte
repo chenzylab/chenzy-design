@@ -20,6 +20,7 @@
     createEditable,
     createEllipsis,
     computeAutosizeHeight,
+    fitTruncatedText,
     type EllipsisPos,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -334,11 +335,66 @@
   // needsMeasure 为构造期常量（基于 untrack 快照），保证测量 effect 只随 hostEl 建立/销毁一次，
   // 不被 ellipsisCfg 等派生的重算反复 re-run（否则会反复 cancel rAF，测量永不落地）。
   const measureRows = initEllipsis?.rows ?? 1;
+  // 精确截断路径 (pos=middle/start)：CSS 只能做 end 截断，中间/首部截断必须靠 JS 测量后切分。
+  // 仅单行支持 (measureRows <= 1)；多行 (rows>1) 时 Semi 也不支持中间截断，退化为 end（走 CSS clamp）。
+  const initPos: EllipsisPos = initEllipsis?.pos ?? 'end';
+  const needsPreciseTruncate = initEllipsis !== null && initPos !== 'end' && measureRows <= 1;
   const needsMeasure =
     initEllipsis !== null &&
     ((initEllipsis.expandable ?? false) ||
       Boolean(initEllipsis.showTooltip) ||
-      initEllipsis.suffix !== undefined);
+      initEllipsis.suffix !== undefined ||
+      needsPreciseTruncate);
+  // 精确截断后的显示文本 (state)：仅在 rAF/observer 回调里写（异步首测），
+  // 渲染读它但不同步回写 → 无 effect 自循环。null = 尚未测量 / 无需精确截断。
+  let truncatedText = $state<string | null>(null);
+  // 精确截断的完整原文（首次测量时从 DOM 读到并缓存，供切分与 tooltip 用）。
+  let preciseFullText = '';
+
+  // 精确截断（pos=middle/start，单行）：离屏探针命令式测量各候选字符预算是否放得下，
+  // 二分（core fitTruncatedText）求最大可容纳的截断串。探针复制宿主字体度量、不换行，
+  // 读 scrollWidth 与容器宽比较。写 state 仅在 rAF/observer 回调里 → 与渲染读分离，无自循环。
+  let probe: HTMLSpanElement | null = null;
+  function measurePreciseNow(): void {
+    const el = hostEl;
+    if (!el || typeof window === 'undefined') return;
+    // 展开态显示完整原文，撤除精确截断。
+    if (untrack(() => expanded)) {
+      if (untrack(() => truncatedText) !== null) truncatedText = null;
+      return;
+    }
+    // 首测缓存完整原文（此刻宿主渲染的是原文；后续测量沿用缓存，不受已截断 DOM 影响）。
+    if (!preciseFullText) preciseFullText = el.textContent?.trim() ?? '';
+    const full = preciseFullText;
+    if (!full) return;
+    const parent = el.parentElement;
+    if (!parent) return;
+    if (!probe) {
+      probe = document.createElement('span');
+      const s = probe.style;
+      s.position = 'absolute';
+      s.visibility = 'hidden';
+      s.whiteSpace = 'nowrap';
+      s.pointerEvents = 'none';
+      s.top = '0';
+      s.left = '0';
+      probe.setAttribute('aria-hidden', 'true');
+      parent.appendChild(probe);
+    }
+    // 对齐宿主当前字体度量（响应主题/字号变化）。
+    const cs = window.getComputedStyle(el);
+    probe.style.font = cs.font;
+    probe.style.letterSpacing = cs.letterSpacing;
+    probe.style.fontWeight = cs.fontWeight;
+    const containerWidth = el.clientWidth;
+    const p = probe;
+    const next = fitTruncatedText(full, initPos, (candidate) => {
+      p.textContent = candidate;
+      return p.scrollWidth <= containerWidth + 1; // 1px 容差吸收亚像素
+    });
+    const sliced = next === full ? null : next;
+    if (untrack(() => truncatedText) !== sliced) truncatedText = sliced;
+  }
 
   // onMount 一次性建立 ResizeObserver + rAF 测量，卸载时清理。
   // 用 onMount 而非 $effect(hostEl) —— 避免 host 因模板派生重渲染导致 effect 反复 teardown，
@@ -351,6 +407,10 @@
     let frame = 0;
     const measure = (): void => {
       frame = 0;
+      if (needsPreciseTruncate) {
+        measurePreciseNow();
+        return;
+      }
       // 展开态 clamp 已撤除, scrollHeight==clientHeight, 不会误判
       ellipsisApi.measure({
         scrollHeight: el.scrollHeight,
@@ -360,7 +420,7 @@
         rows: measureRows,
       });
     };
-    // 首测：DOM 已布局，直接同步测一次落定 truncated（写 state 在 onMount 内，渲染读分离，无自循环）。
+    // 首测：DOM 已布局，直接同步测一次落定（写 state 在 onMount 内，渲染读分离，无自循环）。
     measure();
     const schedule = (): void => {
       if (frame) return;
@@ -371,7 +431,19 @@
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       ro.disconnect();
+      probe?.remove();
+      probe = null;
     };
+  });
+
+  // 展开/折叠切换时重测精确截断（rAF 异步：折叠回来时宿主已从截断文本切回，需重算；
+  // 展开时撤除截断）。写 state 在 rAF 回调里，避免与渲染读写同栈（红线 #4）。
+  $effect(() => {
+    if (!needsPreciseTruncate) return;
+    void expanded; // 依赖 expanded 触发重算
+    if (typeof window === 'undefined' || !hostEl) return;
+    const frame = window.requestAnimationFrame(measurePreciseNow);
+    return () => window.cancelAnimationFrame(frame);
   });
 
   // --- editable: 进入编辑聚焦 textarea；退出后焦点归还触发器（命令式, 红线 #3） ---
@@ -468,12 +540,21 @@
   });
   const hostStyle = $derived(`${inlineWeight}${ellipsisStyle}`);
 
+  // 有效截断标志：CSS/高度路径用 truncated；精确路径（pos=middle/start）用 truncatedText。
+  const isTruncated = $derived(
+    needsPreciseTruncate ? truncatedText !== null : truncated === true,
+  );
   // tooltip: 仅在确实溢出且 showTooltip 时启用
-  const tooltipEnabled = $derived(showTooltip && truncated === true && !expanded);
-  // textContent() 非响应式：用 truncated/expanded 变化作为重算触发器（measure 写 state 后重新取 DOM 全文）。
+  const tooltipEnabled = $derived(showTooltip && isTruncated && !expanded);
+  // 完整原文：精确路径下 DOM 已被切分，改用缓存的 preciseFullText（以 truncatedText 变化触发重算）。
+  // 非精确路径读 DOM（textContent 非响应式，用 truncated/expanded 变化作为重算触发器）。
   const fullText = $derived.by(() => {
     void truncated;
+    void truncatedText;
     void expanded;
+    if (needsPreciseTruncate && truncatedText !== null && !expanded && preciseFullText) {
+      return preciseFullText;
+    }
     return textContent();
   });
   // 浮层显示内容：opts.content 自定义优先，否则用完整原文。
@@ -604,7 +685,9 @@
     onclick={hostClick}
     ondblclick={onTriggerHost}
   >
-    {#if icon}<span class="cd-typography__icon">{@render icon()}</span>{/if}{@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
+    {#if icon}<span class="cd-typography__icon">{@render icon()}</span>{/if}{#if needsPreciseTruncate && truncatedText !== null && !expanded}<!--
+ 精确截断（pos=middle/start）：渲染 JS 测量后切分的文本；完整原文经 preciseFullText/fullText 供 tooltip。
+ -->{truncatedText}{:else}{@render children?.()}{/if}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
  -->{ellipsisCfg.suffix}{/if}{#if (expandable && !expanded && truncated === true) || (collapsible && expanded)}<!--
  --><button
       type="button"

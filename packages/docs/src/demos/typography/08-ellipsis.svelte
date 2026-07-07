@@ -38,6 +38,16 @@
       通过 renderTooltip 完全自定义浮层的省略文本内容。
     </Text>
   </div>
+  <div style="width: 220px;">
+    <Text ellipsis={{ pos: 'middle', showTooltip: true }}>
+      /Users/chenzy/i/chenzy.design/packages/svelte/src/typography/TypographyBase.svelte
+    </Text>
+  </div>
+  <div style="width: 220px;">
+    <Text ellipsis={{ pos: 'start', showTooltip: true }}>
+      前部省略：这是一段很长的文本，省略号出现在开头保留结尾。
+    </Text>
+  </div>
 </div>
 
 {#snippet renderTooltip(fullText: string, trigger: import('svelte').Snippet)}

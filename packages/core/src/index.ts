@@ -340,6 +340,7 @@ export {
   createEllipsis,
   isOverflowing,
   truncateText,
+  fitTruncatedText,
   type EllipsisApi,
   type EllipsisOptions,
   type EllipsisSnapshot,
