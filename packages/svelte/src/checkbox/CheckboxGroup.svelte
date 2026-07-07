@@ -43,7 +43,7 @@
     status = 'default',
     type = 'default',
     name,
-    direction = 'horizontal',
+    direction = 'vertical',
     onChange,
     children,
     ariaLabel,

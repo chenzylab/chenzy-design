@@ -54,13 +54,17 @@ export const meta = {
         desc: '统一展示形态透传子项',
       },
       { name: 'name', type: 'string', default: 'undefined' },
-      { name: 'direction', type: "'horizontal'|'vertical'", default: 'horizontal' },
+      { name: 'direction', type: "'horizontal'|'vertical'", default: 'vertical', desc: '组内布局方向（对齐 Semi 默认 vertical）' },
       { name: 'onChange', type: '(v: (string|number)[]) => void', default: 'undefined' },
       { name: 'children', type: 'Snippet', default: 'undefined' },
       { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可见标题时的可访问名（role=group）' },
       { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联组可见标题 id（优先于 ariaLabel）' },
     ],
   },
+  methods: [
+    { name: 'focus()', desc: '命令式聚焦复选框（尊重 preventScroll），经组件实例调用（对齐 Semi）' },
+    { name: 'blur()', desc: '命令式移除焦点（对齐 Semi）' },
+  ],
   a11y: {
     role: 'checkbox',
     keyboard: ['Space'],
