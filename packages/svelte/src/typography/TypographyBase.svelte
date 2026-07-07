@@ -969,6 +969,8 @@
     justify-content: center;
     margin-inline-start: var(--cd-spacing-typography-copyicon-marginleft);
     padding: 2px;
+    /* 默认复制/编辑图标为裸图标：无边框、无背景（清 UA button 外观） */
+    appearance: none;
     border: 0;
     background: transparent;
     color: var(--cd-typography-action-color);
@@ -1022,6 +1024,16 @@
     /* 现代浏览器：随内容伸缩宽度；不支持时退回 min/max 约束 + 容器宽度上限 */
     field-sizing: content;
     margin: 0;
+    /* 继承宿主字体族/字重/行高，但【不继承 font-size】：
+       textarea UA 默认是 monospace 小字，需继承字体族才对齐正文。
+       字号必须由 editCls 挂的 --h1/--title/--size-* 类通过 font-size 决定——
+       若用 `font: inherit`（含 font-size:inherit），会因源码顺序压掉 --h1 的 font-size，
+       导致 Title h1 编辑态退化成正文字号。故拆开继承、留出 font-size 给字号类。 */
+    font-family: inherit;
+    font-weight: inherit;
+    font-style: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
     /* 右侧多留出 enterIcon 的空间，避免文字压到图标 */
     padding: 2px 22px 2px 6px;
     border: 1px solid var(--cd-color-border);
