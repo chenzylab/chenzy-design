@@ -30,4 +30,5 @@ export const demos: DemoEntry[] = [
   entry('03-readonly-disabled.svelte', '只读与禁用', 'readonly 仅展示分值，disabled 置灰且不可交互。'),
   entry('04-character-tooltips.svelte', '自定义字符与提示', 'character 自定义字符/图标，tooltips 提供逐项提示。'),
   entry('05-size-count.svelte', '尺寸与数量', 'size 调整尺寸，count 自定义评分项数量。'),
+  entry('06-half-custom-size.svelte', '可交互半星与自定义尺寸', 'allowHalf 可交互半星选值；size 传 number 配合自定义字符实现任意尺寸。'),
 ];
