@@ -83,7 +83,7 @@ const components = [
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   ['date-picker', '{ DatePicker, RangePicker }', '22 KB'],
   ['form', '{ FormField, FormInput, FieldArray }', '10 KB'],
-  ['input', '{ Input, InputGroup }', '5 KB'],
+  ['input', '{ Input, InputGroup }', '5.5 KB'],
   ['input-number', '{ InputNumber }', '4.25 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
   ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
