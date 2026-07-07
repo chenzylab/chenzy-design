@@ -72,10 +72,20 @@
   const isControlled = $derived(checked !== undefined);
   let inner = $state(getInitialChecked());
 
-  let inputEl = $state<HTMLElement | null>(null);
+  let inputEl = $state<HTMLInputElement | null>(null);
   $effect(() => {
     if (autoFocus) inputEl?.focus({ preventScroll });
   });
+
+  /** Imperatively focus the radio's input (mirrors Semi's `focus()`). */
+  export function focus(): void {
+    inputEl?.focus({ preventScroll });
+  }
+
+  /** Imperatively blur the radio's input (mirrors Semi's `blur()`). */
+  export function blur(): void {
+    inputEl?.blur();
+  }
 
   function getInitialChecked(): boolean {
     return defaultChecked;

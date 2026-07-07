@@ -59,6 +59,9 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 | `name` | `string` | 继承 Group | 原生表单 name |
 | `addonClass` / `addonStyle` | `string` | — | label 文本容器的扩展类/样式 |
 | `extra` | `string` | — | 卡片型下的辅助说明文本（i18n 由调用方传入） |
+| `mode` | `'advanced' \| ''` | `''` | `advanced`：已选中项再次点击可取消（`onChange(false)`，对齐 Semi） |
+| `autoFocus` | `boolean` | `false` | 挂载时自动聚焦 |
+| `preventScroll` | `boolean` | `false` | 命令式 `focus()` / autoFocus 时阻止滚动文档 |
 
 ### 4.2 Props — RadioGroup
 
@@ -71,6 +74,7 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 | `disabled` | `boolean` | `false` | 整组禁用 |
 | `size` | `'small' \| 'default' \| 'large'` | `'default'` | 整组尺寸 |
 | `type` | `'default' \| 'button' \| 'card' \| 'pureCard'` | `'default'` | 整组形态 |
+| `buttonSize` | `'small' \| 'middle' \| 'large'` | — | `type='button'` 时的尺寸（对齐 Semi；`middle→default` 映射，优先于 size，仅 button 生效） |
 | `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 排列方向（也决定方向键语义） |
 | `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
 | `aria-label` / `aria-labelledby` | `string` | — | 组无可见标题时的可访问名称 |
@@ -85,6 +89,15 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 | `on:blur` | `FocusEvent` | Radio | 失去焦点 |
 
 > 约定：受控输入统一 `value + on:change`；本组件无浮层，故无 `open/openChange`。
+
+### 4.3.1 Methods — Radio
+
+通过组件实例（`bind:this`）调用（对齐 Semi）：
+
+| 方法 | 说明 |
+|---|---|
+| `focus()` | 命令式聚焦内部 radio input（尊重 preventScroll） |
+| `blur()` | 命令式移除焦点 |
 
 ### 4.4 Slots
 

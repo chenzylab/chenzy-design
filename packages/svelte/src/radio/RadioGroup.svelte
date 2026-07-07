@@ -24,6 +24,8 @@
     options?: OptionObject[];
     disabled?: boolean;
     size?: RadioSize;
+    /** 专控 type='button' 时的尺寸（对齐 Semi）；传入时优先于 size。middle→default 映射。 */
+    buttonSize?: 'small' | 'middle' | 'large';
     status?: RadioStatus;
     type?: RadioType;
     direction?: 'horizontal' | 'vertical';
@@ -41,6 +43,7 @@
     options,
     disabled = false,
     size = 'default',
+    buttonSize,
     status = 'default',
     type = 'default',
     direction = 'horizontal',
@@ -66,6 +69,16 @@
   }
 
   const selected = $derived(isControlled ? value : inner);
+
+  // buttonSize（对齐 Semi）仅在 type='button' 时生效并优先于 size；middle→default 映射。
+  // 未传 buttonSize 或非 button type 时 effectiveSize === size，行为与现状字节级一致。
+  const effectiveSize = $derived<RadioSize>(
+    type === 'button' && buttonSize
+      ? buttonSize === 'middle'
+        ? 'default'
+        : buttonSize
+      : size,
+  );
 
   // Insertion-ordered registry of radios (matches DOM order). PLAIN (non-reactive)
   // on purpose: radios push to it while mounting. It is read ONLY inside keyboard
@@ -150,7 +163,7 @@
     name: groupName,
     getSelected: () => selected,
     getDisabled: () => disabled,
-    getSize: () => size,
+    getSize: () => effectiveSize,
     getStatus: () => status,
     getType: () => type,
     select,
