@@ -13,7 +13,7 @@ export const meta = {
   props: [
     { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标内容（Snippet）；icon-only 时需 ariaLabel' },
     { name: 'badge', type: 'BadgeProps', default: 'undefined', desc: '徽章参数（复用本库 Badge：dot/count/overflowCount/showZero/type），有值时外层包裹 Badge' },
-    { name: 'shape', type: "'round'|'square'", default: "'round'", desc: '形状：round=圆角矩形，square=方形' },
+    { name: 'shape', type: "'round'|'square'|string", default: "'round'", desc: '形状：round=正圆（对齐 Semi）、square=方形，或任意 CSS border-radius 字符串自定义（本库额外提供）' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '尺寸三档' },
     { name: 'colorful', type: 'boolean', default: 'false', desc: 'AI 风格多彩渐变外观' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用（不触发跳转/onClick；button 用原生 disabled，a 用 aria-disabled 并移出 tab 序）' },

@@ -2,11 +2,11 @@
   import { FloatButton, Text } from '@chenzy-design/svelte';
 </script>
 
-<Text type="tertiary">有 href 时渲染真实 <code>&lt;a&gt;</code>；target="_blank" 自动补 rel="noopener noreferrer"。</Text>
+<Text type="tertiary">有 href 时渲染为原生链接（a 标签）；target="_blank" 自动补 rel="noopener noreferrer"。</Text>
 <div style="position:relative; height:120px">
   <FloatButton
-    ariaLabel="打开文档"
-    href="https://semi.design/zh-CN/basic/floatbutton"
+    ariaLabel="打开仓库"
+    href="https://github.com/chenzylab/chenzy-design"
     target="_blank"
     style="position:absolute; inset-inline-end:16px; inset-block-end:16px"
   >

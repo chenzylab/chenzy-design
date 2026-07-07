@@ -44,10 +44,13 @@
   // 有 href 且 target=_blank 时补 rel（安全：阻断 window.opener）。
   const computedRel = $derived(target === '_blank' ? 'noopener noreferrer' : undefined);
 
+  // round/square 是语义预设（走 class + token）；其它字符串视为自定义 border-radius。
+  const isPreset = $derived(shape === 'round' || shape === 'square');
+
   const rootClass = $derived(
     [
       'cd-floatbutton',
-      `cd-floatbutton--${shape}`,
+      isPreset ? `cd-floatbutton--${shape}` : '',
       `cd-floatbutton--${size}`,
       colorful ? 'cd-floatbutton--colorful' : '',
       disabled ? 'cd-floatbutton--disabled' : '',
@@ -56,6 +59,11 @@
     ]
       .filter(Boolean)
       .join(' '),
+  );
+
+  // 自定义 shape：把 border-radius 拼到用户 style 前（用户 style 仍可覆盖）。
+  const rootStyle = $derived(
+    isPreset ? style : [`border-radius:${shape}`, style ?? ''].filter(Boolean).join(';'),
   );
 
   function handleClick(e: MouseEvent) {
@@ -96,7 +104,7 @@
     aria-label={ariaLabel}
     aria-disabled={disabled ? 'true' : undefined}
     tabindex={disabled ? -1 : undefined}
-    {style}
+    style={rootStyle}
     onclick={handleClick}
   >
     {@render inner()}
@@ -107,7 +115,7 @@
     class={rootClass}
     {disabled}
     aria-label={ariaLabel}
-    {style}
+    style={rootStyle}
     onclick={handleClick}
   >
     {@render inner()}
