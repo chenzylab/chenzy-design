@@ -86,13 +86,53 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 | dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存） |
 | dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式） |
 | dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop |
+| filterable | `boolean` | `false` | 可搜索别名，等价 `filterTreeNode=true`；未传 filterTreeNode 时回退此值 |
+| treeNodeFilterProp | `string` | `'label'` | 搜索时用于过滤匹配的节点字段 |
+| filterRender | `Snippet<[{ path }]>` | — | 自定义搜索结果项渲染 |
+| filterSorter | `(a, b, input) => number` | — | 搜索结果自定义排序 |
+| onSearch | `(value: string) => void` | — | 搜索输入回调 |
+| remote | `boolean` | `false` | 远程搜索：跳过本地过滤，只触发 onSearch |
+| virtualizeInSearch | `{ height: number; width: number; itemSize: number }` | — | 搜索结果虚拟滚动配置 |
+| searchPosition | `'trigger' \| 'custom'` | `'trigger'` | 搜索框位置：`'trigger'` 内置；`'custom'` 不渲染内置搜索框 |
+| searchPlaceholder | `string` | — | 搜索框占位文案 |
+| autoMergeValue | `boolean` | `true` | 选中父节点时 value 不包含后代 |
+| checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选节点选中关系：`'related'` 父子联动；`'unRelated'` 独立 |
+| onChangeWithObject | `boolean` | `false` | onChange 回传完整节点对象而非 value |
+| max | `number` | — | 多选可勾选数量上限；超出不选入并触发 onExceed |
+| onExceed | `(items: CascaderNode[]) => void` | — | 超出 max 时回调，传当前（含超出项）勾选节点集合 |
+| disableStrictly | `boolean` | `false` | 严格禁用：禁用节点不随父子联动继承 |
+| clickToSelect | `boolean` | `false` | 点击任意节点即选中（含非叶子） |
+| enableLeafClick | `boolean` | `false` | 多选模式下点击叶子即勾选 |
+| keyMaps | `{ value?; label?; children?; disabled?; isLeaf? }` | — | 自定义字段名映射 |
+| showNext | `'click' \| 'hover'` | `'click'` | 展开触发方式（canonical，优先于 expandTrigger） |
+| showClear | `boolean` | — | 显示清除按钮（clearable 别名，优先） |
+| mouseEnterDelay | `number` | `50` | hover 展开鼠标移入延迟（ms） |
+| mouseLeaveDelay | `number` | `50` | hover 鼠标移出延迟（ms） |
+| autoAdjustOverflow | `boolean` | `true` | 浮层视口溢出时自动翻转方向 |
+| preventScroll | `boolean` | `false` | 命令式 focus() 时阻止滚动文档 |
+| stopPropagation | `boolean` | `true` | 阻止下拉框点击冒泡 |
+| motion | `boolean` | `true` | 浮层展开动画 |
+| position | `string` | `'bottomStart'` | 浮层方向 |
+| triggerRender | `Snippet<[{ value, placeholder, isOpen, disabled }]>` | — | 完全自定义触发器 |
+| topSlot | `Snippet` | — | 面板顶部插槽 |
+| bottomSlot | `Snippet` | — | 面板底部插槽 |
+| prefix | `Snippet \| string` | — | 前置内容 |
+| suffix | `Snippet \| string` | — | 后置内容 |
+| insetLabel | `Snippet \| string` | — | 内嵌标签（触发器在值前渲染，如「地区：」） |
+| insetLabelId | `string` | — | 内嵌标签 DOM id（供外部 aria-labelledby 引用） |
+| arrowIcon / expandIcon | `Snippet` | — | 自定义展开/箭头图标（expandIcon 优先） |
+| clearIcon | `Snippet` | — | 自定义清除图标 |
+| borderless | `boolean` | `false` | 无边框模式 |
+| ariaLabel | `string` | — | 可访问名 |
+| class | `string` | `''` | 根节点自定义类名（对齐 Semi className） |
+| style | `string` | — | 选择框内联样式 |
 
 ### Events
 
 | Event | payload | 说明 |
 |---|---|---|
 | change | `{ value, selectedNodes }` | 选定结果变化（单选为路径，多选为路径集合） |
-| openChange | `{ open: boolean }` | 浮层显隐变化 |
+| openChange | `{ open: boolean }` | 浮层显隐变化（对应回调 prop onOpenChange / onDropdownVisibleChange） |
 | select | `{ node, path }` | 点击/激活某一节点（含非叶子） |
 | expand | `{ node, level }` | 展开了某一节点的下一级 |
 | load | `{ node, children }` | 动态加载完成 |
@@ -100,6 +140,8 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 | search | `{ query: string }` | 搜索输入变化 |
 | clear | `{}` | 点击清除 |
 | blur / focus | `FocusEvent` | 触发器失焦/聚焦 |
+| listScroll | `{ panelIndex, activeNode }` | 下拉列滚动（对应回调 prop onListScroll） |
+| exceed | `{ items }` | 多选勾选超出 max（对应回调 prop onExceed） |
 
 ### Slots
 
@@ -112,6 +154,18 @@ Cascader（级联选择器）用于从一组有层级关系的数据集合中进
 | tag | `{ node, onClose }` | 自定义多选 Tag |
 | suffix / prefix | — | 触发器前后缀（图标等） |
 | notFound | `{ query }` | 搜索无结果 |
+
+### Methods
+
+通过组件实例（`bind:this`）调用的命令式方法：
+
+| 方法 | 说明 |
+|---|---|
+| `open()` | 手动展开下拉面板 |
+| `close()` | 手动关闭下拉面板 |
+| `focus()` | 聚焦触发器（尊重 preventScroll） |
+| `blur()` | 触发器失焦 |
+| `search(value: string)` | 手动设置搜索词并触发搜索流程（需可搜索时有效） |
 
 ## 5. 主题 / Token
 

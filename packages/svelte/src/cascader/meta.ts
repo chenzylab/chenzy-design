@@ -87,6 +87,7 @@ export const meta = {
     { name: 'onDropdownVisibleChange', type: '(visible: boolean) => void', default: 'undefined', desc: '下拉面板显隐回调' },
     { name: 'onListScroll', type: '(e: Event, info: { panelIndex: number; activeNode: CascaderNode | null }) => void', default: 'undefined', desc: '列滚动回调' },
     { name: 'triggerRender', type: 'Snippet<[{ value: Key[] | Key[][] | undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>', default: 'undefined', desc: '完全自定义触发器渲染' },
+    { name: 'class', type: 'string', default: "''", desc: '根节点自定义类名（对齐 Semi className）' },
   ],
   a11y: {
     role: 'combobox',
