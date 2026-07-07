@@ -44,7 +44,9 @@
       </tr>
     </thead>
     <tbody>
-      {#each props as prop (prop.name)}
+      <!-- key 用 index：同一表格可含多子组件的同名 prop（如 Grid 的 Row.class / Col.class），
+           用 prop.name 作 key 会重复触发 each_key_duplicate。行顺序稳定，index 安全。 -->
+      {#each props as prop, i (i)}
         <tr>
           <td><code>{prop.name}</code></td>
           <td>{prop.desc ?? '—'}</td>
@@ -65,7 +67,7 @@
       <tr><th>{t('api.event', lang)}</th><th>{t('api.payload', lang)}</th><th>{t('api.desc', lang)}</th></tr>
     </thead>
     <tbody>
-      {#each events as evt (evt.name)}
+      {#each events as evt, i (i)}
         <tr>
           <td><code>{evt.name}</code></td>
           <td><code class="type">{evt.payload ?? '—'}</code></td>
@@ -85,7 +87,7 @@
       <tr><th>{t('api.slotName', lang)}</th><th>{t('api.desc', lang)}</th></tr>
     </thead>
     <tbody>
-      {#each slots as slot (slot.name)}
+      {#each slots as slot, i (i)}
         <tr>
           <td><code>{slot.name}</code></td>
           <td>{slot.desc ?? '—'}</td>

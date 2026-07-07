@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { base } from '$app/paths';
   import { onMount } from 'svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
@@ -35,9 +36,11 @@
     if (!browser) return;
     try {
       // 用 new Function 包裹动态 import，阻止 Vite/Rollup 在构建期静态解析
-      // `/pagefind/pagefind.js`（该文件由 pagefind 在 build 之后生成，构建期不存在）。
+      // `pagefind.js`（该文件由 pagefind 在 build 之后生成，构建期不存在）。
+      // 路径须带 base：GitHub Pages 部署在 /chenzy-design 子路径下，
+      // 否则请求 /pagefind/pagefind.js 会 404（正确为 {base}/pagefind/pagefind.js）。
       const dynamicImport = new Function('p', 'return import(p)');
-      pagefind = await dynamicImport('/pagefind/pagefind.js');
+      pagefind = await dynamicImport(`${base}/pagefind/pagefind.js`);
       await pagefind.init();
     } catch {
       // pagefind 仅在 build 后可用，dev 模式静默跳过
