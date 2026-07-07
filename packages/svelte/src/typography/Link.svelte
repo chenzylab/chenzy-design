@@ -28,6 +28,10 @@
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    /** 斜体（对齐 Semi）。 */
+    italic?: boolean;
+    /** 前置图标（对齐 Semi）；链接下不带下划线。 */
+    icon?: Snippet;
     component?: string;
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
@@ -55,6 +59,8 @@
     underline = false,
     delete: del = false,
     code = false,
+    italic = false,
+    icon,
     component = 'a',
     ellipsis = false,
     copyable = false,
@@ -104,6 +110,8 @@
   {underline}
   delete={del}
   {code}
+  {italic}
+  {icon}
   class={className}
   {ellipsis}
   {copyable}

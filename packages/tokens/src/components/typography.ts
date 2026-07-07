@@ -69,4 +69,5 @@ export const typographyTokens = {
   'typography-code-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '代码字号', usage: 'code 字号（组件消费）' },
   'typography-font-size-small': { value: 'var(--cd-font-size-small)', category: 'font', label: '小号字号', usage: 'size=small 字号（组件消费）' },
   'typography-font-size-large': { value: 'var(--cd-font-size-header-6)', category: 'font', label: '大号字号', usage: 'size=large 字号（组件消费）' },
+  'typography-spacing-extended': { value: '1.8', category: 'other', label: '段落宽松行距', usage: 'Paragraph spacing=extended 行高（对齐 Semi）' },
 } satisfies TokenGroup;

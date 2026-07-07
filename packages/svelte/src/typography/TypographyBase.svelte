@@ -99,6 +99,12 @@
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    /** 斜体（对齐 Semi italic）。 */
+    italic?: boolean;
+    /** 前置图标（对齐 Semi icon）；渲染在内容前，带间距。 */
+    icon?: Snippet | undefined;
+    /** 段落行距（Paragraph）：normal / extended（对齐 Semi spacing）。 */
+    spacing?: 'normal' | 'extended';
     class?: string;
     /** ellipsis / copyable / editable */
     ellipsis?: boolean | EllipsisConfig;
@@ -129,6 +135,9 @@
     underline = false,
     delete: del = false,
     code = false,
+    italic = false,
+    icon,
+    spacing = 'normal',
     class: className = '',
     ellipsis = false,
     copyable = false,
@@ -431,6 +440,8 @@
       underline && `${baseClass}--underline`,
       del && `${baseClass}--delete`,
       code && `${baseClass}--code`,
+      italic && `${baseClass}--italic`,
+      spacing === 'extended' && `${baseClass}--spacing-extended`,
       ellipsisCfg && !expanded && `${baseClass}--ellipsis`,
       ellipsisCfg && rows > 1 && !expanded && `${baseClass}--ellipsis-multi`,
       className,
@@ -528,7 +539,7 @@
 {:else if !isInteractive}
   <!-- 纯文本快路径: 与旧实现完全一致 (向后兼容) -->
   <svelte:element this={element} class={cls} style={hostStyle || undefined} aria-disabled={disabled || undefined} {...hostAttrs}>
-    {@render children?.()}
+    {#if icon}<span class="cd-typography__icon">{@render icon()}</span>{/if}{@render children?.()}
   </svelte:element>
 {:else}
   <!-- showTooltip: 把截断后的文本宿主（hostNode，触发器）用 Tooltip/Popover 包裹，
@@ -590,7 +601,7 @@
     onclick={hostClick}
     ondblclick={onTriggerHost}
   >
-    {@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
+    {#if icon}<span class="cd-typography__icon">{@render icon()}</span>{/if}{@render children?.()}{#if ellipsisCfg?.suffix && truncated === true && !expanded}<!--
  -->{ellipsisCfg.suffix}{/if}
   </svelte:element>
 {/snippet}
@@ -662,6 +673,24 @@
   }
   :global(.cd-typography--strong) {
     font-weight: var(--cd-font-typography-strong-fontweight);
+  }
+  :global(.cd-typography--italic) {
+    font-style: italic;
+  }
+  /* 段落宽松行距（对齐 Semi spacing=extended）。 */
+  :global(.cd-typography--spacing-extended) {
+    line-height: var(--cd-typography-spacing-extended, 1.8);
+  }
+  /* 前置图标：与内容间距，链接下不带下划线（符合规范）。 */
+  :global(.cd-typography__icon) {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: var(--cd-spacing-extra-tight, 4px);
+    vertical-align: -0.125em;
+  }
+  :global(.cd-typography__icon svg) {
+    inline-size: 1em;
+    block-size: 1em;
   }
   /* 字号档 (Text/Paragraph) — spec §4.1 size + §5 token 表; default 沿用继承字号保持向后兼容 */
   :global(.cd-typography--size-small) {

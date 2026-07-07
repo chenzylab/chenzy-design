@@ -25,6 +25,8 @@
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    /** 行距：normal / extended（对齐 Semi spacing）。 */
+    spacing?: 'normal' | 'extended';
     component?: string;
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
@@ -49,6 +51,7 @@
     underline = false,
     delete: del = false,
     code = false,
+    spacing = 'normal',
     component = 'p',
     ellipsis = false,
     copyable = false,
@@ -77,6 +80,7 @@
   {underline}
   delete={del}
   {code}
+  {spacing}
   class={className}
   {ellipsis}
   {copyable}

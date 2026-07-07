@@ -347,6 +347,14 @@ export {
   type EllipsisPos,
 } from './ellipsis.js';
 export {
+  formatNumeral,
+  formatNumber,
+  roundTo,
+  type NumeralRule,
+  type NumeralTruncate,
+  type NumeralOptions,
+} from './numeral.js';
+export {
   computeUploadPercent,
   isUploadOk,
   createUploadQueue,
