@@ -34,13 +34,13 @@
     "@chenzy-design/tokens": "workspace:*",
     "@douyinfe/semi-json-viewer-core": "^2.101.0",
     "@floating-ui/dom": "^1.0.0",
-    "@tiptap/core": "^3.0.0",
-    "@tiptap/extension-image": "^3.0.0",
-    "@tiptap/extension-text-align": "^3.0.0",
-    "@tiptap/extension-text-style": "^3.0.0",
-    "@tiptap/extensions": "^3.27.1",
-    "@tiptap/pm": "^3.0.0",
-    "@tiptap/starter-kit": "^3.0.0",
+    "@tiptap/core": "^3.27.2",
+    "@tiptap/extension-image": "^3.27.2",
+    "@tiptap/extension-text-align": "^3.27.2",
+    "@tiptap/extension-text-style": "^3.27.2",
+    "@tiptap/extensions": "^3.27.2",
+    "@tiptap/pm": "^3.27.2",
+    "@tiptap/starter-kit": "^3.27.2",
     "prismjs": "^1.29.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
@@ -51,7 +51,7 @@
   "devDependencies": {
     "@types/hast": "^3.0.4",
     "@types/prismjs": "^1.26.5",
-    "tsx": "^4.19.2"
+    "tsx": "^4.23.0"
   },
   "peerDependencies": {
     "svelte": ">=5.0.0"
