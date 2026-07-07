@@ -28,7 +28,14 @@
 | maxLength | `number` | — | 最大长度 |
 | status | `'default'\|'warning'\|'error'` | `'default'` | 校验态 |
 | prefix / suffix | `Snippet` | — | 前后缀 |
+| addonBefore / addonAfter | `Snippet \| string` | — | 输入框外前置/后置标签（如 `https://` / `.com`） |
+| borderless | `boolean` | `false` | 无边框模式 |
 | type | `'text'\|'password'\|...` | `'text'` | 原生 type；password 带显隐切换 |
+| getValueLength | `(value: string) => number` | — | 自定义字符计数（emoji 按可见长度计），用于 showCount 与 maxLength |
+| hideSuffix | `boolean` | `false` | 有值时隐藏 suffix |
+| composition | `boolean` | `false` | 输入法模式：开启后 IME 未确认期间不触发 on:change，确认后触发一次（对齐 Semi） |
+| clearIcon | `Snippet` | — | 自定义清除图标（clearable 有值时替换默认图标，对齐 Semi） |
+| preventScroll | `boolean` | `false` | 命令式 focus() 时是否阻止滚动文档 |
 ### Events
 | 事件 | 载荷 | 说明 |
 |---|---|---|
@@ -37,10 +44,20 @@
 | on:clear | — | 点击清除 |
 | on:enterPress | `KeyboardEvent` | 回车 |
 | on:focus / on:blur | `FocusEvent` | |
+| on:keyDown / on:keyUp / on:keyPress | `KeyboardEvent` | 透传原生键盘事件（对齐 Semi）|
+| on:compositionStart / on:compositionEnd / on:compositionUpdate | `CompositionEvent` | 透传原生输入法事件（对齐 Semi）|
 ### Slots
 | 名称 | 说明 |
 |---|---|
 | prefix / suffix | 前后缀内容 |
+| clearIcon | 自定义清除图标 |
+### Methods
+通过组件实例（`bind:this`）调用（对齐 Semi）：
+
+| 方法 | 说明 |
+|---|---|
+| `focus()` | 命令式聚焦输入框（尊重 preventScroll） |
+| `blur()` | 命令式移除焦点 |
 
 ## 5. 主题 / Token
 

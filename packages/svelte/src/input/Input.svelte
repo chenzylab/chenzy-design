@@ -25,6 +25,8 @@
     type?: 'text' | 'password';
     prefix?: Snippet;
     suffix?: Snippet;
+    /** 自定义清除图标（clearable 且有值时替代内置清除图标）。对齐 Semi clearIcon。 */
+    clearIcon?: Snippet;
     /** 前置标签（在 input 框外左侧，如 "https://"）；传 Snippet 可自定义渲染 */
     addonBefore?: Snippet | string;
     /** 后置标签（在 input 框外右侧，如 ".com"）；传 Snippet 可自定义渲染 */
@@ -39,6 +41,11 @@
     preventScroll?: boolean;
     /** 组件挂载时自动聚焦 */
     autoFocus?: boolean;
+    /**
+     * IME 输入缓冲（对齐 Semi `composition`）。默认 false：拼音输入过程中每次输入都触发
+     * onChange。true：IME 未确认期间不触发 onChange，确认（compositionend）后补触发一次。
+     */
+    composition?: boolean;
     name?: string;
     id?: string;
     ariaLabel?: string;
@@ -54,6 +61,18 @@
     onEnter?: (e: KeyboardEvent) => void;
     onFocus?: (e: FocusEvent) => void;
     onBlur?: (e: FocusEvent) => void;
+    /** 原生 keydown 透传（对齐 Semi onKeyDown）。onEnterPress 逻辑不受影响。 */
+    onKeyDown?: (e: KeyboardEvent) => void;
+    /** 原生 keyup 透传（对齐 Semi onKeyUp）。 */
+    onKeyUp?: (e: KeyboardEvent) => void;
+    /** 原生 keypress 透传（对齐 Semi onKeyPress）。 */
+    onKeyPress?: (e: KeyboardEvent) => void;
+    /** 原生 compositionstart 透传（对齐 Semi onCompositionStart）。 */
+    onCompositionStart?: (e: CompositionEvent) => void;
+    /** 原生 compositionend 透传（对齐 Semi onCompositionEnd）。 */
+    onCompositionEnd?: (e: CompositionEvent) => void;
+    /** 原生 compositionupdate 透传（对齐 Semi onCompositionUpdate）。 */
+    onCompositionUpdate?: (e: CompositionEvent) => void;
   }
 
   let {
@@ -70,6 +89,7 @@
     type = 'text',
     prefix,
     suffix,
+    clearIcon,
     addonBefore,
     addonAfter,
     borderless = false,
@@ -77,6 +97,7 @@
     hideSuffix = false,
     preventScroll = false,
     autoFocus = false,
+    composition = false,
     name,
     id,
     ariaLabel,
@@ -89,6 +110,12 @@
     onEnter,
     onFocus,
     onBlur,
+    onKeyDown,
+    onKeyUp,
+    onKeyPress,
+    onCompositionStart,
+    onCompositionEnd,
+    onCompositionUpdate,
   }: Props = $props();
 
   const loc = useLocale();
@@ -125,23 +152,31 @@
     const next = e.currentTarget.value;
     setValue(next);
     onInput?.(next);
-    if (!composing) onChange?.(next);
+    // composition 缓冲仅在 composition=true 时生效：此时 IME 拼音过程中不触发 onChange，
+    // 等 compositionend 补触发一次。composition=false（默认，对齐 Semi）则每次输入都触发。
+    if (!(composition && composing)) onChange?.(next);
   }
 
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
-    if (composing) return;
+    if (composition && composing) return;
     onChange?.(e.currentTarget.value);
   }
 
-  function handleCompositionStart() {
+  function handleCompositionStart(e: CompositionEvent) {
     composing = true;
+    onCompositionStart?.(e);
   }
 
-  function handleCompositionEnd(e: Event & { currentTarget: HTMLInputElement }) {
+  function handleCompositionEnd(e: CompositionEvent & { currentTarget: HTMLInputElement }) {
     composing = false;
-    const next = e.currentTarget.value;
-    setValue(next);
-    onChange?.(next);
+    // 仅在 composition=true 时补触发 onChange（composition=false 时 input 事件已实时触发过，
+    // 此处再触发会重复）。
+    if (composition) {
+      const next = e.currentTarget.value;
+      setValue(next);
+      onChange?.(next);
+    }
+    onCompositionEnd?.(e);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -149,6 +184,7 @@
       onEnterPress?.(e);
       onEnter?.(e);
     }
+    onKeyDown?.(e);
   }
 
   function clear() {
@@ -184,6 +220,16 @@
 
   // --- autoFocus 命令式（红线 #3）---
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
+
+  /** 命令式聚焦（对齐 Semi focus()）。沿用 preventScroll prop。 */
+  export function focus(): void {
+    inputEl?.focus({ preventScroll });
+  }
+
+  /** 命令式失焦（对齐 Semi blur()）。 */
+  export function blur(): void {
+    inputEl?.blur();
+  }
 
   $effect(() => {
     if (!autoFocus || !inputEl) return;
@@ -227,8 +273,11 @@
         oninput={handleInput}
         onchange={handleChange}
         onkeydown={handleKeydown}
+        onkeyup={onKeyUp}
+        onkeypress={onKeyPress}
         oncompositionstart={handleCompositionStart}
         oncompositionend={handleCompositionEnd}
+        oncompositionupdate={onCompositionUpdate}
         onfocus={onFocus}
         onblur={onBlur}
       />
@@ -240,12 +289,16 @@
           aria-label={loc().t('Input.clear')}
           onclick={clear}
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-            />
-          </svg>
+          {#if clearIcon}
+            {@render clearIcon()}
+          {:else}
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path
+                fill="currentColor"
+                d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+              />
+            </svg>
+          {/if}
         </button>
       {/if}
 
@@ -310,8 +363,11 @@
       oninput={handleInput}
       onchange={handleChange}
       onkeydown={handleKeydown}
+      onkeyup={onKeyUp}
+      onkeypress={onKeyPress}
       oncompositionstart={handleCompositionStart}
       oncompositionend={handleCompositionEnd}
+      oncompositionupdate={onCompositionUpdate}
       onfocus={onFocus}
       onblur={onBlur}
     />
@@ -323,12 +379,16 @@
         aria-label={loc().t('Input.clear')}
         onclick={clear}
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        {#if clearIcon}
+          {@render clearIcon()}
+        {:else}
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
+            />
+          </svg>
+        {/if}
       </button>
     {/if}
 
