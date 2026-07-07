@@ -49,7 +49,7 @@
   let uploadDirVal = $state<UploadFileItem[]>([]);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Upload multiple drag accept="image/*" />
 
   <Text type="tertiary">真实上传（action + 进度）：</Text>
@@ -79,7 +79,7 @@
 
   <Text type="tertiary">组件级 status 校验态（warning / error，影响上传区边框色，区别于文件项 file.status）：</Text>
   <div data-testid="upload-status">
-    <Space direction="vertical" align="start">
+    <Space vertical align="start">
       <Upload status="warning" drag accept="image/*" />
       <Upload status="error" drag accept="image/*" />
     </Space>

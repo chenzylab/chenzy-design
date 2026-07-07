@@ -19,7 +19,7 @@
   onCancel={() => { open = false; }}
 >
   {#snippet renderContent({ setValue })}
-    <Space direction="vertical">
+    <Space vertical>
       <Text type="tertiary">用星级为本次服务打分：</Text>
       <Rating onChange={(v) => setValue(String(v))} />
     </Space>

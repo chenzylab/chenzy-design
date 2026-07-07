@@ -5,7 +5,7 @@
   let noAlpha = $state('#16a34a');
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <ColorPicker
       alpha

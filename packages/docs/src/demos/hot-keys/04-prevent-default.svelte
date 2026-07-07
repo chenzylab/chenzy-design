@@ -4,7 +4,7 @@
   let intercepted = $state(0);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space align="center">
     <Text>preventDefault 拦截浏览器默认行为：</Text>
     <HotKeys hotKeys={['Control', 'S']} preventDefault onHotKey={() => (intercepted += 1)} />

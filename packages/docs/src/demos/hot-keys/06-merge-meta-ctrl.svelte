@@ -4,7 +4,7 @@
   let hits = $state(0);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space align="center">
     <Text>mergeMetaCtrl 跨平台合并 Cmd/Ctrl：</Text>
     <HotKeys hotKeys={['Control', 'K']} mergeMetaCtrl onHotKey={() => (hits += 1)} />

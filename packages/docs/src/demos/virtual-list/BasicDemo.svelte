@@ -19,7 +19,7 @@
   let scrollToTarget = $state(500);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">固定高（1 万行，itemSize=36）：</Text>
   <div style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px">
     <VirtualList data={bigData} height={200} itemSize={36} getKey={(it) => it.id}>

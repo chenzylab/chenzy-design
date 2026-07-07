@@ -1,68 +1,73 @@
 <!--
   Space — see specs/components/basic/Space.spec.md
   Flex spacing container. Token-driven gap.
-  NOTE: `split` slot (separator between items) is intentionally omitted in this
-  iteration; to be added later alongside per-item iteration support.
+  Aligns with Semi Design's Space (vertical/spacing/align/wrap) while adding our
+  superset: `block`/`tag`/`style` passthrough.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  type SpaceDirection = 'horizontal' | 'vertical';
-  type SpaceSpacing = 'tight' | 'medium' | 'loose' | number | [number, number];
+  type SpacingItem = 'tight' | 'medium' | 'loose' | number;
+  type SpaceSpacing = SpacingItem | [SpacingItem, SpacingItem];
   type SpaceAlign = 'start' | 'end' | 'center' | 'baseline';
 
   interface Props {
-    direction?: SpaceDirection;
+    /** Vertical layout. When true, items stack in a column. */
+    vertical?: boolean;
+    /**
+     * Gap between items. Accepts a preset step, a number (px), or a
+     * `[horizontal, vertical]` tuple where each element is a step or number.
+     */
     spacing?: SpaceSpacing;
     align?: SpaceAlign;
     wrap?: boolean;
     block?: boolean;
+    tag?: keyof HTMLElementTagNameMap;
     class?: string;
+    style?: string;
     children?: Snippet;
   }
 
   let {
-    direction = 'horizontal',
-    spacing = 'medium',
-    align,
+    vertical = false,
+    spacing = 'tight',
+    align = 'center',
     wrap = false,
     block = false,
+    tag = 'div',
     class: className = '',
+    style = '',
     children,
   }: Props = $props();
 
-  const presetGap: Record<string, string> = {
+  const stepVar: Record<Exclude<SpacingItem, number>, string> = {
     tight: 'var(--cd-space-tight)',
     medium: 'var(--cd-space-medium)',
     loose: 'var(--cd-space-loose)',
   };
 
+  const resolveItem = (item: SpacingItem): string =>
+    typeof item === 'number' ? `${item}px` : stepVar[item];
+
+  // Semi: wrap is meaningless in the vertical direction, so force it off.
+  const isWrap = $derived(vertical ? false : wrap);
+
   const gapCss = $derived.by(() => {
     if (Array.isArray(spacing)) {
-      const [row, col] = spacing;
-      return `${row}px ${col}px`;
+      const [horizontalGap, verticalGap] = spacing;
+      // spacing[0] → horizontal → column-gap, spacing[1] → vertical → row-gap.
+      return `row-gap:${resolveItem(verticalGap)};column-gap:${resolveItem(horizontalGap)}`;
     }
-    if (typeof spacing === 'number') {
-      return `${spacing}px`;
-    }
-    return presetGap[spacing];
+    return `gap:${resolveItem(spacing)}`;
   });
 
-  const alignItems = $derived.by(() => {
-    if (!align) return undefined;
-    if (align === 'start') return 'flex-start';
-    if (align === 'end') return 'flex-end';
-    return align;
-  });
-
-  const isPreset = $derived(typeof spacing === 'string');
+  const alignItems = $derived(align === 'start' ? 'flex-start' : align === 'end' ? 'flex-end' : align);
 
   const cls = $derived(
     [
       'cd-space',
-      `cd-space--${direction}`,
-      isPreset && `cd-space--gap-${spacing}`,
-      wrap && 'cd-space--wrap',
+      vertical ? 'cd-space--vertical' : 'cd-space--horizontal',
+      isWrap && 'cd-space--wrap',
       block && 'cd-space--block',
       className,
     ]
@@ -71,15 +76,13 @@
   );
 
   const inlineStyle = $derived(
-    [!isPreset && `gap:${gapCss}`, alignItems && `align-items:${alignItems}`]
-      .filter(Boolean)
-      .join(';'),
+    [gapCss, `align-items:${alignItems}`, style].filter(Boolean).join(';'),
   );
 </script>
 
-<div class={cls} style={inlineStyle || undefined}>
+<svelte:element this={tag} class={cls} style={inlineStyle || undefined}>
   {@render children?.()}
-</div>
+</svelte:element>
 
 <style>
   .cd-space {
@@ -96,14 +99,5 @@
   }
   .cd-space--wrap {
     flex-wrap: wrap;
-  }
-  .cd-space--gap-tight {
-    gap: var(--cd-space-tight);
-  }
-  .cd-space--gap-medium {
-    gap: var(--cd-space-medium);
-  }
-  .cd-space--gap-loose {
-    gap: var(--cd-space-loose);
   }
 </style>

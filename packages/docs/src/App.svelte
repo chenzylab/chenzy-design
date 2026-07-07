@@ -1194,7 +1194,7 @@ let pageSize2 = $state(10);
   </Paragraph>
 
   <Title heading={6}>Typography · size 字号档（small / default / large）</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Text size="small">size=small 小号文本</Text>
     <Text>size=default 默认文本</Text>
     <Text size="large">size=large 大号文本</Text>
@@ -1261,7 +1261,7 @@ let pageSize2 = $state(10);
   <Divider dashed />
 
   <Title heading={5}>Space（vertical）</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Text>第一行</Text>
     <Text type="tertiary">第二行</Text>
     <Button type="primary" size="small">一个按钮</Button>
@@ -1320,7 +1320,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>M2 Input</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <Input
         placeholder="请输入"
@@ -1467,7 +1467,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>M2 数值组件</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <InputNumber value={numVal} min={0} max={10} onChange={(v) => (numVal = v)} />
       <Text type="tertiary">数值：{numVal}</Text>
@@ -1891,7 +1891,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Select / AutoComplete</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 220px">
       <Select
         options={fruitOptions}
@@ -2029,7 +2029,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>TagInput / ColorPicker</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 320px">
       <TagInput
         value={tags}
@@ -2111,7 +2111,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>DatePicker / TimePicker</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
       <Text type="tertiary">
@@ -2213,7 +2213,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Cascader / TreeSelect</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 240px" data-testid="cascader-filter">
       <Cascader
         treeData={regionData}
@@ -2463,7 +2463,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Transfer / Upload</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Transfer
       dataSource={transferData}
       value={transferVal}
@@ -2571,7 +2571,7 @@ let pageSize2 = $state(10);
 
     <Text type="tertiary">组件级 status 校验态（warning / error，影响上传区边框色，区别于文件项 file.status）：</Text>
     <div data-testid="upload-status">
-      <Space direction="vertical" align="start">
+      <Space vertical align="start">
         <Upload status="warning" drag accept="image/*" />
         <Upload status="error" drag accept="image/*" />
       </Space>
@@ -2581,7 +2581,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>M3 导航：Breadcrumb / Pagination / Steps</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Breadcrumb
       routes={[
         { label: '首页', href: '#' },
@@ -2779,7 +2779,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Tabs / Dropdown</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 360px">
       <Tabs {tabList} value={activeTab} onChange={(k) => (activeTab = k)} />
     </div>
@@ -3166,7 +3166,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>M4 展示：Tag / Avatar / Badge / Card</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <Tag color="primary">主要</Tag>
       <Tag color="success" type="solid">成功</Tag>
@@ -3183,7 +3183,7 @@ let pageSize2 = $state(10);
     </Space>
 
     <div data-testid="avatar-group">
-      <Space direction="vertical" align="start">
+      <Space vertical align="start">
         <Avatar.Group
           maxCount={3}
           items={[
@@ -3320,7 +3320,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Empty / Descriptions / Collapse / Timeline</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Empty image="noResult" description="换个关键词试试" />
 
     <Empty
@@ -3553,7 +3553,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>List / Image / Highlight</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 320px">
       <List
         bordered
@@ -3743,7 +3743,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>VirtualList（1 万行） / Carousel</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <div style="width: 320px; border: 1px solid var(--cd-color-border); border-radius: 8px">
       <VirtualList data={bigData} height={200} itemSize={36} getKey={(it) => it.id}>
         {#snippet renderItem(item)}
@@ -5420,7 +5420,7 @@ let pageSize2 = $state(10);
   </div>
 
   <Title heading={5}>TimePicker · 12 小时制 + 禁用项</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <TimePicker use12Hours value={timeVal12} onChange={(t) => (timeVal12 = Array.isArray(t) ? t[0] : t)} />
       <Text type="tertiary">
@@ -5451,7 +5451,7 @@ let pageSize2 = $state(10);
   </Space>
 
   <Title heading={5}>TimePicker · 范围选择 + format 字符串 + 字符串入参</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Space>
       <div data-testid="timepicker-range">
         <TimePicker
@@ -5486,7 +5486,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Upload：concurrency 并发限制 + 异步 beforeUpload</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Text type="tertiary">
       concurrency=2（模拟上传，同时进行不超过 2 个，完成一个补一个）；beforeUpload 异步拒绝大于 100KB 的文件。
     </Text>
@@ -5509,7 +5509,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>Upload：directory 目录上传 + minSize 最小文件校验</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Text type="tertiary">
       directory：选择整个目录（递归选其下所有文件，保留相对路径）；minSize=10KB / maxSize=2048KB：过小或过大的文件标记 error 并提示。
     </Text>
@@ -5527,7 +5527,7 @@ let pageSize2 = $state(10);
   <Divider />
 
   <Title heading={5}>BackTop：自定义 target 滚动容器 + 受控 visible + announceOnArrive</Title>
-  <Space direction="vertical" align="start">
+  <Space vertical align="start">
     <Text type="tertiary">
       下方滚动盒为自定义滚动容器：BackTop 监听该容器（而非 window）的滚动，回顶也滚该容器；右侧按钮受控显隐；回到顶部经 ARIA live 播报。
     </Text>

@@ -25,7 +25,7 @@
   let icon = $state<{ play: () => void; pause: () => void; stop: () => void } | undefined>();
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <LottieIcon
     bind:this={icon}
     data={{}}

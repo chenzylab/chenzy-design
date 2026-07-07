@@ -7,7 +7,7 @@
   let errorVal = $state<Date | Date[] | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:240px; display:inline-block">
       <DatePicker format="YYYY-MM-DD" placeholder="可手输 YYYY-MM-DD" value={formatVal} onChange={(d) => (formatVal = d)} />

@@ -7,7 +7,7 @@
   let err = $state('#ef4444');
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space align="center">
     <ColorPicker size="small" value={small} onChange={(c) => (small = c)} />
     <ColorPicker size="default" value={large} onChange={(c) => (large = c)} />

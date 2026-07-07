@@ -6,7 +6,7 @@
   let ten = $state(7);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space>
     <Rating value={small} size="small" onChange={(v) => (small = v)} />
     <Text type="tertiary">小号：{small}</Text>

@@ -18,7 +18,7 @@
   ];
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:240px; display:inline-block">
       <DatePicker value={disabledDateVal} disabledDate={disableWeekend} onChange={(d) => (disabledDateVal = d)} />

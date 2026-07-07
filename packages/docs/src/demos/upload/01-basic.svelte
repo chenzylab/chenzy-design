@@ -13,7 +13,7 @@
   ]);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">拖拽上传</Text>
   <Upload multiple drag accept="image/*" />
 

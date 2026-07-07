@@ -5,7 +5,7 @@
   let invalidCount = $state(0);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Text type="tertiary">最多 3 个文件，仅接受 .png/.jpg/.jpeg</Text>
   <Upload
     multiple

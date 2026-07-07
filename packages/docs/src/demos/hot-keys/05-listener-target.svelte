@@ -5,13 +5,13 @@
   let hits = $state(0);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Text type="tertiary" size="small">getListenerTarget 局部监听：仅当焦点在下方面板内按 Enter 才命中。</Text>
   <div
     bind:this={panelEl}
     style="padding:16px;border:1px dashed var(--cd-color-border);border-radius:8px;"
   >
-    <Space direction="vertical">
+    <Space vertical>
       <Input placeholder="聚焦此处后按 Enter" />
       <Text type="tertiary">面板内 Enter 命中：{hits} 次</Text>
     </Space>

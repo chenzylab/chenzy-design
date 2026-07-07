@@ -12,7 +12,7 @@
   let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
     <Text type="tertiary">

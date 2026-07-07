@@ -90,7 +90,7 @@
   let treeRemoteVal = $state<string | number | null>(null);
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <div style="width: 240px" data-testid="treeselect-filter">
     <TreeSelect
       treeData={orgTree}

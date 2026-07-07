@@ -7,7 +7,7 @@
   let format = $state<ColorFormat>('hex');
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space align="start">
     <ColorPicker
       inline
@@ -16,7 +16,7 @@
       onChange={(c) => (color = c)}
       onFormatChange={(f) => (format = f)}
     />
-    <Space direction="vertical" align="start">
+    <Space vertical align="start">
       <Text type="tertiary">当前格式：{format.toUpperCase()}</Text>
       <Text type="tertiary">颜色值：{color}</Text>
     </Space>

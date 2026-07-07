@@ -16,7 +16,7 @@
   }
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <span style="width:260px; display:inline-block">
       <RangePicker type="monthRange" value={monthRange} onChange={(r) => (monthRange = r)} />

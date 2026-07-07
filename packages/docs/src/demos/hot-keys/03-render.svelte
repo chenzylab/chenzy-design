@@ -4,7 +4,7 @@
   let saved = $state(0);
 </script>
 
-<Space direction="vertical">
+<Space vertical>
   <Space align="center">
     <Text>render 完全自定义提示：</Text>
     <HotKeys hotKeys={['Meta', 'S']} onHotKey={() => (saved += 1)}>

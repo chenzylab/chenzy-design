@@ -4,7 +4,7 @@
   let color = $state('#3366ff');
 </script>
 
-<Space direction="vertical" align="start">
+<Space vertical align="start">
   <Space>
     <ColorPicker
       value={color}

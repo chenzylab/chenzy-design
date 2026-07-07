@@ -6,12 +6,12 @@
   import Space from './Space.svelte';
 
   interface Props {
-    direction?: 'horizontal' | 'vertical';
+    vertical?: boolean;
   }
-  let { direction = 'horizontal' }: Props = $props();
+  let { vertical = false }: Props = $props();
 </script>
 
-<Space {direction}>
+<Space {vertical}>
   <button type="button">First</button>
   <button type="button">Second</button>
 </Space>
