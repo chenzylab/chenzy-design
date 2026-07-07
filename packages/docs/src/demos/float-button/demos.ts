@@ -30,6 +30,6 @@ export const demos: DemoEntry[] = [
   entry('04-shape-size.svelte', '形状与尺寸', 'round=正圆 / square=方形 两形状 × small/default/large 三尺寸'),
   entry('08-custom-shape.svelte', '自定义圆角', 'shape 接受任意 border-radius 字符串（8px / 30% 等），本库相较 Semi 额外提供'),
   entry('05-href.svelte', 'href 链接', '有 href 渲染原生链接；target=_blank 自动补 rel=noopener noreferrer'),
-  entry('06-group.svelte', 'Group 平铺', 'FloatButtonGroup 平铺一组，事件委托回传被点项 value'),
+  entry('06-group.svelte', 'Group 胶囊工具条', 'FloatButtonGroup 圆角条内横排「图标+文字」，事件委托回传被点项 value（对齐 Semi）'),
   entry('07-back-to-top.svelte', '回到顶部 recipe', '用 FloatButton 作回到顶部底座（仅需滚动监听时优先用 BackTop）'),
 ];

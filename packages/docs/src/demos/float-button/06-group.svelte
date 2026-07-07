@@ -5,24 +5,24 @@
   let last = $state('');
 
   const items: FloatButtonGroupItem[] = [
-    { value: 'help', ariaLabel: '帮助', icon: help },
-    { value: 'chat', ariaLabel: '客服', icon: chat },
-    { value: 'star', ariaLabel: '收藏', icon: star },
+    { value: 'edit', content: '编辑', icon: edit },
+    { value: 'search', content: '搜索', icon: search },
+    { value: 'help', content: '帮助', icon: help },
   ];
 </script>
 
+{#snippet edit()}
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+{/snippet}
+{#snippet search()}
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" /><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+{/snippet}
 {#snippet help()}
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 9a3 3 0 1 1 4 2.8c-.8.4-1 .9-1 1.7M12 17h.01" /></svg>
-{/snippet}
-{#snippet chat()}
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-4A8.4 8.4 0 1 1 21 11.5Z" /></svg>
-{/snippet}
-{#snippet star()}
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="m12 2 3 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.9 21l1.2-6.8-5-4.9 6.9-1z" /></svg>
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" /><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 9a3 3 0 1 1 4 2.8c-.8.4-1 .9-1 1.7M12 17h.01" /></svg>
 {/snippet}
 
-<Text type="tertiary">FloatButtonGroup 平铺一组，点击委托回传 value。</Text>
-<div style="position:relative; height:200px">
+<Text type="tertiary">FloatButtonGroup 胶囊工具条：一个圆角条内横排「图标+文字」，点击委托回传 value。</Text>
+<div style="position:relative; height:120px">
   <FloatButtonGroup
     ariaLabel="快捷入口"
     onClick={(value) => (last = value)}

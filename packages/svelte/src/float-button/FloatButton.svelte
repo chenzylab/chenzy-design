@@ -166,6 +166,41 @@
   .cd-floatbutton--square {
     border-radius: var(--cd-floatbutton-radius-square);
   }
+  /* round + 有文字（宽>高）：用胶囊圆角而非 50%（后者在矩形上会变椭圆）。 */
+  .cd-floatbutton--round.cd-floatbutton--with-content {
+    border-radius: var(--cd-border-radius-full, 9999px);
+  }
+
+  /* 徽章：让 Badge 包裹层撑满按钮，徽章才相对整个按钮而非 icon 小框定位。 */
+  .cd-floatbutton :global(.cd-badge) {
+    inline-size: 100%;
+    block-size: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+  /*
+    徽章定位到圆形按钮边缘右上角切点（对齐 Semi 几何公式）：
+    偏移 = (√2−1)/√2 × R = 0.29 × R，R = 半个按钮宽。default 48 → 0.29×24 ≈ 7px。
+    覆盖 Badge 默认的 translate(50%,-50%) 贴角定位。
+  */
+  .cd-floatbutton--round :global(.cd-badge__sup--top-right) {
+    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
+    inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
+    transform: translate(50%, -50%);
+  }
+  .cd-floatbutton--round.cd-floatbutton--small :global(.cd-badge__sup--top-right) {
+    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
+    inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
+  }
+  .cd-floatbutton--round.cd-floatbutton--large :global(.cd-badge__sup--top-right) {
+    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
+    inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
+  }
+  /* square：偏移 = 0.29 × 圆角半径，贴方形圆角切点。 */
+  .cd-floatbutton--square :global(.cd-badge__sup--top-right) {
+    inset-block-start: calc(0.29 * var(--cd-floatbutton-radius-square));
+    inset-inline-end: calc(0.29 * var(--cd-floatbutton-radius-square));
+  }
 
   /* 尺寸 */
   .cd-floatbutton--small {
