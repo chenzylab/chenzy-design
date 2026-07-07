@@ -6,9 +6,9 @@
     'display:flex; align-items:center; justify-content:center; color: var(--cd-color-text-2);';
 </script>
 
-<div style="border:1px solid var(--cd-color-border); border-radius:8px; overflow:hidden;">
-  <Layout hasSider>
-    <Layout.Content padding style="height:200px; background: var(--cd-color-bg-0); color: var(--cd-color-text-2);">
+<div style="height: 320px; border:1px solid var(--cd-color-border); border-radius:8px; overflow:hidden;">
+  <Layout hasSider style="height: 100%;">
+    <Layout.Content padding style="background: var(--cd-color-bg-0); color: var(--cd-color-text-2);">
       右置可折叠侧栏：placement="right" + collapsible + reverseArrow，
       箭头方向随右侧位置反转。常用于详情页的辅助信息面板。
     </Layout.Content>

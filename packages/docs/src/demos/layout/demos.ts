@@ -146,4 +146,12 @@ export const demos: DemoEntry[] = [
       en: 'Top bar + left TOC + content + right anchors: a three-column docs layout with its own scroll.',
     },
   ),
+  entry(
+    '16-zero-width-trigger.svelte',
+    { zh: '零宽收起', en: 'Zero-width collapse' },
+    {
+      zh: 'collapsedWidth={0} 完全收起后，内建零宽浮动触发块逸出侧栏外缘，收起后仍可展开。',
+      en: 'With collapsedWidth={0}, a floating zero-width trigger escapes the collapsed sider so it can still be expanded.',
+    },
+  ),
 ];
