@@ -22,6 +22,7 @@ export {
   Text,
   Paragraph,
   Link,
+  Numeral,
   typographyMeta,
 } from './typography/index.js';
 export { Row, Col, gridMeta } from './grid/index.js';

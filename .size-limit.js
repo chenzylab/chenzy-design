@@ -62,7 +62,8 @@ const components = [
   ['icon', '{ Icon }', '1.45 KB'],
   ['layout', '{ LayoutHeader, LayoutFooter, LayoutContent, LayoutSider }', '3.1 KB'],
   ['space', '{ Space }', '1.2 KB'],
-  ['typography', '{ Title, Text, Paragraph, Link }', '6.5 KB'],
+  // 补 Numeral 子组件 + icon/italic/spacing prop 后实测 6.44 KB，预算按 +15% buffer 校准。
+  ['typography', '{ Title, Text, Paragraph, Link, Numeral }', '7.5 KB'],
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
   ['drawer', '{ Drawer }', '4.5 KB'],

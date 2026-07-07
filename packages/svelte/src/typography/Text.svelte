@@ -26,6 +26,10 @@
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    /** 斜体（对齐 Semi）。 */
+    italic?: boolean;
+    /** 前置图标（对齐 Semi）。 */
+    icon?: Snippet;
     component?: string;
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
@@ -50,6 +54,8 @@
     underline = false,
     delete: del = false,
     code = false,
+    italic = false,
+    icon,
     component = 'span',
     ellipsis = false,
     copyable = false,
@@ -78,6 +84,8 @@
   {underline}
   delete={del}
   {code}
+  {italic}
+  {icon}
   class={className}
   {ellipsis}
   {copyable}
