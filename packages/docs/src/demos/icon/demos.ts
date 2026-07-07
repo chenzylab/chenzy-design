@@ -29,4 +29,5 @@ export const demos: DemoEntry[] = [
   entry('03-color.svelte', '颜色', '单色图标自动继承外层容器 color；也可通过 color prop 显式覆盖（优先级高于 status）。'),
   entry('04-rotate.svelte', '静态旋转', 'rotate 设置静态旋转角度（deg），不同于 spin 的持续动画。'),
   entry('05-source-a11y.svelte', '自定义源与无障碍', 'svg 字符串作渲染源（来源须可信）；提供 label 后 role=img + aria-label，供屏幕阅读器读出。'),
+  entry('06-preset-icons.svelte', 'UnoCSS 图标（纯 class）', '不经过 Icon 组件，直接用 UnoCSS preset-icons 的 i-lucide-* class。图标数据来自本地 @iconify-json/lucide，颜色/尺寸走工具类。'),
 ];
