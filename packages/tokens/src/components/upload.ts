@@ -117,11 +117,7 @@ export const uploadTokens = {
   'font-upload-picture-file-card-pic-info-fontsize': { value: '12px', category: 'font', label: '图片信息字号', usage: '图片墙图片信息字体大小' },
   'font-upload-picture-file-card-pic-info-fontweight': { value: '600', category: 'font', label: '图片信息字重', usage: '图片墙图片信息文本字重' },
 
-  // —— chenzy-design 补充别名（Semi 无同名；组件当前 DOM 直接消费的语义别名） ——
-  // 注：拖拽区背景/描边/圆角、列表项 hover 背景等原转发别名已退役，
-  // 组件改为直接消费对应 Semi token（color-upload-drag-area-* / -card-bg-hover 等）。
-  'upload-item-color-error': { value: 'var(--cd-color-upload-file-card-fail-info-text)', category: 'color', label: '列表项错误色', usage: '文件列表项错误态文本/描边（→ file-card-fail-info-text）' },
-  // 组件级校验态边框（表单联动，Semi Upload 无独立 token，落语义别名）。
-  'upload-border-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警告态边框色', usage: '组件级 status=warning 时上传区/卡片边框色' },
-  'upload-border-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误态边框色', usage: '组件级 status=error 时上传区/卡片边框色' },
+  // 注：所有转发别名已退役（不向后兼容）。组件改为直接消费对应 Semi token
+  // （list-item 错误态 → color-upload-file-card-fail-info-text；status=warning/error
+  // 边框 → color-warning / color-danger）。
 } satisfies TokenGroup;

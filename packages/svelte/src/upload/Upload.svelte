@@ -1740,23 +1740,23 @@
   }
   /* 组件级 status：校验态影响上传区/卡片边框色（区别于 file.status 进度态）。 */
   .cd-upload--warning .cd-upload__dragger {
-    border-color: var(--cd-upload-border-warning);
+    border-color: var(--cd-color-warning);
   }
   .cd-upload--error .cd-upload__dragger {
-    border-color: var(--cd-upload-border-error);
+    border-color: var(--cd-color-danger);
   }
   .cd-upload--warning .cd-upload__trigger {
-    border-color: var(--cd-upload-border-warning);
+    border-color: var(--cd-color-warning);
   }
   .cd-upload--error .cd-upload__trigger {
-    border-color: var(--cd-upload-border-error);
+    border-color: var(--cd-color-danger);
   }
   .cd-upload--warning .cd-upload__card,
   .cd-upload--error .cd-upload__card {
-    border-color: var(--cd-upload-border-warning);
+    border-color: var(--cd-color-warning);
   }
   .cd-upload--error .cd-upload__card {
-    border-color: var(--cd-upload-border-error);
+    border-color: var(--cd-color-danger);
   }
   .cd-upload__list-title {
     display: flex;
@@ -1821,7 +1821,7 @@
     background: var(--cd-color-upload-card-bg-hover);
   }
   .cd-upload__item--error {
-    color: var(--cd-upload-item-color-error);
+    color: var(--cd-color-upload-file-card-fail-info-text);
     /* 失败态卡片红底（对齐 Semi file-card-fail bg）。 */
     background: var(--cd-color-upload-card-fail-bg);
   }
@@ -1975,7 +1975,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-upload-picture-file-card-gap);
-    margin: 0;
+    /* 卡片网格下边距（对齐 Semi file-list-main margin-bottom）。 */
+    margin: 0 0 var(--cd-spacing-upload-picture-file-card-marginbottom);
     padding: 0;
     list-style: none;
   }
@@ -2012,6 +2013,8 @@
   }
   .cd-upload__thumb--placeholder {
     background: var(--cd-color-upload-file-card-preview-placeholder-bg);
+    /* 占位图前景色（对齐 Semi file-card-preview-placeholder text；成对消费 bg/text）。 */
+    color: var(--cd-color-upload-file-card-preview-placeholder-text);
   }
   /* previewFile 自定义缩略图容器：撑满卡片，内容居中。 */
   .cd-upload__thumb--custom {
@@ -2036,6 +2039,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    /* 预览图标色（对齐 Semi file-card-preview color）。 */
+    color: var(--cd-color-upload-preview-icon);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -2159,7 +2164,8 @@
     block-size: var(--cd-width-upload-picture-file-card-close);
     border: none;
     background: var(--cd-color-upload-pic-remove-bg);
-    color: var(--cd-color-upload-picture-file-card-close-icon);
+    /* 替换按钮文本色（对齐 Semi picture-file-card-replace color）。 */
+    color: var(--cd-color-upload-replace-text);
     cursor: pointer;
     border-radius: var(--cd-radius-upload-picture-file-card-close);
     font-size: var(--cd-font-size-small);

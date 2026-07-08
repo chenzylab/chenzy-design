@@ -92,5 +92,5 @@ export const meta = {
     keyboard: ['Enter', 'Space'],
     notes: ['隐藏的 file input（visually-hidden）', '触发器为 button', '移除按钮 aria-label「移除」', 'dragger role=button + tabindex + 键盘 Enter/Space'],
   },
-  tokens: ['--cd-color-upload-*', '--cd-width-upload-*', '--cd-height-upload-*', '--cd-spacing-upload-*', '--cd-radius-upload-*', '--cd-font-upload-*', '--cd-upload-dragger-*', '--cd-upload-item-*', '--cd-upload-border-warning', '--cd-upload-border-error', '--cd-button-height-*', '--cd-button-radius', '--cd-button-padding-x', '--cd-focus-ring', '--cd-motion-*', '--cd-color-danger', '--cd-spacing-*', '--cd-font-size-*', '--cd-border-radius-small'],
+  tokens: ['--cd-color-upload-*', '--cd-width-upload-*', '--cd-height-upload-*', '--cd-spacing-upload-*', '--cd-radius-upload-*', '--cd-font-upload-*', '--cd-button-height-*', '--cd-button-radius', '--cd-button-padding-x', '--cd-focus-ring', '--cd-motion-*', '--cd-color-warning', '--cd-color-danger', '--cd-spacing-*', '--cd-font-size-*', '--cd-border-radius-small'],
 } as const;
