@@ -89,10 +89,11 @@
 
   function select(v: RadioValue) {
     if (disabled) return;
-    // Controlled (`value=` / `bind:value`): parent owns `value`; propagate only
-    // via `onChange`. Writing the prop AND firing `onChange` loops.
-    // Uncontrolled: keep our own state in sync.
-    if (!isControlled) inner = v;
+    // `value` 是 $bindable：受控时直接写回（Svelte 5 双向绑定核心，不像 React 会 loop）。
+    // 这样 `bind:value` 无需额外 onChange 即可更新；纯受控（父只传 value 不传 bind）时，
+    // 父在 onChange 里重新赋 value 覆盖即可。未传 value（非受控）时维护内部 inner。
+    if (isControlled) value = v;
+    else inner = v;
     onChange?.(v);
   }
 

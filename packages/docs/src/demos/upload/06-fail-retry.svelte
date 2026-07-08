@@ -13,7 +13,7 @@
   const reportFile = new File(['x'], 'report.pdf', { type: 'application/pdf' });
 
   let textVal = $state<UploadFileItem[]>([
-    { uid: 'fail-1', name: 'report.pdf', size: 204800, status: 'error', error: '上传失败，请重试', file: reportFile },
+    { uid: 'fail-1', name: 'report.pdf', size: 204800, status: 'uploadFail', error: '上传失败，请重试', file: reportFile },
     { uid: 'ok-1', name: 'photo.png', size: 51200, status: 'success' },
   ]);
 
@@ -21,7 +21,7 @@
   const placeholderFile = new File(['x'], 'cover.svg', { type: 'image/svg+xml' });
 
   let picVal = $state<UploadFileItem[]>([
-    { uid: 'pic-fail', name: 'cover.svg', size: 2048, status: 'error', url: demoImageSrc, file: placeholderFile },
+    { uid: 'pic-fail', name: 'cover.svg', size: 2048, status: 'uploadFail', url: demoImageSrc, file: placeholderFile },
     { uid: 'pic-ok', name: 'ok.svg', size: 2048, status: 'success', url: demoImageSrc },
   ]);
 </script>

@@ -86,6 +86,10 @@
     imgAttr?: Record<string, string>;
     /** img 加载失败回调。 */
     onError?: (e: Event) => void;
+    /** 附加类名（合并到根元素，对齐 Semi className）。 */
+    class?: string;
+    /** 内联样式（合并到根元素 style，优先级高于内部派生样式，对齐 Semi style）。 */
+    style?: string;
     children?: Snippet;
   }
 
@@ -109,6 +113,8 @@
     topSlot,
     imgAttr,
     onError,
+    class: className,
+    style: styleProp,
     children,
   }: Props = $props();
 
@@ -174,6 +180,8 @@
       !sizeIsNumber && `cd-avatar--${size}`,
       // 语义色板：图片头像不上色（与 Semi 一致）。
       isPaletteColor && !showImage && `cd-avatar--${color}`,
+      // 外部附加类名（对齐 Semi className），置于末尾便于覆盖。
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -192,6 +200,8 @@
       sizeIsNumber ? `inline-size:${size}px;block-size:${size}px` : '',
       bgColor ? `background:${bgColor}` : '',
       sizeIsNumber ? `font-size:${Math.round((size as number) / 2.4)}px` : '',
+      // 外部内联样式（对齐 Semi style），置于末尾，优先级高于内部派生样式。
+      styleProp ?? '',
     ]
       .filter(Boolean)
       .join(';'),
