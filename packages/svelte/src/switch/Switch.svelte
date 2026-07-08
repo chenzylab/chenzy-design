@@ -149,7 +149,10 @@
   const resolvedUnchecked = $derived<string | Snippet | undefined>(
     uncheckedChildren ?? uncheckedContent ?? uncheckedText,
   );
-  const activeChildren = $derived(on ? resolvedChecked : resolvedUnchecked);
+  // 内嵌文字在最小尺寸下无效（对齐 Semi：small 开关放不下文本，渲染层直接拦截）。
+  const activeChildren = $derived(
+    size === 'small' ? undefined : on ? resolvedChecked : resolvedUnchecked,
+  );
   const isSnippet = (c: string | Snippet | undefined): c is Snippet => typeof c === 'function';
 
   // 隐藏 input 提交值：boolean → 'true'/'false'，其余按原值字符串化。
