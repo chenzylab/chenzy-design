@@ -314,6 +314,7 @@ export const en_US: Locale = {
     uploadingProgress: '{name} upload progress',
     cropTitle: 'Crop image',
     timeoutError: 'Upload timed out',
+    legalTips: 'Release to upload',
   },
   Form: {
     required: '{label} is required',

@@ -33,6 +33,12 @@
   // 拖拽区默认图标（云上传，对齐 Semi drag-area 默认 IconUpload）。用户传 dragIcon 时覆盖。
   const DEFAULT_DRAG_ICON_SVG =
     '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 文件卡片预览占位图标（对标 Semi fileCard 非图片时的 IconFile）：通用文件轮廓。
+  const DEFAULT_FILE_ICON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2.75h7L18.25 8v13.25H6V2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  // 文件卡片失败态内联错误图标（对标 Semi fileCard file-card-icon-error 的 IconAlertCircle）。
+  const DEFAULT_ERROR_ICON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.25" r="1" fill="currentColor"/></svg>';
   import type { CropperShape } from '../cropper/index.js';
   import type {
     UploadFileItem,
@@ -411,6 +417,12 @@
 
   let inputEl: HTMLInputElement | null = null;
 
+  // 拖拽区合法拖入高亮态（对标 Semi dragAreaStatus === DRAG_AREA_LEGAL）。
+  let dragOver = $state(false);
+  // 记录 dragenter 的 target（对标 Semi _dragEnterTarget）：dragleave 仅当 target 相等才清除，
+  // 防止拖过子元素时误触发的 dragleave 抖动清态。
+  let dragEnterTarget: EventTarget | null = null;
+
   // 进行中的 XHR 句柄（uid → xhr），remove/卸载时 abort。
   const xhrMap = new Map<string, XMLHttpRequest>();
 
@@ -435,6 +447,14 @@
       objectUrls.set(item.uid, u);
     }
     return u;
+  }
+  // 文本列表项预览缩略图地址（对标 Semi fileCard.renderFile 的 previewContent）：
+  // 仅当该项是图片（有 url 且未禁预览，或 file 为 image/*）才返回地址；否则 undefined → 显示占位。
+  function itemThumbUrl(item: UploadFileItem): string | undefined {
+    if (item.preview === false) return undefined;
+    const isImage = item.file ? item.file.type.startsWith('image/') : Boolean(item.url);
+    if (!isImage) return undefined;
+    return previewUrl(item);
   }
   function revokeUrl(uid: string) {
     const u = objectUrls.get(uid);
@@ -1030,8 +1050,24 @@
     dispatchNewItems([replaced], [chosen]);
   }
 
+  function handleDragEnter(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    // 记录进入 target（对标 Semi handleDragEnter 记 _dragEnterTarget = currentTarget）。
+    dragEnterTarget = e.currentTarget;
+    if (!disabled) dragOver = true;
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    // 仅当离开的 target 与进入时相同才清态（对标 Semi handleDragLeave 的子元素抖动防护）。
+    if (dragEnterTarget === e.target) dragOver = false;
+  }
+
   function handleDrop(e: DragEvent) {
     e.preventDefault();
+    dragOver = false;
     if (disabled) return;
     const dt = e.dataTransfer;
     if (dt?.files && dt.files.length > 0) {
@@ -1264,10 +1300,13 @@
       {#if drag}
         <div
           class="cd-upload__dragger"
+          class:cd-upload__dragger--legal={dragOver}
           role="button"
           tabindex={disabled ? -1 : 0}
           aria-disabled={disabled || undefined}
           ondragover={(e) => e.preventDefault()}
+          ondragenter={handleDragEnter}
+          ondragleave={handleDragLeave}
           ondrop={handleDrop}
           onclick={openPicker}
           onkeydown={handleDragKeydown}
@@ -1290,6 +1329,10 @@
               <span class="cd-upload__dragger-sub">
                 {#if typeof dragSubText === 'string'}{dragSubText}{:else}{@render dragSubText()}{/if}
               </span>
+            {/if}
+            <!-- 合法拖入提示（对标 Semi drag-area-tips-legal）：仅在 dragOver 高亮态显示。 -->
+            {#if dragOver}
+              <span class="cd-upload__dragger-tips">{loc().t('Upload.legalTips')}</span>
             {/if}
           {/if}
         </div>
@@ -1384,8 +1427,27 @@
             })}
           </li>
         {:else}
+        {@const thumbUrl = itemThumbUrl(item)}
         <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'uploadFail' || item.status === 'validateFail'} style={itemStyleStr}>
+          <!-- 预览盒（对标 Semi fileCard file-card-preview）：图片→缩略图，非图片→占位文件图标。 -->
+          <div
+            class="cd-upload__item-preview"
+            class:cd-upload__item-preview--placeholder={thumbUrl === undefined}
+          >
+            {#if thumbUrl !== undefined}
+              <img class="cd-upload__item-preview-img" src={thumbUrl} alt={item.name} />
+            {:else}
+              <Icon svg={DEFAULT_FILE_ICON_SVG} size="small" />
+            {/if}
+          </div>
+          <div class="cd-upload__item-body">
           <div class="cd-upload__item-main">
+            <!-- 失败态内联错误图标（对标 Semi fileCard file-card-icon-error）。 -->
+            {#if item.status === 'uploadFail' || item.status === 'validateFail'}
+              <span class="cd-upload__item-icon cd-upload__item-icon--error">
+                <Icon svg={DEFAULT_ERROR_ICON_SVG} size="small" />
+              </span>
+            {/if}
             {@render fileName(item)}
             <span class="cd-upload__item-size">{formatSize(item.size)}</span>
             {#if item.status !== 'uploading'}
@@ -1438,6 +1500,7 @@
               ariaLabel={loc().t('Upload.uploadingProgress', { name: item.name })}
             />
           {/if}
+          </div>
         </li>
         {/if}
       {/each}
@@ -1707,6 +1770,21 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
+  /* 合法拖入高亮态（对齐 Semi drag-area-legal）：背景/描边切主色，与 hover 态一致。 */
+  .cd-upload__dragger--legal {
+    border-color: var(--cd-color-upload-drag-area-border-hover);
+    background: var(--cd-color-upload-drag-area-bg-hover);
+  }
+  /* legal 态隐藏副文本（对齐 Semi .drag-area-legal .drag-area-sub-text { display:none }）。 */
+  .cd-upload__dragger--legal .cd-upload__dragger-sub {
+    display: none;
+  }
+  /* 合法拖入提示（对齐 Semi drag-area-tips-legal）：主色 + 提示字重 + 小字号。 */
+  .cd-upload__dragger-tips {
+    font-size: var(--cd-font-size-small);
+    font-weight: var(--cd-font-upload-drag-area-tips-fontweight);
+    color: var(--cd-color-upload-drag-area-tips-text);
+  }
   /* 拖拽区图标色（对齐 Semi drag-area-icon）。 */
   .cd-upload__dragger-icon {
     display: inline-flex;
@@ -1803,8 +1881,9 @@
   }
   .cd-upload__item {
     display: flex;
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+    /* 横向：左预览盒 + 右信息列（对齐 Semi file-card 横向布局）。 */
+    flex-direction: row;
+    align-items: center;
     padding-block: var(--cd-spacing-extra-tight);
     padding-inline: var(--cd-spacing-tight);
     /* 默认卡片背景（对齐 Semi file-card bg，与 hover/fail 态成组）。 */
@@ -1812,10 +1891,52 @@
     border-radius: var(--cd-radius-upload-file-card);
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
+  /* 预览盒（对齐 Semi file-card-preview）：固定尺寸方形、居中、圆角。 */
+  .cd-upload__item-preview {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--cd-width-upload-file-card-preview);
+    block-size: var(--cd-height-upload-file-card-preview);
+    margin: var(--cd-spacing-upload-file-card-preview-margin);
+    border-radius: var(--cd-radius-upload-file-card-preview);
+    color: var(--cd-color-upload-preview-icon);
+    overflow: hidden;
+  }
+  /* 非图片占位（对齐 Semi file-card-preview-placeholder）。 */
+  .cd-upload__item-preview--placeholder {
+    background: var(--cd-color-upload-file-card-preview-placeholder-bg);
+    color: var(--cd-color-upload-file-card-preview-placeholder-text);
+  }
+  .cd-upload__item-preview-img {
+    inline-size: var(--cd-width-upload-file-card-preview-img);
+    block-size: var(--cd-width-upload-file-card-preview-img);
+    object-fit: cover;
+  }
+  /* 信息列：纵向承载 item-main 行 + 进度条（原 item 的 column 布局移到此）。 */
+  .cd-upload__item-body {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--cd-spacing-extra-tight);
+  }
   .cd-upload__item-main {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
+  }
+  /* 内联错误图标（对齐 Semi file-card-icon-error）：固定宽 + 右边距 + 危险色。 */
+  .cd-upload__item-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    inline-size: var(--cd-width-upload-file-card-icon);
+    margin-inline-end: var(--cd-spacing-upload-file-card-icon-marginright);
+  }
+  .cd-upload__item-icon--error {
+    color: var(--cd-color-upload-file-card-fail-info-text);
   }
   .cd-upload__item:hover {
     background: var(--cd-color-upload-card-bg-hover);

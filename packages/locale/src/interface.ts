@@ -420,6 +420,8 @@ export interface Locale {
     cropTitle: string;
     /** 上传超时错误文案（列表项 error + live 播报，uses {name}） */
     timeoutError: string;
+    /** 拖拽区合法拖入时的提示文案（松开鼠标开始上传） */
+    legalTips: string;
   };
   Form: {
     /** uses {label} */

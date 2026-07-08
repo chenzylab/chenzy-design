@@ -314,6 +314,7 @@ export const zh_CN: Locale = {
     uploadingProgress: '{name} 上传进度',
     cropTitle: '裁切图片',
     timeoutError: '上传超时',
+    legalTips: '松开鼠标开始上传',
   },
   Form: {
     required: '{label}为必填项',
