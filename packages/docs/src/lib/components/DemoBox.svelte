@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { LocaleProvider, zh_CN, en_US } from '@chenzy-design/svelte';
-  import { highlight } from '$lib/highlight';
+  import { LocaleProvider, CodeHighlight, zh_CN, en_US } from '@chenzy-design/svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
 
@@ -14,25 +13,26 @@
     title,
     description,
     code,
+    highlightLines,
     children,
   }: {
     title?: string;
     description?: string;
     code?: string;
+    /** 高亮的重点参数行号（1-based），如 [3, 5] 高亮当前 demo 的关键 prop 行。 */
+    highlightLines?: number[];
     children: Snippet;
   } = $props();
 
   let showCode = $state(false);
-  let highlighted = $state<string | null>(null);
   let copied = $state(false);
 
-  $effect(() => {
-    if (showCode && code && highlighted === null) {
-      highlight(code).then((html) => {
-        highlighted = html;
-      });
-    }
-  });
+  // 重点行高亮：把行号列表下发为 CSS 变量，由 .demo-box__code 的样式对相应行做背景高亮（阶段 3）。
+  const highlightLinesVar = $derived(
+    highlightLines && highlightLines.length > 0
+      ? `--demo-hl-lines: ${highlightLines.join(' ')}`
+      : undefined,
+  );
 
   async function copyCode() {
     if (!code) return;
@@ -71,12 +71,8 @@
     {/if}
   </div>
   {#if showCode && code}
-    <div class="demo-box__code">
-      {#if highlighted}
-        {@html highlighted}
-      {:else}
-        <pre class="demo-box__raw">{code}</pre>
-      {/if}
+    <div class="demo-box__code" style={highlightLinesVar}>
+      <CodeHighlight {code} language="svelte" lineNumber class="demo-box__codehl" />
     </div>
   {/if}
 </div>
@@ -120,36 +116,13 @@
   .demo-box__toggle:hover {
     color: var(--cd-color-primary, #0064fa);
   }
-  /* 代码块底色用 shiki 主题自带背景（与 token 配色同源，最协调）；
-     fallback 到 fill-0 以防变量缺失 */
+  /* 源码区：CodeHighlight（Prism）自带主题背景与行号，DemoBox 仅加分隔边框。 */
   .demo-box__code {
     border-top: 1px solid var(--cd-color-border, #e5e7eb);
-    background: var(--shiki-light-bg, var(--cd-color-fill-0, #f7f8fa));
-    font-size: 13px;
     overflow-x: auto;
   }
-  .demo-box__code :global(.shiki) {
+  .demo-box__code :global(.demo-box__codehl) {
     margin: 0;
-    padding: 16px;
-    background-color: transparent !important;
-  }
-  /* shiki 用 defaultColor:false 输出 --shiki-light / --shiki-dark 变量，
-     由 CSS 消费 token 颜色（亮色取 light），否则 token 无色 = 看起来没高亮 */
-  .demo-box__code :global(.shiki),
-  .demo-box__code :global(.shiki span) {
-    color: var(--shiki-light, inherit);
-  }
-  .demo-box__raw {
-    margin: 0;
-    padding: 16px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    white-space: pre;
-  }
-  :global([data-theme='dark']) .demo-box__code {
-    background: var(--shiki-dark-bg, var(--cd-color-fill-0, #1f1f1f));
-  }
-  :global([data-theme='dark']) .demo-box__code :global(.shiki),
-  :global([data-theme='dark']) .demo-box__code :global(.shiki span) {
-    color: var(--shiki-dark, inherit);
+    border-radius: 0;
   }
 </style>

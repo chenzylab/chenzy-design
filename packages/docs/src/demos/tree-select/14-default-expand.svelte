@@ -24,9 +24,8 @@
   let v2 = $state<string | number | null>(null);
 </script>
 
-<div style="display: flex; gap: 24px; flex-wrap: wrap">
-  <div style="width: 220px">
-    <Text type="tertiary">defaultExpandAll：初始即展开全部</Text>
+<div style="display: flex; gap: 32px; flex-wrap: wrap">
+  <div style="display: flex; flex-direction: column; gap: 8px; width: 280px">
     <TreeSelect
       {treeData}
       value={v1}
@@ -34,9 +33,9 @@
       placeholder="选择国家"
       onChange={(k) => (v1 = Array.isArray(k) ? (k[0] ?? null) : k)}
     />
+    <Text type="tertiary" size="small">defaultExpandAll：初始化时展开全部</Text>
   </div>
-  <div style="width: 220px">
-    <Text type="tertiary">expandAll：受控动态展开全部</Text>
+  <div style="display: flex; flex-direction: column; gap: 8px; width: 280px">
     <TreeSelect
       {treeData}
       value={v2}
@@ -44,5 +43,6 @@
       placeholder="选择国家"
       onChange={(k) => (v2 = Array.isArray(k) ? (k[0] ?? null) : k)}
     />
+    <Text type="tertiary" size="small">expandAll：受控动态展开全部</Text>
   </div>
 </div>
