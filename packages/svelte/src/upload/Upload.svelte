@@ -33,6 +33,9 @@
   // 拖拽区默认图标（云上传，对齐 Semi drag-area 默认 IconUpload）。用户传 dragIcon 时覆盖。
   const DEFAULT_DRAG_ICON_SVG =
     '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // 图片墙添加瓦片加号图标（对齐 Semi upload-picture-add 内的 IconPlus）。
+  const DEFAULT_ADD_ICON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   // 文件卡片预览占位图标（对标 Semi fileCard 非图片时的 IconFile）：通用文件轮廓。
   const DEFAULT_FILE_ICON_SVG =
     '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2.75h7L18.25 8v13.25H6V2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
@@ -1128,6 +1131,12 @@
     return parts.length > 0 ? parts.join('; ') : undefined;
   });
 
+  // 图片墙添加瓦片是否显示（对齐 Semi picture-add）：
+  // 仅 image/picture-card 模式、非 drag、hotSpotLocation !== 'none'，且未达 limit（未定义则不限）。
+  const showPicAddTile = $derived(
+    isImageList && !drag && hotSpotLocation !== 'none' && (limit === undefined || current.length < limit)
+  );
+
   // ——— 裁剪流程 ———
   // 归一化 crop 配置：true → 默认对象；对象 → 原样。
   const cropConfig = $derived<UploadCropProps>(
@@ -1362,7 +1371,30 @@
     </div>
   {/snippet}
 
-  {#if hotSpotLocation !== 'none' && hotSpotLocation !== 'end'}
+  <!-- 图片墙添加瓦片（对齐 Semi upload-picture-add）：作为 <li> 进网格与缩略图并排。
+       虚线加号瓦片，与缩略图卡片同尺寸（复用 cardStyleStr）；children 存在时由 children 决定外观。 -->
+  {#snippet picAddTile()}
+    <li class="cd-upload__pic-add-item">
+      <button
+        type="button"
+        class="cd-upload__pic-add"
+        class:cd-upload__pic-add--bare={children}
+        style={cardStyleStr}
+        aria-label={loc().t('Upload.trigger')}
+        {disabled}
+        onclick={openPicker}
+      >
+        {#if children}
+          {@render children()}
+        {:else}
+          <Icon svg={DEFAULT_ADD_ICON_SVG} size="large" />
+        {/if}
+      </button>
+    </li>
+  {/snippet}
+
+  <!-- 图片墙模式触发器改为网格内瓦片（见下方 grid），此处仅非图片墙（text/drag/children）在网格外渲染。 -->
+  {#if !isImageList && hotSpotLocation !== 'none' && hotSpotLocation !== 'end'}
     {@render triggerArea()}
   {/if}
 
@@ -1507,12 +1539,17 @@
     </ul>
   {/if}
 
-  {#if showUploadList && isImageList && current.length > 0}
+  {#if isImageList && (showUploadList && current.length > 0 || showPicAddTile)}
     <ul
       class="cd-upload__grid"
       class:cd-upload__grid--card={listType === 'picture-card'}
     >
-      {#each current as item (item.uid)}
+      <!-- hotSpotLocation='start'：瓦片前置于缩略图之前。 -->
+      {#if showPicAddTile && hotSpotLocation === 'start'}
+        {@render picAddTile()}
+      {/if}
+      {#if showUploadList && current.length > 0}
+        {#each current as item (item.uid)}
         {@const url = previewUrl(item)}
         <li
           class="cd-upload__card"
@@ -1621,11 +1658,17 @@
             </button>
           {/if}
         </li>
-      {/each}
+        {/each}
+      {/if}
+      <!-- hotSpotLocation='end'（默认）：瓦片后置于缩略图之后。 -->
+      {#if showPicAddTile && hotSpotLocation !== 'start'}
+        {@render picAddTile()}
+      {/if}
     </ul>
   {/if}
 
-  {#if hotSpotLocation === 'end'}
+  <!-- 图片墙模式触发器已在网格内渲染瓦片，此处仅非图片墙在网格后渲染。 -->
+  {#if !isImageList && hotSpotLocation === 'end'}
     {@render triggerArea()}
   {/if}
 </div>
@@ -2109,6 +2152,51 @@
     border-radius: var(--cd-radius-upload-picture-file-card-img);
     overflow: hidden;
     background: var(--cd-color-upload-pic-add-bg);
+  }
+  /* --- image / picture-card 添加瓦片（对齐 Semi upload-picture-add） --- */
+  .cd-upload__pic-add-item {
+    list-style: none;
+  }
+  .cd-upload__pic-add {
+    box-sizing: border-box;
+    inline-size: var(--cd-width-upload-file-pic-card);
+    block-size: var(--cd-height-upload-file-pic-card);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    background: var(--cd-color-upload-pic-add-bg);
+    border: var(--cd-width-upload-picture-add-border) dashed var(--cd-color-upload-border);
+    color: var(--cd-color-upload-icon);
+    border-radius: var(--cd-radius-upload-picture-add);
+    cursor: pointer;
+  }
+  .cd-upload__pic-add:hover:not(:disabled) {
+    background: var(--cd-color-upload-pic-add-bg-hover);
+  }
+  .cd-upload__pic-add:active:not(:disabled) {
+    background: var(--cd-color-upload-pic-add-bg-active);
+  }
+  .cd-upload__pic-add:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+  .cd-upload__pic-add:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  /* 裸变体：children 模式下清空瓦片外观，交给 children 决定（如自定义添加卡片）。 */
+  .cd-upload__pic-add--bare {
+    inline-size: auto;
+    block-size: auto;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: inherit;
+  }
+  .cd-upload__pic-add--bare:hover:not(:disabled),
+  .cd-upload__pic-add--bare:active:not(:disabled) {
+    background: none;
   }
   .cd-upload__card--error {
     border-color: var(--cd-color-upload-picture-file-card-error-border);
