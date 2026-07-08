@@ -11,11 +11,31 @@
 <script lang="ts">
   import { resolveCodeClassName } from '@chenzy-design/core';
   import Prism from 'prismjs';
-  import 'prismjs/plugins/line-numbers/prism-line-numbers.js';
   import { useLocale } from '../locale-provider/index.js';
 
   // Semi 对齐：手动高亮，禁止 Prism 自动扫描 DOM。
   Prism.manual = true;
+
+  // 语言组件与行号插件是老式全局脚本（依赖全局 Prism），只能在客户端加载，
+  // 否则 SSR/prerender 阶段 `Prism is not defined` 崩，且生产 build 不引会静默不高亮。
+  // 模块级一次性懒加载（顺序有依赖：markup → markup-templating → 各语言 → svelte）。
+  let prismReady: Promise<void> | null = null;
+  function ensurePrismLangs(): Promise<void> {
+    if (prismReady) return prismReady;
+    prismReady = (async () => {
+      await import('prismjs/components/prism-markup.js');
+      await import('prismjs/components/prism-clike.js');
+      await import('prismjs/components/prism-javascript.js');
+      await import('prismjs/components/prism-css.js');
+      await import('prismjs/components/prism-typescript.js');
+      await import('prismjs/components/prism-markup-templating.js');
+      await import('prismjs/components/prism-bash.js');
+      await import('prismjs/components/prism-json.js');
+      await import('prism-svelte');
+      await import('prismjs/plugins/line-numbers/prism-line-numbers.js');
+    })();
+    return prismReady;
+  }
 
   interface Props {
     /** 待高亮的源码（纯文本；作为 textContent 写入，不解析 HTML）。 */
@@ -62,9 +82,17 @@
     const nextLang = language;
     const nextLineNumber = lineNumber;
 
+    let cancelled = false;
     el.className = resolveCodeClassName('', nextLang, nextLineNumber);
     el.textContent = nextCode;
-    Prism.highlightElement(el, false);
+    // 先确保语言组件+插件已加载（客户端），再高亮；避免语法定义缺失时静默纯文本。
+    ensurePrismLangs().then(() => {
+      if (cancelled || !el.isConnected) return;
+      Prism.highlightElement(el, false);
+    });
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 

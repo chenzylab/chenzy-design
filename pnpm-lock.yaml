@@ -207,6 +207,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.0.0
         version: 3.27.1
+      prism-svelte:
+        specifier: ^0.5.0
+        version: 0.5.0
       prismjs:
         specifier: ^1.29.0
         version: 1.30.0
@@ -2410,6 +2413,9 @@ packages:
 
   prism-svelte@0.4.7:
     resolution: {integrity: sha512-yABh19CYbM24V7aS7TuPYRNMqthxwbvx6FF/Rw920YbyBWO3tnyPIqRMgHuSVsLmuHkkBS1Akyof463FVdkeDQ==}
+
+  prism-svelte@0.5.0:
+    resolution: {integrity: sha512-db91Bf3pRGKDPz1lAqLFSJXeW13mulUJxhycysFpfXV5MIK7RgWWK2E5aPAa71s8TCzQUXxF5JOV42/iOs6QkA==}
 
   prismjs@1.30.0:
     resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
@@ -5311,6 +5317,8 @@ snapshots:
       react-is: 17.0.2
 
   prism-svelte@0.4.7: {}
+
+  prism-svelte@0.5.0: {}
 
   prismjs@1.30.0: {}
 

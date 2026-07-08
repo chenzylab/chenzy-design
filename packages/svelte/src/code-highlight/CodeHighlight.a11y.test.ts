@@ -2,7 +2,7 @@
 //  - 底层用 prismjs 就地高亮 <code>；断言给 code+language 后确实产出 .token span。
 //  - role=region 滚动区需可访问名（aria-label 走 i18n CodeHighlight.codeBlock）。
 //  - tabindex=0 让长代码块可键盘滚动聚焦（a11y_no_noninteractive_tabindex 已知豁免）。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { tick } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import CodeHighlight from './CodeHighlight.svelte';
@@ -12,14 +12,14 @@ describe('CodeHighlight a11y + render', () => {
     const { container } = renderWithLocale(CodeHighlight, {
       props: { code: 'const a = 1;', language: 'javascript' },
     });
-    // $effect 里调用 Prism.highlightElement 是渲染后微任务，等一拍。
-    await tick();
-    await Promise.resolve();
+    // 高亮在 $effect 里异步进行：先动态 import Prism 语言组件（客户端懒加载），再 highlightElement。
+    // 故轮询等待 token 出现，而非固定等一拍。
+    await vi.waitFor(() => {
+      expect(container.querySelectorAll('code .token').length).toBeGreaterThan(0);
+    });
 
     const code = container.querySelector('code');
     expect(code).toBeTruthy();
-    // 高亮后应有 Prism 生成的 .token span（keyword `const`、number `1` 等）。
-    expect(container.querySelectorAll('code .token').length).toBeGreaterThan(0);
     // language class 已加到 code 元素。
     expect(code?.className).toContain('language-javascript');
   });

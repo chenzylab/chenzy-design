@@ -140,7 +140,7 @@ const components = [
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。
   // code-highlight 含 prismjs core；markdown-render 的 unified/remark 与
   // json-viewer 的内核均为动态 import，不计入组件壳（json-viewer ignore 内核）。
-  ['code-highlight', '{ CodeHighlight }', '11 KB'],
+  ['code-highlight', '{ CodeHighlight }', '16 KB'],
   ['markdown-render', '{ MarkdownRender }', '3.5 KB'],
   ['video-player', '{ VideoPlayer }', '9 KB'],
   ['audio-player', '{ AudioPlayer }', '5 KB'],
