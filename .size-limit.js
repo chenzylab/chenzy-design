@@ -96,7 +96,7 @@ const components = [
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
-  ['upload', '{ Upload }', '9.9 KB'],
+  ['upload', '{ Upload }', '13 KB'],
   // navigation
   ['anchor', '{ Anchor }', '3.5 KB'],
   ['breadcrumb', '{ BreadcrumbItem }', '4 KB'],
