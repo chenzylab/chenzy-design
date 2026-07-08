@@ -1,10 +1,14 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { LocaleProvider, zh_CN, en_US } from '@chenzy-design/svelte';
   import { highlight } from '$lib/highlight';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
 
   const lang = $derived(locale.value);
+  // demo 内组件的内置文案跟随文档站语言（zh→zh_CN / en→en_US），
+  // 否则 useLocale() 无 Provider 会回退 en_US，导致中文页面里组件文案仍是英文。
+  const demoLocale = $derived(lang === 'zh' ? zh_CN : en_US);
 
   const {
     title,
@@ -50,7 +54,9 @@
     <p class="demo-box__desc">{description}</p>
   {/if}
   <div class="demo-box__preview">
-    {@render children()}
+    <LocaleProvider locale={demoLocale}>
+      {@render children()}
+    </LocaleProvider>
   </div>
   <div class="demo-box__footer">
     {#if code}

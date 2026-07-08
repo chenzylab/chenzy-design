@@ -26,7 +26,9 @@
     type Meridiem,
     type TimeOption,
   } from '@chenzy-design/core';
+  import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -541,6 +543,8 @@
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
   let triggerEl = $state<HTMLButtonElement | null>(null);
+  // 浮层经 use:floating portal 到 body，列入 extraTargets 使点击浮层不误判为 outsideClick。
+  let panelEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -548,8 +552,21 @@
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [panelEl],
     });
   });
+
+  // position → use:floating 的 Placement（定位/避让/跟随滚动由 action 接管，portal 到 body
+  // 后不再被祖先 overflow 裁剪）。映射表与姊妹组件 DatePicker 对齐，缺省回退 bottomStart。
+  const POSITION_TO_PLACEMENT: Record<string, Placement> = {
+    bottomLeft: 'bottomStart',
+    bottomRight: 'bottomEnd',
+    bottom: 'bottom',
+    topLeft: 'topStart',
+    topRight: 'topEnd',
+    top: 'top',
+  };
+  const panelPlacement = $derived<Placement>(POSITION_TO_PLACEMENT[position] ?? 'bottomStart');
 
   // autoFocus: 挂载时自动聚焦触发器
   $effect(() => {
@@ -671,15 +688,20 @@
     </div>
   {/if}
 
-  {#if panelMounted}
-    <!-- destroyOnClose=false 保留模式：关闭态保留 DOM 但 hidden（视觉隐藏 + 从 a11y 树移除）。 -->
+  {#if panelMounted && rootEl}
+    <!-- destroyOnClose=false 保留模式：关闭态保留 DOM 但 hidden（视觉隐藏 + 从 a11y 树移除）。
+         定位由 use:floating 接管（对齐姊妹组件 DatePicker）：portal 到 getPopupContainer（默认 body）
+         + 避让 + 跟随滚动，不被祖先 overflow 裁剪。 -->
     <div
+      bind:this={panelEl}
       class="cd-time-picker__panel"
+      class:cd-time-picker__panel--no-motion={!motion}
       id={baseId}
       role="dialog"
       aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
       hidden={!isOpen || undefined}
+      use:floating={{ trigger: rootEl, placement: panelPlacement, autoAdjust: autoAdjustOverflow, offset: 4, getContainer: getPopupContainer, open: isOpen }}
     >
       {#if panelHeader}
         <div class="cd-time-picker__panel-header">
@@ -916,9 +938,7 @@
     color: var(--cd-color-text-0);
   }
   .cd-time-picker__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
-    inset-inline-start: 0;
+    /* 定位由 use:floating 接管（portal 到 body + fixed 定位 + 避让）；此处只定义外观。 */
     z-index: var(--cd-date-picker-panel-z);
     background: var(--cd-date-picker-panel-bg);
     border-radius: var(--cd-date-picker-panel-radius);
@@ -937,7 +957,7 @@
     flex: 0 0 auto;
     color: var(--cd-color-text-2);
   }
-  .cd-time-picker--no-motion .cd-time-picker__panel {
+  .cd-time-picker__panel--no-motion {
     transition: none;
   }
   .cd-time-picker__range-tabs {
