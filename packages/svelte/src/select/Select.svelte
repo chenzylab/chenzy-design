@@ -12,7 +12,8 @@
   虚拟化仅作用于「非分组」扁平选项集（hasGroups 时回退全量渲染，忽略 virtualized）。
   dropdownMatchSelectWidth：浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度。
   destroyOnClose：关闭时销毁浮层 DOM（默认 false，保持挂载）。
-  getPopupContainer：浮层挂载目标容器（由 use:floating action 接管）。
+  getPopupContainer：浮层挂载目标容器（透传给 use:floating 的 getContainer，portal 到该容器；缺省 body）。
+  命令式 Methods（bind:this）：open/close/focus/clearInput/deselectAll/selectAll/search/rePosition，对齐 Semi ref。
   emptyContent/empty snippet：空态自定义内容。
   prefix/suffix/arrowIcon/clearIcon snippet：触发器前后缀与图标。
   dropdownHeader/dropdownFooter snippet：浮层顶/底固定区。
@@ -107,6 +108,8 @@
     destroyOnClose?: boolean;
     /** 浮层挂载目标容器（默认 body） */
     getPopupContainer?: () => HTMLElement;
+    /** 浮层溢出视口时自动翻转到反向 placement（默认 true，对齐 Semi autoAdjustOverflow） */
+    autoAdjustOverflow?: boolean;
     /** 无边框模式：移除触发器边框 */
     borderless?: boolean;
     /** 挂载后自动聚焦触发器 */
@@ -237,7 +240,7 @@
     options = [],
     multiple = false,
     filter = false,
-    open = $bindable(),
+    open: openProp = $bindable(),
     defaultOpen = false,
     size = 'default',
     status = 'default',
@@ -264,6 +267,7 @@
     dropdownMargin,
     destroyOnClose = false,
     getPopupContainer,
+    autoAdjustOverflow = true,
     borderless = false,
     autoFocus = false,
     autoClearSearchValue = true,
@@ -336,9 +340,9 @@
   }
 
   // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
+  const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
 
   function getInitialOpen(): boolean {
     return defaultOpen;
@@ -358,6 +362,10 @@
 
   // expandRestTagsOnClick：浮层打开态下点击 +N 就地展开剩余 Tag 的本地展示态（不影响选中值）。
   let restTagsExpanded = $state(false);
+
+  // rePosition() 命令式重定位钩子：递增该 key 传入 use:floating 参数，触发 action 的 update
+  // 在原位重算浮层位置（use-floating action 参数变化且 trigger/placement 不变时走 handle.update()）。
+  let reposKey = $state(0);
 
   // 挂载自动聚焦（autoFocus）；preventScroll 时透传给 focus 避免页面跳动。
   $effect(() => {
@@ -581,6 +589,51 @@
     // 仅 clickToHide=true 时点击收起；关闭态点击始终打开。
     if (isOpen && !clickToHide) return;
     setOpen(!isOpen);
+  }
+
+  // --- 命令式 Methods（对齐 Semi ref API 形状；配 bind:this 调用）---
+  // open()/close() 与 open prop 不冲突：prop 已解构为 openProp，open 标识符在此供方法名占用。
+  /** 打开浮层 */
+  export function open(): void {
+    setOpen(true);
+  }
+  /** 关闭浮层 */
+  export function close(): void {
+    setOpen(false);
+  }
+  /** 聚焦触发器（复用 autoFocus 的 combobox 查询 + preventScroll 透传） */
+  export function focus(): void {
+    rootEl?.querySelector<HTMLElement>('[role="combobox"]')?.focus({ preventScroll });
+  }
+  /** 清空搜索框（写 query state 即经 $derived 重算 filteredOptions；remote 模式一并防抖回调） */
+  export function clearInput(): void {
+    query = '';
+    if (isRemote) scheduleSearch('');
+  }
+  /** 清空所有已选（复用 clearAll 的值/回调逻辑，无事件） */
+  export function deselectAll(): void {
+    if (disabled) return;
+    setValue(multiple ? [] : '');
+    onClear?.();
+  }
+  /** 全选（仅多选生效）：选中全量选项集里所有非禁用项的 value */
+  export function selectAll(): void {
+    if (!multiple || disabled) return;
+    // mergedOptions = flatBase(拍平分组) + createdOptions，即全量可选源（非 filteredOptions）。
+    const all = mergedOptions.filter((o) => !o.disabled).map((o) => o.value);
+    setValue(all);
+    const newSelected = mergedOptions.filter((o) => all.includes(o.value));
+    onChangeWithObject?.(newSelected);
+  }
+  /** 命令式设置搜索值并触发过滤（比照 onSearchInput：写 query 重算 filteredOptions；remote 防抖回调） */
+  export function search(value: string): void {
+    query = value;
+    activeIndex = -1;
+    if (isRemote) scheduleSearch(value);
+  }
+  /** 触发浮层重新定位（递增 reposKey 触发 use:floating action 原位重算） */
+  export function rePosition(): void {
+    reposKey += 1;
   }
 
   function moveActive(delta: number) {
@@ -1009,7 +1062,7 @@
     <div
       class={dropdownCls}
       bind:this={dropdownRootEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: true, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth }}
+      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey }}
       style={dropdownRootInlineStyle}
       hidden={!isOpen || undefined}
     >
