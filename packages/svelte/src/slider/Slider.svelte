@@ -11,6 +11,7 @@
   No floating library is pulled in: percent layout already gives the position.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useLiveAnnouncer } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -19,6 +20,8 @@
   type Single = number;
   type Pair = [number, number];
   type SliderValue = Single | Pair;
+  /** 刻度值：字符串标签，或对象形式 { label, style }（对齐 Semi 的 marks 富配置）。 */
+  type MarkValue = string | { label: string; style?: string };
 
   interface Props {
     value?: SliderValue;
@@ -27,7 +30,7 @@
     max?: number;
     step?: number | null;
     range?: boolean;
-    marks?: Record<number, string>;
+    marks?: Record<number, MarkValue>;
     dots?: boolean;
     included?: boolean;
     vertical?: boolean;
@@ -78,6 +81,12 @@
     onMouseUp?: (e: MouseEvent) => void;
     /** 覆盖 getAriaValueText 的 aria-valuetext 文案 */
     ariaValuetext?: string;
+    /** 自定义单个刻度标签渲染（替换默认 label 文本）。 */
+    mark?: Snippet<[{ value: number; label: string; active: boolean }]>;
+    /** 自定义手柄内容（如带数字徽标）。 */
+    handle?: Snippet<[{ value: number; index: number; dragging: boolean; focused: boolean }]>;
+    /** 自定义数值气泡内部内容（替换默认 tipFormatter 文本）。 */
+    tooltip?: Snippet<[{ value: number; index: number }]>;
   }
 
   let {
@@ -122,7 +131,25 @@
     handleDot,
     onMouseUp,
     ariaValuetext,
+    mark,
+    handle,
+    tooltip,
   }: Props = $props();
+
+  // marks 值统一取 label 文本（对象形式取 .label）。索引访问可能取不到键，容忍 undefined。
+  function markLabel(v: MarkValue | undefined): string {
+    if (v === undefined) return '';
+    return typeof v === 'string' ? v : v.label;
+  }
+  // marks 对象形式的自定义样式（字符串形式无样式）。
+  function markStyle(v: MarkValue | undefined): string | undefined {
+    return typeof v === 'string' || v === undefined ? undefined : v.style;
+  }
+  // 该刻度是否落在已选轨道段内（included 时驱动命中标签色）。
+  function markActive(mk: number): boolean {
+    const pct = valueToPercent(mk);
+    return included && pct >= trackStart - 1e-9 && pct <= trackEnd + 1e-9;
+  }
 
   const loc = useLocale();
   // 单例 live region（polite）：值到达 min/max 边界时播报一次（红线 #3：命令式、事件回调内）。
@@ -546,11 +573,19 @@
 
     {#each markKeys as mk (mk)}
       {@const pct = valueToPercent(mk)}
+      {@const mv = marks![mk]}
+      {@const active = markActive(mk)}
       <span
         class="cd-slider__mark"
+        class:cd-slider__mark--active={active}
         class:cd-slider__mark-label--hidden={!showMarkLabel}
-        style={posStyle(pct)}
-      >{marks?.[mk]}</span>
+        style={[posStyle(pct), markStyle(mv)].filter(Boolean).join('; ')}
+      >
+        {#if mark}{@render mark({ value: mk, label: markLabel(mv), active })}{:else}{markLabel(mv)}{/if}
+        {#if tooltipOnMark}
+          <span class="cd-slider__mark-tip" role="tooltip" aria-hidden="true">{markLabel(mv)}</span>
+        {/if}
+      </span>
     {/each}
 
     {#each handleList as index (index)}
@@ -583,8 +618,11 @@
           onBlur?.({ index });
         }}
       >
+        {#if handle}{@render handle({ value: hv, index, dragging: dragValue !== null && activeIndex === index, focused: focusIndex === index })}{/if}
         {#if tipShown(index)}
-          <span class="cd-slider__tip" role="tooltip" aria-hidden="true">{tipText(index)}</span>
+          <span class="cd-slider__tip" role="tooltip" aria-hidden="true">
+            {#if tooltip}{@render tooltip({ value: hv, index })}{:else}{tipText(index)}{/if}
+          </span>
         {/if}
       </span>
     {/each}
@@ -738,9 +776,39 @@
   .cd-slider--vertical.cd-slider--reverse .cd-slider__mark {
     transform: translateY(-50%);
   }
+  /* 命中刻度（落在已选段内）标签变色。 */
+  .cd-slider__mark--active {
+    color: var(--cd-slider-mark-color-active);
+  }
   /* showMarkLabel=false: keep the tick dot but hide its text label. */
   .cd-slider__mark-label--hidden {
     visibility: hidden;
+  }
+  /* tooltipOnMark: 刻度上方的数值气泡，默认隐藏，hover 刻度时浮现。 */
+  .cd-slider__mark-tip {
+    position: absolute;
+    inset-block-end: calc(100% + var(--cd-slider-gap));
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    padding: 2px var(--cd-slider-gap);
+    background: var(--cd-slider-tip-bg);
+    color: var(--cd-slider-tip-color);
+    font-size: var(--cd-slider-tip-font-size);
+    line-height: 1.4;
+    white-space: nowrap;
+    border-radius: var(--cd-slider-tip-radius);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--cd-slider-handle-transition-duration) var(--cd-slider-handle-transition-easing);
+    z-index: 1;
+  }
+  .cd-slider__mark:hover .cd-slider__mark-tip {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-slider__mark-tip {
+      transition: none;
+    }
   }
   /* Boundary value labels flanking the rail (showBoundary). */
   .cd-slider__boundary-min,
