@@ -88,7 +88,7 @@ const components = [
   ['pincode', '{ PinCode }', '3.5 KB'],
   ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
   ['rating', '{ Rating }', '3.65 KB'],
-  ['select', '{ Select }', '9 KB'],
+  ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '4.25 KB'],

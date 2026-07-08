@@ -92,6 +92,7 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | optionLabelProp | string | 'label' | 用作回显的字段名。 |
 | debounce | number | 300 | 远程搜索防抖毫秒。 |
 | autoFocus | boolean | false | 挂载自动聚焦。 |
+| autoAdjustOverflow | boolean | true | 浮层被遮挡时自动翻转方向（映射 use:floating autoAdjust，对齐 Semi）。 |
 | id | string | auto(useId) | 关联外部 `<label for>`。 |
 
 ### 4.2 Events
@@ -126,6 +127,21 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 | dropdownFooter | — | 浮层底部固定区（inner：滚动列表内部底端，随 optionList 滚动；如"加载更多"）。 |
 | outerTopSlot | — | 浮层最外层顶部 slot（outer：与滚动列表平级、滚动区之外，始终固定展现）。 |
 | outerBottomSlot | — | 浮层最外层底部 slot（outer：与滚动列表平级、滚动区之外，始终固定展现）。 |
+
+### 4.4 Methods
+
+通过组件实例（`bind:this`）调用（对齐 Semi）：
+
+| 方法 | 说明 |
+|---|---|
+| `open()` | 命令式展开下拉列表。 |
+| `close()` | 命令式收起下拉列表。 |
+| `focus()` | 命令式聚焦触发器（尊重 preventScroll）。 |
+| `clearInput()` | 命令式清空搜索框。 |
+| `deselectAll()` | 命令式清空所有已选项。 |
+| `selectAll()` | 命令式选中所有可选 Option（仅多选生效）。 |
+| `search(value, event?)` | 命令式设置搜索值并触发搜索。 |
+| `rePosition()` | 命令式触发浮层重新定位。 |
 
 ## 5. 主题 / Token 表
 
