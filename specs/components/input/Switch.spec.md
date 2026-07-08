@@ -72,8 +72,8 @@ button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-s
 | status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（注：约定为 default/warning/error）。 |
 | disabled | `boolean` | `false` | 禁用，阻止交互与聚焦内交互。 |
 | loading | `boolean` | `false` | 异步加载态，锁定交互并展示 spinner。 |
-| checkedChildren | `string \| Snippet` | `undefined` | 开态内嵌文字/图标。 |
-| uncheckedChildren | `string \| Snippet` | `undefined` | 关态内嵌文字/图标。 |
+| checkedChildren | `string \| Snippet` | `undefined` | 开态内嵌文字/图标。**`size='small'` 时无效**（对齐 Semi：最小开关放不下文本，渲染层不渲染）。 |
+| uncheckedChildren | `string \| Snippet` | `undefined` | 关态内嵌文字/图标。**`size='small'` 时无效**。 |
 | name | `string` | `undefined` | 原生表单字段名（提交时使用）。 |
 | required | `boolean` | `false` | 表单必填校验（须为开态）。 |
 | ariaLabel | `string` | `undefined` | 无可见文本时的可访问名称。 |
