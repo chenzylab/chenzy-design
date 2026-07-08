@@ -496,6 +496,9 @@ export interface Locale {
   };
   TagInput: {
     remove: string;
+    clear: string;
+    duplicate: string;
+    invalid: string;
   };
   Breadcrumb: {
     ariaLabel: string;
