@@ -22,7 +22,7 @@
     <TreeSelect
       {treeData}
       {value}
-      clearable
+      showClear
       defaultExpandAll
       placeholder="Bob 不可选"
       onChange={(k) => (value = Array.isArray(k) ? (k[0] ?? null) : k)}

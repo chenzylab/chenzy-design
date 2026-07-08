@@ -20,7 +20,7 @@
   <TreeSelect
     {treeData}
     {value}
-    clearable
+    showClear
     filterable
     placeholder="选择部门"
     onChange={(k) => (value = Array.isArray(k) ? (k[0] ?? null) : k)}

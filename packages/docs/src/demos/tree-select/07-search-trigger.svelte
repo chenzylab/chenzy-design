@@ -29,7 +29,7 @@
   <TreeSelect
     {treeData}
     {value}
-    clearable
+    showClear
     filterTreeNode
     searchPosition="trigger"
     defaultExpandAll

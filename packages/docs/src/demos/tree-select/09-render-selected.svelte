@@ -30,7 +30,7 @@
     {treeData}
     {value}
     multiple
-    clearable
+    showClear
     defaultExpandAll
     placeholder="选择城市"
     onChange={(k) => (value = Array.isArray(k) ? k : k == null ? [] : [k])}

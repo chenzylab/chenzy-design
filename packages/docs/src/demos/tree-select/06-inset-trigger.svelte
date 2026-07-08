@@ -32,9 +32,9 @@
     <TreeSelect
       {treeData}
       value={inset}
-      clearable
+      showClear
       insetLabel="部门"
-      treeDefaultExpandedKeys={['eng']}
+      defaultExpandedKeys={['eng']}
       placeholder="请选择"
       onChange={(k) => (inset = Array.isArray(k) ? (k[0] ?? null) : k)}
     />
@@ -46,7 +46,7 @@
     <TreeSelect
       {treeData}
       value={custom}
-      treeDefaultExpandedKeys={['eng']}
+      defaultExpandedKeys={['eng']}
       onChange={(k) => (custom = Array.isArray(k) ? (k[0] ?? null) : k)}
     >
       {#snippet triggerRender({ value, isOpen })}
