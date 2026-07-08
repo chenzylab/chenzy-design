@@ -1,14 +1,21 @@
 import type { Snippet } from 'svelte';
 
 /**
- * 文件项上传状态（对齐 Semi）：
+ * 文件项上传状态（对齐 Semi FileItemStatus）：
  * - `wait`：已入列，等待上传（旧值 `ready`）。
+ * - `validating`：校验中（异步 beforeUpload/transformFile 进行中的中间态）。
  * - `uploading`：上传中。
  * - `success`：上传成功。
  * - `validateFail`：校验失败（accept/maxSize/minSize 等不符）。不显示重试。
  * - `uploadFail`：上传失败（网络/超时等）。可重试（retry）。
  */
-export type UploadStatus = 'wait' | 'uploading' | 'success' | 'validateFail' | 'uploadFail';
+export type UploadStatus =
+  | 'wait'
+  | 'validating'
+  | 'uploading'
+  | 'success'
+  | 'validateFail'
+  | 'uploadFail';
 
 /** 静态对象或按当前 file 求值的函数（对标 Semi data/headers）。 */
 export type UploadDataOrFn = Record<string, string> | ((file: File) => Record<string, string>);
@@ -61,6 +68,25 @@ export interface UploadFileItem {
   url?: string;
   /** 校验失败时的本地化提示（如大小超限/过小）；status==='validateFail' 时展示 */
   error?: string;
+  /**
+   * 校验/上传信息文案（对标 Semi validateMessage）。与 `error` 等价并存：
+   * 优先展示 `validateMessage`，回退 `error`。供 afterUpload/beforeUpload 回写自定义文案。
+   */
+  validateMessage?: string;
+  /**
+   * 项级：单独控制该文件项在 success 态是否显示"替换"按钮（对标 Semi FileItem.showReplace）。
+   * 覆盖组件级 `showReplace`；不传时跟随组件级。
+   */
+  showReplace?: boolean;
+  /**
+   * 项级：单独控制该文件项在 uploadFail 态是否显示"重试"按钮（对标 Semi FileItem.showRetry）。
+   * 覆盖组件级 `showRetry`；不传时跟随组件级。
+   */
+  showRetry?: boolean;
+  /** 服务端响应体（对标 Semi FileItem.response）。XHR success 后写入 responseText 或解析后的 JSON。 */
+  response?: unknown;
+  /** 关联的 XHR 事件（对标 Semi FileItem.event）。成功/失败时的原始 ProgressEvent，供业务读取。 */
+  event?: Event;
   /** 目录上传时文件相对路径（webkitRelativePath，若可用） */
   relativePath?: string;
 }

@@ -7,7 +7,7 @@ export const meta = {
   category: 'input',
   description: '文件上传，支持点击与拖拽选择、文件列表（名称/大小/状态/移除）。本轮不做真实网络上传。',
   props: [
-    { name: 'value', type: 'UploadFileItem[]', default: 'undefined', desc: "受控文件列表；提供则为受控。UploadFileItem.status 对齐 Semi：'wait'|'uploading'|'success'|'validateFail'|'uploadFail'（validateFail=校验失败不可重试，uploadFail=网络失败可重试）；preview?:boolean 控制缩略图预览；file 即 Semi fileInstance" },
+    { name: 'value', type: 'UploadFileItem[]', default: 'undefined', desc: "受控文件列表；提供则为受控。UploadFileItem.status 对齐 Semi：'wait'|'validating'|'uploading'|'success'|'validateFail'|'uploadFail'（validating=异步校验中，validateFail=校验失败不可重试，uploadFail=网络失败可重试）；preview?:boolean 控制缩略图预览；file 即 Semi fileInstance；项级 showReplace/showRetry 覆盖组件级；response/event/validateMessage 对齐 Semi FileItem" },
     { name: 'defaultValue', type: 'UploadFileItem[]', default: '[]', desc: '非受控初始文件列表' },
     { name: 'accept', type: 'string', default: 'undefined', desc: '接受的文件类型（input accept）' },
     { name: 'multiple', type: 'boolean', default: 'false' },

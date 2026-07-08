@@ -76,6 +76,7 @@
     onRemove: () => void;
     onRetry: () => void;
     onPreview: () => void;
+    onReplace: () => void;
   };
 
   interface Props {
@@ -575,7 +576,14 @@
         xhrMap.delete(item.uid);
         announcedBucket.delete(item.uid);
         if (isUploadOk(xhr.status)) {
-          patchItem(item.uid, { status: 'success', percent: 100 });
+          // response（对标 Semi FileItem.response）：优先解析 JSON，失败回退原始文本。
+          let response: unknown = xhr.responseText;
+          try {
+            response = JSON.parse(xhr.responseText);
+          } catch {
+            response = xhr.responseText;
+          }
+          patchItem(item.uid, { status: 'success', percent: 100, response });
           // afterUpload（对标 Semi）：成功终态后据返回值改该项状态/文案/名称/预览地址或自动移除。
           applyAfterUpload(item.uid, xhr.responseText);
           // 完成必播（polite，不抢断）。
@@ -590,11 +598,11 @@
         }
         done();
       };
-      xhr.onerror = () => {
+      xhr.onerror = (e) => {
         xhrMap.delete(item.uid);
         announcedBucket.delete(item.uid);
-        // 网络错误 → uploadFail（可重试）。
-        patchItem(item.uid, { status: 'uploadFail' });
+        // 网络错误 → uploadFail（可重试）；event 记录原始事件（对标 Semi FileItem.event）。
+        patchItem(item.uid, { status: 'uploadFail', event: e as Event });
         announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
         onError?.(item);
         done();
@@ -938,6 +946,7 @@
       onRemove: () => remove(item.uid),
       onRetry: () => retryItem(item),
       onPreview: () => onPreviewClick?.(item),
+      onReplace: () => openReplace(item.uid),
     };
   }
 
@@ -1380,7 +1389,7 @@
             {@render fileName(item)}
             <span class="cd-upload__item-size">{formatSize(item.size)}</span>
             {#if item.status !== 'uploading'}
-              <span class="cd-upload__item-status">{item.error ?? item.status}</span>
+              <span class="cd-upload__item-status">{item.validateMessage ?? item.error ?? item.status}</span>
             {/if}
             {#if renderFileOperation}
               <!-- renderFileOperation：自定义列表项操作区（替换默认重试/移除）。 -->
@@ -1393,8 +1402,8 @@
                 })}
               </span>
             {:else}
-              {#if showReplace && item.status === 'success'}
-                <!-- showReplace：已上传项显示替换按钮，点击重选文件替换该项。 -->
+              {#if (item.showReplace ?? showReplace) && item.status === 'success'}
+                <!-- showReplace：已上传项显示替换按钮（项级 item.showReplace 优先于组件级）。 -->
                 <button
                   type="button"
                   class="cd-upload__replace-btn"
@@ -1402,7 +1411,7 @@
                   onclick={() => openReplace(item.uid)}
                 >{loc().t('Upload.replace')}</button>
               {/if}
-              {#if item.status === 'uploadFail' && showRetry !== false}
+              {#if item.status === 'uploadFail' && (item.showRetry ?? showRetry) !== false}
                 <!-- 重试仅对 uploadFail（网络失败）显示；validateFail（校验失败）不可重试（对齐 Semi）。 -->
                 <button
                   type="button"
@@ -1497,8 +1506,8 @@
           {/if}
           <div class="cd-upload__card-overlay">
             <span class="cd-upload__card-name">{item.name}</span>
-            {#if showReplace && item.status === 'success'}
-              <!-- showReplace（picture-card）：已上传项显示替换按钮。 -->
+            {#if (item.showReplace ?? showReplace) && item.status === 'success'}
+              <!-- showReplace（picture-card）：已上传项显示替换按钮（项级优先）。 -->
               <button
                 type="button"
                 class="cd-upload__card-replace"
@@ -1536,8 +1545,8 @@
               })}
             </div>
           {/if}
-          {#if item.status === 'uploadFail' && showRetry !== false && item.file}
-            <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）；仅网络失败可重试。 -->
+          {#if item.status === 'uploadFail' && (item.showRetry ?? showRetry) !== false && item.file}
+            <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）；仅网络失败可重试，项级 showRetry 优先。 -->
             <button
               type="button"
               class="cd-upload__card-retry"
