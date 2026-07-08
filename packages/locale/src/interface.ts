@@ -404,6 +404,10 @@ export interface Locale {
     remove: string;
     /** 重试按钮/失败重传 */
     retry: string;
+    /** 替换已上传文件按钮（showReplace） */
+    replace: string;
+    /** 批量清空按钮 */
+    clear: string;
     /** live 播报：上传中，uses {name} {percent} */
     announceUploading: string;
     /** live 播报：上传成功，uses {name} */

@@ -306,6 +306,8 @@ export const zh_CN: Locale = {
     limitError: '最多上传 {limit} 个文件',
     remove: '移除',
     retry: '重试',
+    replace: '替换',
+    clear: '清空',
     announceUploading: '{name} 上传中 {percent}%',
     announceSuccess: '{name} 上传成功',
     announceError: '{name} 上传失败',

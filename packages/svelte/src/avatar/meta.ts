@@ -50,6 +50,8 @@ export const meta = {
       default: 'undefined',
       desc: '额外传给 img 标签的属性（如 loading、decoding 等）',
     },
+    { name: 'class', type: 'string', default: 'undefined', desc: '附加类名（合并到根元素，对齐 Semi className）' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '内联样式（合并到根元素，优先级高于内部派生样式，对齐 Semi style）' },
     { name: 'hoverMask', type: 'Snippet', default: 'undefined', desc: 'hover 时显示的遮罩层 Snippet' },
     { name: 'topSlot', type: 'Snippet', default: 'undefined', desc: '右上角绝对定位标记 Snippet' },
     { name: 'bottomSlot', type: 'Snippet', default: 'undefined', desc: '右下角绝对定位标记 Snippet（如在线状态徽标）' },

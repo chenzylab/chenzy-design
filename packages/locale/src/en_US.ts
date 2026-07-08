@@ -306,6 +306,8 @@ export const en_US: Locale = {
     limitError: 'At most {limit} file(s)',
     remove: 'Remove',
     retry: 'Retry',
+    replace: 'Replace',
+    clear: 'Clear',
     announceUploading: '{name} uploading {percent}%',
     announceSuccess: '{name} uploaded successfully',
     announceError: '{name} upload failed',
