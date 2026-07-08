@@ -61,3 +61,38 @@ describe('Transfer a11y', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+// treeProps 接线验证：此前 treeProps 被解构为 _treeProps 后丢弃（假 prop），现真正生效。
+describe('Transfer treeProps（treeList）', () => {
+  const treeData = [
+    {
+      key: 'fruit',
+      label: 'Fruit',
+      children: [
+        { key: 'apple', label: 'Apple' },
+        { key: 'banana', label: 'Banana' },
+      ],
+    },
+  ];
+
+  it('默认 expandAll：父节点展开，子节点可见', () => {
+    const { container } = renderWithLocale(Transfer, {
+      props: { type: 'treeList', dataSource: treeData },
+    });
+    const nodes = container.querySelectorAll('.cd-transfer__tree-node');
+    // 展开全部：根 + 2 子 = 3 个可见节点。
+    expect(nodes.length).toBe(3);
+    expect(container.textContent).toContain('Apple');
+  });
+
+  it('treeProps.expandAll=false：子节点收起，仅根可见', () => {
+    const { container } = renderWithLocale(Transfer, {
+      props: { type: 'treeList', dataSource: treeData, treeProps: { expandAll: false } },
+    });
+    const nodes = container.querySelectorAll('.cd-transfer__tree-node');
+    // 收起：仅根节点可见。
+    expect(nodes.length).toBe(1);
+    expect(container.textContent).toContain('Fruit');
+    expect(container.textContent).not.toContain('Apple');
+  });
+});
