@@ -26,7 +26,7 @@
     multiple?: TreeSelectProps['multiple'];
     placeholder?: TreeSelectProps['placeholder'];
     disabled?: boolean;
-    clearable?: TreeSelectProps['clearable'];
+    showClear?: TreeSelectProps['showClear'];
     size?: TreeSelectProps['size'];
     maxTagCount?: TreeSelectProps['maxTagCount'];
   }
@@ -47,7 +47,7 @@
     multiple,
     placeholder,
     disabled,
-    clearable,
+    showClear,
     size,
     maxTagCount,
   }: Props = $props();
@@ -75,7 +75,7 @@
       {...(multiple !== undefined ? { multiple } : {})}
       {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {...(clearable !== undefined ? { clearable } : {})}
+      {...(showClear !== undefined ? { showClear } : {})}
       {...(size !== undefined ? { size } : {})}
       {...(maxTagCount !== undefined ? { maxTagCount } : {})}
       status={status === 'error' ? 'error' : 'default'}

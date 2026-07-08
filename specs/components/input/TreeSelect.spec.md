@@ -15,7 +15,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 ## 2. 设计语义
 
-- 触发器（Trigger）：默认 outline 输入框形态，单选回填为节点 label，多选回填为 Tag 列表（可 maxTagCount 折叠 +N）。占位 placeholder，可清除（clearable）时 hover 出现 clear 图标，尾部箭头 caret 随 open 旋转 180°。
+- 触发器（Trigger）：默认 outline 输入框形态，单选回填为节点 label，多选回填为 Tag 列表（可 maxTagCount 折叠 +N）。占位 placeholder，可清除（showClear）时 hover 出现 clear 图标，尾部箭头 caret 随 open 旋转 180°。
 - 浮层（Popover）：包裹 Tree 面板，宽度默认对齐触发器宽度（可 dropdownMatchSelectWidth），最大高度后内部滚动；超过阈值启用虚拟化。
 - 选中语义：
   - 单选：点击节点即选中并关闭浮层；当前选中节点高亮（`--cd-treeselect-node-selected-bg`）。
@@ -63,7 +63,8 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
 | status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态。 |
 | disabled | `boolean` | `false` | 整体禁用。 |
-| clearable | `boolean` | `false` | 是否可一键清空。 |
+| showClear | `boolean` | `false` | 值不为空时 trigger 展示清除按钮（对齐 Semi）。 |
+| position | `string` | `'bottomLeft'` | 浮层弹出位置（对齐 Semi，参考 Tooltip position）；映射到 use:floating placement。 |
 | filterable | `boolean \| ((input, node) => boolean)` | `false` | 是否可搜索；可传自定义过滤函数。 |
 | filterTreeNode | `boolean \| ((inputValue, treeNodeString, data?) => boolean)` | — | 对齐 Semi：开启搜索并按 `treeNodeFilterProp` 匹配；函数则自定义匹配谓词。与 `filterable` 其一为真即显示搜索框。 |
 | remote | `boolean` | `false` | 远程搜索，输入仅触发 `on:search`，不本地过滤。 |
@@ -74,7 +75,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag。 |
 | restTagsPopoverProps | `Record<string, unknown>` | — | 透传给剩余 Tag Popover 浮层的额外 props（在默认 `trigger=hover`/`position=top` 之后展开，可覆盖）。 |
 | defaultExpandAll | `boolean` | `false` | 初始化时默认全部展开（对齐 Semi）。 |
-| treeDefaultExpandedKeys | `Key[]` | `[]` | 默认展开节点。 |
+| defaultExpandedKeys | `Key[]` | `[]` | 默认展开节点（对齐 Semi）。 |
 | expandedKeys | `Key[]` | — | 受控展开，配合 `on:expand`。 |
 | loadData | `(node) => Promise<TreeNode[]>` | — | 异步加载子节点。 |
 | virtualize | `{ height?: number; width?: number \| string; itemSize?: number }` | — | 列表虚拟化（对齐 Semi）：传入对象即开启，`height` 视口高（默认 224）、`itemSize` 行高（默认 32）。 |
@@ -208,7 +209,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 | 维度 | Budget / 策略 |
 | --- | --- |
-| gzip 体积（svelte 渲染层） | ≤ 9 KB |
+| gzip 体积（svelte 渲染层） | ≤ 12 KB（按实测校准：含 searchPosition/放大镜搜索框/position 映射/showClear/renderSelectedItem 等富功能） |
 | gzip 体积（core headless） | ≤ 5 KB（不含 Tree 原语共享部分） |
 | 首次打开浮层（1k 节点，虚拟化） | < 16ms 首帧（仅渲染视口 + overscan） |
 | 滚动帧 | 稳定 60fps；虚拟列表行回收，无整树重排 |
@@ -232,7 +233,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 ## 11. 测试
 
 - 单元（core，框架无关）：`computeCascade` 向上半选/向下传播、`disabled/disableCheckbox` 跳过；`showCheckedStrategy` 三策略收敛；`leafOnly` 过滤；扁平化可见列表随展开/过滤正确性；受控 vs 非受控 `value/open/expandedKeys` 分支。
-- 交互（svelte + testing-library）：键盘全路径（开/关、上下左右、Home/End、Enter/Space、Esc）；roving 与 `aria-activedescendant` 同步；多选 Tag 增删与 `maxTagCount` 折叠；clearable 行为与 `on:clear`。
+- 交互（svelte + testing-library）：键盘全路径（开/关、上下左右、Home/End、Enter/Space、Esc）；roving 与 `aria-activedescendant` 同步；多选 Tag 增删与 `maxTagCount` 折叠；showClear 行为与 `on:clear`。
 - a11y：axe 无违规；role/aria 断言（treeitem 的 level/posinset/setsize、`aria-checked=mixed`）；focus trap 与焦点回归；reduced-motion 媒体查询生效。
 - 虚拟化：1k/10k 节点渲染节点数上界断言；高亮 scrollIntoView 命中；滚动后选中态保持。
 - 异步：`loadData` resolve/reject、loading 态、加载后展开正确；远程 `on:search` 防抖与竞态（后到先到丢弃）。
@@ -254,6 +255,6 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 - [ ] 全部可见文案走 i18n，无硬编码；计数经 Intl 格式化。
 - [ ] 仅消费 Alias/Component Token，无写死颜色/尺寸；dark 自动适配；RTL 镜像正确。
 - [ ] reduced-motion 下动效退化。
-- [ ] gzip 体积达标（svelte ≤9KB / core ≤5KB）。
+- [ ] gzip 体积达标（svelte ≤12KB / core ≤5KB）。
 - [ ] 提供 `component.meta.ts`，字段完整且与本 SPEC 一致。
-- [ ] `clearable` 一次清空全部，`aria-label` 用「清除」非破坏性措辞。
+- [ ] `showClear` 一次清空全部，`aria-label` 用「清除」非破坏性措辞。

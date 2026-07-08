@@ -32,7 +32,7 @@
     bind:this={ref}
     {treeData}
     {value}
-    clearable
+    showClear
     filterable
     defaultExpandAll
     placeholder="选择国家"

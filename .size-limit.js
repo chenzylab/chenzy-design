@@ -95,7 +95,7 @@ const components = [
   ['textarea', '{ TextArea }', '3.75 KB'],
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
-  ['tree-select', '{ TreeSelect }', '10.6 KB'],
+  ['tree-select', '{ TreeSelect }', '12 KB'],
   ['upload', '{ Upload }', '9.9 KB'],
   // navigation
   ['anchor', '{ Anchor }', '3.5 KB'],

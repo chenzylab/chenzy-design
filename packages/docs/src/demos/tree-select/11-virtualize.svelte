@@ -20,7 +20,7 @@
   <TreeSelect
     {treeData}
     {value}
-    clearable
+    showClear
     defaultExpandAll
     virtualize={{ height: 224, itemSize: 32 }}
     placeholder="选择城市（大数据树）"

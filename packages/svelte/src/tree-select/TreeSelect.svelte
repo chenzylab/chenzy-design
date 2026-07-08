@@ -36,6 +36,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import type { Placement } from '@chenzy-design/core';
   import Tag from '../tag/Tag.svelte';
   import Popover from '../popover/Popover.svelte';
   import type { TreeNode, TreeKey } from './types.js';
@@ -78,11 +79,12 @@
     size?: Size;
     status?: Status;
     disabled?: boolean;
-    clearable?: boolean;
+    /** 值不为空时 trigger 展示清除按钮（对齐 Semi showClear）。 */
+    showClear?: boolean;
     leafOnly?: boolean;
     defaultExpandAll?: boolean;
-    /** 默认展开的节点 key（非受控初始展开集，与 defaultExpandAll 取并集）。 */
-    treeDefaultExpandedKeys?: TreeKey[];
+    /** 默认展开的节点 key（非受控初始展开集，与 defaultExpandAll 取并集；对齐 Semi defaultExpandedKeys）。 */
+    defaultExpandedKeys?: TreeKey[];
     /** 面板顶部搜索框过滤节点（命中 + 祖先链可见、高亮命中文本） */
     filterable?: boolean;
     /**
@@ -116,6 +118,8 @@
      * 默认 100。传入 virtualize 对象时强制开启（不看阈值）。超集，Semi 无。
      */
     virtualizeThreshold?: number;
+    /** 浮层弹出位置（对齐 Semi，参考 Tooltip position）。默认 bottomLeft。 */
+    position?: string;
     /** 浮层宽度对齐触发器（min-inline-size = 触发器宽）。默认 true。 */
     dropdownMatchSelectWidth?: boolean;
     /** 浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body。 */
@@ -297,10 +301,10 @@
     size = 'default',
     status = 'default',
     disabled = false,
-    clearable = false,
+    showClear = false,
     leafOnly = false,
     defaultExpandAll = false,
-    treeDefaultExpandedKeys,
+    defaultExpandedKeys,
     filterable = false,
     filterTreeNode,
     remote = false,
@@ -310,6 +314,7 @@
     loadData,
     virtualize,
     virtualizeThreshold = 100,
+    position = 'bottomLeft',
     dropdownMatchSelectWidth = true,
     getPopupContainer,
     destroyOnClose = false,
@@ -527,8 +532,8 @@
     return defaultOpen;
   }
   function getInitialExpanded(): Set<TreeKey> {
-    // treeDefaultExpandedKeys 与 defaultExpandAll 取并集（非受控初始展开集）。
-    const set = new Set<TreeKey>(treeDefaultExpandedKeys ?? []);
+    // defaultExpandedKeys 与 defaultExpandAll 取并集（非受控初始展开集）。
+    const set = new Set<TreeKey>(defaultExpandedKeys ?? []);
     if (defaultExpandAll) {
       // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时才能识别 children）。
       const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
@@ -629,7 +634,22 @@
   const hasSelection = $derived(
     multiple ? checkedNodes.length > 0 : selectedNode !== undefined,
   );
-  const showClear = $derived(clearable && !disabled && hasSelection);
+  const showClearBtn = $derived(showClear && !disabled && hasSelection);
+
+  // position → use:floating 的 Placement（对齐 Semi，映射表照 DatePicker），缺省 bottomStart。
+  const POSITION_TO_PLACEMENT: Record<string, Placement> = {
+    bottomLeft: 'bottomStart',
+    bottomRight: 'bottomEnd',
+    bottom: 'bottom',
+    topLeft: 'topStart',
+    topRight: 'topEnd',
+    top: 'top',
+    leftTop: 'leftStart',
+    leftBottom: 'leftEnd',
+    rightTop: 'rightStart',
+    rightBottom: 'rightEnd',
+  };
+  const dropdownPlacement = $derived<Placement>(POSITION_TO_PLACEMENT[position] ?? 'bottomStart');
 
   function setValue(next: TreeKey | null) {
     if (!isValueControlled) innerValue = next;
@@ -1288,8 +1308,12 @@
   </span>
 {/snippet}
 
-<!-- 内置搜索框：dropdown / trigger 两处位置复用（searchPosition 决定渲染在哪）。 -->
-{#snippet builtinSearchInput()}
+<!--
+  内置搜索框：dropdown / trigger 两处位置复用。
+  - dropdown（默认）：带灰底 + 放大镜的 field，与列表分隔清晰（对齐 Semi）。
+  - trigger（bare=true）：朴素透明 input，与触发器融为一体，无额外灰底框（避免臃肿）。
+-->
+{#snippet builtinSearchInput(bare = false)}
   {#if typeof searchRender === 'function'}
     {@render searchRender({
       value: searchValue,
@@ -1297,9 +1321,9 @@
       onKeydown: onSearchKeydown,
       placeholder: resolvedSearchPlaceholder,
     })}
-  {:else}
+  {:else if bare}
     <input
-      class="cd-tree-select__search-input"
+      class="cd-tree-select__search-input cd-tree-select__search-input--bare"
       type="text"
       role="combobox"
       aria-expanded={isOpen}
@@ -1311,6 +1335,31 @@
       oninput={onSearchInput}
       onkeydown={onSearchKeydown}
     />
+  {:else}
+    <span class="cd-tree-select__search-field">
+      <svg class="cd-tree-select__search-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          d="M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9ZM10.5 10.5l3 3"
+        />
+      </svg>
+      <input
+        class="cd-tree-select__search-input"
+        type="text"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls={treeId}
+        aria-activedescendant={activeDescId}
+        placeholder={resolvedSearchPlaceholder}
+        aria-label={resolvedSearchPlaceholder}
+        value={searchValue}
+        oninput={onSearchInput}
+        onkeydown={onSearchKeydown}
+      />
+    </span>
   {/if}
 {/snippet}
 
@@ -1376,8 +1425,8 @@
     {/if}
     <span class="cd-tree-select__content" class:cd-tree-select__content--search-trigger={searchInTrigger}>
       {#if searchInTrigger}
-        <!-- searchPosition='trigger'：搜索框内嵌触发器，与已选标签共存（对齐 Semi）。 -->
-        <span class="cd-tree-select__trigger-search">{@render builtinSearchInput()}</span>
+        <!-- searchPosition='trigger'：朴素 input 内嵌触发器，与触发器融为一体（bare 模式，无灰底框）。 -->
+        <span class="cd-tree-select__trigger-search">{@render builtinSearchInput(true)}</span>
       {/if}
       {#if multiple}
         {#if checkedNodes.length > 0}
@@ -1433,7 +1482,7 @@
       {/if}
     </span>
 
-    {#if showClear}
+    {#if showClearBtn}
       <span
         class="cd-tree-select__clear"
         role="button"
@@ -1482,7 +1531,7 @@
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
-        placement: 'bottomStart',
+        placement: dropdownPlacement,
         autoAdjust: true,
         offset: dropdownOffset,
         matchWidth: dropdownMatchSelectWidth,
@@ -1610,6 +1659,27 @@
     align-items: center;
     min-inline-size: 0;
   }
+  /* searchPosition='trigger'：搜索输入占据触发器主区，与已选值/占位并存。 */
+  .cd-tree-select__trigger-search {
+    display: flex;
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+  /* bare 搜索 input：透明、无边框，与触发器融为一体（避免臃肿的灰底框）。 */
+  .cd-tree-select__search-input--bare {
+    inline-size: 100%;
+    min-inline-size: 0;
+    block-size: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    outline: none;
+  }
+  .cd-tree-select__search-input--bare::placeholder {
+    color: var(--cd-color-text-2);
+  }
   .cd-tree-select__value {
     overflow: hidden;
     white-space: nowrap;
@@ -1680,24 +1750,51 @@
     user-select: none;
   }
   .cd-tree-select__search {
+    padding: var(--cd-spacing-tight);
     padding-block-end: var(--cd-spacing-extra-tight);
-    padding-inline: var(--cd-spacing-tight);
   }
-  .cd-tree-select__search-input {
+  /* 搜索字段：灰底圆角 + 左侧放大镜图标（对齐 Semi 的和谐观感，与列表分隔清晰）。 */
+  .cd-tree-select__search-field {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
     inline-size: 100%;
-    block-size: var(--cd-height-input-small);
+    block-size: var(--cd-height-input-default);
     padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    color: inherit;
-    border: 1px solid var(--cd-input-border);
+    background: var(--cd-color-fill-0);
+    border: 1px solid transparent;
     border-radius: var(--cd-input-radius);
-    font: inherit;
-    font-size: var(--cd-font-size-small);
+    transition:
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tree-select__search-input:focus-visible {
-    outline: none;
+  .cd-tree-select__search-field:hover {
+    background: var(--cd-color-fill-1);
+  }
+  .cd-tree-select__search-field:focus-within {
+    background: var(--cd-color-bg-0);
     border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
+  }
+  .cd-tree-select__search-icon {
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+  }
+  .cd-tree-select__search-input {
+    flex: 1 1 auto;
+    inline-size: 100%;
+    min-inline-size: 0;
+    block-size: 100%;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    border: none;
+    font: inherit;
+    font-size: var(--cd-font-size-small);
+    outline: none;
+  }
+  .cd-tree-select__search-input::placeholder {
+    color: var(--cd-color-text-2);
   }
   .cd-tree-select__tree {
     max-block-size: 14rem;

@@ -27,9 +27,9 @@
   <TreeSelect
     {treeData}
     {value}
-    clearable
+    showClear
     size="large"
-    treeDefaultExpandedKeys={['asia']}
+    defaultExpandedKeys={['asia']}
     placeholder="选择国家"
     onChange={(k) => (value = Array.isArray(k) ? (k[0] ?? null) : k)}
   >
