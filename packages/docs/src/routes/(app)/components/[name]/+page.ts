@@ -13,6 +13,8 @@ export interface DemoEntry {
   component: Component;
   code: string;
   seeAlso?: { text: LocalizedText; component: string };
+  /** 源码区高亮的重点参数行号（1-based），如 [12, 22]。 */
+  highlightLines?: number[];
 }
 
 // eager glob：demos.ts / content md 在构建时同步就绪（各 demos.ts 内部本就 eager）。

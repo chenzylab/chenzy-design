@@ -19,7 +19,7 @@
     title?: string;
     description?: string;
     code?: string;
-    /** 高亮的重点参数行号（1-based），如 [3, 5] 高亮当前 demo 的关键 prop 行。 */
+    /** 高亮的重点参数行号（1-based），由 demos.ts entry 声明，如 [12, 22]。 */
     highlightLines?: number[];
     children: Snippet;
   } = $props();
@@ -27,12 +27,7 @@
   let showCode = $state(false);
   let copied = $state(false);
 
-  // 重点行高亮：把行号列表下发为 CSS 变量，由 .demo-box__code 的样式对相应行做背景高亮（阶段 3）。
-  const highlightLinesVar = $derived(
-    highlightLines && highlightLines.length > 0
-      ? `--demo-hl-lines: ${highlightLines.join(' ')}`
-      : undefined,
-  );
+  const hasHighlight = $derived((highlightLines?.length ?? 0) > 0);
 
   async function copyCode() {
     if (!code) return;
@@ -71,7 +66,15 @@
     {/if}
   </div>
   {#if showCode && code}
-    <div class="demo-box__code" style={highlightLinesVar}>
+    <div class="demo-box__code" class:demo-box__code--has-hl={hasHighlight}>
+      {#if hasHighlight}
+        <!-- 重点行高亮：基于 line-numbers 等宽行高的绝对定位背景条（对齐 VitePress 整行高亮观感）。 -->
+        <div class="demo-box__hl-layer" aria-hidden="true">
+          {#each highlightLines ?? [] as ln (ln)}
+            <span class="demo-box__hl-line" style="--hl-line: {ln}"></span>
+          {/each}
+        </div>
+      {/if}
       <CodeHighlight {code} language="svelte" lineNumber class="demo-box__codehl" />
     </div>
   {/if}
@@ -118,11 +121,35 @@
   }
   /* 源码区：CodeHighlight（Prism）自带主题背景与行号，DemoBox 仅加分隔边框。 */
   .demo-box__code {
+    position: relative;
     border-top: 1px solid var(--cd-color-border, #e5e7eb);
     overflow-x: auto;
   }
   .demo-box__code :global(.demo-box__codehl) {
     margin: 0;
     border-radius: 0;
+  }
+  /* 重点行高亮层：绝对定位的整行背景条，与 CodeHighlight 的等宽行高对齐（对齐 VitePress 观感）。
+     行高取 CodeHighlight 的 token；顶部偏移 = pre padding（16px，见 CodeHighlight 样式）。 */
+  .demo-box__hl-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .demo-box__hl-line {
+    position: absolute;
+    inset-inline: 0;
+    block-size: var(--cd-code-highlight-line-height, 1.5em);
+    inset-block-start: calc(
+      16px + (var(--hl-line) - 1) * var(--cd-code-highlight-line-height, 1.5em)
+    );
+    background: var(--cd-color-primary-light-default, rgba(0, 100, 250, 0.08));
+  }
+  /* 代码浮在高亮层之上 */
+  .demo-box__code :global(.demo-box__codehl) {
+    position: relative;
+    z-index: 1;
+    background: transparent;
   }
 </style>

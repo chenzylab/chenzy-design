@@ -224,7 +224,7 @@
                 >{/if}
             </p>
           {/if}
-          <DemoBox code={demo.code}>
+          <DemoBox code={demo.code} highlightLines={demo.highlightLines}>
             <SceneComp />
           </DemoBox>
         </section>
