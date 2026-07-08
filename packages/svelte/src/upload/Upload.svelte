@@ -1366,7 +1366,7 @@
     {@render triggerArea()}
   {/if}
 
-  {#if showClear && current.length > 0}
+  {#if showClear && current.length > 0 && !titleText && !titleSnippet}
     <button
       type="button"
       class="cd-upload__clear-btn"
