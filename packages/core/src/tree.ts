@@ -272,14 +272,17 @@ export function toggleCheck(
   data: TreeNodeData[],
   currentChecked: ReadonlySet<TreeKey>,
   key: TreeKey,
+  disableStrictly = false,
 ): Set<TreeKey> {
   const meta = buildMeta(data);
   const disabled = new Set<TreeKey>();
+  // 默认：父 disabled 传播给子（子亦不参与联动）。
+  // disableStrictly=true：disabled 不向下传播，仅节点自身 disabled 才排除联动（对齐 Semi）。
   (function mark(nodes: TreeNodeData[], pd: boolean): void {
     for (const node of nodes) {
-      const d = pd || !!node.disabled;
+      const d = disableStrictly ? !!node.disabled : pd || !!node.disabled;
       if (d) disabled.add(node.key);
-      if (node.children) mark(node.children, d);
+      if (node.children) mark(node.children, disableStrictly ? false : d);
     }
   })(data, false);
 

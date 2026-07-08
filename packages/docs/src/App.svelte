@@ -2400,7 +2400,7 @@ let pageSize2 = $state(10);
     <div style="width: 260px" data-testid="treeselect-virtual">
       <TreeSelect
         treeData={bigTreeData}
-        virtualized
+        virtualize={{ height: 224, itemSize: 32 }}
         defaultExpandAll
         clearable
         placeholder="虚拟化大树选"

@@ -43,9 +43,7 @@ export const meta = {
       default: 'undefined',
       desc: '异步加载子节点：展开未加载的非叶子节点时调用，返回该节点子节点数组（加载中显示 spinner，竞态去重，不写回 treeData）。与 Tree 的 loadData 对齐',
     },
-    { name: 'virtualized', type: 'boolean', default: 'false', desc: '虚拟滚动：仅渲染视口内可见行，适合大数据树。复用 Tree 范式（core fixedRange），保持 role=tree/treeitem 语义' },
-    { name: 'height', type: 'number', default: '224', desc: '虚拟滚动视口高度（px），virtualized 时生效' },
-    { name: 'itemHeight', type: 'number', default: '32', desc: '虚拟滚动行高（px），virtualized 时生效' },
+    { name: 'virtualize', type: '{ height?: number; width?: number | string; itemSize?: number }', default: 'undefined', desc: '列表虚拟化（对齐 Semi）：传入对象即开启，仅渲染视口内可见行；height 视口高（默认 224）、itemSize 行高（默认 32）。复用 Tree 范式（core fixedRange），保持 role=tree/treeitem 语义' },
     {
       name: 'icon',
       type: 'Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>',
@@ -69,7 +67,7 @@ export const meta = {
     },
     { name: 'onOpenChange', type: '(open: boolean) => void', default: 'undefined' },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
-    { name: 'virtualizeThreshold', type: 'number', default: '100', desc: '可见扁平行数 ≥ 此值时自动开启虚拟化；virtualized=true 强制开启' },
+    { name: 'virtualizeThreshold', type: 'number', default: '100', desc: '可见扁平行数 ≥ 此值时自动开启虚拟化；传入 virtualize 对象强制开启（超集，Semi 无）' },
     { name: 'dropdownMatchSelectWidth', type: 'boolean', default: 'true', desc: '浮层宽度对齐触发器（min-inline-size = 触发器宽）' },
     { name: 'getPopupContainer', type: '() => HTMLElement | null | undefined', default: 'undefined', desc: '浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body' },
     { name: 'destroyOnClose', type: 'boolean', default: 'false', desc: '关闭即从 DOM 卸载浮层（重开重建）；默认首开后保留 DOM 仅隐藏' },
@@ -126,6 +124,9 @@ export const meta = {
     { name: 'onSelect', type: '(selectedKey: TreeKey, selected: boolean, node: unknown) => void', default: 'undefined', desc: '节点选中回调' },
     { name: 'onLoad', type: '(loadedKeys: TreeKey[], treeNode: TreeNode) => void', default: 'undefined', desc: '异步加载完成回调（含已加载 key 集合与当前节点）' },
     { name: 'onVisibleChange', type: '(isVisible: boolean) => void', default: 'undefined', desc: '面板可见性变化回调（与 onOpenChange 语义相同，Semi 风格别名）' },
+  ],
+  methods: [
+    { name: 'search(sugInput)', desc: '命令式搜索：把值置给内部搜索态并触发过滤（对齐 Semi，用于外部自定义搜索框）' },
   ],
   a11y: {
     role: 'combobox',
