@@ -233,6 +233,32 @@ describe('toggleCheck', () => {
     expect(re.checked.has('1')).toBe(false); // root no longer fully checked
     expect(re.half.has('1')).toBe(true); // root half-checked
   });
+
+  // disableStrictly：控制 disabled 是否向下传播。构造父节点禁用的树。
+  const dataDisabledParent: TreeNodeData[] = [
+    {
+      key: 'p',
+      label: 'Parent',
+      children: [
+        { key: 'c1', label: 'C1', disabled: true, children: [{ key: 'g1', label: 'G1' }] },
+        { key: 'c2', label: 'C2' },
+      ],
+    },
+  ];
+
+  it('默认（disableStrictly=false）：父 disabled 传播给子，子不参与联动', () => {
+    // 勾选父 p：c1 disabled，其叶 g1 被传播禁用 → 不被勾选；c2 正常被勾选。
+    const on = toggleCheck(dataDisabledParent, new Set(), 'p');
+    expect(on.has('c2')).toBe(true);
+    expect(on.has('g1')).toBe(false); // 传播禁用，g1 不被联动
+  });
+
+  it('disableStrictly=true：disabled 不向下传播，子仍参与联动', () => {
+    // 勾选父 p：c1 自身 disabled 不选，但 g1 不受父禁用传播 → 被联动勾选。
+    const on = toggleCheck(dataDisabledParent, new Set(), 'p', true);
+    expect(on.has('c2')).toBe(true);
+    expect(on.has('g1')).toBe(true); // 严格模式，g1 参与联动
+  });
 });
 
 describe('normalizeToLeaves', () => {

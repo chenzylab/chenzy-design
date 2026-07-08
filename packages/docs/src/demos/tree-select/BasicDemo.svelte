@@ -159,14 +159,14 @@
   <div style="width: 260px" data-testid="treeselect-virtual">
     <TreeSelect
       treeData={bigTreeData}
-      virtualized
+      virtualize={{ height: 224, itemSize: 32 }}
       defaultExpandAll
       clearable
       placeholder="虚拟化大树选"
       value={treeSelectVirtualVal}
       onChange={(k) => (treeSelectVirtualVal = Array.isArray(k) ? (k[0] ?? null) : k)}
     />
-    <Text type="tertiary">virtualized 1050 节点：仅渲染视口内行</Text>
+    <Text type="tertiary">virtualize 1050 节点：仅渲染视口内行</Text>
   </div>
   <div style="width: 280px" data-testid="treeselect-strategy">
     <TreeSelect

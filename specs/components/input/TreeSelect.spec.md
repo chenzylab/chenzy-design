@@ -73,11 +73,11 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | maxTagCount | `number` | — | 多选回填 Tag 最大展示数，超出折叠为 +N。 |
 | showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag。 |
 | restTagsPopoverProps | `Record<string, unknown>` | — | 透传给剩余 Tag Popover 浮层的额外 props（在默认 `trigger=hover`/`position=top` 之后展开，可覆盖）。 |
-| treeDefaultExpandAll | `boolean` | `false` | 默认全部展开。 |
+| defaultExpandAll | `boolean` | `false` | 初始化时默认全部展开（对齐 Semi）。 |
 | treeDefaultExpandedKeys | `Key[]` | `[]` | 默认展开节点。 |
 | expandedKeys | `Key[]` | — | 受控展开，配合 `on:expand`。 |
 | loadData | `(node) => Promise<TreeNode[]>` | — | 异步加载子节点。 |
-| virtualize | `boolean \| { itemHeight?: number; overscan?: number }` | `false` | 强制开启/配置虚拟化。 |
+| virtualize | `{ height?: number; width?: number \| string; itemSize?: number }` | — | 列表虚拟化（对齐 Semi）：传入对象即开启，`height` 视口高（默认 224）、`itemSize` 行高（默认 32）。 |
 | virtualizeThreshold | `number` | `100` | 自动启用虚拟化的节点数阈值。 |
 | dropdownMatchSelectWidth | `boolean` | `true` | 浮层宽度对齐触发器。 |
 | getPopupContainer | `() => HTMLElement` | `() => document.body` | 浮层挂载容器。 |
@@ -90,6 +90,9 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存）。 |
 | dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式）。 |
 | zIndex | `number` | — | 浮层层级（z-index），未传由 CSS 控制。 |
+| searchPosition | `'dropdown' \| 'trigger'` | `'dropdown'` | 搜索框位置：`dropdown` 面板顶部；`trigger` 内嵌触发器（对齐 Semi）。 |
+| disableStrictly | `boolean` | `false` | 严格禁用：`disabled` 不向下传播，仅节点自身 disabled 才不参与父子联动（对齐 Semi）。 |
+| renderSelectedItem | `Snippet<[{ node: TreeNode; onRemove: () => void }]>` | — | 自定义已选项渲染（单选值 / 多选每个 tag）。 |
 
 ### Events
 
@@ -104,6 +107,14 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | clear | `void` | 点击清除。 |
 | load | `{ node: TreeNode; children: TreeNode[] }` | `loadData` 完成。 |
 | blur / focus | `FocusEvent` | 触发器失焦/聚焦。 |
+
+### Methods
+
+组件实例方法（Svelte 5 `export function`，经 `bind:this` 获取实例后调用）。
+
+| 名称 | 说明 |
+|---|---|
+| `search(sugInput)` | 命令式搜索：把值置给内部搜索态并触发过滤（对齐 Semi，用于外部自定义搜索框）。 |
 
 ### Slots
 

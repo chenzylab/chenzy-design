@@ -30,4 +30,9 @@ export const demos: DemoEntry[] = [
   entry('04-disabled.svelte', '禁用状态', '禁用单个节点（disabled 字段）或整体禁用选择器'),
   entry('05-prefix-clear.svelte', '前缀与清除', '自定义 prefix 图标、large 尺寸、默认展开指定节点并可一键清除'),
   entry('06-inset-trigger.svelte', '内嵌标签与自定义触发器', 'insetLabel 触发器内嵌标签；triggerRender 完全替换默认选择框（与 Cascader 一致）'),
+  entry('07-search-trigger.svelte', '搜索框在触发器', "searchPosition='trigger' 配 filterTreeNode，把搜索输入框内嵌到触发器内而非浮层顶部"),
+  entry('08-disable-strictly.svelte', '严格禁用', 'multiple + disableStrictly：勾选父节点不影响 disabled 子节点，禁用态独立'),
+  entry('09-render-selected.svelte', '自定义已选项', 'renderSelectedItem 具名 snippet 自定义已选 tag 渲染（图标 + 自定义样式）'),
+  entry('10-search-method.svelte', '命令式搜索', 'bind:this 拿实例，调用 ref.search(...) 命令式触发面板内搜索'),
+  entry('11-virtualize.svelte', '虚拟化', 'virtualize 对象开启大数据树虚拟滚动'),
 ];

@@ -9,11 +9,11 @@
   （参数 { node, expanded, level }）。渲染层特性，不改 treeData（红线 #1）。
   loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap 并派生合并树喂给
   所有 core 函数（不写回受控 treeData，红线 #1）；加载中显示 spinner，竞态由 loadedKeys/loadingKeys 去重。
-  virtualized：大数据树虚拟滚动。复用 Tree 范式——直接用 core fixedRange 纯函数自建轻量 fixed 定高
-  虚拟化（非复用 VirtualList 组件，其 role=list/listitem 会破坏 role=tree→treeitem 语义），保持
-  role=tree 容器 + 行 role=treeitem 不变；只渲染视口内切片（flattenVisible 派生扁平节点 + 区间纯派生，
-  红线 #2）。滚动监听命令式 + rAF 节流 + cleanup（红线 #3）。virtualized 时与搜索 filterable 互斥
-  （搜索强制展开命中链与定高虚拟化叠加复杂，故 virtualized 优先静态/异步大树场景）。
+  virtualize（对象形式，对齐 Semi）：大数据树虚拟滚动。复用 Tree 范式——直接用 core fixedRange 纯函数
+  自建轻量 fixed 定高虚拟化（非复用 VirtualList 组件，其 role=list/listitem 会破坏 role=tree→treeitem
+  语义），保持 role=tree 容器 + 行 role=treeitem 不变；只渲染视口内切片（flattenVisible 派生扁平节点 +
+  区间纯派生，红线 #2）。滚动监听命令式 + rAF 节流 + cleanup（红线 #3）。虚拟化时与搜索 filterable 互斥
+  （搜索强制展开命中链与定高虚拟化叠加复杂，故虚拟化优先静态/异步大树场景）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -106,11 +106,14 @@
     showIcon?: boolean;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组。与 Tree 的 loadData 对齐。 */
     loadData?: (node: TreeNode) => Promise<TreeNode[]>;
-    /** 虚拟滚动：仅渲染视口内的可见节点行，适合大数据树（1000+ 节点）。默认 false（行为不变）。 */
-    virtualized?: boolean;
+    /**
+     * 列表虚拟化（对齐 Semi）：仅渲染视口内可见节点行，适合大数据树（1000+ 节点）。
+     * 传入对象即显式开启；height 视口高度（默认 224）、itemSize 行高（默认 32）、width 宽度。
+     */
+    virtualize?: { height?: number; width?: number | string; itemSize?: number };
     /**
      * 自动启用虚拟化的可见节点数阈值：可见扁平行数 ≥ 此值时自动开启虚拟化。
-     * 默认 100。virtualized 显式为 true 时强制开启（不看阈值）。
+     * 默认 100。传入 virtualize 对象时强制开启（不看阈值）。超集，Semi 无。
      */
     virtualizeThreshold?: number;
     /** 浮层宽度对齐触发器（min-inline-size = 触发器宽）。默认 true。 */
@@ -119,10 +122,6 @@
     getPopupContainer?: () => HTMLElement | null | undefined;
     /** 关闭即从 DOM 卸载浮层（重开重建）。默认 false：首开后保留 DOM 仅隐藏。 */
     destroyOnClose?: boolean;
-    /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 224（与默认面板 max-height 一致）。 */
-    height?: number;
-    /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32。 */
-    itemHeight?: number;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
     onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
@@ -309,13 +308,11 @@
     onSearch,
     showIcon = true,
     loadData,
-    virtualized = false,
+    virtualize,
     virtualizeThreshold = 100,
     dropdownMatchSelectWidth = true,
     getPopupContainer,
     destroyOnClose = false,
-    height = 224,
-    itemHeight = 32,
     onChange,
     onOpenChange,
     ariaLabel,
@@ -664,7 +661,7 @@
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
     } else {
-      nextBase = toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key);
+      nextBase = toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key, disableStrictly);
     }
     setChecked(nextBase);
   }
@@ -679,7 +676,7 @@
       setChecked(next);
     } else if (isChecked) {
       // 复用 toggleCheck：已选 → 取消（含子树联动）
-      setChecked(toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key));
+      setChecked(toggleCheck(mergedTree as unknown as TreeNodeData[], currentCheckedBase, node.key, disableStrictly));
     }
   }
 
@@ -782,7 +779,7 @@
     for (const k of filterResult.expand) merged.add(k);
     return merged;
   });
-  // virtualizeThreshold：节点总数 ≥ 阈值时自动启用虚拟化（virtualized=true 时强制启用）。
+  // virtualizeThreshold：节点总数 ≥ 阈值时自动启用虚拟化（传入 virtualize 对象时强制启用）。
   const totalNodeCount = $derived.by(() => {
     let n = 0;
     const walk = (nodes: TreeNode[]) => {
@@ -794,7 +791,11 @@
     walk(mergedTree);
     return n;
   });
-  const useVirtual = $derived(virtualized || totalNodeCount >= virtualizeThreshold);
+  // virtualize 对象归一（对齐 Semi）：传入对象即显式开启；height 视口高度、itemSize 行高。
+  const virtualizeOn = $derived(virtualize !== undefined);
+  const height = $derived(virtualize?.height ?? 224);
+  const itemHeight = $derived(virtualize?.itemSize ?? 32);
+  const useVirtual = $derived(virtualizeOn || totalNodeCount >= virtualizeThreshold);
   // 可见扁平节点：虚拟化用于视口切片，非虚拟化也用于键盘 roving 导航（红线 #2 纯派生）。
   const flat = $derived(
     flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded),
@@ -1092,6 +1093,11 @@
     searchValue = v;
     if (remote) scheduleSearch(v.trim());
   }
+
+  /** 命令式搜索：把值置给内部搜索态并触发过滤（对齐 Semi search(sugInput)，用于外部自定义搜索框）。 */
+  export function search(sugInput: string): void {
+    setSearchValue(sugInput);
+  }
   // 内置搜索框键盘处理（Escape 关闭，其余交给树 roving）。
   function onSearchKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -1102,6 +1108,9 @@
   }
   // searchRender=false 时隐藏内置搜索框（即使 filterable/filterTreeNode 开启）。
   const showBuiltinSearch = $derived(isFilterable && searchRender !== false);
+  // searchPosition：'dropdown'（默认）搜索框在浮层顶部；'trigger' 搜索框内嵌触发器（对齐 Semi）。
+  const searchInDropdown = $derived(showBuiltinSearch && searchPosition !== 'trigger');
+  const searchInTrigger = $derived(showBuiltinSearch && searchPosition === 'trigger');
   // 搜索框占位文案：searchPlaceholder prop 优先，回退 i18n。
   const resolvedSearchPlaceholder = $derived(searchPlaceholder ?? loc().t('TreeSelect.searchPlaceholder'));
 
@@ -1279,6 +1288,32 @@
   </span>
 {/snippet}
 
+<!-- 内置搜索框：dropdown / trigger 两处位置复用（searchPosition 决定渲染在哪）。 -->
+{#snippet builtinSearchInput()}
+  {#if typeof searchRender === 'function'}
+    {@render searchRender({
+      value: searchValue,
+      onInput: setSearchValue,
+      onKeydown: onSearchKeydown,
+      placeholder: resolvedSearchPlaceholder,
+    })}
+  {:else}
+    <input
+      class="cd-tree-select__search-input"
+      type="text"
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-controls={treeId}
+      aria-activedescendant={activeDescId}
+      placeholder={resolvedSearchPlaceholder}
+      aria-label={resolvedSearchPlaceholder}
+      value={searchValue}
+      oninput={onSearchInput}
+      onkeydown={onSearchKeydown}
+    />
+  {/if}
+{/snippet}
+
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {@const setSize = nodes.length}
   {#each nodes as node, i (node.key)}
@@ -1339,18 +1374,26 @@
         {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
       </span>
     {/if}
-    <span class="cd-tree-select__content">
+    <span class="cd-tree-select__content" class:cd-tree-select__content--search-trigger={searchInTrigger}>
+      {#if searchInTrigger}
+        <!-- searchPosition='trigger'：搜索框内嵌触发器，与已选标签共存（对齐 Semi）。 -->
+        <span class="cd-tree-select__trigger-search">{@render builtinSearchInput()}</span>
+      {/if}
       {#if multiple}
         {#if checkedNodes.length > 0}
           <span class="cd-tree-select__tags">
             {#each visibleTagNodes as node (node.key)}
-              <Tag
-                size={size === 'large' ? 'default' : 'small'}
-                closable={!disabled}
-                onClose={() => removeChecked(node)}
-              >
-                {node.label}
-              </Tag>
+              {#if renderSelectedItem}
+                {@render renderSelectedItem({ node, onRemove: () => removeChecked(node) })}
+              {:else}
+                <Tag
+                  size={size === 'large' ? 'default' : 'small'}
+                  closable={!disabled}
+                  onClose={() => removeChecked(node)}
+                >
+                  {node.label}
+                </Tag>
+              {/if}
             {/each}
             {#if hiddenTagCount > 0}
               {#if showRestTagsPopover}
@@ -1380,7 +1423,11 @@
           <span class="cd-tree-select__placeholder">{placeholder}</span>
         {/if}
       {:else if hasSelection}
-        <span class="cd-tree-select__value">{displayLabel}</span>
+        {#if renderSelectedItem && selectedNode}
+          {@render renderSelectedItem({ node: selectedNode, onRemove: () => setValue(null) })}
+        {:else}
+          <span class="cd-tree-select__value">{displayLabel}</span>
+        {/if}
       {:else}
         <span class="cd-tree-select__placeholder">{placeholder}</span>
       {/if}
@@ -1445,30 +1492,9 @@
       id={treeId}
       style={dropdownStyleStr}
     >
-      {#if showBuiltinSearch}
+      {#if searchInDropdown}
         <div class="cd-tree-select__search">
-          {#if typeof searchRender === 'function'}
-            {@render searchRender({
-              value: searchValue,
-              onInput: setSearchValue,
-              onKeydown: onSearchKeydown,
-              placeholder: resolvedSearchPlaceholder,
-            })}
-          {:else}
-            <input
-              class="cd-tree-select__search-input"
-              type="text"
-              role="combobox"
-              aria-expanded={isOpen}
-              aria-controls={treeId}
-              aria-activedescendant={activeDescId}
-              placeholder={resolvedSearchPlaceholder}
-              aria-label={resolvedSearchPlaceholder}
-              value={searchValue}
-              oninput={onSearchInput}
-              onkeydown={onSearchKeydown}
-            />
-          {/if}
+          {@render builtinSearchInput()}
         </div>
       {/if}
       {#if mergedTree.length === 0}
