@@ -1,6 +1,6 @@
 /**
  * Component tokens for Upload（M4 Input）。全量对齐 Semi Design
- * （semi-foundation/upload/variables.scss 95 个），并升级为带元数据的 TokenDef
+ * （semi-foundation/upload/variables.scss 85 个，2026-07 核对），并升级为带元数据的 TokenDef
  * 结构以支持 DSM。值为 var() 引用我们的 alias / global token，或字面量。
  * 末尾保留 chenzy-design Upload 实际消费的补充别名 token（Semi 无同名，组件消费）。
  *
