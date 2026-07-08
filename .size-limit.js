@@ -91,7 +91,7 @@ const components = [
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
-  ['tag-input', '{ TagInput }', '4.25 KB'],
+  ['tag-input', '{ TagInput }', '6.25 KB'],
   ['textarea', '{ TextArea }', '3.75 KB'],
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
