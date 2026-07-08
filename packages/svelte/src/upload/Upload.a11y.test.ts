@@ -31,10 +31,10 @@ describe('Upload a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('文件列表（success/error 项）：删除按钮 locale 可访问名，无 axe violations', async () => {
+  it('文件列表（success/uploadFail 项）：删除按钮 locale 可访问名，无 axe violations', async () => {
     const files: UploadFileItem[] = [
       { uid: 'u1', name: 'doc.pdf', size: 4096, status: 'success', percent: 100 },
-      { uid: 'u2', name: 'big.zip', size: 8192, status: 'error', error: 'Too large' },
+      { uid: 'u2', name: 'big.zip', size: 8192, status: 'uploadFail', error: 'Too large' },
     ];
     const { container } = renderFixture({ value: files });
     const removeBtns = container.querySelectorAll('.cd-upload__item-remove');

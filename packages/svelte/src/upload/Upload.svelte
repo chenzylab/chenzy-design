@@ -2,13 +2,13 @@
   Upload — see specs/components/input/Upload.spec.md
   Basic subset: file selection (click + drag) + file list (name/size/status/remove).
   Controlled / uncontrolled `value`. 真实上传：有 action 且无 customRequest 时，
-  选文件后自动 XHR 上传（uploading→进度→success/error），customRequest 优先；
+  选文件后自动 XHR 上传（uploading→进度→success/uploadFail），customRequest 优先；
   XHR 句柄存 Map，remove/卸载时 abort。uploading 时渲染 Progress（line）。
   listType=image/picture-card：缩略图预览（item.url 优先，否则 file → objectURL，移除/卸载 revoke）。
   concurrency 并发上限（0=不限，超出排队、完成补位，core createUploadQueue 调度）；
   beforeUpload 异步校验/转换（false/reject 跳过该文件，返回 File 替换，true 正常上传）。
   directory：input 命令式加 webkitdirectory，可递归选择整个目录（保留 relativePath）。
-  minSize/maxSize：core validateFileSize 纯函数校验（单位 KB），超限标 error + i18n 提示。
+  minSize/maxSize：core validateFileSize 纯函数校验（单位 KB），超限标 validateFail + i18n 提示。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -67,6 +67,17 @@
     modalCancelText?: string;
   }
 
+  /**
+   * render 家族入参里的文件项：在 UploadFileItem 基础上挂操作方法（对标 Semi
+   * `fileItem.onRemove()` 等直接可调）。与外层分开传的 remove/retry/preview 等价并存，
+   * 便于同时兼容 Semi 写法（`fileItem.onRemove()`）与本仓库既有写法（`remove()`）。
+   */
+  type UploadFileItemWithOps = UploadFileItem & {
+    onRemove: () => void;
+    onRetry: () => void;
+    onPreview: () => void;
+  };
+
   interface Props {
     value?: UploadFileItem[];
     defaultValue?: UploadFileItem[];
@@ -87,7 +98,7 @@
     size?: 'small' | 'default' | 'large';
     /**
      * 组件级校验态（表单联动），影响上传区/边框色。
-     * 注意：区别于每个文件项的 file.status（ready/uploading/error 上传进度态）。
+     * 注意：区别于每个文件项的 file.status（wait/uploading/success/validateFail/uploadFail 上传进度态）。
      */
     status?: 'default' | 'warning' | 'error';
     listType?: 'text' | 'image' | 'picture-card' | 'none';
@@ -218,7 +229,7 @@
      * 完全自定义单个文件项的渲染（替换默认列表项，list/text listType）。
      * 入参含 fileItem 与操作回调（remove/retry/preview）。
      */
-    renderFileItem?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    renderFileItem?: Snippet<[{ fileItem: UploadFileItemWithOps; remove: () => void; retry: () => void; preview: () => void }]>;
     /**
      * 自定义缩略图预览内容：返回内容替换默认的缩略图 <img>（image/picture-card listType）。
      * 对标 Semi previewFile：按 fileItem 返回预览节点。
@@ -239,7 +250,7 @@
      * 只在 picture-card listType 有效。返回内容替换默认的预览热区/图标，
      * 常配合 onPreviewClick 监听点击。入参含 fileItem 与操作回调。
      */
-    renderPicPreviewIcon?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    renderPicPreviewIcon?: Snippet<[{ fileItem: UploadFileItemWithOps; remove: () => void; retry: () => void; preview: () => void }]>;
     /**
      * 自定义照片墙的关闭（移除）按钮（对标 Semi renderPicClose）。
      * 只在 picture-card listType 有效。入参 className 为默认关闭按钮类名，remove 为移除回调。
@@ -250,7 +261,7 @@
      * 只在 text/list listType 有效。返回内容替换默认的重试/移除操作区，
      * 入参含 fileItem 与操作回调（remove/retry/preview）。
      */
-    renderFileOperation?: Snippet<[{ fileItem: UploadFileItem; remove: () => void; retry: () => void; preview: () => void }]>;
+    renderFileOperation?: Snippet<[{ fileItem: UploadFileItemWithOps; remove: () => void; retry: () => void; preview: () => void }]>;
     /**
      * 照片墙模式下自定义图片展示高度（对标 Semi picHeight）。number 视为像素。
      * 只在 image/picture-card listType 有效，写入缩略图卡片 inline style。
@@ -268,9 +279,9 @@
     capture?: boolean | 'user' | 'environment';
     /**
      * 每个文件列表项的自定义 style（对标 Semi itemStyle）。合并进默认列表项/卡片容器 style。
-     * 支持字符串或对象（对象会拼成 style 字符串）。
+     * 支持字符串或对象（对象会拼成 style 字符串；值为 number 时按 CSS 数字属性惯例补 px，如 { width: 300 } → width: 300px）。
      */
-    itemStyle?: string | Record<string, string>;
+    itemStyle?: string | Record<string, string | number>;
     /**
      * 选中原始 File 列表变化的回调（对标 Semi onFileChange）。
      * 区别于 onChange（回传 UploadFileItem 列表）：onFileChange 在用户每次选择/拖入/粘贴文件、
@@ -413,6 +424,8 @@
   const objectUrls = new Map<string, string>();
   const isImageList = $derived(listType === 'image' || listType === 'picture-card');
   function previewUrl(item: UploadFileItem): string | undefined {
+    // 显式禁用预览（对标 Semi preview:false）：即便有 url/file 也不显示缩略图。
+    if (item.preview === false) return undefined;
     if (item.url) return item.url;
     if (!item.file) return undefined;
     let u = objectUrls.get(item.uid);
@@ -569,7 +582,8 @@
           announcer.announce(loc().t('Upload.announceSuccess', { name: item.name }));
           onSuccess?.(xhr.responseText, item);
         } else {
-          patchItem(item.uid, { status: 'error' });
+          // 网络层失败（HTTP 非 2xx）→ uploadFail（可重试）。
+          patchItem(item.uid, { status: 'uploadFail' });
           // 失败必播（assertive，立即打断）。
           announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
           onError?.(item);
@@ -579,7 +593,8 @@
       xhr.onerror = () => {
         xhrMap.delete(item.uid);
         announcedBucket.delete(item.uid);
-        patchItem(item.uid, { status: 'error' });
+        // 网络错误 → uploadFail（可重试）。
+        patchItem(item.uid, { status: 'uploadFail' });
         announcer.announce(loc().t('Upload.announceError', { name: item.name }), 'assertive');
         onError?.(item);
         done();
@@ -594,7 +609,8 @@
       xhr.ontimeout = () => {
         xhrMap.delete(item.uid);
         announcedBucket.delete(item.uid);
-        patchItem(item.uid, { status: 'error', error: loc().t('Upload.timeoutError') });
+        // 超时属网络原因 → uploadFail（可重试）。
+        patchItem(item.uid, { status: 'uploadFail', error: loc().t('Upload.timeoutError') });
         announcer.announce(loc().t('Upload.timeoutError', { name: item.name }), 'assertive');
         onError?.(item);
         done();
@@ -660,7 +676,8 @@
       uid: useId('cd-upload'),
       name: file.name,
       size: file.size,
-      status: sizeError ? 'error' : 'ready',
+      // 大小校验失败 → validateFail（校验态，不可重试）；否则 wait（等待上传）。
+      status: sizeError ? 'validateFail' : 'wait',
       file,
     };
     if (relativePath) item.relativePath = relativePath;
@@ -718,17 +735,17 @@
 
   // 派发入列文件项：onSizeError 通知 + beforeUpload/上传管线。
   function dispatchNewItems(newItems: UploadFileItem[], accepted: File[]) {
-    // onSizeError 回调：大小校验失败项通知外部
+    // onSizeError 回调：大小校验失败项（validateFail）通知外部
     for (const item of newItems) {
-      if (item.status === 'error' && item.file) {
+      if (item.status === 'validateFail' && item.file) {
         const result = validateFileSize(item.file.size, { minSize, maxSize });
         if (result) onSizeError?.(item, result);
       }
     }
     // beforeUpload 通过的项才进队列受 concurrency 调度。
-    // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅处理无尺寸错误的项。
+    // customRequest 完全接管；否则有 action 时自动 XHR 上传。仅处理无校验错误的项。
     for (const item of newItems) {
-      if (item.status === 'error' || !item.file) continue;
+      if (item.status === 'validateFail' || !item.file) continue;
       dispatch(item, item.file, accepted);
     }
   }
@@ -846,7 +863,7 @@
   export function upload() {
     if (disabled) return;
     for (const it of current) {
-      if (it.status !== 'ready') continue;
+      if (it.status !== 'wait') continue;
       const file = pendingFiles.get(it.uid) ?? it.file;
       if (!file) continue;
       pendingFiles.delete(it.uid);
@@ -908,9 +925,20 @@
     commit(current.map((it) => {
       if (it.uid !== item.uid) return it;
       const { percent: _p, error: _e, ...rest } = it;
-      return { ...rest, status: 'ready' };
+      return { ...rest, status: 'wait' };
     }));
     dispatch(item, item.file, [item.file]);
+  }
+
+  // 在文件项上挂操作方法（对标 Semi fileItem.onRemove/onRetry/onPreview 直接可调）。
+  // render 家族入参统一走它，既兼容 Semi 写法，又不破坏现有分开传的 remove/retry/preview。
+  function withOps(item: UploadFileItem): UploadFileItemWithOps {
+    return {
+      ...item,
+      onRemove: () => remove(item.uid),
+      onRetry: () => retryItem(item),
+      onPreview: () => onPreviewClick?.(item),
+    };
   }
 
   /**
@@ -1037,7 +1065,11 @@
   const itemStyleStr = $derived.by<string | undefined>(() => {
     if (itemStyle === undefined) return undefined;
     if (typeof itemStyle === 'string') return itemStyle;
-    const parts = Object.entries(itemStyle).map(([k, v]) => `${k}: ${v}`);
+    // 对象形态：值为 number 时按 CSS 数字属性惯例补 px（对齐 Semi，如 { width: 300 } → width: 300px），
+    // 与 picWidth/picHeight number→px 一致。字符串值原样透传（允许带单位或 CSS 关键字）。
+    const parts = Object.entries(itemStyle).map(
+      ([k, v]) => `${k}: ${typeof v === 'number' ? `${v}px` : v}`,
+    );
     return parts.length > 0 ? parts.join('; ') : undefined;
   });
 
@@ -1292,21 +1324,20 @@
   {/if}
 
   {#snippet fileName(item: UploadFileItem)}
-    {#if tooltipObj?.type === 'tooltip'}
+    {#if tooltipObj?.renderTooltip}
+      <!-- renderTooltip：完全接管浮层（对标 Semi (content, children) => ReactNode）。
+           不再套内置 Tooltip/Popover；把文案（content）与文件名节点（children）交给用户组织。 -->
+      {#snippet nameNode()}
+        <span class="cd-upload__item-name">{item.name}</span>
+      {/snippet}
+      {@render tooltipObj.renderTooltip({ content: item.name, children: nameNode })}
+    {:else if tooltipObj?.type === 'tooltip'}
       <Tooltip content={item.name} {...(tooltipObj.opts ?? {})}>
-        {#if tooltipObj.renderTooltip}
-          {@render tooltipObj.renderTooltip({ content: item.name })}
-        {:else}
-          <span class="cd-upload__item-name">{item.name}</span>
-        {/if}
+        <span class="cd-upload__item-name">{item.name}</span>
       </Tooltip>
     {:else if tooltipObj?.type === 'popover'}
       <Popover content={item.name} {...(tooltipObj.opts ?? {})}>
-        {#if tooltipObj.renderTooltip}
-          {@render tooltipObj.renderTooltip({ content: item.name })}
-        {:else}
-          <span class="cd-upload__item-name">{item.name}</span>
-        {/if}
+        <span class="cd-upload__item-name">{item.name}</span>
       </Popover>
     {:else}
       <span class="cd-upload__item-name" title={useTitleAttr ? item.name : undefined}>{item.name}</span>
@@ -1337,14 +1368,14 @@
         {#if renderFileItem}
           <li class="cd-upload__item cd-upload__item--custom" style={itemStyleStr}>
             {@render renderFileItem({
-              fileItem: item,
+              fileItem: withOps(item),
               remove: () => remove(item.uid),
               retry: () => retryItem(item),
               preview: () => onPreviewClick?.(item),
             })}
           </li>
         {:else}
-        <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'error'} style={itemStyleStr}>
+        <li class="cd-upload__item" class:cd-upload__item--error={item.status === 'uploadFail' || item.status === 'validateFail'} style={itemStyleStr}>
           <div class="cd-upload__item-main">
             {@render fileName(item)}
             <span class="cd-upload__item-size">{formatSize(item.size)}</span>
@@ -1355,7 +1386,7 @@
               <!-- renderFileOperation：自定义列表项操作区（替换默认重试/移除）。 -->
               <span class="cd-upload__item-operation">
                 {@render renderFileOperation({
-                  fileItem: item,
+                  fileItem: withOps(item),
                   remove: () => remove(item.uid),
                   retry: () => retryItem(item),
                   preview: () => onPreviewClick?.(item),
@@ -1371,7 +1402,8 @@
                   onclick={() => openReplace(item.uid)}
                 >{loc().t('Upload.replace')}</button>
               {/if}
-              {#if item.status === 'error' && showRetry !== false}
+              {#if item.status === 'uploadFail' && showRetry !== false}
+                <!-- 重试仅对 uploadFail（网络失败）显示；validateFail（校验失败）不可重试（对齐 Semi）。 -->
                 <button
                   type="button"
                   class="cd-upload__retry-btn"
@@ -1412,7 +1444,7 @@
         {@const url = previewUrl(item)}
         <li
           class="cd-upload__card"
-          class:cd-upload__card--error={item.status === 'error'}
+          class:cd-upload__card--error={item.status === 'uploadFail' || item.status === 'validateFail'}
           class:cd-upload__card--uploading={item.status === 'uploading'}
           style={cardStyleStr}
         >
@@ -1449,8 +1481,8 @@
               />
             </div>
           {/if}
-          {#if item.status === 'error'}
-            <!-- 失败状态角标（对齐 Semi picture-file-card-icon-error）。 -->
+          {#if item.status === 'uploadFail' || item.status === 'validateFail'}
+            <!-- 失败状态角标（对齐 Semi picture-file-card-icon-error）；网络失败与校验失败均显示。 -->
             <span class="cd-upload__card-error-icon" aria-hidden="true">!</span>
           {/if}
           {#if listType === 'picture-card' && showPicInfo}
@@ -1497,15 +1529,15 @@
             <!-- renderPicPreviewIcon：照片墙 hover 预览图标（picture-card），常配合 onPreviewClick。 -->
             <div class="cd-upload__pic-preview-icon">
               {@render renderPicPreviewIcon({
-                fileItem: item,
+                fileItem: withOps(item),
                 remove: () => remove(item.uid),
                 retry: () => retryItem(item),
                 preview: () => onPreviewClick?.(item),
               })}
             </div>
           {/if}
-          {#if item.status === 'error' && showRetry !== false && item.file}
-            <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）。 -->
+          {#if item.status === 'uploadFail' && showRetry !== false && item.file}
+            <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）；仅网络失败可重试。 -->
             <button
               type="button"
               class="cd-upload__card-retry"

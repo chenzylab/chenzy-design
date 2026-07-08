@@ -22,7 +22,7 @@
             it.uid === item.uid
               ? ok
                 ? { ...it, status: 'success', percent: 100 }
-                : { ...it, status: 'error', percent: 100, error: '模拟上传失败' }
+                : { ...it, status: 'uploadFail', percent: 100, error: '模拟上传失败' }
               : it,
           );
           resolve();

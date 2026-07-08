@@ -25,7 +25,8 @@
   const options = $derived(extension.options as Record<string, unknown>);
 
   function dragMainText(): string {
-    if (status === 'error') return loc().t('SideBar.uploadFail');
+    // Upload 文件项失败态（对齐 Semi 枚举）：网络失败 uploadFail / 校验失败 validateFail 均显示失败文案。
+    if (status === 'uploadFail' || status === 'validateFail') return loc().t('SideBar.uploadFail');
     return loc().t('SideBar.uploadImage');
   }
 

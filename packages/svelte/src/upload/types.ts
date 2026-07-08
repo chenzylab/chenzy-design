@@ -1,6 +1,14 @@
 import type { Snippet } from 'svelte';
 
-export type UploadStatus = 'ready' | 'uploading' | 'success' | 'error';
+/**
+ * 文件项上传状态（对齐 Semi）：
+ * - `wait`：已入列，等待上传（旧值 `ready`）。
+ * - `uploading`：上传中。
+ * - `success`：上传成功。
+ * - `validateFail`：校验失败（accept/maxSize/minSize 等不符）。不显示重试。
+ * - `uploadFail`：上传失败（网络/超时等）。可重试（retry）。
+ */
+export type UploadStatus = 'wait' | 'uploading' | 'success' | 'validateFail' | 'uploadFail';
 
 /** 静态对象或按当前 file 求值的函数（对标 Semi data/headers）。 */
 export type UploadDataOrFn = Record<string, string> | ((file: File) => Record<string, string>);
@@ -8,14 +16,18 @@ export type UploadDataOrFn = Record<string, string> | ((file: File) => Record<st
 /**
  * 文件名超长提示配置（对标 Semi showTooltip）。
  * boolean：true=用原生 title 属性；false=不展示。
- * 对象：type 选 Tooltip/Popover 组件包裹文件名；opts 透传给组件；renderTooltip 自定义提示内容渲染。
+ * 对象：type 选 Tooltip/Popover 组件包裹文件名；opts 透传给组件；
+ * renderTooltip 完全接管浮层——与 Semi `(content, children) => ReactNode` 语义一致：
+ * 传入 content（文件名文案）与 children（渲染文件名节点的 Snippet），
+ * 由用户自行组织（如 `<Tooltip content={content}>{@render children()}</Tooltip>`）。
+ * 传了 renderTooltip 时不再套内置 Tooltip/Popover（也不要求先声明 type）。
  */
 export type UploadShowTooltip =
   | boolean
   | {
       type?: 'tooltip' | 'popover';
       opts?: Record<string, unknown>;
-      renderTooltip?: Snippet<[{ content: string }]>;
+      renderTooltip?: Snippet<[{ content: string; children: Snippet }]>;
     };
 
 /**
@@ -34,10 +46,20 @@ export interface UploadFileItem {
   size: number;
   status: UploadStatus;
   percent?: number;
+  /**
+   * 原始 File 对象。对标 Semi `fileInstance`——本仓库统一命名为 `file`，
+   * 二者等价（同一 File 引用）；Semi demo 里读 `fileItem.fileInstance` 的写法请改用 `fileItem.file`。
+   */
   file?: File;
+  /**
+   * 是否为该项启用内置缩略图预览（对标 Semi preview）。
+   * image/picture-card 列表中：`preview === true` 或存在 `url` 时读取地址显示缩略图；
+   * 显式 `preview === false` 可禁用缩略图（即便有 url 也不预览）。不传时按有无 url 判定（默认预览）。
+   */
+  preview?: boolean;
   /** 远程预览地址（image/picture-card 列表优先用它，否则由 file 生成 objectURL） */
   url?: string;
-  /** 校验失败时的本地化提示（如大小超限/过小）；status==='error' 时展示 */
+  /** 校验失败时的本地化提示（如大小超限/过小）；status==='validateFail' 时展示 */
   error?: string;
   /** 目录上传时文件相对路径（webkitRelativePath，若可用） */
   relativePath?: string;
