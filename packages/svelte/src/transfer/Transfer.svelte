@@ -154,8 +154,17 @@
     emptyContent?: EmptyContent;
     /** Extra props passed to the search Input component. */
     inputProps?: Record<string, unknown>;
-    /** Props passed to the Tree component when type='treeList'. */
-    treeProps?: Record<string, unknown>;
+    /**
+     * type='treeList' 时透传给内部树的可控属性（对齐 Semi treeProps 常用子集）：
+     * - filterTreeNode: 自定义搜索匹配（覆盖默认 label 包含匹配）；
+     * - defaultExpandedKeys: 初始展开的节点 key（覆盖默认「展开全部」）；
+     * - expandAll: 是否默认展开全部（默认 true）。
+     */
+    treeProps?: {
+      filterTreeNode?: (query: string, node: TransferTreeNode) => boolean;
+      defaultExpandedKeys?: TransferKey[];
+      expandAll?: boolean;
+    };
     /** When type='treeList', show full path in right panel selected items. */
     showPath?: boolean;
     /** Left panel pagination config (only for list/groupList). */
@@ -200,7 +209,7 @@
     onChange,
     emptyContent,
     inputProps,
-    treeProps: _treeProps,
+    treeProps,
     showPath = false,
     pagination,
     onSelect,
@@ -446,14 +455,25 @@
   // Expansion is local UI state. Default: expand all parents on first paint.
   let expandedTouched = $state(false);
   let innerExpanded = $state<Set<TransferKey>>(new Set());
-  const defaultExpanded = $derived(new Set(collectExpandable(sourceTree)));
+  // 默认展开集：treeProps.defaultExpandedKeys 优先；否则按 expandAll（默认 true）展开全部。
+  const defaultExpanded = $derived.by(() => {
+    if (treeProps?.defaultExpandedKeys) return new Set<TransferKey>(treeProps.defaultExpandedKeys);
+    if (treeProps?.expandAll === false) return new Set<TransferKey>();
+    return new Set(collectExpandable(sourceTree));
+  });
   const baseExpanded = $derived(expandedTouched ? innerExpanded : defaultExpanded);
 
   // Search expands ancestors of matches without writing the base set (红线 #1/#2).
   const treeSearch = $derived(filter && !isRemote ? leftQuery.trim().toLowerCase() : '');
+  // 搜索匹配函数：treeProps.filterTreeNode 优先（自定义搜索，对齐 Semi），否则默认 label 包含匹配。
+  const treeMatcher = $derived<(n: TransferTreeNode) => boolean>(
+    treeProps?.filterTreeNode
+      ? (n) => treeProps!.filterTreeNode!(leftQuery.trim(), n)
+      : (n) => n.label.toLowerCase().includes(treeSearch),
+  );
   const treeFiltered = $derived(
     treeSearch
-      ? computeFilteredKeys(sourceTree, (n) => n.label.toLowerCase().includes(treeSearch))
+      ? computeFilteredKeys(sourceTree, treeMatcher)
       : { matched: new Set<TransferKey>(), expand: new Set<TransferKey>() },
   );
   const searchExpand = $derived(treeFiltered.expand);
@@ -635,6 +655,11 @@
     if (direction === 'left') leftQuery = v;
     else rightQuery = v;
     if (isRemote) scheduleSearch(direction, v);
+  }
+
+  /** 命令式搜索：把值置给左侧搜索框并触发过滤（对齐 Semi search(value)）。 */
+  export function search(value: string): void {
+    onQueryInput('left', value);
   }
   // 卸载兜底清理。
   $effect(() => () => {

@@ -41,5 +41,20 @@ export const demos: DemoEntry[] = [
     '分页 / 自定义空态',
     'pagination 让源面板分页，emptyContent 自定义两侧空态文案。',
   ),
+  entry(
+    '06-search-method.svelte',
+    '命令式搜索',
+    '通过 bind:this 获取实例，调用 search(value) 过滤左侧。',
+  ),
+  entry(
+    '07-tree-expand.svelte',
+    '树默认收起',
+    'treeProps.expandAll=false 初始收起子节点。',
+  ),
+  entry(
+    '08-tree-filter.svelte',
+    '树自定义搜索',
+    'treeProps.filterTreeNode 自定义树搜索逻辑。',
+  ),
   entry('BasicDemo.svelte', '完整示例', '分组、树状面板、单向迁移、虚拟化、拖拽重排、远程搜索等高级用法。'),
 ];

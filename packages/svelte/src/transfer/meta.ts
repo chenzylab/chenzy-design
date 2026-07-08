@@ -28,7 +28,7 @@ export const meta = {
     { name: 'type', type: "'list'|'groupList'|'treeList'", default: "'list'", desc: '数据形态：平铺/分组/树' },
     { name: 'emptyContent', type: '{ left?: Snippet|string; right?: Snippet|string; search?: Snippet|string }', default: 'undefined', desc: '自定义空态' },
     { name: 'inputProps', type: 'object', default: 'undefined', desc: '透传给搜索框 Input 的额外参数' },
-    { name: 'treeProps', type: 'object', default: 'undefined', desc: 'type=treeList 时透传给左侧 Tree 组件的参数' },
+    { name: 'treeProps', type: '{ filterTreeNode?; defaultExpandedKeys?; expandAll? }', default: 'undefined', desc: 'type=treeList 时透传给内部树：filterTreeNode 自定义搜索、defaultExpandedKeys 初始展开、expandAll 默认全展开' },
     { name: 'showPath', type: 'boolean', default: 'false', desc: 'type=treeList 时右侧已选项显示完整路径' },
     { name: 'pagination', type: '{ pageSize?: number; currentPage?: number; defaultCurrentPage?: number; onPageChange?: (page) => void }', default: 'undefined', desc: '左侧面板分页（仅 list/groupList）' },
     { name: 'onSelect', type: '(item: TransferItem) => void', default: 'undefined', desc: '勾选单项时回调' },
@@ -39,6 +39,9 @@ export const meta = {
     { name: 'renderSelectedHeader', type: 'Snippet<[SelectedHeaderProps]>', default: 'undefined', desc: '自定义右侧面板头部' },
     { name: 'renderSourcePanel', type: 'Snippet<[SourcePanelProps]>', default: 'undefined', desc: '完全自定义左侧面板' },
     { name: 'renderSelectedPanel', type: 'Snippet<[SelectedPanelProps]>', default: 'undefined', desc: '完全自定义右侧面板' },
+  ],
+  methods: [
+    { name: 'search(value)', desc: '命令式搜索：把值置给左侧搜索框并触发过滤（对齐 Semi）' },
   ],
   a11y: {
     role: 'group',
