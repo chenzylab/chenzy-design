@@ -56,6 +56,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 | disabledHours | `() => number[]` | — | 返回禁用的小时 |
 | disabledMinutes | `(h: number) => number[]` | — | 按小时返回禁用分钟 |
 | disabledSeconds | `(h, m) => number[]` | — | 按时分返回禁用秒 |
+| disabledTime | `(date: Date) => { disabledHours?, disabledMinutes?, disabledSeconds? }` | — | 按当前已选时间返回禁用规则；返回的字段覆盖顶层 `disabledHours`/`disabledMinutes`/`disabledSeconds`，未返回的回退顶层 |
 | hideDisabledOptions | `boolean` | `false` | 隐藏（而非置灰）禁用项 |
 | size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
 | status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
@@ -67,7 +68,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 | inputReadOnly | `boolean` | `false` | 禁止键盘直接输入文本 |
 | position | `Placement` | `'bottomLeft'` | 浮层定位 |
 | getPopupContainer | `() => HTMLElement` | `body` | 浮层挂载容器 |
-| destroyOnClose | `boolean` | `false` | 关闭时销毁浮层内容 |
+| destroyOnClose | `boolean` | `true` | 关闭时卸载浮层 DOM（内存/无障碍更干净）；`false` 则首次打开后保留 DOM（关闭仅 `hidden`） |
 | zIndex | `number` | `1030` | 浮层层级 |
 | panelHeader / panelFooter | `Snippet` | — | 自定义浮层头/尾 |
 
@@ -81,6 +82,15 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 | on:blur | `FocusEvent` | 触发器失焦 |
 | on:clear | `void` | 点击清除 |
 | on:panelChange | `{ value, panel: 'hour'\|'minute'\|'second'\|'meridiem' }` | 浮层内某列变更（未确认） |
+
+### Methods
+
+组件实例方法（Svelte 5 `export function`，经 `bind:this` 获取实例后调用）。
+
+| 名称 | 说明 |
+|---|---|
+| `focus()` | 命令式聚焦触发器（尊重 `preventScroll`，对齐 Semi）。 |
+| `blur()` | 命令式移除焦点（对齐 Semi）。 |
 
 ### Slots
 
@@ -179,7 +189,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 
 策略：
 - **不虚拟化**：单列最多 60 项（秒/分），DOM 量可控；不引入虚拟列表以省体积。
-- **惰性渲染**：浮层内容首次打开才挂载；`destroyOnClose=true` 时关闭即卸载列 DOM（适合表单中大量 TimePicker 场景）。
+- **惰性渲染**：浮层内容首次打开才挂载；`destroyOnClose=true`（默认）关闭即卸载列 DOM（内存/无障碍更干净）；`destroyOnClose=false` 首次打开后保留 DOM，关闭仅 `hidden`（适合频繁开关、避免重复挂载开销的场景）。
 - 列选项缓存：`step`/`disabledXxx` 不变时记忆化 option 数组。
 - 滚动定位用 `scrollTop` 直接赋值（reduced-motion）或 `scroll-behavior: smooth`，避免 JS 逐帧。
 

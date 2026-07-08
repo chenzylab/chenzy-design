@@ -60,6 +60,10 @@
     disabledMinutes?: (hour: number) => number[];
     disabledSeconds?: (hour: number, minute: number) => number[];
     hideDisabledOptions?: boolean;
+    /** 是否显示「此刻」快捷按钮（默认 true）。 */
+    showNow?: boolean;
+    /** 面板关闭时是否卸载浮层 DOM（默认 false：首次打开后保留）。 */
+    destroyOnClose?: boolean;
     locale?: string;
     /** 单选回调 Date|null；范围回调 [Date|null, Date|null]。 */
     onChange?: (v: (Date | null) | [Date | null, Date | null]) => void;
@@ -145,6 +149,9 @@
     disabledMinutes,
     disabledSeconds,
     hideDisabledOptions = false,
+    showNow = true,
+    // 默认关闭即卸载浮层 DOM（内存/无障碍更干净）；设为 false 则首次打开后保留。
+    destroyOnClose = true,
     locale = 'zh-CN',
     onChange,
     onOpenChange,
@@ -255,6 +262,16 @@
     return defaultOpen;
   }
 
+  // 惰性挂载 + destroyOnClose：记录是否曾打开过。
+  // destroyOnClose=false（默认）→ 首次打开后保留 DOM（关闭仅 CSS 隐藏）；
+  // destroyOnClose=true → 面板 DOM 随 isOpen 挂载/卸载。
+  let hasOpened = $state(getInitialOpen());
+  $effect(() => {
+    if (isOpen) hasOpened = true;
+  });
+  // 面板是否挂载到 DOM：destroy 模式跟随 isOpen；保留模式首次打开后常驻。
+  const panelMounted = $derived(destroyOnClose ? isOpen : hasOpened);
+
   function setOpen(next: boolean) {
     if (next === isOpen) return;
     if (!isOpenControlled) innerOpen = next;
@@ -275,22 +292,31 @@
   const selectedMeridiem = $derived<Meridiem>(meridiemOf(selectedHour));
   const selectedHourDisplay = $derived(effUse12Hours ? to12Hour(selectedHour) : selectedHour);
 
+  // --- disabledTime 接线：以当前已选时间调用 disabledTime，返回的字段覆盖顶层
+  //     disabledHours/Minutes/Seconds，未返回的字段回退顶层（对齐 Semi 语义）。 ---
+  const disabledTimeRules = $derived(
+    disabledTime && activeDate ? disabledTime(activeDate) : undefined,
+  );
+  const effDisabledHours = $derived(disabledTimeRules?.disabledHours ?? disabledHours);
+  const effDisabledMinutes = $derived(disabledTimeRules?.disabledMinutes ?? disabledMinutes);
+  const effDisabledSeconds = $derived(disabledTimeRules?.disabledSeconds ?? disabledSeconds);
+
   // --- 列项 + 禁用集生成 (红线 #2: 派生纯函数) ---
   const hours = $derived(
     applyHideDisabled(
-      buildHourOptions(hourStep, effUse12Hours, selectedMeridiem, disabledHours),
+      buildHourOptions(hourStep, effUse12Hours, selectedMeridiem, effDisabledHours),
       hideDisabledOptions,
     ),
   );
   const minutes = $derived(
     applyHideDisabled(
-      buildMinuteOptions(minuteStep, selectedHour, disabledMinutes),
+      buildMinuteOptions(minuteStep, selectedHour, effDisabledMinutes),
       hideDisabledOptions,
     ),
   );
   const seconds = $derived(
     applyHideDisabled(
-      buildSecondOptions(secondStep, selectedHour, selectedMinute, disabledSeconds),
+      buildSecondOptions(secondStep, selectedHour, selectedMinute, effDisabledSeconds),
       hideDisabledOptions,
     ),
   );
@@ -532,6 +558,16 @@
     }
   });
 
+  /** 命令式聚焦触发器（尊重 preventScroll，对齐 Semi focus()）。 */
+  export function focus(): void {
+    triggerEl?.focus({ preventScroll });
+  }
+
+  /** 命令式移除焦点（对齐 Semi blur()）。 */
+  export function blur(): void {
+    triggerEl?.blur();
+  }
+
   // onClickOutSide: 监听 document mousedown，点击不在 rootEl 内时触发
   $effect(() => {
     if (!onClickOutSide) return;
@@ -635,13 +671,15 @@
     </div>
   {/if}
 
-  {#if isOpen}
+  {#if panelMounted}
+    <!-- destroyOnClose=false 保留模式：关闭态保留 DOM 但 hidden（视觉隐藏 + 从 a11y 树移除）。 -->
     <div
       class="cd-time-picker__panel"
       id={baseId}
       role="dialog"
       aria-label={loc().t('TimePicker.triggerLabel')}
       tabindex="-1"
+      hidden={!isOpen || undefined}
     >
       {#if panelHeader}
         <div class="cd-time-picker__panel-header">
@@ -762,7 +800,9 @@
         </div>
       {/if}
       <div class="cd-time-picker__footer">
-        <button type="button" class="cd-time-picker__now" onclick={setNow}>{loc().t('TimePicker.now')}</button>
+        {#if showNow}
+          <button type="button" class="cd-time-picker__now" onclick={setNow}>{loc().t('TimePicker.now')}</button>
+        {/if}
         <button type="button" class="cd-time-picker__ok" onclick={confirm}>{loc().t('TimePicker.confirm')}</button>
       </div>
     </div>

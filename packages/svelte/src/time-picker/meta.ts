@@ -37,6 +37,8 @@ export const meta = {
     { name: 'disabledMinutes', type: '(hour: number) => number[]', default: 'undefined' },
     { name: 'disabledSeconds', type: '(hour: number, minute: number) => number[]', default: 'undefined' },
     { name: 'hideDisabledOptions', type: 'boolean', default: 'false' },
+    { name: 'showNow', type: 'boolean', default: 'true', desc: '显示「此刻」快捷按钮' },
+    { name: 'destroyOnClose', type: 'boolean', default: 'true', desc: '关闭时卸载浮层 DOM；false 则首次打开后保留' },
     { name: 'locale', type: 'string', default: "'zh-CN'" },
     {
       name: 'onChange',
@@ -66,13 +68,17 @@ export const meta = {
     { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '触发器聚焦' },
     { name: 'onChangeWithDateFirst', type: 'boolean', default: 'false', desc: 'onChange 参数 dateFirst 模式' },
     { name: 'onClickOutSide', type: '(e: MouseEvent) => void', default: 'undefined', desc: '点击外部触发' },
-    { name: 'disabledTime', type: '(date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] }', default: 'undefined', desc: '范围模式禁用函数' },
+    { name: 'disabledTime', type: '(date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (h: number) => number[]; disabledSeconds?: (h: number, m: number) => number[] }', default: 'undefined', desc: '按当前已选时间返回禁用规则，覆盖顶层 disabledHours/Minutes/Seconds，未返回的字段回退顶层' },
     { name: 'panelFooter', type: 'string | Snippet', default: 'undefined', desc: '面板底部自定义内容（在"此刻"/"确定"按钮上方插入）' },
     { name: 'inputStyle', type: 'string | Record<string, string>', default: 'undefined', desc: '输入框样式（透传到触发器 button）' },
     { name: 'inputReadOnly', type: 'boolean', default: 'false', desc: '输入框 readonly 属性（仅允许通过面板选择）' },
     { name: 'triggerRender', type: 'Snippet<[{ value: Date | null; placeholder: string; open: boolean; disabled: boolean }]>', default: 'undefined', desc: '完全自定义触发器渲染' },
     { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: 'focus 时阻止滚动' },
+  ],
+  methods: [
+    { name: 'focus()', desc: '命令式聚焦触发器（尊重 preventScroll，对齐 Semi）' },
+    { name: 'blur()', desc: '命令式移除焦点（对齐 Semi）' },
   ],
   a11y: {
     role: 'dialog',
