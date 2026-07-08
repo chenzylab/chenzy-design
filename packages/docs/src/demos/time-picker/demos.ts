@@ -34,4 +34,7 @@ export const demos: DemoEntry[] = [
   entry('08-controlled-open.svelte', '受控面板', '受控 open + onOpenChange，用 Button 切换面板开合'),
   entry('09-trigger-render.svelte', '自定义触发器', 'triggerRender 完全替换默认触发器渲染'),
   entry('10-disabled-time.svelte', '禁用时段', 'disabledTime 按已选时间动态返回禁用规则，覆盖顶层 disabledHours/Minutes/Seconds'),
+  entry('11-show-now.svelte', '此刻按钮', 'showNow 控制面板底部「此刻」快捷按钮的显隐'),
+  entry('12-destroy-on-close.svelte', '关闭卸载', 'destroyOnClose 控制面板关闭时卸载还是保留浮层 DOM'),
+  entry('13-prefix.svelte', '前缀', 'prefix 在触发器前展示文本或图标'),
 ];
