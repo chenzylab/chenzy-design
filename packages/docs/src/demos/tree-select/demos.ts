@@ -12,14 +12,21 @@ export interface DemoEntry {
   description?: string;
   component: Component;
   code: string;
+  highlightLines?: number[];
 }
 
-function entry(file: string, title: string, description?: string): DemoEntry {
+function entry(
+  file: string,
+  title: string,
+  description?: string,
+  highlightLines?: number[],
+): DemoEntry {
   return {
     title,
     description,
     component: mods[`./${file}`].default,
     code: (sources[`./${file}`] as string).trim(),
+    highlightLines,
   };
 }
 
@@ -37,7 +44,7 @@ export const demos: DemoEntry[] = [
   entry('11-virtualize.svelte', '虚拟化', 'virtualize 对象开启大数据树虚拟滚动'),
   entry('12-remote-search.svelte', '远程搜索', 'remote 开启后输入仅触发 onSearch，由外部更新 treeData'),
   entry('13-trigger-tag-wrap.svelte', '标签换行', 'triggerTagWrap 让 trigger 内多选标签自动换行'),
-  entry('14-default-expand.svelte', '默认展开', 'defaultExpandAll 初始化展开；expandAll 动态展开'),
+  entry('14-default-expand.svelte', '默认展开', 'defaultExpandAll 初始化展开；expandAll 动态展开', [32, 42]),
   entry('15-controlled.svelte', '受控', 'value 完全受控，配合 onChange'),
   entry('16-check-relation.svelte', '选中关系', 'checkRelation=unRelated 时父子选中互不影响'),
   entry('17-load-data.svelte', '异步加载', 'loadData 展开时动态加载子节点'),
