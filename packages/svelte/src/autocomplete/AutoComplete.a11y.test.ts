@@ -26,15 +26,17 @@ describe('AutoComplete a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('打开态：listbox + option 内联渲染 + aria-controls 指向 listbox（结构断言）', () => {
+  it('打开态：listbox + option 渲染 + aria-controls 指向 listbox（结构断言）', () => {
     const { container } = renderWithLocale(AutoComplete, {
       props: { data, defaultOpen: true, defaultValue: 'a' },
     });
     const combobox = container.querySelector('[role="combobox"]');
-    const listbox = container.querySelector('[role="listbox"]');
+    // 浮层经 use:floating portal 到 body，故从 document 查找而非 container。
+    const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
-    expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
     expect(combobox?.getAttribute('aria-expanded')).toBe('true');
+    // aria-controls 契约不变：combobox 仍指向 portal 后的 listbox id。
     expect(combobox?.getAttribute('aria-controls')).toBe(listbox?.getAttribute('id'));
   });
 

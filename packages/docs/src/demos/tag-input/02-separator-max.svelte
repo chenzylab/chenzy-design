@@ -2,7 +2,7 @@
   import { TagInput, Text } from '@chenzy-design/svelte';
 
   let tags = $state<string[]>(['react', 'vue']);
-  let exceeded = $state('');
+  let exceeded = $state(false);
 </script>
 
 <div style="width: 320px">
@@ -12,10 +12,10 @@
     separator={[',', ';', 'Enter']}
     placeholder="逗号、分号或回车添加，最多 5 个"
     onChange={(t) => (tags = t)}
-    onExceed={(v) => (exceeded = v)}
+    onExceed={() => (exceeded = true)}
   />
   <Text type="tertiary">标签（{tags.length}/5）：{tags.join(' / ') || '（无）'}</Text>
   {#if exceeded}
-    <Text type="warning">已达上限，拒绝添加：{exceeded}</Text>
+    <Text type="warning">已达上限（5 个），拒绝继续添加</Text>
   {/if}
 </div>

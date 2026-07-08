@@ -10,6 +10,7 @@
   import type { Snippet } from 'svelte';
   import { useId, useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { floating } from '../_floating/use-floating.js';
 
   type ItemValue = string | number;
   type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
@@ -384,6 +385,8 @@
 
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
+  // 浮层经 use:floating portal 到 body，列入 extraTargets 使点击浮层不误判为 outsideClick。
+  let dropdownEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     if (!isOpen || !rootEl) return;
@@ -391,32 +394,29 @@
       onDismiss: () => setOpen(false),
       escape: true,
       outsideClick: true,
+      extraTargets: [dropdownEl],
     });
     return cleanup;
   });
 
-  // 浮层样式：dropdownMatchSelectWidth 时宽度与触发器同宽（inline-size: 100%）。
+  // 浮层样式：宽度由 use:floating 的 matchWidth 接管（dropdownMatchSelectWidth 时同宽）。
   const dropdownStyleStr = $derived.by(() => {
-    const base = dropdownMatchSelectWidth ? 'inline-size: 100%' : '';
-    if (!dropdownStyle) return base;
-    if (typeof dropdownStyle === 'string') return base ? `${base}; ${dropdownStyle}` : dropdownStyle;
-    const obj = Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; ');
-    return base ? `${base}; ${obj}` : obj;
+    if (!dropdownStyle) return '';
+    if (typeof dropdownStyle === 'string') return dropdownStyle;
+    return Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; ');
   });
 
-  // 浮层位置映射到 CSS 定位。
-  const dropdownPositionStyle = $derived.by(() => {
-    switch (position) {
-      case 'bottomRight':
-        return 'inset-block-start: calc(100% + var(--cd-spacing-extra-tight)); inset-inline-end: 0; inset-inline-start: auto';
-      case 'topLeft':
-        return 'inset-block-end: calc(100% + var(--cd-spacing-extra-tight)); inset-block-start: auto; inset-inline-start: 0';
-      case 'topRight':
-        return 'inset-block-end: calc(100% + var(--cd-spacing-extra-tight)); inset-block-start: auto; inset-inline-end: 0; inset-inline-start: auto';
-      default: // bottomLeft
-        return '';
-    }
-  });
+  // 浮层位置映射到 use:floating 的 placement（定位、避让、跟随滚动由 action 接管）。
+  const dropdownPlacement = $derived(
+    (
+      {
+        bottomLeft: 'bottomStart',
+        bottomRight: 'bottomEnd',
+        topLeft: 'topStart',
+        topRight: 'topEnd',
+      } as const
+    )[position],
+  );
 
   const cls = $derived(
     [
@@ -535,13 +535,15 @@
     </div>
   {/if}
 
-  {#if showDropdown}
+  {#if showDropdown && rootEl}
     <div
+      bind:this={dropdownEl}
       class={['cd-autocomplete__dropdown', dropdownClassName].filter(Boolean).join(' ')}
       role="listbox"
       id={listId}
       aria-busy={loading || undefined}
-      style={[dropdownPositionStyle, dropdownStyleStr, maxHeightStyle, zIndexStyle].filter(Boolean).join('; ')}
+      use:floating={{ trigger: rootEl, placement: dropdownPlacement, offset: 4, autoAdjust: true, padding: 8, matchWidth: dropdownMatchSelectWidth, open: showDropdown }}
+      style={[dropdownStyleStr, maxHeightStyle, zIndexStyle].filter(Boolean).join('; ')}
     >
       {#if loading}
         <div class="cd-autocomplete__loading">
@@ -671,9 +673,7 @@
     flex: 0 0 auto;
   }
   .cd-autocomplete__dropdown {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-spacing-extra-tight));
-    inset-inline: 0;
+    /* 定位由 use:floating 接管（portal 到 body + 避让 + 跟随滚动）；此处只定义外观。 */
     z-index: var(--cd-autocomplete-dropdown-z);
     max-block-size: 16rem;
     overflow-y: auto;

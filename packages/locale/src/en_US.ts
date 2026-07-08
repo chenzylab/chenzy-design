@@ -369,6 +369,9 @@ export const en_US: Locale = {
   },
   TagInput: {
     remove: 'Remove',
+    clear: 'Clear',
+    duplicate: 'Tag already exists',
+    invalid: 'Invalid tag',
   },
   Breadcrumb: {
     ariaLabel: 'Breadcrumb',

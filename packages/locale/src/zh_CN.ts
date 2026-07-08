@@ -369,6 +369,9 @@ export const zh_CN: Locale = {
   },
   TagInput: {
     remove: '删除',
+    clear: '清空',
+    duplicate: '标签已存在',
+    invalid: '标签无效',
   },
   Breadcrumb: {
     ariaLabel: '面包屑',
