@@ -45,5 +45,6 @@ export const demos: DemoEntry[] = [
   entry('19-on-progress.svelte', '进度回调', 'onProgress 回调把每个文件的 percent 回传外部展示。'),
   entry('20-imperative.svelte', '命令式操作', 'bind:this 拿 ref，insert(files, index) 指定位置插入、openFileDialog() 打开选择器。'),
   entry('21-clear-confirm.svelte', '批量清空确认', 'showClear 批量清空按钮 + beforeClear 二次确认拦截。'),
+  entry('22-hotspot-location.svelte', '照片墙热区位置', 'hotSpotLocation 切换加号瓦片位置：start 前置 / end 后置 / none 隐藏。'),
   entry('BasicDemo.svelte', '完整示例', '尺寸变体、校验态、并发控制、beforeUpload 拦截、目录上传等高级用法。'),
 ];
