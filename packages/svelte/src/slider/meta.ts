@@ -13,7 +13,7 @@ export const meta = {
     { name: 'max', type: 'number', default: '100' },
     { name: 'step', type: 'number | null', default: '1', desc: 'null 时仅停靠 marks 键' },
     { name: 'range', type: 'boolean', default: 'false', desc: '双滑块区间模式' },
-    { name: 'marks', type: 'Record<number, string>', default: 'undefined', desc: '刻度标记' },
+    { name: 'marks', type: 'Record<number, string | { label: string; style?: string }>', default: 'undefined', desc: '刻度标记；对象形式可带自定义 style' },
     { name: 'dots', type: 'boolean', default: 'false', desc: '在每个 step 处显示圆点（段内激活色）' },
     { name: 'included', type: 'boolean', default: 'true', desc: '是否填充已选轨道段' },
     { name: 'vertical', type: 'boolean', default: 'false' },
@@ -64,6 +64,11 @@ export const meta = {
     { name: 'onMouseUp', type: '(e: MouseEvent) => void', default: 'undefined', desc: 'pointerup 时触发' },
     { name: 'ariaValuetext', type: 'string', default: 'undefined', desc: '覆盖 getAriaValueText 的 aria-valuetext 文案' },
   ],
+  slots: [
+    { name: 'mark', type: 'Snippet<[{ value: number; label: string; active: boolean }]>', desc: '自定义单个刻度标签渲染' },
+    { name: 'handle', type: 'Snippet<[{ value: number; index: number; dragging: boolean; focused: boolean }]>', desc: '自定义手柄内容（如带数字徽标）' },
+    { name: 'tooltip', type: 'Snippet<[{ value: number; index: number }]>', desc: '自定义数值气泡内部内容' },
+  ],
   a11y: {
     role: 'slider',
     keyboard: ['ArrowUp/Right', 'ArrowDown/Left', 'PageUp', 'PageDown', 'Home', 'End'],
@@ -93,6 +98,7 @@ export const meta = {
     '--cd-slider-handle-transition-easing',
     '--cd-slider-radius',
     '--cd-slider-mark-color',
+    '--cd-slider-mark-color-active',
     '--cd-slider-mark-font-size',
     '--cd-slider-dot-size',
     '--cd-slider-dot-bg',

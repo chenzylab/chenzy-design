@@ -35,6 +35,7 @@ export const sliderTokens = {
   'slider-handle-bg': { value: 'var(--cd-color-slider-handle-bg-default)', category: 'color', label: '手柄背景色', usage: '滑块手柄背景（组件消费）' },
   'slider-handle-border': { value: 'var(--cd-color-slider-track-bg-default)', category: 'color', label: '手柄描边色', usage: '滑块手柄描边（组件消费）' },
   'slider-mark-color': { value: 'var(--cd-color-slider-mark-text-default)', category: 'color', label: '刻度文字色', usage: '滑块刻度文字颜色（组件消费）' },
+  'slider-mark-color-active': { value: 'var(--cd-color-text-0)', category: 'color', label: '命中刻度文字色', usage: '滑块段内命中刻度标签文字颜色（组件消费）' },
   'slider-radius': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '轨道圆角', usage: '滑块轨道圆角（组件消费）' },
   'slider-status-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警示态色', usage: 'warning 校验态轨道/手柄色（组件消费）' },
   'slider-status-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误态色', usage: 'error 校验态轨道/手柄色（组件消费）' },
