@@ -60,7 +60,7 @@
   <div data-testid="anchor-demo">
     <Text type="tertiary">基础锚点（affix 固钉 + updateHash）</Text>
     <div style="width:160px">
-      <Anchor links={anchorLinks} value={anchorKey} affix updateHash onChange={(k) => (anchorKey = k)} />
+      <Anchor links={anchorLinks} value={anchorKey} affix updateHash onChange={(link) => (anchorKey = link?.key ?? '')} />
     </div>
     <Text type="tertiary">锚点：{anchorKey}</Text>
   </div>
@@ -73,7 +73,7 @@
           links={anchorContainerLinks}
           value={anchorContainerKey}
           getContainer={() => anchorContainerEl}
-          onChange={(k) => (anchorContainerKey = k)}
+          onChange={(link) => (anchorContainerKey = link?.key ?? '')}
         />
       </div>
       <div
@@ -95,7 +95,7 @@
       horizontal
       links={anchorHLinks}
       value={anchorHKey}
-      onChange={(k) => (anchorHKey = k)}
+      onChange={(link) => (anchorHKey = link?.key ?? '')}
     />
     <Text type="tertiary">水平锚点：{anchorHKey}</Text>
   </div>
@@ -108,7 +108,7 @@
           links={anchorNestLinks}
           value={anchorNestKey}
           getContainer={() => anchorNestEl}
-          onChange={(k) => (anchorNestKey = k)}
+          onChange={(link) => (anchorNestKey = link?.key ?? '')}
         />
       </div>
       <div

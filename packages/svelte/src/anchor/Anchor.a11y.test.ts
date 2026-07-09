@@ -3,8 +3,10 @@
 //  - 嵌套 links.children 形成 ul/li 树。
 // jsdom 只断言静态 ARIA + axe（scroll-spy / roving 键盘留给真实浏览器）。
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Anchor from './Anchor.svelte';
+import AnchorDeclarativeFixture from './AnchorDeclarativeFixture.svelte';
 import type { AnchorLink } from './types.js';
 
 const links: AnchorLink[] = [
@@ -44,6 +46,43 @@ describe('Anchor a11y', () => {
     const { container } = renderWithLocale(Anchor, { props: { links: nested } });
     // 顶层 ul 内含子 ul（嵌套树）。
     expect(container.querySelector('.cd-anchor__list .cd-anchor__list')).not.toBeNull();
+    await expectNoAxeViolations(container);
+  });
+});
+
+// 声明式 <Anchor.Link> 双 API：子组件按 DOM 顺序 + 嵌套层级注册渲染，
+// disabled 链接排除 roving（tabindex=-1 + aria-disabled），且不触发 Svelte5 自循环
+// （effect_update_depth_exceeded；照 Nav「普通数组 declared + revision + queueMicrotask」解法）。
+describe('Anchor 声明式 <Anchor.Link>', () => {
+  it('子组件注册渲染（含嵌套 + disabled），无 axe violations', async () => {
+    const { container } = render(AnchorDeclarativeFixture);
+    // 挂载后 queueMicrotask 异步 bump 一次 → $derived.by 重建 declared；等待一帧。
+    await new Promise((r) => queueMicrotask(() => r(null)));
+
+    const anchors = Array.from(
+      container.querySelectorAll<HTMLElement>('a.cd-anchor__link'),
+    );
+    // 5 个链接：Guide / Install / Usage / API / FAQ。
+    expect(anchors.map((a) => a.textContent?.trim())).toEqual([
+      'Guide',
+      'Install',
+      'Usage',
+      'API',
+      'FAQ',
+    ]);
+    // 嵌套树：顶层 ul 内含子 ul（Guide 的 children）。
+    expect(
+      container.querySelector('.cd-anchor__list .cd-anchor__list'),
+    ).not.toBeNull();
+
+    // disabled 链接：aria-disabled=true 且 tabindex=-1（排除 roving）。
+    const faq = anchors.find((a) => a.textContent?.trim() === 'FAQ')!;
+    expect(faq.getAttribute('aria-disabled')).toBe('true');
+    expect(faq.tabIndex).toBe(-1);
+    // 首个可聚焦链接（Guide）为单一 Tab 停靠点（tabindex=0）。
+    const guide = anchors.find((a) => a.textContent?.trim() === 'Guide')!;
+    expect(guide.tabIndex).toBe(0);
+
     await expectNoAxeViolations(container);
   });
 });

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Anchor, Text } from '@chenzy-design/svelte';
+  import { Anchor, Text, type AnchorLink } from '@chenzy-design/svelte';
   import type { ComponentProps } from 'svelte';
 
   type AnchorLinks = NonNullable<ComponentProps<typeof Anchor>['links']>;
@@ -22,7 +22,8 @@
 
   let scrollBox = $state<HTMLElement | null>(null);
 
-  function handleChange(key: string) {
+  function handleChange(link: AnchorLink | null) {
+    const key = link?.key ?? '';
     active = key;
     log = key;
   }

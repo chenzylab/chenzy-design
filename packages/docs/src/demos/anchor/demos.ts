@@ -33,4 +33,9 @@ export const demos: DemoEntry[] = [
     'targetOffset 为吸顶栏预留点击跳转间距',
   ),
   entry('05-horizontal.svelte', '横向布局', 'horizontal 横排，ink 走底部下划线，onChange 监听激活'),
+  entry(
+    '06-declarative.svelte',
+    '声明式 Anchor.Link',
+    '<Anchor.Link> 子组件写法（嵌套 + disabled）；railTheme / size / maxWidth 新增 prop',
+  ),
 ];
