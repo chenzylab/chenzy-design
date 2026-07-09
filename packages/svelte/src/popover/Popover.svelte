@@ -579,7 +579,7 @@
   }
   .cd-popover__btn--ok {
     background: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     border-color: var(--cd-color-primary, #165dff);
   }
   .cd-popover__btn--ok:hover {

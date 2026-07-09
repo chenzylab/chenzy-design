@@ -403,7 +403,7 @@
     align-items: center;
     justify-content: center;
     background: var(--cd-color-mask);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     opacity: 0;
     transition: opacity 0.15s ease;
     border-radius: inherit;

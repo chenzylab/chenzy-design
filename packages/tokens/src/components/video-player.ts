@@ -10,7 +10,7 @@
  *  - 已播放进度用 var(--cd-color-primary)（对齐 Semi 主色进度）。
  *  - 轨道 / 缓冲 / 遮罩用半透明白/黑字面量（Semi 控件叠在深色视频上，不走页面 alias，
  *    否则浅色主题下会失明）——与 slider rail 保留字面量同理。
- *  - 图标 / 文本用 var(--cd-color-text-inverse)（= #fff，控件玻璃底上的浅色前景）。
+ *  - 图标 / 文本用 var(--cd-color-white)（= #fff，控件玻璃底上的浅色前景）。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -37,7 +37,7 @@ export const videoPlayerTokens = {
     usage: '底部控件栏从透明到半黑的渐变遮罩',
   },
   'video-player-icon-color': {
-    value: 'var(--cd-color-text-inverse)',
+    value: 'var(--cd-color-white)',
     category: 'color',
     label: '控件图标色',
     usage: '播放/暂停/音量等控件图标颜色（浅色前景）',
@@ -49,7 +49,7 @@ export const videoPlayerTokens = {
     usage: '控件图标 hover 时颜色',
   },
   'video-player-text-color': {
-    value: 'var(--cd-color-text-inverse)',
+    value: 'var(--cd-color-white)',
     category: 'color',
     label: '控件文本色',
     usage: '时间 / 通知等控件文本颜色（浅色前景）',
@@ -75,7 +75,7 @@ export const videoPlayerTokens = {
     usage: '进度条已播放部分颜色（对齐 Semi 主色）',
   },
   'video-player-progress-handle': {
-    value: 'var(--cd-color-text-inverse)',
+    value: 'var(--cd-color-white)',
     category: 'color',
     label: '进度拖拽手柄色',
     usage: '进度条拖拽手柄颜色',
@@ -113,7 +113,7 @@ export const videoPlayerTokens = {
     usage: '中央瞬时通知气泡背景',
   },
   'video-player-notification-color': {
-    value: 'var(--cd-color-text-inverse)',
+    value: 'var(--cd-color-white)',
     category: 'color',
     label: '通知文字色',
     usage: '中央瞬时通知文字颜色',
@@ -133,7 +133,7 @@ export const videoPlayerTokens = {
     usage: '倍率 / 清晰度 / 线路下拉菜单背景',
   },
   'video-player-menu-item-color': {
-    value: 'var(--cd-color-text-inverse)',
+    value: 'var(--cd-color-white)',
     category: 'color',
     label: '菜单项文字色',
     usage: '下拉菜单项文字颜色',

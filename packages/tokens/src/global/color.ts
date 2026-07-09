@@ -185,6 +185,9 @@ export const palette = {
   'violet-7': '#46259e',
   'violet-8': '#361c8a',
   'violet-9': '#281475',
+  // 纯黑/纯白基元（对齐 Semi $white / $black = 255,255,255 / 0,0,0，供反色文字等直接消费）
+  white: 'rgba(255, 255, 255, 1)',
+  black: 'rgba(0, 0, 0, 1)',
 } as const;
 
 export type GlobalColorKey = keyof typeof palette;

@@ -223,27 +223,27 @@
   /* type → semantic color (solid) */
   .cd-badge__sup--solid.cd-badge__sup--primary {
     background: var(--cd-color-primary);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-badge__sup--solid.cd-badge__sup--secondary {
     background: var(--cd-color-text-2);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-badge__sup--solid.cd-badge__sup--tertiary {
     background: var(--cd-color-text-3);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-badge__sup--solid.cd-badge__sup--success {
     background: var(--cd-color-success);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-badge__sup--solid.cd-badge__sup--warning {
     background: var(--cd-color-warning);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-badge__sup--solid.cd-badge__sup--danger {
     background: var(--cd-color-danger);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
 
   /* light theme: tinted background + colored text */

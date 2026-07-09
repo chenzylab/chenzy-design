@@ -1714,7 +1714,7 @@
     flex: 0 0 auto;
     inline-size: 1rem;
     block-size: 1rem;
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     background: var(--cd-color-bg-1, #fff);
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-small, 3px);

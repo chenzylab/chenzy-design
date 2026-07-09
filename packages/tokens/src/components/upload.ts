@@ -7,10 +7,8 @@
  * 注：
  *  - Semi $color-upload_xxx → kebab 小写 color-upload-xxx；var(--semi-color-*) 一一对应
  *    var(--cd-color-*)。
- *  - Semi 无 --cd-color-white / --cd-grey-3 alias：var(--semi-color-white) 与
- *    rgba(var(--semi-white),1) 用最接近的 var(--cd-color-text-inverse)（= #fff）替代；
- *    rgba(var(--semi-grey-3),1)（文件卡片默认预览背景）用最接近的 var(--cd-color-fill-2)。
- *    均未发明新 alias。
+ *  - Semi rgba(var(--semi-grey-3),1)（文件卡片默认预览背景）我们无 --cd-grey-3 alias，
+ *    用最接近的 var(--cd-color-fill-2) 替代。
  *  - $spacing-* → var(--cd-spacing-*) 同名；$font-weight-bold/regular →
  *    var(--cd-font-weight-*)；字面量（px / 数字字重）保留。
  *  - var(--semi-border-radius-*) → var(--cd-border-radius-*)；负值 → calc(-1 * var(...))。
@@ -45,8 +43,8 @@ export const uploadTokens = {
 
   'color-upload-file-card-fail-info-text': { value: 'var(--cd-color-danger)', category: 'color', label: '卡片失败提示文本色', usage: '上传文件卡片失败提示信息文本颜色' },
   'color-upload-file-card-preview-placeholder-bg': { value: 'var(--cd-color-fill-2)', category: 'color', label: '预览占位背景色', usage: '文件卡片默认预览背景颜色' },
-  'color-upload-file-card-preview-placeholder-text': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '预览占位图颜色', usage: '文件卡片默认预览图颜色' },
-  'color-upload-file-card-retry-bg': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '重试按钮背景色', usage: '图片墙上传卡片重新上传按钮背景颜色' },
+  'color-upload-file-card-preview-placeholder-text': { value: 'var(--cd-color-white)', category: 'color', label: '预览占位图颜色', usage: '文件卡片默认预览图颜色' },
+  'color-upload-file-card-retry-bg': { value: 'var(--cd-color-white)', category: 'color', label: '重试按钮背景色', usage: '图片墙上传卡片重新上传按钮背景颜色' },
   'color-upload-file-card-retry-text': { value: 'var(--cd-color-primary)', category: 'color', label: '重试按钮文本色', usage: '图片墙上传卡片重新上传按钮文本颜色' },
   'color-upload-icon': { value: 'var(--cd-color-tertiary)', category: 'color', label: '添加图标颜色', usage: '图片墙上传图标加号颜色' },
   'color-upload-pic-add-bg-active': { value: 'var(--cd-color-fill-2)', category: 'color', label: '图片墙添加背景 - 按下', usage: '图片墙上传背景色 - 按下' },
@@ -55,12 +53,12 @@ export const uploadTokens = {
   'color-upload-pic-remove-bg': { value: 'var(--cd-color-overlay-bg)', category: 'color', label: '图片墙移除图标背景', usage: '图片墙上传移除图标颜色' },
   'color-upload-picture-file-card-loading-error-icon': { value: 'var(--cd-color-danger)', category: 'color', label: '加载/失败图标色', usage: '图片墙上传卡片加载及失败状态图标颜色' },
   'color-upload-picture-file-card-error-border': { value: 'var(--cd-color-danger)', category: 'color', label: '失败状态描边色', usage: '图片墙上传卡片失败状态描边颜色' },
-  'color-upload-picture-file-card-pic-info-text': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '图片信息文字色', usage: '图片墙图片信息（序号）文字颜色' },
-  'color-upload-picture-file-card-close-icon': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '关闭图标颜色', usage: '图片墙关闭图标颜色' },
+  'color-upload-picture-file-card-pic-info-text': { value: 'var(--cd-color-white)', category: 'color', label: '图片信息文字色', usage: '图片墙图片信息（序号）文字颜色' },
+  'color-upload-picture-file-card-close-icon': { value: 'var(--cd-color-white)', category: 'color', label: '关闭图标颜色', usage: '图片墙关闭图标颜色' },
   'color-upload-picture-file-card-hover-bg': { value: 'var(--cd-color-overlay-bg)', category: 'color', label: '预览悬浮背景色', usage: '图片墙预览悬浮背景色' },
   'color-upload-preview-icon': { value: 'var(--cd-color-text-2)', category: 'color', label: '预览图标颜色', usage: '上传文件卡片文本颜色' },
   'color-upload-retry-text': { value: 'var(--cd-color-primary)', category: 'color', label: '重试按钮文本色', usage: '上传文件卡片重新上传按钮文本颜色' },
-  'color-upload-replace-text': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '替换按钮文本色', usage: '图片墙上传卡片替换按钮文本颜色' },
+  'color-upload-replace-text': { value: 'var(--cd-color-white)', category: 'color', label: '替换按钮文本色', usage: '图片墙上传卡片替换按钮文本颜色' },
 
   // —— Width / Height ——
   'height-upload-file-card': { value: '52px', category: 'height', label: '文件卡片高度', usage: '上传文件卡片高度' },

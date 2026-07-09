@@ -782,7 +782,7 @@
   /* theme */
   .cd-carousel--primary {
     --cd-carousel-arrow-bg: var(--cd-color-primary);
-    --cd-carousel-arrow-color: var(--cd-color-text-inverse);
+    --cd-carousel-arrow-color: var(--cd-color-white);
     --cd-carousel-indicator-color-active: var(--cd-color-primary);
   }
   .cd-carousel--light {
@@ -791,9 +791,9 @@
   }
   .cd-carousel--dark {
     --cd-carousel-arrow-bg: rgba(0, 0, 0, 0.5);
-    --cd-carousel-arrow-color: var(--cd-color-text-inverse);
+    --cd-carousel-arrow-color: var(--cd-color-white);
     --cd-carousel-indicator-color: rgba(255, 255, 255, 0.5);
-    --cd-carousel-indicator-color-active: var(--cd-color-text-inverse);
+    --cd-carousel-indicator-color-active: var(--cd-color-white);
   }
 
   @media (prefers-reduced-motion: reduce) {

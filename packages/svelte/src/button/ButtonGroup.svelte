@@ -81,12 +81,12 @@
     margin-inline-start: -1px;
   }
   .cd-button-group :global(.cd-button:first-child) {
-    border-start-start-radius: var(--cd-button-radius);
-    border-end-start-radius: var(--cd-button-radius);
+    border-start-start-radius: var(--cd-radius-button-group);
+    border-end-start-radius: var(--cd-radius-button-group);
   }
   .cd-button-group :global(.cd-button:last-child) {
-    border-start-end-radius: var(--cd-button-radius);
-    border-end-end-radius: var(--cd-button-radius);
+    border-start-end-radius: var(--cd-radius-button-group);
+    border-end-end-radius: var(--cd-radius-button-group);
   }
   /* hover/focus 的按钮浮到相邻按钮之上，保证边框/聚焦环完整可见。 */
   .cd-button-group :global(.cd-button:hover),
@@ -99,8 +99,8 @@
     position: absolute;
     inset-block: 0;
     inset-inline-start: 0;
-    width: 1px;
-    background: var(--cd-button-group-divider);
+    width: var(--cd-width-button-group-border);
+    background: var(--cd-color-button-group-border-default);
     opacity: 0.5;
     pointer-events: none;
   }

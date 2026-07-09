@@ -7,8 +7,7 @@
  *
  * 映射约定：
  *  - Semi `$xxx_yyy` / `$xxx-yyy` → kebab（各组件用自己前缀 tag- / avatar- / badge- / card-）。
- *  - var(--semi-color-*) → var(--cd-color-*)；var(--semi-color-white) → var(--cd-color-text-inverse)
- *    （无 --cd-color-white alias，用最接近的 #ffffff）。
+ *  - var(--semi-color-*) → var(--cd-color-*)；var(--semi-color-white) → var(--cd-color-white)。
  *  - $spacing-* → var(--cd-spacing-*)；$font-size-* → var(--cd-font-size-*)；
  *    $font-weight-bold/regular → var(--cd-font-weight-bold/regular)；
  *    $border-thickness-control → var(--cd-border-thickness-control)。
@@ -163,7 +162,7 @@ export const displayTokens = {
   'badge-size-small': { value: '14px', category: 'height', label: '小数字徽标尺寸', usage: '小数字徽标尺寸（组件消费；Semi 无小档，保留 14px）' },
   'badge-dot-size': { value: 'var(--cd-width-badge-dot)', category: 'width', label: '点状徽标尺寸', usage: '点状徽标尺寸（组件消费）' },
   'badge-bg': { value: 'var(--cd-color-badge-danger-solid-bg-default)', category: 'color', label: '徽标背景色', usage: '徽标默认背景（组件消费；默认危险红）' },
-  'badge-color': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '徽标文字色', usage: '徽标文字颜色（组件消费）' },
+  'badge-color': { value: 'var(--cd-color-white)', category: 'color', label: '徽标文字色', usage: '徽标文字颜色（组件消费）' },
   'badge-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '徽标字号', usage: '徽标字号（组件消费）' },
 
   // —— Card（组件消费） ——

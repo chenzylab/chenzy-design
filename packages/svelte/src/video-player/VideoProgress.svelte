@@ -189,7 +189,7 @@
     width: var(--cd-video-player-handle-size, 12px);
     height: var(--cd-video-player-handle-size, 12px);
     transform: translate(-50%, -50%);
-    background: var(--cd-video-player-progress-handle, var(--cd-color-text-inverse));
+    background: var(--cd-video-player-progress-handle, var(--cd-color-white));
     border-radius: var(--cd-border-radius-circle, 50%);
     opacity: 0;
     transition: opacity var(--cd-video-player-transition, 150ms) ease;
