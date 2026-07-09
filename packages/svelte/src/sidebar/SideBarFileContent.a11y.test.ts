@@ -23,8 +23,11 @@ for (const proto of [Element.prototype, Range.prototype]) {
 }
 
 // tiptap 内核动态 import + editor 创建异步。轮询等 .ProseMirror 挂载，避免固定 sleep 不足。
+// 轮询等待 tiptap（.ProseMirror）挂载够 expected 个再返回。
+// 满载并发时 tiptap 挂载会慢一拍——deadline 给足余量；若仍未达标则显式抛错，
+// 避免静默返回导致后续断言报出误导性的 `expected +0 to be N`（曾偶发 flaky）。
 async function flush(container: Element, expected = 1): Promise<void> {
-  const deadline = Date.now() + 3000;
+  const deadline = Date.now() + 8000;
   while (Date.now() < deadline) {
     if (container.querySelectorAll('.ProseMirror').length >= expected) {
       await new Promise((r) => setTimeout(r, 30));
@@ -32,6 +35,10 @@ async function flush(container: Element, expected = 1): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, 20));
   }
+  const actual = container.querySelectorAll('.ProseMirror').length;
+  throw new Error(
+    `flush 超时：等待 ${expected} 个 .ProseMirror 挂载，8s 后仅 ${actual} 个`,
+  );
 }
 
 const files: FileItemProps[] = [
