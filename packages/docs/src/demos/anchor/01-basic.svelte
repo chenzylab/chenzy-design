@@ -10,6 +10,6 @@
 </script>
 
 <div style="width: 160px">
-  <Anchor {links} value={anchorKey} onChange={(k) => (anchorKey = k)} />
+  <Anchor {links} value={anchorKey} onChange={(link) => (anchorKey = link?.key ?? '')} />
 </div>
 <Text type="tertiary">当前锚点：{anchorKey}</Text>

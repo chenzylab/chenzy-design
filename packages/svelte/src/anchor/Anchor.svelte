@@ -15,8 +15,21 @@
     的子列表向内缩进一级（--cd-anchor-indent，逐层累加），rail 只在顶层一条。
     scroll-spy 命令式遍历扁平化树（flatten 纯函数派生 flatLinks），父子链接皆可
     点击跳转 + 滚动高亮。无 children 时行为与平铺链接完全一致（向后兼容）。
+
+  双 API（对齐 Semi + 照 Nav 范式）：
+    - 传统 links 数组 API（向后兼容）；
+    - 声明式 <Anchor.Link> 子组件（照 Nav：普通数组 declared 承接注册、唯一反应量
+      revision=$state、子项挂载后 queueMicrotask 异步 bump、$derived.by 重建）。
+    互斥：传了 links 就用数组、忽略 children；否则用 children 收集结果。
+    scroll-spy 内核继续吃 flatten(resolvedLinks)，保持纯派生。
 -->
+<script lang="ts" module>
+  export { ANCHOR_COLLECTOR_KEY } from './context.js';
+</script>
+
 <script lang="ts">
+  import type { Snippet } from 'svelte';
+  import { setContext } from 'svelte';
   import type { AnchorLink } from './types.js';
   import {
     nextRovingIndex,
@@ -24,6 +37,15 @@
     createResizeObserver,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import {
+    ANCHOR_COLLECTOR_KEY,
+    type AnchorCollector,
+  } from './context.js';
+
+  /** railTheme：active ink 颜色主题（对齐 Semi）。 */
+  type AnchorRailTheme = 'primary' | 'tertiary' | 'muted';
+  /** size：选项高度/间距尺寸（对齐 Semi）。 */
+  type AnchorSize = 'small' | 'default';
 
   interface Props {
     links?: AnchorLink[];
@@ -32,6 +54,7 @@
     offsetTop?: number;
     bounds?: number;
     showInk?: boolean;
+    /** 点击是否平滑滚动（默认 false，对齐 Semi；reduced-motion 下强制即时）。 */
     scrollMotion?: boolean;
     /** position:sticky 吸顶 */
     affix?: boolean;
@@ -43,8 +66,26 @@
     getContainer?: () => HTMLElement | null;
     /** 水平模式：链接横排，ink 走底部下划线 */
     horizontal?: boolean;
-    onChange?: (key: string) => void;
+    /** ink 颜色主题（对齐 Semi）：primary（默认）/ tertiary / muted。 */
+    railTheme?: AnchorRailTheme;
+    /** 尺寸（对齐 Semi）：default（默认）/ small，影响选项高度与间距。 */
+    size?: AnchorSize;
+    /** 内容最大高度，超出滚动（对齐 Semi）；数字转 px。 */
+    maxHeight?: string | number;
+    /** 内容最大宽度，超出 ellipsis（对齐 Semi）；数字转 px。 */
+    maxWidth?: string | number;
+    /** 根 nav 自定义内联样式（与 affix inset 合并，不覆盖）。 */
+    style?: string;
+    /** 点击链接回调（e.preventDefault 之后触发，对齐 Semi）。 */
+    onClick?: (event: MouseEvent, link: AnchorLink) => void;
+    /** 激活变更回调（对齐 Semi：传入当前/上一个 link 对象）。 */
+    onChange?: (
+      currentLink: AnchorLink | null,
+      previousLink: AnchorLink | null,
+    ) => void;
     ariaLabel?: string;
+    /** 声明式子项（<Anchor.Link>）。与 links 二选一，links 优先。 */
+    children?: Snippet;
   }
 
   let {
@@ -54,17 +95,56 @@
     offsetTop = 0,
     bounds = 5,
     showInk = true,
-    scrollMotion = true,
+    scrollMotion = false,
     affix = false,
     updateHash = false,
     targetOffset,
     getContainer,
     horizontal = false,
+    railTheme = 'primary',
+    size = 'default',
+    maxHeight = '750px',
+    maxWidth = '200px',
+    style,
+    onClick,
     onChange,
     ariaLabel,
+    children,
   }: Props = $props();
 
   const loc = useLocale();
+
+  // --- 声明式子项收集（<Anchor.Link>）---
+  // 普通数组承接注册（非 $state，避免子项 init push 触发反应自循环）。
+  let declared: AnchorLink[] = [];
+  // 唯一反应量：子项挂载后异步 bump，触发一次 links 重建。
+  let revision = $state(0);
+  let bumpScheduled = false;
+
+  setContext<AnchorCollector>(ANCHOR_COLLECTOR_KEY, {
+    add: (link: AnchorLink) => {
+      declared.push(link);
+      return link;
+    },
+    bump: () => {
+      // 合并同一帧的多次 bump 为一次；异步脱离挂载 effect 同步栈。
+      if (bumpScheduled) return;
+      bumpScheduled = true;
+      queueMicrotask(() => {
+        bumpScheduled = false;
+        revision += 1;
+      });
+    },
+  });
+
+  // 互斥：links prop 优先；否则用声明式收集结果。
+  // 必须真正使用 revision 的值（裸读语句会被编译器优化掉、断开依赖）；
+  // 返回浅拷贝确保下游每次收到新数组引用而重派生。
+  const resolvedLinks = $derived.by<AnchorLink[]>(() => {
+    if (links.length) return links;
+    const r = revision;
+    return r >= 0 ? declared.slice() : [];
+  });
 
   // 深度优先扁平化嵌套链接树（纯函数，红线 #2）。scroll-spy 与初始激活
   // 计算只关心全部叶/枝链接的线性集合，与渲染的树形结构解耦。
@@ -76,7 +156,7 @@
     }
     return out;
   }
-  const flatLinks = $derived<AnchorLink[]>(flatten(links));
+  const flatLinks = $derived<AnchorLink[]>(flatten(resolvedLinks));
 
   function getInitialActive(): string {
     return defaultValue ?? flatten(links)[0]?.key ?? '';
@@ -87,10 +167,19 @@
   let innerActive = $state<string>(getInitialActive());
   const activeKey = $derived<string>(isControlled ? (value ?? '') : innerActive);
 
+  // onChange 对齐 Semi：传 link 对象而非裸 key，并携带上一个激活 link。
+  let previousLink: AnchorLink | null = null;
+  function findLink(key: string): AnchorLink | null {
+    return flatLinks.find((l) => l.key === key) ?? null;
+  }
+
   function setActive(key: string) {
     if (key === activeKey) return;
+    const current = findLink(key);
+    const prev = previousLink;
     if (!isControlled) innerActive = key;
-    onChange?.(key);
+    onChange?.(current, prev);
+    previousLink = current;
   }
 
   // updateHash：把激活链接的 href（#id）写入 location.hash。
@@ -180,11 +269,16 @@
 
   function handleClick(e: MouseEvent, link: AnchorLink) {
     e.preventDefault();
+    // 禁用链接不响应点击跳转（对齐 Semi）。
+    if (link.disabled) return;
+    onClick?.(e, link);
     activateLink(link);
   }
 
   // 滚动 + setActive + writeHash 主体（与 handleClick 解耦，供 Space 键复用，无 event）。
   function activateLink(link: AnchorLink) {
+    // 禁用链接不响应跳转（对齐 Semi）。
+    if (link.disabled) return;
     const el = document.querySelector(link.href);
     if (el) {
       const smooth = scrollMotion && !prefersReducedMotion();
@@ -212,24 +306,31 @@
   // --- roving tabindex（a11y §6）：链接列表为单一 Tab 停靠点。 ---
   // rootEl 普通引用，命令式 focus() 用（非 render 期）。
   let rootEl = $state<HTMLElement | null>(null);
-  // 当前焦点链接 key；null = 尚无焦点 -> 首链接作为 Tab 停靠点。
+  // 当前焦点链接 key；null = 尚无焦点 -> 首个可聚焦链接作为 Tab 停靠点。
   let focusedKey = $state<string | null>(null);
 
-  // 纯派生 tabindex：焦点链接（或无焦点时的首链接）为 0，其余 -1。
-  // 不在 render 期写 $state（红线 #2）。
-  function linkTabindex(key: string): 0 | -1 {
-    return (focusedKey ?? flatLinks[0]?.key) === key ? 0 : -1;
+  // roving 只在非禁用链接间移动：禁用链接排除出可聚焦集合。
+  const focusableLinks = $derived<AnchorLink[]>(
+    flatLinks.filter((l) => !l.disabled),
+  );
+
+  // 纯派生 tabindex：焦点链接（或无焦点时的首个可聚焦链接）为 0，其余 -1；
+  // 禁用链接始终 -1（排除出 roving）。不在 render 期写 $state（红线 #2）。
+  function linkTabindex(link: AnchorLink): 0 | -1 {
+    if (link.disabled) return -1;
+    return (focusedKey ?? focusableLinks[0]?.key) === link.key ? 0 : -1;
   }
 
   // 链接 keydown：方向键 roving（纯函数 nextRovingIndex 派生）、Home/End 跳首尾、
   // Space 显式激活（原生 <a> 不响应 Space）。Enter 交给原生 <a> 点击（向后兼容）。
+  // roving 只在 focusableLinks（非禁用）间移动。
   function onLinkKeydown(e: KeyboardEvent, link: AnchorLink) {
     const intent = rovingKeyFromEvent(e.key);
     if (intent) {
       e.preventDefault();
-      const idx = flatLinks.findIndex((l) => l.key === link.key);
-      const next = nextRovingIndex(idx, flatLinks.length, intent, false);
-      const nextKey = flatLinks[next]?.key;
+      const idx = focusableLinks.findIndex((l) => l.key === link.key);
+      const next = nextRovingIndex(idx, focusableLinks.length, intent, false);
+      const nextKey = focusableLinks[next]?.key;
       if (nextKey != null) {
         focusedKey = nextKey;
         rootEl
@@ -240,8 +341,11 @@
     }
     if (e.key === 'Home' || e.key === 'End') {
       e.preventDefault();
-      const nextKey = (e.key === 'Home' ? flatLinks[0] : flatLinks[flatLinks.length - 1])
-        ?.key;
+      const nextKey = (
+        e.key === 'Home'
+          ? focusableLinks[0]
+          : focusableLinks[focusableLinks.length - 1]
+      )?.key;
       if (nextKey != null) {
         focusedKey = nextKey;
         rootEl
@@ -255,19 +359,41 @@
       activateLink(link);
     }
   }
+
+  // 数字转 px（对齐 Semi maxHeight/maxWidth 数字入参）。
+  function toCssLength(v: string | number): string {
+    return typeof v === 'number' ? `${v}px` : v;
+  }
+
+  // 根 nav style：affix inset + maxHeight/overflow + maxWidth，最后合并透传 style。
+  const rootStyle = $derived.by(() => {
+    const parts: string[] = [];
+    if (affix) parts.push(`inset-block-start:${offsetTop}px`);
+    parts.push(`max-height:${toCssLength(maxHeight)}`);
+    parts.push('overflow:auto');
+    parts.push(`max-width:${toCssLength(maxWidth)}`);
+    if (style) parts.push(style);
+    return parts.join(';');
+  });
 </script>
 
 <nav
   bind:this={rootEl}
-  class="cd-anchor"
+  class="cd-anchor cd-anchor--rail-{railTheme} cd-anchor--size-{size}"
   class:cd-anchor--no-ink={!showInk}
   class:cd-anchor--affix={affix}
   class:cd-anchor--horizontal={horizontal}
-  style={affix ? `inset-block-start:${offsetTop}px` : undefined}
+  style={rootStyle}
   aria-label={ariaLabel ?? loc().t('Anchor.ariaLabel')}
 >
-  {@render renderList(links, 0)}
+  {@render renderList(resolvedLinks, 0)}
 </nav>
+
+<!-- 声明式子项注册宿主：仅当未传 links 且有 children 时挂载。
+     Anchor.Link 渲染无可见 DOM，只在此注册描述符；display:none 不占位。 -->
+{#if !links.length && children}
+  <div hidden style="display:none">{@render children()}</div>
+{/if}
 
 {#snippet renderList(items: AnchorLink[], level: number)}
   <ul class="cd-anchor__list">
@@ -275,12 +401,15 @@
       {@const active = link.key === activeKey}
       <li class="cd-anchor__item">
         <a
-          class="cd-anchor__link cd-anchor__link--level-{level}"
+          class="cd-anchor__link cd-anchor__link--level-{level} {link.className ?? ''}"
           class:cd-anchor__link--active={active}
+          class:cd-anchor__link--disabled={link.disabled}
           href={link.href}
           aria-current={active ? 'location' : undefined}
-          tabindex={linkTabindex(link.key)}
+          aria-disabled={link.disabled ? 'true' : undefined}
+          tabindex={linkTabindex(link)}
           data-anchor-key={link.key}
+          style={link.style}
           onclick={(e) => handleClick(e, link)}
           onkeydown={(e) => onLinkKeydown(e, link)}
           onfocus={() => {
@@ -305,6 +434,28 @@
     position: sticky;
     inset-block-start: 0;
   }
+
+  /* --- railTheme：切换 active ink 颜色来源（token 已对齐 Semi，仅按 class 切换） --- */
+  .cd-anchor--rail-primary {
+    --cd-anchor-ink-color: var(--cd-color-anchor-slide-primary-bg-active);
+  }
+  .cd-anchor--rail-tertiary {
+    --cd-anchor-ink-color: var(--cd-color-anchor-slide-tertiary-bg-active);
+  }
+  .cd-anchor--rail-muted {
+    --cd-anchor-ink-color: var(--cd-color-anchor-slide-muted-bg-active);
+  }
+
+  /* --- size：选项高度与上下间距（token 已对齐 Semi） --- */
+  .cd-anchor--size-default {
+    --cd-anchor-link-height: var(--cd-height-anchor-slide-default);
+    --cd-anchor-link-gap-y: var(--cd-spacing-anchor-slide-default-y);
+  }
+  .cd-anchor--size-small {
+    --cd-anchor-link-height: var(--cd-height-anchor-slide-small);
+    --cd-anchor-link-gap-y: var(--cd-spacing-anchor-slide-small-y);
+  }
+
   .cd-anchor__list {
     margin: 0;
     padding: 0;
@@ -324,6 +475,8 @@
   .cd-anchor__link {
     display: block;
     padding: var(--cd-anchor-link-padding);
+    line-height: var(--cd-anchor-link-height, normal);
+    margin-block: var(--cd-anchor-link-gap-y, 0);
     border-inline-start: var(--cd-anchor-ink-width) solid transparent;
     margin-inline-start: calc(-1 * var(--cd-anchor-ink-width));
     color: var(--cd-anchor-link-color);
@@ -348,6 +501,12 @@
   }
   .cd-anchor--no-ink .cd-anchor__link--active {
     border-inline-start-color: transparent;
+  }
+  /* --- disabled：置灰、禁指针（对齐 Semi） --- */
+  .cd-anchor__link--disabled,
+  .cd-anchor__link--disabled:hover {
+    color: var(--cd-color-anchor-title-text-disabled);
+    cursor: not-allowed;
   }
 
   /* --- horizontal 水平模式：链接横排，ink 走底部下划线 --- */
