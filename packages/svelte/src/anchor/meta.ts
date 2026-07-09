@@ -41,6 +41,12 @@ export const meta = {
     },
     { name: 'horizontal', type: 'boolean', default: 'false', desc: '水平模式，ink 走底部下划线' },
     {
+      name: 'autoCollapse',
+      type: 'boolean',
+      default: 'false',
+      desc: '滚动时动态展开激活路径的子级、折叠其它（对齐 Semi）；默认全展开',
+    },
+    {
       name: 'railTheme',
       type: "'primary' | 'tertiary' | 'muted'",
       default: "'primary'",

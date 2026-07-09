@@ -43,4 +43,9 @@ export const demos: DemoEntry[] = [
     '缩略显示 Tooltip',
     'showTooltip 在链接文字缩略时 hover 显示完整标题；position 控制浮层方位',
   ),
+  entry(
+    '08-auto-collapse.svelte',
+    '动态展开 autoCollapse',
+    'autoCollapse 滚动时只展开激活路径的子级、折叠其它分支',
+  ),
 ];
