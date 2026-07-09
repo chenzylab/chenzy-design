@@ -124,6 +124,11 @@ export {
   type NavItemDef,
   type NavKey,
   type NavMode,
+  type NavHeaderConfig,
+  type NavFooterConfig,
+  type NavSelectData,
+  type NavClickData,
+  type NavOpenChangeData,
 } from './nav/index.js';
 export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
 

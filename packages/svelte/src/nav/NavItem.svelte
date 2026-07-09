@@ -1,6 +1,6 @@
 <!--
   Nav.Item — 声明式叶子导航项（对齐 Semi Nav.Item）。
-  仅注册描述符到父级收集器，不直接渲染 DOM（渲染由 Nav 委托的 Menu 统一负责）。
+  仅注册描述符到父级收集器，不直接渲染 DOM（渲染由 Nav 自身的 NavItemRender 统一负责）。
   安全：init 同步注册进【普通数组】，挂载后【异步】bump 触发一次 Nav 重建。
 -->
 <script lang="ts">
