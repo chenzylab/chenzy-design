@@ -11,14 +11,25 @@
   interface Props {
     /** 是否展示收起按钮（仅 vertical 生效）。 */
     collapseButton?: boolean;
+    /** 收起按钮文案（对齐 Semi collapseText，(collapsed)=>string；默认用 locale）。 */
+    collapseText?: (collapsed: boolean) => string;
     /** 自定义类名。 */
     class?: string;
     /** 自定义内联样式。 */
     style?: string;
+    /** 点击事件回调（对齐 Semi Nav.Footer onClick）。 */
+    onClick?: (e: MouseEvent) => void;
     children?: Snippet;
   }
 
-  let { collapseButton = false, class: className = '', style, children }: Props = $props();
+  let {
+    collapseButton = false,
+    collapseText,
+    class: className = '',
+    style,
+    onClick,
+    children,
+  }: Props = $props();
 
   const loc = useLocale();
   const nav = getNavContext();
@@ -27,6 +38,14 @@
     collapseButton && !children && nav?.mode === 'vertical',
   );
   const collapsed = $derived(nav?.collapsed ?? false);
+  // 展开态显示文案：优先 collapseText，回退 locale。折叠态仅留图标。
+  const btnText = $derived(
+    collapseText
+      ? collapseText(collapsed)
+      : collapsed
+        ? loc().t('Sider.expand')
+        : loc().t('Sider.collapse'),
+  );
 </script>
 
 <div class={['cd-nav__footer', className].filter(Boolean).join(' ')} {style}>
@@ -38,7 +57,10 @@
       class="cd-nav__collapse-btn"
       aria-expanded={!collapsed}
       aria-label={collapsed ? loc().t('Sider.expand') : loc().t('Sider.collapse')}
-      onclick={() => nav?.toggleCollapsed()}
+      onclick={(e) => {
+        onClick?.(e);
+        nav?.toggleCollapsed();
+      }}
     >
       <!-- 折叠时箭头指向「展开」（右），反之指向「收起」（左）。用 SVG 保证清晰可见。 -->
       <svg
@@ -56,6 +78,7 @@
       >
         <polyline points="15 18 9 12 15 6" />
       </svg>
+      {#if !collapsed}<span class="cd-nav__collapse-text">{btnText}</span>{/if}
     </button>
   {/if}
 </div>
@@ -65,24 +88,25 @@
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    padding: var(--cd-nav-footer-padding);
-    border-block-start: 1px solid var(--cd-nav-footer-border);
+    padding: var(--cd-spacing-navigation-footer-paddingy) var(--cd-spacing-navigation-footer-paddingx);
+    border-block-start: 1px solid var(--cd-color-navigation-border-default);
   }
   .cd-nav__collapse-btn {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: var(--cd-spacing-navigation-vertical-footer-collapse-text-marginleft);
     width: 100%;
-    height: var(--cd-nav-collapse-btn-height);
+    height: var(--cd-height-navigation-item-base);
     border: none;
     background: transparent;
-    color: var(--cd-nav-collapse-btn-color);
+    color: var(--cd-color-navigation-footer-icon-default);
     cursor: pointer;
-    border-radius: var(--cd-nav-collapse-btn-radius);
+    border-radius: var(--cd-width-navigation-item-borderradius);
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-nav__collapse-btn:hover {
-    background: var(--cd-nav-collapse-btn-hover-bg);
+    background: var(--cd-color-navigation-iteml1-bg-active);
   }
   .cd-nav__collapse-btn:focus-visible {
     outline: none;
@@ -91,6 +115,16 @@
   .cd-nav__collapse-arrow {
     flex: 0 0 auto;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-nav__collapse-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--cd-font-size-regular);
+  }
+  /* 折叠态：按钮无文案，图标居中。 */
+  :global(.cd-nav--collapsed) .cd-nav__collapse-btn {
+    justify-content: center;
   }
   /* 折叠态：箭头翻转指向「展开」方向（右）。 */
   .cd-nav__collapse-arrow--collapsed {

@@ -1,15 +1,14 @@
 <!--
-  Nav — 站点导航（对齐 Semi Navigation）。独立组件、对外字段对齐 Semi
-  （itemKey/text/icon/items），内部委托我们自己的 Menu 渲染导航体（purpose=navigation），
-  复用 Menu 的选中/展开/折叠/键盘/a11y 逻辑，仅新增 Header（logo+text）/Footer（collapseButton）
-  容器与折叠联动。
+  Nav — 站点导航（对齐 Semi Navigation），独立渲染，不依赖 Menu。
+  字段/回调对齐 Semi（itemKey/text/icon/items；富载荷回调）。自管理选中/展开/折叠受控与非受控、
+  内联与浮层子导航、键盘与 a11y、Header（logo+text）/Footer（collapseButton）。
 
-  mode 映射：horizontal → Menu mode=horizontal；vertical 展开 → Menu mode=inline；
-  vertical 折叠 → Menu mode=inline + inlineCollapsed（图标轨 + hover 浮层）。
+  mode：vertical 展开（内联子导航）/ vertical 折叠（图标轨 + 浮层子导航）/ horizontal（顶部 + 浮层）。
 
-  范围（MVP）：mode(vertical/horizontal)、items、header/footer、selected/open/collapsed
-  受控与非受控 + 回调。TODO（暂未实现，留待后续）：limitIndent / toggleIconPosition /
-  subNavMotion / tooltip 延迟 / renderWrapper / Nav.Item 声明式写法。
+  范围：mode(vertical/horizontal)、items、header/footer、selected/open/collapsed 受控与非受控、
+  multiple + onDeselect、limitIndent / toggleIconPosition / subNavMotion / tooltip 延迟 /
+  renderWrapper / 声明式 Nav.Item·Nav.Sub。回调富载荷对齐 Semi（{itemKey,selectedKeys,
+  selectedItems,domEvent,isOpen}）。
 -->
 <script lang="ts" module>
   export { NAV_CONTEXT_KEY } from './context.js';
@@ -18,15 +17,19 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { setContext, untrack } from 'svelte';
-  import Menu from '../menu/Menu.svelte';
-  import type { MenuKey, MenuItemNode } from '../menu/types.js';
+  import { SvelteSet } from 'svelte/reactivity';
   import {
-    navItemsToMenuItems,
+    hasSubNav,
+    collectNavItemsByKeys,
+    collectAncestorKeys,
     type NavItemDef,
     type NavKey,
     type NavMode,
     type NavHeaderConfig,
     type NavFooterConfig,
+    type NavSelectData,
+    type NavClickData,
+    type NavOpenChangeData,
   } from './types.js';
   import {
     NAV_CONTEXT_KEY,
@@ -34,6 +37,7 @@
     type NavContext,
     type NavCollector,
   } from './context.js';
+  import NavItemRender from './NavItemRender.svelte';
   import NavHeader from './NavHeader.svelte';
   import NavFooter from './NavFooter.svelte';
 
@@ -50,34 +54,40 @@
     openKeys?: NavKey[];
     /** 默认展开的子导航 key 数组（非受控）。 */
     defaultOpenKeys?: NavKey[];
+    /** 多选模式（对齐 Semi multiple）：叠加选中，配合 onDeselect。 */
+    multiple?: boolean;
     /** 受控折叠态（仅 vertical 有效）。 */
     isCollapsed?: boolean;
     /** 默认折叠态（非受控，仅 vertical 有效）。 */
     defaultIsCollapsed?: boolean;
-    /** 头部区域配置对象（{logo, text}）。与 header snippet 二选一。 */
+    /** 头部区域配置对象（{logo, text, link, ...}）。与 headerSlot 二选一。 */
     header?: NavHeaderConfig;
-    /** 底部区域配置对象（{collapseButton}）。与 footer snippet 二选一。 */
+    /** 底部区域配置对象（{collapseButton, ...}）。与 footerSlot 二选一。 */
     footer?: NavFooterConfig;
     /** 整体禁用。 */
     disabled?: boolean;
-    /** 子级缩进像素（透传 Menu inlineIndent）。 */
+    /** 子级缩进像素（对齐 Semi inlineIndent）。 */
     inlineIndent?: number;
-    /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进（透传 Menu limitIndent）。 */
+    /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进。 */
     limitIndent?: boolean;
-    /** 含子导航项的展开箭头位置（透传 Menu toggleIconPosition）。 */
+    /** 含子导航项的展开箭头位置。 */
     toggleIconPosition?: 'left' | 'right';
-    /** 自定义展开箭头图标（透传 Menu expandIcon）。 */
+    /** 自定义展开箭头图标。 */
     expandIcon?: Snippet;
-    /** 子导航展开动画开关（默认 true，透传 Menu motion）。对齐 Semi subNavMotion。 */
+    /** 子导航展开动画开关（默认 true）。对齐 Semi subNavMotion。 */
     subNavMotion?: boolean;
-    /** 浮层子导航展开延迟 ms（透传 Menu subMenuOpenDelay）。对齐 Semi subNavOpenDelay。 */
+    /** 浮层子导航展开延迟 ms。对齐 Semi subNavOpenDelay。 */
     subNavOpenDelay?: number;
-    /** 浮层子导航关闭延迟 ms（透传 Menu subMenuCloseDelay）。对齐 Semi subNavCloseDelay。 */
+    /** 浮层子导航关闭延迟 ms。对齐 Semi subNavCloseDelay。 */
     subNavCloseDelay?: number;
-    /** 浮层挂载容器（透传 Menu getPopupContainer）。 */
+    /** 折叠态 tooltip 显示延迟 ms（对齐 Semi tooltipShowDelay）。 */
+    tooltipShowDelay?: number;
+    /** 折叠态 tooltip 隐藏延迟 ms（对齐 Semi tooltipHideDelay）。 */
+    tooltipHideDelay?: number;
+    /** 浮层挂载容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 自定义导航项外层包裹（透传 Menu renderWrapper）。 */
-    renderWrapper?: Snippet<[{ item: MenuItemNode; children: Snippet }]>;
+    /** 自定义导航项外层包裹（对齐 Semi renderWrapper）。 */
+    renderWrapper?: Snippet<[{ item: NavItemDef; isSubNav: boolean; children: Snippet }]>;
     /** 根元素自定义类名（透传）。 */
     class?: string;
     /** 根元素自定义内联样式（透传）。 */
@@ -86,12 +96,14 @@
     bodyStyle?: string;
     /** 可访问性标签。 */
     ariaLabel?: string;
-    /** 选中导航项回调。 */
-    onSelect?: (key: NavKey) => void;
-    /** 点击任意导航项回调（对齐 Semi onClick，在 onSelect 之外亦对已选项触发）。 */
-    onClick?: (key: NavKey) => void;
-    /** 展开/收起子导航回调。 */
-    onOpenChange?: (keys: NavKey[]) => void;
+    /** 选中导航项回调（富载荷对齐 Semi）。 */
+    onSelect?: (data: NavSelectData) => void;
+    /** 多选下取消选中回调（对齐 Semi onDeselect）。 */
+    onDeselect?: (data: NavSelectData) => void;
+    /** 点击任意导航项回调（富载荷对齐 Semi）。 */
+    onClick?: (data: NavClickData) => void;
+    /** 展开/收起子导航回调（富载荷对齐 Semi）。 */
+    onOpenChange?: (data: NavOpenChangeData) => void;
     /** 折叠态变化回调。 */
     onCollapseChange?: (isCollapsed: boolean) => void;
     /** 自定义头部（覆盖 header 配置对象）。 */
@@ -109,18 +121,21 @@
     defaultSelectedKeys,
     openKeys,
     defaultOpenKeys,
+    multiple = false,
     isCollapsed,
     defaultIsCollapsed = false,
     header,
     footer,
     disabled = false,
-    inlineIndent,
-    limitIndent,
-    toggleIconPosition,
+    inlineIndent = 24,
+    limitIndent = true,
+    toggleIconPosition = 'right',
     expandIcon,
-    subNavMotion,
-    subNavOpenDelay,
-    subNavCloseDelay,
+    subNavMotion = true,
+    subNavOpenDelay = 0,
+    subNavCloseDelay = 100,
+    tooltipShowDelay = 0,
+    tooltipHideDelay = 100,
     getPopupContainer,
     renderWrapper,
     class: className = '',
@@ -128,6 +143,7 @@
     bodyStyle,
     ariaLabel,
     onSelect,
+    onDeselect,
     onClick,
     onOpenChange,
     onCollapseChange,
@@ -136,44 +152,16 @@
     children,
   }: Props = $props();
 
-  // --- 受控/非受控折叠态（仅 vertical 有意义）；受控 prop 优先，变化走回调不回写 ---
-  const isCollapsedControlled = $derived(isCollapsed !== undefined);
-  let innerCollapsed = $state(untrack(() => defaultIsCollapsed));
-  const collapsedState = $derived(
-    mode === 'vertical' && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
-  );
-
-  function toggleCollapsed(): void {
-    const next = !collapsedState;
-    if (!isCollapsedControlled) innerCollapsed = next;
-    onCollapseChange?.(next);
-  }
-
-  // Footer 的 collapseButton 经 context 联动折叠态。
-  setContext<NavContext>(NAV_CONTEXT_KEY, {
-    get collapsed() {
-      return collapsedState;
-    },
-    get mode() {
-      return mode;
-    },
-    toggleCollapsed,
-  });
-
-  // --- 声明式子项收集（<Nav.Item>/<Nav.Sub>）---
-  // 普通数组承接注册（非 $state，避免子项 init push 触发反应自循环）。
+  // ---------- 声明式子项收集（<Nav.Item>/<Nav.Sub>）----------
   let declared: NavItemDef[] = [];
-  // 唯一反应量：子项挂载后异步 bump，触发一次 items 重建。
   let revision = $state(0);
   let bumpScheduled = false;
-
   setContext<NavCollector>(NAV_COLLECTOR_KEY, {
     add: (item: NavItemDef) => {
       declared.push(item);
       return item;
     },
     bump: () => {
-      // 合并同一帧的多次 bump 为一次；异步脱离挂载 effect 同步栈。
       if (bumpScheduled) return;
       bumpScheduled = true;
       queueMicrotask(() => {
@@ -183,23 +171,152 @@
     },
   });
 
-  // items prop 优先；否则用声明式收集结果。
-  // 必须真正使用 revision 的值（裸读语句会被编译器优化掉、断开依赖）；
-  // 返回浅拷贝确保 Menu 每次收到新数组引用而重渲染。
+  // items prop 优先，否则用声明式收集结果（revision 触发重建）。
   const resolvedItems = $derived.by(() => {
     if (items.length) return items;
     const r = revision;
     return r >= 0 ? declared.slice() : [];
   });
 
-  // --- items（Semi 形）→ Menu items ---
-  const menuItems = $derived(navItemsToMenuItems(resolvedItems));
-
-  // --- mode 映射到 Menu ---
-  const menuMode = $derived<'inline' | 'horizontal'>(
-    mode === 'horizontal' ? 'horizontal' : 'inline',
+  // ---------- 折叠态（受控/非受控，仅 vertical）----------
+  const isCollapsedControlled = $derived(isCollapsed !== undefined);
+  let innerCollapsed = $state(untrack(() => defaultIsCollapsed));
+  const collapsedState = $derived(
+    mode === 'vertical' && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
   );
-  const menuInlineCollapsed = $derived(mode === 'vertical' && collapsedState);
+  function toggleCollapsed(): void {
+    const next = !collapsedState;
+    if (!isCollapsedControlled) innerCollapsed = next;
+    onCollapseChange?.(next);
+  }
+
+  // ---------- 选中态（受控/非受控，含祖先高亮）----------
+  const isSelectControlled = $derived(selectedKeys !== undefined);
+  const innerSelected = new SvelteSet<NavKey>(untrack(() => defaultSelectedKeys ?? []));
+  // 选中集合 = 显式选中 + 其祖先 SubNav（对齐 Semi：选中子项父级 SubNav 高亮）。
+  const currentSelected = $derived.by(() => {
+    const base = isSelectControlled ? (selectedKeys ?? []) : [...innerSelected];
+    const ancestors = collectAncestorKeys(resolvedItems, base);
+    return new Set<NavKey>([...base, ...ancestors]);
+  });
+
+  // ---------- 展开态（受控/非受控）----------
+  const isOpenControlled = $derived(openKeys !== undefined);
+  const innerOpen = new SvelteSet<NavKey>(untrack(() => defaultOpenKeys ?? []));
+  const currentOpen = $derived<ReadonlySet<NavKey>>(
+    isOpenControlled ? new Set(openKeys) : innerOpen,
+  );
+
+  function isSelected(key: NavKey): boolean {
+    return currentSelected.has(key);
+  }
+  function isOpen(key: NavKey): boolean {
+    return currentOpen.has(key);
+  }
+
+  function buildSelectData(itemKey: NavKey, nextSelectedBase: NavKey[], domEvent?: Event): NavSelectData {
+    return {
+      itemKey,
+      selectedKeys: nextSelectedBase,
+      selectedItems: collectNavItemsByKeys(resolvedItems, nextSelectedBase),
+      ...(domEvent !== undefined ? { domEvent } : {}),
+      isOpen: false,
+    };
+  }
+
+  function selectLeaf(item: NavItemDef, domEvent?: Event): void {
+    if (disabled || item.disabled) return;
+    const base = isSelectControlled ? (selectedKeys ?? []) : [...innerSelected];
+    const wasSelected = base.includes(item.itemKey);
+    const isDeselect = multiple && wasSelected;
+    const nextBase = multiple
+      ? isDeselect
+        ? base.filter((k) => k !== item.itemKey)
+        : [...base, item.itemKey]
+      : [item.itemKey];
+
+    if (!isSelectControlled) {
+      innerSelected.clear();
+      for (const k of nextBase) innerSelected.add(k);
+    }
+
+    onClick?.({ itemKey: item.itemKey, ...(domEvent !== undefined ? { domEvent } : {}), isOpen: false });
+    const data = buildSelectData(item.itemKey, nextBase, domEvent);
+    if (isDeselect) onDeselect?.(data);
+    else onSelect?.(data);
+  }
+
+  function toggleOpen(item: NavItemDef, willOpen: boolean, domEvent?: Event): void {
+    if (disabled || item.disabled) return;
+    const base = isOpenControlled ? (openKeys ?? []) : [...innerOpen];
+    const next = base.filter((k) => k !== item.itemKey);
+    if (willOpen) next.push(item.itemKey);
+    if (!isOpenControlled) {
+      innerOpen.clear();
+      for (const k of next) innerOpen.add(k);
+    }
+    onClick?.({ itemKey: item.itemKey, ...(domEvent !== undefined ? { domEvent } : {}), isOpen: willOpen });
+    onOpenChange?.({
+      itemKey: item.itemKey,
+      openKeys: next,
+      ...(domEvent !== undefined ? { domEvent } : {}),
+      isOpen: willOpen,
+    });
+  }
+
+  // ---------- Context 提供 ----------
+  setContext<NavContext>(NAV_CONTEXT_KEY, {
+    get mode() {
+      return mode;
+    },
+    get collapsed() {
+      return collapsedState;
+    },
+    get multiple() {
+      return multiple;
+    },
+    get disabled() {
+      return disabled;
+    },
+    get limitIndent() {
+      return limitIndent;
+    },
+    get toggleIconPosition() {
+      return toggleIconPosition;
+    },
+    get inlineIndent() {
+      return inlineIndent;
+    },
+    get subNavMotion() {
+      return subNavMotion;
+    },
+    get subNavOpenDelay() {
+      return subNavOpenDelay;
+    },
+    get subNavCloseDelay() {
+      return subNavCloseDelay;
+    },
+    get tooltipShowDelay() {
+      return tooltipShowDelay;
+    },
+    get tooltipHideDelay() {
+      return tooltipHideDelay;
+    },
+    get getPopupContainer() {
+      return getPopupContainer;
+    },
+    get expandIcon() {
+      return expandIcon;
+    },
+    get renderWrapper() {
+      return renderWrapper;
+    },
+    isSelected,
+    isOpen,
+    selectLeaf,
+    toggleOpen,
+    toggleCollapsed,
+  });
 
   const cls = $derived(
     ['cd-nav', `cd-nav--${mode}`, collapsedState && 'cd-nav--collapsed', className]
@@ -207,87 +324,133 @@
       .join(' '),
   );
 
-  // 头部/底部是否渲染。
   const hasHeader = $derived(!!headerSlot || !!header);
   const hasFooter = $derived(!!footerSlot || (!!footer && footer.collapseButton));
 </script>
 
-<div class={cls} {style} aria-label={ariaLabel}>
-  {#if hasHeader}
-    {#if headerSlot}
-      {@render headerSlot()}
-    {:else if header}
-      <NavHeader
-        {...header.logo !== undefined ? { logo: header.logo } : {}}
-        {...header.text !== undefined ? { text: header.text } : {}}
-        {collapsedState}
-      />
-    {/if}
-  {/if}
+<nav class={cls} {style} aria-label={ariaLabel}>
+  <div class="cd-nav__inner">
+    <div class="cd-nav__header-list-outer" class:cd-nav__header-list-outer-collapsed={collapsedState}>
+      {#if hasHeader}
+        {#if headerSlot}
+          {@render headerSlot()}
+        {:else if header}
+          <NavHeader
+            {...header.logo !== undefined ? { logo: header.logo } : {}}
+            {...header.text !== undefined ? { text: header.text } : {}}
+            {...header.link !== undefined ? { link: header.link } : {}}
+            {...header.linkOptions !== undefined ? { linkOptions: header.linkOptions } : {}}
+            {...header.class !== undefined ? { class: header.class } : {}}
+            {...header.style !== undefined ? { style: header.style } : {}}
+            {collapsedState}
+          />
+        {/if}
+      {/if}
 
-  <div class="cd-nav__body" style={bodyStyle}>
-    <Menu
-      items={menuItems}
-      mode={menuMode}
-      inlineCollapsed={menuInlineCollapsed}
-      purpose="navigation"
-      {disabled}
-      {...selectedKeys !== undefined ? { selectedKeys } : {}}
-      {...defaultSelectedKeys !== undefined ? { defaultSelectedKeys } : {}}
-      {...openKeys !== undefined ? { openKeys } : {}}
-      {...defaultOpenKeys !== undefined ? { defaultOpenKeys } : {}}
-      {...inlineIndent !== undefined ? { inlineIndent } : {}}
-      {...limitIndent !== undefined ? { limitIndent } : {}}
-      {...toggleIconPosition !== undefined ? { toggleIconPosition } : {}}
-      {...expandIcon !== undefined ? { expandIcon } : {}}
-      {...subNavMotion !== undefined ? { motion: subNavMotion } : {}}
-      {...subNavOpenDelay !== undefined ? { subMenuOpenDelay: subNavOpenDelay } : {}}
-      {...subNavCloseDelay !== undefined ? { subMenuCloseDelay: subNavCloseDelay } : {}}
-      {...getPopupContainer !== undefined ? { getPopupContainer } : {}}
-      {...renderWrapper !== undefined ? { renderWrapper } : {}}
-      onSelect={(key: MenuKey) => {
-        onSelect?.(key);
-        onClick?.(key);
-      }}
-      onOpenChange={(keys: MenuKey[]) => onOpenChange?.(keys)}
-    />
+      <div class="cd-nav__list-wrapper" style={bodyStyle}>
+        <!-- 站点导航用原生 list/link 语义（nav landmark 已提供地标），不用 menu/menuitem role
+             （对齐 Semi navigation purpose：avoid menu roles for site navigation）。 -->
+        <ul class="cd-nav__list">
+          {#each resolvedItems as item (item.itemKey)}
+            <NavItemRender {item} level={0} />
+          {/each}
+        </ul>
+      </div>
+    </div>
+
+    {#if hasFooter}
+      {#if footerSlot}
+        {@render footerSlot()}
+      {:else if footer}
+        <NavFooter
+          collapseButton={footer.collapseButton ?? false}
+          {...footer.collapseText !== undefined ? { collapseText: footer.collapseText } : {}}
+          {...footer.class !== undefined ? { class: footer.class } : {}}
+          {...footer.style !== undefined ? { style: footer.style } : {}}
+          {...footer.onClick !== undefined ? { onClick: footer.onClick } : {}}
+        />
+      {/if}
+    {/if}
   </div>
 
-  <!-- 声明式子项注册宿主：仅当未传 items 且有 children 时挂载。
-       Nav.Item/Nav.Sub 渲染无可见 DOM，只在此注册描述符；display:none 不占位。 -->
+  <!-- 声明式子项注册宿主：仅当未传 items 且有 children 时挂载。不产可见 DOM。 -->
   {#if !items.length && children}
     <div hidden style="display:none">{@render children()}</div>
   {/if}
-
-  {#if hasFooter}
-    {#if footerSlot}
-      {@render footerSlot()}
-    {:else if footer}
-      <NavFooter collapseButton={footer.collapseButton ?? false} />
-    {/if}
-  {/if}
-</div>
+</nav>
 
 <style>
+  /* 容器：垂直侧边导航（默认）。对齐 Semi navigation.scss。 */
   .cd-nav {
+    box-sizing: border-box;
+    display: inline-flex;
+    width: var(--cd-width-navigation-container-base);
+    outline: none;
+    overflow: hidden;
+    margin: 0;
+    padding-inline: var(--cd-spacing-navigation-paddingx);
+    user-select: none;
+    border-inline-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
+    background: var(--cd-color-navigation-bg-default);
+    /* 注意：不过渡 width——在两个 var() 长度间过渡 Chromium 会卡死在起始值不收敛，
+       导致折叠后宽度停在展开态。折叠为即时切换（功能优先）。 */
+    transition: padding var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-nav__inner {
+    inline-size: 100%;
+    block-size: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--cd-nav-bg);
-    color: var(--cd-nav-color);
+    justify-content: space-between;
   }
+
+  /* 折叠态：容器收窄到图标轨宽度。 */
+  .cd-nav--collapsed {
+    width: var(--cd-width-navigation-container-collapsed);
+    padding-inline: var(--cd-spacing-navigation-collapsed-paddingx);
+  }
+
+  .cd-nav__header-list-outer {
+    block-size: 100%;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+  .cd-nav__list-wrapper {
+    padding-block-start: var(--cd-spacing-navigation-list-wrapper-paddingtop);
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+  .cd-nav__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* 水平顶部导航。 */
   .cd-nav--horizontal {
+    inline-size: 100%;
+    block-size: var(--cd-height-navigation-horizontal-header);
+    border-inline-end: none;
+    border-block-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
+    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
+  }
+  .cd-nav--horizontal .cd-nav__inner {
+    flex-direction: row;
+  }
+  .cd-nav--horizontal .cd-nav__header-list-outer {
     flex-direction: row;
     align-items: center;
-    height: var(--cd-nav-horizontal-height);
+    block-size: auto;
   }
-  /* 导航体占据中间，header/footer 固定 */
-  .cd-nav__body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-  }
-  .cd-nav--horizontal .cd-nav__body {
-    flex: 1 1 auto;
+  .cd-nav--horizontal .cd-nav__list-wrapper {
+    padding-block-start: 0;
     overflow: visible;
+  }
+  .cd-nav--horizontal .cd-nav__list {
+    display: inline-flex;
+    align-items: center;
   }
 </style>

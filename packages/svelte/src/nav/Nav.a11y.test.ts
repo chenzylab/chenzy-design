@@ -1,5 +1,5 @@
 // Nav a11y 专项：axe 0 violations + landmark/链接/折叠/子导航的无障碍语义。
-// 委托 Menu(purpose=navigation)，验证 nav landmark、原生 <a>、aria-current、折叠按钮 aria。
+// Nav 独立渲染：验证 nav landmark、原生 <a>、aria-current、折叠按钮 aria。
 import { describe, it, expect } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
@@ -59,7 +59,7 @@ describe('Nav a11y', () => {
     });
     const links = container.querySelectorAll('a[href]');
     expect(links.length).toBeGreaterThanOrEqual(2);
-    // 外链 target=_blank 应带 rel（Menu 自动补）或显式无 violation
+    // 外链 target=_blank 时 rel 由使用方经 NavItemDef.rel 显式传入（Nav 不自动补）
     await expectNoAxeViolations(container);
   });
 

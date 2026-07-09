@@ -31,7 +31,6 @@ import { navigationTokens } from './navigation.js';
 import { breadcrumbTokens } from './breadcrumb.js';
 import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
-import { navTokens } from './nav.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { popoverTokens } from './popover.js';
@@ -107,7 +106,6 @@ export const componentTokens = {
   ...breadcrumbTokens,
   ...tabsTokens,
   ...menuTokens,
-  ...navTokens,
   ...displayTokens,
   ...tooltipTokens,
   ...popoverTokens,
