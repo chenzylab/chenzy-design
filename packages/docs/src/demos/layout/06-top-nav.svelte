@@ -52,7 +52,7 @@
   <Layout.Content padding style="background: var(--cd-color-bg-0);">
     <div style="margin-bottom:16px;">
       <Breadcrumb
-        routes={[{ label: '首页' }, { label: '当这个页面标题很长时需要省略' }, { label: '上一页' }, { label: '详情页' }]}
+        routes={[{ name: '首页' }, { name: '当这个页面标题很长时需要省略' }, { name: '上一页' }, { name: '详情页' }]}
       />
     </div>
     <div
