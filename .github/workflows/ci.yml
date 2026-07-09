@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # affected 需要 git 历史来对比 base ref。
+          fetch-depth: 0
       # pnpm version comes from package.json "packageManager" (single source of truth)
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
@@ -17,38 +20,193 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # build first so downstream packages' dist/*.d.ts exist before typecheck
-      # docs excluded: it requires pagefind (post-build) and is deployed separately
-      - run: pnpm --filter=!@chenzy-design/docs build
-      # WCAG AA 对比度门禁：审计 alias token 的正文级前景/背景对，
-      # 任一非豁免对 < 4.5:1 即阻断（防 token 改色引入 a11y 回归）。
-      - run: pnpm a11y:contrast
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      # a11y 门禁：vitest-axe 渲染测试（61 组件，axe 0 violations + role/aria 断言）。
-      - run: pnpm test:a11y
-      # 体积门禁（size-limit）：dist 由上面的 build 产出，size-limit 读 dist 测真实
-      # bundle 后的 gzip，与各组件 spec §9 的「svelte 渲染层」预算逐条比对。
-      # 预算已按真实实测 + ~15% 余量校准基线，超预算即阻断（防体积回归）。
-      - run: pnpm perf:check
+
+      # ---------------------------------------------------------------------
+      # affected 判定：只对「受改动影响的包及其下游」跑质量门禁，省 CI 时间。
+      #   - base ref：PR 用目标分支；push main 用 push 前的 SHA。
+      #   - 根级共享配置（lockfile / 根 package.json / vitest·eslint·size-limit·uno·
+      #     tsconfig 基座 / 本 workflow）变动 → 回退全量（MODE=full），因其影响全局、
+      #     affected 算不出具体包却可能引入跨包回归。
+      #   - 否则用 pnpm `...[BASE]` 算「受影响 + 下游」包（PKGS_DOWN，供 typecheck/test/lint）
+      #     与 `...[BASE]...` 加上上游依赖（PKGS_BUILD，供 build 产出 dist）。
+      #   - 无任何包受影响（纯文档 / changeset）→ MODE=none，后续步骤整体跳过。
+      # 输出写入 $GITHUB_ENV：MODE / PKGS_DOWN / PKGS_BUILD / AFFECTED_NAMES。
+      # ---------------------------------------------------------------------
+      - name: Resolve affected packages
+        id: affected
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          # base 无效（首次推送 / force-push 后 SHA 缺失）→ 回退全量。
+          if ! git rev-parse --verify --quiet "$BASE^{commit}" >/dev/null; then
+            echo "base ref '$BASE' unavailable → full run"
+            echo "MODE=full" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          CHANGED="$(git diff --name-only "$BASE"...HEAD || git diff --name-only "$BASE" HEAD)"
+          echo "Changed files:"; echo "$CHANGED"
+
+          # 根级共享配置变动 → 全量。
+          ROOT_CONFIG_RE='^(pnpm-lock\.yaml|package\.json|pnpm-workspace\.yaml|vitest\.config\.ts|vitest\..*-setup\.ts|eslint\.config\.js|\.size-limit\.js|uno\.config\.ts|tsconfig\.base\.json|\.github/workflows/ci\.yml)$'
+          if echo "$CHANGED" | grep -qE "$ROOT_CONFIG_RE"; then
+            echo "root config changed → full run"
+            echo "MODE=full" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          # 受影响 + 下游（typecheck / test / lint 范围）。
+          PKGS_DOWN="$(pnpm -r --filter="...[$BASE]" exec pnpm pkg get name 2>/dev/null | grep -oE '@chenzy-design/[a-z-]+' | sort -u | tr '\n' ' ' || true)"
+          # 受影响 + 下游 + 上游依赖（build 范围，保证下游 typecheck 拿到 dist）。
+          PKGS_BUILD="$(pnpm -r --filter="...[$BASE]..." exec pnpm pkg get name 2>/dev/null | grep -oE '@chenzy-design/[a-z-]+' | sort -u | tr '\n' ' ' || true)"
+
+          if [ -z "$(echo "$PKGS_DOWN" | tr -d '[:space:]')" ]; then
+            echo "no package affected → skip"
+            echo "MODE=none" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "affected (down): $PKGS_DOWN"
+          echo "affected (+build deps): $PKGS_BUILD"
+          echo "MODE=affected" >> "$GITHUB_ENV"
+          echo "PKGS_DOWN=$PKGS_DOWN" >> "$GITHUB_ENV"
+          echo "PKGS_BUILD=$PKGS_BUILD" >> "$GITHUB_ENV"
+
+      # build：下游 typecheck 依赖上游 dist/*.d.ts。docs 排除（需 pagefind 后处理，单独部署）。
+      #   full → 全量（原行为）；affected → 只 build 受影响闭包（仍排除 docs）。
+      - name: Build
+        if: env.MODE != 'none'
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = "full" ]; then
+            pnpm --filter='!@chenzy-design/docs' build
+          else
+            FILTERS=""
+            for p in $PKGS_BUILD; do
+              [ "$p" = "@chenzy-design/docs" ] && continue
+              FILTERS="$FILTERS --filter=$p"
+            done
+            [ -n "$FILTERS" ] && pnpm $FILTERS build || echo "no buildable package"
+          fi
+
+      # WCAG AA 对比度门禁：仅审计 tokens 包。full 或 tokens 受影响时跑。
+      - name: A11y contrast gate
+        if: env.MODE == 'full' || (env.MODE == 'affected' && contains(env.PKGS_DOWN, '@chenzy-design/tokens'))
+        run: pnpm a11y:contrast
+
+      # lint：full → 全仓库；affected → 只 lint 受影响包目录（eslint 无 workspace 边界，传目录）。
+      - name: Lint
+        if: env.MODE != 'none'
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = "full" ]; then
+            pnpm lint
+          else
+            DIRS=""
+            for p in $PKGS_DOWN; do
+              d="packages/${p#@chenzy-design/}"
+              [ -d "$d" ] && DIRS="$DIRS $d"
+            done
+            [ -n "$DIRS" ] && pnpm exec eslint $DIRS --max-warnings=0 || echo "no lintable dir"
+          fi
+
+      # typecheck：full → 全 10 包；affected → 受影响 + 下游（--filter ...[BASE]）。
+      - name: Typecheck
+        if: env.MODE != 'none'
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = "full" ]; then
+            pnpm typecheck
+          else
+            FILTERS=""
+            for p in $PKGS_DOWN; do FILTERS="$FILTERS --filter=$p"; done
+            pnpm $FILTERS typecheck
+          fi
+
+      # 单测 + a11y 渲染测试：full → 全量；affected → 只跑受影响包的测试目录。
+      - name: Test
+        if: env.MODE != 'none'
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = "full" ]; then
+            pnpm test
+          else
+            PATHS=""
+            for p in $PKGS_DOWN; do
+              d="packages/${p#@chenzy-design/}"
+              [ -d "$d" ] && PATHS="$PATHS $d"
+            done
+            if [ -n "$PATHS" ]; then
+              pnpm exec vitest run --project unit --project dom $PATHS
+            else
+              echo "no test path"
+            fi
+          fi
+
+      # 体积门禁（size-limit）：仅测 svelte 渲染层。full 或 svelte 受影响时跑。
+      - name: Size gate
+        if: env.MODE == 'full' || (env.MODE == 'affected' && contains(env.PKGS_DOWN, '@chenzy-design/svelte'))
+        run: pnpm perf:check
 
   # 键盘 e2e 门禁：vitest browser mode（playwright provider）在真实 chromium 里测
   # 真实焦点移动 / focus-trap / roving 导航（jsdom 测不了）。playwright 慢，故拆成
   # 独立 job 与 quality 并行；含 chromium 安装（仅 chromium，省时）+ build + test:e2e。
+  #
+  # e2e 只在 svelte 包受影响（或根配置变 / 无法判定 base）时才有意义——被测的键盘
+  # 交互全在 svelte 组件。用同样的 affected 判定，svelte 未受影响则整体跳过。
   e2e:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # 判定 e2e 是否需要跑：svelte 包受影响 / 根配置变 / base 不可用 → 跑，否则跳过。
+      - name: Resolve e2e need
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if ! git rev-parse --verify --quiet "$BASE^{commit}" >/dev/null; then
+            echo "RUN_E2E=1" >> "$GITHUB_ENV"; exit 0
+          fi
+          CHANGED="$(git diff --name-only "$BASE"...HEAD || git diff --name-only "$BASE" HEAD)"
+          ROOT_CONFIG_RE='^(pnpm-lock\.yaml|package\.json|pnpm-workspace\.yaml|vitest\.config\.ts|vitest\..*-setup\.ts|eslint\.config\.js|\.size-limit\.js|uno\.config\.ts|tsconfig\.base\.json|\.github/workflows/ci\.yml)$'
+          if echo "$CHANGED" | grep -qE "$ROOT_CONFIG_RE"; then
+            echo "RUN_E2E=1" >> "$GITHUB_ENV"; exit 0
+          fi
+          PKGS="$(pnpm -r --filter="...[$BASE]" exec pnpm pkg get name 2>/dev/null | grep -oE '@chenzy-design/[a-z-]+' | sort -u || true)"
+          if echo "$PKGS" | grep -q '@chenzy-design/svelte'; then
+            echo "RUN_E2E=1" >> "$GITHUB_ENV"
+          else
+            echo "svelte not affected → skip e2e"
+            echo "RUN_E2E=0" >> "$GITHUB_ENV"
+          fi
+
       # 只装 chromium（test:e2e 只跑 chromium headless），省去其它浏览器下载。
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install chromium
+        if: env.RUN_E2E == '1'
+        run: pnpm exec playwright install --with-deps chromium
       # browser project 复用 src 源码（非 dist），但被测组件依赖 @chenzy-design/core 等
       # workspace 包的 dist，故先 build 产出依赖。
-      - run: pnpm --filter=!@chenzy-design/docs build
-      - run: pnpm test:e2e
+      - name: Build deps
+        if: env.RUN_E2E == '1'
+        run: pnpm --filter='!@chenzy-design/docs' build
+      - name: E2E
+        if: env.RUN_E2E == '1'
+        run: pnpm test:e2e
