@@ -71,6 +71,11 @@
     getContainer?: () => HTMLElement | null;
     /** 水平模式：链接横排，ink 走底部下划线 */
     horizontal?: boolean;
+    /**
+     * 滚动时动态展开激活路径的子级、折叠其它（对齐 Semi），默认 false（全展开）。
+     * autoCollapse 时一个链接的 children 仅在「本链接激活」或「激活链接是其后代」时渲染。
+     */
+    autoCollapse?: boolean;
     /** ink 颜色主题（对齐 Semi）：primary（默认）/ tertiary / muted。 */
     railTheme?: AnchorRailTheme;
     /** 尺寸（对齐 Semi）：default（默认）/ small，影响选项高度与间距。 */
@@ -117,6 +122,7 @@
     targetOffset,
     getContainer,
     horizontal = false,
+    autoCollapse = false,
     railTheme = 'primary',
     size = 'default',
     maxHeight = '750px',
@@ -180,6 +186,36 @@
     return out;
   }
   const flatLinks = $derived<AnchorLink[]>(flatten(resolvedLinks));
+
+  // childMap：每个链接 key → 其所有后代 key 的集合（纯函数，对齐 Semi _getLinkToMap）。
+  // autoCollapse 用它判断某链接是否在当前激活路径上（激活链接是本链接的后代）。
+  function buildChildMap(
+    items: AnchorLink[],
+    ancestors: string[],
+    map: Record<string, Set<string>>,
+  ): void {
+    for (const item of items) {
+      if (!(item.key in map)) map[item.key] = new Set();
+      for (const anc of ancestors) map[anc]?.add(item.key);
+      if (item.children?.length) {
+        ancestors.push(item.key);
+        buildChildMap(item.children, ancestors, map);
+        ancestors.pop();
+      }
+    }
+  }
+  const childMap = $derived.by<Record<string, Set<string>>>(() => {
+    const map: Record<string, Set<string>> = {};
+    buildChildMap(resolvedLinks, [], map);
+    return map;
+  });
+
+  // autoCollapse=true 时，一个链接的 children 仅在「本链接激活」或「激活链接是其后代」
+  // 时渲染（对齐 Semi link.tsx renderChildren）；默认 false 全展开。
+  function shouldRenderChildren(key: string): boolean {
+    if (!autoCollapse) return true;
+    return key === activeKey || childMap[key]?.has(activeKey) === true;
+  }
 
   function getInitialActive(): string {
     return defaultValue ?? flatten(links)[0]?.key ?? '';
@@ -553,7 +589,7 @@
         {:else}
           {@render linkAnchor(link, level, active)}
         {/if}
-        {#if link.children?.length}
+        {#if link.children?.length && shouldRenderChildren(link.key)}
           {@render renderList(link.children, level + 1)}
         {/if}
       </li>
