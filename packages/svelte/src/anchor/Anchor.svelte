@@ -30,13 +30,18 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { setContext } from 'svelte';
-  import type { AnchorLink } from './types.js';
+  import type { AnchorLink, AnchorShowTooltip, AnchorTooltipConfig } from './types.js';
   import {
     nextRovingIndex,
     rovingKeyFromEvent,
     createResizeObserver,
+    isOverflowing,
+    parsePlacement,
+    type Placement,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
+  import Popover from '../popover/Popover.svelte';
   import {
     ANCHOR_COLLECTOR_KEY,
     type AnchorCollector,
@@ -83,6 +88,17 @@
       currentLink: AnchorLink | null,
       previousLink: AnchorLink | null,
     ) => void;
+    /**
+     * 链接文字被缩略（ellipsis）时，hover 链接以浮层展示完整 title（对齐 Semi）。
+     * boolean | { type: 'tooltip' | 'popover'; opts }；true 等价 { type: 'tooltip' }。
+     * 默认 false：不装 overflow 检测，也不包浮层，零开销。
+     */
+    showTooltip?: AnchorShowTooltip;
+    /**
+     * 浮层弹出位置（12 方位 Placement）；仅 showTooltip 开启时生效。
+     * 缺省不传，跟随浮层组件默认。
+     */
+    position?: Placement;
     ariaLabel?: string;
     /** 声明式子项（<Anchor.Link>）。与 links 二选一，links 优先。 */
     children?: Snippet;
@@ -108,11 +124,18 @@
     style,
     onClick,
     onChange,
+    showTooltip = false,
+    position,
     ariaLabel,
     children,
   }: Props = $props();
 
   const loc = useLocale();
+
+  // --- showTooltip 归一化（对齐 Semi）：true→{type:'tooltip'}；false→null（不装）。 ---
+  const tip = $derived<AnchorTooltipConfig | null>(
+    showTooltip === true ? { type: 'tooltip' } : showTooltip || null,
+  );
 
   // --- 声明式子项收集（<Anchor.Link>）---
   // 普通数组承接注册（非 $state，避免子项 init push 触发反应自循环）。
@@ -360,6 +383,99 @@
     }
   }
 
+  // --- showTooltip overflow 检测（仅 tip 开启时装 RO，默认 false 零开销）---
+  // truncated 记录每个链接是否被 ellipsis 缩略；用普通对象 + 唯一反应量 truncRevision
+  // 驱动重渲染（避免直接 $state Map 的等值判定坑）。写入只发生在 RO 回调里（非 render 期），
+  // RO 观测的是 <a> 尺寸而非 truncated 本身，故不自循环（红线 #2）。
+  const truncated: Record<string, boolean> = {};
+  let truncRevision = $state(0);
+
+  // per-link 缩略查询：读 truncRevision 建立依赖，使 RO 回调 bump 后重派生。
+  function isTruncated(key: string): boolean {
+    void truncRevision;
+    return truncated[key] === true;
+  }
+
+  // 测量单个 <a> 是否单行缩略，写回 truncated 并按需 bump 反应量。
+  // 复用 core isOverflowing 纯函数（rows:1 单行宽度比较），不自造判定。
+  function measureLink(key: string, el: HTMLElement): void {
+    const next = isOverflowing({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+      rows: 1,
+    });
+    if (truncated[key] !== next) {
+      truncated[key] = next;
+      truncRevision += 1;
+    }
+  }
+
+  // Svelte action：仅 tip 开启时对 <a> 装 ResizeObserver 观测缩略。
+  // 默认 showTooltip=false 时 tip 为 null，早退不建 RO（零开销）。
+  // 写 state 仅在 RO 回调（rAF 异步）里，与渲染读分离，避免 effect_update_depth 自循环（红线 #2/#4）。
+  function overflowProbe(node: HTMLElement, key: string) {
+    let frame = 0;
+    let ro: ResizeObserver | null = null;
+
+    function schedule() {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        measureLink(key, node);
+      });
+    }
+
+    function setup() {
+      if (!tip || typeof ResizeObserver === 'undefined') return;
+      ro = new ResizeObserver(schedule);
+      ro.observe(node);
+      // 首测异步（rAF），脱离挂载同步栈避免与首帧渲染读写同栈。
+      schedule();
+    }
+
+    function teardown() {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      ro?.disconnect();
+      ro = null;
+    }
+
+    setup();
+
+    return {
+      update(nextKey: string) {
+        key = nextKey;
+        // tip 由关变开 / 由开变关时重建；key 变化仅需重测。
+        if (tip && !ro) {
+          setup();
+        } else if (!tip && ro) {
+          teardown();
+          if (truncated[key]) {
+            truncated[key] = false;
+            truncRevision += 1;
+          }
+        } else if (ro) {
+          schedule();
+        }
+      },
+      destroy: teardown,
+    };
+  }
+
+  // Popover 用 position(Side)+align 而非单一 Placement：拆分 position prop 供 Popover 消费。
+  // 未传 position 时不下发 side/align（走 Popover 自身默认）；exactOptionalPropertyTypes
+  // 下不能传 undefined，故用对象在缺省时省略键，再展开给浮层组件。
+  const tooltipProps = $derived<Record<string, unknown>>(
+    position ? { placement: position } : {},
+  );
+  const popoverProps = $derived.by<Record<string, unknown>>(() => {
+    if (!position) return {};
+    const { side, align } = parsePlacement(position);
+    return { position: side, align };
+  });
+
   // 数字转 px（对齐 Semi maxHeight/maxWidth 数字入参）。
   function toCssLength(v: string | number): string {
     return typeof v === 'number' ? `${v}px` : v;
@@ -395,29 +511,48 @@
   <div hidden style="display:none">{@render children()}</div>
 {/if}
 
+{#snippet linkAnchor(link: AnchorLink, level: number, active: boolean)}
+  <a
+    class="cd-anchor__link cd-anchor__link--level-{level} {link.className ?? ''}"
+    class:cd-anchor__link--active={active}
+    class:cd-anchor__link--disabled={link.disabled}
+    href={link.href}
+    aria-current={active ? 'location' : undefined}
+    aria-disabled={link.disabled ? 'true' : undefined}
+    tabindex={linkTabindex(link)}
+    data-anchor-key={link.key}
+    style={link.style}
+    use:overflowProbe={link.key}
+    onclick={(e) => handleClick(e, link)}
+    onkeydown={(e) => onLinkKeydown(e, link)}
+    onfocus={() => {
+      focusedKey = link.key;
+    }}
+  >
+    {link.title}
+  </a>
+{/snippet}
+
 {#snippet renderList(items: AnchorLink[], level: number)}
   <ul class="cd-anchor__list">
     {#each items as link (link.key)}
       {@const active = link.key === activeKey}
       <li class="cd-anchor__item">
-        <a
-          class="cd-anchor__link cd-anchor__link--level-{level} {link.className ?? ''}"
-          class:cd-anchor__link--active={active}
-          class:cd-anchor__link--disabled={link.disabled}
-          href={link.href}
-          aria-current={active ? 'location' : undefined}
-          aria-disabled={link.disabled ? 'true' : undefined}
-          tabindex={linkTabindex(link)}
-          data-anchor-key={link.key}
-          style={link.style}
-          onclick={(e) => handleClick(e, link)}
-          onkeydown={(e) => onLinkKeydown(e, link)}
-          onfocus={() => {
-            focusedKey = link.key;
-          }}
-        >
-          {link.title}
-        </a>
+        {#if tip && isTruncated(link.key)}
+          <!-- 缩略且 showTooltip 开启：以浮层承载完整 title（对齐 Semi）。
+               tip.type 决定 Tooltip / Popover；position 拆分给对应浮层；opts 透传。 -->
+          {#if tip.type === 'popover'}
+            <Popover content={link.title} {...tip.opts} {...popoverProps}>
+              {@render linkAnchor(link, level, active)}
+            </Popover>
+          {:else}
+            <Tooltip content={link.title} {...tip.opts} {...tooltipProps}>
+              {@render linkAnchor(link, level, active)}
+            </Tooltip>
+          {/if}
+        {:else}
+          {@render linkAnchor(link, level, active)}
+        {/if}
         {#if link.children?.length}
           {@render renderList(link.children, level + 1)}
         {/if}
@@ -471,6 +606,18 @@
   .cd-anchor__item {
     margin: 0;
     padding: 0;
+  }
+  /* showTooltip 开启且链接缩略时，<a> 被 Tooltip/Popover 的 inline-block 浮层 wrapper
+     包裹。默认 inline-block 会撑到内容宽度（如 352px），使 <a> 不受 li 的 maxWidth 约束、
+     ellipsis 永不触发、truncated 恒 false、浮层永不弹（曾踩此 bug）。
+     令 wrapper 与其 trigger 两层都 block 铺满 li，把 maxWidth 约束从 li 一路传导到 <a>，
+     使 <a>（block + 负 margin ink）布局与未包裹时完全一致（ink 对齐、缩略生效）。
+     DOM 为 li > .cd-tooltip > .cd-tooltip__trigger > a，故用后代选择器覆盖两层。 */
+  .cd-anchor__item :global(.cd-tooltip),
+  .cd-anchor__item :global(.cd-tooltip__trigger),
+  .cd-anchor__item :global(.cd-popover),
+  .cd-anchor__item :global(.cd-popover__trigger) {
+    display: block;
   }
   .cd-anchor__link {
     display: block;

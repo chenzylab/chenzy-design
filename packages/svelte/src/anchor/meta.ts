@@ -72,6 +72,18 @@ export const meta = {
       desc: '点击链接回调（e.preventDefault 之后触发，对齐 Semi）',
     },
     {
+      name: 'showTooltip',
+      type: "boolean | { type: 'tooltip' | 'popover'; opts?: Record<string, unknown> }",
+      default: 'false',
+      desc: '链接文字缩略时 hover 显示完整标题（对齐 Semi）；对象形式指定浮层类型与透传配置',
+    },
+    {
+      name: 'position',
+      type: 'Placement',
+      default: 'undefined',
+      desc: '浮层弹出位置（12 方位）；仅 showTooltip 开启时生效（对齐 Semi）',
+    },
+    {
       name: 'onChange',
       type: '(currentLink: AnchorLink | null, previousLink: AnchorLink | null) => void',
       default: 'undefined',
