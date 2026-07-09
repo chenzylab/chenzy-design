@@ -99,7 +99,10 @@ const components = [
   ['upload', '{ Upload }', '13 KB'],
   // navigation
   ['anchor', '{ Anchor }', '4.5 KB'],
-  ['breadcrumb', '{ BreadcrumbItem }', '4 KB'],
+  // 4 KB → 4.8 KB：全面对齐 Semi 引入的真实新功能（ellipsisPos:'middle' JS 二分截断 +
+  // ResizeObserver、IconMore 折叠图标、showTooltip 对象化、链接三态、字符串 route 归一化）。
+  // 实测 baseline 3460 B → 4620 B，纯功能增长；同类导航组件 anchor 4.5 / pagination 3.8 / tabs 7.3。
+  ['breadcrumb', '{ BreadcrumbItem }', '4.8 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   ['menu', '{ Menu }', '8.4 KB'],
   ['pagination', '{ Pagination }', '3.8 KB'],

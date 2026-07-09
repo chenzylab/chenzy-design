@@ -127,54 +127,57 @@
   });
   /**
    * middle 截断 action（对齐 Semi ellipsisPos:'middle'）：纯 CSS 只能末尾省略，
-   * 中间省略需 JS 测量。挂载 + 容器尺寸变化时二分裁剪文本为「头…尾」使其不溢出；
-   * 未溢出则显示完整文本。完整文本仍由外层 Tooltip 展示。SSR 安全（action 仅客户端跑）。
+   * 中间省略需 JS 测量。挂载 + 容器尺寸变化时二分裁剪承载文本的内层元素为「头…尾」
+   * 使其不溢出，并补 aria-label=完整名保可访问；未溢出则显示完整文本。
+   * enabled=false（end 模式）时 no-op。完整文本仍由外层 Tooltip 展示。SSR 安全。
    */
-  function middleEllipsis(node: HTMLElement, full: string) {
+  function middleEllipsis(node: HTMLElement, opts: { enabled: boolean; full: string }) {
     const ELLIPSIS = '…';
-    // 防重入：update 内改 textContent 会触发 ResizeObserver，用标志忽略自触发回调。
     let updating = false;
-    function fits(): boolean {
-      return node.scrollWidth <= node.clientWidth;
+    // 承载文本的内层元素（current / link / text 之一）。
+    function inner(): HTMLElement | null {
+      return node.querySelector('.cd-breadcrumb__current, .cd-breadcrumb__link, .cd-breadcrumb__text');
     }
-    function apply(text: string) {
-      if (node.textContent !== text) node.textContent = text;
-    }
-    function update() {
-      if (updating) return;
+    function update({ enabled, full }: { enabled: boolean; full: string }) {
+      if (!enabled || updating) return;
+      const el = inner();
+      if (!el) return;
+      // 含前置图标时不裁 textContent（会误删 icon 节点）；退化为 CSS 末尾省略。
+      if (el.querySelector('.cd-breadcrumb__icon')) return;
       updating = true;
-      apply(full);
-      if (fits() || full.length <= 2) {
-        updating = false;
-        return;
-      }
-      // 二分：保留的「头 + 尾」总字符数 keep，头尾各半。
-      let lo = 1;
-      let hi = full.length - 1;
-      let best = ELLIPSIS;
-      while (lo <= hi) {
-        const keep = (lo + hi) >> 1;
-        const head = Math.ceil(keep / 2);
-        const tail = Math.floor(keep / 2);
-        const candidate = full.slice(0, head) + ELLIPSIS + (tail > 0 ? full.slice(full.length - tail) : '');
-        apply(candidate);
-        if (fits()) {
-          best = candidate;
-          lo = keep + 1;
-        } else {
-          hi = keep - 1;
+      el.setAttribute('aria-label', full);
+      el.textContent = full;
+      if (el.scrollWidth > el.clientWidth && full.length > 2) {
+        let lo = 1;
+        let hi = full.length - 1;
+        let best = ELLIPSIS;
+        while (lo <= hi) {
+          const keep = (lo + hi) >> 1;
+          const head = Math.ceil(keep / 2);
+          const tail = Math.floor(keep / 2);
+          const cand = full.slice(0, head) + ELLIPSIS + (tail > 0 ? full.slice(full.length - tail) : '');
+          el.textContent = cand;
+          if (el.scrollWidth <= el.clientWidth) {
+            best = cand;
+            lo = keep + 1;
+          } else {
+            hi = keep - 1;
+          }
         }
+        el.textContent = best;
       }
-      apply(best);
       updating = false;
     }
-    update();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => update()) : null;
+    update(opts);
+    const ro =
+      opts.enabled && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => update(opts))
+        : null;
     ro?.observe(node);
     return {
-      update(next: string) {
-        full = next;
-        update();
+      update(next: { enabled: boolean; full: string }) {
+        opts = next;
+        update(next);
       },
       destroy() {
         ro?.disconnect();
@@ -279,51 +282,13 @@
      end 截断：CSS text-overflow:ellipsis（末尾省略）。
      middle 截断：JS action 二分裁剪为「头…尾」（对齐 Semi ellipsisPos:'middle'）。 -->
 {#snippet maybeTooltip(route: BreadcrumbRoute, index: number, last: boolean)}
-  {#if tooltipCfg.enabled && tooltipCfg.ellipsisPos === 'middle'}
-    <Tooltip content={route.name ?? ''} placement="top">
-      <span
-        class="cd-breadcrumb__ellipsis-wrap cd-breadcrumb__ellipsis-wrap--middle"
-        style="--cd-breadcrumb-item-max-width:{tooltipWidthPx}"
-      >
-        {#if last}
-          <!-- aria-label 用完整名（截断文本由 action 填入），保证 middle 截断后可访问名完整。 -->
-          <span
-            class="cd-breadcrumb__current"
-            aria-current="page"
-            aria-label={route.name ?? ''}
-            use:middleEllipsis={route.name ?? ''}
-          ></span>
-        {:else if route.href}
-          <a
-            class={['cd-breadcrumb__link', activeIndex === index ? 'cd-breadcrumb__link--active' : ''].filter(Boolean).join(' ')}
-            href={route.href}
-            aria-label={route.name ?? ''}
-            use:middleEllipsis={route.name ?? ''}
-            onclick={() => handleClick(route, index)}
-          ></a>
-        {:else}
-          <span
-            class={['cd-breadcrumb__text', activeIndex === index ? 'cd-breadcrumb__text--active' : ''].filter(Boolean).join(' ')}
-            role="link"
-            tabindex="0"
-            aria-label={route.name ?? ''}
-            use:middleEllipsis={route.name ?? ''}
-            onclick={() => handleClick(route, index)}
-            onkeydown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleClick(route, index);
-              }
-            }}
-          ></span>
-        {/if}
-      </span>
-    </Tooltip>
-  {:else if tooltipCfg.enabled}
+  {#if tooltipCfg.enabled}
     <Tooltip content={route.name ?? ''} placement="top">
       <span
         class="cd-breadcrumb__ellipsis-wrap"
+        class:cd-breadcrumb__ellipsis-wrap--middle={tooltipCfg.ellipsisPos === 'middle'}
         style="--cd-breadcrumb-item-max-width:{tooltipWidthPx}"
+        use:middleEllipsis={{ enabled: tooltipCfg.ellipsisPos === 'middle', full: route.name ?? '' }}
         >{@render routeItem(route, index, last)}</span
       >
     </Tooltip>
