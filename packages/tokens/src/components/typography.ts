@@ -12,7 +12,6 @@
  * `$font-weight-regular` → `--cd-font-weight-bold` / `--cd-font-weight-regular`；
  * title1..6 的字重自引用 `$font-typography-title-fontWeight` → 引用同组
  * `--cd-font-typography-title-fontweight`（非自身自引用，合法）。
- * 注：Semi 无 `--semi-color-white` 出现在本表，故无 text-inverse 替换。
  */
 import type { TokenGroup } from './token-def.js';
 

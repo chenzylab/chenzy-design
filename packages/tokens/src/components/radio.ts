@@ -8,8 +8,6 @@
  *
  * Semi 映射规则：
  *   $color-radio_xxx → color-radio-xxx；var(--semi-color-*) → var(--cd-color-*)。
- *   rgba(var(--semi-white), 1)（= #fff）我们无 --cd-color-white alias，
- *   用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  *   $border-thickness-control → var(--cd-border-thickness-control)。
  *   $width-icon-medium → var(--cd-width-icon-medium)；$spacing-* → var(--cd-spacing-*)。
  *   var(--semi-border-radius-*) → var(--cd-border-radius-*)；$font-size-* → var(--cd-font-size-*)；
@@ -28,7 +26,7 @@ export const radioTokens = {
   'color-radio-extra-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '辅助文本色', usage: '辅助文本颜色' },
 
   'color-radio-primary-border-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中描边色', usage: '选中状态单选圆圈描边颜色 - 默认态' },
-  'color-radio-primary-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '中心圆点色', usage: '选中状态单选圆圈中心圆点颜色' },
+  'color-radio-primary-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '中心圆点色', usage: '选中状态单选圆圈中心圆点颜色' },
 
   // —— buttonRadio（按钮样式单选） ——
   'color-radio-buttonradio-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '按钮文本色', usage: '按钮样式单选文本颜色' },

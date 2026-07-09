@@ -7,8 +7,6 @@
  *
  * 注：
  *  - Semi 的 var(--semi-color-*) 一一对应 var(--cd-color-*)；
- *    var(--semi-color-white) → var(--cd-color-text-inverse)（= #ffffff，无 --cd-color-white alias）；
- *    rgba(var(--semi-white), 1) 即纯白 → var(--cd-color-text-inverse)；
  *    var(--semi-grey-3) → var(--cd-color-grey-3)（global palette）。
  *  - $spacing-base-tight → var(--cd-spacing-base-tight)（12px）；$spacing-base → var(--cd-spacing-base)（16px）。
  *  - var(--semi-border-radius-circle) → var(--cd-border-radius-circle)；
@@ -37,7 +35,7 @@ export const stepsTokens = {
   'steps-icon-size': { value: '24px', category: 'width', label: '图标节点尺寸', usage: '步骤条图标节点边长（组件消费，对齐 Semi height-steps-basic-item-left-icon）' },
   'steps-icon-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '未到达图标背景', usage: 'wait 态图标背景（组件消费）' },
   'steps-icon-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '未到达图标文字色', usage: 'wait 态图标文字色（组件消费）' },
-  'steps-icon-color-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '激活图标文字色', usage: 'process/finish 态图标文字色（组件消费）' },
+  'steps-icon-color-active': { value: 'var(--cd-color-white)', category: 'color', label: '激活图标文字色', usage: 'process/finish 态图标文字色（组件消费）' },
   'steps-icon-bg-process': { value: 'var(--cd-color-primary)', category: 'color', label: '进行中图标背景', usage: 'process 态图标背景（组件消费）' },
   'steps-icon-bg-finish': { value: 'var(--cd-color-primary)', category: 'color', label: '已完成图标背景', usage: 'finish 态图标背景（组件消费）' },
   'steps-icon-bg-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误图标背景', usage: 'error 态图标背景（组件消费）' },

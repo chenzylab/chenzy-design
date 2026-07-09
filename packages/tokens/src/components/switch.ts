@@ -7,8 +7,6 @@
  * 末尾为 chenzy-design Switch 实际消费的补充 token（Semi 无 / 命名差异；组件消费）。
  *
  * 注：
- *  - Semi 的 var(--semi-color-white) 与 rgba(var(--semi-white), 1) 我们无对应 --cd-color-white
- *    alias，用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  *  - Semi $motion-switch-transitionDuration: 200ms 对齐我们 --cd-motion-duration-mid（= 200ms）。
  *  - Semi calc（$width-switch_knob_active 等）忠实翻译为 CSS calc(...)。
  */
@@ -21,8 +19,8 @@ export const switchTokens = {
   // —— Color ——
   'color-switch-default-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '关闭态背景色', usage: '关闭态(未选中)开关背景色 - 默认' },
   'color-switch-checked-bg-default': { value: 'var(--cd-color-success)', category: 'color', label: '开启态背景色', usage: '开启态开关背景色 - 默认' },
-  'color-switch-knob-bg-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '滑块背景色', usage: '开关滑块背景颜色 - 关闭态' },
-  'color-switch-checked-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '开启态文案色', usage: '开启态开关文案颜色' },
+  'color-switch-knob-bg-default': { value: 'var(--cd-color-white)', category: 'color', label: '滑块背景色', usage: '开关滑块背景颜色 - 关闭态' },
+  'color-switch-checked-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '开启态文案色', usage: '开启态开关文案颜色' },
 
   // —— Width / Height ——
   'width-switch': { value: '40px', category: 'width', label: '开关宽度', usage: '开关宽度' },

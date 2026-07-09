@@ -555,7 +555,7 @@
     padding: 4px;
     border: none;
     background: transparent;
-    color: var(--cd-video-player-icon-color, var(--cd-color-text-inverse));
+    color: var(--cd-video-player-icon-color, var(--cd-color-white));
     cursor: pointer;
     border-radius: var(--cd-border-radius-small, 3px);
     transition: color var(--cd-video-player-transition, 150ms) ease;
@@ -574,7 +574,7 @@
   }
 
   .cd-video-player__time {
-    color: var(--cd-video-player-text-color, var(--cd-color-text-inverse));
+    color: var(--cd-video-player-text-color, var(--cd-color-white));
     font-size: var(--cd-font-size-regular, 14px);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -587,7 +587,7 @@
     transform: translate(-50%, -50%);
     padding: 8px 16px;
     background: var(--cd-video-player-notification-bg, rgba(0, 0, 0, 0.6));
-    color: var(--cd-video-player-notification-color, var(--cd-color-text-inverse));
+    color: var(--cd-video-player-notification-color, var(--cd-color-white));
     border-radius: var(--cd-video-player-notification-radius, var(--cd-border-radius-medium, 6px));
     font-size: var(--cd-font-size-regular, 14px);
     line-height: normal;
@@ -601,7 +601,7 @@
     align-items: center;
     justify-content: center;
     background: var(--cd-video-player-notification-bg, rgba(0, 0, 0, 0.6));
-    color: var(--cd-video-player-notification-color, var(--cd-color-text-inverse));
+    color: var(--cd-video-player-notification-color, var(--cd-color-white));
     font-size: var(--cd-font-size-regular, 14px);
     line-height: normal;
   }

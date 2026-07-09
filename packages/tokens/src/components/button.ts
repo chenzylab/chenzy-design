@@ -8,55 +8,58 @@ import type { TokenGroup } from './token-def.js';
 export const buttonTokens = {
   // —— primary ——
   'color-button-primary-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '主要按钮背景色', usage: '主要按钮背景颜色' },
-  'color-button-primary-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - solid 模式' },
+  'color-button-primary-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - solid 模式' },
   'color-button-primary-bg-hover': { value: 'var(--cd-color-primary-hover)', category: 'color', label: '主要按钮背景色', usage: '主要按钮背景颜色 - 悬浮' },
-  'color-button-primary-text-hover': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 悬浮' },
+  'color-button-primary-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 悬浮' },
   'color-button-primary-bg-active': { value: 'var(--cd-color-primary-active)', category: 'color', label: '主要按钮背景色', usage: '主要按钮背景颜色 - 按下' },
-  'color-button-primary-text-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 按下' },
+  'color-button-primary-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 按下' },
   'color-button-primary-outline-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '主要按钮边框色', usage: '主要按钮边框颜色 - 边框模式' },
   'color-button-primary-borderless-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 浅色/边框/无边框模式' },
 
   // —— secondary ——
   'color-button-secondary-bg-default': { value: 'var(--cd-color-secondary)', category: 'color', label: '次要按钮背景色', usage: '次要按钮背景颜色' },
-  'color-button-secondary-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - solid 模式' },
+  'color-button-secondary-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - solid 模式' },
   'color-button-secondary-bg-hover': { value: 'var(--cd-color-secondary-hover)', category: 'color', label: '次要按钮背景色', usage: '次要按钮背景颜色 - 悬浮' },
-  'color-button-secondary-text-hover': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - 悬浮' },
+  'color-button-secondary-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - 悬浮' },
   'color-button-secondary-bg-active': { value: 'var(--cd-color-secondary-active)', category: 'color', label: '次要按钮背景色', usage: '次要按钮背景颜色 - 按下' },
-  'color-button-secondary-text-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - 按下' },
+  'color-button-secondary-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - 按下' },
   'color-button-secondary-outline-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '次要按钮边框色', usage: '次要按钮边框颜色 - 边框模式' },
   'color-button-secondary-borderless-text-default': { value: 'var(--cd-color-secondary)', category: 'color', label: '次要按钮文字色', usage: '次要按钮文字颜色 - 浅色/边框/无边框模式' },
 
   // —— danger ——
   'color-button-danger-bg-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险按钮背景色', usage: '危险按钮背景颜色' },
-  'color-button-danger-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - solid 模式' },
+  'color-button-danger-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - solid 模式' },
   'color-button-danger-bg-hover': { value: 'var(--cd-color-danger-hover)', category: 'color', label: '危险按钮背景色', usage: '危险按钮背景颜色 - 悬浮' },
-  'color-button-danger-text-hover': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 悬浮' },
+  'color-button-danger-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 悬浮' },
   'color-button-danger-bg-active': { value: 'var(--cd-color-danger-active)', category: 'color', label: '危险按钮背景色', usage: '危险按钮背景颜色 - 按下' },
-  'color-button-danger-text-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 按下' },
+  'color-button-danger-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 按下' },
   'color-button-danger-outline-border-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险按钮边框色', usage: '危险按钮边框颜色 - 边框模式' },
   'color-button-danger-borderless-text-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 浅色/边框/无边框模式' },
 
   // —— warning ——
   'color-button-warning-bg-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告按钮背景色', usage: '警告按钮背景颜色' },
-  'color-button-warning-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - solid 模式' },
+  'color-button-warning-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - solid 模式' },
   'color-button-warning-bg-hover': { value: 'var(--cd-color-warning-hover)', category: 'color', label: '警告按钮背景色', usage: '警告按钮背景颜色 - 悬浮' },
-  'color-button-warning-text-hover': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 悬浮' },
+  'color-button-warning-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 悬浮' },
   'color-button-warning-bg-active': { value: 'var(--cd-color-warning-active)', category: 'color', label: '警告按钮背景色', usage: '警告按钮背景颜色 - 按下' },
-  'color-button-warning-text-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 按下' },
+  'color-button-warning-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 按下' },
   'color-button-warning-outline-border-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告按钮边框色', usage: '警告按钮边框颜色 - 边框模式' },
   'color-button-warning-borderless-text-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 浅色/边框/无边框模式' },
 
   // —— tertiary ——
   'color-button-tertiary-bg-default': { value: 'var(--cd-color-tertiary)', category: 'color', label: '第三按钮背景色', usage: '第三按钮背景颜色' },
-  'color-button-tertiary-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - solid 模式' },
+  'color-button-tertiary-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - solid 模式' },
   'color-button-tertiary-bg-hover': { value: 'var(--cd-color-tertiary-hover)', category: 'color', label: '第三按钮背景色', usage: '第三按钮背景颜色 - 悬浮' },
-  'color-button-tertiary-text-hover': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 悬浮' },
+  'color-button-tertiary-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 悬浮' },
   'color-button-tertiary-bg-active': { value: 'var(--cd-color-tertiary-active)', category: 'color', label: '第三按钮背景色', usage: '第三按钮背景颜色 - 按下' },
-  'color-button-tertiary-text-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 按下' },
+  'color-button-tertiary-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 按下' },
   'color-button-tertiary-outline-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '第三按钮边框色', usage: '第三按钮边框颜色 - 边框模式' },
   'color-button-tertiary-solid-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 浅色/边框/无边框模式' },
 
-  // —— disabled ——
+  // —— disabled（对齐 Semi $color-button_disabled*：底灰 + 灰文字，而非纯透明）——
+  'color-button-disabled-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用按钮背景色', usage: '禁用按钮背景颜色 - solid/light 主题' },
+  'color-button-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - 所有主题' },
+  'color-button-disabled-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '禁用按钮边框色', usage: '禁用按钮边框颜色 - 边框模式' },
 
   // —— light ——
   'color-button-light-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '浅色按钮背景色', usage: '浅色按钮背景颜色' },
@@ -80,7 +83,13 @@ export const buttonTokens = {
   'color-button-outline-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '边框模式背景色', usage: '边框模式按钮背景颜色 - 悬浮' },
   'color-button-outline-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '边框模式背景色', usage: '边框模式按钮背景颜色 - 按下' },
 
-  // —— buttongroup ——
+  // —— buttongroup（对齐 Semi $color-button_group-border-default / $width-button_group-border）——
+  'color-button-group-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '按钮组分割线色', usage: '按钮组相邻按钮分割线颜色' },
+  'width-button-group-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '按钮组分割线宽度', usage: '按钮组相邻按钮分割线宽度' },
+  'radius-button-group': { value: 'var(--cd-radius-button)', category: 'radius', label: '按钮组圆角', usage: '按钮组两端圆角大小（对齐 Semi $radius-button_group）' },
+
+  // —— splitButtonGroup（对齐 Semi $radius-button_splitButtonGroup_*）——
+  'radius-button-splitbuttongroup': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮组圆角', usage: '分裂按钮组首/末按钮外侧圆角大小' },
 
   // —— padding ——
   'spacing-button-default-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮左侧内边距', usage: '按钮左侧内边距 - 默认' },
@@ -92,6 +101,7 @@ export const buttonTokens = {
   // —— font ——
   'font-button-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '按钮文字字重', usage: '按钮文字字重 - 默认' },
   'font-button-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '按钮文字字号', usage: '按钮文字字号- 默认' },
+  'font-button-lineheight': { value: 'var(--cd-line-height-regular)', category: 'font', label: '按钮文字行高', usage: '按钮文字行高 - 默认（对齐 Semi $font-button-lineHeight 20px）' },
 
   // —— height ——
   'height-button-large': { value: 'var(--cd-control-height-large)', category: 'height', label: '按钮高度', usage: '按钮高度 - 大尺寸' },
@@ -157,16 +167,11 @@ export const buttonTokens = {
   'transform-scale-button-danger': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '危险按钮放大', usage: '危险按钮-放大' },
   'transform-scale-button-borderless': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '无边框按钮放大', usage: '无边框按钮-放大' },
 
-  // —— animation：图标旋转 ——
+  // —— animation：图标旋转（对齐 Semi $animation_duration-button_icon_loading 600ms）——
+  'animation-duration-button-icon-loading': { value: '600ms', category: 'animation', label: '加载图标旋转时长', usage: '加载图标容器旋转一周时长（对齐 Semi 600ms）' },
+  'animation-duration-button-icon-custom-loading': { value: '1600ms', category: 'animation', label: '自定义加载图标旋转时长', usage: '自定义指示器旋转一周时长（对齐 Semi 1600ms）' },
 
-  // —— chenzy-design 组件实际消费的补充 token（Semi 无）——
-  'button-height-default': { value: 'var(--cd-control-height-default)', category: 'height', label: '按钮高度', usage: '按钮高度 - 默认（组件消费）' },
-  'button-height-small': { value: 'var(--cd-control-height-small)', category: 'height', label: '按钮高度', usage: '按钮高度 - 小尺寸（组件消费）' },
-  'button-height-large': { value: 'var(--cd-control-height-large)', category: 'height', label: '按钮高度', usage: '按钮高度 - 大尺寸（组件消费）' },
-  'button-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮水平内边距', usage: '按钮水平内边距 - 默认/小尺寸（组件消费）' },
-  'button-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '按钮圆角', usage: '按钮圆角（组件消费）' },
-  'button-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '按钮字号', usage: '按钮文字字号（组件消费）' },
-  'button-group-divider': { value: 'var(--cd-color-border)', category: 'color', label: '按钮组分隔线色', usage: '按钮组分隔线颜色（组件消费）' },
+  // —— colorful（AI 多彩）：Semi 用 --semi-color-ai-* 语义色，我方用独立可编辑渐变三色 ——
   'button-colorful-from': { value: '#4d6bff', category: 'color', label: 'Colorful 渐变起始色', usage: 'colorful（AI 多彩）蓝→紫渐变起始色', editable: true },
   'button-colorful-via': { value: '#7b5cff', category: 'color', label: 'Colorful 渐变中间色', usage: 'colorful（AI 多彩）蓝→紫渐变中间色', editable: true },
   'button-colorful-to': { value: '#a64dff', category: 'color', label: 'Colorful 渐变结束色', usage: 'colorful（AI 多彩）蓝→紫渐变结束色', editable: true },

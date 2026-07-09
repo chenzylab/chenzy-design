@@ -276,14 +276,14 @@
   /* solid: filled background + inverse text */
   .cd-tag--solid {
     background: var(--cd-tag-semantic);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-tag--solid.cd-tag--grey {
     background: var(--cd-color-text-2);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-tag--solid.cd-tag--warning {
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
 
   /* ghost: transparent background + border */
@@ -312,14 +312,14 @@
   }
   .cd-tag--checkable.cd-tag--checked {
     background: var(--cd-tag-semantic);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     border-color: transparent;
   }
   .cd-tag--checkable.cd-tag--checked.cd-tag--grey {
     background: var(--cd-color-primary);
   }
   .cd-tag--checkable.cd-tag--checked.cd-tag--warning {
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
   }
   .cd-tag--checkable:focus-visible {
     outline: none;
@@ -350,7 +350,7 @@
   /* solid: 多彩实心 + 白字 */
   .cd-tag--colorful.cd-tag--solid {
     background: var(--ct-fill);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     border-color: transparent;
   }
   /* light: 浅多彩底 + 紫字 */

@@ -176,7 +176,7 @@
     border-radius: var(--cd-radius-button);
     font-size: var(--cd-font-button-fontsize);
     font-weight: var(--cd-font-button-fontweight);
-    line-height: 1;
+    line-height: var(--cd-font-button-lineheight);
     cursor: pointer;
     /* 过渡/变换由各 type/theme 的专属 transition/transform token 接管（见下），
        对齐 Semi animation.scss：默认 duration=0ms（无过渡），主题/DSM 可按类型开启。 */
@@ -283,7 +283,6 @@
   }
   .cd-button:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
   }
   /*
     收敛：每个 type × theme × state 组合直接读独立消费组件级 token（对齐 Semi
@@ -466,7 +465,7 @@
   }
   .cd-button--colorful.cd-button--solid {
     background: var(--cf);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     border-color: transparent;
   }
   .cd-button--colorful.cd-button--solid:hover:not(:disabled):not([aria-disabled='true']) {
@@ -516,12 +515,57 @@
       color-mix(in srgb, var(--cd-button-colorful-to) 12%, transparent) 100%
     );
   }
+  /*
+    disabled（对齐 Semi $color-button_disabled*）：不用整体 opacity 压暗，按主题给禁用色。
+    置于所有 type×theme 着色规则之后，特异性 ≥ 那些规则（0-2-0）以确保覆盖：
+    - solid/light：禁用底灰 + 灰字；borderless：透明底 + 灰字；outline：透明底 + 灰边 + 灰字。
+    - colorful 禁用：取消渐变（背景/border-image）回落到同一套禁用色。
+  */
+  .cd-button--solid:disabled,
+  .cd-button--light:disabled {
+    background: var(--cd-color-button-disabled-bg-default);
+    border-color: transparent;
+  }
+  .cd-button--borderless:disabled {
+    background: transparent;
+    border-color: transparent;
+  }
+  .cd-button--outline:disabled {
+    background: transparent;
+    border-color: var(--cd-color-button-disabled-border-default);
+  }
+  /* 文字色：0-2-0 覆盖各 type×theme 文字规则 */
+  .cd-button--solid:disabled,
+  .cd-button--light:disabled,
+  .cd-button--borderless:disabled,
+  .cd-button--outline:disabled {
+    color: var(--cd-color-button-disabled-text-default);
+    box-shadow: none;
+  }
+  /* colorful 禁用：清渐变，回落禁用色（0-3-0 覆盖 colorful 着色） */
+  .cd-button--colorful.cd-button--solid:disabled,
+  .cd-button--colorful.cd-button--light:disabled {
+    background: var(--cd-color-button-disabled-bg-default);
+    border-image: none;
+  }
+  .cd-button--colorful.cd-button--borderless:disabled {
+    background: transparent;
+    border-image: none;
+  }
+  .cd-button--colorful.cd-button--outline:disabled {
+    background: transparent;
+    border-image: none;
+    border-color: var(--cd-color-button-disabled-border-default);
+  }
+  .cd-button--colorful:disabled {
+    color: var(--cd-color-button-disabled-text-default);
+  }
   .cd-button__icon {
     display: inline-flex;
   }
   /* loading 旋转图标 */
   .cd-button__icon--spin {
-    animation: cd-button-spin 0.7s linear infinite;
+    animation: cd-button-spin var(--cd-animation-duration-button-icon-loading) linear infinite;
   }
   @keyframes cd-button-spin {
     to {

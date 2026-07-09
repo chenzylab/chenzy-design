@@ -105,8 +105,11 @@
     display: inline-flex;
     align-items: center;
   }
-  /* 拼接：主按钮右侧去圆角、箭头按钮左侧去圆角并叠边。 */
+  /* 拼接：主按钮右侧去圆角、箭头按钮左侧去圆角并叠边。
+     外侧圆角读 Semi splitButtonGroup 专属圆角 token。 */
   .cd-split-button :global(.cd-button:first-child) {
+    border-start-start-radius: var(--cd-radius-button-splitbuttongroup);
+    border-end-start-radius: var(--cd-radius-button-splitbuttongroup);
     border-start-end-radius: 0;
     border-end-end-radius: 0;
   }
@@ -117,9 +120,11 @@
   .cd-split-button :global(.cd-dropdown .cd-button) {
     border-start-start-radius: 0;
     border-end-start-radius: 0;
+    border-start-end-radius: var(--cd-radius-button-splitbuttongroup);
+    border-end-end-radius: var(--cd-radius-button-splitbuttongroup);
     position: relative;
-    /* 中间细分隔线 */
-    box-shadow: inset 1px 0 0 0 var(--cd-button-group-divider);
+    /* 中间细分隔线（对齐 Semi 按钮组分割线 token） */
+    box-shadow: inset var(--cd-width-button-group-border) 0 0 0 var(--cd-color-button-group-border-default);
   }
   .cd-split-button :global(.cd-dropdown__trigger) {
     display: inline-flex;

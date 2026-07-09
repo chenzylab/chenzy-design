@@ -6,8 +6,6 @@
  * 末尾为 chenzy-design Slider 实际消费的补充 token（Semi 无 / 命名差异；组件消费）。
  *
  * 注：
- *  - Semi 的 var(--semi-color-white) 我们无对应 --cd-color-white alias，
- *    用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  *  - Semi $color-slider_rail: rgba(0, 0, 0, 0.65) 无注释、无 --semi 引用，忠实保留字面量。
  *  - Semi $spacing-slider-* 负值忠实翻译为 CSS calc(-1 * ...)。
  *  - Semi var(--semi-border-radius-small) → var(--cd-border-radius-small)。
@@ -16,7 +14,7 @@ import type { TokenGroup } from './token-def.js';
 
 export const sliderTokens = {
   // —— Color ——
-  'color-slider-handle-bg-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '手柄背景色', usage: '滑动条圆形按钮颜色 - 默认态' },
+  'color-slider-handle-bg-default': { value: 'var(--cd-color-white)', category: 'color', label: '手柄背景色', usage: '滑动条圆形按钮颜色 - 默认态' },
   'color-slider-mark-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '刻度文字色', usage: '滑动条刻度文字颜色' },
   'color-slider-rail-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '轨道背景色', usage: '滑动条轨道颜色 - 未填充' },
   'color-slider-track-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '已填充轨道色', usage: '滑动条轨道颜色 - 已填充' },
@@ -51,7 +49,7 @@ export const sliderTokens = {
   'slider-dot-border-active': { value: 'var(--cd-color-primary)', category: 'color', label: '刻度点激活描边色', usage: '滑块段内刻度点激活描边（组件消费）' },
   'slider-track-disabled-bg': { value: 'var(--cd-color-text-3)', category: 'color', label: '禁用轨道色', usage: '禁用态已填充轨道背景（组件消费）' },
   'slider-tip-bg': { value: 'var(--cd-color-bg-inverse)', category: 'color', label: '气泡背景色', usage: '数值气泡背景（组件消费）' },
-  'slider-tip-color': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '气泡文案色', usage: '数值气泡文案颜色（组件消费）' },
+  'slider-tip-color': { value: 'var(--cd-color-white)', category: 'color', label: '气泡文案色', usage: '数值气泡文案颜色（组件消费）' },
   'slider-tip-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '气泡圆角', usage: '数值气泡圆角（组件消费）' },
   'slider-tip-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '气泡字号', usage: '数值气泡字号（组件消费）' },
   'slider-mark-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '刻度标签字号', usage: '滑块刻度标签字号（组件消费）' },

@@ -15,15 +15,19 @@
  * accepted, so those pairs are exempt. Semi-compliant pairs that DO clear AA
  * (primary/link/text) remain hard gates.
  */
-import { palette } from './global/color.js';
+import { palette, type GlobalColorKey } from './global/color.js';
 import { aliasLight, aliasDark, type AliasKey } from './alias/index.js';
+
+/** 前景/背景可以是 alias 语义 token，也可以是全局基元（如纯白 white）。 */
+type ColorKey = AliasKey | GlobalColorKey;
 
 const AA_NORMAL = 4.5;
 
 /** Resolve an alias token to a concrete color for a given theme (dark inherits light). */
-function resolve(token: AliasKey, theme: 'light' | 'dark'): string {
-  const v = theme === 'dark' ? (aliasDark[token] ?? aliasLight[token]) : aliasLight[token];
-  return v as string;
+function resolve(token: ColorKey, theme: 'light' | 'dark'): string {
+  // 先查 alias 语义层；未命中则回退全局基元（palette，如纯白 white）。
+  const alias = theme === 'dark' ? (aliasDark[token as AliasKey] ?? aliasLight[token as AliasKey]) : aliasLight[token as AliasKey];
+  return (alias ?? palette[token as GlobalColorKey]) as string;
 }
 
 type RGBA = { r: number; g: number; b: number; a: number };
@@ -80,8 +84,8 @@ function contrast(fgColor: string, bgColor: string): number {
 type Pair = {
   theme: 'light' | 'dark';
   label: string;
-  fg: AliasKey;
-  bg: AliasKey;
+  fg: ColorKey;
+  bg: ColorKey;
   /** decorative / non-body or Semi-parity tradeoff: reported but never fails the build */
   exempt?: boolean;
 };
@@ -103,32 +107,32 @@ const PAIRS: Pair[] = [
   { theme: 'light', label: 'text-2 on bg-2', fg: 'color-text-2', bg: 'color-bg-2', exempt: true },
   { theme: 'light', label: 'text-2 on bg-3', fg: 'color-text-2', bg: 'color-bg-3', exempt: true },
   // --- light: solid status buttons (white inverse text) — Semi-parity tradeoff ---
-  { theme: 'light', label: 'text-inverse on success', fg: 'color-text-inverse', bg: 'color-success', exempt: true },
-  { theme: 'light', label: 'text-inverse on warning', fg: 'color-text-inverse', bg: 'color-warning', exempt: true },
-  { theme: 'light', label: 'text-inverse on danger', fg: 'color-text-inverse', bg: 'color-danger', exempt: true },
+  { theme: 'light', label: 'text-inverse on success', fg: 'white', bg: 'color-success', exempt: true },
+  { theme: 'light', label: 'text-inverse on warning', fg: 'white', bg: 'color-warning', exempt: true },
+  { theme: 'light', label: 'text-inverse on danger', fg: 'white', bg: 'color-danger', exempt: true },
   // --- dark: solid primary/status buttons (white inverse text) ---
   // Semi's dark-mode primary fill is a bright blue (#54a9ff) that, like the
   // status fills, does not clear AA under white text. Exempt for Semi parity.
-  { theme: 'dark', label: 'text-inverse on primary', fg: 'color-text-inverse', bg: 'color-primary', exempt: true },
-  { theme: 'dark', label: 'text-inverse on primary-hover', fg: 'color-text-inverse', bg: 'color-primary-hover', exempt: true },
-  { theme: 'dark', label: 'text-inverse on primary-active', fg: 'color-text-inverse', bg: 'color-primary-active', exempt: true },
-  { theme: 'dark', label: 'text-inverse on info', fg: 'color-text-inverse', bg: 'color-info', exempt: true },
-  { theme: 'dark', label: 'text-inverse on success', fg: 'color-text-inverse', bg: 'color-success', exempt: true },
-  { theme: 'dark', label: 'text-inverse on warning', fg: 'color-text-inverse', bg: 'color-warning', exempt: true },
-  { theme: 'dark', label: 'text-inverse on danger', fg: 'color-text-inverse', bg: 'color-danger', exempt: true },
+  { theme: 'dark', label: 'text-inverse on primary', fg: 'white', bg: 'color-primary', exempt: true },
+  { theme: 'dark', label: 'text-inverse on primary-hover', fg: 'white', bg: 'color-primary-hover', exempt: true },
+  { theme: 'dark', label: 'text-inverse on primary-active', fg: 'white', bg: 'color-primary-active', exempt: true },
+  { theme: 'dark', label: 'text-inverse on info', fg: 'white', bg: 'color-info', exempt: true },
+  { theme: 'dark', label: 'text-inverse on success', fg: 'white', bg: 'color-success', exempt: true },
+  { theme: 'dark', label: 'text-inverse on warning', fg: 'white', bg: 'color-warning', exempt: true },
+  { theme: 'dark', label: 'text-inverse on danger', fg: 'white', bg: 'color-danger', exempt: true },
   // --- dark: primary as link/foreground on surfaces ---
   { theme: 'dark', label: 'primary link on bg-0', fg: 'color-primary', bg: 'color-bg-0' },
   { theme: 'dark', label: 'primary link on bg-1', fg: 'color-primary', bg: 'color-bg-1' },
 
   // --- component consumption: solid status fills (Switch / Tag / Badge) ---
   // White text on Semi status fills; exempt for Semi parity (see above).
-  { theme: 'light', label: 'solid primary fill text', fg: 'color-text-inverse', bg: 'color-primary' },
-  { theme: 'light', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success', exempt: true },
-  { theme: 'light', label: 'solid warning fill text', fg: 'color-text-inverse', bg: 'color-warning', exempt: true },
-  { theme: 'light', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger', exempt: true },
-  { theme: 'dark', label: 'solid success fill text', fg: 'color-text-inverse', bg: 'color-success', exempt: true },
-  { theme: 'dark', label: 'solid warning fill text', fg: 'color-text-inverse', bg: 'color-warning', exempt: true },
-  { theme: 'dark', label: 'solid danger fill text', fg: 'color-text-inverse', bg: 'color-danger', exempt: true },
+  { theme: 'light', label: 'solid primary fill text', fg: 'white', bg: 'color-primary' },
+  { theme: 'light', label: 'solid success fill text', fg: 'white', bg: 'color-success', exempt: true },
+  { theme: 'light', label: 'solid warning fill text', fg: 'white', bg: 'color-warning', exempt: true },
+  { theme: 'light', label: 'solid danger fill text', fg: 'white', bg: 'color-danger', exempt: true },
+  { theme: 'dark', label: 'solid success fill text', fg: 'white', bg: 'color-success', exempt: true },
+  { theme: 'dark', label: 'solid warning fill text', fg: 'white', bg: 'color-warning', exempt: true },
+  { theme: 'dark', label: 'solid danger fill text', fg: 'white', bg: 'color-danger', exempt: true },
 ];
 
 let bodyFailures = 0;

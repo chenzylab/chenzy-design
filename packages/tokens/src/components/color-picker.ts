@@ -5,8 +5,6 @@
  * 末尾保留 chenzy-design ColorPicker 实际消费的补充 token（原名，Semi 无 / 命名差异；组件消费）。
  *
  * 注：
- *  - Semi 的 var(--semi-color-white) 我们无对应 --cd-color-white alias，
- *    用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  *  - Semi $radius-colorPicker-handle: var(--semi-border-radius-full) →
  *    var(--cd-border-radius-full)；其余圆角/宽度/间距为字面量，忠实照抄。
  *  - Semi 名 colorPicker → color-picker，下划线 _ 归一为 -，全小写
@@ -34,7 +32,7 @@ export const colorPickerTokens = {
   'width-color-picker-defaulttrigger': { value: '24px', category: 'width', label: '默认 trigger 大小', usage: '默认 trigger 大小' },
 
   // —— 颜色（对齐 Semi $color-colorPicker-*）——
-  'color-color-picker-handle-border': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '把手边框颜色', usage: '把手边框颜色' },
+  'color-color-picker-handle-border': { value: 'var(--cd-color-white)', category: 'color', label: '把手边框颜色', usage: '把手边框颜色' },
 
   // —— 间距（对齐 Semi $spacing-colorPicker-*）——
   'spacing-color-picker-inputnumbersuffix-horizontal': { value: '4px', category: 'spacing', label: '百分比水平距离', usage: '数字输入框后百分比水平距离' },
