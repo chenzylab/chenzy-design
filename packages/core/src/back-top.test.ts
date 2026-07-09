@@ -22,9 +22,10 @@ describe('easeInOutCubic', () => {
 });
 
 describe('isAboveThreshold', () => {
-  it('flips exactly at the threshold', () => {
+  // 对齐 Semi foundation：`scrollTop > visibilityHeight`（严格大于，边界处不显）。
+  it('flips just past the threshold (strict >, matches Semi)', () => {
     expect(isAboveThreshold(399, 400)).toBe(false);
-    expect(isAboveThreshold(400, 400)).toBe(true);
+    expect(isAboveThreshold(400, 400)).toBe(false);
     expect(isAboveThreshold(401, 400)).toBe(true);
   });
 });
