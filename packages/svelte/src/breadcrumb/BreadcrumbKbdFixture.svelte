@@ -10,11 +10,11 @@
   import type { BreadcrumbRoute } from './types.js';
 
   const routes: BreadcrumbRoute[] = [
-    { label: 'Home', href: '#home' },
-    { label: 'Library', href: '#library' },
-    { label: 'Data', href: '#data' },
-    { label: 'Reports', href: '#reports' },
-    { label: 'Q3', href: '#q3' },
+    { name: 'Home', href: '#home' },
+    { name: 'Library', href: '#library' },
+    { name: 'Data', href: '#data' },
+    { name: 'Reports', href: '#reports' },
+    { name: 'Q3', href: '#q3' },
   ];
 </script>
 

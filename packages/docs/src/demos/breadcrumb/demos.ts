@@ -28,5 +28,6 @@ export const demos: DemoEntry[] = [
   entry('02-separator.svelte', '自定义分隔符', '用 separator 替换默认的 "/"，可传入任意字符串（如 >、·、→）。'),
   entry('03-icon.svelte', '带图标', '声明式 <Breadcrumb.Item> 通过 icon snippet 在文本前渲染前置图标。'),
   entry('04-routes-active.svelte', '数据驱动与选中', 'routes 数据驱动渲染，配合 onClick 与受控 activeIndex 高亮当前选中项。'),
-  entry('05-collapse.svelte', '超长折叠', 'maxItemCount 超出时中间折叠为 …；moreType 控制 … 展开为 popover 菜单或 tooltip 提示。'),
+  entry('05-collapse.svelte', '超长折叠', 'maxItemCount（默认 4）超出时中间折叠为三点图标；moreType 控制展开方式：default 点击就地展开，popover 悬浮弹出可点击菜单。'),
+  entry('06-tooltip.svelte', '截断与 Tooltip', 'showTooltip 令超长项截断，hover 显示完整名；对象配置 width（截断宽度）与 ellipsisPos（end 末尾省略 / middle 中间省略）。'),
 ];
