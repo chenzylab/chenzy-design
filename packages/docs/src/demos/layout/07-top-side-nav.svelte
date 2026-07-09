@@ -74,7 +74,7 @@
         />
       </Layout.Sider>
       <Layout.Content padding style="background: var(--cd-color-bg-0);">
-        <Breadcrumb routes={[{ label: '首页' }, { label: '仪表盘' }, { label: '详情页' }]} />
+        <Breadcrumb routes={[{ name: '首页' }, { name: '仪表盘' }, { name: '详情页' }]} />
         <div
           style="margin-top:16px; border-radius:10px; border:1px solid var(--cd-color-border); height:240px; padding:24px; color: var(--cd-color-text-2);"
         >

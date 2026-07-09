@@ -4,8 +4,8 @@
 
 <Breadcrumb
   routes={[
-    { label: '首页', href: '#' },
-    { label: '组件库', href: '#' },
-    { label: 'Breadcrumb' },
+    { name: '首页', href: '#' },
+    { name: '组件库', href: '#' },
+    { name: 'Breadcrumb' },
   ]}
 />

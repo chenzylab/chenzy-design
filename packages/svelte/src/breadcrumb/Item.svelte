@@ -53,11 +53,11 @@
       class="cd-breadcrumb__current"
       aria-current={isLast ? 'page' : undefined}
     >
-      {#if icon}{@render icon()}{/if}{@render children?.()}
+      {#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}
     </span>
   {:else if href}
     <a class="cd-breadcrumb__link" {href} onclick={onClick}>
-      {#if icon}{@render icon()}{/if}{@render children?.()}
+      {#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}
     </a>
   {:else}
     <span
@@ -71,7 +71,7 @@
           onClick?.(e as unknown as MouseEvent);
         }
       }}
-    >{#if icon}{@render icon()}{/if}{@render children?.()}</span
+    >{#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}</span
     >
   {/if}
 </li>

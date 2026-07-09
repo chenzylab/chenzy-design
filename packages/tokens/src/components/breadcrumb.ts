@@ -42,10 +42,14 @@ export const breadcrumbTokens = {
   'font-breadcrumb-compact-fontsize': { value: 'var(--cd-font-size-small)', category: 'font', label: '字号 - 紧凑', usage: '面包屑文字大小 - 紧凑' },
   'font-breadcrumb-loose-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '字号 - 宽松', usage: '面包屑文字大小 - 宽松' },
 
-  // —— chenzy-design Breadcrumb / BreadcrumbItem 实际消费的补充 token（Semi 无 / 命名差异；组件消费） ——
+  // —— chenzy-design Breadcrumb / BreadcrumbItem 实际消费的补充 token（组件消费，值均复用上方 Semi 对齐 token） ——
+  // 链接三态对齐 Semi：常态灰(text-2) → hover 链接蓝(link) → active 深蓝(link-hover)。
   'breadcrumb-color': { value: 'var(--cd-color-breadcrumb-default-text-default)', category: 'color', label: '默认文字色', usage: '面包屑根文字颜色（组件消费）' },
-  'breadcrumb-color-link': { value: 'var(--cd-color-breadcrumb-default-text-hover)', category: 'color', label: '链接文字色', usage: '可点击项文字颜色（组件消费）' },
+  'breadcrumb-color-link': { value: 'var(--cd-color-breadcrumb-default-text-default)', category: 'color', label: '链接文字色 - 常态', usage: '可点击项文字颜色 - 常态（对齐 Semi item 常态灰，组件消费）' },
+  'breadcrumb-color-link-hover': { value: 'var(--cd-color-breadcrumb-default-text-hover)', category: 'color', label: '链接文字色 - 悬浮', usage: '可点击项文字颜色 - 悬浮（对齐 Semi item-link:hover，组件消费）' },
+  'breadcrumb-color-link-active': { value: 'var(--cd-color-breadcrumb-default-text-active)', category: 'color', label: '链接文字色 - 按下', usage: '可点击项文字颜色 - 按下（对齐 Semi item-link:active，组件消费）' },
   'breadcrumb-color-active': { value: 'var(--cd-color-breadcrumb-active-text-default)', category: 'color', label: '当前页文字色', usage: '当前页 / 选中项文字颜色（组件消费）' },
+  'breadcrumb-restitem-color': { value: 'var(--cd-color-breadcrumb-restitem-text-default)', category: 'color', label: '折叠项文字色', usage: '折叠 … 触发器 / restItem 文字颜色（对齐 Semi restItem，组件消费）' },
   'breadcrumb-active-weight': { value: 'var(--cd-font-breadcrumb-active-fontweight)', category: 'font', label: '当前页字重', usage: '当前页 / 选中项字重（组件消费）' },
   'breadcrumb-separator-color': { value: 'var(--cd-color-breadcrumb-sepearator-default-icon-default)', category: 'color', label: '分割符颜色', usage: '分割符颜色（组件消费）' },
   'breadcrumb-gap': { value: 'var(--cd-spacing-breadcrumb-restitem-marginright)', category: 'spacing', label: '项间距', usage: '面包屑项间距（组件消费）' },

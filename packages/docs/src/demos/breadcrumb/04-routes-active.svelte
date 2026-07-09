@@ -3,10 +3,10 @@
   import type { BreadcrumbRoute } from '@chenzy-design/svelte';
 
   const routes: BreadcrumbRoute[] = [
-    { label: '工作台', href: '#' },
-    { label: '项目管理', href: '#' },
-    { label: '设计系统', href: '#' },
-    { label: '当前任务' },
+    { name: '工作台', href: '#' },
+    { name: '项目管理', href: '#' },
+    { name: '设计系统', href: '#' },
+    { name: '当前任务' },
   ];
 
   let activeIndex = $state(1);
@@ -14,7 +14,7 @@
 
   function handleClick(route: BreadcrumbRoute, index: number) {
     activeIndex = index;
-    lastClicked = route.label;
+    lastClicked = route.name ?? '';
   }
 </script>
 
