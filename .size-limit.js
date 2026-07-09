@@ -98,7 +98,7 @@ const components = [
   ['tree-select', '{ TreeSelect }', '12 KB'],
   ['upload', '{ Upload }', '13 KB'],
   // navigation
-  ['anchor', '{ Anchor }', '4.2 KB'],
+  ['anchor', '{ Anchor }', '4.4 KB'],
   ['breadcrumb', '{ BreadcrumbItem }', '4 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   ['menu', '{ Menu }', '8.4 KB'],

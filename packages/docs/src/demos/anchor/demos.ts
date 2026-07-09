@@ -38,4 +38,9 @@ export const demos: DemoEntry[] = [
     '声明式 Anchor.Link',
     '<Anchor.Link> 子组件写法（嵌套 + disabled）；railTheme / size / maxWidth 新增 prop',
   ),
+  entry(
+    '07-tooltip.svelte',
+    '缩略显示 Tooltip',
+    'showTooltip 在链接文字缩略时 hover 显示完整标题；position 控制浮层方位',
+  ),
 ];
