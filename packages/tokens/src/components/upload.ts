@@ -58,7 +58,8 @@ export const uploadTokens = {
   'color-upload-picture-file-card-pic-info-text': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '图片信息文字色', usage: '图片墙图片信息（序号）文字颜色' },
   'color-upload-picture-file-card-close-icon': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '关闭图标颜色', usage: '图片墙关闭图标颜色' },
   'color-upload-picture-file-card-hover-bg': { value: 'var(--cd-color-overlay-bg)', category: 'color', label: '预览悬浮背景色', usage: '图片墙预览悬浮背景色' },
-  'color-upload-preview-icon': { value: 'var(--cd-color-text-2)', category: 'color', label: '预览图标颜色', usage: '上传文件卡片文本颜色' },
+  'color-upload-preview-icon': { value: 'var(--cd-color-text-2)', category: 'color', label: '预览图标颜色', usage: '文本列表文件卡片预览图标颜色' },
+  'color-upload-picture-preview-icon': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '照片墙预览图标颜色', usage: '照片墙 hover 预览眼睛图标颜色（白，暗遮罩上可见，对齐 Semi 内联 white）' },
   'color-upload-retry-text': { value: 'var(--cd-color-primary)', category: 'color', label: '重试按钮文本色', usage: '上传文件卡片重新上传按钮文本颜色' },
   'color-upload-replace-text': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '替换按钮文本色', usage: '图片墙上传卡片替换按钮文本颜色' },
 

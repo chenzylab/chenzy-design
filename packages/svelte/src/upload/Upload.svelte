@@ -1625,7 +1625,7 @@
               aria-label={loc().t('Upload.preview')}
               onclick={() => onPreviewClick?.(item)}
             >
-              <Icon svg={DEFAULT_EYE_ICON_SVG} />
+              <Icon svg={DEFAULT_EYE_ICON_SVG} size="large" />
             </button>
           {/if}
           {#if (item.showReplace ?? showReplace) && item.status === 'success'}
@@ -2260,7 +2260,7 @@
     align-items: center;
     justify-content: center;
     /* 预览图标色（对齐 Semi file-card-preview color）。 */
-    color: var(--cd-color-upload-preview-icon);
+    color: var(--cd-color-upload-picture-preview-icon);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
