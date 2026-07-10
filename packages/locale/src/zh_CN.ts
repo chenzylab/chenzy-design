@@ -62,6 +62,7 @@ export const zh_CN: Locale = {
   },
   Avatar: {
     moreAlt: '还有 {count} 个',
+    groupLabel: '头像组',
   },
   Spin: {
     loading: '加载中',

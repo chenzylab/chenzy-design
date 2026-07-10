@@ -62,6 +62,7 @@ export const en_US: Locale = {
   },
   Avatar: {
     moreAlt: '{count} more',
+    groupLabel: 'Avatar group',
   },
   Spin: {
     loading: 'Loading',

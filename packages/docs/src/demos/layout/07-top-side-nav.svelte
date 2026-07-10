@@ -53,7 +53,7 @@
     <Layout.Header style="background: var(--cd-color-bg-1); padding-inline: 16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
         <Nav mode="horizontal" defaultSelectedKeys={['workbench']} items={topItems} header={{ logo, text: '运营后台' }} />
-        <Avatar size="small" color="var(--cd-color-primary)">BD</Avatar>
+        <Avatar size="small" style="background-color:var(--cd-color-primary);color:#fff">BD</Avatar>
       </div>
     </Layout.Header>
     <Layout hasSider>

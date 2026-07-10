@@ -23,7 +23,7 @@
         style="{cell} justify-content:space-between; padding-inline:16px; background: var(--cd-color-bg-1);"
       >
         <span style="font-weight:600; color: var(--cd-color-text-1);">应用控制台</span>
-        <Avatar size="small" color="var(--cd-color-primary)">AB</Avatar>
+        <Avatar size="small" style="background-color:var(--cd-color-primary);color:#fff">AB</Avatar>
       </Layout.Header>
       <Layout.Content padding style="overflow-y:auto; background: var(--cd-color-bg-0);">
         {#each contentRows as r (r)}
