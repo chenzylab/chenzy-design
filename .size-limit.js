@@ -146,7 +146,7 @@ const components = [
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   ['tooltip', '{ Tooltip }', '3.5 KB'],
-  ['tree', '{ Tree }', '9.8 KB'],
+  ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。

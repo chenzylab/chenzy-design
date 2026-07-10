@@ -2,7 +2,6 @@
   import { Tree, Text } from '@chenzy-design/svelte';
   import type { TreeNode } from '@chenzy-design/svelte';
 
-  // 对齐 Semi 示例数据（Asia / North America）
   const treeData: TreeNode[] = [
     {
       label: '亚洲',
@@ -29,17 +28,20 @@
     },
   ];
 
-  let selected = $state<string | number>('beijing');
+  let checked = $state<(string | number)[]>([]);
 </script>
 
 <div style="width:260px">
+  <!-- multiple + checkable：所有子项被选中时自动勾选父项，部分选中显半选 -->
   <Tree
     style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
     {treeData}
+    multiple
+    checkable
     defaultExpandAll
-    value={selected}
-    onChange={(info) => (selected = info.value as string | number)}
-    ariaLabel="地区树"
+    checkedKeys={checked}
+    onCheck={(info) => (checked = info.checked)}
+    ariaLabel="多选地区树"
   />
-  <Text type="tertiary" size="small">已选：{selected}</Text>
+  <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
 </div>
