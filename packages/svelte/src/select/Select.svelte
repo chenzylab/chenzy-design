@@ -1450,6 +1450,11 @@
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
   }
+  /* destroyOnClose=false 时浮层保持挂载，靠 [hidden] 隐藏；
+     display:flex 会压过 [hidden] 的 UA display:none，故显式补一条属性选择器（对齐关闭态真正不可见）。 */
+  .cd-select__dropdown[hidden] {
+    display: none;
+  }
   /* 内层滚动列表：optionList + inner header/footer + 浮层搜索框，超出 maxHeight 时纵向滚动 */
   .cd-select__list {
     max-block-size: 16rem;

@@ -627,14 +627,16 @@
     animation: cd-popconfirm-in var(--cd-popconfirm-motion-duration)
       var(--cd-popconfirm-motion-easing, ease) both;
   }
+  /* 用独立 scale 属性（非 transform）做进场缩放：use:floating 用 transform: translate()
+     定位浮层，动画走 transform 会覆盖定位、把浮层拉到 (0,0)。scale 属性与 transform 正交。 */
   @keyframes cd-popconfirm-in {
     from {
       opacity: 0;
-      transform: scale(0.96);
+      scale: 0.96;
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      scale: 1;
     }
   }
 

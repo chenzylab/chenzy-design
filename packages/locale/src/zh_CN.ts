@@ -12,7 +12,7 @@ export const zh_CN: Locale = {
     overLimitAnnounce: '已超出 {over} 个字符',
   },
   Pagination: {
-    total: '共 {total} 条',
+    total: '共 {total} 页',
     ariaLabel: '分页',
     prevPage: '上一页',
     nextPage: '下一页',

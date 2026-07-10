@@ -408,6 +408,8 @@
       onclick={onPopEvent}
       onkeydown={onPopEvent}
       onpointerdown={onPopEvent}
+      onpointerenter={onPointerEnter}
+      onpointerleave={onPointerLeave}
     >
       {#if showCloseButton}
         <!-- svelte-ignore a11y_consider_explicit_label -->
@@ -516,14 +518,17 @@
     animation: cd-popover-in var(--cd-popover-motion-duration)
       var(--cd-popover-motion-easing, ease) both;
   }
+  /* 用独立 scale 属性（非 transform）做进场缩放：use:floating 用 transform: translate()
+     定位浮层，若动画也走 transform 会覆盖定位 transform，把浮层拉到 (0,0)。独立 scale
+     属性与 transform 正交，二者叠加互不覆盖。 */
   @keyframes cd-popover-in {
     from {
       opacity: 0;
-      transform: scale(0.96);
+      scale: 0.96;
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      scale: 1;
     }
   }
   /* 关闭按钮：绝对定位于浮层右上角 */
