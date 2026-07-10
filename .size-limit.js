@@ -105,7 +105,10 @@ const components = [
   ['breadcrumb', '{ BreadcrumbItem }', '4.8 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   ['menu', '{ Menu }', '8.4 KB'],
-  ['pagination', '{ Pagination }', '3.8 KB'],
+  // 3.46 KB → 4.82 KB：全面对齐 Semi 引入的真实新功能（hoverShowPageSelect Popover 集成、
+  // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
+  // 换页重算策略、showTotal 页数化）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / tabs 7.3。
+  ['pagination', '{ Pagination }', '5.1 KB'],
   ['steps', '{ Steps }', '3.5 KB'],
   ['tabs', '{ TabPane }', '7.3 KB'],
   // other

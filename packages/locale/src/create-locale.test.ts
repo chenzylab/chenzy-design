@@ -13,7 +13,7 @@ describe('createLocale', () => {
 
   it('interpolates params', () => {
     const l = createLocale({ locale: zh_CN });
-    expect(l.t('Pagination.total', { total: 42 })).toBe('共 42 条');
+    expect(l.t('Pagination.total', { total: 42 })).toBe('共 42 页');
   });
 
   it('falls back to en_US for a key missing in the active bundle', () => {

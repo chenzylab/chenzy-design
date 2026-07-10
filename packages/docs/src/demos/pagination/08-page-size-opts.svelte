@@ -3,8 +3,6 @@
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
-  <Pagination total={30} />
-  <Pagination total={80} />
-  <Pagination total={200} />
-  <Pagination total={80} pageSize={30} />
+  <Pagination total={300} showSizeChanger pageSizeOpts={[50, 80, 90, 200]} />
+  <Pagination total={300} showSizeChanger pageSizeOpts={[10, 20, 50, 200]} />
 </div>

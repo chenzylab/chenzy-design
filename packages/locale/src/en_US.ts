@@ -12,7 +12,7 @@ export const en_US: Locale = {
     overLimitAnnounce: 'Exceeded by {over} characters',
   },
   Pagination: {
-    total: '{total} items in total',
+    total: '{total} pages in total',
     ariaLabel: 'Pagination',
     prevPage: 'Previous page',
     nextPage: 'Next page',

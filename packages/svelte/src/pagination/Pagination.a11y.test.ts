@@ -59,4 +59,21 @@ describe('Pagination a11y', () => {
     });
     await expectNoAxeViolations(container);
   });
+
+  // disabled：整体禁用容器类 + 所有页码/prev/next button 原生 disabled（视觉禁用态挂 :disabled 伪类）。
+  it('disabled：容器 --disabled 类 + 页码/prev/next button 原生 disabled，axe 0 violations', async () => {
+    const { container } = renderWithLocale(Pagination, {
+      props: { total: 100, defaultPageSize: 10, disabled: true },
+    });
+    // 整体禁用容器类
+    expect(container.querySelector('.cd-pagination--disabled')).not.toBeNull();
+    // 所有页码 button 原生 disabled
+    const pages = container.querySelectorAll<HTMLButtonElement>('.cd-pagination__page');
+    expect(pages.length).toBeGreaterThan(0);
+    expect(Array.from(pages).every((b) => b.disabled)).toBe(true);
+    // prev/next 也禁用
+    expect(container.querySelector<HTMLButtonElement>('.cd-pagination__prev')?.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>('.cd-pagination__next')?.disabled).toBe(true);
+    await expectNoAxeViolations(container);
+  });
 });
