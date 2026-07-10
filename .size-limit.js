@@ -109,7 +109,10 @@ const components = [
   // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
   // 换页重算策略、showTotal 页数化）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / tabs 7.3。
   ['pagination', '{ Pagination }', '5.1 KB'],
-  ['steps', '{ Steps }', '3.5 KB'],
+  // 3.46 KB → 4.18 KB：全面对齐 Semi 引入的真实新功能（fill/basic/nav 三型完整样式与
+  // 各自配色语义、finish/error/warning 三个内联状态 SVG 图标、每步独立 icon/status、
+  // hasLine 连接线开关）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / pagination 5.1 / tabs 7.3。
+  ['steps', '{ Steps }', '4.5 KB'],
   ['tabs', '{ TabPane }', '7.3 KB'],
   // other
   ['back-top', '{ BackTop }', '2.65 KB'],
