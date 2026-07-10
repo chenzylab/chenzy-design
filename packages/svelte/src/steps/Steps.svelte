@@ -1,21 +1,24 @@
 <!--
-  Steps — see specs/components/navigation/Steps.spec.md
-  Base subset: horizontal/vertical, fill/nav/basic types, clickable, status, dot mode.
-  dot：图标渲染为小圆点（不显数字/✓），process 态高亮放大。
-  basic：线框/简洁型——节点圆圈描边而非实心填充，process 态高亮描边。
-  icon：自定义图标 snippet，提供时替代默认序号/✓/✕。
+  Steps — 全面对齐 Semi Design（semi-foundation/steps）。
+  三型：
+    fill  — 旧版默认，整块带边框/圆角/内边距的块状步骤，process 态 item 背景高亮，
+            左侧 24×24 圆序号；有 onChange 时可点击，hover/active 变色。
+    basic — 新版简洁型，number-icon 圆序号 + 标题/描述 + 连接线（hasLine 控制）；
+            有 onChange 时可点击。finish 段连接线高亮 primary。
+    nav   — 导航型，序号 + 标题，内容撑开宽度，不可交互，active 态标题变色加粗。
+  status：wait/process/finish/error/warning，可由 current 推断或经 step.status 显式覆盖。
+  icon：每步独立（StepItem.icon，string 或 Snippet），提供时替代默认序号/✓/✕/⚠。
+  a11y：ol/li 结构；可点击步为原生 button，roving tabindex 单 Tab 停靠点，
+        方向键/Home/End 漫游，Enter/Space + 点击触发 onChange。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import { nextRovingIndex, rovingKeyFromEvent, type RovingKey } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import type { StepItem } from './types.js';
+  import type { StepItem, StepStatus } from './types.js';
 
   type StepDirection = 'horizontal' | 'vertical';
-  type StepType = 'fill' | 'nav' | 'basic';
-  type StepStatus = 'process' | 'finish' | 'error' | 'warning';
-  type StepSize = 'small' | 'default' | 'large';
-  type DerivedStatus = 'wait' | 'process' | 'finish' | 'error' | 'warning';
+  type StepType = 'fill' | 'basic' | 'nav';
+  type StepSize = 'small' | 'default';
 
   interface Props {
     current?: number;
@@ -26,14 +29,9 @@
     status?: StepStatus;
     size?: StepSize;
     initial?: number;
-    clickable?: boolean;
-    /** 点状步骤：图标渲染为小圆点，不显数字/✓ */
-    dot?: boolean;
-    /** 自定义图标渲染器，提供时替代默认序号/✓/✕（dot 模式不渲染图标） */
-    icon?: Snippet<[{ step: StepItem; index: number; status: DerivedStatus }]>;
+    /** basic 型是否显示连接线（对齐 Semi hasLine，默认 true） */
+    hasLine?: boolean;
     onChange?: (current: number) => void;
-    onClick?: (e: MouseEvent) => void;
-    onKeyDown?: (e: KeyboardEvent) => void;
     class?: string;
   }
 
@@ -46,17 +44,15 @@
     status = 'process',
     size = 'default',
     initial = 0,
-    clickable,
-    dot = false,
-    icon,
+    hasLine = true,
     onChange,
-    onClick,
-    onKeyDown,
     class: className = '',
   }: Props = $props();
 
-  // Controlled / uncontrolled (red line #1): never write back the prop.
+  // 受控 / 非受控（红线 #1）：绝不写回 prop。
   const isControlled = $derived(current !== undefined);
+  // 函数包装读取 defaultCurrent：非受控 inner 只取初始值，不跟随 prop 变化（预期行为），
+  // 同时避免 state_referenced_locally 告警。
   let inner = $state(getInitialCurrent());
   const activeIndex = $derived(isControlled ? (current as number) : inner);
 
@@ -64,9 +60,10 @@
     return defaultCurrent;
   }
 
-  const isClickable = $derived(clickable ?? type === 'nav');
+  // 可交互性对齐 Semi：fill/basic 且传入 onChange 时可点击；nav 永不可交互。
+  const isClickable = $derived(type !== 'nav' && onChange !== undefined);
 
-  function statusOf(index: number): DerivedStatus {
+  function statusOf(index: number): StepStatus {
     // 显式 step.status 优先于由 current 推断的状态
     const explicit = steps[index]?.status;
     if (explicit) return explicit;
@@ -80,8 +77,9 @@
       'cd-steps',
       `cd-steps--${direction}`,
       `cd-steps--${type}`,
-      `cd-steps--${size}`,
-      dot && 'cd-steps--dot',
+      size !== 'default' && `cd-steps--${size}`,
+      isClickable && 'cd-steps--clickable',
+      type === 'basic' && hasLine && 'cd-steps--hasline',
       className,
     ]
       .filter(Boolean)
@@ -90,17 +88,16 @@
 
   function select(index: number) {
     if (!isClickable) return;
-    if (steps[index]?.disabled) return; // 禁用步不可激活
     if (index === activeIndex) return;
     if (!isControlled) inner = index;
-    onChange?.(index);
+    onChange?.(index + initial);
   }
 
   const loc = useLocale();
 
   // 视觉隐藏的状态文本（WCAG 1.4.1：颜色非唯一信息载体）。
   // 组合「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读。
-  function statusText(st: DerivedStatus): string {
+  function statusText(st: StepStatus): string {
     switch (st) {
       case 'finish':
         return loc().t('Steps.statusFinish');
@@ -114,7 +111,7 @@
         return loc().t('Steps.statusWait');
     }
   }
-  function srLabel(index: number, st: DerivedStatus): string {
+  function srLabel(index: number, st: StepStatus): string {
     // 分隔符 ofTotal 已带（zh「，共 N 步」/ en「 of N」），状态前再以 locale 分隔符停顿。
     const sep = loc().t('Steps.statusSeparator');
     return (
@@ -128,20 +125,16 @@
   // --- roving tabindex（a11y §6）：可点击步骤组为单一 Tab 停靠点。 ---
   // rootEl 普通引用（bind:this），命令式 focus() 用，非 render 期读 DOM。
   let rootEl = $state<HTMLElement | null>(null);
-  // 当前焦点步索引；-1 = 尚无焦点 -> 首个可点击步作为 Tab 停靠点。
+  // 当前焦点步索引；-1 = 尚无焦点 -> activeIndex（或首步）作为 Tab 停靠点。
   let focusedIndex = $state(-1);
 
-  // 可点击（且未禁用）的步骤索引序列；roving 在其中漫游，跳过 disabled（红线 #2：纯派生）。
   const focusableIndices = $derived<number[]>(
-    isClickable
-      ? steps.map((s, i) => (s.disabled ? -1 : i)).filter((i) => i >= 0)
-      : [],
+    isClickable ? steps.map((_, i) => i) : [],
   );
 
-  // 纯派生 tabindex：当前焦点步（或无焦点时回退到 activeIndex/首个可点击步）为 0，其余 -1。
-  // 不在 render 期写 $state（红线 #2）。
+  // 纯派生 tabindex：当前焦点步（或无焦点时回退到 activeIndex/首步）为 0，其余 -1。
   function stepTabindex(index: number): 0 | -1 {
-    if (!isClickable || steps[index]?.disabled) return -1;
+    if (!isClickable) return -1;
     const anchor =
       focusedIndex >= 0
         ? focusedIndex
@@ -153,13 +146,11 @@
 
   function focusStep(index: number): void {
     focusedIndex = index;
-    rootEl
-      ?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)
-      ?.focus();
+    rootEl?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)?.focus();
   }
 
-  // 步骤 keydown：方向键 roving（纯函数 nextRovingIndex 派生，仅在可点击步间移动）、
-  // Home/End 跳首尾可点击步。Enter/Space 交给原生 <button>（向后兼容）。
+  // 步骤 keydown：方向键 roving（纯函数 nextRovingIndex 派生）、Home/End 跳首尾。
+  // Enter/Space 交给原生 <button>（触发 onclick → select）。
   function onStepKeydown(e: KeyboardEvent, index: number): void {
     const intent: RovingKey | null = rovingKeyFromEvent(e.key);
     if (!intent) return;
@@ -171,19 +162,62 @@
     const target = list[next];
     if (target != null) focusStep(target);
   }
+
+  // 是否为字符串图标（StepItem.icon 为 string 时直接文本渲染）
+  function isStringIcon(icon: StepItem['icon']): icon is string {
+    return typeof icon === 'string';
+  }
+
+  // 对齐 Semi basicStep renderIcon：仅 wait/process 且无自定义 icon 时渲染圆底序号；
+  // finish/error/warning 用形状图标着状态色（无圆底），自定义 icon 同样无圆底着色。
+  function hasNumberIcon(step: StepItem, st: StepStatus): boolean {
+    return step.icon === undefined && (st === 'wait' || st === 'process');
+  }
 </script>
 
-{#snippet head(step: StepItem, index: number, st: DerivedStatus)}
-  <span class="cd-steps__icon" aria-hidden="true">
-    {#if dot}{:else if icon}{@render icon({ step, index, status: st })}{:else if st === 'finish'}✓{:else if st === 'error'}✕{:else}{index + 1 + initial}{/if}
-  </span>
+<!-- Semi 状态形状图标（实心，fill=currentColor，色由状态类决定；无圆底）。 -->
+{#snippet tickCircle()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23a11 11 0 1 1 0-22 11 11 0 0 1 0 22Zm-1.1-6.85 6.42-6.42a1.1 1.1 0 0 0-1.55-1.56l-5.64 5.64-2.35-2.34a1.1 1.1 0 0 0-1.55 1.55l3.12 3.13a1.1 1.1 0 0 0 1.56 0Z" />
+  </svg>
+{/snippet}
+{#snippet alertCircle()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23a11 11 0 1 1 0-22 11 11 0 0 1 0 22Zm0-16.5c.7 0 1.25.56 1.25 1.25v5.5a1.25 1.25 0 1 1-2.5 0V7.75c0-.69.56-1.25 1.25-1.25Zm0 12a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" />
+  </svg>
+{/snippet}
+{#snippet alertTriangle()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.7 2.32a2 2 0 0 0-3.4 0L1.3 17.1A2 2 0 0 0 3 20.1h18a2 2 0 0 0 1.7-3l-9-14.78ZM12 7.5c.7 0 1.25.56 1.25 1.25v4.5a1.25 1.25 0 1 1-2.5 0v-4.5c0-.69.56-1.25 1.25-1.25Zm0 10.8a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" />
+  </svg>
+{/snippet}
+
+{#snippet stepIcon(step: StepItem, index: number, st: StepStatus)}
+  {#if hasNumberIcon(step, st)}
+    <!-- wait/process：圆底序号 -->
+    <span class="cd-steps__icon cd-steps__number-icon" aria-hidden="true">{index + 1 + initial}</span>
+  {:else}
+    <!-- 形状图标 / 自定义图标：着状态色、无圆底 -->
+    <span class="cd-steps__icon cd-steps__glyph" aria-hidden="true">
+      {#if step.icon !== undefined}
+        {#if isStringIcon(step.icon)}{step.icon}{:else}{@render step.icon()}{/if}
+      {:else if st === 'finish'}{@render tickCircle()}
+      {:else if st === 'error'}{@render alertCircle()}
+      {:else if st === 'warning'}{@render alertTriangle()}
+      {:else}{index + 1 + initial}{/if}
+    </span>
+  {/if}
+{/snippet}
+
+{#snippet stepBody(step: StepItem, index: number, st: StepStatus)}
+  {@render stepIcon(step, index, st)}
   <span class="cd-steps__content">
     <span class="cd-steps__title">{step.title}</span>
     {#if step.description}
       <span class="cd-steps__desc">{step.description}</span>
     {/if}
   </span>
-  <!-- WCAG 1.4.1：视觉隐藏的「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读，颜色非唯一信息载体。 -->
+  <!-- WCAG 1.4.1：视觉隐藏的「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读。 -->
   <span class="cd-sr-only">{srLabel(index, st)}</span>
 {/snippet}
 
@@ -192,35 +226,39 @@
     {#each steps as step, index (index)}
       {@const st = statusOf(index)}
       {@const last = index === steps.length - 1}
-      {@const isDisabled = step.disabled === true}
-      <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--disabled={isDisabled}>
+      <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--done={index < activeIndex}>
         {#if isClickable}
           <button
             type="button"
             class="cd-steps__head"
             data-step-index={index}
+            aria-label={step.ariaLabel}
             aria-current={index === activeIndex ? 'step' : undefined}
-            disabled={isDisabled}
-            aria-disabled={isDisabled || undefined}
             tabindex={stepTabindex(index)}
-            onclick={(e) => { select(index); onClick?.(e); }}
-            onkeydown={(e) => { onStepKeydown(e, index); onKeyDown?.(e); }}
+            onclick={(e) => {
+              step.onClick?.(e);
+              select(index);
+            }}
+            onkeydown={(e) => {
+              onStepKeydown(e, index);
+              step.onKeyDown?.(e);
+            }}
             onfocus={() => {
               focusedIndex = index;
             }}
           >
-            {@render head(step, index, st)}
+            {@render stepBody(step, index, st)}
           </button>
         {:else}
           <div
             class="cd-steps__head"
+            aria-label={step.ariaLabel}
             aria-current={index === activeIndex ? 'step' : undefined}
-            aria-disabled={isDisabled || undefined}
           >
-            {@render head(step, index, st)}
+            {@render stepBody(step, index, st)}
           </div>
         {/if}
-        {#if !last}
+        {#if !last && type === 'basic'}
           <span
             class="cd-steps__line"
             class:cd-steps__line--finish={index < activeIndex}
@@ -241,8 +279,8 @@
 {/if}
 
 <style>
-  /* 视觉隐藏的状态文本（class="cd-sr-only"）复用 tokens.css 全局工具类，
-     令颜色非唯一信息载体（WCAG 1.4.1）。 */
+  /* 视觉隐藏状态文本（.cd-sr-only）复用 tokens.css 全局工具类，令颜色非唯一信息载体。 */
+
   .cd-steps {
     display: flex;
     margin: 0;
@@ -256,21 +294,25 @@
   .cd-steps--vertical {
     flex-direction: column;
   }
+
   .cd-steps__item {
     position: relative;
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: var(--cd-spacing-tight);
   }
   .cd-steps--vertical .cd-steps__item {
     flex-direction: column;
     align-items: flex-start;
   }
+  .cd-steps__item:last-child {
+    flex: none;
+  }
+
   .cd-steps__head {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-tight);
+    gap: var(--cd-spacing-steps-basic-item-left-marginright);
     margin: 0;
     padding: 0;
     border: none;
@@ -279,114 +321,219 @@
     font: inherit;
     text-align: start;
   }
-  button.cd-steps__head {
+  .cd-steps--clickable .cd-steps__head {
     cursor: pointer;
-  }
-  /* 禁用步：置灰、不可点击 */
-  .cd-steps__item--disabled .cd-steps__head {
-    cursor: not-allowed;
-    opacity: 0.4;
-  }
-  button.cd-steps__head:disabled {
-    cursor: not-allowed;
   }
   button.cd-steps__head:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
+
+  /* 图标节点公共盒：24×24（对齐 Semi height-steps-basic-item-left-number-icon） */
   .cd-steps__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: var(--cd-steps-icon-size);
-    block-size: var(--cd-steps-icon-size);
-    border-radius: var(--cd-border-radius-full);
-    background: var(--cd-steps-icon-bg);
-    color: var(--cd-steps-icon-color);
+    inline-size: var(--cd-width-steps-basic-item-left-number-icon);
+    block-size: var(--cd-height-steps-basic-item-left-number-icon);
     flex: 0 0 auto;
   }
-  .cd-steps__item--process .cd-steps__icon {
-    background: var(--cd-steps-icon-bg-process);
-    color: var(--cd-steps-icon-color-active);
+  /* 圆底序号（仅 wait/process）：圆形背景 + 序号字重 */
+  .cd-steps__number-icon {
+    border-radius: var(--cd-radius-steps-basic-item-left-number-icon);
+    font-weight: var(--cd-font-steps-basic-item-left-number-icon-fontweight);
   }
-  .cd-steps__item--finish .cd-steps__icon {
-    background: var(--cd-steps-icon-bg-finish);
-    color: var(--cd-steps-icon-color-active);
+  /* 形状/自定义图标：无圆底，图标着状态色，放大填满盒（对齐 Semi extra-large 图标） */
+  .cd-steps__glyph {
+    font-size: var(--cd-width-steps-basic-item-left-number-icon);
+    line-height: 1;
   }
-  .cd-steps__item--error .cd-steps__icon {
-    background: var(--cd-steps-icon-bg-error);
-    color: var(--cd-steps-icon-color-active);
+  .cd-steps__glyph :global(svg) {
+    display: block;
   }
+
   .cd-steps__content {
     display: inline-flex;
     flex-direction: column;
   }
   .cd-steps__title {
-    color: var(--cd-steps-title-color);
+    color: var(--cd-color-steps-main-text-default);
+    font-weight: var(--cd-font-steps-basic-item-title-fontweight);
+    line-height: var(--cd-font-steps-basic-item-title-lineheight);
   }
   .cd-steps__desc {
-    color: var(--cd-steps-desc-color);
+    color: var(--cd-color-steps-minor-text-default);
     font-size: var(--cd-font-size-small);
+    max-inline-size: var(--cd-width-steps-basic-item-description-maxwidth);
   }
+
+  /* 连接线：默认灰、finish 段高亮 primary */
   .cd-steps__line {
     flex: 1 1 auto;
-    background: var(--cd-steps-line-color);
+    background: var(--cd-color-steps-title-after-bg);
   }
   .cd-steps--horizontal .cd-steps__line {
-    block-size: 1px;
-    min-inline-size: var(--cd-spacing-base);
+    block-size: var(--cd-height-steps-title-after);
+    min-inline-size: var(--cd-spacing-steps-basic-item-left-marginright);
+    margin-inline: var(--cd-spacing-steps-basic-item-left-marginright);
   }
   .cd-steps--vertical .cd-steps__line {
-    inline-size: 1px;
+    inline-size: var(--cd-width-steps-vertical-icon-after);
     min-block-size: var(--cd-spacing-base);
-    margin-inline-start: calc(var(--cd-steps-icon-size) / 2);
+    margin-inline-start: calc(var(--cd-width-steps-basic-item-left-number-icon) / 2);
   }
   .cd-steps__line--finish {
-    background: var(--cd-steps-line-color-finish);
+    background: var(--cd-color-steps-item-done-after-bg);
   }
 
-  /* --- basic 线框型：节点圆圈用描边而非实心填充 --- */
-  .cd-steps--basic .cd-steps__icon {
-    background: transparent;
-    color: var(--cd-steps-basic-color);
-    border: 1px solid var(--cd-steps-basic-border);
-  }
-  .cd-steps--basic .cd-steps__item--process .cd-steps__icon {
-    background: transparent;
-    color: var(--cd-steps-basic-color-process);
-    border-color: var(--cd-steps-basic-border-process);
-  }
-  .cd-steps--basic .cd-steps__item--finish .cd-steps__icon {
-    background: transparent;
-    color: var(--cd-steps-basic-color-finish);
-    border-color: var(--cd-steps-basic-border-finish);
-  }
-  .cd-steps--basic .cd-steps__item--error .cd-steps__icon {
-    background: transparent;
-    color: var(--cd-steps-basic-color-error);
-    border-color: var(--cd-steps-basic-border-error);
+  /* basic 型隐藏连接线：仅 hasline 时显示 */
+  .cd-steps--basic:not(.cd-steps--hasline) .cd-steps__line {
+    display: none;
   }
 
-  /* --- dot 模式：图标缩为小圆点，process 态放大高亮 --- */
-  .cd-steps--dot .cd-steps__icon {
-    inline-size: var(--cd-steps-dot-size);
-    block-size: var(--cd-steps-dot-size);
-    background: var(--cd-steps-line-color);
+  /* ============ 图标各状态配色（对齐 Semi）============ */
+  /* 圆底序号：process=primary 底 + 白字；wait=灰底 + 灰字 */
+  .cd-steps--basic .cd-steps__item--process .cd-steps__number-icon,
+  .cd-steps--fill .cd-steps__item--process .cd-steps__number-icon {
+    background: var(--cd-color-steps-item-left-number-icon-bg);
+    color: var(--cd-color-steps-item-process-left-number-icon);
   }
-  .cd-steps--dot .cd-steps__item--process .cd-steps__icon {
-    inline-size: var(--cd-steps-dot-size-active);
-    block-size: var(--cd-steps-dot-size-active);
-    background: var(--cd-steps-icon-bg-process);
+  .cd-steps--basic .cd-steps__item--wait .cd-steps__number-icon,
+  .cd-steps--fill .cd-steps__item--wait .cd-steps__number-icon {
+    background: var(--cd-color-steps-item-wait-left-number-icon-bg);
+    color: var(--cd-color-steps-item-wait-left-number-icon-icon);
   }
-  .cd-steps--dot .cd-steps__item--finish .cd-steps__icon {
-    background: var(--cd-steps-icon-bg-finish);
+  .cd-steps--basic .cd-steps__item--wait .cd-steps__title {
+    color: var(--cd-color-steps-item-wait-title-text);
   }
-  .cd-steps--dot .cd-steps__item--error .cd-steps__icon {
-    background: var(--cd-steps-icon-bg-error);
+  /* 形状/自定义图标：无底，图标本身着状态色 */
+  .cd-steps__item--finish .cd-steps__glyph {
+    color: var(--cd-color-steps-item-finish-icon);
   }
-  /* dot 模式垂直对齐 line 与圆点中心 */
-  .cd-steps--dot.cd-steps--vertical .cd-steps__line {
-    margin-inline-start: calc(var(--cd-steps-dot-size) / 2);
+  .cd-steps__item--process .cd-steps__glyph {
+    color: var(--cd-color-steps-item-process-left-icon);
+  }
+  .cd-steps__item--wait .cd-steps__glyph {
+    color: var(--cd-color-steps-item-wait-left-icon-icon);
+  }
+  .cd-steps__item--error .cd-steps__glyph {
+    color: var(--cd-color-steps-item-error-left-icon);
+  }
+  .cd-steps__item--warning .cd-steps__glyph {
+    color: var(--cd-color-steps-item-warning-left-icon);
+  }
+
+  /* clickable 时 wait 态 hover 变色（对齐 Semi wait-hover） */
+  .cd-steps--clickable .cd-steps__item--wait button.cd-steps__head:hover .cd-steps__icon {
+    background: var(--cd-color-steps-item-wait-left-number-icon-bg-hover);
+    color: var(--cd-color-steps-item-wait-left-number-icon-icon-hover);
+  }
+  .cd-steps--clickable button.cd-steps__head:hover .cd-steps__title {
+    color: var(--cd-color-steps-item-title-text-hover);
+  }
+  .cd-steps--clickable button.cd-steps__head:hover .cd-steps__desc {
+    color: var(--cd-color-steps-item-description-text-hover);
+  }
+
+  /* basic 迷你尺寸：图标 20px、标题常规字号 */
+  .cd-steps--basic.cd-steps--small .cd-steps__icon {
+    inline-size: var(--cd-width-steps-basic-small-item-left-number-icon);
+    block-size: var(--cd-width-steps-basic-small-item-left-number-icon);
+  }
+
+  /* ============ fill 型：整块带边框/圆角/内边距的块状步骤 ============ */
+  .cd-steps--fill .cd-steps__item {
+    box-sizing: border-box;
+    min-block-size: var(--cd-height-steps-item);
+    overflow: hidden;
+    margin-inline-end: var(--cd-spacing-steps-item-marginright);
+    border: var(--cd-width-steps-item-border) solid var(--cd-color-steps-border-default);
+    border-radius: var(--cd-radius-steps-item);
+    padding: var(--cd-spacing-steps-item-paddingy) var(--cd-spacing-steps-item-paddingx);
+  }
+  .cd-steps--fill .cd-steps__item:last-child {
+    margin-inline-end: 0;
+  }
+  .cd-steps--fill .cd-steps__head {
+    gap: var(--cd-spacing-steps-item-content-marginleft);
+  }
+  .cd-steps--fill .cd-steps__title {
+    font-weight: var(--cd-font-steps-item-title-fontweight);
+  }
+  /* fill process 态：item 背景高亮 */
+  .cd-steps--fill .cd-steps__item--process {
+    background: var(--cd-color-steps-process-bg-default);
+  }
+  /* fill hover/active 态背景（可点击时） */
+  .cd-steps--clickable.cd-steps--fill button.cd-steps__head:hover {
+    background: var(--cd-color-steps-bg-hover);
+  }
+  .cd-steps--clickable.cd-steps--fill button.cd-steps__head:active {
+    background: var(--cd-color-steps-bg-active);
+  }
+
+  /* fill 型旧版配色语义：图标 + 标题同色。
+     finish=success 绿、error=danger、warning=warning、process=primary（对齐 fillSteps.scss）。
+     图标放大到 header-4 尺寸（约与 24px 圆节点相当）。 */
+  .cd-steps--fill .cd-steps__item--finish .cd-steps__glyph,
+  .cd-steps--fill .cd-steps__item--finish .cd-steps__title {
+    color: var(--cd-color-steps-success-text-default);
+  }
+  .cd-steps--fill .cd-steps__item--error .cd-steps__glyph,
+  .cd-steps--fill .cd-steps__item--error .cd-steps__title {
+    color: var(--cd-color-steps-danger-text-default);
+  }
+  .cd-steps--fill .cd-steps__item--warning .cd-steps__glyph,
+  .cd-steps--fill .cd-steps__item--warning .cd-steps__title {
+    color: var(--cd-color-steps-warning-text-default);
+  }
+  .cd-steps--fill .cd-steps__item--process .cd-steps__title {
+    color: var(--cd-color-steps-primary-icon-default);
+  }
+  /* fill hover/active 态文字色（可点击时，对齐 fillSteps.scss 各状态 hover/active）。 */
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--finish button:hover .cd-steps__glyph,
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--finish button:hover .cd-steps__title {
+    color: var(--cd-color-steps-success-text-hover);
+  }
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--error button:hover .cd-steps__glyph,
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--error button:hover .cd-steps__title {
+    color: var(--cd-color-steps-danger-text-hover);
+  }
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--warning button:hover .cd-steps__glyph,
+  .cd-steps--clickable.cd-steps--fill .cd-steps__item--warning button:hover .cd-steps__title {
+    color: var(--cd-color-steps-warning-text-hover);
+  }
+
+  /* ============ nav 型：序号 + 标题，内容撑开，不可交互 ============ */
+  .cd-steps--nav {
+    display: inline-flex;
+    flex-flow: row nowrap;
+  }
+  /* nav 型图标统一灰色（对齐 Semi grey-3），无圆底，不分状态 */
+  .cd-steps--nav .cd-steps__icon,
+  .cd-steps--nav .cd-steps__glyph {
+    background: transparent;
+    color: var(--cd-color-steps-nav-item-icon);
+    min-inline-size: var(--cd-width-steps-nav-item-icon-minwidth);
+    inline-size: auto;
+    border-radius: 0;
+  }
+  .cd-steps--nav .cd-steps__title {
+    max-inline-size: var(--cd-width-steps-nav-item-title-maxwidth);
+    color: var(--cd-color-steps-nav-item-container-text);
+    font-weight: var(--cd-font-steps-nav-item-title-fontweight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cd-steps--nav .cd-steps__item--process .cd-steps__title {
+    color: var(--cd-color-steps-nav-item-title-text-active);
+    font-weight: var(--cd-font-steps-nav-item-title-active-fontweight);
+  }
+
+  /* nav small 尺寸标题常规字号 */
+  .cd-steps--nav.cd-steps--small .cd-steps__title {
+    font-size: var(--cd-font-size-small);
   }
 </style>
