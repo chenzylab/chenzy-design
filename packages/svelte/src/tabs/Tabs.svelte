@@ -1,13 +1,14 @@
 <!--
-  Tabs — see specs/components/navigation/Tabs.spec.md
-  基础子集：line/card 类型、top 位置、数据驱动 tabList + 声明式 TabPane、
-  roving tabindex + 键盘、closable。
-  溢出滚动：标签超出容器主轴时显示前/后滚动箭头（top/bottom 横向 scrollLeft、
-  left/right 纵向 scrollTop），激活标签自动滚到可视区；几何测量 + ResizeObserver +
-  滚动操作全部命令式 + cleanup（红线 #3）。addable：末尾「+」按钮触发 onAdd（红线 #1 受控）。
-  溢出收纳：overflow='dropdown' 时把放不下的标签收进末尾「更多」下拉（复用 Dropdown），
+  Tabs — 全量对齐 Semi Design（semi-foundation/tabs）。
+  类型 line/card/button/slash（slash 仅横向）；位置 top/left；尺寸 small/medium/large（默认 large）；
+  数据驱动 tabList + 声明式 TabPane、roving tabindex + 键盘、closable。
+  滚动折叠（collapsible）：标签超出容器主轴时显示前/后滚动箭头（top 横向 scrollLeft、
+  left 纵向 scrollTop），激活标签自动滚到可视区；'auto' 自动检测溢出再决定是否折叠；
+  几何测量 + ResizeObserver + 滚动操作全部命令式 + cleanup（红线 #3）。renderArrow/arrowPosition
+  作用于此。addable：末尾「+」按钮触发 onAdd（红线 #1 受控）。
+  溢出收纳（more / overflow='dropdown'）：把放不下的标签收进末尾「更多」下拉（复用 Dropdown），
   离屏测量层命令式测宽 + computeTabOverflow（core 纯函数）算可见/溢出集，激活标签始终保持可见。
-  type='button'：分段按钮组样式（外包 fill 底，选中段填主色）。
+  type='button'：分段按钮组样式（选中段填主色浅底）；type='slash'：相邻标签间对角线分割线。
   纯声明式自动收集：未传 tabList 时，从子 <Tabs.Pane> 的 tab/itemKey/disabled/closable
     自动收集推导 tabList（按源码顺序）；TabPane 在 mount/unmount/同步副作用里写父级簿记
     普通数组 + bump version $state，父 render 据 version 重建快照（红线 #2：副作用写 /
@@ -39,11 +40,13 @@
   import type { TabItem } from './types.js';
 
   type TabKey = string | number;
-  type TabType = 'line' | 'card' | 'button';
-  type TabSize = 'small' | 'default' | 'large';
-  type TabPosition = 'top' | 'bottom' | 'left' | 'right';
+  type TabType = 'line' | 'card' | 'button' | 'slash';
+  type TabSize = 'small' | 'medium' | 'large';
+  type TabPosition = 'top' | 'left';
   type KeyboardActivation = 'auto' | 'manual';
   type OverflowMode = 'scroll' | 'dropdown';
+  /** collapsible：false 不折叠；true 强制折叠收纳；'auto' 自动检测溢出再决定是否折叠。 */
+  type Collapsible = boolean | 'auto';
 
   type MoreConfig = number | {
     count?: number;
@@ -51,11 +54,20 @@
     dropdownProps?: Record<string, unknown>;
   };
 
+  /** dropdownProps 折叠模式下透传下拉参数：start=前箭头下拉，end=后箭头/更多下拉（对齐 Semi）。 */
+  interface DropdownPropsPair {
+    start?: Record<string, unknown>;
+    end?: Record<string, unknown>;
+  }
+
   interface Props {
     value?: TabKey;
     defaultValue?: TabKey;
+    /** 视觉风格：line 线条 / card 卡片 / button 分段按钮 / slash 斜线（slash 仅横向）。 */
     type?: TabType;
+    /** 尺寸档（对齐 Semi）：small / medium / large，默认 large。 */
     size?: TabSize;
+    /** 标签栏位置（对齐 Semi）：top 水平 / left 垂直。slash 仅支持 top。 */
     tabPosition?: TabPosition;
     tabList?: TabItem[];
     closable?: boolean;
@@ -68,10 +80,12 @@
      */
     overflow?: OverflowMode;
     /**
-     * line 风格横向溢出时启用折叠收纳（与 overflow='dropdown' 同效：放不下的标签进末尾「更多」下拉）。
-     * 便捷开关：为 true 时强制走 dropdown 收纳（仅 top/bottom 横向生效）。默认 false。
+     * 折叠收纳（对齐 Semi）：
+     * - false（默认）：不折叠；
+     * - true：强制走 dropdown 收纳（放不下的标签进末尾「更多」下拉，仅横向 top 生效）；
+     * - 'auto'：自动检测——标签溢出容器时才启用折叠，容器变宽/标签变少能全显时自动退出。
      */
-    collapsible?: boolean;
+    collapsible?: Collapsible;
     /** 首次激活后才挂载面板内容 */
     lazy?: boolean;
     /** 激活过的面板切走后保留 DOM（display:none），而非卸载 */
@@ -90,8 +104,8 @@
     renderArrow?: Snippet<[{ type: 'start' | 'end'; onClick: () => void }]>;
     /** dropdown 折叠模式是否在下拉中展示收起 tabs（默认 true） */
     showRestInDropdown?: boolean;
-    /** 透传给「更多」Dropdown 组件的 props */
-    dropdownProps?: Record<string, unknown>;
+    /** 折叠模式下透传下拉参数（对齐 Semi）：{ start, end }，分别作用于前箭头/后箭头「更多」下拉。 */
+    dropdownProps?: DropdownPropsPair;
     /** 溢出项变化回调，携带当前可见 tab keys */
     onVisibleTabsChange?: (visibleTabKeys: TabKey[]) => void;
     /** 内容区外层样式（string 或 CSSProperties 对象） */
@@ -134,7 +148,7 @@
     value,
     defaultValue,
     type = 'line',
-    size = 'default',
+    size = 'large',
     tabPosition = 'top',
     tabList: tabListProp,
     closable = false,
@@ -232,13 +246,22 @@
   // 标签栏实际数据源：传 tabList 用之（数据驱动，向后兼容）；否则用声明式收集结果。
   const tabList = $derived<TabItem[]>(usesDeclarativeTabs ? collectedTabs : (tabListProp ?? []));
 
-  // top/bottom 为横向滚动（主轴 = inline / scrollLeft）；left/right 为纵向（scrollTop）。
-  const isVertical = $derived(tabPosition === 'left' || tabPosition === 'right');
+  // tabPosition：top 为横向（主轴 = inline / scrollLeft）；left 为纵向（scrollTop）。
+  // slash 仅支持横向（对齐 Semi：斜线式无垂直模式）——即便传 left 也按横向渲染。
+  const isVertical = $derived(tabPosition === 'left' && type !== 'slash');
 
-  // dropdown 收纳仅在横向标签栏生效；纵向（left/right）始终走滚动（红线 #4 向后兼容：
-  // 不传 overflow 时为 'scroll'，行为与旧版完全一致）。
-  // collapsible 为便捷开关：等价于 overflow='dropdown'（line 溢出折叠收纳）。
-  const dropdownMode = $derived((overflow === 'dropdown' || collapsible) && !isVertical);
+  // 溢出机制对齐 Semi 的两条独立路径：
+  // 1) more（数字或对象）→ dropdown 收纳：把末尾若干标签收进「更多」下拉（Semi 的 more）。
+  //    overflow='dropdown' 作为等价便捷开关一并归入。仅横向生效。
+  // 2) collapsible（true/'auto'）→ 滚动折叠：前/后切换箭头 + 可滚动视口（Semi 的 collapsible，
+  //    renderArrow/arrowPosition 作用于此）。'auto' 与 true 都靠 overflowing 决定箭头是否出现，
+  //    容器变宽/标签变少不溢出时箭头自动消失，天然"退出"折叠。仅横向生效。
+  const hasMore = $derived(more !== undefined && more !== null);
+  const dropdownMode = $derived(!isVertical && (hasMore || overflow === 'dropdown'));
+  // 滚动折叠激活：collapsible 开启且非 dropdown 收纳模式（两者互斥，more 优先）。
+  const scrollCollapsible = $derived(
+    !dropdownMode && !isVertical && (collapsible === true || collapsible === 'auto'),
+  );
 
   // --- 受控 value (红线 #1)：不无条件回写 value，仅 onChange ---
   const isControlled = $derived(value !== undefined);
@@ -608,6 +631,9 @@
   const moreDropdownProps = $derived(
     typeof more === 'object' && more !== null ? (more.dropdownProps ?? {}) : {},
   );
+  // dropdownProps 为 { start, end }（对齐 Semi）；「更多」触发器在标签栏末尾（end 位置），
+  // 故透传 dropdownProps.end。start 预留给前箭头下拉（scroll 折叠自定义箭头场景）。
+  const endDropdownProps = $derived(dropdownProps?.end ?? {});
 
   // showRestInDropdown=false 时，「更多」下拉中不展示收起 tabs（只展示 overflow tabs 中被 moreCount 限制的部分）
   // 当前实现：showRestInDropdown=false 时隐藏溢出下拉（不渲染 Dropdown）
@@ -641,12 +667,14 @@
     if (item) activateTab(item);
   }
 
+  // slash 仅横向：即便传 tabPosition=left 也按 top 渲染（对齐 Semi）。
+  const effectivePosition = $derived(type === 'slash' ? 'top' : tabPosition);
   const cls = $derived(
     [
       'cd-tabs',
       `cd-tabs--${type}`,
       `cd-tabs--${size}`,
-      `cd-tabs--${tabPosition}`,
+      `cd-tabs--${effectivePosition}`,
       dropdownMode ? 'cd-tabs--dropdown' : '',
       !dropdownMode && overflowing ? 'cd-tabs--scrollable' : '',
     ]
@@ -723,7 +751,7 @@
   {:else if dropdownMode}
     <!-- dropdown 收纳：只渲染可见标签，溢出标签进末尾「更多」下拉。 -->
     <div class="cd-tabs__bar {tabBarClassName ?? ''}" style={tabBarStyleStr} bind:this={barEl}>
-      <div class="cd-tabs__list" role="tablist" style={visibleTabsStyleStr}>
+      <div class="cd-tabs__list" role="tablist" aria-orientation="horizontal" style={visibleTabsStyleStr}>
         {#each visibleTabs as item (item.itemKey)}
           {@render tabNode(item)}
         {/each}
@@ -731,7 +759,7 @@
 
       {#if showMoreDropdown}
         <div class="cd-tabs__more" class:cd-tabs__more--active={moreActive}>
-          <Dropdown items={moreItems} trigger="click" onSelect={onMoreSelect} {...(moreDropdownProps ?? {})} {...(dropdownProps ?? {})}>
+          <Dropdown items={moreItems} trigger="click" onSelect={onMoreSelect} {...(moreDropdownProps ?? {})} {...endDropdownProps}>
             {#snippet triggerContent()}
               {#if moreRender}
                 {@render moreRender()}
@@ -783,7 +811,7 @@
   {:else}
     <!-- scroll 模式（默认）：前/后箭头 + 可滚动视口，行为与旧版一致。 -->
     <div class="cd-tabs__bar {tabBarClassName ?? ''}" style={tabBarStyleStr}>
-      {#if overflowing && (arrowPosition === 'start' || arrowPosition === 'both')}
+      {#if scrollCollapsible && overflowing && (arrowPosition === 'start' || arrowPosition === 'both')}
         {#if renderArrow}
           {@render renderArrow({ type: 'start', onClick: () => scrollByStep(-1) })}
         {:else}
@@ -806,7 +834,7 @@
         <div
           class="cd-tabs__list"
           role="tablist"
-          aria-orientation={isVertical ? 'vertical' : undefined}
+          aria-orientation={isVertical ? 'vertical' : 'horizontal'}
           bind:this={listEl}
         >
           {#each tabList as item (item.itemKey)}
@@ -815,7 +843,7 @@
         </div>
       </div>
 
-      {#if overflowing && (arrowPosition === 'end' || arrowPosition === 'both')}
+      {#if scrollCollapsible && overflowing && (arrowPosition === 'end' || arrowPosition === 'both')}
         {#if renderArrow}
           {@render renderArrow({ type: 'end', onClick: () => scrollByStep(1) })}
         {:else}
@@ -850,18 +878,25 @@
 </div>
 
 <style>
+  /* 全量对齐 Semi semi-foundation/tabs/tabs.scss；token 名值镜像 variables.scss。
+     tabPosition 仅 top/left；type 含 line/card/button/slash（slash 仅横向）。 */
   .cd-tabs {
     display: flex;
     flex-direction: column;
-    font-size: var(--cd-tabs-tab-font-size);
+    box-sizing: border-box;
+    position: relative;
+    font-size: var(--cd-font-tabs-tab-fontsize);
   }
   .cd-tabs__bar {
     display: flex;
     flex-direction: row;
     align-items: stretch;
+    position: relative;
+    white-space: nowrap;
+    outline: none;
   }
   .cd-tabs--line .cd-tabs__bar {
-    border-block-end: 1px solid var(--cd-tabs-bar-border);
+    border-block-end: var(--cd-width-tabs-bar-line-border) solid var(--cd-color-tabs-tab-line-border-default);
   }
 
   /* 滚动视口：裁剪溢出，主轴可滚动；隐藏原生滚动条（滚动由箭头驱动）。 */
@@ -877,26 +912,41 @@
     align-items: stretch;
   }
 
-  /* 滚动箭头 + 新增按钮：不收缩，垂直居中对齐标签栏。 */
+  /* 滚动/折叠箭头 + 新增按钮：不收缩，垂直居中对齐标签栏。 */
   .cd-tabs__scroll-btn,
   .cd-tabs__add {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 var(--cd-spacing-extra-tight);
+    padding: var(--cd-spacing-tabs-tab-pane-arrow);
     border: none;
     background: transparent;
-    color: var(--cd-tabs-tab-color);
+    color: var(--cd-color-tabs-tab-pane-arrow-text-default);
     cursor: pointer;
-    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tabs__scroll-btn:hover:not(:disabled),
+  .cd-tabs__scroll-btn--prev {
+    margin-inline-end: var(--cd-spacing-tabs-overflow-icon-marginright);
+  }
+  .cd-tabs__scroll-btn--next {
+    margin-inline-start: var(--cd-spacing-tabs-overflow-icon-marginleft);
+  }
+  .cd-tabs__add {
+    color: var(--cd-color-tabs-tab-line-text-default);
+  }
+  .cd-tabs__scroll-btn:hover:not(:disabled) {
+    background-color: var(--cd-color-tabs-tab-pane-arrow-bg-hover);
+  }
+  .cd-tabs__scroll-btn:active:not(:disabled) {
+    background-color: var(--cd-color-tabs-tab-pane-arrow-bg-active);
+  }
   .cd-tabs__add:hover {
-    color: var(--cd-tabs-tab-color-active);
+    color: var(--cd-color-tabs-tab-line-text-hover);
   }
   .cd-tabs__scroll-btn:disabled {
-    color: var(--cd-tabs-tab-color-disabled);
+    color: var(--cd-color-tabs-tab-pane-arrow-disabled-text-default);
     cursor: not-allowed;
   }
   .cd-tabs__scroll-btn:focus-visible,
@@ -906,7 +956,7 @@
     border-radius: var(--cd-border-radius-small);
   }
 
-  /* --- overflow=dropdown：bar 为可换行无关的单行 flex，溢出标签收进「更多」--- */
+  /* --- collapsible/overflow=dropdown：bar 单行 flex，溢出标签收进「更多」--- */
   .cd-tabs--dropdown .cd-tabs__bar {
     position: relative;
     flex-wrap: nowrap;
@@ -927,20 +977,20 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     margin: 0;
-    padding: var(--cd-tabs-tab-padding);
+    padding: var(--cd-spacing-tabs-bar-line-tab-paddingtop) var(--cd-spacing-tabs-bar-line-tab-paddingx);
     border: none;
     background: transparent;
-    color: var(--cd-tabs-tab-color);
+    color: var(--cd-color-tabs-tab-line-text-default);
     font: inherit;
     white-space: nowrap;
     cursor: pointer;
     transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tabs__more-btn:hover {
-    color: var(--cd-tabs-tab-color-active);
+    color: var(--cd-color-tabs-tab-line-text-hover);
   }
   .cd-tabs__more--active .cd-tabs__more-btn {
-    color: var(--cd-tabs-tab-color-active);
+    color: var(--cd-color-tabs-tab-line-selected-text-default);
   }
   .cd-tabs__more-btn:focus-visible {
     outline: none;
@@ -961,141 +1011,41 @@
     z-index: -1;
   }
 
-  /* --- type=button：分段按钮组，整体包一层 fill 底，选中段填主色 --- */
-  .cd-tabs--button .cd-tabs__bar {
-    border-block-end: none;
-  }
-  .cd-tabs--button .cd-tabs__list {
-    gap: var(--cd-tabs-button-gap);
-    padding: var(--cd-tabs-button-pad);
-    background: var(--cd-tabs-button-bg);
-    border-radius: var(--cd-tabs-card-radius);
-  }
-  .cd-tabs--button .cd-tabs__tab {
-    border-radius: var(--cd-tabs-card-radius);
-  }
-  .cd-tabs--button .cd-tabs__tab-btn {
-    border: none;
-    border-radius: var(--cd-tabs-card-radius);
-  }
-  .cd-tabs--button .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled):not(.cd-tabs__tab--active) {
-    background: var(--cd-tabs-button-bg-hover);
-  }
-  .cd-tabs--button .cd-tabs__tab--active {
-    background: var(--cd-tabs-button-bg-active);
-  }
-  .cd-tabs--button .cd-tabs__tab--active .cd-tabs__tab-btn {
-    color: var(--cd-tabs-button-color-active);
-  }
-
-  /* --- tabPosition: bottom（bar 在内容下方）--- */
-  .cd-tabs--bottom {
-    flex-direction: column-reverse;
-  }
-  .cd-tabs--bottom.cd-tabs--line .cd-tabs__bar {
-    border-block-end: none;
-    border-block-start: 1px solid var(--cd-tabs-bar-border);
-  }
-  .cd-tabs--bottom.cd-tabs--line .cd-tabs__tab-btn {
-    border-block-end: none;
-    border-block-start: var(--cd-tabs-ink-height) solid transparent;
-  }
-  .cd-tabs--bottom.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
-    border-block-start-color: var(--cd-tabs-ink-color);
-  }
-  .cd-tabs--bottom .cd-tabs__content {
-    padding-block-start: 0;
-    padding-block-end: var(--cd-spacing-tabs-content-paddingy);
-  }
-
-  /* --- tabPosition: left / right（bar 竖向在侧）--- */
-  .cd-tabs--left,
-  .cd-tabs--right {
-    flex-direction: row;
-  }
-  .cd-tabs--right {
-    flex-direction: row-reverse;
-  }
-  .cd-tabs--left .cd-tabs__bar,
-  .cd-tabs--right .cd-tabs__bar {
-    flex-direction: column;
-    align-items: stretch;
-    /* 纵向滚动需要可约束的高度：随内容/父容器，溢出时由 nav 裁剪滚动。 */
-    max-block-size: 100%;
-  }
-  /* 纵向：nav 沿块轴裁剪滚动，list 纵向排列。 */
-  .cd-tabs--left .cd-tabs__nav,
-  .cd-tabs--right .cd-tabs__nav {
-    flex: 1 1 auto;
-    min-block-size: 0;
-    min-inline-size: 0;
-  }
-  .cd-tabs--left .cd-tabs__list,
-  .cd-tabs--right .cd-tabs__list {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .cd-tabs--left.cd-tabs--line .cd-tabs__bar {
-    border-block-end: none;
-    border-inline-end: 1px solid var(--cd-tabs-bar-border);
-  }
-  .cd-tabs--right.cd-tabs--line .cd-tabs__bar {
-    border-block-end: none;
-    border-inline-start: 1px solid var(--cd-tabs-bar-border);
-  }
-  .cd-tabs--left .cd-tabs__tab-btn,
-  .cd-tabs--right .cd-tabs__tab-btn {
-    inline-size: 100%;
-    text-align: start;
-  }
-  .cd-tabs--left.cd-tabs--line .cd-tabs__tab-btn {
-    border-block-end: none;
-    border-inline-end: var(--cd-tabs-ink-height) solid transparent;
-  }
-  .cd-tabs--right.cd-tabs--line .cd-tabs__tab-btn {
-    border-block-end: none;
-    border-inline-start: var(--cd-tabs-ink-height) solid transparent;
-  }
-  .cd-tabs--left.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
-    border-inline-end-color: var(--cd-tabs-ink-color);
-  }
-  .cd-tabs--right.cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
-    border-inline-start-color: var(--cd-tabs-ink-color);
-  }
-  .cd-tabs--left .cd-tabs__content,
-  .cd-tabs--right .cd-tabs__content {
-    flex: 1 1 auto;
-    padding-block-start: 0;
-    padding-inline: var(--cd-spacing-tabs-content-left-paddingx);
-  }
+  /* ============================================================
+     标签容器与按钮基座
+     ============================================================ */
   .cd-tabs__tab {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
+    box-sizing: border-box;
+    position: relative;
     white-space: nowrap;
-  }
-  .cd-tabs--card .cd-tabs__tab {
-    background: var(--cd-tabs-card-bg);
-    border-radius: var(--cd-tabs-card-radius) var(--cd-tabs-card-radius) 0 0;
-  }
-  .cd-tabs--card .cd-tabs__tab--active {
-    background: var(--cd-tabs-card-bg-active);
   }
   .cd-tabs__tab-btn {
     margin: 0;
-    padding: var(--cd-tabs-tab-padding);
+    padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-tabs-tab-color);
+    color: inherit;
     font: inherit;
+    font-weight: var(--cd-font-tabs-tab-fontweight);
     cursor: pointer;
     transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tabs--line .cd-tabs__tab-btn {
-    border-block-end: var(--cd-tabs-ink-height) solid transparent;
+  .cd-tabs__tab--active .cd-tabs__tab-btn {
+    font-weight: var(--cd-font-tabs-tab-active-fontweight);
   }
-  /* 标签图标：文字前渲染，消费 tabs icon token（对齐 Semi 各状态色 + 右间距）。 */
+  .cd-tabs__tab-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-border-radius-small);
+  }
+  .cd-tabs__tab--disabled .cd-tabs__tab-btn {
+    cursor: not-allowed;
+  }
+
+  /* 标签图标：文字前渲染，各态色对齐 Semi。 */
   .cd-tabs__tab-icon {
     display: inline-flex;
     align-items: center;
@@ -1113,44 +1063,280 @@
     color: var(--cd-color-tabs-tab-selected-icon-default);
   }
   .cd-tabs__tab--disabled .cd-tabs__tab-icon {
-    color: var(--cd-tabs-tab-color-disabled);
+    color: var(--cd-color-tabs-tab-line-disabled-text-default);
   }
-  .cd-tabs__tab--active .cd-tabs__tab-btn {
-    color: var(--cd-tabs-tab-color-active);
+
+  /* ============================================================
+     type=line 线条式
+     ============================================================ */
+  .cd-tabs--line .cd-tabs__tab {
+    color: var(--cd-color-tabs-tab-line-text-default);
+    border-block-end: var(--cd-width-tabs-bar-line-tab-border) solid transparent;
+    transition: border-bottom-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tabs--line .cd-tabs__tab--active .cd-tabs__tab-btn {
-    border-block-end-color: var(--cd-tabs-ink-color);
+  .cd-tabs--line.cd-tabs--top .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-paddingtop) var(--cd-spacing-tabs-bar-line-tab-paddingx)
+      var(--cd-spacing-tabs-bar-line-tab-paddingbottom);
   }
-  .cd-tabs__tab-btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-border-radius-small);
+  .cd-tabs--line.cd-tabs--top.cd-tabs--small .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-small-paddingtop) var(--cd-spacing-tabs-bar-line-tab-paddingx)
+      var(--cd-spacing-tabs-bar-line-tab-small-paddingbottom);
   }
-  .cd-tabs__tab--disabled .cd-tabs__tab-btn {
-    color: var(--cd-tabs-tab-color-disabled);
-    cursor: not-allowed;
+  .cd-tabs--line.cd-tabs--top.cd-tabs--medium .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-medium-paddingtop) var(--cd-spacing-tabs-bar-line-tab-paddingx)
+      var(--cd-spacing-tabs-bar-line-tab-medium-paddingbottom);
+  }
+  /* 横向 line：首项去左内边距、相邻右外边距 */
+  .cd-tabs--line.cd-tabs--top .cd-tabs__nav .cd-tabs__tab:first-of-type {
+    padding-inline-start: 0;
+  }
+  .cd-tabs--line.cd-tabs--top .cd-tabs__tab:not(:last-of-type) {
+    margin-inline-end: var(--cd-spacing-tabs-bar-line-tab-marginright);
+  }
+  .cd-tabs--line .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled) {
+    color: var(--cd-color-tabs-tab-line-text-hover);
+    border-block-end-color: var(--cd-color-tabs-tab-line-border-hover);
+  }
+  .cd-tabs--line .cd-tabs__tab:active:not(.cd-tabs__tab--disabled) {
+    color: var(--cd-color-tabs-tab-line-text-active);
+    border-block-end-color: var(--cd-color-tabs-tab-line-border-active);
+  }
+  .cd-tabs--line .cd-tabs__tab--active,
+  .cd-tabs--line .cd-tabs__tab--active:hover {
+    color: var(--cd-color-tabs-tab-line-selected-text-default);
+    border-block-end-color: var(--cd-color-tabs-tab-line-selected-indicator-default);
+  }
+  .cd-tabs--line .cd-tabs__tab--disabled {
+    color: var(--cd-color-tabs-tab-line-disabled-text-default);
+  }
+
+  /* ============================================================
+     type=card 卡片式
+     ============================================================ */
+  .cd-tabs--card .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-card-tab-paddingy) var(--cd-spacing-tabs-bar-card-tab-paddingx);
+    border: var(--cd-width-tabs-bar-card-border) solid transparent;
+    border-block-end: none;
+    border-radius: var(--cd-radius-tabs-tab-card);
+    color: var(--cd-color-tabs-tab-line-text-default);
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tabs--card.cd-tabs--top .cd-tabs__bar {
+    position: relative;
+  }
+  .cd-tabs--card.cd-tabs--top .cd-tabs__bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    border-block-end: var(--cd-width-tabs-bar-card-border) solid var(--cd-color-tabs-tab-card-border-default);
+  }
+  .cd-tabs--card.cd-tabs--top .cd-tabs__tab:not(:last-of-type) {
+    margin-inline-end: var(--cd-spacing-tabs-bar-card-tab-marginright);
+  }
+  .cd-tabs--card .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled) {
+    background: var(--cd-color-tabs-tab-card-bg-hover);
+  }
+  .cd-tabs--card .cd-tabs__tab:active:not(.cd-tabs__tab--disabled) {
+    background: var(--cd-color-tabs-tab-card-bg-active);
+  }
+  .cd-tabs--card.cd-tabs--top .cd-tabs__tab--active,
+  .cd-tabs--card.cd-tabs--top .cd-tabs__tab--active:hover {
+    padding-block-end: var(--cd-spacing-tabs-bar-card-tab-active-paddingbottom);
+    border: var(--cd-width-tabs-bar-card-border) solid var(--cd-color-tabs-tab-card-selected-indicator-default);
+    border-block-end: var(--cd-width-tabs-bar-card-border) solid var(--cd-color-tabs-tab-card-selected-bg-default);
+    background: transparent;
+  }
+  .cd-tabs--card .cd-tabs__tab--disabled {
+    color: var(--cd-color-tabs-tab-line-disabled-text-default);
+  }
+
+  /* ============================================================
+     type=button 分段按钮式
+     ============================================================ */
+  .cd-tabs--button .cd-tabs__bar {
+    border: none;
+  }
+  .cd-tabs--button .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-button-tab-paddingy) var(--cd-spacing-tabs-bar-button-tab-paddingx);
+    border: none;
+    border-radius: var(--cd-radius-tabs-tab-button);
+    color: var(--cd-color-tabs-tab-button-text-default);
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
+      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tabs--button.cd-tabs--top .cd-tabs__tab:not(:last-of-type) {
+    margin-inline-end: var(--cd-spacing-tabs-bar-button-tab-marginright);
+  }
+  .cd-tabs--button .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled):not(.cd-tabs__tab--active) {
+    background-color: var(--cd-color-tabs-tab-button-bg-hover);
+  }
+  .cd-tabs--button .cd-tabs__tab:active:not(.cd-tabs__tab--disabled):not(.cd-tabs__tab--active) {
+    background-color: var(--cd-color-tabs-tab-button-bg-active);
+  }
+  .cd-tabs--button .cd-tabs__tab--active,
+  .cd-tabs--button .cd-tabs__tab--active:hover {
+    color: var(--cd-color-tabs-tab-button-selected-text-default);
+    background-color: var(--cd-color-tabs-tab-button-selected-bg-default);
+  }
+  .cd-tabs--button .cd-tabs__tab--disabled {
+    color: var(--cd-color-tabs-tab-line-disabled-text-default);
+  }
+
+  /* ============================================================
+     type=slash 斜线式（仅横向；相邻标签间插对角线分割线）
+     ============================================================ */
+  .cd-tabs--slash .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-slash-tab-paddingy) var(--cd-spacing-tabs-bar-slash-tab-paddingx);
+    color: var(--cd-color-tabs-tab-line-text-default);
+    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tabs--slash .cd-tabs__tab:first-of-type {
+    padding-inline-start: 0;
+  }
+  .cd-tabs--slash .cd-tabs__tab:not(:last-of-type) {
+    margin-inline-end: var(--cd-spacing-tabs-bar-slash-marginright);
+  }
+  .cd-tabs--slash .cd-tabs__tab:not(:last-of-type)::after {
+    content: '';
+    display: inline-block;
+    margin-inline-start: var(--cd-spacing-tabs-bar-slash-line-marginleft);
+    margin-block: var(--cd-spacing-tabs-bar-slash-line-marginy);
+    inline-size: var(--cd-width-tabs-tab-slash-line);
+    block-size: var(--cd-height-tabs-tab-slash-line);
+    vertical-align: bottom;
+    background: linear-gradient(
+      to bottom right,
+      transparent 0%,
+      transparent calc(50% - 1px),
+      var(--cd-color-tabs-tab-slash-line) 50%,
+      transparent calc(50% + 1px),
+      transparent 100%
+    );
+  }
+  .cd-tabs--slash .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled) {
+    color: var(--cd-color-tabs-tab-line-text-hover);
+  }
+  .cd-tabs--slash .cd-tabs__tab--active,
+  .cd-tabs--slash .cd-tabs__tab--active:hover {
+    color: var(--cd-color-tabs-tab-line-selected-text-default);
+  }
+  .cd-tabs--slash .cd-tabs__tab--disabled {
+    color: var(--cd-color-tabs-tab-line-disabled-text-default);
+  }
+
+  /* ============================================================
+     tabPosition=left（竖向标签栏）
+     ============================================================ */
+  .cd-tabs--left {
+    flex-direction: row;
+  }
+  .cd-tabs--left .cd-tabs__bar {
+    flex-direction: column;
+    align-items: stretch;
+    /* 纵向滚动需要可约束的高度：随内容/父容器，溢出时由 nav 裁剪滚动。 */
+    max-block-size: 100%;
+  }
+  .cd-tabs--left .cd-tabs__nav {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    min-inline-size: 0;
+  }
+  .cd-tabs--left .cd-tabs__list {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cd-tabs--left .cd-tabs__tab-btn {
+    inline-size: 100%;
+    text-align: start;
+  }
+  /* 竖向 line */
+  .cd-tabs--left.cd-tabs--line .cd-tabs__bar {
+    border-block-end: none;
+    border-inline-end: var(--cd-width-tabs-bar-line-border) solid var(--cd-color-tabs-tab-line-border-default);
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-left-padding);
+    border-block-end: none;
+    border-inline-end: var(--cd-width-tabs-bar-line-tab-border) solid transparent;
+  }
+  .cd-tabs--left.cd-tabs--line.cd-tabs--small .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-left-small-padding);
+  }
+  .cd-tabs--left.cd-tabs--line.cd-tabs--medium .cd-tabs__tab {
+    padding: var(--cd-spacing-tabs-bar-line-tab-left-medium-padding);
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab:hover:not(.cd-tabs__tab--disabled) {
+    border-inline-end-color: var(--cd-color-tabs-tab-line-border-hover);
+    background-color: var(--cd-color-tabs-tab-line-vertical-bg-hover);
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab:active:not(.cd-tabs__tab--disabled) {
+    border-inline-end-color: var(--cd-color-tabs-tab-line-border-active);
+    background-color: var(--cd-color-tabs-tab-line-vertical-bg-active);
+  }
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab--active,
+  .cd-tabs--left.cd-tabs--line .cd-tabs__tab--active:hover {
+    border-inline-end-color: var(--cd-color-tabs-tab-line-selected-indicator-default);
+    background-color: var(--cd-color-tabs-tab-line-vertical-selected-bg-default);
+  }
+  /* 竖向 card */
+  .cd-tabs--left.cd-tabs--card .cd-tabs__bar {
+    border-block-end: none;
+    border-inline-end: var(--cd-width-tabs-bar-card-border) solid var(--cd-color-tabs-tab-card-border-default);
+  }
+  .cd-tabs--left.cd-tabs--card .cd-tabs__tab {
+    border-block-end: var(--cd-width-tabs-bar-card-border) solid transparent;
+    border-inline-end: none;
+    border-radius: var(--cd-radius-tabs-tab-card-left);
+  }
+  .cd-tabs--left.cd-tabs--card .cd-tabs__tab:not(:last-of-type) {
+    margin-block-end: var(--cd-spacing-tabs-bar-card-tab-left-marginbottom);
+  }
+  .cd-tabs--left.cd-tabs--card .cd-tabs__tab--active,
+  .cd-tabs--left.cd-tabs--card .cd-tabs__tab--active:hover {
+    border: var(--cd-width-tabs-bar-card-border) solid var(--cd-color-tabs-tab-card-selected-indicator-default);
+    border-inline-end: none;
+    background: transparent;
+  }
+  /* 竖向 button */
+  .cd-tabs--left.cd-tabs--button .cd-tabs__tab:not(:last-of-type) {
+    margin-block-end: var(--cd-spacing-tabs-bar-button-tab-marginbottom);
+  }
+
+  /* ============================================================
+     内容区 / 面板 / 关闭叉 / 附加操作
+     ============================================================ */
+  .cd-tabs__content {
+    inline-size: 100%;
+    padding: var(--cd-spacing-tabs-content-paddingy) var(--cd-spacing-tabs-content-paddingx);
+    color: var(--cd-color-tabs-tab-pane-text-default);
+  }
+  .cd-tabs--left .cd-tabs__content {
+    flex: 1 1 auto;
+    block-size: 100%;
+    padding: 0 var(--cd-spacing-tabs-content-left-paddingx);
   }
   .cd-tabs__close {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-inline-end: var(--cd-spacing-tight);
+    margin-inline-start: 10px;
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-tabs-tab-color);
+    color: var(--cd-color-tabs-tab-icon-default);
     cursor: pointer;
   }
   .cd-tabs__close:hover {
-    color: var(--cd-tabs-tab-color-active);
+    color: var(--cd-color-tabs-tab-line-text-hover);
   }
   .cd-tabs__close:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
-  }
-  .cd-tabs__content {
-    padding-block-start: var(--cd-spacing-tabs-content-paddingy);
   }
   /* tabBarExtraContent：标签栏右侧额外内容，靠右对齐 */
   .cd-tabs__extra {
@@ -1158,14 +1344,16 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-inline-start: var(--cd-spacing-tight);
+    padding: var(--cd-spacing-tabs-bar-extra-paddingy) var(--cd-spacing-tabs-bar-extra-paddingx);
   }
   /* tabPaneMotion=false：禁用面板切换过渡动画 */
   .cd-tabs--no-motion .cd-tabs__content {
     transition: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-tabs__tab-btn {
+    .cd-tabs__tab,
+    .cd-tabs__tab-btn,
+    .cd-tabs__tab-icon {
       transition: none;
     }
   }

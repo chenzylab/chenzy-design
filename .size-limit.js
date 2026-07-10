@@ -113,7 +113,10 @@ const components = [
   // 各自配色语义、finish/error/warning 三个内联状态 SVG 图标、每步独立 icon/status、
   // hasLine 连接线开关）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / pagination 5.1 / tabs 7.3。
   ['steps', '{ Steps }', '4.5 KB'],
-  ['tabs', '{ TabPane }', '7.3 KB'],
+  // 7.3 KB → 8 KB：全面对齐 Semi 引入的真实新功能（slash 型、left 垂直位置、
+  // collapsible 滚动折叠含 auto 自动溢出检测、more 收纳下拉、closable 可关闭、
+  // renderArrow/renderTabBar 自定义、动态增删）。实测 baseline 7.75 KB，纯功能增长。
+  ['tabs', '{ TabPane }', '8 KB'],
   // other
   ['back-top', '{ BackTop }', '2.65 KB'],
   ['hotkeys', '{ HotKeys }', '1.85 KB'],
