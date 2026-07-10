@@ -31,6 +31,8 @@
     addonId?: string;
     extraId?: string;
     preventScroll?: boolean;
+    /** 无可见文本 label 时提供可访问名（如嵌在 Tree 行内、label 由外部承载时）。 */
+    ariaLabel?: string;
     onChange?: (checked: boolean) => void;
     children?: Snippet;
   }
@@ -50,6 +52,7 @@
     addonId,
     extraId: extraIdProp,
     preventScroll,
+    ariaLabel,
     onChange,
     children,
   }: Props = $props();
@@ -143,7 +146,8 @@
     checked={isChecked}
     disabled={resolvedDisabled}
     aria-invalid={resolvedStatus === 'error' || undefined}
-    aria-labelledby={addonId}
+    aria-label={!children ? ariaLabel : undefined}
+    aria-labelledby={children ? addonId : undefined}
     aria-describedby={extraId}
     onchange={handleChange}
   />

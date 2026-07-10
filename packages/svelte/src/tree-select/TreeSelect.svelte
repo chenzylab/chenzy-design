@@ -1227,7 +1227,7 @@
     aria-checked={multiple ? (cs.checked ? true : cs.half ? 'mixed' : false) : undefined}
     aria-expanded={expandable ? nodeOpen : undefined}
     aria-disabled={node.disabled || undefined}
-    style={[posStyle, `padding-inline-start: calc(${level} * var(--cd-tree-indent))`]
+    style={[posStyle, `padding-inline-start: calc(${level} * var(--cd-spacing-tree-option-level-padding-left))`]
       .filter(Boolean)
       .join('; ')}
     onclick={() => selectNode(node)}
@@ -1812,8 +1812,8 @@
   }
   .cd-tree-select__highlight {
     padding: 0;
-    color: var(--cd-tree-search-highlight-color);
-    background: var(--cd-tree-search-highlight-bg);
+    color: var(--cd-color-tree-option-highlight-text);
+    background: inherit;
   }
   .cd-tree-select__node {
     display: flex;
@@ -1824,11 +1824,11 @@
     cursor: pointer;
   }
   .cd-tree-select__node:hover {
-    background: var(--cd-tree-node-bg-hover);
+    background: var(--cd-color-tree-option-bg-hover);
   }
   .cd-tree-select__node--selected {
-    color: var(--cd-tree-node-color-selected);
-    background: var(--cd-tree-node-bg-active);
+    color: var(--cd-color-tree-option-text-default);
+    background: var(--cd-color-tree-option-bg-active);
   }
   /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
   .cd-tree-select__node--active {
@@ -1849,7 +1849,7 @@
     flex: 0 0 auto;
     inline-size: 1rem;
     block-size: 1rem;
-    color: var(--cd-tree-expand-icon-color);
+    color: var(--cd-color-tree-option-icon-default);
     cursor: pointer;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
@@ -1883,7 +1883,7 @@
     flex: 0 0 auto;
     inline-size: 0;
     block-size: 1rem;
-    color: var(--cd-tree-node-color);
+    color: var(--cd-color-tree-option-text-default);
   }
   /* 有自定义图标内容时撑开尺寸（对齐 Tree 的 .cd-tree__icon） */
   .cd-tree-select__icon:not(:empty) {

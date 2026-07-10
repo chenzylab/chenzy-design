@@ -86,6 +86,7 @@
     border-radius: 8px;
     margin-bottom: 24px;
     overflow: hidden;
+    background: var(--cd-color-bg-1);
   }
   .demo-box__title {
     padding: 12px 16px 0;
