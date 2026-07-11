@@ -1,109 +1,208 @@
 import { describe, expect, it } from 'vitest';
 import {
-  eventCoversDay,
-  eventsForDay,
-  groupEventsByDays,
-  timelineForDay,
-  dayKey,
-  isPastDay,
+  getPos,
+  round,
+  amendEvent,
+  parseEvent,
+  parseEvents,
+  renderDailyEvent,
+  getDailyEvents,
+  parseSpanEvents,
+  parseWeekSpanEvents,
+  allDayEventMap,
+  calcRowHeight,
+  getMonthEvents,
+  differenceInCalendarDays,
+  startOfWeek,
+  endOfWeek,
+  getWeekOfMonth,
+  getWeeksInMonth,
   type CalendarEvent,
 } from './calendar.js';
 
-const d = (y: number, m: number, day: number, h = 0): Date => new Date(y, m, day, h);
+const d = (y: number, m: number, day: number, h = 0, min = 0): Date =>
+  new Date(y, m, day, h, min);
 
-const events: CalendarEvent[] = [
-  { key: 'a', start: d(2026, 5, 10, 9), title: '会议 A' },
-  { key: 'b', start: d(2026, 5, 10, 14), title: '会议 B' },
-  { key: 'c', start: d(2026, 5, 10, 8), title: '全天 C', allDay: true },
-  { key: 'd', start: d(2026, 5, 10), end: d(2026, 5, 12), title: '跨天 D' },
-  { key: 'e', start: d(2026, 5, 20), title: '会议 E' },
-];
-
-describe('eventCoversDay', () => {
-  it('matches a same-day event', () => {
-    expect(eventCoversDay(events[0]!, d(2026, 5, 10))).toBe(true);
-    expect(eventCoversDay(events[0]!, d(2026, 5, 11))).toBe(false);
-  });
-
-  it('matches every day a multi-day event spans (inclusive)', () => {
-    const md = events[3]!;
-    expect(eventCoversDay(md, d(2026, 5, 10))).toBe(true);
-    expect(eventCoversDay(md, d(2026, 5, 11))).toBe(true);
-    expect(eventCoversDay(md, d(2026, 5, 12))).toBe(true);
-    expect(eventCoversDay(md, d(2026, 5, 13))).toBe(false);
+describe('getPos', () => {
+  it('maps clock time to a [0,1) day fraction', () => {
+    expect(getPos(d(2026, 5, 10, 0, 0))).toBe(0);
+    expect(getPos(d(2026, 5, 10, 12, 0))).toBe(0.5);
+    expect(round(getPos(d(2026, 5, 10, 6, 0)))).toBe(0.25);
   });
 });
 
-describe('eventsForDay', () => {
-  it('collects all events on a day, all-day first then by start time', () => {
-    const day = eventsForDay(events, d(2026, 5, 10));
-    expect(day.total.map((e) => e.key)).toEqual(['c', 'd', 'a', 'b']);
-    // c is allDay → first; d has start 00:00 → before a(09:00); a before b(14:00)
-    expect(day.overflow).toBe(0);
+describe('date algebra', () => {
+  it('differenceInCalendarDays ignores time-of-day', () => {
+    expect(differenceInCalendarDays(d(2026, 5, 12, 1), d(2026, 5, 10, 23))).toBe(2);
   });
-
-  it('caps to maxPerDay and reports overflow', () => {
-    const day = eventsForDay(events, d(2026, 5, 10), 2);
-    expect(day.visible.map((e) => e.key)).toEqual(['c', 'd']);
-    expect(day.overflow).toBe(2);
+  it('startOfWeek / endOfWeek respect weekStartsOn', () => {
+    // 2026-06-10 is a Wednesday
+    expect(startOfWeek(d(2026, 5, 10), 0).getDay()).toBe(0); // Sunday
+    expect(startOfWeek(d(2026, 5, 10), 1).getDay()).toBe(1); // Monday
+    expect(endOfWeek(d(2026, 5, 10), 0).getDay()).toBe(6); // Saturday
   });
-
-  it('returns empty for a day with no events', () => {
-    const day = eventsForDay(events, d(2026, 5, 1));
-    expect(day.total).toEqual([]);
-    expect(day.overflow).toBe(0);
+  it('getWeekOfMonth / getWeeksInMonth', () => {
+    expect(getWeekOfMonth(d(2026, 5, 1), 0)).toBe(1);
+    expect(getWeeksInMonth(d(2026, 5, 1), 0)).toBeGreaterThanOrEqual(4);
   });
 });
 
-describe('groupEventsByDays', () => {
-  it('builds an O(1) lookup map keyed by day', () => {
-    const days = [d(2026, 5, 10), d(2026, 5, 11), d(2026, 5, 20)];
-    const map = groupEventsByDays(events, days, 3);
-    expect(map.get(dayKey(d(2026, 5, 10)))?.total.length).toBe(4);
-    expect(map.get(dayKey(d(2026, 5, 11)))?.total.map((e) => e.key)).toEqual(['d']);
-    expect(map.get(dayKey(d(2026, 5, 20)))?.total.map((e) => e.key)).toEqual(['e']);
+describe('amendEvent', () => {
+  it('fills a missing end as start + 1h when same day', () => {
+    const e = amendEvent({ key: 'a', start: d(2026, 5, 10, 9) })!;
+    expect(e.end).toEqual(d(2026, 5, 10, 10));
+  });
+  it('fills a missing start as end - 1h when same day', () => {
+    const e = amendEvent({ key: 'a', end: d(2026, 5, 10, 9) })!;
+    expect(e.start).toEqual(d(2026, 5, 10, 8));
+  });
+  it('returns undefined when neither start nor end given', () => {
+    expect(amendEvent({ key: 'a' })).toBeUndefined();
   });
 });
 
-describe('timelineForDay', () => {
-  it('buckets timed events by their start hour, sorted by start time', () => {
-    const tl = timelineForDay(events, d(2026, 5, 10));
-    // a@09 and b@14 are timed; c is allDay; d is multi-day starting same day 00:00
-    expect(tl.byHour.get(9)?.map((e) => e.key)).toEqual(['a']);
-    expect(tl.byHour.get(14)?.map((e) => e.key)).toEqual(['b']);
-    expect(tl.byHour.get(0)?.map((e) => e.key)).toEqual(['d']); // 00:00 start
+describe('parseEvent', () => {
+  it('keeps a same-day timed event whole, keyed to its day', () => {
+    const res = parseEvent({ key: 'a', start: d(2026, 5, 10, 9), end: d(2026, 5, 10, 10) });
+    expect(res).toHaveLength(1);
+    expect(res[0]!.date).toEqual(d(2026, 5, 10));
   });
-
-  it('puts all-day events into the allDay bucket', () => {
-    const tl = timelineForDay(events, d(2026, 5, 10));
-    expect(tl.allDay.map((e) => e.key)).toEqual(['c']);
+  it('splits a <24h cross-midnight event into a head and tail day', () => {
+    const res = parseEvent({ key: 'a', start: d(2026, 5, 10, 20), end: d(2026, 5, 11, 6) });
+    expect(res).toHaveLength(2);
+    expect(res.map((r) => r.date.getDate())).toEqual([10, 11]);
   });
-
-  it('routes multi-day events to allDay on continuation days (start on another day)', () => {
-    const tl = timelineForDay(events, d(2026, 5, 11));
-    // event d covers the 11th but starts on the 10th → all-day on the 11th
-    expect(tl.allDay.map((e) => e.key)).toEqual(['d']);
-    expect([...tl.byHour.keys()]).toEqual([]);
+  it('splits a long span into one all-day copy per covered day', () => {
+    const res = parseEvent({ key: 'a', start: d(2026, 5, 10), end: d(2026, 5, 12) });
+    expect(res.map((r) => r.date.getDate())).toEqual([10, 11, 12]);
+    expect(res.every((r) => r.allDay)).toBe(true);
   });
-
-  it('clamps event hours into the visible from/to range', () => {
-    const late: CalendarEvent[] = [{ key: 'z', start: d(2026, 5, 10, 22), title: '深夜' }];
-    const tl = timelineForDay(late, d(2026, 5, 10), 8, 18);
-    expect(tl.byHour.get(18)?.map((e) => e.key)).toEqual(['z']);
-  });
-
-  it('returns empty buckets for a day with no events', () => {
-    const tl = timelineForDay(events, d(2026, 5, 1));
-    expect(tl.allDay).toEqual([]);
-    expect(tl.byHour.size).toBe(0);
+  it('routes allDay events through parseAllDayEvent', () => {
+    const res = parseEvent({ key: 'a', start: d(2026, 5, 10), allDay: true });
+    expect(res).toHaveLength(1);
+    expect(res[0]!.allDay).toBe(true);
   });
 });
 
-describe('isPastDay', () => {
-  it('compares at day granularity', () => {
-    const today = d(2026, 5, 15, 12);
-    expect(isPastDay(d(2026, 5, 14), today)).toBe(true);
-    expect(isPastDay(d(2026, 5, 15, 23), today)).toBe(false); // same day
-    expect(isPastDay(d(2026, 5, 16), today)).toBe(false);
+describe('parseEvents', () => {
+  it('separates all-day from timed', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 10, 9), end: d(2026, 5, 10, 10) },
+      { key: 'b', start: d(2026, 5, 10), allDay: true },
+    ];
+    const { allDay, day } = parseEvents(events);
+    expect(allDay.map((e) => e.key)).toEqual(['b']);
+    expect(day.map((e) => e.key)).toEqual(['a']);
+  });
+});
+
+describe('renderDailyEvent', () => {
+  it('computes startPos/endPos from clock times', () => {
+    const dated = parseEvent({ key: 'a', start: d(2026, 5, 10, 6), end: d(2026, 5, 10, 12) })[0]!;
+    const r = renderDailyEvent(dated);
+    expect(r.startPos).toBe(0.25);
+    expect(r.endPos).toBe(0.5);
+  });
+});
+
+describe('getDailyEvents', () => {
+  it('positions timed events and offsets identical spans side-by-side', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 10, 9), end: d(2026, 5, 10, 10) },
+      { key: 'b', start: d(2026, 5, 10, 9), end: d(2026, 5, 10, 10) },
+      { key: 'c', start: d(2026, 5, 10, 14), end: d(2026, 5, 10, 15) },
+    ];
+    const { day } = getDailyEvents(parseEvents(events).day, d(2026, 5, 10));
+    const a = day.find((e) => e.key === 'a')!;
+    const b = day.find((e) => e.key === 'b')!;
+    expect(a.left).toBe(0); // first in its span group
+    expect(b.left).toBe('50%'); // second of two → offset 50%
+  });
+  it('surfaces all-day events for the day in its allDay bucket', () => {
+    const events: CalendarEvent[] = [{ key: 'c', start: d(2026, 5, 10), allDay: true }];
+    const { allDay } = getDailyEvents(parseEvents(events).allDay, d(2026, 5, 10));
+    expect(allDay.map((e) => e.key)).toEqual(['c']);
+  });
+});
+
+describe('parseSpanEvents', () => {
+  it('lays spanned all-day events across a range with leftPos/width/topInd', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 10), end: d(2026, 5, 12), allDay: true },
+    ];
+    const spans = parseSpanEvents(allDayEventMap(events), d(2026, 5, 10), d(2026, 5, 17));
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.leftPos).toBe(0);
+    expect(spans[0]!.topInd).toBe(0);
+    expect(spans[0]!.width).toBeGreaterThan(0);
+  });
+  it('stacks overlapping spans on separate rows', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 10), end: d(2026, 5, 13), allDay: true },
+      { key: 'b', start: d(2026, 5, 11), end: d(2026, 5, 14), allDay: true },
+    ];
+    const spans = parseSpanEvents(allDayEventMap(events), d(2026, 5, 10), d(2026, 5, 17));
+    const tops = spans.map((s) => s.topInd).sort();
+    expect(tops).toEqual([0, 1]);
+  });
+});
+
+describe('parseWeekSpanEvents', () => {
+  it('clips a span to the week window', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 8), end: d(2026, 5, 20), allDay: true },
+    ];
+    const weekStart = startOfWeek(d(2026, 5, 10), 0);
+    const spans = parseWeekSpanEvents(allDayEventMap(events), weekStart, 0);
+    expect(spans.length).toBeGreaterThan(0);
+    expect(spans[0]!.width).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('calcRowHeight', () => {
+  it('returns 1 for empty and max(topInd)+1 otherwise', () => {
+    expect(calcRowHeight([])).toBe(1);
+    expect(
+      calcRowHeight([
+        { key: 'a', children: null, leftPos: 0, width: 0.5, topInd: 0 },
+        { key: 'b', children: null, leftPos: 0, width: 0.5, topInd: 2 },
+      ]),
+    ).toBe(3);
+  });
+});
+
+describe('getMonthEvents', () => {
+  it('buckets events by week row of the month', () => {
+    const events: CalendarEvent[] = [
+      { key: 'a', start: d(2026, 5, 3), end: d(2026, 5, 3) },
+      { key: 'b', start: d(2026, 5, 20), end: d(2026, 5, 20) },
+    ];
+    const byWeek = getMonthEvents(events, d(2026, 5, 15), 0);
+    const weeks = Object.keys(byWeek).map(Number);
+    expect(weeks.length).toBeGreaterThanOrEqual(2);
+    // every week has both display + day matrices
+    for (const w of weeks) {
+      expect(byWeek[w]!.display).toBeDefined();
+      expect(byWeek[w]!.day).toBeDefined();
+    }
+  });
+
+  it('a cross-month long span appears in every week it covers (filterWeeklyEvents remap)', () => {
+    // 6/25 → 7/26 covers all of July; must show on each July week row, not just the first.
+    const events: CalendarEvent[] = [
+      { key: 'long', start: d(2019, 5, 25, 14, 45), end: d(2019, 6, 26, 6, 18) },
+    ];
+    const byWeek = getMonthEvents(events, d(2019, 6, 23), 0);
+    const weeksWithLong = Object.values(byWeek).filter((w) =>
+      w.display.some((s) => s.key === 'long'),
+    );
+    // July 2019 spans 5 week rows; the long span covers the first 4 (up to 7/26).
+    expect(weeksWithLong.length).toBeGreaterThanOrEqual(4);
+    // in each covered week it occupies topInd 0 and starts at the week's left edge.
+    for (const w of weeksWithLong) {
+      const bar = w.display.find((s) => s.key === 'long')!;
+      expect(bar.topInd).toBe(0);
+      expect(bar.leftPos).toBe(0);
+    }
   });
 });

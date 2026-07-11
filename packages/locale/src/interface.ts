@@ -267,13 +267,15 @@ export interface Locale {
     selectableLabel: string;
   };
   Calendar: {
-    today: string;
-    prev: string;
-    next: string;
-    /** uses {count} */
-    moreCount: string;
     noEvents: string;
+    /** 全天事件标签（Semi allDay） */
     allDay: string;
+    /** 时间列上午刻度，uses {time}（Semi AM） */
+    AM: string;
+    /** 时间列下午刻度，uses {time}（Semi PM） */
+    PM: string;
+    /** 月视图 +N 折叠文案，uses {count}（Semi remaining，${remained}） */
+    remaining: string;
     /** LiveAnnouncer：选中日期，uses {date} */
     selectedDateAnnounce: string;
   };
