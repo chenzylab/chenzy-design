@@ -44,7 +44,7 @@
         <div style="display:flex; align-items:center; gap:12px; margin-inline-start:auto;">
           <Button theme="borderless" type="tertiary" icon={iconBell} ariaLabel="通知" />
           <Button theme="borderless" type="tertiary" icon={iconHelp} ariaLabel="帮助" />
-          <Avatar size="small" color="var(--cd-color-warning)">YJ</Avatar>
+          <Avatar size="small" style="background-color:var(--cd-color-warning);color:#fff">YJ</Avatar>
         </div>
       {/snippet}
     </Nav>

@@ -127,7 +127,9 @@ const components = [
   ['resizable', '{ Resizable, ResizeGroup, ResizeItem, ResizeHandler }', '6 KB'],
   ['drag-move', '{ DragMove }', '2 KB'],
   // show
-  ['avatar', '{ AvatarGroup }', '4.95 KB'],
+  // 全面对齐 Semi 后功能显著增长（7 档尺寸+字号、topSlot 渐变 SVG、bottomSlot 圆/方多档、
+  // contentMotion 动效、JS scale 自适应、group 各档 border/margin），按实测 6.7 KB +8% 校准。
+  ['avatar', '{ AvatarGroup }', '7.3 KB'],
   ['badge', '{ Badge }', '2.5 KB'],
   ['calendar', '{ Calendar }', '9 KB'],
   ['card', '{ Card, CardGroup }', '3.7 KB'],

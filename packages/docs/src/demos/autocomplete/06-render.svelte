@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { AutoComplete, Avatar } from '@chenzy-design/svelte';
+  import { AutoComplete, Avatar, type AvatarColor } from '@chenzy-design/svelte';
 
-  type Person = { name: string; email: string; abbr: string; color: string };
+  type Person = { name: string; email: string; abbr: string; color: AvatarColor };
   const people: Person[] = [
     { name: '夏可漫', email: 'xiakeman@example.com', abbr: 'XK', color: 'amber' },
     { name: '申悦', email: 'shenyue@example.com', abbr: 'SY', color: 'indigo' },

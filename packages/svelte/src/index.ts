@@ -141,6 +141,16 @@ export {
   type ScrollListValue,
 } from './scroll-list/index.js';
 export { Avatar, AvatarGroup, avatarMeta } from './avatar/index.js';
+export type {
+  AvatarShape,
+  AvatarSizeEnum,
+  AvatarColor,
+  AvatarOverlapFrom,
+  AvatarBorder,
+  AvatarTopSlot,
+  AvatarBottomSlot,
+  AvatarGroupItem,
+} from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, CardGroup, cardMeta, cardGroupMeta } from './card/index.js';
 export { Tooltip, tooltipMeta } from './tooltip/index.js';
