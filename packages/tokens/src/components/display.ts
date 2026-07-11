@@ -163,12 +163,60 @@ export const displayTokens = {
   'color-avatar-white-bg': { value: 'var(--cd-color-white)', category: 'color', label: 'white 头像背景', usage: 'white 头像背景色（Semi color=white）' },
 
   // ============================== Badge ==============================
+  // 原始层完整镜像 Semi badge/variables.scss（值 1:1 对齐 2.89）。
 
+  // default（无 type：custom / 独立使用）
+  'color-badge-default-border-default': { value: 'var(--cd-color-bg-1)', category: 'color', label: '徽标描边色', usage: '描边颜色 - 默认' },
+  'color-badge-default-bg-default': { value: 'var(--cd-color-bg-1)', category: 'color', label: '徽标背景色', usage: '背景颜色 - 默认' },
+  'color-badge-default-light-bg-default': { value: 'var(--cd-color-bg-2)', category: 'color', label: '徽标浅版背景色', usage: '背景颜色 - 浅版' },
+  'color-badge-default-text-default': { value: 'var(--cd-color-bg-2)', category: 'color', label: '徽标文字色', usage: '文字颜色 - 默认' },
+
+  // primary
+  'color-badge-primary-solid-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '主色徽标背景', usage: '背景颜色 - 主色' },
+  'color-badge-primary-light-bg-default': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '浅版主色徽标背景', usage: '背景颜色 - 浅版主色' },
+  'color-badge-primary-light-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '浅版主色徽标文字', usage: '文字颜色 - 浅版主色' },
+  'color-badge-primary-inverted-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '白底主色徽标文字', usage: '文字颜色 - 白底' },
+
+  // secondary
+  'color-badge-secondary-solid-bg-default': { value: 'var(--cd-color-secondary)', category: 'color', label: '次要徽标背景', usage: '背景颜色 - 次要' },
+  'color-badge-secondary-light-bg-default': { value: 'var(--cd-color-secondary-light-default)', category: 'color', label: '浅版次要徽标背景', usage: '背景颜色 - 浅版次要' },
+  'color-badge-secondary-light-text-default': { value: 'var(--cd-color-secondary)', category: 'color', label: '浅版次要徽标文字', usage: '文字颜色 - 浅版次要' },
+  'color-badge-secondary-inverted-text-default': { value: 'var(--cd-color-secondary)', category: 'color', label: '白底次要徽标文字', usage: '文字颜色 - 白底' },
+
+  // tertiary
+  'color-badge-tertiary-solid-bg-default': { value: 'var(--cd-color-tertiary)', category: 'color', label: '第三徽标背景', usage: '背景颜色 - 第三' },
+  'color-badge-tertiary-light-bg-default': { value: 'var(--cd-color-tertiary-light-default)', category: 'color', label: '浅版第三徽标背景', usage: '背景颜色 - 第三' },
+  'color-badge-tertiary-light-text-default': { value: 'var(--cd-color-tertiary)', category: 'color', label: '浅版第三徽标文字', usage: '文字颜色 - 浅版第三' },
+  'color-badge-tertiary-inverted-text-default': { value: 'var(--cd-color-tertiary)', category: 'color', label: '白底第三徽标文字', usage: '文字颜色 - 白底' },
+
+  // danger
   'color-badge-danger-solid-bg-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险徽标背景', usage: '背景颜色 - 危险' },
+  'color-badge-danger-light-bg-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '浅版危险徽标背景', usage: '背景颜色 - 浅版危险' },
+  'color-badge-danger-light-text-default': { value: 'var(--cd-color-danger)', category: 'color', label: '浅版危险徽标文字', usage: '文字颜色 - 浅版危险' },
+  'color-badge-danger-inverted-text-default': { value: 'var(--cd-color-danger)', category: 'color', label: '白底危险徽标文字', usage: '文字颜色 - 白底' },
 
+  // warning
+  'color-badge-warning-solid-bg-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告徽标背景', usage: '背景颜色 - 警告' },
+  'color-badge-warning-light-bg-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '浅版警告徽标背景', usage: '背景颜色 - 浅版警告' },
+  'color-badge-warning-light-text-default': { value: 'var(--cd-color-warning)', category: 'color', label: '浅版警告徽标文字', usage: '文字颜色 - 浅版警告' },
+  'color-badge-warning-inverted-text-default': { value: 'var(--cd-color-warning)', category: 'color', label: '白底警告徽标文字', usage: '文字颜色 - 白底' },
+
+  // success
+  'color-badge-success-solid-bg-default': { value: 'var(--cd-color-success)', category: 'color', label: '成功徽标背景', usage: '背景颜色 - 成功' },
+  'color-badge-success-light-bg-default': { value: 'var(--cd-color-success-light-default)', category: 'color', label: '浅版成功徽标背景', usage: '背景颜色 - 浅版成功' },
+  'color-badge-success-light-text-default': { value: 'var(--cd-color-success)', category: 'color', label: '浅版成功徽标文字', usage: '文字颜色 - 浅版成功' },
+  'color-badge-success-inverted-text-default': { value: 'var(--cd-color-success)', category: 'color', label: '白底成功徽标文字', usage: '文字颜色 - 白底' },
+
+  // 尺寸 / 描边 / 层级
   'width-badge-dot': { value: '8px', category: 'width', label: '点状徽标宽度', usage: '点状徽标宽度' },
-
-  'height-badge-count': { value: '18px', category: 'height', label: '数字徽标高度', usage: '数字徽标宽度' },
+  'height-badge-dot': { value: '8px', category: 'height', label: '点状徽标高度', usage: '点状徽标高度' },
+  'radius-badge-dot': { value: 'var(--cd-border-radius-circle)', category: 'radius', label: '点状徽标圆角', usage: '点状徽标圆角' },
+  'height-badge-count': { value: '18px', category: 'height', label: '数字徽标高度', usage: '数字徽标高度' },
+  'spacing-badge-count-paddingy': { value: '0px', category: 'spacing', label: '数字徽标垂直内边距', usage: '数字徽标上下内边距' },
+  'spacing-badge-count-paddingx': { value: '4px', category: 'spacing', label: '数字徽标水平内边距', usage: '数字徽标左右内边距' },
+  'width-badge-border': { value: '1px', category: 'width', label: '徽标描边宽度', usage: '描边宽度' },
+  'z-badge': { value: '1', category: 'other', label: '徽标层级', usage: '徽标 z-index' },
+  'z-badge-light-bg': { value: '-1', category: 'other', label: '徽标浅色背景层级', usage: '徽标浅色背景 z-index' },
 
   // ============================== Card ==============================
   'color-card-bg-default': { value: 'var(--cd-color-bg-0)', category: 'color', label: '卡片背景色', usage: '卡片背景颜色' },
@@ -333,14 +381,6 @@ export const displayTokens = {
   'avatar-bottom-slot-medium-size': { value: 'var(--cd-font-avatar-bottom-slot-medium-size)', category: 'font', label: '底部 Slot 中字号', usage: 'medium 底部 Slot 字号（组件消费）' },
   'avatar-bottom-slot-large-size': { value: 'var(--cd-font-avatar-bottom-slot-large-size)', category: 'font', label: '底部 Slot 大字号', usage: 'large 底部 Slot 字号（组件消费）' },
   'avatar-bottom-slot-extra-large-size': { value: 'var(--cd-font-avatar-bottom-slot-extra-large-size)', category: 'font', label: '底部 Slot 超大字号', usage: 'extra-large 底部 Slot 字号（组件消费）' },
-
-  // —— Badge（组件消费） ——
-  'badge-size': { value: 'var(--cd-height-badge-count)', category: 'height', label: '数字徽标尺寸', usage: '数字徽标最小宽/高（组件消费）' },
-  'badge-size-small': { value: '14px', category: 'height', label: '小数字徽标尺寸', usage: '小数字徽标尺寸（组件消费；Semi 无小档，保留 14px）' },
-  'badge-dot-size': { value: 'var(--cd-width-badge-dot)', category: 'width', label: '点状徽标尺寸', usage: '点状徽标尺寸（组件消费）' },
-  'badge-bg': { value: 'var(--cd-color-badge-danger-solid-bg-default)', category: 'color', label: '徽标背景色', usage: '徽标默认背景（组件消费；默认危险红）' },
-  'badge-color': { value: 'var(--cd-color-white)', category: 'color', label: '徽标文字色', usage: '徽标文字颜色（组件消费）' },
-  'badge-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '徽标字号', usage: '徽标字号（组件消费）' },
 
   // —— Card（组件消费） ——
   'card-bg': { value: 'var(--cd-color-card-bg-default)', category: 'color', label: '卡片背景色', usage: '卡片背景（组件消费）' },

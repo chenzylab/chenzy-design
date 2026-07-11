@@ -12,7 +12,7 @@ export const meta = {
   exports: ['FloatButton', 'FloatButtonGroup'],
   props: [
     { name: 'icon', type: 'Snippet', default: 'undefined', desc: '图标内容（Snippet）；icon-only 时需 ariaLabel' },
-    { name: 'badge', type: 'BadgeProps', default: 'undefined', desc: '徽章参数（复用本库 Badge：dot/count/overflowCount/showZero/type），有值时外层包裹 Badge' },
+    { name: 'badge', type: 'BadgeProps', default: 'undefined', desc: '徽章参数（复用本库 Badge：dot/count/overflowCount/type/theme），有值时外层包裹 Badge' },
     { name: 'shape', type: "'round'|'square'|string", default: "'round'", desc: '形状：round=正圆（对齐 Semi）、square=方形，或任意 CSS border-radius 字符串自定义（本库额外提供）' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '尺寸三档' },
     { name: 'colorful', type: 'boolean', default: 'false', desc: 'AI 风格多彩渐变外观' },
