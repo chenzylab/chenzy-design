@@ -183,21 +183,21 @@
     偏移 = (√2−1)/√2 × R = 0.29 × R，R = 半个按钮宽。default 48 → 0.29×24 ≈ 7px。
     覆盖 Badge 默认的 translate(50%,-50%) 贴角定位。
   */
-  .cd-floatbutton--round :global(.cd-badge__sup--top-right) {
+  .cd-floatbutton--round :global(.cd-badge-rightTop) {
     inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
     inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
     transform: translate(50%, -50%);
   }
-  .cd-floatbutton--round.cd-floatbutton--small :global(.cd-badge__sup--top-right) {
+  .cd-floatbutton--round.cd-floatbutton--small :global(.cd-badge-rightTop) {
     inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
     inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
   }
-  .cd-floatbutton--round.cd-floatbutton--large :global(.cd-badge__sup--top-right) {
+  .cd-floatbutton--round.cd-floatbutton--large :global(.cd-badge-rightTop) {
     inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
     inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
   }
   /* square：偏移 = 0.29 × 圆角半径，贴方形圆角切点。 */
-  .cd-floatbutton--square :global(.cd-badge__sup--top-right) {
+  .cd-floatbutton--square :global(.cd-badge-rightTop) {
     inset-block-start: calc(0.29 * var(--cd-floatbutton-radius-square));
     inset-inline-end: calc(0.29 * var(--cd-floatbutton-radius-square));
   }
