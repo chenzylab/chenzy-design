@@ -51,6 +51,8 @@ export const meta = {
     { name: 'currencyDisplay', type: "'symbol'|'code'|'name'", default: "'symbol'", desc: '货币展示方式：符号 ￥ / 代码 CNY / 名称 人民币（对齐 Semi）' },
     { name: 'localeCode', type: 'string', default: 'undefined', desc: '货币格式化 BCP-47 locale（zh-CN/de-DE/ja-JP…），决定千分位/小数位/符号位置；回退 locale 再回退 zh-CN（对齐 Semi）' },
     { name: 'showCurrencySymbol', type: 'boolean', default: 'true', desc: 'false 时隐藏内置货币符号/代码/名称（用 decimal 千分位），供 prefix/suffix 自行展示（对齐 Semi）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名（对齐 Semi className）' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式（对齐 Semi style）' },
   ],
   methods: [
     { name: 'focus()', desc: '命令式聚焦输入框（尊重 preventScroll，对齐 Semi）' },

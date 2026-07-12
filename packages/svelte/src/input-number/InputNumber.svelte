@@ -109,6 +109,10 @@
     localeCode?: string;
     /** 是否显示货币符号/代码/名称；false 时仅千分位（style:'decimal'），供用户自定义 prefix/suffix。默认 true。 */
     showCurrencySymbol?: boolean;
+    /** 根元素自定义类名（透传，叠加在内置 class 之后，对齐 Semi className）。 */
+    class?: string;
+    /** 根元素自定义内联样式（透传，对齐 Semi style）。 */
+    style?: string;
   }
 
   let {
@@ -160,6 +164,8 @@
     currencyDisplay = 'symbol',
     localeCode,
     showCurrencySymbol = true,
+    class: className,
+    style,
   }: Props = $props();
 
   const loc = useLocale();
@@ -501,13 +507,14 @@
       suffix != null && 'cd-input-number--has-suffix',
       disabled && 'cd-input-number--disabled',
       borderless && 'cd-input-number--borderless',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
   );
 </script>
 
-<div class={cls} aria-invalid={status === 'error' || undefined}>
+<div class={cls} {style} aria-invalid={status === 'error' || undefined}>
   {#if prefix != null}
     <span class="cd-input-number__affix cd-input-number__prefix">
       {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefix}{/if}

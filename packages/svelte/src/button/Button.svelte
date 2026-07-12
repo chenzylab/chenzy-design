@@ -28,6 +28,10 @@
     circle?: boolean;
     /** required for icon-only buttons */
     ariaLabel?: string;
+    /** 指明按钮控制的元素 id（配合被控元素如 Collapsible 的 id 建立关联，透传 aria-controls）。 */
+    ariaControls?: string;
+    /** 展开态语义（配合折叠/展开触发器，透传 aria-expanded）。 */
+    ariaExpanded?: boolean;
     icon?: Snippet;
     /** 图标相对文字位置。spec §4 L27 */
     iconPosition?: 'left' | 'right';
@@ -60,6 +64,8 @@
     htmlType = 'button',
     circle = false,
     ariaLabel,
+    ariaControls,
+    ariaExpanded,
     icon,
     iconPosition = 'left',
     noHorizontalPadding = false,
@@ -148,6 +154,8 @@
   {disabled}
   aria-busy={loading || undefined}
   aria-label={ariaLabel}
+  aria-controls={ariaControls}
+  aria-expanded={ariaExpanded}
   onclick={handleClick}
   {onmousedown}
   {onmouseenter}
