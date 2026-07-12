@@ -26,6 +26,9 @@ export const radioTokens = {
   'color-radio-extra-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '辅助文本色', usage: '辅助文本颜色' },
 
   'color-radio-primary-border-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中描边色', usage: '选中状态单选圆圈描边颜色 - 默认态' },
+  'color-radio-primary-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中背景色', usage: '选中状态单选圆圈背景颜色 - 默认态' },
+  'color-radio-primary-bg-hover': { value: 'var(--cd-color-primary-hover)', category: 'color', label: '选中悬浮背景色', usage: '选中状态单选圆圈背景颜色 - 悬浮态' },
+  'color-radio-primary-bg-active': { value: 'var(--cd-color-primary-active)', category: 'color', label: '选中按下背景色', usage: '选中状态单选圆圈背景颜色 - 按下态' },
   'color-radio-primary-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '中心圆点色', usage: '选中状态单选圆圈中心圆点颜色' },
 
   // —— buttonRadio（按钮样式单选） ——
@@ -59,7 +62,10 @@ export const radioTokens = {
   'radio-bg': { value: 'var(--cd-color-radio-default-bg-default)', category: 'color', label: '圆圈背景色', usage: '单选圆圈默认背景（组件消费）' },
   'radio-bg-hover': { value: 'var(--cd-color-radio-default-bg-hover)', category: 'color', label: '圆圈悬浮背景色', usage: '单选圆圈悬浮背景（组件消费）' },
   'radio-color-checked': { value: 'var(--cd-color-radio-primary-border-default)', category: 'color', label: '选中主色', usage: '选中态圆圈描边 / 中心圆点主色（组件消费）' },
-  'radio-dot-color': { value: 'var(--cd-color-radio-primary-text-default)', category: 'color', label: '中心圆点色', usage: '选中态中心圆点颜色（组件消费）' },
+  'radio-bg-checked': { value: 'var(--cd-color-radio-primary-bg-default)', category: 'color', label: '选中背景色', usage: '选中态圆圈填充背景（品牌色实心，对齐 Semi；组件消费）' },
+  'radio-bg-checked-hover': { value: 'var(--cd-color-radio-primary-bg-hover)', category: 'color', label: '选中悬浮背景色', usage: '选中态圆圈悬浮填充背景（组件消费）' },
+  'radio-bg-checked-active': { value: 'var(--cd-color-radio-primary-bg-active)', category: 'color', label: '选中按下背景色', usage: '选中态圆圈按下填充背景（组件消费）' },
+  'radio-dot-color': { value: 'var(--cd-color-radio-primary-text-default)', category: 'color', label: '中心圆点色', usage: '选中态中心圆点颜色（白色实心点，对齐 Semi；组件消费）' },
   'radio-color-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警示态色', usage: '校验警示态描边色（组件消费）' },
   'radio-color-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误态色', usage: '校验错误态描边色（组件消费）' },
   // 文字间距 / focus

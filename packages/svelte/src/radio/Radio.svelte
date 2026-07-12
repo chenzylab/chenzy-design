@@ -265,12 +265,15 @@
   .cd-radio__circle {
     position: relative;
     flex: 0 0 auto;
+    /* 对齐 Semi .semi-radio-inner：圆圈整体下移 2px，与文字首行视觉居中对齐。 */
+    margin-top: 2px;
     inline-size: var(--cd-radio-size-default);
     block-size: var(--cd-radio-size-default);
     background: var(--cd-radio-bg);
     border: 1px solid var(--cd-radio-border);
     border-radius: var(--cd-border-radius-full);
     transition:
+      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-radio--small .cd-radio__circle {
@@ -286,8 +289,18 @@
     background: var(--cd-radio-bg-hover);
     border-color: var(--cd-radio-border-hover);
   }
+  /* 选中态：品牌色实心圆底 + 描边，中心白点（对齐 Semi .inner-checked .inner-display）。 */
   .cd-radio--checked .cd-radio__circle {
+    background: var(--cd-radio-bg-checked);
     border-color: var(--cd-radio-color-checked);
+  }
+  .cd-radio--checked:hover:not(.cd-radio--disabled) .cd-radio__circle {
+    background: var(--cd-radio-bg-checked-hover);
+    border-color: var(--cd-radio-bg-checked-hover);
+  }
+  .cd-radio--checked:active:not(.cd-radio--disabled) .cd-radio__circle {
+    background: var(--cd-radio-bg-checked-active);
+    border-color: var(--cd-radio-bg-checked-active);
   }
   .cd-radio--checked .cd-radio__circle::after {
     content: '';
