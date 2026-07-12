@@ -17,11 +17,9 @@
     { uid: 'p-3', name: 'photo-3.svg', size: 2048, status: 'success', url: makeImg('IMG 3', '#00b42a') },
   ]);
 
-  // 从已上传项映射出预览灯箱所需的图片数组（src/alt）。
+  // 从已上传项映射出预览灯箱所需的图片 URL 数组（对齐 ImagePreview 的 src: string[]）。
   const previewImages = $derived(
-    picVal
-      .filter((item) => item.url)
-      .map((item) => ({ src: item.url as string, alt: item.name })),
+    picVal.filter((item) => item.url).map((item) => item.url as string),
   );
 
   let previewVisible = $state(false);
@@ -29,7 +27,9 @@
 
   function onPreviewClick(fileItem: UploadFileItem) {
     // 点击缩略图默认眼睛图标：定位到该项在灯箱中的索引并打开放大预览。
-    const index = previewImages.findIndex((img) => img.alt === fileItem.name);
+    const index = picVal
+      .filter((item) => item.url)
+      .findIndex((item) => item.name === fileItem.name);
     previewCurrent = index < 0 ? 0 : index;
     previewVisible = true;
   }
@@ -50,11 +50,11 @@
   />
 </Space>
 
-{#if previewVisible && previewImages.length > 0}
-  <ImagePreview
-    images={previewImages}
-    current={previewCurrent}
-    onClose={() => (previewVisible = false)}
-    onChange={(index) => (previewCurrent = index)}
-  />
-{/if}
+<ImagePreview
+  src={previewImages}
+  visible={previewVisible}
+  currentIndex={previewCurrent}
+  onVisibleChange={(v) => (previewVisible = v)}
+  onClose={() => (previewVisible = false)}
+  onChange={(index) => (previewCurrent = index)}
+/>
