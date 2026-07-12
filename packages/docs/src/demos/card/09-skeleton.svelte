@@ -22,7 +22,7 @@
   {#snippet cover()}
     <Skeleton {loading} active>
       {#snippet placeholder()}
-        <SkeletonImage width="100%" height={160} />
+        <SkeletonImage style="width:100%; height:160px" />
       {/snippet}
       <div
         style="height: 160px; background: linear-gradient(135deg, var(--cd-color-primary) 0%, var(--cd-color-cyan-4) 100%);"

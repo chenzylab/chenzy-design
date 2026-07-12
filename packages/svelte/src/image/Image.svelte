@@ -231,7 +231,7 @@
         {#if placeholder}
           <div class="cd-image-status">{@render placeholder()}</div>
         {:else}
-          <SkeletonImage {width} {height} />
+          <div class="cd-image-status"><SkeletonImage /></div>
         {/if}
       {/if}
     </div>
