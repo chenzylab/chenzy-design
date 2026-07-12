@@ -23,6 +23,8 @@
     children?: Snippet;
     ariaLabel?: string;
     class?: string;
+    /** 占位容器内联样式（对齐 Semi Skeleton style）。 */
+    style?: string;
   }
 
   let {
@@ -34,6 +36,7 @@
     children,
     ariaLabel,
     class: className,
+    style,
   }: Props = $props();
 
   const loc = useLocale();
@@ -74,7 +77,7 @@
 
 {#if unmountPlaceholder}
   {#if loading}
-    <div class={cls} role="status" aria-busy="true" aria-live="polite" aria-label={ariaLabel ?? loc().t('Skeleton.loading')}>
+    <div class={cls} {style} role="status" aria-busy="true" aria-live="polite" aria-label={ariaLabel ?? loc().t('Skeleton.loading')}>
       {@render placeholderBody()}
     </div>
   {:else}
@@ -84,6 +87,7 @@
   <!-- keepDOM：两侧均挂载，靠 display:none 切换；隐藏侧加 inert/aria-hidden 防焦点与朗读。 -->
   <div
     class={cls}
+    {style}
     role="status"
     aria-busy="true"
     aria-live="polite"

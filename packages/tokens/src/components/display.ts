@@ -219,20 +219,37 @@ export const displayTokens = {
   'z-badge-light-bg': { value: '-1', category: 'other', label: '徽标浅色背景层级', usage: '徽标浅色背景 z-index' },
 
   // ============================== Card ==============================
-  'color-card-bg-default': { value: 'var(--cd-color-bg-0)', category: 'color', label: '卡片背景色', usage: '卡片背景颜色' },
-  'color-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片描边色', usage: '卡片描边颜色' },
-  'color-card-title-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '卡片标题文字色', usage: '卡片标题文字颜色' },
-  'color-card-description-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片描述文字色', usage: '卡片描述文字颜色' },
-  'color-card-body-text': { value: 'var(--cd-color-text-1)', category: 'color', label: '卡片正文文字色', usage: '卡片正文文字颜色' },
+  // 原始层 1:1 镜像 Semi card/variables.scss（值对齐 2.89）。
+  'color-card-bg-default': { value: 'var(--cd-color-bg-0)', category: 'color', label: '卡片背景色', usage: '卡片背景颜色（Semi $color-card-bg-default）' },
+  'color-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片描边色', usage: '卡片描边颜色（Semi $color-card-border）' },
+  'color-card-title-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '卡片标题文字色', usage: '卡片标题文字颜色（Semi $color-card_title-text）' },
+  'color-card-description-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片描述文字色', usage: '卡片描述文字颜色（Semi $color-card_description-text）' },
+  'color-card-extra-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '卡片附加文字色', usage: '卡片附加文字颜色（Semi $color-card_extra-text）' },
+  'color-card-body-text': { value: 'var(--cd-color-text-1)', category: 'color', label: '卡片正文文字色', usage: '卡片正文文字颜色（Semi $color-card_body-text）' },
 
-  'font-card-title-fontweight': { value: '700', category: 'font', label: '卡片标题字重', usage: '卡片文字字重 - 标题' },
-  'font-card-title-fontsize': { value: 'var(--cd-font-size-header-6)', category: 'font', label: '卡片标题字号', usage: '卡片文字大小 - 标题' },
+  'font-card-default-fontweight': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '卡片默认字重', usage: '卡片文字字重 - 默认（Semi $font-card_default-fontWeight）' },
+  'font-card-extra-fontweight': { value: '700', category: 'font', label: '卡片附加字重', usage: '卡片文字字重 - 附加（Semi $font-card_extra-fontWeight）' },
+  'font-card-title-fontweight': { value: '700', category: 'font', label: '卡片标题字重', usage: '卡片文字字重 - 标题（Semi $font-card_title-fontWeight）' },
+  'font-card-default-lineheight': { value: '20px', category: 'font', label: '卡片默认行高', usage: '卡片文字行高 - 默认（Semi $font-card_default-lineHeight）' },
+  'font-card-title-lineheight': { value: '22px', category: 'font', label: '卡片标题行高', usage: '卡片文字行高 - 标题（Semi $font-card_title-lineHeight）' },
+  'font-card-default-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '卡片默认字号', usage: '卡片文字大小 - 默认（Semi $font-card_default-fontSize）' },
+  'font-card-extra-fontsize': { value: 'var(--cd-font-size-header-6)', category: 'font', label: '卡片附加字号', usage: '卡片文字大小 - 附加（Semi $font-card_extra-fontSize）' },
+  'font-card-title-fontsize': { value: 'var(--cd-font-size-header-6)', category: 'font', label: '卡片标题字号', usage: '卡片文字大小 - 标题（Semi $font-card_title-fontSize）' },
 
-  'radius-card': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: '卡片圆角' },
+  'radius-card': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: '卡片圆角（Semi $radius-card）' },
 
-  'shadow-card': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '卡片阴影', usage: '卡片阴影' },
+  'motion-card-transition-duration': { value: '300ms', category: 'other', label: '卡片悬浮动画时长', usage: '卡片悬浮阴影过渡时长（Semi $motion-card-transition_duration）' },
 
-  'spacing-card-padding': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '卡片内边距', usage: '卡片内边距' },
+  'width-card-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '卡片描边宽度', usage: '卡片描边宽度（Semi $width-card-border）' },
+
+  'shadow-card': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '卡片阴影', usage: '卡片阴影（Semi $shadow-card）' },
+
+  'spacing-card-padding': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '卡片内边距', usage: '卡片内边距（Semi $spacing-card-padding）' },
+  'spacing-card-margin': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '卡片外边距', usage: '卡片外边距/间距（Semi $spacing-card-margin）' },
+  'spacing-card-avatar-marginright': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '卡片头像右外边距', usage: 'Meta 头像右侧外边距（Semi $spacing-card_avatar-marginRight）' },
+  'spacing-cardgroup-card-margin': { value: '-1px', category: 'spacing', label: '卡片组拼接负边距', usage: '网格卡片组相邻卡片边框拼接负外边距（Semi $spacing-cardGroup_card-margin）' },
+
+  'z-card-hover': { value: '1', category: 'other', label: '卡片悬浮层级', usage: '悬浮后卡片 z-index，避免网格阴影被覆盖（Semi $z-card_hover）' },
 
   // ====================================================================
   // chenzy-design 四组件实际消费的补充 token（短名，Semi 无 / 命名差异；组件消费）。
@@ -382,22 +399,31 @@ export const displayTokens = {
   'avatar-bottom-slot-large-size': { value: 'var(--cd-font-avatar-bottom-slot-large-size)', category: 'font', label: '底部 Slot 大字号', usage: 'large 底部 Slot 字号（组件消费）' },
   'avatar-bottom-slot-extra-large-size': { value: 'var(--cd-font-avatar-bottom-slot-extra-large-size)', category: 'font', label: '底部 Slot 超大字号', usage: 'extra-large 底部 Slot 字号（组件消费）' },
 
-  // —— Card（组件消费） ——
-  'card-bg': { value: 'var(--cd-color-card-bg-default)', category: 'color', label: '卡片背景色', usage: '卡片背景（组件消费）' },
-  'card-border': { value: 'var(--cd-color-card-border)', category: 'color', label: '卡片描边色', usage: '卡片描边（组件消费）' },
+  // —— Card（组件消费；短名 var() 到上方镜像 Semi 的 card 原始层，DOM 消费点 1:1 对齐 card.scss） ——
+  'card-bg': { value: 'var(--cd-color-card-bg-default)', category: 'color', label: '卡片背景色', usage: '卡片根背景（组件消费）' },
+  'card-border-color': { value: 'var(--cd-color-card-border)', category: 'color', label: '卡片描边色', usage: '卡片外框/头尾分隔线颜色（组件消费）' },
+  'card-border-width': { value: 'var(--cd-width-card-border)', category: 'width', label: '卡片描边宽度', usage: '卡片外框/分隔线宽度（组件消费）' },
   'card-radius': { value: 'var(--cd-radius-card)', category: 'radius', label: '卡片圆角', usage: '卡片圆角（组件消费）' },
-  'card-padding': { value: 'var(--cd-spacing-card-padding)', category: 'spacing', label: '卡片内边距', usage: '卡片内边距（组件消费）' },
-  'card-padding-small': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '小卡片内边距', usage: '小尺寸卡片内边距（组件消费）' },
-  'card-header-border': { value: 'var(--cd-color-card-border)', category: 'color', label: '卡片分隔线色', usage: '卡片头/尾分隔线（组件消费）' },
-  'card-title-color': { value: 'var(--cd-color-card-title-text)', category: 'color', label: '卡片标题色', usage: '卡片标题文字（组件消费）' },
-  'card-title-weight': { value: 'var(--cd-font-card-title-fontweight)', category: 'font', label: '卡片标题字重', usage: '卡片标题字重（组件消费）' },
-  'card-title-size': { value: 'var(--cd-font-card-title-fontsize)', category: 'font', label: '卡片标题字号', usage: '卡片标题字号（组件消费）' },
-  'card-desc-color': { value: 'var(--cd-color-card-description-text)', category: 'color', label: '卡片描述色', usage: '卡片描述文字（组件消费）' },
-  'card-body-color': { value: 'var(--cd-color-card-body-text)', category: 'color', label: '卡片正文色', usage: '卡片正文文字（组件消费）' },
-  'card-shadow': { value: 'var(--cd-shadow-card)', category: 'other', label: '卡片阴影', usage: '卡片阴影（组件消费）' },
-  'card-shadow-hover': { value: 'var(--cd-shadow-card)', category: 'other', label: '卡片悬浮阴影', usage: '卡片悬浮阴影（组件消费；对齐 Semi 单档 elevated）' },
+  'card-padding': { value: 'var(--cd-spacing-card-padding)', category: 'spacing', label: '卡片内边距', usage: 'header/body/footer 内边距（组件消费）' },
+  'card-margin': { value: 'var(--cd-spacing-card-margin)', category: 'spacing', label: '卡片间距', usage: 'actions 顶距 / extra 与 title 间距（组件消费）' },
+  'card-title-color': { value: 'var(--cd-color-card-title-text)', category: 'color', label: '卡片标题色', usage: 'Meta 标题文字（组件消费）' },
+  'card-title-weight': { value: 'var(--cd-font-card-title-fontweight)', category: 'font', label: '卡片标题字重', usage: 'Meta 标题字重（组件消费）' },
+  'card-title-size': { value: 'var(--cd-font-card-title-fontsize)', category: 'font', label: '卡片标题字号', usage: 'Meta 标题字号（组件消费）' },
+  'card-title-lineheight': { value: 'var(--cd-font-card-title-lineheight)', category: 'font', label: '卡片标题行高', usage: 'Meta 标题行高（组件消费）' },
+  'card-extra-color': { value: 'var(--cd-color-card-extra-text)', category: 'color', label: '卡片附加文字色', usage: 'header 右侧 extra 文字（组件消费）' },
+  'card-extra-weight': { value: 'var(--cd-font-card-extra-fontweight)', category: 'font', label: '卡片附加字重', usage: 'header extra 字重（组件消费）' },
+  'card-extra-size': { value: 'var(--cd-font-card-extra-fontsize)', category: 'font', label: '卡片附加字号', usage: 'header extra 字号（组件消费）' },
+  'card-desc-color': { value: 'var(--cd-color-card-description-text)', category: 'color', label: '卡片描述色', usage: 'Meta 描述文字（组件消费）' },
+  'card-body-color': { value: 'var(--cd-color-card-body-text)', category: 'color', label: '卡片正文色', usage: 'body 正文文字（组件消费）' },
+  'card-default-weight': { value: 'var(--cd-font-card-default-fontweight)', category: 'font', label: '卡片默认字重', usage: '卡片/正文默认字重（组件消费）' },
+  'card-default-size': { value: 'var(--cd-font-card-default-fontsize)', category: 'font', label: '卡片默认字号', usage: '卡片/正文默认字号（组件消费）' },
+  'card-default-lineheight': { value: 'var(--cd-font-card-default-lineheight)', category: 'font', label: '卡片默认行高', usage: '卡片/正文/描述默认行高（组件消费）' },
+  'card-avatar-marginright': { value: 'var(--cd-spacing-card-avatar-marginright)', category: 'spacing', label: 'Meta 头像右边距', usage: 'Meta 头像右侧外边距（组件消费）' },
+  'card-shadow': { value: 'var(--cd-shadow-card)', category: 'other', label: '卡片阴影', usage: 'shadows=hover/always 阴影（组件消费；Semi 单档 elevated）' },
+  'card-transition-duration': { value: 'var(--cd-motion-card-transition-duration)', category: 'other', label: '卡片阴影过渡时长', usage: 'shadows 悬浮阴影过渡时长（组件消费）' },
+  'card-z-hover': { value: 'var(--cd-z-card-hover)', category: 'other', label: '卡片悬浮层级', usage: '悬浮后 z-index，避免网格阴影被邻卡覆盖（组件消费）' },
 
-  // —— CardGroup（组件消费；网格排布默认间距，可被 spacing prop 覆盖） ——
-  'cardgroup-spacing': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '卡片组间距', usage: 'CardGroup 网格默认间距（组件消费）' },
-  'cardgroup-min-column': { value: '240px', category: 'width', label: '卡片组列最小宽度', usage: 'CardGroup 网格列最小宽度（auto-fill 阈值，组件消费）' },
+  // —— CardGroup（组件消费） ——
+  'cardgroup-spacing': { value: 'var(--cd-spacing-card-margin)', category: 'spacing', label: '卡片组间距', usage: 'CardGroup 默认卡片间距（组件消费；Semi 默认 16 = spacing-base-loose）' },
+  'cardgroup-card-margin': { value: 'var(--cd-spacing-cardgroup-card-margin)', category: 'spacing', label: '卡片组拼接负边距', usage: '网格型相邻卡片边框拼接负外边距（组件消费）' },
 } satisfies TokenGroup;
