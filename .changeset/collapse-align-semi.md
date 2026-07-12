@@ -10,3 +10,4 @@ Collapse 全面对齐 Semi Design（DOM / API / tokens / demo 场景全镜像，
 - **Tokens**：移除 Semi 没有的 10 个中间变量 `--cd-collapse-*`，组件直接消费 20 个原始层 `--cd-*-collapse-*`（值 / 名逐条对齐 Semi collapse/variables.scss）。
 - 关联组件 `Collapsible` 的 `reCalcKey` / `onMotionEnd` 类型补 `| undefined`（`exactOptionalPropertyTypes`）。
 - Demo 补至 8 个（基本 / 手风琴 / 禁用 / 隐藏图标 / 自定义图标 / extra / 箭头位置 / 仅点击箭头展开），覆盖并超出 Semi 官方场景。
+- **连带适配消费方 SideBar**：`SideBarCodeContent` / `SideBarFileContent` 的展开（全屏）按钮从 `Collapse.Panel` 的 `extra` 槽移入 `head` 内自渲染（新 Collapse 仅 string header 渲染 extra，对齐 Semi），点击 `stopPropagation` 不误触折叠；两者设 `keepDOM` 保留内容 DOM；`onChange` 适配新签名 `(activeKey, e)`。

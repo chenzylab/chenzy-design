@@ -30,7 +30,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
     const root = container.querySelector('.cd-sidebar-code-content');
     expect(root).toBeTruthy();
     // 两个折叠面板。
-    const items = container.querySelectorAll('.cd-collapse__item');
+    const items = container.querySelectorAll('.cd-collapse-item');
     expect(items.length).toBe(2);
     // 头部 name 文本。
     const texts = [...container.querySelectorAll('.cd-sidebar-code-content__head-text')].map(
@@ -67,7 +67,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
   it('空 codes 渲染空折叠列表，不抛错', () => {
     const { container } = renderWithLocale(CC, { props: { codes: [] } });
     expect(container.querySelector('.cd-sidebar-code-content')).toBeTruthy();
-    expect(container.querySelectorAll('.cd-collapse__item').length).toBe(0);
+    expect(container.querySelectorAll('.cd-collapse-item').length).toBe(0);
   });
 });
 
@@ -99,13 +99,13 @@ describe('SideBarCodeContent — 交互回调', () => {
       props: { codes: CODES, activeKey: [], onChange },
     });
     // 初始受控 activeKey=[] → 无面板展开。
-    expect(container.querySelector('.cd-collapse__item--active')).toBeNull();
-    const header = container.querySelector('.cd-collapse__header') as HTMLElement;
+    expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
+    const header = container.querySelector('.cd-collapse-header') as HTMLElement;
     header.click();
     // onChange 通知（含被点击项 key）。
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain('cfg');
     // 受控：DOM 未回写，仍无展开项。
-    expect(container.querySelector('.cd-collapse__item--active')).toBeNull();
+    expect(container.querySelector('.cd-collapse-item-active')).toBeNull();
   });
 });
