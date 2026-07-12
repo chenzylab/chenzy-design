@@ -7,10 +7,11 @@ export const Descriptions: typeof Descriptions_ & {
 
 export { DescriptionsItem };
 export { meta as descriptionsMeta } from './meta.js';
-export type { DescriptionItem } from './types.js';
+export type { DescriptionData } from './types.js';
 export {
   getDescriptionsContext,
   setDescriptionsContext,
   type DescriptionsContext,
-  type DescriptionsDirection,
+  type DescriptionsAlign,
+  type DescriptionsLayout,
 } from './context.js';

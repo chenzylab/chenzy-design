@@ -1,13 +1,16 @@
 import { getContext, setContext } from 'svelte';
 
-export type DescriptionsDirection = 'horizontal' | 'vertical';
+export type DescriptionsAlign = 'center' | 'justify' | 'left' | 'plain';
+export type DescriptionsLayout = 'horizontal' | 'vertical';
 
+/**
+ * 镜像 Semi DescriptionsContext：仅暴露 align + layout，供 <Descriptions.Item>
+ * 决定渲染成 plain（单 td）还是 th/td 对，以及 horizontal 下是否包裹 tr。
+ * getter 保持对父 prop 变化的响应性。
+ */
 export interface DescriptionsContext {
-  // getter 保持对父 Descriptions prop 变化的响应性（直接读快照会冻结初始值）。
-  getColumn: () => number;
-  getDirection: () => DescriptionsDirection;
-  getColon: () => boolean;
-  getEmptyText: () => string;
+  getAlign: () => DescriptionsAlign;
+  getLayout: () => DescriptionsLayout;
 }
 
 const KEY = Symbol('cd-descriptions');
