@@ -24,9 +24,10 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '点击触发器唤起一组可操作命令项，danger 项高亮为危险色。'),
-  entry('02-trigger.svelte', '触发方式', 'trigger 支持 hover 悬浮、click 点击、contextMenu 右键三种唤起方式。'),
-  entry('03-position.svelte', '弹出位置', 'position 控制浮层相对触发器的方位，空间不足时自动翻转。'),
-  entry('04-nested.svelte', '嵌套子菜单', '菜单项含 children 即展开为子菜单，支持多层嵌套，→ 进入、← / Esc 返回。'),
-  entry('05-group.svelte', '分组与分隔', 'type:"group" 分组标题、type:"divider" 分隔符组合出结构化菜单。'),
+  entry('01-basic.svelte', '基本用法', 'render 用 Dropdown.Menu 组合 Title / Item / Divider；Item 支持 icon、disabled、type 五色。'),
+  entry('02-nested.svelte', '嵌套使用', '在 render 内手动嵌套 <Dropdown>，其 children 为 Dropdown.Item 作子菜单触发器。'),
+  entry('03-position.svelte', '弹出位置', 'position 支持 12 方位，语义对齐 Semi（bottomStart≈bottomLeft），空间不足时自动翻转。'),
+  entry('04-trigger.svelte', '触发方式', 'trigger 支持 hover 悬浮、focus 聚焦、click 点击、contextMenu 右键四种唤起方式。'),
+  entry('05-events.svelte', '触发事件', '菜单项支持 onClick / onMouseEnter / onMouseLeave / onContextMenu 四类鼠标事件。'),
+  entry('06-menu-json.svelte', 'JSON 用法', '通过 menu 属性传入 JSON Array 快速配置下拉框；showTick 时 active 项左侧显示对勾。'),
 ];

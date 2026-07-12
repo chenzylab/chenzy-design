@@ -1,13 +1,13 @@
 <!--
   SplitButtonGroup — 分裂按钮：左侧主 Button + 右侧带下拉箭头的小 Button。
-  右侧小按钮点击触发 Dropdown（复用现有 Dropdown 的 items API / menu snippet）。
+  右侧小按钮点击触发 Dropdown（对齐新 Dropdown API：menu prop / render snippet）。
   视觉上两者拼接、中间细分隔；主按钮 type/theme 透传给两侧。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Button from './Button.svelte';
   import { Dropdown } from '../dropdown/index.js';
-  import type { DropdownItem } from '../dropdown/types.js';
+  import type { DropdownMenuItem, DropdownKey } from '../dropdown/types.js';
   import type { Placement } from '@chenzy-design/core';
   import type { ButtonType, ButtonTheme, ButtonSize } from './context.js';
 
@@ -17,14 +17,14 @@
     size?: ButtonSize;
     disabled?: boolean;
     loading?: boolean;
-    /** 下拉菜单数据项（透传给 Dropdown.items）。 */
-    items?: DropdownItem[];
+    /** 下拉菜单数据项（透传给 Dropdown 的 menu prop，JSON Array 配置）。 */
+    items?: DropdownMenuItem[];
     /** 下拉浮层位置（透传给 Dropdown.position）。 */
     position?: Placement;
     /** 下拉箭头按钮的 aria-label（无文字按钮必填）。 */
     triggerAriaLabel?: string;
-    /** 选中下拉项回调。 */
-    onSelect?: (key: string | number) => void;
+    /** 选中下拉项回调（每个 item 的 onClick 内触发，携带其 key）。 */
+    onSelect?: (key: DropdownKey) => void;
     /** 主按钮点击回调。 */
     onclick?: (e: MouseEvent) => void;
     /** 分裂按钮组语义标签（root aria-label，对齐 Semi）。 */
@@ -35,7 +35,7 @@
     style?: string;
     /** 左侧主按钮内容。 */
     children?: Snippet;
-    /** 自定义下拉菜单体（替代 items）。 */
+    /** 自定义下拉菜单体（替代 items，作为 Dropdown 的 render snippet，内含 Dropdown.Menu/Item）。 */
     menu?: Snippet;
   }
 
@@ -56,40 +56,38 @@
     children,
     menu,
   }: Props = $props();
+
+  // 把 items 映射为 Dropdown 的 menu：为每个 item 注入 onClick，
+  // 内部先调用原 onClick（若有），再上抛 onSelect(key)；title/divider 原样透传。
+  const dropdownMenu = $derived(
+    items.map((m) => {
+      if (m.node !== 'item') return m;
+      const { onClick, key } = m;
+      return {
+        ...m,
+        onClick: (e: MouseEvent) => {
+          onClick?.(e);
+          if (key !== undefined) onSelect?.(key);
+        },
+      };
+    }),
+  );
 </script>
 
 <div class={['cd-split-button', className].filter(Boolean).join(' ')} {style} role="group" aria-label={ariaLabel}>
   <Button {type} {theme} {size} {disabled} {loading} onclick={(e) => onclick?.(e)}>
     {@render children?.()}
   </Button>
-  <!-- 有自定义 menu 时把它作为 children 透传给 Dropdown；
-       否则不传 children，让 Dropdown 走内置 items 渲染分支。
-       注意：标签体内即便是空 {#if} 也会被 Svelte 收集成 children snippet，
-       从而覆盖 items 导致菜单为空，故必须按 menu 是否存在分叉两个调用。 -->
+  <!-- 有自定义 menu 时把它作为 Dropdown 的 render snippet 透传（内含 Dropdown.Menu/Item）；
+       否则走 menu prop（items 映射）。注意：render 存在时 Dropdown 忽略 menu prop，
+       故按 menu snippet 是否存在分叉两个调用，避免空 render 覆盖 menu。 -->
   {#if menu}
-    <Dropdown
-      trigger="click"
-      {items}
-      {position}
-      {disabled}
-      onSelect={(key) => onSelect?.(key)}
-    >
-      {#snippet triggerContent()}
-        <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
-      {/snippet}
-      {@render menu()}
+    <Dropdown trigger="click" {position} render={menu}>
+      <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
     </Dropdown>
   {:else}
-    <Dropdown
-      trigger="click"
-      {items}
-      {position}
-      {disabled}
-      onSelect={(key) => onSelect?.(key)}
-    >
-      {#snippet triggerContent()}
-        <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
-      {/snippet}
+    <Dropdown trigger="click" menu={dropdownMenu} {position}>
+      <Button {type} {theme} {size} {disabled} ariaLabel={triggerAriaLabel} icon={caret}></Button>
     </Dropdown>
   {/if}
 </div>
@@ -113,11 +111,11 @@
     border-start-end-radius: 0;
     border-end-end-radius: 0;
   }
-  .cd-split-button :global(.cd-dropdown) {
+  .cd-split-button :global(.cd-dropdown-trigger) {
     display: inline-flex;
     margin-inline-start: -1px;
   }
-  .cd-split-button :global(.cd-dropdown .cd-button) {
+  .cd-split-button :global(.cd-dropdown-trigger .cd-button) {
     border-start-start-radius: 0;
     border-end-start-radius: 0;
     border-start-end-radius: var(--cd-radius-button-splitbuttongroup);
@@ -125,8 +123,5 @@
     position: relative;
     /* 中间细分隔线（对齐 Semi 按钮组分割线 token） */
     box-shadow: inset var(--cd-width-button-group-border) 0 0 0 var(--cd-color-button-group-border-default);
-  }
-  .cd-split-button :global(.cd-dropdown__trigger) {
-    display: inline-flex;
   }
 </style>

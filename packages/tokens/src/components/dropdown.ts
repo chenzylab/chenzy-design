@@ -1,30 +1,37 @@
 /**
- * Component tokens for Dropdown. 全量对齐 Semi Design（semi-foundation/dropdown/variables.scss，34 变量），
- * 并升级为带元数据的 TokenDef 结构以支持 DSM。
+ * Component tokens for Dropdown. 全量对齐 Semi Design（semi-foundation/dropdown/variables.scss + dropdown.scss +
+ * animation.scss，37 变量），并升级为带元数据的 TokenDef 结构以支持 DSM。
  * 值为 var() 引用我们的 alias / global token，或字面量（忠实翻译 Semi）。
  *
  * 命名规则：Semi `$` 前缀去除、下划线 `_` kebab 化、camelCase 小写收敛
  * （如 dropdown_menu-paddingY → dropdown-menu-paddingy，dropdown_title_withTick → dropdown-title-withtick）。
  * 映射：--semi-color-* → --cd-color-*；var(--semi-border-radius-*) → var(--cd-border-radius-*)；
  * $spacing-* → var(--cd-spacing-*)；无对应全局档的字面量保留（如 31px / 9px / 280px / 12px / 1px）。
- * filter 归 other。
+ * filter / transition 归 animation / other。
  *
- * 末尾保留 chenzy-design Dropdown 各子组件（Dropdown/DropdownItem/DropdownItemNode/DropdownSubMenu/
- * DropdownTitle/DropdownDivider）实际消费的补充 token（Semi 无 / 命名差异；组件消费），值对齐 Semi。
- * 收敛前这些 --cd-dropdown-* 被组件直接引用但从未定义（悬空）；此处补齐。
+ * DOM 直接消费这些 Semi 全名 token（dropdown.scss 里 `$color-dropdown_item-bg-hover` →
+ * `--cd-color-dropdown-item-bg-hover`），不再经本库自造中间短名（旧的 --cd-dropdown-bg /
+ * --cd-dropdown-item-padding / --cd-dropdown-min-width / --cd-dropdown-z / --cd-dropdown-shadow 等
+ * 已随本次对齐移除，无向后兼容包袱）。
  *
- * 视觉变化点：
- *  - 浮层背景由既有硬编码改为 Semi color-dropdown-bg-default（= --cd-color-bg-3，亮色 #fff）。
- *  - 浮层圆角由既有值改为 Semi radius-dropdown（= --cd-border-radius-medium）。
- *  - 菜单项 hover 背景对齐 Semi color-dropdown-item-bg-hover（= --cd-color-fill-0）。
- *  - 菜单项内边距对齐 Semi item-paddingY/paddingX（= tight / base）。
- *  - 禁用/分组标题文字对齐 Semi disabled-text / title-text。
+ * 阴影 / z-index / 背景滤镜：Semi dropdown-wrapper 直接 `@include shadow-elevated` + `z-index:$z-dropdown` +
+ * `backdrop-filter:$filter-dropdown-bg`。本库浮层复用 Tooltip 基座（对齐 Semi「Dropdown 封装 Tooltip」），
+ * wrapper 的阴影 / 层级由 Tooltip 承载（Tooltip content 已 shadow-elevated + z-dropdown 级），Dropdown content
+ * 自身不再重复定义 shadow / z / min-width（Semi 亦无 min-width，variables 里 `min-width:150px` 为注释态）。
+ *
+ * 视觉对齐点（值忠实 Semi）：
+ *  - 浮层背景 color-dropdown-bg-default = --cd-color-bg-3（亮色 #fff）。
+ *  - 浮层圆角 radius-dropdown = --cd-border-radius-medium。
+ *  - 菜单项 hover 背景 color-dropdown-item-bg-hover = --cd-color-fill-0；按下 bg-active = fill-1。
+ *  - 菜单项内边距 item-paddingY/paddingX = tight / base。
+ *  - type 五色（primary/secondary/tertiary/warning/danger）文字色映射各语义色。
+ *  - 选中项（active）字重 600；showTick 时项/标题左内边距让位对勾。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const dropdownTokens = {
   // —— 圆角 ——
-  'radius-dropdown': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '下拉菜单圆角', usage: '下拉菜单圆角大小' },
+  'radius-dropdown': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '下拉菜单圆角', usage: '下拉菜单圆角大小（浮层 wrapper）' },
   'radius-dropdown-item': { value: '0px', category: 'radius', label: '菜单项圆角', usage: '下拉菜单项圆角大小' },
 
   // —— 颜色 ——
@@ -74,19 +81,11 @@ export const dropdownTokens = {
   // —— 字重 ——
   'font-dropdown-item-active-fontweight': { value: '600', category: 'font', label: '选中项字重', usage: '选中菜单项字重' },
 
-  // —— 滤镜（Semi $filter-dropdown-bg） ——
-  'filter-dropdown-bg': { value: 'none', category: 'other', label: '背景滤镜', usage: '下拉菜单背景滤镜' },
+  // —— 菜单项背景过渡（Semi animation.scss：$transition_duration/function/delay-dropdown_item-bg） ——
+  'transition-dropdown-item-bg-duration': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '项背景过渡时长', usage: '下拉菜单项背景色过渡时长（默认 none）' },
+  'transition-dropdown-item-bg-function': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '项背景过渡曲线', usage: '下拉菜单项背景色过渡曲线（easeOut）' },
+  'transition-dropdown-item-bg-delay': { value: '0ms', category: 'animation', label: '项背景过渡延迟', usage: '下拉菜单项背景色过渡延迟' },
 
-  // —— chenzy-design Dropdown 各子组件实际消费的补充 token（Semi 无 / 命名差异；组件消费），值对齐 Semi ——
-  // 收敛前这些被组件直接引用却从未定义（悬空），此处补齐并溯源到上方 Semi 对齐 token。
-  'dropdown-bg': { value: 'var(--cd-color-dropdown-bg-default)', category: 'color', label: '浮层背景', usage: '浮层菜单背景（组件消费，= Semi color-dropdown-bg-default / bg-3）' },
-  'dropdown-radius': { value: 'var(--cd-radius-dropdown)', category: 'radius', label: '浮层圆角', usage: '浮层菜单圆角（组件消费，= Semi radius-dropdown / radius-medium）' },
-  'dropdown-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '浮层阴影', usage: '浮层菜单投影（组件消费；Semi 阴影统一走 shadow-elevated）' },
-  'dropdown-min-width': { value: '160px', category: 'width', label: '浮层最小宽度', usage: '浮层菜单最小宽度（组件消费）' },
-  'dropdown-z': { value: 'var(--cd-z-dropdown)', category: 'other', label: '浮层层级', usage: '浮层 z-index（组件消费，= 全局 z-dropdown / 1050）' },
-  'dropdown-item-padding': { value: 'var(--cd-spacing-dropdown-item-paddingy) var(--cd-spacing-dropdown-item-paddingx)', category: 'spacing', label: '菜单项内边距', usage: '菜单项内边距（组件消费，= Semi item-paddingY item-paddingX / tight base）' },
-  'dropdown-item-bg-hover': { value: 'var(--cd-color-dropdown-item-bg-hover)', category: 'color', label: '菜单项悬浮背景', usage: '菜单项悬浮/聚焦背景（组件消费，= Semi color-dropdown-item-bg-hover / fill-0）' },
-  'dropdown-item-color-disabled': { value: 'var(--cd-color-dropdown-item-disabled-text-default)', category: 'color', label: '禁用/标题文字色', usage: '禁用菜单项与分组标题文字色（组件消费，= Semi disabled-text）' },
-  'dropdown-motion-duration': { value: 'var(--cd-motion-duration-fast)', category: 'animation', label: '进场时长', usage: '浮层进场动画时长（组件消费）' },
-  'dropdown-motion-easing': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '进场缓动', usage: '浮层进场动画缓动（组件消费）' },
+  // —— 滤镜（Semi $filter-dropdown-bg） ——
+  'filter-dropdown-bg': { value: 'none', category: 'other', label: '背景滤镜', usage: '下拉菜单背景滤镜（backdrop-filter）' },
 } satisfies TokenGroup;

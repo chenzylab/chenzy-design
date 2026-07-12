@@ -4,10 +4,10 @@
   let last = $state('');
 
   const items = [
-    { key: 'save', label: '保存' },
-    { key: 'save-as', label: '另存为…' },
-    { type: 'divider' as const },
-    { key: 'export', label: '导出 PDF' },
+    { node: 'item' as const, name: '保存', key: 'save' },
+    { node: 'item' as const, name: '另存为…', key: 'save-as' },
+    { node: 'divider' as const },
+    { node: 'item' as const, name: '导出 PDF', key: 'export' },
   ];
 </script>
 

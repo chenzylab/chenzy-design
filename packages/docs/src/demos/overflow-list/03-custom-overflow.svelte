@@ -15,16 +15,14 @@
     {#snippet overflow({ overflowItems, overflowCount })}
       <Dropdown
         trigger="click"
-        items={overflowItems.map((label, i) => ({ key: i, label }))}
+        menu={overflowItems.map((label, i) => ({ node: 'item' as const, name: label, key: i }))}
       >
-        {#snippet triggerContent()}
-          <button
-            type="button"
-            style="flex:0 0 auto;padding:2px 10px;background:var(--cd-color-fill-2);border:none;border-radius:4px;white-space:nowrap;cursor:pointer"
-          >
-            +{overflowCount} 更多
-          </button>
-        {/snippet}
+        <button
+          type="button"
+          style="flex:0 0 auto;padding:2px 10px;background:var(--cd-color-fill-2);border:none;border-radius:4px;white-space:nowrap;cursor:pointer"
+        >
+          +{overflowCount} 更多
+        </button>
       </Dropdown>
     {/snippet}
   </OverflowList>

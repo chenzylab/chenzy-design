@@ -1,22 +1,29 @@
 <script lang="ts">
-  import { Dropdown, Button } from '@chenzy-design/svelte';
+  import { Dropdown, Tag } from '@chenzy-design/svelte';
   import type { ComponentProps } from 'svelte';
 
-  const items = [
-    { key: '1', label: '菜单项 1' },
-    { key: '2', label: '菜单项 2' },
-    { key: '3', label: '菜单项 3' },
-  ];
-
   type Position = NonNullable<ComponentProps<typeof Dropdown>['position']>;
-  const positions: Position[] = ['bottomStart', 'bottom', 'bottomEnd', 'topStart', 'top', 'topEnd'];
+  // 12 方位全集（语义对齐 Semi Tooltip 位置：bottomStart≈bottomLeft、rightStart≈rightTop）
+  const positions: Position[] = [
+    'top', 'topStart', 'topEnd',
+    'bottom', 'bottomStart', 'bottomEnd',
+    'left', 'leftStart', 'leftEnd',
+    'right', 'rightStart', 'rightEnd',
+  ];
 </script>
 
-<div style="display:flex; flex-wrap:wrap; gap:16px; padding:40px 0">
+<!-- 弹出位置：position 控制浮层相对触发器的方位，空间不足时自动翻转（autoAdjustOverflow）。 -->
+<div style="display:flex; flex-wrap:wrap; gap:16px; padding:60px">
   {#each positions as position (position)}
-    <Dropdown {items} {position} trigger="click">
-      {#snippet triggerContent()}
-        <Button type="tertiary">{position}</Button>
+    <Dropdown {position}>
+      <Tag>{position}</Tag>
+
+      {#snippet render()}
+        <Dropdown.Menu>
+          <Dropdown.Item key="1">Menu Item 1</Dropdown.Item>
+          <Dropdown.Item key="2">Menu Item 2</Dropdown.Item>
+          <Dropdown.Item key="3">Menu Item 3</Dropdown.Item>
+        </Dropdown.Menu>
       {/snippet}
     </Dropdown>
   {/each}

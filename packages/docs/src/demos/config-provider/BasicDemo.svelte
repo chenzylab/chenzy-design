@@ -102,15 +102,13 @@
     <div style="margin-top:8px">
       <ConfigProvider getPopupContainer={() => cpPopupHost ?? document.body}>
         <Dropdown
-          items={[
-            { key: 'a', label: '选项 A' },
-            { key: 'b', label: '选项 B' },
+          menu={[
+            { node: 'item', name: '选项 A', key: 'a' },
+            { node: 'item', name: '选项 B', key: 'b' },
           ]}
           trigger="click"
         >
-          {#snippet triggerContent()}
-            <Button>打开菜单</Button>
-          {/snippet}
+          <Button>打开菜单</Button>
         </Dropdown>
       </ConfigProvider>
     </div>
