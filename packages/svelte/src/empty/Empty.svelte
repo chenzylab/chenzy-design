@@ -1,305 +1,192 @@
 <!--
-  Empty — see specs/components/show/Empty.spec.md
-  内置预设插画 (noData/noResult/error/construction/success/noAccess)
-  | 外部图片 URL | 自定义 snippet
-  + 标题 + 描述 + 动作 slot。layout=vertical|horizontal，responsive 窄容器收缩。
+  Empty — 镜像 Semi Design Empty（semi-ui/empty/index.tsx + semi-foundation/empty/empty.scss）。
+  DOM 同构：.cd-empty(flex) > .cd-empty-image + .cd-empty-content(title/description/footer)。
+  image / darkModeImage 接受插画节点(Snippet) | { id?; viewBox?; url? } SVG 对象 | URL 字符串。
+  darkModeImage 存在时监听 data-theme（对齐 Semi 监听 body theme-mode）在暗色下切换插画。
+  title 用 Typography.Title（有图 heading=4；无图 heading=6 + fontWeight 400），description 为 div。
+  layout：vertical（默认）| horizontal。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useLocale } from '../locale-provider/index.js';
+  import Title from '../typography/Title.svelte';
 
-  type EmptyImage =
-    | 'noData'
-    | 'noResult'
-    | 'error'
-    | 'construction'
-    | 'success'
-    | 'noAccess';
-  type Size = 'small' | 'default' | 'large';
   type Layout = 'vertical' | 'horizontal';
+  /** 与 Semi 一致的 SVG 精灵引用对象 */
+  interface SVGNode {
+    id?: string;
+    viewBox?: string;
+    url?: string;
+  }
 
   interface Props {
-    /** 内置预设名，或外部图片 URL（非预设字符串按 URL 渲染 <img>） */
-    image?: EmptyImage | (string & {});
-    title?: string;
-    description?: string;
-    size?: Size;
-    /** 排布方向；horizontal 在窄容器自动降级为 vertical（需 responsive） */
+    /** 布局方式，支持 vertical / horizontal */
     layout?: Layout;
-    /** 是否启用容器宽度自适应收缩（CSS 容器查询，纯样式） */
-    responsive?: boolean;
+    /** 占位图内联样式（作用于 .cd-empty-image） */
+    imageStyle?: string;
+    /** 标题 */
+    title?: string;
+    /** 内容描述 */
+    description?: string;
+    /** 占位图：插画节点(image slot) | SVG 精灵对象 | 图片 URL 字符串 */
+    image?: SVGNode | (string & {});
+    /** 暗色模式占位图，响应 data-theme 变化 */
+    darkModeImage?: SVGNode | (string & {});
+    /** 根节点附加类名 */
     class?: string;
+    /** 根节点内联样式 */
+    style?: string;
+    /** 动作区（footer） */
     children?: Snippet;
+    /** 自定义插画节点（等价 Semi image 传 ReactNode） */
     imageSlot?: Snippet;
+    /** 暗色自定义插画节点 */
+    darkModeImageSlot?: Snippet;
   }
 
   let {
-    image = 'noData',
+    layout = 'vertical',
+    imageStyle,
     title,
     description,
-    size = 'default',
-    layout = 'vertical',
-    responsive = true,
+    image,
+    darkModeImage,
     class: className = '',
+    style,
     children,
     imageSlot,
+    darkModeImageSlot,
   }: Props = $props();
 
-  const loc = useLocale();
+  // —— 暗色探测：仅在提供 darkModeImage/darkModeImageSlot 时挂载观察，对齐 Semi 仅 darkModeImage 时监听。
+  const hasDark = $derived(!!darkModeImage || !!darkModeImageSlot);
+  let isDark = $state(false);
 
-  const presets = [
-    'noData',
-    'noResult',
-    'error',
-    'construction',
-    'success',
-    'noAccess',
-  ] as const;
-  // 纯派生：image 是否为内置预设；否则按外部图片 URL 处理。
-  const isPreset = $derived(
-    (presets as readonly string[]).includes(image),
-  );
+  function readDark(): boolean {
+    if (typeof document === 'undefined') return false;
+    const el = document.querySelector('[data-theme]') ?? document.documentElement;
+    return el.getAttribute('data-theme') === 'dark';
+  }
 
-  const defaultTitles = $derived<Record<EmptyImage, string>>({
-    noData: loc().t('Empty.noData'),
-    noResult: loc().t('Empty.noResult'),
-    error: loc().t('Empty.error'),
-    construction: loc().t('Empty.construction'),
-    success: loc().t('Empty.success'),
-    noAccess: loc().t('Empty.noAccess'),
+  $effect(() => {
+    if (!hasDark) return;
+    isDark = readDark();
+    const observer = new MutationObserver(() => {
+      isDark = readDark();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+      subtree: true,
+    });
+    if (document.body) {
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    }
+    return () => observer.disconnect();
   });
 
-  const resolvedTitle = $derived(
-    title ?? (isPreset ? defaultTitles[image as EmptyImage] : undefined),
-  );
+  // 当前生效的插画来源（暗色优先），对齐 Semi imgSrc 解析。
+  const activeSlot = $derived(isDark && darkModeImageSlot ? darkModeImageSlot : imageSlot);
+  const activeImage = $derived(isDark && darkModeImage ? darkModeImage : image);
 
-  const cls = $derived(
-    [
-      'cd-empty',
-      `cd-empty--${size}`,
-      responsive && 'cd-empty--responsive',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
+  const isStringImage = $derived(typeof activeImage === 'string');
+  const svgNode = $derived(
+    activeImage && typeof activeImage === 'object' && 'id' in activeImage
+      ? (activeImage as SVGNode)
+      : undefined,
   );
-  // 内层承载 flex 布局方向；root 仅作 CSS 容器（容器查询只能影响后代）
-  const layoutCls = $derived(`cd-empty__layout cd-empty__layout--${layout}`);
+  // 是否存在任意插画节点（决定 title heading 档位，对齐 Semi imageNode 真值分支）。
+  const hasImageNode = $derived(!!activeSlot || isStringImage || !!svgNode);
+
+  const alt = $derived(typeof description === 'string' ? description : 'empty');
+
+  const wrapperCls = $derived(
+    ['cd-empty', `cd-empty-${layout}`, className].filter(Boolean).join(' '),
+  );
 </script>
 
-<div class={cls}>
-  <div class={layoutCls}>
-  <div class="cd-empty__image" aria-hidden={isPreset ? 'true' : undefined}>
-    {#if imageSlot}
-      {@render imageSlot()}
-    {:else if !isPreset}
-      <img
-        class="cd-empty__img"
-        src={image}
-        alt={resolvedTitle ?? ''}
-        loading="lazy"
-      />
-    {:else if image === 'noData'}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <rect
-          x="12"
-          y="16"
-          width="40"
-          height="32"
-          rx="3"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        />
-        <line x1="20" y1="26" x2="44" y2="26" stroke="currentColor" stroke-width="2" />
-        <line x1="20" y1="34" x2="44" y2="34" stroke="currentColor" stroke-width="2" />
-      </svg>
-    {:else if image === 'noResult'}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <circle
-          cx="28"
-          cy="28"
-          r="14"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        />
-        <line x1="38" y1="38" x2="50" y2="50" stroke="currentColor" stroke-width="2" />
-      </svg>
-    {:else if image === 'construction'}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <path
-          d="M10 48 24 18l3 6-11 24Z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M54 48 40 18l-3 6 11 24Z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <line x1="24" y1="18" x2="40" y2="18" stroke="currentColor" stroke-width="2" />
-        <line x1="8" y1="48" x2="56" y2="48" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
-    {:else if image === 'success'}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <circle
-          cx="32"
-          cy="32"
-          r="20"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        />
-        <path
-          d="M22 33 29 40 43 25"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    {:else if image === 'noAccess'}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <rect
-          x="18"
-          y="30"
-          width="28"
-          height="20"
-          rx="3"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        />
-        <path
-          d="M24 30v-6a8 8 0 0 1 16 0v6"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <circle cx="32" cy="38" r="2" fill="currentColor" />
-        <line x1="32" y1="40" x2="32" y2="44" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-      </svg>
-    {:else}
-      <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
-        <path
-          d="M32 12 56 52H8L32 12Z"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <line x1="32" y1="28" x2="32" y2="40" stroke="currentColor" stroke-width="2" />
-        <circle cx="32" cy="46" r="1.5" fill="currentColor" />
+<div class={wrapperCls} {style}>
+  <div class="cd-empty-image" style={imageStyle}>
+    {#if activeSlot}
+      {@render activeSlot()}
+    {:else if isStringImage}
+      <img {alt} src={activeImage as string} />
+    {:else if svgNode}
+      <svg viewBox={svgNode.viewBox} aria-hidden="true">
+        <use href={`#${svgNode.id}`} />
       </svg>
     {/if}
   </div>
-
-  {#if resolvedTitle || description || children}
-    <div class="cd-empty__content">
-      {#if resolvedTitle}
-        <p class="cd-empty__title">{resolvedTitle}</p>
+  <div class="cd-empty-content">
+    {#if title}
+      {#if hasImageNode}
+        <Title heading={4} class="cd-empty-title">{title}</Title>
+      {:else}
+        <Title heading={6} weight={400} class="cd-empty-title">{title}</Title>
       {/if}
-
-      {#if description}
-        <p class="cd-empty__description">{description}</p>
-      {/if}
-
-      {#if children}
-        <div class="cd-empty__footer">
-          {@render children()}
-        </div>
-      {/if}
-    </div>
-  {/if}
+    {/if}
+    {#if description}
+      <div class="cd-empty-description">{description}</div>
+    {/if}
+    {#if children}
+      <div class="cd-empty-footer">{@render children()}</div>
+    {/if}
   </div>
 </div>
 
 <style>
-  /* root 仅负责作 CSS 查询容器（responsive 时）；布局在内层 __layout */
-  .cd-empty--responsive {
-    container-type: inline-size;
-  }
-  .cd-empty__layout {
+  /* 镜像 semi-foundation/empty/empty.scss */
+  .cd-empty {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+  }
+  .cd-empty-image {
+    display: flex;
     justify-content: center;
-    gap: var(--cd-empty-gap);
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .cd-empty-vertical {
+    align-items: center;
+    flex-direction: column;
+  }
+  .cd-empty-vertical .cd-empty-content {
+    margin-top: var(--cd-spacing-empty-content-vertical-margintop);
+  }
+  /* .cd-empty-title 落在子组件 Title 渲染的元素上，需 :global 穿透（限定在 .cd-empty 作用域内）；
+     description/footer 为本组件元素但相邻选择器另一端是 global title，故整段末尾用 :global。 */
+  .cd-empty-vertical :global(.cd-empty-title),
+  .cd-empty-vertical :global(.cd-empty-description) {
     text-align: center;
   }
-  .cd-empty__image {
-    display: inline-flex;
-    color: var(--cd-empty-image-color);
+
+  .cd-empty-horizontal .cd-empty-content {
+    margin-left: var(--cd-spacing-empty-content-horizontal-marginleft);
   }
-  .cd-empty__content {
-    display: flex;
-    flex-direction: column;
-    align-items: inherit;
-    gap: var(--cd-empty-gap);
-  }
-  .cd-empty__img {
+
+  .cd-empty :global(.cd-empty-title.cd-empty-title) {
     display: block;
-    inline-size: 64px;
-    block-size: auto;
-    object-fit: contain;
+    font-weight: var(--cd-font-empty-title-fontweight);
   }
-  .cd-empty--small .cd-empty__image :global(svg),
-  .cd-empty--small .cd-empty__img {
-    inline-size: 48px;
-    block-size: 48px;
+  .cd-empty :global(.cd-empty-title + .cd-empty-description) {
+    margin-top: var(--cd-spacing-empty-title-margintop);
   }
-  .cd-empty--large .cd-empty__image :global(svg),
-  .cd-empty--large .cd-empty__img {
-    inline-size: 80px;
-    block-size: 80px;
+  .cd-empty-description {
+    color: var(--cd-color-empty-description-text-default);
   }
-  .cd-empty__title {
-    margin: 0;
-    color: var(--cd-empty-title-color);
-    font-weight: var(--cd-empty-title-weight);
-  }
-  .cd-empty__description {
-    margin: 0;
-    color: var(--cd-empty-desc-color);
-  }
-  .cd-empty__footer {
-    margin-block-start: var(--cd-empty-gap);
+  .cd-empty-footer {
+    margin-top: var(--cd-spacing-empty-footer-margintop);
   }
 
-  /* horizontal：插画在前、文案在后，左右排列并垂直居中 */
-  .cd-empty__layout--horizontal {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    text-align: start;
+  /* RTL：镜像 semi-foundation/empty/rtl.scss */
+  :global([dir='rtl']) .cd-empty {
+    direction: rtl;
   }
-  /* horizontal 下文案列左对齐 */
-  .cd-empty__layout--horizontal .cd-empty__content {
-    align-items: flex-start;
-  }
-
-  /* 响应式收缩：root 容器窄于断点时插画变小，horizontal 降级为 vertical。
-     容器查询只作用于后代，故查询 root、命中内层 __layout */
-  @container (max-width: 320px) {
-    .cd-empty--responsive .cd-empty__layout--horizontal {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .cd-empty--responsive .cd-empty__layout--horizontal .cd-empty__content {
-      align-items: center;
-    }
-    .cd-empty--responsive .cd-empty__image :global(svg),
-    .cd-empty--responsive .cd-empty__img {
-      inline-size: 48px;
-      block-size: 48px;
-    }
+  :global([dir='rtl']) .cd-empty-horizontal .cd-empty-content {
+    margin-left: auto;
+    margin-right: var(--cd-spacing-empty-content-horizontal-marginleft);
   }
 </style>
