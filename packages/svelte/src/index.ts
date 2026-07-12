@@ -167,6 +167,24 @@ export { Tooltip, tooltipMeta } from './tooltip/index.js';
 export { Popover, popoverMeta } from './popover/index.js';
 export { Empty, emptyMeta } from './empty/index.js';
 export {
+  IllustrationNoContent,
+  IllustrationNoContentDark,
+  IllustrationNoResult,
+  IllustrationNoResultDark,
+  IllustrationSuccess,
+  IllustrationSuccessDark,
+  IllustrationFailure,
+  IllustrationFailureDark,
+  IllustrationNoAccess,
+  IllustrationNoAccessDark,
+  IllustrationNotFound,
+  IllustrationNotFoundDark,
+  IllustrationConstruction,
+  IllustrationConstructionDark,
+  IllustrationIdle,
+  IllustrationIdleDark,
+} from './illustrations/index.js';
+export {
   Descriptions,
   DescriptionsItem,
   descriptionsMeta,

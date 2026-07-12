@@ -83,12 +83,7 @@ export const dataDisplayTokens = {
   // ============================================================
   // chenzy-design 组件实际消费的补充 token（原名保留，值对齐 Semi；组件消费）
   // ============================================================
-  // —— Empty ——
-  'empty-image-color': { value: 'var(--cd-color-fill-1)', category: 'color', label: '插画颜色', usage: '空状态插画颜色（组件消费）' },
-  'empty-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '空状态标题颜色（组件消费）' },
-  'empty-title-weight': { value: 'var(--cd-font-empty-title-fontweight)', category: 'font', label: '标题字重', usage: '空状态标题字重（组件消费，对齐 Semi 600）' },
-  'empty-desc-color': { value: 'var(--cd-color-empty-description-text-default)', category: 'color', label: '描述颜色', usage: '空状态描述文字颜色（组件消费，对齐 Semi text-1）' },
-  'empty-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '间距', usage: '空状态各区块间距（组件消费）' },
+  // —— Empty 组件直接消费上方原始层 --cd-*-empty-*（对齐 Semi empty.scss，无中间变量）——
 
   // —— Descriptions 组件直接消费上方原始层 --cd-*-descriptions-*（对齐 Semi descriptions.scss，无中间变量）——
 

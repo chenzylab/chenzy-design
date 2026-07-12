@@ -6,50 +6,31 @@ export const meta = {
   name: 'Empty',
   category: 'show',
   description:
-    '空状态，用于无数据/无搜索结果/加载失败等场景，含内置预设插画、标题、描述与动作区。',
+    '空状态占位。镜像 Semi Design：image / darkModeImage 接受插画节点(imageSlot)、SVG 精灵对象 { id, viewBox, url } 或图片 URL 字符串；darkModeImage 存在时监听 data-theme 在暗色下切换插画；title 用 Typography.Title（有图 heading=4，无图 heading=6+字重 400）；description 为 div；layout 支持 vertical / horizontal。插画由独立 illustrations 资产提供（对齐 @douyinfe/semi-illustrations）。',
   props: [
-    {
-      name: 'image',
-      type: "'noData'|'noResult'|'error'|'construction'|'success'|'noAccess'|(string&{})",
-      default: "'noData'",
-      desc: '内置预设插画名，或外部图片 URL（非预设字符串按 URL 渲染 img）',
-    },
-    { name: 'title', type: 'string', default: 'undefined', desc: '标题，默认按 image 取内置文案' },
-    { name: 'description', type: 'string', default: 'undefined' },
-    { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
-    {
-      name: 'layout',
-      type: "'vertical'|'horizontal'",
-      default: "'vertical'",
-      desc: '排布方向；horizontal 在窄容器自动降级为 vertical',
-    },
-    {
-      name: 'responsive',
-      type: 'boolean',
-      default: 'true',
-      desc: '启用容器宽度自适应收缩（CSS 容器查询，纯样式）',
-    },
+    { name: 'image', type: '{ id?; viewBox?; url? } | string', default: 'undefined', desc: '占位图：SVG 精灵对象或图片 URL；自定义节点用 imageSlot' },
+    { name: 'darkModeImage', type: '{ id?; viewBox?; url? } | string', default: 'undefined', desc: '暗色模式占位图，响应 data-theme 变化' },
+    { name: 'title', type: 'string', default: 'undefined', desc: '标题' },
+    { name: 'description', type: 'string', default: 'undefined', desc: '内容描述' },
+    { name: 'imageStyle', type: 'string', default: 'undefined', desc: '占位图容器（.cd-empty-image）内联样式' },
+    { name: 'layout', type: "'vertical'|'horizontal'", default: "'vertical'", desc: '布局方式' },
     { name: 'class', type: 'string', default: "''" },
-    { name: 'children', type: 'Snippet', default: 'undefined', desc: '动作区（如按钮）' },
-    { name: 'imageSlot', type: 'Snippet', default: 'undefined', desc: '自定义插画' },
+    { name: 'style', type: 'string', default: 'undefined' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '动作区（footer）' },
+    { name: 'imageSlot', type: 'Snippet', default: 'undefined', desc: '自定义插画节点（等价 Semi image 传 ReactNode）' },
+    { name: 'darkModeImageSlot', type: 'Snippet', default: 'undefined', desc: '暗色自定义插画节点' },
   ],
   a11y: {
     role: 'none',
-    notes: ['插画 aria-hidden=true', '标题与描述为可读文本'],
+    notes: ['插画 SVG aria-hidden=true', '外部图片 <img> 带 alt（取 description，缺省 "empty"）', '标题与描述为可读文本'],
   },
   tokens: [
-    // Semi empty/variables.scss 全量对齐（6）
+    // Semi empty/variables.scss 全量对齐（6），组件直接消费原始层
     '--cd-spacing-empty-content-vertical-margintop',
     '--cd-spacing-empty-content-horizontal-marginleft',
     '--cd-spacing-empty-title-margintop',
     '--cd-spacing-empty-footer-margintop',
     '--cd-font-empty-title-fontweight',
     '--cd-color-empty-description-text-default',
-    // 组件消费
-    '--cd-empty-image-color',
-    '--cd-empty-title-color',
-    '--cd-empty-title-weight',
-    '--cd-empty-desc-color',
-    '--cd-empty-gap',
   ],
 } as const;
