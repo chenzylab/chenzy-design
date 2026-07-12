@@ -24,9 +24,12 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础轮播', '受控轮播，点击箭头或指示器切换幻灯片'),
-  entry('02-autoplay.svelte', '自动播放与间隔', 'autoPlay 对象形式设置 interval 与 hoverToPause，悬停暂停'),
-  entry('03-indicator.svelte', '指示器样式与位置', '切换 indicatorType（dot/line/columnar）与 indicatorPosition'),
-  entry('04-arrow.svelte', '箭头控制', 'showArrow 配合 arrowType（hover 悬停显示 / always 始终显示）'),
-  entry('05-fade.svelte', '切换效果与自定义内容', 'animation="fade" 渐隐切换，arrowProps 自定义箭头，幻灯片放任意内容'),
+  entry('01-basic.svelte', '基本用法', '默认自动播放，幻灯片内可放任意内容（Typography 排版）'),
+  entry('02-theme.svelte', '主题切换', 'theme 三种主题：primary / light / dark'),
+  entry('03-indicator.svelte', '指示器', '指示器类型（dot/line/columnar）、位置（left/center/right）、尺寸（small/medium）'),
+  entry('04-arrow.svelte', '箭头', 'showArrow 控制箭头可见，arrowType 控制展示时机（always/hover）'),
+  entry('05-custom-arrow.svelte', '定制箭头', '通过 arrowProps 定制箭头图标与点击事件'),
+  entry('06-autoplay.svelte', '播放参数', 'autoPlay 传入 interval 控制间隔，hoverToPause 控制悬停暂停'),
+  entry('07-animation.svelte', '动画效果与切换速度', "animation='fade' 渐隐切换，speed 控制切换时长"),
+  entry('08-controlled.svelte', '受控的轮播图', 'activeIndex + onChange 受控，外部按钮跳转指定张'),
 ];

@@ -1,16 +1,25 @@
 <!--
-  Carousel — see specs/components/show/Carousel.spec.md
-  基础子集：单/多 slide 展示（slidesToShow/slidesToScroll）、slide/fade 动画、
-    autoplay（含 hoverToPause）、loop、dot/line/columnar 指示器、prev/next 箭头、受控 value、
-    vertical 纵向方向、pointer 拖拽/滑动手势切换。
+  Carousel — 走马灯。DOM 结构、动画机制、API 契约逐项对齐 Semi Design
+  （@douyinfe/semi-ui/carousel）。
+
+  结构（镜像 Semi cssClasses，前缀 cd-）：
+    .cd-carousel (root, role=region)
+      .cd-carousel-content.cd-carousel-content-{slide|fade}[.cd-carousel-content-reverse]
+        .cd-carousel-content-item.cd-carousel-content-item-{current|prev|next|active|slide-in|slide-out}
+      .cd-carousel-indicator > CarouselIndicator(.cd-carousel-indicator.-{type}.-{position})
+      CarouselArrow(.cd-carousel-arrow[.-hover] > .cd-carousel-arrow-prev/-next)
+
+  动画对齐 Semi：所有 item 绝对定位叠放；slide 用 keyframe slide-in/out（+reverse
+  按 slideDirection/是否回退），fade 用 opacity。每张 slide 对应一个指示点。
 
   ⚠️ 死循环红线：
-    - 受控 value 不回写 prop（红线 #1）：isControlled = $derived(value !== undefined) +
-      内部 $state inner + current = $derived(...)；变更只 onChange。
-    - 当前页/transform 为派生纯函数（红线 #2）：trackOffset/pageCount 由 $derived 计算。
-    - autoplay timer 与 pointer 拖拽监听命令式（红线 #3）：autoplay 用普通变量 setInterval
-      + $effect cleanup；pointermove/up 绑 window 手动 add/remove；拖拽偏移存 $state dragPx。
-    - 不使用响应式 attachment 读 DOM。
+    - 受控 activeIndex 不回写 prop（红线 #1）：isControlled = $derived(activeIndex !== undefined)
+      + 内部 $state inner；current = $derived(...)；变更只 onChange。
+    - 当前页/isReverse/isInit 为 $state，仅命令式切换里更新（红线 #2）。
+    - autoplay timer 命令式（红线 #3）：$effect 内 setInterval + cleanup；不用响应式 attachment。
+
+  a11y 增强（Semi 未覆盖，本库补全，不破坏三段式结构）：
+    键盘 ←/→/Home/End、live announcer、reduced-motion、可见播放/暂停按钮（WCAG 2.2.2）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -27,229 +36,178 @@
   type SlideDirection = 'left' | 'right';
   type TriggerType = 'hover' | 'click';
 
-  /** autoPlay 对象形式：{ interval?, hoverToPause? } */
+  /** autoPlay 对象形式：{ interval?, hoverToPause? }（对齐 Semi）。 */
   type AutoPlayConfig = { interval?: number; hoverToPause?: boolean };
 
-  interface ArrowSlotProps {
+  /** 单个箭头自定义：props 透传到箭头 div，children 覆盖默认 Icon（对齐 Semi ArrowButton）。 */
+  interface ArrowButton {
+    props?: Record<string, unknown> & { onClick?: () => void; style?: string; class?: string };
     children?: Snippet;
-    onClick?: () => void;
   }
 
   interface Props {
+    /** 每项一张幻灯片的 Snippet 数组（对齐 Semi children）。 */
     slides?: Snippet[];
-    /** 受控当前激活索引（Semi API: activeIndex） */
+    /** 受控当前激活索引（Semi API: activeIndex）。 */
     activeIndex?: number;
-    value?: number;
+    /** 非受控初始索引。 */
     defaultActiveIndex?: number;
-    /** 自动播放；支持布尔或对象形式 { interval?, hoverToPause? } */
+    /** 自动播放；布尔或 { interval?, hoverToPause? }（默认 true，对齐 Semi）。 */
     autoPlay?: boolean | AutoPlayConfig;
-    /** @deprecated 请用 autoPlay */
-    autoplay?: boolean;
-    interval?: number;
-    loop?: boolean;
+    /** 切换动画。 */
     animation?: Animation;
+    /** 切换速度（ms）。 */
     speed?: number;
-    slidesToShow?: number;
-    slidesToScroll?: number;
-    vertical?: boolean;
-    draggable?: boolean;
+    /** 是否展示指示器。 */
     showIndicator?: boolean;
+    /** 指示器类型：dot / line / columnar。 */
     indicatorType?: IndicatorType;
-    /** 指示器位置（横向：left/center/right） */
+    /** 指示器位置：left / center / right。 */
     indicatorPosition?: IndicatorPosition;
-    /** 指示器尺寸 */
+    /** 指示器尺寸：small / medium。 */
     indicatorSize?: IndicatorSize;
+    /** 是否展示箭头。 */
     showArrow?: boolean;
-    /** 箭头展示时机：hover=悬停时显示，always=始终显示 */
+    /** 箭头展示时机：hover 悬停显示 / always 始终显示。 */
     arrowType?: ArrowType;
-    /** 自定义箭头内容与点击回调 */
+    /** 自定义箭头内容与点击回调。 */
     arrowProps?: {
-      leftArrow?: ArrowSlotProps;
-      rightArrow?: ArrowSlotProps;
+      leftArrow?: ArrowButton;
+      rightArrow?: ArrowButton;
     };
-    hoverToPause?: boolean;
-    /** 主题 */
+    /** 指示器与箭头主题：primary / light / dark（默认 light，对齐 Semi）。 */
     theme?: Theme;
-    /** 动画滑动方向 */
+    /** animation=slide 时的滑动方向：left / right。 */
     slideDirection?: SlideDirection;
-    /** 指示器触发切换的交互方式 */
+    /** 指示器触发切换的交互方式：click / hover。 */
     trigger?: TriggerType;
-    height?: number | string;
-    ariaLabel?: string;
-    onChange?: (index: number) => void;
-    onPlayStateChange?: (playing: boolean) => void;
+    /** 索引变更回调（对齐 Semi：index, preIndex）。 */
+    onChange?: (index: number, preIndex: number) => void;
+    /** 根元素内联样式（对齐 Semi style；常用于设定宽高）。 */
+    style?: string;
     class?: string;
   }
 
   let {
     slides = [],
     activeIndex,
-    value,
     defaultActiveIndex = 0,
-    autoPlay,
-    autoplay = false,
-    interval = 3000,
-    loop = true,
+    autoPlay = true,
     animation = 'slide',
     speed = 300,
-    slidesToShow = 1,
-    slidesToScroll = 1,
-    vertical = false,
-    draggable = true,
     showIndicator = true,
     indicatorType = 'dot',
     indicatorPosition = 'center',
-    indicatorSize = 'medium',
+    indicatorSize = 'small',
     showArrow = true,
     arrowType = 'always',
     arrowProps,
-    hoverToPause = true,
-    theme,
-    slideDirection,
+    theme = 'light',
+    slideDirection = 'left',
     trigger = 'click',
-    height = 240,
-    ariaLabel,
     onChange,
-    onPlayStateChange,
+    style,
     class: className = '',
   }: Props = $props();
 
-  // 解析 autoPlay：对象形式覆盖 interval / hoverToPause
-  const resolvedAutoPlay = $derived.by<boolean>(() => {
-    if (autoPlay !== undefined) {
-      return typeof autoPlay === 'boolean' ? autoPlay : true;
-    }
-    return autoplay;
-  });
-  const resolvedInterval = $derived.by<number>(() => {
-    if (autoPlay && typeof autoPlay === 'object' && autoPlay.interval !== undefined) {
-      return autoPlay.interval;
-    }
-    return interval;
-  });
-  const resolvedHoverToPause = $derived.by<boolean>(() => {
-    if (autoPlay && typeof autoPlay === 'object' && autoPlay.hoverToPause !== undefined) {
-      return autoPlay.hoverToPause;
-    }
-    return hoverToPause;
-  });
+  const DEFAULT_INTERVAL = 2000;
 
-  // 受控索引：activeIndex 优先于 value（Semi API activeIndex 是主 prop）
-  const controlledIndex = $derived(activeIndex !== undefined ? activeIndex : value);
+  // 解析 autoPlay：布尔或对象；对象形式覆盖 interval / hoverToPause（对齐 Semi）。
+  const autoPlayOn = $derived(autoPlay === true || (typeof autoPlay === 'object' && autoPlay !== null));
+  const resolvedInterval = $derived(
+    typeof autoPlay === 'object' && autoPlay?.interval !== undefined ? autoPlay.interval : DEFAULT_INTERVAL,
+  );
+  const resolvedHoverToPause = $derived(
+    typeof autoPlay === 'object' ? autoPlay?.hoverToPause !== false : true,
+  );
 
   const loc = useLocale();
-  // 单例 live region（polite）：手动切换 slide 时播报「第 N 张，共 M 张」（红线 #3：命令式）。
   const announcer = useLiveAnnouncer();
 
   // 受控 / 非受控（红线 #1）：永不回写 prop。
-  const isControlled = $derived(controlledIndex !== undefined);
-  let inner = $state(getInitialIndex());
-  const current = $derived(isControlled ? (controlledIndex as number) : inner);
-
-  function getInitialIndex(): number {
-    return defaultActiveIndex;
-  }
+  const isControlled = $derived(activeIndex !== undefined);
+  // 仅取 defaultActiveIndex 初值（untrack 明确不追踪，后续变更不重置内部索引）。
+  let inner = $state(untrack(() => defaultActiveIndex));
+  const current = $derived(isControlled ? (activeIndex as number) : inner);
 
   const count = $derived(slides.length);
 
-  // 同屏展示数 / 步长归一（至少 1，且不超过 slide 数）。
-  const perView = $derived(Math.max(1, Math.min(slidesToShow, Math.max(1, count))));
-  const step = $derived(Math.max(1, slidesToScroll));
+  // 切换方向与初始态（红线 #2）：命令式切换里更新，驱动 slide keyframe。
+  let isReverse = $state(false);
+  let isInit = $state(true);
+  // 记录上一张，用于 slide-out 定位（对齐 Semi preIndex）；仅取初值。
+  let preIndex = $state(untrack(() => defaultActiveIndex));
 
-  // fade 动画与多图同屏互斥：多图时强制 slide 轨道平移。
-  const mode = $derived<Animation>(perView > 1 ? 'slide' : animation);
-
-  // 派生纯函数（红线 #2）：可滚动的最大起始索引与页数。
-  // loop 时每张都能作为起点；非 loop 时起点止于「末尾恰好填满一屏」。
-  const maxIndex = $derived(loop ? Math.max(0, count - 1) : Math.max(0, count - perView));
-  const pageCount = $derived(
-    count === 0 ? 0 : loop ? Math.ceil(count / step) : Math.floor(maxIndex / step) + 1,
-  );
-  const activePage = $derived(step > 0 ? Math.round(current / step) : 0);
-
-  // hover 暂停状态（本地）。
+  // hover / 键盘 focus / reduced-motion 抑制自动播放。
   let paused = $state(false);
-  // 键盘焦点进入容器时暂停 autoplay（无障碍：WCAG 2.2.2，焦点态不应继续移动）。
   let focused = $state(false);
-  // 用户经播放/暂停按钮显式切换的状态。默认按 autoplay prop 推断初值。
-  // userPaused=true 即用户主动暂停；与 hover/focus 暂停叠加判定是否实际运行。
+  let reducedMotion = $state(false);
+  // 用户经播放/暂停按钮显式暂停。
   let userPaused = $state(false);
 
-  // reduced-motion：matchMedia 监听，开启时暂停 autoplay（无障碍）。
-  let reducedMotion = $state(false);
-
-  // 是否「想要」自动播放（用户意图）：autoPlay/autoplay 开 且 未被用户显式暂停。
-  const wantsPlaying = $derived(resolvedAutoPlay && !userPaused);
-  // 实际是否在播放（叠加 hover/focus/reduced-motion 等运行时抑制）。
+  const wantsPlaying = $derived(autoPlayOn && !userPaused);
   const isPlaying = $derived(
-    wantsPlaying && !paused && !focused && !reducedMotion && count > perView,
+    wantsPlaying && !paused && !focused && !reducedMotion && count > 1,
   );
 
-  function togglePlay() {
-    userPaused = !userPaused;
-    onPlayStateChange?.(!userPaused);
+  function getValidIndex(index: number): number {
+    return count === 0 ? 0 : ((index % count) + count) % count;
   }
 
-  $effect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    reducedMotion = mql.matches;
-    const onChangeMq = (e: MediaQueryListEvent) => {
-      reducedMotion = e.matches;
-    };
-    mql.addEventListener('change', onChangeMq);
-    return () => mql.removeEventListener('change', onChangeMq);
-  });
-
-  const heightStyle = $derived(typeof height === 'number' ? `${height}px` : height);
-
-  // 每张 slide 占视口的百分比（横/纵向均按 perView 切分）。
-  const slidePct = $derived(100 / perView);
-
-  function clampIndex(i: number): number {
-    if (count === 0) return 0;
-    if (loop) return ((i % count) + count) % count;
-    return Math.min(maxIndex, Math.max(0, i));
-  }
-
-  function go(i: number) {
+  // 核心切换（对齐 Semi foundation.goTo / _notifyChange）。
+  function goTo(targetRaw: number) {
     if (count === 0) return;
-    const next = clampIndex(i);
-    if (next === current) return;
-    if (!isControlled) inner = next;
-    onChange?.(next);
-    // 手动切换时 polite 播报「第 N 张，共 M 张」；autoplay 实际运行中不播，避免噪音（§6）。
-    // 用即将生效的 next 计算页码（$derived 在同步回调内尚未重算）。
-    if (!isPlaying && pageCount > 0) {
-      const nextPage = step > 0 ? Math.round(next / step) : 0;
+    const target = getValidIndex(targetRaw);
+    isReverse = current > target;
+    commit(target);
+  }
+  function next() {
+    if (count === 0) return;
+    const target = getValidIndex(current + 1);
+    isReverse = false;
+    commit(target);
+  }
+  function prev() {
+    if (count === 0) return;
+    const target = getValidIndex(current - 1);
+    isReverse = true;
+    commit(target);
+  }
+
+  function commit(target: number) {
+    if (isInit) isInit = false;
+    if (target === current) return;
+    const from = current;
+    preIndex = from;
+    if (!isControlled) inner = target;
+    onChange?.(target, from);
+    // 手动切换 polite 播报「第 N 张，共 M 张」；autoplay 运行中不播（§6 减噪）。
+    if (!isPlaying) {
       announcer.announce(
-        loc().t('Carousel.slideAnnounce', { index: nextPage + 1, total: pageCount }),
+        loc().t('Carousel.slideAnnounce', { index: target + 1, total: count }),
       );
     }
   }
 
-  function prev() {
-    go(current - step);
-  }
-  function next() {
-    go(current + step);
-  }
-  function goToPage(p: number) {
-    go(p * step);
-  }
-  // Home/End：跳到第一/最后一张（非 loop 时止于 maxIndex）。
-  function goFirst() {
-    go(0);
-  }
-  function goLast() {
-    go(loop ? count - 1 : maxIndex);
+  // 指示器切换：click / hover 触发（对齐 Semi onIndicatorChange）。
+  function onIndicatorChange(index: number) {
+    isReverse = current > index;
+    commit(index);
   }
 
-  // 视口键盘导航（§6）：←/→ 切换，Home/End 跳首末。
-  // RTL 下 ←/→ 物理键语义镜像（←=next、→=prev）。
-  function onViewportKeydown(e: KeyboardEvent) {
-    if (count <= perView) return;
-    const rtl = viewportEl?.matches(':dir(rtl)') ?? false;
+  // Home/End：跳首末。
+  function goFirst() {
+    goTo(0);
+  }
+  function goLast() {
+    goTo(count - 1);
+  }
+
+  // 视口键盘导航（本库 a11y 增强）：←/→ 切换、Home/End 跳首末；RTL 下 ←/→ 镜像。
+  let rootEl: HTMLElement | null = null;
+  function onKeydown(e: KeyboardEvent) {
+    if (count <= 1) return;
+    const rtl = rootEl?.matches(':dir(rtl)') ?? false;
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault();
@@ -258,16 +216,6 @@
       case 'ArrowRight':
         e.preventDefault();
         rtl ? prev() : next();
-        break;
-      case 'ArrowUp':
-        if (!vertical) return;
-        e.preventDefault();
-        prev();
-        break;
-      case 'ArrowDown':
-        if (!vertical) return;
-        e.preventDefault();
-        next();
         break;
       case 'Home':
         e.preventDefault();
@@ -280,14 +228,24 @@
     }
   }
 
-  // autoplay：$effect 内 setInterval，普通变量句柄 + cleanup（红线 #3）。
-  // 用 untrack 读 current，避免 effect 依赖 current 而每次切换都重建定时器（计时被重置）；
-  // effect 仅依赖 autoplay/paused/count/interval/reducedMotion/step，定时器在一次播放周期内稳定。
+  // reduced-motion 监听（a11y）。
+  $effect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion = mql.matches;
+    const onMq = (e: MediaQueryListEvent) => (reducedMotion = e.matches);
+    mql.addEventListener('change', onMq);
+    return () => mql.removeEventListener('change', onMq);
+  });
+
+  // autoplay（红线 #3）：$effect 内 setInterval + cleanup。用 untrack 读 current，
+  // 避免每次切换都重建定时器（Semi getSwitchingTime = interval + speed）。
   $effect(() => {
     if (!isPlaying) return;
     const id = setInterval(() => {
-      go(untrack(() => current) + step);
-    }, resolvedInterval);
+      isReverse = false;
+      commit(getValidIndex(untrack(() => current) + 1));
+    }, resolvedInterval + speed);
     return () => clearInterval(id);
   });
 
@@ -297,510 +255,555 @@
   function onMouseLeave() {
     if (resolvedHoverToPause) paused = false;
   }
-  // 键盘焦点进入/离开容器：暂停/恢复 autoplay（§6）。
   function onFocusIn() {
     focused = true;
   }
   function onFocusOut(e: FocusEvent) {
-    // 仅当焦点真正移出容器时恢复（忽略容器内部移动）。
-    const next = e.relatedTarget as Node | null;
-    if (!next || !(e.currentTarget as HTMLElement).contains(next)) {
-      focused = false;
-    }
+    const to = e.relatedTarget as Node | null;
+    if (!to || !(e.currentTarget as HTMLElement).contains(to)) focused = false;
+  }
+  function togglePlay() {
+    userPaused = !userPaused;
   }
 
-  // ---- 命令式 pointer 拖拽（红线 #3）----
-  // 视口尺寸在 pointerdown 时读一次存入普通变量；拖拽偏移（px）存 $state 以驱动轨道平移。
-  let viewportEl: HTMLElement | null = null;
-  let dragStart = 0; // 起点坐标（vertical 取 clientY，否则 clientX）
-  let dragSize = 0; // 视口主轴尺寸（px），用于阈值与百分比换算
-  let dragPx = $state(0); // 实时拖拽位移（px，负为向后）
-  let dragging = $state(false);
+  // ---- 派生 class（对齐 Semi cls 组合）----
+  const rootCls = $derived(['cd-carousel', className].filter(Boolean).join(' '));
 
-  // 拖拽期间的额外平移百分比（占整条轨道），由派生纯函数换算（红线 #2）。
-  const dragPct = $derived(dragSize > 0 ? (dragPx / dragSize) * slidePct : 0);
-
-  function onPointerMove(e: PointerEvent) {
-    const cur = vertical ? e.clientY : e.clientX;
-    dragPx = cur - dragStart;
-  }
-
-  function onPointerUp() {
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', onPointerUp);
-    window.removeEventListener('pointercancel', onPointerUp);
-    const moved = dragPx;
-    dragging = false;
-    dragPx = 0;
-    // 拖过半张（单张尺寸的一半）即进位，否则回弹。
-    const slideSize = dragSize / perView;
-    if (slideSize > 0 && Math.abs(moved) > slideSize / 2) {
-      go(moved < 0 ? current + step : current - step);
-    }
-  }
-
-  function onPointerDown(e: PointerEvent) {
-    if (!draggable || mode !== 'slide' || count <= perView || !viewportEl) return;
-    // 仅主键 / 触摸 / 笔；忽略右键。
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
-    const rect = viewportEl.getBoundingClientRect();
-    dragSize = vertical ? rect.height : rect.width;
-    dragStart = vertical ? e.clientY : e.clientX;
-    dragPx = 0;
-    dragging = true;
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-  }
-
-  // 派生纯函数（红线 #2）：轨道平移 = 当前索引偏移 + 拖拽偏移。
-  const trackOffset = $derived(-(current * slidePct) + dragPct);
-  const axis = $derived(vertical ? 'Y' : 'X');
-  // 拖拽中关闭过渡（跟手），松手后恢复 speed 过渡。
-  const trackDuration = $derived(dragging ? 0 : speed);
-
-  const cls = $derived(
+  // Semi content-reverse：slideDirection==='left' 时 isReverse 直取，否则取反。
+  const contentReverse = $derived(slideDirection === 'left' ? isReverse : !isReverse);
+  const contentCls = $derived(
     [
-      'cd-carousel',
-      `cd-carousel--${mode}`,
-      vertical && 'cd-carousel--vertical',
-      dragging && 'cd-carousel--dragging',
-      draggable && mode === 'slide' && count > perView && 'cd-carousel--draggable',
-      theme && `cd-carousel--${theme}`,
-      arrowType && `cd-carousel--arrow-${arrowType}`,
-      slideDirection && `cd-carousel--slide-${slideDirection}`,
-      className,
+      'cd-carousel-content',
+      `cd-carousel-content-${animation}`,
+      contentReverse && 'cd-carousel-content-reverse',
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  function itemCls(i: number): string {
+    const isCurrent = i === current;
+    const isPrev = i === getValidIndex(current - 1);
+    const isNext = i === getValidIndex(current + 1);
+    return [
+      'cd-carousel-content-item',
+      isPrev && 'cd-carousel-content-item-prev',
+      isNext && 'cd-carousel-content-item-next',
+      isCurrent && 'cd-carousel-content-item-current',
+      isCurrent && 'cd-carousel-content-item-active',
+      animation === 'slide' && !isInit && isCurrent && 'cd-carousel-content-item-slide-in',
+      animation === 'slide' && !isInit && i === preIndex && 'cd-carousel-content-item-slide-out',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+  // item 动画 duration = speed。
+  const itemStyle = $derived(
+    `transition-duration:${speed}ms;animation-duration:${speed}ms;transition-timing-function:ease;animation-timing-function:ease`,
+  );
+
+  const indicatorWrapperCls = $derived(
+    ['cd-carousel-indicator', `cd-carousel-indicator-${indicatorType}`, `cd-carousel-indicator-${indicatorPosition}`]
+      .filter(Boolean)
+      .join(' '),
+  );
+  function indicatorItemCls(i: number): string {
+    return [
+      'cd-carousel-indicator-item',
+      i === current && 'cd-carousel-indicator-item-active',
+      `cd-carousel-indicator-item-${theme}`,
+      `cd-carousel-indicator-item-${indicatorSize}`,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  const arrowCls = $derived(
+    ['cd-carousel-arrow', arrowType === 'hover' && 'cd-carousel-arrow-hover'].filter(Boolean).join(' '),
+  );
+
+  // 暴露 Methods（对齐 Semi ref API）。
+  export function play() {
+    userPaused = false;
+  }
+  export function stop() {
+    userPaused = true;
+  }
+  export { goTo, prev, next };
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-  class={cls}
+  bind:this={rootEl}
+  class={rootCls}
+  {style}
   role="region"
   aria-roledescription="carousel"
-  aria-label={ariaLabel ?? loc().t('Carousel.ariaLabel')}
-  style="block-size:{heightStyle}"
+  aria-label={loc().t('Carousel.ariaLabel')}
+  tabindex={count > 1 ? 0 : undefined}
+  aria-live={isPlaying ? 'off' : 'polite'}
   onmouseenter={onMouseEnter}
   onmouseleave={onMouseLeave}
   onfocusin={onFocusIn}
   onfocusout={onFocusOut}
+  onkeydown={onKeydown}
 >
-  <!--
-    viewport 可聚焦（tabindex=0）以承接 ←/→/Home/End 键盘导航；
-    autoplay 实际运行时 aria-live=off（避免每次自动切换都打断屏幕阅读器），
-    暂停/手动态切到 polite，配合计数文本播报「第 X 张」。
-    APG carousel：role=group 的轮播视口承载方向键导航属预期模式，故抑制以下两条 a11y 警告。
-  -->
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    bind:this={viewportEl}
-    class="cd-carousel__viewport"
-    role="group"
-    aria-roledescription="slides"
-    tabindex={count > perView ? 0 : undefined}
-    aria-live={isPlaying ? 'off' : 'polite'}
-    onpointerdown={onPointerDown}
-    onkeydown={onViewportKeydown}
-  >
-    {#if mode === 'slide'}
+  <div class={contentCls}>
+    {#each slides as slide, i (i)}
       <div
-        class="cd-carousel__track"
-        style="--cd-carousel-slide-size:{slidePct}%; transform:translate{axis}({trackOffset}%); transition-duration:{trackDuration}ms"
+        class={itemCls(i)}
+        style={itemStyle}
+        role="group"
+        aria-roledescription="slide"
+        aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
+        aria-hidden={i !== current || undefined}
+        inert={i !== current || undefined}
       >
-        {#each slides as slide, i (i)}
-          <div
-            class="cd-carousel__slide"
-            role="group"
-            aria-roledescription="slide"
-            aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
-            aria-hidden={(i < current || i >= current + perView) || undefined}
-            inert={(i < current || i >= current + perView) || undefined}
-          >
-            {@render slide()}
-          </div>
-        {/each}
+        {@render slide()}
       </div>
-    {:else}
-      <div class="cd-carousel__fade">
-        {#each slides as slide, i (i)}
-          <div
-            class="cd-carousel__slide cd-carousel__slide--fade"
-            class:cd-carousel__slide--active={i === current}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
-            aria-hidden={i !== current || undefined}
-            inert={i !== current || undefined}
-            style="transition-duration:{speed}ms"
-          >
-            {@render slide()}
-          </div>
-        {/each}
-      </div>
-    {/if}
+    {/each}
   </div>
 
-  {#if showArrow && count > perView}
-    <button
-      type="button"
-      class="cd-carousel__arrow cd-carousel__arrow--prev"
-      aria-label={loc().t('Carousel.prev')}
-      onclick={() => { arrowProps?.leftArrow?.onClick?.(); prev(); }}
-    >
-      {#if arrowProps?.leftArrow?.children}
-        {@render arrowProps.leftArrow.children()}
-      {:else}
-        {vertical ? '∧' : '‹'}
-      {/if}
-    </button>
-    <button
-      type="button"
-      class="cd-carousel__arrow cd-carousel__arrow--next"
-      aria-label={loc().t('Carousel.next')}
-      onclick={() => { arrowProps?.rightArrow?.onClick?.(); next(); }}
-    >
-      {#if arrowProps?.rightArrow?.children}
-        {@render arrowProps.rightArrow.children()}
-      {:else}
-        {vertical ? '∨' : '›'}
-      {/if}
-    </button>
+  {#if showIndicator && count > 1}
+    <div class="cd-carousel-indicator">
+      <div class={indicatorWrapperCls} role="tablist" aria-label={loc().t('Carousel.indicators')}>
+        {#each slides as _s, i (i)}
+          <span
+            class={indicatorItemCls(i)}
+            data-index={i}
+            role="tab"
+            tabindex={0}
+            aria-selected={i === current}
+            aria-label={loc().t('Carousel.slideLabel', { index: i + 1 })}
+            onclick={trigger === 'click' ? () => onIndicatorChange(i) : undefined}
+            onmouseenter={trigger === 'hover' ? () => onIndicatorChange(i) : undefined}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onIndicatorChange(i);
+              }
+            }}
+          ></span>
+        {/each}
+      </div>
+    </div>
   {/if}
 
-  <!--
-    播放/暂停按钮（WCAG 2.2.2）：autoPlay/autoplay 开启时常驻，可见且可键盘操作。
-    label 随 userPaused 切换（播放 ↔ 暂停）。
-  -->
-  {#if resolvedAutoPlay && count > perView}
+  {#if showArrow && count > 1}
+    <div class={arrowCls}>
+      <div
+        class={`cd-carousel-arrow-prev cd-carousel-arrow-${theme}`}
+        role="button"
+        tabindex={0}
+        aria-label={loc().t('Carousel.prev')}
+        onclick={() => {
+          arrowProps?.leftArrow?.props?.onClick?.();
+          prev();
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            prev();
+          }
+        }}
+        style={arrowProps?.leftArrow?.props?.style}
+      >
+        {#if arrowProps?.leftArrow?.children}
+          {@render arrowProps.leftArrow.children()}
+        {:else}
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {/if}
+      </div>
+      <div
+        class={`cd-carousel-arrow-next cd-carousel-arrow-${theme}`}
+        role="button"
+        tabindex={0}
+        aria-label={loc().t('Carousel.next')}
+        onclick={() => {
+          arrowProps?.rightArrow?.props?.onClick?.();
+          next();
+        }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            next();
+          }
+        }}
+        style={arrowProps?.rightArrow?.props?.style}
+      >
+        {#if arrowProps?.rightArrow?.children}
+          {@render arrowProps.rightArrow.children()}
+        {:else}
+          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- WCAG 2.2.2 可见播放/暂停按钮（本库 a11y 增强，Semi 无）。 -->
+  {#if autoPlayOn && count > 1}
     <button
       type="button"
-      class="cd-carousel__play"
+      class="cd-carousel-play"
       aria-label={userPaused ? loc().t('Carousel.play') : loc().t('Carousel.pause')}
       aria-pressed={!userPaused}
       onclick={togglePlay}
     >{userPaused ? '▶' : '❚❚'}</button>
   {/if}
-
-  {#if showIndicator && pageCount > 1}
-    <div
-      class="cd-carousel__indicators cd-carousel__indicators--{indicatorType} cd-carousel__indicators--{indicatorPosition} cd-carousel__indicators--{indicatorSize}"
-      role="tablist"
-      aria-label={loc().t('Carousel.indicators')}
-    >
-      {#each { length: pageCount } as _p, p (p)}
-        <button
-          type="button"
-          class="cd-carousel__dot cd-carousel__indicator cd-carousel__indicator--{indicatorType}"
-          class:cd-carousel__dot--active={p === activePage}
-          role="tab"
-          aria-selected={p === activePage}
-          aria-label={loc().t('Carousel.slideLabel', { index: p + 1 })}
-          onclick={trigger === 'click' ? () => goToPage(p) : undefined}
-          onmouseenter={trigger === 'hover' ? () => goToPage(p) : undefined}
-        ></button>
-      {/each}
-    </div>
-  {/if}
 </div>
 
 <style>
+  /* ============================ Root ============================ */
   .cd-carousel {
     position: relative;
-    inline-size: 100%;
-    overflow: hidden;
-    border-radius: var(--cd-carousel-radius);
-  }
-  .cd-carousel__viewport {
-    position: relative;
-    inline-size: 100%;
-    block-size: 100%;
     overflow: hidden;
   }
-  .cd-carousel__viewport:focus-visible {
+  .cd-carousel:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 2px var(--cd-color-primary, currentColor);
   }
-  /* 可拖拽时禁用文本/图片选中与浏览器原生平移手势，确保 pointer 跟手。 */
-  .cd-carousel--draggable .cd-carousel__viewport {
-    cursor: grab;
-    user-select: none;
-    touch-action: pan-y;
-  }
-  .cd-carousel--vertical.cd-carousel--draggable .cd-carousel__viewport {
-    touch-action: pan-x;
-  }
-  .cd-carousel--dragging .cd-carousel__viewport {
-    cursor: grabbing;
-  }
 
-  /* slide 模式：横向 flex 轨道平移 */
-  .cd-carousel__track {
-    display: flex;
-    inline-size: 100%;
-    block-size: 100%;
-    transition-property: transform;
-    transition-timing-function: var(--cd-motion-ease-standard);
-  }
-  .cd-carousel__slide {
-    flex: 0 0 var(--cd-carousel-slide-size, 100%);
-    inline-size: var(--cd-carousel-slide-size, 100%);
-    block-size: 100%;
-  }
-
-  /* vertical：轨道纵向排列，slide 高度切分，平移走 Y 轴 */
-  .cd-carousel--vertical .cd-carousel__track {
-    flex-direction: column;
-  }
-  .cd-carousel--vertical .cd-carousel__slide {
-    inline-size: 100%;
-    block-size: var(--cd-carousel-slide-size, 100%);
-    flex: 0 0 var(--cd-carousel-slide-size, 100%);
-  }
-
-  /* fade 模式：叠放，仅 active 项可见 */
-  .cd-carousel__fade {
+  /* ============================ Content ============================ */
+  .cd-carousel-content {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     position: relative;
-    inline-size: 100%;
-    block-size: 100%;
   }
-  .cd-carousel__slide--fade {
+  .cd-carousel-content-item {
     position: absolute;
-    inset: 0;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .cd-carousel-content-item-current {
+    z-index: 1;
+  }
+
+  /* fade：默认透明，仅 current 可见 */
+  .cd-carousel-content-fade > .cd-carousel-content-item {
     opacity: 0;
-    pointer-events: none;
     transition-property: opacity;
-    transition-timing-function: var(--cd-motion-ease-standard);
   }
-  .cd-carousel__slide--fade.cd-carousel__slide--active {
+  .cd-carousel-content-fade > .cd-carousel-content-item-current {
     opacity: 1;
-    pointer-events: auto;
   }
 
-  .cd-carousel__arrow {
-    position: absolute;
-    inset-block-start: 50%;
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-carousel-arrow-size);
-    block-size: var(--cd-carousel-arrow-size);
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-border-radius-full);
-    background: var(--cd-carousel-arrow-bg);
-    color: var(--cd-carousel-arrow-color);
-    font-size: calc(var(--cd-carousel-arrow-size) * 0.6);
-    line-height: 1;
-    cursor: pointer;
-    z-index: 2;
+  /* slide：非 current 隐藏；进/出走 keyframe */
+  .cd-carousel-content-slide > .cd-carousel-content-item:not(.cd-carousel-content-item-current) {
+    visibility: hidden;
   }
-  .cd-carousel__arrow--prev {
-    inset-inline-start: var(--cd-spacing-tight);
+  .cd-carousel-content-slide .cd-carousel-content-item-slide-out {
+    display: block;
+    visibility: visible;
+    animation-name: cd-carousel-content-item-keyframe-slide-out;
+    animation-fill-mode: forwards;
   }
-  .cd-carousel__arrow--next {
-    inset-inline-end: var(--cd-spacing-tight);
+  .cd-carousel-content-slide .cd-carousel-content-item-slide-in {
+    display: block;
+    animation-name: cd-carousel-content-item-keyframe-slide-in;
+    animation-fill-mode: forwards;
   }
-  .cd-carousel__arrow:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  /* reverse：进/出方向取反 */
+  .cd-carousel-content-reverse .cd-carousel-content-item-slide-out {
+    animation-name: cd-carousel-content-item-keyframe-slide-out-reverse;
+    animation-fill-mode: forwards;
+  }
+  .cd-carousel-content-reverse .cd-carousel-content-item-slide-in {
+    animation-name: cd-carousel-content-item-keyframe-slide-in-reverse;
+    animation-fill-mode: forwards;
   }
 
-  /* vertical：箭头改为上/下居中 */
-  .cd-carousel--vertical .cd-carousel__arrow {
-    inset-block-start: auto;
-    inset-inline: 0;
-    margin-inline: auto;
-    transform: none;
-  }
-  .cd-carousel--vertical .cd-carousel__arrow--prev {
-    inset-block-start: var(--cd-spacing-tight);
-  }
-  .cd-carousel--vertical .cd-carousel__arrow--next {
-    inset-block-end: var(--cd-spacing-tight);
-  }
-
-  /* 播放/暂停按钮：左下角常驻，命中区 ≥ 32px。 */
-  .cd-carousel__play {
-    position: absolute;
-    inset-block-end: var(--cd-spacing-tight);
-    inset-inline-start: var(--cd-spacing-tight);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-carousel-arrow-size);
-    block-size: var(--cd-carousel-arrow-size);
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-border-radius-full);
-    background: var(--cd-carousel-arrow-bg);
-    color: var(--cd-carousel-arrow-color);
-    font-size: calc(var(--cd-carousel-arrow-size) * 0.4);
-    line-height: 1;
-    cursor: pointer;
-    z-index: 2;
-  }
-  .cd-carousel__play:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-
-  .cd-carousel__indicators {
-    position: absolute;
-    inset-block-end: var(--cd-spacing-tight);
-    inset-inline: 0;
+  /* ============================ Indicator ============================ */
+  .cd-carousel-indicator {
     display: flex;
-    justify-content: center;
-    gap: var(--cd-carousel-indicator-gap);
+    align-items: flex-end;
     z-index: 2;
   }
-  /* vertical：指示器移至右侧纵向排列 */
-  .cd-carousel--vertical .cd-carousel__indicators {
-    inset-block: 0;
-    inset-inline-end: var(--cd-spacing-tight);
-    inset-inline-start: auto;
-    flex-direction: column;
-    justify-content: center;
+  .cd-carousel-indicator-left {
+    position: absolute;
+    left: var(--cd-carousel-spacing-indicator-padding);
+    bottom: var(--cd-carousel-spacing-indicator-padding);
   }
-  .cd-carousel__dot {
-    inline-size: 8px;
-    block-size: 8px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-border-radius-full);
-    background: var(--cd-carousel-indicator-color);
+  .cd-carousel-indicator-center {
+    position: absolute;
+    left: 50%;
+    bottom: var(--cd-carousel-spacing-indicator-padding);
+    transform: translate(-50%);
+  }
+  .cd-carousel-indicator-right {
+    position: absolute;
+    right: var(--cd-carousel-spacing-indicator-padding);
+    bottom: var(--cd-carousel-spacing-indicator-padding);
+  }
+  .cd-carousel-indicator-item {
     cursor: pointer;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-carousel__dot--active {
-    background: var(--cd-carousel-indicator-color-active);
-  }
-  .cd-carousel__dot:focus-visible {
+  .cd-carousel-indicator-item:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
 
-  /* line 指示器：横向细长条；激活态加长 + 高亮（纯 CSS 派生，红线 #2）。 */
-  .cd-carousel__indicator--line {
-    inline-size: 16px;
-    block-size: 4px;
-    border-radius: var(--cd-border-radius-full);
-    transition:
-      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      inline-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  /* dot */
+  .cd-carousel-indicator-dot .cd-carousel-indicator-item {
+    border-radius: var(--cd-carousel-radius-indicator-dot);
   }
-  .cd-carousel__indicator--line.cd-carousel__dot--active {
-    inline-size: 24px;
+  .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child) {
+    margin-right: var(--cd-carousel-spacing-indicator-dot-marginx);
   }
-  /* vertical 方向：line 旋为纵向细条（主轴改为 block-size 伸缩）。 */
-  .cd-carousel--vertical .cd-carousel__indicator--line {
-    inline-size: 4px;
-    block-size: 16px;
-    transition:
-      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      block-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  .cd-carousel-indicator-dot .cd-carousel-indicator-item-small {
+    width: var(--cd-carousel-width-indicator-dot-small);
+    height: var(--cd-carousel-width-indicator-dot-small);
   }
-  .cd-carousel--vertical .cd-carousel__indicator--line.cd-carousel__dot--active {
-    block-size: 24px;
+  .cd-carousel-indicator-dot .cd-carousel-indicator-item-medium {
+    width: var(--cd-carousel-width-indicator-dot-medium);
+    height: var(--cd-carousel-width-indicator-dot-medium);
   }
 
-  /* columnar 指示器：竖栏；默认矮，激活态变高 + 高亮。 */
-  .cd-carousel__indicator--columnar {
-    inline-size: 4px;
-    block-size: 8px;
-    border-radius: var(--cd-border-radius-small, 3px);
-    transition:
-      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      block-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  /* line */
+  .cd-carousel-indicator-line {
+    width: var(--cd-carousel-width-indicator-line);
   }
-  .cd-carousel__indicator--columnar.cd-carousel__dot--active {
-    block-size: 14px;
+  .cd-carousel-indicator-line .cd-carousel-indicator-item {
+    flex: 1;
   }
-  /* vertical 方向：columnar 转为横栏，主轴改为 inline-size 伸缩。 */
-  .cd-carousel--vertical .cd-carousel__indicator--columnar {
-    inline-size: 8px;
-    block-size: 4px;
-    transition:
-      background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      inline-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  .cd-carousel-indicator-line .cd-carousel-indicator-item:not(:last-child) {
+    margin-right: var(--cd-carousel-spacing-indicator-line-marginx);
   }
-  .cd-carousel--vertical .cd-carousel__indicator--columnar.cd-carousel__dot--active {
-    inline-size: 14px;
+  .cd-carousel-indicator-line .cd-carousel-indicator-item-small {
+    height: var(--cd-carousel-height-indicator-line-small);
+  }
+  .cd-carousel-indicator-line .cd-carousel-indicator-item-medium {
+    height: var(--cd-carousel-height-indicator-line-medium);
   }
 
-  /* columnar 横向时按底边对齐，竖栏自底部生长更自然。 */
-  .cd-carousel__indicators--columnar {
-    align-items: flex-end;
+  /* columnar */
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item {
+    cursor: pointer;
   }
-  .cd-carousel--vertical .cd-carousel__indicators--columnar {
-    align-items: flex-start;
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
+    margin-right: var(--cd-carousel-spacing-indicator-columnar-marginx);
+  }
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item-small {
+    width: var(--cd-carousel-width-indicator-columnar-small);
+    height: var(--cd-carousel-height-indicator-columnar-small-default);
+  }
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item-small.cd-carousel-indicator-item-active {
+    height: var(--cd-carousel-height-indicator-columnar-small-active);
+  }
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item-medium {
+    width: var(--cd-carousel-width-indicator-columnar-medium);
+    height: var(--cd-carousel-height-indicator-columnar-medium-default);
+  }
+  .cd-carousel-indicator-columnar .cd-carousel-indicator-item-medium.cd-carousel-indicator-item-active {
+    height: var(--cd-carousel-height-indicator-columnar-medium-active);
   }
 
-  /* arrowType=hover：默认隐藏箭头，鼠标悬停 carousel 时显示 */
-  .cd-carousel--arrow-hover .cd-carousel__arrow {
+  /* 指示器主题（三档 × 默认/悬浮/选中） */
+  .cd-carousel-indicator-item-primary {
+    background-color: var(--cd-carousel-color-indicator-theme-primary-bg-default);
+    transition: background-color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-indicator-item-primary.cd-carousel-indicator-item-active {
+    background: var(--cd-carousel-color-indicator-theme-primary-bg-active);
+  }
+  .cd-carousel-indicator-item-primary:hover {
+    background-color: var(--cd-carousel-color-indicator-theme-primary-bg-hover);
+  }
+  .cd-carousel-indicator-item-primary:active {
+    background: var(--cd-carousel-color-indicator-theme-primary-bg-active);
+  }
+
+  .cd-carousel-indicator-item-light {
+    background-color: var(--cd-carousel-color-indicator-theme-light-bg-default);
+    transition: background-color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-indicator-item-light.cd-carousel-indicator-item-active {
+    background: var(--cd-carousel-color-indicator-theme-light-bg-active);
+  }
+  .cd-carousel-indicator-item-light:hover {
+    background-color: var(--cd-carousel-color-indicator-theme-light-bg-hover);
+  }
+  .cd-carousel-indicator-item-light:active {
+    background: var(--cd-carousel-color-indicator-theme-light-bg-active);
+  }
+
+  .cd-carousel-indicator-item-dark {
+    background-color: var(--cd-carousel-color-indicator-theme-dark-bg-default);
+    transition: background-color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-indicator-item-dark.cd-carousel-indicator-item-active {
+    background-color: var(--cd-carousel-color-indicator-theme-dark-bg-active);
+  }
+  .cd-carousel-indicator-item-dark:hover {
+    background-color: var(--cd-carousel-color-indicator-theme-dark-bg-hover);
+  }
+  .cd-carousel-indicator-item-dark:active {
+    background: var(--cd-carousel-color-indicator-theme-dark-bg-active);
+  }
+
+  /* ============================ Arrow ============================ */
+  .cd-carousel-arrow {
+    display: flex;
+    font-size: var(--cd-carousel-width-arrow);
+    cursor: pointer;
+  }
+  .cd-carousel-arrow-prev {
+    position: absolute;
+    top: 50%;
+    left: var(--cd-carousel-spacing-arrow-left);
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+  .cd-carousel-arrow-next {
+    position: absolute;
+    top: 50%;
+    right: var(--cd-carousel-spacing-arrow-right);
+    transform: translateY(-50%);
+    z-index: 2;
+  }
+  .cd-carousel-arrow-prev:focus-visible,
+  .cd-carousel-arrow-next:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-border-radius-small);
+  }
+
+  .cd-carousel-arrow-light {
+    color: var(--cd-carousel-color-arrow-theme-light-bg-default);
+    transition: color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-arrow-light:hover {
+    color: var(--cd-carousel-color-arrow-theme-light-bg-hover);
+  }
+  .cd-carousel-arrow-primary {
+    color: var(--cd-carousel-color-arrow-theme-primary-bg-default);
+    transition: color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-arrow-primary:hover {
+    color: var(--cd-carousel-color-arrow-theme-primary-bg-hover);
+  }
+  .cd-carousel-arrow-dark {
+    color: var(--cd-carousel-color-arrow-theme-dark-bg-default);
+    transition: color var(--cd-carousel-animation-transition-duration)
+      var(--cd-carousel-animation-transition-function) var(--cd-carousel-animation-transition-delay);
+  }
+  .cd-carousel-arrow-dark:hover {
+    color: var(--cd-carousel-color-arrow-theme-dark-bg-hover);
+  }
+
+  /* arrowType=hover：默认隐藏，悬停 carousel 时显示 */
+  .cd-carousel-arrow-hover > div {
+    z-index: 2;
     opacity: 0;
-    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-carousel--arrow-hover:hover .cd-carousel__arrow,
-  .cd-carousel--arrow-hover:focus-within .cd-carousel__arrow {
+  .cd-carousel:hover .cd-carousel-arrow-hover > div,
+  .cd-carousel:focus-within .cd-carousel-arrow-hover > div {
     opacity: 1;
   }
 
-  /* indicatorPosition */
-  .cd-carousel__indicators--left {
-    justify-content: flex-start;
-    padding-inline-start: var(--cd-spacing-tight);
+  /* ============================ Play/Pause（a11y 增强）============================ */
+  .cd-carousel-play {
+    position: absolute;
+    bottom: var(--cd-spacing-tight);
+    left: var(--cd-spacing-tight);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cd-carousel-width-arrow);
+    height: var(--cd-carousel-width-arrow);
+    padding: 0;
+    border: none;
+    border-radius: var(--cd-border-radius-full);
+    background: color-mix(in srgb, var(--cd-color-black, #000) 45%, transparent);
+    color: var(--cd-color-white, #fff);
+    font-size: calc(var(--cd-carousel-width-arrow) * 0.4);
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
   }
-  .cd-carousel__indicators--right {
-    justify-content: flex-end;
-    padding-inline-end: var(--cd-spacing-tight);
-  }
-
-  /* indicatorSize=small：缩小指示器尺寸 */
-  .cd-carousel__indicators--small .cd-carousel__dot {
-    inline-size: 6px;
-    block-size: 6px;
-  }
-  .cd-carousel__indicators--small .cd-carousel__indicator--line {
-    inline-size: 10px;
-    block-size: 3px;
-  }
-  .cd-carousel__indicators--small .cd-carousel__indicator--line.cd-carousel__dot--active {
-    inline-size: 16px;
-  }
-  .cd-carousel__indicators--small .cd-carousel__indicator--columnar {
-    inline-size: 3px;
-    block-size: 6px;
-  }
-  .cd-carousel__indicators--small .cd-carousel__indicator--columnar.cd-carousel__dot--active {
-    block-size: 10px;
+  .cd-carousel-play:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
   }
 
-  /* theme */
-  .cd-carousel--primary {
-    --cd-carousel-arrow-bg: var(--cd-color-primary);
-    --cd-carousel-arrow-color: var(--cd-color-white);
-    --cd-carousel-indicator-color-active: var(--cd-color-primary);
+  /* ============================ Slide keyframes（对齐 Semi）============================ */
+  @keyframes cd-carousel-content-item-keyframe-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
-  .cd-carousel--light {
-    --cd-carousel-arrow-bg: rgba(255, 255, 255, 0.85);
-    --cd-carousel-arrow-color: var(--cd-color-text-1);
+  @keyframes cd-carousel-content-item-keyframe-slide-out {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100%);
+    }
   }
-  .cd-carousel--dark {
-    --cd-carousel-arrow-bg: rgba(0, 0, 0, 0.5);
-    --cd-carousel-arrow-color: var(--cd-color-white);
-    --cd-carousel-indicator-color: rgba(255, 255, 255, 0.5);
-    --cd-carousel-indicator-color-active: var(--cd-color-white);
+  @keyframes cd-carousel-content-item-keyframe-slide-in-reverse {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes cd-carousel-content-item-keyframe-slide-out-reverse {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /* RTL（对齐 Semi rtl.scss）：方向翻转、箭头镜像、指示器 margin 换边 */
+  .cd-carousel:dir(rtl) .cd-carousel-arrow {
+    flex-direction: row-reverse;
+  }
+  .cd-carousel:dir(rtl) .cd-carousel-arrow-prev {
+    left: auto;
+    right: var(--cd-carousel-spacing-arrow-right);
+    transform: scaleX(-1) translateY(-50%);
+  }
+  .cd-carousel:dir(rtl) .cd-carousel-arrow-next {
+    right: auto;
+    left: var(--cd-carousel-spacing-arrow-left);
+    transform: scaleX(-1) translateY(-50%);
+  }
+  .cd-carousel:dir(rtl) .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child),
+  .cd-carousel:dir(rtl) .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
+    margin-right: 0;
+  }
+  .cd-carousel:dir(rtl) .cd-carousel-indicator-dot .cd-carousel-indicator-item:not(:last-child) {
+    margin-left: var(--cd-carousel-spacing-indicator-dot-marginx);
+  }
+  .cd-carousel:dir(rtl) .cd-carousel-indicator-columnar .cd-carousel-indicator-item:not(:last-child) {
+    margin-left: var(--cd-carousel-spacing-indicator-columnar-marginx);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-carousel__track,
-    .cd-carousel__slide--fade,
-    .cd-carousel__dot {
-      transition-duration: 0ms;
+    .cd-carousel-content-item,
+    .cd-carousel-content-item-slide-in,
+    .cd-carousel-content-item-slide-out {
+      animation-duration: 0ms !important;
+      transition-duration: 0ms !important;
     }
   }
 </style>

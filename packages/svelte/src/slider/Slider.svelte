@@ -288,10 +288,13 @@
   }
 
   // ---- Imperative pointer drag ----
-  // Plain (non-reactive) variables: rail rect is read once on pointerdown.
+  // Plain (non-reactive): rail rect is read once on pointerdown; DOM ref set via bind.
   let railRect: DOMRect | null = null;
-  let activeIndex = 0;
   let railElement: HTMLElement | null = null;
+  // Which handle is being dragged. Read reactively in the template (handle `dragging`
+  // state, line 476/622), so it must be $state — otherwise a change wouldn't trigger
+  // re-render and correctness would rely on it happening to be assigned before dragValue.
+  let activeIndex = $state(0);
 
   function ratioFromRect(rect: DOMRect, clientX: number, clientY: number): number {
     let ratio: number;
