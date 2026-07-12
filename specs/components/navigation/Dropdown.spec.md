@@ -2,6 +2,14 @@
 > 分类：navigation · 阶段：M3
 > 对标 Semi：Dropdown
 
+> ⚠️ **本组件已全面重写对齐 Semi Design（2026-07，破坏性变更，无向后兼容）。**
+> 权威 API / DOM / token 契约以 `packages/svelte/src/dropdown/`（组件实现）与 `meta.ts` 为准。
+> 关键对齐点：触发器为 `children`、浮层内容为 `render`（`Dropdown.Menu/Item/Title/Divider`）或 `menu`（JSON Array）；
+> 触发方式 `hover/focus/click/custom/contextMenu`；受控 `visible`+`onVisibleChange`；`showTick`+`active` 勾选；
+> `Dropdown.Item` 的 type 五色 / icon / onMouseEnter 等事件；嵌套 = 在 `render` 内手动嵌套 `Dropdown`（对齐 Semi）。
+> 本文档下方 §4 及部分章节仍描述旧数据驱动 API（`items`/`triggerContent`/`onSelect`/`closeOnSelect`/内建 SubMenu），
+> 已被上述实现取代，未逐条同步（按需参考实现）。
+
 ## 1. 概述
 
 Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、文字、图标）唤起一组可操作的命令项。它与 `Select` 的本质区别是：`Select` 用于"从选项集合中选值"（受控 `value`），而 `Dropdown` 用于"触发命令/导航动作"，自身不持有选中值，点击项即执行回调。

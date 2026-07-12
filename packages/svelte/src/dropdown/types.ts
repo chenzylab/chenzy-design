@@ -1,67 +1,62 @@
 /**
- * Dropdown 数据项类型。与 Menu 对齐的判别联合思路（见 menu/types.ts）：
- * 普通项含 children 即为可展开 SubMenu；type='divider' 分隔符；type='group' 分组标题。
- * 向后兼容：普通项可省略 type，旧的 flat items 无需改动。
+ * Dropdown 类型定义。对齐 Semi Design（semi-ui/dropdown）：
+ *  - DropdownItemType：Dropdown.Item 语义色，primary/secondary/tertiary/warning/danger。
+ *  - DropdownMenuItem：menu prop 的 JSON Array 配置项（node=item/title/divider），
+ *    透传 Item/Title/Divider 各自属性，快速声明式配置浮层内容。
+ *
+ * 无向后兼容包袱：不再提供旧的 items/DropdownItemNode 判别联合数据结构，
+ * 声明式内容统一走 render（Dropdown.Menu/Item/Title/Divider）或 menu（JSON Array），与 Semi 一致。
  */
-/** Dropdown 项键类型。 */
+import type { Snippet } from 'svelte';
+
+/** Dropdown 项键类型（选中回调携带）。 */
 export type DropdownKey = string | number;
 
-/** 普通菜单项；含 children 即为可展开的 SubMenu。 */
-export interface DropdownItemNode {
-  /** 非分隔符/分组时无需 type，默认即普通项；显式可写 'item' */
-  type?: 'item';
-  key: DropdownKey;
-  label: string;
+/** Dropdown.Item 语义色类型（对齐 Semi strings.ITEM_TYPE）。 */
+export type DropdownItemType =
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'warning'
+  | 'danger';
+
+/** menu JSON 配置：普通项（node='item'）。透传 Dropdown.Item 属性。 */
+export interface DropdownMenuItemItem {
+  node: 'item';
+  /** 菜单文本（Item 内容）。 */
+  name?: string;
+  /** 项键，选中回调携带。 */
+  key?: DropdownKey;
   disabled?: boolean;
-  danger?: boolean;
-  /** 是否选中（showTick=true 时在右侧渲染 ✓ 勾选标记） */
-  selected?: boolean;
-  /** 含子项即为可展开的子菜单（SubMenu），可多层嵌套 */
-  children?: DropdownItem[];
+  /** 激活态：showTick 时左侧显示对勾、字重加粗。 */
+  active?: boolean;
+  /** 语义色。 */
+  type?: DropdownItemType;
+  /** 前置图标（Snippet）。 */
+  icon?: Snippet;
+  onClick?: (e: MouseEvent) => void;
+  onMouseEnter?: (e: MouseEvent) => void;
+  onMouseLeave?: (e: MouseEvent) => void;
+  onContextMenu?: (e: MouseEvent) => void;
+}
+
+/** menu JSON 配置：分组标题（node='title'）。 */
+export interface DropdownMenuItemTitle {
+  node: 'title';
+  /** 标题文本。 */
+  name?: string;
+}
+
+/** menu JSON 配置：分隔符（node='divider'）。 */
+export interface DropdownMenuItemDivider {
+  node: 'divider';
 }
 
 /**
- * 分隔符项：渲染为一条水平分隔线，不可选不可聚焦（role=separator）。
- * 无需 key/label；为避免 #each 缺 key 警告，渲染时按索引生成兜底 key。
+ * menu prop 项：通过 JSON Array 快速配置 Dropdown 内容（对齐 Semi DropDownMenuItem）。
+ * node 决定渲染为 Item / Title / Divider。
  */
-export interface DropdownDividerNode {
-  type: 'divider';
-  key?: DropdownKey;
-}
-
-/**
- * 分组项：渲染为不可点击的组标题 + 其下始终展开的菜单项。
- * 区别于 SubMenu（可展开/收起）——group 是始终展开的分区标题。
- */
-export interface DropdownGroupNode {
-  type: 'group';
-  key?: DropdownKey;
-  /** 分组标题文案 */
-  label: string;
-  children: DropdownItem[];
-}
-
-/**
- * Dropdown 数据项。向后兼容：普通项可省略 type；
- * 通过 type='divider' / type='group' 扩展分隔符与分组标题，
- * 普通项的 children 表示可展开子菜单。
- */
-export type DropdownItem =
-  | DropdownItemNode
-  | DropdownDividerNode
-  | DropdownGroupNode;
-
-/** 类型守卫：分隔符项。 */
-export function isDropdownDivider(item: DropdownItem): item is DropdownDividerNode {
-  return (item as DropdownDividerNode).type === 'divider';
-}
-
-/** 类型守卫：分组项。 */
-export function isDropdownGroup(item: DropdownItem): item is DropdownGroupNode {
-  return (item as DropdownGroupNode).type === 'group';
-}
-
-/** 普通项是否含可展开子菜单。 */
-export function hasDropdownChildren(item: DropdownItemNode): boolean {
-  return !!item.children && item.children.length > 0;
-}
+export type DropdownMenuItem =
+  | DropdownMenuItemItem
+  | DropdownMenuItemTitle
+  | DropdownMenuItemDivider;

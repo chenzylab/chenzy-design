@@ -35,8 +35,7 @@
   import { useId, computeTabOverflow } from '@chenzy-design/core';
   import { setTabsContext, type TabPaneRegistration } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
-  import Dropdown from '../dropdown/Dropdown.svelte';
-  import type { DropdownItem } from '../dropdown/types.js';
+  import { Dropdown } from '../dropdown/index.js';
   import type { TabItem } from './types.js';
 
   type TabKey = string | number;
@@ -635,16 +634,6 @@
   // 故透传 dropdownProps.end。start 预留给前箭头下拉（scroll 折叠自定义箭头场景）。
   const endDropdownProps = $derived(dropdownProps?.end ?? {});
 
-  // showRestInDropdown=false 时，「更多」下拉中不展示收起 tabs（只展示 overflow tabs 中被 moreCount 限制的部分）
-  // 当前实现：showRestInDropdown=false 时隐藏溢出下拉（不渲染 Dropdown）
-  const moreItems = $derived<DropdownItem[]>(
-    showRestInDropdown
-      ? overflowTabs.map((t) =>
-          t.disabled ? { key: t.itemKey, label: t.tab, disabled: true } : { key: t.itemKey, label: t.tab },
-        )
-      : [],
-  );
-
   // 「更多」按钮是否显示：有溢出 tabs 且 showRestInDropdown=true
   const showMoreDropdown = $derived(overflowTabs.length > 0 && showRestInDropdown);
 
@@ -759,23 +748,34 @@
 
       {#if showMoreDropdown}
         <div class="cd-tabs__more" class:cd-tabs__more--active={moreActive}>
-          <Dropdown items={moreItems} trigger="click" onSelect={onMoreSelect} {...(moreDropdownProps ?? {})} {...endDropdownProps}>
-            {#snippet triggerContent()}
-              {#if moreRender}
-                {@render moreRender()}
-              {:else}
-                <button
-                  type="button"
-                  class="cd-tabs__more-btn"
-                  aria-label={loc().t('Tabs.more')}
-                  aria-haspopup="menu"
-                >
-                  {loc().t('Tabs.more')}
-                  <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
-                  </svg>
-                </button>
-              {/if}
+          <Dropdown trigger="click" {...(moreDropdownProps ?? {})} {...endDropdownProps}>
+            {#if moreRender}
+              {@render moreRender()}
+            {:else}
+              <button
+                type="button"
+                class="cd-tabs__more-btn"
+                aria-label={loc().t('Tabs.more')}
+                aria-haspopup="menu"
+              >
+                {loc().t('Tabs.more')}
+                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
+                </svg>
+              </button>
+            {/if}
+            {#snippet render()}
+              <Dropdown.Menu>
+                {#each overflowTabs as t (t.itemKey)}
+                  <Dropdown.Item
+                    key={t.itemKey}
+                    disabled={t.disabled}
+                    onClick={() => onMoreSelect(t.itemKey)}
+                  >
+                    {t.tab}
+                  </Dropdown.Item>
+                {/each}
+              </Dropdown.Menu>
             {/snippet}
           </Dropdown>
         </div>

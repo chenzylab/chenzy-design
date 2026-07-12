@@ -112,7 +112,17 @@ export {
 export { Pagination, paginationMeta } from './pagination/index.js';
 export { Steps, stepsMeta, type StepItem, type StepStatus } from './steps/index.js';
 export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
-export { Dropdown, dropdownMeta, type DropdownItem } from './dropdown/index.js';
+export {
+  Dropdown,
+  DropdownMenu,
+  DropdownItem,
+  DropdownTitle,
+  DropdownDivider,
+  dropdownMeta,
+  type DropdownKey,
+  type DropdownItemType,
+  type DropdownMenuItem,
+} from './dropdown/index.js';
 export { Menu, menuMeta, type MenuItemDef } from './menu/index.js';
 export {
   Nav,
