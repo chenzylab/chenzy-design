@@ -90,14 +90,7 @@ export const dataDisplayTokens = {
   'empty-desc-color': { value: 'var(--cd-color-empty-description-text-default)', category: 'color', label: '描述颜色', usage: '空状态描述文字颜色（组件消费，对齐 Semi text-1）' },
   'empty-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '间距', usage: '空状态各区块间距（组件消费）' },
 
-  // —— Descriptions ——
-  'descriptions-label-color': { value: 'var(--cd-color-descriptions-key-text-default)', category: 'color', label: 'label 颜色', usage: 'label 文字颜色（组件消费）' },
-  'descriptions-value-color': { value: 'var(--cd-color-descriptions-value-text-default)', category: 'color', label: 'value 颜色', usage: 'value 文字颜色（组件消费）' },
-  'descriptions-value-weight-row': { value: 'var(--cd-font-descriptions-value-fontweight)', category: 'font', label: '双行 value 字重', usage: '双行显示 value 字重（组件消费）' },
-  'descriptions-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框颜色', usage: 'bordered 边框颜色（组件消费）' },
-  'descriptions-label-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'label 背景色', usage: 'bordered label 单元格背景（组件消费）' },
-  'descriptions-cell-padding': { value: 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', category: 'spacing', label: '单元格内边距', usage: 'bordered 单元格内边距（组件消费）' },
-  'descriptions-row-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '行间距', usage: '描述项行间距（组件消费，对齐 Semi item-paddingBottom）' },
+  // —— Descriptions 组件直接消费上方原始层 --cd-*-descriptions-*（对齐 Semi descriptions.scss，无中间变量）——
 
   // —— Collapse 组件直接消费上方原始层 --cd-*-collapse-*（对齐 Semi collapse.scss，无中间变量）——
 

@@ -24,8 +24,10 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '传入 data 数组即可渲染描述列表，默认三列水平布局。'),
-  entry('02-bordered.svelte', '带边框', '设置 bordered 添加边框，title 显示标题，适合详情页信息展示。'),
-  entry('03-layout.svelte', '方向布局', '通过 direction 切换水平/垂直两种展示方向。'),
-  entry('04-declarative.svelte', '声明式用法', '不传 data，直接用 Descriptions.Item 子组件，span 支持跨列。'),
+  entry('01-basic.svelte', '基础用法', '通过 data 以键值对数组传入数据，value 支持字符串或富内容 Snippet。'),
+  entry('02-align.svelte', '设置对齐方式', 'align 支持 center（默认）、justify、left、plain 四种对齐；row 为 true 时失效。'),
+  entry('03-jsx.svelte', 'JSX 写法', '除 data 外可用 <Descriptions.Item> 声明式写法，须为直接子元素。'),
+  entry('04-layout.svelte', '设置布局模式', 'layout 支持 vertical（默认）与 horizontal；横向布局配合 column 指定每行最大列数。'),
+  entry('05-double.svelte', '双行显示', 'row 双行显示，支持 small、medium（默认）、large 三种大小，此时 align 失效。'),
+  entry('06-keystyle.svelte', '自定义 Key 样式', '通过 keyStyle 自定义 key 样式，如固定宽度实现对齐，data 与声明式写法均支持。'),
 ];

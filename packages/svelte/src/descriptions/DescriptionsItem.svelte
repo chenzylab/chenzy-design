@@ -1,43 +1,73 @@
 <!--
-  Descriptions.Item — 声明式单项，与 data 模式渲染同一套 .cd-descriptions__item 结构，
-  从而复用父 Descriptions 的 grid 布局、bordered/方向样式。span 跨列由 grid-column: span 自排，
-  span 钳制（不超过父 column 列数）经 context 读取父 column 完成——父级无需预先收集 children。
+  Descriptions.Item — 镜像 Semi descriptions/item.tsx。
+  三种单元格形态：
+    - plain（align==='plain'）：单个 <td.item colspan={span}>，key 后内联冒号，key 与 value 同排。
+    - 非 plain：<th.item.item-th>（key）+ <td.item.item-td colspan={span?span*2-1:1}>（value）成对。
+  外层包裹：
+    - layout==='vertical'：每个 Item 自成一行 <tr>。
+    - layout==='horizontal'：不包 tr（由父 Descriptions 的行分组循环提供 <tr>），只渲裸单元格。
+  hidden 为 true 时不渲染（对齐 Semi）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getDescriptionsContext } from './context.js';
 
   interface Props {
-    /** 字段标签。 */
-    label: string;
-    /** 跨列数（钳制到父 column 列数，默认 1）。 */
-    span?: number;
+    /** 键值（label）。 */
+    itemKey?: string | undefined;
+    /** 是否隐藏不展示。 */
+    hidden?: boolean;
+    /** Item 外层 wrapper(tr) 的类名（仅 vertical 有 tr 时生效）。 */
+    class?: string | undefined;
+    /** Item 外层 wrapper(tr) 的内联样式。 */
+    style?: string | undefined;
+    /** 跨列数。 */
+    span?: number | undefined;
+    /** key 的自定义样式（宽度、对齐等）。 */
+    keyStyle?: string | undefined;
     children?: Snippet;
   }
 
-  let { label, span, children }: Props = $props();
+  let {
+    itemKey,
+    hidden = false,
+    class: className,
+    style,
+    span,
+    keyStyle,
+    children,
+  }: Props = $props();
 
   const ctx = getDescriptionsContext();
-
-  const direction = $derived(ctx?.getDirection() ?? 'horizontal');
-  const colon = $derived(ctx?.getColon() ?? true);
-
-  const clampedSpan = $derived.by(() => {
-    const column = ctx?.getColumn() ?? 1;
-    if (!span || span < 1) return 1;
-    return Math.min(span, column);
-  });
-
-  // children 为空时回退到父 emptyText 占位（与 data 模式 displayValue 一致）。
-  const emptyText = $derived(ctx?.getEmptyText() ?? '-');
+  const align = $derived(ctx?.getAlign() ?? 'center');
+  const layout = $derived(ctx?.getLayout() ?? 'vertical');
 </script>
 
-<div class="cd-descriptions__item" style="grid-column: span {clampedSpan};">
-  <dt class="cd-descriptions__label">
-    {label}{#if colon && direction === 'horizontal'}<span
-        class="cd-descriptions__colon"
-        aria-hidden="true">:</span
-      >{/if}
-  </dt>
-  <dd class="cd-descriptions__value">{#if children}{@render children()}{:else}{emptyText}{/if}</dd>
-</div>
+{#if !hidden}
+  {#snippet plainCell()}
+    <td class="cd-descriptions-item" colspan={span || 1}>
+      <span class="cd-descriptions-key" style={keyStyle}>{itemKey}:</span>
+      <span class="cd-descriptions-value">{@render children?.()}</span>
+    </td>
+  {/snippet}
+
+  {#snippet alignCell()}
+    <th class="cd-descriptions-item cd-descriptions-item-th">
+      <span class="cd-descriptions-key" style={keyStyle}>{itemKey}</span>
+    </th>
+    <td
+      class="cd-descriptions-item cd-descriptions-item-td"
+      colspan={span ? span * 2 - 1 : 1}
+    >
+      <span class="cd-descriptions-value">{@render children?.()}</span>
+    </td>
+  {/snippet}
+
+  {#if layout === 'horizontal'}
+    {#if align === 'plain'}{@render plainCell()}{:else}{@render alignCell()}{/if}
+  {:else}
+    <tr class={className} {style}>
+      {#if align === 'plain'}{@render plainCell()}{:else}{@render alignCell()}{/if}
+    </tr>
+  {/if}
+{/if}

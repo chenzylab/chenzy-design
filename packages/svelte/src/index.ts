@@ -160,7 +160,7 @@ export {
   Descriptions,
   DescriptionsItem,
   descriptionsMeta,
-  type DescriptionItem,
+  type DescriptionData,
 } from './descriptions/index.js';
 export {
   Collapse,
