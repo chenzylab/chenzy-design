@@ -1,32 +1,37 @@
 <script lang="ts">
-  import { Carousel, RadioGroup, Radio } from '@chenzy-design/svelte';
+  import { Carousel, RadioGroup, Radio, Space } from '@chenzy-design/svelte';
 
-  type ArrowType = 'hover' | 'always';
-  let arrowType = $state<ArrowType>('hover');
+  let show = $state(true);
+  let arrowType = $state<'always' | 'hover'>('always');
+
+  const bgs = ['var(--cd-color-primary)', 'var(--cd-color-success)', 'var(--cd-color-warning)'];
 </script>
 
-{#snippet s1()}
-  <div style="height:100%;display:grid;place-items:center;background:#364fc7;color:#fff;font-size:20px">箭头控制 1</div>
-{/snippet}
-{#snippet s2()}
-  <div style="height:100%;display:grid;place-items:center;background:#0c8599;color:#fff;font-size:20px">箭头控制 2</div>
-{/snippet}
-{#snippet s3()}
-  <div style="height:100%;display:grid;place-items:center;background:#c2255c;color:#fff;font-size:20px">箭头控制 3</div>
-{/snippet}
+{#snippet s0()}<div style="width:100%;height:100%;background:{bgs[0]}"></div>{/snippet}
+{#snippet s1()}<div style="width:100%;height:100%;background:{bgs[1]}"></div>{/snippet}
+{#snippet s2()}<div style="width:100%;height:100%;background:{bgs[2]}"></div>{/snippet}
 
-<div style="display:flex;flex-direction:column;gap:12px;width:360px">
-  <RadioGroup bind:value={arrowType}>
-    <Radio value="hover">hover 悬停显示</Radio>
-    <Radio value="always">always 始终显示</Radio>
-  </RadioGroup>
-
+<Space vertical align="start">
   <Carousel
-    slides={[s1, s2, s3]}
-    showArrow={true}
+    slides={[s0, s1, s2]}
+    showArrow={show}
     {arrowType}
-    showIndicator={false}
-    height={160}
     theme="dark"
+    autoPlay={false}
+    style="width:100%;height:320px"
   />
-</div>
+  <Space>
+    <span>展示箭头</span>
+    <RadioGroup value={show} onChange={(v) => (show = v as boolean)} type="button">
+      <Radio value={true}>show</Radio>
+      <Radio value={false}>hide</Radio>
+    </RadioGroup>
+  </Space>
+  <Space>
+    <span>展示时机</span>
+    <RadioGroup value={arrowType} onChange={(v) => (arrowType = v as typeof arrowType)} type="button">
+      <Radio value="always">always</Radio>
+      <Radio value="hover">hover</Radio>
+    </RadioGroup>
+  </Space>
+</Space>
