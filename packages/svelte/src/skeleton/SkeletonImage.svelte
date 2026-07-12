@@ -7,8 +7,8 @@
   import { SKELETON_KEY, type SkeletonContext } from './context.js';
 
   interface Props {
-    width?: string | number;
-    height?: string | number;
+    width?: string | number | undefined;
+    height?: string | number | undefined;
     showIcon?: boolean;
     class?: string;
     style?: string;

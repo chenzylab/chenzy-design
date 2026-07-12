@@ -39,7 +39,7 @@
     maxWidth?: number | string;
     disabled?: boolean;
     /** 浮层 z-index（覆盖 CSS token --cd-tooltip-z） */
-    zIndex?: number;
+    zIndex?: number | undefined;
     /** 浮层自定义类名（追加到浮层元素） */
     popClass?: string;
     /** 浮层自定义内联样式（追加到浮层元素） */

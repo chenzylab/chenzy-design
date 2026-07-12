@@ -41,6 +41,7 @@ import { tableTokens } from './table.js';
 import { calendarTokens } from './calendar.js';
 import { carouselTokens } from './carousel.js';
 import { cropperTokens } from './cropper.js';
+import { imageTokens } from './image.js';
 import { scrollListTokens } from './scroll-list.js';
 import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
@@ -118,6 +119,7 @@ export const componentTokens = {
   ...calendarTokens,
   ...carouselTokens,
   ...cropperTokens,
+  ...imageTokens,
   ...scrollListTokens,
   ...overflowListTokens,
   ...spinTokens,
