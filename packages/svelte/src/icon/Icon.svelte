@@ -23,6 +23,8 @@
     /** 透传到根元素的内联样式。 */
     style?: string;
     children?: Snippet;
+    /** 其余原生属性（onclick/onkeydown/aria-* 等）透传到根 span，对齐 Semi Icon 的 {...restProps}。 */
+    [key: string]: unknown;
   }
 
   let {
@@ -37,6 +39,7 @@
     class: className = '',
     style = '',
     children,
+    ...rest
   }: Props = $props();
 
   // 渲染源派生：优先级 svg > component > children。
@@ -75,6 +78,7 @@
   role={label ? 'img' : undefined}
   aria-label={label}
   aria-hidden={label ? undefined : 'true'}
+  {...rest}
 >
   {#if svg}
     <!-- 渲染源 svg：信任来源（构建期 SVGO 净化），运行时不做净化；用户传入的运行时 svg 须自行确保可信。 -->

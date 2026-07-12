@@ -40,7 +40,7 @@
     clickable?: boolean;
     size?: Size;
     status?: Status;
-    tooltipVisible?: boolean;
+    tooltipVisible?: boolean | undefined;
     alwaysShowTip?: boolean;
     tipFormatter?: (value: number) => string | null;
     getAriaValueText?: (value: number, index: number) => string;

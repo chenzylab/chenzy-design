@@ -1,185 +1,124 @@
 <!--
-  Image — see specs/components/show/Image.spec.md
-  基础子集：src + 懒加载(native/observer) + fit/position + 占位 + 失败降级 +
-    点击预览(全屏遮罩 portal + 缩放/旋转/重置工具栏 + 多图左右切换) + LQIP 模糊占位 +
-    crossorigin/srcset/sizes 原生属性透传(响应式图源)。
-
-  红线遵守：
-   - observer 模式 IntersectionObserver 在 $effect 内命令式创建 + cleanup disconnect；
-     node 用 bind:this 普通引用，不在 render 期读几何。
-   - 预览浮层 portal、keydown 监听在 ImagePreview 内命令式 + cleanup。
-   - 无受控 prop 需回写（previewOpen 为本地 $state）。
-   - 在 Image.PreviewGroup 内时，预览态交由组共享浮层管理（受控不回写仅回调）。
+  Image — 增强图片（对齐 Semi image/image.tsx + imageFoundation）。
+  职责：src 加载态机（loading/success/error）→ overlay 显占位/破图；success 且 preview 时
+    hover 蒙层 + 点击进预览。在 ImagePreview（组）内时把预览交给组共享浮层（context），
+    否则渲染自身单图 PreviewInner。
+  DOM 镜像 Semi：.cd-image > img.cd-image-img + .cd-image-overlay(status) + .cd-image-mask + PreviewInner。
+  红线 #1：preview.visible 受控不回写，仅经 preview.onVisibleChange 回调（非受控用本地态）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
+  import { SkeletonImage } from '../skeleton/index.js';
+  import { Icon } from '../icon/index.js';
   import { useLocale } from '../locale-provider/index.js';
-  import ImagePreview from './ImagePreview.svelte';
-  import { getImageGroupContext } from './context.js';
+  import PreviewInner from './PreviewInner.svelte';
+  import { getImagePreviewGroupContext } from './previewContext.js';
+  import { iconEyeOpened, iconUploadError } from './icons.js';
+  import type { PreviewProps } from './types.js';
 
-  type ImageFit = 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
-  type ImageStatus = 'pending' | 'loading' | 'loaded' | 'error';
-  type LazyMode = 'native' | 'observer';
+  type LoadStatus = 'loading' | 'success' | 'error';
 
   interface Props {
-    src: string;
-    alt?: string;
+    src?: string;
     width?: number | string;
     height?: number | string;
-    fit?: ImageFit;
-    position?: string;
+    alt?: string;
+    /** 加载中占位内容（对齐 Semi placeholder: ReactNode）。 */
+    placeholder?: Snippet;
+    /** 加载失败：string=降级图 src；Snippet=自定义内容；不传=默认破图。 */
+    fallback?: string | Snippet;
+    /** 预览：false 禁用；true 默认开启；对象=预览参数（含 src 覆盖预览图）。 */
+    preview?: boolean | PreviewProps;
     crossorigin?: 'anonymous' | 'use-credentials';
-    srcset?: string;
-    sizes?: string;
-    lazy?: boolean;
-    lazyMode?: LazyMode;
-    rootMargin?: string;
-    placeholder?: string | boolean;
-    fallback?: string | boolean;
-    preview?: boolean;
-    /** 自定义预览图 URL，不传时用 src。 */
-    previewSrc?: string;
-    /** img 加载失败回调。 */
-    onError?: (e: Event) => void;
-    /** img 加载成功回调。 */
-    onLoad?: (e: Event) => void;
+    /** 透传到 img 的自定义类名（对齐 Semi imgCls）。 */
+    imgCls?: string;
+    /** 透传到 img 的自定义内联样式（对齐 Semi imgStyle）。 */
+    imgStyle?: string;
+    /** 预览下载自定义文件名（对齐 Semi setDownloadName）。 */
+    setDownloadName?: (src: string) => string;
     class?: string;
-    errorSlot?: Snippet;
-    placeholderSlot?: Snippet;
+    style?: string;
+    /** 组内稳定索引，由 ImagePreview 组注入（对齐 Semi imageID）。 */
+    imageID?: number;
+    onError?: (e: Event) => void;
+    onLoad?: (e: Event) => void;
+    onClick?: (e: MouseEvent) => void;
   }
 
   let {
     src,
-    alt = '',
     width,
     height,
-    fit = 'fill',
-    position = 'center',
+    alt = '',
+    placeholder,
+    fallback,
+    preview = true,
     crossorigin,
-    srcset,
-    sizes,
-    lazy = true,
-    lazyMode = 'native',
-    rootMargin = '200px',
-    placeholder = true,
-    fallback = true,
-    preview = false,
-    previewSrc,
+    imgCls,
+    imgStyle,
+    setDownloadName,
+    class: className = '',
+    style = '',
+    imageID,
     onError,
     onLoad,
-    class: className = '',
-    errorSlot,
-    placeholderSlot,
+    onClick,
   }: Props = $props();
 
   const loc = useLocale();
+  const group = getImagePreviewGroupContext();
 
-  const useObserver = $derived(lazy && lazyMode === 'observer');
-  // 仅用于 $state 初始值：untrack 读一次原始 props，避免 state_referenced_locally 警告。
-  const initialObserver = untrack(() => lazy && lazyMode === 'observer');
+  let loadStatus = $state<LoadStatus>('loading');
+  // 单图非受控预览可见态（组内不用）。
+  let previewVisible = $state(false);
 
-  // observer 模式初始为 pending（未进视口），否则直接 loading
-  let status = $state<ImageStatus>(initialObserver ? 'pending' : 'loading');
-  let inView = $state(!initialObserver);
-  let previewOpen = $state(false);
-
+  // 组内懒加载：img bind + 进视口态。进视口前 src 为 undefined（声明式派生，避免命令式
+  // 设 DOM 被 Svelte 响应式覆盖）。非组内或组未开 lazyLoad 时恒 true。
   let imgNode = $state<HTMLImageElement | null>(null);
+  const lazyLoad = $derived(Boolean(group?.lazyLoad));
+  // 初始 inView：复用同一次 getContext 的 group（勿重复调 getContext，setup 后返回 undefined）。
+  // 非懒加载（无组/组未开）时恒 true，src 直接生效。
+  let inView = $state(!(group?.lazyLoad ?? false));
+  const resolvedSrc = $derived(lazyLoad && !inView ? undefined : src);
 
-  // observer 模式下，进入视口前不设真实 src
-  const resolvedSrc = $derived(useObserver && !inView ? undefined : src);
-  // srcset 与 src 同步延迟：observer 未进视口前不设，避免浏览器提前选源加载。
-  const resolvedSrcset = $derived(useObserver && !inView ? undefined : srcset);
-
-  // placeholder 是字符串时当作 LQIP 低质占位图 src（loading/pending 阶段显示，CSS blur 模糊）。
-  // 主图 onload 前显示模糊占位，加载完成后主图淡入清晰、占位淡出。
-  const placeholderSrc = $derived(typeof placeholder === 'string' ? placeholder : undefined);
-  const showPlaceholder = $derived(status === 'pending' || status === 'loading');
-  const showSkeleton = $derived(showPlaceholder && placeholder === true);
-  // 是否为 LQIP 模糊占位（字符串占位 = 低质图，需 blur + 淡入主图）。
-  const isLqip = $derived(placeholderSrc !== undefined);
-  // 主图加载完成才淡入（仅 LQIP 场景需要，避免无占位时初始透明闪烁）。
-  const imgLoaded = $derived(status === 'loaded');
-
-  // error 降级：fallback 为字符串 → 降级图；true → 默认破图占位；false → errorSlot
-  const fallbackSrc = $derived(typeof fallback === 'string' ? fallback : undefined);
-
-  const nativeLoading = $derived(lazy && lazyMode === 'native' ? 'lazy' : undefined);
-
-  const rootStyle = $derived(
-    [
-      width !== undefined ? `inline-size:${typeof width === 'number' ? `${width}px` : width}` : '',
-      height !== undefined ? `block-size:${typeof height === 'number' ? `${height}px` : height}` : '',
-    ]
-      .filter(Boolean)
-      .join(';'),
+  // preview 为对象时提取参数；预览图 src 优先取 preview.src，否则用 src。
+  const previewProps = $derived(
+    typeof preview === 'object' && preview !== null ? preview : undefined,
   );
-
-  const imgStyle = $derived(`object-fit:${fit};object-position:${position}`);
-
-  // 装饰性图片（明确传 alt=''）：role="presentation" 让读屏跳过，不当作有意义内容。
-  const presentationRole = $derived(alt === '' ? 'presentation' : undefined);
-
-  // 主图类名：LQIP 场景下未加载完成时透明，加载完成淡入清晰。
-  const imgCls = $derived(
-    ['cd-image__img', isLqip && 'cd-image__img--fade', isLqip && imgLoaded && 'cd-image__img--in']
-      .filter(Boolean)
-      .join(' '),
+  const previewEnabled = $derived(preview !== false);
+  // 单图预览图源窄化为 string：preview.src 为数组时取首张，否则用它，再回退 src。
+  const previewSrc = $derived<string | undefined>(
+    Array.isArray(previewProps?.src)
+      ? previewProps.src[0]
+      : ((previewProps?.src as string | undefined) ?? src),
   );
+  const canPreview = $derived(loadStatus === 'success' && previewEnabled && !group);
+  const showPreviewCursor = $derived(previewEnabled && loadStatus === 'success');
 
-  const cls = $derived(
-    ['cd-image', preview && status === 'loaded' && 'cd-image--previewable', className]
-      .filter(Boolean)
-      .join(' '),
+  // 受控 previewVisible（对齐 Semi getDerivedStateFromProps：preview.visible 为 bool 时受控）。
+  const controlledVisible = $derived(
+    typeof previewProps?.visible === 'boolean' ? previewProps.visible : undefined,
   );
+  const effectiveVisible = $derived(controlledVisible ?? previewVisible);
 
-  const canPreview = $derived(preview && status === 'loaded');
-
-  function handleLoad(e: Event) {
-    status = 'loaded';
-    onLoad?.(e);
-  }
-
-  function handleError(e: Event) {
-    status = 'error';
-    onError?.(e);
-  }
-
-  // 预览组上下文：存在则把预览态交给组共享浮层（多图切换）；否则用本地单图浮层。
-  const group = getImageGroupContext();
-  // 在组内注册自身（注册顺序 = 组内稳定槽位索引）。注册是一次性的（非响应式），
-  // src/alt 经 getter 暴露给组以保持响应性。卸载时经 $effect cleanup 注销。
-  const groupSlot = group ? group.register({ getSrc: () => previewSrc ?? src, getAlt: () => alt }) : -1;
-  if (group) {
-    $effect(() => () => group.unregister(groupSlot));
-  }
-
-  function openPreview() {
-    if (!canPreview) return;
-    if (group) {
-      group.open(groupSlot);
-    } else {
-      previewOpen = true;
-    }
-  }
-
-  function closePreview() {
-    previewOpen = false;
-  }
-
-  // 单图浮层只有一张图，索引恒为 0；onChange 无实际切换（满足共享组件接口）。
-  // previewSrc 指定自定义预览图（缩略图与预览图可不同）。
-  const singleImages = $derived([{ src: previewSrc ?? src, alt }]);
-
-  // IntersectionObserver：命令式创建 + cleanup，进入视口才放行真实 src
+  // src 变化重置加载态（对齐 Semi getDerivedStateFromProps）。
+  let lastSrc = $state(untrack(() => src));
   $effect(() => {
-    if (!useObserver) return;
-    if (inView) return;
+    if (src !== lastSrc) {
+      lastSrc = src;
+      loadStatus = 'loading';
+    }
+  });
+
+  // 组内懒加载 IntersectionObserver：进视口置 inView（命令式创建 + cleanup，红线 #3）。
+  // 每图自管 observer，src 经 resolvedSrc 声明式派生，进视口后浏览器加载，避免命令式改 DOM 被覆盖。
+  $effect(() => {
+    if (!lazyLoad || inView) return;
     const node = imgNode;
     if (!node) return;
     if (typeof IntersectionObserver === 'undefined') {
       inView = true;
-      status = 'loading';
       return;
     }
     const observer = new IntersectionObserver(
@@ -187,200 +126,239 @@
         for (const entry of entries) {
           if (entry.isIntersecting) {
             inView = true;
-            status = 'loading';
             observer.disconnect();
             break;
           }
         }
       },
-      { rootMargin },
+      { rootMargin: group?.lazyLoadMargin ?? '0px 100px 100px 0px' },
     );
     observer.observe(node);
     return () => observer.disconnect();
   });
 
-  // 缓存图竞态兜底：若图片在 onload 监听挂载前已 complete（如缓存命中 / data-URI 同步解码），
-  // load 事件可能不再触发，status 会卡在 loading。此处命令式补判 complete 推进状态。
-  $effect(() => {
-    if (status !== 'loading') return;
-    const node = imgNode;
-    if (!node || !node.getAttribute('src')) return;
-    if (node.complete) {
-      // naturalWidth 为 0 视为解码失败 → error，否则 loaded。
-      status = node.naturalWidth > 0 ? 'loaded' : 'error';
+  // 组内注册（注册顺序 = imageID）；src/title 用 getter 保持响应，卸载注销（红线 #3 cleanup）。
+  let groupID = -1;
+  if (group) {
+    groupID = group.register({
+      getSrc: () => previewSrc ?? '',
+      getTitle: () => previewProps?.previewTitle,
+    });
+    $effect(() => () => group.unregister(groupID));
+  }
+
+  function handleLoad(e: Event) {
+    onLoad?.(e);
+    loadStatus = 'success';
+  }
+  function handleError(e: Event) {
+    onError?.(e);
+    loadStatus = 'error';
+  }
+  function handleClick(e: MouseEvent) {
+    onClick?.(e);
+    if (!previewEnabled) return;
+    if (group) {
+      group.setCurrentIndex(imageID ?? groupID);
+      group.handleVisibleChange(true);
+    } else {
+      setPreviewVisible(true);
     }
-  });
+  }
+  function setPreviewVisible(v: boolean) {
+    previewProps?.onVisibleChange?.(v);
+    if (controlledVisible === undefined) previewVisible = v;
+  }
+
+  const outerStyle = $derived(
+    [
+      width !== undefined && `width:${typeof width === 'number' ? `${width}px` : width}`,
+      height !== undefined && `height:${typeof height === 'number' ? `${height}px` : height}`,
+      style,
+    ]
+      .filter(Boolean)
+      .join(';'),
+  );
+
+  const fallbackSrc = $derived(typeof fallback === 'string' ? fallback : undefined);
+
+  const imgClass = $derived(
+    [
+      'cd-image-img',
+      showPreviewCursor && 'cd-image-img-preview',
+      loadStatus === 'error' && 'cd-image-img-error',
+      imgCls,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 </script>
 
-<div class={cls} style={rootStyle || undefined} data-status={status}>
-  {#if status === 'error'}
-    {#if fallbackSrc}
-      <img class="cd-image__img" src={fallbackSrc} {alt} style={imgStyle} />
-    {:else if fallback === true}
-      <div class="cd-image__error" role="img" aria-label={alt || loc().t('Image.errorAlt')}>
-        <svg viewBox="0 0 48 48" width="32" height="32" aria-hidden="true" focusable="false">
-          <rect x="6" y="10" width="36" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2" />
-          <path d="M12 32 20 22 27 30 32 25 38 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-          <circle cx="30" cy="18" r="3" fill="currentColor" />
-        </svg>
-      </div>
-    {:else if errorSlot}
-      {@render errorSlot()}
-    {/if}
-  {:else}
-    {#if showPlaceholder}
-      <div class="cd-image__placeholder" aria-hidden="true" aria-busy="true">
-        {#if placeholderSrc}
-          <img class="cd-image__img cd-image__placeholder-img cd-image__placeholder-img--blur" src={placeholderSrc} alt="" style={imgStyle} />
-        {:else if placeholderSlot}
-          {@render placeholderSlot()}
-        {:else if showSkeleton}
-          <span class="cd-image__skeleton"></span>
-        {/if}
-      </div>
-    {/if}
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div
+  class={['cd-image', className].filter(Boolean).join(' ')}
+  style={outerStyle || undefined}
+  onclick={handleClick}
+>
+  <img
+    bind:this={imgNode}
+    class={imgClass}
+    src={resolvedSrc}
+    {alt}
+    {width}
+    {height}
+    crossorigin={crossorigin}
+    style={imgStyle}
+    onload={handleLoad}
+    onerror={handleError}
+  />
 
-    {#if canPreview}
-      <button
-        type="button"
-        class="cd-image__trigger"
-        onclick={openPreview}
-        aria-label={loc().t('Image.previewTrigger')}
-      >
-        <img
-          bind:this={imgNode}
-          class={imgCls}
-          src={resolvedSrc}
-          srcset={resolvedSrcset}
-          {sizes}
-          {crossorigin}
-          {alt}
-          role={presentationRole}
-          loading={nativeLoading}
-          style={imgStyle}
-          onload={handleLoad}
-          onerror={handleError}
-        />
-        <span class="cd-image__mask" aria-hidden="true">{loc().t('Image.previewMask')}</span>
-      </button>
-    {:else}
-      <img
-        bind:this={imgNode}
-        class={imgCls}
-        src={resolvedSrc}
-        srcset={resolvedSrcset}
-        {sizes}
-        {crossorigin}
-        {alt}
-        role={presentationRole}
-        loading={nativeLoading}
-        style={imgStyle}
-        onload={handleLoad}
-        onerror={handleError}
-      />
-    {/if}
+  {#if loadStatus !== 'success'}
+    <div class="cd-image-overlay">
+      {#if loadStatus === 'error'}
+        {#if fallbackSrc}
+          <div class="cd-image-status">
+            <img class="cd-image-status-fallback" src={fallbackSrc} alt="fallback" />
+          </div>
+        {:else if typeof fallback === 'function'}
+          <div class="cd-image-status">{@render fallback()}</div>
+        {:else}
+          <div class="cd-image-status" role="img" aria-label={alt || loc().t('Image.errorAlt')}>
+            <Icon svg={iconUploadError} size="extra-large" />
+          </div>
+        {/if}
+      {:else if loadStatus === 'loading'}
+        {#if placeholder}
+          <div class="cd-image-status">{@render placeholder()}</div>
+        {:else}
+          <SkeletonImage {width} {height} />
+        {/if}
+      {/if}
+    </div>
+  {/if}
+
+  {#if showPreviewCursor}
+    <div class="cd-image-mask" aria-hidden="true">
+      <div class="cd-image-mask-info">
+        <Icon svg={iconEyeOpened} size="extra-large" />
+        <span class="cd-image-mask-info-text">{loc().t('Image.preview')}</span>
+      </div>
+    </div>
   {/if}
 </div>
 
-<!-- 单图预览：复用共享浮层（组预览由 Image.PreviewGroup 渲染共享浮层）。 -->
-{#if previewOpen && !group}
-  <ImagePreview
-    images={singleImages}
-    current={0}
-    onClose={closePreview}
-    onChange={() => {}}
+{#if canPreview && previewSrc}
+  <PreviewInner
+    src={[previewSrc]}
+    visible={effectiveVisible}
+    onVisibleChange={setPreviewVisible}
+    crossOrigin={crossorigin}
+    {setDownloadName}
+    maskClosable={previewProps?.maskClosable}
+    closable={previewProps?.closable}
+    closeOnEsc={previewProps?.closeOnEsc}
+    zoomStep={previewProps?.zoomStep}
+    maxZoom={previewProps?.maxZoom}
+    minZoom={previewProps?.minZoom}
+    initialZoom={previewProps?.initialZoom}
+    disableDownload={previewProps?.disableDownload}
+    showTooltip={previewProps?.showTooltip}
+    viewerVisibleDelay={previewProps?.viewerVisibleDelay}
+    zIndex={previewProps?.zIndex}
+    prevTip={previewProps?.prevTip}
+    nextTip={previewProps?.nextTip}
+    zoomInTip={previewProps?.zoomInTip}
+    zoomOutTip={previewProps?.zoomOutTip}
+    rotateTip={previewProps?.rotateTip}
+    downloadTip={previewProps?.downloadTip}
+    adaptiveTip={previewProps?.adaptiveTip}
+    originTip={previewProps?.originTip}
+    getPopupContainer={previewProps?.getPopupContainer}
+    renderHeader={previewProps?.renderHeader}
+    renderPreviewMenu={previewProps?.renderPreviewMenu}
+    renderCloseIcon={previewProps?.renderCloseIcon}
+    renderLeftIcon={previewProps?.renderLeftIcon}
+    renderRightIcon={previewProps?.renderRightIcon}
+    onClose={previewProps?.onClose}
+    onZoomIn={previewProps?.onZoomIn}
+    onZoomOut={previewProps?.onZoomOut}
+    onDownload={previewProps?.onDownload}
+    onRotateLeft={previewProps?.onRotateLeft}
+    onRatioChange={previewProps?.onRatioChange}
+    onDownloadError={previewProps?.onDownloadError}
   />
 {/if}
 
 <style>
   .cd-image {
+    border-radius: var(--cd-image-radius);
     position: relative;
     display: inline-block;
     overflow: hidden;
-    background: var(--cd-image-bg);
-    border-radius: var(--cd-image-radius);
-    line-height: 0;
   }
-  .cd-image__img {
-    display: block;
-    inline-size: 100%;
-    block-size: 100%;
+  .cd-image :global(img) {
+    /* 覆盖 tailwind 等把 img max-width 设为 100% 的场景，否则影响预览放大 */
+    max-width: none;
   }
-  .cd-image__trigger {
-    display: block;
-    inline-size: 100%;
-    block-size: 100%;
-    padding: 0;
-    margin: 0;
-    border: 0;
-    background: none;
+  .cd-image-img {
+    vertical-align: top;
+    border-radius: inherit;
+    user-select: none;
+  }
+  .cd-image-img-preview {
     cursor: zoom-in;
   }
-  .cd-image__trigger:focus-visible {
-    outline: var(--cd-focus-ring);
-    outline-offset: -2px;
+  .cd-image-img-error {
+    opacity: 0;
   }
-
-  .cd-image__placeholder {
+  .cd-image-overlay {
     position: absolute;
-    inset: 0;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .cd-image-status {
+    width: 100%;
+    height: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    border-radius: var(--cd-image-radius);
+    background-color: var(--cd-image-status-bg);
+    color: var(--cd-image-status-color);
   }
-  .cd-image__placeholder-img {
-    object-fit: cover;
-  }
-  .cd-image__skeleton {
-    inline-size: 100%;
-    block-size: 100%;
-    background: var(--cd-image-placeholder-color);
-    opacity: 0.4;
+  .cd-image-status-fallback {
+    width: 100%;
+    height: 100%;
   }
 
-  .cd-image__error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 100%;
-    block-size: 100%;
-    min-block-size: 64px;
-    color: var(--cd-image-placeholder-color);
-  }
-
-  .cd-image__mask {
+  /* hover 预览蒙层 */
+  .cd-image-mask {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--cd-image-mask-bg);
-    color: var(--cd-image-mask-color);
-    line-height: normal;
+    color: var(--cd-image-mask-info-text);
     opacity: 0;
     transition: opacity var(--cd-motion-duration-fast, 0.12s) ease;
   }
-  .cd-image__trigger:hover .cd-image__mask,
-  .cd-image__trigger:focus-visible .cd-image__mask {
+  .cd-image:hover .cd-image-mask {
     opacity: 1;
   }
-
-  /* LQIP：低质占位图模糊；主图加载完成前透明，加载后淡入清晰。 */
-  .cd-image__placeholder-img--blur {
-    filter: blur(12px);
-    transform: scale(1.05);
+  .cd-image-mask-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
-  .cd-image__img--fade {
-    opacity: 0;
-    transition: opacity var(--cd-motion-duration-mid, 0.2s) var(--cd-motion-ease-standard);
-  }
-  .cd-image__img--in {
-    opacity: 1;
+  .cd-image-mask-info-text {
+    margin-block-start: var(--cd-image-mask-info-text-margin-top);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-image__mask,
-    .cd-image__img--fade {
+    .cd-image-mask {
       transition: none;
     }
   }

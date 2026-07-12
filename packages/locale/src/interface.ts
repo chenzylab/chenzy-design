@@ -294,18 +294,23 @@ export interface Locale {
     clear: string;
   };
   Image: {
+    /** 图片 hover 蒙层「预览」文字 */
+    preview: string;
+    loading: string;
+    loadError: string;
+    /** 预览工具栏 tooltip（对齐 Semi） */
+    prevTip: string;
+    nextTip: string;
+    zoomInTip: string;
+    zoomOutTip: string;
+    rotateTip: string;
+    downloadTip: string;
+    adaptiveTip: string;
+    originTip: string;
     errorAlt: string;
     previewAlt: string;
     previewTrigger: string;
     closePreview: string;
-    previewMask: string;
-    zoomIn: string;
-    zoomOut: string;
-    rotateLeft: string;
-    rotateRight: string;
-    reset: string;
-    prev: string;
-    next: string;
     /** LiveAnnouncer：预览翻页计数，uses {index} / {total} */
     previewCount: string;
   };
