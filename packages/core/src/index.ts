@@ -50,6 +50,7 @@ export {
   mergeRanges,
   chunksFromRanges,
   highlightChunks,
+  type HighlightWord,
   type HighlightRange,
   type HighlightChunk,
   type FindRangesOptions,
