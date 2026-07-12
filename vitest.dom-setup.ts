@@ -11,6 +11,17 @@ if (typeof Element !== 'undefined' && typeof Element.prototype.scrollIntoView !=
   Element.prototype.scrollIntoView = function scrollIntoView() {};
 }
 
+// jsdom 缺口 polyfill：jsdom 未实现 ResizeObserver，而 Typography 的 ellipsis 测量
+// （Card string title 走 Typography.Title ellipsis）在 $effect 中 new ResizeObserver 观测尺寸。
+// 不打桩会抛 "ResizeObserver is not defined"。同为布局缺口，统一打无操作桩。
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 afterEach(() => {
   cleanup();
   // 兜底：清空 body，移除 portal（Modal 等 appendChild 到 body 的节点）

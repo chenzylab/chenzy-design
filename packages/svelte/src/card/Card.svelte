@@ -1,68 +1,79 @@
 <!--
-  Card — see specs/components/show/Card.spec.md
-  Container: cover → header → body (with loading skeleton) → actions.
+  Card — 卡片容器，对齐 Semi Design Card。
+  DOM 顺序（同 Semi）：header → cover → body(含 actions) → footer。
+  - header：header snippet 优先，否则 headerExtraContent(左) + title(右)，wrapper row-reverse 使视觉为 title 左 / extra 右。
+  - title 为 string 时用 Typography.Title heading=6 + 单行省略 + tooltip（同 Semi）。
+  - body：loading 时用 Skeleton 占位（Title + Paragraph rows=3），仅在有 children 时渲染。
+  - actions：body 内底部操作区，用 Space spacing=12 逐项排布（同 Semi）。
+  - footer：自定义页脚，footerLine 控制其与 body 的上分隔线（默认 false，同 Semi）。
+  shadows：'hover' | 'always'（无 never，同 Semi）；bordered 默认 true。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import { Typography } from '../typography/index.js';
+  import { Skeleton, SkeletonTitle, SkeletonParagraph } from '../skeleton/index.js';
+  import { Space } from '../space/index.js';
 
-  type CardSize = 'small' | 'default' | 'large';
-  type CardShadow = 'never' | 'hover' | 'always';
+  export type Shadows = 'hover' | 'always';
 
   export interface Props {
+    /** 卡片标题；string 时用 Typography.Title heading=6 渲染并关联 aria-labelledby。 */
     title?: string | Snippet;
-    extra?: Snippet;
-    cover?: Snippet;
-    actions?: Snippet;
-    size?: CardSize;
-    bordered?: boolean;
-    shadow?: CardShadow;
-    hoverable?: boolean;
-    loading?: boolean;
-    loadingRows?: number;
-    /** header 区内联样式透传 */
-    headerStyle?: string;
-    /** body 区内联样式透传 */
-    bodyStyle?: string;
-    /** header 与 body 间是否显示分隔线 */
+    /** header 右侧的额外内容（对齐 Semi headerExtraContent）。 */
+    headerExtraContent?: Snippet;
+    /** 自定义头部，传入将覆盖 title 与 headerExtraContent（对齐 Semi header）。 */
+    header?: Snippet;
+    /** 头部与内容区是否有分隔线。 */
     headerLine?: boolean;
-    /** actions 区上方是否显示分隔线 */
+    /** 头部区内联样式透传。 */
+    headerStyle?: string;
+    /** 卡片封面（出血）。 */
+    cover?: Snippet;
+    /** 内容区内联样式透传。 */
+    bodyStyle?: string;
+    /** 卡片内容区底部的操作组，以 12px 水平间距排布。 */
+    actions?: Snippet;
+    /** 自定义页脚。 */
+    footer?: Snippet;
+    /** 页脚区与内容区是否有分隔线（默认 false）。 */
     footerLine?: boolean;
-    /** actions/footer 区内联样式透传 */
+    /** 页脚区内联样式透传。 */
     footerStyle?: string;
-    /** 整卡可点击：合并 hoverable 视觉并启用键盘/点击激活与 role=button */
-    clickable?: boolean;
-    /** 仅在 clickable 时生效，禁用点击与 hover 反馈 */
-    disabled?: boolean;
+    /** 是否有外边框。 */
+    bordered?: boolean;
+    /** 阴影显示时机；不设则无阴影。 */
+    shadows?: Shadows;
+    /** 内容区是否显示加载占位。 */
+    loading?: boolean;
+    /** 根节点自定义类名。 */
     class?: string;
-    onClick?: (originalEvent: MouseEvent | KeyboardEvent) => void;
-    onMouseenter?: (originalEvent: MouseEvent) => void;
-    onMouseleave?: (originalEvent: MouseEvent) => void;
+    /** 根节点自定义内联样式。 */
+    style?: string;
+    /** 根节点 aria-label，表述该 Card 的作用。 */
+    ariaLabel?: string;
+    /** 卡片正文。 */
     children?: Snippet;
   }
 
   let {
     title,
-    extra,
-    cover,
-    actions,
-    size = 'default',
-    bordered = true,
-    shadow = 'never',
-    hoverable = false,
-    loading = false,
-    loadingRows = 3,
-    headerStyle,
-    bodyStyle,
+    headerExtraContent,
+    header,
     headerLine = true,
-    footerLine = true,
+    headerStyle,
+    cover,
+    bodyStyle,
+    actions,
+    footer,
+    footerLine = false,
     footerStyle,
-    clickable = false,
-    disabled = false,
+    bordered = true,
+    shadows,
+    loading = false,
     class: className,
-    onClick,
-    onMouseenter,
-    onMouseleave,
+    style,
+    ariaLabel,
     children,
   }: Props = $props();
 
@@ -71,271 +82,198 @@
   const titleText = $derived(typeof title === 'string' ? title : undefined);
   const titleSnippet = $derived(typeof title === 'function' ? title : undefined);
   const hasTitle = $derived(title !== undefined);
-  const hasHeader = $derived(hasTitle || extra !== undefined);
-
-  // skeleton rows is render-only (derived from a number prop, not a mounted array)
-  const rows = $derived(
-    Array.from({ length: Math.max(0, loadingRows) }, (_, i) => i),
-  );
+  const hasHeader = $derived(header !== undefined || headerExtraContent !== undefined || hasTitle);
 
   const cls = $derived(
     [
       'cd-card',
-      `cd-card--${size}`,
       bordered && 'cd-card--bordered',
-      `cd-card--shadow-${shadow}`,
-      (hoverable || shadow === 'hover' || (clickable && !disabled)) &&
-        'cd-card--hoverable',
-      clickable && 'cd-card--clickable',
-      clickable && disabled && 'cd-card--disabled',
+      shadows && 'cd-card--shadows',
+      shadows && `cd-card--shadows-${shadows}`,
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
-
-  // clickable interaction: pure handlers, no global listeners → no cleanup needed
-  function handleClick(e: MouseEvent) {
-    if (!clickable || disabled) return;
-    onClick?.(e);
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (!clickable || disabled) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      // Space: prevent page scroll on activation
-      e.preventDefault();
-      onClick?.(e);
-    }
-  }
-
-  function handleMouseenter(e: MouseEvent) {
-    onMouseenter?.(e);
-  }
-  function handleMouseleave(e: MouseEvent) {
-    onMouseleave?.(e);
-  }
 </script>
 
-<!--
-  tabindex is only set together with role="button" (clickable, not disabled),
-  so the element is interactive when focusable; the static check can't see the
-  cross-attribute correlation.
--->
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class={cls}
-  role={clickable ? 'button' : hasTitle ? 'region' : undefined}
-  aria-labelledby={titleIsString ? titleId : undefined}
+  {style}
+  role={hasTitle ? 'region' : undefined}
+  aria-label={ariaLabel}
+  aria-labelledby={titleIsString && !ariaLabel ? titleId : undefined}
   aria-busy={loading || undefined}
-  aria-disabled={clickable && disabled ? 'true' : undefined}
-  tabindex={clickable ? (disabled ? -1 : 0) : undefined}
-  onclick={clickable ? handleClick : undefined}
-  onkeydown={clickable ? handleKeydown : undefined}
-  onmouseenter={onMouseenter ? handleMouseenter : undefined}
-  onmouseleave={onMouseleave ? handleMouseleave : undefined}
 >
-  {#if cover}
-    <div class="cd-card__cover">{@render cover()}</div>
-  {/if}
-
   {#if hasHeader}
     <div
-      class={['cd-card__header', !headerLine && 'cd-card__header--no-line']
+      class={['cd-card__header', headerLine && 'cd-card__header--bordered']
         .filter(Boolean)
         .join(' ')}
       style={headerStyle}
     >
-      {#if hasTitle}
-        <div class="cd-card__title" id={titleIsString ? titleId : undefined}>
-          {#if titleText !== undefined}
-            {titleText}
-          {:else if titleSnippet}
-            {@render titleSnippet()}
+      {#if header}
+        {@render header()}
+      {:else}
+        <div class="cd-card__header-wrapper">
+          {#if headerExtraContent}
+            <div class="cd-card__header-wrapper-extra">{@render headerExtraContent()}</div>
+          {/if}
+          {#if hasTitle}
+            <div
+              class={[
+                'cd-card__header-wrapper-title',
+                headerExtraContent && 'cd-card__header-wrapper-spacing',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {#if titleText !== undefined}
+                <div id={titleId}>
+                  <Typography.Title
+                    heading={6}
+                    ellipsis={{ showTooltip: true, rows: 1 }}
+                  >
+                    {titleText}
+                  </Typography.Title>
+                </div>
+              {:else if titleSnippet}
+                {@render titleSnippet()}
+              {/if}
+            </div>
           {/if}
         </div>
-      {/if}
-      {#if extra}
-        <div class="cd-card__extra">{@render extra()}</div>
       {/if}
     </div>
   {/if}
 
+  {#if cover}
+    <div class="cd-card__cover">{@render cover()}</div>
+  {/if}
+
   <div class="cd-card__body" style={bodyStyle}>
-    {#if loading}
-      <div class="cd-card__skeleton" aria-hidden="true">
-        {#each rows as row (row)}
-          <span class="cd-card__skeleton-row"></span>
-        {/each}
+    {#if children}
+      {#if loading}
+        <Skeleton loading active>
+          {#snippet placeholder()}
+            <SkeletonTitle />
+            <br />
+            <SkeletonParagraph rows={3} />
+          {/snippet}
+          {@render children()}
+        </Skeleton>
+      {:else}
+        {@render children()}
+      {/if}
+    {/if}
+    {#if actions}
+      <div class="cd-card__body-actions">
+        <Space spacing={12}>
+          {@render actions()}
+        </Space>
       </div>
-    {:else}
-      {@render children?.()}
     {/if}
   </div>
 
-  {#if actions}
+  {#if footer}
     <div
-      class={['cd-card__actions', !footerLine && 'cd-card__actions--no-line']
+      class={['cd-card__footer', footerLine && 'cd-card__footer--bordered']
         .filter(Boolean)
         .join(' ')}
       style={footerStyle}
     >
-      {@render actions()}
+      {@render footer()}
     </div>
   {/if}
 </div>
 
 <style>
   .cd-card {
-    display: flex;
-    flex-direction: column;
-    background: var(--cd-card-bg);
-    border: 1px solid transparent;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
     border-radius: var(--cd-card-radius);
+    border: var(--cd-card-border-width) solid transparent;
     overflow: hidden;
-    transition: box-shadow var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    background-color: var(--cd-card-bg);
+    color: var(--cd-card-body-color);
+    font-size: var(--cd-card-default-size);
+    font-weight: var(--cd-card-default-weight);
+    line-height: var(--cd-card-default-lineheight);
+    letter-spacing: 0;
   }
   .cd-card--bordered {
-    border-color: var(--cd-card-border);
+    border-color: var(--cd-card-border-color);
   }
-  .cd-card--shadow-always {
+
+  /* shadows：hover 时悬停显示、always 常显；shadows 存在即 cursor:pointer（同 Semi）。 */
+  .cd-card--shadows {
+    cursor: pointer;
+    transition: box-shadow var(--cd-card-transition-duration);
+  }
+  .cd-card--shadows-hover:hover {
+    box-shadow: var(--cd-card-shadow);
+    /* 避免网格型卡片组 shadow 被相邻卡覆盖 */
+    z-index: var(--cd-card-z-hover);
+  }
+  .cd-card--shadows-always {
     box-shadow: var(--cd-card-shadow);
   }
-  .cd-card--hoverable:hover,
-  .cd-card--shadow-hover:hover {
-    box-shadow: var(--cd-card-shadow-hover);
-  }
 
-  .cd-card--clickable {
-    cursor: pointer;
-    transition:
-      box-shadow var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  .cd-card__header {
+    padding: var(--cd-card-padding);
   }
-  .cd-card--clickable:not(.cd-card--disabled):hover {
-    transform: translateY(-2px);
+  .cd-card__header--bordered {
+    border-bottom: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
-  .cd-card--clickable:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  .cd-card__header-wrapper {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: row-reverse;
+    justify-content: space-between;
   }
-  .cd-card--disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  .cd-card__header-wrapper-spacing {
+    margin-inline-end: var(--cd-card-margin);
   }
-  .cd-card--disabled.cd-card--clickable:hover {
-    transform: none;
-    box-shadow: none;
-  }
-
-  .cd-card__cover {
-    display: block;
+  .cd-card__header-wrapper-title {
+    inline-size: 100%;
     overflow: hidden;
+    color: var(--cd-card-title-color);
+    font-weight: var(--cd-card-title-weight);
+    font-size: var(--cd-card-title-size);
+    line-height: var(--cd-card-title-lineheight);
   }
-  .cd-card__cover :global(img) {
+  .cd-card__header-wrapper-extra {
+    flex-shrink: 0;
+    font-size: var(--cd-card-extra-size);
+    font-weight: var(--cd-card-extra-weight);
+    color: var(--cd-card-extra-color);
+    letter-spacing: 0;
+  }
+
+  .cd-card__cover :global(> *) {
     display: block;
     inline-size: 100%;
   }
 
-  .cd-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--cd-spacing-base-tight);
-    padding: var(--cd-card-padding);
-    border-block-end: 1px solid var(--cd-card-header-border);
-  }
-  .cd-card__header--no-line {
-    border-block-end: none;
-  }
-  .cd-card--small .cd-card__header {
-    padding: var(--cd-card-padding-small);
-  }
-  .cd-card__title {
-    color: var(--cd-card-title-color);
-    font-weight: var(--cd-card-title-weight);
-    font-size: var(--cd-card-title-size);
-    min-inline-size: 0;
-  }
-  .cd-card--small .cd-card__title {
-    font-size: var(--cd-font-size-regular);
-  }
-  .cd-card--large .cd-card__title {
-    font-size: var(--cd-font-size-header-4);
-  }
-  .cd-card__extra {
-    flex: 0 0 auto;
-    color: var(--cd-card-desc-color);
-    font-size: var(--cd-font-size-regular);
-  }
-
   .cd-card__body {
-    flex: 1 1 auto;
     padding: var(--cd-card-padding);
+    font-size: var(--cd-card-default-size);
+    font-weight: var(--cd-card-default-weight);
+    line-height: var(--cd-card-default-lineheight);
     color: var(--cd-card-body-color);
+    letter-spacing: 0;
   }
-  .cd-card--small .cd-card__body {
-    padding: var(--cd-card-padding-small);
-  }
-
-  .cd-card__actions {
-    display: flex;
-    align-items: center;
-    border-block-start: 1px solid var(--cd-card-header-border);
-  }
-  .cd-card__actions--no-line {
-    border-block-start: none;
-  }
-  .cd-card__actions :global(> *) {
-    flex: 1 1 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-block: var(--cd-spacing-base-tight);
-  }
-  .cd-card__actions :global(> * + *) {
-    border-inline-start: 1px solid var(--cd-card-header-border);
+  .cd-card__body-actions {
+    margin-block-start: var(--cd-card-margin);
+    padding-block-start: var(--cd-card-padding);
+    border-top: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
 
-  .cd-card__skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cd-spacing-base-tight);
+  .cd-card__footer {
+    padding: var(--cd-card-padding);
   }
-  .cd-card__skeleton-row {
-    display: block;
-    block-size: 0.9em;
-    border-radius: var(--cd-border-radius-small);
-    background: linear-gradient(
-      90deg,
-      var(--cd-color-fill-0) 25%,
-      var(--cd-color-fill-1) 37%,
-      var(--cd-color-fill-0) 63%
-    );
-    background-size: 400% 100%;
-    animation: cd-card-shimmer 1.4s ease infinite;
-  }
-  .cd-card__skeleton-row:last-child {
-    inline-size: 60%;
-  }
-
-  @keyframes cd-card-shimmer {
-    0% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0 50%;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-card,
-    .cd-card--clickable,
-    .cd-card__skeleton-row {
-      transition: none;
-      animation: none;
-    }
-    .cd-card--clickable:not(.cd-card--disabled):hover {
-      transform: none;
-    }
+  .cd-card__footer--bordered {
+    border-top: var(--cd-card-border-width) solid var(--cd-card-border-color);
   }
 </style>

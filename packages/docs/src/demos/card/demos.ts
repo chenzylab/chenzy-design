@@ -24,10 +24,16 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '最简单的卡片，包含标题与内容区。'),
-  entry('02-extra.svelte', '额外操作', '通过 extra 插槽在 header 右侧放置操作按钮或链接。'),
-  entry('03-shadow.svelte', '阴影效果', '支持 never / hover / always 三种阴影模式，hoverable 等效于 shadow="hover"。'),
-  entry('04-loading.svelte', '加载状态', '设置 loading 时 body 区展示骨架占位，loadingRows 控制骨架行数。'),
-  entry('05-actions.svelte', '底部操作', '通过 actions 插槽在卡片底部放置等分操作按钮。'),
-  entry('06-group.svelte', '卡片组', 'CardGroup 以网格排布多个 Card，spacing 统一间距（number 一致，[x,y] 分别指定水平/垂直）。'),
+  entry('01-basic.svelte', '基础卡片', '包含标题、headerExtraContent 与内容区的基础卡片。'),
+  entry('02-simple.svelte', '简洁卡片', '只设置内容区域，或配合 Card.Meta + bodyStyle 排布头像与操作。'),
+  entry('03-cover.svelte', '封面', '通过 cover 设置封面，出血铺满卡片顶部。'),
+  entry('04-border.svelte', '边线和外边框', 'bordered 控制外边框，headerLine / footerLine 控制头/尾分隔线。'),
+  entry('05-shadow.svelte', '阴影', 'shadows 设置阴影时机：hover（悬停显示）、always（始终显示）。'),
+  entry('06-meta.svelte', '更灵活的内容展示', '用 Card.Meta 承载 title / avatar / description，配合 footer 放置底部操作。'),
+  entry('07-inner.svelte', '内部卡片', '卡片内部可以嵌套其他卡片。'),
+  entry('08-loading.svelte', '内置预加载', 'loading 为 true 时内容区显示骨架占位。'),
+  entry('09-skeleton.svelte', '更丰富的预加载效果', '结合 Skeleton 自定义头部、封面等更丰富的预加载。'),
+  entry('10-actions.svelte', '卡片操作区', 'actions 位于内容区底部，以 12px 水平间距排布。'),
+  entry('11-group.svelte', '卡片组', 'CardGroup 中的卡片等间距排列，spacing 控制间距大小。'),
+  entry('12-grid.svelte', '网格型卡片组', "type='grid' 把卡片组设为网格型：卡片去圆角并以边框拼接。"),
 ];
