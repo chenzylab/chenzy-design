@@ -1,18 +1,14 @@
 /**
- * Component tokens for Skeleton（M5 Feedback）。全量对齐 Semi Design
- * （semi-foundation/skeleton/variables.scss 15 个 + animation.scss 2 个），
- * 并升级为带元数据的 TokenDef 结构以支持 DSM。
- * 值为 var() 引用我们的 alias / global token，或字面量。
+ * Component tokens for Skeleton（M5 Feedback）。严格镜像 Semi Design
+ * （semi-foundation/skeleton/variables.scss 15 个 + animation.scss 2 个 = 17 个），
+ * token 名与值逐条对应 Semi，无中间转接短名（Semi 没有的中间变量一律不引入）。
+ * 组件直接消费下列 --cd-* 长名 token（等价于 Semi 组件直接消费 $... 变量）。
+ * 值为 var() 引用我们的 alias / global token，或字面量，与 Semi 一致。
  *
- * 末尾保留 chenzy-design Skeleton 原子组件实际消费的补充 token（原名，Semi 无 / 命名差异；
- * 组件消费），值统一改读上面 Semi 对齐后的 token。
- *
- * 注：
- * - Semi 的 $height-skeleton_title = $height-control-small(24px)、
- *   $height-skeleton_button = $height-control-default(32px)，我们引 --cd-control-height-*。
- * - Semi 圆形头像用字面量 border-radius:50%（无 token），胶囊按钮我们无 Semi 对应；
- *   故 radius-pill 归为组件消费 token，引 --cd-border-radius-full。
- * - 图标弱色沿用 --cd-color-text-3（Semi 图片骨架无独立 token，此为组件消费）。
+ * 注（与 Semi 一一对应）：
+ * - $height-skeleton_title = $height-control-small(24px) → 引 --cd-control-height-small。
+ * - $height-skeleton_button = $height-control-default(32px) → 引 --cd-control-height-default。
+ * - 圆形头像 Semi 用字面量 border-radius:50%（无 token），故此处不设圆形圆角 token，组件内联 50%。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -45,16 +41,4 @@ export const skeletonTokens = {
   // —— 动画（animation.scss） ——
   'animation-duration-skeleton-highlight': { value: '1400ms', category: 'animation', label: '高亮动画时长', usage: '骨架屏高亮动画时长' },
   'animation-function-skeleton-highlight': { value: 'ease', category: 'animation', label: '高亮动画曲线', usage: '骨架屏高亮动画曲线' },
-
-  // —— chenzy-design Skeleton 原子组件实际消费的补充 token（原名，Semi 无 / 命名差异；组件消费） ——
-  'skeleton-color-bg': { value: 'var(--cd-color-skeleton-default-bg-default)', category: 'color', label: '骨架背景色', usage: '骨架块背景色（组件消费；引 color-skeleton-default-bg-default）' },
-  'skeleton-color-highlight': { value: 'var(--cd-color-skeleton-loading-gradient-bg-active)', category: 'color', label: '动画高亮色', usage: 'shimmer 高亮色（组件消费；引 color-skeleton-loading-gradient-bg-active）' },
-  'skeleton-radius': { value: 'var(--cd-radius-skeleton-item)', category: 'radius', label: '骨架圆角', usage: '骨架块圆角（组件消费；引 radius-skeleton-item）' },
-  'skeleton-radius-pill': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '胶囊圆角', usage: '圆形头像 / 胶囊按钮圆角（组件消费；Semi 圆形头像用 50%，此处统一 full）' },
-  'skeleton-gap': { value: 'var(--cd-spacing-skeleton-li-marginbottom)', category: 'spacing', label: '块间距', usage: '骨架块间距（组件消费；引 spacing-skeleton-li-marginbottom）' },
-  'skeleton-title-height': { value: 'var(--cd-height-skeleton-title)', category: 'height', label: '标题高度', usage: '标题骨架高度（组件消费；引 height-skeleton-title）' },
-  'skeleton-paragraph-height': { value: 'var(--cd-height-skeleton-li)', category: 'height', label: '段落行高', usage: '段落骨架行高（组件消费；引 height-skeleton-li）' },
-  'skeleton-anim-duration': { value: 'var(--cd-animation-duration-skeleton-highlight)', category: 'animation', label: '动画时长', usage: 'shimmer 动画时长（组件消费；引 animation-duration-skeleton-highlight）' },
-  'skeleton-anim-timing': { value: 'var(--cd-animation-function-skeleton-highlight)', category: 'animation', label: '动画曲线', usage: 'shimmer 动画曲线（组件消费；引 animation-function-skeleton-highlight）' },
-  'skeleton-image-icon-color': { value: 'var(--cd-color-text-3)', category: 'color', label: '图片图标色', usage: '图片骨架中心图标弱色（组件消费；Semi 无独立 token）' },
 } satisfies TokenGroup;

@@ -1,103 +1,26 @@
 <!--
-  SkeletonParagraph — 多行段落骨架块。
-  宽度规则：width 是数组按行取（越界用 100%）；是单值时全部行用该值；
-  未给 width 时末行收窄到 61%、其余 100%。
-  active 优先从 context 读（无 context 默认 false）。
+  SkeletonParagraph — 段落占位块，镜像 Semi Skeleton.Paragraph（item.tsx Paragraph）。
+  渲染 <ul> + rows 个 <li>；默认 rows=4。行宽/行高/行距 + 首行 100%、末行 60%
+  由 Skeleton.svelte 的 :global .cd-skeleton-paragraph 样式定义（对齐 Semi）。
 -->
 <script lang="ts">
-  import { getContext } from 'svelte';
-  import { SKELETON_KEY, type SkeletonContext } from './context.js';
-
   interface Props {
+    /** 段落占位行数，对齐 Semi，默认 4。 */
     rows?: number;
-    width?: string | number | Array<string | number>;
     class?: string;
     style?: string;
   }
 
-  let { rows = 3, width, class: className, style }: Props = $props();
-
-  const ctx = getContext<SkeletonContext | undefined>(SKELETON_KEY);
-  const active = $derived(ctx?.active ?? false);
-
-  function toLength(value: string | number): string {
-    return typeof value === 'number' ? `${value}px` : value;
-  }
-
-  const widths = $derived.by(() => {
-    const list: string[] = [];
-    for (let i = 0; i < rows; i++) {
-      const last = i === rows - 1;
-      if (Array.isArray(width)) {
-        const v = width[i];
-        list.push(v === undefined ? '100%' : toLength(v));
-      } else if (width === undefined) {
-        list.push(last ? '61%' : '100%');
-      } else {
-        list.push(toLength(width));
-      }
-    }
-    return list;
-  });
+  let { rows = 4, class: className, style }: Props = $props();
 
   const cls = $derived(
-    ['cd-skeleton__paragraph', className].filter(Boolean).join(' '),
+    ['cd-skeleton-paragraph', className].filter(Boolean).join(' '),
   );
+  const lines = $derived(Array.from({ length: Math.max(0, rows) }, (_, i) => i));
 </script>
 
-<ul class={cls} aria-hidden="true" style={style}>
-  {#each widths as w, i (i)}
-    <li
-      class="cd-skeleton__block cd-skeleton__paragraph-row"
-      class:cd-skeleton__block--active={active}
-      style="inline-size:{w}"
-    ></li>
+<ul class={cls} {style}>
+  {#each lines as i (i)}
+    <li></li>
   {/each}
 </ul>
-
-<style>
-  .cd-skeleton__paragraph {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cd-skeleton-gap);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .cd-skeleton__paragraph-row {
-    block-size: var(--cd-skeleton-paragraph-height);
-  }
-
-  .cd-skeleton__block {
-    background: var(--cd-skeleton-color-bg);
-    border-radius: var(--cd-skeleton-radius);
-  }
-  .cd-skeleton__block--active {
-    background-image: linear-gradient(
-      90deg,
-      var(--cd-skeleton-color-bg) 25%,
-      var(--cd-skeleton-color-highlight) 37%,
-      var(--cd-skeleton-color-bg) 63%
-    );
-    background-size: 400% 100%;
-    animation: -global-cd-skeleton-shimmer var(--cd-skeleton-anim-duration)
-      var(--cd-skeleton-anim-timing) infinite;
-  }
-
-  @keyframes -global-cd-skeleton-shimmer {
-    0% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0 50%;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cd-skeleton__block--active {
-      animation: none;
-      background-image: none;
-      background: var(--cd-skeleton-color-bg);
-    }
-  }
-</style>
