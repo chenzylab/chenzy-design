@@ -193,12 +193,11 @@ export const zh_CN: Locale = {
     selectableLabel: '可选择列表',
   },
   Calendar: {
-    today: '今天',
-    prev: '上一月',
-    next: '下一月',
-    moreCount: '还有 {count} 项',
     noEvents: '暂无日程',
     allDay: '全天',
+    AM: '上午{time}时',
+    PM: '下午{time}时',
+    remaining: '还有 {count} 项',
     selectedDateAnnounce: '已选择 {date}',
   },
   Tree: {

@@ -193,12 +193,11 @@ export const en_US: Locale = {
     selectableLabel: 'Selectable list',
   },
   Calendar: {
-    today: 'Today',
-    prev: 'Previous',
-    next: 'Next',
-    moreCount: '+{count} more',
     noEvents: 'No events',
-    allDay: 'All day',
+    allDay: 'All Day',
+    AM: '{time} AM',
+    PM: '{time} PM',
+    remaining: '{count} more',
     selectedDateAnnounce: 'Selected {date}',
   },
   Tree: {

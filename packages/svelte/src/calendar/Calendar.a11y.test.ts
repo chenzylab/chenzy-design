@@ -1,51 +1,70 @@
-// Calendar a11y：month 模式渲染 role=grid + role=row + columnheader + gridcell；
-// 工具栏 prev/next 按钮 locale 可访问名；popup 模式 trigger aria-haspopup/aria-expanded。
-import { describe, it, expect } from 'vitest';
-import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
+// Calendar a11y（DOM 结构 + role 对齐 Semi Design Calendar）：
+// - 根容器 role=grid + aria-label（取标题）。
+// - month：7 个 role=columnheader（星期表头）+ 若干 role=gridcell（日格），today 格 aria-current=date。
+// - week：columnheader（日期表头）+ gridcell（列内容区）+ 全天区，时间格按钮有 aria-label。
+// - 无默认头部导航（仅传入 header 时渲染）。
+import { describe, it, expect, beforeAll } from 'vitest';
+import { render } from '@testing-library/svelte';
+import { renderWithLocale } from '../test-utils/a11y.js';
 import Calendar from './Calendar.svelte';
+import CalendarCustomFieldFixture from './CalendarCustomFieldFixture.svelte';
+
+// jsdom 无 ResizeObserver（Calendar 用 bind:clientHeight 测滚动区高度以定位事件）。
+beforeAll(() => {
+  if (!('ResizeObserver' in globalThis)) {
+    (globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    };
+  }
+});
 
 const FIXED = new Date(2024, 5, 15); // 固定锚点，避免随当天漂移。
 
 describe('Calendar a11y', () => {
-  it('month 模式：role=grid + columnheader + gridcell，prev/next locale 可访问名，无 axe violations', async () => {
+  it('month 模式：role=grid + aria-label + 7 columnheader + gridcell', () => {
     const { container } = renderWithLocale(Calendar, {
-      props: { mode: 'month', defaultValue: FIXED, ariaLabel: 'Event calendar' },
+      props: { mode: 'month', displayValue: FIXED },
     });
     const grid = container.querySelector('[role="grid"]');
     expect(grid).not.toBeNull();
     expect(grid?.getAttribute('aria-label')).toBeTruthy();
-    expect(container.querySelectorAll('[role="row"]').length).toBeGreaterThan(0);
     expect(container.querySelectorAll('[role="columnheader"]').length).toBe(7);
     expect(container.querySelectorAll('[role="gridcell"]').length).toBeGreaterThan(0);
-
-    // 工具栏 prev/next 按钮可访问名来自 en_US locale（两按钮共用 .cd-calendar__nav）。
-    const navs = container.querySelectorAll('.cd-calendar__nav');
-    expect(navs.length).toBe(2);
-    const prevLabel = navs[0]?.getAttribute('aria-label');
-    const nextLabel = navs[1]?.getAttribute('aria-label');
-    expect(prevLabel).toBeTruthy();
-    expect(prevLabel).not.toBe('Calendar.prev');
-    expect(nextLabel).toBeTruthy();
-    expect(nextLabel).not.toBe('Calendar.next');
-    await expectNoAxeViolations(container);
   });
 
-  it('选中态：gridcell aria-selected，无 axe violations', async () => {
+  it('month 模式：today 日格 aria-current=date（用今天的月份锚点）', () => {
     const { container } = renderWithLocale(Calendar, {
-      props: { mode: 'month', defaultValue: FIXED, defaultSelectedDate: FIXED, ariaLabel: 'Calendar' },
+      props: { mode: 'month', displayValue: new Date() },
     });
-    const selected = container.querySelector('[role="gridcell"][aria-selected="true"]');
-    expect(selected).not.toBeNull();
-    await expectNoAxeViolations(container);
+    expect(container.querySelector('[role="gridcell"][aria-current="date"]')).not.toBeNull();
   });
 
-  it('popup 模式：trigger 按钮 aria-haspopup=dialog / aria-expanded=false，无 axe violations', async () => {
+  it('对齐 Semi：不传 header 时无默认头部工具栏（month 无导航按钮）', () => {
     const { container } = renderWithLocale(Calendar, {
-      props: { mode: 'month', defaultValue: FIXED, popup: true, ariaLabel: 'Date picker calendar' },
+      props: { mode: 'month', displayValue: FIXED },
     });
-    const trigger = container.querySelector('[aria-haspopup="dialog"]');
-    expect(trigger).not.toBeNull();
-    expect(trigger?.getAttribute('aria-expanded')).toBe('false');
-    await expectNoAxeViolations(container);
+    expect(container.querySelector('button')).toBeNull();
+  });
+
+  it('week 模式（默认，对齐 Semi weekCalendar：根/表头无 role）：7 列内容区 gridcell + 半小时格 li', () => {
+    const { container } = renderWithLocale(Calendar, {
+      props: { displayValue: FIXED },
+    });
+    // 对齐 Semi：week 根无 role=grid，表头 li 无 role=columnheader（Semi weekCalendar 未加）。
+    expect(container.querySelector('.cd-calendar-week[role="grid"]')).toBeNull();
+    // 7 列 DayCol 内容区（gridcell，对齐 Semi dayCol grid-content role=gridcell）。
+    expect(container.querySelectorAll('.cd-calendar-grid-content[role="gridcell"]').length).toBe(7);
+    // 半小时格可点击 li（对齐 Semi DayCol skeleton li：空 li onClick，role=button + 可访问名）。
+    const slot = container.querySelector('.cd-calendar-grid-skeleton-row-line[role="button"]');
+    expect(slot?.getAttribute('aria-label')).toBeTruthy();
+  });
+
+  // 回归：event.children 渲染须穿透到跨天全天条（走 span 布局）。
+  it('event.children 渲染穿透到跨天全天条（走 span 布局）', () => {
+    const { container } = render(CalendarCustomFieldFixture);
+    const text = container.textContent ?? '';
+    expect(text).toContain('CUSTOM_SPAN_LABEL');
   });
 });

@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
 import { renderKbdFixture, userEvent } from '../test-utils/kbd.js';
 import PopoverKbdFixture from './PopoverKbdFixture.svelte';
+import PopoverStopPropFixture from './PopoverStopPropFixture.svelte';
 
 function loc(el: Element) {
   return page.elementLocator(el);
@@ -38,5 +39,28 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
     await userEvent.keyboard('{Escape}');
     await expect.element(loc(trigger)).toHaveFocus();
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  // 回归：click 绑在触发器元素本身（对齐 Semi cloneElement 绑 children），
+  // 故 children 内部子元素 stopPropagation 不影响浮层打开（曾因 click 挂最外层靠冒泡而被截断）。
+  it('children 子元素 stopPropagation 时，点击仍打开浮层且不连带冒泡到外层', async () => {
+    const { baseElement } = renderKbdFixture(PopoverStopPropFixture);
+
+    const moreBtn = baseElement.querySelector('[data-testid="more"]') as HTMLElement;
+    expect(moreBtn).not.toBeNull();
+
+    const trigger = baseElement.querySelector('.cd-popover__trigger') as HTMLElement;
+
+    // 点击带 stopPropagation 的 children 子元素。
+    await userEvent.click(moreBtn);
+
+    // 浮层打开（trigger 上的 onClick 触发，未被子元素 stopPropagation 截断）。
+    await expect.poll(() => trigger.getAttribute('aria-expanded')).toBe('true');
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialog).not.toBeNull();
+
+    // stopPropagation 生效：外层容器未收到该 click（未误触发外层 onclick）。
+    const outerClicks = baseElement.querySelector('[data-testid="outer-clicks"]');
+    expect(outerClicks?.textContent).toBe('0');
   });
 });
