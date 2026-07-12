@@ -90,7 +90,6 @@ export const aliasLight = {
   'color-text-1': 'rgba(28, 31, 35, 0.8)',
   'color-text-2': 'rgba(28, 31, 35, 0.62)',
   'color-text-3': 'rgba(28, 31, 35, 0.35)',
-  'color-text-inverse': '#ffffff',
   // background — Semi 浅色 5 层全白，层级靠 border/fill 半透明 + 阴影
   'color-bg-0': '#ffffff',
   'color-bg-1': '#ffffff',
@@ -127,7 +126,6 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   'color-text-1': 'rgba(249, 249, 249, 0.8)',
   'color-text-2': 'rgba(249, 249, 249, 0.62)',
   'color-text-3': 'rgba(249, 249, 249, 0.35)',
-  'color-text-inverse': '#ffffff',
   // Rating 星色 — Semi 暗色 yellow-5 = rgb(253,222,67)
   'color-rating-icon-default': '#fdde43',
   // Highlight — Semi 暗色 white 字 + yellow-2 底（yellow-2 = #fdf398）

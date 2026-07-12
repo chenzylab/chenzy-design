@@ -4,9 +4,7 @@
  * 值为 var() 引用我们的 alias / global token，或字面量。
  * 末尾保留 chenzy-design Anchor 实际消费的补充 token（Semi 无：横排缩进等）。
  *
- * 注：Semi 的 var(--semi-color-white) 我们无对应 --cd-color-white alias，
- * 用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
- * Semi 的自引用（$color-anchor_title_active-text-hover: $color-anchor_title-text-hover）
+ * 注：Semi 的自引用（$color-anchor_title_active-text-hover: $color-anchor_title-text-hover）
  * 保留为 var() 自引用另一个 anchor token。
  */
 import type { TokenGroup } from './token-def.js';
@@ -16,7 +14,7 @@ export const anchorTokens = {
   'color-anchor-slide-default-bg-default': { value: 'var(--cd-color-border)', category: 'color', label: '滑轨背景色', usage: '滑轨背景颜色' },
   'color-anchor-slide-primary-bg-active': { value: 'var(--cd-color-primary)', category: 'color', label: '选中色-Primary', usage: '选中颜色 - Primary' },
   'color-anchor-slide-tertiary-bg-active': { value: 'var(--cd-color-tertiary)', category: 'color', label: '选中色-Tertiary', usage: '选中颜色 - Tietrary' },
-  'color-anchor-slide-muted-bg-active': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '选中色-Muted', usage: '选中颜色 - Muted' },
+  'color-anchor-slide-muted-bg-active': { value: 'var(--cd-color-white)', category: 'color', label: '选中色-Muted', usage: '选中颜色 - Muted' },
 
   // —— Color：标题文字 title ——
   'color-anchor-title-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '文字色-未选中', usage: '文字颜色 - 未选中' },

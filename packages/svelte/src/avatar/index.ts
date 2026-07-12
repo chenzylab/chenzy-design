@@ -7,4 +7,14 @@ export const Avatar: typeof Avatar_ & {
 
 export { AvatarGroup };
 export { meta as avatarMeta } from './meta.js';
-export type { AvatarShape, AvatarSizeEnum, AvatarGroupContext } from './context.js';
+export type {
+  AvatarShape,
+  AvatarSizeEnum,
+  AvatarColor,
+  AvatarOverlapFrom,
+  AvatarBorder,
+  AvatarTopSlot,
+  AvatarBottomSlot,
+  AvatarGroupContext,
+} from './context.js';
+export type { AvatarGroupItem } from './AvatarGroup.svelte';

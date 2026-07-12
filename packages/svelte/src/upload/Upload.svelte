@@ -1752,13 +1752,13 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
-    height: var(--cd-button-height-default);
-    padding-inline: var(--cd-button-padding-x);
+    height: var(--cd-height-button-default);
+    padding-inline: var(--cd-spacing-button-default-paddingleft);
     background: var(--cd-color-upload-pic-add-bg);
     color: var(--cd-color-upload-text);
     border: 1px solid var(--cd-color-upload-border);
-    border-radius: var(--cd-button-radius);
-    font-size: var(--cd-button-font-size);
+    border-radius: var(--cd-radius-button);
+    font-size: var(--cd-font-button-fontsize);
     cursor: pointer;
   }
   /* 裸变体：children 模式下清空默认按钮外观，交给 children 决定（如 Avatar 头像）。 */
@@ -1788,11 +1788,11 @@
   }
   /* 组件级 size：触发按钮高度/字号档（区别于 file.size 体积）。 */
   .cd-upload--small .cd-upload__trigger {
-    height: var(--cd-button-height-small);
+    height: var(--cd-height-button-small);
     font-size: var(--cd-font-size-small);
   }
   .cd-upload--large .cd-upload__trigger {
-    height: var(--cd-button-height-large);
+    height: var(--cd-height-button-large);
     font-size: var(--cd-font-size-header-6);
   }
   .cd-upload__trigger:disabled {

@@ -47,7 +47,7 @@ describe('SideBarAnnotation — 分组 / 卡片渲染', () => {
     const { container } = renderWithLocale(SideBarAnnotation, {
       props: { visible: true, info, activeKey: 'videos', motion: false },
     });
-    const headers = container.querySelectorAll('.cd-collapse__header');
+    const headers = container.querySelectorAll('.cd-collapse-header');
     // 两个分组 → 两个折叠头部。
     expect(headers.length).toBe(2);
     // 分组标题文本渲染。

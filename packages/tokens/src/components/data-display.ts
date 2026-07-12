@@ -83,37 +83,22 @@ export const dataDisplayTokens = {
   // ============================================================
   // chenzy-design 组件实际消费的补充 token（原名保留，值对齐 Semi；组件消费）
   // ============================================================
-  // —— Empty ——
-  'empty-image-color': { value: 'var(--cd-color-fill-1)', category: 'color', label: '插画颜色', usage: '空状态插画颜色（组件消费）' },
-  'empty-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '空状态标题颜色（组件消费）' },
-  'empty-title-weight': { value: 'var(--cd-font-empty-title-fontweight)', category: 'font', label: '标题字重', usage: '空状态标题字重（组件消费，对齐 Semi 600）' },
-  'empty-desc-color': { value: 'var(--cd-color-empty-description-text-default)', category: 'color', label: '描述颜色', usage: '空状态描述文字颜色（组件消费，对齐 Semi text-1）' },
-  'empty-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '间距', usage: '空状态各区块间距（组件消费）' },
+  // —— Empty 组件直接消费上方原始层 --cd-*-empty-*（对齐 Semi empty.scss，无中间变量）——
 
-  // —— Descriptions ——
-  'descriptions-label-color': { value: 'var(--cd-color-descriptions-key-text-default)', category: 'color', label: 'label 颜色', usage: 'label 文字颜色（组件消费）' },
-  'descriptions-value-color': { value: 'var(--cd-color-descriptions-value-text-default)', category: 'color', label: 'value 颜色', usage: 'value 文字颜色（组件消费）' },
-  'descriptions-value-weight-row': { value: 'var(--cd-font-descriptions-value-fontweight)', category: 'font', label: '双行 value 字重', usage: '双行显示 value 字重（组件消费）' },
-  'descriptions-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框颜色', usage: 'bordered 边框颜色（组件消费）' },
-  'descriptions-label-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'label 背景色', usage: 'bordered label 单元格背景（组件消费）' },
-  'descriptions-cell-padding': { value: 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', category: 'spacing', label: '单元格内边距', usage: 'bordered 单元格内边距（组件消费）' },
-  'descriptions-row-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '行间距', usage: '描述项行间距（组件消费，对齐 Semi item-paddingBottom）' },
+  // —— Descriptions 组件直接消费上方原始层 --cd-*-descriptions-*（对齐 Semi descriptions.scss，无中间变量）——
 
-  // —— Collapse ——
-  'collapse-header-padding': { value: 'var(--cd-spacing-collapse-header-padding)', category: 'spacing', label: '标题内边距', usage: 'header 内边距（组件消费，对齐 Semi 8）' },
-  'collapse-header-color': { value: 'var(--cd-color-collapse-header-text-default)', category: 'color', label: '标题颜色', usage: 'header 文字颜色（组件消费）' },
-  'collapse-header-weight': { value: 'var(--cd-font-collapse-header-fontweight)', category: 'font', label: '标题字重', usage: 'header 字重（组件消费，对齐 Semi bold）' },
-  'collapse-header-bg-hover': { value: 'var(--cd-color-collapse-header-bg-hover)', category: 'color', label: '标题悬浮背景', usage: 'header 悬浮背景（组件消费）' },
-  'collapse-header-bg-active': { value: 'var(--cd-color-collapse-header-bg-active)', category: 'color', label: '标题按下背景', usage: 'header 按下背景（组件消费）' },
-  'collapse-content-padding': { value: 'var(--cd-spacing-collapse-content-paddingtop) var(--cd-spacing-collapse-content-paddingright) var(--cd-spacing-collapse-content-paddingbottom)', category: 'spacing', label: '内容内边距', usage: 'content 内边距（组件消费，对齐 Semi top 4 / x 16 / bottom 8）' },
-  'collapse-content-color': { value: 'var(--cd-color-collapse-content-text-default)', category: 'color', label: '内容颜色', usage: 'content 文字颜色（组件消费）' },
-  'collapse-border': { value: 'var(--cd-color-collapse-item-border-default)', category: 'color', label: '边框颜色', usage: '边框 / 分割线颜色（组件消费）' },
-  'collapse-arrow-color': { value: 'var(--cd-color-collapse-header-icon-default)', category: 'color', label: '箭头颜色', usage: '展开箭头颜色（组件消费）' },
-  'collapse-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '动画时长', usage: '展开动画时长（组件消费）' },
+  // —— Collapse 组件直接消费上方原始层 --cd-*-collapse-*（对齐 Semi collapse.scss，无中间变量）——
 
-  // —— Collapsible（折叠容器原语，Collapse 底层能力；高度过渡由内容决定，仅需 motion token）——
-  'collapsible-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '折叠动画时长', usage: '折叠/展开过渡时长默认值（可被 duration prop 覆盖，组件消费）' },
-  'collapsible-motion-ease': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '折叠动画曲线', usage: '折叠/展开过渡曲线（组件消费）' },
+  // —— Collapsible（折叠容器原语，Collapse 底层能力）——
+  // 镜像 Semi collapsible/animation.scss：height / opacity 各一组 transition_function/duration/delay，
+  // 直接组件级值（无中间档位变量）。height 曲线用 CSS ease 等价 cubic-bezier(0.25,0.1,0.25,1)、
+  // opacity 曲线引用 easeIn、delay 引用 none，与 Semi 逐值对齐。
+  'transition-function-collapsible-height': { value: 'cubic-bezier(0.25, 0.1, 0.25, 1)', category: 'animation', label: '折叠高度过渡曲线', usage: '折叠-高度-过渡曲线（组件消费，对齐 Semi $transition_function-collapsible-height）' },
+  'transition-duration-collapsible-height': { value: '250ms', category: 'animation', label: '折叠高度动画时长', usage: '折叠-高度-动画持续时间默认值（可被 duration prop 覆盖，组件消费，对齐 Semi $transition_duration-collapsible-height）' },
+  'transition-delay-collapsible-height': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '折叠高度过渡延迟', usage: '折叠-高度-延迟时间（组件消费，对齐 Semi $transition_delay-collapsible-height）' },
+  'transition-function-collapsible-opacity': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '折叠透明度过渡曲线', usage: '折叠-透明度-过渡曲线（组件消费，对齐 Semi $transition_function-collapsible-opacity）' },
+  'transition-duration-collapsible-opacity': { value: '250ms', category: 'animation', label: '折叠透明度动画时长', usage: '折叠-透明度-动画持续时间（组件消费，对齐 Semi $transition_duration-collapsible-opacity）' },
+  'transition-delay-collapsible-opacity': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '折叠透明度过渡延迟', usage: '折叠-透明度-延迟时间（组件消费，对齐 Semi $transition_delay-collapsible-opacity）' },
 
   // —— Timeline ——
   'timeline-dot-size': { value: '9px', category: 'width', label: '圆点尺寸', usage: '圆点尺寸（组件消费，对齐 Semi 9px）' },

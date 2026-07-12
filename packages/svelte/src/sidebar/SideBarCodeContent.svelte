@@ -67,7 +67,14 @@
   const expandLabel = $derived(loc().t('SideBar.expand'));
 
   function handleExpand(e: MouseEvent, code: CodeItemProps): void {
+    // 展开按钮在 head 内：阻止冒泡到 Collapse 头部，避免误触折叠（对齐 Semi FAQ 建议）。
+    e.stopPropagation();
     onExpand?.(e, code, 'code');
+  }
+
+  // 新 Collapse onChange 为 (activeKey, e)；本组件对外仅暴露 key 列表。
+  function handleChange(keys: string[]): void {
+    onChange?.(keys);
   }
 
   const rootCls = $derived(
@@ -77,30 +84,12 @@
 
 <div class={rootCls} {style}>
   <Collapse
+    keepDOM
     {...activeKey !== undefined ? { activeKey } : {}}
-    {...onChange !== undefined ? { onChange } : {}}
+    {...onChange !== undefined ? { onChange: handleChange } : {}}
   >
     {#each codes as code (code.key)}
-      {#snippet expandBtn()}
-        <button
-          type="button"
-          class="cd-sidebar-code-content__expand"
-          aria-label={expandLabel}
-          title={expandLabel}
-          onclick={(e) => handleExpand(e, code)}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      {/snippet}
-      <Collapse.Panel itemKey={code.key} extra={expandBtn}>
+      <Collapse.Panel itemKey={code.key}>
         {#snippet head()}
           <span class="cd-sidebar-code-content__head">
             <span class="cd-sidebar-code-content__head-icon" aria-hidden="true">
@@ -115,6 +104,24 @@
               </svg>
             </span>
             <span class="cd-sidebar-code-content__head-text">{code.name ?? code.key}</span>
+            <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
+            <button
+              type="button"
+              class="cd-sidebar-code-content__expand"
+              aria-label={expandLabel}
+              title={expandLabel}
+              onclick={(e) => handleExpand(e, code)}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-5 5M2.5 13.5l5-5"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           </span>
         {/snippet}
         <div class="cd-sidebar-code-content__body">
@@ -140,10 +147,15 @@
 
 <style>
   .cd-sidebar-code-content__head {
-    display: inline-flex;
+    display: flex;
+    flex: 1 1 auto;
     align-items: center;
     gap: var(--cd-sidebar-code-head-gap);
     min-inline-size: 0;
+  }
+  /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
+  .cd-sidebar-code-content__expand {
+    margin-inline-start: auto;
   }
   .cd-sidebar-code-content__head-icon {
     display: inline-flex;

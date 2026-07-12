@@ -6,17 +6,17 @@ export const meta = {
   name: 'Tabs',
   category: 'navigation',
   description:
-    '标签页，在同一区域内组织并切换多组对等内容。支持 line/card/button 类型、数据驱动 tabList 或纯声明式 <Tabs.Pane> 自动收集、renderTabBar 自定义标签栏、roving tabindex 键盘导航、可关闭标签与溢出滚动/下拉收纳（overflow）。',
+    '标签页，在同一区域内组织并切换多组对等内容。全量对齐 Semi Design：支持 line/card/button/slash 类型、top/left 位置、small/medium/large 尺寸、数据驱动 tabList 或纯声明式 <Tabs.Pane> 自动收集、renderTabBar 自定义标签栏、roving tabindex 键盘导航、可关闭标签、more 收纳与 collapsible 滚动折叠（含 auto 自动检测）。',
   props: [
     { name: 'value', type: 'string|number', default: 'undefined', desc: '受控选中标签 key' },
     { name: 'defaultValue', type: 'string|number', default: '首个标签', desc: '非受控初始 key' },
-    { name: 'type', type: "'line'|'card'|'button'", default: 'line', desc: '视觉风格（button=分段按钮组）' },
-    { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
+    { name: 'type', type: "'line'|'card'|'button'|'slash'", default: 'line', desc: '视觉风格（button=分段按钮组，slash=斜线式仅横向）' },
+    { name: 'size', type: "'small'|'medium'|'large'", default: 'large', desc: '尺寸档（对齐 Semi）' },
     {
       name: 'tabPosition',
-      type: "'top'|'bottom'|'left'|'right'",
+      type: "'top'|'left'",
       default: 'top',
-      desc: '标签栏位置',
+      desc: '标签栏位置：top 水平 / left 垂直（对齐 Semi；slash 仅 top）',
     },
     { name: 'lazy', type: 'boolean', default: 'false', desc: '首次激活后才挂载面板' },
     { name: 'keepDOM', type: 'boolean', default: 'false', desc: '激活过的面板保留 DOM' },
@@ -43,43 +43,43 @@ export const meta = {
       name: 'overflow',
       type: "'scroll'|'dropdown'",
       default: 'scroll',
-      desc: '横向溢出处理：scroll 前/后滚动箭头；dropdown 收纳进末尾「更多」下拉（仅 top/bottom 生效，纵向始终滚动）',
+      desc: 'dropdown 等价于传 more：把溢出标签收进末尾「更多」下拉（仅横向生效）',
     },
     {
       name: 'collapsible',
-      type: 'boolean',
+      type: "boolean | 'auto'",
       default: 'false',
-      desc: 'line 风格横向溢出时启用折叠收纳（便捷开关，等价 overflow=dropdown：放不下的标签进末尾「更多」下拉，仅 top/bottom 生效）',
+      desc: '滚动折叠（对齐 Semi）：true 溢出时显示前/后切换箭头；auto 自动检测溢出再决定是否折叠（仅横向生效）',
     },
     {
       name: 'more',
       type: "number | { count?: number; render?: Snippet; dropdownProps?: object }",
       default: 'undefined',
-      desc: '溢出折叠配置：数字简写或对象形式，仅 dropdown 模式有效',
+      desc: '把末尾若干标签收进「更多」下拉（对齐 Semi）：数字简写或对象形式（count/render/dropdownProps）',
     },
     {
       name: 'arrowPosition',
       type: "'start'|'end'|'both'",
       default: 'both',
-      desc: 'scroll 模式中前/后箭头位置',
+      desc: 'collapsible 折叠模式中前/后切换箭头位置',
     },
     {
       name: 'renderArrow',
       type: "Snippet<[{ type: 'start'|'end'; onClick: () => void }]>",
       default: 'undefined',
-      desc: '自定义前/后滚动箭头',
+      desc: 'collapsible 折叠模式下自定义前/后切换箭头',
     },
     {
       name: 'showRestInDropdown',
       type: 'boolean',
       default: 'true',
-      desc: 'dropdown 折叠模式是否在下拉中展示收起 tabs',
+      desc: 'more 收纳模式是否在下拉中展示收起 tabs',
     },
     {
       name: 'dropdownProps',
-      type: 'object',
+      type: '{ start?: object; end?: object }',
       default: 'undefined',
-      desc: '透传给「更多」Dropdown 组件的 props',
+      desc: '折叠模式下透传下拉参数（对齐 Semi）：start=前箭头下拉，end=末尾「更多」下拉',
     },
     {
       name: 'onVisibleTabsChange',
@@ -166,25 +166,41 @@ export const meta = {
       'preventScroll=true 时 Tab 聚焦不触发页面滚动',
     ],
   },
+  // 组件实际消费的 token（名值一一对齐 Semi tabs/variables.scss；见 tokens/src/components/tabs.ts）。
   tokens: [
-    // 全量对齐 Semi tabs/variables.scss（121 变量）的语义层：
-    '--cd-color-tabs-tab-line-*', // 线条式各状态文本/背景/标示线
-    '--cd-color-tabs-tab-card-*', // 卡片式各状态
-    '--cd-color-tabs-tab-button-*', // 按钮式各状态
-    '--cd-color-tabs-tab-icon-*',
-    '--cd-color-tabs-tab-pane-arrow-*', // 滚动折叠箭头
-    '--cd-font-tabs-*', // 字重 / 字号 / 行高
-    '--cd-width-tabs-*',
-    '--cd-height-tabs-*',
-    '--cd-spacing-tabs-*', // 各类型内/外边距 + 内容区
-    '--cd-radius-tabs-*',
-    // 组件实际消费的老 token（值对齐 Semi）：
-    '--cd-tabs-tab-color', '--cd-tabs-tab-color-active', '--cd-tabs-tab-color-disabled',
-    '--cd-tabs-tab-padding', '--cd-tabs-tab-font-size',
-    '--cd-tabs-ink-color', '--cd-tabs-ink-height', '--cd-tabs-bar-border',
-    '--cd-tabs-card-bg', '--cd-tabs-card-bg-active', '--cd-tabs-card-radius',
-    '--cd-tabs-button-bg', '--cd-tabs-button-bg-hover', '--cd-tabs-button-bg-active',
-    '--cd-tabs-button-color-active', '--cd-tabs-button-gap', '--cd-tabs-button-pad',
-    '--cd-focus-ring', '--cd-border-radius-small', '--cd-spacing-*',
+    // —— 颜色 ——
+    '--cd-color-tabs-tab-line-border-default', '--cd-color-tabs-tab-line-border-hover', '--cd-color-tabs-tab-line-border-active',
+    '--cd-color-tabs-tab-line-text-default', '--cd-color-tabs-tab-line-text-hover', '--cd-color-tabs-tab-line-text-active',
+    '--cd-color-tabs-tab-line-selected-text-default', '--cd-color-tabs-tab-line-selected-indicator-default',
+    '--cd-color-tabs-tab-line-vertical-selected-bg-default', '--cd-color-tabs-tab-line-vertical-bg-hover', '--cd-color-tabs-tab-line-vertical-bg-active',
+    '--cd-color-tabs-tab-line-disabled-text-default',
+    '--cd-color-tabs-tab-card-border-default', '--cd-color-tabs-tab-card-selected-indicator-default',
+    '--cd-color-tabs-tab-card-bg-hover', '--cd-color-tabs-tab-card-bg-active', '--cd-color-tabs-tab-card-selected-bg-default',
+    '--cd-color-tabs-tab-button-text-default', '--cd-color-tabs-tab-button-bg-hover', '--cd-color-tabs-tab-button-bg-active',
+    '--cd-color-tabs-tab-button-selected-bg-default', '--cd-color-tabs-tab-button-selected-text-default',
+    '--cd-color-tabs-tab-icon-default', '--cd-color-tabs-tab-icon-hover', '--cd-color-tabs-tab-icon-active', '--cd-color-tabs-tab-selected-icon-default',
+    '--cd-color-tabs-tab-pane-text-default', '--cd-color-tabs-tab-slash-line',
+    '--cd-color-tabs-tab-pane-arrow-text-default', '--cd-color-tabs-tab-pane-arrow-bg-hover', '--cd-color-tabs-tab-pane-arrow-bg-active', '--cd-color-tabs-tab-pane-arrow-disabled-text-default',
+    // —— 字重 / 字号 ——
+    '--cd-font-tabs-tab-fontweight', '--cd-font-tabs-tab-active-fontweight', '--cd-font-tabs-tab-fontsize',
+    // —— 线宽 / 斜线尺寸 ——
+    '--cd-width-tabs-bar-line-border', '--cd-width-tabs-bar-line-tab-border', '--cd-width-tabs-bar-card-border',
+    '--cd-width-tabs-tab-slash-line', '--cd-height-tabs-tab-slash-line',
+    // —— 间距（图标 / 箭头 / 附加 / 各类型内外边距 / 内容区）——
+    '--cd-spacing-tabs-tab-icon-marginright', '--cd-spacing-tabs-tab-pane-arrow',
+    '--cd-spacing-tabs-overflow-icon-marginleft', '--cd-spacing-tabs-overflow-icon-marginright',
+    '--cd-spacing-tabs-bar-extra-paddingx', '--cd-spacing-tabs-bar-extra-paddingy',
+    '--cd-spacing-tabs-bar-line-tab-paddingtop', '--cd-spacing-tabs-bar-line-tab-paddingx', '--cd-spacing-tabs-bar-line-tab-paddingbottom', '--cd-spacing-tabs-bar-line-tab-marginright',
+    '--cd-spacing-tabs-bar-line-tab-small-paddingtop', '--cd-spacing-tabs-bar-line-tab-small-paddingbottom',
+    '--cd-spacing-tabs-bar-line-tab-medium-paddingtop', '--cd-spacing-tabs-bar-line-tab-medium-paddingbottom',
+    '--cd-spacing-tabs-bar-line-tab-left-padding', '--cd-spacing-tabs-bar-line-tab-left-small-padding', '--cd-spacing-tabs-bar-line-tab-left-medium-padding',
+    '--cd-spacing-tabs-bar-slash-tab-paddingy', '--cd-spacing-tabs-bar-slash-tab-paddingx', '--cd-spacing-tabs-bar-slash-marginright', '--cd-spacing-tabs-bar-slash-line-marginleft', '--cd-spacing-tabs-bar-slash-line-marginy',
+    '--cd-spacing-tabs-content-paddingy', '--cd-spacing-tabs-content-paddingx', '--cd-spacing-tabs-content-left-paddingx',
+    '--cd-spacing-tabs-bar-card-tab-marginright', '--cd-spacing-tabs-bar-card-tab-paddingy', '--cd-spacing-tabs-bar-card-tab-paddingx', '--cd-spacing-tabs-bar-card-tab-active-paddingbottom', '--cd-spacing-tabs-bar-card-tab-left-marginbottom',
+    '--cd-spacing-tabs-bar-button-tab-marginright', '--cd-spacing-tabs-bar-button-tab-marginbottom', '--cd-spacing-tabs-bar-button-tab-paddingy', '--cd-spacing-tabs-bar-button-tab-paddingx',
+    // —— 圆角 ——
+    '--cd-radius-tabs-tab-card', '--cd-radius-tabs-tab-card-left', '--cd-radius-tabs-tab-button',
+    // —— 全局别名 ——
+    '--cd-focus-ring', '--cd-border-radius-small',
   ],
 } as const;

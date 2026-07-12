@@ -98,13 +98,25 @@ const components = [
   ['tree-select', '{ TreeSelect }', '12 KB'],
   ['upload', '{ Upload }', '13 KB'],
   // navigation
-  ['anchor', '{ Anchor }', '3.5 KB'],
-  ['breadcrumb', '{ BreadcrumbItem }', '4 KB'],
+  ['anchor', '{ Anchor }', '4.5 KB'],
+  // 4 KB → 4.8 KB：全面对齐 Semi 引入的真实新功能（ellipsisPos:'middle' JS 二分截断 +
+  // ResizeObserver、IconMore 折叠图标、showTooltip 对象化、链接三态、字符串 route 归一化）。
+  // 实测 baseline 3460 B → 4620 B，纯功能增长；同类导航组件 anchor 4.5 / pagination 3.8 / tabs 7.3。
+  ['breadcrumb', '{ BreadcrumbItem }', '4.8 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   ['menu', '{ Menu }', '8.4 KB'],
-  ['pagination', '{ Pagination }', '3.8 KB'],
-  ['steps', '{ Steps }', '3.5 KB'],
-  ['tabs', '{ TabPane }', '7.3 KB'],
+  // 3.46 KB → 4.82 KB：全面对齐 Semi 引入的真实新功能（hoverShowPageSelect Popover 集成、
+  // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
+  // 换页重算策略、showTotal 页数化）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / tabs 7.3。
+  ['pagination', '{ Pagination }', '5.1 KB'],
+  // 3.46 KB → 4.18 KB：全面对齐 Semi 引入的真实新功能（fill/basic/nav 三型完整样式与
+  // 各自配色语义、finish/error/warning 三个内联状态 SVG 图标、每步独立 icon/status、
+  // hasLine 连接线开关）。纯功能增长；同类导航组件 anchor 4.5 / breadcrumb 4.8 / pagination 5.1 / tabs 7.3。
+  ['steps', '{ Steps }', '4.5 KB'],
+  // 7.3 KB → 8 KB：全面对齐 Semi 引入的真实新功能（slash 型、left 垂直位置、
+  // collapsible 滚动折叠含 auto 自动溢出检测、more 收纳下拉、closable 可关闭、
+  // renderArrow/renderTabBar 自定义、动态增删）。实测 baseline 7.75 KB，纯功能增长。
+  ['tabs', '{ TabPane }', '8 KB'],
   // other
   ['back-top', '{ BackTop }', '2.65 KB'],
   ['hotkeys', '{ HotKeys }', '1.85 KB'],
@@ -115,7 +127,9 @@ const components = [
   ['resizable', '{ Resizable, ResizeGroup, ResizeItem, ResizeHandler }', '6 KB'],
   ['drag-move', '{ DragMove }', '2 KB'],
   // show
-  ['avatar', '{ AvatarGroup }', '4.95 KB'],
+  // 全面对齐 Semi 后功能显著增长（7 档尺寸+字号、topSlot 渐变 SVG、bottomSlot 圆/方多档、
+  // contentMotion 动效、JS scale 自适应、group 各档 border/margin），按实测 6.7 KB +8% 校准。
+  ['avatar', '{ AvatarGroup }', '7.3 KB'],
   ['badge', '{ Badge }', '2.5 KB'],
   ['calendar', '{ Calendar }', '9 KB'],
   ['card', '{ Card, CardGroup }', '3.7 KB'],
@@ -125,7 +139,7 @@ const components = [
   ['descriptions', '{ DescriptionsItem }', '2.8 KB'],
   ['empty', '{ Empty }', '2.55 KB'],
   ['highlight', '{ Highlight }', '1.45 KB'],
-  ['image', '{ ImagePreviewGroup }', '6 KB'],
+  ['image', '{ Image, ImagePreview }', '13 KB'],
   ['list', '{ ListItem, ListMeta }', '8.95 KB'],
   ['overflow-list', '{ OverflowList }', '3.2 KB'],
   ['popover', '{ Popover }', '4.75 KB'],
@@ -134,7 +148,7 @@ const components = [
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   ['tooltip', '{ Tooltip }', '3.5 KB'],
-  ['tree', '{ Tree }', '9.8 KB'],
+  ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
   // show · 富媒体（P0-P2）—— 预算按实测 +~15% 校准（见各 spec §9）。

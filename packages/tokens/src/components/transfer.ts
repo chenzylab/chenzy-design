@@ -4,9 +4,6 @@
  * 带元数据的 TokenDef 结构以支持 DSM。值为 var() 引用我们的 alias / global token，或字面量。
  * 末尾保留 chenzy-design Transfer 实际消费的补充 token（Semi 无 / 命名差异；组件消费），
  * 值对齐 Semi。
- *
- * 注：Semi 的 var(--semi-color-white) 我们无对应 --cd-color-white alias，
- * 用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  */
 import type { TokenGroup } from './token-def.js';
 

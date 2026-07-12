@@ -31,7 +31,6 @@ import { navigationTokens } from './navigation.js';
 import { breadcrumbTokens } from './breadcrumb.js';
 import { tabsTokens } from './tabs.js';
 import { menuTokens } from './menu.js';
-import { navTokens } from './nav.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { popoverTokens } from './popover.js';
@@ -40,7 +39,9 @@ import { listTokens } from './list.js';
 import { virtualTokens } from './virtual.js';
 import { tableTokens } from './table.js';
 import { calendarTokens } from './calendar.js';
+import { carouselTokens } from './carousel.js';
 import { cropperTokens } from './cropper.js';
+import { imageTokens } from './image.js';
 import { scrollListTokens } from './scroll-list.js';
 import { overflowListTokens } from './overflow-list.js';
 import { spinTokens } from './spin.js';
@@ -60,6 +61,7 @@ import { anchorTokens } from './anchor.js';
 import { dropdownTokens } from './dropdown.js';
 import { paginationTokens } from './pagination.js';
 import { codeHighlightTokens } from './code-highlight.js';
+import { highlightTokens } from './highlight.js';
 import { markdownRenderTokens } from './markdown-render.js';
 import { videoPlayerTokens } from './video-player.js';
 import { audioPlayerTokens } from './audio-player.js';
@@ -107,7 +109,6 @@ export const componentTokens = {
   ...breadcrumbTokens,
   ...tabsTokens,
   ...menuTokens,
-  ...navTokens,
   ...displayTokens,
   ...tooltipTokens,
   ...popoverTokens,
@@ -116,7 +117,9 @@ export const componentTokens = {
   ...virtualTokens,
   ...tableTokens,
   ...calendarTokens,
+  ...carouselTokens,
   ...cropperTokens,
+  ...imageTokens,
   ...scrollListTokens,
   ...overflowListTokens,
   ...spinTokens,
@@ -136,6 +139,7 @@ export const componentTokens = {
   ...dropdownTokens,
   ...paginationTokens,
   ...codeHighlightTokens,
+  ...highlightTokens,
   ...markdownRenderTokens,
   ...videoPlayerTokens,
   ...audioPlayerTokens,

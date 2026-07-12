@@ -1,5 +1,5 @@
 /**
- * Component tokens for List / Image / Highlight（M4 Show）。
+ * Component tokens for List / Image（M4 Show）。
  *
  * List 部分全量对齐 Semi Design（semi-foundation/list/variables.scss 16 个），
  * 并升级为带元数据的 TokenDef 结构以支持 DSM。值为 var() 引用我们的 alias / global
@@ -16,7 +16,8 @@
  *    $spacing-super-loose → var(--cd-spacing-super-loose)（40px）。0px 字面量保留。
  *  - 组件 token 名（list-* / color-list-* / spacing-list-* …）与 alias / global 层
  *    不同名，var() 无自引用死循环。
- *  - Image / Highlight token 供 image/ 与 highlight/ 组件消费，保持原样不变。
+ *  - Image token 供 image/ 组件消费，保持原样不变。
+ *    （Highlight token 已迁出至 components/highlight.ts，由 highlight/ 组件独立消费。）
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -56,13 +57,8 @@ export const listTokens = {
   'image-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '图片圆角', usage: 'Semi $radius-image = small（原 medium）' },
   'image-placeholder-color': { value: 'var(--cd-color-text-3)', category: 'color', label: '占位符颜色', usage: '图片占位/错误文字颜色' },
   'image-mask-bg': { value: 'rgba(0, 0, 0, 0.5)', category: 'color', label: '遮罩背景色', usage: '图片操作遮罩背景' },
-  'image-mask-color': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '遮罩文字色', usage: '图片操作遮罩文字颜色' },
+  'image-mask-color': { value: 'var(--cd-color-white)', category: 'color', label: '遮罩文字色', usage: '图片操作遮罩文字颜色' },
   'image-mask-hover-bg': { value: 'rgba(255, 255, 255, 0.15)', category: 'color', label: '遮罩控件 hover 底', usage: '预览工具条/切换按钮 hover 时的浅色高亮叠层（浮在深色遮罩上）' },
   'image-preview-overlay': { value: 'rgba(0, 0, 0, 0.7)', category: 'color', label: '预览遮罩色', usage: '预览层背景遮罩' },
   'image-preview-z': { value: 'var(--cd-z-modal)', category: 'other', label: '预览层级', usage: '预览层 z-index' },
-
-  // Highlight（镜像 Semi：黄底黑字 + 字重 600）
-  'highlight-bg': { value: 'var(--cd-color-highlight-bg)', category: 'color', label: '高亮背景色', usage: '高亮命中文字背景' },
-  'highlight-color': { value: 'var(--cd-color-highlight)', category: 'color', label: '高亮文字色', usage: '高亮命中文字颜色' },
-  'highlight-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '高亮字重', usage: '高亮命中文字字重' },
 } satisfies TokenGroup;

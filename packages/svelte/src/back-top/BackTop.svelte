@@ -57,8 +57,8 @@
     announceOnArrive = false,
     visibilityHeight = 400,
     duration = 450,
-    bottom = 40,
-    right = 40,
+    bottom = 50,
+    right = 100,
     size = 'default',
     ariaLabel,
     icon,
@@ -243,15 +243,19 @@
 <style>
   .cd-backtop {
     position: fixed;
-    inset-block-end: var(--cd-backtop-offset-bottom, 40px);
-    inset-inline-end: var(--cd-backtop-offset-inline-end, 40px);
+    box-sizing: border-box;
+    /* 距底 / inline-end 偏移对齐 Semi：$spacing-backtop-bottom 50px / $spacing-backtop-right 100px。 */
+    inset-block-end: var(--cd-backtop-offset-bottom, 50px);
+    inset-inline-end: var(--cd-backtop-offset-inline-end, 100px);
     inline-size: var(--cd-backtop-size);
     block-size: var(--cd-backtop-size);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    text-align: center;
     padding: 0;
-    border: 1px solid transparent;
+    border: 1px solid var(--cd-backtop-border);
     border-radius: var(--cd-backtop-radius);
     background: var(--cd-backtop-bg);
     color: var(--cd-backtop-color);

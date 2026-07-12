@@ -1,291 +1,281 @@
 <!--
-  Descriptions — see specs/components/show/Descriptions.spec.md
-  基础子集: data 数据驱动、inline/row 布局、column 数字、bordered、colon、
-    horizontal/vertical direction、span 跨列。
-  两种用法择一：
-    - 数据驱动：传 data 数组（向后兼容，行为不变）。
-    - 声明式：不传 data，改在 children 内写 <Descriptions.Item>（可放富内容）。
-  布局复用：父子渲染同一套 .cd-descriptions__item 结构。父用 CSS grid（grid-template-columns
-    repeat(column)），子项靠 grid-column: span N 自排——声明式下父级无需预先知道 children，
-    Item 经 context 读取 column 做 span 钳制即可自动换行/跨列。故后代样式用 :global 包裹，
-    既覆盖本组件 data 渲染的 item，也覆盖 <Descriptions.Item> 跨组件边界渲染的 item。
-  响应式 column：column 除 number 外支持断点对象 { xs?, sm?, md?, lg?, xl?, xxl? }，
-    按视口宽度选列数——复用 grid 的 useBreakpoint（resize 监听 + cleanup，红线 #3）+ core
-    resolveResponsiveValue（纯函数 mobile-first 级联，红线 #2）。这里用视口断点而非容器查询：
-    避免上批 Breadcrumb 容器查询「只作用后代、container-type 层级错配」的坑。
-  align：内容（value）水平对齐 left/center/right，纯 CSS class（红线 #2）。
-  justify：每个 item 内 label 与 value 的排布对齐 start/center/end/between，纯 CSS class。
+  Descriptions — 镜像 Semi descriptions/index.tsx。
+  DOM：<div.cd-descriptions[modifiers]><table><tbody> … </tbody></table></div>
+  两种数据源（择一）：
+    - data 数组（{ key, value, hidden, span, keyStyle }，value 可为函数）。
+    - 声明式 children（<Descriptions.Item>）。
+  布局：
+    - vertical（默认）：每项自成一行 <tr>（由 Item 渲染）。
+    - horizontal：data 模式下按 getHorizontalList 分组，每组一个 <tr>，column 控每行总列数。
+      （对齐 Semi：children 模式的 horizontal 不做分组，Item 各自渲染。）
+  align：center（默认）/justify/left/plain —— 纯 class，映射 Semi 同名 modifier；row=true 时 align 失效。
+  row（双行）：small/medium/large（默认 medium）—— tbody flex-wrap，key/value 各占一行、value 加粗放大。
+  样式与 token 全量镜像 semi-foundation/descriptions/descriptions.scss + variables.scss，
+    直接消费原始层 --cd-*-descriptions-*（无中间变量）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import type { DescriptionData } from './types.js';
+  import Item from './DescriptionsItem.svelte';
   import {
-    resolveActiveBreakpoint,
-    resolveResponsiveValue,
-    type Breakpoint,
-  } from '@chenzy-design/core';
-  import type { DescriptionItem } from './types.js';
-  import { setDescriptionsContext } from './context.js';
+    setDescriptionsContext,
+    type DescriptionsAlign,
+    type DescriptionsLayout,
+  } from './context.js';
 
-  type Layout = 'inline' | 'row';
-  type Direction = 'horizontal' | 'vertical';
-  type Size = 'small' | 'default' | 'large';
-  type Align = 'left' | 'center' | 'right';
-  type Justify = 'start' | 'center' | 'end' | 'between';
-  /** 列数：number 或断点对象（按视口宽自动选列，mobile-first 向下级联）。 */
-  type ColumnProp = number | Partial<Record<Breakpoint, number>>;
+  type Size = 'small' | 'medium' | 'large';
 
   interface Props {
-    data?: DescriptionItem[];
-    layout?: Layout;
-    direction?: Direction;
-    /** 列数；可传断点对象 { xs?, sm?, md?, lg?, xl?, xxl? } 按视口宽响应。 */
-    column?: ColumnProp;
-    size?: Size;
-    bordered?: boolean;
-    colon?: boolean;
-    /** 内容（value）水平对齐。 */
-    align?: Align;
-    /** 每个 item 内 label 与 value 的排布对齐。 */
-    justify?: Justify;
-    title?: string;
-    emptyText?: string;
-    /** 双行显示：label 与 value 各占一行（同 Semi Design row prop） */
+    /** 对齐方式（row=true 时失效）。 */
+    align?: DescriptionsAlign;
+    /** 是否双行显示。 */
     row?: boolean;
+    /** 双行显示时的大小。 */
+    size?: Size;
+    /** 列表数据（不传时渲染 children 内的 <Descriptions.Item>）。 */
+    data?: DescriptionData[];
+    /** 布局模式。 */
+    layout?: DescriptionsLayout;
+    /** horizontal 布局下每行的总列数。 */
+    column?: number;
     class?: string;
-    /** 声明式用法：内嵌 <Descriptions.Item> 列表（不传 data 时生效）。 */
+    style?: string;
+    /** 声明式用法：内嵌 <Descriptions.Item>。 */
     children?: Snippet;
   }
 
   let {
-    data = [],
-    layout = 'inline',
-    direction = 'horizontal',
-    column = 3,
-    size = 'default',
-    bordered = false,
-    colon = true,
-    align = 'left',
-    justify = 'start',
-    title,
-    emptyText = '-',
+    align = 'center',
     row = false,
+    size = 'medium',
+    data = [],
+    layout = 'vertical',
+    column = 3,
     class: className = '',
+    style,
     children,
   }: Props = $props();
 
-  // 声明式优先级低于 data：仅在未传 data 时渲染 children。
-  const useDeclarative = $derived(data.length === 0 && children != null);
-
-  const SUPPORTS_DOM = typeof window !== 'undefined';
-
-  // 当前视口断点：resize 监听（rAF 节流）+ cleanup（红线 #3）。仅 column 为对象时才订阅，
-  // 避免固定列数场景下无谓监听。SSR 安全：先以真实/最小宽度落定再校正。
-  let activeBp = $state<Breakpoint>(
-    SUPPORTS_DOM ? resolveActiveBreakpoint(window.innerWidth) : 'xs',
-  );
-  const responsive = $derived(typeof column === 'object' && column !== null);
-
-  $effect(() => {
-    if (!SUPPORTS_DOM || !responsive) return;
-    let frame = 0;
-    const measure = (): void => {
-      frame = 0;
-      const next = resolveActiveBreakpoint(window.innerWidth);
-      if (next !== activeBp) activeBp = next;
-    };
-    const onResize = (): void => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(measure);
-    };
-    measure();
-    window.addEventListener('resize', onResize);
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', onResize);
-    };
-  });
-
-  // 有效列数：number 直用；对象按当前断点 mobile-first 级联解析（纯函数，红线 #2）。
-  const effectiveColumn = $derived(
-    typeof column === 'number'
-      ? column
-      : resolveResponsiveValue(column, activeBp, 3),
-  );
-
-  // 通过 context 向 <Descriptions.Item> 暴露父级布局配置（getter 保持响应性）。
-  // column 暴露解析后的有效列数，使声明式 span 钳制随响应式列数实时更新。
   setDescriptionsContext({
-    getColumn: () => effectiveColumn,
-    getDirection: () => direction,
-    getColon: () => colon,
-    getEmptyText: () => emptyText,
+    getAlign: () => align,
+    getLayout: () => layout,
   });
 
-  function isEmptyValue(value: unknown): boolean {
-    return value === null || value === undefined || value === '';
+  // 镜像 Semi foundation.getHorizontalList：按 span 累加分组，达到 column 换行；
+  // 尾组若最后一项无 span 且总 span 不足 column，补足使其撑满该行。
+  function getHorizontalList(items: DescriptionData[]): DescriptionData[][] {
+    const visible = items.filter((item) => !item.hidden);
+    const list: DescriptionData[][] = [];
+    let itemList: DescriptionData[] = [];
+    let totalSpan = 0;
+    for (const item of visible) {
+      totalSpan += item.span || 1;
+      itemList.push(item);
+      if (totalSpan >= column) {
+        list.push(itemList);
+        itemList = [];
+        totalSpan = 0;
+      }
+    }
+    if (itemList.length !== 0) {
+      const last = itemList[itemList.length - 1]!;
+      if (last.span == null || Number.isNaN(last.span)) {
+        let total = 0;
+        for (const item of itemList) {
+          total += item.span != null && !Number.isNaN(item.span) ? item.span : 1;
+        }
+        if (total < column) last.span = column - total + 1;
+      }
+      list.push(itemList);
+    }
+    return list;
   }
 
-  function displayValue(value: unknown): string {
-    return isEmptyValue(value) ? emptyText : String(value);
-  }
+  const horizontalList = $derived(
+    layout === 'horizontal' ? getHorizontalList(data) : [],
+  );
+  const verticalData = $derived(data.filter((item) => !item.hidden));
 
-  function clampSpan(span: number | undefined): number {
-    if (!span || span < 1) return 1;
-    return Math.min(span, effectiveColumn);
+  // data.value 为函数时按 Snippet 处理（对齐 Semi value?: () => ReactNode，可渲染富内容）。
+  function isSnippet(value: unknown): value is Snippet {
+    return typeof value === 'function';
   }
 
   const cls = $derived(
     [
       'cd-descriptions',
-      `cd-descriptions--${layout}`,
-      `cd-descriptions--${direction}`,
-      `cd-descriptions--${size}`,
-      `cd-descriptions--align-${align}`,
-      `cd-descriptions--justify-${justify}`,
-      bordered && 'cd-descriptions--bordered',
-      row && 'cd-descriptions--row-mode',
+      !row && `cd-descriptions-${align}`,
+      row && 'cd-descriptions-double',
+      row && `cd-descriptions-double-${size}`,
+      layout === 'horizontal' && 'cd-descriptions-horizontal',
+      layout === 'vertical' && 'cd-descriptions-vertical',
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
-
-  const gridStyle = $derived(
-    `grid-template-columns: repeat(${effectiveColumn}, minmax(0, 1fr));`,
-  );
 </script>
 
-<div class={cls}>
-  {#if title}
-    <div class="cd-descriptions__title">{title}</div>
-  {/if}
-  <dl class="cd-descriptions__content" style={gridStyle}>
-    {#if useDeclarative}
-      {@render children?.()}
-    {:else}
-      {#each data as item, index (item.key ?? index)}
-        <div
-          class="cd-descriptions__item"
-          style="grid-column: span {clampSpan(item.span)};"
-        >
-          <dt class="cd-descriptions__label">
-            {item.label}{#if colon && direction === 'horizontal'}<span
-                class="cd-descriptions__colon"
-                aria-hidden="true">:</span
-              >{/if}
-          </dt>
-          <dd class="cd-descriptions__value">{displayValue(item.value)}</dd>
-        </div>
-      {/each}
-    {/if}
-  </dl>
+<div class={cls} {style}>
+  <table>
+    <tbody>
+      {#if data && data.length}
+        {#if layout === 'horizontal'}
+          {#each horizontalList as rowItems, rIndex (rIndex)}
+            <tr>
+              {#each rowItems as item, iIndex (iIndex)}
+                <Item
+                  itemKey={item.key}
+                  span={item.span}
+                  keyStyle={item.keyStyle}
+                >
+                  {#if isSnippet(item.value)}{@render (item.value as Snippet)()}{:else}{item.value}{/if}
+                </Item>
+              {/each}
+            </tr>
+          {/each}
+        {:else}
+          {#each verticalData as item, index (index)}
+            <Item itemKey={item.key} span={item.span} keyStyle={item.keyStyle}>
+              {#if isSnippet(item.value)}{@render (item.value as Snippet)()}{:else}{item.value}{/if}
+            </Item>
+          {/each}
+        {/if}
+      {:else}
+        {@render children?.()}
+      {/if}
+    </tbody>
+  </table>
 </div>
 
 <style>
-  /*
-    .cd-descriptions 根保留组件作用域哈希；其下 .cd-descriptions__* 后代用 :global 包裹，
-    使同一套结构样式既覆盖本组件 data 渲染的 item，也覆盖 <Descriptions.Item> 在子组件中
-    渲染的 item（跨组件边界）。grid 由父级 dl 定义，子项靠 grid-column: span 自排。
-  */
+  /* 镜像 semi-foundation/descriptions/descriptions.scss（$module = cd-descriptions）。 */
   .cd-descriptions {
-    inline-size: 100%;
+    line-height: var(--cd-font-descriptions-lineheight);
   }
-  .cd-descriptions__title {
-    margin-block-end: var(--cd-descriptions-row-gap);
-    color: var(--cd-descriptions-label-color);
-    font-weight: 600;
-  }
-  .cd-descriptions__content {
-    display: grid;
-    gap: var(--cd-descriptions-row-gap);
+  .cd-descriptions :global(table),
+  .cd-descriptions :global(tr),
+  .cd-descriptions :global(th),
+  .cd-descriptions :global(td) {
     margin: 0;
+    padding: 0;
+    border: 0;
   }
-  .cd-descriptions :global(.cd-descriptions__item) {
-    display: flex;
-    min-inline-size: 0;
+  .cd-descriptions :global(th) {
+    padding-right: var(--cd-spacing-descriptions-th-paddingright);
   }
-  .cd-descriptions--horizontal :global(.cd-descriptions__item) {
-    flex-direction: row;
-    align-items: baseline;
-    gap: var(--cd-spacing-extra-tight);
+  .cd-descriptions :global(.cd-descriptions-item) {
+    margin: 0;
+    padding-bottom: var(--cd-spacing-descriptions-item-paddingbottom);
+    text-align: left;
+    vertical-align: top;
   }
-  .cd-descriptions--vertical :global(.cd-descriptions__item) {
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
-  }
-  .cd-descriptions :global(.cd-descriptions__label) {
-    color: var(--cd-descriptions-label-color);
+  .cd-descriptions :global(.cd-descriptions-key) {
+    font-weight: normal;
+    font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
+    min-height: var(--cd-font-size-regular);
     white-space: nowrap;
+    color: var(--cd-color-descriptions-key-text-default);
   }
-  .cd-descriptions :global(.cd-descriptions__colon) {
-    margin-inline-start: 0.125em;
-  }
-  .cd-descriptions :global(.cd-descriptions__value) {
-    margin: 0;
-    color: var(--cd-descriptions-value-color);
-    min-inline-size: 0;
-    overflow-wrap: break-word;
+  .cd-descriptions :global(.cd-descriptions-value) {
+    font-weight: normal;
+    font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
+    color: var(--cd-color-descriptions-value-text-default);
   }
 
-  /*
-    align：内容（value）水平对齐。horizontal 下 value 仍随 flex 流排在 label 后，
-    text-align 控制其文本对齐；vertical 下 value 独占一行，text-align 直接生效。
-  */
-  .cd-descriptions--align-center :global(.cd-descriptions__value) {
-    text-align: center;
+  /* align: center —— key(th) 右对齐、value(td) 左对齐。 */
+  .cd-descriptions-center :global(.cd-descriptions-item-th) {
+    text-align: right;
   }
-  .cd-descriptions--align-right :global(.cd-descriptions__value) {
-    text-align: end;
+  .cd-descriptions-center :global(.cd-descriptions-item-td) {
+    text-align: left;
   }
-
-  /*
-    justify：每个 item 内 label 与 value 的排布对齐（沿主轴）。horizontal 主轴为行，
-    vertical 主轴为列。between 让 label 与 value 两端对齐、撑开剩余空间。
-  */
-  .cd-descriptions--justify-center :global(.cd-descriptions__item) {
-    justify-content: center;
+  /* align: left —— 均左对齐。 */
+  .cd-descriptions-left :global(.cd-descriptions-item-th),
+  .cd-descriptions-left :global(.cd-descriptions-item-td) {
+    text-align: left;
   }
-  .cd-descriptions--justify-end :global(.cd-descriptions__item) {
-    justify-content: flex-end;
+  /* align: justify —— key 左、value 右（两端对齐）。 */
+  .cd-descriptions-justify :global(.cd-descriptions-item-th) {
+    text-align: left;
   }
-  .cd-descriptions--justify-between :global(.cd-descriptions__item) {
-    justify-content: space-between;
+  .cd-descriptions-justify :global(.cd-descriptions-item-td) {
+    text-align: right;
   }
-
-  /* row layout: table-like cells */
-  .cd-descriptions--row .cd-descriptions__content {
-    gap: 0;
+  /* align: plain —— key/value 同排 inline-block，value 左侧留距；tag 垂直居中。 */
+  .cd-descriptions-plain :global(.cd-descriptions-key),
+  .cd-descriptions-plain :global(.cd-descriptions-value) {
+    display: inline-block;
   }
-  .cd-descriptions--row :global(.cd-descriptions__item) {
-    align-items: stretch;
-  }
-  /* 双行显示：value 字重 bold（对齐 Semi $font-descriptions_value-fontWeight） */
-  .cd-descriptions--row-mode :global(.cd-descriptions__value) {
-    font-weight: var(--cd-descriptions-value-weight-row);
+  .cd-descriptions-plain :global(.cd-descriptions-value) {
+    padding-left: var(--cd-spacing-descriptions-value-plain-paddingleft);
   }
 
-  /* bordered cells */
-  .cd-descriptions--bordered .cd-descriptions__content {
-    gap: 0;
-    border-block-start: 1px solid var(--cd-descriptions-border);
-    border-inline-start: 1px solid var(--cd-descriptions-border);
+  /* row=true：双行显示。 */
+  .cd-descriptions-double :global(tbody) {
+    display: flex;
+    flex-wrap: wrap;
   }
-  .cd-descriptions--bordered :global(.cd-descriptions__label),
-  .cd-descriptions--bordered :global(.cd-descriptions__value) {
-    padding: var(--cd-descriptions-cell-padding);
-    border-block-end: 1px solid var(--cd-descriptions-border);
-    border-inline-end: 1px solid var(--cd-descriptions-border);
-  }
-  .cd-descriptions--bordered :global(.cd-descriptions__label) {
-    background: var(--cd-descriptions-label-bg);
-  }
-  .cd-descriptions--bordered.cd-descriptions--horizontal :global(.cd-descriptions__value) {
-    flex: 1 1 auto;
-  }
-
-  /* row=true：双行显示，每项 label 与 value 纵向叠放（覆盖 direction 横向排列） */
-  .cd-descriptions--row-mode :global(.cd-descriptions__item) {
+  .cd-descriptions-double :global(tr) {
+    display: inline-flex;
     flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
+  }
+  .cd-descriptions-double :global(.cd-descriptions-item) {
+    padding: var(--cd-spacing-descriptions-item-double-padding);
+    flex: 1;
+  }
+  .cd-descriptions-double :global(.cd-descriptions-value) {
+    font-weight: var(--cd-font-descriptions-value-fontweight);
+  }
+  /* row size: small */
+  .cd-descriptions-double-small :global(.cd-descriptions-item) {
+    padding-right: var(--cd-spacing-descriptions-item-small-paddingright);
+  }
+  .cd-descriptions-double-small :global(.cd-descriptions-key) {
+    font-size: var(--cd-font-descriptions-key-small-fontsize);
+    line-height: var(--cd-line-height-small);
+    padding-bottom: 0;
+  }
+  .cd-descriptions-double-small :global(.cd-descriptions-value) {
+    font-size: var(--cd-font-descriptions-value-small-fontsize);
+    line-height: var(--cd-line-height-header-6);
+  }
+  /* row size: medium */
+  .cd-descriptions-double-medium :global(.cd-descriptions-item) {
+    padding-right: var(--cd-spacing-descriptions-item-medium-paddingright);
+  }
+  .cd-descriptions-double-medium :global(.cd-descriptions-key) {
+    padding-bottom: var(--cd-spacing-descriptions-key-medium-paddingbottom);
+    font-size: var(--cd-font-descriptions-key-medium-fontsize);
+  }
+  .cd-descriptions-double-medium :global(.cd-descriptions-value) {
+    font-size: var(--cd-font-descriptions-value-medium-fontsize);
+    line-height: var(--cd-line-height-header-4);
+  }
+  /* row size: large */
+  .cd-descriptions-double-large :global(.cd-descriptions-item) {
+    padding-right: var(--cd-spacing-descriptions-item-large-paddingright);
+  }
+  .cd-descriptions-double-large :global(.cd-descriptions-key) {
+    padding-bottom: var(--cd-spacing-descriptions-key-large-paddingbottom);
+    font-size: var(--cd-font-descriptions-key-large-fontsize);
+  }
+  .cd-descriptions-double-large :global(.cd-descriptions-value) {
+    font-size: var(--cd-font-descriptions-value-large-fontsize);
+    line-height: var(--cd-line-height-header-2);
+  }
+
+  /* horizontal 布局：表格定宽、撑满。 */
+  .cd-descriptions-horizontal :global(table) {
+    table-layout: fixed;
+  }
+  .cd-descriptions-horizontal :global(table),
+  .cd-descriptions-horizontal :global(tbody) {
+    width: 100%;
+  }
+  .cd-descriptions-horizontal :global(.cd-descriptions-item) {
+    flex: 0;
   }
 </style>

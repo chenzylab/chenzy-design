@@ -17,7 +17,8 @@ Skeleton（骨架屏）是在内容加载完成前，以占位灰块预渲染页
 
 ## 无障碍
 
-- 占位根节点设 `aria-busy="true"` 和 `aria-label`（i18n `Skeleton.loading`，如"内容加载中"），供屏幕阅读器播报当前为加载态。
-- 占位形状块设 `aria-hidden="true"`，不向辅助技术暴露无意义的几何形状；加载完成后移除 `aria-busy`，若 `announce=true` 则通过 live region 播报「内容已加载」。
-- 占位无可聚焦元素，不进入 Tab 序列；加载完成后焦点不主动移动，避免打断用户。
-- `prefers-reduced-motion` 时关闭 shimmer 动画（`animation: none`），保留静态灰块；RTL 下 shimmer 扫过方向镜像。
+Skeleton 镜像 Semi 结构：占位根节点为纯 `<div class="cd-skeleton">`，骨架块为纯装饰 `<div>`，本身不携带语义。设计取向是让骨架屏对辅助技术「透明」——不制造无意义的几何形状播报。
+
+- 占位块均为非交互的装饰性 `<div>`，无可聚焦元素，不进入 Tab 序列；加载完成后焦点不主动移动，避免打断用户。
+- 若需向屏幕阅读器播报加载态，由使用方在业务容器上按需补充 `aria-busy` / `aria-live`（组件不强加），以贴合具体页面语境。
+- RTL 下容器 `direction: rtl`，shimmer 扫过方向随之镜像。

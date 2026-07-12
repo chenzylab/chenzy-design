@@ -1,33 +1,27 @@
-// Nav 行为 + a11y：委托 Menu(purpose=navigation) 渲染，新增 header/footer/折叠。
+// Nav 行为 + a11y：Nav 独立渲染（不依赖 Menu），header/footer/折叠/选中/展开/多选。
 // 命名 *.a11y.test.ts 进入 dom(jsdom) project。
 import { describe, it, expect, vi } from 'vitest';
 import { tick } from 'svelte';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import Nav from './Nav.svelte';
 import NavDeclarativeFixture from './NavDeclarativeFixture.svelte';
-import { navItemsToMenuItems } from './types.js';
+import { collectNavItemsByKeys, collectAncestorKeys } from './types.js';
 
 const items = [
   { itemKey: 'home', text: '首页' },
   { itemKey: 'tasks', text: '任务', items: [{ itemKey: 'a', text: '任务A' }] },
 ];
 
-describe('navItemsToMenuItems 映射（Semi 字段 → Menu 字段）', () => {
-  it('itemKey→key、text→label、items→children、link→href', () => {
-    const mapped = navItemsToMenuItems([
-      { itemKey: 'x', text: '外链', link: 'https://a.com', target: '_blank' },
-      { itemKey: 'p', text: '父', items: [{ itemKey: 'c', text: '子' }] },
-    ]);
-    expect(mapped[0]).toMatchObject({ key: 'x', label: '外链', href: 'https://a.com', target: '_blank' });
-    const parent = mapped[1];
-    if (!parent) throw new Error('expected mapped[1]');
-    expect(parent.key).toBe('p');
-    // children 仅普通项有；用类型守卫窄化
-    if ('children' in parent && parent.children) {
-      expect(parent.children[0]).toMatchObject({ key: 'c', label: '子' });
-    } else {
-      throw new Error('expected children on mapped parent');
-    }
+describe('Nav 项树辅助（selectedItems / 祖先高亮）', () => {
+  it('collectNavItemsByKeys：按 key 收集 Nav 形节点（含嵌套）', () => {
+    const got = collectNavItemsByKeys(items, ['home', 'a']);
+    expect(got.map((i) => i.itemKey).sort()).toEqual(['a', 'home']);
+    expect(got.find((i) => i.itemKey === 'a')).toMatchObject({ text: '任务A' });
+  });
+
+  it('collectAncestorKeys：选中子项时返回父级 SubNav key', () => {
+    expect(collectAncestorKeys(items, ['a'])).toEqual(['tasks']);
+    expect(collectAncestorKeys(items, ['home'])).toEqual([]);
   });
 });
 
@@ -35,7 +29,7 @@ describe('Nav 渲染（对齐 Semi）', () => {
   it('vertical：渲染 nav landmark + 导航项', () => {
     const { container } = renderWithLocale(Nav, { props: { mode: 'vertical', items } });
     expect(container.querySelector('.cd-nav')).not.toBeNull();
-    // Menu purpose=navigation 渲染 <nav> landmark
+    // 独立渲染 <nav> landmark
     expect(container.querySelector('nav')).not.toBeNull();
     expect(container.textContent).toContain('首页');
   });
@@ -81,7 +75,7 @@ describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {
     // 声明式项经 microtask bump 异步渲染，等一拍。
     await Promise.resolve();
     await tick();
-    const body = container.querySelector('.cd-nav__body')!;
+    const body = container.querySelector('.cd-nav__list-wrapper')!;
     const text = body.textContent ?? '';
     expect(text).toContain('首页');
     expect(text).toContain('管理');
@@ -92,16 +86,33 @@ describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {
 });
 
 describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
-  it('onClick：点击叶子项触发，载荷为 itemKey', async () => {
+  it('onClick/onSelect：点击叶子项触发，富载荷含 itemKey/selectedKeys/domEvent（对齐 Semi）', async () => {
     const onClick = vi.fn();
     const onSelect = vi.fn();
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, onClick, onSelect },
     });
-    const leaf = container.querySelector<HTMLElement>('.cd-nav__body .cd-menu__link');
+    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
     leaf?.click();
-    expect(onSelect).toHaveBeenCalledWith('home');
-    expect(onClick).toHaveBeenCalledWith('home');
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ itemKey: 'home', selectedKeys: ['home'], isOpen: false }),
+    );
+    // selectedItems 为 Nav 形（含 text 字段）
+    expect(onSelect.mock.calls[0]?.[0].selectedItems[0]).toMatchObject({ itemKey: 'home', text: '首页' });
+    expect(onClick).toHaveBeenCalledWith(expect.objectContaining({ itemKey: 'home', isOpen: false }));
+  });
+
+  it('multiple + onDeselect：再次点击已选项触发 onDeselect', async () => {
+    const onSelect = vi.fn();
+    const onDeselect = vi.fn();
+    const { container } = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items, multiple: true, onSelect, onDeselect },
+    });
+    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
+    leaf?.click();
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ itemKey: 'home' }));
+    leaf?.click();
+    expect(onDeselect).toHaveBeenCalledWith(expect.objectContaining({ itemKey: 'home' }));
   });
 
   it('项级 onClick：NavItemDef.onClick 点击时触发', () => {
@@ -110,7 +121,7 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items: localItems },
     });
-    const leaf = container.querySelector<HTMLElement>('.cd-nav__body .cd-menu__link');
+    const leaf = container.querySelector<HTMLElement>('.cd-nav__list .cd-nav__item-normal');
     leaf?.click();
     expect(itemOnClick).toHaveBeenCalledOnce();
   });
@@ -119,12 +130,12 @@ describe('Nav 交互回调与新增透传（对齐 Semi）', () => {
     const open = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: true },
     });
-    expect(open.container.querySelector('.cd-menu__sub--motion')).not.toBeNull();
+    expect(open.container.querySelector('.cd-nav__sub--motion')).not.toBeNull();
 
     const noMotion = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, defaultOpenKeys: ['tasks'], subNavMotion: false },
     });
-    expect(noMotion.container.querySelector('.cd-menu__sub--motion')).toBeNull();
-    expect(noMotion.container.querySelector('.cd-menu__sub')).not.toBeNull();
+    expect(noMotion.container.querySelector('.cd-nav__sub--motion')).toBeNull();
+    expect(noMotion.container.querySelector('.cd-nav__sub')).not.toBeNull();
   });
 });

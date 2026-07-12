@@ -1,35 +1,38 @@
-// Skeleton a11y：loading 占位容器 aria-busy + aria-live=polite + aria-label。
-//
-// 已知 violation（组件源码缺口，本批不改源码）：占位容器是裸 <div>，带 aria-label/aria-live
-// 但无 role，axe 规则 [aria-prohibited-attr] 报「aria-label cannot be used on a div with no
-// valid role」。修复需给容器加 role（如 role="status"），属组件改动，故相关 axe 断言 it.skip。
-// 结构性 ARIA 断言（aria-busy/aria-live/aria-label 存在）仍作为非 skip 用例保留。
+// Skeleton a11y：镜像 Semi，占位根节点为纯 <div class="cd-skeleton">（无 role/aria）。
+// 骨架块为纯装饰 div，不进入 Tab 序列；axe 对纯装饰 div 无异议。
 import { describe, it, expect } from 'vitest';
+import { render } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Skeleton from './Skeleton.svelte';
+import SkeletonAvatar from './SkeletonAvatar.svelte';
 
 describe('Skeleton a11y', () => {
-  it('loading：占位容器 aria-busy + aria-live + aria-label 结构正确', () => {
+  it('loading：渲染 .cd-skeleton 占位容器（对齐 Semi，纯 div 无 role/aria）', () => {
     const { container } = renderWithLocale(Skeleton, {
       props: { loading: true },
     });
     const root = container.querySelector('.cd-skeleton');
-    expect(root?.getAttribute('aria-busy')).toBe('true');
-    expect(root?.getAttribute('aria-live')).toBe('polite');
-    expect(root?.getAttribute('aria-label')).toBeTruthy();
+    expect(root).not.toBeNull();
+    expect(root?.getAttribute('role')).toBeNull();
+    expect(root?.getAttribute('aria-busy')).toBeNull();
   });
 
-  it('loading：无 axe violations（占位容器 role=status）', async () => {
+  it('active：占位容器带 cd-skeleton--active 类', () => {
+    const { container } = renderWithLocale(Skeleton, {
+      props: { loading: true, active: true },
+    });
+    expect(container.querySelector('.cd-skeleton--active')).not.toBeNull();
+  });
+
+  it('loading：无 axe violations', async () => {
     const { container } = renderWithLocale(Skeleton, {
       props: { loading: true },
     });
     await expectNoAxeViolations(container);
   });
 
-  it('active：无 axe violations（占位容器 role=status）', async () => {
-    const { container } = renderWithLocale(Skeleton, {
-      props: { loading: true, active: true },
-    });
+  it('骨架原子块：无 axe violations（纯装饰 div）', async () => {
+    const { container } = render(SkeletonAvatar, { props: { size: 'medium' } });
     await expectNoAxeViolations(container);
   });
 });

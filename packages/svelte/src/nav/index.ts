@@ -24,4 +24,13 @@ export const Nav: typeof NavRoot & {
 });
 
 export { meta as navMeta } from './meta.js';
-export type { NavItemDef, NavKey, NavMode, NavHeaderConfig, NavFooterConfig } from './types.js';
+export type {
+  NavItemDef,
+  NavKey,
+  NavMode,
+  NavHeaderConfig,
+  NavFooterConfig,
+  NavSelectData,
+  NavClickData,
+  NavOpenChangeData,
+} from './types.js';

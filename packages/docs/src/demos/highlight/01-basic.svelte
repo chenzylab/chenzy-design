@@ -2,4 +2,9 @@
   import { Highlight } from '@chenzy-design/svelte';
 </script>
 
-<Highlight sourceString="React 是一个用于构建用户界面的 JavaScript 库" searchWords="JavaScript" />
+<h2>
+  <Highlight
+    sourceString="从 Semi Design 到 Any Design 快速定义你的设计系统，并应用在设计稿和代码中"
+    searchWords={['设计系统', 'Semi Design']}
+  />
+</h2>

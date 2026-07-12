@@ -1,53 +1,44 @@
-// Collapse a11y：折叠面板（APG Accordion）。
-// Header 外层 role=heading + aria-level；触发器为原生 button + aria-expanded；
-// button aria-controls 指向内容 region，region aria-labelledby 指回 header。
-// 用数据驱动夹具（CollapseA11yFixture）渲染真实 region，使 aria-controls 不悬空。
+// Collapse a11y：折叠面板（DOM 对齐 Semi collapse）。
+// Header 触发器为 role=button + tabindex=0 + aria-expanded + aria-owns（指向 content id）；
+// content 容器 id 与 aria-owns 一致、aria-hidden 随展开态切换；disabled 面板 aria-disabled=true。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import CollapseFixture from './CollapseA11yFixture.svelte';
 
 describe('Collapse a11y', () => {
-  it('默认渲染：role=heading + button aria-expanded + region 关联，无 axe violations', async () => {
+  it('默认渲染：role=button + tabindex=0 + aria-expanded=false，无 axe violations', async () => {
     const { container } = renderWithLocale(CollapseFixture, {});
 
-    // 每个 panel 的 Header 外层为 role=heading + aria-level。
-    const headings = container.querySelectorAll('[role="heading"]');
-    expect(headings.length).toBe(3);
-    expect(headings[0]?.getAttribute('aria-level')).toBe('3');
-
-    // 触发器为原生 button，aria-expanded 标记展开态（默认全收起）。
-    const headerBtns = container.querySelectorAll('button.cd-collapse__header');
-    expect(headerBtns.length).toBe(3);
-    expect(headerBtns[0]?.getAttribute('aria-expanded')).toBe('false');
-
-    // aria-controls 指向真实存在的 region，region aria-labelledby 指回 header。
-    const controls = headerBtns[0]?.getAttribute('aria-controls');
-    expect(controls).toBeTruthy();
-    const region = controls ? container.ownerDocument.getElementById(controls!) : null;
-    expect(region?.getAttribute('role')).toBe('region');
-    expect(region?.getAttribute('aria-labelledby')).toBe(headerBtns[0]?.id);
+    // 每个 panel 的 Header 为 role=button（对齐 Semi，非原生 button/heading 包裹）。
+    const headers = [...container.querySelectorAll<HTMLElement>('.cd-collapse-header')];
+    expect(headers.length).toBe(3);
+    expect(headers[0]?.getAttribute('role')).toBe('button');
+    expect(headers[0]?.getAttribute('tabindex')).toBe('0');
+    expect(headers[0]?.getAttribute('aria-expanded')).toBe('false');
+    // aria-owns 存在（对齐 Semi；默认收起且 keepDOM=false 时 content 不挂载，展开后由 id 匹配）。
+    expect(headers[0]?.getAttribute('aria-owns')).toBeTruthy();
 
     await expectNoAxeViolations(container);
   });
 
-  it('defaultActiveKey 展开：对应 header aria-expanded=true，region 非 hidden', async () => {
-    const { container } = renderWithLocale(CollapseFixture, {
-      props: { defaultActiveKey: 'a' },
-    });
-    const headerBtns = container.querySelectorAll('button.cd-collapse__header');
-    expect(headerBtns[0]?.getAttribute('aria-expanded')).toBe('true');
-    const controls = headerBtns[0]?.getAttribute('aria-controls');
-    const region = controls ? container.ownerDocument.getElementById(controls!) : null;
-    expect(region?.hasAttribute('hidden')).toBe(false);
+  it('defaultActiveKey 展开：对应 header aria-expanded=true，content aria-hidden=false', async () => {
+    const { container } = renderWithLocale(CollapseFixture, { props: { defaultActiveKey: 'a' } });
+
+    const headers = [...container.querySelectorAll<HTMLElement>('.cd-collapse-header')];
+    expect(headers[0]?.getAttribute('aria-expanded')).toBe('true');
+    const owns = headers[0]?.getAttribute('aria-owns');
+    const content = container.querySelector(`#${owns}`);
+    expect(content?.getAttribute('aria-hidden')).toBe('false');
     await expectNoAxeViolations(container);
   });
 
-  it('roving tabindex：仅一个 Header 为 Tab 停靠点（tabindex=0），其余 -1', async () => {
+  it('disabled 面板：header aria-disabled=true 且带 -disabled 类', async () => {
     const { container } = renderWithLocale(CollapseFixture, {});
-    const headerBtns = [...container.querySelectorAll('button.cd-collapse__header')];
-    const zero = headerBtns.filter((b) => b.getAttribute('tabindex') === '0');
-    // 首个未禁用 Header 为停靠点；禁用项（第三个）从 roving 中排除。
-    expect(zero.length).toBe(1);
+    const headers = [...container.querySelectorAll<HTMLElement>('.cd-collapse-header')];
+    // 夹具第三个面板 disabled。
+    const last = headers[2];
+    expect(last?.getAttribute('aria-disabled')).toBe('true');
+    expect(last?.classList.contains('cd-collapse-header-disabled')).toBe(true);
     await expectNoAxeViolations(container);
   });
 });

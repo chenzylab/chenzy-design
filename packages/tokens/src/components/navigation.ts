@@ -17,14 +17,30 @@ export const navigationTokens = {
   // —— Size ——
   'height-navigation-item-base': { value: '36px', category: 'height', label: '侧边菜单项高度', usage: '侧边导航栏菜单项高度' },
   'height-navigation-horizontal-header': { value: '60px', category: 'height', label: '顶部导航高度', usage: '顶部导航栏高度' },
+  'height-navigation-footer': { value: '48px', category: 'height', label: 'footer 高度', usage: '侧边导航栏 footer 高度' },
+  'width-navigation-container-base': { value: '240px', category: 'width', label: '侧边展开宽度', usage: '侧边导航栏展开后宽度' },
+  'width-navigation-container-collapsed': { value: '60px', category: 'width', label: '侧边折叠宽度', usage: '侧边导航栏收起后宽度' },
+  'width-navigation-border': { value: '1px', category: 'width', label: '描边宽度', usage: '导航栏描边宽度' },
+  'width-navigation-icon-text-between': { value: '12px', category: 'width', label: '图标文案间距', usage: '导航栏菜单项图标与标题间距' },
+  'width-navigation-icon-left-minwidth': { value: '20px', category: 'width', label: '左图标区最小宽', usage: '导航栏菜单项左侧图标区域最小宽度' },
+  'width-navigation-dropdown-item-nav-item-minwidth': { value: '150px', category: 'width', label: '浮层项最小宽', usage: '导航栏菜单项下拉菜单最小宽度' },
+  'width-navigation-outline': { value: '2px', category: 'width', label: '聚焦描边宽', usage: '导航栏聚焦 outline 宽度' },
+  'width-navigation-outlineoffset': { value: '-2px', category: 'width', label: '聚焦描边偏移', usage: '导航栏聚焦 outline 偏移' },
   'width-navigation-item-borderradius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '菜单项圆角', usage: '导航栏菜单项圆角' },
+  'font-size-navigation-header-text': { value: 'var(--cd-font-size-header-5)', category: 'font', label: 'header 字号', usage: '导航栏 header 标题字号（对齐 Semi @include font-size-header-5）' },
 
   // —— Spacing ——
+  'spacing-navigation-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '容器水平内边距', usage: '侧边导航栏水平方向内边距' },
+  'spacing-navigation-collapsed-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '折叠容器水平内边距', usage: '侧边导航栏收起后水平方向内边距' },
   'spacing-navigation-item-paddingx': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '菜单项水平内边距', usage: '侧边导航栏菜单项水平方向内边距' },
+  'spacing-navigation-item-paddingy': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '菜单项垂直内边距', usage: '侧边导航栏菜单项垂直方向内边距' },
+  'spacing-navigation-item-marginbottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '菜单项底外边距', usage: '侧边导航栏菜单项底部外边距' },
+  'spacing-navigation-list-wrapper-paddingtop': { value: '12px', category: 'spacing', label: '列表顶内边距', usage: '导航栏菜单项列表顶部内边距' },
   'spacing-navigation-header-logo-marginright': { value: '8px', category: 'spacing', label: 'Logo 右外边距', usage: '侧边导航栏 Logo 右侧外边距' },
   'spacing-navigation-horizontal-paddingleft': { value: '24px', category: 'spacing', label: '顶部左内边距', usage: '顶部导航栏左侧内边距' },
-  // Semi calc：(container_collapsed - collapsed_paddingX*2 - border - header_logo_collapsed) * 0.5
-  'spacing-navigation-vertical-footer-paddingleft': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'footer 左内边距', usage: '侧边导航栏 footer 左侧内边距' },
+  'spacing-navigation-footer-paddingx': { value: '24px', category: 'spacing', label: 'footer 水平内边距', usage: '导航栏 footer 水平方向内边距（对齐 Semi 24px）' },
+  'spacing-navigation-footer-paddingy': { value: '16px', category: 'spacing', label: 'footer 垂直内边距', usage: '导航栏 footer 垂直方向内边距（对齐 Semi 16px）' },
+  'spacing-navigation-vertical-footer-collapse-text-marginleft': { value: '12px', category: 'spacing', label: '收起按钮文案左边距', usage: '收起侧边栏按钮标题左侧外边距（对齐 Semi 12px）' },
 
   // —— Color ——
   'color-navigation-bg-default': { value: 'var(--cd-color-nav-bg)', category: 'color', label: '导航背景色', usage: '导航栏背景色' },
@@ -39,6 +55,7 @@ export const navigationTokens = {
   'color-navigation-iteml1-selected-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '一级选中文字色', usage: '导航栏一级已选中菜单项文字颜色' },
   'color-navigation-iteml1-selected-icon-default': { value: 'var(--cd-color-primary)', category: 'color', label: '一级选中图标色', usage: '导航栏一级已选中菜单项图标颜色' },
   'color-navigation-iteml1-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '一级禁用文字色', usage: '导航栏一级菜单项禁用态文字颜色' },
+  'color-navigation-outline-focus': { value: 'var(--cd-color-primary-light-active)', category: 'color', label: '聚焦描边色', usage: '导航栏菜单键盘聚焦颜色' },
 
   'color-navigation-horizontal-iteml1-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '水平一级文字色', usage: '水平导航栏一级菜单项文字颜色' },
   'color-navigation-horizontal-iteml1-text-hover': { value: 'var(--cd-color-text-1)', category: 'color', label: '水平一级悬浮文字', usage: '水平导航栏一级菜单项悬浮态文字颜色' },

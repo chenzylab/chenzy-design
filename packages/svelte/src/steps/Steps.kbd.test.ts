@@ -1,5 +1,5 @@
 // Steps 键盘 e2e（browser project / 真实 chromium）。
-// type="nav"（→ clickable）启用 roving，可点击步骤组为单一 Tab 停靠点。
+// 可点击态 = basic 型 + onChange（对齐 Semi）启用 roving，可点击步骤组为单一 Tab 停靠点。
 // 测真实焦点移动——jsdom 测不了（命令式 focus() 不可靠）：
 //   1. roving 单停靠点：Tab 进入只停在一个 step button（其余 tabindex=-1）。
 //   2. ↑↓/←→ 真实移动焦点到相邻步骤（无 wrap：clamp 在两端，源码 nextRovingIndex(...,false)）。

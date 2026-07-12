@@ -1062,7 +1062,7 @@
     text-decoration: underline;
   }
   .cd-time-picker__ok {
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     background: var(--cd-color-primary);
   }
   .cd-time-picker__ok:hover {

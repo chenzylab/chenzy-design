@@ -5,8 +5,8 @@ export interface FloatButtonBadgeProps {
   count?: number | string;
   dot?: boolean;
   overflowCount?: number;
-  showZero?: boolean;
   type?: 'primary' | 'secondary' | 'tertiary' | 'success' | 'warning' | 'danger';
+  theme?: 'solid' | 'light' | 'inverted';
 }
 
 /**

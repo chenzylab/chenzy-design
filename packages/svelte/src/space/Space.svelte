@@ -23,6 +23,10 @@
     wrap?: boolean;
     block?: boolean;
     tag?: keyof HTMLElementTagNameMap;
+    /** ARIA role passthrough for the container element. */
+    role?: string | undefined;
+    /** ARIA label passthrough for the container element. */
+    ariaLabel?: string | undefined;
     class?: string;
     style?: string;
     children?: Snippet;
@@ -35,6 +39,8 @@
     wrap = false,
     block = false,
     tag = 'div',
+    role,
+    ariaLabel,
     class: className = '',
     style = '',
     children,
@@ -80,7 +86,13 @@
   );
 </script>
 
-<svelte:element this={tag} class={cls} style={inlineStyle || undefined}>
+<svelte:element
+  this={tag}
+  class={cls}
+  style={inlineStyle || undefined}
+  {role}
+  aria-label={ariaLabel}
+>
   {@render children?.()}
 </svelte:element>
 

@@ -1,14 +1,30 @@
 <script lang="ts">
-  import { Descriptions } from '@chenzy-design/svelte';
+  import { Descriptions, Tag, Icon } from '@chenzy-design/svelte';
 
-  const data = [
-    { label: '用户名', value: 'bytegolang' },
-    { label: '邮箱', value: 'hello@example.com' },
-    { label: '手机', value: '138****8888' },
-    { label: '城市', value: '上海' },
-    { label: '注册时间', value: '2024-01-01' },
-    { label: '状态', value: '正常' },
-  ];
+  const arrowUpSvg =
+    '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M12 5l7 7h-4v7h-6v-7H5z"/></svg>';
 </script>
 
-<Descriptions {data} />
+{#snippet retention()}
+  <span
+    >98%<Icon
+      svg={arrowUpSvg}
+      size="small"
+      style="color: var(--cd-color-success); margin-left: 2px;"
+    /></span
+  >
+{/snippet}
+
+{#snippet tagValue()}
+  <Tag style="margin: 0;">电商</Tag>
+{/snippet}
+
+<Descriptions
+  data={[
+    { key: '实际用户数量', value: '1,480,000' },
+    { key: '7天留存', value: retention },
+    { key: '安全等级', value: '3级' },
+    { key: '垂类标签', value: tagValue },
+    { key: '认证状态', value: '未认证' },
+  ]}
+/>

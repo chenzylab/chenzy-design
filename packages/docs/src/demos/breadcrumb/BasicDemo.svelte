@@ -7,9 +7,9 @@
 <div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start">
   <Breadcrumb
     routes={[
-      { label: '首页', href: '#' },
-      { label: '组件', href: '#' },
-      { label: '导航' },
+      { name: '首页', href: '#' },
+      { name: '组件', href: '#' },
+      { name: '导航' },
     ]}
   />
 
@@ -17,12 +17,12 @@
     <Breadcrumb
       maxItemCount={3}
       routes={[
-        { label: '首页', href: '#' },
-        { label: '一级', href: '#' },
-        { label: '二级', href: '#' },
-        { label: '三级', href: '#' },
-        { label: '四级', href: '#' },
-        { label: '当前页' },
+        { name: '首页', href: '#' },
+        { name: '一级', href: '#' },
+        { name: '二级', href: '#' },
+        { name: '三级', href: '#' },
+        { name: '四级', href: '#' },
+        { name: '当前页' },
       ]}
     />
   </div>
@@ -39,9 +39,9 @@
     <Breadcrumb
       showTooltip
       routes={[
-        { label: '首页', href: '#' },
-        { label: '这是一个非常非常非常长以至于会被截断的中间项标题', href: '#' },
-        { label: '另一个同样很长很长很长很长会被省略号截断的当前页标题' },
+        { name: '首页', href: '#' },
+        { name: '这是一个非常非常非常长以至于会被截断的中间项标题', href: '#' },
+        { name: '另一个同样很长很长很长很长会被省略号截断的当前页标题' },
       ]}
     />
   </div>
@@ -50,30 +50,30 @@
     <Breadcrumb
       maxItemCount={3}
       moreType="popover"
-      onClick={(r) => (breadcrumbMore = r.label)}
+      onClick={(r) => (breadcrumbMore = r.name ?? '')}
       routes={[
-        { label: '首页', href: '#' },
-        { label: '一级', href: '#' },
-        { label: '二级', href: '#' },
-        { label: '三级', href: '#' },
-        { label: '四级', href: '#' },
-        { label: '当前页' },
+        { name: '首页', href: '#' },
+        { name: '一级', href: '#' },
+        { name: '二级', href: '#' },
+        { name: '三级', href: '#' },
+        { name: '四级', href: '#' },
+        { name: '当前页' },
       ]}
     />
     <Text type="tertiary">popover 点击折叠项：{breadcrumbMore}</Text>
   </div>
 
-  <div data-testid="breadcrumb-more-tooltip">
+  <div data-testid="breadcrumb-more-default">
     <Breadcrumb
       maxItemCount={3}
-      moreType="tooltip"
+      moreType="default"
       routes={[
-        { label: '首页', href: '#' },
-        { label: '一级', href: '#' },
-        { label: '二级', href: '#' },
-        { label: '三级', href: '#' },
-        { label: '四级', href: '#' },
-        { label: '当前页' },
+        { name: '首页', href: '#' },
+        { name: '一级', href: '#' },
+        { name: '二级', href: '#' },
+        { name: '三级', href: '#' },
+        { name: '四级', href: '#' },
+        { name: '当前页' },
       ]}
     />
   </div>

@@ -15,7 +15,7 @@ function loc(el: Element) {
 }
 
 function counterText(): string {
-  return document.querySelector('.cd-image__preview-counter')?.textContent?.trim() ?? '';
+  return document.querySelector('.cd-image-preview-footer-page')?.textContent?.trim() ?? '';
 }
 
 describe('Image 灯箱键盘 e2e（focus trap + ←→ 翻页 + Esc 归还）', () => {
@@ -27,26 +27,26 @@ describe('Image 灯箱键盘 e2e（focus trap + ←→ 翻页 + Esc 归还）', 
     await userEvent.click(trigger);
 
     // 灯箱 portal 到 body：查 role=dialog（aria-modal=true）。
-    const overlay = document.querySelector('.cd-image__preview[role="dialog"]') as HTMLElement;
+    const overlay = document.querySelector('.cd-image-preview[role="dialog"]') as HTMLElement;
     expect(overlay).not.toBeNull();
     expect(overlay.getAttribute('aria-modal')).toBe('true');
 
     // 1. 焦点进入灯箱（focus trap activate；落在内部可聚焦项）。
     await expect.poll(() => overlay.contains(document.activeElement)).toBe(true);
-    expect(counterText()).toBe('1 / 3');
+    expect(counterText()).toBe('1/3');
 
     // 2. → 翻到下一张（onChange 切 current）。
     await userEvent.keyboard('{ArrowRight}');
-    await expect.poll(() => counterText()).toBe('2 / 3');
+    await expect.poll(() => counterText()).toBe('2/3');
     // 焦点仍困在灯箱内。
     expect(overlay.contains(document.activeElement)).toBe(true);
     // ← 翻回上一张。
     await userEvent.keyboard('{ArrowLeft}');
-    await expect.poll(() => counterText()).toBe('1 / 3');
+    await expect.poll(() => counterText()).toBe('1/3');
 
     // 3. Esc 关闭灯箱 → 焦点归还 trigger（focus trap deactivate returnFocus）。
     await userEvent.keyboard('{Escape}');
-    await expect.poll(() => document.querySelector('.cd-image__preview')).toBeNull();
+    await expect.poll(() => document.querySelector('.cd-image-preview')).toBeNull();
     await expect.element(loc(trigger)).toHaveFocus();
   });
 });

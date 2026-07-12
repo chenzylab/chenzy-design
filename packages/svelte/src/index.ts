@@ -110,9 +110,19 @@ export {
   type BreadcrumbRoute,
 } from './breadcrumb/index.js';
 export { Pagination, paginationMeta } from './pagination/index.js';
-export { Steps, stepsMeta, type StepItem } from './steps/index.js';
+export { Steps, stepsMeta, type StepItem, type StepStatus } from './steps/index.js';
 export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
-export { Dropdown, dropdownMeta, type DropdownItem } from './dropdown/index.js';
+export {
+  Dropdown,
+  DropdownMenu,
+  DropdownItem,
+  DropdownTitle,
+  DropdownDivider,
+  dropdownMeta,
+  type DropdownKey,
+  type DropdownItemType,
+  type DropdownMenuItem,
+} from './dropdown/index.js';
 export { Menu, menuMeta, type MenuItemDef } from './menu/index.js';
 export {
   Nav,
@@ -124,6 +134,11 @@ export {
   type NavItemDef,
   type NavKey,
   type NavMode,
+  type NavHeaderConfig,
+  type NavFooterConfig,
+  type NavSelectData,
+  type NavClickData,
+  type NavOpenChangeData,
 } from './nav/index.js';
 export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
 
@@ -136,29 +151,63 @@ export {
   type ScrollListValue,
 } from './scroll-list/index.js';
 export { Avatar, AvatarGroup, avatarMeta } from './avatar/index.js';
+export type {
+  AvatarShape,
+  AvatarSizeEnum,
+  AvatarColor,
+  AvatarOverlapFrom,
+  AvatarBorder,
+  AvatarTopSlot,
+  AvatarBottomSlot,
+  AvatarGroupItem,
+} from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, CardGroup, cardMeta, cardGroupMeta } from './card/index.js';
 export { Tooltip, tooltipMeta } from './tooltip/index.js';
 export { Popover, popoverMeta } from './popover/index.js';
 export { Empty, emptyMeta } from './empty/index.js';
 export {
+  IllustrationNoContent,
+  IllustrationNoContentDark,
+  IllustrationNoResult,
+  IllustrationNoResultDark,
+  IllustrationSuccess,
+  IllustrationSuccessDark,
+  IllustrationFailure,
+  IllustrationFailureDark,
+  IllustrationNoAccess,
+  IllustrationNoAccessDark,
+  IllustrationNotFound,
+  IllustrationNotFoundDark,
+  IllustrationConstruction,
+  IllustrationConstructionDark,
+  IllustrationIdle,
+  IllustrationIdleDark,
+} from './illustrations/index.js';
+export {
   Descriptions,
   DescriptionsItem,
   descriptionsMeta,
-  type DescriptionItem,
+  type DescriptionData,
 } from './descriptions/index.js';
 export {
   Collapse,
   CollapsePanelComponent,
   collapseMeta,
-  type CollapsePanel,
   type CollapseContext,
 } from './collapse/index.js';
 export { Collapsible, collapsibleMeta } from './collapsible/index.js';
 export { Timeline, TimelineItem, timelineMeta, type TimelineItemData } from './timeline/index.js';
 export { List, listMeta } from './list/index.js';
-export { Image, ImagePreview, ImagePreviewGroup, imageMeta } from './image/index.js';
+export { Image, ImagePreview, PreviewInner, imageMeta } from './image/index.js';
+export type {
+  PreviewProps as ImagePreviewProps,
+  MenuProps as ImageMenuProps,
+  RatioType as ImageRatioType,
+  ImagePreviewGroupContext,
+} from './image/index.js';
 export { Highlight, highlightMeta } from './highlight/index.js';
+export type { HighlightWord } from '@chenzy-design/core';
 export { CodeHighlight, codeHighlightMeta } from './code-highlight/index.js';
 export {
   JsonViewer,

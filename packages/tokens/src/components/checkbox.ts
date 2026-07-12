@@ -4,9 +4,6 @@
  * 及其中间节点，删去组件未用的 Semi 状态态变量。带元数据的 TokenDef 结构以支持 DSM。
  * 值为 var() 引用我们的 alias / global token，或字面量。
  * 末尾为 chenzy-design Checkbox/CheckboxGroup 实际消费的补充 token（Semi 无）。
- *
- * 注：Semi 的 var(--semi-color-white) 我们无对应 --cd-color-white alias，
- * 用最接近的 --cd-color-text-inverse（= #ffffff）替代，未发明新 alias。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -23,7 +20,7 @@ export const checkboxTokens = {
 
   // —— checked（选中态） ——
   'color-checkbox-checked-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中态背景色', usage: '复选框选中态内部勾选框背景色 - 默认态' },
-  'color-checkbox-checked-icon-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '对勾颜色', usage: '选框选中态对勾颜色 - 默认' },
+  'color-checkbox-checked-icon-default': { value: 'var(--cd-color-white)', category: 'color', label: '对勾颜色', usage: '选框选中态对勾颜色 - 默认' },
   'color-checkbox-checked-border-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中态描边色', usage: '选框选中态描边颜色 - 默认' },
 
   // —— cardType（卡片形态） ——

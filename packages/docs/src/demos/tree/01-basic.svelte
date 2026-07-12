@@ -2,61 +2,44 @@
   import { Tree, Text } from '@chenzy-design/svelte';
   import type { TreeNode } from '@chenzy-design/svelte';
 
+  // 对齐 Semi 示例数据（Asia / North America）
   const treeData: TreeNode[] = [
     {
-      key: 'design',
-      label: '设计',
+      label: '亚洲',
+      key: 'asia',
       children: [
-        { key: 'figma', label: 'Figma 规范' },
-        { key: 'token', label: 'Design Token' },
+        {
+          label: '中国',
+          key: 'china',
+          children: [
+            { label: '北京', key: 'beijing' },
+            { label: '上海', key: 'shanghai' },
+          ],
+        },
+        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
       ],
     },
     {
-      key: 'dev',
-      label: '研发',
+      label: '北美洲',
+      key: 'na',
       children: [
-        { key: 'fe', label: '前端' },
-        {
-          key: 'be',
-          label: '后端',
-          children: [
-            { key: 'api', label: 'API' },
-            { key: 'db', label: '数据库' },
-          ],
-        },
+        { label: '美国', key: 'us' },
+        { label: '加拿大', key: 'canada' },
       ],
     },
-    { key: 'qa', label: '测试' },
   ];
 
-  let selected = $state<string | number>('figma');
-  let checked = $state<(string | number)[]>([]);
+  let selected = $state<string | number>('beijing');
 </script>
 
-<div style="display:flex; gap:48px; flex-wrap:wrap; align-items:flex-start">
-  <div style="width:240px">
-    <Text type="tertiary">单选</Text>
-    <Tree
-      {treeData}
-      defaultExpandAll
-      value={selected}
-      onChange={(info) => (selected = info.value as string | number)}
-      ariaLabel="部门树"
-    />
-    <Text type="tertiary">已选：{selected}</Text>
-  </div>
-
-  <div style="width:240px">
-    <Text type="tertiary">可勾选（父子联动）+ 可搜索</Text>
-    <Tree
-      {treeData}
-      checkable
-      filterable
-      defaultExpandAll
-      checkedKeys={checked}
-      onCheck={(info) => (checked = info.checked)}
-      ariaLabel="可勾选部门树"
-    />
-    <Text type="tertiary">已勾选 {checked.length} 项</Text>
-  </div>
+<div style="width:260px">
+  <Tree
+    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
+    {treeData}
+    defaultExpandAll
+    value={selected}
+    onChange={(info) => (selected = info.value as string | number)}
+    ariaLabel="地区树"
+  />
+  <Text type="tertiary" size="small">已选：{selected}</Text>
 </div>

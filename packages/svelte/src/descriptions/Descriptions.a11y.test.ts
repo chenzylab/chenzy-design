@@ -1,31 +1,47 @@
-// Descriptions a11y：dl/dt/dd 描述列表语义，data 驱动。
+// Descriptions a11y：table 语义（th=key、td=value），data 驱动，无 axe violations。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Descriptions from './Descriptions.svelte';
 
 describe('Descriptions a11y', () => {
-  it('data 驱动：dl/dt/dd 语义，无 axe violations', async () => {
+  it('data 驱动 vertical：table/th/td 语义，无 axe violations', async () => {
     const { container } = renderWithLocale(Descriptions, {
       props: {
-        title: 'Account',
         data: [
-          { key: 'name', label: 'Name', value: 'Jane' },
-          { key: 'email', label: 'Email', value: 'jane@example.com' },
+          { key: 'Name', value: 'Jane' },
+          { key: 'Email', value: 'jane@example.com' },
         ],
       },
     });
-    expect(container.querySelector('dl')).not.toBeNull();
-    expect(container.querySelectorAll('dt').length).toBe(2);
-    expect(container.querySelectorAll('dd').length).toBe(2);
+    expect(container.querySelector('table')).not.toBeNull();
+    // align 默认 center（非 plain）→ 每项 th + td 一对。
+    expect(container.querySelectorAll('th').length).toBe(2);
+    expect(container.querySelectorAll('td').length).toBe(2);
     await expectNoAxeViolations(container);
   });
 
-  it('bordered + vertical：无 axe violations', async () => {
+  it('plain 对齐：单 td 单元格，无 axe violations', async () => {
     const { container } = renderWithLocale(Descriptions, {
       props: {
-        bordered: true,
-        direction: 'vertical',
-        data: [{ key: 'a', label: 'A', value: '1' }],
+        align: 'plain',
+        data: [{ key: 'A', value: '1' }],
+      },
+    });
+    expect(container.querySelectorAll('th').length).toBe(0);
+    expect(container.querySelectorAll('td').length).toBe(1);
+    await expectNoAxeViolations(container);
+  });
+
+  it('horizontal 布局 + row 双行：无 axe violations', async () => {
+    const { container } = renderWithLocale(Descriptions, {
+      props: {
+        layout: 'horizontal',
+        column: 2,
+        data: [
+          { key: 'A', value: '1' },
+          { key: 'B', value: '2' },
+          { key: 'C', value: '3', hidden: true },
+        ],
       },
     });
     await expectNoAxeViolations(container);

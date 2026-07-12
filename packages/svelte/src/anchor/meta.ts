@@ -6,13 +6,13 @@ export const meta = {
   name: 'Anchor',
   category: 'navigation',
   description:
-    '锚点导航，垂直/水平链接列表。支持 scroll-spy 激活高亮、点击平滑滚动、ink 边框指示、自定义滚动容器、多级嵌套链接树，受控/非受控。',
+    '锚点导航，垂直/水平链接列表。支持 scroll-spy 激活高亮、点击平滑滚动、ink 边框指示、自定义滚动容器、多级嵌套链接树，受控/非受控。双 API：links 数组或声明式 <Anchor.Link>。',
   props: [
     {
       name: 'links',
       type: 'AnchorLink[]',
       default: '[]',
-      desc: '锚点链接数据；link.children 形成多级嵌套树，渲染逐级缩进，父子皆参与滚动高亮（无 children 即平铺）',
+      desc: '锚点链接数据；link.children 形成多级嵌套树，渲染逐级缩进，父子皆参与滚动高亮（无 children 即平铺）。与声明式 <Anchor.Link> 二选一，links 优先',
     },
     {
       name: 'value',
@@ -27,8 +27,8 @@ export const meta = {
     {
       name: 'scrollMotion',
       type: 'boolean',
-      default: 'true',
-      desc: '点击是否平滑滚动（reduced-motion 下强制即时）',
+      default: 'false',
+      desc: '点击是否平滑滚动（默认 false 对齐 Semi；reduced-motion 下强制即时）',
     },
     { name: 'affix', type: 'boolean', default: 'false', desc: 'position:sticky 吸顶' },
     { name: 'updateHash', type: 'boolean', default: 'false', desc: '激活变更时写 location.hash' },
@@ -40,8 +40,77 @@ export const meta = {
       desc: '自定义滚动容器（缺省 window）',
     },
     { name: 'horizontal', type: 'boolean', default: 'false', desc: '水平模式，ink 走底部下划线' },
-    { name: 'onChange', type: '(key: string) => void', default: 'undefined' },
+    {
+      name: 'autoCollapse',
+      type: 'boolean',
+      default: 'false',
+      desc: '滚动时动态展开激活路径的子级、折叠其它（对齐 Semi）；默认全展开',
+    },
+    {
+      name: 'railTheme',
+      type: "'primary' | 'tertiary' | 'muted'",
+      default: "'primary'",
+      desc: 'active ink 颜色主题（对齐 Semi）',
+    },
+    {
+      name: 'size',
+      type: "'small' | 'default'",
+      default: "'default'",
+      desc: '尺寸，影响选项高度与上下间距（对齐 Semi）',
+    },
+    {
+      name: 'maxHeight',
+      type: 'string | number',
+      default: "'750px'",
+      desc: '内容最大高度，超出滚动（数字转 px，对齐 Semi）',
+    },
+    {
+      name: 'maxWidth',
+      type: 'string | number',
+      default: "'200px'",
+      desc: '内容最大宽度，超出 ellipsis（数字转 px，对齐 Semi）',
+    },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根 nav 自定义内联样式（与 affix inset 合并）' },
+    {
+      name: 'onClick',
+      type: '(event: MouseEvent, link: AnchorLink) => void',
+      default: 'undefined',
+      desc: '点击链接回调（e.preventDefault 之后触发，对齐 Semi）',
+    },
+    {
+      name: 'showTooltip',
+      type: "boolean | { type: 'tooltip' | 'popover'; opts?: Record<string, unknown> }",
+      default: 'false',
+      desc: '链接文字缩略时 hover 显示完整标题（对齐 Semi）；对象形式指定浮层类型与透传配置',
+    },
+    {
+      name: 'position',
+      type: 'Placement',
+      default: 'undefined',
+      desc: '浮层弹出位置（12 方位）；仅 showTooltip 开启时生效（对齐 Semi）',
+    },
+    {
+      name: 'onChange',
+      type: '(currentLink: AnchorLink | null, previousLink: AnchorLink | null) => void',
+      default: 'undefined',
+      desc: '激活变更回调（对齐 Semi：传入当前/上一个 link 对象）',
+    },
     { name: 'ariaLabel', type: 'string', default: 'undefined' },
+  ],
+  subComponents: [
+    {
+      name: 'Anchor.Link',
+      description:
+        '声明式锚点链接（对齐 Semi Anchor.Link）。无 children 为叶子，有 children 为分支（嵌套树）。与 links 数组二选一。',
+      props: [
+        { name: 'key', type: 'string', default: 'href', desc: '唯一标识，缺省用 href' },
+        { name: 'href', type: 'string', default: '—', desc: "目标锚点，形如 '#section-1'" },
+        { name: 'title', type: 'string', default: '—', desc: '链接标题文案' },
+        { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用：不响应跳转、置灰、排除 roving' },
+        { name: 'className', type: 'string', default: 'undefined', desc: 'Link 级自定义类名，透传到 <a>' },
+        { name: 'style', type: 'string', default: 'undefined', desc: 'Link 级自定义内联样式，透传到 <a>' },
+      ],
+    },
   ],
   a11y: {
     role: 'navigation',

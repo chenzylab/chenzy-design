@@ -356,9 +356,8 @@
   }
 </script>
 
-<!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children；自身无障碍语义忽略 -->
+<!-- 外层仅承载 hover/focus 触发（需覆盖 trigger + 浮层区域）；click 绑在触发器本身。 -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
   class="cd-popover"
   bind:this={rootEl}
@@ -366,7 +365,6 @@
   onpointerleave={onPointerLeave}
   onfocusin={onFocusIn}
   onfocusout={onFocusOut}
-  onclick={onClick}
 >
   <!-- dialog 模式（click/custom）触发器承载 button 角色，让 aria-haspopup/expanded/controls
        挂在合法宿主上（axe aria-allowed-attr）；可聚焦 + Enter/Space 激活。
@@ -383,6 +381,7 @@
     aria-controls={!isTooltipRole && isOpen ? popId : undefined}
     aria-describedby={isTooltipRole && isOpen ? popId : undefined}
     aria-disabled={!isTooltipRole && disabled ? 'true' : undefined}
+    onclickcapture={isTooltipRole ? undefined : onClick}
     onkeydown={isTooltipRole ? undefined : onTriggerKeydown}
   >
     {@render children?.()}
@@ -408,6 +407,8 @@
       onclick={onPopEvent}
       onkeydown={onPopEvent}
       onpointerdown={onPopEvent}
+      onpointerenter={onPointerEnter}
+      onpointerleave={onPointerLeave}
     >
       {#if showCloseButton}
         <!-- svelte-ignore a11y_consider_explicit_label -->
@@ -516,14 +517,17 @@
     animation: cd-popover-in var(--cd-popover-motion-duration)
       var(--cd-popover-motion-easing, ease) both;
   }
+  /* 用独立 scale 属性（非 transform）做进场缩放：use:floating 用 transform: translate()
+     定位浮层，若动画也走 transform 会覆盖定位 transform，把浮层拉到 (0,0)。独立 scale
+     属性与 transform 正交，二者叠加互不覆盖。 */
   @keyframes cd-popover-in {
     from {
       opacity: 0;
-      transform: scale(0.96);
+      scale: 0.96;
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      scale: 1;
     }
   }
   /* 关闭按钮：绝对定位于浮层右上角 */
@@ -579,7 +583,7 @@
   }
   .cd-popover__btn--ok {
     background: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-text-inverse);
+    color: var(--cd-color-white);
     border-color: var(--cd-color-primary, #165dff);
   }
   .cd-popover__btn--ok:hover {

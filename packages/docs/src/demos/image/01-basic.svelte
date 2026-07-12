@@ -2,4 +2,9 @@
   import { Image } from '@chenzy-design/svelte';
 </script>
 
-<Image src="https://picsum.photos/seed/chenzy/400/300" alt="示例图片" width={400} height={300} />
+<Image
+  width={360}
+  height={200}
+  src="https://picsum.photos/seed/abstract/720/400"
+  alt="基础图片示例"
+/>

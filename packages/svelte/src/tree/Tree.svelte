@@ -13,7 +13,7 @@
   + rAF 节流 + cleanup（红线 #3），可见区间 $derived 纯派生（红线 #2）。键盘移动 activeKey 时
   scrollToIndex 滚到可见。a11y 取舍：aria-activedescendant 指向的行可能因虚拟化未渲染，故键盘
   移动后命令式滚动确保目标行进入视口并被渲染，保证键盘可用。
-  fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化（红线 #1/#2），
+  keyMaps：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化（红线 #1/#2），
   默认字段名时零开销直接用原 treeData，回调回传原始节点（__orig）。
   accordion：手风琴模式，同层级最多展开一个——展开某节点时用 core 的 accordionExpand 纯函数
   计算并收起其同父级 siblings（不同层级互不影响）。受控时只 onExpandedChange 回传新集不回写（红线 #1）。
@@ -42,6 +42,10 @@
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
+  import Input from '../input/Input.svelte';
+  import Checkbox from '../checkbox/Checkbox.svelte';
+  import Spin from '../spin/Spin.svelte';
+  import Highlight from '../highlight/Highlight.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -60,7 +64,66 @@
   };
 
   /** 自定义节点字段名映射（适配任意后端数据结构）。默认 key/label/children。 */
-  type FieldNames = { key?: string; label?: string; children?: string };
+  type KeyMaps = { key?: string; label?: string; children?: string };
+
+  /**
+   * renderFullLabel 整行接管渲染的上下文（对齐 Semi `renderFullLabel` 参数）。
+   * 暴露节点数据、层级、内置计算好的 class、展开图标 snippet 与全部行为回调，
+   * 让使用者完全自定义整行 option 的渲染结构（叶子分组、单选高亮子节点等高级场景）。
+   */
+  type FullLabelContext = {
+    /** 节点数据（自定义 keyMaps 时为原始节点） */
+    data: TreeNodeData;
+    /** 层级，从 0 开始 */
+    level: number;
+    /** 虚拟化时必须赋给渲染 DOM 的定位样式（否则行错位） */
+    style: string | undefined;
+    /** 内置样式类名（含缩进/选中/禁用等状态类） */
+    className: string;
+    /**
+     * 内置展开图标 snippet。可展开节点渲染可点击的箭头（点击触发展开/收起），叶子节点为占位。
+     * 用法：`{@render ctx.expandIcon(ctx.expandStatus)}`（传入展开态以渲染正确朝向）。
+     */
+    expandIcon: Snippet<[{ expanded: boolean; loading: boolean }]>;
+    /** 是否叶子节点 */
+    isLeaf: boolean;
+    /** 选中状态 */
+    checkStatus: { checked: boolean; halfChecked: boolean };
+    /** 展开状态 */
+    expandStatus: { expanded: boolean; loading: boolean };
+    /** 该节点是否命中当前搜索 */
+    filtered: boolean;
+    /** 当前搜索框输入值 */
+    searchWord: string;
+    /** 单选/行点击回调 */
+    onClick: (e: MouseEvent) => void;
+    /** 勾选回调 */
+    onCheck: (e: MouseEvent) => void;
+    /** 展开/收起回调 */
+    onExpand: (e: MouseEvent) => void;
+    /** 右键回调 */
+    onContextMenu: (e: MouseEvent) => void;
+    /** 双击回调 */
+    onDoubleClick: (e: MouseEvent) => void;
+  };
+
+  /**
+   * searchRender 自定义搜索框渲染上下文（对齐 Semi `searchRender` 收到的 inputProps）。
+   * Semi 把这些 props spread 给内置 Input；本库同样透传，snippet 可原样传给我们的 `Input` 组件。
+   */
+  type SearchRenderContext = {
+    value: string;
+    placeholder: string;
+    /** 值变化回调（等价 Input 的 onChange/onInput） */
+    onChange: (value: string) => void;
+    /** 清除回调 */
+    onClear: () => void;
+    /** 是否显示清除按钮（对齐 Semi showClear，映射 Input 的 clearable） */
+    showClear: boolean;
+    className: string | undefined;
+    style: string | undefined;
+    disabled: boolean;
+  };
 
   /** 标准节点附带原始节点引用，用于回调时回传用户原始数据。 */
   type NormalizedNode = TreeNodeData & { __orig: Record<string, unknown> };
@@ -68,7 +131,7 @@
   interface Props {
     /**
      * 树数据源。默认节点字段为 key/label/children；
-     * 用 fieldNames 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
+     * 用 keyMaps 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
      */
     treeData?: TreeNodeData[];
     /**
@@ -79,7 +142,7 @@
      */
     treeDataSimpleJson?: Record<string, unknown>;
     /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
-    fieldNames?: FieldNames;
+    keyMaps?: KeyMaps;
     value?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
     defaultValue?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
     /**
@@ -118,18 +181,36 @@
      * leafOnly 仍会滤成只留叶子。默认 false（回传全部命中节点）。
      */
     leafOnly?: boolean;
+    /**
+     * 目录树模式（对齐 Semi `directory`）。开启后：
+     *  - 默认整行块（等价 blockNode=true），点击整行即选中；
+     *  - 内置目录/文件图标（可展开节点为文件夹、叶子为文件），可用 `icon` snippet 覆盖；
+     *  - 默认展开触发方式为点击整行（expandAction 未显式指定时按 'click'）。
+     * 默认 false。
+     */
+    directory?: boolean;
+    /** 是否开启展开/收起动画（对齐 Semi `motion`）。默认 true；virtualized 时强制关闭。 */
+    motion?: boolean;
     expandedKeys?: TreeKey[];
     defaultExpandedKeys?: TreeKey[];
     defaultExpandAll?: boolean;
+    /**
+     * 展开全部（对齐 Semi `expandAll`）。与 `defaultExpandAll` 的区别：defaultExpandAll 仅初始化生效，
+     * 数据（treeData）后续变化不再影响；expandAll 在数据变化时**仍然生效**（每次数据变化都重新展开全部）。
+     * 仅在非受控展开（未传 expandedKeys）时有意义。默认 false。
+     */
+    expandAll?: boolean;
     /**
      * 默认展开到第 N 层（仅初始化非受控展开集时生效，1 表示展开根层使其子节点可见）。
      * 优先级低于 defaultExpandAll；与 defaultExpandedKeys 取并集。受控 expandedKeys 时忽略（红线 #1）。
      */
     expandedDepth?: number;
     /**
-     * 受控展开时自动展开父节点：expandedKeys 更新时若 autoExpandParent=true，
-     * 自动把所有展开节点的祖先链也加入展开集（派生，不写回受控 expandedKeys，红线 #1）。
-     * 默认 true，与 Semi Design 行为一致。
+     * 自动展开父节点（对齐 Semi `autoExpandParent`，默认 false）。
+     *  - 初次挂载：把初始展开节点的祖先链一次性并入展开集，使其可见（非受控经 initExpanded）；
+     *  - 开启后交互约束：收起某父节点时，若它仍有展开的子孙，则**阻止收起**——需先收起所有
+     *    子节点才能收起父节点（对齐 Semi「需先收起子节点」）。
+     * 默认 false（收起不受此约束，父节点可直接收起）。
      */
     autoExpandParent?: boolean;
     /**
@@ -185,6 +266,15 @@
      * 例如设 `'value'` 则按节点 value 字段匹配关键词。
      */
     treeNodeFilterProp?: string;
+    /** 搜索框占位文案（对齐 Semi `searchPlaceholder`）。不传时用内置 i18n 文案。 */
+    searchPlaceholder?: string;
+    /**
+     * 自定义搜索框渲染（对齐 Semi `searchRender`）。
+     *  - 传 snippet：用它替换内置搜索框，snippet 收到 { value, placeholder, onChange, onClear, className, style }；
+     *  - 传 `false`：隐藏内置搜索框（仍可经 `search()` 方法或受控 searchValue 驱动过滤）。
+     * 仅在搜索开启（filterable / filterTreeNode）时有意义。
+     */
+    searchRender?: false | Snippet<[SearchRenderContext]>;
     /** 搜索框内联样式（对齐 Semi `searchStyle`，透传到搜索框 input 的 style）。 */
     searchStyle?: string;
     /** 搜索框附加 class（对齐 Semi `searchClassName`，追加到搜索框 input 的 class）。 */
@@ -218,8 +308,17 @@
     status?: Status;
     emptyContent?: string;
     ariaLabel?: string;
+    /** 根容器内联样式（对齐 Semi `style`）。可设 width/height/border 等；设 height 时列表区自动限高滚动。 */
+    style?: string;
+    /** 根元素自定义类名（对齐 Semi `className`；本库/Svelte 惯例用 `class`，叠加在内置 class 之后）。 */
+    class?: string;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组 */
     loadData?: (node: TreeNodeData) => Promise<TreeNodeData[]>;
+    /**
+     * 受控已加载节点 key（对齐 Semi `loadedKeys`）。传入时以此为准判断哪些节点已加载，
+     * 已在集合内的节点展开时不再触发 loadData。配合 loadData 使用；不传则由组件内部维护加载态。
+     */
+    loadedKeys?: TreeKey[];
     /** 异步加载完成回调 */
     onLoad?: (loadedKeys: string[], info: { event: 'load'; node: TreeNodeData }) => void;
     /** 启用 HTML5 拖拽排序：节点可拖动改变层级/顺序。默认 false（行为不变） */
@@ -250,16 +349,34 @@
     onDragStart?: (node: TreeNodeData) => void;
     /** 拖拽进入候选目标节点 */
     onDragEnter?: (info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void;
+    /** 拖拽悬停在候选目标节点上（对齐 Semi `onDragOver`）。 */
+    onDragOver?: (info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void;
+    /** 拖拽离开候选目标节点（对齐 Semi `onDragLeave`）。 */
+    onDragLeave?: (info: { dragNode: TreeNodeData; dropNode: TreeNodeData }) => void;
+    /** 拖拽结束（无论是否成功放下，对齐 Semi `onDragEnd`）。 */
+    onDragEnd?: (info: { dragNode: TreeNodeData }) => void;
+    /**
+     * 单个节点被选中时回调（对齐 Semi `onSelect`）。参数 (key, selected, node)：
+     * 单选/多选点击选中节点时触发，早于 onChange。key 为该节点 key，selected 为选中后状态。
+     */
+    onSelect?: (key: TreeKey, selected: boolean, node: TreeNodeData) => void;
     onChange?: (info: ChangeInfo) => void;
     onCheck?: (info: CheckInfo) => void;
     onExpandedChange?: (info: ExpandInfo) => void;
-    label?: Snippet<
+    /** 自定义节点内容渲染（对齐 Semi `renderLabel`）；参数含节点、层级、当前搜索词、选中/勾选态。 */
+    renderLabel?: Snippet<
       [{ node: TreeNodeData; level: number; searchValue: string; selected: boolean; checked: boolean }]
     >;
+    /**
+     * 完全接管整行渲染（对齐 Semi `renderFullLabel`）。传入后忽略内置的 switcher/checkbox/icon/label
+     * 结构，由 snippet 用 FullLabelContext 自绘整行（含 class/expandIcon/checkStatus/回调）。
+     * 用于「叶子分组勾选」「单选高亮子节点」等高级场景。虚拟化时须把 ctx.style 赋给渲染根节点。
+     */
+    renderFullLabel?: Snippet<[FullLabelContext]>;
     /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点、展开态与是否叶子 */
     icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; isLeaf: boolean }]>;
     /** 自定义展开/收起箭头；参数含节点、展开态与加载态 */
-    switcher?: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>;
+    expandIcon?: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>;
     /** 节点尾部操作区（渲染在 label 右侧） */
     suffix?: Snippet<[{ node: TreeNodeData }]>;
     /** 自定义拖拽幽灵节点 */
@@ -269,7 +386,7 @@
   let {
     treeData = [],
     treeDataSimpleJson,
-    fieldNames,
+    keyMaps,
     value,
     defaultValue = null,
     onChangeWithObject = false,
@@ -281,14 +398,17 @@
     checkStrictly = false,
     disableStrictly = false,
     leafOnly = false,
+    directory = false,
+    motion = true,
     expandedKeys,
     defaultExpandedKeys = [],
     defaultExpandAll = false,
+    expandAll = false,
     expandedDepth,
-    autoExpandParent = true,
+    autoExpandParent = false,
     accordion = false,
     selectable = true,
-    expandAction = false,
+    expandAction,
     autoMergeValue = true,
     labelEllipsis,
     preventScroll = false,
@@ -300,19 +420,24 @@
     filterable = false,
     filterTreeNode,
     treeNodeFilterProp = 'label',
+    searchPlaceholder,
+    searchRender,
     searchStyle,
     searchClassName,
     showClear = true,
     showFilteredOnly = false,
     searchValue: searchValueProp,
     onSearch,
-    blockNode = false,
+    blockNode = true,
     disabled = false,
     size = 'default',
     status = 'default',
     emptyContent,
     ariaLabel,
+    style: rootStyle,
+    class: rootClassName,
     loadData,
+    loadedKeys: loadedKeysProp,
     onLoad,
     draggable = false,
     autoExpandWhenDragEnter = true,
@@ -323,15 +448,26 @@
     onRightClick,
     onDragStart,
     onDragEnter,
+    onDragOver,
+    onDragLeave,
+    onDragEnd,
+    onSelect,
     onChange,
     onCheck,
     onExpandedChange,
-    label,
+    renderLabel,
+    renderFullLabel,
     icon,
-    switcher,
+    expandIcon,
     suffix,
     dragGhost,
   }: Props = $props();
+
+  // directory 目录树：默认整行块 + 点击整行展开（expandAction 未显式指定时按 'click'）。
+  const effBlockNode = $derived(blockNode || directory);
+  const effExpandAction = $derived(expandAction ?? (directory ? 'click' : false));
+  // motion：virtualized 时强制关闭动画（对齐 Semi）。
+  const motionEnabled = $derived(motion && !virtualized);
 
   const loc = useLocale();
 
@@ -341,13 +477,13 @@
     return `${baseId}-${String(key)}`;
   }
 
-  // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
+  // --- keyMaps 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
   // 默认（全标准名）时直接返回原 treeData 引用，零额外开销（红线 #3）；映射为纯 $derived（红线 #2），
   // 不写回 treeData（红线 #1）。每个标准节点附带 __orig 指向用户原始节点，回调时回传原始数据。
-  const keyField = $derived(fieldNames?.key ?? 'key');
-  const labelField = $derived(fieldNames?.label ?? 'label');
-  const childrenField = $derived(fieldNames?.children ?? 'children');
-  const fieldNamesDefault = $derived(
+  const keyField = $derived(keyMaps?.key ?? 'key');
+  const labelField = $derived(keyMaps?.label ?? 'label');
+  const childrenField = $derived(keyMaps?.children ?? 'children');
+  const keyMapsDefault = $derived(
     keyField === 'key' && labelField === 'label' && childrenField === 'children',
   );
 
@@ -392,10 +528,10 @@
 
   // 标准化后的树：默认时即数据源原引用（零开销），否则递归映射字段名。
   const normalizedData = $derived<TreeNodeData[]>(
-    fieldNamesDefault ? sourceData : normalizeNodes(sourceData),
+    keyMapsDefault ? sourceData : normalizeNodes(sourceData),
   );
 
-  /** 回调回传：自定义 fieldNames 时回原始节点，否则回标准节点本身。 */
+  /** 回调回传：自定义 keyMaps 时回原始节点，否则回标准节点本身。 */
   function toOrig(node: TreeNodeData): TreeNodeData {
     const orig = (node as Partial<NormalizedNode>).__orig;
     return (orig as TreeNodeData | undefined) ?? node;
@@ -410,6 +546,11 @@
   const loadedChildren = new SvelteMap<TreeKey, TreeNodeData[]>();
   const loadingKeys = new SvelteSet<TreeKey>();
   const loadedKeys = new SvelteSet<TreeKey>();
+  // 受控 loadedKeys（对齐 Semi）：并入内部已加载集，判断加载态时两者取并。
+  const controlledLoaded = $derived(new Set<TreeKey>(loadedKeysProp ?? []));
+  function isLoaded(key: TreeKey): boolean {
+    return loadedKeys.has(key) || controlledLoaded.has(key);
+  }
 
   // 合并树：把已加载的子节点注入对应节点，喂给所有 core 纯函数。
   // 无加载时返回原 treeData 引用，零开销。
@@ -430,17 +571,17 @@
     if (flatHasChildren) return true;
     if (!loadData || node.isLeaf === true) return false;
     // 已加载且为空 → 不可展开；未加载 → 显示箭头（异步占位）
-    if (loadedKeys.has(node.key)) return (loadedChildren.get(node.key)?.length ?? 0) > 0;
+    if (isLoaded(node.key)) return (loadedChildren.get(node.key)?.length ?? 0) > 0;
     return true;
   }
 
   async function loadChildren(node: TreeNodeData) {
-    if (!loadData || loadingKeys.has(node.key) || loadedKeys.has(node.key)) return;
+    if (!loadData || loadingKeys.has(node.key) || isLoaded(node.key)) return;
     loadingKeys.add(node.key);
     try {
-      // loadData 收到用户原始节点（自定义字段名形态），返回结果按 fieldNames 标准化后缓存。
+      // loadData 收到用户原始节点（自定义字段名形态），返回结果按 keyMaps 标准化后缓存。
       const kids = await loadData(toOrig(node));
-      loadedChildren.set(node.key, fieldNamesDefault ? kids : normalizeNodes(kids));
+      loadedChildren.set(node.key, keyMapsDefault ? kids : normalizeNodes(kids));
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
@@ -518,13 +659,13 @@
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
   function initExpanded(): Set<TreeKey> {
-    // 需用标准化后的 key（fieldNames 自定义时 collectExpandable* 才能识别 children）。
+    // 需用标准化后的 key（keyMaps 自定义时 collectExpandable* 才能识别 children）。
     const rawSource =
       treeData.length > 0 || !treeDataSimpleJson
         ? treeData
         : simpleJsonToTree(treeDataSimpleJson);
-    const base = fieldNamesDefault ? rawSource : normalizeNodes(rawSource);
-    if (defaultExpandAll) {
+    const base = keyMapsDefault ? rawSource : normalizeNodes(rawSource);
+    if (defaultExpandAll || expandAll) {
       return new Set(collectExpandable(base));
     }
     // expandedDepth：展开 ≤N 层的有子节点（与 defaultExpandedKeys 取并集）。优先级低于 defaultExpandAll。
@@ -532,33 +673,41 @@
     if (typeof expandedDepth === 'number' && expandedDepth > 0) {
       for (const k of collectExpandableToDepth(base, expandedDepth)) init.add(k);
     }
+    // autoExpandParent：初次挂载时把初始展开节点的祖先链一次性并入（对齐 Semi「初次挂载为 true」）。
+    // 仅初始化做一次，此后交互不再强制（否则父节点收不起）。受控 expandedKeys 由外部自行含父节点。
+    if (autoExpandParent && init.size > 0) {
+      for (const k of [...init]) collectAncestorsInto(base, k, init);
+    }
     return init;
   }
-  const isExpandControlled = $derived(expandedKeys !== undefined);
-  let innerExpanded = $state<Set<TreeKey>>(initExpanded());
-  const baseExpandedSet = $derived(
-    isExpandControlled ? new Set(expandedKeys ?? []) : innerExpanded,
-  );
-  // autoExpandParent：展开节点的所有祖先也纳入展开集（派生，不写回，红线 #1）。
-  // 实现：对 baseExpandedSet 中每个 key，递归向上收集祖先 key（深度优先搜索）。
-  function collectAncestors(data: TreeNodeData[], targetKey: TreeKey, acc: Set<TreeKey>): boolean {
+  // 收集 targetKey 的祖先链并入 acc（DFS）。纯函数辅助，供 autoExpandParent 初始化用。
+  function collectAncestorsInto(data: TreeNodeData[], targetKey: TreeKey, acc: Set<TreeKey>): boolean {
     for (const node of data) {
       if (node.key === targetKey) return true;
-      if (node.children && collectAncestors(node.children, targetKey, acc)) {
+      if (node.children && collectAncestorsInto(node.children, targetKey, acc)) {
         acc.add(node.key);
         return true;
       }
     }
     return false;
   }
-  const currentExpandedSet = $derived.by(() => {
-    if (!autoExpandParent || baseExpandedSet.size === 0) return baseExpandedSet;
-    const withAncestors = new Set(baseExpandedSet);
-    for (const key of baseExpandedSet) {
-      collectAncestors(mergedData, key, withAncestors);
-    }
-    return withAncestors;
+  const isExpandControlled = $derived(expandedKeys !== undefined);
+  let innerExpanded = $state<Set<TreeKey>>(initExpanded());
+  // expandAll（对齐 Semi）：数据（mergedData）变化时，非受控展开集重新展开全部——区别于
+  // defaultExpandAll 仅初始化生效。仅在 expandAll 且非受控时挂载此 effect（红线 #3 无副作用泄漏）。
+  $effect(() => {
+    if (!expandAll || isExpandControlled) return;
+    // 读取 mergedData 建立依赖：数据变化即重算全展开集。
+    innerExpanded = new Set(collectExpandable(mergedData));
   });
+  const baseExpandedSet = $derived(
+    isExpandControlled ? new Set(expandedKeys ?? []) : innerExpanded,
+  );
+  // autoExpandParent（对齐 Semi：默认 false，「初次挂载时为 true」——仅初始化阶段把展开节点的
+  // 祖先链一次性并入展开集，使其可见；此后用户交互（收起父节点）以实际展开集为准，不再强制把
+  // 祖先加回，否则父节点将「收不起来」。实现：并祖先只在 initExpanded 里做一次；currentExpandedSet
+  // 直接用 baseExpandedSet（受控 expandedKeys 或非受控 innerExpanded），不再持续派生强制。
+  const currentExpandedSet = $derived(baseExpandedSet);
 
   // --- 搜索：支持受控（searchValueProp）和非受控（内部 state）两种模式 ---
   // 受控：searchValueProp 传入时直接用，input 事件仅触发 onSearch 回调，不更新内部 state（红线 #1）。
@@ -580,7 +729,7 @@
   const matchPredicate = $derived.by(() => {
     if (typeof filterTreeNode === 'function') {
       const fn = filterTreeNode;
-      // 回传原始节点（fieldNames 自定义时），与其它回调一致。
+      // 回传原始节点（keyMaps 自定义时），与其它回调一致。
       return (node: TreeNodeData) => fn(trimmedSearch, toOrig(node));
     }
     const lower = trimmedSearch.toLowerCase();
@@ -591,29 +740,13 @@
     return computeFilteredKeys(mergedData, matchPredicate);
   });
 
-  // 搜索输入处理：受控时只触发 onSearch，非受控时同时更新 innerSearchValue。
+  // 搜索输入处理：复用命令式 search()（受控时只回调 onSearch，非受控时更新内部 state）。
   function handleSearchInput(e: Event) {
-    const val = (e.target as HTMLInputElement).value;
-    if (!isSearchControlled) innerSearchValue = val;
-    // 计算 filteredKeys 并回调（基于当前 filterResult，但此时 val 可能还未更新到 derived）。
-    // 为使 filteredKeys 与新 val 同步，临时基于新 val 计算一次。
-    if (onSearch) {
-      const trimmed = val.trim();
-      let fKeys: string[] = [];
-      if (trimmed.length > 0 && searchEnabled) {
-        let pred: (node: TreeNodeData) => boolean;
-        if (typeof filterTreeNode === 'function') {
-          const fn = filterTreeNode;
-          pred = (node: TreeNodeData) => fn(trimmed, toOrig(node));
-        } else {
-          const lower = trimmed.toLowerCase();
-          pred = (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
-        }
-        const result = computeFilteredKeys(mergedData, pred);
-        fKeys = [...result.matched].map(String);
-      }
-      onSearch(val, fKeys);
-    }
+    search((e.target as HTMLInputElement).value);
+  }
+  // 供 searchRender 自定义搜索框的 onChange 回调（直接接受值）。
+  function handleSearchValue(val: string) {
+    search(val);
   }
 
   // 清除搜索：非受控时清空内部 state；受控时仅回调 onSearch('') 让外层清（红线 #1）。
@@ -621,7 +754,6 @@
     if (!isSearchControlled) innerSearchValue = '';
     onSearch?.('', []);
   }
-  const showClearBtn = $derived(showClear && searchValue.length > 0 && !disabled);
 
   // 搜索激活时把过滤展开集并入可见展开集（派生，不写回）
   const effectiveExpanded = $derived.by(() => {
@@ -671,6 +803,31 @@
   export function focus(): void {
     const el = viewportEl ?? listEl;
     el?.focus({ preventScroll });
+  }
+
+  /**
+   * 命令式触发搜索（对齐 Semi `search` 方法）。写入内部搜索词并触发过滤/回调。
+   * 常配合 searchRender={false}（隐藏内置搜索框）使用，由外部输入框驱动。
+   * 受控 searchValue 时仅回调 onSearch 不写内部 state（红线 #1）。
+   */
+  export function search(value: string): void {
+    if (!isSearchControlled) innerSearchValue = value;
+    if (onSearch) {
+      const trimmed = value.trim();
+      let fKeys: string[] = [];
+      if (trimmed.length > 0 && searchEnabled) {
+        let pred: (node: TreeNodeData) => boolean;
+        if (typeof filterTreeNode === 'function') {
+          const fn = filterTreeNode;
+          pred = (n: TreeNodeData) => fn(trimmed, toOrig(n));
+        } else {
+          const lower = trimmed.toLowerCase();
+          pred = (n: TreeNodeData) => nodeFilterText(n).toLowerCase().includes(lower);
+        }
+        fKeys = [...computeFilteredKeys(mergedData, pred).matched].map(String);
+      }
+      onSearch(value, fKeys);
+    }
   }
   // 仅由命令式 scroll 回调写入的本地 scrollTop，render 期只读。
   let scrollTop = $state(0);
@@ -736,6 +893,37 @@
     scrollIndexIntoView(i);
   }
 
+  /**
+   * 命令式滚动到指定节点（对齐 Semi `scrollTo` 方法）。仅虚拟化 Tree 生效，
+   * 目标须为当前已展开（可见）节点。align 决定对齐位置，默认 'center'。
+   */
+  export function scrollTo(opts: {
+    key: TreeKey;
+    align?: 'center' | 'start' | 'end' | 'smart' | 'auto';
+  }): void {
+    const el = viewportEl;
+    if (!el || !virtualized) return;
+    const index = visibleFlat.findIndex((f) => f.node.key === opts.key);
+    if (index < 0) return;
+    const align = opts.align ?? 'center';
+    const itemStart = index * rowHeight;
+    if (align === 'center') {
+      const target = itemStart - (el.clientHeight - rowHeight) / 2;
+      const clamped = Math.max(0, Math.min(target, totalHeight - el.clientHeight));
+      el.scrollTop = clamped;
+      scrollTop = clamped;
+      return;
+    }
+    if (align === 'auto' || align === 'smart') {
+      scrollIndexIntoView(index);
+      return;
+    }
+    // start / end：复用 core scrollOffsetForIndex。
+    const target = scrollOffsetForIndex(itemStart, rowHeight, el.clientHeight, totalHeight, align);
+    el.scrollTop = target;
+    scrollTop = target;
+  }
+
   function isNodeDisabled(node: TreeNodeData): boolean {
     return disabled || !!node.disabled;
   }
@@ -759,8 +947,21 @@
     const walk = (nodes: TreeNodeData[], ancestorChecked: boolean) => {
       for (const n of nodes) {
         const selfChecked = checked.has(n.key);
+        const isLeaf = !n.children || n.children.length === 0;
         // 仅当自身被选中且无已选中祖先时保留（顶层完全选中节点）。
         if (selfChecked && !ancestorChecked) out.push(n.key);
+        // disableStrictly 下，被选中的 disabled 叶子必须显式保留——即便其父级已完全选中：
+        // 受控回填时父级 key 经 conduct 无法把 disabled 叶子重新联动勾上（disabled 不受父级联动），
+        // 若被合并剔除就会丢失该叶子的勾选态（对齐 Semi disableStrictly 语义）。
+        else if (
+          disableStrictly &&
+          selfChecked &&
+          ancestorChecked &&
+          isLeaf &&
+          !!n.disabled
+        ) {
+          out.push(n.key);
+        }
         if (n.children && n.children.length > 0) {
           walk(n.children, ancestorChecked || selfChecked);
         }
@@ -794,6 +995,8 @@
       selected = true;
     }
     if (!isValueControlled) innerValue = nextKeys;
+    // onSelect（对齐 Semi）：早于 onChange，回传 (key, selected, node)。
+    onSelect?.(node.key, selected, toOrig(node));
     // onChangeWithObject 时把 key 形态转成节点对象形态输出（数组内元素同型，非混合）。
     const outValue: ChangeInfo['value'] = Array.isArray(nextKeys)
       ? (nextKeys.map(keyToOutput) as TreeKey[] | TreeNodeData[])
@@ -810,7 +1013,7 @@
       if (nextBase.has(node.key)) nextBase.delete(node.key);
       else nextBase.add(node.key);
     } else {
-      nextBase = toggleCheck(mergedData, currentCheckedBase, node.key);
+      nextBase = toggleCheck(mergedData, currentCheckedBase, node.key, disableStrictly);
     }
     if (!isCheckControlled) innerCheckedBase = nextBase;
     const resolved = !checkLinked
@@ -843,6 +1046,11 @@
         ? accordionExpand(mergedData, currentExpandedSet, node.key)
         : new Set(currentExpandedSet).add(node.key);
     } else {
+      // autoExpandParent（对齐 Semi）：收起某节点时，若其仍有展开中的子孙，则阻止收起——
+      // 需先收起所有子节点才能收起父节点。无展开子孙时正常收起。
+      if (autoExpandParent && hasExpandedDescendant(node, currentExpandedSet)) {
+        return;
+      }
       next = new Set(currentExpandedSet);
       next.delete(node.key);
     }
@@ -850,12 +1058,22 @@
     onExpandedChange?.({ expanded: [...next], node: toOrig(node), expand });
   }
 
+  // 节点是否有仍在展开集中的子孙（供 autoExpandParent 判断「父节点能否收起」）。
+  function hasExpandedDescendant(node: TreeNodeData, expandedSet: ReadonlySet<TreeKey>): boolean {
+    if (!node.children) return false;
+    for (const child of node.children) {
+      if (expandedSet.has(child.key)) return true;
+      if (hasExpandedDescendant(child, expandedSet)) return true;
+    }
+    return false;
+  }
+
   function toggleExpand(node: TreeNodeData) {
     const hasOwnKids = (node.children?.length ?? 0) > 0;
     if (!isExpandable(node, hasOwnKids)) return;
     const willExpand = !isExpanded(node.key);
     // 展开未加载的异步节点：先取数据再展开（数据到位后合并树派生即显示子节点）
-    if (willExpand && !hasOwnKids && loadData && !loadedKeys.has(node.key)) {
+    if (willExpand && !hasOwnKids && loadData && !isLoaded(node.key)) {
       void loadChildren(node);
     }
     emitExpand(node, willExpand);
@@ -868,7 +1086,7 @@
     if (isSelectable(node)) {
       emitSelect(node);
       // expandAction='click'：可选中节点点击整行时，选中与展开同时发生（对齐 Semi）。
-      if (expandAction === 'click' && expandable) toggleExpand(node);
+      if (effExpandAction === 'click' && expandable) toggleExpand(node);
     } else if (expandable) {
       // 不可选中的可展开节点：默认点击即展开（沿用原行为），expandAction='click' 语义一致，不重复触发。
       toggleExpand(node);
@@ -879,7 +1097,7 @@
   function onRowDblClick(e: MouseEvent, node: TreeNodeData) {
     if (isNodeDisabled(node)) return;
     onDoubleClick?.(e, toOrig(node));
-    if (expandAction === 'doubleClick' && isExpandable(node, (node.children?.length ?? 0) > 0)) {
+    if (effExpandAction === 'doubleClick' && isExpandable(node, (node.children?.length ?? 0) > 0)) {
       toggleExpand(node);
     }
   }
@@ -943,7 +1161,7 @@
       if (next.has(sib.node.key)) continue;
       // 触发未加载异步节点的子节点拉取（数据到位后合并树派生显示）。
       const hasOwnKids = (sib.node.children?.length ?? 0) > 0;
-      if (!hasOwnKids && loadData && !loadedKeys.has(sib.node.key)) {
+      if (!hasOwnKids && loadData && !isLoaded(sib.node.key)) {
         void loadChildren(sib.node);
       }
       next.add(sib.node.key);
@@ -1165,6 +1383,11 @@
     }
     dropKey = node.key;
     dropPos = pos;
+    // onDragOver（对齐 Semi）：每次悬停在候选目标上回传。
+    if (onDragOver) {
+      const dragNode = findFlatNode(dragKey);
+      if (dragNode) onDragOver({ dragNode: toOrig(dragNode), dropNode: toOrig(node) });
+    }
     // 拖到内部时自动展开目标（便于放入），延时避免误触。autoExpandWhenDragEnter=false 时关闭。
     if (
       autoExpandWhenDragEnter &&
@@ -1188,6 +1411,11 @@
     const related = e.relatedTarget as Node | null;
     const cur = e.currentTarget as HTMLElement;
     if (related && cur.contains(related)) return;
+    // onDragLeave（对齐 Semi）：真正离开该行时回传。
+    if (onDragLeave && dragKey !== null) {
+      const dragNode = findFlatNode(dragKey);
+      if (dragNode) onDragLeave({ dragNode: toOrig(dragNode), dropNode: toOrig(node) });
+    }
     if (dropKey === node.key) {
       clearExpandTimer();
       dropKey = null;
@@ -1214,31 +1442,17 @@
   }
 
   function onNodeDragEnd() {
+    // onDragEnd（对齐 Semi）：拖拽结束无论是否成功放下都回传被拖节点。
+    if (onDragEnd && dragKey !== null) {
+      const dragNode = findFlatNode(dragKey);
+      if (dragNode) onDragEnd({ dragNode: toOrig(dragNode) });
+    }
     resetDrag();
   }
 
   function findFlatNode(key: TreeKey): TreeNodeData | undefined {
     const f = flat.find((x) => x.node.key === key);
     return f?.node;
-  }
-
-  // --- 搜索高亮：把命中子串包 <mark>，返回片段数组供模板渲染 ---
-  type Part = { text: string; mark: boolean };
-  function highlightParts(text: string): Part[] {
-    if (!searchActive) return [{ text, mark: false }];
-    const lower = text.toLowerCase();
-    const term = trimmedSearch.toLowerCase();
-    const parts: Part[] = [];
-    let from = 0;
-    let idx = lower.indexOf(term, from);
-    while (idx !== -1) {
-      if (idx > from) parts.push({ text: text.slice(from, idx), mark: false });
-      parts.push({ text: text.slice(idx, idx + term.length), mark: true });
-      from = idx + term.length;
-      idx = lower.indexOf(term, from);
-    }
-    if (from < text.length) parts.push({ text: text.slice(from), mark: false });
-    return parts;
   }
 
   function rowChecked(node: TreeNodeData): boolean {
@@ -1260,42 +1474,75 @@
       `cd-tree--${status}`,
       disabled && 'cd-tree--disabled',
       showLine && 'cd-tree--line',
+      effBlockNode && 'cd-tree--block',
+      directory && 'cd-tree--directory',
+      motionEnabled && 'cd-tree--motion',
+      rootClassName,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // renderFullLabel 上下文构造：把内置计算好的状态与行为回调封装给使用者 snippet。
+  // className 汇总内置状态类（缩进由 padding 处理，此处给状态类），供自定义渲染沿用内置样式。
+  function fullLabelClass(f: FlatNode, selected: boolean, nodeDisabled: boolean, active: boolean): string {
+    return [
+      'cd-tree__node',
+      `cd-tree__node--fulllabel`,
+      `cd-tree__node--level-${f.level + 1}`,
+      selected && 'cd-tree__node--selected',
+      nodeDisabled && 'cd-tree__node--disabled',
+      active && 'cd-tree__node--active',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
 </script>
 
-<div class={cls}>
-  {#if searchEnabled}
-    <div class="cd-tree__search" class:cd-tree__search--clearable={showClearBtn}>
-      <input
-        class={['cd-tree__search-input', searchClassName].filter(Boolean).join(' ')}
-        type="text"
-        placeholder={loc().t('Tree.searchPlaceholder')}
-        aria-label={loc().t('Tree.searchPlaceholder')}
-        value={searchValue}
-        oninput={handleSearchInput}
-        style={searchStyle}
-        {disabled}
-      />
-      {#if showClearBtn}
-        <button
-          type="button"
-          class="cd-tree__search-clear"
-          aria-label={loc().t('Tree.clear')}
-          onclick={clearSearch}
+<div class={cls} style={rootStyle}>
+  {#if searchEnabled && searchRender !== false}
+    {@const placeholder = searchPlaceholder ?? loc().t('Tree.searchPlaceholder')}
+    <!-- 搜索框容器（对齐 Semi tree-search-wrapper：paddingY 8 / paddingX 12） -->
+    <div
+      class={['cd-tree__search', searchClassName].filter(Boolean).join(' ')}
+      style={searchStyle}
+    >
+      {#if searchRender}
+        <!-- 自定义搜索框（对齐 Semi searchRender）：透传 inputProps，使用者可原样传给 Input。 -->
+        {@render searchRender({
+          value: searchValue,
+          placeholder,
+          onChange: handleSearchValue,
+          onClear: clearSearch,
+          showClear,
+          className: searchClassName,
+          style: searchStyle,
+          disabled,
+        })}
+      {:else}
+        <!-- 内置搜索框复用库内 Input：IconSearch 前缀 + clearable（对齐 Semi 用 Input + showClear）。 -->
+        <Input
+          value={searchValue}
+          {placeholder}
+          ariaLabel={placeholder}
+          {size}
+          {disabled}
+          clearable={showClear}
+          onInput={handleSearchValue}
+          onClear={clearSearch}
         >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              d="M4 4l8 8M12 4l-8 8"
-            />
-          </svg>
-        </button>
+          {#snippet prefix()}
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                d="M7 2.5a4.5 4.5 0 1 0 2.9 7.96l3.32 3.32M11.5 7A4.5 4.5 0 0 0 7 2.5"
+              />
+            </svg>
+          {/snippet}
+        </Input>
       {/if}
     </div>
   {/if}
@@ -1342,6 +1589,20 @@
   {/if}
 </div>
 
+{#snippet fullLabelSwitcher(s: { expanded: boolean; loading: boolean })}
+  {#if s.loading}
+    <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
+      <Spin size="small" />
+    </span>
+  {:else}
+    <span class="cd-tree__switcher" class:cd-tree__switcher--open={s.expanded} aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
+      </svg>
+    </span>
+  {/if}
+{/snippet}
+
 {#snippet row(f: FlatNode, posStyle: string | undefined)}
   {@const node = f.node}
   {@const expandable = isExpandable(node, f.hasChildren)}
@@ -1353,7 +1614,28 @@
   {@const active = activeKey === node.key}
   {@const dragging = dragKey === node.key}
   {@const isDropTarget = dropKey === node.key}
-  {@const indentStyle = showLine ? '' : `padding-inline-start: calc(${f.level} * var(--cd-tree-indent))`}
+  {@const indentStyle = showLine ? '' : `padding-inline-start: calc(var(--cd-spacing-tree-option-level1-padding-left) + ${f.level} * var(--cd-spacing-tree-option-level-padding-left))`}
+  {#if renderFullLabel}
+    <!-- renderFullLabel：整行完全由使用者接管（对齐 Semi）。提供内置状态类/图标/回调，
+         使用者自绘结构；虚拟化时须把 ctx.style 赋给渲染根节点。 -->
+    {@render renderFullLabel({
+      data: toOrig(node),
+      level: f.level,
+      style: [posStyle, indentStyle].filter(Boolean).join('; ') || undefined,
+      className: fullLabelClass(f, selected, nodeDisabled, active),
+      expandIcon: fullLabelSwitcher,
+      isLeaf: !expandable,
+      checkStatus: { checked, halfChecked: rowHalf(node) },
+      expandStatus: { expanded, loading },
+      filtered: searchActive && filterResult.matched.has(node.key),
+      searchWord: trimmedSearch,
+      onClick: () => onRowClick(node),
+      onCheck: () => emitCheck(node),
+      onExpand: () => toggleExpand(node),
+      onContextMenu: (e: MouseEvent) => { e.preventDefault(); onRightClick?.(e, toOrig(node)); },
+      onDoubleClick: (e: MouseEvent) => onRowDblClick(e, node),
+    })}
+  {:else}
         <!-- treeitem 焦点经容器 aria-activedescendant 漫游管理，行本身 tabindex=-1，键盘统一在 role=tree 容器处理 -->
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
@@ -1362,7 +1644,7 @@
           class:cd-tree__node--selected={selected}
           class:cd-tree__node--disabled={nodeDisabled}
           class:cd-tree__node--active={active}
-          class:cd-tree__node--block={blockNode}
+          class:cd-tree__node--block={effBlockNode}
           class:cd-tree__node--dragging={dragging}
           class:cd-tree__node--drop-before={isDropTarget && dropPos === 'before'}
           class:cd-tree__node--drop-inside={isDropTarget && dropPos === 'inside'}
@@ -1379,7 +1661,7 @@
           aria-disabled={nodeDisabled || undefined}
           style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
-          ondblclick={onDoubleClick || expandAction === 'doubleClick'
+          ondblclick={onDoubleClick || effExpandAction === 'doubleClick'
             ? (e) => onRowDblClick(e, node)
             : undefined}
           oncontextmenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(e, toOrig(node)); } : undefined}
@@ -1403,15 +1685,16 @@
             {/each}
           {/if}
           {#if loading}
-            {#if switcher}
-              {@render switcher({ node, expanded: false, loading: true })}
+            {#if expandIcon}
+              {@render expandIcon({ node, expanded: false, loading: true })}
             {:else}
+              <!-- 加载态复用 Spin 组件（对齐 Semi Tree 内部用 Spin） -->
               <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
-                <span class="cd-tree__spinner"></span>
+                <Spin size="small" />
               </span>
             {/if}
           {:else if expandable}
-            {#if switcher}
+            {#if expandIcon}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <span
                 role="button"
@@ -1422,7 +1705,7 @@
                   if (!nodeDisabled) toggleExpand(node);
                 }}
               >
-                {@render switcher({ node, expanded, loading: false })}
+                {@render expandIcon({ node, expanded, loading: false })}
               </span>
             {:else}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1443,63 +1726,75 @@
               </span>
             {/if}
           {:else}
-            {#if switcher}
-              {@render switcher({ node, expanded: false, loading: false })}
+            {#if expandIcon}
+              {@render expandIcon({ node, expanded: false, loading: false })}
             {:else}
               <span class="cd-tree__switcher cd-tree__switcher--leaf" aria-hidden="true"></span>
             {/if}
           {/if}
 
           {#if checkable}
+            <!-- 勾选框复用 Checkbox 组件（对齐 Semi Tree 内部用 Checkbox）。
+                 交互由 Checkbox 自身的 onChange 触发 emitCheck（不要在外层容器加 onclick——
+                 Checkbox 内部是 label+input，点 label 会双触发 click，导致 toggle 抵消）。
+                 外层 span 仅阻止点击冒泡到行（避免额外触发行选中/展开）。 -->
+            <!-- span 仅拦截冒泡、非交互元素（交互由内部 Checkbox 承载），故忽略静态元素交互告警 -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <span
               class="cd-tree__checkbox"
-              class:cd-tree__checkbox--checked={checked}
-              class:cd-tree__checkbox--half={!checked && rowHalf(node)}
-              class:cd-tree__checkbox--disabled={!isCheckableNode(node)}
-              role="button"
-              tabindex="-1"
-              aria-hidden="true"
-              onclick={(e) => {
-                e.stopPropagation();
-                emitCheck(node);
-              }}
+              onclick={(e) => e.stopPropagation()}
             >
-              {#if checked}
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M3.5 8.5l3 3 6-6.5"
-                  />
-                </svg>
-              {:else if rowHalf(node)}
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 8h8" />
-                </svg>
+              <Checkbox
+                checked={checked}
+                indeterminate={!checked && rowHalf(node)}
+                disabled={!isCheckableNode(node)}
+                ariaLabel={node.label}
+                {size}
+                onChange={() => emitCheck(node)}
+              />
+            </span>
+          {/if}
+
+          {#if showIcon || directory}
+            {@const isLeaf = !expandable}
+            <span class="cd-tree__icon" class:cd-tree__icon--directory={directory && !icon} aria-hidden="true">
+              {#if icon}
+                {@render icon({ node, expanded, isLeaf })}
+              {:else if directory}
+                <!-- directory 模式内置目录/文件图标（对齐 Semi IconFolder/IconFolderOpen/IconFile）；可用 icon snippet 覆盖 -->
+                {#if isLeaf}
+                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
+                      d="M4 1.5h5l3 3v10H4z" />
+                    <path fill="none" stroke="currentColor" stroke-width="1.2" d="M9 1.5v3h3" />
+                  </svg>
+                {:else if expanded}
+                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
+                      d="M1.5 4.5h4l1.5 1.5H14v7H2z" />
+                  </svg>
+                {:else}
+                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
+                      d="M1.5 3.5h5l1.5 1.5H14.5v8h-13z" />
+                  </svg>
+                {/if}
               {/if}
             </span>
           {/if}
 
-          {#if showIcon}
-            {@const isLeaf = !expandable}
-            <span class="cd-tree__icon" aria-hidden="true">
-              {#if icon}{@render icon({ node, expanded, isLeaf })}{/if}
-            </span>
-          {/if}
-
           <span class="cd-tree__label" class:cd-tree__label--ellipsis={ellipsis}>
-            {#if label}
-              {@render label({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
-            {:else}
-              {#each highlightParts(node.label) as part, i (i)}
-                {#if part.mark}
-                  <mark class="cd-tree__highlight">{part.text}</mark>
-                {:else}{part.text}{/if}
-              {/each}
-            {/if}
+            {#if renderLabel}
+              {@render renderLabel({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
+            {:else if searchActive}
+              <!-- 搜索命中高亮复用 Highlight 组件（对齐 Semi Tree 内部用 Highlight） -->
+              <Highlight
+                sourceString={node.label}
+                searchWords={trimmedSearch}
+                highlightClassName="cd-tree__highlight"
+              />
+            {:else}{node.label}{/if}
           </span>
 
           {#if suffix}
@@ -1514,6 +1809,7 @@
             </span>
           {/if}
         </div>
+  {/if}
 {/snippet}
 
 <style>
@@ -1522,8 +1818,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-tree-node-color);
+    color: var(--cd-color-tree-option-text-default);
     font-size: var(--cd-tree-node-font-size);
+    box-sizing: border-box;
+    /* 通过 style prop 设 height 时生效：容器不溢出，由列表区自身滚动 */
+    overflow: hidden;
   }
   .cd-tree--small {
     --cd-tree-row-height: var(--cd-tree-node-height-small);
@@ -1532,71 +1831,30 @@
     --cd-tree-row-height: var(--cd-tree-node-height-large);
   }
   .cd-tree--disabled {
-    color: var(--cd-tree-node-color-disabled);
+    color: var(--cd-color-tree-option-disabled-text-default);
   }
 
+  /* 搜索框容器：对齐 Semi tree-search-wrapper（paddingY 8 / paddingX 12）。
+     内部搜索框复用 Input 组件，边框/清除/聚焦样式由 Input 自带（无需 Tree 再写）。 */
   .cd-tree__search {
-    position: relative;
-  }
-  .cd-tree__search-input {
-    inline-size: 100%;
-    block-size: var(--cd-tree-row-height);
-    padding-inline: var(--cd-spacing-tight);
-    color: inherit;
-    background: var(--cd-color-bg-1, transparent);
-    border: 1px solid var(--cd-tree-border-color);
-    border-radius: var(--cd-tree-radius);
-    font: inherit;
-  }
-  /* 显示清除按钮时给输入框尾部留出空间（RTL 自适应 padding-inline-end） */
-  .cd-tree__search--clearable .cd-tree__search-input {
-    padding-inline-end: calc(var(--cd-spacing-tight) + 1.25rem);
-  }
-  .cd-tree__search-clear {
-    position: absolute;
-    inset-block-start: 50%;
-    inset-inline-end: var(--cd-spacing-extra-tight);
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 1.25rem;
-    block-size: 1.25rem;
-    padding: 0;
-    color: var(--cd-tree-node-color-disabled);
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  .cd-tree__search-clear:hover {
-    color: var(--cd-tree-node-color);
-    background: var(--cd-tree-node-bg-hover);
-  }
-  .cd-tree__search-clear:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
-  }
-  .cd-tree--warning .cd-tree__search-input {
-    border-color: var(--cd-tree-border-color-warning);
-  }
-  .cd-tree--error .cd-tree__search-input {
-    border-color: var(--cd-tree-border-color-error);
-  }
-  .cd-tree__search-input:focus-visible {
-    outline: none;
-    border-color: var(--cd-tree-focus-ring);
-    box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
+    padding: var(--cd-spacing-tree-search-wrapper-padding-y)
+      var(--cd-spacing-tree-search-wrapper-padding-x);
   }
 
   .cd-tree__list {
     display: flex;
     flex-direction: column;
     outline: none;
+    /* 对齐 Semi tree-option-list（paddingY 8 / paddingX 0；flex:1 占满剩余高度，超出滚动） */
+    padding: var(--cd-spacing-tree-option-list-padding-y) var(--cd-spacing-tree-option-list-padding-x);
+    flex: 1 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .cd-tree__list:focus-visible {
     box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
-    border-radius: var(--cd-tree-radius);
+    border-radius: var(--cd-radius-tree-checkbox-addon);
   }
   /* 虚拟滚动：容器自身滚动，display block 以便 spacer 绝对定位行布局生效 */
   .cd-tree__list--virtual {
@@ -1613,23 +1871,38 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     block-size: var(--cd-tree-row-height);
-    padding-inline-end: var(--cd-spacing-tight);
-    border-radius: var(--cd-tree-radius);
+    /* 首层左内边距 + 行右内边距（对齐 Semi $spacing-tree_option_level1-paddingLeft 8px） */
+    padding-inline: var(--cd-spacing-tree-option-level1-padding-left);
+    border-radius: var(--cd-radius-tree-checkbox-addon);
     cursor: pointer;
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-tree__node:hover {
-    background: var(--cd-tree-node-bg-hover);
+    background: var(--cd-color-tree-option-bg-hover);
+  }
+  /* 按下态（对齐 Semi $color-tree_option_selected-bg-default = fill-1） */
+  .cd-tree__node:active {
+    background: var(--cd-color-tree-option-selected-bg-default);
   }
   .cd-tree__node--selected {
-    color: var(--cd-tree-node-color-selected);
-    background: var(--cd-tree-node-bg-selected);
+    color: var(--cd-color-tree-option-text-default);
+    background: var(--cd-color-tree-option-bg-active);
   }
-  .cd-tree__node--active {
-    box-shadow: inset 0 0 0 1px var(--cd-tree-focus-ring);
+  .cd-tree__node--selected:hover,
+  .cd-tree__node--selected:active {
+    background: var(--cd-color-tree-option-bg-active);
+  }
+  /* 键盘 roving 焦点（当前项）：对齐 Semi 无 border，仅用背景区分；焦点可见性靠背景差异。 */
+  .cd-tree__node--active:not(.cd-tree__node--selected) {
+    background: var(--cd-color-tree-option-bg-hover);
+  }
+  /* 键盘操作时（容器 focus-visible 内）给当前项一个可见焦点环，鼠标交互不显示 border。 */
+  .cd-tree__list:focus-visible .cd-tree__node--active {
+    outline: 2px solid var(--cd-tree-focus-ring);
+    outline-offset: -2px;
   }
   .cd-tree__node--disabled {
-    color: var(--cd-tree-node-color-disabled);
+    color: var(--cd-color-tree-option-disabled-text-default);
     cursor: not-allowed;
   }
   .cd-tree__node--disabled:hover {
@@ -1637,6 +1910,14 @@
   }
 
   /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
+  /* 可拖拽行的内边距（对齐 Semi $spacing-tree_option_draggable-paddingY 2 / paddingX 0） */
+  .cd-tree__node[draggable='true'] {
+    padding-block: var(--cd-spacing-tree-option-draggable-padding-y);
+    padding-inline-end: calc(
+      var(--cd-spacing-tree-option-level1-padding-left) +
+        var(--cd-spacing-tree-option-draggable-padding-x)
+    );
+  }
   .cd-tree__node--dragging {
     opacity: 0.5;
   }
@@ -1659,7 +1940,7 @@
   }
   /* inside：成为子节点 → 整行高亮框 */
   .cd-tree__node--drop-inside {
-    background: var(--cd-tree-node-bg-hover);
+    background: var(--cd-color-tree-option-bg-hover);
     box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
   }
   /* 节点需相对定位以承载绝对定位的指示线；虚拟化行已 position:absolute，非虚拟行设 relative */
@@ -1671,7 +1952,7 @@
   .cd-tree__line {
     position: relative;
     flex: 0 0 auto;
-    inline-size: var(--cd-tree-indent);
+    inline-size: var(--cd-spacing-tree-option-level-padding-left);
     align-self: stretch;
   }
   /* 贯穿竖线（祖先非末层） */
@@ -1680,8 +1961,8 @@
     position: absolute;
     inset-block: 0;
     inset-inline-start: 50%;
-    inline-size: 1px;
-    background: var(--cd-tree-line-color);
+    inline-size: var(--cd-width-tree-option-line);
+    background: var(--cd-color-tree-option-line);
   }
   /* ├ 形：竖线贯穿 + 横线到右 */
   .cd-tree__line--tee::before {
@@ -1689,8 +1970,8 @@
     position: absolute;
     inset-block: 0;
     inset-inline-start: 50%;
-    inline-size: 1px;
-    background: var(--cd-tree-line-color);
+    inline-size: var(--cd-width-tree-option-line);
+    background: var(--cd-color-tree-option-line);
   }
   /* └ 形：竖线 top→中 + 横线到右 */
   .cd-tree__line--elbow::before {
@@ -1699,8 +1980,8 @@
     inset-block-start: 0;
     block-size: 50%;
     inset-inline-start: 50%;
-    inline-size: 1px;
-    background: var(--cd-tree-line-color);
+    inline-size: var(--cd-width-tree-option-line);
+    background: var(--cd-color-tree-option-line);
   }
   .cd-tree__line--tee::after,
   .cd-tree__line--elbow::after {
@@ -1709,8 +1990,8 @@
     inset-block-start: 50%;
     inset-inline-start: 50%;
     inset-inline-end: 0;
-    block-size: 1px;
-    background: var(--cd-tree-line-color);
+    block-size: var(--cd-width-tree-option-line);
+    background: var(--cd-color-tree-option-line);
   }
 
   .cd-tree__switcher {
@@ -1718,11 +1999,19 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    inline-size: 1rem;
-    block-size: 1rem;
-    color: var(--cd-tree-expand-icon-color);
+    /* 对齐 Semi $width-tree_emptyIcon（展开图标宽 12）+ marginRight 8 */
+    inline-size: var(--cd-width-tree-empty-icon);
+    block-size: var(--cd-width-tree-empty-icon);
+    margin-inline-end: var(--cd-spacing-tree-icon-margin-right);
+    color: var(--cd-color-tree-option-icon-default);
     cursor: pointer;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-tree__switcher:hover {
+    color: var(--cd-color-tree-option-icon-hover);
+  }
+  .cd-tree__switcher:active {
+    color: var(--cd-color-tree-option-icon-active);
   }
   .cd-tree__switcher--open {
     transform: rotate(90deg);
@@ -1732,42 +2021,17 @@
   }
   .cd-tree__switcher--loading {
     cursor: default;
-  }
-  .cd-tree__spinner {
-    inline-size: 0.75rem;
-    block-size: 0.75rem;
-    border: 2px solid var(--cd-tree-border-color);
-    border-block-start-color: var(--cd-color-tree-option-loading-icon-default);
-    border-radius: 50%;
-    animation: cd-tree-spin 0.7s linear infinite;
-  }
-  @keyframes cd-tree-spin {
-    to {
-      transform: rotate(360deg);
-    }
+    /* 加载 spin 尺寸对齐 Semi $width-tree_spinIcon（12） */
+    inline-size: var(--cd-width-tree-spin-icon);
+    block-size: var(--cd-width-tree-spin-icon);
   }
 
+  /* 勾选框：框体样式由 Checkbox 组件自带，此处仅负责在行内的定位与右间距（对齐 Semi label withIcon marginRight 8） */
   .cd-tree__checkbox {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     flex: 0 0 auto;
-    inline-size: 1rem;
-    block-size: 1rem;
-    color: var(--cd-color-text-inverse);
-    background: var(--cd-color-bg-1, #fff);
-    border: 1px solid var(--cd-tree-border-color);
-    border-radius: var(--cd-radius-tree-checkbox-addon);
-    cursor: pointer;
-  }
-  .cd-tree__checkbox--checked,
-  .cd-tree__checkbox--half {
-    background: var(--cd-color-primary);
-    border-color: var(--cd-color-primary);
-  }
-  .cd-tree__checkbox--disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+    margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
   }
 
   .cd-tree__icon {
@@ -1776,12 +2040,13 @@
     justify-content: center;
     flex: 0 0 auto;
     inline-size: 0;
-    block-size: 1rem;
-    color: var(--cd-tree-node-color);
+    block-size: var(--cd-width-tree-empty-icon);
+    color: var(--cd-color-tree-option-icon-default);
   }
-  /* 有自定义图标内容时撑开尺寸 */
+  /* 有自定义图标内容时撑开尺寸 + 右间距（对齐 Semi label withIcon marginRight 8） */
   .cd-tree__icon:not(:empty) {
-    inline-size: 1rem;
+    inline-size: var(--cd-width-tree-empty-icon);
+    margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
   }
 
   .cd-tree__label {
@@ -1810,26 +2075,30 @@
     pointer-events: none;
   }
 
-  .cd-tree__highlight {
+  /* 搜索命中高亮：class 注入到 Highlight 子组件内部的 mark，需 :global 穿透 scoped CSS。
+     对齐 Semi：primary 文字 + bold + 无独立背景（inherit）。 */
+  .cd-tree__label :global(.cd-tree__highlight) {
     padding: 0;
-    color: var(--cd-tree-search-highlight-color);
-    background: var(--cd-tree-search-highlight-bg);
-    font-weight: var(--cd-tree-search-highlight-weight); /* 对齐 Semi 高亮字重 bold */
+    color: var(--cd-color-tree-option-highlight-text);
+    background: inherit;
+    font-weight: var(--cd-font-tree-option-highlight-weight);
   }
 
   .cd-tree__empty {
     padding: var(--cd-spacing-base-tight);
-    color: var(--cd-tree-node-color-disabled);
+    color: var(--cd-color-tree-option-disabled-text-default);
     text-align: center;
+  }
+
+  /* motion 开关（对齐 Semi motion）：仅 cd-tree--motion 时启用 switcher 旋转过渡。 */
+  .cd-tree:not(.cd-tree--motion) .cd-tree__switcher {
+    transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cd-tree__node,
     .cd-tree__switcher {
       transition: none;
-    }
-    .cd-tree__spinner {
-      animation: none;
     }
   }
 </style>

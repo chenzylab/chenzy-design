@@ -85,6 +85,12 @@ export function useFloating(
   let frame = 0;
 
   function position() {
+    // 浮层隐藏时（destroyOnClose=false 关闭态挂载 display:none）rect 全 0，
+    // 此时定位会算出错误坐标并写死 transform(0,0)，之后即便可见也停在左上角。
+    // 跳过隐藏态定位：等浮层可见（ResizeObserver 尺寸 0→实际 或 update 调用）再算。
+    // 用 computed display 判定 display:none（jsdom 与浏览器均准确，且不依赖 layout 尺寸，
+    // 避免在无布局环境把可见元素误判为隐藏）。
+    if (typeof window !== 'undefined' && window.getComputedStyle(popup).display === 'none') return;
     const triggerRect = trigger.getBoundingClientRect();
     // match-width must be applied before measuring the popup so its rect (and
     // the cross-axis clamping below) reflects the trigger-derived width.
@@ -229,6 +235,13 @@ export function floating(node: HTMLElement, params: FloatingActionParams) {
         lastPlacement = next.placement;
         lastPointAtCenter = next.arrowPointAtCenter;
         stop();
+        start(next);
+        return;
+      }
+      // 浮层此前可能 display:none（destroyOnClose=false 保持挂载，--hidden 隐藏），
+      // 初始定位在隐藏态算得的 popupRect 全 0 → 停在 (0,0)。open 变 true 后浮层可见，
+      // 需补建（初始 trigger 曾为 null）或原位重算定位。
+      if (!handle && next.trigger) {
         start(next);
       } else {
         handle?.update();

@@ -53,7 +53,7 @@
     <Layout.Header style="background: var(--cd-color-bg-1); padding-inline: 16px;">
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
         <Nav mode="horizontal" defaultSelectedKeys={['workbench']} items={topItems} header={{ logo, text: '运营后台' }} />
-        <Avatar size="small" color="var(--cd-color-primary)">BD</Avatar>
+        <Avatar size="small" style="background-color:var(--cd-color-primary);color:#fff">BD</Avatar>
       </div>
     </Layout.Header>
     <Layout hasSider>
@@ -74,7 +74,7 @@
         />
       </Layout.Sider>
       <Layout.Content padding style="background: var(--cd-color-bg-0);">
-        <Breadcrumb routes={[{ label: '首页' }, { label: '仪表盘' }, { label: '详情页' }]} />
+        <Breadcrumb routes={[{ name: '首页' }, { name: '仪表盘' }, { name: '详情页' }]} />
         <div
           style="margin-top:16px; border-radius:10px; border:1px solid var(--cd-color-border); height:240px; padding:24px; color: var(--cd-color-text-2);"
         >

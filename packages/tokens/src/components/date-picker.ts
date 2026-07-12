@@ -7,8 +7,6 @@
  * 命名/映射约定（历史沿袭，逐条亲验 Semi variables.scss + 我们的 global/scales.ts + alias/index.ts）：
  * - Semi `$color-datepicker_xxx` → kebab `color-date-picker-xxx`（datepicker → date-picker）。
  * - Semi `var(--semi-color-*)` → 我们 `var(--cd-color-*)`（语义名一一对应）。
- *   Semi `var(--semi-color-white)` 我们无 --cd-color-white alias，用最接近的
- *   `var(--cd-color-text-inverse)`（= #ffffff）替代（对齐 Checkbox 的做法）。
  * - Semi `$border-thickness-control` → `var(--cd-border-thickness-control)`（1px）；
  *   `$border-thickness-control-focus` → `var(--cd-border-thickness-control-focus)`。
  * - Semi `$spacing-tight/-base-tight/-base/-base-loose` → 我们 `var(--cd-spacing-*)`。
@@ -49,7 +47,7 @@ export const datePickerTokens = {
   'color-date-picker-quick-bg-default': { value: 'transparent', category: 'color', label: '快捷操作背景色', usage: '日期选择器快捷操作背景颜色' },
   'color-date-picker-quick-button-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '快捷操作按钮文字色', usage: '日期选择器快捷操作按钮文字颜色' },
   'color-date-picker-date-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '日期格子文字色', usage: '日期格子文字颜色 - 默认' },
-  'color-date-picker-date-selected-text-default': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '选中日期文字色', usage: '日期格子文字颜色 - 选中' },
+  'color-date-picker-date-selected-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '选中日期文字色', usage: '日期格子文字颜色 - 选中' },
   'color-date-picker-date-selected-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '选中日期背景色', usage: '日期格子背景颜色 - 选中' },
   'color-date-picker-date-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用日期文字色', usage: '禁用日期格子文字颜色' },
   'color-date-picker-date-today-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '今日文字色', usage: '今日文字颜色' },
@@ -88,7 +86,7 @@ export const datePickerTokens = {
   'date-picker-cell-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '日期格圆角', usage: 'Semi 日期格圆角 small（原 medium）（组件消费）' },
   'date-picker-cell-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '日期格悬浮背景色', usage: '日期格悬浮背景（组件消费）' },
   'date-picker-cell-bg-selected': { value: 'var(--cd-color-primary)', category: 'color', label: '日期格选中背景色', usage: '日期格选中背景（组件消费）' },
-  'date-picker-cell-color-selected': { value: 'var(--cd-color-text-inverse)', category: 'color', label: '日期格选中文字色', usage: '日期格选中文字（组件消费）' },
+  'date-picker-cell-color-selected': { value: 'var(--cd-color-white)', category: 'color', label: '日期格选中文字色', usage: '日期格选中文字（组件消费）' },
   'date-picker-cell-color-muted': { value: 'var(--cd-color-text-3)', category: 'color', label: '日期格弱化文字色', usage: '日期格弱化文字（组件消费）' },
   'date-picker-footer-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'footer 背景色', usage: 'Semi $color-datepicker_footer-bg-default（组件消费）' },
   'date-picker-header-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'header 文字色', usage: '日期面板 header 文字（组件消费）' },

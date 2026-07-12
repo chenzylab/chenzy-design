@@ -30,7 +30,7 @@
       targetOffset={48}
       bounds={48}
       value={active}
-      onChange={(k) => (active = k)}
+      onChange={(link) => (active = link?.key ?? '')}
       getContainer={() => scrollBox}
     />
   </div>

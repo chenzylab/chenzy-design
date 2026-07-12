@@ -2,13 +2,25 @@
   {
     "name": "button",
     "passed": true,
-    "size": 1517,
-    "sizeLimit": 2500
+    "size": 3650,
+    "sizeLimit": 4000
+  },
+  {
+    "name": "iconbutton",
+    "passed": true,
+    "size": 538,
+    "sizeLimit": 600
+  },
+  {
+    "name": "float-button",
+    "passed": true,
+    "size": 2939,
+    "sizeLimit": 3400
   },
   {
     "name": "divider",
     "passed": true,
-    "size": 1339,
+    "size": 1336,
     "sizeLimit": 1550
   },
   {
@@ -26,247 +38,265 @@
   {
     "name": "layout",
     "passed": true,
-    "size": 2681,
+    "size": 3003,
     "sizeLimit": 3100
   },
   {
     "name": "space",
     "passed": true,
-    "size": 967,
+    "size": 951,
     "sizeLimit": 1200
   },
   {
     "name": "typography",
     "passed": true,
-    "size": 5639,
-    "sizeLimit": 6500
+    "size": 7888,
+    "sizeLimit": 9000
   },
   {
     "name": "banner",
     "passed": true,
-    "size": 2828,
+    "size": 2816,
     "sizeLimit": 3300
   },
   {
     "name": "drawer",
     "passed": true,
-    "size": 3129,
+    "size": 3538,
     "sizeLimit": 4500
   },
   {
     "name": "modal",
     "passed": true,
-    "size": 5069,
+    "size": 5722,
     "sizeLimit": 5850
   },
   {
     "name": "notification",
     "passed": true,
-    "size": 4469,
-    "sizeLimit": 4500
+    "size": 4719,
+    "sizeLimit": 5500
   },
   {
     "name": "popconfirm",
     "passed": true,
-    "size": 4141,
+    "size": 4440,
     "sizeLimit": 4800
   },
   {
     "name": "progress",
     "passed": true,
-    "size": 2659,
-    "sizeLimit": 3100
+    "size": 3271,
+    "sizeLimit": 3800
   },
   {
     "name": "side-sheet",
     "passed": true,
-    "size": 3862,
+    "size": 3976,
     "sizeLimit": 4500
+  },
+  {
+    "name": "feedback",
+    "passed": true,
+    "size": 2760,
+    "sizeLimit": 3500
   },
   {
     "name": "skeleton",
     "passed": true,
-    "size": 3121,
+    "size": 3119,
     "sizeLimit": 3500
   },
   {
     "name": "spin",
     "passed": true,
-    "size": 2244,
+    "size": 2247,
     "sizeLimit": 2600
   },
   {
     "name": "toast",
     "passed": true,
-    "size": 3908,
+    "size": 4362,
     "sizeLimit": 4500
   },
   {
     "name": "autocomplete",
     "passed": true,
-    "size": 4179,
-    "sizeLimit": 4500
+    "size": 5152,
+    "sizeLimit": 5800
   },
   {
     "name": "cascader",
     "passed": true,
-    "size": 7756,
-    "sizeLimit": 8950
+    "size": 10526,
+    "sizeLimit": 10600
   },
   {
     "name": "checkbox",
     "passed": true,
-    "size": 3064,
+    "size": 3278,
     "sizeLimit": 3500
   },
   {
     "name": "color-picker",
     "passed": true,
-    "size": 5924,
+    "size": 6296,
     "sizeLimit": 7500
   },
   {
     "name": "date-picker",
     "passed": true,
-    "size": 10492,
-    "sizeLimit": 12100
+    "size": 19331,
+    "sizeLimit": 22000
   },
   {
     "name": "form",
     "passed": true,
-    "size": 5312,
-    "sizeLimit": 6150
+    "size": 8590,
+    "sizeLimit": 10000
   },
   {
     "name": "input",
     "passed": true,
-    "size": 2725,
-    "sizeLimit": 3500
+    "size": 5001,
+    "sizeLimit": 5500
   },
   {
     "name": "input-number",
     "passed": true,
-    "size": 3675,
-    "sizeLimit": 4250
+    "size": 4777,
+    "sizeLimit": 5000
+  },
+  {
+    "name": "pincode",
+    "passed": true,
+    "size": 2513,
+    "sizeLimit": 3500
   },
   {
     "name": "radio",
     "passed": true,
-    "size": 3529,
+    "size": 3998,
     "sizeLimit": 4100
   },
   {
     "name": "rating",
     "passed": true,
-    "size": 3159,
+    "size": 3228,
     "sizeLimit": 3650
   },
   {
     "name": "select",
     "passed": true,
-    "size": 6136,
-    "sizeLimit": 9000
+    "size": 9226,
+    "sizeLimit": 10000
   },
   {
     "name": "slider",
     "passed": true,
-    "size": 4103,
-    "sizeLimit": 4750
+    "size": 5182,
+    "sizeLimit": 5500
   },
   {
     "name": "switch",
     "passed": true,
-    "size": 2345,
+    "size": 2409,
     "sizeLimit": 2700
   },
   {
     "name": "tag-input",
     "passed": true,
-    "size": 3042,
-    "sizeLimit": 3500
+    "size": 5400,
+    "sizeLimit": 6250
   },
   {
     "name": "textarea",
     "passed": true,
-    "size": 3252,
+    "size": 3538,
     "sizeLimit": 3750
   },
   {
     "name": "time-picker",
     "passed": true,
-    "size": 5684,
-    "sizeLimit": 6550
+    "size": 7109,
+    "sizeLimit": 7750
   },
   {
     "name": "transfer",
     "passed": true,
-    "size": 8169,
-    "sizeLimit": 9400
+    "size": 9560,
+    "sizeLimit": 10900
   },
   {
     "name": "tree-select",
     "passed": true,
-    "size": 8268,
-    "sizeLimit": 9000
+    "size": 10935,
+    "sizeLimit": 12000
   },
   {
     "name": "upload",
     "passed": true,
-    "size": 4791,
-    "sizeLimit": 6000
+    "size": 12054,
+    "sizeLimit": 13000
   },
   {
     "name": "anchor",
     "passed": true,
-    "size": 2549,
-    "sizeLimit": 3500
+    "size": 4415,
+    "sizeLimit": 4500
   },
   {
     "name": "breadcrumb",
     "passed": true,
-    "size": 3460,
-    "sizeLimit": 4000
+    "size": 4624,
+    "sizeLimit": 4800
   },
   {
     "name": "dropdown",
     "passed": true,
-    "size": 4982,
-    "sizeLimit": 5000
+    "size": 6838,
+    "sizeLimit": 7850
   },
   {
     "name": "menu",
     "passed": true,
-    "size": 7295,
+    "size": 8153,
     "sizeLimit": 8400
   },
   {
     "name": "pagination",
     "passed": true,
-    "size": 3291,
-    "sizeLimit": 3800
+    "size": 4939,
+    "sizeLimit": 5100
   },
   {
     "name": "steps",
     "passed": true,
-    "size": 3107,
-    "sizeLimit": 3500
+    "size": 4176,
+    "sizeLimit": 4500
   },
   {
     "name": "tabs",
     "passed": true,
-    "size": 6009,
-    "sizeLimit": 6950
+    "size": 7755,
+    "sizeLimit": 8000
   },
   {
     "name": "back-top",
     "passed": true,
-    "size": 2300,
+    "size": 2241,
     "sizeLimit": 2650
+  },
+  {
+    "name": "hotkeys",
+    "passed": true,
+    "size": 1590,
+    "sizeLimit": 1850
   },
   {
     "name": "config-provider",
     "passed": true,
-    "size": 1466,
+    "size": 1609,
     "sizeLimit": 1700
   },
   {
@@ -284,86 +314,104 @@
   {
     "name": "resize-observer",
     "passed": true,
-    "size": 1039,
+    "size": 1071,
     "sizeLimit": 1200
+  },
+  {
+    "name": "resizable",
+    "passed": true,
+    "size": 5775,
+    "sizeLimit": 6000
+  },
+  {
+    "name": "drag-move",
+    "passed": true,
+    "size": 1352,
+    "sizeLimit": 2000
   },
   {
     "name": "avatar",
     "passed": true,
-    "size": 3155,
-    "sizeLimit": 3650
+    "size": 6744,
+    "sizeLimit": 7300
   },
   {
     "name": "badge",
     "passed": true,
-    "size": 2132,
+    "size": 2322,
     "sizeLimit": 2500
   },
   {
     "name": "calendar",
     "passed": true,
-    "size": 7749,
+    "size": 8599,
     "sizeLimit": 9000
   },
   {
     "name": "card",
     "passed": true,
-    "size": 2535,
-    "sizeLimit": 3000
+    "size": 3407,
+    "sizeLimit": 3700
   },
   {
     "name": "carousel",
     "passed": true,
-    "size": 4087,
+    "size": 4656,
     "sizeLimit": 5500
   },
   {
     "name": "collapse",
     "passed": true,
-    "size": 3458,
-    "sizeLimit": 3500
+    "size": 3820,
+    "sizeLimit": 4400
+  },
+  {
+    "name": "collapsible",
+    "passed": true,
+    "size": 1774,
+    "sizeLimit": 2000
   },
   {
     "name": "descriptions",
     "passed": true,
-    "size": 2395,
+    "size": 2444,
     "sizeLimit": 2800
   },
   {
     "name": "empty",
     "passed": true,
-    "size": 2197,
+    "size": 2214,
     "sizeLimit": 2550
   },
   {
     "name": "highlight",
     "passed": true,
-    "size": 1226,
+    "size": 1232,
     "sizeLimit": 1450
   },
   {
     "name": "image",
     "passed": true,
-    "size": 5186,
+    "size": 5219,
     "sizeLimit": 6000
   },
   {
     "name": "list",
     "passed": true,
-    "size": 7756,
+    "size": 7973,
     "sizeLimit": 8950
   },
   {
     "name": "overflow-list",
     "passed": true,
-    "size": 3047,
+    "size": 3049,
     "sizeLimit": 3200
   },
   {
     "name": "popover",
     "passed": true,
-    "size": 3216,
-    "sizeLimit": 3500
+    "size": 4114,
+    "sizeLimit": 4750
   },
   {
     "name": "scroll-list",
@@ -374,37 +422,103 @@
   {
     "name": "table",
     "passed": true,
-    "size": 11615,
-    "sizeLimit": 14000
+    "size": 15570,
+    "sizeLimit": 16700
   },
   {
     "name": "tag",
     "passed": true,
-    "size": 2595,
-    "sizeLimit": 3000
+    "size": 4160,
+    "sizeLimit": 5000
   },
   {
     "name": "timeline",
     "passed": true,
-    "size": 4678,
+    "size": 5028,
     "sizeLimit": 5400
   },
   {
     "name": "tooltip",
     "passed": true,
-    "size": 2811,
+    "size": 3066,
     "sizeLimit": 3500
   },
   {
     "name": "tree",
     "passed": true,
-    "size": 7606,
-    "sizeLimit": 9000
+    "size": 10239,
+    "sizeLimit": 11000
+  },
+  {
+    "name": "user-guide",
+    "passed": true,
+    "size": 4715,
+    "sizeLimit": 5500
   },
   {
     "name": "virtual-list",
     "passed": true,
     "size": 2278,
     "sizeLimit": 2650
+  },
+  {
+    "name": "code-highlight",
+    "passed": true,
+    "size": 14270,
+    "sizeLimit": 16000
+  },
+  {
+    "name": "markdown-render",
+    "passed": true,
+    "size": 2946,
+    "sizeLimit": 3500
+  },
+  {
+    "name": "video-player",
+    "passed": true,
+    "size": 7846,
+    "sizeLimit": 9000
+  },
+  {
+    "name": "audio-player",
+    "passed": true,
+    "size": 4359,
+    "sizeLimit": 5000
+  },
+  {
+    "name": "json-viewer",
+    "passed": true,
+    "size": 3288,
+    "sizeLimit": 4000
+  },
+  {
+    "name": "chat",
+    "passed": true,
+    "size": 7809,
+    "sizeLimit": 8500
+  },
+  {
+    "name": "cropper",
+    "passed": true,
+    "size": 3205,
+    "sizeLimit": 4000
+  },
+  {
+    "name": "ai-chat-dialogue",
+    "passed": true,
+    "size": 6713,
+    "sizeLimit": 7700
+  },
+  {
+    "name": "sidebar",
+    "passed": true,
+    "size": 14979,
+    "sizeLimit": 20000
+  },
+  {
+    "name": "ai-chat-input",
+    "passed": true,
+    "size": 10438,
+    "sizeLimit": 12000
   }
 ]

@@ -12,9 +12,12 @@ export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-/** true if the button should be visible given the current scroll position. */
+/**
+ * true if the button should be visible given the current scroll position.
+ * 对齐 Semi foundation：`scrollTop > visibilityHeight`（严格大于，边界处不显）。
+ */
 export function isAboveThreshold(scrollTop: number, visibilityHeight: number): boolean {
-  return scrollTop >= visibilityHeight;
+  return scrollTop > visibilityHeight;
 }
 
 /**

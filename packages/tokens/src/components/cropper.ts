@@ -4,7 +4,7 @@
  *   - $color-cropper_mask-bg        → 遮罩层背景（半透明暗色）
  *   - $color-cropper_box-outline    → 裁切框 outline 颜色（品牌色）
  *   - $width-cropper_box-outline    → 裁切框 outline 宽度
- *   - $color-cropper_box_corner-bg  → 角点背景（白）
+ *   - $color-cropper_box_corner-bg  → 角点背景（品牌色）
  *   - $width-cropper_box_corner     → 角点宽高
  * 值走 alias/语义 token，禁写死。
  */
@@ -30,10 +30,10 @@ export const cropperTokens = {
     usage: '裁切框 outline 宽度',
   },
   'cropper-corner-bg': {
-    value: 'var(--cd-color-bg-0)',
+    value: 'var(--cd-color-primary)',
     category: 'color',
     label: '角点背景',
-    usage: '裁切框 8 角点填充色',
+    usage: '裁切框 8 角点填充色（品牌色，对齐 Semi $color-cropper_box_corner-bg）',
   },
   'cropper-corner-size': {
     value: '10px',

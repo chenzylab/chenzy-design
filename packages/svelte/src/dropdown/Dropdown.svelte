@@ -1,217 +1,218 @@
 <!--
-  Dropdown — see specs/components/navigation/Dropdown.spec.md
-  基础子集：click/hover/contextMenu 触发、12 方位、菜单项、useDismiss、closeOnSelect、键盘导航。
-  定位：portal 到 body + position:fixed，core computePosition + autoAdjustOverflow flip。
-  contextMenu：右键 preventDefault + 记录光标 x/y，浮层 portal 到 body 并 fixed 落点光标。
-  嵌套子菜单 / divider / group：与 Menu 对齐的判别联合（types.ts），菜单体经 DropdownItemNode 递归渲染，
-  子浮层 hover/聚焦展开并 floating 到父项右侧（溢出翻转左侧）；键盘 →/←/↑↓/Esc 逐层导航。
-  键盘 roving：焦点式（query 当前层可聚焦 menuitem 移动焦点），兼容嵌套与 divider/group。
-  destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 显隐），true 时关闭即卸载 {#if}，重开重建。
-  getPopupContainer：自定义浮层挂载容器（默认 body）；非 body 容器时 floating 切 position:absolute 相对容器定位，
-    嵌套子菜单经 ctx 透传同容器，contextMenu 浮层亦挂同容器。
+  Dropdown — 向下弹出的菜单，对齐 Semi Design（semi-ui/dropdown）。
+
+  架构对齐：Semi Dropdown 封装 Tooltip 作纯定位层。本库无独立「纯定位组件」，等价 primitive 是
+  _floating/use-floating action（Tooltip/Popover 内部亦复用它），故 Dropdown 直接复用同一 use:floating
+  定位层自绘浮层 wrapper（只带 shadow/radius/bg，无 padding，DOM 最贴 Semi）。
+
+  DOM 镜像 Semi：触发器 span.cd-dropdown-trigger（aria-haspopup/expanded 附在其上）；浮层
+  div.cd-dropdown（wrapper）> div.cd-dropdown-content > (render | menu 生成的 Dropdown.Menu)。
+  菜单为 ul.cd-dropdown-menu[role=menu][aria-orientation=vertical]，项为 li.cd-dropdown-item[role=menuitem]。
+
+  触发方式（对齐 Semi TRIGGER_SET）：hover / focus / click / custom / contextMenu。
+   - hover：mouseEnterDelay/mouseLeaveDelay 延迟开关；disableFocusListener=false 时聚焦触发器亦开（Semi issue#977）。
+   - focus：聚焦触发器开、失焦关。
+   - click：点击切换；打开后焦点自动落首个非禁用项（Semi foundation handleVisibleChange）。
+   - custom：显隐完全受控（visible + onVisibleChange），不自动响应任何鼠标/键盘。
+   - contextMenu：右键 preventDefault + 记录光标 x/y，浮层落点光标（v2.42+）。
+
+  嵌套：与 Semi 一致——用户在 render 内手动嵌套 <Dropdown>（其 children 为 Dropdown.Item 作触发器），
+  子 Dropdown 经 context.level 判定嵌套：默认间距用 NESTED_SPACING(2)，嵌套项 click 走 mousedown 语义。
+
+  键盘（对齐 Semi foundation）：触发器 Enter/Space click 打开、ArrowDown 焦点首项、ArrowUp 焦点末项、Esc 关闭；
+  菜单内 ArrowDown/Up 漫游、Esc 关闭回触发器。
 -->
 <script lang="ts">
-  import { setContext, type Snippet } from 'svelte';
+  import { setContext, getContext, untrack, type Snippet } from 'svelte';
   import { useId, useDismiss, type Placement } from '@chenzy-design/core';
-  import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
-  import DropdownItemNode from './DropdownItemNode.svelte';
-  import { isDropdownDivider, isDropdownGroup } from './types.js';
+  import DropdownMenu from './DropdownMenu.svelte';
+  import DropdownItem from './DropdownItem.svelte';
+  import DropdownTitle from './DropdownTitle.svelte';
+  import DropdownDivider from './DropdownDivider.svelte';
   import { DROPDOWN_CTX, type DropdownContext } from './context.js';
-  import type { DropdownItem } from './types.js';
+  import type { DropdownMenuItem } from './types.js';
 
-  type ItemKey = string | number;
-  type Trigger = 'hover' | 'click' | 'contextMenu';
-  // 12 方位全集（兼容旧的 bottomStart/bottomEnd/topStart）
-  type Position = Placement;
-  type Size = 'small' | 'default' | 'large';
+  // 触发方式全集（对齐 Semi strings.TRIGGER_SET）
+  type Trigger = 'hover' | 'focus' | 'click' | 'custom' | 'contextMenu';
+
+  // 默认间距（对齐 Semi numbers）：顶层 4、嵌套 2。
+  const SPACING = 4;
+  const NESTED_SPACING = 2;
+  // 默认延迟（对齐 Semi：mouseLeaveDelay 默认 DEFAULT_LEAVE_DELAY=100，mouseEnterDelay 默认 50）。
+  const DEFAULT_ENTER_DELAY = 50;
+  const DEFAULT_LEAVE_DELAY = 100;
 
   interface Props {
-    items?: DropdownItem[];
+    /** 弹出层内容，由 Dropdown.Menu / Dropdown.Item / Dropdown.Title / Dropdown.Divider 构成（对齐 Semi render）。 */
+    render?: Snippet;
+    /** 通过 JSON Array 快速配置 Dropdown 内容（对齐 Semi menu）；render 存在时忽略 menu。 */
+    menu?: DropdownMenuItem[];
+    /** 触发弹出层的 Trigger 元素（对齐 Semi children）。 */
+    children?: Snippet;
+    /** 触发下拉的行为：hover / focus / click / custom / contextMenu。默认 hover。 */
     trigger?: Trigger;
-    open?: boolean;
-    defaultOpen?: boolean;
-    position?: Position;
-    size?: Size;
-    disabled?: boolean;
-    closeOnSelect?: boolean;
-    closeOnEsc?: boolean;
+    /** 是否显示菜单，需配合 trigger='custom' 使用（对齐 Semi visible，受控）。 */
+    visible?: boolean;
+    /** 非受控初始显隐。 */
+    defaultVisible?: boolean;
+    /**
+     * 弹出菜单的位置（对齐 Semi position）。本库统一用 12 方位 Placement 命名，
+     * 语义与 Semi 一一对应（bottomStart≈bottomLeft、rightStart≈rightTop）。默认 bottom。
+     */
+    position?: Placement;
+    /** 弹出层被遮挡时是否自动调整方向（对齐 Semi autoAdjustOverflow）。默认 true。 */
+    autoAdjustOverflow?: boolean;
+    /** 鼠标移入 Trigger 后延迟显示时间(ms)，仅 hover/focus 生效（对齐 Semi mouseEnterDelay）。 */
     mouseEnterDelay?: number;
+    /** 鼠标移出弹出层后延迟消失时间(ms)，仅 hover/focus 生效（对齐 Semi mouseLeaveDelay）。 */
     mouseLeaveDelay?: number;
     /**
-     * 浮层与触发元素的间距(px)。数值映射到 floating 主轴 offset；
-     * 传 { x, y } 时按当前 position 主轴方向取值（上下取 y、左右取 x）。默认 4。
+     * 弹出层与 Trigger 的距离(px)（对齐 Semi spacing）。嵌套时缺省用 NESTED_SPACING(2)，顶层 SPACING(4)。
+     * 传 { x, y } 时按 position 主轴方向取值（上下取 y、左右取 x）。
      */
     spacing?: number | { x: number; y: number };
-    /**
-     * hover 模式下点击菜单项是否关闭浮层（默认 true）。
-     * 设为 false 时 hover 触发下点击项不关闭，仅靠移出/Esc/外部点击收起。
-     * 仅影响 hover 触发；click/contextMenu 触发的关闭仍由 closeOnSelect 决定。
-     */
-    clickToHide?: boolean;
-    /** 浮层层级（z-index），默认 1050。写入浮层内联 style 覆盖 token 默认值。 */
+    /** 弹出层计算溢出时增加的冗余值(px)（对齐 Semi margin，作用同 Tooltip margin）。 */
+    margin?: number;
+    /** 弹出层 z-index（对齐 Semi zIndex）。默认 1050（Tooltip DEFAULT_Z_INDEX）。 */
     zIndex?: number;
-    /** 浮层根 <ul> 追加的自定义 className（Semi Dropdown className，作用于下拉弹层外层）。 */
-    className?: string;
-    /**
-     * 浮层内容根 className（Semi Dropdown contentClassName）。
-     * 本库浮层 <ul> 同时是外层与内容根，故与 className 并存追加到同一 <ul>。
-     */
-    contentClassName?: string;
-    /** 浮层根 <ul> 合并的自定义内联样式（拼在内置 z-index 之后；勿含 position/transform，会与定位冲突）。 */
-    style?: string;
-    /**
-     * 值变化时强制浮层重新定位（Semi rePosKey）。透传 floating action，
-     * 值改变触发 action update → 重算位置（用于内容异步撑大等场景）。
-     */
-    rePosKey?: string | number;
-    /**
-     * 空间不足时自动翻转/移位到可视区（默认 true）。
-     * 透传 floating action autoAdjust：false 时严格按 position 定位不翻转。
-     */
-    autoAdjustOverflow?: boolean;
-    /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
-    destroyOnClose?: boolean;
-    /**
-     * 首次打开前不渲染浮层内容（默认 true：惰性渲染，首开才挂载）。
-     * 设为 false 时即使从未打开也预渲染浮层 DOM（仅隐藏），可减少首开开销。
-     */
-    lazyRender?: boolean;
-    /**
-     * 关闭后保留浮层 DOM（与 destroyOnClose 互斥；为 true 时强制保留，忽略 destroyOnClose）。
-     * 默认 false：保留策略由 destroyOnClose 决定。
-     */
-    keepDOM?: boolean;
-    /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
-    getPopupContainer?: () => HTMLElement | null | undefined;
-    /**
-     * 已选中的 Item 右侧显示 ✓ 勾选标记（默认 false）。
-     * 通过 context 透传给 DropdownItemNode 渲染。
-     */
-    showTick?: boolean;
-    /**
-     * 下拉动画开关（默认 true）。
-     * false 时禁用菜单展开/收起过渡动画。
-     */
+    /** 下拉动画开关（对齐 Semi motion）。默认 true。 */
     motion?: boolean;
-    /**
-     * 阻断下拉框内点击事件冒泡（默认 true）。
-     * 包裹菜单的 onclick/pointerdown 停止冒泡，防止触发上层监听器。
-     */
+    /** 下拉弹层外层样式类名（对齐 Semi className，作用于 div.cd-dropdown）。 */
+    className?: string;
+    /** 下拉菜单根元素类名（对齐 Semi contentClassName，作用于 div.cd-dropdown-content）。 */
+    contentClassName?: string;
+    /** 弹出层内联样式（对齐 Semi style，作用于 div.cd-dropdown-content；勿含 position/transform）。 */
+    style?: string;
+    /** 是否自动在 active 的 Dropdown.Item 左侧展示对勾（对齐 Semi showTick）。默认 false。 */
+    showTick?: boolean;
+    /** 是否阻止弹出层上的点击事件冒泡（对齐 Semi stopPropagation）。默认 false。 */
     stopPropagation?: boolean;
-    onSelect?: (key: ItemKey) => void;
-    onOpenChange?: (open: boolean) => void;
-    /** 在 trigger 或浮层内按下 Esc 键时触发（Semi onEscKeyDown），在关闭逻辑之前调用。 */
+    /** 在 trigger 或弹出层按 Esc 键是否关闭面板，受控时不生效（对齐 Semi closeOnEsc）。默认 true。 */
+    closeOnEsc?: boolean;
+    /** 更新该值手动触发弹出层重新定位（对齐 Semi rePosKey）。 */
+    rePosKey?: string | number;
+    /** hover 时不响应键盘聚焦弹出事件（对齐 Semi disableFocusListener，issue#977）。默认 false。 */
+    disableFocusListener?: boolean;
+    /** 弹出层内点击时是否自动关闭弹出层（对齐 Semi clickToHide）。默认随触发方式：hover/click 为 true。 */
+    clickToHide?: boolean;
+    /** 关闭时是否保留内部组件 DOM 不销毁（对齐 Semi keepDOM）。默认 false。 */
+    keepDOM?: boolean;
+    /** 指定父级 DOM，弹层渲染至该 DOM（对齐 Semi getPopupContainer）。默认 document.body。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 弹出层显示状态改变时的回调（对齐 Semi onVisibleChange）。 */
+    onVisibleChange?: (visible: boolean) => void;
+    /** 在 trigger 或弹出层按 Esc 键时调用（对齐 Semi onEscKeyDown），在关闭逻辑之前。 */
     onEscKeyDown?: (e: KeyboardEvent) => void;
-    triggerContent?: Snippet;
-    children?: Snippet;
+    /** 展示状态下点击非 children、非弹出层区域时回调（对齐 Semi onClickOutSide，仅 custom/click 有效）。 */
+    onClickOutSide?: (e: PointerEvent) => void;
   }
 
   let {
-    items = [],
+    render,
+    menu,
+    children,
     trigger = 'hover',
-    open,
-    defaultOpen = false,
-    position = 'bottomStart',
-    size = 'default',
-    disabled = false,
-    closeOnSelect = true,
-    closeOnEsc = true,
-    mouseEnterDelay = 150,
-    mouseLeaveDelay = 150,
-    spacing = 4,
-    clickToHide = true,
+    visible,
+    defaultVisible = false,
+    position = 'bottom',
+    autoAdjustOverflow = true,
+    mouseEnterDelay = DEFAULT_ENTER_DELAY,
+    mouseLeaveDelay = DEFAULT_LEAVE_DELAY,
+    spacing,
+    margin,
     zIndex = 1050,
+    motion = true,
     className,
     contentClassName,
-    style: overlayStyle,
+    style: contentStyle,
+    showTick = false,
+    stopPropagation = false,
+    closeOnEsc = true,
     rePosKey,
-    autoAdjustOverflow = true,
-    destroyOnClose = false,
-    lazyRender = true,
+    disableFocusListener = false,
+    clickToHide,
     keepDOM = false,
     getPopupContainer,
-    showTick = false,
-    motion = true,
-    stopPropagation = true,
-    onSelect,
-    onOpenChange,
+    onVisibleChange,
     onEscKeyDown,
-    triggerContent,
-    children,
+    onClickOutSide,
   }: Props = $props();
 
-  const loc = useLocale();
-  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
+  // 父级 Dropdown 上下文（嵌套判定）：顶层无父 ctx（level 视为 0），render 内的 Item 处于 level 1，
+  // 其内的子 Dropdown 读到 parent.level=1，自身内容 level=2。
+  const parentCtx = getContext<DropdownContext | undefined>(DROPDOWN_CTX);
+  const parentLevel = parentCtx?.level ?? 0;
+  const isNested = $derived(parentLevel > 0);
+
+  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，否则继承父级容器（嵌套同容器）。
   const globalPopupContainer = getGlobalPopupContainer();
-  // 合并后的容器解析器：prop 优先，否则全局默认；两处（context 共享 + portal）共用。
-  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
+  const resolvePopupContainer = $derived(
+    getPopupContainer ?? parentCtx?.getContainer ?? globalPopupContainer,
+  );
 
   const menuId = useId('cd-dropdown-menu');
-  // 触发元素 id：菜单浮层 aria-labelledby 指向它，让 AT 用触发文案命名菜单（spec §6）。
   const triggerId = useId('cd-dropdown-trigger');
 
-  // spacing → floating 主轴 offset：number 直用；{ x, y } 按 position 主轴方向取值
-  // （top/bottom 系主轴是垂直取 y；left/right 系主轴是水平取 x）。
+  // spacing → floating 主轴 offset：未传时顶层 SPACING / 嵌套 NESTED_SPACING；
+  // number 直用；{ x, y } 按 position 主轴方向取值（上下取 y、左右取 x）。
   const offset = $derived.by(() => {
-    if (typeof spacing === 'number') return spacing;
+    const s = spacing ?? (isNested ? NESTED_SPACING : SPACING);
+    if (typeof s === 'number') return s;
     const horizontal = position.startsWith('left') || position.startsWith('right');
-    return horizontal ? spacing.x : spacing.y;
+    return horizontal ? s.x : s.y;
   });
 
-  // 子菜单浮层经此 context 共享同一挂载容器（getPopupContainer）；
-  // showTick 透传给叶子 DropdownItemNode 渲染勾选标记。
+  // 溢出冗余（Semi margin）：透传给 floating padding（视口边缘保留距离）；未传时用默认。
+  const DEFAULT_FLOAT_PADDING = 8;
+  const floatPadding = $derived(typeof margin === 'number' ? margin : DEFAULT_FLOAT_PADDING);
+
+  // clickToHide 解析：未传时 hover/click 默认 true（点击项关闭），custom/contextMenu 不受此控制。
+  const resolvedClickToHide = $derived(clickToHide ?? true);
+
+  // 供 render/menu 内 Dropdown.Item 点击后自动关闭（clickToHide）。经 context 上抛，
+  // render（用户手写 Item）与 menu（生成 Item）行为一致。
+  function requestCloseOnSelect() {
+    if (trigger === 'custom') return;
+    if (resolvedClickToHide) setOpen(false);
+  }
+
+  // 向子树透传：showTick / level+1 / trigger / 容器（子菜单浮层挂同容器）/ 关闭请求。
   setContext<DropdownContext>(DROPDOWN_CTX, {
-    get getContainer() {
-      return resolvePopupContainer;
-    },
     get showTick() {
       return showTick;
     },
+    level: parentLevel + 1,
+    get trigger() {
+      return trigger;
+    },
+    get getContainer() {
+      return resolvePopupContainer;
+    },
+    requestClose: requestCloseOnSelect,
   });
 
-  // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
-  const isControlled = $derived(open !== undefined);
-  let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isControlled ? !!open : innerOpen);
-
-  // --- 渲染策略：lazyRender 控制首开前是否预渲染；keepDOM/destroyOnClose 控制关闭后是否保留 ---
-  //  lazyRender=false 时即使从未打开也预渲染（仅隐藏）。
-  //  关闭后保留：keepDOM=true 强制保留（忽略 destroyOnClose）；否则 destroyOnClose=false 保留 / true 卸载。
-  let hasBeenOpened = $state(false);
-  $effect(() => {
-    if (isOpen) hasBeenOpened = true;
-  });
-  // 关闭后是否保留 DOM：keepDOM 优先，否则取 !destroyOnClose。
-  const retainOnClose = $derived(keepDOM || !destroyOnClose);
-  const shouldRender = $derived(
-    isOpen ||
-      // 已开过且关闭后需保留
-      (hasBeenOpened && retainOnClose) ||
-      // 非惰性：从未打开也预渲染
-      !lazyRender,
-  );
-
-  function getInitialOpen(): boolean {
-    return defaultOpen;
-  }
+  // --- 受控 open（红线 #1）：custom trigger 完全受控；其余以 visible 受控优先，否则内部态 ---
+  const isControlled = $derived(visible !== undefined);
+  // eslint-disable-next-line -- 仅取 defaultVisible 初值作为非受控初始态
+  let innerOpen = $state(untrack(() => defaultVisible));
+  const isOpen = $derived(isControlled ? !!visible : innerOpen);
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
     if (!isControlled) innerOpen = next;
-    onOpenChange?.(next);
+    onVisibleChange?.(next);
   }
 
-  function selectLeaf(key: ItemKey) {
-    onSelect?.(key);
-    // hover 模式下 clickToHide=false 时点击项不关闭浮层（仅靠移出/Esc/外部点击收起）；
-    // click/contextMenu 触发不受 clickToHide 影响，关闭仍由 closeOnSelect 决定。
-    if (trigger === 'hover' && !clickToHide) return;
-    if (closeOnSelect) setOpen(false);
-  }
+  // --- 渲染保留策略：keepDOM=true 关闭后保留浮层 DOM（仅隐藏），否则关闭即卸载 ---
+  let hasBeenOpened = $state(false);
+  $effect(() => {
+    if (isOpen) hasBeenOpened = true;
+  });
+  const shouldRender = $derived(isOpen || (hasBeenOpened && keepDOM));
 
-  // --- hover 延迟开关：setTimeout 存普通变量，cleanup 清除 ---
+  // --- hover / focus 延迟开关 ---
   let enterTimer: ReturnType<typeof setTimeout> | undefined;
   let leaveTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -227,50 +228,82 @@
   }
 
   function onPointerEnter() {
-    if (disabled || trigger !== 'hover') return;
+    if (trigger !== 'hover') return;
     clearTimers();
     enterTimer = setTimeout(() => setOpen(true), mouseEnterDelay);
   }
 
-  function onPointerLeave() {
-    if (disabled || trigger !== 'hover') return;
+  function onPointerLeave(e: PointerEvent) {
+    if (trigger !== 'hover') return;
+    // 指针移入浮层（portal 到 body，在触发根之外）时不关闭。
+    const related = e.relatedTarget as Node | null;
+    if (related instanceof Element && menuWrapperEl?.contains(related)) return;
     clearTimers();
     leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
   }
 
   function onTriggerClick() {
-    if (disabled || trigger !== 'click') return;
+    if (trigger !== 'click') return;
     setOpen(!isOpen);
   }
 
-  // --- contextMenu 触发：右键弹菜单，菜单定位到鼠标光标处 ---
-  // 鼠标坐标存普通 $state，仅用于浮层 fixed 定位（红线 #3：命令式监听 + cleanup）。
+  function onTriggerFocusIn() {
+    // focus 触发；或 hover 触发但未禁用 focus 监听（Semi disableFocusListener）。
+    if (trigger === 'focus' || (trigger === 'hover' && !disableFocusListener)) {
+      clearTimers();
+      setOpen(true);
+    }
+  }
+
+  function onTriggerFocusOut(e: FocusEvent) {
+    if (trigger !== 'focus') return;
+    const related = e.relatedTarget as Node | null;
+    if (related instanceof Element && menuWrapperEl?.contains(related)) return;
+    if (rootEl && related instanceof Node && rootEl.contains(related)) return;
+    setOpen(false);
+  }
+
+  // --- contextMenu 触发：右键弹菜单，定位到鼠标光标处 ---
   let cursorX = $state(0);
   let cursorY = $state(0);
 
   function onContextMenu(e: MouseEvent) {
-    if (disabled || trigger !== 'contextMenu') return;
+    if (trigger !== 'contextMenu') return;
     e.preventDefault();
     cursorX = e.clientX;
     cursorY = e.clientY;
     setOpen(true);
   }
 
-  // 顶层菜单可聚焦项：本层直属（不含子浮层里的）未禁用 menuitem。
-  function topMenuItems(): HTMLElement[] {
-    if (!menuEl) return [];
-    return [...menuEl.querySelectorAll<HTMLElement>('[role="menuitem"]')].filter(
-      (el) => el.getAttribute('aria-disabled') !== 'true' && belongsToTopLevel(el),
+  // --- DOM 引用 ---
+  let rootEl = $state<HTMLSpanElement | null>(null);
+  let menuWrapperEl = $state<HTMLDivElement | null>(null);
+
+  // floating 定位锚点：非嵌套时 = rootEl（inline-block span，有正常 rect）；
+  // 嵌套时 rootEl 为 display:contents 的 span（rect 全 0，不可锚定），改锚定其内部真实元素
+  // （子 Dropdown 的触发器 Dropdown.Item <li>）。
+  const anchorEl = $derived.by(() => {
+    if (!rootEl) return rootEl;
+    if (!isNested) return rootEl;
+    return (rootEl.firstElementChild as HTMLElement | null) ?? rootEl;
+  });
+
+  // 浮层内可聚焦菜单项（本层直属 li[role=menuitem]，未禁用；不含嵌套子 Dropdown 浮层里的）。
+  function menuItems(): HTMLElement[] {
+    const scope = menuWrapperEl;
+    if (!scope) return [];
+    return [...scope.querySelectorAll<HTMLElement>('li[role="menuitem"]')].filter(
+      (el) =>
+        el.getAttribute('aria-disabled') !== 'true' &&
+        // 仅本层：排除嵌套子 Dropdown 浮层（各自 portal，不在本 wrapper 内即天然排除；
+        // 若同容器 absolute 定位则可能在内，按最近的 .cd-dropdown wrapper 归属过滤）。
+        el.closest('.cd-dropdown-content') ===
+          scope.querySelector('.cd-dropdown-content'),
     );
   }
 
-  // 元素是否属于顶层菜单（不在任何子浮层 .cd-dropdown__sub 内）。
-  function belongsToTopLevel(el: HTMLElement): boolean {
-    return el.closest('.cd-dropdown__sub') === null;
-  }
-
-  function focusTopItem(delta: number) {
-    const list = topMenuItems();
+  function focusItem(delta: number) {
+    const list = menuItems();
     if (list.length === 0) return;
     const cur = list.findIndex((el) => el === document.activeElement);
     let next: number;
@@ -279,30 +312,66 @@
     list[next]?.focus();
   }
 
+  // 触发器 aria action（对齐 Semi cloneElement 语义）：把 aria-haspopup/expanded/controls 写到
+  // 用户提供的真实触发器元素（span 的首个 element child）本身，而非包裹 span——避免在无 role 的 span 上
+  // 出现受限 aria（aria-allowed-attr），也避免 span role=button 与可聚焦 children 形成嵌套交互控件
+  // （nested-interactive）。嵌套触发器（Dropdown.Item <li role=menuitem>）不写（其 menuitem 语义自足）。
+  function triggerAria(node: HTMLElement, params: { open: boolean; controls: string; nested: boolean }) {
+    function apply(open: boolean, controls: string, nested: boolean) {
+      const target = node.firstElementChild as HTMLElement | null;
+      if (!target || nested) return;
+      target.setAttribute('aria-haspopup', 'menu');
+      target.setAttribute('aria-expanded', String(open));
+      target.setAttribute('aria-controls', controls);
+    }
+    apply(params.open, params.controls, params.nested);
+    return {
+      update(next: { open: boolean; controls: string; nested: boolean }) {
+        apply(next.open, next.controls, next.nested);
+      },
+    };
+  }
+
+  // 打开后浮层需在下一帧挂载完成才能聚焦。
+  function focusEdgeWhenReady(delta: number) {
+    requestAnimationFrame(() => {
+      const list = menuItems();
+      (delta > 0 ? list[0] : list[list.length - 1])?.focus();
+    });
+  }
+
   function onTriggerKeydown(e: KeyboardEvent) {
-    if (disabled) return;
+    if (trigger === 'custom') return;
     switch (e.key) {
       case 'Enter':
       case ' ':
+        // Semi：Enter/Space 直接 click 触发器（click 触发下打开并聚焦首项）。
         e.preventDefault();
-        if (!isOpen) {
-          setOpen(true);
-          focusFirstWhenReady();
-        }
+        onTriggerClick();
+        if (isOpen || trigger === 'click') focusEdgeWhenReady(1);
         break;
       case 'ArrowDown':
         e.preventDefault();
         if (!isOpen) {
           setOpen(true);
-          focusFirstWhenReady();
+          focusEdgeWhenReady(1);
         } else {
-          focusTopItem(1);
+          focusEdgeWhenReady(1);
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!isOpen) {
+          setOpen(true);
+          focusEdgeWhenReady(-1);
+        } else {
+          focusEdgeWhenReady(-1);
         }
         break;
       case 'Escape':
         if (isOpen) {
           onEscKeyDown?.(e);
-          if (closeOnEsc) {
+          if (closeOnEsc && !isControlled) {
             e.preventDefault();
             setOpen(false);
           }
@@ -313,30 +382,34 @@
     }
   }
 
-  // 打开后浮层需在下一帧挂载完成才能聚焦首项。
-  function focusFirstWhenReady() {
-    requestAnimationFrame(() => {
-      const list = topMenuItems();
-      list[0]?.focus();
-    });
-  }
-
   function onMenuKeydown(e: KeyboardEvent) {
     if (!isOpen) return;
     switch (e.key) {
+      case 'Enter':
+      case ' ':
+        // 对齐 Semi foundation：Enter/Space 激活当前聚焦的菜单项（触发其 onClick）。
+        if (
+          document.activeElement instanceof HTMLElement &&
+          document.activeElement.getAttribute('role') === 'menuitem'
+        ) {
+          e.preventDefault();
+          document.activeElement.click();
+        }
+        break;
       case 'ArrowDown':
         e.preventDefault();
-        focusTopItem(1);
+        focusItem(1);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        focusTopItem(-1);
+        focusItem(-1);
         break;
       case 'Escape':
         onEscKeyDown?.(e);
-        if (closeOnEsc) {
+        if (closeOnEsc && !isControlled) {
           e.preventDefault();
           setOpen(false);
+          rootEl?.querySelector<HTMLElement>('[tabindex]')?.focus();
         }
         break;
       default:
@@ -344,46 +417,60 @@
     }
   }
 
-  // --- DOM 引用：触发根 + portal 浮层菜单（定位由 use:floating action 接管）---
-  let rootEl = $state<HTMLDivElement | null>(null);
-  let menuEl = $state<HTMLUListElement | null>(null);
-
-  // --- useDismiss (红线 #3)：仅复用 Escape；outside-click 自管理。---
-  // 子菜单浮层各自 portal 到 body（动态多层），无法逐一列入 extraTargets，
-  // 故 outside 判定改为：点在触发根 / 顶层菜单 / 任意 .cd-dropdown__sub 浮层内即「内部」。
+  // click 触发打开后，焦点自动落首个非禁用项（Semi foundation.handleVisibleChange）。
   $effect(() => {
-    if (!isOpen || !rootEl) return;
+    if (isOpen && trigger === 'click') {
+      focusEdgeWhenReady(1);
+    }
+  });
+
+  // --- useDismiss（红线 #3）：Escape 复用；outside-click 自管理（识别嵌套子浮层为内部）---
+  $effect(() => {
+    if (!isOpen || !rootEl || trigger === 'custom') return;
     const cleanup = useDismiss(rootEl, {
-      onDismiss: () => setOpen(false),
+      onDismiss: () => {
+        if (closeOnEsc) setOpen(false);
+      },
       escape: closeOnEsc,
       outsideClick: false,
-      extraTargets: [menuEl],
+      extraTargets: [menuWrapperEl],
     });
     return cleanup;
   });
 
-  // outside-click 命令式监听 + cleanup（红线 #3）：识别多层子浮层为内部。
+  // outside-click 命令式监听 + cleanup（红线 #3）：custom/contextMenu 不自动关的语义除外。
+  // custom 完全受控不监听；其余 click/hover/focus/contextMenu 点外部关闭并回调 onClickOutSide。
   $effect(() => {
-    if (!isOpen || !rootEl) return;
+    if (!isOpen || !rootEl || trigger === 'custom') return;
     const root = rootEl;
     function onPointerDown(e: PointerEvent) {
       const t = e.target as Node | null;
-      if (root.contains(t)) return;
-      if (menuEl && menuEl.contains(t)) return;
-      if (t instanceof Element && t.closest('.cd-dropdown__sub')) return;
+      if (t && root.contains(t)) return;
+      if (menuWrapperEl && t && menuWrapperEl.contains(t)) return;
+      // 嵌套子 Dropdown 浮层（各自 portal）识别为内部。
+      if (t instanceof Element && t.closest('.cd-dropdown')) return;
+      onClickOutSide?.(e);
       setOpen(false);
     }
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   });
 
-  // contextMenu 浮层定位：portal 到 body + position:fixed 到光标 x/y。
-  // floating action 只支持元素锚点，故 contextMenu 用此命令式 action 直接落点光标。
+  // contextmenu 监听绑触发根（命令式 + cleanup）。
+  $effect(() => {
+    if (trigger !== 'contextMenu' || !rootEl) return;
+    const el = rootEl;
+    el.addEventListener('contextmenu', onContextMenu);
+    return () => el.removeEventListener('contextmenu', onContextMenu);
+  });
+
+  $effect(() => clearTimers);
+
+  // contextMenu 浮层定位：portal + fixed 到光标 x/y（floating action 只支持元素锚点）。
   function cursorFloating(node: HTMLElement, coords: { x: number; y: number }) {
     if (typeof document === 'undefined') {
       return { update() {}, destroy() {} };
     }
-    // 自定义容器（getPopupContainer）时挂同容器并改 absolute 相对容器定位。
     const container = resolvePopupContainer?.() ?? document.body;
     const useAbsolute = container !== document.body;
     container.appendChild(node);
@@ -392,11 +479,9 @@
 
     function place(x: number, y: number) {
       const rect = node.getBoundingClientRect();
-      // 防止越出视口右/下边缘：超出则向左/上贴边。
       let left = Math.max(0, Math.min(x, window.innerWidth - rect.width));
       let top = Math.max(0, Math.min(y, window.innerHeight - rect.height));
       if (useAbsolute) {
-        // 光标坐标是视口系；转为容器局部坐标（减容器盒原点 + 加容器滚动）。
         const cRect = container.getBoundingClientRect();
         left = left - cRect.left + container.scrollLeft;
         top = top - cRect.top + container.scrollTop;
@@ -416,182 +501,144 @@
     };
   }
 
-  // contextmenu 监听绑触发根，命令式 + cleanup（红线 #3）。
-  $effect(() => {
-    if (trigger !== 'contextMenu' || !rootEl) return;
-    const el = rootEl;
-    el.addEventListener('contextmenu', onContextMenu);
-    return () => el.removeEventListener('contextmenu', onContextMenu);
-  });
-
-  $effect(() => clearTimers);
-
-  // portal 后 menu 不在 root 子树内，hover 移到 menu 上需维持 open。
-  function onMenuPointerEnter() {
-    if (trigger !== 'hover') return;
-    clearTimers();
-  }
-  function onMenuPointerLeave(e: PointerEvent) {
-    if (trigger !== 'hover') return;
-    // 指针移入子菜单浮层（portal 到 body，在顶层 ul 之外）时不关闭整体。
-    const related = e.relatedTarget as Node | null;
-    if (related instanceof Element && related.closest('.cd-dropdown__sub')) return;
-    clearTimers();
-    leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
-  }
-
-  const cls = $derived(
-    [
-      'cd-dropdown',
-      `cd-dropdown--${size}`,
-      disabled && 'cd-dropdown--disabled',
-      isOpen && 'cd-dropdown--open',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-
-  // stopPropagation：菜单内 click/pointerdown 停止冒泡（防触发上层监听器）。
-  function onMenuEvent(e: Event) {
+  // 浮层内点击：stopPropagation（Semi 默认 false）；clickToHide 关闭由 Item onClick 上抛（见下方 selectClose）。
+  function onMenuClick(e: Event) {
     if (stopPropagation) e.stopPropagation();
   }
 
-  // 浮层根 <ul> 追加的 class：className（外层）+ contentClassName（内容根，本库同一 <ul>）。
-  const menuExtraCls = $derived(
-    [className, contentClassName].filter(Boolean).join(' '),
-  );
 
-  // 浮层根 <ul> 内联样式：内置 z-index + 可选 style（勿含 position/transform）。
-  const menuInlineStyle = $derived(
-    [`z-index:${zIndex}`, overlayStyle].filter(Boolean).join(';'),
+  const wrapperCls = $derived(
+    ['cd-dropdown', className].filter(Boolean).join(' '),
   );
+  const contentCls = $derived(
+    ['cd-dropdown-content', contentClassName].filter(Boolean).join(' '),
+  );
+  const wrapperInlineStyle = $derived(`z-index:${zIndex}`);
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class={cls}
-  bind:this={rootEl}
-  onpointerenter={onPointerEnter}
-  onpointerleave={onPointerLeave}
->
-  <div
-    class="cd-dropdown__trigger"
-    id={triggerId}
-    role="button"
-    tabindex={disabled ? -1 : 0}
-    aria-haspopup="menu"
-    aria-expanded={isOpen}
-    aria-controls={menuId}
-    aria-disabled={disabled || undefined}
-    onclick={onTriggerClick}
-    onkeydown={onTriggerKeydown}
-  >
-    {#if triggerContent}
-      {@render triggerContent()}
-    {:else}
-      <span class="cd-dropdown__trigger-default">{loc().t('Dropdown.trigger')}</span>
+{#snippet popContent()}
+  <div class={contentCls} style={contentStyle}>
+    {#if render}
+      {@render render()}
+    {:else if menu}
+      <DropdownMenu>
+        {#each menu as m, i (i)}
+          {#if m.node === 'title'}
+            <DropdownTitle>{m.name}</DropdownTitle>
+          {:else if m.node === 'divider'}
+            <DropdownDivider />
+          {:else if m.node === 'item'}
+            <DropdownItem
+              key={m.key}
+              disabled={m.disabled}
+              active={m.active}
+              type={m.type}
+              icon={m.icon}
+              onClick={m.onClick}
+              onMouseEnter={m.onMouseEnter}
+              onMouseLeave={m.onMouseLeave}
+              onContextMenu={m.onContextMenu}
+            >
+              {m.name}
+            </DropdownItem>
+          {/if}
+        {/each}
+      </DropdownMenu>
     {/if}
   </div>
+{/snippet}
 
-  {#snippet menuBody()}
-    {#if children}
-      {@render children()}
-    {:else}
-      {#each items as item, i (isDropdownDivider(item) || isDropdownGroup(item) ? `__cd-dd-top-${i}` : item.key)}
-        <DropdownItemNode
-          {item}
-          onSelectLeaf={selectLeaf}
-          onCloseAll={() => {}}
-        />
-      {/each}
-    {/if}
-  {/snippet}
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!--
+  触发器包裹 span：承载交互（keydown/click/hover/focus 事件由内部可聚焦 children 冒泡至此），
+  自身无 role/aria——aria-haspopup/expanded/controls 经 use:triggerAria 写到真实触发器元素本身
+  （对齐 Semi cloneElement 语义），避免 aria-allowed-attr / nested-interactive 违规。
+  嵌套时 span 为 display:contents 无盒子，内部 li（Dropdown.Item role=menuitem）语义自足。
+-->
+<span
+  class="cd-dropdown-trigger"
+  class:cd-dropdown-trigger--nested={isNested}
+  id={triggerId}
+  bind:this={rootEl}
+  use:triggerAria={{ open: isOpen, controls: menuId, nested: isNested }}
+  onpointerenter={onPointerEnter}
+  onpointerleave={onPointerLeave}
+  onclick={onTriggerClick}
+  onfocusin={onTriggerFocusIn}
+  onfocusout={onTriggerFocusOut}
+  onkeydown={onTriggerKeydown}
+>
+  {@render children?.()}
+</span>
 
-  {#if isOpen && trigger === 'contextMenu'}
-    <!-- contextMenu：浮层 portal 到 body 并定位到光标 x/y -->
-    <ul
-      class="cd-dropdown__menu {menuExtraCls}"
-      class:cd-dropdown__menu--motion={motion}
-      id={menuId}
-      bind:this={menuEl}
-      style={menuInlineStyle}
-      use:cursorFloating={{ x: cursorX, y: cursorY }}
-      role="menu"
-      aria-labelledby={triggerId}
-      tabindex="-1"
-      onkeydown={onMenuKeydown}
-      onclick={onMenuEvent}
-      onpointerdown={onMenuEvent}
-    >
-      {@render menuBody()}
-    </ul>
-  {:else if shouldRender}
-    <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
-    <ul
-      class="cd-dropdown__menu {menuExtraCls}"
-      class:cd-dropdown__menu--hidden={!isOpen}
-      class:cd-dropdown__menu--motion={motion && isOpen}
-      id={menuId}
-      bind:this={menuEl}
-      style={menuInlineStyle}
-      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
-      role="menu"
-      aria-labelledby={triggerId}
-      tabindex="-1"
-      aria-hidden={!isOpen || undefined}
-      onkeydown={onMenuKeydown}
-      onpointerenter={onMenuPointerEnter}
-      onpointerleave={onMenuPointerLeave}
-      onclick={onMenuEvent}
-      onpointerdown={onMenuEvent}
-    >
-      {@render menuBody()}
-    </ul>
-  {/if}
-</div>
+{#if isOpen && trigger === 'contextMenu'}
+  <!-- contextMenu：wrapper portal 到 body 并定位到光标 x/y -->
+  <div
+    class={wrapperCls}
+    id={menuId}
+    bind:this={menuWrapperEl}
+    style={wrapperInlineStyle}
+    class:cd-dropdown--motion={motion}
+    use:cursorFloating={{ x: cursorX, y: cursorY }}
+    onkeydown={onMenuKeydown}
+    onclick={onMenuClick}
+    onpointerdown={onMenuClick}
+    role="presentation"
+  >
+    {@render popContent()}
+  </div>
+{:else if shouldRender}
+  <div
+    class={wrapperCls}
+    id={menuId}
+    bind:this={menuWrapperEl}
+    style={wrapperInlineStyle}
+    class:cd-dropdown--hidden={!isOpen}
+    class:cd-dropdown--motion={motion && isOpen}
+    use:floating={{ trigger: anchorEl, placement: position, autoAdjust: autoAdjustOverflow, offset, padding: floatPadding, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
+    onkeydown={onMenuKeydown}
+    onpointerenter={() => trigger === 'hover' && clearTimers()}
+    onpointerleave={onPointerLeave}
+    onclick={onMenuClick}
+    onpointerdown={onMenuClick}
+    role="presentation"
+  >
+    {@render popContent()}
+  </div>
+{/if}
 
 <style>
-  .cd-dropdown {
-    position: relative;
+  .cd-dropdown-trigger {
     display: inline-block;
   }
-  .cd-dropdown__trigger {
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-  }
-  .cd-dropdown__trigger:focus-visible {
+  .cd-dropdown-trigger:focus-visible {
     outline: none;
-    box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-border-radius-small);
   }
-  .cd-dropdown--disabled .cd-dropdown__trigger {
-    color: var(--cd-color-text-3);
-    cursor: not-allowed;
+  /* 嵌套：子 Dropdown 触发器为 Dropdown.Item（<li>），需直接参与父 ul 布局，
+     故包裹 span 用 display:contents 不产生盒子（li 视觉归位 ul，事件仍经 span 冒泡处理）。 */
+  .cd-dropdown-trigger--nested {
+    display: contents;
   }
-  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
-  .cd-dropdown__menu {
-    margin: 0;
-    padding-block: var(--cd-spacing-extra-tight);
-    padding-inline: 0;
-    list-style: none;
-    z-index: var(--cd-dropdown-z);
-    min-inline-size: var(--cd-dropdown-min-width);
-    background: var(--cd-dropdown-bg);
-    border-radius: var(--cd-dropdown-radius);
-    box-shadow: var(--cd-dropdown-shadow);
+  /* 浮层 wrapper：portal 到 body，由 use:floating 写 position:fixed + transform 定位。
+     对齐 Semi .semi-dropdown（+ wrapper 的 shadow/radius/bg/z）。 */
+  .cd-dropdown {
+    z-index: var(--cd-z-dropdown);
+    border-radius: var(--cd-radius-dropdown);
+    background: var(--cd-color-dropdown-bg-default);
+    box-shadow: var(--cd-shadow-elevated);
+    backdrop-filter: var(--cd-filter-dropdown-bg);
+    overflow-y: auto;
+    font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
   }
-  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  .cd-dropdown__menu--hidden {
+  /* keepDOM 关闭后保留 DOM 但不可见 */
+  .cd-dropdown--hidden {
     display: none;
   }
-  /* motion：进场淡入；reduced-motion 退化。
-     注意：定位 transform 由 use:floating 写入 inline style，动画 keyframe
-     绝不能设置 transform（CSS animation 优先级高于 inline style，会把
-     floating 的 translate(x,y) 覆盖成 0，浮层飘到容器左上角）。故只动 opacity。 */
-  .cd-dropdown__menu--motion {
-    animation: cd-dropdown-in var(--cd-dropdown-motion-duration, 120ms)
-      var(--cd-dropdown-motion-easing, ease) both;
+  /* motion：进场淡入；定位 transform 由 use:floating 写入 inline style，
+     keyframe 绝不能设 transform（会覆盖 translate 使浮层飘走），故只动 opacity。 */
+  .cd-dropdown--motion {
+    animation: cd-dropdown-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
   }
   @keyframes cd-dropdown-in {
     from {
@@ -602,7 +649,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-dropdown__menu--motion {
+    .cd-dropdown--motion {
       animation: none;
     }
   }

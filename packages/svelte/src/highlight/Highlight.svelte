@@ -1,99 +1,79 @@
 <!--
   Highlight — see specs/components/show/Highlight.spec.md
-  纯展示文本高亮：sourceString 中标记 searchWords。纯文本输出（不解析 HTML）。
-  片段分割 / 重叠区间合并为纯函数（@chenzy-design/core highlightChunks，红线 #2），
-  渲染派生：默认 <mark>，可由 highlight/chunk snippet 自定义。
-  支持单/多关键词、大小写敏感、highlightAll、autoEscape、自定义 component/类名/样式、
-  unstyled、命中片段 id + aria 关联。
+  纯展示文本高亮：镜像 Semi Highlight。sourceString 中标记 searchWords，命中片段默认用
+  <mark class="cd-highlight-tag"> 包裹，非命中片段原样输出纯文本（不解析 HTML）。
+  片段分割 / 重叠区间合并 / 差异化样式载荷为纯函数（@chenzy-design/core highlightChunks）。
+
+  对齐 Semi（semi-ui/highlight/index.tsx）：
+  - 无外层 wrapper，直接输出片段序列（Semi render 返回数组）。
+  - highlightClassName 追加到高亮 tag（Semi: cls({semi-highlight-tag:true}, highlightClassName)）。
+  - searchWords 支持对象数组 { text, className, style }（Semi v2.71 差异化样式）；每词 style/className
+    与组件级 highlightStyle/highlightClassName 合并（chunk 优先，对齐 Semi {...highlightStyle, ...chunk.style}）。
+  - component 指定高亮标签（默认 mark）。caseSensitive / autoEscape 透传匹配算法。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
-  import { highlightChunks, useId } from '@chenzy-design/core';
+  import { highlightChunks, type HighlightWord } from '@chenzy-design/core';
 
   interface Props {
+    /** 源文本（纯文本，HTML 会被转义而非解析）。 */
     sourceString?: string;
-    searchWords?: string | string[];
+    /** 需高亮的关键词；string / string[]，或对象数组 { text, className, style } 差异化样式。 */
+    searchWords?: string | string[] | HighlightWord | HighlightWord[];
+    /** 是否大小写敏感匹配（默认 false）。 */
     caseSensitive?: boolean;
-    highlightAll?: boolean;
+    /** 是否对关键词做正则转义（默认 true）；关闭后 searchWords 视为正则源。 */
     autoEscape?: boolean;
+    /** 高亮片段包裹标签名（默认 mark）。 */
     component?: string;
+    /** 追加到每个高亮片段的类名。 */
     highlightClassName?: string;
+    /** 追加到每个高亮片段的内联样式（字符串）。 */
     highlightStyle?: string;
-    className?: string;
-    style?: string;
-    unstyled?: boolean;
-    /** 自定义命中片段渲染（覆盖默认 <mark>）。 */
-    highlight?: Snippet<[{ chunk: string; index: number }]>;
-    /** 自定义非命中片段渲染（默认裸文本）。 */
-    chunk?: Snippet<[{ chunk: string; index: number }]>;
-    /** 命中片段 id 前缀，用于 aria 关联；省略则自动生成。 */
-    idPrefix?: string;
-    /** 追加到每个命中片段的 aria-describedby（指向外部说明元素）。 */
-    describedById?: string;
-    /** 命中片段的 aria-label（默认不加，避免逐字播报噪音）。 */
-    highlightAriaLabel?: string;
   }
 
   let {
     sourceString = '',
     searchWords = [],
     caseSensitive = false,
-    highlightAll = true,
     autoEscape = true,
     component = 'mark',
     highlightClassName = '',
     highlightStyle = '',
-    className = '',
-    style = '',
-    unstyled = false,
-    highlight,
-    chunk,
-    idPrefix,
-    describedById,
-    highlightAriaLabel,
   }: Props = $props();
 
-  // 稳定前缀：仅在未显式传入时生成一次，render 期只读（红线 #2）。
-  const autoPrefix = useId('cd-highlight');
-  const prefix = $derived(idPrefix || autoPrefix);
+  // 片段分割 + 重叠区间合并 + 差异化样式载荷：纯函数（core），渲染只读派生。
+  const chunks = $derived(highlightChunks(sourceString, searchWords, { caseSensitive, autoEscape }));
 
-  // 片段分割 + 重叠区间合并：纯函数（core），渲染只读派生（红线 #2）。
-  const chunks = $derived(
-    highlightChunks(sourceString, searchWords, { caseSensitive, highlightAll, autoEscape }),
-  );
+  // 高亮 tag class：cd-highlight-tag + highlightClassName + chunk 各自 className（对齐 Semi cls 拼接）。
+  function tagClass(chunkClassName?: string): string {
+    return ['cd-highlight-tag', highlightClassName, chunkClassName].filter(Boolean).join(' ');
+  }
 
-  const rootClass = $derived(['cd-highlight', className].filter(Boolean).join(' '));
-  const markClass = $derived(
-    ['cd-highlight__mark', unstyled && 'cd-highlight__mark--unstyled', highlightClassName]
-      .filter(Boolean)
-      .join(' '),
-  );
+  // style 对象（差异化样式，React camelCase）→ CSS 字符串；与 highlightStyle 合并，chunk 优先。
+  function tagStyle(chunkStyle?: Record<string, string | number>): string | undefined {
+    const parts: string[] = [];
+    if (highlightStyle) parts.push(highlightStyle.trim().replace(/;\s*$/, ''));
+    if (chunkStyle) {
+      for (const [k, v] of Object.entries(chunkStyle)) {
+        const prop = k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+        parts.push(`${prop}: ${typeof v === 'number' ? `${v}px` : v}`);
+      }
+    }
+    return parts.length ? `${parts.join('; ')};` : undefined;
+  }
 </script>
 
-<span class={rootClass} style={style || undefined}
-  >{#each chunks as item, i (i)}{#if item.matched}{#if highlight}{@render highlight({ chunk: item.text, index: i })}{:else}<svelte:element
-          this={component}
-          id={`${prefix}-${i}`}
-          class={markClass}
-          style={highlightStyle || undefined}
-          aria-label={highlightAriaLabel || undefined}
-          aria-describedby={describedById || undefined}>{item.text}</svelte:element>{/if}{:else if chunk}{@render chunk({ chunk: item.text, index: i })}{:else}{item.text}{/if}{/each}</span
->
+{#each chunks as item, i (i)}{#if item.highlight}<svelte:element
+      this={component}
+      class={tagClass(item.className)}
+      style={tagStyle(item.style)}>{item.text}</svelte:element
+    >{:else}{item.text}{/if}{/each}
 
 <style>
-  .cd-highlight {
-    color: inherit;
-  }
-  .cd-highlight__mark {
-    padding-inline: 2px;
-    border-radius: var(--cd-border-radius-small);
-    background: var(--cd-highlight-bg);
+  /* 镜像 Semi .semi-highlight-tag：仅 color / background-color / font-weight，无 padding、无 radius。 */
+  :global(.cd-highlight-tag) {
     color: var(--cd-highlight-color);
-    font-weight: var(--cd-highlight-weight); /* 对齐 Semi 高亮字重 600 */
-  }
-  .cd-highlight__mark--unstyled {
-    padding-inline: 0;
-    background: transparent;
-    color: inherit;
+    background-color: var(--cd-highlight-bg);
+    font-weight: var(--cd-highlight-font-weight);
   }
 </style>

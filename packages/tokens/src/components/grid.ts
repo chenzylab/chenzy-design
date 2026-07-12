@@ -8,7 +8,6 @@
  * - sm/md/lg/xl/xxl 断点复用我们的 --cd-breakpoint-*（值与 Semi 一致）；
  *   Semi 的 xs=480px 我们无对应 alias（xs 为 0-width 基档），保留字面量。
  * - Semi 的 -min = 对应 screen 值；-max = (下一档 min - 1px)，用 calc 表达。
- *   我们无 --cd-color-white 之类发明，未臆造 alias。
  *
  * 见 specs/components/basic/Grid.spec.md、specs/00-foundation/dsm.spec.md §4。
  */

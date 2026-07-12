@@ -1,21 +1,15 @@
 <script lang="ts">
   import { Collapse } from '@chenzy-design/svelte';
-
-  const panels = [
-    { key: '1', header: '面板一' },
-    { key: '2', header: '面板二' },
-    { key: '3', header: '面板三' },
-  ];
 </script>
 
-<Collapse {panels} defaultActiveKey="1">
-  {#snippet children({ key })}
-    {#if key === '1'}
-      <p>面板一的内容，折叠面板用于承载大量内容，节省页面空间。</p>
-    {:else if key === '2'}
-      <p>面板二的内容。</p>
-    {:else}
-      <p>面板三的内容。</p>
-    {/if}
-  {/snippet}
+<Collapse>
+  <Collapse.Panel header="This is panel header 1" itemKey="1">
+    <p>Hi, bytedance dance dance. This is the docsite of chenzy-design.</p>
+  </Collapse.Panel>
+  <Collapse.Panel header="This is panel header 2" itemKey="2">
+    <p>Hi, bytedance dance dance. This is the docsite of chenzy-design.</p>
+  </Collapse.Panel>
+  <Collapse.Panel header="This is panel header 3" itemKey="3">
+    <p>Hi, bytedance dance dance. This is the docsite of chenzy-design.</p>
+  </Collapse.Panel>
 </Collapse>

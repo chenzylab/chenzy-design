@@ -39,13 +39,8 @@
 
   const selected = $derived((ctx?.getValue()[field] as string[] | undefined) ?? []);
 
-  // Dropdown items：已选项打勾（showTick 读 selected），点击 toggle。
-  const items = $derived(
-    options.map((o) => ({ key: o.value, label: o.label, selected: selected.includes(o.value) })),
-  );
-
-  function handleSelect(key: string | number): void {
-    const value = String(key);
+  // 已选项打勾（active，showTick 时显示对勾），点击 toggle。
+  function handleSelect(value: string): void {
     const next = selected.includes(value)
       ? selected.filter((v) => v !== value)
       : [...selected, value];
@@ -54,17 +49,22 @@
   }
 </script>
 
-<Dropdown
-  trigger="click"
-  closeOnSelect={false}
-  showTick
-  items={items as never}
-  onSelect={handleSelect}
->
-  {#snippet triggerContent()}
-    <button type="button" class="cd-ai-chat-input-configure-mcp-trigger">
-      MCP · {selected.length}
-    </button>
+<Dropdown trigger="click" clickToHide={false} showTick>
+  <button type="button" class="cd-ai-chat-input-configure-mcp-trigger">
+    MCP · {selected.length}
+  </button>
+  {#snippet render()}
+    <Dropdown.Menu>
+      {#each options as o (o.value)}
+        <Dropdown.Item
+          key={o.value}
+          active={selected.includes(o.value)}
+          onClick={() => handleSelect(o.value)}
+        >
+          {o.label}
+        </Dropdown.Item>
+      {/each}
+    </Dropdown.Menu>
   {/snippet}
 </Dropdown>
 

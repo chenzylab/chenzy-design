@@ -152,7 +152,7 @@
     padding: 6px 12px;
     border: none;
     background: transparent;
-    color: var(--cd-video-player-menu-item-color, var(--cd-color-text-inverse));
+    color: var(--cd-video-player-menu-item-color, var(--cd-color-white));
     font-size: var(--cd-font-size-regular, 14px);
     text-align: center;
     white-space: nowrap;

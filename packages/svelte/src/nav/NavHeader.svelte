@@ -10,6 +10,10 @@
     logo?: Snippet;
     /** Logo 文案。 */
     text?: string;
+    /** 链接地址（对齐 Semi）：传入时头部整体包裹一个 `<a>`。 */
+    link?: string;
+    /** 透传给 `<a>` 的属性（对齐 Semi linkOptions，如 target/rel）。 */
+    linkOptions?: Record<string, string>;
     /** 折叠态（由 Nav 透传；折叠时隐藏文案）。 */
     collapsedState?: boolean;
     /** 自定义类名。 */
@@ -22,6 +26,8 @@
   let {
     logo,
     text,
+    link,
+    linkOptions,
     collapsedState = false,
     class: className = '',
     style,
@@ -29,7 +35,7 @@
   }: Props = $props();
 </script>
 
-<div class={['cd-nav__header', className].filter(Boolean).join(' ')} {style}>
+{#snippet inner()}
   {#if children}
     {@render children()}
   {:else}
@@ -40,17 +46,32 @@
       <span class="cd-nav__header-text">{text}</span>
     {/if}
   {/if}
+{/snippet}
+
+<div class={['cd-nav__header', className].filter(Boolean).join(' ')} {style}>
+  {#if link}
+    <a class="cd-nav__header-link" href={link} {...linkOptions}>{@render inner()}</a>
+  {:else}
+    {@render inner()}
+  {/if}
 </div>
 
 <style>
   .cd-nav__header {
     display: flex;
     align-items: center;
-    gap: var(--cd-nav-header-gap);
-    height: var(--cd-nav-header-height);
-    padding-inline: var(--cd-nav-header-padding-x);
+    gap: var(--cd-spacing-navigation-header-logo-marginright);
+    height: var(--cd-height-navigation-horizontal-header);
+    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
     flex: 0 0 auto;
     overflow: hidden;
+  }
+  .cd-nav__header-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-navigation-header-logo-marginright);
+    color: inherit;
+    text-decoration: none;
   }
   .cd-nav__logo {
     display: inline-flex;
@@ -58,9 +79,9 @@
     flex: 0 0 auto;
   }
   .cd-nav__header-text {
-    font-size: var(--cd-nav-header-text-size);
-    font-weight: var(--cd-nav-header-text-weight);
+    font-size: var(--cd-font-size-navigation-header-text);
+    font-weight: var(--cd-font-navigation-header-item-fontweight);
     white-space: nowrap;
-    color: var(--cd-nav-header-text-color);
+    color: var(--cd-color-navigation-header-text-default);
   }
 </style>

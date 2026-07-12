@@ -1,73 +1,48 @@
 <script lang="ts">
-  import { Tree, Text } from '@chenzy-design/svelte';
+  import { Tree, Text, Switch } from '@chenzy-design/svelte';
   import type { TreeNode } from '@chenzy-design/svelte';
 
   const treeData: TreeNode[] = [
     {
-      key: 'components',
-      label: '组件',
+      label: '亚洲',
+      key: 'asia',
       children: [
         {
-          key: 'input',
-          label: '输入类',
+          label: '中国',
+          key: 'china',
           children: [
-            { key: 'input-field', label: 'Input 输入框' },
-            { key: 'select', label: 'Select 选择器' },
-            { key: 'datepicker', label: 'DatePicker 日期选择' },
+            { label: '北京', key: 'beijing' },
+            { label: '上海', key: 'shanghai' },
           ],
         },
-        {
-          key: 'show',
-          label: '展示类',
-          children: [
-            { key: 'table', label: 'Table 表格' },
-            { key: 'tree', label: 'Tree 树形控件' },
-            { key: 'tag', label: 'Tag 标签' },
-          ],
-        },
+        { label: '日本', key: 'japan', children: [{ label: '大阪', key: 'osaka' }] },
       ],
     },
     {
-      key: 'feedback',
-      label: '反馈类',
+      label: '北美洲',
+      key: 'na',
       children: [
-        { key: 'modal', label: 'Modal 对话框' },
-        { key: 'toast', label: 'Toast 轻提示' },
+        { label: '美国', key: 'us' },
+        { label: '加拿大', key: 'canada' },
       ],
     },
   ];
 
-  let lastSearch = $state('');
-  let hitCount = $state(0);
+  let filteredOnly = $state(false);
 </script>
 
-<div style="display:flex; gap:48px; flex-wrap:wrap; align-items:flex-start">
-  <div style="width:280px">
-    <Text type="tertiary">内置搜索（命中高亮 + 自动展开祖先）</Text>
-    <Tree
-      {treeData}
-      filterable
-      defaultExpandAll
-      onSearch={(value, keys) => {
-        lastSearch = value;
-        hitCount = keys.length;
-      }}
-      ariaLabel="可搜索组件树"
-    />
-    <Text type="tertiary">
-      {lastSearch ? `“${lastSearch}” 命中 ${hitCount} 项` : '输入关键词过滤，如 “选择”'}
-    </Text>
-  </div>
-
-  <div style="width:280px">
-    <Text type="tertiary">自定义过滤谓词（仅匹配开头）</Text>
-    <Tree
-      {treeData}
-      defaultExpandAll
-      filterTreeNode={(input, node) =>
-        node.label.toLowerCase().startsWith(input.toLowerCase())}
-      ariaLabel="自定义过滤组件树"
-    />
-    <Text type="tertiary">按 label 前缀匹配，如 “T”</Text>
-  </div>
+<div style="display:flex; flex-direction:column; gap:12px; width:260px">
+  <label style="display:flex; align-items:center; gap:8px">
+    <Switch value={filteredOnly} onChange={(v) => (filteredOnly = v)} size="small" />
+    <Text size="small">showFilteredOnly（只展示命中结果）</Text>
+  </label>
+  <!-- filterTreeNode 开启搜索；默认对 label 搜索，命中高亮 + 自动展开祖先 -->
+  <Tree
+    style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
+    {treeData}
+    filterTreeNode
+    showFilteredOnly={filteredOnly}
+    defaultExpandAll
+    ariaLabel="可搜索地区树"
+  />
 </div>

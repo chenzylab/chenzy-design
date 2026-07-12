@@ -1,79 +1,82 @@
 <!--
-  CardGroup — see specs/components/show/CardGroup.spec.md
-  把多个 Card 以网格方式成组排布，统一间距（spacing）。纯 CSS 布局，无运行时。
-  对标 Semi CardGroup（type='grid' + spacing: number | [x, y]）。
+  CardGroup — 卡片组容器，对齐 Semi CardGroup。
+  基于 Space（flex wrap）排布多个 Card：
+  - 普通型：spacing 控制卡片等间距（默认 16，同 Semi）。
+  - 网格型（type='grid'）：Space spacing=0，卡片 border-radius:0 且以 -1px 负边距拼接边框，覆盖 spacing。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { Space } from '../space/index.js';
 
-  type CardGroupType = 'grid';
+  export type CardGroupType = 'grid';
 
   export interface Props {
-    /** 卡片间距：number 统一水平/垂直；[x, y] 分别指定水平/垂直间距。 */
+    /** 卡片间距：number 统一，[x, y] 分别指定水平/垂直（网格型下被忽略）。 */
     spacing?: number | number[];
-    /** 排布类型（当前仅 grid）。 */
+    /** 卡片组类型；grid 为网格型，将覆盖 spacing。 */
     type?: CardGroupType;
-    /** 组语义标签（aria-label）。 */
-    ariaLabel?: string;
     /** 根节点自定义类名。 */
     class?: string;
     /** 根节点自定义内联样式。 */
     style?: string;
+    /** 组语义标签（aria-label）。 */
+    ariaLabel?: string;
     /** 子 Card。 */
     children?: Snippet;
   }
 
   let {
-    spacing,
-    type = 'grid',
-    ariaLabel,
+    spacing = 16,
+    type,
     class: className,
     style,
+    ariaLabel,
     children,
   }: Props = $props();
 
-  // spacing → [columnGap, rowGap]。number 统一；[x, y] 分别取值（缺省回退 x）。
-  const gaps = $derived.by<[string, string] | undefined>(() => {
-    if (spacing === undefined) return undefined;
+  const isGrid = $derived(type === 'grid');
+
+  // Semi：网格型 spacing 恒为 0，靠 -1px 负边距拼接；否则透传 spacing。
+  // number[] → [x, y] tuple 以对齐我们 Space 的 spacing 类型。
+  const spaceSpacing = $derived.by<number | [number, number]>(() => {
+    if (isGrid) return 0;
     if (Array.isArray(spacing)) {
-      const x = spacing[0];
-      const y = spacing.length > 1 ? spacing[1] : spacing[0];
-      if (x === undefined) return undefined;
-      return [`${x}px`, `${y ?? x}px`];
+      const x = spacing[0] ?? 0;
+      const y = spacing.length > 1 ? (spacing[1] ?? x) : x;
+      return [x, y];
     }
-    return [`${spacing}px`, `${spacing}px`];
+    return spacing;
   });
 
-  const gapStyle = $derived(
-    gaps
-      ? `--cd-cardgroup-column-gap:${gaps[0]};--cd-cardgroup-row-gap:${gaps[1]};`
-      : '',
+  const cls = $derived(
+    ['cd-card-group', isGrid && 'cd-card-group--grid', className]
+      .filter(Boolean)
+      .join(' '),
   );
-
-  const rootStyle = $derived([gapStyle, style].filter(Boolean).join(''));
 </script>
 
-<div
-  class={['cd-card-group', `cd-card-group--${type}`, className]
-    .filter(Boolean)
-    .join(' ')}
-  style={rootStyle || undefined}
+<Space
+  spacing={spaceSpacing}
+  wrap
+  block
+  align="start"
   role="group"
-  aria-label={ariaLabel}
+  {ariaLabel}
+  class={cls}
+  style={style ?? ''}
 >
   {@render children?.()}
-</div>
+</Space>
 
 <style>
-  .cd-card-group {
-    display: grid;
-    column-gap: var(--cd-cardgroup-column-gap, var(--cd-cardgroup-spacing));
-    row-gap: var(--cd-cardgroup-row-gap, var(--cd-cardgroup-spacing));
-  }
-  .cd-card-group--grid {
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(min(var(--cd-cardgroup-min-column), 100%), 1fr)
-    );
+  /*
+    网格型：子 Card 去圆角，以 -1px 负边距使相邻边框重叠为单线（对齐 Semi）。
+    .cd-card-group--grid 作用在 Space 渲染的根节点（非本组件模板内），子 .cd-card 亦为外部组件，
+    故整条走 :global，否则 Svelte scoped 会因找不到静态匹配而剪掉规则、样式失效。
+  */
+  :global(.cd-card-group--grid .cd-card) {
+    border-radius: 0;
+    margin-inline-start: var(--cd-cardgroup-card-margin);
+    margin-block-start: var(--cd-cardgroup-card-margin);
   }
 </style>

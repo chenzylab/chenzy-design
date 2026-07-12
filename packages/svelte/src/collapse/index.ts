@@ -7,11 +7,9 @@ export const Collapse: typeof Collapse_ & {
 
 export { CollapsePanelComponent };
 export { meta as collapseMeta } from './meta.js';
-export type { CollapsePanel } from './types.js';
 export {
   getCollapseContext,
   setCollapseContext,
   type CollapseContext,
-  type CollapseSize,
   type CollapseIconPosition,
 } from './context.js';

@@ -12,22 +12,18 @@
 </script>
 
 <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
-  <Switch bind:value={active} />
+  <Switch value={active} onChange={(v) => (active = v)} />
   <Text type="tertiary">{active ? 'active：shimmer 流光动画开启' : 'active 关闭：静态底色'}</Text>
 </div>
 
-<div style="width:360px; padding:16px; border:1px solid var(--cd-color-border); border-radius:8px">
-  <Skeleton loading {active}>
-    {#snippet placeholder()}
-      <div style="display:flex; gap:16px">
-        <SkeletonAvatar size="large" />
-        <div style="flex:1">
-          <SkeletonTitle width="40%" />
-          <div style="margin-top:12px">
-            <SkeletonParagraph rows={3} />
-          </div>
-        </div>
+<Skeleton loading {active}>
+  {#snippet placeholder()}
+    <div style="display:flex; align-items:flex-start">
+      <SkeletonAvatar style="margin-right:12px" />
+      <div>
+        <SkeletonTitle style="width:120px; margin-bottom:12px; margin-top:12px" />
+        <SkeletonParagraph style="width:240px" rows={3} />
       </div>
-    {/snippet}
-  </Skeleton>
-</div>
+    </div>
+  {/snippet}
+</Skeleton>
