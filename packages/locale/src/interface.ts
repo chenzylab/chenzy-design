@@ -415,6 +415,8 @@ export interface Locale {
     retry: string;
     /** 替换已上传文件按钮（showReplace） */
     replace: string;
+    /** 照片墙预览图标 aria-label */
+    preview: string;
     /** 批量清空按钮 */
     clear: string;
     /** live 播报：上传中，uses {name} {percent} */

@@ -310,6 +310,7 @@ export const en_US: Locale = {
     remove: 'Remove',
     retry: 'Retry',
     replace: 'Replace',
+    preview: 'Preview',
     clear: 'Clear',
     announceUploading: '{name} uploading {percent}%',
     announceSuccess: '{name} uploaded successfully',

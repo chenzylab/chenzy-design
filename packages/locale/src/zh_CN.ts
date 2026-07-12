@@ -310,6 +310,7 @@ export const zh_CN: Locale = {
     remove: '移除',
     retry: '重试',
     replace: '替换',
+    preview: '预览',
     clear: '清空',
     announceUploading: '{name} 上传中 {percent}%',
     announceSuccess: '{name} 上传成功',

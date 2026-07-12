@@ -42,6 +42,9 @@
   // 文件卡片失败态内联错误图标（对标 Semi fileCard file-card-icon-error 的 IconAlertCircle）。
   const DEFAULT_ERROR_ICON_SVG =
     '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.25" r="1" fill="currentColor"/></svg>';
+  // 照片墙缩略图默认预览图标（对标 Semi renderPicPreviewIcon 默认的 IconEyeOpened）：居中眼睛，hover 显现。
+  const DEFAULT_EYE_ICON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>';
   import type { CropperShape } from '../cropper/index.js';
   import type {
     UploadFileItem,
@@ -1549,7 +1552,7 @@
         {@render picAddTile()}
       {/if}
       {#if showUploadList && current.length > 0}
-        {#each current as item (item.uid)}
+        {#each current as item, index (item.uid)}
         {@const url = previewUrl(item)}
         <li
           class="cd-upload__card"
@@ -1595,45 +1598,15 @@
             <span class="cd-upload__card-error-icon" aria-hidden="true">!</span>
           {/if}
           {#if listType === 'picture-card' && showPicInfo}
-            <!-- 图片信息浮层（对齐 Semi picture-file-card-pic-info），常显（非仅 hover）。 -->
+            <!-- 图片信息浮层（对齐 Semi picture-file-card-pic-info）：左下角显示该项序号。 -->
             <div class="cd-upload__pic-info">
               {#if renderPicInfo}
                 {@render renderPicInfo({ fileItem: item })}
               {:else}
-                <span class="cd-upload__pic-info-name">{item.name}</span>
+                <span class="cd-upload__pic-info-index">{index + 1}</span>
               {/if}
             </div>
           {/if}
-          <div class="cd-upload__card-overlay">
-            <span class="cd-upload__card-name">{item.name}</span>
-            {#if (item.showReplace ?? showReplace) && item.status === 'success'}
-              <!-- showReplace（picture-card）：已上传项显示替换按钮（项级优先）。 -->
-              <button
-                type="button"
-                class="cd-upload__card-replace"
-                aria-label={loc().t('Upload.replace')}
-                {disabled}
-                onclick={() => openReplace(item.uid)}
-              >&#8635;</button>
-            {/if}
-            {#if renderPicClose}
-              <!-- renderPicClose：自定义照片墙关闭（移除）按钮。 -->
-              {@render renderPicClose({
-                className: 'cd-upload__card-remove',
-                remove: () => remove(item.uid),
-              })}
-            {:else}
-              <button
-                type="button"
-                class="cd-upload__card-remove"
-                aria-label={loc().t('Upload.remove')}
-                {disabled}
-                onclick={() => remove(item.uid)}
-              >
-                &times;
-              </button>
-            {/if}
-          </div>
           {#if renderPicPreviewIcon}
             <!-- renderPicPreviewIcon：照片墙 hover 预览图标（picture-card），常配合 onPreviewClick。 -->
             <div class="cd-upload__pic-preview-icon">
@@ -1644,6 +1617,44 @@
                 preview: () => onPreviewClick?.(item),
               })}
             </div>
+          {:else if item.status === 'success'}
+            <!-- 默认预览眼睛图标（对齐 Semi renderPicPreviewIcon 默认 IconEyeOpened）：居中，hover 显现，点击触发 onPreviewClick。 -->
+            <button
+              type="button"
+              class="cd-upload__pic-preview-icon cd-upload__pic-preview-icon--default"
+              aria-label={loc().t('Upload.preview')}
+              onclick={() => onPreviewClick?.(item)}
+            >
+              <Icon svg={DEFAULT_EYE_ICON_SVG} size="large" />
+            </button>
+          {/if}
+          {#if (item.showReplace ?? showReplace) && item.status === 'success'}
+            <!-- showReplace（picture-card）：已上传项显示替换按钮（项级优先），hover 显现于左上。 -->
+            <button
+              type="button"
+              class="cd-upload__card-replace"
+              aria-label={loc().t('Upload.replace')}
+              {disabled}
+              onclick={() => openReplace(item.uid)}
+            >&#8635;</button>
+          {/if}
+          {#if renderPicClose}
+            <!-- renderPicClose：自定义照片墙关闭（移除）按钮。 -->
+            {@render renderPicClose({
+              className: 'cd-upload__card-close',
+              remove: () => remove(item.uid),
+            })}
+          {:else}
+            <!-- 关闭按钮：右上角圆形深底白×（对齐 Semi picture-file-card-close），hover 显现。 -->
+            <button
+              type="button"
+              class="cd-upload__card-close"
+              aria-label={loc().t('Upload.remove')}
+              {disabled}
+              onclick={() => remove(item.uid)}
+            >
+              &times;
+            </button>
           {/if}
           {#if item.status === 'uploadFail' && (item.showRetry ?? showRetry) !== false && item.file}
             <!-- 失败重试按钮（hover 时可见，对齐 Semi picture-file-card-retry）；仅网络失败可重试，项级 showRetry 优先。 -->
@@ -2249,7 +2260,7 @@
     align-items: center;
     justify-content: center;
     /* 预览图标色（对齐 Semi file-card-preview color）。 */
-    color: var(--cd-color-upload-preview-icon);
+    color: var(--cd-color-upload-picture-preview-icon);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -2260,6 +2271,19 @@
     opacity: 1;
     pointer-events: auto;
   }
+  /* 默认预览眼睛图标按钮：清空按钮外观，图标尺寸对齐 close 图标。 */
+  .cd-upload__pic-preview-icon--default {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--cd-font-size-header-4);
+  }
+  .cd-upload__pic-preview-icon--default:focus-visible {
+    outline: none;
+    border-radius: var(--cd-radius-small);
+    box-shadow: var(--cd-focus-ring);
+  }
   /* renderFileItem 自定义列表项：清空默认卡片内边距/背景，交由使用方渲染。 */
   .cd-upload__item--custom {
     padding: 0;
@@ -2268,7 +2292,7 @@
   .cd-upload__item--custom:hover {
     background: transparent;
   }
-  /* showPicInfo 信息浮层（picture-card）：底部渐变条承托文件名。 */
+  /* showPicInfo 信息浮层（picture-card）：左下角渐变条承托序号（对齐 Semi pic-info）。 */
   .cd-upload__pic-info {
     position: absolute;
     inset-block-end: 0;
@@ -2277,14 +2301,13 @@
     background: var(--cd-color-upload-picture-file-card-hover-bg);
     color: var(--cd-color-upload-picture-file-card-pic-info-text);
     font-size: var(--cd-font-upload-picture-file-card-pic-info-fontsize);
+    font-weight: var(--cd-font-upload-picture-file-card-pic-info-fontweight);
     pointer-events: none;
     z-index: 1;
   }
-  .cd-upload__pic-info-name {
+  .cd-upload__pic-info-index {
     display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1;
   }
   /* 裁切弹窗内容容器：给 Cropper 一个明确的布局盒。 */
   .cd-upload__crop-body {
@@ -2311,34 +2334,11 @@
   .cd-upload__card--uploading::before {
     opacity: 1;
   }
-  .cd-upload__card-overlay {
+  /* 关闭按钮：右上角圆形深底白×（对齐 Semi picture-file-card-close，top/right 8px），hover 显现。 */
+  .cd-upload__card-close {
     position: absolute;
-    inset-block-start: 0;
-    inset-inline: 0;
-    display: flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding: var(--cd-spacing-extra-tight);
-    opacity: 0;
-    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-upload__card:hover .cd-upload__card-overlay,
-  .cd-upload__card:focus-within .cd-upload__card-overlay {
-    opacity: 1;
-  }
-  .cd-upload__card-name {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--cd-color-upload-picture-file-card-pic-info-text);
-    /* 图片信息文字字号/字重（对齐 Semi picture-file-card-pic-info）。 */
-    font-size: var(--cd-font-upload-picture-file-card-pic-info-fontsize);
-    font-weight: var(--cd-font-upload-picture-file-card-pic-info-fontweight);
-  }
-  .cd-upload__card-remove {
-    flex: 0 0 auto;
+    inset-block-start: var(--cd-spacing-upload-picture-file-card-close-top);
+    inset-inline-end: var(--cd-spacing-upload-picture-file-card-close-right);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2353,18 +2353,27 @@
     border-radius: var(--cd-radius-upload-picture-file-card-close);
     font-size: var(--cd-font-size-header-6);
     line-height: 1;
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    z-index: 3;
   }
-  .cd-upload__card-remove:focus-visible {
+  .cd-upload__card:hover .cd-upload__card-close,
+  .cd-upload__card:focus-within .cd-upload__card-close {
+    opacity: 1;
+  }
+  .cd-upload__card-close:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-upload__card-remove:disabled {
+  .cd-upload__card-close:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
-  /* 照片墙替换按钮：与关闭按钮同观感，位于 overlay 内（关闭按钮之前）。 */
+  /* 照片墙替换按钮：与关闭按钮同观感，位于左上角，hover 显现。 */
   .cd-upload__card-replace {
-    flex: 0 0 auto;
+    position: absolute;
+    inset-block-start: var(--cd-spacing-upload-picture-file-card-close-top);
+    inset-inline-start: var(--cd-spacing-upload-picture-file-card-close-right);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -2379,6 +2388,13 @@
     border-radius: var(--cd-radius-upload-picture-file-card-close);
     font-size: var(--cd-font-size-small);
     line-height: 1;
+    opacity: 0;
+    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    z-index: 3;
+  }
+  .cd-upload__card:hover .cd-upload__card-replace,
+  .cd-upload__card:focus-within .cd-upload__card-replace {
+    opacity: 1;
   }
   .cd-upload__card-replace:focus-visible {
     outline: none;
@@ -2439,7 +2455,8 @@
     opacity: 0.5;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-upload__card-overlay,
+    .cd-upload__card-close,
+    .cd-upload__card-replace,
     .cd-upload__card::before,
     .cd-upload__card-retry,
     .cd-upload__pic-preview-icon,
