@@ -1,27 +1,25 @@
 <!--
-  仅供 Collapse.a11y.test.ts 使用的测试夹具：数据驱动 panels + children Snippet 渲染面板内容，
-  使 header button 的 aria-controls 指向真实存在的 region（axe aria-valid-attr-value 通过）。
+  仅供 Collapse.a11y.test.ts 使用的测试夹具：声明式 <Collapse.Panel>，
+  DOM 对齐 Semi（header role=button + aria-owns 指向真实存在的 content region）。
 -->
 <script lang="ts">
   import { Collapse } from './index.js';
-  import type { CollapsePanel } from './types.js';
 
   interface Props {
     accordion?: boolean;
-    disabled?: boolean;
     defaultActiveKey?: string | string[];
   }
-  let { accordion = false, disabled = false, defaultActiveKey = [] }: Props = $props();
-
-  const panels: CollapsePanel[] = [
-    { key: 'a', header: 'Section A' },
-    { key: 'b', header: 'Section B' },
-    { key: 'c', header: 'Section C', disabled: true },
-  ];
+  let { accordion = false, defaultActiveKey = [] }: Props = $props();
 </script>
 
-<Collapse {panels} {accordion} {disabled} {defaultActiveKey}>
-  {#snippet children({ key })}
-    <p>Content for {key}</p>
-  {/snippet}
+<Collapse {accordion} {defaultActiveKey}>
+  <Collapse.Panel header="Section A" itemKey="a">
+    <p>Content for a</p>
+  </Collapse.Panel>
+  <Collapse.Panel header="Section B" itemKey="b">
+    <p>Content for b</p>
+  </Collapse.Panel>
+  <Collapse.Panel header="Section C" itemKey="c" disabled>
+    <p>Content for c</p>
+  </Collapse.Panel>
 </Collapse>

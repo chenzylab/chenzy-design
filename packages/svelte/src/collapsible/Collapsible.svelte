@@ -37,11 +37,11 @@
     /** 折叠时是否叠加透明度渐变。 */
     fade?: boolean;
     /** 变更时强制重算高度（内容动态变化后触发重测，仅 collapseHeight>0 生效）。 */
-    reCalcKey?: number | string;
+    reCalcKey?: number | string | undefined;
     /** 内容容器 id。 */
     id?: string;
     /** 展开/折叠过渡动画结束回调。 */
-    onMotionEnd?: () => void;
+    onMotionEnd?: (() => void) | undefined;
     /** 根节点 class。 */
     class?: string;
     /** 根节点内联样式。 */

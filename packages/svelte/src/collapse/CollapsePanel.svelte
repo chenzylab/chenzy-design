@@ -1,102 +1,175 @@
 <!--
-  Collapse.Panel — 声明式单面板，与数据驱动 panels 渲染同一套 .cd-collapse__item 结构，
-  从而复用父 Collapse 的 grid 展开动画、箭头位置、边框等全部 CSS，无需在父级建挂载 registry。
-  父子状态经 context.ts 传递（参考 Timeline.Item / Form.Field）：
-    展开态判断（isActive/shouldRender）为父级纯派生函数，本组件只读不写（红线 #2）；
-    点击 header 调父 toggle，受控时仅 onChange 不回写（红线 #1，在父级落实）。
+  Collapse.Panel — 单面板，对齐 Semi collapse/item.tsx 的 DOM 结构与 handleClick 逻辑。
+  经 context 读父级展开态（isActive，纯派生只读，红线 #2）与配置；点击调父 onClick
+  （受控仅 onChange 不回写，红线 #1，在父级落实）。content 用 <Collapsible> 原语做高度
+  折叠/展开过渡（keepDOM / lazyRender / motion / reCalcKey 透传，红线 #3 由原语负责）。
+
+  DOM 镜像 Semi：
+    .cd-collapse-item (.cd-collapse-item-active)
+      div.cd-collapse-header (role=button, tabindex=0, aria-expanded/-disabled/-owns)
+        string header → <span>{header}</span> + .cd-collapse-header-right(<span>{extra}</span> + icon)
+        node   header → icon(left) + {head} + icon(right)
+      <Collapsible> .cd-collapse-content(aria-hidden, id) > .cd-collapse-content-wrapper
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { useId } from '@chenzy-design/core';
+  import Collapsible from '../collapsible/Collapsible.svelte';
   import { getCollapseContext } from './context.js';
 
   interface Props {
-    /** 面板唯一标识，等价数据驱动 panel.key。 */
+    /** 必填且唯一，选中状态匹配 activeKey / defaultActiveKey。 */
     itemKey: string;
-    /** 头部文本。 */
+    /** 面板头文本内容（string 时渲染 header-right + extra，对齐 Semi）。 */
     header?: string;
-    /** 面板级 disabled：该面板不可展开/收起。 */
-    disabled?: boolean;
-    /** 头部富内容插槽，优先于 header 文本。 */
+    /** 面板头富内容插槽（ReactNode 语义，优先于 header 文本；此时 extra 不单独渲染）。 */
     head?: Snippet;
-    /** 头部右侧额外内容（不触发展开/收起），可为字符串或 Snippet。 */
+    /** 自定义渲染右上角辅助内容（仅当 header 为 string、未用 head 时生效）。 */
     extra?: Snippet | string;
-    /** 是否显示箭头区域，默认 true。 */
+    /** 面板是否被禁用。 */
+    disabled?: boolean;
+    /** 是否展示箭头。 */
     showArrow?: boolean;
+    /** reCalcKey 改变时重算内容高度（透传 Collapsible，动态内容用）。 */
+    reCalcKey?: number | string;
+    /** 动画结束回调。 */
+    onMotionEnd?: () => void;
+    /** 样式类名。 */
+    class?: string;
+    /** 内联 CSS 样式。 */
+    style?: string;
+    /** 面板内容。 */
     children?: Snippet;
   }
 
-  let { itemKey, header, disabled = false, head, extra, showArrow = true, children }: Props = $props();
+  let {
+    itemKey,
+    header,
+    head,
+    extra,
+    disabled = false,
+    showArrow = true,
+    reCalcKey,
+    onMotionEnd,
+    class: className,
+    style,
+    children,
+  }: Props = $props();
 
   const ctx = getCollapseContext();
 
-  // 展开态由父派生（纯函数），跨 context 读 getter 保持响应性。
+  // 展开态由父派生（纯函数），跨 context 读 getter 保持响应性（红线 #2 只读）。
   const active = $derived(ctx?.isActive(itemKey) ?? false);
-  // 面板不可用 = 父整体 disabled 或本面板 disabled。
-  const itemDisabled = $derived((ctx?.getDisabled() ?? false) || disabled);
-  const render = $derived(ctx?.shouldRender(itemKey) ?? true);
+  const iconPosition = $derived(ctx?.getIconPosition() ?? 'right');
+  const keepDOM = $derived(ctx?.getKeepDOM() ?? false);
+  const motion = $derived(ctx?.getMotion() ?? true);
+  const lazyRender = $derived(ctx?.getLazyRender() ?? false);
+  const clickHeaderToExpand = $derived(ctx?.getClickHeaderToExpand() ?? true);
+  const customExpandIcon = $derived(ctx?.getExpandIcon());
+  const customCollapseIcon = $derived(ctx?.getCollapseIcon());
 
-  const idBase = $derived(ctx?.getIdBase() ?? 'cd-collapse');
-  const headerId = $derived(`${idBase}-h-${itemKey}`);
-  const regionId = $derived(`${idBase}-r-${itemKey}`);
-  const headingLevel = $derived(ctx?.getHeadingLevel() ?? 3);
-  // roving tabindex 由父派生（红线 #2：本组件只读不写父级 $state）。
-  const tabindex = $derived(ctx?.headerTabindex(itemKey, disabled) ?? 0);
-  const expandIcon = $derived(ctx?.getExpandIcon());
+  // aria-owns 关联内容区（对齐 Semi ariaID）。
+  const ariaID = useId('cd-collapse');
+
+  // 图标是否「可用」（对齐 Semi expandIconEnable）：有内容且未禁用时，展开/收起切换两个图标；
+  // 否则恒显 expandIcon 并加 -header-iconDisabled。
+  const iconEnable = $derived(children !== undefined && !disabled);
+  const iconPosLeft = $derived(iconPosition === 'left');
+
+  // header-icon 引用：用于判定点击是否落在箭头上（clickHeaderToExpand=false 时仅箭头可触发）。
+  let iconEl = $state<HTMLElement | null>(null);
+
+  // 对齐 Semi handleClick：clickHeaderToExpand 或点击目标在 icon 内才触发切换。
+  function handleClick(event: MouseEvent): void {
+    if (disabled) return;
+    if (clickHeaderToExpand || iconEl?.contains(event.target as Node)) {
+      ctx?.onClick(itemKey, event);
+    }
+  }
+
+  const itemCls = $derived(
+    ['cd-collapse-item', active && 'cd-collapse-item-active', className]
+      .filter(Boolean)
+      .join(' '),
+  );
+  const headerCls = $derived(
+    [
+      'cd-collapse-header',
+      disabled && 'cd-collapse-header-disabled',
+      iconPosLeft && 'cd-collapse-header-iconLeft',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 </script>
 
-<div class="cd-collapse__item" class:cd-collapse__item--active={active}>
-  <!-- APG Accordion：Header 触发器外层 role=heading + aria-level。 -->
-  <span role="heading" aria-level={headingLevel} class="cd-collapse__heading">
-  <button
-    type="button"
-    id={headerId}
-    class="cd-collapse__header"
-    data-collapse-key={itemKey}
-    aria-expanded={active}
-    aria-controls={regionId}
-    aria-disabled={itemDisabled || undefined}
-    disabled={itemDisabled || undefined}
-    {tabindex}
-    onclick={(e) => ctx?.headerClick(e, itemKey, disabled)}
-    onkeydown={(e) => ctx?.onHeaderKeydown(e, itemKey)}
-    onfocus={() => ctx?.onHeaderFocus(itemKey)}
+<!-- 默认展开图标（收起态显示）：IconChevronDown。 -->
+{#snippet defaultExpand()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
+    <path d="M12.783 15.707a1 1 0 0 1-1.566 0l-4.076-5.076A1 1 0 0 1 7.924 9h8.152a1 1 0 0 1 .783 1.631l-4.076 5.076Z" />
+  </svg>
+{/snippet}
+<!-- 默认折叠图标（展开态显示）：IconChevronUp。 -->
+{#snippet defaultCollapse()}
+  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
+    <path d="M11.217 8.293a1 1 0 0 1 1.566 0l4.076 5.076A1 1 0 0 1 16.076 15H7.924a1 1 0 0 1-.783-1.631l4.076-5.076Z" />
+  </svg>
+{/snippet}
+
+{#snippet iconSpan()}
+  <span
+    bind:this={iconEl}
+    aria-hidden="true"
+    class={['cd-collapse-header-icon', !iconEnable && 'cd-collapse-header-iconDisabled']
+      .filter(Boolean)
+      .join(' ')}
   >
-    {#if showArrow}
-      {#if expandIcon}
-        <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
-          {@render expandIcon({ isExpanded: active })}
-        </span>
-      {:else}
-        <span class="cd-collapse__arrow" class:cd-collapse__arrow--open={active} aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-            <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-          </svg>
-        </span>
-      {/if}
-    {/if}
-    <span class="cd-collapse__title">
-      {#if head}{@render head()}{:else}{header}{/if}
-    </span>
-    {#if extra !== undefined}
-      <span class="cd-collapse__extra" onclick={(e) => e.stopPropagation()} role="none">
-        {#if typeof extra === 'string'}{extra}{:else}{@render extra()}{/if}
+    {#if iconEnable && active}
+      {#if customCollapseIcon}{@render customCollapseIcon()}{:else}{@render defaultCollapse()}{/if}
+    {:else if customExpandIcon}{@render customExpandIcon()}{:else}{@render defaultExpand()}{/if}
+  </span>
+{/snippet}
+
+<div class={itemCls} {style}>
+  <div
+    role="button"
+    tabindex={0}
+    class={headerCls}
+    aria-disabled={disabled}
+    aria-expanded={active ? 'true' : 'false'}
+    aria-owns={ariaID}
+    onclick={handleClick}
+    onkeydown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick(e as unknown as MouseEvent);
+      }
+    }}
+  >
+    {#if head}
+      <!-- 富内容 header：icon 直接夹在 head 两侧（对齐 Semi node header 分支）。 -->
+      {#if showArrow && iconPosLeft}{@render iconSpan()}{/if}
+      {@render head()}
+      {#if showArrow && !iconPosLeft}{@render iconSpan()}{/if}
+    {:else}
+      <!-- string header：header-right 承载 extra + icon（对齐 Semi string header 分支）。 -->
+      {#if showArrow && iconPosLeft}{@render iconSpan()}{/if}
+      <span>{header}</span>
+      <span class="cd-collapse-header-right">
+        {#if extra !== undefined}
+          <span>{#if typeof extra === 'string'}{extra}{:else}{@render extra()}{/if}</span>
+        {/if}
+        {#if showArrow && !iconPosLeft}{@render iconSpan()}{/if}
       </span>
     {/if}
-  </button>
-  </span>
-  <div
-    id={regionId}
-    class="cd-collapse__region"
-    role="region"
-    aria-labelledby={headerId}
-    hidden={!active}
-  >
-    <div class="cd-collapse__region-inner">
-      <div class="cd-collapse__content">
-        {#if render}
-          {@render children?.()}
-        {/if}
-      </div>
-    </div>
   </div>
+  {#if children !== undefined}
+    <Collapsible isOpen={active} {keepDOM} {motion} {lazyRender} {reCalcKey} {onMotionEnd}>
+      <div class="cd-collapse-content" aria-hidden={!active} id={ariaID}>
+        <div class="cd-collapse-content-wrapper">
+          {@render children()}
+        </div>
+      </div>
+    </Collapsible>
+  {/if}
 </div>
