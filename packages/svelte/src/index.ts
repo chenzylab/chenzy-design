@@ -166,7 +166,6 @@ export {
   Collapse,
   CollapsePanelComponent,
   collapseMeta,
-  type CollapsePanel,
   type CollapseContext,
 } from './collapse/index.js';
 export { Collapsible, collapsibleMeta } from './collapsible/index.js';

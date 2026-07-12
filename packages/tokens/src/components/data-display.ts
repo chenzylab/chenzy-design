@@ -99,17 +99,7 @@ export const dataDisplayTokens = {
   'descriptions-cell-padding': { value: 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', category: 'spacing', label: '单元格内边距', usage: 'bordered 单元格内边距（组件消费）' },
   'descriptions-row-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '行间距', usage: '描述项行间距（组件消费，对齐 Semi item-paddingBottom）' },
 
-  // —— Collapse ——
-  'collapse-header-padding': { value: 'var(--cd-spacing-collapse-header-padding)', category: 'spacing', label: '标题内边距', usage: 'header 内边距（组件消费，对齐 Semi 8）' },
-  'collapse-header-color': { value: 'var(--cd-color-collapse-header-text-default)', category: 'color', label: '标题颜色', usage: 'header 文字颜色（组件消费）' },
-  'collapse-header-weight': { value: 'var(--cd-font-collapse-header-fontweight)', category: 'font', label: '标题字重', usage: 'header 字重（组件消费，对齐 Semi bold）' },
-  'collapse-header-bg-hover': { value: 'var(--cd-color-collapse-header-bg-hover)', category: 'color', label: '标题悬浮背景', usage: 'header 悬浮背景（组件消费）' },
-  'collapse-header-bg-active': { value: 'var(--cd-color-collapse-header-bg-active)', category: 'color', label: '标题按下背景', usage: 'header 按下背景（组件消费）' },
-  'collapse-content-padding': { value: 'var(--cd-spacing-collapse-content-paddingtop) var(--cd-spacing-collapse-content-paddingright) var(--cd-spacing-collapse-content-paddingbottom)', category: 'spacing', label: '内容内边距', usage: 'content 内边距（组件消费，对齐 Semi top 4 / x 16 / bottom 8）' },
-  'collapse-content-color': { value: 'var(--cd-color-collapse-content-text-default)', category: 'color', label: '内容颜色', usage: 'content 文字颜色（组件消费）' },
-  'collapse-border': { value: 'var(--cd-color-collapse-item-border-default)', category: 'color', label: '边框颜色', usage: '边框 / 分割线颜色（组件消费）' },
-  'collapse-arrow-color': { value: 'var(--cd-color-collapse-header-icon-default)', category: 'color', label: '箭头颜色', usage: '展开箭头颜色（组件消费）' },
-  'collapse-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '动画时长', usage: '展开动画时长（组件消费）' },
+  // —— Collapse 组件直接消费上方原始层 --cd-*-collapse-*（对齐 Semi collapse.scss，无中间变量）——
 
   // —— Collapsible（折叠容器原语，Collapse 底层能力；高度过渡由内容决定，仅需 motion token）——
   'collapsible-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '折叠动画时长', usage: '折叠/展开过渡时长默认值（可被 duration prop 覆盖，组件消费）' },

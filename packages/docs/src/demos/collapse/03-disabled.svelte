@@ -2,8 +2,8 @@
   import { Collapse } from '@chenzy-design/svelte';
 </script>
 
-<Collapse>
-  <Collapse.Panel header="This is panel header 1" itemKey="1">
+<Collapse accordion>
+  <Collapse.Panel header="This is panel header 1" itemKey="1" disabled>
     <p>Hi, bytedance dance dance. This is the docsite of chenzy-design.</p>
   </Collapse.Panel>
   <Collapse.Panel header="This is panel header 2" itemKey="2">
