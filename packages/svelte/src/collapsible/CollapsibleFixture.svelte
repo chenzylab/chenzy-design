@@ -1,6 +1,6 @@
 <!--
   Collapsible a11y/render 夹具：把 Collapsible 包一层并注入可见内容 children，
-  供 jsdom 渲染测试断言 aria-hidden / shouldRender（内容 DOM 存留）/ onMotionEnd 等。
+  供 jsdom 渲染测试断言 shouldRender（内容 DOM 存留）/ id 透传 / onMotionEnd 等。
 -->
 <script lang="ts">
   import Collapsible from './Collapsible.svelte';

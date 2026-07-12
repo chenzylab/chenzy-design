@@ -20,6 +20,8 @@ export const meta = {
     { name: 'iconPosition', type: "'left'|'right'", default: 'left', desc: '图标相对文字位置' },
     { name: 'noHorizontalPadding', type: "boolean|'left'|'right'|('left'|'right')[]", default: 'false', desc: '仅设置 icon 时去单/双侧水平内距' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍名；纯图标按钮必填' },
+    { name: 'ariaControls', type: 'string', default: 'undefined', desc: '控制的元素 id（透传 aria-controls，配合 Collapsible 等被控元素 id）' },
+    { name: 'ariaExpanded', type: 'boolean', default: 'undefined', desc: '展开态语义（透传 aria-expanded，折叠/展开触发器用）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
     { name: 'contentClassName', type: 'string', default: 'undefined', desc: '内容区自定义类名' },

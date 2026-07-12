@@ -2,20 +2,33 @@
   import { Collapsible, Button } from '@chenzy-design/svelte';
 
   let open = $state(false);
+  // 折叠态叠加底部渐隐遮罩（对齐 Semi 自定义折叠高度示例）。
+  const maskStyle = $derived(
+    open
+      ? ''
+      : '-webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.2) 80%, transparent 100%);',
+  );
 </script>
 
 <div>
-  <p style="color: var(--cd-color-text-2); font-size: 13px; margin: 0 0 8px;">
-    collapseHeight=60：折叠时保留 60px 高度做「展开更多」，点击按钮展开全文。
-  </p>
-  <Collapsible isOpen={open} collapseHeight={60}>
-    <div style="padding: 12px; background: var(--cd-color-fill-0); border-radius: 6px;">
-      <p>这是一段较长的文本。折叠态只保留部分高度作为预览，其余内容被截断隐藏。</p>
-      <p>点击「展开更多」后完整呈现。这种模式常用于评论、简介、协议条款等场景。</p>
-      <p>collapseHeight&gt;0 时组件改用显式高度过渡 + JS 测高（内容变化经 reCalcKey 重测）。</p>
-    </div>
-  </Collapsible>
-  <Button style="margin-top: 8px;" onclick={() => (open = !open)}>
-    {open ? '收起' : '展开更多'}
-  </Button>
+  <Button onclick={() => (open = !open)}>Toggle</Button>
+  <div style="position: relative;">
+    <Collapsible isOpen={open} collapseHeight={60} style={maskStyle}>
+      <ul style="margin: 0; padding-left: 20px; color: var(--cd-color-text-1);">
+        <li><p>Semi Design 以内容优先进行设计。</p></li>
+        <li><p>更容易地自定义主题。</p></li>
+        <li><p>适用国际化场景。</p></li>
+        <li><p>效率场景加入人性化关怀。</p></li>
+      </ul>
+    </Collapsible>
+    {#if !open}
+      <a
+        href={null}
+        onclick={() => (open = true)}
+        style="position: absolute; left: 0; right: 0; bottom: -10px; text-align: center; font-weight: 700; cursor: pointer; color: var(--cd-color-text-1);"
+      >
+        + Show More
+      </a>
+    {/if}
+  </div>
 </div>

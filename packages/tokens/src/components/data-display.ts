@@ -101,9 +101,16 @@ export const dataDisplayTokens = {
 
   // —— Collapse 组件直接消费上方原始层 --cd-*-collapse-*（对齐 Semi collapse.scss，无中间变量）——
 
-  // —— Collapsible（折叠容器原语，Collapse 底层能力；高度过渡由内容决定，仅需 motion token）——
-  'collapsible-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '折叠动画时长', usage: '折叠/展开过渡时长默认值（可被 duration prop 覆盖，组件消费）' },
-  'collapsible-motion-ease': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '折叠动画曲线', usage: '折叠/展开过渡曲线（组件消费）' },
+  // —— Collapsible（折叠容器原语，Collapse 底层能力）——
+  // 镜像 Semi collapsible/animation.scss：height / opacity 各一组 transition_function/duration/delay，
+  // 直接组件级值（无中间档位变量）。height 曲线用 CSS ease 等价 cubic-bezier(0.25,0.1,0.25,1)、
+  // opacity 曲线引用 easeIn、delay 引用 none，与 Semi 逐值对齐。
+  'transition-function-collapsible-height': { value: 'cubic-bezier(0.25, 0.1, 0.25, 1)', category: 'animation', label: '折叠高度过渡曲线', usage: '折叠-高度-过渡曲线（组件消费，对齐 Semi $transition_function-collapsible-height）' },
+  'transition-duration-collapsible-height': { value: '250ms', category: 'animation', label: '折叠高度动画时长', usage: '折叠-高度-动画持续时间默认值（可被 duration prop 覆盖，组件消费，对齐 Semi $transition_duration-collapsible-height）' },
+  'transition-delay-collapsible-height': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '折叠高度过渡延迟', usage: '折叠-高度-延迟时间（组件消费，对齐 Semi $transition_delay-collapsible-height）' },
+  'transition-function-collapsible-opacity': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '折叠透明度过渡曲线', usage: '折叠-透明度-过渡曲线（组件消费，对齐 Semi $transition_function-collapsible-opacity）' },
+  'transition-duration-collapsible-opacity': { value: '250ms', category: 'animation', label: '折叠透明度动画时长', usage: '折叠-透明度-动画持续时间（组件消费，对齐 Semi $transition_duration-collapsible-opacity）' },
+  'transition-delay-collapsible-opacity': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '折叠透明度过渡延迟', usage: '折叠-透明度-延迟时间（组件消费，对齐 Semi $transition_delay-collapsible-opacity）' },
 
   // —— Timeline ——
   'timeline-dot-size': { value: '9px', category: 'width', label: '圆点尺寸', usage: '圆点尺寸（组件消费，对齐 Semi 9px）' },

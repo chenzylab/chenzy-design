@@ -5,13 +5,13 @@
 </script>
 
 <div>
-  <Button onclick={() => (open = !open)}>
-    {open ? '收起' : '展开'}
-  </Button>
+  <Button onclick={() => (open = !open)}>Toggle</Button>
   <Collapsible isOpen={open}>
-    <div style="padding: 12px; margin-top: 8px; background: var(--cd-color-fill-0); border-radius: 6px;">
-      <p>Collapsible 是折叠容器原语，通过 isOpen 控制展开/折叠，带高度过渡动画。</p>
-      <p>默认用 CSS grid 自适应折叠，内容高度无需 JS 测量。</p>
-    </div>
+    <ul style="margin: 8px 0 0; padding-left: 20px; color: var(--cd-color-text-1);">
+      <li><p>Semi Design 以内容优先进行设计。</p></li>
+      <li><p>更容易地自定义主题。</p></li>
+      <li><p>适用国际化场景。</p></li>
+      <li><p>效率场景加入人性化关怀。</p></li>
+    </ul>
   </Collapsible>
 </div>
