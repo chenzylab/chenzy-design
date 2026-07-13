@@ -9,11 +9,12 @@
 -->
 <script lang="ts">
   import { tick, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey, type ScrollListValue } from '@chenzy-design/core';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
+  import ScrollItem from '../scroll-list/ScrollItem.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -739,43 +740,39 @@
   // 月份全名（Intl 本地化，朗读/显示用）。
   const monthLongFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'long' }));
 
-  // 年列 ScrollListItem：value=年份数字，label 本地化（中文加「年」）。
+  // 年列 ScrollItem list：value=年份数字，text 本地化（中文加「年」）。
   const isCJK = $derived(locale.startsWith('zh') || locale.startsWith('ja') || locale.startsWith('ko'));
-  const yamYearItems = $derived(
+  const yamYearItems = $derived<ScrollItemData[]>(
     yamYears.map((y) => ({
       value: y,
-      label: isCJK ? `${y}年` : `${y}`,
+      text: isCJK ? `${y}年` : `${y}`,
       // 该年 12 个月全被禁用 → 整年禁用（对齐 Semi isAllMonthDisabled）。
       disabled: Array.from({ length: 12 }, (_, m) => new Date(y, m, 1)).every(
         (d) => disabledDate?.(d) ?? false,
       ),
     })),
   );
-  // 月列 ScrollListItem：value=0..11 月序，label 本地化月名。
-  const yamMonthItems = $derived(
+  // 月列 ScrollItem list：value=0..11 月序，text 本地化月名。
+  const yamMonthItems = $derived<ScrollItemData[]>(
     Array.from({ length: 12 }, (_, m) => {
       const d = new Date(cursor.getFullYear(), m, 1);
       return {
         value: m,
-        label: monthLongFormat.format(d),
+        text: monthLongFormat.format(d),
         disabled: disabledDate?.(d) ?? false,
       };
     }),
   );
-  // 滚轮当前值：[cursor 年, cursor 月]（受控给 ScrollList）。
-  const yamValue = $derived<ScrollListValue[]>([cursor.getFullYear(), cursor.getMonth()]);
-  const yamColumns = $derived([
-    { data: yamYearItems, cyclic: yamYearCyclic, ariaLabel: loc().t('DatePicker.yearColumnLabel') },
-    { data: yamMonthItems, cyclic: yamMonthCyclic, ariaLabel: loc().t('DatePicker.monthColumnLabel') },
-  ]);
+  // 各列当前选中索引（受控给 ScrollItem.selectedIndex）：年 = cursor 年在 yamYears 的位置；月 = cursor 月序。
+  const yamYearIndex = $derived(Math.max(0, yamYears.indexOf(cursor.getFullYear())));
+  const yamMonthIndex = $derived(cursor.getMonth());
 
   // 滚轮选中 → 只跳转面板游标（不写 value，对齐 Semi「选完回主面板继续选日」）。
   // autoSwitchDate=true 且当前面板存在日期网格（type='date'/'dateTime'）时，选完年/月
   // 自动切回日期网格视图（关闭滚轮）；否则停留在滚轮（对齐 Semi autoSwitchDate）。
-  function onYamChange(info: { value: ScrollListValue | ScrollListValue[] }): void {
-    const vals = Array.isArray(info.value) ? info.value : [info.value];
-    const year = typeof vals[0] === 'number' ? vals[0] : cursor.getFullYear();
-    const month = typeof vals[1] === 'number' ? vals[1] : cursor.getMonth();
+  function onYamSelect(data: ScrollItemSelectPayload): void {
+    const year = data.type === 'year' && typeof data.value === 'number' ? data.value : cursor.getFullYear();
+    const month = data.type === 'month' && typeof data.value === 'number' ? data.value : cursor.getMonth();
     setCursor(new Date(year, month, 1));
     if (autoSwitchDate && (type === 'date' || type === 'dateTime')) {
       yamOpen = false;
@@ -1413,15 +1410,29 @@
               </div>
 
               {#if yamOpen && yamEnabled}
-                <!-- 年月滚轮快速跳转面板 (PANEL_YAM)：复用 ScrollList 多列（年 + 月），
+                <!-- 年月滚轮快速跳转面板 (PANEL_YAM)：ScrollList 容器 + 年/月两 wheel 列（对齐 Semi），
                      选中即跳转 cursor（不写 value）；yearCyclic/monthCyclic 控制循环滚动。 -->
                 <div class="cd-date-picker__yam" role="group" aria-label={loc().t('DatePicker.switchYearMonth')}>
-                  <ScrollList
-                    columns={yamColumns}
-                    value={yamValue}
-                    rows={5}
-                    onChange={onYamChange}
-                  />
+                  <ScrollList>
+                    <ScrollItem
+                      mode="wheel"
+                      list={yamYearItems}
+                      type="year"
+                      cycled={yamYearCyclic}
+                      selectedIndex={yamYearIndex}
+                      onSelect={onYamSelect}
+                      ariaLabel={loc().t('DatePicker.yearColumnLabel')}
+                    />
+                    <ScrollItem
+                      mode="wheel"
+                      list={yamMonthItems}
+                      type="month"
+                      cycled={yamMonthCyclic}
+                      selectedIndex={yamMonthIndex}
+                      onSelect={onYamSelect}
+                      ariaLabel={loc().t('DatePicker.monthColumnLabel')}
+                    />
+                  </ScrollList>
                   <button type="button" class="cd-date-picker__yam-back" onclick={backToMain}>
                     {loc().t('DatePicker.backToDate')}
                   </button>
@@ -2230,11 +2241,15 @@
     min-block-size: var(--cd-height-date-picker-yam-showing-min);
     padding: var(--cd-spacing-date-picker-scrolllist-body-padding);
   }
-  .cd-date-picker__yam :global(.cd-scroll-list) {
+  .cd-date-picker__yam :global(.cd-scrolllist) {
     block-size: var(--cd-height-date-picker-panel-yam-scrolllist);
-    border: none;
+    box-shadow: none;
   }
-  .cd-date-picker__yam :global(.cd-scroll-list__item) {
+  .cd-date-picker__yam :global(.cd-scrolllist-body) {
+    block-size: var(--cd-height-date-picker-panel-yam-scrolllist);
+    padding: 0;
+  }
+  .cd-date-picker__yam :global(.cd-scrolllist-item-wheel) {
     min-inline-size: var(--cd-width-date-picker-panel-yam-scrolllist-li-min);
   }
   .cd-date-picker__yam-back {

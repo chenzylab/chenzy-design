@@ -1,60 +1,56 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * ScrollList — see specs/components/show/ScrollList.spec.md
+ * ScrollList / ScrollItem — 严格对齐 Semi Design（semi-ui/scrollList）。
  */
 export const meta = {
   name: 'ScrollList',
   category: 'show',
   description:
-    '滚轮选择器：JS 主导定位吸附居中，中央选区遮罩 + 上下渐隐，支持点击/键盘/拖拽选中、disabled 项跳过，受控 value 不回写仅通过 onChange 通知。单列（data）向后兼容；多列（columns）联动，值为各列组合数组。进阶能力：cyclic 循环滚动、惯性物理（pointer 拖拽 + 指数减速 + 预测吸附）、虚拟化（列项很多时只渲染视口）、loadMore（滚到末尾加载更多）、status（loading/empty 状态）。复用 @chenzy-design/core 纯函数（offsetToIndex/indexToOffset/keyboardTarget/wrapIndex/cyclicCenterIndex/cyclicRecenter/momentumStep/projectSettleIndex/fixedRange）。',
-  exports: ['ScrollList'],
+    '滚动列表，类似 iOS 的滚动选择模式。ScrollList 是纯容器（header/footer/bodyHeight），内部放若干 ScrollItem 组成多列。ScrollItem 有 wheel（滚轮，滚动/点击将候选吸附到中央选区居中）与 normal（普通列表，点击选中并高亮）两种模式；wheel 支持 cycled 无限循环、motion 缓动、transform 选中项文案变换、disabled 跳过。选择通过 selectedIndex 受控 + onSelect(data) 回调（data 含 value/index/type）。复用 @chenzy-design/core 纯函数（resolveItemText/centerOffset/nearestIndex/wrapIndex/scrollFrame/repeatCount）。',
+  exports: ['ScrollList', 'ScrollItem'],
+  // ScrollList（容器）props 放顶层；ScrollItem（列）props 放 subComponents。
   props: [
-    { name: 'value', type: 'string | number | (string|number)[]', default: 'undefined', desc: '受控选中值；多列为数组；受控时不回写' },
-    { name: 'defaultValue', type: 'string | number | (string|number)[]', default: 'undefined', desc: '非受控初始值；多列为数组' },
-    { name: 'data', type: 'ScrollListItem[]', default: '[]', desc: '单列选项数据（与 columns 互斥）' },
-    { name: 'columns', type: 'ScrollListColumn[]', default: 'undefined', desc: '多列配置；提供时进入多列联动模式' },
-    { name: 'cyclic', type: 'boolean', default: 'false', desc: '循环滚动（滚到底接回开头）；列级可覆盖' },
-    { name: 'virtualized', type: 'boolean', default: 'false', desc: '虚拟化：列项很多时只渲染视口范围' },
-    { name: 'overscan', type: 'number', default: '3', desc: '虚拟化视口上下缓冲行数' },
-    { name: 'status', type: "'idle'|'loading'|'empty'", default: "'idle'", desc: '列状态；loading 显示加载中、empty 显示空文案' },
-    { name: 'emptyText', type: 'string', default: 'i18n', desc: '空状态文案' },
-    { name: 'loadingText', type: 'string', default: 'i18n', desc: '加载中文案' },
-    { name: 'onLoadMore', type: '() => void', default: 'undefined', desc: '单列滚到末尾触发加载更多（非 cyclic）' },
+    { name: 'header', type: 'Snippet | string', default: 'undefined', desc: '头部 addon（对齐 Semi header）' },
+    { name: 'footer', type: 'Snippet | string', default: 'undefined', desc: '底部 addon（对齐 Semi footer）' },
+    { name: 'bodyHeight', type: 'number | string', default: 'undefined', desc: 'body 高度；数字按 px（对齐 Semi bodyHeight）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根节点类名（对齐 Semi className）' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根节点内联样式（对齐 Semi style）' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '列内容：若干 <ScrollItem>' },
+  ],
+  subComponents: [
     {
-      name: 'size',
-      type: "'small'|'default'|'large'",
-      default: "'default'",
-      desc: '决定 itemHeight 28/36/44',
-    },
-    { name: 'rows', type: 'number', default: '5', desc: '可见行数（奇数）' },
-    { name: 'itemHeight', type: 'number', default: 'undefined', desc: '显式覆盖 size 推导的行高' },
-    { name: 'disabled', type: 'boolean', default: 'false', desc: '禁止滚动与选中交互' },
-    { name: 'ariaLabel', type: 'string', default: "'滚动选择'", desc: 'listbox 无障碍标签' },
-    {
-      name: 'renderItem',
-      type: 'Snippet<[{ item; selected; index }]>',
-      default: 'undefined',
-      desc: '自定义单项渲染',
-    },
-    {
-      name: 'onChange',
-      type: '(info: { value; item; index }) => void',
-      default: 'undefined',
-      desc: '选中变化回调',
+      name: 'ScrollItem',
+      usage: '<ScrollItem mode="wheel" list={data} selectedIndex={i} onSelect={fn} /> 作为 ScrollList 的子列',
+      desc: '单列滚动选择：wheel（滚轮吸附居中）/ normal（点击选中并高亮）。对齐 Semi ScrollItem。',
+      props: [
+        { name: 'mode', type: "'wheel' | 'normal'", default: "'wheel'", desc: '模式：wheel 吸附居中 / normal 点击选中' },
+        { name: 'cycled', type: 'boolean', default: 'false', desc: '无限循环（仅 wheel 生效）' },
+        { name: 'list', type: 'ScrollItemData[]', default: '[]', desc: '列表数据，项 = { value; text?; disabled?; transform? }' },
+        { name: 'selectedIndex', type: 'number', default: '0', desc: '选中项索引（受控）' },
+        { name: 'motion', type: 'boolean', default: 'true', desc: '是否开启滚动缓动动画' },
+        { name: 'transform', type: '(value, text) => string', default: 'undefined', desc: '选中项文案变换（列级公共）' },
+        { name: 'type', type: 'string | number', default: 'undefined', desc: '列标识，透传回 onSelect 供外层区分列' },
+        { name: 'onSelect', type: '(data: ScrollItemSelectPayload) => void', default: 'undefined', desc: '选中回调，data 含 value/index/type' },
+        { name: 'class', type: 'string', default: 'undefined', desc: '列样式类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '列内联样式' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '列无障碍标签' },
+      ],
     },
   ],
   events: [
-    { name: 'onChange', desc: '居中选中项变化（滚动落定 / 点击 / 键盘 / 拖拽惯性）；单列回调 {value,item,index}，多列回调 {value:数组,column}' },
-    { name: 'onLoadMore', desc: '滚到末尾触发加载更多' },
+    { name: 'onSelect', desc: '选中项变化（wheel 滚动落定/点击、normal 点击）；载荷 {...item, value, index, type}' },
   ],
-  slots: [{ name: 'renderItem', desc: '自定义单项渲染，提供 item/selected/index' }],
+  slots: [
+    { name: 'header', desc: 'ScrollList 头部 addon' },
+    { name: 'footer', desc: 'ScrollList 底部 addon' },
+  ],
   a11y: {
     hasRole: true,
-    focusable: true,
-    note: 'role=listbox + aria-orientation=vertical + aria-activedescendant 指向居中项；每项 role=option + aria-selected；单一 tab stop；键盘 ArrowUp/Down、PageUp/Down、Home/End 移动选中，disabled 项自动跳过。',
+    focusable: false,
+    note: '每列 ul role=listbox + aria-label + aria-multiselectable=false；每项 li role=option + aria-selected；disabled 项 aria-disabled。',
   },
   tokens: [
-    // —— Semi 全量对齐（semi-foundation/scrollList/variables.scss 39 变量）——
+    // —— Semi 全量对齐（semi-foundation/scrollList/variables.scss 39 变量 + animation.scss 3 变量）——
     '--cd-color-scroll-list-bg',
     '--cd-color-scroll-list-border',
     '--cd-color-scroll-list-header-bg',
@@ -93,42 +89,24 @@ export const meta = {
     '--cd-radius-scroll-list',
     '--cd-font-scroll-list-header-title-fontweight',
     '--cd-font-scroll-list-item-wheel-item-selected-fontweight',
+    '--cd-transition-duration-scroll-list-selected-item-bg',
+    '--cd-transition-function-scroll-list-selected-item-bg',
+    '--cd-transition-delay-scroll-list-selected-item-bg',
     '--cd-shadow-scroll-list',
-    // —— chenzy-design 组件实际消费（Semi 无；TimePicker/DatePicker 复用 item-height）——
-    '--cd-scrolllist-item-height',
-    '--cd-scrolllist-item-height-small',
-    '--cd-scrolllist-item-height-large',
-    '--cd-scrolllist-color-text',
-    '--cd-scrolllist-color-text-adjacent',
-    '--cd-scrolllist-color-text-disabled',
-    '--cd-scrolllist-mask-bg',
-    '--cd-scrolllist-mask-border',
-    '--cd-scrolllist-gradient-color',
-    '--cd-scrolllist-border-color',
-    '--cd-scrolllist-radius',
-    '--cd-scrolllist-transition',
   ],
   responsive: false,
   examples: [
     {
-      title: '基础数字选择',
-      code: '<ScrollList data={hours} defaultValue={9} onChange={(i) => (v = i.value)} />',
+      title: '滚轮多列（时/分）',
+      code: '<ScrollList header="时间"><ScrollItem mode="wheel" cycled list={hours} selectedIndex={h} onSelect={(d) => (h = d.index)} /><ScrollItem mode="wheel" cycled list={minutes} selectedIndex={m} onSelect={(d) => (m = d.index)} /></ScrollList>',
     },
     {
-      title: '自定义渲染',
-      code: '<ScrollList data={list}>{#snippet renderItem({ item, selected })}<span class:on={selected}>{item.label}</span>{/snippet}</ScrollList>',
+      title: '普通列表点击选中',
+      code: '<ScrollList><ScrollItem mode="normal" list={items} selectedIndex={i} onSelect={(d) => (i = d.index)} /></ScrollList>',
     },
     {
-      title: '多列联动（年/月/日）',
-      code: '<ScrollList columns={[{ data: years }, { data: months }, { data: days, cyclic: true }]} value={[2024, 2, 15]} onChange={(i) => (date = i.value)} />',
-    },
-    {
-      title: 'cyclic 循环 + 惯性拖拽',
-      code: '<ScrollList data={hours} cyclic defaultValue={12} />',
-    },
-    {
-      title: '虚拟化 + loadMore + status',
-      code: '<ScrollList data={big} virtualized status={loading ? "loading" : "idle"} onLoadMore={fetchMore} />',
+      title: '选中项文案变换',
+      code: '<ScrollItem mode="wheel" list={hours} selectedIndex={h} transform={(v) => `${v} 时`} onSelect={(d) => (h = d.index)} />',
     },
   ],
 } as const;

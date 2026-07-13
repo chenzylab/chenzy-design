@@ -250,13 +250,6 @@ export interface Locale {
     loadError: string;
     label: string;
   };
-  ScrollList: {
-    ariaLabel: string;
-    empty: string;
-    loading: string;
-    /** uses {label} */
-    announceSelected: string;
-  };
   List: {
     /** 空列表缺省展示文案（对齐 Semi List locale.emptyText） */
     emptyText: string;

@@ -96,7 +96,7 @@ export const meta = {
   i18nKeys: ['TimePicker.placeholder', 'TimePicker.now', 'TimePicker.confirm', 'TimePicker.clear', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.am', 'TimePicker.pm', 'TimePicker.rangeStart', 'TimePicker.rangeEnd'],
   // 全量对齐 Semi timePicker/variables.scss 的组件 token（面板分割线/描边/列宽/项高/圆角/阴影）。
   // 触发输入框复用 Input（--cd-input-* / --cd-height-input-*）、面板容器与单元格复用 DatePicker
-  // （--cd-date-picker-panel-* / --cd-date-picker-cell-*），滚动列项高复用 ScrollList（--cd-scrolllist-item-height）。
+  // （--cd-date-picker-panel-* / --cd-date-picker-cell-*），滚动列项高复用 ScrollList（--cd-height-scroll-list-item）。
   tokens: [
     '--cd-color-time-picker-range-picker-panel-split-border',
     '--cd-color-time-picker-range-panel-border',

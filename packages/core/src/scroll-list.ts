@@ -1,229 +1,145 @@
 /**
- * createScrollList helpers — framework-agnostic single-column picker math.
- * Pure functions only: scroll offset ↔ selected index mapping, disabled-item
- * skipping, and keyboard target resolution. No DOM, no framework deps, no
- * internal mutable state — the render layer (svelte) owns scroll state and the
- * actual CSS scroll-snap. See specs/components/show/ScrollList.spec.md §3
- * (single-column subset; momentum/cyclic/multi-column deferred).
+ * ScrollList / ScrollItem helpers — framework-agnostic picker math.
+ *
+ * 严格对齐 Semi Design（semi-foundation/scrollList）。Semi 的 itemFoundation 是有
+ * 状态、直接操作真实 DOM 的类；本层遵循 chenzy-design headless 哲学，只抽出**纯函数**
+ * 几何 / 文案 / 缓动数学，DOM 读写（节点搬移、getBoundingClientRect）由 svelte 渲染层
+ * 用这些函数实现，无 DOM、无框架依赖、无内部可变状态。
+ *
+ * 对齐来源：
+ * - scrollItem.tsx `scrollToNode` / `scrollToCenter` → {@link centerOffset}
+ * - itemFoundation `getNearestNodeInfo`（选区中线找最近非禁用节点） → {@link nearestIndex}
+ * - scrollTo.ts（semi-animation 弹簧驱动 scrollTop） → {@link scrollFrame}（rAF ease-out 等价）
+ * - renderItemList `transform`（选中项文案变换） → {@link resolveItemText}
+ * - constants.ts `DEFAULT_ITEM_HEIGHT=36` / `DEFAULT_SCROLL_DURATION=120`
  */
 
-export type ScrollListValue = string | number;
+/** ScrollItem.mode：wheel（滚轮，居中吸附）| normal（普通列表，点击选中）。对齐 Semi strings.MODE。 */
+export type ScrollItemMode = 'wheel' | 'normal';
 
-export interface ScrollListItem {
-  value: ScrollListValue;
-  label: string;
+/** Semi scrollList numbers 常量。 */
+export const SCROLL_LIST_DEFAULT_ITEM_HEIGHT = 36;
+export const SCROLL_LIST_DEFAULT_SCROLL_DURATION = 120;
+
+/**
+ * 单项数据（对齐 Semi itemFoundation `Item`）。
+ * value 任意；text 缺省时用 value 展示；transform 选中态文案变换（优先于 ScrollItem.transform）。
+ */
+export interface ScrollItemData {
+  value: unknown;
+  text?: string;
   disabled?: boolean;
+  transform?: (value: unknown, text: string) => string;
+  [x: string]: unknown;
 }
 
-/** Map a scrollTop offset to the centered item index (clamped to range). */
-export function offsetToIndex(scrollTop: number, itemHeight: number, count: number): number {
-  if (itemHeight <= 0 || count <= 0) return 0;
-  const raw = Math.round(scrollTop / itemHeight);
-  return Math.max(0, Math.min(count - 1, raw));
-}
-
-/** The scrollTop that centers a given index. */
-export function indexToOffset(index: number, itemHeight: number): number {
-  return index * itemHeight;
-}
-
-/** Index of an item by value, or -1. */
-export function indexOfValue(
-  items: readonly ScrollListItem[],
-  value: ScrollListValue | undefined,
-): number {
-  if (value === undefined) return -1;
-  return items.findIndex((it) => it.value === value);
+/** onSelect 回调载荷（对齐 Semi notifySelectItem：展开 item + value + type + index）。 */
+export interface ScrollItemSelectPayload {
+  value: unknown;
+  /** 选中项在 list 中的原始索引（cycled 下已取模回 [0,len)）。 */
+  index: number;
+  /** ScrollItem.type，用于外层区分是哪一列。 */
+  type?: string | number;
+  [x: string]: unknown;
 }
 
 /**
- * Resolve the nearest enabled index at or after `from` in `dir` (+1/-1).
- * If none exists in that direction, returns the original `from` unchanged.
+ * 解析一项应展示的文案（对齐 Semi renderItemList）。
+ * selected 时优先用 transform（item.transform > 公共 transform）变换，否则 text ?? String(value)。
  */
-export function nextEnabledIndex(
-  items: readonly ScrollListItem[],
-  from: number,
-  dir: 1 | -1,
-): number {
-  let i = from + dir;
-  while (i >= 0 && i < items.length) {
-    if (!items[i]?.disabled) return i;
-    i += dir;
-  }
-  return from;
+export function resolveItemText(
+  item: ScrollItemData,
+  selected: boolean,
+  commonTransform?: (value: unknown, text: string) => string,
+): string {
+  const base = item.text == null ? String(item.value) : item.text;
+  if (!selected) return base;
+  const transform = typeof item.transform === 'function' ? item.transform : commonTransform;
+  if (typeof transform === 'function') return transform(item.value, base);
+  return base;
 }
-
-/** First enabled index (for Home / value resolution), or -1 if all disabled. */
-export function firstEnabledIndex(items: readonly ScrollListItem[]): number {
-  for (let i = 0; i < items.length; i += 1) {
-    if (!items[i]?.disabled) return i;
-  }
-  return -1;
-}
-
-/** Last enabled index (for End), or -1 if all disabled. */
-export function lastEnabledIndex(items: readonly ScrollListItem[]): number {
-  for (let i = items.length - 1; i >= 0; i -= 1) {
-    if (!items[i]?.disabled) return i;
-  }
-  return -1;
-}
-
-export type ScrollListKey =
-  | 'ArrowUp'
-  | 'ArrowDown'
-  | 'PageUp'
-  | 'PageDown'
-  | 'Home'
-  | 'End';
 
 /**
- * Resolve the target index for a keyboard action from the current index.
- * Returns the current index when the action can't move (boundary / all
- * neighbors disabled). `page` is how many rows PageUp/PageDown move.
+ * 把某 index 的项**居中**到视窗中线所需的 scrollTop（对齐 Semi scrollToNode）：
+ * targetTop = node.offsetTop - (wrapperHeight - itemHeight) / 2。
+ * offsetTop = index * itemHeight（含 ul 顶部 `:before` 空白，见样式）。
  */
-export function keyboardTarget(
-  items: readonly ScrollListItem[],
-  current: number,
-  key: ScrollListKey,
-  page = 3,
+export function centerOffset(
+  index: number,
+  itemHeight: number,
+  wrapperHeight: number,
+  topPadding = 0,
 ): number {
-  switch (key) {
-    case 'ArrowUp':
-      return nextEnabledIndex(items, current, -1);
-    case 'ArrowDown':
-      return nextEnabledIndex(items, current, 1);
-    case 'Home': {
-      const f = firstEnabledIndex(items);
-      return f === -1 ? current : f;
-    }
-    case 'End': {
-      const l = lastEnabledIndex(items);
-      return l === -1 ? current : l;
-    }
-    case 'PageUp': {
-      let target = current;
-      for (let n = 0; n < page; n += 1) {
-        const nxt = nextEnabledIndex(items, target, -1);
-        if (nxt === target) break;
-        target = nxt;
-      }
-      return target;
-    }
-    case 'PageDown': {
-      let target = current;
-      for (let n = 0; n < page; n += 1) {
-        const nxt = nextEnabledIndex(items, target, 1);
-        if (nxt === target) break;
-        target = nxt;
-      }
-      return target;
-    }
-    default:
-      return current;
-  }
+  const nodeTop = topPadding + index * itemHeight;
+  return nodeTop - (wrapperHeight - itemHeight) / 2;
 }
 
-// ---------------------------------------------------------------------------
-// cyclic（循环列）—— 无限轮：用「重复 N 份」+ 中段定位实现。
-// 渲染层把 data 重复 `repeat` 份铺成一个长列表（virtual count = count*repeat），
-// 滚到靠近首/尾时命令式跳回中段（无动画），视觉无缝。下面是纯索引数学。
-// ---------------------------------------------------------------------------
+/**
+ * 给定当前 scrollTop 与视窗高度，求中线最近的**非禁用**项索引（对齐 getNearestNodeInfo）。
+ * 中线在视窗几何正中；每项中心 = topPadding + (i + 0.5) * itemHeight - scrollTop。
+ * 返回 -1 表示无可选项（全禁用 / 空）。
+ */
+export function nearestIndex(
+  scrollTop: number,
+  itemHeight: number,
+  wrapperHeight: number,
+  count: number,
+  isDisabled: (index: number) => boolean,
+  topPadding = 0,
+): number {
+  if (itemHeight <= 0 || count <= 0) return -1;
+  const selectorCenter = wrapperHeight / 2;
+  let best = -1;
+  let bestDist = Infinity;
+  for (let i = 0; i < count; i += 1) {
+    if (isDisabled(i)) continue;
+    const itemCenter = topPadding + (i + 0.5) * itemHeight - scrollTop;
+    const dist = Math.abs(itemCenter - selectorCenter);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  return best;
+}
 
-/** 正取模（结果恒非负），把任意整数索引折回 [0, count)。 */
+/** 正取模：把任意整数索引折回 [0, count)（cycled 用）。对齐 Semi `index % list.length` 语义（负值也回正）。 */
 export function wrapIndex(index: number, count: number): number {
   if (count <= 0) return 0;
   return ((index % count) + count) % count;
 }
 
 /**
- * cyclic 列的「虚拟总行数」。把真实 count 重复 repeat 份，
- * repeat 必须为奇数且 >= 3，使「中段」居中。count<=0 返回 0。
+ * cubic ease-out（等价 Semi semi-animation 弹簧的观感：先快后缓落定）。t ∈ [0,1]。
  */
-export function cyclicVirtualCount(count: number, repeat: number): number {
-  if (count <= 0) return 0;
-  return count * Math.max(3, repeat | 1);
+export function easeOut(t: number): number {
+  const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+  return 1 - Math.pow(1 - clamped, 3);
 }
 
 /**
- * cyclic 列的「中段基准虚拟索引」：把真实索引 logical 映射到位于正中那一份的虚拟索引。
- * 例如 count=24、repeat=5 → 中段从 2*24=48 起，logical=9 → 57。
+ * 缓动滚动的单帧 scrollTop（对齐 Semi scrollTo.ts：from→to over duration）。
+ * elapsed>=duration 或 duration<=0 时返回 to（落定）。渲染层用 rAF 逐帧调用并写 el.scrollTop。
  */
-export function cyclicCenterIndex(logical: number, count: number, repeat: number): number {
-  if (count <= 0) return 0;
-  const r = Math.max(3, repeat | 1);
-  const mid = Math.floor(r / 2);
-  return mid * count + wrapIndex(logical, count);
+export function scrollFrame(from: number, to: number, elapsed: number, duration: number): number {
+  if (duration <= 0 || elapsed >= duration) return to;
+  const p = easeOut(elapsed / duration);
+  return from + (to - from) * p;
 }
 
 /**
- * cyclic 滚动落定后，判断是否需要把虚拟索引「重定位」回中段（避免滚出重复区边界）。
- * 返回新的虚拟索引（与传入逻辑值同余、但落在中段），渲染层据此命令式无动画跳转。
- * 当 virtualIndex 已在安全中段（距首尾各至少 count 行）时返回原值（无需跳）。
+ * cycled 无限列表：需要在真实列表头/尾各补多少「份」完整数据，才能填满上/下缓冲区
+ * （对齐 shouldPrepend / shouldAppend）。ratio=缓冲区为视窗高度的倍数（init 时 2，调整时 1）。
+ * 纯几何版：不读 DOM，用 list 高度（count*itemHeight）与视窗几何推算。
  */
-export function cyclicRecenter(virtualIndex: number, count: number, repeat: number): number {
-  if (count <= 0) return 0;
-  const r = Math.max(3, repeat | 1);
-  const total = count * r;
-  // 安全区：[count, total-count)。在区内不动。
-  if (virtualIndex >= count && virtualIndex < total - count) return virtualIndex;
-  const logical = wrapIndex(virtualIndex, count);
-  return cyclicCenterIndex(logical, count, repeat);
-}
-
-// ---------------------------------------------------------------------------
-// 惯性物理（inertia / momentum）—— 拖拽释放后按速度指数减速，落定吸附到最近整行。
-// 纯函数：给定初速度与每帧 dt，算出位移；并提供「按当前位置 + 速度预测落点行」。
-// 渲染层用 rAF 驱动，把几何（scrollTop）读出传入，写回 scrollTop。
-// ---------------------------------------------------------------------------
-
-export interface MomentumStep {
-  /** 本帧后的速度（px/ms）。 */
-  velocity: number;
-  /** 本帧位移增量（px，velocity*dt 的积分近似）。 */
-  delta: number;
-  /** 速度是否已低于阈值（应停止动画进入吸附）。 */
-  done: boolean;
-}
-
-/**
- * 推进一帧惯性：指数衰减 v' = v * decay^(dt/16.67)，位移取平均速度积分。
- * @param velocity 当前速度（px/ms，正=向下/scrollTop 增大）
- * @param dt       帧间隔（ms）
- * @param decay    每 ~16.67ms（60fps 一帧）的衰减系数，默认 0.95
- * @param minV     停止阈值（px/ms），默认 0.02
- */
-export function momentumStep(
-  velocity: number,
-  dt: number,
-  decay = 0.95,
-  minV = 0.02,
-): MomentumStep {
-  const frames = dt / (1000 / 60);
-  const next = velocity * Math.pow(decay, frames);
-  // 平均速度积分（梯形）得位移，避免高速时单帧跨度过大。
-  const delta = ((velocity + next) / 2) * dt;
-  return { velocity: next, delta, done: Math.abs(next) < minV };
-}
-
-/**
- * 根据当前 scrollTop 与剩余速度预测「最终吸附目标行」（含一点惯性前瞻），clamp 到 [0,count)。
- * 用于释放瞬间直接算出目标行，再 smooth 吸附（比逐帧更稳，避免抖动）。
- * @param scrollTop 当前偏移
- * @param velocity  当前速度（px/ms）
- * @param itemHeight 行高
- * @param count     行数
- * @param projection 速度前瞻系数（默认 80：v*80 px 的滑行预估）
- */
-export function projectSettleIndex(
-  scrollTop: number,
-  velocity: number,
-  itemHeight: number,
+export function repeatCount(
   count: number,
-  projection = 80,
+  itemHeight: number,
+  wrapperHeight: number,
+  ratio = 2,
 ): number {
-  if (itemHeight <= 0 || count <= 0) return 0;
-  const projected = scrollTop + velocity * projection;
-  const raw = Math.round(projected / itemHeight);
-  return Math.max(0, Math.min(count - 1, raw));
+  if (count <= 0 || itemHeight <= 0) return 0;
+  const listHeight = count * itemHeight;
+  if (listHeight <= 0) return 0;
+  return Math.ceil((wrapperHeight * ratio) / listHeight);
 }
