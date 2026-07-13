@@ -180,12 +180,6 @@ export const zh_CN: Locale = {
     loadError: '动画加载失败',
     label: '图标',
   },
-  ScrollList: {
-    ariaLabel: '滚动选择',
-    empty: '暂无可选项',
-    loading: '加载中…',
-    announceSelected: '已选中 {label}',
-  },
   List: {
     emptyText: '暂无数据',
   },

@@ -14,8 +14,8 @@
  * - Semi `$color-timePicker_range_picker_panel_split-border` → kebab
  *   `color-time-picker-range-picker-panel-split-border`，`var(--semi-color-border)` → `var(--cd-color-border)`。
  * - Semi `rgba(0, 0, 0, .1)` / `0 4px 14px rgba(0, 0, 0, .1)` → 保留字面量（补全 `.1` → `0.1`）。
- * - Semi `$height-scrollList_item: 36px` → 复用我们已有的 `var(--cd-scrolllist-item-height)`（= 36px），
- *   刻意复用（TimePicker 滚动列项高对齐 ScrollList），不写死字面量。
+ * - Semi `$height-scrollList_item: 36px` → 复用 ScrollList 的 Semi 全名 token
+ *   `var(--cd-height-scroll-list-item)`（= 36px），刻意复用（TimePicker 滚动列项高对齐 ScrollList），不写死字面量。
  * - Semi `var(--semi-border-radius-medium)` → `var(--cd-border-radius-medium)`（= 6px）。
  * - Semi `var(--semi-border-radius-small)` → `var(--cd-border-radius-small)`（= 3px）。
  * - 字面量宽高（252px / 64px / 72px / 1px / 2px / 0）保留。
@@ -34,7 +34,7 @@ export const timePickerTokens = {
   // —— 面板尺寸（width / height）——
   'width-time-picker-range-panel-border': { value: '1px', category: 'width', label: '菜单分割线宽度', usage: '时间选择器菜单分割线宽度' },
   'height-time-picker-panel-body': { value: '252px', category: 'height', label: '菜单高度', usage: '时间选择器菜单高度' },
-  'height-time-picker-scrolllist-item': { value: 'var(--cd-scrolllist-item-height)', category: 'height', label: '滚动列项高', usage: '时间选择器滚动列项高度（复用 ScrollList item 高度 36px）' },
+  'height-time-picker-scrolllist-item': { value: 'var(--cd-height-scroll-list-item)', category: 'height', label: '滚动列项高', usage: '时间选择器滚动列项高度（复用 ScrollList item 高度 36px）' },
   'width-time-picker-panel-list-ampm': { value: '72px', category: 'width', label: '上午下午列宽', usage: '时间选择器菜单中列宽度 - 上午下午' },
   'width-time-picker-panel-list-hour': { value: '64px', category: 'width', label: '小时列宽', usage: '时间选择器菜单中列宽度 - 小时' },
   'width-time-picker-panel-list-minute': { value: '64px', category: 'width', label: '分钟列宽', usage: '时间选择器菜单中列宽度 - 分钟' },

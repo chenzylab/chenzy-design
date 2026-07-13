@@ -146,9 +146,11 @@ export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
 export { Tag, TagGroup, SplitTagGroup, tagMeta, tagGroupMeta, splitTagGroupMeta } from './tag/index.js';
 export {
   ScrollList,
+  ScrollItem,
   scrollListMeta,
-  type ScrollListItem,
-  type ScrollListValue,
+  type ScrollItemMode,
+  type ScrollItemData,
+  type ScrollItemSelectPayload,
 } from './scroll-list/index.js';
 export { Avatar, AvatarGroup, avatarMeta } from './avatar/index.js';
 export type {

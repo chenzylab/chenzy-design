@@ -180,12 +180,6 @@ export const en_US: Locale = {
     loadError: 'Failed to load animation',
     label: 'Icon',
   },
-  ScrollList: {
-    ariaLabel: 'Scroll to select',
-    empty: 'No options',
-    loading: 'Loading…',
-    announceSelected: 'Selected {label}',
-  },
   List: {
     emptyText: 'No data',
   },
