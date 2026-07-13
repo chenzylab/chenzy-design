@@ -30,7 +30,7 @@ export const demos: DemoEntry[] = [
   entry('04-grid.svelte', '栅格列表', 'grid 的 span 设置每项占格数（24 栅格），gutter 控制间距。'),
   entry('05-grid-responsive.svelte', '响应式栅格列表', 'grid 的 xs/sm/md/lg/xl/xxl 按断点设置占格数，响应尺寸与 Grid 一致。'),
   entry('06-load-more.svelte', '加载更多', '点击后先追加骨架占位行，请求返回再替换为真实数据；已展示项始终显示真内容，只有新增占位行显示 Skeleton（对齐 Semi）。'),
-  entry('07-infinite-scroll.svelte', '滚动加载', '滚动到底自动加载下一批（加载中底部显示 Spin），每到第 4 的倍数批次改为出现「显示更多」按钮（对齐 Semi 交互规范）。'),
+  entry('07-infinite-scroll.svelte', '滚动加载', '首屏后滚动到底自动加载，连续加载 3 批后（批次数为 4 的倍数）出现「显示更多」按钮，点击再进入自动滚动——每 4 批一个按钮（对齐 Semi）。加载中底部显示 Spin。'),
   entry('08-virtualized.svelte', '滚动加载无限长列表', '组合 VirtualList 只渲染视口内行，支撑万级数据（等价 Semi 集成 react-virtualized）。'),
   entry('09-drag-sort.svelte', '拖拽排序', '用原生 HTML5 draggable 事件实现列表项拖拽重排（等价 Semi 集成 dnd-kit）。'),
   entry('10-pagination.svelte', '带分页器', '组合 Pagination 对数据切片，实现分页列表。'),
