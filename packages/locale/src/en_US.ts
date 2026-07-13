@@ -187,10 +187,7 @@ export const en_US: Locale = {
     announceSelected: 'Selected {label}',
   },
   List: {
-    loadMore: 'Load more',
-    selectAnnounce: 'Selected {label}',
-    deselectAnnounce: 'Deselected {label}',
-    selectableLabel: 'Selectable list',
+    emptyText: 'No data',
   },
   Calendar: {
     noEvents: 'No events',

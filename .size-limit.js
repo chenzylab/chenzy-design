@@ -140,7 +140,7 @@ const components = [
   ['empty', '{ Empty }', '2.55 KB'],
   ['highlight', '{ Highlight }', '1.45 KB'],
   ['image', '{ Image, ImagePreview }', '13 KB'],
-  ['list', '{ ListItem, ListMeta }', '8.95 KB'],
+  ['list', '{ List, ListItem }', '3.5 KB'],
   ['overflow-list', '{ OverflowList }', '3.2 KB'],
   ['popover', '{ Popover }', '4.75 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],

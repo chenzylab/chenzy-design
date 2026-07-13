@@ -3,7 +3,7 @@
   用 renderItem snippet 渲染真实行。隔离 snippet（snippet 只能在 .svelte 内定义）。
 -->
 <script lang="ts">
-  import { List } from './index.js';
+  import { List, ListItem } from './index.js';
 
   interface Props {
     count?: number;
@@ -17,6 +17,6 @@
 
 <List {dataSource} bordered>
   {#snippet renderItem(item)}
-    <span>{(item as { title: string }).title}</span>
+    <ListItem main={(item as { title: string }).title} />
   {/snippet}
 </List>

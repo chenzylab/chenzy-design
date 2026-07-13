@@ -1,31 +1,41 @@
 import { getContext, setContext } from 'svelte';
-import type { ListKey } from '@chenzy-design/core';
 
 /**
- * List context — exposes selectable state to declarative <List.Item> children.
- * Getters keep reactivity to the parent List's props (reading a snapshot would
- * freeze the initial value). No mutable state stored here; selection toggling
- * goes through the parent's command (which calls the controlled onSelectionChange
- * — red line #1: never writes back to selectedKeys).
+ * List grid 配置（对齐 Semi `Grid extends RowProps, ColProps`）。
+ * gutter/align/justify/wrap 作用于 Row 容器；span/offset/order/push/pull/flex 与
+ * 响应式断点 xs..xxl 作用于每个 Item 外层的 Col。List 拆分后经 context 下发给 Item。
+ */
+export interface ListGrid {
+  gutter?: number | [number, number];
+  align?: 'top' | 'middle' | 'bottom' | 'baseline' | 'stretch';
+  justify?: 'start' | 'end' | 'center' | 'space-between' | 'space-around' | 'space-evenly';
+  wrap?: boolean;
+  span?: number;
+  offset?: number;
+  order?: number;
+  push?: number;
+  pull?: number;
+  flex?: string | number;
+  xs?: number | Record<string, unknown>;
+  sm?: number | Record<string, unknown>;
+  md?: number | Record<string, unknown>;
+  lg?: number | Record<string, unknown>;
+  xl?: number | Record<string, unknown>;
+  xxl?: number | Record<string, unknown>;
+}
+
+/**
+ * List context —— 对齐 Semi ListContext（list-context.ts）。
+ * 向 <List.Item> 下发 grid 配置与 List 级 onClick/onRightClick 回退。
+ * getter 保持对 List props 的响应性（读快照会冻结初值）。
  */
 export interface ListContext {
-  /** Whether selectable is enabled (single|multiple). */
-  getSelectable: () => false | 'single' | 'multiple';
-  /** Whether row `key` is currently selected. */
-  isSelected: (key: ListKey) => boolean;
-  /** Request a selection toggle for row `key` (fires onSelectionChange only). */
-  toggle: (key: ListKey, shiftKey: boolean) => void;
-  /** Row vertical padding size class suffix. */
-  getSize: () => 'small' | 'default' | 'large';
-  /**
-   * roving tabindex (pure derived): focused row / first DOM row is 0, others -1.
-   * Red line #2: read-only during render, never writes parent $state.
-   */
-  rowTabindex: (key: ListKey) => 0 | -1;
-  /** Row keydown: ↑↓ roving + Home/End + PageUp/Down (imperative focus()). */
-  onRowKeydown: (event: KeyboardEvent, key: ListKey) => void;
-  /** Sync focusedRowKey when a row gains focus. */
-  onRowFocus: (key: ListKey) => void;
+  /** grid 配置；存在时 Item 用 Col 包裹自身。 */
+  getGrid: () => ListGrid | undefined;
+  /** List 级点击回退（Item 未自带 onClick 时使用）。 */
+  getOnClick: () => ((e: MouseEvent) => void) | undefined;
+  /** List 级右键回退（Item 未自带 onRightClick 时使用）。 */
+  getOnRightClick: () => ((e: MouseEvent) => void) | undefined;
 }
 
 const KEY = Symbol('cd-list');

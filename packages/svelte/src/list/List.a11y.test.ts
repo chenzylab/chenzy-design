@@ -1,69 +1,39 @@
-// List a11y：列表。
-// 非 selectable：原生 ul/li 列表语义（role=list / listitem 隐式）。
-// selectable：容器 role=listbox（multiple 加 aria-multiselectable），行 role=option + aria-selected，
-// 行 tabindex roving（仅一行为 Tab 停靠点）。
-// 用数据驱动夹具（ListA11yFixture）渲染真实行。
+// List a11y：原生 ul/li 列表语义（对齐 Semi List DOM 结构）。
+// cd-list-items(ul) > cd-list-item(li)；header/footer/empty 结构；无 axe violations。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import ListFixture from './ListA11yFixture.svelte';
 
 describe('List a11y', () => {
-  it('默认渲染：原生 ul/li 列表语义，无 axe violations', async () => {
+  it('默认渲染：ul.cd-list-items > li.cd-list-item，无 axe violations', async () => {
     const { container } = renderWithLocale(ListFixture, {
-      props: { bordered: true, header: 'Users' },
+      props: { bordered: true, header: 'Users', footer: 'End' },
     });
-    const ul = container.querySelector('ul.cd-list__items');
+    const ul = container.querySelector('ul.cd-list-items');
     expect(ul).not.toBeNull();
-    // 非 selectable：不设显式 role（保留原生 list 语义）。
+    // 原生 list 语义：不设显式 role。
     expect(ul?.getAttribute('role')).toBeNull();
-    expect(container.querySelectorAll('li.cd-list__item').length).toBe(3);
+    expect(container.querySelectorAll('li.cd-list-item').length).toBe(3);
+    // header/footer 结构就位。
+    expect(container.querySelector('.cd-list-header')?.textContent).toContain('Users');
+    expect(container.querySelector('.cd-list-footer')?.textContent).toContain('End');
     await expectNoAxeViolations(container);
   });
 
-  // 结构断言（不含 axe）：selectable 的 listbox/option/aria-selected/roving 语义确实就位。
-  // axe 0-violation 断言因下述两个真实组件缺口被拆到 it.skip，故此处只验证 ARIA 结构。
-  it('selectable=single：role=listbox + option + aria-selected + roving 结构', async () => {
-    const { container } = renderWithLocale(ListFixture, {
-      props: { selectable: 'single', defaultSelectedKeys: ['u2'] },
-    });
-    const listbox = container.querySelector('[role="listbox"]');
-    expect(listbox).not.toBeNull();
-    expect(listbox?.getAttribute('aria-multiselectable')).toBeNull();
-
-    const options = container.querySelectorAll('[role="option"]');
-    expect(options.length).toBe(3);
-    const selected = container.querySelectorAll('[role="option"][aria-selected="true"]');
-    expect(selected.length).toBe(1);
-    expect(selected[0]?.textContent).toContain('Alan Turing');
-
-    // roving tabindex：仅一行为 Tab 停靠点。
-    const zero = [...options].filter((o) => o.getAttribute('tabindex') === '0');
-    expect(zero.length).toBe(1);
+  it('Item body 结构：main/extra 就位（对齐 Semi item DOM）', async () => {
+    const { container } = renderWithLocale(ListFixture, { props: {} });
+    const first = container.querySelector('li.cd-list-item');
+    expect(first?.querySelector('.cd-list-item-body-main')?.textContent).toContain('Alan Turing');
+    expect(first?.querySelector('.cd-list-item-extra')?.textContent).toContain('Mathematician');
+    // body 默认 flex-start 对齐类。
+    expect(container.querySelector('.cd-list-item-body-flex-start')).not.toBeNull();
   });
 
-  it('selectable=multiple：listbox aria-multiselectable=true 结构', async () => {
-    const { container } = renderWithLocale(ListFixture, {
-      props: { selectable: 'multiple', defaultSelectedKeys: ['u1', 'u3'] },
-    });
-    const listbox = container.querySelector('[role="listbox"]');
-    expect(listbox?.getAttribute('aria-multiselectable')).toBe('true');
-    const selected = container.querySelectorAll('[role="option"][aria-selected="true"]');
-    expect(selected.length).toBe(2);
-  });
-
-  // 修复后：listbox 经 aria-label（List.selectableLabel）有可访问名；option 内勾选框改纯视觉
-  // （aria-hidden + 无 input），选中态由行 aria-selected 表达，无 nested-interactive。
-  it('selectable=single：axe 0 violations（listbox 可访问名 + 纯视觉勾选框）', async () => {
-    const { container } = renderWithLocale(ListFixture, {
-      props: { selectable: 'single', defaultSelectedKeys: ['u2'] },
-    });
-    await expectNoAxeViolations(container);
-  });
-
-  it('selectable=multiple：axe 0 violations（listbox 可访问名 + 纯视觉勾选框）', async () => {
-    const { container } = renderWithLocale(ListFixture, {
-      props: { selectable: 'multiple', defaultSelectedKeys: ['u1', 'u3'] },
-    });
+  it('空态：无数据渲染 cd-list-empty，无 axe violations', async () => {
+    const { container } = renderWithLocale(ListFixture, { props: { empty: true } });
+    const empty = container.querySelector('.cd-list-empty');
+    expect(empty).not.toBeNull();
+    expect(empty?.textContent?.trim()).toBeTruthy();
     await expectNoAxeViolations(container);
   });
 });
