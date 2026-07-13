@@ -34,14 +34,14 @@
     "@chenzy-design/locale": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@douyinfe/semi-json-viewer-core": "^2.101.0",
-    "@floating-ui/dom": "^1.0.0",
-    "@tiptap/core": "^3.0.0",
-    "@tiptap/extension-image": "^3.0.0",
-    "@tiptap/extension-text-align": "^3.0.0",
-    "@tiptap/extension-text-style": "^3.0.0",
-    "@tiptap/extensions": "^3.27.1",
-    "@tiptap/pm": "^3.0.0",
-    "@tiptap/starter-kit": "^3.0.0",
+    "@floating-ui/dom": "^1.8.0",
+    "@tiptap/core": "^3.27.3",
+    "@tiptap/extension-image": "^3.27.3",
+    "@tiptap/extension-text-align": "^3.27.3",
+    "@tiptap/extension-text-style": "^3.27.3",
+    "@tiptap/extensions": "^3.27.3",
+    "@tiptap/pm": "^3.27.3",
+    "@tiptap/starter-kit": "^3.27.3",
     "prism-svelte": "^0.5.0",
     "prismjs": "^1.29.0",
     "remark-gfm": "^4.0.1",
@@ -51,9 +51,9 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
-    "@types/hast": "^3.0.4",
+    "@types/hast": "^3.0.5",
     "@types/prismjs": "^1.26.5",
-    "tsx": "^4.19.2"
+    "tsx": "^4.23.1"
   },
   "peerDependencies": {
     "svelte": ">=5.0.0"
