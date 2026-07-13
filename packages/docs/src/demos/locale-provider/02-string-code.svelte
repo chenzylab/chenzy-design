@@ -14,7 +14,7 @@
   <div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
     <div>
       <Text type="secondary">Empty 内置文案</Text>
-      <Empty image="noResult" />
+      <Empty />
     </div>
     <div>
       <Text type="secondary">Pagination 内置文案</Text>

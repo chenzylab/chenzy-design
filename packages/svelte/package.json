@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@chenzy-design/core": "workspace:*",
+    "@chenzy-design/icons": "workspace:*",
     "@chenzy-design/locale": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@douyinfe/semi-json-viewer-core": "^2.101.0",

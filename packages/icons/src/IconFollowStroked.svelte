@@ -1,0 +1,18 @@
+<!-- IconFollowStroked — 具名图标，对齐 Semi IconFollowStroked（convertIcon(follow_stroked, 'follow_stroked')）。 -->
+<script lang="ts">
+  import Icon, { type IconSize } from './Icon.svelte';
+  import { followStrokedSvg } from './svgs.js';
+
+  interface Props {
+    size?: IconSize;
+    spin?: boolean;
+    rotate?: number;
+    fill?: string;
+    class?: string;
+    style?: string;
+    [key: string]: unknown;
+  }
+  let { ...rest }: Props = $props();
+</script>
+
+<Icon svg={followStrokedSvg} type="follow_stroked" {...rest} />

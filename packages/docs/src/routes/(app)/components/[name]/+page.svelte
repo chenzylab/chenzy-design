@@ -102,7 +102,10 @@
 
   // 场景 demo：demos.ts 全部条目，逐个作为顶级章节
   // 每个场景生成稳定锚点 id（按序号），供 TOC 跳转
-  const sceneDemos = $derived(demoList.map((d, i) => ({ ...d, anchorId: `demo-${i}` })));
+  const allDemos = $derived(demoList.map((d, i) => ({ ...d, anchorId: `demo-${i}` })));
+  // pageHead demo（如图标列表）置于「如何引入」之前、裸渲染；其余为常规场景。
+  const headDemos = $derived(allDemos.filter((d) => d.pageHead));
+  const sceneDemos = $derived(allDemos.filter((d) => !d.pageHead));
 
   const hasA11y = $derived(!!(a11yRole || a11yKeyboard.length || a11yNotes.length || a11yPattern));
   const hasContent = $derived(!!(usageHints || dangerousActions || relatedComponents.length));
@@ -126,6 +129,7 @@
   // 不再统一收进「代码演示」一节）。交互式 playground 作为首个「代码演示」节。
   const tocSections = $derived(
     [
+      // 页首区块（图标列表等）不进 TOC（对齐 Semi：图标列表不在右侧目录）
       { id: 'install', title: t('section.install', lang) },
       ...sceneDemos.map((d) => ({ id: d.anchorId, title: localize(d.title, lang) })),
       { id: 'api', title: t('section.api', lang) },
@@ -203,7 +207,19 @@
     </div>
 
     {#if activeTab === 'api'}
-      <!-- 如何引入：具名导入片段（首节，对齐 Semi 的引入说明）-->
+      <!-- 页首区块（如图标列表）：置于「如何引入」之前，裸渲染无 DemoBox（对齐 Semi）-->
+      {#each headDemos as demo (demo.anchorId)}
+        {@const HeadComp = demo.component}
+        <section class="section" id={demo.anchorId}>
+          <h2>{localize(demo.title, lang)}<SectionAnchor id={demo.anchorId} /></h2>
+          {#if demo.description}
+            <p class="section-desc">{localize(demo.description, lang)}</p>
+          {/if}
+          <HeadComp />
+        </section>
+      {/each}
+
+      <!-- 如何引入：具名导入片段（对齐 Semi 的引入说明）-->
       <section class="section" id="install">
         <h2>{t('section.install', lang)}<SectionAnchor id="install" /></h2>
         <CodeBlock code={importCode} codeLang="typescript" />
@@ -224,9 +240,13 @@
                 >{/if}
             </p>
           {/if}
-          <DemoBox code={demo.code} highlightLines={demo.highlightLines}>
+          {#if demo.raw}
             <SceneComp />
-          </DemoBox>
+          {:else}
+            <DemoBox code={demo.code} highlightLines={demo.highlightLines}>
+              <SceneComp />
+            </DemoBox>
+          {/if}
         </section>
       {/each}
 

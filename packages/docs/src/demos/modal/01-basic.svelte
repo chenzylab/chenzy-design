@@ -1,17 +1,27 @@
 <script lang="ts">
   import { Modal, Button } from '@chenzy-design/svelte';
 
-  let open = $state(false);
+  let visible = $state(false);
+  function handleOk() {
+    visible = false;
+    console.log('Ok button clicked');
+  }
+  function handleCancel() {
+    visible = false;
+    console.log('Cancel button clicked');
+  }
 </script>
 
-<Button type="primary" onclick={() => (open = true)}>打开对话框</Button>
-
+<Button onclick={() => (visible = true)}>打开弹窗</Button>
 <Modal
-  title="对话框标题"
-  open={open}
-  onOpenChange={(v) => (open = v)}
-  onOk={() => (open = false)}
-  onCancel={() => (open = false)}
+  title="基本对话框"
+  {visible}
+  onOk={handleOk}
+  onCancel={handleCancel}
+  afterClose={() => console.log('After Close callback executed')}
+  closeOnEsc={true}
 >
-  <p>对话框内容区域，可以放置表单、说明文字等。</p>
+  This is the content of a basic modal.
+  <br />
+  More content...
 </Modal>

@@ -11,6 +11,14 @@ Icon 是组件库最底层的视觉原语，负责以统一的尺寸、颜色、
 
 它解决三个一致性问题：尺寸统一（通过 `size` 枚举映射到 token，保证与同行 Button/Input 文本基线对齐）；颜色继承（默认 `fill: currentColor`，跟随父级文本色）；a11y 默认正确（装饰性图标默认对屏幕阅读器隐藏，语义图标强制要求 `label`）。
 
+## 图标集
+
+默认图标集 `@chenzy-design/icons`（523 个）包含面性、线性、AI 三套图标。面性图标、线性图标，以及 AI 图标中的单色图标默认不带颜色，可通过 CSS `color` 属性更改颜色；AI 图标中的双色、多色图标有默认颜色，可通过 `fill` 属性更改（支持 `string` 与 `string[]`）。
+
+`@chenzy-design/icons-lab`（84 个）为彩色图标集，自带颜色、不可改色。
+
+具名图标用法与 Semi 一致：`import { IconHome } from '@chenzy-design/icons'`，即 `<IconHome />`，继承 Icon 基座的 `size`/`spin`/`rotate`/`fill` 属性。全部图标见下方「图标列表」，点击可复制图标名。
+
 ## 两种图标用法
 
 本设计系统提供两条并行的图标路径，按需选用：

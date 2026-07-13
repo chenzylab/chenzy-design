@@ -15,6 +15,10 @@ export interface DemoEntry {
   seeAlso?: { text: LocalizedText; component: string };
   /** 源码区高亮的重点参数行号（1-based），如 [12, 22]。 */
   highlightLines?: number[];
+  /** 跳过 DemoBox（无源码框）裸渲染组件。用于图标列表这类浏览工具而非代码示例。 */
+  raw?: boolean;
+  /** 置于「如何引入」之前的页首区块（对齐 Semi 图标列表位置）。隐含 raw。 */
+  pageHead?: boolean;
 }
 
 // eager glob：demos.ts / content md 在构建时同步就绪（各 demos.ts 内部本就 eager）。

@@ -1,13 +1,19 @@
 <!--
-  Modal — see specs/components/feedback/Modal.spec.md
-  fixed 遮罩+面板，portal 到 body（或 getContainer），role=dialog aria-modal，
-  useFocusTrap 焦点捕获+归还、useDismiss Esc 关闭、useScrollLock 锁背景滚动，
-  遮罩点击关闭、ok/cancel 按钮、自定义尾部、reduced-motion。
-  堆叠 z-index 由 z-stack 模块级计数器分配（声明式 + 命令式共享）。
-  destroyOnClose：关闭即卸载内容（{#if}），重开重建。
-  命令式工厂 Modal.confirm/info/... 见 command.svelte.ts（已 Object.assign 到 Modal）。
-  draggable：按住标题栏拖动面板，偏移 $state 派生为 transform 叠加在居中/距顶定位上，
-  pointermove/up 绑 window 命令式 + cleanup，重开偏移重置。
+  Modal — 严格镜像 Semi Design（semi-foundation/modal + semi-ui/modal/ModalContent）。
+  DOM 结构对齐 Semi：
+    .cd-modal-fixed（最外，getPopupContainer!==body 时 .cd-modal-popup）
+      └ .cd-modal-mask（遮罩）
+      └ .cd-modal-wrap（role=none，负责滚动与遮罩点击，centered 时 -wrap-center）
+          └ .cd-modal（尺寸类 -small/-medium/-large/-full-width，centered 时 -centered）
+              └ .cd-modal-content（role=dialog aria-modal，背景/圆角/阴影；modalRender 包裹此节点）
+                  ├ .cd-modal-header（icon + Typography.Title + 关闭 IconButton）
+                  ├ .cd-modal-body / .cd-modal-body-wrapper（无 header 时 icon+body+closer）
+                  └ .cd-modal-footer
+  API 严格镜像 Semi 名：visible / closeOnEsc / getPopupContainer / afterClose / motion /
+    okType(5 种) / size(small|medium|large|full-width) / header(Snippet) / footerFill 等。
+  ReactNode→Snippet、className→class（本库 Svelte 惯例）。拖拽经 modalRender + <DragMove>（Semi 同）。
+  命令式浮层编排（红线 #3）：open 且面板就绪时 activate focus-trap、绑 Esc dismiss、scroll-lock、
+    背景 inert；cleanup 归还。堆叠 z-index 由模块级计数器分配（声明式与命令式共享）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -18,197 +24,221 @@
     useScrollLock,
     useInertBackground,
   } from '@chenzy-design/core';
+  import { IconClose } from '@chenzy-design/icons';
   import { Button } from '../button/index.js';
+  import { IconButton } from '../iconbutton/index.js';
+  import { Title } from '../typography/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { acquireZIndex } from './z-stack.js';
 
-  type OkType = 'primary' | 'danger';
+  type OkType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
+  type ModalSize = 'small' | 'medium' | 'large' | 'full-width';
 
   interface Props {
-    open?: boolean;
+    /** 对话框是否可见（受控；受控时不回写）。对齐 Semi visible。 */
+    visible?: boolean;
+    /** 标题（string）。对齐 Semi title。 */
     title?: string;
-    titleSnippet?: Snippet;
+    /** 自定义头部（Snippet），设为 null 不展示头部。对齐 Semi header(ReactNode)。 */
+    header?: Snippet | null;
+    /** 宽度。对齐 Semi width。 */
     width?: number | string;
+    /** 高度。对齐 Semi height。 */
+    height?: number | string;
+    /** 预设宽度尺寸：small(448)/medium(684)/large(920)/full-width(100vw-64px)。对齐 Semi size。 */
+    size?: ModalSize;
+    /** 垂直居中。对齐 Semi centered。 */
     centered?: boolean;
+    /** 右上角关闭按钮。对齐 Semi closable。 */
     closable?: boolean;
+    /** 自定义关闭图标（Snippet）。对齐 Semi closeIcon。 */
+    closeIcon?: Snippet;
+    /** 点遮罩关闭。对齐 Semi maskClosable。 */
     maskClosable?: boolean;
-    keyboard?: boolean;
-    /** 为真时按住标题栏可拖动整个对话框。默认 false。 */
-    draggable?: boolean;
+    /** Esc 关闭。对齐 Semi closeOnEsc。 */
+    closeOnEsc?: boolean;
+    /** 确认按钮 loading。对齐 Semi confirmLoading。 */
     confirmLoading?: boolean;
+    /** 确认按钮文字。对齐 Semi okText。 */
     okText?: string;
+    /** 取消按钮文字。对齐 Semi cancelText。 */
     cancelText?: string;
+    /** 确认按钮类型：primary/secondary/tertiary/warning/danger。对齐 Semi okType。 */
     okType?: OkType;
-    /** 关闭即卸载内部内容；重开重建。默认 false（保留 DOM 仅隐藏 via {#if isOpen}）。 */
-    destroyOnClose?: boolean;
-    /** Portal 容器，缺省 document.body。脱离父层叠上下文。 */
-    getContainer?: () => HTMLElement | null;
+    /** 透传给确认按钮的额外 props。对齐 Semi okButtonProps。 */
+    okButtonProps?: Record<string, unknown>;
+    /** 透传给取消按钮的额外 props。对齐 Semi cancelButtonProps。 */
+    cancelButtonProps?: Record<string, unknown>;
+    /** 是否显示取消按钮。对齐 Semi hasCancel。 */
+    hasCancel?: boolean;
+    /** 自定义底部（Snippet），设为 null 不展示底部按钮。对齐 Semi footer(ReactNode)。 */
     footer?: Snippet<[{ ok: () => void; cancel: () => void }]> | null;
+    /** 底部按钮撑满。对齐 Semi footerFill。 */
+    footerFill?: boolean;
+    /** 是否显示遮罩。对齐 Semi mask。 */
+    mask?: boolean;
+    /** 遮罩内联样式。对齐 Semi maskStyle。 */
+    maskStyle?: string;
+    /** 内容区内联样式。对齐 Semi bodyStyle。 */
+    bodyStyle?: string;
+    /** 根节点内联样式（如 top）。对齐 Semi style。 */
+    style?: string;
+    /** 根节点类名。对齐 Semi className。 */
+    class?: string;
+    /** 内容区类名。对齐 Semi modalContentClass。 */
+    modalContentClass?: string;
+    /** 全屏（覆盖 width/height）。对齐 Semi fullScreen。 */
+    fullScreen?: boolean;
+    /** 动画开关。对齐 Semi motion。 */
+    motion?: boolean;
+    /** 指定父级 DOM。对齐 Semi getPopupContainer。 */
+    getPopupContainer?: () => HTMLElement | null;
+    /** z-index。对齐 Semi zIndex。 */
+    zIndex?: number;
+    /** 关闭时保留 DOM 不销毁。对齐 Semi keepDOM。 */
+    keepDOM?: boolean;
+    /** 配合 keepDOM：为 true 时挂载时不渲染对话框。对齐 Semi lazyRender。 */
+    lazyRender?: boolean;
+    /** 命令式类型图标（Snippet）。对齐 Semi icon。 */
+    icon?: Snippet;
+    /** 自定义渲染 Modal content（对齐 Semi modalRender）。接收默认 content Snippet，返回包裹结构。 */
+    modalRender?: Snippet<[Snippet]>;
+    /** 内容主体。 */
     children?: Snippet;
     ariaLabel?: string;
+    /** 点击确认。对齐 Semi onOk。 */
     onOk?: () => void;
+    /** 取消/关闭。对齐 Semi onCancel。 */
     onCancel?: () => void;
-    onOpenChange?: (open: boolean) => void;
-    onAfterClose?: () => void;
-    class?: string;
-    /** 透传给确定按钮的额外 props（如 disabled、size 等）。loading 由 confirmLoading 控制，此处不重复。 */
-    okButtonProps?: Record<string, unknown>;
-    /** 透传给取消按钮的额外 props */
-    cancelButtonProps?: Record<string, unknown>;
-    /** 是否显示取消按钮。默认 true */
-    hasCancel?: boolean;
-    /** 预设宽度枚举，优先级低于 width prop */
-    size?: 'small' | 'medium' | 'large' | 'full-width';
-    /** 全屏模式 */
-    fullScreen?: boolean;
-    /** 关闭时保留 DOM（用 display:none 隐藏）。与 destroyOnClose 反义；默认 false（不保留，即关闭卸载） */
-    keepDOM?: boolean;
-    /** 配合 keepDOM 的懒挂载：true 时首次打开前不渲染内容。默认 true */
-    lazyRender?: boolean;
-    /** 内容区内联 style 字符串 */
-    bodyStyle?: string;
-    /** 遮罩层内联 style 字符串 */
-    maskStyle?: string;
-    /** Modal 高度 */
-    height?: number | string;
-    /** 底部按钮撑满宽度 */
-    footerFill?: boolean;
-    /** 内容区域额外 class */
-    modalContentClass?: string;
-    /** 自定义关闭图标（Snippet） */
-    closeIcon?: Snippet;
-    /** 是否显示遮罩。默认 true */
-    mask?: boolean;
+    /** 对话框完全关闭后回调。对齐 Semi afterClose。 */
+    afterClose?: () => void;
+    /** 显隐变化通知（本库补充，便于非受控回写）。 */
+    onVisibleChange?: (visible: boolean) => void;
     /**
-     * 自定义渲染整个 Modal 面板容器。接收默认面板内容 Snippet，返回包裹后的结构，
-     * 用于自定义拖拽/包装等（对标 Semi modalRender）。返回内容仍在遮罩内、portal 到容器。
-     */
-    modalRender?: Snippet<[Snippet]>;
-    /** 取消按钮的 loading 态（对称于 confirmLoading）。默认 false */
-    cancelLoading?: boolean;
-    /**
-     * 遮罩是否 position:fixed（对标 Semi 默认固定遮罩）。默认 true；
-     * 为 false 时改为 position:absolute，配合 getContainer 的相对定位父级局部铺满。
+     * 遮罩是否 position:fixed（对齐 Semi maskFixed，配合 getPopupContainer 局部弹层）。默认 true。
      */
     maskFixed?: boolean;
   }
 
   let {
-    open,
+    visible,
     title,
-    titleSnippet,
+    header,
     width = 448,
+    height,
+    size,
     centered = false,
     closable = true,
+    closeIcon,
     maskClosable = true,
-    keyboard = true,
-    draggable = false,
+    closeOnEsc = true,
     confirmLoading = false,
     okText,
     cancelText,
     okType = 'primary',
-    destroyOnClose = false,
-    getContainer,
+    okButtonProps,
+    cancelButtonProps,
+    hasCancel = true,
     footer,
+    footerFill = false,
+    mask = true,
+    maskStyle,
+    bodyStyle,
+    style,
+    class: className,
+    modalContentClass,
+    fullScreen = false,
+    motion = true,
+    getPopupContainer,
+    zIndex,
+    keepDOM = false,
+    lazyRender = true,
+    icon,
+    modalRender,
     children,
     ariaLabel,
     onOk,
     onCancel,
-    onOpenChange,
-    onAfterClose,
-    class: className,
-    okButtonProps,
-    cancelButtonProps,
-    hasCancel,
-    size,
-    fullScreen = false,
-    keepDOM = false,
-    lazyRender = true,
-    bodyStyle,
-    maskStyle,
-    height,
-    footerFill = false,
-    modalContentClass,
-    closeIcon,
-    mask = true,
-    modalRender,
-    cancelLoading = false,
+    afterClose,
+    onVisibleChange,
     maskFixed = true,
   }: Props = $props();
 
   const titleId = useId('cd-modal-title');
+  const bodyId = useId('cd-modal-body');
   const loc = useLocale();
-  // ConfigProvider 全局浮层容器默认；自身 getContainer prop 优先，未传时回退此值（再回退 body）。
   const globalPopupContainer = getGlobalPopupContainer();
 
-  // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange/onCancel ---
-  const isControlled = $derived(open !== undefined);
-  let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isControlled ? !!open : innerOpen);
+  // 受控 visible（红线 #1）：不无条件回写，仅 onVisibleChange/onCancel 通知。
+  const isControlled = $derived(visible !== undefined);
+  let innerOpen = $state(false);
+  const isOpen = $derived(isControlled ? !!visible : innerOpen);
 
-  function getInitialOpen(): boolean {
-    return false;
-  }
+  // header 存在性：header prop 传入（含 null）时以其为准；否则看 title。
+  const hasHeaderProp = $derived(header !== undefined);
+  const hasHeader = $derived(hasHeaderProp ? header !== null : title != null);
+  const hasIcon = $derived(Boolean(icon));
 
-  const hasTitle = $derived(Boolean(titleSnippet) || Boolean(title));
+  // 尺寸类与宽度（对齐 Semi：size 生成 -small/-medium/... 类，width 走内联 style）。
+  const sizeClass = $derived(size ? `cd-modal-${size}` : '');
+  const widthStyle = $derived(
+    size || fullScreen ? '' : typeof width === 'number' ? `${width}px` : (width ?? ''),
+  );
+  const heightStyle = $derived(
+    height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : '',
+  );
 
-  const SIZE_MAP = { small: '480px', medium: '600px', large: '800px', 'full-width': '100vw' } as const;
-  const effectiveWidth = $derived(size ? SIZE_MAP[size] : (typeof width === 'number' ? `${width}px` : width));
-  const heightStyle = $derived(height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : '');
+  const okBtnType = $derived(okType);
 
-  const panelCls = $derived(['cd-modal', fullScreen ? 'cd-modal--fullscreen' : '', className].filter(Boolean).join(' '));
-
-  // --- destroyOnClose：默认 false 时首开后保留 DOM（仅 isOpen 切换显隐），
-  //     true 时关闭即从 DOM 卸载（{#if isOpen}），重开重建。
-  //     keepDOM=true 或 lazyRender=false 时，首开前亦渲染。 ---
+  // destroyOnClose 语义：Semi 用 keepDOM 控制关闭是否保留 DOM。默认关闭即卸载 wrap（{#if}）。
   let hasBeenOpened = $state(false);
   $effect(() => {
     if (isOpen) hasBeenOpened = true;
   });
-  const shouldRender = $derived(
-    destroyOnClose ? isOpen : (keepDOM || !lazyRender || hasBeenOpened)
-  );
+  const shouldRender = $derived(keepDOM ? !lazyRender || hasBeenOpened : isOpen);
 
   function cancel() {
     if (!isControlled) innerOpen = false;
-    onOpenChange?.(false);
+    onVisibleChange?.(false);
     onCancel?.();
-    if (onAfterClose) queueMicrotask(() => onAfterClose?.());
+    if (afterClose) queueMicrotask(() => afterClose?.());
   }
 
   function ok() {
     onOk?.();
-    // 折中：非受控模式 ok 后自动关闭；受控模式由 onOk 回调控制 open
     if (!isControlled) {
       innerOpen = false;
-      onOpenChange?.(false);
+      onVisibleChange?.(false);
     }
   }
 
-  function onMaskClick(e: MouseEvent) {
-    if (maskClosable && e.target === e.currentTarget) {
+  // 遮罩点击关闭：仅当按下与抬起都在 wrap 本身（非面板内），对齐 Semi 的 mousedown/up 判定，
+  // 避免在面板内选中文本拖到遮罩误触关闭。
+  let mouseDownOnWrap = false;
+  function onWrapMouseDown(e: MouseEvent) {
+    mouseDownOnWrap = e.target === e.currentTarget;
+  }
+  function onWrapClick(e: MouseEvent) {
+    if (maskClosable && e.target === e.currentTarget && mouseDownOnWrap) {
       cancel();
     }
+    mouseDownOnWrap = false;
   }
 
-  // --- 浮层命令式编排 (红线 #3)：open 且面板就绪时，
-  //     activate focus-trap、绑 dismiss(Esc)、加 scroll-lock；
-  //     cleanup 里 deactivate(归还焦点)、解绑 dismiss、release scroll-lock ---
-  let panelEl = $state<HTMLElement | null>(null);
-  // portal 根（遮罩）—— 背景 inert 以它为锚，对兄弟节点（页面其余内容/下层浮层）生效。
-  let maskEl = $state<HTMLElement | null>(null);
+  // 命令式浮层编排（红线 #3）。
+  let contentEl = $state<HTMLElement | null>(null);
+  let rootEl = $state<HTMLElement | null>(null);
 
   $effect(() => {
-    if (!isOpen || !panelEl) return;
-    const trap = useFocusTrap(panelEl);
+    if (!isOpen || !contentEl) return;
+    const trap = useFocusTrap(contentEl);
     trap.activate();
     const releaseScroll = useScrollLock();
-    // 背景内容对 SR/键盘 inert+aria-hidden（spec §6）；以遮罩为锚隐藏其兄弟节点。
-    const releaseInert = maskEl ? useInertBackground(maskEl) : () => {};
+    const releaseInert = rootEl ? useInertBackground(rootEl) : () => {};
     let undismiss = () => {};
-    if (keyboard) {
-      undismiss = useDismiss(panelEl, {
+    if (closeOnEsc) {
+      undismiss = useDismiss(contentEl, {
         onDismiss: () => cancel(),
         escape: true,
         outsideClick: false,
@@ -222,87 +252,32 @@
     };
   });
 
-  // --- 堆叠 z-index (红线 #3)：每次打开向模块计数器申请一层，关闭回收。
-  //     与命令式 modal.confirm 共享计数器，多层叠放后开者在上。 ---
+  // 堆叠 z-index：zIndex prop 优先，否则模块计数器分配。
   let stackZ = $state<number | undefined>(undefined);
-
   $effect(() => {
     if (!isOpen) return;
-    const { zIndex, release } = acquireZIndex();
-    stackZ = zIndex;
+    if (zIndex !== undefined) {
+      stackZ = zIndex;
+      return;
+    }
+    const { zIndex: z, release } = acquireZIndex();
+    stackZ = z;
     return () => {
       stackZ = undefined;
       release();
     };
   });
+  const effectiveZ = $derived(zIndex ?? stackZ);
 
-  // --- 拖拽 (红线 #2/#3)：偏移量存 $state，派生为 transform；
-  //     pointerdown 在 header 起拖，pointermove/up 绑 window 命令式 + cleanup，
-  //     以便拖出 header 仍跟随、松手在视口外亦能结束。重开偏移重置。 ---
-  let dragX = $state(0);
-  let dragY = $state(0);
-
-  // 偏移叠加在现有居中/距顶定位之上（红线 #2：纯函数派生）。
-  const panelTransform = $derived(
-    draggable && (dragX !== 0 || dragY !== 0)
-      ? `transform: translate(${dragX}px, ${dragY}px)`
-      : undefined,
+  // popup 模式：getPopupContainer 指向非 body 时，mask/wrap 用 absolute（对齐 Semi -popup）。
+  const isPopup = $derived(
+    !maskFixed && typeof getPopupContainer === 'function' && getPopupContainer() != null,
   );
 
-  // 重开（isOpen 由 false→true）时重置偏移。
-  let wasOpen = false;
-  $effect(() => {
-    if (isOpen && !wasOpen) {
-      dragX = 0;
-      dragY = 0;
-    }
-    wasOpen = isOpen;
-  });
-
-  function onHeaderPointerDown(e: PointerEvent) {
-    if (!draggable) return;
-    // 仅主键拖拽；避免拖到关闭按钮等交互元素时误触。
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('.cd-modal__close')) return;
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const baseX = dragX;
-    const baseY = dragY;
-
-    function onMove(ev: PointerEvent) {
-      let nextX = baseX + (ev.clientX - startX);
-      let nextY = baseY + (ev.clientY - startY);
-      // 边界：保留面板至少一部分可见（不让标题栏完全拖出视口）。
-      if (panelEl) {
-        const rect = panelEl.getBoundingClientRect();
-        const margin = 40;
-        const minX = -(rect.left - baseX) - rect.width + margin;
-        const maxX = window.innerWidth - (rect.left - baseX) - margin;
-        const minY = -(rect.top - baseY);
-        const maxY = window.innerHeight - (rect.top - baseY) - margin;
-        nextX = Math.min(Math.max(nextX, minX), maxX);
-        nextY = Math.min(Math.max(nextY, minY), maxY);
-      }
-      dragX = nextX;
-      dragY = nextY;
-    }
-    function onUp() {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-    }
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-  }
-
-  // --- portal action (红线 #3)：命令式 appendChild 到 getContainer()/body，
-  //     脱离父 DOM 层叠上下文；destroy 时 removeChild 归还/清理。 ---
+  // portal（红线 #3）：命令式挂到 getPopupContainer()/body，脱离父层叠上下文。
   function portal(node: HTMLElement) {
-    if (typeof document === 'undefined') {
-      return { destroy() {} };
-    }
-    const target = getContainer?.() ?? globalPopupContainer?.() ?? document.body;
+    if (typeof document === 'undefined') return { destroy() {} };
+    const target = getPopupContainer?.() ?? globalPopupContainer?.() ?? document.body;
     target.appendChild(node);
     return {
       destroy() {
@@ -310,232 +285,342 @@
       },
     };
   }
+
+  const rootCls = $derived(
+    [
+      maskFixed && !isPopup ? 'cd-modal-fixed' : '',
+      isPopup ? 'cd-modal-popup' : '',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const modalCls = $derived(
+    [
+      'cd-modal',
+      sizeClass,
+      centered ? 'cd-modal-centered' : '',
+      motion ? 'cd-modal-motion' : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const contentCls = $derived(
+    [
+      'cd-modal-content',
+      fullScreen ? 'cd-modal-content-fullscreen' : '',
+      heightStyle ? 'cd-modal-content-height-set' : '',
+      modalContentClass,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const modalStyle = $derived(
+    [
+      widthStyle ? `width:${widthStyle}` : '',
+      heightStyle ? `height:${heightStyle}` : '',
+      style ?? '',
+    ]
+      .filter(Boolean)
+      .join(';'),
+  );
 </script>
 
 {#if shouldRender}
-  <!-- 遮罩 role=presentation：点击关闭为鼠标增强，键盘等价为 Esc（focus-trap + useDismiss 提供）
-       use:portal 命令式挂载到 getContainer()/body，脱离父层叠上下文；
-       !isOpen 时（destroyOnClose=false 保留 DOM）以 hidden class 隐藏。 -->
+  <!-- 根：portal 到容器，脱离父层叠上下文。effectiveZ 经 --cd-modal-content-z / -mask-z 覆盖基线。 -->
   <div
-    class="cd-modal-mask"
-    class:cd-modal-mask--centered={centered}
-    class:cd-modal-mask--hidden={!isOpen}
-    class:cd-modal-mask--no-mask={!mask}
-    class:cd-modal-mask--absolute={!maskFixed}
-    bind:this={maskEl}
-    style={[stackZ !== undefined ? `--cd-modal-z:${stackZ}` : '', maskStyle ?? ''].filter(Boolean).join('; ') || undefined}
-    onclick={onMaskClick}
-    role="presentation"
+    class={rootCls}
+    class:cd-modal-hidden={!isOpen}
+    bind:this={rootEl}
+    style={effectiveZ !== undefined
+      ? `--cd-modal-content-z:${effectiveZ + 1};--cd-modal-mask-z:${effectiveZ}`
+      : undefined}
     use:portal
   >
-    <!-- modalRender：自定义包裹整个面板（对标 Semi）。传入默认面板 Snippet，
-         由用户返回包装结构；未传则直接渲染面板。panelEl 仍绑在 role=dialog 上，
-         focus-trap/aria 不受包装影响。 -->
-    {#if modalRender}
-      {@render modalRender(panelContent)}
-    {:else}
-      {@render panelContent()}
+    {#if mask}
+      <div
+        class="cd-modal-mask"
+        class:cd-modal-mask-absolute={isPopup}
+        style={maskStyle}
+      ></div>
     {/if}
+    <!-- wrap：role=none，负责滚动与遮罩点击（对齐 Semi -wrap / -wrap-center）。 -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      class="cd-modal-wrap"
+      class:cd-modal-wrap-center={centered}
+      class:cd-modal-wrap-absolute={isPopup}
+      role="none"
+      onmousedown={maskClosable ? onWrapMouseDown : undefined}
+      onclick={maskClosable ? onWrapClick : undefined}
+    >
+      <div class={modalCls} style={modalStyle || undefined}>
+        {#if modalRender}
+          {@render modalRender(modalContent)}
+        {:else}
+          {@render modalContent()}
+        {/if}
+      </div>
+    </div>
   </div>
 {/if}
 
-{#snippet panelContent()}
-    <div
-      class={panelCls}
-      bind:this={panelEl}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={hasTitle ? titleId : undefined}
-      aria-label={hasTitle ? undefined : ariaLabel}
-      style="inline-size: {effectiveWidth}{heightStyle ? `; block-size: ${heightStyle}` : ''}{panelTransform ? `; ${panelTransform}` : ''}"
-    >
-      {#if hasTitle || closable}
-        <!-- draggable：标题栏起拖。pointerdown 命令式绑 window move/up（见脚本）。
-             拖拽是鼠标增强，键盘/焦点陷阱不受影响；header role=presentation 与遮罩同理
-             （内部 h2/关闭按钮各自保留语义角色），满足静态元素交互的 a11y 规则。 -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <header
-          class="cd-modal__header"
-          class:cd-modal__header--draggable={draggable}
-          onpointerdown={draggable ? onHeaderPointerDown : undefined}
-        >
-          {#if hasTitle}
-            <h2 id={titleId} class="cd-modal__title">
-              {#if titleSnippet}
-                {@render titleSnippet()}
-              {:else}
-                {title}
-              {/if}
-            </h2>
-          {:else}
-            <span></span>
-          {/if}
-          {#if closable}
-            <button
-              type="button"
-              class="cd-modal__close"
-              aria-label={loc().t('Modal.close')}
-              onclick={cancel}
-            >
-              {#if closeIcon}
-                {@render closeIcon()}
-              {:else}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 3l10 10M13 3L3 13"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              {/if}
-            </button>
-          {/if}
-        </header>
+{#snippet modalContent()}
+  <div
+    class={contentCls}
+    bind:this={contentEl}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby={hasHeader ? titleId : undefined}
+    aria-label={hasHeader ? undefined : ariaLabel}
+    aria-describedby={bodyId}
+  >
+    {#if hasHeaderProp}
+      {#if header}
+        {@render header()}
       {/if}
+    {:else if title != null}
+      <!-- 默认头部：icon + Typography.Title + 关闭按钮（对齐 Semi renderHeader）。 -->
+      <div class="cd-modal-header">
+        {#if hasIcon}
+          <span class="cd-modal-icon-wrapper">{@render icon?.()}</span>
+        {/if}
+        <Title heading={5} class="cd-modal-title" id={titleId}>{title}</Title>
+        {#if closable}
+          {@render closeBtn()}
+        {/if}
+      </div>
+    {/if}
 
-      <div class={['cd-modal__body', modalContentClass].filter(Boolean).join(' ')} style={bodyStyle ?? undefined}>
+    <!-- body：有 header 时普通 body；无 header 时 body-wrapper（icon + body + 关闭），对齐 Semi renderBody。 -->
+    {#if hasHeader}
+      <div
+        class={['cd-modal-body', hasIcon ? 'cd-modal-withIcon' : ''].filter(Boolean).join(' ')}
+        id={bodyId}
+        style={bodyStyle}
+      >
         {@render children?.()}
       </div>
+    {:else}
+      <div class="cd-modal-body-wrapper">
+        {#if hasIcon}
+          <span class="cd-modal-icon-wrapper">{@render icon?.()}</span>
+        {/if}
+        <div class="cd-modal-body" id={bodyId} style={bodyStyle}>
+          {@render children?.()}
+        </div>
+        {#if closable}
+          {@render closeBtn()}
+        {/if}
+      </div>
+    {/if}
 
-      {#if footer !== null}
-        <footer class="cd-modal__footer" class:cd-modal__footer--fill={footerFill}>
-          {#if footer}
-            {@render footer({ ok, cancel })}
-          {:else}
-            {#if hasCancel !== false}
-              <Button onclick={cancel} loading={cancelLoading} {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button>
-            {/if}
-            <Button type={okType} onclick={ok} loading={confirmLoading} {...(okButtonProps ?? {})}>
-              {okText ?? loc().t('Modal.okText')}
-            </Button>
+    {#if footer !== null}
+      <div class="cd-modal-footer" class:cd-modal-footerfill={footerFill}>
+        {#if footer}
+          {@render footer({ ok, cancel })}
+        {:else}
+          {#if hasCancel}
+            <Button onclick={cancel} {...(cancelButtonProps ?? {})}
+              >{cancelText ?? loc().t('Modal.cancelText')}</Button
+            >
           {/if}
-        </footer>
+          <Button type={okBtnType} onclick={ok} loading={confirmLoading} {...(okButtonProps ?? {})}
+            >{okText ?? loc().t('Modal.okText')}</Button
+          >
+        {/if}
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet closeBtn()}
+  <IconButton
+    class="cd-modal-close"
+    type="tertiary"
+    theme="borderless"
+    size="small"
+    ariaLabel={loc().t('Modal.close')}
+    onclick={cancel}
+  >
+    {#snippet icon()}
+      {#if closeIcon}
+        {@render closeIcon()}
+      {:else}
+        <IconClose />
       {/if}
-    </div>
+    {/snippet}
+  </IconButton>
 {/snippet}
 
 <style>
+  /* —— 遮罩（对齐 Semi .semi-modal-mask）—— */
   .cd-modal-mask {
     position: fixed;
     inset: 0;
-    z-index: var(--cd-modal-z);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: var(--cd-modal-padding);
-    background: var(--cd-modal-mask-bg);
-    overflow: auto;
+    height: 100%;
+    z-index: var(--cd-modal-mask-z, var(--cd-z-modal-mask));
+    background-color: var(--cd-color-modal-mask-bg);
   }
-  .cd-modal-mask--centered {
-    align-items: center;
-  }
-  /* maskFixed=false：遮罩相对最近定位祖先铺满（配合 getContainer 局部弹层） */
-  .cd-modal-mask--absolute {
+  .cd-modal-mask-absolute {
     position: absolute;
   }
-  /* destroyOnClose=false 时关闭仅隐藏、保留 DOM 与内部状态 */
-  .cd-modal-mask--hidden {
-    display: none;
-  }
-  .cd-modal {
-    box-sizing: border-box;
-    max-inline-size: 90vw;
-    max-block-size: 90vh;
-    margin-block-start: var(--cd-spacing-modal-marginy);
-    padding: var(--cd-modal-padding);
-    background: var(--cd-modal-bg);
-    border-radius: var(--cd-modal-radius);
-    box-shadow: var(--cd-modal-shadow);
+
+  /* —— wrap（对齐 Semi .semi-modal-wrap）：滚动 + 遮罩点击 —— */
+  .cd-modal-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: var(--cd-modal-content-z, var(--cd-z-modal));
     overflow: auto;
+    outline: 0;
+    -webkit-overflow-scrolling: touch;
   }
-  .cd-modal-mask--centered .cd-modal {
-    margin-block-start: 0;
+  .cd-modal-wrap-absolute {
+    position: absolute;
   }
-  .cd-modal__header {
+  /* Semi：wrap-center 用 flex-start + margin:auto 实现「内容适配时居中、溢出时顶对齐可滚」 */
+  .cd-modal-wrap-center {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--cd-modal-header-gap);
-    margin-block-end: var(--cd-modal-header-gap);
-  }
-  .cd-modal__header--draggable {
-    cursor: move;
-    user-select: none;
-    touch-action: none;
-  }
-  /* 关闭按钮区域保留默认指针，避免落在「可拖拽」视觉上 */
-  .cd-modal__header--draggable .cd-modal__close {
-    cursor: pointer;
-  }
-  .cd-modal__title {
-    margin: 0;
-    color: var(--cd-modal-title-color);
-    font-size: var(--cd-modal-title-size);
-    font-weight: var(--cd-modal-title-weight);
-    line-height: 1.4;
-  }
-  .cd-modal__close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-modal-radius);
-    background: transparent;
-    color: var(--cd-modal-close-color);
-    cursor: pointer;
-  }
-  .cd-modal__close:hover {
-    background: var(--cd-modal-close-hover-bg);
-  }
-  .cd-modal__close:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-modal__body {
-    color: var(--cd-modal-body-color);
-  }
-  .cd-modal__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--cd-modal-footer-gap);
-    margin-block-start: var(--cd-modal-padding);
   }
 
-  .cd-modal--fullscreen {
-    inline-size: 100vw !important;
-    block-size: 100vh !important;
-    max-inline-size: none !important;
-    max-block-size: none !important;
-    margin: 0 !important;
-    border-radius: 0;
+  /* —— .cd-modal（尺寸壳，对齐 Semi .semi-modal）—— */
+  .cd-modal {
+    position: relative;
+    margin: var(--cd-spacing-modal-marginy) var(--cd-spacing-modal-marginx);
+    color: var(--cd-color-modal-main-text);
   }
-  .cd-modal-mask--no-mask {
-    background: transparent;
-    pointer-events: none;
+  .cd-modal-centered {
+    margin: auto;
   }
-  .cd-modal-mask--no-mask .cd-modal {
-    pointer-events: auto;
+  .cd-modal-small {
+    width: var(--cd-width-modal-small);
   }
-  .cd-modal__footer--fill {
-    justify-content: stretch;
+  .cd-modal-medium {
+    width: var(--cd-width-modal-medium);
   }
-  .cd-modal__footer--fill > :global(*) {
+  .cd-modal-large {
+    width: var(--cd-width-modal-large);
+  }
+  .cd-modal-full-width {
+    width: var(--cd-width-modal-full-width);
+  }
+
+  /* —— content（对齐 Semi .semi-modal-content）—— */
+  .cd-modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: var(--cd-width-modal-content);
+    height: var(--cd-height-modal-content);
+    padding: var(--cd-spacing-modal-content-paddingy) var(--cd-spacing-modal-content-paddingx);
+    background-color: var(--cd-color-modal-bg);
+    border: var(--cd-width-modal-content-border) solid var(--cd-color-modal-content-border);
+    border-radius: var(--cd-radius-modal-content);
+    background-clip: padding-box;
+    box-shadow: var(--cd-shadow-modal-content);
+    overflow: hidden;
+  }
+  .cd-modal-content-height-set {
+    height: 100%;
+  }
+  .cd-modal-content-fullscreen {
+    top: var(--cd-spacing-modal-content-fullscreen-top);
+    height: 100%;
+    border: none;
+    border-radius: var(--cd-radius-modal-content-fullscreen);
+  }
+
+  /* —— header（对齐 Semi .semi-modal-header）—— */
+  .cd-modal-header {
+    display: flex;
+    align-items: flex-start;
+    margin: var(--cd-spacing-modal-header-marginy) var(--cd-spacing-modal-header-marginx);
+    background-color: var(--cd-color-modal-header-bg);
+    color: var(--cd-color-modal-main-text);
+    border-bottom: var(--cd-width-modal-header-border) solid var(--cd-color-modal-header-border);
+  }
+  .cd-modal-header :global(.cd-modal-title) {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: var(--cd-font-modal-header-fontsize);
+    font-weight: var(--cd-font-modal-header-fontweight);
+  }
+
+  /* 关闭按钮定位：header/body-wrapper 里靠右（Semi 用 flex，close 在 title 后） */
+  .cd-modal-header :global(.cd-modal-close),
+  .cd-modal-body-wrapper :global(.cd-modal-close) {
+    flex: none;
+    margin-inline-start: auto;
+  }
+
+  /* —— icon-wrapper（命令式类型图标，对齐 Semi .semi-modal-icon-wrapper）—— */
+  .cd-modal-icon-wrapper {
+    display: inline-flex;
+    flex: none;
+    margin-right: var(--cd-spacing-modal-icon-wrapper-marginright);
+    width: var(--cd-width-icon-extra-large);
+    font-size: var(--cd-width-icon-extra-large);
+  }
+
+  /* —— body（对齐 Semi .semi-modal-body / -body-wrapper）—— */
+  .cd-modal-body-wrapper {
+    display: flex;
+    align-items: flex-start;
+    margin: var(--cd-spacing-modal-body-wrapper-marginy) var(--cd-spacing-modal-body-wrapper-marginx);
+  }
+  .cd-modal-body {
+    flex: 1 1 auto;
+  }
+  .cd-modal-withIcon {
+    margin-left: var(--cd-spacing-modal-content-withicon-marginleft);
+  }
+
+  /* —— footer（对齐 Semi .semi-modal-footer）—— */
+  .cd-modal-footer {
+    margin: var(--cd-spacing-modal-footer-marginy) var(--cd-spacing-modal-footer-marginx);
+    text-align: right;
+    background-color: var(--cd-color-modal-footer-bg);
+    border-top: var(--cd-width-modal-footer-border) solid var(--cd-color-modal-footer-border);
+    border-radius: var(--cd-radius-modal-footer);
+  }
+  .cd-modal-footer :global(.cd-btn) {
+    margin-left: var(--cd-spacing-modal-footer-button-marginleft);
+    margin-right: 0;
+  }
+  .cd-modal-footerfill {
+    display: flex;
+  }
+  .cd-modal-footerfill :global(.cd-btn) {
     flex: 1;
   }
 
+  /* keepDOM 且关闭：保留 DOM 仅隐藏 */
+  .cd-modal-hidden {
+    display: none;
+  }
+
+  /* —— 动画（对齐 Semi content/mask keyframe；reduced-motion 抑制）—— */
+  .cd-modal-motion .cd-modal-content {
+    animation: cd-modal-content-show 120ms cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  }
+  @keyframes cd-modal-content-show {
+    0% {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .cd-modal-mask,
-    .cd-modal {
+    .cd-modal-motion .cd-modal-content {
       animation: none;
     }
   }

@@ -296,11 +296,11 @@
     confirmLoading={submitting}
     onOk={handleOk}
     onCancel={handleCancel}
-    {...afterClose ? { onAfterClose: afterClose } : {}}
-    {...open !== undefined ? { open } : {}}
+    {...afterClose ? { afterClose } : {}}
+    {...open !== undefined ? { visible: open } : {}}
     {...title !== undefined ? { title } : {}}
     {...width !== undefined ? { width } : {}}
-    {...onOpenChange ? { onOpenChange } : {}}
+    {...onOpenChange ? { onVisibleChange: onOpenChange } : {}}
     {...className ? { class: className } : {}}
   >
     {@render body()}

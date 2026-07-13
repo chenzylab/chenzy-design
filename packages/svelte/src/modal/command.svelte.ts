@@ -18,9 +18,15 @@ export interface ModalCommandConfig {
   content?: string;
   okText?: string;
   cancelText?: string;
-  showCancel?: boolean;
+  okType?: 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
+  /** 是否显示取消按钮（对齐 Semi hasCancel；confirm 默认 true，其余默认 false） */
+  hasCancel?: boolean;
   width?: number | string;
   centered?: boolean;
+  okButtonProps?: Record<string, unknown>;
+  cancelButtonProps?: Record<string, unknown>;
+  /** 自定义类型图标（SVG 字符串或 Snippet 场景由渲染层处理；命令式传 svg 字符串） */
+  icon?: string;
   /** 返回 Promise 时确认按钮自动 loading，resolve 后关闭、reject 保持打开 */
   onOk?: () => void | Promise<unknown>;
   onCancel?: () => void;
@@ -94,7 +100,7 @@ export function destroyAll(): void {
 
 export const modal = {
   confirm: (config: ModalCommandConfig): ModalCommandHandle =>
-    spawn('confirm', { showCancel: true, ...config }),
+    spawn('confirm', { hasCancel: true, ...config }),
   info: (config: ModalCommandConfig): ModalCommandHandle => spawn('info', config),
   success: (config: ModalCommandConfig): ModalCommandHandle => spawn('success', config),
   warning: (config: ModalCommandConfig): ModalCommandHandle => spawn('warning', config),

@@ -17,10 +17,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "echo \"[icons] codegen placeholder — see specs/components/basic/Icon.spec.md\"",
-    "typecheck": "echo \"[icons] no ts yet\""
+    "build": "svelte-check --tsconfig ./tsconfig.json",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "peerDependencies": {
     "svelte": ">=5.0.0"
+  },
+  "devDependencies": {
+    "svelte-check": "^4.0.0"
   }
 }

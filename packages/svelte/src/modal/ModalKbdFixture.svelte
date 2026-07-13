@@ -14,9 +14,9 @@
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="trigger" onclick={() => (open = true)}>open modal</button>
   <Modal
-    {open}
+    visible={open}
     title="Delete item"
-    onOpenChange={(v) => (open = v)}
+    onVisibleChange={(v) => (open = v)}
     onCancel={() => (open = false)}
   >
     <p>Are you sure?</p>
