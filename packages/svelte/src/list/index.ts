@@ -1,21 +1,16 @@
 import List_ from './List.svelte';
-import ListItem_ from './ListItem.svelte';
-import ListMeta from './ListMeta.svelte';
+import ListItem from './ListItem.svelte';
 
-// List.Item 挂 Meta 子组件（List.Item.Meta），List 挂 Item（及 Item.Meta 镜像）。
-const ListItem: typeof ListItem_ & { Meta: typeof ListMeta } = Object.assign(ListItem_, {
-  Meta: ListMeta,
-});
-
+// List 挂 Item 子组件（List.Item），对齐 Semi `List.Item = ListItem`。
 export const List: typeof List_ & {
   Item: typeof ListItem;
-  Meta: typeof ListMeta;
-} = Object.assign(List_, { Item: ListItem, Meta: ListMeta });
+} = Object.assign(List_, { Item: ListItem });
 
-export { ListItem, ListMeta };
+export { ListItem };
 export { meta as listMeta } from './meta.js';
 export {
   getListContext,
   setListContext,
   type ListContext,
+  type ListGrid,
 } from './context.js';

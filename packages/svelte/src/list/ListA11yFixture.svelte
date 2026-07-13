@@ -1,38 +1,37 @@
 <!--
-  仅供 List.a11y.test.ts 使用的测试夹具：数据驱动 dataSource + renderItem Snippet。
-  selectable 时容器升级 role=listbox，行 role=option + aria-selected。
+  List a11y 夹具：数据驱动渲染真实 ul/li 列表（对齐 Semi 结构）。
+  renderItem 返回 <List.Item>，含 main/extra 模板结构，便于 axe 校验。
 -->
 <script lang="ts">
-  import { List } from './index.js';
+  import { List, ListItem } from './index.js';
 
   interface Props {
-    selectable?: false | 'single' | 'multiple';
     bordered?: boolean;
     header?: string;
-    defaultSelectedKeys?: (string | number)[];
+    footer?: string;
+    empty?: boolean;
   }
-  let {
-    selectable = false,
-    bordered = false,
-    header = undefined,
-    defaultSelectedKeys = [],
-  }: Props = $props();
+  let { bordered = false, header, footer, empty = false }: Props = $props();
 
-  const dataSource = [
-    { key: 'u1', title: 'Ada Lovelace' },
-    { key: 'u2', title: 'Alan Turing' },
-    { key: 'u3', title: 'Grace Hopper' },
-  ];
+  const data = $derived(
+    empty
+      ? []
+      : [
+          { key: 'u1', name: 'Alan Turing', role: 'Mathematician' },
+          { key: 'u2', name: 'Grace Hopper', role: 'Computer Scientist' },
+          { key: 'u3', name: 'Ada Lovelace', role: 'Analyst' },
+        ],
+  );
 </script>
 
 <List
-  {dataSource}
-  {selectable}
+  dataSource={data}
   {bordered}
-  {defaultSelectedKeys}
   {...header !== undefined ? { header } : {}}
+  {...footer !== undefined ? { footer } : {}}
 >
   {#snippet renderItem(item)}
-    <span>{(item as { title: string }).title}</span>
+    {@const d = item as { name: string; role: string }}
+    <ListItem main={d.name} extra={d.role} />
   {/snippet}
 </List>

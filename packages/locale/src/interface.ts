@@ -258,13 +258,8 @@ export interface Locale {
     announceSelected: string;
   };
   List: {
-    loadMore: string;
-    /** LiveAnnouncer：选中行，uses {label} */
-    selectAnnounce: string;
-    /** LiveAnnouncer：取消选中行，uses {label} */
-    deselectAnnounce: string;
-    /** selectable 模式 listbox 容器缺省可访问名 */
-    selectableLabel: string;
+    /** 空列表缺省展示文案（对齐 Semi List locale.emptyText） */
+    emptyText: string;
   };
   Calendar: {
     noEvents: string;

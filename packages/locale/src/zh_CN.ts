@@ -187,10 +187,7 @@ export const zh_CN: Locale = {
     announceSelected: '已选中 {label}',
   },
   List: {
-    loadMore: '加载更多',
-    selectAnnounce: '已选中 {label}',
-    deselectAnnounce: '已取消选中 {label}',
-    selectableLabel: '可选择列表',
+    emptyText: '暂无数据',
   },
   Calendar: {
     noEvents: '暂无日程',

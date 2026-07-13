@@ -198,7 +198,7 @@ export {
 } from './collapse/index.js';
 export { Collapsible, collapsibleMeta } from './collapsible/index.js';
 export { Timeline, TimelineItem, timelineMeta, type TimelineItemData } from './timeline/index.js';
-export { List, listMeta } from './list/index.js';
+export { List, ListItem, listMeta } from './list/index.js';
 export { Image, ImagePreview, PreviewInner, imageMeta } from './image/index.js';
 export type {
   PreviewProps as ImagePreviewProps,
