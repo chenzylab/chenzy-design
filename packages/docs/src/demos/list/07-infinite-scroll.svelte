@@ -1,6 +1,8 @@
 <script lang="ts">
-  // 滚动加载：严格对齐 Semi 机制——滚动到底自动加载下一批（threshold），
-  // 但每加载到第 4 的倍数批次时改为出现「显示更多」按钮（避免无节制滚动）；加载中底部显示 Spin。
+  // 滚动加载：严格对齐 Semi 机制（Semi 用 react-infinite-scroller）——
+  // count 为已加载批次数（对齐 countRef）；showLoadMore = count % 4 === 0。
+  // 首屏加载后 count=1 → 隐藏按钮、滚动到底自动加载；连续加载到 count=4（4%4===0）→ 显示「显示更多」按钮，
+  // 点击后又进入 3 批自动滚动……每 4 批一个按钮（避免无节制滚动）。加载中底部显示 Spin。
   import { List, Avatar, Button, Spin } from '@chenzy-design/svelte';
 
   type Row = { color: 'grey'; title: string };
@@ -14,17 +16,22 @@
   let dataSource = $state<Row[]>([]);
   let loading = $state(false);
   let hasMore = $state(true);
-  let batch = 0; // 已加载批次数（对齐 Semi countRef）
+  // 已加载批次计数（对齐 Semi countRef）：slice 用它做起点，加载成功后 +1；需响应式以驱动 showLoadMore。
+  let count = $state(0);
+  let started = false; // 防重复首屏加载（对齐 Semi useEffect 只跑一次）。
 
-  // 第 4 的倍数批次显示「显示更多」按钮（对齐 Semi showLoadMore = countRef % 4 === 0）。
-  const showLoadMore = $derived(batch % 4 === 0);
+  // 对齐 Semi：showLoadMore = countRef % 4 === 0（在 count 递增之后判定）。
+  // 首屏加载成功后 count=1（1%4≠0）→ 隐藏按钮、进入自动滚动；连续到 count=4（4%4===0）→ 显示按钮。
+  const showLoadMore = $derived(count % 4 === 0);
 
   function fetchData() {
+    if (loading) return;
     loading = true;
     setTimeout(() => {
-      const next = all.slice(batch * pageSize, batch * pageSize + pageSize);
+      // slice 用递增前的 count 作起点（对齐 Semi dataRef.slice(countRef*count, ...)）。
+      const next = all.slice(count * pageSize, count * pageSize + pageSize);
       dataSource = [...dataSource, ...next];
-      batch += 1;
+      count += 1; // 成功后递增（对齐 Semi countRef++）。
       loading = false;
       hasMore = next.length > 0;
     }, 1000);
@@ -32,11 +39,14 @@
 
   // 首次挂载即加载第一页（对齐 Semi useEffect(fetchData)）。
   $effect(() => {
-    if (dataSource.length === 0 && batch === 0) fetchData();
+    if (!started) {
+      started = true;
+      fetchData();
+    }
   });
 
   function onScroll(e: Event) {
-    // 仅在「自动加载」模式（非按钮模式）下滚动到底触发加载。
+    // 仅在「自动加载」模式（!showLoadMore，对齐 Semi InfiniteScroll hasMore=!loading&&hasMore&&!showLoadMore）滚动到底触发。
     if (loading || !hasMore || showLoadMore) return;
     const el = e.currentTarget as HTMLDivElement;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) fetchData();
