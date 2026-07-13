@@ -142,7 +142,9 @@ jobs:
               [ -d "$d" ] && PATHS="$PATHS $d"
             done
             if [ -n "$PATHS" ]; then
-              pnpm exec vitest run --project unit --project dom $PATHS
+              # --passWithNoTests：受影响包路径存在但无 unit/dom 测试文件时（如纯 docs 改动）
+              # 不应让 vitest 以 "No test files found" exit 1 阻断构建。
+              pnpm exec vitest run --project unit --project dom --passWithNoTests $PATHS
             else
               echo "no test path"
             fi
