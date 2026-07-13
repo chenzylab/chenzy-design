@@ -650,9 +650,7 @@
      使 <a>（block + 负 margin ink）布局与未包裹时完全一致（ink 对齐、缩略生效）。
      DOM 为 li > .cd-tooltip > .cd-tooltip__trigger > a，故用后代选择器覆盖两层。 */
   .cd-anchor__item :global(.cd-tooltip),
-  .cd-anchor__item :global(.cd-tooltip__trigger),
-  .cd-anchor__item :global(.cd-popover),
-  .cd-anchor__item :global(.cd-popover__trigger) {
+  .cd-anchor__item :global(.cd-tooltip__trigger) {
     display: block;
   }
   .cd-anchor__link {
