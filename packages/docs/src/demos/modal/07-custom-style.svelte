@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { Modal, Button } from '@chenzy-design/svelte';
+
+  let visible = $state(false);
+</script>
+
+<Button onclick={() => (visible = true)}>自定义对话框样式</Button>
+<Modal
+  title="自定义样式"
+  {visible}
+  centered
+  bodyStyle="overflow: auto; height: 200px;"
+  onOk={() => (visible = false)}
+  onCancel={() => (visible = false)}
+>
+  <p style="line-height: 1.8;">
+    chenzy-design 是对齐 Semi Design 的 Svelte 5 组件库。设计系统包含设计语言以及一整套可复用的前端组件，帮助设计师与开发者更容易地打造高质量的、用户体验一致的、符合设计规范的
+    Web 应用。
+  </p>
+  <p style="line-height: 1.8;">以用户中心、内容优先、设计人性化为设计理念，具有以下优势：</p>
+  <ul>
+    <li><p>以内容优先进行设计。</p></li>
+    <li><p>更容易地自定义主题。</p></li>
+    <li><p>适用国际化场景。</p></li>
+    <li><p>效率场景加入人性化关怀。</p></li>
+  </ul>
+</Modal>

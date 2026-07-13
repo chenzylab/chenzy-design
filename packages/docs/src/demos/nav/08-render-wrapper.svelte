@@ -27,8 +27,11 @@
 </script>
 
 {#snippet wrapper({ item, children }: { item: NavItemDef; isSubNav: boolean; children: Snippet })}
+  <!-- rel="external"：这些是演示 renderWrapper 路由包裹的示例占位链接（非本站真实页面），
+       加 external 让 SvelteKit 预渲染爬虫不跟踪，避免 /about 等占位路径 404 阻断构建。 -->
   <a
     href={routerMap[String(item.itemKey)] ?? '#'}
+    rel="external"
     style="text-decoration: none; color: inherit; display: block;"
     onclick={(e) => e.preventDefault()}
   >

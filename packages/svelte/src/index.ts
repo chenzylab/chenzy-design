@@ -351,10 +351,15 @@ export {
 export { Banner, bannerMeta, type BannerType } from './banner/index.js';
 export {
   Modal,
+  ModalContextHolder,
   modalMeta,
   modal,
+  useModal,
   type ModalCommandConfig,
   type ModalCommandHandle,
+  type ModalHookApi,
+  type ModalHolder,
+  type HookModalItem,
 } from './modal/index.js';
 export { Popconfirm, popconfirmMeta } from './popconfirm/index.js';
 export { Drawer, drawerMeta } from './drawer/index.js';

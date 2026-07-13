@@ -27,7 +27,7 @@
       <Pagination total={256} showTotal currentPage={1} pageSize={10} />
     </div>
     <div>
-      <Empty image="noData" />
+      <Empty />
     </div>
   </div>
 </LocaleProvider>

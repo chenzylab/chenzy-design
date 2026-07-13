@@ -34,6 +34,8 @@
     onEditCancel?: () => void;
     onExpand?: (expanded: boolean) => void;
     class?: string;
+    /** 透传到根元素的 id（对齐 Semi Typography.Title id，供 aria-labelledby 关联）。 */
+    id?: string;
     children?: Snippet;
   }
 
@@ -58,16 +60,19 @@
     onEditCancel,
     onExpand,
     class: className = '',
+    id,
     children,
   }: Props = $props();
 
   const element = $derived(component ?? `h${heading}`);
+  const hostAttrs = $derived(id ? { id } : undefined);
 </script>
 
 <TypographyBase
   {element}
   baseClass="cd-typography"
   extraClass={`cd-typography--title cd-typography--h${heading}`}
+  {hostAttrs}
   {type}
   {strong}
   {weight}

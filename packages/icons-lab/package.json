@@ -1,0 +1,30 @@
+{
+  "name": "@chenzy-design/icons-lab",
+  "version": "0.3.1",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "description": "chenzy-design 彩色图标集，对齐 Semi @douyinfe/semi-icons-lab（彩色、不可改色）",
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "svelte-check --tsconfig ./tsconfig.json",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": ">=5.0.0"
+  },
+  "devDependencies": {
+    "svelte-check": "^4.0.0"
+  }
+}

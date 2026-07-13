@@ -1,0 +1,18 @@
+<!-- IconWrenchStroked — 具名图标，对齐 Semi IconWrenchStroked（convertIcon(wrench_stroked, 'wrench_stroked')）。 -->
+<script lang="ts">
+  import Icon, { type IconSize } from './Icon.svelte';
+  import { wrenchStrokedSvg } from './svgs.js';
+
+  interface Props {
+    size?: IconSize;
+    spin?: boolean;
+    rotate?: number;
+    fill?: string;
+    class?: string;
+    style?: string;
+    [key: string]: unknown;
+  }
+  let { ...rest }: Props = $props();
+</script>
+
+<Icon svg={wrenchStrokedSvg} type="wrench_stroked" {...rest} />

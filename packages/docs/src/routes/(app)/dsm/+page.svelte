@@ -421,7 +421,7 @@
             </div>
             <Modal
               title="标题"
-              open={modalOpen}
+              visible={modalOpen}
               onOk={() => (modalOpen = false)}
               onCancel={() => (modalOpen = false)}
             >

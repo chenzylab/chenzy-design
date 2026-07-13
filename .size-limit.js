@@ -67,7 +67,7 @@ const components = [
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
   ['drawer', '{ Drawer }', '4.5 KB'],
-  ['modal', '{ modal }', '5.85 KB'],
+  ['modal', '{ modal }', '6.2 KB'],
   ['notification', '{ notification }', '5.5 KB'],
   ['popconfirm', '{ Popconfirm }', '4.8 KB'],
   ['progress', '{ Progress }', '3.8 KB'],

@@ -1,0 +1,18 @@
+<!-- IconRotationStroked — 具名图标，对齐 Semi IconRotationStroked（convertIcon(rotation_stroked, 'rotation_stroked')）。 -->
+<script lang="ts">
+  import Icon, { type IconSize } from './Icon.svelte';
+  import { rotationStrokedSvg } from './svgs.js';
+
+  interface Props {
+    size?: IconSize;
+    spin?: boolean;
+    rotate?: number;
+    fill?: string;
+    class?: string;
+    style?: string;
+    [key: string]: unknown;
+  }
+  let { ...rest }: Props = $props();
+</script>
+
+<Icon svg={rotationStrokedSvg} type="rotation_stroked" {...rest} />

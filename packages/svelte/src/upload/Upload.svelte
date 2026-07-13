@@ -1686,12 +1686,12 @@
 
 {#if crop}
   <Modal
-    open={cropOpen}
+    visible={cropOpen}
     title={cropConfig.modalTitle ?? loc().t('Upload.cropTitle')}
     confirmLoading={cropConfirming}
     onOk={confirmCrop}
     onCancel={cancelCrop}
-    onOpenChange={(o) => {
+    onVisibleChange={(o) => {
       // 点遮罩/Esc 关闭时也视为取消。
       if (!o && cropOpen) cancelCrop();
     }}
