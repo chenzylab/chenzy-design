@@ -737,11 +737,18 @@
     {:else}
       <Tooltip
         content={tooltipEnabled ? tooltipContent : ''}
-        placement={(tooltipOpts.placement ?? 'top') as never}
-        theme={tooltipOpts.theme ?? 'dark'}
-        maxWidth={tooltipOpts.maxWidth ?? 300}
-        popClass={tooltipOpts.className ?? ''}
-        popStyleExtra={tooltipOpts.style ?? ''}
+        position={(tooltipOpts.position ?? tooltipOpts.placement ?? 'top') as never}
+        class={tooltipOpts.className ?? ''}
+        style={[
+          typeof tooltipOpts.maxWidth === 'number'
+            ? `max-inline-size:${tooltipOpts.maxWidth}px`
+            : tooltipOpts.maxWidth
+              ? `max-inline-size:${tooltipOpts.maxWidth}`
+              : '',
+          tooltipOpts.style ?? '',
+        ]
+          .filter(Boolean)
+          .join(';')}
         disabled={!tooltipEnabled}
       >
         {@render hostNode()}

@@ -974,7 +974,7 @@
           {#if showRestTagsPopover}
             <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
               {@render restTrigger(hiddenTagCount)}
-              {#snippet contentSlot()}
+              {#snippet content()}
                 {@render restTagsContent(hiddenOpts)}
               {/snippet}
             </Popover>

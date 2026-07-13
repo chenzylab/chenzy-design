@@ -389,7 +389,7 @@
         <!-- Popover 渲染为 span，须包在 <li> 内保持 <ul> 合法子；触发器内容用 span（非 li），
              避免 <span><li> 非法嵌套导致 .cd-popover 布局塌陷、浮层定位到 (0,0)。 -->
         <li class="cd-pagination__item-wrap">
-          <Popover position={popoverSide} align="center" trigger="hover" showArrow={false}>
+          <Popover position={popoverSide} trigger="hover" showArrow={false}>
             {#snippet content()}{@render restList(allPageNumbers)}{/snippet}
             <span class="cd-pagination__item cd-pagination__item--small">
               {nf.format(current)}/{nf.format(pageCount)}

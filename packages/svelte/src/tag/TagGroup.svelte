@@ -134,7 +134,7 @@
   {#if showN}
     {#if showPopover && restTags.length > 0}
       <Popover trigger="hover" {...(popoverProps ?? {})}>
-        {#snippet contentSlot()}
+        {#snippet content()}
           <div class="cd-taggroup__rest" role="group" aria-label={restLabel}>
             {#each restTags as item, i (item.tagKey ?? `rest-${i}`)}
               <Tag {...tagCommon()} {...tagProps(item)}>{item.children ?? ''}</Tag>

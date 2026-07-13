@@ -163,7 +163,14 @@ export type {
 } from './avatar/index.js';
 export { Badge, badgeMeta } from './badge/index.js';
 export { Card, CardGroup, cardMeta, cardGroupMeta } from './card/index.js';
-export { Tooltip, tooltipMeta } from './tooltip/index.js';
+export {
+  Tooltip,
+  tooltipMeta,
+  type Position,
+  POSITION_SET,
+  positionToPlacement,
+  placementToPosition,
+} from './tooltip/index.js';
 export { Popover, popoverMeta } from './popover/index.js';
 export { Empty, emptyMeta } from './empty/index.js';
 export {

@@ -530,18 +530,10 @@
                     {/if}
                   {/snippet}
                   {#if remaining > 0}
-                    {#snippet cardTitle()}
-                      <div class="cd-calendar-month-event-card-header-info">
-                        <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(cell.date)}</div>
-                        <div class="cd-calendar-month-event-card-header-info-date">{dayString(cell.date)}</div>
-                      </div>
-                    {/snippet}
                     <Popover
                       trigger="click"
                       position="bottom"
-                      showCloseButton
-                      title={cardTitle}
-                      onOpenChange={(open) => { if (!open) onClose?.(new Event('close')); }}
+                      onVisibleChange={(open) => { if (!open) onClose?.(new Event('close')); }}
                     >
                       <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                       <li
@@ -568,6 +560,12 @@
                       </li>
                       {#snippet content()}
                         <div class="cd-calendar-month-event-card">
+                          <div class="cd-calendar-month-event-card-header">
+                            <div class="cd-calendar-month-event-card-header-info">
+                              <div class="cd-calendar-month-event-card-header-info-weekday">{weekdayLongFmt.format(cell.date)}</div>
+                              <div class="cd-calendar-month-event-card-header-info-date">{dayString(cell.date)}</div>
+                            </div>
+                          </div>
                           <div class="cd-calendar-month-event-card-body">
                             <ul class="cd-calendar-month-event-card-list">
                               {#each all as ev (ev.key)}

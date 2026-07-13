@@ -8,24 +8,22 @@
   import Tooltip from './Tooltip.svelte';
 
   interface Props {
-    open?: boolean;
+    visible?: boolean;
     content?: string;
-    status?: 'default' | 'warning' | 'error';
     trigger?: 'hover' | 'focus' | 'click' | 'custom';
     locale?: string;
   }
 
   let {
-    open = false,
+    visible = false,
     content = 'More info',
-    status = 'default',
     trigger = 'custom',
     locale = 'en_US',
   }: Props = $props();
 </script>
 
 <LocaleProvider {locale}>
-  <Tooltip {open} {content} {status} {trigger}>
+  <Tooltip {visible} {content} {trigger}>
     <button type="button">Hover me</button>
   </Tooltip>
 </LocaleProvider>

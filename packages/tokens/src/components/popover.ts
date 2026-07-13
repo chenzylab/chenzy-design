@@ -44,4 +44,21 @@ export const popoverTokens = {
 
   // —— Filter ——
   'filter-popover-bg': { value: 'none', category: 'other', label: '背景滤镜', usage: '背景滤镜' },
+
+  // —— chenzy-design Popover 实际消费的补充 token（组件消费），值对齐 Semi ——
+  // Semi Popover 无 size 档 / 无 popover-color / 无 popover-arrow-size 方块（箭头走 SVG，尺寸复用
+  // width/height-popover-arrow）；这些越界 token 已移除。背景对齐 Semi $color-popover-bg-default = bg-3。
+  'popover-bg': { value: 'var(--cd-color-popover-bg-default)', category: 'color', label: 'Popover 背景', usage: 'Popover 浮层背景（组件消费，对齐 Semi bg-3）' },
+  'popover-border': { value: 'var(--cd-color-popover-border-default)', category: 'color', label: 'Popover 描边', usage: 'Popover 浮层描边（组件消费，对齐 Semi border）' },
+  'popover-radius': { value: 'var(--cd-radius-popover)', category: 'radius', label: 'Popover 圆角', usage: 'Popover 圆角（组件消费，对齐 Semi radius-medium）' },
+  'popover-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: 'Popover 阴影', usage: 'Popover 浮层阴影（组件消费，对齐 Semi shadow-elevated）' },
+  'popover-z': { value: 'var(--cd-z-popover)', category: 'other', label: 'Popover 层级', usage: 'Popover z-index（组件消费，对齐 Semi 1030）' },
+  // 带箭头浮层内边距（Semi $spacing-popover_withArrow-padding = 12px）；标题内边距（Semi 8px）。
+  'popover-witharrow-padding': { value: 'var(--cd-spacing-popover-witharrow-padding)', category: 'spacing', label: '带箭头内边距', usage: '带箭头气泡卡片内边距（组件消费，对齐 Semi 12px）' },
+  'popover-title-padding': { value: 'var(--cd-spacing-popover-title-padding)', category: 'spacing', label: '标题内边距', usage: '气泡卡片标题内边距（组件消费，对齐 Semi 8px）' },
+  'popover-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题文字色', usage: 'Popover 标题文字色（组件消费）' },
+  'popover-arrow-bg': { value: 'var(--cd-color-popover-arrow-bg)', category: 'color', label: '箭头背景', usage: 'Popover 箭头背景（组件消费，对齐 Semi bg-3）' },
+  'popover-arrow-border': { value: 'var(--cd-color-popover-arrow-border)', category: 'color', label: '箭头描边', usage: 'Popover 箭头描边（组件消费，对齐 Semi border）' },
+  'popover-motion-duration': { value: 'var(--cd-motion-duration-fast)', category: 'animation', label: '动画时长', usage: 'Popover 显隐动画时长（组件消费）' },
+  'popover-motion-easing': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '动画曲线', usage: 'Popover 显隐动画曲线（组件消费）' },
 } satisfies TokenGroup;

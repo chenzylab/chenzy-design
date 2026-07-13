@@ -10,7 +10,7 @@
 
 <LocaleProvider locale="en_US">
   <Popover trigger="click" title="More info">
-    {#snippet contentSlot()}
+    {#snippet content()}
       <button type="button" data-testid="pop-btn">action</button>
     {/snippet}
     Open

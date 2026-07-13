@@ -51,7 +51,7 @@
 </div>
 
 {#snippet renderTooltip(fullText: string, trigger: import('svelte').Snippet)}
-  <Tooltip content={`完整原文：${fullText}`} theme="light">
+  <Tooltip content={`完整原文：${fullText}`}>
     {@render trigger()}
   </Tooltip>
 {/snippet}

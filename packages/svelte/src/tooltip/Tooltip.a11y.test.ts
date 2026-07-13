@@ -9,13 +9,13 @@ import Fixture from './TooltipA11yFixture.svelte';
 
 describe('Tooltip a11y', () => {
   it('收起：仅触发器可见，无浮层，无 axe violations', async () => {
-    const { container } = render(Fixture, { props: { open: false } });
+    const { container } = render(Fixture, { props: { visible: false } });
     expect(document.querySelector('[role="tooltip"]')).toBeNull();
     await expectNoAxeViolations(container);
   });
 
-  it('open=true：浮层 role=tooltip + 触发器 aria-describedby 指向浮层，无 axe violations', async () => {
-    render(Fixture, { props: { open: true, content: 'Helpful hint' } });
+  it('visible=true：浮层 role=tooltip + 触发器 aria-describedby 指向浮层，无 axe violations', async () => {
+    render(Fixture, { props: { visible: true, content: 'Helpful hint' } });
 
     const tip = document.querySelector('[role="tooltip"]') as HTMLElement | null;
     expect(tip).not.toBeNull();
@@ -25,16 +25,6 @@ describe('Tooltip a11y', () => {
     const describedby = trigger?.getAttribute('aria-describedby');
     expect(describedby).toBeTruthy();
     expect(describedby).toBe(tip?.id);
-
-    await expectNoAxeViolations(document.body);
-  });
-
-  it('status=error：语义图标有 role=img + 可访问名（locale），无 axe violations', async () => {
-    render(Fixture, { props: { open: true, content: 'Invalid', status: 'error' } });
-
-    const statusIcon = document.querySelector('.cd-tooltip__status') as HTMLElement | null;
-    expect(statusIcon?.getAttribute('role')).toBe('img');
-    expect(statusIcon?.getAttribute('aria-label')).toBeTruthy();
 
     await expectNoAxeViolations(document.body);
   });

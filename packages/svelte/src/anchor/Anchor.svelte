@@ -504,7 +504,7 @@
   // 未传 position 时不下发 side/align（走 Popover 自身默认）；exactOptionalPropertyTypes
   // 下不能传 undefined，故用对象在缺省时省略键，再展开给浮层组件。
   const tooltipProps = $derived<Record<string, unknown>>(
-    position ? { placement: position } : {},
+    position ? { position } : {},
   );
   const popoverProps = $derived.by<Record<string, unknown>>(() => {
     if (!position) return {};
