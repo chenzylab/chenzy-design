@@ -9,9 +9,5 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <Popconfirm title="Delete this item?" content="This cannot be undone.">
-    {#snippet trigger()}
-      Delete
-    {/snippet}
-  </Popconfirm>
+  <Popconfirm title="Delete this item?" content="This cannot be undone.">Delete</Popconfirm>
 </LocaleProvider>

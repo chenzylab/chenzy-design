@@ -1,12 +1,13 @@
 /**
- * createOverflowList helpers — framework-agnostic overflow-collapse math.
- * Pure functions only: given measured item widths + container width, compute
- * how many leading items fit before the rest collapse into a "+N" node. No DOM,
- * no framework deps, no internal mutable state — the svelte layer measures DOM
- * (ResizeObserver) and feeds widths in. See specs/components/show/OverflowList.spec.md §3.
- * The fit math is axis-agnostic — horizontal/vertical only changes which DOM
- * dimension the svelte layer measures — and `computeOverflowPartition` adds
- * `collapseFrom: 'start' | 'end'` for head- vs tail-collapse.
+ * Overflow-collapse math — framework-agnostic pure functions.
+ * Given measured item/tab widths + container width, compute how many leading
+ * items fit before the rest collapse into a "+N" (OverflowList) or "more"
+ * dropdown (Tabs) node. No DOM, no framework deps, no internal mutable state.
+ *
+ * NOTE: The Svelte OverflowList strictly mirrors Semi and measures/collapses
+ * inline (per-item ResizeObserver accumulation), so it no longer consumes these
+ * helpers. `computeVisibleCount` is retained only as the shared leading-fit core
+ * for `computeTabOverflow` (Tabs dropdown-overflow).
  */
 
 export interface OverflowComputeInput {
@@ -85,71 +86,6 @@ export function computeVisibleCount(input: OverflowComputeInput): OverflowComput
   return { visibleCount: visible, overflowCount: count - visible };
 }
 
-/** which end the overflow node collapses from: trailing (`end`) or leading (`start`) */
-export type CollapseFrom = 'end' | 'start';
-
-export interface OverflowPartitionInput extends OverflowComputeInput {
-  /** collapse trailing items (`end`, default) or leading items (`start`) */
-  collapseFrom?: CollapseFrom;
-}
-
-export interface OverflowPartitionResult extends OverflowComputeResult {
-  /** indexes rendered visibly, in document order */
-  visibleIndexes: number[];
-  /** indexes collapsed into the overflow node, in document order */
-  overflowIndexes: number[];
-}
-
-/**
- * Partition items into visible + overflow honoring `collapseFrom`. The fit math
- * is direction-agnostic (the svelte layer feeds the main-axis sizes regardless
- * of horizontal/vertical), so the same {@link computeVisibleCount} drives both
- * ends — for `start` we mirror the size array, fit the same number of items, and
- * map the kept window back to the trailing positions.
- *
- * `end`  → visible = leading [0..k), overflow = trailing [k..count)
- * `start`→ visible = trailing [count-k..count), overflow = leading [0..count-k)
- *
- * `alwaysVisible` indexes and `minVisibleItems` raise the visible-count floor in
- * both directions (mirrored for `start`).
- */
-export function computeOverflowPartition(
-  input: OverflowPartitionInput,
-): OverflowPartitionResult {
-  const { itemSizes, collapseFrom = 'end', alwaysVisible = [] } = input;
-  const count = itemSizes.length;
-
-  if (collapseFrom === 'end') {
-    const { visibleCount, overflowCount } = computeVisibleCount(input);
-    const visibleIndexes: number[] = [];
-    const overflowIndexes: number[] = [];
-    for (let i = 0; i < count; i += 1) {
-      if (i < visibleCount) visibleIndexes.push(i);
-      else overflowIndexes.push(i);
-    }
-    return { visibleCount, overflowCount, visibleIndexes, overflowIndexes };
-  }
-
-  // start: mirror so the same leading-fit math keeps the *trailing* window.
-  const mirroredSizes = [...itemSizes].reverse();
-  // mirror alwaysVisible indexes too (i → count-1-i).
-  const mirroredAlways = alwaysVisible.map((i) => count - 1 - i);
-  const { visibleCount } = computeVisibleCount({
-    ...input,
-    itemSizes: mirroredSizes,
-    alwaysVisible: mirroredAlways,
-  });
-  const overflowCount = count - visibleCount;
-  const firstVisible = overflowCount; // [overflowCount .. count) stay visible
-  const visibleIndexes: number[] = [];
-  const overflowIndexes: number[] = [];
-  for (let i = 0; i < count; i += 1) {
-    if (i < firstVisible) overflowIndexes.push(i);
-    else visibleIndexes.push(i);
-  }
-  return { visibleCount, overflowCount, visibleIndexes, overflowIndexes };
-}
-
 /**
  * Tabs dropdown-overflow partition input. Given measured tab sizes + the bar's
  * available main-axis size, decide which leading tabs render inline and which
@@ -221,24 +157,4 @@ export function computeTabOverflow(input: TabOverflowInput): TabOverflowResult {
     else overflowIndexes.push(i);
   }
   return { visibleIndexes, overflowIndexes };
-}
-
-/**
- * Apply hysteresis: keep the previous visibleCount unless the new computation
- * differs by enough to cross the threshold band, preventing flicker at the
- * boundary width. Returns the count to actually render.
- */
-export function applyHysteresis(
-  prev: number,
-  next: number,
-  prevContainerSize: number,
-  containerSize: number,
-  threshold: number,
-): number {
-  // Only damp tiny size wobbles; a real resize (beyond threshold) always applies.
-  if (Math.abs(containerSize - prevContainerSize) <= threshold && next !== prev) {
-    // within the dead-band: prefer keeping more items visible (avoid collapse churn)
-    return Math.max(prev, next);
-  }
-  return next;
 }

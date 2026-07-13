@@ -1449,7 +1449,7 @@
                 <!-- showRestTagsPopover：hover +N 用本库 Popover 展示折叠掉的剩余 Tag（restTagsPopoverProps 可覆盖默认 props） -->
                 <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
                   {@render restTagsTrigger()}
-                  {#snippet contentSlot()}
+                  {#snippet content()}
                     <span class="cd-tree-select__rest-tags">
                       {#each hiddenTagNodes as node (node.key)}
                         <Tag

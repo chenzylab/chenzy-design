@@ -13,3 +13,6 @@ test-results/
 
 # Claude Code runtime
 .claude/scheduled_tasks.lock
+
+# Claude Code 个人会话/记忆目录（团队 skills 与 settings.json 仍追踪）
+.claude/projects/

@@ -25,7 +25,9 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 
 export const demos: DemoEntry[] = [
   entry('01-basic.svelte', '基础用法', '悬停触发元素时展示 content 提示文字，默认出现在顶部。'),
-  entry('02-placement.svelte', '弹出位置', '支持上下左右及各角落共 8 个方位，通过 placement 控制。'),
-  entry('03-theme.svelte', '主题', '支持 dark（深色，默认）与 light（浅色）两种主题。'),
-  entry('04-status.svelte', '状态', '设置 status 在提示内容前显示对应语义图标，适合警告或错误提示。'),
+  entry('02-placement.svelte', '位置', '通过 position 配置 12 个弹出方位与对齐位置。'),
+  entry('03-arrow-point-at-center.svelte', '指向元素中心', 'arrowPointAtCenter（默认 true）时小三角始终指向元素中心；设为 false 则浮层与元素边缘对齐。'),
+  entry('04-trigger.svelte', '触发时机', '通过 trigger 配置 hover/focus/click/custom；custom 配合 visible 完全受控。'),
+  entry('05-condition.svelte', 'condition 条件触发', 'condition={false} 时不响应 hover/click/focus 触发（custom 不受影响）。'),
+  entry('06-custom-style.svelte', '覆盖特定样式', '通过 class、style 为浮层配置特定样式，例如覆盖默认的 max-width。'),
 ];

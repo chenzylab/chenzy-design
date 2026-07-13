@@ -283,7 +283,7 @@
      middle 截断：JS action 二分裁剪为「头…尾」（对齐 Semi ellipsisPos:'middle'）。 -->
 {#snippet maybeTooltip(route: BreadcrumbRoute, index: number, last: boolean)}
   {#if tooltipCfg.enabled}
-    <Tooltip content={route.name ?? ''} placement="top">
+    <Tooltip content={route.name ?? ''} position="top">
       <span
         class="cd-breadcrumb__ellipsis-wrap"
         class:cd-breadcrumb__ellipsis-wrap--middle={tooltipCfg.ellipsisPos === 'middle'}
@@ -319,9 +319,9 @@
               <!-- renderMore 接管折叠区域渲染，参数为被折叠路由列表。 -->
               {@render renderMore(cell.collapsed)}
             {:else if moreType === 'popover'}
-              <Popover trigger="click" position="bottom" align="start">
+              <Popover trigger="click" position="bottomLeft">
                 {@render moreTrigger(cell.count, true)}
-                {#snippet contentSlot()}
+                {#snippet content()}
                   <!-- 折叠节点展开浮层：WAI-ARIA APG menu 角色，项为 menuitem。 -->
                   <ul class="cd-breadcrumb__more-list" role="menu">
                     {#each cell.collapsed as c (c.index)}

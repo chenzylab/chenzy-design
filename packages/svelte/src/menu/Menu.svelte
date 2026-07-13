@@ -19,7 +19,7 @@
   import MenuPopupNode from './MenuPopupNode.svelte';
   import { deriveMenuSemantics, isDivider, isGroup } from './types.js';
   import type { Snippet } from 'svelte';
-  import type { Placement } from '@chenzy-design/core';
+  import type { Position as TooltipPosition } from '../tooltip/placement.js';
   import type { MenuItemDef, MenuItemNode, MenuKey, MenuPurpose } from './types.js';
 
   type Mode = 'vertical' | 'inline' | 'horizontal';
@@ -29,8 +29,7 @@
 
   interface TooltipProps {
     content?: string;
-    position?: Placement;
-    theme?: 'dark' | 'light';
+    position?: TooltipPosition;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
   }
@@ -100,7 +99,7 @@
     ariaLabel?: string;
     /**
      * 折叠模式（inlineCollapsed=true）下顶层项的 Tooltip 配置。
-     * content 默认为项 label；position→placement、theme、mouseEnterDelay、mouseLeaveDelay 透传给 Tooltip。
+     * content 默认为项 label；position、mouseEnterDelay、mouseLeaveDelay 透传给 Tooltip。
      */
     tooltipProps?: TooltipProps;
     /**

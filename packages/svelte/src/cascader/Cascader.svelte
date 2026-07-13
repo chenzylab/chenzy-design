@@ -1254,7 +1254,7 @@
                   >
                     <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
                   </span>
-                  {#snippet contentSlot()}
+                  {#snippet content()}
                     <div class="cd-cascader__rest-tags">
                       {#each hiddenTagPaths as leaf (leaf.path.join('/'))}
                         <Tag

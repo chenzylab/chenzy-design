@@ -737,11 +737,18 @@
     {:else}
       <Tooltip
         content={tooltipEnabled ? tooltipContent : ''}
-        placement={(tooltipOpts.placement ?? 'top') as never}
-        theme={tooltipOpts.theme ?? 'dark'}
-        maxWidth={tooltipOpts.maxWidth ?? 300}
-        popClass={tooltipOpts.className ?? ''}
-        popStyleExtra={tooltipOpts.style ?? ''}
+        position={(tooltipOpts.position ?? tooltipOpts.placement ?? 'top') as never}
+        class={tooltipOpts.className ?? ''}
+        style={[
+          typeof tooltipOpts.maxWidth === 'number'
+            ? `max-inline-size:${tooltipOpts.maxWidth}px`
+            : tooltipOpts.maxWidth
+              ? `max-inline-size:${tooltipOpts.maxWidth}`
+              : '',
+          tooltipOpts.style ?? '',
+        ]
+          .filter(Boolean)
+          .join(';')}
         disabled={!tooltipEnabled}
       >
         {@render hostNode()}
@@ -941,16 +948,12 @@
      会让被包裹宿主的 max-inline-size:100% 退化为内容宽（永不溢出、tooltip 永不触发）。
      当包裹的是省略宿主时，让包裹层撑满父容器宽度，使宽度约束正确传递到宿主。 */
   :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis)),
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi)),
-  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis)),
-  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis-multi)) {
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi)) {
     display: block;
     max-inline-size: 100%;
   }
   :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis) > .cd-tooltip__trigger),
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi) > .cd-tooltip__trigger),
-  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis) > .cd-popover__trigger),
-  :global(.cd-popover:has(> .cd-popover__trigger > .cd-typography--ellipsis-multi) > .cd-popover__trigger) {
+  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography--ellipsis-multi) > .cd-tooltip__trigger) {
     display: block;
     max-inline-size: 100%;
   }

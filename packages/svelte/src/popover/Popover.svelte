@@ -1,647 +1,269 @@
 <!--
-  Popover — see specs/components/show/Popover.spec.md
-  基础子集：hover/click/focus/custom 触发、position+align（映射 12 方位）、箭头、间距、标题。
-  定位：use:floating action portal 到 getPopupContainer()（默认 body）+ position:fixed，
-  core computePosition 计算坐标 + autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
-  custom：显隐完全由受控 open + onOpenChange 控制，组件不自动响应 hover/click/focus，
-  也不启用 useDismiss 外部点击/Esc 关闭——由调用方自行决定何时显隐。
-
-  spec §4 浮层 prop（复用库内浮层基建，红线 #3 命令式 + cleanup）：
-  - getPopupContainer/zIndex：floating action getContainer（回退 ConfigProvider 全局，再回退 body）+ 内联 z-index。
-  - trapFocus/returnFocus/rememberFocus：useFocusTrap（trapTab/returnFocus/rememberFocus 选项），关闭归还触发器。
-  - closeOnEsc/closeOnOutsideClick：useDismiss（esc/outsideClick 分别可关）。
-  - lockScroll：useScrollLock（默认关闭，非阻断）。
-  - destroyOnClose：关闭即卸载浮层 DOM（{#if}），重开重建；默认 false 首开后保留（--hidden 隐藏）。
-  - stopPropagation：浮层内 click/keydown/pointerdown 停止冒泡。
-  - size：small/default/large 内边距档（token 驱动）。
-  - motion：进场过渡开关/配置，reduced-motion 退化。
+  Popover — 气泡卡片（严格对齐 Semi Design semi-ui/popover）。
+  架构：Popover 封装 Tooltip（对齐 Semi `Popover extends Tooltip`）——定位/触发/焦点/
+       dismiss/箭头/12方位全部委托 Tooltip，自身仅：
+       - variant='popover' 切浅色浮层视觉（bg-3 白底 + 阴影）
+       - content={popCard} 渲染 .cd-popover > (.cd-popover-title?) + .cd-popover-content
+         （承 Semi renderPopCard 的 .popover / .popover-content 结构）
+       - role 派生：click/custom → dialog（承可交互富内容）；hover/focus → tooltip
+       - spacing 默认按 showArrow 切换：4（无箭头）/ 10（有箭头，对齐 Semi SPACING/SPACING_WITH_ARROW）
+       - content 支持函数形态：({ initialFocusRef }) => ...，打开时自动聚焦（对齐 Semi 2.8.0）
+  注意事项同 Semi：Popover 需将事件监听器应用到 children，children 应能承载事件与定位。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { untrack } from 'svelte';
-  import {
-    useId,
-    useDismiss,
-    useFocusTrap,
-    useScrollLock,
-    makePlacement,
-    parsePlacement,
-    type Placement,
-    type Side,
-    type Align,
-  } from '@chenzy-design/core';
-  import { getGlobalPopupContainer } from '../config-provider/index.js';
+  import { useId } from '@chenzy-design/core';
+  import { Tooltip, type Position } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
-  import { floating } from '../_floating/use-floating.js';
 
-  type TriggerKind = 'hover' | 'click' | 'focus' | 'custom';
-  type Position = 'top' | 'bottom' | 'left' | 'right';
-  type Size = 'small' | 'default' | 'large';
+  type TriggerKind = 'hover' | 'focus' | 'click' | 'custom';
 
-  /** motion 配置：传 number 覆盖时长（ms），传 false 关闭过渡 */
-  interface MotionConfig {
-    /** 过渡时长（ms），缺省走 token --cd-popover-motion-duration */
-    duration?: number;
+  /** content 带参 Snippet 入参：将 initialFocusRef action 绑定到浮层内可聚焦元素，打开时自动聚焦。
+   *  （对齐 Semi content 函数形态 ({ initialFocusRef }) => …，Svelte 中即带参数 Snippet） */
+  interface RenderContentProps {
+    initialFocusRef: (node: HTMLElement) => void;
+  }
+
+  /** 箭头颜色定制（对齐 Semi arrowStyle）。 */
+  interface ArrowStyle {
+    borderColor?: string;
+    backgroundColor?: string;
+    borderOpacity?: string | number;
   }
 
   interface Props {
-    content?: string | Snippet;
+    /**
+     * 浮层内容：文本 / Snippet。Snippet 可选接收 { initialFocusRef } 入参
+     * （对齐 Semi content 函数形态 ({ initialFocusRef }) => …）：绑定到浮层内可聚焦元素，
+     * 打开时自动聚焦。不声明参数的普通内容 Snippet 也可直接传（多余入参被忽略）。
+     */
+    content?: string | Snippet<[RenderContentProps]>;
+    /** 标题，提供则渲染 .cd-popover-title 标题区与下边框 */
     title?: string | Snippet;
-    open?: boolean;
-    defaultOpen?: boolean;
+    /** 受控显隐（配合 trigger='custom'），对齐 Semi visible */
+    visible?: boolean;
+    /** 非受控初始显隐 */
+    defaultVisible?: boolean;
+    /** 触发方式；custom 完全受控（仅 visible + onVisibleChange） */
     trigger?: TriggerKind;
+    /** 弹出方位（Semi 12 方位命名 + 2 Over），默认 bottom */
     position?: Position;
-    align?: Align;
     /** 视口溢出时翻转到对侧 */
     autoAdjustOverflow?: boolean;
+    /** 是否显示箭头，默认 false（对齐 Semi Popover） */
     showArrow?: boolean;
-    /** start/end 对齐时箭头指向触发器中心（默认 false：贴对齐边） */
+    /** 箭头是否指向触发元素中心（需 showArrow），默认 true */
     arrowPointAtCenter?: boolean;
-    spacing?: number;
+    /** 箭头颜色定制（border/bg/opacity） */
+    arrowStyle?: ArrowStyle;
+    /** 浮层与触发器距离(px)；缺省按 showArrow 取 10 / 4（对齐 Semi） */
+    spacing?: number | { x: number; y: number };
+    /** 计算溢出翻转时增加的冗余安全边距（对齐 Semi margin） */
+    margin?: number | { marginLeft?: number; marginTop?: number; marginRight?: number; marginBottom?: number };
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
+    /** 是否允许触发显示；false 时不响应 hover/click/focus（custom 不受影响），对齐 Semi condition */
+    condition?: boolean;
+    /** 点击浮层及内部任一元素时自动关闭，对齐 Semi clickToHide */
+    clickToHide?: boolean;
+    /** 关闭时保留浮层 DOM 不销毁（--hidden 隐藏），对齐 Semi keepDOM */
+    keepDOM?: boolean;
+    /** hover 触发时不响应键盘 focus 显隐，对齐 Semi disableFocusListener */
+    disableFocusListener?: boolean;
     disabled?: boolean;
-    /** 浮层挂载容器，缺省回退 ConfigProvider 全局，再回退 document.body。非 body 容器时 floating 改 absolute 定位。 */
+    /** 是否展示进出场动画 */
+    motion?: boolean;
+    /** 浮层挂载容器，缺省回退 ConfigProvider 全局，再回退 body */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 浮层层级，缺省走 token var(--cd-popover-z) */
+    /** 浮层 z-index，缺省走 token */
     zIndex?: number;
-    /** 是否陷入焦点（Tab 循环），缺省随 trigger==='click' */
-    trapFocus?: boolean;
-    /** 关闭后焦点是否归还触发器（仅 trapFocus 时生效），默认 true */
-    returnFocus?: boolean;
-    /** Esc 关闭，默认 true（custom 触发不生效） */
+    /** Esc 关闭浮层 */
     closeOnEsc?: boolean;
-    /** 外部点击关闭，默认 true（custom 触发不生效） */
-    closeOnOutsideClick?: boolean;
-    /** 打开时锁定背景滚动，默认 false（非阻断） */
-    lockScroll?: boolean;
-    /** 关闭时销毁浮层 DOM，默认 false（首开后保留，仅 --hidden 隐藏） */
-    destroyOnClose?: boolean;
-    /** 重新打开时恢复上次浮层内焦点位置（仅 trapFocus 时生效），默认 false */
-    rememberFocus?: boolean;
-    /** 阻断浮层内事件冒泡，默认 false */
+    /** 焦点处于浮层内时 Tab 是否循环（对齐 Semi guardFocus），默认随 dialog 模式 */
+    guardFocus?: boolean;
+    /** 关闭后焦点归还触发器（仅 guardFocus 时生效），对齐 Semi returnFocusOnClose */
+    returnFocusOnClose?: boolean;
+    /** 阻止浮层上的点击事件冒泡，对齐 Semi stopPropagation */
     stopPropagation?: boolean;
-    /** 内边距尺寸档位，默认 default */
-    size?: Size;
-    /** 动画开关/配置，默认 true */
-    motion?: boolean | MotionConfig;
-    /** 浮层右上角显示关闭按钮，默认 false */
-    showCloseButton?: boolean;
-    /** 自定义关闭按钮图标（showCloseButton=true 时有效） */
-    closeIcon?: Snippet;
-    /** 确定按钮文案（默认来自 locale） */
-    okText?: string;
-    /** 取消按钮文案（默认来自 locale） */
-    cancelText?: string;
-    /** 透传给确定 Button 的 props */
-    okButtonProps?: Record<string, unknown>;
-    /** 透传给取消 Button 的 props */
-    cancelButtonProps?: Record<string, unknown>;
-    /** 点击确定按钮回调 */
-    onOk?: () => void;
-    /** 点击取消按钮回调 */
-    onCancel?: () => void;
-    onOpenChange?: (open: boolean) => void;
+    /** 更新该值手动触发浮层重新定位，对齐 Semi rePosKey */
+    rePosKey?: string | number;
+    /** 浮层自定义类名 */
+    class?: string;
+    /** 浮层自定义内联样式 */
+    style?: string;
+    /** 显隐切换回调，对齐 Semi onVisibleChange */
+    onVisibleChange?: (visible: boolean) => void;
+    /** 点击浮层与触发器外部区域的回调（仅 custom/click），对齐 Semi onClickOutSide */
+    onClickOutSide?: (e: MouseEvent) => void;
+    /** 浮层完全关闭后的回调 */
+    afterClose?: () => void;
+    /**
+     * dialog 模式浮层的 aria-labelledby（外部封装者传入，指向自绘标题元素 id）。
+     * Popconfirm 等封装 Popover 时，标题渲染在 content 内，用此项关联浮层与标题。
+     * 优先于 Popover 自身 title 生成的 id。
+     */
+    ariaLabelledby?: string;
+    /** 触发元素（必填） */
     children?: Snippet;
-    contentSlot?: Snippet;
   }
 
   let {
     content,
     title,
-    open,
-    defaultOpen = false,
+    visible,
+    defaultVisible = false,
     trigger = 'hover',
     position = 'bottom',
-    align = 'center',
     autoAdjustOverflow = true,
-    showArrow = true,
-    arrowPointAtCenter = false,
-    spacing = 8,
-    mouseEnterDelay = 100,
-    mouseLeaveDelay = 100,
+    showArrow = false,
+    arrowPointAtCenter = true,
+    arrowStyle,
+    spacing,
+    margin = 0,
+    mouseEnterDelay = 50,
+    mouseLeaveDelay = 50,
+    condition = true,
+    clickToHide = false,
+    keepDOM = false,
+    disableFocusListener = false,
     disabled = false,
+    motion = true,
     getPopupContainer,
     zIndex,
-    trapFocus,
-    returnFocus = true,
     closeOnEsc = true,
-    closeOnOutsideClick = true,
-    lockScroll = false,
-    destroyOnClose = false,
-    rememberFocus = false,
+    guardFocus,
+    returnFocusOnClose = true,
     stopPropagation = false,
-    size = 'default',
-    motion = true,
-    showCloseButton = false,
-    closeIcon,
-    okText,
-    cancelText,
-    okButtonProps,
-    cancelButtonProps,
-    onOk,
-    onCancel,
-    onOpenChange,
+    rePosKey,
+    class: className = '',
+    style: styleExtra = '',
+    onVisibleChange,
+    onClickOutSide,
+    afterClose,
+    ariaLabelledby: ariaLabelledbyProp,
     children,
-    contentSlot,
   }: Props = $props();
 
-  const popId = useId('cd-popover');
   const loc = useLocale();
+  const titleId = useId('cd-popover-title');
 
-  // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
-  const globalPopupContainer = getGlobalPopupContainer();
-  const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
+  // role 派生（对齐 Semi）：click/custom 承载可交互富内容 → dialog；hover/focus → tooltip。
+  const isDialog = $derived(trigger === 'click' || trigger === 'custom');
+  const role = $derived(isDialog ? 'dialog' : 'tooltip');
 
-  // trapFocus 缺省随 click（spec 默认值 trigger==='click'）。
-  const shouldTrapFocus = $derived(trapFocus ?? trigger === 'click');
+  // spacing 缺省：有箭头 10 / 无箭头 4（对齐 Semi SPACING_WITH_ARROW / SPACING）。
+  const resolvedSpacing = $derived(spacing ?? (showArrow ? 10 : 4));
 
-  // motion：false（或 {duration:0}）关闭过渡；number 形态在模板写内联时长。
-  const motionEnabled = $derived(motion !== false);
-  const motionDuration = $derived(
-    typeof motion === 'object' && typeof motion.duration === 'number'
-      ? motion.duration
-      : undefined,
-  );
-
-  // position + align → core 12 方位 Placement
-  const placement = $derived(makePlacement(position as Side, align));
-
-  // --- 受控 open (红线 #1)：不无条件回写 open，仅 onOpenChange ---
-  const isControlled = $derived(open !== undefined);
-  let innerOpen = $state(untrack(() => defaultOpen));
-  const isOpen = $derived(!disabled && (isControlled ? !!open : innerOpen));
-
-  function setOpen(next: boolean) {
-    if (next === (isControlled ? !!open : innerOpen)) return;
-    if (!isControlled) innerOpen = next;
-    onOpenChange?.(next);
-  }
-
+  // 标题归一：string / Snippet。
   const titleText = $derived(typeof title === 'string' ? title : undefined);
-  const titleSnippet = $derived(typeof title === 'function' ? title : undefined);
+  const titleSnippet = $derived(typeof title === 'function' ? (title as Snippet) : undefined);
   const hasTitle = $derived(title !== undefined && title !== '');
-  const titleId = $derived(`${popId}-title`);
 
+  // content 归一：string 文本 / Snippet（可选带 { initialFocusRef } 参数）。
   const contentText = $derived(typeof content === 'string' ? content : undefined);
-  const contentSnippetFn = $derived(
-    typeof content === 'function' ? content : undefined,
+  const contentSnippet = $derived(
+    typeof content === 'function' ? (content as Snippet<[RenderContentProps]>) : undefined,
   );
 
-  // --- destroyOnClose / 惰性挂载：首开才挂；关闭后 destroyOnClose=false 保留 DOM（--hidden），true 卸载。 ---
-  let hasBeenOpened = $state(false);
-  $effect(() => {
-    if (isOpen) hasBeenOpened = true;
-  });
-  const shouldRender = $derived(isOpen || (hasBeenOpened && !destroyOnClose));
-
-  // --- hover 延迟开关：setTimeout 存普通变量，cleanup 清除 ---
-  let enterTimer: ReturnType<typeof setTimeout> | undefined;
-  let leaveTimer: ReturnType<typeof setTimeout> | undefined;
-
-  function clearTimers() {
-    if (enterTimer !== undefined) {
-      clearTimeout(enterTimer);
-      enterTimer = undefined;
-    }
-    if (leaveTimer !== undefined) {
-      clearTimeout(leaveTimer);
-      leaveTimer = undefined;
-    }
+  // initialFocusRef action：绑定到浮层内元素，打开时聚焦（对齐 Semi content 函数）。
+  // 浮层已由 Tooltip focus-trap 陷入，此处仅把初始焦点落到指定元素。
+  function initialFocusRef(node: HTMLElement) {
+    queueMicrotask(() => node.focus?.());
   }
 
-  function onPointerEnter() {
-    if (disabled || trigger !== 'hover') return;
-    clearTimers();
-    enterTimer = setTimeout(() => setOpen(true), mouseEnterDelay);
-  }
-
-  function onPointerLeave() {
-    if (disabled || trigger !== 'hover') return;
-    clearTimers();
-    leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
-  }
-
-  function onFocusIn() {
-    if (disabled || trigger !== 'focus') return;
-    setOpen(true);
-  }
-
-  function onFocusOut() {
-    if (disabled || trigger !== 'focus') return;
-    setOpen(false);
-  }
-
-  function onClick() {
-    if (disabled || trigger !== 'click') return;
-    setOpen(!isOpen);
-  }
-
-  // dialog 模式（click）触发器承载 button 角色：Enter/Space 键盘激活（与原生 button 一致）。
-  // tooltip 模式（hover/focus）不挂键盘处理，触发器保持纯 generic span。
-  function onTriggerKeydown(e: KeyboardEvent) {
-    if (disabled || trigger !== 'click') return;
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-      e.preventDefault();
-      setOpen(!isOpen);
-    }
-  }
-
-  // --- DOM 引用：触发包裹（浮层定位由 use:floating action 接管）---
-  let rootEl = $state<HTMLSpanElement | null>(null);
-  let popEl = $state<HTMLDivElement | null>(null);
-
-  // 解析后的实际方位（flip 后）
-  let resolvedPlacement = $state<Placement>(untrack(() => placement));
-  const resolvedSide = $derived<Side>(parsePlacement(resolvedPlacement).side);
-  let arrowOffset = $state(0);
-
-  function onPlacement(info: { placement: Placement; arrowOffset: number }) {
-    resolvedPlacement = info.placement;
-    arrowOffset = info.arrowOffset;
-  }
-
-  // --- useDismiss (红线 #3)：仅 click 触发需要 outside/Esc；popup portal 列入 extraTargets ---
-  $effect(() => {
-    if (!isOpen || !rootEl || trigger !== 'click') return;
-    if (!closeOnEsc && !closeOnOutsideClick) return;
-    const cleanup = useDismiss(rootEl, {
-      onDismiss: (reason) => {
-        if (reason === 'esc' && !closeOnEsc) return;
-        if (reason === 'outsideClick' && !closeOnOutsideClick) return;
-        setOpen(false);
-      },
-      escape: closeOnEsc,
-      outsideClick: closeOnOutsideClick,
-      extraTargets: [popEl],
-    });
-    return cleanup;
-  });
-
-  // --- focus-trap (红线 #3)：click 且 trapFocus 时，open 后陷入焦点，关闭归还触发器。 ---
-  //  popEl 经 floating action 在挂载时即 portal 完成，$effect 运行时已在 DOM 且可聚焦，
-  //  故同步 activate（与 Modal/Drawer 一致）。触发器 click 的默认聚焦先于 effect 结算，
-  //  activate 捕获的 previouslyFocused 即触发器，关闭后 returnFocus 归还正确。
-  $effect(() => {
-    if (!isOpen || !popEl || !shouldTrapFocus) return;
-    const trap = useFocusTrap(popEl, { returnFocus, rememberFocus });
-    trap.activate();
-    return () => trap.deactivate();
-  });
-
-  // --- scroll-lock (红线 #3)：lockScroll 时打开锁背景滚动，关闭即释放。 ---
-  $effect(() => {
-    if (!isOpen || !lockScroll) return;
-    const release = useScrollLock();
-    return release;
-  });
-
-  // cleanup hover 定时器
-  $effect(() => clearTimers);
-
-  // stopPropagation：浮层内交互事件停止冒泡（红线 #3 思路：组件内事件处理，不外泄）。
-  function onPopEvent(e: Event) {
-    if (stopPropagation) e.stopPropagation();
-  }
-
-  const arrowStyle = $derived(
-    resolvedSide === 'top' || resolvedSide === 'bottom'
-      ? `inset-inline-start:${arrowOffset}px`
-      : `inset-block-start:${arrowOffset}px`,
+  // dialog 模式浮层的 aria 关联：外部传入 ariaLabelledby 优先（Popconfirm 等封装者自绘标题）；
+  // 否则自身有标题 → 指向自绘标题；两者皆无 → aria-label 兜底。
+  const ariaLabelledby = $derived(
+    !isDialog ? undefined : (ariaLabelledbyProp ?? (hasTitle ? titleId : undefined)),
   );
-
-  // 浮层根内联样式：自定义 zIndex 覆盖 token 层级；motion duration 覆盖 token 时长。
-  const popStyle = $derived(
-    [
-      zIndex !== undefined ? `z-index:${zIndex}` : '',
-      motionDuration !== undefined
-        ? `--cd-popover-motion-duration:${motionDuration}ms`
-        : '',
-    ]
-      .filter(Boolean)
-      .join(';'),
-  );
-
-  // --- role 派生（纯函数，红线 #2）：依触发模式区分（spec §6）---
-  // 内容信息性 + hover/focus → role="tooltip"，触发器 aria-describedby 关联浮层；
-  // 内容可交互 + click/custom → role="dialog"，aria-modal=false + aria-haspopup/expanded/controls。
-  const isTooltipRole = $derived(trigger === 'hover' || trigger === 'focus');
-  // dialog 兜底 aria-label（无标题时，仅 dialog 模式需要）。
   const dialogLabel = $derived(
-    isTooltipRole || hasTitle ? undefined : loc().t('Popover.dialogLabel'),
+    isDialog && !ariaLabelledby ? loc().t('Popover.dialogLabel') : undefined,
   );
-
-  // 按钮文案：prop 优先，否则取 locale。
-  const resolvedOkText = $derived(okText ?? loc().t('Popover.okText'));
-  const resolvedCancelText = $derived(cancelText ?? loc().t('Popover.cancelText'));
-
-  // 是否渲染底部按钮区。
-  const hasFooter = $derived(onOk !== undefined || onCancel !== undefined);
-
-  // 关闭按钮处理：调用 setOpen(false) 并触发 onCancel。
-  function handleClose() {
-    setOpen(false);
-    onCancel?.();
-  }
-
-  // 确定按钮处理。
-  function handleOk() {
-    onOk?.();
-  }
-
-  // 取消按钮处理：同关闭。
-  function handleCancel() {
-    setOpen(false);
-    onCancel?.();
-  }
 </script>
 
-<!-- 外层仅承载 hover/focus 触发（需覆盖 trigger + 浮层区域）；click 绑在触发器本身。 -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<span
-  class="cd-popover"
-  bind:this={rootEl}
-  onpointerenter={onPointerEnter}
-  onpointerleave={onPointerLeave}
-  onfocusin={onFocusIn}
-  onfocusout={onFocusOut}
+<Tooltip
+  variant="popover"
+  {role}
+  {position}
+  {visible}
+  {defaultVisible}
+  {trigger}
+  {autoAdjustOverflow}
+  {showArrow}
+  {arrowPointAtCenter}
+  {arrowStyle}
+  spacing={resolvedSpacing}
+  {margin}
+  {mouseEnterDelay}
+  {mouseLeaveDelay}
+  {condition}
+  {clickToHide}
+  {keepDOM}
+  {disableFocusListener}
+  {disabled}
+  {motion}
+  {getPopupContainer}
+  {zIndex}
+  {closeOnEsc}
+  {guardFocus}
+  {returnFocusOnClose}
+  {stopPropagation}
+  {rePosKey}
+  class={className}
+  style={styleExtra}
+  {onVisibleChange}
+  {onClickOutSide}
+  {afterClose}
+  {dialogLabel}
+  {ariaLabelledby}
+  content={popCard}
 >
-  <!-- dialog 模式（click/custom）触发器承载 button 角色，让 aria-haspopup/expanded/controls
-       挂在合法宿主上（axe aria-allowed-attr）；可聚焦 + Enter/Space 激活。
-       tooltip 模式（hover/focus）保持纯 span，仅 aria-describedby（generic 上合法）。 -->
-  <!-- role/tabindex 动态（dialog 模式才 button），静态分析看不出 → 抑制两条误报。 -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <span
-    class="cd-popover__trigger"
-    role={isTooltipRole ? undefined : 'button'}
-    tabindex={isTooltipRole ? undefined : 0}
-    aria-haspopup={isTooltipRole ? undefined : 'dialog'}
-    aria-expanded={isTooltipRole ? undefined : isOpen}
-    aria-controls={!isTooltipRole && isOpen ? popId : undefined}
-    aria-describedby={isTooltipRole && isOpen ? popId : undefined}
-    aria-disabled={!isTooltipRole && disabled ? 'true' : undefined}
-    onclickcapture={isTooltipRole ? undefined : onClick}
-    onkeydown={isTooltipRole ? undefined : onTriggerKeydown}
-  >
-    {@render children?.()}
-  </span>
+  {@render children?.()}
+</Tooltip>
 
-  {#if shouldRender}
-    <!-- destroyOnClose=false 时关闭仍保留 DOM（--hidden 隐藏），true 时 !isOpen 即被 {#if} 卸载。 -->
-    <div
-      id={popId}
-      role={isTooltipRole ? 'tooltip' : 'dialog'}
-      aria-modal={isTooltipRole ? undefined : 'false'}
-      aria-labelledby={!isTooltipRole && hasTitle ? titleId : undefined}
-      aria-label={dialogLabel}
-      aria-hidden={!isOpen || undefined}
-      tabindex="-1"
-      bind:this={popEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: spacing, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer, open: isOpen }}
-      class="cd-popover__pop cd-popover__pop--{resolvedSide} cd-popover__pop--{size}"
-      class:cd-popover__pop--no-arrow={!showArrow}
-      class:cd-popover__pop--hidden={!isOpen}
-      class:cd-popover__pop--motion={motionEnabled}
-      style={popStyle}
-      onclick={onPopEvent}
-      onkeydown={onPopEvent}
-      onpointerdown={onPopEvent}
-      onpointerenter={onPointerEnter}
-      onpointerleave={onPointerLeave}
-    >
-      {#if showCloseButton}
-        <!-- svelte-ignore a11y_consider_explicit_label -->
-        <button
-          type="button"
-          class="cd-popover__close-btn"
-          aria-label={loc().t('Popover.close')}
-          onclick={handleClose}
-        >
-          {#if closeIcon}
-            {@render closeIcon()}
-          {:else}
-            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false" aria-hidden="true">
-              <path stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M3 3l10 10M13 3L3 13" />
-            </svg>
-          {/if}
-        </button>
-      {/if}
-      {#if hasTitle}
-        <div class="cd-popover__title" id={titleId}>
-          {#if titleSnippet}
-            {@render titleSnippet()}
-          {:else}
-            {titleText}
-          {/if}
-        </div>
-      {/if}
-      <div class="cd-popover__content">
-        {#if contentSlot}
-          {@render contentSlot()}
-        {:else if contentSnippetFn}
-          {@render contentSnippetFn()}
+<!-- renderPopCard：对齐 Semi <div class="popover"><div class="popover-content">…</div></div>。
+     标题区（可选）+ 内容区。内容函数形态注入 initialFocusRef。 -->
+{#snippet popCard()}
+  <div class="cd-popover" class:cd-popover--with-arrow={showArrow}>
+    {#if hasTitle}
+      <div class="cd-popover-title" id={titleId}>
+        {#if titleSnippet}
+          {@render titleSnippet()}
         {:else}
-          {contentText}
+          {titleText}
         {/if}
       </div>
-      {#if hasFooter}
-        <div class="cd-popover__footer">
-          {#if onCancel !== undefined}
-            <!-- svelte-ignore a11y_consider_explicit_label -->
-            <button
-              type="button"
-              class="cd-popover__btn cd-popover__btn--cancel"
-              onclick={handleCancel}
-              {...(cancelButtonProps ?? {})}
-            >
-              {resolvedCancelText}
-            </button>
-          {/if}
-          {#if onOk !== undefined}
-            <!-- svelte-ignore a11y_consider_explicit_label -->
-            <button
-              type="button"
-              class="cd-popover__btn cd-popover__btn--ok"
-              onclick={handleOk}
-              {...(okButtonProps ?? {})}
-            >
-              {resolvedOkText}
-            </button>
-          {/if}
-        </div>
-      {/if}
-      {#if showArrow}
-        <span class="cd-popover__arrow" style={arrowStyle} aria-hidden="true"></span>
+    {/if}
+    <div class="cd-popover-content">
+      {#if contentSnippet}
+        {@render contentSnippet({ initialFocusRef })}
+      {:else}
+        {contentText}
       {/if}
     </div>
-  {/if}
-</span>
+  </div>
+{/snippet}
 
 <style>
+  /* 对齐 Semi .popover / .popover-content 结构：Popover 内层承载 padding，
+     浮层视觉（bg/阴影/圆角）由 Tooltip variant=popover 提供。 */
   .cd-popover {
-    position: relative;
-    display: inline-block;
+    box-sizing: border-box;
   }
-  .cd-popover__trigger {
-    display: inline-block;
+  /* 带箭头时整卡内边距（对齐 Semi $spacing-popover_withArrow-padding: 12px）。 */
+  .cd-popover--with-arrow {
+    padding: var(--cd-spacing-popover-witharrow-padding);
   }
-  /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位 */
-  .cd-popover__pop {
-    position: relative;
-    z-index: var(--cd-popover-z);
-    inline-size: max-content;
-    max-inline-size: 20rem;
-    padding: var(--cd-popover-padding-default);
-    background: var(--cd-popover-bg);
-    color: var(--cd-popover-color);
-    border-radius: var(--cd-popover-radius);
-    box-shadow: var(--cd-popover-shadow);
-  }
-  /* size 档：内边距随档位切换（token 驱动） */
-  .cd-popover__pop--small {
-    padding: var(--cd-popover-padding-small);
-  }
-  .cd-popover__pop--default {
-    padding: var(--cd-popover-padding-default);
-  }
-  .cd-popover__pop--large {
-    padding: var(--cd-popover-padding-large);
-  }
-  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  .cd-popover__pop--hidden {
-    display: none;
-  }
-  /* motion：进场淡入 + 轻微缩放，token 时长/缓动；reduced-motion 退化 */
-  .cd-popover__pop--motion {
-    animation: cd-popover-in var(--cd-popover-motion-duration)
-      var(--cd-popover-motion-easing, ease) both;
-  }
-  /* 用独立 scale 属性（非 transform）做进场缩放：use:floating 用 transform: translate()
-     定位浮层，若动画也走 transform 会覆盖定位 transform，把浮层拉到 (0,0)。独立 scale
-     属性与 transform 正交，二者叠加互不覆盖。 */
-  @keyframes cd-popover-in {
-    from {
-      opacity: 0;
-      scale: 0.96;
-    }
-    to {
-      opacity: 1;
-      scale: 1;
-    }
-  }
-  /* 关闭按钮：绝对定位于浮层右上角 */
-  .cd-popover__close-btn {
-    position: absolute;
-    inset-block-start: var(--cd-spacing-tight);
-    inset-inline-end: var(--cd-spacing-tight);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--cd-spacing-extra-tight);
-    border: none;
-    border-radius: var(--cd-border-radius-small);
-    background: transparent;
-    color: var(--cd-color-text-2);
-    cursor: pointer;
-    line-height: 1;
-  }
-  .cd-popover__close-btn:hover {
-    background: var(--cd-color-fill-2, rgba(0, 0, 0, 0.06));
-    color: var(--cd-color-text-1);
-  }
-  .cd-popover__close-btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-
-  /* 底部按钮区 */
-  .cd-popover__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--cd-spacing-tight);
-    margin-block-start: var(--cd-spacing-base-tight);
-  }
-  .cd-popover__btn {
-    display: inline-flex;
-    align-items: center;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
-    border-radius: var(--cd-border-radius-small);
-    border: 1px solid transparent;
-    font: inherit;
-    font-size: var(--cd-font-size-regular);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .cd-popover__btn--cancel {
-    background: var(--cd-color-bg-2, #f2f3f5);
-    color: var(--cd-color-text-1);
-    border-color: var(--cd-color-border, #e5e6eb);
-  }
-  .cd-popover__btn--cancel:hover {
-    background: var(--cd-color-bg-3, #e5e6eb);
-  }
-  .cd-popover__btn--ok {
-    background: var(--cd-color-primary, #165dff);
-    color: var(--cd-color-white);
-    border-color: var(--cd-color-primary, #165dff);
-  }
-  .cd-popover__btn--ok:hover {
-    background: var(--cd-color-primary-hover);
-    border-color: var(--cd-color-primary-hover);
-  }
-  .cd-popover__btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-
-  .cd-popover__title {
-    margin-block-end: var(--cd-spacing-tight);
-    padding-block-end: var(--cd-spacing-tight);
-    border-block-end: var(--cd-width-popover-title-border) solid var(--cd-popover-title-border);
+  /* 标题区：下边框分隔，内边距对齐 Semi $spacing-popover_title-padding: 8px。 */
+  .cd-popover-title {
+    padding: var(--cd-spacing-popover-title-padding);
+    border-block-end: var(--cd-width-popover-title-border) solid
+      var(--cd-color-popover-border-default);
     color: var(--cd-popover-title-color);
-    font-weight: var(--cd-font-weight-medium, 600);
+    font-weight: var(--cd-font-weight-bold);
   }
-
-  /* --- 箭头：方块旋转 45deg，交叉轴偏移由内联 style 控制 --- */
-  .cd-popover__arrow {
-    position: absolute;
-    inline-size: var(--cd-popover-arrow-size);
-    block-size: var(--cd-popover-arrow-size);
-    background: var(--cd-popover-bg);
-    box-shadow: var(--cd-popover-shadow);
-    transform: rotate(45deg);
-  }
-  .cd-popover__pop--top .cd-popover__arrow,
-  .cd-popover__pop--bottom .cd-popover__arrow {
-    margin-inline-start: calc(var(--cd-popover-arrow-size) / -2);
-  }
-  .cd-popover__pop--left .cd-popover__arrow,
-  .cd-popover__pop--right .cd-popover__arrow {
-    margin-block-start: calc(var(--cd-popover-arrow-size) / -2);
-  }
-
-  /* 箭头吸附到浮层贴近触发器的那条边（按解析后的 side） */
-  .cd-popover__pop--top .cd-popover__arrow {
-    inset-block-end: calc(var(--cd-popover-arrow-size) / -2);
-  }
-  .cd-popover__pop--bottom .cd-popover__arrow {
-    inset-block-start: calc(var(--cd-popover-arrow-size) / -2);
-  }
-  .cd-popover__pop--left .cd-popover__arrow {
-    inset-inline-end: calc(var(--cd-popover-arrow-size) / -2);
-  }
-  .cd-popover__pop--right .cd-popover__arrow {
-    inset-inline-start: calc(var(--cd-popover-arrow-size) / -2);
-  }
-  .cd-popover__pop--no-arrow .cd-popover__arrow {
-    display: none;
-  }
-
-  /* reduced-motion：禁用进场动画 */
-  @media (prefers-reduced-motion: reduce) {
-    .cd-popover__pop--motion {
-      animation: none;
-    }
+  /* 内容区：Semi .popover-content 无固定内边距（由用户 content 自带），此处不加 padding。 */
+  .cd-popover-content {
+    min-inline-size: 0;
   }
 </style>

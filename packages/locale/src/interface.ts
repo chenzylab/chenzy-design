@@ -578,14 +578,8 @@ export interface Locale {
     errorLabel: string;
   };
   Popover: {
-    /** 关闭按钮 aria-label（destroyOnClose/带关闭图标时） */
-    close: string;
-    /** dialog 模式无标题时的兜底 aria-label */
+    /** dialog 模式（click/custom 触发）无标题时的兜底 aria-label */
     dialogLabel: string;
-    /** 确定按钮默认文案 */
-    okText: string;
-    /** 取消按钮默认文案 */
-    cancelText: string;
   };
   Typography: {
     copy: string;

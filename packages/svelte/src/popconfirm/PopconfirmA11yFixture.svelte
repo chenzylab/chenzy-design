@@ -9,7 +9,7 @@
   import Popconfirm from './Popconfirm.svelte';
 
   interface Props {
-    open?: boolean;
+    visible?: boolean;
     title?: string;
     content?: string;
     type?: 'default' | 'danger' | 'warning';
@@ -17,7 +17,7 @@
   }
 
   let {
-    open = false,
+    visible = false,
     title = 'Delete this item?',
     content = 'This action cannot be undone.',
     type = 'default',
@@ -26,9 +26,5 @@
 </script>
 
 <LocaleProvider {locale}>
-  <Popconfirm {open} {title} {content} {type}>
-    {#snippet trigger()}
-      Delete
-    {/snippet}
-  </Popconfirm>
+  <Popconfirm {visible} trigger="custom" {title} {content} {type}>Delete</Popconfirm>
 </LocaleProvider>

@@ -147,7 +147,7 @@ const components = [
   ['table', '{ Table }', '16.7 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
-  ['tooltip', '{ Tooltip }', '3.5 KB'],
+  ['tooltip', '{ Tooltip }', '4.6 KB'],
   ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],

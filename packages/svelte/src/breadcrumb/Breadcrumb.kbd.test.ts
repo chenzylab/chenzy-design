@@ -1,6 +1,6 @@
 // Breadcrumb 键盘 e2e（browser project / 真实 chromium），折叠 … disclosure。
 // maxItemCount + moreType='popover' → 中间项折叠为 … 触发器，经 Popover 包裹：
-// cd-popover__trigger（role=button, tabindex=0）承载 aria-haspopup/aria-expanded，
+// cd-tooltip__trigger（role=button, tabindex=0）承载 aria-haspopup/aria-expanded，
 // Enter/Space 键盘激活展开浮层菜单（role=menu，portal 到 document.body）。
 //   1. 折叠触发器真实聚焦，初始 aria-expanded=false。
 //   2. Enter 展开：aria-expanded=true，浮层 role=menu 出现在 document。
@@ -18,9 +18,9 @@ describe('Breadcrumb 键盘 e2e（折叠 … disclosure）', () => {
   it('Enter 展开折叠浮层菜单 + aria-expanded 变化 + Esc 收起', async () => {
     const { baseElement } = renderKbdFixture(BreadcrumbKbdFixture);
 
-    // disclosure 触发器：Popover 的 role=button 包裹（aria-expanded 宿主）。
+    // disclosure 触发器：Popover 封装 Tooltip，触发器为 Tooltip 的 role=button 包裹（aria-expanded 宿主）。
     const trigger = baseElement.querySelector(
-      '.cd-popover__trigger[role="button"]',
+      '.cd-tooltip__trigger[role="button"]',
     ) as HTMLElement;
     expect(trigger).not.toBeNull();
     expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');

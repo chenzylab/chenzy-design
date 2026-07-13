@@ -183,14 +183,9 @@ export {
 } from './scroll-list.js';
 export {
   computeVisibleCount,
-  computeOverflowPartition,
-  applyHysteresis,
   computeTabOverflow,
   type OverflowComputeInput,
   type OverflowComputeResult,
-  type OverflowPartitionInput,
-  type OverflowPartitionResult,
-  type CollapseFrom,
   type TabOverflowInput,
   type TabOverflowResult,
 } from './overflow-list.js';

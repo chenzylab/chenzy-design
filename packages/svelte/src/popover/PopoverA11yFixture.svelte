@@ -10,7 +10,7 @@
   import Popover from './Popover.svelte';
 
   interface Props {
-    open?: boolean;
+    visible?: boolean;
     content?: string;
     title?: string | undefined;
     trigger?: 'hover' | 'click' | 'focus' | 'custom';
@@ -18,7 +18,7 @@
   }
 
   let {
-    open = false,
+    visible = false,
     content = 'Popover body content',
     title,
     trigger = 'custom',
@@ -28,8 +28,8 @@
 
 <LocaleProvider {locale}>
   {#if title !== undefined}
-    <Popover {open} {content} {title} {trigger}>Open</Popover>
+    <Popover {visible} {content} {title} {trigger}>Open</Popover>
   {:else}
-    <Popover {open} {content} {trigger}>Open</Popover>
+    <Popover {visible} {content} {trigger}>Open</Popover>
   {/if}
 </LocaleProvider>

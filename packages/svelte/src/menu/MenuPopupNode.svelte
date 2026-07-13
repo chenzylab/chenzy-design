@@ -14,11 +14,11 @@
   import type { MenuItemDef, MenuItemNode, MenuKey } from './types.js';
   import Self from './MenuPopupNode.svelte';
   import { Tooltip } from '../tooltip/index.js';
+  import type { Position as TooltipPosition } from '../tooltip/placement.js';
 
   interface TooltipProps {
     content?: string;
-    position?: Placement;
-    theme?: 'dark' | 'light';
+    position?: TooltipPosition;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
   }
@@ -91,8 +91,7 @@
   // 值域不含 undefined 的可选 prop，故仅在有值时纳入（content/placement 始终有兜底另传）。
   const tooltipPass = $derived({
     content: tooltipProps?.content ?? node.label,
-    placement: tooltipProps?.position ?? ('right' as Placement),
-    ...(tooltipProps?.theme !== undefined ? { theme: tooltipProps.theme } : {}),
+    position: tooltipProps?.position ?? 'right',
     ...(tooltipProps?.mouseEnterDelay !== undefined
       ? { mouseEnterDelay: tooltipProps.mouseEnterDelay }
       : {}),
