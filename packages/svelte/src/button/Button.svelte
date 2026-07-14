@@ -51,6 +51,11 @@
     onmousedown?: (e: MouseEvent) => void;
     onmouseenter?: (e: MouseEvent) => void;
     onmouseleave?: (e: MouseEvent) => void;
+    /**
+     * 其余原生属性透传到根 `<button>`（对齐 Semi Button `...attr` 透传）：
+     * data-*、autofocus、name、value、form、title、tabindex 等。显式声明的 prop 优先。
+     */
+    [key: string]: unknown;
   }
 
   let {
@@ -77,6 +82,7 @@
     onmousedown,
     onmouseenter,
     onmouseleave,
+    ...rest
   }: Props = $props();
 
   // ButtonGroup 上下文：仅在未显式设置对应 prop 时作为默认回退（显式 prop 始终优先）。
@@ -148,6 +154,7 @@
 {/snippet}
 
 <button
+  {...rest}
   class={cls}
   {style}
   type={htmlType}

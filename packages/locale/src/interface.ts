@@ -133,7 +133,6 @@ export interface Locale {
   Popconfirm: {
     confirm: string;
     cancel: string;
-    confirming: string;
   };
   Toast: {
     close: string;

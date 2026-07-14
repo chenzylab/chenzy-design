@@ -51,9 +51,10 @@ describe('Button props（对齐 Semi）', () => {
     expect(container.querySelector('button')!.classList.contains('cd-button--circle')).toBe(false);
   });
 
-  it('已移除 href：不再渲染 <a>', () => {
+  it('已移除 href：始终渲染 <button>，不再渲染 <a>', () => {
+    // Button 对齐 Semi 透传任意原生属性到根 <button>（`[key: string]: unknown`），
+    // 故 href 类型上合法，但 Button 始终是 <button>，绝不渲染 <a>。
     const { container } = render(Button, {
-      // @ts-expect-error href 已从 Props 移除
       props: { href: 'https://x.com', ariaLabel: 'x' },
     });
     expect(container.querySelector('a')).toBeNull();

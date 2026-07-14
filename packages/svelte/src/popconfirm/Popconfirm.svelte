@@ -2,27 +2,43 @@
   Popconfirm — 气泡确认框（严格对齐 Semi Design semi-ui/popconfirm）。
   架构：Popconfirm 封装 Popover（对齐 Semi `Popconfirm extends PopoverProps` +
   `<Popover content={renderConfirmPopCard}>`）——复用 Popover→Tooltip 的全部定位/触发/
-  焦点/dismiss/12 方位/箭头基建，自身只负责：
-    - 卡片内容 .cd-popconfirm（header 图标+标题 / body 正文 / footer 取消+确定按钮）
-    - 危险分级 type（default/danger/warning）默认图标 + okType/cancelType
-    - 异步确认：onConfirm 返回 Promise 时确定按钮 loading，resolve 关闭 / reject 保持打开
+  焦点/dismiss/12 方位/箭头基建，自身只负责渲染确认卡片：
+    .cd-popconfirm > .cd-popconfirm-inner >
+      .cd-popconfirm-header( header-icon? + header-body(header-title?) + btn-close? )
+    + .cd-popconfirm-body(-withIcon?)?
+    + .cd-popconfirm-footer( cancel + ok )
+  对齐要点（对齐 Semi index.tsx / popconfirm.scss，无自造）：
+    - icon 缺省 <IconAlertTriangle size="extra-large"/>（warning 色由 .cd-icon-alert_triangle 上色）；
+      不同风格由使用方经 icon(style)+okType 搭配（Semi 无 type 分级 prop）。
+    - showCloseIcon 默认 true：header 内 borderless small 关闭按钮（第三个 flex 子项，靠 header-body
+      flex-grow 推到右侧，与 Semi 一致——scss 中 btn-close 无独立定位规则）。
+    - okType 默认 primary、cancelType 默认 tertiary、确认按钮 theme=solid（对齐 Semi defaultProps）。
+    - 异步：onConfirm/onCancel 返回 Promise 时对应按钮 loading，resolve 关闭 / reject 保持打开。
+    - autoFocus：okButtonProps/cancelButtonProps.autoFocus 打开时聚焦对应按钮（对齐 Semi 2.30）。
   受控 visible（红线 #1）：不回写，仅经 onVisibleChange 通知；trigger 默认 click，
-  position 默认 bottomLeft（对齐 Semi）。stopPropagation 默认 true。
+  position 默认 bottomLeft，stopPropagation 默认 true（对齐 Semi）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { untrack } from 'svelte';
-  import { useId, useLiveAnnouncer } from '@chenzy-design/core';
+  import { tick, untrack } from 'svelte';
+  import { useId } from '@chenzy-design/core';
+  import { IconAlertTriangle, IconClose } from '@chenzy-design/icons';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import Popover from '../popover/Popover.svelte';
   import type { Position } from '../tooltip/placement.js';
 
-  type PopType = 'default' | 'danger' | 'warning';
   type ButtonType = 'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger';
   type TriggerType = 'click' | 'hover' | 'focus' | 'custom';
 
-  /** 透传给确认/取消 Button 的额外属性（type/theme/size/block/disabled/ariaLabel 等，不含 onclick/loading：由组件托管） */
+  /** content 函数形态入参（对齐 Semi content: ({ initialFocusRef }) => ReactNode）：
+   *  将 initialFocusRef 绑定到浮层内可聚焦元素，打开时自动聚焦。 */
+  interface RenderContentProps {
+    initialFocusRef: (node: HTMLElement) => void;
+  }
+
+  /** 透传给确认/取消 Button 的额外属性（对齐 Semi okButtonProps/cancelButtonProps）。
+   *  onclick/loading/theme/data-type 由组件托管；autoFocus 用于打开时初始聚焦。 */
   type ExtraButtonProps = {
     type?: ButtonType;
     theme?: 'solid' | 'borderless' | 'light' | 'outline';
@@ -31,89 +47,107 @@
     disabled?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
     ariaLabel?: string;
+    class?: string;
+    /** 打开面板时自动聚焦此按钮（对齐 Semi autoFocus） */
+    autoFocus?: boolean;
   };
 
   interface Props {
     /** 受控显隐（配合 trigger='custom'），对齐 Semi visible */
     visible?: boolean;
-    /** 非受控初始显隐 */
+    /** 非受控初始显隐，对齐 Semi defaultVisible */
     defaultVisible?: boolean;
-    title?: string;
-    titleSnippet?: Snippet;
-    content?: string;
-    contentSnippet?: Snippet;
-    /** 危险分级：影响默认图标与确定按钮默认 type */
-    type?: PopType;
-    /** 自定义图标，或传 false 不显示图标 */
+    /** 标题：文本或富文本 Snippet（对齐 Semi title: ReactNode） */
+    title?: string | Snippet;
+    /** 正文：文本 / 富文本 Snippet / 带 { initialFocusRef } 入参的函数 Snippet
+     *  （对齐 Semi content: ReactNode | ({ initialFocusRef }) => ReactNode） */
+    content?: string | Snippet<[RenderContentProps]>;
+    /** 自定义弹出气泡图标；false 隐藏图标；缺省 <IconAlertTriangle size="extra-large"/>（对齐 Semi） */
     icon?: Snippet | false;
+    /** 确认按钮文字，默认 locale 'confirm'（对齐 Semi okText） */
     okText?: string;
+    /** 取消按钮文字，默认 locale 'cancel'（对齐 Semi cancelText） */
     cancelText?: string;
-    /** 确定按钮类型，默认 primary（对齐 Semi） */
+    /** 确认按钮类型，默认 primary（对齐 Semi okType） */
     okType?: ButtonType;
-    /** 取消按钮类型，默认 tertiary（对齐 Semi） */
+    /** 取消按钮类型，默认 tertiary（对齐 Semi cancelType） */
     cancelType?: ButtonType;
+    /** 确认按钮 props（对齐 Semi okButtonProps） */
     okButtonProps?: ExtraButtonProps;
+    /** 取消按钮 props（对齐 Semi cancelButtonProps） */
     cancelButtonProps?: ExtraButtonProps;
-    showCancel?: boolean;
-    /** 弹出方位，默认 bottomLeft（对齐 Semi） */
+    /** 是否显示右上角关闭按钮，默认 true（对齐 Semi showCloseIcon） */
+    showCloseIcon?: boolean;
+    /** 弹出方位，默认 bottomLeft（对齐 Semi position） */
     position?: Position;
-    /** 触发方式，默认 click（对齐 Semi） */
+    /** 触发方式，默认 click（对齐 Semi trigger） */
     trigger?: TriggerType;
+    /** 点击子元素是否弹出，false 时不弹（对齐 Semi disabled） */
     disabled?: boolean;
+    /** Esc 关闭，受控时不生效，默认 true（对齐 Semi closeOnEsc） */
     closeOnEsc?: boolean;
-    /** 箭头是否指向触发元素中心 */
+    /** 箭头是否指向触发元素中心（需 showArrow），默认 false（对齐 Semi arrowPointAtCenter） */
     arrowPointAtCenter?: boolean;
-    /** 是否显示箭头三角，默认 false */
+    /** 是否显示箭头三角，默认 false（对齐 Semi showArrow） */
     showArrow?: boolean;
+    /** 进出场动画，默认 true（对齐 Semi motion） */
     motion?: boolean;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
+    /** 自定义浮层容器（对齐 Semi getPopupContainer） */
     getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 浮层 z-index，默认 1030（对齐 Semi zIndex） */
     zIndex?: number;
-    /** Tab 键是否在浮层内循环（焦点陷阱），默认随 dialog（click/custom） */
+    /** Tab 是否在浮层内循环，默认 true（对齐 Semi guardFocus） */
     guardFocus?: boolean;
+    /** Esc 后焦点回到 trigger（仅 trigger=click），默认 true（对齐 Semi returnFocusOnClose） */
     returnFocusOnClose?: boolean;
-    /** 点击浮层内事件是否阻止冒泡到文档，默认 true（对齐 Semi） */
+    /** 阻止浮层内点击冒泡，默认 true（对齐 Semi stopPropagation） */
     stopPropagation?: boolean;
+    /** 手动触发重新定位（对齐 Semi rePosKey） */
     rePosKey?: string | number;
+    /** 卡片自定义类名（对齐 Semi className） */
     class?: string;
+    /** 卡片自定义内联样式（对齐 Semi style） */
     style?: string;
-    /** 触发元素（children） */
+    /** 触发元素（对齐 Semi children） */
     children?: Snippet;
+    /** 显隐切换回调（对齐 Semi onVisibleChange） */
     onVisibleChange?: (visible: boolean) => void;
+    /** 点击浮层外部回调（对齐 Semi onClickOutSide） */
     onClickOutSide?: (e: MouseEvent) => void;
-    /** 确认回调；返回 Promise 时确认按钮 loading，resolve 关闭 / reject 保持打开 */
-    onConfirm?: () => void | Promise<unknown>;
-    onCancel?: () => void;
+    /** Esc 键回调（对齐 Semi onEscKeyDown） */
+    onEscKeyDown?: (e: KeyboardEvent) => void;
+    /** 确认回调；返回 Promise 时确认按钮 loading，resolve 关闭 / reject 保持（对齐 Semi onConfirm） */
+    onConfirm?: (e: MouseEvent) => void | Promise<unknown>;
+    /** 取消回调；返回 Promise 时取消按钮 loading，resolve 关闭 / reject 保持（对齐 Semi onCancel） */
+    onCancel?: (e: MouseEvent) => void | Promise<unknown>;
   }
 
   let {
     visible,
     defaultVisible = false,
     title,
-    titleSnippet,
     content,
-    contentSnippet,
-    type = 'default',
     icon,
     okText,
     cancelText,
-    okType,
+    okType = 'primary',
     cancelType = 'tertiary',
     okButtonProps,
     cancelButtonProps,
-    showCancel = true,
+    showCloseIcon = true,
     position = 'bottomLeft',
     trigger = 'click',
     disabled = false,
     closeOnEsc = true,
-    arrowPointAtCenter = true,
+    arrowPointAtCenter = false,
     showArrow = false,
     motion = true,
     mouseEnterDelay = 50,
     mouseLeaveDelay = 50,
     getPopupContainer,
-    zIndex,
+    zIndex = 1030,
     guardFocus,
     returnFocusOnClose = true,
     stopPropagation = true,
@@ -123,16 +157,13 @@
     children,
     onVisibleChange,
     onClickOutSide,
+    onEscKeyDown,
     onConfirm,
     onCancel,
   }: Props = $props();
 
   const loc = useLocale();
-  // 单例 live region（polite）：异步确认进入 loading 时播报「处理中」给屏幕阅读器。
-  const announcer = useLiveAnnouncer();
-
   const titleId = useId('cd-popconfirm-title');
-  const contentId = useId('cd-popconfirm-content');
 
   // --- 受控 visible (红线 #1)：不无条件回写，仅 onVisibleChange ---
   const isControlled = $derived(visible !== undefined);
@@ -140,20 +171,29 @@
   let innerOpen = $state(untrack(() => defaultVisible));
   const isOpen = $derived(isControlled ? !!visible : innerOpen);
 
-  // 确认按钮 type 优先级：显式 okType > okButtonProps.type > 由 type 推导（danger→danger，否则 primary）。
-  const resolvedOkType = $derived<ButtonType>(
-    okType ?? okButtonProps?.type ?? (type === 'danger' ? 'danger' : 'primary'),
-  );
-  const resolvedCancelType = $derived<ButtonType>(cancelType ?? cancelButtonProps?.type ?? 'tertiary');
+  // title / content 归一：string 文本 / Snippet（content 可带 { initialFocusRef } 入参）。
+  const titleText = $derived(typeof title === 'string' ? title : undefined);
+  const titleSnippet = $derived(typeof title === 'function' ? (title as Snippet) : undefined);
+  const hasTitle = $derived(title !== undefined && title !== '');
 
-  const hasContent = $derived(Boolean(contentSnippet) || Boolean(content));
-  const hasTitle = $derived(Boolean(titleSnippet) || Boolean(title));
+  const contentText = $derived(typeof content === 'string' ? content : undefined);
+  const contentSnippet = $derived(
+    typeof content === 'function' ? (content as Snippet<[RenderContentProps]>) : undefined,
+  );
+  const hasContent = $derived(content !== undefined && content !== '');
+
   const showIcon = $derived(icon !== false);
-  // 别名：Popover 的 content 插槽 `{#snippet content()}` 会遮蔽同名 content prop，
-  // 故在插槽内改用这两个别名引用字符串 prop（否则 `{content}` 被当 snippet 触发
-  // snippet_without_render_tag）。同理 title。
-  const titleTextVal = $derived(title);
-  const contentTextVal = $derived(content);
+
+  // 透传给 Button 的字段：仅剔除 autoFocus（Popconfirm 私有聚焦语义，经 focusOperateButton
+  // 主动 focus，不透传成原生 autofocus）。其余（type/class/theme/size/disabled…）随 Semi
+  // 展开在显式默认属性之后，故 okButtonProps.type 等可覆盖组件默认（对齐 Semi）。
+  function pickBtnProps(p?: ExtraButtonProps) {
+    if (!p) return {};
+    const { autoFocus: _a, ...rest } = p;
+    return rest;
+  }
+  const okBtnRest = $derived(pickBtnProps(okButtonProps));
+  const cancelBtnRest = $derived(pickBtnProps(cancelButtonProps));
 
   function setOpen(next: boolean) {
     if (next === (isControlled ? !!visible : innerOpen)) return;
@@ -161,16 +201,17 @@
     onVisibleChange?.(next);
   }
 
-  // --- 异步确认 (红线 #3)：onConfirm 返回 Promise 时确认按钮 loading，
-  //     resolve 后关闭、reject 保持打开（对齐 ConfirmModal）。 ---
+  // --- 异步 (红线 #3)：onConfirm/onCancel 返回 Promise 时对应按钮 loading，
+  //     resolve 后关闭、reject 保持打开（对齐 Semi PopconfirmFoundation）。 ---
   let confirmLoading = $state(false);
+  let cancelLoading = $state(false);
+  const busy = $derived(confirmLoading || cancelLoading);
 
-  async function confirm() {
-    if (confirmLoading) return;
-    const result = onConfirm?.();
+  async function confirm(e: MouseEvent) {
+    if (busy) return;
+    const result = onConfirm?.(e);
     if (result instanceof Promise) {
       confirmLoading = true;
-      announcer.announce(loc().t('Popconfirm.confirming'));
       try {
         await result;
         confirmLoading = false;
@@ -183,20 +224,50 @@
     }
   }
 
-  function cancel() {
-    if (confirmLoading) return;
-    onCancel?.();
-    setOpen(false);
+  async function cancel(e: MouseEvent) {
+    if (busy) return;
+    const result = onCancel?.(e);
+    if (result instanceof Promise) {
+      cancelLoading = true;
+      try {
+        await result;
+        cancelLoading = false;
+        setOpen(false);
+      } catch {
+        cancelLoading = false;
+      }
+    } else {
+      setOpen(false);
+    }
   }
 
-  // Popover onVisibleChange：受控/非受控同步（外部点击/Esc 关闭时也走此路，触发 onCancel 语义交给 Popover 的 onClickOutSide）。
+  // Popover onVisibleChange：受控/非受控同步（外部点击/Esc 关闭也走此路）。
   function handlePopoverVisibleChange(next: boolean) {
-    if (confirmLoading && !next) return; // 异步确认进行中不被外部关闭打断
+    if (busy && !next) return; // 异步进行中不被外部关闭打断
     if (!isControlled) innerOpen = next;
     onVisibleChange?.(next);
+    if (next) queueMicrotask(focusOperateButton);
   }
 
-  // dialog 模式无标题时的兜底：Popover 内部已处理（用 Popconfirm.dialogLabel 走 Popover.dialogLabel）。
+  // --- 初始焦点 (对齐 Semi handleFocusOperateButton)：打开时按 autoFocus 聚焦 cancel/ok。 ---
+  let footerEl = $state<HTMLDivElement>();
+  async function focusOperateButton() {
+    await tick();
+    const cancelAuto = cancelButtonProps?.autoFocus && !cancelButtonProps?.disabled;
+    const okAuto = okButtonProps?.autoFocus && !okButtonProps?.disabled;
+    const sel = cancelAuto
+      ? '[data-type="cancel"]'
+      : okAuto
+        ? '[data-type="ok"]'
+        : undefined;
+    if (!sel) return;
+    (footerEl?.querySelector(sel) as HTMLElement | undefined)?.focus({ preventScroll: true });
+  }
+
+  // content 函数形态的 initialFocusRef：打开时聚焦浮层内指定元素（复用 Popover 同名机制经 contentSnippet 入参）。
+  function initialFocusRef(node: HTMLElement) {
+    queueMicrotask(() => node.focus?.());
+  }
 </script>
 
 <Popover
@@ -211,84 +282,78 @@
   {mouseLeaveDelay}
   {returnFocusOnClose}
   {stopPropagation}
+  {zIndex}
   visible={isOpen}
   onVisibleChange={handlePopoverVisibleChange}
   {...(guardFocus !== undefined ? { guardFocus } : {})}
-  {...(zIndex !== undefined ? { zIndex } : {})}
   {...(rePosKey !== undefined ? { rePosKey } : {})}
   {...(getPopupContainer !== undefined ? { getPopupContainer } : {})}
   {...(onClickOutSide !== undefined ? { onClickOutSide } : {})}
+  {...(onEscKeyDown !== undefined ? { onEscKeyDown } : {})}
   {...(hasTitle ? { ariaLabelledby: titleId } : {})}
 >
   {#snippet content()}
-    <div class={`cd-popconfirm ${className}`} style={styleExtra}>
-      <div class="cd-popconfirm__inner">
-        <div class="cd-popconfirm__header">
+    <div class={`cd-popconfirm ${className}`.trim()} style={styleExtra}>
+      <div class="cd-popconfirm-inner">
+        <div class="cd-popconfirm-header">
           {#if showIcon}
-            <span
-              class="cd-popconfirm__header-icon cd-popconfirm__header-icon--{type}"
-              aria-hidden="true"
-            >
+            <i class="cd-popconfirm-header-icon">
               {#if typeof icon === 'function'}
                 {@render icon()}
-              {:else if type === 'danger'}
-                <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
-                  <path d="M8 4.5v4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  <circle cx="8" cy="11.3" r="0.9" fill="currentColor" />
-                </svg>
-              {:else if type === 'warning'}
-                <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 2 1.5 13.5h13L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                  <path d="M8 6.3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  <circle cx="8" cy="11.4" r="0.85" fill="currentColor" />
-                </svg>
               {:else}
-                <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 2 1.5 13.5h13L8 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                  <path d="M8 6.3v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  <circle cx="8" cy="11.4" r="0.85" fill="currentColor" />
-                </svg>
+                <IconAlertTriangle size="extra-large" />
               {/if}
-            </span>
+            </i>
           {/if}
-          <div class="cd-popconfirm__header-body">
+          <div class="cd-popconfirm-header-body">
             {#if hasTitle}
-              <div class="cd-popconfirm__header-title" id={titleId}>
+              <div class="cd-popconfirm-header-title" id={titleId}>
                 {#if titleSnippet}
                   {@render titleSnippet()}
                 {:else}
-                  {titleTextVal}
+                  {titleText}
                 {/if}
               </div>
             {/if}
           </div>
+          {#if showCloseIcon}
+            <Button
+              class="cd-popconfirm-btn-close"
+              size="small"
+              theme="borderless"
+              type={cancelType}
+              icon={closeIcon}
+              onclick={cancel}
+            />
+          {/if}
         </div>
         {#if hasContent}
-          <div
-            class="cd-popconfirm__body"
-            class:cd-popconfirm__body--with-icon={showIcon}
-            id={contentId}
-          >
+          <div class="cd-popconfirm-body" class:cd-popconfirm-body-withIcon={showIcon}>
             {#if contentSnippet}
-              {@render contentSnippet()}
+              {@render contentSnippet({ initialFocusRef })}
             {:else}
-              {contentTextVal}
+              {contentText}
             {/if}
           </div>
         {/if}
-        <div class="cd-popconfirm__footer">
-          {#if showCancel}
-            <Button size="small" {...cancelButtonProps} type={resolvedCancelType} disabled={confirmLoading} onclick={cancel}>
-              {cancelText ?? loc().t('Popconfirm.cancel')}
-            </Button>
-          {/if}
+        <div class="cd-popconfirm-footer" bind:this={footerEl}>
           <Button
-            size="small"
+            data-type="cancel"
+            type={cancelType}
+            {...cancelBtnRest}
+            loading={cancelLoading}
+            disabled={cancelButtonProps?.disabled || confirmLoading}
+            onclick={cancel}
+          >
+            {cancelText ?? loc().t('Popconfirm.cancel')}
+          </Button>
+          <Button
+            data-type="ok"
+            type={okType}
             theme="solid"
-            {...okButtonProps}
-            type={resolvedOkType}
+            {...okBtnRest}
             loading={confirmLoading}
+            disabled={okButtonProps?.disabled || cancelLoading}
             onclick={confirm}
           >
             {okText ?? loc().t('Popconfirm.confirm')}
@@ -300,59 +365,70 @@
   {@render children?.()}
 </Popover>
 
+{#snippet closeIcon()}
+  <IconClose />
+{/snippet}
+
 <style>
-  /* Popconfirm 卡片：渲染在 Popover 的 .cd-popover 卡面内（light bg-3 + border + radius）。
-     对齐 Semi .popconfirm-inner/header/body/footer 结构与 token。 */
+  /* Popconfirm 卡片：渲染在 Popover 的 .cd-popover 卡面内（bg-0 + border + radius）。
+     结构/token/spacing 全量对齐 Semi popconfirm.scss（$module = semi-popconfirm）。 */
   .cd-popconfirm {
+    box-sizing: border-box;
     max-inline-size: var(--cd-width-popconfirm-maxwidth);
   }
-  .cd-popconfirm__inner {
-    padding: var(--cd-spacing-popconfirm-top) var(--cd-spacing-popconfirm-top)
-      var(--cd-spacing-popconfirm-bottom) var(--cd-spacing-popconfirm-top);
-  }
-  .cd-popconfirm__header {
+  /* inner padding: top top top bottom（对齐 Semi：右=top，左=bottom；底=top）。 */
+  .cd-popconfirm-inner {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    padding: var(--cd-spacing-popconfirm-top) var(--cd-spacing-popconfirm-top)
+      var(--cd-spacing-popconfirm-top) var(--cd-spacing-popconfirm-bottom);
+    position: relative;
   }
-  .cd-popconfirm__header-icon {
-    display: inline-flex;
-    flex-shrink: 0;
+  .cd-popconfirm-header {
+    display: flex;
+    justify-content: flex-start;
+  }
+  .cd-popconfirm-header-icon {
     inline-size: var(--cd-width-popconfirm-icon);
     block-size: var(--cd-width-popconfirm-icon);
     margin-inline-end: var(--cd-spacing-popconfirm-header-icon-marginright);
-    line-height: 1;
   }
-  .cd-popconfirm__header-icon--danger {
-    color: var(--cd-popconfirm-icon-color-danger);
+  /* IconAlertTriangle 警示色（对齐 Semi .semi-icon-alert_triangle { color: warning }）。 */
+  .cd-popconfirm-header-icon :global(.cd-icon-alert_triangle) {
+    color: var(--cd-color-popconfirm-header-alert-icon);
   }
-  .cd-popconfirm__header-icon--warning,
-  .cd-popconfirm__header-icon--default {
-    color: var(--cd-popconfirm-icon-color-warning);
-  }
-  .cd-popconfirm__header-body {
+  .cd-popconfirm-header-body {
+    display: inline-flex;
+    flex-grow: 1;
+    flex-direction: column;
     min-inline-size: 0;
-    flex: 1;
   }
-  .cd-popconfirm__header-title {
-    color: var(--cd-color-popconfirm-header-text);
+  .cd-popconfirm-header-title {
+    font-size: var(--cd-font-size-header-6);
     font-weight: var(--cd-font-popconfirm-header-title-fontweight);
-    line-height: 1.4;
     margin-block-end: var(--cd-spacing-popconfirm-header-title-marginbottom);
+    color: var(--cd-color-popconfirm-header-text);
   }
-  .cd-popconfirm__body {
+  .cd-popconfirm-body {
     color: var(--cd-color-popconfirm-body-text);
-    line-height: 1.5;
   }
-  /* 有图标时正文缩进对齐标题（图标宽 + 右外边距） */
-  .cd-popconfirm__body--with-icon {
-    padding-inline-start: calc(
+  /* 有图标时正文缩进对齐标题（图标宽 + 右外边距，对齐 Semi body-withIcon margin-left）。 */
+  .cd-popconfirm-body-withIcon {
+    margin-inline-start: calc(
       var(--cd-width-popconfirm-icon) + var(--cd-spacing-popconfirm-header-icon-marginright)
     );
   }
-  .cd-popconfirm__footer {
+  .cd-popconfirm-body :global(p) {
+    margin: var(--cd-spacing-popconfirm-body-p-margin);
+    padding: var(--cd-spacing-popconfirm-body-p-padding);
+  }
+  .cd-popconfirm-footer {
+    margin-block-start: var(--cd-spacing-popconfirm-footer-margintop);
     display: flex;
     justify-content: flex-end;
-    gap: var(--cd-spacing-popconfirm-footer-btn-marginright);
-    margin-block-start: var(--cd-spacing-popconfirm-footer-margintop);
+  }
+  /* footer 首按钮（非唯一）右外边距（对齐 Semi first-child:not(:last-child)）。 */
+  .cd-popconfirm-footer :global(.cd-button:first-child:not(:last-child)) {
+    margin-inline-end: var(--cd-spacing-popconfirm-footer-btn-marginright);
   }
 </style>

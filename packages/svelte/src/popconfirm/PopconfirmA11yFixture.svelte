@@ -12,7 +12,6 @@
     visible?: boolean;
     title?: string;
     content?: string;
-    type?: 'default' | 'danger' | 'warning';
     locale?: string;
   }
 
@@ -20,11 +19,10 @@
     visible = false,
     title = 'Delete this item?',
     content = 'This action cannot be undone.',
-    type = 'default',
     locale = 'en_US',
   }: Props = $props();
 </script>
 
 <LocaleProvider {locale}>
-  <Popconfirm {visible} trigger="custom" {title} {content} {type}>Delete</Popconfirm>
+  <Popconfirm {visible} trigger="custom" {title} {content}>Delete</Popconfirm>
 </LocaleProvider>
