@@ -579,6 +579,5 @@ export const en_US: Locale = {
     next: 'Next',
     prev: 'Prev',
     finish: 'Finish',
-    stepIndicator: 'Step {current} of {total}',
   },
 };

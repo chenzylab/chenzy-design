@@ -1,18 +1,15 @@
 // UserGuide 组件 + a11y 测试（jsdom dom project：文件名 *.a11y.test.ts）。
-// 覆盖：role=dialog + aria-modal + labelledby/describedby、进度 aria-label、
-// spotlight 矩形随 target、圆点指示器、Esc/←→ 键盘、mask inert、axe 0 violations。
-//
-// 注意：jsdom 焦点模型不完整，不断言真实焦点移动/trap 行为（那属于 kbd/浏览器套件），
-// 只断言静态 ARIA + DOM 结构 + 键盘事件触发的回调。portal 到 body，全局查询。
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// 严格对齐 Semi userGuide：DOM 结构（popup-content / modal / spotlight）、指示器文本 n/total、
+// 圆点指示器、按钮显隐规则、axe 0 violations。Semi 无 focus-trap/inert/Esc/键盘/role=dialog，
+// 故不测这些（popup 的 role=dialog 由本库 Popover 对 trigger="custom" 自带，属 Popover 契约）。
+// portal 到 body，全局查询。
+import { describe, it, expect, beforeEach } from 'vitest';
 import { tick } from 'svelte';
 import type { Component } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import UserGuideComponent from './UserGuide.svelte';
 import type { UserGuideStep } from './UserGuide.svelte';
 
-// renderWithLocale 接受 Component<Record<string, unknown>>；UserGuide 有必填 prop
-// steps，故在 exactOptionalPropertyTypes 下不直接可赋值——这里做一次宽松转型。
 const UserGuide = UserGuideComponent as unknown as Component<Record<string, unknown>>;
 
 function makeTarget(id: string): HTMLElement {
@@ -40,27 +37,19 @@ beforeEach(() => {
   makeTarget('t3');
 });
 
-describe('UserGuide popup a11y', () => {
-  it('role=dialog + aria-modal + labelledby/describedby，进度 aria-label，无 axe violations', async () => {
+describe('UserGuide popup', () => {
+  it('渲染 popup-content 结构（title/description/indicator/buttons），无 axe violations', async () => {
     renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: true } });
     await tick();
 
-    const dialog = document.querySelector('.cd-userguide[role="dialog"]') as HTMLElement | null;
-    expect(dialog).not.toBeNull();
-    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    const content = document.querySelector('.cd-userGuide-popup-content');
+    expect(content).not.toBeNull();
+    expect(document.querySelector('.cd-userGuide-popup-content-title')?.textContent).toContain('第一步');
+    expect(document.querySelector('.cd-userGuide-popup-content-description')?.textContent).toContain('介绍一');
 
-    const labelledby = dialog?.getAttribute('aria-labelledby');
-    expect(labelledby).toBeTruthy();
-    expect(document.getElementById(labelledby!)?.textContent).toContain('第一步');
-
-    const describedby = dialog?.getAttribute('aria-describedby');
-    expect(describedby).toBeTruthy();
-    expect(document.getElementById(describedby!)?.textContent).toContain('介绍一');
-
-    // 进度 aria-label（中文模板 zh_CN 默认或 en_US；renderWithLocale 默认 en_US）
-    const progress = document.querySelector('.cd-userguide__progress') as HTMLElement | null;
-    expect(progress?.getAttribute('aria-label')).toBeTruthy();
-    expect(progress?.getAttribute('aria-label')).toMatch(/1/);
+    // 指示器为纯文本 n/total（对齐 Semi，无 i18n / 无 aria-label）
+    const indicator = document.querySelector('.cd-userGuide-popup-content-indicator');
+    expect(indicator?.textContent?.replace(/\s/g, '')).toBe('1/3');
 
     await expectNoAxeViolations(document.body);
   });
@@ -69,10 +58,10 @@ describe('UserGuide popup a11y', () => {
     renderWithLocale(UserGuide, {
       props: { steps: popupSteps(), visible: true, spotlightPadding: 10 },
     });
-    // 首帧测量延后到宏任务（红线 #3），等 setTimeout(0)
-    await new Promise((r) => setTimeout(r, 5));
+    // updateSpotlightRect 在 rAF 内 setState
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     await tick();
-    const hole = document.querySelector('rect.cd-userguide-hole') as SVGRectElement | null;
+    const hole = document.querySelector('rect.cd-userGuide-spotlight-rect') as SVGRectElement | null;
     expect(hole).not.toBeNull();
     // target rect: left=100 top=50 w=80 h=30；padding=10 → x=90 y=40 w=100 h=50
     expect(hole?.getAttribute('x')).toBe('90');
@@ -81,66 +70,38 @@ describe('UserGuide popup a11y', () => {
     expect(hole?.getAttribute('height')).toBe('50');
   });
 
-  it('svg mask id 唯一（非随机）', async () => {
-    renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: true } });
-    await tick();
-    const mask = document.querySelector('mask') as SVGMaskElement | null;
-    expect(mask?.id).toMatch(/^cd-userguide-mask-\d+$/);
-  });
-
-  it('mask=false 不渲染遮罩 svg', async () => {
+  it('mask=false 不渲染遮罩 rect（仍渲染 spotlight svg 供定位）', async () => {
     renderWithLocale(UserGuide, {
       props: { steps: popupSteps(), visible: true, mask: false },
     });
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
     await tick();
-    expect(document.querySelector('svg.cd-userguide-mask')).toBeNull();
-    // 仍渲染气泡
-    expect(document.querySelector('.cd-userguide[role="dialog"]')).not.toBeNull();
+    // mask=false → 无遮罩/透明 rect（对齐 Semi：mask && (...) 分支不渲染）
+    expect(document.querySelector('.cd-userGuide-spotlight-transparent-rect')).toBeNull();
+    // 仍渲染气泡内容
+    expect(document.querySelector('.cd-userGuide-popup-content')).not.toBeNull();
   });
 
-  it('Esc 触发 onSkip，←/→ 触发步进', async () => {
-    const onSkip = vi.fn();
-    const onChange = vi.fn();
+  it('末步下一步按钮显示完成文案，隐藏跳过', async () => {
     renderWithLocale(UserGuide, {
-      props: { steps: popupSteps(), visible: true, onSkip, onChange },
+      props: { steps: popupSteps(), visible: true, current: 2 },
     });
     await tick();
-    const dialog = document.querySelector('.cd-userguide[role="dialog"]') as HTMLElement;
-
-    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-    await tick();
-    expect(onChange).toHaveBeenLastCalledWith(1);
-
-    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
-    await tick();
-    expect(onChange).toHaveBeenLastCalledWith(0);
-
-    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(onSkip).toHaveBeenCalledOnce();
-  });
-
-  it('末步下一步按钮显示完成文案并触发 onFinish', async () => {
-    const onFinish = vi.fn();
-    renderWithLocale(UserGuide, {
-      props: { steps: popupSteps(), visible: true, current: 2, onFinish },
-    });
-    await tick();
-    // 受控末步：跳过按钮隐藏、上一步显示
-    const buttons = Array.from(document.querySelectorAll('.cd-userguide__actions button'));
+    const buttons = Array.from(
+      document.querySelectorAll('.cd-userGuide-popup-content-buttons button'),
+    );
     const labels = buttons.map((b) => b.textContent?.trim());
     expect(labels).toContain('Finish');
     expect(labels).not.toContain('Skip'); // 末步无跳过
-    const finishBtn = buttons.find((b) => b.textContent?.trim() === 'Finish') as HTMLButtonElement;
-    finishBtn.click();
-    expect(onFinish).toHaveBeenCalledOnce();
+    expect(labels).toContain('Prev'); // 末步有上一步
   });
 
   it('首步隐藏上一步、显示跳过', async () => {
     renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: true } });
     await tick();
-    const labels = Array.from(document.querySelectorAll('.cd-userguide__actions button')).map(
-      (b) => b.textContent?.trim(),
-    );
+    const labels = Array.from(
+      document.querySelectorAll('.cd-userGuide-popup-content-buttons button'),
+    ).map((b) => b.textContent?.trim());
     expect(labels).toContain('Skip');
     expect(labels).not.toContain('Prev'); // 首步无上一步
     expect(labels).toContain('Next');
@@ -149,21 +110,12 @@ describe('UserGuide popup a11y', () => {
   it('visible=false 不渲染', async () => {
     renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: false } });
     await tick();
-    expect(document.querySelector('.cd-userguide-overlay')).toBeNull();
-  });
-
-  it('mask 背景 inert：overlay 挂到 body 后其兄弟节点 inert', async () => {
-    const sibling = document.createElement('div');
-    sibling.id = 'page-content';
-    document.body.appendChild(sibling);
-    renderWithLocale(UserGuide, { props: { steps: popupSteps(), visible: true } });
-    await tick();
-    // useInertBackground 以 overlay 为锚，对兄弟设 inert
-    expect(sibling.hasAttribute('inert')).toBe(true);
+    expect(document.querySelector('.cd-userGuide-popup-content')).toBeNull();
+    expect(document.querySelector('.cd-userGuide-spotlight')).toBeNull();
   });
 });
 
-describe('UserGuide modal a11y', () => {
+describe('UserGuide modal', () => {
   function modalSteps(): UserGuideStep[] {
     return [
       { title: '欢迎', description: '欢迎语' },
@@ -171,33 +123,29 @@ describe('UserGuide modal a11y', () => {
     ];
   }
 
-  it('mode=modal role=dialog + aria-modal + labelledby，无 axe violations', async () => {
+  it('mode=modal 渲染 modal-body 结构，无 axe violations', async () => {
     renderWithLocale(UserGuide, {
       props: { steps: modalSteps(), visible: true, mode: 'modal' },
     });
     await tick();
-    const dialog = document.querySelector('.cd-userguide-modal[role="dialog"]') as HTMLElement | null;
-    expect(dialog).not.toBeNull();
-    expect(dialog?.getAttribute('aria-modal')).toBe('true');
-    const labelledby = dialog?.getAttribute('aria-labelledby');
-    expect(document.getElementById(labelledby!)?.textContent).toContain('欢迎');
+    expect(document.querySelector('.cd-userGuide-modal-body-title')?.textContent).toContain('欢迎');
+    expect(document.querySelector('.cd-userGuide-modal-body-description')?.textContent).toContain('欢迎语');
     await expectNoAxeViolations(document.body);
   });
 
   it('有 cover 步骤渲染圆点指示器，激活态跟随 current', async () => {
-    // 用一个含 cover 的 snippet 触发指示器（hasCover 逻辑：任一步有 cover）。
     const coverSnippet = (() => {}) as unknown as NonNullable<UserGuideStep['cover']>;
     const withCover: UserGuideStep[] = [
       { title: 'A', cover: coverSnippet },
-      { title: 'B' },
+      { title: 'B', cover: coverSnippet },
     ];
     renderWithLocale(UserGuide, {
       props: { steps: withCover, visible: true, mode: 'modal', current: 1 },
     });
     await tick();
-    const dots = document.querySelectorAll('.cd-userguide__dot');
+    const dots = document.querySelectorAll('.cd-userGuide-modal-indicator-item');
     expect(dots.length).toBe(2);
-    expect(dots[1]?.classList.contains('cd-userguide__dot--active')).toBe(true);
-    expect(dots[0]?.classList.contains('cd-userguide__dot--active')).toBe(false);
+    expect(dots[1]?.classList.contains('cd-userGuide-modal-indicator-item-active')).toBe(true);
+    expect(dots[0]?.classList.contains('cd-userGuide-modal-indicator-item-active')).toBe(false);
   });
 });

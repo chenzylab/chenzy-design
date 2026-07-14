@@ -1,8 +1,8 @@
 # SPEC · UserGuide
 
-> 分类：show · 阶段：M4（增补，对标 Semi 后补齐）
-> 对标 Semi：[UserGuide 用户引导](https://semi.design/zh-CN/show/userguide)（Semi 近期新增）
-> 对新用户进行功能分步导览。本 SPEC 对标 Semi 2.101.0 API，并在 a11y 上做**大幅增强**（Semi 无 focus trap / 无 Esc / 无 inert / 无键盘导航 / 无 role=dialog）。
+> 分类：show · 阶段：M4（破坏性重写，严格对齐 Semi）
+> 对标 Semi：[UserGuide 用户引导](https://semi.design/zh-CN/show/userguide)
+> 对新用户进行功能分步导览。本 SPEC **严格对齐 Semi userGuide**（DOM / token / API / demo 全量对齐，无向后兼容）：复用本库 Popover / Modal，移除自造的、Semi 无的能力（focus-trap / inert / Esc / 箭头键 / role=dialog 契约 / live-announcer / stepIndicator i18n）。
 
 ## 1. 概述
 
@@ -20,16 +20,17 @@ UserGuide 用于**新用户功能引导 / 分步导览**：popup 模式用 spotl
 
 ## 3. 分层实现
 
-- **headless（core/）**：需要。`packages/core/src/user-guide/createUserGuide.ts`：
-  - 步进状态机：`current`、受控（传 current）/非受控、`handleNext`/`handlePrev`/`handleSkip`/`handleFinish` 及各回调去重（current 未变不 notify）。
-  - `visible` false→true 时重置 current=0。
-  - popup 无 target 的步骤跳过。
-  - spotlight 矩形计算：`target.getBoundingClientRect()` + padding 三层覆盖（step > props > 默认 5）。
-  - 按钮渲染规则（跳过：非末步；上一步：非首步；下一步/完成）。
-- **渲染（svelte/）**：`UserGuide.svelte`：
-  - popup：`<svg>` mask 挖洞遮罩 + 复用本库 **Popover**（`floating` 定位）贴气泡 + 目标滚动进视口。
-  - modal：复用本库 **Modal**（centered、无 header/footer、圆点指示器）。
-  - **a11y 原语组合**（超越 Semi）：`focus-trap`（焦点困在气泡/弹窗）+ `inert-background`（背景 inert）+ `scroll-lock`（锁滚动）+ Esc/箭头键盘。
+- **headless（core/）**：`packages/core/src/user-guide.ts`（对齐 Semi foundation.ts）：
+  - 步进状态机：`current`、受控（传 current）/非受控、`handlePrev`/`handleNext`/`handleSkip` 及回调去重（notifyChange 仅在 current 变化时触发）。
+  - 末步 `handleNext` 触发 `onFinish` 而非前进。
+  - `reset`：非受控 visible false→true 时重置 current=0。
+  - **无「无 target 步骤跳过」逻辑**（对齐 Semi：无 target 步仅不渲染，导航仍 +1/-1）。
+  - spotlight 矩形：`target.getBoundingClientRect()` + padding（step > props > 默认 5）。
+- **渲染（svelte/）**：`UserGuide.svelte`（DOM 逐条对齐 Semi userGuide/index.tsx）：
+  - popup：复用本库 **Popover**（`trigger="custom"`）贴 fixed 定位透明 target 气泡 + `<svg>` mask 挖洞遮罩（四块透明 rect 让高亮区可交互）+ 目标 scrollIntoView。指示器纯文本 `n/total`。
+  - modal：复用本库 **Modal**（centered、header/footer=null、bodyStyle padding:0、圆点指示器）。
+  - body 滚动锁：对齐 Semi `disabledBodyScroll`（body overflow:hidden + 补偿滚动条宽，getPopupContainer 时跳过）。
+  - **不含**（Semi 皆无，破坏性移除）：focus-trap / inert / Esc / 箭头键 / role=dialog 契约 / live-announcer。
 
 ## 4. API
 
@@ -79,39 +80,38 @@ Events 见 Props 中 `onChange`/`onNext`/`onPrev`/`onFinish`/`onSkip`。Slots：
 
 ## 5. 主题 / Token 表
 
-| Token | 含义 | 默认引用 |
+逐条镜像 Semi `userGuide/variables.scss`（名 / 值 / 作用 DOM 对齐），无 Semi 之外的中间变量。摘录关键项：
+
+| Token | 含义 | 值（对齐 Semi） |
 | --- | --- | --- |
-| `--cd-userguide-mask-bg` | 遮罩色 | `--cd-color-overlay-bg`（半透明暗色） |
-| `--cd-userguide-spotlight-radius` | 高亮挖洞圆角 | `--cd-border-radius-small` |
-| `--cd-userguide-popup-bg` | 气泡背景 | `--cd-color-bg-2` |
-| `--cd-userguide-popup-bg-primary` | primary 主题气泡背景 | `--cd-color-primary` |
-| `--cd-userguide-popup-color` | 气泡文字 | `--cd-color-text-0` |
-| `--cd-userguide-popup-radius` | 气泡圆角 | `--cd-border-radius-medium` |
-| `--cd-userguide-popup-shadow` | 气泡阴影 | `--cd-shadow-elevated` |
-| `--cd-userguide-indicator-color` | 圆点指示器默认 | `--cd-color-fill-1` |
-| `--cd-userguide-indicator-active` | 圆点激活 | `--cd-color-primary` |
-| `--cd-userguide-spotlight-transition` | 高亮移动过渡 | `--cd-motion-duration-mid` + ease |
+| `--cd-userguide-popup-text-default` | 气泡文字 - 默认 | `--cd-color-text-0` |
+| `--cd-userguide-popup-text-primary` | 气泡文字 - primary | `--cd-color-tertiary-light-default` |
+| `--cd-userguide-modal-indicator-bg` | 弹窗指示器背景 | `--cd-color-primary-light-active` |
+| `--cd-userguide-modal-indicator-bg-active` | 弹窗指示器激活 | `--cd-color-primary` |
+| `--cd-userguide-popover-width` | 气泡卡片宽度 | `400px` |
+| `--cd-userguide-popup-body-padding` | 气泡内边距 | `24px` |
+| `--cd-userguide-popup-title-font-size` | 气泡标题字号 | `--cd-font-size-header-5` |
+| `--cd-userguide-modal-cover-width` / `-height` | 弹窗封面宽 / 高 | `600px` / `300px` |
+| `--cd-userguide-spotlight-mask-bg` | spotlight 遮罩背景 | `--cd-color-overlay-bg` |
+| `--cd-userguide-spotlight-duration` / `-function` | spotlight 过渡 | `200ms` / `cubic-bezier(0.4,0,0.2,1)` |
+
+完整清单见 `packages/tokens/src/components/user-guide.ts`。
 
 ## 6. 无障碍
 
-对标 Semi 的**大幅增强**（Semi 无 focus trap/Esc/inert/键盘/role）：
+严格对齐 Semi（Semi 无 focus-trap / Esc / inert / 键盘导航 / role=dialog 契约，故本组件亦不含）：
 
-- **role/aria**：气泡/弹窗 `role="dialog"` + `aria-modal="true"`，`aria-labelledby`→title、`aria-describedby`→description。进度指示器 `aria-label`「第 N 步，共 M 步」。
-- **焦点管理**：打开时移焦到当前气泡/弹窗（复用 `focus-trap`），焦点困在其中；步进时焦点跟到新气泡；关闭/完成/跳过归还焦点到触发元素。
-- **背景 inert**：复用 `inert-background`，遮罩下背景 DOM 设 `inert`（键盘/读屏不可达）；高亮目标本身按需可保持可交互（引导「点这里」场景）。
-- **键盘**：`Esc`=跳过；`←`/`→` 或 Enter=上一步/下一步（可配）；Tab 在气泡内循环。
-- **滚动锁定**：复用 `scroll-lock`（getPopupContainer 时跳过）。
+- **气泡对话框语义**：popup 复用 Popover（`trigger="custom"`），浮层由 Popover 提供对话框语义；定位锚点是空 div，Popover 将其包成 role=button 宿主，故给一个视觉隐藏可访问名（step.title 优先）避免 aria-command-name 违规。
+- **聚光挖孔可交互**：spotlight 高亮区通过四块透明 rect 让出指针事件（对齐 Semi），用户可点击被高亮目标。
 - **spotlight**：目标不在视口时 `scrollIntoView({block:'center'})`。
-- **播报**：步进经 `live-announcer` polite 播报「第 N 步：{title}」。
+- **body 滚动锁**：对齐 Semi `disabledBodyScroll`（getPopupContainer 时跳过）。
 - **对比度**：气泡文字、圆点激活态达标；遮罩对比保证高亮区可辨。
-- **reduced-motion**：spotlight 移动过渡与气泡入场在 reduced-motion 下移除。
-- **RTL**：气泡位置、箭头、上一步/下一步方向随 RTL 镜像。
+- **reduced-motion**：spotlight 移动过渡在 reduced-motion 下移除。
 
 ## 7. 国际化
 
-- i18n key（locale `UserGuide`）：
-  - `skip`（跳过 / Skip）、`next`（下一步 / Next）、`prev`（上一步 / Prev）、`finish`（完成 / Finish）。
-  - `stepIndicator`：进度模板含 `{current}`/`{total}`（zh「第 {current} 步，共 {total} 步」/ en「Step {current} of {total}」）——**补齐 Semi 未国际化的进度文案**。
+- i18n key（locale `UserGuide`，对齐 Semi）：`skip`（跳过 / Skip）、`next`（下一步 / Next）、`prev`（上一步 / Prev）、`finish`（完成 / Finish）。
+- popup 进度指示器为纯文本 `n/total`（对齐 Semi，**无 i18n key**）。
 - 按钮文案可被 `nextButtonProps.children`/`prevButtonProps.children`/`finishText` 覆盖。
 
 ## 8. 文案

@@ -185,6 +185,8 @@
     font-size: var(--cd-font-button-fontsize);
     font-weight: var(--cd-font-button-fontweight);
     line-height: var(--cd-font-button-lineheight);
+    /* 按钮文字不换行（对齐 Semi button.scss white-space:nowrap）：窄容器下也保持单行 */
+    white-space: nowrap;
     cursor: pointer;
     /* 过渡/变换由各 type/theme 的专属 transition/transform token 接管（见下），
        对齐 Semi animation.scss：默认 duration=0ms（无过渡），主题/DSM 可按类型开启。 */

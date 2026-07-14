@@ -579,6 +579,5 @@ export const zh_CN: Locale = {
     next: '下一步',
     prev: '上一步',
     finish: '完成',
-    stepIndicator: '第 {current} 步，共 {total} 步',
   },
 };
