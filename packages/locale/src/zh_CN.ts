@@ -95,7 +95,6 @@ export const zh_CN: Locale = {
   Popconfirm: {
     confirm: '确定',
     cancel: '取消',
-    confirming: '处理中…',
   },
   Toast: {
     close: '关闭',

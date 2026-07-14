@@ -95,7 +95,6 @@ export const en_US: Locale = {
   Popconfirm: {
     confirm: 'Confirm',
     cancel: 'Cancel',
-    confirming: 'Processing…',
   },
   Toast: {
     close: 'Close',
