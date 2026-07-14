@@ -6,7 +6,7 @@ export const meta = {
   name: 'ScrollList',
   category: 'show',
   description:
-    '滚动列表，类似 iOS 的滚动选择模式。ScrollList 是纯容器（header/footer/bodyHeight），内部放若干 ScrollItem 组成多列。ScrollItem 有 wheel（滚轮，滚动/点击将候选吸附到中央选区居中）与 normal（普通列表，点击选中并高亮）两种模式；wheel 支持 cycled 无限循环、motion 缓动、transform 选中项文案变换、disabled 跳过。选择通过 selectedIndex 受控 + onSelect(data) 回调（data 含 value/index/type）。复用 @chenzy-design/core 纯函数（resolveItemText/centerOffset/nearestIndex/wrapIndex/scrollFrame/repeatCount）。',
+    '滚动列表，类似 iOS 的滚动选择模式。ScrollList 是纯容器（header/footer/bodyHeight），内部放若干 ScrollItem 组成多列。ScrollItem 有 wheel（滚轮，滚动/点击将候选吸附到中央选区居中）与 normal（普通列表，点击选中并高亮）两种模式；wheel 支持 cycled 无限循环、motion 缓动、transform 选中项文案变换、disabled 跳过。选择通过 selectedIndex 受控 + onSelect(data) 回调（data 含 value/index/type）。复用 @chenzy-design/core 纯函数（resolveItemText/centerOffset/nearestIndex/wrapIndex/scrollFrame/shouldPrepend/shouldAppend）。',
   exports: ['ScrollList', 'ScrollItem'],
   // ScrollList（容器）props 放顶层；ScrollItem（列）props 放 subComponents。
   props: [

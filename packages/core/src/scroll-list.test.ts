@@ -6,7 +6,8 @@ import {
   wrapIndex,
   easeOut,
   scrollFrame,
-  repeatCount,
+  shouldPrepend,
+  shouldAppend,
   SCROLL_LIST_DEFAULT_ITEM_HEIGHT,
   SCROLL_LIST_DEFAULT_SCROLL_DURATION,
   type ScrollItemData,
@@ -121,16 +122,33 @@ describe('缓动 easeOut / scrollFrame（对齐 Semi scrollTo.ts）', () => {
   });
 });
 
-describe('repeatCount（cycled 无限列表补份数，对齐 shouldPrepend/Append）', () => {
-  it('按缓冲区/列表高度算需要补几份', () => {
-    // count=2, ih=36 → listHeight=72；wrapperH=300, ratio=2 → 600/72 = 8.3 → 9
-    expect(repeatCount(2, 36, 300, 2)).toBe(9);
-    // count=60, ih=36 → listHeight=2160；600/2160 < 1 → 1
-    expect(repeatCount(60, 36, 300, 2)).toBe(1);
+describe('shouldPrepend / shouldAppend（cycled 补份数，逐份 while 循环对齐 Semi）', () => {
+  // 校准自 Semi 官方 demo 实测：hours(12项)→4 份(48 li)、minutes(60项)→2 份(120 li)。
+  // init 基准份 selected(idx=1) 居中 → baseFirstTop=(300-36)/2 - 1*36=96。
+  it('hours（count=12）init(ratio=2) 头 2 份 + 尾 1 份，合基准共 4 份（对齐 Semi 48 li）', () => {
+    const firstTop = (300 - 36) / 2 - 1 * 36; // 96
+    const lastTop = firstTop + (12 - 1) * 36; // 492
+    expect(shouldPrepend(firstTop, 12, 36, 300, 2)).toBe(2);
+    expect(shouldAppend(lastTop, 12, 36, 300, 2)).toBe(1);
+    // 总份 = prepend + 1 基准 + append
+    expect(2 + 1 + 1).toBe(4);
+  });
+
+  it('minutes（count=60）init(ratio=2) 头 1 份 + 尾 0 份，合基准共 2 份（对齐 Semi 120 li）', () => {
+    const firstTop = (300 - 36) / 2 - 1 * 36; // 96
+    const lastTop = firstTop + (60 - 1) * 36; // 2220
+    expect(shouldPrepend(firstTop, 60, 36, 300, 2)).toBe(1);
+    expect(shouldAppend(lastTop, 60, 36, 300, 2)).toBe(0);
+    expect(1 + 1 + 0).toBe(2);
+  });
+
+  it('滚动调整用 ratio=1（缓冲收窄为 1× 视窗）', () => {
+    // 首项恰在视窗顶（firstTop=0）：ratio=1 时上方需 1 份缓冲
+    expect(shouldPrepend(0, 12, 36, 300, 1)).toBe(1);
   });
 
   it('退化输入返回 0', () => {
-    expect(repeatCount(0, 36, 300)).toBe(0);
-    expect(repeatCount(24, 0, 300)).toBe(0);
+    expect(shouldPrepend(0, 0, 36, 300)).toBe(0);
+    expect(shouldAppend(0, 12, 0, 300)).toBe(0);
   });
 });

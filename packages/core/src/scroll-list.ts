@@ -9,7 +9,10 @@
  * 对齐来源：
  * - scrollItem.tsx `scrollToNode` / `scrollToCenter` → {@link centerOffset}
  * - itemFoundation `getNearestNodeInfo`（选区中线找最近非禁用节点） → {@link nearestIndex}
- * - scrollTo.ts（semi-animation 弹簧驱动 scrollTop） → {@link scrollFrame}（rAF ease-out 等价）
+ * - scrollTo.ts（semi-animation 驱动 scrollTop） → {@link scrollFrame}
+ *   （已核 semi-animation 源码：scrollTo 传 `{duration}` 不传 easing → wrapValue 走 bezier 分支 →
+ *    getEasing(undefined)='linear'=cubic-bezier(.25,.25,.75,.75)，数学上即线性。故本层用**线性**缓动，
+ *    非弹簧、非 ease-out。）
  * - renderItemList `transform`（选中项文案变换） → {@link resolveItemText}
  * - constants.ts `DEFAULT_ITEM_HEIGHT=36` / `DEFAULT_SCROLL_DURATION=120`
  */
@@ -110,7 +113,8 @@ export function wrapIndex(index: number, count: number): number {
 }
 
 /**
- * cubic ease-out（等价 Semi semi-animation 弹簧的观感：先快后缓落定）。t ∈ [0,1]。
+ * cubic ease-out（先快后缓）。t ∈ [0,1]。通用缓动工具。
+ * 注意：ScrollList 落定**不**用它——Semi scrollTo 用的是线性（见 {@link scrollFrame}）。
  */
 export function easeOut(t: number): number {
   const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -118,21 +122,25 @@ export function easeOut(t: number): number {
 }
 
 /**
- * 缓动滚动的单帧 scrollTop（对齐 Semi scrollTo.ts：from→to over duration）。
+ * 缓动滚动的单帧 scrollTop（照搬 Semi scrollTo.ts：from→to over duration，**线性**）。
+ * Semi 的 scrollTo 只传 duration 不传 easing → semi-animation 落到 'linear' bezier
+ * （cubic-bezier(.25,.25,.75,.75)，即匀速 y=x）。故此处用线性插值 `elapsed/duration`。
  * elapsed>=duration 或 duration<=0 时返回 to（落定）。渲染层用 rAF 逐帧调用并写 el.scrollTop。
  */
 export function scrollFrame(from: number, to: number, elapsed: number, duration: number): number {
   if (duration <= 0 || elapsed >= duration) return to;
-  const p = easeOut(elapsed / duration);
+  const p = elapsed / duration; // 线性，对齐 Semi
   return from + (to - from) * p;
 }
 
 /**
- * cycled 无限列表：需要在真实列表头/尾各补多少「份」完整数据，才能填满上/下缓冲区
- * （对齐 shouldPrepend / shouldAppend）。ratio=缓冲区为视窗高度的倍数（init 时 2，调整时 1）。
- * 纯几何版：不读 DOM，用 list 高度（count*itemHeight）与视窗几何推算。
+ * cycled 头部要补多少「份」完整数据，才能让首节点越过上缓冲区顶（对齐 Semi shouldPrepend）。
+ * 照搬 Semi while 循环：`while (baseTop + itemHeight >= wrapperTop - wrapperHeight*ratio) { count++; baseTop -= listHeight }`，
+ * 参数化为相对坐标 `firstTop = firstNodeTop - wrapperTop`（首 li 顶相对视窗顶的偏移，可负），不读 DOM。
+ * ratio=缓冲区为视窗高度的倍数（init 时 2，滚动调整时 1，对齐 Semi）。
  */
-export function repeatCount(
+export function shouldPrepend(
+  firstTop: number,
   count: number,
   itemHeight: number,
   wrapperHeight: number,
@@ -141,5 +149,37 @@ export function repeatCount(
   if (count <= 0 || itemHeight <= 0) return 0;
   const listHeight = count * itemHeight;
   if (listHeight <= 0) return 0;
-  return Math.ceil((wrapperHeight * ratio) / listHeight);
+  const threshold = -wrapperHeight * ratio; // wrapperTop - wrapperHeight*ratio，相对坐标下 wrapperTop=0
+  let baseTop = firstTop;
+  let n = 0;
+  while (baseTop + itemHeight >= threshold) {
+    n += 1;
+    baseTop -= listHeight;
+  }
+  return n;
+}
+
+/**
+ * cycled 尾部要补多少「份」完整数据，才能让尾节点越过下缓冲区底（对齐 Semi shouldAppend）。
+ * 照搬 Semi while 循环：`while (baseTop <= wrapperTop + wrapperHeight*ratio) { count++; baseTop += listHeight }`，
+ * 参数化为相对坐标 `lastTop = lastNodeTop - wrapperTop`（尾 li 顶相对视窗顶的偏移），不读 DOM。
+ */
+export function shouldAppend(
+  lastTop: number,
+  count: number,
+  itemHeight: number,
+  wrapperHeight: number,
+  ratio = 2,
+): number {
+  if (count <= 0 || itemHeight <= 0) return 0;
+  const listHeight = count * itemHeight;
+  if (listHeight <= 0) return 0;
+  const threshold = wrapperHeight * ratio; // wrapperTop + wrapperHeight*ratio，相对坐标下 wrapperTop=0
+  let baseTop = lastTop;
+  let n = 0;
+  while (baseTop <= threshold) {
+    n += 1;
+    baseTop += listHeight;
+  }
+  return n;
 }
