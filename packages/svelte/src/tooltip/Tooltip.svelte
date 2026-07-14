@@ -1,16 +1,20 @@
 <!--
   Tooltip — 文字提示（严格对齐 Semi Design semi-ui/tooltip）。
   浮层基座：Popover / Popconfirm 复用其定位/触发/焦点/dismiss/箭头（对齐 Semi 继承链）。
-  DOM：触发包裹 span + portal 浮层 .cd-tooltip__pop（承 semi-tooltip-wrapper 语义）
-       > .cd-tooltip__content（content 层）+ SVG 箭头（同级）。
+  DOM（对齐 Semi）：触发包裹 span > .{prefixCls}-wrapper[x-placement]（承 semi-tooltip-wrapper 语义）
+       > .cd-tooltip-content（content 层，恒 tooltip 前缀，对齐 Semi ${prefix}-content）
+       + 箭头 .{prefixCls}-icon-arrow（同级）。prefixCls 默认 cd-tooltip；Popover 传 cd-popover
+       切换整套类名前缀（对齐 Semi prefixCls，替代旧 variant）。
   定位：portal 到 getPopupContainer()（缺省 body）+ position:fixed，core computePosition
        计算坐标 + autoAdjustOverflow flip 碰撞避让（脱离 overflow:hidden 裁剪）。
-  Semi 12 方位 position（top/topLeft/leftTop…）→ core side+align Placement（见 placement.ts）。
+  x-placement 用 Semi position 命名（topLeft/leftTop…，对齐 Semi arrow.scss 选择器）。
+  箭头：默认单 path SVG（TriangleArrow 24×7 / TriangleArrowVertical 7×24）+ fill=currentColor，
+       color 走 --cd-color-tooltip-arrow-icon-default（grey-7，对齐 Semi）。Popover 经 showArrow
+       Snippet 传入自定义双 path 箭头（描边+背景），Tooltip 自身无 arrowStyle（Semi Tooltip 无）。
   Semi Tooltip 固定 dark（grey-7 背景），无 theme/status/maxWidth（用 style 覆盖 max-width）。
-  箭头：SVG 双 path（外层 border 色 + 内层 bg 色），vertical(24×7) / horizontal(7×24) 两套，
-       对齐 Semi TriangleArrow/TriangleArrowVertical。arrowStyle 可定制 border/bg 色。
+  触发：hover/focus/click/custom/contextMenu（对齐 Semi TRIGGER_SET）。
   custom trigger：显隐完全由受控 visible + onVisibleChange 控制。
-  condition=false：不响应 hover/click/focus（custom 不受影响）。
+  condition=false：不响应 hover/click/focus/contextMenu（custom 不受影响）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -27,11 +31,12 @@
   import { floating } from '../_floating/use-floating.js';
   import {
     positionToPlacement,
+    placementToPosition,
     resolveSide,
     type Position,
   } from './placement.js';
 
-  type TriggerKind = 'hover' | 'focus' | 'click' | 'custom';
+  type TriggerKind = 'hover' | 'focus' | 'click' | 'custom' | 'contextMenu';
   type Spacing = number | { x: number; y: number };
   type MarginObject = {
     marginLeft?: number;
@@ -39,12 +44,6 @@
     marginRight?: number;
     marginBottom?: number;
   };
-  /** 箭头颜色定制（对齐 Semi arrowStyle 的 borderColor/backgroundColor/borderOpacity 子集）。 */
-  interface ArrowStyle {
-    borderColor?: string;
-    backgroundColor?: string;
-    borderOpacity?: string | number;
-  }
 
   interface Props {
     content?: string | Snippet;
@@ -63,14 +62,12 @@
     margin?: number | MarginObject;
     mouseEnterDelay?: number;
     mouseLeaveDelay?: number;
-    /** 是否显示箭头，或传自定义箭头 Snippet，默认 true */
+    /** 是否显示箭头，或传自定义箭头 Snippet（Popover 传双 path），默认 true */
     showArrow?: boolean | Snippet;
     /** 箭头是否指向触发元素中心（需 showArrow），默认 true */
     arrowPointAtCenter?: boolean;
-    /** 箭头颜色定制（border/bg/opacity） */
-    arrowStyle?: ArrowStyle | undefined;
     disabled?: boolean;
-    /** 是否允许触发显示；false 时不响应 hover/click/focus（custom 不受影响），默认 true */
+    /** 是否允许触发显示；false 时不响应 hover/click/focus/contextMenu（custom 不受影响），默认 true */
     condition?: boolean;
     /** hover 触发下，点击浮层内部即关闭，默认 false */
     clickToHide?: boolean;
@@ -80,7 +77,12 @@
     disableFocusListener?: boolean;
     /** 是否展示进出场动画，默认 true */
     motion?: boolean;
-    /** 浮层 z-index（覆盖 CSS token --cd-tooltip-z），默认 undefined（走 token） */
+    /**
+     * 是否从触发元素中心处变换（仅影响动效 transform-origin），默认 true。对齐 Semi transformFromCenter，
+     * 一般无需改动。false 时进出场缩放从浮层自身原点起。
+     */
+    transformFromCenter?: boolean;
+    /** 浮层 z-index（覆盖 CSS token --cd-z-tooltip），默认 undefined（走 token，=1060） */
     zIndex?: number | undefined;
     /** 浮层自定义类名（追加到浮层元素） */
     class?: string;
@@ -103,11 +105,21 @@
     /** 浮层完全关闭后的回调 */
     afterClose?: (() => void) | undefined;
     /**
-     * 浮层视觉档（对齐 Semi prefixCls 机制）：'tooltip'（默认，深色 grey-7 浮层）
-     * | 'popover'（浅色 bg-3 白底 + 边框 + 阴影，供 Popover/Popconfirm 复用）。
-     * 切换浮层根 class 命名空间与箭头默认配色 token。
+     * 浮层 wrapper 的类名前缀（对齐 Semi prefixCls）：默认 'cd-tooltip'（深色 grey-7 浮层）。
+     * Popover/Popconfirm 传 'cd-popover' 切换整套类名前缀 + 浅色浮层视觉 + 双 path 箭头。
+     * 拼 {prefixCls}-wrapper / {prefixCls}-icon-arrow / {prefixCls}-with-arrow。
      */
-    variant?: 'tooltip' | 'popover';
+    prefixCls?: string;
+    /**
+     * 当 children 为 disabled，或 children 为多个元素时，外层包裹 span 的类名（对齐 Semi wrapperClassName）。
+     * 此库始终以 span 包裹触发器，故该类名恒作用于包裹 span。
+     */
+    wrapperClassName?: string;
+    /**
+     * 浮层 wrapper 节点的 id（对齐 Semi wrapperId）；trigger 的 aria 属性指向此 id，
+     * 不设则组件随机生成。
+     */
+    wrapperId?: string | undefined;
     /** 浮层 role（对齐 Semi role），默认 'tooltip'。Popover 传 'dialog' 承载可交互富内容。 */
     role?: string;
     /** dialog 模式（role=dialog）：焦点陷入浮层（Tab 循环），默认随 role==='dialog' */
@@ -134,13 +146,13 @@
     mouseLeaveDelay = 50,
     showArrow = true,
     arrowPointAtCenter = true,
-    arrowStyle,
     disabled = false,
     condition = true,
     clickToHide = false,
     keepDOM = false,
     disableFocusListener = false,
     motion = true,
+    transformFromCenter = true,
     zIndex,
     class: className = '',
     style: styleExtra = '',
@@ -152,7 +164,9 @@
     onVisibleChange,
     onClickOutSide,
     afterClose,
-    variant = 'tooltip',
+    prefixCls = 'cd-tooltip',
+    wrapperClassName = '',
+    wrapperId,
     role = 'tooltip',
     guardFocus,
     returnFocusOnClose = true,
@@ -161,7 +175,9 @@
     children,
   }: Props = $props();
 
-  const tipId = useId('cd-tooltip');
+  const autoId = useId('cd-tooltip');
+  // 浮层 wrapper id：优先用户 wrapperId，否则自动生成（对齐 Semi wrapperId 语义）。
+  const tipId = $derived(wrapperId ?? autoId);
 
   // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先。
   const globalPopupContainer = getGlobalPopupContainer();
@@ -170,7 +186,7 @@
   // Semi 12 方位 position → core Placement（内部定位用）
   const placement = $derived<Placement>(positionToPlacement(position));
 
-  // showArrow 归一：boolean 决定显隐；Snippet 时视为显示且用自定义箭头。
+  // showArrow 归一：boolean 决定显隐；Snippet 时视为显示且用自定义箭头（Popover 双 path）。
   const showArrowBool = $derived(showArrow !== false);
   const customArrow = $derived(
     typeof showArrow === 'function' ? (showArrow as Snippet) : undefined,
@@ -289,13 +305,23 @@
     setOpen(!isOpen);
   }
 
+  // --- contextMenu 触发（对齐 Semi）：右键 preventDefault 弹浮层；再次右键切换。
+  //     非 dialog 时也走此路径（Tooltip contextMenu 无焦点陷入需求，但仍作为可控浮层）。 ---
+  function onTriggerContextMenu(e: MouseEvent) {
+    if (!allowShow || isCustom || !triggers.includes('contextMenu')) return;
+    e.preventDefault();
+    setOpen(!isOpen);
+  }
+
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
   let popEl = $state<HTMLDivElement | null>(null);
 
-  // 解析后的实际方位（flip 后），驱动箭头朝向 class。初值仅取 placement 一次。
+  // 解析后的实际方位（flip 后），驱动箭头朝向与 x-placement。初值仅取 placement 一次。
   let resolvedPlacement = $state<Placement>(untrack(() => placement));
   const resolvedSide = $derived<Side>(resolveSide(resolvedPlacement));
+  // x-placement 属性用 Semi position 命名（topLeft/leftTop…，对齐 Semi arrow.scss 选择器）。
+  const xPlacement = $derived(placementToPosition(resolvedPlacement));
   let arrowOffset = $state(0);
 
   function onPlacement(info: { placement: Placement; arrowOffset: number }) {
@@ -312,12 +338,13 @@
 
   // --- useDismiss (红线 #3)：Esc 对所有触发模式生效（WCAG 1.4.13 Content on Hover/Focus：
   //     hover/focus 浮层也须可由 Esc 关闭；Semi closeOnEsc 默认关仅指 click 触发的专用行为，
-  //     此处 Esc 关闭是无障碍底线，不受 closeOnEsc 门控）。外部点击关闭仅 click/custom 生效
-  //     （对齐 Semi；hover/focus 自然离开即关）。popup portal 列入 extraTargets。
+  //     此处 Esc 关闭是无障碍底线，不受 closeOnEsc 门控）。外部点击关闭仅 click/custom/contextMenu
+  //     生效（对齐 Semi；hover/focus 自然离开即关）。popup portal 列入 extraTargets。
   //     外部点击先触发 onClickOutSide（仅 custom/click）。 ---
   $effect(() => {
     if (!isOpen || !rootEl) return;
-    const allowOutsideClick = triggers.includes('click') || isCustom;
+    const allowOutsideClick =
+      triggers.includes('click') || triggers.includes('contextMenu') || isCustom;
     if (!closeOnEsc && !allowOutsideClick) return;
     const cleanup = useDismiss(rootEl, {
       onDismiss: (reason) => {
@@ -370,10 +397,12 @@
     prevOpenRef.value = current;
   });
 
-  // 浮层根内联样式：自定义 zIndex 覆盖 token 层级 + 用户 style 追加。
+  // 浮层根内联样式：自定义 zIndex 覆盖 token 层级 + transform-origin（transformFromCenter=false
+  // 时缩放从浮层自身原点）+ 用户 style 追加。
   const popStyle = $derived(
     [
       zIndex !== undefined ? `z-index:${zIndex}` : '',
+      transformFromCenter ? '' : 'transform-origin:top left',
       styleExtra,
     ]
       .filter(Boolean)
@@ -386,29 +415,25 @@
     if (clickToHide && !isCustom) setOpen(false);
   }
 
-  // 箭头沿交叉轴的定位样式：top/bottom 用 inline-start，left/right 用 block-start。
-  const arrowStyleCss = $derived(
-    resolvedSide === 'top' || resolvedSide === 'bottom'
-      ? `inset-inline-start:${arrowOffset}px`
-      : `inset-block-start:${arrowOffset}px`,
-  );
+  // 箭头沿交叉轴的定位：写 CSS 变量到 wrapper（对齐 Semi --semi-tooltip-arrow-offset-x/y），
+  // 由 arrow.scss 对齐选择器消费（left/top: var(--…-arrow-offset-x, 50%)）。
+  // top/bottom 用 x 偏移；left/right 用 y 偏移。仅 arrowPointAtCenter 且非 start/end 对齐时写。
+  const arrowOffsetVar = $derived.by(() => {
+    if (!arrowPointAtCenter) return '';
+    const isCenter =
+      resolvedPlacement === 'top' ||
+      resolvedPlacement === 'bottom' ||
+      resolvedPlacement === 'left' ||
+      resolvedPlacement === 'right';
+    if (!isCenter) return '';
+    return resolvedSide === 'top' || resolvedSide === 'bottom'
+      ? `--cd-tooltip-arrow-offset-x:${arrowOffset}px`
+      : `--cd-tooltip-arrow-offset-y:${arrowOffset}px`;
+  });
 
-  // 箭头颜色：arrowStyle 覆盖 token 默认（border/bg/opacity）。
-  // variant 决定默认配色 token：tooltip 深色（border=bg 无独立描边）；
-  // popover 浅色（bg=popover-arrow-bg、border=popover-arrow-border 独立描边）。
-  const arrowDefaultBg = $derived(
-    variant === 'popover'
-      ? 'var(--cd-color-popover-arrow-bg)'
-      : 'var(--cd-tooltip-bg)',
+  const wrapperStyle = $derived(
+    [popStyle, arrowOffsetVar].filter(Boolean).join(';'),
   );
-  const arrowDefaultBorder = $derived(
-    variant === 'popover'
-      ? 'var(--cd-color-popover-arrow-border)'
-      : 'var(--cd-tooltip-arrow-border, var(--cd-tooltip-bg))',
-  );
-  const arrowBorderColor = $derived(arrowStyle?.borderColor);
-  const arrowBgColor = $derived(arrowStyle?.backgroundColor);
-  const arrowBorderOpacity = $derived(arrowStyle?.borderOpacity);
 
   // dialog 模式：触发器承载 button 角色（aria-haspopup/expanded/controls 挂合法宿主，
   // 对齐 Semi Popover 的 a11y 修复）；tooltip 模式保持纯 span + aria-describedby。
@@ -422,17 +447,18 @@
   }
 </script>
 
-<!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children -->
+<!-- 触发包裹 span 仅转发宿主事件给真正可交互的 children（wrapperClassName 作用于此包裹 span） -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
-  class="cd-tooltip"
+  class="cd-tooltip {wrapperClassName}"
   bind:this={rootEl}
   onpointerenter={onPointerEnter}
   onpointerleave={onPointerLeave}
   onfocusin={onFocusIn}
   onfocusout={onFocusOut}
   onclick={onClick}
+  oncontextmenu={triggers.includes('contextMenu') ? onTriggerContextMenu : undefined}
 >
   <!-- dialog 模式触发器承载 button 角色（aria-haspopup/expanded/controls 挂合法宿主）；
        tooltip 模式保持纯 span + aria-describedby。role/tabindex 动态，抑制静态分析误报。 -->
@@ -461,6 +487,7 @@
     <div
       id={tipId}
       {role}
+      {...{ 'x-placement': xPlacement }}
       aria-modal={isDialog ? 'false' : undefined}
       aria-labelledby={isDialog ? ariaLabelledby : undefined}
       aria-label={isDialog ? dialogLabel : undefined}
@@ -468,15 +495,15 @@
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
       use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
-      class="cd-tooltip__pop cd-tooltip__pop--{variant} cd-tooltip__pop--{resolvedSide} {className}"
-      class:cd-tooltip__pop--no-arrow={!showArrowBool}
-      class:cd-tooltip__pop--with-arrow={showArrowBool}
-      class:cd-tooltip__pop--hidden={!isOpen}
-      class:cd-tooltip__pop--motion={motionEnabled}
-      style={popStyle}
+      class="{prefixCls}-wrapper {className}"
+      class:cd-tooltip-with-arrow={showArrowBool}
+      class:cd-tooltip-wrapper-show={isOpen}
+      class:cd-tooltip-wrapper--hidden={!isOpen}
+      class:cd-tooltip-wrapper--motion={motionEnabled}
+      style={wrapperStyle}
       onclick={onPopClick}
     >
-      <div class="cd-tooltip__content">
+      <div class="cd-tooltip-content">
         {#if contentSnippet}
           {@render contentSnippet()}
         {:else}
@@ -487,32 +514,34 @@
         {#if customArrow}
           {@render customArrow()}
         {:else if resolvedSide === 'top' || resolvedSide === 'bottom'}
-          <!-- 水平箭头（top/bottom）：24×7 SVG 双 path，bottom 侧旋转 180° -->
+          <!-- 水平箭头（top/bottom）：单 path 24×7 SVG，fill=currentColor（color=grey-7），
+               bottom 侧由 x-placement CSS 旋转 180°（对齐 Semi TriangleArrow） -->
           <svg
-            class="cd-tooltip__arrow cd-tooltip__arrow--v"
+            class="{prefixCls}-icon-arrow"
             width="24"
             height="7"
             viewBox="0 0 24 7"
-            style={arrowStyleCss}
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
             focusable="false"
           >
-            <path d="M0 0.5L0 1.5C4 1.5, 5.5 3, 7.5 5S10,8 12,8S14.5 7, 16.5 5S20,1.5 24,1.5L24 0.5L0 0.5z" style="fill:{arrowBorderColor ?? arrowDefaultBorder};opacity:{arrowBorderOpacity ?? 1}" />
-            <path d="M0 0L0 1C4 1, 5.5 2, 7.5 4S10,7 12,7S14.5  6, 16.5 4S20,1 24,1L24 0L0 0z" style="fill:{arrowBgColor ?? arrowDefaultBg}" />
+            <path d="M24 0V1C20 1 18.5 2 16.5 4C14.5 6 14 7 12 7C10 7 9.5 6 7.5 4C5.5 2 4 1 0 1V0H24Z" />
           </svg>
         {:else}
-          <!-- 垂直箭头（left/right）：7×24 SVG 双 path，right 侧旋转 180° -->
+          <!-- 垂直箭头（left/right）：单 path 7×24 SVG，right 侧由 x-placement CSS 旋转 180°
+               （对齐 Semi TriangleArrowVertical） -->
           <svg
-            class="cd-tooltip__arrow cd-tooltip__arrow--h"
+            class="{prefixCls}-icon-arrow"
             width="7"
             height="24"
             viewBox="0 0 7 24"
-            style={arrowStyleCss}
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
             focusable="false"
           >
-            <path d="M0.5 0L1.5 0C1.5 4, 3 5.5, 5 7.5S8,10 8,12S7 14.5, 5 16.5S1.5,20 1.5,24L0.5 24L0.5 0z" style="fill:{arrowBorderColor ?? arrowDefaultBorder};opacity:{arrowBorderOpacity ?? 1}" />
-            <path d="M0 0L1 0C1 4, 2 5.5, 4 7.5S7,10 7,12S6 14.5, 4 16.5S1,20 1,24L0 24L0 0z" style="fill:{arrowBgColor ?? arrowDefaultBg}" />
+            <path d="M0 0L1 0C1 4, 2 5.5, 4 7.5S7,10 7,12S6 14.5, 4 16.5S1,20 1,24L0 24L0 0z" />
           </svg>
         {/if}
       {/if}
@@ -527,101 +556,152 @@
   }
   .cd-tooltip__trigger {
     display: inline-block;
+    inline-size: auto;
+    block-size: auto;
   }
+
   /* 浮层 portal 到 body，由 JS 写 position:fixed + transform 定位。
      对齐 Semi .semi-tooltip-wrapper：dark grey-7 背景、8/12 内边距、240 max-width。 */
-  .cd-tooltip__pop {
-    z-index: var(--cd-tooltip-z);
+  :global(.cd-tooltip-wrapper) {
+    position: relative;
+    z-index: var(--cd-z-tooltip);
     inline-size: max-content;
-    max-inline-size: var(--cd-tooltip-max-width);
-    padding: var(--cd-tooltip-padding);
-    background: var(--cd-tooltip-bg);
-    color: var(--cd-tooltip-color);
-    border-radius: var(--cd-tooltip-radius);
-    font-size: var(--cd-tooltip-font-size);
-    line-height: var(--cd-tooltip-line-height);
+    max-inline-size: var(--cd-width-tooltip);
+    padding: var(--cd-spacing-tooltip-content-paddingtop)
+      var(--cd-spacing-tooltip-content-paddingright)
+      var(--cd-spacing-tooltip-content-paddingbottom)
+      var(--cd-spacing-tooltip-content-paddingleft);
+    background-color: var(--cd-color-tooltip-bg-default);
+    backdrop-filter: var(--cd-filter-tooltip-bg);
+    color: var(--cd-color-tooltip-text-default);
+    border-radius: var(--cd-radius-tooltip);
+    font-size: var(--cd-font-tooltip-fontsize);
+    line-height: var(--cd-line-height-regular);
     word-wrap: break-word;
     overflow-wrap: break-word;
     pointer-events: auto;
   }
-  .cd-tooltip__content {
+  /* 箭头颜色：单 path fill=currentColor，color 走 tooltip 箭头色（grey-7，对齐 Semi）。 */
+  :global(.cd-tooltip-icon-arrow) {
+    color: var(--cd-color-tooltip-arrow-icon-default);
+  }
+  :global(.cd-tooltip-content) {
     min-inline-size: 0;
   }
-
-  /* --- variant=popover：浅色浮层（对齐 Semi .semi-popover-wrapper：bg-3 白底 + 阴影 + medium 圆角）。
-     内边距归零，由 Popover 内层 .cd-popover-content / .cd-popover-title 控制（对齐 Semi）。 --- */
-  .cd-tooltip__pop--popover {
-    padding: 0;
-    max-inline-size: none;
-    background: var(--cd-color-popover-bg-default);
-    color: var(--cd-color-text-0);
-    border-radius: var(--cd-radius-popover);
-    box-shadow: var(--cd-popover-shadow);
-    font-size: var(--cd-tooltip-font-size);
-    line-height: var(--cd-tooltip-line-height);
-    backdrop-filter: var(--cd-filter-popover-bg);
+  /* 带箭头浮层内容居中（对齐 Semi .semi-tooltip-with-arrow） */
+  :global(.cd-tooltip-with-arrow) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
-  /* --- 箭头：SVG 双 path，arrowOffset（内联 inset-*）指箭头中心距浮层前缘，
-     故交叉轴用 margin 回退半个箭头宽/高，把中心对准 arrowOffset；bottom/right 侧旋转 180°。 --- */
-  .cd-tooltip__arrow {
+  /* --- 箭头绝对定位（对齐 Semi arrow.scss，按 x-placement 属性选择器）。
+     水平箭头 24×7；垂直箭头 7×24；bottom/right 系旋转 180°。
+     交叉轴 center 用 --cd-tooltip-arrow-offset-x/y（缺省 50%），start/end 用校正偏移。 --- */
+  :global(.cd-tooltip-wrapper) :global(.cd-tooltip-icon-arrow) {
     position: absolute;
-    display: block;
+    inline-size: var(--cd-width-tooltip-arrow);
+    block-size: var(--cd-height-tooltip-arrow);
   }
-  /* 水平箭头（top/bottom 系）：宽 24 高 7；交叉轴回退半宽 12px；主轴贴边（高 7 → 露出 6px 补 1px 缝） */
-  .cd-tooltip__pop--top .cd-tooltip__arrow--v,
-  .cd-tooltip__pop--bottom .cd-tooltip__arrow--v {
-    margin-inline-start: -12px;
+  /* top 系：箭头在下缘 */
+  :global(.cd-tooltip-wrapper[x-placement='top']) :global(.cd-tooltip-icon-arrow) {
+    inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
+    transform: translateX(-50%);
+    inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
   }
-  .cd-tooltip__pop--top .cd-tooltip__arrow--v {
-    inset-block-end: -6px;
+  :global(.cd-tooltip-wrapper[x-placement='topLeft']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
+    inset-inline-start: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
   }
-  .cd-tooltip__pop--bottom .cd-tooltip__arrow--v {
-    inset-block-start: -6px;
+  :global(.cd-tooltip-wrapper[x-placement='topRight']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
+    inset-inline-end: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
+  }
+  /* bottom 系：箭头在上缘，旋转 180° */
+  :global(.cd-tooltip-wrapper[x-placement='bottom']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
+    inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
+    transform: translateX(-50%) rotate(180deg);
+  }
+  :global(.cd-tooltip-wrapper[x-placement='bottomLeft']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
+    inset-inline-start: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
-  /* 垂直箭头（left/right 系）：宽 7 高 24；交叉轴回退半高 12px */
-  .cd-tooltip__pop--left .cd-tooltip__arrow--h,
-  .cd-tooltip__pop--right .cd-tooltip__arrow--h {
-    margin-block-start: -12px;
-  }
-  .cd-tooltip__pop--left .cd-tooltip__arrow--h {
-    inset-inline-end: -6px;
-  }
-  .cd-tooltip__pop--right .cd-tooltip__arrow--h {
-    inset-inline-start: -6px;
+  :global(.cd-tooltip-wrapper[x-placement='bottomRight']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
+    inset-inline-end: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
-  .cd-tooltip__pop--no-arrow .cd-tooltip__arrow {
-    display: none;
+  /* left 系：箭头在右缘（垂直箭头尺寸） */
+  :global(.cd-tooltip-wrapper[x-placement='left']) :global(.cd-tooltip-icon-arrow),
+  :global(.cd-tooltip-wrapper[x-placement='leftTop']) :global(.cd-tooltip-icon-arrow),
+  :global(.cd-tooltip-wrapper[x-placement='leftBottom']) :global(.cd-tooltip-icon-arrow) {
+    inline-size: var(--cd-width-tooltip-arrow-vertical);
+    block-size: var(--cd-height-tooltip-arrow-vertical);
+    inset-inline-end: calc(-1 * var(--cd-width-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
+  }
+  :global(.cd-tooltip-wrapper[x-placement='left']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
+    transform: translateY(-50%);
+  }
+  :global(.cd-tooltip-wrapper[x-placement='leftTop']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+  }
+  :global(.cd-tooltip-wrapper[x-placement='leftBottom']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-end: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+  }
+  /* right 系：箭头在左缘，旋转 180° */
+  :global(.cd-tooltip-wrapper[x-placement='right']) :global(.cd-tooltip-icon-arrow),
+  :global(.cd-tooltip-wrapper[x-placement='rightTop']) :global(.cd-tooltip-icon-arrow),
+  :global(.cd-tooltip-wrapper[x-placement='rightBottom']) :global(.cd-tooltip-icon-arrow) {
+    inline-size: var(--cd-width-tooltip-arrow-vertical);
+    block-size: var(--cd-height-tooltip-arrow-vertical);
+    inset-inline-start: calc(-1 * var(--cd-width-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
+  }
+  :global(.cd-tooltip-wrapper[x-placement='right']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
+    transform: translateY(-50%) rotate(180deg);
+  }
+  :global(.cd-tooltip-wrapper[x-placement='rightTop']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-start: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+    transform: rotate(180deg);
+  }
+  :global(.cd-tooltip-wrapper[x-placement='rightBottom']) :global(.cd-tooltip-icon-arrow) {
+    inset-block-end: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+    transform: rotate(180deg);
   }
 
-  /* motion：进场淡入 + 轻微缩放（zoom），token 时长/缓动；reduced-motion 退化。
+  /* motion：进出场 zoomIn（对齐 Semi tooltip zoomIn 关键帧 + 100ms cubic-bezier）。
      用独立 scale 属性（非 transform）做缩放：use:floating 用 transform: translate() 定位，
      动画走 transform 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖。 */
-  .cd-tooltip__pop--motion {
-    animation: cd-tooltip-in var(--cd-tooltip-motion-duration)
-      var(--cd-tooltip-motion-easing, ease) both;
+  :global(.cd-tooltip-wrapper--motion) {
+    animation: cd-tooltip-zoom-in var(--cd-animation-duration-tooltip-in)
+      var(--cd-animation-function-tooltip-in) both;
   }
-  @keyframes cd-tooltip-in {
+  @keyframes cd-tooltip-zoom-in {
     from {
-      opacity: 0;
-      scale: 0.8;
+      opacity: var(--cd-tooltip-motion-zoom-opacity-from);
+      scale: var(--cd-tooltip-motion-zoom-scale-from);
+    }
+    50% {
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
     }
     to {
-      opacity: 1;
+      opacity: var(--cd-tooltip-motion-zoom-opacity-to);
       scale: 1;
     }
   }
 
   /* keepDOM=true 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  .cd-tooltip__pop--hidden {
+  :global(.cd-tooltip-wrapper--hidden) {
     display: none;
   }
 
   /* reduced-motion：禁用进场动画 */
   @media (prefers-reduced-motion: reduce) {
-    .cd-tooltip__pop--motion {
+    :global(.cd-tooltip-wrapper--motion) {
       animation: none;
     }
   }

@@ -1,5 +1,5 @@
 // Popconfirm a11y（封装 Popover→Tooltip 架构）：气泡确认浮层。受控 visible 强制打开。
-//  - 浮层 portal 到 body，role=dialog（在 .cd-tooltip__pop 上），aria-labelledby 指向 Popconfirm 标题。
+//  - 浮层 portal 到 body，role=dialog（在 .cd-popover-wrapper 上），aria-labelledby 指向 Popconfirm 标题。
 //  - 触发器 .cd-tooltip__trigger 承载 role=button + aria-haspopup=dialog + aria-expanded/controls。
 // 浮层在 document.body —— 全局查询并扫 document.body。
 import { describe, it, expect } from 'vitest';
@@ -38,7 +38,7 @@ describe('Popconfirm a11y', () => {
 
   it('收起态：无浮层 dialog，无 axe violations', async () => {
     const { container } = render(Fixture, { props: { visible: false } });
-    expect(document.querySelector('.cd-tooltip__pop[role="dialog"]')).toBeNull();
+    expect(document.querySelector('.cd-popover-wrapper[role="dialog"]')).toBeNull();
     await expectNoAxeViolations(container);
   });
 });

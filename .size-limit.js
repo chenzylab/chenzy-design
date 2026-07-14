@@ -68,7 +68,10 @@ const components = [
   ['banner', '{ Banner }', '3.3 KB'],
   ['modal', '{ modal }', '6.2 KB'],
   ['notification', '{ notification }', '5.5 KB'],
-  ['popconfirm', '{ Popconfirm }', '4.8 KB'],
+  // 浮层三件套对齐 Semi 破坏性重写后箭头定位职责回归 Tooltip 基座：Tooltip 内联 12 方位
+  // x-placement CSS（+40%），Popover/Popconfirm 移除重复箭头 CSS 与中间变量层而下降。
+  // 预算按各自实测 +15% buffer 重新校准（popconfirm 4.44→2.73 KB 实测）。
+  ['popconfirm', '{ Popconfirm }', '3.2 KB'],
   ['progress', '{ Progress }', '3.8 KB'],
   ['side-sheet', '{ SideSheet }', '4.5 KB'],
   ['feedback', '{ Feedback }', '3.5 KB'],
@@ -141,13 +144,16 @@ const components = [
   ['image', '{ Image, ImagePreview }', '13 KB'],
   ['list', '{ List, ListItem }', '3.5 KB'],
   ['overflow-list', '{ OverflowList }', '3.2 KB'],
-  ['popover', '{ Popover }', '4.75 KB'],
+  // 箭头定位 CSS 迁回 Tooltip 后 4.11→2.82 KB 实测；预算按 +15% buffer 校准（见浮层三件套注）。
+  ['popover', '{ Popover }', '3.3 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],
   // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、useFullRender、onRow 事件、根 class/style、components tag 覆盖、getVirtualizedListRef、scrollToFirstRowOnChange、RTL、图标组件化）后实测 17.92 KB，预算按小幅 headroom 校准。
   ['table', '{ Table }', '18.2 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
-  ['tooltip', '{ Tooltip }', '4.6 KB'],
+  // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS
+  // 全部内联进基座（原 3.07 KB → 4.2 KB 实测）；预算按 +15% buffer 校准（见浮层三件套注）。
+  ['tooltip', '{ Tooltip }', '5 KB'],
   ['tree', '{ Tree }', '11 KB'],
   ['user-guide', '{ UserGuide }', '5.5 KB'],
   ['virtual-list', '{ VirtualList }', '2.65 KB'],
