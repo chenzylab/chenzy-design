@@ -60,12 +60,6 @@
     "sizeLimit": 3300
   },
   {
-    "name": "drawer",
-    "passed": true,
-    "size": 3538,
-    "sizeLimit": 4500
-  },
-  {
     "name": "modal",
     "passed": true,
     "size": 5722,
