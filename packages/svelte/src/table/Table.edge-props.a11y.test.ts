@@ -32,16 +32,16 @@ describe('Table 边角 props', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, expandable: { expandedRowRender } },
     });
-    expect(container.querySelector('.cd-table__cell--expand')).toBeNull();
-    expect(container.querySelector('.cd-table__expand-inline .cd-table__expand-btn')).not.toBeNull();
+    expect(container.querySelector('.cd-table-column-expand')).toBeNull();
+    expect(container.querySelector('.cd-table-expand-icon-cell .cd-table-expand-icon')).not.toBeNull();
   });
 
   it('hideExpandedColumn=false：展开按钮单独成列', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, hideExpandedColumn: false, expandable: { expandedRowRender } },
     });
-    expect(container.querySelector('.cd-table__cell--expand')).not.toBeNull();
-    expect(container.querySelector('.cd-table__expand-inline')).toBeNull();
+    expect(container.querySelector('.cd-table-column-expand')).not.toBeNull();
+    expect(container.querySelector('.cd-table-expand-icon-cell')).toBeNull();
   });
 
   it('expandIcon：自定义展开图标替换默认三角', () => {
@@ -51,7 +51,7 @@ describe('Table 边角 props', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, expandIcon, expandable: { expandedRowRender } },
     });
-    expect(container.querySelector('.cd-table__expand-btn .my-caret')).not.toBeNull();
+    expect(container.querySelector('.cd-table-expand-icon .my-caret')).not.toBeNull();
   });
 
   it('renderPagination：替换内置 Pagination UI', () => {
@@ -62,14 +62,14 @@ describe('Table 边角 props', () => {
       props: { columns, dataSource, renderPagination, pagination: { pageSize: 1 } },
     });
     expect(container.querySelector('.my-pager')).not.toBeNull();
-    expect(container.querySelector('.cd-table__pagination')).toBeNull();
+    expect(container.querySelector('.cd-table-pagination-outer')).toBeNull();
   });
 
   it('headerStyle：对象应用到所有表头 th', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, headerStyle: { 'background-color': 'rgb(1, 2, 3)' } },
     });
-    const ths = container.querySelectorAll('th.cd-table__cell--head');
+    const ths = container.querySelectorAll('th.cd-table-row-head');
     expect(ths.length).toBe(2);
     ths.forEach((th) => {
       expect((th as HTMLElement).style.backgroundColor).toBe('rgb(1, 2, 3)');
@@ -80,16 +80,16 @@ describe('Table 边角 props', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, headerStyle: 'color: rgb(4, 5, 6)' },
     });
-    container.querySelectorAll('th.cd-table__cell--head').forEach((th) => {
+    container.querySelectorAll('th.cd-table-row-head').forEach((th) => {
       expect((th as HTMLElement).style.color).toBe('rgb(4, 5, 6)');
     });
   });
 
-  it('rowSpanHover：容器附加 cd-table--row-span-hover 类', () => {
+  it('rowSpanHover：容器附加 cd-table-row-span-hover 类', () => {
     const { container } = renderWithLocale(Table, {
       props: { columns, dataSource, rowSpanHover: true },
     });
-    expect(container.querySelector('.cd-table.cd-table--row-span-hover')).not.toBeNull();
+    expect(container.querySelector('.cd-table.cd-table-row-span-hover')).not.toBeNull();
   });
 
   it('onGroupedRow：分组头行合并自定义 className/style', () => {
@@ -105,7 +105,7 @@ describe('Table 边角 props', () => {
         },
       },
     });
-    const groupRow = container.querySelector('.cd-table__row--group-header.my-group-row');
+    const groupRow = container.querySelector('.cd-table-row-section.my-group-row');
     expect(groupRow).not.toBeNull();
     expect((groupRow as HTMLElement).style.fontWeight).toBe('700');
     expect(called).toBe(true);

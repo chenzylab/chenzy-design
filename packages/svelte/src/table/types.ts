@@ -24,8 +24,12 @@ export interface ColumnDef<T> {
   resizable?: boolean;
   /** 对齐方式，默认 left */
   align?: Align;
+  /** 列样式名（作用于 col / th / td，对齐 Semi column.className） */
+  className?: string;
   /** 单元格溢出省略 */
   ellipsis?: boolean;
+  /** 筛选确认模式：immediate 立即生效 / confirm 需点确定（对齐 Semi filterConfirmMode） */
+  filterConfirmMode?: 'immediate' | 'confirm';
   /** true 按 dataIndex 默认比较；或自定义比较器 */
   sorter?: boolean | ((a: T, b: T) => number);
   /** 受控排序状态（当前列）*/
