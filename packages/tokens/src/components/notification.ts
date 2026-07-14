@@ -1,14 +1,16 @@
 /**
- * Component tokens for Notification (M5 Feedback). 全量对齐 Semi Design
- * （semi-foundation/notification/variables.scss，35 个），并升级为带元数据的
- * TokenDef 结构以支持 DSM。值为 var() 引用我们的 alias / global token 或字面量。
- * 末尾保留 chenzy-design Notification 实际消费的补充 token（含旧 token 名，
- * 值对齐 Semi；组件消费）。
+ * Component tokens for Notification (M5 Feedback). 严格对齐 Semi Design
+ * （semi-foundation/notification/variables.scss，共 35 个），无自造中间变量。
+ * 组件（NotificationItem / NotificationContainer）直接消费这些对齐名，
+ * 与 Semi scss 直接引用 `$color-notification-*` / `$spacing-notification-*` 的方式一致。
  *
- * 映射约定：Semi kebab 化，`--semi-color-*`→`--cd-color-*`，
- * `$spacing-*`→`var(--cd-spacing-*)`，`var(--semi-border-radius-*)`→`var(--cd-border-radius-*)`，
- * `$font-weight-*`→`var(--cd-font-weight-*)`，`$width-icon-*`→`var(--cd-width-icon-*)`，
- * 字面量保留。注意 var() 自引用需落不同名（下方 notification-* 消费段直接给值，不自引用）。
+ * 映射约定（Semi → chenzy）：
+ *   `$color-notification-*` 的 `var(--semi-color-*)` → `var(--cd-color-*)`
+ *   `$spacing-*`  → `var(--cd-spacing-*)`（字面量 0 / 8px 保留）
+ *   `var(--semi-border-radius-*)` → `var(--cd-border-radius-*)`
+ *   `$font-weight-*` → `var(--cd-font-weight-*)`
+ *   `$width-icon-*`  → `var(--cd-width-icon-*)`
+ *   其余字面量（auto / 320px / 1px）保留。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -57,49 +59,4 @@ export const notificationTokens = {
   // —— Font（对齐 Semi「Font」段 2 个）——
   'font-notification-notice-title-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '通知卡片标题字重' },
   'font-notification-notice-content-fontweight': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '内容字重', usage: '通知卡片内容字重' },
-
-  // —— chenzy-design Notification 实际消费的补充 token（旧 token 名，值对齐 Semi；组件消费）——
-  // 尺寸 / 布局
-  'notification-width': { value: 'var(--cd-width-notification-notice-minwidth)', category: 'width', label: '通知宽度', usage: '单条通知卡片宽度（组件消费；对齐 Semi minWidth 320）' },
-  'notification-padding': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '卡片内边距', usage: '卡片内边距（组件消费；对齐 Semi paddingTop/Bottom base）' },
-  'notification-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '图标内容间距', usage: '图标与内容间距 / 堆叠列间距（组件消费；对齐 Semi icon-marginRight）' },
-  'notification-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: '卡片圆角（组件消费；对齐 Semi medium）' },
-  'notification-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '卡片阴影', usage: '卡片投影（组件消费）' },
-  'notification-offset': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: '视口偏移', usage: '堆叠列距视口边缘偏移（组件消费）' },
-  'notification-z': { value: 'var(--cd-z-notification)', category: 'other', label: '层叠层级', usage: '通知层叠层级（组件消费；对齐 Semi z-index 1010）' },
-  'notification-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '过渡时长', usage: '关闭按钮色彩过渡时长（组件消费）' },
-  // 卡片文案 / 背景 / 边框（light）
-  'notification-bg': { value: 'var(--cd-color-notification-bg-default)', category: 'color', label: '卡片背景色', usage: '卡片背景（组件消费；对齐 Semi bg-3）' },
-  'notification-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片边框色', usage: '卡片边框（组件消费）' },
-  'notification-color-title': { value: 'var(--cd-color-notification-title-text)', category: 'color', label: '标题文本色', usage: '标题文本颜色（组件消费；对齐 Semi text-0）' },
-  'notification-color-content': { value: 'var(--cd-color-notification-content-text)', category: 'color', label: '内容文本色', usage: '内容文本颜色（组件消费；对齐 Semi text-1）' },
-  'notification-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '标题字号', usage: '标题字号（组件消费）' },
-  'notification-title-weight': { value: 'var(--cd-font-notification-notice-title-fontweight)', category: 'font', label: '标题字重', usage: '标题字重（组件消费；对齐 Semi bold）' },
-  'notification-content-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '内容字号', usage: '内容字号（组件消费）' },
-  // 类型图标色
-  'notification-icon-success': { value: 'var(--cd-color-notification-success-icon)', category: 'color', label: '成功图标色', usage: '成功类型图标色（组件消费）' },
-  'notification-icon-info': { value: 'var(--cd-color-notification-info-icon)', category: 'color', label: '信息图标色', usage: '信息类型图标色（组件消费；对齐 Semi color-info）' },
-  'notification-icon-warning': { value: 'var(--cd-color-notification-warning-icon)', category: 'color', label: '警告图标色', usage: '警告类型图标色（组件消费）' },
-  'notification-icon-error': { value: 'var(--cd-color-notification-danger-icon)', category: 'color', label: '错误图标色', usage: '错误类型图标色（组件消费；对齐 Semi danger）' },
-  // 关闭按钮
-  'notification-close-color': { value: 'var(--cd-color-notification-closebtn-icon)', category: 'color', label: '关闭按钮色', usage: '关闭按钮默认色（组件消费；对齐 Semi text-2）' },
-  'notification-close-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: '关闭按钮悬浮色', usage: '关闭按钮悬浮色（组件消费）' },
-  // 内容顶部间距（对齐 Semi title-marginBottom / extra-tight）
-  'notification-content-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '内容顶间距', usage: '内容距标题顶部间距（组件消费；对齐 Semi title-marginBottom）' },
-  // footer 操作区
-  'notification-footer-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'footer 项间距', usage: 'footer 操作项间距（组件消费）' },
-  'notification-footer-margintop': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'footer 顶间距', usage: 'footer 距内容顶部间距（组件消费）' },
-  // 关闭按钮聚焦轮廓
-  'notification-focus-outline-color': { value: 'var(--cd-color-primary)', category: 'color', label: '聚焦轮廓色', usage: '关闭按钮聚焦轮廓色（组件消费）' },
-  'notification-close-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '关闭按钮圆角', usage: '关闭按钮圆角（组件消费）' },
-  // showProgress 倒计时进度条
-  'notification-progress-height': { value: '3px', category: 'height', label: '进度条高度', usage: '倒计时进度条高度（组件消费）' },
-  'notification-progress-color': { value: 'var(--cd-color-primary)', category: 'color', label: '进度条颜色', usage: '倒计时进度条颜色（组件消费）' },
-  // dark 主题卡片
-  'notification-bg-dark': { value: 'var(--cd-color-text-0)', category: 'color', label: '深色卡片背景', usage: '深色主题卡片背景（组件消费）' },
-  'notification-border-dark': { value: 'var(--cd-color-text-0)', category: 'color', label: '深色卡片边框', usage: '深色主题卡片边框（组件消费）' },
-  'notification-color-title-dark': { value: 'var(--cd-color-bg-0)', category: 'color', label: '深色标题文本', usage: '深色主题标题文本（组件消费）' },
-  'notification-color-content-dark': { value: 'var(--cd-color-bg-1)', category: 'color', label: '深色内容文本', usage: '深色主题内容文本（组件消费）' },
-  'notification-close-color-dark': { value: 'var(--cd-color-bg-2)', category: 'color', label: '深色关闭按钮', usage: '深色主题关闭按钮（组件消费）' },
-  'notification-close-color-hover-dark': { value: 'var(--cd-color-bg-0)', category: 'color', label: '深色关闭悬浮', usage: '深色主题关闭按钮悬浮（组件消费）' },
 } satisfies TokenGroup;

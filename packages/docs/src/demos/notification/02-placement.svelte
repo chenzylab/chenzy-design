@@ -1,13 +1,25 @@
 <script lang="ts">
-  import { notification, Button } from '@chenzy-design/svelte';
+  import { notification, Button, ButtonGroup } from '@chenzy-design/svelte';
+  import type { NotificationPosition } from '@chenzy-design/svelte';
+
+  const opts = {
+    duration: 3,
+    content: 'semi-ui-notification',
+    title: 'Hi bytedance',
+  };
+  const open = (position: NotificationPosition) =>
+    notification.info({ ...opts, position });
 </script>
 
-<div style="display:flex; gap:12px; flex-wrap:wrap">
-  <Button onclick={() => notification.info({ title: '左上', content: 'placement: topLeft', placement: 'topLeft' })}>topLeft</Button>
-  <Button onclick={() => notification.info({ title: '顶部居中', content: 'placement: top', placement: 'top' })}>top</Button>
-  <Button onclick={() => notification.info({ title: '右上（默认）', content: 'placement: topRight', placement: 'topRight' })}>topRight</Button>
-  <Button onclick={() => notification.info({ title: '左下', content: 'placement: bottomLeft', placement: 'bottomLeft' })}>bottomLeft</Button>
-  <Button onclick={() => notification.info({ title: '底部居中', content: 'placement: bottom', placement: 'bottom' })}>bottom</Button>
-  <Button onclick={() => notification.info({ title: '右下', content: 'placement: bottomRight', placement: 'bottomRight' })}>bottomRight</Button>
-  <Button onclick={() => notification.destroyAll()}>清空全部</Button>
+<div style="display:flex; flex-direction:column; gap:16px; align-items:flex-start">
+  <ButtonGroup>
+    <Button onclick={() => open('top')}>top</Button>
+    <Button onclick={() => open('topLeft')}>topLeft</Button>
+    <Button onclick={() => open('topRight')}>topRight</Button>
+  </ButtonGroup>
+  <ButtonGroup>
+    <Button onclick={() => open('bottom')}>bottom</Button>
+    <Button onclick={() => open('bottomRight')}>bottomRight</Button>
+    <Button onclick={() => open('bottomLeft')}>bottomLeft</Button>
+  </ButtonGroup>
 </div>

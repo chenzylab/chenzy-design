@@ -34,6 +34,8 @@
     code?: boolean;
     disabled?: boolean;
     class?: string;
+    /** 自定义内联样式（对齐 Semi Numeral style）。 */
+    style?: string;
     children?: Snippet;
   }
 
@@ -53,6 +55,7 @@
     code = false,
     disabled = false,
     class: className = '',
+    style,
     children,
   }: Props = $props();
 
@@ -97,6 +100,12 @@
   );
 </script>
 
-<svelte:element this={component} bind:this={hostEl} class={cls} aria-disabled={disabled || undefined}>
+<svelte:element
+  this={component}
+  bind:this={hostEl}
+  class={cls}
+  style={style || undefined}
+  aria-disabled={disabled || undefined}
+>
   {@render children?.()}
 </svelte:element>

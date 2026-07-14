@@ -227,8 +227,7 @@ export {
   type NotificationItem,
   type NotificationOptions,
   type NotificationType,
-  type NotificationPlacement,
-  type NotificationCloseReason,
+  type NotificationPosition,
   type NotificationTheme,
   type NotificationDirection,
 } from './notification.js';

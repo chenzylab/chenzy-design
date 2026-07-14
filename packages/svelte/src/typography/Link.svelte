@@ -44,6 +44,8 @@
     onExpand?: (expanded: boolean) => void;
     onClick?: (e: MouseEvent) => void;
     class?: string;
+    /** 自定义内联样式（对齐 Semi Typography style）。 */
+    style?: string;
     children?: Snippet;
   }
 
@@ -73,6 +75,7 @@
     onExpand,
     onClick,
     class: className = '',
+    style,
     children,
   }: Props = $props();
 
@@ -113,6 +116,7 @@
   {italic}
   {icon}
   class={className}
+  {style}
   {ellipsis}
   {copyable}
   {editable}

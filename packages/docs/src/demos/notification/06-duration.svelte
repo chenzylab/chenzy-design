@@ -4,11 +4,10 @@
 
 <Button
   onclick={() =>
-    notification.open({
-      title: 'Hi, Bytedance',
-      content: 'ies dance dance dance',
-      duration: 3,
+    notification.info({
+      content: 'Hi, Bytedance dance dance',
+      duration: 10,
     })}
 >
-  Display Notification
+  Close After 10s
 </Button>
