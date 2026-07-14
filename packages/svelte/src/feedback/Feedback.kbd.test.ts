@@ -1,7 +1,7 @@
 // Feedback 键盘 e2e（browser project / 真实 chromium）。
-// emoji 评分行 role=radiogroup + role=radio 子项，roving tabindex：
-// 方向键在 emoji 间移动并选中（首次按 → 从第 0 项开始），aria-checked 真实变化。
-// jsdom 焦点/方向键合成不可靠，故在真浏览器里测。
+// 对齐 Semi 后 emoji 评分行是裸 span（无 radiogroup/方向键 roving）；本库补
+// role=button + tabindex=0 + Enter/Space 触发，保证键盘可达。jsdom 焦点/键盘合成
+// 不可靠，故在真浏览器验证：Tab 聚焦 emoji、Enter/Space 触发选择。
 import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
 import { renderKbdFixture, userEvent } from '../test-utils/kbd.js';
@@ -11,41 +11,34 @@ function loc(el: Element) {
   return page.elementLocator(el);
 }
 
-describe('Feedback emoji 键盘 e2e（radiogroup 方向键选择）', () => {
-  it('聚焦首项 + 方向键移动 + Home/End，aria-checked 真实变化', async () => {
-    // Feedback portal 到 document.body；直接在全局查询 radio 项。
+describe('Feedback emoji 键盘 e2e（裸 span + Enter/Space 触发）', () => {
+  it('聚焦 emoji + Enter/Space 触发选择，选中项加 -selected', async () => {
+    // Feedback portal 到 document.body；直接在全局查询 emoji 项。
     renderKbdFixture(FeedbackKbdFixture);
 
-    const radios = Array.from(document.querySelectorAll('[role="radio"]')) as [
-      HTMLElement,
-      HTMLElement,
+    const items = Array.from(document.querySelectorAll('.cd-feedback-emoji-item')) as [
       HTMLElement,
       HTMLElement,
       HTMLElement,
     ];
-    expect(radios.length).toBe(5);
+    expect(items.length).toBe(3);
 
-    // 未选中时首项 roving tabindex=0，聚焦它。
-    radios[0].focus();
-    await expect.element(loc(radios[0])).toHaveFocus();
+    // 每项 role=button + tabindex=0，键盘可聚焦。
+    for (const item of items) {
+      expect(item.getAttribute('role')).toBe('button');
+      expect(item.getAttribute('tabindex')).toBe('0');
+    }
 
-    // → 从未选（-1）落到第 0 项并选中。
-    await userEvent.keyboard('{ArrowRight}');
-    await expect.element(loc(radios[0])).toHaveAttribute('aria-checked', 'true');
+    // 聚焦第 2 项（😐）并按 Enter → 选中。
+    items[1].focus();
+    await expect.element(loc(items[1])).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect.element(loc(items[1])).toHaveClass('cd-feedback-emoji-item-selected');
 
-    // 再 → 到第 1 项。
-    await userEvent.keyboard('{ArrowRight}');
-    await expect.element(loc(radios[1])).toHaveAttribute('aria-checked', 'true');
-    await expect.element(loc(radios[0])).toHaveAttribute('aria-checked', 'false');
-
-    // ← 回到第 0 项。
-    await userEvent.keyboard('{ArrowLeft}');
-    await expect.element(loc(radios[0])).toHaveAttribute('aria-checked', 'true');
-
-    // End → 最后一项，Home → 第 0 项。
-    await userEvent.keyboard('{End}');
-    await expect.element(loc(radios[4])).toHaveAttribute('aria-checked', 'true');
-    await userEvent.keyboard('{Home}');
-    await expect.element(loc(radios[0])).toHaveAttribute('aria-checked', 'true');
+    // 聚焦第 3 项（😃）并按 Space → 选中，切换选中态。
+    items[2].focus();
+    await userEvent.keyboard(' ');
+    await expect.element(loc(items[2])).toHaveClass('cd-feedback-emoji-item-selected');
+    await expect.element(loc(items[1])).not.toHaveClass('cd-feedback-emoji-item-selected');
   });
 });

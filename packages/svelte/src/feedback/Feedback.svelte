@@ -1,15 +1,17 @@
 <!--
-  Feedback — see specs/components/feedback/Feedback.spec.md
-  用户反馈收集弹窗（对标 Semi Feedback）。纯组合本库外壳 + 内容子控件：
-    mode=modal → Modal 外壳；mode=popup → SideSheet 外壳。
-    type=text → TextArea；emoji → radiogroup 表情行；radio → RadioGroup；
-    checkbox → CheckboxGroup；custom → renderContent / content slot。
+  Feedback — 用户反馈收集弹窗，严格对齐 Semi Feedback（feedback/index.tsx）。
+  纯组合本库外壳 + 内容子控件：
+    mode=popup（默认）→ SideSheet 外壳（bottom 抽屉，自绘 footer）；
+    mode=modal        → Modal 外壳（复用 Modal 内置 footer）。
+    type=emoji（默认）→ 😞😐😃 三档表情行，选 😞(bad) 时额外出可选 TextArea；
+    type=text         → TextArea；radio → RadioGroup；checkbox → CheckboxGroup；
+    type=custom       → children（由 renderContent 可选包裹）。
   外壳的 focus-trap / inert / Esc / 背景锁滚均由 Modal / SideSheet 内置，直接复用。
-  emoji 评分自建 role=radiogroup + 方向键（参照 Rating 键盘范式）。
-  value 归一化内联（spec §3 允许内联，逻辑简单）：string / string[] / EmojiResult。
+  value 归一化内联：string / string[] / EmojiResult。submit 禁用规则对齐 Semi
+  （无值或空数组时禁用）；onOk/onCancel 返回 Promise 时按钮 loading。
 
-  exactOptionalPropertyTypes：透传给子组件的可选 prop 用条件 spread，
-  绝不显式传 undefined（{...v !== undefined ? { v } : {}}）。
+  与 Semi 一致：radio/checkbox 选项经 radioGroupProps / checkboxGroupProps 透传，
+  无自造 options；emoji 为裸 span + click（无 roving tabindex / role=radio）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -18,6 +20,7 @@
   import { TextArea } from '../textarea/index.js';
   import { RadioGroup } from '../radio/index.js';
   import { CheckboxGroup } from '../checkbox/index.js';
+  import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
 
   export type FeedbackMode = 'modal' | 'popup';
@@ -29,350 +32,298 @@
   }
   export type FeedbackValue = string | string[] | EmojiResult;
 
-  /** radio / checkbox 类型的可选项。 */
-  export interface FeedbackOption {
-    label: string;
-    value: string;
-    disabled?: boolean;
-  }
-
-  /** renderContent 上下文：当前值 + 归一化写值方法。 */
-  export interface FeedbackContentContext {
-    value: FeedbackValue | undefined;
-    setValue: (v: FeedbackValue) => void;
-  }
-
   interface Props {
-    /** 呈现形态：modal=Modal 弹窗；popup=SideSheet 抽屉。 */
+    /** 呈现形态：popup=SideSheet 抽屉；modal=Modal 弹窗。对齐 Semi mode，默认 popup。 */
     mode?: FeedbackMode;
-    /** 反馈类型。默认 text（最基础的文本反馈）。 */
+    /** 反馈类型。对齐 Semi type，默认 emoji。 */
     type?: FeedbackType;
-    /** 反馈值（受控）。 */
-    value?: FeedbackValue;
-    /** 反馈值变化。 */
+    /** 反馈内容变化回调。对齐 Semi onValueChange。 */
     onValueChange?: (value: FeedbackValue) => void;
-    /** radio / checkbox 类型的可选项。 */
-    options?: FeedbackOption[];
-    /** 文本输入透传本库 TextArea props。 */
+    /** 透传多行输入框参数。对齐 Semi textAreaProps。 */
     textAreaProps?: Record<string, unknown>;
-    /** 自定义/包裹反馈内容区（type=custom 或需覆盖内容时）。 */
-    renderContent?: Snippet<[FeedbackContentContext]>;
-    /** content slot 等价 renderContent。 */
-    content?: Snippet<[FeedbackContentContext]>;
-    /** 提交回调（可异步，await 期间外壳 loading）。 */
-    onOk?: (e: { value: FeedbackValue | undefined }) => void | Promise<unknown>;
-    /** 取消回调。 */
-    onCancel?: () => void | Promise<unknown>;
-    /** 关闭后回调。 */
+    /** 透传单选组参数（含 options）。对齐 Semi radioGroupProps。 */
+    radioGroupProps?: Record<string, unknown>;
+    /** 透传多选组参数（含 options）。对齐 Semi checkboxGroupProps。 */
+    checkboxGroupProps?: Record<string, unknown>;
+    /** 自定义反馈内容展示：接收已渲染的默认内容 snippet。对齐 Semi renderContent。 */
+    renderContent?: Snippet<[Snippet]>;
+    /** 提交回调，返回 Promise 时 resolve 后自动关闭。对齐 Semi onOk。 */
+    onOk?: (e: MouseEvent) => void | Promise<unknown>;
+    /** 取消回调，返回 Promise 时 resolve 后自动关闭。对齐 Semi onCancel。 */
+    onCancel?: (e: MouseEvent) => void | Promise<unknown>;
+    /** 关闭后回调。对齐 Semi afterClose。 */
     afterClose?: () => void;
-    /** 显隐（受控透传外壳）。 */
-    open?: boolean;
-    /** 标题（透传外壳）。 */
-    title?: string;
-    /** 宽度（透传外壳）。 */
-    width?: number | string;
-    /** popup 抽屉位置（仅 mode=popup）。 */
-    placement?: 'left' | 'right' | 'top' | 'bottom';
-    /** 显隐意图变化（受控，需外部回写 open）。 */
-    onOpenChange?: (open: boolean) => void;
-    /** emoji 类型的 emoji 序列，默认 5 档满意度表情。 */
-    emojis?: string[];
+    /** 透传提交按钮参数。对齐 Semi okButtonProps。 */
+    okButtonProps?: Record<string, unknown>;
+    /** 透传取消按钮参数。对齐 Semi cancelButtonProps。 */
+    cancelButtonProps?: Record<string, unknown>;
+    /** type=custom 时的自定义内容。 */
+    children?: Snippet;
+    /** 自定义底部（透传外壳）。对齐 Semi footer：非空时替换默认双按钮。 */
+    footer?: Snippet | null;
     class?: string;
+    /** 其余参数透传外壳（mode=modal → ModalProps；mode=popup → SideSheetProps）。 */
+    [key: string]: unknown;
   }
 
   let {
-    mode = 'modal',
-    type = 'text',
-    value,
+    mode = 'popup',
+    type = 'emoji',
     onValueChange,
-    options,
     textAreaProps,
+    radioGroupProps,
+    checkboxGroupProps,
     renderContent,
-    content,
     onOk,
     onCancel,
     afterClose,
-    open,
-    title,
-    width,
-    placement = 'right',
-    onOpenChange,
-    emojis,
+    okButtonProps,
+    cancelButtonProps,
+    children,
+    footer,
     class: className,
+    ...rest
   }: Props = $props();
 
   const loc = useLocale();
+  const submitText = $derived(loc().t('Feedback.submit'));
+  const cancelText = $derived(loc().t('Feedback.cancel'));
 
-  // —— value 归一化（内联；spec §3）——
-  // 各 type 读写对应形态；渲染层只读派生，写值统一走 setValue（红线 #2）。
-  const emojiValue = $derived(
-    type === 'emoji' && value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as EmojiResult)
-      : ({} as EmojiResult),
+  // —— Emoji 表情（对齐 Semi constants.strings.Emoji）——
+  const EMOJI = { bad: '😞', normal: '😐', good: '😃' } as const;
+  const EMOJI_LIST = [EMOJI.bad, EMOJI.normal, EMOJI.good];
+
+  // —— value 受控归一化（内联）——
+  let value = $state<FeedbackValue | null>(null);
+  const emojiResult = $derived(
+    value && typeof value === 'object' && !Array.isArray(value) ? (value as EmojiResult) : ({} as EmojiResult),
   );
-  const textValue = $derived(typeof value === 'string' ? value : (emojiValue.text ?? ''));
-  const radioValue = $derived(typeof value === 'string' ? value : undefined);
-  const checkboxValue = $derived(Array.isArray(value) ? (value as string[]) : []);
+  const selectedEmoji = $derived(emojiResult.emoji);
 
   function setValue(next: FeedbackValue) {
+    value = next;
     onValueChange?.(next);
   }
 
-  // —— emoji 表情行：自建 role=radiogroup（对齐 Rating 键盘范式）——
-  const DEFAULT_EMOJIS = ['😠', '🙁', '😐', '🙂', '😍'];
-  const emojiList = $derived(emojis ?? DEFAULT_EMOJIS);
-  const emojiLabels = $derived([
-    loc().t('Feedback.emojiVeryBad'),
-    loc().t('Feedback.emojiBad'),
-    loc().t('Feedback.emojiNeutral'),
-    loc().t('Feedback.emojiGood'),
-    loc().t('Feedback.emojiVeryGood'),
-  ]);
-
-  function emojiLabelFor(index: number): string {
-    // 默认 5 档语义映射；自定义 emoji 数量不同时按比例落到 5 档，兜底为序号。
-    if (emojiList.length === 5) return emojiLabels[index] ?? `${index + 1}`;
-    const ratio = emojiList.length > 1 ? index / (emojiList.length - 1) : 0;
-    const bucket = Math.round(ratio * 4);
-    return emojiLabels[bucket] ?? `${index + 1}`;
+  // —— 各 type 变化处理（对齐 Semi foundation）——
+  function handleEmojiClick(emoji: string) {
+    setValue({ emoji });
+  }
+  function handleEmojiReasonChange(text: string) {
+    (textAreaProps?.onChange as ((v: string) => void) | undefined)?.(text);
+    setValue({ ...emojiResult, text });
+  }
+  function handleTextChange(text: string) {
+    (textAreaProps?.onChange as ((v: string) => void) | undefined)?.(text);
+    setValue(text);
+  }
+  function handleRadioChange(v: unknown) {
+    (radioGroupProps?.onChange as ((v: unknown) => void) | undefined)?.(v);
+    setValue(v as string);
+  }
+  function handleCheckboxChange(v: unknown[]) {
+    (checkboxGroupProps?.onChange as ((v: unknown[]) => void) | undefined)?.(v);
+    setValue(v.map(String));
   }
 
-  const selectedEmojiIndex = $derived(
-    emojiValue.emoji ? emojiList.indexOf(emojiValue.emoji) : -1,
-  );
+  // 提交禁用：无值或空数组（对齐 Semi disableSubmitButton）。
+  const disableSubmit = $derived(!value || (Array.isArray(value) && value.length === 0));
 
-  function selectEmoji(index: number) {
-    const emoji = emojiList[index];
-    if (emoji === undefined) return;
-    setValue({ emoji, ...(emojiValue.text !== undefined ? { text: emojiValue.text } : {}) });
+  // —— 提交 / 取消 Promise 状态（对齐 Semi onOKReturnPromiseStatus）——
+  let okPending = $state(false);
+  let cancelPending = $state(false);
+
+  function isPromise(v: unknown): v is Promise<unknown> {
+    return !!v && typeof (v as Promise<unknown>).then === 'function';
   }
 
-  function onEmojiKeydown(e: KeyboardEvent) {
-    const count = emojiList.length;
-    if (count === 0) return;
-    const cur = selectedEmojiIndex;
-    let next = cur;
-    switch (e.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        next = cur < 0 ? 0 : Math.min(count - 1, cur + 1);
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        next = cur < 0 ? count - 1 : Math.max(0, cur - 1);
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = count - 1;
-        break;
-      default:
-        return;
+  // popup：自绘 footer 按钮，异步 loading，resolve 后清空 value（对齐 foundation.handleSubmit/handleCancel）。
+  function handleSubmit(e: MouseEvent) {
+    const result = onOk?.(e);
+    if (isPromise(result)) {
+      okPending = true;
+      result.then(() => { okPending = false; value = null; }).catch((err) => { okPending = false; throw err; });
+    } else {
+      value = null;
     }
-    e.preventDefault();
-    if (next !== cur) selectEmoji(next);
   }
-
-  // roving tabindex：选中项可聚焦；未选中时首项可聚焦。
-  function emojiTabIndex(index: number): number {
-    if (selectedEmojiIndex < 0) return index === 0 ? 0 : -1;
-    return index === selectedEmojiIndex ? 0 : -1;
-  }
-
-  // —— 提交 loading（onOk 异步）——
-  let submitting = $state(false);
-
-  async function handleOk(): Promise<void> {
-    if (!onOk) return;
-    const result = onOk({ value });
-    if (result && typeof (result as Promise<unknown>).then === 'function') {
-      submitting = true;
-      try {
-        await result;
-      } finally {
-        submitting = false;
-      }
+  // SideSheet onCancel 传 MouseEvent | KeyboardEvent；onCancel 消费方按 MouseEvent 断言即可。
+  function handleCancelClick(e: MouseEvent | KeyboardEvent) {
+    const result = onCancel?.(e as MouseEvent);
+    if (isPromise(result)) {
+      cancelPending = true;
+      result.then(() => { cancelPending = false; value = null; }).catch((err) => { cancelPending = false; throw err; });
+    } else {
+      value = null;
     }
   }
 
-  function handleCancel(): void {
-    onCancel?.();
+  // modal：交给 Modal 内置按钮（onOk/onCancel 无参），返回 Promise 则透传给 Modal（其自行 loading）。
+  function handleModalOk() {
+    const result = onOk?.(undefined as unknown as MouseEvent);
+    if (isPromise(result)) return result.then(() => { value = null; });
+    value = null;
+  }
+  function handleModalCancel() {
+    const result = onCancel?.(undefined as unknown as MouseEvent);
+    if (isPromise(result)) return result.then(() => { value = null; });
+    value = null;
   }
 
-  const ctx = $derived<FeedbackContentContext>({ value, setValue });
-  const bodySnippet = $derived(renderContent ?? content);
-
-  const submitText = $derived(loc().t('Feedback.submit'));
-  const cancelText = $derived(loc().t('Feedback.cancel'));
-  const placeholder = $derived(loc().t('Feedback.placeholder'));
-  const ratingLabel = $derived(loc().t('Feedback.ratingLabel'));
+  const textPlaceholder = 'Provider additional feedback';
+  const reasonPlaceholder = 'Provider additional feedback(optional)';
 </script>
 
-<!-- 反馈内容区：按 type 分发。惰性由外壳 destroyOnClose / lazy 控制。 -->
-{#snippet body()}
-  <div class="cd-feedback__body">
-    {#if bodySnippet}
-      {@render bodySnippet(ctx)}
-    {:else if type === 'text'}
-      <TextArea
-        value={textValue}
-        {placeholder}
-        onChange={(v) => setValue(v)}
-        {...textAreaProps ?? {}}
-      />
-    {:else if type === 'emoji'}
-      <div
-        class="cd-feedback__emoji-group"
-        role="radiogroup"
-        tabindex={-1}
-        aria-label={ratingLabel}
-        onkeydown={onEmojiKeydown}
-      >
-        {#each emojiList as emoji, i (i)}
-          <button
-            type="button"
-            class="cd-feedback__emoji"
-            class:cd-feedback__emoji--active={i === selectedEmojiIndex}
-            role="radio"
-            aria-checked={i === selectedEmojiIndex}
-            aria-label={emojiLabelFor(i)}
-            tabindex={emojiTabIndex(i)}
-            onclick={() => selectEmoji(i)}
-          >
-            <span aria-hidden="true">{emoji}</span>
-          </button>
-        {/each}
-      </div>
-    {:else if type === 'radio'}
-      <RadioGroup
-        direction="vertical"
-        options={options ?? []}
-        onChange={(v) => setValue(String(v))}
-        {...radioValue !== undefined ? { value: radioValue } : {}}
-      />
-    {:else if type === 'checkbox'}
-      <CheckboxGroup
-        direction="vertical"
-        options={options ?? []}
-        value={checkboxValue}
-        onChange={(v) => setValue(v as string[])}
-      />
+<!-- 默认内容区：按 type 分发（renderContent 可包裹此 snippet）。 -->
+{#snippet defaultContent()}
+  {#if type === 'custom'}
+    {@render children?.()}
+  {:else if type === 'text'}
+    <TextArea placeholder={textPlaceholder} onChange={handleTextChange} {...textAreaProps ?? {}} />
+  {:else if type === 'emoji'}
+    <div class="cd-feedback-emoji-container">
+      {#each EMOJI_LIST as emoji (emoji)}
+        <span
+          class="cd-feedback-emoji-item"
+          class:cd-feedback-emoji-item-selected={emoji === selectedEmoji}
+          data-value={emoji}
+          role="button"
+          tabindex="0"
+          onclick={() => handleEmojiClick(emoji)}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmojiClick(emoji); } }}
+        >{emoji}</span>
+      {/each}
+    </div>
+    {#if selectedEmoji === EMOJI.bad}
+      <TextArea placeholder={reasonPlaceholder} onChange={handleEmojiReasonChange} {...textAreaProps ?? {}} />
     {/if}
+  {:else if type === 'radio'}
+    <div class="cd-feedback-radio-container">
+      <RadioGroup direction="vertical" onChange={handleRadioChange} {...radioGroupProps ?? {}} />
+    </div>
+  {:else if type === 'checkbox'}
+    <div class="cd-feedback-checkbox-container">
+      <CheckboxGroup direction="vertical" onChange={handleCheckboxChange} {...checkboxGroupProps ?? {}} />
+    </div>
+  {/if}
+{/snippet}
+
+<!-- 内容出口：renderContent 存在则包裹默认内容，否则直接渲染。 -->
+{#snippet realContent()}
+  {#if renderContent}
+    {@render renderContent(defaultContent)}
+  {:else}
+    {@render defaultContent()}
+  {/if}
+{/snippet}
+
+<!-- popup 默认底部：取消(primary) + 提交(primary solid)，对齐 Semi renderFooter。 -->
+{#snippet defaultFooter()}
+  <div class="cd-feedback-footer">
+    <Button type="primary" loading={cancelPending} onclick={handleCancelClick} {...cancelButtonProps ?? {}}>
+      {cancelText}
+    </Button>
+    <Button type="primary" theme="solid" disabled={disableSubmit} loading={okPending} onclick={handleSubmit} {...okButtonProps ?? {}}>
+      {submitText}
+    </Button>
   </div>
 {/snippet}
 
-{#if mode === 'popup'}
-  <SideSheet
-    {placement}
-    onCancel={handleCancel}
-    {...afterClose || onOpenChange
-      ? {
-          afterVisibleChange: (isVisible: boolean) => {
-            if (!isVisible) afterClose?.();
-            onOpenChange?.(isVisible);
-          },
-        }
-      : {}}
-    {...open !== undefined ? { visible: open } : {}}
-    {...title !== undefined ? { title } : {}}
-    {...width !== undefined ? { width } : {}}
-    {...className ? { class: className } : {}}
-  >
-    {@render body()}
-    {#snippet footer({ close })}
-      <button type="button" class="cd-feedback__btn cd-feedback__btn--text" onclick={() => { handleCancel(); close(); }}>
-        {cancelText}
-      </button>
-      <button
-        type="button"
-        class="cd-feedback__btn cd-feedback__btn--primary"
-        aria-busy={submitting}
-        disabled={submitting}
-        onclick={async () => { await handleOk(); }}
-      >
-        {submitText}
-      </button>
-    {/snippet}
-  </SideSheet>
-{:else}
+{#if mode === 'modal'}
   <Modal
     okText={submitText}
     cancelText={cancelText}
-    confirmLoading={submitting}
-    onOk={handleOk}
-    onCancel={handleCancel}
+    onOk={handleModalOk}
+    onCancel={handleModalCancel}
+    okButtonProps={{ disabled: disableSubmit, ...(okButtonProps ?? {}) }}
+    {...cancelButtonProps ? { cancelButtonProps } : {}}
     {...afterClose ? { afterClose } : {}}
-    {...open !== undefined ? { visible: open } : {}}
-    {...title !== undefined ? { title } : {}}
-    {...width !== undefined ? { width } : {}}
-    {...onOpenChange ? { onVisibleChange: onOpenChange } : {}}
-    {...className ? { class: className } : {}}
+    {...footer !== undefined ? { footer } : {}}
+    {...'width' in rest ? {} : { width: 'var(--cd-width-feedback)' }}
+    {...className ? { class: `cd-feedback cd-feedback-${type} ${className}` } : { class: `cd-feedback cd-feedback-${type}` }}
+    {...rest}
   >
-    {@render body()}
+    {@render realContent()}
   </Modal>
+{:else}
+  <SideSheet
+    mask={false}
+    disableScroll={false}
+    placement="bottom"
+    height="auto"
+    onCancel={handleCancelClick}
+    footer={footer ?? defaultFooter}
+    {...className ? { class: `cd-feedback cd-feedback-${type} ${className}` } : { class: `cd-feedback cd-feedback-${type}` }}
+    {...rest}
+  >
+    {@render realContent()}
+  </SideSheet>
 {/if}
 
 <style>
-  .cd-feedback__body {
+  /* emoji 表情行（对齐 Semi .feedback-emoji-container / -emoji-item） */
+  :global(.cd-feedback-emoji-container) {
     display: flex;
-    flex-direction: column;
-    gap: var(--cd-feedback-content-gap);
-  }
-  .cd-feedback__emoji-group {
-    display: flex;
-    gap: var(--cd-feedback-emoji-gap);
-    align-items: center;
-  }
-  .cd-feedback__emoji {
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    padding: 4px;
-    border: none;
-    background: transparent;
-    font-size: var(--cd-feedback-emoji-size);
-    line-height: 1;
+    align-items: center;
+    column-gap: var(--cd-spacing-feedback-emoji-container-column-gap);
+    align-self: stretch;
+    margin-top: var(--cd-spacing-feedback-emoji-container-margin-y);
+    margin-bottom: var(--cd-spacing-feedback-emoji-container-margin-y);
+  }
+  :global(.cd-feedback-emoji-item) {
+    user-select: none;
     cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
-    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    font-size: var(--cd-font-feedback-emoji-font-size);
+    line-height: var(--cd-font-feedback-emoji-font-size);
+    height: var(--cd-font-feedback-emoji-font-size);
+    font-style: normal;
+    filter: grayscale(100%);
   }
-  .cd-feedback__emoji:hover {
-    transform: scale(var(--cd-feedback-emoji-active-scale));
+  :global(.cd-feedback-emoji-item:hover),
+  :global(.cd-feedback-emoji-item-selected) {
+    filter: none;
   }
-  .cd-feedback__emoji--active {
-    transform: scale(var(--cd-feedback-emoji-active-scale));
+
+  /* 感谢文案（对齐 Semi .feedback-thank-text，供反馈完成态复用） */
+  :global(.cd-feedback-thank-text) {
+    color: var(--cd-color-feedback-thank-text);
+    text-align: center;
+    font-size: var(--cd-font-feedback-thank-text-font-size);
+    font-weight: var(--cd-font-feedback-thank-text-font-weight);
+    line-height: var(--cd-font-feedback-thank-text-line-height);
+    margin-top: var(--cd-spacing-feedback-thank-text-margin-top);
+    margin-bottom: var(--cd-spacing-feedback-thank-text-margin-bottom);
   }
-  .cd-feedback__emoji:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+
+  /* 多选组行间距（对齐 Semi .feedback .checkboxGroup-vertical） */
+  :global(.cd-feedback .cd-checkbox-group--vertical) {
+    row-gap: var(--cd-spacing-feedback-checkbox-group-vertical-row-gap);
   }
-  /* popup 形态自绘底部按钮（SideSheet footer 不含默认按钮） */
-  .cd-feedback__btn {
-    padding: 6px 16px;
-    border-radius: var(--cd-border-radius-medium);
-    border: 1px solid var(--cd-color-border);
-    background: var(--cd-color-bg-2);
-    color: var(--cd-color-text-0);
-    cursor: pointer;
-    font-size: var(--cd-font-size-body);
+
+  /* 底部按钮行（对齐 Semi .feedback-footer） */
+  :global(.cd-feedback-footer) {
+    display: flex;
+    justify-content: flex-end;
+    column-gap: var(--cd-spacing-feedback-footer-column-gap);
   }
-  .cd-feedback__btn--primary {
-    border-color: transparent;
-    background: var(--cd-color-primary);
-    color: var(--cd-color-white);
+
+  /* modal 宽度：所有 type 恒 400，经 width prop 传入（Modal 内联 width 无法用 CSS 覆盖），
+     对齐 Semi .feedback .modal / .feedback-text .modal（均 $width-feedback=400）。 */
+
+  /* sidesheet 圆角、宽度与底部定位（对齐 Semi .feedback .sidesheet-inner / -size-small / -text / -bottom） */
+  :global(.cd-feedback .cd-sidesheet-inner) {
+    border-radius: var(--cd-radius-feedback-sidesheet-inner);
   }
-  .cd-feedback__btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  /* 提高特异性赢过 SideSheet 的 .cd-sidesheet-size-small.cd-sidesheet（同为 400/600，对齐 Semi feedback 宽度）。 */
+  :global(.cd-sidesheet.cd-sidesheet-bottom.cd-feedback) {
+    width: var(--cd-width-feedback);
   }
-  .cd-feedback__btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  :global(.cd-sidesheet.cd-sidesheet-bottom.cd-feedback.cd-feedback-text) {
+    width: var(--cd-width-feedback-text);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-feedback__emoji {
-      transition: none;
-    }
+  :global(.cd-feedback.cd-sidesheet-bottom) {
+    right: var(--cd-spacing-feedback-sidesheet-bottom-right);
+    left: auto;
   }
 </style>
