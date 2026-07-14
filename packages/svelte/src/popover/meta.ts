@@ -21,9 +21,9 @@ export const meta = {
     { name: 'defaultVisible', type: 'boolean', default: 'false', desc: '非受控初始显隐' },
     {
       name: 'trigger',
-      type: "'hover'|'click'|'focus'|'custom'",
+      type: "'hover'|'click'|'focus'|'custom'|'contextMenu'",
       default: "'hover'",
-      desc: "触发方式；custom 完全受控（仅 visible + onVisibleChange）。click/custom → dialog role，hover/focus → tooltip role",
+      desc: "触发方式；custom 完全受控（仅 visible + onVisibleChange）；contextMenu 右键触发。click/custom → dialog role，hover/focus/contextMenu → tooltip role",
     },
     {
       name: 'position',
@@ -76,7 +76,7 @@ export const meta = {
       default: 'undefined',
       desc: '浮层挂载容器，缺省回退 ConfigProvider 全局，再回退 body',
     },
-    { name: 'zIndex', type: 'number', default: 'undefined', desc: '浮层 z-index（缺省走 token --cd-popover-z = 1030）' },
+    { name: 'zIndex', type: 'number', default: 'undefined', desc: '浮层 z-index（缺省走 token --cd-z-popover = 1030）' },
     { name: 'closeOnEsc', type: 'boolean', default: 'true', desc: 'Esc 关闭浮层' },
     {
       name: 'guardFocus',
@@ -108,32 +108,37 @@ export const meta = {
       'click/custom 触发用 useDismiss 处理 Escape（closeOnEsc）与外部点击（onClickOutSide）关闭',
       'dialog 模式 guardFocus 用 useFocusTrap 陷入焦点循环 Tab，关闭后 returnFocusOnClose 归还触发器',
       'content 函数形态可将初始焦点落到 initialFocusRef 指定元素；condition=false 禁止一切自动触发（custom 不受影响）',
-      '定位/触发/焦点/dismiss/箭头全部复用 Tooltip（variant=popover），对齐 Semi Popover extends Tooltip',
+      '定位/触发/焦点/dismiss 复用 Tooltip（prefixCls=cd-popover 切换整套浮层类名前缀），对齐 Semi Popover extends Tooltip；箭头为 Popover 独立双 path SVG（描边+背景，8px），与 Tooltip 单 path 解耦',
     ],
   },
   tokens: [
-    // Popover 浮层视觉（bg-3 白底 + 阴影 + medium 圆角，由 Tooltip variant=popover 提供）
+    // 严格对齐 Semi（semi-foundation/popover/variables.scss），组件直接消费，无中间变量层。
+    // 浮层视觉（浅色 bg-3 白底 + 阴影 + medium 圆角，Popover.svelte 提供 .cd-popover-wrapper CSS）
     '--cd-color-popover-bg-default',
-    '--cd-popover-shadow',
+    '--cd-color-popover-border-default',
     '--cd-radius-popover',
+    '--cd-shadow-elevated',
     '--cd-filter-popover-bg',
+    '--cd-z-popover',
     // 内层 renderPopCard：标题 / 带箭头内边距
     '--cd-spacing-popover-title-padding',
     '--cd-spacing-popover-witharrow-padding',
     '--cd-width-popover-title-border',
-    '--cd-color-popover-border-default',
-    '--cd-popover-title-color',
-    // SVG 箭头配色（复用 Tooltip 箭头，variant 切 popover 默认色）
+    '--cd-color-text-0',
+    // 独立双 path 箭头配色（描边 + 背景，对齐 Semi popover/Arrow.tsx）
     '--cd-color-popover-arrow-bg',
     '--cd-color-popover-arrow-border',
-    // 箭头尺寸（SVG 24×8 / 8×24，对齐 Semi）
+    // 箭头尺寸 8px（SVG 24×8 / 8×24，对齐 Semi popover 覆写 tooltip 箭头为 8px）
     '--cd-width-popover-arrow',
     '--cd-height-popover-arrow',
     '--cd-width-popover-arrow-vertical',
     '--cd-height-popover-arrow-vertical',
-    '--cd-popover-z',
-    // 定位/motion 复用 Tooltip
-    '--cd-tooltip-*',
-    '--cd-motion-*',
+    '--cd-spacing-popover-arrow-adjusted-offset-x',
+    '--cd-spacing-popover-arrow-adjusted-offset-y',
+    // 箭头缝隙偏移 / 定位 / motion 复用 Tooltip（zoomIn 100ms）
+    '--cd-spacing-tooltip-arrow-offset-x',
+    '--cd-spacing-tooltip-arrow-offset-y',
+    '--cd-animation-duration-tooltip-in',
+    '--cd-animation-function-tooltip-in',
   ],
 } as const;

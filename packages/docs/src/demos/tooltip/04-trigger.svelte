@@ -19,6 +19,10 @@
     </span>
   </Tooltip>
 
+  <Tooltip content="hi bytedance" trigger="contextMenu">
+    <Button>右键点击展示</Button>
+  </Tooltip>
+
   <Tooltip content="hi bytedance" trigger="custom" {visible}>
     <span style="display: inline-block;">
       <RadioGroup

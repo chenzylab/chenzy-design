@@ -2,7 +2,7 @@
   {
     "name": "button",
     "passed": true,
-    "size": 3650,
+    "size": 3669,
     "sizeLimit": 4000
   },
   {
@@ -14,7 +14,7 @@
   {
     "name": "float-button",
     "passed": true,
-    "size": 2939,
+    "size": 2934,
     "sizeLimit": 3400
   },
   {
@@ -32,7 +32,7 @@
   {
     "name": "icon",
     "passed": true,
-    "size": 1247,
+    "size": 1317,
     "sizeLimit": 1450
   },
   {
@@ -44,13 +44,13 @@
   {
     "name": "space",
     "passed": true,
-    "size": 951,
+    "size": 975,
     "sizeLimit": 1200
   },
   {
     "name": "typography",
     "passed": true,
-    "size": 7888,
+    "size": 7898,
     "sizeLimit": 9000
   },
   {
@@ -62,8 +62,8 @@
   {
     "name": "modal",
     "passed": true,
-    "size": 5722,
-    "sizeLimit": 5850
+    "size": 6003,
+    "sizeLimit": 6200
   },
   {
     "name": "notification",
@@ -74,8 +74,8 @@
   {
     "name": "popconfirm",
     "passed": true,
-    "size": 4440,
-    "sizeLimit": 4800
+    "size": 2796,
+    "sizeLimit": 3200
   },
   {
     "name": "progress",
@@ -86,19 +86,19 @@
   {
     "name": "side-sheet",
     "passed": true,
-    "size": 3976,
+    "size": 3815,
     "sizeLimit": 4500
   },
   {
     "name": "feedback",
     "passed": true,
-    "size": 2760,
+    "size": 2781,
     "sizeLimit": 3500
   },
   {
     "name": "skeleton",
     "passed": true,
-    "size": 3119,
+    "size": 1620,
     "sizeLimit": 3500
   },
   {
@@ -122,7 +122,7 @@
   {
     "name": "cascader",
     "passed": true,
-    "size": 10526,
+    "size": 10517,
     "sizeLimit": 10600
   },
   {
@@ -134,13 +134,13 @@
   {
     "name": "color-picker",
     "passed": true,
-    "size": 6296,
+    "size": 6295,
     "sizeLimit": 7500
   },
   {
     "name": "date-picker",
     "passed": true,
-    "size": 19331,
+    "size": 19680,
     "sizeLimit": 22000
   },
   {
@@ -158,7 +158,7 @@
   {
     "name": "input-number",
     "passed": true,
-    "size": 4777,
+    "size": 4789,
     "sizeLimit": 5000
   },
   {
@@ -170,7 +170,7 @@
   {
     "name": "radio",
     "passed": true,
-    "size": 3998,
+    "size": 4047,
     "sizeLimit": 4100
   },
   {
@@ -182,13 +182,13 @@
   {
     "name": "select",
     "passed": true,
-    "size": 9226,
+    "size": 9222,
     "sizeLimit": 10000
   },
   {
     "name": "slider",
     "passed": true,
-    "size": 5182,
+    "size": 5187,
     "sizeLimit": 5500
   },
   {
@@ -224,43 +224,43 @@
   {
     "name": "tree-select",
     "passed": true,
-    "size": 10935,
+    "size": 10932,
     "sizeLimit": 12000
   },
   {
     "name": "upload",
     "passed": true,
-    "size": 12054,
+    "size": 12178,
     "sizeLimit": 13000
   },
   {
     "name": "anchor",
     "passed": true,
-    "size": 4415,
+    "size": 4404,
     "sizeLimit": 4500
   },
   {
     "name": "breadcrumb",
     "passed": true,
-    "size": 4624,
+    "size": 4603,
     "sizeLimit": 4800
   },
   {
     "name": "dropdown",
     "passed": true,
-    "size": 6838,
+    "size": 5432,
     "sizeLimit": 7850
   },
   {
     "name": "menu",
     "passed": true,
-    "size": 8153,
+    "size": 8143,
     "sizeLimit": 8400
   },
   {
     "name": "pagination",
     "passed": true,
-    "size": 4939,
+    "size": 4933,
     "sizeLimit": 5100
   },
   {
@@ -272,7 +272,7 @@
   {
     "name": "tabs",
     "passed": true,
-    "size": 7755,
+    "size": 7908,
     "sizeLimit": 8000
   },
   {
@@ -326,103 +326,103 @@
   {
     "name": "avatar",
     "passed": true,
-    "size": 6744,
+    "size": 6785,
     "sizeLimit": 7300
   },
   {
     "name": "badge",
     "passed": true,
-    "size": 2322,
+    "size": 1675,
     "sizeLimit": 2500
   },
   {
     "name": "calendar",
     "passed": true,
-    "size": 8599,
+    "size": 7700,
     "sizeLimit": 9000
   },
   {
     "name": "card",
     "passed": true,
-    "size": 3407,
+    "size": 3041,
     "sizeLimit": 3700
   },
   {
     "name": "carousel",
     "passed": true,
-    "size": 4656,
+    "size": 4545,
     "sizeLimit": 5500
   },
   {
     "name": "collapse",
     "passed": true,
-    "size": 3820,
+    "size": 3073,
     "sizeLimit": 4400
   },
   {
     "name": "collapsible",
     "passed": true,
-    "size": 1774,
+    "size": 1547,
     "sizeLimit": 2000
   },
   {
     "name": "descriptions",
     "passed": true,
-    "size": 2444,
+    "size": 2546,
     "sizeLimit": 2800
   },
   {
     "name": "empty",
     "passed": true,
-    "size": 2214,
+    "size": 1750,
     "sizeLimit": 2550
   },
   {
     "name": "highlight",
     "passed": true,
-    "size": 1232,
+    "size": 1011,
     "sizeLimit": 1450
   },
   {
     "name": "image",
     "passed": true,
-    "size": 5219,
-    "sizeLimit": 6000
+    "size": 12845,
+    "sizeLimit": 13000
   },
   {
     "name": "list",
     "passed": true,
-    "size": 7973,
-    "sizeLimit": 8950
+    "size": 3002,
+    "sizeLimit": 3500
   },
   {
     "name": "overflow-list",
     "passed": true,
-    "size": 3049,
+    "size": 2470,
     "sizeLimit": 3200
   },
   {
     "name": "popover",
     "passed": true,
-    "size": 4114,
-    "sizeLimit": 4750
+    "size": 2889,
+    "sizeLimit": 3300
   },
   {
     "name": "scroll-list",
     "passed": true,
-    "size": 5000,
+    "size": 2168,
     "sizeLimit": 5750
   },
   {
     "name": "table",
     "passed": true,
-    "size": 15570,
-    "sizeLimit": 16700
+    "size": 17924,
+    "sizeLimit": 18200
   },
   {
     "name": "tag",
     "passed": true,
-    "size": 4160,
+    "size": 4386,
     "sizeLimit": 5000
   },
   {
@@ -434,8 +434,8 @@
   {
     "name": "tooltip",
     "passed": true,
-    "size": 3066,
-    "sizeLimit": 3500
+    "size": 4299,
+    "sizeLimit": 5000
   },
   {
     "name": "tree",
@@ -494,7 +494,7 @@
   {
     "name": "cropper",
     "passed": true,
-    "size": 3205,
+    "size": 3103,
     "sizeLimit": 4000
   },
   {
@@ -506,7 +506,7 @@
   {
     "name": "sidebar",
     "passed": true,
-    "size": 14979,
+    "size": 15024,
     "sizeLimit": 20000
   },
   {
