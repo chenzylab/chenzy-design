@@ -1495,7 +1495,7 @@
       <tr
         role={gridEnabled ? 'row' : undefined}
         aria-rowindex={gridEnabled ? 1 : undefined}
-        class={headerRowProps?.className ?? undefined}
+        class="cd-table-row {headerRowProps?.className ?? ''}"
         style={headerRowProps?.style ?? undefined}
         onclick={headerRowProps?.onClick ?? undefined}
       >
