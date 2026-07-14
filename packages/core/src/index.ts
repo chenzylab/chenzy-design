@@ -583,18 +583,14 @@ export {
 export {
   createUserGuide,
   getSpotlightRect,
-  isStepActive,
-  nextActiveIndex,
-  shouldShowSkip,
-  shouldShowPrev,
-  isLastStep,
+  DEFAULT_SPOTLIGHT_PADDING,
+  DEFAULT_USER_GUIDE_Z_INDEX,
   type UserGuideMode,
   type UserGuideTheme,
   type UserGuidePosition,
   type UserGuideStepData,
   type CreateUserGuideOptions,
   type SpotlightRect,
-  type UserGuideState,
   type UserGuideController,
 } from './user-guide.js';
 export {

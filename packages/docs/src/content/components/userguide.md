@@ -2,7 +2,7 @@
 title: UserGuide 用户引导
 name: userguide
 category: show
-brief: 分步引导用户熟悉界面与功能。支持 popup 气泡逐个高亮目标元素（spotlight 聚光）与 modal 居中图文引导两种模式，内置遮罩、聚光挖孔、步进控制、进度指示与完整的键盘与无障碍支持。
+brief: 用于页面对新用户进行功能引导。支持 popup 气泡逐个高亮目标元素（spotlight 聚光）与 modal 居中图文引导两种模式，内置遮罩、聚光挖孔、步进控制与进度指示。
 ---
 
 ## 使用场景
@@ -15,8 +15,8 @@ UserGuide（用户引导）用于**在首次进入或功能上线时，分步骤
 - **聚光高亮**：popup 模式下在遮罩上按目标元素轮廓挖孔，`spotlightPadding` 控制留白，让焦点区域自然凸显。
 - **步进控制**：内置上一步 / 下一步 / 跳过 / 完成按钮，`showPrevButton`、`showSkipButton`、`finishText` 可裁剪，`nextButtonProps` / `prevButtonProps` 可定制按钮外观。
 - **受控 / 非受控**：不传 `current` 时组件自管步骤；传入 `current` 即进入受控模式，须配合 `onChange` 写回，便于与外部状态或埋点联动。
-- **进度指示**：modal 模式下底部渲染步骤指示点，用户可感知总进度。
-- **主题与定位**：`theme`（default / primary）、`position`（top / bottom / left / right）、`mask`、`zIndex`、`getPopupContainer` 均可配置，逐步骤亦可覆盖 `position` / `theme` / `spotlightPadding`。
+- **进度指示**：popup 模式在底部渲染 `当前步 / 总步数` 文本，modal 模式（含封面时）底部渲染步骤指示点，用户可感知总进度。
+- **主题与定位**：`theme`（default / primary）、`position`（12 种方位）、`mask`、`zIndex`、`getPopupContainer` 均可配置，逐步骤亦可覆盖 `position` / `theme` / `spotlightPadding` / `showArrow`。
 
 ## 何时使用
 
@@ -32,13 +32,10 @@ UserGuide（用户引导）用于**在首次进入或功能上线时，分步骤
 
 ## 无障碍
 
-对标并大幅超越 Semi 的引导实现：
+严格对齐 Semi 的引导实现：
 
-- **`role="dialog"` 语义**：引导气泡 / 弹窗以对话框语义暴露，`aria-modal` 表明模态性，屏幕阅读器可正确识别。
-- **焦点陷阱**：打开后焦点被约束在引导内部（Tab / Shift+Tab 循环），关闭后归还触发前的焦点。
-- **`inert` 隔离背景**：遮罩下的背景内容标记为 `inert`，既不可聚焦也不进无障碍树，避免用户误触。
-- **Esc 跳过**：按 Esc 触发跳过（等价 `onSkip`），符合对话框的关闭预期。
-- **← / → 步进**：左右方向键在步骤间前进 / 后退，无需鼠标即可完成整个引导。
-- **进度播报**：步骤切换时通过 `aria-live` 播报「第 N 步 / 共 M 步」及当前标题，让非视觉用户感知进度。
+- **气泡对话框语义**：popup 复用 Popover（`trigger="custom"`），浮层以对话框语义暴露，触发锚点承载可访问名。
+- **聚光挖孔可交互**：spotlight 高亮区通过四块透明矩形让出指针事件，用户仍可点击被高亮的目标元素（「点这里」场景）。
+- **步进控制**：上一步 / 下一步 / 跳过 / 完成均为标准 Button，可键盘聚焦与激活。
 - **对比度**：气泡文字、按钮与背景对比度 ≥ 4.5:1；聚光挖孔不依赖颜色单独传达焦点。
-- **RTL**：定位与指示点顺序随书写方向镜像。
+- **reduced-motion**：`prefers-reduced-motion` 下移除 spotlight 移动过渡。

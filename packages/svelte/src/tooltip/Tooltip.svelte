@@ -116,6 +116,12 @@
      */
     wrapperClassName?: string;
     /**
+     * 外层包裹 span（rootEl，即定位参照的触发宿主）的内联样式。
+     * 用于让包裹 span 直接承载触发盒（如 UserGuide 的 fixed 定位空锚点），
+     * 避免子元素 position:fixed 使包裹 span 塌缩为 0 尺寸导致 floating 定位错位。
+     */
+    triggerStyle?: string;
+    /**
      * 浮层 wrapper 节点的 id（对齐 Semi wrapperId）；trigger 的 aria 属性指向此 id，
      * 不设则组件随机生成。
      */
@@ -166,6 +172,7 @@
     afterClose,
     prefixCls = 'cd-tooltip',
     wrapperClassName = '',
+    triggerStyle = '',
     wrapperId,
     role = 'tooltip',
     guardFocus,
@@ -435,6 +442,37 @@
     [popStyle, arrowOffsetVar].filter(Boolean).join(';'),
   );
 
+  // wrapperStyle（z-index / transform-origin / 用户 style / 箭头偏移 CSS 变量）经 $effect
+  // 用 setProperty 逐条写入 popEl.style，而非 `style={wrapperStyle}` 整串绑定。
+  // 原因：use:floating 命令式写 popEl.style 的 position/inset/transform/margin 定位浮层；
+  // 若用整串 style= 绑定，wrapperStyle 因 onPlacement 回写 arrowOffset 而重算时，Svelte 会
+  // 重置整个 style 属性，抹掉 floating 刚写入的定位，导致浮层塌回文档流（UserGuide 尤甚）。
+  // 逐条 setProperty 只覆盖自己的键，floating 的定位键得以共存。
+  let appliedStyleKeys: string[] = [];
+  function parseStyleDecls(css: string): [string, string][] {
+    const out: [string, string][] = [];
+    for (const decl of css.split(';')) {
+      const i = decl.indexOf(':');
+      if (i === -1) continue;
+      const prop = decl.slice(0, i).trim();
+      const val = decl.slice(i + 1).trim();
+      if (prop) out.push([prop, val]);
+    }
+    return out;
+  }
+  $effect(() => {
+    const el = popEl;
+    if (!el) return;
+    const decls = parseStyleDecls(wrapperStyle);
+    const nextKeys = decls.map(([p]) => p);
+    // 移除本组件上一轮写过、这一轮不再存在的键（避免残留）。
+    for (const k of appliedStyleKeys) {
+      if (!nextKeys.includes(k)) el.style.removeProperty(k);
+    }
+    for (const [prop, val] of decls) el.style.setProperty(prop, val);
+    appliedStyleKeys = nextKeys;
+  });
+
   // dialog 模式：触发器承载 button 角色（aria-haspopup/expanded/controls 挂合法宿主，
   // 对齐 Semi Popover 的 a11y 修复）；tooltip 模式保持纯 span + aria-describedby。
   // dialog 模式触发器可 Enter/Space 激活（与原生 button 一致）。
@@ -452,6 +490,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <span
   class="cd-tooltip {wrapperClassName}"
+  style={triggerStyle || undefined}
   bind:this={rootEl}
   onpointerenter={onPointerEnter}
   onpointerleave={onPointerLeave}
@@ -500,7 +539,6 @@
       class:cd-tooltip-wrapper-show={isOpen}
       class:cd-tooltip-wrapper--hidden={!isOpen}
       class:cd-tooltip-wrapper--motion={motionEnabled}
-      style={wrapperStyle}
       onclick={onPopClick}
     >
       <div class="cd-tooltip-content">

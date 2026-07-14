@@ -856,7 +856,5 @@ export interface Locale {
     prev: string;
     /** finish button (last step) */
     finish: string;
-    /** progress aria-label / indicator template, uses {current} and {total} */
-    stepIndicator: string;
   };
 }

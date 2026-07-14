@@ -1,6 +1,6 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * UserGuide — see specs/components/show/UserGuide.spec.md
+ * UserGuide — 严格对齐 Semi userGuide（破坏性重写，无向后兼容）。
  */
 export const meta = {
   name: 'UserGuide',
@@ -8,14 +8,7 @@ export const meta = {
   stage: 'M4',
   semiEquivalent: 'UserGuide',
   description:
-    '用户引导：popup 模式用 svg mask 挖洞 spotlight 遮罩逐个高亮目标元素并用 floating 贴气泡讲解（目标 scrollIntoView 进视口）；modal 模式居中弹窗图文引导（cover 封面 + 圆点指示器）。步进状态机在 core createUserGuide：current 受控（提供 current 即受控，内部不改需配合 onChange 回写）/非受控，handleNext/handlePrev/handleSkip/handleFinish 回调去重（current 未变不 notify），visible false→true 重置 current=0，popup 无 target 步骤跳过，spotlight padding 三层覆盖（step>props>默认5），按钮显隐规则（跳过=非末步、上一步=非首步、下一步/完成）。a11y 大幅超越 Semi：role=dialog + aria-modal + aria-labelledby/describedby；打开移焦 useFocusTrap 焦点困住 + 关闭归还；背景 useInertBackground inert；Esc=跳过、←/→=上一步/下一步；useScrollLock 锁滚动（getPopupContainer 时跳过）；进度 aria-label + useLiveAnnouncer polite 播报「第 N 步：标题」。onFinish/onSkip 不自动关闭，使用方置 visible=false。',
-  a11yPattern: 'dialog + spotlight',
-  keyboardMap: {
-    Escape: '跳过引导（onSkip）',
-    ArrowRight: '下一步',
-    ArrowLeft: '上一步',
-    Tab: '在气泡/弹窗内循环焦点',
-  },
+    '用户引导：popup 模式复用本库 Popover（trigger="custom"）贴气泡讲解 + svg mask 挖洞 spotlight 遮罩逐个高亮目标元素（4 块透明 rect 让高亮区可交互，目标不在视口时 scrollIntoView）；modal 模式复用本库 Modal（header/footer=null、centered、bodyStyle padding:0）图文引导（cover 封面 + 圆点指示器）。步进状态机在 core createUserGuide：current 受控（提供 current 即受控，内部不改需配合 onChange 回写）/非受控，handlePrev/handleNext/handleSkip 回调去重（current 未变不 notify onChange），末步 handleNext 触发 onFinish，visible false→true 重置 current=0 并锁 body 滚动（getPopupContainer 时跳过、补偿滚动条宽），按钮显隐规则（跳过=非末步、上一步=非首步、下一步/完成）。指示器 popup 为纯文本 n/total（对齐 Semi 无 i18n），modal 为圆点。onFinish/onSkip 不自动关闭，使用方置 visible=false。严格对齐 Semi：无 focus-trap/inert/Esc/箭头键/进度 aria/live-announcer。',
   props: [
     { name: 'steps', type: 'StepItem[]', default: '[]', desc: '必填，引导步骤数组' },
     { name: 'visible', type: 'boolean', default: 'false', desc: '是否显示；false→true 重置到第 0 步' },
@@ -23,7 +16,7 @@ export const meta = {
     { name: 'mode', type: "'popup'|'modal'", default: "'popup'", desc: 'popup=气泡+spotlight；modal=居中弹窗' },
     { name: 'mask', type: 'boolean', default: 'true', desc: '是否显示遮罩' },
     { name: 'theme', type: "'default'|'primary'", default: "'default'", desc: '气泡主题（popup）' },
-    { name: 'position', type: "'top'|'bottom'|'left'|'right'", default: "'bottom'", desc: '气泡相对目标位置（可被 step 覆盖）' },
+    { name: 'position', type: 'Position', default: "'bottom'", desc: '气泡相对目标位置（14 方位，可被 step 覆盖）' },
     { name: 'spotlightPadding', type: 'number', default: '5', desc: '高亮区内边距 px（可被 step 覆盖）' },
     { name: 'showPrevButton', type: 'boolean', default: 'true', desc: '显示上一步（首步自动隐藏）' },
     { name: 'showSkipButton', type: 'boolean', default: 'true', desc: '显示跳过（末步自动隐藏）' },
@@ -32,8 +25,8 @@ export const meta = {
     { name: 'prevButtonProps', type: 'ButtonProps', default: '{}', desc: '上一步按钮属性透传' },
     { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '挂载父级；提供时不锁 body 滚动' },
     { name: 'zIndex', type: 'number', default: '1030', desc: '弹层/spotlight 层级' },
-    { name: 'class', type: 'string', default: 'undefined', desc: '气泡/根节点类名' },
-    { name: 'style', type: 'string', default: 'undefined', desc: '气泡/根节点内联样式' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '气泡 popover 类名' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '气泡 popover 内联样式' },
     { name: 'onChange', type: '(current: number) => void', default: 'undefined', desc: '步骤改变（去重）' },
     { name: 'onNext', type: '(current: number) => void', default: 'undefined', desc: '点下一步（非末步），参数为新 current' },
     { name: 'onPrev', type: '(current: number) => void', default: 'undefined', desc: '点上一步，参数为 current-1' },
@@ -41,27 +34,28 @@ export const meta = {
     { name: 'onSkip', type: '() => void', default: 'undefined', desc: '点跳过（不自动关闭）' },
   ],
   stepItem: [
-    { name: 'target', type: '(() => Element)|Element', desc: '锚定/高亮目标（popup 必需，无则该步跳过；modal 忽略）' },
+    { name: 'target', type: '(() => Element)|Element', desc: '锚定/高亮目标（popup 必需，无则该步不渲染；modal 忽略）' },
     { name: 'title', type: 'string|Snippet', desc: '步骤标题' },
     { name: 'description', type: 'string|Snippet', desc: '步骤描述' },
-    { name: 'cover', type: 'Snippet', desc: '封面（modal 有 cover 才渲染圆点指示器）' },
-    { name: 'position', type: "'top'|'bottom'|'left'|'right'", desc: '本步气泡位置（继承 props）' },
-    { name: 'theme', type: "'default'|'primary'", desc: '本步主题（继承 props）' },
-    { name: 'showArrow', type: 'boolean', desc: '气泡箭头（popup）' },
-    { name: 'spotlightPadding', type: 'number', desc: '本步高亮内边距（继承 props）' },
-    { name: 'className', type: 'string', desc: '步骤自定义类名' },
+    { name: 'cover', type: 'Snippet|string', desc: '封面（modal 有 cover 才渲染圆点指示器）' },
+    { name: 'mask', type: 'boolean', desc: '是否显示此步蒙层（覆盖全局）' },
+    { name: 'showArrow', type: 'boolean', desc: '气泡箭头（popup），默认 true' },
+    { name: 'spotlightPadding', type: 'number', desc: '本步高亮内边距（覆盖全局）' },
+    { name: 'theme', type: "'default'|'primary'", desc: '本步主题（覆盖全局）' },
+    { name: 'position', type: 'Position', desc: '本步气泡位置（覆盖全局）' },
   ],
   examples: [
     'popup 分步高亮：steps 各含 target + title + description，visible 控制显隐',
-    'modal 图文引导：mode="modal"，step.cover 封面 + 圆点指示器',
-    '受控 current：传 current + onChange 回写',
-    '无遮罩轻提示：mask={false}',
     'primary 主题：theme="primary"',
+    'popup 12 方位 + showArrow 控制箭头',
+    '设置高亮区域大小：spotlightPadding（可 step 级覆盖）',
     '自定义按钮文案：finishText + nextButtonProps/prevButtonProps',
+    '受控 current：传 current + onChange 回写',
+    'modal 图文引导：mode="modal"，step.cover 封面 + 圆点指示器',
+    '无遮罩：mask={false}',
   ],
   doNot: [
     '不要忘记在 onFinish/onSkip 里置 visible=false 关闭引导',
-    'popup 步骤别漏 target（无 target 该步会被跳过）',
-    '不要绕过 focus trap / inert（a11y 契约）',
+    'popup 步骤别漏 target（无 target 该步不渲染）',
   ],
 } as const;

@@ -24,10 +24,12 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-popup.svelte', 'Popup 分步高亮', '气泡模式逐个高亮目标元素，配合标题与描述引导用户操作'),
-  entry('02-modal.svelte', 'Modal 图文引导', '居中弹窗模式，支持封面图 + 图文说明与底部指示点'),
-  entry('03-controlled.svelte', '受控当前步骤', '通过 current + onChange 由外部状态托管当前步骤'),
-  entry('04-no-mask.svelte', '无遮罩轻提示', 'mask={false} 只做轻量高亮，不遮挡背景内容'),
-  entry('05-primary.svelte', 'Primary 主题', 'theme="primary" 让气泡与高亮采用品牌色调'),
-  entry('06-custom-text.svelte', '自定义按钮', '定制 finishText 与 next/prev 按钮的外观与文案'),
+  entry('01-basic.svelte', '基本用法', 'popup 气泡模式逐个高亮目标元素，配合标题与描述引导用户操作'),
+  entry('02-theme.svelte', '主题', 'popup 气泡卡片提供 default 与 primary 两种主题，通过 theme 设置'),
+  entry('03-position.svelte', '气泡卡片弹出位置', 'popup 提供 12 种弹出位置，可通过 showArrow 设置是否显示箭头'),
+  entry('04-padding.svelte', '设置高亮区域大小', '通过 spotlightPadding 设置高亮区域内边距，支持 step 级覆盖'),
+  entry('05-custom-button.svelte', '定制按钮', '通过 nextButtonProps / prevButtonProps 与 finishText 定制按钮样式与文案'),
+  entry('06-controlled.svelte', '受控', '通过 current + onChange 由外部状态托管当前引导步骤'),
+  entry('07-modal.svelte', '弹窗式引导', 'mode="modal" 开启居中弹窗式图文引导，含封面图与底部圆点指示器'),
+  entry('08-no-mask.svelte', '无遮罩', 'mask={false} 开启无遮罩引导，不遮挡背景内容'),
 ];

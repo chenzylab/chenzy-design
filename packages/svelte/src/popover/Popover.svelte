@@ -108,6 +108,10 @@
      * 优先于 Popover 自身 title 生成的 id。
      */
     ariaLabelledby?: string;
+    /** 外层包裹 span（定位参照宿主）的类名（对齐 Semi wrapperClassName） */
+    wrapperClassName?: string;
+    /** 外层包裹 span（定位参照宿主）的内联样式；用于让包裹 span 直接承载触发盒 */
+    triggerStyle?: string;
     /** 触发元素（必填） */
     children?: Snippet;
   }
@@ -146,6 +150,8 @@
     onClickOutSide,
     afterClose,
     ariaLabelledby: ariaLabelledbyProp,
+    wrapperClassName = '',
+    triggerStyle = '',
     children,
   }: Props = $props();
 
@@ -225,6 +231,8 @@
   {afterClose}
   {dialogLabel}
   {ariaLabelledby}
+  {wrapperClassName}
+  {triggerStyle}
   content={popCard}
 >
   {@render children?.()}
