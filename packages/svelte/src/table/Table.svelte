@@ -1253,6 +1253,13 @@
   }
   const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
 
+  // 单元格 style 合并：把 onCell 返回的自定义 style 追加到该 td 已有的 sticky/宽度 style 之后。
+  function mergeCellStyle(base: string | undefined, extra: string | undefined): string | undefined {
+    if (!extra) return base;
+    if (!base) return extra;
+    return `${base};${extra}`;
+  }
+
   // 表头单元格 style 合并：把 headerStyle（应用到所有 th）追加到该 th 已有的 sticky/宽度 style 之后。
   function mergeHeaderStyle(base: string | undefined): string | undefined {
     if (!headerStyleStr) return base;
@@ -1945,10 +1952,14 @@
               {@const value = cellValue(col, record)}
               {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
               {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !expandAsColumn}
+              {@const cellProps = col.onCell ? col.onCell(record, index) : undefined}
+              {#if !(cellProps && (cellProps.colSpan === 0 || cellProps.rowSpan === 0))}
               <td
-                class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
+                class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)} {cellProps?.className ?? ''}"
                 class:cd-table-row-cell-ellipsis={col.ellipsis}
-                style={cellStyle(col, i)}
+                colspan={cellProps?.colSpan}
+                rowspan={cellProps?.rowSpan}
+                style={mergeCellStyle(cellStyle(col, i), cellProps?.style)}
                 role={gridEnabled ? (isRowHeader ? 'rowheader' : 'gridcell') : undefined}
                 id={gridEnabled ? cellId(gridRow, gc) : undefined}
                 tabindex={rovingTabindex(gridRow, gc)}
@@ -1991,6 +2002,7 @@
                   {cellText(value)}
                 {/if}
               </td>
+              {/if}
             {/each}
           </tr>
           {#if hasExpand && canExpand(record)}

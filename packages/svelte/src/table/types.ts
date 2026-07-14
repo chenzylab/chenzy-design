@@ -46,6 +46,16 @@ export interface ColumnDef<T> {
   onFilter?: (value: string | number, record: T) => boolean;
   /** 单元格自定义渲染 */
   render?: Snippet<[{ value: unknown; record: T; index: number }]>;
+  /**
+   * 设置单元格属性（对齐 Semi column.onCell）。返回 { colSpan, rowSpan } 实现行列合并：
+   * 值为 0 时该单元格不渲染（被合并进相邻格）；也可返回 style/className。
+   */
+  onCell?: (record: T, rowIndex: number) => {
+    colSpan?: number;
+    rowSpan?: number;
+    style?: string;
+    className?: string;
+  };
 }
 
 export interface Expandable<T> {
