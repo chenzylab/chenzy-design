@@ -1,40 +1,60 @@
 <!--
-  Banner — see specs/components/feedback/Banner.spec.md
-  内嵌文档流的反馈横幅：info/success/warning/danger 四语义，full/card 两形态。
-  非模态、不夺焦、不锁滚。role/aria-live 由 @chenzy-design/core resolveBannerRole 按 type + dynamic 推断。
-  红线 #1：受控 open 绝不回写——isOpen 派生自受控 open 或内部 innerOpen，关闭仅回调 + 仅非受控写 innerOpen。
-  红线 #2：render 不读 effect 写的状态。
-  红线 #3：无 DOM 几何测量；关闭过渡用 svelte/transition (slide)，reduced-motion 经 duration 降级。
-  closeOnEsc：开启且可关闭并显示时，$effect 内 window keydown 监听 Esc → close('esc')，cleanup 解绑。
+  Banner — 通知横幅，严格对齐 Semi Design（semi-ui/banner/index.tsx）。
+  DOM 结构镜像 Semi：
+    div.cd-banner.cd-banner-{type}.cd-banner-full|in-container[.cd-banner-bordered] role=alert
+      div.cd-banner-content-wrapper
+        div.cd-banner-content
+          div.cd-banner-icon            ← icon !== null
+          div.cd-banner-content-body
+            <Typography.Title  class=cd-banner-title  heading=5 component=div>   ← title
+            <Typography.Paragraph class=cd-banner-description component=div>      ← description
+        <IconButton class=cd-banner-close theme=borderless size=small type=tertiary> ← closeIcon !== null
+      div.cd-banner-extra               ← children
+  依赖组件均已对齐 Semi：Typography.Title/Paragraph、IconButton、IconClose/IconAlertTriangle/IconInfoCircle/IconTickCircle/IconAlertCircle。
+  行为对齐 Semi foundation：内部 visible 状态，remove() 先 notifyClose(onClose) 再 setVisible(false)；关闭后不再渲染。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { slide } from 'svelte/transition';
-  import { resolveBannerRole, useId, type BannerType } from '@chenzy-design/core';
+  import { Title, Paragraph } from '../typography/index.js';
+  import IconButton from '../iconbutton/IconButton.svelte';
+  import {
+    IconClose,
+    IconAlertTriangle,
+    IconInfoCircle,
+    IconTickCircle,
+    IconAlertCircle,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
+  type Type = 'info' | 'success' | 'danger' | 'warning';
+
   interface Props {
-    type?: BannerType;
+    /** 类型，支持 info / success / danger / warning。 */
+    type?: Type;
+    /** 是否为全屏模式。 */
     fullMode?: boolean;
+    /** 是否展示边框，仅在非全屏模式下有效。 */
     bordered?: boolean;
+    /** 标题（string 文本）。titleSnippet 优先。 */
     title?: string;
+    /** 描述内容（string 文本）。descriptionSnippet 优先。 */
     description?: string;
-    open?: boolean;
-    defaultOpen?: boolean;
-    closable?: boolean;
-    closeOnEsc?: boolean;
-    animation?: boolean;
-    dynamic?: boolean;
-    ariaLabel?: string;
+    /** 自定义 icon 片段；传 null 不显示 icon。 */
+    icon?: Snippet | null;
+    /** 自定义关闭 icon 片段；传 null 不显示关闭按钮。 */
+    closeIcon?: Snippet | null;
+    /** 自定义渲染内容（对齐 Semi children，渲染在 extra 区）。 */
     children?: Snippet;
+    /** 自定义标题片段，覆盖 title（对齐 Semi title 传 ReactNode）。 */
     titleSnippet?: Snippet;
-    icon?: Snippet<[{ type: BannerType }]> | boolean;
-    action?: Snippet<[{ close: () => void }]>;
-    closeIcon?: Snippet;
-    onOpenChange?: (info: { open: boolean }) => void;
-    onClose?: (info: { trigger: 'closeButton' | 'esc' }) => void;
-    onAfterClose?: () => void;
+    /** 自定义描述片段，覆盖 description（对齐 Semi description 传 ReactNode）。 */
+    descriptionSnippet?: Snippet;
+    /** 关闭时的回调函数。 */
+    onClose?: (e: MouseEvent) => void;
+    /** 根元素类名。 */
     class?: string;
+    /** 根元素内联样式。 */
+    style?: string;
   }
 
   let {
@@ -43,74 +63,41 @@
     bordered = false,
     title = '',
     description = '',
-    open,
-    defaultOpen = true,
-    closable = true,
-    closeOnEsc = false,
-    animation = true,
-    dynamic = false,
-    ariaLabel,
+    icon,
+    closeIcon,
     children,
     titleSnippet,
-    icon = true,
-    action,
-    closeIcon,
-    onOpenChange,
+    descriptionSnippet,
     onClose,
-    onAfterClose,
     class: className = '',
+    style,
   }: Props = $props();
-
-  // 红线 #1：受控 open 绝不回写。
-  // initOpen() 仅在初始化时读 defaultOpen，避免 state_referenced_locally。
-  function initOpen(): boolean {
-    return defaultOpen;
-  }
-  const isOpenControlled = $derived(open !== undefined);
-  let innerOpen = $state(initOpen());
-  const isOpen = $derived(isOpenControlled ? open : innerOpen);
-
-  const roleProps = $derived(resolveBannerRole(type, dynamic));
-  const isRegion = $derived(roleProps.role === 'region');
 
   const loc = useLocale();
 
-  const titleId = useId('cd-banner-title');
-  const descId = useId('cd-banner-desc');
+  // 对齐 Semi foundation：内部 visible 状态；removeBanner = notifyClose(onClose) → setVisible(false)。
+  let visible = $state(true);
 
-  const hasTitle = $derived(titleSnippet !== undefined || title.length > 0);
-  const hasDescription = $derived(children !== undefined || description.length > 0);
-
-  // icon 三态：false 隐藏；function 用自定义 snippet；其余真值用默认语义图标。
-  const showIcon = $derived(icon !== false);
-  const useCustomIcon = $derived(typeof icon === 'function');
-
-  const animDur = $derived(animation ? 150 : 0);
-
-  function close(trigger: 'closeButton' | 'esc') {
-    if (!isOpenControlled) innerOpen = false;
-    onOpenChange?.({ open: false });
-    onClose?.({ trigger });
+  function remove(e: MouseEvent) {
+    e?.stopPropagation();
+    onClose?.(e);
+    visible = false;
   }
 
-  // 红线 #3：Esc 监听命令式绑定 + cleanup。
-  // 仅在显示、开启 closeOnEsc 且可关闭时绑定全局 keydown（横幅内嵌文档流非夺焦，故监听 window）；
-  // 关闭后 isOpen 变 false，effect 重跑触发 cleanup 解绑，避免遗留监听。
-  $effect(() => {
-    if (!isOpen || !closeOnEsc || !closable) return;
-    function onKeydown(e: KeyboardEvent) {
-      if (e.key === 'Escape') close('esc');
-    }
-    window.addEventListener('keydown', onKeydown);
-    return () => window.removeEventListener('keydown', onKeydown);
-  });
+  const hasTitle = $derived(titleSnippet !== undefined || title.length > 0);
+  const hasDescription = $derived(descriptionSnippet !== undefined || description.length > 0);
 
-  const cls = $derived(
+  // icon: undefined → 默认语义图标；null → 不显示；snippet → 自定义。
+  const showIcon = $derived(icon !== null);
+  // closeIcon: null → 不显示关闭按钮。
+  const showClose = $derived(closeIcon !== null);
+
+  const rootClass = $derived(
     [
       'cd-banner',
-      `cd-banner--${type}`,
-      fullMode ? 'cd-banner--full' : 'cd-banner--card',
-      !fullMode && bordered && 'cd-banner--bordered',
+      `cd-banner-${type}`,
+      fullMode ? 'cd-banner-full' : 'cd-banner-in-container',
+      !fullMode && bordered && 'cd-banner-bordered',
       className,
     ]
       .filter(Boolean)
@@ -118,251 +105,179 @@
   );
 </script>
 
-{#snippet defaultIcon(t: BannerType)}
-  {#if t === 'success'}
-    <svg class="cd-banner__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
-      <path
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M5 8.2l2 2 4-4.4"
-      />
-    </svg>
-  {:else if t === 'warning'}
-    <svg class="cd-banner__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <path
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.4"
-        stroke-linejoin="round"
-        d="M8 1.8l6.4 11.4H1.6z"
-      />
-      <path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 6v3.4" />
-      <circle cx="8" cy="11.4" r="0.85" fill="currentColor" />
-    </svg>
+{#snippet defaultCloseIcon()}
+  <IconClose aria-hidden="true" />
+{/snippet}
+
+{#snippet defaultIcon(t: Type)}
+  {#if t === 'warning'}
+    <IconAlertTriangle size="large" aria-label="warning" />
+  {:else if t === 'success'}
+    <IconTickCircle size="large" aria-label="success" />
   {:else if t === 'danger'}
-    <svg class="cd-banner__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
-      <path
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-        d="M5.5 5.5l5 5M10.5 5.5l-5 5"
-      />
-    </svg>
+    <IconAlertCircle size="large" aria-label="danger" />
   {:else}
-    <svg class="cd-banner__icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.4" />
-      <circle cx="8" cy="4.6" r="0.85" fill="currentColor" />
-      <path stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M8 7v4.4" />
-    </svg>
+    <IconInfoCircle size="large" aria-label="info" />
   {/if}
 {/snippet}
 
-{#if isOpen}
-  <div
-    class={cls}
-    {...roleProps}
-    aria-label={isRegion ? ariaLabel : undefined}
-    aria-labelledby={hasTitle ? titleId : undefined}
-    aria-describedby={hasDescription ? descId : undefined}
-    transition:slide={{ duration: animDur }}
-    onoutroend={() => onAfterClose?.()}
-  >
-    {#if showIcon}
-      <span class="cd-banner__icon" aria-hidden={useCustomIcon ? undefined : true}>
-        {#if typeof icon === 'function'}
-          {@render icon({ type })}
-        {:else}
-          {@render defaultIcon(type)}
+{#if visible}
+  <div class={rootClass} {style} role="alert">
+    <div class="cd-banner-content-wrapper">
+      <div class="cd-banner-content">
+        {#if showIcon}
+          <div class="cd-banner-icon">
+            {#if icon}
+              {@render icon()}
+            {:else}
+              {@render defaultIcon(type)}
+            {/if}
+          </div>
         {/if}
-      </span>
-    {/if}
-
-    <div class="cd-banner__content">
-      {#if hasTitle}
-        <div class="cd-banner__title" id={titleId}>
-          {#if titleSnippet}
-            {@render titleSnippet()}
-          {:else}
-            {title}
+        <div class="cd-banner-content-body">
+          {#if hasTitle}
+            <Title heading={5} class="cd-banner-title" component="div">
+              {#if titleSnippet}
+                {@render titleSnippet()}
+              {:else}
+                {title}
+              {/if}
+            </Title>
+          {/if}
+          {#if hasDescription}
+            <Paragraph class="cd-banner-description" component="div">
+              {#if descriptionSnippet}
+                {@render descriptionSnippet()}
+              {:else}
+                {description}
+              {/if}
+            </Paragraph>
           {/if}
         </div>
-      {/if}
-      {#if hasDescription}
-        <div class="cd-banner__description" id={descId}>
-          {#if children}
-            {@render children()}
-          {:else}
-            {description}
-          {/if}
-        </div>
+      </div>
+      {#if showClose}
+        <IconButton
+          class="cd-banner-close"
+          theme="borderless"
+          size="small"
+          type="tertiary"
+          ariaLabel={loc().t('Banner.closeButtonAriaLabel')}
+          onclick={remove}
+          icon={closeIcon ?? defaultCloseIcon}
+        />
       {/if}
     </div>
-
-    {#if action}
-      <div class="cd-banner__action">
-        {@render action({ close: () => close('closeButton') })}
+    {#if children}
+      <div class="cd-banner-extra">
+        {@render children()}
       </div>
-    {/if}
-
-    {#if closable}
-      <button
-        type="button"
-        class="cd-banner__close"
-        aria-label={loc().t('Banner.closeButtonAriaLabel')}
-        onclick={() => close('closeButton')}
-      >
-        {#if closeIcon}
-          {@render closeIcon()}
-        {:else}
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              d="M4 4l8 8M12 4l-8 8"
-            />
-          </svg>
-        {/if}
-      </button>
     {/if}
   </div>
 {/if}
 
 <style>
+  /* 对齐 semi-foundation/banner/banner.scss */
   .cd-banner {
+    padding: var(--cd-spacing-banner-paddingy) var(--cd-spacing-banner-paddingx);
+  }
+
+  .cd-banner-content-wrapper {
     display: flex;
-    align-items: flex-start;
-    gap: var(--cd-banner-gap);
-    padding: var(--cd-banner-padding-y) var(--cd-banner-padding-x);
-    color: var(--cd-banner-desc-color);
-    font-size: var(--cd-banner-desc-size);
+    flex-direction: row;
   }
 
-  /* full：铺满，无圆角无外边框，左侧 accent 竖条 */
-  .cd-banner--full {
-    border-radius: 0;
-    border-inline-start: var(--cd-banner-accent-width) solid transparent;
+  .cd-banner-description {
+    margin: 0;
   }
 
-  /* card：圆角，可选边框 */
-  .cd-banner--card {
-    border-radius: var(--cd-banner-radius);
-  }
-  .cd-banner--bordered {
-    border: var(--cd-banner-border-width) solid var(--cd-banner-border-color);
-  }
-
-  /* 语义背景 + accent（图标 / full 竖条） */
-  .cd-banner--info {
-    background: var(--cd-banner-info-bg);
-  }
-  .cd-banner--info.cd-banner--full {
-    border-inline-start-color: var(--cd-banner-info-accent);
-  }
-  .cd-banner--info .cd-banner__icon {
-    color: var(--cd-banner-info-accent);
-  }
-
-  .cd-banner--success {
-    background: var(--cd-banner-success-bg);
-  }
-  .cd-banner--success.cd-banner--full {
-    border-inline-start-color: var(--cd-banner-success-accent);
-  }
-  .cd-banner--success .cd-banner__icon {
-    color: var(--cd-banner-success-accent);
-  }
-
-  .cd-banner--warning {
-    background: var(--cd-banner-warning-bg);
-  }
-  .cd-banner--warning.cd-banner--full {
-    border-inline-start-color: var(--cd-banner-warning-accent);
-  }
-  .cd-banner--warning .cd-banner__icon {
-    color: var(--cd-banner-warning-accent);
-  }
-
-  .cd-banner--danger {
-    background: var(--cd-banner-danger-bg);
-  }
-  .cd-banner--danger.cd-banner--full {
-    border-inline-start-color: var(--cd-banner-danger-accent);
-  }
-  .cd-banner--danger .cd-banner__icon {
-    color: var(--cd-banner-danger-accent);
-  }
-
-  .cd-banner__icon {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-banner-icon-size);
-    block-size: var(--cd-banner-icon-size);
-  }
-  .cd-banner__icon-svg {
-    inline-size: 100%;
-    block-size: 100%;
-  }
-
-  .cd-banner__content {
-    flex: 1 1 auto;
-    min-inline-size: 0;
+  .cd-banner .cd-banner-content-wrapper .cd-banner-content {
     display: flex;
-    flex-direction: column;
-    gap: var(--cd-banner-content-gap);
+    flex: 1;
   }
 
-  .cd-banner__title {
-    color: var(--cd-banner-title-color);
-    font-size: var(--cd-banner-title-size);
-    font-weight: var(--cd-banner-title-weight);
-    line-height: 1.4;
+  /* in-container（非全屏）：圆角 + 标题/描述纵向堆叠 */
+  .cd-banner-in-container {
+    border-radius: var(--cd-radius-banner);
   }
-  .cd-banner__description {
-    color: var(--cd-banner-desc-color);
-    font-size: var(--cd-banner-desc-size);
-    line-height: 1.5;
+  .cd-banner-in-container .cd-banner-content-wrapper .cd-banner-content .cd-banner-content-body {
+    flex: 1;
   }
-
-  .cd-banner__action {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
+  .cd-banner-in-container
+    .cd-banner-content-wrapper
+    .cd-banner-content
+    .cd-banner-content-body
+    :global(.cd-banner-title + .cd-banner-description) {
+    margin-top: var(--cd-spacing-banner-title-description-margintop);
   }
 
-  .cd-banner__close {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
+  /* full（全屏）：内容居中，icon 与 content-body 垂直居中 */
+  .cd-banner-full .cd-banner-content-wrapper .cd-banner-content {
     justify-content: center;
-    inline-size: var(--cd-width-banner-closebtn);
-    block-size: var(--cd-height-banner-closebtn);
-    padding: 0;
-    color: var(--cd-banner-close-color);
-    background: transparent;
-    border: none;
-    border-radius: var(--cd-banner-close-radius);
-    cursor: pointer;
-    transition: background-color var(--cd-banner-motion-duration) var(--cd-motion-ease-standard);
   }
-  .cd-banner__close:hover {
-    background: var(--cd-banner-close-hover-bg);
-  }
-  .cd-banner__close:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--cd-color-primary);
+  .cd-banner-full .cd-banner-content-wrapper .cd-banner-icon,
+  .cd-banner-full .cd-banner-content-wrapper .cd-banner-content-body {
+    display: flex;
+    align-items: center;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .cd-banner__close {
-      transition: none;
-    }
+  .cd-banner :global(.cd-banner-close) {
+    margin-left: var(--cd-spacing-banner-closebtn-marginleft);
+    height: var(--cd-height-banner-closebtn);
+    width: var(--cd-width-banner-closebtn);
+  }
+
+  .cd-banner-extra {
+    margin-top: var(--cd-spacing-banner-extra-margintop);
+  }
+
+  .cd-banner-icon {
+    display: flex;
+    margin-right: var(--cd-spacing-banner-icon-marginright);
+  }
+
+  /* —— 四语义色（对齐 Semi variables.scss） —— */
+  .cd-banner-info {
+    background-color: var(--cd-color-banner-info-bg-default);
+    color: var(--cd-color-banner-info-text-default);
+  }
+  .cd-banner-info.cd-banner-bordered {
+    border: var(--cd-width-banner-border) solid var(--cd-color-banner-info-border-default);
+  }
+
+  .cd-banner-warning {
+    background-color: var(--cd-color-banner-warning-bg-default);
+    color: var(--cd-color-banner-warning-text-default);
+  }
+  .cd-banner-warning.cd-banner-bordered {
+    border: var(--cd-width-banner-border) solid var(--cd-color-banner-warning-border-default);
+  }
+
+  .cd-banner-success {
+    background-color: var(--cd-color-banner-success-bg-default);
+    color: var(--cd-color-banner-success-text-default);
+  }
+  .cd-banner-success.cd-banner-bordered {
+    border: var(--cd-width-banner-border) solid var(--cd-color-banner-success-border-default);
+  }
+
+  .cd-banner-danger {
+    background-color: var(--cd-color-banner-danger-bg-default);
+    color: var(--cd-color-banner-danger-text-default);
+  }
+  .cd-banner-danger.cd-banner-bordered {
+    border: var(--cd-width-banner-border) solid var(--cd-color-banner-danger-border-default);
+  }
+
+  /* RTL（对齐 Semi rtl.scss） */
+  :global([dir='rtl']) .cd-banner {
+    direction: rtl;
+  }
+  :global([dir='rtl']) .cd-banner :global(.cd-banner-close) {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-banner-closebtn-marginleft);
+  }
+  :global([dir='rtl']) .cd-banner-icon {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-banner-icon-marginright);
   }
 </style>

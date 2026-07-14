@@ -82,10 +82,6 @@ export const en_US: Locale = {
   },
   Banner: {
     closeButtonAriaLabel: 'Close',
-    info: 'Info',
-    success: 'Success',
-    warning: 'Warning',
-    danger: 'Error',
   },
   Drawer: {
     close: 'Close',
