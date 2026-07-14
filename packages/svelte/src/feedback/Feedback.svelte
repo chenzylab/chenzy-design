@@ -266,11 +266,17 @@
   <SideSheet
     {placement}
     onCancel={handleCancel}
-    {...afterClose ? { onAfterClose: afterClose } : {}}
-    {...open !== undefined ? { open } : {}}
+    {...afterClose || onOpenChange
+      ? {
+          afterVisibleChange: (isVisible: boolean) => {
+            if (!isVisible) afterClose?.();
+            onOpenChange?.(isVisible);
+          },
+        }
+      : {}}
+    {...open !== undefined ? { visible: open } : {}}
     {...title !== undefined ? { title } : {}}
     {...width !== undefined ? { width } : {}}
-    {...onOpenChange ? { onOpenChange: (e: { open: boolean }) => onOpenChange(e.open) } : {}}
     {...className ? { class: className } : {}}
   >
     {@render body()}

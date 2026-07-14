@@ -9,7 +9,7 @@ import SideSheet from './SideSheet.svelte';
 describe('SideSheet a11y', () => {
   it('open + title：role=dialog / aria-modal / aria-labelledby，无 axe violations', async () => {
     renderWithLocale(SideSheet, {
-      props: { open: true, title: 'Edit user' },
+      props: { visible: true, title: 'Edit user' },
     });
 
     // portal 到 body —— 在 document 全局查询而非 container。
@@ -18,14 +18,14 @@ describe('SideSheet a11y', () => {
     // mask 默认 true → 模态。
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
 
-    // 有 title 时用 aria-labelledby 指向标题 h2，且该 id 存在。
+    // 有 title 时用 aria-labelledby 指向标题，且该 id 存在。
     const labelledby = dialog?.getAttribute('aria-labelledby');
     expect(labelledby).toBeTruthy();
     const titleEl = labelledby ? document.getElementById(labelledby) : null;
     expect(titleEl?.textContent).toContain('Edit user');
 
     // 关闭按钮 aria-label 来自 en_US locale（验证 LocaleProvider 管线）。
-    const closeBtn = document.querySelector('.cd-sidesheet__close') as HTMLElement | null;
+    const closeBtn = document.querySelector('.cd-sidesheet-close') as HTMLElement | null;
     expect(closeBtn?.getAttribute('aria-label')).toBeTruthy();
 
     await expectNoAxeViolations(document.body);
@@ -33,7 +33,7 @@ describe('SideSheet a11y', () => {
 
   it('无 title + ariaLabel：role=dialog 用 aria-label 提供可访问名', async () => {
     renderWithLocale(SideSheet, {
-      props: { open: true, ariaLabel: 'Notification center', closable: false },
+      props: { visible: true, ariaLabel: 'Notification center', closable: false },
     });
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
     expect(dialog?.getAttribute('aria-label')).toBe('Notification center');
@@ -43,7 +43,7 @@ describe('SideSheet a11y', () => {
 
   it('mask=false 非模态：不设 aria-modal（避免误导锁定语义）', async () => {
     renderWithLocale(SideSheet, {
-      props: { open: true, title: 'Filters', mask: false },
+      props: { visible: true, title: 'Filters', mask: false },
     });
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
     expect(dialog).not.toBeNull();

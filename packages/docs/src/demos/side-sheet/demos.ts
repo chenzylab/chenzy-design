@@ -24,9 +24,10 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础侧边栏', '右侧滑入面板，受控 open，支持 Esc/遮罩关闭并回调关闭原因。'),
-  entry('02-placement.svelte', '弹出方位', 'placement 控制从 left/right/top/bottom 四边滑入。'),
-  entry('03-size.svelte', '尺寸控制', 'size 预设（small/large）或 width 显式数值，显式优先于预设。'),
-  entry('04-no-mask.svelte', '非模态协作', 'mask=false：无遮罩、不锁滚动、不抢焦点，可与主页面同时操作，outsideClosable 点击外部关闭。'),
-  entry('05-footer.svelte', '带 Footer 操作', 'footer 暴露 close()，由取消/应用按钮关闭面板。'),
+  entry('01-basic.svelte', '基本', '默认侧边栏从右滑出，支持点击遮罩区关闭。'),
+  entry('02-placement.svelte', '自定义位置', 'placement 设置滑出位置，支持 top/bottom/left/right。'),
+  entry('03-size.svelte', '自定义尺寸', 'size 设置尺寸，支持 small(448px)/medium(684px)/large(920px)，仅 left/right 生效；也可用 width 自定义。'),
+  entry('04-no-mask.svelte', '可操作的外部区域', 'mask=false 时允许对外部区域进行操作；disableScroll=false 保留外部滚动。'),
+  entry('05-container.svelte', '渲染在指定容器', 'getPopupContainer 指定父级 DOM，弹层渲染至该 DOM；容器需设 overflow:hidden。'),
+  entry('06-content.svelte', '自定义内容区域', '自定义 titleSnippet、footer、headerStyle/bodyStyle 等创建丰富内容样式。'),
 ];

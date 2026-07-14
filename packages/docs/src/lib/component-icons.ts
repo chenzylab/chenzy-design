@@ -90,7 +90,6 @@ export const componentIcons: Record<string, string> = {
   banner: `<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="1.5"/><path d="M12 10h5"/><path d="M12 14h5"/>`,
   modal: `<rect x="3" y="4" width="18" height="16" rx="2" opacity="0.4"/><rect x="7" y="8" width="10" height="8" rx="1.5"/>`,
   popconfirm: `<path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8.5 10l2 2 3.5-4"/>`,
-  drawer: `<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/><path d="M17 12h-1"/>`,
   sidesheet: `<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M11 4v16"/><path d="M17 9l-2 3 2 3"/>`,
   toast: `<rect x="3" y="9" width="18" height="6" rx="3"/><circle cx="7.5" cy="12" r="1.5"/><path d="M11 12h7"/>`,
   notification: `<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 0 0 4 0"/>`,

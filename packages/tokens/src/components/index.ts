@@ -49,7 +49,6 @@ import { progressTokens } from './progress.js';
 import { skeletonTokens } from './skeleton.js';
 import { bannerTokens } from './banner.js';
 import { modalTokens } from './modal.js';
-import { drawerTokens } from './drawer.js';
 import { sideSheetTokens } from './side-sheet.js';
 import { popconfirmTokens } from './popconfirm.js';
 import { toastTokens } from './toast.js';
@@ -127,7 +126,6 @@ export const componentTokens = {
   ...skeletonTokens,
   ...bannerTokens,
   ...modalTokens,
-  ...drawerTokens,
   ...sideSheetTokens,
   ...popconfirmTokens,
   ...toastTokens,

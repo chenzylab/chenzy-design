@@ -13,7 +13,7 @@ Modal 提供声明式组件用法与命令式 API（`Modal.confirm/info/warning/
 
 ## 何时使用
 
-当需要完全打断用户操作、强制要求用户处理当前事项时使用 Modal。轻量反馈（如操作成功）使用 Toast/Notification；侧边详情或表单编辑使用 Drawer/SideSheet；就地的轻量确认使用 Popconfirm。
+当需要完全打断用户操作、强制要求用户处理当前事项时使用 Modal。轻量反馈（如操作成功）使用 Toast/Notification；侧边详情或表单编辑使用 SideSheet；就地的轻量确认使用 Popconfirm。
 
 ## 无障碍
 

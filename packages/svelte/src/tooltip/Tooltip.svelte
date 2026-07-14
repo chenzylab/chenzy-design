@@ -342,7 +342,7 @@
 
   // --- focus-trap (红线 #3)：dialog 模式且 guardFocus 时，open 后陷入焦点，关闭归还触发器。
   //  popEl 经 floating action 在挂载时即 portal 完成，$effect 运行时已在 DOM 且可聚焦，
-  //  故同步 activate（与 Modal/Drawer 一致）。 ---
+  //  故同步 activate（与 Modal/SideSheet 一致）。 ---
   $effect(() => {
     if (!isOpen || !popEl || !shouldTrapFocus) return;
     const trap = useFocusTrap(popEl, { returnFocus: returnFocusOnClose });

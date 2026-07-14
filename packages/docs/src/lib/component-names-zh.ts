@@ -20,7 +20,6 @@ export const componentNamesZh: Record<string, string> = {
   datepicker: '日期选择器',
   descriptions: '描述列表',
   divider: '分割线',
-  drawer: '抽屉',
   dropdown: '下拉菜单',
   empty: '空状态',
   feedback: '用户反馈',
