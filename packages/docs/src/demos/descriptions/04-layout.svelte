@@ -31,13 +31,13 @@
 
 {#snippet verticalTags()}
   <Space>
-    <Tag size="small" shape="circle" color="warning">互联网资讯</Tag>
-    <Tag size="small" shape="circle" color="primary">编程</Tag>
+    <Tag size="small" shape="circle" color="orange">互联网资讯</Tag>
+    <Tag size="small" shape="circle" color="blue">编程</Tag>
   </Space>
 {/snippet}
 
 {#snippet horizontalTag()}
-  <Tag size="small" shape="circle" color="primary">编程</Tag>
+  <Tag size="small" shape="circle" color="blue">编程</Tag>
 {/snippet}
 
 <div style="display: flex; flex-direction: column; gap: 24px;">

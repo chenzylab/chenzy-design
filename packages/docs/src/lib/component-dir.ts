@@ -75,8 +75,6 @@ export const nameToDir: Record<string, string> = {
   table: 'table',
   tabs: 'tabs',
   tag: 'tag',
-  taggroup: 'tag-group',
-  splittaggroup: 'split-tag-group',
   taginput: 'tag-input',
   textarea: 'input',
   timepicker: 'time-picker',

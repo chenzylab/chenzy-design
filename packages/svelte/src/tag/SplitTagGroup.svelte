@@ -1,26 +1,26 @@
 <!--
-  SplitTagGroup — see specs/components/show/SplitTagGroup.spec.md
-  连接式标签组：多个 Tag 连成一体（首子前缘圆角、末子后缘圆角、中间去圆角合并边），
-  视觉上是一个分段控件。纯 CSS 装饰（无运行时几何、无 cloneElement）：
-  用 :first-child / :last-child 定位直接子 .cd-tag，合并相邻边。
+  SplitTagGroup — 严格对齐 Semi semi-ui/tag/splitTagGroup.tsx + tag.scss .semi-tag-split。
+  连接式标签组：多个 Tag 连成一体（首子前缘圆角、末子后缘圆角、中间去圆角，相邻 1px 间隙）。
+  Semi 通过 cloneElement 注入 first/last class；此处用纯 CSS :first-child/:last-child 定位直接子 .cd-tag，
+  语义等价且无运行时开销。circle 形状子标签首末用 radius-tag_circle。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
   interface Props {
-    /** 组的可访问名（aria-label） */
+    /** 组的可访问名（对齐 Semi aria-label） */
     ariaLabel?: string;
-    /** 透传根类名 */
+    /** 透传根类名（对齐 Semi className） */
     class?: string;
-    /** 透传根内联样式 */
+    /** 透传根内联样式（对齐 Semi style） */
     style?: string;
-    /** 子 Tag（首尾自动加圆角、相邻合并边） */
+    /** 子 Tag（对齐 Semi children） */
     children?: Snippet;
   }
 
   let { ariaLabel, class: className, style, children }: Props = $props();
 
-  const rootCls = $derived(['cd-splittaggroup', className].filter(Boolean).join(' '));
+  const rootCls = $derived(['cd-tag-split', className].filter(Boolean).join(' '));
 </script>
 
 <div class={rootCls} {style} role="group" aria-label={ariaLabel}>
@@ -28,27 +28,35 @@
 </div>
 
 <style>
-  .cd-splittaggroup {
+  /* —— 对齐 Semi .semi-tag-split —— */
+  .cd-tag-split {
     display: inline-flex;
     align-items: center;
-    vertical-align: middle;
   }
 
-  /* 相邻子标签合并边：非首个去掉左圆角并叠 -1px 让边合并 */
-  .cd-splittaggroup :global(> .cd-tag) {
+  /* 子标签去圆角 + 相邻 1px 间隙（对齐 Semi .semi-tag-split .semi-tag）—— */
+  .cd-tag-split :global(> .cd-tag) {
     border-radius: 0;
+    margin-right: var(--cd-tag-split-gap);
   }
-  .cd-splittaggroup :global(> .cd-tag:first-child) {
-    border-start-start-radius: var(--cd-tag-radius);
-    border-end-start-radius: var(--cd-tag-radius);
+  /* 首子前缘圆角（对齐 Semi &-first）—— */
+  .cd-tag-split :global(> .cd-tag:first-child) {
+    border-top-left-radius: var(--cd-tag-radius);
+    border-bottom-left-radius: var(--cd-tag-radius);
   }
-  .cd-splittaggroup :global(> .cd-tag:last-child) {
-    border-start-end-radius: var(--cd-tag-radius);
-    border-end-end-radius: var(--cd-tag-radius);
+  /* 末子后缘圆角 + 去右间隙（对齐 Semi &-last）—— */
+  .cd-tag-split :global(> .cd-tag:last-child) {
+    border-top-right-radius: var(--cd-tag-radius);
+    border-bottom-right-radius: var(--cd-tag-radius);
+    margin-right: 0;
   }
-  .cd-splittaggroup :global(> .cd-tag:not(:first-child)) {
-    margin-inline-start: calc(-1 * var(--cd-splittaggroup-divider-width));
-    border-inline-start: var(--cd-splittaggroup-divider-width) solid
-      var(--cd-splittaggroup-divider-color);
+  /* circle 子标签首末用胶囊圆角（对齐 Semi &-circle.&-first/&-last）—— */
+  .cd-tag-split :global(> .cd-tag--circle:first-child) {
+    border-top-left-radius: var(--cd-tag-radius-circle);
+    border-bottom-left-radius: var(--cd-tag-radius-circle);
+  }
+  .cd-tag-split :global(> .cd-tag--circle:last-child) {
+    border-top-right-radius: var(--cd-tag-radius-circle);
+    border-bottom-right-radius: var(--cd-tag-radius-circle);
   }
 </style>

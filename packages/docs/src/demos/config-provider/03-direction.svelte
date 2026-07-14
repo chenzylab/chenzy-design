@@ -26,7 +26,7 @@
     <div style="margin-top:12px; display:flex; gap:8px; align-items:center">
       <Button type="primary">主要</Button>
       <Button>次要</Button>
-      <Tag color="success">起始侧标签</Tag>
+      <Tag color="green">起始侧标签</Tag>
     </div>
   </div>
 </ConfigProvider>

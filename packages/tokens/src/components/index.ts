@@ -9,8 +9,8 @@ import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
 import { inputNumberTokens } from './input-number.js';
 import { pinCodeTokens } from './pincode.js';
+import { tagTokens } from './tag.js';
 import { tagInputTokens } from './tag-input.js';
-import { tagGroupTokens } from './tag-group.js';
 import { uploadTokens } from './upload.js';
 import { switchTokens } from './switch.js';
 import { checkboxTokens } from './checkbox.js';
@@ -86,8 +86,8 @@ export const componentTokens = {
   ...inputTokens,
   ...inputNumberTokens,
   ...pinCodeTokens,
+  ...tagTokens,
   ...tagInputTokens,
-  ...tagGroupTokens,
   ...uploadTokens,
   ...switchTokens,
   ...checkboxTokens,

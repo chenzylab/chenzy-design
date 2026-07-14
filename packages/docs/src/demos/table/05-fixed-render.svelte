@@ -11,10 +11,10 @@
     [k: string]: unknown;
   };
 
-  const statusMeta: Record<Row['status'], { label: string; color: 'success' | 'warning' | 'danger' }> = {
-    active: { label: '已激活', color: 'success' },
-    invited: { label: '待接受', color: 'warning' },
-    disabled: { label: '已停用', color: 'danger' },
+  const statusMeta: Record<Row['status'], { label: string; color: 'green' | 'orange' | 'red' }> = {
+    active: { label: '已激活', color: 'green' },
+    invited: { label: '待接受', color: 'orange' },
+    disabled: { label: '已停用', color: 'red' },
   };
 
   const columns = [

@@ -8,15 +8,15 @@
 </script>
 
 <!-- 每个事件的 children 直接是带颜色的 Tag（对齐 Semi children 内联节点）。 -->
-{#snippet tag(label: string, color: 'primary' | 'success' | 'warning' | 'danger')}
+{#snippet tag(label: string, color: 'blue' | 'green' | 'orange' | 'red')}
   <Tag size="small" {color}>{label}</Tag>
 {/snippet}
-{#snippet c1()}{@render tag('周会', 'success')}{/snippet}
-{#snippet c2()}{@render tag('设计评审', 'warning')}{/snippet}
-{#snippet c3()}{@render tag('需求对齐', 'primary')}{/snippet}
-{#snippet c4()}{@render tag('联调', 'primary')}{/snippet}
-{#snippet c5()}{@render tag('复盘', 'success')}{/snippet}
-{#snippet c6()}{@render tag('发版', 'danger')}{/snippet}
+{#snippet c1()}{@render tag('周会', 'green')}{/snippet}
+{#snippet c2()}{@render tag('设计评审', 'orange')}{/snippet}
+{#snippet c3()}{@render tag('需求对齐', 'blue')}{/snippet}
+{#snippet c4()}{@render tag('联调', 'blue')}{/snippet}
+{#snippet c5()}{@render tag('复盘', 'green')}{/snippet}
+{#snippet c6()}{@render tag('发版', 'red')}{/snippet}
 
 <Calendar
   mode="month"

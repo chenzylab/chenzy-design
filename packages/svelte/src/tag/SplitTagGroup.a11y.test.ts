@@ -9,7 +9,7 @@ describe('SplitTagGroup a11y', () => {
     const { container } = render(SplitTagGroupA11yFixture, {
       props: { ariaLabel: 'Task status' },
     });
-    const group = container.querySelector('.cd-splittaggroup');
+    const group = container.querySelector('.cd-tag-split');
     expect(group?.getAttribute('role')).toBe('group');
     expect(group?.getAttribute('aria-label')).toBe('Task status');
     expect(container.querySelectorAll('.cd-tag').length).toBe(3);

@@ -26,7 +26,7 @@
     }}
   >
     {#snippet visibleItemRenderer(item)}
-      <Tag color="primary" style="margin-right:8px;flex:0 0 auto">{item.key}</Tag>
+      <Tag color="blue" style="margin-right:8px;flex:0 0 auto">{item.key}</Tag>
     {/snippet}
     {#snippet overflowRenderer(rest)}
       {#if rest.length}

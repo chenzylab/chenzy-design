@@ -161,6 +161,8 @@ const MULTI_SEGMENT_COMPONENTS: string[][] = [
   ['video', 'player'],
   ['audio', 'player'],
   ['json', 'viewer'],
+  // tag-input 与 tag 是两个不同组件；不含此项则 --cd-tag-input-* 首段 tag 会误归给 Tag。
+  ['tag', 'input'],
 ];
 // 无连字符别名 → 规范组件名（同组件的另一套命名收归同一归属）。
 const COMPONENT_ALIASES: Record<string, string> = {

@@ -26,7 +26,7 @@
       <span style="display:inline-flex; align-items:center; gap:8px">
         {node.label}
         {#if node.children?.length}
-          <Tag size="small" color="primary">{node.children.length} 人</Tag>
+          <Tag size="small" color="blue">{node.children.length} 人</Tag>
         {/if}
       </span>
     {/snippet}

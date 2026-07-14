@@ -24,7 +24,7 @@
 <div style="width:{width}%">
   <OverflowList {items} minVisibleItems={3}>
     {#snippet visibleItemRenderer(item)}
-      <Tag color="primary" style="margin-right:8px;flex:0 0 auto">{item.key}</Tag>
+      <Tag color="blue" style="margin-right:8px;flex:0 0 auto">{item.key}</Tag>
     {/snippet}
     {#snippet overflowRenderer(rest)}
       {#if rest.length}<Tag style="flex:0 0 auto;font-variant-numeric:tabular-nums">+{rest.length}</Tag>{/if}

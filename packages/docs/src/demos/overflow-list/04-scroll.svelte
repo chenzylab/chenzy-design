@@ -26,7 +26,7 @@
   <OverflowList {items} renderMode="scroll">
     {#snippet visibleItemRenderer(item)}
       <span class="item-cls" style="flex:0 0 auto">
-        <Tag color="primary" style="margin-right:8px">{item.key}</Tag>
+        <Tag color="blue" style="margin-right:8px">{item.key}</Tag>
       </span>
     {/snippet}
     {#snippet overflowRenderer(rest)}

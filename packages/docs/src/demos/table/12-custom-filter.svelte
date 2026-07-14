@@ -12,9 +12,9 @@
     [k: string]: unknown;
   };
 
-  const statusMeta: Record<Row['status'], { label: string; color: 'success' | 'warning' }> = {
-    success: { label: '已交付', color: 'success' },
-    wait: { label: '待评审', color: 'warning' },
+  const statusMeta: Record<Row['status'], { label: string; color: 'green' | 'orange' }> = {
+    success: { label: '已交付', color: 'green' },
+    wait: { label: '待评审', color: 'orange' },
   };
 
   const columns = [

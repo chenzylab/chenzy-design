@@ -1,60 +1,91 @@
 <!--
-  Tag — see specs/components/show/Tag.spec.md
-  Display atom. Controlled checked/visible never written back (only onChange/onClose).
+  Tag — 严格对齐 Semi semi-ui/tag/index.tsx。
+  展示原子。受控 visible 不回写（仅通过 onClose 通知）。
+  DOM 结构对齐 Semi：根 div（clickable 时 role=button + tabIndex + keydown），
+  子序 prefix-icon → avatar → content(ellipsis/center) → suffix-icon → close(div + IconClose)。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useLocale } from '../locale-provider/index.js';
   import Avatar from '../avatar/Avatar.svelte';
+  import { IconClose } from '@chenzy-design/icons';
 
   type TagType = 'light' | 'solid' | 'ghost';
-  type TagColor = 'grey' | 'primary' | 'success' | 'warning' | 'danger';
+  type TagColor =
+    | 'amber'
+    | 'blue'
+    | 'cyan'
+    | 'green'
+    | 'grey'
+    | 'indigo'
+    | 'light-blue'
+    | 'light-green'
+    | 'lime'
+    | 'orange'
+    | 'pink'
+    | 'purple'
+    | 'red'
+    | 'teal'
+    | 'violet'
+    | 'yellow'
+    | 'white';
   type TagSize = 'small' | 'default' | 'large';
   type TagShape = 'square' | 'circle';
+  type AvatarShape = 'square' | 'circle';
 
   interface Props {
+    /** 视觉风格：light 浅色底 / solid 深色底 / ghost 白色底镂空。默认 light（对齐 Semi） */
     type?: TagType;
+    /** 语义色，17 种色板 + white（对齐 Semi 色板）。默认 grey */
     color?: TagColor;
+    /** 尺寸 small/default/large；default 与 small 同高（对齐 Semi） */
     size?: TagSize;
+    /** 形状 square 直角 / circle 胶囊。默认 square */
     shape?: TagShape;
+    /** 尾部关闭按钮 */
     closable?: boolean;
-    /** controlled visibility; when false the tag is not rendered */
+    /** 受控显隐；受控时不回写，仅通过 onClose 通知（对齐 Semi visible 受控/非受控双轨） */
     visible?: boolean;
-    checkable?: boolean;
-    /** controlled checked state */
-    checked?: boolean;
-    disabled?: boolean;
-    /** AI 多彩标签：蓝→紫渐变（对齐 Semi AI 风格）。注意字重比非多彩更重。 */
+    /** AI 多彩标签：蓝→紫渐变（对齐 Semi colorful）。字重比非多彩更重 */
     colorful?: boolean;
-    /** 是否渐变色，仅在 colorful 为 true 时生效。false 时用单色紫。 */
+    /** 是否渐变色，仅在 colorful=true 时生效（对齐 Semi gradient） */
     gradient?: boolean;
-    onClose?: () => void;
-    onChange?: (checked: boolean) => void;
-    children?: Snippet;
-    prefixIcon?: Snippet;
-    /** 后置图标（与 closable 互不冲突，关闭图标始终最右） */
-    suffixIcon?: Snippet;
-    /** 头像型 Tag 的图片地址 */
+    /** 头像型 Tag 的图片地址（对齐 Semi avatarSrc） */
     avatarSrc?: string;
-    /** 头像形状 */
-    avatarShape?: 'square' | 'circle';
-    /** 自定义关闭图标（默认内置 X） */
-    closeIcon?: Snippet;
-    /**
-     * 标签纯文本，仅用于派生 closable 关闭按钮的无障碍名（如「移除 已完成」）。
-     * children 为 Snippet 无法取文本，故由调用方显式提供；缺省时关闭按钮退回通用「关闭」标签。
-     */
-    tagText?: string;
-    /** 在 TagGroup 中的稳定标识 */
+    /** 头像形状（对齐 Semi avatarShape），默认 square */
+    avatarShape?: AvatarShape;
+    /** 在 TagGroup 中的稳定标识（对齐 Semi tagKey） */
     tagKey?: string | number;
+    /** 前置图标（对齐 Semi prefixIcon） */
+    prefixIcon?: Snippet;
+    /** 后置图标（关闭图标始终最右，对齐 Semi suffixIcon） */
+    suffixIcon?: Snippet;
+    /** 标签内容 */
+    children?: Snippet;
     /**
-     * 透传根元素的可访问名（aria-label）。当 children 为图标/纯符号（如折叠计数「+N」）
-     * 无有意义文本时，用它给整枚 Tag 一个屏幕阅读器可读的名字，省去外层再套 span 承载。
+     * 关闭回调。对齐 Semi onClose(tagChildren, e, tagKey)：
+     * 在回调内 e.preventDefault() 可阻止默认隐藏（点击后依然显示）。
      */
+    onClose?: (
+      tagChildren: unknown,
+      e: MouseEvent | KeyboardEvent,
+      tagKey: string | number | undefined,
+    ) => void;
+    /** 单击标签回调（对齐 Semi onClick）；传入后标签变为可交互（role=button、可聚焦、Enter 激活） */
+    onClick?: (e: MouseEvent | KeyboardEvent) => void;
+    /** 鼠标进入回调（对齐 Semi onMouseEnter） */
+    onMouseEnter?: (e: MouseEvent) => void;
+    /** 键盘事件回调（对齐 Semi onKeyDown），在内部处理后触发 */
+    onKeyDown?: (e: KeyboardEvent) => void;
+    /**
+     * 可交互 Tag 的 tabIndex（对齐 Semi tabIndex）；TagInput 内用 -1 以左右方向键控制焦点。
+     * 仅在 clickable（有 onClick 或 closable）时生效。
+     */
+    tabIndex?: number;
+    /** 根元素可访问名（对齐 Semi aria-label） */
     ariaLabel?: string;
-    /** 透传根类名 */
+    /** 透传根类名（对齐 Semi className） */
     class?: string;
-    /** 透传根内联样式 */
+    /** 透传根内联样式（对齐 Semi style） */
     style?: string;
   }
 
@@ -65,272 +96,362 @@
     shape = 'square',
     closable = false,
     visible,
-    checkable = false,
-    checked,
-    disabled = false,
     colorful = false,
     gradient = false,
-    onClose,
-    onChange,
-    children,
-    prefixIcon,
-    suffixIcon,
     avatarSrc,
     avatarShape = 'square',
-    closeIcon,
-    tagText,
+    tagKey,
+    prefixIcon,
+    suffixIcon,
+    children,
+    onClose,
+    onClick,
+    onMouseEnter,
+    onKeyDown,
+    tabIndex,
     ariaLabel,
     class: className,
     style,
   }: Props = $props();
 
-  const loc = useLocale();
-
-  // closable 关闭按钮无障碍名：有 tagText 时派生「移除 <文本>」（i18n Tag.closeAriaLabel），
-  // 缺省退回通用「关闭」（Tag.close），保证按钮永远有可读名。
-  const closeLabel = $derived(
-    tagText !== undefined && tagText !== ''
-      ? loc().t('Tag.closeAriaLabel', { label: tagText })
-      : loc().t('Tag.close'),
-  );
-
-  // --- visible: controlled vs uncontrolled (never write the prop back) ---
+  // —— visible：受控 vs 非受控（永不回写 prop，对齐 Semi getDerivedStateFromProps）——
   const visibleControlled = $derived(visible !== undefined);
   let innerVisible = $state(true);
-  const currentVisible = $derived(visibleControlled ? !!visible : innerVisible);
+  const isVisible = $derived(visibleControlled ? !!visible : innerVisible);
 
-  // --- checked: controlled vs uncontrolled (never write the prop back) ---
-  const checkedControlled = $derived(checked !== undefined);
-  let innerChecked = $state(false);
-  const currentChecked = $derived(checkedControlled ? !!checked : innerChecked);
+  // clickable：有自定义 onClick 或 closable（对齐 Semi：onClick !== defaultProps.onClick || closable）
+  const clickable = $derived(!!onClick || closable);
+
+  // avatar 尺寸随 tag 尺寸（circle 头像用专属尺寸，方形头像跟随 tag 高）
+  const avatarSize = $derived(
+    avatarShape === 'circle'
+      ? size === 'large'
+        ? 20
+        : 16
+      : size === 'large'
+        ? 24
+        : 20,
+  );
 
   const cls = $derived(
     [
       'cd-tag',
-      `cd-tag--${type}`,
-      `cd-tag--${color}`,
       `cd-tag--${size}`,
       `cd-tag--${shape}`,
-      checkable && 'cd-tag--checkable',
-      checkable && currentChecked && 'cd-tag--checked',
+      `cd-tag--${type}`,
+      `cd-tag--${color}-${type}`,
+      closable && 'cd-tag--closable',
+      !isVisible && 'cd-tag--invisible',
+      avatarSrc && `cd-tag--avatar-${avatarShape}`,
       colorful && 'cd-tag--colorful',
       colorful && gradient && 'cd-tag--gradient',
-      disabled && 'cd-tag--disabled',
-      avatarSrc && 'cd-tag--has-avatar',
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
-  // avatar sizing follows tag size; keep avatar compact within the tag
-  const avatarSize = $derived(
-    size === 'small' ? 16 : size === 'large' ? 24 : 20,
-  );
-
-  function handleToggle() {
-    if (disabled || !checkable) return;
-    const next = !currentChecked;
-    // Controlled: parent owns `checked`; propagate via onChange only.
-    if (!checkedControlled) innerChecked = next;
-    onChange?.(next);
+  function setVisible(v: boolean) {
+    if (!visibleControlled) innerVisible = v;
   }
 
-  function handleClose(e: MouseEvent) {
+  // 关闭：对齐 Semi close(e, value, tagKey) —— stopPropagation、onClose，preventDefault 则不隐藏。
+  function close(e: MouseEvent | KeyboardEvent) {
     e.stopPropagation();
-    if (disabled) return;
-    // Controlled: parent owns `visible` and must set it false.
-    if (!visibleControlled) innerVisible = false;
-    onClose?.();
+    onClose?.(childrenValue(), e, tagKey);
+    if (e.defaultPrevented) return;
+    setVisible(false);
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (!checkable || disabled) return;
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      handleToggle();
+  // Semi 用 children 作为 onClose 第一参 / tagKey 兜底；此处 children 是 Snippet 无法取文本，回传 undefined。
+  function childrenValue(): unknown {
+    return undefined;
+  }
+
+  function handleClick(e: MouseEvent) {
+    onClick?.(e);
+  }
+
+  // 键盘（对齐 Semi handleKeyDown）：Enter 激活 onClick、Delete/Backspace 关闭、Esc 失焦。
+  function handleKeyDown(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'Backspace':
+      case 'Delete':
+        if (closable) {
+          close(e);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        break;
+      case 'Enter':
+        onClick?.(e);
+        e.preventDefault();
+        e.stopPropagation();
+        break;
+      case 'Escape':
+        (e.target as HTMLElement)?.blur();
+        break;
+      default:
+        break;
     }
+    onKeyDown?.(e);
   }
 </script>
 
-{#if currentVisible}
-  {#if checkable}
-    <span
-      class={cls}
-      {style}
-      role="checkbox"
-      aria-label={ariaLabel}
-      aria-checked={currentChecked}
-      aria-disabled={disabled || undefined}
-      tabindex={disabled ? -1 : 0}
-      onclick={handleToggle}
-      onkeydown={handleKeydown}
-    >
-      {@render leading()}
-      {#if children}<span class="cd-tag__content">{@render children()}</span>{/if}
-      {@render trailing()}
-    </span>
-  {:else}
-    <span class={cls} {style} aria-label={ariaLabel}>
-      {@render leading()}
-      {#if children}<span class="cd-tag__content">{@render children()}</span>{/if}
-      {@render trailing()}
-      {#if closable}
-        <button
-          type="button"
-          class="cd-tag__close"
-          aria-label={closeLabel}
-          disabled={disabled || undefined}
-          onclick={handleClose}
-        >
-          {#if closeIcon}
-            {@render closeIcon()}
-          {:else}
-            <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                d="M4 4 L12 12 M12 4 L4 12"
-              />
-            </svg>
-          {/if}
-        </button>
-      {/if}
-    </span>
+<!--
+  根 div：clickable 时挂 role=button + tabIndex + keydown（对齐 Semi wrapProps）。
+  svelte 的 a11y 规则要求交互元素配 keydown，这里 clickable 时已具备。
+-->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+  class={cls}
+  {style}
+  role={clickable ? 'button' : undefined}
+  tabindex={clickable ? (tabIndex ?? 0) : undefined}
+  aria-label={ariaLabel}
+  onclick={clickable ? handleClick : undefined}
+  onkeydown={clickable ? handleKeyDown : undefined}
+  onmouseenter={onMouseEnter}
+>
+  {#if prefixIcon}
+    <div class="cd-tag__prefix-icon">{@render prefixIcon()}</div>
   {/if}
-{/if}
-
-<!-- leading: avatar (highest priority) then prefix icon -->
-{#snippet leading()}
   {#if avatarSrc}
-    <span class="cd-tag__avatar">
-      <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
-    </span>
+    <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
   {/if}
-  {#if prefixIcon}<span class="cd-tag__prefix">{@render prefixIcon()}</span>{/if}
-{/snippet}
-
-<!-- trailing: suffix icon (closable's X is rendered separately, always rightmost) -->
-{#snippet trailing()}
-  {#if suffixIcon}<span class="cd-tag__suffix">{@render suffixIcon()}</span>{/if}
-{/snippet}
+  <div class="cd-tag__content cd-tag__content--ellipsis">
+    {#if children}{@render children()}{/if}
+  </div>
+  {#if suffixIcon}
+    <div class="cd-tag__suffix-icon">{@render suffixIcon()}</div>
+  {/if}
+  {#if closable}
+    <!-- close：对齐 Semi <div class="semi-tag-close" onClick>；键盘走根 div 的 Delete/Backspace -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="cd-tag__close" onclick={close}>
+      <IconClose size="small" />
+    </div>
+  {/if}
+</div>
 
 <style>
+  /* —— 基础（对齐 Semi tag.scss .semi-tag）—— */
   .cd-tag {
-    --cd-tag-semantic: var(--cd-color-text-1);
-    --cd-tag-surface: var(--cd-color-bg-0);
+    box-sizing: border-box;
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-tag-gap);
-    block-size: var(--cd-tag-height-default);
-    padding-inline: var(--cd-tag-padding-x);
-    padding-block: var(--cd-tag-padding-y);
-    border: 1px solid transparent;
+    justify-content: center;
     border-radius: var(--cd-tag-radius);
-    font-size: var(--cd-tag-font-size);
-    line-height: 1;
+    background-color: transparent;
+    border: var(--cd-tag-border-width) solid transparent;
+    user-select: none;
+    overflow: hidden;
     white-space: nowrap;
-    vertical-align: middle;
-    box-sizing: border-box;
+    vertical-align: bottom;
   }
+
+  /* default / small 同高（对齐 Semi &-default,&-small）；large 单列 */
+  .cd-tag--default,
   .cd-tag--small {
-    block-size: var(--cd-tag-height-small);
+    font-size: var(--cd-tag-font-size);
+    height: var(--cd-tag-height-small);
+    padding: var(--cd-tag-small-padding-y) var(--cd-tag-small-padding-x);
   }
   .cd-tag--large {
-    block-size: var(--cd-tag-height-large);
-    padding-block: var(--cd-tag-padding-y-large);
+    font-size: var(--cd-tag-font-size);
+    height: var(--cd-tag-height-large);
+    padding: var(--cd-tag-large-padding-y) var(--cd-tag-large-padding-x);
+  }
+
+  .cd-tag--square {
+    border-radius: var(--cd-tag-radius);
   }
   .cd-tag--circle {
-    border-radius: var(--cd-border-radius-full);
+    border-radius: var(--cd-tag-radius-circle);
   }
 
-  /* color → semantic mapping */
-  .cd-tag--grey {
-    --cd-tag-semantic: var(--cd-color-text-1);
-  }
-  .cd-tag--primary {
-    --cd-tag-semantic: var(--cd-color-primary);
-  }
-  .cd-tag--success {
-    --cd-tag-semantic: var(--cd-color-success);
-  }
-  .cd-tag--warning {
-    --cd-tag-semantic: var(--cd-color-warning);
-  }
-  .cd-tag--danger {
-    --cd-tag-semantic: var(--cd-color-danger);
+  .cd-tag:focus-visible {
+    outline: var(--cd-tag-outline-width) solid var(--cd-tag-outline-color);
   }
 
-  /* light: tinted background + strong text */
-  .cd-tag--light {
-    background: color-mix(in srgb, var(--cd-tag-semantic) 12%, var(--cd-tag-surface));
-    color: var(--cd-tag-semantic);
-  }
-  .cd-tag--light.cd-tag--grey {
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-0);
+  .cd-tag--invisible {
+    display: none;
   }
 
-  /* solid: filled background + inverse text */
-  .cd-tag--solid {
-    background: var(--cd-tag-semantic);
-    color: var(--cd-color-white);
+  /* —— prefix / suffix icon（对齐 Semi &-prefix-icon / &-suffix-icon）—— */
+  .cd-tag__prefix-icon {
+    display: flex;
+    padding-right: var(--cd-tag-prefix-icon-padding-right);
   }
-  .cd-tag--solid.cd-tag--grey {
-    background: var(--cd-color-text-2);
-    color: var(--cd-color-white);
-  }
-  .cd-tag--solid.cd-tag--warning {
-    color: var(--cd-color-white);
+  .cd-tag__suffix-icon {
+    display: flex;
+    padding-left: var(--cd-tag-suffix-icon-padding-left);
   }
 
-  /* ghost: transparent background + border */
-  .cd-tag--ghost {
-    background: transparent;
-    border-color: var(--cd-tag-semantic);
-    color: var(--cd-tag-semantic);
+  /* —— content（对齐 Semi &-content / -ellipsis / -center）—— */
+  .cd-tag__content {
+    flex: 1;
   }
-  .cd-tag--ghost.cd-tag--grey {
-    border-color: var(--cd-color-border);
-    color: var(--cd-color-text-1);
+  .cd-tag__content--ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  /* checkable chip */
-  .cd-tag--checkable {
+  /* —— close（对齐 Semi &-close）—— */
+  .cd-tag__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-tag-close-icon-default);
+    padding-left: var(--cd-tag-close-padding-left);
     cursor: pointer;
-    user-select: none;
-    transition:
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tag--checkable:not(.cd-tag--checked) {
-    background: var(--cd-color-fill-0);
-    border-color: transparent;
-    color: var(--cd-color-text-1);
+  .cd-tag__close:hover {
+    color: var(--cd-tag-close-icon-hover);
   }
-  .cd-tag--checkable.cd-tag--checked {
-    background: var(--cd-tag-semantic);
-    color: var(--cd-color-white);
-    border-color: transparent;
+  .cd-tag__close:active {
+    color: var(--cd-tag-close-icon-active);
   }
-  .cd-tag--checkable.cd-tag--checked.cd-tag--grey {
-    background: var(--cd-color-primary);
+
+  /* closable 内边距（对齐 Semi &-closable）—— */
+  .cd-tag--closable {
+    padding: var(--cd-tag-closable-padding-top) var(--cd-tag-closable-padding-right)
+      var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-left);
   }
-  .cd-tag--checkable.cd-tag--checked.cd-tag--warning {
-    color: var(--cd-color-white);
+
+  /* —— 头像标签（对齐 Semi &-avatar-square / -circle）—— */
+  .cd-tag--avatar-square,
+  .cd-tag--avatar-circle {
+    background-color: var(--cd-tag-avatar-bg);
+    border: var(--cd-tag-border-width) solid var(--cd-tag-avatar-border);
+    color: var(--cd-tag-avatar-text);
   }
-  .cd-tag--checkable:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  .cd-tag--avatar-square :global(.cd-avatar),
+  .cd-tag--avatar-circle :global(.cd-avatar) {
+    margin-right: var(--cd-tag-avatar-margin-right);
+  }
+  .cd-tag--avatar-square {
+    padding: 0 var(--cd-tag-avatar-square-padding-x) 0 0;
+  }
+  .cd-tag--avatar-square :global(.cd-avatar > img) {
+    background-color: var(--cd-tag-avatar-square-img-bg);
+  }
+  .cd-tag--avatar-circle {
+    padding: var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-x)
+      var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-left);
+  }
+  /* 方形头像宽高跟随 tag 高（对齐 Semi avatar-square.default/small/large）—— */
+  .cd-tag--avatar-square.cd-tag--default :global(.cd-avatar),
+  .cd-tag--avatar-square.cd-tag--small :global(.cd-avatar) {
+    width: var(--cd-tag-height-small);
+    height: var(--cd-tag-height-small);
+  }
+  .cd-tag--avatar-square.cd-tag--large :global(.cd-avatar) {
+    width: var(--cd-tag-height-large);
+    height: var(--cd-tag-height-large);
+  }
+  /* 圆头像改 tag 圆角为 height*0.5+1（对齐 Semi avatar-circle 圆角计算）—— */
+  .cd-tag--avatar-circle.cd-tag--small,
+  .cd-tag--avatar-circle.cd-tag--default {
+    border-radius: calc(var(--cd-tag-height-small) * 0.5 + 1px);
+  }
+  .cd-tag--avatar-circle.cd-tag--small :global(.cd-avatar),
+  .cd-tag--avatar-circle.cd-tag--default :global(.cd-avatar) {
+    width: var(--cd-tag-avatar-circle-small);
+    height: var(--cd-tag-avatar-circle-small);
+  }
+  .cd-tag--avatar-circle.cd-tag--large {
+    border-radius: calc(var(--cd-tag-height-large) * 0.5 + 1px);
+  }
+  .cd-tag--avatar-circle.cd-tag--large :global(.cd-avatar) {
+    width: var(--cd-tag-avatar-circle-large);
+    height: var(--cd-tag-avatar-circle-large);
   }
 
   /*
-    colorful（AI 多彩标签）：蓝→紫渐变，对齐 Semi AI 风格。
-    - type（solid/light/ghost）仍生效，仅配色改用 AI 渐变，覆盖 color 语义色。
-    - gradient=true 用三段渐变；false 用中间紫单色（--ct-solid）。
-    - 多彩标签字重更重（对齐 Semi「字重与非多彩不同」）。
+    —— 17 色 × 3 type（对齐 Semi tag/mixin.scss @each tag-style）——
+    solid: bg=<c>-5, text=white
+    ghost: bg=transparent, border=<c>-4, text=<c>-5
+    light: bg=<c>-5 @15%, text=<c>-8
+    用 --cd-color-<c>-N 全局色阶 + color-mix 派生。
+  */
+  /* solid */
+  .cd-tag--amber-solid { background-color: var(--cd-color-amber-5); color: var(--cd-color-white); }
+  .cd-tag--blue-solid { background-color: var(--cd-color-blue-5); color: var(--cd-color-white); }
+  .cd-tag--cyan-solid { background-color: var(--cd-color-cyan-5); color: var(--cd-color-white); }
+  .cd-tag--green-solid { background-color: var(--cd-color-green-5); color: var(--cd-color-white); }
+  .cd-tag--grey-solid { background-color: var(--cd-color-grey-5); color: var(--cd-color-white); }
+  .cd-tag--indigo-solid { background-color: var(--cd-color-indigo-5); color: var(--cd-color-white); }
+  .cd-tag--light-blue-solid { background-color: var(--cd-color-light-blue-5); color: var(--cd-color-white); }
+  .cd-tag--light-green-solid { background-color: var(--cd-color-light-green-5); color: var(--cd-color-white); }
+  .cd-tag--lime-solid { background-color: var(--cd-color-lime-5); color: var(--cd-color-white); }
+  .cd-tag--orange-solid { background-color: var(--cd-color-orange-5); color: var(--cd-color-white); }
+  .cd-tag--pink-solid { background-color: var(--cd-color-pink-5); color: var(--cd-color-white); }
+  .cd-tag--purple-solid { background-color: var(--cd-color-purple-5); color: var(--cd-color-white); }
+  .cd-tag--red-solid { background-color: var(--cd-color-red-5); color: var(--cd-color-white); }
+  .cd-tag--teal-solid { background-color: var(--cd-color-teal-5); color: var(--cd-color-white); }
+  .cd-tag--violet-solid { background-color: var(--cd-color-violet-5); color: var(--cd-color-white); }
+  .cd-tag--yellow-solid { background-color: var(--cd-color-yellow-5); color: var(--cd-color-white); }
+
+  /* ghost */
+  .cd-tag--amber-ghost { background-color: transparent; border-color: var(--cd-color-amber-4); color: var(--cd-color-amber-5); }
+  .cd-tag--blue-ghost { background-color: transparent; border-color: var(--cd-color-blue-4); color: var(--cd-color-blue-5); }
+  .cd-tag--cyan-ghost { background-color: transparent; border-color: var(--cd-color-cyan-4); color: var(--cd-color-cyan-5); }
+  .cd-tag--green-ghost { background-color: transparent; border-color: var(--cd-color-green-4); color: var(--cd-color-green-5); }
+  .cd-tag--grey-ghost { background-color: transparent; border-color: var(--cd-color-grey-4); color: var(--cd-color-grey-5); }
+  .cd-tag--indigo-ghost { background-color: transparent; border-color: var(--cd-color-indigo-4); color: var(--cd-color-indigo-5); }
+  .cd-tag--light-blue-ghost { background-color: transparent; border-color: var(--cd-color-light-blue-4); color: var(--cd-color-light-blue-5); }
+  .cd-tag--light-green-ghost { background-color: transparent; border-color: var(--cd-color-light-green-4); color: var(--cd-color-light-green-5); }
+  .cd-tag--lime-ghost { background-color: transparent; border-color: var(--cd-color-lime-4); color: var(--cd-color-lime-5); }
+  .cd-tag--orange-ghost { background-color: transparent; border-color: var(--cd-color-orange-4); color: var(--cd-color-orange-5); }
+  .cd-tag--pink-ghost { background-color: transparent; border-color: var(--cd-color-pink-4); color: var(--cd-color-pink-5); }
+  .cd-tag--purple-ghost { background-color: transparent; border-color: var(--cd-color-purple-4); color: var(--cd-color-purple-5); }
+  .cd-tag--red-ghost { background-color: transparent; border-color: var(--cd-color-red-4); color: var(--cd-color-red-5); }
+  .cd-tag--teal-ghost { background-color: transparent; border-color: var(--cd-color-teal-4); color: var(--cd-color-teal-5); }
+  .cd-tag--violet-ghost { background-color: transparent; border-color: var(--cd-color-violet-4); color: var(--cd-color-violet-5); }
+  .cd-tag--yellow-ghost { background-color: transparent; border-color: var(--cd-color-yellow-4); color: var(--cd-color-yellow-5); }
+
+  /* light */
+  .cd-tag--amber-light { background-color: color-mix(in srgb, var(--cd-color-amber-5) 15%, transparent); color: var(--cd-color-amber-8); }
+  .cd-tag--blue-light { background-color: color-mix(in srgb, var(--cd-color-blue-5) 15%, transparent); color: var(--cd-color-blue-8); }
+  .cd-tag--cyan-light { background-color: color-mix(in srgb, var(--cd-color-cyan-5) 15%, transparent); color: var(--cd-color-cyan-8); }
+  .cd-tag--green-light { background-color: color-mix(in srgb, var(--cd-color-green-5) 15%, transparent); color: var(--cd-color-green-8); }
+  .cd-tag--grey-light { background-color: color-mix(in srgb, var(--cd-color-grey-5) 15%, transparent); color: var(--cd-color-grey-8); }
+  .cd-tag--indigo-light { background-color: color-mix(in srgb, var(--cd-color-indigo-5) 15%, transparent); color: var(--cd-color-indigo-8); }
+  .cd-tag--light-blue-light { background-color: color-mix(in srgb, var(--cd-color-light-blue-5) 15%, transparent); color: var(--cd-color-light-blue-8); }
+  .cd-tag--light-green-light { background-color: color-mix(in srgb, var(--cd-color-light-green-5) 15%, transparent); color: var(--cd-color-light-green-8); }
+  .cd-tag--lime-light { background-color: color-mix(in srgb, var(--cd-color-lime-5) 15%, transparent); color: var(--cd-color-lime-8); }
+  .cd-tag--orange-light { background-color: color-mix(in srgb, var(--cd-color-orange-5) 15%, transparent); color: var(--cd-color-orange-8); }
+  .cd-tag--pink-light { background-color: color-mix(in srgb, var(--cd-color-pink-5) 15%, transparent); color: var(--cd-color-pink-8); }
+  .cd-tag--purple-light { background-color: color-mix(in srgb, var(--cd-color-purple-5) 15%, transparent); color: var(--cd-color-purple-8); }
+  .cd-tag--red-light { background-color: color-mix(in srgb, var(--cd-color-red-5) 15%, transparent); color: var(--cd-color-red-8); }
+  .cd-tag--teal-light { background-color: color-mix(in srgb, var(--cd-color-teal-5) 15%, transparent); color: var(--cd-color-teal-8); }
+  .cd-tag--violet-light { background-color: color-mix(in srgb, var(--cd-color-violet-5) 15%, transparent); color: var(--cd-color-violet-8); }
+  .cd-tag--yellow-light { background-color: color-mix(in srgb, var(--cd-color-yellow-5) 15%, transparent); color: var(--cd-color-yellow-8); }
+
+  /* —— white 色（对齐 Semi @each white-<type> + 边框 + close icon）—— */
+  .cd-tag--white-light,
+  .cd-tag--white-solid,
+  .cd-tag--white-ghost {
+    background-color: var(--cd-tag-white-bg);
+    border: var(--cd-tag-border-width) solid var(--cd-tag-white-border);
+    color: var(--cd-tag-white-text);
+  }
+  .cd-tag--white-light .cd-tag__close,
+  .cd-tag--white-solid .cd-tag__close,
+  .cd-tag--white-ghost .cd-tag__close {
+    color: var(--cd-tag-white-icon);
+  }
+
+  /*
+    —— colorful（AI 多彩标签，对齐 Semi &-colorful）——
+    type 仍生效，配色改用 AI 渐变覆盖 color 语义色；gradient=true 三段渐变，false 单色紫(via)。
+    多彩标签字重更重。
   */
   .cd-tag--colorful {
     --ct: linear-gradient(
@@ -342,18 +463,18 @@
     --ct-solid: var(--cd-tag-colorful-via);
     --ct-fill: var(--ct-solid);
     --ct-text: var(--cd-tag-colorful-via);
-    font-weight: var(--cd-font-weight-bold);
+    font-weight: var(--cd-tag-colorful-font-weight);
   }
   .cd-tag--colorful.cd-tag--gradient {
     --ct-fill: var(--ct);
   }
-  /* solid: 多彩实心 + 白字 */
+  /* solid：多彩实心 + 白字 */
   .cd-tag--colorful.cd-tag--solid {
     background: var(--ct-fill);
     color: var(--cd-color-white);
     border-color: transparent;
   }
-  /* light: 浅多彩底 + 紫字 */
+  /* light：浅多彩底 + 紫字 */
   .cd-tag--colorful.cd-tag--light {
     background: color-mix(in srgb, var(--ct-text) 12%, var(--cd-color-bg-0));
     color: var(--ct-text);
@@ -367,7 +488,7 @@
       color-mix(in srgb, var(--cd-tag-colorful-to) 14%, transparent) 100%
     );
   }
-  /* ghost: 透明 + 紫边框（gradient 用渐变边框）+ 紫字 */
+  /* ghost：透明 + 紫边框（gradient 用渐变边框）+ 紫字 */
   .cd-tag--colorful.cd-tag--ghost {
     background: transparent;
     border-color: var(--ct-text);
@@ -376,61 +497,5 @@
   .cd-tag--colorful.cd-tag--gradient.cd-tag--ghost {
     border-color: transparent;
     border-image: var(--ct) 1;
-  }
-
-  .cd-tag--disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  .cd-tag__prefix,
-  .cd-tag__suffix,
-  .cd-tag__content {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .cd-tag__avatar {
-    display: inline-flex;
-    align-items: center;
-    margin-inline-start: calc(var(--cd-tag-padding-x) * -0.5);
-  }
-
-  .cd-tag__close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 1em;
-    block-size: 1em;
-    padding: 0;
-    margin: 0;
-    border: 0;
-    background: transparent;
-    color: var(--cd-tag-close-color);
-    cursor: pointer;
-    opacity: 0.7;
-    border-radius: var(--cd-border-radius-full);
-  }
-  .cd-tag__close:hover {
-    color: var(--cd-tag-close-color-hover);
-    opacity: 1;
-  }
-  .cd-tag__close:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  .cd-tag__close:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-tag__close svg {
-    inline-size: 100%;
-    block-size: 100%;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cd-tag--checkable {
-      transition: none;
-    }
   }
 </style>

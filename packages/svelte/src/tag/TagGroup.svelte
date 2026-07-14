@@ -1,8 +1,8 @@
 <!--
-  TagGroup — see specs/components/show/TagGroup.spec.md
+  TagGroup — 严格对齐 Semi semi-ui/tag/group.tsx。
   一组 Tag 成组渲染；超过 maxTagCount 折叠剩余为「+N」标签，
-  hover/点击在 Popover 弹层内展示被折叠的 Tag。数据驱动（tagList）或子元素（children）两种用法。
-  复用本库 Tag / Popover。
+  showPopover 时 hover 在 Popover（showArrow / trigger=hover / position=top）弹层展示被折叠的 Tag。
+  数据驱动（tagList）或 mode='custom'（tagList 直接是 Tag 节点数组）两种用法。复用本库 Tag / Popover。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,175 +13,173 @@
   type TagSize = 'small' | 'default' | 'large';
   type AvatarShape = 'circle' | 'square';
 
-  /** 单个 Tag 的数据项（tagList 用法）。透传给 Tag 的常用 props 子集。 */
+  /** 单个 Tag 的数据项（tagList 普通用法）。透传给 Tag 的常用 props 子集。 */
   interface TagItem {
-    /** 稳定标识（列表 key / onTagClose 回传） */
     tagKey?: string | number;
-    /** 纯文本内容（同时作为 closable 关闭按钮的无障碍名） */
     children?: string;
-    color?: 'grey' | 'primary' | 'success' | 'warning' | 'danger';
+    color?: string;
     type?: 'light' | 'solid' | 'ghost';
     closable?: boolean;
-    disabled?: boolean;
     avatarSrc?: string;
-    /** 其余任意 Tag prop 透传 */
+    size?: TagSize;
+    avatarShape?: AvatarShape;
+    onClose?: (tagChildren: unknown, e: unknown, tagKey: string | number | undefined) => void;
     [key: string]: unknown;
   }
 
   interface Props {
-    /** 数据驱动的标签数据（与 children 二选一） */
+    /** 数据驱动的标签数据（对齐 Semi tagList）。mode='custom' 时元素为 Tag 节点 Snippet */
     tagList?: TagItem[];
-    /** 最多展示的标签数，超出折叠为 +N */
+    /** 最大数量限制，超出后显示为 +N（对齐 Semi maxTagCount） */
     maxTagCount?: number;
-    /** 直接指定折叠数量（覆盖自动计算，用于外部已知总数场景） */
+    /** 直接指定折叠数量（对齐 Semi restCount，覆盖自动计算） */
     restCount?: number;
-    /** 标签尺寸（透传各 Tag） */
+    /** 标签尺寸，透传各 Tag（对齐 Semi size） */
     size?: TagSize;
-    /** 标签内头像形状（透传） */
+    /** 标签内头像形状，透传（对齐 Semi avatarShape） */
     avatarShape?: AvatarShape;
-    /** +N 是否 hover 弹层展示剩余 */
+    /** hover 到 +N 时是否通过 Popover 展示剩余（对齐 Semi showPopover，默认 false） */
     showPopover?: boolean;
-    /** 弹层透传（复用本库 Popover） */
+    /** 弹层透传（对齐 Semi popoverProps） */
     popoverProps?: Record<string, unknown>;
-    /** 关闭某标签回调（回传该项 tagKey 与索引） */
-    onTagClose?: (tagKey: string | number | undefined, index: number) => void;
-    /** 鼠标进入 +N 回调 */
-    onPlusNMouseEnter?: () => void;
-    /** 透传根类名 */
+    /** 删除 TagGroup 中的 Tag 回调（对齐 Semi onTagClose(tagChildren, e, tagKey)） */
+    onTagClose?: (
+      tagChildren: unknown,
+      e: unknown,
+      tagKey: string | number | undefined,
+    ) => void;
+    /** 鼠标进入 +N 回调（对齐 Semi onPlusNMouseEnter） */
+    onPlusNMouseEnter?: (e: MouseEvent) => void;
+    /** 透传根类名（对齐 Semi className） */
     class?: string;
-    /** 透传根内联样式 */
+    /** 透传根内联样式（对齐 Semi style） */
     style?: string;
-    /** 子 Tag（与 tagList 二选一） */
-    children?: Snippet;
   }
 
   let {
-    tagList,
+    tagList = [],
     maxTagCount,
     restCount,
     size = 'default',
     avatarShape,
-    showPopover = true,
+    showPopover = false,
     popoverProps,
     onTagClose,
     onPlusNMouseEnter,
     class: className,
     style,
-    children,
   }: Props = $props();
 
   const loc = useLocale();
 
-  // 数据驱动模式下的可见 / 折叠划分。
-  const list = $derived(tagList ?? []);
-  const hasList = $derived(tagList !== undefined);
+  // 折叠计数（对齐 Semi renderMergeTags：n = restCount ?? tagList.length - maxTagCount）。
+  const n = $derived(
+    restCount !== undefined ? restCount : (maxTagCount !== undefined ? tagList.length - maxTagCount : 0),
+  );
+  // 可见 / 折叠划分（对齐 Semi：normalTags=slice(0,maxTagCount)、restTags=slice(maxTagCount)）。
+  const normalTags = $derived(
+    maxTagCount !== undefined ? tagList.slice(0, maxTagCount) : tagList,
+  );
+  const restTags = $derived(
+    maxTagCount !== undefined ? tagList.slice(maxTagCount) : [],
+  );
+  const showN = $derived(maxTagCount !== undefined && n > 0);
 
-  // 可见数量：有 maxTagCount 且列表更长时截断，否则全展示。
-  const visibleCount = $derived(
-    maxTagCount !== undefined && list.length > maxTagCount ? maxTagCount : list.length,
+  const restLabel = $derived(loc().t('TagGroup.restTagsAriaLabel', { count: n }));
+
+  const rootCls = $derived(
+    ['cd-tag-group', maxTagCount !== undefined && 'cd-tag-group--max', `cd-tag-group--${size}`, className]
+      .filter(Boolean)
+      .join(' '),
   );
 
-  const visibleTags = $derived(list.slice(0, visibleCount));
-  const restTags = $derived(list.slice(visibleCount));
-
-  // 折叠计数：restCount 显式覆盖，否则按截断数量。
-  const nCount = $derived(
-    restCount !== undefined ? restCount : list.length - visibleCount,
-  );
-  const showN = $derived(nCount > 0);
-
-  const restLabel = $derived(loc().t('TagGroup.restTagsAriaLabel', { count: nCount }));
-
-  const rootCls = $derived(['cd-taggroup', className].filter(Boolean).join(' '));
-
-  // 透传给每个 Tag 的公共 props（条件 spread，避免显式 undefined 触发 exactOptionalPropertyTypes）。
-  function tagCommon(): Record<string, unknown> {
-    const p: Record<string, unknown> = { size };
-    if (avatarShape !== undefined) p.avatarShape = avatarShape;
+  // 透传给每个 Tag 的公共 props（对齐 Semi renderAllTags：size / avatarShape / tagKey 补全）。
+  function tagProps(item: TagItem, i: number): Record<string, unknown> {
+    const { children: _c, tagKey, onClose: _o, ...rest } = item;
+    const p: Record<string, unknown> = { ...rest };
+    if (p.size === undefined) p.size = size;
+    if (p.avatarShape === undefined && avatarShape !== undefined) p.avatarShape = avatarShape;
+    p.tagKey = tagKey ?? (typeof item.children === 'string' ? item.children : i);
     return p;
   }
 
-  // 从数据项剥离非 Tag prop（children 文本 / tagKey）后透传给 Tag，
-  // 避免 children:string 与 Tag 的 children:Snippet 冲突。
-  // 条件写入 tagText（exactOptionalPropertyTypes：不显式传 undefined）：
-  // children 为字符串时派生关闭按钮无障碍名。
-  function tagProps(item: TagItem): Record<string, unknown> {
-    const { children: text, tagKey: _k, ...rest } = item;
-    if (typeof text === 'string' && text !== '') rest.tagText = text;
-    return rest;
-  }
-
-  function handleClose(item: TagItem, index: number) {
-    onTagClose?.(item.tagKey, index);
+  function handleClose(item: TagItem, e: unknown) {
+    const key = item.tagKey ?? (typeof item.children === 'string' ? item.children : undefined);
+    item.onClose?.(item.children, e, key);
+    onTagClose?.(item.children, e, key);
   }
 </script>
 
-<div class={rootCls} {style} role="group">
-  {#if hasList}
-    {#each visibleTags as item, i (item.tagKey ?? i)}
-      <Tag
-        {...tagCommon()}
-        {...tagProps(item)}
-        onClose={() => handleClose(item, i)}
-      >
-        {item.children ?? ''}
-      </Tag>
-    {/each}
-  {:else if children}
-    {@render children()}
-  {/if}
+<div class={rootCls} {style}>
+  {#each normalTags as item, i (item.tagKey ?? i)}
+    <Tag {...tagProps(item, i)} onClose={(_c, e) => handleClose(item, e)}>
+      {item.children ?? ''}
+    </Tag>
+  {/each}
 
   {#if showN}
-    {#if showPopover && restTags.length > 0}
-      <Popover trigger="hover" {...(popoverProps ?? {})}>
+    {#if showPopover}
+      <Popover showArrow trigger="hover" position="top" autoAdjustOverflow {...(popoverProps ?? {})}>
         {#snippet content()}
-          <div class="cd-taggroup__rest" role="group" aria-label={restLabel}>
+          <div class="cd-tag-rest-group-popover" role="group" aria-label={restLabel}>
             {#each restTags as item, i (item.tagKey ?? `rest-${i}`)}
-              <Tag {...tagCommon()} {...tagProps(item)}>{item.children ?? ''}</Tag>
+              <Tag {...tagProps(item, i)}>{item.children ?? ''}</Tag>
             {/each}
           </div>
         {/snippet}
-        {@render plusN()}
+        {@render nTag()}
       </Popover>
     {:else}
-      {@render plusN()}
+      {@render nTag()}
     {/if}
   {/if}
 </div>
 
-{#snippet plusN()}
+<!-- +N 标签：对齐 Semi renderNTag（closable=false、color=grey、透明底、size 跟随组） -->
+{#snippet nTag()}
   <span
-    class="cd-taggroup__plus"
-    role="button"
-    tabindex="0"
-    aria-label={restLabel}
+    class="cd-tag-group__n"
     onmouseenter={onPlusNMouseEnter}
+    role="presentation"
   >
-    <Tag {...tagCommon()} color="grey">+{nCount}</Tag>
+    <Tag {size} color="grey" ariaLabel={restLabel} style="background-color: transparent;">+{n}</Tag>
   </span>
 {/snippet}
 
 <style>
-  .cd-taggroup {
+  /* —— 组容器（对齐 Semi .semi-tag-group）—— */
+  .cd-tag-group {
+    display: block;
+    height: auto;
+  }
+  .cd-tag-group :global(.cd-tag) {
+    margin-bottom: 0;
+    margin-right: var(--cd-tag-group-margin-right);
+  }
+  /* 折叠模式高度（对齐 Semi &-max.&-group-small/large = tag 高 + 2px）—— */
+  .cd-tag-group--max.cd-tag-group--small,
+  .cd-tag-group--max.cd-tag-group--default {
+    height: calc(var(--cd-tag-height-small) + 2px);
+  }
+  .cd-tag-group--max.cd-tag-group--large {
+    height: calc(var(--cd-tag-height-large) + 2px);
+  }
+
+  .cd-tag-group__n {
+    display: inline-flex;
+  }
+
+  /* —— 折叠弹层内的标签（对齐 Semi .semi-tag-rest-group-popover）—— */
+  .cd-tag-rest-group-popover {
     display: inline-flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: var(--cd-taggroup-gap);
   }
-  .cd-taggroup__plus {
-    display: inline-flex;
-    cursor: default;
-    border-radius: var(--cd-border-radius-small);
+  .cd-tag-rest-group-popover :global(.cd-tag) {
+    margin-right: var(--cd-tag-group-margin-right);
+    margin-bottom: 0;
   }
-  .cd-taggroup__plus:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-taggroup__rest {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--cd-taggroup-gap);
-    max-inline-size: 240px;
+  .cd-tag-rest-group-popover :global(.cd-tag:last-of-type) {
+    margin-right: 0;
   }
 </style>

@@ -309,9 +309,9 @@
               <Button type="danger">Danger</Button>
             </div>
             <div class="prow">
-              <Tag color="primary">Primary</Tag>
-              <Tag color="success">Success</Tag>
-              <Tag color="danger">Danger</Tag>
+              <Tag color="blue">Primary</Tag>
+              <Tag color="green">Success</Tag>
+              <Tag color="red">Danger</Tag>
               <Badge count={5}><Avatar size="small">CD</Avatar></Badge>
               <Switch bind:value={demoSwitch} />
               <Checkbox bind:checked={demoChecked}>选择</Checkbox>
@@ -390,15 +390,15 @@
             </div>
           {:else if previewKey === 'tag'}
             <div class="prow">
-              <Tag color="primary">Primary</Tag>
-              <Tag color="success">Success</Tag>
-              <Tag color="warning">Warning</Tag>
-              <Tag color="danger">Danger</Tag>
+              <Tag color="blue">Primary</Tag>
+              <Tag color="green">Success</Tag>
+              <Tag color="orange">Warning</Tag>
+              <Tag color="red">Danger</Tag>
             </div>
             <div class="prow">
-              <Tag type="light" color="primary">Light</Tag>
-              <Tag type="ghost" color="primary">Ghost</Tag>
-              <Tag type="solid" color="primary">Solid</Tag>
+              <Tag type="light" color="blue">Light</Tag>
+              <Tag type="ghost" color="blue">Ghost</Tag>
+              <Tag type="solid" color="blue">Solid</Tag>
               <Tag closable>可关闭</Tag>
             </div>
           {:else if previewKey === 'avatar'}
