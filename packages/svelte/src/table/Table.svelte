@@ -280,6 +280,59 @@
   const colKeyOf = (col: ColumnDef<T>, index: number): string =>
     col.key ?? col.dataIndex ?? String(index);
 
+  // --- 表头合并（column.children）：叶子列驱动 body/ColGroup/固定列，父列只作表头分组 ---
+  // 无 children 时 leafColumns 与 columns 等价（零行为变化）。
+  function flattenLeaves(cols: ColumnDef<T>[]): ColumnDef<T>[] {
+    const out: ColumnDef<T>[] = [];
+    for (const c of cols) {
+      if (c.children && c.children.length > 0) out.push(...flattenLeaves(c.children));
+      else out.push(c);
+    }
+    return out;
+  }
+  const leafColumns = $derived(flattenLeaves(columns));
+  const hasHeaderMerge = $derived(columns.some((c) => c.children && c.children.length > 0));
+
+  function leafCount(col: ColumnDef<T>): number {
+    if (!col.children || col.children.length === 0) return 1;
+    return col.children.reduce((s, c) => s + leafCount(c), 0);
+  }
+  const headerDepth = $derived.by(() => {
+    const depth = (col: ColumnDef<T>): number =>
+      col.children && col.children.length > 0 ? 1 + Math.max(...col.children.map(depth)) : 1;
+    return columns.length ? Math.max(...columns.map(depth)) : 1;
+  });
+  interface HeaderCell {
+    col: ColumnDef<T>;
+    colSpan: number;
+    rowSpan: number;
+    leafIndex: number; // 叶子格：其在 leafColumns 的下标；父分组格：-1
+    isLeaf: boolean;
+  }
+  // 二维表头：rows[r] 是第 r 行的表头格序列。叶子列 rowSpan 纵向合并到底行。
+  const headerRows = $derived.by<HeaderCell[][]>(() => {
+    const depth = headerDepth;
+    const rows: HeaderCell[][] = Array.from({ length: depth }, () => []);
+    const walk = (col: ColumnDef<T>, rowIndex: number, startLeaf: number): void => {
+      if (!col.children || col.children.length === 0) {
+        rows[rowIndex]?.push({ col, colSpan: 1, rowSpan: depth - rowIndex, leafIndex: startLeaf, isLeaf: true });
+      } else {
+        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: -1, isLeaf: false });
+        let childLeaf = startLeaf;
+        for (const child of col.children) {
+          walk(child, rowIndex + 1, childLeaf);
+          childLeaf += leafCount(child);
+        }
+      }
+    };
+    let cursor = 0;
+    for (const col of columns) {
+      walk(col, 0, cursor);
+      cursor += leafCount(col);
+    }
+    return rows;
+  });
+
   // --- 列宽拖拽：本地覆盖宽度 (colKey → px)，不写回 columns prop (红线 #1) ---
   const MIN_COL_WIDTH = 40;
   const widthOverrides = new SvelteMap<string, number>();
@@ -344,8 +397,8 @@
   );
   function initSort(): SortState {
     // Check for per-column defaultSortOrder
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.defaultSortOrder != null) {
         return { key: colKeyOf(col, i), order: col.defaultSortOrder };
       }
@@ -394,7 +447,7 @@
   }
   // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
   function emitFilterChange(colKey: string, values: (string | number)[]) {
-    const col = columns.find((c, i) => colKeyOf(c, i) === colKey);
+    const col = leafColumns.find((c, i) => colKeyOf(c, i) === colKey);
     onFilterChange?.({ dataIndex: col?.dataIndex ?? colKey, values });
     emitChange('filter');
   }
@@ -428,8 +481,8 @@
   const processed = $derived.by(() => {
     let data = [...dataSource];
     // 列筛选（多列 AND）
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       const ck = colKeyOf(col, i);
       if (isEffectivelyFiltered(col, ck)) {
         const selected = effectiveFilterValues(col, ck);
@@ -448,7 +501,7 @@
     const { key, order } = currentSort;
     if (key && order) {
       let target: ColumnDef<T> | undefined;
-      columns.forEach((col, i) => {
+      leafColumns.forEach((col, i) => {
         if (colKeyOf(col, i) === key) target = col;
       });
       if (target && target.sorter) {
@@ -702,7 +755,7 @@
   // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
   const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
   const colSpan = $derived(
-    columns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
+    leafColumns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
   );
 
   // 表头行内联 style：headerStyle 支持字符串或键值对象，统一序列化为 style 字符串。
@@ -897,7 +950,7 @@
   const gridId = useId('cd-table-grid');
   // 网格列扁平表：前置 expand/selection 占位列 + 数据列（纯函数 buildGridCols）。
   const gridCols = $derived<GridCol[]>(
-    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: columns.length }),
+    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: leafColumns.length }),
   );
   const gridColCount = $derived(gridCols.length);
   // 总行数（含表头行）= aria-rowcount，虚拟化时为逻辑总数而非渲染数（spec §6）。
@@ -1065,7 +1118,7 @@
   // 当前各列筛选选中值（colKey → values[]），仅含非空筛选列。
   function snapshotFilters(): Record<string, (string | number)[]> {
     const out: Record<string, (string | number)[]> = {};
-    columns.forEach((col, i) => {
+    leafColumns.forEach((col, i) => {
       const ck = colKeyOf(col, i);
       const vals = filterState.get(ck);
       if (vals && vals.size > 0) out[ck] = [...vals];
@@ -1169,11 +1222,11 @@
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
   const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
-  const hasFixed = $derived(columns.some((c) => c.fixed));
+  const hasFixed = $derived(leafColumns.some((c) => c.fixed));
   // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
   const totalMinWidth = $derived(
     leadingWidth +
-      columns.reduce((sum, c, i) => {
+      leafColumns.reduce((sum, c, i) => {
         const w = resolveWidth(c, i);
         return sum + (typeof w === 'number' ? w : 120);
       }, 0),
@@ -1189,8 +1242,8 @@
   const fixedLeftOffsets = $derived.by(() => {
     const out: (number | null)[] = [];
     let acc = leadingWidth;
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.fixed === 'left') {
         out.push(acc);
         acc += colNumWidth(col, i);
@@ -1202,10 +1255,10 @@
   });
   // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和
   const fixedRightOffsets = $derived.by(() => {
-    const out: (number | null)[] = new Array(columns.length).fill(null);
+    const out: (number | null)[] = new Array(leafColumns.length).fill(null);
     let acc = 0;
-    for (let i = columns.length - 1; i >= 0; i--) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = leafColumns.length - 1; i >= 0; i--) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.fixed === 'right') {
         out[i] = acc;
         acc += colNumWidth(col, i);
@@ -1216,12 +1269,12 @@
   // 最后一个左固定列 / 第一个右固定列索引（用于阴影边界）
   const lastLeftFixed = $derived.by(() => {
     let idx = -1;
-    columns.forEach((c, i) => {
+    leafColumns.forEach((c, i) => {
       if (c.fixed === 'left') idx = i;
     });
     return idx;
   });
-  const firstRightFixed = $derived(columns.findIndex((c) => c.fixed === 'right'));
+  const firstRightFixed = $derived(leafColumns.findIndex((c) => c.fixed === 'right'));
 
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
@@ -1488,7 +1541,7 @@
       {#if hasSelection}
         <col class="cd-table-column-selection" style="width:{selectionColWidth}px" />
       {/if}
-      {#each columns as col, i (colKeyOf(col, i))}
+      {#each leafColumns as col, i (colKeyOf(col, i))}
         <col class={col.className} style={colGroupStyle(col, i)} />
       {/each}
     </colgroup>
@@ -1509,6 +1562,7 @@
         {#if expandAsColumn}
           {@const gc = 0}
           <th
+            rowspan={hasHeaderMerge ? headerDepth : undefined}
             class="cd-table-row-head cd-table-column-expand {leadingFixedClass}"
             scope="col"
             style={mergeHeaderStyle(leadingStyle('expand'))}
@@ -1524,6 +1578,7 @@
           {@const isRadio = rowSelection?.type === 'radio'}
           {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
           <th
+            rowspan={hasHeaderMerge ? headerDepth : undefined}
             class="cd-table-row-head cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
             scope="col"
             style={mergeHeaderStyle(selectionColStyle ?? leadingStyle('selection'))}
@@ -1548,13 +1603,52 @@
             {/if}
           </th>
         {/if}
-        {#each columns as col, i (colKeyOf(col, i))}
+        {#if !hasHeaderMerge}
+          {#each leafColumns as col, i (colKeyOf(col, i))}
+            {@render leafHeaderCell(col, i, 1)}
+          {/each}
+        {:else}
+          <!-- 合并模式首行：expand/selection th 已 rowspan 跨满，其后接 headerRows[0] -->
+          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+            {@render headerMergeCell(hc)}
+          {/each}
+        {/if}
+      </tr>
+      {#if hasHeaderMerge}
+        {#each headerRows.slice(1) as hrow, ri (ri)}
+          <tr class="cd-table-row">
+            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+              {@render headerMergeCell(hc)}
+            {/each}
+          </tr>
+        {/each}
+      {/if}
+    </thead>
+    {/if}
+    {#snippet headerMergeCell(hc: HeaderCell)}
+      {#if hc.isLeaf}
+        {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
+      {:else}
+        <th
+          class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
+          class:cd-table-row-cell-ellipsis={hc.col.ellipsis}
+          scope="colgroup"
+          colspan={hc.colSpan}
+          role={gridEnabled ? 'columnheader' : undefined}
+          style={mergeHeaderStyle(undefined)}
+        >
+          <span class="cd-table-row-head-title">{hc.col.title}</span>
+        </th>
+      {/if}
+    {/snippet}
+    {#snippet leafHeaderCell(col: ColumnDef<T>, i: number, thRowSpan: number)}
           {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
           {@const hasFilter = !!col.filters && col.filters.length > 0}
           {@const resizable = !!col.resizable}
           <th
+            rowspan={thRowSpan > 1 ? thRowSpan : undefined}
             class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
             class:cd-table-row-cell-ellipsis={col.ellipsis}
             class:cd-table-row-head-has-filter={hasFilter}
@@ -1663,10 +1757,7 @@
               ></span>
             {/if}
           </th>
-        {/each}
-      </tr>
-    </thead>
-    {/if}
+    {/snippet}
     <tbody class="cd-table-tbody">
       {#if visibleRows.length === 0}
         <tr class="cd-table-row cd-table-row-placeholder" role={gridEnabled ? 'row' : undefined}>
@@ -1799,7 +1890,7 @@
                     </span>
                   </td>
                 {/if}
-                {#each columns as col, i (colKeyOf(col, i))}
+                {#each leafColumns as col, i (colKeyOf(col, i))}
                   {@const value = cellValue(col, record)}
                   <td
                     class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
@@ -1948,7 +2039,7 @@
                 </span>
               </td>
             {/if}
-            {#each columns as col, i (colKeyOf(col, i))}
+            {#each leafColumns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
               {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
               {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !expandAsColumn}

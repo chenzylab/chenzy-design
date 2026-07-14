@@ -9,7 +9,7 @@ export const meta = {
     '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。行虚拟滚动 virtualized：仅渲染视口内行切片（复用 core fixedRange），首尾 padding spacer tr 撑总高，保持原生 table 语义；thead sticky 固定顶部；与 pagination 互斥（虚拟时忽略分页）。',
   exports: ['Table'],
   props: [
-    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/ellipsis/sorter/filters/onFilter/render' },
+    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）' },
     { name: 'dataSource', type: 'T[]', default: '[]', desc: '数据行' },
     { name: 'rowKey', type: "string | ((record: T) => RowKey)", default: "'key'", desc: '行唯一键解析' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },

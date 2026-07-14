@@ -48,5 +48,6 @@ export const demos: DemoEntry[] = [
   entry('22-infinite-scroll.svelte', '无限滚动', 'onReachBottom 触底追加数据。'),
   entry('24-dynamic.svelte', '受控的动态表格', '运行时增删数据行，响应式驱动重渲染。'),
   entry('25-full-custom.svelte', '完全自定义渲染', 'render snippet 卡片式整格内容。'),
+  entry('26-header-group.svelte', '表头合并', 'column.children 定义子列，父列 title 横跨叶子列。'),
   entry('23-span-cell.svelte', '行列合并', 'column.onCell 返回 colSpan / rowSpan 合并单元格。'),
 ];

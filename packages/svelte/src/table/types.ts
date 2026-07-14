@@ -16,6 +16,11 @@ export interface ColumnDef<T> {
   dataIndex?: keyof T & string;
   /** 表头文案 */
   title: string;
+  /**
+   * 子列（表头合并，对齐 Semi column.children）。父列只作表头分组，
+   * 数据渲染下沉到叶子列；父列 title 横跨其全部叶子列。
+   */
+  children?: ColumnDef<T>[];
   /** 列宽 */
   width?: number | string;
   /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值） */
