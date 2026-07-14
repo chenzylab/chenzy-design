@@ -82,10 +82,6 @@ export const zh_CN: Locale = {
   },
   Banner: {
     closeButtonAriaLabel: '关闭',
-    info: '提示',
-    success: '成功',
-    warning: '警告',
-    danger: '错误',
   },
   Drawer: {
     close: '关闭',

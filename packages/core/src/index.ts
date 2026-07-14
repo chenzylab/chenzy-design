@@ -202,11 +202,6 @@ export {
   type RootAriaProps,
 } from './progress.js';
 export {
-  resolveBannerRole,
-  type BannerType,
-  type BannerRoleProps,
-} from './banner.js';
-export {
   resolveCodeClassName,
   type ResolveCodeClassNameOptions,
 } from './code-highlight.js';

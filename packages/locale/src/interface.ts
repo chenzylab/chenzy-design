@@ -120,10 +120,6 @@ export interface Locale {
   };
   Banner: {
     closeButtonAriaLabel: string;
-    info: string;
-    success: string;
-    warning: string;
-    danger: string;
   };
   Drawer: {
     close: string;

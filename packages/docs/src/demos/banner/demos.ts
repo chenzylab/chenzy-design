@@ -24,6 +24,25 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-type.svelte', '类型', '支持 info / success / warning / danger 四种语义类型，配套图标与颜色。'),
-  entry('02-closable.svelte', '可关闭', '设置 onClose 后显示关闭按钮，action 插槽支持自定义操作按钮。'),
+  entry(
+    '01-basic.svelte',
+    '基本用法',
+    '横幅常驻，需用户主动关闭；onClose 回调可用于同步外部显隐状态。',
+  ),
+  entry('02-type.svelte', '不同类型', '支持 4 种类型：info / warning / danger / success，默认为 info。'),
+  entry(
+    '03-full-mode.svelte',
+    '非全屏模式',
+    '设置 fullMode={false} 使用非全屏模式；bordered 显示边框，icon / closeIcon 传 null 隐藏图标与关闭按钮。',
+  ),
+  entry(
+    '04-custom-content.svelte',
+    '自定义内容',
+    '通过 children 自定义其他渲染内容，渲染于横幅尾部的 extra 区。',
+  ),
+  entry(
+    '05-custom-icon.svelte',
+    '自定义图标',
+    '通过 icon 自定义横幅图标，通过 closeIcon 自定义关闭图标。',
+  ),
 ];
