@@ -29,7 +29,6 @@ export const nameToDir: Record<string, string> = {
   descriptions: 'descriptions',
   divider: 'divider',
   dragmove: 'drag-move',
-  drawer: 'drawer',
   dropdown: 'dropdown',
   empty: 'empty',
   feedback: 'feedback',

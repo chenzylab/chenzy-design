@@ -7,7 +7,7 @@
 每个组件的 a11y 实现都对照以下规则：
 
 - **键盘**：Tab / Shift+Tab 进出，Enter / Space 激活，Esc 关闭浮层，方向键在复合组件内导航（Menu / Tabs / Radio / Listbox 遵循 WAI-ARIA APG）。
-- **焦点管理**：浮层（Modal / Drawer / Dropdown）进入时 focus trap，关闭后焦点归还触发元素；`useFocusTrap` 放在 `@chenzy-design/core`。
+- **焦点管理**：浮层（Modal / SideSheet / Dropdown）进入时 focus trap，关闭后焦点归还触发元素；`useFocusTrap` 放在 `@chenzy-design/core`。
 - **ARIA**：正确的 `role`、`aria-*`、`aria-expanded` / `aria-selected` / `aria-checked` / `aria-disabled`、`aria-labelledby` / `aria-describedby`；动态内容用 `aria-live`。
 - **可见焦点**：统一 `:focus-visible` 样式，由 `--cd-color-focus` / `--cd-focus-ring` 控制，禁止 `outline:none` 而不补替代。
 - **对比度**：文本 / 图标对背景 ≥ 4.5:1（大字 3:1）；token 设计阶段即校验。

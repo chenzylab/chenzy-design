@@ -516,7 +516,7 @@
   });
 
   // ---------- useFocusTrap (红线 #3)：浮层模式打开时陷入焦点，关闭归还 trigger ----------
-  // 复用 core 同一原语（与 Modal/Drawer/Popover 一致，不重造）。
+  // 复用 core 同一原语（与 Modal/SideSheet/Popover 一致，不重造）。
   $effect(() => {
     if (effectiveInline || !isOpen || !panelEl) return;
     const trap = useFocusTrap(panelEl);

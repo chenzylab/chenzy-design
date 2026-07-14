@@ -71,7 +71,6 @@ import { meta as skeletonMeta } from './skeleton/meta.js';
 import { meta as bannerMeta } from './banner/meta.js';
 import { meta as modalMeta } from './modal/meta.js';
 import { meta as popconfirmMeta } from './popconfirm/meta.js';
-import { meta as drawerMeta } from './drawer/meta.js';
 import { meta as sideSheetMeta } from './side-sheet/meta.js';
 import { meta as feedbackMeta } from './feedback/meta.js';
 import { meta as toastMeta } from './toast/meta.js';
@@ -164,7 +163,6 @@ const metas = {
   bannerMeta,
   modalMeta,
   popconfirmMeta,
-  drawerMeta,
   sideSheetMeta,
   feedbackMeta,
   toastMeta,

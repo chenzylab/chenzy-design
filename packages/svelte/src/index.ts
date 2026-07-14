@@ -371,7 +371,6 @@ export {
   type HookModalItem,
 } from './modal/index.js';
 export { Popconfirm, popconfirmMeta } from './popconfirm/index.js';
-export { Drawer, drawerMeta } from './drawer/index.js';
 export { SideSheet, sideSheetMeta } from './side-sheet/index.js';
 export {
   Feedback,

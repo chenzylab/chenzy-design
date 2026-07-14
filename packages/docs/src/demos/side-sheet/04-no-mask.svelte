@@ -1,26 +1,21 @@
 <script lang="ts">
-  import { SideSheet, Button, Text, Input } from '@chenzy-design/svelte';
+  import { SideSheet, TextArea, Button } from '@chenzy-design/svelte';
 
-  let open = $state(false);
+  let visible = $state(false);
   let value = $state('');
 </script>
 
-<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
-  <Button type="primary" onclick={() => (open = true)}>打开协作面板</Button>
-  <div style="width:220px">
-    <Input placeholder="面板开着也能在这里输入" bind:value />
-  </div>
+<Button onclick={() => (visible = true)}>Open SideSheet</Button>
+<div style="margin-top:12px">
+  <TextArea placeholder="Please enter something" onChange={(v) => (value = v)} />
 </div>
-
 <SideSheet
-  {open}
-  placement="right"
+  title="可操作外部的侧边栏"
+  {visible}
+  onCancel={() => (visible = false)}
   mask={false}
-  outsideClosable
-  title="通知中心（非模态）"
-  onOpenChange={(e) => (open = e.open)}
+  disableScroll={false}
 >
-  <Text>
-    mask=false：无遮罩、不锁背景滚动、不抢焦点，打开时仍可与主页面交互。点击面板外部关闭（outsideClosable）。
-  </Text>
+  <p>这里是输入的内容：</p>
+  <p>{value}</p>
 </SideSheet>
