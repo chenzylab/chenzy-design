@@ -76,11 +76,6 @@ export const dataDisplayTokens = {
   'size-collapse-icon-default': { value: 'var(--cd-width-icon-medium)', category: 'width', label: '图标尺寸', usage: '图标尺寸' },
 
   // ============================================================
-  // Timeline —— 对齐 semi-foundation/timeline/variables.scss（仅保留组件消费）
-  // ============================================================
-  'radius-timeline-head': { value: 'var(--cd-border-radius-circle)', category: 'radius', label: '圆点圆角', usage: '时间轴节点圆点圆角' },
-
-  // ============================================================
   // chenzy-design 组件实际消费的补充 token（原名保留，值对齐 Semi；组件消费）
   // ============================================================
   // —— Empty 组件直接消费上方原始层 --cd-*-empty-*（对齐 Semi empty.scss，无中间变量）——
@@ -100,15 +95,62 @@ export const dataDisplayTokens = {
   'transition-duration-collapsible-opacity': { value: '250ms', category: 'animation', label: '折叠透明度动画时长', usage: '折叠-透明度-动画持续时间（组件消费，对齐 Semi $transition_duration-collapsible-opacity）' },
   'transition-delay-collapsible-opacity': { value: 'var(--cd-motion-delay-none)', category: 'animation', label: '折叠透明度过渡延迟', usage: '折叠-透明度-延迟时间（组件消费，对齐 Semi $transition_delay-collapsible-opacity）' },
 
-  // —— Timeline ——
-  'timeline-dot-size': { value: '9px', category: 'width', label: '圆点尺寸', usage: '圆点尺寸（组件消费，对齐 Semi 9px）' },
-  'timeline-dot-color': { value: 'var(--cd-color-primary)', category: 'color', label: '圆点颜色', usage: '默认圆点颜色 - 进行中（组件消费）' },
-  'timeline-dot-color-success': { value: 'var(--cd-color-success)', category: 'color', label: '圆点颜色-成功', usage: '成功态圆点颜色（组件消费）' },
-  'timeline-dot-color-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '圆点颜色-警告', usage: '警告态圆点颜色（组件消费）' },
-  'timeline-dot-color-error': { value: 'var(--cd-color-danger)', category: 'color', label: '圆点颜色-错误', usage: '错误态圆点颜色（组件消费）' },
-  'timeline-dot-color-ongoing': { value: 'var(--cd-color-primary)', category: 'color', label: '圆点颜色-进行中', usage: '进行中态圆点颜色（组件消费）' },
-  'timeline-line-color': { value: 'var(--cd-color-text-3)', category: 'color', label: '连线颜色', usage: '连线颜色（组件消费，对齐 Semi text-3）' },
-  'timeline-content-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '内容颜色', usage: '内容文字颜色（组件消费）' },
-  'timeline-time-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '时间文字颜色', usage: '时间文字颜色（组件消费）' },
-  'timeline-gap': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '间距', usage: '节点内容间距（组件消费）' },
+  // ============================================================
+  // Timeline —— 严格对齐 semi-foundation/timeline/variables.scss
+  //   Semi $xxx-timeline_yyy 逐个翻译为 timeline-* 组件 token（名与值一一对应，
+  //   移除自造语义中间层）。var(--semi-*) → var(--cd-*)，$spacing-*/$border-* 引全局别名，
+  //   calc / 字面量忠实保留。仅收录 timeline.scss 实际消费的变量，孤儿不搬。
+  // ============================================================
+  // —— color ——
+  'color-timeline-dot-default-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '圆点背景-进行中', usage: '时间轴节点圆点背景色 - 进行中（Semi $color-timeline_dot_default-bg-default）' },
+  'color-timeline-dot-success-bg-default': { value: 'var(--cd-color-success)', category: 'color', label: '圆点背景-成功', usage: '时间轴节点圆点背景色 - 成功（Semi $color-timeline_dot_success-bg-default）' },
+  'color-timeline-dot-warning-bg-default': { value: 'var(--cd-color-warning)', category: 'color', label: '圆点背景-警告', usage: '时间轴节点圆点背景色 - 警告（Semi $color-timeline_dot_warning-bg-default）' },
+  'color-timeline-dot-error-bg-default': { value: 'var(--cd-color-danger)', category: 'color', label: '圆点背景-错误', usage: '时间轴节点圆点背景色 - 错误（Semi $color-timeline_dot_error-bg-default）' },
+  'color-timeline-dot-info-bg-default': { value: 'var(--cd-color-tertiary-light-active)', category: 'color', label: '圆点背景-默认', usage: '时间轴节点圆点背景色 - 默认（Semi $color-timeline_dot_info-bg-default）' },
+  'color-timeline-tail-border': { value: 'var(--cd-color-text-3)', category: 'color', label: '连线颜色', usage: '时间轴连线颜色（Semi $color-timeline_tail-border）' },
+  'color-timeline-time-default-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '时间文字颜色', usage: '时间轴文字颜色 - 默认（Semi $color-timeline_time_default-text-default）' },
+  'color-timeline-item-head-bg': { value: 'transparent', category: 'color', label: '自定义节点背景', usage: '时间轴自定义图标节点背景颜色（Semi $color-timeline_item_head-bg）' },
+  'color-timeline-item-content-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '内容文字颜色', usage: '时间轴标题文字颜色（Semi $color-timeline_item_content-text-default）' },
+
+  // —— spacing ——
+  'spacing-timeline-margin': { value: 'var(--cd-spacing-none)', category: 'spacing', label: '整体外边距', usage: '时间轴整体外边距（Semi $spacing-timeline-margin）' },
+  'spacing-timeline-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '整体内边距', usage: '时间轴整体内边距（Semi $spacing-timeline-padding）' },
+  'spacing-timeline-tail-top': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '连线顶部位置', usage: '时间轴连线顶部位置（Semi $spacing-timeline_tail-top）' },
+  'spacing-timeline-tail-left': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '连线左侧位置', usage: '时间轴连线左侧位置（Semi $spacing-timeline_tail-left）' },
+  'spacing-timeline-head-top': { value: '5px', category: 'spacing', label: '圆点顶部位置', usage: '时间轴节点圆点顶部位置（Semi $spacing-timeline_head-top）' },
+  'spacing-timeline-head-custom-top': { value: '10px', category: 'spacing', label: '自定义节点顶部位置', usage: '时间轴自定义图标节点圆点顶部位置（Semi $spacing-timeline_head_custom-top）' },
+  'spacing-timeline-head-custom-left': { value: '5px', category: 'spacing', label: '自定义节点左侧位置', usage: '时间轴自定义图标节点圆点左侧位置（Semi $spacing-timeline_head_custom-left）' },
+  'spacing-timeline-content-marginleft': { value: '25px', category: 'spacing', label: '内容左外边距', usage: '时间轴内容左侧外边距（Semi $spacing-timeline_content-marginLeft）' },
+  'spacing-timeline-time-margintop': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '时间文本顶外边距', usage: '时间轴时间文本顶部外边距（Semi $spacing-timeline_time-marginTop）' },
+  'spacing-timeline-time-top': { value: '-2px', category: 'spacing', label: '时间文本顶部位置', usage: '时间轴时间文本顶部位置（Semi $spacing-timeline_time-top）' },
+  'spacing-timeline-item-margin': { value: 'var(--cd-spacing-none)', category: 'spacing', label: '节点外边距', usage: '时间轴各节点外边距（Semi $spacing-timeline_item-margin）' },
+  'spacing-timeline-item-paddingbottom': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: '节点底外边距', usage: '时间轴各节点底部外边距（Semi $spacing-timeline_item-paddingBottom）' },
+  'spacing-timeline-item-content-time-marginleft': { value: 'calc(-40px - 100%)', category: 'spacing', label: 'center 时间左外边距', usage: 'center 模式时间文本左侧外边距（Semi $spacing-timeline_item_content_time-marginLeft）' },
+  'spacing-timeline-item-right-item-left': { value: 'calc(100% - 9px)', category: 'spacing', label: 'right 节点左位置', usage: '时间轴在右侧时各节点左侧位置（Semi $spacing-timeline_item_right_item-left）' },
+  'spacing-timeline-item-right-item-content': { value: 'var(--cd-spacing-none)', category: 'spacing', label: 'right 内容外边距', usage: '时间轴在右侧时各节点内容外边距（Semi $spacing-timeline_item_right_item_content）' },
+  'spacing-timeline-item-left-item-content-left': { value: 'calc(50% - 4px)', category: 'spacing', label: 'left 内容左位置', usage: 'alternate/center 左侧内容左位置（Semi $spacing-timeline_item_left_item_content-left）' },
+  'spacing-timeline-item-head-custom-left': { value: '50%', category: 'spacing', label: '交替自定义节点左位置', usage: 'alternate/right/center 自定义节点左位置（Semi $spacing-timeline_item_head_custom-left）' },
+  'spacing-timeline-item-head-marginleft': { value: '-4px', category: 'spacing', label: '交替节点左外边距', usage: 'alternate/right/center 圆点左侧外边距（Semi $spacing-timeline_item_head-marginLeft）' },
+
+  // —— width ——
+  'width-timeline': { value: '100%', category: 'width', label: '整体宽度', usage: '时间轴整体宽度（Semi $width-timeline）' },
+  'width-timeline-dot': { value: '9px', category: 'width', label: '圆点宽度', usage: '时间轴节点圆点宽度（Semi $width-timeline_dot）' },
+  'width-timeline-head-custom': { value: 'auto', category: 'width', label: '自定义节点宽度', usage: '时间轴节点自定义图标宽度（Semi $width-timeline_head_custom）' },
+  'width-timeline-tail-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '连线宽度', usage: '时间轴连线宽度（Semi $width-timeline_tail-border）' },
+  'width-timeline-head-custom-border': { value: 'var(--cd-border-thickness)', category: 'width', label: '自定义连线宽度', usage: '时间轴自定义连线宽度（Semi $width-timeline_head_custom-border）' },
+  'width-timeline-item-content-time': { value: '100%', category: 'width', label: 'center 时间宽度', usage: 'center 模式时间文本宽度（Semi $width-timeline_item_content_time）' },
+  'width-timeline-item-right-content': { value: 'calc(100% - 28px)', category: 'width', label: 'right 内容宽度', usage: 'right 模式内容宽度（Semi $width-timeline_item_right_content）' },
+  'width-timeline-item-left-item-content': { value: 'calc(50% - 14px)', category: 'width', label: 'left 内容宽度', usage: 'alternate/center 左侧内容宽度（Semi $width-timeline_item_left_item_content）' },
+  'width-timeline-item-right-item-content': { value: 'calc(50% - 20px)', category: 'width', label: 'right 内容宽度（交替）', usage: 'alternate/center 右侧内容宽度（Semi $width-timeline_item_right_item_content）' },
+
+  // —— height ——
+  'height-timeline-tail': { value: 'calc(100% - 20px)', category: 'height', label: '连线高度', usage: '时间轴连线高度（Semi $height-timline_tail）' },
+  'height-timeline-head-custom': { value: 'auto', category: 'height', label: '自定义连线高度', usage: '时间轴自定义连线高度（Semi $height-timeline_head_custom）' },
+
+  // —— radius ——
+  'radius-timeline-head': { value: 'var(--cd-border-radius-circle)', category: 'radius', label: '圆点圆角', usage: '时间轴节点圆点圆角（Semi $radius-timeline_head）' },
+  'radius-timeline-head-custom': { value: '0', category: 'radius', label: '自定义节点圆角', usage: '时间轴节点自定义图标圆角（Semi $radius-timeline_head_custom）' },
+
+  // —— motion ——
+  'motion-timeline-head-custom-transform': { value: 'translate(-50%, -50%)', category: 'animation', label: '自定义节点位移', usage: '时间轴自定义图标节点位移（Semi $motion-timeline_head_custom-transform）' },
 } satisfies TokenGroup;

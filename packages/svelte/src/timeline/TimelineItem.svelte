@@ -1,164 +1,122 @@
 <!--
-  Timeline.Item — 声明式单项，与 dataSource 模式渲染同一套 .cd-timeline__item 结构，
-  从而复用父 Timeline 的 :nth-child 交替布局 CSS（alternate/center）与方向样式，无需索引计算。
-
-  interactive：父 Timeline 开启时，项渲染为可聚焦 role=button，roving tabindex 由父持有的
-  焦点 id 决定（getter 经 context 保持响应性，项不写 $state——红线 #2）。方向键 roving 上交父级
-  处理，Enter/Space 触发本项 onClick。挂载时经 context 领号、卸载时退号（命令式 cleanup）。
+  Timeline.Item — 严格对齐 Semi timeline/item.tsx。
+  DOM：<li class="cd-timeline-item {posCls} {class}"> > .item-tail + .item-head(-custom/-{type}) + .item-content(children + extra + time)。
+  位置类 posCls 对齐 Semi getPosCls：
+    - 显式 position → cd-timeline-item-{position}（覆盖父 mode）
+    - alternate → 无 position 时按兄弟顺序索引奇偶 left/right
+    - center → 无 position 时统一 left
+    - left/right → cd-timeline-item-{mode}
+  声明式子项经 context 拿父 mode 与自身顺序索引；dataSource 模式由父 Timeline 直接传 posCls（此时 mode/index 为 undefined，走 posClass prop 分支）。
 -->
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
-  import { getTimelineContext, type TimelineLineStyle } from './context.js';
+  import { getTimelineContext } from './context.js';
+  import type { TimelineItemType, TimelineItemPosition } from './types.js';
 
   interface Props {
-    /** 圆点颜色（等价 dataSource 项的 dotColor/color）。 */
-    dotColor?: string;
-    /** 圆点颜色别名（与 dotColor 等价，优先级低于 dotColor）。 */
-    color?: string;
-    /** 语义类型，给圆点附加 cd-timeline__dot--{type} class。 */
-    type?: 'default' | 'ongoing' | 'success' | 'warning' | 'error';
-    /** 自定义圆点 snippet，提供时替代默认圆点。 */
-    dot?: Snippet;
-    /** 单项连接线样式，覆盖父 Timeline 的 lineStyle。 */
-    lineStyle?: TimelineLineStyle;
-    /** 时间文本，渲染在内容下方（horizontal 模式同 dataSource）。 */
-    time?: string;
-    /** 覆盖父 Timeline mode 的单项定位（'left' | 'right'）。 */
-    position?: 'left' | 'right';
-    /** 辅助内容（时间旁附加信息），字符串或 Snippet。 */
-    extra?: string | Snippet;
-    /** interactive 模式下按 Enter/Space 或点击该节点触发。 */
-    onClick?: () => void;
-    children?: Snippet;
+    /** 自定义圆点色值（对齐 Semi color，设置 head backgroundColor）。 */
+    color?: string | undefined;
+    /** 时间文本，渲染在内容下方。 */
+    time?: string | Snippet | undefined;
+    /** 当前圆点模式。 */
+    type?: TimelineItemType | undefined;
+    /** 自定义时间轴点（提供时 head 附加 -custom class）。 */
+    dot?: string | Snippet | undefined;
+    /** 自定义辅助内容，渲染在内容与时间之间。 */
+    extra?: string | Snippet | undefined;
+    /** 自定义节点位置，覆盖 Timeline 的 mode 选项。 */
+    position?: TimelineItemPosition | undefined;
+    class?: string | undefined;
+    style?: string | undefined;
+    /** 鼠标点击事件的回调。 */
+    onClick?: ((e: MouseEvent) => void) | undefined;
+    /** 内部：dataSource 模式下父 Timeline 直接注入的位置类（优先于 context 计算）。 */
+    posClass?: string | undefined;
+    children?: Snippet | undefined;
   }
 
-  let { dotColor, color, type, dot, lineStyle, time, position, extra, onClick, children }: Props = $props();
+  let {
+    color,
+    time,
+    type = 'default',
+    dot,
+    extra,
+    position,
+    class: className,
+    style,
+    onClick,
+    posClass,
+    children,
+  }: Props = $props();
 
   const ctx = getTimelineContext();
 
-  // 未显式指定时回退到父 Timeline 的 lineStyle。
-  const effectiveLine = $derived<TimelineLineStyle>(lineStyle ?? ctx?.getLineStyle() ?? 'solid');
-
-  // dotColor 优先，其次 color 别名。
-  const effectiveDotColor = $derived(dotColor ?? color);
-
-  const dotInline = $derived(effectiveDotColor ? `--cd-timeline-dot-current: ${effectiveDotColor};` : undefined);
-
-  const dotClass = $derived(
-    ['cd-timeline__dot', type && type !== 'default' && `cd-timeline__dot--${type}`]
-      .filter(Boolean)
-      .join(' '),
-  );
-
-  // interactive：在 $effect 内 mount 领号 / unmount 退号（仿 Tabs；untrack 读初值仅跑一次，
-  // 避免重注册打乱保序）。项自身不参与 roving 簿记 $state。
-  const interactive = $derived(ctx?.getInteractive() ?? false);
-  let myId = $state(-1);
+  // 声明式：挂载登记，getIndex() 反映本项在兄弟中的当前顺序索引（alternate 奇偶用）。
+  // getIndex 依赖父级 version（每次兄弟增减 bump），故 $derived 读取即保持响应。
+  let handle = $state<{ getIndex: () => number; unregister: () => void } | null>(null);
   $effect(() => {
     const reg = ctx?.registerItem;
     if (!reg) return;
     const r = untrack(() => reg());
-    myId = r.id;
-    return r.unregister;
+    handle = r;
+    return () => {
+      r.unregister();
+      handle = null;
+    };
+  });
+  const index = $derived(handle?.getIndex() ?? 0);
+
+  const mode = $derived(ctx?.getMode() ?? 'left');
+
+  // 位置类：对齐 Semi getPosCls。dataSource 模式由父传 posClass 直接用。
+  const positionClass = $derived.by(() => {
+    if (posClass !== undefined) return posClass;
+    if (position) return `cd-timeline-item-${position}`;
+    if (mode === 'alternate') return index % 2 === 0 ? 'cd-timeline-item-left' : 'cd-timeline-item-right';
+    if (mode === 'center') return 'cd-timeline-item-left';
+    if (mode === 'left' || mode === 'right') return `cd-timeline-item-${mode}`;
+    return '';
   });
 
-  // roving tabindex：焦点项 0，其余 -1（焦点状态经 context getter 读取，保持响应性）。
-  const tindex = $derived(interactive && myId >= 0 && ctx?.isFocused(myId) ? 0 : -1);
+  const itemCls = $derived(
+    ['cd-timeline-item', positionClass, className].filter(Boolean).join(' '),
+  );
 
-  function onKeydown(e: KeyboardEvent): void {
-    if (!interactive) return;
-    // Enter/Space 触发本项 onClick；方向键 roving 交父级。
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick?.();
-      return;
-    }
-    ctx?.onItemKeydown(myId, e);
-  }
+  const headCls = $derived(
+    [
+      'cd-timeline-item-head',
+      dot && 'cd-timeline-item-head-custom',
+      type && `cd-timeline-item-head-${type}`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 
-  function onActivate(): void {
-    if (!interactive) {
-      onClick?.();
-      return;
-    }
-    ctx?.onItemFocus(myId);
-    onClick?.();
-  }
+  // color 设置 head 背景色（对齐 Semi dotStyle）。
+  const headStyle = $derived(color ? `background-color: ${color};` : undefined);
 </script>
 
-{#if interactive}
-  <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
-  <li
-    class={[
-      'cd-timeline__item',
-      'cd-timeline__item--interactive',
-      effectiveLine === 'dashed' && 'cd-timeline__item--dashed',
-      position && `cd-timeline__item--${position}`,
-    ]}
-    role="button"
-    tabindex={tindex}
-    data-tid={myId}
-    onclick={onActivate}
-    onkeydown={onKeydown}
-    onfocus={() => ctx?.onItemFocus(myId)}
-  >
-    <span class="cd-timeline__tail" aria-hidden="true"></span>
-    <span class={dotClass} style={dotInline} aria-hidden="true">
-      {#if dot}{@render dot()}{/if}
-    </span>
-    <div class="cd-timeline__body">
-      <div class="cd-timeline__content">{@render children?.()}</div>
-      {#if time || extra}
-        <div class="cd-timeline__time">
-          {#if time}{time}{/if}
-          {#if extra}
-            {#if typeof extra === 'string'}
-              <span class="cd-timeline__extra">{extra}</span>
-            {:else}
-              <span class="cd-timeline__extra">{@render extra()}</span>
-            {/if}
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </li>
-{:else}
-  <li
-    class={[
-      'cd-timeline__item',
-      effectiveLine === 'dashed' && 'cd-timeline__item--dashed',
-      position && `cd-timeline__item--${position}`,
-    ]}
-  >
-    <span class="cd-timeline__tail" aria-hidden="true"></span>
-    <span class={dotClass} style={dotInline} aria-hidden="true">
-      {#if dot}{@render dot()}{/if}
-    </span>
-    <div class="cd-timeline__body">
-      <div class="cd-timeline__content">{@render children?.()}</div>
-      {#if time || extra}
-        <div class="cd-timeline__time">
-          {#if time}{time}{/if}
-          {#if extra}
-            {#if typeof extra === 'string'}
-              <span class="cd-timeline__extra">{extra}</span>
-            {:else}
-              <span class="cd-timeline__extra">{@render extra()}</span>
-            {/if}
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </li>
-{/if}
-
-<style>
-  /* 单项 dashed 覆盖：作用于自身 tail，优先于父级 solid。 */
-  .cd-timeline__item--dashed .cd-timeline__tail {
-    border-inline-start-style: dashed;
-  }
-  :global(.cd-timeline--horizontal) .cd-timeline__item--dashed .cd-timeline__tail {
-    border-inline-start: none;
-    border-block-start-style: dashed;
-  }
-</style>
+<!-- Semi Timeline.Item 将 onClick 直接挂在 <li> 上（无键盘等价，节点本身非交互控件），此处忠实对齐。 -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<li class={itemCls} {style} onclick={onClick}>
+  <div class="cd-timeline-item-tail" aria-hidden="true"></div>
+  <div class={headCls} style={headStyle} aria-hidden="true">
+    {#if dot}
+      {#if typeof dot === 'string'}{dot}{:else}{@render dot()}{/if}
+    {/if}
+  </div>
+  <div class="cd-timeline-item-content">
+    {@render children?.()}
+    {#if extra}
+      <div class="cd-timeline-item-content-extra">
+        {#if typeof extra === 'string'}{extra}{:else}{@render extra()}{/if}
+      </div>
+    {/if}
+    {#if time}
+      <div class="cd-timeline-item-content-time">
+        {#if typeof time === 'string'}{time}{:else}{@render time()}{/if}
+      </div>
+    {/if}
+  </div>
+</li>
