@@ -143,7 +143,7 @@ export {
 export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
 
 // --- M4 Show ---
-export { Tag, TagGroup, SplitTagGroup, tagMeta, tagGroupMeta, splitTagGroupMeta } from './tag/index.js';
+export { Tag, TagGroup, SplitTagGroup, tagMeta } from './tag/index.js';
 export {
   ScrollList,
   ScrollItem,

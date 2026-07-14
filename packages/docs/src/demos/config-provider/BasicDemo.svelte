@@ -25,7 +25,7 @@
     <div style="display:flex; gap:12px">
       <Button type="primary">主要按钮</Button>
       <Button>次要按钮</Button>
-      <Tag color="success">标签</Tag>
+      <Tag color="green">标签</Tag>
     </div>
   </div>
 </ConfigProvider>
@@ -43,7 +43,7 @@
       </p>
       <div style="display:flex; gap:12px">
         <Button type="primary">主要按钮</Button>
-        <Tag color="success">标签</Tag>
+        <Tag color="green">标签</Tag>
       </div>
     </div>
   </ConfigProvider>

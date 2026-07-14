@@ -10,7 +10,7 @@
     {#snippet children({ width })}
       {@const compact = width < BREAKPOINT}
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px">
-        <Tag color={compact ? 'warning' : 'primary'}>
+        <Tag color={compact ? 'orange' : 'blue'}>
           {compact ? '紧凑（纵向）' : '宽屏（横向）'}
         </Tag>
         <Text type="tertiary" size="small">{Math.round(width)} px</Text>

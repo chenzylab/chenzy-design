@@ -45,7 +45,7 @@
 {/snippet}
 
 {#snippet statusCell({ record }: { value: unknown; record: Row; index: number })}
-  <Tag color={record.status === 'online' ? 'success' : 'grey'}>
+  <Tag color={record.status === 'online' ? 'green' : 'grey'}>
     {record.status === 'online' ? '在线' : '离线'}
   </Tag>
 {/snippet}

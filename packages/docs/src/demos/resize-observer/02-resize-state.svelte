@@ -7,7 +7,7 @@
 
 <Text type="tertiary">拖拽调整时显示“调整中”，松手静默后提交“调整完成”</Text>
 <div style="margin-top:8px; display:flex; align-items:center; gap:8px">
-  <Tag color={resizing ? 'warning' : 'success'}>
+  <Tag color={resizing ? 'orange' : 'green'}>
     {resizing ? '调整中…' : '空闲'}
   </Tag>
   {#if last}

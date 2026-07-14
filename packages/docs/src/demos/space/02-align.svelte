@@ -11,7 +11,7 @@
     <Space {align}>
       <div style={boxStyle}>{align}</div>
       <Button theme="solid" type="primary">按钮</Button>
-      <Tag color="success" size="large">标签</Tag>
+      <Tag color="green" size="large">标签</Tag>
     </Space>
   {/each}
 </Space>

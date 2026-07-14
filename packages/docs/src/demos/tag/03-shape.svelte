@@ -3,6 +3,6 @@
 </script>
 
 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  <Tag color="primary" shape="square">Square</Tag>
-  <Tag color="primary" shape="circle">Circle</Tag>
+  <Tag size="small" shape="circle" color="amber">small circle tag</Tag>
+  <Tag size="large" shape="circle" color="violet">large circle tag</Tag>
 </div>

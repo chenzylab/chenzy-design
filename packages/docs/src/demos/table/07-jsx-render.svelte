@@ -15,10 +15,10 @@
     [k: string]: unknown;
   };
 
-  const statusMeta: Record<Status, { label: string; color: 'success' | 'warning' | 'primary' }> = {
-    success: { label: '已交付', color: 'success' },
-    pending: { label: '已延期', color: 'warning' },
-    wait: { label: '待评审', color: 'primary' },
+  const statusMeta: Record<Status, { label: string; color: 'green' | 'orange' | 'blue' }> = {
+    success: { label: '已交付', color: 'green' },
+    pending: { label: '已延期', color: 'orange' },
+    wait: { label: '待评审', color: 'blue' },
   };
 
   const columns = [

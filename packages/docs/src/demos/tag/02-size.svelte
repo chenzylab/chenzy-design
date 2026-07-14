@@ -3,7 +3,6 @@
 </script>
 
 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  <Tag type="light" color="primary">Light</Tag>
-  <Tag type="solid" color="primary">Solid</Tag>
-  <Tag type="ghost" color="primary">Ghost</Tag>
+  <Tag size="small" color="light-blue">small tag</Tag>
+  <Tag size="large" color="cyan">large tag</Tag>
 </div>

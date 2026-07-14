@@ -21,19 +21,7 @@
 import type { TokenGroup } from './token-def.js';
 
 export const displayTokens = {
-  // ============================== Tag ==============================
-
-  'height-tag-small': { value: '20px', category: 'height', label: '小尺寸标签高度', usage: '小尺寸标签高度' },
-  'height-tag-large': { value: '24px', category: 'height', label: '大尺寸标签高度', usage: '大尺寸标签高度' },
-  'radius-tag': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '标签圆角', usage: '标签圆角大小' },
-
-  'spacing-tag-small-paddingy': { value: '2px', category: 'spacing', label: '小标签垂直内边距', usage: '小尺寸标签垂直方向内边距' },
-  'spacing-tag-small-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '小标签水平内边距', usage: '小尺寸标签水平方向内边距' },
-
-  'spacing-tag-large-paddingy': { value: '4px', category: 'spacing', label: '大标签垂直内边距', usage: '大尺寸标签垂直方向内边距' },
-
-  'color-tag-close-icon-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '关闭按钮色', usage: '可删除的标签删除按钮颜色' },
-  'color-tag-close-icon-hover': { value: 'var(--cd-color-text-1)', category: 'color', label: '关闭按钮悬浮色', usage: '可删除的标签删除按钮颜色 - 悬浮' },
+  // Tag / TagGroup / SplitTagGroup 的 token 已迁至独立 tag.ts（对齐 Semi tag/variables.scss，单层无中间变量）。
 
   // ============================== Avatar ==============================
   // 原始层完整镜像 Semi avatar/variables.scss（值 1:1 对齐 2.89）。
@@ -255,23 +243,6 @@ export const displayTokens = {
   // chenzy-design 四组件实际消费的补充 token（短名，Semi 无 / 命名差异；组件消费）。
   // 值 var() 到上方对齐 Semi 的组件 token 或 alias，形成单向引用（无自引用死循环）。
   // ====================================================================
-  // —— Tag（组件消费） ——
-  'tag-height-default': { value: 'var(--cd-height-tag-small)', category: 'height', label: '默认标签高度', usage: '默认标签高度（组件消费；对齐 Semi small=20px）' },
-  'tag-height-small': { value: 'var(--cd-height-tag-small)', category: 'height', label: '小标签高度', usage: '小标签高度（组件消费）' },
-  'tag-height-large': { value: 'var(--cd-height-tag-large)', category: 'height', label: '大标签高度', usage: '大标签高度（组件消费）' },
-  'tag-padding-x': { value: 'var(--cd-spacing-tag-small-paddingx)', category: 'spacing', label: '标签水平内边距', usage: '标签水平内边距（组件消费）' },
-  'tag-padding-y': { value: 'var(--cd-spacing-tag-small-paddingy)', category: 'spacing', label: '标签垂直内边距', usage: 'default/small 垂直内边距（组件消费）' },
-  'tag-padding-y-large': { value: 'var(--cd-spacing-tag-large-paddingy)', category: 'spacing', label: '大标签垂直内边距', usage: 'large 垂直内边距（组件消费）' },
-  'tag-radius': { value: 'var(--cd-radius-tag)', category: 'radius', label: '标签圆角', usage: '标签圆角（组件消费）' },
-  'tag-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '标签字号', usage: '标签字号（组件消费）' },
-  'tag-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '标签内元素间距', usage: '标签内 icon/文本间距（组件消费）' },
-  'tag-close-color': { value: 'var(--cd-color-tag-close-icon-default)', category: 'color', label: '关闭按钮色', usage: '关闭按钮颜色（组件消费）' },
-  'tag-close-color-hover': { value: 'var(--cd-color-tag-close-icon-hover)', category: 'color', label: '关闭按钮悬浮色', usage: '关闭按钮悬浮颜色（组件消费）' },
-  // colorful（AI 多彩标签）：蓝→紫渐变，与 Button/FloatButton colorful 同源，保持 AI 视觉统一。
-  'tag-colorful-from': { value: '#4d6bff', category: 'color', label: 'Colorful 渐变起始色', usage: 'colorful（AI 多彩）蓝→紫渐变起始色', editable: true },
-  'tag-colorful-via': { value: '#7b5cff', category: 'color', label: 'Colorful 渐变中间色', usage: 'colorful（AI 多彩）蓝→紫渐变中间色', editable: true },
-  'tag-colorful-to': { value: '#a64dff', category: 'color', label: 'Colorful 渐变结束色', usage: 'colorful（AI 多彩）蓝→紫渐变结束色', editable: true },
-
   // —— Avatar（组件消费；短名映射到 width-avatar-*） ——
   'avatar-size-extra-extra-small': { value: 'var(--cd-width-avatar-extra-extra-small)', category: 'width', label: '极小头像尺寸', usage: '极小头像尺寸（组件消费）' },
   'avatar-size-extra-small': { value: 'var(--cd-width-avatar-extra-small)', category: 'width', label: '超小头像尺寸', usage: '超小头像尺寸（组件消费）' },

@@ -18,9 +18,13 @@ const KNOWN_PREFIXES = new Set(
  */
 export function resolveTokenPrefix(lowerName: string, dir?: string): string {
   const candidates = [
+    // 连字符组件的 token 归属现以连字符全名归一（date-picker / overflow-list / tag-input …），
+    // 故连字符全名（dir 优先，其次 lowerName）最具体，须最优先，避免 tag-input 被首段 tag 误命中。
+    dir || '',
+    lowerName,
     lowerName.replace(/-/g, ''),
     dir ? dir.replace(/-/g, '') : '',
-    // 多词组件常以首段命名 token（date-picker→date、overflow-list→overflow）
+    // 兜底：少数组件仍以首段命名 token（历史遗留），置于末位。
     dir ? dir.split('-')[0] : '',
     lowerName.split('-')[0],
   ].filter(Boolean);

@@ -8,7 +8,7 @@
   </svg>
 {/snippet}
 {#snippet recommended()}
-  <Tag color="primary" style="margin: 0;">Recommended</Tag>
+  <Tag color="blue" style="margin: 0;">Recommended</Tag>
 {/snippet}
 
 <Collapse>

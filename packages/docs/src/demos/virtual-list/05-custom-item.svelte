@@ -10,8 +10,8 @@
     done: i % 4 === 0,
   }));
 
-  const colorOf = (lv: Row['level']): 'danger' | 'warning' | 'success' =>
-    lv === 'P0' ? 'danger' : lv === 'P1' ? 'warning' : 'success';
+  const colorOf = (lv: Row['level']): 'red' | 'orange' | 'green' =>
+    lv === 'P0' ? 'red' : lv === 'P1' ? 'orange' : 'green';
 </script>
 
 <Text type="tertiary">自定义项渲染（renderItem 内组合 Tag + 富结构，固定行高 52px）</Text>

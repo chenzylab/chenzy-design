@@ -19,7 +19,7 @@
     <Text type="tertiary">
       reducedMotion={String(reduce)} · reduced={String(applied)}
     </Text>
-    <Tag color={applied ? 'warning' : 'success'}>
+    <Tag color={applied ? 'orange' : 'green'}>
       {applied ? '动画已降级' : '动画正常'}
     </Tag>
   </div>
