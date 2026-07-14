@@ -32,6 +32,7 @@
   dataSource={data}
   rowKey="key"
   bordered
+  scroll={{ y: 240, scrollToFirstRowOnChange: true }}
   pagination={{
     pageSize: 8,
     current,

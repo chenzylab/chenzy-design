@@ -16,6 +16,11 @@ export interface ColumnDef<T> {
   dataIndex?: keyof T & string;
   /** 表头文案 */
   title: string;
+  /**
+   * 子列（表头合并，对齐 Semi column.children）。父列只作表头分组，
+   * 数据渲染下沉到叶子列；父列 title 横跨其全部叶子列。
+   */
+  children?: ColumnDef<T>[];
   /** 列宽 */
   width?: number | string;
   /** 固定列：横向滚动时左/右侧 sticky 锁定（需配合 width 数值） */
@@ -24,8 +29,12 @@ export interface ColumnDef<T> {
   resizable?: boolean;
   /** 对齐方式，默认 left */
   align?: Align;
+  /** 列样式名（作用于 col / th / td，对齐 Semi column.className） */
+  className?: string;
   /** 单元格溢出省略 */
   ellipsis?: boolean;
+  /** 筛选确认模式：immediate 立即生效 / confirm 需点确定（对齐 Semi filterConfirmMode） */
+  filterConfirmMode?: 'immediate' | 'confirm';
   /** true 按 dataIndex 默认比较；或自定义比较器 */
   sorter?: boolean | ((a: T, b: T) => number);
   /** 受控排序状态（当前列）*/
@@ -40,8 +49,35 @@ export interface ColumnDef<T> {
   filterMultiple?: boolean;
   /** 行是否匹配某筛选值；缺省时按 dataIndex 全等比较 */
   onFilter?: (value: string | number, record: T) => boolean;
-  /** 单元格自定义渲染 */
-  render?: Snippet<[{ value: unknown; record: T; index: number }]>;
+  /**
+   * 是否完全自定义渲染（对齐 Semi useFullRender）。开启后 render 额外收到
+   * { selection, expandIcon, indentText } 物料，由使用方自行摆放，组件不再
+   * 自动前置缩进/展开图标/选择框。
+   */
+  useFullRender?: boolean;
+  /** 单元格自定义渲染。useFullRender 时额外收到 selection/expandIcon/indentText 物料 Snippet。 */
+  render?: Snippet<
+    [
+      {
+        value: unknown;
+        record: T;
+        index: number;
+        selection?: Snippet;
+        expandIcon?: Snippet;
+        indentText?: Snippet;
+      },
+    ]
+  >;
+  /**
+   * 设置单元格属性（对齐 Semi column.onCell）。返回 { colSpan, rowSpan } 实现行列合并：
+   * 值为 0 时该单元格不渲染（被合并进相邻格）；也可返回 style/className。
+   */
+  onCell?: (record: T, rowIndex: number) => {
+    colSpan?: number;
+    rowSpan?: number;
+    style?: string;
+    className?: string;
+  };
 }
 
 export interface Expandable<T> {

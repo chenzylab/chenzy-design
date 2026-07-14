@@ -15,7 +15,7 @@
   后代部分选中父行半选 indeterminate），true=父子独立(向后兼容)。联动 {checked,half} 经 core
   conductRows/toggleRowCheck 纯函数据整棵可见行树派生 (红线 #2)；内部存叶子级 base，
   onChange 回传含父行的完整 checked 集；半选写 input.indeterminate 复用 attachment (红线 #3)。
-  行虚拟滚动：virtualized=true 时 .cd-table-wrap 自身纵向滚动(固定 height)，thead sticky 固定顶部，
+  行虚拟滚动：virtualized=true 时 .cd-table-body 自身纵向滚动(固定 height)，thead sticky 固定顶部，
   tbody 仅渲染视口内行切片(复用 core fixedRange 算可见区间)，首尾各一个 padding spacer tr 撑出
   未渲染行总高(保持原生 <table>/<tr>/<td> 语义与 a11y)。scrollTop 命令式 scroll 回调 + rAF 节流写入
   本地 $state，可见区间纯 $derived render 期只读(红线 #2/#3)。virtualized 与 pagination 互斥(虚拟时
@@ -45,6 +45,13 @@
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
+  import {
+    IconCaretup,
+    IconCaretdown,
+    IconFilter,
+    IconChevronRight,
+    IconTreeTriangleRight,
+  } from '@chenzy-design/icons';
   import { floating } from '../_floating/use-floating.js';
   import { useDismiss } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
@@ -126,6 +133,14 @@
     hideExpandedColumn = true,
     rowSpanHover = false,
     headerStyle,
+    direction = 'ltr',
+    title,
+    footer,
+    childrenRecordName,
+    class: className,
+    style,
+    components,
+    getVirtualizedListRef,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -199,9 +214,9 @@
     /** 筛选浮层挂载容器，默认跟随触发按钮 */
     getPopupContainer?: () => HTMLElement;
     /** 行级事件与属性（返回 onClick/onDoubleClick/className/style） */
-    onRow?: (record: T, index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onRow?: (record: T, index: number, rowStatus?: { disabled?: boolean; selected?: boolean }) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 表头行级事件与属性 */
-    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 点击行体时触发展开/收起，默认 false */
     expandRowByClick?: boolean;
     /** 展开图标列固定方向 */
@@ -224,7 +239,7 @@
     /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
     onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
     /** 分组标题行的自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头行 tr。groupBy 时生效 */
-    onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 表格顶部标题区域 */
     titleSnippet?: Snippet;
     /** 表格底部内容区域（接收 currentData） */
@@ -248,7 +263,46 @@
     rowSpanHover?: boolean;
     /** 表头单元格（所有 th，含 fixed 表头）的自定义内联样式。字符串或键值对象 */
     headerStyle?: string | Record<string, string>;
+    /** RTL/LTR 方向，默认 ltr（对齐 Semi direction） */
+    direction?: 'ltr' | 'rtl';
+    /** 表格标题（字符串；富内容用 titleSnippet） */
+    title?: string;
+    /** 表格尾部（字符串；富内容用 footerSnippet） */
+    footer?: string;
+    /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi childrenRecordName；tree.childrenColumnName 优先） */
+    childrenRecordName?: string;
+    /** 最外层 .cd-table-wrapper 自定义样式名（对齐 Semi className） */
+    class?: string;
+    /** 最外层 .cd-table-wrapper 内联样式（对齐 Semi style） */
+    style?: string;
+    /**
+     * 覆盖组成元素的 tag 名（对齐 Semi components）。Svelte 侧以标签名字符串生效，
+     * 经 <svelte:element> 渲染，内部 class/role/事件仍注入。缺省用原生
+     * table/thead/tbody/tr/th/td。常见用法：body.row='div' 配合拖拽库。
+     */
+    components?: {
+      table?: string;
+      header?: { wrapper?: string; row?: string; cell?: string };
+      body?: { wrapper?: string; row?: string; cell?: string };
+    };
+    /**
+     * 返回虚拟化滚动控制句柄（对齐 Semi getVirtualizedListRef）。仅 virtualized 时有效。
+     * 句柄含 scrollTo(offset) 与 scrollToItem(index)，命令式驱动表体滚动。
+     */
+    getVirtualizedListRef?: (ref: {
+      scrollTo: (offset: number) => void;
+      scrollToItem: (index: number) => void;
+    }) => void;
   } = $props();
+
+  // 解析各槽位 tag，缺省回退原生（对齐 Semi DEFAULT_COMPONENTS）。
+  const tagTable = $derived(components?.table ?? 'table');
+  const tagThead = $derived(components?.header?.wrapper ?? 'thead');
+  const tagTbody = $derived(components?.body?.wrapper ?? 'tbody');
+  const tagHeaderRow = $derived(components?.header?.row ?? 'tr');
+  const tagHeaderCell = $derived(components?.header?.cell ?? 'th');
+  const tagBodyRow = $derived(components?.body?.row ?? 'tr');
+  const tagBodyCell = $derived(components?.body?.cell ?? 'td');
 
   const loc = useLocale();
   // 单例 live region（polite）：排序结果播报给屏幕阅读器（命令式写入在事件回调，红线 #3）。
@@ -260,6 +314,59 @@
 
   const colKeyOf = (col: ColumnDef<T>, index: number): string =>
     col.key ?? col.dataIndex ?? String(index);
+
+  // --- 表头合并（column.children）：叶子列驱动 body/ColGroup/固定列，父列只作表头分组 ---
+  // 无 children 时 leafColumns 与 columns 等价（零行为变化）。
+  function flattenLeaves(cols: ColumnDef<T>[]): ColumnDef<T>[] {
+    const out: ColumnDef<T>[] = [];
+    for (const c of cols) {
+      if (c.children && c.children.length > 0) out.push(...flattenLeaves(c.children));
+      else out.push(c);
+    }
+    return out;
+  }
+  const leafColumns = $derived(flattenLeaves(columns));
+  const hasHeaderMerge = $derived(columns.some((c) => c.children && c.children.length > 0));
+
+  function leafCount(col: ColumnDef<T>): number {
+    if (!col.children || col.children.length === 0) return 1;
+    return col.children.reduce((s, c) => s + leafCount(c), 0);
+  }
+  const headerDepth = $derived.by(() => {
+    const depth = (col: ColumnDef<T>): number =>
+      col.children && col.children.length > 0 ? 1 + Math.max(...col.children.map(depth)) : 1;
+    return columns.length ? Math.max(...columns.map(depth)) : 1;
+  });
+  interface HeaderCell {
+    col: ColumnDef<T>;
+    colSpan: number;
+    rowSpan: number;
+    leafIndex: number; // 叶子格：其在 leafColumns 的下标；父分组格：-1
+    isLeaf: boolean;
+  }
+  // 二维表头：rows[r] 是第 r 行的表头格序列。叶子列 rowSpan 纵向合并到底行。
+  const headerRows = $derived.by<HeaderCell[][]>(() => {
+    const depth = headerDepth;
+    const rows: HeaderCell[][] = Array.from({ length: depth }, () => []);
+    const walk = (col: ColumnDef<T>, rowIndex: number, startLeaf: number): void => {
+      if (!col.children || col.children.length === 0) {
+        rows[rowIndex]?.push({ col, colSpan: 1, rowSpan: depth - rowIndex, leafIndex: startLeaf, isLeaf: true });
+      } else {
+        rows[rowIndex]?.push({ col, colSpan: leafCount(col), rowSpan: 1, leafIndex: -1, isLeaf: false });
+        let childLeaf = startLeaf;
+        for (const child of col.children) {
+          walk(child, rowIndex + 1, childLeaf);
+          childLeaf += leafCount(child);
+        }
+      }
+    };
+    let cursor = 0;
+    for (const col of columns) {
+      walk(col, 0, cursor);
+      cursor += leafCount(col);
+    }
+    return rows;
+  });
 
   // --- 列宽拖拽：本地覆盖宽度 (colKey → px)，不写回 columns prop (红线 #1) ---
   const MIN_COL_WIDTH = 40;
@@ -325,8 +432,8 @@
   );
   function initSort(): SortState {
     // Check for per-column defaultSortOrder
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.defaultSortOrder != null) {
         return { key: colKeyOf(col, i), order: col.defaultSortOrder };
       }
@@ -375,7 +482,7 @@
   }
   // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
   function emitFilterChange(colKey: string, values: (string | number)[]) {
-    const col = columns.find((c, i) => colKeyOf(c, i) === colKey);
+    const col = leafColumns.find((c, i) => colKeyOf(c, i) === colKey);
     onFilterChange?.({ dataIndex: col?.dataIndex ?? colKey, values });
     emitChange('filter');
   }
@@ -409,8 +516,8 @@
   const processed = $derived.by(() => {
     let data = [...dataSource];
     // 列筛选（多列 AND）
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       const ck = colKeyOf(col, i);
       if (isEffectivelyFiltered(col, ck)) {
         const selected = effectiveFilterValues(col, ck);
@@ -429,7 +536,7 @@
     const { key, order } = currentSort;
     if (key && order) {
       let target: ColumnDef<T> | undefined;
-      columns.forEach((col, i) => {
+      leafColumns.forEach((col, i) => {
         if (colKeyOf(col, i) === key) target = col;
       });
       if (target && target.sorter) {
@@ -492,7 +599,7 @@
   // 受控 tree.expandedRowKeys 不回写，仅 onExpand 通知 (红线 #1)。
   const treeEnabled = $derived(tree !== undefined && tree !== false);
   const treeOpts = $derived<TreeTable>(typeof tree === 'object' ? tree : {});
-  const childrenColumnName = $derived(treeOpts.childrenColumnName ?? 'children');
+  const childrenColumnName = $derived(treeOpts.childrenColumnName ?? childrenRecordName ?? 'children');
   const indentSize = $derived(treeOpts.indentSize ?? indentSizeProp);
 
   function getChildren(record: T): T[] | undefined {
@@ -576,6 +683,8 @@
   // 仅依赖本地 $state，render 期只读不读 DOM（红线 #2）。
   const VIRTUAL_OVERSCAN = 4;
   let scrollEl = $state<HTMLDivElement | null>(null);
+  // 最外层 wrapper 引用（scrollToFirstRowOnChange 无 scroll.y 时滚入视口）
+  let wrapperEl = $state<HTMLDivElement | null>(null);
   // 仅由 scroll 回调写入的本地 scrollTop，render 期只读。
   let scrollTop = $state(0);
   // rAF 节流句柄（非响应式）。
@@ -585,6 +694,22 @@
 
   const vRowHeight = $derived(rowHeight > 0 ? rowHeight : 48);
   const vTotalHeight = $derived(displayRows.length * vRowHeight);
+
+  // getVirtualizedListRef：virtualized 时把滚动控制句柄回传给使用方（对齐 Semi）。
+  // scrollTo(offset) 直接设 scrollTop；scrollToItem(index) 按行高换算偏移。命令式，非响应式读。
+  $effect(() => {
+    if (!virtualized || !scrollEl || !getVirtualizedListRef) return;
+    const el = scrollEl;
+    const rowH = vRowHeight;
+    getVirtualizedListRef({
+      scrollTo: (offset: number) => {
+        el.scrollTop = offset;
+      },
+      scrollToItem: (index: number) => {
+        el.scrollTop = index * rowH;
+      },
+    });
+  });
   const vRange = $derived(
     virtualized
       ? fixedRange(scrollTop, height, vRowHeight, displayRows.length, VIRTUAL_OVERSCAN)
@@ -683,7 +808,7 @@
   // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
   const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
   const colSpan = $derived(
-    columns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
+    leafColumns.length + (hasSelection ? 1 : 0) + (expandAsColumn ? 1 : 0),
   );
 
   // 表头行内联 style：headerStyle 支持字符串或键值对象，统一序列化为 style 字符串。
@@ -878,7 +1003,7 @@
   const gridId = useId('cd-table-grid');
   // 网格列扁平表：前置 expand/selection 占位列 + 数据列（纯函数 buildGridCols）。
   const gridCols = $derived<GridCol[]>(
-    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: columns.length }),
+    buildGridCols({ hasExpand: expandAsColumn, hasSelection, dataColumnCount: leafColumns.length }),
   );
   const gridColCount = $derived(gridCols.length);
   // 总行数（含表头行）= aria-rowcount，虚拟化时为逻辑总数而非渲染数（spec §6）。
@@ -1005,7 +1130,7 @@
     const cell = gridEl?.querySelector<HTMLElement>(`#${cssEscape(cellId(focusRow, focusCol))}`);
     if (!cell) return false;
     const focusable = cell.querySelector<HTMLElement>(
-      'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]):not(.cd-table__cell)',
+      'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]):not(.cd-table-row-cell)',
     );
     if (!focusable) return false;
     cellInteractive = true;
@@ -1046,7 +1171,7 @@
   // 当前各列筛选选中值（colKey → values[]），仅含非空筛选列。
   function snapshotFilters(): Record<string, (string | number)[]> {
     const out: Record<string, (string | number)[]> = {};
-    columns.forEach((col, i) => {
+    leafColumns.forEach((col, i) => {
       const ck = colKeyOf(col, i);
       const vals = filterState.get(ck);
       if (vals && vals.size > 0) out[ck] = [...vals];
@@ -1069,6 +1194,18 @@
       sorter: sorterOverride ?? currentSort,
       extra: { action },
     });
+    maybeScrollToFirstRow();
+  }
+
+  // scroll.scrollToFirstRowOnChange：分页/排序/筛选变化后滚到表格顶部（对齐 Semi）。
+  // scroll.y 时重置表体内部滚动到顶；否则把表格滚入视口顶部。命令式写 DOM，非响应式。
+  function maybeScrollToFirstRow() {
+    if (!scroll?.scrollToFirstRowOnChange) return;
+    if (scroll.y != null && scrollEl) {
+      scrollEl.scrollTop = 0;
+    } else if (wrapperEl) {
+      wrapperEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   }
 
   // --- 排序点击 ---
@@ -1131,17 +1268,30 @@
     if (w === undefined) return undefined;
     return typeof w === 'number' ? `width:${w}px` : `width:${w}`;
   }
+  // ColGroup <col> 宽度：对齐 Semi（width + minWidth 同值），无宽则不设。
+  function colGroupStyle(col: ColumnDef<T>, index: number): string | undefined {
+    const w = resolveWidth(col, index);
+    if (w === undefined) return undefined;
+    const v = typeof w === 'number' ? `${w}px` : w;
+    return `width:${v};min-width:${v}`;
+  }
+  // 选择列宽度：rowSelection.columnWidth 优先，否则 Semi 默认 48px（对齐 LEADING_W）。
+  const selectionColWidth = $derived(
+    typeof rowSelection?.columnWidth === 'number'
+      ? rowSelection.columnWidth
+      : 48,
+  );
 
   // --- 固定列：纯 CSS sticky + 逐列像素偏移计算 ---
-  // selection / expand 前置列宽（与 CSS .cd-table__cell--selection/--expand 对齐）
+  // selection / expand 前置列宽（与 CSS .cd-table-column-selection/--expand 对齐）
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
   const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
-  const hasFixed = $derived(columns.some((c) => c.fixed));
+  const hasFixed = $derived(leafColumns.some((c) => c.fixed));
   // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
   const totalMinWidth = $derived(
     leadingWidth +
-      columns.reduce((sum, c, i) => {
+      leafColumns.reduce((sum, c, i) => {
         const w = resolveWidth(c, i);
         return sum + (typeof w === 'number' ? w : 120);
       }, 0),
@@ -1157,8 +1307,8 @@
   const fixedLeftOffsets = $derived.by(() => {
     const out: (number | null)[] = [];
     let acc = leadingWidth;
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = 0; i < leafColumns.length; i++) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.fixed === 'left') {
         out.push(acc);
         acc += colNumWidth(col, i);
@@ -1170,10 +1320,10 @@
   });
   // 每个数据列的 right 偏移（右固定列）：之后所有右固定列宽之和
   const fixedRightOffsets = $derived.by(() => {
-    const out: (number | null)[] = new Array(columns.length).fill(null);
+    const out: (number | null)[] = new Array(leafColumns.length).fill(null);
     let acc = 0;
-    for (let i = columns.length - 1; i >= 0; i--) {
-      const col = columns[i] as ColumnDef<T>;
+    for (let i = leafColumns.length - 1; i >= 0; i--) {
+      const col = leafColumns[i] as ColumnDef<T>;
       if (col.fixed === 'right') {
         out[i] = acc;
         acc += colNumWidth(col, i);
@@ -1184,12 +1334,12 @@
   // 最后一个左固定列 / 第一个右固定列索引（用于阴影边界）
   const lastLeftFixed = $derived.by(() => {
     let idx = -1;
-    columns.forEach((c, i) => {
+    leafColumns.forEach((c, i) => {
       if (c.fixed === 'left') idx = i;
     });
     return idx;
   });
-  const firstRightFixed = $derived(columns.findIndex((c) => c.fixed === 'right'));
+  const firstRightFixed = $derived(leafColumns.findIndex((c) => c.fixed === 'right'));
 
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
@@ -1205,10 +1355,10 @@
 
   function fixedCellClass(i: number): string {
     if (fixedLeftOffsets[i] != null) {
-      return `cd-table__cell--fixed cd-table__cell--fixed-left${i === lastLeftFixed ? ' cd-table__cell--fixed-left-last' : ''}`;
+      return `cd-table-cell-fixed cd-table-cell-fixed-left${i === lastLeftFixed ? ' cd-table-cell-fixed-left-last' : ''}`;
     }
     if (fixedRightOffsets[i] != null) {
-      return `cd-table__cell--fixed cd-table__cell--fixed-right${i === firstRightFixed ? ' cd-table__cell--fixed-right-first' : ''}`;
+      return `cd-table-cell-fixed cd-table-cell-fixed-right${i === firstRightFixed ? ' cd-table-cell-fixed-right-first' : ''}`;
     }
     return '';
   }
@@ -1219,7 +1369,14 @@
     const offset = slot === 'expand' ? 0 : expandAsColumn ? LEADING_W : 0;
     return `position:sticky;inset-inline-start:${offset}px`;
   }
-  const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
+  const leadingFixedClass = $derived(hasFixed && lastLeftFixed >= 0 ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
+
+  // 单元格 style 合并：把 onCell 返回的自定义 style 追加到该 td 已有的 sticky/宽度 style 之后。
+  function mergeCellStyle(base: string | undefined, extra: string | undefined): string | undefined {
+    if (!extra) return base;
+    if (!base) return extra;
+    return `${base};${extra}`;
+  }
 
   // 表头单元格 style 合并：把 headerStyle（应用到所有 th）追加到该 th 已有的 sticky/宽度 style 之后。
   function mergeHeaderStyle(base: string | undefined): string | undefined {
@@ -1239,11 +1396,11 @@
   const cls = $derived(
     [
       'cd-table',
-      `cd-table--${size}`,
-      bordered && 'cd-table--bordered',
-      stripe && 'cd-table--stripe',
-      hasFixed && 'cd-table--fixed',
-      rowSpanHover && 'cd-table--row-span-hover',
+      `cd-table-${size}`,
+      bordered && 'cd-table-bordered',
+      stripe && 'cd-table-stripe',
+      hasFixed && 'cd-table-fixed',
+      rowSpanHover && 'cd-table-row-span-hover',
     ]
       .filter(Boolean)
       .join(' '),
@@ -1297,7 +1454,7 @@
     }
     return parts.length ? parts.join(';') : undefined;
   });
-  const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table__cell--fixed cd-table__cell--fixed-left' : '');
+  const selectionFixedClass = $derived(rowSelection?.fixed ? 'cd-table-cell-fixed cd-table-cell-fixed-left' : '');
 
   // --- groupBy: build grouped display rows ---
   type GroupRow = { type: 'group'; groupKey: string; group: T[]; expanded: boolean; groupIndex: number };
@@ -1389,8 +1546,8 @@
 {#snippet expandButton(record: T, key: RowKey, gridTab: number | undefined)}
   <button
     type="button"
-    class="cd-table__expand-btn"
-    class:cd-table__expand-btn--open={expandedSet.has(key)}
+    class="cd-table-expand-icon"
+    class:cd-table-expandedIcon-show={expandedSet.has(key)}
     aria-expanded={expandedSet.has(key)}
     aria-label={expandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
     tabindex={gridTab}
@@ -1402,25 +1559,34 @@
     {#if expandIcon}
       {@render expandIcon({ expanded: expandedSet.has(key), record })}
     {:else}
-      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-      </svg>
+      <IconChevronRight size="small" aria-hidden="true" />
     {/if}
   </button>
 {/snippet}
 
-{#if titleSnippet}
-  <div class="cd-table__title-area">
-    {@render titleSnippet()}
-  </div>
-{/if}
+<!-- 最外层 .semi-table-wrapper（含方向 ltr/rtl），对齐 Semi 分层 -->
 <div
-  class="cd-table-wrap"
-  class:cd-table-wrap--virtual={virtualized}
-  class:cd-table-wrap--scroll-body={scrollBody}
-  bind:this={scrollEl}
-  style={scrollWrapStyle}
+  class="cd-table-wrapper cd-table-wrapper-{direction} {className ?? ''}"
+  class:cd-table-wrapper-rtl={direction === 'rtl'}
+  data-column-fixed={hasFixed ? 'true' : undefined}
+  dir={direction}
+  {style}
+  bind:this={wrapperEl}
 >
+  {#if titleSnippet || title}
+    <div class="cd-table-title">
+      {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
+    </div>
+  {/if}
+  <!-- .semi-table-container：承载 body + footer -->
+  <div class="cd-table-container">
+    <div
+      class="cd-table-body"
+      class:cd-table-body-virtual={virtualized}
+      class:cd-table-body-scroll={scrollBody}
+      bind:this={scrollEl}
+      style={scrollWrapStyle}
+    >
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- role=grid 是交互容器；tabindex=-1 仅作虚拟化焦点回收落点，不进 Tab 序列 -->
   <table
@@ -1434,24 +1600,41 @@
     tabindex={gridEnabled ? -1 : undefined}
     onkeydown={gridEnabled ? onGridKeydown : undefined}
   >
+    <!-- ColGroup：对齐 Semi，每列一个 <col>，selection/expand 列带对应 class -->
+    <colgroup class="cd-table-colgroup">
+      {#if expandAsColumn}
+        <col class="cd-table-column-expand" style="width:{LEADING_W}px" />
+      {/if}
+      {#if hasSelection}
+        <col class="cd-table-column-selection" style="width:{selectionColWidth}px" />
+      {/if}
+      {#each leafColumns as col, i (colKeyOf(col, i))}
+        <col class={col.className} style={colGroupStyle(col, i)} />
+      {/each}
+    </colgroup>
     {#if showHeader}
       {@const headerRowProps = onHeaderRow ? onHeaderRow(columns, 0) : undefined}
-    <thead
-      class="cd-table__head"
-      class:cd-table__head--sticky={isStickyHead}
+    <svelte:element
+      this={tagThead}
+      class="cd-table-thead"
+      class:cd-table-thead-sticky={isStickyHead}
       style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
     >
-      <tr
+      <svelte:element
+        this={tagHeaderRow}
         role={gridEnabled ? 'row' : undefined}
         aria-rowindex={gridEnabled ? 1 : undefined}
-        class={headerRowProps?.className ?? undefined}
+        class="cd-table-row {headerRowProps?.className ?? ''}"
         style={headerRowProps?.style ?? undefined}
         onclick={headerRowProps?.onClick ?? undefined}
+        onmouseenter={headerRowProps?.onMouseEnter ?? undefined}
+        onmouseleave={headerRowProps?.onMouseLeave ?? undefined}
       >
         {#if expandAsColumn}
           {@const gc = 0}
           <th
-            class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+            rowspan={hasHeaderMerge ? headerDepth : undefined}
+            class="cd-table-row-head cd-table-column-expand {leadingFixedClass}"
             scope="col"
             style={mergeHeaderStyle(leadingStyle('expand'))}
             role={gridEnabled ? 'columnheader' : undefined}
@@ -1466,7 +1649,8 @@
           {@const isRadio = rowSelection?.type === 'radio'}
           {@const showSelectAll = !isRadio && !rowSelection?.hideSelectAll}
           <th
-            class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
+            rowspan={hasHeaderMerge ? headerDepth : undefined}
+            class="cd-table-row-head cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
             scope="col"
             style={mergeHeaderStyle(selectionColStyle ?? leadingStyle('selection'))}
             role={gridEnabled ? 'columnheader' : undefined}
@@ -1476,30 +1660,71 @@
             onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
           >
             {#if showSelectAll}
-              <input
-                type="checkbox"
-                class="cd-table__checkbox"
-                aria-label={loc().t('Table.selectAll')}
-                checked={headerSelect.checked}
-                tabindex={childTabindex(-1, gc)}
-                {@attach indeterminate(headerSelect.indeterminate)}
-                onchange={onToggleAll}
-              />
+              <span class="cd-table-selection-wrap">
+                <input
+                  type="checkbox"
+                  class="cd-table-selection-checkbox"
+                  aria-label={loc().t('Table.selectAll')}
+                  checked={headerSelect.checked}
+                  tabindex={childTabindex(-1, gc)}
+                  {@attach indeterminate(headerSelect.indeterminate)}
+                  onchange={onToggleAll}
+                />
+              </span>
             {/if}
           </th>
         {/if}
-        {#each columns as col, i (colKeyOf(col, i))}
+        {#if !hasHeaderMerge}
+          {#each leafColumns as col, i (colKeyOf(col, i))}
+            {@render leafHeaderCell(col, i, 1)}
+          {/each}
+        {:else}
+          <!-- 合并模式首行：expand/selection th 已 rowspan 跨满，其后接 headerRows[0] -->
+          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+            {@render headerMergeCell(hc)}
+          {/each}
+        {/if}
+      </svelte:element>
+      {#if hasHeaderMerge}
+        {#each headerRows.slice(1) as hrow, ri (ri)}
+          <tr class="cd-table-row">
+            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+              {@render headerMergeCell(hc)}
+            {/each}
+          </tr>
+        {/each}
+      {/if}
+    </svelte:element>
+    {/if}
+    {#snippet headerMergeCell(hc: HeaderCell)}
+      {#if hc.isLeaf}
+        {@render leafHeaderCell(hc.col, hc.leafIndex, hc.rowSpan)}
+      {:else}
+        <th
+          class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
+          class:cd-table-row-cell-ellipsis={hc.col.ellipsis}
+          scope="colgroup"
+          colspan={hc.colSpan}
+          role={gridEnabled ? 'columnheader' : undefined}
+          style={mergeHeaderStyle(undefined)}
+        >
+          <span class="cd-table-row-head-title">{hc.col.title}</span>
+        </th>
+      {/if}
+    {/snippet}
+    {#snippet leafHeaderCell(col: ColumnDef<T>, i: number, thRowSpan: number)}
           {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
           {@const hasFilter = !!col.filters && col.filters.length > 0}
           {@const resizable = !!col.resizable}
           <th
-            class="cd-table__cell cd-table__cell--head cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
-            class:cd-table__cell--ellipsis={col.ellipsis}
-            class:cd-table__cell--has-filter={hasFilter}
-            class:cd-table__cell--resizable={resizable}
-            class:cd-table__cell--resizing={resizingKey === colKey}
+            rowspan={thRowSpan > 1 ? thRowSpan : undefined}
+            class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
+            class:cd-table-row-cell-ellipsis={col.ellipsis}
+            class:cd-table-row-head-has-filter={hasFilter}
+            class:cd-table-row-head-resizable={resizable}
+            class:resizing={resizingKey === colKey}
             scope="col"
             style={mergeHeaderStyle(cellStyle(col, i))}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
@@ -1513,43 +1738,29 @@
               {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
               <button
                 type="button"
-                class="cd-table__sort-btn"
+                class="cd-table-column-sorter-wrapper"
                 tabindex={childTabindex(-1, gc)}
                 onclick={() => onSort(col, i)}
               >
-                <span class="cd-table__title">{col.title}</span>
-                <span class="cd-table__sort-icons" aria-hidden="true">
-                  <svg
-                    class="cd-table__sort-up"
-                    class:cd-table__sort--active={order === 'ascend'}
-                    viewBox="0 0 8 5"
-                    width="8"
-                    height="5"
-                    focusable="false"
-                  >
-                    <path fill="currentColor" d="M4 0l4 5H0z" />
-                  </svg>
-                  <svg
-                    class="cd-table__sort-down"
-                    class:cd-table__sort--active={order === 'descend'}
-                    viewBox="0 0 8 5"
-                    width="8"
-                    height="5"
-                    focusable="false"
-                  >
-                    <path fill="currentColor" d="M4 5L0 0h8z" />
-                  </svg>
+                <span class="cd-table-row-head-title">{col.title}</span>
+                <span class="cd-table-column-sorter" aria-hidden="true">
+                  <span class="cd-table-column-sorter-up" class:on={order === 'ascend'}>
+                    <IconCaretup size="small" />
+                  </span>
+                  <span class="cd-table-column-sorter-down" class:on={order === 'descend'}>
+                    <IconCaretdown size="small" />
+                  </span>
                 </span>
               </button>
             {:else}
-              <span class="cd-table__title">{col.title}</span>
+              <span class="cd-table-row-head-title">{col.title}</span>
             {/if}
 
             {#if hasFilter}
               <button
                 type="button"
-                class="cd-table__filter-btn"
-                class:cd-table__filter-btn--active={isEffectivelyFiltered(col, colKey)}
+                class="cd-table-column-filter"
+                class:on={isEffectivelyFiltered(col, colKey)}
                 aria-label={loc().t('Table.filter')}
                 aria-expanded={openFilterKey === colKey}
                 tabindex={childTabindex(-1, gc)}
@@ -1559,21 +1770,19 @@
                   openFilterKey = openFilterKey === colKey ? null : colKey;
                 }}
               >
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M2 3h12l-4.5 5.5V13L6.5 11V8.5L2 3Z" />
-                </svg>
+                <IconFilter size="small" aria-hidden="true" />
               </button>
               {#if openFilterKey === colKey && filterTriggers[colKey]}
                 {@const filterMultiple = col.filterMultiple !== false}
                 <div
-                  class="cd-table__filter-panel"
+                  class="cd-table-column-filter-dropdown"
                   use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
                   bind:this={filterPanelEl}
                 >
-                  <ul class="cd-table__filter-list">
+                  <ul class="cd-table-column-filter-list">
                     {#each col.filters ?? [] as f (f.value)}
-                      <li class="cd-table__filter-option">
-                        <label class="cd-table__filter-label">
+                      <li class="cd-table-column-filter-item">
+                        <label class="cd-table-column-filter-label">
                           {#if filterMultiple}
                             <input
                               type="checkbox"
@@ -1596,11 +1805,11 @@
                       </li>
                     {/each}
                   </ul>
-                  <div class="cd-table__filter-actions">
-                    <button type="button" class="cd-table__filter-reset" onclick={() => resetFilter(colKey)}>
+                  <div class="cd-table-column-filter-actions">
+                    <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(colKey)}>
                       {loc().t('Table.filterReset')}
                     </button>
-                    <button type="button" class="cd-table__filter-confirm" onclick={() => (openFilterKey = null)}>
+                    <button type="button" class="cd-table-column-filter-confirm" onclick={() => (openFilterKey = null)}>
                       {loc().t('Table.filterConfirm')}
                     </button>
                   </div>
@@ -1610,7 +1819,7 @@
 
             {#if resizable}
               <span
-                class="cd-table__resize-handle"
+                class="react-resizable-handle"
                 role="separator"
                 aria-orientation="vertical"
                 aria-label={loc().t('Table.resizeColumn')}
@@ -1619,15 +1828,12 @@
               ></span>
             {/if}
           </th>
-        {/each}
-      </tr>
-    </thead>
-    {/if}
-    <tbody class="cd-table__body">
+    {/snippet}
+    <svelte:element this={tagTbody} class="cd-table-tbody">
       {#if visibleRows.length === 0}
-        <tr class="cd-table__row cd-table__row--empty" role={gridEnabled ? 'row' : undefined}>
+        <tr class="cd-table-row cd-table-row-placeholder" role={gridEnabled ? 'row' : undefined}>
           <td
-            class="cd-table__cell cd-table__cell--empty"
+            class="cd-table-row-cell cd-table-placeholder"
             colspan={colSpan}
             role={gridEnabled ? 'gridcell' : undefined}
             aria-colindex={gridEnabled ? 1 : undefined}
@@ -1642,14 +1848,16 @@
               {@const gRow = groupRow as GroupRow}
               {@const groupedRowProps = onGroupedRow ? onGroupedRow(gRow.group, gRow.groupIndex) : undefined}
               <tr
-                class="cd-table__row cd-table__row--group-header {groupedRowProps?.className ?? ''}"
-                class:cd-table__row--group-clickable={clickGroupedRowToExpand}
+                class="cd-table-row cd-table-row-section {groupedRowProps?.className ?? ''}"
+                class:cd-table-row-section-clickable={clickGroupedRowToExpand}
                 role={gridEnabled ? 'row' : undefined}
                 style={groupedRowProps?.style ?? undefined}
                 ondblclick={groupedRowProps?.onDoubleClick ?? undefined}
+                onmouseenter={groupedRowProps?.onMouseEnter ?? undefined}
+                onmouseleave={groupedRowProps?.onMouseLeave ?? undefined}
               >
                 <td
-                  class="cd-table__cell cd-table__cell--group-header"
+                  class="cd-table-row-cell cd-table-row-cell-section"
                   colspan={colSpan}
                   role={clickGroupedRowToExpand ? 'button' : undefined}
                   tabindex={clickGroupedRowToExpand ? 0 : undefined}
@@ -1669,13 +1877,11 @@
                 >
                   {#if clickGroupedRowToExpand}
                     <span
-                      class="cd-table__group-caret"
-                      class:cd-table__group-caret--open={gRow.expanded}
+                      class="cd-table-expand-icon"
+                      class:cd-table-expandedIcon-show={gRow.expanded}
                       aria-hidden="true"
                     >
-                      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-                      </svg>
+                      <IconChevronRight size="small" aria-hidden="true" />
                     </span>
                   {/if}
                   {#if renderGroupSection}
@@ -1696,13 +1902,13 @@
               {@const rowDisabled = disabledSet.has(key)}
               {@const extra = rowClassName ? rowClassName(record, index) : ''}
               {@const clickable = !!onRowClick || expandRowByClick}
-              {@const rowProps = onRow ? onRow(record, index) : undefined}
-              <tr
-                class="cd-table__row {extra} {rowProps?.className ?? ''}"
-                class:cd-table__row--selected={selected}
-                class:cd-table__row--stripe={stripe && index % 2 === 1}
-                class:cd-table__row--clickable={clickable}
-                class:cd-table__row--child={treeEnabled && row.level > 0}
+              {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
+              <svelte:element this={tagBodyRow}
+                class="cd-table-row {extra} {rowProps?.className ?? ''}"
+                class:cd-table-row-selected={selected}
+                class:cd-table-row-stripe={stripe && index % 2 === 1}
+                class:cd-table-row-clickable={clickable}
+                class:cd-table-row-child={treeEnabled && row.level > 0}
                 role={gridEnabled ? 'row' : undefined}
                 style={rowProps?.style ?? undefined}
                 onclick={(e) => {
@@ -1712,10 +1918,12 @@
                   if (rowProps?.onClick) rowProps.onClick(e);
                 }}
                 ondblclick={rowProps?.onDoubleClick ?? undefined}
+                onmouseenter={rowProps?.onMouseEnter ?? undefined}
+                onmouseleave={rowProps?.onMouseLeave ?? undefined}
               >
                 {#if expandAsColumn}
                   <td
-                    class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+                    class="cd-table-row-cell cd-table-column-expand {leadingFixedClass}"
                     style={leadingStyle('expand')}
                     role={gridEnabled ? 'gridcell' : undefined}
                   >
@@ -1727,14 +1935,15 @@
                 {#if hasSelection}
                   {@const isRadio = rowSelection?.type === 'radio'}
                   <td
-                    class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
+                    class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                     style={selectionColStyle ?? leadingStyle('selection')}
                     role={gridEnabled ? 'gridcell' : undefined}
                   >
+                    <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowDisabled}>
                     {#if isRadio}
                       <input
                         type="radio"
-                        class="cd-table__checkbox"
+                        class="cd-table-selection-checkbox"
                         aria-label={loc().t('Table.selectRow')}
                         checked={selected}
                         disabled={rowDisabled}
@@ -1744,7 +1953,7 @@
                     {:else}
                       <input
                         type="checkbox"
-                        class="cd-table__checkbox"
+                        class="cd-table-selection-checkbox"
                         aria-label={loc().t('Table.selectRow')}
                         checked={selected}
                         disabled={rowDisabled}
@@ -1753,61 +1962,71 @@
                         onchange={() => onToggleRow(record)}
                       />
                     {/if}
+                    </span>
                   </td>
                 {/if}
-                {#each columns as col, i (colKeyOf(col, i))}
+                {#each leafColumns as col, i (colKeyOf(col, i))}
                   {@const value = cellValue(col, record)}
                   <td
-                    class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
-                    class:cd-table__cell--ellipsis={col.ellipsis}
+                    class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
+                    class:cd-table-row-cell-ellipsis={col.ellipsis}
                     style={cellStyle(col, i)}
                   >
-                    {#if hasExpand && !expandAsColumn && i === 0}
-                      <span class="cd-table__expand-inline">
-                        {#if canExpand(record)}
-                          {@render expandButton(record, key, undefined)}
-                        {:else}
-                          <span class="cd-table__expand-btn cd-table__expand-btn--placeholder" aria-hidden="true"></span>
-                        {/if}
-                      </span>
-                    {/if}
-                    {#if treeEnabled && i === 0}
-                      <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
-                      {#if row.hasChildren}
-                        <button
-                          type="button"
-                          class="cd-table__tree-toggle"
-                          class:cd-table__tree-toggle--open={treeExpandedSet.has(key)}
-                          aria-expanded={treeExpandedSet.has(key)}
-                          aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                          onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
-                        >
-                          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-                          </svg>
-                        </button>
-                      {:else}
-                        <span class="cd-table__tree-toggle cd-table__tree-toggle--placeholder" aria-hidden="true"></span>
+                    {#snippet gExpandMaterial()}
+                      {#if hasExpand && !expandAsColumn && i === 0}
+                        <span class="cd-table-expand-icon-cell">
+                          {#if canExpand(record)}
+                            {@render expandButton(record, key, undefined)}
+                          {:else}
+                            <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
+                          {/if}
+                        </span>
                       {/if}
-                    {/if}
-                    {#if col.render}
-                      {@render col.render({ value, record, index })}
+                      {#if treeEnabled && i === 0}
+                        {#if row.hasChildren}
+                          <button
+                            type="button"
+                            class="cd-table-expand-icon"
+                            class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
+                            aria-expanded={treeExpandedSet.has(key)}
+                            aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                            onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
+                          >
+                            <IconTreeTriangleRight size="small" aria-hidden="true" />
+                          </button>
+                        {:else}
+                          <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
+                        {/if}
+                      {/if}
+                    {/snippet}
+                    {#snippet gIndentMaterial()}
+                      {#if treeEnabled && i === 0}
+                        <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                      {/if}
+                    {/snippet}
+                    {#if col.useFullRender && col.render}
+                      {@render col.render({ value, record, index, expandIcon: gExpandMaterial, indentText: gIndentMaterial })}
                     {:else}
-                      {cellText(value)}
+                      {#if i === 0}{@render gIndentMaterial()}{@render gExpandMaterial()}{/if}
+                      {#if col.render}
+                        {@render col.render({ value, record, index })}
+                      {:else}
+                        {cellText(value)}
+                      {/if}
                     {/if}
                   </td>
                 {/each}
-              </tr>
+              </svelte:element>
               {#if hasExpand && canExpand(record)}
                 {#if keepDOM}
-                  <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined} style={expandedSet.has(key) ? undefined : 'display:none'}>
-                    <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
+                  <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined} style={expandedSet.has(key) ? undefined : 'display:none'}>
+                    <td class="cd-table-row-cell cd-table-row-cell-expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
                       {@render expandable!.expandedRowRender({ record, index })}
                     </td>
                   </tr>
                 {:else if expandedSet.has(key)}
-                  <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
-                    <td class="cd-table__cell cd-table__cell--expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
+                  <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined}>
+                    <td class="cd-table-row-cell cd-table-row-cell-expanded-content" colspan={colSpan} role={gridEnabled ? 'gridcell' : undefined} aria-colindex={gridEnabled ? 1 : undefined}>
                       {@render expandable!.expandedRowRender({ record, index })}
                     </td>
                   </tr>
@@ -1817,7 +2036,7 @@
           {/each}
         {:else}
         {#if virtualized && vTopPad > 0}
-          <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
+          <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
             <td colspan={colSpan} style="block-size:{vTopPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
@@ -1831,13 +2050,13 @@
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
           {@const clickable = !!onRowClick || expandRowByClick}
-          {@const rowProps = onRow ? onRow(record, index) : undefined}
-          <tr
-            class="cd-table__row {extra} {rowProps?.className ?? ''}"
-            class:cd-table__row--selected={selected}
-            class:cd-table__row--stripe={stripe && index % 2 === 1}
-            class:cd-table__row--clickable={clickable}
-            class:cd-table__row--child={treeEnabled && row.level > 0}
+          {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
+          <svelte:element this={tagBodyRow}
+            class="cd-table-row {extra} {rowProps?.className ?? ''}"
+            class:cd-table-row-selected={selected}
+            class:cd-table-row-stripe={stripe && index % 2 === 1}
+            class:cd-table-row-clickable={clickable}
+            class:cd-table-row-child={treeEnabled && row.level > 0}
             role={gridEnabled ? 'row' : undefined}
             aria-rowindex={gridEnabled ? gridRow + 2 : undefined}
             aria-selected={gridEnabled && hasSelection ? selected : undefined}
@@ -1849,11 +2068,13 @@
               if (rowProps?.onClick) rowProps.onClick(e);
             }}
             ondblclick={rowProps?.onDoubleClick ?? undefined}
+            onmouseenter={rowProps?.onMouseEnter ?? undefined}
+            onmouseleave={rowProps?.onMouseLeave ?? undefined}
           >
             {#if expandAsColumn}
               {@const gc = 0}
               <td
-                class="cd-table__cell cd-table__cell--expand {leadingFixedClass}"
+                class="cd-table-row-cell cd-table-column-expand {leadingFixedClass}"
                 style={leadingStyle('expand')}
                 role={gridEnabled ? 'gridcell' : undefined}
                 id={gridEnabled ? cellId(gridRow, gc) : undefined}
@@ -1870,7 +2091,7 @@
               {@const gc = expandAsColumn ? 1 : 0}
               {@const isRadio = rowSelection?.type === 'radio'}
               <td
-                class="cd-table__cell cd-table__cell--selection {selectionFixedClass || leadingFixedClass}"
+                class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                 style={selectionColStyle ?? leadingStyle('selection')}
                 role={gridEnabled ? 'gridcell' : undefined}
                 id={gridEnabled ? cellId(gridRow, gc) : undefined}
@@ -1878,10 +2099,11 @@
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
+                <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowDisabled}>
                 {#if isRadio}
                   <input
                     type="radio"
-                    class="cd-table__checkbox"
+                    class="cd-table-selection-checkbox"
                     aria-label={loc().t('Table.selectRow')}
                     checked={selected}
                     disabled={rowDisabled}
@@ -1892,7 +2114,7 @@
                 {:else}
                   <input
                     type="checkbox"
-                    class="cd-table__checkbox"
+                    class="cd-table-selection-checkbox"
                     aria-label={loc().t('Table.selectRow')}
                     checked={selected}
                     disabled={rowDisabled}
@@ -1902,71 +2124,87 @@
                     onchange={() => onToggleRow(record)}
                   />
                 {/if}
+                </span>
               </td>
             {/if}
-            {#each columns as col, i (colKeyOf(col, i))}
+            {#each leafColumns as col, i (colKeyOf(col, i))}
               {@const value = cellValue(col, record)}
               {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
               {@const isRowHeader = gridEnabled && i === 0 && !hasSelection && !expandAsColumn}
+              {@const cellProps = col.onCell ? col.onCell(record, index) : undefined}
+              {#if !(cellProps && (cellProps.colSpan === 0 || cellProps.rowSpan === 0))}
               <td
-                class="cd-table__cell cd-table__cell--{alignOf(col)} {fixedCellClass(i)}"
-                class:cd-table__cell--ellipsis={col.ellipsis}
-                style={cellStyle(col, i)}
+                class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)} {cellProps?.className ?? ''}"
+                class:cd-table-row-cell-ellipsis={col.ellipsis}
+                colspan={cellProps?.colSpan}
+                rowspan={cellProps?.rowSpan}
+                style={mergeCellStyle(cellStyle(col, i), cellProps?.style)}
                 role={gridEnabled ? (isRowHeader ? 'rowheader' : 'gridcell') : undefined}
                 id={gridEnabled ? cellId(gridRow, gc) : undefined}
                 tabindex={rovingTabindex(gridRow, gc)}
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
-                {#if hasExpand && !expandAsColumn && i === 0}
-                  <span class="cd-table__expand-inline">
-                    {#if canExpand(record)}
-                      {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                <!-- 展开图标 / 树形三角 / 缩进物料：useFullRender 时不自动前置，改注入 render 供自行摆放 -->
+                {#snippet cellExpandMaterial()}
+                  {#if hasExpand && !expandAsColumn && i === 0}
+                    <span class="cd-table-expand-icon-cell">
+                      {#if canExpand(record)}
+                        {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                      {:else}
+                        <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
+                      {/if}
+                    </span>
+                  {/if}
+                  {#if treeEnabled && i === 0}
+                    {#if row.hasChildren}
+                      <button
+                        type="button"
+                        class="cd-table-expand-icon"
+                        class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
+                        aria-expanded={treeExpandedSet.has(key)}
+                        aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                        tabindex={childTabindex(gridRow, gc)}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          toggleTreeExpand(record);
+                        }}
+                      >
+                        <IconTreeTriangleRight size="small" aria-hidden="true" />
+                      </button>
                     {:else}
-                      <span class="cd-table__expand-btn cd-table__expand-btn--placeholder" aria-hidden="true"></span>
+                      <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                     {/if}
-                  </span>
-                {/if}
-                {#if treeEnabled && i === 0}
-                  <span class="cd-table__tree-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
-                  {#if row.hasChildren}
-                    <button
-                      type="button"
-                      class="cd-table__tree-toggle"
-                      class:cd-table__tree-toggle--open={treeExpandedSet.has(key)}
-                      aria-expanded={treeExpandedSet.has(key)}
-                      aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                      tabindex={childTabindex(gridRow, gc)}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        toggleTreeExpand(record);
-                      }}
-                    >
-                      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4l4 4-4 4" />
-                      </svg>
-                    </button>
+                  {/if}
+                {/snippet}
+                {#snippet cellIndentMaterial()}
+                  {#if treeEnabled && i === 0}
+                    <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                  {/if}
+                {/snippet}
+                {#if col.useFullRender && col.render}
+                  {@render col.render({ value, record, index, expandIcon: cellExpandMaterial, indentText: cellIndentMaterial })}
+                {:else}
+                  {#if i === 0}{@render cellIndentMaterial()}{@render cellExpandMaterial()}{/if}
+                  {#if col.render}
+                    {@render col.render({ value, record, index })}
                   {:else}
-                    <span class="cd-table__tree-toggle cd-table__tree-toggle--placeholder" aria-hidden="true"></span>
+                    {cellText(value)}
                   {/if}
                 {/if}
-                {#if col.render}
-                  {@render col.render({ value, record, index })}
-                {:else}
-                  {cellText(value)}
-                {/if}
               </td>
+              {/if}
             {/each}
-          </tr>
+          </svelte:element>
           {#if hasExpand && canExpand(record)}
             {#if keepDOM}
               <tr
-                class="cd-table__row cd-table__row--expanded"
+                class="cd-table-row cd-table-row-expand"
                 role={gridEnabled ? 'row' : undefined}
                 style={expandedSet.has(key) ? undefined : 'display:none'}
               >
                 <td
-                  class="cd-table__cell cd-table__cell--expanded-content"
+                  class="cd-table-row-cell cd-table-row-cell-expanded-content"
                   colspan={colSpan}
                   role={gridEnabled ? 'gridcell' : undefined}
                   aria-colindex={gridEnabled ? 1 : undefined}
@@ -1975,9 +2213,9 @@
                 </td>
               </tr>
             {:else if expandedSet.has(key)}
-              <tr class="cd-table__row cd-table__row--expanded" role={gridEnabled ? 'row' : undefined}>
+              <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined}>
                 <td
-                  class="cd-table__cell cd-table__cell--expanded-content"
+                  class="cd-table-row-cell cd-table-row-cell-expanded-content"
                   colspan={colSpan}
                   role={gridEnabled ? 'gridcell' : undefined}
                   aria-colindex={gridEnabled ? 1 : undefined}
@@ -1989,20 +2227,33 @@
           {/if}
         {/each}
         {#if virtualized && vBottomPad > 0}
-          <tr class="cd-table__row cd-table__row--spacer" aria-hidden="true">
+          <tr class="cd-table-row cd-table-row-spacer" aria-hidden="true">
             <td colspan={colSpan} style="block-size:{vBottomPad}px; padding:0; border:0"></td>
           </tr>
         {/if}
         {/if}
       {/if}
-    </tbody>
+    </svelte:element>
   </table>
+      {#if loading}
+        <div class="cd-table-loading" aria-hidden="true">
+          <span class="cd-table-spinner"></span>
+        </div>
+      {/if}
+    </div>
+    <!-- footer 在 .cd-table-container 内、body 之后（对齐 Semi） -->
+    {#if footerSnippet || footer}
+      <div class="cd-table-footer">
+        {#if footerSnippet}{@render footerSnippet({ currentData: visibleRows })}{:else}{footer}{/if}
+      </div>
+    {/if}
+  </div>
 
   {#if paginationEnabled && total > 0}
     {#if renderPagination}
       {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
     {:else}
-      <div class="cd-table__pagination">
+      <div class="cd-table-pagination-outer">
         <Pagination
           {total}
           currentPage={currentPage}
@@ -2013,345 +2264,350 @@
       </div>
     {/if}
   {/if}
-
-  {#if loading}
-    <div class="cd-table__loading" aria-hidden="true">
-      <span class="cd-table__spinner"></span>
-    </div>
-  {/if}
 </div>
-
-{#if footerSnippet}
-  <div class="cd-table__footer">
-    {@render footerSnippet({ currentData: visibleRows })}
-  </div>
-{/if}
+<!-- /.cd-table-wrapper -->
 
 <style>
-  .cd-table-wrap {
+  /* ===== 严格对齐 Semi Design table.scss —— 消费 Semi 全名 token ===== */
+
+  /* 最外层容器：.semi-table-wrapper */
+  .cd-table-wrapper {
     position: relative;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
     inline-size: 100%;
-    overflow-x: auto;
+    color: var(--cd-color-table-text-default);
+    font-size: var(--cd-font-table-base-fontsize);
   }
 
-  /* 行虚拟滚动：容器自身纵向滚动，表头 sticky 固定于顶部 */
-  .cd-table-wrap--virtual {
+  /* body 滚动容器：.semi-table-body（横向 + 纵向滚动区） */
+  .cd-table-body {
+    position: relative;
+    inline-size: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+  }
+  .cd-table-body-virtual,
+  .cd-table-body-scroll {
     overflow: auto;
   }
-  /* 非虚拟化的可滚动表体（onScroll/onReachBottom）：约束高度纵向滚动，表头 sticky */
-  .cd-table-wrap--scroll-body {
-    overflow: auto;
-  }
-  .cd-table__head--sticky th {
+
+  /* 吸顶表头：thead sticky */
+  .cd-table-thead-sticky th {
     position: sticky;
     inset-block-start: 0;
-    /* 高于固定列单元格(z-index:3)，确保横向固定列表头不盖过纵向 sticky 表头 */
-    z-index: 5;
+    z-index: calc(var(--cd-z-table-fixed-column) + 1);
   }
-  /* spacer 占位行无内容、无交互，仅撑高 */
-  .cd-table__row--spacer:hover {
+  .cd-table-row-spacer:hover {
     background: transparent;
   }
 
+  /* 表格本体：.semi-table */
   .cd-table {
     inline-size: 100%;
-    border-collapse: collapse;
-    background: var(--cd-table-bg);
-    color: var(--cd-table-cell-text);
-    border-radius: var(--cd-table-radius);
-    font-size: var(--cd-font-table-base-fontsize);
+    text-align: left;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: inherit;
+    display: table;
+    background: var(--cd-color-table-bg-default);
   }
-  /* 固定列：用 fixed 布局让列宽精确生效，min-width 撑过容器以触发横滚 */
-  .cd-table--fixed {
+  /* fixed 布局：固定列 / 列宽精确 */
+  .cd-table-fixed {
     inline-size: auto;
     min-inline-size: 100%;
     table-layout: fixed;
   }
 
-  .cd-table__cell {
-    padding-block: var(--cd-table-cell-padding-y);
-    padding-inline: var(--cd-table-cell-padding-x);
+  /* ===== 表头 thead ===== */
+  .cd-table-thead > .cd-table-row > .cd-table-row-head {
+    background-color: var(--cd-color-table-th-bg-default);
+    color: var(--cd-color-table-th-text-default);
+    font-weight: var(--cd-font-weight-bold, 600);
     text-align: left;
     vertical-align: middle;
-    border-block-end: 1px solid var(--cd-table-border-color);
+    overflow-wrap: break-word;
+    position: relative;
+    padding-inline: var(--cd-spacing-table-row-head-paddingx);
+    padding-block: var(--cd-spacing-table-row-head-paddingy);
+    border-block-end: var(--cd-width-table-header-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-th-border-default);
   }
-  .cd-table--small .cd-table__cell {
-    padding-block: var(--cd-table-cell-padding-y-small);
-  }
-  .cd-table--large .cd-table__cell {
-    padding-block: var(--cd-table-cell-padding-y-large);
-  }
-
-  .cd-table__cell--head {
-    color: var(--cd-table-header-text);
-    background: var(--cd-table-header-bg);
-    font-weight: 600;
-  }
-  .cd-table__head th {
-    background: var(--cd-table-header-bg);
-    color: var(--cd-table-header-text);
-    font-weight: 600;
-  }
-
-  .cd-table__cell--center {
-    text-align: center;
-  }
-  .cd-table__cell--right {
-    text-align: right;
-  }
-  .cd-table__cell--selection {
-    inline-size: 48px;
-    text-align: center;
-    white-space: nowrap;
-  }
-  .cd-table__cell--expand {
-    inline-size: 48px;
-    white-space: nowrap;
-    text-align: center;
-  }
-  .cd-table__expand-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: none;
-    background: var(--cd-color-table-expanded-bg-default);
-    color: var(--cd-color-table-expanded-icon-default);
+  /* 点击排序表头：clickSort */
+  .cd-table-row-head-clicksort {
     cursor: pointer;
-    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-table__expand-btn:hover {
-    color: var(--cd-color-table-text-default);
+  .cd-table-row-head-clicksort:hover {
+    background-image: linear-gradient(0deg, var(--cd-color-table-th-clicksort-bg-hover), var(--cd-color-table-th-clicksort-bg-hover));
+    background-color: var(--cd-color-table-cell-bg-hover);
   }
-  .cd-table__expand-btn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-border-radius-small);
+  .cd-table-row-head.cd-table-column-selection {
+    text-align: center;
   }
-  .cd-table__expand-btn--open {
-    transform: rotate(90deg);
-  }
-  /* hideExpandedColumn: 展开按钮并入首列时的内联包裹（与内容同格） */
-  .cd-table__expand-inline {
-    display: inline-flex;
-    align-items: center;
-    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright, 8px);
-    vertical-align: middle;
-  }
-  .cd-table__expand-btn--placeholder {
-    inline-size: 12px;
-    block-size: 12px;
-    background: transparent;
-    pointer-events: none;
-  }
-  .cd-table__cell--expanded-content {
-    padding: var(--cd-table-cell-padding);
-    background: var(--cd-color-table-row-expanded-bg-default);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-table__expand-btn {
-      transition: none;
-    }
-  }
-  .cd-table__cell--ellipsis {
-    max-inline-size: 0;
+  .cd-table-row-head-ellipsis,
+  .cd-table-row-head-ellipsis .cd-table-row-head-title {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  /* --- 树形数据：缩进 + 展开三角 --- */
-  .cd-table__tree-indent {
-    display: inline-block;
+  /* ===== 表体 tbody ===== */
+  .cd-table-tbody {
+    display: table-row-group;
+  }
+  .cd-table-tbody > .cd-table-row {
+    display: table-row;
+    background-color: var(--cd-color-table-body-bg-default);
+  }
+  .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+    display: table-cell;
+    overflow-wrap: break-word;
+    border-inline: none;
+    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    padding: var(--cd-spacing-table-tbody-rowcell-padding);
+    box-sizing: border-box;
+    position: relative;
     vertical-align: middle;
   }
-  .cd-table__tree-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 16px;
-    block-size: 16px;
-    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright);
-    padding: 0;
-    border: none;
-    background: var(--cd-color-table-expanded-bg-default);
-    color: var(--cd-color-table-expanded-icon-default);
-    cursor: pointer;
-    vertical-align: middle;
-    transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  /* 尺寸档：middle / small 单元格纵向内边距 */
+  .cd-table-middle .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+    padding-block: var(--cd-spacing-table-middle-paddingy);
   }
-  .cd-table__tree-toggle:hover {
-    color: var(--cd-color-table-text-default);
+  .cd-table-small .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+    padding-block: var(--cd-spacing-table-small-paddingy);
   }
-  .cd-table__tree-toggle:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-    border-radius: var(--cd-border-radius-small);
-  }
-  .cd-table__tree-toggle--open {
-    transform: rotate(90deg);
-  }
-  .cd-table__tree-toggle--placeholder {
-    cursor: default;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-table__tree-toggle {
-      transition: none;
-    }
+  .cd-table-row-cell-ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  /* --- 固定列：sticky 单元格需不透明背景，避免透出横滚内容 --- */
-  .cd-table__cell--fixed {
-    z-index: 2;
-    background: var(--cd-table-bg);
+  /* 行 hover：Semi 用 background-image+background-color 双层（fill-0 半透 + bg-0 兜底） */
+  .cd-table-tbody > .cd-table-row:hover > .cd-table-row-cell,
+  .cd-table-tbody > .cd-table-row-hovered > .cd-table-row-cell {
+    background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
+    background-color: var(--cd-color-table-cell-bg-hover);
   }
-  .cd-table__head .cd-table__cell--fixed {
-    z-index: 3;
-    background: var(--cd-table-header-bg);
-  }
-  /* 固定列随行态变色：hover / stripe / selected 时同步背景 */
-  .cd-table__row:hover .cd-table__cell--fixed {
-    background: var(--cd-table-row-hover-bg);
-  }
-  .cd-table__row--stripe .cd-table__cell--fixed {
-    background: var(--cd-table-row-stripe-bg);
-  }
-  .cd-table__row--selected .cd-table__cell--fixed,
-  .cd-table__row--selected:hover .cd-table__cell--fixed {
-    background: var(--cd-table-row-selected-bg);
-  }
-  /* 边界阴影：最后一个左固定列右侧、第一个右固定列左侧 */
-  .cd-table__cell--fixed-left-last::after,
-  .cd-table__cell--fixed-right-first::after {
-    content: '';
-    position: absolute;
-    inset-block: 0;
-    inline-size: 6px;
-    pointer-events: none;
-  }
-  .cd-table__cell--fixed-left-last {
-    position: sticky;
-  }
-  .cd-table__cell--fixed-left-last::after {
-    inset-inline-end: -6px;
-    background: linear-gradient(
-      to right,
-      var(--cd-table-fixed-shadow),
-      transparent
-    );
-  }
-  .cd-table__cell--fixed-right-first::after {
-    inset-inline-start: -6px;
-    background: linear-gradient(
-      to left,
-      var(--cd-table-fixed-shadow),
-      transparent
-    );
-  }
-  /* sticky cell 需相对定位以承载 ::after 阴影 */
-  .cd-table__cell--fixed {
-    position: sticky;
+  /* 固定列 hover：底色保持 body-default，避免透出横滚内容 */
+  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-left,
+  .cd-table-tbody > .cd-table-row:hover > .cd-table-cell-fixed-right,
+  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-left,
+  .cd-table-tbody > .cd-table-row-hovered > .cd-table-cell-fixed-right {
+    background-image: linear-gradient(0deg, var(--cd-color-table-body-bg-hover), var(--cd-color-table-body-bg-hover));
+    background-color: var(--cd-color-table-body-bg-default);
   }
 
-  .cd-table--bordered .cd-table__cell {
-    border-inline-end: 1px solid var(--cd-table-border-color);
-  }
-  .cd-table--bordered .cd-table__cell:first-child {
-    border-inline-start: 1px solid var(--cd-table-border-color);
-  }
-  .cd-table--bordered .cd-table__head th {
-    border-block-start: 1px solid var(--cd-table-border-color);
-  }
-
-  .cd-table__row--stripe {
-    background: var(--cd-table-row-stripe-bg);
-  }
-  .cd-table__row:hover {
-    background: var(--cd-table-row-hover-bg);
-  }
-  /* rowSpanHover: 合并单元格(rowSpan)时高亮整个合并区。
-     依赖 rowSpan 合并单元格（经 column.render 合并，与 Semi 同为渐进能力）；
-     hover 行内含 rowSpan 的单元格自身高亮，其纵向覆盖的行经原生 <td rowSpan> 天然共格，
-     此规则保证合并单元格在整行 hover 语境下与普通单元格一致高亮，不被 stripe/selected 背景压过。 */
-  .cd-table--row-span-hover .cd-table__row:hover :global(td[rowspan]) {
-    background: var(--cd-table-row-hover-bg);
-  }
-  .cd-table__row--selected,
-  .cd-table__row--selected:hover {
-    background: var(--cd-table-row-selected-bg);
-  }
-  .cd-table__row--clickable {
-    cursor: pointer;
-  }
-
-  .cd-table__cell--empty {
-    padding-block: var(--cd-spacing-loose);
-    color: var(--cd-table-empty-color);
+  /* 对齐 */
+  .cd-table-align-center {
     text-align: center;
   }
-
-  /* --- 列筛选 --- */
-  .cd-table__cell--has-filter {
-    position: relative;
+  .cd-table-align-right {
+    text-align: right;
   }
-  .cd-table__filter-btn {
+
+  /* 选择列 / 展开列固定宽度（对齐 Semi $width-table_column_selection = 48px） */
+  .cd-table-column-selection,
+  .cd-table-column-expand {
+    inline-size: var(--cd-width-table-column-selection);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* 斑马纹（chenzy-design 扩展；Semi 靠 demo onRow className 实现，此处保留组件级开关） */
+  .cd-table-stripe .cd-table-tbody > .cd-table-row-stripe > .cd-table-row-cell {
+    background-color: var(--cd-color-table-selection-bg-default);
+  }
+
+  /* 选中行 */
+  .cd-table-tbody > .cd-table-row-selected > .cd-table-row-cell {
+    background-color: var(--cd-color-primary-light-default);
+  }
+  .cd-table-row-clickable {
+    cursor: pointer;
+  }
+
+  /* ===== 展开行 / 分组行 ===== */
+  .cd-table-tbody > .cd-table-row-expand > .cd-table-row-cell {
+    background-color: var(--cd-color-table-row-expanded-bg-default);
+  }
+  .cd-table-row-cell-expanded-content {
+    padding-inline: var(--cd-spacing-table-expand-row-paddingleft) var(--cd-spacing-table-expand-row-paddingright);
+    padding-block: var(--cd-spacing-table-expand-row-paddingtop) var(--cd-spacing-table-expand-row-paddingbottom);
+    background-color: var(--cd-color-table-row-expanded-bg-default);
+  }
+  .cd-table-row-hidden {
+    display: none;
+  }
+
+  /* 分组表头行 .semi-table-row-section */
+  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell {
+    background-color: var(--cd-color-table-selection-bg-default);
+    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+  .cd-table-tbody > .cd-table-row-section > .cd-table-row-cell:not(.cd-table-column-selection) {
+    padding: var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingy) var(--cd-spacing-table-tbody-rowselection-rowcell-notselection-paddingx);
+  }
+  .cd-table-section-inner {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+  }
+  .cd-table-row-section-clickable .cd-table-row-cell-section {
+    cursor: pointer;
+    user-select: none;
+  }
+  .cd-table-row-cell-section:focus-visible {
+    outline: 2px solid var(--cd-focus-ring, currentColor);
+    outline-offset: -2px;
+  }
+
+  /* ===== 固定列：sticky + 边界阴影 ===== */
+  .cd-table-cell-fixed-left,
+  .cd-table-cell-fixed-right {
+    z-index: var(--cd-z-table-fixed-column);
+    position: sticky;
+    background-color: var(--cd-color-table-bg-default);
+  }
+  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-left,
+  .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-right {
+    background-color: var(--cd-color-table-th-bg-default);
+  }
+  .cd-table-cell-fixed-left-last {
+    border-inline-end: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
+    box-shadow: var(--cd-shadow-table-right);
+  }
+  .cd-table-cell-fixed-right-first {
+    border-inline-start: var(--cd-width-table-cell-fixed-right-first) solid var(--cd-color-table-shadow-border-default);
+    box-shadow: var(--cd-shadow-table-left);
+  }
+  /* 横滚到边隐藏对应阴影 */
+  .cd-table-scroll-position-left .cd-table-cell-fixed-left-last {
+    box-shadow: none;
+  }
+  .cd-table-scroll-position-right .cd-table-cell-fixed-right-first {
+    box-shadow: none;
+  }
+
+  /* ===== 带边框 bordered ===== */
+  .cd-table-bordered > .cd-table-container {
+    border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+    border-inline-end: 0;
+    border-block-end: 0;
+  }
+  .cd-table-bordered .cd-table-thead > .cd-table-row > .cd-table-row-head,
+  .cd-table-bordered .cd-table-tbody > .cd-table-row > .cd-table-row-cell {
+    border-inline-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+
+  /* ===== 空数据占位 .semi-table-placeholder ===== */
+  .cd-table-placeholder {
+    padding: var(--cd-spacing-table-paddingy) var(--cd-spacing-table-paddingx);
+    color: var(--cd-color-table-placeholder-text-default);
+    font-size: var(--cd-font-table-base-fontsize);
+    text-align: center;
+    background: var(--cd-color-table-pl-bg-default);
+    border-block-end: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
+  }
+
+  /* ===== 排序 ColumnSorter ===== */
+  .cd-table-column-sorter-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-table-column-sorter-marginleft);
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: var(--cd-font-weight-bold, 600);
+    background: none;
+    border: none;
+  }
+  .cd-table-column-sorter-wrapper:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+    border-radius: var(--cd-border-radius-small);
+  }
+  .cd-table-column-sorter {
+    display: inline-block;
+    inline-size: var(--cd-width-table-column-sorter-icon);
+    block-size: var(--cd-height-table-column-sorter-icon);
+    vertical-align: middle;
+    text-align: center;
+  }
+  .cd-table-column-sorter-up,
+  .cd-table-column-sorter-down {
+    display: block;
+    block-size: 0;
+    color: var(--cd-color-table-sorter-text-default);
+  }
+  .cd-table-column-sorter-up.on,
+  .cd-table-column-sorter-down.on {
+    color: var(--cd-color-table-sorter-on-text-default);
+  }
+  .cd-table-column-sorter-up :global(svg),
+  .cd-table-column-sorter-down :global(svg) {
+    inline-size: var(--cd-width-table-column-sorter-icon);
+    block-size: var(--cd-height-table-column-sorter-icon);
+  }
+
+  /* ===== 列筛选 ColumnFilter ===== */
+  .cd-table-column-filter {
     margin-inline-start: var(--cd-spacing-table-column-filter-marginleft);
-    padding: 2px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--cd-color-table-filter-text-default);
+    padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-color-table-filter-text-default);
-    cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
-    vertical-align: middle;
   }
-  .cd-table__filter-btn:hover {
-    color: var(--cd-color-table-text-default);
+  .cd-table-column-filter :global(svg) {
+    inline-size: var(--cd-width-table-column-filter-icon);
+    block-size: var(--cd-height-table-column-filter-icon);
   }
-  .cd-table__filter-btn--active {
+  .cd-table-column-filter.on {
     color: var(--cd-color-table-filter-on-text-default);
   }
-  .cd-table__filter-btn:focus-visible {
+  .cd-table-column-filter:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-table__filter-panel {
-    z-index: var(--cd-select-dropdown-z, 1050);
+  /* 筛选下拉面板 .semi-table-column-filter-dropdown */
+  .cd-table-column-filter-dropdown {
+    z-index: var(--cd-z-dropdown, 1060);
     min-inline-size: 10rem;
     padding-block: var(--cd-spacing-extra-tight);
-    background: var(--cd-select-dropdown-bg, var(--cd-color-bg-0, #fff));
-    border-radius: var(--cd-select-dropdown-radius, 6px);
-    box-shadow: var(--cd-select-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));
-    font-weight: 400;
+    background: var(--cd-color-bg-3, #fff);
+    border-radius: var(--cd-border-radius-medium, 6px);
+    box-shadow: var(--cd-shadow-elevated, 0 4px 12px rgba(0, 0, 0, 0.12));
+    font-weight: var(--cd-font-weight-regular, 400);
   }
-  .cd-table__filter-list {
+  .cd-table-column-filter-list {
     margin: 0;
     padding: 0;
     list-style: none;
-    max-block-size: 14rem;
+    max-block-size: var(--cd-height-table-column-filter-dropdown);
     overflow-y: auto;
   }
-  .cd-table__filter-label {
+  .cd-table-column-filter-label {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
     padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
     cursor: pointer;
   }
-  .cd-table__filter-label:hover {
-    background: var(--cd-table-row-hover-bg);
+  .cd-table-column-filter-label:hover {
+    background: var(--cd-color-table-body-bg-hover);
   }
-  .cd-table__filter-actions {
+  .cd-table-column-filter-actions {
     display: flex;
     justify-content: space-between;
     gap: var(--cd-spacing-tight);
     padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base-tight);
-    border-block-start: 1px solid var(--cd-table-border-color);
+    border-block-start: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
   }
-  .cd-table__filter-reset,
-  .cd-table__filter-confirm {
+  .cd-table-column-filter-reset,
+  .cd-table-column-filter-confirm {
     padding: 0;
     border: none;
     background: transparent;
@@ -2359,104 +2615,142 @@
     font-size: var(--cd-font-size-small);
     cursor: pointer;
   }
-  .cd-table__filter-reset {
+  .cd-table-column-filter-reset {
     color: var(--cd-color-table-filter-text-default);
   }
-  .cd-table__filter-confirm {
+  .cd-table-column-filter-confirm {
     color: var(--cd-color-table-filter-on-text-default);
   }
 
-  /* --- 列宽拖拽手柄 --- */
-  .cd-table__cell--resizable {
+  /* ===== 列宽拖拽手柄 .react-resizable-handle ===== */
+  .cd-table-row-head-resizable {
     position: relative;
   }
-  .cd-table__resize-handle {
+  .react-resizable-handle {
     position: absolute;
-    inset-block: 0;
-    inset-inline-end: 0;
-    inline-size: 8px;
+    inline-size: var(--cd-width-table-react-resizable-handle);
+    block-size: calc(100% - var(--cd-spacing-table-resizable-offset-y) * 2);
+    inset-block-end: var(--cd-spacing-table-resizable-bottom);
+    inset-inline-end: var(--cd-spacing-table-react-resizable-handle-right);
     cursor: col-resize;
-    /* 提到固定列阴影/内容之上，确保可命中 */
-    z-index: 4;
+    z-index: 0;
     touch-action: none;
     user-select: none;
+    background-color: var(--cd-color-table-border-default);
   }
-  .cd-table__resize-handle::after {
-    content: '';
-    position: absolute;
-    inset-block: 25%;
-    inset-inline-end: 3px;
-    inline-size: 2px;
-    background: transparent;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  .react-resizable-handle:hover {
+    background-color: var(--cd-color-table-resizer-bg-default);
   }
-  .cd-table__resize-handle:hover::after,
-  .cd-table__cell--resizing .cd-table__resize-handle::after {
-    background: var(--cd-color-table-resizer-bg-default);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-table__resize-handle::after {
-      transition: none;
-    }
+  /* 拖拽中列：resizing 标示线 */
+  .resizing.cd-table-row-head,
+  .resizing.cd-table-row-cell {
+    border-inline-end: var(--cd-width-table-resizer-border) solid var(--cd-color-table-resizer-bg-default);
   }
 
-  .cd-table__sort-btn {
+  /* ===== 行选择 checkbox 包裹 .semi-table-selection-wrap ===== */
+  .cd-table-selection-wrap {
+    display: inline-flex;
+    vertical-align: bottom;
+  }
+  .cd-table-selection-disabled {
+    cursor: not-allowed;
+  }
+  .cd-table-selection-checkbox {
+    cursor: pointer;
+    accent-color: var(--cd-color-primary);
+  }
+  .cd-table-selection-checkbox:disabled {
+    cursor: not-allowed;
+  }
+  .cd-table-selection-checkbox:focus-visible {
+    outline: none;
+    box-shadow: var(--cd-focus-ring);
+  }
+
+  /* ===== 展开图标 .semi-table-expand-icon ===== */
+  .cd-table-expand-icon {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-table-column-sorter-marginleft);
-    padding: 0;
-    color: inherit;
-    font: inherit;
-    font-weight: 600;
-    background: none;
-    border: none;
+    justify-content: center;
+    user-select: none;
+    position: relative;
     cursor: pointer;
+    padding: 0;
+    border: none;
+    vertical-align: middle;
+    background: var(--cd-color-table-expanded-bg-default);
+    color: var(--cd-color-table-expanded-icon-default);
+    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright);
+    transition: transform 150ms cubic-bezier(0.62, 0.05, 0.36, 0.95);
   }
-  .cd-table__sort-btn:focus-visible {
+  .cd-table-expand-icon:hover {
+    color: var(--cd-color-table-text-default);
+  }
+  .cd-table-expand-icon:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
-
-  .cd-table__sort-icons {
+  /* 旋转态：展开 90°（对齐 Semi -expandedIcon-show/-hide） */
+  .cd-table-expandedIcon-show {
+    transform: rotate(90deg);
+  }
+  .cd-table-expandedIcon-hide {
+    transform: rotate(0deg);
+  }
+  .cd-table-expand-icon-placeholder {
+    inline-size: 16px;
+    block-size: 16px;
+    background: transparent;
+    pointer-events: none;
+    cursor: default;
+  }
+  /* 展开按钮并入首列（hideExpandedColumn）内联包裹 */
+  .cd-table-expand-icon-cell {
     display: inline-flex;
-    flex-direction: column;
-    gap: 1px;
-    color: var(--cd-table-sort-icon-color);
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
   }
-  .cd-table__sort--active {
-    color: var(--cd-table-sort-active-color);
-  }
-
-  .cd-table__checkbox {
-    cursor: pointer;
-    accent-color: var(--cd-color-primary);
-  }
-  .cd-table__checkbox:disabled {
-    cursor: not-allowed;
-  }
-  .cd-table__checkbox:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  /* 树形缩进占位 */
+  .cd-table-row-indent {
+    display: inline-block;
+    vertical-align: middle;
   }
 
-  .cd-table__pagination {
+  /* ===== 分页器 .semi-table-pagination-outer ===== */
+  .cd-table-pagination-outer {
     display: flex;
-    justify-content: flex-end;
-    margin-block-start: var(--cd-spacing-base-tight);
+    justify-content: space-between;
+    align-items: center;
+    min-block-size: var(--cd-height-table-pagination-outer-min);
+    color: var(--cd-color-table-page-text-default);
   }
 
-  .cd-table__loading {
+  /* ===== 标题 / footer ===== */
+  .cd-table-title {
+    position: relative;
+    padding-block: var(--cd-spacing-table-title-paddingy);
+    padding-inline: var(--cd-spacing-table-title-paddingx);
+  }
+  .cd-table-footer {
+    background-color: var(--cd-color-table-footer-bg-default);
+    padding: var(--cd-spacing-table-footer-padding);
+    margin: 0;
+    position: relative;
+  }
+
+  /* ===== 加载态遮罩 ===== */
+  .cd-table-loading {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--cd-table-loading-mask);
+    background: var(--cd-color-table-bg-default);
     opacity: 0.6;
   }
-
-  .cd-table__spinner {
+  .cd-table-spinner {
     inline-size: 28px;
     block-size: 28px;
     border: 3px solid var(--cd-color-fill-1, rgba(0, 0, 0, 0.1));
@@ -2464,7 +2758,6 @@
     border-radius: 50%;
     animation: cd-table-spin 0.8s linear infinite;
   }
-
   @keyframes cd-table-spin {
     to {
       transform: rotate(360deg);
@@ -2472,61 +2765,12 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-table__spinner {
+    .cd-table-spinner {
       animation: none;
     }
-    .cd-table__sort-up,
-    .cd-table__sort-down {
+    .cd-table-expand-icon,
+    .react-resizable-handle {
       transition: none;
     }
-  }
-
-  /* --- 分组标题行 --- */
-  .cd-table__row--group-header {
-    background: var(--cd-table-header-bg);
-  }
-  .cd-table__cell--group-header {
-    padding-block: var(--cd-table-cell-padding-y);
-    padding-inline: var(--cd-table-cell-padding-x);
-    font-weight: 600;
-    color: var(--cd-table-header-text);
-    border-block-end: 1px solid var(--cd-table-border-color);
-  }
-  /* 可点击分组标题：disclosure 模式 */
-  .cd-table__row--group-clickable .cd-table__cell--group-header {
-    cursor: pointer;
-    user-select: none;
-  }
-  .cd-table__row--group-clickable .cd-table__cell--group-header:hover {
-    background: var(--cd-table-row-hover-bg);
-  }
-  .cd-table__cell--group-header:focus-visible {
-    outline: 2px solid var(--cd-focus-ring, currentColor);
-    outline-offset: -2px;
-  }
-  .cd-table__group-caret {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-inline-end: var(--cd-spacing-table-expand-icon-marginright, 8px);
-    color: var(--cd-color-table-expanded-icon-default, currentColor);
-    transition: transform 0.2s ease;
-    vertical-align: middle;
-  }
-  .cd-table__group-caret--open {
-    transform: rotate(90deg);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-table__group-caret {
-      transition: none;
-    }
-  }
-
-  /* --- 表格顶部标题/底部区域 --- */
-  .cd-table__title-area {
-    margin-block-end: var(--cd-spacing-tight, 8px);
-  }
-  .cd-table__footer {
-    margin-block-start: var(--cd-spacing-base-tight, 12px);
   }
 </style>
