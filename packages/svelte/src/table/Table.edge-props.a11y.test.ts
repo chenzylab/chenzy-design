@@ -110,4 +110,70 @@ describe('Table 边角 props', () => {
     expect((groupRow as HTMLElement).style.fontWeight).toBe('700');
     expect(called).toBe(true);
   });
+
+  it('column.children 表头合并：生成 2 行 thead，父列 colspan 跨子列，body 按叶子列渲染', () => {
+    const mergedCols = [
+      { key: 'name', dataIndex: 'name', title: 'Name' },
+      {
+        key: 'g',
+        title: 'Group',
+        children: [
+          { key: 'age', dataIndex: 'age', title: 'Age' },
+          { key: 'dept', dataIndex: 'dept', title: 'Dept' },
+        ],
+      },
+    ];
+    const { container } = renderWithLocale(Table, {
+      props: { columns: mergedCols, dataSource },
+    });
+    const headRows = container.querySelectorAll('.cd-table-thead tr');
+    expect(headRows.length).toBe(2);
+    const groupTh = container.querySelector('.cd-table-thead th[colspan="2"]');
+    expect(groupTh?.textContent).toContain('Group');
+    // body 第一行有 3 个叶子列（name/age/dept）
+    const firstBodyRow = container.querySelector('.cd-table-tbody .cd-table-row');
+    expect(firstBodyRow?.querySelectorAll('.cd-table-row-cell').length).toBe(3);
+  });
+
+  it('column.onCell 行列合并：rowSpan=0 的单元格不渲染', () => {
+    const spanCols = [
+      { key: 'name', dataIndex: 'name', title: 'Name' },
+      {
+        key: 'age',
+        dataIndex: 'age',
+        title: 'Age',
+        onCell: (_r: Row, i: number) => (i === 0 ? { rowSpan: 2 } : { rowSpan: 0 }),
+      },
+    ];
+    const { container } = renderWithLocale(Table, {
+      props: { columns: spanCols, dataSource },
+    });
+    const rows = container.querySelectorAll('.cd-table-tbody .cd-table-row');
+    expect(rows[0]?.querySelectorAll('.cd-table-row-cell').length).toBe(2);
+    expect(rows[1]?.querySelectorAll('.cd-table-row-cell').length).toBe(1); // age 被合并
+    expect(container.querySelector('td[rowspan="2"]')).not.toBeNull();
+  });
+
+  it('components 覆盖 body.row/wrapper tag：tbody→div、行→div，class 仍注入', () => {
+    const { container } = renderWithLocale(Table, {
+      props: {
+        columns,
+        dataSource,
+        components: { body: { wrapper: 'div', row: 'div' } },
+      },
+    });
+    const tbody = container.querySelector('.cd-table-tbody');
+    expect(tbody?.tagName).toBe('DIV');
+    const row = container.querySelector('.cd-table-tbody .cd-table-row');
+    expect(row?.tagName).toBe('DIV');
+  });
+
+  it('根 class / style 作用于 .cd-table-wrapper', () => {
+    const { container } = renderWithLocale(Table, {
+      props: { columns, dataSource, class: 'my-table', style: 'opacity:0.5' },
+    });
+    const wrapper = container.querySelector('.cd-table-wrapper.my-table');
+    expect(wrapper).not.toBeNull();
+    expect((wrapper as HTMLElement).style.opacity).toBe('0.5');
+  });
 });

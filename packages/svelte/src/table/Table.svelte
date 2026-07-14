@@ -139,6 +139,8 @@
     childrenRecordName,
     class: className,
     style,
+    components,
+    getVirtualizedListRef,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -273,7 +275,34 @@
     class?: string;
     /** 最外层 .cd-table-wrapper 内联样式（对齐 Semi style） */
     style?: string;
+    /**
+     * 覆盖组成元素的 tag 名（对齐 Semi components）。Svelte 侧以标签名字符串生效，
+     * 经 <svelte:element> 渲染，内部 class/role/事件仍注入。缺省用原生
+     * table/thead/tbody/tr/th/td。常见用法：body.row='div' 配合拖拽库。
+     */
+    components?: {
+      table?: string;
+      header?: { wrapper?: string; row?: string; cell?: string };
+      body?: { wrapper?: string; row?: string; cell?: string };
+    };
+    /**
+     * 返回虚拟化滚动控制句柄（对齐 Semi getVirtualizedListRef）。仅 virtualized 时有效。
+     * 句柄含 scrollTo(offset) 与 scrollToItem(index)，命令式驱动表体滚动。
+     */
+    getVirtualizedListRef?: (ref: {
+      scrollTo: (offset: number) => void;
+      scrollToItem: (index: number) => void;
+    }) => void;
   } = $props();
+
+  // 解析各槽位 tag，缺省回退原生（对齐 Semi DEFAULT_COMPONENTS）。
+  const tagTable = $derived(components?.table ?? 'table');
+  const tagThead = $derived(components?.header?.wrapper ?? 'thead');
+  const tagTbody = $derived(components?.body?.wrapper ?? 'tbody');
+  const tagHeaderRow = $derived(components?.header?.row ?? 'tr');
+  const tagHeaderCell = $derived(components?.header?.cell ?? 'th');
+  const tagBodyRow = $derived(components?.body?.row ?? 'tr');
+  const tagBodyCell = $derived(components?.body?.cell ?? 'td');
 
   const loc = useLocale();
   // 单例 live region（polite）：排序结果播报给屏幕阅读器（命令式写入在事件回调，红线 #3）。
@@ -654,6 +683,8 @@
   // 仅依赖本地 $state，render 期只读不读 DOM（红线 #2）。
   const VIRTUAL_OVERSCAN = 4;
   let scrollEl = $state<HTMLDivElement | null>(null);
+  // 最外层 wrapper 引用（scrollToFirstRowOnChange 无 scroll.y 时滚入视口）
+  let wrapperEl = $state<HTMLDivElement | null>(null);
   // 仅由 scroll 回调写入的本地 scrollTop，render 期只读。
   let scrollTop = $state(0);
   // rAF 节流句柄（非响应式）。
@@ -663,6 +694,22 @@
 
   const vRowHeight = $derived(rowHeight > 0 ? rowHeight : 48);
   const vTotalHeight = $derived(displayRows.length * vRowHeight);
+
+  // getVirtualizedListRef：virtualized 时把滚动控制句柄回传给使用方（对齐 Semi）。
+  // scrollTo(offset) 直接设 scrollTop；scrollToItem(index) 按行高换算偏移。命令式，非响应式读。
+  $effect(() => {
+    if (!virtualized || !scrollEl || !getVirtualizedListRef) return;
+    const el = scrollEl;
+    const rowH = vRowHeight;
+    getVirtualizedListRef({
+      scrollTo: (offset: number) => {
+        el.scrollTop = offset;
+      },
+      scrollToItem: (index: number) => {
+        el.scrollTop = index * rowH;
+      },
+    });
+  });
   const vRange = $derived(
     virtualized
       ? fixedRange(scrollTop, height, vRowHeight, displayRows.length, VIRTUAL_OVERSCAN)
@@ -1147,6 +1194,18 @@
       sorter: sorterOverride ?? currentSort,
       extra: { action },
     });
+    maybeScrollToFirstRow();
+  }
+
+  // scroll.scrollToFirstRowOnChange：分页/排序/筛选变化后滚到表格顶部（对齐 Semi）。
+  // scroll.y 时重置表体内部滚动到顶；否则把表格滚入视口顶部。命令式写 DOM，非响应式。
+  function maybeScrollToFirstRow() {
+    if (!scroll?.scrollToFirstRowOnChange) return;
+    if (scroll.y != null && scrollEl) {
+      scrollEl.scrollTop = 0;
+    } else if (wrapperEl) {
+      wrapperEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   }
 
   // --- 排序点击 ---
@@ -1512,6 +1571,7 @@
   data-column-fixed={hasFixed ? 'true' : undefined}
   dir={direction}
   {style}
+  bind:this={wrapperEl}
 >
   {#if titleSnippet || title}
     <div class="cd-table-title">
@@ -1554,12 +1614,14 @@
     </colgroup>
     {#if showHeader}
       {@const headerRowProps = onHeaderRow ? onHeaderRow(columns, 0) : undefined}
-    <thead
+    <svelte:element
+      this={tagThead}
       class="cd-table-thead"
       class:cd-table-thead-sticky={isStickyHead}
       style={isStickyHead && stickyOffset > 0 ? `top:${stickyOffset}px` : undefined}
     >
-      <tr
+      <svelte:element
+        this={tagHeaderRow}
         role={gridEnabled ? 'row' : undefined}
         aria-rowindex={gridEnabled ? 1 : undefined}
         class="cd-table-row {headerRowProps?.className ?? ''}"
@@ -1622,7 +1684,7 @@
             {@render headerMergeCell(hc)}
           {/each}
         {/if}
-      </tr>
+      </svelte:element>
       {#if hasHeaderMerge}
         {#each headerRows.slice(1) as hrow, ri (ri)}
           <tr class="cd-table-row">
@@ -1632,7 +1694,7 @@
           </tr>
         {/each}
       {/if}
-    </thead>
+    </svelte:element>
     {/if}
     {#snippet headerMergeCell(hc: HeaderCell)}
       {#if hc.isLeaf}
@@ -1767,7 +1829,7 @@
             {/if}
           </th>
     {/snippet}
-    <tbody class="cd-table-tbody">
+    <svelte:element this={tagTbody} class="cd-table-tbody">
       {#if visibleRows.length === 0}
         <tr class="cd-table-row cd-table-row-placeholder" role={gridEnabled ? 'row' : undefined}>
           <td
@@ -1841,7 +1903,7 @@
               {@const extra = rowClassName ? rowClassName(record, index) : ''}
               {@const clickable = !!onRowClick || expandRowByClick}
               {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
-              <tr
+              <svelte:element this={tagBodyRow}
                 class="cd-table-row {extra} {rowProps?.className ?? ''}"
                 class:cd-table-row-selected={selected}
                 class:cd-table-row-stripe={stripe && index % 2 === 1}
@@ -1954,7 +2016,7 @@
                     {/if}
                   </td>
                 {/each}
-              </tr>
+              </svelte:element>
               {#if hasExpand && canExpand(record)}
                 {#if keepDOM}
                   <tr class="cd-table-row cd-table-row-expand" role={gridEnabled ? 'row' : undefined} style={expandedSet.has(key) ? undefined : 'display:none'}>
@@ -1989,7 +2051,7 @@
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
           {@const clickable = !!onRowClick || expandRowByClick}
           {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
-          <tr
+          <svelte:element this={tagBodyRow}
             class="cd-table-row {extra} {rowProps?.className ?? ''}"
             class:cd-table-row-selected={selected}
             class:cd-table-row-stripe={stripe && index % 2 === 1}
@@ -2133,7 +2195,7 @@
               </td>
               {/if}
             {/each}
-          </tr>
+          </svelte:element>
           {#if hasExpand && canExpand(record)}
             {#if keepDOM}
               <tr
@@ -2171,7 +2233,7 @@
         {/if}
         {/if}
       {/if}
-    </tbody>
+    </svelte:element>
   </table>
       {#if loading}
         <div class="cd-table-loading" aria-hidden="true">
