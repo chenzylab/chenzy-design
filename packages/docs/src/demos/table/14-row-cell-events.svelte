@@ -25,19 +25,17 @@
   ];
 
   let lastClicked = $state<string>('（未点击）');
+  let hovered = $state<string>('（未悬停）');
 
-  // 每行统一加 className；仅第 3 行（index === 2）附带 onClick
-  const onRow = (record: Row, index: number) => {
-    if (index === 2) {
-      return {
-        className: 'my-tr-class',
-        onClick: () => (lastClicked = `${record.name}（第 ${index + 1} 行）`),
-        style: 'cursor:pointer',
-      };
-    }
-    return { className: 'my-tr-class' };
-  };
+  // onRow 返回 className / style / onClick / onMouseEnter / onMouseLeave（对齐 Semi）
+  const onRow = (record: Row, index: number) => ({
+    className: 'my-tr-class',
+    style: index === 2 ? 'cursor:pointer' : undefined,
+    onClick: index === 2 ? () => (lastClicked = `${record.name}（第 ${index + 1} 行）`) : undefined,
+    onMouseEnter: () => (hovered = record.name),
+    onMouseLeave: () => (hovered = '（未悬停）'),
+  });
 </script>
 
 <Table {columns} dataSource={data} rowKey="key" bordered {onRow} />
-<Text type="tertiary">最近点击（仅第 3 行可点）：{lastClicked}</Text>
+<Text type="tertiary">悬停行：{hovered}　|　最近点击（仅第 3 行可点）：{lastClicked}</Text>

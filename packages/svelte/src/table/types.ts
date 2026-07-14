@@ -49,8 +49,25 @@ export interface ColumnDef<T> {
   filterMultiple?: boolean;
   /** 行是否匹配某筛选值；缺省时按 dataIndex 全等比较 */
   onFilter?: (value: string | number, record: T) => boolean;
-  /** 单元格自定义渲染 */
-  render?: Snippet<[{ value: unknown; record: T; index: number }]>;
+  /**
+   * 是否完全自定义渲染（对齐 Semi useFullRender）。开启后 render 额外收到
+   * { selection, expandIcon, indentText } 物料，由使用方自行摆放，组件不再
+   * 自动前置缩进/展开图标/选择框。
+   */
+  useFullRender?: boolean;
+  /** 单元格自定义渲染。useFullRender 时额外收到 selection/expandIcon/indentText 物料 Snippet。 */
+  render?: Snippet<
+    [
+      {
+        value: unknown;
+        record: T;
+        index: number;
+        selection?: Snippet;
+        expandIcon?: Snippet;
+        indentText?: Snippet;
+      },
+    ]
+  >;
   /**
    * 设置单元格属性（对齐 Semi column.onCell）。返回 { colSpan, rowSpan } 实现行列合并：
    * 值为 0 时该单元格不渲染（被合并进相邻格）；也可返回 style/className。

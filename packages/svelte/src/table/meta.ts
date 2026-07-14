@@ -9,7 +9,7 @@ export const meta = {
     '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。行虚拟滚动 virtualized：仅渲染视口内行切片（复用 core fixedRange），首尾 padding spacer tr 撑总高，保持原生 table 语义；thead sticky 固定顶部；与 pagination 互斥（虚拟时忽略分页）。',
   exports: ['Table'],
   props: [
-    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）' },
+    { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）；useFullRender 完全自定义（render 额外收到 expandIcon/indentText 物料自行摆放）' },
     { name: 'dataSource', type: 'T[]', default: '[]', desc: '数据行' },
     { name: 'rowKey', type: "string | ((record: T) => RowKey)", default: "'key'", desc: '行唯一键解析' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
@@ -64,7 +64,7 @@ export const meta = {
     { name: 'showHeader', type: 'boolean', default: 'true', desc: '是否显示表头' },
     { name: 'defaultExpandAllRows', type: 'boolean', default: 'false', desc: '默认展开全部行（含树形行）' },
     { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '筛选浮层挂载容器，默认跟随触发按钮' },
-    { name: 'onRow', type: '(record: T, index: number) => { onClick?; onDoubleClick?; className?; style? }', default: 'undefined', desc: '行级事件与属性' },
+    { name: 'onRow', type: '(record: T, index: number, rowStatus?: { disabled?; selected? }) => { onClick?; onDoubleClick?; onMouseEnter?; onMouseLeave?; className?; style? }', default: 'undefined', desc: '行级事件与属性（返回值合并到 tr；第三参 rowStatus 含 disabled/selected）' },
     { name: 'onHeaderRow', type: '(columns: ColumnDef<T>[], index: number) => { onClick?; className?; style? }', default: 'undefined', desc: '表头行级事件与属性' },
     { name: 'expandRowByClick', type: 'boolean', default: 'false', desc: '点击行体触发展开/收起' },
     { name: 'expandCellFixed', type: "boolean | 'left' | 'right'", default: 'undefined', desc: '展开图标列固定方向' },

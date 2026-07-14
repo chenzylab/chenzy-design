@@ -143,8 +143,8 @@ const components = [
   ['overflow-list', '{ OverflowList }', '3.2 KB'],
   ['popover', '{ Popover }', '4.75 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],
-  // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、RTL、图标组件化）后实测 17.07 KB，预算按小幅 headroom 校准。
-  ['table', '{ Table }', '17.4 KB'],
+  // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、useFullRender、onRow 事件、根 class/style、RTL、图标组件化）后实测 17.56 KB，预算按小幅 headroom 校准。
+  ['table', '{ Table }', '17.9 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   ['tooltip', '{ Tooltip }', '4.6 KB'],

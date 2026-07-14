@@ -137,6 +137,8 @@
     title,
     footer,
     childrenRecordName,
+    class: className,
+    style,
   }: {
     columns?: ColumnDef<T>[];
     dataSource?: T[];
@@ -210,9 +212,9 @@
     /** 筛选浮层挂载容器，默认跟随触发按钮 */
     getPopupContainer?: () => HTMLElement;
     /** 行级事件与属性（返回 onClick/onDoubleClick/className/style） */
-    onRow?: (record: T, index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onRow?: (record: T, index: number, rowStatus?: { disabled?: boolean; selected?: boolean }) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 表头行级事件与属性 */
-    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 点击行体时触发展开/收起，默认 false */
     expandRowByClick?: boolean;
     /** 展开图标列固定方向 */
@@ -235,7 +237,7 @@
     /** 分组展开/收起变化回调（点击分组标题行触发），回传当前展开的分组 key 集合 */
     onGroupExpandChange?: (info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void;
     /** 分组标题行的自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头行 tr。groupBy 时生效 */
-    onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; className?: string; style?: string };
+    onGroupedRow?: (group: T[], index: number) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 表格顶部标题区域 */
     titleSnippet?: Snippet;
     /** 表格底部内容区域（接收 currentData） */
@@ -267,6 +269,10 @@
     footer?: string;
     /** 树形 dataSource 中子级字段名，默认 'children'（对齐 Semi childrenRecordName；tree.childrenColumnName 优先） */
     childrenRecordName?: string;
+    /** 最外层 .cd-table-wrapper 自定义样式名（对齐 Semi className） */
+    class?: string;
+    /** 最外层 .cd-table-wrapper 内联样式（对齐 Semi style） */
+    style?: string;
   } = $props();
 
   const loc = useLocale();
@@ -1501,10 +1507,11 @@
 
 <!-- 最外层 .semi-table-wrapper（含方向 ltr/rtl），对齐 Semi 分层 -->
 <div
-  class="cd-table-wrapper cd-table-wrapper-{direction}"
+  class="cd-table-wrapper cd-table-wrapper-{direction} {className ?? ''}"
   class:cd-table-wrapper-rtl={direction === 'rtl'}
   data-column-fixed={hasFixed ? 'true' : undefined}
   dir={direction}
+  {style}
 >
   {#if titleSnippet || title}
     <div class="cd-table-title">
@@ -1558,6 +1565,8 @@
         class="cd-table-row {headerRowProps?.className ?? ''}"
         style={headerRowProps?.style ?? undefined}
         onclick={headerRowProps?.onClick ?? undefined}
+        onmouseenter={headerRowProps?.onMouseEnter ?? undefined}
+        onmouseleave={headerRowProps?.onMouseLeave ?? undefined}
       >
         {#if expandAsColumn}
           {@const gc = 0}
@@ -1782,6 +1791,8 @@
                 role={gridEnabled ? 'row' : undefined}
                 style={groupedRowProps?.style ?? undefined}
                 ondblclick={groupedRowProps?.onDoubleClick ?? undefined}
+                onmouseenter={groupedRowProps?.onMouseEnter ?? undefined}
+                onmouseleave={groupedRowProps?.onMouseLeave ?? undefined}
               >
                 <td
                   class="cd-table-row-cell cd-table-row-cell-section"
@@ -1829,7 +1840,7 @@
               {@const rowDisabled = disabledSet.has(key)}
               {@const extra = rowClassName ? rowClassName(record, index) : ''}
               {@const clickable = !!onRowClick || expandRowByClick}
-              {@const rowProps = onRow ? onRow(record, index) : undefined}
+              {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
               <tr
                 class="cd-table-row {extra} {rowProps?.className ?? ''}"
                 class:cd-table-row-selected={selected}
@@ -1845,6 +1856,8 @@
                   if (rowProps?.onClick) rowProps.onClick(e);
                 }}
                 ondblclick={rowProps?.onDoubleClick ?? undefined}
+                onmouseenter={rowProps?.onMouseEnter ?? undefined}
+                onmouseleave={rowProps?.onMouseLeave ?? undefined}
               >
                 {#if expandAsColumn}
                   <td
@@ -1897,36 +1910,47 @@
                     class:cd-table-row-cell-ellipsis={col.ellipsis}
                     style={cellStyle(col, i)}
                   >
-                    {#if hasExpand && !expandAsColumn && i === 0}
-                      <span class="cd-table-expand-icon-cell">
-                        {#if canExpand(record)}
-                          {@render expandButton(record, key, undefined)}
+                    {#snippet gExpandMaterial()}
+                      {#if hasExpand && !expandAsColumn && i === 0}
+                        <span class="cd-table-expand-icon-cell">
+                          {#if canExpand(record)}
+                            {@render expandButton(record, key, undefined)}
+                          {:else}
+                            <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
+                          {/if}
+                        </span>
+                      {/if}
+                      {#if treeEnabled && i === 0}
+                        {#if row.hasChildren}
+                          <button
+                            type="button"
+                            class="cd-table-expand-icon"
+                            class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
+                            aria-expanded={treeExpandedSet.has(key)}
+                            aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                            onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
+                          >
+                            <IconTreeTriangleRight size="small" aria-hidden="true" />
+                          </button>
                         {:else}
                           <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                         {/if}
-                      </span>
-                    {/if}
-                    {#if treeEnabled && i === 0}
-                      <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
-                      {#if row.hasChildren}
-                        <button
-                          type="button"
-                          class="cd-table-expand-icon"
-                          class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
-                          aria-expanded={treeExpandedSet.has(key)}
-                          aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                          onclick={(e) => { e.stopPropagation(); toggleTreeExpand(record); }}
-                        >
-                          <IconTreeTriangleRight size="small" aria-hidden="true" />
-                        </button>
-                      {:else}
-                        <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                       {/if}
-                    {/if}
-                    {#if col.render}
-                      {@render col.render({ value, record, index })}
+                    {/snippet}
+                    {#snippet gIndentMaterial()}
+                      {#if treeEnabled && i === 0}
+                        <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                      {/if}
+                    {/snippet}
+                    {#if col.useFullRender && col.render}
+                      {@render col.render({ value, record, index, expandIcon: gExpandMaterial, indentText: gIndentMaterial })}
                     {:else}
-                      {cellText(value)}
+                      {#if i === 0}{@render gIndentMaterial()}{@render gExpandMaterial()}{/if}
+                      {#if col.render}
+                        {@render col.render({ value, record, index })}
+                      {:else}
+                        {cellText(value)}
+                      {/if}
                     {/if}
                   </td>
                 {/each}
@@ -1964,7 +1988,7 @@
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
           {@const clickable = !!onRowClick || expandRowByClick}
-          {@const rowProps = onRow ? onRow(record, index) : undefined}
+          {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
           <tr
             class="cd-table-row {extra} {rowProps?.className ?? ''}"
             class:cd-table-row-selected={selected}
@@ -1982,6 +2006,8 @@
               if (rowProps?.onClick) rowProps.onClick(e);
             }}
             ondblclick={rowProps?.onDoubleClick ?? undefined}
+            onmouseenter={rowProps?.onMouseEnter ?? undefined}
+            onmouseleave={rowProps?.onMouseLeave ?? undefined}
           >
             {#if expandAsColumn}
               {@const gc = 0}
@@ -2057,40 +2083,52 @@
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
-                {#if hasExpand && !expandAsColumn && i === 0}
-                  <span class="cd-table-expand-icon-cell">
-                    {#if canExpand(record)}
-                      {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                <!-- 展开图标 / 树形三角 / 缩进物料：useFullRender 时不自动前置，改注入 render 供自行摆放 -->
+                {#snippet cellExpandMaterial()}
+                  {#if hasExpand && !expandAsColumn && i === 0}
+                    <span class="cd-table-expand-icon-cell">
+                      {#if canExpand(record)}
+                        {@render expandButton(record, key, childTabindex(gridRow, gc))}
+                      {:else}
+                        <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
+                      {/if}
+                    </span>
+                  {/if}
+                  {#if treeEnabled && i === 0}
+                    {#if row.hasChildren}
+                      <button
+                        type="button"
+                        class="cd-table-expand-icon"
+                        class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
+                        aria-expanded={treeExpandedSet.has(key)}
+                        aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
+                        tabindex={childTabindex(gridRow, gc)}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          toggleTreeExpand(record);
+                        }}
+                      >
+                        <IconTreeTriangleRight size="small" aria-hidden="true" />
+                      </button>
                     {:else}
                       <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                     {/if}
-                  </span>
-                {/if}
-                {#if treeEnabled && i === 0}
-                  <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
-                  {#if row.hasChildren}
-                    <button
-                      type="button"
-                      class="cd-table-expand-icon"
-                      class:cd-table-expandedIcon-show={treeExpandedSet.has(key)}
-                      aria-expanded={treeExpandedSet.has(key)}
-                      aria-label={treeExpandedSet.has(key) ? loc().t('Table.collapseRow') : loc().t('Table.expandRow')}
-                      tabindex={childTabindex(gridRow, gc)}
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        toggleTreeExpand(record);
-                      }}
-                    >
-                      <IconTreeTriangleRight size="small" aria-hidden="true" />
-                    </button>
-                  {:else}
-                    <span class="cd-table-expand-icon cd-table-expand-icon-placeholder" aria-hidden="true"></span>
                   {/if}
-                {/if}
-                {#if col.render}
-                  {@render col.render({ value, record, index })}
+                {/snippet}
+                {#snippet cellIndentMaterial()}
+                  {#if treeEnabled && i === 0}
+                    <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
+                  {/if}
+                {/snippet}
+                {#if col.useFullRender && col.render}
+                  {@render col.render({ value, record, index, expandIcon: cellExpandMaterial, indentText: cellIndentMaterial })}
                 {:else}
-                  {cellText(value)}
+                  {#if i === 0}{@render cellIndentMaterial()}{@render cellExpandMaterial()}{/if}
+                  {#if col.render}
+                    {@render col.render({ value, record, index })}
+                  {:else}
+                    {cellText(value)}
+                  {/if}
                 {/if}
               </td>
               {/if}
