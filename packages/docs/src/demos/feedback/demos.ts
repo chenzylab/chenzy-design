@@ -24,10 +24,11 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-emoji.svelte', 'emoji 满意度', 'type=emoji：表情评分行（role=radiogroup），方向键选择。'),
-  entry('02-text.svelte', '文本反馈', 'type=text：TextArea 收集文字，textAreaProps 透传字数统计等。'),
-  entry('03-radio.svelte', '单选原因', 'type=radio：options 提供单选项，收集单一原因。'),
-  entry('04-checkbox.svelte', '多选亮点', 'type=checkbox：options 提供多选项，收集多个标签。'),
-  entry('05-popup.svelte', '抽屉形态', 'mode=popup：以 SideSheet 抽屉呈现；onOk 异步提交时按钮 loading。'),
-  entry('06-custom.svelte', '自定义内容', 'type=custom：renderContent 自绘内容区（如内嵌星级评分）。'),
+  entry('01-basic.svelte', '基本使用', '通过 visible 设置是否显示。默认反馈内容是 emoji 形式，可通过 onValueChange 获取当前选择。'),
+  entry('02-text.svelte', '文字类型', '设置 type 为 text 可获得多行输入框形式，可通过 textAreaProps 设置多行输入框参数。'),
+  entry('03-radio.svelte', '单选反馈', '设置 type 为 radio 可获得单选形式，可通过 radioGroupProps 设置单选参数。'),
+  entry('04-checkbox.svelte', '多选反馈', '设置 type 为 checkbox 可获得多选形式，可通过 checkboxGroupProps 设置多选参数。'),
+  entry('05-custom.svelte', '自定义反馈内容', '设置 type 为 custom，通过 children 设置内容；需自行经 okButtonProps.disabled 控制提交禁用。'),
+  entry('06-modal.svelte', '模态对话框形式', '通过 mode 切换反馈形式，默认 popup，设为 modal 可获得模态对话框形式。'),
+  entry('07-thanks.svelte', '反馈完成提示', '反馈完成后，可切换展示信息提示用户本次反馈已经完成。'),
 ];

@@ -1,24 +1,24 @@
 <!--
   仅供 Feedback.kbd.test.ts（browser project）使用的键盘 e2e 夹具。
-  Feedback type=emoji 的评分行是 role=radiogroup + role=radio 子项（roving tabindex），
-  方向键在 emoji 间移动并选中（aria-checked 真实变化），jsdom 测不了真实焦点/方向键。
-  受控 value 由本夹具持有，onValueChange 回写，模拟真实使用。
+  对齐 Semi 后 emoji 评分行为裸 span（本库补 role=button + Enter/Space 触发），
+  真浏览器验证键盘可达性与真实焦点。onValueChange 回写供断言。
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';
   import Feedback from './Feedback.svelte';
   import type { FeedbackValue } from './Feedback.svelte';
 
-  let value = $state<FeedbackValue>({});
+  let last = $state<FeedbackValue | null>(null);
 </script>
 
 <LocaleProvider locale="en_US">
   <Feedback
-    open
+    visible
     mode="modal"
     type="emoji"
     title="Feedback"
-    {value}
-    onValueChange={(v: FeedbackValue) => (value = v)}
+    onValueChange={(v: FeedbackValue) => (last = v)}
   />
 </LocaleProvider>
+
+<span data-testid="last-emoji">{last && typeof last === 'object' && !Array.isArray(last) ? (last.emoji ?? '') : ''}</span>

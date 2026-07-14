@@ -1,144 +1,143 @@
 // Feedback a11y + 行为（jsdom/dom project）：
 //  - 外壳 role=dialog（modal→Modal / popup→SideSheet），axe 0 violations。
 //  - type 五种渲染分发（text/emoji/radio/checkbox/custom）。
-//  - emoji 评分 role=radiogroup + 每 emoji role=radio + aria-label（i18n 语义）。
-//  - emoji 选择触发 onValueChange，提交 onOk 异步时按钮 aria-busy。
-// 注：真实焦点移动 / 方向键 roving 留给 *.kbd.test.ts（真浏览器）。
+//  - emoji 评分为裸 span（role=button，对齐 Semi，无 radiogroup/radio），点击触发 onValueChange。
+//  - 选中 😞(bad) 时额外出可选 TextArea；提交 onOk 异步时 popup 按钮 loading。
 import { describe, it, expect, vi } from 'vitest';
-import { flushSync, tick } from 'svelte';
+import { flushSync, tick, createRawSnippet } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Feedback from './Feedback.svelte';
 
 describe('Feedback a11y', () => {
-  it('mode=modal + emoji：外壳 role=dialog、radiogroup + radio + i18n aria-label，无 axe violations', async () => {
+  it('mode=modal + emoji：外壳 role=dialog、emoji 为 3 档裸 span，无 axe violations', async () => {
     renderWithLocale(Feedback, {
-      props: { open: true, mode: 'modal', type: 'emoji', title: 'Feedback' },
+      props: { visible: true, mode: 'modal', type: 'emoji', title: 'Feedback' },
     });
 
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
     expect(dialog).not.toBeNull();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
 
-    const group = document.querySelector('[role="radiogroup"]') as HTMLElement | null;
-    expect(group).not.toBeNull();
-    // 可访问名来自 en_US locale（Feedback.ratingLabel），非 key 原样。
-    const groupLabel = group?.getAttribute('aria-label');
-    expect(groupLabel).toBeTruthy();
-    expect(groupLabel).not.toBe('Feedback.ratingLabel');
-
-    const radios = document.querySelectorAll('[role="radio"]');
-    expect(radios.length).toBe(5);
-    const firstLabel = radios[0]?.getAttribute('aria-label');
-    expect(firstLabel).toBeTruthy();
-    expect(firstLabel).not.toContain('Feedback.emoji');
+    // 对齐 Semi：3 档 emoji（😞😐😃），裸 span（本库补 role=button 键盘可达）。
+    const items = document.querySelectorAll('.cd-feedback-emoji-item');
+    expect(items.length).toBe(3);
+    expect((items[0] as HTMLElement).dataset.value).toBe('😞');
 
     await expectNoAxeViolations(document.body);
   });
 
-  it('mode=popup：外壳 role=dialog（SideSheet），无 axe violations', async () => {
+  it('mode=popup + text：外壳 role=dialog（SideSheet），渲染 textarea，无 axe violations', async () => {
     renderWithLocale(Feedback, {
-      props: { open: true, mode: 'popup', type: 'text', title: 'Feedback' },
+      props: { visible: true, mode: 'popup', type: 'text', title: 'Feedback' },
     });
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
     expect(dialog).not.toBeNull();
-    // text 类型渲染 textarea
     expect(document.querySelector('textarea')).not.toBeNull();
     await expectNoAxeViolations(document.body);
   });
 
-  it('type=radio：渲染 radiogroup（RadioGroup），无 axe violations', async () => {
+  it('type=radio：radioGroupProps.options 渲染单选（RadioGroup），无 axe violations', async () => {
     renderWithLocale(Feedback, {
       props: {
-        open: true,
+        visible: true,
         type: 'radio',
         title: 'Reason',
-        options: [
-          { label: 'Slow', value: 'slow' },
-          { label: 'Buggy', value: 'buggy' },
-        ],
+        radioGroupProps: {
+          options: [
+            { label: 'Slow', value: 'slow' },
+            { label: 'Buggy', value: 'buggy' },
+          ],
+        },
       },
     });
     const radios = document.querySelectorAll('input[type="radio"]');
     expect(radios.length).toBe(2);
+    // 对齐 Semi DOM：容器 .cd-feedback-radio-container。
+    expect(document.querySelector('.cd-feedback-radio-container')).not.toBeNull();
     await expectNoAxeViolations(document.body);
   });
 
-  it('type=checkbox：渲染多选（CheckboxGroup），无 axe violations', async () => {
+  it('type=checkbox：checkboxGroupProps.options 渲染多选（CheckboxGroup），无 axe violations', async () => {
     renderWithLocale(Feedback, {
       props: {
-        open: true,
+        visible: true,
         type: 'checkbox',
         title: 'Tags',
-        value: ['a'],
-        options: [
-          { label: 'A', value: 'a' },
-          { label: 'B', value: 'b' },
-        ],
+        checkboxGroupProps: {
+          options: [
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+          ],
+        },
       },
     });
     const boxes = document.querySelectorAll('input[type="checkbox"]');
     expect(boxes.length).toBe(2);
+    expect(document.querySelector('.cd-feedback-checkbox-container')).not.toBeNull();
     await expectNoAxeViolations(document.body);
   });
 
-  it('emoji 选择：点击触发 onValueChange 归一化为 EmojiResult', async () => {
+  it('emoji 点击：触发 onValueChange 归一化为 EmojiResult，选中项加 -selected', async () => {
     const onValueChange = vi.fn();
     renderWithLocale(Feedback, {
-      props: { open: true, type: 'emoji', title: 'F', onValueChange },
+      props: { visible: true, type: 'emoji', title: 'F', onValueChange },
     });
-    const radios = document.querySelectorAll('[role="radio"]');
-    (radios[4] as HTMLButtonElement).click();
+    const items = document.querySelectorAll('.cd-feedback-emoji-item');
+    (items[2] as HTMLElement).click();
     flushSync();
     expect(onValueChange).toHaveBeenCalledTimes(1);
-    const arg = onValueChange.mock.calls[0]![0];
-    expect(arg).toMatchObject({ emoji: expect.any(String) });
+    expect(onValueChange.mock.calls[0]![0]).toEqual({ emoji: '😃' });
+    // 选中项拿到 -selected 类（filter:none 去灰）。
+    expect((items[2] as HTMLElement).classList.contains('cd-feedback-emoji-item-selected')).toBe(true);
   });
 
-  it('已选 emoji：aria-checked=true 且 roving tabindex=0', async () => {
+  it('emoji 选 😞(bad)：额外出可选 TextArea', async () => {
     renderWithLocale(Feedback, {
-      props: { open: true, type: 'emoji', title: 'F', value: { emoji: '😐' } },
+      props: { visible: true, type: 'emoji', title: 'F' },
     });
-    const radios = Array.from(document.querySelectorAll('[role="radio"]'));
-    const checked = radios.find((r) => r.getAttribute('aria-checked') === 'true');
-    expect(checked).toBeTruthy();
-    expect(checked?.getAttribute('tabindex')).toBe('0');
+    // 初始无 textarea。
+    expect(document.querySelector('textarea')).toBeNull();
+    const items = document.querySelectorAll('.cd-feedback-emoji-item');
+    (items[0] as HTMLElement).click(); // 😞
+    flushSync();
+    expect(document.querySelector('textarea')).not.toBeNull();
   });
 
-  it('onOk 异步：提交按钮 aria-busy 在 await 期间为 true', async () => {
+  it('onOk 异步：popup 提交按钮 await 期间 loading', async () => {
     let resolveOk: () => void = () => {};
     const onOk = vi.fn(() => new Promise<void>((r) => { resolveOk = r; }));
     renderWithLocale(Feedback, {
-      props: { open: true, mode: 'popup', type: 'text', title: 'F', onOk },
+      props: { visible: true, mode: 'popup', type: 'text', title: 'F', onOk },
     });
-    const submit = document.querySelector('.cd-feedback__btn--primary') as HTMLButtonElement;
-    expect(submit).not.toBeNull();
+    // 先输入使提交可用。
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.value = 'x';
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+    // footer 内第二个按钮为提交（primary solid）。
+    const buttons = Array.from(document.querySelectorAll('.cd-feedback-footer button')) as HTMLButtonElement[];
+    const submit = buttons[1]!;
     submit.click();
     flushSync();
     await tick();
-    expect(submit.getAttribute('aria-busy')).toBe('true');
+    expect(submit.className).toContain('loading');
     resolveOk();
     await tick();
     flushSync();
-    expect(submit.getAttribute('aria-busy')).toBe('false');
+    expect(submit.className).not.toContain('loading');
   });
 
-  it('type=custom：renderContent 渲染自定义内容', async () => {
+  it('type=custom：children 渲染自定义内容', async () => {
     renderWithLocale(Feedback, {
       props: {
-        open: true,
+        visible: true,
         type: 'custom',
         title: 'F',
-        renderContent: createSnippet(),
+        children: createRawSnippet(() => ({
+          render: () => `<div data-testid="custom">custom</div>`,
+        })),
       },
     });
     expect(document.querySelector('[data-testid="custom"]')).not.toBeNull();
   });
 });
-
-// 一个最小 Snippet：渲染带 data-testid 的节点。用 svelte 的 createRawSnippet。
-import { createRawSnippet } from 'svelte';
-function createSnippet() {
-  return createRawSnippet(() => ({
-    render: () => `<div data-testid="custom">custom</div>`,
-  }));
-}

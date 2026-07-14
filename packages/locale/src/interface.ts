@@ -212,20 +212,6 @@ export interface Locale {
     submit: string;
     /** 取消按钮文案 */
     cancel: string;
-    /** 文本反馈占位符 */
-    placeholder: string;
-    /** emoji 评分组的 role=radiogroup 可访问名 */
-    ratingLabel: string;
-    /** emoji 语义 aria-label —— 非常差 */
-    emojiVeryBad: string;
-    /** emoji 语义 aria-label —— 差 */
-    emojiBad: string;
-    /** emoji 语义 aria-label —— 一般 */
-    emojiNeutral: string;
-    /** emoji 语义 aria-label —— 好 */
-    emojiGood: string;
-    /** emoji 语义 aria-label —— 非常好 */
-    emojiVeryGood: string;
   };
   PinCode: {
     /** 分组无可视标签时的辅助名 */

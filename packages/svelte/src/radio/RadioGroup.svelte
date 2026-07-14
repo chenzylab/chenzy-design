@@ -16,12 +16,14 @@
   } from './context.js';
 
   type OptionObject = { label: string; value: RadioValue; disabled?: boolean; extra?: string };
+  // 对齐 Semi：options 支持 primitive（string/number）或对象形式。
+  type Option = string | number | OptionObject;
 
   interface Props {
     value?: RadioValue;
     defaultValue?: RadioValue;
     name?: string;
-    options?: OptionObject[];
+    options?: Option[];
     disabled?: boolean;
     size?: RadioSize;
     /** 专控 type='button' 时的尺寸（对齐 Semi）；传入时优先于 size。middle→default 映射。 */
@@ -176,6 +178,12 @@
   const cls = $derived(
     `cd-radio-group cd-radio-group--${direction} cd-radio-group--${type}`,
   );
+
+  // 对齐 Semi：primitive option 归一化为 { label, value }（label/value 同值）。
+  function normalizeOption(opt: Option): OptionObject {
+    return typeof opt === 'object' ? opt : { label: String(opt), value: opt };
+  }
+  const normalizedOptions = $derived(options?.map(normalizeOption));
 </script>
 
 <div
@@ -186,8 +194,8 @@
   aria-label={ariaLabelledby ? undefined : ariaLabel}
   aria-invalid={status === 'error' ? 'true' : undefined}
 >
-  {#if options}
-    {#each options as opt (opt.value)}
+  {#if normalizedOptions}
+    {#each normalizedOptions as opt (opt.value)}
       <Radio value={opt.value} disabled={opt.disabled ?? false} extra={opt.extra}>{opt.label}</Radio
       >
     {/each}

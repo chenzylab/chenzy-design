@@ -4,12 +4,12 @@
   let visible = $state(false);
 </script>
 
-<Button onclick={() => (visible = !visible)}>展示反馈: Popup, radio</Button>
+<Button onclick={() => (visible = !visible)}>展示反馈: Modal, emoji</Button>
 <Feedback
-  type="radio"
-  radioGroupProps={{ options: ['访客', '开发者', '维护者'] }}
-  title="您的身份是"
+  mode="modal"
+  title="Why did you choose this rating?"
   {visible}
   onOk={() => { visible = false; }}
   onCancel={() => { visible = false; }}
+  onValueChange={(value) => console.log('emoji value', value)}
 />

@@ -152,13 +152,6 @@ export const zh_CN: Locale = {
   Feedback: {
     submit: '提交',
     cancel: '取消',
-    placeholder: '请填写你的反馈',
-    ratingLabel: '满意度评分',
-    emojiVeryBad: '非常差',
-    emojiBad: '差',
-    emojiNeutral: '一般',
-    emojiGood: '好',
-    emojiVeryGood: '非常好',
   },
   PinCode: {
     ariaLabel: '验证码',
