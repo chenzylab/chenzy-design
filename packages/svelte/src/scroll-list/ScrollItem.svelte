@@ -6,21 +6,23 @@
   - DOM/class 镜像 Semi：wheel → -item-wheel > -shade-pre/-selector/-shade-post/-list-outer>ul>li；
     normal → -item > ul>li（选中 li 加 -item-sel）。
   - wheel 滚动落定：找选区中线最近的非禁用节点 → 吸附居中 + 加 -item-selected 类 + onSelect。
-  - cycled（仅 wheel）：渲染重复份，滚动落定后无缝重定位回中段（等价 Semi adjustInfiniteList 的节点搬移）。
-  - selectedIndex 受控变化 → 缓动滚动到该项居中（motion=true 用 rAF ease-out，对齐 semi-animation；false 直达）。
+  - cycled（仅 wheel）：渲染 prepend+基准+append 份（份数对齐 Semi），滚动中环绕平移 scrollTop 维持
+    上下缓冲（等价 Semi adjustInfiniteList 的 prepend/append 节点搬移净效果，DOM 节点数守恒）。
+  - selectedIndex 受控变化 → 缓动滚动到该项居中（motion=true 用 rAF 线性缓动，对齐 semi-animation；false 直达）。
   - transform：选中项文案变换（item.transform 优先于公共 transform，对齐 Semi renderItemList）。
   - onSelect 载荷 {...item, value, type, index}（对齐 Semi notifySelectItem）。
   所有 scroll/rAF 监听命令式 + cleanup；纯几何/文案复用 @chenzy-design/core。
 -->
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack, tick } from 'svelte';
   import {
     resolveItemText,
     centerOffset,
     nearestIndex,
     wrapIndex,
     scrollFrame,
-    repeatCount,
+    shouldPrepend,
+    shouldAppend,
     SCROLL_LIST_DEFAULT_ITEM_HEIGHT,
     SCROLL_LIST_DEFAULT_SCROLL_DURATION,
     type ScrollItemMode,
@@ -80,25 +82,33 @@
   let wheelHeight = $state(300);
 
   // ul 顶部 :before 空白（对齐 Semi ($height-scrollList - $height-scrollList_item)*0.5），随实测高变化。
+  // 仅 nocycle wheel 的 ul 有此 :before（见样式 `-nocycle > ul::before`）；cycled ul 铺满、无顶部空白。
   const TOP_PADDING = $derived((wheelHeight - ITEM_HEIGHT) / 2);
 
-  // cycled 重复份数（奇数，保证中段两侧各有缓冲）。ratio=2 对齐 Semi init shouldPrepend/Append。
-  const REPEAT = $derived(
-    isCyclic ? Math.max(3, (repeatCount(count, ITEM_HEIGHT, wheelHeight, 2) * 2 + 1) | 1) : 1,
-  );
-  const virtualCount = $derived(isCyclic ? count * REPEAT : count);
+  // 几何基线：nocycle 首项 offsetTop = TOP_PADDING；cycled 首项 offsetTop = 0（ul 无 :before）。
+  // centerOffset / nearestIndex 必须用与真实 DOM 一致的基线，否则 cycled 落定永远差半格、不吸附。
+  const GEOM_TOP_PADDING = $derived(isCyclic ? 0 : TOP_PADDING);
 
-  // 逻辑 index ↔ 虚拟 index（cycled 落到正中那份）。
+  // cycled 头/尾补的「份数」（对齐 Semi state.prependCount / appendCount，决定 DOM 节点数）。渲染 =
+  // prepend 份 + 基准 1 份 + append 份，init 用 shouldPrepend/Append(ratio=2) 定值（节点数与 Semi 一致）。
+  // 每份都是完整 list 循环 → 无限滚动靠 adjustInfiniteList 环绕平移 scrollTop（内容循环、视觉无感），
+  // 无需运行时增删份，故 prependCount/appendCount 定后不变（对齐 Semi 总节点数守恒的净效果）。
+  let prependCount = $state(0);
+  let appendCount = $state(0);
+  const parts = $derived(isCyclic ? prependCount + 1 + appendCount : 1);
+  const virtualCount = $derived(isCyclic ? count * parts : count);
+
+  // 逻辑 index ↔ 虚拟 index。每份都是完整 list 顺序 → 逻辑 = wrapIndex(virtual, count)（与 scrollTop
+  // 无关，环绕平移不影响此映射）。基准份（对齐 selectedIndex 的那份）起点虚拟 index = prependCount*count。
   function toVirtual(logical: number): number {
     if (!isCyclic || count <= 0) return logical;
-    const mid = Math.floor(REPEAT / 2);
-    return mid * count + wrapIndex(logical, count);
+    return prependCount * count + wrapIndex(logical, count);
   }
   function toLogical(virtual: number): number {
     return isCyclic ? wrapIndex(virtual, count) : virtual;
   }
 
-  // 渲染行（虚拟）：cycled 铺 REPEAT 份，否则原 list。
+  // 渲染行（虚拟）：cycled 铺 parts 份，否则原 list。
   const rendered = $derived.by(() => {
     const out: Array<{ v: number; logical: number; item: ScrollItemData }> = [];
     for (let v = 0; v < virtualCount; v += 1) {
@@ -121,9 +131,10 @@
   const currentLogical = $derived(toLogical(currentVIndex));
 
   // 命令式控制变量（非 $state）。
-  let suppressSelect = false; // 程序化滚动时抑制 scroll 落定
   let settleTimer: ReturnType<typeof setTimeout> | undefined;
   let rafId = 0;
+  let animTarget = Number.NaN; // 进行中吸附动画的目标 scrollTop（用于避免同目标重启）
+  let adjustThrottled = false; // cycled 重定位的 rAF 节流闸（对齐 Semi throttledAdjustList）
 
   function prefersReducedMotion(): boolean {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
@@ -135,28 +146,43 @@
       cancelAnimationFrame(rafId);
       rafId = 0;
     }
+    animTarget = Number.NaN;
   }
 
-  // 把某虚拟 index 居中所需 scrollTop（对齐 Semi scrollToNode，含 ul :before 顶部空白）。
+  // 把某虚拟 index 居中所需 scrollTop（对齐 Semi scrollToNode）。
+  // 基线用 GEOM_TOP_PADDING：cycled ul 无 :before → 0；nocycle → TOP_PADDING。
   function offsetForV(virtual: number): number {
-    return centerOffset(virtual, ITEM_HEIGHT, wheelHeight, TOP_PADDING);
+    return centerOffset(virtual, ITEM_HEIGHT, wheelHeight, GEOM_TOP_PADDING);
   }
 
-  // 缓动滚动到目标 scrollTop（对齐 Semi scrollTo.ts）。duration=0 或 reduced-motion 直达。
+  // 缓动滚动到目标 scrollTop（照搬 Semi scrollTo.ts：线性 from→to over duration=120ms）。
+  // duration=0 / motion=false / reduced-motion 直达。曲线为线性（见 core scrollFrame 注释）。
   function animateScrollTo(el: HTMLElement, to: number, duration: number): void {
+    // 进行中动画的目标与新目标一致 → 不重启，让原动画自然跑完（对齐 Semi scrollTop===targetTop
+    // 的稳定性：吸附动画途中掉帧触发的二次 settle 会算出同一 target，不该打断/重置动画进度）。
+    if (rafId && Math.abs(animTarget - to) < 0.5) return;
     cancelAnim();
-    if (duration <= 0 || !motion || prefersReducedMotion()) {
+    // duration=0 / motion=false / reduced-motion / 页面不可见（rAF 被浏览器节流挂起，动画会卡在
+    // 半途）→ 直接落定，保证吸附始终精确到位。
+    const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    if (duration <= 0 || !motion || prefersReducedMotion() || hidden) {
       el.scrollTop = to;
       return;
     }
     const from = el.scrollTop;
-    if (from === to) return;
-    let start = performance.now();
+    // 已到位（含浮点/亚像素误差）直接落定，避免无谓 rAF 与来回抖动。
+    if (Math.abs(from - to) < 0.5) {
+      el.scrollTop = to;
+      return;
+    }
+    animTarget = to;
+    const start = performance.now();
     const tick = (now: number): void => {
       const elapsed = now - start;
       el.scrollTop = scrollFrame(from, to, elapsed, duration);
       if (elapsed >= duration) {
         rafId = 0;
+        animTarget = Number.NaN;
         return;
       }
       rafId = requestAnimationFrame(tick);
@@ -164,11 +190,11 @@
     rafId = requestAnimationFrame(tick);
   }
 
-  // 程序化滚动到虚拟 index 居中（wheel）。
+  // 程序化滚动到虚拟 index 居中（wheel）。落定是幂等的：若已居中，animateScrollTo 直接返回，
+  // 后续 scroll→settle 也只会算出同一 nearest、同一 offset，不产生抖动或重复 notify。
   function scrollToV(virtual: number, duration: number): void {
     const el = listOuterEl;
     if (!el) return;
-    suppressSelect = true;
     animateScrollTo(el, offsetForV(virtual), duration);
   }
 
@@ -195,24 +221,34 @@
     }
   }
 
-  // cycled：落定后若滚出安全中段则无动画重定位（等价 Semi adjustInfiniteList）。
-  function maybeRecenter(virtual: number): void {
+  // cycled 无缝无限滚动（对齐 Semi adjustInfiniteList 的净效果）：滚动中读首/尾 li 相对视窗的位置，
+  // 用 shouldPrepend/shouldAppend(ratio=1) 判断上/下缓冲是否不足（各需再补几份）。因每份都是完整
+  // list 循环，补份等价于「环绕平移」：上缓冲不足 → scrollTop += k*listHeight（内容相对下移、上方露出
+  // 更多循环份）；下缓冲不足 → scrollTop -= k*listHeight。平移量是 listHeight 的整数倍 → 视觉完全
+  // 无感、无露白（已 Node 逐步滚动实测两侧缓冲恒 >= wheelHeight）。currentVIndex 同步平移保持高亮。
+  function adjustInfiniteList(): void {
     if (!isCyclic) return;
-    const total = virtualCount;
-    // 安全区 [count, total-count)。
-    if (virtual >= count && virtual < total - count) return;
-    const mid = Math.floor(REPEAT / 2);
-    const re = mid * count + wrapIndex(virtual, count);
-    requestAnimationFrame(() => {
-      const el = listOuterEl;
-      if (!el) return;
-      suppressSelect = true;
-      el.scrollTop = offsetForV(re);
-      currentVIndex = re;
-    });
+    const el = listOuterEl;
+    if (!el) return;
+    const listHeight = count * ITEM_HEIGHT;
+    if (listHeight <= 0) return;
+    // 首/尾 li 顶相对视窗顶的偏移（相对坐标，wrapperTop=0）。首份起点 = ul 顶 = -scrollTop
+    // （cycled ul 无 :before）；尾份最后一项顶 = 首 + (virtualCount-1)*ITEM_HEIGHT。
+    const firstTop = -el.scrollTop;
+    const lastTop = firstTop + (virtualCount - 1) * ITEM_HEIGHT;
+    const needPrepend = shouldPrepend(firstTop, count, ITEM_HEIGHT, wheelHeight, 1);
+    const needAppend = shouldAppend(lastTop, count, ITEM_HEIGHT, wheelHeight, 1);
+    if (needPrepend > 0) {
+      el.scrollTop += needPrepend * listHeight;
+      currentVIndex += needPrepend * count;
+    } else if (needAppend > 0) {
+      el.scrollTop -= needAppend * listHeight;
+      currentVIndex -= needAppend * count;
+    }
   }
 
-  // wheel scroll 落定：中线找最近非禁用节点 → 吸附居中 + 选中（对齐 getNearestNodeInfo + debouncedSelect）。
+  // wheel scroll 落定（照搬 Semi debouncedSelect→selectNode）：中线找最近非禁用节点 →
+  // scrollToCenter 吸附居中 + notify。幂等交给 scrollToPos/animateScrollTo（scrollTop≈target 即跳过）。
   function settle(): void {
     const el = listOuterEl;
     if (!el) return;
@@ -222,30 +258,31 @@
       wheelHeight,
       virtualCount,
       (v) => isDisabledLogical(toLogical(v)),
-      TOP_PADDING,
+      GEOM_TOP_PADDING,
     );
     if (nearest < 0) return;
     scrollToV(nearest, SCROLL_LIST_DEFAULT_SCROLL_DURATION);
     commitV(nearest, true);
-    maybeRecenter(nearest);
   }
 
-  // --- wheel scroll 监听（命令式 + debounce 落定）---
+  // --- wheel scroll 监听（照搬 Semi scrollToSelectItem：throttled adjust + debounced select）---
   $effect(() => {
     if (!isWheel) return;
     const el = listOuterEl;
     if (!el) return;
 
     function onScroll(): void {
+      // throttle：滚动过程中持续维持 cycled 缓冲（对齐 Semi throttledAdjustList，每帧 ~16ms）。
+      if (!adjustThrottled) {
+        adjustThrottled = true;
+        requestAnimationFrame(() => {
+          adjustThrottled = false;
+          adjustInfiniteList();
+        });
+      }
+      // debounce：滚动停顿 ~33ms 后吸附落定（对齐 Semi debouncedSelect，msPerFrame*2）。
       if (settleTimer) clearTimeout(settleTimer);
-      settleTimer = setTimeout(() => {
-        if (suppressSelect) {
-          suppressSelect = false;
-          return;
-        }
-        if (rafId) return; // 缓动中不抢落定
-        settle();
-      }, (1000 / 60) * 2);
+      settleTimer = setTimeout(settle, (1000 / 60) * 2);
     }
 
     el.addEventListener('scroll', onScroll, { passive: true });
@@ -277,12 +314,27 @@
     if (!el) return;
     // 依赖 wheelHeight：实测高度变化后重新居中定位。
     void wheelHeight;
-    untrack(() => {
+    // cycled：先按 Semi initWheelList(ratio=2) 定初始 prepend/append 份数——设想「基准份 selected
+    // 居中」的布局，算首/尾项相对视窗的位置，求头尾各需补多少份填满 2× 视窗缓冲。改份数会触发 ul
+    // 重渲染出 parts 份，必须 await tick() 等 DOM 扩展后再设 scrollTop，否则容器 scrollHeight 仍是
+    // 单份高、offsetForV 的目标被 clamp（导致 cycled 首屏不居中、中线偏半格）。
+    let cancelled = false;
+    void untrack(async () => {
+      if (isCyclic && count > 0) {
+        const baseFirstTop = (wheelHeight - ITEM_HEIGHT) / 2 - selectedIndex * ITEM_HEIGHT;
+        const baseLastTop = baseFirstTop + (count - 1) * ITEM_HEIGHT;
+        prependCount = shouldPrepend(baseFirstTop, count, ITEM_HEIGHT, wheelHeight, 2);
+        appendCount = shouldAppend(baseLastTop, count, ITEM_HEIGHT, wheelHeight, 2);
+        await tick();
+        if (cancelled) return;
+      }
       const initV = toVirtual(selectedIndex);
-      suppressSelect = true;
       el.scrollTop = offsetForV(initV);
       currentVIndex = initV;
     });
+    return () => {
+      cancelled = true;
+    };
   });
 
   // --- selectedIndex 受控变化 → 缓动滚动（对齐 Semi componentDidUpdate）---
@@ -312,7 +364,7 @@
     cancelAnim();
     scrollToV(virtual, SCROLL_LIST_DEFAULT_SCROLL_DURATION);
     commitV(virtual, true);
-    maybeRecenter(virtual);
+    // 点击落点若冲出安全中段，随后由吸附动画触发的 scroll→adjustInfiniteList 会重定位维持缓冲。
   }
 
   // --- normal 点击选中（对齐 Semi selectIndex）---
