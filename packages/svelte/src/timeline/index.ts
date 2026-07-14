@@ -7,10 +7,14 @@ export const Timeline: typeof Timeline_ & {
 
 export { TimelineItem };
 export { meta as timelineMeta } from './meta.js';
-export type { TimelineItemData } from './types.js';
+export type {
+  TimelineItemData,
+  TimelineItemType,
+  TimelineItemPosition,
+} from './types.js';
 export {
   getTimelineContext,
   setTimelineContext,
   type TimelineContext,
-  type TimelineLineStyle,
+  type TimelineMode,
 } from './context.js';

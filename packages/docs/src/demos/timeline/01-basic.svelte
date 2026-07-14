@@ -1,12 +1,9 @@
 <script lang="ts">
   import { Timeline } from '@chenzy-design/svelte';
-
-  const dataSource = [
-    { key: '1', content: '创建订单', time: '2024-06-01 10:00' },
-    { key: '2', content: '支付成功', time: '2024-06-01 10:05' },
-    { key: '3', content: '商家接单', time: '2024-06-01 10:30' },
-    { key: '4', content: '配送中', time: '2024-06-01 14:00' },
-  ];
 </script>
 
-<Timeline {dataSource} />
+<Timeline>
+  <Timeline.Item time="2019-07-14 10:35">第一个节点内容</Timeline.Item>
+  <Timeline.Item time="2019-06-13 16:17">第二个节点内容</Timeline.Item>
+  <Timeline.Item time="2019-05-14 18:34">第三个节点内容</Timeline.Item>
+</Timeline>
