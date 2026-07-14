@@ -34,6 +34,8 @@
     onEditCancel?: () => void;
     onExpand?: (expanded: boolean) => void;
     class?: string;
+    /** 自定义内联样式（对齐 Semi Typography style）。 */
+    style?: string;
     /** 透传到根元素的 id（对齐 Semi Typography.Title id，供 aria-labelledby 关联）。 */
     id?: string;
     children?: Snippet;
@@ -60,6 +62,7 @@
     onEditCancel,
     onExpand,
     class: className = '',
+    style,
     id,
     children,
   }: Props = $props();
@@ -82,6 +85,7 @@
   delete={del}
   {code}
   class={className}
+  {style}
   {ellipsis}
   {copyable}
   {editable}

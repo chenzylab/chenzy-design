@@ -398,11 +398,18 @@ export {
 } from './toast/index.js';
 export {
   notification,
+  useNotification,
+  NotificationHolder,
   notificationMeta,
+  type NotificationConfig,
+  type SvelteNotificationOptions,
+  type NotificationHookApi,
   type NotificationType,
   type NotificationOptions,
   type NotificationItem,
-  type NotificationPlacement,
+  type NotificationPosition,
+  type NotificationTheme,
+  type NotificationDirection,
 } from './notification/index.js';
 
 // --- M6 Other ---

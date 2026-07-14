@@ -38,6 +38,8 @@
     onEditCancel?: () => void;
     onExpand?: (expanded: boolean) => void;
     class?: string;
+    /** 自定义内联样式（对齐 Semi Typography style）。 */
+    style?: string;
     children?: Snippet;
   }
 
@@ -63,6 +65,7 @@
     onEditCancel,
     onExpand,
     class: className = '',
+    style,
     children,
   }: Props = $props();
 </script>
@@ -82,6 +85,7 @@
   {code}
   {spacing}
   class={className}
+  {style}
   {ellipsis}
   {copyable}
   {editable}

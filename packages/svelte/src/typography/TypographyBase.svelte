@@ -136,6 +136,8 @@
     /** 段落行距（Paragraph）：normal / extended（对齐 Semi spacing）。 */
     spacing?: 'normal' | 'extended';
     class?: string;
+    /** 自定义内联样式（对齐 Semi base.tsx style）；合并在内部计算样式之后（用户样式优先）。 */
+    style?: string | undefined;
     /** ellipsis / copyable / editable */
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
@@ -169,6 +171,7 @@
     icon,
     spacing = 'normal',
     class: className = '',
+    style: userStyle = '',
     ellipsis = false,
     copyable = false,
     editable = false,
@@ -581,7 +584,11 @@
     if (rows > 1) return `--cd-typo-clamp:${rows};`;
     return '';
   });
-  const hostStyle = $derived(`${inlineWeight}${ellipsisStyle}`);
+  // 用户内联样式（对齐 Semi style）追加在内部计算样式之后 → 用户样式优先。
+  const userStyleNormalized = $derived(
+    userStyle && !userStyle.trim().endsWith(';') ? `${userStyle};` : userStyle,
+  );
+  const hostStyle = $derived(`${inlineWeight}${ellipsisStyle}${userStyleNormalized}`);
 
   // 有效截断标志：CSS/高度路径用 truncated；精确路径（pos=middle/start）用 truncatedText。
   const isTruncated = $derived(
