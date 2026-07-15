@@ -1,187 +1,261 @@
 /**
- * Toast — 命令式全局轻提示入口。
- * 模块级单例 store + 惰性挂载的单例 ToastContainer（首次调用时 mount 到 body）。
- * 复用 @chenzy-design/core 的 createToastStore（无框架依赖的队列 + 定时器）。
- * See specs/components/feedback/Toast.spec.md
+ * Toast — 命令式全局轻提示入口，严格对齐 Semi Design
+ * （semi-ui/toast/index.tsx 的静态方法 + config + useToast + ToastFactory）。
+ * 每个 Toast 实例 = 模块级单例 store + 惰性挂载的单例 ToastContainer（首次调用时
+ * mount 到 getPopupContainer() 或 body）。复用 @chenzy-design/core 的 createToastStore
+ * （无框架依赖的队列 + 定时器，语义对齐 Semi foundation）。
+ *
+ * 对齐 Semi 静态 API：info/success/warning/error/open/close/destroyAll/config/useToast。
+ * ToastFactory.create(config) 创建带独立 config 的新 Toast（对齐 Semi ToastFactory.create）。
+ * See semi-ui/toast/index.tsx
  */
 import {
   createToastStore,
   type ToastStore,
   type ToastOptions,
   type ToastType,
+  type ToastTheme,
 } from '@chenzy-design/core';
-import { createLocale, en_US, type LocaleApi } from '@chenzy-design/locale';
-import { announce } from './live-region.js';
 
-let store: ToastStore | null = null;
-let containerMounted = false;
-
-/** Toast.config() 全局配置。 */
+/**
+ * 全局配置（对齐 Semi ConfigProps）。容器经 mount() 挂在 Svelte 组件树之外，拿不到
+ * ConfigProvider context，故位置偏移 / 挂载容器 / 默认值只能经此命令式入口配置：
+ *  - top/bottom/left/right：wrapper 与视口边缘的偏移（CSS 值或数字像素）。
+ *  - zIndex：wrapper z-index（对齐 Semi，默认 1010）。
+ *  - theme：默认卡片主题（normal/light）。
+ *  - duration：默认自动关闭秒数（0 = 常驻），可被单条 options.duration 覆盖。
+ *  - getPopupContainer：容器宿主挂载目标（默认 body，对齐 Semi getPopupContainer）。
+ */
 export interface ToastConfig {
-  /** 卡片主题（全局默认值）。 */
-  theme?: 'light' | 'dark';
-  /** 容器层级。 */
-  zIndex?: number;
-  /** 容器距顶部偏移（px 数字或 CSS 字符串）。 */
   top?: number | string;
-  /** 容器距底部偏移（px 数字或 CSS 字符串）。 */
   bottom?: number | string;
-  /** 容器距左侧偏移（px 数字或 CSS 字符串）。 */
   left?: number | string;
-  /** 容器距右侧偏移（px 数字或 CSS 字符串）。 */
   right?: number | string;
-}
-
-let globalConfig: ToastConfig = {};
-
-/** 读取当前全局配置（供 ToastContainer 消费）。 */
-export function getToastConfig(): ToastConfig {
-  return globalConfig;
-}
-
-// promise 默认文案的回退 locale（与 useLocale 一致用 en_US 构造，模块级单例）。
-// 命令式入口在组件树之外，拿不到 LocaleProvider context，故默认文案走此回退实例；
-// 调用方可经 messages 显式覆盖任一文案。
-let fallbackLocale: LocaleApi | undefined;
-function getFallbackLocale(): LocaleApi {
-  if (!fallbackLocale) fallbackLocale = createLocale({ locale: en_US });
-  return fallbackLocale;
-}
-
-function ensureStore(): ToastStore {
-  if (!store) store = createToastStore({ maxCount: 5, defaultDuration: 3 });
-  return store;
+  zIndex?: number;
+  theme?: ToastTheme;
+  duration?: number;
+  getPopupContainer?: () => HTMLElement | null | undefined;
 }
 
 /**
- * 惰性挂载容器：首次调用时动态 import + mount ToastContainer 到 body。
- * mount 是 async（动态 import），但调用方的 s.add 已同步把数据写进 store；
- * 容器在 mount 时立即同步读一次 store.getToasts()，不会丢首条 toast。
+ * Svelte 命令式选项（对齐 Semi ToastReactProps）。content/icon 可为 string 文本或
+ * Svelte Snippet（对齐 Semi ReactNode）。允许传 string 简写（对齐 Semi info(opts|string)）。
+ * 额外的 getPopupContainer（per-toast）：首条 toast 的该值决定容器挂载点（对齐 Semi）。
  */
-async function ensureContainer(): Promise<void> {
-  if (containerMounted || typeof document === 'undefined') return;
-  containerMounted = true;
-  const { mount } = await import('svelte');
-  const { default: ToastContainer } = await import('./ToastContainer.svelte');
-  const host = document.createElement('div');
-  host.className = 'cd-toast-host';
-  document.body.appendChild(host);
-  mount(ToastContainer, { target: host, props: { store: ensureStore() } });
+export type SvelteToastOptions = Omit<ToastOptions, 'type'> & {
+  getPopupContainer?: () => HTMLElement | null | undefined;
+};
+
+/** info/success/warning/error/open 的入参：完整 options 或 string 简写。 */
+type OptsOrString = SvelteToastOptions | string;
+
+function toOptions(input: OptsOrString): SvelteToastOptions {
+  return typeof input === 'string' ? { content: input } : input;
 }
 
-function show(
-  type: ToastType,
-  content: string,
-  opts: Partial<Omit<ToastOptions, 'content'>> = {},
-): string {
-  const s = ensureStore();
-  void ensureContainer();
-  const id = s.add({ content, type, ...opts });
-  // a11y：把文案写入单例 live region 供屏幕阅读器播报（卡片本身不再带 role/aria-live）。
-  announce(content, type);
-  return id;
+/** 位置偏移 + zIndex，供 ToastContainer 读取注入 wrapper inline style。 */
+export type ToastPositionConfig = Pick<
+  ToastConfig,
+  'top' | 'bottom' | 'left' | 'right' | 'zIndex'
+>;
+
+/** 一个 Toast 实例的公开 API（对齐 Semi 静态方法集）。 */
+export interface ToastInstanceApi {
+  info: (opts: OptsOrString) => string;
+  success: (opts: OptsOrString) => string;
+  warning: (opts: OptsOrString) => string;
+  error: (opts: OptsOrString) => string;
+  /** 展示一条 type=default 的 toast（对齐 Semi 无 open，但保留 default 入口）。 */
+  open: (opts: OptsOrString) => string;
+  close: (id: string) => void;
+  destroyAll: () => void;
+  config: (cfg: ToastConfig) => void;
 }
 
 /**
- * Toast.promise 文案：可为静态字符串，或接收 resolve 值 / reject 原因的函数（对齐 sonner / AntD）。
+ * 创建一个 Toast 实例（默认单例与 ToastFactory.create 共用同一构造）。
+ * 每个实例持有独立的 store、容器挂载状态、全局配置与位置偏移。
  */
-type PromiseMessage<T> = string | ((value: T) => string);
+function createToastInstance(initialConfig: ToastConfig = {}): ToastInstanceApi & {
+  /** 供 ToastContainer 读取的位置配置 getter（挂在实例上，闭包隔离多实例）。 */
+  __getPositionConfig: () => ToastPositionConfig;
+} {
+  let store: ToastStore | null = null;
+  let containerMounted = false;
+  let globalDuration = initialConfig.duration;
+  let globalTheme = initialConfig.theme;
+  let getPopupContainer = initialConfig.getPopupContainer;
+  let positionConfig: ToastPositionConfig = {};
+  {
+    // 只放入 initialConfig 显式提供的键（避免 exactOptionalPropertyTypes 下写入 undefined 值）。
+    if (initialConfig.top !== undefined) positionConfig.top = initialConfig.top;
+    if (initialConfig.bottom !== undefined) positionConfig.bottom = initialConfig.bottom;
+    if (initialConfig.left !== undefined) positionConfig.left = initialConfig.left;
+    if (initialConfig.right !== undefined) positionConfig.right = initialConfig.right;
+    if (initialConfig.zIndex !== undefined) positionConfig.zIndex = initialConfig.zIndex;
+  }
 
-export interface ToastPromiseMessages<T> {
-  /** pending 阶段文案；省略走 locale 默认 promiseLoading */
-  loading?: string;
-  /** resolve 文案；省略走 locale 默认 promiseSuccess */
-  success?: PromiseMessage<T>;
-  /** reject 文案；省略走 locale 默认 promiseError */
-  error?: PromiseMessage<unknown>;
-}
+  function ensureStore(): ToastStore {
+    if (!store) {
+      store = createToastStore({
+        defaultDuration: globalDuration ?? 3,
+        defaultTheme: globalTheme ?? 'normal',
+      });
+    }
+    return store;
+  }
 
-/** 透传给底层 toast 的额外选项（position/theme/duration 等），content/type 由 promise 阶段接管。 */
-type PromiseToastOptions = Partial<Omit<ToastOptions, 'content' | 'type' | 'id'>>;
+  const getPositionConfig = (): ToastPositionConfig => positionConfig;
 
-function resolveMessage<T>(msg: PromiseMessage<T> | undefined, value: T, fallback: string): string {
-  if (msg === undefined) return fallback;
-  return typeof msg === 'function' ? msg(value) : msg;
-}
-
-export const Toast = {
-  info: (content: string, opts?: Partial<Omit<ToastOptions, 'content'>>) =>
-    show('info', content, opts),
-  success: (content: string, opts?: Partial<Omit<ToastOptions, 'content'>>) =>
-    show('success', content, opts),
-  warning: (content: string, opts?: Partial<Omit<ToastOptions, 'content'>>) =>
-    show('warning', content, opts),
-  error: (content: string, opts?: Partial<Omit<ToastOptions, 'content'>>) =>
-    show('error', content, opts),
-  loading: (content: string, opts?: Partial<Omit<ToastOptions, 'content'>>) =>
-    show('loading', content, opts),
-  /** 完整选项打开一条 toast，返回其 id。 */
-  open: (opts: ToastOptions): string => {
-    void ensureContainer();
-    const id = ensureStore().add(opts);
-    announce(opts.content, opts.type ?? 'info');
-    return id;
-  },
-  /**
-   * promise API：传入 Promise，pending 显示 loading toast，resolve→success、reject→error 切文案。
-   * 返回原 Promise 以便继续链式/await（对齐 sonner / AntD message.promise）。
-   *
-   * 红线 #3：单条 toast 经同 id update 命令式切换状态（loading→success/error），
-   * 计时由底层 store 接管（loading 持久 duration:0，success/error 用默认 3s 自动关闭）；
-   * .then/.catch 是 Promise 自身的生命周期回调，无需额外手动 cleanup（toast 自身定时器在 store 内 cleanup）。
-   * 默认文案经 @chenzy-design/locale（回退 en_US，无 Provider context）；调用方可经 messages 覆盖。
-   */
-  promise: <T>(
-    promise: Promise<T>,
-    messages: ToastPromiseMessages<T> = {},
-    opts: PromiseToastOptions = {},
-  ): Promise<T> => {
-    const s = ensureStore();
-    void ensureContainer();
-    const t = getFallbackLocale().t;
-    const loadingText = messages.loading ?? t('Toast.promiseLoading');
-    // loading 阶段：持久（duration 0），不可关闭，交给 resolve/reject 接管。
-    const id = s.add({
-      ...opts,
-      content: loadingText,
-      type: 'loading',
-      duration: 0,
-      closable: opts.closable ?? false,
+  async function ensureContainer(): Promise<void> {
+    if (containerMounted || typeof document === 'undefined') return;
+    containerMounted = true;
+    const { mount } = await import('svelte');
+    const { default: ToastContainer } = await import('./ToastContainer.svelte');
+    const host = document.createElement('div');
+    host.className = 'cd-toast-host';
+    const target = getPopupContainer?.() ?? document.body;
+    target.appendChild(host);
+    mount(ToastContainer, {
+      target: host,
+      props: { store: ensureStore(), getPositionConfig },
     });
-    announce(loadingText, 'loading');
+  }
 
-    const settle = (type: ToastType, content: string): void => {
-      // 同 id update：原地把 loading 切为 success/error 并重启定时器（默认 3s 自动关闭）。
-      s.add({ ...opts, id, content, type });
-      announce(content, type);
-    };
+  /** 剥离 getPopupContainer（仅首次挂载用，不进入 core item）。 */
+  function toCoreOpts(opts: SvelteToastOptions): ToastOptions {
+    const core = { ...opts } as SvelteToastOptions & { getPopupContainer?: unknown };
+    delete core.getPopupContainer;
+    return core as ToastOptions;
+  }
 
-    return promise.then(
-      (value) => {
-        settle('success', resolveMessage(messages.success, value, t('Toast.promiseSuccess')));
-        return value;
-      },
-      (reason: unknown) => {
-        settle('error', resolveMessage(messages.error, reason, t('Toast.promiseError')));
-        throw reason;
-      },
-    );
-  },
-  /** 手动关闭指定 toast。 */
-  close: (id: string): void => ensureStore().remove(id, 'manual'),
-  /** 按同 id 更新一条 toast（store.add 对已存在 id 走原地更新 + 重启定时器）。 */
-  update: (id: string, opts: Partial<ToastOptions>): string => {
+  function show(type: ToastType, input: OptsOrString): string {
+    const opts = toOptions(input);
+    // 首条 toast 的 getPopupContainer 决定容器挂载点（对齐 Semi create）。
+    if (!containerMounted && opts.getPopupContainer) getPopupContainer = opts.getPopupContainer;
     void ensureContainer();
-    const content = opts.content ?? '';
-    const result = ensureStore().add({ ...opts, id, content });
-    // 仅在有新文案时播报，避免空字符串无意义地刷新 region。
-    if (content) announce(content, opts.type ?? 'info');
-    return result;
-  },
-  /** 清空全部 toast。 */
-  destroyAll: (): void => ensureStore().removeAll(),
-  /** 设置全局配置（theme/zIndex/top/bottom/left/right 位置偏移）。 */
-  config: (cfg: ToastConfig): void => {
-    globalConfig = { ...globalConfig, ...cfg };
+    const s = ensureStore();
+    const core = { ...toCoreOpts(opts), type };
+    // 对齐 Semi create：已存在 id → 原地合并更新（restart timer），否则新增。
+    if (opts.id && s.has(opts.id)) {
+      s.update(opts.id, core);
+      return opts.id;
+    }
+    return s.add(core);
+  }
+
+  function config(cfg: ToastConfig): void {
+    if (cfg.duration !== undefined) globalDuration = cfg.duration;
+    if (cfg.theme !== undefined) globalTheme = cfg.theme;
+    if ('getPopupContainer' in cfg) getPopupContainer = cfg.getPopupContainer;
+    const next: ToastPositionConfig = { ...positionConfig };
+    if (cfg.top !== undefined) next.top = cfg.top;
+    if (cfg.bottom !== undefined) next.bottom = cfg.bottom;
+    if (cfg.left !== undefined) next.left = cfg.left;
+    if (cfg.right !== undefined) next.right = cfg.right;
+    if (cfg.zIndex !== undefined) next.zIndex = cfg.zIndex;
+    positionConfig = next;
+  }
+
+  return {
+    info: (opts) => show('info', opts),
+    success: (opts) => show('success', opts),
+    warning: (opts) => show('warning', opts),
+    error: (opts) => show('error', opts),
+    open: (opts) => show('default', opts),
+    close: (id) => ensureStore().remove(id),
+    destroyAll: () => ensureStore().removeAll(),
+    config,
+    __getPositionConfig: getPositionConfig,
+  };
+}
+
+// —— 默认单例实例（对齐 Semi 默认导出的 Toast）——
+const defaultInstance = createToastInstance();
+
+/**
+ * 默认全局 Toast（对齐 Semi 默认导出）。含 useToast Hook（挂静态方法上，对齐 Semi Toast.useToast）。
+ */
+export const Toast: ToastInstanceApi & {
+  useToast: typeof useToast;
+} = {
+  info: defaultInstance.info,
+  success: defaultInstance.success,
+  warning: defaultInstance.warning,
+  error: defaultInstance.error,
+  open: defaultInstance.open,
+  close: defaultInstance.close,
+  destroyAll: defaultInstance.destroyAll,
+  config: defaultInstance.config,
+  useToast,
+};
+
+/**
+ * ToastFactory.create(config) — 创建带独立 config 的新 Toast（对齐 Semi ToastFactory.create）。
+ * 常用于覆盖全局配置（如 getPopupContainer 指定自定义容器）。返回的实例含 useToast。
+ */
+export const ToastFactory = {
+  create(config?: ToastConfig): ToastInstanceApi & { useToast: typeof useToast } {
+    const inst = createToastInstance(config ?? {});
+    return {
+      info: inst.info,
+      success: inst.success,
+      warning: inst.warning,
+      error: inst.error,
+      open: inst.open,
+      close: inst.close,
+      destroyAll: inst.destroyAll,
+      config: inst.config,
+      useToast,
+    };
   },
 };
+
+// 供默认容器读取默认实例的位置配置。
+export function getToastConfig(): ToastPositionConfig {
+  return defaultInstance.__getPositionConfig();
+}
+
+/** useToast Hook 返回的 api（对齐 Semi：info/success/warning/error/open/close）。 */
+export interface ToastHookApi {
+  info: (opts: OptsOrString) => string;
+  success: (opts: OptsOrString) => string;
+  warning: (opts: OptsOrString) => string;
+  error: (opts: OptsOrString) => string;
+  open: (opts: OptsOrString) => string;
+  close: (id: string) => void;
+}
+
+/**
+ * useToast — Svelte 版 Hook（对齐 Semi Toast.useToast）。
+ * 返回 [api, holderStore]：
+ *  - api：info/success/warning/error/open/close（局部，不含全局的 config/destroyAll）；
+ *  - holderStore：传给 <ToastHolder store={holderStore} /> 渲染在组件树内，
+ *    使经此 api 创建的 toast 渲染在 holder 所在位置，继承该处上下文（如 LocaleProvider）。
+ * 与全局单例不同：本 Hook 的 store 与容器是局部的，不挂 body。
+ * 用法：
+ *   const [toast, contextHolder] = useToast();
+ *   // 模板中：<ToastHolder store={contextHolder} />
+ *   // 事件中：toast.success({ content })
+ */
+export function useToast(): [ToastHookApi, ToastStore] {
+  const localStore = createToastStore({ defaultDuration: 3 });
+  function localShow(type: ToastType, input: OptsOrString): string {
+    const opts = toOptions(input);
+    const core = { ...opts, type } as ToastOptions;
+    if (opts.id && localStore.has(opts.id)) {
+      localStore.update(opts.id, core);
+      return opts.id;
+    }
+    return localStore.add(core);
+  }
+  const api: ToastHookApi = {
+    info: (opts) => localShow('info', opts),
+    success: (opts) => localShow('success', opts),
+    warning: (opts) => localShow('warning', opts),
+    error: (opts) => localShow('error', opts),
+    open: (opts) => localShow('default', opts),
+    close: (id) => localStore.remove(id),
+  };
+  return [api, localStore];
+}

@@ -98,14 +98,6 @@ export const zh_CN: Locale = {
   },
   Toast: {
     close: '关闭',
-    loading: '加载中',
-    typeLabelInfo: '信息',
-    typeLabelSuccess: '成功',
-    typeLabelWarning: '警告',
-    typeLabelError: '错误',
-    promiseLoading: '加载中…',
-    promiseSuccess: '成功',
-    promiseError: '出错了',
   },
   Notification: {
     closeText: '关闭',

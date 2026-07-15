@@ -392,10 +392,19 @@ export { Table, tableMeta } from './table/index.js';
 export { Calendar, calendarMeta, type CalendarEvent } from './calendar/index.js';
 export {
   Toast,
+  ToastFactory,
+  useToast,
+  ToastHolder,
   toastMeta,
+  type ToastConfig,
+  type ToastInstanceApi,
+  type ToastHookApi,
+  type SvelteToastOptions,
   type ToastType,
   type ToastOptions,
   type ToastItem,
+  type ToastTheme,
+  type ToastDirection,
 } from './toast/index.js';
 export {
   notification,
