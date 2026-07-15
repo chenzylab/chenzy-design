@@ -41,22 +41,9 @@ describe('createSpinController', () => {
     c.destroy();
   });
 
-  it('keeps showing for at least minShowTime', () => {
-    const c = createSpinController({ minShowTime: 500, spinning: true });
+  it('hides immediately when spinning turns off (no minShowTime — Semi has none)', () => {
+    const c = createSpinController({ spinning: true });
     expect(c.getEffective()).toBe(true);
-    vi.advanceTimersByTime(100);
-    c.setSpinning(false); // wants to hide after only 100ms
-    expect(c.getEffective()).toBe(true); // still held
-    vi.advanceTimersByTime(399);
-    expect(c.getEffective()).toBe(true);
-    vi.advanceTimersByTime(1);
-    expect(c.getEffective()).toBe(false); // 500ms reached
-    c.destroy();
-  });
-
-  it('hides immediately when minShowTime already elapsed', () => {
-    const c = createSpinController({ minShowTime: 200, spinning: true });
-    vi.advanceTimersByTime(300);
     c.setSpinning(false);
     expect(c.getEffective()).toBe(false);
     c.destroy();
@@ -70,19 +57,6 @@ describe('createSpinController', () => {
     vi.advanceTimersByTime(100);
     c.setSpinning(false);
     expect(seen).toEqual([true, false]);
-    c.destroy();
-  });
-
-  it('re-show during minShowTime hold keeps it visible (no flto false)', () => {
-    const seen: boolean[] = [];
-    const c = createSpinController({ minShowTime: 500, spinning: true });
-    c.subscribe((e) => seen.push(e));
-    vi.advanceTimersByTime(100);
-    c.setSpinning(false);
-    c.setSpinning(true); // requested again before the min timer fires
-    vi.advanceTimersByTime(1000);
-    expect(c.getEffective()).toBe(true);
-    expect(seen).toEqual([]); // stayed visible throughout
     c.destroy();
   });
 });
