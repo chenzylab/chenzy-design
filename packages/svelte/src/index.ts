@@ -123,7 +123,6 @@ export {
   type DropdownItemType,
   type DropdownMenuItem,
 } from './dropdown/index.js';
-export { Menu, menuMeta, type MenuItemDef } from './menu/index.js';
 export {
   Nav,
   NavHeader,
