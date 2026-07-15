@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Row, Col } from '@chenzy-design/svelte';
 
-  // 五种垂直对齐（align）。baseline / stretch 为本库相较 Semi 额外提供。
-  const modes = ['top', 'middle', 'bottom', 'baseline', 'stretch'] as const;
+  // 三种垂直对齐（align），对齐 Semi。需配 type="flex" 启用 flex 布局。
+  const modes = ['top', 'middle', 'bottom'] as const;
   // 不等高内容，凸显垂直对齐差异。
   const heights = [56, 32, 72, 44];
 </script>
@@ -36,11 +36,10 @@
   {#each modes as mode (mode)}
     <p class="demo-label">align=&quot;{mode}&quot;</p>
     <div class="demo-row-box">
-      <Row align={mode} gutter={8}>
+      <Row type="flex" align={mode} gutter={8}>
         {#each heights as h, i (i)}
           <Col span={6}>
-            <!-- stretch 下不设固定高，靠 Row 拉伸等高；其余用固定高展示对齐 -->
-            <div class="demo-col" style={mode === 'stretch' ? 'height:100%;min-height:32px' : `height:${h}px`}>
+            <div class="demo-col" style={`height:${h}px`}>
               {h}px
             </div>
           </Col>

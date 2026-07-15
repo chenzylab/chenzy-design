@@ -22,7 +22,8 @@
   }
 </style>
 
-<Row gutter={8}>
+<!-- order 作用于 flex item，需 Row type="flex" 启用 flex 布局。 -->
+<Row type="flex" gutter={8}>
   {#each cols as c (c.order)}
     <Col span={6} order={c.order}><div class="demo-col">{c.label}</div></Col>
   {/each}
