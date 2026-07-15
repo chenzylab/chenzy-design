@@ -401,15 +401,9 @@ export const zh_CN: Locale = {
   },
   Typography: {
     copy: '复制',
-    copied: '已复制',
-    copyFailed: '复制失败',
-    edit: '编辑',
-    editConfirm: '完成',
-    editCancel: '取消',
-    enter: '回车确认',
+    copied: '复制成功',
     expand: '展开',
     collapse: '收起',
-    ellipsisSuffix: '…',
   },
   VideoPlayer: {
     play: '播放',

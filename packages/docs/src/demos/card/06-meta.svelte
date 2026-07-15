@@ -12,7 +12,7 @@
     </Card.Meta>
   {/snippet}
   {#snippet headerExtraContent()}
-    <Typography.Link href="#">More</Typography.Link>
+    <Typography.Text link={{ href: '#' }}>More</Typography.Text>
   {/snippet}
   {#snippet cover()}
     <div

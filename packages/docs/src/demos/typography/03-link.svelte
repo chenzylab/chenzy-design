@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { Link } from '@chenzy-design/svelte';
+  import { Typography } from '@chenzy-design/svelte';
+
+  const { Text } = Typography;
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 8px;">
-  <Link href="https://svelte.dev" target="_blank">新窗口打开链接（自动 rel）</Link>
-  <Link href="https://svelte.dev" underline>带下划线的链接</Link>
-  <Link href="https://svelte.dev" icon={linkIcon}>带前置图标的链接</Link>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+  <Text link={{ href: 'https://semi.design/' }}>链接文本</Text>
+  <Text link={{ href: 'https://semi.design/', target: '_blank' }}>新窗口打开网站</Text>
+  <Text link icon={linkIcon} underline>带前置图标与下划线的网页链接</Text>
 </div>
 
 {#snippet linkIcon()}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Banner, Link } from '@chenzy-design/svelte';
+  import { Banner, Text } from '@chenzy-design/svelte';
 
   // fullMode={false} 使用非全屏模式；bordered 显示边框。
   // icon={null}、closeIcon={null} 隐藏图标与关闭按钮。
@@ -16,7 +16,7 @@
       {#snippet descriptionSnippet()}
         <div>
           你可先联系对应的研发同学，确认是否已在
-          <Link href="https://semi.design/">应用云平台</Link>
+          <Text link={{ href: 'https://semi.design/' }}>应用云平台</Text>
           申请了应用，并填写对应的信息。
         </div>
       {/snippet}

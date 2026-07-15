@@ -24,15 +24,41 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-title.svelte', '标题', '使用 Title 渲染 h1~h6 标题，通过 heading 控制层级。'),
-  entry('02-text.svelte', '文本', '使用 Text 渲染行内文本，支持语义色与加粗、下划线、标记、code、禁用等修饰。'),
-  entry('03-paragraph.svelte', '段落', '使用 Paragraph 渲染段落文本，可配合 type 与 size 调整样式。'),
-  entry('04-link.svelte', '链接', '使用 Link 渲染超链接，target=_blank 自动补 rel，支持下划线与前置图标。'),
-  entry('05-size.svelte', '文本大小', '通过 size 控制 small / default / large 三档字号。'),
-  entry('06-italic-icon.svelte', '斜体与图标', '使用 italic 渲染斜体，icon 添加前置图标。'),
-  entry('07-copyable.svelte', '可复制', '通过 copyable 开启复制，可自定义复制内容并监听 onCopy 回调。'),
-  entry('08-ellipsis.svelte', '省略', '通过 ellipsis 配置单行 / 多行省略、悬浮显示全文与自定义后缀。'),
-  entry('09-ellipsis-expand.svelte', '展开收起', '结合 expandable 与 collapsible，长文本可展开查看并收起折叠。'),
-  entry('10-editable.svelte', '可编辑', '通过 editable 与 value / onChange 实现受控的文本编辑。'),
-  entry('11-numeral.svelte', '数值格式化', '使用 Numeral 按 rule 格式化文本中的数字：取整、百分比、字节、科学计数等。'),
+  entry('01-title.svelte', '标题组件', '通过 heading 展示 h1~h6 六级标题。'),
+  entry(
+    '02-text.svelte',
+    '文本组件',
+    '内置不同样式的文本：语义色 type，以及 strong / underline / delete / mark / code / disabled 等修饰。',
+  ),
+  entry(
+    '03-link.svelte',
+    '链接文本',
+    '通过 link prop 渲染链接（传 object 属性透传到 <a>），可配合 icon 前置图标与 underline 下划线。',
+  ),
+  entry('04-paragraph.svelte', '段落组件', '通过 spacing="extended" 使用更宽松的行距，配合 Title 小标题。'),
+  entry(
+    '05-size.svelte',
+    '文本大小',
+    '通过 size 控制 normal / small 两档字号；嵌套时内层设 size="inherit" 继承外层尺寸。',
+  ),
+  entry(
+    '06-copyable.svelte',
+    '可复制文本',
+    '通过 copyable 开启复制：默认图标、自定义 content、onCopy 回调、自定义 icon 与 render 完全接管渲染。',
+  ),
+  entry(
+    '07-ellipsis.svelte',
+    '省略文本',
+    '通过 ellipsis 配置单行/多行省略、showTooltip 悬浮显示全文（Tooltip/Popover/自定义浮层）、中间截断 pos、后缀 suffix 与展开收起。',
+  ),
+  entry(
+    '08-numeral.svelte',
+    '数值组件',
+    '使用 Numeral 按 rule 格式化文本中的数字：取整、百分比、十进制/二进制字节、科学计数等。',
+  ),
+  entry(
+    '09-numeral-parser.svelte',
+    '数值自定义解析',
+    '通过 parser 自定义数值解析规则（千分位），并演示 link 链接样式的 Numeral。',
+  ),
 ];

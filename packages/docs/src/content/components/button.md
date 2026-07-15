@@ -22,7 +22,7 @@ brief: 触发即时操作的按钮，是最基础的交互原子。
 
 | 场景 | 用什么 | 说明 |
 | --- | --- | --- |
-| 页面内/外跳转的文字链接 | [Typography.Link](/components/typography) | 链接语义用真 `<a>`，不要用按钮模拟 |
+| 页面内/外跳转的文字链接 | [Typography 链接](/components/typography) | 链接语义用真 `<a>`，不要用按钮模拟 |
 | 纯图标的轻量操作 | [IconButton](/components/iconbutton) | 无文字时用图标按钮，自带 `aria-label` 约束 |
 | 一组互斥的单选切换 | [Radio](/components/radio) Button 模式 | 状态选择不是「触发动作」 |
 | 命令菜单 / 更多操作收纳 | [Dropdown](/components/dropdown) | 多个低频动作折叠进下拉，避免按钮堆叠 |
@@ -57,4 +57,4 @@ brief: 触发即时操作的按钮，是最基础的交互原子。
   `disabled` 优先级更高：同时为 true 时按钮不可点击且不展示加载态。提交类操作建议只在请求期间设 `loading`。
 
 - **想要文字链接的跳转效果，该用 Button 吗？**
-  不建议。跳转用 [Typography.Link](/components/typography)（真 `<a>` 语义，对 SEO、新标签页打开、可访问性更友好）；Button 仅用于触发动作。
+  不建议。跳转用 [Typography 链接](/components/typography)（真 `<a>` 语义，对 SEO、新标签页打开、可访问性更友好）；Button 仅用于触发动作。

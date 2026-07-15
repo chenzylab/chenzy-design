@@ -9,7 +9,7 @@
   {#each cards as n (n)}
     <Card shadows="hover" title="Card title" headerLine={false} style="width: 200px;">
       {#snippet headerExtraContent()}
-        <Typography.Link href="#">More</Typography.Link>
+        <Typography.Text link={{ href: '#' }}>More</Typography.Text>
       {/snippet}
       <Typography.Text>Card content</Typography.Text>
     </Card>

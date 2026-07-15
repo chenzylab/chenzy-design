@@ -1,25 +1,21 @@
 <!--
-  Typography.Paragraph — see specs/components/basic/Typography.spec.md
-  Renders a <p>. ellipsis / copyable / editable 经 TypographyBase 组合 core 原语。
+  Typography.Paragraph — 渲染 <p>，对齐 Semi Typography.Paragraph。
+  拼 cd-typography-paragraph 类；spacing=extended 走宽松行距。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import TypographyBase, {
+    type TypoType,
+    type TypoSize,
     type EllipsisConfig,
     type CopyableConfig,
-    type EditableConfig,
   } from './TypographyBase.svelte';
-
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
-  type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
-  type TypoSize = 'small' | 'default' | 'large' | 'inherit';
 
   interface Props {
     type?: TypoType;
-    /** 字号档 small/default/large。spec §4.1 L60 */
+    /** 字号档 normal / small（对齐 Semi）。 */
     size?: TypoSize;
     strong?: boolean;
-    weight?: TypoWeight;
     disabled?: boolean;
     mark?: boolean;
     underline?: boolean;
@@ -27,42 +23,31 @@
     code?: boolean;
     /** 行距：normal / extended（对齐 Semi spacing）。 */
     spacing?: 'normal' | 'extended';
+    /** 链接（对齐 Semi link）。 */
+    link?: boolean | Record<string, unknown>;
     component?: string;
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
-    editable?: boolean | EditableConfig;
-    value?: string;
-    onChange?: (value: string) => void;
-    onCopy?: (content: string) => void;
-    onEditStart?: () => void;
-    onEditCancel?: () => void;
-    onExpand?: (expanded: boolean) => void;
+    onExpand?: (expanded: boolean, e: MouseEvent) => void;
     class?: string;
-    /** 自定义内联样式（对齐 Semi Typography style）。 */
     style?: string;
     children?: Snippet;
   }
 
   let {
-    type = 'default',
-    size = 'default',
+    type = 'primary',
+    size = 'normal',
     strong = false,
-    weight,
     disabled = false,
     mark = false,
     underline = false,
     delete: del = false,
     code = false,
     spacing = 'normal',
+    link = false,
     component = 'p',
     ellipsis = false,
     copyable = false,
-    editable = false,
-    value,
-    onChange,
-    onCopy,
-    onEditStart,
-    onEditCancel,
     onExpand,
     class: className = '',
     style,
@@ -72,28 +57,21 @@
 
 <TypographyBase
   element={component}
-  baseClass="cd-typography"
-  extraClass="cd-typography--paragraph"
+  extraClass="cd-typography-paragraph"
   {type}
   {size}
   {strong}
-  {weight}
   {disabled}
   {mark}
   {underline}
   delete={del}
   {code}
   {spacing}
+  {link}
   class={className}
   {style}
   {ellipsis}
   {copyable}
-  {editable}
-  {value}
-  {onChange}
-  {onCopy}
-  {onEditStart}
-  {onEditCancel}
   {onExpand}
 >
   {@render children?.()}

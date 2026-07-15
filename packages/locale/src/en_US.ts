@@ -402,14 +402,8 @@ export const en_US: Locale = {
   Typography: {
     copy: 'Copy',
     copied: 'Copied',
-    copyFailed: 'Copy failed',
-    edit: 'Edit',
-    editConfirm: 'Save',
-    editCancel: 'Cancel',
-    enter: 'Press Enter to confirm',
     expand: 'Expand',
     collapse: 'Collapse',
-    ellipsisSuffix: '…',
   },
   VideoPlayer: {
     play: 'Play',

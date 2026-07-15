@@ -116,8 +116,8 @@ export const demos: DemoEntry[] = [
     '06-link.svelte',
     { zh: '链接按钮', en: 'Link' },
     {
-      zh: '链接型文字按钮推荐用 Typography.Link 实现（而非 Button），支持 href / target / underline，具体用法详见',
-      en: 'For link-style text buttons, use Typography.Link (not Button) — it supports href / target / underline. See',
+      zh: '链接型文字按钮推荐用 Typography 的 link prop 实现（而非 Button），支持 href / target / underline，具体用法详见',
+      en: 'For link-style text buttons, use Typography link prop (not Button) — it supports href / target / underline. See',
     },
     { text: { zh: 'Typography', en: 'Typography' }, component: 'Typography' },
   ),
