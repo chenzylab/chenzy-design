@@ -2,7 +2,9 @@
  * Component tokens for Grid (Row/Col). 全量对齐 Semi Design
  * （semi-foundation/grid/variables.scss，19 个），升级为带元数据的 TokenDef
  * 结构以支持 DSM。断点 min/max 为派生量（editable:false）。
- * 末尾保留 chenzy-design Grid 实际消费的补充 token（Semi 无），值对齐 Semi。
+ *
+ * Grid 组件（Row/Col）走 float + 内联样式机制，无运行时 CSS 变量消费；
+ * 这里的 token 仅作为设计变量表（断点尺寸 + 栅格列数/槽宽）展示，逐字对齐 Semi。
  *
  * 注：
  * - sm/md/lg/xl/xxl 断点复用我们的 --cd-breakpoint-*（值与 Semi 一致）；
@@ -38,9 +40,4 @@ export const gridTokens = {
   // —— 栅格系统 ——
   'width-grid-columns': { value: '24', category: 'other', label: '栅格列数', usage: '栅格宽度' },
   'width-grid-gutter': { value: '0', category: 'spacing', label: '槽宽度', usage: '槽宽度' },
-
-  // —— chenzy-design Grid 实际消费的补充 token（Semi 无；组件消费；值对齐 Semi） ——
-  'grid-columns': { value: 'var(--cd-width-grid-columns)', category: 'other', label: '栅格列数', usage: '24 栅格列数（组件消费）' },
-  'grid-gutter-x': { value: '0px', category: 'spacing', label: '水平槽宽', usage: '列间水平间距，由 Row gutter prop 覆盖（组件消费；默认对齐 Semi 0）' },
-  'grid-gutter-y': { value: '0px', category: 'spacing', label: '垂直槽宽', usage: '列间垂直间距，由 Row gutter prop 覆盖（组件消费；默认对齐 Semi 0）' },
 } satisfies TokenGroup;

@@ -59,8 +59,8 @@ const components = [
   // 徽章几何定位 + Group 胶囊工具条（bg/shadow/item 横排）后实测 2.94 KB，预算按 +15% buffer 校准。
   ['float-button', '{ FloatButton, FloatButtonGroup }', '3.4 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
-  // Col 对齐 Semi 内联 24×6 断点的 CSS 类矩阵（span/offset/push/pull/order）后实测 5.43 KB，预算按 +15% buffer 校准。
-  ['grid', '{ Row, Col }', '6.25 KB'],
+  // Col 破坏性重写为 Semi float 机制（float:left+width%，取代 flex-basis+max-width）+ 补 .cd-rtl 物理属性 RTL 覆盖（float:right、offset margin-right，24×7 新增选择器）后实测 7.23 KB，预算按 +15% buffer 校准。
+  ['grid', '{ Row, Col }', '8.3 KB'],
   ['icon', '{ Icon }', '1.45 KB'],
   // 破坏性对齐 Semi 移除折叠/sticky/padding/token 后瘦身，实测 1.71 KB，预算按 +15% buffer 校准。
   ['layout', '{ LayoutHeader, LayoutFooter, LayoutContent, LayoutSider }', '2 KB'],

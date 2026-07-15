@@ -1,15 +1,16 @@
 <!--
-  Row — 24 栅格容器，配对 Col。对齐 Semi grid/row：
-  gutter 用 screens 状态机做响应式（registerMediaQuery 订阅 6 档 media query，
-  getGutter 用 responsiveArray 从大到小降级取第一个命中且有值的断点），
-  gutter 负 margin 技术，Col 经 context 读 gutters 施加左右 padding。
-  align/justify/wrap 为本库相较 Semi 额外提供的 flex 便捷 prop。
+  Row — 24 栅格容器，配对 Col。严格对齐 Semi grid/row（float 机制 + type prop）：
+  - type='flex' → cd-row-flex（display:flex）+ justify/align 类；缺省 → cd-row（display:block + float 清除浮动）。
+  - gutter 用 screens 状态机做响应式（registerMediaQuery 订阅 6 档 media query，
+    getGutter 用 responsiveArray 从大到小降级取第一个命中且有值的断点）。
+  - gutter 走 Semi 真实四向负 margin：水平 marginLeft/Right、垂直 marginTop/Bottom，
+    Col 经 context 读 gutters 施加对应四向 padding 抵消。
 -->
 <script lang="ts" module>
   export const ROW_CONTEXT_KEY = Symbol('cd-row');
 
   export interface RowContext {
-    /** [水平, 垂直] 实际 gutter（px），Col 据此施加左右 padding。 */
+    /** [水平, 垂直] 实际 gutter（px），Col 据此施加四向 padding。 */
     getGutters: () => [number, number];
   }
 </script>
@@ -20,31 +21,33 @@
   import {
     registerMediaQuery,
     defaultResponsiveMap,
-    EMPTY_SCREENS,
     type Breakpoint,
     type BreakpointScreens,
   } from '@chenzy-design/core';
 
-  type RowAlign = 'top' | 'middle' | 'bottom' | 'baseline' | 'stretch';
-  type RowJustify = 'start' | 'end' | 'center' | 'space-between' | 'space-around' | 'space-evenly';
+  type RowAlign = 'top' | 'middle' | 'bottom';
+  type RowJustify = 'start' | 'end' | 'center' | 'space-between' | 'space-around';
   // 对齐 Semi：单轴 gutter = number | 响应式对象；整体可为 [x轴, y轴]。
   type Gutter = number | Partial<Record<Breakpoint, number>>;
 
   interface Props {
-    gutter?: Gutter | [Gutter, Gutter];
+    /** 布局模式；'flex' 时启用 flex 布局并激活 justify/align。 */
+    type?: 'flex';
     align?: RowAlign;
     justify?: RowJustify;
-    wrap?: boolean;
+    gutter?: Gutter | [Gutter, Gutter];
     class?: string;
+    style?: string;
     children?: Snippet;
   }
 
   let {
-    gutter = 0,
-    align = 'top',
+    type,
+    align,
     justify = 'start',
-    wrap = true,
+    gutter = 0,
     class: className = '',
+    style = '',
     children,
   }: Props = $props();
 
@@ -101,50 +104,32 @@
     return results;
   });
 
-  const gutterX = $derived(gutters[0]);
-  const gutterY = $derived(gutters[1]);
-
-  // Col 读此值施加匹配的左右 padding（对齐 Semi RowContext.gutters）。
+  // Col 读此值施加匹配的四向 padding（对齐 Semi RowContext.gutters）。
   setContext<RowContext>(ROW_CONTEXT_KEY, { getGutters: () => gutters });
 
-  const alignItems = $derived.by(() => {
-    switch (align) {
-      case 'middle':
-        return 'center';
-      case 'bottom':
-        return 'flex-end';
-      case 'baseline':
-        return 'baseline';
-      case 'stretch':
-        return 'stretch';
-      default:
-        return 'flex-start';
-    }
-  });
+  // class 三段式对齐 Semi row.tsx classnames：
+  //  type !== 'flex' → cd-row（基础）；type → cd-row-{type}；type && justify/align → cd-row-{type}-{justify}/-{align}。
+  const cls = $derived(
+    [
+      type !== 'flex' && 'cd-row',
+      type && `cd-row-${type}`,
+      type && justify && `cd-row-${type}-${justify}`,
+      type && align && `cd-row-${type}-${align}`,
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 
-  const justifyContent = $derived.by(() => {
-    switch (justify) {
-      case 'start':
-        return 'flex-start';
-      case 'end':
-        return 'flex-end';
-      case 'center':
-        return 'center';
-      default:
-        return justify;
-    }
-  });
-
-  const cls = $derived(['cd-row', className].filter(Boolean).join(' '));
-
+  // gutter 内联样式对齐 Semi rowStyle：x轴负左右 margin、y轴负上下 margin；用户 style 追加在后可覆盖。
   const inlineStyle = $derived(
     [
-      `--cd-grid-gutter-x:${gutterX}px`,
-      `--cd-grid-gutter-y:${gutterY}px`,
-      `align-items:${alignItems}`,
-      `justify-content:${justifyContent}`,
-      `flex-wrap:${wrap ? 'wrap' : 'nowrap'}`,
-    ].join(';'),
+      gutters[0] > 0 && `margin-left:${gutters[0] / -2}px;margin-right:${gutters[0] / -2}px`,
+      gutters[1] > 0 && `margin-top:${gutters[1] / -2}px;margin-bottom:${gutters[1] / -2}px`,
+      style,
+    ]
+      .filter(Boolean)
+      .join(';'),
   );
 </script>
 
@@ -153,11 +138,61 @@
 </div>
 
 <style>
-  .cd-row {
+  /* 严格镜像 Semi grid.scss。动态类名靠 :global 落地（Svelte 不静态收集拼接类名）。 */
+
+  /* .cd-row：display:block + make-row（position:relative;height:auto;margin:0）+ clearfix。 */
+  :global(.cd-row) {
+    display: block;
+    box-sizing: border-box;
+    position: relative;
+    height: auto;
+    margin-right: 0;
+    margin-left: 0;
+  }
+  :global(.cd-row)::before,
+  :global(.cd-row)::after {
+    display: table;
+    content: '';
+  }
+  :global(.cd-row)::after {
+    clear: both;
+  }
+
+  /* .cd-row-flex：display:flex + flex-flow:row wrap；伪元素改 display:flex。 */
+  :global(.cd-row-flex) {
     display: flex;
     flex-flow: row wrap;
-    min-width: 0;
-    margin-inline: calc(var(--cd-grid-gutter-x) / -2);
-    row-gap: var(--cd-grid-gutter-y);
+  }
+  :global(.cd-row-flex)::before,
+  :global(.cd-row-flex)::after {
+    display: flex;
+  }
+
+  /* justify（x 轴）对齐 Semi。 */
+  :global(.cd-row-flex-start) {
+    justify-content: flex-start;
+  }
+  :global(.cd-row-flex-center) {
+    justify-content: center;
+  }
+  :global(.cd-row-flex-end) {
+    justify-content: flex-end;
+  }
+  :global(.cd-row-flex-space-between) {
+    justify-content: space-between;
+  }
+  :global(.cd-row-flex-space-around) {
+    justify-content: space-around;
+  }
+
+  /* align（y 轴）对齐 Semi。 */
+  :global(.cd-row-flex-top) {
+    align-items: flex-start;
+  }
+  :global(.cd-row-flex-middle) {
+    align-items: center;
+  }
+  :global(.cd-row-flex-bottom) {
+    align-items: flex-end;
   }
 </style>
