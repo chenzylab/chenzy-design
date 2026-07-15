@@ -9,7 +9,8 @@
   列项/禁用集生成 + 格式解析/序列化走 @chenzy-design/core 纯函数 (红线 #2)。
 -->
 <script lang="ts">
-  import { tick, type Snippet } from 'svelte';
+  import { tick, getContext, type Snippet } from 'svelte';
+  import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/index.js';
   import {
     useId,
     useDismiss,
@@ -23,6 +24,7 @@
     parseFormatSpec,
     formatTime,
     parseTimeString,
+    zonedWallTime,
     type Meridiem,
     type TimeOption,
   } from '@chenzy-design/core';
@@ -58,6 +60,8 @@
     use12Hours?: boolean;
     /** 格式串 (如 'HH:mm' / 'hh:mm A' / 'HH:mm:ss')：决定显示列与 12h，并作为展示/字符串值序列化格式。 */
     format?: string;
+    /** 时区（数字偏移 / 'GMT±HH:mm' / IANA）：仅作用于无 format 时的 Intl 显示层；自身优先，未传回退 ConfigProvider。对齐 Semi timeZone。 */
+    timeZone?: string | number;
     disabledHours?: () => number[];
     disabledMinutes?: (hour: number) => number[];
     disabledSeconds?: (hour: number, minute: number) => number[];
@@ -147,6 +151,7 @@
     showSecond = true,
     use12Hours = false,
     format,
+    timeZone,
     disabledHours,
     disabledMinutes,
     disabledSeconds,
@@ -328,6 +333,13 @@
   }
 
   // --- Intl 本地化展示 (无 format 时；不手拼时间串)；12h 制由 hour12 驱动 AM/PM ---
+  // timeZone：自身 prop 优先，未传回退 ConfigProvider 注入的 config timeZone（对齐 Semi：
+  // TimePicker 用 timeZone={config} 作默认再被自身 prop 覆盖）。对齐 Semi utcToZonedTime 值层
+  // 语义：把选中时刻转成目标时区墙上时间的 Date，再按本地字段序列化（不给 Intl 传 timeZone）。
+  // 取值支持数字 / 'GMT±HH:mm'；具名 IANA（无 tz 数据库）不做转换。
+  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
+  const configTimeZone = $derived(configCtx?.current.timeZone);
+  const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
@@ -337,12 +349,14 @@
     }),
   );
 
-  // 单个 Date 的展示串：有 format 走 core formatTime (红线 #2)，否则 Intl 本地化
+  // 单个 Date 的展示串：先转目标时区墙上时间，再序列化（有 format 走 core formatTime 按本地
+  // 字段（红线 #2），否则 Intl 本地化）。对齐 Semi 值层时区转换语义。
   function displayOne(d: Date): string {
+    const shown = zonedWallTime(d, effectiveTimeZone);
     if (format) {
-      return formatTime({ hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() }, format);
+      return formatTime({ hour: shown.getHours(), minute: shown.getMinutes(), second: shown.getSeconds() }, format);
     }
-    return triggerFormat.format(d);
+    return triggerFormat.format(shown);
   }
 
   const placeholderText = $derived(placeholder ?? loc().t('TimePicker.placeholder'));

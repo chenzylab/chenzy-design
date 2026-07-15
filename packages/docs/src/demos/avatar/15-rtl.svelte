@@ -13,8 +13,8 @@
 </script>
 
 <Text type="tertiary"
-  >在 wrap 包裹元素上写 <code>dir</code> 建立方向作用域：RTL 下头像组层叠方向、hover
-  遮罩定位随之镜像。</Text
+  >ConfigProvider <code>direction="rtl"</code> 渲染 <code>cd-rtl</code> 包裹层建立方向作用域：RTL
+  下头像组层叠方向、hover 遮罩定位随之镜像。</Text
 >
 
 <div style="margin-top:12px; display:flex; gap:8px">
@@ -22,7 +22,7 @@
   <Button type={dir === 'rtl' ? 'primary' : 'secondary'} onclick={() => (dir = 'rtl')}>RTL</Button>
 </div>
 
-<ConfigProvider wrap {dir}>
+<ConfigProvider direction={dir}>
   <div
     style="margin-top:12px; padding:16px; border:1px dashed var(--cd-color-border); border-radius:8px; display:flex; flex-direction:column; gap:16px;"
   >

@@ -13,7 +13,6 @@
     type MessageDescriptor,
     type ValidateTrigger,
   } from '@chenzy-design/core';
-  import { interpolate } from '@chenzy-design/locale';
   import {
     setFormContext,
     type FormLayout,
@@ -23,7 +22,6 @@
     type GridCol,
   } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
-  import { getGlobalValidateMessages } from '../config-provider/index.js';
 
   interface Props {
     /** controlled whole-form values (reported back via onChange, never written to the prop) */
@@ -119,18 +117,12 @@
   }: Props = $props();
 
   const loc = useLocale();
-  // 全局校验文案覆盖（来自 ConfigProvider getValidateMessages）；须在 init 期读 context。
-  const globalValidateMessages = getGlobalValidateMessages();
 
-  // 校验消息优先级：
+  // 校验消息优先级（对齐 Semi：ConfigProvider 无全局校验文案覆盖，文案走 locale）：
   // 1) rule.message（descriptor.text）显式覆盖；
-  // 2) ConfigProvider getValidateMessages() 提供的对应 `Form.*` 键模板（带插值）；
-  // 3) locale 内置 Form.* 模板。
-  // 未配置全局覆盖时行为完全不变（向后兼容）。
+  // 2) locale 内置 Form.* 模板。
   function resolveMessage(d: MessageDescriptor): string {
     if (d.text !== undefined) return d.text;
-    const override = globalValidateMessages?.()[d.key];
-    if (override !== undefined) return d.params ? interpolate(override, d.params) : override;
     return loc().t(d.key, d.params);
   }
 

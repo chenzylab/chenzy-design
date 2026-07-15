@@ -8,9 +8,10 @@
   年月滚轮（PANEL_YAM，对齐 Semi）：点头部年/月标题展开年 + 月两列 ScrollList 快速跳转面板游标（复用 scroll-list，不重写滚轮）。
 -->
 <script lang="ts">
-  import { tick, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
+  import { tick, getContext, type Snippet } from 'svelte';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
@@ -73,7 +74,7 @@
      * 不做完整的跨时区值转换（选中/解析得到的 Date 其绝对时刻不变）。
      * format 串走 core formatDate 的可编辑模式不受 timeZone 影响（按 Date 本地字段序列化）。
      */
-    timeZone?: string;
+    timeZone?: string | number;
     /** token 格式串 (YYYY/MM/DD/HH/mm/ss)。传入则触发器变可输入文本框，显示+手输解析按此格式。 */
     format?: string;
     /**
@@ -413,46 +414,50 @@
     }
   });
 
-  // --- Intl 本地化格式化器 (不手拼日期串) ---
-  // timeZone 仅注入显示格式化层：把用户传入的 IANA 时区透传给每个 DateTimeFormat，
-  // 使显示文案按该时区呈现；不改变底层 Date 的绝对时刻（见 timeZone JSDoc 边界说明）。
-  function withTZ(opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormatOptions {
-    return timeZone ? { ...opts, timeZone } : opts;
-  }
+  // --- 时区（对齐 Semi utcToZonedTime 值层语义，不给 Intl 传 timeZone）---
+  // Semi 的 timeZone 不在显示格式化器上附加时区，而是在值层把选中的绝对时刻转成「目标时区
+  // 墙上时间」的 Date，再按其本地字段序列化。自身 timeZone prop 优先，未传回退 ConfigProvider
+  // 的 timeZone（对齐 Semi：DatePicker 用 timeZone={config} 作默认再被自身 prop 覆盖）。
+  // 取值支持数字偏移 / 'GMT±HH:mm'；具名 IANA（无 tz 数据库）不做转换。
+  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
+  const configTimeZone = $derived(configCtx?.current.timeZone);
+  const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
+
+  // --- Intl 本地化格式化器 (不手拼日期串；不传 timeZone，时区在值层由 zonedWallTime 处理) ---
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(
       locale,
-      withTZ(
-        isYear
-          ? { year: 'numeric' }
-          : isMonth
-            ? { year: 'numeric', month: '2-digit' }
-            : {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                ...(isDateTime
-                  ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
-                  : {}),
-              },
-      ),
+      isYear
+        ? { year: 'numeric' }
+        : isMonth
+          ? { year: 'numeric', month: '2-digit' }
+          : {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              ...(isDateTime
+                ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+                : {}),
+            },
     ),
   );
   const headerFormat = $derived(
-    new Intl.DateTimeFormat(locale, withTZ({ year: 'numeric', month: 'long' })),
+    new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
   );
   // 仅年份的头部文案 (month 面板头部 / year 面板基准)
-  const yearFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ year: 'numeric' })));
+  const yearFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric' }));
   // 月格短名 (month 面板 12 格)
-  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ month: 'short' })));
-  const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, withTZ({ weekday: 'short' })));
+  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
+  const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
   // 完整星期名 (columnheader aria-label，朗读用)
   const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
 
-  // format 串优先用 core 纯函数序列化；否则沿用 Intl (向后兼容)
+  // 触发器/输入显示：选中值先转目标时区墙上时间，再序列化（format 走 core 纯函数按本地字段，
+  // 无 format 走 Intl 本地字段），使显示随 timeZone 变化。对齐 Semi 值层转换语义。
   function formatSingle(d: Date | null): string {
     if (!d) return '';
-    return format ? formatDate(d, format) : triggerFormat.format(d);
+    const shown = zonedWallTime(d, effectiveTimeZone);
+    return format ? formatDate(shown, format) : triggerFormat.format(shown);
   }
 
   const formattedValue = $derived(

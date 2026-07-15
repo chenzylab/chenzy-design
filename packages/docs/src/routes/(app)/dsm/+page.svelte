@@ -4,7 +4,6 @@
     Badge,
     Button,
     Checkbox,
-    ConfigProvider,
     Input,
     Progress,
     Radio,
@@ -29,12 +28,19 @@
 
   // ── 覆写状态 ──────────────────────────────────────────────────
   // key 为无前缀 token 名（如 color-primary / color-button-primary-bg-hover）→ 值。
-  // 全局层 + 组件层的改动统一汇入这里，一并注入 ConfigProvider。
+  // 全局层 + 组件层的改动统一汇入这里，一并注入预览容器的 scoped 变量。
   let overrides = $state<Record<string, string>>({});
 
-  // 传给 ConfigProvider 的覆写：在用户覆写基础上扩散出传递引用它们的组件 token
+  // 预览区局部 token 覆写：在用户覆写基础上扩散出传递引用它们的组件 token
   // （带原始 var() 值），使 scoped 注入下组件也能级联联动（见 tokens.ts 说明）。
+  // ConfigProvider 已对齐 Semi（无 tokens prop），这里直接在预览容器上注入 scoped
+  // CSS 变量（--cd-<key>），仅作用于该子树、不污染全局。
   const themeTokens = $derived(expandOverridesForPreview(overrides));
+  const previewTokenStyle = $derived(
+    Object.entries(themeTokens)
+      .map(([k, v]) => `--cd-${k}: ${v}`)
+      .join('; '),
+  );
 
   function keyOf(name: string): string {
     return name.replace(/^--cd-/, '');
@@ -297,9 +303,8 @@
   <div class="dsm-preview">
     <div class="preview-sticky">
       <h2>预览{tab === 'component' ? ` · ${selectedComponent}` : ''}</h2>
-      <ConfigProvider tokens={themeTokens} wrap>
-        <div class="preview-stage">
-          {#if previewKey === 'global'}
+      <div class="preview-stage" style={previewTokenStyle}>
+        {#if previewKey === 'global'}
             <!-- 全局层：混合一组代表性组件，体现全局色联动 -->
             <div class="prow">
               <Button type="primary">Primary</Button>
@@ -460,9 +465,8 @@
             <div class="preview-fallback">
               该组件暂无预览，仍可编辑 token 并导出。
             </div>
-          {/if}
-        </div>
-      </ConfigProvider>
+        {/if}
+      </div>
 
       {#if !hasPreview}
         <p class="fallback-note">「{selectedComponent}」暂无专属预览，token 编辑与导出照常可用。</p>

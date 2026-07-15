@@ -436,8 +436,18 @@ export {
   ConfigProvider,
   CONFIG_CONTEXT_KEY,
   getConfigContext,
+  getConfigResponsive,
+  defaultResponsiveMap,
   configProviderMeta,
   type ConfigContextValue,
+  type OnBreakpoint,
+  type ConfigDir,
+  type ConfigTimeZone,
+  type Breakpoint,
+  type ResponsiveMap,
+  type BreakpointScreens,
+  type OnBreakpointScreensCallback,
+  type OnBreakpointChangeCallback,
 } from './config-provider/index.js';
 export {
   ResizeObserver,
