@@ -2,12 +2,13 @@
   ResizeItem — one panel inside a ResizeGroup. Registers with the group (context)
   declaratively; the group drives its flex-basis. Registration bookkeeping is a
   plain object handed to the group (no reactive dispatch on mount → no §9.3 loop).
-  See specs/components/other/Resizable.spec.md §4.3.
+  On dynamic direction change the inline width↔height is swapped (aligns Semi).
+  DOM: root cd-resizable-item.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { getContext, onMount } from 'svelte';
-  import type { ResizeCallback, ResizeStartCallback } from '@chenzy-design/core';
+  import { getContext, onMount, tick } from 'svelte';
+  import type { ResizeCallback, ResizeStartCallback, GroupDirection } from '@chenzy-design/core';
   import {
     RESIZE_GROUP_KEY,
     type ResizeGroupContext,
@@ -15,11 +16,11 @@
   } from './context.js';
 
   interface Props {
-    /** 初始尺寸（百分比字符串 / px / 数字比例）。 */
+    /** 初始尺寸（百分比字符串 / px / 纯数字比例）。 */
     defaultSize?: string | number;
-    /** 最小尺寸（同单位）。 */
+    /** 最小尺寸（百分比或像素）。 */
     min?: string;
-    /** 最大尺寸（同单位）。 */
+    /** 最大尺寸（百分比或像素）。 */
     max?: string;
     onResizeStart?: ResizeStartCallback;
     onChange?: ResizeCallback;
@@ -61,7 +62,32 @@
     return unregister;
   });
 
-  const cls = $derived(['cd-resize-item', className].filter(Boolean).join(' '));
+  // 支持动态方向：direction 变化时把 inline width↔height 互换（对齐 Semi）。
+  let prevDirection: GroupDirection | undefined;
+  $effect(() => {
+    const dir = group?.direction();
+    if (!dir) return;
+    if (prevDirection === undefined) {
+      prevDirection = dir;
+      return;
+    }
+    if (dir === prevDirection) return;
+    prevDirection = dir;
+    tick().then(() => {
+      if (!el) return;
+      if (dir === 'horizontal') {
+        const newWidth = el.style.height;
+        el.style.width = newWidth;
+        el.style.removeProperty('height');
+      } else {
+        const newHeight = el.style.width;
+        el.style.height = newHeight;
+        el.style.removeProperty('width');
+      }
+    });
+  });
+
+  const cls = $derived([className, 'cd-resizable-item'].filter(Boolean).join(' '));
 </script>
 
 <div bind:this={el} class={cls} {style}>
@@ -69,10 +95,9 @@
 </div>
 
 <style>
-  .cd-resize-item {
+  .cd-resizable-item {
+    position: relative;
     box-sizing: border-box;
-    min-width: 0;
-    min-height: 0;
-    overflow: auto;
+    flex-shrink: 0;
   }
 </style>

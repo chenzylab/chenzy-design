@@ -2,13 +2,18 @@
  * Component tokens for SideBar（M4 show/AI，重量级套件，分阶段交付）。
  * P0 Container 浮层壳 + P1 主壳/Options 的容器背景/边框/宽度/header/Options 项 token。
  * 对标 Semi Sidebar，但补齐 chenzy-design 增强（focus 环、Options 激活态等）。
- * 拖拽把手复用 Resizable 的 --cd-resizable-handle-* token（Container 复用 Resizable），
- * 不再重复定义。值为 var() 引用 alias / global token，或字面量。
- * 见 specs/components/show/SideBar.spec.md §5。
+ * 拖拽把手为 Container 自有 token（Resizable 已严格对齐 Semi、不再提供把手 CSS 变量），
+ * 故此处自定义拖拽把手命中区/线色/hover 色，语义独立。值为 var() 引用 alias / global
+ * token，或字面量。见 specs/components/show/SideBar.spec.md §5。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const sideBarTokens = {
+  // —— 拖拽把手（Container 自有，不再依赖 Resizable）——
+  'sidebar-handle-size': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '把手命中区厚度', usage: 'Container 拖拽把手命中区厚度（组件消费）' },
+  'sidebar-handle-color': { value: 'var(--cd-color-border)', category: 'color', label: '把手可视线色', usage: 'Container 拖拽把手默认可视分隔线颜色（组件消费）' },
+  'sidebar-handle-color-hover': { value: 'var(--cd-color-primary)', category: 'color', label: '把手 hover 色', usage: 'Container 拖拽把手 hover/拖拽高亮色（组件消费）' },
+
   // —— Container 面板 ——
   'sidebar-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '容器背景', usage: 'Container 浮层背景（组件消费）' },
   'sidebar-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '容器正文色', usage: 'Container 正文文字颜色（组件消费）' },

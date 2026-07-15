@@ -235,6 +235,40 @@ describe('createResizeDrag — lifecycle', () => {
     doc.fire('pointermove', pe(100, 0)); // width 200 -> height 100 (ratio 2)
     expect(sizes[0]).toEqual({ width: 200, height: 100 });
   });
+
+  it('lockAspectRatioExtra offsets the driven axis (Semi lockAspectRatioExtra*)', () => {
+    const doc = makeFakeDoc();
+    const sizes: { width: number; height: number }[] = [];
+    const drag = createResizeDrag({
+      axis: 'xy',
+      getStart: () => ({ width: 100, height: 50 }),
+      lockAspectRatio: 2, // explicit ratio 2
+      lockAspectRatioExtraHeight: 10,
+      lockAspectRatioExtraWidth: 4,
+      onMove: (s) => sizes.push({ width: s.width, height: s.height }),
+      ownerDocument: doc as unknown as Document,
+    });
+    drag.start(pe(0, 0), 'bottomRight'); // horizontal edge -> height driven from width
+    doc.fire('pointermove', pe(100, 0)); // width 200 -> height = (200-4)/2 + 10 = 108
+    expect(sizes[0]).toEqual({ width: 200, height: 108 });
+  });
+
+  it('boundsByDirection only caps the dragged edge axis (Semi boundsByDirection)', () => {
+    const doc = makeFakeDoc();
+    const sizes: { width: number; height: number }[] = [];
+    const drag = createResizeDrag({
+      axis: 'xy',
+      getStart: () => ({ width: 100, height: 100 }),
+      getBoundMax: () => ({ maxWidth: 150, maxHeight: 150 }),
+      boundsByDirection: true,
+      onMove: (s) => sizes.push({ width: s.width, height: s.height }),
+      ownerDocument: doc as unknown as Document,
+    });
+    // right edge: only width is capped; height is uncapped (no top/bottom in dir)
+    drag.start(pe(0, 0), 'right');
+    doc.fire('pointermove', pe(300, 300)); // width 400 -> capped 150; height stays 100
+    expect(sizes[0]).toEqual({ width: 150, height: 100 });
+  });
 });
 
 describe('computeGroupResize — coupling + conservation', () => {

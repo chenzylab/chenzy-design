@@ -1,23 +1,23 @@
 <!--
   Resizable — single resizable container with up to 8 drag handles (4 edges + 4
   corners). Consumes createResizeDrag from core for imperative pointer geometry
-  (redline #3: no reactive attachment reads geometry). Handles are role=separator
-  with keyboard support (←→/↑↓/Home/End) + i18n aria-label. See
-  specs/components/other/Resizable.spec.md §4.1.
+  (redline no.3: no reactive attachment reads geometry). Handles are bare divs
+  (no role / aria / tabindex / keyboard) — strictly aligned with Semi Design.
+  DOM mirrors Semi: root cd-resizable-resizable, an isResizing fixed background
+  overlay, a handle-wrapper layer, and per-direction cd-resizable-resizableHandler.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import {
     createResizeDrag,
     DIRECTIONS,
-    hasDirection,
     type Direction,
     type Enable,
     type ResizableSize as Size,
     type ResizeCallback,
     type ResizeStartCallback,
   } from '@chenzy-design/core';
-  import { useLocale } from '../locale-provider/index.js';
+  import type { HandleClassName, HandleStyle, HandleNode } from './context.js';
 
   interface Props {
     /** 受控尺寸。 */
@@ -32,22 +32,36 @@
     maxHeight?: string | number;
     /** 锁定宽高比（true 从起始尺寸推导，number 为指定比值）。 */
     lockAspectRatio?: boolean | number;
-    /** 吸附网格步长 [x, y]。 */
-    grid?: [number, number];
+    /** 锁定比例时宽度额外补偿（对齐 Semi）。 */
+    lockAspectRatioExtraWidth?: number;
+    /** 锁定比例时高度额外补偿（对齐 Semi）。 */
+    lockAspectRatioExtraHeight?: number;
+    /** 吸附网格步长 [x, y]，默认 [1,1]。也接受单数字（归一为 [n,n]）。 */
+    grid?: [number, number] | number;
     /** 吸附到指定像素尺寸（对齐 Semi snap）。 */
     snap?: { x?: number[]; y?: number[] };
     /** 吸附生效的最小间隙，0 表示总是吸附到最近目标（对齐 Semi snapGap）。 */
     snapGap?: number;
     /** 限制伸缩范围的边界元素（对齐 Semi boundElement）：'parent' | 'window' | HTMLElement。 */
     boundElement?: 'parent' | 'window' | HTMLElement;
+    /** 按方向计算边界（对齐 Semi boundsByDirection）。 */
+    boundsByDirection?: boolean;
     /** 画布缩放系数（拖拽 delta 除以 scale）。 */
     scale?: number;
     /** 像素比修正（高分屏 delta）。 */
     ratio?: number | [number, number];
-    /** 键盘步长（默认 10 或 grid[0]/grid[1]）。 */
-    keyboardStep?: number;
     class?: string;
     style?: string;
+    /** 把手 wrapper 层的类名。 */
+    handleWrapperClass?: string;
+    /** 把手 wrapper 层的内联样式。 */
+    handleWrapperStyle?: string;
+    /** 各向把手的自定义类名。 */
+    handleClass?: HandleClassName;
+    /** 各向把手的自定义内联样式。 */
+    handleStyle?: HandleStyle;
+    /** 各向把手自定义内容。 */
+    handleNode?: HandleNode;
     /** 拖拽开始；返回 false 取消本次拖拽（对齐 Semi）。 */
     onResizeStart?: ResizeStartCallback;
     /** 拖拽中；载荷顺序 (size, event, direction)。 */
@@ -55,8 +69,6 @@
     /** 拖拽结束，签名同 onChange。 */
     onResizeEnd?: ResizeCallback;
     children?: Snippet;
-    /** 各向把手自定义内容。 */
-    handleNode?: Partial<Record<Direction, Snippet>>;
   }
 
   let {
@@ -68,25 +80,34 @@
     maxWidth,
     maxHeight,
     lockAspectRatio = false,
+    lockAspectRatioExtraWidth = 0,
+    lockAspectRatioExtraHeight = 0,
     grid,
     snap,
     snapGap,
     boundElement,
+    boundsByDirection,
     scale = 1,
     ratio = 1,
-    keyboardStep,
     class: className = '',
     style,
+    handleWrapperClass = '',
+    handleWrapperStyle,
+    handleClass,
+    handleStyle,
+    handleNode,
     onResizeStart,
     onChange,
     onResizeEnd,
     children,
-    handleNode,
   }: Props = $props();
 
-  const loc = useLocale();
-
   let rootEl = $state<HTMLDivElement | null>(null);
+  let isResizing = $state(false);
+
+  const normGrid = $derived<[number, number] | undefined>(
+    grid == null ? undefined : typeof grid === 'number' ? [grid, grid] : grid,
+  );
 
   const toCss = (v: string | number | undefined): string | undefined =>
     v == null ? undefined : typeof v === 'number' ? `${v}px` : v;
@@ -99,7 +120,7 @@
     return Number.isNaN(n) ? undefined : n;
   };
 
-  // 非受控本地尺寸（拖拽/键盘时命令式写入）。default 仅作一次性初值、后续不回写。
+  // 非受控本地尺寸（拖拽时命令式写入）。default 仅作一次性初值、后续不回写。
   // svelte-ignore state_referenced_locally
   let localWidth = $state<string | number | undefined>(defaultSize?.width);
   // svelte-ignore state_referenced_locally
@@ -117,7 +138,7 @@
 
   const enabledHandles = $derived(DIRECTIONS.filter(isEnabled));
 
-  // 当前尺寸的 px 读数（命令式，红线 #3：不在 effect 里读几何）。
+  // 当前尺寸的 px 读数（命令式，红线 no.3：不在 effect 里读几何）。
   function readSize(): { width: number; height: number } {
     if (rootEl) {
       return { width: rootEl.offsetWidth, height: rootEl.offsetHeight };
@@ -127,7 +148,6 @@
 
   function commit(w: number, h: number): void {
     if (!isControlled) {
-      // 保持原单位语义：若初值是 % 字符串，转回 %。
       localWidth = w;
       localHeight = h;
     }
@@ -175,17 +195,21 @@
     const cont = onResizeStart?.(event, dir);
     if (cont === false) return;
     event.preventDefault();
+    isResizing = true;
     activeDrag?.destroy();
     activeDrag = createResizeDrag({
       axis: 'xy',
       getStart: () => readSize(),
       min: { min: toPx(minWidth) },
       max: { max: toPx(maxWidth) },
-      ...(grid ? { grid } : {}),
+      ...(normGrid ? { grid: normGrid } : {}),
       ...(snap ? { snap } : {}),
       ...(snapGap != null ? { snapGap } : {}),
       ...(boundElement ? { getBoundMax: computeBoundMax } : {}),
+      ...(boundsByDirection ? { boundsByDirection } : {}),
       lockAspectRatio,
+      lockAspectRatioExtraWidth,
+      lockAspectRatioExtraHeight,
       scale,
       ratio,
       onMove: (s, _delta, d, e) => {
@@ -196,6 +220,7 @@
       },
       onEnd: (s, d, e) => {
         const { width: w, height: h } = clampSize(s.width, s.height);
+        isResizing = false;
         onResizeEnd?.({ width: w, height: h }, e, d);
         activeDrag = null;
       },
@@ -203,221 +228,127 @@
     activeDrag.start(event, dir);
   }
 
-  // 卸载兜底：拖拽中卸载时解绑遗留全局监听（红线 #3）。
+  // 卸载兜底：拖拽中卸载时解绑遗留全局监听（红线 no.3）。
   $effect(() => () => activeDrag?.destroy());
 
-  // 键盘：把手聚焦后按方向调尺寸。
-  function stepFor(dir: 'x' | 'y'): number {
-    if (keyboardStep != null) return keyboardStep;
-    if (grid) return dir === 'x' ? grid[0] : grid[1];
-    return 10;
-  }
-
-  function applyKeyboard(dir: Direction, dw: number, dh: number, e: KeyboardEvent): void {
-    const cur = readSize();
-    let w = cur.width + dw;
-    let h = cur.height + dh;
-    const minW = toPx(minWidth);
-    const maxW = toPx(maxWidth);
-    const minH = toPx(minHeight);
-    const maxH = toPx(maxHeight);
-    if (minW != null) w = Math.max(w, minW);
-    if (maxW != null) w = Math.min(w, maxW);
-    if (minH != null) h = Math.max(h, minH);
-    if (maxH != null) h = Math.min(h, maxH);
-    commit(w, h);
-    onChange?.({ width: w, height: h }, e as unknown as PointerEvent, dir);
-    onResizeEnd?.({ width: w, height: h }, e as unknown as PointerEvent, dir);
-  }
-
-  function handleKeydown(event: KeyboardEvent, dir: Direction): void {
-    const horizontal = hasDirection(dir, 'left') || hasDirection(dir, 'right');
-    const vertical = hasDirection(dir, 'top') || hasDirection(dir, 'bottom');
-    // RTL 镜像：横向把手 ←→ 语义反转。
-    const rtl =
-      typeof window !== 'undefined' && rootEl
-        ? getComputedStyle(rootEl).direction === 'rtl'
-        : false;
-    const sx = stepFor('x');
-    const sy = stepFor('y');
-    let dw = 0;
-    let dh = 0;
-    switch (event.key) {
-      case 'ArrowRight':
-        if (horizontal) dw = rtl ? -sx : sx;
-        break;
-      case 'ArrowLeft':
-        if (horizontal) dw = rtl ? sx : -sx;
-        break;
-      case 'ArrowDown':
-        if (vertical) dh = sy;
-        break;
-      case 'ArrowUp':
-        if (vertical) dh = -sy;
-        break;
-      case 'Home': {
-        // 收到最小
-        const cur = readSize();
-        if (horizontal) dw = (toPx(minWidth) ?? 0) - cur.width;
-        if (vertical) dh = (toPx(minHeight) ?? 0) - cur.height;
-        break;
-      }
-      case 'End': {
-        const cur = readSize();
-        const mw = toPx(maxWidth);
-        const mh = toPx(maxHeight);
-        if (horizontal && mw != null) dw = mw - cur.width;
-        if (vertical && mh != null) dh = mh - cur.height;
-        break;
-      }
-      default:
-        return;
-    }
-    if (dw === 0 && dh === 0) return;
-    event.preventDefault();
-    applyKeyboard(dir, dw, dh, event);
-  }
-
-  const orientationOf = (dir: Direction): 'horizontal' | 'vertical' =>
-    // 左右把手 = 竖直分隔线（vertical orientation）
-    hasDirection(dir, 'left') || hasDirection(dir, 'right') ? 'vertical' : 'horizontal';
-
-  const rootStyle = $derived(
-    [toCss(curWidth) ? `width:${toCss(curWidth)}` : '', toCss(curHeight) ? `height:${toCss(curHeight)}` : '', style ?? '']
+  const resizeStyle = $derived(
+    [
+      isResizing ? 'user-select:none' : 'user-select:auto',
+      toCss(maxWidth) ? `max-width:${toCss(maxWidth)}` : '',
+      toCss(maxHeight) ? `max-height:${toCss(maxHeight)}` : '',
+      toCss(minWidth) ? `min-width:${toCss(minWidth)}` : '',
+      toCss(minHeight) ? `min-height:${toCss(minHeight)}` : '',
+      style ?? '',
+      toCss(curWidth) ? `width:${toCss(curWidth)}` : '',
+      toCss(curHeight) ? `height:${toCss(curHeight)}` : '',
+    ]
       .filter(Boolean)
       .join(';'),
   );
 
-  const cls = $derived(['cd-resizable', className].filter(Boolean).join(' '));
-
-  const label = $derived(loc().t('Resizable.handleAriaLabel'));
-
-  function ariaNow(dir: Direction): number {
-    const cur = readSize();
-    return orientationOf(dir) === 'vertical' ? cur.width : cur.height;
-  }
+  const cls = $derived([className, 'cd-resizable-resizable'].filter(Boolean).join(' '));
 </script>
 
-<div bind:this={rootEl} class={cls} style={rootStyle}>
+<div bind:this={rootEl} class={cls} style={resizeStyle}>
+  {#if isResizing}
+    <div class="cd-resizable-background"></div>
+  {/if}
   {@render children?.()}
-  {#each enabledHandles as dir (dir)}
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="cd-resizable__handle cd-resizable__handle--{dir}"
-      role="separator"
-      tabindex="0"
-      aria-orientation={orientationOf(dir)}
-      aria-label={label}
-      aria-valuenow={Math.round(ariaNow(dir))}
-      aria-valuemin={orientationOf(dir) === 'vertical' ? toPx(minWidth) : toPx(minHeight)}
-      aria-valuemax={orientationOf(dir) === 'vertical' ? toPx(maxWidth) : toPx(maxHeight)}
-      onpointerdown={(e) => handlePointerDown(e, dir)}
-      onkeydown={(e) => handleKeydown(e, dir)}
-    >
-      {#if handleNode?.[dir]}
-        {@render handleNode[dir]?.()}
-      {/if}
+  {#if enable !== false && enabledHandles.length}
+    <div class={handleWrapperClass} style={handleWrapperStyle}>
+      {#each enabledHandles as dir (dir)}
+        <!-- 把手是裸命中区，严格对齐 Semi（无 role/aria/键盘），仅承载指针拖拽。 -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="{handleClass?.[dir] ?? ''} cd-resizable-resizableHandler cd-resizable-resizableHandler-{dir}"
+          style={handleStyle?.[dir]}
+          onpointerdown={(e) => handlePointerDown(e, dir)}
+        >
+          {#if handleNode?.[dir]}
+            {@render handleNode[dir]?.()}
+          {/if}
+        </div>
+      {/each}
     </div>
-  {/each}
+  {/if}
 </div>
 
 <style>
-  .cd-resizable {
+  .cd-resizable-resizable {
     position: relative;
     box-sizing: border-box;
+    flex-shrink: 0;
   }
-  .cd-resizable__handle {
+
+  .cd-resizable-background {
+    height: 100%;
+    width: 100%;
+    inset: 0;
+    z-index: 20;
+    opacity: 0;
+    position: fixed;
+  }
+
+  :global(.cd-resizable-resizableHandler) {
     position: absolute;
-    z-index: 1;
-    touch-action: none;
-    /* 命中区 ≥24px（视觉线细，命中区扩展满足 2.5.8） */
+    user-select: none;
+    z-index: 10;
   }
-  .cd-resizable__handle:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--cd-resizable-handle-color-focus);
-  }
-  /* 边把手：可视分隔线 */
-  .cd-resizable__handle--right,
-  .cd-resizable__handle--left {
-    top: 0;
-    bottom: 0;
-    width: max(var(--cd-resizable-handle-size), 12px);
-    cursor: ew-resize;
-  }
-  .cd-resizable__handle--right {
-    right: calc(var(--cd-resizable-handle-size) * -0.5);
-  }
-  .cd-resizable__handle--left {
-    left: calc(var(--cd-resizable-handle-size) * -0.5);
-  }
-  .cd-resizable__handle--top,
-  .cd-resizable__handle--bottom {
+  /* 上下把手：宽满高 10px */
+  :global(.cd-resizable-resizableHandler-top),
+  :global(.cd-resizable-resizableHandler-bottom) {
+    width: 100%;
+    height: 10px;
     left: 0;
-    right: 0;
-    height: max(var(--cd-resizable-handle-size), 12px);
-    cursor: ns-resize;
+    cursor: row-resize;
   }
-  .cd-resizable__handle--top {
-    top: calc(var(--cd-resizable-handle-size) * -0.5);
+  :global(.cd-resizable-resizableHandler-top) {
+    top: -5px;
   }
-  .cd-resizable__handle--bottom {
-    bottom: calc(var(--cd-resizable-handle-size) * -0.5);
+  :global(.cd-resizable-resizableHandler-bottom) {
+    bottom: -5px;
   }
-  /* 角把手 */
-  .cd-resizable__handle--topRight,
-  .cd-resizable__handle--bottomRight,
-  .cd-resizable__handle--bottomLeft,
-  .cd-resizable__handle--topLeft {
-    width: max(var(--cd-resizable-handle-size), 12px);
-    height: max(var(--cd-resizable-handle-size), 12px);
-  }
-  .cd-resizable__handle--topRight {
+  /* 左右把手：高满宽 10px */
+  :global(.cd-resizable-resizableHandler-left),
+  :global(.cd-resizable-resizableHandler-right) {
+    width: 10px;
+    height: 100%;
     top: 0;
-    right: 0;
-    cursor: nesw-resize;
+    cursor: col-resize;
   }
-  .cd-resizable__handle--bottomRight {
-    bottom: 0;
-    right: 0;
-    cursor: nwse-resize;
+  :global(.cd-resizable-resizableHandler-left) {
+    left: -5px;
   }
-  .cd-resizable__handle--bottomLeft {
-    bottom: 0;
-    left: 0;
-    cursor: nesw-resize;
+  :global(.cd-resizable-resizableHandler-right) {
+    right: -5px;
   }
-  .cd-resizable__handle--topLeft {
-    top: 0;
-    left: 0;
-    cursor: nwse-resize;
-  }
-  /* 可视线：edge 把手中间画一条细线 */
-  .cd-resizable__handle--right::after,
-  .cd-resizable__handle--left::after {
-    content: '';
+  /* 四角：20x20 */
+  :global(.cd-resizable-resizableHandler-topRight),
+  :global(.cd-resizable-resizableHandler-bottomRight),
+  :global(.cd-resizable-resizableHandler-bottomLeft),
+  :global(.cd-resizable-resizableHandler-topLeft) {
+    width: 20px;
+    height: 20px;
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 1px;
-    transform: translateX(-50%);
-    background: var(--cd-resizable-handle-color);
-    transition: background-color 0.15s;
   }
-  .cd-resizable__handle--top::after,
-  .cd-resizable__handle--bottom::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    transform: translateY(-50%);
-    background: var(--cd-resizable-handle-color);
-    transition: background-color 0.15s;
+  :global(.cd-resizable-resizableHandler-topRight) {
+    top: -10px;
+    right: -10px;
+    cursor: ne-resize;
   }
-  .cd-resizable__handle:hover::after {
-    background: var(--cd-resizable-handle-color-hover);
+  :global(.cd-resizable-resizableHandler-bottomRight) {
+    bottom: -10px;
+    right: -10px;
+    cursor: se-resize;
+  }
+  :global(.cd-resizable-resizableHandler-bottomLeft) {
+    bottom: -10px;
+    left: -10px;
+    cursor: sw-resize;
+  }
+  :global(.cd-resizable-resizableHandler-topLeft) {
+    top: -10px;
+    left: -10px;
+    cursor: nw-resize;
   }
 </style>

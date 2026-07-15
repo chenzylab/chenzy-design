@@ -8,8 +8,8 @@
   dragging a handler grows one neighbour and shrinks the other, conserving the
   sum; per-item min/max clamps redistribute to keep the total. Sizes live as
   `calc(percent% - minus)` flex-basis where minus reserves half a handler.
-
-  See specs/components/other/Resizable.spec.md §3 / §4.2.
+  DOM mirrors Semi: root cd-resizable-group with inline flex-direction plus an
+  isResizing fixed background overlay.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -27,16 +27,17 @@
   } from './context.js';
 
   interface Props {
-    /** 分栏方向（横向=调宽，纵向=调高）。必填。 */
-    direction: GroupDirection;
+    /** 分栏方向（横向=调宽，纵向=调高）。默认 horizontal。 */
+    direction?: GroupDirection;
     class?: string;
     style?: string;
     children?: Snippet;
   }
 
-  let { direction, class: className = '', style, children }: Props = $props();
+  let { direction = 'horizontal', class: className = '', style, children }: Props = $props();
 
   let groupEl = $state<HTMLDivElement | null>(null);
+  let isResizing = $state(false);
 
   // 声明式注册用普通数组簿记（非 $state，避免 §9.3 effect 自循环）。
   const items: ResizeItemRegistration[] = [];
@@ -46,7 +47,7 @@
   const itemPercent = new Map<number, number>();
   const itemMinus = new Map<number, number>();
 
-  // 拖拽期间的全局监听句柄（命令式，红线 #3）。
+  // 拖拽期间的全局监听句柄（命令式，红线 no.3）。
   let activeMove: ((e: PointerEvent) => void) | null = null;
   let activeUp: ((e: PointerEvent) => void) | null = null;
 
@@ -147,13 +148,11 @@
 
   onMount(() => {
     // 首帧测量延后一帧（DOM 完成布局），纳入 cleanup。
-    let raf = 0;
     const id = setTimeout(() => {
       initSpace();
     }, 0);
     return () => {
       clearTimeout(id);
-      if (raf) cancelAnimationFrame(raf);
       if (activeMove) document.removeEventListener('pointermove', activeMove);
       if (activeUp) document.removeEventListener('pointerup', activeUp);
     };
@@ -189,6 +188,7 @@
     if (c1 === false || c2 === false) return;
 
     event.preventDefault();
+    isResizing = true;
 
     const win = groupEl.ownerDocument.defaultView ?? window;
     const lastMinus = itemMinus.get(last.id) ?? 0;
@@ -226,6 +226,7 @@
       document.removeEventListener('pointerup', onUp);
       activeMove = null;
       activeUp = null;
+      isResizing = false;
       last.onResizeEnd?.({ width: lastEl.offsetWidth, height: lastEl.offsetHeight }, e, lastDir);
       next.onResizeEnd?.({ width: nextEl.offsetWidth, height: nextEl.offsetHeight }, e, nextDir);
     };
@@ -233,82 +234,6 @@
     activeUp = onUp;
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
-  }
-
-  function keyboardAdjust(handlerId: number, deltaPx: number, event: KeyboardEvent): void {
-    const pair = neighboursOf(handlerId);
-    if (!pair || !groupEl) return;
-    const { last, next } = pair;
-    const lastEl = last.getEl();
-    const nextEl = next.getEl();
-    if (!lastEl || !nextEl) return;
-    const win = groupEl.ownerDocument.defaultView ?? window;
-    const lastMinus = itemMinus.get(last.id) ?? 0;
-    const nextMinus = itemMinus.get(next.id) ?? 0;
-    const lastOffset = getOffset(win.getComputedStyle(lastEl), direction) + lastMinus;
-    const nextOffset = getOffset(win.getComputedStyle(nextEl), direction) + nextMinus;
-    const parent = groupSize();
-    const lastItemSize = (direction === 'horizontal' ? lastEl.offsetWidth : lastEl.offsetHeight) + lastMinus;
-    const nextItemSize = (direction === 'horizontal' ? nextEl.offsetWidth : nextEl.offsetHeight) + nextMinus;
-    const [lastDir, nextDir] = direction === 'horizontal' ? (['right', 'left'] as const) : (['bottom', 'top'] as const);
-    const r = computeGroupResize({
-      direction,
-      parentSize: parent,
-      delta: deltaPx,
-      lastItemSize,
-      nextItemSize,
-      lastItemPercent: itemPercent.get(last.id) ?? 0,
-      nextItemPercent: itemPercent.get(next.id) ?? 0,
-      last: { min: last.getMin(), max: last.getMax(), offset: lastOffset },
-      next: { min: next.getMin(), max: next.getMax(), offset: nextOffset },
-    });
-    itemPercent.set(last.id, r.lastNewPercent);
-    itemPercent.set(next.id, r.nextNewPercent);
-    applyBasis(last, r.lastNewPercent);
-    applyBasis(next, r.nextNewPercent);
-    last.onChange?.({ width: lastEl.offsetWidth, height: lastEl.offsetHeight }, event as unknown as PointerEvent, lastDir);
-    next.onChange?.({ width: nextEl.offsetWidth, height: nextEl.offsetHeight }, event as unknown as PointerEvent, nextDir);
-    last.onResizeEnd?.({ width: lastEl.offsetWidth, height: lastEl.offsetHeight }, event as unknown as PointerEvent, lastDir);
-    next.onResizeEnd?.({ width: nextEl.offsetWidth, height: nextEl.offsetHeight }, event as unknown as PointerEvent, nextDir);
-  }
-
-  // 折叠状态：item id → 折叠前的百分比（存在即处于折叠态）。本库独有增强。
-  const collapsedPercent = new Map<number, number>();
-
-  function toggleCollapse(handlerId: number): void {
-    const pair = neighboursOf(handlerId);
-    if (!pair) return;
-    const { last, next } = pair;
-    if (collapsedPercent.has(last.id)) {
-      // 展开：把之前折叠时腾出的百分比从邻居还回来。
-      const restored = collapsedPercent.get(last.id) ?? 0;
-      collapsedPercent.delete(last.id);
-      const nextPct = itemPercent.get(next.id) ?? 0;
-      itemPercent.set(last.id, restored);
-      itemPercent.set(next.id, Math.max(0, nextPct - restored));
-    } else {
-      // 折叠：记住当前百分比，设为 0，空间给下一项。
-      const lastPct = itemPercent.get(last.id) ?? 0;
-      const nextPct = itemPercent.get(next.id) ?? 0;
-      collapsedPercent.set(last.id, lastPct);
-      itemPercent.set(last.id, 0);
-      itemPercent.set(next.id, nextPct + lastPct);
-    }
-    applyBasis(last, itemPercent.get(last.id) ?? 0);
-    applyBasis(next, itemPercent.get(next.id) ?? 0);
-  }
-
-  function itemSizeAround(handlerId: number): { last: number; next: number; parent: number } {
-    const pair = neighboursOf(handlerId);
-    const parent = groupSize();
-    if (!pair) return { last: 0, next: 0, parent };
-    const lastEl = pair.last.getEl();
-    const nextEl = pair.next.getEl();
-    return {
-      last: lastEl ? (direction === 'horizontal' ? lastEl.offsetWidth : lastEl.offsetHeight) : 0,
-      next: nextEl ? (direction === 'horizontal' ? nextEl.offsetWidth : nextEl.offsetHeight) : 0,
-      parent,
-    };
   }
 
   let nextId = 0;
@@ -333,9 +258,6 @@
       };
     },
     startHandlerDrag,
-    keyboardAdjust,
-    itemSizeAround,
-    toggleCollapse,
   };
 
   let measureQueued = false;
@@ -351,27 +273,36 @@
 
   setContext<ResizeGroupContext>(RESIZE_GROUP_KEY, ctx);
 
-  const cls = $derived(
-    ['cd-resize-group', `cd-resize-group--${direction}`, className].filter(Boolean).join(' '),
+  const cls = $derived(['cd-resizable-group', className].filter(Boolean).join(' '));
+  const groupStyle = $derived(
+    [`flex-direction:${direction === 'vertical' ? 'column' : 'row'}`, style ?? '']
+      .filter(Boolean)
+      .join(';'),
   );
 </script>
 
-<div bind:this={groupEl} class={cls} {style}>
+<div bind:this={groupEl} class={cls} style={groupStyle}>
+  {#if isResizing}
+    <div class="cd-resizable-background"></div>
+  {/if}
   {@render children?.()}
 </div>
 
 <style>
-  .cd-resize-group {
+  .cd-resizable-group {
     display: flex;
+    position: relative;
     box-sizing: border-box;
-    overflow: hidden;
-  }
-  .cd-resize-group--horizontal {
-    flex-direction: row;
+    height: 100%;
     width: 100%;
   }
-  .cd-resize-group--vertical {
-    flex-direction: column;
+
+  .cd-resizable-background {
     height: 100%;
+    width: 100%;
+    inset: 0;
+    z-index: 20;
+    opacity: 0;
+    position: fixed;
   }
 </style>

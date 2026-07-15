@@ -395,7 +395,7 @@
     inset-block: 0;
     inset-inline-start: 0;
     z-index: 1;
-    inline-size: max(var(--cd-resizable-handle-size), 12px);
+    inline-size: max(var(--cd-sidebar-handle-size), 12px);
     cursor: ew-resize;
     touch-action: none;
     transform: translateX(-50%);
@@ -412,11 +412,11 @@
     inset-inline-start: 50%;
     inline-size: 1px;
     transform: translateX(-50%);
-    background: var(--cd-resizable-handle-color);
+    background: var(--cd-sidebar-handle-color);
     transition: background-color 0.15s;
   }
   .cd-sidebar-container__handle:hover::after {
-    background: var(--cd-resizable-handle-color-hover);
+    background: var(--cd-sidebar-handle-color-hover);
   }
   .cd-sidebar-container__handle:focus-visible {
     outline: none;
