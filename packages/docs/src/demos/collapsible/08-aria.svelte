@@ -7,7 +7,7 @@
 </script>
 
 <div>
-  <Button onclick={() => (visible = !visible)} ariaControls={collapseId} ariaExpanded={visible}>
+  <Button onclick={() => (visible = !visible)} aria-controls={collapseId} aria-expanded={visible}>
     {visible ? 'hide' : 'show'}
   </Button>
   <Collapsible isOpen={visible} id={collapseId}>

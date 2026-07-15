@@ -18,14 +18,16 @@ describe('Button props（对齐 Semi）', () => {
     expect(btn.getAttribute('style')).toContain('opacity: 0.3');
   });
 
-  it('noHorizontalPadding=true（有 icon）加去内距 class', () => {
+  it('noHorizontalPadding=true（有 icon）用 inline padding 去内距（对齐 Semi）', () => {
     const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
     const { container } = render(Button, {
       props: { ariaLabel: 'x', icon, noHorizontalPadding: true },
     });
     const btn = container.querySelector('button')!;
-    expect(btn.classList.contains('cd-button--no-pad-left')).toBe(true);
-    expect(btn.classList.contains('cd-button--no-pad-right')).toBe(true);
+    // 浏览器会把 padding-left:0 规整为 padding-left: 0px，用 replace 去空格后断言。
+    const style = (btn.getAttribute('style') ?? '').replace(/\s/g, '');
+    expect(style).toContain('padding-left:0px');
+    expect(style).toContain('padding-right:0px');
   });
 
   it('noHorizontalPadding 无 icon 时不生效', () => {
@@ -33,22 +35,23 @@ describe('Button props（对齐 Semi）', () => {
       props: { ariaLabel: 'x', noHorizontalPadding: true },
     });
     const btn = container.querySelector('button')!;
-    expect(btn.classList.contains('cd-button--no-pad-left')).toBe(false);
+    const style = (btn.getAttribute('style') ?? '').replace(/\s/g, '');
+    expect(style).not.toContain('padding-left:0');
   });
 
-  it('circle 加 cd-button--circle class（含与 icon-only 组合）', () => {
+  it('circle 加 cd-button-circle class（含与 icon-only 组合）', () => {
     const icon = createRawSnippet(() => ({ render: () => '<svg></svg>' }));
     const { container } = render(Button, {
       props: { ariaLabel: 'x', icon, circle: true },
     });
     const btn = container.querySelector('button')!;
-    expect(btn.classList.contains('cd-button--circle')).toBe(true);
-    expect(btn.classList.contains('cd-button--icon-only')).toBe(true);
+    expect(btn.classList.contains('cd-button-circle')).toBe(true);
+    expect(btn.classList.contains('cd-button-with-icon-only')).toBe(true);
   });
 
   it('circle 默认关闭', () => {
     const { container } = render(Button, { props: { ariaLabel: 'x' } });
-    expect(container.querySelector('button')!.classList.contains('cd-button--circle')).toBe(false);
+    expect(container.querySelector('button')!.classList.contains('cd-button-circle')).toBe(false);
   });
 
   it('已移除 href：始终渲染 <button>，不再渲染 <a>', () => {

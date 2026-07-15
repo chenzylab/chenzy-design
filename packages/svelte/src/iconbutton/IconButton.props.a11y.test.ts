@@ -17,7 +17,7 @@ describe('IconButton', () => {
     const btn = container.querySelector('button')!;
     expect(btn).not.toBeNull();
     expect(btn.getAttribute('aria-label')).toBe('编辑');
-    expect(btn.classList.contains('cd-button--icon-only')).toBe(true);
+    expect(btn.classList.contains('cd-button-with-icon-only')).toBe(true);
   });
 
   it('不渲染文字内容（不传 children），仅有图标', () => {
@@ -33,22 +33,24 @@ describe('IconButton', () => {
       props: { icon, ariaLabel: 'x', type: 'danger', theme: 'solid', size: 'large' },
     });
     const btn = container.querySelector('button')!;
-    expect(btn.classList.contains('cd-button--danger')).toBe(true);
-    expect(btn.classList.contains('cd-button--solid')).toBe(true);
-    expect(btn.classList.contains('cd-button--large')).toBe(true);
+    expect(btn.classList.contains('cd-button-danger')).toBe(true);
+    expect(btn.classList.contains('cd-button-solid')).toBe(true);
+    expect(btn.classList.contains('cd-button-size-large')).toBe(true);
   });
 
-  it('circle 加 cd-button--circle class', () => {
+  it('circle 加 cd-button-circle class', () => {
     const { container } = render(IconButton, { props: { icon, ariaLabel: 'x', circle: true } });
     const btn = container.querySelector('button')!;
-    expect(btn.classList.contains('cd-button--circle')).toBe(true);
+    expect(btn.classList.contains('cd-button-circle')).toBe(true);
   });
 
   it('loading 时 aria-busy=true 且带 spin 图标', () => {
     const { container } = render(IconButton, { props: { icon, ariaLabel: 'x', loading: true } });
     const btn = container.querySelector('button')!;
     expect(btn.getAttribute('aria-busy')).toBe('true');
-    expect(container.querySelector('.cd-button__icon--spin')).not.toBeNull();
+    // loading 组装态：根 button 带 cd-button-loading，内部渲染旋转 spinner svg。
+    expect(btn.classList.contains('cd-button-loading')).toBe(true);
+    expect(container.querySelector('.cd-button-loading-spin')).not.toBeNull();
   });
 
   it('转发 class / style / disabled', () => {
