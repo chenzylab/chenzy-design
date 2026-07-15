@@ -21,7 +21,6 @@ export {
   Title,
   Text,
   Paragraph,
-  Link,
   Numeral,
   typographyMeta,
 } from './typography/index.js';

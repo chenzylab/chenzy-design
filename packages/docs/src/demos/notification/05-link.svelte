@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { notification, Button, Link } from '@chenzy-design/svelte';
+  import { notification, Button, Text } from '@chenzy-design/svelte';
 </script>
 
 <Button
@@ -16,7 +16,7 @@
 {#snippet linkContent()}
   <div>Hi, Bytedance dance dance</div>
   <div style="margin-top:8px">
-    <Link href="#">查看详情</Link>
-    <Link href="#" style="margin-left:20px">一会再看</Link>
+    <Text link={{ href: '#' }}>查看详情</Text>
+    <Text link={{ href: '#' }} style="margin-left:20px">一会再看</Text>
   </div>
 {/snippet}

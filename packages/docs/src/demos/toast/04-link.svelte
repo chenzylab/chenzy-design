@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Toast, Button, Typography } from '@chenzy-design/svelte';
 
-  const { Text, Link } = Typography;
+  const { Text } = Typography;
 
   // 配合 Typography 自定义链接文本，用来配合更复杂场景的使用（对齐 Semi）。
   // content 支持 Snippet（对齐 Semi ReactNode），传入自定义富文本内容。
@@ -10,7 +10,7 @@
 {#snippet inlineContent()}
   <span>
     <Text>Hi, Bytedance dance dance</Text>
-    <Link style="margin-left:12px">更多</Link>
+    <Text link style="margin-left:12px">更多</Text>
   </span>
 {/snippet}
 
@@ -18,8 +18,8 @@
   <span>
     <div>Hi, Bytedance dance dance</div>
     <div style="margin-top:8px">
-      <Link>查看详情</Link>
-      <Link style="margin-left:20px">一会再看</Link>
+      <Text link>查看详情</Text>
+      <Text link style="margin-left:20px">一会再看</Text>
     </div>
   </span>
 {/snippet}

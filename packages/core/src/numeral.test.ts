@@ -48,7 +48,7 @@ describe('formatNumeral — text scanning', () => {
   });
   it('numbers rule keeps only numbers', () => {
     expect(formatNumeral('2.4444e2', { rule: 'numbers', precision: 1 })).toBe('244.4');
-    expect(formatNumeral('a 12 b 34', { rule: 'numbers', precision: 0 })).toBe('12 34');
+    expect(formatNumeral('a 12 b 34', { rule: 'numbers', precision: 0 })).toBe('12,34');
   });
   it('bytes-decimal in sentence', () => {
     expect(formatNumeral('已使用: 1000', { rule: 'bytes-decimal', precision: 2, truncate: 'floor' })).toBe(

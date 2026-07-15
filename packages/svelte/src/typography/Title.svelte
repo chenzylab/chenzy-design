@@ -1,49 +1,44 @@
 <!--
-  Typography.Title — see specs/components/basic/Typography.spec.md
-  Renders an <h1>..<h6>. ellipsis / copyable / editable 经 TypographyBase 组合 core 原语。
+  Typography.Title — 渲染 <h1>..<h6>，对齐 Semi Typography.Title。
+  heading 决定标签与 cd-typography-h{n} 类；weight 字符串枚举走字重类，数字走内联 style。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import TypographyBase, {
+    type TypoType,
     type EllipsisConfig,
     type CopyableConfig,
-    type EditableConfig,
   } from './TypographyBase.svelte';
 
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
-  type TypoWeight = number | 'regular' | 'medium' | 'semibold' | 'bold';
+  type TitleWeight = 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'default' | number;
 
   interface Props {
     heading?: 1 | 2 | 3 | 4 | 5 | 6;
     type?: TypoType;
     strong?: boolean;
-    weight?: TypoWeight;
+    /** 字重（对齐 Semi Title weight：字符串枚举走类，数字走 style）。 */
+    weight?: TitleWeight;
     disabled?: boolean;
     mark?: boolean;
     underline?: boolean;
     delete?: boolean;
     code?: boolean;
+    /** 链接（对齐 Semi link）。 */
+    link?: boolean | Record<string, unknown>;
     component?: string;
     ellipsis?: boolean | EllipsisConfig;
     copyable?: boolean | CopyableConfig;
-    editable?: boolean | EditableConfig;
-    value?: string;
-    onChange?: (value: string) => void;
-    onCopy?: (content: string) => void;
-    onEditStart?: () => void;
-    onEditCancel?: () => void;
-    onExpand?: (expanded: boolean) => void;
+    onExpand?: (expanded: boolean, e: MouseEvent) => void;
     class?: string;
-    /** 自定义内联样式（对齐 Semi Typography style）。 */
     style?: string;
-    /** 透传到根元素的 id（对齐 Semi Typography.Title id，供 aria-labelledby 关联）。 */
+    /** 透传到根元素的 id（供 aria-labelledby 关联）。 */
     id?: string;
     children?: Snippet;
   }
 
   let {
     heading = 1,
-    type = 'default',
+    type = 'primary',
     strong = false,
     weight,
     disabled = false,
@@ -51,15 +46,10 @@
     underline = false,
     delete: del = false,
     code = false,
+    link = false,
     component,
     ellipsis = false,
     copyable = false,
-    editable = false,
-    value,
-    onChange,
-    onCopy,
-    onEditStart,
-    onEditCancel,
     onExpand,
     class: className = '',
     style,
@@ -68,13 +58,14 @@
   }: Props = $props();
 
   const element = $derived(component ?? `h${heading}`);
+  const headingClass = $derived(`h${heading}`);
   const hostAttrs = $derived(id ? { id } : undefined);
 </script>
 
 <TypographyBase
   {element}
-  baseClass="cd-typography"
-  extraClass={`cd-typography--title cd-typography--h${heading}`}
+  extraClass={`cd-typography-h${heading}`}
+  heading={headingClass}
   {hostAttrs}
   {type}
   {strong}
@@ -84,16 +75,11 @@
   {underline}
   delete={del}
   {code}
+  {link}
   class={className}
   {style}
   {ellipsis}
   {copyable}
-  {editable}
-  {value}
-  {onChange}
-  {onCopy}
-  {onEditStart}
-  {onEditCancel}
   {onExpand}
 >
   {@render children?.()}

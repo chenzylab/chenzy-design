@@ -6,13 +6,13 @@
 <Card title="Card title">
   <Card title="Inner Card title" style="margin-bottom: 20px;">
     {#snippet headerExtraContent()}
-      <Typography.Link href="#">More</Typography.Link>
+      <Typography.Text link={{ href: '#' }}>More</Typography.Text>
     {/snippet}
     Inner Card content
   </Card>
   <Card title="Inner Card title">
     {#snippet headerExtraContent()}
-      <Typography.Link href="#">More</Typography.Link>
+      <Typography.Text link={{ href: '#' }}>More</Typography.Text>
     {/snippet}
     Inner Card content
   </Card>

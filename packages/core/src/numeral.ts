@@ -90,9 +90,9 @@ export function formatNumeral(text: string, options: NumeralOptions = {}): strin
   if (parser) return parser(text);
 
   if (rule === 'numbers') {
-    // Extract numbers only, formatted, space-joined.
+    // Extract numbers only, formatted, comma-joined (对齐 Semi formatNumeral: join(',')).
     const nums = text.match(NUMBER_RE) ?? [];
-    return nums.map((m) => formatNumber(Number(m), 'numbers', precision, truncate)).join(' ');
+    return nums.map((m) => formatNumber(Number(m), 'numbers', precision, truncate)).join(',');
   }
 
   return text.replace(NUMBER_RE, (m) => formatNumber(Number(m), rule, precision, truncate));

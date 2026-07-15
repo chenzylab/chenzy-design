@@ -6,7 +6,6 @@
     Title,
     Text,
     Paragraph,
-    Link,
   } from '@chenzy-design/svelte';
 
   // ---- theme ----
@@ -36,8 +35,8 @@
 
   // ---- scene 2: Typography ----
   let typoComp = $state<'Title' | 'Text' | 'Paragraph' | 'Link'>('Title');
-  let typoType = $state<'default' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success'>(
-    'default',
+  let typoType = $state<'primary' | 'secondary' | 'tertiary' | 'warning' | 'danger' | 'success'>(
+    'primary',
   );
   let typoStrong = $state(false);
   let typoUnderline = $state(false);
@@ -98,7 +97,7 @@
       [
         { key: 'heading', value: typoComp === 'Title' ? typoHeading : undefined, def: 1 },
         { key: 'href', value: typoComp === 'Link' ? '#' : undefined, def: undefined },
-        { key: 'type', value: typoType, def: 'default' },
+        { key: 'type', value: typoType, def: 'primary' },
         { key: 'strong', value: typoStrong, def: false },
         { key: 'underline', value: typoUnderline, def: false },
         { key: 'delete', value: typoDelete, def: false },
@@ -215,7 +214,7 @@
         <label class="field">
           <span class="label">type</span>
           <select bind:value={typoType}>
-            <option value="default">default</option>
+            <option value="primary">primary</option>
             <option value="secondary">secondary</option>
             <option value="tertiary">tertiary</option>
             <option value="warning">warning</option>
@@ -327,8 +326,8 @@
               {typoText}
             </Paragraph>
           {:else}
-            <Link
-              href="#"
+            <Text
+              link={{ href: '#' }}
               type={typoType}
               strong={typoStrong}
               underline={typoUnderline}
@@ -337,7 +336,7 @@
               code={typoCode}
             >
               {typoText}
-            </Link>
+            </Text>
           {/if}
         {:else}
           <Space

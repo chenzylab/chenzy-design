@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { Title } from '@chenzy-design/svelte';
+  import { Typography } from '@chenzy-design/svelte';
+
+  const { Title } = Typography;
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 4px;">
-  <Title heading={1}>一级标题 H1</Title>
-  <Title heading={2}>二级标题 H2</Title>
-  <Title heading={3}>三级标题 H3</Title>
-  <Title heading={4}>四级标题 H4</Title>
+<div>
+  <Title style="margin: 8px 0;">h1. chenzy Design</Title>
+  <Title heading={2} style="margin: 8px 0;">h2. chenzy Design</Title>
+  <Title heading={3} style="margin: 8px 0;">h3. chenzy Design</Title>
+  <Title heading={4} style="margin: 8px 0;">h4. chenzy Design</Title>
+  <Title heading={5} style="margin: 8px 0;">h5. chenzy Design</Title>
+  <Title heading={6} style="margin: 8px 0;">h6. chenzy Design</Title>
 </div>

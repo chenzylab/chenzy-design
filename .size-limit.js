@@ -65,8 +65,8 @@ const components = [
   // 破坏性对齐 Semi 移除折叠/sticky/padding/token 后瘦身，实测 1.71 KB，预算按 +15% buffer 校准。
   ['layout', '{ LayoutHeader, LayoutFooter, LayoutContent, LayoutSider }', '2 KB'],
   ['space', '{ Space }', '1.2 KB'],
-  // 扩 editable 对齐 Ant（editIcon/enterIcon/tooltip/trigger + enter svg + 编辑态 CSS）后实测 7.89 KB，预算按 +15% buffer 校准。
-  ['typography', '{ Title, Text, Paragraph, Link, Numeral }', '9 KB'],
+  // 破坏性对齐 Semi（移除独立 Link/editable/italic、单横线 class）后实测 6.72 KB，预算按 +~15% buffer 校准。
+  ['typography', '{ Title, Text, Paragraph, Numeral }', '8 KB'],
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
   ['modal', '{ modal }', '6.2 KB'],

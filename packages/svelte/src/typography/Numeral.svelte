@@ -1,15 +1,18 @@
 <!--
-  Typography.Numeral — 数值格式化文本（对齐 Semi Typography.Numeral）。
-  在 Text 样式基础上，遍历 children 的文本节点，按 rule/precision/truncate/parser
-  格式化其中的数字（千分位/百分比/字节/精度/科学计数），渲染到 <span>（或 component）。
-  格式化引擎来自 @chenzy-design/core formatNumeral（框架无关、可测）。
+  Typography.Numeral — 数值格式化文本，对齐 Semi Typography.Numeral。
+  在 Text 样式（复用 TypographyBase）基础上，遍历渲染后 children 的文本节点，
+  按 rule / precision / truncate / parser 格式化其中数字。格式化引擎来自
+  @chenzy-design/core formatNumeral（框架无关、可测，逻辑对齐 Semi formatNumeral）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { formatNumeral, type NumeralRule, type NumeralTruncate } from '@chenzy-design/core';
-
-  type TypoType = 'default' | 'secondary' | 'tertiary' | 'quaternary' | 'warning' | 'danger' | 'success';
-  type TypoSize = 'small' | 'default' | 'large' | 'inherit';
+  import TypographyBase, {
+    type TypoType,
+    type TypoSize,
+    type EllipsisConfig,
+    type CopyableConfig,
+  } from './TypographyBase.svelte';
 
   interface Props {
     /** 解析规则（对齐 Semi）。 */
@@ -20,10 +23,11 @@
     truncate?: NumeralTruncate;
     /** 自定义解析函数（优先于 rule）。 */
     parser?: (raw: string) => string;
-    /** 渲染元素，默认 span。 */
     component?: string;
-    /** 渲染为链接样式（对齐 Semi Numeral link）。 */
-    link?: boolean;
+    /** 链接（对齐 Semi Numeral link）。 */
+    link?: boolean | Record<string, unknown>;
+    /** 前置图标（对齐 Semi icon）。 */
+    icon?: Snippet;
     // —— 复用 Text 的样式 props ——
     type?: TypoType;
     size?: TypoSize;
@@ -33,8 +37,9 @@
     delete?: boolean;
     code?: boolean;
     disabled?: boolean;
+    ellipsis?: boolean | EllipsisConfig;
+    copyable?: boolean | CopyableConfig;
     class?: string;
-    /** 自定义内联样式（对齐 Semi Numeral style）。 */
     style?: string;
     children?: Snippet;
   }
@@ -46,25 +51,34 @@
     parser,
     component = 'span',
     link = false,
-    type = 'default',
-    size = 'default',
+    icon,
+    type = 'primary',
+    size = 'normal',
     strong = false,
     mark = false,
     underline = false,
     delete: del = false,
     code = false,
     disabled = false,
+    ellipsis = false,
+    copyable = false,
     class: className = '',
     style,
     children,
   }: Props = $props();
 
-  let hostEl = $state<HTMLElement>();
+  let hostEl = $state<HTMLElement | undefined>();
 
-  // 遍历 host 下所有文本节点，按 numeral 规则格式化。渲染后 + children 变化时重跑。
+  // 遍历 host 下所有文本节点，按 numeral 规则格式化（对齐 Semi formatNodeDFS 语义）。
+  // 渲染后 + 规则变化时重跑。
   $effect(() => {
     const el = hostEl;
     if (!el) return;
+    // 依赖收集：规则变化触发重算
+    void rule;
+    void precision;
+    void truncate;
+    void parser;
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
     let n = walker.nextNode();
@@ -79,33 +93,25 @@
       if (formatted !== raw) node.nodeValue = formatted;
     }
   });
-
-  const cls = $derived(
-    [
-      'cd-typography',
-      'cd-typography--text',
-      type !== 'default' && `cd-typography--${type}`,
-      size !== 'default' && `cd-typography--size-${size}`,
-      link && 'cd-typography--link',
-      strong && 'cd-typography--strong',
-      mark && 'cd-typography--mark',
-      underline && 'cd-typography--underline',
-      del && 'cd-typography--delete',
-      code && 'cd-typography--code',
-      disabled && 'cd-typography--disabled',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
 </script>
 
-<svelte:element
-  this={component}
-  bind:this={hostEl}
-  class={cls}
-  style={style || undefined}
-  aria-disabled={disabled || undefined}
+<TypographyBase
+  element={component}
+  hostRef={(el) => (hostEl = el)}
+  {type}
+  {size}
+  {strong}
+  {mark}
+  {underline}
+  delete={del}
+  {code}
+  {disabled}
+  {icon}
+  {link}
+  {ellipsis}
+  {copyable}
+  class={className}
+  {style}
 >
   {@render children?.()}
-</svelte:element>
+</TypographyBase>
