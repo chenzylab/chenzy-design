@@ -2,13 +2,12 @@
   import { FloatButton, Text } from '@chenzy-design/svelte';
 </script>
 
-<Text type="tertiary">有 href 时渲染为原生链接（a 标签）；target="_blank" 自动补 rel="noopener noreferrer"。</Text>
+<Text type="tertiary">有 href 时点击经 JS 跳转（对齐 Semi）；target="_blank" 用 window.open 新开。</Text>
 <div style="position:relative; height:120px">
   <FloatButton
-    ariaLabel="打开仓库"
     href="https://github.com/chenzylab/chenzy-design"
     target="_blank"
-    style="position:absolute; inset-inline-end:16px; inset-block-end:16px"
+    style="position:absolute; bottom:16px; right:16px"
   >
     {#snippet icon()}
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">

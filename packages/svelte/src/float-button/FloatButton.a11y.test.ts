@@ -1,88 +1,70 @@
-// FloatButton / FloatButtonGroup a11y：语义元素 + 可访问名 + axe 0 violations。
-//  - 无 href → button[type=button]；有 href → <a>；_blank 补 rel。
-//  - icon-only 必须 aria-label（有则 axe button/link-name 通过）。
-//  - Group role=group + locale aria-label；各子项独立 button/a。
-// jsdom 只断言静态 ARIA + axe（真实键盘/焦点留给 Playwright）。
-import { describe, it, expect } from 'vitest';
-import { createRawSnippet } from 'svelte';
+// FloatButton / FloatButtonGroup — DOM 结构对齐 Semi 的最小回归。
+// 严格对齐 Semi：纯 div + onClick（非 button/a），外层 div 带 size+shape class，
+// body 带 shape+size(+colorful?+disabled?) class，Group 点击委托读 e.target.dataset.value。
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
-import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
+import { createRawSnippet } from 'svelte';
 import FloatButton from './FloatButton.svelte';
 import FloatButtonGroup from './FloatButtonGroup.svelte';
 
-const iconSnippet = () => createRawSnippet(() => ({ render: () => '<svg aria-hidden="true"></svg>' }));
+const icon = () => createRawSnippet(() => ({ render: () => `<svg data-testid="fb-icon"></svg>` }));
 
-describe('FloatButton a11y', () => {
-  it('icon-only + ariaLabel：button 有可访问名，无 axe violations', async () => {
-    const { container } = renderWithLocale(FloatButton, {
-      props: { ariaLabel: 'AI 编辑', icon: iconSnippet() },
-    });
-    const btn = container.querySelector('button.cd-floatbutton')!;
-    expect(btn.getAttribute('type')).toBe('button');
-    expect(btn.getAttribute('aria-label')).toBe('AI 编辑');
-    await expectNoAxeViolations(container);
+describe('FloatButton DOM（对齐 Semi）', () => {
+  it('外层 div 带 size+shape class；body 带 shape+size class；非 button/a', () => {
+    const { container } = render(FloatButton, { props: { icon: icon(), size: 'large', shape: 'square' } });
+    const root = container.querySelector('.cd-floatButton') as HTMLElement;
+    expect(root.tagName).toBe('DIV');
+    expect(root.classList.contains('cd-floatButton-large')).toBe(true);
+    expect(root.classList.contains('cd-floatButton-square')).toBe(true);
+    const body = container.querySelector('.cd-floatButton-body') as HTMLElement;
+    expect(body.classList.contains('cd-floatButton-square')).toBe(true);
+    expect(body.classList.contains('cd-floatButton-large')).toBe(true);
+    expect(container.querySelector('button')).toBeNull();
+    expect(container.querySelector('a')).toBeNull();
   });
 
-  it('有 href：渲染 <a>，可访问名 + 无 axe violations', async () => {
-    const { container } = renderWithLocale(FloatButton, {
-      props: { ariaLabel: '文档', href: '/docs', icon: iconSnippet() },
-    });
-    const a = container.querySelector('a.cd-floatbutton')!;
-    expect(a.getAttribute('aria-label')).toBe('文档');
-    await expectNoAxeViolations(container);
+  it('colorful / disabled 反映到 body class', () => {
+    const { container } = render(FloatButton, { props: { icon: icon(), colorful: true, disabled: true } });
+    const body = container.querySelector('.cd-floatButton-body') as HTMLElement;
+    expect(body.classList.contains('cd-floatButton-colorful')).toBe(true);
+    expect(body.classList.contains('cd-floatButton-disabled')).toBe(true);
   });
 
-  it('_blank 链接：rel=noopener noreferrer，无 axe violations', async () => {
-    const { container } = renderWithLocale(FloatButton, {
-      props: { ariaLabel: '外部文档', href: 'https://x.com', target: '_blank', icon: iconSnippet() },
-    });
-    const a = container.querySelector('a.cd-floatbutton')!;
-    expect(a.getAttribute('rel')).toBe('noopener noreferrer');
-    await expectNoAxeViolations(container);
+  it('disabled 时点击不触发 onClick', async () => {
+    const onClick = vi.fn();
+    const { container } = render(FloatButton, { props: { icon: icon(), disabled: true, onClick } });
+    (container.querySelector('.cd-floatButton') as HTMLElement).click();
+    expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('带文字（children）：文字渲染进按钮内容区，可访问名来自文字，无 axe violations', async () => {
-    // 直接用 render 传 children（LocaleHarness 的 props.children 会被其自身默认插槽遮蔽）。
-    // FloatButton 为纯展示组件，不依赖 locale，无需 LocaleProvider 包裹。
-    const { container } = render(FloatButton, {
-      props: {
-        children: createRawSnippet(() => ({ render: () => '<span>返回顶部</span>' })),
-      },
-    });
-    expect(container.querySelector('.cd-floatbutton__content')!.textContent).toContain('返回顶部');
-    await expectNoAxeViolations(container);
-  });
-
-  it('disabled button：原生 disabled，无 axe violations', async () => {
-    const { container } = renderWithLocale(FloatButton, {
-      props: { ariaLabel: '不可用', disabled: true, icon: iconSnippet() },
-    });
-    expect(container.querySelector('button')!.hasAttribute('disabled')).toBe(true);
-    await expectNoAxeViolations(container);
+  it('badge 时 body 外层包裹 Badge', () => {
+    const { container } = render(FloatButton, { props: { icon: icon(), badge: { count: 3 } } });
+    const badge = container.querySelector('.cd-badge');
+    expect(badge).not.toBeNull();
+    expect(badge?.querySelector('.cd-floatButton-body')).not.toBeNull();
   });
 });
 
-describe('FloatButtonGroup a11y', () => {
-  const items = [
-    { value: 'help', ariaLabel: '帮助', icon: iconSnippet() },
-    { value: 'chat', ariaLabel: '客服', icon: iconSnippet() },
-  ];
-
-  it('role=group + locale 可访问名（非 key 原样），无 axe violations', async () => {
-    const { container } = renderWithLocale(FloatButtonGroup, { props: { items } });
-    const group = container.querySelector('.cd-floatbutton-group')!;
-    expect(group.getAttribute('role')).toBe('group');
-    const label = group.getAttribute('aria-label');
-    expect(label).toBeTruthy();
-    expect(label).not.toBe('FloatButton.groupAriaLabel');
-    await expectNoAxeViolations(container);
+describe('FloatButtonGroup DOM（对齐 Semi）', () => {
+  it('item 为 div，带 data-value；点击直接读 e.target.dataset.value 回传', async () => {
+    const onClick = vi.fn();
+    const { container } = render(FloatButtonGroup, {
+      props: { items: [{ value: 'help', content: '帮助' }], onClick },
+    });
+    const item = container.querySelector('.cd-floatButtonGroup-item') as HTMLElement;
+    expect(item.tagName).toBe('DIV');
+    expect(item.getAttribute('data-value')).toBe('help');
+    item.click();
+    expect(onClick).toHaveBeenCalledWith('help', expect.anything());
   });
 
-  it('自定义 ariaLabel 覆盖组可访问名', async () => {
-    const { container } = renderWithLocale(FloatButtonGroup, {
-      props: { items, ariaLabel: '快捷入口' },
+  it('disabled 组不触发点击', () => {
+    const onClick = vi.fn();
+    const { container } = render(FloatButtonGroup, {
+      props: { items: [{ value: 'a', content: 'A' }], disabled: true, onClick },
     });
-    expect(container.querySelector('.cd-floatbutton-group')!.getAttribute('aria-label')).toBe('快捷入口');
-    await expectNoAxeViolations(container);
+    (container.querySelector('.cd-floatButtonGroup-item') as HTMLElement).click();
+    expect(onClick).not.toHaveBeenCalled();
+    expect(container.querySelector('.cd-floatButtonGroup-disabled')).not.toBeNull();
   });
 });

@@ -12,7 +12,7 @@ import { palette } from '../global/color.js';
 /**
  * light theme semantic mapping — 1:1 对齐 Semi global.scss（semi-theme-default）。
  * 状态色四档：base / hover / active / disabled + 浅版 light-default/hover/active。
- * 未纳入（无组件消费，避免膨胀）：data-*（vchart）、ai-*、highlight、default-*。
+ * 未纳入（无组件消费，避免膨胀）：data-*（vchart）、highlight、default-*。
  */
 export const aliasLight = {
   // —— primary（主要，blue）——
@@ -112,6 +112,13 @@ export const aliasLight = {
   'color-focus': palette['blue-5'],
   'color-focus-border': palette['blue-5'],
   'focus-ring': `0 0 0 2px ${palette['blue-2']}`,
+  // —— AI general 渐变（对齐 Semi general-5/6/7，FloatButton colorful 消费）——
+  'color-ai-general':
+    'linear-gradient(278deg, rgb(233,69,255) 0%, rgb(166,71,255) 30%, rgb(107,97,255) 60%, rgb(46,140,255) 100%)',
+  'color-ai-general-hover':
+    'linear-gradient(278deg, rgb(194,53,219) 0%, rgb(134,54,219) 30%, rgb(88,77,219) 60%, rgb(33,114,219) 100%)',
+  'color-ai-general-active':
+    'linear-gradient(278deg, rgb(157,39,184) 0%, rgb(105,40,184) 30%, rgb(71,59,184) 60%, rgb(22,89,184) 100%)',
 } as const;
 
 export type AliasKey = keyof typeof aliasLight;
@@ -212,4 +219,11 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
   // focus
   'color-focus': 'rgb(84, 169, 255)',
   'color-focus-border': 'rgb(84, 169, 255)',
+  // —— AI general 渐变（Semi 暗色 general-5/6/7；-0 浅蓝→-3 粉，与 light 顺序相反，已按 278deg 从 -0 到 -3 排好）——
+  'color-ai-general':
+    'linear-gradient(278deg, rgb(234,107,246) 0%, rgb(195,117,255) 30%, rgb(134,129,252) 60%, rgb(91,162,245) 100%)',
+  'color-ai-general-hover':
+    'linear-gradient(278deg, rgb(243,143,248) 0%, rgb(213,152,255) 30%, rgb(163,160,253) 60%, rgb(131,187,248) 100%)',
+  'color-ai-general-active':
+    'linear-gradient(278deg, rgb(249,180,251) 0%, rgb(229,186,255) 30%, rgb(192,192,253) 60%, rgb(172,210,250) 100%)',
 };

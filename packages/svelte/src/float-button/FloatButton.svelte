@@ -1,14 +1,10 @@
 <!--
-  FloatButton — 悬浮固定在视口的可操作按钮。
-  a11y 升级（对标 Semi div+onClick）：
-    - 无 href → <button type="button">；有 href → <a href target rel>。天然键盘可达。
-    - _blank 自动补 rel="noopener noreferrer"。
-    - icon-only（无 children/content）必须 aria-label（dev 缺失 warn）。
-  定位靠 style 逻辑属性（inset-inline-end / inset-block-end），不提供独立 top/right prop。
-  可选包裹 Badge（复用本库 Badge）。
+  FloatButton — 悬浮固定在视口的可操作按钮。严格对齐 Semi Design：
+  纯 div + onClick（非 button/a），href 靠 JS 跳转（_blank → window.open，否则 location.href）。
+  外层 div 带 size + shape class；body 带 shape + size (+ colorful? + disabled?) class。
+  有 badge 时 body 外层包裹 Badge（复用本库 Badge）。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Badge from '../badge/Badge.svelte';
   import type { FloatButtonProps } from './types.js';
 
@@ -21,243 +17,145 @@
     disabled = false,
     href,
     target,
-    ariaLabel,
     onClick,
     class: className = '',
     style,
-    children,
   }: FloatButtonProps = $props();
 
-  // dev 检测：兼容 Vite（import.meta.env.DEV）与非 Vite 消费方（缺失时静默 no-op），
-  // 避免依赖 vite/client 环境类型即可通过 svelte-check（对齐 IconButton）。
-  const isDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV ?? false;
-
-  // dev 校验：icon-only（无 children）时必须提供 ariaLabel。
-  $effect(() => {
-    if (isDev && !children && !ariaLabel) {
-      console.warn(
-        '[FloatButton] `ariaLabel` is required for icon-only float buttons to provide an accessible name.',
-      );
-    }
-  });
-
-  // 有 href 且 target=_blank 时补 rel（安全：阻断 window.opener）。
-  const computedRel = $derived(target === '_blank' ? 'noopener noreferrer' : undefined);
-
-  // round/square 是语义预设（走 class + token）；其它字符串视为自定义 border-radius。
-  const isPreset = $derived(shape === 'round' || shape === 'square');
-
   const rootClass = $derived(
+    ['cd-floatButton', `cd-floatButton-${size}`, `cd-floatButton-${shape}`, className]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const bodyClass = $derived(
     [
-      'cd-floatbutton',
-      isPreset ? `cd-floatbutton--${shape}` : '',
-      `cd-floatbutton--${size}`,
-      colorful ? 'cd-floatbutton--colorful' : '',
-      disabled ? 'cd-floatbutton--disabled' : '',
-      children ? 'cd-floatbutton--with-content' : 'cd-floatbutton--icon-only',
-      className,
+      'cd-floatButton-body',
+      `cd-floatButton-${shape}`,
+      `cd-floatButton-${size}`,
+      colorful ? 'cd-floatButton-colorful' : '',
+      disabled ? 'cd-floatButton-disabled' : '',
     ]
       .filter(Boolean)
       .join(' '),
   );
 
-  // 自定义 shape：把 border-radius 拼到用户 style 前（用户 style 仍可覆盖）。
-  const rootStyle = $derived(
-    isPreset ? style : [`border-radius:${shape}`, style ?? ''].filter(Boolean).join(';'),
-  );
-
   function handleClick(e: MouseEvent) {
-    if (disabled) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
+    if (disabled) return;
+    if (href) {
+      if (target === '_blank') window.open(href, '_blank');
+      else window.location.href = href;
     }
     onClick?.(e);
   }
 </script>
 
-{#snippet body()}
-  {#if icon}
-    <span class="cd-floatbutton__icon">{@render (icon as Snippet)()}</span>
-  {/if}
-  {#if children}
-    <span class="cd-floatbutton__content">{@render children()}</span>
-  {/if}
-{/snippet}
-
-{#snippet inner()}
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class={rootClass} {style} onclick={handleClick}>
   {#if badge}
     <Badge {...badge}>
-      {@render body()}
+      <div class={bodyClass}>{@render icon?.()}</div>
     </Badge>
   {:else}
-    {@render body()}
+    <div class={bodyClass}>{@render icon?.()}</div>
   {/if}
-{/snippet}
-
-{#if href}
-  <a
-    class={rootClass}
-    href={disabled ? undefined : href}
-    {target}
-    rel={computedRel}
-    aria-label={ariaLabel}
-    aria-disabled={disabled ? 'true' : undefined}
-    tabindex={disabled ? -1 : undefined}
-    style={rootStyle}
-    onclick={handleClick}
-  >
-    {@render inner()}
-  </a>
-{:else}
-  <button
-    type="button"
-    class={rootClass}
-    {disabled}
-    aria-label={ariaLabel}
-    style={rootStyle}
-    onclick={handleClick}
-  >
-    {@render inner()}
-  </button>
-{/if}
+</div>
 
 <style>
-  .cd-floatbutton {
+  .cd-floatButton {
     position: fixed;
-    box-sizing: border-box;
-    display: inline-flex;
+    bottom: var(--cd-floatbutton-bottom);
+    right: var(--cd-floatbutton-right);
+    z-index: var(--cd-floatbutton-z);
+    cursor: pointer;
+  }
+
+  .cd-floatButton-body {
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--cd-spacing-tight, 8px);
-    inline-size: var(--cd-floatbutton-size-default);
-    block-size: var(--cd-floatbutton-size-default);
-    padding: 0;
-    border: 1px solid var(--cd-floatbutton-border);
-    border-radius: var(--cd-floatbutton-radius-round);
-    background: var(--cd-floatbutton-bg);
-    color: var(--cd-floatbutton-color);
+    background-color: var(--cd-floatbutton-bg);
     box-shadow: var(--cd-floatbutton-shadow);
-    font: inherit;
-    text-decoration: none;
-    cursor: pointer;
-    z-index: var(--cd-floatbutton-z);
-    transition:
-      background var(--cd-floatbutton-motion-duration) ease,
-      box-shadow var(--cd-floatbutton-motion-duration) ease;
+    color: var(--cd-floatbutton-color);
+  }
+  .cd-floatButton-body:hover {
+    background-color: var(--cd-floatbutton-bg-hover);
+  }
+  .cd-floatButton-body:active {
+    background-color: var(--cd-floatbutton-bg-active);
   }
 
-  /* 有可视文字时：宽度自适应，加水平内距 */
-  .cd-floatbutton--with-content {
-    inline-size: auto;
-    min-inline-size: var(--cd-floatbutton-size-default);
-    padding-inline: 16px;
+  /* 形状（作用于 body：Semi round/square 圆角在 body 上生效） */
+  .cd-floatButton-body.cd-floatButton-round {
+    border-radius: var(--cd-floatbutton-radius-round);
   }
-  .cd-floatbutton--with-content.cd-floatbutton--small {
-    min-inline-size: var(--cd-floatbutton-size-small);
-    padding-inline: 12px;
-  }
-  .cd-floatbutton--with-content.cd-floatbutton--large {
-    min-inline-size: var(--cd-floatbutton-size-large);
-    padding-inline: 20px;
-  }
-
-  /* 形状 */
-  .cd-floatbutton--square {
+  .cd-floatButton-body.cd-floatButton-square {
     border-radius: var(--cd-floatbutton-radius-square);
   }
-  /* round + 有文字（宽>高）：用胶囊圆角而非 50%（后者在矩形上会变椭圆）。 */
-  .cd-floatbutton--round.cd-floatbutton--with-content {
-    border-radius: var(--cd-border-radius-full, 9999px);
+
+  /* 尺寸（作用于 body） */
+  .cd-floatButton-body.cd-floatButton-small {
+    width: var(--cd-floatbutton-size-small);
+    height: var(--cd-floatbutton-size-small);
+  }
+  .cd-floatButton-body.cd-floatButton-default {
+    width: var(--cd-floatbutton-size-default);
+    height: var(--cd-floatbutton-size-default);
+  }
+  .cd-floatButton-body.cd-floatButton-large {
+    width: var(--cd-floatbutton-size-large);
+    height: var(--cd-floatbutton-size-large);
   }
 
-  /* 徽章：让 Badge 包裹层撑满按钮，徽章才相对整个按钮而非 icon 小框定位。 */
-  .cd-floatbutton :global(.cd-badge) {
-    inline-size: 100%;
-    block-size: 100%;
-    align-items: center;
-    justify-content: center;
+  /* colorful（AI 多彩渐变） */
+  .cd-floatButton-body.cd-floatButton-colorful {
+    background: var(--cd-floatbutton-colorful-bg);
+    color: var(--cd-floatbutton-colorful-text);
   }
-  /*
-    徽章定位到圆形按钮边缘右上角切点（对齐 Semi 几何公式）：
-    偏移 = (√2−1)/√2 × R = 0.29 × R，R = 半个按钮宽。default 48 → 0.29×24 ≈ 7px。
-    覆盖 Badge 默认的 translate(50%,-50%) 贴角定位。
-  */
-  .cd-floatbutton--round :global(.cd-badge-rightTop) {
-    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
-    inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
-    transform: translate(50%, -50%);
+  .cd-floatButton-body.cd-floatButton-colorful:hover {
+    background: var(--cd-floatbutton-colorful-bg-hover);
   }
-  .cd-floatbutton--round.cd-floatbutton--small :global(.cd-badge-rightTop) {
-    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
+  .cd-floatButton-body.cd-floatButton-colorful:active {
+    background: var(--cd-floatbutton-colorful-bg-active);
+  }
+
+  /* 禁用（Semi：disabled-bg + disabled-text，非 opacity） */
+  .cd-floatButton-body.cd-floatButton-disabled {
+    background: var(--cd-floatbutton-disabled-bg);
+    color: var(--cd-floatbutton-disabled-text);
+    cursor: not-allowed;
+  }
+  .cd-floatButton-body.cd-floatButton-disabled:hover {
+    background-color: var(--cd-floatbutton-disabled-bg);
+  }
+
+  .cd-floatButton-body :global(svg) {
+    width: 1.25em;
+    height: 1.25em;
+  }
+
+  /* 徽章定位（对齐 Semi 几何公式：偏移 = 0.29 × R）。
+     Semi 直接选 .semi-badge-dot / .semi-badge-count；本库 Badge 用 cd-badge-* 类。
+     round：R = 0.5 × 边长；square：R = 圆角半径。 */
+  .cd-floatButton-round.cd-floatButton-small :global(.cd-badge-dot),
+  .cd-floatButton-round.cd-floatButton-small :global(.cd-badge-count) {
+    top: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
     inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-small));
   }
-  .cd-floatbutton--round.cd-floatbutton--large :global(.cd-badge-rightTop) {
-    inset-block-start: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
+  .cd-floatButton-round.cd-floatButton-default :global(.cd-badge-dot),
+  .cd-floatButton-round.cd-floatButton-default :global(.cd-badge-count) {
+    top: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
+    inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-default));
+  }
+  .cd-floatButton-round.cd-floatButton-large :global(.cd-badge-dot),
+  .cd-floatButton-round.cd-floatButton-large :global(.cd-badge-count) {
+    top: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
     inset-inline-end: calc(0.29 * 0.5 * var(--cd-floatbutton-size-large));
   }
-  /* square：偏移 = 0.29 × 圆角半径，贴方形圆角切点。 */
-  .cd-floatbutton--square :global(.cd-badge-rightTop) {
-    inset-block-start: calc(0.29 * var(--cd-floatbutton-radius-square));
+  .cd-floatButton-square :global(.cd-badge-dot),
+  .cd-floatButton-square :global(.cd-badge-count) {
+    top: calc(0.29 * var(--cd-floatbutton-radius-square));
     inset-inline-end: calc(0.29 * var(--cd-floatbutton-radius-square));
-  }
-
-  /* 尺寸 */
-  .cd-floatbutton--small {
-    inline-size: var(--cd-floatbutton-size-small);
-    block-size: var(--cd-floatbutton-size-small);
-  }
-  .cd-floatbutton--large {
-    inline-size: var(--cd-floatbutton-size-large);
-    block-size: var(--cd-floatbutton-size-large);
-  }
-
-  .cd-floatbutton:hover {
-    background: var(--cd-floatbutton-bg-hover);
-  }
-  .cd-floatbutton:active {
-    background: var(--cd-floatbutton-bg-active);
-  }
-  .cd-floatbutton:focus-visible {
-    outline: 2px solid var(--cd-floatbutton-focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* colorful：AI 多彩渐变 */
-  .cd-floatbutton--colorful {
-    background: var(--cd-floatbutton-colorful-gradient);
-    color: var(--cd-floatbutton-colorful-color);
-    border-color: transparent;
-  }
-  .cd-floatbutton--colorful:hover,
-  .cd-floatbutton--colorful:active {
-    background: var(--cd-floatbutton-colorful-gradient);
-    filter: brightness(1.05);
-  }
-
-  /* 禁用 */
-  .cd-floatbutton--disabled {
-    opacity: var(--cd-floatbutton-disabled-opacity);
-    cursor: not-allowed;
-    pointer-events: none;
-    box-shadow: none;
-  }
-
-  .cd-floatbutton__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .cd-floatbutton__icon :global(svg) {
-    inline-size: 1.25em;
-    block-size: 1.25em;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cd-floatbutton {
-      transition: none;
-    }
-    /* colorful 渐变在 reduced-motion 下静止（本实现为静态渐变，无动画） */
   }
 </style>

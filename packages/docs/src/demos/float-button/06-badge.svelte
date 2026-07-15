@@ -2,12 +2,11 @@
   import { FloatButton, Text } from '@chenzy-design/svelte';
 </script>
 
-<Text type="tertiary">带徽章：传 badge 参数外层包裹 Badge，可访问名并入按钮 label。</Text>
+<Text type="tertiary">带徽章：传 badge 参数时 body 外层包裹 Badge，徽章按 Semi 几何公式贴形状切点定位。</Text>
 <div style="position:relative; height:120px">
   <FloatButton
-    ariaLabel="通知，3 条未读"
     badge={{ count: 3 }}
-    style="position:absolute; inset-inline-end:16px; inset-block-end:16px"
+    style="position:absolute; bottom:16px; right:16px"
   >
     {#snippet icon()}
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">

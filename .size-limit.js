@@ -56,8 +56,8 @@ const components = [
   // 破坏性对齐 Semi 重建三层架构（BaseButton 纯容器 + Button 派发器 + IconButton 组装）后实测 4.44 KB，预算按 +15% buffer 校准。
   ['button', '{ Button }', '5.1 KB'],
   ['iconbutton', '{ IconButton }', '0.6 KB'],
-  // 徽章几何定位 + Group 胶囊工具条（bg/shadow/item 横排）后实测 2.94 KB，预算按 +15% buffer 校准。
-  ['float-button', '{ FloatButton, FloatButtonGroup }', '3.4 KB'],
+  // 破坏性对齐 Semi 重写（纯 div+onClick、删 button/a/dev warn/focus/a11y/自定义 shape）瘦身，实测 2.06 KB，预算按 +20% buffer 校准。
+  ['float-button', '{ FloatButton, FloatButtonGroup }', '2.5 KB'],
   ['divider', '{ Divider }', '1.55 KB'],
   // Col 破坏性重写为 Semi float 机制（float:left+width%，取代 flex-basis+max-width）+ 补 .cd-rtl 物理属性 RTL 覆盖（float:right、offset margin-right，24×7 新增选择器）后实测 7.23 KB，预算按 +15% buffer 校准。
   ['grid', '{ Row, Col }', '8.3 KB'],
