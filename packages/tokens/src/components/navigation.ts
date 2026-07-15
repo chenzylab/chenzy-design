@@ -21,6 +21,7 @@ export const navigationTokens = {
   'width-navigation-container-collapsed': { value: '60px', category: 'width', label: '侧边折叠宽度', usage: '侧边导航栏收起后宽度' },
   'width-navigation-border': { value: '1px', category: 'width', label: '描边宽度', usage: '导航栏描边宽度' },
   'width-navigation-icon-text-between': { value: '12px', category: 'width', label: '图标文案间距', usage: '导航栏菜单项图标与标题间距' },
+  'width-navigation-icon-left': { value: '20px', category: 'width', label: '左图标区宽度', usage: '导航栏菜单项图标距左侧边距离（子级项文字缩进补偿，对齐 Semi $width-navigation_icon_left）' },
   'width-navigation-icon-left-minwidth': { value: '20px', category: 'width', label: '左图标区最小宽', usage: '导航栏菜单项左侧图标区域最小宽度' },
   'width-navigation-dropdown-item-nav-item-minwidth': { value: '150px', category: 'width', label: '浮层项最小宽', usage: '导航栏菜单项下拉菜单最小宽度' },
   'width-navigation-outline': { value: '2px', category: 'width', label: '聚焦描边宽', usage: '导航栏聚焦 outline 宽度' },
@@ -39,6 +40,7 @@ export const navigationTokens = {
   'spacing-navigation-horizontal-paddingleft': { value: '24px', category: 'spacing', label: '顶部左内边距', usage: '顶部导航栏左侧内边距' },
   'spacing-navigation-footer-paddingx': { value: '24px', category: 'spacing', label: 'footer 水平内边距', usage: '导航栏 footer 水平方向内边距（对齐 Semi 24px）' },
   'spacing-navigation-footer-paddingy': { value: '16px', category: 'spacing', label: 'footer 垂直内边距', usage: '导航栏 footer 垂直方向内边距（对齐 Semi 16px）' },
+  'spacing-navigation-vertical-footer-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '垂直 footer 水平内边距', usage: '侧边导航栏 footer 左右内边距（对齐 Semi $spacing-navigation_vertical_footer-paddingLeft/Right = $spacing-tight = 8px）' },
   'spacing-navigation-vertical-footer-collapse-text-marginleft': { value: '12px', category: 'spacing', label: '收起按钮文案左边距', usage: '收起侧边栏按钮标题左侧外边距（对齐 Semi 12px）' },
 
   // —— Color ——
@@ -54,6 +56,9 @@ export const navigationTokens = {
   'color-navigation-iteml1-selected-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '一级选中文字色', usage: '导航栏一级已选中菜单项文字颜色' },
   'color-navigation-iteml1-selected-icon-default': { value: 'var(--cd-color-primary)', category: 'color', label: '一级选中图标色', usage: '导航栏一级已选中菜单项图标颜色' },
   'color-navigation-iteml1-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '一级禁用文字色', usage: '导航栏一级菜单项禁用态文字颜色' },
+  'color-navigation-iteml1-selected-disabled-bg-default': { value: 'transparent', category: 'color', label: '一级选中禁用背景', usage: '导航栏一级已选中菜单项禁用态背景色（对齐 Semi $color-navigation_itemL1_selected_disabled-bg-default = transparent）' },
+  'color-navigation-iteml1-selected-disabled-text-default': { value: 'var(--cd-color-primary-disabled)', category: 'color', label: '一级选中禁用文字', usage: '导航栏一级已选中菜单项禁用态文字颜色（对齐 Semi = color-primary-disabled）' },
+  'color-navigation-iteml1-selected-disabled-icon-default': { value: 'var(--cd-color-primary-disabled)', category: 'color', label: '一级选中禁用图标', usage: '导航栏一级已选中菜单项禁用态图标颜色（对齐 Semi = color-primary-disabled）' },
   'color-navigation-outline-focus': { value: 'var(--cd-color-primary-light-active)', category: 'color', label: '聚焦描边色', usage: '导航栏菜单键盘聚焦颜色' },
 
   'color-navigation-horizontal-iteml1-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '水平一级文字色', usage: '水平导航栏一级菜单项文字颜色' },
@@ -62,5 +67,6 @@ export const navigationTokens = {
 
   // —— Font ——
   'font-navigation-header-item-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: 'header 标题字重', usage: '导航栏 header 标题字重' },
+  'font-navigation-popover-nav-item-selected-fontweight': { value: 'normal', category: 'font', label: '浮层选中项字重', usage: '导航栏浮层子级菜单项选中态字重（对齐 Semi $font-navigation_popover_nav_item_selected-fontWeight = normal，特意降回 normal）' },
 
 } satisfies TokenGroup;

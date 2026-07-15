@@ -7,22 +7,49 @@
   import type { Snippet } from 'svelte';
   import { onMount, setContext } from 'svelte';
   import { getNavCollector, NAV_COLLECTOR_KEY, type NavCollector } from './context.js';
-  import type { NavItemDef, NavKey } from './types.js';
+  import type { NavItemDef, NavKey, NavDropdownProps } from './types.js';
 
   interface Props {
     /** 子导航唯一标识。 */
     itemKey: NavKey;
-    /** 子导航标题文案。 */
-    text: string;
+    /** 子导航标题文案（字符串或 Snippet）。 */
+    text: string | Snippet;
     /** 标题前置图标。 */
     icon?: Snippet;
-    /** 是否禁用。 */
+    /** 是否禁用（默认 false）。 */
     disabled?: boolean;
+    /** 是否保留左侧 Icon 占位（对齐 Semi indent）。 */
+    indent?: boolean;
+    /** 子导航最大高度（内联展开动画，对齐 Semi maxHeight，默认 999）。 */
+    maxHeight?: number;
+    /** 子导航是否展开（对齐 Semi Sub.isOpen）。 */
+    isOpen?: boolean;
+    /** 透传给该子导航浮层 Dropdown 的属性（对齐 Semi dropdownProps）。 */
+    dropdownProps?: NavDropdownProps;
+    /** 透传给该子导航浮层 Dropdown 的内联样式（对齐 Semi dropdownStyle）。 */
+    dropdownStyle?: string;
+    /** 标题鼠标移入回调。 */
+    onMouseEnter?: (e: MouseEvent) => void;
+    /** 标题鼠标移出回调。 */
+    onMouseLeave?: (e: MouseEvent) => void;
     /** 内嵌的 Nav.Item / Nav.Sub。 */
     children?: Snippet;
   }
 
-  let { itemKey, text, icon, disabled, children }: Props = $props();
+  let {
+    itemKey,
+    text,
+    icon,
+    disabled = false,
+    indent,
+    maxHeight = 999,
+    isOpen,
+    dropdownProps,
+    dropdownStyle,
+    onMouseEnter,
+    onMouseLeave,
+    children,
+  }: Props = $props();
 
   const parent = getNavCollector();
 
@@ -34,8 +61,15 @@
     itemKey,
     text,
     items: childItems,
+    disabled,
+    maxHeight,
     ...(icon !== undefined ? { icon } : {}),
-    ...(disabled !== undefined ? { disabled } : {}),
+    ...(indent !== undefined ? { indent } : {}),
+    ...(isOpen !== undefined ? { isOpen } : {}),
+    ...(dropdownProps !== undefined ? { dropdownProps } : {}),
+    ...(dropdownStyle !== undefined ? { dropdownStyle } : {}),
+    ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),
+    ...(onMouseLeave !== undefined ? { onMouseLeave } : {}),
   };
 
   // init 同步注册到父级（普通数组）。

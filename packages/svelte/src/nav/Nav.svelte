@@ -19,7 +19,6 @@
   import { setContext, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import {
-    hasSubNav,
     collectNavItemsByKeys,
     collectAncestorKeys,
     type NavItemDef,
@@ -66,8 +65,6 @@
     footer?: NavFooterConfig;
     /** 整体禁用。 */
     disabled?: boolean;
-    /** 子级缩进像素（对齐 Semi inlineIndent）。 */
-    inlineIndent?: number;
     /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进。 */
     limitIndent?: boolean;
     /** 含子导航项的展开箭头位置。 */
@@ -80,14 +77,26 @@
     subNavOpenDelay?: number;
     /** 浮层子导航关闭延迟 ms。对齐 Semi subNavCloseDelay。 */
     subNavCloseDelay?: number;
+    /** Nav 级：透传给所有子导航浮层 Dropdown 的默认属性（对齐 Semi subDropdownProps）。 */
+    subDropdownProps?: import('./types.js').NavDropdownProps;
     /** 折叠态 tooltip 显示延迟 ms（对齐 Semi tooltipShowDelay）。 */
     tooltipShowDelay?: number;
     /** 折叠态 tooltip 隐藏延迟 ms（对齐 Semi tooltipHideDelay）。 */
     tooltipHideDelay?: number;
     /** 浮层挂载容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 自定义导航项外层包裹（对齐 Semi renderWrapper）。 */
-    renderWrapper?: Snippet<[{ item: NavItemDef; isSubNav: boolean; children: Snippet }]>;
+    /** 自定义导航项外层包裹（对齐 Semi renderWrapper {itemElement,isSubNav,isInSubNav,props}）。 */
+    renderWrapper?: Snippet<
+      [
+        {
+          item: NavItemDef;
+          isSubNav: boolean;
+          isInSubNav: boolean;
+          props: NavItemDef;
+          children: Snippet;
+        },
+      ]
+    >;
     /** 根元素自定义类名（透传）。 */
     class?: string;
     /** 根元素自定义内联样式（透传）。 */
@@ -127,13 +136,13 @@
     header,
     footer,
     disabled = false,
-    inlineIndent = 24,
     limitIndent = true,
     toggleIconPosition = 'right',
     expandIcon,
     subNavMotion = true,
     subNavOpenDelay = 0,
     subNavCloseDelay = 100,
+    subDropdownProps,
     tooltipShowDelay = 0,
     tooltipHideDelay = 100,
     getPopupContainer,
@@ -205,6 +214,11 @@
   const innerOpen = new SvelteSet<NavKey>(untrack(() => defaultOpenKeys ?? []));
   const currentOpen = $derived<ReadonlySet<NavKey>>(
     isOpenControlled ? new Set(openKeys) : innerOpen,
+  );
+  // openKeys 受控 = openKeys 受控 且 vertical 且未折叠（对齐 Semi openKeysIsControlled）。
+  // 浮层 SubNav 据此在受控时用 trigger='custom' + visible。
+  const openKeysIsControlled = $derived(
+    isOpenControlled && mode === 'vertical' && !collapsedState,
   );
 
   function isSelected(key: NavKey): boolean {
@@ -284,8 +298,11 @@
     get toggleIconPosition() {
       return toggleIconPosition;
     },
-    get inlineIndent() {
-      return inlineIndent;
+    get openKeysIsControlled() {
+      return openKeysIsControlled;
+    },
+    get subDropdownProps() {
+      return subDropdownProps;
     },
     get subNavMotion() {
       return subNavMotion;
@@ -325,10 +342,11 @@
   );
 
   const hasHeader = $derived(!!headerSlot || !!header);
-  const hasFooter = $derived(!!footerSlot || (!!footer && footer.collapseButton));
+  const hasFooter = $derived(!!footerSlot || (!!footer && !!footer.collapseButton));
 </script>
 
-<nav class={cls} {style} aria-label={ariaLabel}>
+<!-- 根为纯容器 <div>（对齐 Semi index.tsx：无 nav landmark）；列表用 role=menu 语义。 -->
+<div class={cls} {style} aria-label={ariaLabel}>
   <div class="cd-nav__inner">
     <div class="cd-nav__header-list-outer" class:cd-nav__header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}
@@ -348,9 +366,8 @@
       {/if}
 
       <div class="cd-nav__list-wrapper" style={bodyStyle}>
-        <!-- 站点导航用原生 list/link 语义（nav landmark 已提供地标），不用 menu/menuitem role
-             （对齐 Semi navigation purpose：avoid menu roles for site navigation）。 -->
-        <ul class="cd-nav__list">
+        <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。 -->
+        <ul class="cd-nav__list" role="menu" aria-orientation={mode}>
           {#each resolvedItems as item (item.itemKey)}
             <NavItemRender {item} level={0} />
           {/each}
@@ -377,7 +394,7 @@
   {#if !items.length && children}
     <div hidden style="display:none">{@render children()}</div>
   {/if}
-</nav>
+</div>
 
 <style>
   /* 容器：垂直侧边导航（默认）。对齐 Semi navigation.scss。 */

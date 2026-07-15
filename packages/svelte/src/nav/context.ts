@@ -7,7 +7,7 @@
  */
 import { getContext, hasContext } from 'svelte';
 import type { Snippet } from 'svelte';
-import type { NavItemDef, NavKey, NavMode } from './types.js';
+import type { NavItemDef, NavKey, NavMode, NavDropdownProps } from './types.js';
 
 /** Nav 渲染上下文：递归子项据此判断选中/展开/折叠并触发行为。 */
 export interface NavContext {
@@ -23,8 +23,10 @@ export interface NavContext {
   readonly limitIndent: boolean;
   /** toggle 箭头位置。 */
   readonly toggleIconPosition: 'left' | 'right';
-  /** 子级缩进像素。 */
-  readonly inlineIndent: number;
+  /** openKeys 是否受控（仅 vertical 且未折叠时为真，对齐 Semi openKeysIsControlled）。 */
+  readonly openKeysIsControlled: boolean;
+  /** Nav 级：透传给所有子导航浮层 Dropdown 的默认属性（对齐 Semi subDropdownProps）。 */
+  readonly subDropdownProps: NavDropdownProps | undefined;
   /** 子导航展开动画开关。 */
   readonly subNavMotion: boolean;
   /** 浮层子导航展开延迟 ms。 */
@@ -39,9 +41,19 @@ export interface NavContext {
   readonly getPopupContainer: (() => HTMLElement | null | undefined) | undefined;
   /** 自定义展开箭头图标。 */
   readonly expandIcon: Snippet | undefined;
-  /** 自定义导航项外层包裹。 */
+  /** 自定义导航项外层包裹（payload 对齐 Semi {itemElement,isSubNav,isInSubNav,props}）。 */
   readonly renderWrapper:
-    | Snippet<[{ item: NavItemDef; isSubNav: boolean; children: Snippet }]>
+    | Snippet<
+        [
+          {
+            item: NavItemDef;
+            isSubNav: boolean;
+            isInSubNav: boolean;
+            props: NavItemDef;
+            children: Snippet;
+          },
+        ]
+      >
     | undefined;
 
   /** 判断某 key 是否选中。 */

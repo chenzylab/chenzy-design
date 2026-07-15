@@ -98,4 +98,52 @@ export const demos: DemoEntry[] = [
       en: 'defaultSelectedKeys / defaultOpenKeys set initial state only; the component manages it thereafter.',
     },
   ),
+  entry(
+    '10-disabled.svelte',
+    { zh: '禁用项', en: 'Disabled' },
+    {
+      zh: 'disabled 覆盖三种粒度：一级项禁用、子导航禁用、子项禁用；禁用项不可点击、不可选中。',
+      en: 'disabled at three levels: top-level item, sub-nav, and leaf item; disabled entries are not clickable or selectable.',
+    },
+  ),
+  entry(
+    '11-custom-expand-icon.svelte',
+    { zh: '自定义展开箭头', en: 'Custom expand icon' },
+    {
+      zh: 'expandIcon 传入自定义 snippet，替换子导航默认的展开箭头（此处用 IconTriangleDown）。',
+      en: 'expandIcon takes a custom snippet to replace the default sub-nav arrow (here IconTriangleDown).',
+    },
+  ),
+  entry(
+    '12-link.svelte',
+    { zh: '原生链接导航', en: 'Link' },
+    {
+      zh: '叶子项用 link + linkOptions 渲染为原生 <a href>，头部同样支持 link/linkOptions。',
+      en: 'Leaf items render as native <a href> via link + linkOptions; the header supports link/linkOptions too.',
+    },
+  ),
+  entry(
+    '13-popup-container.svelte',
+    { zh: '浮层挂载容器', en: 'Popup container' },
+    {
+      zh: 'mode="horizontal" 子导航以浮层弹出，getPopupContainer 指定浮层挂载到自定义容器。',
+      en: 'In mode="horizontal" sub-navs pop up; getPopupContainer mounts the popup into a custom container.',
+    },
+  ),
+  entry(
+    '14-number-key.svelte',
+    { zh: '数字类型 itemKey', en: 'Number itemKey' },
+    {
+      zh: 'itemKey 使用数字，覆盖 NavKey 的 number 分支；选中/展开回调回写 number 数组。',
+      en: 'itemKey uses numbers, exercising the number branch of NavKey; callbacks write back number arrays.',
+    },
+  ),
+  entry(
+    '15-collapse-text.svelte',
+    { zh: '自定义收起文案', en: 'Collapse text' },
+    {
+      zh: 'footer.collapseText 按当前收起状态返回不同文案（展开侧栏 / 收起侧栏）。',
+      en: 'footer.collapseText returns different labels based on the collapsed state.',
+    },
+  ),
 ];

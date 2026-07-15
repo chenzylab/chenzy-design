@@ -7,25 +7,25 @@
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
   import { getNavCollector } from './context.js';
-  import type { NavKey } from './types.js';
+  import type { NavKey, NavClickData } from './types.js';
 
   interface Props {
     /** 导航项唯一标识。 */
     itemKey: NavKey;
-    /** 导航项文案。 */
-    text: string;
+    /** 导航项文案（字符串或 Snippet）。 */
+    text: string | Snippet;
     /** 项前置图标。 */
     icon?: Snippet;
-    /** 是否禁用。 */
+    /** 是否禁用（默认 false）。 */
     disabled?: boolean;
     /** 链接地址（叶子项渲染为原生 <a>）。 */
     link?: string;
-    /** 链接 target。 */
-    target?: string;
-    /** 链接 rel。 */
-    rel?: string;
-    /** 项级点击回调。 */
-    onClick?: (e: MouseEvent) => void;
+    /** 透传给 <a> 的属性（对齐 Semi linkOptions，如 target/rel/download）。 */
+    linkOptions?: Record<string, string>;
+    /** 是否保留左侧 Icon 占位（对齐 Semi indent）。 */
+    indent?: boolean;
+    /** 项级点击回调（富载荷对齐 Semi）。 */
+    onClick?: (data: NavClickData) => void;
     /** 项级鼠标移入回调。 */
     onMouseEnter?: (e: MouseEvent) => void;
     /** 项级鼠标移出回调。 */
@@ -36,10 +36,10 @@
     itemKey,
     text,
     icon,
-    disabled,
+    disabled = false,
     link,
-    target,
-    rel,
+    linkOptions,
+    indent,
     onClick,
     onMouseEnter,
     onMouseLeave,
@@ -53,11 +53,11 @@
     collector.add({
       itemKey,
       text,
+      disabled,
       ...(icon !== undefined ? { icon } : {}),
-      ...(disabled !== undefined ? { disabled } : {}),
       ...(link !== undefined ? { link } : {}),
-      ...(target !== undefined ? { target } : {}),
-      ...(rel !== undefined ? { rel } : {}),
+      ...(linkOptions !== undefined ? { linkOptions } : {}),
+      ...(indent !== undefined ? { indent } : {}),
       ...(onClick !== undefined ? { onClick } : {}),
       ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),
       ...(onMouseLeave !== undefined ? { onMouseLeave } : {}),

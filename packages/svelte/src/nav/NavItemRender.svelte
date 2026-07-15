@@ -35,16 +35,16 @@
   const popupMode = $derived(ctx.mode === 'horizontal' || ctx.collapsed);
 
   // 多级缩进占位数量（对齐 Semi：limitIndent=false 且 vertical 展开时按层级补占位图标）。
-  // 有图标且非 indent 时占位数 = level，否则 level - 1。
+  // 有图标且非 indent 时占位数 = level，否则 level - 1（对齐 Semi Item.tsx/SubNav.tsx iconAmount）。
   const placeholderCount = $derived.by(() => {
     if (ctx.limitIndent || ctx.collapsed || ctx.mode !== 'vertical') return 0;
-    const n = item.icon ? level : level - 1;
+    const n = item.icon && !item.indent ? level : level - 1;
     return n > 0 ? n : 0;
   });
 
   function onLeafClick(e: MouseEvent): void {
     if (itemDisabled) return;
-    item.onClick?.(e);
+    item.onClick?.({ itemKey: item.itemKey, domEvent: e, isOpen: false });
     ctx.selectLeaf(item, e);
   }
 
@@ -103,29 +103,30 @@
   {#if withToggle && ctx.toggleIconPosition === 'left'}{@render toggleArrow()}{/if}
   {#if item.icon}
     <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true">{@render item.icon()}</i>
-  {:else if inSubNav && !popupMode}
-    <!-- 内联子导航项无图标：保留占位对齐（对齐 Semi isInSubNav 占位）。 -->
+  {:else if item.indent || (inSubNav && !popupMode)}
+    <!-- indent 或内联子导航项无图标：保留占位对齐（对齐 Semi icon||indent||isInSubNav 占位）。 -->
     <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true"></i>
   {/if}
-  <span class="cd-nav__item-text">{item.text}</span>
+  <span class="cd-nav__item-text">
+    {#if typeof item.text === 'string'}{item.text}{:else}{@render item.text()}{/if}
+  </span>
   {#if withToggle && ctx.toggleIconPosition === 'right'}{@render toggleArrow()}{/if}
 {/snippet}
 
-<!-- 叶子项内容：含 link 时包 <a>。 -->
+<!-- 叶子项内容：含 link 时包 <a>（Semi Item.tsx；叶子直挂内容，无 item-inner 包裹）。 -->
 {#snippet leafInner()}
   {#if item.link !== undefined}
     <a
       class="cd-nav__item-link"
       href={itemDisabled ? undefined : item.link}
-      target={item.target}
-      rel={item.rel}
       aria-disabled={itemDisabled || undefined}
       tabindex="-1"
+      {...item.linkOptions ?? {}}
     >
-      <span class="cd-nav__item-inner">{@render innerContent(false)}</span>
+      {@render innerContent(false)}
     </a>
   {:else}
-    <span class="cd-nav__item-inner">{@render innerContent(false)}</span>
+    {@render innerContent(false)}
   {/if}
 {/snippet}
 
@@ -135,14 +136,16 @@
     {#snippet titleContent()}{@render innerContent(true)}{/snippet}
   </NavSubPopup>
 {:else if isSub}
-  <!-- 内联子导航（vertical 展开）。 -->
+  <!-- 内联子导航（vertical 展开）。sub-title 用 role=menuitem（对齐 Semi SubNav.tsx:238）。 -->
   {#snippet subWrap()}
-    <li class="cd-nav__item cd-nav__sub-wrap" class:cd-nav__item-disabled={itemDisabled}>
+    <!-- sub-wrap li 为 role=none（呈现性）：内部 div[role=menuitem] 由外层 role=menu 直接拥有，
+         避免 li 作为 menu 的非 menuitem 子元素破坏 aria-required-children。 -->
+    <li class="cd-nav__item cd-nav__item-sub cd-nav__sub-wrap" role="none" class:cd-nav__item-disabled={itemDisabled}>
       <div
         class="cd-nav__sub-title"
         class:cd-nav__sub-title-selected={selected}
         class:cd-nav__sub-title-disabled={itemDisabled}
-        role="button"
+        role="menuitem"
         tabindex={itemDisabled ? -1 : 0}
         aria-expanded={open}
         aria-disabled={itemDisabled || undefined}
@@ -154,7 +157,8 @@
         <div class="cd-nav__item-inner">{@render innerContent(true)}</div>
       </div>
       {#if open}
-        <ul class="cd-nav__sub" class:cd-nav__sub--motion={ctx.subNavMotion}>
+        <!-- 内联子菜单同样 role=menu，使嵌套 li[role=menuitem] 有合规 menu 父级。 -->
+        <ul class="cd-nav__sub" role="menu" aria-orientation="vertical" class:cd-nav__sub--motion={ctx.subNavMotion}>
           {#each item.items ?? [] as child (child.itemKey)}
             <Self item={child} level={level + 1} inSubNav={true} />
           {/each}
@@ -163,23 +167,22 @@
     </li>
   {/snippet}
   {#if ctx.renderWrapper}
-    {@render ctx.renderWrapper({ item, isSubNav: true, children: subWrap })}
+    {@render ctx.renderWrapper({ item, isSubNav: true, isInSubNav: inSubNav, props: item, children: subWrap })}
   {:else}
     {@render subWrap()}
   {/if}
 {:else}
-  <!-- 叶子项：站点导航用原生 <li> + 可选 <a>（native list/link 语义，nav landmark 已提供地标）。
+  <!-- 叶子项：li[role=menuitem]（对齐 Semi Item.tsx:283-286，选中靠 -selected class，无 aria-current）。
        含 link 时走原生链接键序；无 link 时以 tabindex + Enter/Space 支持键盘激活。 -->
   {#snippet leaf()}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <li
       class="cd-nav__item cd-nav__item-normal"
       class:cd-nav__item-selected={selected}
       class:cd-nav__item-disabled={itemDisabled}
       class:cd-nav__item-has-link={item.link !== undefined}
-      tabindex={item.link !== undefined || itemDisabled ? undefined : 0}
-      aria-current={selected ? 'page' : undefined}
+      role="menuitem"
+      tabindex={itemDisabled ? -1 : 0}
+      aria-disabled={itemDisabled || undefined}
       onclick={onLeafClick}
       onkeydown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && item.link === undefined) {
@@ -194,7 +197,7 @@
     </li>
   {/snippet}
   {#if ctx.renderWrapper}
-    {@render ctx.renderWrapper({ item, isSubNav: false, children: leaf })}
+    {@render ctx.renderWrapper({ item, isSubNav: false, isInSubNav: inSubNav, props: item, children: leaf })}
   {:else}
     {@render leaf()}
   {/if}
@@ -213,7 +216,7 @@
     margin-block-end: var(--cd-spacing-navigation-item-marginbottom);
     font-size: var(--cd-font-size-regular);
     color: var(--cd-color-navigation-iteml1-text-default);
-    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* 背景切换无动画（对齐 Semi $transition_duration-navigation_itemL1-bg = transition_duration-none）。 */
   }
   /* sub-wrap 是承载子导航的 li：本身不作交互盒，内部 sub-title 才是。 */
   .cd-nav__sub-wrap {
@@ -314,6 +317,15 @@
     color: var(--cd-color-navigation-iteml1-disabled-text-default);
   }
 
+  /* 选中 + 禁用复合态（对齐 Semi $color-navigation_itemL1_selected_disabled-*）。 */
+  .cd-nav__item-selected.cd-nav__item-disabled {
+    background: var(--cd-color-navigation-iteml1-selected-disabled-bg-default);
+    color: var(--cd-color-navigation-iteml1-selected-disabled-text-default);
+  }
+  .cd-nav__item-selected.cd-nav__item-disabled .cd-nav__item-icon-info {
+    color: var(--cd-color-navigation-iteml1-selected-disabled-icon-default);
+  }
+
   /* 焦点可见描边（对齐 Semi outline）。 */
   .cd-nav__item:focus-visible,
   .cd-nav__sub-title:focus-visible {
@@ -326,6 +338,14 @@
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  /* 子级项无图标时文字左缩进补偿，与有图标项对齐（对齐 Semi `-sub .-item-text:first-child` margin-left
+     = $spacing-base-tight + $width-navigation_icon_left + $width-navigation_icon_text_between）。 */
+  .cd-nav__sub .cd-nav__item-text:first-child {
+    margin-inline-start: calc(
+      var(--cd-spacing-base-tight) + var(--cd-width-navigation-icon-left) +
+        var(--cd-width-navigation-icon-text-between)
+    );
   }
   .cd-nav__sub--motion {
     animation: cd-nav-sub-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
@@ -357,7 +377,10 @@
   :global(.cd-nav--collapsed) .cd-nav__item-icon-toggle-left {
     display: none;
   }
-  /* 折叠态：item 内容水平居中，图标 margin 归零 → 选中/hover 块填满图标轨、图标居中。 */
+  /* 折叠态：item 内容水平居中，图标 margin 归零 → 选中/hover 块填满图标轨、图标居中。
+     叶子 li 直挂内容（无 item-inner），故 li 自身居中；sub-title 内 item-inner 亦居中。 */
+  :global(.cd-nav--collapsed) .cd-nav__item-normal,
+  :global(.cd-nav--collapsed) .cd-nav__item-link,
   :global(.cd-nav--collapsed) .cd-nav__item-inner {
     justify-content: center;
   }
