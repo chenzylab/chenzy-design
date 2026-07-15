@@ -1,77 +1,86 @@
 import { describe, expect, it } from 'vitest';
 import {
   clampPercent,
-  resolveStatus,
   getCirclePathProps,
+  generateColor,
   getRootAriaProps,
 } from './progress.js';
 
 describe('clampPercent', () => {
-  it('clamps to 0..100 and handles NaN', () => {
+  it('clamps to 0..100', () => {
     expect(clampPercent(50)).toBe(50);
     expect(clampPercent(-10)).toBe(0);
     expect(clampPercent(120)).toBe(100);
-    expect(clampPercent(Number.NaN)).toBe(0);
     expect(clampPercent(0)).toBe(0);
     expect(clampPercent(100)).toBe(100);
   });
 });
 
-describe('resolveStatus', () => {
-  it('respects an explicit status', () => {
-    expect(resolveStatus(100, 'error')).toBe('error');
-    expect(resolveStatus(50, 'warning')).toBe('warning');
+describe('getCirclePathProps', () => {
+  it('computes radius/circumference (Semi single-ring model)', () => {
+    const p = getCirclePathProps({ width: 72, strokeWidth: 4, percent: 0 });
+    expect(p.center).toBe(36);
+    expect(p.radius).toBe(34); // (72 - 4) / 2
+    expect(p.circumference).toBeCloseTo(2 * Math.PI * 34, 5);
+    expect(p.strokeDasharray).toBe(`${p.circumference} ${p.circumference}`);
   });
 
-  it('promotes to success when full and successWhenFull', () => {
-    expect(resolveStatus(100, 'normal', true)).toBe('success');
-    expect(resolveStatus(99, 'normal', true)).toBe('normal');
-    expect(resolveStatus(100, 'normal', false)).toBe('normal');
+  it('dashoffset is (1 - percent/100) * circumference', () => {
+    const p0 = getCirclePathProps({ width: 72, strokeWidth: 4, percent: 0 });
+    expect(p0.strokeDashoffset).toBeCloseTo(p0.circumference, 5);
+
+    const p50 = getCirclePathProps({ width: 72, strokeWidth: 4, percent: 50 });
+    expect(p50.strokeDashoffset).toBeCloseTo(p50.circumference * 0.5, 5);
+
+    const p100 = getCirclePathProps({ width: 72, strokeWidth: 4, percent: 100 });
+    expect(p100.strokeDashoffset).toBeCloseTo(0, 5);
+  });
+
+  it('clamps percent before computing offset', () => {
+    const p = getCirclePathProps({ width: 100, strokeWidth: 6, percent: 150 });
+    expect(p.strokeDashoffset).toBeCloseTo(0, 5);
   });
 });
 
-describe('getCirclePathProps', () => {
-  it('computes radius/perimeter for a full circle', () => {
-    const p = getCirclePathProps({ width: 120, strokeWidth: 8, percent: 0 });
-    expect(p.center).toBe(60);
-    expect(p.radius).toBe(56); // 60 - 8/2
-    expect(p.circumference).toBeCloseTo(2 * Math.PI * 56, 5);
+describe('generateColor (segmented stroke)', () => {
+  const strokeArr = [
+    { percent: 20, color: '#ff0000' },
+    { percent: 60, color: '#00ff00' },
+    { percent: 100, color: '#0000ff' },
+  ];
+
+  it('returns default when percent is below the first anchor', () => {
+    expect(generateColor(strokeArr, 10, false)).toBe('var(--cd-color-success)');
   });
 
-  it('fill length is proportional to percent (full circle)', () => {
-    const r = 56;
-    const perim = 2 * Math.PI * r;
-    const p = getCirclePathProps({ width: 120, strokeWidth: 8, percent: 50 });
-    const fillLen = Number(p.fillDash.split(' ')[0]);
-    expect(fillLen).toBeCloseTo(perim * 0.5, 4);
+  it('returns the last colour when percent exceeds the last anchor', () => {
+    expect(generateColor([{ percent: 50, color: '#ff0000' }], 80, false)).toBe('#ff0000ff');
   });
 
-  it('dashboard gap reduces the visible track length', () => {
-    const r = 56;
-    const perim = 2 * Math.PI * r;
-    const p = getCirclePathProps({
-      width: 120,
-      strokeWidth: 8,
-      percent: 100,
-      gapDegree: 90,
-    });
-    // visible track = 270/360 of perimeter
-    const trackLen = Number(p.trackDash.split(' ')[0]);
-    expect(trackLen).toBeCloseTo(perim * (270 / 360), 4);
-    // 100% fill covers the full visible track
-    const fillLen = Number(p.fillDash.split(' ')[0]);
-    expect(fillLen).toBeCloseTo(trackLen, 4);
+  it('returns exact colour on an anchor', () => {
+    expect(generateColor(strokeArr, 60, false)).toBe('#00ff00ff');
   });
 
-  it('rotation differs by gapPosition', () => {
-    const top = getCirclePathProps({ width: 100, strokeWidth: 6, percent: 0, gapDegree: 60, gapPosition: 'top' });
-    const bottom = getCirclePathProps({ width: 100, strokeWidth: 6, percent: 0, gapDegree: 60, gapPosition: 'bottom' });
-    expect(top.rotation).not.toBe(bottom.rotation);
+  it('non-gradient picks the lower anchor colour between anchors', () => {
+    // 40 is between 20(#ff0000) and 60(#00ff00) → lower anchor red
+    expect(generateColor(strokeArr, 40, false)).toBe('#ff0000ff');
+  });
+
+  it('gradient interpolates between two anchors', () => {
+    const c = generateColor(strokeArr, 40, true);
+    expect(typeof c).toBe('string');
+    expect(c).toMatch(/^#[0-9a-f]{8}$/);
+    // blended red→green: some green appears, red drops from ff
+    expect(c).not.toBe('#ff0000ff');
+  });
+
+  it('accepts rgb/hsl colour inputs', () => {
+    expect(generateColor([{ percent: 0, color: 'rgb(255, 0, 0)' }], 50, false)).toBe('#ff0000ff');
   });
 });
 
 describe('getRootAriaProps', () => {
-  it('emits valuenow for determinate progress', () => {
+  it('always emits valuenow (clamped)', () => {
     const a = getRootAriaProps({ percent: 42, label: '上传进度', valueText: '42% 完成' });
     expect(a.role).toBe('progressbar');
     expect(a['aria-valuenow']).toBe(42);
@@ -81,10 +90,10 @@ describe('getRootAriaProps', () => {
     expect(a['aria-label']).toBe('上传进度');
   });
 
-  it('omits valuenow and sets busy when indeterminate', () => {
-    const a = getRootAriaProps({ percent: 50, indeterminate: true });
-    expect(a['aria-valuenow']).toBeUndefined();
-    expect(a['aria-busy']).toBe(true);
+  it('supports labelledby', () => {
+    const a = getRootAriaProps({ percent: 30, labelledBy: 'lbl' });
+    expect(a['aria-labelledby']).toBe('lbl');
+    expect(a['aria-label']).toBeUndefined();
   });
 
   it('clamps valuenow', () => {

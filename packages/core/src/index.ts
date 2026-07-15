@@ -192,12 +192,15 @@ export {
 } from './spin.js';
 export {
   clampPercent,
-  resolveStatus,
   getCirclePathProps,
+  generateColor,
   getRootAriaProps,
-  type ProgressStatus,
   type ProgressType,
-  type GapPosition,
+  type ProgressDirection,
+  type ProgressSize,
+  type StrokeLinecap,
+  type StrokeSet,
+  type StrokeArr,
   type CirclePathProps,
   type RootAriaProps,
 } from './progress.js';

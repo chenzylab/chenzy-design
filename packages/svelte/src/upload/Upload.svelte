@@ -1532,7 +1532,7 @@
             <Progress
               percent={item.percent ?? 0}
               size="small"
-              ariaLabel={loc().t('Upload.uploadingProgress', { name: item.name })}
+              aria-label={loc().t('Upload.uploadingProgress', { name: item.name })}
             />
           {/if}
           </div>
@@ -1589,7 +1589,7 @@
               <Progress
                 percent={item.percent ?? 0}
                 size="small"
-                ariaLabel={loc().t('Upload.uploadingProgress', { name: item.name })}
+                aria-label={loc().t('Upload.uploadingProgress', { name: item.name })}
               />
             </div>
           {/if}

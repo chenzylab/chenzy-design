@@ -1,177 +1,179 @@
 <!--
-  Progress — see specs/components/feedback/Progress.spec.md
-  进度条：line / circle / dashboard 三形态，normal/success/error/warning 四态。
-  几何与 a11y 逻辑全部复用 @chenzy-design/core 纯函数（clampPercent / resolveStatus /
-  getCirclePathProps / getRootAriaProps），不在组件里重复实现。
-  红线 #1：percent 是受控输入，绝不回写；onComplete/onChange 仅通知。
-  红线 #3：无 DOM 测量、无定时器；indeterminate 纯 CSS 动画。
-  role=progressbar + aria-valuenow/min/max/valuetext；indeterminate 省略 valuenow 并设 aria-busy。
-  success 环形显示对勾（非颜色冗余信号）；reduced-motion 禁用过渡与循环动画。
+  Progress — 进度条，严格对齐 Semi Design（semi-ui/progress）。
+  两种形态：line（horizontal / vertical）与 circle。
+  几何与颜色逻辑全部复用 @chenzy-design/core 纯函数（clampPercent /
+  getCirclePathProps / generateColor / getRootAriaProps），不在组件里重复实现。
+
+  红线 #1：percent 是受控输入，绝不回写。
+  数字滚动：percent 变化时线性插值动画（对齐 Semi Animation linear/300ms），
+  motion=false 或 reduced-motion 时直接跳到目标值，无定时器残留。
+  DOM 对齐 Semi：
+    line   → .cd-progress.cd-progress-horizontal/-vertical > .cd-progress-track
+             > .cd-progress-track-inner；文本 .cd-progress-line-text。
+    circle → .cd-progress.cd-progress-circle > svg.cd-progress-circle-ring
+             > circle.cd-progress-circle-ring-track / .cd-progress-circle-ring-inner；
+             文本 .cd-progress-circle-text。
+  role=progressbar + aria-valuenow/min/max/valuetext/label/labelledby。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import {
     clampPercent,
-    resolveStatus,
     getCirclePathProps,
+    generateColor,
     getRootAriaProps,
-    type ProgressStatus,
     type ProgressType,
-    type GapPosition,
+    type ProgressDirection,
+    type ProgressSize,
+    type StrokeLinecap,
+    type StrokeArr,
   } from '@chenzy-design/core';
-
-  type Size = 'small' | 'default' | 'large';
-
-  type StrokeColorGradient = { from: string; to: string; direction?: string };
 
   interface Props {
     percent?: number;
     type?: ProgressType;
-    status?: ProgressStatus;
-    size?: Size;
+    direction?: ProgressDirection;
+    size?: ProgressSize;
     width?: number;
     strokeWidth?: number;
-    strokeLinecap?: 'round' | 'butt' | 'square';
+    strokeLinecap?: StrokeLinecap;
     showInfo?: boolean;
-    format?: (percent: number, status: ProgressStatus) => string | null;
-    indeterminate?: boolean;
-    gapDegree?: number;
-    gapPosition?: GapPosition;
-    successWhenFull?: boolean;
-    /** 进度条颜色：字符串直接用作颜色，对象 {from, to, direction?} 生成渐变。 */
-    strokeColor?: string | StrokeColorGradient;
-    /** 轨道（背景）颜色。 */
-    trailColor?: string;
+    /** 进度条填充色：字符串直接用作颜色，或分段颜色数组（配合 strokeGradient 渐变）。 */
+    stroke?: string | StrokeArr;
+    /** 是否自动补齐颜色区间生成渐变（需 stroke 为至少一个区间的数组）。 */
+    strokeGradient?: boolean;
+    /** 进度条轨道填充色。 */
+    orbitStroke?: string;
+    /** 格式化函数，入参为当前百分比，返回值渲染在信息区。默认 percent + '%'。 */
+    format?: (percent: number) => string | null;
     motion?: boolean;
-    ariaLabel?: string;
-    formatSnippet?: Snippet<[{ percent: number; status: ProgressStatus }]>;
-    onComplete?: (info: { percent: number }) => void;
-    onChange?: (info: { percent: number }) => void;
+    class?: string;
+    style?: string;
+    id?: string;
+    'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-valuetext'?: string;
+    /** 信息区自定义内容 snippet，优先于 format prop。 */
+    formatSnippet?: Snippet<[{ percent: number }]>;
   }
 
   let {
     percent = 0,
     type = 'line',
-    status = 'normal',
+    direction = 'horizontal',
     size = 'default',
     width,
-    strokeWidth,
+    strokeWidth = 4,
     strokeLinecap = 'round',
-    showInfo = true,
+    showInfo = false,
+    stroke,
+    strokeGradient = false,
+    orbitStroke,
     format,
-    indeterminate = false,
-    gapDegree,
-    gapPosition = 'bottom',
-    successWhenFull = false,
-    strokeColor,
-    trailColor,
     motion = true,
-    ariaLabel,
+    class: className,
+    style,
+    id,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-valuetext': ariaValueText,
     formatSnippet,
-    onComplete,
-    onChange,
   }: Props = $props();
 
-  const pct = $derived(clampPercent(percent));
-  const effStatus = $derived(resolveStatus(pct, status, successWhenFull));
+  const isCircle = $derived(type === 'circle');
+  const isVertical = $derived(direction === 'vertical');
 
-  const isCircle = $derived(type === 'circle' || type === 'dashboard');
-  const gap = $derived(gapDegree ?? (type === 'dashboard' ? 75 : 0));
+  // 真实 percent（钳制）；动画 percent（数字滚动的当前显示值）。
+  const perc = $derived(clampPercent(percent));
 
-  const circleSize: Record<Size, number> = { small: 80, default: 120, large: 160 };
-  const diameter = $derived(width ?? circleSize[size]);
-  const sw = $derived(strokeWidth ?? Math.max(2, Math.round(diameter * 0.06)));
+  // ---- 数字滚动动画：线性插值，对齐 Semi Animation(linear, 300ms) ----
+  // 初始快照读 prop（untrack 避免 state_referenced_locally 告警）；
+  // 后续动画由下方 $effect 驱动，逐帧写 percentNumber。
+  let percentNumber = $state(untrack(() => clampPercent(percent)));
+  let prevPercent = untrack(() => clampPercent(percent));
+  let rafId = 0;
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  }
+
+  $effect(() => {
+    const target = perc;
+    const from = prevPercent;
+    prevPercent = target;
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+    if (!motion || prefersReducedMotion() || from === target) {
+      percentNumber = target;
+      return;
+    }
+    const duration = 300;
+    let start = 0;
+    const step = (t: number) => {
+      if (!start) start = t;
+      const elapsed = t - start;
+      const ratio = Math.min(1, elapsed / duration);
+      // parseInt 语义：截断到整数（对齐 Semi）
+      percentNumber = Math.trunc(from + (target - from) * ratio);
+      if (ratio < 1) {
+        rafId = requestAnimationFrame(step);
+      } else {
+        percentNumber = target;
+        rafId = 0;
+      }
+    };
+    rafId = requestAnimationFrame(step);
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+    };
+  });
+
+  const percNumber = $derived(clampPercent(percentNumber));
+
+  // circle 直径：优先 width，其次 size（default 72 / small 24）。
+  const diameter = $derived(width ?? (size === 'default' ? 72 : 24));
 
   const circle = $derived(
-    getCirclePathProps({
-      width: diameter,
-      strokeWidth: sw,
-      percent: pct,
-      gapDegree: gap,
-      gapPosition,
-    }),
+    getCirclePathProps({ width: diameter, strokeWidth, percent: perc }),
   );
+
+  // stroke 颜色解析：字符串直接用；数组走 generateColor（分段/渐变）。
+  const strokeColor = $derived.by(() => {
+    if (typeof stroke === 'string') return stroke;
+    if (Array.isArray(stroke)) {
+      const c = generateColor(stroke, perc, strokeGradient);
+      return c ?? undefined;
+    }
+    return undefined;
+  });
 
   const aria = $derived(
     getRootAriaProps({
-      percent: pct,
-      indeterminate,
+      // Semi：line 用真实 perc，circle 用动画 percNumber
+      percent: isCircle ? percNumber : perc,
       ...(ariaLabel !== undefined ? { label: ariaLabel } : {}),
-      valueText: `${pct}%`,
+      ...(ariaLabelledBy !== undefined ? { labelledBy: ariaLabelledBy } : {}),
+      ...(ariaValueText !== undefined ? { valueText: ariaValueText } : {}),
     }),
   );
 
-  // 信息区文本：formatSnippet 优先于 format prop；format 返回 null 时隐藏。
-  // indeterminate（不确定进度）忽略 percent 数值显示，不渲染默认百分比。
-  const infoText = $derived(
-    indeterminate ? null : format ? format(pct, effStatus) : `${pct}%`,
-  );
-  const showCheck = $derived(isCircle && effStatus === 'success');
-
-  // strokeColor 处理：字符串直接用，对象生成渐变
-  const isGradientStroke = $derived(typeof strokeColor === 'object' && strokeColor !== null);
-  const gradientId = $derived(isGradientStroke ? `cd-progress-grad-${Math.abs(hashStr(JSON.stringify(strokeColor)))}` : '');
-  const strokeColorValue = $derived(
-    !strokeColor
-      ? undefined
-      : typeof strokeColor === 'string'
-        ? strokeColor
-        : `url(#${gradientId})`
-  );
-  const trailColorValue = $derived(trailColor ?? undefined);
-
-  function hashStr(s: string): number {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
-    return h;
-  }
-
-  // onComplete：percent 首达 100 触发一次；回落到 <100 后重置可再次触发。
-  let firedComplete = false;
-  $effect(() => {
-    const p = pct;
-    if (p >= 100 && !firedComplete) {
-      firedComplete = true;
-      onComplete?.({ percent: p });
-    }
-    if (p < 100) firedComplete = false;
-  });
-
-  // onChange：percent 变化时通知，untrack 上次值避免初次挂载触发噪音。
-  let prevPct = untrack(() => pct);
-  $effect(() => {
-    const p = pct;
-    if (p !== untrack(() => prevPct)) {
-      prevPct = p;
-      onChange?.({ percent: p });
-    }
-  });
+  // 信息区文本：默认 percent + '%'；format 自定义（入参为动画值）。
+  const infoText = $derived(format ? format(percNumber) : `${percNumber}%`);
 </script>
 
-{#snippet checkIcon()}
-  <svg
-    class="cd-progress__check"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path
-      d="M5 13l4 4L19 7"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-  </svg>
-{/snippet}
-
-{#snippet info(forCircle: boolean)}
+{#snippet info()}
   {#if formatSnippet}
-    {@render formatSnippet({ percent: pct, status: effStatus })}
-  {:else if forCircle && showCheck}
-    {@render checkIcon()}
+    {@render formatSnippet({ percent: percNumber })}
   {:else}
     {infoText}
   {/if}
@@ -179,245 +181,182 @@
 
 {#if isCircle}
   <div
-    class="cd-progress cd-progress--circle cd-progress--{effStatus}"
-    class:cd-progress--no-motion={!motion}
-    class:cd-progress--indeterminate={indeterminate}
-    style="inline-size:{diameter}px; block-size:{diameter}px"
+    {id}
+    class={['cd-progress', 'cd-progress-circle', className]}
+    {style}
     {...aria}
   >
     <svg
-      class="cd-progress__svg"
-      width={diameter}
+      class="cd-progress-circle-ring"
       height={diameter}
-      viewBox="0 0 {diameter} {diameter}"
+      width={diameter}
       aria-hidden="true"
     >
-      {#if isGradientStroke && strokeColor && typeof strokeColor === 'object'}
-        <defs>
-          <linearGradient
-            id={gradientId}
-            x1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
-            y1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
-            x2={strokeColor.direction === 'to bottom' ? '0%' : '100%'}
-            y2={strokeColor.direction === 'to bottom' ? '100%' : '0%'}
-          >
-            <stop offset="0%" stop-color={strokeColor.from} />
-            <stop offset="100%" stop-color={strokeColor.to} />
-          </linearGradient>
-        </defs>
-      {/if}
       <circle
-        class="cd-progress__circle-track"
+        class="cd-progress-circle-ring-track"
+        stroke-dashoffset={0}
+        stroke-width={strokeWidth}
+        stroke-dasharray={circle.strokeDasharray}
+        stroke-linecap={strokeLinecap}
+        fill="transparent"
+        style={orbitStroke ? `stroke:${orbitStroke}` : undefined}
+        r={circle.radius}
         cx={circle.center}
         cy={circle.center}
-        r={circle.radius}
-        fill="none"
-        stroke={trailColorValue ?? 'var(--cd-progress-track-color)'}
-        stroke-width={sw}
-        stroke-dasharray={circle.trackDash}
-        transform="rotate({circle.rotation} {circle.center} {circle.center})"
       />
       <circle
-        class="cd-progress__circle-fill"
+        class="cd-progress-circle-ring-inner"
+        stroke-dashoffset={circle.strokeDashoffset}
+        stroke-width={strokeWidth}
+        stroke-dasharray={circle.strokeDasharray}
+        stroke-linecap={strokeLinecap}
+        fill="transparent"
+        style={strokeColor ? `stroke:${strokeColor}` : undefined}
+        r={circle.radius}
         cx={circle.center}
         cy={circle.center}
-        r={circle.radius}
-        fill="none"
-        stroke={strokeColorValue}
-        stroke-width={sw}
-        stroke-linecap={strokeLinecap}
-        stroke-dasharray={circle.fillDash}
-        transform="rotate({circle.rotation} {circle.center} {circle.center})"
       />
     </svg>
-    {#if showInfo}
-      <span class="cd-progress__circle-info">{@render info(true)}</span>
+    {#if showInfo && size !== 'small'}
+      <span class="cd-progress-circle-text">{@render info()}</span>
     {/if}
   </div>
 {:else}
-  {#if isGradientStroke && strokeColor && typeof strokeColor === 'object'}
-    <svg width="0" height="0" aria-hidden="true" style="position:absolute">
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
-          y1={strokeColor.direction === 'to bottom' ? '0%' : '0%'}
-          x2={strokeColor.direction === 'to bottom' ? '0%' : '100%'}
-          y2={strokeColor.direction === 'to bottom' ? '100%' : '0%'}
-        >
-          <stop offset="0%" stop-color={strokeColor.from} />
-          <stop offset="100%" stop-color={strokeColor.to} />
-        </linearGradient>
-      </defs>
-    </svg>
-  {/if}
   <div
-    class="cd-progress cd-progress--line cd-progress--{size} cd-progress--{effStatus}"
-    class:cd-progress--no-motion={!motion}
+    {id}
+    class={[
+      'cd-progress',
+      isVertical ? 'cd-progress-vertical' : 'cd-progress-horizontal',
+      size === 'large' && 'cd-progress-large',
+      className,
+    ]}
+    {style}
     {...aria}
   >
-    <div class="cd-progress__track" style={trailColorValue ? `background:${trailColorValue}` : undefined}>
+    <div
+      class="cd-progress-track"
+      style={orbitStroke ? `background-color:${orbitStroke}` : undefined}
+      aria-hidden="true"
+    >
       <div
-        class="cd-progress__fill"
-        class:cd-progress__fill--indeterminate={indeterminate}
+        class="cd-progress-track-inner"
         style={[
-          `inline-size: ${indeterminate ? 100 : pct}%`,
-          strokeColorValue ? `background:${strokeColorValue}` : '',
-        ].filter(Boolean).join(';')}
+          isVertical ? `height:${perc}%` : `width:${perc}%`,
+          strokeColor ? `background:${strokeColor}` : '',
+        ]
+          .filter(Boolean)
+          .join(';')}
+        aria-hidden="true"
       ></div>
     </div>
-    {#if showInfo && infoText !== null}
-      <span class="cd-progress__info">{@render info(false)}</span>
+    {#if showInfo}
+      <div class="cd-progress-line-text">{@render info()}</div>
     {/if}
   </div>
 {/if}
 
 <style>
-  /* ---- line 形态 ---- */
-  .cd-progress--line {
+  /* ==== 根 ==== */
+  .cd-progress {
     display: flex;
     align-items: center;
-    gap: var(--cd-progress-info-gap);
-    inline-size: 100%;
   }
 
-  .cd-progress__track {
-    position: relative;
-    flex: 1 1 auto;
-    overflow: hidden;
-    block-size: var(--cd-progress-height-default);
-    border-radius: calc(var(--cd-progress-height-default) / 2);
-    background: var(--cd-progress-track-color);
-  }
-  .cd-progress--small .cd-progress__track {
-    block-size: var(--cd-progress-height-small);
-    border-radius: calc(var(--cd-progress-height-small) / 2);
-  }
-  .cd-progress--large .cd-progress__track {
-    block-size: var(--cd-progress-height-large);
-    border-radius: calc(var(--cd-progress-height-large) / 2);
+  .cd-progress-track {
+    background-color: var(--cd-color-progress-default-bg);
+    border-radius: var(--cd-radius-progress-track);
   }
 
-  .cd-progress__fill {
-    block-size: 100%;
-    border-radius: inherit;
-    background: var(--cd-progress-stroke-normal);
-    transition: inline-size var(--cd-progress-transition);
+  /* ==== 水平 line ==== */
+  .cd-progress-horizontal {
+    height: var(--cd-height-progress-horizontal);
+    margin-top: var(--cd-spacing-progress-horizontal-marginy);
+    margin-bottom: var(--cd-spacing-progress-horizontal-marginy);
   }
-  .cd-progress--success .cd-progress__fill {
-    background: var(--cd-progress-stroke-success);
+  .cd-progress-horizontal.cd-progress-large {
+    height: var(--cd-height-progress-horizontal-large);
   }
-  .cd-progress--error .cd-progress__fill {
-    background: var(--cd-progress-stroke-error);
+  .cd-progress-horizontal .cd-progress-track {
+    height: 100%;
+    width: 100%;
   }
-  .cd-progress--warning .cd-progress__fill {
-    background: var(--cd-progress-stroke-warning);
+  .cd-progress-horizontal .cd-progress-track-inner {
+    height: 100%;
+    background-color: var(--cd-color-progress-track-inner-bg);
+    border-radius: var(--cd-radius-progress-track-inner);
+    transition: width var(--cd-motion-progress-transition-duration);
+    transition-timing-function: var(--cd-motion-progress-transition-timing-function);
   }
-
-  .cd-progress__fill--indeterminate {
-    inline-size: 40% !important;
-    border-radius: inherit;
-    transition: none;
-    animation: cd-progress-indeterminate 1.4s ease-in-out infinite;
-  }
-
-  .cd-progress__info {
-    flex: 0 0 auto;
-    min-inline-size: 3em;
-    color: var(--cd-progress-info-color);
-    font-size: var(--cd-progress-info-font-size);
-    text-align: end;
-    white-space: nowrap;
-  }
-  .cd-progress--success .cd-progress__info {
-    color: var(--cd-progress-info-success-color);
+  .cd-progress-horizontal .cd-progress-line-text {
+    min-width: var(--cd-width-progress-line-text);
+    font-weight: var(--cd-font-progress-line-text-fontweight);
+    margin-left: var(--cd-spacing-progress-line-text-marginleft);
+    color: var(--cd-color-progress-line-text-text);
   }
 
-  /* ---- circle / dashboard 形态 ---- */
-  .cd-progress--circle {
-    position: relative;
+  /* ==== 垂直 line ==== */
+  .cd-progress-vertical {
+    width: var(--cd-width-progress-vertical);
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    height: 100%;
+    margin-left: var(--cd-spacing-progress-vertical-marginx);
+    margin-right: var(--cd-spacing-progress-vertical-marginx);
+    flex-direction: column;
+  }
+  .cd-progress-vertical.cd-progress-large {
+    width: var(--cd-width-progress-vertical-large);
+  }
+  .cd-progress-vertical .cd-progress-track {
+    height: 100%;
+    width: 100%;
+  }
+  .cd-progress-vertical .cd-progress-track-inner {
+    background-color: var(--cd-color-progress-track-inner-bg);
+    border-radius: var(--cd-radius-progress-track-inner);
+    width: 100%;
+    transition: height var(--cd-motion-progress-transition-duration);
+    transition-timing-function: var(--cd-motion-progress-transition-timing-function);
+  }
+  .cd-progress-vertical .cd-progress-line-text {
+    font-weight: var(--cd-font-progress-line-text-fontweight);
+    margin-top: var(--cd-spacing-progress-vertical-line-text-margintop);
   }
 
-  .cd-progress__svg {
+  /* ==== 环形 circle ==== */
+  .cd-progress-circle {
+    position: relative;
+    display: inline-block;
+  }
+  .cd-progress-circle-ring {
     display: block;
   }
-
-  .cd-progress__circle-fill {
-    stroke: var(--cd-progress-stroke-normal);
-    transition: stroke-dasharray var(--cd-progress-transition);
+  .cd-progress-circle-ring-track {
+    stroke: var(--cd-color-progress-default-bg);
   }
-  .cd-progress--success .cd-progress__circle-fill {
-    stroke: var(--cd-progress-stroke-success);
+  .cd-progress-circle-ring-inner {
+    transition: stroke-dashoffset var(--cd-motion-progress-transition-duration);
+    transition-timing-function: var(--cd-motion-progress-transition-timing-function);
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    stroke: var(--cd-color-progress-track-inner-bg);
   }
-  .cd-progress--error .cd-progress__circle-fill {
-    stroke: var(--cd-progress-stroke-error);
-  }
-  .cd-progress--warning .cd-progress__circle-fill {
-    stroke: var(--cd-progress-stroke-warning);
-  }
-
-  .cd-progress__circle-info {
+  .cd-progress-circle-text {
     position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--cd-progress-info-color-circle);
-    font-size: var(--cd-progress-info-font-size-circle);
-    line-height: 1;
-  }
-  .cd-progress--success .cd-progress__circle-info {
-    color: var(--cd-progress-info-success-color);
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    user-select: none;
+    color: var(--cd-color-progress-circle-text);
   }
 
-  .cd-progress__check {
-    inline-size: 40%;
-    block-size: 40%;
-  }
-
-  /* indeterminate circle：整体旋转 + 固定弧（fillDash 由 percent 给一段弧即可） */
-  .cd-progress--indeterminate .cd-progress__svg {
-    animation: cd-progress-spin 1.4s linear infinite;
-  }
-  .cd-progress--indeterminate .cd-progress__circle-fill {
-    transition: none;
-  }
-
-  @keyframes cd-progress-indeterminate {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(250%);
-    }
-  }
-  @keyframes cd-progress-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* motion=false 与 reduced-motion：禁用过渡与循环动画 */
-  .cd-progress--no-motion .cd-progress__fill,
-  .cd-progress--no-motion .cd-progress__circle-fill {
-    transition: none;
-  }
-  .cd-progress--no-motion .cd-progress__fill--indeterminate,
-  .cd-progress--no-motion .cd-progress__svg {
-    animation: none;
-  }
-
+  /* reduced-motion：禁用过渡（数字滚动在脚本中同样跳过） */
   @media (prefers-reduced-motion: reduce) {
-    .cd-progress__fill,
-    .cd-progress__circle-fill {
+    .cd-progress-horizontal .cd-progress-track-inner,
+    .cd-progress-vertical .cd-progress-track-inner,
+    .cd-progress-circle-ring-inner {
       transition: none;
-    }
-    .cd-progress__fill--indeterminate,
-    .cd-progress--indeterminate .cd-progress__svg {
-      animation: none;
     }
   }
 </style>
