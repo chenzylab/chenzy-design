@@ -98,14 +98,6 @@ export const en_US: Locale = {
   },
   Toast: {
     close: 'Close',
-    loading: 'Loading',
-    typeLabelInfo: 'Info',
-    typeLabelSuccess: 'Success',
-    typeLabelWarning: 'Warning',
-    typeLabelError: 'Error',
-    promiseLoading: 'Loading…',
-    promiseSuccess: 'Success',
-    promiseError: 'Error',
   },
   Notification: {
     closeText: 'Close',

@@ -135,18 +135,8 @@ export interface Locale {
     cancel: string;
   };
   Toast: {
+    /** 关闭按钮可访问名 */
     close: string;
-    loading: string;
-    typeLabelInfo: string;
-    typeLabelSuccess: string;
-    typeLabelWarning: string;
-    typeLabelError: string;
-    /** Toast.promise 默认文案：pending */
-    promiseLoading: string;
-    /** Toast.promise 默认文案：resolve */
-    promiseSuccess: string;
-    /** Toast.promise 默认文案：reject */
-    promiseError: string;
   };
   Notification: {
     closeText: string;

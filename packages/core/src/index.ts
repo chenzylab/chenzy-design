@@ -217,12 +217,12 @@ export {
 export {
   createToastStore,
   type ToastStore,
+  type ToastStoreOptions,
   type ToastItem,
   type ToastOptions,
   type ToastType,
-  type ToastPosition,
   type ToastTheme,
-  type ToastCloseReason,
+  type ToastDirection,
 } from './toast.js';
 export {
   createNotificationStore,
