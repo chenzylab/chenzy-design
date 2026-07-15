@@ -53,7 +53,8 @@ const ignore = [
 // 取该组件的主渲染组件（含子组件时取代表/全部，与 spec 预算口径一致）。
 const components = [
   // basic
-  ['button', '{ Button }', '4 KB'],
+  // 破坏性对齐 Semi 重建三层架构（BaseButton 纯容器 + Button 派发器 + IconButton 组装）后实测 4.44 KB，预算按 +15% buffer 校准。
+  ['button', '{ Button }', '5.1 KB'],
   ['iconbutton', '{ IconButton }', '0.6 KB'],
   // 徽章几何定位 + Group 胶囊工具条（bg/shadow/item 横排）后实测 2.94 KB，预算按 +15% buffer 校准。
   ['float-button', '{ FloatButton, FloatButtonGroup }', '3.4 KB'],
