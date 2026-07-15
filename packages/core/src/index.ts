@@ -28,12 +28,6 @@ export {
   __resetInertBackground,
 } from './inert-background.js';
 export {
-  createSider,
-  type SiderApi,
-  type SiderOptions,
-  type SiderTrigger,
-} from './sider.js';
-export {
   createForm,
   type FormApi,
   type FormOptions,

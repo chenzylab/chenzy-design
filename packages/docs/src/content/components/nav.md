@@ -25,5 +25,5 @@ Nav 不负责路由跳转本身：叶子项通过 `link` 产出原生 `<a href>`
 
 - 容器渲染 `<nav>` landmark；含 `link` 的叶子渲染为原生 `<a href>`，沿用浏览器链接与 `Tab` 键序。
 - 选中项 `aria-current="page"`；多选项使用 `aria-checked`。
-- 折叠按钮：原生 `<button>` + `aria-expanded` + `aria-label`（文案来自 i18n `Sider.expand`/`Sider.collapse`）。
+- 折叠按钮：原生 `<button>` + `aria-expanded` + `aria-label`（文案来自 i18n `Navigation.expandText`/`Navigation.collapseText`）。
 - 键盘：`Tab`/`Shift+Tab` 在可聚焦项间移动，`Enter` 激活；子导航触发器 `Enter`/`Space`/`→` 展开、`←` 收起。

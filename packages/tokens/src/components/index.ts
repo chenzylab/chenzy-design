@@ -5,7 +5,6 @@ import { dividerTokens } from './divider.js';
 import { spaceTokens } from './space.js';
 import { typographyTokens } from './typography.js';
 import { gridTokens } from './grid.js';
-import { layoutTokens } from './layout.js';
 import { inputTokens } from './input.js';
 import { inputNumberTokens } from './input-number.js';
 import { pinCodeTokens } from './pincode.js';
@@ -82,7 +81,6 @@ export const componentTokens = {
   ...spaceTokens,
   ...typographyTokens,
   ...gridTokens,
-  ...layoutTokens,
   ...inputTokens,
   ...inputNumberTokens,
   ...pinCodeTokens,

@@ -23,18 +23,19 @@
 {/snippet}
 
 <Layout style="border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
-  <Layout.Header style="background: var(--cd-color-bg-1);">
-    <Nav mode="horizontal" header={{ logo }} footerSlot={navFooter} style="width: 100%;" />
-  </Layout.Header>
+  <Layout.Sider style="background: var(--cd-color-bg-1);">
+    <Nav
+      style="max-width: 220px; height: 100%;"
+      defaultSelectedKeys={['Home']}
+      items={sideItems}
+      header={{ logo, text: 'chenzy Design' }}
+      footer={{ collapseButton: true }}
+    />
+  </Layout.Sider>
   <Layout>
-    <Layout.Sider style="background: var(--cd-color-bg-1);">
-      <Nav
-        style="max-width: 220px; height: 100%;"
-        defaultSelectedKeys={['Home']}
-        items={sideItems}
-        footer={{ collapseButton: true }}
-      />
-    </Layout.Sider>
+    <Layout.Header style="background: var(--cd-color-bg-1);">
+      <Nav mode="horizontal" footerSlot={navFooter} style="width: 100%;" />
+    </Layout.Header>
     <Layout.Content style="padding: 24px; background: var(--cd-color-bg-0);">
       <Breadcrumb
         style="margin-bottom: 24px;"
@@ -51,14 +52,14 @@
         </Skeleton>
       </div>
     </Layout.Content>
+    <Layout.Footer
+      style="display: flex; justify-content: space-between; padding: 20px; color: var(--cd-color-text-2); background: var(--cd-color-fill-0);"
+    >
+      <span>Copyright © 2024 chenzy design. All Rights Reserved.</span>
+      <span>
+        <span style="margin-right: 24px;">平台客服</span>
+        <span>反馈建议</span>
+      </span>
+    </Layout.Footer>
   </Layout>
-  <Layout.Footer
-    style="display: flex; justify-content: space-between; padding: 20px; color: var(--cd-color-text-2); background: var(--cd-color-fill-0);"
-  >
-    <span>Copyright © 2024 chenzy design. All Rights Reserved.</span>
-    <span>
-      <span style="margin-right: 24px;">平台客服</span>
-      <span>反馈建议</span>
-    </span>
-  </Layout.Footer>
 </Layout>

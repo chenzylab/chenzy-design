@@ -1,24 +1,27 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
  * Aggregated metadata for the Layout family (root + Header/Sider/Content/Footer).
+ * 对齐 Semi：纯布局容器，不附带背景/尺寸样式，无组件 token。
  */
 export const meta = {
   name: 'Layout',
   category: 'basic',
-  description: '页面级布局骨架：Layout 根容器 + Header / Sider / Content / Footer 子组件。',
+  description:
+    '页面级布局骨架：Layout 根容器 + Header / Sider / Content / Footer 子组件。纯布局容器，不附带背景/尺寸样式，按需自定义。',
   subComponents: [
     {
       name: 'Layout',
       element: 'section',
+      note: 'Layout.Header / Layout.Footer / Layout.Content 与 Layout API 相同。',
       props: [
+        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         {
           name: 'hasSider',
           type: 'boolean',
           default: 'undefined',
-          desc: '显式声明含侧边栏→row 方向；不传则由 Sider 挂载时自动检测',
+          desc: '表示子元素里有 Sider，一般不用指定；可用于 SSR 避免样式闪动',
         },
-        { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
-        { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
         { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
       ],
@@ -27,8 +30,6 @@ export const meta = {
       name: 'Layout.Header',
       element: 'header',
       props: [
-        { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky top:0' },
-        { name: 'height', type: 'string|number', default: 'undefined', desc: 'number→px，覆盖 token 高度' },
         { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
@@ -39,8 +40,6 @@ export const meta = {
       name: 'Layout.Footer',
       element: 'footer',
       props: [
-        { name: 'sticky', type: 'boolean', default: 'false', desc: 'position:sticky bottom:0' },
-        { name: 'height', type: 'string|number', default: 'undefined' },
         { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
@@ -51,86 +50,67 @@ export const meta = {
       name: 'Layout.Content',
       element: 'main',
       props: [
-        {
-          name: 'padding',
-          type: 'string|number|boolean',
-          default: 'false',
-          desc: 'true→token padding；number→px；string→原样；false→0',
-        },
         { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
-        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
+        { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role（覆盖默认 main 语义）' },
       ],
     },
     {
       name: 'Layout.Sider',
       element: 'aside',
       props: [
-        { name: 'collapsed', type: 'boolean', default: 'undefined', desc: '受控收起状态' },
-        { name: 'defaultCollapsed', type: 'boolean', default: 'false' },
-        { name: 'collapsible', type: 'boolean', default: 'false', desc: 'true→渲染默认触发器' },
-        { name: 'width', type: 'string|number', default: '200', desc: 'number→px' },
-        { name: 'collapsedWidth', type: 'string|number', default: '60', desc: '0 时完全收起，露出零宽浮动触发块' },
-        { name: 'breakpoint', type: "'xs'|'sm'|'md'|'lg'|'xl'|'xxl'", default: 'undefined', desc: '低于断点自动收起' },
-        { name: 'reverseArrow', type: 'boolean', default: 'false', desc: '反转触发器箭头方向' },
-        { name: 'placement', type: "'left'|'right'", default: "'left'" },
+        {
+          name: 'breakpoint',
+          type: "('xs'|'sm'|'md'|'lg'|'xl'|'xxl')[]",
+          default: 'undefined',
+          desc: '触发响应式布局的断点数组',
+        },
+        {
+          name: 'onBreakpoint',
+          type: '(screen, matched: boolean) => void',
+          default: 'undefined',
+          desc: '触发响应式布局断点时的回调',
+        },
         { name: 'class', type: 'string', default: "''", desc: '根元素自定义类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
         { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签，描述该 Sider 作用' },
         { name: 'role', type: 'string', default: 'undefined', desc: '可访问性 role' },
-        { name: 'onCollapse', type: "(collapsed, trigger:'click'|'breakpoint')=>void", default: 'undefined' },
-        { name: 'onBreakpoint', type: '(matched: boolean, breakpoint) => void', default: 'undefined', desc: '命中响应式断点时回调' },
-        { name: 'trigger', type: 'Snippet<[{collapsed,toggle}]>', default: 'undefined', desc: '自定义触发器' },
-        { name: 'zeroWidthTriggerStyle', type: 'string', default: 'undefined', desc: 'collapsedWidth=0 时零宽浮动触发块的自定义样式（叠加在内置定位后）' },
       ],
     },
   ],
   events: [
-    { name: 'onCollapse', desc: 'Sider 收起状态变化，第二参数区分 click / breakpoint 触发来源' },
-    { name: 'onBreakpoint', desc: 'Sider 命中响应式断点时触发，(matched, breakpoint)' },
+    {
+      name: 'onBreakpoint',
+      desc: 'Sider 命中 / 解除响应式断点时触发，(screen, matched)',
+    },
   ],
-  slots: [
-    { name: 'children', desc: '各子组件内容' },
-    { name: 'trigger', desc: 'Sider 自定义触发器，接收 {collapsed, toggle}' },
-  ],
+  slots: [{ name: 'children', desc: '各子组件内容' }],
   a11y: {
     hasRole: false,
     focusable: false,
-    sider: 'Sider 触发器为原生 button，含 aria-expanded / aria-controls / aria-label；collapsedWidth=0 时内容 aria-hidden，并露出零宽浮动触发块保证可展开',
-    note: 'reduced-motion 下移除 Sider 过渡',
+    note: 'landmark 语义：Header→header，Content→main，Footer→footer，Sider→aside；Sider 可传 aria-label 描述作用。',
   },
-  tokens: [
-    '--cd-layout-bg',
-    '--cd-layout-header-bg',
-    '--cd-layout-header-height',
-    '--cd-layout-header-z',
-    '--cd-layout-footer-bg',
-    '--cd-layout-footer-color',
-    '--cd-layout-content-bg',
-    '--cd-layout-content-padding',
-    '--cd-layout-sider-bg',
-    '--cd-layout-sider-width',
-    '--cd-layout-sider-collapsed-width',
-    '--cd-layout-sider-border',
-    '--cd-layout-sider-trigger-bg',
-    '--cd-layout-sider-trigger-color',
-    '--cd-layout-sider-trigger-hover-bg',
-    '--cd-layout-sider-zero-trigger-width',
-    '--cd-layout-sider-zero-trigger-height',
-    '--cd-layout-motion-duration',
-    '--cd-layout-motion-ease',
-  ],
+  // 对齐 Semi：Layout 无组件 token（无 variables.scss），不附带背景/尺寸样式。
+  tokens: [],
+  responsiveMap: {
+    xs: '(max-width: 575px)',
+    sm: '(min-width: 576px)',
+    md: '(min-width: 768px)',
+    lg: '(min-width: 992px)',
+    xl: '(min-width: 1200px)',
+    xxl: '(min-width: 1600px)',
+  },
   aiHints: [
+    'Layout 只负责布局，不附带背景/文本/宽高样式，配色与尺寸靠 style / class 自定义。',
     'SSR/首屏含侧边栏时显式传 hasSider，避免 column→row 闪动。',
-    'Sider 受控用 collapsed + onCollapse；非受控用 defaultCollapsed。',
-    '需要响应式自动收起时传 breakpoint。',
+    '需要响应式回调时给 Sider 传 breakpoint + onBreakpoint。',
     'Layout.Header / Layout.Sider 等命名空间用法与具名 LayoutHeader 等价。',
   ],
   examples: [
     {
       title: '经典后台布局',
-      code: '<Layout hasSider><Layout.Sider collapsible /><Layout><Layout.Header /><Layout.Content padding>内容</Layout.Content><Layout.Footer>底部</Layout.Footer></Layout></Layout>',
+      code: '<Layout><Layout.Sider>侧栏</Layout.Sider><Layout><Layout.Header>页头</Layout.Header><Layout.Content>内容</Layout.Content><Layout.Footer>页脚</Layout.Footer></Layout></Layout>',
     },
   ],
 } as const;
