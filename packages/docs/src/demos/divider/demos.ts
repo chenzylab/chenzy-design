@@ -36,17 +36,12 @@ export const demos: DemoEntry[] = [
   ),
   entry(
     '03-with-text.svelte',
-    '带内容',
-    '水平分割线可嵌入文字/图标，align 控制内容居左/居中/居右。',
+    '带文字',
+    '水平分割线可嵌入文字，align 控制内容居左/居中/居右；左对齐左线段短、右对齐右线段短、居中两侧等宽。',
   ),
   entry(
-    '04-plain.svelte',
-    '文字字重',
-    'plain 默认 true 为常规字重；plain=false 时文字加粗，用于更强的区块标题。',
-  ),
-  entry(
-    '05-thickness.svelte',
-    '线宽',
-    'thickness 自定义线宽（px），默认 1px，用于强调更粗的结构分隔。',
+    '04-with-icon.svelte',
+    '带图标',
+    '水平分割线内容也可以是图标，用 margin 控制两侧留白。',
   ),
 ];

@@ -39,7 +39,7 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
   - 计算 BEM class 与 CSS 变量映射。
   - 当 `layout="horizontal"` 且存在 `children`/`slot` 时渲染文字段，按 `align` 控制两侧 flex 比例。
   - 透传 `class`/`style`/`...$$restProps` 至根元素，便于消费者覆盖间距。
-- **渲染选型**：默认根元素为 `<div role="separator">`；当作为列表项分隔时建议消费者用 `<li role="separator">`（通过文档说明，不在组件内分支）。无运行时副作用，SSR 安全。
+- **渲染选型**：根元素永远为纯 `<div>`（严格对齐 Semi，vertical 也是 div，不是 span，且不带 role/aria）。无运行时副作用，SSR 安全。
 
 ## 4. API
 
@@ -47,16 +47,19 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 
 | 名称 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `layout` | `'horizontal' \| 'vertical'` | `'horizontal'` | 分割线方向。垂直仅用于行内场景，不支持带文字。 |
-| `dashed` | `boolean` | `false` | 是否为虚线样式。 |
-| `align` | `'left' \| 'center' \| 'right'` | `'center'` | 文字/插槽内容的对齐位置，仅 `horizontal` 且有内容时生效。 |
-| `margin` | `string \| number` | `undefined` | 自定义分隔线主轴外边距。number 视为 px；string 原样作为 CSS 长度。覆盖 `--cd-divider-spacing`。 |
-| `thickness` | `number` | `1` | 线宽（px），映射到 `--cd-divider-thickness`。 |
-| `plain` | `boolean` | `true` | 文字是否为「普通」字重（非加粗）。`false` 时文字加粗，用于标题型分隔。 |
-| `class` | `string` | `''` | 透传到根元素的附加类名。 |
-| `style` | `string` | `''` | 透传到根元素的内联样式。 |
+严格对齐 Semi Design：props 为 `align`、`margin`、`children`、`class`、`dashed`、`layout`、`style`，其余属性经 `...rest` 透传到根 `<div>`。
 
-> 一致性说明：Divider 无受控输入、无浮层，故不涉及 `value/on:change`、`open/on:openChange`；不提供 `size`（用 `thickness`/`margin` 表达密度）；无校验态 `status`（纯展示，无输入语义）。
+| 名称 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `align` | `'left' \| 'center' \| 'right'` | `'center'` | 内容的对齐位置，仅 `horizontal` 且有 `children` 时生效。左对齐左线段短、右对齐右线段短、居中两侧等宽。 |
+| `margin` | `string \| number` | `undefined` | 自定义分隔线外边距。number 视为 px；string 原样作为 CSS 长度。`vertical` 作用于 `margin-left/right`，`horizontal` 作用于 `margin-top/bottom`。与 `style` 合并时用户 `style` 优先。 |
+| `children` | `Snippet` | `undefined` | 水平分割线嵌入的文字/图标；`vertical` 时忽略。 |
+| `class` | `string` | `''` | 透传到根元素的附加类名。 |
+| `dashed` | `boolean` | `false` | 是否为虚线样式。 |
+| `layout` | `'horizontal' \| 'vertical'` | `'horizontal'` | 分割线方向。垂直仅用于行内场景，不带内容。 |
+| `style` | `string` | `undefined` | 透传到根元素的内联样式，优先级高于组件默认 margin。 |
+
+> 一致性说明：严格对齐 Semi，不提供 `thickness`/`plain`（Semi 无）。Divider 无受控输入、无浮层，故不涉及 `value/on:change`、`open/on:openChange`；不提供 `size`；无校验态 `status`（纯展示，无输入语义）。
 
 ### Events
 
@@ -72,27 +75,30 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 
 ## 5. 主题 / Token 表
 
-仅消费 Alias / Component 级 Token，禁止写死值。
+全量对齐 Semi（`semi-foundation/divider/variables.scss`，19 个 token），组件直接消费，无中间层简写 token。
 
-| Component Token | 回退（Alias / Global） | 用途 |
+| Component Token | 值（回退到 Alias / Global） | 用途 |
 |---|---|---|
-| `--cd-divider-color` | `--cd-color-border` | 线条颜色（实线/虚线通用）。 |
-| `--cd-divider-thickness` | `1px`（Global 原子，经 `thickness` prop 覆盖） | 线宽（水平=高度，垂直=宽度）。 |
-| `--cd-divider-text-color` | `--cd-color-text-2` | 带文字时文字颜色。 |
-| `--cd-divider-text-font-size` | `--cd-font-size-2`（Alias） | 带文字时字号。 |
-| `--cd-divider-text-padding` | `--cd-spacing-3`（Alias） | 文字与两侧线条的间距。 |
-| `--cd-divider-spacing` | 水平 `--cd-spacing-4`（block）/ 垂直 `--cd-spacing-2`（inline） | 分隔线主轴外边距，可被 `margin` prop 覆盖。 |
-| `--cd-divider-dash-pattern` | `4px 2px`（Global） | 虚线 dash 长度/间隙（映射 `border-style:dashed` 或 `background` repeating-gradient）。 |
+| `--cd-spacing-divider-horizontal-marginleft/right/top/bottom` | `0px`/`0px`/`1px`/`1px` | 水平模式外间距。 |
+| `--cd-spacing-divider-vertical-marginleft/right/top/bottom` | `1px`/`1px`/`0px`/`0px` | 垂直模式外间距。 |
+| `--cd-spacing-divider-inner-text-paddingleft/right/top/bottom` | `8px`/`8px`/`0px`/`0px` | 带文字时文字内边距。 |
+| `--cd-width-divider-inner-text-left-line` | `40px` | 左对齐时左线段宽度。 |
+| `--cd-width-divider-inner-text-right-line` | `40px` | 右对齐时右线段宽度。 |
+| `--cd-width-divider-border` | `1px` | 线宽（水平=底边，垂直=左边）。 |
+| `--cd-height-divider-vertical` | `20px` | 垂直分割线高度。 |
+| `--cd-color-divider-border-color` | `--cd-color-border` | 线条颜色（实线/虚线通用）。 |
+| `--cd-color-divider-text-default` | `--cd-color-text-0` | 带文字时文字颜色。 |
+| `--cd-font-divider-text-weight` | `--cd-font-weight-bold` | 带文字时文字字重。 |
 
-类名约定：
-- 根：`cd-divider`
-- 修饰：`cd-divider--horizontal` / `cd-divider--vertical` / `cd-divider--dashed` / `cd-divider--with-text` / `cd-divider--align-left|center|right` / `cd-divider--bold`（`plain=false`）
-- 元素：`cd-divider__text`（文字容器）
+类名约定（对齐 Semi，单短横线连字符前缀）：
+- 根：`cd-divider`（永远是 `<div>`）
+- 修饰：`cd-divider-horizontal` / `cd-divider-vertical` / `cd-divider-dashed` / `cd-divider-with-text` / `cd-divider-with-text-left|center|right`
+- 元素：`cd-divider_inner-text`（文字容器）
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
-- **role**：根元素 `role="separator"`。垂直分隔线额外设置 `aria-orientation="vertical"`（水平为默认 `horizontal`，可省略但建议显式）。
-- **带文字时的语义**：当 `separator` 含可见文字，文字作为分隔的可访问名称随元素读出；为确保读屏正确朗读，文字容器不额外加 `aria-hidden`。若文字纯装饰（如仅图标），消费者应自行提供 `aria-label`。
+- **role**：严格对齐 Semi，根元素为纯 `<div>`，不设 `role`/`aria-orientation`（Semi 原生实现即如此，交由消费者按场景决定语义）。若需 `role="separator"` 等语义，消费者可经 `...rest` 透传。
+- **带文字时的语义**：文字作为可见内容随元素读出；若文字纯装饰（如仅图标），消费者应自行提供 `aria-label`。
 - **键盘交互**：无。Divider 不可聚焦（无 `tabindex`），不参与 Tab 序列，符合非交互分隔元素规范。
 - **焦点管理**：不涉及（无可聚焦子元素）。若插槽内放入交互元素（不推荐），其语义由该元素自身负责。
 - **对比度**：线条颜色 `--cd-color-border` 属于非文本图形元素，需对相邻背景满足 **≥ 3:1**（WCAG 1.4.11 Non-text Contrast）。文字 `--cd-color-text-2` 对背景需满足 **≥ 4.5:1**（正文）。Token 体系须保证两者达标。
@@ -140,7 +146,7 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 - `tags: ['divider', 'separator', '分割线', '分隔线', 'hr', 'vertical', 'horizontal']`，便于 AI 检索。
 - `props` schema（类型、默认值、枚举值、是否必填）与本 SPEC 第 4 节同步。
 - `slots: ['default']`、`events: []`。
-- `a11y: { role: 'separator', focusable: false, ariaOrientation: 'horizontal|vertical' }`。
+- 无 a11y role/aria（对齐 Semi 纯 div）；如需语义由消费者透传。
 - `examples`：纯水平线、带文字（左/中/右）、虚线、垂直分隔（按钮组之间）、`OR` 表单分隔——每个含最小代码片段供 AI 复制。
 - `antiPatterns`：垂直方向传 slot 文字、用 Divider 替代列表语义、写死颜色绕过 Token。
 - `tokens`：导出第 5 节 Component Token 清单供主题工具消费。
@@ -148,29 +154,26 @@ Divider 为**纯展示组件，省略 core**：无键盘交互、无焦点管理
 ## 11. 测试
 
 - **单元 / 渲染（Vitest + @testing-library/svelte）**：
-  - 默认渲染根元素含 `cd-divider cd-divider--horizontal` 且 `role="separator"`。
-  - `layout="vertical"` 渲染 `--vertical` 修饰类且 `aria-orientation="vertical"`。
-  - `dashed` 切换 `--dashed` 类。
-  - 有 slot 内容时渲染 `cd-divider__text` 与 `--with-text`；无内容时不渲染文字节点。
-  - `align` 三值分别映射 `--align-left|center|right`。
-  - `plain=false` 渲染 `--bold`。
-  - `margin`（number → px，string 原样）/`thickness` 正确写入内联 CSS 变量。
+  - 默认渲染根元素含 `cd-divider cd-divider-horizontal`，且为纯 `<div>`（无 role）。
+  - `layout="vertical"` 渲染 `cd-divider-vertical` 类。
+  - `dashed` 切换 `cd-divider-dashed` 类。
+  - 有内容时渲染 `cd-divider_inner-text` 与 `cd-divider-with-text`；无内容时不渲染文字节点。
+  - `align` 三值分别映射 `cd-divider-with-text-left|center|right`。
+  - `margin`（number → px，string 原样）正确写入内联样式；用户 `style` 优先。
   - `class`/`style`/restProps 正确透传。
-- **a11y（axe-core / vitest-axe）**：纯线、带文字、垂直三种形态均零违规；验证 `role="separator"` 与对比度断言（视觉回归辅助）。
+- **a11y（axe-core / vitest-axe）**：纯线、带文字、垂直三种形态均零违规（纯 div 无违规）。
 - **视觉回归（Playwright / Storybook snapshot）**：水平/垂直 × 实线/虚线 × 三种 align × 明暗主题 × LTR/RTL 的快照矩阵。
 - **SSR**：服务端渲染输出 HTML 与客户端 hydration 一致，无 mismatch 警告。
 
 ## 12. 验收标准 checklist
 
-- [ ] 支持 `horizontal`（默认）与 `vertical` 两种方向，方向正确反映为 class 与 `aria-orientation`。
-- [ ] 水平方向支持 `default` slot 文字，`align` 左/中/右生效；垂直方向忽略文字。
-- [ ] 支持 `dashed` 虚线与 `plain` 字重切换。
-- [ ] `margin` / `thickness` 通过 CSS 变量覆盖，且仅消费 Alias/Component Token，无任何写死颜色/尺寸。
-- [ ] 根元素 `role="separator"`，不可聚焦、不入 Tab 序。
+- [ ] 支持 `horizontal`（默认）与 `vertical` 两种方向，方向正确反映为 class。
+- [ ] 水平方向支持 `children` 文字/图标，`align` 左/中/右生效（三档线段宽度不同）；垂直方向忽略内容。
+- [ ] 支持 `dashed` 虚线。
+- [ ] `margin` 通过内联样式覆盖（用户 `style` 优先），且仅消费对齐 Semi 的 19 个 Component Token，无任何写死颜色/尺寸。
+- [ ] 根元素永远是纯 `<div>`（对齐 Semi），无 role/aria；其余属性经 `...rest` 透传。
 - [ ] 线条对比度 ≥ 3:1、文字对比度 ≥ 4.5:1，暗色模式经 Alias 自动适配。
-- [ ] 使用逻辑属性，RTL 下 align 与间距自动镜像。
 - [ ] 组件零硬编码可见文案；提供 `Divider.more` / `Divider.or` i18n key。
-- [ ] 纯展示实现，不引入 `@chenzy-design/core`；gzip ≤ 1.55 KB。
+- [ ] 纯展示实现，不引入 `@chenzy-design/core`。
 - [ ] 提供 `component.meta.ts`，props/slots/events/tokens 与 SPEC 同步。
-- [ ] 单元、a11y（axe 零违规）、视觉回归（明暗 + RTL 矩阵）、SSR hydration 测试全部通过。
-- [ ] 类名遵循 `cd-divider` BEM-like 约定，CSS 变量遵循 `--cd-divider-*` 前缀。
+- [ ] 类名遵循 `cd-divider` 单短横线连字符约定（对齐 Semi），直接消费对齐 Semi 的 19 个 token。
