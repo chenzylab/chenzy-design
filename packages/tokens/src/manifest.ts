@@ -139,6 +139,8 @@ const GLOBAL_SEGMENTS = new Set([
 const CATEGORY_SEGMENTS = new Set([
   'color', 'spacing', 'radius', 'font', 'height', 'width', 'animation',
   'border', 'line', 'shadow', 'motion', 'transform', 'transition', 'z', 'breakpoint',
+  // opacity 作 category（--cd-opacity-spin-children 对齐 Semi $opacity-spin_children）
+  'opacity',
 ]);
 
 // category 之后还可能跟的修饰段（--cd-animation-duration-button-* 的 duration、

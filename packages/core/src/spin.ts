@@ -1,14 +1,14 @@
 /**
  * createSpinController — framework-agnostic loading-state debouncer for Spin.
- * Handles `delay` (wait before showing, to avoid flicker on fast requests) and
- * `minShowTime` (keep showing at least this long once shown). Uses timers only;
- * SSR-safe because the consumer starts it in a client effect. No DOM, no
- * framework deps. See specs/components/feedback/Spin.spec.md §3.
+ * Mirrors Semi's delay semantics (semi-foundation/spin/foundation.ts): when a
+ * `delay` is set, showing is postponed by `delay` ms; turning spinning off hides
+ * immediately (and cancels any pending delayed show). No minShowTime — Semi has
+ * none. Uses timers only; SSR-safe because the consumer starts it in a client
+ * effect. No DOM, no framework deps.
  */
 
 export interface SpinOptions {
   delay?: number;
-  minShowTime?: number;
   /** initial spinning request */
   spinning?: boolean;
 }
@@ -27,13 +27,13 @@ export interface SpinController {
 type TimerId = ReturnType<typeof setTimeout>;
 
 export function createSpinController(options: SpinOptions = {}): SpinController {
-  const { delay = 0, minShowTime = 0 } = options;
+  const { delay = 0 } = options;
 
   let requested = options.spinning ?? false;
-  let effective = false;
-  let shownAt = 0;
+  // Semi seeds loading=true, then getDerivedStateFromProps resolves it against
+  // spinning/delay. With no delay, effective tracks `requested` immediately.
+  let effective = delay > 0 ? false : requested;
   let delayTimer: TimerId | null = null;
-  let minTimer: TimerId | null = null;
   const listeners = new Set<(effective: boolean) => void>();
 
   function clearDelay(): void {
@@ -42,17 +42,10 @@ export function createSpinController(options: SpinOptions = {}): SpinController 
       delayTimer = null;
     }
   }
-  function clearMin(): void {
-    if (minTimer !== null) {
-      clearTimeout(minTimer);
-      minTimer = null;
-    }
-  }
 
   function setEffective(value: boolean): void {
     if (effective === value) return;
     effective = value;
-    if (value) shownAt = Date.now();
     for (const l of listeners) l(effective);
   }
 
@@ -69,24 +62,11 @@ export function createSpinController(options: SpinOptions = {}): SpinController 
   }
 
   function hide(): void {
-    clearDelay(); // cancel a pending show — never displayed, never announced
-    if (!effective) return;
-    if (minShowTime > 0) {
-      const elapsed = Date.now() - shownAt;
-      const remaining = minShowTime - elapsed;
-      if (remaining > 0) {
-        clearMin();
-        minTimer = setTimeout(() => {
-          minTimer = null;
-          if (!requested) setEffective(false);
-        }, remaining);
-        return;
-      }
-    }
+    clearDelay(); // cancel a pending show — never displayed
     setEffective(false);
   }
 
-  // apply the initial request synchronously-ish (delay still honored)
+  // apply the initial request (delay still honored)
   if (requested) show();
 
   return {
@@ -98,16 +78,11 @@ export function createSpinController(options: SpinOptions = {}): SpinController 
     setSpinning(value) {
       if (value === requested) return;
       requested = value;
-      if (value) {
-        clearMin();
-        show();
-      } else {
-        hide();
-      }
+      if (value) show();
+      else hide();
     },
     destroy() {
       clearDelay();
-      clearMin();
       listeners.clear();
     },
   };
