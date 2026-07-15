@@ -344,8 +344,11 @@ export { Spin, spinMeta } from './spin/index.js';
 export {
   Progress,
   progressMeta,
-  type ProgressStatus,
   type ProgressType,
+  type ProgressDirection,
+  type ProgressSize,
+  type StrokeLinecap,
+  type StrokeArr,
 } from './progress/index.js';
 export { Carousel, carouselMeta } from './carousel/index.js';
 export {
