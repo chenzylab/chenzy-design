@@ -111,9 +111,6 @@ export const en_US: Locale = {
     ariaLabel: 'Back to top',
     arrived: 'Returned to top',
   },
-  FloatButton: {
-    groupAriaLabel: 'Float actions',
-  },
   AudioPlayer: {
     play: 'Play',
     pause: 'Pause',

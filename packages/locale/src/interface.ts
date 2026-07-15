@@ -151,10 +151,6 @@ export interface Locale {
     ariaLabel: string;
     arrived: string;
   };
-  FloatButton: {
-    /** FloatButtonGroup 的默认可访问名（role="group" 的 aria-label） */
-    groupAriaLabel: string;
-  };
   AudioPlayer: {
     /** 播放按钮 aria-label */
     play: string;

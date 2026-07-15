@@ -1,150 +1,90 @@
 <!--
-  FloatButtonGroup — 胶囊工具条（对齐 Semi）：一个背景圆角条内横排（或竖排）多个
-  「图标 + 文字」项，事件委托回传 value。
-  a11y：role="group" + aria-label（缺省取 locale FloatButton.groupAriaLabel）；
-  每项为原生 <button>，逐个可 Tab。点击委托从事件目标向上找带 data-value 的元素读取 value。
+  FloatButtonGroup — 胶囊工具条（严格对齐 Semi）：一个背景圆角条内 inline-flex 横排多个
+  「图标 + 文字」项，事件委托直接读 e.target.dataset.value 回传（不向上查找，对齐 Semi）。
+  纯 div（非 button），item.badge 时 item 外层包裹 Badge。
 -->
 <script lang="ts">
-  import { useLocale } from '../locale-provider/index.js';
+  import Badge from '../badge/Badge.svelte';
   import type { FloatButtonGroupProps } from './types.js';
 
   let {
     items = [],
-    direction = 'horizontal',
     disabled = false,
-    ariaLabel,
     onClick,
     class: className = '',
     style,
   }: FloatButtonGroupProps = $props();
 
-  const loc = useLocale();
-
   const rootClass = $derived(
-    [
-      'cd-floatbutton-group',
-      `cd-floatbutton-group--${direction}`,
-      disabled ? 'cd-floatbutton-group--disabled' : '',
-      className,
-    ]
+    ['cd-floatButtonGroup', disabled ? 'cd-floatButtonGroup-disabled' : '', className]
       .filter(Boolean)
       .join(' '),
   );
 
-  // 事件委托：从 e.target 向上（止于容器）找最近带 data-value 的元素，读取 value 回传。
+  // 点击委托：对齐 Semi，直接读 e.target.dataset.value（不向上冒泡查找）。
   function handleClick(e: MouseEvent) {
-    if (!onClick || disabled) return;
-    let node = e.target as HTMLElement | null;
-    const root = e.currentTarget as HTMLElement;
-    while (node && node !== root) {
-      const value = node.getAttribute?.('data-value');
-      if (value != null) {
-        onClick(value, e);
-        return;
-      }
-      node = node.parentElement;
-    }
+    if (disabled) return;
+    const value = (e.target as HTMLElement).dataset?.value;
+    if (value != null) onClick?.(value, e);
   }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  class={rootClass}
-  role="group"
-  aria-label={ariaLabel ?? loc().t('FloatButton.groupAriaLabel')}
-  {style}
-  onclick={handleClick}
->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class={rootClass} {style} onclick={handleClick}>
   {#each items as item (item.value)}
-    <button
-      type="button"
-      class="cd-floatbutton-group__item"
-      data-value={item.value}
-      disabled={disabled || item.disabled || false}
-      aria-label={item.ariaLabel}
-    >
-      {#if item.icon}
-        <span class="cd-floatbutton-group__icon">{@render item.icon()}</span>
-      {/if}
-      {#if item.content}
-        <span class="cd-floatbutton-group__text">
-          {#if typeof item.content === 'string'}
-            {item.content}
-          {:else}
-            {@render item.content()}
-          {/if}
-        </span>
-      {/if}
-    </button>
+    {#if item.badge}
+      <Badge {...item.badge}>
+        <div class="cd-floatButtonGroup-item" data-value={item.value}>
+          {@render item.icon?.()}
+          {#if typeof item.content === 'string'}{item.content}{:else if item.content}{@render item.content()}{/if}
+        </div>
+      </Badge>
+    {:else}
+      <div class="cd-floatButtonGroup-item" data-value={item.value}>
+        {@render item.icon?.()}
+        {#if typeof item.content === 'string'}{item.content}{:else if item.content}{@render item.content()}{/if}
+      </div>
+    {/if}
   {/each}
 </div>
 
 <style>
-  .cd-floatbutton-group {
+  .cd-floatButtonGroup {
     position: fixed;
-    display: inline-flex;
-    gap: var(--cd-floatbutton-group-gap);
-    padding: var(--cd-floatbutton-group-padding);
     border-radius: var(--cd-floatbutton-group-radius);
+    bottom: var(--cd-floatbutton-group-bottom);
+    right: var(--cd-floatbutton-group-right);
+    z-index: var(--cd-floatbutton-z);
     background: var(--cd-floatbutton-group-bg);
     box-shadow: var(--cd-floatbutton-group-shadow);
-    z-index: var(--cd-floatbutton-z);
-  }
-  .cd-floatbutton-group--horizontal {
-    flex-direction: row;
-  }
-  .cd-floatbutton-group--vertical {
-    flex-direction: column;
+    display: inline-flex;
+    padding: var(--cd-floatbutton-group-padding);
+    gap: var(--cd-floatbutton-group-gap);
   }
 
-  .cd-floatbutton-group__item {
-    display: flex;
-    align-items: center;
-    gap: var(--cd-floatbutton-group-item-gap);
-    padding: var(--cd-floatbutton-group-item-padding-y) var(--cd-floatbutton-group-item-padding-x);
-    border: none;
-    border-radius: var(--cd-floatbutton-group-item-radius);
-    background: transparent;
-    color: var(--cd-floatbutton-group-item-color);
-    font: inherit;
+  .cd-floatButtonGroup-item {
     cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--cd-floatbutton-motion-duration) ease;
+    display: flex;
+    padding: var(--cd-floatbutton-group-item-padding-y) var(--cd-floatbutton-group-item-padding-x);
+    align-items: center;
+    column-gap: var(--cd-floatbutton-group-item-gap);
+    border-radius: var(--cd-floatbutton-group-item-radius);
+    color: var(--cd-floatbutton-group-item-color);
+    font-size: var(--cd-floatbutton-group-item-font-size);
+    font-style: normal;
+    font-weight: var(--cd-floatbutton-group-item-font-weight);
+    line-height: var(--cd-floatbutton-group-item-line-height);
   }
-  .cd-floatbutton-group__item:hover {
+  .cd-floatButtonGroup-item:hover {
     background: var(--cd-floatbutton-group-item-bg-hover);
   }
-  .cd-floatbutton-group__item:active {
+  .cd-floatButtonGroup-item:active {
     background: var(--cd-floatbutton-group-item-bg-active);
   }
-  .cd-floatbutton-group__item:focus-visible {
-    outline: 2px solid var(--cd-floatbutton-focus-ring);
-    outline-offset: -2px;
-  }
-  .cd-floatbutton-group__item:disabled {
-    opacity: var(--cd-floatbutton-disabled-opacity);
-    cursor: not-allowed;
-  }
 
-  .cd-floatbutton-group__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .cd-floatbutton-group__icon :global(svg) {
-    inline-size: 1.25em;
-    block-size: 1.25em;
-  }
-
-  .cd-floatbutton-group--disabled {
-    opacity: var(--cd-floatbutton-disabled-opacity);
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cd-floatbutton-group__item {
-      transition: none;
-    }
+  .cd-floatButtonGroup-item :global(svg) {
+    width: 1.25em;
+    height: 1.25em;
   }
 </style>

@@ -133,6 +133,11 @@ const PAIRS: Pair[] = [
   { theme: 'dark', label: 'solid success fill text', fg: 'white', bg: 'color-success', exempt: true },
   { theme: 'dark', label: 'solid warning fill text', fg: 'white', bg: 'color-warning', exempt: true },
   { theme: 'dark', label: 'solid danger fill text', fg: 'white', bg: 'color-danger', exempt: true },
+  // NOTE: FloatButton `colorful` renders white text on the `color-ai-general`
+  // linear-gradient (Semi parity). A gradient has no single background color,
+  // so its contrast cannot be computed by parse() — it is intentionally NOT
+  // added as a PAIR here (parse() would throw on the gradient string). Semi
+  // parity exempt by design, same tradeoff as the solid status fills above.
 ];
 
 let bodyFailures = 0;

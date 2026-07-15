@@ -111,9 +111,6 @@ export const zh_CN: Locale = {
     ariaLabel: '回到顶部',
     arrived: '已回到顶部',
   },
-  FloatButton: {
-    groupAriaLabel: '悬浮操作组',
-  },
   AudioPlayer: {
     play: '播放',
     pause: '暂停',
