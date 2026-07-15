@@ -209,11 +209,9 @@ export const zh_CN: Locale = {
   Timeline: {
     pending: '加载中…',
   },
-  Sider: {
-    expand: '展开侧边栏',
-    collapse: '收起侧边栏',
-    expanded: '侧边栏已展开',
-    collapsed: '侧边栏已收起',
+  Navigation: {
+    collapseText: '收起侧边栏',
+    expandText: '展开侧边栏',
   },
   Select: {
     placeholder: '请选择',

@@ -6,7 +6,7 @@
 export const meta = {
   name: 'Grid',
   category: 'basic',
-  description: '24 栅格布局：Row 容器 + Col 列，flex 实现，gutter 经 context 下发到 Col；支持 xs/sm/md/lg/xl/xxl 响应式断点（mobile-first 降级解析）。',
+  description: '24 栅格布局：Row 容器 + Col 列，flex 实现，gutter 经 context 下发到 Col。对齐 Semi：Col 响应式为纯 CSS 类驱动（cd-col-{bp}-{span} 等，靠 @media 断点层叠）；Row 用 screens 状态机（registerMediaQuery 订阅 6 档 media query）做 gutter 响应式，responsiveArray 从大到小降级取值。',
   exports: ['Row', 'Col'],
   // flat props (Row + Col merged); each item tagged with its owner.
   props: [
@@ -15,7 +15,7 @@ export const meta = {
       name: 'gutter',
       type: 'number|[number,number]|Partial<Record<Breakpoint,number|[number,number]>>',
       default: '0',
-      desc: 'number→水平间距；[x,y]→水平+垂直；按断点对象 { xs,sm,md,... } 时按当前视口 mobile-first 降级解析',
+      desc: 'number→水平间距；[x,y]→水平+垂直；按断点对象 { xs,sm,md,... } 时经 screens 状态机 + responsiveArray 从大到小降级取第一个命中且有值的断点（对齐 Semi getGutter）',
     },
     {
       owner: 'Row',
@@ -33,11 +33,11 @@ export const meta = {
     },
     { owner: 'Row', name: 'wrap', type: 'boolean', default: 'true', desc: 'false→flex-wrap:nowrap' },
     { owner: 'Row', name: 'class', type: 'string', default: "''" },
-    { owner: 'Col', name: 'span', type: 'number', default: 'undefined', desc: '0-24，0 隐藏，未设为自动列' },
-    { owner: 'Col', name: 'offset', type: 'number', default: '0', desc: 'margin-inline-start 偏移列数' },
-    { owner: 'Col', name: 'order', type: 'number', default: '0', desc: 'flex order' },
-    { owner: 'Col', name: 'push', type: 'number', default: '0', desc: 'inset-inline-start 相对偏移' },
-    { owner: 'Col', name: 'pull', type: 'number', default: '0', desc: 'inset-inline-end 相对偏移' },
+    { owner: 'Col', name: 'span', type: 'number', default: 'undefined', desc: '0-24，生成 cd-col-{span} 类；0 → cd-col-0 隐藏，未设为自动列' },
+    { owner: 'Col', name: 'offset', type: 'number', default: '0', desc: 'cd-col-offset-{n} → margin-inline-start 偏移列数' },
+    { owner: 'Col', name: 'order', type: 'number', default: '0', desc: 'cd-col-order-{n} → flex order' },
+    { owner: 'Col', name: 'push', type: 'number', default: '0', desc: 'cd-col-push-{n} → inset-inline-start 相对偏移' },
+    { owner: 'Col', name: 'pull', type: 'number', default: '0', desc: 'cd-col-pull-{n} → inset-inline-end 相对偏移' },
     {
       owner: 'Col',
       name: 'flex',
@@ -48,16 +48,16 @@ export const meta = {
     {
       owner: 'Col',
       name: 'xs|sm|md|lg|xl|xxl',
-      type: 'number | { span?, offset?, order?, push?, pull?, flex? }',
+      type: 'number | { span?, offset?, order?, push?, pull? }',
       default: 'undefined',
-      desc: '响应式断点覆盖：值为 number(span) 或子集对象，按当前视口 mobile-first 降级解析后覆盖基础 props',
+      desc: '响应式断点覆盖：值为 number(span) 或子集对象，生成 cd-col-{bp}-{span} 等 CSS 类，靠 @media (min-width) 断点层叠（纯 CSS 驱动，不读 JS 断点）',
     },
     { owner: 'Col', name: 'class', type: 'string', default: "''" },
   ],
   events: [],
   slots: [{ name: 'children', desc: 'Row 内放 Col；Col 内放任意内容' }],
   a11y: { hasRole: false, focusable: false, note: '纯布局容器，不引入语义角色' },
-  tokens: ['--cd-grid-columns', '--cd-grid-gutter-x', '--cd-grid-gutter-y'],
+  tokens: ['--cd-grid-gutter-x', '--cd-grid-gutter-y'],
   responsive: true,
   examples: [
     {

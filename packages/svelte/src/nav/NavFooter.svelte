@@ -1,7 +1,7 @@
 <!--
   Nav.Footer — 导航底部（对齐 Semi footer={{collapseButton}}）。
   collapseButton 仅 mode='vertical' 生效，点击经 Nav context toggle 折叠态。
-  aria-label 文案复用 locale 包 Sider.expand/collapse。
+  aria-label 文案取自 locale 包 Navigation.expandText/collapseText（对齐 Semi）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -43,8 +43,8 @@
     collapseText
       ? collapseText(collapsed)
       : collapsed
-        ? loc().t('Sider.expand')
-        : loc().t('Sider.collapse'),
+        ? loc().t('Navigation.expandText')
+        : loc().t('Navigation.collapseText'),
   );
 </script>
 
@@ -56,7 +56,7 @@
       type="button"
       class="cd-nav__collapse-btn"
       aria-expanded={!collapsed}
-      aria-label={collapsed ? loc().t('Sider.expand') : loc().t('Sider.collapse')}
+      aria-label={collapsed ? loc().t('Navigation.expandText') : loc().t('Navigation.collapseText')}
       onclick={(e) => {
         onClick?.(e);
         nav?.toggleCollapsed();

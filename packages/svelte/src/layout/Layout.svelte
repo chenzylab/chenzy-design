@@ -1,15 +1,16 @@
 <!--
-  Layout — root flex container. Column by default; row when a Sider is present.
-  Sider auto-detection: Sider registers itself via context on mount, flipping the
-  direction to row. Explicit `hasSider` always wins.
-  NOTE: child onMount runs after the parent, so SSR/first frame may render column
-  then switch to row. For SSR correctness pass `hasSider` explicitly.
+  Layout — 布局容器（对齐 Semi）。默认 column 方向；存在 Sider 时切换为 row。
+  纯布局容器：不附带背景色、文本色、宽高等样式，按需通过 style / class 自定义。
+  Sider 自动检测：Sider 挂载时经 context 注册，翻转方向为 row；显式 hasSider 始终优先。
+  注意：子组件 onMount 在父之后执行，SSR/首帧可能先 column 再切 row；
+  SSR 正确性请显式传 hasSider。
 -->
 <script lang="ts" module>
   export const LAYOUT_CONTEXT_KEY = Symbol('cd-layout');
 
   export interface LayoutContext {
-    registerSider: () => void;
+    addSider: (id: string) => void;
+    removeSider: (id: string) => void;
   }
 </script>
 
@@ -18,6 +19,7 @@
   import { setContext } from 'svelte';
 
   interface Props {
+    /** 显式声明含侧边栏 → row 方向；一般不用指定，可用于 SSR 避免样式闪动。 */
     hasSider?: boolean;
     class?: string;
     /** 根元素自定义内联样式（透传）。Layout 不附带背景/尺寸样式，按需自定义。 */
@@ -38,20 +40,18 @@
     children,
   }: Props = $props();
 
-  let hasSiderDetected = $state(false);
+  // 已注册的 Sider id 集合，对齐 Semi 的 siders 数组。
+  const siders = $state(new Set<string>());
 
   setContext<LayoutContext>(LAYOUT_CONTEXT_KEY, {
-    registerSider: () => {
-      hasSiderDetected = true;
-    },
+    addSider: (id) => siders.add(id),
+    removeSider: (id) => siders.delete(id),
   });
 
-  const isRow = $derived(hasSider ?? hasSiderDetected);
+  const isRow = $derived(typeof hasSider === 'boolean' ? hasSider : siders.size > 0);
 
   const cls = $derived(
-    ['cd-layout', isRow ? 'cd-layout--has-sider' : 'cd-layout--column', className]
-      .filter(Boolean)
-      .join(' '),
+    ['cd-layout', isRow && 'cd-layout-has-sider', className].filter(Boolean).join(' '),
   );
 </script>
 
@@ -64,10 +64,20 @@
     display: flex;
     flex: auto;
     flex-direction: column;
-    min-height: 0;
-    background: var(--cd-layout-bg);
+    min-height: auto;
+    box-sizing: border-box;
   }
-  .cd-layout--has-sider {
+  .cd-layout-has-sider {
     flex-direction: row;
+  }
+  /* 内层 Layout / Content 在 has-sider 行内裁掉横向溢出（对齐 Semi）。 */
+  .cd-layout-has-sider > :global(.cd-layout),
+  .cd-layout-has-sider > :global(.cd-layout-content) {
+    overflow-x: hidden;
+  }
+  /* RTL */
+  :global(.cd-rtl) .cd-layout,
+  :global(.cd-portal-rtl) .cd-layout {
+    direction: rtl;
   }
 </style>

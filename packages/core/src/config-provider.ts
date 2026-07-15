@@ -9,16 +9,27 @@
  * 可测的合并逻辑、断点常量与 registerMediaQuery 工具（对齐 semi `_utils`）。
  */
 
-import type { Breakpoint } from './breakpoints.js';
+/**
+ * 响应式断点键（xs..xxl），与 Semi Design / Ant Design 六档一致。
+ * 断点系统的类型与常量归属此处（config-provider 是响应式配置的落点）。
+ */
+export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+
+/** 各断点的 min-width（px）。xs 为 0（基础层无媒体查询）。对齐 Semi 断点尺寸。 */
+export const BREAKPOINTS: Record<Breakpoint, number> = {
+  xs: 0,
+  sm: 576,
+  md: 768,
+  lg: 992,
+  xl: 1200,
+  xxl: 1600,
+};
 
 /** 文本方向。对齐 Semi direction。 */
 export type ConfigDir = 'ltr' | 'rtl';
 
 /** 时区标识：数字（距 UTC 偏移小时）或字符串（GMT±/IANA）。对齐 Semi timeZone。 */
 export type ConfigTimeZone = string | number;
-
-// 响应式断点键（xs..xxl）复用 breakpoints.ts 的 Breakpoint（与 Semi 六档一致），
-// 不重复定义，避免 core 导出重名。
 
 /** 断点 → media query 字符串映射。对齐 Semi ResponsiveMap。 */
 export interface ResponsiveMap {

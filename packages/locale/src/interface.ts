@@ -284,11 +284,9 @@ export interface Locale {
   Timeline: {
     pending: string;
   };
-  Sider: {
-    expand: string;
-    collapse: string;
-    expanded: string;
-    collapsed: string;
+  Navigation: {
+    collapseText: string;
+    expandText: string;
   };
   Select: {
     placeholder: string;

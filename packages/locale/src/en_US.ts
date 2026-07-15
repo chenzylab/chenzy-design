@@ -209,11 +209,9 @@ export const en_US: Locale = {
   Timeline: {
     pending: 'Loading…',
   },
-  Sider: {
-    expand: 'Expand sidebar',
-    collapse: 'Collapse sidebar',
-    expanded: 'Sidebar expanded',
-    collapsed: 'Sidebar collapsed',
+  Navigation: {
+    collapseText: 'Collapse Sidebar',
+    expandText: 'Expand Sidebar',
   },
   Select: {
     placeholder: 'Please select',

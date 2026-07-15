@@ -1,274 +1,117 @@
 <!--
-  Sider — collapsible side panel. Backed by headless createSider from core.
-  Registers with Layout (context) so Layout switches to row direction.
-  aria-label 文案经 useLocale 取自 locale 包（Sider.expand/collapse）。
+  Sider — Layout 侧边栏（对齐 Semi）。纯布局容器，不附带背景/尺寸样式，按需自定义。
+  挂载时经 context 向 Layout 注册（使 Layout 切换为 row 方向），卸载时注销。
+  breakpoint：可传 responsiveMap 的键数组（xs/sm/md/lg/xl/xxl），命中/解除断点时回调 onBreakpoint。
+  DOM 结构：<aside class="cd-layout-sider"><div class="cd-layout-sider-children">…</div></aside>
 -->
+<script lang="ts" module>
+  /** 六档响应断点（对齐 Semi）。注意 xs 为 max-width，其余为 min-width。 */
+  export const responsiveMap = {
+    xs: '(max-width: 575px)',
+    sm: '(min-width: 576px)',
+    md: '(min-width: 768px)',
+    lg: '(min-width: 992px)',
+    xl: '(min-width: 1200px)',
+    xxl: '(min-width: 1600px)',
+  } as const;
+
+  export type Breakpoint = keyof typeof responsiveMap;
+
+  let uid = 0;
+
+  /** 注册一个 media query，命中/解除时回调（对齐 Semi registerMediaQuery，callInInit=true）。 */
+  function registerMediaQuery(
+    media: string,
+    match: () => void,
+    unmatch: () => void,
+  ): () => void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return () => undefined;
+    }
+    const mql = window.matchMedia(media);
+    const handler = (e: MediaQueryList | MediaQueryListEvent): void => {
+      if (e.matches) match();
+      else unmatch();
+    };
+    handler(mql);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { getContext, onMount, untrack } from 'svelte';
-  import {
-    createSider,
-    type Breakpoint,
-    type SiderOptions,
-    type SiderTrigger,
-  } from '@chenzy-design/core';
+  import { getContext, onMount } from 'svelte';
   import { LAYOUT_CONTEXT_KEY, type LayoutContext } from './Layout.svelte';
-  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
-    /** controlled collapsed value */
-    collapsed?: boolean;
-    defaultCollapsed?: boolean;
-    collapsible?: boolean;
-    width?: string | number;
-    collapsedWidth?: string | number;
-    breakpoint?: Breakpoint;
-    reverseArrow?: boolean;
-    placement?: 'left' | 'right';
+    /** 触发响应式布局的断点，可选值 xs/sm/md/lg/xl/xxl。 */
+    breakpoint?: Breakpoint[];
+    /** 触发响应式布局断点时的回调 (screen, matched)。 */
+    onBreakpoint?: (screen: Breakpoint, matched: boolean) => void;
     class?: string;
-    /** 根元素自定义内联样式（透传，叠加在宽度样式之后）。 */
+    /** 根元素自定义内联样式（透传）。 */
     style?: string;
     /** 可访问性标签（透传到 aside 的 aria-label，描述该 Sider 作用）。 */
     ariaLabel?: string;
     /** 可访问性 role（透传到根元素）。 */
     role?: string;
-    onCollapse?: (collapsed: boolean, trigger: SiderTrigger) => void;
-    /** 触发响应式断点时的回调（matched=是否命中 max-width 断点）。 */
-    onBreakpoint?: (matched: boolean, breakpoint: Breakpoint) => void;
     children?: Snippet;
-    /** custom trigger; receives current collapsed + toggle */
-    trigger?: Snippet<[{ collapsed: boolean; toggle: () => void }]>;
-    /**
-     * 零宽触发器自定义样式（对齐 Ant zeroWidthTriggerStyle）。
-     * 仅在 collapsedWidth=0 且 collapsible 时，浮动触发块逸出 0 宽侧栏外缘，
-     * 使收起后仍可展开。此 style 叠加在内置定位样式之后，可覆盖位置/尺寸/配色。
-     */
-    zeroWidthTriggerStyle?: string;
   }
 
   let {
-    collapsed,
-    defaultCollapsed = false,
-    collapsible = false,
-    width = 200,
-    collapsedWidth = 60,
     breakpoint,
-    reverseArrow = false,
-    placement = 'left',
+    onBreakpoint,
     class: className = '',
     style,
     ariaLabel,
     role,
-    onCollapse,
-    onBreakpoint,
     children,
-    trigger,
-    zeroWidthTriggerStyle,
   }: Props = $props();
-
-  const loc = useLocale();
 
   const layout = getContext<LayoutContext | undefined>(LAYOUT_CONTEXT_KEY);
 
-  // Headless machine is created once with the initial prop values; later changes
-  // to the controlled `collapsed` prop are applied via the $derived below.
-  // untrack documents that we intentionally capture only the initial values here.
-  const sider = untrack(() => {
-    // Build options conditionally — exactOptionalPropertyTypes forbids passing
-    // `undefined` for optional props typed without `| undefined`.
-    const options: SiderOptions = {
-      defaultCollapsed,
-      onChange: (value, t) => onCollapse?.(value, t),
-      onBreakpoint: (matched, bp) => onBreakpoint?.(matched, bp),
-    };
-    if (collapsed !== undefined) options.collapsed = collapsed;
-    if (breakpoint !== undefined) options.breakpoint = breakpoint;
-    return createSider(options);
-  });
+  // eslint-disable-next-line no-plusplus
+  const uniqueId = `cd-layout-sider-${++uid}`;
 
-  // Tracks the headless machine's uncontrolled collapsed state.
-  let internalCollapsed = $state(sider.getCollapsed());
-
-  // Controlled `collapsed` prop always wins over the internal value.
-  const collapsedState = $derived(collapsed ?? internalCollapsed);
-
-  // Notify Layout once so it switches to row direction.
   onMount(() => {
-    layout?.registerSider();
-  });
+    layout?.addSider(uniqueId);
 
-  // Bridge the headless subscription/breakpoint watcher into Svelte reactivity.
-  // This is the intended escape-hatch use of $effect: syncing an external store.
-  $effect(() => {
-    const unsubscribe = sider.subscribe((value) => {
-      internalCollapsed = value;
-    });
-    const stopWatch = sider.watchBreakpoint();
+    const bpts = (breakpoint ?? []).filter((s): s is Breakpoint => s in responsiveMap);
+    const unregisters = bpts.map((screen) =>
+      registerMediaQuery(
+        responsiveMap[screen],
+        () => onBreakpoint?.(screen, true),
+        () => onBreakpoint?.(screen, false),
+      ),
+    );
+
     return () => {
-      unsubscribe();
-      stopWatch();
+      unregisters.forEach((un) => un());
+      layout?.removeSider(uniqueId);
     };
   });
 
-  function toggle(): void {
-    // 受控模式：headless 在构造时捕获了初始 collapsed，其 current() 是陈旧值，
-    // 直接 sider.toggle() 会一直按初值翻转。故用 Svelte 侧 live 的 collapsedState
-    // 计算目标并 setCollapsed（仅触发 onChange，受控不自改）。非受控走 headless toggle。
-    if (collapsed !== undefined) {
-      sider.setCollapsed(!collapsedState, 'click');
-    } else {
-      sider.toggle();
-    }
-  }
-
-  function toCss(value: string | number): string {
-    return typeof value === 'number' ? `${value}px` : value;
-  }
-
-  const widthCss = $derived(collapsedState ? toCss(collapsedWidth) : toCss(width));
-
-  const isCollapsedToZero = $derived(
-    collapsedState && (collapsedWidth === 0 || collapsedWidth === '0' || collapsedWidth === '0px'),
-  );
-
-  // 零宽触发器：collapsible + 已收成 0 宽时，露出浮动块以便重新展开（对齐 Ant zeroWidthTrigger）。
-  // 无它时 0 宽侧栏没有任何可点区域，收起后无法恢复。
-  const showZeroTrigger = $derived(collapsible && isCollapsedToZero);
-
-  const cls = $derived(
-    [
-      'cd-layout-sider',
-      `cd-layout-sider--${placement}`,
-      collapsedState && 'cd-layout-sider--collapsed',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-
-  // 宽度派生样式在前，用户 style 在后（可覆盖）。
-  const inlineStyle = $derived(
-    [`flex: 0 0 ${widthCss}; width: ${widthCss}; max-width: ${widthCss}`, style ?? '']
-      .filter(Boolean)
-      .join('; '),
-  );
-
-  // Arrow direction: point "outward" to expand, "inward" to collapse.
-  // placement + reverseArrow flip which glyph means which.
-  const pointsStart = $derived.by(() => {
-    const base = placement === 'left' ? collapsedState : !collapsedState;
-    return reverseArrow ? !base : base;
-  });
+  const cls = $derived(['cd-layout-sider', className].filter(Boolean).join(' '));
 </script>
 
-<aside class={cls} style={inlineStyle} aria-label={ariaLabel} {role}>
-  <div
-    id={sider.id}
-    class="cd-layout-sider__children"
-    aria-hidden={isCollapsedToZero || undefined}
-  >
+<aside class={cls} {style} aria-label={ariaLabel} {role}>
+  <div class="cd-layout-sider-children">
     {@render children?.()}
   </div>
-
-  {#if trigger}
-    {@render trigger({ collapsed: collapsedState, toggle })}
-  {:else if showZeroTrigger}
-    <!-- 零宽态：浮动触发块 position:absolute 逸出 0 宽侧栏外缘，收起后仍可展开。 -->
-    <button
-      type="button"
-      class="cd-layout-sider__trigger cd-layout-sider__trigger--zero"
-      style={zeroWidthTriggerStyle}
-      aria-expanded={false}
-      aria-controls={sider.id}
-      aria-label={loc().t('Sider.expand')}
-      onclick={toggle}
-    >
-      <span class="cd-layout-sider__arrow" aria-hidden="true">{pointsStart ? '‹' : '›'}</span>
-    </button>
-  {:else if collapsible}
-    <button
-      type="button"
-      class="cd-layout-sider__trigger"
-      aria-expanded={!collapsedState}
-      aria-controls={sider.id}
-      aria-label={collapsedState ? loc().t('Sider.expand') : loc().t('Sider.collapse')}
-      onclick={toggle}
-    >
-      <span class="cd-layout-sider__arrow" aria-hidden="true">{pointsStart ? '‹' : '›'}</span>
-    </button>
-  {/if}
 </aside>
 
 <style>
   .cd-layout-sider {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    background: var(--cd-layout-sider-bg);
-    transition:
-      flex-basis var(--cd-layout-motion-duration) var(--cd-layout-motion-ease),
-      width var(--cd-layout-motion-duration) var(--cd-layout-motion-ease),
-      max-width var(--cd-layout-motion-duration) var(--cd-layout-motion-ease);
+    min-width: auto;
+    box-sizing: border-box;
   }
-  .cd-layout-sider--left {
-    border-inline-end: var(--cd-layout-sider-border);
-  }
-  .cd-layout-sider--right {
-    border-inline-start: var(--cd-layout-sider-border);
-  }
-  .cd-layout-sider__children {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .cd-layout-sider__trigger {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    height: var(--cd-layout-header-height);
-    padding: 0;
-    border: none;
-    background: var(--cd-layout-sider-trigger-bg);
-    color: var(--cd-layout-sider-trigger-color);
-    cursor: pointer;
-    transition: background-color var(--cd-layout-motion-duration) var(--cd-layout-motion-ease);
-  }
-  .cd-layout-sider__trigger:hover {
-    background: var(--cd-layout-sider-trigger-hover-bg);
-  }
-  .cd-layout-sider__trigger:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  /* 零宽浮动触发块：逸出 0 宽侧栏外缘。left 贴右外侧，right 贴左外侧。 */
-  .cd-layout-sider__trigger--zero {
-    position: absolute;
-    inset-block-start: var(--cd-spacing-base);
-    width: var(--cd-layout-sider-zero-trigger-width);
-    height: var(--cd-layout-sider-zero-trigger-height);
-    border: var(--cd-layout-sider-border);
-    border-radius: 0 var(--cd-border-radius-medium) var(--cd-border-radius-medium) 0;
-    box-shadow: var(--cd-shadow-elevated);
-    z-index: var(--cd-layout-header-z);
-  }
-  .cd-layout-sider--left .cd-layout-sider__trigger--zero {
-    inset-inline-start: 100%;
-  }
-  .cd-layout-sider--right .cd-layout-sider__trigger--zero {
-    inset-inline-end: 100%;
-    border-radius: var(--cd-border-radius-medium) 0 0 var(--cd-border-radius-medium);
-  }
-  .cd-layout-sider__arrow {
-    display: inline-flex;
-    font-size: var(--cd-font-size-header-6);
-    line-height: 1;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-layout-sider,
-    .cd-layout-sider__trigger {
-      transition: none;
-    }
+  .cd-layout-sider-children {
+    height: 100%;
+    /* 对齐 Semi：抵消子内容 margin 折叠导致的高度偏差。 */
+    margin-top: -0.1px;
+    padding-top: 0.1px;
+    box-sizing: border-box;
   }
 </style>

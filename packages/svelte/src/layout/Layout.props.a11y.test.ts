@@ -1,15 +1,13 @@
-// 验证对齐 Semi Layout 新增的透传 props：style / aria-label / role
+// 验证对齐 Semi Layout 的透传 props：style / aria-label / role
 // 覆盖 Layout / Header / Content / Footer / Sider 五个组件的根元素透传。
 // 命名 *.a11y.test.ts 以进入 dom(jsdom) project。
-import { describe, it, expect } from 'vitest';
-import { tick } from 'svelte';
+import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import Layout from './Layout.svelte';
 import Header from './Header.svelte';
 import Content from './Content.svelte';
 import Footer from './Footer.svelte';
 import Sider from './Sider.svelte';
-import SiderControlledFixture from './SiderControlledFixture.svelte';
 
 describe('Layout 家族 props 透传（对齐 Semi）', () => {
   it('Layout：style / aria-label / role 落到 section', () => {
@@ -22,29 +20,25 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
     expect(el.getAttribute('role')).toBe('region');
   });
 
-  it('Header：用户 style 叠加在 height 之后', () => {
+  it('Header：style / aria-label 透传到 header', () => {
     const { container } = renderWithLocale(Header, {
-      props: { height: 80, style: 'background: blue', ariaLabel: '顶部' },
+      props: { style: 'background: blue', ariaLabel: '顶部' },
     });
     const el = container.querySelector('header')!;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toMatch(/height:\s*80px/);
-    expect(style).toContain('background: blue');
+    expect(el.getAttribute('style')).toContain('background: blue');
     expect(el.getAttribute('aria-label')).toBe('顶部');
   });
 
-  it('Content：用户 style 叠加在 padding 之后，role 可覆盖', () => {
+  it('Content：style / role 透传到 main（role 可覆盖）', () => {
     const { container } = renderWithLocale(Content, {
-      props: { padding: true, style: 'background: green', role: 'main' },
+      props: { style: 'background: green', role: 'main' },
     });
     const el = container.querySelector('main')!;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('padding:');
-    expect(style).toContain('background: green');
+    expect(el.getAttribute('style')).toContain('background: green');
     expect(el.getAttribute('role')).toBe('main');
   });
 
-  it('Footer：style / aria-label 透传', () => {
+  it('Footer：style / aria-label 透传到 footer', () => {
     const { container } = renderWithLocale(Footer, {
       props: { style: 'background: gray', ariaLabel: '底部' },
     });
@@ -53,38 +47,36 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
     expect(el.getAttribute('aria-label')).toBe('底部');
   });
 
-  it('Sider：style 叠加在宽度之后，aria-label / role 透传', () => {
+  it('Sider：style / aria-label / role 透传到 aside，内含 children 容器', () => {
     const { container } = renderWithLocale(Sider, {
-      props: { width: 150, style: 'background: gold', ariaLabel: '侧栏', role: 'navigation' },
+      props: { style: 'background: gold', ariaLabel: '侧栏', role: 'navigation' },
     });
     const el = container.querySelector('aside')!;
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('width: 150px');
-    expect(style).toContain('background: gold');
+    expect(el.getAttribute('style')).toContain('background: gold');
     expect(el.getAttribute('aria-label')).toBe('侧栏');
     expect(el.getAttribute('role')).toBe('navigation');
+    expect(el.querySelector('.cd-layout-sider-children')).not.toBeNull();
   });
 });
 
-describe('Sider 受控折叠 toggle 往返（回归 #350 后）', () => {
-  it('受控模式下触发器可反复折叠/展开（不卡在折叠态）', async () => {
-    // 夹具无 props，类型为 Record<string, never>，与 helper 的 Record<string, unknown> 不兼容；
-    // 测试场景下安全 cast。
-    const { container } = renderWithLocale(
-      SiderControlledFixture as unknown as Parameters<typeof renderWithLocale>[0],
-      {},
+describe('Sider 响应式断点（对齐 Semi breakpoint / onBreakpoint）', () => {
+  it('挂载时按 responsiveMap 注册并回调 onBreakpoint(screen, matched)', () => {
+    // jsdom 无 matchMedia，注入一个受控 stub：md 命中，其余不命中。
+    const listeners: Array<() => void> = [];
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((media: string) => ({
+        matches: media === '(min-width: 768px)',
+        media,
+        addEventListener: (_: string, cb: () => void) => listeners.push(cb),
+        removeEventListener: () => undefined,
+      })),
     );
-    const sider = container.querySelector('.cd-layout-sider')!;
-    const trigger = container.querySelector<HTMLButtonElement>('.cd-layout-sider__trigger')!;
-    // 初始展开
-    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(false);
-    // 第一次点击 → 折叠
-    trigger.click();
-    await tick();
-    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(true);
-    // 第二次点击 → 展开（曾因 headless 捕获陈旧受控值而卡住）
-    trigger.click();
-    await tick();
-    expect(sider.classList.contains('cd-layout-sider--collapsed')).toBe(false);
+    const onBreakpoint = vi.fn();
+    renderWithLocale(Sider, { props: { breakpoint: ['md', 'lg'], onBreakpoint } });
+    // 初始化即回调（callInInit）：md 命中 true，lg 不命中 false。
+    expect(onBreakpoint).toHaveBeenCalledWith('md', true);
+    expect(onBreakpoint).toHaveBeenCalledWith('lg', false);
+    vi.unstubAllGlobals();
   });
 });
