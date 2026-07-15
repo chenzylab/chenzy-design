@@ -1,28 +1,43 @@
-import type { ResolvedConfig } from '@chenzy-design/core';
+import type {
+  ResolvedConfig,
+  ResponsiveMap,
+  BreakpointScreens,
+  Breakpoint,
+  OnBreakpointScreensCallback,
+  OnBreakpointChangeCallback,
+} from '@chenzy-design/core';
 
-/** 全局浮层挂载容器解析器：返回浮层应 portal 进的元素。 */
+/** 全局浮层挂载容器解析器：返回浮层应 portal 进的元素。对齐 Semi getPopupContainer。 */
 export type GetPopupContainer = () => HTMLElement | null | undefined;
 
 /**
- * 全局表单校验文案覆盖：按 `Form.*` 键返回模板字符串（支持 {label}/{min}/{max} 等
- * 占位符插值）。仅覆盖列出的键，未列出的回退到 locale 内置文案。
+ * 断点订阅函数（两种签名，均返回取消订阅函数）。对齐 Semi ConfigProvider onBreakpoint：
+ * - `onBreakpoint(cb)`：cb 拿到完整 screens 映射；
+ * - `onBreakpoint(['md','lg'], cb)`：只监听指定断点，cb 拿到 (screen, match)。
+ * 订阅时会立即以当前状态回调一次。
  */
-export type ValidateMessages = Record<string, string>;
-export type GetValidateMessages = () => ValidateMessages;
+export interface OnBreakpoint {
+  (callback: OnBreakpointScreensCallback): () => void;
+  (breakpoints: Breakpoint[], callback: OnBreakpointChangeCallback): () => void;
+}
 
 /**
- * config context：下发合并后的全局配置。
- *
- * `current` 是可序列化的纯配置（来自 core 的 mergeConfig）；而函数型配置
- * （getPopupContainer / getValidateMessages）不参与 core 合并，单独挂在 context
- * 上，并在嵌套时由 ConfigProvider 自行做「就近 wins、未提供继承父级」合并。
+ * config context：下发合并后的全局配置（direction / timeZone）与运行时能力。
+ * 严格对齐 Semi ConfigProvider Context：
+ * - `current`：可继承的纯配置（direction / timeZone）；
+ * - `getPopupContainer`：全局浮层默认容器（浮层组件自身 prop 优先，未传时回退）；
+ * - `responsiveMap` / `screens` / `onBreakpoint`：响应式断点能力（非 props，经 context 读）。
  */
 export type ConfigContextValue = {
   readonly current: ResolvedConfig;
   /** 全局浮层默认容器；未配置为 undefined（浮层组件回退 document.body）。 */
   readonly getPopupContainer?: GetPopupContainer | undefined;
-  /** 全局校验文案覆盖；未配置为 undefined（回退 locale 内置文案）。 */
-  readonly getValidateMessages?: GetValidateMessages | undefined;
+  /** 当前生效的断点配置（未传时为 defaultResponsiveMap）。 */
+  readonly responsiveMap: ResponsiveMap;
+  /** 各断点当前命中情况（read-only 快照）。 */
+  readonly screens: BreakpointScreens;
+  /** 订阅断点变化。 */
+  readonly onBreakpoint: OnBreakpoint;
 };
 
 /** config context：下发合并后的全局配置 */
