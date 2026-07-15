@@ -48,7 +48,6 @@ export const nameToDir: Record<string, string> = {
   localeprovider: 'locale-provider',
   lottieicon: 'lottie-icon',
   markdownrender: 'markdown-render',
-  menu: 'menu',
   modal: 'modal',
   notification: 'notification',
   overflowlist: 'overflow-list',

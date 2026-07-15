@@ -37,7 +37,6 @@ import { meta as paginationMeta } from './pagination/meta.js';
 import { meta as stepsMeta } from './steps/meta.js';
 import { meta as tabsMeta } from './tabs/meta.js';
 import { meta as dropdownMeta } from './dropdown/meta.js';
-import { meta as menuMeta } from './menu/meta.js';
 import { meta as anchorMeta } from './anchor/meta.js';
 import { meta as tagMeta } from './tag/meta.js';
 import { meta as avatarMeta } from './avatar/meta.js';
@@ -126,7 +125,6 @@ const metas = {
   stepsMeta,
   tabsMeta,
   dropdownMeta,
-  menuMeta,
   anchorMeta,
   tagMeta,
   avatarMeta,

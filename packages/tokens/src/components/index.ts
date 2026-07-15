@@ -29,7 +29,6 @@ import { transferTokens } from './transfer.js';
 import { navigationTokens } from './navigation.js';
 import { breadcrumbTokens } from './breadcrumb.js';
 import { tabsTokens } from './tabs.js';
-import { menuTokens } from './menu.js';
 import { displayTokens } from './display.js';
 import { tooltipTokens } from './tooltip.js';
 import { popoverTokens } from './popover.js';
@@ -105,7 +104,6 @@ export const componentTokens = {
   ...navigationTokens,
   ...breadcrumbTokens,
   ...tabsTokens,
-  ...menuTokens,
   ...displayTokens,
   ...tooltipTokens,
   ...popoverTokens,

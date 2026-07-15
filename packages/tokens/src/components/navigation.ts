@@ -1,17 +1,16 @@
 /**
  * Navigation 主 token 源：命名镜像 semi-foundation/navigation/variables.scss（kebab：
- * `$xxx-navigation_yyy` → `xxx-navigation-yyy`），Menu / Nav 组件 token（menu.ts / nav.ts）
- * 转引这里作为主 token 源。
+ * `$xxx-navigation_yyy` → `xxx-navigation-yyy`），由 Navigation 组件消费。
  *
- * 曾 1:1 全量镜像 Semi 的 120 个变量；后按 dsm.spec「Token 精简原则」收敛为只保留
- * Menu / Nav 实际消费的主 token，删除无任何组件消费的孤儿（含 Semi 自引用 calc 链、
- * 未落地的 itemLn / horizontal 细分态等）。值 var() 引用我们的 alias / global token 或字面量。
+ * 目标：1:1 全量对齐 Semi navigation/variables.scss（名与值逐一镜像，无中间变量）。
+ * 当前为过渡态——旧 Menu 组件已删除，Navigation 组件待新建；期间 token 保留不作孤儿清理。
+ * 值 var() 引用我们的 alias / global token 或字面量。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const navigationTokens = {
   // ============================================================
-  // Navigation 主 token（Menu / Nav 消费；命名对齐 Semi navigation/variables.scss）
+  // Navigation 主 token（命名对齐 Semi navigation/variables.scss）
   // ============================================================
 
   // —— Size ——
