@@ -1,7 +1,6 @@
 /**
  * Machine-readable component metadata for AI/docs consumption.
- * Resizable family (single + split group) — see
- * specs/components/other/Resizable.spec.md.
+ * Resizable family (single + split group) — strictly aligned with Semi Design.
  */
 export const meta = {
   name: 'Resizable',
@@ -9,23 +8,14 @@ export const meta = {
   stage: 'M6',
   semiEquivalent: 'Resizable',
   description:
-    '可伸缩组件族：Resizable 单体容器（4 边 + 4 角共 8 个可选把手，拖拽改自身宽/高，支持 min/max、锁比例、网格吸附、缩放/像素比修正）与 ResizeGroup/ResizeItem/ResizeHandler 分栏组（水平/垂直多面板，相邻两项联动一增一减、总和守恒，各项 min/max clamp 后重分配）。core 沉淀通用拖拽原语 createResizeDrag（单次拖拽生命周期，命令式绑/解全局监听）+ computeGroupResize（分栏联动几何），供 Table 列宽拖拽、SideBar Container 复用。把手 role=separator + aria-orientation + aria-value* + 键盘 ←→/↑↓/Home/End + RTL 镜像。',
+    '可伸缩组件族：Resizable 单体容器（4 边 + 4 角共 8 个可选把手，拖拽改自身宽/高，支持 min/max、锁比例、网格吸附、缩放/像素比修正、边界限制）与 ResizeGroup/ResizeItem/ResizeHandler 分栏组（水平/垂直多面板，相邻两项联动一增一减、总和守恒，各项 min/max clamp 后重分配）。严格对齐 Semi Design：把手是裸 div（无 role/aria/tabindex/键盘），ResizeHandler 默认渲染 IconHandle。core 沉淀通用拖拽原语 createResizeDrag（单次拖拽生命周期，命令式绑/解全局监听）+ computeGroupResize（分栏联动几何），供 Table 列宽拖拽、SideBar Container 复用。',
   exports: ['Resizable', 'ResizeGroup', 'ResizeItem', 'ResizeHandler'],
   relatedTo: ['Table', 'SideBar', 'Slider'],
-  a11yPattern: 'separator',
-  keyboardMap: {
-    ArrowLeft: '横向把手：减小尺寸（RTL 镜像）',
-    ArrowRight: '横向把手：增大尺寸（RTL 镜像）',
-    ArrowUp: '纵向把手：减小尺寸',
-    ArrowDown: '纵向把手：增大尺寸',
-    Home: '收到最小尺寸',
-    End: '放到最大尺寸',
-  },
   subComponents: [
     {
       name: 'Resizable',
       props: [
-        { name: 'size', type: '{ width?: string|number; height?: string|number }', default: 'undefined', desc: '受控尺寸' },
+        { name: 'size', type: '{ width?: string|number; height?: string|number }', default: 'undefined', desc: '受控尺寸（数字或 px/vw/vh/% 字符串）' },
         { name: 'defaultSize', type: 'Size', default: 'undefined', desc: '非受控初始尺寸' },
         { name: 'enable', type: 'Partial<Record<Direction, boolean>> | false', default: '全 true', desc: '启用哪些把手；false 全禁用' },
         { name: 'minWidth', type: 'string | number', default: 'undefined' },
@@ -33,13 +23,22 @@ export const meta = {
         { name: 'maxWidth', type: 'string | number', default: 'undefined' },
         { name: 'maxHeight', type: 'string | number', default: 'undefined' },
         { name: 'lockAspectRatio', type: 'boolean | number', default: 'false', desc: '锁定宽高比' },
-        { name: 'grid', type: '[number, number]', default: 'undefined', desc: '吸附网格步长' },
-        { name: 'snap', type: '{ x?: number[]; y?: number[] }', default: 'undefined', desc: '吸附到指定像素尺寸（对齐 Semi）' },
+        { name: 'lockAspectRatioExtraWidth', type: 'number', default: '0', desc: '锁定比例时宽度额外补偿' },
+        { name: 'lockAspectRatioExtraHeight', type: 'number', default: '0', desc: '锁定比例时高度额外补偿' },
+        { name: 'grid', type: '[number, number] | number', default: '[1, 1]', desc: '吸附网格步长；单数字归一为 [n,n]' },
+        { name: 'snap', type: '{ x?: number[]; y?: number[] }', default: 'undefined', desc: '吸附到指定像素尺寸' },
         { name: 'snapGap', type: 'number', default: '0', desc: '吸附生效的最小间隙，0=总吸附到最近目标' },
-        { name: 'boundElement', type: "'parent' | 'window' | HTMLElement", default: 'undefined', desc: '限制伸缩范围的边界元素（对齐 Semi boundElement）' },
+        { name: 'boundElement', type: "'parent' | 'window' | HTMLElement", default: 'undefined', desc: '限制伸缩范围的边界元素' },
+        { name: 'boundsByDirection', type: 'boolean', default: 'undefined', desc: '按方向计算边界（对齐 Semi）' },
         { name: 'scale', type: 'number', default: '1', desc: '画布缩放系数' },
         { name: 'ratio', type: 'number | [number, number]', default: '1', desc: '像素比修正' },
-        { name: 'keyboardStep', type: 'number', default: '10 或 grid', desc: '键盘步长' },
+        { name: 'class', type: 'string', default: 'undefined', desc: '根节点类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根节点内联样式' },
+        { name: 'handleWrapperClass', type: 'string', default: 'undefined', desc: '把手 wrapper 层类名' },
+        { name: 'handleWrapperStyle', type: 'string', default: 'undefined', desc: '把手 wrapper 层内联样式' },
+        { name: 'handleClass', type: 'Partial<Record<Direction, string>>', default: 'undefined', desc: '各向把手自定义类名' },
+        { name: 'handleStyle', type: 'Partial<Record<Direction, string>>', default: 'undefined', desc: '各向把手自定义内联样式' },
+        { name: 'handleNode', type: 'Partial<Record<Direction, Snippet>>', default: 'undefined', desc: '各向把手自定义内容' },
         { name: 'onResizeStart', type: '(e, dir) => void | boolean', default: 'undefined', desc: '返回 false 取消本次拖拽' },
         { name: 'onChange', type: '(size, event, direction) => void', default: 'undefined', desc: '拖拽中，载荷顺序对齐 Semi' },
         { name: 'onResizeEnd', type: '(size, event, direction) => void', default: 'undefined' },
@@ -48,16 +47,19 @@ export const meta = {
     {
       name: 'ResizeGroup',
       props: [
-        { name: 'direction', type: "'horizontal' | 'vertical'", default: '必填', desc: '分栏方向' },
+        { name: 'direction', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: '分栏方向' },
         { name: 'class', type: 'string', default: 'undefined' },
+        { name: 'style', type: 'string', default: 'undefined' },
       ],
     },
     {
       name: 'ResizeItem',
       props: [
-        { name: 'defaultSize', type: 'string | number', default: 'undefined', desc: '初始尺寸（%/px/比例数）' },
-        { name: 'min', type: 'string', default: 'undefined' },
-        { name: 'max', type: 'string', default: 'undefined' },
+        { name: 'defaultSize', type: 'string | number', default: 'undefined', desc: '初始尺寸；%/px 或纯数字/数字表示按比例分配剩余空间' },
+        { name: 'min', type: 'string', default: 'undefined', desc: '最小尺寸（百分比或像素）' },
+        { name: 'max', type: 'string', default: 'undefined', desc: '最大尺寸（百分比或像素）' },
+        { name: 'class', type: 'string', default: 'undefined' },
+        { name: 'style', type: 'string', default: 'undefined' },
         { name: 'onResizeStart', type: '(e, dir) => void | boolean', default: 'undefined' },
         { name: 'onChange', type: '(size, event, direction) => void', default: 'undefined' },
         { name: 'onResizeEnd', type: '(size, event, direction) => void', default: 'undefined' },
@@ -67,8 +69,9 @@ export const meta = {
       name: 'ResizeHandler',
       props: [
         { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用该把手' },
-        { name: 'keyboardStep', type: 'number', default: '10', desc: '键盘步长（px）' },
-        { name: 'collapsible', type: 'boolean', default: 'false', desc: '双击折叠/展开左（上）侧面板（本库独有增强）' },
+        { name: 'class', type: 'string', default: 'undefined' },
+        { name: 'style', type: 'string', default: 'undefined' },
+        { name: 'children', type: 'Snippet', default: 'IconHandle', desc: '自定义把手内容，缺省渲染 IconHandle' },
       ],
     },
   ],
@@ -82,7 +85,7 @@ export const meta = {
   ],
   doNot: [
     '不要用它做 slider（值语义用 Slider，Resizable 改的是元素尺寸）',
-    '不要漏把手键盘（把手是 separator，需 ←→/↑↓/Home/End）',
-    '不要用响应式 attachment 读几何（拖拽用命令式几何，红线 #3）',
+    '不要给把手加 role/aria/键盘（严格对齐 Semi，把手是裸命中区）',
+    '不要用响应式 attachment 读几何（拖拽用命令式几何，红线 no.3）',
   ],
 } as const;

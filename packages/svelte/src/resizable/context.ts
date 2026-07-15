@@ -5,10 +5,19 @@
  * described in AGENTS.md §9.3 — the group re-measures on a single trigger state.
  */
 import type {
+  Direction,
   GroupDirection,
   ResizeCallback,
   ResizeStartCallback,
 } from '@chenzy-design/core';
+import type { Snippet } from 'svelte';
+
+/** Per-direction custom class names for single Resizable handles. */
+export type HandleClassName = Partial<Record<Direction, string>>;
+/** Per-direction inline styles for single Resizable handles. */
+export type HandleStyle = Partial<Record<Direction, string>>;
+/** Per-direction custom handle content for single Resizable handles. */
+export type HandleNode = Partial<Record<Direction, Snippet>>;
 
 export interface ResizeItemRegistration {
   /** stable id for ordering */
@@ -34,15 +43,6 @@ export interface ResizeGroupContext {
   registerHandler: (reg: ResizeHandlerRegistration) => () => void;
   /** Begin a drag from the handler with the given id. */
   startHandlerDrag: (handlerId: number, event: PointerEvent) => void;
-  /** Keyboard adjust from a handler. */
-  keyboardAdjust: (handlerId: number, delta: number, event: KeyboardEvent) => void;
-  /** Read the group's split-axis size for a handler's aria-value. */
-  itemSizeAround: (handlerId: number) => { last: number; next: number; parent: number };
-  /**
-   * 双击把手：折叠/展开该把手左（上）侧面板（本库独有增强，Semi 无内建折叠）。
-   * 折叠时记住原尺寸、腾给邻居；再次双击恢复。返回折叠后状态。
-   */
-  toggleCollapse: (handlerId: number) => void;
 }
 
 export const RESIZE_GROUP_KEY = Symbol('cd-resize-group');

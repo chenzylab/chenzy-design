@@ -161,6 +161,16 @@ export interface CreateResizeDragOptions {
   getBoundMax?: () => { maxWidth?: number; maxHeight?: number };
   /** Lock aspect ratio — `true` derives from start size, number = explicit w/h. */
   lockAspectRatio?: boolean | number;
+  /** Extra width offset applied in the lock-ratio formula (Semi `lockAspectRatioExtraWidth`). */
+  lockAspectRatioExtraWidth?: number;
+  /** Extra height offset applied in the lock-ratio formula (Semi `lockAspectRatioExtraHeight`). */
+  lockAspectRatioExtraHeight?: number;
+  /**
+   * Constrain by drag direction (Semi `boundsByDirection`): when dragging the
+   * left/top edge the width/height (respectively) is constrained; otherwise the
+   * opposite edge is. Only affects lock-ratio driven-axis selection here.
+   */
+  boundsByDirection?: boolean;
   /** Canvas zoom factor — pointer delta is divided by scale. */
   scale?: number;
   /** Pixel ratio correction — delta multiplied by ratio. */
@@ -280,8 +290,14 @@ export function createResizeDrag(
     let w = startW;
     let h = startH;
 
-    const usesX = options.axis === 'x' || options.axis === 'xy';
-    const usesY = options.axis === 'y' || options.axis === 'xy';
+    // For an explicit single axis ('x'/'y', e.g. Table column drag) that axis
+    // always moves. For 'xy' (Resizable's edge/corner handles) only the axis the
+    // dragged direction actually spans moves — mirroring Semi: a `right` handle
+    // changes width only, a `bottom` handle height only, corners change both.
+    const dirHasX = hasDirection(dir, 'left') || hasDirection(dir, 'right');
+    const dirHasY = hasDirection(dir, 'top') || hasDirection(dir, 'bottom');
+    const usesX = options.axis === 'x' || (options.axis === 'xy' && dirHasX);
+    const usesY = options.axis === 'y' || (options.axis === 'xy' && dirHasY);
 
     if (usesX) {
       // left edge grows toward negative delta
@@ -300,29 +316,46 @@ export function createResizeDrag(
     if (usesY) h = snapToPoints(h, snapY, snapGap);
 
     // clamp — per-axis bounds win, else the single-number bound.
-    // Bound-element caps (getBoundMax) fold into the upper limit.
+    // Bound-element caps (getBoundMax) fold into the upper limit. When
+    // boundsByDirection is set, the cap only applies to the dragged edge's axis
+    // (Semi: left/right → width, top/bottom → height), matching Semi's
+    // isWidthConstrained/isHeightConstrained gating.
+    const capW = options.boundsByDirection
+      ? hasDirection(dir, 'left') || hasDirection(dir, 'right')
+        ? boundMaxW
+        : Infinity
+      : boundMaxW;
+    const capH = options.boundsByDirection
+      ? hasDirection(dir, 'top') || hasDirection(dir, 'bottom')
+        ? boundMaxH
+        : Infinity
+      : boundMaxH;
     const lo_w = minW ?? (options.axis !== 'y' ? singleMin : undefined);
     const hi_w = Math.min(
       maxW ?? (options.axis !== 'y' ? singleMax : undefined) ?? Infinity,
-      boundMaxW,
+      capW,
     );
     const lo_h = minH ?? (options.axis === 'y' ? singleMin : undefined);
     const hi_h = Math.min(
       maxH ?? (options.axis === 'y' ? singleMax : undefined) ?? Infinity,
-      boundMaxH,
+      capH,
     );
 
     if (usesX) w = clamp(w, lo_w ?? -Infinity, hi_w);
     if (usesY) h = clamp(h, lo_h ?? -Infinity, hi_h);
 
-    // lock aspect ratio (after individual clamps, derive the driven axis)
+    // lock aspect ratio (after individual clamps, derive the driven axis).
+    // Extra offsets mirror Semi: newWidth = (newHeight - extraH) * ratio + extraW,
+    // newHeight = (newWidth - extraW) / ratio + extraH.
     if (options.lockAspectRatio) {
+      const extraW = options.lockAspectRatioExtraWidth ?? 0;
+      const extraH = options.lockAspectRatioExtraHeight ?? 0;
       if (options.axis === 'xy') {
         // corner drag: drive height from width when horizontal edge present
         if (hasDirection(dir, 'left') || hasDirection(dir, 'right')) {
-          h = w / lockRatio;
+          h = (w - extraW) / lockRatio + extraH;
         } else {
-          w = h * lockRatio;
+          w = (h - extraH) * lockRatio + extraW;
         }
       }
     }

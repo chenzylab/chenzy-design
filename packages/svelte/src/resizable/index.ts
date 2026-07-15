@@ -8,6 +8,9 @@ export {
   type ResizeGroupContext,
   type ResizeItemRegistration,
   type ResizeHandlerRegistration,
+  type HandleClassName,
+  type HandleStyle,
+  type HandleNode,
 } from './context.js';
 export {
   createResizeDrag,
