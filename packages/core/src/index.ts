@@ -268,9 +268,11 @@ export {
   DEFAULT_CONFIG,
   defaultResponsiveMap,
   EMPTY_SCREENS,
+  BREAKPOINTS,
   registerMediaQuery,
   zonedWallTime,
   parseTimeZoneOffsetMinutes,
+  type Breakpoint,
   type ConfigInput,
   type ResolvedConfig,
   type ConfigDir,
@@ -321,13 +323,6 @@ export {
   type ComputePositionInput,
   type ComputePositionResult,
 } from './floating.js';
-export {
-  BREAKPOINTS,
-  BREAKPOINT_ORDER,
-  resolveActiveBreakpoint,
-  resolveResponsiveValue,
-  type Breakpoint,
-} from './breakpoints.js';
 export {
   computeAutosizeHeight,
   countCharacters,
