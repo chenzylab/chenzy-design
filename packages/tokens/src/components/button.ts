@@ -1,7 +1,16 @@
 /**
- * Component tokens for Button. 全量对齐 Semi Design（semi-foundation/button/variables.scss
- * + animation.scss 的 2 个真实值 token），并升级为带元数据的 TokenDef 结构以支持 DSM。
- * 值为 var() 引用我们的 alias / global token，或字面量。
+ * Component tokens for Button / IconButton / ButtonGroup / SplitButtonGroup。
+ * 严格对齐 Semi semi-foundation/button/{variables,animation}.scss（值 1:1 逐条亲验）。
+ * 单层：组件直接消费本文件 token，无「原始层 + 组件消费短名」双层中间变量。
+ *
+ * 映射约定（对齐 tag.ts 惯例）：
+ *  - `var(--semi-color-*)` → `var(--cd-color-*)`；`rgba(var(--semi-white),1)` → `var(--cd-color-white)`。
+ *  - `$spacing-tight/extra-tight/super-tight/base-tight/base` → `var(--cd-spacing-*)`。
+ *  - `$height-control-*` → `var(--cd-control-height-*)`；`$border-thickness*` → `var(--cd-border-thickness*)`。
+ *  - `var(--semi-border-radius-small)` → `var(--cd-border-radius-small)`。
+ *  - `$font-weight-bold` → `var(--cd-font-weight-bold)`；`$font-size-regular` → `var(--cd-font-size-regular)`。
+ *  - Semi AI 色板（`--semi-color-ai-*`）我方无对应 alias，colorful 用可编辑渐变三色
+ *    `button-colorful-from/via/to`（与 Tag/FloatButton 同源，AI 视觉统一）。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -13,6 +22,7 @@ export const buttonTokens = {
   'color-button-primary-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 悬浮' },
   'color-button-primary-bg-active': { value: 'var(--cd-color-primary-active)', category: 'color', label: '主要按钮背景色', usage: '主要按钮背景颜色 - 按下' },
   'color-button-primary-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 按下' },
+  'color-button-primary-outline-focus': { value: 'var(--cd-color-primary-light-active)', category: 'color', label: '主要按钮轮廓色', usage: '主要按钮轮廓 - 聚焦' },
   'color-button-primary-outline-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '主要按钮边框色', usage: '主要按钮边框颜色 - 边框模式' },
   'color-button-primary-borderless-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '主要按钮文字色', usage: '主要按钮文字颜色 - 浅色/边框/无边框模式' },
 
@@ -33,6 +43,7 @@ export const buttonTokens = {
   'color-button-danger-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 悬浮' },
   'color-button-danger-bg-active': { value: 'var(--cd-color-danger-active)', category: 'color', label: '危险按钮背景色', usage: '危险按钮背景颜色 - 按下' },
   'color-button-danger-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 按下' },
+  'color-button-danger-outline-focus': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: '危险按钮轮廓色', usage: '危险按钮轮廓 - 聚焦' },
   'color-button-danger-outline-border-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险按钮边框色', usage: '危险按钮边框颜色 - 边框模式' },
   'color-button-danger-borderless-text-default': { value: 'var(--cd-color-danger)', category: 'color', label: '危险按钮文字色', usage: '危险按钮文字颜色 - 浅色/边框/无边框模式' },
 
@@ -43,6 +54,7 @@ export const buttonTokens = {
   'color-button-warning-text-hover': { value: 'var(--cd-color-white)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 悬浮' },
   'color-button-warning-bg-active': { value: 'var(--cd-color-warning-active)', category: 'color', label: '警告按钮背景色', usage: '警告按钮背景颜色 - 按下' },
   'color-button-warning-text-active': { value: 'var(--cd-color-white)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 按下' },
+  'color-button-warning-outline-focus': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: '警告按钮轮廓色', usage: '警告按钮轮廓 - 聚焦' },
   'color-button-warning-outline-border-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告按钮边框色', usage: '警告按钮边框颜色 - 边框模式' },
   'color-button-warning-borderless-text-default': { value: 'var(--cd-color-warning)', category: 'color', label: '警告按钮文字色', usage: '警告按钮文字颜色 - 浅色/边框/无边框模式' },
 
@@ -57,9 +69,25 @@ export const buttonTokens = {
   'color-button-tertiary-solid-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '第三按钮文字色', usage: '第三按钮文字颜色 - 浅色/边框/无边框模式' },
 
   // —— disabled（对齐 Semi $color-button_disabled*：底灰 + 灰文字，而非纯透明）——
-  'color-button-disabled-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用按钮背景色', usage: '禁用按钮背景颜色 - solid/light 主题' },
-  'color-button-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - 所有主题' },
-  'color-button-disabled-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '禁用按钮边框色', usage: '禁用按钮边框颜色 - 边框模式' },
+  'color-button-disabled-solid-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - solid 主题' },
+  'color-button-disabled-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - 浅色主题或无背景' },
+  'color-button-disabled-outline-text-default': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - 边框模式' },
+  'color-button-disabled-text-hover': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用按钮文字色', usage: '禁用按钮文字颜色 - solid 主题 - 悬浮' },
+  'color-button-disabled-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用按钮背景色', usage: '禁用按钮背景颜色' },
+  'color-button-disabled-bg-hover': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用按钮背景色', usage: '禁用按钮背景颜色 - 悬浮' },
+  'color-button-disabled-outline-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '禁用按钮边框色', usage: '禁用按钮边框颜色 - 边框模式' },
+  // disabled × type 底色（Semi 全部 = $color-button_disabled-bg-default）
+  'color-button-disabled-primary-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用主要按钮背景色', usage: '禁用 primary 按钮背景颜色' },
+  'color-button-disabled-secondary-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用次要按钮背景色', usage: '禁用 secondary 按钮背景颜色' },
+  'color-button-disabled-danger-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用危险按钮背景色', usage: '禁用 danger 按钮背景颜色' },
+  'color-button-disabled-warning-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用警告按钮背景色', usage: '禁用 warning 按钮背景颜色' },
+  'color-button-disabled-tertiary-bg-default': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: '禁用第三按钮背景色', usage: '禁用 tertiary 按钮背景颜色' },
+  // disabled × light × type 底色（Semi 全部 = $color-button_light-bg-default）
+  'color-button-disabled-light-primary-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用浅色主要按钮背景色', usage: '禁用 light primary 按钮背景颜色' },
+  'color-button-disabled-light-secondary-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用浅色次要按钮背景色', usage: '禁用 light secondary 按钮背景颜色' },
+  'color-button-disabled-light-danger-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用浅色危险按钮背景色', usage: '禁用 light danger 按钮背景颜色' },
+  'color-button-disabled-light-warning-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用浅色警告按钮背景色', usage: '禁用 light warning 按钮背景颜色' },
+  'color-button-disabled-light-tertiary-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用浅色第三按钮背景色', usage: '禁用 light tertiary 按钮背景颜色' },
 
   // —— light ——
   'color-button-light-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '浅色按钮背景色', usage: '浅色按钮背景颜色' },
@@ -71,6 +99,7 @@ export const buttonTokens = {
   'width-button-light-border': { value: '0', category: 'width', label: '浅色按钮描边宽度', usage: '浅色按钮描边宽度' },
 
   // —— borderless ——
+  'color-button-borderless-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '无背景按钮文字色', usage: '无背景按钮文字颜色' },
   'color-button-borderless-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '无背景按钮背景色', usage: '无背景按钮背景颜色 - 悬浮' },
   'color-button-borderless-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '无背景按钮背景色', usage: '无背景按钮背景颜色 - 按下' },
   'color-button-borderless-border-default': { value: 'transparent', category: 'color', label: '无背景按钮描边色', usage: '无背景按钮描边颜色' },
@@ -83,20 +112,57 @@ export const buttonTokens = {
   'color-button-outline-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '边框模式背景色', usage: '边框模式按钮背景颜色 - 悬浮' },
   'color-button-outline-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '边框模式背景色', usage: '边框模式按钮背景颜色 - 按下' },
 
-  // —— buttongroup（对齐 Semi $color-button_group-border-default / $width-button_group-border）——
+  // —— buttongroup（对齐 Semi $color-button_group* / $width-button_group-border / $height-button_group_line）——
   'color-button-group-border-default': { value: 'var(--cd-color-border)', category: 'color', label: '按钮组分割线色', usage: '按钮组相邻按钮分割线颜色' },
   'width-button-group-border': { value: 'var(--cd-border-thickness-control)', category: 'width', label: '按钮组分割线宽度', usage: '按钮组相邻按钮分割线宽度' },
-  'radius-button-group': { value: 'var(--cd-radius-button)', category: 'radius', label: '按钮组圆角', usage: '按钮组两端圆角大小（对齐 Semi $radius-button_group）' },
+  'height-button-group-line-default': { value: '20px', category: 'height', label: '按钮组分割线高度', usage: '按钮组分割线高度 - 默认（对齐 Semi 20px）' },
+  'radius-button-group': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '按钮组圆角', usage: '按钮组两端圆角大小（对齐 Semi $radius-button_group）' },
 
-  // —— splitButtonGroup（对齐 Semi $radius-button_splitButtonGroup_*）——
-  'radius-button-splitbuttongroup': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮组圆角', usage: '分裂按钮组首/末按钮外侧圆角大小' },
+  // —— splitButtonGroup（对齐 Semi $radius-button_splitButtonGroup_*，4 个角均 = border-radius-small）——
+  'radius-button-splitbuttongroup-first-topleft': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮首左上圆角', usage: '分裂按钮组首个按钮左上圆角' },
+  'radius-button-splitbuttongroup-first-bottomleft': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮首左下圆角', usage: '分裂按钮组首个按钮左下圆角' },
+  'radius-button-splitbuttongroup-last-topright': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮末右上圆角', usage: '分裂按钮组末尾按钮右上圆角' },
+  'radius-button-splitbuttongroup-last-bottomright': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '分裂按钮末右下圆角', usage: '分裂按钮组末尾按钮右下圆角' },
 
-  // —— padding ——
-  'spacing-button-default-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮左侧内边距', usage: '按钮左侧内边距 - 默认' },
-  'spacing-button-large-paddingleft': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '按钮左侧内边距', usage: '按钮左侧内边距 - 大尺寸' },
-  'spacing-button-small-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮左侧内边距', usage: '按钮左侧内边距 - 小尺寸' },
+  // —— padding（对齐 Semi $spacing-button_*-padding{Top,Bottom,Left,Right}）——
+  'spacing-button-default-paddingtop': { value: '6px', category: 'spacing', label: '按钮上内边距', usage: '按钮顶部内边距 - 默认（对齐 Semi 6px）' },
+  'spacing-button-default-paddingbottom': { value: '6px', category: 'spacing', label: '按钮下内边距', usage: '按钮底部内边距 - 默认（对齐 Semi 6px）' },
+  'spacing-button-default-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮左内边距', usage: '按钮左侧内边距 - 默认' },
+  'spacing-button-default-paddingright': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '按钮右内边距', usage: '按钮右侧内边距 - 默认' },
+  'spacing-button-large-paddingtop': { value: '10px', category: 'spacing', label: '大按钮上内边距', usage: '按钮顶部内边距 - 大尺寸（对齐 Semi 10px）' },
+  'spacing-button-large-paddingbottom': { value: '10px', category: 'spacing', label: '大按钮下内边距', usage: '按钮底部内边距 - 大尺寸（对齐 Semi 10px）' },
+  'spacing-button-large-paddingleft': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '大按钮左内边距', usage: '按钮左侧内边距 - 大尺寸' },
+  'spacing-button-large-paddingright': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '大按钮右内边距', usage: '按钮右侧内边距 - 大尺寸' },
+  'spacing-button-small-paddingtop': { value: 'var(--cd-spacing-super-tight)', category: 'spacing', label: '小按钮上内边距', usage: '按钮顶部内边距 - 小尺寸' },
+  'spacing-button-small-paddingbottom': { value: 'var(--cd-spacing-super-tight)', category: 'spacing', label: '小按钮下内边距', usage: '按钮底部内边距 - 小尺寸' },
+  'spacing-button-small-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '小按钮左内边距', usage: '按钮左侧内边距 - 小尺寸' },
+  'spacing-button-small-paddingright': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '小按钮右内边距', usage: '按钮右侧内边距 - 小尺寸' },
 
-  // —— margin ——
+  // —— iconOnly padding（对齐 Semi $spacing-button_iconOnly_*-padding*）——
+  'spacing-button-icononly-default-paddingleft': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标按钮左内边距', usage: '图标按钮左侧内边距 - 默认' },
+  'spacing-button-icononly-default-paddingright': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标按钮右内边距', usage: '图标按钮右侧内边距 - 默认' },
+  'spacing-button-icononly-default-paddingtop': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标按钮上内边距', usage: '图标按钮顶部内边距 - 默认' },
+  'spacing-button-icononly-default-paddingbottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标按钮下内边距', usage: '图标按钮底部内边距 - 默认' },
+  'spacing-button-icononly-large-paddingleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '大图标按钮左内边距', usage: '图标按钮左侧内边距 - 大尺寸' },
+  'spacing-button-icononly-large-paddingright': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '大图标按钮右内边距', usage: '图标按钮右侧内边距 - 大尺寸' },
+  'spacing-button-icononly-large-paddingtop': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '大图标按钮上内边距', usage: '图标按钮顶部内边距 - 大尺寸' },
+  'spacing-button-icononly-large-paddingbottom': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '大图标按钮下内边距', usage: '图标按钮底部内边距 - 大尺寸' },
+  'spacing-button-icononly-small-paddingleft': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '小图标按钮左内边距', usage: '图标按钮左侧内边距 - 小尺寸' },
+  'spacing-button-icononly-small-paddingright': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '小图标按钮右内边距', usage: '图标按钮右侧内边距 - 小尺寸' },
+  'spacing-button-icononly-small-paddingtop': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '小图标按钮上内边距', usage: '图标按钮顶部内边距 - 小尺寸' },
+  'spacing-button-icononly-small-paddingbottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '小图标按钮下内边距', usage: '图标按钮底部内边距 - 小尺寸' },
+
+  // —— iconOnly 尺寸（对齐 Semi $height/width-button_iconOnly_*）——
+  'height-button-icononly-small': { value: 'var(--cd-control-height-small)', category: 'height', label: '小图标按钮高度', usage: '图标按钮 height - 小尺寸' },
+  'width-button-icononly-small': { value: 'var(--cd-control-height-small)', category: 'width', label: '小图标按钮宽度', usage: '图标按钮 width - 小尺寸' },
+  'height-button-icononly-default': { value: 'var(--cd-control-height-default)', category: 'height', label: '图标按钮高度', usage: '图标按钮 height - 默认' },
+  'width-button-icononly-default': { value: 'var(--cd-control-height-default)', category: 'width', label: '图标按钮宽度', usage: '图标按钮 width - 默认' },
+  'height-button-icononly-large': { value: 'var(--cd-control-height-large)', category: 'height', label: '大图标按钮高度', usage: '图标按钮 height - 大尺寸' },
+  'width-button-icononly-large': { value: 'var(--cd-control-height-large)', category: 'width', label: '大图标按钮宽度', usage: '图标按钮 width - 大尺寸' },
+
+  // —— iconOnly 图标↔文字间距（对齐 Semi $spacing-button_iconOnly_content-margin*）——
+  'spacing-button-icononly-content-marginleft': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标右侧文字间距', usage: '按钮右侧图标距离文字间距' },
+  'spacing-button-icononly-content-marginright': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '图标左侧文字间距', usage: '按钮左侧图标距离文字间距' },
 
   // —— font ——
   'font-button-fontweight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '按钮文字字重', usage: '按钮文字字重 - 默认' },
@@ -108,11 +174,10 @@ export const buttonTokens = {
   'height-button-small': { value: 'var(--cd-control-height-small)', category: 'height', label: '按钮高度', usage: '按钮高度 - 小尺寸' },
   'height-button-default': { value: 'var(--cd-control-height-default)', category: 'height', label: '按钮高度', usage: '按钮高度 - 默认' },
 
-  // —— radius ——
+  // —— radius / border ——
   'width-button-border': { value: 'var(--cd-border-thickness)', category: 'width', label: '按钮描边宽度', usage: '按钮描边宽度' },
   'radius-button': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '按钮圆角', usage: '按钮圆角大小' },
-
-  // —— splitButtonGroup ——
+  'width-button-outline': { value: '2px', category: 'width', label: '按钮轮廓宽度', usage: '按钮轮廓宽度（focus-visible outline）' },
 
   // —— animation：背景色过渡（7 类型 × duration/function/delay，对齐 Semi animation.scss）——
   // 默认无动画（duration/delay=0ms），主题或 DSM 可按类型单独开启过渡。

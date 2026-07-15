@@ -13,9 +13,10 @@ export const meta = {
   props: [
     { name: 'icon', type: 'Snippet', default: 'undefined', desc: '必填。图标内容。' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '必填。可访问名；dev 缺失时 console.warn。' },
-    { name: 'type', type: "'primary'|'secondary'|'tertiary'|'warning'|'danger'", default: 'secondary', desc: '语义类型' },
+    { name: 'type', type: "'primary'|'secondary'|'tertiary'|'warning'|'danger'", default: 'primary', desc: '语义类型' },
     { name: 'theme', type: "'solid'|'borderless'|'light'|'outline'", default: 'light', desc: '视觉变体' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default', desc: '尺寸三档' },
+    { name: 'iconPosition', type: "'left'|'right'", default: 'left', desc: '图标相对文字位置（透传给 Button）' },
     { name: 'circle', type: 'boolean', default: 'false', desc: '圆形按钮（复用 Button circle）' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '禁用' },
     { name: 'loading', type: 'boolean', default: 'false', desc: '加载态（spin 图标替换）' },

@@ -125,8 +125,8 @@ export const demos: DemoEntry[] = [
     '07-disabled.svelte',
     { zh: '禁用状态', en: 'Disabled' },
     {
-      zh: 'disabled 在各主题下统一降低不透明度并禁止交互。',
-      en: 'disabled lowers opacity and blocks interaction across all themes.',
+      zh: 'disabled 在各主题下用禁用底灰 + 灰字表现，并禁止交互；disabled 优先级高于 loading（对齐 Semi）。',
+      en: 'disabled renders a muted grey background + grey text and blocks interaction; disabled takes priority over loading (aligned with Semi).',
     },
   ),
   entry(
@@ -173,8 +173,8 @@ export const demos: DemoEntry[] = [
     '11-split.svelte',
     { zh: '分裂按钮组合', en: 'SplitButtonGroup' },
     {
-      zh: 'SplitButtonGroup 左侧主操作 + 右侧箭头触发下拉，下拉复用 Dropdown 的 items API。',
-      en: 'SplitButtonGroup: primary action on the left, arrow on the right opens a Dropdown (reusing its items API).',
+      zh: 'SplitButtonGroup 是纯容器（对齐 Semi）：内部放 Button + Dropdown（含箭头 Button），为首/末按钮补圆角并添加按钮间隔。',
+      en: 'SplitButtonGroup is a pure container (aligned with Semi): place a Button plus a Dropdown (with an arrow Button) inside; it rounds the first/last button corners and adds spacing.',
     },
   ),
 ];
