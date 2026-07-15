@@ -8,8 +8,8 @@
   interface Props {
     /** Logo 节点。 */
     logo?: Snippet;
-    /** Logo 文案。 */
-    text?: string;
+    /** Logo 文案（字符串或 Snippet）。 */
+    text?: string | Snippet;
     /** 链接地址（对齐 Semi）：传入时头部整体包裹一个 `<a>`。 */
     link?: string;
     /** 透传给 `<a>` 的属性（对齐 Semi linkOptions，如 target/rel）。 */
@@ -40,10 +40,12 @@
     {@render children()}
   {:else}
     {#if logo}
-      <span class="cd-nav__logo">{@render logo()}</span>
+      <span class="cd-nav__header-logo">{@render logo()}</span>
     {/if}
     {#if text && !collapsedState}
-      <span class="cd-nav__header-text">{text}</span>
+      <span class="cd-nav__header-text"
+        >{#if typeof text === 'string'}{text}{:else}{@render text()}{/if}</span
+      >
     {/if}
   {/if}
 {/snippet}
@@ -73,7 +75,7 @@
     color: inherit;
     text-decoration: none;
   }
-  .cd-nav__logo {
+  .cd-nav__header-logo {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;

@@ -26,11 +26,14 @@ describe('Nav 项树辅助（selectedItems / 祖先高亮）', () => {
 });
 
 describe('Nav 渲染（对齐 Semi）', () => {
-  it('vertical：渲染 nav landmark + 导航项', () => {
+  it('vertical：根为 div.cd-nav + ul[role=menu] + 导航项', () => {
     const { container } = renderWithLocale(Nav, { props: { mode: 'vertical', items } });
-    expect(container.querySelector('.cd-nav')).not.toBeNull();
-    // 独立渲染 <nav> landmark
-    expect(container.querySelector('nav')).not.toBeNull();
+    const root = container.querySelector('.cd-nav');
+    expect(root).not.toBeNull();
+    // 对齐 Semi：根为纯 <div>（无 nav landmark）。
+    expect(root?.tagName).toBe('DIV');
+    expect(container.querySelector('nav')).toBeNull();
+    expect(container.querySelector('.cd-nav__list[role="menu"]')).not.toBeNull();
     expect(container.textContent).toContain('首页');
   });
 
@@ -47,9 +50,11 @@ describe('Nav 渲染（对齐 Semi）', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, footer: { collapseButton: true }, onCollapseChange },
     });
-    const btn = container.querySelector<HTMLButtonElement>('.cd-nav__collapse-btn');
+    // 收起按钮为 div.cd-nav__collapse-btn 内的 Button。
+    const wrap = container.querySelector('.cd-nav__collapse-btn');
+    expect(wrap).not.toBeNull();
+    const btn = wrap?.querySelector<HTMLButtonElement>('button');
     expect(btn).not.toBeNull();
-    expect(btn?.getAttribute('aria-expanded')).toBe('true');
     btn?.click();
     expect(onCollapseChange).toHaveBeenCalledWith(true);
   });
