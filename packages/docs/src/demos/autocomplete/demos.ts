@@ -24,11 +24,11 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '输入时从候选列表中补全，onChange 同步值。'),
-  entry('02-remote.svelte', '远程搜索', 'onSearch 防抖后回调由外部更新 data，配合 loading 展示加载态。'),
-  entry('03-group.svelte', '分组数据', 'data 传入 { label, options } 分组项，选项可为字符串或 { value, label, disabled }。'),
+  entry('01-basic.svelte', '基础用法', '对齐 Semi：onSearch 按输入 query 准备候选 data，组件不做本地过滤，onChange 同步值。'),
+  entry('02-remote.svelte', '远程搜索', 'onSearch 回调由外部更新 data，配合 loading 展示加载态。'),
+  entry('03-group.svelte', '对象候选项', 'data 传入 { value, label, disabled } 对象项，onSelectWithObject 选中时回传完整对象。'),
   entry('04-size.svelte', '尺寸', 'size 控制 small / default / large 三档输入框尺寸。'),
-  entry('05-prefix-clear.svelte', '前缀与清除', 'prefix 内嵌前缀标签，clearable 显示一键清空按钮。'),
+  entry('05-prefix-clear.svelte', '前缀与清除', 'prefix 内嵌前缀标签，showClear 显示一键清空按钮（对齐 Semi）。'),
   entry(
     '06-render.svelte',
     '自定义候选项渲染',

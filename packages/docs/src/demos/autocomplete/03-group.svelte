@@ -3,29 +3,30 @@
 
   let value = $state('');
 
-  // 分组数据：{ label, options: [] }，options 可为字符串或 { value, label, disabled }
-  const data = [
-    {
-      label: '前端框架',
-      options: ['React', 'Vue', 'Svelte', 'Solid'],
-    },
-    {
-      label: '后端语言',
-      options: [
-        { value: 'go', label: 'Go' },
-        { value: 'rust', label: 'Rust' },
-        { value: 'java', label: 'Java', disabled: true },
-      ],
-    },
+  // data 支持字符串或 { value, label, disabled } 对象项（对齐 Semi data 形态）。
+  const all = [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'solid', label: 'Solid' },
+    { value: 'angular', label: 'Angular', disabled: true },
   ];
+  let data = $state<typeof all>([]);
+
+  function onSearch(query: string) {
+    const q = query.toLowerCase();
+    data = q ? all.filter((o) => o.label.toLowerCase().includes(q)) : all;
+  }
 </script>
 
 <div style="width: 260px">
+  <!-- 对象候选项：含 label / value / disabled；onSelectWithObject 回传完整对象 -->
   <AutoComplete
     {data}
     {value}
-    openOnFocus
-    placeholder="聚焦展开分组候选"
-    onChange={(v) => (value = v)}
+    placeholder="输入框架名（Angular 禁用）"
+    onSelectWithObject
+    {onSearch}
+    onChange={(v) => (value = String(v))}
   />
 </div>

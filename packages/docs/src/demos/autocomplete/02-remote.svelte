@@ -29,7 +29,7 @@
     {loading}
     placeholder="输入关键词远程搜索"
     onSearch={search}
-    onChange={(v) => (value = v)}
+    onChange={(v) => (value = String(v))}
   />
   <Text type="tertiary">{loading ? '加载中…' : `输入：${value || '（空）'}`}</Text>
 </div>

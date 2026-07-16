@@ -1,42 +1,39 @@
 /**
  * Component tokens for AutoComplete。
- * 遵循 dsm.spec「Token 精简原则」：只保留 AutoComplete.svelte 实际消费的 token。
- * AutoComplete 在触发器/输入框上复用 Input token、下拉外观复用 Select token，
- * 因此原「对齐 Semi autoComplete/variables.scss」的长名变量无人消费，已整段删除。
- * 以下别名把组件里散落的 alias 收敛到组件层，默认值 = 原直接引 alias，视觉不变。
- * 值为 var() 引用我们的 alias / global / input / select token，或字面量。
+ * 严格对齐 Semi semi-foundation/autoComplete/variables.scss：token 名与值逐条镜像
+ * Semi 原始 `$...-autoComplete_...` 变量（下划线段转连字符、驼峰保留），去除「复用 Input/Select
+ * 别名中间层」的自造转发 token。触发器/输入框结构复用本库 Input 组件（消费 Input 自身 token），
+ * 故此处只声明 Semi autoComplete 原生存在的下拉/选项/加载相关 token，不再重复声明触发器外观。
+ * 值引用本库 alias/global（--cd-color-* / --cd-spacing-* / --cd-width-* / --cd-font-weight-*）。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const autocompleteTokens = {
-  // —— chenzy-design 组件实际消费的补充 token（AutoComplete.svelte 直接消费）——
-  // 触发器/输入框外观复用 Input token，下拉外观复用 Select token。
-  'autocomplete-font-size': { value: 'var(--cd-input-font-size)', category: 'font', label: '字号', usage: '自动完成文字字号（组件消费，复用 Input）' },
-  'autocomplete-control-height-default': { value: 'var(--cd-height-input-default)', category: 'height', label: '触发器高度', usage: '自动完成触发器高度 - 默认（组件消费，复用 Input）' },
-  'autocomplete-control-height-small': { value: 'var(--cd-height-input-small)', category: 'height', label: '触发器高度', usage: '自动完成触发器高度 - 小尺寸（组件消费，复用 Input）' },
-  'autocomplete-control-height-large': { value: 'var(--cd-height-input-large)', category: 'height', label: '触发器高度', usage: '自动完成触发器高度 - 大尺寸（组件消费，复用 Input）' },
-  'autocomplete-control-padding-x': { value: 'var(--cd-input-padding-x)', category: 'spacing', label: '触发器水平内边距', usage: '自动完成触发器水平内边距（组件消费，复用 Input）' },
-  'autocomplete-control-bg': { value: 'var(--cd-input-color-bg)', category: 'color', label: '触发器背景色', usage: '自动完成触发器背景颜色（组件消费，复用 Input）' },
-  'autocomplete-control-border': { value: 'var(--cd-input-border)', category: 'color', label: '触发器描边色', usage: '自动完成触发器描边颜色 - 默认（组件消费，复用 Input）' },
-  'autocomplete-control-border-active': { value: 'var(--cd-input-border-active)', category: 'color', label: '触发器聚焦描边色', usage: '自动完成触发器描边颜色 - 聚焦（组件消费，复用 Input）' },
-  'autocomplete-control-border-warning': { value: 'var(--cd-input-border-warning)', category: 'color', label: '触发器警告描边色', usage: '自动完成触发器描边颜色 - 警告（组件消费，复用 Input）' },
-  'autocomplete-control-border-error': { value: 'var(--cd-input-border-error)', category: 'color', label: '触发器错误描边色', usage: '自动完成触发器描边颜色 - 错误（组件消费，复用 Input）' },
-  'autocomplete-control-radius': { value: 'var(--cd-input-radius)', category: 'radius', label: '触发器圆角', usage: '自动完成触发器圆角（组件消费，复用 Input）' },
-  'autocomplete-control-disabled-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '禁用触发器背景色', usage: '自动完成触发器背景颜色 - 禁用（组件消费）' },
-  'autocomplete-control-disabled-text': { value: 'var(--cd-color-text-3)', category: 'color', label: '禁用触发器文字色', usage: '自动完成触发器文字颜色 - 禁用（组件消费）' },
-  'autocomplete-placeholder-text': { value: 'var(--cd-input-color-placeholder)', category: 'color', label: '占位文字色', usage: '自动完成占位文字颜色（组件消费，复用 Input）' },
-  'autocomplete-affix-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '前后缀/内嵌标签文字色', usage: '自动完成 prefix/suffix/insetLabel 文字颜色（组件消费）' },
-  'autocomplete-clear-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '清除按钮色', usage: '自动完成清除按钮颜色 - 默认（组件消费）' },
-  'autocomplete-clear-text-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: '清除按钮色', usage: '自动完成清除按钮颜色 - 悬停（组件消费）' },
-  'autocomplete-dropdown-bg': { value: 'var(--cd-select-dropdown-bg)', category: 'color', label: '下拉背景色', usage: '自动完成下拉浮层背景颜色（组件消费，复用 Select）' },
-  'autocomplete-dropdown-shadow': { value: 'var(--cd-select-dropdown-shadow)', category: 'other', label: '下拉阴影', usage: '自动完成下拉浮层阴影（组件消费，复用 Select）' },
-  'autocomplete-dropdown-radius': { value: 'var(--cd-select-dropdown-radius)', category: 'radius', label: '下拉圆角', usage: '自动完成下拉浮层圆角（组件消费，复用 Select）' },
-  'autocomplete-dropdown-z': { value: 'var(--cd-select-dropdown-z)', category: 'other', label: '下拉层级', usage: '自动完成下拉浮层 z-index（组件消费，复用 Select）' },
-  'autocomplete-option-padding': { value: 'var(--cd-select-option-padding)', category: 'spacing', label: '选项内边距', usage: '自动完成下拉选项内边距（组件消费，复用 Select）' },
-  'autocomplete-option-bg-hover': { value: 'var(--cd-select-option-bg-hover)', category: 'color', label: '选项背景色', usage: '自动完成下拉选项背景颜色 - 悬停（组件消费，复用 Select）' },
-  'autocomplete-option-disabled-text': { value: 'var(--cd-color-text-3)', category: 'color', label: '禁用选项文字色', usage: '自动完成下拉禁用选项文字颜色（组件消费）' },
-  'autocomplete-empty-text': { value: 'var(--cd-color-text-3)', category: 'color', label: '空态/加载文字色', usage: '自动完成空态与加载文字颜色（组件消费）' },
-  'autocomplete-group-label-text': { value: 'var(--cd-color-text-3)', category: 'color', label: '分组标题文字色', usage: '自动完成分组标题文字颜色（组件消费）' },
-  'autocomplete-spinner-track': { value: 'var(--cd-color-border)', category: 'color', label: 'spinner 轨道色', usage: '自动完成加载 spinner 轨道颜色（组件消费）' },
-  'autocomplete-spinner-indicator': { value: 'var(--cd-color-primary)', category: 'color', label: 'spinner 指示色', usage: '自动完成加载 spinner 指示颜色（组件消费）' },
+  // —— 选项配色（Semi $color-autoComplete_option-*）——
+  'autocomplete-option-main-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '选项文本色', usage: '自动完成菜单选项文本颜色（Semi $color-autoComplete_option_main-text）' },
+  'autocomplete-option-bg-default': { value: 'transparent', category: 'color', label: '选项背景色-默认', usage: '自动完成菜单选项背景颜色 - 默认态（Semi $color-autoComplete_option-bg-default）' },
+  'autocomplete-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '选项背景色-悬停', usage: '自动完成菜单选项背景颜色 - 悬停/高亮态（Semi $color-autoComplete_option-bg-hover）' },
+  'autocomplete-option-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '选项背景色-按下', usage: '自动完成菜单选项背景颜色 - 按下态（Semi $color-autoComplete_option-bg-active）' },
+  'autocomplete-option-disabled-text': { value: 'var(--cd-color-disabled-text)', category: 'color', label: '禁用选项文字色', usage: '禁用自动完成菜单选项文字颜色（Semi $color-autoComplete_option_disabled-text）' },
+  'autocomplete-option-keyword-text': { value: 'var(--cd-color-primary)', category: 'color', label: '关键词高亮色', usage: '自动完成菜单选项匹配搜索结果文本颜色（Semi $color-autoComplete_option_keyword-text）' },
+  // 注：Semi variables.scss 另有 option-icon-default/active、option-tick-width/margin-right（仅作用于
+  // 选中对勾 .semi-autocomplete-option-icon，而 autoComplete 恒传 showTick=false 从不渲染该 DOM）与
+  // option-border-default（分组描边，autoComplete 无分组），本库 option 无对应结构，故不镜像这些死变量。
+
+  // —— 选项尺寸/内边距（Semi $spacing-autoComplete_option-* / $radius-autoComplete_option）——
+  'autocomplete-option-padding-left': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选项左内边距', usage: '自动完成菜单项左侧内边距（Semi $spacing-autoComplete_option-paddingLeft）' },
+  'autocomplete-option-padding-right': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选项右内边距', usage: '自动完成菜单项右侧内边距（Semi $spacing-autoComplete_option-paddingRight）' },
+  'autocomplete-option-padding-top': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '选项上内边距', usage: '自动完成菜单项顶部内边距（Semi $spacing-autoComplete_option-paddingTop）' },
+  'autocomplete-option-padding-bottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '选项下内边距', usage: '自动完成菜单项底部内边距（Semi $spacing-autoComplete_option-paddingBottom）' },
+  'autocomplete-option-first-margin-top': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '首项上外边距', usage: '自动完成第一个菜单项顶部外边距（Semi $spacing-autoComplete_option_first-marginTop）' },
+  'autocomplete-option-last-margin-bottom': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '末项下外边距', usage: '自动完成最后一个菜单项底部外边距（Semi $spacing-autoComplete_option_last-marginBottom）' },
+  'autocomplete-option-radius': { value: '0px', category: 'radius', label: '选项圆角', usage: '自动完成待选项圆角（Semi $radius-autoComplete_option）' },
+
+  // —— 加载态（Semi $spacing-autoComplete_loading_wrapper-*）——
+  'autocomplete-loading-wrapper-padding-top': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '加载区上内边距', usage: '加载搜索结果时的顶部内边距（Semi $spacing-autoComplete_loading_wrapper-paddingTop）' },
+  'autocomplete-loading-wrapper-padding-bottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '加载区下内边距', usage: '加载搜索结果时的底部内边距（Semi $spacing-autoComplete_loading_wrapper-paddingBottom）' },
+
+  // —— 字重（Semi $font-autoComplete_inset_label-fontWeight / $font-autoComplete_keyword-fontWeight）——
+  'autocomplete-inset-label-font-weight': { value: '600', category: 'font', label: '内嵌标签字重', usage: '自动完成内嵌标签文本字重（Semi $font-autoComplete_inset_label-fontWeight）' },
+  'autocomplete-keyword-font-weight': { value: '600', category: 'font', label: '关键词字重', usage: '自动完成搜索结果命中关键词文本字重（Semi $font-autoComplete_keyword-fontWeight）' },
 } satisfies TokenGroup;

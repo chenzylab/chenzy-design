@@ -1,10 +1,22 @@
 <!--
-  AutoComplete — see specs/components/input/AutoComplete.spec.md
-  输入联想 + 本地过滤 + 键盘选择。Token-driven, a11y-correct (combobox + listbox)。
-  remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 data；loading 显示 spinner。
-  remote 模式本地不再过滤（外部已按 query 准备 data）。maxCount：建议项最多渲染条数（0=不限）。
-  insetLabel：输入框内嵌前缀标签（string | Snippet）。openOnFocus：聚焦即展开建议列表。
-  分组：data 支持 { label, options }[]，逻辑/键盘/maxCount 基于扁平序列（红线 #2 派生纯函数）。
+  AutoComplete — 严格对齐 Semi Design（semi-ui/autoComplete）。
+  输入联想 + 键盘选择。Token-driven, a11y-correct (combobox + listbox)。
+
+  对齐 Semi 要点：
+  - 组件本身不做本地过滤：data 由用户按 query 准备（远程或本地皆同）。是否远程由 onSearch 存在决定。
+  - 下拉列表根 class = cd-autocomplete-option-list（对齐 Semi semi-autocomplete-option-list）。
+  - 选项包 cd-autocomplete-option-text 层，字符串候选经 <Highlight> 高亮命中的输入词
+    （高亮 tag = cd-autocomplete-option-keyword，对齐 Semi option.tsx renderOptionContent）。
+  - loading 复用本库 <Spin>，外层 cd-autocomplete-loading-wrapper（对齐 Semi renderLoading）。
+  - defaultActiveFirstOption 默认 false、maxHeight 默认 300、zIndex 默认走 token（对齐 Semi defaultProps）。
+
+  暂缓（本轮保留自绘）：
+  - 触发器未复用本库 <Input>：本库 Input 尚无 combobox 相关 aria 透传能力
+    （role=combobox / aria-expanded / aria-controls / aria-activedescendant / aria-autocomplete
+    无法设到其原生 input 上），而这些是 autoComplete a11y 契约（测试与 a11y.spec 强约束）。
+    直接给 Input 加这些属于跨组件改动，故本轮保留自绘 combobox 输入框，待 Input 补 aria 透传后复用。
+  - 下拉浮层用 use:floating（与本库 Select 同架构）承载，未包 <Popover>：Popover 的 .cd-popover 卡片
+    结构/内边距面向气泡卡而非选项列表，Select 亦直接用 use:floating；保持二者一致的 -option-list 结构。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -12,127 +24,115 @@
   import { IconClear } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import Spin from '../spin/Spin.svelte';
+  import Highlight from '../highlight/Highlight.svelte';
 
   type ItemValue = string | number;
   type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
-  /** 分组项：含 options 即为分组 */
-  type ItemGroup = { label: string; options: Item[] };
-  type ItemOrGroup = Item | ItemGroup;
   type NormalizedItem = { value: ItemValue; label: string; disabled: boolean };
-  type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
+  type Size = 'small' | 'large' | 'default';
+  type ValidateStatus = 'default' | 'warning' | 'error';
   type Position = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
 
-  function isGroup(o: ItemOrGroup): o is ItemGroup {
-    return typeof o === 'object' && o !== null && Array.isArray((o as ItemGroup).options);
-  }
-
   interface Props {
-    value?: string;
-    defaultValue?: string;
-    /** 候选数据；可含分组项 { label, options: [] } */
-    data?: ItemOrGroup[];
-    open?: boolean;
+    /** 受控输入值（string | number）。 */
+    value?: ItemValue;
+    /** 非受控初始值。 */
+    defaultValue?: ItemValue;
+    /** 候选数据（对齐 Semi data，由用户按 query 准备，组件不做本地过滤）。 */
+    data?: Item[];
+    /** 非受控初始展开。 */
     defaultOpen?: boolean;
     placeholder?: string;
-    /** combobox 输入框可访问名；缺省回退到 placeholder 或 locale 默认 */
+    /** combobox 输入框可访问名；缺省回退到 placeholder 或 locale 默认。 */
     ariaLabel?: string;
-    /** 关联外部 label 的 id（优先于 ariaLabel） */
+    /** 关联外部 label 的 id（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
-    /** 输入框内嵌前缀标签 */
+    /** 输入框内嵌前缀标签。 */
     insetLabel?: string | Snippet;
-    /** 聚焦即展开建议列表（默认 false，仅输入时展开） */
-    openOnFocus?: boolean;
+    /** 内嵌标签 id（关联到 combobox 可访问名，对齐 Semi insetLabelId）。 */
+    insetLabelId?: string;
     size?: Size;
-    status?: Status;
+    /** 校验状态（对齐 Semi validateStatus）。 */
+    validateStatus?: ValidateStatus;
     disabled?: boolean;
-    filter?: boolean;
+    /** 打开浮层时默认高亮首个可用选项（对齐 Semi 默认 false）。 */
     defaultActiveFirstOption?: boolean;
-    clearable?: boolean;
-    /** 远程搜索：输入防抖后回调（由外部更新 data，本地不再过滤） */
+    /** 远程搜索：输入回调（由外部更新 data）。提供即视为远程模式。 */
     onSearch?: (query: string) => void;
-    /** 远程加载中（显示 spinner） */
+    /** 远程加载中（显示 Spin）。 */
     loading?: boolean;
-    /** onSearch 防抖毫秒（默认 300） */
-    searchDebounce?: number;
-    /** 建议项最多渲染条数（0=不限制） */
-    maxCount?: number;
-    onChange?: (v: string) => void;
-    /** onSelectWithObject 为 true 时入参为完整对象，否则为 value */
+    /** 值变化回调（对齐 Semi (value: string|number)）。 */
+    onChange?: (value: ItemValue) => void;
+    /** 选中候选项回调；onSelectWithObject=true 时入参为完整对象，否则为 value。 */
     onSelect?: (value: ItemValue | NormalizedItem) => void;
-    /** 为 true 时 onSelect 回调入参从 value 变为完整候选对象 { value, label, disabled } */
+    /** 为 true 时 onSelect 回调入参从 value 变为完整候选对象 { value, label, disabled }（对齐 Semi）。 */
     onSelectWithObject?: boolean;
-    onOpenChange?: (open: boolean) => void;
-    /** 浮层宽度与触发器同宽（默认 true） */
+    /** 浮层显隐切换回调（对齐 Semi onDropdownVisibleChange）。 */
+    onDropdownVisibleChange?: (visible: boolean) => void;
+    /** 浮层宽度与触发器同宽（默认 true）。 */
     dropdownMatchSelectWidth?: boolean;
-    /** 浮层挂载容器 */
+    /** 浮层挂载容器。 */
     getPopupContainer?: () => HTMLElement;
-    /** 浮层 className */
+    /** 浮层 className。 */
     dropdownClassName?: string;
-    /** 浮层样式 */
+    /** 浮层样式。 */
     dropdownStyle?: string | Record<string, string>;
-    /** 完全自定义触发器 */
+    /** 完全自定义触发器。 */
     triggerRender?: Snippet<[{ value: string; placeholder: string; disabled: boolean }]>;
-    /** 自定义候选项渲染 */
+    /** 自定义候选项渲染。 */
     renderItem?: Snippet<[{ item: NormalizedItem; isSelected: boolean }]>;
-    /** 自定义已选项显示 */
+    /** 自定义已选项显示（仅 string，对齐 Semi renderSelectedItem）。 */
     renderSelectedItem?: Snippet<[{ item: NormalizedItem }]>;
-    /** 无候选时展示内容 */
+    /** 无候选时展示内容。 */
     emptyContent?: Snippet | string;
-    /** 输入框前缀 */
+    /** 输入框前缀。 */
     prefix?: Snippet | string;
-    /** 输入框后缀 */
+    /** 输入框后缀。 */
     suffix?: Snippet | string;
-    /** 显示清除按钮（clearable 的别名，showClear 优先） */
+    /** 显示清除按钮（对齐 Semi showClear）。 */
     showClear?: boolean;
-    /** 自定义清除图标 */
+    /** 自定义清除图标。 */
     clearIcon?: Snippet;
     onBlur?: (e: FocusEvent) => void;
     onFocus?: (e: FocusEvent) => void;
     onClear?: () => void;
-    /** 显式远程模式（关闭本地过滤），不依赖 onSearch 是否存在 */
-    remote?: boolean;
-    /** 挂载自动聚焦 */
+    /** 挂载自动聚焦。 */
     autoFocus?: boolean;
-    /** 浮层位置 */
+    /** 浮层位置。 */
     position?: Position;
-    /** 透传键盘原始事件（在内部键盘逻辑之前调用） */
+    /** 透传键盘原始事件（在内部键盘逻辑之前调用）。 */
     onKeyDown?: (e: KeyboardEvent) => void;
-    /** 根节点自定义 class */
+    /** 根节点自定义 class。 */
     class?: string;
-    /** 根节点自定义 style */
+    /** 根节点自定义 style。 */
     style?: string;
-    /** 浮层最大高度（number→px，string 原样），覆盖默认 16rem */
+    /** 浮层最大高度（number→px，string 原样），默认 300（对齐 Semi）。 */
     maxHeight?: number | string;
-    /** 浮层 z-index，覆盖默认 token */
+    /** 浮层 z-index，覆盖默认 token。 */
     zIndex?: number;
   }
 
   let {
-    value = $bindable(),
+    value,
     defaultValue = '',
     data = [],
-    open = $bindable(),
     defaultOpen = false,
     placeholder = '',
     ariaLabel,
     ariaLabelledby,
     insetLabel,
-    openOnFocus = false,
+    insetLabelId,
     size = 'default',
-    status = 'default',
+    validateStatus = 'default',
     disabled = false,
-    filter = true,
-    defaultActiveFirstOption = true,
-    clearable = false,
+    defaultActiveFirstOption = false,
     onSearch,
     loading = false,
-    searchDebounce = 300,
-    maxCount = 0,
     onChange,
     onSelect,
     onSelectWithObject = false,
-    onOpenChange,
+    onDropdownVisibleChange,
     dropdownMatchSelectWidth = true,
     getPopupContainer,
     dropdownClassName,
@@ -143,18 +143,17 @@
     emptyContent,
     prefix,
     suffix,
-    showClear,
+    showClear = false,
     clearIcon,
     onBlur,
     onFocus,
     onClear,
-    remote = false,
     autoFocus = false,
     position = 'bottomLeft',
     onKeyDown,
     class: className = '',
     style = '',
-    maxHeight,
+    maxHeight = 300,
     zIndex,
   }: Props = $props();
 
@@ -164,22 +163,23 @@
 
   // --- 受控值 (红线 #1): 不无条件回写 value，仅 onChange ---
   const isValueControlled = $derived(value !== undefined);
-  let innerValue = $state(getInitialValue());
-  const currentValue = $derived(isValueControlled ? (value ?? '') : innerValue);
+  let innerValue = $state<ItemValue>(getInitialValue());
+  const currentValue = $derived<ItemValue>(isValueControlled ? (value ?? '') : innerValue);
 
-  function getInitialValue(): string {
+  function getInitialValue(): ItemValue {
     return defaultValue;
   }
+  // 输入框回显文本（number 值转字符串）。
+  const displayValue = $derived(String(currentValue ?? ''));
 
-  function setValue(next: string) {
+  function setValue(next: ItemValue) {
     if (!isValueControlled) innerValue = next;
     onChange?.(next);
   }
 
-  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
+  // --- 非受控 open (对齐 Semi：无受控 open，仅 defaultOpen + onDropdownVisibleChange) ---
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(innerOpen);
 
   function getInitialOpen(): boolean {
     return defaultOpen;
@@ -187,8 +187,8 @@
 
   function setOpen(next: boolean) {
     if (next === isOpen) return;
-    if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
+    innerOpen = next;
+    onDropdownVisibleChange?.(next);
     if (!next) activeIndex = -1;
   }
 
@@ -199,58 +199,10 @@
     return { value: it.value, label: it.label ?? String(it.value), disabled: it.disabled ?? false };
   }
 
-  // remote 模式：外部已按 query 更新 data，本地不再过滤。
-  // remote prop 显式开启时也禁用本地过滤，无需 onSearch。
-  const isRemote = $derived(remote || onSearch !== undefined);
+  // 候选序列：仅归一化，不做本地过滤（对齐 Semi：data 由用户按 query 准备）。
+  const options = $derived<NormalizedItem[]>(data.map(normalize));
 
-  // 是否含分组：决定渲染走分组结构还是扁平。
-  const hasGroups = $derived(data.some(isGroup));
-
-  // 过滤纯函数：复用于扁平序列与分组视图，保证两者一致。
-  function matchOption(o: NormalizedItem): boolean {
-    if (isRemote || !filter || currentValue === '') return true;
-    const q = currentValue.toLowerCase();
-    return (
-      o.label.toLowerCase().includes(q) || String(o.value).toLowerCase().includes(q)
-    );
-  }
-
-  // 候选条目：归一化 + 记录所属组（groupKey：组序号，无组为 -1），用于分组视图重组。
-  type FlatItem = NormalizedItem & { groupKey: number };
-
-  // 扁平候选序列（拍平分组并过滤/截断）——逻辑/键盘/maxCount/高亮统一基于它（红线 #2）。
-  const options = $derived.by<FlatItem[]>(() => {
-    const all: FlatItem[] = [];
-    data.forEach((o, gi) => {
-      if (isGroup(o)) {
-        for (const child of o.options) all.push({ ...normalize(child), groupKey: gi });
-      } else {
-        all.push({ ...normalize(o), groupKey: -1 });
-      }
-    });
-    const matched = all.filter(matchOption);
-    return maxCount > 0 ? matched.slice(0, maxCount) : matched;
-  });
-
-  // 分组渲染视图：按原始组顺序聚合过滤后的候选 + 全局扁平索引（与 activeIndex 对齐）。
-  // 仅 hasGroups 时使用；纯派生，无副作用（红线 #2）。
-  const groupedView = $derived.by<{ key: number; label: string | null; items: { opt: FlatItem; flatIndex: number }[] }[]>(() => {
-    if (!hasGroups) return [];
-    const out: { key: number; label: string | null; items: { opt: FlatItem; flatIndex: number }[] }[] = [];
-    options.forEach((opt, flatIndex) => {
-      const label = opt.groupKey >= 0 ? (data[opt.groupKey] as ItemGroup).label : null;
-      const last = out[out.length - 1];
-      // 连续同组合并为同一段，保留原始相邻关系。
-      if (last && last.key === opt.groupKey) {
-        last.items.push({ opt, flatIndex });
-      } else {
-        out.push({ key: opt.groupKey, label, items: [{ opt, flatIndex }] });
-      }
-    });
-    return out;
-  });
-
-  // --- roving 高亮 (红线 #2): activeIndex 本地 $state，不依赖挂载 registry ---
+  // --- roving 高亮 (红线 #2): activeIndex 本地 $state ---
   let activeIndex = $state(-1);
 
   const activeOptionId = $derived(
@@ -259,57 +211,32 @@
       : undefined,
   );
 
-  // remote 模式下即便暂无候选也展开（显示 spinner / 空文案）；本地模式无候选则不展开。
-  const showDropdown = $derived(isOpen && (options.length > 0 || isRemote));
+  // 展开且（有候选 或 加载中）时才展示浮层。
+  const showDropdown = $derived(isOpen && (options.length > 0 || loading));
 
-  // showClear 优先，clearable 兜底；两者任一为 true 时显示清除按钮。
-  const effectiveClearable = $derived(showClear ?? clearable);
-  const showClearBtn = $derived(effectiveClearable && !disabled && currentValue.length > 0);
+  const showClearBtn = $derived(showClear && !disabled && displayValue.length > 0);
 
-  // 已选项：options 里找到与 currentValue 匹配的 label 对应项。
-  const selectedItem = $derived(
-    options.find((o) => o.label === currentValue) ?? null,
-  );
-
-  function openWithOptions() {
-    if (!isRemote && options.length === 0) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
-    if (defaultActiveFirstOption) activeIndex = firstEnabledIndex();
-  }
+  // 已选项：options 里找到与 currentValue 匹配的项（用于 renderSelectedItem）。
+  const selectedItem = $derived(options.find((o) => o.label === displayValue) ?? null);
 
   function firstEnabledIndex(): number {
     return options.findIndex((o) => !o.disabled);
   }
 
-  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
-  let searchTimer: ReturnType<typeof setTimeout> | undefined;
-  function scheduleSearch(q: string) {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      searchTimer = undefined;
-      onSearch?.(q);
-    }, Math.max(0, searchDebounce));
+  function openWithOptions() {
+    setOpen(true);
+    if (defaultActiveFirstOption) activeIndex = firstEnabledIndex();
   }
-  // 卸载兜底清理。
-  $effect(() => () => {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-  });
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.value;
     setValue(next);
-    // 输入即打开浮层。openWithOptions 读取 derived options，
-    // 它在本次更新已随 currentValue 变化；调用在事件处理器内，非 render 期。
     openWithOptions();
-    // remote：防抖回调外部更新 data（受控值红线 #1：仅 onSearch，不回写）。
-    if (onSearch) scheduleSearch(next);
+    // 远程：外部按 query 更新 data（受控红线 #1：仅回调，不回写）。
+    onSearch?.(next);
   }
 
   function handleFocus(e: FocusEvent) {
-    if (!disabled && openOnFocus) openWithOptions();
     onFocus?.(e);
   }
 
@@ -319,7 +246,7 @@
 
   function commit(opt: NormalizedItem) {
     if (opt.disabled || disabled) return;
-    setValue(opt.label);
+    setValue(opt.value);
     onSelect?.(onSelectWithObject ? opt : opt.value);
     setOpen(false);
   }
@@ -384,9 +311,9 @@
     }
   });
 
-  // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
+  // --- useDismiss (红线 #3): open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
-  // 浮层经 use:floating portal 到 body，列入 extraTargets 使点击浮层不误判为 outsideClick。
+  // 浮层经 use:floating portal 到 body，列入 extraTargets 避免误判 outsideClick。
   let dropdownEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
@@ -400,14 +327,12 @@
     return cleanup;
   });
 
-  // 浮层样式：宽度由 use:floating 的 matchWidth 接管（dropdownMatchSelectWidth 时同宽）。
   const dropdownStyleStr = $derived.by(() => {
     if (!dropdownStyle) return '';
     if (typeof dropdownStyle === 'string') return dropdownStyle;
     return Object.entries(dropdownStyle).map(([k, v]) => `${k}: ${v}`).join('; ');
   });
 
-  // 浮层位置映射到 use:floating 的 placement（定位、避让、跟随滚动由 action 接管）。
   const dropdownPlacement = $derived(
     (
       {
@@ -423,7 +348,7 @@
     [
       'cd-autocomplete',
       `cd-autocomplete--${size}`,
-      `cd-autocomplete--${status}`,
+      `cd-autocomplete--${validateStatus}`,
       disabled && 'cd-autocomplete--disabled',
       isOpen && 'cd-autocomplete--open',
       className,
@@ -432,27 +357,34 @@
       .join(' '),
   );
 
-  // 浮层最大高度：number→px，string 原样，内联下发覆盖 CSS 默认（fallback 保留）。
+  // 浮层最大高度：number→px，string 原样（对齐 Semi maxHeight 默认 300）。
   const maxHeightStyle = $derived.by(() => {
-    if (maxHeight === undefined) return '';
     const v = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight;
     return `max-block-size: ${v}`;
   });
 
-  // 浮层 z-index：传入时内联覆盖默认 token。
   const zIndexStyle = $derived(zIndex === undefined ? '' : `z-index: ${zIndex}`);
 
   // combobox 输入框可访问名：ariaLabelledby > ariaLabel > placeholder(非空) > locale 默认
   const inputAriaLabel = $derived(
     ariaLabelledby ? undefined : (ariaLabel || placeholder || loc().t('AutoComplete.ariaLabel')),
   );
+
+  // insetLabel 存在且有 id 时，纳入 combobox 的 aria-labelledby。
+  const resolvedLabelledby = $derived(
+    [ariaLabelledby, insetLabel !== undefined && insetLabelId ? insetLabelId : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined,
+  );
 </script>
 
 {#snippet optionRow(opt: NormalizedItem, i: number)}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
-    class="cd-autocomplete__option"
-    class:cd-autocomplete__option--active={i === activeIndex}
+    class="cd-autocomplete-option"
+    class:cd-autocomplete-option-focused={i === activeIndex}
+    class:cd-autocomplete-option-selected={opt.label === displayValue}
+    class:cd-autocomplete-option-disabled={opt.disabled}
     id={`${listId}-opt-${i}`}
     role="option"
     aria-selected={i === activeIndex}
@@ -464,16 +396,26 @@
     onclick={() => commit(opt)}
   >
     {#if renderItem}
-      {@render renderItem({ item: opt, isSelected: opt.label === currentValue })}
+      {@render renderItem({ item: opt, isSelected: opt.label === displayValue })}
     {:else}
-      {opt.label}
+      <div class="cd-autocomplete-option-text">
+        {#if displayValue}
+          <Highlight
+            sourceString={opt.label}
+            searchWords={[displayValue]}
+            highlightClassName="cd-autocomplete-option-keyword"
+          />
+        {:else}
+          {opt.label}
+        {/if}
+      </div>
     {/if}
   </div>
 {/snippet}
 
 <div class={cls} style={style || undefined} bind:this={rootEl}>
   {#if triggerRender}
-    {@render triggerRender({ value: currentValue, placeholder, disabled })}
+    {@render triggerRender({ value: displayValue, placeholder, disabled })}
   {:else}
     <div class="cd-autocomplete__control">
       {#if prefix}
@@ -482,7 +424,7 @@
         </span>
       {/if}
       {#if insetLabel}
-        <span class="cd-autocomplete__inset-label">
+        <span class="cd-autocomplete__inset-label" id={insetLabelId}>
           {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
         </span>
       {/if}
@@ -491,16 +433,16 @@
         bind:this={inputEl}
         type="text"
         role="combobox"
-        value={currentValue}
+        value={displayValue}
         {placeholder}
         {disabled}
         aria-label={inputAriaLabel}
-        aria-labelledby={ariaLabelledby}
+        aria-labelledby={resolvedLabelledby}
         aria-expanded={showDropdown}
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={activeOptionId}
-        aria-invalid={status === 'error' || undefined}
+        aria-invalid={validateStatus === 'error' || undefined}
         oninput={handleInput}
         onkeydown={handleKeydown}
         onfocus={handleFocus}
@@ -534,36 +476,25 @@
   {#if showDropdown && rootEl}
     <div
       bind:this={dropdownEl}
-      class={['cd-autocomplete__dropdown', dropdownClassName].filter(Boolean).join(' ')}
+      class={['cd-autocomplete-option-list', dropdownClassName].filter(Boolean).join(' ')}
       role="listbox"
       id={listId}
       aria-busy={loading || undefined}
-      use:floating={{ trigger: rootEl, placement: dropdownPlacement, offset: 4, autoAdjust: true, padding: 8, matchWidth: dropdownMatchSelectWidth, open: showDropdown }}
+      use:floating={{ trigger: rootEl, placement: dropdownPlacement, offset: 4, autoAdjust: true, padding: 8, matchWidth: dropdownMatchSelectWidth, open: showDropdown, getContainer: getPopupContainer }}
       style={[dropdownStyleStr, maxHeightStyle, zIndexStyle].filter(Boolean).join('; ')}
     >
       {#if loading}
-        <div class="cd-autocomplete__loading">
-          <span class="cd-autocomplete__spinner" aria-hidden="true"></span>
-          <span>{loc().t('AutoComplete.loading')}</span>
+        <div class="cd-autocomplete-loading-wrapper">
+          <Spin size="small" />
         </div>
-      {/if}
-      {#if options.length === 0 && !loading}
-        <div class="cd-autocomplete__empty">
+      {:else if options.length === 0}
+        <div class="cd-autocomplete-option cd-autocomplete-option-empty">
           {#if emptyContent}
             {#if typeof emptyContent === 'string'}{emptyContent}{:else}{@render emptyContent()}{/if}
           {:else}
             {loc().t('AutoComplete.emptyText')}
           {/if}
         </div>
-      {:else if hasGroups}
-        {#each groupedView as group, gi (group.label === null ? `g-${gi}` : `${group.key}-${group.label}`)}
-          {#if group.label !== null}
-            <div class="cd-autocomplete__group-label" role="presentation">{group.label}</div>
-          {/if}
-          {#each group.items as it (it.opt.value)}
-            {@render optionRow(it.opt, it.flatIndex)}
-          {/each}
-        {/each}
       {:else}
         {#each options as opt, i (opt.value)}
           {@render optionRow(opt, i)}
@@ -578,46 +509,48 @@
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    font-size: var(--cd-autocomplete-font-size);
+    font-size: var(--cd-input-font-size);
   }
+  /* 触发器输入框（暂缓复用 Input，自绘但外观复用 Input token） */
   .cd-autocomplete__control {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
-    block-size: var(--cd-autocomplete-control-height-default);
-    padding-inline: var(--cd-autocomplete-control-padding-x);
-    background: var(--cd-autocomplete-control-bg);
-    border: 1px solid var(--cd-autocomplete-control-border);
-    border-radius: var(--cd-autocomplete-control-radius);
+    block-size: var(--cd-height-input-default);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-input-color-bg);
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-autocomplete--small .cd-autocomplete__control {
-    block-size: var(--cd-autocomplete-control-height-small);
+    block-size: var(--cd-height-input-small);
   }
   .cd-autocomplete--large .cd-autocomplete__control {
-    block-size: var(--cd-autocomplete-control-height-large);
+    block-size: var(--cd-height-input-large);
   }
   .cd-autocomplete__control:focus-within {
-    border-color: var(--cd-autocomplete-control-border-active);
+    border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-autocomplete--warning .cd-autocomplete__control {
-    border-color: var(--cd-autocomplete-control-border-warning);
+    border-color: var(--cd-input-border-warning);
   }
   .cd-autocomplete--error .cd-autocomplete__control {
-    border-color: var(--cd-autocomplete-control-border-error);
+    border-color: var(--cd-input-border-error);
   }
   .cd-autocomplete--disabled .cd-autocomplete__control {
-    background: var(--cd-autocomplete-control-disabled-bg);
-    color: var(--cd-autocomplete-control-disabled-text);
+    background: var(--cd-color-fill-0);
+    color: var(--cd-color-disabled-text);
     cursor: not-allowed;
   }
   .cd-autocomplete__inset-label {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    color: var(--cd-autocomplete-affix-text);
+    color: var(--cd-color-text-2);
+    font-weight: var(--cd-autocomplete-inset-label-font-weight);
     user-select: none;
     white-space: nowrap;
   }
@@ -626,7 +559,7 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    color: var(--cd-autocomplete-affix-text);
+    color: var(--cd-color-text-2);
     user-select: none;
     white-space: nowrap;
   }
@@ -644,7 +577,7 @@
     outline: none;
   }
   .cd-autocomplete__input::placeholder {
-    color: var(--cd-autocomplete-placeholder-text);
+    color: var(--cd-input-color-placeholder);
   }
   .cd-autocomplete__input:disabled {
     cursor: not-allowed;
@@ -657,77 +590,96 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--cd-autocomplete-clear-text);
+    color: var(--cd-color-text-2);
     cursor: pointer;
   }
   .cd-autocomplete__clear:hover {
-    color: var(--cd-autocomplete-clear-text-hover);
+    color: var(--cd-color-text-0);
   }
   .cd-autocomplete__selected {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
   }
-  .cd-autocomplete__dropdown {
-    /* 定位由 use:floating 接管（portal 到 body + 避让 + 跟随滚动）；此处只定义外观。 */
-    z-index: var(--cd-autocomplete-dropdown-z);
-    max-block-size: 16rem;
+
+  /* --- 下拉列表：对齐 Semi .semi-autocomplete-option-list --- */
+  .cd-autocomplete-option-list {
+    /* 定位由 use:floating 接管；此处只定义外观 + 滚动。 */
+    z-index: var(--cd-z-popover);
+    overflow-x: hidden;
     overflow-y: auto;
     padding-block: var(--cd-spacing-extra-tight);
-    background: var(--cd-autocomplete-dropdown-bg);
-    border-radius: var(--cd-autocomplete-dropdown-radius);
-    box-shadow: var(--cd-autocomplete-dropdown-shadow);
+    background: var(--cd-color-bg-3);
+    border-radius: var(--cd-border-radius-medium);
+    box-shadow: var(--cd-shadow-elevated);
   }
-  .cd-autocomplete__option {
-    padding: var(--cd-autocomplete-option-padding);
+  /* 选项：对齐 Semi .semi-autocomplete-option */
+  .cd-autocomplete-option {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    word-break: break-all;
+    padding-inline-start: var(--cd-autocomplete-option-padding-left);
+    padding-inline-end: var(--cd-autocomplete-option-padding-right);
+    padding-block-start: var(--cd-autocomplete-option-padding-top);
+    padding-block-end: var(--cd-autocomplete-option-padding-bottom);
+    color: var(--cd-autocomplete-option-main-text);
+    background-color: var(--cd-autocomplete-option-bg-default);
+    border-radius: var(--cd-autocomplete-option-radius);
     cursor: pointer;
   }
-  .cd-autocomplete__option--active {
-    background: var(--cd-autocomplete-option-bg-hover);
+  .cd-autocomplete-option:first-of-type {
+    margin-block-start: var(--cd-autocomplete-option-first-margin-top);
   }
-  .cd-autocomplete__option[aria-disabled='true'] {
+  .cd-autocomplete-option:last-of-type {
+    margin-block-end: var(--cd-autocomplete-option-last-margin-bottom);
+  }
+  .cd-autocomplete-option:active {
+    background-color: var(--cd-autocomplete-option-bg-active);
+  }
+  /* focused（键盘高亮 / 悬停）对齐 Semi .semi-autocomplete-option-focused */
+  .cd-autocomplete-option-focused {
+    background-color: var(--cd-autocomplete-option-bg-hover);
+  }
+  /* selected 对齐 Semi .semi-autocomplete-option-selected（加粗） */
+  .cd-autocomplete-option-selected {
+    font-weight: var(--cd-font-weight-bold);
+  }
+  .cd-autocomplete-option-disabled {
     color: var(--cd-autocomplete-option-disabled-text);
     cursor: not-allowed;
   }
-  .cd-autocomplete__group-label {
-    padding: var(--cd-spacing-extra-tight) var(--cd-autocomplete-option-padding, var(--cd-spacing-tight));
-    color: var(--cd-autocomplete-group-label-text);
-    font-size: var(--cd-font-size-small);
-    font-weight: var(--cd-font-weight-medium, 500);
-    user-select: none;
-  }
-  .cd-autocomplete__empty {
-    padding: var(--cd-autocomplete-option-padding);
-    color: var(--cd-autocomplete-empty-text);
-    text-align: center;
-  }
-  .cd-autocomplete__loading {
+  /* option-text 层对齐 Semi .semi-autocomplete-option-text */
+  .cd-autocomplete-option-text {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    white-space: pre;
+  }
+  /* 关键词高亮对齐 Semi .semi-autocomplete-option-keyword（primary 色 + 600 字重） */
+  :global(.cd-autocomplete-option-keyword) {
+    color: var(--cd-autocomplete-option-keyword-text);
+    background-color: inherit;
+    font-weight: var(--cd-autocomplete-keyword-font-weight);
+  }
+  /* 空态：对齐 Semi .semi-autocomplete-option-empty（居中 + disabled 文字） */
+  .cd-autocomplete-option-empty {
     justify-content: center;
-    gap: var(--cd-spacing-tight);
-    padding: var(--cd-autocomplete-option-padding);
-    color: var(--cd-autocomplete-empty-text);
+    color: var(--cd-autocomplete-option-disabled-text);
+    cursor: not-allowed;
   }
-  .cd-autocomplete__spinner {
-    inline-size: 1em;
-    block-size: 1em;
-    border: 2px solid var(--cd-autocomplete-spinner-track);
-    border-block-start-color: var(--cd-autocomplete-spinner-indicator);
-    border-radius: var(--cd-border-radius-full);
-    animation: cd-autocomplete-spin 0.7s linear infinite;
-  }
-  @keyframes cd-autocomplete-spin {
-    to {
-      transform: rotate(360deg);
-    }
+  /* 加载区：对齐 Semi .semi-autocomplete-loading-wrapper（复用 Spin） */
+  .cd-autocomplete-loading-wrapper {
+    display: flex;
+    justify-content: center;
+    padding-block-start: var(--cd-autocomplete-loading-wrapper-padding-top);
+    padding-block-end: var(--cd-autocomplete-loading-wrapper-padding-bottom);
+    cursor: not-allowed;
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-autocomplete__control {
       transition: none;
-    }
-    .cd-autocomplete__spinner {
-      animation: none;
     }
   }
 </style>

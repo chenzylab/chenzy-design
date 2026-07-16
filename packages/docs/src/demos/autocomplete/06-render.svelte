@@ -28,7 +28,7 @@
     prefix="搜索"
     placeholder="输入姓名联想联系人"
     onSearch={search}
-    onChange={(v) => (value = v)}
+    onChange={(v) => (value = String(v))}
   >
     {#snippet renderItem({ item })}
       {@const p = byName(String(item.value))}

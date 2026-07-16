@@ -20,7 +20,7 @@ export const componentBriefsEn: Record<string, string> = {
   Slider: 'A slider for selecting a value over a continuous or discrete range, supporting single and range values, ticks, vertical orientation, and full keyboard operation.',
   Form: 'A form container that bridges the headless createForm, providing field registration, validation, layout, and accessibility.',
   Select: 'A dropdown selector supporting single / multiple selection, local filtering, keyboard navigation, and an overlay.',
-  AutoComplete: 'An autocomplete input supporting local filtering, remote async search, option grouping, inline tags, and keyboard selection.',
+  AutoComplete: 'An autocomplete input where data is prepared by the caller per query (no built-in filtering), with keyword highlighting, loading/empty states, and keyboard selection.',
   TagInput: 'A tag input supporting Enter / separator submission, backspace deletion, deduplication, a maximum limit, and submit-on-blur.',
   ColorPicker: 'A color picker: a trigger opens an overlay panel (or renders inline) with a saturation square, hue bar, alpha bar, format-switchable input (hex/rgb/hsv/hsl), and presets, communicating externally as a hex string.',
   DatePicker: 'A date picker: type=date calendar panel / type=dateTime date + time (reusing the TimePicker hour-minute-second columns) / type=month month panel / type=year year panel, controlled or uncontrolled; display and weekday/month/year are localized via Intl.DateTimeFormat.',

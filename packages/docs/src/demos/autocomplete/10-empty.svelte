@@ -26,7 +26,6 @@
   <AutoComplete
     {data}
     {loading}
-    openOnFocus
     placeholder="输入后无结果看空态"
     onSearch={search}
   >
