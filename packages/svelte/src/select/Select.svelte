@@ -34,6 +34,7 @@
     scrollOffsetForIndex,
     type Placement,
   } from '@chenzy-design/core';
+  import { IconClose, IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Popover from '../popover/Popover.svelte';
@@ -953,12 +954,7 @@
                 removeTag(tag.opt.value);
               }}
             >
-              <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M9.1 8l3.2-3.2-1.1-1.1L8 6.9 4.8 3.7 3.7 4.8 6.9 8l-3.2 3.2 1.1 1.1L8 9.1l3.2 3.2 1.1-1.1L9.1 8Z"
-                />
-              </svg>
+              <IconClose size="small" aria-hidden="true" />
             </button>
           </span>
         {/each}
@@ -1027,12 +1023,7 @@
         {#if clearIcon}
           {@render clearIcon()}
         {:else}
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-            />
-          </svg>
+          <IconClear aria-hidden="true" />
         {/if}
       </button>
     {/if}
@@ -1044,9 +1035,7 @@
         {#if arrowIcon}
           {@render arrowIcon()}
         {:else}
-          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-            <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-          </svg>
+          <IconChevronDown aria-hidden="true" />
         {/if}
       </span>
     {/if}
@@ -1194,12 +1183,7 @@
       {#if multiple}
         <span class="cd-select__check" aria-hidden="true">
           {#if isSelected(opt.value)}
-            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-              <path
-                fill="currentColor"
-                d="M6.2 11.2 2.9 7.9l1.1-1.1 2.2 2.2 5-5L12.3 5l-6.1 6.2Z"
-              />
-            </svg>
+            <IconTick aria-hidden="true" />
           {/if}
         </span>
       {/if}
