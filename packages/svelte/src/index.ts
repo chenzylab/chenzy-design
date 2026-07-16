@@ -152,7 +152,14 @@ export {
   type NavClickData,
   type NavOpenChangeData,
 } from './nav/index.js';
-export { Anchor, anchorMeta, type AnchorLink } from './anchor/index.js';
+export {
+  Anchor,
+  anchorMeta,
+  type AnchorShowTooltip,
+  type AnchorTooltipConfig,
+  type AnchorRailTheme,
+  type AnchorSize,
+} from './anchor/index.js';
 
 // --- M4 Show ---
 export { Tag, TagGroup, SplitTagGroup, tagMeta } from './tag/index.js';

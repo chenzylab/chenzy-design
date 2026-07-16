@@ -1,5 +1,7 @@
 <!--
-  Breadcrumb — 面包屑导航。字段/API 全面对齐 Semi Design。
+  Breadcrumb — 面包屑导航。字段/API/DOM 全面对齐 Semi Design。
+  DOM 结构镜像 Semi：nav[aria-label] > 直接放扁平 span/a（无 ol/li 列表包裹）；
+  每项一个 item-wrap span，内含 item(可点 a / 不可点 span) + 项后分隔符（对齐 semi-ui item.tsx）。
   Data-driven `routes` mode（可为 Route 对象或纯字符串）+ declarative `<Breadcrumb.Item>` mode。
   声明式模式：子项间分隔符由纯 CSS（:not(:last-child)::after）自动插入，最后一项后无分隔符；
   最后一项语义（当前页：不可点 + aria-current=page）由 context 注册顺序派生（红线 #2 纯函数）。
@@ -19,7 +21,6 @@
   import { setBreadcrumbContext } from './context.js';
   import type { BreadcrumbRoute } from './types.js';
 
-  type BreadcrumbSize = 'small' | 'default' | 'large';
   /** 折叠 … 浮层类型，对齐 Semi：'default'（点击就地展开）/ 'popover'（悬浮气泡列出可点项）。 */
   type MoreType = 'default' | 'popover';
   /** 截断 Tooltip 配置（对齐 Semi showToolTipProps）。 */
@@ -39,8 +40,8 @@
   interface Props {
     /** 路由项数组，元素可为 Route 对象或纯字符串（字符串即 name，对齐 Semi）。 */
     routes?: Array<BreadcrumbRoute | string>;
-    separator?: string;
-    size?: BreadcrumbSize;
+    /** 分隔符，默认 '/'。可为字符串或 Snippet（对齐 Semi separator: ReactNode，支持传图标）。 */
+    separator?: string | Snippet;
     /** 超出此数量时中间折叠，默认 4（对齐 Semi）。 */
     maxItemCount?: number;
     /**
@@ -63,9 +64,10 @@
     style?: string;
     /**
      * 自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑。
-     * Svelte 5 Snippet：{@render renderItem(route, index, isLast)}
+     * 对齐 Semi renderItem(route): ReactNode —— 单参 route。
+     * Svelte 5 Snippet：{@render renderItem(route)}
      */
-    renderItem?: Snippet<[BreadcrumbRoute, number, boolean]>;
+    renderItem?: Snippet<[BreadcrumbRoute]>;
     /**
      * 自定义折叠 … 区域渲染（替代 moreType 内置浮层）。
      * 传入时接管折叠展示，参数为被折叠的路由列表。
@@ -74,19 +76,19 @@
     renderMore?: Snippet<[CollapsedRoute[]]>;
     class?: string;
     children?: Snippet;
-    onClick?: (route: BreadcrumbRoute, index: number) => void;
+    /** 单击事件，对齐 Semi onClick(route, event)。 */
+    onClick?: (route: BreadcrumbRoute, event: MouseEvent) => void;
   }
 
   let {
     routes = [],
     separator = '/',
-    size = 'default',
     maxItemCount = 4,
     showTooltip = false,
     moreType = 'default',
     compact = true,
     autoCollapse = true,
-    activeIndex,
+    activeIndex = undefined,
     ariaLabel,
     style,
     renderItem,
@@ -98,16 +100,20 @@
 
   const loc = useLocale();
 
+  // 尺寸对齐 Semi：仅 compact 布尔驱动（compact → 紧凑小字号；!compact → 宽松大字号），无独立 size prop。
   const cls = $derived(
     [
       'cd-breadcrumb',
-      `cd-breadcrumb--${size}`,
-      !compact ? 'cd-breadcrumb--loose' : '',
+      compact ? 'cd-breadcrumb--compact' : 'cd-breadcrumb--loose',
       className,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  /** separator 为字符串时的文本值（供纯 CSS 声明式分隔符与 aria 使用）；Snippet 时回退默认 '/'。 */
+  const separatorText = $derived(typeof separator === 'string' ? separator : '/');
+  const separatorSnippet = $derived(typeof separator === 'function' ? separator : undefined);
 
   /** 归一化 routes：纯字符串 → { name }；对象原样（对齐 Semi genRoutes）。 */
   const normalizedRoutes = $derived<BreadcrumbRoute[]>(
@@ -210,8 +216,8 @@
     return [...head, { type: 'ellipsis', count: rest.length, collapsed }, ...tailCells];
   });
 
-  function handleClick(route: BreadcrumbRoute, index: number) {
-    onClick?.(route, index);
+  function handleClick(route: BreadcrumbRoute, event: MouseEvent) {
+    onClick?.(route, event);
   }
 
   // 声明式 <Breadcrumb.Item> 注册：按 mount 顺序（= 源码顺序）收集 id，据此派生「最后一项」。
@@ -246,7 +252,7 @@
      activeIndex 对应项附加 cd-breadcrumb__link--active / cd-breadcrumb__text--active 类。 -->
 {#snippet routeItem(route: BreadcrumbRoute, index: number, last: boolean)}
   {#if renderItem}
-    {@render renderItem(route, index, last)}
+    {@render renderItem(route)}
   {:else if last}
     <span class="cd-breadcrumb__current" aria-current="page">
       {#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}
@@ -255,7 +261,7 @@
     <a
       class={['cd-breadcrumb__link', activeIndex === index ? 'cd-breadcrumb__link--active' : ''].filter(Boolean).join(' ')}
       href={route.href}
-      onclick={() => handleClick(route, index)}
+      onclick={(e) => handleClick(route, e)}
       >{#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</a
     >
   {:else}
@@ -263,11 +269,11 @@
       class={['cd-breadcrumb__text', activeIndex === index ? 'cd-breadcrumb__text--active' : ''].filter(Boolean).join(' ')}
       role="link"
       tabindex="0"
-      onclick={() => handleClick(route, index)}
+      onclick={(e) => handleClick(route, e)}
       onkeydown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          handleClick(route, index);
+          handleClick(route, e as unknown as MouseEvent);
         }
       }}
       >{#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</span
@@ -305,12 +311,14 @@
   >{@render iconMore()}</button>
 {/snippet}
 
+<!-- DOM 结构镜像 Semi：nav > 直接放扁平 span/a（无 ol/li 列表包裹，对齐 semi-ui breadcrumb index.tsx L294 + item.tsx）。
+     每项一个 item-wrap span（对齐 Semi .semi-breadcrumb-item-wrap），内含 item(a|span) + 项后分隔符。 -->
 <nav class={cls} aria-label={ariaLabel ?? loc().t('Breadcrumb.ariaLabel')} {style}>
   {#if hasRoutes}
-    <ol class="cd-breadcrumb__list">
+    <span class="cd-breadcrumb__list">
       {#each cells as cell, cellIndex (cell.type === 'route' ? `r-${cell.index}` : 'ellipsis')}
         {@const isLast = cellIndex === cells.length - 1}
-        <li class="cd-breadcrumb__item">
+        <span class="cd-breadcrumb__item">
           {#if cell.type === 'ellipsis'}
             {#if renderMore}
               <!-- renderMore 接管折叠区域渲染，参数为被折叠路由列表。 -->
@@ -328,18 +336,18 @@
                             class="cd-breadcrumb__link"
                             role="menuitem"
                             href={c.route.href}
-                            onclick={() => handleClick(c.route, c.index)}>{c.route.name ?? ''}</a
+                            onclick={(e) => handleClick(c.route, e)}>{c.route.name ?? ''}</a
                           >
                         {:else}
                           <span
                             class="cd-breadcrumb__text"
                             role="menuitem"
                             tabindex="0"
-                            onclick={() => handleClick(c.route, c.index)}
+                            onclick={(e) => handleClick(c.route, e)}
                             onkeydown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                handleClick(c.route, c.index);
+                                handleClick(c.route, e as unknown as MouseEvent);
                               }
                             }}>{c.route.name ?? ''}</span
                           >
@@ -350,7 +358,7 @@
                 {/snippet}
               </Popover>
             {:else}
-              <!-- 默认模式（moreType='default'，对齐 Semi）：点击 IconMore 就地展开整条 ol，disclosure 语义用 aria-expanded。 -->
+              <!-- 默认模式（moreType='default'，对齐 Semi）：点击 IconMore 就地展开整条，disclosure 语义用 aria-expanded。 -->
               <button
                 type="button"
                 class="cd-breadcrumb__more"
@@ -363,18 +371,20 @@
             {@render maybeTooltip(cell.route, cell.index, isLast)}
           {/if}
           {#if !isLast}
-            <span class="cd-breadcrumb__separator" aria-hidden="true">{separator}</span>
+            <span class="cd-breadcrumb__separator" aria-hidden="true"
+              >{#if separatorSnippet}{@render separatorSnippet()}{:else}{separatorText}{/if}</span
+            >
           {/if}
-        </li>
+        </span>
       {/each}
-    </ol>
+    </span>
   {:else}
-    <ol
+    <span
       class="cd-breadcrumb__list cd-breadcrumb__list--declarative"
-      style="--cd-breadcrumb-separator-content: '{separator}'"
+      style="--cd-breadcrumb-separator-content: '{separatorText}'"
     >
       {@render children?.()}
-    </ol>
+    </span>
   {/if}
 </nav>
 
@@ -382,31 +392,23 @@
   .cd-breadcrumb {
     /* 对齐 Semi .semi-breadcrumb { overflow: hidden } */
     overflow: hidden;
-    font-size: var(--cd-breadcrumb-font-size);
     color: var(--cd-breadcrumb-color);
   }
-  .cd-breadcrumb--small {
+  /* 尺寸对齐 Semi：仅 compact 布尔驱动。
+     compact → 紧凑小字号（Semi .semi-breadcrumb-wrapper-compact / font-size-small）；
+     !compact（loose）→ 宽松常规字号（Semi .semi-breadcrumb-wrapper-loose / font-size-regular）。 */
+  .cd-breadcrumb--compact {
     font-size: var(--cd-breadcrumb-font-size-compact);
   }
-  .cd-breadcrumb--large {
-    font-size: var(--cd-font-size-header-6);
-  }
-  /* compact=false：宽松模式，字号对齐 Semi loose（regular），项间距增加 */
   .cd-breadcrumb--loose {
-    font-size: var(--cd-breadcrumb-loose-font-size);
-    letter-spacing: var(--cd-breadcrumb-loose-letter-spacing);
+    font-size: var(--cd-breadcrumb-font-size);
   }
-  .cd-breadcrumb--loose .cd-breadcrumb__list {
-    gap: var(--cd-breadcrumb-loose-gap);
-  }
+  /* 扁平结构：nav 下的 span 容器（对齐 Semi .semi-breadcrumb-wrapper，无列表语义）。 */
   .cd-breadcrumb__list {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--cd-breadcrumb-gap);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
   /* 子项内容类用 :global 包裹：声明式 <Breadcrumb.Item> 渲染的元素在子组件作用域内，
      数据驱动模式的元素则为本组件 .cd-breadcrumb 后代，两者统一受样式约束（对齐 Collapse 模式）。 */

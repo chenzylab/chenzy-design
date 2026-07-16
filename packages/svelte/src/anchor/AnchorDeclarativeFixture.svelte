@@ -9,7 +9,7 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <Anchor ariaLabel="On this page">
+  <Anchor aria-label="On this page">
     <Anchor.Link href="#guide" title="Guide">
       <Anchor.Link href="#install" title="Install" />
       <Anchor.Link href="#usage" title="Usage" />

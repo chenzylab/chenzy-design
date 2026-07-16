@@ -110,7 +110,6 @@ export const zh_CN: Locale = {
   },
   BackTop: {
     ariaLabel: '回到顶部',
-    arrived: '已回到顶部',
   },
   AudioPlayer: {
     play: '播放',

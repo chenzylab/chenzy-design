@@ -110,7 +110,6 @@ export const en_US: Locale = {
   },
   BackTop: {
     ariaLabel: 'Back to top',
-    arrived: 'Returned to top',
   },
   AudioPlayer: {
     play: 'Play',

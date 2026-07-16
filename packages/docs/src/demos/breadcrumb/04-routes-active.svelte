@@ -12,8 +12,9 @@
   let activeIndex = $state(1);
   let lastClicked = $state('—');
 
-  function handleClick(route: BreadcrumbRoute, index: number) {
-    activeIndex = index;
+  // 对齐 Semi onClick(route, event)：回调不再带 index，改由 route 在数组中的位置反查。
+  function handleClick(route: BreadcrumbRoute) {
+    activeIndex = routes.indexOf(route);
     lastClicked = route.name ?? '';
   }
 </script>

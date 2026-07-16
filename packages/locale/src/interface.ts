@@ -151,7 +151,6 @@ export interface Locale {
   };
   BackTop: {
     ariaLabel: string;
-    arrived: string;
   };
   AudioPlayer: {
     /** 播放按钮 aria-label */

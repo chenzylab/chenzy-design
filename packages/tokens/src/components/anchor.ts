@@ -1,8 +1,7 @@
 /**
- * Component tokens for Anchor. 全量对齐 Semi Design（semi-foundation/anchor/variables.scss
- * 26 个），升级为带元数据的 TokenDef 结构以支持 DSM。
+ * Component tokens for Anchor. 全量对齐 Semi Design（semi-foundation/anchor/variables.scss），
+ * 升级为带元数据的 TokenDef 结构以支持 DSM。名/值/作用位置严格镜像 Semi，无中间层。
  * 值为 var() 引用我们的 alias / global token，或字面量。
- * 末尾保留 chenzy-design Anchor 实际消费的补充 token（Semi 无：横排缩进等）。
  *
  * 注：Semi 的自引用（$color-anchor_title_active-text-hover: $color-anchor_title-text-hover）
  * 保留为 var() 自引用另一个 anchor token。
@@ -49,13 +48,4 @@ export const anchorTokens = {
   'width-anchor-outline': { value: '2px', category: 'width', label: '轮廓宽度', usage: 'anchor轮廓宽度' },
   'width-anchor-outlineoffset': { value: '-2px', category: 'width', label: '轮廓 outline-offset', usage: 'anchor轮廓 outline-offset 宽度' },
   'width-anchor-outline-border-radius': { value: '3px', category: 'width', label: '轮廓圆角', usage: 'anchor轮廓圆角' },
-
-  // —— chenzy-design 补充（Semi 无）：组件实际消费 ——
-  'anchor-link-color': { value: 'var(--cd-color-anchor-title-text-default)', category: 'color', label: '链接文字色', usage: '链接默认文字颜色（组件消费）' },
-  'anchor-link-color-active': { value: 'var(--cd-color-anchor-title-text-active)', category: 'color', label: '链接选中文字色', usage: '链接选中/悬浮文字颜色（组件消费）' },
-  'anchor-link-padding': { value: 'var(--cd-spacing-extra-tight) var(--cd-spacing-tight)', category: 'spacing', label: '链接内边距', usage: '链接文字内边距（组件消费）' },
-  'anchor-indent': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '嵌套缩进', usage: '多级嵌套子列表逐级缩进（组件消费）' },
-  'anchor-rail-color': { value: 'var(--cd-color-anchor-slide-default-bg-default)', category: 'color', label: '滑轨底色', usage: '滑轨（rail）背景颜色（组件消费）' },
-  'anchor-ink-color': { value: 'var(--cd-color-anchor-slide-primary-bg-active)', category: 'color', label: 'ink 颜色', usage: '激活链接 ink 边框颜色（组件消费）' },
-  'anchor-ink-width': { value: 'var(--cd-width-anchor-slide-default)', category: 'width', label: 'ink 宽度', usage: '激活链接 ink 边框宽度（组件消费）' },
 } satisfies TokenGroup;

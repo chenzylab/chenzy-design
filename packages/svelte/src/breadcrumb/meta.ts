@@ -14,7 +14,7 @@ export const meta = {
       default: '[]',
       desc: '数据驱动的路由项，元素为 Route 对象或纯字符串（字符串即 name）；最后一项为当前页（aria-current=page）',
     },
-    { name: 'separator', type: 'string', default: "'/'", desc: '分隔符文本' },
+    { name: 'separator', type: 'string | Snippet', default: "'/'", desc: '分隔符，字符串或 Snippet（对齐 Semi separator: ReactNode，支持传图标）' },
     { name: 'maxItemCount', type: 'number', default: '4', desc: '超出时中间折叠（对齐 Semi；<=0 不折叠）' },
     {
       name: 'showTooltip',
@@ -28,7 +28,6 @@ export const meta = {
       default: "'default'",
       desc: '折叠 … 的浮层类型（对齐 Semi）：default 点击三点图标就地展开全部；popover 悬浮弹出可点击跳转的折叠项菜单',
     },
-    { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     {
       name: 'ariaLabel',
       type: 'string',
@@ -56,9 +55,9 @@ export const meta = {
     },
     {
       name: 'renderItem',
-      type: '(route: BreadcrumbRoute, index: number, isLast: boolean) => Snippet',
+      type: 'Snippet<[route: BreadcrumbRoute]>',
       default: 'undefined',
-      desc: '自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑',
+      desc: '自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑（对齐 Semi renderItem(route)）',
     },
     {
       name: 'renderMore',
@@ -75,8 +74,9 @@ export const meta = {
     },
     {
       name: 'onClick',
-      type: '(route: BreadcrumbRoute, index: number) => void',
+      type: '(route: BreadcrumbRoute, event: MouseEvent) => void',
       default: 'undefined',
+      desc: '单击事件（对齐 Semi onClick(route, event)）',
     },
   ],
   subComponents: [
@@ -119,7 +119,7 @@ export const meta = {
     role: 'navigation',
     keyboard: ['Enter', 'Space'],
     notes: [
-      'nav[aria-label] 包裹 ol 有序列表',
+      'nav[aria-label] 下直接放扁平 span/a（对齐 Semi，无 ol/li 列表包裹）',
       '最后一项 aria-current=page，不可点击',
       '无 href 的中间项用 role=link + tabindex=0 + 键盘可激活',
       '分隔符 aria-hidden=true',
@@ -155,9 +155,6 @@ export const meta = {
     '--cd-breadcrumb-gap',
     '--cd-breadcrumb-font-size',
     '--cd-breadcrumb-font-size-compact',
-    '--cd-breadcrumb-loose-font-size',
-    '--cd-breadcrumb-loose-letter-spacing',
-    '--cd-breadcrumb-loose-gap',
     '--cd-breadcrumb-item-max-width',
     // 通用
     '--cd-focus-ring',

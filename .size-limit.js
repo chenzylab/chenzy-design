@@ -126,7 +126,7 @@ const components = [
   // renderArrow/renderTabBar 自定义、动态增删）。实测 baseline 7.75 KB，纯功能增长。
   ['tabs', '{ TabPane }', '8 KB'],
   // other
-  ['back-top', '{ BackTop }', '2.65 KB'],
+  ['back-top', '{ BackTop }', '1.7 KB'],
   ['hotkeys', '{ HotKeys }', '1.85 KB'],
   ['config-provider', '{ ConfigProvider }', '1.7 KB'],
   ['locale-provider', '{ LocaleProvider }', '1.0 KB'],
