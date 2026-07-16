@@ -33,6 +33,14 @@
     type CheckedStrategy,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import {
+    IconTreeTriangleDown,
+    IconCheckboxTick,
+    IconCheckboxIndeterminate,
+    IconSearch,
+    IconClear,
+    IconChevronDown,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -1256,9 +1264,7 @@
           }
         }}
       >
-        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-          <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-        </svg>
+        <IconTreeTriangleDown size="small" aria-hidden="true" />
       </span>
     {:else}
       <span class="cd-tree-select__expand cd-tree-select__expand--placeholder" aria-hidden="true"></span>
@@ -1271,13 +1277,9 @@
         aria-hidden="true"
       >
         {#if cs.checked}
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5l3 3 6-6.5" />
-          </svg>
+          <IconCheckboxTick aria-hidden="true" />
         {:else if cs.half}
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 8h8" />
-          </svg>
+          <IconCheckboxIndeterminate aria-hidden="true" />
         {/if}
       </span>
     {/if}
@@ -1337,15 +1339,7 @@
     />
   {:else}
     <span class="cd-tree-select__search-field">
-      <svg class="cd-tree-select__search-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-        <path
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          d="M7 2.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9ZM10.5 10.5l3 3"
-        />
-      </svg>
+      <IconSearch class="cd-tree-select__search-icon" aria-hidden="true" />
       <input
         class="cd-tree-select__search-input"
         type="text"
@@ -1497,12 +1491,7 @@
           }
         }}
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        <IconClear aria-hidden="true" />
       </span>
     {/if}
 
@@ -1515,9 +1504,7 @@
       {#if arrowIcon}
         {@render arrowIcon()}
       {:else}
-        <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
-          <path fill="currentColor" d="M3.5 6 8 10.5 12.5 6l-1-1L8 8.5 4.5 5l-1 1Z" />
-        </svg>
+        <IconChevronDown aria-hidden="true" />
       {/if}
     </span>
   </div>
@@ -1852,16 +1839,20 @@
     color: var(--cd-color-tree-option-icon-default);
     cursor: pointer;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* IconTreeTriangleDown 默认朝下（展开态）；折叠态旋转 -90deg 朝右，对齐 Semi。 */
+    transform: rotate(-90deg);
   }
   .cd-tree-select__expand--open {
-    transform: rotate(90deg);
+    transform: rotate(0deg);
   }
   .cd-tree-select__expand--placeholder {
     cursor: default;
+    transform: none;
   }
   .cd-tree-select__expand--loading {
     cursor: default;
     transition: none;
+    transform: none;
   }
   .cd-tree-select__spinner {
     inline-size: 0.75rem;

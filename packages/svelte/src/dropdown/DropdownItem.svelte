@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import { getContext, type Snippet } from 'svelte';
+  import { IconTick } from '@chenzy-design/icons';
   import { DROPDOWN_CTX, type DropdownContext } from './context.js';
   import type { DropdownItemType, DropdownKey } from './types.js';
 
@@ -108,17 +109,11 @@
 >
   {#if showTick}
     <!-- 对勾恒占位：active 显示实色勾，否则透明勾保持宽度一致（对齐 Semi IconTick 占位机制） -->
-    <svg
-      class="cd-dropdown-item-tick"
-      class:cd-dropdown-item-tick--hidden={!active}
-      viewBox="0 0 24 24"
-      width="1em"
-      height="1em"
-      focusable="false"
+    <IconTick
+      size="small"
+      class={`cd-dropdown-item-tick${active ? '' : ' cd-dropdown-item-tick--hidden'}`}
       aria-hidden="true"
-    >
-      <path fill="currentColor" d="M9.3 18.2 3 11.9l1.8-1.8 4.5 4.5L19.2 4.7 21 6.5z" />
-    </svg>
+    />
   {/if}
   {#if icon}
     <span class="cd-dropdown-item-icon">{@render icon()}</span>
