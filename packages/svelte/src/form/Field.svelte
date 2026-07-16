@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, type Rule, type ValidateTrigger } from '@chenzy-design/core';
+  import { IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
   import { getFormContext } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
 
@@ -324,38 +325,14 @@
     {#if showError}
       <div id={errorId} role="alert" class="cd-form-field__error">
         {#if showValidateIcon}
-          <svg
-            class="cd-form-field__status-icon"
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm-.75 3.5h1.5v5h-1.5v-5ZM8 12.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
-            />
-          </svg>
+          <IconAlertCircle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{error}</span>
       </div>
     {:else if showWarning}
       <div id={warningId} class="cd-form-field__warning">
         {#if showValidateIcon}
-          <svg
-            class="cd-form-field__status-icon"
-            viewBox="0 0 16 16"
-            width="14"
-            height="14"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              fill="currentColor"
-              d="M7.13 1.7a1 1 0 0 1 1.74 0l6.1 10.8A1 1 0 0 1 14.1 14H1.9a1 1 0 0 1-.87-1.5l6.1-10.8ZM7.25 6h1.5v4h-1.5V6ZM8 12.4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"
-            />
-          </svg>
+          <IconAlertTriangle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{warning}</span>
       </div>

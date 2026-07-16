@@ -45,6 +45,7 @@
     fitTruncatedText,
     type EllipsisPos,
   } from '@chenzy-design/core';
+  import { IconCopy, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Tooltip from '../tooltip/Tooltip.svelte';
   import Popover from '../popover/Popover.svelte';
@@ -468,15 +469,10 @@
 </script>
 
 {#snippet copyIconDefault()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-    <rect x="9" y="9" width="11" height="11" rx="2" />
-    <path d="M5 15V5a2 2 0 0 1 2-2h10" stroke-linecap="round" />
-  </svg>
+  <IconCopy size="inherit" aria-hidden="true" />
 {/snippet}
 {#snippet copiedIconDefault()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
-  </svg>
+  <IconTick size="inherit" aria-hidden="true" />
 {/snippet}
 
 {#snippet actions()}

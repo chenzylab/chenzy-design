@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import { IconStar } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large' | number;
@@ -285,19 +286,11 @@
         <!-- 自定义 Snippet：调用方按 {index,state,value} 自渲染（含半态）。 -->
         {@render character({ index: i, state: stateFor(i), value: displayValue })}
       {:else}
-        <svg class="cd-rating__icon cd-rating__icon--bg" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M12 2.5 14.9 8.4 21.4 9.3 16.7 13.9 17.8 20.4 12 17.3 6.2 20.4 7.3 13.9 2.6 9.3 9.1 8.4 12 2.5Z"
-          />
-        </svg>
+        <!-- 双层 star 叠层：底层灰星撑满星位，上层填充星裹在定宽 .cd-rating__fg 内按
+             fill 百分比裁剪，实现整/半/空三态（机制对齐 Semi item.tsx 的 star 叠放）。 -->
+        <IconStar class="cd-rating__icon cd-rating__icon--bg" size="inherit" aria-hidden="true" />
         <span class="cd-rating__fg" style={`inline-size: ${fill * 100}%`}>
-          <svg class="cd-rating__icon cd-rating__icon--fg" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M12 2.5 14.9 8.4 21.4 9.3 16.7 13.9 17.8 20.4 12 17.3 6.2 20.4 7.3 13.9 2.6 9.3 9.1 8.4 12 2.5Z"
-            />
-          </svg>
+          <IconStar class="cd-rating__icon cd-rating__icon--fg" size="inherit" aria-hidden="true" />
         </span>
       {/if}
     </span>
@@ -334,24 +327,28 @@
     display: inline-flex;
     inline-size: var(--cd-rating-size-default);
     block-size: var(--cd-rating-size-default);
+    /* 星位字号驱动内部 IconStar（size="inherit"，svg 1em）填满星位。 */
+    font-size: var(--cd-rating-size-default);
     color: var(--cd-rating-color-inactive);
   }
   .cd-rating--small .cd-rating__star {
     inline-size: var(--cd-rating-size-small);
     block-size: var(--cd-rating-size-small);
+    font-size: var(--cd-rating-size-small);
   }
   .cd-rating--large .cd-rating__star {
     inline-size: var(--cd-rating-size-large);
     block-size: var(--cd-rating-size-large);
+    font-size: var(--cd-rating-size-large);
   }
   .cd-rating--custom .cd-rating__star {
     inline-size: var(--cd-rating-size-active);
     block-size: var(--cd-rating-size-active);
+    font-size: var(--cd-rating-size-active);
   }
   .cd-rating__icon {
-    inline-size: 100%;
-    block-size: 100%;
     display: block;
+    line-height: 0;
   }
   .cd-rating__fg {
     position: absolute;
@@ -362,19 +359,6 @@
     overflow: hidden;
     color: var(--cd-rating-color-active);
     transition: color var(--cd-rating-transition-duration) var(--cd-rating-transition-easing);
-  }
-  .cd-rating__icon--fg {
-    inline-size: var(--cd-rating-size-default);
-    block-size: 100%;
-  }
-  .cd-rating--small .cd-rating__icon--fg {
-    inline-size: var(--cd-rating-size-small);
-  }
-  .cd-rating--large .cd-rating__icon--fg {
-    inline-size: var(--cd-rating-size-large);
-  }
-  .cd-rating--custom .cd-rating__icon--fg {
-    inline-size: var(--cd-rating-size-active);
   }
   .cd-rating--warning .cd-rating__fg {
     color: var(--cd-rating-color-warning);

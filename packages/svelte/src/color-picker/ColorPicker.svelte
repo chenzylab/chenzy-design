@@ -26,6 +26,7 @@
     type Hsv,
     type ColorFormat,
   } from '@chenzy-design/core';
+  import { IconEyedropper } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -652,9 +653,7 @@
             {disabled}
             onclick={pickWithEyeDropper}
           >
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M11.6 1.5a2 2 0 0 1 2.9 2.8l-1.3 1.3 1 1-1.1 1-1-1-5.4 5.4-3 .8.8-3 5.4-5.4-1-1 1-1.1 1 1 1.3-1.3Z" />
-            </svg>
+            <IconEyedropper aria-hidden="true" />
           </button>
         {/if}
       </div>
