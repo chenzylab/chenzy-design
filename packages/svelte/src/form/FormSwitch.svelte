@@ -26,8 +26,8 @@
     disabled?: boolean;
     size?: SwitchProps['size'];
     loading?: SwitchProps['loading'];
-    checkedChildren?: string | Snippet;
-    uncheckedChildren?: string | Snippet;
+    checkedText?: string | Snippet;
+    uncheckedText?: string | Snippet;
   }
 
   let {
@@ -45,8 +45,8 @@
     disabled,
     size,
     loading,
-    checkedChildren,
-    uncheckedChildren,
+    checkedText,
+    uncheckedText,
   }: Props = $props();
 
   const fieldProps = $derived<ComponentProps<typeof Field>>({
@@ -66,17 +66,16 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Switch
       {...(typeof value === 'boolean' ? { value } : {})}
       disabled={disabled ?? fieldDisabled}
       {...(size !== undefined ? { size } : {})}
       {...(loading !== undefined ? { loading } : {})}
-      {...(checkedChildren !== undefined ? { checkedChildren } : {})}
-      {...(uncheckedChildren !== undefined ? { uncheckedChildren } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      {...(checkedText !== undefined ? { checkedText } : {})}
+      {...(uncheckedText !== undefined ? { uncheckedText } : {})}
+      {...(status === 'error' ? { 'aria-invalid': true } : {})}
       onChange={(v) => onChange(v)}
-      onBlur={() => onBlur()}
     />
   {/snippet}
 </Field>

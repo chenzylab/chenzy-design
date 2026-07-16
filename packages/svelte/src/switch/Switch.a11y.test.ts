@@ -8,7 +8,7 @@ import Switch from './Switch.svelte';
 describe('Switch a11y', () => {
   it('默认：role=switch / aria-checked=false / ariaLabel 提供可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(Switch, {
-      props: { ariaLabel: 'Dark mode' },
+      props: { 'aria-label':'Dark mode' },
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw).not.toBeNull();
@@ -19,7 +19,7 @@ describe('Switch a11y', () => {
 
   it('选中：value=true → aria-checked=true', async () => {
     const { container } = renderWithLocale(Switch, {
-      props: { ariaLabel: 'Wifi', value: true },
+      props: { 'aria-label':'Wifi', value: true },
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw?.getAttribute('aria-checked')).toBe('true');
@@ -28,7 +28,7 @@ describe('Switch a11y', () => {
 
   it('禁用：disabled，无 axe violations', async () => {
     const { container } = renderWithLocale(Switch, {
-      props: { ariaLabel: 'Bluetooth', disabled: true },
+      props: { 'aria-label':'Bluetooth', disabled: true },
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw).not.toBeNull();
@@ -37,7 +37,7 @@ describe('Switch a11y', () => {
 
   it('loading：aria-busy=true', async () => {
     const { container } = renderWithLocale(Switch, {
-      props: { ariaLabel: 'Sync', loading: true },
+      props: { 'aria-label':'Sync', loading: true },
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw?.getAttribute('aria-busy')).toBe('true');

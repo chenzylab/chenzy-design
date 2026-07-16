@@ -1,57 +1,76 @@
 /**
- * Component tokens for Switch. 曾全量对齐 Semi Design（semi-foundation/switch/variables.scss），
- * 现按 DSM「Token 精简原则」清理孤儿：仅保留组件实际消费的 token 及其中间节点。
- * 我们的开关滑块用 inset-inline-start 定位而非 translateX，故删去全部 spacing-switch-*-translatex
- * 位移及相关 knob/spin 尺寸孤儿。带元数据的 TokenDef 结构以支持 DSM。
- * 值为 var() 引用我们的 alias / global token，或字面量。
- * 末尾为 chenzy-design Switch 实际消费的补充 token（Semi 无 / 命名差异；组件消费）。
+ * Component tokens for Switch — 严格对齐 Semi Design（semi-foundation/switch/variables.scss）。
+ * 名值对齐 Semi；值引用本库 alias/global var(--cd-*) 或字面量（Semi 用 SCSS 计算的
+ * knob 尺寸/位移在此忠实翻译为字面量 px，与 variables.scss 数值一致）。
+ * 无自造中间层：组件 CSS 直接消费下列 --cd-switch-* token。
  *
- * 注：
- *  - Semi $motion-switch-transitionDuration: 200ms 对齐我们 --cd-motion-duration-mid（= 200ms）。
- *  - Semi calc（$width-switch_knob_active 等）忠实翻译为 CSS calc(...)。
+ * DOM 偏离：本库根为 <button role=switch>（保留 APG pattern），Semi 为 div+隐藏 input；
+ * knob 用 translateX 位移对齐 Semi（非 inset 定位）。
+ *
+ * 尺寸/位移映射（对齐 variables.scss）：
+ *   default: 宽40 高24 knob18 padding2 tx_off2 tx_on18
+ *   large:   宽54 高32 knob24 padding3 tx_off3 tx_on26
+ *   small:   宽26 高16 knob12 padding1 tx_off1 tx_on11
  */
 import type { TokenGroup } from './token-def.js';
 
 export const switchTokens = {
-  // —— Other：滑块 / 加载图标位移距离 + 动画时长 ——
-  'motion-switch-transitionduration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '开关动画时长', usage: '开关动画时长' },
+  // —— 尺寸：宽 / 高（对齐 $width-switch* / $height-switch*） ——
+  'switch-width-default': { value: '40px', category: 'width', label: '开关宽度', usage: '开关宽度 - 默认' },
+  'switch-width-small': { value: '26px', category: 'width', label: '开关宽度', usage: '开关宽度 - 小尺寸' },
+  'switch-width-large': { value: '54px', category: 'width', label: '开关宽度', usage: '开关宽度 - 大尺寸' },
+  'switch-height-default': { value: '24px', category: 'height', label: '开关高度', usage: '开关高度 - 默认' },
+  'switch-height-small': { value: '16px', category: 'height', label: '开关高度', usage: '开关高度 - 小尺寸' },
+  'switch-height-large': { value: '32px', category: 'height', label: '开关高度', usage: '开关高度 - 大尺寸' },
+  'switch-radius': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '开关圆角', usage: '开关圆角（Semi=height*0.5，pill 等价）' },
+  'switch-border-width': { value: '1px', category: 'width', label: '描边宽度', usage: '开关描边宽度（对齐 border-thickness-control）' },
 
-  // —— Color ——
-  'color-switch-default-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '关闭态背景色', usage: '关闭态(未选中)开关背景色 - 默认' },
-  'color-switch-checked-bg-default': { value: 'var(--cd-color-success)', category: 'color', label: '开启态背景色', usage: '开启态开关背景色 - 默认' },
-  'color-switch-knob-bg-default': { value: 'var(--cd-color-white)', category: 'color', label: '滑块背景色', usage: '开关滑块背景颜色 - 关闭态' },
-  'color-switch-checked-text-default': { value: 'var(--cd-color-white)', category: 'color', label: '开启态文案色', usage: '开启态开关文案颜色' },
+  // —— 背景色：关态 / 开态 × 默认 / 悬浮 / 按下 / 禁用（对齐 $color-switch_*-bg-*） ——
+  'switch-bg-off': { value: 'var(--cd-color-fill-0)', category: 'color', label: '关态背景', usage: '关闭态背景 - 默认' },
+  'switch-bg-off-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关态悬浮背景', usage: '关闭态背景 - 悬浮' },
+  'switch-bg-off-active': { value: 'var(--cd-color-fill-2)', category: 'color', label: '关态按下背景', usage: '关闭态背景 - 按下' },
+  'switch-bg-on': { value: 'var(--cd-color-success)', category: 'color', label: '开态背景', usage: '开启态背景 - 默认' },
+  'switch-bg-on-hover': { value: 'var(--cd-color-success-hover)', category: 'color', label: '开态悬浮背景', usage: '开启态背景 - 悬浮' },
+  'switch-bg-on-active': { value: 'var(--cd-color-success-active)', category: 'color', label: '开态按下背景', usage: '开启态背景 - 按下' },
+  'switch-bg-on-disabled': { value: 'var(--cd-color-success-disabled)', category: 'color', label: '禁用开态背景', usage: '禁用开启态背景' },
+  'switch-border-off': { value: 'transparent', category: 'color', label: '关态描边', usage: '关闭态描边颜色' },
 
-  // —— Width / Height ——
-  'width-switch': { value: '40px', category: 'width', label: '开关宽度', usage: '开关宽度' },
-  'height-switch': { value: '24px', category: 'height', label: '开关高度', usage: '开关高度' },
-  'height-switch-large': { value: '32px', category: 'height', label: '大尺寸高度', usage: '大尺寸开关高度' },
-  'width-switch-large': { value: '54px', category: 'width', label: '大尺寸宽度', usage: '大尺寸开关宽度' },
-  'height-switch-small': { value: '16px', category: 'height', label: '小尺寸高度', usage: '小尺寸开关高度' },
-  'width-switch-small': { value: '26px', category: 'width', label: '小尺寸宽度', usage: '小尺寸开关宽度' },
+  // —— knob（滑块） ——
+  'switch-knob-bg': { value: 'var(--cd-color-white)', category: 'color', label: '滑块背景', usage: '开关滑块背景颜色' },
+  'switch-knob-shadow': { value: '0 4px 6px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.3)', category: 'other', label: '滑块阴影', usage: '开关滑块阴影（对齐 shadow-knob mixin）' },
+  'switch-knob-size': { value: '18px', category: 'width', label: '滑块尺寸', usage: '滑块宽高 - 默认（$width-switch_knob_default）' },
+  'switch-knob-size-large': { value: '24px', category: 'width', label: '大尺寸滑块尺寸', usage: '滑块宽高 - 大尺寸（$width-switch_knob_large）' },
+  'switch-knob-size-small': { value: '12px', category: 'width', label: '小尺寸滑块尺寸', usage: '滑块宽高 - 小尺寸（$width-switch_knob_large_small）' },
+  'switch-knob-padding': { value: '2px', category: 'spacing', label: '滑块顶部边距', usage: '滑块顶部边距 - 默认（$spacing-switch_knob-padding）' },
+  'switch-knob-padding-large': { value: '3px', category: 'spacing', label: '大尺寸滑块顶部边距', usage: '滑块顶部边距 - 大尺寸（$spacing-switch_knob_large-padding）' },
+  'switch-knob-padding-small': { value: '1px', category: 'spacing', label: '小尺寸滑块顶部边距', usage: '滑块顶部边距 - 小尺寸（$spacing-switch_knob_small-padding）' },
+  'switch-knob-tx-off': { value: '2px', category: 'spacing', label: '关态滑块位移', usage: '滑块位移 - 关态默认（$spacing-switch_unchecked-translateX）' },
+  'switch-knob-tx-on': { value: '18px', category: 'spacing', label: '开态滑块位移', usage: '滑块位移 - 开态默认（$spacing-switch_checked-translateX）' },
+  'switch-knob-tx-off-large': { value: '3px', category: 'spacing', label: '大尺寸关态滑块位移', usage: '滑块位移 - 关态大尺寸（$spacing-switch_unchecked_large-translateX）' },
+  'switch-knob-tx-on-large': { value: '26px', category: 'spacing', label: '大尺寸开态滑块位移', usage: '滑块位移 - 开态大尺寸（$spacing-switch_checked_large-translateX）' },
+  'switch-knob-tx-off-small': { value: '1px', category: 'spacing', label: '小尺寸关态滑块位移', usage: '滑块位移 - 关态小尺寸（$spacing-switch_unchecked_small-translateX）' },
+  'switch-knob-tx-on-small': { value: '11px', category: 'spacing', label: '小尺寸开态滑块位移', usage: '滑块位移 - 开态小尺寸（$spacing-switch_checked_small-translateX）' },
 
-  // —— chenzy-design Switch 实际消费的补充 token（Semi 无 / 命名差异；组件消费） ——
-  'switch-height-default': { value: 'var(--cd-height-switch)', category: 'height', label: '开关高度', usage: '开关高度 - 默认（组件消费）' },
-  'switch-height-small': { value: 'var(--cd-height-switch-small)', category: 'height', label: '开关高度', usage: '开关高度 - 小尺寸（组件消费）' },
-  'switch-height-large': { value: 'var(--cd-height-switch-large)', category: 'height', label: '开关高度', usage: '开关高度 - 大尺寸（组件消费）' },
-  'switch-width-default': { value: 'var(--cd-width-switch)', category: 'width', label: '开关宽度', usage: '开关宽度 - 默认（组件消费）' },
-  'switch-width-small': { value: 'var(--cd-width-switch-small)', category: 'width', label: '开关宽度', usage: '开关宽度 - 小尺寸（组件消费）' },
-  'switch-width-large': { value: 'var(--cd-width-switch-large)', category: 'width', label: '开关宽度', usage: '开关宽度 - 大尺寸（组件消费）' },
-  'switch-bg-off': { value: 'var(--cd-color-switch-default-bg-default)', category: 'color', label: '关闭背景色', usage: '关闭态开关背景（组件消费）' },
-  'switch-bg-on': { value: 'var(--cd-color-switch-checked-bg-default)', category: 'color', label: '开启背景色', usage: '开启态开关背景（组件消费）' },
-  'switch-bg-on-warning': { value: 'var(--cd-color-warning)', category: 'color', label: '警示开启背景色', usage: 'warning 状态开启态开关背景（组件消费）' },
-  'switch-bg-on-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误开启背景色', usage: 'error 状态开启态开关背景（组件消费）' },
-  'switch-knob-bg': { value: 'var(--cd-color-switch-knob-bg-default)', category: 'color', label: '滑块背景色', usage: '开关滑块背景（组件消费）' },
-  'switch-radius': { value: 'var(--cd-border-radius-full)', category: 'radius', label: '开关圆角', usage: '开关圆角（组件消费）' },
-  'switch-label-color': { value: 'var(--cd-color-switch-checked-text-default)', category: 'color', label: '开关文案色', usage: '开关内文案颜色（组件消费）' },
-  'switch-label-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '文案字号', usage: '开关内文案字号（组件消费）' },
-  'switch-label-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '文案内间距', usage: '开关内文案内间距（组件消费）' },
-  'switch-label-padding-start': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '开启文案左内距', usage: '开启态文案左内间距（组件消费）' },
-  'switch-label-padding-end': { value: 'var(--cd-spacing-base-loose)', category: 'spacing', label: '开启文案右内距', usage: '开启态文案右内间距（组件消费）' },
-  'switch-outline-focus': { value: 'var(--cd-focus-ring)', category: 'other', label: '聚焦轮廓', usage: '开关聚焦轮廓阴影（组件消费）' },
-  'switch-transition-duration': { value: 'var(--cd-motion-switch-transitionduration)', category: 'animation', label: '过渡时长', usage: '开关过渡动画时长（组件消费）' },
-  'switch-transition-easing': { value: 'var(--cd-motion-ease-standard)', category: 'animation', label: '过渡曲线', usage: '开关过渡动画曲线（组件消费）' },
-  'switch-spinner-track': { value: 'var(--cd-color-grey-3)', category: 'color', label: '加载轨道色', usage: '加载 spinner 轨道颜色（组件消费）' },
-  'switch-spinner-indicator': { value: 'var(--cd-color-primary)', category: 'color', label: '加载指示色', usage: '加载 spinner 指示颜色（组件消费）' },
-  'switch-spinner-duration': { value: 'var(--cd-motion-duration-slow)', category: 'animation', label: '加载动画时长', usage: '加载 spinner 旋转时长（组件消费）' },
+  // —— 内嵌文案 ——
+  'switch-text-width': { value: '20px', category: 'width', label: '文案宽度', usage: '内嵌文案节点宽度 - 默认' },
+  'switch-text-width-large': { value: '26px', category: 'width', label: '大尺寸文案宽度', usage: '内嵌文案节点宽度 - 大尺寸（$width-switch_checked_unchecked_text）' },
+  'switch-text-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '文案字号', usage: '内嵌文案字号 - 默认' },
+  'switch-text-font-size-large': { value: 'var(--cd-font-size-regular)', category: 'font', label: '大尺寸文案字号', usage: '内嵌文案字号 - 大尺寸' },
+  'switch-checked-text-color': { value: 'var(--cd-color-white)', category: 'color', label: '开态文案色', usage: '开启态文案颜色（$color-switch_checked-text-default）' },
+  'switch-unchecked-text-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '关态文案色', usage: '关闭态文案颜色（$color-switch_unchecked-text-default）' },
+
+  // —— loading spin ——
+  'switch-bg-spin-off': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关态加载背景', usage: '已关闭加载态背景（$color-switch_spin_unchecked-bg-default）' },
+  'switch-bg-spin-on': { value: 'var(--cd-color-success-hover)', category: 'color', label: '开态加载背景', usage: '已开启加载态背景（$color-switch_spin_checked-bg-default）' },
+  'switch-spin-track': { value: 'var(--cd-color-fill-1)', category: 'color', label: '加载轨道色', usage: '加载 spinner 轨道颜色' },
+  'switch-spin-indicator': { value: 'var(--cd-color-white)', category: 'color', label: '加载指示色', usage: '加载 spinner 指示颜色（$color-switch_loading_spin-default）' },
+  'switch-spin-duration': { value: 'var(--cd-motion-duration-slow)', category: 'animation', label: '加载动画时长', usage: '加载 spinner 旋转时长' },
+
+  // —— 聚焦轮廓（对齐 $color-switch_primary-outline-focus / $width-switch-outline） ——
+  'switch-outline-focus': { value: 'var(--cd-color-primary-light-active)', category: 'color', label: '聚焦轮廓色', usage: '开关聚焦轮廓颜色' },
+  'switch-outline-width': { value: '2px', category: 'width', label: '聚焦轮廓宽度', usage: '开关聚焦轮廓宽度（$width-switch-outline）' },
+
+  // —— 动画（对齐 $motion-switch-transitionDuration=200ms） ——
+  'switch-transition-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '过渡时长', usage: '开关过渡动画时长（Semi=200ms）' },
+  'switch-transition-easing': { value: 'ease-in-out', category: 'animation', label: '过渡曲线', usage: '开关过渡曲线（对齐 Semi ease-in-out）' },
 } satisfies TokenGroup;

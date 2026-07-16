@@ -125,13 +125,6 @@ export const zh_CN: Locale = {
     loading: '加载中',
     error: '播放出错',
   },
-  Switch: {
-    on: '开',
-    off: '关',
-    loading: '加载中',
-    announceChecked: '已开启',
-    announceUnchecked: '已关闭',
-  },
   Rating: {
     ariaLabel: '评分',
     valueText: '{value} 颗星，共 {count} 颗',

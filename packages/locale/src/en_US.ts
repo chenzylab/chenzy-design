@@ -125,13 +125,6 @@ export const en_US: Locale = {
     loading: 'Loading',
     error: 'Playback error',
   },
-  Switch: {
-    on: 'On',
-    off: 'Off',
-    loading: 'Loading',
-    announceChecked: 'Turned on',
-    announceUnchecked: 'Turned off',
-  },
   Rating: {
     ariaLabel: 'Rating',
     valueText: '{value} of {count} stars',

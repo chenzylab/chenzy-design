@@ -3,6 +3,6 @@
 </script>
 
 <div style="display: flex; gap: 16px; align-items: center;">
-  <Switch defaultValue={true} checkedChildren="开" uncheckedChildren="关" />
-  <Switch defaultValue={false} checkedChildren="ON" uncheckedChildren="OFF" />
+  <Switch defaultValue={true} checkedText="开" uncheckedText="关" />
+  <Switch defaultValue={false} checkedText="ON" uncheckedText="OFF" />
 </div>

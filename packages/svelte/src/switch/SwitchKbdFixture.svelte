@@ -13,7 +13,7 @@
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
   <Switch
-    ariaLabel="Toggle"
+    aria-label="Toggle"
     onChange={(v) => {
       lastValue = v;
     }}

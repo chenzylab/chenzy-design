@@ -178,15 +178,6 @@ export interface Locale {
     /** 播放出错播报 */
     error: string;
   };
-  Switch: {
-    on: string;
-    off: string;
-    loading: string;
-    /** announceOnChange 播报（开） */
-    announceChecked: string;
-    /** announceOnChange 播报（关） */
-    announceUnchecked: string;
-  };
   Rating: {
     ariaLabel: string;
     /** uses {value} and {count} */
