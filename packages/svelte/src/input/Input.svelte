@@ -5,6 +5,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tick } from 'svelte';
+  import { IconClear, IconEyeOpened, IconEyeClosedSolid } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { getInputGroupContext } from './context.js';
 
@@ -292,12 +293,7 @@
           {#if clearIcon}
             {@render clearIcon()}
           {:else}
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-              <path
-                fill="currentColor"
-                d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-              />
-            </svg>
+            <IconClear />
           {/if}
         </button>
       {/if}
@@ -310,19 +306,11 @@
           aria-pressed={revealed}
           onclick={toggleReveal}
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            {#if revealed}
-              <path
-                fill="currentColor"
-                d="M8 3C4.5 3 1.7 5.1.5 8c1.2 2.9 4 5 7.5 5s6.3-2.1 7.5-5C14.3 5.1 11.5 3 8 3Zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm0-4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
-              />
-            {:else}
-              <path
-                fill="currentColor"
-                d="M2.1 1.4 1 2.5l2.3 2.3C2 5.6 1 6.7.5 8c1.2 2.9 4 5 7.5 5 1.3 0 2.6-.3 3.7-.8l2.3 2.3 1.1-1.1L2.1 1.4ZM8 11a3 3 0 0 1-2.8-4.1l1.3 1.3a1.5 1.5 0 0 0 2.3 2.3l1.3 1.3c-.6.2-1.3.2-2.1.2Zm0-8c3.5 0 6.3 2.1 7.5 5-.5 1.1-1.2 2.1-2.1 2.8l-2-2A3 3 0 0 0 8 5h-.4L6.1 3.5C6.7 3.2 7.3 3 8 3Z"
-              />
-            {/if}
-          </svg>
+          {#if revealed}
+            <IconEyeOpened />
+          {:else}
+            <IconEyeClosedSolid />
+          {/if}
         </button>
       {/if}
 
@@ -382,12 +370,7 @@
         {#if clearIcon}
           {@render clearIcon()}
         {:else}
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-            />
-          </svg>
+          <IconClear />
         {/if}
       </button>
     {/if}
@@ -400,19 +383,11 @@
         aria-pressed={revealed}
         onclick={toggleReveal}
       >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          {#if revealed}
-            <path
-              fill="currentColor"
-              d="M8 3C4.5 3 1.7 5.1.5 8c1.2 2.9 4 5 7.5 5s6.3-2.1 7.5-5C14.3 5.1 11.5 3 8 3Zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm0-4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
-            />
-          {:else}
-            <path
-              fill="currentColor"
-              d="M2.1 1.4 1 2.5l2.3 2.3C2 5.6 1 6.7.5 8c1.2 2.9 4 5 7.5 5 1.3 0 2.6-.3 3.7-.8l2.3 2.3 1.1-1.1L2.1 1.4ZM8 11a3 3 0 0 1-2.8-4.1l1.3 1.3a1.5 1.5 0 0 0 2.3 2.3l1.3 1.3c-.6.2-1.3.2-2.1.2Zm0-8c3.5 0 6.3 2.1 7.5 5-.5 1.1-1.2 2.1-2.1 2.8l-2-2A3 3 0 0 0 8 5h-.4L6.1 3.5C6.7 3.2 7.3 3 8 3Z"
-            />
-          {/if}
-        </svg>
+        {#if revealed}
+          <IconEyeOpened />
+        {:else}
+          <IconEyeClosedSolid />
+        {/if}
       </button>
     {/if}
 
