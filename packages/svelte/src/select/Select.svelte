@@ -3,26 +3,25 @@
   单选 / 多选 / 本地过滤 / 键盘导航 / 浮层。Token-driven, a11y-correct.
   下拉 portal 到 body + position:fixed（脱离 overflow:hidden 裁剪），matchWidth 跟随触发器宽度，flip 避让。
   maxTagCount：多选 tag 超出折叠为 +N。allowCreate：filter 无匹配时可创建新选项。
-  分组：options 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
-  remote：提供 onSearch 时输入防抖回调（searchDebounce ms），由外部更新 options；loading 显示 spinner。
-  虚拟化：virtualized=true 时下拉只渲染视口内 option（复用 core fixedRange），spacer 撑总高、
+  分组：optionList 含 { label, options:[] } 时按组渲染组标题；逻辑/键盘/filter 基于扁平序列。
+  remote：remote=true 时输入防抖回调 onSearch(value, event)，由外部更新 optionList；loading 显示 spinner。
+  虚拟化：传入 virtualize 对象时下拉只渲染视口内 option（复用 core fixedRange），spacer 撑总高、
   option 绝对定位按索引偏移；scrollTop 由命令式 scroll 回调 + rAF 节流写入本地 $state，可见区间
   纯 $derived render 期只读（红线 #2/#3）。键盘移动 activeIndex 时命令式 scrollOffsetForIndex 滚到可见
   （未渲染的 active option 移动后会被滚进视口而渲染，a11y 取舍同 Tree 虚拟化）。
-  虚拟化仅作用于「非分组」扁平选项集（hasGroups 时回退全量渲染，忽略 virtualized）。
+  虚拟化仅作用于「非分组」扁平选项集（hasGroups 时回退全量渲染，忽略 virtualize）。
   dropdownMatchSelectWidth：浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度。
   destroyOnClose：关闭时销毁浮层 DOM（默认 false，保持挂载）。
   getPopupContainer：浮层挂载目标容器（透传给 use:floating 的 getContainer，portal 到该容器；缺省 body）。
   命令式 Methods（bind:this）：open/close/focus/clearInput/deselectAll/selectAll/search/rePosition，对齐 Semi ref。
-  emptyContent/empty snippet：空态自定义内容。
+  emptyContent snippet：空态自定义内容。
   prefix/suffix/arrowIcon/clearIcon snippet：触发器前后缀与图标。
-  dropdownHeader/dropdownFooter snippet：浮层顶/底固定区。
-  option snippet：自定义单项渲染；label snippet：自定义选中值/Tag 渲染。
+  innerTopSlot/innerBottomSlot snippet：浮层滚动区内顶/底固定区；outerTopSlot/outerBottomSlot：滚动区外固定区。
+  renderOptionItem snippet：完全自定义候选项渲染；renderSelectedItem snippet：自定义选中值/Tag 渲染。
   onSelect/onDeselect/onClear/onCreate/onFocus/onBlur/onScrollToBottom/onExceed/onChangeWithObject。
   autoClearSearchValue：多选选中后自动清空搜索词（默认 true）。
   showRestTagsPopover：+N tag 悬停用 Popover 浮层展示剩余全部 tags；restTagsPopoverProps 透传给该 Popover。
   borderless：无边框模式；autoFocus：挂载自动聚焦；id：关联外部 label。
-  optionLabelProp：用作回显的字段名（默认 'label'，当前 OptionData 仅支持 label/value）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -34,10 +33,11 @@
     scrollOffsetForIndex,
     type Placement,
   } from '@chenzy-design/core';
-  import { IconClose, IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
+  import { IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Popover from '../popover/Popover.svelte';
+  import Tag from '../tag/Tag.svelte';
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean; [key: string]: unknown };
@@ -54,16 +54,22 @@
   interface Props {
     value?: OptionValue | OptionValue[];
     defaultValue?: OptionValue | OptionValue[];
-    /** 选项；可含分组项 { label, options: [] } */
-    options?: OptionOrGroup[];
+    /** 选项；可含分组项 { label, options: [] }（对齐 Semi optionList） */
+    optionList?: OptionOrGroup[];
     multiple?: boolean;
-    filter?: boolean;
+    /**
+     * 是否开启输入过滤（对齐 Semi filter: boolean | function）。
+     * boolean：true 时按选项 label 本地包含匹配；
+     * function：自定义过滤逻辑 (input, option) => boolean，返回 true 保留该项。
+     */
+    filter?: boolean | ((input: string, option: OptionData) => boolean);
     open?: boolean;
     defaultOpen?: boolean;
     size?: Size;
-    status?: Status;
-    /** 下拉浮层 placement（默认 bottomStart，自动避让仍生效） */
-    placement?: Placement;
+    /** 校验态样式（对齐 Semi validateStatus） */
+    validateStatus?: Status;
+    /** 下拉浮层弹出位置（对齐 Semi position，默认 bottomStart，自动避让仍生效） */
+    position?: Placement;
     placeholder?: string;
     /** combobox 触发器可访问名；缺省回退到 placeholder 或 locale 默认 */
     ariaLabel?: string;
@@ -72,24 +78,33 @@
     /** 绑定到触发器的 id 属性，用于关联外部 <label for="..."> */
     id?: string;
     disabled?: boolean;
-    clearable?: boolean;
+    /** 多选/单选是否显示清除按钮（对齐 Semi showClear，默认 false） */
+    showClear?: boolean;
+    /** 多选最多可选项数（对齐 Semi max）；达到上限后新增项被忽略并触发 onExceed */
+    max?: number;
     /** 多选 tag 最大显示数，超出折叠为 +N（0=不折叠） */
     maxTagCount?: number;
     /** 多选单个 Tag 文本最大长度，超出截断为「前缀…」，完整文本经 title 查看（不截则不传） */
     maxTagTextLength?: number;
     /** filter 无匹配时允许创建新选项（值=输入文本） */
     allowCreate?: boolean;
-    /** 远程搜索：输入防抖后回调（由外部更新 options，不再本地过滤） */
-    onSearch?: (query: string) => void;
+    /**
+     * 远程搜索（对齐 Semi remote，默认 false）：为 true 时不本地过滤，
+     * 输入防抖后回调 onSearch，由外部按 query 更新 optionList。
+     */
+    remote?: boolean;
+    /** 搜索输入回调（对齐 Semi onSearch(value, event)）；remote=true 时防抖触发 */
+    onSearch?: (value: string, event?: Event) => void;
     /** 远程加载中（显示 spinner） */
     loading?: boolean;
-    /** onSearch 防抖毫秒（默认 300） */
-    searchDebounce?: number;
-    /** 选项虚拟化：大数据下拉只渲染视口内 option（仅非分组生效，默认 false） */
-    virtualized?: boolean;
-    /** 虚拟化选项行高（px，默认 32）；需与样式实际行高一致 */
-    optionHeight?: number;
-    /** 下拉最大高度（px，默认 256）；虚拟化时同时作为视口高度 */
+    /**
+     * 选项虚拟化（对齐 Semi virtualize 对象）：非分组大数据下拉只渲染视口内 option。
+     * itemSize：选项行高（px，默认 32，需与样式实际行高一致）；
+     * height：虚拟视口高度（px，默认取 maxHeight）；width：预留（当前跟随触发器宽度，忽略）。
+     * 传入该对象即开启虚拟化（仅非分组生效）。
+     */
+    virtualize?: { itemSize?: number; height?: number; width?: string | number };
+    /** 下拉最大高度（px，默认 270，对齐 Semi maxHeight） */
     maxHeight?: number;
     /** 浮层宽度是否跟随触发器（默认 true）；false 时浮层自适应内容宽度 */
     dropdownMatchSelectWidth?: boolean;
@@ -105,6 +120,12 @@
      * （bottom/top 系取 bottom/top，left/right 系取 left/right），缺项回退默认。
      */
     dropdownMargin?: number | { top?: number; bottom?: number; left?: number; right?: number };
+    /** 浮层点击是否 stopPropagation（对齐 Semi stopPropagation，默认 true），避免冒泡到外层触发无关点击 */
+    stopPropagation?: boolean;
+    /** 触发器鼠标进入回调（对齐 Semi onMouseEnter） */
+    onMouseEnter?: (e: MouseEvent) => void;
+    /** 触发器鼠标离开回调（对齐 Semi onMouseLeave） */
+    onMouseLeave?: (e: MouseEvent) => void;
     /** 关闭时销毁浮层 DOM（默认 false，复用节点避免重建开销） */
     destroyOnClose?: boolean;
     /** 浮层挂载目标容器（默认 body） */
@@ -149,14 +170,14 @@
      * 对齐 Semi ellipsisTrigger：纯 CSS 单行省略，完整文本经 title 查看；不影响选中值。
      */
     ellipsisTrigger?: boolean;
-    /** 用作回显的字段名（默认 'label'）；当选项含自定义字段时取对应值作显示文本 */
-    optionLabelProp?: string;
     /**
-     * 搜索框位置：'dropdown'（默认，浮层内独立搜索框）| 'trigger'（搜索输入内联在触发器上）。
-     * 仅在 filter=true 时生效。'trigger' 时输入框长驻触发器（单选选中值作 placeholder，
-     * 多选与 tags 并排），键入即在触发器上就地过滤，无需先打开浮层内的独立搜索框。
+     * 搜索框位置（对齐 Semi searchPosition，默认 'trigger'）：'trigger'（搜索输入内联在触发器上）
+     * | 'dropdown'（浮层内独立搜索框）。仅在 filter 开启时生效。'trigger' 时输入框长驻触发器
+     * （单选选中值作 placeholder，多选与 tags 并排），键入即就地过滤。
      */
     searchPosition?: 'dropdown' | 'trigger';
+    /** 搜索框占位文本（对齐 Semi searchPlaceholder）；缺省走 locale Select.searchPlaceholder */
+    searchPlaceholder?: string;
     /**
      * 内嵌标签：浮入触发器左侧的常驻标签（string 或 Snippet），用于「标签+值」一体式触发器。
      * 渲染在前缀之后、内容之前，不影响选中值/过滤逻辑（纯展示，对齐 DatePicker insetInput 的展示层定位）。
@@ -168,7 +189,8 @@
      */
     insetLabelId?: string;
     onChange?: (v: OptionValue | OptionValue[]) => void;
-    onOpenChange?: (open: boolean) => void;
+    /** 浮层显隐变化回调（对齐 Semi onDropdownVisibleChange） */
+    onDropdownVisibleChange?: (open: boolean) => void;
     /** 选中某项时触发（多选：每次单个 toggle 选中时；单选：选中时） */
     onSelect?: (value: OptionValue, option: OptionData) => void;
     /** 多选取消某项时触发 */
@@ -195,22 +217,30 @@
     clearIcon?: Snippet;
     /** 自定义下拉箭头图标 */
     arrowIcon?: Snippet;
-    /** 自定义空态内容（字符串或 Snippet 均可，为字符串时直接渲染文本） */
+    /** 自定义空态内容（字符串或 Snippet 均可，为字符串时直接渲染文本，对齐 Semi emptyContent） */
     emptyContent?: string | Snippet;
-    /** 自定义空态 snippet（与 emptyContent 等价，优先级同） */
-    empty?: Snippet;
     /** 浮层顶部固定区（inner：渲染在滚动列表内部顶端，随 optionList 滚动，对齐 Semi innerTopSlot） */
-    dropdownHeader?: Snippet;
+    innerTopSlot?: Snippet;
     /** 浮层底部固定区（inner：渲染在滚动列表内部底端，随 optionList 滚动，对齐 Semi innerBottomSlot） */
-    dropdownFooter?: Snippet;
+    innerBottomSlot?: Snippet;
     /** 浮层最外层顶部 slot（outer：与滚动列表平级、位于滚动区之外，始终固定展现，对齐 Semi outerTopSlot） */
     outerTopSlot?: Snippet;
     /** 浮层最外层底部 slot（outer：与滚动列表平级、位于滚动区之外，始终固定展现，对齐 Semi outerBottomSlot） */
     outerBottomSlot?: Snippet;
-    /** 自定义单项渲染 */
-    option?: Snippet<[{ option: OptionData; selected: boolean; active: boolean }]>;
-    /** 自定义选中值/Tag 渲染 */
-    label?: Snippet<[{ option: OptionData }]>;
+    /** 完全自定义候选项渲染（对齐 Semi renderOptionItem，入参含 selected/focused/onMouseEnter/onClick） */
+    renderOptionItem?: Snippet<
+      [
+        {
+          option: OptionData;
+          selected: boolean;
+          focused: boolean;
+          onMouseEnter: () => void;
+          onClick: () => void;
+        },
+      ]
+    >;
+    /** 自定义已选项标签/回显渲染（对齐 Semi renderSelectedItem，单选返回节点，多选逐个 Tag 内容） */
+    renderSelectedItem?: Snippet<[{ option: OptionData }]>;
     /** 自定义"创建xxx"项渲染 */
     renderCreateItem?: Snippet<[string]>;
     /**
@@ -238,34 +268,37 @@
   let {
     value = $bindable(),
     defaultValue,
-    options = [],
+    optionList = [],
     multiple = false,
     filter = false,
     open: openProp = $bindable(),
     defaultOpen = false,
     size = 'default',
-    status = 'default',
-    placement = 'bottomStart',
+    validateStatus = 'default',
+    position = 'bottomStart',
     placeholder,
     ariaLabel,
     ariaLabelledby,
     id,
     disabled = false,
-    clearable = false,
+    showClear = false,
+    max,
     maxTagCount = 0,
     maxTagTextLength,
     allowCreate = false,
+    remote = false,
     onSearch,
     loading = false,
-    searchDebounce = 300,
-    virtualized = false,
-    optionHeight = 32,
-    maxHeight = 256,
+    virtualize,
+    maxHeight = 270,
     dropdownMatchSelectWidth = true,
     dropdownClassName,
     dropdownStyle,
     zIndex,
     dropdownMargin,
+    stopPropagation = true,
+    onMouseEnter,
+    onMouseLeave,
     destroyOnClose = false,
     getPopupContainer,
     autoAdjustOverflow = true,
@@ -282,12 +315,12 @@
     preventScroll = false,
     expandRestTagsOnClick = false,
     ellipsisTrigger = false,
-    optionLabelProp = 'label',
-    searchPosition = 'dropdown',
+    searchPosition = 'trigger',
+    searchPlaceholder,
     insetLabel,
     insetLabelId,
     onChange,
-    onOpenChange,
+    onDropdownVisibleChange,
     onSelect,
     onDeselect,
     onClear,
@@ -302,13 +335,12 @@
     clearIcon,
     arrowIcon,
     emptyContent,
-    empty,
-    dropdownHeader,
-    dropdownFooter,
+    innerTopSlot,
+    innerBottomSlot,
     outerTopSlot,
     outerBottomSlot,
-    option: optionSnippet,
-    label: labelSnippet,
+    renderOptionItem,
+    renderSelectedItem,
     renderCreateItem,
     triggerRender,
   }: Props = $props();
@@ -340,7 +372,7 @@
     onChange?.(next);
   }
 
-  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
+  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onDropdownVisibleChange ---
   const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
@@ -352,7 +384,7 @@
   function setOpen(next: boolean) {
     if (next === isOpen) return;
     if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
+    onDropdownVisibleChange?.(next);
     if (!next) {
       activeIndex = -1;
       query = '';
@@ -379,24 +411,31 @@
   let query = $state('');
 
   // 是否含分组：决定渲染走分组结构还是扁平。
-  const hasGroups = $derived(options.some(isGroup));
+  const hasGroups = $derived(optionList.some(isGroup));
   // 扁平选项序列（拍平分组）——逻辑/键盘/filter/回显统一基于它。
   const flatBase = $derived<OptionData[]>(
-    options.flatMap((o) => (isGroup(o) ? o.options : [o])),
+    optionList.flatMap((o) => (isGroup(o) ? o.options : [o])),
   );
 
-  // allowCreate：本地已创建选项，合并进选项集供回显与列表（不写回 options prop）。
+  // allowCreate：本地已创建选项，合并进选项集供回显与列表（不写回 optionList prop）。
   let createdOptions = $state<OptionData[]>([]);
   const mergedOptions = $derived<OptionData[]>(
     createdOptions.length === 0 ? flatBase : [...flatBase, ...createdOptions],
   );
 
-  // remote 模式：外部已按 query 更新 options，本地不再过滤。
-  const isRemote = $derived(onSearch !== undefined);
+  // remote 模式（对齐 Semi remote 布尔）：外部已按 query 更新 optionList，本地不再过滤。
+  const isRemote = $derived(remote);
+  // filter 是否开启（boolean true 或函数形态）。
+  const filterEnabled = $derived(filter === true || typeof filter === 'function');
 
   const filteredOptions = $derived.by(() => {
     if (isRemote) return mergedOptions;
-    if (!filter || query.trim() === '') return mergedOptions;
+    if (!filterEnabled || query.trim() === '') return mergedOptions;
+    // 函数形态：自定义过滤逻辑 (input, option) => boolean（对齐 Semi filter function）。
+    if (typeof filter === 'function') {
+      const q = query.trim();
+      return mergedOptions.filter((o) => (filter as (i: string, o: OptionData) => boolean)(q, o));
+    }
     const q = query.toLowerCase();
     return mergedOptions.filter((o) => o.label.toLowerCase().includes(q));
   });
@@ -407,7 +446,7 @@
     if (!hasGroups) return [];
     const out: { label: string | null; items: { opt: OptionData; flatIndex: number }[] }[] = [];
     const indexOf = (opt: OptionData) => filteredOptions.indexOf(opt);
-    for (const o of options) {
+    for (const o of optionList) {
       if (isGroup(o)) {
         const items = o.options
           .filter((opt) => filteredOptions.includes(opt))
@@ -428,7 +467,7 @@
   // 当前输入是否可创建新选项：allowCreate + filter 有输入 + 无 label 完全匹配。
   const canCreate = $derived(
     allowCreate &&
-      filter &&
+      filterEnabled &&
       query.trim() !== '' &&
       !mergedOptions.some((o) => o.label.toLowerCase() === query.trim().toLowerCase()),
   );
@@ -469,10 +508,11 @@
   // --- 选项虚拟化（仅非分组生效；分组时回退全量渲染）---
   // 视口=下拉容器自身滚动；scrollTop 由命令式 scroll 回调写入本地 $state，
   // 可见区间纯 $derived render 期只读不读 DOM（红线 #2/#3）。
+  // virtualize 对象（对齐 Semi）：传入即开启（仅非分组）；itemSize 行高、height 视口高。
   const VIRTUAL_OVERSCAN = 4;
-  const isVirtual = $derived(virtualized && !hasGroups);
-  const vOptionHeight = $derived(optionHeight > 0 ? optionHeight : 32);
-  const vViewportH = $derived(maxHeight > 0 ? maxHeight : 256);
+  const isVirtual = $derived(virtualize !== undefined && !hasGroups);
+  const vOptionHeight = $derived(virtualize?.itemSize && virtualize.itemSize > 0 ? virtualize.itemSize : 32);
+  const vViewportH = $derived(virtualize?.height && virtualize.height > 0 ? virtualize.height : (maxHeight > 0 ? maxHeight : 270));
   // 仅由 scroll 回调写入的本地 scrollTop，render 期只读。
   let scrollTop = $state(0);
   // rAF 节流句柄（非响应式）。
@@ -517,10 +557,9 @@
     tagsCollapsed ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
   );
 
-  // optionLabelProp：取选项对应字段作为显示文本（默认 'label'）。
+  // 取选项显示文本（对齐 Semi：以 label 字段回显）。
   function getOptionLabel(opt: OptionData): string {
-    const val = opt[optionLabelProp];
-    return typeof val === 'string' ? val : opt.label;
+    return opt.label;
   }
 
   const singleLabel = $derived(
@@ -528,7 +567,7 @@
   );
 
   const hasSelection = $derived(selectedValues.length > 0);
-  const showClear = $derived(clearable && !disabled && hasSelection);
+  const showClearBtn = $derived(showClear && !disabled && hasSelection);
 
   function isSelected(v: OptionValue): boolean {
     return selectedValues.includes(v);
@@ -541,6 +580,11 @@
       const idx = set.indexOf(opt.value);
       const isAdd = idx === -1;
       if (isAdd) {
+        // max（对齐 Semi）：已达上限时忽略新增并通知 onExceed，不改变选中值。
+        if (max !== undefined && max >= 0 && set.length >= max) {
+          onExceed?.(opt);
+          return;
+        }
         set.push(opt.value);
         onSelect?.(opt.value, opt);
         // onExceed：新增后超出 maxTagCount 时，把被隐藏的 option 逐个通知
@@ -606,10 +650,10 @@
   export function focus(): void {
     rootEl?.querySelector<HTMLElement>('[role="combobox"]')?.focus({ preventScroll });
   }
-  /** 清空搜索框（写 query state 即经 $derived 重算 filteredOptions；remote 模式一并防抖回调） */
+  /** 清空搜索框（写 query state 即经 $derived 重算 filteredOptions；一并回调 onSearch('')） */
   export function clearInput(): void {
     query = '';
-    if (isRemote) scheduleSearch('');
+    emitSearch('');
   }
   /** 清空所有已选（复用 clearAll 的值/回调逻辑，无事件） */
   export function deselectAll(): void {
@@ -626,11 +670,11 @@
     const newSelected = mergedOptions.filter((o) => all.includes(o.value));
     onChangeWithObject?.(newSelected);
   }
-  /** 命令式设置搜索值并触发过滤（比照 onSearchInput：写 query 重算 filteredOptions；remote 防抖回调） */
+  /** 命令式设置搜索值并触发过滤（比照 onSearchInput：写 query 重算 filteredOptions；回调 onSearch） */
   export function search(value: string): void {
     query = value;
     activeIndex = -1;
-    if (isRemote) scheduleSearch(value);
+    emitSearch(value);
   }
   /** 触发浮层重新定位（递增 reposKey 触发 use:floating action 原位重算） */
   export function rePosition(): void {
@@ -744,25 +788,16 @@
     }
   }
 
-  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
-  let searchTimer: ReturnType<typeof setTimeout> | undefined;
-  function scheduleSearch(q: string) {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      searchTimer = undefined;
-      onSearch?.(q);
-    }, Math.max(0, searchDebounce));
+  // --- 搜索回调（对齐 Semi onSearch(value, event)；防抖交由使用方处理）---
+  function emitSearch(q: string, event?: Event) {
+    onSearch?.(q, event);
   }
-  // 卸载兜底清理。
-  $effect(() => () => {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-  });
 
   function onSearchInput(e: Event & { currentTarget: HTMLInputElement }) {
     query = e.currentTarget.value;
     if (!isOpen) setOpen(true);
     activeIndex = -1;
-    if (isRemote) scheduleSearch(query);
+    emitSearch(query, e);
   }
 
   // --- DOM 引用：触发根 + portal 下拉外层容器 + 内层滚动列表（定位由 use:floating action 接管）---
@@ -824,9 +859,9 @@
   const dropdownOffset = $derived.by(() => {
     if (dropdownMargin === undefined) return 4;
     if (typeof dropdownMargin === 'number') return dropdownMargin;
-    const horizontal = placement.startsWith('left') || placement.startsWith('right');
-    if (horizontal) return (placement.startsWith('left') ? dropdownMargin.left : dropdownMargin.right) ?? 4;
-    return (placement.startsWith('top') ? dropdownMargin.top : dropdownMargin.bottom) ?? 4;
+    const horizontal = position.startsWith('left') || position.startsWith('right');
+    if (horizontal) return (position.startsWith('left') ? dropdownMargin.left : dropdownMargin.right) ?? 4;
+    return (position.startsWith('top') ? dropdownMargin.top : dropdownMargin.bottom) ?? 4;
   });
 
   // 浮层根 div class：内置类名 + dropdownClassName。
@@ -852,7 +887,9 @@
     [
       'cd-select',
       `cd-select--${size}`,
-      `cd-select--${status}`,
+      // 校验态（对齐 Semi validateStatus）：仅 warning/error 有视觉样式，default 不加类。
+      validateStatus === 'warning' && 'cd-select--warning',
+      validateStatus === 'error' && 'cd-select--error',
       disabled && 'cd-select--disabled',
       isOpen && 'cd-select--open',
       multiple && 'cd-select--multiple',
@@ -879,11 +916,13 @@
   );
 
   // searchPosition='trigger' 且 filter 时，搜索框内联在触发器上（无需浮层内独立搜索框）。
-  const triggerSearch = $derived(filter && searchPosition === 'trigger');
+  const triggerSearch = $derived(filterEnabled && searchPosition === 'trigger');
+  // 搜索框占位文本（对齐 Semi searchPlaceholder）：显式 prop 优先，缺省走 locale。
+  const searchPlaceholderText = $derived(searchPlaceholder ?? loc().t('Select.searchPlaceholder'));
 
   // searchPosition='dropdown' 时，打开浮层后自动聚焦浮层内搜索框，便于直接键入过滤。
   $effect(() => {
-    if (!isOpen || triggerSearch || !filter || !dropdownEl) return;
+    if (!isOpen || triggerSearch || !filterEnabled || !dropdownEl) return;
     const searchEl = dropdownEl.querySelector<HTMLInputElement>('.cd-select__search--dropdown');
     searchEl?.focus();
   });
@@ -912,12 +951,14 @@
     aria-controls={listId}
     aria-activedescendant={activeOptionId}
     aria-disabled={disabled || undefined}
-    aria-invalid={status === 'error' || undefined}
+    aria-invalid={validateStatus === 'error' || undefined}
     tabindex={disabled ? -1 : 0}
     onclick={toggleOpen}
     onkeydown={onTriggerKeydown}
     onfocus={() => onFocus?.()}
     onblur={() => onBlur?.()}
+    onmouseenter={(e) => onMouseEnter?.(e)}
+    onmouseleave={(e) => onMouseLeave?.(e)}
   >
     {#if prefix}
       <span class="cd-select__prefix">{@render prefix()}</span>
@@ -936,27 +977,27 @@
     <div class="cd-select__content">
       {#if multiple && selectedOptions.length > 0}
         {#each visibleTags as tag (tag.opt.value)}
-          <span class="cd-select__tag">
-            {#if labelSnippet}
-              {@render labelSnippet({ option: tag.opt })}
+          <!-- 多选 Tag 复用本库 Tag 组件（已对齐 Semi）：closable + onClose 移除该项 -->
+          <Tag
+            class="cd-select__tag"
+            size="small"
+            color="white"
+            closable={!disabled}
+            ariaLabel={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
+            onClose={(_c, e) => {
+              e.stopPropagation();
+              removeTag(tag.opt.value);
+            }}
+          >
+            {#if renderSelectedItem}
+              {@render renderSelectedItem({ option: tag.opt })}
             {:else}
               <span
                 class="cd-select__tag-label"
                 title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
               >{tag.display}</span>
             {/if}
-            <button
-              type="button"
-              class="cd-select__tag-close"
-              aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
-              onclick={(e) => {
-                e.stopPropagation();
-                removeTag(tag.opt.value);
-              }}
-            >
-              <IconClose size="small" aria-hidden="true" />
-            </button>
-          </span>
+          </Tag>
         {/each}
         {#if hiddenTagCount > 0}
           {@const hiddenOpts = selectedOptions.slice(maxTagCount)}
@@ -984,7 +1025,8 @@
             class="cd-select__search"
             type="text"
             value={query}
-            aria-label={loc().t('Select.searchPlaceholder')}
+            placeholder={searchPlaceholderText}
+            aria-label={searchPlaceholderText}
             oninput={onSearchInput}
             onkeydown={onTriggerKeydown}
             onclick={(e) => e.stopPropagation()}
@@ -997,14 +1039,14 @@
           type="text"
           value={query}
           placeholder={hasSelection ? singleLabel : (placeholder ?? loc().t('Select.placeholder'))}
-          aria-label={loc().t('Select.searchPlaceholder')}
+          aria-label={searchPlaceholderText}
           oninput={onSearchInput}
           onkeydown={onTriggerKeydown}
           onclick={(e) => e.stopPropagation()}
         />
       {:else if hasSelection}
-        {#if labelSnippet}
-          {@render labelSnippet({ option: selectedOptions[0]! })}
+        {#if renderSelectedItem}
+          {@render renderSelectedItem({ option: selectedOptions[0]! })}
         {:else}
           <span class="cd-select__value">{singleLabel}</span>
         {/if}
@@ -1013,7 +1055,7 @@
       {/if}
     </div>
 
-    {#if showClear}
+    {#if showClearBtn}
       <button
         type="button"
         class="cd-select__clear"
@@ -1051,7 +1093,7 @@
     <div
       class={dropdownCls}
       bind:this={dropdownRootEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey }}
+      use:floating={{ trigger: rootEl, placement: position, autoAdjust: autoAdjustOverflow, offset: dropdownOffset, matchWidth: dropdownMatchSelectWidth, getContainer: getPopupContainer, rePosKey: reposKey }}
       style={dropdownRootInlineStyle}
       hidden={!isOpen || undefined}
     >
@@ -1067,16 +1109,16 @@
         aria-busy={loading || undefined}
         style={dropdownListInlineStyle}
       >
-      {#if filter && !triggerSearch}
-        <!-- searchPosition='dropdown'（默认）：搜索框在浮层顶部 -->
+      {#if filterEnabled && !triggerSearch}
+        <!-- searchPosition='dropdown'：搜索框在浮层顶部 -->
         <div class="cd-select__dropdown-search">
           <input
             {...inputProps}
             class="cd-select__search cd-select__search--dropdown"
             type="text"
             value={query}
-            placeholder={loc().t('Select.searchPlaceholder')}
-            aria-label={loc().t('Select.searchPlaceholder')}
+            placeholder={searchPlaceholderText}
+            aria-label={searchPlaceholderText}
             aria-controls={listId}
             oninput={onSearchInput}
             onkeydown={onTriggerKeydown}
@@ -1084,8 +1126,8 @@
           />
         </div>
       {/if}
-      {#if dropdownHeader}
-        <div class="cd-select__dropdown-header">{@render dropdownHeader()}</div>
+      {#if innerTopSlot}
+        <div class="cd-select__dropdown-header">{@render innerTopSlot()}</div>
       {/if}
       {#if loading}
         <div class="cd-select__loading">
@@ -1111,9 +1153,7 @@
       {/if}
       {#if filteredOptions.length === 0 && !canCreate && !loading}
         <div class="cd-select__empty">
-          {#if empty}
-            {@render empty()}
-          {:else if emptyContent !== undefined}
+          {#if emptyContent !== undefined}
             {#if typeof emptyContent === 'string'}
               {emptyContent}
             {:else}
@@ -1148,8 +1188,8 @@
           {@render optionRow(opt, i)}
         {/each}
       {/if}
-      {#if dropdownFooter}
-        <div class="cd-select__dropdown-footer">{@render dropdownFooter()}</div>
+      {#if innerBottomSlot}
+        <div class="cd-select__dropdown-footer">{@render innerBottomSlot()}</div>
       {/if}
       </div>
       {#if outerBottomSlot}
@@ -1177,8 +1217,16 @@
     }}
     onclick={() => selectOption(opt)}
   >
-    {#if optionSnippet}
-      {@render optionSnippet({ option: opt, selected: isSelected(opt.value), active: i === activeIndex })}
+    {#if renderOptionItem}
+      {@render renderOptionItem({
+        option: opt,
+        selected: isSelected(opt.value),
+        focused: i === activeIndex,
+        onMouseEnter: () => {
+          if (!opt.disabled) activeIndex = i;
+        },
+        onClick: () => selectOption(opt),
+      })}
     {:else}
       {#if multiple}
         <span class="cd-select__check" aria-hidden="true">
@@ -1201,7 +1249,7 @@
   {#if expandRestTagsOnClick}
     <button
       type="button"
-      class="cd-select__tag cd-select__tag--rest cd-select__tag--rest-clickable"
+      class="cd-select__tag--rest cd-select__tag--rest-clickable"
       aria-label={loc().t('Select.restTagsCount', { count })}
       aria-expanded={restTagsExpanded}
       onclick={(e) => {
@@ -1213,7 +1261,7 @@
     >+{count}</button>
   {:else}
     <span
-      class="cd-select__tag cd-select__tag--rest"
+      class="cd-select__tag--rest"
       aria-label={loc().t('Select.restTagsCount', { count })}
     >+{count}</span>
   {/if}
@@ -1275,8 +1323,29 @@
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
+  /* 校验态 warning（对齐 Semi &-warning：背景 + 描边 light 变体，聚焦时描边加深） */
+  .cd-select--warning .cd-select__trigger {
+    background: var(--cd-color-select-warning-bg);
+    border-color: var(--cd-color-select-warning-border);
+  }
+  .cd-select--warning:not(.cd-select--disabled) .cd-select__trigger:hover {
+    background: var(--cd-color-select-warning-bg-hover);
+  }
+  .cd-select--warning .cd-select__trigger:focus-visible,
+  .cd-select--warning.cd-select--open .cd-select__trigger {
+    border-color: var(--cd-color-select-warning-border-focus);
+  }
+  /* 校验态 error（对齐 Semi &-error：danger light 背景 + 描边，聚焦时描边加深） */
   .cd-select--error .cd-select__trigger {
-    border-color: var(--cd-select-border-error);
+    background: var(--cd-color-select-danger-bg);
+    border-color: var(--cd-color-select-danger-border);
+  }
+  .cd-select--error:not(.cd-select--disabled) .cd-select__trigger:hover {
+    background: var(--cd-color-select-danger-bg-hover);
+  }
+  .cd-select--error .cd-select__trigger:focus-visible,
+  .cd-select--error.cd-select--open .cd-select__trigger {
+    border-color: var(--cd-color-select-danger-border-focus);
   }
   .cd-select--disabled .cd-select__trigger {
     background: var(--cd-color-select-input-disabled-bg);
@@ -1340,7 +1409,8 @@
   .cd-select__search::placeholder {
     color: var(--cd-color-select-input-placeholder-text);
   }
-  .cd-select__tag {
+  /* +N 折叠元素（非 Tag 组件，是裸 span/button）：与 Tag 视觉近似的胶囊 */
+  .cd-select__tag--rest {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -1348,8 +1418,6 @@
     background: var(--cd-color-fill-1);
     border-radius: var(--cd-border-radius-small);
     font-size: var(--cd-font-size-small);
-  }
-  .cd-select__tag--rest {
     color: var(--cd-color-select-prefix-suffix-text-default);
   }
   /* +N 悬停 Popover 浮层内容：剩余 Tag 逐行列表（走 token，简洁排版） */
@@ -1384,19 +1452,6 @@
   }
   .cd-select__option--create {
     color: var(--cd-color-select-option-keyword-text);
-  }
-  .cd-select__tag-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--cd-color-select-icon-default);
-    cursor: pointer;
-  }
-  .cd-select__tag-close:hover {
-    color: var(--cd-color-select-clearbtn-text-hover);
   }
   .cd-select__clear,
   .cd-select__arrow {
@@ -1456,7 +1511,7 @@
     position: relative;
     inline-size: 100%;
   }
-  /* 虚拟化行带固定 block-size + 内边距，需 border-box 保证行高与 optionHeight 一致 */
+  /* 虚拟化行带固定 block-size + 内边距，需 border-box 保证行高与 virtualize.itemSize 一致 */
   .cd-select__spacer .cd-select__option {
     box-sizing: border-box;
     overflow: hidden;
@@ -1482,7 +1537,7 @@
   }
   .cd-select__option--selected {
     color: var(--cd-select-option-color-selected);
-    background: var(--cd-select-option-bg-active);
+    background: var(--cd-select-option-bg-selected);
   }
   .cd-select__option[aria-disabled='true'] {
     color: var(--cd-color-select-option-disabled-text);

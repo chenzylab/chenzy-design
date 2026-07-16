@@ -450,8 +450,8 @@
             {disabled}
             clickToHide
             ariaLabel={loc().t('Pagination.itemsPerPage')}
-            placement={sizeChangerPlacement}
-            options={sizeOptions}
+            position={sizeChangerPlacement}
+            optionList={sizeOptions}
             value={currentSize}
             onChange={(v) => changePageSize(Number(v))}
           />

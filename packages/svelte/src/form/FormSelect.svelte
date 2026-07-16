@@ -22,16 +22,16 @@
     dependencies?: string[];
     trigger?: ValidateTrigger | ValidateTrigger[];
     // Select-specific props
-    options?: SelectProps['options'];
+    optionList?: SelectProps['optionList'];
     multiple?: SelectProps['multiple'];
     filter?: SelectProps['filter'];
     placeholder?: SelectProps['placeholder'];
     disabled?: boolean;
-    clearable?: SelectProps['clearable'];
+    showClear?: SelectProps['showClear'];
     size?: SelectProps['size'];
     maxTagCount?: SelectProps['maxTagCount'];
     allowCreate?: SelectProps['allowCreate'];
-    virtualized?: SelectProps['virtualized'];
+    virtualize?: SelectProps['virtualize'];
   }
 
   let {
@@ -46,16 +46,16 @@
     transform,
     dependencies,
     trigger,
-    options,
+    optionList,
     multiple,
     filter,
     placeholder,
     disabled,
-    clearable,
+    showClear,
     size,
     maxTagCount,
     allowCreate,
-    virtualized,
+    virtualize,
   }: Props = $props();
 
   const fieldProps = $derived<ComponentProps<typeof Field>>({
@@ -77,17 +77,17 @@
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy })}
     <Select
       {...(value !== undefined ? { value: value as NonNullable<SelectProps['value']> } : {})}
-      {...(options !== undefined ? { options } : {})}
+      {...(optionList !== undefined ? { optionList } : {})}
       {...(multiple !== undefined ? { multiple } : {})}
       {...(filter !== undefined ? { filter } : {})}
       {...(placeholder !== undefined ? { placeholder } : {})}
       disabled={disabled ?? fieldDisabled}
-      {...(clearable !== undefined ? { clearable } : {})}
+      {...(showClear !== undefined ? { showClear } : {})}
       {...(size !== undefined ? { size } : {})}
       {...(maxTagCount !== undefined ? { maxTagCount } : {})}
       {...(allowCreate !== undefined ? { allowCreate } : {})}
-      {...(virtualized !== undefined ? { virtualized } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      {...(virtualize !== undefined ? { virtualize } : {})}
+      validateStatus={status === 'error' ? 'error' : 'default'}
       {...(label !== undefined ? {} : { ariaLabelledby: id })}
       {...(describedBy !== undefined ? { ariaLabel: describedBy } : {})}
       onChange={(v) => onChange(v)}

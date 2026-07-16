@@ -3,7 +3,7 @@
 
   let vals = $state<string[]>([]);
 
-  const options = [
+  const optionList = [
     { label: '北京', value: 'bj' },
     { label: '上海', value: 'sh' },
     { label: '广州', value: 'gz' },
@@ -15,7 +15,7 @@
 <div style="display: flex; flex-direction: column; gap: 8px; max-width: 320px;">
   <Select
     multiple
-    {options}
+    {optionList}
     value={vals}
     onChange={(v) => (vals = v as string[])}
     placeholder="选择城市（可多选）"

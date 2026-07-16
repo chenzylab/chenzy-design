@@ -58,9 +58,9 @@
 <!-- 单选 -->
 <div style="width: 220px">
   <Select
-    options={fruitOptions}
+    optionList={fruitOptions}
     value={selVal}
-    clearable
+    showClear
     {disabled}
     {size}
     {placeholder}
@@ -72,7 +72,7 @@
 <!-- 分组 + 搜索 -->
 <div style="width: 220px; margin-top: 12px" data-testid="select-group">
   <Select
-    options={[
+    optionList={[
       { label: '水果', options: [
         { label: '苹果', value: 'apple' },
         { label: '香蕉', value: 'banana' },
@@ -83,7 +83,7 @@
       ] },
     ]}
     filter
-    clearable
+    showClear
     placeholder="分组选择"
     value={selGroupVal}
     onChange={(v) => (selGroupVal = v as string | number)}
@@ -94,11 +94,12 @@
 <!-- 远程搜索 -->
 <div style="width: 220px; margin-top: 12px" data-testid="select-remote">
   <Select
-    options={remoteOptions}
+    optionList={remoteOptions}
     filter
+    remote
     loading={remoteLoading}
     onSearch={handleRemoteSearch}
-    clearable
+    showClear
     placeholder="远程搜索（输入触发）"
     value={remoteVal}
     onChange={(v) => (remoteVal = v as string | number)}
@@ -109,7 +110,7 @@
 <!-- 多选 + allowCreate + maxTagCount -->
 <div style="width: 260px; margin-top: 12px" data-testid="select-multi">
   <Select
-    options={fruitOptions}
+    optionList={fruitOptions}
     multiple
     filter
     allowCreate
@@ -123,7 +124,7 @@
 <!-- 多选单 tag 截断 -->
 <div style="width: 260px; margin-top: 12px" data-testid="select-multi-trunc">
   <Select
-    options={longTagOptions}
+    optionList={longTagOptions}
     multiple
     maxTagTextLength={4}
     value={multiTruncVal}
@@ -135,10 +136,10 @@
 <!-- 虚拟化大数据 -->
 <div style="width: 260px; margin-top: 12px" data-testid="select-virtualized">
   <Select
-    options={bigOptions}
-    virtualized
+    optionList={bigOptions}
+    virtualize={{ itemSize: 32 }}
     filter
-    clearable
+    showClear
     placeholder="虚拟化（2000 选项）"
     value={bigVal}
     onChange={(v) => (bigVal = v as string | number)}

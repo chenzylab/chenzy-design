@@ -16,7 +16,7 @@ const options = [
 describe('Select a11y', () => {
   it('关闭态：触发器 role=combobox / aria-expanded=false / aria-haspopup=listbox（结构断言）', () => {
     const { container } = renderWithLocale(Select, {
-      props: { options, placeholder: 'Pick a fruit' },
+      props: { optionList: options, placeholder: 'Pick a fruit' },
     });
     const combobox = container.querySelector('[role="combobox"]');
     expect(combobox).not.toBeNull();
@@ -32,7 +32,7 @@ describe('Select a11y', () => {
 
   it('打开态：listbox + option 渲染（结构断言）', () => {
     renderWithLocale(Select, {
-      props: { options, defaultOpen: true, placeholder: 'Pick a fruit' },
+      props: { optionList: options, defaultOpen: true, placeholder: 'Pick a fruit' },
     });
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
@@ -41,7 +41,7 @@ describe('Select a11y', () => {
 
   it('已选值：选中 option aria-selected=true（结构断言）', () => {
     renderWithLocale(Select, {
-      props: { options, defaultOpen: true, defaultValue: 'banana' },
+      props: { optionList: options, defaultOpen: true, defaultValue: 'banana' },
     });
     const selected = document.querySelector('[role="option"][aria-selected="true"]');
     expect(selected?.textContent).toContain('Banana');
@@ -49,7 +49,7 @@ describe('Select a11y', () => {
 
   it('多选：aria-multiselectable=true（结构断言）', () => {
     renderWithLocale(Select, {
-      props: { options, defaultOpen: true, multiple: true },
+      props: { optionList: options, defaultOpen: true, multiple: true },
     });
     expect(document.querySelector('[role="listbox"]')?.getAttribute('aria-multiselectable')).toBe('true');
   });
@@ -57,7 +57,7 @@ describe('Select a11y', () => {
   // combobox 可访问名回退到 placeholder（缺省走 locale Select.ariaLabel）。
   it('打开态：axe 0 violations（combobox 经 placeholder/locale 获可访问名）', async () => {
     renderWithLocale(Select, {
-      props: { options, defaultOpen: true, placeholder: 'Pick a fruit' },
+      props: { optionList: options, defaultOpen: true, placeholder: 'Pick a fruit' },
     });
     expect(document.querySelector('[role="combobox"]')?.getAttribute('aria-label')).toBe('Pick a fruit');
     await expectNoAxeViolations(document.body);

@@ -34,7 +34,7 @@
 <NodeViewWrapper as="span" class="cd-ai-chat-input-select-slot-wrap">
   <Select
     size="small"
-    options={options as never}
+    optionList={options as never}
     value={value as never}
     onChange={handleChange as never}
   />

@@ -30,6 +30,18 @@ export const selectTokens = {
 
   'color-select-prefix-suffix-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '前后缀文本色', usage: '选择器输入框前后缀文本颜色' },
 
+  // —— Color · 校验态 warning（对齐 Semi $color-select_warning-*，组件直接消费）——
+  'color-select-warning-bg': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '警示背景色', usage: '警示选择器输入框背景色 - 默认态' },
+  'color-select-warning-bg-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: '警示背景色', usage: '警示选择器输入框背景色 - 悬停态' },
+  'color-select-warning-border': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '警示描边色', usage: '警示选择器输入框描边色 - 默认态' },
+  'color-select-warning-border-focus': { value: 'var(--cd-color-warning)', category: 'color', label: '警示聚焦描边色', usage: '警示选择器输入框描边色 - 聚焦态' },
+
+  // —— Color · 校验态 danger（对齐 Semi $color-select_danger-*，组件直接消费）——
+  'color-select-danger-bg': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '报错背景色', usage: '报错选择器输入框背景色 - 默认态' },
+  'color-select-danger-bg-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: '报错背景色', usage: '报错选择器输入框背景色 - 悬停态' },
+  'color-select-danger-border': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '报错描边色', usage: '报错选择器输入框描边色 - 默认态' },
+  'color-select-danger-border-focus': { value: 'var(--cd-color-danger)', category: 'color', label: '报错聚焦描边色', usage: '报错选择器输入框描边色 - 聚焦态' },
+
   // —— animation：过渡（bg/border/option × duration/function/delay，组件直接消费）——
   // 默认无动画（duration/delay=0ms），主题或 DSM 可单独开启过渡。
   'transition-duration-select-bg': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '背景过渡时长', usage: '选择器-背景色-动画持续时间' },
@@ -46,9 +58,13 @@ export const selectTokens = {
   'transform-scale-select': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '选择框放大', usage: '选择框-变大' },
   'transform-rotate-select-arrow': { value: 'var(--cd-motion-rotate-none)', category: 'other', label: '箭头旋转', usage: '选择框-箭头-旋转' },
 
-  // —— chenzy-design 组件实际消费的短名别名 ——
-  // 被 Select/TreeSelect/AutoComplete/Cascader/Pagination/Table/Menu 直接消费。
-  // 值已从原 Semi 对齐长名重接到最终 alias/global，链条缩短、视觉不变。
+  // —— 跨组件复用的短名别名（红线：删除会静默断链，本轮保留）——
+  // 被 TreeSelect / Cascader 直接消费（select-bg / select-border* / select-height* /
+  // select-dropdown-* / select-font-size / select-padding-x / select-radius），
+  // 以及 Pagination 覆写 --cd-select-dropdown-z。这些下游多数尚未对齐 Semi，
+  // 贸然删短名会导致 var() 取空值 → 远端样式静默失效（记忆 deleting-shared-token-breaks-cross-component-consumer）。
+  // 待 TreeSelect / Cascader 对齐后再统一清理。值已重接到最终 alias/global，链条缩短、视觉不变。
+  // 注：select-option-* 系为 Select 自用短名（下游不消费），仅 select.svelte 直引。
   'select-height-default': { value: 'var(--cd-control-height-default)', category: 'height', label: '选择框高度', usage: '选择器高度 - 默认（组件消费）' },
   'select-height-small': { value: 'var(--cd-control-height-small)', category: 'height', label: '选择框高度', usage: '选择器高度 - 小尺寸（组件消费）' },
   'select-height-large': { value: 'var(--cd-control-height-large)', category: 'height', label: '选择框高度', usage: '选择器高度 - 大尺寸（组件消费）' },
@@ -65,8 +81,9 @@ export const selectTokens = {
   'select-dropdown-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '下拉圆角', usage: '选择器下拉浮层圆角（组件消费）' },
   'select-dropdown-z': { value: 'var(--cd-z-dropdown)', category: 'other', label: '下拉层级', usage: '选择器下拉浮层 z-index（组件消费）' },
   'select-option-padding': { value: 'var(--cd-spacing-tight) var(--cd-spacing-base-tight)', category: 'spacing', label: '选项内边距', usage: '选择器下拉选项内边距（组件消费）' },
-  'select-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '选项背景色', usage: '选择器下拉选项背景颜色 - 悬浮（组件消费）' },
-  'select-option-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '选项背景色', usage: '选择器下拉选项背景颜色 - 选中（组件消费）' },
+  // 对齐 Semi：hover/focused 态 = fill-0；选中态背景 = transparent（仅靠对勾/主色区分）。
+  'select-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '选项背景色', usage: '选择器下拉选项背景颜色 - 悬浮/高亮（组件消费）' },
+  'select-option-bg-selected': { value: 'transparent', category: 'color', label: '选中项背景色', usage: '选择器下拉选中项背景颜色（对齐 Semi transparent，组件消费）' },
   'select-option-color-selected': { value: 'var(--cd-color-text-0)', category: 'color', label: '选中项文字色', usage: '选择器下拉选中项文字颜色（组件消费）' },
   'select-option-check-color': { value: 'var(--cd-color-primary)', category: 'color', label: '选中对勾色', usage: '选择器下拉选中对勾颜色（组件消费）' },
 } satisfies TokenGroup;

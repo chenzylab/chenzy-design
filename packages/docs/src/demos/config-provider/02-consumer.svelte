@@ -19,7 +19,7 @@
 <ConfigProvider {timeZone} direction="ltr">
   <div style="margin-top:12px; display:flex; flex-direction:column; gap:12px">
     <div style="width:200px">
-      <Select options={gmtList} value={timeZone} onChange={(v) => (timeZone = v as string)} />
+      <Select optionList={gmtList} value={timeZone} onChange={(v) => (timeZone = v as string)} />
     </div>
     <ConfigConsumerView />
   </div>

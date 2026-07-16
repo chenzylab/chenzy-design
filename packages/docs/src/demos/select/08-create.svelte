@@ -2,20 +2,20 @@
   import { Select, Text } from '@chenzy-design/svelte';
 
   let val = $state<string | undefined>(undefined);
-  let options = $state([
+  let optionList = $state([
     { label: '前端', value: 'fe' },
     { label: '后端', value: 'be' },
   ]);
 
   // allowCreate：filter 无匹配时可创建新选项
   function handleCreate(v: string) {
-    options = [...options, { label: v, value: v }];
+    optionList = [...optionList, { label: v, value: v }];
   }
 </script>
 
 <div style="max-width:280px">
   <Select
-    {options}
+    {optionList}
     value={val}
     filter
     allowCreate

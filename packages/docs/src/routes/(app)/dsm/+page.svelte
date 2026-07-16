@@ -323,7 +323,7 @@
             </div>
             <div class="prow">
               <div class="w160"><Input placeholder="输入框" /></div>
-              <div class="w160"><Select bind:value={demoSelect} options={selectOptions} /></div>
+              <div class="w160"><Select bind:value={demoSelect} optionList={selectOptions} /></div>
             </div>
             <div class="prow slider-row">
               <Slider bind:value={demoSlider} />
@@ -363,10 +363,10 @@
             </div>
           {:else if previewKey === 'select'}
             <div class="prow">
-              <div class="w200"><Select bind:value={demoSelect} options={selectOptions} /></div>
+              <div class="w200"><Select bind:value={demoSelect} optionList={selectOptions} /></div>
             </div>
             <div class="prow">
-              <div class="w200"><Select options={selectOptions} placeholder="请选择" /></div>
+              <div class="w200"><Select optionList={selectOptions} placeholder="请选择" /></div>
             </div>
           {:else if previewKey === 'checkbox'}
             <div class="prow">

@@ -8,7 +8,7 @@
   import { LocaleProvider } from '../locale-provider/index.js';
   import Select from './Select.svelte';
 
-  const options = [
+  const optionList = [
     { label: 'Apple', value: 'apple' },
     { label: 'Banana', value: 'banana' },
     { label: 'Cherry', value: 'cherry' },
@@ -19,7 +19,7 @@
 
 <LocaleProvider locale="en_US">
   <Select
-    {options}
+    {optionList}
     ariaLabel="Fruit"
     defaultActiveFirstOption={false}
     onChange={(v) => {

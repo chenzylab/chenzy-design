@@ -15,7 +15,7 @@
       field="city"
       label="城市"
       placeholder="请选择"
-      options={[
+      optionList={[
         { label: '北京', value: 'bj' },
         { label: '上海', value: 'sh' },
         { label: '广州', value: 'gz' },

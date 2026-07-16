@@ -22,7 +22,7 @@
 
 <ConfigProvider {timeZone}>
   <div style="width:300px; margin-top:12px; display:flex; flex-direction:column; gap:16px">
-    <Select options={gmtList} value={timeZone} onChange={(v) => (timeZone = v as string)} />
+    <Select optionList={gmtList} value={timeZone} onChange={(v) => (timeZone = v as string)} />
     <DatePicker type="dateTime" value={defaultTimestamp} />
     <TimePicker value={defaultTimestamp} />
   </div>

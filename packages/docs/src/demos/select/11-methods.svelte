@@ -3,7 +3,7 @@
 
   let sel = $state<ReturnType<typeof Select> | undefined>(undefined);
   let val = $state<string[]>([]);
-  const options = [
+  const optionList = [
     { label: '选项 A', value: 'a' },
     { label: '选项 B', value: 'b' },
     { label: '选项 C', value: 'c' },
@@ -23,7 +23,7 @@
   <div style="width:320px">
     <Select
       bind:this={sel}
-      {options}
+      {optionList}
       multiple
       value={val}
       onChange={(v) => (val = v as string[])}

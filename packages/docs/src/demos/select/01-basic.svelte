@@ -3,7 +3,7 @@
 
   let val = $state<string | undefined>(undefined);
 
-  const options = [
+  const optionList = [
     { label: '苹果', value: 'apple' },
     { label: '香蕉', value: 'banana' },
     { label: '橙子', value: 'orange' },
@@ -12,6 +12,6 @@
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 8px; max-width: 280px;">
-  <Select {options} value={val} onChange={(v) => (val = v as string)} placeholder="请选择水果" />
+  <Select {optionList} value={val} onChange={(v) => (val = v as string)} placeholder="请选择水果" />
   <Text type="tertiary">已选：{val ?? '（未选）'}</Text>
 </div>
