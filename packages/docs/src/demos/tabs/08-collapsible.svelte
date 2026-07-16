@@ -7,7 +7,7 @@
 
 <div style="width: 60%; min-width: 320px;">
   <!-- collapsible：横向溢出时显示前/后切换箭头，可滚动查看被裁切的标签。 -->
-  <Tabs type="card" collapsible value={active} onChange={(k) => (active = k)}>
+  <Tabs type="card" collapsible activeKey={active} onChange={(k) => (active = k)}>
     {#each keys as i (i)}
       <TabPane tab={`Tab-${i}`} itemKey={`Tab-${i}`}>Content of card tab {i}</TabPane>
     {/each}

@@ -72,6 +72,18 @@ describe('Nav 渲染（对齐 Semi）', () => {
     });
     expect(container.querySelector('.cd-nav--collapsed')).not.toBeNull();
   });
+
+  it('items string 简写：string 子项取值作 text 与 itemKey（对齐 Semi）', () => {
+    const shorthandItems = [
+      { itemKey: 'job', text: '任务平台', items: ['任务管理', '用户任务查询'] },
+    ];
+    const { container } = renderWithLocale(Nav, {
+      props: { mode: 'vertical', items: shorthandItems, defaultOpenKeys: ['job'] },
+    });
+    const text = container.querySelector('.cd-nav__list-wrapper')?.textContent ?? '';
+    expect(text).toContain('任务管理');
+    expect(text).toContain('用户任务查询');
+  });
 });
 
 describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {

@@ -6,6 +6,7 @@ import {
   clampPageSize,
   parseJumpInput,
   pageRange,
+  semiPageList,
   type PageCell,
 } from './pagination.js';
 
@@ -180,5 +181,51 @@ describe('pageRange', () => {
     expect(tokens(pageRange(99, 10))).toEqual([1, '<', 6, 7, 8, 9, 10]); // current clamped to 10
     expect(tokens(pageRange(5, 10, -1, -1))).toEqual(['<', 5, '>']); // sibling/boundary→0
     expect(tokens(pageRange(1, 0))).toEqual([1]); // count floored to 1
+  });
+});
+
+describe('semiPageList (strict Semi _updatePageList mirror)', () => {
+  it('lists every page when total ≤ 7', () => {
+    expect(semiPageList(1, 7).pageList).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(semiPageList(3, 5).pageList).toEqual([1, 2, 3, 4, 5]);
+    expect(semiPageList(1, 1).pageList).toEqual([1]);
+  });
+
+  it('c < 4: 1 2 3 4 … (t-1) t', () => {
+    expect(semiPageList(1, 10).pageList).toEqual([1, 2, 3, 4, '...', 9, 10]);
+    expect(semiPageList(3, 10).pageList).toEqual([1, 2, 3, 4, '...', 9, 10]);
+    // restRight covers the hidden pages 5..8
+    expect(semiPageList(1, 10).restRight).toEqual([5, 6, 7, 8]);
+  });
+
+  it('c === 4: 1 2 3 4 5 … t', () => {
+    expect(semiPageList(4, 10).pageList).toEqual([1, 2, 3, 4, 5, '...', 10]);
+    expect(semiPageList(4, 10).restRight).toEqual([6, 7, 8, 9]);
+  });
+
+  it('4 < c < t-3: 1 … (c-1) c (c+1) … t', () => {
+    expect(semiPageList(5, 10).pageList).toEqual([1, '...', 4, 5, 6, '...', 10]);
+    expect(semiPageList(50, 100).pageList).toEqual([1, '...', 49, 50, 51, '...', 100]);
+    // rest lists behind each ellipsis
+    expect(semiPageList(5, 12).restLeft).toEqual([2, 3]);
+    expect(semiPageList(5, 12).restRight).toEqual([7, 8, 9, 10, 11]);
+  });
+
+  it('t-3 ≤ c ≤ t: 1 … (t-4)(t-3)(t-2)(t-1) t', () => {
+    expect(semiPageList(10, 10).pageList).toEqual([1, '...', 6, 7, 8, 9, 10]);
+    expect(semiPageList(8, 10).pageList).toEqual([1, '...', 6, 7, 8, 9, 10]);
+    expect(semiPageList(10, 10).restLeft).toEqual([2, 3, 4, 5]);
+  });
+
+  it('caps hidden rest pages at 1,000,000 and stays O(1)', () => {
+    const big = semiPageList(1, 5_000_000);
+    expect(big.pageList).toEqual([1, 2, 3, 4, '...', 4_999_999, 5_000_000]);
+    expect(big.restRight.length).toBe(1_000_000);
+  });
+
+  it('sanitises invalid inputs', () => {
+    expect(semiPageList(Number.NaN, 10).pageList).toEqual([1, 2, 3, 4, '...', 9, 10]); // current→1
+    expect(semiPageList(99, 10).pageList).toEqual([1, '...', 6, 7, 8, 9, 10]); // clamped to 10
+    expect(semiPageList(1, 0).pageList).toEqual([1]); // total floored to 1
   });
 });

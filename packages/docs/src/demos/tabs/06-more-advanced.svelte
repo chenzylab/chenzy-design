@@ -13,7 +13,7 @@
   <!-- more 传对象：count 控制收入数量，render 自定义触发器，dropdownProps 透传下拉参数。 -->
   <Tabs
     type="card"
-    value={active}
+    activeKey={active}
     onChange={(k) => (active = k)}
     more={{ count: 4, render: moreTrigger, dropdownProps: { position: 'bottomEnd' } }}
   >

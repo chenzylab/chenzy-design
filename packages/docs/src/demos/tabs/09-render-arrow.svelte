@@ -17,7 +17,7 @@
 
 <div style="width: 50%; min-width: 320px;">
   <!-- renderArrow：自定义滚动折叠模式下的前/后切换箭头。 -->
-  <Tabs type="card" collapsible renderArrow={arrow} value={active} onChange={(k) => (active = k)}>
+  <Tabs type="card" collapsible renderArrow={arrow} activeKey={active} onChange={(k) => (active = k)}>
     {#each keys as i (i)}
       <TabPane tab={`Tab-${i}`} itemKey={`Tab-${i}`}>Content of card tab {i}</TabPane>
     {/each}

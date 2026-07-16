@@ -5,8 +5,8 @@
   滚动折叠（collapsible）：标签超出容器主轴时显示前/后滚动箭头（top 横向 scrollLeft、
   left 纵向 scrollTop），激活标签自动滚到可视区；'auto' 自动检测溢出再决定是否折叠；
   几何测量 + ResizeObserver + 滚动操作全部命令式 + cleanup（红线 #3）。renderArrow/arrowPosition
-  作用于此。addable：末尾「+」按钮触发 onAdd（红线 #1 受控）。
-  溢出收纳（more / overflow='dropdown'）：把放不下的标签收进末尾「更多」下拉（复用 Dropdown），
+  作用于此。
+  溢出收纳（more）：把放不下的标签收进末尾「更多」下拉（复用 Dropdown），
   离屏测量层命令式测宽 + computeTabOverflow（core 纯函数）算可见/溢出集，激活标签始终保持可见。
   type='button'：分段按钮组样式（选中段填主色浅底）；type='slash'：相邻标签间对角线分割线。
   纯声明式自动收集：未传 tabList 时，从子 <Tabs.Pane> 的 tab/itemKey/disabled/closable
@@ -33,7 +33,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, computeTabOverflow } from '@chenzy-design/core';
-  import { IconClose, IconChevronDown, IconChevronLeft, IconChevronRight, IconPlus } from '@chenzy-design/icons';
+  import { IconClose, IconChevronDown, IconChevronLeft, IconChevronRight } from '@chenzy-design/icons';
   import { setTabsContext, type TabPaneRegistration } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
   import { Dropdown } from '../dropdown/index.js';
@@ -43,8 +43,6 @@
   type TabType = 'line' | 'card' | 'button' | 'slash';
   type TabSize = 'small' | 'medium' | 'large';
   type TabPosition = 'top' | 'left';
-  type KeyboardActivation = 'auto' | 'manual';
-  type OverflowMode = 'scroll' | 'dropdown';
   /** collapsible：false 不折叠；true 强制折叠收纳；'auto' 自动检测溢出再决定是否折叠。 */
   type Collapsible = boolean | 'auto';
 
@@ -61,8 +59,10 @@
   }
 
   interface Props {
-    value?: TabKey;
-    defaultValue?: TabKey;
+    /** 受控选中标签 key（对齐 Semi activeKey）。 */
+    activeKey?: TabKey;
+    /** 非受控初始选中 key（对齐 Semi defaultActiveKey）。 */
+    defaultActiveKey?: TabKey;
     /** 视觉风格：line 线条 / card 卡片 / button 分段按钮 / slash 斜线（slash 仅横向）。 */
     type?: TabType;
     /** 尺寸档（对齐 Semi）：small / medium / large，默认 large。 */
@@ -71,31 +71,21 @@
     tabPosition?: TabPosition;
     tabList?: TabItem[];
     closable?: boolean;
-    keyboardActivation?: KeyboardActivation;
-    /**
-     * 横向溢出处理方式：
-     * - 'scroll'（默认）：标签超出容器时显示前/后滚动箭头，命令式滚动；
-     * - 'dropdown'：把放不下的标签收纳进末尾「更多」下拉，点下拉项跳到对应 tab。
-     * 仅 top/bottom 横向标签栏生效；纵向（left/right）始终走滚动。
-     */
-    overflow?: OverflowMode;
     /**
      * 折叠收纳（对齐 Semi）：
      * - false（默认）：不折叠；
-     * - true：强制走 dropdown 收纳（放不下的标签进末尾「更多」下拉，仅横向 top 生效）；
+     * - true：溢出时显示前/后切换箭头，可滚动查看被裁切标签（仅横向 top 生效）；
      * - 'auto'：自动检测——标签溢出容器时才启用折叠，容器变宽/标签变少能全显时自动退出。
      */
     collapsible?: Collapsible;
-    /** 首次激活后才挂载面板内容 */
-    lazy?: boolean;
-    /** 激活过的面板切走后保留 DOM（display:none），而非卸载 */
+    /** 懒渲染：仅当面板激活过才挂载进 DOM（对齐 Semi lazyRender） */
+    lazyRender?: boolean;
+    /** 使用 TabPane 写法时是否渲染隐藏面板的 DOM 结构（对齐 Semi keepDOM，默认 true） */
     keepDOM?: boolean;
-    /** 标签栏末尾显示「+」按钮，点击触发 onAdd（受控数据，由父组件追加） */
-    addable?: boolean;
     /**
-     * 溢出折叠配置：数字时等价于 { count: n }；对象时含 count（收起阈值）、
-     * render（自定义「更多」触发器 Snippet）、dropdownProps（透传下拉参数）。
-     * 仅 overflow='dropdown'（或 collapsible=true）时生效。
+     * 溢出折叠配置（对齐 Semi more）：把末尾若干标签收进「更多」下拉。
+     * 数字时等价于 { count: n }；对象时含 count（收起数量）、
+     * render（自定义「更多」触发器 Snippet）、dropdownProps（透传下拉参数）。仅横向生效。
      */
     more?: MoreConfig;
     /** 标签栏末尾「更多」下拉折叠时，折叠箭头位置（scroll 模式中的前/后箭头）。默认 'both'。 */
@@ -128,16 +118,14 @@
     onChange?: (key: TabKey) => void;
     onTabClose?: (key: TabKey) => void;
     /**
-     * 标签被点击回调（spec §4：on:tabClick）。含已选中标签（未必触发 onChange），
+     * 标签被点击回调（对齐 Semi onTabClick）。含已选中标签（未必触发 onChange），
      * 在 disabled 拦截前发出，可用于埋点。
      */
     onTabClick?: (key: TabKey, event: MouseEvent) => void;
-    /** addable=true 时点击「+」按钮回调（红线 #1：组件内部不改 tabList） */
-    onAdd?: () => void;
     /**
      * 自定义整个标签栏的渲染（调用方完全自绘标签栏）。
      * 接收：当前 tab 列表（数据驱动 tabList 或声明式收集结果）、当前激活 key、
-     * 切换回调 setActive（受控时仅触发 onChange，不回写 value，红线 #1）。
+     * 切换回调 setActive（受控时仅触发 onChange，不回写 activeKey，红线 #1）。
      * 传入时跳过内置标签栏与溢出处理；面板内容仍按 activeKey 显隐。
      */
     renderTabBar?: Snippet<[TabItem[], TabKey | undefined, (key: TabKey) => void]>;
@@ -145,19 +133,16 @@
   }
 
   let {
-    value,
-    defaultValue,
+    activeKey: activeKeyProp,
+    defaultActiveKey,
     type = 'line',
     size = 'large',
     tabPosition = 'top',
     tabList: tabListProp,
     closable = false,
-    keyboardActivation = 'auto',
-    overflow = 'scroll',
     collapsible = false,
-    lazy = false,
-    keepDOM = false,
-    addable = false,
+    lazyRender = false,
+    keepDOM = true,
     more,
     arrowPosition = 'both',
     renderArrow,
@@ -174,7 +159,6 @@
     onChange,
     onTabClose,
     onTabClick,
-    onAdd,
     renderTabBar,
     children,
   }: Props = $props();
@@ -251,33 +235,32 @@
   const isVertical = $derived(tabPosition === 'left' && type !== 'slash');
 
   // 溢出机制对齐 Semi 的两条独立路径：
-  // 1) more（数字或对象）→ dropdown 收纳：把末尾若干标签收进「更多」下拉（Semi 的 more）。
-  //    overflow='dropdown' 作为等价便捷开关一并归入。仅横向生效。
+  // 1) more（数字或对象）→ dropdown 收纳：把末尾若干标签收进「更多」下拉（Semi 的 more）。仅横向生效。
   // 2) collapsible（true/'auto'）→ 滚动折叠：前/后切换箭头 + 可滚动视口（Semi 的 collapsible，
   //    renderArrow/arrowPosition 作用于此）。'auto' 与 true 都靠 overflowing 决定箭头是否出现，
   //    容器变宽/标签变少不溢出时箭头自动消失，天然"退出"折叠。仅横向生效。
   const hasMore = $derived(more !== undefined && more !== null);
-  const dropdownMode = $derived(!isVertical && (hasMore || overflow === 'dropdown'));
+  const dropdownMode = $derived(!isVertical && hasMore);
   // 滚动折叠激活：collapsible 开启且非 dropdown 收纳模式（两者互斥，more 优先）。
   const scrollCollapsible = $derived(
     !dropdownMode && !isVertical && (collapsible === true || collapsible === 'auto'),
   );
 
-  // --- 受控 value (红线 #1)：不无条件回写 value，仅 onChange ---
-  const isControlled = $derived(value !== undefined);
-  // inner 初值：defaultValue 优先，否则数据驱动取首项 key（声明式收集首项需待 pane 注册，
+  // --- 受控 activeKey (红线 #1)：不无条件回写 activeKey，仅 onChange ---
+  const isControlled = $derived(activeKeyProp !== undefined);
+  // inner 初值：defaultActiveKey 优先，否则数据驱动取首项 key（声明式收集首项需待 pane 注册，
   // 故此处不读 derived tabList，初值可能为 undefined，由 activeKey 派生兜底首个可用标签）。
   let inner = $state<TabKey | undefined>(getInitialValue());
 
   function getInitialValue(): TabKey | undefined {
-    if (defaultValue !== undefined) return defaultValue;
+    if (defaultActiveKey !== undefined) return defaultActiveKey;
     return tabListProp?.[0]?.itemKey;
   }
 
   // activeKey 纯派生（红线 #1/#2，render 期只读）：
-  // 受控取 value；非受控取 inner，inner 未定（如声明式首帧或被关闭后失效）则兜底首个标签 key。
+  // 受控取 activeKey prop；非受控取 inner，inner 未定（如声明式首帧或被关闭后失效）则兜底首个标签 key。
   const activeKey = $derived<TabKey | undefined>(
-    isControlled ? value : (resolveUncontrolledKey()),
+    isControlled ? activeKeyProp : (resolveUncontrolledKey()),
   );
 
   function resolveUncontrolledKey(): TabKey | undefined {
@@ -295,7 +278,7 @@
   // lazy/keepDOM 也经 context 暴露给 TabPane 决定挂载/保留策略。
   setTabsContext({
     getActiveKey: () => activeKey,
-    getLazy: () => lazy,
+    getLazy: () => lazyRender,
     getKeepDOM: () => keepDOM,
     getTabId: tabId,
     getPanelId: panelId,
@@ -334,7 +317,7 @@
   }
 
   // --- 键盘导航 (红线 #2)：roving tabindex 仅由 activeKey 决定，不读挂载数组 ---
-  // tablist 内移动焦点到相邻未禁用 tab；auto 聚焦即激活，manual 需 Enter/Space。
+  // 对齐 Semi：方向键仅移动焦点到相邻未禁用 tab（手动激活），Enter/Space 才激活。
   function enabledIndexes(): number[] {
     const out: number[] = [];
     for (let i = 0; i < tabList.length; i += 1) {
@@ -348,7 +331,6 @@
     if (!item) return;
     const el = document.getElementById(tabId(item.itemKey));
     el?.focus({ preventScroll });
-    if (keyboardActivation === 'auto') setActive(item.itemKey);
   }
 
   function onTabKeydown(e: KeyboardEvent, item: TabItem) {
@@ -384,10 +366,8 @@
       }
       case 'Enter':
       case ' ': {
-        if (keyboardActivation === 'manual') {
-          e.preventDefault();
-          setActive(item.itemKey);
-        }
+        e.preventDefault();
+        setActive(item.itemKey);
         break;
       }
       default:
@@ -714,19 +694,6 @@
   </div>
 {/snippet}
 
-{#snippet addBtn()}
-  {#if addable}
-    <button
-      type="button"
-      class="cd-tabs__add"
-      aria-label={loc().t('Tabs.add')}
-      onclick={() => onAdd?.()}
-    >
-      <IconPlus size="small" aria-hidden="true" />
-    </button>
-  {/if}
-{/snippet}
-
 <div class={cls} class:cd-tabs--no-motion={!tabPaneMotion}>
   {#if renderTabBar}
     <!-- renderTabBar：调用方完全自绘标签栏；跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。 -->
@@ -772,8 +739,6 @@
           </Dropdown>
         </div>
       {/if}
-
-      {@render addBtn()}
 
       {#if tabBarExtraContent}
         <div class="cd-tabs__extra">{@render tabBarExtraContent()}</div>
@@ -848,8 +813,6 @@
         {/if}
       {/if}
 
-      {@render addBtn()}
-
       {#if tabBarExtraContent}
         <div class="cd-tabs__extra">{@render tabBarExtraContent()}</div>
       {/if}
@@ -898,9 +861,8 @@
     align-items: stretch;
   }
 
-  /* 滚动/折叠箭头 + 新增按钮：不收缩，垂直居中对齐标签栏。 */
-  .cd-tabs__scroll-btn,
-  .cd-tabs__add {
+  /* 滚动/折叠箭头：不收缩，垂直居中对齐标签栏。 */
+  .cd-tabs__scroll-btn {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -919,24 +881,17 @@
   .cd-tabs__scroll-btn--next {
     margin-inline-start: var(--cd-spacing-tabs-overflow-icon-marginleft);
   }
-  .cd-tabs__add {
-    color: var(--cd-color-tabs-tab-line-text-default);
-  }
   .cd-tabs__scroll-btn:hover:not(:disabled) {
     background-color: var(--cd-color-tabs-tab-pane-arrow-bg-hover);
   }
   .cd-tabs__scroll-btn:active:not(:disabled) {
     background-color: var(--cd-color-tabs-tab-pane-arrow-bg-active);
   }
-  .cd-tabs__add:hover {
-    color: var(--cd-color-tabs-tab-line-text-hover);
-  }
   .cd-tabs__scroll-btn:disabled {
     color: var(--cd-color-tabs-tab-pane-arrow-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-tabs__scroll-btn:focus-visible,
-  .cd-tabs__add:focus-visible {
+  .cd-tabs__scroll-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);

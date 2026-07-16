@@ -24,6 +24,8 @@
     linkOptions?: Record<string, string>;
     /** 是否保留左侧 Icon 占位（对齐 Semi indent）。 */
     indent?: boolean;
+    /** 当前项嵌套层级（对齐 Semi level）；limitIndent=false 时用于自定义缩进位置。 */
+    level?: number;
     /** 项级点击回调（富载荷对齐 Semi）。 */
     onClick?: (data: NavClickData) => void;
     /** 项级鼠标移入回调。 */
@@ -40,6 +42,7 @@
     link,
     linkOptions,
     indent,
+    level,
     onClick,
     onMouseEnter,
     onMouseLeave,
@@ -58,6 +61,7 @@
       ...(link !== undefined ? { link } : {}),
       ...(linkOptions !== undefined ? { linkOptions } : {}),
       ...(indent !== undefined ? { indent } : {}),
+      ...(level !== undefined ? { level } : {}),
       ...(onClick !== undefined ? { onClick } : {}),
       ...(onMouseEnter !== undefined ? { onMouseEnter } : {}),
       ...(onMouseLeave !== undefined ? { onMouseLeave } : {}),

@@ -43,16 +43,16 @@ describe('Tree a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('checkable：treeitem aria-checked + 容器 aria-multiselectable', async () => {
+  it('multiple：treeitem aria-checked + 容器 aria-multiselectable', async () => {
     const { container } = renderWithLocale(Tree, {
-      props: { treeData, ariaLabel: 'Tree', checkable: true, defaultExpandAll: true },
+      props: { treeData, ariaLabel: 'Tree', multiple: true, defaultExpandAll: true },
     });
     expect(container.querySelector('[role="tree"]')?.getAttribute('aria-multiselectable')).toBe('true');
     expect(container.querySelector('[role="treeitem"][aria-checked]')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 
-  it('选中态：selectable 节点 aria-selected', async () => {
+  it('选中态：单选节点 aria-selected', async () => {
     const { container } = renderWithLocale(Tree, {
       props: { treeData, ariaLabel: 'Tree', defaultValue: 'leaf' },
     });

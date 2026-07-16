@@ -1,45 +1,43 @@
 <!--
-  Steps — 全面对齐 Semi Design（semi-foundation/steps）。
+  Steps — 组合式 API，严格对齐 Semi Design（semi-ui/steps + semi-foundation/steps）。
+  用法：<Steps type=.. current=.. onChange=..><Steps.Step title=.. /> …</Steps>（对齐 Semi）。
   三型：
-    fill  — 旧版默认，整块带边框/圆角/内边距的块状步骤，process 态 item 背景高亮，
-            左侧 24×24 圆序号；有 onChange 时可点击，hover/active 变色。
-    basic — 新版简洁型，number-icon 圆序号 + 标题/描述 + 连接线（hasLine 控制）；
-            有 onChange 时可点击。finish 段连接线高亮 primary。
-    nav   — 导航型，序号 + 标题，内容撑开宽度，不可交互，active 态标题变色加粗。
-  status：wait/process/finish/error/warning，可由 current 推断或经 step.status 显式覆盖。
-  icon：每步独立（StepItem.icon，string 或 Snippet），提供时替代默认序号/✓/✕/⚠。
-  a11y：ol/li 结构；可点击步为原生 button，roving tabindex 单 Tab 停靠点，
-        方向键/Home/End 漫游，Enter/Space + 点击触发 onChange。
+    fill  — 旧版默认，整块带边框/圆角/内边距的块状步骤，process 态 item 背景高亮。
+    basic — 新版简洁型，number-icon 圆序号 + 标题/描述 + 连接线（hasLine 控制）。
+    nav   — 导航型，序号 chevron + 标题，内容撑开宽度，不可交互。
+  DOM class 层级镜像 Semi（cd-steps / cd-steps-item / cd-steps-item-container/-left/-content/-title/-title-text/-description/-icon/-number-icon）。
+  子项经 context 拿父 type/size/direction/current/initial/status/onChange 与自身顺序索引，自算状态。
+  a11y：<ol>（nav 型外包 <nav aria-label>）；可点击步为原生 button，roving tabindex 单 Tab 停靠点。
 -->
 <script lang="ts">
-  import { nextRovingIndex, rovingKeyFromEvent, type RovingKey } from '@chenzy-design/core';
-  import { IconTickCircle, IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
+  import { tick, type Snippet } from 'svelte';
   import { useLocale } from '../locale-provider/index.js';
-  import type { StepItem, StepStatus } from './types.js';
-
-  type StepDirection = 'horizontal' | 'vertical';
-  type StepType = 'fill' | 'basic' | 'nav';
-  type StepSize = 'small' | 'default';
+  import { setStepsContext, type StepsType, type StepsSize, type StepsDirection } from './context.js';
+  import type { StepStatus } from './types.js';
 
   interface Props {
     current?: number;
     defaultCurrent?: number;
-    steps?: StepItem[];
-    direction?: StepDirection;
-    type?: StepType;
+    direction?: StepsDirection;
+    type?: StepsType;
     status?: StepStatus;
-    size?: StepSize;
+    size?: StepsSize;
     initial?: number;
-    /** basic 型是否显示连接线（对齐 Semi hasLine，默认 true） */
+    /** basic 型是否显示连接线（对齐 Semi hasLine，默认 true）。 */
     hasLine?: boolean;
     onChange?: (current: number) => void;
     class?: string;
+    /** 容器内联样式（对齐 Semi Steps 的 style，字符串形式）。 */
+    style?: string;
+    /** 容器 aria-label（对齐 Semi Steps 的 aria-label）。 */
+    ariaLabel?: string;
+    /** 内嵌 <Steps.Step> 列表。 */
+    children?: Snippet;
   }
 
   let {
     current,
     defaultCurrent = 0,
-    steps = [],
     direction = 'horizontal',
     type = 'fill',
     status = 'process',
@@ -48,56 +46,24 @@
     hasLine = true,
     onChange,
     class: className = '',
+    style,
+    ariaLabel,
+    children,
   }: Props = $props();
 
   // 受控 / 非受控（红线 #1）：绝不写回 prop。
   const isControlled = $derived(current !== undefined);
-  // 函数包装读取 defaultCurrent：非受控 inner 只取初始值，不跟随 prop 变化（预期行为），
-  // 同时避免 state_referenced_locally 告警。
   let inner = $state(getInitialCurrent());
-  const activeIndex = $derived(isControlled ? (current as number) : inner);
-
   function getInitialCurrent(): number {
     return defaultCurrent;
   }
+  const activeIndex = $derived(isControlled ? (current as number) : inner);
 
-  // 可交互性对齐 Semi：fill/basic 且传入 onChange 时可点击；nav 永不可交互。
   const isClickable = $derived(type !== 'nav' && onChange !== undefined);
-
-  function statusOf(index: number): StepStatus {
-    // 显式 step.status 优先于由 current 推断的状态
-    const explicit = steps[index]?.status;
-    if (explicit) return explicit;
-    if (index < activeIndex) return 'finish';
-    if (index === activeIndex) return status;
-    return 'wait';
-  }
-
-  const cls = $derived(
-    [
-      'cd-steps',
-      `cd-steps--${direction}`,
-      `cd-steps--${type}`,
-      size !== 'default' && `cd-steps--${size}`,
-      isClickable && 'cd-steps--clickable',
-      type === 'basic' && hasLine && 'cd-steps--hasline',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-
-  function select(index: number) {
-    if (!isClickable) return;
-    if (index === activeIndex) return;
-    if (!isControlled) inner = index;
-    onChange?.(index + initial);
-  }
 
   const loc = useLocale();
 
-  // 视觉隐藏的状态文本（WCAG 1.4.1：颜色非唯一信息载体）。
-  // 组合「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读。
+  // 视觉隐藏状态文本（WCAG 1.4.1）。
   function statusText(st: StepStatus): string {
     switch (st) {
       case 'finish':
@@ -112,145 +78,96 @@
         return loc().t('Steps.statusWait');
     }
   }
-  function srLabel(index: number, st: StepStatus): string {
-    // 分隔符 ofTotal 已带（zh「，共 N 步」/ en「 of N」），状态前再以 locale 分隔符停顿。
+  function srLabel(index: number, total: number, st: StepStatus): string {
     const sep = loc().t('Steps.statusSeparator');
     return (
       loc().t('Steps.stepLabel', { index: index + 1 + initial }) +
-      loc().t('Steps.ofTotal', { total: steps.length }) +
+      loc().t('Steps.ofTotal', { total }) +
       sep +
       statusText(st)
     );
   }
 
-  // --- roving tabindex（a11y §6）：可点击步骤组为单一 Tab 停靠点。 ---
-  // rootEl 普通引用（bind:this），命令式 focus() 用，非 render 期读 DOM。
+  // --- 声明式子项登记（对齐本库 Timeline 范式）：副作用写簿记 + bump version；渲染只读 version。 ---
+  let seq = 0;
+  const order: number[] = [];
+  let version = $state(0);
+
+  // roving tabindex：当前焦点步索引（-1 = 回退 activeIndex/首步）。
   let rootEl = $state<HTMLElement | null>(null);
-  // 当前焦点步索引；-1 = 尚无焦点 -> activeIndex（或首步）作为 Tab 停靠点。
   let focusedIndex = $state(-1);
-
-  const focusableIndices = $derived<number[]>(
-    isClickable ? steps.map((_, i) => i) : [],
-  );
-
-  // 纯派生 tabindex：当前焦点步（或无焦点时回退到 activeIndex/首步）为 0，其余 -1。
-  function stepTabindex(index: number): 0 | -1 {
-    if (!isClickable) return -1;
-    const anchor =
-      focusedIndex >= 0
-        ? focusedIndex
-        : focusableIndices.includes(activeIndex)
-          ? activeIndex
-          : (focusableIndices[0] ?? -1);
-    return index === anchor ? 0 : -1;
-  }
 
   function focusStep(index: number): void {
     focusedIndex = index;
-    rootEl?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)?.focus();
+    tick().then(() => {
+      rootEl?.querySelector<HTMLElement>(`[data-step-index="${index}"]`)?.focus();
+    });
   }
 
-  // 步骤 keydown：方向键 roving（纯函数 nextRovingIndex 派生）、Home/End 跳首尾。
-  // Enter/Space 交给原生 <button>（触发 onclick → select）。
-  function onStepKeydown(e: KeyboardEvent, index: number): void {
-    const intent: RovingKey | null = rovingKeyFromEvent(e.key);
-    if (!intent) return;
-    e.preventDefault();
-    const list = focusableIndices;
-    if (list.length === 0) return;
-    const cur = list.indexOf(index);
-    const next = nextRovingIndex(cur, list.length, intent, false);
-    const target = list[next];
-    if (target != null) focusStep(target);
-  }
+  setStepsContext({
+    getType: () => type,
+    getSize: () => size,
+    getDirection: () => direction,
+    getCurrent: () => activeIndex,
+    getInitial: () => initial,
+    getStatus: () => status,
+    getClickable: () => isClickable,
+    getOnChange: () =>
+      onChange === undefined
+        ? undefined
+        : (next: number) => {
+            if (!isControlled) inner = next - initial;
+            onChange(next);
+          },
+    registerStep: () => {
+      const id = seq;
+      seq += 1;
+      order.push(id);
+      version += 1;
+      return {
+        getIndex: () => {
+          void version;
+          return order.indexOf(id);
+        },
+        getTotal: () => {
+          void version;
+          return order.length;
+        },
+        unregister: () => {
+          const i = order.indexOf(id);
+          if (i >= 0) order.splice(i, 1);
+          version += 1;
+        },
+      };
+    },
+    getFocusedIndex: () => focusedIndex,
+    setFocusedIndex: (index: number) => {
+      focusedIndex = index;
+    },
+    focusStep,
+    srLabel,
+  });
 
-  // 是否为字符串图标（StepItem.icon 为 string 时直接文本渲染）
-  function isStringIcon(icon: StepItem['icon']): icon is string {
-    return typeof icon === 'string';
-  }
-
-  // 对齐 Semi basicStep renderIcon：仅 wait/process 且无自定义 icon 时渲染圆底序号；
-  // finish/error/warning 用形状图标着状态色（无圆底），自定义 icon 同样无圆底着色。
-  function hasNumberIcon(step: StepItem, st: StepStatus): boolean {
-    return step.icon === undefined && (st === 'wait' || st === 'process');
-  }
+  // 容器 class（对齐 Semi wrapperCls：cd-steps-{type}? + cd-steps-{direction} + cd-steps-{size}? + cd-steps-hasline?）。
+  // fill 型 wrapper 为 cd-steps（无 -fill 后缀，对齐 Semi fillSteps prefixCls）；basic/nav 带类型后缀。
+  const cls = $derived(
+    [
+      'cd-steps',
+      type === 'basic' && 'cd-steps-basic',
+      type === 'nav' && 'cd-steps-nav',
+      `cd-steps-${direction}`,
+      size !== 'default' && `cd-steps-${size}`,
+      type === 'basic' && hasLine && 'cd-steps-hasline',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 </script>
 
-{#snippet stepIcon(step: StepItem, index: number, st: StepStatus)}
-  {#if hasNumberIcon(step, st)}
-    <!-- wait/process：圆底序号 -->
-    <span class="cd-steps__icon cd-steps__number-icon" aria-hidden="true">{index + 1 + initial}</span>
-  {:else}
-    <!-- 形状图标 / 自定义图标：着状态色、无圆底 -->
-    <span class="cd-steps__icon cd-steps__glyph" aria-hidden="true">
-      {#if step.icon !== undefined}
-        {#if isStringIcon(step.icon)}{step.icon}{:else}{@render step.icon()}{/if}
-      {:else if st === 'finish'}<IconTickCircle size="inherit" aria-hidden="true" />
-      {:else if st === 'error'}<IconAlertCircle size="inherit" aria-hidden="true" />
-      {:else if st === 'warning'}<IconAlertTriangle size="inherit" aria-hidden="true" />
-      {:else}{index + 1 + initial}{/if}
-    </span>
-  {/if}
-{/snippet}
-
-{#snippet stepBody(step: StepItem, index: number, st: StepStatus)}
-  {@render stepIcon(step, index, st)}
-  <span class="cd-steps__content">
-    <span class="cd-steps__title">{step.title}</span>
-    {#if step.description}
-      <span class="cd-steps__desc">{step.description}</span>
-    {/if}
-  </span>
-  <!-- WCAG 1.4.1：视觉隐藏的「步骤 N，共 M 步，<状态>」供屏幕阅读器朗读。 -->
-  <span class="cd-sr-only">{srLabel(index, st)}</span>
-{/snippet}
-
 {#snippet stepsList()}
-  <ol class={cls} bind:this={rootEl}>
-    {#each steps as step, index (index)}
-      {@const st = statusOf(index)}
-      {@const last = index === steps.length - 1}
-      <li class="cd-steps__item cd-steps__item--{st}" class:cd-steps__item--done={index < activeIndex}>
-        {#if isClickable}
-          <button
-            type="button"
-            class="cd-steps__head"
-            data-step-index={index}
-            aria-label={step.ariaLabel}
-            aria-current={index === activeIndex ? 'step' : undefined}
-            tabindex={stepTabindex(index)}
-            onclick={(e) => {
-              step.onClick?.(e);
-              select(index);
-            }}
-            onkeydown={(e) => {
-              onStepKeydown(e, index);
-              step.onKeyDown?.(e);
-            }}
-            onfocus={() => {
-              focusedIndex = index;
-            }}
-          >
-            {@render stepBody(step, index, st)}
-          </button>
-        {:else}
-          <div
-            class="cd-steps__head"
-            aria-label={step.ariaLabel}
-            aria-current={index === activeIndex ? 'step' : undefined}
-          >
-            {@render stepBody(step, index, st)}
-          </div>
-        {/if}
-        {#if !last && type === 'basic'}
-          <span
-            class="cd-steps__line"
-            class:cd-steps__line--finish={index < activeIndex}
-            aria-hidden="true"
-          ></span>
-        {/if}
-      </li>
-    {/each}
+  <ol class={cls} {style} aria-label={ariaLabel} bind:this={rootEl}>
+    {@render children?.()}
   </ol>
 {/snippet}
 
@@ -263,7 +180,12 @@
 {/if}
 
 <style>
-  /* 视觉隐藏状态文本（.cd-sr-only）复用 tokens.css 全局工具类，令颜色非唯一信息载体。 */
+  /* ============================================================================
+     严格对齐 Semi steps scss（bacisSteps/fillSteps/navSteps），前缀 cd-steps，
+     token 值引 var(--cd-*-steps-*)。根 <ol> 保留组件作用域哈希；后代 .cd-steps-item-*
+     由 <Steps.Step> 子组件渲染的 <li>（跨组件边界），用 :global 包裹覆盖（对齐本库 Timeline）。
+     class 层级 = Semi DOM 层级：item > container? > left/content > title/title-text/description/icon/number-icon。
+     ============================================================================ */
 
   .cd-steps {
     display: flex;
@@ -271,32 +193,9 @@
     padding: 0;
     list-style: none;
   }
-  .cd-steps--horizontal {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .cd-steps--vertical {
-    flex-direction: column;
-  }
-
-  .cd-steps__item {
-    position: relative;
+  .cd-steps :global(.cd-steps-item-head) {
     display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-  }
-  .cd-steps--vertical .cd-steps__item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .cd-steps__item:last-child {
-    flex: none;
-  }
-
-  .cd-steps__head {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-steps-basic-item-left-marginright);
+    flex: 1;
     margin: 0;
     padding: 0;
     border: none;
@@ -304,220 +203,437 @@
     color: inherit;
     font: inherit;
     text-align: start;
+    width: 100%;
   }
-  .cd-steps--clickable .cd-steps__head {
+  .cd-steps :global(.cd-steps-item-clickable .cd-steps-item-head),
+  .cd-steps :global(button.cd-steps-item-head) {
     cursor: pointer;
   }
-  button.cd-steps__head:focus-visible {
+  .cd-steps :global(button.cd-steps-item-head:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
     border-radius: var(--cd-border-radius-small);
   }
 
-  /* 图标节点公共盒：24×24（对齐 Semi height-steps-basic-item-left-number-icon） */
-  .cd-steps__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--cd-width-steps-basic-item-left-number-icon);
-    block-size: var(--cd-height-steps-basic-item-left-number-icon);
-    flex: 0 0 auto;
-  }
-  /* 圆底序号（仅 wait/process）：圆形背景 + 序号字重 */
-  .cd-steps__number-icon {
-    border-radius: var(--cd-radius-steps-basic-item-left-number-icon);
-    font-weight: var(--cd-font-steps-basic-item-left-number-icon-fontweight);
-  }
-  /* 形状/自定义图标：无圆底，图标着状态色，放大填满盒（对齐 Semi extra-large 图标） */
-  .cd-steps__glyph {
-    font-size: var(--cd-width-steps-basic-item-left-number-icon);
-    line-height: 1;
-  }
-  .cd-steps__glyph :global(svg) {
-    display: block;
-  }
-
-  .cd-steps__content {
-    display: inline-flex;
-    flex-direction: column;
-  }
-  .cd-steps__title {
-    color: var(--cd-color-steps-main-text-default);
-    font-weight: var(--cd-font-steps-basic-item-title-fontweight);
-    line-height: var(--cd-font-steps-basic-item-title-lineheight);
-  }
-  .cd-steps__desc {
-    color: var(--cd-color-steps-minor-text-default);
-    font-size: var(--cd-font-size-small);
-    max-inline-size: var(--cd-width-steps-basic-item-description-maxwidth);
-  }
-
-  /* 连接线：默认灰、finish 段高亮 primary */
-  .cd-steps__line {
-    flex: 1 1 auto;
-    background: var(--cd-color-steps-title-after-bg);
-  }
-  .cd-steps--horizontal .cd-steps__line {
-    block-size: var(--cd-height-steps-title-after);
-    min-inline-size: var(--cd-spacing-steps-basic-item-left-marginright);
-    margin-inline: var(--cd-spacing-steps-basic-item-left-marginright);
-  }
-  .cd-steps--vertical .cd-steps__line {
-    inline-size: var(--cd-width-steps-vertical-icon-after);
-    min-block-size: var(--cd-spacing-base);
-    margin-inline-start: calc(var(--cd-width-steps-basic-item-left-number-icon) / 2);
-  }
-  .cd-steps__line--finish {
-    background: var(--cd-color-steps-item-done-after-bg);
-  }
-
-  /* basic 型隐藏连接线：仅 hasline 时显示 */
-  .cd-steps--basic:not(.cd-steps--hasline) .cd-steps__line {
-    display: none;
-  }
-
-  /* ============ 图标各状态配色（对齐 Semi）============ */
-  /* 圆底序号：process=primary 底 + 白字；wait=灰底 + 灰字 */
-  .cd-steps--basic .cd-steps__item--process .cd-steps__number-icon,
-  .cd-steps--fill .cd-steps__item--process .cd-steps__number-icon {
-    background: var(--cd-color-steps-item-left-number-icon-bg);
-    color: var(--cd-color-steps-item-process-left-number-icon);
-  }
-  .cd-steps--basic .cd-steps__item--wait .cd-steps__number-icon,
-  .cd-steps--fill .cd-steps__item--wait .cd-steps__number-icon {
-    background: var(--cd-color-steps-item-wait-left-number-icon-bg);
-    color: var(--cd-color-steps-item-wait-left-number-icon-icon);
-  }
-  .cd-steps--basic .cd-steps__item--wait .cd-steps__title {
-    color: var(--cd-color-steps-item-wait-title-text);
-  }
-  /* 形状/自定义图标：无底，图标本身着状态色 */
-  .cd-steps__item--finish .cd-steps__glyph {
-    color: var(--cd-color-steps-item-finish-icon);
-  }
-  .cd-steps__item--process .cd-steps__glyph {
-    color: var(--cd-color-steps-item-process-left-icon);
-  }
-  .cd-steps__item--wait .cd-steps__glyph {
-    color: var(--cd-color-steps-item-wait-left-icon-icon);
-  }
-  .cd-steps__item--error .cd-steps__glyph {
-    color: var(--cd-color-steps-item-error-left-icon);
-  }
-  .cd-steps__item--warning .cd-steps__glyph {
-    color: var(--cd-color-steps-item-warning-left-icon);
-  }
-
-  /* clickable 时 wait 态 hover 变色（对齐 Semi wait-hover） */
-  .cd-steps--clickable .cd-steps__item--wait button.cd-steps__head:hover .cd-steps__icon {
-    background: var(--cd-color-steps-item-wait-left-number-icon-bg-hover);
-    color: var(--cd-color-steps-item-wait-left-number-icon-icon-hover);
-  }
-  .cd-steps--clickable button.cd-steps__head:hover .cd-steps__title {
-    color: var(--cd-color-steps-item-title-text-hover);
-  }
-  .cd-steps--clickable button.cd-steps__head:hover .cd-steps__desc {
-    color: var(--cd-color-steps-item-description-text-hover);
-  }
-
-  /* basic 迷你尺寸：图标 20px、标题常规字号 */
-  .cd-steps--basic.cd-steps--small .cd-steps__icon {
-    inline-size: var(--cd-width-steps-basic-small-item-left-number-icon);
-    block-size: var(--cd-width-steps-basic-small-item-left-number-icon);
-  }
-
-  /* ============ fill 型：整块带边框/圆角/内边距的块状步骤 ============ */
-  .cd-steps--fill .cd-steps__item {
-    box-sizing: border-box;
-    min-block-size: var(--cd-height-steps-item);
-    overflow: hidden;
-    margin-inline-end: var(--cd-spacing-steps-item-marginright);
-    border: var(--cd-width-steps-item-border) solid var(--cd-color-steps-border-default);
-    border-radius: var(--cd-radius-steps-item);
-    padding: var(--cd-spacing-steps-item-paddingy) var(--cd-spacing-steps-item-paddingx);
-  }
-  .cd-steps--fill .cd-steps__item:last-child {
-    margin-inline-end: 0;
-  }
-  .cd-steps--fill .cd-steps__head {
-    gap: var(--cd-spacing-steps-item-content-marginleft);
-  }
-  .cd-steps--fill .cd-steps__title {
-    font-weight: var(--cd-font-steps-item-title-fontweight);
-  }
-  /* fill process 态：item 背景高亮 */
-  .cd-steps--fill .cd-steps__item--process {
-    background: var(--cd-color-steps-process-bg-default);
-  }
-  /* fill hover/active 态背景（可点击时） */
-  .cd-steps--clickable.cd-steps--fill button.cd-steps__head:hover {
-    background: var(--cd-color-steps-bg-hover);
-  }
-  .cd-steps--clickable.cd-steps--fill button.cd-steps__head:active {
-    background: var(--cd-color-steps-bg-active);
-  }
-
-  /* fill 型旧版配色语义：图标 + 标题同色。
-     finish=success 绿、error=danger、warning=warning、process=primary（对齐 fillSteps.scss）。
-     图标放大到 header-4 尺寸（约与 24px 圆节点相当）。 */
-  .cd-steps--fill .cd-steps__item--finish .cd-steps__glyph,
-  .cd-steps--fill .cd-steps__item--finish .cd-steps__title {
-    color: var(--cd-color-steps-success-text-default);
-  }
-  .cd-steps--fill .cd-steps__item--error .cd-steps__glyph,
-  .cd-steps--fill .cd-steps__item--error .cd-steps__title {
-    color: var(--cd-color-steps-danger-text-default);
-  }
-  .cd-steps--fill .cd-steps__item--warning .cd-steps__glyph,
-  .cd-steps--fill .cd-steps__item--warning .cd-steps__title {
-    color: var(--cd-color-steps-warning-text-default);
-  }
-  .cd-steps--fill .cd-steps__item--process .cd-steps__title {
-    color: var(--cd-color-steps-primary-icon-default);
-  }
-  /* fill hover/active 态文字色（可点击时，对齐 fillSteps.scss 各状态 hover/active）。 */
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--finish button:hover .cd-steps__glyph,
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--finish button:hover .cd-steps__title {
-    color: var(--cd-color-steps-success-text-hover);
-  }
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--error button:hover .cd-steps__glyph,
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--error button:hover .cd-steps__title {
-    color: var(--cd-color-steps-danger-text-hover);
-  }
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--warning button:hover .cd-steps__glyph,
-  .cd-steps--clickable.cd-steps--fill .cd-steps__item--warning button:hover .cd-steps__title {
-    color: var(--cd-color-steps-warning-text-hover);
-  }
-
-  /* ============ nav 型：序号 + 标题，内容撑开，不可交互 ============ */
-  .cd-steps--nav {
-    display: inline-flex;
+  /* ============ basic 型 ============ */
+  .cd-steps-basic.cd-steps-horizontal {
     flex-flow: row nowrap;
   }
-  /* nav 型图标统一灰色（对齐 Semi grey-3），无圆底，不分状态 */
-  .cd-steps--nav .cd-steps__icon,
-  .cd-steps--nav .cd-steps__glyph {
-    background: transparent;
-    color: var(--cd-color-steps-nav-item-icon);
-    min-inline-size: var(--cd-width-steps-nav-item-icon-minwidth);
-    inline-size: auto;
-    border-radius: 0;
+  /* 连接线：basic 水平 + hasline → .item-title::after 横向连线 */
+  .cd-steps-basic.cd-steps-horizontal.cd-steps-hasline :global(.cd-steps-item-title::after) {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    display: block;
+    width: var(--cd-width-steps-title-after);
+    height: var(--cd-height-steps-title-after);
+    background: var(--cd-color-steps-title-after-bg);
   }
-  .cd-steps--nav .cd-steps__title {
-    max-inline-size: var(--cd-width-steps-nav-item-title-maxwidth);
-    color: var(--cd-color-steps-nav-item-container-text);
-    font-weight: var(--cd-font-steps-nav-item-title-fontweight);
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item) {
+    padding-left: var(--cd-spacing-steps-basic-item-paddingleft);
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item:first-child) {
+    padding-left: 0;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item:last-child) {
+    flex: none;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item:last-child .cd-steps-item-title) {
+    max-width: 100%;
+    padding-right: 0;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item:last-child .cd-steps-item-title::after) {
+    display: none;
+  }
+  /* done 段连接线高亮 primary */
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item-done .cd-steps-item-container .cd-steps-item-title::after) {
+    background: var(--cd-color-steps-item-done-after-bg);
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item .cd-steps-item-content) {
+    flex: 1;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item .cd-steps-item-description) {
+    font-size: var(--cd-font-size-small);
+    color: var(--cd-color-steps-minor-text-default);
+    width: var(--cd-width-steps-basic-item-description);
+    max-width: var(--cd-width-steps-basic-item-description-maxwidth);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-steps--nav .cd-steps__item--process .cd-steps__title {
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item .cd-steps-item-title) {
+    max-width: var(--cd-width-steps-basic-item-title-maxwidth);
+    min-height: var(--cd-height-steps-basic-item-left-icon);
+    display: inline-flex;
+    align-items: center;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item .cd-steps-item-title .cd-steps-item-title-text) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cd-steps-basic.cd-steps-horizontal :global(.cd-steps-item-title-text-empty) {
+    width: 0;
+  }
+
+  /* basic 垂直型 */
+  .cd-steps-basic.cd-steps-vertical {
+    flex-flow: column nowrap;
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item-icon) {
+    box-sizing: content-box;
+  }
+  .cd-steps-basic.cd-steps-vertical.cd-steps-small :global(.cd-steps-item .cd-steps-item-content) {
+    min-height: var(--cd-height-steps-basic-vertical-small-item-content-minheight);
+  }
+  /* 垂直连接线：hasline → .item-icon::after 纵向连线 */
+  .cd-steps-basic.cd-steps-vertical.cd-steps-hasline :global(.cd-steps-item-icon::after) {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    display: block;
+    width: var(--cd-width-steps-vertical-icon-after);
+    height: var(--cd-height-steps-vertical-icon-after);
+    background: var(--cd-color-steps-icon-after-bg);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item) {
+    padding-top: var(--cd-spacing-steps-basic-vertical-item-paddingtop);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item:first-child) {
+    padding-top: 0;
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item:last-child .cd-steps-item-icon::after) {
+    display: none;
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item-done .cd-steps-item-icon::after) {
+    background: var(--cd-color-steps-item-done-icon-after-bg);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item .cd-steps-item-content) {
+    min-height: var(--cd-height-steps-basic-vertical-icon-content-minheight);
+    padding-bottom: var(--cd-spacing-steps-basic-vertical-item-content-paddingbottom);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item .cd-steps-item-icon) {
+    display: inline-flex;
+    position: relative;
+    padding-bottom: var(--cd-spacing-steps-basic-vertical-item-icon-paddingbottom);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item .cd-steps-item-description) {
+    font-size: var(--cd-font-size-small);
+    color: var(--cd-color-steps-minor-text-default);
+    width: var(--cd-width-steps-basic-vertical-item-description);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item .cd-steps-item-title) {
+    max-width: var(--cd-width-steps-basic-vertical-item-title-maxwidth);
+  }
+  .cd-steps-basic.cd-steps-vertical :global(.cd-steps-item .cd-steps-item-title .cd-steps-item-title-text) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* basic 型公共 item 样式 */
+  .cd-steps-basic :global(.cd-steps-item) {
+    box-sizing: border-box;
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    overflow: hidden;
+    flex: 1;
+  }
+  .cd-steps-basic :global(.cd-steps-item-clickable) {
+    cursor: pointer;
+  }
+  .cd-steps-basic :global(.cd-steps-item-hover:hover .cd-steps-item-title) {
+    color: var(--cd-color-steps-item-title-text-hover);
+  }
+  .cd-steps-basic :global(.cd-steps-item-hover:hover .cd-steps-item-description) {
+    color: var(--cd-color-steps-item-description-text-hover);
+  }
+  .cd-steps-basic :global(.cd-steps-item-container) {
+    display: flex;
+    align-items: flex-start;
+  }
+  .cd-steps-basic :global(.cd-steps-item-left) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: var(--cd-spacing-steps-basic-item-left-marginright);
+  }
+  .cd-steps-basic :global(.cd-steps-item-left .cd-steps-item-icon) {
+    display: flex;
+    height: var(--cd-height-steps-basic-item-left-icon);
+    align-items: center;
+    font-size: var(--cd-width-steps-basic-item-left-number-icon);
+    line-height: 1;
+  }
+  .cd-steps-basic :global(.cd-steps-item-left .cd-steps-item-number-icon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cd-width-steps-basic-item-left-number-icon);
+    height: var(--cd-height-steps-basic-item-left-number-icon);
+    font-size: var(--cd-font-size-small);
+    font-weight: var(--cd-font-steps-basic-item-left-number-icon-fontweight);
+    background: var(--cd-color-steps-item-left-number-icon-bg);
+    border-radius: var(--cd-radius-steps-basic-item-left-number-icon);
+    color: var(--cd-color-steps-item-left-number-icon-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-icon svg) {
+    display: block;
+  }
+  .cd-steps-basic :global(.cd-steps-item-title) {
+    position: relative;
+    display: inline-block;
+    line-height: var(--cd-font-steps-basic-item-title-lineheight);
+    font-weight: var(--cd-font-steps-basic-item-title-fontweight);
+    color: var(--cd-color-steps-main-text-default);
+    vertical-align: top;
+    padding-right: var(--cd-spacing-steps-basic-item-title-paddingright);
+    margin-bottom: var(--cd-spacing-steps-basic-item-title-paddingbottom);
+  }
+
+  /* basic 各状态图标配色 */
+  .cd-steps-basic :global(.cd-steps-item-finish .cd-steps-item-left .cd-steps-item-icon) {
+    color: var(--cd-color-steps-item-finish-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-finish .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    color: var(--cd-color-steps-item-finish-number-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-wait .cd-steps-item-title) {
+    color: var(--cd-color-steps-item-wait-title-text);
+  }
+  .cd-steps-basic :global(.cd-steps-item-wait .cd-steps-item-left .cd-steps-item-icon) {
+    color: var(--cd-color-steps-item-wait-left-icon-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-wait .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    background: var(--cd-color-steps-item-wait-left-number-icon-bg);
+    color: var(--cd-color-steps-item-wait-left-number-icon-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-wait-hover:hover .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    background: var(--cd-color-steps-item-wait-left-number-icon-bg-hover);
+    color: var(--cd-color-steps-item-wait-left-number-icon-icon-hover);
+  }
+  .cd-steps-basic :global(.cd-steps-item-process .cd-steps-item-left .cd-steps-item-icon) {
+    color: var(--cd-color-steps-item-process-left-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-process .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    color: var(--cd-color-steps-item-process-left-number-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-error .cd-steps-item-left .cd-steps-item-icon) {
+    color: var(--cd-color-steps-item-error-left-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-error .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    color: var(--cd-color-steps-item-error-left-number-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-warning .cd-steps-item-left .cd-steps-item-icon) {
+    color: var(--cd-color-steps-item-warning-left-icon);
+  }
+  .cd-steps-basic :global(.cd-steps-item-warning .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    color: var(--cd-color-steps-item-warning-left-number-icon);
+  }
+
+  /* basic small 尺寸 */
+  .cd-steps-basic.cd-steps-small :global(.cd-steps-item .cd-steps-item-title) {
+    font-size: var(--cd-font-size-regular);
+  }
+  .cd-steps-basic.cd-steps-small :global(.cd-steps-item .cd-steps-item-left .cd-steps-item-icon) {
+    height: var(--cd-height-steps-basic-small-item-left-icon);
+  }
+  .cd-steps-basic.cd-steps-small :global(.cd-steps-item .cd-steps-item-left .cd-steps-item-icon .cd-steps-item-number-icon) {
+    font-size: var(--cd-font-size-small);
+    width: var(--cd-width-steps-basic-small-item-left-number-icon);
+    height: var(--cd-width-steps-basic-small-item-left-number-icon);
+  }
+
+  /* ============ fill 型（wrapper = cd-steps 无类型后缀，对齐 Semi fillSteps prefixCls）============ */
+  .cd-steps-horizontal:not(.cd-steps-basic):not(.cd-steps-nav) {
+    flex-flow: row nowrap;
+  }
+  .cd-steps-vertical:not(.cd-steps-basic):not(.cd-steps-nav) {
+    flex-flow: column nowrap;
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item) {
+    box-sizing: border-box;
+    display: flex;
+    height: var(--cd-height-steps-item);
+    position: relative;
+    overflow: hidden;
+    margin-right: var(--cd-spacing-steps-item-marginright);
+    border: var(--cd-width-steps-item-border) solid var(--cd-color-steps-border-default);
+    border-radius: var(--cd-radius-steps-item);
+    padding: var(--cd-spacing-steps-item-paddingy) var(--cd-spacing-steps-item-paddingx);
+    flex: 1;
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item:last-child) {
+    margin-right: 0;
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item .cd-steps-item-title) {
+    position: relative;
+    font-weight: var(--cd-font-steps-item-title-fontweight);
+    width: var(--cd-width-steps-item-title);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--cd-color-steps-main-text-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item .cd-steps-item-description) {
+    color: var(--cd-color-steps-minor-text-default);
+    width: var(--cd-width-steps-item-description);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* fill process 态 item 背景 + 图标/标题着 primary */
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-process) {
+    background-color: var(--cd-color-steps-process-bg-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-process .cd-steps-item-left:not(.cd-steps-item-icon)) {
+    background: var(--cd-color-steps-primary-bg-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-process .cd-steps-item-title),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-process .cd-steps-item-icon) {
+    color: var(--cd-color-steps-primary-icon-default);
+  }
+  /* fill wait 态 */
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-wait .cd-steps-item-left:not(.cd-steps-item-icon)) {
+    background: var(--cd-color-steps-bg-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-wait .cd-steps-item-icon) {
+    color: var(--cd-color-steps-icon-default);
+  }
+  /* fill finish/error/warning：图标 + 标题同状态色，hover/active 变色 */
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish .cd-steps-item-title) {
+    color: var(--cd-color-steps-success-text-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:hover) {
+    background-color: var(--cd-color-steps-bg-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:hover .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:hover .cd-steps-item-title) {
+    color: var(--cd-color-steps-success-text-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:active) {
+    background-color: var(--cd-color-steps-bg-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:active .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-finish-hover:active .cd-steps-item-title) {
+    color: var(--cd-color-steps-success-text-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error .cd-steps-item-title) {
+    color: var(--cd-color-steps-danger-text-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:hover) {
+    background: var(--cd-color-steps-bg-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:hover .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:hover .cd-steps-item-title) {
+    color: var(--cd-color-steps-danger-text-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:active) {
+    background-color: var(--cd-color-steps-bg-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:active .cd-steps-item-icon),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-error-hover:active .cd-steps-item-title) {
+    color: var(--cd-color-steps-danger-text-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning .cd-steps-item-title),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning .cd-steps-item-icon) {
+    color: var(--cd-color-steps-warning-text-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:hover) {
+    background: var(--cd-color-steps-bg-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:hover .cd-steps-item-title),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:hover .cd-steps-item-icon) {
+    color: var(--cd-color-steps-warning-text-hover);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:active) {
+    background-color: var(--cd-color-steps-bg-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:active .cd-steps-item-title),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-warning-hover:active .cd-steps-item-icon) {
+    color: var(--cd-color-steps-warning-text-active);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-clickable) {
+    cursor: pointer;
+  }
+  /* fill 左侧节点：24×24 圆，序号字重/行高 */
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-left) {
+    width: var(--cd-width-steps-item-left);
+    height: var(--cd-height-steps-item-left);
+    line-height: var(--cd-font-steps-item-left-lineheight);
+    text-align: center;
+    border-radius: var(--cd-radius-steps-item-left);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--cd-font-steps-item-left-fontweight);
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-left.cd-steps-item-plain) {
+    color: var(--cd-color-steps-text-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-left-process) {
+    background: var(--cd-color-steps-process-bg-default);
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-left svg),
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-icon svg) {
+    display: block;
+  }
+  .cd-steps:not(.cd-steps-basic):not(.cd-steps-nav) :global(.cd-steps-item-content) {
+    margin-left: var(--cd-spacing-steps-item-content-marginleft);
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ============ nav 型 ============ */
+  .cd-steps-nav {
+    display: inline-flex;
+    flex-flow: row nowrap;
+  }
+  .cd-steps-nav :global(.cd-steps-item) {
+    box-sizing: border-box;
+    flex: 1;
+  }
+  .cd-steps-nav :global(.cd-steps-item:last-child) {
+    flex: none;
+  }
+  .cd-steps-nav :global(.cd-steps-item:last-child .cd-steps-item-content) {
+    width: auto;
+  }
+  .cd-steps-nav :global(.cd-steps-item .cd-steps-item-container) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-steps-nav-item-container-text);
+  }
+  .cd-steps-nav :global(.cd-steps-item .cd-steps-item-container .cd-steps-item-icon) {
+    display: inline-flex;
+    flex: 1;
+    justify-content: center;
+    color: var(--cd-color-steps-nav-item-icon);
+    min-width: var(--cd-width-steps-nav-item-icon-minwidth);
+  }
+  .cd-steps-nav :global(.cd-steps-item .cd-steps-item-content) {
+    flex: 1;
+    display: inline-block;
+  }
+  .cd-steps-nav :global(.cd-steps-item .cd-steps-item-title) {
+    max-width: var(--cd-width-steps-nav-item-title-maxwidth);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--cd-font-steps-nav-item-title-fontweight);
+  }
+  .cd-steps-nav :global(.cd-steps-item-active .cd-steps-item-title) {
     color: var(--cd-color-steps-nav-item-title-text-active);
     font-weight: var(--cd-font-steps-nav-item-title-active-fontweight);
   }
-
-  /* nav small 尺寸标题常规字号 */
-  .cd-steps--nav.cd-steps--small .cd-steps__title {
+  .cd-steps-nav.cd-steps-small :global(.cd-steps-item .cd-steps-item-title) {
     font-size: var(--cd-font-size-small);
   }
 </style>

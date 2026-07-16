@@ -41,6 +41,8 @@ export interface Locale {
     itemsPerPage: string;
     jumpTo: string;
     jumpToSuffix: string;
+    /** 省略号项的可访问名（对齐 Semi aria-label="More"） */
+    more: string;
     /** live-region 翻页播报，uses {page} and {count} */
     pageChangeAnnounce: string;
     /** live-region 每页条数变更播报，uses {size} and {page} */
@@ -149,7 +151,6 @@ export interface Locale {
   };
   BackTop: {
     ariaLabel: string;
-    arrived: string;
   };
   AudioPlayer: {
     /** 播放按钮 aria-label */

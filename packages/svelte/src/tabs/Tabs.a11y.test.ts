@@ -27,9 +27,9 @@ describe('Tabs a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('选中态：defaultValue 标签 aria-selected=true，其余 false', async () => {
+  it('选中态：defaultActiveKey 标签 aria-selected=true，其余 false', async () => {
     const { container } = renderWithLocale(TabsFixture, {
-      props: { defaultValue: 'details' },
+      props: { defaultActiveKey: 'details' },
     });
     const selected = container.querySelectorAll('[role="tab"][aria-selected="true"]');
     expect(selected.length).toBe(1);

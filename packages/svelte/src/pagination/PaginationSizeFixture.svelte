@@ -23,7 +23,6 @@
   <Pagination
     total={200}
     defaultCurrentPage={5}
-    defaultPageSize={10}
     showSizeChanger
     preventPageChangeOnPageSizeChange={prevent}
     onChange={(p, s) => {

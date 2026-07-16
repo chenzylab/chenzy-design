@@ -24,11 +24,11 @@
     <Tree
       style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
       {treeData}
-      checkable
+      multiple
       checkRelation="related"
       defaultExpandAll
-      checkedKeys={related}
-      onCheck={(info) => (related = info.checked)}
+      value={related}
+      onChange={(value) => (related = value as (string | number)[])}
       ariaLabel="联动勾选树"
     />
   </div>
@@ -37,11 +37,11 @@
     <Tree
       style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
       {treeData}
-      checkable
+      multiple
       checkRelation="unRelated"
       defaultExpandAll
-      checkedKeys={unrelated}
-      onCheck={(info) => (unrelated = info.checked)}
+      value={unrelated}
+      onChange={(value) => (unrelated = value as (string | number)[])}
       ariaLabel="非联动勾选树"
     />
   </div>

@@ -31,11 +31,10 @@
     style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
     {treeData}
     multiple
-    checkable
     disableStrictly
     defaultExpandAll
-    checkedKeys={checked}
-    onCheck={(info) => (checked = info.checked)}
+    value={checked}
+    onChange={(value) => (checked = value as (string | number)[])}
     ariaLabel="严格禁用树"
   />
   <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>

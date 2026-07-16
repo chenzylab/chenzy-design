@@ -1,4 +1,5 @@
-// Breadcrumb a11y：nav[aria-label] 包裹 <ol> 列表；最后一项 aria-current=page（不可点）。
+// Breadcrumb a11y：DOM 镜像 Semi 扁平结构——nav[aria-label] > 直接放扁平 span/a（无 ol/li 列表）；
+//  最后一项 aria-current=page（不可点）。
 //  - routes 数据驱动模式（无需声明式 snippet）。
 // jsdom 只断言静态 ARIA + axe。
 import { describe, it, expect } from 'vitest';
@@ -13,13 +14,19 @@ const routes: BreadcrumbRoute[] = [
 ];
 
 describe('Breadcrumb a11y', () => {
-  it('routes 模式：nav[aria-label] + ol 列表，无 axe violations', async () => {
+  it('routes 模式：nav[aria-label] > 扁平 span/a（无 ol/li），无 axe violations', async () => {
     const { container } = renderWithLocale(Breadcrumb, { props: { routes } });
     const nav = container.querySelector('nav.cd-breadcrumb');
     expect(nav).not.toBeNull();
     expect(nav?.getAttribute('aria-label')).toBeTruthy();
-    expect(container.querySelector('ol.cd-breadcrumb__list')).not.toBeNull();
-    expect(container.querySelectorAll('li.cd-breadcrumb__item')).toHaveLength(3);
+    // DOM 镜像 Semi 扁平结构：容器与项均为 span，无 ol/li 列表语义。
+    const list = container.querySelector('span.cd-breadcrumb__list');
+    expect(list).not.toBeNull();
+    expect(list?.tagName.toLowerCase()).toBe('span');
+    expect(container.querySelector('ol')).toBeNull();
+    expect(container.querySelector('li')).toBeNull();
+    const items = container.querySelectorAll('span.cd-breadcrumb__item');
+    expect(items).toHaveLength(3);
     await expectNoAxeViolations(container);
   });
 
@@ -37,7 +44,7 @@ describe('Breadcrumb a11y', () => {
     const { container } = renderWithLocale(Breadcrumb, {
       props: { routes: ['Home', 'Library', 'Data'] },
     });
-    const items = container.querySelectorAll('li.cd-breadcrumb__item');
+    const items = container.querySelectorAll('span.cd-breadcrumb__item');
     expect(items).toHaveLength(3);
     expect(items[0]?.textContent?.trim()).toContain('Home');
     // 末项当前页。

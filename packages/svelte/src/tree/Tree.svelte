@@ -1,22 +1,20 @@
 <!--
-  Tree — see specs/components/show/Tree.spec.md
-  层级展示：展开/收起、单选/多选、可勾选父子联动(含半选 mixed)、内置搜索高亮。
-  受控 value/checkedKeys/expandedKeys 不回写，仅 onChange/onCheck/onExpandedChange 通知。
+  Tree — 严格对齐 Semi Design Tree。
+  层级展示：展开/收起、单选/多选(multiple 驱动 checkbox 父子联动含半选 mixed)、内置搜索高亮。
+  值通道统一走 value/onChange：单选为节点 key，多选为选中 key 数组（含 conduct 联动结果）。
+  受控 value/expandedKeys 不回写，仅 onChange/onExpand/onSelect/onSearch 通知（红线 #1）。
   键盘遵循 WAI-ARIA APG Tree View（单一 tab stop + aria-activedescendant）。
   复用 @chenzy-design/core 的纯函数树算法，不重复实现。
   loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap
   并派生合并树喂给所有 core 函数（不写回受控 treeData，红线 #1）。
   showLine：层级引导线（复用 core FlatNode.isLast/ancestorIsLast，纯 CSS ├/└/竖线）。
-  virtualized：大数据树虚拟滚动。直接用 core fixedRange 纯函数自建轻量 fixed 定高虚拟化
-  （非复用 VirtualList 组件——其 role=list/listitem 包裹层会破坏 role=tree→treeitem 的 ARIA
-  结构），保持 role=tree 容器 + 行 role=treeitem 语义不变；只渲染视口内切片。滚动监听命令式
-  + rAF 节流 + cleanup（红线 #3），可见区间 $derived 纯派生（红线 #2）。键盘移动 activeKey 时
-  scrollToIndex 滚到可见。a11y 取舍：aria-activedescendant 指向的行可能因虚拟化未渲染，故键盘
-  移动后命令式滚动确保目标行进入视口并被渲染，保证键盘可用。
+  virtualize：大数据树虚拟滚动（传 { itemSize, height?, width? } 对象开启，对齐 Semi）。直接用
+  core fixedRange 纯函数自建轻量 fixed 定高虚拟化（非复用 VirtualList 组件——其 role=list/listitem
+  包裹层会破坏 role=tree→treeitem 的 ARIA 结构），保持 role=tree 容器 + 行 role=treeitem 语义不变；
+  只渲染视口内切片。滚动监听命令式 + rAF 节流 + cleanup（红线 #3），可见区间 $derived 纯派生（红线 #2）。
+  键盘移动 activeKey 时 scrollToIndex 滚到可见，确保目标行进入视口并被渲染，保证键盘可用。
   keyMaps：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化（红线 #1/#2），
   默认字段名时零开销直接用原 treeData，回调回传原始节点（__orig）。
-  accordion：手风琴模式，同层级最多展开一个——展开某节点时用 core 的 accordionExpand 纯函数
-  计算并收起其同父级 siblings（不同层级互不影响）。受控时只 onExpandedChange 回传新集不回写（红线 #1）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -24,7 +22,6 @@
     useId,
     flattenVisible,
     collectExpandable,
-    collectExpandableToDepth,
     conduct,
     toggleCheck,
     collectLeafKeys,
@@ -34,7 +31,6 @@
     scrollOffsetForIndex,
     computeDropPosition,
     isAncestorOrSelf,
-    accordionExpand,
     type TreeKey,
     type TreeNodeData,
     type FlatNode,
@@ -54,20 +50,25 @@
   import Spin from '../spin/Spin.svelte';
   import Highlight from '../highlight/Highlight.svelte';
 
-  type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
-
-  type ChangeInfo = {
-    value: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[];
-    node: TreeNodeData;
-    selected: boolean;
-  };
-  type CheckInfo = { checked: TreeKey[]; node: TreeNodeData; halfChecked: TreeKey[] };
-  type ExpandInfo = { expanded: TreeKey[]; node: TreeNodeData; expand: boolean };
+  /** 值通道类型（对齐 Semi `Value`）：单选为标量或节点对象，多选为其数组。 */
+  type TreeValue =
+    | TreeKey
+    | TreeNodeData
+    | Array<TreeKey | TreeNodeData>;
   type DropInfo = {
     dragNode: TreeNodeData;
     dropNode: TreeNodeData;
     dropPosition: DropPosition;
+  };
+
+  /** 虚拟化配置对象（对齐 Semi `Virtualize`）。itemSize 必传。 */
+  type Virtualize = {
+    /** 每行高度（px），必传 */
+    itemSize: number;
+    /** 视口高度，默认 '100%'（需父节点有确定高度）或数字 px */
+    height?: number | string;
+    /** 视口宽度，默认 '100%' */
+    width?: number | string;
   };
 
   /** 自定义节点字段名映射（适配任意后端数据结构）。默认 key/label/children。 */
@@ -150,42 +151,48 @@
     treeDataSimpleJson?: Record<string, unknown>;
     /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
     keyMaps?: KeyMaps;
-    value?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
-    defaultValue?: TreeKey | TreeKey[] | TreeNodeData | TreeNodeData[] | null;
+    /**
+     * 受控选中值（对齐 Semi `value`）。传入即为受控（不回写，红线 #1）。
+     *  - 单选（multiple=false）：选中节点的 key（或 onChangeWithObject 时为节点对象）；
+     *  - 多选（multiple=true）：选中节点 key 数组（含父子联动结果；onChangeWithObject 时为对象数组）。
+     */
+    value?: TreeValue | null;
+    /** 非受控初始选中值（对齐 Semi `defaultValue`）；形态同 value。 */
+    defaultValue?: TreeValue | null;
     /**
      * 以对象形态回传/接收选中项（对齐 Semi `onChangeWithObject`）。开启后：
-     *  - `onChange` 回调 payload 的 `value` 从 key（或 key 数组）变为**节点对象**（含 label/value/其它字段，
+     *  - `onChange` 回调入参的 `value` 从 key（或 key 数组）变为**节点对象**（含 label/value/其它字段，
      *    即原始节点 `toOrig`），多选时为对象数组；
      *  - 受控 `value` 与非受控 `defaultValue` 也须传对象形态（对象须含节点标识——优先取 `value` 字段，
      *    缺省回退 `key`）。组件内部据此提取标识匹配节点。
      * 默认 false（value 收发均为 key）。
      */
     onChangeWithObject?: boolean;
-    multiple?: boolean;
-    checkable?: boolean;
-    checkedKeys?: TreeKey[];
-    defaultCheckedKeys?: TreeKey[];
     /**
-     * 父子勾选是否联动。'related'（默认）：勾选父全选子、子全选则父选中、部分选中半选；
-     * 'unRelated'：父子勾选互不影响，每个节点独立勾选、无半选态。
-     * 与 checkStrictly 的关系：两者都旁路 conduct 联动算法，效果上 unRelated ≡ checkStrictly 的
-     * 「父子状态独立」。checkRelation 是枚举（对齐 Semi 语义），checkStrictly 是 boolean；
-     * 任一开启（unRelated 或 checkStrictly=true）即关闭父子联动。默认 related + checkStrictly=false 保持联动。
+     * 是否多选（对齐 Semi `multiple`）。默认 false。
+     * 开启后每行渲染勾选框（checkbox），父子联动勾选（含半选 mixed），选中值经 `value`/`onChange`
+     * 作为选中 key 数组收发。关闭为单选（点击整行选中，值为单个 key）。
+     */
+    multiple?: boolean;
+    /**
+     * 多选时父子勾选联动关系（对齐 Semi `checkRelation`）。默认 'related'。
+     *  - 'related'：勾选父全选子、子全选则父选中、部分选中半选（默认联动）；
+     *  - 'unRelated'：父子勾选互不影响，每个节点独立勾选、无半选态。
+     * 仅 multiple 时有意义。
      */
     checkRelation?: 'related' | 'unRelated';
-    checkStrictly?: boolean;
     /**
      * 严格禁用（对齐 Semi `disableStrictly`）。开启后，disabled 节点的勾选态被「严格锁定」：
      * 不能通过父级/子级联动改变——已勾选的 disabled 节点不会被父级取消，未勾选的不会被父级勾上。
      * 与普通 `disabled` 的区别：普通 disabled 仅禁止直接点击该节点，其勾选态仍可能因父级联动被改；
-     * `disableStrictly` 则连联动也锁死。仅在 checkable 多选联动（related）下有意义。默认 false。
+     * `disableStrictly` 则连联动也锁死。仅在 multiple 联动（related）下有意义。默认 false。
      */
     disableStrictly?: boolean;
     /**
-     * 仅叶子回传（对齐 Semi `leafOnly`）。多选勾选（checkable）时，`onCheck` 回传的 `checked`
-     * 及 `halfChecked` 只含叶子节点 key，不含父/半选节点。适合「父节点仅作分组、值只关心叶子」的场景。
-     * 仅在 checkable 联动（related）下有意义；解耦（checkStrictly/unRelated）下 checked 本就是各节点独立态，
-     * leafOnly 仍会滤成只留叶子。默认 false（回传全部命中节点）。
+     * 仅叶子回传（对齐 Semi `leafOnly`）。多选（multiple）时，`onChange` 回传的 value（选中集）
+     * 只含叶子节点，不含父/半选节点。适合「父节点仅作分组、值只关心叶子」的场景。
+     * 仅在 multiple 联动（related）下有意义；解耦（unRelated）下本就是各节点独立态，leafOnly 仍滤成只留叶子。
+     * 默认 false（回传全部命中节点）。
      */
     leafOnly?: boolean;
     /**
@@ -196,7 +203,7 @@
      * 默认 false。
      */
     directory?: boolean;
-    /** 是否开启展开/收起动画（对齐 Semi `motion`）。默认 true；virtualized 时强制关闭。 */
+    /** 是否开启展开/收起动画（对齐 Semi `motion`）。默认 true；virtualize 时强制关闭。 */
     motion?: boolean;
     expandedKeys?: TreeKey[];
     defaultExpandedKeys?: TreeKey[];
@@ -208,11 +215,6 @@
      */
     expandAll?: boolean;
     /**
-     * 默认展开到第 N 层（仅初始化非受控展开集时生效，1 表示展开根层使其子节点可见）。
-     * 优先级低于 defaultExpandAll；与 defaultExpandedKeys 取并集。受控 expandedKeys 时忽略（红线 #1）。
-     */
-    expandedDepth?: number;
-    /**
      * 自动展开父节点（对齐 Semi `autoExpandParent`，默认 false）。
      *  - 初次挂载：把初始展开节点的祖先链一次性并入展开集，使其可见（非受控经 initExpanded）；
      *  - 开启后交互约束：收起某父节点时，若它仍有展开的子孙，则**阻止收起**——需先收起所有
@@ -220,13 +222,6 @@
      * 默认 false（收起不受此约束，父节点可直接收起）。
      */
     autoExpandParent?: boolean;
-    /**
-     * 手风琴模式：同一层级最多展开一个节点。展开某节点时自动收起其同父级（siblings）
-     * 的其它已展开节点；不同层级互不影响。受控 expandedKeys 同样生效（通过 onExpandedChange
-     * 回传收起 siblings 后的新展开集，不自行回写——红线 #1）。默认 false（展开行为不变）。
-     */
-    accordion?: boolean;
-    selectable?: boolean;
     /**
      * 展开触发方式（对齐 Semi `expandAction`）。
      *  - `false`（默认）：仅点击展开箭头（switcher）才展开/收起，点击行只做选中；
@@ -236,13 +231,13 @@
      */
     expandAction?: false | 'click' | 'doubleClick';
     /**
-     * 多选受控 value 自动合并父子（对齐 Semi `autoMergeValue`）。默认 true。
+     * 多选 value 自动合并父子（对齐 Semi `autoMergeValue`）。默认 true。
      * 开启后，当某父节点被完全选中时，`onChange` 回传的 value 不再包含其子孙节点（仅保留父节点）；
-     * 关闭则回传全部命中节点。仅在 `multiple` + `checkable` 联动（related）且 `leafOnly=false` 时有意义。
+     * 关闭则回传全部命中节点。仅在 `multiple` 联动（related）且 `leafOnly=false` 时有意义。
      */
     autoMergeValue?: boolean;
     /**
-     * label 超长省略（对齐 Semi `labelEllipsis`）。默认 false；`virtualized` 时默认 true。
+     * label 超长省略（对齐 Semi `labelEllipsis`）。默认 false；`virtualize` 时默认 true。
      * 开启后单行 label 超出容器宽度以省略号截断；关闭则不截断（可换行/溢出由外部控制）。
      */
     labelEllipsis?: boolean;
@@ -251,20 +246,18 @@
      * 默认 false（聚焦时按需滚动至可见）。
      */
     preventScroll?: boolean;
-    showIcon?: boolean;
-    /** 显示层级连接线（父子引导线） */
+    /** 显示层级连接线（父子引导线，对齐 Semi `showLine`）。默认 false。 */
     showLine?: boolean;
-    /** 虚拟滚动：仅渲染视口内的可见节点行，适合大数据树（1000+ 节点）。默认 false（行为不变） */
-    virtualized?: boolean;
-    /** 虚拟滚动视口高度（px）。virtualized 时生效，默认 320 */
-    height?: number;
-    /** 虚拟滚动行高（px）。virtualized 时生效，默认取 token 行高 32 */
-    itemHeight?: number;
-    filterable?: boolean;
     /**
-     * 自定义搜索过滤谓词。`(input, node) => boolean` 返回该节点是否命中关键词；
-     * 命中节点的祖先链自动展开（沿用内置过滤行为）。传函数即开启搜索（无需再传 filterable）；
-     * 不传时回退到内置「按 treeNodeFilterProp 字段包含关键词（不区分大小写）」。boolean 形态等价于 filterable 开关。
+     * 列表虚拟化（对齐 Semi `virtualize`）。传入 `{ itemSize, height?, width? }` 对象即开启：
+     * 仅渲染视口内可见节点行，适合大数据树（1000+ 节点）。`itemSize`（行高 px）必传；
+     * `height` 默认 '100%'（需父节点有确定高度）；开启后强制关闭动画。默认 undefined（不虚拟化）。
+     */
+    virtualize?: Virtualize;
+    /**
+     * 是否根据输入项筛选（对齐 Semi `filterTreeNode`）。传 `true` 用内置谓词（按 `treeNodeFilterProp`
+     * 字段包含关键词，不区分大小写）；传函数 `(input, node) => boolean` 自定义命中逻辑。
+     * 命中节点的祖先链自动展开。默认 false（不渲染搜索框、不过滤）。
      */
     filterTreeNode?: boolean | ((input: string, node: TreeNodeData) => boolean);
     /**
@@ -278,8 +271,8 @@
     /**
      * 自定义搜索框渲染（对齐 Semi `searchRender`）。
      *  - 传 snippet：用它替换内置搜索框，snippet 收到 { value, placeholder, onChange, onClear, className, style }；
-     *  - 传 `false`：隐藏内置搜索框（仍可经 `search()` 方法或受控 searchValue 驱动过滤）。
-     * 仅在搜索开启（filterable / filterTreeNode）时有意义。
+     *  - 传 `false`：隐藏内置搜索框（仍可经组件实例 `search()` 方法驱动过滤）。
+     * 仅在搜索开启（filterTreeNode）时有意义。
      */
     searchRender?: false | Snippet<[SearchRenderContext]>;
     /** 搜索框内联样式（对齐 Semi `searchStyle`，透传到搜索框 input 的 style）。 */
@@ -288,7 +281,7 @@
     searchClassName?: string;
     /**
      * 搜索框是否显示清除按钮（对齐 Semi `showClear`）。默认 true。
-     * 有输入内容时在搜索框尾部显示清除按钮，点击清空搜索词（受控时仅回调 onSearch 不写回，红线 #1）。
+     * 有输入内容时在搜索框尾部显示清除按钮，点击清空搜索词。
      */
     showClear?: boolean;
     /**
@@ -299,20 +292,13 @@
      */
     showFilteredOnly?: boolean;
     /**
-     * 受控搜索关键词。传入时走受控模式：搜索框 value 绑定到此 prop，
-     * 输入变化仅触发 onSearch 回调，不更新内部 state。不传则保留内部非受控 state。
-     */
-    searchValue?: string;
-    /**
-     * 搜索关键词变化回调。参数 (value, filteredKeys)：
+     * 搜索关键词变化回调（对齐 Semi `onSearch`）。参数 (value, filteredExpandedKeys)：
      *  - value：当前搜索词；
-     *  - filteredKeys：所有命中节点（matched）的 key 列表，供受控外层决定渲染。
+     *  - filteredExpandedKeys：因搜索而展开的节点 key（命中节点的祖先链），配合展开受控使用。
      */
-    onSearch?: (value: string, filteredKeys: string[]) => void;
+    onSearch?: (value: string, filteredExpandedKeys: string[]) => void;
     blockNode?: boolean;
     disabled?: boolean;
-    size?: Size;
-    status?: Status;
     emptyContent?: string;
     ariaLabel?: string;
     /** 根容器内联样式（对齐 Semi `style`）。可设 width/height/border 等；设 height 时列表区自动限高滚动。 */
@@ -350,8 +336,8 @@
     onDrop?: (info: DropInfo) => void;
     /** 节点双击回调（对齐 Semi `onDoubleClick`）。 */
     onDoubleClick?: (e: MouseEvent, node: TreeNodeData) => void;
-    /** 节点右键菜单回调 */
-    onRightClick?: (e: MouseEvent, node: TreeNodeData) => void;
+    /** 节点右键菜单回调（对齐 Semi `onContextMenu`）。 */
+    onContextMenu?: (e: MouseEvent, node: TreeNodeData) => void;
     /** 开始拖拽节点 */
     onDragStart?: (node: TreeNodeData) => void;
     /** 拖拽进入候选目标节点 */
@@ -364,12 +350,23 @@
     onDragEnd?: (info: { dragNode: TreeNodeData }) => void;
     /**
      * 单个节点被选中时回调（对齐 Semi `onSelect`）。参数 (key, selected, node)：
-     * 单选/多选点击选中节点时触发，早于 onChange。key 为该节点 key，selected 为选中后状态。
+     * 选中节点时触发，早于 onChange。key 为该节点 key，selected 为选中后状态。
      */
     onSelect?: (key: TreeKey, selected: boolean, node: TreeNodeData) => void;
-    onChange?: (info: ChangeInfo) => void;
-    onCheck?: (info: CheckInfo) => void;
-    onExpandedChange?: (info: ExpandInfo) => void;
+    /**
+     * 选中变更回调（对齐 Semi `onChange`）。参数 value：
+     *  - 单选：选中节点的 key（或 onChangeWithObject 时的节点对象）；
+     *  - 多选：选中节点 key 数组（含父子联动 / autoMergeValue / leafOnly 处理结果）。
+     */
+    onChange?: (value: TreeValue) => void;
+    /**
+     * 展开/收起回调（对齐 Semi `onExpand`）。参数 (expandedKeys, { expanded, node })：
+     * expandedKeys 为变更后的全部展开 key，第二参含本次操作的展开态与节点。
+     */
+    onExpand?: (
+      expandedKeys: TreeKey[],
+      info: { expanded: boolean; node: TreeNodeData },
+    ) => void;
     /** 自定义节点内容渲染（对齐 Semi `renderLabel`）；参数含节点、层级、当前搜索词、选中/勾选态。 */
     renderLabel?: Snippet<
       [{ node: TreeNodeData; level: number; searchValue: string; selected: boolean; checked: boolean }]
@@ -380,7 +377,7 @@
      * 用于「叶子分组勾选」「单选高亮子节点」等高级场景。虚拟化时须把 ctx.style 赋给渲染根节点。
      */
     renderFullLabel?: Snippet<[FullLabelContext]>;
-    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点、展开态与是否叶子 */
+    /** 自定义节点图标（对齐 Semi `icon`）；参数含节点、展开态与是否叶子。传入时渲染在 label 前。 */
     icon?: Snippet<[{ node: TreeNodeData; expanded: boolean; isLeaf: boolean }]>;
     /** 自定义展开/收起箭头；参数含节点、展开态与加载态 */
     expandIcon?: Snippet<[{ node: TreeNodeData; expanded: boolean; loading: boolean }]>;
@@ -398,11 +395,7 @@
     defaultValue = null,
     onChangeWithObject = false,
     multiple = false,
-    checkable = false,
-    checkedKeys,
-    defaultCheckedKeys = [],
     checkRelation = 'related',
-    checkStrictly = false,
     disableStrictly = false,
     leafOnly = false,
     directory = false,
@@ -411,20 +404,13 @@
     defaultExpandedKeys = [],
     defaultExpandAll = false,
     expandAll = false,
-    expandedDepth,
     autoExpandParent = false,
-    accordion = false,
-    selectable = true,
     expandAction,
     autoMergeValue = true,
     labelEllipsis,
     preventScroll = false,
-    showIcon = true,
     showLine = false,
-    virtualized = false,
-    height = 320,
-    itemHeight = 32,
-    filterable = false,
+    virtualize,
     filterTreeNode,
     treeNodeFilterProp = 'label',
     searchPlaceholder,
@@ -433,12 +419,9 @@
     searchClassName,
     showClear = true,
     showFilteredOnly = false,
-    searchValue: searchValueProp,
     onSearch,
     blockNode = true,
     disabled = false,
-    size = 'default',
-    status = 'default',
     emptyContent,
     ariaLabel,
     style: rootStyle,
@@ -452,7 +435,7 @@
     renderDraggingNode,
     onDrop,
     onDoubleClick,
-    onRightClick,
+    onContextMenu,
     onDragStart,
     onDragEnter,
     onDragOver,
@@ -460,8 +443,7 @@
     onDragEnd,
     onSelect,
     onChange,
-    onCheck,
-    onExpandedChange,
+    onExpand,
     renderLabel,
     renderFullLabel,
     icon,
@@ -473,7 +455,10 @@
   // directory 目录树：默认整行块 + 点击整行展开（expandAction 未显式指定时按 'click'）。
   const effBlockNode = $derived(blockNode || directory);
   const effExpandAction = $derived(expandAction ?? (directory ? 'click' : false));
-  // motion：virtualized 时强制关闭动画（对齐 Semi）。
+  // 虚拟化：virtualize 对象存在即开启；行高取 itemSize，视口高取 height（数字 px，字符串走 CSS）。
+  const virtualized = $derived(virtualize != null);
+  const virtualItemSize = $derived(virtualize?.itemSize ?? 32);
+  // motion：virtualize 时强制关闭动画（对齐 Semi）。
   const motionEnabled = $derived(motion && !virtualized);
 
   const loc = useLocale();
@@ -621,7 +606,8 @@
   function initValue(): TreeKey | TreeKey[] | null {
     const dv = defaultValue as ValueEntry | ValueEntry[] | null;
     if (multiple) {
-      return Array.isArray(dv) ? dv.map(entryToKey).filter((k): k is TreeKey => k !== null) : [];
+      if (Array.isArray(dv)) return dv.map(entryToKey).filter((k): k is TreeKey => k !== null);
+      return dv === null || dv === undefined ? [] : ([entryToKey(dv)].filter((k): k is TreeKey => k !== null));
     }
     if (Array.isArray(dv)) return dv.length > 0 ? entryToKey(dv[0] as ValueEntry) : null;
     return dv === null ? null : entryToKey(dv);
@@ -629,12 +615,13 @@
   const isValueControlled = $derived(value !== undefined);
   let innerValue = $state<TreeKey | TreeKey[] | null>(initValue());
   // 受控 value：onChangeWithObject 时为对象形态，统一归一为内部 key 集合。
-  const selectedSet = $derived.by(() => {
+  // 单选时集合含 0/1 个 key；多选时含全部选中 key（父子联动结果的 value 侧输入）。
+  const valueSet = $derived.by(() => {
     const set = new Set<TreeKey>();
     const src: TreeKey | TreeKey[] | null = isValueControlled
       ? (() => {
           const v = value as ValueEntry | ValueEntry[] | null | undefined;
-          if (v === undefined || v === null) return null;
+          if (v === undefined || v === null) return multiple ? [] : null;
           if (Array.isArray(v))
             return v.map(entryToKey).filter((k): k is TreeKey => k !== null);
           return entryToKey(v);
@@ -644,24 +631,20 @@
     else if (src !== null) set.add(src);
     return set;
   });
+  // 单选高亮集：仅单选模式使用（多选无「选中高亮」，靠 checkbox 表达）。
+  const selectedSet = $derived(multiple ? new Set<TreeKey>() : valueSet);
 
-  // --- check: 受控 checkedKeys 不回写 (红线 #1)。base 为叶子级显式勾选 ---
-  function initCheckedBase(): Set<TreeKey> {
-    return new Set(defaultCheckedKeys);
-  }
-  const isCheckControlled = $derived(checkedKeys !== undefined);
-  let innerCheckedBase = $state<Set<TreeKey>>(initCheckedBase());
-  const currentCheckedBase = $derived(
-    isCheckControlled ? new Set(checkedKeys ?? []) : innerCheckedBase,
-  );
-  // 父子是否联动：checkStrictly 或 checkRelation==='unRelated' 任一开启即解耦（无联动、无半选）。
-  const checkLinked = $derived(!checkStrictly && checkRelation !== 'unRelated');
-  // 解耦时直接用 base 当 checked，无半选；联动时用 conduct 归一（disableStrictly 传入以锁定禁用节点）。
+  // --- check（多选，对齐 Semi：multiple 驱动勾选，值走 value 通道）---
+  // 父子是否联动：checkRelation==='related'（默认）联动含半选；'unRelated' 解耦无联动无半选。
+  const checkLinked = $derived(checkRelation !== 'unRelated');
+  // 勾选态由 value（valueSet）派生：related 时用 conduct 归一（value 里的 key 视为已勾选，
+  // 补齐 checked/halfChecked，disableStrictly 锁定禁用节点）；unRelated 时直接用 valueSet。
   const checkState = $derived.by(() => {
+    if (!multiple) return { checked: new Set<TreeKey>(), half: new Set<TreeKey>() };
     if (!checkLinked) {
-      return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
+      return { checked: new Set(valueSet), half: new Set<TreeKey>() };
     }
-    return conduct(mergedData, currentCheckedBase, disableStrictly);
+    return conduct(mergedData, valueSet, disableStrictly);
   });
 
   // --- expand: 受控 expandedKeys 不回写 (红线 #1) ---
@@ -675,11 +658,7 @@
     if (defaultExpandAll || expandAll) {
       return new Set(collectExpandable(base));
     }
-    // expandedDepth：展开 ≤N 层的有子节点（与 defaultExpandedKeys 取并集）。优先级低于 defaultExpandAll。
     const init = new Set<TreeKey>(defaultExpandedKeys);
-    if (typeof expandedDepth === 'number' && expandedDepth > 0) {
-      for (const k of collectExpandableToDepth(base, expandedDepth)) init.add(k);
-    }
     // autoExpandParent：初次挂载时把初始展开节点的祖先链一次性并入（对齐 Semi「初次挂载为 true」）。
     // 仅初始化做一次，此后交互不再强制（否则父节点收不起）。受控 expandedKeys 由外部自行含父节点。
     if (autoExpandParent && init.size > 0) {
@@ -716,15 +695,12 @@
   // 直接用 baseExpandedSet（受控 expandedKeys 或非受控 innerExpanded），不再持续派生强制。
   const currentExpandedSet = $derived(baseExpandedSet);
 
-  // --- 搜索：支持受控（searchValueProp）和非受控（内部 state）两种模式 ---
-  // 受控：searchValueProp 传入时直接用，input 事件仅触发 onSearch 回调，不更新内部 state（红线 #1）。
-  // 非受控：用内部 state，input 事件更新 innerSearchValue 并触发 onSearch。
-  const isSearchControlled = $derived(searchValueProp !== undefined);
+  // --- 搜索（对齐 Semi）：内部非受控 state，input 事件更新 innerSearchValue 并触发 onSearch。---
   let innerSearchValue = $state('');
-  const searchValue = $derived(isSearchControlled ? (searchValueProp ?? '') : innerSearchValue);
+  const searchValue = $derived(innerSearchValue);
   const trimmedSearch = $derived(searchValue.trim());
-  // 搜索框是否渲染/启用：filterable 或 filterTreeNode（true 或自定义谓词函数）任一开启。
-  const searchEnabled = $derived(filterable || filterTreeNode === true || typeof filterTreeNode === 'function');
+  // 搜索框是否渲染/启用：filterTreeNode 为 true 或自定义谓词函数即开启（对齐 Semi）。
+  const searchEnabled = $derived(filterTreeNode === true || typeof filterTreeNode === 'function');
   const searchActive = $derived(searchEnabled && trimmedSearch.length > 0);
   // 过滤谓词：传函数则用自定义 (input, node)；否则内置 label 包含（不区分大小写）。
   // 内置谓词按 treeNodeFilterProp 指定字段匹配（默认 label）；字段缺省回退 label。
@@ -747,18 +723,14 @@
     return computeFilteredKeys(mergedData, matchPredicate);
   });
 
-  // 搜索输入处理：复用命令式 search()（受控时只回调 onSearch，非受控时更新内部 state）。
-  function handleSearchInput(e: Event) {
-    search((e.target as HTMLInputElement).value);
-  }
   // 供 searchRender 自定义搜索框的 onChange 回调（直接接受值）。
   function handleSearchValue(val: string) {
     search(val);
   }
 
-  // 清除搜索：非受控时清空内部 state；受控时仅回调 onSearch('') 让外层清（红线 #1）。
+  // 清除搜索：清空内部 state 并回调 onSearch('')。
   function clearSearch() {
-    if (!isSearchControlled) innerSearchValue = '';
+    innerSearchValue = '';
     onSearch?.('', []);
   }
 
@@ -815,13 +787,13 @@
   /**
    * 命令式触发搜索（对齐 Semi `search` 方法）。写入内部搜索词并触发过滤/回调。
    * 常配合 searchRender={false}（隐藏内置搜索框）使用，由外部输入框驱动。
-   * 受控 searchValue 时仅回调 onSearch 不写内部 state（红线 #1）。
+   * onSearch 第二参回传 filteredExpandedKeys（因搜索而展开的祖先链 key，对齐 Semi）。
    */
   export function search(value: string): void {
-    if (!isSearchControlled) innerSearchValue = value;
+    innerSearchValue = value;
     if (onSearch) {
       const trimmed = value.trim();
-      let fKeys: string[] = [];
+      let expandKeys: string[] = [];
       if (trimmed.length > 0 && searchEnabled) {
         let pred: (node: TreeNodeData) => boolean;
         if (typeof filterTreeNode === 'function') {
@@ -831,9 +803,10 @@
           const lower = trimmed.toLowerCase();
           pred = (n: TreeNodeData) => nodeFilterText(n).toLowerCase().includes(lower);
         }
-        fKeys = [...computeFilteredKeys(mergedData, pred).matched].map(String);
+        // filteredExpandedKeys：命中节点的祖先链（computeFilteredKeys 的 expand 集），供展开受控回写。
+        expandKeys = [...computeFilteredKeys(mergedData, pred).expand].map(String);
       }
-      onSearch(value, fKeys);
+      onSearch(value, expandKeys);
     }
   }
   // 仅由命令式 scroll 回调写入的本地 scrollTop，render 期只读。
@@ -841,15 +814,22 @@
   // rAF 节流句柄（非响应式）。
   let rafId = 0;
 
-  // labelEllipsis：未显式传时默认跟随 virtualized（虚拟化下默认省略，对齐 Semi）。
+  // labelEllipsis：未显式传时默认跟随虚拟化（虚拟化下默认省略，对齐 Semi）。
   const ellipsis = $derived(labelEllipsis ?? virtualized);
 
-  const rowHeight = $derived(itemHeight > 0 ? itemHeight : 32);
+  // 虚拟化视口高度（数字 px 用于几何计算；字符串 '100%' 走 CSS，几何回退 320）。
+  const virtualHeightCss = $derived<string>(
+    typeof virtualize?.height === 'number'
+      ? `${virtualize.height}px`
+      : (virtualize?.height as string | undefined) ?? '100%',
+  );
+  const virtualHeightPx = $derived(typeof virtualize?.height === 'number' ? virtualize.height : 320);
+  const rowHeight = $derived(virtualItemSize > 0 ? virtualItemSize : 32);
   const totalHeight = $derived(visibleFlat.length * rowHeight);
   // 可视区间：纯 $derived，仅依赖本地 $state，render-safe（不读 DOM）（红线 #2）。
   const vRange = $derived(
     virtualized
-      ? fixedRange(scrollTop, height, rowHeight, visibleFlat.length, VIRTUAL_OVERSCAN)
+      ? fixedRange(scrollTop, virtualHeightPx, rowHeight, visibleFlat.length, VIRTUAL_OVERSCAN)
       : { startIndex: 0, endIndex: visibleFlat.length },
   );
   // 实际喂给 #each 的行集合：virtualized 时只取视口内切片，否则全量。
@@ -935,12 +915,14 @@
     return disabled || !!node.disabled;
   }
 
+  // 单选：非多选模式下、未禁用的节点可点击选中。
   function isSelectable(node: TreeNodeData): boolean {
-    return selectable && node.selectable !== false && !isNodeDisabled(node);
+    return !multiple && !isNodeDisabled(node);
   }
 
+  // 多选勾选：多选模式下、未禁用的节点可勾选。
   function isCheckableNode(node: TreeNodeData): boolean {
-    return checkable && node.checkable !== false && !isNodeDisabled(node);
+    return multiple && !isNodeDisabled(node);
   }
 
   function isExpanded(key: TreeKey): boolean {
@@ -979,55 +961,42 @@
   }
 
   // --- 状态写入：仅非受控写 inner，受控只回调 (红线 #1) ---
-  function emitSelect(node: TreeNodeData) {
-    if (!isSelectable(node)) return;
-    // 内部始终以 key 计算下一态（selectedSet 已把受控对象/key 归一为 key 集）。
-    let nextKeys: TreeKey | TreeKey[];
-    let selected: boolean;
-    if (multiple) {
-      // 从当前选中 key 集派生数组，保持文档序不敏感（沿用原「切换」语义）。
-      const arr = [...selectedSet];
-      const idx = arr.indexOf(node.key);
-      if (idx >= 0) {
-        arr.splice(idx, 1);
-        selected = false;
-      } else {
-        arr.push(node.key);
-        selected = true;
-      }
-      nextKeys = arr;
-    } else {
-      // 单选：点击直接选中该节点（不取消），selected 恒为 true
-      nextKeys = node.key;
-      selected = true;
-    }
-    if (!isValueControlled) innerValue = nextKeys;
-    // onSelect（对齐 Semi）：早于 onChange，回传 (key, selected, node)。
-    onSelect?.(node.key, selected, toOrig(node));
-    // onChangeWithObject 时把 key 形态转成节点对象形态输出（数组内元素同型，非混合）。
-    const outValue: ChangeInfo['value'] = Array.isArray(nextKeys)
-      ? (nextKeys.map(keyToOutput) as TreeKey[] | TreeNodeData[])
-      : keyToOutput(nextKeys);
-    onChange?.({ value: outValue, node: toOrig(node), selected });
+  // 把内部选中 key 集转成 onChange/受控所需的 value 输出形态（多选数组 / 单选标量；
+  // onChangeWithObject 时元素转节点对象）。
+  function toChangeValue(keys: TreeKey[], singleKey: TreeKey | null): TreeValue {
+    if (multiple) return keys.map(keyToOutput) as Array<TreeKey | TreeNodeData>;
+    return singleKey === null ? ('' as TreeKey) : keyToOutput(singleKey);
   }
 
+  // 单选：点击整行选中该节点（对齐 Semi 单选，值为单个 key）。
+  function emitSelect(node: TreeNodeData) {
+    if (!isSelectable(node)) return;
+    const nextKey = node.key;
+    if (!isValueControlled) innerValue = nextKey;
+    // onSelect（对齐 Semi）：早于 onChange，回传 (key, selected, node)。单选点击恒为选中。
+    onSelect?.(node.key, true, toOrig(node));
+    onChange?.(toChangeValue([nextKey], nextKey));
+  }
+
+  // 多选：勾选/取消勾选该节点，父子联动，值走 value 通道（对齐 Semi multiple + onChange）。
   function emitCheck(node: TreeNodeData) {
     if (!isCheckableNode(node)) return;
-    let nextBase: Set<TreeKey>;
+    // 以当前 checkState.checked 作为勾选基集切换（valueSet 经 conduct 归一后的完整勾选集）。
+    let nextChecked: Set<TreeKey>;
     if (!checkLinked) {
-      // 解耦（checkStrictly 或 unRelated）：仅翻转该节点自身，不触达父子。
-      nextBase = new Set(currentCheckedBase);
-      if (nextBase.has(node.key)) nextBase.delete(node.key);
-      else nextBase.add(node.key);
+      // 解耦（unRelated）：仅翻转该节点自身，不触达父子。
+      nextChecked = new Set(checkState.checked);
+      if (nextChecked.has(node.key)) nextChecked.delete(node.key);
+      else nextChecked.add(node.key);
     } else {
-      nextBase = toggleCheck(mergedData, currentCheckedBase, node.key, disableStrictly);
+      nextChecked = toggleCheck(mergedData, checkState.checked, node.key, disableStrictly);
     }
-    if (!isCheckControlled) innerCheckedBase = nextBase;
     const resolved = !checkLinked
-      ? { checked: new Set(nextBase), half: new Set<TreeKey>() }
-      : conduct(mergedData, nextBase, disableStrictly);
+      ? { checked: new Set(nextChecked), half: new Set<TreeKey>() }
+      : conduct(mergedData, nextChecked, disableStrictly);
+    // 是否勾选后为选中态（供 onSelect 语义）。
+    const selected = resolved.checked.has(node.key);
     // 输出优先级：leafOnly（只留叶子）> autoMergeValue（合并父子、剔除已选祖先的后代）> 全量。
-    // autoMergeValue 仅在联动（related）且非 leafOnly 下有意义（对齐 Semi）。
     let checkedOut: TreeKey[];
     if (leafOnly) {
       checkedOut = collectLeafKeys(mergedData, resolved.checked);
@@ -1036,22 +1005,16 @@
     } else {
       checkedOut = [...resolved.checked];
     }
-    const halfOut = leafOnly ? [] : [...resolved.half];
-    onCheck?.({
-      checked: checkedOut,
-      node: toOrig(node),
-      halfChecked: halfOut,
-    });
+    if (!isValueControlled) innerValue = checkedOut;
+    // onSelect（对齐 Semi）：早于 onChange，回传 (key, selected, node)。
+    onSelect?.(node.key, selected, toOrig(node));
+    onChange?.(toChangeValue(checkedOut, null));
   }
 
   function emitExpand(node: TreeNodeData, expand: boolean) {
-    // accordion：展开时同层级只保留一个，自动收起同父级其它已展开节点（纯函数 core，红线 #2）。
-    // 不同层级互不影响；收起仅移除自身。受控时也只回调收起 siblings 后的新集，不回写（红线 #1）。
     let next: Set<TreeKey>;
     if (expand) {
-      next = accordion
-        ? accordionExpand(mergedData, currentExpandedSet, node.key)
-        : new Set(currentExpandedSet).add(node.key);
+      next = new Set(currentExpandedSet).add(node.key);
     } else {
       // autoExpandParent（对齐 Semi）：收起某节点时，若其仍有展开中的子孙，则阻止收起——
       // 需先收起所有子节点才能收起父节点。无展开子孙时正常收起。
@@ -1062,7 +1025,7 @@
       next.delete(node.key);
     }
     if (!isExpandControlled) innerExpanded = next;
-    onExpandedChange?.({ expanded: [...next], node: toOrig(node), expand });
+    onExpand?.([...next], { expanded: expand, node: toOrig(node) });
   }
 
   // 节点是否有仍在展开集中的子孙（供 autoExpandParent 判断「父节点能否收起」）。
@@ -1177,8 +1140,8 @@
     }
     if (!changed || lastNode === null) return;
     if (!isExpandControlled) innerExpanded = next;
-    // 一次性回调（node 取最后展开者，expand=true）；受控时不回写（红线 #1）。
-    onExpandedChange?.({ expanded: [...next], node: toOrig(lastNode), expand: true });
+    // 一次性回调（node 取最后展开者，expanded=true）；受控时不回写（红线 #1）。
+    onExpand?.([...next], { expanded: true, node: toOrig(lastNode) });
   }
 
   // typeahead：连续输入字符在可见节点间按 label 前缀跳转（APG，spec §6）。
@@ -1477,8 +1440,6 @@
   const cls = $derived(
     [
       'cd-tree',
-      `cd-tree--${size}`,
-      `cd-tree--${status}`,
       disabled && 'cd-tree--disabled',
       showLine && 'cd-tree--line',
       effBlockNode && 'cd-tree--block',
@@ -1532,7 +1493,6 @@
           value={searchValue}
           {placeholder}
           ariaLabel={placeholder}
-          {size}
           {disabled}
           clearable={showClear}
           onInput={handleSearchValue}
@@ -1555,12 +1515,12 @@
       class="cd-tree__list cd-tree__list--virtual"
       role="tree"
       aria-label={ariaLabel}
-      aria-multiselectable={multiple || checkable}
+      aria-multiselectable={multiple}
       aria-activedescendant={activeDescId}
       aria-disabled={disabled || undefined}
       tabindex={disabled ? -1 : 0}
       bind:this={viewportEl}
-      style={`block-size:${height}px; overflow:auto`}
+      style={`block-size:${virtualHeightCss}; overflow:auto`}
       onkeydown={onKeydown}
     >
       <div class="cd-tree__spacer" style={`block-size:${totalHeight}px`}>
@@ -1574,7 +1534,7 @@
       class="cd-tree__list"
       role="tree"
       aria-label={ariaLabel}
-      aria-multiselectable={multiple || checkable}
+      aria-multiselectable={multiple}
       aria-activedescendant={activeDescId}
       aria-disabled={disabled || undefined}
       tabindex={disabled ? -1 : 0}
@@ -1629,7 +1589,7 @@
       onClick: () => onRowClick(node),
       onCheck: () => emitCheck(node),
       onExpand: () => toggleExpand(node),
-      onContextMenu: (e: MouseEvent) => { e.preventDefault(); onRightClick?.(e, toOrig(node)); },
+      onContextMenu: (e: MouseEvent) => { e.preventDefault(); onContextMenu?.(e, toOrig(node)); },
       onDoubleClick: (e: MouseEvent) => onRowDblClick(e, node),
     })}
   {:else}
@@ -1653,15 +1613,15 @@
           aria-setsize={f.setSize}
           aria-posinset={f.posInSet}
           aria-expanded={expandable ? expanded : undefined}
-          aria-selected={selectable ? selected : undefined}
-          aria-checked={checkable ? ariaCheckedValue(node) : undefined}
+          aria-selected={!multiple ? selected : undefined}
+          aria-checked={multiple ? ariaCheckedValue(node) : undefined}
           aria-disabled={nodeDisabled || undefined}
           style={[posStyle, indentStyle].filter(Boolean).join('; ') || undefined}
           onclick={() => onRowClick(node)}
           ondblclick={onDoubleClick || effExpandAction === 'doubleClick'
             ? (e) => onRowDblClick(e, node)
             : undefined}
-          oncontextmenu={onRightClick ? (e) => { e.preventDefault(); onRightClick(e, toOrig(node)); } : undefined}
+          oncontextmenu={onContextMenu ? (e) => { e.preventDefault(); onContextMenu(e, toOrig(node)); } : undefined}
           ondragstart={draggable ? (e) => onNodeDragStart(e, node) : undefined}
           ondragover={draggable ? (e) => onNodeDragOver(e, f) : undefined}
           ondragleave={draggable ? (e) => onNodeDragLeave(e, node) : undefined}
@@ -1728,7 +1688,7 @@
             {/if}
           {/if}
 
-          {#if checkable}
+          {#if multiple}
             <!-- 勾选框复用 Checkbox 组件（对齐 Semi Tree 内部用 Checkbox）。
                  交互由 Checkbox 自身的 onChange 触发 emitCheck（不要在外层容器加 onclick——
                  Checkbox 内部是 label+input，点 label 会双触发 click，导致 toggle 抵消）。
@@ -1745,13 +1705,12 @@
                 indeterminate={!checked && rowHalf(node)}
                 disabled={!isCheckableNode(node)}
                 ariaLabel={node.label}
-                {size}
                 onChange={() => emitCheck(node)}
               />
             </span>
           {/if}
 
-          {#if showIcon || directory}
+          {#if icon || directory}
             {@const isLeaf = !expandable}
             <span class="cd-tree__icon" class:cd-tree__icon--directory={directory && !icon} aria-hidden="true">
               {#if icon}

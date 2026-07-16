@@ -5,7 +5,7 @@
   const marginTop = 'margin-top:15px;';
 </script>
 
-<Tabs type="line" value={active} onChange={(k) => (active = k)}>
+<Tabs type="line" activeKey={active} onChange={(k) => (active = k)}>
   <TabPane tab="tight" itemKey="1">
     <Space spacing="tight" style={marginTop}>
       <Button theme="solid" type="primary">按钮</Button>

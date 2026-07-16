@@ -10,7 +10,7 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
   <div>
     <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">line（线条式，默认）</p>
-    <Tabs type="line" value={lineActive} onChange={(k) => (lineActive = k)}>
+    <Tabs type="line" activeKey={lineActive} onChange={(k) => (lineActive = k)}>
       <TabPane tab="文档" itemKey="1">文档内容</TabPane>
       <TabPane tab="快速起步" itemKey="2">快速起步内容</TabPane>
       <TabPane tab="帮助" itemKey="3">帮助内容</TabPane>
@@ -18,7 +18,7 @@
   </div>
   <div>
     <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">card（卡片式）</p>
-    <Tabs type="card" value={cardActive} onChange={(k) => (cardActive = k)}>
+    <Tabs type="card" activeKey={cardActive} onChange={(k) => (cardActive = k)}>
       <TabPane tab="文档" itemKey="1">文档内容</TabPane>
       <TabPane tab="快速起步" itemKey="2">快速起步内容</TabPane>
       <TabPane tab="帮助" itemKey="3">帮助内容</TabPane>
@@ -26,7 +26,7 @@
   </div>
   <div>
     <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">button（按钮式）</p>
-    <Tabs type="button" value={btnActive} onChange={(k) => (btnActive = k)}>
+    <Tabs type="button" activeKey={btnActive} onChange={(k) => (btnActive = k)}>
       <TabPane tab="日" itemKey="1">按日查看</TabPane>
       <TabPane tab="周" itemKey="2">按周查看</TabPane>
       <TabPane tab="月" itemKey="3">按月查看</TabPane>
@@ -34,7 +34,7 @@
   </div>
   <div>
     <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">slash（斜线式）</p>
-    <Tabs type="slash" value={slashActive} onChange={(k) => (slashActive = k)}>
+    <Tabs type="slash" activeKey={slashActive} onChange={(k) => (slashActive = k)}>
       <TabPane tab="文档" itemKey="1">文档内容</TabPane>
       <TabPane tab="快速起步" itemKey="2">快速起步内容</TabPane>
       <TabPane tab="帮助" itemKey="3">帮助内容</TabPane>

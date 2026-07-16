@@ -7,7 +7,7 @@
 </script>
 
 <div style="width: 60%; min-width: 320px;">
-  <Tabs type="card" more={4} value={active} onChange={(k) => (active = k)}>
+  <Tabs type="card" more={4} activeKey={active} onChange={(k) => (active = k)}>
     {#each keys as i (i)}
       <TabPane tab={`Tab-${i}`} itemKey={`Tab-${i}`}>Content of card tab {i}</TabPane>
     {/each}

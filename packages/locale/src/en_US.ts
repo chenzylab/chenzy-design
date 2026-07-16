@@ -21,6 +21,7 @@ export const en_US: Locale = {
     itemsPerPage: 'Items per page',
     jumpTo: 'Go to',
     jumpToSuffix: '',
+    more: 'More',
     pageChangeAnnounce: 'Page {page} of {count}',
     pageSizeChangeAnnounce: '{size} per page, page {page}',
   },
@@ -109,7 +110,6 @@ export const en_US: Locale = {
   },
   BackTop: {
     ariaLabel: 'Back to top',
-    arrived: 'Returned to top',
   },
   AudioPlayer: {
     play: 'Play',

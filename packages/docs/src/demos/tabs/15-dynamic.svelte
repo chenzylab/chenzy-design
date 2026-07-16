@@ -36,7 +36,7 @@
 {/snippet}
 
 <!-- 动态更新：通过绑定事件增删标签页。 -->
-<Tabs value={active} onChange={(k) => (active = k)} tabBarExtraContent={extra}>
+<Tabs activeKey={active} onChange={(k) => (active = k)} tabBarExtraContent={extra}>
   {#each panes as pane (pane.itemKey)}
     <TabPane tab={pane.title} itemKey={pane.itemKey}>{pane.content}</TabPane>
   {/each}

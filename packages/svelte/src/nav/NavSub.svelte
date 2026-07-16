@@ -20,6 +20,8 @@
     disabled?: boolean;
     /** 是否保留左侧 Icon 占位（对齐 Semi indent）。 */
     indent?: boolean;
+    /** 当前项嵌套层级（对齐 Semi level，默认 0）；limitIndent=false 时用于自定义缩进位置。 */
+    level?: number;
     /** 子导航最大高度（内联展开动画，对齐 Semi maxHeight，默认 999）。 */
     maxHeight?: number;
     /** 子导航是否展开（对齐 Semi Sub.isOpen）。 */
@@ -42,6 +44,7 @@
     icon,
     disabled = false,
     indent,
+    level,
     maxHeight = 999,
     isOpen,
     dropdownProps,
@@ -65,6 +68,7 @@
     maxHeight,
     ...(icon !== undefined ? { icon } : {}),
     ...(indent !== undefined ? { indent } : {}),
+    ...(level !== undefined ? { level } : {}),
     ...(isOpen !== undefined ? { isOpen } : {}),
     ...(dropdownProps !== undefined ? { dropdownProps } : {}),
     ...(dropdownStyle !== undefined ? { dropdownStyle } : {}),

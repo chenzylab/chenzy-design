@@ -23,7 +23,7 @@
 {/snippet}
 
 <!-- renderTabBar：完全自绘标签栏；面板内容仍按 activeKey 显隐。 -->
-<Tabs value={active} onChange={(k) => (active = k)} renderTabBar={renderBar}>
+<Tabs activeKey={active} onChange={(k) => (active = k)} renderTabBar={renderBar}>
   <TabPane tab="文档" itemKey="1">文档内容</TabPane>
   <TabPane tab="快速起步" itemKey="2">快速起步内容</TabPane>
   <TabPane tab="帮助" itemKey="3">帮助内容</TabPane>

@@ -20,7 +20,7 @@ describe('Anchor 键盘 e2e（链接 roving，真实焦点）', () => {
   it('Tab 单停靠点 + 方向键移动焦点（clamp）+ Home/End + Space 激活', async () => {
     const { baseElement } = renderKbdFixture(AnchorKbdFixture);
 
-    const links = Array.from(baseElement.querySelectorAll<HTMLElement>('a[data-anchor-key]'));
+    const links = Array.from(baseElement.querySelectorAll<HTMLElement>('[data-anchor-href]'));
     expect(links.length).toBe(3);
     const [one, two, three] = links as [HTMLElement, HTMLElement, HTMLElement];
 

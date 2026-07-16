@@ -6,18 +6,17 @@
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';
-  import Steps from './Steps.svelte';
+  import { Steps } from './index.js';
 
-  const steps = [
-    { title: 'First' },
-    { title: 'Second' },
-    { title: 'Third' },
-  ];
   let current = $state(0);
 </script>
 
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
-  <Steps {steps} type="basic" {current} onChange={(c) => (current = c)} />
+  <Steps type="basic" {current} onChange={(c) => (current = c)}>
+    <Steps.Step title="First" />
+    <Steps.Step title="Second" />
+    <Steps.Step title="Third" />
+  </Steps>
   <button type="button" data-testid="after">after</button>
 </LocaleProvider>

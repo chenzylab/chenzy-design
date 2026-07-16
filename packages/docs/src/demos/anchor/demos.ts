@@ -24,28 +24,35 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础锚点', '点击链接高亮当前节，onChange 同步选中值'),
-  entry('02-nested.svelte', '多级嵌套锚点', 'links.children 形成树形，父子链接皆可跳转与高亮'),
-  entry('03-affix.svelte', '固定位置 affix', 'affix 让锚点在滚动容器内吸顶停留'),
+  entry('01-basic.svelte', '基本示例', '用 <Anchor.Link> 创建锚点，点击跳转到指定位置（对齐 Semi）'),
   entry(
-    '04-target-offset.svelte',
-    '滚动偏移 targetOffset',
-    'targetOffset 为吸顶栏预留点击跳转间距',
+    '02-comprehensive.svelte',
+    '综合使用',
+    'getContainer + offsetTop + targetOffset + 嵌套子链接，开箱即用的目录导航（对齐 Semi）',
   ),
-  entry('05-horizontal.svelte', '横向布局', 'horizontal 横排，ink 走底部下划线，onChange 监听激活'),
+  entry('03-size-default.svelte', '尺寸 default', 'size="default"（默认尺寸）'),
+  entry('04-size-small.svelte', '尺寸 small', 'size="small" 紧凑锚点'),
+  entry('05-rail-primary.svelte', '滑轨主题 primary', 'railTheme="primary"（默认）'),
+  entry('06-rail-tertiary.svelte', '滑轨主题 tertiary', 'railTheme="tertiary"'),
+  entry('07-rail-muted.svelte', '滑轨主题 muted', 'railTheme="muted" 隐藏滑轨'),
   entry(
-    '06-declarative.svelte',
-    '声明式 Anchor.Link',
-    '<Anchor.Link> 子组件写法（嵌套 + disabled）；railTheme / size / maxWidth 新增 prop',
-  ),
-  entry(
-    '07-tooltip.svelte',
-    '缩略显示 Tooltip',
-    'showTooltip 在链接文字缩略时 hover 显示完整标题；position 控制浮层方位',
+    '08-collapse-on.svelte',
+    '动态展示 autoCollapse',
+    'autoCollapse=true：滚动时仅展开激活路径的子级、折叠其它（对齐 Semi）',
   ),
   entry(
-    '08-auto-collapse.svelte',
-    '动态展开 autoCollapse',
-    'autoCollapse 滚动时只展开激活路径的子级、折叠其它分支',
+    '09-collapse-off.svelte',
+    '动态展示 autoCollapse=false',
+    'autoCollapse=false（默认）：始终全展开（对齐 Semi）',
+  ),
+  entry(
+    '10-tooltip.svelte',
+    '显示工具提示',
+    'showTooltip：Link 超出 maxWidth 时 hover 显示完整文字（对齐 Semi）',
+  ),
+  entry(
+    '11-tooltip-position.svelte',
+    '工具提示位置',
+    'position 设置 Tooltip 显示位置，仅 showTooltip=true 时生效（对齐 Semi）',
   ),
 ];

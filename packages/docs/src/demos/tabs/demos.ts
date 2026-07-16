@@ -40,4 +40,6 @@ export const demos: DemoEntry[] = [
   entry('14-render-tabbar.svelte', '标签栏二次封装', 'renderTabBar 完全自绘标签栏；面板内容仍按 activeKey 显隐。'),
   entry('15-dynamic.svelte', '动态更新', '通过绑定事件动态增删标签页。'),
   entry('16-closable.svelte', '关闭', '卡片样式支持关闭；单项 closable 控制是否可关，onTabClose 由父组件移除。'),
+  entry('17-tablist.svelte', '数据驱动 tabList', '传 tabList 数组定义标签，内容由单节点按 activeKey 渲染（对齐 Semi 每次只渲染当前项）。'),
+  entry('18-keepdom.svelte', 'keepDOM / lazyRender', 'keepDOM（默认 true）保留隐藏面板 DOM；lazyRender 仅激活过才挂载。'),
 ];

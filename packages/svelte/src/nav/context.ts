@@ -17,8 +17,6 @@ export interface NavContext {
   readonly collapsed: boolean;
   /** 是否多选。 */
   readonly multiple: boolean;
-  /** 整体禁用。 */
-  readonly disabled: boolean;
   /** 仅一级缩进（true）/逐级缩进（false）。 */
   readonly limitIndent: boolean;
   /** toggle 箭头位置。 */

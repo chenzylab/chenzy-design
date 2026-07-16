@@ -21,6 +21,7 @@ export const zh_CN: Locale = {
     itemsPerPage: '每页条数',
     jumpTo: '跳至',
     jumpToSuffix: '页',
+    more: '更多',
     pageChangeAnnounce: '第 {page} 页，共 {count} 页',
     pageSizeChangeAnnounce: '每页 {size} 条，第 {page} 页',
   },
@@ -109,7 +110,6 @@ export const zh_CN: Locale = {
   },
   BackTop: {
     ariaLabel: '回到顶部',
-    arrived: '已回到顶部',
   },
   AudioPlayer: {
     play: '播放',

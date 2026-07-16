@@ -53,11 +53,8 @@ export const breadcrumbTokens = {
   'breadcrumb-active-weight': { value: 'var(--cd-font-breadcrumb-active-fontweight)', category: 'font', label: '当前页字重', usage: '当前页 / 选中项字重（组件消费）' },
   'breadcrumb-separator-color': { value: 'var(--cd-color-breadcrumb-sepearator-default-icon-default)', category: 'color', label: '分割符颜色', usage: '分割符颜色（组件消费）' },
   'breadcrumb-gap': { value: 'var(--cd-spacing-breadcrumb-restitem-marginright)', category: 'spacing', label: '项间距', usage: '面包屑项间距（组件消费）' },
-  'breadcrumb-font-size': { value: 'var(--cd-font-breadcrumb-loose-fontsize)', category: 'font', label: '根字号', usage: '面包屑根字号 - 默认（组件消费）' },
-  'breadcrumb-font-size-compact': { value: 'var(--cd-font-breadcrumb-compact-fontsize)', category: 'font', label: '紧凑字号', usage: '紧凑模式字号（组件消费）' },
-  // 宽松模式（compact=false）可调项
-  'breadcrumb-loose-font-size': { value: 'var(--cd-breadcrumb-font-size)', category: 'font', label: '宽松字号', usage: '宽松模式字号（组件消费）' },
-  'breadcrumb-loose-letter-spacing': { value: '0.01em', category: 'other', label: '宽松字间距', usage: '宽松模式字间距（组件消费）' },
-  'breadcrumb-loose-gap': { value: 'calc(var(--cd-breadcrumb-gap) * 1.5)', category: 'spacing', label: '宽松项间距', usage: '宽松模式项间距（组件消费）' },
+  // 尺寸对齐 Semi：仅 compact 布尔驱动。loose(=!compact) 用 loose 字号(regular)，compact 用 compact 字号(small)。
+  'breadcrumb-font-size': { value: 'var(--cd-font-breadcrumb-loose-fontsize)', category: 'font', label: '宽松字号', usage: '面包屑宽松模式字号（!compact，对齐 Semi loose=regular，组件消费）' },
+  'breadcrumb-font-size-compact': { value: 'var(--cd-font-breadcrumb-compact-fontsize)', category: 'font', label: '紧凑字号', usage: '面包屑紧凑模式字号（compact，对齐 Semi compact=small，组件消费）' },
   'breadcrumb-item-max-width': { value: '12em', category: 'width', label: '截断项最大宽度', usage: 'showTooltip 截断项最大宽度（组件消费）' },
 } satisfies TokenGroup;

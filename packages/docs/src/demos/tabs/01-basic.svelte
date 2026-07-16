@@ -4,7 +4,7 @@
   let active = $state<string | number>('1');
 </script>
 
-<Tabs type="line" value={active} onChange={(k) => (active = k)}>
+<Tabs type="line" activeKey={active} onChange={(k) => (active = k)}>
   <TabPane tab="文档" itemKey="1">
     <p style="line-height: 1.8; margin: 12px 0;">
       chenzy-design 是一套对齐 Semi Design 的 Svelte 组件库，帮助开发者更容易地打造高质量、

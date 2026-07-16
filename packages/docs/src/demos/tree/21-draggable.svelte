@@ -56,7 +56,6 @@
     draggable
     defaultExpandAll
     showLine
-    showIcon={false}
     ariaLabel="可拖拽树"
     onDrop={(d) => {
       data = reorder(data, d.dragNode.key, d.dropNode.key, d.dropPosition);

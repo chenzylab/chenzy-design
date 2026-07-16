@@ -44,7 +44,7 @@
   noLink：非最后一项也渲染为普通 span（不可点击/键盘激活）；语义上表示该层级无可导航地址。
   icon：前置图标 snippet，渲染在 children 前。
 -->
-<li
+<span
   class={cls}
   style={separator !== undefined ? `--cd-breadcrumb-separator-content: '${separator}'` : undefined}
 >
@@ -74,4 +74,4 @@
     >{#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}</span
     >
   {/if}
-</li>
+</span>

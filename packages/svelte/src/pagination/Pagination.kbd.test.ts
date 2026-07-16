@@ -34,7 +34,7 @@ describe('Pagination 键盘 e2e（页码 roving，真实焦点，移动≠切页
     const { baseElement } = renderKbdFixture(PaginationKbdFixture);
 
     const pages = Array.from(
-      baseElement.querySelectorAll<HTMLElement>('.cd-pagination__page[data-page]'),
+      baseElement.querySelectorAll<HTMLElement>('.cd-page-item[data-page]'),
     );
     expect(pages.length).toBe(3);
     const [p1, p2, p3] = pages as [HTMLElement, HTMLElement, HTMLElement];
