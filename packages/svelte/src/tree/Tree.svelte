@@ -41,6 +41,13 @@
     type DropPosition,
   } from '@chenzy-design/core';
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+  import {
+    IconSearch,
+    IconTreeTriangleDown,
+    IconFile,
+    IconFolder,
+    IconFolderOpen,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Input from '../input/Input.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
@@ -1532,15 +1539,7 @@
           onClear={clearSearch}
         >
           {#snippet prefix()}
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-              <path
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                d="M7 2.5a4.5 4.5 0 1 0 2.9 7.96l3.32 3.32M11.5 7A4.5 4.5 0 0 0 7 2.5"
-              />
-            </svg>
+            <IconSearch />
           {/snippet}
         </Input>
       {/if}
@@ -1596,9 +1595,7 @@
     </span>
   {:else}
     <span class="cd-tree__switcher" class:cd-tree__switcher--open={s.expanded} aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-        <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-      </svg>
+      <IconTreeTriangleDown size="small" />
     </span>
   {/if}
 {/snippet}
@@ -1720,9 +1717,7 @@
                   if (!nodeDisabled) toggleExpand(node);
                 }}
               >
-                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-                </svg>
+                <IconTreeTriangleDown size="small" />
               </span>
             {/if}
           {:else}
@@ -1764,21 +1759,11 @@
               {:else if directory}
                 <!-- directory 模式内置目录/文件图标（对齐 Semi IconFolder/IconFolderOpen/IconFile）；可用 icon snippet 覆盖 -->
                 {#if isLeaf}
-                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
-                      d="M4 1.5h5l3 3v10H4z" />
-                    <path fill="none" stroke="currentColor" stroke-width="1.2" d="M9 1.5v3h3" />
-                  </svg>
+                  <IconFile />
                 {:else if expanded}
-                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
-                      d="M1.5 4.5h4l1.5 1.5H14v7H2z" />
-                  </svg>
+                  <IconFolderOpen />
                 {:else}
-                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-                    <path fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"
-                      d="M1.5 3.5h5l1.5 1.5H14.5v8h-13z" />
-                  </svg>
+                  <IconFolder />
                 {/if}
               {/if}
             </span>
@@ -2006,6 +1991,8 @@
     color: var(--cd-color-tree-option-icon-default);
     cursor: pointer;
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* IconTreeTriangleDown 默认朝下（=展开态外观，对齐 Semi）；收起态旋转 -90deg 指向右侧。 */
+    transform: rotate(-90deg);
   }
   .cd-tree__switcher:hover {
     color: var(--cd-color-tree-option-icon-hover);
@@ -2014,13 +2001,15 @@
     color: var(--cd-color-tree-option-icon-active);
   }
   .cd-tree__switcher--open {
-    transform: rotate(90deg);
+    transform: rotate(0deg);
   }
   .cd-tree__switcher--leaf {
     cursor: default;
+    transform: none;
   }
   .cd-tree__switcher--loading {
     cursor: default;
+    transform: none;
     /* 加载 spin 尺寸对齐 Semi $width-tree_spinIcon（12） */
     inline-size: var(--cd-width-tree-spin-icon);
     block-size: var(--cd-width-tree-spin-icon);
