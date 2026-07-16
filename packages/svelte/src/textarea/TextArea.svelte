@@ -12,6 +12,7 @@
     countCharacters,
     createResizeObserver,
   } from '@chenzy-design/core';
+  import { IconClear } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -304,12 +305,7 @@
       {#if clearIcon}
         {@render clearIcon()}
       {:else}
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        <IconClear />
       {/if}
     </button>
   {/if}
