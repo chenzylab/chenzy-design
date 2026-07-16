@@ -353,6 +353,7 @@
             {...header.linkOptions !== undefined ? { linkOptions: header.linkOptions } : {}}
             {...header.class !== undefined ? { class: header.class } : {}}
             {...header.style !== undefined ? { style: header.style } : {}}
+            {mode}
             {collapsedState}
           />
         {/if}

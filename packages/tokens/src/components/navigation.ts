@@ -15,6 +15,7 @@ export const navigationTokens = {
 
   // —— Size ——
   'height-navigation-item-base': { value: '36px', category: 'height', label: '侧边菜单项高度', usage: '侧边导航栏菜单项高度' },
+  'height-navigation-header-logo-collapsed': { value: '36px', category: 'height', label: 'Logo 折叠尺寸', usage: '侧边导航栏 Logo 收起后尺寸（对齐 Semi $height-navigation_header_logo_collapsed = 36px；供 header 左内边距公式派生）' },
   'height-navigation-horizontal-header': { value: '60px', category: 'height', label: '顶部导航高度', usage: '顶部导航栏高度' },
   'height-navigation-footer': { value: '48px', category: 'height', label: 'footer 高度', usage: '侧边导航栏 footer 高度' },
   'width-navigation-container-base': { value: '240px', category: 'width', label: '侧边展开宽度', usage: '侧边导航栏展开后宽度' },
@@ -38,6 +39,11 @@ export const navigationTokens = {
   'spacing-navigation-list-wrapper-paddingtop': { value: '12px', category: 'spacing', label: '列表顶内边距', usage: '导航栏菜单项列表顶部内边距' },
   'spacing-navigation-header-logo-marginright': { value: '8px', category: 'spacing', label: 'Logo 右外边距', usage: '侧边导航栏 Logo 右侧外边距' },
   'spacing-navigation-horizontal-paddingleft': { value: '24px', category: 'spacing', label: '顶部左内边距', usage: '顶部导航栏左侧内边距' },
+  // 侧边 header 左内边距按 Semi 公式派生：(折叠容器宽 - 折叠水平内边距*2 - 描边 - Logo 折叠尺寸) / 2（对齐 Semi $spacing-navigation_vertical_nav_header-paddingLeft，结果 3.5px，使 Logo 左缘与折叠态图标居中对齐）。
+  'spacing-navigation-vertical-header-paddingleft': { value: 'calc((var(--cd-width-navigation-container-collapsed) - var(--cd-spacing-navigation-collapsed-paddingx) * 2 - var(--cd-width-navigation-border) - var(--cd-height-navigation-header-logo-collapsed)) / 2)', category: 'spacing', label: '侧边 header 左内边距', usage: '侧边导航栏 header 左侧内边距（对齐 Semi 公式派生）' },
+  'spacing-navigation-vertical-header-paddingright': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '侧边 header 右内边距', usage: '侧边导航栏 header 右侧内边距（对齐 Semi $spacing-navigation_vertical_nav_header-paddingRight = $spacing-tight = 8px）' },
+  'spacing-navigation-vertical-header-collapsed-paddingleft': { value: 'calc((var(--cd-width-navigation-container-collapsed) - var(--cd-spacing-navigation-collapsed-paddingx) * 2 - var(--cd-width-navigation-border) - var(--cd-height-navigation-header-logo-collapsed)) / 2)', category: 'spacing', label: '侧边折叠 header 左内边距', usage: '侧边导航栏收起后 header 左侧内边距（对齐 Semi $spacing-navigation_vertical_nav_header_collapsed-paddingLeft，同展开公式）' },
+  'spacing-navigation-vertical-header-collapsed-paddingright': { value: '0', category: 'spacing', label: '侧边折叠 header 右内边距', usage: '侧边导航栏收起后 header 右侧内边距（对齐 Semi $spacing-navigation_vertical_nav_header_collapsed-paddingRight = 0）' },
   'spacing-navigation-footer-paddingx': { value: '24px', category: 'spacing', label: 'footer 水平内边距', usage: '导航栏 footer 水平方向内边距（对齐 Semi 24px）' },
   'spacing-navigation-footer-paddingy': { value: '16px', category: 'spacing', label: 'footer 垂直内边距', usage: '导航栏 footer 垂直方向内边距（对齐 Semi 16px）' },
   'spacing-navigation-vertical-footer-paddingx': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '垂直 footer 水平内边距', usage: '侧边导航栏 footer 左右内边距（对齐 Semi $spacing-navigation_vertical_footer-paddingLeft/Right = $spacing-tight = 8px）' },
