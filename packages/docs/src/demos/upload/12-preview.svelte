@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Upload, ImagePreview, Space, Text } from '@chenzy-design/svelte';
+  import { IconPlus, IconEyeOpened } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   function makeImg(label: string, fill: string) {
@@ -26,7 +27,7 @@
   let previewCurrent = $state(0);
 
   function onPreviewClick(fileItem: UploadFileItem) {
-    // 点击缩略图默认眼睛图标：定位到该项在灯箱中的索引并打开放大预览。
+    // 点击缩略图（hover 显示自定义眼睛图标）：定位到该项在灯箱中的索引并打开放大预览。
     const index = picVal
       .filter((item) => item.url)
       .findIndex((item) => item.name === fileItem.name);
@@ -37,7 +38,7 @@
 
 <Space vertical align="start">
   <Text type="tertiary">
-    照片墙放大预览（对齐 Semi）：设置 onPreviewClick 后卡片可点，hover 显示右上角圆形关闭按钮与左下角序号（showPicInfo）。点击缩略图弹出 ImagePreview 放大预览，可缩放/旋转/翻页。
+    照片墙放大预览（对齐 Semi）：renderPicPreviewIcon 自绘 hover 眼睛图标，onPreviewClick 监听单张容器点击，弹出 ImagePreview 放大预览，可缩放/旋转/翻页。
   </Text>
   <Upload
     listType="picture"
@@ -47,7 +48,12 @@
     fileList={picVal}
     onChange={({ fileList }) => (picVal = fileList)}
     {onPreviewClick}
-  />
+  >
+    {#snippet renderPicPreviewIcon()}
+      <IconEyeOpened style="color:var(--cd-color-white);font-size:24px;" />
+    {/snippet}
+    <IconPlus size="extra-large" />
+  </Upload>
 </Space>
 
 <ImagePreview

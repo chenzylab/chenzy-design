@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Image } from '@chenzy-design/svelte';
+  import { IconPlus } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   const img = (fill: string) =>
@@ -27,5 +28,11 @@
     picHeight={110}
     fileList={val}
     onChange={({ fileList }) => (val = fileList)}
-  />
+  >
+    {#snippet renderThumbnail(file)}
+      <Image src={file.url} width={200} height={110} />
+    {/snippet}
+    <IconPlus size="extra-large" style="margin:4px;" />
+    点击添加图片
+  </Upload>
 </Space>

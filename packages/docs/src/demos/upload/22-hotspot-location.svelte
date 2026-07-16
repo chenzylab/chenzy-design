@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Upload, RadioGroup, Space, Text } from '@chenzy-design/svelte';
+  import { IconPlus } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   const img = 'data:image/gif;base64,R0lGODlhAQABAIAAAABm/wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
@@ -32,5 +33,7 @@
     hotSpotLocation={hotSpot}
     fileList={imageVal}
     onChange={({ fileList }) => (imageVal = fileList)}
-  />
+  >
+    <IconPlus size="extra-large" />
+  </Upload>
 </Space>

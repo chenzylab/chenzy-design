@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconUpload, IconPlus } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   const demoImageSrc =
@@ -14,8 +15,13 @@
 </script>
 
 <Space vertical align="start">
-  <Text type="tertiary">拖拽上传</Text>
-  <Upload multiple draggable accept="image/*" />
+  <Text type="tertiary">list（点击按钮选择文件）</Text>
+  <Upload multiple accept="image/*" action="//example.com/upload">
+    <Button theme="light">
+      {#snippet icon()}<IconUpload />{/snippet}
+      点击上传
+    </Button>
+  </Upload>
 
   <Text type="tertiary">picture-card（缩略图网格）</Text>
   <Upload
@@ -24,5 +30,7 @@
     accept="image/*"
     fileList={imageVal}
     onChange={({ fileList }) => (imageVal = fileList)}
-  />
+  >
+    <IconPlus size="extra-large" />
+  </Upload>
 </Space>

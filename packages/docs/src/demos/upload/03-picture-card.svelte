@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Upload } from '@chenzy-design/svelte';
+  import { IconPlus } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   const demoImageSrc =
@@ -20,4 +21,6 @@
   action="//example.com/upload"
   fileList={imageVal}
   onChange={({ fileList }) => (imageVal = fileList)}
-/>
+>
+  <IconPlus size="extra-large" />
+</Upload>

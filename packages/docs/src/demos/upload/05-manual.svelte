@@ -1,27 +1,27 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
-  import type { UploadFileItem } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconPlus, IconUpload } from '@chenzy-design/icons';
 
-  // 手动上传：不传 action / customRequest，仅收集文件，点击按钮时统一处理。
-  let files = $state<UploadFileItem[]>([]);
-  let log = $state('');
-
-  function manualUpload() {
-    const names = files.map((f) => f.name).join('、');
-    log = files.length ? `准备上传：${names}` : '暂无待上传文件';
-  }
+  // 手动上传（对齐 Semi）：uploadTrigger="custom" 时选文件不自动上传，
+  // 由外部按钮调 uploadRef.upload() 统一触发真正上传。
+  let uploadRef = $state<ReturnType<typeof Upload> | undefined>(undefined);
 </script>
 
 <Space vertical align="start">
-  <Text type="tertiary">选择文件后不会自动上传，点击下方按钮手动触发</Text>
+  <Text type="tertiary">选择文件后不会自动上传，点击「开始上传」才真正上传（uploadTrigger="custom"）。</Text>
   <Upload
+    bind:this={uploadRef}
+    action="//example.com/upload"
+    uploadTrigger="custom"
     multiple
-    showClear
-    fileListTitle="待上传列表"
-    onChange={({ fileList }) => (files = fileList)}
-  />
-  <button type="button" onclick={manualUpload}>开始上传</button>
-  {#if log}
-    <Text type="secondary">{log}</Text>
-  {/if}
+  >
+    <Button theme="light">
+      {#snippet icon()}<IconPlus />{/snippet}
+      选择文件
+    </Button>
+  </Upload>
+  <Button theme="solid" onclick={() => uploadRef?.upload()}>
+    {#snippet icon()}<IconUpload />{/snippet}
+    开始上传
+  </Button>
 </Space>
