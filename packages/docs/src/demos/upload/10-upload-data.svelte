@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
 </script>
 
 <Space vertical align="start">
@@ -12,5 +13,10 @@
     name="attachment"
     data={(file) => ({ filename: file.name, ts: String(Date.now()) })}
     headers={{ 'X-Upload-Source': 'chenzy-docs', Authorization: 'Bearer demo-token' }}
-  />
+  >
+    <Button theme="light">
+      {#snippet icon()}<IconUpload />{/snippet}
+      点击上传
+    </Button>
+  </Upload>
 </Space>

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
   import type { UploadFileItem, AfterUploadProps, AfterUploadResult } from '@chenzy-design/svelte';
 
   let val = $state<UploadFileItem[]>([]);
@@ -26,5 +27,10 @@
     {afterUpload}
     fileList={val}
     onChange={({ fileList }) => (val = fileList)}
-  />
+  >
+    <Button theme="light">
+      {#snippet icon()}<IconUpload />{/snippet}
+      点击上传
+    </Button>
+  </Upload>
 </Space>
