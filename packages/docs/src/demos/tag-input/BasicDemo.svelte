@@ -8,11 +8,10 @@
   let tagInputCtrl = $state('');
 </script>
 
-<!-- 基础：回车或逗号添加 -->
+<!-- 基础：回车或逗号添加（默认 separator=','） -->
 <div style="width: 320px">
   <TagInput
     value={tags}
-    separator={[',', 'Enter']}
     placeholder="输入后回车或逗号"
     onChange={(t) => (tags = t)}
   />
@@ -24,7 +23,6 @@
   <TagInput
     value={tagsCtrl}
     inputValue={tagInputCtrl}
-    separator={[',', 'Enter']}
     placeholder="受控输入：外部驱动文本"
     onChange={(t) => (tagsCtrl = t)}
     onInputChange={(v) => (tagInputCtrl = v.toUpperCase())}
@@ -32,13 +30,12 @@
   <Text type="tertiary">输入(强制大写)：{tagInputCtrl || '（空）'}</Text>
 </div>
 
-<!-- maxTagTextLength 截断 -->
-<div style="width: 320px; margin-top: 12px" data-testid="taginput-maxlen">
+<!-- 长标签省略 + 悬浮全文（showContentTooltip） -->
+<div style="width: 320px; margin-top: 12px" data-testid="taginput-tooltip">
   <TagInput
     value={tagsTrunc}
-    maxTagTextLength={6}
-    separator={[',', 'Enter']}
-    placeholder="超长标签截断显示（maxTagTextLength=6）"
+    showContentTooltip
+    placeholder="长标签省略，悬浮查看全文"
     onChange={(t) => (tagsTrunc = t)}
   />
   <Text type="tertiary">实际值：{tagsTrunc.join(' / ') || '（无）'}</Text>
@@ -49,7 +46,6 @@
   <TagInput
     value={tagsDrag}
     draggable
-    separator={[',', 'Enter']}
     placeholder="可拖拽重排标签"
     onChange={(t) => (tagsDrag = t)}
   />

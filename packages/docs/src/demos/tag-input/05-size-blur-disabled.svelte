@@ -3,7 +3,7 @@
 
   let small = $state<string[]>(['sm']);
   let large = $state<string[]>(['blur', 'add']);
-  let locked = $state<string[]>(['readonly', 'lib']);
+  let locked = $state<string[]>(['disabled', 'lib']);
 </script>
 
 <div style="display:flex;flex-direction:column;gap:16px;width:360px">

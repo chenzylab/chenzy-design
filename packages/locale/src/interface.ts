@@ -474,10 +474,7 @@ export interface Locale {
     slideAnnounce: string;
   };
   TagInput: {
-    remove: string;
     clear: string;
-    duplicate: string;
-    invalid: string;
   };
   Breadcrumb: {
     ariaLabel: string;

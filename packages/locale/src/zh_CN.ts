@@ -340,10 +340,7 @@ export const zh_CN: Locale = {
     slideAnnounce: '第 {index} 张，共 {total} 张',
   },
   TagInput: {
-    remove: '删除',
     clear: '清空',
-    duplicate: '标签已存在',
-    invalid: '标签无效',
   },
   Breadcrumb: {
     ariaLabel: '面包屑',

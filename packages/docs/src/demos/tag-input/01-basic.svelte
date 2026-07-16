@@ -7,7 +7,6 @@
 <div style="width: 320px">
   <TagInput
     value={tags}
-    separator={[',', 'Enter']}
     placeholder="输入后回车或逗号添加标签"
     onChange={(t) => (tags = t)}
   />

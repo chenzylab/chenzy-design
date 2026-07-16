@@ -72,7 +72,7 @@
       {...(size !== undefined ? { size } : {})}
       {...(maxLength !== undefined ? { maxLength } : {})}
       {...(allowDuplicates !== undefined ? { allowDuplicates } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      validateStatus={status === 'error' ? 'error' : 'default'}
       onChange={(tags) => onChange(tags)}
     />
   {/snippet}
