@@ -101,6 +101,7 @@
     margin: 0;
   }
   .demo-box__preview {
+    position: relative;
     padding: 24px 16px;
   }
   .demo-box__footer {
