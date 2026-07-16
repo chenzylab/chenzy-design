@@ -90,6 +90,12 @@
     onCompositionStart?: (e: CompositionEvent) => void;
     onCompositionEnd?: (e: CompositionEvent) => void;
     onCompositionUpdate?: (e: CompositionEvent) => void;
+    /**
+     * 透传到原生 <input> 的其余属性（对齐 Semi Input extends InputHTMLAttributes + {...rest}）。
+     * 供 InputNumber(role=spinbutton/aria-valuenow)、AutoComplete/Cascader(role=combobox/aria-expanded
+     * /aria-controls/aria-activedescendant/aria-autocomplete) 等复用方透传 role 与任意 aria/data-* 属性。
+     */
+    [key: string]: unknown;
   }
 
   let {
@@ -140,6 +146,7 @@
     onCompositionStart,
     onCompositionEnd,
     onCompositionUpdate,
+    ...rest
   }: Props = $props();
 
   const loc = useLocale();
@@ -287,6 +294,7 @@
 
   <input
     bind:this={inputEl}
+    {...rest}
     class="cd-input"
     class:cd-input-sibling-clearbtn={allowClear}
     class:cd-input-sibling-modebtn={mode === 'password'}
