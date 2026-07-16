@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { nextRovingIndex, rovingKeyFromEvent, type RovingKey } from '@chenzy-design/core';
+  import { IconTickCircle, IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import type { StepItem, StepStatus } from './types.js';
 
@@ -175,23 +176,6 @@
   }
 </script>
 
-<!-- Semi 状态形状图标（实心，fill=currentColor，色由状态类决定；无圆底）。 -->
-{#snippet tickCircle()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23a11 11 0 1 1 0-22 11 11 0 0 1 0 22Zm-1.1-6.85 6.42-6.42a1.1 1.1 0 0 0-1.55-1.56l-5.64 5.64-2.35-2.34a1.1 1.1 0 0 0-1.55 1.55l3.12 3.13a1.1 1.1 0 0 0 1.56 0Z" />
-  </svg>
-{/snippet}
-{#snippet alertCircle()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23a11 11 0 1 1 0-22 11 11 0 0 1 0 22Zm0-16.5c.7 0 1.25.56 1.25 1.25v5.5a1.25 1.25 0 1 1-2.5 0V7.75c0-.69.56-1.25 1.25-1.25Zm0 12a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" />
-  </svg>
-{/snippet}
-{#snippet alertTriangle()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.7 2.32a2 2 0 0 0-3.4 0L1.3 17.1A2 2 0 0 0 3 20.1h18a2 2 0 0 0 1.7-3l-9-14.78ZM12 7.5c.7 0 1.25.56 1.25 1.25v4.5a1.25 1.25 0 1 1-2.5 0v-4.5c0-.69.56-1.25 1.25-1.25Zm0 10.8a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" />
-  </svg>
-{/snippet}
-
 {#snippet stepIcon(step: StepItem, index: number, st: StepStatus)}
   {#if hasNumberIcon(step, st)}
     <!-- wait/process：圆底序号 -->
@@ -201,9 +185,9 @@
     <span class="cd-steps__icon cd-steps__glyph" aria-hidden="true">
       {#if step.icon !== undefined}
         {#if isStringIcon(step.icon)}{step.icon}{:else}{@render step.icon()}{/if}
-      {:else if st === 'finish'}{@render tickCircle()}
-      {:else if st === 'error'}{@render alertCircle()}
-      {:else if st === 'warning'}{@render alertTriangle()}
+      {:else if st === 'finish'}<IconTickCircle size="inherit" aria-hidden="true" />
+      {:else if st === 'error'}<IconAlertCircle size="inherit" aria-hidden="true" />
+      {:else if st === 'warning'}<IconAlertTriangle size="inherit" aria-hidden="true" />
       {:else}{index + 1 + initial}{/if}
     </span>
   {/if}

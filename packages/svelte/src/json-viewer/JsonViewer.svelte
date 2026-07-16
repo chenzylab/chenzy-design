@@ -20,6 +20,15 @@
     JsonViewerOptions,
     FindMatch,
   } from '@douyinfe/semi-json-viewer-core';
+  import {
+    IconSearch,
+    IconCaseSensitive,
+    IconWholeWord,
+    IconRegExp,
+    IconChevronLeft,
+    IconChevronRight,
+    IconClose,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   /** 搜索工具条暴露给 renderSearchButton 的受控句柄。 */
@@ -225,12 +234,7 @@
     aria-expanded={searchOpen}
     onclick={openSearch}
   >
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <path
-        fill="currentColor"
-        d="M11.3 10.6a5 5 0 1 0-.7.7l3 3a.5.5 0 0 0 .7-.7zM7 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8"
-      />
-    </svg>
+    <IconSearch aria-hidden="true" />
   </button>
 {/snippet}
 
@@ -268,7 +272,7 @@
           class:cd-json-viewer__toolbar-btn--active={caseSensitive}
           aria-label={loc().t('JsonViewer.caseSensitive')}
           aria-pressed={caseSensitive}
-          onclick={toggleCase}>Aa</button
+          onclick={toggleCase}><IconCaseSensitive aria-hidden="true" /></button
         >
         <button
           type="button"
@@ -276,7 +280,7 @@
           class:cd-json-viewer__toolbar-btn--active={wholeWord}
           aria-label={loc().t('JsonViewer.wholeWord')}
           aria-pressed={wholeWord}
-          onclick={toggleWord}>ab</button
+          onclick={toggleWord}><IconWholeWord aria-hidden="true" /></button
         >
         <button
           type="button"
@@ -284,25 +288,25 @@
           class:cd-json-viewer__toolbar-btn--active={useRegex}
           aria-label={loc().t('JsonViewer.regex')}
           aria-pressed={useRegex}
-          onclick={toggleRegex}>.*</button
+          onclick={toggleRegex}><IconRegExp aria-hidden="true" /></button
         >
         <button
           type="button"
           class="cd-json-viewer__toolbar-btn"
           aria-label={loc().t('JsonViewer.prev')}
-          onclick={() => prevSearch()}>↑</button
+          onclick={() => prevSearch()}><IconChevronLeft aria-hidden="true" /></button
         >
         <button
           type="button"
           class="cd-json-viewer__toolbar-btn"
           aria-label={loc().t('JsonViewer.next')}
-          onclick={() => nextSearch()}>↓</button
+          onclick={() => nextSearch()}><IconChevronRight aria-hidden="true" /></button
         >
         <button
           type="button"
           class="cd-json-viewer__toolbar-btn"
           aria-label={loc().t('JsonViewer.closeSearch')}
-          onclick={closeSearch}>✕</button
+          onclick={closeSearch}><IconClose aria-hidden="true" /></button
         >
       </div>
 

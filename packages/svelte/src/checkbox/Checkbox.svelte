@@ -5,6 +5,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import { IconCheckboxTick, IconCheckboxIndeterminate } from '@chenzy-design/icons';
   import {
     getCheckboxGroupContext,
     type CheckboxValue,
@@ -153,18 +154,9 @@
   />
   <span class="cd-checkbox__box" aria-hidden="true">
     {#if indeterminate && !isChecked}
-      <span class="cd-checkbox__dash"></span>
+      <IconCheckboxIndeterminate class="cd-checkbox__mark" size="inherit" />
     {:else if isChecked}
-      <svg class="cd-checkbox__check" viewBox="0 0 16 16" focusable="false">
-        <path
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M3.5 8.5 6.5 11.5 12.5 4.5"
-        />
-      </svg>
+      <IconCheckboxTick class="cd-checkbox__mark" size="inherit" />
     {/if}
   </span>
   {#if children || extra}
@@ -207,6 +199,8 @@
     justify-content: center;
     inline-size: var(--cd-checkbox-size-default);
     block-size: var(--cd-checkbox-size-default);
+    /* Semi 勾/半选图标经字号驱动填满整盒（图标 viewBox 自带视觉内边距）。 */
+    font-size: var(--cd-checkbox-size-default);
     background: var(--cd-checkbox-bg);
     border: 1px solid var(--cd-checkbox-border);
     border-radius: var(--cd-checkbox-radius);
@@ -220,10 +214,12 @@
   .cd-checkbox--small .cd-checkbox__box {
     inline-size: var(--cd-checkbox-size-small);
     block-size: var(--cd-checkbox-size-small);
+    font-size: var(--cd-checkbox-size-small);
   }
   .cd-checkbox--large .cd-checkbox__box {
     inline-size: var(--cd-checkbox-size-large);
     block-size: var(--cd-checkbox-size-large);
+    font-size: var(--cd-checkbox-size-large);
   }
   /* 未选中态悬浮：对齐 Semi（描边 focus-border、背景 fill-0） */
   .cd-checkbox:hover:not(.cd-checkbox--disabled):not(.cd-checkbox--checked):not(.cd-checkbox--indeterminate)
@@ -246,16 +242,8 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-checkbox__check {
-    inline-size: 80%;
-    block-size: 80%;
-  }
-  .cd-checkbox__dash {
-    inline-size: 60%;
-    block-size: 2px;
-    background: currentColor;
-    border-radius: var(--cd-border-radius-full);
-  }
+  /* 勾/半选图标：字号继承自 box（size="inherit"），svg 1em 填满整盒；
+     色随 box 的 color（--cd-checkbox-mark-color）经 currentColor 生效。 */
   .cd-checkbox__content {
     display: inline-flex;
     flex-direction: column;
