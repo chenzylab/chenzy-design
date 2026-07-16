@@ -2,7 +2,7 @@
  * Component tokens for Divider. 全量对齐 Semi Design
  * （semi-foundation/divider/variables.scss，19 个），升级为带元数据的 TokenDef
  * 结构以支持 DSM。值为 var() 引用我们的 alias / global token，或字面量。
- * 末尾保留 chenzy-design Divider 实际消费的补充 token（Semi 无），值对齐 Semi。
+ * 19 个全对齐 Semi，组件直接消费（无中间层简写 token）。
  *
  * 见 specs/components/basic/Divider.spec.md、specs/00-foundation/dsm.spec.md §4。
  */
@@ -39,13 +39,4 @@ export const dividerTokens = {
   'color-divider-border-color': { value: 'var(--cd-color-border)', category: 'color', label: '分割线颜色', usage: '分割线颜色' },
   'color-divider-text-default': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '标题颜色' },
   'font-divider-text-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '分割线文字字重', usage: '分割线文字字重' },
-
-  // —— chenzy-design Divider 实际消费的补充 token（Semi 无；组件消费；值对齐 Semi） ——
-  'divider-color': { value: 'var(--cd-color-divider-border-color)', category: 'color', label: '分割线颜色', usage: '分割线描边颜色（组件消费）' },
-  'divider-thickness': { value: 'var(--cd-width-divider-border)', category: 'width', label: '分割线宽度', usage: '分割线宽度（组件消费；对齐 Semi 1px）' },
-  'divider-spacing': { value: 'var(--cd-spacing-divider-horizontal-margintop)', category: 'spacing', label: '分割线主轴外边距', usage: '分割线主轴外边距（组件消费；对齐 Semi 1px）' },
-  'divider-text-color': { value: 'var(--cd-color-divider-text-default)', category: 'color', label: '文字颜色', usage: '带文字分割线文字颜色（组件消费；对齐 Semi text-0）' },
-  'divider-text-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '文字字号', usage: '带文字分割线文字字号（组件消费）' },
-  'divider-text-gap': { value: 'var(--cd-spacing-divider-inner-text-paddingleft)', category: 'spacing', label: '文字两侧间距', usage: '带文字分割线文字与线段间距（组件消费；对齐 Semi 8px）' },
-  'divider-text-weight': { value: 'var(--cd-font-divider-text-weight)', category: 'font', label: '文字字重', usage: 'plain=false 时文字字重（组件消费；对齐 Semi bold）' },
 } satisfies TokenGroup;

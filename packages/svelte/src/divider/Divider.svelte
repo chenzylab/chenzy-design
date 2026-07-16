@@ -1,6 +1,6 @@
 <!--
   Divider — see specs/components/basic/Divider.spec.md
-  Pure presentational separator. Token-driven, a11y role="separator".
+  纯展示分隔线，严格对齐 Semi Design（根永远是 div，无 role/aria）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,10 +13,10 @@
     dashed?: boolean;
     align?: DividerAlign;
     margin?: string | number;
-    thickness?: number;
-    plain?: boolean;
     class?: string;
+    style?: string;
     children?: Snippet;
+    [key: string]: unknown;
   }
 
   let {
@@ -24,131 +24,123 @@
     dashed = false,
     align = 'center',
     margin,
-    thickness = 1,
-    plain = true,
     class: className = '',
+    style,
     children,
+    ...rest
   }: Props = $props();
 
-  const hasContent = $derived(layout === 'horizontal' && !!children);
+  const hasContent = $derived(!!children && layout === 'horizontal');
 
   const marginCss = $derived(typeof margin === 'number' ? `${margin}px` : margin);
 
-  const inlineStyle = $derived(
-    [
-      `--cd-divider-thickness:${thickness}px`,
-      layout === 'horizontal' && marginCss && `margin-block:${marginCss}`,
-      layout === 'vertical' && marginCss && `margin-inline:${marginCss}`,
-    ]
-      .filter(Boolean)
-      .join(';'),
+  // margin 覆盖：vertical → margin-left/right；horizontal → margin-top/bottom。
+  // 用户 style 优先（对齐 Semi {...override, ...style}）。
+  const overrideStyle = $derived(
+    marginCss
+      ? layout === 'vertical'
+        ? `margin-left:${marginCss};margin-right:${marginCss};`
+        : `margin-top:${marginCss};margin-bottom:${marginCss};`
+      : '',
   );
-</script>
 
-{#if layout === 'vertical'}
-  <span
-    class={['cd-divider', 'cd-divider--vertical', dashed && 'cd-divider--dashed', className]
-      .filter(Boolean)
-      .join(' ')}
-    role="separator"
-    aria-orientation="vertical"
-    style={inlineStyle}
-  ></span>
-{:else if hasContent}
-  <div
-    class={[
+  const mergedStyle = $derived([overrideStyle, style].filter(Boolean).join('') || undefined);
+
+  const cls = $derived(
+    [
       'cd-divider',
-      'cd-divider--horizontal',
-      'cd-divider--with-text',
-      `cd-divider--align-${align}`,
-      dashed && 'cd-divider--dashed',
-      !plain && 'cd-divider--bold',
+      layout === 'horizontal' && 'cd-divider-horizontal',
+      layout === 'vertical' && 'cd-divider-vertical',
+      dashed && 'cd-divider-dashed',
+      hasContent && 'cd-divider-with-text',
+      hasContent && `cd-divider-with-text-${align}`,
       className,
     ]
       .filter(Boolean)
-      .join(' ')}
-    role="separator"
-    style={inlineStyle}
-  >
-    <span class="cd-divider__text">{@render children?.()}</span>
-  </div>
-{:else}
-  <div
-    class={['cd-divider', 'cd-divider--horizontal', dashed && 'cd-divider--dashed', className]
-      .filter(Boolean)
-      .join(' ')}
-    role="separator"
-    style={inlineStyle}
-  ></div>
-{/if}
+      .join(' '),
+  );
+</script>
+
+<div class={cls} style={mergedStyle} {...rest}>
+  {#if hasContent}
+    <span class="cd-divider_inner-text">{@render children?.()}</span>
+  {/if}
+</div>
 
 <style>
   .cd-divider {
-    --cd-divider-thickness: 1px;
+    margin: var(--cd-spacing-divider-horizontal-margintop)
+      var(--cd-spacing-divider-horizontal-marginright)
+      var(--cd-spacing-divider-horizontal-marginbottom)
+      var(--cd-spacing-divider-horizontal-marginleft);
+    border-bottom: var(--cd-width-divider-border) solid var(--cd-color-divider-border-color);
+    color: var(--cd-color-divider-text-default);
     box-sizing: border-box;
-    border-color: var(--cd-divider-color);
-    border-style: solid;
-  }
-  .cd-divider--dashed {
-    border-style: dashed;
   }
 
-  /* horizontal plain line */
-  .cd-divider--horizontal {
-    display: block;
+  .cd-divider-dashed {
+    border-bottom-style: dashed;
+  }
+
+  .cd-divider-horizontal {
     width: 100%;
-    border: 0;
-    border-block-start: var(--cd-divider-thickness) solid var(--cd-divider-color);
-    margin-block: var(--cd-divider-spacing);
-  }
-  .cd-divider--horizontal.cd-divider--dashed {
-    border-block-start-style: dashed;
-  }
-
-  /* horizontal with text */
-  .cd-divider--with-text {
     display: flex;
-    align-items: center;
-    width: 100%;
-    border: 0;
-    margin-block: var(--cd-divider-spacing);
-    color: var(--cd-divider-text-color);
-    font-size: var(--cd-divider-text-font-size);
-  }
-  .cd-divider--with-text::before,
-  .cd-divider--with-text::after {
-    content: '';
-    flex: 1 1 auto;
-    border-block-start: var(--cd-divider-thickness) solid var(--cd-divider-color);
-  }
-  .cd-divider--with-text.cd-divider--dashed::before,
-  .cd-divider--with-text.cd-divider--dashed::after {
-    border-block-start-style: dashed;
-  }
-  .cd-divider__text {
-    flex: 0 0 auto;
-    padding-inline: var(--cd-divider-text-gap);
-  }
-  .cd-divider--bold .cd-divider__text {
-    font-weight: var(--cd-divider-text-weight);
-  }
-  .cd-divider--align-left::before {
-    flex: 0 0 5%;
-  }
-  .cd-divider--align-right::after {
-    flex: 0 0 5%;
   }
 
-  /* vertical */
-  .cd-divider--vertical {
+  .cd-divider-vertical {
+    border-bottom: 0;
     display: inline-block;
-    height: 0.9em;
-    border: 0;
-    border-inline-start: var(--cd-divider-thickness) solid var(--cd-divider-color);
-    margin-inline: var(--cd-divider-spacing);
+    margin: var(--cd-spacing-divider-vertical-margintop)
+      var(--cd-spacing-divider-vertical-marginright)
+      var(--cd-spacing-divider-vertical-marginbottom)
+      var(--cd-spacing-divider-vertical-marginleft);
+    border-left: var(--cd-width-divider-border) solid var(--cd-color-divider-border-color);
+    height: var(--cd-height-divider-vertical);
     vertical-align: middle;
   }
-  .cd-divider--vertical.cd-divider--dashed {
-    border-inline-start-style: dashed;
+
+  .cd-divider-with-text {
+    display: flex;
+    border-bottom: 0;
+    white-space: nowrap;
+    align-items: center;
+  }
+
+  .cd-divider-with-text .cd-divider_inner-text {
+    font-weight: var(--cd-font-divider-text-weight);
+    padding: var(--cd-spacing-divider-inner-text-paddingtop)
+      var(--cd-spacing-divider-inner-text-paddingright)
+      var(--cd-spacing-divider-inner-text-paddingbottom)
+      var(--cd-spacing-divider-inner-text-paddingleft);
+    display: inline-block;
+  }
+
+  .cd-divider-with-text::before,
+  .cd-divider-with-text::after {
+    content: '';
+    width: 50%;
+    border-bottom: var(--cd-width-divider-border) solid var(--cd-color-divider-border-color);
+  }
+
+  .cd-divider-with-text-left::before {
+    width: var(--cd-width-divider-inner-text-left-line);
+  }
+  .cd-divider-with-text-left::after {
+    flex: 1;
+  }
+  .cd-divider-with-text-right::before {
+    flex: 1;
+  }
+  .cd-divider-with-text-right::after {
+    width: var(--cd-width-divider-inner-text-right-line);
+  }
+
+  .cd-divider-dashed::before,
+  .cd-divider-dashed::after {
+    border-bottom: var(--cd-width-divider-border) dashed var(--cd-color-divider-border-color);
+  }
+
+  .cd-divider-vertical.cd-divider-dashed {
+    border-left: var(--cd-width-divider-border) dashed var(--cd-color-divider-border-color);
   }
 </style>
