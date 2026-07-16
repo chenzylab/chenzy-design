@@ -17,6 +17,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { setContext } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
 
   interface Props {
     /** 显式声明含侧边栏 → row 方向；一般不用指定，可用于 SSR 避免样式闪动。 */
@@ -41,7 +42,9 @@
   }: Props = $props();
 
   // 已注册的 Sider id 集合，对齐 Semi 的 siders 数组。
-  const siders = $state(new Set<string>());
+  // SvelteSet：普通 Set 的 .add()/.delete() 不触发 Svelte 5 响应式，siders.size 派生不更新
+  // 会导致 has-sider class 加不上、Sider 方向不翻转（真机才暴露）。
+  const siders = new SvelteSet<string>();
 
   setContext<LayoutContext>(LAYOUT_CONTEXT_KEY, {
     addSider: (id) => siders.add(id),
