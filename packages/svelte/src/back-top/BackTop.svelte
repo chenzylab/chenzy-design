@@ -14,6 +14,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { isAboveThreshold, scrollPositionAt } from '@chenzy-design/core';
+  import { IconChevronUp } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -220,16 +221,7 @@
   {:else if icon}
     {@render icon({ size })}
   {:else}
-    <svg class="cd-backtop__icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M12 19V5M5 12l7-7 7 7"
-      />
-    </svg>
+    <IconChevronUp size="large" aria-hidden="true" />
   {/if}
 </button>
 
@@ -301,11 +293,6 @@
   .cd-backtop:focus-visible {
     outline: 2px solid var(--cd-backtop-focus-ring);
     outline-offset: 2px;
-  }
-
-  .cd-backtop__icon {
-    inline-size: 50%;
-    block-size: 50%;
   }
 
   /* 到顶播报 live region 复用 tokens.css 全局 .cd-sr-only：视觉隐藏但 AT 可读。 */

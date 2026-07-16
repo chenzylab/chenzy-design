@@ -58,8 +58,8 @@ describe('Breadcrumb a11y', () => {
     // default 模式为 disclosure：有 aria-expanded，非 haspopup。
     expect(more?.getAttribute('aria-expanded')).toBe('false');
     expect(more?.getAttribute('aria-haspopup')).toBeNull();
-    // 三点图标：3 个 circle。
-    expect(more?.querySelectorAll('.cd-breadcrumb__more-icon circle')).toHaveLength(3);
+    // 三点图标：IconMore（对齐 Semi），渲染为 .cd-icon-more。
+    expect(more?.querySelector('.cd-icon-more')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 

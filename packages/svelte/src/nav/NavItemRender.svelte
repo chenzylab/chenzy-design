@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { IconChevronDown, IconChevronRight } from '@chenzy-design/icons';
   import { getNavContext } from './context.js';
   import { hasSubNav, type NavItemDef } from './types.js';
   import NavSubPopup from './NavSubPopup.svelte';
@@ -88,11 +89,11 @@
     {#if ctx.expandIcon}
       {@render ctx.expandIcon()}
     {:else if popupMode && inSubNav}
-      <!-- 浮层内嵌子导航：向右箭头 -->
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false"><path fill="currentColor" d="M6 4l4 4-4 4V4Z" /></svg>
+      <!-- 浮层内嵌子导航：向右箭头（对齐 Semi IconChevronRight） -->
+      <IconChevronRight size="small" aria-hidden="true" />
     {:else}
-      <!-- 展开箭头：向下（内联/浮层顶层） -->
-      <svg viewBox="0 0 16 16" width="12" height="12" focusable="false"><path fill="currentColor" d="M4 6l4 4 4-4H4Z" /></svg>
+      <!-- 展开箭头：向下（内联/浮层顶层，对齐 Semi IconChevronDown）；open 内联态由外层 <i> rotate 180° -->
+      <IconChevronDown size="small" aria-hidden="true" />
     {/if}
   </i>
 {/snippet}

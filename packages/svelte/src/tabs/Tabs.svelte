@@ -33,6 +33,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, computeTabOverflow } from '@chenzy-design/core';
+  import { IconClose, IconChevronDown, IconChevronLeft, IconChevronRight, IconPlus } from '@chenzy-design/icons';
   import { setTabsContext, type TabPaneRegistration } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
   import { Dropdown } from '../dropdown/index.js';
@@ -707,12 +708,7 @@
         tabindex={selected ? 0 : -1}
         onclick={(e) => closeTab(e, item)}
       >
-        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M9.1 8l3.2-3.2-1.1-1.1L8 6.9 4.8 3.7 3.7 4.8 6.9 8l-3.2 3.2 1.1 1.1L8 9.1l3.2 3.2 1.1-1.1L9.1 8Z"
-          />
-        </svg>
+        <IconClose size="small" aria-hidden="true" />
       </button>
     {/if}
   </div>
@@ -726,9 +722,7 @@
       aria-label={loc().t('Tabs.add')}
       onclick={() => onAdd?.()}
     >
-      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-        <path fill="currentColor" d="M8.8 7.2V2.5H7.2v4.7H2.5v1.6h4.7v4.7h1.6V8.8h4.7V7.2H8.8Z" />
-      </svg>
+      <IconPlus size="small" aria-hidden="true" />
     </button>
   {/if}
 {/snippet}
@@ -759,9 +753,7 @@
                 aria-haspopup="menu"
               >
                 {loc().t('Tabs.more')}
-                <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
-                </svg>
+                <IconChevronDown size="small" aria-hidden="true" />
               </button>
             {/if}
             {#snippet render()}
@@ -803,9 +795,7 @@
       {/each}
       <span class="cd-tabs__more-btn" data-cd-measure-more>
         {loc().t('Tabs.more')}
-        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-          <path fill="currentColor" d="M3.2 5.5 8 10.3l4.8-4.8 1.1 1.1L8 12.5 2.1 6.6l1.1-1.1Z" />
-        </svg>
+        <IconChevronDown size="small" aria-hidden="true" />
       </span>
     </div>
   {:else}
@@ -823,9 +813,7 @@
             tabindex="-1"
             onclick={() => scrollByStep(-1)}
           >
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M10.5 3.2 5.7 8l4.8 4.8 1.1-1.1L7.9 8l3.7-3.7-1.1-1.1Z" />
-            </svg>
+            <IconChevronLeft size="small" aria-hidden="true" />
           </button>
         {/if}
       {/if}
@@ -855,9 +843,7 @@
             tabindex="-1"
             onclick={() => scrollByStep(1)}
           >
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M5.5 3.2 10.3 8l-4.8 4.8-1.1-1.1L8.1 8 4.4 4.3l1.1-1.1Z" />
-            </svg>
+            <IconChevronRight size="small" aria-hidden="true" />
           </button>
         {/if}
       {/if}
