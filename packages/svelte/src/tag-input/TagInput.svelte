@@ -12,7 +12,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useDismiss } from '@chenzy-design/core';
-  import { IconClear } from '@chenzy-design/icons';
+  import { IconClear, IconClose } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { computeInsertSide, reorder, type InsertSide } from './reorder.js';
   import Popover from '../popover/Popover.svelte';
@@ -544,7 +544,7 @@
               removeAt(i);
             }}
           >
-            {#if removeIcon}{@render removeIcon({ index: i })}{:else}×{/if}
+            {#if removeIcon}{@render removeIcon({ index: i })}{:else}<IconClose size="small" />{/if}
           </button>
         {/if}
       {/if}

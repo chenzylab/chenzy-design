@@ -34,6 +34,9 @@
     IconFile,
     IconAlertCircle,
     IconEyeOpened,
+    IconClose,
+    IconClear,
+    IconRefresh,
   } from '@chenzy-design/icons';
   import type { CropperShape } from '../cropper/index.js';
   import type {
@@ -1514,7 +1517,7 @@
                 {disabled}
                 onclick={() => remove(item.uid)}
               >
-                &times;
+                <IconClose />
               </button>
             {/if}
           </div>
@@ -1626,7 +1629,32 @@
               aria-label={loc().t('Upload.replace')}
               {disabled}
               onclick={() => openReplace(item.uid)}
-            >&#8635;</button>
+            >
+              <!-- 替换图标：对齐 Semi fileCard ReplaceSvg（本地手写图形，非具名图标）。 -->
+              <svg
+                focusable="false"
+                aria-hidden="true"
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="14" cy="14" r="14" fill="#16161A" fill-opacity="0.6" />
+                <path
+                  d="M9 10.25V18.25L10.25 13.25H17.875V11.75C17.875 11.4739 17.6511 11.25 17.375 11.25H14L12.75 9.75H9.5C9.22386 9.75 9 9.97386 9 10.25Z"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M18 18.25L19 13.25H10.2031L9 18.25H18Z"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           {/if}
           {#if renderPicClose}
             <!-- renderPicClose：自定义照片墙关闭（移除）按钮。 -->
@@ -1643,7 +1671,7 @@
               {disabled}
               onclick={() => remove(item.uid)}
             >
-              &times;
+              <IconClear />
             </button>
           {/if}
           {#if item.status === 'uploadFail' && (item.showRetry ?? showRetry) !== false && item.file}
@@ -1655,7 +1683,7 @@
               {disabled}
               onclick={() => retryItem(item)}
             >
-              &#8635;
+              <IconRefresh />
             </button>
           {/if}
         </li>
