@@ -1494,7 +1494,7 @@
           {placeholder}
           ariaLabel={placeholder}
           {disabled}
-          clearable={showClear}
+          {showClear}
           onInput={handleSearchValue}
           onClear={clearSearch}
         >

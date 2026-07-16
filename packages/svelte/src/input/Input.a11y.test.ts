@@ -17,7 +17,7 @@ describe('Input a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Email', status: 'error' },
+      props: { ariaLabel: 'Email', validateStatus: 'error' },
     });
     const input = container.querySelector('input');
     expect(input?.getAttribute('aria-invalid')).toBe('true');
@@ -35,9 +35,9 @@ describe('Input a11y', () => {
 
   it('clearable：clear 按钮的 aria-label 来自 en_US locale（验证 LocaleProvider 管线）', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Search', clearable: true, defaultValue: 'hello' },
+      props: { ariaLabel: 'Search', showClear: true, defaultValue: 'hello' },
     });
-    const clearBtn = container.querySelector('.cd-input__clear');
+    const clearBtn = container.querySelector('.cd-input-clearbtn');
     expect(clearBtn).not.toBeNull();
     // en_US 语言包里 Input.clear 应为非空可访问名（不是空串/key 原样）。
     const label = clearBtn?.getAttribute('aria-label');
@@ -48,9 +48,9 @@ describe('Input a11y', () => {
 
   it('password：reveal 按钮 aria-pressed + locale 可访问名', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Password', type: 'password' },
+      props: { ariaLabel: 'Password', mode: 'password' },
     });
-    const revealBtn = container.querySelector('.cd-input__reveal');
+    const revealBtn = container.querySelector('.cd-input-modebtn');
     expect(revealBtn?.getAttribute('aria-pressed')).toBe('false');
     expect(revealBtn?.getAttribute('aria-label')).toBeTruthy();
     await expectNoAxeViolations(container);

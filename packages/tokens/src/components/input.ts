@@ -146,9 +146,7 @@ export const inputTokens = {
   'input-border-error': { value: 'var(--cd-color-input-danger-border-focus)', category: 'color', label: '错误描边色', usage: '输入框描边颜色 - 错误（组件消费）' },
   'input-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '输入框字号', usage: '输入框文字字号（组件消费）' },
   // InputNumber 步进器补充 token 已迁至 components/input-number.ts（组件消费，Semi inputNumber）。
-
-  // —— InputGroup（组件消费；多控件拼接容器：相邻边框合并 + 首尾圆角 + 组标签间距） ——
-  'inputgroup-border': { value: 'var(--cd-color-input-group-border-default)', category: 'color', label: '输入组分隔线色', usage: 'InputGroup 相邻控件分隔线颜色（组件消费）' },
-  'inputgroup-radius': { value: 'var(--cd-radius-input-wrapper)', category: 'radius', label: '输入组圆角', usage: 'InputGroup 首尾圆角（组件消费）' },
-  'inputgroup-label-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '输入组标签间距', usage: 'InputGroup 标签与控件的间距（组件消费）' },
+  // InputGroup 严格对齐 Semi 后不再自造 inputgroup-* 中间层：分隔线直引
+  //   --cd-color-input-group-border-default / --cd-width-input-group-pseudo-border（Semi 同名），
+  //   首尾圆角直引 --cd-radius-input-wrapper，标签间距用 --cd-spacing-base-tight。
 } satisfies TokenGroup;

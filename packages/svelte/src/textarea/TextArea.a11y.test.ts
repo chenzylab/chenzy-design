@@ -17,7 +17,7 @@ describe('TextArea a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(TextArea, {
-      props: { ariaLabel: 'Notes', status: 'error' },
+      props: { ariaLabel: 'Notes', validateStatus: 'error' },
     });
     const ta = container.querySelector('textarea');
     expect(ta?.getAttribute('aria-invalid')).toBe('true');
@@ -34,7 +34,7 @@ describe('TextArea a11y', () => {
         maxLength: 100,
       },
     });
-    const clearBtn = container.querySelector('.cd-textarea__clear');
+    const clearBtn = container.querySelector('.cd-input-clearbtn');
     expect(clearBtn).not.toBeNull();
     const label = clearBtn?.getAttribute('aria-label');
     expect(label).toBeTruthy();

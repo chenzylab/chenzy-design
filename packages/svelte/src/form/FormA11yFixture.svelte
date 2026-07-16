@@ -20,7 +20,7 @@
       <TextArea
         value={value === undefined ? '' : String(value)}
         {id}
-        status={status === 'error' ? 'error' : 'default'}
+        validateStatus={status === 'error' ? 'error' : 'default'}
         ariaLabel="Bio"
         {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
         onChange={(v) => onChange(v)}

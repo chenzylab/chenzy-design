@@ -1129,7 +1129,7 @@
             {size}
             value={leftQuery}
             placeholder={searchPlaceholderText}
-            clearable
+            showClear
             disabled={disabled}
             ariaLabel={searchPlaceholderText}
             onInput={(v) => onQueryInput('left', v)}
@@ -1204,7 +1204,7 @@
             {size}
             value={rightQuery}
             placeholder={searchPlaceholderText}
-            clearable
+            showClear
             disabled={disabled}
             ariaLabel={searchPlaceholderText}
             onInput={(v) => onQueryInput('right', v)}

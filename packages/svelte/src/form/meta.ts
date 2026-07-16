@@ -78,7 +78,7 @@ export const meta = {
     { name: 'Input.transform', type: '(v, values) => unknown', default: 'undefined', desc: '提交前值转换（纯函数）（spec §4.2）' },
     { name: 'Input.placeholder', type: 'string', default: 'undefined' },
     { name: 'Input.type', type: "'text'|'password'", default: 'text' },
-    { name: 'Input.clearable', type: 'boolean', default: 'false' },
+    { name: 'Input.showClear', type: 'boolean', default: 'false' },
     { name: 'Input.maxLength', type: 'number', default: 'undefined' },
     { name: 'Input.dependencies', type: 'string[]', default: 'undefined', desc: '依赖字段名；其值变化时本字段自动重校验' },
     { name: 'Input.trigger', type: "'change'|'blur'|'submit'|'mount'|string[]", default: '继承容器', desc: '字段级校验时机覆盖（spec §4）' },

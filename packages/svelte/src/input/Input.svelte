@@ -1,6 +1,8 @@
 <!--
-  Input — see specs/components/input/Input.spec.md
-  Token-driven, a11y-correct (native <input>), controlled / uncontrolled.
+  Input — 严格对齐 Semi Design（semi-ui/input/index.tsx）。
+  单层 semi-input-wrapper 容器 + 原生 <input class="semi-input">，受控/非受控，IME 安全。
+  DOM 结构镜像 Semi：wrapper 内直挂 prepend / prefix / input / clearbtn / suffix / modebtn / append
+  （前后置标签是 wrapper 的直接子级，非外层 group）。class 用 Semi 连字符体系（cd- 前缀）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -10,7 +12,8 @@
   import { getInputGroupContext } from './context.js';
 
   type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
+  /** Semi 保留 success（Form 会注入），Input 不为 success 配置特殊样式但接受为合法值。 */
+  type ValidateStatus = 'default' | 'warning' | 'error' | 'success';
 
   interface Props {
     value?: string;
@@ -19,60 +22,73 @@
     disabled?: boolean;
     readonly?: boolean;
     placeholder?: string;
-    clearable?: boolean;
+    /** 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear）。 */
+    showClear?: boolean;
     showCount?: boolean;
     maxLength?: number;
-    status?: Status;
-    type?: 'text' | 'password';
+    /** 校验状态（对齐 Semi validateStatus，仅影响展示样式）。 */
+    validateStatus?: ValidateStatus;
+    /** 输入框模式，password 时启用密码显隐按钮（对齐 Semi mode）。 */
+    mode?: 'password';
+    /** 原生 input type，透传（对齐 Semi type，可为 text/number/email/search 等任意字符串）。 */
+    type?: string;
     prefix?: Snippet;
     suffix?: Snippet;
-    /** 自定义清除图标（clearable 且有值时替代内置清除图标）。对齐 Semi clearIcon。 */
+    /** 内嵌标签（渲染在输入框内左侧，与 prefix 同槽，对齐 Semi insetLabel）。 */
+    insetLabel?: Snippet | string;
+    /** 内嵌标签容器 id（关联 aria，对齐 Semi insetLabelId）。 */
+    insetLabelId?: string;
+    /** 自定义清除图标（showClear 且有值时替代内置清除图标，对齐 Semi clearIcon）。 */
     clearIcon?: Snippet;
-    /** 前置标签（在 input 框外左侧，如 "https://"）；传 Snippet 可自定义渲染 */
+    /** 前置标签（在输入框内左侧、prefix 更外层，如 "https://"）；传 Snippet 可自定义渲染。 */
     addonBefore?: Snippet | string;
-    /** 后置标签（在 input 框外右侧，如 ".com"）；传 Snippet 可自定义渲染 */
+    /** 后置标签（在输入框内右侧，如 ".com"）；传 Snippet 可自定义渲染。 */
     addonAfter?: Snippet | string;
-    /** 无边框模式 */
+    /** 无边框模式（对齐 Semi borderless）。 */
     borderless?: boolean;
-    /** 自定义字符计数函数，替代默认 value.length（用于 showCount 展示和 maxLength 校验） */
+    /** 自定义字符计数函数，替代默认 [...value].length（用于 showCount 展示与 maxLength 校验）。 */
     getValueLength?: (value: string) => number;
-    /** 有值时隐藏 suffix（常用于清除按钮/搜索图标场景） */
+    /** 清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix）。 */
     hideSuffix?: boolean;
-    /** 调用 focus() 时传入 { preventScroll } 参数 */
+    /** 根容器内联样式（对齐 Semi style）。 */
+    style?: string;
+    /** 根容器自定义类名（对齐 Semi className）。 */
+    class?: string;
+    /** input 元素内联样式（对齐 Semi inputStyle）。 */
+    inputStyle?: string;
+    /** 调用 focus() 时传入 { preventScroll } 参数（对齐 Semi preventScroll）。 */
     preventScroll?: boolean;
-    /** 组件挂载时自动聚焦 */
+    /** 组件挂载时自动聚焦（对齐 Semi autoFocus）。 */
     autoFocus?: boolean;
     /**
-     * IME 输入缓冲（对齐 Semi `composition`）。默认 false：拼音输入过程中每次输入都触发
-     * onChange。true：IME 未确认期间不触发 onChange，确认（compositionend）后补触发一次。
+     * 输入法模式（对齐 Semi composition）。默认 false：拼音输入过程中每次输入都触发 onChange。
+     * true：IME 未确认期间不触发 onChange，确认（compositionend）后补触发一次。
      */
     composition?: boolean;
     name?: string;
     id?: string;
     ariaLabel?: string;
+    ariaLabelledby?: string;
     ariaDescribedby?: string;
+    ariaErrormessage?: string;
     /** 必填语义（Form.Field required 透传）：输出 aria-required="true"。 */
     ariaRequired?: boolean;
-    onChange?: (v: string) => void;
-    onInput?: (v: string) => void;
-    onClear?: () => void;
-    /** 回车按下（spec §4 on:enterPress）。Enter 触发，composition 中不触发。 */
+    /** 内容变化回调（对齐 Semi：第二参为原生事件）。 */
+    onChange?: (value: string, e: Event) => void;
+    /** 原生 input 事件回调（对齐 Semi）。 */
+    onInput?: (value: string, e: Event) => void;
+    /** 点击清除按钮回调（对齐 Semi：透传鼠标事件）。 */
+    onClear?: (e: MouseEvent) => void;
+    /** 回车按下（对齐 Semi onEnterPress）。composition 中不触发。 */
     onEnterPress?: (e: KeyboardEvent) => void;
-    /** @deprecated 改用 onEnterPress（保留向后兼容）。 */
-    onEnter?: (e: KeyboardEvent) => void;
     onFocus?: (e: FocusEvent) => void;
     onBlur?: (e: FocusEvent) => void;
     /** 原生 keydown 透传（对齐 Semi onKeyDown）。onEnterPress 逻辑不受影响。 */
     onKeyDown?: (e: KeyboardEvent) => void;
-    /** 原生 keyup 透传（对齐 Semi onKeyUp）。 */
     onKeyUp?: (e: KeyboardEvent) => void;
-    /** 原生 keypress 透传（对齐 Semi onKeyPress）。 */
     onKeyPress?: (e: KeyboardEvent) => void;
-    /** 原生 compositionstart 透传（对齐 Semi onCompositionStart）。 */
     onCompositionStart?: (e: CompositionEvent) => void;
-    /** 原生 compositionend 透传（对齐 Semi onCompositionEnd）。 */
     onCompositionEnd?: (e: CompositionEvent) => void;
-    /** 原生 compositionupdate 透传（对齐 Semi onCompositionUpdate）。 */
     onCompositionUpdate?: (e: CompositionEvent) => void;
   }
 
@@ -83,32 +99,39 @@
     disabled: disabledProp,
     readonly = false,
     placeholder,
-    clearable = false,
+    showClear = false,
     showCount = false,
     maxLength,
-    status = 'default',
+    validateStatus = 'default',
+    mode,
     type = 'text',
     prefix,
     suffix,
+    insetLabel,
+    insetLabelId,
     clearIcon,
     addonBefore,
     addonAfter,
     borderless = false,
     getValueLength,
     hideSuffix = false,
+    style,
+    class: className,
+    inputStyle,
     preventScroll = false,
     autoFocus = false,
     composition = false,
     name,
     id,
     ariaLabel,
+    ariaLabelledby,
     ariaDescribedby,
+    ariaErrormessage,
     ariaRequired,
     onChange,
     onInput,
     onClear,
     onEnterPress,
-    onEnter,
     onFocus,
     onBlur,
     onKeyDown,
@@ -136,31 +159,26 @@
 
   let composing = $state(false);
   let revealed = $state(false);
-  const inputType = $derived(type === 'password' && !revealed ? 'password' : 'text');
+  const inputType = $derived(mode === 'password' && !revealed ? 'password' : type);
 
   const len = $derived(getValueLength ? getValueLength(current) : [...current].length);
 
   function setValue(next: string) {
-    // Controlled (`value=` / `bind:value`): the parent owns `value`. We do NOT
-    // write the prop here — the change is propagated via `onChange` (callers
-    // always invoke it). Writing the prop AND firing `onChange` is what creates
-    // the value -> onChange -> value update loop (effect_update_depth_exceeded).
-    // Uncontrolled: keep our own state in sync.
+    // 受控时不回写 prop，仅经 onChange 上报（避免 value→onChange→value 死循环）。
     if (!isControlled) inner = next;
   }
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.value;
     setValue(next);
-    onInput?.(next);
-    // composition 缓冲仅在 composition=true 时生效：此时 IME 拼音过程中不触发 onChange，
-    // 等 compositionend 补触发一次。composition=false（默认，对齐 Semi）则每次输入都触发。
-    if (!(composition && composing)) onChange?.(next);
+    onInput?.(next, e);
+    // composition 缓冲仅在 composition=true 时生效。
+    if (!(composition && composing)) onChange?.(next, e);
   }
 
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
     if (composition && composing) return;
-    onChange?.(e.currentTarget.value);
+    onChange?.(e.currentTarget.value, e);
   }
 
   function handleCompositionStart(e: CompositionEvent) {
@@ -170,56 +188,65 @@
 
   function handleCompositionEnd(e: CompositionEvent & { currentTarget: HTMLInputElement }) {
     composing = false;
-    // 仅在 composition=true 时补触发 onChange（composition=false 时 input 事件已实时触发过，
-    // 此处再触发会重复）。
     if (composition) {
       const next = e.currentTarget.value;
       setValue(next);
-      onChange?.(next);
+      onChange?.(next, e);
     }
     onCompositionEnd?.(e);
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !composing) {
-      onEnterPress?.(e);
-      onEnter?.(e);
-    }
+    if (e.key === 'Enter' && !composing) onEnterPress?.(e);
     onKeyDown?.(e);
   }
 
-  function clear() {
+  function clear(e: MouseEvent) {
     setValue('');
-    onClear?.();
-    onChange?.('');
+    onClear?.(e);
+    onChange?.('', e);
+    inputEl?.focus({ preventScroll });
   }
 
   function toggleReveal() {
     revealed = !revealed;
   }
 
-  const showClear = $derived(clearable && !disabled && !readonly && current.length > 0);
+  const allowClear = $derived(showClear && !disabled && !readonly && current.length > 0);
+  const showModeBtn = $derived(mode === 'password' && !disabled);
+  const isError = $derived(validateStatus === 'error');
 
-  // suffix 显示条件：hideSuffix 为 true 且有值时隐藏
-  const showSuffix = $derived(suffix && !(hideSuffix && current.length > 0));
+  // suffix 显示条件：hideSuffix 为 true 且清除按钮可见时隐藏（对齐 Semi）。
+  const suffixHidden = $derived(hideSuffix && allowClear);
 
-  // addonBefore/addonAfter 的 Snippet 判断
+  // 前缀槽（prefix 或 insetLabel，对齐 Semi renderPrefix：二者同槽）。
+  const prefixNode = $derived(prefix ?? insetLabel);
+  const prefixSnippet = $derived(typeof prefixNode === 'function' ? (prefixNode as Snippet) : undefined);
   const addonBeforeSnippet = $derived(typeof addonBefore === 'function' ? (addonBefore as Snippet) : undefined);
   const addonAfterSnippet = $derived(typeof addonAfter === 'function' ? (addonAfter as Snippet) : undefined);
 
-  const cls = $derived(
+  const wrapperCls = $derived(
     [
-      'cd-input',
-      `cd-input--${size}`,
-      `cd-input--${status}`,
-      disabled && 'cd-input--disabled',
-      borderless && 'cd-input--borderless',
+      'cd-input-wrapper',
+      `cd-input-wrapper-${size}`,
+      (prefix != null || insetLabel != null) && 'cd-input-wrapper__with-prefix',
+      suffix != null && 'cd-input-wrapper__with-suffix',
+      suffixHidden && 'cd-input-wrapper__with-suffix-hidden',
+      addonBefore != null && 'cd-input-wrapper__with-prepend',
+      addonAfter != null && 'cd-input-wrapper__with-append',
+      readonly && 'cd-input-wrapper-readonly',
+      disabled && 'cd-input-wrapper-disabled',
+      validateStatus === 'warning' && 'cd-input-wrapper-warning',
+      validateStatus === 'error' && 'cd-input-wrapper-error',
+      allowClear && 'cd-input-wrapper-clearable',
+      mode === 'password' && 'cd-input-wrapper-modebtn',
+      borderless && 'cd-input-borderless',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
-  // --- autoFocus 命令式（红线 #3）---
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
 
   /** 命令式聚焦（对齐 Semi focus()）。沿用 preventScroll prop。 */
@@ -233,7 +260,7 @@
   }
 
   $effect(() => {
-    if (!autoFocus || !inputEl) return;
+    if (!autoFocus || !inputEl || disabled) return;
     const el = inputEl;
     let raf: number;
     tick().then(() => {
@@ -245,223 +272,117 @@
   });
 </script>
 
-{#if addonBefore != null || addonAfter != null}
-  <div class="cd-input-group">
-    {#if addonBefore != null}
-      <span class="cd-input__addon cd-input__addon--before">
-        {#if addonBeforeSnippet}{@render addonBeforeSnippet()}{:else}{addonBefore}{/if}
-      </span>
-    {/if}
-
-    <div class={cls} aria-invalid={status === 'error' || undefined}>
-      {#if prefix}<span class="cd-input__affix cd-input__prefix">{@render prefix()}</span>{/if}
-
-      <input
-        bind:this={inputEl}
-        class="cd-input__native"
-        type={inputType}
-        {name}
-        {id}
-        {disabled}
-        {readonly}
-        {placeholder}
-        maxlength={maxLength}
-        value={current}
-        aria-label={ariaLabel}
-        aria-describedby={ariaDescribedby}
-        aria-required={ariaRequired || undefined}
-        aria-invalid={status === 'error' || undefined}
-        oninput={handleInput}
-        onchange={handleChange}
-        onkeydown={handleKeydown}
-        onkeyup={onKeyUp}
-        onkeypress={onKeyPress}
-        oncompositionstart={handleCompositionStart}
-        oncompositionend={handleCompositionEnd}
-        oncompositionupdate={onCompositionUpdate}
-        onfocus={onFocus}
-        onblur={onBlur}
-      />
-
-      {#if showClear}
-        <button
-          type="button"
-          class="cd-input__action cd-input__clear"
-          aria-label={loc().t('Input.clear')}
-          onclick={clear}
-        >
-          {#if clearIcon}
-            {@render clearIcon()}
-          {:else}
-            <IconClear />
-          {/if}
-        </button>
-      {/if}
-
-      {#if type === 'password'}
-        <button
-          type="button"
-          class="cd-input__action cd-input__reveal"
-          aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
-          aria-pressed={revealed}
-          onclick={toggleReveal}
-        >
-          {#if revealed}
-            <IconEyeOpened />
-          {:else}
-            <IconEyeClosedSolid />
-          {/if}
-        </button>
-      {/if}
-
-      {#if showCount}
-        <span class="cd-input__count">
-          {len}{#if maxLength !== undefined}/{maxLength}{/if}
-        </span>
-      {/if}
-
-      {#if showSuffix}<span class="cd-input__affix cd-input__suffix">{@render suffix!()}</span>{/if}
+<div class={wrapperCls} {style} aria-invalid={isError || undefined}>
+  {#if addonBefore != null}
+    <div class="cd-input-prepend">
+      {#if addonBeforeSnippet}{@render addonBeforeSnippet()}{:else}{addonBefore}{/if}
     </div>
+  {/if}
 
-    {#if addonAfter != null}
-      <span class="cd-input__addon cd-input__addon--after">
-        {#if addonAfterSnippet}{@render addonAfterSnippet()}{:else}{addonAfter}{/if}
-      </span>
-    {/if}
-  </div>
-{:else}
-  <div class={cls} aria-invalid={status === 'error' || undefined}>
-    {#if prefix}<span class="cd-input__affix cd-input__prefix">{@render prefix()}</span>{/if}
+  {#if prefixNode != null}
+    <div class="cd-input-prefix" class:cd-input-inset-label={insetLabel != null && prefix == null} id={insetLabelId}>
+      {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefixNode}{/if}
+    </div>
+  {/if}
 
-    <input
-      bind:this={inputEl}
-      class="cd-input__native"
-      type={inputType}
-      {name}
-      {id}
-      {disabled}
-      {readonly}
-      {placeholder}
-      maxlength={maxLength}
-      value={current}
-      aria-label={ariaLabel}
-      aria-describedby={ariaDescribedby}
-      aria-required={ariaRequired || undefined}
-      aria-invalid={status === 'error' || undefined}
-      oninput={handleInput}
-      onchange={handleChange}
-      onkeydown={handleKeydown}
-      onkeyup={onKeyUp}
-      onkeypress={onKeyPress}
-      oncompositionstart={handleCompositionStart}
-      oncompositionend={handleCompositionEnd}
-      oncompositionupdate={onCompositionUpdate}
-      onfocus={onFocus}
-      onblur={onBlur}
-    />
+  <input
+    bind:this={inputEl}
+    class="cd-input"
+    class:cd-input-sibling-clearbtn={allowClear}
+    class:cd-input-sibling-modebtn={mode === 'password'}
+    style={inputStyle}
+    type={inputType}
+    {name}
+    {id}
+    {disabled}
+    {readonly}
+    {placeholder}
+    maxlength={getValueLength ? undefined : maxLength}
+    value={current}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    aria-describedby={ariaDescribedby}
+    aria-errormessage={ariaErrormessage}
+    aria-required={ariaRequired || undefined}
+    aria-invalid={isError || undefined}
+    oninput={handleInput}
+    onchange={handleChange}
+    onkeydown={handleKeydown}
+    onkeyup={onKeyUp}
+    onkeypress={onKeyPress}
+    oncompositionstart={handleCompositionStart}
+    oncompositionend={handleCompositionEnd}
+    oncompositionupdate={onCompositionUpdate}
+    onfocus={onFocus}
+    onblur={onBlur}
+  />
 
-    {#if showClear}
-      <button
-        type="button"
-        class="cd-input__action cd-input__clear"
-        aria-label={loc().t('Input.clear')}
-        onclick={clear}
-      >
-        {#if clearIcon}
-          {@render clearIcon()}
-        {:else}
-          <IconClear />
-        {/if}
-      </button>
-    {/if}
+  {#if allowClear}
+    <button
+      type="button"
+      class="cd-input-clearbtn"
+      aria-label={loc().t('Input.clear')}
+      onclick={clear}
+    >
+      {#if clearIcon}
+        {@render clearIcon()}
+      {:else}
+        <IconClear />
+      {/if}
+    </button>
+  {/if}
 
-    {#if type === 'password'}
-      <button
-        type="button"
-        class="cd-input__action cd-input__reveal"
-        aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
-        aria-pressed={revealed}
-        onclick={toggleReveal}
-      >
-        {#if revealed}
-          <IconEyeOpened />
-        {:else}
-          <IconEyeClosedSolid />
-        {/if}
-      </button>
-    {/if}
+  {#if suffix}
+    <div class="cd-input-suffix" class:cd-input-suffix-hidden={suffixHidden}>
+      {@render suffix()}
+    </div>
+  {/if}
 
-    {#if showCount}
-      <span class="cd-input__count">
-        {len}{#if maxLength !== undefined}/{maxLength}{/if}
-      </span>
-    {/if}
+  {#if showModeBtn}
+    <button
+      type="button"
+      class="cd-input-modebtn"
+      aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
+      aria-pressed={revealed}
+      onclick={toggleReveal}
+    >
+      {#if revealed}
+        <IconEyeOpened />
+      {:else}
+        <IconEyeClosedSolid />
+      {/if}
+    </button>
+  {/if}
 
-    {#if showSuffix}<span class="cd-input__affix cd-input__suffix">{@render suffix!()}</span>{/if}
-  </div>
-{/if}
+  {#if showCount}
+    <span class="cd-input-count">
+      {len}{#if maxLength !== undefined}/{maxLength}{/if}
+    </span>
+  {/if}
+
+  {#if addonAfter != null}
+    <div class="cd-input-append">
+      {#if addonAfterSnippet}{@render addonAfterSnippet()}{:else}{addonAfter}{/if}
+    </div>
+  {/if}
+</div>
 
 <style>
-  .cd-input-group {
-    display: inline-flex;
-    align-items: stretch;
-    inline-size: 100%;
-  }
-  /* 前/后置标签 —— 对齐 Semi input-prepend/append：灰底 + text-2 + 透明分隔描边 */
-  .cd-input__addon {
+  /* 输入框容器 —— 对齐 Semi input-wrapper：填充式灰底 + 透明描边，聚焦换 focus 边框。 */
+  .cd-input-wrapper {
     display: inline-flex;
     align-items: center;
-    flex: 0 0 auto;
-    padding-block: var(--cd-spacing-input-prepend-paddingy);
-    padding-inline: var(--cd-spacing-input-prepend-paddingx);
-    background: var(--cd-color-input-default-bg-default);
-    color: var(--cd-color-input-prefix-text-default);
-    font-size: var(--cd-input-font-size);
-    white-space: nowrap;
-    user-select: none;
-  }
-  .cd-input__addon--before {
-    border-inline-end: var(--cd-width-input-prepend-border) solid
-      var(--cd-color-input-default-border-default);
-    border-start-start-radius: var(--cd-radius-input-wrapper);
-    border-end-start-radius: var(--cd-radius-input-wrapper);
-  }
-  .cd-input__addon--after {
-    border-inline-start: var(--cd-width-input-append-border) solid
-      var(--cd-color-input-default-border-default);
-    border-start-end-radius: var(--cd-radius-input-wrapper);
-    border-end-end-radius: var(--cd-radius-input-wrapper);
-  }
-  /* 有 addon 时，input wrapper 的圆角需要调整 */
-  .cd-input-group .cd-input {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-  }
-  .cd-input-group .cd-input:not(:first-child) {
-    border-start-start-radius: 0;
-    border-end-start-radius: 0;
-  }
-  .cd-input-group .cd-input:not(:last-child) {
-    border-start-end-radius: 0;
-    border-end-end-radius: 0;
-  }
-  /* 输入框容器 —— 对齐 Semi input-wrapper：填充式灰底 + 透明描边，聚焦换 focus 边框 */
-  .cd-input {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-input-prefix-icon-marginx);
+    position: relative;
+    vertical-align: middle;
     inline-size: 100%;
-    block-size: var(--cd-height-input-wrapper-default);
-    padding-inline-start: var(--cd-spacing-input-paddingleft);
-    padding-inline-end: var(--cd-spacing-input-paddingright);
+    box-sizing: border-box;
     background: var(--cd-color-input-default-bg-default);
     color: var(--cd-color-input-default-text-default);
     border: var(--cd-width-input-wrapper-border) solid var(--cd-color-input-default-border-default);
     border-radius: var(--cd-radius-input-wrapper);
-    font-size: var(--cd-input-font-size);
-    line-height: var(--cd-height-input-default);
-    /* 过渡/变换由 input 专属 transition/transform token 接管（对齐 Semi animation.scss）：
-       默认 duration=0ms（无过渡），主题/DSM 可开启。 */
+    font-size: var(--cd-font-size-regular);
+    cursor: text;
+    /* 过渡由 input 专属 token 接管（对齐 Semi animation.scss）：默认 duration=0ms。 */
     transition:
       background-color var(--cd-transition-duration-input-bg)
         var(--cd-transition-function-input-bg) var(--cd-transition-delay-input-bg),
@@ -469,129 +390,178 @@
         var(--cd-transition-function-input-border) var(--cd-transition-delay-input-border);
     transform: var(--cd-transform-scale-input);
   }
-  /* Semi：small/default 字号统一 regular，仅 large 用 header-6 */
-  .cd-input--small {
+  .cd-input-wrapper-default {
+    block-size: var(--cd-height-input-wrapper-default);
+    line-height: var(--cd-height-input-default);
+  }
+  .cd-input-wrapper-small {
     block-size: var(--cd-height-input-wrapper-small);
     line-height: var(--cd-height-input-small);
   }
-  .cd-input--large {
+  .cd-input-wrapper-large {
     block-size: var(--cd-height-input-wrapper-large);
     font-size: var(--cd-font-size-header-6);
     line-height: var(--cd-height-input-large);
   }
-  /* 对齐 Semi 填充式：悬浮加深底色 */
-  .cd-input:hover:not(.cd-input--disabled):not(:focus-within) {
+  .cd-input-wrapper-readonly {
+    cursor: default;
+  }
+  /* 对齐 Semi 填充式：悬浮加深底色（无前后置标签时）。 */
+  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
     background: var(--cd-color-input-default-bg-hover);
     border-color: var(--cd-color-input-default-border-hover);
   }
-  .cd-input:focus-within {
+  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within {
     background: var(--cd-color-input-default-bg-focus);
-    border-color: var(--cd-color-input-default-border-focus);
+    border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-focus);
   }
-  .cd-input:focus-within:hover:not(.cd-input--warning):not(.cd-input--error) {
+  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
     background: var(--cd-color-input-default-bg-focus-hover);
   }
-  .cd-input:focus-within:active {
+  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:active {
     background: var(--cd-color-input-default-bg-active);
     border-color: var(--cd-color-input-default-border-focus);
   }
-  /* warning / error —— 对齐 Semi：浅色状态底 + 同色描边，聚焦换实色描边 */
-  .cd-input--warning {
+  /* warning / error —— 对齐 Semi：浅色状态底 + 同色描边，聚焦换实色描边。 */
+  .cd-input-wrapper-warning {
     background: var(--cd-color-input-warning-bg-default);
     border-color: var(--cd-color-input-warning-border-default);
   }
-  .cd-input--warning:hover:not(.cd-input--disabled):not(:focus-within) {
+  .cd-input-wrapper-warning:hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
     background: var(--cd-color-input-warning-bg-hover);
     border-color: var(--cd-color-input-warning-border-hover);
   }
-  .cd-input--warning:focus-within {
+  .cd-input-wrapper-warning:focus-within {
     background: var(--cd-color-input-warning-bg-focus);
     border-color: var(--cd-color-input-warning-border-focus);
   }
-  .cd-input--warning:active:not(.cd-input--disabled) {
+  .cd-input-wrapper-warning:active:not(.cd-input-wrapper-disabled) {
     background: var(--cd-color-input-warning-bg-active);
     border-color: var(--cd-color-input-warning-border-focus);
   }
-  .cd-input--error {
+  .cd-input-wrapper-error {
     background: var(--cd-color-input-danger-bg-default);
     border-color: var(--cd-color-input-danger-border-default);
   }
-  .cd-input--error:hover:not(.cd-input--disabled):not(:focus-within) {
+  .cd-input-wrapper-error:hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
     background: var(--cd-color-input-danger-bg-hover);
     border-color: var(--cd-color-input-danger-border-hover);
   }
-  .cd-input--error:focus-within {
+  .cd-input-wrapper-error:focus-within {
     background: var(--cd-color-input-danger-bg-focus);
     border-color: var(--cd-color-input-danger-border-focus);
   }
-  .cd-input--error:active:not(.cd-input--disabled) {
+  .cd-input-wrapper-error:active:not(.cd-input-wrapper-disabled) {
     background: var(--cd-color-input-danger-bg-active);
     border-color: var(--cd-color-input-danger-border-focus);
   }
-  .cd-input--disabled {
+  .cd-input-wrapper-disabled {
     background: var(--cd-color-input-disabled-bg-default);
     color: var(--cd-color-input-disabled-text-default);
-    /* fix：Safari 下禁用态文字颜色（对齐 Semi） */
     -webkit-text-fill-color: var(--cd-color-input-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-input--disabled:hover {
+  .cd-input-wrapper-disabled:hover {
     background: var(--cd-color-input-disabled-bg-default);
   }
-  .cd-input--disabled .cd-input__affix,
-  .cd-input--disabled .cd-input__action {
+  .cd-input-wrapper-disabled .cd-input-prefix,
+  .cd-input-wrapper-disabled .cd-input-suffix,
+  .cd-input-wrapper-disabled .cd-input-prepend,
+  .cd-input-wrapper-disabled .cd-input-append,
+  .cd-input-wrapper-disabled .cd-input-clearbtn,
+  .cd-input-wrapper-disabled .cd-input-modebtn {
     color: var(--cd-color-input-disabled-text-default);
   }
-  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边 */
-  .cd-input--borderless:not(:focus-within):not(:hover) {
-    background: transparent;
-    border-color: transparent;
-  }
-  .cd-input--borderless:focus-within:not(:active) {
+  /* 前后置标签模式：wrapper 转透明，内部 input 自持填充底（对齐 Semi with-prepend/append）。 */
+  .cd-input-wrapper__with-prepend,
+  .cd-input-wrapper__with-append {
     background: transparent;
   }
-  .cd-input--borderless.cd-input--error:not(:focus-within) {
-    border-color: var(--cd-color-input-danger-border-focus);
+  .cd-input-wrapper__with-prepend:hover,
+  .cd-input-wrapper__with-append:hover {
+    background: transparent;
   }
-  .cd-input--borderless.cd-input--warning:not(:focus-within) {
-    border-color: var(--cd-color-input-warning-border-focus);
+  .cd-input-wrapper__with-prepend:focus-within,
+  .cd-input-wrapper__with-append:focus-within {
+    background: transparent;
+    border-color: var(--cd-color-input-default-border-default);
   }
-  .cd-input__native {
+  .cd-input-wrapper__with-prepend .cd-input,
+  .cd-input-wrapper__with-append .cd-input {
+    background: var(--cd-color-input-default-bg-default);
+  }
+
+  /* input 元素 —— 对齐 Semi .semi-input：透明底 + 继承色 + 内边距。 */
+  .cd-input {
     flex: 1 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
     block-size: 100%;
     margin: 0;
-    padding: 0;
+    padding-inline-start: var(--cd-spacing-input-paddingleft);
+    padding-inline-end: var(--cd-spacing-input-paddingright);
     border: none;
     background: transparent;
     color: inherit;
     font: inherit;
+    box-sizing: border-box;
     outline: none;
   }
-  .cd-input__native::placeholder {
+  /* 对齐 Semi with-prefix/suffix：相应侧内边距归零，交给 prefix/suffix 槽。 */
+  .cd-input-wrapper__with-prefix .cd-input {
+    padding-inline-start: 0;
+  }
+  .cd-input-wrapper__with-suffix .cd-input {
+    padding-inline-end: 0;
+  }
+  .cd-input::placeholder {
     color: var(--cd-color-input-placeholder-text-default);
+    text-overflow: ellipsis;
   }
-  .cd-input__native:disabled {
+  .cd-input:disabled {
     cursor: not-allowed;
+    color: inherit;
   }
-  .cd-input--disabled .cd-input__native::placeholder {
+  .cd-input-wrapper-disabled .cd-input::placeholder {
     color: var(--cd-color-input-disabled-text-default);
   }
-  /* prefix/suffix —— 对齐 Semi：text-2 + bold 字重（图标不受 font-weight 影响） */
-  .cd-input__affix {
-    display: inline-flex;
-    align-items: center;
-    color: var(--cd-color-input-prefix-text-default);
-    font-weight: var(--cd-font-input-prefix-suffix-fontweight);
-    flex: 0 0 auto;
+  /* 隐藏浏览器原生密码/搜索的清除/显隐控件（对齐 Semi）。 */
+  .cd-input[type='password']::-ms-reveal,
+  .cd-input[type='password']::-ms-clear {
+    display: none;
   }
-  /* clear / 密码显隐按钮 —— 对齐 Semi clearbtn/modebtn 图标三态 + outline 聚焦 */
-  .cd-input__action {
+  .cd-input[type='search']::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  /* prefix/suffix —— 对齐 Semi：text-2 + bold 字重（图标不受 font-weight 影响）。 */
+  .cd-input-prefix,
+  .cd-input-suffix {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
+    color: var(--cd-color-input-prefix-text-default);
+    font-weight: var(--cd-font-input-prefix-suffix-fontweight);
+    white-space: nowrap;
+  }
+  .cd-input-inset-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .cd-input-suffix-hidden {
+    display: none;
+  }
+  /* clear / 密码显隐按钮 —— 对齐 Semi clearbtn/modebtn 图标三态 + outline 聚焦。 */
+  .cd-input-clearbtn,
+  .cd-input-modebtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    block-size: 100%;
+    min-inline-size: var(--cd-width-input-icon);
     padding: 0;
     border: none;
     background: transparent;
@@ -599,24 +569,78 @@
     cursor: pointer;
     border-radius: var(--cd-radius-input-wrapper);
   }
-  .cd-input__action:hover {
+  .cd-input-clearbtn:hover,
+  .cd-input-modebtn:hover {
     color: var(--cd-color-input-icon-hover);
   }
-  .cd-input__action:active {
+  .cd-input-clearbtn:active,
+  .cd-input-modebtn:active {
     color: var(--cd-color-input-icon-active);
   }
-  .cd-input__action:focus-visible {
+  .cd-input-clearbtn:focus-visible,
+  .cd-input-modebtn:focus-visible {
     outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
     outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
-  .cd-input__count {
+  /* 前后置标签 —— 对齐 Semi input-prepend/append：灰底 + text-2 + 分隔描边。 */
+  .cd-input-prepend,
+  .cd-input-append {
+    display: inline-flex;
+    align-items: center;
     flex: 0 0 auto;
+    block-size: 100%;
+    padding-block: var(--cd-spacing-input-prepend-paddingy);
+    padding-inline: var(--cd-spacing-input-prepend-paddingx);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-prefix-text-default);
+    font-size: var(--cd-font-size-regular);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .cd-input-prepend {
+    border-inline-end: var(--cd-width-input-prepend-border) solid
+      var(--cd-color-input-default-border-default);
+    border-start-start-radius: var(--cd-radius-input-wrapper);
+    border-end-start-radius: var(--cd-radius-input-wrapper);
+  }
+  .cd-input-append {
+    border-inline-start: var(--cd-width-input-append-border) solid
+      var(--cd-color-input-default-border-default);
+    border-start-end-radius: var(--cd-radius-input-wrapper);
+    border-end-end-radius: var(--cd-radius-input-wrapper);
+  }
+  /* 前后置标签模式下 input 侧的圆角调整（对齐 Semi with-prepend-only/append-only）。 */
+  .cd-input-wrapper__with-prepend:not(.cd-input-wrapper__with-append) .cd-input {
+    border-start-end-radius: var(--cd-radius-input-wrapper);
+    border-end-end-radius: var(--cd-radius-input-wrapper);
+  }
+  .cd-input-wrapper__with-append:not(.cd-input-wrapper__with-prepend) .cd-input {
+    border-start-start-radius: var(--cd-radius-input-wrapper);
+    border-end-start-radius: var(--cd-radius-input-wrapper);
+  }
+  .cd-input-count {
+    flex: 0 0 auto;
+    margin-inline-end: var(--cd-spacing-input-paddingright);
     color: var(--cd-color-input-counter-text-default);
     font-size: var(--cd-font-size-small);
     white-space: nowrap;
   }
+  /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。 */
+  .cd-input-borderless:not(:focus-within):not(:hover) {
+    background: transparent;
+    border-color: transparent;
+  }
+  .cd-input-borderless:focus-within:not(:active) {
+    background: transparent;
+  }
+  .cd-input-borderless.cd-input-wrapper-error:not(:focus-within) {
+    border-color: var(--cd-color-input-danger-border-focus);
+  }
+  .cd-input-borderless.cd-input-wrapper-warning:not(:focus-within) {
+    border-color: var(--cd-color-input-warning-border-focus);
+  }
   @media (prefers-reduced-motion: reduce) {
-    .cd-input {
+    .cd-input-wrapper {
       transition: none;
     }
   }

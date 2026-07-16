@@ -24,7 +24,7 @@
     transform?: (value: unknown, values: Record<string, unknown>) => unknown;
     placeholder?: string;
     type?: 'text' | 'password';
-    clearable?: boolean;
+    showClear?: boolean;
     maxLength?: number;
     dependencies?: string[];
     /** field-level override of the form's validateTrigger (spec §4 L84). */
@@ -43,7 +43,7 @@
     transform,
     placeholder,
     type = 'text',
-    clearable = false,
+    showClear = false,
     maxLength,
     dependencies,
     trigger,
@@ -78,11 +78,11 @@
     -->
     <Input
       value={value === undefined ? '' : String(value)}
-      status={status === 'error' ? 'error' : 'default'}
+      validateStatus={status === 'error' ? 'error' : 'default'}
       {disabled}
       {id}
-      {type}
-      {clearable}
+      {...(type === 'password' ? { mode: 'password' as const } : {})}
+      {showClear}
       {...(placeholder !== undefined ? { placeholder } : {})}
       {...(maxLength !== undefined ? { maxLength } : {})}
       {...(label !== undefined ? { ariaLabel: label } : {})}

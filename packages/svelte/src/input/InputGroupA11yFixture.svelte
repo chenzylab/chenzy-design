@@ -11,7 +11,7 @@
 </script>
 
 <InputGroup
-  {...label ? { label } : {}}
+  {...label ? { label: { text: label } } : {}}
   {...size ? { size } : {}}
   {...disabled !== undefined ? { disabled } : {}}
 >

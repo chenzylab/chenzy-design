@@ -359,7 +359,7 @@
               <div class="w120"><Input placeholder="禁用" disabled /></div>
             </div>
             <div class="prow">
-              <div class="w200"><Input placeholder="警告态" status="error" /></div>
+              <div class="w200"><Input placeholder="警告态" validateStatus="error" /></div>
             </div>
           {:else if previewKey === 'select'}
             <div class="prow">

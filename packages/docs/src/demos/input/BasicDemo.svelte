@@ -24,12 +24,12 @@
       {placeholder}
       {disabled}
       {size}
-      clearable
+      showClear
       value={inputVal}
       onChange={(v) => (inputVal = v)}
     />
-    <Input type="password" placeholder="密码" {disabled} {size} />
-    <Input status="error" placeholder="错误态" {disabled} {size} />
+    <Input mode="password" placeholder="密码" {disabled} {size} />
+    <Input validateStatus="error" placeholder="错误态" {disabled} {size} />
     <Input disabled={disabled || true} placeholder="禁用" {size} />
   </div>
   <Text type="tertiary">受控值：{inputVal || '（空）'}</Text>
@@ -45,9 +45,9 @@
   </div>
   <div data-testid="textarea-graphemes" style="margin-top:12px">
     <TextArea
-      placeholder="countGraphemes：emoji 👨‍👩‍👧 按视觉字符计数"
+      placeholder="getValueLength：emoji 👨‍👩‍👧 按视觉字符计数"
       showCount
-      countGraphemes
+      getValueLength={(s) => [...new Intl.Segmenter().segment(s)].length}
       maxCount={10}
       defaultValue="👨‍👩‍👧🇨🇳"
     />
@@ -64,7 +64,7 @@
     <Text type="tertiary">受控值长度：{taVal.length}</Text>
   </div>
   <div data-testid="textarea-autofocus" style="margin-top:12px">
-    <TextArea placeholder="status=error + autoFocus" status="error" autoFocus />
+    <TextArea placeholder="validateStatus=error + autoFocus" validateStatus="error" autoFocus />
   </div>
 
   <div data-testid="input-events" style="margin-top:12px">
@@ -85,8 +85,8 @@
       autosize={{ minRows: 1, maxRows: 6 }}
       onFocus={() => (taEvtLog = 'focus')}
       onBlur={() => (taEvtLog = 'blur')}
-      onEnterPress={({ event }) =>
-        (taEvtLog = event.ctrlKey || event.metaKey ? 'enterPress+mod' : 'enterPress')}
+      onEnterPress={(e) =>
+        (taEvtLog = e.ctrlKey || e.metaKey ? 'enterPress+mod' : 'enterPress')}
       onResize={({ height }) => (taResizeH = height)}
       onCompositionStart={() => (taEvtLog = 'compositionStart')}
       onCompositionEnd={() => (taEvtLog = 'compositionEnd')}

@@ -22,7 +22,7 @@
       <Input
         {value}
         placeholder={placeholder}
-        clearable={showClear}
+        {showClear}
         onInput={onChange}
         onClear={onClear}
       >

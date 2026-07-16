@@ -335,7 +335,7 @@
           ariaLabel={loc().t('Pagination.jumpTo')}
           value={jumpValue}
           onInput={(v) => (jumpValue = v)}
-          onEnter={jump}
+          onEnterPress={jump}
         />
       </span>
       {#if loc().t('Pagination.jumpToSuffix')}
