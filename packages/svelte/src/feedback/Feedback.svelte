@@ -19,6 +19,7 @@
   import { SideSheet } from '../side-sheet/index.js';
   import { TextArea } from '../textarea/index.js';
   import { RadioGroup } from '../radio/index.js';
+  import type { RadioChangeEvent } from '../radio/context.js';
   import { CheckboxGroup } from '../checkbox/index.js';
   import { Button } from '../button/index.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -117,9 +118,9 @@
     (textAreaProps?.onChange as ((v: string) => void) | undefined)?.(text);
     setValue(text);
   }
-  function handleRadioChange(v: unknown) {
-    (radioGroupProps?.onChange as ((v: unknown) => void) | undefined)?.(v);
-    setValue(v as string);
+  function handleRadioChange(e: RadioChangeEvent) {
+    (radioGroupProps?.onChange as ((e: RadioChangeEvent) => void) | undefined)?.(e);
+    setValue(e.target.value as string);
   }
   function handleCheckboxChange(v: unknown[]) {
     (checkboxGroupProps?.onChange as ((v: unknown[]) => void) | undefined)?.(v);

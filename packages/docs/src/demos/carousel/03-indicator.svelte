@@ -24,7 +24,7 @@
   />
   <Space>
     <span>类型</span>
-    <RadioGroup value={type} onChange={(v) => (type = v as typeof type)} type="button">
+    <RadioGroup value={type} onChange={(e) => (type = e.target.value as typeof type)} type="button">
       <Radio value="dot">dot</Radio>
       <Radio value="line">line</Radio>
       <Radio value="columnar">columnar</Radio>
@@ -32,7 +32,7 @@
   </Space>
   <Space>
     <span>位置</span>
-    <RadioGroup value={position} onChange={(v) => (position = v as typeof position)} type="button">
+    <RadioGroup value={position} onChange={(e) => (position = e.target.value as typeof position)} type="button">
       <Radio value="left">left</Radio>
       <Radio value="center">center</Radio>
       <Radio value="right">right</Radio>
@@ -40,7 +40,7 @@
   </Space>
   <Space>
     <span>尺寸</span>
-    <RadioGroup value={size} onChange={(v) => (size = v as typeof size)} type="button">
+    <RadioGroup value={size} onChange={(e) => (size = e.target.value as typeof size)} type="button">
       <Radio value="small">small</Radio>
       <Radio value="medium">medium</Radio>
     </RadioGroup>

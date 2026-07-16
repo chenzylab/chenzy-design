@@ -8,7 +8,7 @@
   <RadioGroup
     type="button"
     value={val}
-    onChange={(v) => (val = v)}
+    onChange={(e) => (val = e.target.value)}
     options={[
       { label: '日', value: 'day' },
       { label: '周', value: 'week' },

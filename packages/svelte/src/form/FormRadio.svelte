@@ -26,7 +26,6 @@
     /** Radio 自身的业务值（用于 RadioGroup；作为独立 Field 时通常不需要）。 */
     value?: RadioProps['value'];
     disabled?: boolean;
-    size?: RadioProps['size'];
     type?: RadioProps['type'];
     children?: Snippet;
   }
@@ -45,7 +44,6 @@
     trigger,
     value: radioValue = '' as RadioProps['value'],
     disabled,
-    size,
     type,
     children: slotChildren,
   }: Props = $props();
@@ -67,15 +65,13 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, disabled: fieldDisabled })}
     <Radio
       value={radioValue}
       {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={disabled ?? fieldDisabled}
-      {...(size !== undefined ? { size } : {})}
       {...(type !== undefined ? { type } : {})}
-      status={status === 'error' ? 'error' : 'default'}
-      onChange={(checked) => onChange(checked)}
+      onChange={(e) => onChange(e.target.checked)}
     >
       {@render slotChildren?.()}
     </Radio>

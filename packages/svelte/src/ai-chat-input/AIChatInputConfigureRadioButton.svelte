@@ -6,7 +6,7 @@
   import { untrack } from 'svelte';
   import { RadioGroup } from '../radio/index.js';
   import { getConfigureContext } from './configure-context.js';
-  import type { RadioValue } from '../radio/context.js';
+  import type { RadioValue, RadioChangeEvent } from '../radio/context.js';
 
   interface Props {
     /** 绑定的配置字段名。 */
@@ -35,7 +35,8 @@
 
   const value = $derived(ctx?.getValue()[field] as RadioValue | undefined);
 
-  function handleChange(v: RadioValue): void {
+  function handleChange(e: RadioChangeEvent): void {
+    const v = e.target.value;
     ctx?.setField({ [field]: v });
     onChange?.(v);
   }

@@ -14,7 +14,7 @@
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 12px;">
-  <RadioGroup value={shape} onChange={(v) => (shape = v as CropperShape)}>
+  <RadioGroup value={shape} onChange={(e) => (shape = e.target.value as CropperShape)}>
     <Radio value="rect">rect</Radio>
     <Radio value="round">round</Radio>
     <Radio value="roundRect">roundRect</Radio>

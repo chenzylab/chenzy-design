@@ -26,7 +26,7 @@
 {#snippet e8()}{@render allday('7月25日 8:00 ~ 7月27日 6:00')}{/snippet}
 {#snippet e9()}{@render allday('7月26日 10:00 ~ 7月27日 16:00')}{/snippet}
 
-<RadioGroup type="button" value={mode} onChange={(v) => (mode = v as Mode)}>
+<RadioGroup type="button" value={mode} onChange={(e) => (mode = e.target.value as Mode)}>
   <Radio value="day">日视图</Radio>
   <Radio value="week">周视图</Radio>
   <Radio value="month">月视图</Radio>

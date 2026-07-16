@@ -15,7 +15,7 @@
   <Carousel slides={[s0, s1, s2]} {theme} autoPlay={false} style="width:100%;height:320px" />
   <Space>
     <span>主题</span>
-    <RadioGroup value={theme} onChange={(v) => (theme = v as Theme)} type="button">
+    <RadioGroup value={theme} onChange={(e) => (theme = e.target.value as Theme)} type="button">
       <Radio value="primary">primary</Radio>
       <Radio value="light">light</Radio>
       <Radio value="dark">dark</Radio>

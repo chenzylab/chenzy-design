@@ -19,7 +19,7 @@
   <RadioGroup
     type="button"
     value={hotSpot}
-    onChange={(v) => (hotSpot = v as 'start' | 'end')}
+    onChange={(e) => (hotSpot = e.target.value as 'start' | 'end')}
     options={[
       { label: 'start', value: 'start' },
       { label: 'end', value: 'end' },

@@ -22,14 +22,14 @@
   />
   <Space>
     <span>展示箭头</span>
-    <RadioGroup value={show} onChange={(v) => (show = v as boolean)} type="button">
+    <RadioGroup value={show} onChange={(e) => (show = e.target.value as boolean)} type="button">
       <Radio value={true}>show</Radio>
       <Radio value={false}>hide</Radio>
     </RadioGroup>
   </Space>
   <Space>
     <span>展示时机</span>
-    <RadioGroup value={arrowType} onChange={(v) => (arrowType = v as typeof arrowType)} type="button">
+    <RadioGroup value={arrowType} onChange={(e) => (arrowType = e.target.value as typeof arrowType)} type="button">
       <Radio value="always">always</Radio>
       <Radio value="hover">hover</Radio>
     </RadioGroup>

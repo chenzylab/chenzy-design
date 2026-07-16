@@ -9,7 +9,7 @@
   type="button"
   ariaLabel="周起始日"
   value={weekStartsOn}
-  onChange={(v) => (weekStartsOn = v as 0 | 1 | 2 | 3 | 4 | 5 | 6)}
+  onChange={(e) => (weekStartsOn = e.target.value as 0 | 1 | 2 | 3 | 4 | 5 | 6)}
 >
   <Radio value={0}>周日</Radio>
   <Radio value={1}>周一</Radio>

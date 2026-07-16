@@ -7,7 +7,7 @@
 <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
   <RadioGroup
     value={val}
-    onChange={(v) => (val = v)}
+    onChange={(e) => (val = e.target.value)}
     options={[
       { label: '苹果', value: '1' },
       { label: '橘子', value: '2' },

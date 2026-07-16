@@ -7,7 +7,7 @@
   const change = () => (visible = !visible);
 </script>
 
-<RadioGroup value={size} onChange={(v) => (size = v as Size)}>
+<RadioGroup value={size} onChange={(e) => (size = e.target.value as Size)}>
   <Radio value="small">small</Radio>
   <Radio value="medium">medium</Radio>
   <Radio value="large">large</Radio>

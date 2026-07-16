@@ -28,7 +28,7 @@
       <RadioGroup
         type="button"
         value={visible}
-        onChange={(v) => (visible = v as boolean)}
+        onChange={(e) => (visible = e.target.value as boolean)}
       >
         <Radio value={true}>受控显示</Radio>
         <Radio value={false}>受控隐藏</Radio>

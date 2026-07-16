@@ -22,7 +22,7 @@
   </div>
 
   <div style="width:240px;">
-    <RadioGroup value={picked} onChange={(v) => (picked = v as string)}>
+    <RadioGroup value={picked} onChange={(e) => (picked = e.target.value as string)}>
       <List dataSource={data} split={false} size="small" style="border:1px solid var(--cd-color-border);">
         {#snippet renderItem(item)}
           <List.Item><Radio value={item}>{item}</Radio></List.Item>

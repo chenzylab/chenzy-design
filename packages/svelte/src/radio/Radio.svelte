@@ -1,7 +1,8 @@
 <!--
-  Radio — see specs/components/input/Radio.spec.md
+  Radio — 严格对齐 Semi radio.tsx / radioInner.tsx。
   Inside RadioGroup: role=radio via native input, roving tabindex.
   Standalone: self controlled / uncontrolled.
+  onChange 回调收到对齐 Semi 的 RadioChangeEvent（e.target.{checked,value}）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -9,9 +10,8 @@
   import {
     getRadioGroupContext,
     type RadioValue,
-    type RadioSize,
-    type RadioStatus,
     type RadioType,
+    type RadioChangeEvent,
   } from './context.js';
 
   interface Props {
@@ -19,19 +19,20 @@
     checked?: boolean;
     defaultChecked?: boolean;
     disabled?: boolean;
-    size?: RadioSize;
-    status?: RadioStatus;
     type?: RadioType;
     name?: string;
     extra?: string | undefined;
     children?: Snippet;
-    onChange?: (checked: boolean) => void;
+    /** 对齐 Semi：变更回调收到 RadioChangeEvent（e.target.{checked,value}）。 */
+    onChange?: (e: RadioChangeEvent) => void;
     addonId?: string;
     addonClassName?: string;
     addonStyle?: string;
     autoFocus?: boolean;
     extraId?: string;
     mode?: 'advanced' | '';
+    /** 根元素附加 class（对齐 Semi className；本库惯例用 class）。 */
+    class?: string;
     style?: string;
     onMouseEnter?: (e: MouseEvent) => void;
     onMouseLeave?: (e: MouseEvent) => void;
@@ -44,8 +45,6 @@
     checked = $bindable(),
     defaultChecked = false,
     disabled = false,
-    size = 'default',
-    status = 'default',
     type,
     name,
     extra,
@@ -57,6 +56,7 @@
     autoFocus = false,
     extraId: extraIdProp,
     mode = '',
+    class: className,
     style,
     onMouseEnter,
     onMouseLeave,
@@ -92,12 +92,11 @@
   }
 
   const resolvedDisabled = $derived(disabled || (group ? group.getDisabled() : false));
-  const resolvedSize = $derived(group ? group.getSize() : size);
-  // Group transparently provides `status`; a per-item non-default `status` overrides it.
-  const resolvedStatus = $derived(status !== 'default' ? status : (group?.getStatus() ?? 'default'));
   const resolvedName = $derived(group ? group.name : name);
   // type 优先取本项显式值，否则继承 Group，再退 default。
   const resolvedType = $derived<RadioType>(type ?? group?.getType() ?? 'default');
+  // button 型的尺寸（仅 group + type=button 时生效，对齐 Semi buttonSize）。
+  const resolvedButtonSize = $derived(group?.getButtonSize());
   // button/card/pureCard 用 role=radio 容器（非原生 input），其余用隐藏 input。
   const isFancy = $derived(resolvedType !== 'default');
 
@@ -108,18 +107,28 @@
   // roving tabindex: in a group only the tab stop is 0, else -1; standalone always 0
   const tabindex = $derived(group ? (group.isTabStop(value, resolvedDisabled) ? 0 : -1) : 0);
 
+  /** 构造对齐 Semi 的 RadioChangeEvent（e.target.{checked,value}）。 */
+  function makeEvent(nextChecked: boolean, nativeEvent?: Event): RadioChangeEvent {
+    return {
+      target: { checked: nextChecked, value, name: resolvedName, mode },
+      ...(nativeEvent ? { nativeEvent } : {}),
+      stopPropagation: () => nativeEvent?.stopPropagation(),
+      preventDefault: () => nativeEvent?.preventDefault(),
+    };
+  }
+
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.checked;
     if (group) {
-      group.select(value);
-      onChange?.(true);
+      group.select(value, makeEvent(true, e));
+      onChange?.(makeEvent(true, e));
       return;
     }
     // Controlled (`checked=` / `bind:checked`): parent owns `checked`; propagate
     // only via `onChange`. Writing the prop AND firing `onChange` loops.
     // Uncontrolled: keep our own state in sync.
     if (!isControlled) inner = next;
-    onChange?.(next);
+    onChange?.(makeEvent(next, e));
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -132,33 +141,33 @@
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
       if (mode === 'advanced' && isChecked) {
-        onChange?.(false);
+        onChange?.(makeEvent(false, e));
         return;
       }
-      activate();
+      activate(e);
       return;
     }
     group?.onKeydown(e, value);
   }
 
-  function handleFancyClick() {
+  function handleFancyClick(e: MouseEvent) {
     if (resolvedDisabled) return;
     if (mode === 'advanced' && isChecked) {
-      onChange?.(false);
+      onChange?.(makeEvent(false, e));
       return;
     }
-    activate();
+    activate(e);
   }
 
   // 选中本项（用于 role=radio 容器的点击/键盘），同 handleChange 的提交逻辑。
-  function activate() {
+  function activate(nativeEvent?: Event) {
     if (group) {
-      group.select(value);
-      onChange?.(true);
+      group.select(value, makeEvent(true, nativeEvent));
+      onChange?.(makeEvent(true, nativeEvent));
       return;
     }
     if (!isControlled) inner = true;
-    onChange?.(true);
+    onChange?.(makeEvent(true, nativeEvent));
   }
 
   /** Register this radio's focusable element with the group for roving focus management. */
@@ -171,11 +180,11 @@
   const cls = $derived(
     [
       'cd-radio',
-      `cd-radio--${resolvedSize}`,
       `cd-radio--${resolvedType}`,
-      resolvedStatus !== 'default' && `cd-radio--${resolvedStatus}`,
+      isFancy && resolvedType === 'button' && resolvedButtonSize && `cd-radio--button-${resolvedButtonSize}`,
       isChecked && 'cd-radio--checked',
       resolvedDisabled && 'cd-radio--disabled',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -249,7 +258,8 @@
   }
   .cd-radio--disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    /* 对齐 Semi：禁用态用精确禁用色 token（非 opacity 近似）。 */
+    color: var(--cd-color-radio-disabled-text-default);
   }
   .cd-radio__input {
     position: absolute;
@@ -269,38 +279,30 @@
     margin-top: 2px;
     inline-size: var(--cd-radio-size-default);
     block-size: var(--cd-radio-size-default);
-    background: var(--cd-radio-bg);
-    border: 1px solid var(--cd-radio-border);
+    background: var(--cd-color-radio-default-bg-default);
+    border: 1px solid var(--cd-color-radio-default-border-default);
     border-radius: var(--cd-border-radius-full);
     transition:
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-radio--small .cd-radio__circle {
-    inline-size: var(--cd-radio-size-small);
-    block-size: var(--cd-radio-size-small);
-  }
-  .cd-radio--large .cd-radio__circle {
-    inline-size: var(--cd-radio-size-large);
-    block-size: var(--cd-radio-size-large);
-  }
   /* 未选中态悬浮：对齐 Semi（描边 focus-border、背景 fill-0） */
   .cd-radio:hover:not(.cd-radio--disabled):not(.cd-radio--checked) .cd-radio__circle {
-    background: var(--cd-radio-bg-hover);
-    border-color: var(--cd-radio-border-hover);
+    background: var(--cd-color-radio-default-bg-hover);
+    border-color: var(--cd-color-radio-default-border-hover);
   }
   /* 选中态：品牌色实心圆底 + 描边，中心白点（对齐 Semi .inner-checked .inner-display）。 */
   .cd-radio--checked .cd-radio__circle {
-    background: var(--cd-radio-bg-checked);
-    border-color: var(--cd-radio-color-checked);
+    background: var(--cd-color-radio-primary-bg-default);
+    border-color: var(--cd-color-radio-primary-border-default);
   }
   .cd-radio--checked:hover:not(.cd-radio--disabled) .cd-radio__circle {
-    background: var(--cd-radio-bg-checked-hover);
-    border-color: var(--cd-radio-bg-checked-hover);
+    background: var(--cd-color-radio-primary-bg-hover);
+    border-color: var(--cd-color-radio-primary-bg-hover);
   }
   .cd-radio--checked:active:not(.cd-radio--disabled) .cd-radio__circle {
-    background: var(--cd-radio-bg-checked-active);
-    border-color: var(--cd-radio-bg-checked-active);
+    background: var(--cd-color-radio-primary-bg-active);
+    border-color: var(--cd-color-radio-primary-bg-active);
   }
   .cd-radio--checked .cd-radio__circle::after {
     content: '';
@@ -309,15 +311,17 @@
     inline-size: 50%;
     block-size: 50%;
     transform: translate(-50%, -50%);
-    background: var(--cd-radio-dot-color);
+    background: var(--cd-color-radio-primary-text-default);
     border-radius: var(--cd-border-radius-full);
   }
-  /* 校验态：边框改用 warning/error，覆盖默认与 checked 描边（token 驱动） */
-  .cd-radio--warning .cd-radio__circle {
-    border-color: var(--cd-radio-color-warning);
+  /* 禁用态圆圈：对齐 Semi 精确禁用色（描边 border、背景 disabled-fill）。 */
+  .cd-radio--disabled .cd-radio__circle {
+    background: var(--cd-color-radio-disabled-bg-default);
+    border-color: var(--cd-color-radio-default-border-disabled);
   }
-  .cd-radio--error .cd-radio__circle {
-    border-color: var(--cd-radio-color-error);
+  .cd-radio--disabled.cd-radio--checked .cd-radio__circle {
+    background: var(--cd-color-radio-checked-bg-disabled);
+    border-color: var(--cd-color-radio-checked-border-disabled);
   }
   .cd-radio__input:focus-visible + .cd-radio__circle {
     outline: none;
@@ -353,43 +357,33 @@
     justify-content: center;
     color: var(--cd-color-radio-buttonradio-text-default);
     background: var(--cd-color-radio-buttonradio-bg-default);
-    border: 1px solid var(--cd-radio-border);
+    border: 1px solid var(--cd-color-radio-default-border-default);
     border-radius: var(--cd-radius-radio-buttonradio);
   }
-  .cd-radio--button.cd-radio--small {
+  .cd-radio--button-small {
     block-size: var(--cd-radio-button-height-small);
   }
-  .cd-radio--button.cd-radio--large {
+  .cd-radio--button-large {
     block-size: var(--cd-radio-button-height-large);
   }
   .cd-radio--button .cd-radio__circle {
     display: none;
   }
   .cd-radio--button.cd-radio--checked {
-    color: var(--cd-radio-color-checked);
-    border-color: var(--cd-radio-color-checked);
+    color: var(--cd-color-radio-primary-border-default);
+    border-color: var(--cd-color-radio-primary-border-default);
   }
   /* card / pureCard 型：带边框卡片，选中高亮边框 */
   .cd-radio--card,
   .cd-radio--pureCard {
     padding: var(--cd-spacing-radio-cardradiogroup-paddingy) var(--cd-spacing-radio-cardradiogroup-paddingx);
-    background: var(--cd-radio-bg);
-    border: 1px solid var(--cd-radio-border);
-    border-radius: var(--cd-radio-card-radius);
+    background: var(--cd-color-radio-default-bg-default);
+    border: 1px solid var(--cd-color-radio-default-border-default);
+    border-radius: var(--cd-radius-radio-cardradiogroup);
   }
   .cd-radio--card.cd-radio--checked,
   .cd-radio--pureCard.cd-radio--checked {
-    border-color: var(--cd-radio-card-border-checked);
-  }
-  .cd-radio--card.cd-radio--warning,
-  .cd-radio--pureCard.cd-radio--warning,
-  .cd-radio--button.cd-radio--warning {
-    border-color: var(--cd-radio-color-warning);
-  }
-  .cd-radio--card.cd-radio--error,
-  .cd-radio--pureCard.cd-radio--error,
-  .cd-radio--button.cd-radio--error {
-    border-color: var(--cd-radio-color-error);
+    border-color: var(--cd-color-radio-cardradiogroup-border-active);
   }
 
   @media (prefers-reduced-motion: reduce) {

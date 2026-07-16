@@ -28,7 +28,7 @@
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 14px; align-items: flex-start;">
-  <RadioGroup type="button" value={kind} onChange={(v) => (kind = v as Kind)}>
+  <RadioGroup type="button" value={kind} onChange={(e) => (kind = e.target.value as Kind)}>
     {#each ['default', 'warning', 'danger', 'tertiary'] as const as k}
       <Radio value={k}>
         <span style="color: {labelColor[k]}">{k}</span>

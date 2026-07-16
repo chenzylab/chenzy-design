@@ -6,7 +6,7 @@
 
 <Space vertical align="start">
   <!-- mode="advanced"：已选中时再次点击可取消选择 -->
-  <Radio value="opt" mode="advanced" checked={checked} onChange={(c) => (checked = c)}>
+  <Radio value="opt" mode="advanced" checked={checked} onChange={(e) => (checked = e.target.checked)}>
     允许取消选择（再次点击取消）
   </Radio>
   <Text type="tertiary">{checked ? '已选中' : '未选中'}</Text>

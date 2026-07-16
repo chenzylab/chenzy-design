@@ -6,7 +6,7 @@
 </script>
 
 <div>
-  <RadioGroup type="button" value={visible ? 1 : 0} onChange={(v) => (visible = v === 1)}>
+  <RadioGroup type="button" value={visible ? 1 : 0} onChange={(e) => (visible = e.target.value === 1)}>
     <Radio value={1}>Show</Radio>
     <Radio value={0}>Hide</Radio>
   </RadioGroup>
