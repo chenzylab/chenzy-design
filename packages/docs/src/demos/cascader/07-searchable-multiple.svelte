@@ -28,8 +28,8 @@
     {treeData}
     {value}
     multiple
-    filterable
-    clearable
+    filterTreeNode
+    showClear
     maxTagCount={3}
     filterSorter={sorter}
     placeholder="搜索并多选地区"

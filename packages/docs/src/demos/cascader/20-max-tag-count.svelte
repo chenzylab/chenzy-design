@@ -15,25 +15,24 @@
     },
   ];
 
-  let value = $state<(string | number)[][]>([]);
-  let exceeded = $state(0);
+  let value = $state<(string | number)[][]>([
+    ['fe', 'fw', 'react'],
+    ['fe', 'fw', 'vue'],
+    ['fe', 'lang', 'ts'],
+    ['be', 'belang', 'go'],
+  ]);
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 12px; width: 320px">
-  <!-- insetLabel：触发器在值前内嵌一个标签 -->
-  <Cascader {treeData} insetLabel="技术栈：" placeholder="请选择" showClear />
-
-  <!-- max：多选最多勾选 2 项，超出触发 onExceed 且不选入 -->
+<div style="width: 320px">
   <Cascader
     {treeData}
     {value}
     multiple
     showClear
-    max={2}
-    insetLabel="最多 2 项："
-    placeholder="选择技术栈（最多 2 项）"
+    maxTagCount={2}
+    showRestTagsPopover
+    placeholder="选择技术栈（可多选）"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}
-    onExceed={() => (exceeded += 1)}
   />
-  <Text type="tertiary">已选 {value.length} 项 · 触发 onExceed {exceeded} 次</Text>
+  <Text type="tertiary">maxTagCount=2 折叠溢出，showRestTagsPopover 悬停 +N 展示剩余</Text>
 </div>

@@ -21,7 +21,7 @@
     {value}
     multiple
     leafOnly
-    clearable
+    showClear
     placeholder="value 仅含叶子节点（leafOnly）"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}
   />

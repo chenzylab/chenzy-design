@@ -22,7 +22,7 @@
     {treeData}
     {value}
     keyMaps={{ label: 'name', value: 'id', children: 'sub' }}
-    clearable
+    showClear
     placeholder="自定义字段映射"
     onChange={(p) => (value = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
   />

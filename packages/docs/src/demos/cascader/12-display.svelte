@@ -17,7 +17,7 @@
     {treeData}
     {value}
     separator=" > "
-    clearable
+    showClear
     placeholder="自定义分隔符 >"
     onChange={(p) => (value = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
   />

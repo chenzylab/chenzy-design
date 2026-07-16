@@ -20,7 +20,7 @@
   <Cascader
     {treeData}
     onChangeWithObject
-    clearable
+    showClear
     placeholder="回调返回完整节点对象"
     onChange={handleChange}
   />

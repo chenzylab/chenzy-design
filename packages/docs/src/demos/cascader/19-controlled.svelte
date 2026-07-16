@@ -19,7 +19,7 @@
   <Cascader
     {treeData}
     {value}
-    clearable
+    showClear
     placeholder="受控组件"
     onChange={(p) => (value = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
   />

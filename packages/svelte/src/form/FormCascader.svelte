@@ -75,7 +75,7 @@
       disabled={disabled ?? fieldDisabled}
       {...(size !== undefined ? { size } : {})}
       {...(displayProp !== undefined ? { displayProp } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      validateStatus={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

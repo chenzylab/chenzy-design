@@ -23,7 +23,7 @@
     {treeData}
     {value}
     multiple
-    clearable
+    showClear
     maxTagCount={2}
     placeholder="选择技术栈（可多选）"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}

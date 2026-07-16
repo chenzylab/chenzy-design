@@ -14,7 +14,7 @@ function activeOptionText(combobox: HTMLElement): string | null {
   const id = combobox.getAttribute('aria-activedescendant');
   if (!id) return null;
   const el = document.getElementById(id);
-  const label = el?.querySelector('.cd-cascader__option-label');
+  const label = el?.querySelector('.cd-cascader-option-label');
   return label?.textContent?.trim() ?? null;
 }
 
@@ -27,7 +27,7 @@ describe('Cascader 键盘 e2e（aria-activedescendant 列内 roving）', () => {
 
     // 点击触发器打开浮层（焦点留在 combobox）。
     await userEvent.click(combobox);
-    const listbox = document.querySelector('.cd-cascader__column[role="listbox"]') as HTMLElement;
+    const listbox = document.querySelector('.cd-cascader-option-list[role="listbox"]') as HTMLElement;
     expect(listbox).not.toBeNull();
     const options = Array.from(
       listbox.querySelectorAll<HTMLElement>('[role="option"]'),

@@ -14,7 +14,7 @@
 
 <div style="width: 300px">
   <!-- filterRender 自定义搜索结果整行渲染 -->
-  <Cascader {treeData} filterable placeholder="搜索并看自定义结果项">
+  <Cascader {treeData} filterTreeNode placeholder="搜索并看自定义结果项">
     {#snippet filterRender({ path })}
       <span style="display:flex;gap:6px;align-items:center">
         <span style="color:var(--cd-color-primary)">🔎</span>

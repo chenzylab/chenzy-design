@@ -22,8 +22,8 @@
   <Cascader
     {treeData}
     {value}
-    clearable
-    filterable
+    showClear
+    filterTreeNode
     placeholder="选择地区"
     onChange={(p) => (value = Array.isArray(p[0]) ? (p[0] as (string | number)[]) : (p as (string | number)[]))}
   />

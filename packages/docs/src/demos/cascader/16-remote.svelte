@@ -28,8 +28,8 @@
   <Cascader
     {treeData}
     remote
-    filterable
-    clearable
+    filterTreeNode
+    showClear
     placeholder="远程搜索省份"
     onSearch={handleSearch}
   />

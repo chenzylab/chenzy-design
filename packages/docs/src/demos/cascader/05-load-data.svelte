@@ -18,5 +18,5 @@
 </script>
 
 <div style="width: 240px">
-  <Cascader {treeData} {loadData} clearable placeholder="点击节点动态加载" />
+  <Cascader {treeData} {loadData} showClear placeholder="点击节点动态加载" />
 </div>

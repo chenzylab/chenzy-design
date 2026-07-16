@@ -21,7 +21,7 @@
     {value}
     multiple
     checkRelation="unRelated"
-    clearable
+    showClear
     placeholder="节点选中互不联动（unRelated）"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}
   />

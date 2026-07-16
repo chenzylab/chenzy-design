@@ -22,7 +22,7 @@
     {value}
     multiple
     disableStrictly
-    clearable
+    showClear
     placeholder="严格禁用（宁波不受父级联动）"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}
   />

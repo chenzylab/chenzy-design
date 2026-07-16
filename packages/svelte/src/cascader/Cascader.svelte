@@ -6,19 +6,18 @@
   加载中显示 spinner，结果缓存到本地 extraChildren（不改 treeData prop）。
   multiple：每列 checkbox 多选 + 父子联动（复用 core conduct/toggleCheck，以 value 为 key），
   trigger 按选中叶子路径多 tag 回显可单独移除；value 为 Key[][]（多条路径）。
-  filterable：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
-  expandTrigger='hover'：悬停非叶子节点即展开子级列（pointerenter 设 activePath，选中仍用点击）。
+  filterTreeNode：搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中，点击直接选中整条路径。
+  showNext='hover'：悬停非叶子节点即展开子级列（pointerenter 设 activePath，选中仍用点击）。
   displayRender：自定义触发器选中路径回显（单选 + 多选每个 tag 共用）。
   changeOnSelect（单选）：点击任一层级节点（含中间非叶子）立即提交从根到该
   节点的路径并触发 onChange；非叶子同时展开子列、不关闭面板（可停在任意层级
   或继续深入），叶子提交并关闭。关闭时仅叶子提交并关闭，非叶子仅展开（默认）。
   spec §4 补齐：separator（分隔符）、displayProp（回显字段 label/value）、
   maxTagCount（多选 tag 折叠 +N）、leafOnly（多选完全勾选父级折叠为父路径）、
-  filterTreeNode（filterable 的超集：true=默认子串匹配，函数=自定义谓词）、
+  filterTreeNode（true=默认子串匹配，函数=自定义谓词）、
   filterLeafOnly（搜索是否仅到叶子）、emptyContent（空态 string|Snippet）、
-  destroyOnClose（关闭保留/卸载浮层 DOM）、zIndex、getPopupContainer（浮层容器）、
-  columnWidth（列宽 number|number[]）。
-  新增：borderless/prefix/suffix/clearIcon/expandIcon/motion/keyMaps/remote/
+  zIndex、getPopupContainer（浮层容器）。
+  新增：borderless/prefix/suffix/clearIcon/expandIcon/arrowIcon/motion/keyMaps/remote/
   checkRelation/autoMergeValue/showNext/triggerRender/filterRender/filterSorter/
   topSlot/bottomSlot/onClear/onLoad/onSelect/onDropdownVisibleChange/onListScroll 等。
 -->
@@ -28,7 +27,6 @@
     useDismiss,
     conduct,
     toggleCheck,
-    resolveColumnWidth,
     rovingKeyFromEvent,
     nextRovingIndex,
     type TreeNodeData,
@@ -39,20 +37,22 @@
   import {
     IconClear,
     IconChevronDown,
-    IconCheckboxTick,
-    IconCheckboxIndeterminate,
+    IconChevronRight,
+    IconSpin,
   } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
+  import Checkbox from '../checkbox/Checkbox.svelte';
   import Popover from '../popover/Popover.svelte';
   import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
 
   type Key = string | number;
   type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
+  /** 校验状态（对齐 Semi validateStatus）：默认 / 警告 / 错误 */
+  type ValidateStatus = 'default' | 'warning' | 'error';
 
   interface Props {
     /** 单选为单条路径 Key[]；多选为多条路径 Key[][] */
@@ -64,17 +64,13 @@
     /** 多选：每列 checkbox + 父子联动，trigger 多 tag 回显 */
     multiple?: boolean;
     size?: Size;
-    status?: Status;
+    /** 校验状态（对齐 Semi validateStatus）：'default' | 'warning' | 'error' */
+    validateStatus?: ValidateStatus;
     placeholder?: string;
     disabled?: boolean;
-    clearable?: boolean;
     changeOnSelect?: boolean;
-    /** 展开触发方式：'click' 点击展开（默认）；'hover' 悬停非叶子节点即展开子级列（legacy alias，推荐用 showNext） */
-    expandTrigger?: 'click' | 'hover';
     /** 多选时只回传/计数叶子节点（父节点不进 value、tag、计数） */
     leafOnly?: boolean;
-    /** 搜索时切换为扁平路径列表，按 label 链过滤 + 高亮命中（向后兼容别名，等价 filterTreeNode=true） */
-    filterable?: boolean;
     /** 是否可搜索及自定义匹配：false 关闭；true 默认按 label 链子串匹配；函数自定义谓词 */
     filterTreeNode?: boolean | ((query: string, path: CascaderFlatPath<CascaderNode>) => boolean);
     /** 搜索结果是否仅展示到叶子路径（默认 true；false 时含中间层级路径） */
@@ -87,21 +83,17 @@
     maxTagCount?: number;
     /** 列为空（无可选项）时内容；缺省走 i18n */
     emptyContent?: string | Snippet;
-    /** 关闭即卸载浮层内容（{#if}），重开重建。默认 false：首开后保留 DOM 仅隐藏。 */
-    destroyOnClose?: boolean;
     /** 浮层层级 */
     zIndex?: number;
     /** 浮层挂载容器，缺省 document.body。非 body 容器时改 absolute 定位相对该容器。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 列宽：统一（number）或逐列（number[]，超出取末项） */
-    columnWidth?: number | number[];
     /** 动态加载子节点；点击非叶子且无 children 的节点时调用 */
     loadData?: (node: CascaderNode) => Promise<CascaderNode[]>;
     /** 自定义触发器选中路径的回显文本（单选 + 多选每个 tag 均走此函数） */
     displayRender?: (labels: string[], selectedNodes: CascaderNode[]) => string;
     /** 单选回调单条路径；多选回调多条叶子路径。onChangeWithObject=true 时改为回传节点对象（单选节点链 CascaderNode[]，多选每条路径节点链 CascaderNode[][]） */
     onChange?: (value: Key[] | Key[][] | CascaderNode[] | CascaderNode[][]) => void;
-    onOpenChange?: (open: boolean) => void;
+    /** 可访问名（对齐 Semi aria-label，默认 'Cascader'）。本库沿用 Input/Checkbox 的 ariaLabel 命名惯例。 */
     ariaLabel?: string;
 
     // --- 外观 ---
@@ -119,9 +111,9 @@
     suffix?: Snippet | string;
     /** 自定义清除图标 */
     clearIcon?: Snippet;
-    /** 自定义展开图标（expandIcon / arrowIcon 均可，expandIcon 优先） */
+    /** 自定义菜单项右侧展开图标（列项 icon，对齐 Semi expandIcon） */
     expandIcon?: Snippet;
-    /** 自定义右侧下拉箭头（expandIcon 的别名） */
+    /** 自定义触发器右侧下拉箭头（对齐 Semi arrowIcon，与 expandIcon 语义不同） */
     arrowIcon?: Snippet;
     /** 下拉框展开动画（默认 true） */
     motion?: boolean;
@@ -189,7 +181,7 @@
     showRestTagsPopover?: boolean;
     /** 传给剩余 tags Popover 的额外 props（透传，可覆盖默认）。 */
     restTagsPopoverProps?: Record<string, unknown>;
-    /** 是否显示清除按钮（clearable 的别名） */
+    /** 是否显示清除按钮（对齐 Semi showClear，默认 false） */
     showClear?: boolean;
 
     // --- 节点配置 ---
@@ -201,7 +193,7 @@
     enableLeafClick?: boolean;
     /** 禁用不从父节点继承（严格禁用） */
     disableStrictly?: boolean;
-    /** 展开触发方式（新版 canonical prop，优先于 expandTrigger） */
+    /** 展开触发方式（对齐 Semi showNext）：'click' 点击展开（默认）；'hover' 悬停即展开子级列 */
     showNext?: 'click' | 'hover';
 
     // --- 事件 ---
@@ -229,29 +221,23 @@
     defaultOpen = false,
     multiple = false,
     size = 'default',
-    status = 'default',
-    placeholder = '请选择',
+    validateStatus = 'default',
+    placeholder,
     disabled = false,
-    clearable = false,
     changeOnSelect = false,
-    expandTrigger = 'click',
     leafOnly = false,
-    filterable = false,
     filterTreeNode,
     filterLeafOnly = true,
     displayProp = 'label',
     separator = ' / ',
     maxTagCount,
     emptyContent,
-    destroyOnClose = false,
     zIndex = 1030,
     getPopupContainer,
-    columnWidth = 180,
     loadData,
     displayRender,
     onChange,
-    onOpenChange,
-    ariaLabel,
+    ariaLabel = 'Cascader',
     class: className = '',
     borderless = false,
     prefix,
@@ -291,7 +277,7 @@
     onExceed,
     showRestTagsPopover = false,
     restTagsPopoverProps,
-    showClear: showClearProp,
+    showClear: showClearProp = false,
     keyMaps,
     clickToSelect = false,
     enableLeafClick = false,
@@ -362,15 +348,12 @@
   }
   const normalizedTreeData = $derived(keyMapsDefault ? treeData : normalizeNodes(treeData));
 
-  // showNext 是 canonical prop；expandTrigger 是 legacy alias。showNext 优先。
-  const effectiveExpandTrigger = $derived(
-    showNext === 'hover' || expandTrigger === 'hover' ? 'hover' : 'click',
-  );
+  // 展开触发方式（对齐 Semi showNext）。
+  const effectiveExpandTrigger = $derived(showNext === 'hover' ? 'hover' : 'click');
 
-  // filterTreeNode 优先；未显式传时回退 filterable 别名（向后兼容）。
-  // 归一为：是否可搜索 + 实际谓词（true=默认子串匹配，函数=自定义）。
+  // filterTreeNode 归一：是否可搜索 + 实际谓词（true=默认子串匹配，函数=自定义）。
   const filterSpec = $derived<boolean | ((q: string, p: CascaderFlatPath<CascaderNode>) => boolean)>(
-    remote ? true : (filterTreeNode !== undefined ? filterTreeNode : filterable),
+    remote ? true : (filterTreeNode ?? false),
   );
   const isFilterable = $derived(filterSpec !== false || remote);
   const showBuiltinSearch = $derived(isFilterable && searchPosition !== 'custom');
@@ -463,7 +446,7 @@
     isValueControlled ? asMultiPaths(value) : innerPaths,
   );
 
-  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
+  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onDropdownVisibleChange ---
   const isOpenControlled = $derived(openProp !== undefined);
   let innerOpen = $state(getInitialOpen());
   const isOpen = $derived(isOpenControlled ? !!openProp : innerOpen);
@@ -675,17 +658,12 @@
       : [],
   );
 
-  // clearable / showClear 别名归一（showClear prop 优先 clearable）
-  const effClearable = $derived(showClearProp ?? clearable ?? false);
-  // expandIcon / arrowIcon 别名归一
-  const effExpandIcon = $derived(expandIcon ?? arrowIcon);
-
   const selectedChain = $derived(findPath(normalizedTreeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
   const hasSelection = $derived(
     multiple ? checkedLeafPaths.length > 0 : selectedChain.length > 0,
   );
-  const showClear = $derived(effClearable && !disabled && hasSelection);
+  const showClear = $derived(showClearProp && !disabled && hasSelection);
 
   // 单条路径回显文本：有 displayRender 走自定义（仍传 label 链 + 节点链）；
   // 否则按 displayProp 取 label 或 value 链，用 separator 连接。
@@ -833,7 +811,6 @@
     if (next === isOpen) return;
     if (!next) searchValue = '';
     if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
     onDropdownVisibleChange?.(next);
     if (next) {
       // 打开时同步 activePath 到当前选中路径
@@ -866,11 +843,11 @@
   }
   /** 聚焦触发器可聚焦元素（消费 preventScroll）。 */
   export function focus() {
-    (triggerEl ?? rootEl)?.focus({ preventScroll });
+    rootEl?.focus({ preventScroll });
   }
   /** 触发器失焦。 */
   export function blur() {
-    (triggerEl ?? rootEl)?.blur();
+    rootEl?.blur();
   }
   /** 以编程方式设置搜索值并触发搜索流程（等价用户在搜索框输入）。 */
   export function search(value: string) {
@@ -1145,16 +1122,13 @@
   // --- DOM 引用：触发根 + portal 面板（定位由 use:floating action 接管）---
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
-  // 触发器可聚焦元素（combobox div / 自定义 triggerRender 时回退 rootEl）
-  let triggerEl = $state<HTMLDivElement | null>(null);
 
-  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅 --hidden 切显隐），
-  //     true 时关闭即从 DOM 卸载（{#if shouldRender}），重开重建。 ---
+  // 浮层 DOM 保活：首开后保留（仅 -hidden 切显隐），对齐 Semi Popover motion（无 destroyOnClose）。
   let hasBeenOpened = $state(false);
   $effect(() => {
     if (isOpen) hasBeenOpened = true;
   });
-  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+  const shouldRender = $derived(isOpen || hasBeenOpened);
 
   // 空态文本（emptyContent 为 string 时用，Snippet 时模板直接渲染）。
   const emptyText = $derived(
@@ -1173,16 +1147,22 @@
     });
   });
 
+  // 对齐 Semi 修饰类：single/multiple/filterable/focus(=open)/error/warning/borderless/with-prefix/with-suffix。
   const cls = $derived(
     [
       'cd-cascader',
-      `cd-cascader--${size}`,
-      `cd-cascader--${status}`,
-      disabled && 'cd-cascader--disabled',
-      isOpen && 'cd-cascader--open',
-      position && `cd-cascader--${position}`,
-      borderless && 'cd-cascader--borderless',
-      motion === false && 'cd-cascader--no-motion',
+      size === 'small' && 'cd-cascader-small',
+      size === 'large' && 'cd-cascader-large',
+      validateStatus === 'error' && 'cd-cascader-error',
+      validateStatus === 'warning' && 'cd-cascader-warning',
+      disabled && 'cd-cascader-disabled',
+      isOpen && 'cd-cascader-focus',
+      multiple ? 'cd-cascader-multiple' : 'cd-cascader-single',
+      isFilterable && 'cd-cascader-filterable',
+      borderless && 'cd-cascader-borderless',
+      (prefix || insetLabel) && 'cd-cascader-with-prefix',
+      suffix && 'cd-cascader-with-suffix',
+      motion === false && 'cd-cascader-no-motion',
       className,
     ]
       .filter(Boolean)
@@ -1190,114 +1170,118 @@
   );
 </script>
 
-<div class={cls} bind:this={rootEl} {style}>
-  <!-- combobox 容器用 div 以合法承载多选 tags / clear 等内部交互元素 -->
-  {#if triggerRender}
-    {@render triggerRender({ value, placeholder, isOpen, disabled })}
-  {:else}
-  <div
-    bind:this={triggerEl}
-    class="cd-cascader__trigger"
-    role="combobox"
-    aria-haspopup="listbox"
-    aria-expanded={isOpen}
-    aria-controls={listId}
-    aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
-    aria-label={ariaLabel}
-    aria-invalid={status === 'error' || undefined}
-    aria-disabled={disabled || undefined}
-    tabindex={disabled ? -1 : 0}
-    onclick={toggleOpen}
-    onfocus={(e) => onFocus?.(e as unknown as MouseEvent)}
-    onblur={(e) => onBlur?.(e as unknown as MouseEvent)}
-    onkeydown={(e) => {
-      if (disabled) return;
-      if (!isOpen) {
-        // 关闭态：Enter/Space/Down 打开浮层。
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          setOpen(true);
-        }
-        return;
+<!--
+  root 即 combobox（对齐 Semi：.semi-cascader 根节点承载 role=combobox + 焦点 + 键盘），
+  内部含 prefix / selection（tags|text|placeholder）/ clearbtn / arrow / suffix。
+-->
+<!-- svelte-ignore a11y_interactive_supports_focus -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+  class={cls}
+  bind:this={rootEl}
+  {style}
+  role={triggerRender ? undefined : 'combobox'}
+  aria-haspopup={triggerRender ? undefined : 'listbox'}
+  aria-expanded={triggerRender ? undefined : isOpen}
+  aria-controls={triggerRender ? undefined : listId}
+  aria-activedescendant={!triggerRender && isOpen && !searchActive ? activeDescId : undefined}
+  aria-label={triggerRender ? undefined : ariaLabel}
+  aria-invalid={!triggerRender && validateStatus === 'error' ? true : undefined}
+  aria-disabled={!triggerRender && disabled ? true : undefined}
+  tabindex={triggerRender ? undefined : (disabled ? -1 : 0)}
+  onclick={triggerRender ? undefined : toggleOpen}
+  onfocus={triggerRender ? undefined : (e) => onFocus?.(e as unknown as MouseEvent)}
+  onblur={triggerRender ? undefined : (e) => onBlur?.(e as unknown as MouseEvent)}
+  onkeydown={triggerRender ? undefined : (e) => {
+    if (disabled) return;
+    if (!isOpen) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setOpen(true);
       }
-      // 打开态：搜索激活时由搜索框处理 roving，焦点不在触发器；
-      // 否则触发器（焦点宿主）驱动列 roving（aria-activedescendant 模型）。
-      if (!searchActive) onPanelKeydown(e);
-      else if (e.key === 'Escape') setOpen(false);
-    }}
-  >
-    {#if prefix}
-      <span class="cd-cascader__prefix" aria-hidden="true">
-        {#if typeof prefix === 'string'}{prefix}{:else}{@render (prefix as Snippet)()}{/if}
-      </span>
+      return;
+    }
+    if (!searchActive) onPanelKeydown(e);
+    else if (e.key === 'Escape') setOpen(false);
+  }}
+>
+  {#if triggerRender}
+    {@render triggerRender({ value, placeholder: placeholder ?? '', isOpen, disabled })}
+  {:else}
+    {#if prefix || insetLabel}
+      <div class="cd-cascader-prefix" aria-hidden="true">
+        {#if prefix}
+          {#if typeof prefix === 'string'}
+            <span class="cd-cascader-prefix-text">{prefix}</span>
+          {:else}{@render (prefix as Snippet)()}{/if}
+        {/if}
+        {#if insetLabel}
+          <span class="cd-cascader-inset-label" id={insetLabelId}>
+            {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render (insetLabel as Snippet)()}{/if}
+          </span>
+        {/if}
+      </div>
     {/if}
 
-    {#if insetLabel}
-      <span class="cd-cascader__inset-label" id={insetLabelId}>
-        {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render (insetLabel as Snippet)()}{/if}
-      </span>
-    {/if}
-
-    <span class="cd-cascader__content">
+    <div class={['cd-cascader-selection', multiple && 'cd-cascader-selection-multiple'].filter(Boolean).join(' ')}>
       {#if multiple}
         {#if checkedLeafPaths.length > 0}
-          <span class="cd-cascader__tags">
-            {#each visibleTagPaths as leaf (leaf.path.join('/'))}
-              <Tag
-                size={size === 'large' ? 'default' : 'small'}
-                closable={!disabled}
-                onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
-              >
-                {renderPath(leaf.labels, leaf.nodes)}
-              </Tag>
-            {/each}
-            {#if hiddenTagCount > 0}
-              {#if showRestTagsPopover}
-                <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
-                  <span
-                    class="cd-cascader__rest-tags-trigger"
-                    aria-label={loc().t('Cascader.restTagsCount', { count: hiddenTagCount })}
-                  >
-                    <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
-                  </span>
-                  {#snippet content()}
-                    <div class="cd-cascader__rest-tags">
-                      {#each hiddenTagPaths as leaf (leaf.path.join('/'))}
-                        <Tag
-                          size={size === 'large' ? 'default' : 'small'}
-                          closable={!disabled}
-                          onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
-                        >
-                          {renderPath(leaf.labels, leaf.nodes)}
-                        </Tag>
-                      {/each}
-                    </div>
-                  {/snippet}
-                </Popover>
-              {:else}
-                <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
-              {/if}
+          {#each visibleTagPaths as leaf (leaf.path.join('/'))}
+            <Tag
+              class="cd-cascader-selection-tag"
+              size={size === 'large' ? 'default' : 'small'}
+              closable={!disabled}
+              onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
+            >
+              {renderPath(leaf.labels, leaf.nodes)}
+            </Tag>
+          {/each}
+          {#if hiddenTagCount > 0}
+            {#if showRestTagsPopover}
+              <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
+                <span
+                  class="cd-cascader-selection-n"
+                  aria-label={loc().t('Cascader.restTagsCount', { count: hiddenTagCount })}
+                >+{hiddenTagCount}</span>
+                {#snippet content()}
+                  <div class="cd-cascader-rest-tags">
+                    {#each hiddenTagPaths as leaf (leaf.path.join('/'))}
+                      <Tag
+                        size={size === 'large' ? 'default' : 'small'}
+                        closable={!disabled}
+                        onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
+                      >
+                        {renderPath(leaf.labels, leaf.nodes)}
+                      </Tag>
+                    {/each}
+                  </div>
+                {/snippet}
+              </Popover>
+            {:else}
+              <span class="cd-cascader-selection-n">+{hiddenTagCount}</span>
             {/if}
-          </span>
+          {/if}
         {:else}
-          <span class="cd-cascader__placeholder">{placeholder}</span>
+          <span class="cd-cascader-selection-placeholder">{placeholder ?? ''}</span>
         {/if}
       {:else if hasSelection}
-        <span class="cd-cascader__value">{displayLabel}</span>
+        <span class="cd-cascader-selection-text">{displayLabel}</span>
       {:else}
-        <span class="cd-cascader__placeholder">{placeholder}</span>
+        <span class="cd-cascader-selection-placeholder">{placeholder ?? ''}</span>
       {/if}
-    </span>
+    </div>
 
     {#if suffix}
-      <span class="cd-cascader__suffix" aria-hidden="true">
-        {#if typeof suffix === 'string'}{suffix}{:else}{@render (suffix as Snippet)()}{/if}
-      </span>
+      <div class="cd-cascader-suffix" aria-hidden="true">
+        {#if typeof suffix === 'string'}
+          <span class="cd-cascader-suffix-text">{suffix}</span>
+        {:else}{@render (suffix as Snippet)()}{/if}
+      </div>
     {/if}
 
     {#if showClear}
       <span
-        class="cd-cascader__clear"
+        class="cd-cascader-clearbtn"
         role="button"
         tabindex="-1"
         aria-label={loc().t('Cascader.clear')}
@@ -1317,20 +1301,19 @@
       </span>
     {/if}
 
-    <span class="cd-cascader__arrow" aria-hidden="true">
-      {#if effExpandIcon}
-        {@render effExpandIcon()}
+    <span class="cd-cascader-arrow" aria-hidden="true">
+      {#if arrowIcon}
+        {@render arrowIcon()}
       {:else}
         <IconChevronDown aria-hidden="true" />
       {/if}
     </span>
-  </div>
   {/if}
 
   {#if shouldRender}
     <div
-      class={['cd-cascader__panel', dropdownClassName].filter(Boolean).join(' ')}
-      class:cd-cascader__panel--hidden={!isOpen}
+      class={['cd-cascader-popover', dropdownClassName].filter(Boolean).join(' ')}
+      class:cd-cascader-popover-hidden={!isOpen}
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
@@ -1346,15 +1329,15 @@
       {#if topSlot}{@render topSlot()}{/if}
 
       {#if showBuiltinSearch}
-        <div class="cd-cascader__search">
+        <div class="cd-cascader-search-wrapper">
           <input
-            class="cd-cascader__search-input"
+            class="cd-cascader-search-input"
             type="text"
             role="combobox"
             aria-expanded={searchActive}
             aria-controls={flatListId}
             aria-activedescendant={searchActive ? activeDescId : undefined}
-            placeholder={loc().t('Cascader.searchPlaceholder')}
+            placeholder={searchPlaceholder ?? loc().t('Cascader.searchPlaceholder')}
             aria-label={loc().t('Cascader.searchPlaceholder')}
             bind:value={searchValue}
             onkeydown={onFlatKeydown}
@@ -1368,8 +1351,8 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <li
             id={flatItemId(p.values)}
-            class="cd-cascader__option cd-cascader__flat-option"
-            class:cd-cascader__option--active={kbFlatIndex === fi}
+            class="cd-cascader-option cd-cascader-option-flatten"
+            class:cd-cascader-option-active={kbFlatIndex === fi}
             role="option"
             aria-selected={kbFlatIndex === fi}
             aria-disabled={p.disabled || undefined}
@@ -1379,9 +1362,9 @@
             {#if filterRender}
               {@render filterRender({ path: p })}
             {:else}
-              <span class="cd-cascader__option-label">
+              <span class="cd-cascader-option-label">
                 {#each highlightParts(p.labels.join(separator)) as part, i (i)}
-                  {#if part.mark}<mark class="cd-cascader__highlight">{part.text}</mark>{:else}{part.text}{/if}
+                  {#if part.mark}<span class="cd-cascader-option-label-highlight">{part.text}</span>{:else}{part.text}{/if}
                 {/each}
               </span>
             {/if}
@@ -1390,7 +1373,7 @@
         {#if virtualizeInSearch && filteredPaths.length > 0}
           <!-- 搜索结果虚拟滚动：仅在传入 virtualizeInSearch 且有命中时启用 -->
           <div
-            class="cd-cascader__flat cd-cascader__flat--virtual"
+            class="cd-cascader-option-lists cd-cascader-flatten"
             role="listbox"
             id={flatListId}
             aria-label={loc().t('Cascader.searchResults')}
@@ -1409,16 +1392,16 @@
           </div>
         {:else}
           <ul
-            class="cd-cascader__flat"
+            class="cd-cascader-option-lists cd-cascader-flatten"
             role="listbox"
             id={flatListId}
             aria-label={loc().t('Cascader.searchResults')}
           >
             {#if filteredPaths.length === 0}
               {#if isEmptySnippet}
-                <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+                <li class="cd-cascader-option-empty">{@render (emptyContent as Snippet)()}</li>
               {:else}
-                <li class="cd-cascader__empty">{emptyText}</li>
+                <li class="cd-cascader-option-empty">{emptyText}</li>
               {/if}
             {:else}
               {#each filteredPaths as p, fi (p.values.join('/'))}
@@ -1428,13 +1411,12 @@
           </ul>
         {/if}
       {:else}
-      <div class="cd-cascader__columns">
+      <div class="cd-cascader-option-lists">
       {#each columns as column, colIndex (colIndex)}
         <ul
-          class="cd-cascader__column"
+          class="cd-cascader-option-list"
           role="listbox"
           aria-label={loc().t('Cascader.columnLabel', { level: colIndex + 1 })}
-          style:inline-size="{resolveColumnWidth(columnWidth, colIndex, 180)}px"
           onscroll={(e) => onListScroll?.(e, {
             panelIndex: colIndex,
             activeNode: columns[colIndex]?.find((n) => isActiveAt(colIndex, n)) ?? null,
@@ -1442,20 +1424,22 @@
         >
           {#if column.length === 0}
             {#if isEmptySnippet}
-              <li class="cd-cascader__empty">{@render (emptyContent as Snippet)()}</li>
+              <li class="cd-cascader-option-empty">{@render (emptyContent as Snippet)()}</li>
             {:else}
-              <li class="cd-cascader__empty">{emptyText}</li>
+              <li class="cd-cascader-option-empty">{emptyText}</li>
             {/if}
           {/if}
           {#each column as node (node.value)}
+            {@const cs = multiple ? nodeCheck(node) : { checked: false, half: false }}
             <!-- 键盘经触发器 aria-activedescendant 漫游管理，选项 tabindex=-1 click-only -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <li
               id={colItemId(colIndex, node.value)}
-              class="cd-cascader__option"
-              class:cd-cascader__option--active={isActiveAt(colIndex, node)}
-              class:cd-cascader__option--kbactive={isKbActive(colIndex, node)}
-              class:cd-cascader__option--selected={isSelectedLeaf(colIndex, node)}
+              class="cd-cascader-option"
+              class:cd-cascader-option-active={isActiveAt(colIndex, node)}
+              class:cd-cascader-option-kbactive={isKbActive(colIndex, node)}
+              class:cd-cascader-option-select={isSelectedLeaf(colIndex, node)}
+              class:cd-cascader-option-disabled={node.disabled}
               role="option"
               aria-selected={isActiveAt(colIndex, node)}
               aria-disabled={node.disabled || undefined}
@@ -1464,33 +1448,34 @@
               onpointerleave={scheduleHoverLeave}
               tabindex={-1}
             >
-              {#if multiple}
-                {@const cs = nodeCheck(node)}
-                <span
-                  class="cd-cascader__checkbox"
-                  class:cd-cascader__checkbox--checked={cs.checked}
-                  class:cd-cascader__checkbox--half={cs.half}
-                  role="button"
-                  tabindex="-1"
-                  aria-hidden="true"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    toggleCheckNode(node);
-                  }}
-                >
-                  {#if cs.checked}
-                    <IconCheckboxTick aria-hidden="true" />
-                  {:else if cs.half}
-                    <IconCheckboxIndeterminate aria-hidden="true" />
-                  {/if}
-                </span>
-              {/if}
-              <span class="cd-cascader__option-label">{node.label}</span>
+              <span class="cd-cascader-option-label">
+                {#if multiple}
+                  <!-- 复用已对齐的 Checkbox：勾选由其 onChange 驱动 toggleCheckNode；
+                       stopPropagation 阻止冒泡到 li（否则 selectNode 会二次触发）。 -->
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <span
+                    class="cd-cascader-option-label-checkbox"
+                    onclick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={cs.checked}
+                      indeterminate={cs.half}
+                      disabled={node.disabled || disabled}
+                      ariaLabel={node.label}
+                      onChange={() => toggleCheckNode(node)}
+                    />
+                  </span>
+                {/if}
+                {node.label}
+              </span>
               {#if isLoading(node)}
-                <span class="cd-cascader__option-loading" aria-label={loc().t('Cascader.loading')}></span>
+                <span class="cd-cascader-option-icon cd-cascader-option-spin-icon" aria-label={loc().t('Cascader.loading')}>
+                  <IconSpin aria-hidden="true" />
+                </span>
               {:else if canExpand(node)}
-                <span class="cd-cascader__option-expand" aria-hidden="true">
-                  {#if expandIcon}{@render expandIcon()}{:else}›{/if}
+                <span class="cd-cascader-option-icon" aria-hidden="true">
+                  {#if expandIcon}{@render expandIcon()}{:else}<IconChevronRight aria-hidden="true" />{/if}
                 </span>
               {/if}
             </li>
@@ -1506,94 +1491,107 @@
 </div>
 
 <style>
+  /* 根即 combobox（对齐 Semi .semi-cascader 填充式触发器）。 */
   .cd-cascader {
     position: relative;
     display: inline-flex;
-    inline-size: 100%;
-    font-size: var(--cd-select-font-size);
-  }
-  .cd-cascader__trigger {
-    display: flex;
     align-items: center;
-    gap: var(--cd-spacing-tight);
     inline-size: 100%;
     min-block-size: var(--cd-select-height-default);
-    padding-inline: var(--cd-select-padding-x);
+    box-sizing: border-box;
+    font-size: var(--cd-select-font-size);
     background: var(--cd-select-bg);
     border: 1px solid var(--cd-select-border);
     border-radius: var(--cd-select-radius);
-    color: inherit;
-    font: inherit;
-    text-align: start;
     cursor: pointer;
     transition:
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-cascader--small .cd-cascader__trigger {
+  .cd-cascader-small {
     min-block-size: var(--cd-select-height-small);
   }
-  .cd-cascader--large .cd-cascader__trigger {
+  .cd-cascader-large {
     min-block-size: var(--cd-select-height-large);
   }
   /* 对齐 Semi 填充式：悬浮加深底色（非展开/禁用态） */
-  .cd-cascader:not(.cd-cascader--open):not(.cd-cascader--disabled) .cd-cascader__trigger:hover {
+  .cd-cascader:not(.cd-cascader-focus):not(.cd-cascader-disabled):hover {
     background: var(--cd-select-bg-hover);
   }
-  .cd-cascader__trigger:focus-visible {
+  .cd-cascader:focus-visible {
     outline: none;
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-cascader--open .cd-cascader__trigger {
+  .cd-cascader-focus {
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
-  .cd-cascader--error .cd-cascader__trigger {
+  .cd-cascader-error {
     border-color: var(--cd-select-border-error);
   }
-  .cd-cascader__trigger[aria-disabled='true'] {
+  .cd-cascader-disabled {
     background: var(--cd-color-disabled-fill, var(--cd-color-fill-0));
     color: var(--cd-color-text-3);
     cursor: not-allowed;
+    user-select: none;
   }
-  .cd-cascader__content {
-    display: flex;
+  /* 选中值 / 占位 / tags 容器 */
+  .cd-cascader-selection {
+    display: inline-flex;
     flex: 1 1 auto;
     align-items: center;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-extra-tight);
     min-inline-size: 0;
+    overflow: hidden;
+    padding-inline: var(--cd-select-padding-x);
+    color: var(--cd-color-cascader-selection-text-default);
   }
-  .cd-cascader__value {
+  .cd-cascader-selection-text {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-cascader__placeholder {
-    color: var(--cd-input-color-placeholder);
+  .cd-cascader-selection-placeholder {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--cd-color-cascader-placeholder-text-default);
   }
-  .cd-cascader__clear,
-  .cd-cascader__arrow {
+  .cd-cascader-selection-n {
+    cursor: pointer;
+    font-size: var(--cd-font-size-small);
+    color: var(--cd-color-cascader-selection-n-text-default);
+    padding-inline: var(--cd-spacing-tight);
+  }
+  .cd-cascader-clearbtn,
+  .cd-cascader-arrow {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    inline-size: var(--cd-width-cascader-icon, 32px);
     color: var(--cd-color-cascader-icon-default);
   }
-  .cd-cascader__clear {
+  .cd-cascader-clearbtn {
     cursor: pointer;
   }
-  .cd-cascader__clear:hover {
-    color: var(--cd-color-text-0);
+  .cd-cascader-clearbtn:hover {
+    color: var(--cd-color-cascader-icon-hover);
   }
-  .cd-cascader__arrow {
+  .cd-cascader-clearbtn:active {
+    color: var(--cd-color-cascader-icon-active);
+  }
+  .cd-cascader-arrow {
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-cascader--open .cd-cascader__arrow {
+  .cd-cascader-focus .cd-cascader-arrow {
     transform: rotate(180deg);
   }
   /* 面板 portal 到 body，由 JS 写 position:fixed + transform 定位 */
-  .cd-cascader__panel {
+  .cd-cascader-popover {
     z-index: var(--cd-select-dropdown-z);
     display: flex;
     flex-direction: column;
@@ -1602,20 +1600,15 @@
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
   }
-  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  .cd-cascader__panel--hidden {
+  /* 关闭后保留 DOM 但不可见、不可交互、不占位（对齐 Semi Popover motion）。 */
+  .cd-cascader-popover-hidden {
     display: none;
   }
-  /* 级联列容器：横向排列各列 */
-  .cd-cascader__columns {
-    display: flex;
-    max-block-size: 16rem;
-  }
-  .cd-cascader__search {
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
+  .cd-cascader-search-wrapper {
+    padding: var(--cd-spacing-tight) var(--cd-spacing-base-tight);
     border-block-end: 1px solid var(--cd-cascader-column-border);
   }
-  .cd-cascader__search-input {
+  .cd-cascader-search-input {
     inline-size: 100%;
     block-size: var(--cd-height-input-small);
     padding-inline: var(--cd-input-padding-x);
@@ -1626,129 +1619,122 @@
     font: inherit;
     font-size: var(--cd-font-size-small);
   }
-  .cd-cascader__search-input:focus-visible {
+  .cd-cascader-search-input:focus-visible {
     outline: none;
     border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  /* 搜索结果：扁平路径列表（单列纵向滚动） */
-  .cd-cascader__flat {
+  /* 各级菜单列容器：横向排列 */
+  .cd-cascader-option-lists {
+    display: flex;
     margin: 0;
-    padding-block: var(--cd-spacing-extra-tight);
-    padding-inline: 0;
-    list-style: none;
+    padding: 0;
     max-block-size: 16rem;
+  }
+  /* 搜索结果扁平列表：单列纵向滚动 */
+  .cd-cascader-option-lists.cd-cascader-flatten {
+    display: block;
+    padding-block: var(--cd-spacing-extra-tight);
+    list-style: none;
     min-inline-size: var(--cd-cascader-column-width);
     overflow-y: auto;
   }
-  .cd-cascader__flat-option {
-    justify-content: flex-start;
-  }
-  .cd-cascader__empty {
-    padding: var(--cd-tree-node-padding-x);
-    color: var(--cd-color-text-3);
-    text-align: center;
-  }
-  .cd-cascader__highlight {
-    padding: 0;
-    color: var(--cd-color-cascader-select-highlight);
-    background: transparent;
-  }
-  .cd-cascader__column {
+  .cd-cascader-option-list {
+    box-sizing: border-box;
     margin: 0;
     padding-block: var(--cd-spacing-extra-tight);
     padding-inline: 0;
     list-style: none;
     overflow-y: auto;
     inline-size: var(--cd-cascader-column-width);
-    border-inline-end: 1px solid var(--cd-cascader-column-border);
+    border-inline-start: 1px solid var(--cd-cascader-column-border);
   }
-  .cd-cascader__column:last-child {
-    border-inline-end: none;
+  .cd-cascader-option-list:first-child {
+    border-inline-start: none;
   }
-  .cd-cascader__option {
+  .cd-cascader-option-empty {
+    padding: var(--cd-tree-node-padding-x);
+    color: var(--cd-color-cascader-option-empty-text-default);
+    text-align: center;
+    cursor: not-allowed;
+  }
+  .cd-cascader-option {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--cd-spacing-tight);
     block-size: var(--cd-tree-node-height);
     padding-inline: var(--cd-tree-node-padding-x);
+    color: var(--cd-color-cascader-option-main-text-default);
     cursor: pointer;
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-cascader__option:hover {
+  .cd-cascader-option:hover {
     background: var(--cd-color-cascader-option-bg-hover);
   }
-  .cd-cascader__option--active {
+  .cd-cascader-option:active {
     background: var(--cd-color-cascader-option-bg-active);
   }
+  /* 命中项（当前路径 active）：primary-light 底色，对齐 Semi option-bg-selected */
+  .cd-cascader-option-active,
+  .cd-cascader-option-active:hover {
+    background: var(--cd-color-cascader-option-bg-selected);
+  }
   /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
-  .cd-cascader__option--kbactive {
+  .cd-cascader-option-kbactive {
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-cascader__option--selected {
-    color: var(--cd-color-cascader-option-main-text-default);
+  /* 选中叶子 / 搜索命中高亮文字：字重加粗 + primary 色 */
+  .cd-cascader-option-select .cd-cascader-option-label,
+  .cd-cascader-option-label-highlight {
+    font-weight: var(--cd-font-cascader-select-fontweight);
+    color: var(--cd-color-cascader-select-highlight);
   }
-  .cd-cascader__option:focus-visible {
+  .cd-cascader-option:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-cascader__option[aria-disabled='true'] {
-    color: var(--cd-color-text-3);
+  .cd-cascader-option-disabled {
+    color: var(--cd-color-cascader-option-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-cascader__option-label {
+  .cd-cascader-option-disabled:hover,
+  .cd-cascader-option-disabled:active {
+    background: transparent;
+  }
+  .cd-cascader-option-disabled .cd-cascader-option-label {
+    color: var(--cd-color-cascader-option-disabled-text-default);
+  }
+  .cd-cascader-option-label {
+    display: flex;
+    align-items: center;
+    min-inline-size: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
     flex: 1 1 auto;
   }
-  .cd-cascader__checkbox {
+  .cd-cascader-option-label-checkbox {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     flex: 0 0 auto;
-    inline-size: 1rem;
-    block-size: 1rem;
-    color: var(--cd-color-white);
-    background: var(--cd-color-bg-1, #fff);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-small, 3px);
-    cursor: pointer;
+    margin-inline-end: var(--cd-spacing-tight);
   }
-  .cd-cascader__checkbox--checked,
-  .cd-cascader__checkbox--half {
-    background: var(--cd-color-primary);
-    border-color: var(--cd-color-primary);
-  }
-  .cd-cascader__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-spacing-extra-tight);
-    align-items: center;
-    min-inline-size: 0;
-  }
-  .cd-cascader__rest-tags-trigger {
-    display: inline-flex;
-    align-items: center;
-  }
-  .cd-cascader__rest-tags {
+  .cd-cascader-rest-tags {
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
     align-items: center;
     max-inline-size: 240px;
   }
-  .cd-cascader__option-expand {
+  .cd-cascader-option-icon {
+    display: inline-flex;
+    align-items: center;
     flex: 0 0 auto;
+    inline-size: var(--cd-width-cascader-option-icon, 16px);
     color: var(--cd-color-cascader-option-icon-default);
   }
-  .cd-cascader__option-loading {
-    flex: 0 0 auto;
-    inline-size: 12px;
-    block-size: 12px;
-    border: 2px solid var(--cd-color-cascader-option-icon-default, currentColor);
-    border-block-start-color: transparent;
-    border-radius: var(--cd-border-radius-full);
+  .cd-cascader-option-spin-icon :global(svg) {
     animation: cd-cascader-spin 0.7s linear infinite;
   }
   @keyframes cd-cascader-spin {
@@ -1757,39 +1743,56 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-cascader__option-loading {
+    .cd-cascader-option-spin-icon :global(svg) {
       animation: none;
     }
-    .cd-cascader__trigger,
-    .cd-cascader__arrow {
+    .cd-cascader,
+    .cd-cascader-arrow {
       transition: none;
     }
   }
-  /* --- 新增样式 --- */
-  .cd-cascader--borderless .cd-cascader__trigger {
+  /* borderless：非聚焦/悬浮态透明底色 + 隐藏箭头（对齐 Semi） */
+  .cd-cascader-borderless:not(:focus-within):not(:hover) {
     border-color: transparent;
     background: transparent;
   }
-  .cd-cascader--borderless .cd-cascader__trigger:focus-visible {
-    border-color: var(--cd-select-border-active);
-    background: var(--cd-select-bg);
+  .cd-cascader-borderless:not(:focus-within):not(:hover) .cd-cascader-arrow {
+    opacity: 0;
   }
-  .cd-cascader--no-motion .cd-cascader__trigger,
-  .cd-cascader--no-motion .cd-cascader__arrow {
+  .cd-cascader-borderless:focus-within:not(:active) {
+    background: transparent;
+  }
+  .cd-cascader-no-motion,
+  .cd-cascader-no-motion .cd-cascader-arrow {
     transition: none;
   }
-  .cd-cascader__prefix,
-  .cd-cascader__suffix {
+  /* prefix / suffix / inset-label */
+  .cd-cascader-prefix,
+  .cd-cascader-suffix {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
     color: var(--cd-color-cascader-prefix-suffix-text-default);
   }
+  .cd-cascader-prefix-text,
+  .cd-cascader-suffix-text {
+    margin-inline: var(--cd-spacing-base-tight);
+    font-weight: var(--cd-font-cascader-label-fontweight);
+    color: var(--cd-color-cascader-prefix-suffix-text-default);
+  }
+  .cd-cascader-with-prefix .cd-cascader-selection {
+    padding-inline-start: 0;
+  }
+  .cd-cascader-with-suffix .cd-cascader-selection {
+    padding-inline-end: 0;
+  }
   /* insetLabel：值前内嵌标签，消费 cascader label token */
-  .cd-cascader__inset-label {
+  .cd-cascader-inset-label {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
+    white-space: nowrap;
+    margin-inline: var(--cd-spacing-base-tight);
     color: var(--cd-color-cascader-label-text-default);
     font-weight: var(--cd-font-cascader-label-fontweight);
   }

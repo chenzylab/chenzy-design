@@ -17,5 +17,5 @@
 </script>
 
 <div style="width: 240px">
-  <Cascader {treeData} clearable placeholder="部分选项禁用" />
+  <Cascader {treeData} showClear placeholder="部分选项禁用" />
 </div>

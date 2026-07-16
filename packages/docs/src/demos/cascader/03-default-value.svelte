@@ -21,7 +21,7 @@
     {treeData}
     defaultValue={['zj', 'hz', 'xh']}
     changeOnSelect
-    clearable
+    showClear
     placeholder="选择地区"
   />
 </div>

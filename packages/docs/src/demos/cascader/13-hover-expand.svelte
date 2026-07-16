@@ -22,7 +22,7 @@
     multiple
     showNext="hover"
     clickToSelect
-    clearable
+    showClear
     placeholder="悬停展开 + 点击即选"
     onChange={(p) => (value = (Array.isArray(p[0]) ? p : [p]) as (string | number)[][])}
   />

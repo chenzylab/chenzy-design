@@ -43,4 +43,8 @@ export const demos: DemoEntry[] = [
   entry('17-key-maps.svelte', '自定义字段映射', 'keyMaps 将 label/value/children 映射到数据中的自定义字段名'),
   entry('18-change-with-object.svelte', '回调返回对象', 'onChangeWithObject 使 onChange 入参从 value 变为完整节点对象'),
   entry('19-controlled.svelte', '受控', '外部持有 value 配合 onChange 双向同步，可编程式设置选中路径'),
+  entry('20-max-tag-count.svelte', '限制标签展示数量', 'maxTagCount 折叠溢出标签，showRestTagsPopover 悬停 +N 展示剩余项'),
+  entry('21-auto-merge-value.svelte', '自动合并 value', 'autoMergeValue 控制父级全选时 value 是否合并为父路径或含全部后代'),
+  entry('22-dynamic-data.svelte', '动态更新数据', '运行时切换 treeData，选中态与展开列随新数据源重算'),
+  entry('23-virtualized-search.svelte', '超长列表', 'virtualizeInSearch 对超长搜索结果启用虚拟滚动'),
 ];
