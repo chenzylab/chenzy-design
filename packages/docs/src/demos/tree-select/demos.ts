@@ -48,4 +48,7 @@ export const demos: DemoEntry[] = [
   entry('15-controlled.svelte', '受控', 'value 完全受控，配合 onChange'),
   entry('16-check-relation.svelte', '选中关系', 'checkRelation=unRelated 时父子选中互不影响'),
   entry('17-load-data.svelte', '异步加载', 'loadData 展开时动态加载子节点'),
+  entry('18-size.svelte', '尺寸大小', 'size 设置 small / default / large 三种尺寸'),
+  entry('19-search-expand-controlled.svelte', '开启搜索的展开受控', 'expandedKeys 展开受控 + onSearch 的 filteredExpandedKeys 实现搜索展开'),
+  entry('20-dynamic-data.svelte', '动态更新数据', '运行时替换 treeData，选择器随数据源切换更新'),
 ];

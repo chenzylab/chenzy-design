@@ -1,12 +1,10 @@
 <!--
-  TreeSelect — see specs/components/input/TreeSelect.spec.md
+  TreeSelect — 严格对齐 Semi Design treeSelect。
   基础子集: 单选、可展开/收起的单面板树、叶子或任意节点选中 (leafOnly 控制)。
   multiple: checkbox 多选 + 父子联动 (复用 core conduct/toggleCheck)，trigger 多 tag 回显可单独移除。
   filterable: 面板顶部搜索框过滤节点（复用 core computeFilteredKeys），命中 + 祖先链可见、命中文本高亮。
   Token-driven, a11y-correct, 受控/非受控。
-  fieldNames：自定义节点字段名（key/label/children）映射任意后端数据；派生只读标准化，默认字段名时零开销。
-  icon：自定义节点图标 snippet（showIcon 为真时渲染在 label 前），API 与 Tree 的 icon 对齐
-  （参数 { node, expanded, level }）。渲染层特性，不改 treeData（红线 #1）。
+  keyMaps：自定义节点字段名（key/label/value）映射任意后端数据；派生只读标准化，默认字段名时零开销。
   loadData：展开未加载的非叶子节点时异步取子节点，结果缓存进本地 SvelteMap 并派生合并树喂给
   所有 core 函数（不写回受控 treeData，红线 #1）；加载中显示 spinner，竞态由 loadedKeys/loadingKeys 去重。
   virtualize（对象形式，对齐 Semi）：大数据树虚拟滚动。复用 Tree 范式——直接用 core fixedRange 纯函数
@@ -52,35 +50,22 @@
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
 
-  /** 自定义节点字段名映射（适配任意后端数据结构）。默认 key/label/children。 */
-  type FieldNames = { key?: string; label?: string; children?: string };
-
   interface Props {
     value?: TreeKey | TreeKey[] | null;
     defaultValue?: TreeKey | TreeKey[] | null;
     /**
      * 树数据源。默认节点字段为 key/label/children；
-     * 用 fieldNames 自定义字段名时可传任意后端结构（如 { id, name, sub }）。
+     * 用 keyMaps 自定义字段名时可传任意后端结构（如 { id, name }）。
      */
     treeData?: TreeNode[];
-    /** 自定义节点字段名映射，如 { key:'id', label:'name', children:'sub' }。默认全部为标准名。 */
-    fieldNames?: FieldNames;
-    open?: boolean;
     defaultOpen?: boolean;
     /** 多选：面板节点显示 checkbox + 父子联动，trigger 多 tag 回显 */
     multiple?: boolean;
-    /** 多选时父子勾选互不影响（无半选） */
-    checkStrictly?: boolean;
     /**
-     * 多选父子是否级联联动（对齐 Tree）。'related'（默认）父子联动；
-     * 'unRelated' 互不影响（等价 checkStrictly）。checkStrictly=true 强制 unRelated（向后兼容）。
+     * 多选父子是否级联联动（对齐 Semi/Tree）。'related'（默认）父子联动；
+     * 'unRelated' 互不影响（勾选无半选）。
      */
     checkRelation?: 'related' | 'unRelated';
-    /**
-     * 多选回填值 / Tag 的收敛策略：'all'（默认，全部勾选节点）、
-     * 'parent'（完全勾选父级折叠为父）、'child'（仅叶子）。仅 related 级联时生效。
-     */
-    showCheckedStrategy?: CheckedStrategy;
     /** 多选回填 Tag 最大展示数，超出折叠为 +N（仅影响显示，不改 value）。 */
     maxTagCount?: number;
     placeholder?: string;
@@ -108,12 +93,11 @@
      * 隐含 filterable 行为（显示搜索框）。默认 false。
      */
     remote?: boolean;
-    /** onSearch 防抖毫秒（remote 时生效，默认 300）。 */
-    searchDebounce?: number;
-    /** 远程搜索输入回调（防抖后）。 */
-    onSearch?: (query: string) => void;
-    /** 是否预留节点图标位（icon 提供时渲染在 label 前）。默认 true，与 Tree 对齐。 */
-    showIcon?: boolean;
+    /**
+     * 搜索输入回调（对齐 Semi onSearch）：入参为当前输入、过滤后应展开的节点 keys、命中节点数组。
+     * remote 时用于外部更新 treeData；本地过滤时可配合 expandedKeys 受控搜索展开。
+     */
+    onSearch?: (input: string, filteredExpandedKeys: TreeKey[], filteredNodes: TreeNode[]) => void;
     /** 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点的子节点数组。与 Tree 的 loadData 对齐。 */
     loadData?: (node: TreeNode) => Promise<TreeNode[]>;
     /**
@@ -121,24 +105,16 @@
      * 传入对象即显式开启；height 视口高度（默认 224）、itemSize 行高（默认 32）、width 宽度。
      */
     virtualize?: { height?: number; width?: number | string; itemSize?: number };
-    /**
-     * 自动启用虚拟化的可见节点数阈值：可见扁平行数 ≥ 此值时自动开启虚拟化。
-     * 默认 100。传入 virtualize 对象时强制开启（不看阈值）。超集，Semi 无。
-     */
-    virtualizeThreshold?: number;
     /** 浮层弹出位置（对齐 Semi，参考 Tooltip position）。默认 bottomLeft。 */
     position?: string;
     /** 浮层宽度对齐触发器（min-inline-size = 触发器宽）。默认 true。 */
     dropdownMatchSelectWidth?: boolean;
     /** 浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
-    /** 关闭即从 DOM 卸载浮层（重开重建）。默认 false：首开后保留 DOM 仅隐藏。 */
-    destroyOnClose?: boolean;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
-    onOpenChange?: (open: boolean) => void;
     ariaLabel?: string;
-    /** 自定义节点图标（showIcon 为真时渲染在 label 前）；参数含节点与展开态，与 Tree 的 icon 对齐。 */
-    icon?: Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>;
+    /** 触发器点击是否阻止事件冒泡（对齐 Semi stopPropagation）。默认 true。 */
+    stopPropagation?: boolean;
     /**
      * 完全自定义触发器渲染（替换默认选择框）。与 Cascader.triggerRender 对齐：
      * 参数含当前 value / placeholder / isOpen / disabled，由使用方决定如何呈现。
@@ -234,8 +210,8 @@
 
     // --- Multi-select enhancements ---
     /**
-     * 自动合并值：父节点全选时 value 不再包含其后代（等价 showCheckedStrategy='parent'）。
-     * 默认 true。autoMergeValue=false 时 showCheckedStrategy 原始生效。
+     * 自动合并值：父节点全选时 value 不再包含其后代（收敛为父，对齐 Semi autoMergeValue）。
+     * 默认 true。false 时 value 含全部勾选叶子与父（'all' 策略）。leafOnly 时改为仅叶子（'child'）。
      */
     autoMergeValue?: boolean;
     /** onChange 回调携带完整节点对象而非仅 key。默认 false。 */
@@ -256,8 +232,8 @@
     renderSelectedItem?: Snippet<[{ node: TreeNode; onRemove: () => void }]>;
     /** 节点数据中用作显示 label 的字段名（默认 'label'）。 */
     treeNodeLabelProp?: string;
-    /** 自定义 key/label/value 字段映射（优先级高于 fieldNames 的 key/label 部分）。 */
-    keyMaps?: { key?: string; label?: string; value?: string };
+    /** 自定义节点字段名映射（对齐 Semi keyMaps）：适配任意后端数据结构，如 { key:'id', label:'name', children:'sub' }。 */
+    keyMaps?: { key?: string; label?: string; value?: string; children?: string };
     /** 选项列表容器的内联 style（字符串或对象形式）。 */
     optionListStyle?: string | Record<string, string>;
     /** 受控已加载的节点 keys */
@@ -289,7 +265,7 @@
     onSelect?: (selectedKey: TreeKey, selected: boolean, node: unknown) => void;
     /** 异步加载完成回调（含已加载 key 集合与当前节点）。 */
     onLoad?: (loadedKeys: TreeKey[], treeNode: TreeNode) => void;
-    /** 面板可见性变化回调（与 onOpenChange 语义相同，Semi 风格别名）。 */
+    /** 面板可见性变化回调（对齐 Semi onVisibleChange）。 */
     onVisibleChange?: (isVisible: boolean) => void;
   }
 
@@ -297,13 +273,9 @@
     value,
     defaultValue = null,
     treeData = [],
-    fieldNames,
-    open,
     defaultOpen = false,
     multiple = false,
-    checkStrictly = false,
     checkRelation = 'related',
-    showCheckedStrategy = 'all',
     maxTagCount,
     placeholder = '请选择',
     size = 'default',
@@ -316,20 +288,15 @@
     filterable = false,
     filterTreeNode,
     remote = false,
-    searchDebounce = 300,
     onSearch,
-    showIcon = true,
     loadData,
     virtualize,
-    virtualizeThreshold = 100,
     position = 'bottomLeft',
     dropdownMatchSelectWidth = true,
     getPopupContainer,
-    destroyOnClose = false,
     onChange,
-    onOpenChange,
     ariaLabel,
-    icon,
+    stopPropagation = true,
     triggerRender,
     insetLabel,
     insetLabelId,
@@ -394,10 +361,9 @@
   const globalPopupContainer = getGlobalPopupContainer();
   const resolvePopupContainer = $derived(getPopupContainer ?? globalPopupContainer);
 
-  // remote 隐含可搜索（显示搜索框）；filterTreeNode（bool 或函数）亦开启搜索；
-  // checkRelation 归一：checkStrictly=true 强制 unRelated（向后兼容）。
+  // remote 隐含可搜索（显示搜索框）；filterTreeNode（bool 或函数）亦开启搜索。
   const isFilterable = $derived(filterable || remote || filterTreeNode === true || typeof filterTreeNode === 'function');
-  const isUnRelated = $derived(checkStrictly || checkRelation === 'unRelated');
+  const isUnRelated = $derived(checkRelation === 'unRelated');
 
   // validateStatus 是 status 别名；效值以 validateStatus 优先（未传时回退 status）。
   const effStatus = $derived(validateStatus ?? status ?? 'default');
@@ -428,14 +394,14 @@
     return `${itemBaseId}-${String(key)}`;
   }
 
-  // --- fieldNames 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构 ---
+  // --- keyMaps 字段映射：把用户自定义字段名的数据派生为标准 {key,label,children} 结构（对齐 Semi keyMaps）---
   // 默认（全标准名）时直接返回原 treeData 引用，零额外开销；映射为纯 $derived（红线 #2），不写回（红线 #1）。
   // 节点 key 取自原始 key 字段，故 onChange 回传的 value（key）即用户原始 id，无需额外映射回原节点。
-  // keyMaps 优先级高于 fieldNames（key/label 部分）；keyMaps.value 作为 key 字段别名。
-  const keyField = $derived(keyMaps?.key ?? keyMaps?.value ?? fieldNames?.key ?? 'key');
-  const labelField = $derived(keyMaps?.label ?? fieldNames?.label ?? 'label');
-  const childrenField = $derived(fieldNames?.children ?? 'children');
-  const fieldNamesDefault = $derived(
+  // keyMaps.value 作为 key 字段别名（对齐 Semi）。
+  const keyField = $derived(keyMaps?.key ?? keyMaps?.value ?? 'key');
+  const labelField = $derived(keyMaps?.label ?? 'label');
+  const childrenField = $derived(keyMaps?.children ?? 'children');
+  const keyMapsDefault = $derived(
     keyField === 'key' && labelField === 'label' && childrenField === 'children',
   );
 
@@ -464,7 +430,7 @@
 
   // 标准化后的树：默认时即 treeData 原引用（零开销），否则递归映射字段名。
   const normalizedTree = $derived<TreeNode[]>(
-    fieldNamesDefault ? treeData : normalizeNodes(treeData),
+    keyMapsDefault ? treeData : normalizeNodes(treeData),
   );
 
   // --- 异步加载（对齐 Tree）：本地缓存子节点 + loading/loaded 标记（不写回受控 treeData，红线 #1）---
@@ -493,7 +459,7 @@
     loadingKeys.add(node.key);
     try {
       const kids = await loadData(node);
-      loadedChildren.set(node.key, fieldNamesDefault ? kids : normalizeNodes(kids));
+      loadedChildren.set(node.key, keyMapsDefault ? kids : normalizeNodes(kids));
     } finally {
       loadingKeys.delete(node.key);
       loadedKeys.add(node.key);
@@ -543,8 +509,8 @@
     // defaultExpandedKeys 与 defaultExpandAll 取并集（非受控初始展开集）。
     const set = new Set<TreeKey>(defaultExpandedKeys ?? []);
     if (defaultExpandAll) {
-      // defaultExpandAll 需用标准化后的 key（fieldNames 自定义时才能识别 children）。
-      const base = fieldNamesDefault ? treeData : normalizeNodes(treeData);
+      // defaultExpandAll 需用标准化后的 key（keyMaps 自定义时才能识别 children）。
+      const base = keyMapsDefault ? treeData : normalizeNodes(treeData);
       for (const k of collectExpandable(base, [])) set.add(k);
     }
     return set;
@@ -571,13 +537,10 @@
     if (isUnRelated) return { checked: new Set(currentCheckedBase), half: new Set<TreeKey>() };
     return conduct(mergedTree as unknown as TreeNodeData[], currentCheckedBase);
   });
-  // autoMergeValue=true 时把 showCheckedStrategy='all' 升级为 'parent'（父选不含后代）。
+  // 回填值/Tag 收敛策略（对齐 Semi，由 leafOnly + autoMergeValue 组合表达，无独立 showCheckedStrategy）：
+  // leafOnly → 'child'（仅叶子）；否则 autoMergeValue=true → 'parent'（父全选折叠为父，value 不含后代）；否则 'all'。
   const effectiveStrategy = $derived<CheckedStrategy>(
-    !autoMergeValue
-      ? showCheckedStrategy
-      : showCheckedStrategy === 'all'
-        ? 'parent'
-        : showCheckedStrategy,
+    leafOnly ? 'child' : autoMergeValue ? 'parent' : 'all',
   );
 
   // 回填值/Tag 收敛集（effectiveStrategy）：unRelated 无父子关系故策略不生效（取全 checked）。
@@ -622,18 +585,17 @@
       : [],
   );
 
-  // --- 受控 open (红线 #1): 不无条件回写 open，仅 onOpenChange ---
-  const isOpenControlled = $derived(open !== undefined);
+  // --- 非受控 open（对齐 Semi：仅 defaultOpen 初始 + onVisibleChange 回调，无受控 open prop）---
   let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(isOpenControlled ? !!open : innerOpen);
+  const isOpen = $derived(innerOpen);
 
-  // onVisibleChange 是 onOpenChange 别名：isOpen 变化时同步触发。
-  $effect(() => {
-    onVisibleChange?.(isOpen);
-  });
-
-  // --- 本地展开状态 (红线 #2): expandedKeys 本地 $state Set，不依赖挂载 registry ---
-  let expandedKeys = $state<Set<TreeKey>>(getInitialExpanded());
+  // --- 展开状态：受控（传入 expandedKeys）时只读派生 + onExpand 回调（红线 #1 不回写）；
+  //     非受控时本地 $state Set（红线 #2，不依赖挂载 registry）。 ---
+  const isExpandControlled = $derived(expandedKeysProp !== undefined);
+  let innerExpanded = $state<Set<TreeKey>>(getInitialExpanded());
+  const expandedKeys = $derived<Set<TreeKey>>(
+    isExpandControlled ? new Set(expandedKeysProp) : innerExpanded,
+  );
 
   const selectedNode = $derived(
     currentValue === null ? undefined : findNode(mergedTree, currentValue),
@@ -718,12 +680,13 @@
   function setOpen(next: boolean) {
     if (next === isOpen) return;
     if (!next) searchValue = '';
-    if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
+    innerOpen = next;
     onVisibleChange?.(next);
   }
 
-  function toggleOpen() {
+  function toggleOpen(e: MouseEvent) {
+    // stopPropagation（对齐 Semi，默认 true）：阻止 trigger 点击冒泡到外层。
+    if (stopPropagation) e.stopPropagation();
     if (disabled) return;
     if (isOpen && !clickTriggerToHide) return;
     setOpen(!isOpen);
@@ -778,8 +741,8 @@
   }
 
   function isExpanded(key: TreeKey): boolean {
-    // 搜索激活时强制展开命中链
-    if (searchActive && filterResult.expand.has(key)) return true;
+    // 搜索激活时强制展开命中链（对齐 Semi：展开受控时不再自动展开，完全由 expandedKeys 控制）。
+    if (!isExpandControlled && searchActive && filterResult.expand.has(key)) return true;
     return expandedKeys.has(key);
   }
 
@@ -798,32 +761,20 @@
         }
       };
       walk(mergedTree);
-      // 同时并入搜索展开链。
-      if (searchActive) for (const k of filterResult.expand) set.add(k);
+      // 同时并入搜索展开链（受控展开时不自动展开）。
+      if (!isExpandControlled && searchActive) for (const k of filterResult.expand) set.add(k);
       return set;
     }
-    if (!searchActive) return expandedKeys;
+    // 受控展开时不并入搜索展开链（对齐 Semi），完全由 expandedKeys 控制。
+    if (!searchActive || isExpandControlled) return expandedKeys;
     const merged = new Set(expandedKeys);
     for (const k of filterResult.expand) merged.add(k);
     return merged;
   });
-  // virtualizeThreshold：节点总数 ≥ 阈值时自动启用虚拟化（传入 virtualize 对象时强制启用）。
-  const totalNodeCount = $derived.by(() => {
-    let n = 0;
-    const walk = (nodes: TreeNode[]) => {
-      for (const node of nodes) {
-        n++;
-        if (node.children) walk(node.children);
-      }
-    };
-    walk(mergedTree);
-    return n;
-  });
-  // virtualize 对象归一（对齐 Semi）：传入对象即显式开启；height 视口高度、itemSize 行高。
-  const virtualizeOn = $derived(virtualize !== undefined);
+  // virtualize 对象归一（对齐 Semi）：传入对象即显式开启（无自动阈值）；height 视口高度、itemSize 行高。
   const height = $derived(virtualize?.height ?? 224);
   const itemHeight = $derived(virtualize?.itemSize ?? 32);
-  const useVirtual = $derived(virtualizeOn || totalNodeCount >= virtualizeThreshold);
+  const useVirtual = $derived(virtualize !== undefined);
   // 可见扁平节点：虚拟化用于视口切片，非虚拟化也用于键盘 roving 导航（红线 #2 纯派生）。
   const flat = $derived(
     flattenVisible(mergedTree as unknown as TreeNodeData[], effectiveExpanded),
@@ -913,7 +864,8 @@
   function toggleExpand(node: TreeNode) {
     const key = node.key;
     const next = new Set(expandedKeys);
-    if (next.has(key)) {
+    const willExpand = !next.has(key);
+    if (!willExpand) {
       next.delete(key);
     } else {
       next.add(key);
@@ -935,7 +887,9 @@
       // 展开未加载的异步节点：先取数据（数据到位后合并树派生即显示子节点）。
       if (!hasChildren(node) && loadData && !loadedKeys.has(key)) void loadChildren(node);
     }
-    expandedKeys = next;
+    // 受控展开（红线 #1）：只回调 onExpand，不回写本地态；非受控写本地态。
+    if (!isExpandControlled) innerExpanded = next;
+    onExpand?.([...next], { expanded: willExpand, node });
   }
 
   function selectNode(node: TreeNode) {
@@ -1099,27 +1053,48 @@
     scrollActiveIntoView();
   }
 
-  // --- remote 搜索防抖（命令式定时器 + cleanup，红线 #3）---
-  let searchTimer: ReturnType<typeof setTimeout> | undefined;
-  function scheduleSearch(q: string) {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-      searchTimer = undefined;
-      onSearch?.(q);
-    }, Math.max(0, searchDebounce));
+  // --- onSearch（对齐 Semi 三入参签名 (input, filteredExpandedKeys, filteredNodes)）---
+  // 无内置防抖：Semi 也不做防抖，remote 场景由使用方在 onSearch 内自行节流。
+  // 对任意输入即时计算过滤结果（不受 remote/searchActive gate 限制），供回调的后两参。
+  function emitSearch(input: string) {
+    if (!onSearch) return;
+    const q = input.trim();
+    if (q.length === 0) {
+      onSearch(input, [], []);
+      return;
+    }
+    const lower = q.toLowerCase();
+    const predicate =
+      typeof filterTreeNode === 'function'
+        ? (node: TreeNodeData) =>
+            (filterTreeNode as (i: string, s: string, d?: TreeNode) => boolean)(
+              q,
+              nodeFilterText(node),
+              node as unknown as TreeNode,
+            )
+        : (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
+    const res = computeFilteredKeys(mergedTree as unknown as TreeNodeData[], predicate);
+    // filteredExpandedKeys：命中链上应展开的祖先节点 keys（对齐 Semi filteredExpandedKeys）。
+    const filteredExpandedKeys = [...res.expand];
+    // filteredNodes：命中节点原始数据数组（树序）。
+    const filteredNodes: TreeNode[] = [];
+    const walk = (nodes: TreeNode[]) => {
+      for (const n of nodes) {
+        if (res.matched.has(n.key)) filteredNodes.push(n);
+        if (n.children) walk(n.children);
+      }
+    };
+    walk(mergedTree);
+    onSearch(input, filteredExpandedKeys, filteredNodes);
   }
-  // 卸载兜底清理。
-  $effect(() => () => {
-    if (searchTimer !== undefined) clearTimeout(searchTimer);
-  });
   function onSearchInput(e: Event & { currentTarget: HTMLInputElement }) {
     searchValue = e.currentTarget.value;
-    if (remote) scheduleSearch(searchValue.trim());
+    emitSearch(searchValue);
   }
-  // searchRender 自定义搜索框用的命令式回调（把外部输入回填给内部搜索态，复用过滤/防抖）。
+  // searchRender 自定义搜索框用的命令式回调（把外部输入回填给内部搜索态）。
   function setSearchValue(v: string) {
     searchValue = v;
-    if (remote) scheduleSearch(v.trim());
+    emitSearch(v);
   }
 
   /** 命令式搜索：把值置给内部搜索态并触发过滤（对齐 Semi search(sugInput)，用于外部自定义搜索框）。 */
@@ -1146,12 +1121,12 @@
   let rootEl = $state<HTMLDivElement | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
 
-  // --- destroyOnClose：默认 false 时首开后保留浮层 DOM（仅隐藏），true 时关闭即卸载，重开重建。 ---
+  // --- 浮层 DOM：首开后保留（仅隐藏），对齐 Semi（不销毁重建）。 ---
   let hasBeenOpened = $state(false);
   $effect(() => {
     if (isOpen) hasBeenOpened = true;
   });
-  const shouldRender = $derived(destroyOnClose ? isOpen : isOpen || hasBeenOpened);
+  const shouldRender = $derived(isOpen || hasBeenOpened);
 
   // --- useDismiss (红线 #3): panel portal 出 root 子树后列入 extraTargets ---
   $effect(() => {
@@ -1283,10 +1258,8 @@
         {/if}
       </span>
     {/if}
-    {#if showIcon}
-      <span class="cd-tree-select__icon" aria-hidden="true">
-        {#if icon}{@render icon({ node, expanded: nodeOpen, level })}{/if}
-      </span>
+    {#if node.icon != null}
+      <span class="cd-tree-select__icon" aria-hidden="true">{node.icon}</span>
     {/if}
     <span class="cd-tree-select__node-label">
       {#if searchActive}
@@ -1632,8 +1605,43 @@
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
+  /* warning 校验态：light-bg + 分态 border（对齐 Semi treeSelect warning，same as Input）。 */
+  .cd-tree-select--warning .cd-tree-select__trigger {
+    background: var(--cd-color-tree-select-warning-bg-default);
+    border-color: var(--cd-color-tree-select-warning-border-default);
+  }
+  .cd-tree-select--warning:not(.cd-tree-select--open):not(.cd-tree-select--disabled)
+    .cd-tree-select__trigger:hover {
+    background: var(--cd-color-tree-select-warning-bg-hover);
+    border-color: var(--cd-color-tree-select-warning-border-hover);
+  }
+  .cd-tree-select--warning .cd-tree-select__trigger:focus-visible,
+  .cd-tree-select--warning.cd-tree-select--open .cd-tree-select__trigger {
+    background: var(--cd-color-tree-select-warning-bg-focus);
+    border-color: var(--cd-color-tree-select-warning-border-focus);
+  }
+  .cd-tree-select--warning .cd-tree-select__trigger:active {
+    background: var(--cd-color-tree-select-warning-bg-active);
+    border-color: var(--cd-color-tree-select-warning-border-active);
+  }
+  /* error 校验态：light-bg + 分态 border（对齐 Semi treeSelect danger，same as Input）。 */
   .cd-tree-select--error .cd-tree-select__trigger {
-    border-color: var(--cd-select-border-error);
+    background: var(--cd-color-tree-select-danger-bg-default);
+    border-color: var(--cd-color-tree-select-danger-border-default);
+  }
+  .cd-tree-select--error:not(.cd-tree-select--open):not(.cd-tree-select--disabled)
+    .cd-tree-select__trigger:hover {
+    background: var(--cd-color-tree-select-danger-bg-hover);
+    border-color: var(--cd-color-tree-select-danger-border-hover);
+  }
+  .cd-tree-select--error .cd-tree-select__trigger:focus-visible,
+  .cd-tree-select--error.cd-tree-select--open .cd-tree-select__trigger {
+    background: var(--cd-color-tree-select-danger-bg-focus);
+    border-color: var(--cd-color-tree-select-danger-border-focus);
+  }
+  .cd-tree-select--error .cd-tree-select__trigger:active {
+    background: var(--cd-color-tree-select-danger-bg-active);
+    border-color: var(--cd-color-tree-select-danger-border-active);
   }
   .cd-tree-select__trigger[aria-disabled='true'] {
     background: var(--cd-color-tree-select-input-disabled-bg-default, var(--cd-color-fill-0));
@@ -1705,7 +1713,7 @@
     border-radius: var(--cd-select-dropdown-radius);
     box-shadow: var(--cd-select-dropdown-shadow);
   }
-  /* destroyOnClose=false 关闭后保留 DOM 但不可见、不可交互、不占位 */
+  /* 关闭后保留 DOM 但不可见、不可交互、不占位（对齐 Semi，不销毁重建） */
   .cd-tree-select__panel--hidden {
     display: none;
   }

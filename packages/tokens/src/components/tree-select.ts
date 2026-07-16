@@ -31,4 +31,24 @@ export const treeSelectTokens = {
   // —— insetLabel 内嵌标签（触发器值前的内嵌标签文本）——
   'color-tree-select-label': { value: 'var(--cd-color-text-2)', category: 'color', label: '内嵌标签文本色', usage: '树选择器触发器内嵌标签（insetLabel）文本颜色' },
   'font-tree-select-label': { value: 'var(--cd-font-weight-regular)', category: 'font', label: '内嵌标签字重', usage: '树选择器触发器内嵌标签（insetLabel）文本字重' },
+
+  // —— warning 校验态（same as Input，对齐 Semi variables.scss:22-33）——
+  'color-tree-select-warning-bg-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '警告背景色', usage: '警告树选择器选择框背景颜色 - 默认' },
+  'color-tree-select-warning-border-default': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '警告描边色', usage: '警告树选择器选择框描边颜色 - 默认' },
+  'color-tree-select-warning-bg-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: '警告背景色', usage: '警告树选择器选择框背景颜色 - 悬浮' },
+  'color-tree-select-warning-border-hover': { value: 'var(--cd-color-warning-light-hover)', category: 'color', label: '警告描边色', usage: '警告树选择器选择框描边颜色 - 悬浮' },
+  'color-tree-select-warning-bg-focus': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '警告背景色', usage: '警告树选择器选择框背景颜色 - 选中' },
+  'color-tree-select-warning-border-focus': { value: 'var(--cd-color-warning)', category: 'color', label: '警告描边色', usage: '警告树选择器选择框描边颜色 - 选中' },
+  'color-tree-select-warning-bg-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: '警告背景色', usage: '警告树选择器选择框背景颜色 - 激活' },
+  'color-tree-select-warning-border-active': { value: 'var(--cd-color-warning-light-active)', category: 'color', label: '警告描边色', usage: '警告树选择器选择框描边颜色 - 激活' },
+
+  // —— error/danger 校验态（same as Input，对齐 Semi variables.scss:36-46）——
+  'color-tree-select-danger-bg-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '错误背景色', usage: '错误树选择器选择框背景颜色 - 默认' },
+  'color-tree-select-danger-border-default': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '错误描边色', usage: '错误树选择器选择框描边颜色 - 默认' },
+  'color-tree-select-danger-bg-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: '错误背景色', usage: '错误树选择器选择框背景颜色 - 悬浮' },
+  'color-tree-select-danger-border-hover': { value: 'var(--cd-color-danger-light-hover)', category: 'color', label: '错误描边色', usage: '错误树选择器选择框描边颜色 - 悬浮' },
+  'color-tree-select-danger-bg-focus': { value: 'var(--cd-color-danger-light-default)', category: 'color', label: '错误背景色', usage: '错误树选择器选择框背景颜色 - 选中' },
+  'color-tree-select-danger-border-focus': { value: 'var(--cd-color-danger)', category: 'color', label: '错误描边色', usage: '错误树选择器选择框描边颜色 - 选中' },
+  'color-tree-select-danger-bg-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: '错误背景色', usage: '错误树选择器选择框背景颜色 - 激活' },
+  'color-tree-select-danger-border-active': { value: 'var(--cd-color-danger-light-active)', category: 'color', label: '错误描边色', usage: '错误树选择器选择框描边颜色 - 激活' },
 } satisfies TokenGroup;
