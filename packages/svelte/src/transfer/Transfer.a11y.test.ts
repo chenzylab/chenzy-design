@@ -1,12 +1,6 @@
-// Transfer a11y：双栏穿梭框（dual-listbox）。
-// 容器 role=group；每侧平铺列表 role=listbox + aria-multiselectable；
-// 条目 role=option + aria-selected。
-//
-// 组件 a11y 修复（原 axe violations 已消除）：
-//   1. [aria-toggle-field-name] role=option 条目原可访问名为空（label 在 aria-hidden 子树内）：
-//      已给 role=option 的 <li> 加 aria-label={item.label}，提供可访问名（视觉勾选框仍 aria-hidden）。
-//   2. [aria-required-children]/[listitem] 空 listbox 仅含空态 <li>：空态时该 <ul> 退化为普通
-//      容器（去掉 role=listbox 及 listbox-only ARIA），空态 <li> 成为合法 listitem。
+// Transfer a11y：严格对齐 Semi（非 dual-listbox）。
+// 容器 role=group；每侧列表 role=list（div）；右侧已选项 role=listitem；
+// 左侧为原生 Checkbox 行；搜索框 role=search + aria-label；删除按钮 aria-label。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Transfer from './Transfer.svelte';
@@ -19,42 +13,34 @@ const dataSource = [
 ];
 
 describe('Transfer a11y', () => {
-  it('默认渲染：role=group + 非空面板为 listbox + option role/aria（不跑 axe）', () => {
-    const { container } = renderWithLocale(Transfer, {
-      props: { dataSource },
-    });
+  it('默认渲染：role=group + 源列表 role=list + 搜索框 role=search（不跑 axe）', () => {
+    const { container } = renderWithLocale(Transfer, { props: { dataSource } });
     expect(container.querySelector('[role="group"]')).not.toBeNull();
-    // 默认无选中：源面板有项 → listbox；目标面板为空 → 退化为普通容器（非 listbox，
-    // 避免 axe aria-required-children）。故此处仅 1 个 listbox。
-    const listboxes = container.querySelectorAll('[role="listbox"]');
-    expect(listboxes.length).toBe(1);
-    const lb = listboxes[0];
-    expect(lb?.getAttribute('aria-multiselectable')).toBe('true');
-    // listbox 由栏标题 aria-labelledby 命名
-    expect(lb?.getAttribute('aria-labelledby')).toBeTruthy();
-    // 源面板 4 个 option，均带 aria-selected + aria-label（可访问名）
-    const options = container.querySelectorAll('[role="option"]');
-    expect(options.length).toBe(4);
-    options.forEach((opt) => {
-      expect(opt.hasAttribute('aria-selected')).toBe(true);
-      expect(opt.getAttribute('aria-label')).toBeTruthy();
-    });
+    // 源列表容器 role=list（对齐 Semi renderLeftList）。
+    const lists = container.querySelectorAll('[role="list"]');
+    expect(lists.length).toBeGreaterThanOrEqual(1);
+    // 搜索框 role=search + aria-label（对齐 Semi renderFilter）。
+    const search = container.querySelector('[role="search"]');
+    expect(search?.getAttribute('aria-label')).toBe('Transfer filter');
+    // 左侧 4 个 Checkbox 行。
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    expect(checkboxes.length).toBe(4);
   });
 
-  it('带选中：两侧均非空 → 双 listbox，右侧含已选项 + aria-selected（不跑 axe）', () => {
+  it('带选中：右侧列表含已选项 role=listitem + 删除按钮 aria-label（不跑 axe）', () => {
     const { container } = renderWithLocale(Transfer, {
       props: { dataSource, defaultValue: ['b'] },
     });
-    const listboxes = container.querySelectorAll('[role="listbox"]');
-    expect(listboxes.length).toBe(2);
-    const right = listboxes[1];
-    expect(right).toBeDefined();
-    expect(right?.textContent).toContain('Banana');
-    expect(right?.querySelectorAll('[role="option"]').length).toBe(1);
+    const rightList = container.querySelector('.cd-transfer-right-list');
+    expect(rightList?.getAttribute('role')).toBe('list');
+    expect(rightList?.textContent).toContain('Banana');
+    const items = rightList?.querySelectorAll('[role="listitem"]');
+    expect(items?.length).toBe(1);
+    const removeBtn = rightList?.querySelector('.cd-transfer-item-close-icon');
+    expect(removeBtn?.getAttribute('aria-label')).toBeTruthy();
   });
 
-  // axe 0 violations：组件已修复（option aria-label 提供可访问名；空 listbox 退化为普通容器）。
-  it('axe 0 violations（option 可访问名 + 空 listbox 处理后）', async () => {
+  it('axe 0 violations', async () => {
     const { container } = renderWithLocale(Transfer, {
       props: { dataSource, defaultValue: ['b'] },
     });
@@ -62,8 +48,8 @@ describe('Transfer a11y', () => {
   });
 });
 
-// treeProps 接线验证：此前 treeProps 被解构为 _treeProps 后丢弃（假 prop），现真正生效。
-describe('Transfer treeProps（treeList）', () => {
+// treeProps 接线验证：treeList 模式内嵌复用 Tree 组件。
+describe('Transfer treeList（复用 Tree）', () => {
   const treeData = [
     {
       key: 'fruit',
@@ -75,24 +61,13 @@ describe('Transfer treeProps（treeList）', () => {
     },
   ];
 
-  it('默认 expandAll：父节点展开，子节点可见', () => {
+  it('默认 defaultExpandAll：内嵌 Tree 渲染且子节点可见', () => {
     const { container } = renderWithLocale(Transfer, {
       props: { type: 'treeList', dataSource: treeData },
     });
-    const nodes = container.querySelectorAll('.cd-transfer__tree-node');
-    // 展开全部：根 + 2 子 = 3 个可见节点。
-    expect(nodes.length).toBe(3);
+    // 复用本库 Tree 组件（cd-tree 根）。
+    expect(container.querySelector('.cd-transfer-tree')).not.toBeNull();
     expect(container.textContent).toContain('Apple');
-  });
-
-  it('treeProps.expandAll=false：子节点收起，仅根可见', () => {
-    const { container } = renderWithLocale(Transfer, {
-      props: { type: 'treeList', dataSource: treeData, treeProps: { expandAll: false } },
-    });
-    const nodes = container.querySelectorAll('.cd-transfer__tree-node');
-    // 收起：仅根节点可见。
-    expect(nodes.length).toBe(1);
     expect(container.textContent).toContain('Fruit');
-    expect(container.textContent).not.toContain('Apple');
   });
 });

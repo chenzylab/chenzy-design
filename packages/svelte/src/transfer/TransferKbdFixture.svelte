@@ -1,8 +1,7 @@
 <!--
-  仅供 Transfer.kbd.test.ts（browser project）使用的双 listbox roving 键盘 e2e 夹具。
-  受控 value + onChange 回写，使「移动到对侧」真实生效（红线 #1：组件不自改 value）。
-  左侧为 SOURCE（role=listbox），条目 role=option + data-transfer-key；
-  验证：列内 ↑↓ 真实移动焦点到相邻 option、Space 勾选、Enter 移动后焦点保留在源列合理位置。
+  Transfer 键盘 e2e 夹具（browser project）。对齐 Semi：左侧原生 Checkbox，中间原生
+  移动 Button。受控 value + onChange 回写使「移动到对侧」真实生效（红线 #1）。
+  验证：Tab/focus 到左侧 Checkbox、Space 勾选、点击移动按钮把勾选项移到右侧。
 -->
 <script lang="ts">
   import { LocaleProvider } from '../locale-provider/index.js';

@@ -330,21 +330,32 @@ export interface Locale {
   };
   Transfer: {
     searchPlaceholder: string;
-    /** uses {count} */
-    itemsUnit: string;
-    empty: string;
+    /** 分组回退标题 / 源栏标题 */
     titleSource: string;
-    titleTarget: string;
+    /** 左侧空态 */
+    emptyLeft: string;
+    /** 搜索无结果空态 */
+    emptySearch: string;
+    /** 右侧空态 */
+    emptyRight: string;
+    /** 右侧清空按钮 */
+    clear: string;
+    /** 左侧全选按钮 */
+    selectAll: string;
+    /** 左侧取消全选按钮 */
+    clearSelectAll: string;
+    /** 左侧计数，uses {total} */
+    total: string;
+    /** 右侧计数，uses {total} */
+    selected: string;
+    /** 移动按钮 aria-label */
     moveToRight: string;
-    moveToLeft: string;
-    /** oneWay 模式：移除单项的按钮 aria-label */
+    /** 右侧删除单项按钮 aria-label */
     remove: string;
+    /** 拖拽手柄 aria-label */
+    dragSort: string;
     /** remote onSearch 加载中提示 */
     loading: string;
-    /** 移动后 live 播报，uses {count} */
-    movedToRight: string;
-    /** 移动后 live 播报，uses {count} */
-    movedToLeft: string;
   };
   Upload: {
     trigger: string;

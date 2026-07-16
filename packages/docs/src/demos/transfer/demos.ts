@@ -24,37 +24,37 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '平铺列表穿梭框，支持搜索过滤。'),
-  entry('02-group.svelte', '分组数据', "type='groupList'：源数据按分组渲染分组头与计数。"),
+  entry('01-basic.svelte', '基本使用', '平铺列表穿梭框，支持搜索过滤；onChange 回传 (values, items) 两参。'),
+  entry('02-group.svelte', '分组', "type='groupList'：源数据按分组渲染分组标题。"),
   entry(
-    '03-custom-render.svelte',
-    '自定义渲染 / 禁用项',
-    'renderSourceItem / renderSelectedItem 自定义行内容，disabled 标记不可迁移项，onSelect / onDeselect 跟踪勾选。',
+    '03-custom-filter-render.svelte',
+    '自定义筛选逻辑 / 自定义选项渲染',
+    'filter 传函数自定义匹配，renderSourceItem 自定义左侧条目内容。',
+  ),
+  entry('04-disabled.svelte', '禁用', '整体 disabled 与单项 item.disabled 两种禁用。'),
+  entry('05-draggable.svelte', '拖拽排序', 'draggable：右侧已选列鼠标拖拽重排，新顺序经 onChange 通知。'),
+  entry('06-pagination.svelte', '左侧分页', 'pagination.pageSize 让源面板分页（非受控页码）。'),
+  entry(
+    '07-pagination-controlled.svelte',
+    '左侧分页 + 受控页码',
+    'pagination.currentPage 受控页码，由外部 state 驱动翻页。',
   ),
   entry(
-    '04-tree-path.svelte',
-    '树状面板 / 显示路径',
-    "type='treeList' 树状源面板，勾父连带勾叶；showPath 让已选项显示完整路径。",
+    '08-draggable-custom-item.svelte',
+    '拖拽 + 自定义已选项渲染',
+    'draggable 配合 renderSelectedItem 自定义右侧条目内容。',
   ),
+  entry('09-custom-header.svelte', '自定义渲染面板头部信息', 'renderSourceHeader / renderSelectedHeader 自定义两侧头部。'),
+  entry('10-fully-custom.svelte', '完全自定义渲染', 'renderSourcePanel / renderSelectedPanel 完全接管两侧面板。'),
   entry(
-    '05-pagination.svelte',
-    '分页 / 自定义空态',
-    'pagination 让源面板分页，emptyContent 自定义两侧空态文案。',
+    '11-fully-custom-draggable.svelte',
+    '完全自定义渲染 + 拖拽排序',
+    'renderSelectedPanel 内自实现 HTML5 拖拽，经 onSortEnd 上报新顺序。',
   ),
+  entry('12-tree.svelte', '树穿梭框', "type='treeList' 内嵌复用 Tree 组件，仅叶子迁移；showPath 显示完整路径。"),
   entry(
-    '06-search-method.svelte',
-    '命令式搜索',
-    '通过 bind:this 获取实例，调用 search(value) 过滤左侧。',
+    '13-tree-leaf-count.svelte',
+    '树穿梭框自定义头部显示叶子节点数量',
+    'renderSourceHeader 的 leafOnlyNum 显示可选叶子数量。',
   ),
-  entry(
-    '07-tree-expand.svelte',
-    '树默认收起',
-    'treeProps.expandAll=false 初始收起子节点。',
-  ),
-  entry(
-    '08-tree-filter.svelte',
-    '树自定义搜索',
-    'treeProps.filterTreeNode 自定义树搜索逻辑。',
-  ),
-  entry('BasicDemo.svelte', '完整示例', '分组、树状面板、单向迁移、虚拟化、拖拽重排、远程搜索等高级用法。'),
 ];

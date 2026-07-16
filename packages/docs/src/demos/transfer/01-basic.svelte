@@ -1,20 +1,22 @@
 <script lang="ts">
   import { Transfer, Text } from '@chenzy-design/svelte';
+  import type { TransferItem } from '@chenzy-design/svelte';
 
-  const data = [
-    { key: 'a', label: '北京' },
-    { key: 'b', label: '上海' },
-    { key: 'c', label: '广州' },
-    { key: 'd', label: '深圳' },
-  ];
+  const data = Array.from({ length: 12 }, (_, i) => ({
+    key: `${i}`,
+    label: `选项 ${i}`,
+    disabled: i % 4 === 0,
+  }));
 
-  let value = $state<(string | number)[]>(['b']);
+  let value = $state<(string | number)[]>(['2', '5']);
+  let picked = $state<string>('');
+
+  // onChange 回传 (values, items) 两参（对齐 Semi）。
+  function onChange(keys: (string | number)[], items: TransferItem[]) {
+    value = keys;
+    picked = items.map((i) => i.label).join('、');
+  }
 </script>
 
-<Transfer
-  dataSource={data}
-  {value}
-  titles={['可选城市', '已选城市']}
-  onChange={(keys) => (value = keys)}
-/>
-<Text type="tertiary">已选：{value.join(', ') || '（无）'}</Text>
+<Transfer dataSource={data} {value} {onChange} />
+<Text type="tertiary">已选项：{picked || '（无）'}</Text>

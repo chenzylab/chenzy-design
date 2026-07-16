@@ -4,6 +4,8 @@ export interface TransferItem {
   disabled?: boolean;
   /** Optional group name; items sharing a group render under one group header. */
   group?: string;
+  /** 完整路径（treeList + showPath 时右侧已选项的祖先路径，对齐 Semi fullPath）。 */
+  fullPath?: { key: string | number; label: string }[];
 }
 
 /** Grouped data source: each group renders a header + its items. */
