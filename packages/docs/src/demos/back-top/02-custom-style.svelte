@@ -8,10 +8,12 @@
 
   let box = $state<HTMLDivElement | null>(null);
 
+  // 文档站无 iframe 隔离：覆盖为 absolute 定位到预览区（.demo-box__preview 为 relative），
+  // 模拟 Semi 浮于预览窗口右下角的观感。蓝色圆形按钮对齐 Semi 自定义样式 demo。
   const style =
-    'position:absolute; display:flex; align-items:center; justify-content:center;' +
-    'height:30px; width:30px; border-radius:100%; background-color:#0077fa; color:#fff;' +
-    'right:16px; bottom:16px';
+    'position:absolute; inset-inline-end:24px; inset-block-end:24px;' +
+    'display:flex; align-items:center; justify-content:center;' +
+    'height:30px; width:30px; border-radius:100%; background-color:#0077fa; color:#fff';
 </script>
 
 <Text type="tertiary">
@@ -19,13 +21,13 @@
 </Text>
 <div
   bind:this={box}
-  style="position:relative; width:320px; height:200px; overflow:auto; border:1px solid var(--cd-color-border); border-radius:6px; padding:12px; margin-top:8px"
+  style="width:320px; height:200px; overflow:auto; border:1px solid var(--cd-color-border); border-radius:6px; padding:12px; margin-top:8px"
 >
   <div style="height:1200px">
     Scroll down to see the bottom-right
     <span style="color:#0077fa">blue circular</span> button.
   </div>
-  <BackTop target={() => box} visibilityHeight={100} {style}>
-    <IconArrowUp />
-  </BackTop>
 </div>
+<BackTop target={() => box} visibilityHeight={100} {style}>
+  <IconArrowUp />
+</BackTop>
