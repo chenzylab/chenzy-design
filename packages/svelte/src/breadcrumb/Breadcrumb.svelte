@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { IconMore } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Tooltip from '../tooltip/Tooltip.svelte';
   import Popover from '../popover/Popover.svelte';
@@ -237,11 +238,7 @@
 
 <!-- IconMore：水平三点，对齐 Semi IconMore 折叠触发器视觉。 -->
 {#snippet iconMore()}
-  <svg class="cd-breadcrumb__more-icon" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">
-    <circle cx="5" cy="12" r="2" fill="currentColor" />
-    <circle cx="12" cy="12" r="2" fill="currentColor" />
-    <circle cx="19" cy="12" r="2" fill="currentColor" />
-  </svg>
+  <IconMore size="inherit" aria-hidden="true" />
 {/snippet}
 
 <!-- 单个路由项内容：末项=当前页（不可点），有 href=链接，否则可点文本。
@@ -483,9 +480,6 @@
     line-height: 1;
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
-  }
-  .cd-breadcrumb__more-icon {
-    display: block;
   }
   .cd-breadcrumb__more:hover {
     color: var(--cd-breadcrumb-color-link-hover);

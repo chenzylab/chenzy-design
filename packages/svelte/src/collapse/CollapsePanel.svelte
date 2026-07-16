@@ -14,6 +14,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
+  import { IconChevronDown, IconChevronUp } from '@chenzy-design/icons';
   import Collapsible from '../collapsible/Collapsible.svelte';
   import { getCollapseContext } from './context.js';
 
@@ -103,17 +104,13 @@
   );
 </script>
 
-<!-- 默认展开图标（收起态显示）：IconChevronDown。 -->
+<!-- 默认展开图标（收起态显示）：IconChevronDown（对齐 Semi，两图标切换非 rotate）。 -->
 {#snippet defaultExpand()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
-    <path d="M12.783 15.707a1 1 0 0 1-1.566 0l-4.076-5.076A1 1 0 0 1 7.924 9h8.152a1 1 0 0 1 .783 1.631l-4.076 5.076Z" />
-  </svg>
+  <IconChevronDown size="inherit" aria-hidden="true" />
 {/snippet}
-<!-- 默认折叠图标（展开态显示）：IconChevronUp。 -->
+<!-- 默认折叠图标（展开态显示）：IconChevronUp（对齐 Semi，两图标切换非 rotate）。 -->
 {#snippet defaultCollapse()}
-  <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" focusable="false" aria-hidden="true">
-    <path d="M11.217 8.293a1 1 0 0 1 1.566 0l4.076 5.076A1 1 0 0 1 16.076 15H7.924a1 1 0 0 1-.783-1.631l4.076-5.076Z" />
-  </svg>
+  <IconChevronUp size="inherit" aria-hidden="true" />
 {/snippet}
 
 {#snippet iconSpan()}

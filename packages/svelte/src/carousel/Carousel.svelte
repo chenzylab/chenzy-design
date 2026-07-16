@@ -25,6 +25,7 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import { useLiveAnnouncer } from '@chenzy-design/core';
+  import { IconChevronLeft, IconChevronRight } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Animation = 'slide' | 'fade';
@@ -412,9 +413,7 @@
         {#if arrowProps?.leftArrow?.children}
           {@render arrowProps.leftArrow.children()}
         {:else}
-          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" aria-hidden="true">
-            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <IconChevronLeft size="inherit" aria-label="Previous index" />
         {/if}
       </div>
       <div
@@ -437,9 +436,7 @@
         {#if arrowProps?.rightArrow?.children}
           {@render arrowProps.rightArrow.children()}
         {:else}
-          <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" aria-hidden="true">
-            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          <IconChevronRight size="inherit" aria-label="Next index" />
         {/if}
       </div>
     </div>
