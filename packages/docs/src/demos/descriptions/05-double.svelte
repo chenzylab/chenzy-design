@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { Descriptions, Icon } from '@chenzy-design/svelte';
-
-  const arrowUpSvg =
-    '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor"><path d="M12 5l7 7h-4v7h-6v-7H5z"/></svg>';
+  import { Descriptions } from '@chenzy-design/svelte';
+  import { IconArrowUp } from '@chenzy-design/icons';
 
   const cardStyle =
     'box-shadow: var(--cd-shadow-elevated); background-color: var(--cd-color-bg-2); border-radius: 4px; padding: 10px; width: 600px;';
@@ -10,7 +8,7 @@
 
 {#snippet retention()}
   <span
-    >98%<Icon svg={arrowUpSvg} size="small" style="color: red; margin-left: 4px;" /></span
+    >98%<IconArrowUp size="small" style="color: red; margin-left: 4px;" /></span
   >
 {/snippet}
 

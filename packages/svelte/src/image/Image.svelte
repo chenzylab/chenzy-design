@@ -10,11 +10,10 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import { SkeletonImage } from '../skeleton/index.js';
-  import { Icon } from '../icon/index.js';
+  import { IconEyeOpened, IconUploadError } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import PreviewInner from './PreviewInner.svelte';
   import { getImagePreviewGroupContext } from './previewContext.js';
-  import { iconEyeOpened, iconUploadError } from './icons.js';
   import type { PreviewProps } from './types.js';
 
   type LoadStatus = 'loading' | 'success' | 'error';
@@ -224,7 +223,7 @@
           <div class="cd-image-status">{@render fallback()}</div>
         {:else}
           <div class="cd-image-status" role="img" aria-label={alt || loc().t('Image.errorAlt')}>
-            <Icon svg={iconUploadError} size="extra-large" />
+            <IconUploadError size="extra-large" />
           </div>
         {/if}
       {:else if loadStatus === 'loading'}
@@ -240,7 +239,7 @@
   {#if showPreviewCursor}
     <div class="cd-image-mask" aria-hidden="true">
       <div class="cd-image-mask-info">
-        <Icon svg={iconEyeOpened} size="extra-large" />
+        <IconEyeOpened size="extra-large" />
         <span class="cd-image-mask-info-text">{loc().t('Image.preview')}</span>
       </div>
     </div>

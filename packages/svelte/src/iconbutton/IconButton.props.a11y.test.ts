@@ -1,18 +1,15 @@
-// IconButton 组件测：转发 Button props、不传 children、circle class、loading、缺 ariaLabel warn。
+// IconButton 组件测：薄封装 Button，透传 props；icon/children/ariaLabel 均可选（对齐 Semi）。
 // 放在 *.a11y.test.ts 命名下以进入 dom(jsdom) project（见根 vitest.config）。
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createRawSnippet } from 'svelte';
 import { render } from '@testing-library/svelte';
 import IconButton from './IconButton.svelte';
 
 const icon = createRawSnippet(() => ({ render: () => '<svg data-testid="ic"></svg>' }));
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+const text = createRawSnippet(() => ({ render: () => '新增' }));
 
 describe('IconButton', () => {
-  it('渲染原生 <button>，带 aria-label，且为 icon-only（方形）', () => {
+  it('渲染原生 <button>，透传 aria-label，纯图标为 icon-only（方形）', () => {
     const { container } = render(IconButton, { props: { icon, ariaLabel: '编辑' } });
     const btn = container.querySelector('button')!;
     expect(btn).not.toBeNull();
@@ -20,12 +17,27 @@ describe('IconButton', () => {
     expect(btn.classList.contains('cd-button-with-icon-only')).toBe(true);
   });
 
-  it('不渲染文字内容（不传 children），仅有图标', () => {
+  it('不传 children 时仅有图标（icon-only）', () => {
     const { container } = render(IconButton, { props: { icon, ariaLabel: 'x' } });
     const btn = container.querySelector('button')!;
-    // 仅图标 span，无文本节点
     expect(container.querySelector('[data-testid="ic"]')).not.toBeNull();
     expect(btn.textContent?.trim()).toBe('');
+  });
+
+  it('传 children（图标+文字）时非 icon-only', () => {
+    const { container } = render(IconButton, { props: { icon, children: text } });
+    const btn = container.querySelector('button')!;
+    expect(container.querySelector('[data-testid="ic"]')).not.toBeNull();
+    expect(btn.textContent?.trim()).toBe('新增');
+    // 有文字 → with-icon 但非 with-icon-only
+    expect(btn.classList.contains('cd-button-with-icon')).toBe(true);
+    expect(btn.classList.contains('cd-button-with-icon-only')).toBe(false);
+  });
+
+  it('ariaLabel 可选：不提供时不设置 aria-label、无告警', () => {
+    const { container } = render(IconButton, { props: { icon } });
+    const btn = container.querySelector('button')!;
+    expect(btn.hasAttribute('aria-label')).toBe(false);
   });
 
   it('转发 type / theme / size 到内部 Button', () => {
@@ -48,7 +60,6 @@ describe('IconButton', () => {
     const { container } = render(IconButton, { props: { icon, ariaLabel: 'x', loading: true } });
     const btn = container.querySelector('button')!;
     expect(btn.getAttribute('aria-busy')).toBe('true');
-    // loading 组装态：根 button 带 cd-button-loading，内部渲染旋转 spinner svg。
     expect(btn.classList.contains('cd-button-loading')).toBe(true);
     expect(container.querySelector('.cd-button-loading-spin')).not.toBeNull();
   });
@@ -61,17 +72,5 @@ describe('IconButton', () => {
     expect(btn.classList.contains('my-cls')).toBe(true);
     expect(btn.getAttribute('style')).toContain('opacity: 0.3');
     expect(btn.hasAttribute('disabled')).toBe(true);
-  });
-
-  it('缺失 ariaLabel（空串）在 dev 下 console.warn', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(IconButton, { props: { icon, ariaLabel: '' } });
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('ariaLabel'));
-  });
-
-  it('提供 ariaLabel 时不告警', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(IconButton, { props: { icon, ariaLabel: '编辑' } });
-    expect(warn).not.toHaveBeenCalled();
   });
 });

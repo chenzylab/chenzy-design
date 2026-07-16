@@ -28,23 +28,13 @@
   import { Cropper } from '../cropper/index.js';
   import { Tooltip } from '../tooltip/index.js';
   import { Popover } from '../popover/index.js';
-  import { Icon } from '../icon/index.js';
-
-  // 拖拽区默认图标（云上传，对齐 Semi drag-area 默认 IconUpload）。用户传 dragIcon 时覆盖。
-  const DEFAULT_DRAG_ICON_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 14v3.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  // 图片墙添加瓦片加号图标（对齐 Semi upload-picture-add 内的 IconPlus）。
-  const DEFAULT_ADD_ICON_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  // 文件卡片预览占位图标（对标 Semi fileCard 非图片时的 IconFile）：通用文件轮廓。
-  const DEFAULT_FILE_ICON_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2.75h7L18.25 8v13.25H6V2.75Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
-  // 文件卡片失败态内联错误图标（对标 Semi fileCard file-card-icon-error 的 IconAlertCircle）。
-  const DEFAULT_ERROR_ICON_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5v5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.25" r="1" fill="currentColor"/></svg>';
-  // 照片墙缩略图默认预览图标（对标 Semi renderPicPreviewIcon 默认的 IconEyeOpened）：居中眼睛，hover 显现。
-  const DEFAULT_EYE_ICON_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>';
+  import {
+    IconUpload,
+    IconPlus,
+    IconFile,
+    IconAlertCircle,
+    IconEyeOpened,
+  } from '@chenzy-design/icons';
   import type { CropperShape } from '../cropper/index.js';
   import type {
     UploadFileItem,
@@ -1328,7 +1318,7 @@
           {:else}
             <!-- dragIcon 未传时渲染默认云上传图标（对齐 Semi drag-area 默认图标）。 -->
             <span class="cd-upload__dragger-icon">
-              {#if dragIcon}{@render dragIcon()}{:else}<Icon svg={DEFAULT_DRAG_ICON_SVG} size="large" />{/if}
+              {#if dragIcon}{@render dragIcon()}{:else}<IconUpload size="extra-large" />{/if}
             </span>
             {#if dragMainText}
               <span class="cd-upload__dragger-main">
@@ -1390,7 +1380,7 @@
         {#if children}
           {@render children()}
         {:else}
-          <Icon svg={DEFAULT_ADD_ICON_SVG} size="large" />
+          <IconPlus size="large" />
         {/if}
       </button>
     </li>
@@ -1472,7 +1462,7 @@
             {#if thumbUrl !== undefined}
               <img class="cd-upload__item-preview-img" src={thumbUrl} alt={item.name} />
             {:else}
-              <Icon svg={DEFAULT_FILE_ICON_SVG} size="small" />
+              <IconFile size="large" />
             {/if}
           </div>
           <div class="cd-upload__item-body">
@@ -1480,7 +1470,7 @@
             <!-- 失败态内联错误图标（对标 Semi fileCard file-card-icon-error）。 -->
             {#if item.status === 'uploadFail' || item.status === 'validateFail'}
               <span class="cd-upload__item-icon cd-upload__item-icon--error">
-                <Icon svg={DEFAULT_ERROR_ICON_SVG} size="small" />
+                <IconAlertCircle size="small" />
               </span>
             {/if}
             {@render fileName(item)}
@@ -1625,7 +1615,7 @@
               aria-label={loc().t('Upload.preview')}
               onclick={() => onPreviewClick?.(item)}
             >
-              <Icon svg={DEFAULT_EYE_ICON_SVG} size="large" />
+              <IconEyeOpened size="large" />
             </button>
           {/if}
           {#if (item.showReplace ?? showReplace) && item.status === 'success'}

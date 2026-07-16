@@ -5,9 +5,8 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Icon } from '../icon/index.js';
+  import { IconClose } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
-  import { iconClose } from './icons.js';
 
   interface Props {
     /** 当前图 title（string 或 Snippet），来自 context.titles[currentIndex]。 */
@@ -46,7 +45,7 @@
       {#if renderCloseIcon}
         {@render renderCloseIcon()}
       {:else}
-        <Icon svg={iconClose} />
+        <IconClose />
       {/if}
     </button>
   {/if}

@@ -4,7 +4,7 @@ import { createRawSnippet } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import IconButton from './IconButton.svelte';
 
-// IconButton 的 icon/ariaLabel 为必填 prop，与 renderWithLocale 的宽松 AnyComponent
+// IconButton 的 rest props（[key:string]:unknown）与 renderWithLocale 的宽松 AnyComponent
 // 形态在 exactOptionalPropertyTypes 下不严格兼容，按 Image 测试同法收窄。
 const IconButtonC = IconButton as unknown as Parameters<typeof renderWithLocale>[0];
 
