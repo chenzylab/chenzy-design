@@ -1,20 +1,22 @@
 <!--
-  Rating — see specs/components/input/Rating.spec.md
-  Star rating with half-star, hover preview, keyboard. APG slider pattern.
-  Controlled / uncontrolled; variation only via onChange. hoverValue is local-only.
+  Rating — 评分（破坏性对齐 Semi Design semi-ui/rating）。
+  架构对齐 Semi：<ul> 根 + 每颗星一个 <li class="cd-rating-star">，li 内 wrapper > first(半星层) + second(整星层)，
+  两层各 role="radio"（roving tabindex），非根 role="slider"。额外渲染 index==count 的空评分项（size 0）
+  承载「0 分」焦点。半星靠 first 层定宽裁剪 + 定位叠放（对齐 item.tsx）。
+  键盘：仅方向键（→/↑ 加、←/↓ 减，RTL 镜像；对齐 Semi foundation.handleKeyDown，无 Home/End/数字键超集）。
+  tooltips：复用本库 Tooltip（trigger="custom" + visible 由 hoverValue 联动，对齐 Semi index.tsx:296-303）。
+  受控：value 受控只回调不回写（controlled-props-no-bind-no-writeback）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId } from '@chenzy-design/core';
+  import { tick } from 'svelte';
   import { IconStar } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
 
-  type Size = 'small' | 'default' | 'large' | number;
-  type Status = 'default' | 'warning' | 'error';
-  type ItemState = 'empty' | 'half' | 'full';
-  type CharCtx = { index: number; state: ItemState; value: number };
-  // 自定义字符：字符串（统一字符）或 Snippet（按 {index,state,value} 渲染不同节点，
-  // 取代 spec 中的 (index,state)=>node 函数形式——Svelte 5 用带参 Snippet 表达）。
+  type Size = 'small' | 'default' | number;
+  type CharCtx = { index: number; value: number };
+  // 自定义字符：字符串（统一字符）或 Snippet（按 {index,value} 渲染节点）。对齐 Semi ReactNode。
   type Character = string | Snippet<[CharCtx]>;
 
   interface Props {
@@ -23,31 +25,39 @@
     count?: number;
     allowHalf?: boolean;
     allowClear?: boolean;
-    /** 自定义字符/图标：字符串 或 带 {index,state,value} 的 Snippet。不传则默认星形。 */
+    /** 自定义字符/图标：字符串 或 带 {index,value} 的 Snippet。不传则默认星形。 */
     character?: Character;
     size?: Size;
     disabled?: boolean;
-    readonly?: boolean;
-    status?: Status;
-    /** 逐项提示文案（native title），长度应等于 count。 */
+    /** 逐项提示文案（复用 Tooltip 浮层），长度应等于 count。 */
     tooltips?: string[];
-    /** 挂载时聚焦。 */
+    /** 挂载时聚焦（对齐 Semi autoFocus）。 */
     autoFocus?: boolean;
-    name?: string;
-    /** 根元素 id，关联 aria；不传自动生成。 */
+    /** 根元素 id。 */
     id?: string;
-    ariaLabel?: string;
+    /** 根 tabIndex（对齐 Semi，默认 -1；根仅作 focus 转发容器，实际焦点落在星 radio 上）。 */
+    tabIndex?: number;
     style?: string;
-    onChange?: (v: number) => void;
-    onHoverChange?: (v: number) => void;
-    onBlur?: () => void;
-    onFocus?: () => void;
-    onKeyDown?: (e: KeyboardEvent) => void;
+    class?: string;
+    /** autoFocus / focus() 聚焦时是否阻止滚动（对齐 Semi preventScroll）。 */
     preventScroll?: boolean;
+    // —— aria 直传（对齐 Semi index.tsx:17-22） ——
+    'aria-label'?: string;
+    'aria-labelledby'?: string;
+    'aria-describedby'?: string;
+    'aria-errormessage'?: string;
+    'aria-invalid'?: boolean;
+    'aria-required'?: boolean;
+    onChange?: (value: number) => void;
+    onHoverChange?: (value: number) => void;
+    onClick?: (e: MouseEvent | KeyboardEvent, index: number) => void;
+    onFocus?: (e: FocusEvent) => void;
+    onBlur?: (e: FocusEvent) => void;
+    onKeyDown?: (e: KeyboardEvent) => void;
   }
 
   let {
-    value = $bindable(),
+    value = undefined,
     defaultValue = 0,
     count = 5,
     allowHalf = false,
@@ -55,62 +65,63 @@
     character,
     size = 'default',
     disabled = false,
-    readonly = false,
-    status = 'default',
     tooltips,
     autoFocus = false,
-    name,
     id,
-    ariaLabel,
+    tabIndex = -1,
     style,
+    class: className,
+    preventScroll,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    'aria-describedby': ariaDescribedby,
+    'aria-errormessage': ariaErrormessage,
+    'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
     onChange,
     onHoverChange,
-    onBlur,
+    onClick,
     onFocus,
+    onBlur,
     onKeyDown,
-    preventScroll,
   }: Props = $props();
 
   const loc = useLocale();
-  const autoId = useId('cd-rating');
-  const rootId = $derived(id ?? autoId);
 
   const isSnippet = (c: unknown): c is Snippet<[CharCtx]> => typeof c === 'function';
 
   const isControlled = $derived(value !== undefined);
+  // 非受控初值：函数包裹读取，避免 state_referenced_locally 告警。
+  const getInitialValue = () => defaultValue;
   let inner = $state(getInitialValue());
   const current = $derived(isControlled ? (value ?? 0) : inner);
 
-  function getInitialValue(): number {
-    return defaultValue;
-  }
+  // hoverValue：纯本地预览，undefined = 无 hover（对齐 Semi state.hoverValue）。
+  let hoverValue = $state<number | undefined>(undefined);
+  const displayValue = $derived(hoverValue === undefined ? current : hoverValue);
 
-  // hoverValue is purely local preview state; null means "no hover".
-  let hoverValue = $state<number | null>(null);
-  const displayValue = $derived(hoverValue ?? current);
+  // 空评分项聚焦可见态（对齐 Semi emptyStarFocusVisible），仅供根 focus 环。
+  let emptyStarFocusVisible = $state(false);
 
-  const interactive = $derived(!disabled && !readonly);
   const minStep = $derived(allowHalf ? 0.5 : 1);
 
+  const isCustomSize = $derived(typeof size === 'number');
   const sizePx = $derived(typeof size === 'number' ? `${size}px` : undefined);
-  const sizeClass = $derived(typeof size === 'number' ? 'cd-rating--custom' : `cd-rating--${size}`);
+  const sizeClass = $derived(typeof size === 'number' ? undefined : `cd-rating-star-${size}`);
 
-  // Per-star fill: 0 = empty, 0.5 = half, 1 = full.
-  function fillFor(index: number): number {
-    const starValue = index + 1;
-    if (displayValue >= starValue) return 1;
-    if (displayValue >= starValue - 0.5) return 0.5;
-    return 0;
-  }
-
-  // 三态语义（供 character Snippet 上下文）：纯派生函数（红线 #2）。
-  function stateFor(index: number): ItemState {
-    const fill = fillFor(index);
-    return fill === 1 ? 'full' : fill === 0.5 ? 'half' : 'empty';
-  }
+  // aria 前缀：aria-label > 字符串 character > 'star'（对齐 Semi getAriaLabelPrefix）。
+  const ariaLabelPrefix = $derived(
+    ariaLabel ?? (typeof character === 'string' ? character : 'star'),
+  );
+  const rootAriaLabel = $derived(
+    ariaLabel ??
+      loc().t('Rating.valueText', {
+        value: loc().formatNumber(current),
+        count: loc().formatNumber(count),
+      }),
+  );
 
   function commit(next: number) {
-    // Controlled: never write the prop; propagate via onChange only.
     if (!isControlled) inner = next;
     onChange?.(next);
     announce(next);
@@ -121,26 +132,32 @@
   function announce(next: number) {
     announceText = '';
     queueMicrotask(() => {
-      announceText = next === 0 ? loc().t('Rating.cleared') : textFor(next);
+      announceText =
+        next === 0
+          ? loc().t('Rating.cleared')
+          : loc().t('Rating.valueText', {
+              value: loc().formatNumber(next),
+              count: loc().formatNumber(count),
+            });
     });
   }
 
-  function valueAt(index: number, isHalf: boolean): number {
-    return allowHalf && isHalf ? index + 0.5 : index + 1;
+  // 指针落在星左/右半 → 半星判定（对齐 foundation.getStarValue）。
+  function starValueAt(index: number, e: { currentTarget: HTMLElement; clientX: number }): number {
+    let v = index + 1;
+    if (allowHalf) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
+      const offset = e.clientX - rect.left;
+      const leftHalf = offset < rect.width / 2;
+      if (rtl ? !leftHalf : leftHalf) v -= 0.5;
+    }
+    return v;
   }
 
-  function isLeftHalf(e: { currentTarget: HTMLElement; clientX: number }): boolean {
-    if (!allowHalf) return false;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
-    const offset = e.clientX - rect.left;
-    const leftHalf = offset < rect.width / 2;
-    return rtl ? !leftHalf : leftHalf;
-  }
-
-  function handleMove(index: number, e: MouseEvent & { currentTarget: HTMLElement }) {
-    if (!interactive) return;
-    const next = valueAt(index, isLeftHalf(e));
+  function handleHover(index: number, e: MouseEvent & { currentTarget: HTMLElement }) {
+    if (disabled) return;
+    const next = starValueAt(index, e);
     if (next !== hoverValue) {
       hoverValue = next;
       onHoverChange?.(next);
@@ -148,246 +165,333 @@
   }
 
   function handleLeave() {
-    if (hoverValue !== null) {
-      hoverValue = null;
-      // 移出复位至当前 value（spec：hoverChange 移出时为当前 value）。
-      onHoverChange?.(current);
-    }
+    if (disabled) return;
+    // 移出：hoverValue 复位 undefined，回调 undefined（对齐 Semi handleMouseLeave/notifyHoverChange）。
+    hoverValue = undefined;
+    onHoverChange?.(undefined as unknown as number);
   }
 
   function handleClick(index: number, e: MouseEvent & { currentTarget: HTMLElement }) {
-    if (!interactive) return;
-    const next = valueAt(index, isLeftHalf(e));
-    if (allowClear && next === current) {
-      commit(0);
-    } else {
-      commit(next);
-    }
-    hoverValue = null;
+    if (disabled) return;
+    const next = starValueAt(index, e);
+    const isReset = allowClear ? next === current : false;
+    commit(isReset ? 0 : next);
+    onClick?.(e, index);
+    hoverValue = undefined;
+  }
+
+  // 空项（index==count）回车/点击 → 置 0。
+  function handleEmptyActivate(e: MouseEvent | KeyboardEvent) {
+    if (disabled) return;
+    commit(0);
+    onClick?.(e, count);
+    hoverValue = undefined;
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (!interactive) return;
-    let next = current;
-    switch (e.key) {
-      case 'ArrowRight':
-      case 'ArrowUp':
-        next = Math.min(count, current + minStep);
-        break;
-      case 'ArrowLeft':
-      case 'ArrowDown':
-        next = Math.max(0, current - minStep);
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = count;
-        break;
-      case 'Delete':
-      case 'Backspace':
-        if (allowClear) next = 0;
-        break;
-      default: {
-        // 数字键 1–9：直接定位到对应整数分值（钳到 [1, count]）。
-        if (e.key >= '1' && e.key <= '9') {
-          const n = Number(e.key);
-          if (n <= count) next = n;
-          else return;
-        } else {
-          return;
-        }
-      }
+    if (disabled) return;
+    const rtl = rootEl ? getComputedStyle(rootEl).direction === 'rtl' : false;
+    const step = minStep;
+    let temp: number | undefined;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      temp = current + (rtl ? -step : step);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      temp = current + (rtl ? step : -step);
     }
+    if (temp === undefined) return;
+    let next: number;
+    if (temp > count) next = 0;
+    else if (temp < 0) next = count;
+    else next = temp;
     e.preventDefault();
-    if (next !== current) commit(next);
+    hoverValue = undefined;
+    commit(next);
+    tick().then(() => focusStarFor(next));
   }
 
-  const cls = $derived(
-    [
-      'cd-rating',
-      sizeClass,
-      `cd-rating--${status}`,
-      disabled && 'cd-rating--disabled',
-      readonly && 'cd-rating--readonly',
-    ]
-      .filter(Boolean)
-      .join(' '),
+  // —— 焦点管理（roving tabindex）——
+  let rootEl = $state<HTMLUListElement | undefined>(undefined);
+
+  // 定位到某分值对应的可聚焦 radio 元素并聚焦（对齐 Semi changeFocusStar）。
+  function focusStarFor(v: number) {
+    if (!rootEl) return;
+    const index = Math.ceil(v) - 1;
+    const opts = preventScroll === undefined ? undefined : { preventScroll };
+    if (index < 0) {
+      // 0 分 → 空项的 second 星。
+      const el = rootEl.querySelector<HTMLElement>(`[data-empty] [data-star="second"]`);
+      el?.focus(opts);
+    } else {
+      const isHalf = v * 10 % 10 === 5;
+      const star = allowHalf && isHalf ? 'first' : 'second';
+      const el = rootEl.querySelector<HTMLElement>(`[data-index="${index}"] [data-star="${star}"]`);
+      el?.focus(opts);
+    }
+  }
+
+  /** 命令式聚焦（对齐 Semi focus()）：聚焦当前分值对应星，空态聚焦空项。 */
+  export function focus(): void {
+    if (disabled) return;
+    focusStarFor(current);
+  }
+
+  /** 命令式失焦（对齐 Semi blur()）。 */
+  export function blur(): void {
+    if (disabled) return;
+    (rootEl?.querySelector<HTMLElement>(':focus') ?? document.activeElement as HTMLElement | null)?.blur?.();
+  }
+
+  // autoFocus：挂载后聚焦一次（对齐 Semi foundation.init）。
+  $effect(() => {
+    if (autoFocus && !disabled && rootEl) {
+      tick().then(() => focusStarFor(current));
+    }
+  });
+
+  // 每颗星填充：0 空 / 0.5 半 / 1 满（基于 displayValue，含 hover 预览）。
+  function fillFor(index: number): number {
+    const starValue = index + 1;
+    const diff = starValue - displayValue;
+    if (diff <= 0) return 1;
+    if (allowHalf && diff < 1) return 0.5;
+    return 0;
+  }
+
+  // —— IconStar 尺寸映射（对齐 item.tsx:176）——
+  const iconSize = $derived(
+    isCustomSize ? 'inherit' : size === 'small' ? 'default' : 'extra-large',
   );
 
-  // aria-valuetext / 播报文案：i18n + Intl 数字格式（红线 #2 纯派生）。
-  function textFor(v: number): string {
-    if (v === 0) return loc().t('Rating.unrated');
-    return loc().t('Rating.valueText', {
-      value: loc().formatNumber(v),
-      count: loc().formatNumber(count),
-    });
+  // tooltip 联动：hoverValue-1 === index 时显示该项 tooltip（对齐 index.tsx:298）。
+  function tipVisible(index: number): boolean {
+    return hoverValue !== undefined && hoverValue - 1 === index;
   }
-  const valueText = $derived(textFor(current));
-  const resolvedAriaLabel = $derived(ariaLabel ?? loc().t('Rating.ariaLabel'));
-
-  // 单项 title：tooltips[index]（长度可不足，缺省为 undefined）。
-  function titleFor(index: number): string | undefined {
-    return tooltips?.[index];
-  }
-
-  let rootEl: HTMLDivElement | undefined;
-  // autoFocus：命令式聚焦一次（红线 #3，SSR 安全）。
-  $effect(() => {
-    if (autoFocus && rootEl && interactive)
-      rootEl.focus(preventScroll === undefined ? undefined : { preventScroll });
-  });
 </script>
 
-<div
+<!--
+  svelte-ignore a11y_no_noninteractive_element_interactions, a11y_no_noninteractive_tabindex,
+  a11y_role_supports_aria_props_implicit
+-->
+<ul
   bind:this={rootEl}
-  id={rootId}
-  class={cls}
-  role="slider"
-  aria-label={resolvedAriaLabel}
-  aria-valuenow={current}
-  aria-valuemin={0}
-  aria-valuemax={count}
-  aria-valuetext={valueText}
-  aria-disabled={disabled || undefined}
-  aria-readonly={readonly || undefined}
-  aria-invalid={status === 'error' || undefined}
-  tabindex={interactive ? 0 : -1}
+  {id}
+  class={['cd-rating', disabled && 'cd-rating-disabled', emptyStarFocusVisible && 'cd-rating-focus', className]
+    .filter(Boolean)
+    .join(' ')}
   style={[sizePx ? `--cd-rating-size-active: ${sizePx}` : '', style ?? ''].filter(Boolean).join(';') || undefined}
+  aria-label={rootAriaLabel}
+  aria-labelledby={ariaLabelledby}
+  aria-describedby={ariaDescribedby}
+  aria-errormessage={ariaErrormessage}
+  aria-invalid={ariaInvalid}
+  aria-required={ariaRequired}
+  tabindex={disabled ? -1 : tabIndex}
+  onmouseleave={handleLeave}
+  onfocus={(e) => onFocus?.(e)}
+  onblur={(e) => onBlur?.(e)}
   onkeydown={(e) => {
     handleKeydown(e);
     onKeyDown?.(e);
   }}
-  onfocus={() => onFocus?.()}
-  onblur={() => onBlur?.()}
-  onmouseleave={handleLeave}
 >
-  {#if name}<input type="hidden" {name} value={current} />{/if}
-
-  {#each Array(count) as _, i (i)}
+  {#each Array(count + 1) as _, i (i)}
+    {@const isEmpty = i === count}
     {@const fill = fillFor(i)}
-    <span
-      class="cd-rating__star"
-      class:cd-rating__star--full={fill === 1}
-      class:cd-rating__star--half={fill === 0.5}
-      class:cd-rating__star--char={character !== undefined}
-      role="presentation"
-      title={titleFor(i)}
-      onmousemove={(e) => handleMove(i, e)}
-      onclick={(e) => handleClick(i, e)}
-    >
-      {#if typeof character === 'string'}
-        <!-- 自定义字符（字符串）：双层裁剪，与星形同结构。 -->
-        <span class="cd-rating__icon cd-rating__icon--bg cd-rating__text">{character}</span>
-        <span class="cd-rating__fg" style={`inline-size: ${fill * 100}%`}>
-          <span class="cd-rating__icon cd-rating__icon--fg cd-rating__text">{character}</span>
-        </span>
-      {:else if isSnippet(character)}
-        <!-- 自定义 Snippet：调用方按 {index,state,value} 自渲染（含半态）。 -->
-        {@render character({ index: i, state: stateFor(i), value: displayValue })}
-      {:else}
-        <!-- 双层 star 叠层：底层灰星撑满星位，上层填充星裹在定宽 .cd-rating__fg 内按
-             fill 百分比裁剪，实现整/半/空三态（机制对齐 Semi item.tsx 的 star 叠放）。 -->
-        <IconStar class="cd-rating__icon cd-rating__icon--bg" size="inherit" aria-hidden="true" />
-        <span class="cd-rating__fg" style={`inline-size: ${fill * 100}%`}>
-          <IconStar class="cd-rating__icon cd-rating__icon--fg" size="inherit" aria-hidden="true" />
-        </span>
-      {/if}
-    </span>
-  {/each}
-</div>
+    {@const isHalf = fill === 0.5}
+    {@const isFull = fill === 1}
+    {@const starValue = i + 1}
+    {@const firstWidth = Math.max(0, Math.min(1, 1 - (starValue - displayValue))) * 100}
+    {@const ariaSetSize = allowHalf ? count * 2 + 1 : count + 1}
+    {#snippet star()}
+      <li
+        class={['cd-rating-star', !isCustomSize && !isEmpty && sizeClass, isHalf && 'cd-rating-star-half', isFull && 'cd-rating-star-full']
+          .filter(Boolean)
+          .join(' ')}
+        data-index={i}
+        data-empty={isEmpty ? '' : undefined}
+        style={isCustomSize && !isEmpty ? `width:${sizePx};height:${sizePx};font-size:${sizePx}` : undefined}
+      >
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <div
+          class={['cd-rating-star-wrapper', disabled && 'cd-rating-star-disabled'].filter(Boolean).join(' ')}
+          role="presentation"
+          onmousemove={disabled || isEmpty ? undefined : (e) => handleHover(i, e)}
+          onclick={disabled ? undefined : isEmpty ? (e) => handleEmptyActivate(e) : (e) => handleClick(i, e)}
+        >
+          {#if allowHalf && !isEmpty}
+            <!-- 半星层（first）：定宽裁剪，role=radio -->
+            <div
+              class="cd-rating-star-first cd-rating-no-focus"
+              data-star="first"
+              role="radio"
+              aria-checked={current === i + 0.5}
+              aria-posinset={2 * i + 1}
+              aria-setsize={ariaSetSize}
+              aria-disabled={disabled || undefined}
+              aria-label={`${i + 0.5} ${ariaLabelPrefix}s`}
+              tabindex={!disabled && current === i + 0.5 ? 0 : -1}
+              style={`width:${firstWidth}%`}
+            >
+              {#if typeof character === 'string'}
+                <span class="cd-rating-char">{character}</span>
+              {:else if isSnippet(character)}
+                {@render character({ index: i, value: displayValue })}
+              {:else}
+                <IconStar size={iconSize} style="display:block" aria-hidden="true" />
+              {/if}
+            </div>
+          {/if}
+          <!-- 整星层（second）：role=radio；空项承载 0 分焦点 -->
+          <div
+            class="cd-rating-star-second cd-rating-no-focus"
+            data-star="second"
+            role="radio"
+            aria-checked={isEmpty ? current === 0 : current === i + 1}
+            aria-posinset={allowHalf ? 2 * (i + 1) : i + 1}
+            aria-setsize={ariaSetSize}
+            aria-disabled={disabled || undefined}
+            aria-label={`${isEmpty ? 0 : i + 1} ${ariaLabelPrefix}${i === 0 && !isEmpty ? '' : 's'}`}
+            tabindex={!disabled && ((current === i + 1) || (isEmpty && current === 0)) ? 0 : -1}
+            onkeydown={isEmpty
+              ? (e) => {
+                  if (e.key === 'Enter') handleEmptyActivate(e);
+                }
+              : undefined}
+          >
+            {#if isEmpty}
+              <!-- 空项不渲染可见内容，仅作 0 分焦点/radio 停靠点 -->
+            {:else if typeof character === 'string'}
+              <span class="cd-rating-char">{character}</span>
+            {:else if isSnippet(character)}
+              {@render character({ index: i, value: displayValue })}
+            {:else}
+              <IconStar size={iconSize} style="display:block" aria-hidden="true" />
+            {/if}
+          </div>
+        </div>
+      </li>
+    {/snippet}
 
-<!-- 值变更播报 live region：视觉隐藏，仅供辅助技术读取（render 期只读 $state）。 -->
-<div class="cd-rating__sr-live" role="status" aria-live="polite" aria-atomic="true">
+    {#if tooltips && !isEmpty}
+      <Tooltip trigger="custom" visible={tipVisible(i)} content={tooltips[i] ?? ''}>
+        {@render star()}
+      </Tooltip>
+    {:else}
+      {@render star()}
+    {/if}
+  {/each}
+</ul>
+
+<!-- 值变更播报 live region：视觉隐藏，仅供辅助技术读取。 -->
+<div class="cd-rating-sr-live" role="status" aria-live="polite" aria-atomic="true">
   {announceText}
 </div>
 
 <style>
+  /* 结构与 token 挂点对齐 Semi rating.scss。 */
   .cd-rating {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-rating-gap);
-    color: var(--cd-rating-color-inactive);
+    display: inline-block;
+    margin: var(--cd-spacing-rating-margin);
+    padding: var(--cd-spacing-rating-padding);
+    color: var(--cd-color-rating-icon-active);
+    list-style: none;
+    outline: none;
+    border-radius: 3px;
     cursor: pointer;
+  }
+  .cd-rating-focus {
+    outline: var(--cd-width-rating-outline-focus) solid var(--cd-color-rating-outline-focus);
+  }
+  .cd-rating-no-focus {
     outline: none;
   }
-  .cd-rating:focus-visible {
-    box-shadow: var(--cd-rating-outline-focus);
-    border-radius: var(--cd-rating-radius);
-  }
-  .cd-rating--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .cd-rating--readonly {
+  .cd-rating-disabled {
     cursor: default;
   }
-  .cd-rating__star {
+  .cd-rating-disabled .cd-rating-star {
+    cursor: default;
+  }
+  .cd-rating-disabled .cd-rating-star:hover {
+    transform: scale(1);
+  }
+
+  .cd-rating-star {
     position: relative;
-    display: inline-flex;
-    inline-size: var(--cd-rating-size-default);
-    block-size: var(--cd-rating-size-default);
-    /* 星位字号驱动内部 IconStar（size="inherit"，svg 1em）填满星位。 */
-    font-size: var(--cd-rating-size-default);
-    color: var(--cd-rating-color-inactive);
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    color: inherit;
+    cursor: pointer;
+    transition: all 0.5s;
   }
-  .cd-rating--small .cd-rating__star {
-    inline-size: var(--cd-rating-size-small);
-    block-size: var(--cd-rating-size-small);
-    font-size: var(--cd-rating-size-small);
+  .cd-rating-star:not(:last-child) {
+    margin-right: var(--cd-spacing-rating-item-marginright);
   }
-  .cd-rating--large .cd-rating__star {
-    inline-size: var(--cd-rating-size-large);
-    block-size: var(--cd-rating-size-large);
-    font-size: var(--cd-rating-size-large);
+  .cd-rating-star > div:hover,
+  .cd-rating-star > div:focus {
+    transform: scale(1.1);
   }
-  .cd-rating--custom .cd-rating__star {
-    inline-size: var(--cd-rating-size-active);
-    block-size: var(--cd-rating-size-active);
-    font-size: var(--cd-rating-size-active);
+  .cd-rating-star > div.cd-rating-star-disabled {
+    transform: none;
   }
-  .cd-rating__icon {
-    display: block;
-    line-height: 0;
+
+  .cd-rating-star-small {
+    width: var(--cd-width-rating-item-small);
+    height: var(--cd-width-rating-item-small);
+    font-size: var(--cd-font-rating-item-small-fontsize);
   }
-  .cd-rating__fg {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    block-size: 100%;
-    inline-size: 0;
+  .cd-rating-star-default {
+    width: var(--cd-width-rating-item-default);
+    height: var(--cd-width-rating-item-default);
+    font-size: var(--cd-font-rating-item-default-fontsize);
+  }
+
+  .cd-rating-star-wrapper {
+    position: relative;
     overflow: hidden;
-    color: var(--cd-rating-color-active);
-    transition: color var(--cd-rating-transition-duration) var(--cd-rating-transition-easing);
+    border-radius: 3px;
+    width: 100%;
+    height: 100%;
   }
-  .cd-rating--warning .cd-rating__fg {
-    color: var(--cd-rating-color-warning);
+
+  .cd-rating-star-first,
+  .cd-rating-star-second {
+    transition: color var(--cd-transition-duration-rating-color) var(--cd-transition-function-rating-color)
+      var(--cd-transition-delay-rating-color);
+    color: var(--cd-color-rating-bg-default);
+    user-select: none;
   }
-  .cd-rating--error .cd-rating__fg {
-    color: var(--cd-rating-color-error);
+  .cd-rating-star-first {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    opacity: 0;
   }
-  /* 自定义字符（字符串）：以文本承载，撑满星位，垂直水平居中。 */
-  .cd-rating__text {
+  .cd-rating-star-half .cd-rating-star-first,
+  .cd-rating-star-half .cd-rating-star-second {
+    opacity: 1;
+  }
+  .cd-rating-star-half .cd-rating-star-first,
+  .cd-rating-star-full .cd-rating-star-second {
+    color: inherit;
+  }
+
+  /* 自定义字符（字符串）：以文本撑满星位居中。 */
+  .cd-rating-char {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: 100%;
-    block-size: 100%;
-    font-size: var(--cd-rating-size-default);
+    width: 100%;
+    height: 100%;
     line-height: 1;
     white-space: nowrap;
   }
-  .cd-rating--small .cd-rating__text {
-    font-size: var(--cd-rating-size-small);
-  }
-  .cd-rating--large .cd-rating__text {
-    font-size: var(--cd-rating-size-large);
-  }
-  .cd-rating--custom .cd-rating__text {
-    font-size: var(--cd-rating-size-active);
-  }
-  /* 视觉隐藏但对辅助技术可见（不可用 display:none / visibility:hidden）。 */
-  .cd-rating__sr-live {
+
+  /* 视觉隐藏但对辅助技术可见。 */
+  .cd-rating-sr-live {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -398,10 +502,5 @@
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-rating__fg {
-      transition: none;
-    }
   }
 </style>

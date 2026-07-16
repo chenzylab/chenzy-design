@@ -1,16 +1,15 @@
 <script lang="ts">
   import { Rating, Text, Space } from '@chenzy-design/svelte';
-
-  let value = $state(3);
 </script>
 
+<!-- 基本用法：两种尺寸 default / small（对齐 Semi 基本用法） -->
 <Space vertical>
   <Space>
-    <Rating {value} onChange={(v) => (value = v)} />
-    <Text type="tertiary">评分：{value}</Text>
+    <Rating defaultValue={5} />
+    <Text type="tertiary">默认尺寸</Text>
   </Space>
   <Space>
-    <Rating value={2.5} allowHalf readonly />
-    <Text type="tertiary">半星只读展示</Text>
+    <Rating size="small" defaultValue={5} />
+    <Text type="tertiary">小尺寸（small）</Text>
   </Space>
 </Space>

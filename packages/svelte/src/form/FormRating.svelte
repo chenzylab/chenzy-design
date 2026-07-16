@@ -21,12 +21,11 @@
     transform?: (value: unknown, values: Record<string, unknown>) => unknown;
     dependencies?: string[];
     trigger?: ValidateTrigger | ValidateTrigger[];
-    // Rating-specific props
+    // Rating-specific props（对齐 Semi Rating：无 readonly/status，只读用 disabled）
     count?: RatingProps['count'];
     allowHalf?: RatingProps['allowHalf'];
     allowClear?: RatingProps['allowClear'];
     disabled?: boolean;
-    readonly?: RatingProps['readonly'];
     size?: RatingProps['size'];
     tooltips?: RatingProps['tooltips'];
   }
@@ -47,7 +46,6 @@
     allowHalf,
     allowClear,
     disabled,
-    readonly,
     size,
     tooltips,
   }: Props = $props();
@@ -75,10 +73,9 @@
       {...(allowHalf !== undefined ? { allowHalf } : {})}
       {...(allowClear !== undefined ? { allowClear } : {})}
       disabled={disabled ?? fieldDisabled}
-      {...(readonly !== undefined ? { readonly } : {})}
       {...(size !== undefined ? { size } : {})}
       {...(tooltips !== undefined ? { tooltips } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      {...(status === 'error' ? { 'aria-invalid': true } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}
