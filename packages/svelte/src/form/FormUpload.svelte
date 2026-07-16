@@ -27,9 +27,8 @@
     limit?: UploadProps['limit'];
     disabled?: boolean;
     listType?: UploadProps['listType'];
-    drag?: UploadProps['drag'];
+    draggable?: UploadProps['draggable'];
     action?: UploadProps['action'];
-    size?: UploadProps['size'];
     children?: Snippet;
   }
 
@@ -50,9 +49,8 @@
     limit,
     disabled,
     listType,
-    drag,
+    draggable,
     action,
-    size,
     children: slotChildren,
   }: Props = $props();
 
@@ -74,17 +72,16 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
     <Upload
-      {...(Array.isArray(value) ? { value: value as NonNullable<UploadProps['value']> } : {})}
+      {...(Array.isArray(value) ? { fileList: value as NonNullable<UploadProps['fileList']> } : {})}
       {...(accept !== undefined ? { accept } : {})}
       {...(multiple !== undefined ? { multiple } : {})}
       {...(limit !== undefined ? { limit } : {})}
       disabled={disabled ?? fieldDisabled}
       {...(listType !== undefined ? { listType } : {})}
-      {...(drag !== undefined ? { drag } : {})}
+      {...(draggable !== undefined ? { draggable } : {})}
       {...(action !== undefined ? { action } : {})}
-      {...(size !== undefined ? { size } : {})}
-      status={status === 'error' ? 'error' : 'default'}
-      onChange={(list) => onChange(list)}
+      validateStatus={status === 'error' ? 'error' : 'default'}
+      onChange={({ fileList }) => onChange(fileList)}
     >
       {@render slotChildren?.()}
     </Upload>

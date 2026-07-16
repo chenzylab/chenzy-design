@@ -96,9 +96,22 @@ export {
 export { Transfer, transferMeta, type TransferItem, type TransferGroup } from './transfer/index.js';
 export {
   Upload,
+  UploadFileCard,
   uploadMeta,
   type UploadFileItem,
   type UploadStatus,
+  type UploadListType,
+  type UploadValidateStatus,
+  type UploadPromptPosition,
+  type UploadDataOrFn,
+  type UploadShowTooltip,
+  type UploadFileListTitle,
+  type BeforeUploadObjectResult,
+  type BeforeUploadProps,
+  type AfterUploadProps,
+  type AfterUploadResult,
+  type RenderFileItemProps,
+  type RenderPictureCloseProps,
 } from './upload/index.js';
 
 // --- M3 Navigation ---

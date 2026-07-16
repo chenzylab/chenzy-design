@@ -11,9 +11,9 @@
 
   let currentAvatar = $state(avatarSrc);
 
-  function onChange(list: UploadFileItem[]) {
+  function onChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }) {
     // 取最新成功项的本地预览地址换头像（真实场景用后端返回 url）。
-    const last = list[list.length - 1];
+    const last = fileList[fileList.length - 1];
     if (last?.status === 'success' && last.url) currentAvatar = last.url;
   }
 </script>

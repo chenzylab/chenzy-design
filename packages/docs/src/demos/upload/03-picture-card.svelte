@@ -14,10 +14,10 @@
 </script>
 
 <Upload
-  listType="picture-card"
+  listType="picture"
   multiple
   accept="image/*"
   action="//example.com/upload"
-  value={imageVal}
-  onChange={(list) => (imageVal = list)}
+  fileList={imageVal}
+  onChange={({ fileList }) => (imageVal = fileList)}
 />

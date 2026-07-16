@@ -32,8 +32,8 @@
       文本列表失败态：红底卡片 + 失败信息文本，hover 显示重试按钮。
     </p>
     <Upload
-      value={textVal}
-      onChange={(list) => (textVal = list)}
+      fileList={textVal}
+      onChange={({ fileList }) => (textVal = fileList)}
       onRetry={(f) => console.log('retry', f.name)}
     />
   </div>
@@ -43,9 +43,9 @@
       图片卡片失败态：失败描边 + 右下失败角标，hover 显示居中重试按钮与移除。
     </p>
     <Upload
-      listType="picture-card"
-      value={picVal}
-      onChange={(list) => (picVal = list)}
+      listType="picture"
+      fileList={picVal}
+      onChange={({ fileList }) => (picVal = fileList)}
       onRetry={(f) => console.log('retry', f.name)}
     />
   </div>

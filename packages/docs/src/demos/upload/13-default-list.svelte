@@ -20,14 +20,14 @@
 </script>
 
 <Space vertical align="start">
-  <Text type="tertiary">默认文件列表：defaultValue 传入已上传项（含预览 url、status: 'success'），非受控。</Text>
-  <Upload multiple defaultValue={defaultText} action="/api/upload" />
+  <Text type="tertiary">默认文件列表：defaultFileList 传入已上传项（含预览 url、status: 'success'），非受控。</Text>
+  <Upload multiple defaultFileList={defaultText} action="/api/upload" />
 
   <Text type="tertiary">picture-card 默认已上传图片：</Text>
   <Upload
-    listType="picture-card"
+    listType="picture"
     accept="image/*"
-    defaultValue={defaultPics}
+    defaultFileList={defaultPics}
     action="/api/upload"
   />
 </Space>

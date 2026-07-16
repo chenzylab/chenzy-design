@@ -101,7 +101,9 @@ const components = [
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
-  ['upload', '{ Upload }', '13 KB'],
+  // 13 KB → 14 KB：破坏性重写严格对齐 Semi，FileCard 拆分后按 Semi「组件调用组件」
+  // 引入 Button/Spin/Progress(circle)/Typography.Text/Tooltip（替代原裸元素），实测 13.35 KB。
+  ['upload', '{ Upload }', '14 KB'],
   // navigation
   ['anchor', '{ Anchor }', '4.5 KB'],
   // 4 KB → 4.8 KB：全面对齐 Semi 引入的真实新功能（ellipsisPos:'middle' JS 二分截断 +

@@ -285,6 +285,9 @@ export const en_US: Locale = {
     cropTitle: 'Crop image',
     timeoutError: 'Upload timed out',
     legalTips: 'Release to upload',
+    selectedFiles: 'Selected files',
+    fail: 'Upload failed',
+    illegalSize: 'Invalid file size',
   },
   Form: {
     required: '{label} is required',

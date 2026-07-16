@@ -19,27 +19,27 @@
 <!-- renderFileItem：完全自定义文本列表项。 -->
 <Upload
   action="//example.com/upload"
-  value={listVal}
-  onChange={(list) => (listVal = list)}
+  fileList={listVal}
+  onChange={({ fileList }) => (listVal = fileList)}
 >
-  {#snippet renderFileItem({ fileItem, remove })}
+  {#snippet renderFileItem(file)}
     <span style="display:flex;gap:8px;align-items:center;">
-      📄 {fileItem.name}
-      <button type="button" onclick={remove}>删除</button>
+      📄 {file.name}
+      <button type="button" onclick={file.onRemove}>删除</button>
     </span>
   {/snippet}
 </Upload>
 
-<!-- showPicInfo + renderPicInfo：picture-card 图片信息浮层。 -->
+<!-- showPicInfo + renderPicInfo：picture 照片墙图片信息浮层。 -->
 <Upload
-  listType="picture-card"
+  listType="picture"
   accept="image/*"
   action="//example.com/upload"
   showPicInfo
-  value={picVal}
-  onChange={(list) => (picVal = list)}
+  fileList={picVal}
+  onChange={({ fileList }) => (picVal = fileList)}
 >
-  {#snippet renderPicInfo({ fileItem })}
-    <span>{fileItem.name} · {(fileItem.size / 1024).toFixed(1)}KB</span>
+  {#snippet renderPicInfo(file)}
+    <span>{file.name} · {(file.size / 1024).toFixed(1)}KB</span>
   {/snippet}
 </Upload>

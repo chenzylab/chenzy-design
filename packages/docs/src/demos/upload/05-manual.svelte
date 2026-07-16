@@ -18,7 +18,7 @@
     multiple
     showClear
     fileListTitle="待上传列表"
-    onChange={(list) => (files = list)}
+    onChange={({ fileList }) => (files = fileList)}
   />
   <button type="button" onclick={manualUpload}>开始上传</button>
   {#if log}

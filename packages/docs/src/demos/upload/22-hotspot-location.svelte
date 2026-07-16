@@ -4,7 +4,7 @@
 
   const img = 'data:image/gif;base64,R0lGODlhAQABAIAAAABm/wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
 
-  let hotSpot = $state<'start' | 'end' | 'none'>('start');
+  let hotSpot = $state<'start' | 'end'>('end');
 
   let imageVal = $state<UploadFileItem[]>([
     { uid: 'hs-1', name: 'cover.png', size: 2048, status: 'success', url: img },
@@ -13,24 +13,24 @@
 
 <Space vertical align="start">
   <Text type="tertiary">
-    hotSpotLocation 控制照片墙加号瓦片的位置：start 前置、end 后置、none 隐藏。
+    hotSpotLocation 控制照片墙加号瓦片的位置：start 前置、end 后置（对齐 Semi，默认 end）。
   </Text>
   <RadioGroup
     type="button"
-    bind:value={hotSpot}
+    value={hotSpot}
+    onChange={(v) => (hotSpot = v as 'start' | 'end')}
     options={[
       { label: 'start', value: 'start' },
       { label: 'end', value: 'end' },
-      { label: 'none', value: 'none' },
     ]}
   />
   <Upload
-    listType="picture-card"
+    listType="picture"
     multiple
     accept="image/*"
     action="//example.com/upload"
     hotSpotLocation={hotSpot}
-    value={imageVal}
-    onChange={(list) => (imageVal = list)}
+    fileList={imageVal}
+    onChange={({ fileList }) => (imageVal = fileList)}
   />
 </Space>

@@ -10,9 +10,9 @@
 
 <Space vertical align="start">
   <Text type="tertiary">
-    受控模式：value 绑定外部 state，onChange 回写；外部按钮可直接增删证明列表受控。
+    受控模式：fileList 绑定外部 state，onChange 回写；外部按钮可直接增删证明列表受控。
   </Text>
-  <Upload multiple value={fileList} onChange={(list) => (fileList = list)} />
+  <Upload multiple fileList={fileList} onChange={({ fileList: fl }) => (fileList = fl)} />
   <Space>
     <Button
       onclick={() =>

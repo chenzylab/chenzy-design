@@ -386,6 +386,12 @@ export interface Locale {
     timeoutError: string;
     /** 拖拽区合法拖入时的提示文案（松开鼠标开始上传） */
     legalTips: string;
+    /** 文件列表默认标题（对齐 Semi selectedFiles） */
+    selectedFiles: string;
+    /** 上传失败默认校验信息（对齐 Semi fail） */
+    fail: string;
+    /** 文件尺寸不合法默认信息（对齐 Semi illegalSize） */
+    illegalSize: string;
   };
   Form: {
     /** uses {label} */

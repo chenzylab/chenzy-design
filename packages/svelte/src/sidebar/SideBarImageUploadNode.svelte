@@ -30,29 +30,29 @@
     return loc().t('SideBar.uploadImage');
   }
 
-  function handleChange(list: UploadFileItem[]): void {
-    const file = list[0];
+  function handleChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
+    const file = fileList[0];
     if (file) status = file.status;
-    (options.onChange as ((list: UploadFileItem[]) => void) | undefined)?.(list);
+    (options.onChange as ((list: UploadFileItem[]) => void) | undefined)?.(fileList);
   }
 
-  function handleSuccess(response: string, item: UploadFileItem): void {
-    (options.onSuccess as ((r: string, i: UploadFileItem) => void) | undefined)?.(response, item);
+  function handleSuccess(response: unknown, item: UploadFileItem): void {
+    (options.onSuccess as ((r: unknown, i: UploadFileItem) => void) | undefined)?.(response, item);
 
     const getUploadImageSrc = options.getUploadImageSrc as
       | ((src: string) => string)
       | undefined;
     let src = item.url ?? '';
+    // onSuccess 回传的 responseBody 已按 JSON 解析（失败回退原始文本）。
+    const responseStr = typeof response === 'string' ? response : '';
+    const responseObj =
+      response && typeof response === 'object' ? (response as { src?: string }) : undefined;
     if (getUploadImageSrc) {
-      src = getUploadImageSrc(response || src);
-    } else if (response) {
-      // 服务端返回纯字符串 URL 或 { src } JSON。
-      try {
-        const parsed = JSON.parse(response) as { src?: string };
-        src = parsed?.src ?? response;
-      } catch {
-        src = response;
-      }
+      src = getUploadImageSrc(responseObj?.src ?? responseStr ?? src);
+    } else if (responseObj?.src) {
+      src = responseObj.src;
+    } else if (responseStr) {
+      src = responseStr;
     }
 
     const imageNode = {
@@ -86,8 +86,8 @@
 <NodeViewWrapper class="cd-sidebar-file-image-slot" data-status={status}>
   <Upload
     {...uploadProps}
-    listType="image"
-    drag
+    listType="picture"
+    draggable
     dragMainText={dragMainText()}
     onChange={handleChange}
     onSuccess={handleSuccess}
