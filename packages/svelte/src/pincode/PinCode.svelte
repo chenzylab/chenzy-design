@@ -272,7 +272,13 @@
   .cd-pincode {
     display: inline-flex;
     align-items: center;
-    gap: var(--cd-pincode-gap);
+    gap: var(--cd-pincode-gap-default);
+  }
+  .cd-pincode--small {
+    gap: var(--cd-pincode-gap-small);
+  }
+  .cd-pincode--large {
+    gap: var(--cd-pincode-gap-large);
   }
   /* 单格：复用 Input 家族填充式外观 token（边框 / 背景 / 聚焦 / 校验态），正方形居中。 */
   .cd-pincode__cell {
