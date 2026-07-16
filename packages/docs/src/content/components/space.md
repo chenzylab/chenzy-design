@@ -19,7 +19,6 @@ Space 只负责一维线性排布 + 间距，不承担二维网格（用 Grid/Ro
 
 ## 无障碍
 
-- 默认 `div` 不带 role，为纯布局容器；语义化场景建议通过 `tag` 设为 `nav`/`ul` 等。
+- 根 `div` 不带 role，为纯布局容器（对齐 Semi，无 `tag`/`role` 超集）；语义化场景由业务在外层包裹语义容器，或经透传的 `role`/`aria-label` 表述。
 - 容器不可聚焦（不设 tabindex），不接管焦点，无焦点陷阱。
-- `split` 渲染的分隔元素加 `aria-hidden="true"`，避免读屏器朗读装饰性分隔。
 - Space 不重排 DOM（仅 flex 视觉排列），视觉顺序与 DOM/Tab 顺序一致，避免焦点错乱。
