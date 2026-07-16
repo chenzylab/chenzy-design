@@ -37,15 +37,15 @@
 
 <Space vertical align="start">
   <Text type="tertiary">
-    照片墙放大预览：hover 显示默认预览眼睛图标（居中）与右上角圆形关闭按钮，左下角显示序号（showPicInfo）。点击眼睛图标弹出 ImagePreview 放大预览，可缩放/旋转/翻页。
+    照片墙放大预览（对齐 Semi）：设置 onPreviewClick 后卡片可点，hover 显示右上角圆形关闭按钮与左下角序号（showPicInfo）。点击缩略图弹出 ImagePreview 放大预览，可缩放/旋转/翻页。
   </Text>
   <Upload
-    listType="picture-card"
+    listType="picture"
     accept="image/*"
     action="/api/upload"
     showPicInfo
-    value={picVal}
-    onChange={(list) => (picVal = list)}
+    fileList={picVal}
+    onChange={({ fileList }) => (picVal = fileList)}
     {onPreviewClick}
   />
 </Space>

@@ -11,12 +11,12 @@
   传对象可自定义宽高比/形状（此处圆形，适合头像）。
 -->
 <Upload
-  listType="picture-card"
+  listType="picture"
   accept="image/*"
   action="//example.com/upload"
   crop={{ shape: 'round', aspectRatio: 1, modalTitle: '裁切头像' }}
   beforeCrop={(file) => file.size > 0}
   onCropError={(err) => console.error('crop failed', err)}
-  value={val}
-  onChange={(list) => (val = list)}
+  fileList={val}
+  onChange={({ fileList }) => (val = fileList)}
 />

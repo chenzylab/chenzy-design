@@ -26,8 +26,8 @@
     bind:this={uploadRef}
     multiple
     action="/api/upload"
-    value={fileList}
-    onChange={(list) => (fileList = list)}
+    fileList={fileList}
+    onChange={({ fileList: fl }) => (fileList = fl)}
   />
   <Space>
     <Button onclick={insertAtFront}>在最前插入文件</Button>

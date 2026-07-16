@@ -39,7 +39,7 @@
   <Upload
     multiple
     {customRequest}
-    value={fileList}
-    onChange={(list) => (fileList = list)}
+    fileList={fileList}
+    onChange={({ fileList: fl }) => (fileList = fl)}
   />
 </Space>

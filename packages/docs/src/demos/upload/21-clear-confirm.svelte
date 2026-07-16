@@ -22,7 +22,7 @@
     multiple
     showClear
     fileListTitle="待处理文件"
-    defaultValue={seed}
+    defaultFileList={seed}
     action="/api/upload"
     {beforeClear}
     onClear={() => console.log('已清空')}

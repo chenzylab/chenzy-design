@@ -285,6 +285,9 @@ export const zh_CN: Locale = {
     cropTitle: '裁切图片',
     timeoutError: '上传超时',
     legalTips: '松开鼠标开始上传',
+    selectedFiles: '已选择文件',
+    fail: '上传失败',
+    illegalSize: '文件尺寸不合法',
   },
   Form: {
     required: '{label}为必填项',

@@ -19,7 +19,7 @@
   </Text>
   <Upload
     multiple
-    defaultValue={seed}
+    defaultFileList={seed}
     action="/api/upload"
     showTooltip={{ type: 'tooltip' }}
   />

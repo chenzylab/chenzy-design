@@ -99,8 +99,8 @@
     emitInputChange();
   }
 
-  function handleAttachmentChange(list: UploadFileItem[]): void {
-    attachment = [...list];
+  function handleAttachmentChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
+    attachment = [...fileList];
     emitInputChange();
   }
 
@@ -198,7 +198,7 @@
   <div class="cd-chat-inputBox-upload" class:cd-chat-inputBox-upload--hidden={!clickUpload}>
     <Upload
       bind:this={uploadApi}
-      listType="picture-card"
+      listType="picture"
       multiple
       addOnPasting={pasteUpload}
       {...uploadProps}

@@ -15,14 +15,14 @@
 
 <Space vertical align="start">
   <Text type="tertiary">拖拽上传</Text>
-  <Upload multiple drag accept="image/*" />
+  <Upload multiple draggable accept="image/*" />
 
   <Text type="tertiary">picture-card（缩略图网格）</Text>
   <Upload
-    listType="picture-card"
+    listType="picture"
     multiple
     accept="image/*"
-    value={imageVal}
-    onChange={(list) => (imageVal = list)}
+    fileList={imageVal}
+    onChange={({ fileList }) => (imageVal = fileList)}
   />
 </Space>

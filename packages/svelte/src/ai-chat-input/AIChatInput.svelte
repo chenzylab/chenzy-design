@@ -569,8 +569,8 @@
     doSend();
   }
 
-  function handleAttachmentChange(list: UploadFileItem[]): void {
-    attachments = list as unknown as AIChatInputAttachment[];
+  function handleAttachmentChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
+    attachments = fileList as unknown as AIChatInputAttachment[];
     onUploadChange?.(attachments);
   }
 

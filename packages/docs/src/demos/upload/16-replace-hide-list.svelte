@@ -17,22 +17,22 @@
 </script>
 
 <Space vertical align="start">
-  <Text type="tertiary">showReplace：已上传项显示"替换"按钮，点击重选文件替换该项（text）。</Text>
+  <Text type="tertiary">showReplace：已上传项显示"替换"按钮，点击重选文件替换该项（list）。</Text>
   <Upload
     showReplace
     action="/api/upload"
-    value={textVal}
-    onChange={(list) => (textVal = list)}
+    fileList={textVal}
+    onChange={({ fileList }) => (textVal = fileList)}
   />
 
-  <Text type="tertiary">showReplace（picture-card）：hover 卡片显示替换。</Text>
+  <Text type="tertiary">showReplace（picture 照片墙）：hover 卡片显示替换。</Text>
   <Upload
     showReplace
-    listType="picture-card"
+    listType="picture"
     accept="image/*"
     action="/api/upload"
-    value={picVal}
-    onChange={(list) => (picVal = list)}
+    fileList={picVal}
+    onChange={({ fileList }) => (picVal = fileList)}
   />
 
   <Text type="tertiary">showUploadList=false：不渲染文件列表，仅保留触发器（列表交由外部呈现）。</Text>

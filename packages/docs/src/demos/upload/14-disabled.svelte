@@ -18,8 +18,8 @@
 
 <Space vertical align="start">
   <Text type="tertiary">禁用（text）：触发器不可点，已有列表项也不可移除。</Text>
-  <Upload disabled multiple defaultValue={textVal} />
+  <Upload disabled multiple defaultFileList={textVal} />
 
   <Text type="tertiary">禁用（picture-card）：</Text>
-  <Upload disabled listType="picture-card" accept="image/*" defaultValue={picVal} />
+  <Upload disabled listType="picture" accept="image/*" defaultFileList={picVal} />
 </Space>

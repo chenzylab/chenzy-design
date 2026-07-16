@@ -3,7 +3,7 @@
 </script>
 
 <Upload
-  drag
+  draggable
   multiple
   action="//example.com/upload"
   dragMainText="点击或拖拽文件到此处上传"
