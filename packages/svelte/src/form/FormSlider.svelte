@@ -29,7 +29,6 @@
     marks?: SliderProps['marks'];
     disabled?: boolean;
     vertical?: SliderProps['vertical'];
-    size?: SliderProps['size'];
     tooltipVisible?: SliderProps['tooltipVisible'];
     tipFormatter?: SliderProps['tipFormatter'];
   }
@@ -53,7 +52,6 @@
     marks,
     disabled,
     vertical,
-    size,
     tooltipVisible,
     tipFormatter,
   }: Props = $props();
@@ -74,7 +72,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, disabled: fieldDisabled })}
     <Slider
       {...(value !== undefined ? { value: value as NonNullable<SliderProps['value']> } : {})}
       {...(min !== undefined ? { min } : {})}
@@ -84,12 +82,9 @@
       {...(marks !== undefined ? { marks } : {})}
       disabled={disabled ?? fieldDisabled}
       {...(vertical !== undefined ? { vertical } : {})}
-      {...(size !== undefined ? { size } : {})}
       {...(tooltipVisible !== undefined ? { tooltipVisible } : {})}
       {...(tipFormatter !== undefined ? { tipFormatter } : {})}
-      status={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
-      onBlur={() => onBlur()}
     />
   {/snippet}
 </Field>

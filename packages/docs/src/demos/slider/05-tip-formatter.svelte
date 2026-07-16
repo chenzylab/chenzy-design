@@ -4,8 +4,8 @@
 
 <div style="max-width: 360px; display: flex; flex-direction: column; gap: 16px;">
   <div style="display: flex; flex-direction: column; gap: 8px;">
-    <Text type="tertiary">追加单位并常驻显示</Text>
-    <Slider defaultValue={40} tipFormatter={(v) => `${v}%`} alwaysShowTip />
+    <Text type="tertiary">追加单位（tipFormatter），getAriaValueText 提供友好读值</Text>
+    <Slider defaultValue={40} tipFormatter={(v) => `${v}%`} getAriaValueText={(v) => `${v}%`} />
   </div>
   <div style="display: flex; flex-direction: column; gap: 8px;">
     <Text type="tertiary">隐藏气泡</Text>

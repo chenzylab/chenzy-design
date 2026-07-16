@@ -1,163 +1,119 @@
 <!--
-  Slider — see specs/components/input/Slider.spec.md
-  Single / range slider. APG slider(-multithumb). Controlled / uncontrolled.
-  Dragging is IMPERATIVE: rail rect read once on pointerdown into a plain var,
-  document pointermove/up listeners added/removed by hand — no reactive
-  attachment reads DOM measurements (avoids re-subscribe loops). Variation only
-  via onChange; an optional local `dragValue` gives instant feedback while dragging.
+  Slider — 严格对齐 Semi Design（semi-ui/slider）。
+  单值 / range 滑块，受控 / 非受控，APG slider(-multithumb) 键盘可达。
 
-  Tooltip is a lightweight absolutely-positioned bubble above each handle, shown
-  on hover/focus/drag (or always via alwaysShowTip / forced via tooltipVisible).
-  No floating library is pulled in: percent layout already gives the position.
+  DOM 结构对齐 Semi（index.tsx render）：
+   - 水平：<div.cd-slider> > <div.cd-slider-wrapper> > rail / track / dots / handles(div) / marks / boundary
+   - 垂直：<div.cd-slider-vertical> > <div.cd-slider-wrapper.cd-slider-vertical-wrapper> …（无外层，对齐 Semi 只渲染 wrapper）
+  class 采用连字符 BEM（cd-slider-rail / cd-slider-handle …，对齐 Semi semi-slider-*），
+  与已对齐的 Input/checkbox/space 全库连字符化一致。
+
+  数值气泡复用本库 Tooltip 组件（trigger="custom" + visible + position + rePosKey），
+  对齐 Semi（每个 handle 由 <Tooltip> 包裹）。不再自绘轻量气泡。
+
+  拖拽命令式：pointerdown 读一次 rail rect 到普通变量，document pointermove/up 手动增删，
+  拖动中 dragValue 提供即时视觉反馈；落定后经 onChange / onAfterChange 上抛（range 时已排序）。
 -->
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import { useLiveAnnouncer } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
 
-  type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
   type Single = number;
   type Pair = [number, number];
   type SliderValue = Single | Pair;
-  /** 刻度值：字符串标签，或对象形式 { label, style }（对齐 Semi 的 marks 富配置）。 */
-  type MarkValue = string | { label: string; style?: string };
+  /** 刻度值：字符串标签（对齐 Semi Record<number, string>）。 */
+  type MarkValue = string;
 
   interface Props {
+    /** 受控值；range 时为二元组。对齐 Semi value。 */
     value?: SliderValue;
+    /** 非受控初始值。对齐 Semi defaultValue。 */
     defaultValue?: SliderValue;
     min?: number;
     max?: number;
-    step?: number | null;
+    step?: number;
     range?: boolean;
+    /** 刻度标记（对齐 Semi marks: Record<number, string>）。 */
     marks?: Record<number, MarkValue>;
-    dots?: boolean;
+    /** 是否填充已选轨道段（对齐 Semi included）。 */
     included?: boolean;
     vertical?: boolean;
+    /** 垂直时反向（顶部为 min，对齐 Semi verticalReverse）。 */
     verticalReverse?: boolean;
-    height?: number;
     disabled?: boolean;
-    clickable?: boolean;
-    size?: Size;
-    status?: Status;
+    /** 强制控制数值气泡显隐（受控，对齐 Semi tooltipVisible）。 */
     tooltipVisible?: boolean | undefined;
-    alwaysShowTip?: boolean;
-    tipFormatter?: (value: number) => string | null;
-    getAriaValueText?: (value: number, index: number) => string;
-    railStyle?: string;
-    handleStyle?: string;
-    id?: string;
-    ariaLabel?: string;
-    /** group 容器与各手柄的 aria-labelledby（指向外部 label 的 id）。 */
-    ariaLabelledby?: string;
-    onChange?: (v: SliderValue) => void;
-    /** 拖拽结束（pointerup）或键盘操作落定时触发，适合做请求节流。 */
-    onChangeComplete?: (v: SliderValue) => void;
-    /** 与 change 同步的低级输入信号（拖动中每次值变化实时触发，表单绑定用）。 */
-    onInput?: (v: SliderValue) => void;
-    /** 手柄获得焦点，附带手柄索引（0/1）。 */
-    onFocus?: (detail: { index: number }) => void;
-    /** 手柄失焦，附带手柄索引（0/1）。 */
-    onBlur?: (detail: { index: number }) => void;
-    /** 已选轨道段自定义样式（range 时为数组，各段对应一个样式对象） */
-    trackStyle?: Record<string, string> | Record<string, string>[];
-    /** range 模式下两手柄是否可相互推动（true=最小间距 0，number=最小间距值） */
-    pushable?: boolean | number;
-    /** range 模式下是否允许交叉（默认 true，false 时强制 left <= right） */
-    allowCross?: boolean;
-    /** 拖拽/点击结束时触发（onChangeComplete 的别名，语义更明确） */
-    onAfterChange?: (v: SliderValue) => void;
-    /** 显示轨道两端边界值标签 */
-    showBoundary?: boolean;
-    /** tooltip 是否显示箭头 */
-    showArrow?: boolean;
-    /** 显示标记文本标签 */
-    showMarkLabel?: boolean;
-    /** tooltip 跟随标记位置 */
+    /** tooltip 跟随刻度显示（对齐 Semi tooltipOnMark）。 */
     tooltipOnMark?: boolean;
-    /** 自定义手柄圆点样式，range 时为数组 */
-    handleDot?: { color: string; size: string } | { color: string; size: string }[];
-    /** pointerup 时触发 */
-    onMouseUp?: (e: MouseEvent) => void;
-    /** 覆盖 getAriaValueText 的 aria-valuetext 文案 */
+    /** 自定义气泡文案；返回 null/undefined 隐藏气泡（对齐 Semi tipFormatter，默认原样返回）。 */
+    tipFormatter?: (value: number) => string | number | null | undefined;
+    /** 自定义 aria-valuetext（对齐 Semi getAriaValueText）。 */
+    getAriaValueText?: (value: number, index?: number) => string;
+    /** 透传轨道内联样式（对齐 Semi railStyle）。 */
+    railStyle?: string;
+    /** tooltip 是否显示箭头（对齐 Semi showArrow）。 */
+    showArrow?: boolean;
+    /** 显示刻度文本标签（对齐 Semi showMarkLabel）。 */
+    showMarkLabel?: boolean;
+    /** hover 时展示轨道两端边界值标签（对齐 Semi showBoundary）。 */
+    showBoundary?: boolean;
+    /** 自定义手柄圆点样式，range 时为数组（对齐 Semi handleDot）。 */
+    handleDot?: { color?: string; size?: string } | { color?: string; size?: string }[];
+    id?: string;
+    /** 根节点自定义类名（对齐 Semi className）。 */
+    class?: string;
+    /** 根节点自定义内联样式（对齐 Semi style）。 */
+    style?: string;
+    ariaLabel?: string;
+    ariaLabelledby?: string;
+    /** 覆盖 getAriaValueText 的 aria-valuetext 文案（对齐 Semi aria-valuetext）。 */
     ariaValuetext?: string;
-    /** 自定义单个刻度标签渲染（替换默认 label 文本）。 */
-    mark?: Snippet<[{ value: number; label: string; active: boolean }]>;
-    /** 自定义手柄内容（如带数字徽标）。 */
-    handle?: Snippet<[{ value: number; index: number; dragging: boolean; focused: boolean }]>;
-    /** 自定义数值气泡内部内容（替换默认 tipFormatter 文本）。 */
-    tooltip?: Snippet<[{ value: number; index: number }]>;
+    /** 值变化（拖拽中实时 + 键盘），range 时回传已排序数组（对齐 Semi onChange）。 */
+    onChange?: (value: SliderValue) => void;
+    /** 拖拽结束（pointerup）/点击/键盘落定时触发（对齐 Semi onAfterChange）。 */
+    onAfterChange?: (value: SliderValue) => void;
+    /** pointerup 时触发（对齐 Semi onMouseUp）。 */
+    onMouseUp?: (e: MouseEvent) => void;
   }
 
   let {
-    value = $bindable(),
+    value,
     defaultValue,
     min = 0,
     max = 100,
     step = 1,
     range = false,
     marks,
-    dots = false,
     included = true,
     vertical = false,
     verticalReverse = false,
-    height = 200,
     disabled = false,
-    clickable = true,
-    size = 'default',
-    status = 'default',
     tooltipVisible = undefined,
-    alwaysShowTip = false,
-    tipFormatter = String,
+    tooltipOnMark = false,
+    tipFormatter = (v) => v,
     getAriaValueText,
     railStyle,
-    handleStyle,
-    id,
-    ariaLabel,
-    ariaLabelledby,
-    onChange,
-    onChangeComplete,
-    onInput,
-    onFocus,
-    onBlur,
-    trackStyle,
-    pushable = false,
-    allowCross = true,
-    onAfterChange,
-    showBoundary = false,
     showArrow = true,
     showMarkLabel = true,
-    tooltipOnMark = false,
+    showBoundary = false,
     handleDot,
-    onMouseUp,
+    id,
+    class: className,
+    style: styleProp,
+    ariaLabel,
+    ariaLabelledby,
     ariaValuetext,
-    mark,
-    handle,
-    tooltip,
+    onChange,
+    onAfterChange,
+    onMouseUp,
   }: Props = $props();
 
-  // marks 值统一取 label 文本（对象形式取 .label）。索引访问可能取不到键，容忍 undefined。
-  function markLabel(v: MarkValue | undefined): string {
-    if (v === undefined) return '';
-    return typeof v === 'string' ? v : v.label;
-  }
-  // marks 对象形式的自定义样式（字符串形式无样式）。
-  function markStyle(v: MarkValue | undefined): string | undefined {
-    return typeof v === 'string' || v === undefined ? undefined : v.style;
-  }
-  // 该刻度是否落在已选轨道段内（included 时驱动命中标签色）。
-  function markActive(mk: number): boolean {
-    const pct = valueToPercent(mk);
-    return included && pct >= trackStart - 1e-9 && pct <= trackEnd + 1e-9;
-  }
-
   const loc = useLocale();
-  // 单例 live region（polite）：值到达 min/max 边界时播报一次（红线 #3：命令式、事件回调内）。
+  // 单例 live region（polite）：值到达 min/max 边界时播报一次。
   const announcer = useLiveAnnouncer();
-  // 节流：记住上次播报的边界，连续停在同一边界不重复播；离开后再回到才重播。
   let lastBoundary: 'min' | 'max' | null = null;
 
-  // 任一手柄到达 min/max 时 polite 播报一次（拖拽落定 / 键盘步进后调用）。
   function maybeAnnounceBoundary(v: SliderValue) {
     const reachesMin = Array.isArray(v) ? v[0] <= min : v <= min;
     const reachesMax = Array.isArray(v) ? v[1] >= max : v >= max;
@@ -175,13 +131,13 @@
 
   const isControlled = $derived(value !== undefined);
   let inner = $state<SliderValue>(getInitialValue());
-  // While dragging, a local override gives instant visual feedback without
-  // writing the controlled prop. null = not dragging.
+  // 拖拽中的本地覆盖，给即时视觉反馈（不写受控 prop）。null = 未拖拽。
   let dragValue = $state<SliderValue | null>(null);
-  // Which handle (if any) the pointer is hovering / which has focus — drives the
-  // hover/focus tooltip without any imperative DOM measurement.
+  // hover / focus 的手柄索引，驱动气泡显隐（对齐 Semi focusPos）。
   let hoverIndex = $state<number | null>(null);
   let focusIndex = $state<number | null>(null);
+  // hover wrapper 时展示 boundary（对齐 Semi handleWrapperEnter/Leave）。
+  let wrapperHover = $state(false);
 
   const current = $derived<SliderValue>(
     dragValue ?? (isControlled ? (value as SliderValue) : inner),
@@ -192,7 +148,7 @@
     return range ? [min, min] : min;
   }
 
-  // Normalize to a pair for rendering; single mode uses index 1 (start = min).
+  // 归一为一对做渲染；单值用索引 1（起点 = min）。
   const values = $derived<Pair>(
     range ? (current as Pair) : ([min, current as number] as Pair),
   );
@@ -201,31 +157,15 @@
     marks ? Object.keys(marks).map(Number).sort((a, b) => a - b) : [],
   );
 
-  // Dot positions: every step between min and max (skip endpoints duplicates of marks not needed).
-  const dotValues = $derived.by<number[]>(() => {
-    if (!dots || step === null || step <= 0) return [];
-    const out: number[] = [];
-    for (let v = min; v <= max + 1e-9; v += step) {
-      out.push(Math.round(v * 1e6) / 1e6);
-    }
-    return out;
-  });
-
   function clampToRange(n: number): number {
     return Math.min(max, Math.max(min, n));
   }
 
   function snap(n: number): number {
     const clamped = clampToRange(n);
-    if (step === null) {
-      if (markKeys.length === 0) return clamped;
-      return markKeys.reduce((best, k) =>
-        Math.abs(k - clamped) < Math.abs(best - clamped) ? k : best,
-      );
-    }
-    const stepped = Math.round((clamped - min) / step) * step + min;
-    // Avoid float drift.
-    const decimals = decimalsOf(step);
+    const s = step > 0 ? step : 1;
+    const stepped = Math.round((clamped - min) / s) * s + min;
+    const decimals = decimalsOf(s);
     const factor = 10 ** decimals;
     return clampToRange(Math.round(stepped * factor) / factor);
   }
@@ -241,65 +181,38 @@
     return ((n - min) / (max - min)) * 100;
   }
 
+  // 上抛值：range 时排序（对齐 Semi adapter.notifyChange sort）。
+  function sortValue(v: SliderValue): SliderValue {
+    return Array.isArray(v) ? ([...v].sort((a, b) => a - b) as Pair) : v;
+  }
+
   function commit(next: SliderValue, complete = false) {
-    // Controlled: never write the prop; propagate only via onChange.
     if (!isControlled) inner = next;
-    onChange?.(next);
-    // onInput: low-level input signal, kept in sync with change.
-    onInput?.(next);
-    // onChangeComplete / onAfterChange: only when the interaction settles (pointerup / keyboard),
-    // for request throttling on the consumer side.
+    onChange?.(sortValue(next));
     if (complete) {
-      onChangeComplete?.(next);
-      onAfterChange?.(next);
+      onAfterChange?.(sortValue(next));
       maybeAnnounceBoundary(next);
     }
   }
 
-  // Build the next value for a given handle index, honoring allowCross and pushable.
+  // 为某手柄构造下一个值；越过时自动交换（对齐 Semi range 恒排序，无 allowCross/pushable）。
   function withHandle(index: number, raw: number): SliderValue {
     const snapped = snap(raw);
     if (!range) return snapped;
     const pair: Pair = [...(current as Pair)] as Pair;
     pair[index] = snapped;
-
-    if (!allowCross) {
-      // Enforce left <= right; clamp instead of swap.
-      if (index === 0 && pair[0] > pair[1]) pair[0] = pair[1];
-      if (index === 1 && pair[1] < pair[0]) pair[1] = pair[0];
-    } else if (pushable !== false) {
-      // pushable: minimum gap between handles.
-      const minGap = typeof pushable === 'number' ? pushable : 0;
-      if (index === 0 && pair[0] > pair[1] - minGap) {
-        pair[1] = snap(pair[0] + minGap);
-        if (pair[1] > max) { pair[1] = max; pair[0] = snap(max - minGap); }
-      }
-      if (index === 1 && pair[1] < pair[0] + minGap) {
-        pair[0] = snap(pair[1] - minGap);
-        if (pair[0] < min) { pair[0] = min; pair[1] = snap(min + minGap); }
-      }
-    } else {
-      // Default: swap so handles never cross.
-      if (pair[0] > pair[1]) {
-        return [pair[1], pair[0]];
-      }
-    }
+    if (pair[0] > pair[1]) return [pair[1], pair[0]];
     return pair;
   }
 
-  // ---- Imperative pointer drag ----
-  // Plain (non-reactive): rail rect is read once on pointerdown; DOM ref set via bind.
+  // ---- 命令式指针拖拽 ----
   let railRect: DOMRect | null = null;
-  let railElement: HTMLElement | null = null;
-  // Which handle is being dragged. Read reactively in the template (handle `dragging`
-  // state, line 476/622), so it must be $state — otherwise a change wouldn't trigger
-  // re-render and correctness would rely on it happening to be assigned before dragValue.
+  let railElement: HTMLElement | null = $state(null);
   let activeIndex = $state(0);
 
   function ratioFromRect(rect: DOMRect, clientX: number, clientY: number): number {
     let ratio: number;
     if (vertical) {
-      // Default: bottom = min (value grows upward). verticalReverse flips it.
       ratio = verticalReverse
         ? (clientY - rect.top) / rect.height
         : (rect.bottom - clientY) / rect.height;
@@ -325,24 +238,22 @@
   function onPointerMove(e: PointerEvent) {
     const raw = rawFromClient(e.clientX, e.clientY);
     const next = withHandle(activeIndex, raw);
-    // Fire onInput on every live value change during the drag; only emit when the
-    // value actually moved to avoid spamming identical values per pixel.
-    if (!sameValue(next, dragValue)) onInput?.(next);
-    dragValue = next;
+    if (!sameValue(next, dragValue)) {
+      dragValue = next;
+      if (!isControlled) inner = next;
+      onChange?.(sortValue(next));
+    }
   }
 
   function onPointerUp(e?: PointerEvent) {
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
-    if (e) onMouseUp?.(e as MouseEvent);
+    if (e) onMouseUp?.(e as unknown as MouseEvent);
     if (dragValue !== null) {
       const finalValue = dragValue;
       dragValue = null;
-      // Drag settled: emit change + changeComplete (onInput already fired live).
       if (!isControlled) inner = finalValue;
-      onChange?.(finalValue);
-      onChangeComplete?.(finalValue);
-      onAfterChange?.(finalValue);
+      onAfterChange?.(sortValue(finalValue));
       maybeAnnounceBoundary(finalValue);
     }
     railRect = null;
@@ -358,7 +269,10 @@
     if (disabled || !railElement) return;
     activeIndex = index;
     railRect = railElement.getBoundingClientRect();
-    dragValue = withHandle(index, rawFromClient(e.clientX, e.clientY));
+    const next = withHandle(index, rawFromClient(e.clientX, e.clientY));
+    dragValue = next;
+    if (!isControlled) inner = next;
+    onChange?.(sortValue(next));
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
   }
@@ -371,24 +285,18 @@
   }
 
   function handleRailPointerDown(e: PointerEvent) {
-    if (disabled || !railElement || !clickable) return;
+    if (disabled || !railElement) return;
     const rect = railElement.getBoundingClientRect();
     const raw = min + ratioFromRect(rect, e.clientX, e.clientY) * (max - min);
     beginDrag(nearestHandle(raw), e);
   }
 
-  // RTL detection for keyboard mapping (SSR-safe). Mirrors the pointer path which
-  // reads documentElement direction.
   function isRtl(): boolean {
     if (typeof document === 'undefined') return false;
     return getComputedStyle(document.documentElement).direction === 'rtl';
   }
 
-  // Map an arrow key to +1 / -1 / 0 (other) so the *visual* direction always
-  // matches increase/decrease, honoring vertical + verticalReverse + RTL.
-  // Horizontal: Right increases, Left decreases — flipped under RTL.
-  // Vertical: Up increases, Down decreases — flipped under verticalReverse.
-  // (The cross-axis arrows stay consistent with APG: Right/Up increase.)
+  // 方向键 → +1 / -1 / 0，令视觉方向恒与增减一致（vertical + verticalReverse + RTL）。
   function arrowDirection(key: string): -1 | 0 | 1 {
     const rtl = isRtl();
     switch (key) {
@@ -408,7 +316,7 @@
   function handleKeydown(index: number, e: KeyboardEvent) {
     if (disabled) return;
     const cur = handleValue(index);
-    const stepSize = step ?? 1;
+    const stepSize = step > 0 ? step : 1;
     const bigStep = stepSize * 10;
     let next = cur;
     switch (e.key) {
@@ -434,11 +342,10 @@
         return;
     }
     e.preventDefault();
-    // Keyboard step settles immediately: change + input + changeComplete.
     commit(withHandle(index, next), true);
   }
 
-  // Track geometry (percent) for the filled segment.
+  // 已选段几何（percent）。
   const trackStart = $derived(range ? valueToPercent(values[0]) : 0);
   const trackEnd = $derived(valueToPercent(range ? values[1] : (current as number)));
   const handleList = $derived(range ? ([0, 1] as const) : ([1] as const));
@@ -448,10 +355,6 @@
     return (current as Pair)[index] ?? min;
   }
 
-  // Per-handle aria-valuemin/max. In range mode the two handles must not report
-  // ranges that allow crossing: the low handle (0) caps its max at the high
-  // handle's current value, and the high handle (1) floors its min at the low
-  // handle's current value (防越界的可达性表达 — spec §6).
   function handleMin(index: number): number {
     if (range && index === 1) return (current as Pair)[0] ?? min;
     return min;
@@ -461,20 +364,22 @@
     return max;
   }
 
-  // A dot sits inside the filled segment (active) when between trackStart/End.
-  function dotActive(v: number): boolean {
-    const pct = valueToPercent(v);
-    return included && pct >= trackStart - 1e-9 && pct <= trackEnd + 1e-9;
+  // 刻度是否落在已选段内（included 时驱动命中色，对齐 Semi isMarkActive）。
+  function markActive(mk: number): boolean {
+    if (!included) return false;
+    const pct = valueToPercent(mk);
+    return pct >= trackStart - 1e-9 && pct <= trackEnd + 1e-9;
   }
 
-  // Should the value bubble show for a given handle?
+  // 气泡文案：tipFormatter 返回 null/undefined 时隐藏。
   function tipText(index: number): string | null {
-    return tipFormatter ? tipFormatter(handleValue(index)) : String(handleValue(index));
+    const raw = tipFormatter ? tipFormatter(handleValue(index)) : handleValue(index);
+    if (raw === null || raw === undefined) return null;
+    return String(raw);
   }
   function tipShown(index: number): boolean {
     if (tipText(index) === null) return false;
     if (tooltipVisible !== undefined) return tooltipVisible;
-    if (alwaysShowTip) return true;
     if (dragValue !== null && activeIndex === index) return true;
     return hoverIndex === index || focusIndex === index;
   }
@@ -482,11 +387,12 @@
   function ariaValueText(index: number): string | undefined {
     const v = handleValue(index);
     if (getAriaValueText) return getAriaValueText(v, index);
-    const t = tipFormatter ? tipFormatter(v) : null;
+    if (ariaValuetext !== undefined) return ariaValuetext;
+    const t = tipText(index);
     return t ?? undefined;
   }
 
-  // Position style for an element at a value percent, honoring direction.
+  // 元素在某 value 百分比处的定位（对齐 Semi stylePos：vertical→top，RTL→right，否则 left）。
   function posStyle(pct: number): string {
     if (vertical) {
       return verticalReverse ? `inset-block-start: ${pct}%` : `inset-block-end: ${pct}%`;
@@ -494,30 +400,20 @@
     return `inset-inline-start: ${pct}%`;
   }
 
+  function handleDotForIndex(index: number): { color?: string; size?: string } | undefined {
+    if (!handleDot) return undefined;
+    return Array.isArray(handleDot) ? handleDot[index] : handleDot;
+  }
   function handleDotStyle(index: number): string {
-    if (!handleDot) return '';
-    const dot = Array.isArray(handleDot) ? handleDot[index] : handleDot;
+    const dot = handleDotForIndex(index);
     if (!dot) return '';
     const parts: string[] = [];
-    if (dot.color) parts.push(`--cd-slider-dot-color:${dot.color}`);
-    if (dot.size) parts.push(`--cd-slider-dot-size:${dot.size}`);
+    if (dot.size) parts.push(`inline-size:${dot.size}`, `block-size:${dot.size}`);
+    if (dot.color) parts.push(`background-color:${dot.color}`);
     return parts.join(';');
   }
 
-  const cls = $derived(
-    [
-      'cd-slider',
-      `cd-slider--${size}`,
-      `cd-slider--${vertical ? 'vertical' : 'horizontal'}`,
-      vertical && verticalReverse && 'cd-slider--reverse',
-      status !== 'default' && `cd-slider--${status}`,
-      disabled && 'cd-slider--disabled',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  );
-
-  // Track segment style: anchor + size, honoring vertical reverse.
+  // 已选段样式：锚点 + 尺寸，honoring vertical reverse（对齐 Semi renderTrack）。
   const trackSegStyle = $derived.by(() => {
     const segSize = `${trackEnd - trackStart}%`;
     if (vertical) {
@@ -528,335 +424,360 @@
     return `inset-inline-start: ${trackStart}%; inline-size: ${segSize}`;
   });
 
-  // trackStyle: merge user-provided custom track styles into the segment style string.
-  // In range mode trackStyle may be an array; index 0 applies to the single segment
-  // (the filled area between the two handles). Single mode uses index 0 or the object directly.
-  function getTrackStyleStr(segIndex: number): string {
-    if (!trackStyle) return '';
-    const styleObj = Array.isArray(trackStyle) ? trackStyle[segIndex] : trackStyle;
-    if (!styleObj) return '';
-    return Object.entries(styleObj).map(([k, v]) => `${k}: ${v}`).join('; ');
+  // 手柄拖拽态 class（对齐 Semi handle-clicked）。
+  function isHandleClicked(index: number): boolean {
+    return dragValue !== null && activeIndex === index;
   }
 </script>
 
-<div
-  {id}
-  class={cls}
-  class:cd-slider--vertical={vertical}
-  class:cd-slider--tooltip-on-mark={tooltipOnMark}
-  role="group"
-  aria-label={ariaLabelledby ? undefined : ariaLabel}
-  aria-labelledby={ariaLabelledby}
-  aria-disabled={disabled || undefined}
-  style={vertical ? `block-size: ${height}px` : undefined}
->
-  {#if showBoundary}<span class="cd-slider__boundary-min">{min}</span>{/if}
+{#snippet sliderBody()}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="cd-slider__rail"
-    role="presentation"
-    bind:this={railElement}
-    style={railStyle}
-    onpointerdown={handleRailPointerDown}
+    class="cd-slider-wrapper {vertical ? 'cd-slider-vertical-wrapper' : ''} {vertical &&
+    verticalReverse
+      ? 'cd-slider-reverse'
+      : ''} {disabled ? 'cd-slider-disabled' : ''}"
+    onmouseenter={() => (wrapperHover = true)}
+    onmouseleave={() => (wrapperHover = false)}
   >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="cd-slider-rail"
+      bind:this={railElement}
+      style={railStyle}
+      onpointerdown={handleRailPointerDown}
+    ></div>
+
     {#if included}
-      <div
-        class="cd-slider__track"
-        style={[trackSegStyle, getTrackStyleStr(0)].filter(Boolean).join('; ')}
-      ></div>
+      <div class="cd-slider-track" style={trackSegStyle}></div>
     {/if}
 
-    {#each dotValues as dv (dv)}
-      {@const pct = valueToPercent(dv)}
-      <span
-        class="cd-slider__dot"
-        class:cd-slider__dot--active={dotActive(dv)}
-        style={posStyle(pct)}
-      ></span>
-    {/each}
+    {#if markKeys.length > 0}
+      <div class="cd-slider-dots">
+        {#each markKeys as mk (mk)}
+          {#if markActive(mk)}
+            {@const pct = valueToPercent(mk)}
+            <span
+              class="cd-slider-dot"
+              class:cd-slider-dot-active={markActive(mk)}
+              style={posStyle(pct)}
+            ></span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
 
-    {#each markKeys as mk (mk)}
-      {@const pct = valueToPercent(mk)}
-      {@const mv = marks![mk]}
-      {@const active = markActive(mk)}
-      <span
-        class="cd-slider__mark"
-        class:cd-slider__mark--active={active}
-        class:cd-slider__mark-label--hidden={!showMarkLabel}
-        style={[posStyle(pct), markStyle(mv)].filter(Boolean).join('; ')}
-      >
-        {#if mark}{@render mark({ value: mk, label: markLabel(mv), active })}{:else}{markLabel(mv)}{/if}
-        {#if tooltipOnMark}
-          <span class="cd-slider__mark-tip" role="tooltip" aria-hidden="true">{markLabel(mv)}</span>
-        {/if}
-      </span>
-    {/each}
-
-    {#each handleList as index (index)}
-      {@const hv = handleValue(index)}
-      {@const pct = valueToPercent(hv)}
-      <span
-        class="cd-slider__handle"
-        role="slider"
-        tabindex={disabled ? -1 : 0}
-        aria-label={ariaLabelledby ? undefined : ariaLabel}
-        aria-labelledby={ariaLabelledby}
-        aria-orientation={vertical ? 'vertical' : 'horizontal'}
-        aria-valuemin={handleMin(index)}
-        aria-valuemax={handleMax(index)}
-        aria-valuenow={hv}
-        aria-valuetext={ariaValuetext ?? ariaValueText(index)}
-        aria-disabled={disabled || undefined}
-        data-show-arrow={showArrow}
-        style={[posStyle(pct), handleStyle ?? '', handleDotStyle(index)].filter(Boolean).join(';')}
-        onpointerdown={(e) => handleHandlePointerDown(index, e)}
-        onkeydown={(e) => handleKeydown(index, e)}
-        onpointerenter={() => (hoverIndex = index)}
-        onpointerleave={() => (hoverIndex = null)}
-        onfocus={() => {
-          focusIndex = index;
-          onFocus?.({ index });
-        }}
-        onblur={() => {
-          focusIndex = null;
-          onBlur?.({ index });
-        }}
-      >
-        {#if handle}{@render handle({ value: hv, index, dragging: dragValue !== null && activeIndex === index, focused: focusIndex === index })}{/if}
-        {#if tipShown(index)}
-          <span class="cd-slider__tip" role="tooltip" aria-hidden="true">
-            {#if tooltip}{@render tooltip({ value: hv, index })}{:else}{tipText(index)}{/if}
+    <div>
+      {#each handleList as index (index)}
+        {@const hv = handleValue(index)}
+        {@const pct = valueToPercent(hv)}
+        {@const tip = tipText(index)}
+        <!--
+          复用 Tooltip 组件承载数值气泡（对齐 Semi：每个 handle 由 <Tooltip> 包裹）。
+          Tooltip 外层包裹 span 承载手柄的绝对定位（经 wrapperClassName + triggerStyle，
+          对齐 Tooltip 注释里 UserGuide 的用法）；手柄 span 自身不再绝对定位，填满包裹 span。
+        -->
+        <Tooltip
+          content={tip ?? ''}
+          trigger="custom"
+          position={vertical ? 'right' : 'top'}
+          {showArrow}
+          visible={tip !== null && tipShown(index)}
+          rePosKey={pct}
+          wrapperClassName="cd-slider-handle-anchor {isHandleClicked(index)
+            ? 'cd-slider-handle-anchor-clicked'
+            : ''}"
+          triggerStyle="{posStyle(pct)}; z-index: {isHandleClicked(index) ? 2 : 1}"
+        >
+          <span
+            class="cd-slider-handle"
+            class:cd-slider-handle-clicked={isHandleClicked(index)}
+            role="slider"
+            tabindex={disabled ? -1 : 0}
+            aria-label={ariaLabelledby ? undefined : ariaLabel}
+            aria-labelledby={ariaLabelledby}
+            aria-orientation={vertical ? 'vertical' : 'horizontal'}
+            aria-valuemin={handleMin(index)}
+            aria-valuemax={handleMax(index)}
+            aria-valuenow={hv}
+            aria-valuetext={ariaValueText(index)}
+            aria-disabled={disabled || undefined}
+            onpointerdown={(e) => handleHandlePointerDown(index, e)}
+            onkeydown={(e) => handleKeydown(index, e)}
+            onpointerenter={() => (hoverIndex = index)}
+            onpointerleave={() => (hoverIndex = null)}
+            onfocus={() => (focusIndex = index)}
+            onblur={() => (focusIndex = null)}
+          >
+            {#if handleDotForIndex(index)}
+              <div class="cd-slider-handle-dot" style={handleDotStyle(index)}></div>
+            {/if}
           </span>
-        {/if}
-      </span>
-    {/each}
+        </Tooltip>
+      {/each}
+    </div>
+
+    {#if showMarkLabel && markKeys.length > 0}
+      <div class="cd-slider-marks">
+        {#each markKeys as mk (mk)}
+          {#if markActive(mk)}
+            {@const pct = valueToPercent(mk)}
+            {@const mv = marks![mk] ?? ''}
+            <span
+              class="cd-slider-mark"
+              class:cd-slider-mark-active={markActive(mk)}
+              style={posStyle(pct)}
+            >
+              {#if tooltipOnMark}
+                <Tooltip content={mv}>
+                  <span>{mv}</span>
+                </Tooltip>
+              {:else}
+                {mv}
+              {/if}
+            </span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+
+    <div class="cd-slider-boundary" class:cd-slider-boundary-show={showBoundary && wrapperHover}>
+      <span class="cd-slider-boundary-min">{min}</span>
+      <span class="cd-slider-boundary-max">{max}</span>
+    </div>
   </div>
-  {#if showBoundary}<span class="cd-slider__boundary-max">{max}</span>{/if}
-</div>
+{/snippet}
+
+{#if vertical}
+  <div
+    {id}
+    class="cd-slider-vertical {className ?? ''}"
+    style={styleProp}
+    role="group"
+    aria-label={ariaLabelledby ? undefined : ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    aria-disabled={disabled || undefined}
+  >
+    {@render sliderBody()}
+  </div>
+{:else}
+  <div
+    {id}
+    class="cd-slider {className ?? ''}"
+    style={styleProp}
+    role="group"
+    aria-label={ariaLabelledby ? undefined : ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    aria-disabled={disabled || undefined}
+  >
+    {@render sliderBody()}
+  </div>
+{/if}
 
 <style>
+  /* --- 外层（对齐 Semi .semi-slider / .semi-slider-vertical）--- */
   .cd-slider {
+    padding: 0 var(--cd-spacing-slider-paddingx);
+  }
+  .cd-slider-vertical {
+    display: inline-block;
+    block-size: 100%;
+  }
+
+  /* --- wrapper（对齐 Semi .semi-slider-wrapper）--- */
+  .cd-slider-wrapper {
+    box-sizing: border-box;
     position: relative;
-    display: flex;
-    align-items: center;
+    block-size: var(--cd-height-slider-wrapper);
     inline-size: 100%;
-    padding-block: var(--cd-slider-padding);
+    display: inline-block;
+    vertical-align: bottom;
+  }
+  .cd-slider-vertical-wrapper {
+    inline-size: var(--cd-height-slider-rail);
+    block-size: 100%;
+  }
+
+  /* --- rail（未填充轨道，对齐 Semi .semi-slider-rail）--- */
+  .cd-slider-rail {
+    box-sizing: border-box;
+    position: absolute;
+    inset-block-start: var(--cd-spacing-slider-rail-top);
+    inline-size: 100%;
+    block-size: var(--cd-height-slider-rail);
+    background-color: var(--cd-color-slider-rail-bg-default);
+    border-radius: var(--cd-radius-slider-rail);
+    cursor: pointer;
     touch-action: none;
   }
-  .cd-slider--vertical {
-    display: inline-flex;
-    inline-size: auto;
-    block-size: 200px;
-    padding-block: 0;
-    padding-inline: var(--cd-slider-padding);
+  .cd-slider-vertical-wrapper .cd-slider-rail {
+    inline-size: var(--cd-height-slider-rail);
+    block-size: 100%;
+    inset-block-start: 0;
   }
-  .cd-slider__rail {
-    position: relative;
-    flex: 1 1 auto;
-    inline-size: 100%;
-    block-size: var(--cd-slider-rail-height);
-    background: var(--cd-slider-rail-bg);
-    border-radius: var(--cd-slider-radius);
+
+  /* --- track（已填充轨道，对齐 Semi .semi-slider-track）--- */
+  .cd-slider-track {
+    position: absolute;
+    inset-block-start: var(--cd-spacing-slider-rail-top);
+    block-size: var(--cd-height-slider-track);
+    background: var(--cd-color-slider-track-bg-default);
+    border-radius: var(--cd-radius-slider-track);
     cursor: pointer;
   }
-  .cd-slider--vertical .cd-slider__rail {
-    inline-size: var(--cd-slider-rail-height);
-    block-size: 100%;
-  }
-  .cd-slider__track {
-    position: absolute;
-    inset-block: 0;
+  .cd-slider-vertical-wrapper .cd-slider-track {
+    inline-size: var(--cd-height-slider-track);
+    inset-block-start: auto;
     inset-inline-start: 0;
-    block-size: 100%;
-    background: var(--cd-slider-track-bg);
-    border-radius: var(--cd-slider-radius);
   }
-  .cd-slider--vertical .cd-slider__track {
-    inset-block: auto;
-    inset-inline: 0;
-    inline-size: 100%;
-  }
-  .cd-slider__handle {
+
+  /* --- handle 锚点（Tooltip 外层包裹 span，承载手柄的绝对定位）。
+     用 .cd-slider-wrapper 前缀提高特异性(0,2,0)，稳压 Tooltip 自身 .cd-tooltip(0,1,0)
+     的 position:relative/display:inline-block（记忆 svelte-compiler-drops-compound-selector-specificity）。 --- */
+  .cd-slider-wrapper :global(.cd-slider-handle-anchor) {
     position: absolute;
-    inset-block-start: 50%;
-    inline-size: var(--cd-slider-handle-size);
-    block-size: var(--cd-slider-handle-size);
-    background: var(--cd-slider-handle-bg);
-    border: var(--cd-slider-handle-border-width) solid var(--cd-slider-handle-border);
-    border-radius: var(--cd-slider-handle-radius);
-    transform: translate(-50%, -50%);
-    cursor: grab;
-    outline: none;
-    transition: box-shadow var(--cd-slider-handle-transition-duration) var(--cd-slider-handle-transition-easing);
+    inset-block-start: var(--cd-spacing-slider-rail-top);
+    inline-size: var(--cd-width-slider-handle);
+    block-size: var(--cd-width-slider-handle);
+    margin-block-start: -10px;
+    transform: translateX(-50%);
   }
-  .cd-slider--vertical .cd-slider__handle {
+  .cd-slider-vertical-wrapper :global(.cd-slider-handle-anchor) {
     inset-block-start: auto;
     inset-inline-start: 50%;
-    transform: translate(-50%, 50%);
+    margin-block-start: 0;
+    margin-inline-start: -10px;
+    transform: translateY(50%);
   }
-  /* Reverse vertical: handle anchored from the top, offset upward by half. */
-  .cd-slider--vertical.cd-slider--reverse .cd-slider__handle {
-    transform: translate(-50%, -50%);
+
+  /* --- handle（圆形按钮，对齐 Semi .semi-slider-handle）：填满锚点 span --- */
+  .cd-slider-handle {
+    box-sizing: border-box;
+    display: inline-flex;
+    inline-size: var(--cd-width-slider-handle);
+    block-size: var(--cd-width-slider-handle);
+    justify-content: center;
+    align-items: center;
+    background-color: var(--cd-color-slider-handle-bg-default);
+    border: none;
+    border-radius: 50%;
+    box-shadow: var(--cd-shadow-slider-knob);
+    cursor: pointer;
+    transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    outline: none;
   }
-  /* Custom handle dot (only rendered when handleDot sets the color variable). */
-  .cd-slider__handle[style*='--cd-slider-dot-color']::before {
-    content: '';
-    position: absolute;
-    inset-block-start: 50%;
-    inset-inline-start: 50%;
-    inline-size: var(--cd-slider-dot-size, 6px);
-    block-size: var(--cd-slider-dot-size, 6px);
-    background: var(--cd-slider-dot-color);
-    border-radius: var(--cd-slider-handle-radius);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
+  .cd-slider-handle:hover {
+    background-color: var(--cd-color-slider-handle-bg-hover);
   }
-  .cd-slider__handle:hover {
-    box-shadow: var(--cd-slider-handle-shadow-hover);
+  .cd-slider-handle:focus-visible {
+    outline: var(--cd-width-slider-handle-focus) solid var(--cd-color-slider-handle-focus);
   }
-  .cd-slider__handle:active {
+  /* 拖拽态：细描边（对齐 Semi .semi-slider-handle-clicked）。 */
+  .cd-slider-handle-clicked {
+    border: solid var(--cd-width-slider-handle-clicked) var(--cd-color-slider-handle-border-focus);
     cursor: grabbing;
   }
-  .cd-slider__handle:focus-visible {
-    box-shadow: var(--cd-slider-handle-focus-ring);
+
+  /* 手柄内部圆点（对齐 Semi .semi-slider-handle-dot）。 */
+  .cd-slider-handle-dot {
+    background: var(--cd-color-slider-handle-dot);
+    inline-size: var(--cd-width-slider-handle-dot);
+    block-size: var(--cd-width-slider-handle-dot);
+    border-radius: var(--cd-border-radius-circle);
   }
-  /* Value bubble above the handle. */
-  .cd-slider__tip {
+
+  /* --- dots（步进/刻度圆点，对齐 Semi .semi-slider-dots > .semi-slider-dot）--- */
+  .cd-slider-dots {
+    inline-size: 100%;
+    background: transparent;
+  }
+  .cd-slider-dot {
     position: absolute;
-    inset-block-end: calc(100% + var(--cd-slider-gap));
-    inset-inline-start: 50%;
+    inset-block-start: var(--cd-spacing-slider-rail-top);
+    inline-size: var(--cd-width-slider-dot);
+    block-size: var(--cd-width-slider-dot);
+    background-color: var(--cd-color-slider-dot-bg-default);
+    border-radius: 50%;
+    cursor: pointer;
     transform: translateX(-50%);
-    padding: 2px var(--cd-slider-gap);
-    background: var(--cd-slider-tip-bg);
-    color: var(--cd-slider-tip-color);
-    font-size: var(--cd-slider-tip-font-size);
-    line-height: 1.4;
-    white-space: nowrap;
-    border-radius: var(--cd-slider-tip-radius);
-    pointer-events: none;
-    z-index: 1;
   }
-  .cd-slider--vertical .cd-slider__tip {
-    inset-block-end: 50%;
-    inset-inline-start: calc(100% + var(--cd-slider-gap));
-    transform: translateY(50%);
+  .cd-slider-dot-active {
+    background-color: var(--cd-color-slider-dot-border-active);
   }
-  /* Step dots. */
-  .cd-slider__dot {
-    position: absolute;
-    inset-block-start: 50%;
-    inline-size: var(--cd-slider-dot-size);
-    block-size: var(--cd-slider-dot-size);
-    background: var(--cd-slider-dot-bg);
-    border: 2px solid var(--cd-slider-dot-color, var(--cd-slider-dot-border));
-    border-radius: var(--cd-slider-handle-radius);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-  .cd-slider__dot--active {
-    border-color: var(--cd-slider-dot-border-active);
-  }
-  .cd-slider--vertical .cd-slider__dot {
+  .cd-slider-vertical-wrapper .cd-slider-dot {
     inset-block-start: auto;
     inset-inline-start: 50%;
-    transform: translate(-50%, 50%);
-  }
-  .cd-slider--vertical.cd-slider--reverse .cd-slider__dot {
-    transform: translate(-50%, -50%);
-  }
-  .cd-slider__mark {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-slider-gap));
-    transform: translateX(-50%);
-    color: var(--cd-slider-mark-color);
-    font-size: var(--cd-slider-mark-font-size);
-    white-space: nowrap;
-  }
-  .cd-slider--vertical .cd-slider__mark {
-    inset-block-start: auto;
-    inset-inline-start: calc(100% + var(--cd-slider-gap));
     transform: translateY(50%);
   }
-  .cd-slider--vertical.cd-slider--reverse .cd-slider__mark {
-    transform: translateY(-50%);
+
+  /* --- marks（刻度标签，对齐 Semi .semi-slider-marks > .semi-slider-mark）--- */
+  .cd-slider-marks {
+    position: absolute;
+    inset-block-start: var(--cd-spacing-slider-marks-top);
+    inset-inline-start: 0;
+    inline-size: 100%;
+    font-size: var(--cd-font-slider-marks-fontsize);
   }
-  /* 命中刻度（落在已选段内）标签变色。 */
-  .cd-slider__mark--active {
-    color: var(--cd-slider-mark-color-active);
+  .cd-slider-mark {
+    position: absolute;
+    display: inline-block;
+    color: var(--cd-color-slider-mark-text-default);
+    text-align: center;
+    cursor: pointer;
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
-  /* showMarkLabel=false: keep the tick dot but hide its text label. */
-  .cd-slider__mark-label--hidden {
+  .cd-slider-vertical-wrapper .cd-slider-marks {
+    block-size: 100%;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    margin-inline-start: 29px;
+  }
+  .cd-slider-vertical-wrapper .cd-slider-mark {
+    inset-block-start: auto;
+    transform: translateY(50%);
+  }
+
+  /* --- boundary（边界值，hover 展示，对齐 Semi .semi-slider-boundary）--- */
+  .cd-slider-boundary {
+    position: relative;
+    inset-block-start: var(--cd-spacing-slider-boundary-top);
+    font-size: var(--cd-font-size-small);
+    color: var(--cd-color-slider-text-default);
     visibility: hidden;
   }
-  /* tooltipOnMark: 刻度上方的数值气泡，默认隐藏，hover 刻度时浮现。 */
-  .cd-slider__mark-tip {
+  .cd-slider-boundary-show {
+    visibility: visible;
+  }
+  .cd-slider-boundary span {
     position: absolute;
-    inset-block-end: calc(100% + var(--cd-slider-gap));
-    inset-inline-start: 50%;
-    transform: translateX(-50%);
-    padding: 2px var(--cd-slider-gap);
-    background: var(--cd-slider-tip-bg);
-    color: var(--cd-slider-tip-color);
-    font-size: var(--cd-slider-tip-font-size);
-    line-height: 1.4;
-    white-space: nowrap;
-    border-radius: var(--cd-slider-tip-radius);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--cd-slider-handle-transition-duration) var(--cd-slider-handle-transition-easing);
-    z-index: 1;
+    display: inline-block;
   }
-  .cd-slider__mark:hover .cd-slider__mark-tip {
-    opacity: 1;
+  .cd-slider-boundary-min {
+    inset-inline-start: 0;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-slider__mark-tip {
-      transition: none;
-    }
+  .cd-slider-boundary-max {
+    inset-inline-end: 0;
   }
-  /* Boundary value labels flanking the rail (showBoundary). */
-  .cd-slider__boundary-min,
-  .cd-slider__boundary-max {
-    flex: 0 0 auto;
-    color: var(--cd-slider-boundary-color);
-    font-size: var(--cd-slider-boundary-font-size);
-    white-space: nowrap;
-  }
-  .cd-slider__boundary-min {
-    margin-inline-end: var(--cd-slider-boundary-gap);
-  }
-  .cd-slider__boundary-max {
-    margin-inline-start: var(--cd-slider-boundary-gap);
-  }
-  .cd-slider--vertical .cd-slider__boundary-min,
-  .cd-slider--vertical .cd-slider__boundary-max {
-    margin-inline: 0;
-    margin-block: var(--cd-slider-gap);
-  }
-  .cd-slider--disabled {
-    opacity: 0.5;
-  }
-  .cd-slider--disabled .cd-slider__rail,
-  .cd-slider--disabled .cd-slider__handle {
+
+  /* --- disabled（对齐 Semi .semi-slider-disabled）--- */
+  .cd-slider-disabled .cd-slider-rail,
+  .cd-slider-disabled .cd-slider-track,
+  .cd-slider-disabled .cd-slider-handle,
+  .cd-slider-disabled .cd-slider-dot {
     cursor: not-allowed;
   }
-  .cd-slider--disabled .cd-slider__track {
-    background: var(--cd-slider-track-disabled-bg);
+  .cd-slider-disabled .cd-slider-handle {
+    box-shadow: none;
+    border: var(--cd-width-slider-handle-border-disabled) solid
+      var(--cd-color-slider-handle-disabled-border);
   }
-  /* 校验态：已选轨道段与手柄边框改用 warning/error 色调（disabled 优先）。 */
-  .cd-slider--warning:not(.cd-slider--disabled) .cd-slider__track {
-    background: var(--cd-slider-status-warning);
+  .cd-slider-disabled .cd-slider-track {
+    background-color: var(--cd-color-slider-track-disabled-bg);
   }
-  .cd-slider--warning:not(.cd-slider--disabled) .cd-slider__handle {
-    border-color: var(--cd-slider-status-warning);
-  }
-  .cd-slider--error:not(.cd-slider--disabled) .cd-slider__track {
-    background: var(--cd-slider-status-error);
-  }
-  .cd-slider--error:not(.cd-slider--disabled) .cd-slider__handle {
-    border-color: var(--cd-slider-status-error);
-  }
+
   @media (prefers-reduced-motion: reduce) {
-    .cd-slider__handle {
+    .cd-slider-handle {
       transition: none;
     }
   }

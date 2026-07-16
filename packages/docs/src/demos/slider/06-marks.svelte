@@ -4,7 +4,7 @@
   const marks = {
     0: '0°C',
     20: '20°C',
-    40: { label: '40°C', style: 'color: var(--cd-color-danger)' },
+    40: '40°C',
     100: '100°C',
   };
 </script>
