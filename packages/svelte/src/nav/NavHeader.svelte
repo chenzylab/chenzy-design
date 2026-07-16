@@ -14,6 +14,8 @@
     link?: string;
     /** 透传给 `<a>` 的属性（对齐 Semi linkOptions，如 target/rel）。 */
     linkOptions?: Record<string, string>;
+    /** 导航方向（由 Nav 透传；决定 header 左右内边距语义）。 */
+    mode?: 'vertical' | 'horizontal';
     /** 折叠态（由 Nav 透传；折叠时隐藏文案）。 */
     collapsedState?: boolean;
     /** 自定义类名。 */
@@ -28,6 +30,7 @@
     text,
     link,
     linkOptions,
+    mode = 'vertical',
     collapsedState = false,
     class: className = '',
     style,
@@ -50,7 +53,17 @@
   {/if}
 {/snippet}
 
-<div class={['cd-nav__header', className].filter(Boolean).join(' ')} {style}>
+<div
+  class={[
+    'cd-nav__header',
+    `cd-nav__header--${mode}`,
+    collapsedState && 'cd-nav__header--collapsed',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')}
+  {style}
+>
   {#if link}
     <a class="cd-nav__header-link" href={link} {...linkOptions}>{@render inner()}</a>
   {:else}
@@ -64,9 +77,22 @@
     align-items: center;
     gap: var(--cd-spacing-navigation-header-logo-marginright);
     height: var(--cd-height-navigation-horizontal-header);
-    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
     flex: 0 0 auto;
     overflow: hidden;
+  }
+  /* 顶部导航：左右内边距 24px（对齐 Semi $spacing-navigation_horizontal-paddingLeft）。 */
+  .cd-nav__header--horizontal {
+    padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
+  }
+  /* 侧边导航：左内边距按 Semi 公式派生使 Logo 与折叠态图标居中对齐，右为 tight。 */
+  .cd-nav__header--vertical {
+    padding-left: var(--cd-spacing-navigation-vertical-header-paddingleft);
+    padding-right: var(--cd-spacing-navigation-vertical-header-paddingright);
+  }
+  /* 侧边折叠态：右内边距归 0（对齐 Semi collapsed-paddingRight）。 */
+  .cd-nav__header--vertical.cd-nav__header--collapsed {
+    padding-left: var(--cd-spacing-navigation-vertical-header-collapsed-paddingleft);
+    padding-right: var(--cd-spacing-navigation-vertical-header-collapsed-paddingright);
   }
   .cd-nav__header-link {
     display: inline-flex;

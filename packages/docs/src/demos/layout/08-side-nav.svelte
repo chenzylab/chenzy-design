@@ -1,13 +1,26 @@
 <script lang="ts">
-  import { Layout, Nav, Avatar, Breadcrumb, Skeleton, SkeletonParagraph } from '@chenzy-design/svelte';
+  import { Layout, Nav, Button, Avatar, Breadcrumb, Skeleton, SkeletonParagraph } from '@chenzy-design/svelte';
+  import {
+    IconHome,
+    IconHistogram,
+    IconLive,
+    IconSetting,
+    IconBell,
+    IconHelpCircle,
+  } from '@chenzy-design/icons';
 
   const sideItems = [
-    { itemKey: 'Home', text: '首页' },
-    { itemKey: 'Histogram', text: '基础数据' },
-    { itemKey: 'Live', text: '测试功能' },
-    { itemKey: 'Setting', text: '设置' },
+    { itemKey: 'Home', text: '首页', icon: iconHome },
+    { itemKey: 'Histogram', text: '基础数据', icon: iconHistogram },
+    { itemKey: 'Live', text: '测试功能', icon: iconLive },
+    { itemKey: 'Setting', text: '设置', icon: iconSetting },
   ];
 </script>
+
+{#snippet iconHome()}<IconHome size="large" />{/snippet}
+{#snippet iconHistogram()}<IconHistogram size="large" />{/snippet}
+{#snippet iconLive()}<IconLive size="large" />{/snippet}
+{#snippet iconSetting()}<IconSetting size="large" />{/snippet}
 
 {#snippet logo()}
   <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
@@ -18,7 +31,12 @@
   </svg>
 {/snippet}
 
+{#snippet bellIcon()}<IconBell size="large" />{/snippet}
+{#snippet helpIcon()}<IconHelpCircle size="large" />{/snippet}
+
 {#snippet navFooter()}
+  <Button theme="borderless" icon={bellIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
+  <Button theme="borderless" icon={helpIcon} style="color: var(--cd-color-text-2); margin-right: 12px;" />
   <Avatar color="orange" size="small">YJ</Avatar>
 {/snippet}
 
@@ -55,7 +73,15 @@
     <Layout.Footer
       style="display: flex; justify-content: space-between; padding: 20px; color: var(--cd-color-text-2); background: var(--cd-color-fill-0);"
     >
-      <span>Copyright © 2024 chenzy design. All Rights Reserved.</span>
+      <span style="display: flex; align-items: center;">
+        <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 8px;" aria-hidden="true">
+          <rect x="2" y="2" width="9" height="9" rx="2" fill="currentColor" />
+          <rect x="13" y="2" width="9" height="9" rx="2" fill="currentColor" opacity="0.55" />
+          <rect x="2" y="13" width="9" height="9" rx="2" fill="currentColor" opacity="0.55" />
+          <rect x="13" y="13" width="9" height="9" rx="2" fill="currentColor" />
+        </svg>
+        <span>Copyright © 2024 chenzy design. All Rights Reserved.</span>
+      </span>
       <span>
         <span style="margin-right: 24px;">平台客服</span>
         <span>反馈建议</span>
