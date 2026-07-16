@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Upload } from '@chenzy-design/svelte';
+  import { IconPlus } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   let val = $state<UploadFileItem[]>([]);
@@ -19,4 +20,6 @@
   onCropError={(err) => console.error('crop failed', err)}
   fileList={val}
   onChange={({ fileList }) => (val = fileList)}
-/>
+>
+  <IconPlus size="extra-large" />
+</Upload>

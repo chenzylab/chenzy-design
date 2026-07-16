@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   let val = $state<UploadFileItem[]>([]);
@@ -23,7 +24,12 @@
     {onSizeError}
     fileList={val}
     onChange={({ fileList }) => (val = fileList)}
-  />
+  >
+    <Button theme="light">
+      {#snippet icon()}<IconUpload />{/snippet}
+      点击上传（最小 200KB，最大 1MB）
+    </Button>
+  </Upload>
   {#if lastError}
     <Text type="danger">{lastError}</Text>
   {/if}

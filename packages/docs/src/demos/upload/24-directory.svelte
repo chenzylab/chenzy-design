@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Upload, Space, Text } from '@chenzy-design/svelte';
+  import { Upload, Space, Text, Button } from '@chenzy-design/svelte';
+  import { IconUpload } from '@chenzy-design/icons';
   import type { UploadFileItem } from '@chenzy-design/svelte';
 
   let val = $state<UploadFileItem[]>([]);
@@ -14,7 +15,12 @@
     action="/api/upload"
     fileList={val}
     onChange={({ fileList }) => (val = fileList)}
-  />
+  >
+    <Button theme="light">
+      {#snippet icon()}<IconUpload />{/snippet}
+      上传文件夹
+    </Button>
+  </Upload>
   {#if val.length}
     <Text type="secondary">已选 {val.length} 个文件，示例相对路径：{val[0]?.relativePath ?? val[0]?.name}</Text>
   {/if}
