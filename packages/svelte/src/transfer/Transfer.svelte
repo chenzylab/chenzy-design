@@ -24,6 +24,7 @@
 -->
 <script lang="ts">
   import { tick } from 'svelte';
+  import { IconClose, IconCheckboxTick, IconTreeTriangleDown } from '@chenzy-design/icons';
   import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
   import Button from '../button/Button.svelte';
@@ -913,9 +914,8 @@
           disabled={disabled || (item.disabled ?? false)}
           onclick={() => removeOne(item.key)}
         >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8" />
-          </svg>
+          <IconClose size="small" />
+
         </button>
       {/if}
     {:else if asOption}
@@ -928,9 +928,7 @@
         <span class="cd-transfer__option-control" aria-hidden="true">
           <span class="cd-transfer__check" class:cd-transfer__check--on={isChecked}>
             {#if isChecked}
-              <svg viewBox="0 0 16 16" width="10" height="10" focusable="false">
-                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 8.5 6.5 11.5 12.5 4.5" />
-              </svg>
+              <IconCheckboxTick size="small" />
             {/if}
           </span>
           <span class="cd-transfer__option-label">{displayLabel}</span>
@@ -969,9 +967,7 @@
         aria-label={isExpanded(node.key) ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
         onclick={() => toggleExpand(node.key)}
       >
-        <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" focusable="false">
-          <path fill="currentColor" d="M6 4l4 4-4 4V4Z" />
-        </svg>
+        <IconTreeTriangleDown size="small" />
       </button>
     {:else}
       <span class="cd-transfer__switcher cd-transfer__switcher--leaf" aria-hidden="true"></span>
@@ -1420,12 +1416,15 @@
     color: var(--cd-color-text-2);
     cursor: pointer;
     transition: transform 0.15s ease;
+    /* IconTreeTriangleDown 默认朝下（=展开态外观）；收起态旋转 -90deg 指向右侧。 */
+    transform: rotate(-90deg);
   }
   .cd-transfer__switcher--open {
-    transform: rotate(90deg);
+    transform: rotate(0deg);
   }
   .cd-transfer__switcher--leaf {
     cursor: default;
+    transform: none;
   }
   .cd-transfer__switcher:focus-visible {
     outline: none;
