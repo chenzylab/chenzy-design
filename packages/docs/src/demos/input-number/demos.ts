@@ -24,9 +24,9 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('BasicDemo.svelte', '基础用法', '支持格式化、滚轮调值、strict 越界模式、两侧按钮、内嵌按钮、前后缀。'),
-  entry('01-basic.svelte', '基础数字输入', '最小最大值限制、两侧按钮布局、前后缀装饰。'),
-  entry('02-range-step.svelte', '范围与步进', 'min/max 限制、step/shiftStep 步进、strict 越界拒绝。'),
+  entry('BasicDemo.svelte', '基础用法', '格式化、onUpClick/onDownClick、内嵌按钮 + suffix、前后缀、locale 千分位。'),
+  entry('01-basic.svelte', '基础数字输入', '最小最大值限制、step 步进、前后缀装饰。'),
+  entry('02-range-step.svelte', '范围与步进', 'min/max 限制、step/shiftStep 步进、越界自动钳制。'),
   entry('03-precision.svelte', '小数精度', 'precision 控制小数位数，自动四舍五入归一化。'),
   entry('04-formatter.svelte', '格式化与解析', 'formatter/parser 实现千分位、货币、百分比显示。'),
   entry('05-size-disabled.svelte', '尺寸与状态', 'small/large 尺寸、内嵌按钮、disabled/readonly 状态。'),

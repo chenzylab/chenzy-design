@@ -1,29 +1,29 @@
 <!--
-  InputNumber — see specs/components/input/InputNumber.spec.md
-  Constrained numeric input: native <input inputmode="decimal"> + stacked steppers.
-  Controlled / uncontrolled (same pattern as Input). Variation only via onChange.
-  长按连续增减：按钮 mousedown 首延迟 400ms 后以 60ms 间隔重复，up/leave/卸载清理。
+  InputNumber — 严格对齐 Semi Design inputNumber。
+  受约束的数值录入：native <input inputmode="decimal"> role=spinbutton + 右侧 stacked 步进器。
+  受控 / 非受控（value 显式提供即受控，只回调不回写）。
+  DOM/class 对齐 Semi 连字符体系：
+    根 .cd-input-number（含 -size-{size}）
+    步进器 .cd-input-number-suffix-btns（innerButtons → -inner）
+    按钮 .cd-input-number-button + -button-up/-down（+ -not-allowed / -disabled）
+  长按连续增减：按钮 mousedown 首延迟 pressTimeout 后以 pressInterval 间隔重复，up/leave/卸载清理。
   formatter/parser：自定义显示/解析（formatter 仅作用于非编辑态显示）。
-  mouseWheel/selectOnFocus/autofocus 命令式监听挂在 action 上并 cleanup（红线 #3）。
+  货币 / 科学计数法：仅失焦显示态套用；current/onChange/onNumberChange 的值始终是完整 number。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import {
     useId,
-    clampWithMode,
-    boundaryHitOf,
     roundToPrecision,
     addNumberStep,
     formatWithLocale,
     useLiveAnnouncer,
-    type BoundaryMode,
   } from '@chenzy-design/core';
   import { IconClear, IconChevronUp, IconChevronDown } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
-  type ControlsPosition = 'right' | 'sides';
+  type ValidateStatus = 'default' | 'error' | 'warning' | 'success';
 
   interface Props {
     value?: number | null;
@@ -33,86 +33,79 @@
     step?: number;
     shiftStep?: number;
     precision?: number;
-    /** 越界处理：clamp 钳制 / strict 拒绝回滚 */
-    boundaryMode?: BoundaryMode;
     size?: Size;
     disabled?: boolean;
     readonly?: boolean;
-    status?: Status;
-    controls?: boolean;
-    /** 步进按钮布局：right 右侧 stacked / sides 两侧 */
-    controlsPosition?: ControlsPosition;
-    /** 步进按钮内嵌悬浮（hover/focus 显形） */
+    /** 校验状态（对齐 Semi InputProps validateStatus，含 success）。 */
+    validateStatus?: ValidateStatus;
+    /** 步进按钮内嵌悬浮（hover/focus 显形，对齐 Semi innerButtons）。 */
     innerButtons?: boolean;
-    keyboard?: boolean;
-    /** 聚焦时滚轮步进 */
-    mouseWheel?: boolean;
+    /** 彻底隐藏步进按钮（对齐 Semi hideButtons）。 */
+    hideButtons?: boolean;
     placeholder?: string;
-    /** 输入框前置内容（如货币符号 ¥、单位）；传 Snippet 可自定义渲染 */
+    /** 输入框前置内容（如货币符号 ¥、单位）；传 Snippet 可自定义渲染。 */
     prefix?: string | Snippet;
-    /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染 */
+    /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染。 */
     suffix?: string | Snippet;
     name?: string;
-    /** input 元素 id，关联外部 label；不传自动生成 */
+    /** input 元素 id，关联外部 label；不传自动生成。 */
     id?: string;
     ariaLabel?: string;
-    /** 挂载自动聚焦 */
+    /** 挂载自动聚焦（对齐 Semi autofocus）。 */
     autofocus?: boolean;
-    /** 聚焦时全选文本 */
-    selectOnFocus?: boolean;
-    /** 数字格式化 locale，传给内部 Intl（仅未提供 formatter 时生效） */
+    /** 数字格式化 locale，传给内部 Intl（仅未提供 formatter 时生效）。 */
     locale?: string;
-    /** 自定义显示格式化（仅非编辑态） */
+    /** 自定义显示格式化（仅非编辑态；对齐 Semi formatter）。 */
     formatter?: (n: number) => string;
-    /** 自定义解析（与 formatter 对应） */
+    /** 自定义解析（与 formatter 对应；对齐 Semi parser）。 */
     parser?: (s: string) => number;
-    onChange?: (v: number | null) => void;
-    /** 触达/试图越过边界 */
-    onBoundaryHit?: (e: { boundary: 'min' | 'max'; value: number }) => void;
-    /** 任一步进动作完成（按钮 / 键盘 / 滚轮） */
-    onStep?: (e: {
-      value: number;
-      direction: 'up' | 'down';
-      source: 'button' | 'keyboard' | 'wheel';
-    }) => void;
-    /** 聚焦 */
+    /**
+     * 值变化（对齐 Semi onChange）。货币/formatter 模式回显示字符串，其余回 number；
+     * 空值回 null。携带原生 event（step/键盘/滚轮触发时为 undefined）。
+     */
+    onChange?: (value: number | string | null, e?: Event) => void;
+    /** 携带 number 类型的变化回调（对齐 Semi onNumberChange，带 event）。 */
+    onNumberChange?: (value: number | null, e?: Event) => void;
+    /** 聚焦（对齐 Semi onFocus）。 */
     onFocus?: (e: FocusEvent) => void;
-    /** 失焦（已完成 commit 归一化） */
+    /** 失焦（已完成 commit 归一化；对齐 Semi onBlur）。 */
     onBlur?: (e: FocusEvent) => void;
-    /** 透传原生 keydown（便于扩展，如 Enter 提交表单） */
-    onKeydown?: (e: KeyboardEvent) => void;
-    /** 无边框模式 */
+    /** 透传原生 keydown（对齐 Semi onKeyDown）。 */
+    onKeyDown?: (e: KeyboardEvent) => void;
+    /** 点击「+」按钮回调（对齐 Semi onUpClick，携带步进后值与鼠标事件）。 */
+    onUpClick?: (value: number | null, e: MouseEvent) => void;
+    /** 点击「-」按钮回调（对齐 Semi onDownClick，携带步进后值与鼠标事件）。 */
+    onDownClick?: (value: number | null, e: MouseEvent) => void;
+    /** 无边框模式（对齐 Semi InputProps borderless）。 */
     borderless?: boolean;
-    /** 显示清除按钮（有值时出现 ×） */
+    /** 显示清除按钮（有值时出现 ×；对齐 Semi InputProps showClear）。 */
     showClear?: boolean;
-    /** 自定义清除图标 */
+    /** 自定义清除图标（对齐 Semi clearIcon）。 */
     clearIcon?: Snippet;
-    /** 点击 +/- 按钮后保持输入框聚焦（默认 false） */
+    /** 点击 +/- 按钮后保持输入框聚焦（对齐 Semi keepFocus，默认 false）。 */
     keepFocus?: boolean;
-    /** 携带 number 类型的变化回调（区别于 onChange 返回 number | null） */
-    onNumberChange?: (value: number | null) => void;
-    /** focus() 命令式聚焦时是否阻止滚动（对齐 Semi，默认 false） */
+    /** focus() 命令式聚焦时是否阻止滚动（对齐 Semi preventScroll，默认 false）。 */
     preventScroll?: boolean;
-    /** 彻底隐藏步进按钮（对齐 Semi；优先级高于 controls） */
-    hideButtons?: boolean;
-    /** 长按后延迟多久开始连续触发（ms，对齐 Semi，默认 250） */
+    /** 长按后延迟多久开始连续触发（ms，对齐 Semi pressTimeout，默认 250）。 */
     pressTimeout?: number;
-    /** 连续触发间隔（ms，对齐 Semi，默认 250） */
+    /** 连续触发间隔（ms，对齐 Semi pressInterval，默认 250）。 */
     pressInterval?: number;
-    /** 失焦时大数值以科学计数法显示（对齐 Semi；聚焦编辑仍为完整数字）。
-     * 传对象可自定义有效位阈值 threshold（默认 15）。 */
+    /**
+     * 失焦时大数值以科学计数法显示（对齐 Semi scientificNotation；聚焦编辑仍为完整数字）。
+     * 传对象可自定义有效位阈值 threshold（默认 15）。
+     */
     scientificNotation?: boolean | { threshold?: number };
-    /** 货币展示（对齐 Semi）：true 按 localeCode 自动推断币种；字符串（如 'CNY'/'USD'）显式指定 ISO 4217 币种码。 */
+    /** 货币展示（对齐 Semi currency）：true 按 localeCode 自动推断币种；字符串（'CNY'/'USD'）显式指定 ISO 4217 币种码。 */
     currency?: boolean | string;
-    /** 货币显示形式：symbol（￥）/ code（CNY）/ name（人民币），默认 symbol。 */
+    /** 货币显示形式：symbol（￥）/ code（CNY）/ name（人民币），默认 symbol（对齐 Semi currencyDisplay）。 */
     currencyDisplay?: 'symbol' | 'code' | 'name';
-    /** 货币格式化 BCP-47 locale（如 'zh-CN'/'de-DE'）；未传回退 locale，再回退 'zh-CN'。 */
+    /** 货币格式化 BCP-47 locale（'zh-CN'/'de-DE'）；未传回退 locale，再回退 'zh-CN'（对齐 Semi localeCode）。 */
     localeCode?: string;
-    /** 是否显示货币符号/代码/名称；false 时仅千分位（style:'decimal'），供用户自定义 prefix/suffix。默认 true。 */
+    /** 是否显示货币符号/代码/名称；false 时仅千分位（style:'decimal'），供 prefix/suffix 自定义（对齐 Semi showCurrencySymbol，默认 true）。 */
     showCurrencySymbol?: boolean;
-    /** 根元素自定义类名（透传，叠加在内置 class 之后，对齐 Semi className）。 */
+    /** 根元素自定义类名（对齐 Semi className）。 */
     class?: string;
-    /** 根元素自定义内联样式（透传，对齐 Semi style）。 */
+    /** 根元素自定义内联样式（对齐 Semi style）。 */
     style?: string;
   }
 
@@ -122,18 +115,14 @@
     min = -Infinity,
     max = Infinity,
     step = 1,
-    shiftStep,
+    shiftStep = 10,
     precision,
-    boundaryMode = 'clamp',
     size = 'default',
     disabled = false,
     readonly = false,
-    status = 'default',
-    controls = true,
-    controlsPosition = 'right',
+    validateStatus = 'default',
     innerButtons = false,
-    keyboard = true,
-    mouseWheel = false,
+    hideButtons = false,
     placeholder,
     prefix,
     suffix,
@@ -141,23 +130,21 @@
     id,
     ariaLabel,
     autofocus = false,
-    selectOnFocus = false,
     locale,
     formatter,
     parser,
     onChange,
-    onBoundaryHit,
-    onStep,
+    onNumberChange,
     onFocus,
     onBlur,
-    onKeydown,
+    onKeyDown,
+    onUpClick,
+    onDownClick,
     borderless = false,
     showClear = false,
     clearIcon,
     keepFocus = false,
-    onNumberChange,
     preventScroll = false,
-    hideButtons = false,
     pressTimeout = 250,
     pressInterval = 250,
     scientificNotation = false,
@@ -170,7 +157,7 @@
   }: Props = $props();
 
   const loc = useLocale();
-  // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值（红线 #3：命令式）。
+  // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值。
   const announcer = useLiveAnnouncer();
   // prefix/suffix 可传 string 或 Snippet；函数即视为 Snippet。
   const prefixSnippet = $derived(typeof prefix === 'function' ? (prefix as Snippet) : undefined);
@@ -187,14 +174,11 @@
 
   // While editing, `editingText` holds the raw string the user typed (kept loose
   // so intermediate forms like "-" / "1." survive). When `null`, the field shows
-  // the formatted `current` — no $effect needed, so external value changes flow
-  // straight through the derived display.
+  // the formatted `current`.
   let editingText = $state<string | null>(null);
-  // 是否聚焦（编辑态）：科学计数法仅在失焦显示态生效，聚焦时展示完整数字。
+  // 是否聚焦（编辑态）：科学计数法/货币仅在失焦显示态生效，聚焦时展示完整数字。
   let focused = $state(false);
   const text = $derived(editingText ?? formatDisplay(current));
-
-  const effectiveShiftStep = $derived(shiftStep ?? step * 10);
 
   // 科学计数法：启用与阈值派生（对象可自定义 threshold，默认 15）。
   const sciEnabled = $derived(!!scientificNotation);
@@ -203,11 +187,8 @@
   );
 
   // --- 货币展示（对齐 Semi currency）---
-  // 启用条件：currency 非 false/undefined（true 或币种码字符串）。
   const currencyEnabled = $derived(currency !== false && currency !== undefined);
-  // 格式化 locale：localeCode 优先 → 组件 locale → 'zh-CN'。
   const resolvedLocaleCode = $derived(localeCode ?? locale ?? 'zh-CN');
-  // 币种码：字符串直接用；currency===true 时按 locale 前缀映射到 ISO 4217，缺省回退 USD。
   const resolvedCurrencyCode = $derived.by(() => {
     if (typeof currency === 'string') return currency;
     return localeToCurrency(resolvedLocaleCode);
@@ -218,7 +199,6 @@
   }
 
   // locale → ISO 4217 币种码映射（currency===true 时按 localeCode 推断）。
-  // 精确匹配优先，再按语言前缀匹配，最后回退 USD。
   function localeToCurrency(code: string): string {
     const lc = code.toLowerCase();
     const exact: Record<string, string> = {
@@ -260,11 +240,11 @@
   const atMin = $derived(current !== null && current <= min);
   const atMax = $derived(current !== null && current >= max);
 
-  // aria-valuetext：当存在 formatter / locale 使显示值不同于裸数字时，向屏幕阅读器
-  // 播报格式化后的可读文本（如「1,234」「¥1,200」）。无格式化时省略，让 AT 直接读 valuenow。
+  // aria-valuetext：存在 formatter / locale / currency 使显示值不同于裸数字时，向屏幕阅读器
+  // 播报格式化后的可读文本。无格式化时省略，让 AT 直接读 valuenow。
   const ariaValueText = $derived.by<string | undefined>(() => {
     if (current === null) return undefined;
-    if (!formatter && !locale) return undefined;
+    if (!formatter && !locale && !currencyEnabled) return undefined;
     const display = formatDisplay(current);
     if (display === '' || display === String(current)) return undefined;
     return display;
@@ -273,24 +253,19 @@
   function formatDisplay(n: number | null): string {
     if (n === null || Number.isNaN(n)) return '';
     // 货币展示：仅失焦显示态套用（聚焦编辑态展示纯数字，便于解析）。
-    // currency 优先于科学计数法 —— 同时传时 currency 生效、sci 被忽略（对齐 Semi「currency 不支持 sci」）。
-    // 仅影响显示；current / onChange / onNumberChange 的值仍是完整 number。
+    // currency 优先于科学计数法（对齐 Semi「currency 不支持 sci」）。
     if (currencyEnabled && !focused) {
-      // showCurrencySymbol=false → decimal（仅千分位，不显示符号/代码/名称，供用户自定义 prefix/suffix）。
-      // currency 模式由 Intl 决定小数位（如 JPY 0 位、CNY 2 位）。
       return new Intl.NumberFormat(resolvedLocaleCode, {
         style: showCurrencySymbol ? 'currency' : 'decimal',
         currency: resolvedCurrencyCode,
         currencyDisplay,
       }).format(n);
     }
-    // 科学计数法：仅失焦显示态、且数量级达阈值时套用（聚焦编辑态展示完整数字）。
-    // 仅影响显示；current / onChange / onNumberChange 的值仍是完整 number。
+    // 科学计数法：仅失焦显示态、且数量级达阈值时套用。
     if (sciEnabled && !focused && Math.abs(n) >= 10 ** sciThreshold) {
       return n.toExponential();
     }
     if (formatter) return formatter(n);
-    // 未提供 formatter 时：仅当显式传入 locale 才走 Intl，否则保持现状 String(n)。
     if (locale) return formatWithLocale(n, locale);
     return String(n);
   }
@@ -302,8 +277,7 @@
       const n = parser(t);
       return Number.isNaN(n) ? null : n;
     }
-    // 货币模式：即便聚焦态通常已展示纯数字，仍保险剥离货币符号/代码/名称/千分位分隔符，
-    // 仅保留数字、小数点、负号（编辑基准是标准 '.' 小数点，故足够）。
+    // 货币模式：剥离货币符号/代码/名称/千分位分隔符，仅保留数字、小数点、负号。
     if (currencyEnabled) {
       const cleaned = trimmed.replace(/[^\d.-]/g, '');
       const n = Number(cleaned);
@@ -317,26 +291,30 @@
     return roundToPrecision(n, precision);
   }
 
-  // 归一化：round → clamp/strict。strict 越界返回 null（表示拒绝，调用方回滚）。
-  // 同时上报 boundaryHit。
-  function normalize(n: number): number | null {
+  // 归一化：round → clamp 到 [min,max]（对齐 Semi：恒 clamp，无 strict 模式）。
+  function normalize(n: number): number {
     const rounded = applyPrecision(n);
-    const hit = boundaryHitOf(rounded, min, max);
-    if (hit) onBoundaryHit?.({ boundary: hit, value: rounded });
-    const clamped = clampWithMode(rounded, min, max, boundaryMode);
-    // clamp 模式越界回弹：实际生效值与输入不同 → polite 播报生效值（strict 模式返回 null 拒绝，不播）。
-    if (hit && clamped !== null && clamped !== rounded) {
+    const clamped = Math.min(max, Math.max(min, rounded));
+    // 越界回弹：实际生效值与输入不同 → polite 播报生效值。
+    if (clamped !== rounded && Number.isFinite(clamped)) {
       announcer.announce(loc().t('InputNumber.clampedAnnounce', { value: formatDisplay(clamped) }));
     }
     return clamped;
   }
 
-  function commitValue(next: number | null) {
-    // Controlled: never write the prop here; propagate only via onChange.
-    // Uncontrolled: keep local state in sync. (Avoids the value->onChange->value loop.)
+  // onChange 值：货币/formatter 模式回显示字符串，其余回 number（对齐 Semi onChange 值语义）。
+  function changeValueOf(n: number | null): number | string | null {
+    if (n === null) return null;
+    if (currencyEnabled || formatter) return formatDisplay(n);
+    return n;
+  }
+
+  function commitValue(next: number | null, e?: Event) {
+    // Controlled: never write the prop here; propagate only via callbacks.
+    // Uncontrolled: keep local state in sync.
     if (!isControlled) inner = next;
-    onChange?.(next);
-    onNumberChange?.(next);
+    onChange?.(changeValueOf(next), e);
+    onNumberChange?.(next, e);
   }
 
   function clearValue() {
@@ -351,46 +329,37 @@
     editingText = e.currentTarget.value;
   }
 
-  function commitFromText() {
+  function commitFromText(e?: Event) {
     const raw = editingText ?? formatDisplay(current);
     editingText = null;
     const parsed = parseText(raw);
     if (parsed === null) {
-      if (current !== null) commitValue(null);
+      if (current !== null) commitValue(null, e);
       return;
     }
     const normalized = normalize(parsed);
-    // strict 越界：normalize 返回 null → 拒绝写入，回滚到 current 显示。
-    // 受控值未变（不会触发重渲染回填 input），故命令式把 DOM 值还原为当前显示串。
-    if (normalized === null) {
-      restoreDisplay();
-      return;
-    }
-    if (normalized !== current) commitValue(normalized);
+    if (normalized !== current) commitValue(normalized, e);
   }
 
   function handleBlur(e: FocusEvent) {
-    // 先清 focused：commitFromText 后 text 派生走显示态，失焦时才套科学计数法。
+    // 先清 focused：commitFromText 后 text 派生走显示态，失焦时才套科学计数法/货币。
     focused = false;
-    commitFromText();
-    // commit 归一化后再上报失焦（spec：blur 时已完成 commit）。
+    commitFromText(e);
     onBlur?.(e);
   }
 
-  function stepBy(dir: 1 | -1, large: boolean, source: 'button' | 'keyboard' | 'wheel') {
-    if (disabled || readonly) return;
-    const delta = (large ? effectiveShiftStep : step) * dir;
+  // 步进：dir=±1，large 用 shiftStep。可选携带触发事件用于 up/down click 回调。
+  function stepBy(dir: 1 | -1, large: boolean): number | null {
+    if (disabled || readonly) return current;
+    const delta = (large ? shiftStep : step) * dir;
     const base = current ?? (Number.isFinite(min) ? min : 0);
     const next = normalize(addNumberStep(base, delta));
     editingText = null;
-    // strict 越界回滚：保持 current。
-    if (next === null) return;
     if (next !== current) commitValue(next);
-    // 步进动作完成上报（即便钳制后值未变也算一次步进尝试，但仅在落到有效值时触发）。
-    onStep?.({ value: next, direction: dir === 1 ? 'up' : 'down', source });
+    return next;
   }
 
-  // --- 长按连续增减：首延迟 400ms 后以 60ms 间隔重复，cleanup 清理（红线 #3）---
+  // --- 长按连续增减：首延迟 pressTimeout 后以 pressInterval 间隔重复，cleanup 清理 ---
   let holdTimer: ReturnType<typeof setTimeout> | undefined;
   let holdInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -410,9 +379,11 @@
     preventBlurSteal(e);
     if (keepFocus && inputEl) inputEl.focus({ preventScroll: true });
     if (disabled || readonly) return;
-    stepBy(dir, false, 'button');
+    const next = stepBy(dir, false);
+    if (dir === 1) onUpClick?.(next, e);
+    else onDownClick?.(next, e);
     holdTimer = setTimeout(() => {
-      holdInterval = setInterval(() => stepBy(dir, false, 'button'), pressInterval);
+      holdInterval = setInterval(() => stepBy(dir, false), pressInterval);
     }, pressTimeout);
   }
 
@@ -420,23 +391,23 @@
   $effect(() => stopHold);
 
   function handleKeydown(e: KeyboardEvent) {
-    // 始终透传原生 keydown（即便 keyboard 关闭/禁用，便于使用方扩展，如 Enter 提交表单）。
-    onKeydown?.(e);
-    if (!keyboard || disabled || readonly) return;
+    // 始终透传原生 keydown（便于扩展，如 Enter 提交表单）。
+    onKeyDown?.(e);
+    if (disabled || readonly) return;
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      stepBy(1, e.shiftKey, 'keyboard');
+      stepBy(1, e.shiftKey);
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      stepBy(-1, e.shiftKey, 'keyboard');
+      stepBy(-1, e.shiftKey);
     } else if (e.key === 'PageUp') {
       e.preventDefault();
-      stepBy(1, true, 'keyboard');
+      stepBy(1, true);
     } else if (e.key === 'PageDown') {
       e.preventDefault();
-      stepBy(-1, true, 'keyboard');
+      stepBy(-1, true);
     } else if (e.key === 'Enter') {
-      commitFromText();
+      commitFromText(e);
     }
   }
 
@@ -445,21 +416,14 @@
     e.preventDefault();
   }
 
-  // --- 命令式监听：autofocus / selectOnFocus / mouseWheel + cleanup（红线 #3）---
   let inputEl: HTMLInputElement | undefined;
 
   // 命令式 Methods（对齐 Semi）：focus() 尊重 preventScroll prop（默认 false）。
-  // 注意：内部 autofocus/keepFocus/clear 的 focus 仍用 preventScroll:true，保持既有行为。
   export function focus(): void {
     inputEl?.focus({ preventScroll });
   }
   export function blur(): void {
     inputEl?.blur();
-  }
-
-  // 受控值未变时（如 strict 越界拒绝），Svelte 不会重渲染 input.value，需命令式还原。
-  function restoreDisplay() {
-    if (inputEl) inputEl.value = formatDisplay(current);
   }
 
   function inputActions(node: HTMLInputElement) {
@@ -470,44 +434,34 @@
     }
 
     function handleFocus(e: FocusEvent) {
-      // 进入编辑态：科学计数法退回完整数字显示（text 派生重算）。
+      // 进入编辑态：科学计数法/货币退回完整数字显示（text 派生重算）。
       focused = true;
       onFocus?.(e);
-      // 推迟到下一帧：浏览器在 focus 后才放置默认光标，立即 select 会被覆盖。
-      if (selectOnFocus) requestAnimationFrame(() => node.select());
-    }
-
-    // 滚轮步进：仅聚焦时响应，passive=false 以便 preventDefault 阻止页面滚动。
-    function onWheel(e: WheelEvent) {
-      if (!mouseWheel || disabled || readonly) return;
-      if (document.activeElement !== node) return;
-      e.preventDefault();
-      stepBy(e.deltaY < 0 ? 1 : -1, e.shiftKey, 'wheel');
     }
 
     node.addEventListener('focus', handleFocus);
-    node.addEventListener('wheel', onWheel, { passive: false });
 
     return {
       destroy() {
         node.removeEventListener('focus', handleFocus);
-        node.removeEventListener('wheel', onWheel);
         if (inputEl === node) inputEl = undefined;
       },
     };
   }
 
+  // 步进器隐藏：hideButtons 或 innerButtons（innerButtons 靠 CSS hover/focus 显形）。
+  const showButtons = $derived(!hideButtons);
+
   const cls = $derived(
     [
       'cd-input-number',
-      `cd-input-number--${size}`,
-      `cd-input-number--${status}`,
-      `cd-input-number--controls-${controlsPosition}`,
-      innerButtons && 'cd-input-number--inner',
-      prefix != null && 'cd-input-number--has-prefix',
-      suffix != null && 'cd-input-number--has-suffix',
-      disabled && 'cd-input-number--disabled',
-      borderless && 'cd-input-number--borderless',
+      `cd-input-number-size-${size}`,
+      validateStatus !== 'default' && `cd-input-number-${validateStatus}`,
+      innerButtons && 'cd-input-number-inner',
+      prefix != null && 'cd-input-number-has-prefix',
+      suffix != null && 'cd-input-number-has-suffix',
+      disabled && 'cd-input-number-disabled',
+      borderless && 'cd-input-number-borderless',
       className,
     ]
       .filter(Boolean)
@@ -515,16 +469,16 @@
   );
 </script>
 
-<div class={cls} {style} aria-invalid={status === 'error' || undefined}>
+<div class={cls} {style} aria-invalid={validateStatus === 'error' || undefined}>
   {#if prefix != null}
-    <span class="cd-input-number__affix cd-input-number__prefix">
+    <span class="cd-input-number-affix cd-input-number-prefix">
       {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefix}{/if}
     </span>
   {/if}
 
   <input
     use:inputActions
-    class="cd-input-number__native"
+    class="cd-input-number-input"
     type="text"
     inputmode="decimal"
     role="spinbutton"
@@ -539,7 +493,7 @@
     aria-valuetext={ariaValueText}
     aria-valuemin={Number.isFinite(min) ? min : undefined}
     aria-valuemax={Number.isFinite(max) ? max : undefined}
-    aria-invalid={status === 'error' || undefined}
+    aria-invalid={validateStatus === 'error' || undefined}
     aria-disabled={disabled || undefined}
     aria-readonly={readonly || undefined}
     oninput={handleInput}
@@ -548,7 +502,7 @@
   />
 
   {#if suffix != null}
-    <span class="cd-input-number__affix cd-input-number__suffix">
+    <span class="cd-input-number-affix cd-input-number-suffix">
       {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
     </span>
   {/if}
@@ -556,7 +510,7 @@
   {#if canClear}
     <button
       type="button"
-      class="cd-input-number__clear"
+      class="cd-input-number-clearbtn"
       tabindex="-1"
       aria-label={loc().t('InputNumber.clear')}
       onmousedown={(e) => e.preventDefault()}
@@ -570,40 +524,45 @@
     </button>
   {/if}
 
-  {#if controls && !hideButtons}
-    <span class="cd-input-number__actions">
-      <button
-        type="button"
-        class="cd-input-number__action cd-input-number__increment"
+  {#if showButtons}
+    <div class="cd-input-number-suffix-btns" class:cd-input-number-suffix-btns-inner={innerButtons}>
+      <span
+        class="cd-input-number-button cd-input-number-button-up"
+        class:cd-input-number-button-up-not-allowed={disabled || readonly || atMax}
+        class:cd-input-number-button-up-disabled={disabled}
+        role="button"
         tabindex="-1"
         aria-label={loc().t('InputNumber.increase')}
-        disabled={disabled || readonly || atMax}
+        aria-disabled={disabled || readonly || atMax || undefined}
         onmousedown={(e) => startHold(1, e)}
         onmouseup={stopHold}
         onmouseleave={stopHold}
       >
         <IconChevronUp size="extra-small" />
-      </button>
-      <button
-        type="button"
-        class="cd-input-number__action cd-input-number__decrement"
+      </span>
+      <span
+        class="cd-input-number-button cd-input-number-button-down"
+        class:cd-input-number-button-down-not-allowed={disabled || readonly || atMin}
+        class:cd-input-number-button-down-disabled={disabled}
+        role="button"
         tabindex="-1"
         aria-label={loc().t('InputNumber.decrease')}
-        disabled={disabled || readonly || atMin}
+        aria-disabled={disabled || readonly || atMin || undefined}
         onmousedown={(e) => startHold(-1, e)}
         onmouseup={stopHold}
         onmouseleave={stopHold}
       >
         <IconChevronDown size="extra-small" />
-      </button>
-    </span>
+      </span>
+    </div>
   {/if}
 </div>
 
 <style>
   .cd-input-number {
     display: inline-flex;
-    align-items: stretch;
+    align-items: center;
+    box-sizing: border-box;
     inline-size: 100%;
     block-size: var(--cd-height-input-default);
     background: var(--cd-input-color-bg);
@@ -611,14 +570,14 @@
     border: 1px solid var(--cd-input-border);
     border-radius: var(--cd-input-radius);
     font-size: var(--cd-input-font-size);
-    overflow: hidden;
+    padding-inline-end: var(--cd-spacing-input-number-button-marginleft);
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-input-number--small {
+  .cd-input-number-size-small {
     block-size: var(--cd-height-input-small);
     font-size: var(--cd-font-size-small);
   }
-  .cd-input-number--large {
+  .cd-input-number-size-large {
     block-size: var(--cd-height-input-large);
     font-size: var(--cd-font-size-header-6);
   }
@@ -626,27 +585,27 @@
     border-color: var(--cd-input-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-input-number--warning {
+  .cd-input-number-warning {
     border-color: var(--cd-input-border-warning);
   }
-  .cd-input-number--error {
+  .cd-input-number-error {
     border-color: var(--cd-input-border-error);
   }
-  .cd-input-number--disabled {
+  .cd-input-number-disabled {
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
-  .cd-input-number--borderless {
+  .cd-input-number-borderless {
     border-color: transparent;
     background: transparent;
     box-shadow: none;
   }
-  .cd-input-number--borderless:focus-within {
+  .cd-input-number-borderless:focus-within {
     border-color: transparent;
     box-shadow: none;
   }
-  .cd-input-number__clear {
+  .cd-input-number-clearbtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -659,14 +618,14 @@
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-input-number__clear:hover {
+  .cd-input-number-clearbtn:hover {
     color: var(--cd-color-text-0);
   }
-  .cd-input-number__clear:focus-visible {
+  .cd-input-number-clearbtn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-input-number__native {
+  .cd-input-number-input {
     flex: 1 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
@@ -679,16 +638,16 @@
     outline: none;
   }
   /* 有前/后缀时，由 affix 承担该侧边距，避免双重留白。 */
-  .cd-input-number--has-prefix .cd-input-number__native {
+  .cd-input-number-has-prefix .cd-input-number-input {
     padding-inline-start: var(--cd-spacing-extra-tight);
   }
-  .cd-input-number--has-suffix .cd-input-number__native {
+  .cd-input-number-has-suffix .cd-input-number-input {
     padding-inline-end: var(--cd-spacing-extra-tight);
   }
-  .cd-input-number__native::placeholder {
+  .cd-input-number-input::placeholder {
     color: var(--cd-input-color-placeholder);
   }
-  .cd-input-number__affix {
+  .cd-input-number-affix {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -696,111 +655,101 @@
     white-space: nowrap;
     user-select: none;
   }
-  .cd-input-number__prefix {
+  .cd-input-number-prefix {
     padding-inline-start: var(--cd-input-padding-x);
   }
-  .cd-input-number__suffix {
+  .cd-input-number-suffix {
     padding-inline-end: var(--cd-input-padding-x);
   }
-  .cd-input-number__native:disabled {
+  .cd-input-number-input:disabled {
     cursor: not-allowed;
   }
-  /* 步进器：对齐 Semi inputNumber，实底 bg-2 按钮 + 描边 + small 圆角，按钮间留 1px 缝 */
-  .cd-input-number__actions {
-    display: flex;
+
+  /* --- 步进器：对齐 Semi inputNumber-suffix-btns（列布局，外框描边，两按钮各占 50%） --- */
+  .cd-input-number-suffix-btns {
+    display: inline-flex;
     flex-direction: column;
     flex: 0 0 auto;
-    inline-size: var(--cd-input-number-step-width);
-    gap: var(--cd-width-input-number-button-border); /* Semi button-border 1px 缝 */
-    margin-inline-start: var(--cd-spacing-input-number-button-marginleft); /* Semi button-marginLeft */
+    box-sizing: border-box;
+    block-size: var(--cd-height-input-number-button-default);
+    margin-inline-start: var(--cd-spacing-input-number-button-marginleft);
+    border: var(--cd-width-input-number-button-border) solid
+      var(--cd-color-input-number-button-border-default);
+    border-radius: var(--cd-radius-input-number);
+    background: var(--cd-color-input-number-button-bg-default);
   }
-  .cd-input-number__action {
+  .cd-input-number-size-small .cd-input-number-suffix-btns {
+    block-size: var(--cd-height-input-number-button-small);
+  }
+  .cd-input-number-size-large .cd-input-number-suffix-btns {
+    block-size: var(--cd-height-input-number-button-large);
+  }
+  .cd-input-number-button {
+    block-size: 50%;
+    inline-size: var(--cd-width-input-number-button);
+    padding: 0;
+    margin: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 1 1 50%;
-    min-block-size: 0;
-    padding: 0;
-    border: var(--cd-width-input-number-button-border) solid var(--cd-input-number-step-border);
-    border-radius: var(--cd-input-number-step-radius);
-    background: var(--cd-input-number-step-bg);
-    color: var(--cd-input-number-step-color);
+    user-select: none;
+    border-radius: 0;
+    color: var(--cd-color-input-number-button-text-default);
+  }
+  .cd-input-number-button-up:not(.cd-input-number-button-up-not-allowed):hover,
+  .cd-input-number-button-down:not(.cd-input-number-button-down-not-allowed):hover {
     cursor: pointer;
-    transition:
-      background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    background: var(--cd-color-input-number-button-bg-hover);
   }
-  .cd-input-number__action:hover:not(:disabled) {
-    background: var(--cd-input-number-step-bg-hover);
-    border-color: var(--cd-color-input-number-button-border-hover);
+  .cd-input-number-button-up:not(.cd-input-number-button-up-not-allowed):active,
+  .cd-input-number-button-down:not(.cd-input-number-button-down-not-allowed):active {
+    cursor: pointer;
+    background: var(--cd-color-input-number-button-bg-active);
   }
-  .cd-input-number__action:active:not(:disabled) {
-    background: var(--cd-input-number-step-bg-active);
+  .cd-input-number-button-up.cd-input-number-button-up-disabled,
+  .cd-input-number-button-down.cd-input-number-button-down-disabled {
+    background: var(--cd-color-input-number-button-bg-disabled);
+    color: var(--cd-color-input-number-button-text-disabled);
   }
-  .cd-input-number__action:disabled {
-    color: var(--cd-input-number-step-color-disabled);
-    background: var(--cd-input-number-step-bg-disabled);
+  .cd-input-number-button-up.cd-input-number-button-up-not-allowed,
+  .cd-input-number-button-down.cd-input-number-button-down-not-allowed {
     cursor: not-allowed;
   }
-  /* --- controlsPosition="sides"：减/输入/加 横向排布，按钮分居两侧 --- */
-  .cd-input-number--controls-sides {
-    position: relative;
-  }
-  .cd-input-number--controls-sides .cd-input-number__actions {
-    flex-direction: row;
-    inline-size: auto;
-    border-inline-start: none;
-    order: 2;
-  }
-  .cd-input-number--controls-sides .cd-input-number__decrement {
-    order: 0;
-    border-block-end: none;
-    border-inline-end: 1px solid var(--cd-input-border);
-  }
-  .cd-input-number--controls-sides .cd-input-number__increment {
-    order: 3;
-    border-block-end: none;
-    border-inline-start: 1px solid var(--cd-input-border);
-  }
-  .cd-input-number--controls-sides .cd-input-number__native {
-    order: 1;
-    text-align: center;
-  }
-  .cd-input-number--controls-sides .cd-input-number__action {
-    inline-size: var(--cd-spacing-loose, 28px);
-  }
-  /* sides 布局：前缀紧贴减号右、后缀紧贴加号左，包裹中央输入。 */
-  .cd-input-number--controls-sides .cd-input-number__prefix {
-    order: 1;
-  }
-  .cd-input-number--controls-sides .cd-input-number__suffix {
-    order: 1;
-  }
 
-  /* --- innerButtons：按钮悬浮于右内侧，hover/focus 显形 --- */
-  .cd-input-number--inner {
+  /* --- innerButtons：步进器内嵌右内侧，hover/focus 显形（对齐 Semi suffix-btns-inner） --- */
+  .cd-input-number-inner {
     position: relative;
   }
-  .cd-input-number--inner .cd-input-number__actions {
+  .cd-input-number-suffix-btns-inner {
+    margin-inline-start: var(--cd-spacing-input-number-button-inner-marginleft);
+    border-radius: var(--cd-radius-input-number-inner);
+    overflow: hidden;
+  }
+  .cd-input-number-size-small .cd-input-number-suffix-btns-inner {
+    block-size: var(--cd-height-input-number-button-inner-small);
+  }
+  .cd-input-number-size-large .cd-input-number-suffix-btns-inner {
+    block-size: var(--cd-height-input-number-button-inner-large);
+  }
+  .cd-input-number-inner .cd-input-number-suffix-btns {
     position: absolute;
     inset-block: 1px;
     inset-inline-end: 1px;
-    border-inline-start: none;
+    block-size: var(--cd-height-input-number-button-inner-default);
     background: var(--cd-input-color-bg);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-input-number--inner:hover .cd-input-number__actions,
-  .cd-input-number--inner:focus-within .cd-input-number__actions {
+  .cd-input-number-inner:hover .cd-input-number-suffix-btns,
+  .cd-input-number-inner:focus-within .cd-input-number-suffix-btns {
     opacity: 1;
     pointer-events: auto;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cd-input-number,
-    .cd-input-number__action,
-    .cd-input-number--inner .cd-input-number__actions {
+    .cd-input-number-inner .cd-input-number-suffix-btns {
       transition: none;
     }
   }

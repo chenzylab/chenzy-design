@@ -6,15 +6,15 @@
 
 <div style="display:flex; flex-direction:column; gap:12px; align-items:flex-start">
   <div style="display:flex; align-items:center; gap:8px">
-    <InputNumber {value} min={0} max={10} onChange={(v) => (value = v)} />
+    <InputNumber {value} min={0} max={10} onChange={(v) => (value = typeof v === 'number' ? v : value)} />
     <Text type="tertiary">数值：{value}</Text>
   </div>
 
   <div style="display:flex; align-items:center; gap:8px">
     <div style="width:160px">
-      <InputNumber defaultValue={2} min={0} max={9} controlsPosition="sides" />
+      <InputNumber defaultValue={2} min={0} max={9} step={2} />
     </div>
-    <Text type="tertiary">两侧按钮</Text>
+    <Text type="tertiary">步进 step=2</Text>
   </div>
 
   <div style="display:flex; align-items:center; gap:8px">

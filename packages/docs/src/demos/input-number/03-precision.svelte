@@ -15,7 +15,7 @@
         step={0.1}
         precision={2}
         prefix="¥"
-        onChange={(v) => (price = v)}
+        onNumberChange={(v) => (price = v)}
       />
     </div>
     <Text type="tertiary">precision 2：{price}</Text>
@@ -27,7 +27,7 @@
         value={rate}
         step={0.0001}
         precision={4}
-        onChange={(v) => (rate = v)}
+        onNumberChange={(v) => (rate = v)}
       />
     </div>
     <Text type="tertiary">precision 4：{rate}</Text>
@@ -41,7 +41,7 @@
         step={0.5}
         precision={0}
         suffix="kg"
-        onChange={(v) => (weight = v)}
+        onNumberChange={(v) => (weight = v)}
       />
     </div>
     <Text type="tertiary">precision 0（取整）：{weight}</Text>

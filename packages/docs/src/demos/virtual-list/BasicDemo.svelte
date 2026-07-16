@@ -81,7 +81,7 @@
       value={scrollToTarget}
       min={0}
       max={9999}
-      onChange={(v) => (scrollToTarget = v ?? 0)}
+      onNumberChange={(v) => (scrollToTarget = v ?? 0)}
     />
     <Button
       onclick={() => scrollToVL?.scrollToIndex(scrollToTarget, { align: 'start' })}

@@ -9,6 +9,6 @@
     <Slider value={val} onChange={(v) => (val = v as number)} />
   </div>
   <div style="width: 96px;">
-    <InputNumber value={val} min={0} max={100} onChange={(v) => (val = v ?? 0)} />
+    <InputNumber value={val} min={0} max={100} onNumberChange={(v) => (val = v ?? 0)} />
   </div>
 </div>

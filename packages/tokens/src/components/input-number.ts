@@ -1,12 +1,9 @@
 /**
- * Component tokens for InputNumber. 全量对齐 Semi Design
- * （semi-foundation/inputNumber/variables.scss 24 行 / 22 变量），
- * 并升级为带元数据的 TokenDef 结构以支持 DSM。
- * 值为 var() 引用我们的 alias / global token，或字面量。
- * 末尾保留 chenzy-design InputNumber 实际消费的步进器补充 token
- * （原在 input.ts 末尾，此处迁移过来，保持原名原值供组件消费，别改名）。
+ * Component tokens for InputNumber. 严格对齐 Semi Design
+ * （semi-foundation/inputNumber/variables.scss，22 变量，名值逐条对应）。
+ * 组件直接消费这些 Semi 对齐名，不再有自造短名中间层（已删）。
  *
- * 映射约定（逐条亲验 Semi variables.scss + 我们的 global/scales.ts + alias/index.ts）：
+ * 映射约定（逐条亲验 Semi variables.scss + global/scales.ts + alias/index.ts）：
  * - Semi `$color-inputNumber_button-*` → kebab `color-input-number-button-*`。
  * - Semi `var(--semi-color-*)` → 我们 `var(--cd-color-*)`（语义名一一对应）。
  * - Semi `$height-control-*` → 我们 `var(--cd-control-height-*)`。
@@ -50,16 +47,4 @@ export const inputNumberTokens = {
   'spacing-input-number-button-marginleft': { value: '4px', category: 'spacing', label: '步进器左外边距', usage: '步进器按钮左侧外边距' },
   'spacing-input-number-button-inner-marginleft': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '隐藏步进器左外边距', usage: '隐藏步进器按钮左侧外边距' },
   'spacing-input-number-clearbtn-suffix-marginleft': { value: 'calc(-1 * var(--cd-spacing-extra-tight))', category: 'spacing', label: '清空按钮左外边距', usage: '清空按钮左侧外边距' },
-
-  // —— chenzy-design InputNumber 步进器实际消费的补充 token（Semi 无；组件消费）——
-  // 迁移自 input.ts 末尾，保持原名原值（组件在用，勿改名）。
-  'input-number-step-width': { value: '14px', category: 'width', label: '步进按钮宽度', usage: 'InputNumber 步进按钮宽度（组件消费，Semi width-inputNumber_button）' },
-  'input-number-step-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色（组件消费）' },
-  'input-number-step-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 悬浮（组件消费）' },
-  'input-number-step-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 按下（组件消费）' },
-  'input-number-step-bg-disabled': { value: 'var(--cd-color-fill-0)', category: 'color', label: '步进按钮背景色', usage: 'InputNumber 步进按钮背景颜色 - 禁用（组件消费）' },
-  'input-number-step-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '步进按钮图标色', usage: 'InputNumber 步进按钮图标颜色（组件消费）' },
-  'input-number-step-color-disabled': { value: 'var(--cd-color-text-3)', category: 'color', label: '步进按钮图标色', usage: 'InputNumber 步进按钮图标颜色 - 禁用（组件消费）' },
-  'input-number-step-border': { value: 'var(--cd-color-border)', category: 'color', label: '步进按钮描边色', usage: 'InputNumber 步进按钮描边颜色（组件消费）' },
-  'input-number-step-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '步进按钮圆角', usage: 'InputNumber 步进按钮圆角（组件消费）' },
 } satisfies TokenGroup;

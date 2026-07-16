@@ -15,8 +15,8 @@ describe('InputNumber a11y', () => {
     expect(spin?.getAttribute('aria-valuemin')).toBe('0');
     expect(spin?.getAttribute('aria-valuemax')).toBe('10');
     // 步进按钮可访问名来自 en_US locale（InputNumber.increase / decrease）。
-    const inc = container.querySelector('.cd-input-number__increment');
-    const dec = container.querySelector('.cd-input-number__decrement');
+    const inc = container.querySelector('.cd-input-number-button-up');
+    const dec = container.querySelector('.cd-input-number-button-down');
     expect(inc?.getAttribute('aria-label')).toBeTruthy();
     expect(inc?.getAttribute('aria-label')).not.toBe('InputNumber.increase');
     expect(dec?.getAttribute('aria-label')).toBeTruthy();
@@ -25,16 +25,16 @@ describe('InputNumber a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(InputNumber, {
-      props: { ariaLabel: 'Amount', status: 'error' },
+      props: { ariaLabel: 'Amount', validateStatus: 'error' },
     });
     const spin = container.querySelector('[role="spinbutton"]');
     expect(spin?.getAttribute('aria-invalid')).toBe('true');
     await expectNoAxeViolations(container);
   });
 
-  it('readonly + 无 controls：aria-readonly，无 axe violations', async () => {
+  it('readonly + hideButtons：aria-readonly，无 axe violations', async () => {
     const { container } = renderWithLocale(InputNumber, {
-      props: { ariaLabel: 'Score', defaultValue: 7, readonly: true, controls: false },
+      props: { ariaLabel: 'Score', defaultValue: 7, readonly: true, hideButtons: true },
     });
     const spin = container.querySelector('[role="spinbutton"]');
     expect(spin?.getAttribute('aria-readonly')).toBe('true');

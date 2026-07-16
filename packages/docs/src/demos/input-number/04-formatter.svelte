@@ -26,7 +26,7 @@
         step={1000}
         formatter={thousandFormatter}
         parser={thousandParser}
-        onChange={(v) => (amount = v)}
+        onNumberChange={(v) => (amount = v)}
       />
     </div>
     <Text type="tertiary">千分位：{amount}</Text>
@@ -41,7 +41,7 @@
         precision={0}
         formatter={moneyFormatter}
         parser={moneyParser}
-        onChange={(v) => (money = v)}
+        onNumberChange={(v) => (money = v)}
       />
     </div>
     <Text type="tertiary">货币：{money}</Text>
@@ -57,7 +57,7 @@
         precision={2}
         formatter={percentFormatter}
         parser={percentParser}
-        onChange={(v) => (percent = v)}
+        onNumberChange={(v) => (percent = v)}
       />
     </div>
     <Text type="tertiary">百分比：{percent}</Text>
