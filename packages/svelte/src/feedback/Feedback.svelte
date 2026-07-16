@@ -298,7 +298,7 @@
   }
 
   /* 多选组行间距（对齐 Semi .feedback .checkboxGroup-vertical） */
-  :global(.cd-feedback .cd-checkbox-group--vertical) {
+  :global(.cd-feedback .cd-checkboxGroup-vertical) {
     row-gap: var(--cd-spacing-feedback-checkbox-group-vertical-row-gap);
   }
 

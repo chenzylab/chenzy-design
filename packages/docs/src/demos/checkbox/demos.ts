@@ -33,4 +33,5 @@ export const demos: DemoEntry[] = [
   entry('07-controlled.svelte', '受控', '外部持有 checked/disabled，按钮编程式联动切换选中与禁用。'),
   entry('08-direction.svelte', '排列方向', 'direction 控制 CheckboxGroup 内布局，vertical（默认）或 horizontal。'),
   entry('09-pure-card.svelte', '纯卡片形态', 'type="pureCard" 带背景但无 checkbox 框的纯卡片样式。'),
+  entry('10-grid.svelte', '配合 grid 布局', 'CheckboxGroup 内嵌 Checkbox 与 Row/Col 栅格组合，实现灵活布局。'),
 ];

@@ -1,6 +1,7 @@
 <!--
-  CheckboxGroup — see specs/components/input/Checkbox.spec.md
+  CheckboxGroup — 严格对齐 Semi（checkboxGroup.tsx）。
   Provides context to child Checkboxes; controlled / uncontrolled set of values.
+  DOM class 镜像 Semi：cd-checkboxGroup cd-checkboxGroup-wrapper cd-checkboxGroup-{direction}，role=list/listitem。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -8,9 +9,7 @@
   import {
     setCheckboxGroupContext,
     type CheckboxValue,
-    type CheckboxSize,
     type CheckboxType,
-    type CheckboxStatus,
   } from './context.js';
 
   type OptionObject = { label: string; value: CheckboxValue; disabled?: boolean; extra?: string };
@@ -21,14 +20,13 @@
     defaultValue?: CheckboxValue[];
     options?: Option[];
     disabled?: boolean;
-    size?: CheckboxSize;
-    status?: CheckboxStatus;
     type?: CheckboxType;
     name?: string;
     direction?: 'horizontal' | 'vertical';
     onChange?: (v: CheckboxValue[]) => void;
     children?: Snippet;
-    /** 无可见标题时的可访问名称（role=group）。 */
+    id?: string;
+    /** 无可见标题时的可访问名称（role=list）。 */
     ariaLabel?: string;
     /** 关联组的可见标题元素 id（优先于 ariaLabel 体现可访问名）。 */
     ariaLabelledby?: string;
@@ -39,13 +37,12 @@
     defaultValue = [],
     options,
     disabled = false,
-    size = 'default',
-    status = 'default',
     type = 'default',
     name,
     direction = 'vertical',
     onChange,
     children,
+    id,
     ariaLabel,
     ariaLabelledby,
   }: Props = $props();
@@ -71,6 +68,9 @@
     return typeof opt === 'object' ? opt : { label: String(opt), value: opt };
   }
 
+  const isCardType = $derived(type === 'card' || type === 'pureCard');
+  const isPureCardType = $derived(type === 'pureCard');
+
   setCheckboxGroupContext({
     isChecked: (v) => selected.includes(v),
     toggle: (v) => {
@@ -80,25 +80,39 @@
       commit(next);
     },
     getDisabled: () => disabled,
-    getSize: () => size,
     getName: () => name,
     getType: () => type,
-    getStatus: () => status,
   });
 
-  const cls = $derived(`cd-checkbox-group cd-checkbox-group--${direction}`);
+  const cls = $derived(
+    [
+      'cd-checkboxGroup',
+      'cd-checkboxGroup-wrapper',
+      `cd-checkboxGroup-${direction}`,
+      isCardType && `cd-checkboxGroup-${direction}-cardType`,
+      isPureCardType && `cd-checkboxGroup-${direction}-pureCardType`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
 </script>
 
 <div
   class={cls}
-  role="group"
+  {id}
+  role="list"
   aria-labelledby={ariaLabelledby}
   aria-label={ariaLabelledby ? undefined : ariaLabel}
 >
   {#if options}
     {#each options as opt (normalize(opt).value)}
       {@const o = normalize(opt)}
-      <Checkbox value={o.value} disabled={o.disabled ?? false} extra={o.extra}>{o.label}</Checkbox>
+      <Checkbox
+        role="listitem"
+        value={o.value}
+        disabled={o.disabled ?? false}
+        {...(o.extra !== undefined ? { extra: o.extra } : {})}>{o.label}</Checkbox
+      >
     {/each}
   {:else}
     {@render children?.()}
@@ -106,20 +120,27 @@
 </div>
 
 <style>
-  .cd-checkbox-group {
-    display: inline-flex;
+  .cd-checkboxGroup {
+    line-height: var(--cd-font-size-small);
   }
-  .cd-checkbox-group--horizontal {
-    flex-direction: row;
+  .cd-checkboxGroup-horizontal {
+    display: flex;
     flex-wrap: wrap;
     align-items: center;
     /* 对齐 Semi 水平组间距 spacing-base */
     gap: var(--cd-spacing-checkbox-group-horizontal-marginright);
   }
-  .cd-checkbox-group--vertical {
+  .cd-checkboxGroup-vertical {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
-    /* 对齐 Semi 垂直组项间距 spacing-base-tight（比水平更紧） */
-    gap: var(--cd-spacing-checkbox-group-vertical-item-marginbottom);
+    /* 对齐 Semi 垂直组项间距 spacing-base-tight */
+    row-gap: var(--cd-spacing-checkbox-group-vertical-item-marginbottom);
+  }
+  .cd-checkboxGroup-vertical-cardType {
+    row-gap: var(--cd-spacing-checkbox-card-group-vertical-marginbottom);
+  }
+  .cd-checkboxGroup-vertical-pureCardType :global(.cd-checkbox) {
+    column-gap: 0;
   }
 </style>

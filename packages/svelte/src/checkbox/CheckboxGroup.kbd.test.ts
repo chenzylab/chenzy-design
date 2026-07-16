@@ -1,5 +1,5 @@
 // CheckboxGroup 键盘 e2e（browser project / 真实 chromium）。
-// 组（role=group）内为原生 <input type=checkbox>（视觉隐藏但 Tab 可达、Space 可切）：
+// 组（role=list）内为原生 <input type=checkbox>（视觉隐藏但 Tab 可达、Space 可切）：
 //   Tab 从前置按钮进入聚焦首个复选框，Space 切换其 checked（原生语义 → checked 属性）。
 import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
@@ -14,7 +14,7 @@ describe('CheckboxGroup 键盘 e2e（Tab 进入 + Space 切换）', () => {
   it('Tab 聚焦首个复选框 + Space 切换 checked', async () => {
     const { baseElement } = renderKbdFixture(CheckboxGroupKbdFixture);
 
-    const group = baseElement.querySelector('[role="group"]') as HTMLElement;
+    const group = baseElement.querySelector('[role="list"]') as HTMLElement;
     expect(group).not.toBeNull();
     const inputs = Array.from(
       group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),

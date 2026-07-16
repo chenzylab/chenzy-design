@@ -939,7 +939,6 @@
         {@render renderSourceItem({ item, onChange: () => toggleChecked(side, item.key), checked: isChecked })}
       {:else}
         <Checkbox
-          {size}
           checked={isChecked}
           disabled={disabled || (item.disabled ?? false)}
           onChange={() => toggleChecked(side, item.key)}
@@ -973,7 +972,6 @@
       <span class="cd-transfer__switcher cd-transfer__switcher--leaf" aria-hidden="true"></span>
     {/if}
     <Checkbox
-      {size}
       {checked}
       indeterminate={half}
       disabled={disabled || (node.disabled ?? false)}
@@ -1046,7 +1044,6 @@
         <li class="cd-transfer__group">
           <div class="cd-transfer__group-header">
             <Checkbox
-              {size}
               checked={state.checked}
               indeterminate={state.indeterminate}
               disabled={disabled || group.items.every((i) => i.disabled)}

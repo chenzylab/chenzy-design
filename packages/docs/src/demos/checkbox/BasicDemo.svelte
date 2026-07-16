@@ -33,13 +33,4 @@
     </CheckboxGroup>
   </div>
   <Text type="tertiary">卡片已选：{cardChecks.join(', ') || '（无）'}</Text>
-
-  <Text type="tertiary">status 校验态（Group 透传，单项可覆盖）：</Text>
-  <div data-testid="checkbox-status">
-    <CheckboxGroup status="error" defaultValue={['a']}>
-      <Checkbox value="a">error 透传</Checkbox>
-      <Checkbox value="b">error 透传</Checkbox>
-      <Checkbox value="c" status="warning">单项覆盖 warning</Checkbox>
-    </CheckboxGroup>
-  </div>
 </div>

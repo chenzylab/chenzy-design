@@ -1,4 +1,4 @@
-// CheckboxGroup a11y：role="group" 容器 + 多个 checkbox 选项（原生 input）。
+// CheckboxGroup a11y：role="list" 容器（对齐 Semi）+ 多个 checkbox 选项（原生 input）。
 // 只断言静态 ARIA + axe 0 violations，不测键盘（jsdom 限制）。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
@@ -11,11 +11,11 @@ const OPTIONS = [
 ];
 
 describe('CheckboxGroup a11y', () => {
-  it('默认：role=group + ariaLabel + 多选项渲染，无 axe violations', async () => {
+  it('默认：role=list + ariaLabel + 多选项渲染，无 axe violations', async () => {
     const { container } = renderWithLocale(CheckboxGroup, {
       props: { ariaLabel: 'Permissions', options: OPTIONS },
     });
-    const group = container.querySelector('[role="group"]');
+    const group = container.querySelector('[role="list"]');
     expect(group?.getAttribute('aria-label')).toBe('Permissions');
 
     const boxes = container.querySelectorAll('input[type="checkbox"]');

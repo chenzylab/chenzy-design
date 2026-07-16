@@ -9,8 +9,8 @@
   );
   const checkAll = $derived(checkedList.length === options.length);
 
-  function onCheckAll(checked: boolean) {
-    checkedList = checked ? [...options] : [];
+  function onCheckAll(e: { target: { checked: boolean } }) {
+    checkedList = e.target.checked ? [...options] : [];
   }
 </script>
 

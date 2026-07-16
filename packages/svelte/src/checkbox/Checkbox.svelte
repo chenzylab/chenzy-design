@@ -1,6 +1,7 @@
 <!--
-  Checkbox — see specs/components/input/Checkbox.spec.md
+  Checkbox — 严格对齐 Semi（checkbox.tsx / checkboxInner.tsx）。
   Works standalone (controlled / uncontrolled) or inside CheckboxGroup via context.
+  DOM class 镜像 Semi 连字符体系（cd-checkbox / -inner / -inner-display / -addon / -content）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -9,12 +10,9 @@
   import {
     getCheckboxGroupContext,
     type CheckboxValue,
-    type CheckboxSize,
     type CheckboxType,
-    type CheckboxStatus,
+    type CheckboxEvent,
   } from './context.js';
-
-  type Status = CheckboxStatus;
 
   interface Props {
     checked?: boolean;
@@ -22,19 +20,22 @@
     indeterminate?: boolean;
     value?: CheckboxValue;
     disabled?: boolean;
-    size?: CheckboxSize;
-    status?: Status;
-    /** Display form. card adds border+background and expands the hit area to the whole card; pureCard is borderless. */
+    /** Display form. card adds border+background and expands the hit area to the whole card; pureCard hides the box. */
     type?: CheckboxType;
     name?: string;
-    extra?: string | undefined;
+    /** 辅助说明，可传富内容（对齐 Semi ReactNode）。 */
+    extra?: Snippet | string;
     id?: string;
     addonId?: string;
     extraId?: string;
     preventScroll?: boolean;
     /** 无可见文本 label 时提供可访问名（如嵌在 Tree 行内、label 由外部承载时）。 */
     ariaLabel?: string;
-    onChange?: (checked: boolean) => void;
+    /** a11y: 标记为无效（校验失败时，对齐 Semi aria-invalid）。 */
+    ariaInvalid?: boolean;
+    /** a11y: wrapper role（Group 内为 listitem）。 */
+    role?: string;
+    onChange?: (e: CheckboxEvent) => void;
     children?: Snippet;
   }
 
@@ -44,8 +45,6 @@
     indeterminate = false,
     value,
     disabled = false,
-    size = 'default',
-    status = 'default',
     type = 'default',
     name,
     extra,
@@ -54,6 +53,8 @@
     extraId: extraIdProp,
     preventScroll,
     ariaLabel,
+    ariaInvalid,
+    role,
     onChange,
     children,
   }: Props = $props();
@@ -62,6 +63,8 @@
 
   const fieldId = resolveId();
   const extraId = $derived(extraIdProp ?? (extra ? `${fieldId}-extra` : undefined));
+  // 有可见标签内容时自动生成 addonId 关联 aria-labelledby（对齐 Semi setAddonId）。
+  const resolvedAddonId = $derived(addonId ?? (children ? `${fieldId}-addon` : undefined));
 
   function resolveId(): string {
     return id ?? useId('cd-checkbox');
@@ -70,6 +73,10 @@
   const isControlled = $derived(checked !== undefined);
   let inner = $state(getInitialChecked());
   let inputEl = $state<HTMLInputElement | null>(null);
+
+  function getInitialChecked(): boolean {
+    return defaultChecked;
+  }
 
   /** Imperatively focus the native checkbox input (honors `preventScroll`). */
   export function focus(): void {
@@ -81,10 +88,6 @@
     inputEl?.blur();
   }
 
-  function getInitialChecked(): boolean {
-    return defaultChecked;
-  }
-
   const isChecked = $derived(
     group && value !== undefined
       ? group.isChecked(value)
@@ -93,26 +96,38 @@
         : inner,
   );
 
-  const resolvedSize = $derived(group ? group.getSize() : size);
   const resolvedDisabled = $derived(disabled || (group ? group.getDisabled() : false));
   const resolvedName = $derived(name ?? group?.getName());
   // Group transparently provides `type`; a per-item non-default `type` overrides it.
   const resolvedType = $derived(type !== 'default' ? type : (group?.getType() ?? 'default'));
-  // Group transparently provides `status`; a per-item non-default `status` overrides it.
-  const resolvedStatus = $derived(status !== 'default' ? status : (group?.getStatus() ?? 'default'));
+  const isCardType = $derived(resolvedType === 'card' || resolvedType === 'pureCard');
+  const isPureCardType = $derived(resolvedType === 'pureCard');
+
+  /** 构造对齐 Semi 的 CheckboxEvent（checkbox.tsx:104-126）。 */
+  function makeEvent(next: boolean, e: Event): CheckboxEvent {
+    return {
+      target: { checked: next, value },
+      stopPropagation: () => e.stopPropagation(),
+      preventDefault: () => e.preventDefault(),
+      nativeEvent: {
+        stopImmediatePropagation: () => e.stopImmediatePropagation(),
+      },
+    };
+  }
 
   function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
     const next = e.currentTarget.checked;
+    const evt = makeEvent(next, e);
     if (group && value !== undefined) {
-      group.toggle(value);
-      onChange?.(next);
+      group.toggle(value, evt);
+      onChange?.(evt);
       return;
     }
     // Controlled (`checked=` / `bind:checked`): parent owns `checked`; propagate
     // only via `onChange`. Writing the prop AND firing `onChange` loops.
     // Uncontrolled: keep our own state in sync.
     if (!isControlled) inner = next;
-    onChange?.(next);
+    onChange?.(evt);
   }
 
   /** Set the indeterminate DOM property (not a reflected attribute). */
@@ -123,180 +138,274 @@
   const cls = $derived(
     [
       'cd-checkbox',
-      `cd-checkbox--${resolvedSize}`,
-      `cd-checkbox--${resolvedStatus}`,
-      resolvedType !== 'default' && `cd-checkbox--${resolvedType}`,
-      isChecked && 'cd-checkbox--checked',
-      indeterminate && !isChecked && 'cd-checkbox--indeterminate',
-      resolvedDisabled && 'cd-checkbox--disabled',
+      isChecked ? 'cd-checkbox-checked' : 'cd-checkbox-unChecked',
+      indeterminate && !isChecked && 'cd-checkbox-indeterminate',
+      resolvedDisabled && 'cd-checkbox-disabled',
+      isCardType && 'cd-checkbox-cardType',
+      isCardType && resolvedDisabled && 'cd-checkbox-cardType_disabled',
+      isCardType && !resolvedDisabled && 'cd-checkbox-cardType_enable',
+      isCardType && isChecked && !resolvedDisabled && 'cd-checkbox-cardType_checked',
+      isCardType && isChecked && resolvedDisabled && 'cd-checkbox-cardType_checked_disabled',
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  const innerCls = $derived(
+    [
+      'cd-checkbox-inner',
+      isChecked && 'cd-checkbox-inner-checked',
+      isPureCardType && 'cd-checkbox-inner-pureCardType',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  const extraIsString = $derived(typeof extra === 'string');
 </script>
 
-<label class={cls} for={fieldId}>
-  <input
-    bind:this={inputEl}
-    {@attach indeterminateAttach}
-    id={fieldId}
-    class="cd-checkbox__input"
-    type="checkbox"
-    name={resolvedName}
-    value={value !== undefined ? String(value) : undefined}
-    checked={isChecked}
-    disabled={resolvedDisabled}
-    aria-invalid={resolvedStatus === 'error' || undefined}
-    aria-label={!children ? ariaLabel : undefined}
-    aria-labelledby={children ? addonId : undefined}
-    aria-describedby={extraId}
-    onchange={handleChange}
-  />
-  <span class="cd-checkbox__box" aria-hidden="true">
-    {#if indeterminate && !isChecked}
-      <IconCheckboxIndeterminate class="cd-checkbox__mark" size="inherit" />
-    {:else if isChecked}
-      <IconCheckboxTick class="cd-checkbox__mark" size="inherit" />
-    {/if}
+<!-- Semi 注释：label 更好，但用 span 是为规避 gitlab #364（对齐 Semi 根用 span 非 label）。
+     a11y 靠原生 input（opacity:0 铺满 inner）+ aria-labelledby 承载，非隐式 label 关联。 -->
+<span class={cls} id={id} {role} aria-labelledby={children ? resolvedAddonId : undefined}>
+  <span class={innerCls}>
+    <input
+      bind:this={inputEl}
+      {@attach indeterminateAttach}
+      id={fieldId}
+      class="cd-checkbox-input"
+      type="checkbox"
+      name={resolvedName}
+      value={value !== undefined ? String(value) : undefined}
+      checked={isChecked}
+      disabled={resolvedDisabled}
+      aria-label={!children ? ariaLabel : undefined}
+      aria-labelledby={children ? resolvedAddonId : undefined}
+      aria-describedby={extraId}
+      aria-invalid={ariaInvalid || undefined}
+      onchange={handleChange}
+    />
+    <span class="cd-checkbox-inner-display" aria-hidden="true">
+      {#if indeterminate && !isChecked}
+        <IconCheckboxIndeterminate size="inherit" />
+      {:else if isChecked}
+        <IconCheckboxTick size="inherit" />
+      {/if}
+    </span>
   </span>
   {#if children || extra}
-    <span class="cd-checkbox__content" id={addonId}>
-      {#if children}<span class="cd-checkbox__label">{@render children()}</span>{/if}
-      {#if extra}<span class="cd-checkbox__extra" id={extraId}>{extra}</span>{/if}
-    </span>
+    <div class="cd-checkbox-content">
+      {#if children}<span class="cd-checkbox-addon" id={resolvedAddonId}>{@render children()}</span>{/if}
+      {#if extra}
+        <div
+          class="cd-checkbox-extra"
+          class:cd-checkbox-cardType_extra_noChildren={isCardType && !children}
+          id={extraId}
+        >
+          {#if extraIsString}{extra}{:else}{@render (extra as Snippet)()}{/if}
+        </div>
+      {/if}
+    </div>
   {/if}
-</label>
+</span>
 
 <style>
   .cd-checkbox {
+    box-sizing: border-box;
+    position: relative;
     display: inline-flex;
     align-items: flex-start;
-    gap: var(--cd-checkbox-label-gap);
+    column-gap: var(--cd-spacing-checkbox-label-paddingleft);
     color: var(--cd-color-checkbox-label-text-default);
     cursor: pointer;
     line-height: 1.4;
+    transition:
+      background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
+        var(--cd-transition-delay-checkbox-bg),
+      border-color var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
+        var(--cd-transition-delay-checkbox-border);
   }
-  .cd-checkbox--disabled {
+  .cd-checkbox-disabled {
     cursor: not-allowed;
-    opacity: 0.5;
   }
-  .cd-checkbox__input {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-  .cd-checkbox__box {
+
+  /* —— inner：三层 span.inner > input + span.inner-display —— */
+  .cd-checkbox-inner {
     position: relative;
-    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    inline-size: var(--cd-checkbox-size-default);
+    block-size: var(--cd-checkbox-inner-height);
+    user-select: none;
+    cursor: pointer;
+  }
+  /* 原生 input 铺满 inner，opacity:0 承载 a11y 焦点（对齐 Semi checkbox.scss:22-30） */
+  .cd-checkbox-input {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: inherit;
+  }
+  .cd-checkbox-inner-display {
+    box-sizing: border-box;
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     inline-size: var(--cd-checkbox-size-default);
     block-size: var(--cd-checkbox-size-default);
-    /* Semi 勾/半选图标经字号驱动填满整盒（图标 viewBox 自带视觉内边距）。 */
+    /* Semi 图标经字号驱动填满整盒（图标 viewBox 自带视觉内边距）。 */
     font-size: var(--cd-checkbox-size-default);
-    background: var(--cd-checkbox-bg);
-    border: 1px solid var(--cd-checkbox-border);
-    border-radius: var(--cd-checkbox-radius);
-    color: var(--cd-checkbox-mark-color);
+    background: var(--cd-color-checkbox-default-bg-default);
+    border-radius: var(--cd-radius-checkbox-inner);
+    /* Semi 用 inset box-shadow 画描边（checkbox.scss:110）。 */
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-default-border-default);
+    color: var(--cd-color-checkbox-checked-icon-default);
     transition:
       background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
         var(--cd-transition-delay-checkbox-bg),
-      border-color var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
+      box-shadow var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
         var(--cd-transition-delay-checkbox-border);
   }
-  .cd-checkbox--small .cd-checkbox__box {
-    inline-size: var(--cd-checkbox-size-small);
-    block-size: var(--cd-checkbox-size-small);
-    font-size: var(--cd-checkbox-size-small);
+
+  /* 未选中态悬浮（对齐 Semi：描边 focus-border、背景 fill-0） */
+  .cd-checkbox:hover:not(.cd-checkbox-disabled):not(.cd-checkbox-checked):not(.cd-checkbox-indeterminate)
+    .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-default-bg-hover);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-default-border-hover);
   }
-  .cd-checkbox--large .cd-checkbox__box {
-    inline-size: var(--cd-checkbox-size-large);
-    block-size: var(--cd-checkbox-size-large);
-    font-size: var(--cd-checkbox-size-large);
+  /* 未选中态按下 */
+  .cd-checkbox:active:not(.cd-checkbox-disabled):not(.cd-checkbox-checked):not(.cd-checkbox-indeterminate)
+    .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-default-bg-active);
   }
-  /* 未选中态悬浮：对齐 Semi（描边 focus-border、背景 fill-0） */
-  .cd-checkbox:hover:not(.cd-checkbox--disabled):not(.cd-checkbox--checked):not(.cd-checkbox--indeterminate)
-    .cd-checkbox__box {
-    background: var(--cd-checkbox-bg-hover);
-    border-color: var(--cd-checkbox-border-hover);
+
+  /* 选中 / 半选态 */
+  .cd-checkbox-checked .cd-checkbox-inner-display,
+  .cd-checkbox-indeterminate .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-checked-bg-default);
+    color: var(--cd-color-checkbox-checked-icon-default);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-default);
   }
-  .cd-checkbox--checked .cd-checkbox__box,
-  .cd-checkbox--indeterminate .cd-checkbox__box {
-    background: var(--cd-checkbox-bg-checked);
-    border-color: var(--cd-checkbox-border-checked);
+  .cd-checkbox-checked:hover:not(.cd-checkbox-disabled) .cd-checkbox-inner-display,
+  .cd-checkbox-indeterminate:hover:not(.cd-checkbox-disabled) .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-checked-bg-hover);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-hover);
   }
-  .cd-checkbox--warning .cd-checkbox__box {
-    border-color: var(--cd-color-warning);
+  .cd-checkbox-checked:active:not(.cd-checkbox-disabled) .cd-checkbox-inner-display,
+  .cd-checkbox-indeterminate:active:not(.cd-checkbox-disabled) .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-checked-bg-active);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-border-active);
   }
-  .cd-checkbox--error .cd-checkbox__box {
-    border-color: var(--cd-color-danger);
+
+  /* 禁用态 */
+  .cd-checkbox-disabled .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-disabled-bg-default);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-disabled-border-default);
+    color: var(--cd-color-checkbox-checked-icon-disabled);
   }
-  .cd-checkbox__input:focus-visible + .cd-checkbox__box {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  .cd-checkbox-disabled.cd-checkbox-checked .cd-checkbox-inner-display,
+  .cd-checkbox-disabled.cd-checkbox-indeterminate .cd-checkbox-inner-display {
+    opacity: 0.75;
+    background: var(--cd-color-checkbox-checked-bg-disabled);
+    box-shadow: inset 0 0 0 var(--cd-size-checkbox-inner-shadow) var(--cd-color-checkbox-checked-bg-disabled);
+    color: var(--cd-color-checkbox-checked-icon-disabled);
   }
-  /* 勾/半选图标：字号继承自 box（size="inherit"），svg 1em 填满整盒；
-     色随 box 的 color（--cd-checkbox-mark-color）经 currentColor 生效。 */
-  .cd-checkbox__content {
-    display: inline-flex;
+  .cd-checkbox-disabled .cd-checkbox-addon,
+  .cd-checkbox-disabled .cd-checkbox-extra {
+    color: var(--cd-color-checkbox-label-text-disabled);
+  }
+
+  /* 焦点环：input focus-visible 时给 inner-display 描 focus ring */
+  .cd-checkbox-input:focus-visible + .cd-checkbox-inner-display {
+    outline: var(--cd-width-checkbox-outline) solid var(--cd-color-checkbox-primary-outline-focus);
+    outline-offset: 0;
+  }
+
+  /* —— 内容区 —— */
+  .cd-checkbox-content {
+    flex: 1;
+    display: flex;
     flex-direction: column;
-    gap: var(--cd-spacing-checkbox-extra-margintop);
+    row-gap: var(--cd-spacing-checkbox-extra-margintop);
   }
-  .cd-checkbox__extra {
+  .cd-checkbox-addon {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    color: var(--cd-color-checkbox-label-text-default);
+    line-height: var(--cd-font-checkbox-label-lineheight);
+    user-select: none;
+  }
+  .cd-checkbox-extra {
+    box-sizing: border-box;
     color: var(--cd-color-checkbox-extra-text-default);
     font-size: var(--cd-font-size-small);
   }
 
-  /* card / pureCard 形态：整张卡片即命中区，hover 抬升背景，选中描边 primary。 */
-  .cd-checkbox--card,
-  .cd-checkbox--pureCard {
-    padding: var(--cd-checkbox-card-padding);
-    border-radius: var(--cd-checkbox-card-radius);
-    background: var(--cd-checkbox-card-bg);
-    transition:
-      background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
-        var(--cd-transition-delay-checkbox-bg),
-      border-color var(--cd-transition-duration-checkbox-border) var(--cd-transition-function-checkbox-border)
-        var(--cd-transition-delay-checkbox-border);
+  /* —— card / pureCard 形态 —— */
+  .cd-checkbox-cardType {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    border-radius: var(--cd-radius-checkbox-cardtype);
+    padding: var(--cd-spacing-checkbox-cardtype-paddingy) var(--cd-spacing-checkbox-cardtype-paddingx);
+    background: transparent;
+    border: var(--cd-width-checkbox-cardtype-border) solid var(--cd-color-checkbox-cardtype-border-default);
   }
-  .cd-checkbox--card {
-    border: 1px solid var(--cd-checkbox-card-border);
+  .cd-checkbox-cardType .cd-checkbox-inner-display {
+    background: var(--cd-color-checkbox-cardtype-inner-bg-default);
   }
-  .cd-checkbox--pureCard {
-    border: 1px solid transparent;
+  /* pureCard：隐藏勾选框但保留 input 承载 a11y 焦点（对齐 Semi checkbox.scss:204-210） */
+  .cd-checkbox-inner-pureCardType {
+    opacity: 0;
+    width: 0;
   }
-  .cd-checkbox--card:hover:not(.cd-checkbox--disabled),
-  .cd-checkbox--pureCard:hover:not(.cd-checkbox--disabled) {
-    background: var(--cd-checkbox-card-bg-hover);
+  .cd-checkbox-cardType .cd-checkbox-addon {
+    font-weight: var(--cd-font-checkbox-cardtype-addon-fontweight);
+    font-size: var(--cd-font-checkbox-cardtype-addon-size);
+    line-height: var(--cd-font-checkbox-cardtype-addon-lineheight);
+    color: var(--cd-color-checkbox-cardtype-addon-text-default);
   }
-  .cd-checkbox--card.cd-checkbox--checked,
-  .cd-checkbox--card.cd-checkbox--indeterminate,
-  .cd-checkbox--pureCard.cd-checkbox--checked,
-  .cd-checkbox--pureCard.cd-checkbox--indeterminate {
-    border-color: var(--cd-checkbox-card-border-checked);
-    background: var(--cd-checkbox-card-bg-checked); /* 对齐 Semi 卡片选中 primary-light-default */
+  .cd-checkbox-cardType .cd-checkbox-extra {
+    font-size: var(--cd-font-checkbox-cardtype-extra-size);
+    line-height: var(--cd-font-checkbox-cardtype-extra-lineheight);
+    color: var(--cd-color-checkbox-cardtype-extra-text-default);
   }
-  .cd-checkbox--card .cd-checkbox__input:focus-visible ~ .cd-checkbox__box,
-  .cd-checkbox--pureCard .cd-checkbox__input:focus-visible ~ .cd-checkbox__box {
-    box-shadow: none;
+  .cd-checkbox-cardType_extra_noChildren {
+    margin-top: 0;
   }
-  .cd-checkbox--card:has(.cd-checkbox__input:focus-visible),
-  .cd-checkbox--pureCard:has(.cd-checkbox__input:focus-visible) {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
+  .cd-checkbox-cardType_enable:hover {
+    background: var(--cd-color-checkbox-cardtype-bg-hover);
+  }
+  .cd-checkbox-cardType_enable:active {
+    background: var(--cd-color-checkbox-cardtype-bg-active);
+  }
+  .cd-checkbox-cardType_checked {
+    background: var(--cd-color-checkbox-cardtype-checked-bg);
+    border-color: var(--cd-color-checkbox-cardtype-checked-border-default);
+  }
+  .cd-checkbox-cardType_checked:hover {
+    border-color: var(--cd-color-checkbox-cardtype-checked-border-hover);
+  }
+  .cd-checkbox-cardType_checked:active {
+    border-color: var(--cd-color-checkbox-cardtype-checked-border-active);
+  }
+  .cd-checkbox-cardType_checked_disabled {
+    background: var(--cd-color-checkbox-cardtype-checked-disabled-bg);
+    border-color: var(--cd-color-checkbox-cardtype-checked-disabled-border-default);
+  }
+  .cd-checkbox-cardType_disabled:hover,
+  .cd-checkbox-cardType_disabled:active {
+    background: transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-checkbox__box,
-    .cd-checkbox--card,
-    .cd-checkbox--pureCard {
+    .cd-checkbox,
+    .cd-checkbox-inner-display {
       transition: none;
     }
   }

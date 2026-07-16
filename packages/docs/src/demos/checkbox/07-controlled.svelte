@@ -9,7 +9,7 @@
 
 <div style="display:flex;flex-direction:column;gap:16px;align-items:flex-start">
   <!-- 受控：外部持有 checked/disabled，按钮联动切换 -->
-  <Checkbox {checked} {disabled} onChange={(c) => (checked = c)}>
+  <Checkbox {checked} {disabled} onChange={(e) => (checked = e.target.checked)}>
     {label}
   </Checkbox>
   <div style="display:flex;gap:8px">

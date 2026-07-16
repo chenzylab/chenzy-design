@@ -24,7 +24,6 @@
     trigger?: ValidateTrigger | ValidateTrigger[];
     // Checkbox-specific props
     disabled?: boolean;
-    size?: CheckboxProps['size'];
     indeterminate?: CheckboxProps['indeterminate'];
     type?: CheckboxProps['type'];
     children?: Snippet;
@@ -43,7 +42,6 @@
     dependencies,
     trigger,
     disabled,
-    size,
     indeterminate,
     type,
     children: slotChildren,
@@ -70,12 +68,11 @@
     <Checkbox
       {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={disabled ?? fieldDisabled}
-      {...(size !== undefined ? { size } : {})}
       {...(indeterminate !== undefined ? { indeterminate } : {})}
       {...(type !== undefined ? { type } : {})}
       {id}
-      status={status === 'error' ? 'error' : 'default'}
-      onChange={(checked) => onChange(checked)}
+      ariaInvalid={status === 'error'}
+      onChange={(e) => onChange(e.target.checked)}
     >
       {@render slotChildren?.()}
     </Checkbox>
