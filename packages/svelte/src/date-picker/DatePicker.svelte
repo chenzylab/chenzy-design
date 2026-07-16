@@ -16,6 +16,7 @@
   import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
   import ScrollItem from '../scroll-list/ScrollItem.svelte';
+  import { IconClear, IconCalendar, IconCalendarClock, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -702,6 +703,9 @@
   // 头部导航按面板类型分派（month=切年, year=切十年, 其它=切月）
   const onPrev = $derived(isYear ? prevDecade : isMonth ? prevYear : prevMonth);
   const onNext = $derived(isYear ? nextDecade : isMonth ? nextYear : nextMonth);
+  // 头部箭头图标：date/dateTime 面板翻「月」用单箭头 Chevron；month 翻「年」/ year 翻「十年」
+  // 均属年级跳转，对齐 Semi Navigation（翻年用 DoubleChevron），用双箭头。
+  const navIsYearJump = $derived(isYear || isMonth);
   const prevLabel = $derived(
     isYear
       ? loc().t('DatePicker.prevDecade')
@@ -1268,23 +1272,17 @@
         {#if clearIcon}
           {@render clearIcon()}
         {:else}
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-            />
-          </svg>
+          <IconClear aria-hidden="true" />
         {/if}
       </button>
     {/if}
 
     <span class="cd-date-picker__icon" aria-hidden="true">
-      <svg viewBox="0 0 16 16" width="14" height="14" focusable="false">
-        <path
-          fill="currentColor"
-          d="M5 1v1H3.5A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 12.5 2H11V1h-1v1H6V1H5Zm7.5 4.5v7h-9v-7h9Z"
-        />
-      </svg>
+      {#if isDateTime}
+        <IconCalendarClock aria-hidden="true" />
+      {:else}
+        <IconCalendar aria-hidden="true" />
+      {/if}
     </span>
   </div>
 
@@ -1385,9 +1383,11 @@
                   aria-label={prevLabel}
                   onclick={onPrev}
                 >
-                  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
-                  </svg>
+                  {#if navIsYearJump}
+                    <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                  {:else}
+                    <IconChevronLeft size="small" aria-hidden="true" />
+                  {/if}
                 </button>
                 {#if yamEnabled}
                   <button
@@ -1408,9 +1408,11 @@
                   aria-label={nextLabel}
                   onclick={onNext}
                 >
-                  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
-                  </svg>
+                  {#if navIsYearJump}
+                    <IconDoubleChevronRight size="small" aria-hidden="true" />
+                  {:else}
+                    <IconChevronRight size="small" aria-hidden="true" />
+                  {/if}
                 </button>
               </div>
 

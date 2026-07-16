@@ -35,6 +35,7 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import { IconClear, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -802,12 +803,7 @@
 
     {#if showClear}
       <button type="button" class="cd-range-picker__clear" aria-label={loc().t('DatePicker.clear')} onclick={clear}>
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-          />
-        </svg>
+        <IconClear aria-hidden="true" />
       </button>
     {/if}
   </div>
@@ -838,9 +834,7 @@
           <div class="cd-range-picker__month">
             <div class="cd-range-picker__header">
               <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.prevYear')} onclick={prevMonth}>
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
-                </svg>
+                <IconDoubleChevronLeft size="small" aria-hidden="true" />
               </button>
               <span class="cd-range-picker__title">{leftHeaderText}</span>
               <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
@@ -876,9 +870,7 @@
               <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
               <span class="cd-range-picker__title">{rightHeaderText}</span>
               <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.nextYear')} onclick={nextMonth}>
-                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
-                </svg>
+                <IconDoubleChevronRight size="small" aria-hidden="true" />
               </button>
             </div>
             <div class="cd-range-picker__grid cd-range-picker__grid--month" role="grid" aria-label={rightHeaderText}>
@@ -910,9 +902,7 @@
         <div class="cd-range-picker__month">
           <div class="cd-range-picker__header">
             <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.prevMonth')} onclick={prevMonth}>
-              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M10 3.5 5.5 8l4.5 4.5 1-1L7.5 8 11 4.5l-1-1Z" />
-              </svg>
+              <IconChevronLeft size="small" aria-hidden="true" />
             </button>
             <span class="cd-range-picker__title">{leftHeaderText}</span>
             <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
@@ -972,9 +962,7 @@
             <span class="cd-range-picker__nav cd-range-picker__nav--ghost" aria-hidden="true"></span>
             <span class="cd-range-picker__title">{rightHeaderText}</span>
             <button type="button" class="cd-range-picker__nav" aria-label={loc().t('DatePicker.nextMonth')} onclick={nextMonth}>
-              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M6 3.5 5 4.5 8.5 8 5 11.5l1 1L10.5 8 6 3.5Z" />
-              </svg>
+              <IconChevronRight size="small" aria-hidden="true" />
             </button>
           </div>
 

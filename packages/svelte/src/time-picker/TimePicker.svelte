@@ -31,6 +31,7 @@
   import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import { IconClear, IconClock } from '@chenzy-design/icons';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -681,23 +682,13 @@
           {#if clearIcon}
             {@render clearIcon()}
           {:else}
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-              <path
-                fill="currentColor"
-                d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm2.5 9.1-1.4 1.4L8 9.4 6.5 11l-1.4-1.4L6.6 8 5.1 6.5 6.5 5.1 8 6.6 9.5 5.1l1.4 1.4L9.4 8l1.1 1.1Z"
-              />
-            </svg>
+            <IconClear aria-hidden="true" />
           {/if}
         </button>
       {/if}
 
       <span class="cd-time-picker__icon" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="14" height="14" focusable="false">
-          <path
-            fill="currentColor"
-            d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8.5 4.5h-1v4l3 1.8.5-.85L8.5 8V4.5Z"
-          />
-        </svg>
+        <IconClock aria-hidden="true" />
       </span>
     </div>
   {/if}
