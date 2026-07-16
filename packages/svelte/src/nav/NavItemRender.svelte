@@ -11,7 +11,7 @@
   import type { Snippet } from 'svelte';
   import { IconChevronDown, IconChevronRight } from '@chenzy-design/icons';
   import { getNavContext } from './context.js';
-  import { hasSubNav, type NavItemDef } from './types.js';
+  import { hasSubNav, normalizeNavItems, type NavItemDef } from './types.js';
   import NavSubPopup from './NavSubPopup.svelte';
   import Self from './NavItemRender.svelte';
 
@@ -28,18 +28,22 @@
   const ctx = getNavContext()!;
 
   const isSub = $derived(hasSubNav(item));
+  // 子项归一（string→对象），供内联/浮层递归渲染。
+  const childItems = $derived(normalizeNavItems(item.items));
   const selected = $derived(ctx.isSelected(item.itemKey));
   const open = $derived(ctx.isOpen(item.itemKey));
-  const itemDisabled = $derived(ctx.disabled || !!item.disabled);
+  const itemDisabled = $derived(!!item.disabled);
 
   // 浮层模式：horizontal，或 vertical 折叠态。内联模式：vertical 展开态。
   const popupMode = $derived(ctx.mode === 'horizontal' || ctx.collapsed);
 
   // 多级缩进占位数量（对齐 Semi：limitIndent=false 且 vertical 展开时按层级补占位图标）。
   // 有图标且非 indent 时占位数 = level，否则 level - 1（对齐 Semi Item.tsx/SubNav.tsx iconAmount）。
+  // 层级取显式 item.level（声明式手动传，对齐 Semi）优先，否则用递归下传的 level。
+  const effectiveLevel = $derived(item.level ?? level);
   const placeholderCount = $derived.by(() => {
     if (ctx.limitIndent || ctx.collapsed || ctx.mode !== 'vertical') return 0;
-    const n = item.icon && !item.indent ? level : level - 1;
+    const n = item.icon && !item.indent ? effectiveLevel : effectiveLevel - 1;
     return n > 0 ? n : 0;
   });
 
@@ -160,7 +164,7 @@
       {#if open}
         <!-- 内联子菜单同样 role=menu，使嵌套 li[role=menuitem] 有合规 menu 父级。 -->
         <ul class="cd-nav__sub" role="menu" aria-orientation="vertical" class:cd-nav__sub--motion={ctx.subNavMotion}>
-          {#each item.items ?? [] as child (child.itemKey)}
+          {#each childItems as child (child.itemKey)}
             <Self item={child} level={level + 1} inSubNav={true} />
           {/each}
         </ul>

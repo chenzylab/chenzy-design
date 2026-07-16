@@ -15,14 +15,10 @@
   </svg>
 {/snippet}
 
-<Steps
-  type="basic"
-  onChange={(i) => console.log(i)}
-  steps={[
-    { title: '已完成', status: 'finish' },
-    { title: '错误', status: 'error' },
-    { title: '警告', status: 'warning' },
-    { title: '正在进行', status: 'process', icon: homeIcon },
-    { title: '等待', status: 'wait', icon: lockIcon },
-  ]}
-/>
+<Steps type="basic" onChange={(i) => console.log(i)}>
+  <Steps.Step status="finish" title="已完成" />
+  <Steps.Step status="error" title="错误" />
+  <Steps.Step status="warning" title="警告" />
+  <Steps.Step status="process" title="正在进行" icon={homeIcon} />
+  <Steps.Step status="wait" title="等待" icon={lockIcon} />
+</Steps>

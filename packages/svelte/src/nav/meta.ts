@@ -10,9 +10,9 @@ export const meta = {
   props: [
     {
       name: 'items',
-      type: 'NavItemDef[]',
+      type: 'NavItemInput[]',
       default: '[]',
-      desc: '导航项列表，字段对齐 Semi：itemKey/text/icon/items（含 items 即子导航）',
+      desc: '导航项列表，字段对齐 Semi：itemKey/text/icon/items（含 items 即子导航）。string 项取值作 text 与 itemKey',
     },
     { name: 'mode', type: "'vertical'|'horizontal'", default: "'vertical'", desc: '导航方向：侧边/顶部' },
     { name: 'selectedKeys', type: 'NavKey[]', default: 'undefined', desc: '受控选中项 key 数组' },
@@ -24,7 +24,6 @@ export const meta = {
     { name: 'defaultIsCollapsed', type: 'boolean', default: 'false', desc: '默认折叠态（仅 vertical 有效）' },
     { name: 'header', type: '{ logo?: Snippet; text?: string }', default: 'undefined', desc: '头部配置（logo + 文案）' },
     { name: 'footer', type: '{ collapseButton?: boolean }', default: 'undefined', desc: '底部配置（收起按钮，仅 vertical）' },
-    { name: 'disabled', type: 'boolean', default: 'false', desc: '整体禁用' },
     { name: 'limitIndent', type: 'boolean', default: 'true', desc: '仅一级缩进；false 时逐级缩进（依赖 level+indent）' },
     { name: 'toggleIconPosition', type: "'left'|'right'", default: "'right'", desc: '子导航展开箭头位置' },
     { name: 'expandIcon', type: 'Snippet', default: 'undefined', desc: '自定义展开箭头图标' },
@@ -39,7 +38,6 @@ export const meta = {
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
     { name: 'bodyStyle', type: 'string', default: 'undefined', desc: '导航项列表容器样式（对齐 Semi bodyStyle）' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '可访问性标签' },
   ],
   events: [
     { name: 'onSelect', payload: 'NavSelectData', desc: '选中导航项时触发（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}）' },
@@ -86,6 +84,7 @@ export const meta = {
         { name: 'icon', type: 'Snippet', default: 'undefined', desc: '项前置图标' },
         { name: 'disabled', type: 'boolean', default: 'false', desc: '是否禁用' },
         { name: 'indent', type: 'boolean', default: 'undefined', desc: '保留左侧图标占位（对齐 Semi indent）' },
+        { name: 'level', type: 'number', default: 'undefined', desc: '嵌套层级（limitIndent=false 时自定义缩进，对齐 Semi level）' },
         { name: 'link', type: 'string', default: 'undefined', desc: '链接地址（渲染原生 <a>）' },
         { name: 'linkOptions', type: 'Record<string,string>', default: 'undefined', desc: '透传给 <a> 的属性（target/rel/download）' },
         { name: 'onClick', type: '(data: NavClickData) => void', default: 'undefined', desc: '项级点击回调（富载荷 {itemKey,domEvent,isOpen}）' },
@@ -102,6 +101,7 @@ export const meta = {
         { name: 'icon', type: 'Snippet', default: 'undefined', desc: '标题前置图标' },
         { name: 'disabled', type: 'boolean', default: 'false', desc: '是否禁用' },
         { name: 'indent', type: 'boolean', default: 'undefined', desc: '保留左侧图标占位（对齐 Semi indent）' },
+        { name: 'level', type: 'number', default: '0', desc: '嵌套层级（limitIndent=false 时自定义缩进，对齐 Semi level）' },
         { name: 'maxHeight', type: 'number', default: '999', desc: '子导航最大高度（内联展开动画）' },
         { name: 'isOpen', type: 'boolean', default: 'undefined', desc: '子导航是否展开（对齐 Semi isOpen）' },
         { name: 'dropdownProps', type: 'NavDropdownProps', default: 'undefined', desc: '透传给该子导航浮层 Dropdown 的属性' },

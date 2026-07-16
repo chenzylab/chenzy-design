@@ -13,11 +13,11 @@
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 12px;">
-  <Steps
-    type="basic"
-    {current}
-    steps={steps.map(({ title }) => ({ title }))}
-  />
+  <Steps type="basic" {current}>
+    {#each steps as step (step.title)}
+      <Steps.Step title={step.title} />
+    {/each}
+  </Steps>
   <div style="margin: 4px 0;">{steps[current].content}</div>
   <div style="display: flex; gap: 8px;">
     {#if current < steps.length - 1}

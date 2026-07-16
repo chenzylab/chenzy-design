@@ -21,6 +21,7 @@ export const en_US: Locale = {
     itemsPerPage: 'Items per page',
     jumpTo: 'Go to',
     jumpToSuffix: '',
+    more: 'More',
     pageChangeAnnounce: 'Page {page} of {count}',
     pageSizeChangeAnnounce: '{size} per page, page {page}',
   },
@@ -391,6 +392,7 @@ export const en_US: Locale = {
   Tabs: {
     scrollPrev: 'Scroll backward',
     scrollNext: 'Scroll forward',
+    add: 'Add tab',
     more: 'More',
     closeTab: 'Close {tab}',
   },

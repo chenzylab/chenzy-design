@@ -7,8 +7,8 @@
 
   范围：mode(vertical/horizontal)、items、header/footer、selected/open/collapsed 受控与非受控、
   multiple + onDeselect、limitIndent / toggleIconPosition / subNavMotion / tooltip 延迟 /
-  renderWrapper / 声明式 Nav.Item·Nav.Sub。回调富载荷对齐 Semi（{itemKey,selectedKeys,
-  selectedItems,domEvent,isOpen}）。
+  renderWrapper / 声明式 Nav.Item·Nav.Sub。props 逐条对齐 Semi Navigation（无 Nav 级 disabled/ariaLabel 超集）。
+  回调富载荷对齐 Semi（{itemKey,selectedKeys,selectedItems,domEvent,isOpen}）。
 -->
 <script lang="ts" module>
   export { NAV_CONTEXT_KEY } from './context.js';
@@ -21,7 +21,9 @@
   import {
     collectNavItemsByKeys,
     collectAncestorKeys,
+    normalizeNavItems,
     type NavItemDef,
+    type NavItemInput,
     type NavKey,
     type NavMode,
     type NavHeaderConfig,
@@ -41,8 +43,8 @@
   import NavFooter from './NavFooter.svelte';
 
   interface Props {
-    /** 导航项列表（字段对齐 Semi：itemKey/text/icon/items）。 */
-    items?: NavItemDef[];
+    /** 导航项列表（字段对齐 Semi：itemKey/text/icon/items）。string 项取值作 text 与 itemKey。 */
+    items?: NavItemInput[];
     /** 导航方向：vertical（侧边，默认）/ horizontal（顶部）。 */
     mode?: NavMode;
     /** 受控选中项 key 数组。 */
@@ -63,8 +65,6 @@
     header?: NavHeaderConfig;
     /** 底部区域配置对象（{collapseButton, ...}）。与 footerSlot 二选一。 */
     footer?: NavFooterConfig;
-    /** 整体禁用。 */
-    disabled?: boolean;
     /** 缩进限制：仅一级缩进（默认 true）；false 时逐级缩进。 */
     limitIndent?: boolean;
     /** 含子导航项的展开箭头位置。 */
@@ -103,8 +103,6 @@
     style?: string;
     /** 导航项列表容器自定义样式（对齐 Semi bodyStyle）。 */
     bodyStyle?: string;
-    /** 可访问性标签。 */
-    ariaLabel?: string;
     /** 选中导航项回调（富载荷对齐 Semi）。 */
     onSelect?: (data: NavSelectData) => void;
     /** 多选下取消选中回调（对齐 Semi onDeselect）。 */
@@ -135,7 +133,6 @@
     defaultIsCollapsed = false,
     header,
     footer,
-    disabled = false,
     limitIndent = true,
     toggleIconPosition = 'right',
     expandIcon,
@@ -150,7 +147,6 @@
     class: className = '',
     style,
     bodyStyle,
-    ariaLabel,
     onSelect,
     onDeselect,
     onClick,
@@ -180,9 +176,9 @@
     },
   });
 
-  // items prop 优先，否则用声明式收集结果（revision 触发重建）。
-  const resolvedItems = $derived.by(() => {
-    if (items.length) return items;
+  // items prop 优先（归一 string 项，对齐 Semi），否则用声明式收集结果（revision 触发重建）。
+  const resolvedItems = $derived.by<NavItemDef[]>(() => {
+    if (items.length) return normalizeNavItems(items);
     const r = revision;
     return r >= 0 ? declared.slice() : [];
   });
@@ -239,7 +235,7 @@
   }
 
   function selectLeaf(item: NavItemDef, domEvent?: Event): void {
-    if (disabled || item.disabled) return;
+    if (item.disabled) return;
     const base = isSelectControlled ? (selectedKeys ?? []) : [...innerSelected];
     const wasSelected = base.includes(item.itemKey);
     const isDeselect = multiple && wasSelected;
@@ -261,7 +257,7 @@
   }
 
   function toggleOpen(item: NavItemDef, willOpen: boolean, domEvent?: Event): void {
-    if (disabled || item.disabled) return;
+    if (item.disabled) return;
     const base = isOpenControlled ? (openKeys ?? []) : [...innerOpen];
     const next = base.filter((k) => k !== item.itemKey);
     if (willOpen) next.push(item.itemKey);
@@ -288,9 +284,6 @@
     },
     get multiple() {
       return multiple;
-    },
-    get disabled() {
-      return disabled;
     },
     get limitIndent() {
       return limitIndent;
@@ -346,7 +339,7 @@
 </script>
 
 <!-- 根为纯容器 <div>（对齐 Semi index.tsx：无 nav landmark）；列表用 role=menu 语义。 -->
-<div class={cls} {style} aria-label={ariaLabel}>
+<div class={cls} {style}>
   <div class="cd-nav__inner">
     <div class="cd-nav__header-list-outer" class:cd-nav__header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}

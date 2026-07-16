@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { getNavContext } from './context.js';
-  import { hasSubNav, type NavItemDef } from './types.js';
+  import { hasSubNav, normalizeNavItems, type NavItemDef } from './types.js';
   import { Dropdown } from '../dropdown/index.js';
   import { IconChevronRight } from '@chenzy-design/icons';
   import Self from './NavPopupNode.svelte';
@@ -24,8 +24,9 @@
 
   const isSub = $derived(hasSubNav(item));
   const selected = $derived(ctx.isSelected(item.itemKey));
-  const itemDisabled = $derived(ctx.disabled || !!item.disabled);
+  const itemDisabled = $derived(!!item.disabled);
   const open = $derived(ctx.isOpen(item.itemKey));
+  const childItems = $derived(normalizeNavItems(item.items));
 
   function onLeafClick(e: MouseEvent): void {
     if (itemDisabled) return;
@@ -60,7 +61,7 @@
   >
     {#snippet render()}
       <Dropdown.Menu>
-        {#each item.items ?? [] as child (child.itemKey)}
+        {#each childItems as child (child.itemKey)}
           <Self item={child} />
         {/each}
       </Dropdown.Menu>

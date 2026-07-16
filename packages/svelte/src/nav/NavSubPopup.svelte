@@ -10,7 +10,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getNavContext } from './context.js';
-  import type { NavItemDef } from './types.js';
+  import { normalizeNavItems, type NavItemDef } from './types.js';
   import { Dropdown } from '../dropdown/index.js';
   import NavPopupNode from './NavPopupNode.svelte';
 
@@ -28,8 +28,9 @@
   const ctx = getNavContext()!;
 
   const selected = $derived(ctx.isSelected(item.itemKey));
-  const itemDisabled = $derived(ctx.disabled || !!item.disabled);
+  const itemDisabled = $derived(!!item.disabled);
   const open = $derived(ctx.isOpen(item.itemKey));
+  const childItems = $derived(normalizeNavItems(item.items));
 
   // horizontal 顶层向下（bottomStart≈Semi bottomLeft），其余向右（rightStart≈Semi rightTop）。
   const position = $derived<'bottomStart' | 'rightStart'>(
@@ -71,7 +72,7 @@
     >
       {#snippet render()}
         <Dropdown.Menu>
-          {#each item.items ?? [] as child (child.itemKey)}
+          {#each childItems as child (child.itemKey)}
             <NavPopupNode item={child} />
           {/each}
         </Dropdown.Menu>

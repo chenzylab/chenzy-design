@@ -36,8 +36,8 @@ export interface NavItemDef {
   onMouseEnter?: (e: MouseEvent) => void;
   /** 项级鼠标移出回调。 */
   onMouseLeave?: (e: MouseEvent) => void;
-  /** 子导航项；含 items 即为可展开子导航。 */
-  items?: NavItemDef[];
+  /** 子导航项；含 items 即为可展开子导航。string 项取值作 text 与 itemKey（对齐 Semi）。 */
+  items?: NavItemInput[];
   /** 子导航最大高度（用于内联展开动画，对齐 Semi maxHeight，默认 999）。 */
   maxHeight?: number;
   /** 子导航是否展开（对齐 Semi Sub.isOpen，非受控展开配合）。 */
@@ -47,6 +47,12 @@ export interface NavItemDef {
   /** 透传给该子导航浮层 Dropdown 的内联样式（对齐 Semi Sub dropdownStyle）。 */
   dropdownStyle?: string;
 }
+
+/**
+ * items 入参项：对象或字符串（对齐 Semi `items` 支持 string[]，取每项作 text 与 itemKey）。
+ * 传入 Nav 后经 normalizeNavItems 归一为 NavItemDef。
+ */
+export type NavItemInput = string | NavItemDef;
 
 /** onSelect 富载荷（对齐 Semi Navigation onSelect）。 */
 export interface NavSelectData {
@@ -107,6 +113,19 @@ export interface NavFooterConfig {
   onClick?: (e: MouseEvent) => void;
 }
 
+/**
+ * 归一 items 入参（对齐 Semi）：string 项 → { itemKey, text } 同值；对象项递归归一其 items。
+ * Nav 在消费前调用一次，之后内部只处理 NavItemDef 树。
+ */
+export function normalizeNavItems(input: readonly NavItemInput[] | undefined): NavItemDef[] {
+  if (!input) return [];
+  return input.map((it) => {
+    if (typeof it === 'string') return { itemKey: it, text: it };
+    if (it.items && it.items.length) return { ...it, items: normalizeNavItems(it.items) };
+    return it as NavItemDef;
+  });
+}
+
 /** 是否为可展开子导航（含非空 items）。 */
 export function hasSubNav(item: NavItemDef): boolean {
   return !!item.items && item.items.length > 0;
@@ -122,7 +141,7 @@ export function collectNavItemsByKeys(
   const walk = (list: NavItemDef[]) => {
     for (const it of list) {
       if (set.has(it.itemKey)) acc.push(it);
-      if (it.items?.length) walk(it.items);
+      if (it.items?.length) walk(normalizeNavItems(it.items));
     }
   };
   walk(items);
@@ -139,7 +158,7 @@ export function collectAncestorKeys(items: NavItemDef[], keys: readonly NavKey[]
   const walk = (list: NavItemDef[], ancestors: NavKey[]): void => {
     for (const it of list) {
       if (target.has(it.itemKey)) ancestors.forEach((a) => acc.add(a));
-      if (it.items?.length) walk(it.items, [...ancestors, it.itemKey]);
+      if (it.items?.length) walk(normalizeNavItems(it.items), [...ancestors, it.itemKey]);
     }
   };
   walk(items, []);

@@ -414,7 +414,9 @@ export {
   clampPageSize,
   parseJumpInput,
   pageRange,
+  semiPageList,
   type PageCell,
+  type SemiPageList,
 } from './pagination.js';
 export {
   clamp01 as colorClamp01,

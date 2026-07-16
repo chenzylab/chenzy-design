@@ -128,6 +128,64 @@ function numbers(start: number, end: number): number[] {
   return out;
 }
 
+/** Semi 分页折叠上限：可见页码 + 省略号总计 7；省略号后的隐藏页上限 100 万。 */
+const PAGE_SHOW_MAX = 7;
+const REST_PAGE_MAX_SIZE = 1_000_000;
+
+/** Semi 分页页码列表：pageList 含 '...'，restLeft/restRight 为各省略号背后的隐藏页。 */
+export interface SemiPageList {
+  pageList: (number | '...')[];
+  restLeft: number[];
+  restRight: number[];
+}
+
+/**
+ * 严格镜像 Semi `_updatePageList` 的折叠逻辑（t=总页数, c=当前页）：
+ *  - t≤7：全展开
+ *  - c<4：`1 2 3 4 … (t-1) t`
+ *  - c=4：`1 2 3 4 5 … t`
+ *  - 4<c<t-3：`1 … (c-1) c (c+1) … t`
+ *  - t-3≤c≤t：`1 … (t-4)(t-3)(t-2)(t-1)(t)`
+ * 截断符 + 数字总计 7 个。restLeft/restRight 为省略号 hover 弹层的隐藏页码。
+ * 纯函数，页码数百万仍产出 O(1) 单元格。
+ */
+export function semiPageList(current: number, total: number): SemiPageList {
+  const totalPageNum = Math.max(1, Number.isFinite(total) ? Math.trunc(total) : 1);
+  const c = Math.min(Math.max(1, Number.isFinite(current) ? Math.trunc(current) : 1), totalPageNum);
+
+  if (totalPageNum <= PAGE_SHOW_MAX) {
+    return { pageList: numbers(1, totalPageNum), restLeft: [], restRight: [] };
+  }
+  if (c < 4) {
+    return {
+      pageList: [1, 2, 3, 4, '...', totalPageNum - 1, totalPageNum],
+      restLeft: [],
+      restRight: numbers(5, 4 + Math.min(totalPageNum - 6, REST_PAGE_MAX_SIZE)),
+    };
+  }
+  if (c === 4) {
+    return {
+      pageList: [1, 2, 3, 4, 5, '...', totalPageNum],
+      restLeft: [],
+      restRight: numbers(6, 5 + Math.min(totalPageNum - 6, REST_PAGE_MAX_SIZE)),
+    };
+  }
+  if (c < totalPageNum - 3) {
+    return {
+      pageList: [1, '...', c - 1, c, c + 1, '...', totalPageNum],
+      restLeft: numbers(2, 1 + Math.min(c - 3, REST_PAGE_MAX_SIZE)),
+      restRight: numbers(c + 2, c + 1 + Math.min(totalPageNum - c - 2, REST_PAGE_MAX_SIZE)),
+    };
+  }
+  // t-3 ≤ c ≤ t
+  const right = numbers(totalPageNum - 4, totalPageNum);
+  return {
+    pageList: [1, '...', ...right],
+    restLeft: numbers(2, 1 + Math.min(right[0]! - 2, REST_PAGE_MAX_SIZE)),
+    restRight: [],
+  };
+}
+
 /**
  * Parse + clamp a quick-jumper text input into a valid page number.
  * Returns the clamped page, or `null` when the input is empty / non-numeric

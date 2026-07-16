@@ -21,6 +21,7 @@ export const zh_CN: Locale = {
     itemsPerPage: '每页条数',
     jumpTo: '跳至',
     jumpToSuffix: '页',
+    more: '更多',
     pageChangeAnnounce: '第 {page} 页，共 {count} 页',
     pageSizeChangeAnnounce: '每页 {size} 条，第 {page} 页',
   },
@@ -391,6 +392,7 @@ export const zh_CN: Locale = {
   Tabs: {
     scrollPrev: '向前滚动',
     scrollNext: '向后滚动',
+    add: '新增标签',
     more: '更多',
     closeTab: '关闭 {tab}',
   },

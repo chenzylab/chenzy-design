@@ -6,11 +6,10 @@ export const meta = {
   name: 'Steps',
   category: 'navigation',
   description:
-    '步骤条，引导用户按流程完成任务。全面对齐 Semi Design：支持横向/纵向、fill/basic/nav 三型、迷你尺寸、每步独立图标/状态、连接线开关（hasLine）与 onChange 切换。',
+    '步骤条，引导用户按流程完成任务。组合式 API（<Steps><Steps.Step/></Steps>），严格对齐 Semi Design：支持横向/纵向、fill/basic/nav 三型、迷你尺寸、每步独立图标/状态、连接线开关（hasLine）与 onChange 切换。',
   props: [
     { name: 'current', type: 'number', default: 'undefined', desc: '受控当前步（从 0 计数）' },
     { name: 'defaultCurrent', type: 'number', default: '0', desc: '非受控初始当前步' },
-    { name: 'steps', type: 'StepItem[]', default: '[]', desc: '步骤数据' },
     {
       name: 'direction',
       type: "'horizontal'|'vertical'",
@@ -44,10 +43,14 @@ export const meta = {
       desc: '切换步骤回调（参数为 initial + index）；传入时 fill/basic 型步骤可点击',
     },
     { name: 'class', type: 'string', default: "''" },
+    { name: 'style', type: 'string', default: 'undefined', desc: '容器内联样式（对齐 Semi style）' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '容器 aria-label（对齐 Semi aria-label）' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 <Steps.Step> 列表' },
   ],
-  stepItemProps: [
-    { name: 'title', type: 'string', default: 'undefined', desc: '步骤标题' },
-    { name: 'description', type: 'string', default: 'undefined', desc: '步骤描述（次要信息）' },
+  // <Steps.Step> 子组件 props（对齐 Semi Steps.Step）。
+  stepProps: [
+    { name: 'title', type: 'string | Snippet', default: 'undefined', desc: '步骤标题' },
+    { name: 'description', type: 'string | Snippet', default: 'undefined', desc: '步骤描述（次要信息）' },
     {
       name: 'status',
       type: "'wait'|'process'|'finish'|'error'|'warning'",
@@ -60,7 +63,10 @@ export const meta = {
       default: 'undefined',
       desc: '该步自定义图标（字符串或 Snippet），替代默认序号/✓/✕/⚠（对齐 Semi Steps.Step.icon）',
     },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '该步 aria-label' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '该步 aria-label（对齐 Semi Steps.Step.aria-label）' },
+    { name: 'role', type: 'string', default: 'undefined', desc: '该步 role（对齐 Semi Steps.Step.role）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '该步根节点类名（对齐 Semi Steps.Step.className）' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '该步根节点内联样式（对齐 Semi Steps.Step.style）' },
     {
       name: 'onClick',
       type: '(e: MouseEvent) => void',

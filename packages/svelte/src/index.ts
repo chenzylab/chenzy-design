@@ -122,7 +122,7 @@ export {
   type BreadcrumbRoute,
 } from './breadcrumb/index.js';
 export { Pagination, paginationMeta } from './pagination/index.js';
-export { Steps, stepsMeta, type StepItem, type StepStatus } from './steps/index.js';
+export { Steps, Step, stepsMeta, type StepProps, type StepStatus } from './steps/index.js';
 export { Tabs, TabPane, tabsMeta, type TabItem } from './tabs/index.js';
 export {
   Dropdown,
@@ -143,6 +143,7 @@ export {
   NavSub,
   navMeta,
   type NavItemDef,
+  type NavItemInput,
   type NavKey,
   type NavMode,
   type NavHeaderConfig,

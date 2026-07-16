@@ -26,6 +26,7 @@ export const Nav: typeof NavRoot & {
 export { meta as navMeta } from './meta.js';
 export type {
   NavItemDef,
+  NavItemInput,
   NavKey,
   NavMode,
   NavHeaderConfig,

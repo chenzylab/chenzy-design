@@ -33,6 +33,6 @@ export const demos: DemoEntry[] = [
   entry('06-quick-jumper.svelte', '快速跳转', '开启 showQuickJumper，输入页码回车快速跳转；越界自动跳末页。'),
   entry('07-controlled.svelte', '页码受控', '传入 currentPage 后为受控组件，当前页完全取决于 currentPage。'),
   entry('08-page-size-opts.svelte', '预设每页容量可选值', '通过 pageSizeOpts 指定切换每页容量的可选值。'),
-  entry('09-small.svelte', '迷你版本', "size='small' 为紧凑视图；开启 hoverShowPageSelect 可 hover 页码弹出全部页码快速切换。"),
-  entry('10-prevent.svelte', '切换每页条数的页码策略', '默认按当前首条数据位置重算页码；preventPageChangeOnPageSizeChange 则保持当前页码不变。'),
+  entry('09-small.svelte', '迷你版本', "size='small' 为紧凑视图（current/total）。"),
+  entry('10-hover-show-page-select.svelte', 'hover 快速切换', '迷你版本开启 hoverShowPageSelect，可 hover 页码弹出全部页码快速切换（v1.27）。'),
 ];
