@@ -532,7 +532,6 @@ export interface Locale {
   Tabs: {
     scrollPrev: string;
     scrollNext: string;
-    add: string;
     more: string;
     /** 关闭标签按钮 aria-label，uses {tab} */
     closeTab: string;

@@ -23,8 +23,7 @@
     style="width: 260px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
     bind:this={tree}
     {treeData}
-    virtualized
-    height={320}
+    virtualize={{ itemSize: 32, height: 320 }}
     defaultExpandAll
     ariaLabel="大数据虚拟树"
   />

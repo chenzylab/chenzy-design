@@ -19,7 +19,7 @@
 </div>
 
 <!-- tabPosition=left：竖向标签栏，支持 line / card / button 三型 -->
-<Tabs {type} tabPosition="left" value={active} onChange={(k) => (active = k)}>
+<Tabs {type} tabPosition="left" activeKey={active} onChange={(k) => (active = k)}>
   <TabPane tab="文档" itemKey="1">
     <div style="padding: 0 24px;">
       <h3>文档</h3>

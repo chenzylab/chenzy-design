@@ -38,7 +38,7 @@
     {treeData}
     defaultExpandAll
     value={selected}
-    onChange={(info) => (selected = info.value as string | number)}
+    onChange={(v) => (selected = v as string | number)}
     ariaLabel="地区树"
   />
   <Text type="tertiary" size="small">已选：{selected}</Text>

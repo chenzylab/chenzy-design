@@ -29,7 +29,7 @@
     keyMaps={{ key: 'id', label: 'name', children: 'sub' }}
     defaultExpandAll
     value={selected}
-    onChange={(info) => (selected = info.value as string | number)}
+    onChange={(v) => (selected = v as string | number)}
     ariaLabel="字段映射树"
   />
   <Text type="tertiary" size="small">已选：{selected ?? '（未选）'}</Text>

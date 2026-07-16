@@ -20,7 +20,7 @@
   </svg>
 {/snippet}
 
-<Tabs value={active} onChange={(k) => (active = k)}>
+<Tabs activeKey={active} onChange={(k) => (active = k)}>
   <TabPane tab="文档" itemKey="1" icon={iconFile}>文档内容</TabPane>
   <TabPane tab="快速起步" itemKey="2" icon={iconGlobe}>快速起步内容</TabPane>
   <TabPane tab="帮助" itemKey="3" icon={iconHelp}>帮助内容</TabPane>

@@ -450,7 +450,7 @@
               <Slider bind:value={demoSlider} />
             </div>
           {:else if previewKey === 'tabs'}
-            <Tabs value={demoTab} onChange={(k) => (demoTab = String(k))}>
+            <Tabs activeKey={demoTab} onChange={(k) => (demoTab = String(k))}>
               <TabPane tab="标签一" itemKey="t1">
                 <p>内容一</p>
               </TabPane>

@@ -21,7 +21,7 @@
 </script>
 
 <!-- 关闭：只有卡片样式支持关闭；单项 closable 控制是否可关。onTabClose 由父组件移除。 -->
-<Tabs type="card" value={active} onChange={(k) => (active = k)} onTabClose={close}>
+<Tabs type="card" activeKey={active} onChange={(k) => (active = k)} onTabClose={close}>
   {#each tabList as t (t.itemKey)}
     <TabPane closable={t.closable} tab={t.tab} itemKey={t.itemKey}>{t.text}</TabPane>
   {/each}

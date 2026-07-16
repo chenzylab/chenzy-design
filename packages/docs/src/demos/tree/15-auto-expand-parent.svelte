@@ -14,7 +14,7 @@
   ];
 
   // 受控展开集，autoExpandParent 开启（对齐 Semi）：需先收起「中国」才能收起「亚洲」——
-  // 因为中国仍展开时，亚洲作为其父被保持展开。受控需 onExpandedChange 回填。
+  // 因为中国仍展开时，亚洲作为其父被保持展开。受控需 onExpand 回填。
   let expanded = $state<(string | number)[]>(['asia', 'china']);
 </script>
 
@@ -25,7 +25,7 @@
     {treeData}
     expandedKeys={expanded}
     autoExpandParent
-    onExpandedChange={(info) => (expanded = info.expanded)}
+    onExpand={(keys) => (expanded = keys)}
     ariaLabel="自动展开父节点树"
   />
 </div>

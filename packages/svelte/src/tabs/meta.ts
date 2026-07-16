@@ -8,8 +8,8 @@ export const meta = {
   description:
     '标签页，在同一区域内组织并切换多组对等内容。全量对齐 Semi Design：支持 line/card/button/slash 类型、top/left 位置、small/medium/large 尺寸、数据驱动 tabList 或纯声明式 <Tabs.Pane> 自动收集、renderTabBar 自定义标签栏、roving tabindex 键盘导航、可关闭标签、more 收纳与 collapsible 滚动折叠（含 auto 自动检测）。',
   props: [
-    { name: 'value', type: 'string|number', default: 'undefined', desc: '受控选中标签 key' },
-    { name: 'defaultValue', type: 'string|number', default: '首个标签', desc: '非受控初始 key' },
+    { name: 'activeKey', type: 'string|number', default: 'undefined', desc: '受控选中标签 key（对齐 Semi）' },
+    { name: 'defaultActiveKey', type: 'string|number', default: '首个标签', desc: '非受控初始 key（对齐 Semi）' },
     { name: 'type', type: "'line'|'card'|'button'|'slash'", default: 'line', desc: '视觉风格（button=分段按钮组，slash=斜线式仅横向）' },
     { name: 'size', type: "'small'|'medium'|'large'", default: 'large', desc: '尺寸档（对齐 Semi）' },
     {
@@ -18,8 +18,8 @@ export const meta = {
       default: 'top',
       desc: '标签栏位置：top 水平 / left 垂直（对齐 Semi；slash 仅 top）',
     },
-    { name: 'lazy', type: 'boolean', default: 'false', desc: '首次激活后才挂载面板' },
-    { name: 'keepDOM', type: 'boolean', default: 'false', desc: '激活过的面板保留 DOM' },
+    { name: 'lazyRender', type: 'boolean', default: 'false', desc: '懒渲染：仅当面板激活过才挂载进 DOM（对齐 Semi）' },
+    { name: 'keepDOM', type: 'boolean', default: 'true', desc: '使用 TabPane 写法时是否渲染隐藏面板的 DOM（对齐 Semi）' },
     {
       name: 'tabList',
       type: 'TabItem[]',
@@ -27,24 +27,6 @@ export const meta = {
       desc: '数据驱动标签定义；不传则从子 <Tabs.Pane> 的 tab/itemKey/icon/disabled/closable 纯声明式自动收集。TabItem 支持 icon?: Snippet（标签文字前渲染的图标）',
     },
     { name: 'closable', type: 'boolean', default: 'false', desc: '全局可关闭（单项可覆盖）' },
-    {
-      name: 'addable',
-      type: 'boolean',
-      default: 'false',
-      desc: '标签栏末尾显示「+」按钮，点击触发 onAdd（受控，由父组件追加）',
-    },
-    {
-      name: 'keyboardActivation',
-      type: "'auto'|'manual'",
-      default: 'auto',
-      desc: '方向键聚焦即激活 / 需 Enter/Space 激活',
-    },
-    {
-      name: 'overflow',
-      type: "'scroll'|'dropdown'",
-      default: 'scroll',
-      desc: 'dropdown 等价于传 more：把溢出标签收进末尾「更多」下拉（仅横向生效）',
-    },
     {
       name: 'collapsible',
       type: "boolean | 'auto'",
@@ -138,12 +120,6 @@ export const meta = {
       desc: '标签被点击触发（含已选中标签，未必触发 onChange；disabled 拦截前发出，可用于埋点）',
     },
     {
-      name: 'onAdd',
-      type: '() => void',
-      default: 'undefined',
-      desc: 'addable=true 时点击「+」按钮回调（受控数据，组件内不改 tabList）',
-    },
-    {
       name: 'renderTabBar',
       type: 'Snippet<[TabItem[], string|number|undefined, (key) => void]>',
       default: 'undefined',
@@ -157,11 +133,10 @@ export const meta = {
     notes: [
       'tablist 内每个标签为 role=tab，aria-selected 标记激活，aria-controls 关联面板',
       'roving tabindex：仅激活标签 tabindex=0，其余 -1',
-      'keyboardActivation=auto 聚焦即激活，manual 需 Enter/Space 确认',
+      '对齐 Semi 手动激活：方向键仅移动焦点，Enter/Space 或点击才激活对应面板',
       '面板 role=tabpanel；关闭叉为带 aria-label 的原生 button',
       '标签溢出时出现前/后滚动箭头（带 aria-label，tabindex=-1 不入 Tab 序），激活标签自动滚到可视区',
-      'overflow=dropdown 时溢出标签收进末尾「更多」下拉（aria-haspopup=menu，带 aria-label），激活标签始终保持可见',
-      'addable 的「+」为带 aria-label 的原生 button',
+      'more 收纳时溢出标签收进末尾「更多」下拉（aria-haspopup=menu，带 aria-label），激活标签始终保持可见',
       'renderTabBar 自定义标签栏时由调用方负责无障碍语义（role=tab/aria-selected 等）',
       'preventScroll=true 时 Tab 聚焦不触发页面滚动',
     ],

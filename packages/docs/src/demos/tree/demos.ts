@@ -48,5 +48,7 @@ export const demos: DemoEntry[] = [
   entry('22-full-label-leaf.svelte', '高级定制·叶子分组勾选', 'renderFullLabel 只在叶子渲染勾选框，父节点仅分组（leafOnly）。'),
   entry('23-full-label-highlight.svelte', '高级定制·单选高亮子节点', 'renderFullLabel + onSelect：选中父节点同时高亮其子孙。'),
   entry('24-field-names.svelte', '字段映射', 'keyMaps 把后端 id/name/sub 映射为标准字段。'),
-  entry('25-accordion.svelte', '手风琴', 'accordion：同层级最多展开一个节点。'),
+  entry('25-custom-filter.svelte', '自定义搜索谓词', 'filterTreeNode 传函数自定义命中逻辑（按 label 前缀），命中节点祖先链自动展开。'),
+  entry('26-search-controlled-expand.svelte', '开启搜索的展开受控', '受控 expandedKeys 时搜索不自动展开，用 onSearch 的 filteredKeys 回写展开集。'),
+  entry('27-draggable-full-label.svelte', '可拖拽的高级定制', 'draggable + renderFullLabel 同用：整行自定义 + 拖拽排序 + 选中高亮子孙。'),
 ];

@@ -11,7 +11,7 @@
     <div>
       <p style="color: var(--cd-color-text-2); font-size: 12px; margin: 0 0 8px;">arrowPosition="{pos}"</p>
       <!-- arrowPosition：控制滚动折叠模式下前/后箭头的渲染位置。 -->
-      <Tabs type="card" collapsible arrowPosition={pos} value={active} onChange={(k) => (active = k)}>
+      <Tabs type="card" collapsible arrowPosition={pos} activeKey={active} onChange={(k) => (active = k)}>
         {#each keys as i (i)}
           <TabPane tab={`Tab-${i}`} itemKey={`Tab-${i}`}>Content of card tab {i}</TabPane>
         {/each}

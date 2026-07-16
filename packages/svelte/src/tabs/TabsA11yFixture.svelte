@@ -7,13 +7,13 @@
   import { Tabs } from './index.js';
 
   interface Props {
-    defaultValue?: string | number;
+    defaultActiveKey?: string | number;
     type?: 'line' | 'card' | 'button';
   }
-  let { defaultValue = 'overview', type = 'line' }: Props = $props();
+  let { defaultActiveKey = 'overview', type = 'line' }: Props = $props();
 </script>
 
-<Tabs {defaultValue} {type}>
+<Tabs {defaultActiveKey} {type}>
   <Tabs.Pane itemKey="overview" tab="Overview">Overview content</Tabs.Pane>
   <Tabs.Pane itemKey="details" tab="Details">Details content</Tabs.Pane>
   <Tabs.Pane itemKey="history" tab="History">History content</Tabs.Pane>

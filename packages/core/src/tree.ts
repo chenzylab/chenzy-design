@@ -10,10 +10,10 @@ export type TreeKey = string | number;
 
 export interface TreeNodeData {
   key: TreeKey;
+  /** 节点的 value（对齐 Semi TreeNodeData.value）。不填时 onChange/value 等以 key 为准。 */
+  value?: string | number;
   label: string;
   disabled?: boolean;
-  checkable?: boolean;
-  selectable?: boolean;
   isLeaf?: boolean;
   children?: TreeNodeData[];
 }

@@ -391,7 +391,6 @@ export const zh_CN: Locale = {
   Tabs: {
     scrollPrev: '向前滚动',
     scrollNext: '向后滚动',
-    add: '新增标签',
     more: '更多',
     closeTab: '关闭 {tab}',
   },

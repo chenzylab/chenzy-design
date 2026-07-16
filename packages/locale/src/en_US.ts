@@ -391,7 +391,6 @@ export const en_US: Locale = {
   Tabs: {
     scrollPrev: 'Scroll backward',
     scrollNext: 'Scroll forward',
-    add: 'Add tab',
     more: 'More',
     closeTab: 'Close {tab}',
   },
