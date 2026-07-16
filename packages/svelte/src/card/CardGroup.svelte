@@ -1,8 +1,9 @@
 <!--
   CardGroup — 卡片组容器，对齐 Semi CardGroup。
-  基于 Space（flex wrap）排布多个 Card：
+  基于 Space（inline-flex wrap）排布多个 Card，仅透传 spacing / wrap / class / style / ...rest：
   - 普通型：spacing 控制卡片等间距（默认 16，同 Semi）。
   - 网格型（type='grid'）：Space spacing=0，卡片 border-radius:0 且以 -1px 负边距拼接边框，覆盖 spacing。
+  对齐 Semi：不向 Space 传 block/align/role/ariaLabel（Semi CardGroup 无这些）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -19,10 +20,10 @@
     class?: string;
     /** 根节点自定义内联样式。 */
     style?: string;
-    /** 组语义标签（aria-label）。 */
-    ariaLabel?: string;
     /** 子 Card。 */
     children?: Snippet;
+    /** 其余原生属性透传到根节点（对齐 Semi ...others）。 */
+    [key: string]: unknown;
   }
 
   let {
@@ -30,8 +31,8 @@
     type,
     class: className,
     style,
-    ariaLabel,
     children,
+    ...rest
   }: Props = $props();
 
   const isGrid = $derived(type === 'grid');
@@ -55,16 +56,7 @@
   );
 </script>
 
-<Space
-  spacing={spaceSpacing}
-  wrap
-  block
-  align="start"
-  role="group"
-  {ariaLabel}
-  class={cls}
-  style={style ?? ''}
->
+<Space spacing={spaceSpacing} wrap class={cls} style={style ?? ''} {...rest}>
   {@render children?.()}
 </Space>
 

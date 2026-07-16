@@ -4,6 +4,6 @@
 
 <Space wrap style="max-width:320px;">
   {#each Array(10) as _, i (i)}
-    <Button theme="solid" type="secondary">按钮 {i + 1}</Button>
+    <Button theme="solid" type="secondary">按钮</Button>
   {/each}
 </Space>

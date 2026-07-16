@@ -17,7 +17,7 @@
   />
 </div>
 <br />
-<CardGroup {spacing} ariaLabel="指标卡片墙">
+<CardGroup {spacing}>
   {#each cards as n (n)}
     <Card shadows="hover" title="Card title" headerLine={false} style="width: 200px;">
       {#snippet headerExtraContent()}

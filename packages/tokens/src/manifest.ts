@@ -118,7 +118,7 @@ const GLOBAL_SEGMENTS = new Set([
   'amber', 'cyan', 'indigo', 'lime', 'pink', 'purple', 'teal', 'violet',
   // 复合色系（--cd-color-light-blue-N / --cd-color-light-green-N 剥 color 后首段是 light）
   'light',
-  // 全局间距刻度（--cd-space-loose / --cd-space-medium 等）
+  // 间距相关全局段（保留段名，避免以 space 起始的 token 被误归组件）
   'space',
   // z-index 阶名（--cd-z-sticky / --cd-z-affix / --cd-z-drag，均非组件；
   // 组件名的 z 阶如 --cd-z-modal 归各自组件，故此处只列无同名组件的阶）

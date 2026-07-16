@@ -1,16 +1,14 @@
-// CardGroup a11y：根（Space 元素）role=group + 可选 aria-label；基于 Space 的 gap 排布；type=grid 拼接。
+// CardGroup a11y：对齐 Semi，纯 Space 包裹（无 role/aria-label）；基于 Space 的 gap 排布；type=grid 拼接。
 import { describe, it, expect } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Fixture from './CardGroupA11yFixture.svelte';
 
 describe('CardGroup a11y', () => {
-  it('根 role=group + aria-label，子 Card 渲染，无 axe violations', async () => {
-    const { container } = renderWithLocale(Fixture, {
-      props: { ariaLabel: 'Card wall' },
-    });
+  it('对齐 Semi：根不加 role/aria-label，子 Card 渲染，无 axe violations', async () => {
+    const { container } = renderWithLocale(Fixture, { props: {} });
     const group = container.querySelector('.cd-card-group');
-    expect(group?.getAttribute('role')).toBe('group');
-    expect(group?.getAttribute('aria-label')).toBe('Card wall');
+    expect(group?.getAttribute('role')).toBeNull();
+    expect(group?.getAttribute('aria-label')).toBeNull();
     // 两张子卡片渲染
     expect(container.querySelectorAll('.cd-card').length).toBe(2);
     await expectNoAxeViolations(container);

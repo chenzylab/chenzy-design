@@ -26,8 +26,6 @@ export const meta = {
       desc: '交叉轴对齐，映射 align-items',
     },
     { name: 'wrap', type: 'boolean', default: 'false', desc: '横向排布是否自动换行（vertical 时强制不换行）' },
-    { name: 'block', type: 'boolean', default: 'false', desc: 'true→display:flex 占满父宽（Semi 无，超集）' },
-    { name: 'tag', type: 'keyof HTMLElementTagNameMap', default: "'div'", desc: '根元素标签（Semi 无，超集）' },
     { name: 'class', type: 'string', default: "''" },
     { name: 'style', type: 'string', default: "''" },
   ],
@@ -35,9 +33,9 @@ export const meta = {
   slots: [{ name: 'children', desc: '需要被施加间距的一组子元素' }],
   a11y: {
     role: 'none',
-    note: '纯布局容器，不引入语义；不重排 DOM，视觉顺序 = DOM 顺序 = Tab 顺序',
+    note: '纯布局容器，不引入语义；不重排 DOM，视觉顺序 = DOM 顺序 = Tab 顺序。对齐 Semi，无 role/tag 超集，data-*/aria-* 经 ...rest 透传',
   },
-  tokens: ['--cd-space-tight', '--cd-space-medium', '--cd-space-loose'],
+  tokens: ['--cd-spacing-space-tight', '--cd-spacing-space-medium', '--cd-spacing-space-loose'],
   examples: [
     { title: '横向按钮组', code: '<Space><Button>A</Button><Button>B</Button></Space>' },
     { title: 'wrap 标签云', code: '<Space wrap spacing={[8, 16]}>...</Space>' },

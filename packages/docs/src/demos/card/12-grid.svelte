@@ -5,7 +5,7 @@
 </script>
 
 <!-- type='grid' 把卡片组设为网格型：卡片去圆角并以边框拼接，spacing 被忽略 -->
-<CardGroup type="grid" ariaLabel="网格卡片墙">
+<CardGroup type="grid">
   {#each cards as n (n)}
     <Card shadows="hover" title="Card title" headerLine={false} style="width: 200px;">
       {#snippet headerExtraContent()}

@@ -6,10 +6,10 @@
   const aligns = ['start', 'center', 'end', 'baseline'] as const;
 </script>
 
-<Space vertical spacing="loose">
+<Space vertical>
   {#each aligns as align (align)}
     <Space {align}>
-      <div style={boxStyle}>{align}</div>
+      <div style={boxStyle}>文本</div>
       <Button theme="solid" type="primary">按钮</Button>
       <Tag color="green" size="large">标签</Tag>
     </Space>
