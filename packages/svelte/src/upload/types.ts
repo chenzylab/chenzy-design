@@ -48,7 +48,8 @@ export type UploadShowTooltip =
   | {
       type?: 'tooltip' | 'popover';
       opts?: Record<string, unknown>;
-      renderTooltip?: Snippet<[{ content: string; children: Snippet }]>;
+      /** 完全接管浮层，位置参数 (fullText, trigger)，与 Semi `(content, children)` 及 Typography.Text 契约一致。 */
+      renderTooltip?: Snippet<[string, Snippet]>;
     };
 
 /**

@@ -7,8 +7,7 @@
  * 注：
  *  - Semi $color-upload_xxx → kebab 小写 color-upload-xxx；var(--semi-color-*) 一一对应
  *    var(--cd-color-*)。
- *  - Semi rgba(var(--semi-grey-3),1)（文件卡片默认预览背景）我们无 --cd-grey-3 alias，
- *    用最接近的 var(--cd-color-fill-2) 替代。
+ *  - Semi rgba(var(--semi-grey-3),1)（文件卡片默认预览背景）→ var(--cd-color-grey-3)（palette emit，精确对齐）。
  *  - $spacing-* → var(--cd-spacing-*) 同名；$font-weight-bold/regular →
  *    var(--cd-font-weight-*)；字面量（px / 数字字重）保留。
  *  - var(--semi-border-radius-*) → var(--cd-border-radius-*)；负值 → calc(-1 * var(...))。
@@ -42,7 +41,7 @@ export const uploadTokens = {
   'color-upload-drag-area-sub-text-active': { value: 'var(--cd-color-text-0)', category: 'color', label: '拖拽区副文本 - 按下', usage: '上传可拖拽区次要提示文本颜色 - 按下' },
 
   'color-upload-file-card-fail-info-text': { value: 'var(--cd-color-danger)', category: 'color', label: '卡片失败提示文本色', usage: '上传文件卡片失败提示信息文本颜色' },
-  'color-upload-file-card-preview-placeholder-bg': { value: 'var(--cd-color-fill-2)', category: 'color', label: '预览占位背景色', usage: '文件卡片默认预览背景颜色' },
+  'color-upload-file-card-preview-placeholder-bg': { value: 'var(--cd-color-grey-3)', category: 'color', label: '预览占位背景色', usage: '文件卡片默认预览背景颜色（对齐 Semi rgba(grey-3,1)）' },
   'color-upload-file-card-preview-placeholder-text': { value: 'var(--cd-color-white)', category: 'color', label: '预览占位图颜色', usage: '文件卡片默认预览图颜色' },
   'color-upload-file-card-retry-bg': { value: 'var(--cd-color-white)', category: 'color', label: '重试按钮背景色', usage: '图片墙上传卡片重新上传按钮背景颜色' },
   'color-upload-file-card-retry-text': { value: 'var(--cd-color-primary)', category: 'color', label: '重试按钮文本色', usage: '图片墙上传卡片重新上传按钮文本颜色' },

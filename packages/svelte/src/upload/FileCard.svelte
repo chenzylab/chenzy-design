@@ -107,13 +107,14 @@
   }
 
   // 归一 showTooltip 到 Typography.Text 的 EllipsisShowTooltip 形态（对齐 Semi ShowTooltip）。
-  // boolean 直接透传；对象态透传 type/opts（renderTooltip 位置参数形态由 Text 自定义，
-  // Upload 侧对象入参不直接桥接，传对象时回退为基础 Tooltip）。
+  // boolean 直接透传；对象态透传 type/opts/renderTooltip——三者签名与 Text 一致，renderTooltip
+  // 为位置参数 (fullText, trigger)（对齐 Semi (content, children)），直接桥接不降级。
   const ellipsisShowTooltip = $derived.by<boolean | EllipsisShowTooltip>(() => {
     if (typeof showTooltip === 'boolean') return showTooltip;
     const cfg: EllipsisShowTooltip = {};
     if (showTooltip.type !== undefined) cfg.type = showTooltip.type;
     if (showTooltip.opts !== undefined) cfg.opts = showTooltip.opts as NonNullable<EllipsisShowTooltip['opts']>;
+    if (showTooltip.renderTooltip !== undefined) cfg.renderTooltip = showTooltip.renderTooltip;
     return cfg;
   });
 
