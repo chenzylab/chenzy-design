@@ -1,26 +1,19 @@
 <script lang="ts">
-  import { Icon } from '@chenzy-design/svelte';
+  import {
+    IconInfoCircle,
+    IconTickCircle,
+    IconAlertTriangle,
+    IconAlertCircle,
+    IconSpin,
+  } from '@chenzy-design/icons';
 </script>
 
 <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-  <Icon status="default">
-    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-  </Icon>
-  <Icon status="info">
-    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-  </Icon>
-  <Icon status="success">
-    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-  </Icon>
-  <Icon status="warning">
-    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-  </Icon>
-  <Icon status="error">
-    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-  </Icon>
-  <Icon spin>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
-    </svg>
-  </Icon>
+  <!-- 单色图标继承外层 color；用 style 应用语义色 -->
+  <IconInfoCircle style="color: var(--cd-color-info);" />
+  <IconTickCircle style="color: var(--cd-color-success);" />
+  <IconAlertTriangle style="color: var(--cd-color-warning);" />
+  <IconAlertCircle style="color: var(--cd-color-danger);" />
+  <!-- spin 属性使图标持续旋转，受 reduced-motion 抑制 -->
+  <IconSpin spin />
 </div>

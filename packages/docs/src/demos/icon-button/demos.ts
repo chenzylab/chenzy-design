@@ -38,8 +38,8 @@ export const demos: DemoEntry[] = [
     '01-basic.svelte',
     { zh: '基础用法', en: 'Basic' },
     {
-      zh: '纯图标按钮：通过 icon snippet 传入图标，ariaLabel 必填以提供可访问名。等价于 Button 传 icon 且无文字。',
-      en: 'Icon-only button: pass the icon via the icon snippet; ariaLabel is required for the accessible name. Equivalent to Button with icon and no text.',
+      zh: '纯图标按钮：通过 icon snippet 传入图标，建议提供 ariaLabel 作为可访问名。等价于 Button 传 icon 且无文字。',
+      en: 'Icon-only button: pass the icon via the icon snippet; provide ariaLabel for the accessible name. Equivalent to Button with icon and no text.',
     },
     { text: { zh: 'Button', en: 'Button' }, component: 'Button' },
   ),
@@ -89,6 +89,22 @@ export const demos: DemoEntry[] = [
     {
       zh: 'colorful 在各主题下用品牌蓝→紫渐变，营造 AI 风格；可与 circle 组合。',
       en: 'colorful applies a blue→purple gradient across themes for an AI feel; combinable with circle.',
+    },
+  ),
+  entry(
+    '08-with-text.svelte',
+    { zh: '图标 + 文字', en: 'Icon + Text' },
+    {
+      zh: '传入 children 文字后不再是纯图标按钮（对齐 Semi）：icon + 文字组合，自动加 -with-icon class。',
+      en: 'Passing children text makes it no longer icon-only (aligned with Semi): icon + text, with the -with-icon class.',
+    },
+  ),
+  entry(
+    '09-icon-position.svelte',
+    { zh: '图标位置', en: 'Icon Position' },
+    {
+      zh: 'iconPosition 控制图标相对文字的位置：left（默认）/ right。',
+      en: 'iconPosition controls the icon position relative to the text: left (default) / right.',
     },
   ),
 ];

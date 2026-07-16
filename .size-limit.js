@@ -55,7 +55,8 @@ const components = [
   // basic
   // 破坏性对齐 Semi 重建三层架构（BaseButton 纯容器 + Button 派发器 + IconButton 组装）后实测 4.44 KB，预算按 +15% buffer 校准。
   ['button', '{ Button }', '5.1 KB'],
-  ['iconbutton', '{ IconButton }', '0.6 KB'],
+  // 破坏性对齐 Semi iconButton 后（去必填约束、补 iconPosition/iconSize/iconStyle/noHorizontalPadding/contentClassName 等透传、iconSize/iconStyle 走 Icon 包裹）实测 0.71 KB，预算按 +15% buffer 校准。
+  ['iconbutton', '{ IconButton }', '0.85 KB'],
   // 破坏性对齐 Semi 重写（纯 div+onClick、删 button/a/dev warn/focus/a11y/自定义 shape）瘦身，实测 2.06 KB，预算按 +20% buffer 校准。
   ['float-button', '{ FloatButton, FloatButtonGroup }', '2.5 KB'],
   ['divider', '{ Divider }', '1.55 KB'],

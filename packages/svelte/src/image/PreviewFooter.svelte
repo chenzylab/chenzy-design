@@ -8,21 +8,20 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Icon } from '../icon/index.js';
+  import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconMinus,
+    IconPlus,
+    IconRotate,
+    IconDownload,
+    IconRealSizeStroked,
+    IconWindowAdaptionStroked,
+  } from '@chenzy-design/icons';
   import { Slider } from '../slider/index.js';
   import { Divider } from '../divider/index.js';
   import { Tooltip } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
-  import {
-    iconChevronLeft,
-    iconChevronRight,
-    iconMinus,
-    iconPlus,
-    iconRotate,
-    iconDownload,
-    iconRealSize,
-    iconWindowAdaption,
-  } from './icons.js';
 
   type RatioType = 'adaptation' | 'realSize';
 
@@ -206,8 +205,7 @@
 
 {#snippet itemChevronLeft()}
   {#snippet ic()}
-    <Icon
-      svg={iconChevronLeft}
+    <IconChevronLeft
       size="large"
       class={disabledPrev ? 'cd-image-preview-footer-disabled' : ''}
       onclick={!disabledPrev ? onPrev : undefined}
@@ -222,8 +220,7 @@
 
 {#snippet itemChevronRight()}
   {#snippet ic()}
-    <Icon
-      svg={iconChevronRight}
+    <IconChevronRight
       size="large"
       class={disabledNext ? 'cd-image-preview-footer-disabled' : ''}
       onclick={!disabledNext ? onNext : undefined}
@@ -234,8 +231,7 @@
 
 {#snippet itemMinus()}
   {#snippet ic()}
-    <Icon
-      svg={iconMinus}
+    <IconMinus
       size="large"
       class={disabledZoomOut ? 'cd-image-preview-footer-disabled' : ''}
       onclick={!disabledZoomOut ? () => changeSliderValue('minus') : undefined}
@@ -258,8 +254,7 @@
 
 {#snippet itemPlus()}
   {#snippet ic()}
-    <Icon
-      svg={iconPlus}
+    <IconPlus
       size="large"
       class={disabledZoomIn ? 'cd-image-preview-footer-disabled' : ''}
       onclick={!disabledZoomIn ? () => changeSliderValue('plus') : undefined}
@@ -270,27 +265,33 @@
 
 {#snippet itemRatio()}
   {#snippet ic()}
-    <Icon
-      svg={ratio === 'adaptation' ? iconRealSize : iconWindowAdaption}
-      size="large"
-      class={showTooltip ? '' : 'cd-image-preview-footer-gap'}
-      onclick={handleRatioClick}
-    />
+    {#if ratio === 'adaptation'}
+      <IconRealSizeStroked
+        size="large"
+        class={showTooltip ? '' : 'cd-image-preview-footer-gap'}
+        onclick={handleRatioClick}
+      />
+    {:else}
+      <IconWindowAdaptionStroked
+        size="large"
+        class={showTooltip ? '' : 'cd-image-preview-footer-gap'}
+        onclick={handleRatioClick}
+      />
+    {/if}
   {/snippet}
   {@render tip(ratioContent, true, ic)}
 {/snippet}
 
 {#snippet itemRotate()}
   {#snippet ic()}
-    <Icon svg={iconRotate} size="large" onclick={handleRotateLeft} />
+    <IconRotate size="large" onclick={handleRotateLeft} />
   {/snippet}
   {@render tip(rotateContent, false, ic)}
 {/snippet}
 
 {#snippet itemDownload()}
   {#snippet ic()}
-    <Icon
-      svg={iconDownload}
+    <IconDownload
       size="large"
       class={[
         !showTooltip && 'cd-image-preview-footer-gap',

@@ -12,11 +12,10 @@
   import { useFocusTrap, useScrollLock, useLiveAnnouncer } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { useLocale } from '../locale-provider/index.js';
-  import { Icon } from '../icon/index.js';
+  import { IconArrowLeft, IconArrowRight } from '@chenzy-design/icons';
   import PreviewImage from './PreviewImage.svelte';
   import PreviewHeader from './PreviewHeader.svelte';
   import PreviewFooter, { type MenuProps } from './PreviewFooter.svelte';
-  import { iconArrowLeft, iconArrowRight } from './icons.js';
   import { clampZoom, getPreloadImageArr } from './previewGeometry.js';
   import { downloadImage, defaultDownloadName } from './download.js';
 
@@ -454,7 +453,7 @@
         aria-label={prevTip ?? loc().t('Image.prevTip')}
         onclick={() => switchImage('prev')}
       >
-        {#if renderLeftIcon}{@render renderLeftIcon()}{:else}<Icon svg={iconArrowLeft} size="large" />{/if}
+        {#if renderLeftIcon}{@render renderLeftIcon()}{:else}<IconArrowLeft size="large" />{/if}
       </div>
     {/if}
     {#if showNext}
@@ -468,7 +467,7 @@
         aria-label={nextTip ?? loc().t('Image.nextTip')}
         onclick={() => switchImage('next')}
       >
-        {#if renderRightIcon}{@render renderRightIcon()}{:else}<Icon svg={iconArrowRight} size="large" />{/if}
+        {#if renderRightIcon}{@render renderRightIcon()}{:else}<IconArrowRight size="large" />{/if}
       </div>
     {/if}
 
