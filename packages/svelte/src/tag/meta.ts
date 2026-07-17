@@ -65,7 +65,8 @@ export const meta = {
       usage: '<TagGroup tagList={...} maxTagCount={n} />，超出折叠为 +N',
       desc: '一组 Tag 成组渲染，超过 maxTagCount 折叠剩余为「+N」标签，showPopover 时 hover 在 Popover(showArrow/top) 弹层展示被折叠项。tagList 数据驱动。复用 Tag/Popover，严格对齐 Semi TagGroup。',
       props: [
-        { name: 'tagList', type: 'TagItem[]', default: '[]', desc: '数据驱动的标签数据' },
+        { name: 'tagList', type: 'TagItem[]', default: '[]', desc: '数据驱动的标签数据；mode=custom 时每项含 tag Snippet 承载完整 Tag 节点' },
+        { name: 'mode', type: "'custom'", default: 'undefined', desc: "渲染模式；'custom' 时每项由自带 tag Snippet 渲染 Tag 节点（对齐 Semi mode）" },
         { name: 'maxTagCount', type: 'number', default: 'undefined', desc: '最大数量限制，超出折叠为 +N' },
         { name: 'restCount', type: 'number', default: 'undefined', desc: '直接指定折叠数量（覆盖自动计算）' },
         { name: 'size', type: "'small'|'default'|'large'", default: "'default'", desc: '标签尺寸（透传各 Tag）' },

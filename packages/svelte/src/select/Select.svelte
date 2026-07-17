@@ -20,7 +20,8 @@
   renderOptionItem snippet：完全自定义候选项渲染；renderSelectedItem snippet：自定义选中值/Tag 渲染。
   onSelect/onDeselect/onClear/onCreate/onFocus/onBlur/onScrollToBottom/onExceed/onChangeWithObject。
   autoClearSearchValue：多选选中后自动清空搜索词（默认 true）。
-  showRestTagsPopover：+N tag 悬停用 Popover 浮层展示剩余全部 tags；restTagsPopoverProps 透传给该 Popover。
+  多选折叠复用 TagGroup（mode=custom）：可见 tag + 折叠 +N + hover Popover 全由 TagGroup 承担。
+  showRestTagsPopover：+N tag 悬停用 Popover 浮层展示剩余全部 tags（接 TagGroup showPopover）；restTagsPopoverProps 透传给该 Popover。
   borderless：无边框模式；autoFocus：挂载自动聚焦；id：关联外部 label。
 -->
 <script lang="ts">
@@ -36,8 +37,8 @@
   import { IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
-  import Popover from '../popover/Popover.svelte';
   import Tag from '../tag/Tag.svelte';
+  import TagGroup from '../tag/TagGroup.svelte';
 
   type OptionValue = string | number;
   type OptionData = { label: string; value: OptionValue; disabled?: boolean; [key: string]: unknown };
@@ -46,6 +47,8 @@
   type OptionOrGroup = OptionData | OptionGroup;
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
+  /** 单个多选 Tag 的渲染信息（选项 + 截断后显示文本 + 是否被截断）。 */
+  type TagInfo = { opt: OptionData; display: string; truncated: boolean };
 
   function isGroup(o: OptionOrGroup): o is OptionGroup {
     return Array.isArray((o as OptionGroup).options);
@@ -161,8 +164,9 @@
     /** autoFocus/命令式聚焦触发器时是否传入 focus({ preventScroll })，避免页面跳动（对齐 Semi preventScroll） */
     preventScroll?: boolean;
     /**
-     * 多选且 maxTagCount 折叠出 +N 时，浮层打开状态下点击 +N 是否就地展开剩余全部 Tag（对齐 Semi expandRestTagsOnClick）。
-     * 展开为纯展示态（本地 $state），不影响选中值；浮层关闭时自动复位为折叠。
+     * 多选且 maxTagCount 折叠出 +N 时，浮层打开状态下是否就地展开剩余全部 Tag（对齐 Semi expandRestTagsOnClick）。
+     * 对齐 Semi renderMultipleSelection：为 true 且浮层打开时全量展开（NotOneLine 分支），关闭时复位折叠；
+     * 展开为纯展示态，不影响选中值。点击触发器即打开浮层→展开，无需单独点击 +N。
      */
     expandRestTagsOnClick?: boolean;
     /**
@@ -388,13 +392,8 @@
     if (!next) {
       activeIndex = -1;
       query = '';
-      // 关闭浮层时复位 +N 展开态（展开仅在打开时生效，对齐 Semi expandRestTagsOnClick）。
-      restTagsExpanded = false;
     }
   }
-
-  // expandRestTagsOnClick：浮层打开态下点击 +N 就地展开剩余 Tag 的本地展示态（不影响选中值）。
-  let restTagsExpanded = $state(false);
 
   // rePosition() 命令式重定位钩子：递增该 key 传入 use:floating 参数，触发 action 的 update
   // 在原位重算浮层位置（use-floating action 参数变化且 trigger/placement 不变时走 handle.update()）。
@@ -538,23 +537,29 @@
     return text.length > limit ? `${text.slice(0, limit)}…` : text;
   }
 
-  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数。
+  // maxTagCount 折叠：折叠逻辑复用 TagGroup（mode=custom），本组件只组装 tag 数据 + 折叠开关。
   // maxTagTextLength 仅影响 tag 显示文本（截断派生），实际值/回显不变（红线 #1/#2）。
   // expandRestTagsOnClick 且已点击 +N 展开（restTagsExpanded）时，视为不折叠、全量展示（对齐 Semi）。
+  // 对齐 Semi renderMultipleSelection：expandRestTagsOnClick 且浮层打开时全量展开（NotOneLine 分支），
+  // 否则折叠。展开由「浮层打开」驱动（点击触发器即开浮层→展开），无需 +N 单独点击态。
   const tagsCollapsed = $derived(
-    maxTagCount > 0 && !(expandRestTagsOnClick && restTagsExpanded),
+    maxTagCount > 0 && !(expandRestTagsOnClick && isOpen),
   );
-  const visibleTags = $derived(
-    (tagsCollapsed ? selectedOptions.slice(0, maxTagCount) : selectedOptions).map(
-      (opt) => {
-        const raw = getOptionLabel(opt);
-        const display = truncate(raw, maxTagTextLength);
-        return { opt, display, truncated: display !== raw };
-      },
-    ),
+  // 全部已选项的显示信息（label 截断态一并算好，供 tag 内容渲染）。
+  const allTags = $derived(
+    selectedOptions.map((opt) => {
+      const raw = getOptionLabel(opt);
+      const display = truncate(raw, maxTagTextLength);
+      return { opt, display, truncated: display !== raw };
+    }),
   );
-  const hiddenTagCount = $derived(
-    tagsCollapsed ? Math.max(0, selectedOptions.length - maxTagCount) : 0,
+  // 折叠时透传给 TagGroup 的 maxTagCount（对齐 Semi：n = length>max ? max : undefined）。
+  const tagGroupMaxCount = $derived(
+    tagsCollapsed && selectedOptions.length > maxTagCount ? maxTagCount : undefined,
+  );
+  // 折叠时透传给 TagGroup 的 restCount（对齐 Semi：selectedItems.length - maxTagCount）。
+  const tagGroupRestCount = $derived(
+    tagsCollapsed ? Math.max(0, selectedOptions.length - maxTagCount) : undefined,
   );
 
   // 取选项显示文本（对齐 Semi：以 label 字段回显）。
@@ -976,48 +981,30 @@
 
     <div class="cd-select__content">
       {#if multiple && selectedOptions.length > 0}
-        {#each visibleTags as tag (tag.opt.value)}
-          <!-- 多选 Tag 复用本库 Tag 组件（已对齐 Semi）：closable + onClose 移除该项 -->
-          <Tag
-            class="cd-select__tag"
-            size="small"
-            color="white"
-            closable={!disabled}
-            ariaLabel={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
-            onClose={(_c, e) => {
-              e.stopPropagation();
-              removeTag(tag.opt.value);
-            }}
-          >
-            {#if renderSelectedItem}
-              {@render renderSelectedItem({ option: tag.opt })}
-            {:else}
-              <span
-                class="cd-select__tag-label"
-                title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
-              >{tag.display}</span>
-            {/if}
-          </Tag>
-        {/each}
-        {#if hiddenTagCount > 0}
-          {@const hiddenOpts = selectedOptions.slice(maxTagCount)}
+        {#if tagsCollapsed}
           <!--
-            +N 折叠元素：
-            - showRestTagsPopover=true 时用真正的 Popover 浮层包裹，hover +N 展示隐藏的剩余全部 Tag；
-              restTagsPopoverProps 透传给该 Popover（可覆盖 position/trigger/spacing 等）。
-            - expandRestTagsOnClick 与之兼容：控制点击 +N 就地展开（改本地展示态，不改值）。
-            两者可共存：hover 预览（Popover）+ 点击展开（expandRestTagsOnClick）。
+            折叠态：复用 TagGroup（mode=custom）承担「可见 tag + 折叠 +N + hover Popover」。
+            - tagList：全部已选项的 custom tag 节点（TagGroup 内部按 maxTagCount 切可见/剩余）；
+            - maxTagCount/restCount：对齐 Semi renderOneLineTags 传参；
+            - showPopover 接 showRestTagsPopover；popoverProps 接 restTagsPopoverProps。
+            expandRestTagsOnClick 展开由浮层打开态驱动（见 tagsCollapsed 派生），无需 +N 单独点击。
           -->
-          {#if showRestTagsPopover}
-            <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
-              {@render restTrigger(hiddenTagCount)}
-              {#snippet content()}
-                {@render restTagsContent(hiddenOpts)}
-              {/snippet}
-            </Popover>
-          {:else}
-            {@render restTrigger(hiddenTagCount)}
-          {/if}
+          <TagGroup
+            class="cd-select__tag-group"
+            mode="custom"
+            tagList={allTags.map((tag) => ({ tagKey: tag.opt.value, tagInfo: tag }))}
+            maxTagCount={tagGroupMaxCount}
+            restCount={tagGroupRestCount}
+            size="small"
+            showPopover={showRestTagsPopover}
+            popoverProps={restTagsPopoverProps}
+            renderTagItem={customTagItem}
+          />
+        {:else}
+          <!-- 展开态（无 maxTagCount，或 expandRestTagsOnClick 已展开）：直接逐个渲染全部 tag（对齐 Semi NotOneLine 分支） -->
+          {#each allTags as tag (tag.opt.value)}
+            {@render selectTag(tag)}
+          {/each}
         {/if}
         {#if triggerSearch}
           <input
@@ -1241,39 +1228,38 @@
 {/snippet}
 
 <!--
-  +N 折叠触发元素：expandRestTagsOnClick 时渲染为可点击 button（点击就地展开剩余 Tag），
-  否则渲染为普通 +N 元素。可访问名统一为「还有 N 项」（i18n Select.restTagsCount）。
-  外层若被 Popover 包裹（showRestTagsPopover），hover 该元素弹出剩余 Tag 浮层预览。
+  单个多选 Tag（对齐 Semi renderTag：color=white、closable+onClose 删除该项）。
+  可见 tag（展开态）与折叠态经 TagGroup custom 渲染的可见/剩余 tag 均复用此 snippet。
 -->
-{#snippet restTrigger(count: number)}
-  {#if expandRestTagsOnClick}
-    <button
-      type="button"
-      class="cd-select__tag--rest cd-select__tag--rest-clickable"
-      aria-label={loc().t('Select.restTagsCount', { count })}
-      aria-expanded={restTagsExpanded}
-      onclick={(e) => {
-        e.stopPropagation();
-        // 对齐 Semi：面板打开状态下展开剩余 Tag；未打开则先打开浮层再展开。
-        if (!isOpen) setOpen(true);
-        restTagsExpanded = true;
-      }}
-    >+{count}</button>
-  {:else}
-    <span
-      class="cd-select__tag--rest"
-      aria-label={loc().t('Select.restTagsCount', { count })}
-    >+{count}</span>
-  {/if}
+{#snippet selectTag(tag: TagInfo)}
+  <Tag
+    class="cd-select__tag"
+    size="small"
+    color="white"
+    closable={!disabled}
+    ariaLabel={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
+    onClose={(_c, e) => {
+      (e as Event)?.stopPropagation?.();
+      removeTag(tag.opt.value);
+    }}
+  >
+    {#if renderSelectedItem}
+      {@render renderSelectedItem({ option: tag.opt })}
+    {:else}
+      <span
+        class="cd-select__tag-label"
+        title={tag.truncated ? getOptionLabel(tag.opt) : undefined}
+      >{tag.display}</span>
+    {/if}
+  </Tag>
 {/snippet}
 
-<!-- +N 悬停 Popover 浮层内容：逐行列出被折叠隐藏的剩余全部 Tag（走 token，样式简洁）。 -->
-{#snippet restTagsContent(hiddenOpts: OptionData[])}
-  <ul class="cd-select__rest-tags-list">
-    {#each hiddenOpts as opt (opt.value)}
-      <li class="cd-select__rest-tags-item">{getOptionLabel(opt)}</li>
-    {/each}
-  </ul>
+<!-- TagGroup mode=custom 的每项渲染入口：从 tagList 项取回 tagInfo，委托 selectTag。 -->
+{#snippet customTagItem(item: Record<string, unknown>)}
+  {@const tag = item.tagInfo as TagInfo | undefined}
+  {#if tag}
+    {@render selectTag(tag)}
+  {/if}
 {/snippet}
 
 <style>
@@ -1409,36 +1395,13 @@
   .cd-select__search::placeholder {
     color: var(--cd-color-select-input-placeholder-text);
   }
-  /* +N 折叠元素（非 Tag 组件，是裸 span/button）：与 Tag 视觉近似的胶囊 */
-  .cd-select__tag--rest {
+  /* 折叠态 TagGroup 实例：在触发器 flex 内联排布（与 search input 并排），随内容换行 */
+  .cd-select :global(.cd-select__tag-group) {
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding-inline: var(--cd-spacing-tight);
-    background: var(--cd-color-fill-1);
-    border-radius: var(--cd-border-radius-small);
-    font-size: var(--cd-font-size-small);
-    color: var(--cd-color-select-prefix-suffix-text-default);
-  }
-  /* +N 悬停 Popover 浮层内容：剩余 Tag 逐行列表（走 token，简洁排版） */
-  .cd-select__rest-tags-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-size: var(--cd-font-size-small);
-    color: var(--cd-color-select-main-text-default);
-  }
-  .cd-select__rest-tags-item {
-    white-space: nowrap;
-  }
-  /* expandRestTagsOnClick：+N 作为可点击按钮，去除原生 button 外观 */
-  .cd-select__tag--rest-clickable {
-    border: none;
-    cursor: pointer;
-    font: inherit;
+    min-inline-size: 0;
+    height: auto;
   }
   /* ellipsisTrigger：多选 tag 溢出时，对可见 tag 文本做单行省略（完整文本经 title 查看） */
   .cd-select--ellipsis-trigger .cd-select__content {

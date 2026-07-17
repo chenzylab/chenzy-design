@@ -2,7 +2,7 @@
   TagGroup — 严格对齐 Semi semi-ui/tag/group.tsx。
   一组 Tag 成组渲染；超过 maxTagCount 折叠剩余为「+N」标签，
   showPopover 时 hover 在 Popover（showArrow / trigger=hover / position=top）弹层展示被折叠的 Tag。
-  数据驱动（tagList）或 mode='custom'（tagList 直接是 Tag 节点数组）两种用法。复用本库 Tag / Popover。
+  数据驱动（tagList）或 mode='custom'（每项自带 `tag` Snippet 承载完整 Tag 节点）两种用法。复用本库 Tag / Popover。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,7 +13,8 @@
   type TagSize = 'small' | 'default' | 'large';
   type AvatarShape = 'circle' | 'square';
 
-  /** 单个 Tag 的数据项（tagList 普通用法）。透传给 Tag 的常用 props 子集。 */
+  /** 单个 Tag 的数据项（tagList 普通用法）。透传给 Tag 的常用 props 子集。
+   *  mode='custom' 时改由 `tag` Snippet 承载已构建好的 Tag 节点（对齐 Semi 传入 prebuilt ReactNode）。 */
   interface TagItem {
     tagKey?: string | number;
     children?: string;
@@ -28,12 +29,23 @@
   }
 
   interface Props {
-    /** 数据驱动的标签数据（对齐 Semi tagList）。mode='custom' 时元素为 Tag 节点 Snippet */
+    /** 数据驱动的标签数据（对齐 Semi tagList）。mode='custom' 时元素含 `tag` Snippet 承载 Tag 节点 */
     tagList?: TagItem[];
+    /**
+     * 渲染模式（对齐 Semi mode）：
+     * - 默认（undefined）：数据驱动，按 TagItem 字段渲染 <Tag>；
+     * - 'custom'：每项经 renderTagItem(item) 渲染完整 Tag 节点（消费方完全掌控 Tag 内容/事件）。
+     */
+    mode?: 'custom';
+    /**
+     * mode='custom' 时：渲染单个 tagList 项为完整 Tag 节点的 Snippet（对齐 Semi custom 模式的 prebuilt node）。
+     * 可见 tag 与折叠 Popover 内的剩余 tag 均经此渲染。
+     */
+    renderTagItem?: Snippet<[TagItem]>;
     /** 最大数量限制，超出后显示为 +N（对齐 Semi maxTagCount） */
-    maxTagCount?: number;
+    maxTagCount?: number | undefined;
     /** 直接指定折叠数量（对齐 Semi restCount，覆盖自动计算） */
-    restCount?: number;
+    restCount?: number | undefined;
     /** 标签尺寸，透传各 Tag（对齐 Semi size） */
     size?: TagSize;
     /** 标签内头像形状，透传（对齐 Semi avatarShape） */
@@ -41,7 +53,7 @@
     /** hover 到 +N 时是否通过 Popover 展示剩余（对齐 Semi showPopover，默认 false） */
     showPopover?: boolean;
     /** 弹层透传（对齐 Semi popoverProps） */
-    popoverProps?: Record<string, unknown>;
+    popoverProps?: Record<string, unknown> | undefined;
     /** 删除 TagGroup 中的 Tag 回调（对齐 Semi onTagClose(tagChildren, e, tagKey)） */
     onTagClose?: (
       tagChildren: unknown,
@@ -58,6 +70,8 @@
 
   let {
     tagList = [],
+    mode,
+    renderTagItem,
     maxTagCount,
     restCount,
     size = 'default',
@@ -112,9 +126,14 @@
 
 <div class={rootCls} {style}>
   {#each normalTags as item, i (item.tagKey ?? i)}
-    <Tag {...tagProps(item, i)} onClose={(_c, e) => handleClose(item, e)}>
-      {item.children ?? ''}
-    </Tag>
+    {#if mode === 'custom'}
+      <!-- custom 模式：经 renderTagItem 渲染消费方掌控的完整 Tag 节点（对齐 Semi prebuilt node） -->
+      {@render renderTagItem?.(item)}
+    {:else}
+      <Tag {...tagProps(item, i)} onClose={(_c, e) => handleClose(item, e)}>
+        {item.children ?? ''}
+      </Tag>
+    {/if}
   {/each}
 
   {#if showN}
@@ -123,7 +142,11 @@
         {#snippet content()}
           <div class="cd-tag-rest-group-popover" role="group" aria-label={restLabel}>
             {#each restTags as item, i (item.tagKey ?? `rest-${i}`)}
-              <Tag {...tagProps(item, i)}>{item.children ?? ''}</Tag>
+              {#if mode === 'custom'}
+                {@render renderTagItem?.(item)}
+              {:else}
+                <Tag {...tagProps(item, i)}>{item.children ?? ''}</Tag>
+              {/if}
             {/each}
           </div>
         {/snippet}
