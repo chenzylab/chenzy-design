@@ -1,27 +1,19 @@
 <script lang="ts">
-  import { ColorPicker, Text, Space } from '@chenzy-design/svelte';
+  import { ColorPicker, Text, Space, colorValueFromHex, type ColorValue } from '@chenzy-design/svelte';
 
-  let withAlpha = $state('#3366ffcc');
-  let noAlpha = $state('#16a34a');
+  let withAlpha = $state<ColorValue>(colorValueFromHex('#3366ffcc'));
+  let noAlpha = $state<ColorValue>(colorValueFromHex('#16a34a'));
 </script>
 
 <Space vertical align="start">
-  <Space>
-    <ColorPicker
-      alpha
-      defaultFormat="rgb"
-      value={withAlpha}
-      onChange={(c) => (withAlpha = c)}
-    />
-    <Text type="tertiary">带透明度：{withAlpha}</Text>
+  <Space align="start">
+    <!-- alpha 开启：显示透明度滑条 + 百分比数字输入 -->
+    <ColorPicker alpha value={withAlpha} onChange={(c) => (withAlpha = c)} />
+    <Text type="tertiary">带透明度：{withAlpha.hex}（a={withAlpha.rgba.a}）</Text>
   </Space>
 
-  <Space>
-    <ColorPicker
-      alpha={false}
-      value={noAlpha}
-      onChange={(c) => (noAlpha = c)}
-    />
-    <Text type="tertiary">关闭透明度：{noAlpha}</Text>
+  <Space align="start">
+    <ColorPicker alpha={false} value={noAlpha} onChange={(c) => (noAlpha = c)} />
+    <Text type="tertiary">关闭透明度：{noAlpha.hex}</Text>
   </Space>
 </Space>

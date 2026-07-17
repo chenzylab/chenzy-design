@@ -366,10 +366,7 @@ export const en_US: Locale = {
     alpha: 'Alpha',
     hex: 'Hex color value',
     eyeDropper: 'Pick color from screen',
-    recent: 'Recently used',
     format: 'Color format',
-    presets: 'Preset colors',
-    panelLabel: 'Color picker',
   },
   Tag: {
     close: 'Close',
