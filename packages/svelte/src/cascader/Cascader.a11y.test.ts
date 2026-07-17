@@ -168,4 +168,27 @@ describe('Cascader a11y', () => {
     expect(tags[0]?.textContent).toContain('Hangzhou');
     expect(tags[0]?.textContent).not.toContain('West Lake');
   });
+
+  // 回归（渲染层）：unRelated 下多个跨层中间节点的完整路径 value 都渲染成含父路径的 tag。
+  // 覆盖 checkedLeafPaths 的 unRelated 分支（用 currentPaths 直取、findPath 解析路径）。
+  // 注：交互层「点击 checkbox 经 toggleCheckNode 构建完整路径」的修复（colIndex 传参）走真机
+  // 与 kbd 测试覆盖——此处用 defaultValue 传入已完整的路径，绕过 toggleCheckNode，故只验渲染。
+  it('多选 unRelated：多个中间节点的完整路径 value 均渲染含父路径的 tag', () => {
+    const { container } = renderWithLocale(Cascader, {
+      props: {
+        treeData,
+        multiple: true,
+        checkRelation: 'unRelated',
+        // 两个跨层中间节点：Hangzhou（zj>hz）与 Jiangsu（js，第一层）。
+        defaultValue: [['zj', 'hz'], ['js']],
+        ariaLabel: 'Region',
+      },
+    });
+    const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
+    expect(tags.length).toBe(2);
+    const texts = tags.map((t) => t.textContent ?? '');
+    // 完整路径回显：Hangzhou 带父 Zhejiang，Jiangsu 独立。
+    expect(texts.some((t) => t.includes('Zhejiang') && t.includes('Hangzhou'))).toBe(true);
+    expect(texts.some((t) => t.includes('Jiangsu'))).toBe(true);
+  });
 });

@@ -776,8 +776,9 @@
     return false;
   }
 
-  // 切换某节点勾选（支持 related/unRelated 两种模式）
-  function toggleCheckNode(node: CascaderNode) {
+  // 切换某节点勾选（支持 related/unRelated 两种模式）。colIndex=该节点所在列，
+  // 用于在 unRelated 下构建完整路径（父路径 = activePath 前 colIndex 项）。
+  function toggleCheckNode(node: CascaderNode, colIndex?: number) {
     if (node.disabled || disabled) return;
     if (isUnRelated) {
       // unRelated: 独立切换，不联动父子
@@ -787,13 +788,11 @@
       if (idx >= 0) {
         nextPaths.splice(idx, 1);
       } else {
-        // 从 activePath 构建完整路径
-        const colIdx = activePath.indexOf(nodeVal);
-        if (colIdx >= 0) {
-          nextPaths.push(activePath.slice(0, colIdx + 1));
-        } else {
-          nextPaths.push([nodeVal]);
-        }
+        // 构建完整路径：第 colIndex 列节点的父路径 = activePath 前 colIndex 项。
+        // 用 colIndex 而非 activePath.indexOf(nodeVal)——后者在值重复/父列未展开时会失败，
+        // 导致存入残缺路径（如只有 [tropical] 丢了父 fruit），findPath 解析不到而 tag 不渲染。
+        const parent = typeof colIndex === 'number' ? activePath.slice(0, colIndex) : [];
+        nextPaths.push([...parent, nodeVal]);
       }
       const nextKeys = pathsToLeafBase(nextPaths);
       if (exceedsMax(currentPaths.length, nextPaths.length, nextKeys)) return;
@@ -946,7 +945,7 @@
       }
       // enableLeafClick: 只有 true 时叶子点击触发勾选
       if (enableLeafClick || !node.isLeaf) {
-        toggleCheckNode(node);
+        toggleCheckNode(node, colIndex);
       }
       return;
     }
@@ -1143,7 +1142,7 @@
       case ' ':
         e.preventDefault();
         if (node) {
-          if (multiple) toggleCheckNode(node);
+          if (multiple) toggleCheckNode(node, kbCol);
           else selectNode(kbCol, node);
         }
         break;
@@ -1547,7 +1546,7 @@
                       indeterminate={cs.half}
                       disabled={node.disabled || disabled}
                       ariaLabel={node.label}
-                      onChange={() => toggleCheckNode(node)}
+                      onChange={() => toggleCheckNode(node, colIndex)}
                     />
                   </span>
                 {/if}
