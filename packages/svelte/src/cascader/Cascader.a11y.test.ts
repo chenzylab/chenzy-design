@@ -75,4 +75,43 @@ describe('Cascader a11y', () => {
     expect(rootCombobox).toBeNull();
     await expectNoAxeViolations(container);
   });
+
+  // 多选：触发器整体复用 TagInput（对齐 Semi renderTagInput）。选中路径以 tag 回显路径 label，
+  // 触发器内是 .cd-tag-input（role=group），而非自绘 <Tag> 列表。
+  it('多选：触发器为 TagInput 结构，选中路径以 tag 回显路径 label，无 axe violations', async () => {
+    const { container } = renderWithLocale(Cascader, {
+      props: {
+        treeData,
+        multiple: true,
+        defaultValue: [['zj', 'hz', 'xh']],
+        ariaLabel: 'Region',
+        placeholder: 'Select region',
+      },
+    });
+    // 触发器内是 TagInput（role=group），而非旧的自绘 tag 列表。
+    const tagInput = container.querySelector('.cd-tag-input[role="group"]');
+    expect(tagInput).not.toBeNull();
+    // 选中路径以 tag 渲染，文本为整条路径 label（separator 连接）。
+    const tag = container.querySelector('.cd-cascader-selection-tag');
+    expect(tag).not.toBeNull();
+    expect(tag?.textContent).toContain('West Lake');
+    await expectNoAxeViolations(container);
+  });
+
+  // 多选 maxTagCount 折叠：超出显示 +N（由 TagInput 内建 .cd-tag-input-wrapper-n 渲染）。
+  it('多选 maxTagCount：超出折叠为 +N（TagInput 内建），无 axe violations', async () => {
+    const { container } = renderWithLocale(Cascader, {
+      props: {
+        treeData,
+        multiple: true,
+        maxTagCount: 1,
+        defaultValue: [['zj', 'hz', 'xh'], ['js', 'nj']],
+        ariaLabel: 'Region',
+      },
+    });
+    const restN = container.querySelector('.cd-tag-input-wrapper-n');
+    expect(restN).not.toBeNull();
+    expect(restN?.textContent).toContain('+1');
+    await expectNoAxeViolations(container);
+  });
 });

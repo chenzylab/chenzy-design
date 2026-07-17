@@ -46,7 +46,7 @@
   import Tag from '../tag/Tag.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
   import Input from '../input/Input.svelte';
-  import Popover from '../popover/Popover.svelte';
+  import TagInput from '../tag-input/TagInput.svelte';
   import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
 
@@ -496,7 +496,7 @@
 
   // 触发器内搜索输入框（对齐 Semi renderInput：搜索框在触发器选择区内，非浮层顶部）。
   // showInput：面板打开且内置可搜索时显示 <Input>（Semi 于 toggleInputShow(true) 时聚焦）。
-  // 单选：Input 与 displayText span 同层；多选本轮仍用 <Tag> 直渲 + Input 承接搜索。
+  // 单选：Input 与 displayText span 同层；多选走 TagInput（其内建搜索输入，见 renderTagInput 段）。
   const showInput = $derived(showBuiltinSearch && isOpen);
   // 搜索 Input 组件实例（供打开时聚焦，对齐 Semi focusInput）。
   let searchInputEl = $state<Input | undefined>(undefined);
@@ -648,23 +648,27 @@
     return out;
   });
 
-  // maxTagCount 折叠：显示前 N 个 tag + 隐藏数（仅影响显示，不改 value，红线 #1/#2）。
-  const visibleTagPaths = $derived(
-    maxTagCount !== undefined && maxTagCount >= 0
-      ? checkedLeafPaths.slice(0, maxTagCount)
-      : checkedLeafPaths,
+  // --- 多选触发器复用 TagInput（对齐 Semi renderTagInput）---
+  // TagInput 消费 string[] 的 value（每条选中路径以其末端节点 value 为 key），
+  // 折叠 maxTagCount / 剩余 Popover / +N 均由 TagInput 内部处理（Semi 同构）。
+  // key→路径回显数据映射：renderTagItem 收到 key 后据此取路径 label；onRemove 据此取叶子 value。
+  const tagKeyToLeaf = $derived.by(() => {
+    const m = new Map<string, { path: Key[]; labels: string[]; nodes: CascaderNode[] }>();
+    for (const leaf of checkedLeafPaths) {
+      m.set(String(leaf.path[leaf.path.length - 1]), leaf);
+    }
+    return m;
+  });
+  // TagInput value：每条选中路径末端节点 value 的字符串键（顺序即 checkedLeafPaths 顺序）。
+  const tagInputValue = $derived(
+    checkedLeafPaths.map((leaf) => String(leaf.path[leaf.path.length - 1])),
   );
-  const hiddenTagCount = $derived(
-    maxTagCount !== undefined && maxTagCount >= 0
-      ? Math.max(0, checkedLeafPaths.length - maxTagCount)
-      : 0,
-  );
-  // 折叠隐藏的剩余项（showRestTagsPopover 时在 +N 浮层内列出，与可见 tag 相同的 label 取法）。
-  const hiddenTagPaths = $derived(
-    maxTagCount !== undefined && maxTagCount >= 0
-      ? checkedLeafPaths.slice(maxTagCount)
-      : [],
-  );
+  // exactOptionalPropertyTypes：可选 prop 传 undefined 会报错，缺省时不带该键（对象展开透传）。
+  const tagInputOptional = $derived<Record<string, unknown>>({
+    ...(maxTagCount !== undefined ? { maxTagCount } : {}),
+    ...(restTagsPopoverProps !== undefined ? { restTagsPopoverProps } : {}),
+    ...(showBuiltinSearch ? { onInputChange: (v: string) => (searchValue = v) } : {}),
+  });
 
   const selectedChain = $derived(findPath(normalizedTreeData, currentValue));
   const displayLabel = $derived(renderPath(selectedChain.map((n) => n.label), selectedChain));
@@ -1295,52 +1299,48 @@
 
     <div class={['cd-cascader-selection', multiple && 'cd-cascader-selection-multiple'].filter(Boolean).join(' ')}>
       {#if multiple}
-        {#if checkedLeafPaths.length > 0}
-          {#each visibleTagPaths as leaf (leaf.path.join('/'))}
-            <Tag
-              class="cd-cascader-selection-tag"
-              size={size === 'large' ? 'default' : 'small'}
-              closable={!disabled}
-              onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
-            >
-              {renderPath(leaf.labels, leaf.nodes)}
-            </Tag>
-          {/each}
-          {#if hiddenTagCount > 0}
-            {#if showRestTagsPopover}
-              <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
-                <span
-                  class="cd-cascader-selection-n"
-                  aria-label={loc().t('Cascader.restTagsCount', { count: hiddenTagCount })}
-                >+{hiddenTagCount}</span>
-                {#snippet content()}
-                  <div class="cd-cascader-rest-tags">
-                    {#each hiddenTagPaths as leaf (leaf.path.join('/'))}
-                      <Tag
-                        size={size === 'large' ? 'default' : 'small'}
-                        closable={!disabled}
-                        onClose={() => removeLeaf(leaf.path[leaf.path.length - 1] as Key)}
-                      >
-                        {renderPath(leaf.labels, leaf.nodes)}
-                      </Tag>
-                    {/each}
-                  </div>
-                {/snippet}
-              </Popover>
-            {:else}
-              <span class="cd-cascader-selection-n">+{hiddenTagCount}</span>
+        <!--
+          多选触发器整体复用 TagInput（严格对齐 Semi renderTagInput）：
+          value=已选叶子 key、maxTagCount/showRestTagsPopover/restTagsPopoverProps 透传、
+          renderTagItem 保留 cascader 路径 label 回显、inputValue+onInputChange 接搜索过滤、
+          onRemove 接删除叶子（受控不回写 value，仅 onChange，红线 #1）、expandRestTagsOnClick=false。
+          搜索输入内建在 TagInput（Semi 同构，无独立搜索 Input）；不可搜索时 TagInput 输入框仅占位不生效。
+        -->
+        <TagInput
+          {disabled}
+          size={size === 'large' ? 'large' : size === 'small' ? 'small' : 'default'}
+          {validateStatus}
+          value={tagInputValue}
+          {showRestTagsPopover}
+          expandRestTagsOnClick={false}
+          inputValue={showBuiltinSearch ? searchValue : ''}
+          {...tagInputOptional}
+          onRemove={(removedKey) => {
+            const leaf = tagKeyToLeaf.get(removedKey);
+            if (leaf) removeLeaf(leaf.path[leaf.path.length - 1] as Key);
+          }}
+          placeholder={hasSelection ? '' : (placeholder ?? '')}
+          ariaLabel={ariaLabel}
+        >
+          {#snippet renderTagItem({ value: nodeKey, onClose })}
+            {@const leaf = tagKeyToLeaf.get(nodeKey)}
+            {#if leaf}
+              <Tag
+                class="cd-cascader-selection-tag"
+                size={size === 'large' ? 'large' : 'small'}
+                color="white"
+                type="light"
+                closable={!disabled}
+                onClose={(_children, e) => {
+                  e.preventDefault();
+                  onClose();
+                }}
+              >
+                {renderPath(leaf.labels, leaf.nodes)}
+              </Tag>
             {/if}
-          {/if}
-          <!-- 多选 + 内置可搜索：Tag 之后接搜索 Input（对齐 Semi renderTagInput 的搜索段）。 -->
-          {#if showInput}
-            {@render searchInput()}
-          {/if}
-        {:else if showBuiltinSearch}
-          <!-- 多选空选 + 可搜索：placeholder span + 搜索 Input（对齐 Semi renderInput）。 -->
-          {@render searchTrigger('')}
-        {:else}
-          <span class="cd-cascader-selection-placeholder">{placeholder ?? ''}</span>
-        {/if}
+          {/snippet}
+        </TagInput>
       {:else if showBuiltinSearch}
         <!-- 单选 + 内置可搜索：displayText/placeholder span + showInput 时的搜索 Input
              （对齐 Semi renderInput：search-wrapper > span + <Input>，非浮层顶部裸 input）。 -->
@@ -1625,11 +1625,16 @@
     text-overflow: ellipsis;
     color: var(--cd-color-cascader-placeholder-text-default);
   }
-  .cd-cascader-selection-n {
-    cursor: pointer;
-    font-size: var(--cd-font-size-small);
-    color: var(--cd-color-cascader-selection-n-text-default);
-    padding-inline: var(--cd-spacing-tight);
+  /* 多选：TagInput 撑满选择区且去除外层内边距（TagInput 自带内边距 + tag 折叠/+N/搜索）。 */
+  .cd-cascader-selection-multiple {
+    padding-inline: 0;
+    overflow: visible;
+  }
+  .cd-cascader-selection-multiple :global(.cd-tag-input) {
+    inline-size: 100%;
+    min-block-size: auto;
+    border: none;
+    background: transparent;
   }
   .cd-cascader-clearbtn,
   .cd-cascader-arrow {
@@ -1794,13 +1799,6 @@
     align-items: center;
     flex: 0 0 auto;
     margin-inline-end: var(--cd-spacing-tight);
-  }
-  .cd-cascader-rest-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-spacing-extra-tight);
-    align-items: center;
-    max-inline-size: 240px;
   }
   .cd-cascader-option-icon {
     display: inline-flex;
