@@ -5,12 +5,13 @@
 
   // disabledTime 按当前已选时间动态返回禁用规则：
   // 禁用 0 ~ 6 点；且当已选到某小时时，禁用该小时之前的所有分钟。
-  function disabledTime(date: Date) {
-    const h = date.getHours();
+  function disabledTime(date: Date | null) {
+    const h = date ? date.getHours() : 0;
+    const m = date ? date.getMinutes() : 0;
     return {
       disabledHours: () => [0, 1, 2, 3, 4, 5, 6],
       disabledMinutes: (hour: number) =>
-        hour === h ? Array.from({ length: date.getMinutes() }, (_, i) => i) : [],
+        hour === h ? Array.from({ length: m }, (_, i) => i) : [],
     };
   }
 </script>

@@ -9,11 +9,11 @@
   </div>
   <div style="display:flex; flex-direction:column; gap:6px">
     <Text type="tertiary">large + 可清除</Text>
-    <TimePicker size="large" clearable defaultValue="09:30:00" />
+    <TimePicker size="large" showClear defaultValue="09:30:00" />
   </div>
   <div style="display:flex; flex-direction:column; gap:6px">
     <Text type="tertiary">error 状态</Text>
-    <TimePicker status="error" placeholder="请选择时间" />
+    <TimePicker validateStatus="error" placeholder="请选择时间" />
   </div>
   <div style="display:flex; flex-direction:column; gap:6px">
     <Text type="tertiary">禁用</Text>

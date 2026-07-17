@@ -16,7 +16,7 @@
   <TimePicker
     {value}
     minuteStep={5}
-    showSecond={false}
+    format="HH:mm"
     {disabledHours}
     hideDisabledOptions
     onChange={(t) => (value = Array.isArray(t) ? t[0] : t)}
