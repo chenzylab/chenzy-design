@@ -318,7 +318,7 @@
               <Tag color="green">Success</Tag>
               <Tag color="red">Danger</Tag>
               <Badge count={5}><Avatar size="small">CD</Avatar></Badge>
-              <Switch bind:value={demoSwitch} />
+              <Switch value={demoSwitch} onChange={(c) => (demoSwitch = c)} />
               <Checkbox bind:checked={demoChecked}>选择</Checkbox>
             </div>
             <div class="prow">
@@ -326,7 +326,7 @@
               <div class="w160"><Select bind:value={demoSelect} optionList={selectOptions} /></div>
             </div>
             <div class="prow slider-row">
-              <Slider bind:value={demoSlider} />
+              <Slider value={demoSlider} onChange={(v) => (demoSlider = v as number)} />
             </div>
             <div class="prow">
               <Progress percent={demoSlider} />
@@ -384,7 +384,7 @@
             </div>
           {:else if previewKey === 'switch'}
             <div class="prow">
-              <Switch bind:value={demoSwitch} />
+              <Switch value={demoSwitch} onChange={(c) => (demoSwitch = c)} />
               <Switch value />
               <Switch disabled />
               <Switch value disabled />
@@ -440,14 +440,14 @@
             </div>
           {:else if previewKey === 'slider'}
             <div class="prow slider-row">
-              <Slider bind:value={demoSlider} />
+              <Slider value={demoSlider} onChange={(v) => (demoSlider = v as number)} />
             </div>
           {:else if previewKey === 'progress'}
             <div class="prow">
               <Progress percent={demoSlider} />
             </div>
             <div class="prow slider-row">
-              <Slider bind:value={demoSlider} />
+              <Slider value={demoSlider} onChange={(v) => (demoSlider = v as number)} />
             </div>
           {:else if previewKey === 'tabs'}
             <Tabs activeKey={demoTab} onChange={(k) => (demoTab = String(k))}>
