@@ -1949,8 +1949,8 @@
     border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
   .cd-date-picker__time-col {
-    inline-size: var(--cd-time-picker-time-col-width);
-    block-size: calc(var(--cd-time-picker-time-item-height) * 7);
+    inline-size: var(--cd-date-picker-inline-time-col-width);
+    block-size: calc(var(--cd-date-picker-inline-time-item-height) * 7);
     margin: 0;
     padding: 0;
     overflow-y: auto;
@@ -1964,7 +1964,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    block-size: var(--cd-time-picker-time-item-height);
+    block-size: var(--cd-date-picker-inline-time-item-height);
     color: var(--cd-color-date-picker-date-text-default);
     cursor: pointer;
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);

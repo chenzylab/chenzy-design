@@ -21,8 +21,7 @@
  * - 字面量宽高（252px / 64px / 72px / 1px / 2px / 0）保留。
  * - Semi 无 shadow category，我们 TokenCategory 亦无，`$shadow-*` 归 other。
  *
- * 末尾两项（time-col-width / time-item-height）为 chenzy-design 组件实际消费的补充 token（Semi 无对应，
- * 但 TimePicker.svelte 与 DatePicker.svelte 均引 `--cd-time-picker-time-*`），本次一并定义收敛悬空。
+ * 全部 token 严格对齐 Semi variables.scss，无自造超集中间层。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -49,12 +48,4 @@ export const timePickerTokens = {
 
   // —— 阴影（other，我们无 shadow category）——
   'shadow-time-picker-range-panel': { value: '0 4px 14px rgba(0, 0, 0, 0.1)', category: 'other', label: '菜单阴影', usage: '时间范围选择器菜单阴影' },
-
-  // —— DatePicker / RangePicker 内联时间列消费的补充 token（Semi 无对应；仅 DatePicker 系列消费）——
-  // 注意：TimePicker 已破坏性重写为复用 ScrollList/ScrollItem，改消费 Semi 对齐的 panel-list-*（64/72px）
-  // 与 ScrollList item 高（36px），不再消费这两个 56/28 短名。但 DatePicker.svelte / RangePicker.svelte
-  // 的 dateTime 内联时间列仍消费它们（见 date-picker/*.svelte），故保留定义避免跨组件断链（那两组件
-  // 的对齐属独立工程）。待 DatePicker 系列亦复用 ScrollList 后可一并移除。
-  'time-picker-time-col-width': { value: '56px', category: 'width', label: '滚动列列宽', usage: '日期时间选择器内联时间列每列宽度（DatePicker/RangePicker 消费）' },
-  'time-picker-time-item-height': { value: '28px', category: 'height', label: '滚动列项高', usage: '日期时间选择器内联时间列每项高度（DatePicker/RangePicker 消费）' },
 } satisfies TokenGroup;

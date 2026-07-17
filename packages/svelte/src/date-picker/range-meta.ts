@@ -79,8 +79,8 @@ export const meta = {
   tokens: [
     '--cd-date-picker-*',
     '--cd-color-date-picker-*',
-    '--cd-time-picker-time-col-width',
-    '--cd-time-picker-time-item-height',
+    '--cd-date-picker-inline-time-col-width',
+    '--cd-date-picker-inline-time-item-height',
     '--cd-input-*',
     '--cd-focus-ring',
     '--cd-motion-*',

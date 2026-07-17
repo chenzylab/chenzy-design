@@ -91,4 +91,11 @@ export const datePickerTokens = {
   'date-picker-footer-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'footer 背景色', usage: 'Semi $color-datepicker_footer-bg-default（组件消费）' },
   'date-picker-header-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'header 文字色', usage: '日期面板 header 文字（组件消费）' },
   'date-picker-weekday-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '星期文字色', usage: '星期标题文字（组件消费）' },
+
+  // —— dateTime 内联时间列私有尺寸（Semi 无对应；DatePicker/RangePicker 内联时间列消费）——
+  // 自 time-picker.ts 迁入：TimePicker 已复用 ScrollList 对齐 Semi，这两个 56/28 短名是 DatePicker
+  // 系列内联时间列（未复用 ScrollList）的私有尺寸，归属 date-picker。待 DatePicker 系列亦复用
+  // ScrollList/TimePicker 后连同 CSS 一并移除。
+  'date-picker-inline-time-col-width': { value: '56px', category: 'width', label: '内联时间列列宽', usage: 'dateTime 内联时间列每列宽度（组件消费）' },
+  'date-picker-inline-time-item-height': { value: '28px', category: 'height', label: '内联时间列项高', usage: 'dateTime 内联时间列每项高度（组件消费）' },
 } satisfies TokenGroup;
