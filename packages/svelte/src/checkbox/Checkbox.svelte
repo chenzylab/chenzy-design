@@ -239,7 +239,10 @@
     user-select: none;
     cursor: pointer;
   }
-  /* 原生 input 铺满 inner，opacity:0 承载 a11y 焦点（对齐 Semi checkbox.scss:22-30） */
+  /* 原生 input 铺满 inner，opacity:0 承载 a11y 焦点（对齐 Semi checkbox.scss:22-30）。
+     z-index:1 让 input 稳定盖在 relative 的 inner-display 之上——否则后置的 relative
+     兄弟会渲染在 absolute input 上层，点击视觉方框（inner-display，aria-hidden）时
+     input 收不到 change，导致「勾不上」（cascader 多选列真机暴露）。 */
   .cd-checkbox-input {
     position: absolute;
     inset: 0;
@@ -249,6 +252,7 @@
     padding: 0;
     opacity: 0;
     cursor: inherit;
+    z-index: 1;
   }
   .cd-checkbox-inner-display {
     box-sizing: border-box;

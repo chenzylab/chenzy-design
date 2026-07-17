@@ -626,6 +626,19 @@
   //   leafOnly=true：完全勾选的父级折叠为父路径并停止下钻（父 tag 代表整子树）。
   const checkedLeafPaths = $derived.by<{ path: Key[]; labels: string[]; nodes: CascaderNode[] }[]>(() => {
     if (!multiple) return [];
+    // unRelated（互不联动）：tag 源直接取用户实际勾选的每条路径（currentPaths），
+    // 不走联动推导的 checkState、不下钻到叶子（对齐 Semi：unRelated 用 checkedKeys 直接回显）。
+    // 否则勾选中间节点（如「热带」）会被 conduct 联动展开成其叶子 tag（芒果/菠萝），语义错。
+    if (isUnRelated) {
+      const out: { path: Key[]; labels: string[]; nodes: CascaderNode[] }[] = [];
+      for (const p of currentPaths) {
+        if (p.length === 0) continue;
+        const chain = findPath(normalizedTreeData, p);
+        if (chain.length === 0) continue;
+        out.push({ path: p, labels: chain.map((n) => n.label), nodes: chain });
+      }
+      return out;
+    }
     const out: { path: Key[]; labels: string[]; nodes: CascaderNode[] }[] = [];
     const walk = (nodes: CascaderNode[], path: Key[], labels: string[], chain: CascaderNode[]) => {
       for (const n of nodes) {

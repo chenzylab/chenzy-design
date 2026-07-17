@@ -147,4 +147,25 @@ describe('Cascader a11y', () => {
     expect(changed).toBeDefined();
     expect(Array.isArray(changed) ? (changed as unknown[]).length : -1).toBe(0);
   });
+
+  // 回归：checkRelation=unRelated 勾选中间节点，tag 回显该节点本身（不联动展开成其叶子）。
+  // 修复前 checkedLeafPaths 用联动推导的 checkState，勾「Hangzhou」会被 conduct 展开成叶子
+  // 「West Lake」，语义错。修复后 unRelated 直接取 currentPaths，tag 就是被勾选的中间节点路径。
+  it('多选 unRelated：勾选中间节点 tag 回显该节点本身不展开成叶子', () => {
+    const { container } = renderWithLocale(Cascader, {
+      props: {
+        treeData,
+        multiple: true,
+        checkRelation: 'unRelated',
+        // 勾选中间节点 Hangzhou（其下有叶子 West Lake）。unRelated 下应独立选中它本身。
+        defaultValue: [['zj', 'hz']],
+        ariaLabel: 'Region',
+      },
+    });
+    const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
+    // 恰 1 个 tag，回显到 Hangzhou（中间节点本身），不含叶子 West Lake。
+    expect(tags.length).toBe(1);
+    expect(tags[0]?.textContent).toContain('Hangzhou');
+    expect(tags[0]?.textContent).not.toContain('West Lake');
+  });
 });
