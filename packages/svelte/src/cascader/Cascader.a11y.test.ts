@@ -56,4 +56,23 @@ describe('Cascader a11y', () => {
     expect(selected).not.toBeNull();
     await expectNoAxeViolations(document.body);
   });
+
+  // 内置可搜索（filterTreeNode）+ 打开：对齐 Semi renderInput，combobox 语义下移到触发器内
+  // 搜索 <Input> 的原生 <input> 上（role=combobox + aria-expanded + aria-autocomplete=list），
+  // 根容器不再是 combobox（避免嵌套双 combobox）。
+  it('可搜索打开态：combobox 落在触发器内原生 input，root 非 combobox，无 axe violations', async () => {
+    const { container } = renderWithLocale(Cascader, {
+      props: { treeData, defaultOpen: true, filterTreeNode: true, ariaLabel: 'Region', placeholder: 'Select region' },
+    });
+    // combobox 现在是搜索 Input 的原生 input（.cd-input），而非根 .cd-cascader div。
+    const combobox = container.querySelector('input.cd-input[role="combobox"]');
+    expect(combobox).not.toBeNull();
+    expect(combobox?.getAttribute('aria-expanded')).toBe('true');
+    expect(combobox?.getAttribute('aria-autocomplete')).toBe('list');
+    expect(combobox?.getAttribute('aria-controls')).toBeTruthy();
+    // 根容器不再承载 combobox（语义已下移到 input）。
+    const rootCombobox = container.querySelector('div.cd-cascader[role="combobox"]');
+    expect(rootCombobox).toBeNull();
+    await expectNoAxeViolations(container);
+  });
 });

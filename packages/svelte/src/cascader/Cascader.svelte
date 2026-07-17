@@ -45,6 +45,7 @@
   import { floating } from '../_floating/use-floating.js';
   import Tag from '../tag/Tag.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
+  import Input from '../input/Input.svelte';
   import Popover from '../popover/Popover.svelte';
   import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
@@ -493,6 +494,13 @@
   const trimmedSearch = $derived(searchValue.trim());
   const searchActive = $derived(isFilterable && trimmedSearch.length > 0);
 
+  // 触发器内搜索输入框（对齐 Semi renderInput：搜索框在触发器选择区内，非浮层顶部）。
+  // showInput：面板打开且内置可搜索时显示 <Input>（Semi 于 toggleInputShow(true) 时聚焦）。
+  // 单选：Input 与 displayText span 同层；多选本轮仍用 <Tag> 直渲 + Input 承接搜索。
+  const showInput = $derived(showBuiltinSearch && isOpen);
+  // 搜索 Input 组件实例（供打开时聚焦，对齐 Semi focusInput）。
+  let searchInputEl = $state<Input | undefined>(undefined);
+
   // onSearch 回调：搜索值变化时触发
   $effect(() => {
     if (isFilterable && trimmedSearch) {
@@ -828,6 +836,8 @@
 
   function toggleOpen() {
     if (disabled) return;
+    // 对齐 Semi handleClick：可搜索时点击开着的触发器不收起（焦点留搜索框继续输入）。
+    if (isOpen && showBuiltinSearch) return;
     setOpen(!isOpen);
   }
 
@@ -1130,6 +1140,15 @@
   });
   const shouldRender = $derived(isOpen || hasBeenOpened);
 
+  // 打开且内置可搜索时聚焦触发器内搜索 Input（对齐 Semi toggle2SearchInput→focus）。
+  // 焦点从 root(combobox) 转移到 Input 原生 input：searchable 时 combobox 语义由 Input 承载。
+  $effect(() => {
+    if (showInput && searchInputEl) {
+      // tick 后聚焦，待 Input 挂载。
+      requestAnimationFrame(() => searchInputEl?.focus());
+    }
+  });
+
   // 空态文本（emptyContent 为 string 时用，Snippet 时模板直接渲染）。
   const emptyText = $derived(
     typeof emptyContent === 'string' ? emptyContent : loc().t('Cascader.emptyText'),
@@ -1171,28 +1190,79 @@
 </script>
 
 <!--
-  root 即 combobox（对齐 Semi：.semi-cascader 根节点承载 role=combobox + 焦点 + 键盘），
-  内部含 prefix / selection（tags|text|placeholder）/ clearbtn / arrow / suffix。
+  root 触发器容器（对齐 Semi .semi-cascader，含 prefix / selection / clearbtn / arrow / suffix）。
+  - 非搜索：root 承载 role=combobox + tabindex + 键盘（aria-activedescendant 列内 roving），焦点在 root。
+  - 内置可搜索：combobox 语义下移到 selection 内的搜索 <Input>（原生 input 承载 role/aria +
+    键盘），root 转为普通容器（无 role/tabindex，避免嵌套双 combobox）。对齐 Semi renderInput。
 -->
+<!--
+  searchInput：触发器内搜索 <Input>（对齐 Semi renderInput 的 {showInput && <Input/>}）。
+  combobox 语义经 rest 透传落到 Input 内部原生 <input>：role=combobox + aria-expanded
+  + aria-controls + aria-activedescendant + aria-autocomplete=list。受控值 searchValue + onInput
+  回填（勿 bind:）。键盘走 onFlatKeydown（搜索态 roving）+ Escape 关闭。
+-->
+{#snippet searchInput()}
+  <Input
+    bind:this={searchInputEl}
+    class="cd-cascader-search-input"
+    size={size === 'large' ? 'default' : 'small'}
+    borderless
+    {disabled}
+    {validateStatus}
+    value={searchValue}
+    placeholder={hasSelection ? '' : (searchPlaceholder ?? loc().t('Cascader.searchPlaceholder'))}
+    ariaLabel={ariaLabel}
+    role="combobox"
+    aria-haspopup="listbox"
+    aria-expanded={isOpen}
+    aria-controls={searchActive ? flatListId : listId}
+    aria-activedescendant={activeDescId}
+    aria-autocomplete="list"
+    onInput={(v) => (searchValue = v)}
+    onKeyDown={(e) => {
+      if (searchActive) onFlatKeydown(e);
+      else if (e.key === 'Escape') setOpen(false);
+      else onPanelKeydown(e);
+    }}
+  />
+{/snippet}
+
+<!-- searchTrigger：Semi renderInput 的 search-wrapper（span[displayText|placeholder] + searchInput）。 -->
+{#snippet searchTrigger(displayText: string)}
+  <div class="cd-cascader-search-wrapper">
+    <span
+      class={[
+        !displayText && 'cd-cascader-selection-placeholder',
+        displayText && 'cd-cascader-selection-text',
+        showInput && searchValue && 'cd-cascader-selection-text-hide',
+        showInput && !searchValue && 'cd-cascader-selection-text-inactive',
+      ].filter(Boolean).join(' ')}
+    >{displayText ? displayText : (placeholder ?? '')}</span>
+    {#if showInput}
+      {@render searchInput()}
+    {/if}
+  </div>
+{/snippet}
+
 <!-- svelte-ignore a11y_interactive_supports_focus -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class={cls}
   bind:this={rootEl}
   {style}
-  role={triggerRender ? undefined : 'combobox'}
-  aria-haspopup={triggerRender ? undefined : 'listbox'}
-  aria-expanded={triggerRender ? undefined : isOpen}
-  aria-controls={triggerRender ? undefined : listId}
-  aria-activedescendant={!triggerRender && isOpen && !searchActive ? activeDescId : undefined}
-  aria-label={triggerRender ? undefined : ariaLabel}
-  aria-invalid={!triggerRender && validateStatus === 'error' ? true : undefined}
-  aria-disabled={!triggerRender && disabled ? true : undefined}
-  tabindex={triggerRender ? undefined : (disabled ? -1 : 0)}
+  role={triggerRender || showBuiltinSearch ? undefined : 'combobox'}
+  aria-haspopup={triggerRender || showBuiltinSearch ? undefined : 'listbox'}
+  aria-expanded={triggerRender || showBuiltinSearch ? undefined : isOpen}
+  aria-controls={triggerRender || showBuiltinSearch ? undefined : listId}
+  aria-activedescendant={!triggerRender && !showBuiltinSearch && isOpen && !searchActive ? activeDescId : undefined}
+  aria-label={triggerRender || showBuiltinSearch ? undefined : ariaLabel}
+  aria-invalid={!triggerRender && !showBuiltinSearch && validateStatus === 'error' ? true : undefined}
+  aria-disabled={!triggerRender && !showBuiltinSearch && disabled ? true : undefined}
+  tabindex={triggerRender || showBuiltinSearch ? undefined : (disabled ? -1 : 0)}
   onclick={triggerRender ? undefined : toggleOpen}
   onfocus={triggerRender ? undefined : (e) => onFocus?.(e as unknown as MouseEvent)}
   onblur={triggerRender ? undefined : (e) => onBlur?.(e as unknown as MouseEvent)}
-  onkeydown={triggerRender ? undefined : (e) => {
+  onkeydown={triggerRender || showBuiltinSearch ? undefined : (e) => {
     if (disabled) return;
     if (!isOpen) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
@@ -1261,9 +1331,20 @@
               <span class="cd-cascader-selection-n">+{hiddenTagCount}</span>
             {/if}
           {/if}
+          <!-- 多选 + 内置可搜索：Tag 之后接搜索 Input（对齐 Semi renderTagInput 的搜索段）。 -->
+          {#if showInput}
+            {@render searchInput()}
+          {/if}
+        {:else if showBuiltinSearch}
+          <!-- 多选空选 + 可搜索：placeholder span + 搜索 Input（对齐 Semi renderInput）。 -->
+          {@render searchTrigger('')}
         {:else}
           <span class="cd-cascader-selection-placeholder">{placeholder ?? ''}</span>
         {/if}
+      {:else if showBuiltinSearch}
+        <!-- 单选 + 内置可搜索：displayText/placeholder span + showInput 时的搜索 Input
+             （对齐 Semi renderInput：search-wrapper > span + <Input>，非浮层顶部裸 input）。 -->
+        {@render searchTrigger(hasSelection ? displayLabel : '')}
       {:else if hasSelection}
         <span class="cd-cascader-selection-text">{displayLabel}</span>
       {:else}
@@ -1328,22 +1409,6 @@
     >
       {#if topSlot}{@render topSlot()}{/if}
 
-      {#if showBuiltinSearch}
-        <div class="cd-cascader-search-wrapper">
-          <input
-            class="cd-cascader-search-input"
-            type="text"
-            role="combobox"
-            aria-expanded={searchActive}
-            aria-controls={flatListId}
-            aria-activedescendant={searchActive ? activeDescId : undefined}
-            placeholder={searchPlaceholder ?? loc().t('Cascader.searchPlaceholder')}
-            aria-label={loc().t('Cascader.searchPlaceholder')}
-            bind:value={searchValue}
-            onkeydown={onFlatKeydown}
-          />
-        </div>
-      {/if}
       {#if searchActive}
         <!-- 单条搜索结果项：virtualize 与非 virtualize 两路共用同一渲染，行为一致 -->
         {#snippet flatOption(p: FlatPath, fi: number)}
@@ -1604,25 +1669,35 @@
   .cd-cascader-popover-hidden {
     display: none;
   }
+  /* 触发器内搜索段（对齐 Semi renderInput 的 search-wrapper）：占满选择区，
+     span 与 <Input> 层叠占位。Input 无边框透明底，融入触发器（借用 Input borderless）。 */
   .cd-cascader-search-wrapper {
-    padding: var(--cd-spacing-tight) var(--cd-spacing-base-tight);
-    border-block-end: 1px solid var(--cd-cascader-column-border);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-inline-size: 0;
   }
-  .cd-cascader-search-input {
+  /* showInput 时 span 与 <Input> 层叠（span 绝对定位于输入框上层作占位）；
+     未 showInput（关闭态）时 span 留在正常流中撑起 wrapper 高度，避免塌陷不可见。 */
+  .cd-cascader-search-wrapper:has(.cd-cascader-search-input) .cd-cascader-selection-placeholder,
+  .cd-cascader-search-wrapper:has(.cd-cascader-search-input) .cd-cascader-selection-text {
+    position: absolute;
+    inset-inline: 0;
+    pointer-events: none;
+  }
+  /* showInput 且有输入：隐藏底层 displayText（改由 Input 显示输入值）。 */
+  .cd-cascader-selection-text-hide {
+    display: none;
+  }
+  /* showInput 且无输入：displayText 淡显作为占位提示（对齐 Semi selection-text-inactive）。 */
+  .cd-cascader-selection-text-inactive {
+    color: var(--cd-color-cascader-placeholder-text-default);
+  }
+  /* 触发器内搜索 Input：撑满、透明融入触发器（borderless 已去边框底色）。 */
+  .cd-cascader-search-wrapper :global(.cd-cascader-search-input) {
     inline-size: 100%;
-    block-size: var(--cd-height-input-small);
-    padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    color: inherit;
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
-    font: inherit;
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-cascader-search-input:focus-visible {
-    outline: none;
-    border-color: var(--cd-input-border-active);
-    box-shadow: var(--cd-focus-ring);
+    background: transparent;
   }
   /* 各级菜单列容器：横向排列 */
   .cd-cascader-option-lists {
