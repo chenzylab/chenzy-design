@@ -1,9 +1,10 @@
 <!--
-  InputNumber — 严格对齐 Semi Design inputNumber。
-  受约束的数值录入：native <input inputmode="decimal"> role=spinbutton + 右侧 stacked 步进器。
+  InputNumber — 严格对齐 Semi Design inputNumber（复用已对齐的 Input，对齐 Semi InputNumber extends InputProps）。
+  受约束的数值录入：内部复用 <Input>，经 rest 透传 role=spinbutton + aria-valuenow/min/max/valuetext
+  落到原生 <input>，右侧 stacked 步进器（正常态外置 sibling、innerButtons 态作 Input suffix）。
   受控 / 非受控（value 显式提供即受控，只回调不回写）。
   DOM/class 对齐 Semi 连字符体系：
-    根 .cd-input-number（含 -size-{size}）
+    外层容器 .cd-input-number（透明 flex，含 -size-{size}），边框/底色由 Input 承担
     步进器 .cd-input-number-suffix-btns（innerButtons → -inner）
     按钮 .cd-input-number-button + -button-up/-down（+ -not-allowed / -disabled）
   长按连续增减：按钮 mousedown 首延迟 pressTimeout 后以 pressInterval 间隔重复，up/leave/卸载清理。
@@ -19,8 +20,9 @@
     formatWithLocale,
     useLiveAnnouncer,
   } from '@chenzy-design/core';
-  import { IconClear, IconChevronUp, IconChevronDown } from '@chenzy-design/icons';
+  import { IconChevronUp, IconChevronDown } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
+  import Input from '../input/Input.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'error' | 'warning' | 'success';
@@ -159,9 +161,11 @@
   const loc = useLocale();
   // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值。
   const announcer = useLiveAnnouncer();
-  // prefix/suffix 可传 string 或 Snippet；函数即视为 Snippet。
+  // prefix 可传 string 或 Snippet；函数即视为 Snippet，字符串走内置 span 渲染。
   const prefixSnippet = $derived(typeof prefix === 'function' ? (prefix as Snippet) : undefined);
+  const prefixText = $derived(typeof prefix === 'string' ? prefix : undefined);
   const suffixSnippet = $derived(typeof suffix === 'function' ? (suffix as Snippet) : undefined);
+  const suffixText = $derived(typeof suffix === 'string' ? suffix : undefined);
   // 生成一次稳定回退 id（在 $derived 里调 useId 会每次产生新 id）。
   const autoId = useId('cd-input-number');
   const inputId = $derived(id ?? autoId);
@@ -178,6 +182,8 @@
   let editingText = $state<string | null>(null);
   // 是否聚焦（编辑态）：科学计数法/货币仅在失焦显示态生效，聚焦时展示完整数字。
   let focused = $state(false);
+  // 悬浮态：innerButtons 步进器仅在 hover/focus 时出现在 Input suffix（对齐 Semi renderSuffix）。
+  let hovering = $state(false);
   const text = $derived(editingText ?? formatDisplay(current));
 
   // 科学计数法：启用与阈值派生（对象可自定义 threshold，默认 15）。
@@ -317,16 +323,18 @@
     onNumberChange?.(next, e);
   }
 
-  function clearValue() {
-    commitValue(null);
-    editingText = null;
-    inputEl?.focus({ preventScroll: true });
-  }
-
   const canClear = $derived(showClear && !disabled && !readonly && current !== null);
 
-  function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
-    editingText = e.currentTarget.value;
+  // Input onChange 回 string：编辑态仅缓存原始文本，parse/clamp/commit 延后到失焦/Enter。
+  function handleInputChange(v: string) {
+    editingText = v;
+  }
+
+  // Input showClear 清除：直接 commit null 并复位编辑态（对齐 Semi 内置清除）。
+  function handleClear() {
+    commitValue(null);
+    editingText = null;
+    inputRef?.focus();
   }
 
   function commitFromText(e?: Event) {
@@ -339,6 +347,12 @@
     }
     const normalized = normalize(parsed);
     if (normalized !== current) commitValue(normalized, e);
+  }
+
+  function handleFocus(e: FocusEvent) {
+    // 进入编辑态：科学计数法/货币退回完整数字显示（text 派生重算）。
+    focused = true;
+    onFocus?.(e);
   }
 
   function handleBlur(e: FocusEvent) {
@@ -377,7 +391,7 @@
   function startHold(dir: 1 | -1, e: MouseEvent) {
     // 始终阻止 mousedown 失焦（现有行为），keepFocus 进一步确保聚焦保持。
     preventBlurSteal(e);
-    if (keepFocus && inputEl) inputEl.focus({ preventScroll: true });
+    if (keepFocus) inputRef?.focus();
     if (disabled || readonly) return;
     const next = stepBy(dir, false);
     if (dir === 1) onUpClick?.(next, e);
@@ -416,41 +430,36 @@
     e.preventDefault();
   }
 
-  let inputEl: HTMLInputElement | undefined;
+  // 内部 Input 组件实例引用（复用其命令式 focus/blur 方法）。
+  let inputRef = $state<Input | undefined>(undefined);
 
-  // 命令式 Methods（对齐 Semi）：focus() 尊重 preventScroll prop（默认 false）。
+  // 命令式 Methods（对齐 Semi）：委托内部 Input（其 focus 尊重自身 preventScroll）。
   export function focus(): void {
-    inputEl?.focus({ preventScroll });
+    inputRef?.focus();
   }
   export function blur(): void {
-    inputEl?.blur();
+    inputRef?.blur();
   }
 
-  function inputActions(node: HTMLInputElement) {
-    inputEl = node;
-    if (autofocus && !disabled) {
-      // 推迟到下一帧，确保挂载后 DOM 已就绪、避免抢占 SSR hydration。
-      requestAnimationFrame(() => node.focus());
-    }
-
-    function handleFocus(e: FocusEvent) {
-      // 进入编辑态：科学计数法/货币退回完整数字显示（text 派生重算）。
-      focused = true;
-      onFocus?.(e);
-    }
-
-    node.addEventListener('focus', handleFocus);
-
-    return {
-      destroy() {
-        node.removeEventListener('focus', handleFocus);
-        if (inputEl === node) inputEl = undefined;
-      },
-    };
-  }
-
-  // 步进器隐藏：hideButtons 或 innerButtons（innerButtons 靠 CSS hover/focus 显形）。
+  // 步进器隐藏：hideButtons 或 innerButtons（innerButtons 靠 hover/focus 显形）。
   const showButtons = $derived(!hideButtons);
+  // 正常态（非 inner、非 hidden）步进器外置为 Input 的兄弟节点；innerButtons 态作 Input 的 suffix。
+  const showOuterButtons = $derived(showButtons && !innerButtons);
+  // innerButtons 态：hover/focus 时步进器占据 Input suffix 槽。
+  const showInnerButtons = $derived(innerButtons && showButtons && (hovering || focused));
+  // 传给 Input 的 suffix：有内容（内嵌步进器 / 用户 suffix）才传 snippet，否则 undefined（不渲染空槽）。
+  const passSuffix = $derived(showInnerButtons || suffix != null);
+  // 传给 Input 的 prefix：仅在有值时传 snippet。
+  const passPrefix = $derived(prefix != null);
+
+  // 可选字符串属性经此聚合展开：值为 undefined 时键不出现，满足 Input 在 exactOptionalPropertyTypes
+  // 下 `?: string`（不含 undefined）的严格约束。clearIcon 同理（Snippet | undefined）。
+  const optionalAttrs = $derived({
+    ...(placeholder !== undefined && { placeholder }),
+    ...(name !== undefined && { name }),
+    ...(ariaLabel !== undefined && { ariaLabel }),
+    id: inputId,
+  });
 
   const cls = $derived(
     [
@@ -458,10 +467,7 @@
       `cd-input-number-size-${size}`,
       validateStatus !== 'default' && `cd-input-number-${validateStatus}`,
       innerButtons && 'cd-input-number-inner',
-      prefix != null && 'cd-input-number-has-prefix',
-      suffix != null && 'cd-input-number-has-suffix',
       disabled && 'cd-input-number-disabled',
-      borderless && 'cd-input-number-borderless',
       className,
     ]
       .filter(Boolean)
@@ -469,184 +475,124 @@
   );
 </script>
 
-<div class={cls} {style} aria-invalid={validateStatus === 'error' || undefined}>
-  {#if prefix != null}
-    <span class="cd-input-number-affix cd-input-number-prefix">
-      {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefix}{/if}
-    </span>
-  {/if}
-
-  <input
-    use:inputActions
-    class="cd-input-number-input"
-    type="text"
-    inputmode="decimal"
+<div
+  class={cls}
+  {style}
+  onmouseenter={() => (hovering = true)}
+  onmouseleave={() => (hovering = false)}
+  role="presentation"
+>
+  <Input
+    bind:this={inputRef}
     role="spinbutton"
-    id={inputId}
-    {name}
-    {disabled}
-    {readonly}
-    {placeholder}
-    value={text}
-    aria-label={ariaLabel}
+    inputmode="decimal"
+    type="text"
+    step={Number.isFinite(step) ? step : undefined}
     aria-valuenow={current ?? undefined}
     aria-valuetext={ariaValueText}
     aria-valuemin={Number.isFinite(min) ? min : undefined}
     aria-valuemax={Number.isFinite(max) ? max : undefined}
-    aria-invalid={validateStatus === 'error' || undefined}
-    aria-disabled={disabled || undefined}
     aria-readonly={readonly || undefined}
-    oninput={handleInput}
-    onblur={handleBlur}
-    onkeydown={handleKeydown}
+    aria-disabled={disabled || undefined}
+    {size}
+    {disabled}
+    {readonly}
+    {...optionalAttrs}
+    {validateStatus}
+    {borderless}
+    autoFocus={autofocus}
+    {preventScroll}
+    value={text}
+    showClear={canClear}
+    {...clearIcon !== undefined ? { clearIcon } : {}}
+    onChange={handleInputChange}
+    onClear={handleClear}
+    onKeyDown={handleKeydown}
+    onFocus={handleFocus}
+    onBlur={handleBlur}
+    {...passPrefix ? { prefix: prefixNode } : {}}
+    {...passSuffix ? { suffix: suffixNode } : {}}
   />
 
-  {#if suffix != null}
-    <span class="cd-input-number-affix cd-input-number-suffix">
-      {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
-    </span>
-  {/if}
-
-  {#if canClear}
-    <button
-      type="button"
-      class="cd-input-number-clearbtn"
-      tabindex="-1"
-      aria-label={loc().t('InputNumber.clear')}
-      onmousedown={(e) => e.preventDefault()}
-      onclick={clearValue}
-    >
-      {#if clearIcon}
-        {@render clearIcon()}
-      {:else}
-        <IconClear />
-      {/if}
-    </button>
-  {/if}
-
-  {#if showButtons}
-    <div class="cd-input-number-suffix-btns" class:cd-input-number-suffix-btns-inner={innerButtons}>
-      <span
-        class="cd-input-number-button cd-input-number-button-up"
-        class:cd-input-number-button-up-not-allowed={disabled || readonly || atMax}
-        class:cd-input-number-button-up-disabled={disabled}
-        role="button"
-        tabindex="-1"
-        aria-label={loc().t('InputNumber.increase')}
-        aria-disabled={disabled || readonly || atMax || undefined}
-        onmousedown={(e) => startHold(1, e)}
-        onmouseup={stopHold}
-        onmouseleave={stopHold}
-      >
-        <IconChevronUp size="extra-small" />
-      </span>
-      <span
-        class="cd-input-number-button cd-input-number-button-down"
-        class:cd-input-number-button-down-not-allowed={disabled || readonly || atMin}
-        class:cd-input-number-button-down-disabled={disabled}
-        role="button"
-        tabindex="-1"
-        aria-label={loc().t('InputNumber.decrease')}
-        aria-disabled={disabled || readonly || atMin || undefined}
-        onmousedown={(e) => startHold(-1, e)}
-        onmouseup={stopHold}
-        onmouseleave={stopHold}
-      >
-        <IconChevronDown size="extra-small" />
-      </span>
+  {#if showOuterButtons}
+    <div class="cd-input-number-suffix-btns">
+      {@render stepperButtons()}
     </div>
   {/if}
 </div>
 
+<!-- prefix：Snippet 直渲，字符串包 span（对齐 Semi renderPrefix 同槽）。 -->
+{#snippet prefixNode()}
+  {#if prefixSnippet}
+    {@render prefixSnippet()}
+  {:else if prefixText != null}
+    <span class="cd-input-number-affix cd-input-number-prefix">{prefixText}</span>
+  {/if}
+{/snippet}
+
+<!--
+  Input suffix（对齐 Semi renderSuffix）：innerButtons 态渲染步进器；
+  否则渲染用户 suffix（string 包 span，Snippet 直渲）。正常态步进器不在此，见外置 sibling。
+-->
+{#snippet suffixNode()}
+  {#if showInnerButtons}
+    <div class="cd-input-number-suffix-btns cd-input-number-suffix-btns-inner">
+      {@render stepperButtons()}
+    </div>
+  {:else if suffixSnippet}
+    {@render suffixSnippet()}
+  {:else if suffixText != null}
+    <span class="cd-input-number-affix cd-input-number-suffix">{suffixText}</span>
+  {/if}
+{/snippet}
+
+<!-- 步进上/下按钮（对齐 Semi renderButtons）：正常态外置、innerButtons 态作 Input suffix。 -->
+{#snippet stepperButtons()}
+  <span
+    class="cd-input-number-button cd-input-number-button-up"
+    class:cd-input-number-button-up-not-allowed={disabled || readonly || atMax}
+    class:cd-input-number-button-up-disabled={disabled}
+    role="button"
+    tabindex="-1"
+    aria-label={loc().t('InputNumber.increase')}
+    aria-disabled={disabled || readonly || atMax || undefined}
+    onmousedown={(e) => startHold(1, e)}
+    onmouseup={stopHold}
+    onmouseleave={stopHold}
+  >
+    <IconChevronUp size="extra-small" />
+  </span>
+  <span
+    class="cd-input-number-button cd-input-number-button-down"
+    class:cd-input-number-button-down-not-allowed={disabled || readonly || atMin}
+    class:cd-input-number-button-down-disabled={disabled}
+    role="button"
+    tabindex="-1"
+    aria-label={loc().t('InputNumber.decrease')}
+    aria-disabled={disabled || readonly || atMin || undefined}
+    onmousedown={(e) => startHold(-1, e)}
+    onmouseup={stopHold}
+    onmouseleave={stopHold}
+  >
+    <IconChevronDown size="extra-small" />
+  </span>
+{/snippet}
+
 <style>
+  /* 外层容器 —— 对齐 Semi .semi-input-number：透明 inline-flex，边框/底色由内部 Input 承担。 */
   .cd-input-number {
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
     inline-size: 100%;
-    block-size: var(--cd-height-input-default);
-    background: var(--cd-input-color-bg);
-    color: var(--cd-input-color-text);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
-    font-size: var(--cd-input-font-size);
-    padding-inline-end: var(--cd-spacing-input-number-button-marginleft);
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    position: relative;
   }
-  .cd-input-number-size-small {
-    block-size: var(--cd-height-input-small);
-    font-size: var(--cd-font-size-small);
+  /* innerButtons：步进器绝对定位于内嵌右内侧，需容器建立定位上下文。 */
+  .cd-input-number-inner {
+    position: relative;
   }
-  .cd-input-number-size-large {
-    block-size: var(--cd-height-input-large);
-    font-size: var(--cd-font-size-header-6);
-  }
-  .cd-input-number:focus-within {
-    border-color: var(--cd-input-border-active);
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-input-number-warning {
-    border-color: var(--cd-input-border-warning);
-  }
-  .cd-input-number-error {
-    border-color: var(--cd-input-border-error);
-  }
-  .cd-input-number-disabled {
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-text-3);
-    cursor: not-allowed;
-  }
-  .cd-input-number-borderless {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-  }
-  .cd-input-number-borderless:focus-within {
-    border-color: transparent;
-    box-shadow: none;
-  }
-  .cd-input-number-clearbtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    padding: 0;
-    padding-inline-end: var(--cd-spacing-extra-tight);
-    border: none;
-    background: transparent;
-    color: var(--cd-color-text-2);
-    cursor: pointer;
-    border-radius: var(--cd-border-radius-small);
-  }
-  .cd-input-number-clearbtn:hover {
-    color: var(--cd-color-text-0);
-  }
-  .cd-input-number-clearbtn:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-input-number-input {
-    flex: 1 1 auto;
-    inline-size: 100%;
-    min-inline-size: 0;
-    margin: 0;
-    padding-inline: var(--cd-input-padding-x);
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    outline: none;
-  }
-  /* 有前/后缀时，由 affix 承担该侧边距，避免双重留白。 */
-  .cd-input-number-has-prefix .cd-input-number-input {
-    padding-inline-start: var(--cd-spacing-extra-tight);
-  }
-  .cd-input-number-has-suffix .cd-input-number-input {
-    padding-inline-end: var(--cd-spacing-extra-tight);
-  }
-  .cd-input-number-input::placeholder {
-    color: var(--cd-input-color-placeholder);
-  }
+
+  /* prefix/suffix affix（字符串态）—— 对齐 Semi：text-2，nowrap，不换行。 */
   .cd-input-number-affix {
     display: inline-flex;
     align-items: center;
@@ -654,15 +600,6 @@
     color: var(--cd-color-text-2);
     white-space: nowrap;
     user-select: none;
-  }
-  .cd-input-number-prefix {
-    padding-inline-start: var(--cd-input-padding-x);
-  }
-  .cd-input-number-suffix {
-    padding-inline-end: var(--cd-input-padding-x);
-  }
-  .cd-input-number-input:disabled {
-    cursor: not-allowed;
   }
 
   /* --- 步进器：对齐 Semi inputNumber-suffix-btns（列布局，外框描边，两按钮各占 50%） --- */
@@ -716,41 +653,17 @@
     cursor: not-allowed;
   }
 
-  /* --- innerButtons：步进器内嵌右内侧，hover/focus 显形（对齐 Semi suffix-btns-inner） --- */
-  .cd-input-number-inner {
-    position: relative;
-  }
+  /* --- innerButtons：步进器内嵌 Input suffix 槽，hover/focus 时条件渲染（对齐 Semi suffix-btns-inner） --- */
   .cd-input-number-suffix-btns-inner {
     margin-inline-start: var(--cd-spacing-input-number-button-inner-marginleft);
     border-radius: var(--cd-radius-input-number-inner);
     overflow: hidden;
+    block-size: var(--cd-height-input-number-button-inner-default);
   }
   .cd-input-number-size-small .cd-input-number-suffix-btns-inner {
     block-size: var(--cd-height-input-number-button-inner-small);
   }
   .cd-input-number-size-large .cd-input-number-suffix-btns-inner {
     block-size: var(--cd-height-input-number-button-inner-large);
-  }
-  .cd-input-number-inner .cd-input-number-suffix-btns {
-    position: absolute;
-    inset-block: 1px;
-    inset-inline-end: 1px;
-    block-size: var(--cd-height-input-number-button-inner-default);
-    background: var(--cd-input-color-bg);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-input-number-inner:hover .cd-input-number-suffix-btns,
-  .cd-input-number-inner:focus-within .cd-input-number-suffix-btns {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cd-input-number,
-    .cd-input-number-inner .cd-input-number-suffix-btns {
-      transition: none;
-    }
   }
 </style>
