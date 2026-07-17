@@ -478,6 +478,11 @@
     box-sizing: border-box;
     pointer-events: none;
   }
+  /* 滑块把手尺寸略小于色板把手（对齐 Semi 色板 handleSize=20 / 滑块 handleSize=18）。 */
+  .cd-color-picker__slider-handle {
+    inline-size: var(--cd-color-picker-slider-handle-size);
+    block-size: var(--cd-color-picker-slider-handle-size);
+  }
   .cd-color-picker__colorSlider {
     position: relative;
     inline-size: 100%;

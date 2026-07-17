@@ -43,7 +43,8 @@ export const colorPickerTokens = {
   'font-color-picker-inputnumbersuffix-fontsize': { value: '14px', category: 'font', label: '百分比字号', usage: 'alpha 数字输入框后百分比字体大小' },
 
   // —— chenzy 补充（Semi 靠 renderPicker 传入 handleSize/height，无对应字面量 token；组件消费）——
-  'color-picker-handle-size': { value: '20px', category: 'width', label: '把手尺寸', usage: '拖拽把手 / 滑块把手边长（组件消费；对齐 Semi handleSize 18~20）' },
+  'color-picker-handle-size': { value: '20px', category: 'width', label: '色板把手尺寸', usage: '色板（colorChooseArea）拖拽把手边长（组件消费；对齐 Semi handleSize={20}）' },
+  'color-picker-slider-handle-size': { value: '18px', category: 'width', label: '滑块把手尺寸', usage: 'hue / alpha 滑块把手边长（组件消费；对齐 Semi slider handleSize={18}）' },
   'color-picker-handle-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '把手阴影', usage: '拖拽把手阴影（组件消费）' },
   'color-picker-slider-height': { value: '10px', category: 'height', label: '滑块高度', usage: 'hue / alpha 滑块条高度（组件消费；对齐 Semi height=10）' },
 } satisfies TokenGroup;
