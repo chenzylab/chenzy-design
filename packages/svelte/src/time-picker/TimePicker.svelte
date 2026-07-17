@@ -734,15 +734,10 @@
 
   /* 面板内列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
      解除 ScrollList 默认 `flex: 1 1 0%` 的等分，让下面的列宽 width 生效。
-     同时去掉列间竖线：Semi 时间面板的列实测 border 为 0（devtools 盒模型 64×36 四周皆 0），
-     列间无分隔线，选中行高亮因此跨列连成整条。ScrollList 默认给 `-item:not(:last-child)` 加了
-     `border-inline-end`（通用滚动列表语义），在时间面板里需去掉才与 Semi 一致。 */
+     列间 1px 8% border 保留（对齐 Semi：scrollList `-item:not(:last-child)` 的 border-right，
+     Semi timePicker 只去了 -item-wheel 的 border，normal item 的 border-right 保留）。 */
   :global(.cd-time-picker__panel .cd-scrolllist-item) {
     flex: none;
-  }
-  /* 去列间竖线需匹配 ScrollList 那条 `-item:not(:last-child)` 的特异性（0-3-0）才压得住。 */
-  :global(.cd-time-picker__panel .cd-scrolllist-item:not(:last-child)) {
-    border: none;
   }
   /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`：
      Semi 是无祖先前缀的裸类，这里用 :global() 包裸类等价——面板 use:floating portal 到 body，
