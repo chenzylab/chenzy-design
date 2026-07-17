@@ -788,6 +788,11 @@
   .cd-time-picker__lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
     border-inline-end: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
   }
+  /* range 面板里 body 与 header 的 padding 覆盖为 0（镜像 Semi timePicker.scss L111-115
+     `.semi-scrolllist { .semi-scrolllist-body, .semi-scrolllist-header { padding: 0 } }`）。
+     ScrollList 默认 body 有 `padding: 0 16px`，在双列 range 布局里会把列内容与面板边缘/
+     中间分割线推开 16px 空隙、视觉不紧凑——此处按 Semi 归零。之前只覆盖了 header 漏了 body。 */
+  .cd-time-picker__lists :global(.cd-scrolllist-body),
   .cd-time-picker__lists :global(.cd-scrolllist-header) {
     padding: var(--cd-spacing-time-picker-range-panel-scrolllist-header-body-padding);
   }
