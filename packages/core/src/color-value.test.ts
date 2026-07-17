@@ -53,6 +53,11 @@ describe('ColorValue: Semi hsva (s/v 0-100) round-trips', () => {
     expect(rgba.g).toBeGreaterThanOrEqual(196);
     expect(rgba.b).toBeGreaterThanOrEqual(186);
   });
+  it('hsva -> hex (Semi 品牌绿，含 ±1 byte 舍入)', () => {
+    // hsvaToHex = rgbaToHex(hsvaToRgba)；#39c5bb 往返因 round 得 #39c4bb（g 少 1，Semi 同）。
+    const hex = hsvaToHex({ h: 176, s: 71, v: 77, a: 1 });
+    expect(hex).toMatch(/^#39c[45]bb$/);
+  });
 });
 
 describe('ColorValue: three-state constructors', () => {
