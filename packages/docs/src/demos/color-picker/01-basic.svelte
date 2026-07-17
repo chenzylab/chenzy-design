@@ -1,27 +1,20 @@
 <script lang="ts">
-  import { ColorPicker, Text, Space } from '@chenzy-design/svelte';
+  import { ColorPicker, Text, Space, colorValueFromHex, type ColorValue } from '@chenzy-design/svelte';
 
-  let color = $state('#3366ff');
+  // 值为 Semi ColorValue 对象 { hsva, rgba, hex }
+  let color = $state<ColorValue>(colorValueFromHex('#39c5bb'));
 </script>
 
 <Space vertical align="start">
-  <Space>
-    <ColorPicker
-      value={color}
-      presets={['#3366ff', '#16a34a', '#ef4444', '#f59e0b']}
-      recentColors
-      onChange={(c) => (color = c)}
-    />
-    <Text type="tertiary">颜色：{color}</Text>
+  <Space align="center">
+    <!-- usePopover：默认色块 trigger 点击弹出面板 -->
+    <ColorPicker usePopover value={color} onChange={(c) => (color = c)} />
+    <Text type="tertiary">颜色：{color.hex}</Text>
   </Space>
 
   <Space align="start">
-    <ColorPicker
-      inline
-      value={color}
-      presets={['#3366ff', '#16a34a', '#ef4444']}
-      onChange={(c) => (color = c)}
-    />
+    <!-- 默认 inline：直接内联渲染面板 -->
+    <ColorPicker value={color} onChange={(c) => (color = c)} />
     <Text type="tertiary">内联模式</Text>
   </Space>
 </Space>

@@ -440,6 +440,24 @@ export {
   type FormatOptions,
 } from './color.js';
 export {
+  hexToRgba as colorValueHexToRgba,
+  rgbaToHex as colorValueRgbaToHex,
+  rgbaToHsva as colorValueRgbaToHsva,
+  hsvaToRgba as colorValueHsvaToRgba,
+  hsvaToHex as colorValueHsvaToHex,
+  hexToHsva as colorValueHexToHsva,
+  colorValueFromHsva,
+  colorValueFromRgba,
+  colorValueFromHex,
+  colorValueToInputString,
+  parseColorInput,
+  DEFAULT_COLOR_VALUE,
+  type HsvaColor,
+  type RgbaColor,
+  type ColorValue,
+  type ColorValueFormat,
+} from './color-value.js';
+export {
   createVideoPlayerFoundation,
   progressValueFromPointer,
   segmentValueWidth,

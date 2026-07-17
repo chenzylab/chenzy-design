@@ -1,311 +1,243 @@
 <!--
-  ColorPicker — see specs/components/input/ColorPicker.spec.md
-  基础子集：trigger + 浮层（saturation 方块 + hue 条 + alpha 条 + hex 输入 + presets）。
-  受控 value / open 不回写 (红线 #1)，仅 onChange / onOpenChange。
-  拖拽用命令式指针（红线 #3）：pointerdown 一次性读 rect 存普通变量，
-  document pointermove/pointerup 手动加/移除。useDismiss 放 $effect。
-  对外 value/onChange 一律为 hex 字符串（向后兼容；format 仅影响面板内显示/编辑）。
-  eyeDropper：浏览器支持 window.EyeDropper 时渲染吸管按钮，取屏幕色（降级隐藏）。
-  recentColors：记录最近应用的颜色（preset/eyeDropper/hex 确认/关闭面板时），去重 + 上限。
-  format：面板内可切换 hex/rgb/hsv/hsl 显示与编辑（红线 #2：转换纯函数在 core）。
-  inline：不渲染 trigger 浮层，直接内联渲染选色面板（设置页嵌入）。
+  ColorPicker — 严格对齐 Semi Design（semi-ui/colorPicker）。
+  值形态为 Semi ColorValue 对象 { hsva, rgba, hex }（hsva 的 s/v 为 0-100）。
+  受控 value 不回写（红线 #1），仅经 onChange 通知；value 未传时内部持有 currentColor。
+
+  结构镜像 Semi renderPicker：
+    topSlot? + ColorChooseArea(饱和度方块) + ColorSlider(hue) + AlphaSlider(alpha)?
+    + DataPart(colorDemoBlock + InputGroup[Input + InputNumber(alpha%)? + Select(格式)] + Button(吸管)?)
+    + bottomSlot?
+  usePopover=true 时用 <Popover> 包裹，children 缺省渲染默认色块 trigger（对齐 Semi）。
+
+  拖拽用命令式指针（红线 #3）：pointerdown 一次性读 rect，document 上手动加/移除监听。
+  格式（hex/rgba/hsva）为 DataPart 内部 state，不受控（对齐 Semi）。
 -->
 <script lang="ts">
-  import { tick, type Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import {
-    useId,
-    useDismiss,
-    useFocusTrap,
-    nextRovingIndex,
-    rovingKeyFromEvent,
-    hexToHsv as coreHexToHsv,
-    hsvToHex as coreHsvToHex,
-    formatColor,
-    parseColor,
-    colorClamp01,
-    type Hsv,
-    type ColorFormat,
+    colorValueFromHsva,
+    colorValueFromRgba,
+    colorValueFromHex,
+    colorValueToInputString,
+    parseColorInput,
+    DEFAULT_COLOR_VALUE,
+    type ColorValue,
+    type ColorValueFormat,
+    type HsvaColor,
+    type RgbaColor,
   } from '@chenzy-design/core';
   import { IconEyedropper } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
+  import Popover from '../popover/Popover.svelte';
+  import type { ComponentProps } from 'svelte';
+  import Input from '../input/Input.svelte';
+  import InputGroup from '../input/InputGroup.svelte';
+  import InputNumber from '../input-number/InputNumber.svelte';
+  import Select from '../select/Select.svelte';
+  import Button from '../button/Button.svelte';
 
-  type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
+  type PopoverProps = ComponentProps<typeof Popover>;
 
   interface Props {
-    value?: string;
-    defaultValue?: string;
+    /** 受控值（Semi ColorValue 对象）。 */
+    value?: ColorValue;
+    /** 非受控初始值（默认 Semi 品牌绿 #39c5bb）。 */
+    defaultValue?: ColorValue;
+    /** 是否显示 alpha 透明度滑条（对齐 Semi alpha）。 */
     alpha?: boolean;
-    open?: boolean;
-    defaultOpen?: boolean;
-    presets?: string[];
-    size?: Size;
-    status?: Status;
-    disabled?: boolean;
-    outputUppercase?: boolean;
-    /** 受控：面板内显示/编辑的颜色格式。对外 onChange 仍为 hex 字符串。 */
-    format?: ColorFormat;
-    /** 非受控初始格式（默认 'hex'）。format 受控时忽略。 */
-    defaultFormat?: ColorFormat;
-    /** 面板内是否显示格式切换器（默认 true；format 锁定可设 false） */
-    showFormatToggle?: boolean;
-    /** 内联渲染选色面板，不使用 trigger 浮层（默认 false） */
-    inline?: boolean;
-    /** 等价于 !inline，使用 trigger 浮层（默认 false） */
-    usePopover?: boolean;
-    /** 自定义触发器内容（提供时替换默认色块 trigger，仅浮层模式） */
-    children?: Snippet;
-    /** 面板顶部 slot */
-    topSlot?: Snippet;
-    /** 面板底部 slot */
-    bottomSlot?: Snippet;
-    /** 根元素内联样式 */
-    style?: string;
-    /** 面板高度 px（默认 280） */
-    height?: number;
-    /** 面板宽度 px（默认 280） */
+    /** 面板宽度 px（对齐 Semi width，默认 280）。 */
     width?: number;
-    /** 支持浏览器 EyeDropper 时显示吸管按钮（默认 true，不支持自动隐藏） */
+    /** 饱和度方块高度 px（对齐 Semi height，默认 280）。 */
+    height?: number;
+    /** DataPart 输入区初始格式（不受控，对齐 Semi defaultFormat）。 */
+    defaultFormat?: ColorValueFormat;
+    /** 支持浏览器 EyeDropper 时显示吸管按钮（默认 true，不支持自动隐藏）。 */
     eyeDropper?: boolean;
-    /** 显示最近使用颜色行（默认 false） */
-    recentColors?: boolean;
-    /** 最近颜色上限（默认 8） */
-    recentMax?: number;
-    onChange?: (hex: string) => void;
-    onOpenChange?: (open: boolean) => void;
-    /** 面板内格式切换时触发 */
-    onFormatChange?: (format: ColorFormat) => void;
-    ariaLabel?: string;
+    /** 浮层模式：包裹 Popover，children 作触发器（对齐 Semi usePopover）。 */
+    usePopover?: boolean;
+    /** 透传内部 Popover 的属性（仅 usePopover）。 */
+    popoverProps?: PopoverProps;
+    /** 自定义触发器（仅 usePopover；缺省渲染默认色块，对齐 Semi children）。 */
+    children?: Snippet;
+    /** 面板顶部 slot（对齐 Semi topSlot）。 */
+    topSlot?: Snippet;
+    /** 面板底部 slot（对齐 Semi bottomSlot）。 */
+    bottomSlot?: Snippet;
+    /** 根元素自定义类名（对齐 Semi className）。 */
+    class?: string;
+    /** 根元素内联样式（对齐 Semi style）。 */
+    style?: string;
+    /** 值变化回调（对齐 Semi onChange，回 ColorValue 对象）。 */
+    onChange?: (value: ColorValue) => void;
   }
 
   let {
     value,
-    defaultValue = '#000000',
-    alpha = true,
-    open,
-    defaultOpen = false,
-    presets = [],
-    size = 'default',
-    status = 'default',
-    disabled = false,
-    outputUppercase = true,
-    format,
+    defaultValue = DEFAULT_COLOR_VALUE,
+    alpha = false,
+    width = 280,
+    height = 280,
     defaultFormat = 'hex',
-    showFormatToggle = true,
-    inline = false,
+    eyeDropper = true,
     usePopover = false,
+    popoverProps,
     children,
     topSlot,
     bottomSlot,
+    class: className,
     style,
-    height = 280,
-    width = 280,
-    eyeDropper = true,
-    recentColors = false,
-    recentMax = 8,
     onChange,
-    onOpenChange,
-    onFormatChange,
-    ariaLabel,
   }: Props = $props();
 
   const loc = useLocale();
 
-  const hexInputId = useId('cd-color-picker-hex');
-
-  // ---------- 色彩工具（纯函数来自 core，红线 #2）----------
-  const clamp01 = colorClamp01;
-
-  function hexToHsv(hex: string): Hsv {
-    return coreHexToHsv(hex);
-  }
-
-  function hsvToHex(hsv: Hsv): string {
-    return coreHsvToHex(hsv, { uppercase: outputUppercase });
-  }
-
-  // ---------- 受控值 (红线 #1) ----------
+  // ---------- 受控值（红线 #1）----------
   const isControlled = $derived(value !== undefined);
-  let innerValue = $state<string>(getInitialValue());
-  const currentHex = $derived(isControlled ? (value ?? defaultValue) : innerValue);
+  let innerValue = $state<ColorValue>(untrack(() => defaultValue));
+  const currentColor = $derived<ColorValue>(isControlled ? value! : innerValue);
 
-  function getInitialValue(): string {
-    return defaultValue;
+  function notify(next: ColorValue) {
+    if (!isControlled) innerValue = next;
+    onChange?.(next);
   }
 
-  function setValue(hex: string) {
-    if (!isControlled) innerValue = hex;
-    onChange?.(hex);
+  /** 按格式提交颜色变更（对齐 Semi foundation.handleChange）。 */
+  function handleChange(color: HsvaColor | RgbaColor | string, format: ColorValueFormat) {
+    if (format === 'hsva') notify(colorValueFromHsva(color as HsvaColor));
+    else if (format === 'rgba') notify(colorValueFromRgba(color as RgbaColor));
+    else notify(colorValueFromHex(color as string));
   }
 
-  // usePopover 等价于 !inline：显式启用浮层则覆盖 inline。
-  const effectiveInline = $derived(usePopover ? false : inline);
-
-  // ---------- 受控 open (红线 #1) ----------
-  // inline 模式：面板常驻渲染，不受 open 控制。
-  const isOpenControlled = $derived(open !== undefined);
-  let innerOpen = $state(getInitialOpen());
-  const isOpen = $derived(effectiveInline ? true : isOpenControlled ? !!open : innerOpen);
-
-  // ---------- 受控 format (红线 #1) ----------
-  const isFormatControlled = $derived(format !== undefined);
-  let innerFormat = $state<ColorFormat>(getInitialFormat());
-  const currentFormat = $derived<ColorFormat>(isFormatControlled ? format! : innerFormat);
-
-  function getInitialFormat(): ColorFormat {
-    return format ?? defaultFormat;
-  }
-  const formatOptions: ColorFormat[] = ['hex', 'rgb', 'hsv', 'hsl'];
-
-  function setFormat(next: ColorFormat) {
-    if (next === currentFormat) return;
-    if (!isFormatControlled) innerFormat = next;
-    onFormatChange?.(next);
-    // 切换格式时立即用当前色按新格式刷新输入框（非编辑态）。
-    editingHex = false;
-  }
-
-  function getInitialOpen(): boolean {
-    return defaultOpen;
-  }
-
-  function setOpen(next: boolean) {
-    if (next === isOpen) return;
-    // 关闭面板时把当前颜色记入最近用色
-    if (!next) recordColor(hsvToHex({ h, s, v, a }));
-    if (!isOpenControlled) innerOpen = next;
-    onOpenChange?.(next);
-  }
-
-  function toggleOpen() {
-    if (disabled) return;
-    setOpen(!isOpen);
-  }
-
-  // ---------- 内部 HSV 状态 ----------
-  // 初值从 current hex 派生。dragging 期间不从 value 反算（避免与本地更新打架）。
-  function initialHsv(): Hsv {
-    return hexToHsv(defaultValue);
-  }
-  const init = initialHsv();
-  let h = $state(init.h);
-  let s = $state(init.s);
-  let v = $state(init.v);
-  let a = $state(init.a);
-
-  let dragging = $state(false);
-  // 用户正在手动编辑 hex 输入时，不从 value 反算覆盖输入框。
-  let editingHex = $state(false);
-
-  // 当外部 value 变化时同步内部 HSV（非拖拽 / 非手动编辑期间）。
-  $effect(() => {
-    const hex = currentHex;
-    if (dragging || editingHex) return;
-    const next = hexToHsv(hex);
-    h = next.h;
-    s = next.s;
-    v = next.v;
-    a = next.a;
-  });
-
-  // 当前 hex（由 hsv 计算），用于显示与渐变。
-  const displayHex = $derived(hsvToHex({ h, s, v, a }));
-  const opaqueHex = $derived(hsvToHex({ h, s, v, a: 1 }));
-
-  // 按当前格式格式化的字符串，用于输入框显示。
-  const displayFormatted = $derived(
-    formatColor(
-      { h, s, v, a: alpha ? a : 1 },
-      currentFormat,
-      { uppercase: outputUppercase, alpha },
-    ),
-  );
-
-  function commitHsv() {
-    setValue(hsvToHex({ h, s, v, a }));
-  }
-
-  // ---------- 颜色输入框（按 currentFormat 显示/编辑） ----------
-  // 编辑态显示用户输入缓冲，否则始终派生 displayFormatted（切换格式/拖拽即时刷新）。
-  let hexBuffer = $state('');
-  const hexInput = $derived(editingHex ? hexBuffer : displayFormatted);
-
-  function handleHexInput(e: Event & { currentTarget: HTMLInputElement }) {
-    editingHex = true;
-    hexBuffer = e.currentTarget.value;
-    const next = parseColor(hexBuffer, currentFormat);
-    if (!next) return;
-    h = next.h;
-    s = next.s;
-    v = next.v;
-    a = alpha ? next.a : 1;
-    commitHsv();
-  }
-
-  function handleHexBlur() {
-    editingHex = false;
-  }
-
-  // 应用一个完整 hex（preset / eyeDropper / 最近色）：写 HSV + 提交 + 记录最近。
-  function applyHex(hex: string) {
-    if (disabled) return;
-    const next = hexToHsv(hex);
-    h = next.h;
-    s = next.s;
-    v = next.v;
-    a = alpha ? next.a : 1;
-    commitHsv();
-    recordColor(hsvToHex({ h, s, v, a }));
-  }
-
-  // ---------- presets (role=listbox + 方向键漫游) ----------
-  function applyPreset(preset: string) {
-    applyHex(preset);
-  }
-
-  // 当前高亮的预设索引（roving）。render 期只读此 $state，焦点由 effect 命令式移动。
-  let presetActiveIndex = $state(0);
-  let presetsEl = $state<HTMLElement | null>(null);
-
-  function focusPresetAt(index: number) {
-    void tick().then(() => {
-      const opts = presetsEl?.querySelectorAll<HTMLElement>('[role="option"]');
-      opts?.[index]?.focus();
+  /** 仅改 alpha（对齐 Semi handleChangeA：alpha 关闭时强制不透明，hex 截断）。 */
+  function handleChangeA(newAlpha: number) {
+    const a = alpha ? newAlpha : 1;
+    const rgba: RgbaColor = { ...currentColor.rgba, a };
+    const from = colorValueFromRgba(rgba);
+    notify({
+      rgba,
+      hex: alpha ? from.hex : from.hex.slice(0, 7),
+      hsva: { ...currentColor.hsva, a },
     });
   }
 
-  function onPresetsKeydown(e: KeyboardEvent) {
-    if (disabled || presets.length === 0) return;
-    // RTL：水平方向键语义翻转，使视觉移动方向与按键一致。
-    const rtl = isRtl(e.currentTarget);
-    let key = e.key;
-    if (rtl && key === 'ArrowRight') key = 'ArrowLeft';
-    else if (rtl && key === 'ArrowLeft') key = 'ArrowRight';
-    const intent = rovingKeyFromEvent(key);
-    if (intent) {
-      e.preventDefault();
-      const next = nextRovingIndex(presetActiveIndex, presets.length, intent, true);
-      presetActiveIndex = next;
-      focusPresetAt(next);
-      return;
-    }
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      const preset = presets[presetActiveIndex];
-      if (preset) applyPreset(preset);
-    }
+  // ---------- 命令式拖拽（红线 #3）----------
+  function clamp(n: number, lo: number, hi: number) {
+    return Math.min(hi, Math.max(lo, n));
   }
 
-  // ---------- recentColors ----------
-  let recent = $state<string[]>([]);
-  function recordColor(hex: string) {
-    if (!recentColors) return;
-    const norm = outputUppercase ? hex.toUpperCase() : hex.toLowerCase();
-    const next = [norm, ...recent.filter((c) => c !== norm)];
-    recent = next.slice(0, recentMax);
+  let satEl = $state<HTMLElement | null>(null);
+  let satRect: DOMRect | null = null;
+  function onSatMove(e: PointerEvent) {
+    if (!satRect) return;
+    const s = clamp((e.clientX - satRect.left) / satRect.width, 0, 1) * 100;
+    const v = (1 - clamp((e.clientY - satRect.top) / satRect.height, 0, 1)) * 100;
+    handleChange({ h: currentColor.hsva.h, s, v, a: currentColor.hsva.a }, 'hsva');
+  }
+  function onSatUp() {
+    document.removeEventListener('pointermove', onSatMove);
+    document.removeEventListener('pointerup', onSatUp);
+    satRect = null;
+  }
+  function onSatDown(e: PointerEvent) {
+    if (!satEl) return;
+    e.preventDefault();
+    satRect = satEl.getBoundingClientRect();
+    onSatMove(e);
+    document.addEventListener('pointermove', onSatMove);
+    document.addEventListener('pointerup', onSatUp);
   }
 
-  // ---------- eyeDropper（实验性 API，降级隐藏） ----------
+  let hueEl = $state<HTMLElement | null>(null);
+  let hueRect: DOMRect | null = null;
+  function onHueMove(e: PointerEvent) {
+    if (!hueRect) return;
+    const h = clamp((e.clientX - hueRect.left) / hueRect.width, 0, 1) * 360;
+    handleChange({ ...currentColor.hsva, h }, 'hsva');
+  }
+  function onHueUp() {
+    document.removeEventListener('pointermove', onHueMove);
+    document.removeEventListener('pointerup', onHueUp);
+    hueRect = null;
+  }
+  function onHueDown(e: PointerEvent) {
+    if (!hueEl) return;
+    e.preventDefault();
+    hueRect = hueEl.getBoundingClientRect();
+    onHueMove(e);
+    document.addEventListener('pointermove', onHueMove);
+    document.addEventListener('pointerup', onHueUp);
+  }
+
+  let alphaEl = $state<HTMLElement | null>(null);
+  let alphaRect: DOMRect | null = null;
+  function onAlphaMove(e: PointerEvent) {
+    if (!alphaRect) return;
+    const a = Math.round(clamp((e.clientX - alphaRect.left) / alphaRect.width, 0, 1) * 100) / 100;
+    handleChangeA(a);
+  }
+  function onAlphaUp() {
+    document.removeEventListener('pointermove', onAlphaMove);
+    document.removeEventListener('pointerup', onAlphaUp);
+    alphaRect = null;
+  }
+  function onAlphaDown(e: PointerEvent) {
+    if (!alphaEl) return;
+    e.preventDefault();
+    alphaRect = alphaEl.getBoundingClientRect();
+    onAlphaMove(e);
+    document.addEventListener('pointermove', onAlphaMove);
+    document.addEventListener('pointerup', onAlphaUp);
+  }
+
+  // ---------- 键盘微调（slider 无障碍）----------
+  function onSatKeydown(e: KeyboardEvent) {
+    const { h, s, v, a } = currentColor.hsva;
+    let ns = s;
+    let nv = v;
+    switch (e.key) {
+      case 'ArrowRight': ns = clamp(s + 1, 0, 100); break;
+      case 'ArrowLeft': ns = clamp(s - 1, 0, 100); break;
+      case 'ArrowUp': nv = clamp(v + 1, 0, 100); break;
+      case 'ArrowDown': nv = clamp(v - 1, 0, 100); break;
+      case 'Home': ns = 0; break;
+      case 'End': ns = 100; break;
+      default: return;
+    }
+    e.preventDefault();
+    handleChange({ h, s: ns, v: nv, a }, 'hsva');
+  }
+  function onHueKeydown(e: KeyboardEvent) {
+    const { h } = currentColor.hsva;
+    let nh = h;
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp': nh = (h + 1) % 360; break;
+      case 'ArrowLeft':
+      case 'ArrowDown': nh = (h - 1 + 360) % 360; break;
+      case 'Home': nh = 0; break;
+      case 'End': nh = 360; break;
+      default: return;
+    }
+    e.preventDefault();
+    handleChange({ ...currentColor.hsva, h: nh }, 'hsva');
+  }
+  function onAlphaKeydown(e: KeyboardEvent) {
+    const a = currentColor.hsva.a;
+    let na = a;
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowUp': na = clamp(Math.round((a + 0.01) * 100) / 100, 0, 1); break;
+      case 'ArrowLeft':
+      case 'ArrowDown': na = clamp(Math.round((a - 0.01) * 100) / 100, 0, 1); break;
+      case 'Home': na = 0; break;
+      case 'End': na = 1; break;
+      default: return;
+    }
+    e.preventDefault();
+    handleChangeA(na);
+  }
+
+  // ---------- eyeDropper（实验性 API，降级隐藏）----------
   interface EyeDropperCtor {
     new (): { open: () => Promise<{ sRGBHex: string }> };
   }
@@ -313,534 +245,214 @@
     eyeDropper && typeof window !== 'undefined' && 'EyeDropper' in window,
   );
   async function pickWithEyeDropper() {
-    if (disabled || !eyeDropperSupported) return;
+    if (!eyeDropperSupported) return;
     const Ctor = (window as unknown as { EyeDropper: EyeDropperCtor }).EyeDropper;
     try {
       const result = await new Ctor().open();
-      if (result?.sRGBHex) applyHex(result.sRGBHex);
+      const c = result?.sRGBHex;
+      if (!c) return;
+      if (c.startsWith('#')) handleChange(c, 'hex');
     } catch {
-      // 用户取消（Esc）或失败：静默忽略
+      // 用户取消（Esc）：静默忽略
     }
   }
 
-  // ---------- 命令式拖拽 (红线 #3) ----------
-  // pointerdown 一次性读 rect 存普通变量；document 监听手动加/移除。
-  let satRect: DOMRect | null = null;
-  let satEl = $state<HTMLElement | null>(null);
-  let hueRect: DOMRect | null = null;
-  let hueEl = $state<HTMLElement | null>(null);
-  let alphaRect: DOMRect | null = null;
-  let alphaEl = $state<HTMLElement | null>(null);
+  // ---------- DataPart 内部格式 state（不受控，对齐 Semi）----------
+  let format = $state<ColorValueFormat>(untrack(() => defaultFormat));
+  const formatOptions: { label: string; value: ColorValueFormat }[] = [
+    { label: 'hex', value: 'hex' },
+    { label: 'rgba', value: 'rgba' },
+    { label: 'hsva', value: 'hsva' },
+  ];
+  const inputString = $derived(colorValueToInputString(currentColor, format));
 
-  function ratioX(rect: DOMRect, clientX: number): number {
-    return clamp01((clientX - rect.left) / rect.width);
-  }
-  function ratioY(rect: DOMRect, clientY: number): number {
-    return clamp01((clientY - rect.top) / rect.height);
+  function handleInputChange(v: string) {
+    const parsed = parseColorInput(v, format);
+    if (parsed) handleChange(parsed.color, parsed.format);
   }
 
-  // --- saturation ---
-  function onSatMove(e: PointerEvent) {
-    if (!satRect) return;
-    s = ratioX(satRect, e.clientX);
-    v = 1 - ratioY(satRect, e.clientY);
-    commitHsv();
-  }
-  function onSatUp() {
-    document.removeEventListener('pointermove', onSatMove);
-    document.removeEventListener('pointerup', onSatUp);
-    satRect = null;
-    dragging = false;
-  }
-  function onSatDown(e: PointerEvent) {
-    if (disabled || !satEl) return;
-    e.preventDefault();
-    dragging = true;
-    satRect = satEl.getBoundingClientRect();
-    s = ratioX(satRect, e.clientX);
-    v = 1 - ratioY(satRect, e.clientY);
-    commitHsv();
-    document.addEventListener('pointermove', onSatMove);
-    document.addEventListener('pointerup', onSatUp);
+  function handleAlphaNumberChange(v: number | null) {
+    if (v == null) return;
+    const na = Number((v / 100).toFixed(2));
+    if (format === 'rgba') handleChange({ ...currentColor.rgba, a: na }, 'rgba');
+    else if (format === 'hsva') handleChange({ ...currentColor.hsva, a: na }, 'hsva');
+    else handleChangeA(na);
   }
 
-  // --- hue ---
-  function onHueMove(e: PointerEvent) {
-    if (!hueRect) return;
-    h = ratioX(hueRect, e.clientX) * 360;
-    commitHsv();
-  }
-  function onHueUp() {
-    document.removeEventListener('pointermove', onHueMove);
-    document.removeEventListener('pointerup', onHueUp);
-    hueRect = null;
-    dragging = false;
-  }
-  function onHueDown(e: PointerEvent) {
-    if (disabled || !hueEl) return;
-    e.preventDefault();
-    dragging = true;
-    hueRect = hueEl.getBoundingClientRect();
-    h = ratioX(hueRect, e.clientX) * 360;
-    commitHsv();
-    document.addEventListener('pointermove', onHueMove);
-    document.addEventListener('pointerup', onHueUp);
-  }
+  const alphaPercentValue = $derived(Math.round(currentColor.rgba.a * 100));
 
-  // --- alpha ---
-  function onAlphaMove(e: PointerEvent) {
-    if (!alphaRect) return;
-    a = ratioX(alphaRect, e.clientX);
-    commitHsv();
-  }
-  function onAlphaUp() {
-    document.removeEventListener('pointermove', onAlphaMove);
-    document.removeEventListener('pointerup', onAlphaUp);
-    alphaRect = null;
-    dragging = false;
-  }
-  function onAlphaDown(e: PointerEvent) {
-    if (disabled || !alphaEl) return;
-    e.preventDefault();
-    dragging = true;
-    alphaRect = alphaEl.getBoundingClientRect();
-    a = ratioX(alphaRect, e.clientX);
-    commitHsv();
-    document.addEventListener('pointermove', onAlphaMove);
-    document.addEventListener('pointerup', onAlphaUp);
-  }
-
-  // ---------- 键盘微调 ----------
-  // RTL：滑块视觉方向翻转（视觉左仍为低值），故水平方向键语义随之翻转。
-  // 在事件处理里读 getComputedStyle，render 期不依赖（红线）。
-  function isRtl(el: EventTarget | null): boolean {
-    return el instanceof HTMLElement && getComputedStyle(el).direction === 'rtl';
-  }
-
-  function onHueKeydown(e: KeyboardEvent) {
-    if (disabled) return;
-    if (e.key === 'Home') {
-      e.preventDefault();
-      h = 0;
-      commitHsv();
-      return;
-    }
-    if (e.key === 'End') {
-      e.preventDefault();
-      h = 360;
-      commitHsv();
-      return;
-    }
-    const rtl = isRtl(e.currentTarget);
-    let delta = 0;
-    if (e.key === 'ArrowUp') delta = 1;
-    else if (e.key === 'ArrowDown') delta = -1;
-    else if (e.key === 'ArrowRight') delta = rtl ? -1 : 1;
-    else if (e.key === 'ArrowLeft') delta = rtl ? 1 : -1;
-    else return;
-    e.preventDefault();
-    h = (h + delta + 360) % 360;
-    commitHsv();
-  }
-
-  function onAlphaKeydown(e: KeyboardEvent) {
-    if (disabled) return;
-    if (e.key === 'Home') {
-      e.preventDefault();
-      a = 0;
-      commitHsv();
-      return;
-    }
-    if (e.key === 'End') {
-      e.preventDefault();
-      a = 1;
-      commitHsv();
-      return;
-    }
-    const rtl = isRtl(e.currentTarget);
-    let delta = 0;
-    if (e.key === 'ArrowUp') delta = 0.01;
-    else if (e.key === 'ArrowDown') delta = -0.01;
-    else if (e.key === 'ArrowRight') delta = rtl ? -0.01 : 0.01;
-    else if (e.key === 'ArrowLeft') delta = rtl ? 0.01 : -0.01;
-    else return;
-    e.preventDefault();
-    a = clamp01(a + delta);
-    commitHsv();
-  }
-
-  function onSatKeydown(e: KeyboardEvent) {
-    if (disabled) return;
-    // Home/End 跳饱和度极值（首=0%，末=100%），明度不变。
-    if (e.key === 'Home') {
-      e.preventDefault();
-      s = 0;
-      commitHsv();
-      return;
-    }
-    if (e.key === 'End') {
-      e.preventDefault();
-      s = 1;
-      commitHsv();
-      return;
-    }
-    const rtl = isRtl(e.currentTarget);
-    let ds = 0;
-    let dv = 0;
-    switch (e.key) {
-      case 'ArrowRight': ds = rtl ? -0.01 : 0.01; break;
-      case 'ArrowLeft': ds = rtl ? 0.01 : -0.01; break;
-      case 'ArrowUp': dv = 0.01; break;
-      case 'ArrowDown': dv = -0.01; break;
-      default: return;
-    }
-    e.preventDefault();
-    s = clamp01(s + ds);
-    v = clamp01(v + dv);
-    commitHsv();
-  }
-
-  // ---------- useDismiss (红线 #3): 放 $effect ----------
-  let rootEl = $state<HTMLDivElement | null>(null);
-  // 浮层面板节点：用于 focus trap（打开聚焦面板内首个控件，关闭归还 trigger）。
-  let panelEl = $state<HTMLElement | null>(null);
-
-  $effect(() => {
-    // inline 模式无浮层，不挂 dismiss。
-    if (effectiveInline || !isOpen || !rootEl) return;
-    const cleanup = useDismiss(rootEl, {
-      onDismiss: () => setOpen(false),
-      escape: true,
-      outsideClick: true,
-    });
-    return cleanup;
-  });
-
-  // ---------- useFocusTrap (红线 #3)：浮层模式打开时陷入焦点，关闭归还 trigger ----------
-  // 复用 core 同一原语（与 Modal/SideSheet/Popover 一致，不重造）。
-  $effect(() => {
-    if (effectiveInline || !isOpen || !panelEl) return;
-    const trap = useFocusTrap(panelEl);
-    trap.activate();
-    return () => trap.deactivate();
-  });
-
-  // ---------- 派生展示数据 ----------
-  const huePercent = $derived((h / 360) * 100);
-  const satPercent = $derived(s * 100);
-  const valPercent = $derived((1 - v) * 100);
-  const alphaPercent = $derived(a * 100);
-  const hueRounded = $derived(Math.round(h));
-  const alphaRounded = $derived(Math.round(a * 100) / 100);
-
-  const cls = $derived(
-    [
-      'cd-color-picker',
-      `cd-color-picker--${size}`,
-      status !== 'default' && `cd-color-picker--${status}`,
-      effectiveInline && 'cd-color-picker--inline',
-      disabled && 'cd-color-picker--disabled',
-      isOpen && 'cd-color-picker--open',
-    ]
-      .filter(Boolean)
-      .join(' '),
+  // ---------- 派生展示 ----------
+  const hueColor = $derived(`hsl(${currentColor.hsva.h}, 100%, 50%)`);
+  const satX = $derived(currentColor.hsva.s);
+  const satY = $derived(100 - currentColor.hsva.v);
+  const huePercent = $derived((currentColor.hsva.h / 360) * 100);
+  const alphaPercent = $derived(currentColor.hsva.a * 100);
+  const rgbaCss = $derived(
+    `rgba(${currentColor.rgba.r},${currentColor.rgba.g},${currentColor.rgba.b},${currentColor.rgba.a})`,
   );
+  const opaqueRgbaCss = $derived(
+    `rgb(${currentColor.rgba.r},${currentColor.rgba.g},${currentColor.rgba.b})`,
+  );
+
+  const rootCls = $derived(['cd-color-picker', className].filter(Boolean).join(' '));
+  const rootStyle = $derived([`width:${width}px`, style].filter(Boolean).join(';'));
 </script>
 
-{#snippet panelBody()}
-      {@render topSlot?.()}
+{#snippet picker()}
+  <div class={rootCls} style={rootStyle}>
+    {@render topSlot?.()}
+
+    <div
+      class="cd-color-picker__colorChooseArea"
+      bind:this={satEl}
+      role="slider"
+      tabindex="0"
+      aria-label={loc().t('ColorPicker.saturation')}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(currentColor.hsva.s)}
+      style="height:{height}px; background:{hueColor}"
+      onpointerdown={onSatDown}
+      onkeydown={onSatKeydown}
+    >
+      <div class="cd-color-picker__saturation-white"></div>
+      <div class="cd-color-picker__saturation-black"></div>
+      <span
+        class="cd-color-picker__handle"
+        style="left:{satX}%; top:{satY}%"
+      ></span>
+    </div>
+
+    <div
+      class="cd-color-picker__colorSlider"
+      bind:this={hueEl}
+      role="slider"
+      tabindex="0"
+      aria-label={loc().t('ColorPicker.hue')}
+      aria-valuemin={0}
+      aria-valuemax={360}
+      aria-valuenow={Math.round(currentColor.hsva.h)}
+      onpointerdown={onHueDown}
+      onkeydown={onHueKeydown}
+    >
+      <span class="cd-color-picker__handle cd-color-picker__slider-handle" style="left:{huePercent}%"></span>
+    </div>
+
+    {#if alpha}
       <div
-        class="cd-color-picker__saturation"
-        bind:this={satEl}
+        class="cd-color-picker__alphaSlider"
+        bind:this={alphaEl}
         role="slider"
-        tabindex={disabled ? -1 : 0}
-        aria-label={loc().t('ColorPicker.saturation')}
+        tabindex="0"
+        aria-label={loc().t('ColorPicker.alpha')}
         aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(satPercent)}
-        aria-valuetext={`饱和度 ${Math.round(satPercent)}%，明度 ${Math.round(v * 100)}%`}
-        style="background:hsl({hueRounded}, 100%, 50%)"
-        onpointerdown={onSatDown}
-        onkeydown={onSatKeydown}
+        aria-valuemax={1}
+        aria-valuenow={Math.round(currentColor.hsva.a * 100) / 100}
+        onpointerdown={onAlphaDown}
+        onkeydown={onAlphaKeydown}
       >
-        <div class="cd-color-picker__saturation-white"></div>
-        <div class="cd-color-picker__saturation-black"></div>
-        <span
-          class="cd-color-picker__saturation-handle"
-          style="inset-inline-start:{satPercent}%; inset-block-start:{valPercent}%"
-        ></span>
+        <div
+          class="cd-color-picker__alphaSliderInner"
+          style="background:linear-gradient(to right, transparent, {opaqueRgbaCss})"
+        ></div>
+        <span class="cd-color-picker__handle cd-color-picker__slider-handle" style="left:{alphaPercent}%"></span>
       </div>
+    {/if}
 
-      <div class="cd-color-picker__sliders">
-        <div class="cd-color-picker__swatch-current" style="background:{displayHex}"></div>
-
-        <div class="cd-color-picker__bars">
-          <div
-            class="cd-color-picker__hue"
-            bind:this={hueEl}
-            role="slider"
-            tabindex={disabled ? -1 : 0}
-            aria-label={loc().t('ColorPicker.hue')}
-            aria-valuemin={0}
-            aria-valuemax={360}
-            aria-valuenow={hueRounded}
-            onpointerdown={onHueDown}
-            onkeydown={onHueKeydown}
-          >
-            <span
-              class="cd-color-picker__bar-handle"
-              style="inset-inline-start:{huePercent}%"
-            ></span>
+    <div class="cd-color-picker__dataPart">
+      <div class="cd-color-picker__colorDemoBlock" style="background:{rgbaCss}"></div>
+      <div class="cd-color-picker__inputGroup">
+        <InputGroup size="small">
+          <div class="cd-color-picker__colorPickerInput">
+            <Input
+              size="small"
+              value={inputString}
+              ariaLabel={loc().t('ColorPicker.hex')}
+              onChange={handleInputChange}
+            />
           </div>
-
           {#if alpha}
-            <div
-              class="cd-color-picker__alpha"
-              bind:this={alphaEl}
-              role="slider"
-              tabindex={disabled ? -1 : 0}
-              aria-label={loc().t('ColorPicker.alpha')}
-              aria-valuemin={0}
-              aria-valuemax={1}
-              aria-valuenow={alphaRounded}
-              onpointerdown={onAlphaDown}
-              onkeydown={onAlphaKeydown}
-            >
-              <div
-                class="cd-color-picker__alpha-bg"
-                style="background:linear-gradient(to right, transparent, {opaqueHex})"
-              ></div>
-              <span
-                class="cd-color-picker__bar-handle"
-                style="inset-inline-start:{alphaPercent}%"
-              ></span>
+            <div class="cd-color-picker__colorPickerInputNumber">
+              <InputNumber
+                size="small"
+                min={0}
+                max={100}
+                hideButtons
+                ariaLabel={loc().t('ColorPicker.alpha')}
+                value={alphaPercentValue}
+                onNumberChange={handleAlphaNumberChange}
+              >
+                {#snippet suffix()}<span class="cd-color-picker__inputNumberSuffix">%</span>{/snippet}
+              </InputNumber>
             </div>
           {/if}
-        </div>
-      </div>
-
-      <div class="cd-color-picker__field">
-        {#if showFormatToggle}
-          <label class="cd-color-picker__format" aria-label={loc().t('ColorPicker.format')}>
-            <select
-              class="cd-color-picker__format-select"
-              value={currentFormat}
-              {disabled}
-              onchange={(e) => setFormat(e.currentTarget.value as ColorFormat)}
-            >
-              {#each formatOptions as opt (opt)}
-                <option value={opt}>{opt.toUpperCase()}</option>
-              {/each}
-            </select>
-          </label>
-        {:else}
-          <label class="cd-color-picker__label" for={hexInputId}>{currentFormat.toUpperCase()}</label>
-        {/if}
-        <input
-          class="cd-color-picker__hex"
-          id={hexInputId}
-          type="text"
-          value={hexInput}
-          aria-label={loc().t('ColorPicker.hex')}
-          oninput={handleHexInput}
-          onblur={handleHexBlur}
-        />
-        {#if eyeDropperSupported}
-          <button
-            type="button"
-            class="cd-color-picker__eyedropper"
-            aria-label={loc().t('ColorPicker.eyeDropper')}
-            {disabled}
-            onclick={pickWithEyeDropper}
-          >
-            <IconEyedropper aria-hidden="true" />
-          </button>
-        {/if}
-      </div>
-
-      {#if presets.length > 0}
-        <div
-          class="cd-color-picker__presets"
-          bind:this={presetsEl}
-          role="listbox"
-          tabindex={-1}
-          aria-label={loc().t('ColorPicker.presets')}
-          onkeydown={onPresetsKeydown}
-        >
-          {#each presets as preset, i (preset)}
-            <button
-              type="button"
-              class="cd-color-picker__preset"
-              role="option"
-              aria-selected={currentHex.toLowerCase() === preset.toLowerCase()}
-              aria-label={preset}
-              tabindex={i === presetActiveIndex ? 0 : -1}
-              style="background:{preset}"
-              onclick={() => {
-                presetActiveIndex = i;
-                applyPreset(preset);
-              }}
-            ></button>
-          {/each}
-        </div>
-      {/if}
-
-      {#if recentColors && recent.length > 0}
-        <div class="cd-color-picker__recent">
-          <span class="cd-color-picker__recent-label">{loc().t('ColorPicker.recent')}</span>
-          <div class="cd-color-picker__recent-swatches">
-            {#each recent as color (color)}
-              <button
-                type="button"
-                class="cd-color-picker__preset"
-                aria-label={color}
-                style="background:{color}"
-                onclick={() => applyHex(color)}
-              ></button>
-            {/each}
+          <div class="cd-color-picker__formatSelect">
+            <Select
+              size="small"
+              value={format}
+              optionList={formatOptions}
+              ariaLabel={loc().t('ColorPicker.format')}
+              onSelect={(v) => (format = v as ColorValueFormat)}
+            />
           </div>
-        </div>
+        </InputGroup>
+      </div>
+      {#if eyeDropperSupported}
+        <Button
+          type="tertiary"
+          theme="light"
+          size="small"
+          ariaLabel={loc().t('ColorPicker.eyeDropper')}
+          onclick={pickWithEyeDropper}
+        >
+          {#snippet icon()}<IconEyedropper aria-hidden="true" />{/snippet}
+        </Button>
       {/if}
+    </div>
 
-      {@render bottomSlot?.()}
+    {@render bottomSlot?.()}
+  </div>
 {/snippet}
 
-{#if effectiveInline}
-  <div
-    class={cls}
-    bind:this={rootEl}
-    style={[style, width ? `width:${width}px` : '', height ? `height:${height}px` : '']
-      .filter(Boolean)
-      .join(';')}
-  >
-    <div class="cd-color-picker__panel cd-color-picker__panel--inline" role="group" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
-      {@render panelBody()}
-    </div>
-  </div>
-{:else}
-  <div
-    class={cls}
-    bind:this={rootEl}
-    style={[style, width ? `width:${width}px` : '', height ? `height:${height}px` : '']
-      .filter(Boolean)
-      .join(';')}
+{#if usePopover}
+  <Popover
+    trigger="click"
+    {...popoverProps}
+    class={['cd-color-picker-popover', popoverProps?.class].filter(Boolean).join(' ')}
+    content={picker}
   >
     {#if children}
-      <span
-        class="cd-color-picker__trigger--custom"
-        role="button"
-        tabindex={disabled ? -1 : 0}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-label={ariaLabel}
-        aria-disabled={disabled}
-        onclick={() => !disabled && toggleOpen()}
-        onkeydown={(e) => {
-          if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            toggleOpen();
-          }
-        }}
-      >
-        {@render children()}
-      </span>
+      {@render children()}
     {:else}
-      <button
-        type="button"
-        class="cd-color-picker__trigger"
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-label={ariaLabel}
-        {disabled}
-        style="background:{displayHex}"
-        onclick={toggleOpen}
-      ></button>
+      <div
+        class="cd-color-picker-popover-defaultChildren"
+        aria-label={loc().t('ColorPicker.hex')}
+        style="background:{currentColor.hex}"
+      ></div>
     {/if}
-
-    {#if isOpen}
-      <div class="cd-color-picker__panel" bind:this={panelEl} role="dialog" aria-label={ariaLabel ?? loc().t('ColorPicker.panelLabel')}>
-        {@render panelBody()}
-      </div>
-    {/if}
-  </div>
+  </Popover>
+{:else}
+  {@render picker()}
 {/if}
 
 <style>
   .cd-color-picker {
-    position: relative;
-    display: inline-flex;
+    display: inline-block;
   }
-  .cd-color-picker__trigger {
-    inline-size: var(--cd-color-picker-trigger-size);
-    block-size: var(--cd-color-picker-trigger-size);
-    padding: 0;
-    border: 1px solid var(--cd-color-picker-trigger-border);
-    border-radius: var(--cd-color-picker-trigger-radius);
-    cursor: pointer;
-  }
-  .cd-color-picker__trigger--custom {
-    display: inline-flex;
-    cursor: pointer;
-  }
-  .cd-color-picker__trigger--custom[tabindex='-1'] {
-    cursor: not-allowed;
-  }
-  .cd-color-picker--small .cd-color-picker__trigger {
-    inline-size: calc(var(--cd-color-picker-trigger-size) - 4px);
-    block-size: calc(var(--cd-color-picker-trigger-size) - 4px);
-  }
-  .cd-color-picker--large .cd-color-picker__trigger {
-    inline-size: calc(var(--cd-color-picker-trigger-size) + 6px);
-    block-size: calc(var(--cd-color-picker-trigger-size) + 6px);
-  }
-  .cd-color-picker__trigger:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-color-picker__trigger:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  /* 校验态：仅影响 trigger 与 inline 面板边框色，不改内部取色控件。 */
-  .cd-color-picker--warning .cd-color-picker__trigger,
-  .cd-color-picker--warning .cd-color-picker__panel--inline {
-    border-color: var(--cd-color-picker-status-warning);
-  }
-  .cd-color-picker--error .cd-color-picker__trigger,
-  .cd-color-picker--error .cd-color-picker__panel--inline {
-    border-color: var(--cd-color-picker-status-error);
-  }
-  .cd-color-picker__panel {
-    position: absolute;
-    inset-block-start: calc(100% + var(--cd-color-picker-inner-gap));
-    inset-inline-start: 0;
-    z-index: var(--cd-color-picker-panel-z);
-    inline-size: var(--cd-color-picker-panel-width);
-    padding: var(--cd-color-picker-panel-padding);
-    background: var(--cd-color-picker-panel-bg);
-    border-radius: var(--cd-color-picker-panel-radius);
-    box-shadow: var(--cd-color-picker-panel-shadow);
-  }
-  .cd-color-picker--inline {
-    display: inline-flex;
-  }
-  .cd-color-picker__panel--inline {
-    position: static;
-    inset: auto;
-    box-shadow: none;
-    border: 1px solid var(--cd-color-picker-panel-border);
-  }
-  .cd-color-picker__saturation {
+  /* saturation 方块：四角非对称圆角（上圆下直）。 */
+  .cd-color-picker__colorChooseArea {
     position: relative;
     inline-size: 100%;
-    block-size: var(--cd-color-picker-saturation-height);
-    border-radius: var(--cd-color-picker-saturation-radius);
+    border-radius:
+      var(--cd-radius-color-picker-topleft) var(--cd-radius-color-picker-topright)
+      var(--cd-radius-color-picker-bottomright) var(--cd-radius-color-picker-bottomleft);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     cursor: crosshair;
     touch-action: none;
     outline: none;
   }
-  .cd-color-picker__saturation:focus-visible {
+  .cd-color-picker__colorChooseArea:focus-visible {
     box-shadow: var(--cd-focus-ring);
   }
   .cd-color-picker__saturation-white,
@@ -855,197 +467,111 @@
   .cd-color-picker__saturation-black {
     background: linear-gradient(to top, #000, rgba(0, 0, 0, 0));
   }
-  .cd-color-picker__saturation-handle {
+  .cd-color-picker__handle {
     position: absolute;
     inline-size: var(--cd-color-picker-handle-size);
     block-size: var(--cd-color-picker-handle-size);
-    border: var(--cd-color-picker-handle-border-width) solid var(--cd-color-picker-handle-border);
-    border-radius: var(--cd-color-picker-handle-radius);
+    border: var(--cd-width-color-picker-handle-border) solid var(--cd-color-color-picker-handle-border);
+    border-radius: var(--cd-radius-color-picker-handle);
     box-shadow: var(--cd-color-picker-handle-shadow);
     transform: translate(-50%, -50%);
+    box-sizing: border-box;
     pointer-events: none;
   }
-  .cd-color-picker__sliders {
-    display: flex;
-    align-items: center;
-    gap: var(--cd-color-picker-inner-gap);
-    margin-block-start: var(--cd-color-picker-section-gap);
+  /* 滑块把手尺寸略小于色板把手（对齐 Semi 色板 handleSize=20 / 滑块 handleSize=18）。 */
+  .cd-color-picker__slider-handle {
+    inline-size: var(--cd-color-picker-slider-handle-size);
+    block-size: var(--cd-color-picker-slider-handle-size);
   }
-  .cd-color-picker__swatch-current {
-    flex: 0 0 auto;
-    inline-size: var(--cd-color-picker-swatch-size);
-    block-size: var(--cd-color-picker-swatch-size);
-    border: 1px solid var(--cd-color-picker-swatch-border);
-    border-radius: var(--cd-color-picker-swatch-radius);
-  }
-  .cd-color-picker__bars {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: var(--cd-color-picker-inner-gap);
-    min-inline-size: 0;
-  }
-  .cd-color-picker__hue,
-  .cd-color-picker__alpha {
+  .cd-color-picker__colorSlider {
     position: relative;
     inline-size: 100%;
     block-size: var(--cd-color-picker-slider-height);
-    border-radius: var(--cd-color-picker-slider-radius);
+    margin-block-start: var(--cd-spacing-color-picker-slider-margintop);
+    border-radius: var(--cd-radius-color-picker-handle);
+    background: linear-gradient(
+      to right,
+      #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%
+    );
     cursor: pointer;
     touch-action: none;
     outline: none;
   }
-  .cd-color-picker__hue {
-    background: linear-gradient(
-      to right,
-      #f00 0%,
-      #ff0 17%,
-      #0f0 33%,
-      #0ff 50%,
-      #00f 67%,
-      #f0f 83%,
-      #f00 100%
-    );
+  .cd-color-picker__alphaSlider {
+    position: relative;
+    inline-size: 100%;
+    block-size: var(--cd-color-picker-slider-height);
+    margin-block-start: var(--cd-spacing-color-picker-slider-margintop);
+    border-radius: var(--cd-radius-color-picker-handle);
+    background:
+      url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill-opacity=".05"><rect x="8" width="8" height="8"/><rect y="8" width="8" height="8"/></svg>');
+    cursor: pointer;
+    touch-action: none;
+    outline: none;
   }
-  .cd-color-picker__alpha {
-    background-image:
-      linear-gradient(45deg, var(--cd-color-picker-alpha-grid) 25%, transparent 25%),
-      linear-gradient(-45deg, var(--cd-color-picker-alpha-grid) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, var(--cd-color-picker-alpha-grid) 75%),
-      linear-gradient(-45deg, transparent 75%, var(--cd-color-picker-alpha-grid) 75%);
-    background-size: 8px 8px;
-    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
-  }
-  .cd-color-picker__alpha-bg {
+  .cd-color-picker__alphaSliderInner {
     position: absolute;
     inset: 0;
-    border-radius: inherit;
+    inline-size: 100%;
+    block-size: 100%;
+    border-radius: var(--cd-radius-color-picker-alphasliderinner);
     pointer-events: none;
   }
-  .cd-color-picker__hue:focus-visible,
-  .cd-color-picker__alpha:focus-visible {
+  .cd-color-picker__colorSlider:focus-visible,
+  .cd-color-picker__alphaSlider:focus-visible {
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-color-picker__bar-handle {
-    position: absolute;
+  .cd-color-picker__slider-handle {
     inset-block-start: 50%;
-    inline-size: var(--cd-color-picker-handle-size);
-    block-size: var(--cd-color-picker-handle-size);
-    background: var(--cd-color-picker-handle-border);
-    border: 1px solid var(--cd-color-picker-handle-outline);
-    border-radius: var(--cd-color-picker-handle-radius);
-    box-shadow: var(--cd-color-picker-handle-shadow);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
   }
-  .cd-color-picker__field {
+  .cd-color-picker__dataPart {
     display: flex;
     align-items: center;
-    gap: var(--cd-color-picker-inner-gap);
-    margin-block-start: var(--cd-color-picker-section-gap);
+    margin-block-start: var(--cd-spacing-color-picker-datapart-margintop);
   }
-  .cd-color-picker__label {
+  .cd-color-picker__colorDemoBlock {
     flex: 0 0 auto;
-    color: var(--cd-color-picker-label-text);
-    font-size: var(--cd-color-picker-field-font-size);
+    min-inline-size: 20px;
+    min-block-size: 20px;
+    inline-size: 20px;
+    block-size: 20px;
+    border-radius: var(--cd-radius-color-picker-demoblock);
   }
-  .cd-color-picker__format {
-    flex: 0 0 auto;
-    display: inline-flex;
-  }
-  .cd-color-picker__format-select {
-    block-size: var(--cd-color-picker-field-height);
-    padding-inline: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-picker-label-text);
-    background: var(--cd-color-picker-field-bg);
-    border: 1px solid var(--cd-color-picker-field-border);
-    border-radius: var(--cd-color-picker-field-radius);
-    font: inherit;
-    font-size: var(--cd-color-picker-field-font-size);
-    cursor: pointer;
-  }
-  .cd-color-picker__format-select:focus-visible {
-    outline: none;
-    border-color: var(--cd-color-picker-field-border-active);
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-color-picker__format-select:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  .cd-color-picker__hex {
-    flex: 1 1 auto;
+  .cd-color-picker__inputGroup {
+    flex: 1;
     min-inline-size: 0;
-    block-size: var(--cd-color-picker-field-height);
-    padding-inline: var(--cd-color-picker-field-padding-x);
-    background: var(--cd-color-picker-field-bg);
-    color: var(--cd-color-picker-field-text);
-    border: 1px solid var(--cd-color-picker-field-border);
-    border-radius: var(--cd-color-picker-field-radius);
-    font: inherit;
-    font-size: var(--cd-color-picker-field-font-size);
+    margin-inline-start: var(--cd-spacing-color-picker-inputgroup-marginleft);
   }
-  .cd-color-picker__hex:focus-visible {
-    outline: none;
-    border-color: var(--cd-color-picker-field-border-active);
-    box-shadow: var(--cd-focus-ring);
+  .cd-color-picker__inputGroup :global(.cd-input-group) {
+    inline-size: 100%;
+    flex-wrap: nowrap;
   }
-  .cd-color-picker__presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-color-picker-inner-gap);
-    margin-block-start: var(--cd-color-picker-section-gap);
+  .cd-color-picker__colorPickerInput {
+    flex: 1;
+    min-inline-size: 0;
   }
-  .cd-color-picker__preset {
-    inline-size: var(--cd-color-picker-swatch-size);
-    block-size: var(--cd-color-picker-swatch-size);
-    padding: 0;
-    border: 1px solid var(--cd-color-picker-swatch-border);
-    border-radius: var(--cd-color-picker-preset-radius);
-    cursor: pointer;
-  }
-  .cd-color-picker__preset:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-color-picker__eyedropper {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .cd-color-picker__colorPickerInputNumber {
     flex: 0 0 auto;
-    inline-size: var(--cd-color-picker-field-height);
-    block-size: var(--cd-color-picker-field-height);
-    padding: 0;
-    color: var(--cd-color-picker-label-text);
-    background: var(--cd-color-picker-field-bg);
-    border: 1px solid var(--cd-color-picker-field-border);
-    border-radius: var(--cd-color-picker-field-radius);
+    inline-size: var(--cd-width-color-picker-colorpickerinputnumber);
+  }
+  .cd-color-picker__inputNumberSuffix {
+    font-size: var(--cd-font-color-picker-inputnumbersuffix-fontsize);
+    padding:
+      var(--cd-spacing-color-picker-inputnumbersuffix-vertical)
+      var(--cd-spacing-color-picker-inputnumbersuffix-horizontal);
+  }
+  .cd-color-picker__formatSelect {
+    flex: 0 0 auto;
+    inline-size: var(--cd-width-color-picker-formatselect);
+  }
+  /* popover 模式：整体内边距 + 默认色块 trigger。 */
+  :global(.cd-color-picker-popover .cd-popover-content) {
+    padding: var(--cd-spacing-color-picker-popover-padding);
+  }
+  .cd-color-picker-popover-defaultChildren {
+    inline-size: var(--cd-width-color-picker-defaulttrigger);
+    block-size: var(--cd-width-color-picker-defaulttrigger);
+    border-radius: var(--cd-radius-color-picker-defaulttrigger);
     cursor: pointer;
-  }
-  .cd-color-picker__eyedropper:hover:not(:disabled) {
-    color: var(--cd-color-primary);
-    border-color: var(--cd-color-picker-field-border-active);
-  }
-  .cd-color-picker__eyedropper:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-color-picker__eyedropper:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  .cd-color-picker__recent {
-    margin-block-start: var(--cd-color-picker-section-gap);
-  }
-  .cd-color-picker__recent-label {
-    display: block;
-    margin-block-end: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-picker-label-text);
-    font-size: var(--cd-color-picker-field-font-size);
-  }
-  .cd-color-picker__recent-swatches {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-color-picker-inner-gap);
   }
 </style>

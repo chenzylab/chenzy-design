@@ -84,6 +84,16 @@ export { Select, selectMeta, type OptionData } from './select/index.js';
 export { AutoComplete, autocompleteMeta } from './autocomplete/index.js';
 export { TagInput, tagInputMeta } from './tag-input/index.js';
 export { ColorPicker, colorPickerMeta } from './color-picker/index.js';
+export {
+  colorValueFromHex,
+  colorValueFromRgba,
+  colorValueFromHsva,
+  DEFAULT_COLOR_VALUE,
+  type ColorValue,
+  type ColorValueFormat,
+  type HsvaColor as ColorPickerHsvaColor,
+  type RgbaColor as ColorPickerRgbaColor,
+} from '@chenzy-design/core';
 export { DatePicker, datePickerMeta, RangePicker, rangePickerMeta } from './date-picker/index.js';
 export { TimePicker, timePickerMeta } from './time-picker/index.js';
 export { Cascader, cascaderMeta, type CascaderNode } from './cascader/index.js';
