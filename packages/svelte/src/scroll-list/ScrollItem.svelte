@@ -125,6 +125,7 @@
 
   // --- DOM 引用 ---
   let listOuterEl = $state<HTMLElement | null>(null); // wheel: 滚动容器
+  let normalWrapperEl = $state<HTMLElement | null>(null); // normal: 滚动容器（-item wrapper）
 
   // 当前落定的虚拟 index（用于高亮 -item-selected）。
   let currentVIndex = $state(untrack(() => toVirtual(selectedIndex)));
@@ -367,6 +368,26 @@
     // 点击落点若冲出安全中段，随后由吸附动画触发的 scroll→adjustInfiniteList 会重定位维持缓冲。
   }
 
+  // --- normal 模式：selectedIndex 变化 / 挂载时把选中项滚到居中（对齐 Semi componentDidMount /
+  //     componentDidUpdate 的 scrollToNode：targetTop = node.offsetTop - (wrapperHeight - itemHeight)/2）。
+  //     Semi 两种模式都在 mount 时 scrollToNode，wheel 已有独立初始定位，此处补 normal。 ---
+  function scrollNormalToSelected(duration: number): void {
+    const el = normalWrapperEl;
+    if (!el) return;
+    const li = el.querySelectorAll<HTMLElement>('li')[selectedIndex];
+    if (!li) return;
+    const to = li.offsetTop - (el.clientHeight - li.offsetHeight) / 2;
+    animateScrollTo(el, Math.max(0, to), duration);
+  }
+
+  $effect(() => {
+    if (isWheel) return;
+    const el = normalWrapperEl;
+    if (!el) return;
+    void selectedIndex; // 依赖：selectedIndex 变化重滚
+    void tick().then(() => scrollNormalToSelected(SCROLL_LIST_DEFAULT_SCROLL_DURATION));
+  });
+
   // --- normal 点击选中（对齐 Semi selectIndex）---
   function onNormalItemClick(logical: number): void {
     const item = list[logical];
@@ -415,7 +436,7 @@
   </div>
 {:else}
   <!-- normal 模式：item（滚动）> ul > li，点击选中。对齐 Semi renderNormalList。 -->
-  <div class={normalCls} {style}>
+  <div class={normalCls} {style} bind:this={normalWrapperEl}>
     <ul role="listbox" aria-multiselectable="false" aria-label={ariaLabel}>
       {#each list as item, index (index)}
         {@const selected = selectedIndex === index}

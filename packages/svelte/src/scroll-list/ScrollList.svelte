@@ -9,9 +9,9 @@
 
   interface Props {
     /** 头部 addon（对齐 Semi header）。 */
-    header?: Snippet | string;
+    header?: Snippet | string | undefined;
     /** 底部 addon（对齐 Semi footer）。 */
-    footer?: Snippet | string;
+    footer?: Snippet | string | undefined;
     /** body 高度（对齐 Semi bodyHeight）；数字按 px，字符串原样。 */
     bodyHeight?: number | string;
     /** 根节点类名（对齐 Semi className）。 */
