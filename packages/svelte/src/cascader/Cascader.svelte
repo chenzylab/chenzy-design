@@ -802,8 +802,14 @@
       setPaths(nextPaths);
       return;
     }
-    const nextBase = new Set(checkedBase);
-    nextBase.delete(leafValue);
+    // 修复 autoMergeValue 合并态删除失效：checkedBase 在合并态含父 key、不含被合并的叶子，
+    // 直接 delete(leafValue) 会 miss。改从 tag 显示源 checkedLeafPaths（完整展开的叶子路径，
+    // 与 tag 一一对应）重建叶子基集 minus 要删的叶子，保证删除源与显示源一致。
+    const nextBase = new Set<Key>();
+    for (const leaf of checkedLeafPaths) {
+      const key = leaf.path[leaf.path.length - 1] as Key;
+      if (key !== leafValue) nextBase.add(key);
+    }
     const resolved = conduct(mergedTreeData, nextBase);
     setPaths(leafBaseToPaths(resolved.checked));
   }

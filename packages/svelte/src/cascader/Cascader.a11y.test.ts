@@ -114,4 +114,37 @@ describe('Cascader a11y', () => {
     expect(restN?.textContent).toContain('+1');
     await expectNoAxeViolations(container);
   });
+
+  // 回归：autoMergeValue 合并态删除叶子 tag。value 合并为父路径（[zj,hz]，代表其下 xh 全选），
+  // 但 tag 按叶子展开显示（West Lake）。点该 tag 的关闭按钮，删除必须生效并回调 onChange。
+  // 修复前 removeLeaf 在合并态 checkedBase（含父 key、不含叶子）上 delete(叶子) 会 miss → 删不掉。
+  it('多选 autoMergeValue 合并态：删除叶子 tag 生效并回调 onChange', async () => {
+    let changed: unknown = undefined;
+    const { container } = renderWithLocale(Cascader, {
+      props: {
+        treeData,
+        multiple: true,
+        autoMergeValue: true,
+        // 合并态：杭州(hz)父路径代表其唯一叶子 xh 全选；tag 展开显示 West Lake。
+        defaultValue: [['zj', 'hz']],
+        ariaLabel: 'Region',
+        onChange: (v: unknown) => {
+          changed = v;
+        },
+      },
+    });
+    // 合并态下 tag 仍按叶子展开：应有 1 个路径 tag（West Lake）。
+    const tag = container.querySelector('.cd-cascader-selection-tag');
+    expect(tag).not.toBeNull();
+    expect(tag?.textContent).toContain('West Lake');
+    // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag__close / [aria-label*=close] 等）。
+    const closeBtn = container.querySelector(
+      '.cd-cascader-selection-tag .cd-tag__close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag__close',
+    ) as HTMLElement | null;
+    expect(closeBtn).not.toBeNull();
+    closeBtn?.click();
+    // 删除必须生效：onChange 被调用，且删掉后不再包含该叶子（结果为空数组）。
+    expect(changed).toBeDefined();
+    expect(Array.isArray(changed) ? (changed as unknown[]).length : -1).toBe(0);
+  });
 });
