@@ -3,6 +3,11 @@
   输入联想 + 键盘选择。Token-driven, a11y-correct (combobox + listbox)。
 
   对齐 Semi 要点：
+  - 触发器整个复用本库 <Input>（镜像 Semi renderInput：<div outerProps><Input {...innerProps} value/></div>）。
+    Semi 无自绘 __control/__prefix/__input/__clear/__selected 套件，全部由 <Input> 承担
+    （Input 自带 wrapper/prefix/insetLabel/showClear/suffix + autoFocus）。
+    combobox role 与 aria-*（expanded/controls/activedescendant/autocomplete）经 Input 的 rest
+    透传落到内部原生 <input class="cd-input">（本库 a11y 契约：combobox 在原生 input 上）。
   - 组件本身不做本地过滤：data 由用户按 query 准备（远程或本地皆同）。是否远程由 onSearch 存在决定。
   - 下拉列表根 class = cd-autocomplete-option-list（对齐 Semi semi-autocomplete-option-list）。
   - 选项包 cd-autocomplete-option-text 层，字符串候选经 <Highlight> 高亮命中的输入词
@@ -11,19 +16,15 @@
   - defaultActiveFirstOption 默认 false、maxHeight 默认 300、zIndex 默认走 token（对齐 Semi defaultProps）。
 
   暂缓（本轮保留自绘）：
-  - 触发器未复用本库 <Input>：本库 Input 尚无 combobox 相关 aria 透传能力
-    （role=combobox / aria-expanded / aria-controls / aria-activedescendant / aria-autocomplete
-    无法设到其原生 input 上），而这些是 autoComplete a11y 契约（测试与 a11y.spec 强约束）。
-    直接给 Input 加这些属于跨组件改动，故本轮保留自绘 combobox 输入框，待 Input 补 aria 透传后复用。
   - 下拉浮层用 use:floating（与本库 Select 同架构）承载，未包 <Popover>：Popover 的 .cd-popover 卡片
     结构/内边距面向气泡卡而非选项列表，Select 亦直接用 use:floating；保持二者一致的 -option-list 结构。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { useId, useDismiss } from '@chenzy-design/core';
-  import { IconClear } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
+  import Input from '../input/Input.svelte';
   import Spin from '../spin/Spin.svelte';
   import Highlight from '../highlight/Highlight.svelte';
 
@@ -214,10 +215,14 @@
   // 展开且（有候选 或 加载中）时才展示浮层。
   const showDropdown = $derived(isOpen && (options.length > 0 || loading));
 
-  const showClearBtn = $derived(showClear && !disabled && displayValue.length > 0);
-
   // 已选项：options 里找到与 currentValue 匹配的项（用于 renderSelectedItem）。
   const selectedItem = $derived(options.find((o) => o.label === displayValue) ?? null);
+
+  // suffix 槽是否有内容（自定义 suffix 或需渲染 renderSelectedItem）——空则不传 Input，避免空 suffix 壳。
+  const hasSuffixSlot = $derived(suffix != null || (!!renderSelectedItem && !!selectedItem));
+  // prefix 优先、缺省回退 insetLabel（对齐 Semi prefix||insetLabel）。
+  const usePrefixSlot = $derived(prefix != null);
+  const useInsetLabelSlot = $derived(prefix == null && insetLabel != null);
 
   function firstEnabledIndex(): number {
     return options.findIndex((o) => !o.disabled);
@@ -228,8 +233,8 @@
     if (defaultActiveFirstOption) activeIndex = firstEnabledIndex();
   }
 
-  function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
-    const next = e.currentTarget.value;
+  // Input.onInput 签名为 (value, e)（对齐 Semi）。
+  function handleInput(next: string) {
     setValue(next);
     openWithOptions();
     // 远程：外部按 query 更新 data（受控红线 #1：仅回调，不回写）。
@@ -251,10 +256,12 @@
     setOpen(false);
   }
 
+  // 桥接内部 <Input showClear> 的清除：同步值 + 关下拉 + 上报 onClear（对齐 Semi onInputClear）。
   function clearAll() {
     if (disabled) return;
     setValue('');
     setOpen(false);
+    onSearch?.('');
     onClear?.();
   }
 
@@ -303,13 +310,7 @@
     }
   }
 
-  // autoFocus：命令式聚焦一次（红线 #3，SSR 安全）。
-  let inputEl = $state<HTMLInputElement | null>(null);
-  $effect(() => {
-    if (autoFocus && inputEl && !disabled) {
-      inputEl.focus();
-    }
-  });
+  // autoFocus 由内部 <Input autoFocus> 承担（对齐 Semi：Input 自带 autoFocus 能力）。
 
   // --- useDismiss (红线 #3): open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -344,11 +345,10 @@
     )[position],
   );
 
+  // 根 wrapper class：尺寸/校验态/禁用外观全由内部 <Input> 承担，此处只留语义状态钩子 + 用户 class。
   const cls = $derived(
     [
       'cd-autocomplete',
-      `cd-autocomplete--${size}`,
-      `cd-autocomplete--${validateStatus}`,
       disabled && 'cd-autocomplete--disabled',
       isOpen && 'cd-autocomplete--open',
       className,
@@ -377,6 +377,24 @@
       .join(' ') || undefined,
   );
 </script>
+
+{#snippet prefixSlot()}
+  {#if typeof prefix === 'string'}{prefix}{:else if prefix}{@render prefix()}{/if}
+{/snippet}
+
+{#snippet insetLabelSlot()}
+  {#if typeof insetLabel === 'string'}{insetLabel}{:else if insetLabel}{@render insetLabel()}{/if}
+{/snippet}
+
+<!-- suffix 槽：折入 renderSelectedItem（对齐 Semi：renderSelectedItem 作 Input suffix）。 -->
+{#snippet suffixSlot()}
+  {#if renderSelectedItem && selectedItem}
+    <span class="cd-autocomplete__selected">
+      {@render renderSelectedItem({ item: selectedItem })}
+    </span>
+  {/if}
+  {#if typeof suffix === 'string'}{suffix}{:else if suffix}{@render suffix()}{/if}
+{/snippet}
 
 {#snippet optionRow(opt: NormalizedItem, i: number)}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -417,60 +435,42 @@
   {#if triggerRender}
     {@render triggerRender({ value: displayValue, placeholder, disabled })}
   {:else}
-    <div class="cd-autocomplete__control">
-      {#if prefix}
-        <span class="cd-autocomplete__prefix">
-          {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
-        </span>
-      {/if}
-      {#if insetLabel}
-        <span class="cd-autocomplete__inset-label" id={insetLabelId}>
-          {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
-        </span>
-      {/if}
-      <input
-        class="cd-autocomplete__input"
-        bind:this={inputEl}
-        type="text"
-        role="combobox"
-        value={displayValue}
-        {placeholder}
-        {disabled}
-        aria-label={inputAriaLabel}
-        aria-labelledby={resolvedLabelledby}
-        aria-expanded={showDropdown}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={activeOptionId}
-        aria-invalid={validateStatus === 'error' || undefined}
-        oninput={handleInput}
-        onkeydown={handleKeydown}
-        onfocus={handleFocus}
-        onblur={handleBlur}
-      />
-
-      {#if renderSelectedItem && selectedItem}
-        <span class="cd-autocomplete__selected">
-          {@render renderSelectedItem({ item: selectedItem })}
-        </span>
-      {/if}
-
-      {#if showClearBtn}
-        <button type="button" class="cd-autocomplete__clear" aria-label={loc().t('AutoComplete.clear')} onclick={clearAll}>
-          {#if clearIcon}
-            {@render clearIcon()}
-          {:else}
-            <IconClear aria-hidden="true" />
-          {/if}
-        </button>
-      {/if}
-
-      {#if suffix}
-        <span class="cd-autocomplete__suffix">
-          {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
-        </span>
-      {/if}
-    </div>
+    <!--
+      触发器整个复用 <Input>（镜像 Semi renderInput 的 <Input {...innerProps} value/>）。
+      combobox role 与 aria-* 经 Input rest 透传落到内部原生 <input class="cd-input">。
+      prefix 与 insetLabel 走 Input 同一前缀槽（prefix 优先，对齐 Semi prefix||insetLabel）。
+      suffix 折入 renderSelectedItem。showClear/clearIcon/autoFocus 由 Input 承担。
+      可选 Snippet 槽仅在有内容时才注入（exactOptionalPropertyTypes 下不传 undefined）。
+    -->
+    {@const slotProps = {
+      ...(usePrefixSlot ? { prefix: prefixSlot } : {}),
+      ...(useInsetLabelSlot ? { insetLabel: insetLabelSlot } : {}),
+      ...(hasSuffixSlot ? { suffix: suffixSlot } : {}),
+      ...(clearIcon ? { clearIcon } : {}),
+      ...(insetLabelId != null ? { insetLabelId } : {}),
+      ...(inputAriaLabel != null ? { ariaLabel: inputAriaLabel } : {}),
+      ...(resolvedLabelledby != null ? { ariaLabelledby: resolvedLabelledby } : {}),
+      ...(activeOptionId != null ? { 'aria-activedescendant': activeOptionId } : {}),
+    }}
+    <Input
+      value={displayValue}
+      {size}
+      {disabled}
+      {placeholder}
+      {autoFocus}
+      {showClear}
+      {validateStatus}
+      {...slotProps}
+      onInput={handleInput}
+      onKeyDown={handleKeydown}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onClear={clearAll}
+      role="combobox"
+      aria-expanded={showDropdown}
+      aria-controls={listId}
+      aria-autocomplete="list"
+    />
   {/if}
 
   {#if showDropdown && rootEl}
@@ -505,97 +505,13 @@
 </div>
 
 <style>
+  /* 根 wrapper：触发器整个复用 <Input>（自带 wrapper/边框/背景/尺寸/校验态），此处只做定位 + 占宽。 */
   .cd-autocomplete {
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    font-size: var(--cd-input-font-size);
   }
-  /* 触发器输入框（暂缓复用 Input，自绘但外观复用 Input token） */
-  .cd-autocomplete__control {
-    display: flex;
-    align-items: center;
-    gap: var(--cd-spacing-tight);
-    inline-size: 100%;
-    block-size: var(--cd-height-input-default);
-    padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
-  }
-  .cd-autocomplete--small .cd-autocomplete__control {
-    block-size: var(--cd-height-input-small);
-  }
-  .cd-autocomplete--large .cd-autocomplete__control {
-    block-size: var(--cd-height-input-large);
-  }
-  .cd-autocomplete__control:focus-within {
-    border-color: var(--cd-input-border-active);
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-autocomplete--warning .cd-autocomplete__control {
-    border-color: var(--cd-input-border-warning);
-  }
-  .cd-autocomplete--error .cd-autocomplete__control {
-    border-color: var(--cd-input-border-error);
-  }
-  .cd-autocomplete--disabled .cd-autocomplete__control {
-    background: var(--cd-color-fill-0);
-    color: var(--cd-color-disabled-text);
-    cursor: not-allowed;
-  }
-  .cd-autocomplete__inset-label {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    color: var(--cd-color-text-2);
-    font-weight: var(--cd-autocomplete-inset-label-font-weight);
-    user-select: none;
-    white-space: nowrap;
-  }
-  .cd-autocomplete__prefix,
-  .cd-autocomplete__suffix {
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-    color: var(--cd-color-text-2);
-    user-select: none;
-    white-space: nowrap;
-  }
-  .cd-autocomplete__input {
-    flex: 1 1 auto;
-    inline-size: 100%;
-    min-inline-size: 0;
-    block-size: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    outline: none;
-  }
-  .cd-autocomplete__input::placeholder {
-    color: var(--cd-input-color-placeholder);
-  }
-  .cd-autocomplete__input:disabled {
-    cursor: not-allowed;
-  }
-  .cd-autocomplete__clear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--cd-color-text-2);
-    cursor: pointer;
-  }
-  .cd-autocomplete__clear:hover {
-    color: var(--cd-color-text-0);
-  }
+  /* renderSelectedItem 折入 Input suffix 时的内联容器。 */
   .cd-autocomplete__selected {
     display: inline-flex;
     align-items: center;
@@ -676,10 +592,5 @@
     padding-block-start: var(--cd-autocomplete-loading-wrapper-padding-top);
     padding-block-end: var(--cd-autocomplete-loading-wrapper-padding-bottom);
     cursor: not-allowed;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-autocomplete__control {
-      transition: none;
-    }
   }
 </style>
