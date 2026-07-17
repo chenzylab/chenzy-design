@@ -732,29 +732,31 @@
     transition: none;
   }
 
-  /* 单选/范围列宽（对齐 Semi timePicker.scss `-panel-list-*` 64/72px）。ScrollItem 根 class
-     由外层 class prop 附加到 `-scrolllist-item` 上。
-     注意：ScrollList 的 `.cd-scrolllist-item`（scoped，特异性 0-2-0）设了 `flex: 1 1 0%`，其
-     flex-basis:0% 会覆盖单纯的 inline-size/width。故这里必须（1）用复合选择器 `.cd-scrolllist-item.xxx`
-     提到 0-3-0 特异性稳赢，（2）把列宽写进 flex-basis（`flex: 0 0 <width>`）而非仅 inline-size，
-     否则 flex:1 的 basis 0% 仍会把列压成等分（实测被压到 30px）。 */
-  /* 前缀必须用 `.cd-time-picker__panel`（面板根）而非 `.cd-time-picker`（触发器容器）：面板
-     use:floating **portal 到 document.body**，脱离了 `.cd-time-picker` 容器，用后者做祖先选择器
-     永远匹配不到 portal 出去的列（实测祖先链最高只到 `.cd-time-picker__panel`）。 */
-  :global(.cd-time-picker__panel .cd-scrolllist-item.cd-time-picker__panel-list-hour) {
-    flex: 0 0 var(--cd-width-time-picker-panel-list-hour);
+  /* 面板内列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
+     解除 ScrollList 默认 `flex: 1 1 0%` 的等分，让下面的列宽 width 生效。
+     同时去掉列间竖线：Semi 时间面板的列实测 border 为 0（devtools 盒模型 64×36 四周皆 0），
+     列间无分隔线，选中行高亮因此跨列连成整条。ScrollList 默认给 `-item:not(:last-child)` 加了
+     `border-inline-end`（通用滚动列表语义），在时间面板里需去掉才与 Semi 一致。 */
+  :global(.cd-time-picker__panel .cd-scrolllist-item) {
+    flex: none;
+  }
+  /* 去列间竖线需匹配 ScrollList 那条 `-item:not(:last-child)` 的特异性（0-3-0）才压得住。 */
+  :global(.cd-time-picker__panel .cd-scrolllist-item:not(:last-child)) {
+    border: none;
+  }
+  /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`：
+     Semi 是无祖先前缀的裸类，这里用 :global() 包裸类等价——面板 use:floating portal 到 body，
+     scoped 祖先选择器（如 .cd-time-picker）匹配不到 portal 出去的列。 */
+  :global(.cd-time-picker__panel-list-hour) {
     inline-size: var(--cd-width-time-picker-panel-list-hour);
   }
-  :global(.cd-time-picker__panel .cd-scrolllist-item.cd-time-picker__panel-list-minute) {
-    flex: 0 0 var(--cd-width-time-picker-panel-list-minute);
+  :global(.cd-time-picker__panel-list-minute) {
     inline-size: var(--cd-width-time-picker-panel-list-minute);
   }
-  :global(.cd-time-picker__panel .cd-scrolllist-item.cd-time-picker__panel-list-second) {
-    flex: 0 0 var(--cd-width-time-picker-panel-list-second);
+  :global(.cd-time-picker__panel-list-second) {
     inline-size: var(--cd-width-time-picker-panel-list-second);
   }
-  :global(.cd-time-picker__panel .cd-scrolllist-item.cd-time-picker__panel-list-ampm) {
-    flex: 0 0 var(--cd-width-time-picker-panel-list-ampm);
+  :global(.cd-time-picker__panel-list-ampm) {
     inline-size: var(--cd-width-time-picker-panel-list-ampm);
   }
 
@@ -771,15 +773,6 @@
   .cd-time-picker__panel :global(.cd-scrolllist-item > ul) {
     padding-block-end: calc((var(--cd-height-time-picker-panel-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
-  /* 选中行跨列高亮连通（对齐 Semi 观感）：列 item 间有 1px border-right（8% 淡灰），
-     选中 li 仅铺满 item 内容区（列宽 - border），相邻列高亮块间露出 1px 缝、视觉断开。
-     用 box-shadow 在选中 li 右侧补一段同色高亮盖过该 border 缝，使选中行连成整条。
-     仅作用于 timePicker 面板内、且非最后一列（最后一列右侧无 border，避免盖到面板边）；
-     不污染共享 ScrollList 的其他消费方。 */
-  .cd-time-picker__panel :global(.cd-scrolllist-item:not(:last-child) > ul > li.cd-scrolllist-item-sel) {
-    box-shadow: var(--cd-width-scroll-list-item-border) 0 0 var(--cd-color-scroll-list-selected-item-bg);
-  }
-
   /* --- range 双列并排（对齐 Semi timePicker.scss `-range-panel .lists`）--- */
   .cd-time-picker__lists {
     display: flex;
