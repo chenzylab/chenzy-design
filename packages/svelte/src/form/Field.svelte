@@ -193,11 +193,11 @@
     // set `touched`, so the "showing error" path keeps submit errors clearable.
     const active = touched === true || (error !== undefined && error !== '');
     const validate = tr.includes('change') && active;
-    form.setFieldValue(field, stored, { validate });
+    form.setValue(field, stored, { validate });
   }
 
   function handleBlur() {
-    form.setFieldTouched(field);
+    form.setTouched(field);
     // only validate on blur when 'blur' is an active trigger for this field.
     if (triggers().includes('blur')) void form.validateField(field);
   }

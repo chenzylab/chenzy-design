@@ -12,10 +12,10 @@
     <Form.Input field="email" label="邮箱" rules={[{ type: 'email' }]} />
   </Form>
   <Space style="margin-top:12px">
-    <Button size="small" onclick={() => api?.setFieldsValue({ name: '张三', email: 'zhangsan@example.com' })}>
+    <Button size="small" onclick={() => api?.setValues({ name: '张三', email: 'zhangsan@example.com' })}>
       填充示例
     </Button>
-    <Button size="small" type="tertiary" onclick={() => api?.resetFields()}>重置</Button>
+    <Button size="small" type="tertiary" onclick={() => api?.reset()}>重置</Button>
     <Button size="small" type="tertiary" onclick={async () => (result = (await api?.validate()) ? '校验通过' : '校验失败')}>
       校验
     </Button>

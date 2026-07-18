@@ -4,7 +4,7 @@
  *
  * Scope (foundational subset): values/errors/touched/dirty, field registry,
  * sync + async rules (required/min/max/minLength/maxLength/pattern/type/validator),
- * async race-token discard, validate/resetFields/submit, fine-grained subscribe.
+ * async race-token discard, validate/reset/submitForm, fine-grained subscribe.
  * Deferred: nested-path arrays beyond simple dot paths, dependencies graph.
  */
 import { useId } from './id.js';
@@ -60,7 +60,7 @@ export interface FieldConfig {
   trigger?: ValidateTrigger | ValidateTrigger[];
   /**
    * pure transform applied to the field's value when collecting values for
-   * `getFieldsValue`/`submit` (spec §4.2 L88). Does NOT mutate state — the live
+   * `getValues`/`submitForm` (spec §4.2 L88). Does NOT mutate state — the live
    * `values` keep the raw value; only the collected payload is transformed.
    */
   transform?: (value: unknown, values: FormValues) => unknown;
@@ -115,34 +115,64 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s]+$/;
 
 export interface FormApi {
-  getState(): FormState;
+  /** the current form state snapshot (Semi getFormState). */
+  getFormState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
   registerField(name: string, config?: FieldConfig): () => void;
   /**
    * resolved validation triggers for a field: its own `trigger` override, else
    * the form default. Always a normalized array (spec §4 L65/L84). The render
-   * layer uses this to decide which DOM events to wire.
+   * layer uses this to decide which DOM events to wire. Headless superset —
+   * Semi has no equivalent; kept un-renamed.
    */
   getFieldTrigger(name: string): ValidateTrigger[];
-  getFieldValue(name: string): unknown;
-  setFieldValue(name: string, value: unknown, opts?: { validate?: boolean }): void;
-  setFieldsValue(values: FormValues): void;
-  setFieldTouched(name: string, touched?: boolean): void;
-  getFieldError(name: string): string | undefined;
-  /** the field's non-blocking warning (from a `warningOnly` rule), if any */
+  /**
+   * read a field's value, or (when `name` is omitted) a shallow snapshot of all
+   * values (Semi getValue(field?)).
+   */
+  getValue(name?: string): unknown;
+  setValue(name: string, value: unknown, opts?: { validate?: boolean }): void;
+  /**
+   * batch-write values. Default merges into existing values; `config.isOverride`
+   * replaces the whole values object (Semi setValues(values, {isOverride})).
+   */
+  setValues(values: FormValues, config?: { isOverride?: boolean }): void;
+  setTouched(name: string, touched?: boolean): void;
+  /** command-imperatively set a field's error (e.g. backend validation) (Semi setError). */
+  setError(name: string, error: string | undefined): void;
+  /**
+   * read a field's error, or (when `name` is omitted) the whole errors map
+   * (Semi getError(field?)).
+   */
+  getError(name?: string): string | undefined | FieldErrors;
+  /** the field's non-blocking warning (from a `warningOnly` rule), if any. Headless superset. */
   getFieldWarning(name: string): string | undefined;
-  /** validate one field; resolves to its (blocking) error (or undefined) */
+  /** whether a field is currently registered (Semi getFieldExist). */
+  getFieldExist(name: string): boolean;
+  /**
+   * a field's initial value, or (when `name` is omitted) a snapshot of all
+   * initial values (Semi getInitValue(field?)).
+   */
+  getInitValue(name?: string): unknown;
+  /** snapshot of all initial values (Semi getInitValues). */
+  getInitValues(): FormValues;
+  /** validate one field; resolves to its (blocking) error (or undefined). Headless superset. */
   validateField(name: string): Promise<string | undefined>;
   /** validate all (or given) fields; resolves to true when valid */
   validate(names?: string[]): Promise<boolean>;
-  resetFields(): void;
+  /**
+   * reset fields to their initial values and clear errors/warnings/touched.
+   * With `fields` given, only those fields are reset; otherwise the whole form
+   * (Semi reset(fields?)).
+   */
+  reset(fields?: string[]): void;
   /**
    * collected values honoring `allowEmpty` (spec §4 L70): with `allowEmpty:false`
-   * keys whose value is empty (`undefined`/`null`/`''`) are dropped.
+   * keys whose value is empty (`undefined`/`null`/`''`) are dropped (Semi getValues).
    */
-  getFieldsValue(): FormValues;
-  /** run validation then resolve { valid, values, errors } */
-  submit(): Promise<{ valid: boolean; values: FormValues; errors: FieldErrors }>;
+  getValues(): FormValues;
+  /** run validation then resolve { valid, values, errors } (Semi submitForm). */
+  submitForm(): Promise<{ valid: boolean; values: FormValues; errors: FieldErrors }>;
 }
 
 /** the canonical "value is empty" predicate shared by required-rules and allowEmpty. */
@@ -167,7 +197,7 @@ export function createForm(options: FormOptions = {}): FormApi {
   // per-field async race token: only the latest validation may write the error
   const tokens = new Map<string, string>();
   // reverse dependency graph: dep field name → set of fields that depend on it.
-  // setFieldValue(dep) connects to re-validating the dependents.
+  // setValue(dep) connects to re-validating the dependents.
   const dependents = new Map<string, Set<string>>();
 
   const state: FormState = {
@@ -307,7 +337,7 @@ export function createForm(options: FormOptions = {}): FormApi {
   }
 
   return {
-    getState: () => state,
+    getFormState: () => state,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -336,8 +366,8 @@ export function createForm(options: FormOptions = {}): FormApi {
       if (t === undefined) return defaultTrigger;
       return Array.isArray(t) ? t : [t];
     },
-    getFieldValue: (name) => state.values[name],
-    setFieldValue(name, value, opts) {
+    getValue: (name) => (name === undefined ? { ...state.values } : state.values[name]),
+    setValue(name, value, opts) {
       state.values = { ...state.values, [name]: value };
       emit();
       if (opts?.validate) void validateField(name);
@@ -353,23 +383,58 @@ export function createForm(options: FormOptions = {}): FormApi {
         if (active) void validateField(dep);
       }
     },
-    setFieldsValue(values) {
-      state.values = { ...state.values, ...values };
+    setValues(values, config) {
+      // isOverride:true replaces the whole values object; default merges. The
+      // Field subscribers re-read on emit, so a flat replace is enough.
+      state.values = config?.isOverride ? { ...values } : { ...state.values, ...values };
       emit();
     },
-    setFieldTouched(name, touched = true) {
+    setTouched(name, touched = true) {
       state.touched = { ...state.touched, [name]: touched };
       emit();
     },
-    getFieldError: (name) => state.errors[name],
+    setError(name, error) {
+      state.errors = { ...state.errors, [name]: error };
+      emit();
+    },
+    getError: (name) =>
+      name === undefined ? { ...state.errors } : state.errors[name],
     getFieldWarning: (name) => state.warnings[name],
+    getFieldExist: (name) => fields.has(name),
+    getInitValue: (name) => (name === undefined ? { ...initial } : initial[name]),
+    getInitValues: () => ({ ...initial }),
     validateField,
     async validate(names) {
       const targets = names ?? [...fields.keys()];
       const results = await Promise.all(targets.map((n) => validateField(n)));
       return results.every((e) => !e);
     },
-    resetFields() {
+    reset(fields) {
+      if (fields && fields.length > 0) {
+        // partial reset: only the targeted fields fall back to their initial
+        // value (or drop when there is none) and lose error/warning/touched/
+        // validating state; everything else is left untouched.
+        const values = { ...state.values };
+        const errors = { ...state.errors };
+        const warnings = { ...state.warnings };
+        const touched = { ...state.touched };
+        const validating = { ...state.validating };
+        for (const f of fields) {
+          if (Object.prototype.hasOwnProperty.call(initial, f)) values[f] = initial[f];
+          else delete values[f];
+          delete errors[f];
+          delete warnings[f];
+          delete touched[f];
+          delete validating[f];
+        }
+        state.values = values;
+        state.errors = errors;
+        state.warnings = warnings;
+        state.touched = touched;
+        state.validating = validating;
+        emit();
+        return;
+      }
       state.values = { ...initial };
       state.errors = {};
       state.warnings = {};
@@ -377,8 +442,8 @@ export function createForm(options: FormOptions = {}): FormApi {
       state.validating = {};
       emit();
     },
-    getFieldsValue: () => collectValues(),
-    async submit() {
+    getValues: () => collectValues(),
+    async submitForm() {
       state.submitting = true;
       state.submitCount += 1;
       emit();
