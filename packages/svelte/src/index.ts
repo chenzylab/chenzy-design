@@ -94,7 +94,7 @@ export {
   type HsvaColor as ColorPickerHsvaColor,
   type RgbaColor as ColorPickerRgbaColor,
 } from '@chenzy-design/core';
-export { DatePicker, datePickerMeta, RangePicker, rangePickerMeta } from './date-picker/index.js';
+export { DatePicker, datePickerMeta } from './date-picker/index.js';
 export { TimePicker, timePickerMeta } from './time-picker/index.js';
 export { Cascader, cascaderMeta, type CascaderNode } from './cascader/index.js';
 export {

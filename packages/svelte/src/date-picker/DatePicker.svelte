@@ -8,8 +8,8 @@
   年月滚轮（PANEL_YAM，对齐 Semi）：点头部年/月标题展开年 + 月两列 ScrollList 快速跳转面板游标（复用 scroll-list，不重写滚轮）。
 -->
 <script lang="ts">
-  import { tick, getContext, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
+  import { tick, untrack, getContext, type Snippet } from 'svelte';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, daysBetween, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -19,11 +19,23 @@
   import { IconClear, IconCalendar, IconCalendarClock, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
 
   type Size = 'small' | 'default' | 'large';
-  type Status = 'default' | 'warning' | 'error';
+  type ValidateStatus = 'default' | 'warning' | 'error';
   type WeekStart = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  type PickerType = 'date' | 'dateTime' | 'month' | 'year';
+  // 对齐 Semi TYPE_SET（constants.ts:49）：单组件靠 type 枚举承载 7 种形态（含 3 种 range）。
+  type PickerType =
+    | 'date'
+    | 'dateRange'
+    | 'year'
+    | 'month'
+    | 'monthRange'
+    | 'dateTime'
+    | 'dateTimeRange';
   type CSSProperties = Record<string, string | number>;
   type PresetPosition = 'left' | 'right' | 'top' | 'bottom';
+  // range 值：起止元组（各端 Date|null）。
+  type RangeValue = [Date | null, Date | null];
+  // range 双输入框焦点态（对齐 Semi rangeInputFocus）：由用户点哪个输入框驱动落 start/end。
+  type RangeInputFocus = 'rangeStart' | 'rangeEnd' | false;
 
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值
   interface DisabledTime {
@@ -32,10 +44,10 @@
     disabledSeconds?: (hour: number, minute: number) => number[];
   }
 
-  // 快捷日期项：value 可为 Date 或惰性求值函数 (点击时才计算，如「今天」)
+  // 快捷日期项：单选 value 为 Date 或惰性函数；range 为 [start,end] 元组或惰性函数（点击即时求值）。
   interface Preset {
     label: string;
-    value: Date | (() => Date);
+    value: Date | (() => Date) | [Date, Date] | (() => [Date, Date]);
   }
 
   interface DayStatus {
@@ -47,21 +59,40 @@
 
   interface Props {
     type?: PickerType;
-    value?: Date | Date[] | null;
-    defaultValue?: Date | Date[] | null;
+    /** 单选为 Date|Date[]（multiple）；range 为 [start,end] 元组。 */
+    value?: Date | Date[] | RangeValue | null;
+    defaultValue?: Date | Date[] | RangeValue | null;
     open?: boolean;
     defaultOpen?: boolean;
     placeholder?: string;
+    /** range 起始输入框占位（对齐 Semi）。 */
+    startPlaceholder?: string;
+    /** range 结束输入框占位（对齐 Semi）。 */
+    endPlaceholder?: string;
     size?: Size;
-    status?: Status;
+    /** 校验态（对齐 Semi validateStatus）。 */
+    validateStatus?: ValidateStatus;
     disabled?: boolean;
-    clearable?: boolean;
     disabledDate?: (date: Date) => boolean;
     disabledTime?: (date: Date) => DisabledTime;
     presets?: Preset[];
-    weekStart?: WeekStart;
-    showSecond?: boolean;
     locale?: string;
+    /** range 起止跨度上限（天）。选定起始后超出该跨度的日期禁用。 */
+    maxRange?: number;
+    /**
+     * 单击范围选择（周选择）：与 endDateOffset 同时提供后，单击某日即选定区间
+     * [startDateOffset(clicked), endDateOffset(clicked)]，一步完成不进双输入焦点流转。
+     * 仅 dateRange/dateTimeRange 生效。
+     */
+    startDateOffset?: (date: Date) => Date;
+    /** 单击范围选择的结束偏移；与 startDateOffset 同时提供才生效。 */
+    endDateOffset?: (date: Date) => Date;
+    /** range 双面板同步翻月（对齐 Semi syncSwitchMonth，默认 false）。 */
+    syncSwitchMonth?: boolean;
+    /** range 起止输入框之间的自定义分隔节点（对齐 Semi rangeSeparatorNode）。 */
+    rangeSeparatorNode?: Snippet | string;
+    /** 透传给内部时间列的配置（对齐 Semi timePickerOpts）：showSecond 等。 */
+    timePickerOpts?: { showSecond?: boolean; use12Hours?: boolean } & Record<string, unknown>;
     /**
      * 面板初始定位日期（非受控，仅控制面板首次展开时显示哪个月/年）。
      * 与 value 无关：不改变选中值，只 seed 面板游标。range 场景可传 Date[]（取首个）。
@@ -83,18 +114,16 @@
      * rangeSeparator 连接）。参数顺序由 onChangeWithDateFirst 控制：默认 (value, dateString)；
      * onChangeWithDateFirst=false 时 (dateString, value)。历史用法仅取第一参 value，故默认保持 value-first。
      */
-    onChange?: (value: Date | Date[] | null, dateString: string) => void;
+    onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onOpenChange?: (open: boolean) => void;
-    /** 手动键入解析失败 (editable 模式)。 */
-    onParseError?: (e: { text: string }) => void;
     /** 可见年月切换 (头部导航)。 */
     onPanelChange?: (e: { panelDate: Date }) => void;
-    /** 点击快捷选项。 */
-    onPresetClick?: (e: { preset: Preset }) => void;
+    /** 点击快捷选项（对齐 Semi (item, e)）。 */
+    onPresetClick?: (item: Preset, e?: MouseEvent) => void;
     /** 点击清除。 */
     onClear?: (e: Record<string, never>) => void;
     /** 点击确认按钮 (dateTime / needConfirm)。 */
-    onConfirm?: (e: { value: Date | Date[] | null }) => void;
+    onConfirm?: (e: { value: Date | Date[] | RangeValue | null }) => void;
     /** 触发器获得焦点。 */
     onFocus?: (e: FocusEvent) => void;
     /** 触发器失去焦点。 */
@@ -119,10 +148,10 @@
     spacing?: number;
     /** 浮层挂载容器。 */
     getPopupContainer?: () => HTMLElement;
-    /** weekStart 别名。 */
+    /** 一周起始日（0=周日 … 6=周六）。 */
     weekStartsOn?: WeekStart;
-    /** 点击取消按钮。 */
-    onCancel?: (date: Date | Date[] | null, dateStr: string) => void;
+    /** 点击取消按钮（对齐 Semi 无参）。 */
+    onCancel?: () => void;
     /**
      * 控制 onChange 参数顺序。默认 true → (value, dateString)（对齐 Semi 默认，且与历史 value-first 用法一致）；
      * 设为 false → (dateString, value)。
@@ -184,7 +213,7 @@
     multiple?: boolean;
     /** multiple=true 时最多选择数量 */
     max?: number;
-    /** 范围日期分隔符（默认 '~'） */
+    /** 范围日期分隔符（默认 ' ~ '，对齐 Semi DEFAULT_SEPARATOR_RANGE） */
     rangeSeparator?: string;
     /** 年份滚轮最小年 */
     startYear?: number;
@@ -197,7 +226,7 @@
     /** 完全自定义日期格子 */
     renderFullDate?: Snippet<[{ day: number; fullDate: string; dayStatus: DayStatus }]>;
     /** 完全自定义触发器 */
-    triggerRender?: Snippet<[{ value: Date | Date[] | null; placeholder: string }]>;
+    triggerRender?: Snippet<[{ value: Date | Date[] | RangeValue | null; placeholder: string }]>;
 
     // --- 时间相关 ---
     /** 隐藏禁止的时间选项 */
@@ -223,22 +252,26 @@
     open: openProp,
     defaultOpen = false,
     placeholder,
+    startPlaceholder,
+    endPlaceholder,
     size = 'default',
-    status = 'default',
+    validateStatus = 'default',
     disabled = false,
-    clearable = true,
     disabledDate,
     disabledTime,
     presets,
-    weekStart = 0,
-    showSecond = true,
     locale = 'zh-CN',
+    maxRange,
+    startDateOffset,
+    endDateOffset,
+    syncSwitchMonth = false,
+    rangeSeparatorNode,
+    timePickerOpts,
     defaultPickerValue,
     timeZone,
     format,
     onChange,
     onOpenChange,
-    onParseError,
     onPanelChange,
     onPresetClick,
     onClear,
@@ -248,14 +281,14 @@
     ariaLabel,
     insetLabel,
     insetLabelId,
-    rangeSeparator = '~',
+    rangeSeparator = ' ~ ',
     autoSwitchDate = true,
     autoAdjustOverflow = true,
     insetInput = false,
     position = 'bottomLeft',
     spacing,
     getPopupContainer,
-    weekStartsOn,
+    weekStartsOn = 0,
     yearAndMonthOpts,
     onCancel,
     onChangeWithDateFirst = true,
@@ -296,17 +329,23 @@
     // 时间相关
     hideDisabledOptions = false,
     disabledTimePicker = false,
-    needConfirm = false,
+    needConfirm,
     // 快捷选项
     presetPosition = 'bottom',
   }: Props = $props();
 
-  const isDateTime = $derived(type === 'dateTime');
-  const isMonth = $derived(type === 'month');
+  // --- 7-type 派生分派（对齐 Semi isRangeType /range/i.test + monthsGridFoundation）---
+  const isRange = $derived(/range/i.test(type));
+  const isDateTime = $derived(/dateTime/i.test(type)); // dateTime | dateTimeRange
+  const isMonth = $derived(type === 'month' || type === 'monthRange');
   const isYear = $derived(type === 'year');
+  // showSecond：Semi 走 timePickerOpts.showSecond；默认 true。
+  const showSecond = $derived(timePickerOpts?.showSecond ?? true);
+  // needConfirm：显式传优先；dateTimeRange 默认 true，其它默认 false（对齐 Semi）。
+  const effNeedConfirm = $derived(needConfirm ?? type === 'dateTimeRange');
 
-  // weekStartsOn 是 weekStart 的别名，weekStart 优先
-  const effWeekStart = $derived(weekStart ?? weekStartsOn ?? 0);
+  // 一周起始（保留 weekStartsOn 单名，删旧 weekStart 别名）。
+  const effWeekStart = $derived(weekStartsOn ?? 0);
 
   const loc = useLocale();
 
@@ -317,23 +356,48 @@
   // --- 受控 value (红线 #1): 不无条件回写 value，仅 onChange ---
   const isValueControlled = $derived(value !== undefined);
 
+  // monthRange/dateRange/dateTimeRange 归一：把 raw value 折成 [start,end]。
+  // svelte-ignore state_referenced_locally
+  function normOneRange(d: Date | null | undefined): Date | null {
+    if (!d) return null;
+    if (type === 'dateTimeRange') return new Date(d);
+    if (type === 'monthRange') return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+    return startOfDay(d);
+  }
+  function toRangePair(v: unknown): RangeValue {
+    if (Array.isArray(v)) {
+      const a = v[0] instanceof Date ? v[0] : null;
+      const b = v[1] instanceof Date ? v[1] : null;
+      return [normOneRange(a), normOneRange(b)];
+    }
+    return [null, null];
+  }
+
   // multiple 模式下 value 为 Date[]，单选为 Date | null
   function getInitialValue(): Date | Date[] | null {
     if (multiple) {
-      if (Array.isArray(defaultValue)) return defaultValue;
+      if (Array.isArray(defaultValue)) return defaultValue as Date[];
       if (defaultValue instanceof Date) return [defaultValue];
       return [];
     }
-    if (Array.isArray(defaultValue)) return defaultValue[0] ?? null;
-    return defaultValue ?? null;
+    if (Array.isArray(defaultValue)) return (defaultValue as Date[])[0] ?? null;
+    return (defaultValue as Date | null) ?? null;
   }
 
   let innerValue = $state<Date | Date[] | null>(getInitialValue());
-  const current = $derived<Date | Date[] | null>(isValueControlled ? (value ?? null) : innerValue);
+  const current = $derived<Date | Date[] | null>(
+    isValueControlled ? ((value as Date | Date[] | null) ?? null) : innerValue,
+  );
 
   // 单一 Date 视图（multiple 时取第一个，非 multiple 直接用）
   const currentSingle = $derived<Date | null>(
     Array.isArray(current) ? (current[0] ?? null) : current,
+  );
+
+  // --- range 值模型（与 single/multiple 平行）---
+  let innerRange = $state<RangeValue>(untrack(() => toRangePair(defaultValue)));
+  const currentRange = $derived<RangeValue>(
+    isValueControlled ? toRangePair(value) : innerRange,
   );
 
   function setValue(next: Date | Date[] | null) {
@@ -341,12 +405,26 @@
     if (onChange) {
       // 第二参 dateString：按当前格式化规则序列化 next（multiple 用 rangeSeparator 连接）。
       const dateStr = Array.isArray(next)
-        ? next.map(formatSingle).join(` ${rangeSeparator} `)
+        ? next.map(formatSingle).join(rangeSeparator)
         : formatSingle(next);
       // onChangeWithDateFirst 默认 true → (value, dateString)；false → (dateString, value)。
       if (onChangeWithDateFirst) onChange(next, dateStr);
       // onChangeWithDateFirst=false：故意反转为 (dateString, value)，类型以默认 value-first 声明，此处 cast。
       else (onChange as (a: unknown, b: unknown) => void)(dateStr, next);
+    }
+  }
+
+  // range 提交：写内部值 + onChange（第二参为 'start ~ end' 串）。
+  function setRangeValue(next: RangeValue) {
+    const emptied = next[0] === null && next[1] === null;
+    if (!isValueControlled) innerRange = next;
+    if (onChange) {
+      const dateStr = emptied
+        ? ''
+        : `${formatSingle(next[0])}${rangeSeparator}${formatSingle(next[1])}`;
+      const outVal = emptied ? null : next;
+      if (onChangeWithDateFirst) onChange(outVal, dateStr);
+      else (onChange as (a: unknown, b: unknown) => void)(dateStr, outVal);
     }
   }
 
@@ -398,11 +476,17 @@
     ? (defaultValue[0] ?? null)
     : (defaultValue instanceof Date ? defaultValue : null);
   let cursor = $state(startOfDay(_initCursorDate ?? _pickerSeed ?? new Date()));
+  // 双面板游标：左=cursor、右=cursor+1 月（monthRange 右=+1 年=+12 月）。
+  const rightCursor = $derived(addMonths(cursor, isMonth ? 12 : 1));
 
-  // 当面板打开时把游标对齐到当前选中值所在月份；无选中值时回退 defaultPickerValue（首次定位），再无则今天。
+  // 当面板打开时把游标对齐到当前选中值所在月份；range 对齐到起始端；无值回退 defaultPickerValue/今天。
   $effect(() => {
     if (isOpen) {
-      cursor = startOfDay(currentSingle ?? _pickerSeed ?? new Date());
+      if (isRange) {
+        cursor = startOfDay(currentRange[0] ?? _pickerSeed ?? new Date());
+      } else {
+        cursor = startOfDay(currentSingle ?? _pickerSeed ?? new Date());
+      }
     }
   });
 
@@ -412,6 +496,58 @@
   $effect(() => {
     if (isOpen) {
       pendingValue = current;
+    }
+  });
+
+  // ============================================================================
+  // range 状态机（对齐 Semi）：阶段 3 把 phase 两步机升级为 rangeInputFocus 双输入框驱动。
+  // 值语义：currentRange=[start,end]；needConfirm 时选择进 pendingRange 缓冲、点确定才提交。
+  // ============================================================================
+  // rangeInputFocus：点起始输入框→'rangeStart'、点结束输入框→'rangeEnd'、未聚焦→false。
+  let rangeInputFocus = $state<RangeInputFocus>(false);
+  // 用户是否手动点过某端输入框（对齐 Semi isAnotherPanelHasOpened：允许只改一端不自动流转）。
+  let rangeStartFocused = $state(false);
+  let rangeEndFocused = $state(false);
+  // range 选择缓冲：pendingRange 暂存起止（含时间），提交前的工作值。
+  let pendingRange = $state<RangeValue>([null, null]);
+  // hover 预览端点（选起点后 hover 目标 = 预览终点；offset 周选择时预览整段）。
+  let hoverDay = $state<Date | null>(null);
+  let offsetPreviewStart = $state<Date | null>(null);
+  let offsetPreviewEnd = $state<Date | null>(null);
+  // 时间列作用的当前激活端（dateTimeRange）。
+  let activeEnd = $state<'start' | 'end'>('start');
+
+  // 单击范围选择（周选择）：start+end offset 都提供且非 monthRange。
+  const offsetSelect = $derived(!isMonth && !!startDateOffset && !!endDateOffset);
+
+  // range 面板生效的起止（needConfirm 用 pending，否则用已提交值）。
+  const panelRangeStart = $derived<Date | null>(effNeedConfirm ? pendingRange[0] : currentRange[0]);
+  const panelRangeEnd = $derived<Date | null>(effNeedConfirm ? pendingRange[1] : currentRange[1]);
+
+  // 触发器显示端点（对齐 currentRange，触发器双输入框各显示一端）。
+  const rangeStart = $derived<Date | null>(currentRange[0]);
+  const rangeEnd = $derived<Date | null>(currentRange[1]);
+
+  // 打开面板时初始化 range 状态机。
+  $effect(() => {
+    if (!isRange) return;
+    if (isOpen) {
+      untrack(() => {
+        pendingRange = [currentRange[0], currentRange[1]];
+        rangeInputFocus = 'rangeStart';
+        rangeStartFocused = false;
+        rangeEndFocused = false;
+        hoverDay = null;
+        offsetPreviewStart = null;
+        offsetPreviewEnd = null;
+        activeEnd = 'start';
+      });
+    } else {
+      untrack(() => {
+        hoverDay = null;
+        offsetPreviewStart = null;
+        offsetPreviewEnd = null;
+      });
     }
   });
 
@@ -490,7 +626,6 @@
     } else {
       // 解析失败：回退到当前值的规范文本
       inputText = formattedValue;
-      onParseError?.({ text: raw });
     }
   }
 
@@ -555,11 +690,10 @@
     const parsed = parseDateString(raw, insetDateFormat);
     if (parsed && !(disabledDate?.(parsed) ?? false)) {
       const next = combine(parsed);
-      if (needConfirm) pendingValue = next;
+      if (effNeedConfirm) pendingValue = next;
       else setValue(next);
     } else {
       insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
-      onParseError?.({ text: raw });
     }
   }
 
@@ -572,11 +706,10 @@
     if (parsedTime) {
       const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
       base.setHours(parsedTime.getHours(), parsedTime.getMinutes(), parsedTime.getSeconds(), 0);
-      if (needConfirm) pendingValue = base;
+      if (effNeedConfirm) pendingValue = base;
       else setValue(base);
     } else {
       insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
-      onParseError?.({ text: raw });
     }
   }
 
@@ -653,12 +786,48 @@
   // 当前高亮格 id（aria-activedescendant）
   const activeCellId = $derived(highlight ? cellId(highlight) : undefined);
 
-  // showClear 综合判断：clearable & !disabled & 有值 & showClearProp=true
+  // --- range 双面板网格派生 ---
+  const rangeRightGridId = useId('cd-date-picker-grid-r');
+  const leftGrid = $derived(getMonthGrid(cursor, effWeekStart));
+  const rightGrid = $derived(getMonthGrid(rightCursor, effWeekStart));
+  const leftRows = $derived(Array.from({ length: 6 }, (_, r) => leftGrid.slice(r * 7, r * 7 + 7)));
+  const rightRows = $derived(Array.from({ length: 6 }, (_, r) => rightGrid.slice(r * 7, r * 7 + 7)));
+  function rangeCellId(prefix: string, date: Date): string {
+    return `${prefix}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
+  // range monthRange 双面板月格。
+  const leftMonthCells = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const date = new Date(cursor.getFullYear(), m, 1);
+      return { date, label: monthShortFormat.format(date), month: m };
+    }),
+  );
+  const rightMonthCells = $derived(
+    Array.from({ length: 12 }, (_, m) => {
+      const date = new Date(rightCursor.getFullYear(), m, 1);
+      return { date, label: monthShortFormat.format(date), month: m };
+    }),
+  );
+  // range 头部文案：dateRange 显示「年 月」；monthRange 仅显示年。
+  const rangeLeftHeaderText = $derived(isMonth ? yearFormat.format(cursor) : headerFormat.format(cursor));
+  const rangeRightHeaderText = $derived(isMonth ? yearFormat.format(rightCursor) : headerFormat.format(rightCursor));
+  // 触发器双输入框各端显示文本。
+  const startText = $derived(
+    rangeStart ? triggerFormat.format(zonedWallTime(rangeStart, effectiveTimeZone)) : '',
+  );
+  const endText = $derived(
+    rangeEnd ? triggerFormat.format(zonedWallTime(rangeEnd, effectiveTimeZone)) : '',
+  );
+
+  // showClear 综合判断（对齐 Semi 单一 showClear）：showClear & !disabled & 有值。
   const showClearDerived = $derived(
-    clearable &&
     showClearProp &&
     !disabled &&
-    (multiple ? (Array.isArray(current) && current.length > 0) : currentSingle !== null),
+    (isRange
+      ? (rangeStart !== null || rangeEnd !== null)
+      : multiple
+        ? (Array.isArray(current) && current.length > 0)
+        : currentSingle !== null),
   );
 
   // 头部导航切换可见年月：更新游标并通知 onPanelChange（红线 #1：panelDate 是面板视图态，非 value）
@@ -847,7 +1016,7 @@
         if (max !== undefined && arr.length >= max) return;
         next = [...arr, startOfDay(date)];
       }
-      if (needConfirm) {
+      if (effNeedConfirm) {
         pendingValue = next;
       } else {
         setValue(next);
@@ -856,7 +1025,7 @@
     }
 
     const combined = combine(date);
-    if (needConfirm) {
+    if (effNeedConfirm) {
       pendingValue = combined;
       // dateTime needConfirm：选日期后保留面板
     } else {
@@ -886,7 +1055,7 @@
   function commitTime(h: number, m: number, s: number) {
     const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
     base.setHours(h, m, s, 0);
-    if (needConfirm) {
+    if (effNeedConfirm) {
       pendingValue = base;
     } else {
       setValue(base);
@@ -905,10 +1074,220 @@
     commitTime(selectedHour, selectedMinute, s);
   }
 
-  // --- presets：点击快捷项直接选中 (惰性 value 即时求值) ---
-  function selectPreset(preset: Preset) {
-    onPresetClick?.({ preset });
-    const date = typeof preset.value === 'function' ? preset.value() : preset.value;
+  // ============================================================================
+  // range 选择逻辑（双面板 + rangeInputFocus 状态机，对齐 Semi handleRangeSelected）
+  // ============================================================================
+  function startOfMonthD(d: Date): Date {
+    return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+  }
+  // range 比较单位：monthRange 按月，其余按日。
+  function normUnit(d: Date): Date {
+    return isMonth ? startOfMonthD(d) : startOfDay(d);
+  }
+  function isSameUnit(a: Date | null | undefined, b: Date | null | undefined): boolean {
+    if (!a || !b) return false;
+    return isMonth
+      ? a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
+      : isSameDay(a, b);
+  }
+  function resetRangeSelection() {
+    hoverDay = null;
+    offsetPreviewStart = null;
+    offsetPreviewEnd = null;
+  }
+
+  // range 区间可视端点：offset 预览优先；否则 pending 起点 + hover 预览终点，再否则面板生效值。
+  const visRangeStart = $derived<Date | null>(
+    offsetSelect && offsetPreviewStart
+      ? offsetPreviewStart
+      : (pendingRange[0] ?? panelRangeStart),
+  );
+  const visRangeEnd = $derived<Date | null>(
+    offsetSelect && offsetPreviewEnd
+      ? offsetPreviewEnd
+      : pendingRange[0] !== null && pendingRange[1] === null && hoverDay
+        ? hoverDay
+        : (pendingRange[1] ?? panelRangeEnd),
+  );
+  const rangeSpan = $derived.by<[number, number] | null>(() => {
+    const a = visRangeStart;
+    const b = visRangeEnd;
+    if (!a || !b) return null;
+    const ta = normUnit(a).getTime();
+    const tb = normUnit(b).getTime();
+    return ta <= tb ? [ta, tb] : [tb, ta];
+  });
+  function inRange(date: Date): boolean {
+    if (!rangeSpan) return false;
+    const t = normUnit(date).getTime();
+    return t > rangeSpan[0] && t < rangeSpan[1];
+  }
+  function isEdge(date: Date): boolean {
+    return isSameUnit(date, visRangeStart) || isSameUnit(date, visRangeEnd);
+  }
+
+  // maxRange：选定起始后离 pending 起点超过 maxRange-1 天的日期禁用。
+  function exceedsMaxRange(date: Date): boolean {
+    if (isMonth) return false;
+    if (maxRange == null || maxRange <= 0) return false;
+    if (pendingRange[0] === null || pendingRange[1] !== null) return false;
+    return Math.abs(daysBetween(pendingRange[0], date)) > maxRange - 1;
+  }
+  function isRangeCellDisabled(date: Date): boolean {
+    return (disabledDate?.(date) ?? false) || exceedsMaxRange(date);
+  }
+
+  // 合并 day 与某端已有时分秒（dateTimeRange 保时间，dateRange 归零，monthRange 归月 1 号）。
+  function combineRangeDay(day: Date, base: Date | null): Date {
+    if (isMonth) return startOfMonthD(day);
+    if (!isDateTime) return startOfDay(day);
+    const next = startOfDay(day);
+    if (base) next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), 0);
+    return next;
+  }
+
+  // 点击日期（range）：对齐 Semi handleRangeSelected，由 rangeInputFocus 决定落 start/end。
+  function selectRangeDate(date: Date) {
+    if (isRangeCellDisabled(date)) return;
+    const day = isMonth ? startOfMonthD(date) : startOfDay(date);
+
+    // 单击范围选择（周选择）：一步算出起止提交。
+    if (offsetSelect && startDateOffset && endDateOffset) {
+      const s = startOfDay(startDateOffset(date));
+      const en = startOfDay(endDateOffset(date));
+      const [loDay, hiDay] = s.getTime() <= en.getTime() ? [s, en] : [en, s];
+      const lo = combineRangeDay(loDay, isDateTime ? pendingRange[0] : null);
+      const hi = combineRangeDay(hiDay, isDateTime ? pendingRange[1] : null);
+      resetRangeSelection();
+      if (effNeedConfirm) {
+        pendingRange = [lo, hi];
+      } else {
+        setRangeValue([lo, hi]);
+        setOpen(false);
+      }
+      return;
+    }
+
+    let start = pendingRange[0];
+    let end = pendingRange[1];
+
+    if (rangeInputFocus === 'rangeEnd') {
+      end = combineRangeDay(day, pendingRange[1]);
+      activeEnd = 'end';
+      // 新 end 早于旧 start → reset start（对齐 Semi）。
+      if (start && normUnit(end).getTime() < normUnit(start).getTime()) {
+        start = null;
+      }
+    } else {
+      // 'rangeStart' 或 false（打开后未点输入框直接选日）。
+      start = combineRangeDay(day, pendingRange[0]);
+      activeEnd = 'start';
+      if (end && normUnit(end).getTime() < normUnit(start).getTime()) {
+        end = null;
+      }
+    }
+    pendingRange = [start, end];
+
+    // 焦点流转（对齐 Semi）：设完一端切另一端，但已手动 focus 过另一端则不强切（允许只改一端）。
+    if (rangeInputFocus === 'rangeEnd') {
+      if (!rangeStartFocused || !start) rangeInputFocus = 'rangeStart';
+    } else {
+      if (!rangeEndFocused || !end) rangeInputFocus = 'rangeEnd';
+    }
+
+    // 完成判定：两端都有值 → 提交（非 needConfirm 关面板）。
+    const complete = start !== null && end !== null;
+    if (complete) {
+      if (!effNeedConfirm) {
+        setRangeValue([start, end]);
+        // 双端完成后关闭：仅当两端都是本轮选定（避免只改一端时误关）。
+        if (!rangeStartFocused && !rangeEndFocused) setOpen(false);
+      }
+    } else if (!effNeedConfirm) {
+      // 单端已选、另一端仍空：即时回写（Semi 完成即 notify，未完成也保留部分）。
+      setRangeValue([start, end]);
+    }
+  }
+
+  function onRangeCellHover(date: Date) {
+    if (offsetSelect && startDateOffset && endDateOffset) {
+      if (isRangeCellDisabled(date)) return;
+      offsetPreviewStart = startOfDay(startDateOffset(date));
+      offsetPreviewEnd = startOfDay(endDateOffset(date));
+      return;
+    }
+    // 有起点、无终点时 hover 预览终点。
+    if (pendingRange[0] !== null && pendingRange[1] === null && !isRangeCellDisabled(date)) {
+      hoverDay = isMonth ? startOfMonthD(date) : startOfDay(date);
+    }
+  }
+
+  // 点起止输入框切换 rangeInputFocus（阶段 3 双输入框驱动）。
+  function focusRangeInput(which: 'rangeStart' | 'rangeEnd') {
+    rangeInputFocus = which;
+    if (which === 'rangeStart') { rangeStartFocused = true; activeEnd = 'start'; }
+    else { rangeEndFocused = true; activeEnd = 'end'; }
+    if (!isOpen) setOpen(true);
+  }
+
+  // range 头部翻月（对齐 Semi handleSwitchMonthOrYear + syncSwitchMonth + 防同月）。
+  function rangePrev() {
+    const delta = isMonth ? -12 : -1;
+    setCursor(addMonths(cursor, delta));
+  }
+  function rangeNext() {
+    const delta = isMonth ? 12 : 1;
+    setCursor(addMonths(cursor, delta));
+  }
+
+  // range 时间列：作用于 activeEnd（对齐 RangePicker）。
+  const rangeActiveDate = $derived<Date | null>(
+    activeEnd === 'start' ? pendingRange[0] : pendingRange[1],
+  );
+  const rangeActiveHour = $derived(rangeActiveDate ? rangeActiveDate.getHours() : 0);
+  const rangeActiveMinute = $derived(rangeActiveDate ? rangeActiveDate.getMinutes() : 0);
+  const rangeActiveSecond = $derived(rangeActiveDate ? rangeActiveDate.getSeconds() : 0);
+  const rangeDisabledTimeCfg = $derived(
+    isDateTime && disabledTime ? disabledTime(rangeActiveDate ?? today) : undefined,
+  );
+  const rangeDisabledHourSet = $derived(new Set(rangeDisabledTimeCfg?.disabledHours?.() ?? []));
+  const rangeDisabledMinuteSet = $derived(new Set(rangeDisabledTimeCfg?.disabledMinutes?.(rangeActiveHour) ?? []));
+  const rangeDisabledSecondSet = $derived(new Set(rangeDisabledTimeCfg?.disabledSeconds?.(rangeActiveHour, rangeActiveMinute) ?? []));
+
+  function commitRangeTime(h: number, m: number, s: number) {
+    const baseSrc = rangeActiveDate ?? startOfDay(today);
+    const base = new Date(baseSrc);
+    base.setHours(h, m, s, 0);
+    const nextPair: RangeValue =
+      activeEnd === 'start' ? [base, pendingRange[1]] : [pendingRange[0], base];
+    pendingRange = nextPair;
+    if (!effNeedConfirm) setRangeValue(nextPair);
+  }
+  function pickRangeHour(h: number) { if (!rangeDisabledHourSet.has(h)) commitRangeTime(h, rangeActiveMinute, rangeActiveSecond); }
+  function pickRangeMinute(m: number) { if (!rangeDisabledMinuteSet.has(m)) commitRangeTime(rangeActiveHour, m, rangeActiveSecond); }
+  function pickRangeSecond(s: number) { if (!rangeDisabledSecondSet.has(s)) commitRangeTime(rangeActiveHour, rangeActiveMinute, s); }
+
+  // --- presets：点击快捷项直接选中 (惰性 value 即时求值)。range/单选分派。 ---
+  function selectPreset(preset: Preset, e?: MouseEvent) {
+    // 对齐 Semi onPresetClick(item, e)。
+    onPresetClick?.(preset, e);
+    const raw = typeof preset.value === 'function' ? preset.value() : preset.value;
+    if (isRange) {
+      if (!Array.isArray(raw)) return;
+      const s = normOneRange(raw[0]);
+      const en = normOneRange(raw[1]);
+      if (!s || !en) return;
+      const [lo, hi] = s.getTime() <= en.getTime() ? [s, en] : [en, s];
+      resetRangeSelection();
+      if (effNeedConfirm) {
+        pendingRange = [lo, hi];
+      } else {
+        setRangeValue([lo, hi]);
+        setOpen(false);
+      }
+      return;
+    }
+    const date = raw as Date;
     if (disabledDate?.(date)) return;
     if (isMonth) {
       setValue(startOfDay(new Date(date.getFullYear(), date.getMonth(), 1)));
@@ -926,20 +1305,28 @@
   }
 
   function confirm() {
-    const val = needConfirm ? pendingValue : current;
+    if (isRange) {
+      onConfirm?.({ value: pendingRange[0] === null && pendingRange[1] === null ? null : pendingRange });
+      setRangeValue(pendingRange);
+      setOpen(false);
+      return;
+    }
+    const val = effNeedConfirm ? pendingValue : current;
     onConfirm?.({ value: val });
-    if (needConfirm && pendingValue !== null) {
+    if (effNeedConfirm && pendingValue !== null) {
       setValue(pendingValue);
     }
     setOpen(false);
   }
 
   function cancelConfirm() {
-    const dateStr = Array.isArray(current)
-      ? current.map(formatSingle).join(` ${rangeSeparator} `)
-      : formatSingle(currentSingle);
-    onCancel?.(current, dateStr);
-    pendingValue = current;
+    // 对齐 Semi onCancel 无参。
+    onCancel?.();
+    if (isRange) {
+      pendingRange = [currentRange[0], currentRange[1]];
+    } else {
+      pendingValue = current;
+    }
     setOpen(false);
   }
 
@@ -967,8 +1354,17 @@
   function clear(e: MouseEvent) {
     e.stopPropagation();
     if (disabled) return;
-    const emptyVal = multiple ? [] : null;
-    setValue(emptyVal);
+    if (isRange) {
+      setRangeValue([null, null]);
+      pendingRange = [null, null];
+      rangeInputFocus = 'rangeStart';
+      rangeStartFocused = false;
+      rangeEndFocused = false;
+      resetRangeSelection();
+    } else {
+      const emptyVal = multiple ? [] : null;
+      setValue(emptyVal);
+    }
     onClear?.({});
   }
 
@@ -1029,7 +1425,10 @@
     const key = e.key;
     if (key === 'Enter' || key === ' ') {
       e.preventDefault();
-      if (highlight) selectDate(highlight);
+      if (highlight) {
+        if (isRange) selectRangeDate(highlight);
+        else selectDate(highlight);
+      }
       return;
     }
     if (key === 'Escape') {
@@ -1047,7 +1446,13 @@
     if (!GRID_NAV_KEYS.has(key)) return;
     e.preventDefault();
     const next = gridFocusMove(base, key as GridFocusKey, 'month', effWeekStart);
-    if (next) setHighlight(next);
+    if (next) {
+      setHighlight(next);
+      // range 选择中：方向键移动即刷新 hover 预览终点。
+      if (isRange && pendingRange[0] !== null && pendingRange[1] === null && !isRangeCellDisabled(next)) {
+        hoverDay = isMonth ? startOfMonthD(next) : startOfDay(next);
+      }
+    }
   }
 
   // --- useDismiss (红线 #3): 绑定放进 $effect，open 时绑、cleanup 解绑 ---
@@ -1167,7 +1572,7 @@
     [
       'cd-date-picker',
       `cd-date-picker--${size}`,
-      `cd-date-picker--${status}`,
+      `cd-date-picker--${validateStatus}`,
       disabled && 'cd-date-picker--disabled',
       isOpen && 'cd-date-picker--open',
       insetInput && 'cd-date-picker--inset-input',
@@ -1198,7 +1603,7 @@
   const presetsVertical = $derived(presetPosition === 'left' || presetPosition === 'right');
 </script>
 
-<div class={cls} style={style || undefined} bind:this={rootEl} aria-invalid={status === 'error' || undefined} data-position={position}>
+<div class={cls} style={style || undefined} bind:this={rootEl} aria-invalid={validateStatus === 'error' || undefined} data-position={position}>
   <div class="cd-date-picker__control" class:cd-date-picker__control--inset-label={hasInsetLabel}>
     {#if hasInsetLabel}
       <span class="cd-date-picker__inset-label" id={insetLabelId}>
@@ -1210,7 +1615,52 @@
       </span>
     {/if}
     {#if triggerRender}
-      {@render triggerRender({ value: current, placeholder: placeholder ?? loc().t('DatePicker.placeholder') })}
+      {@render triggerRender({ value: isRange ? currentRange : current, placeholder: placeholder ?? loc().t('DatePicker.placeholder') })}
+    {:else if isRange}
+      <!-- range 触发器：起止双输入框 + 分隔节点（对齐 Semi dateInput range 分支）。 -->
+      <div
+        class="cd-date-picker__range-input"
+        class:cd-date-picker__range-input--start-active={isOpen && rangeInputFocus === 'rangeStart'}
+        class:cd-date-picker__range-input--end-active={isOpen && rangeInputFocus === 'rangeEnd'}
+      >
+        <input
+          type="text"
+          class="cd-date-picker__range-field cd-date-picker__range-field--start"
+          role="combobox"
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+          aria-controls={dialogId}
+          aria-label={triggerAriaLabel ?? loc().t('DatePicker.startPlaceholder')}
+          placeholder={startPlaceholder ?? loc().t('DatePicker.startPlaceholder')}
+          value={startText}
+          readonly
+          {disabled}
+          bind:this={triggerEl as HTMLInputElement}
+          onclick={() => focusRangeInput('rangeStart')}
+          onfocus={(e) => { focusRangeInput('rangeStart'); onFocus?.(e); }}
+          onkeydown={onTriggerKeydown}
+          onblur={onBlur}
+        />
+        <span class="cd-date-picker__range-sep" aria-hidden="true">
+          {#if rangeSeparatorNode}
+            {#if typeof rangeSeparatorNode === 'string'}{rangeSeparatorNode}{:else}{@render rangeSeparatorNode()}{/if}
+          {:else}
+            {rangeSeparator}
+          {/if}
+        </span>
+        <input
+          type="text"
+          class="cd-date-picker__range-field cd-date-picker__range-field--end"
+          aria-label={loc().t('DatePicker.endPlaceholder')}
+          placeholder={endPlaceholder ?? loc().t('DatePicker.endPlaceholder')}
+          value={endText}
+          readonly
+          {disabled}
+          onclick={() => focusRangeInput('rangeEnd')}
+          onfocus={() => focusRangeInput('rangeEnd')}
+          onkeydown={onTriggerKeydown}
+        />
+      </div>
     {:else if editable}
       <input
         type="text"
@@ -1375,6 +1825,140 @@
             </div>
           {/if}
           <div class="cd-date-picker__body">
+            {#if isRange}
+              <!-- ================= range 双面板 ================= -->
+              <div class="cd-date-picker__panels">
+                {#each [{ cur: cursor, header: rangeLeftHeaderText, rows: leftRows, months: leftMonthCells, side: 'left', gid: gridId }, { cur: rightCursor, header: rangeRightHeaderText, rows: rightRows, months: rightMonthCells, side: 'right', gid: rangeRightGridId }] as panel (panel.side)}
+                  <div class="cd-date-picker__month">
+                    <div class="cd-date-picker__header">
+                      {#if panel.side === 'left'}
+                        <button type="button" class="cd-date-picker__nav" aria-label={isMonth ? loc().t('DatePicker.prevYear') : loc().t('DatePicker.prevMonth')} onclick={rangePrev}>
+                          {#if isMonth}<IconDoubleChevronLeft size="small" aria-hidden="true" />{:else}<IconChevronLeft size="small" aria-hidden="true" />{/if}
+                        </button>
+                      {:else}
+                        <span class="cd-date-picker__nav cd-date-picker__nav--ghost" aria-hidden="true"></span>
+                      {/if}
+                      <span class="cd-date-picker__title">{panel.header}</span>
+                      {#if panel.side === 'right'}
+                        <button type="button" class="cd-date-picker__nav" aria-label={isMonth ? loc().t('DatePicker.nextYear') : loc().t('DatePicker.nextMonth')} onclick={rangeNext}>
+                          {#if isMonth}<IconDoubleChevronRight size="small" aria-hidden="true" />{:else}<IconChevronRight size="small" aria-hidden="true" />{/if}
+                        </button>
+                      {:else}
+                        <span class="cd-date-picker__nav cd-date-picker__nav--ghost" aria-hidden="true"></span>
+                      {/if}
+                    </div>
+                    {#if isMonth}
+                      <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid" aria-label={panel.header}>
+                        {#each panel.months as cell (cell.month)}
+                          {@const edge = isEdge(cell.date)}
+                          {@const within = inRange(cell.date)}
+                          {@const isCurrentMonth = today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+                          {@const isDisabled = isRangeCellDisabled(cell.date)}
+                          <button
+                            type="button"
+                            class="cd-date-picker__cell cd-date-picker__cell--block"
+                            class:cd-date-picker__cell--edge={edge}
+                            class:cd-date-picker__cell--in-range={within}
+                            class:cd-date-picker__cell--today={isCurrentMonth}
+                            role="gridcell"
+                            aria-selected={edge}
+                            aria-disabled={isDisabled || undefined}
+                            disabled={isDisabled}
+                            onclick={() => selectRangeDate(cell.date)}
+                            onpointerenter={() => onRangeCellHover(cell.date)}
+                          >
+                            {cell.label}
+                          </button>
+                        {/each}
+                      </div>
+                    {:else}
+                      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                      <div class="cd-date-picker__grid" role="grid" tabindex="0" aria-label={panel.header} onkeydown={onGridKeydown}>
+                        <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
+                          {#each weekdayNames as name, i (i)}
+                            <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>{name}</span>
+                          {/each}
+                        </div>
+                        {#each panel.rows as row, wi (wi)}
+                          <div class="cd-date-picker__row" role="row">
+                            {#each row as cell (cell.date.getTime())}
+                              {@const edge = isEdge(cell.date)}
+                              {@const within = inRange(cell.date)}
+                              {@const isTodayCell = isSameDay(cell.date, today)}
+                              {@const isHighlight = isSameDay(cell.date, highlight)}
+                              {@const isDisabled = isRangeCellDisabled(cell.date)}
+                              <button
+                                type="button"
+                                id={rangeCellId(panel.gid, cell.date)}
+                                class="cd-date-picker__cell"
+                                class:cd-date-picker__cell--muted={!cell.inMonth}
+                                class:cd-date-picker__cell--edge={edge}
+                                class:cd-date-picker__cell--in-range={within}
+                                class:cd-date-picker__cell--today={isTodayCell}
+                                class:cd-date-picker__cell--highlight={isHighlight}
+                                role="gridcell"
+                                aria-selected={edge}
+                                aria-disabled={isDisabled || undefined}
+                                disabled={isDisabled}
+                                tabindex={-1}
+                                onclick={() => selectRangeDate(cell.date)}
+                                onpointerenter={() => onRangeCellHover(cell.date)}
+                              >
+                                {cell.date.getDate()}
+                              </button>
+                            {/each}
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                {/each}
+
+                {#if isDateTime && !disabledTimePicker}
+                  <!-- range 起止两组时间列（对齐 RangePicker，作用于 activeEnd） -->
+                  <div class="cd-date-picker__times">
+                    {#each ['start', 'end'] as end (end)}
+                      {@const isActive = activeEnd === end}
+                      {@const endDate = end === 'start' ? pendingRange[0] : pendingRange[1]}
+                      {@const hh = endDate ? endDate.getHours() : 0}
+                      {@const mm = endDate ? endDate.getMinutes() : 0}
+                      {@const ss = endDate ? endDate.getSeconds() : 0}
+                      <div class="cd-date-picker__time" class:cd-date-picker__time--active={isActive} role="group" aria-label={end === 'start' ? loc().t('DatePicker.startPlaceholder') : loc().t('DatePicker.endPlaceholder')}>
+                        <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')}>
+                          {#each hours as h (h)}
+                            {@const isDis = isActive && rangeDisabledHourSet.has(h)}
+                            {@const isSel = isActive && h === hh && endDate !== null}
+                            {#if !(hideDisabledOptions && isDis)}
+                              <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeHour(h); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeHour(h); } }}>{pad2(h)}</li>
+                            {/if}
+                          {/each}
+                        </ul>
+                        <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')}>
+                          {#each minutes as m (m)}
+                            {@const isDis = isActive && rangeDisabledMinuteSet.has(m)}
+                            {@const isSel = isActive && m === mm && endDate !== null}
+                            {#if !(hideDisabledOptions && isDis)}
+                              <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeMinute(m); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeMinute(m); } }}>{pad2(m)}</li>
+                            {/if}
+                          {/each}
+                        </ul>
+                        {#if showSecond}
+                          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')}>
+                            {#each seconds as s (s)}
+                              {@const isDis = isActive && rangeDisabledSecondSet.has(s)}
+                              {@const isSel = isActive && s === ss && endDate !== null}
+                              {#if !(hideDisabledOptions && isDis)}
+                                <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeSecond(s); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeSecond(s); } }}>{pad2(s)}</li>
+                              {/if}
+                            {/each}
+                          </ul>
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {:else}
             <div class="cd-date-picker__calendar">
               <div class="cd-date-picker__header">
                 <button
@@ -1633,14 +2217,17 @@
                 {/if}
               </div>
             {/if}
+            {/if}
           </div>
 
           <div class="cd-date-picker__footer">
-            <button type="button" class="cd-date-picker__today" onclick={selectToday}>
-              {loc().t('DatePicker.today')}
-            </button>
-            {#if isDateTime || needConfirm}
-              {#if needConfirm}
+            {#if !isRange}
+              <button type="button" class="cd-date-picker__today" onclick={selectToday}>
+                {loc().t('DatePicker.today')}
+              </button>
+            {/if}
+            {#if isDateTime || effNeedConfirm}
+              {#if isRange || effNeedConfirm}
                 <button type="button" class="cd-date-picker__cancel" onclick={cancelConfirm}>
                   {loc().t('DatePicker.cancel') ?? '取消'}
                 </button>
@@ -2279,8 +2866,118 @@
     border-radius: var(--cd-border-radius-small);
   }
 
+  /* ============================ range 触发器双输入框 ============================ */
+  .cd-date-picker__range-input {
+    display: flex;
+    align-items: center;
+    gap: var(--cd-spacing-tight);
+    inline-size: 100%;
+    block-size: var(--cd-height-input-default);
+    padding-inline: var(--cd-input-padding-x);
+    background: var(--cd-input-color-bg);
+    color: var(--cd-input-color-text);
+    border: 1px solid var(--cd-input-border);
+    border-radius: var(--cd-input-radius);
+    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  }
+  .cd-date-picker--small .cd-date-picker__range-input {
+    block-size: var(--cd-height-input-small);
+    font-size: var(--cd-font-size-small);
+  }
+  .cd-date-picker--large .cd-date-picker__range-input {
+    block-size: var(--cd-height-input-large);
+    font-size: var(--cd-font-size-header-6);
+  }
+  .cd-date-picker--open .cd-date-picker__range-input {
+    border-color: var(--cd-input-border-active);
+  }
+  .cd-date-picker--warning .cd-date-picker__range-input {
+    border-color: var(--cd-input-border-warning);
+  }
+  .cd-date-picker--error .cd-date-picker__range-input {
+    border-color: var(--cd-input-border-error);
+  }
+  .cd-date-picker--disabled .cd-date-picker__range-input {
+    background: var(--cd-color-fill-0);
+    color: var(--cd-color-text-3);
+    cursor: not-allowed;
+  }
+  .cd-date-picker__range-field {
+    flex: 1 1 0;
+    min-inline-size: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    outline: none;
+  }
+  .cd-date-picker__range-field::placeholder {
+    color: var(--cd-input-color-placeholder);
+  }
+  .cd-date-picker__range-field:disabled {
+    cursor: not-allowed;
+  }
+  /* 激活端下划线提示（对齐 Semi range 输入焦点态） */
+  .cd-date-picker__range-input--start-active .cd-date-picker__range-field--start,
+  .cd-date-picker__range-input--end-active .cd-date-picker__range-field--end {
+    box-shadow: inset 0 -2px 0 0 var(--cd-color-date-picker-range-input-border-active);
+  }
+  .cd-date-picker__range-sep {
+    flex: 0 0 auto;
+    color: var(--cd-color-text-2);
+  }
+
+  /* ============================ range 双面板 ============================ */
+  .cd-date-picker__panels {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cd-spacing-base);
+  }
+  .cd-date-picker__month {
+    flex: 0 0 auto;
+  }
+  .cd-date-picker__nav--ghost {
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cd-date-picker__nav--ghost:hover {
+    background: transparent;
+  }
+  /* range 区间内：浅底连续条（对齐 Semi primary-light 区间底色） */
+  .cd-date-picker__cell--in-range {
+    background: var(--cd-color-date-picker-date-in-hover-bg-default);
+    border-radius: 0;
+  }
+  /* range 端点：实心高亮 */
+  .cd-date-picker__cell--edge,
+  .cd-date-picker__cell--edge:hover {
+    background: var(--cd-color-date-picker-date-selected-bg-default);
+    color: var(--cd-color-date-picker-date-selected-text-default);
+    border-radius: var(--cd-date-picker-cell-radius);
+  }
+
+  /* ============================ range 时间列 ============================ */
+  .cd-date-picker__times {
+    display: flex;
+    margin-inline-start: var(--cd-spacing-tight);
+    padding-inline-start: var(--cd-spacing-tight);
+    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+    gap: var(--cd-spacing-tight);
+  }
+  .cd-date-picker__time--active {
+    background: var(--cd-color-date-picker-date-in-hover-bg-default);
+    border-radius: var(--cd-date-picker-cell-radius);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cd-date-picker__trigger,
+    .cd-date-picker__range-input,
     .cd-date-picker__clear,
     .cd-date-picker__cell,
     .cd-date-picker__preset,

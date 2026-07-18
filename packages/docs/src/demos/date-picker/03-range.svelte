@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let rangeVal = $state<[Date | null, Date | null] | null>(null);
   let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
@@ -20,13 +20,13 @@
 <Space vertical align="start">
   <Space>
     <span style="width:260px; display:inline-block">
-      <RangePicker value={rangeVal} disabledDate={disablePast} onChange={(r) => (rangeVal = r)} />
+      <DatePicker type="dateRange" value={rangeVal} disabledDate={disablePast} onChange={(r) => (rangeVal = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">禁用过去日期：{fmt(rangeVal)}</Text>
   </Space>
   <Space>
     <span style="width:260px; display:inline-block">
-      <RangePicker maxRange={7} value={maxRangeVal} onChange={(r) => (maxRangeVal = r)} />
+      <DatePicker type="dateRange" maxRange={7} value={maxRangeVal} onChange={(r) => (maxRangeVal = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">maxRange=7（最多 7 天跨度）：{fmt(maxRangeVal)}</Text>
   </Space>

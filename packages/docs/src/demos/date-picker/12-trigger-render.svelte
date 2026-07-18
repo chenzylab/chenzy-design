@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DatePicker, Button, Space, Text } from '@chenzy-design/svelte';
 
-  let val = $state<Date | Date[] | null>(null);
+  let val = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
   const label = $derived(val instanceof Date ? val.toLocaleDateString('zh-CN') : '选择日期');
 </script>
 

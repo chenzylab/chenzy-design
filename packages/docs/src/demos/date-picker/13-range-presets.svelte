@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let val = $state<[Date | null, Date | null] | null>(null);
 
@@ -21,11 +21,12 @@
 <Space vertical align="start">
   <!-- RangePicker presets 快捷区间 + presetPosition 位置 -->
   <span style="width:280px;display:inline-block">
-    <RangePicker
+    <DatePicker
+      type="dateRange"
       value={val}
       presets={presets}
       presetPosition="left"
-      onChange={(r) => (val = r)}
+      onChange={(r) => (val = r as [Date | null, Date | null] | null)}
     />
   </span>
   <Text type="tertiary">

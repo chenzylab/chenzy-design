@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let monthRange = $state<[Date | null, Date | null] | null>(null);
   const preset = $state<[Date | null, Date | null]>([
@@ -19,13 +19,13 @@
 <Space vertical align="start">
   <Space>
     <span style="width:260px; display:inline-block">
-      <RangePicker type="monthRange" value={monthRange} onChange={(r) => (monthRange = r)} />
+      <DatePicker type="monthRange" value={monthRange} onChange={(r) => (monthRange = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">月份范围（双月份面板选起止月）：{fmt(monthRange)}</Text>
   </Space>
   <Space>
     <span style="width:260px; display:inline-block">
-      <RangePicker type="monthRange" defaultValue={preset} />
+      <DatePicker type="monthRange" defaultValue={preset} />
     </span>
     <Text type="tertiary">带默认值 2024-03 ~ 2024-07</Text>
   </Space>

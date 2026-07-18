@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DatePicker, RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let dateVal = $state<Date | Date[] | null>(null);
   let rangeVal = $state<[Date | null, Date | null] | null>(null);
@@ -14,7 +14,7 @@
   </Space>
   <Space>
     <span style="width:260px; display:inline-block">
-      <RangePicker value={rangeVal} onChange={(r) => (rangeVal = r)} />
+      <DatePicker type="dateRange" value={rangeVal} onChange={(r) => (rangeVal = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">
       范围：{rangeVal && rangeVal[0] && rangeVal[1]

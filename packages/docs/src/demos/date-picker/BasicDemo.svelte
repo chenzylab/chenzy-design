@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { DatePicker, RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let dateVal = $state<Date | Date[] | null>(null);
-  let dateTimeVal = $state<Date | Date[] | null>(null);
+  let dateVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let dateTimeVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
   let dateRangeVal = $state<[Date | null, Date | null] | null>(null);
-  let monthVal = $state<Date | Date[] | null>(null);
-  let yearVal = $state<Date | Date[] | null>(null);
-  let disabledTimeVal = $state<Date | Date[] | null>(null);
-  let presetVal = $state<Date | Date[] | null>(null);
-  let formatVal = $state<Date | Date[] | null>(null);
+  let monthVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let yearVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let disabledTimeVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let presetVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let formatVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
   let maxRangeVal = $state<[Date | null, Date | null] | null>(null);
 </script>
 
@@ -72,7 +72,7 @@
   </Space>
   <Space>
     <span data-testid="rangepicker-dual" style="width:260px; display:inline-block">
-      <RangePicker value={dateRangeVal} onChange={(r) => (dateRangeVal = r)} />
+      <DatePicker type="dateRange" value={dateRangeVal} onChange={(r) => (dateRangeVal = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">
       范围（双面板，两个月并排）：{dateRangeVal && dateRangeVal[0] && dateRangeVal[1]
@@ -92,7 +92,7 @@
   </Space>
   <Space>
     <span data-testid="rangepicker-maxrange" style="width:260px; display:inline-block">
-      <RangePicker maxRange={7} value={maxRangeVal} onChange={(r) => (maxRangeVal = r)} />
+      <DatePicker type="dateRange" maxRange={7} value={maxRangeVal} onChange={(r) => (maxRangeVal = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">
       maxRange=7（最多 7 天跨度）：{maxRangeVal && maxRangeVal[0] && maxRangeVal[1]

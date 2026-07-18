@@ -57,7 +57,6 @@ export const nameToDir: Record<string, string> = {
   popover: 'popover',
   progress: 'progress',
   radio: 'radio',
-  rangepicker: 'date-picker',
   rating: 'rating',
   resizable: 'resizable',
   resizeobserver: 'resize-observer',
