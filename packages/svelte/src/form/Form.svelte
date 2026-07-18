@@ -59,7 +59,7 @@
      * Form 挂载后一次性回调，回传内部 headless FormApi 句柄（Semi getFormApi，
      * props-gap-tracker §1 Form 高）。这是「渲染 <Form> 的父组件」唯一的命令式逃生舱：
      * FormApi 经 context 只下发给后代 Field，父级够不到；拿到句柄后可在外部
-     * setFieldsValue / validate / validateField / resetFields。
+     * setValues / validate / validateField / reset。
      * 注：Semi 的 `validateFields` 是 Form 级自定义校验器（validator 旧别名），
      * 并非独立的外部触发校验入口——外部触发校验由本回调回传的 formApi.validate()
      * / formApi.validateField() 直接覆盖，故不单列 prop。
@@ -71,7 +71,7 @@
     /** 表单校验失败时独立回调（onSubmit 只在 valid 时调用时可用此做失败分支）。 */
     onSubmitFail?: (errors: FieldErrors, values: FormValues) => void;
     onChange?: (values: FormValues) => void;
-    /** 表单重置时回调（点击原生 reset 或 formApi.resetFields()）（Semi onReset，spec §4 Events reset）。 */
+    /** 表单重置时回调（点击原生 reset 或 formApi.reset()）（Semi onReset，spec §4 Events reset）。 */
     onReset?: () => void;
     /** 任意字段错误集合变化时回调，入参为最新 formState.errors（Semi onErrorChange，props-gap-tracker §1 Form 中）。 */
     onErrorChange?: (errors: FieldErrors) => void;
@@ -145,11 +145,11 @@
   // sub-objects are replaced immutably; we take a fresh shallow snapshot on every
   // emit so the new reference triggers Svelte reactivity. The $effect ONLY writes
   // formState — it never reads state that children write on mount, so no loop.
-  let formState = $state({ ...form.getState() });
-  let lastValues = form.getState().values;
+  let formState = $state({ ...form.getFormState() });
+  let lastValues = form.getFormState().values;
   // track the errors reference to fire onErrorChange only when the error set
   // actually changes (same immutable-replacement pattern as lastValues).
-  let lastErrors = form.getState().errors;
+  let lastErrors = form.getFormState().errors;
   // Subscribe synchronously at component init (NOT inside an $effect): child
   // Field registration effects run after the parent's setup but emit on the core
   // bus; subscribing here guarantees we capture those early emits (e.g. a
@@ -194,7 +194,7 @@
   // We never write back to the prop (onChange is the only outward channel), so
   // this cannot form a value -> onChange -> value loop.
   $effect(() => {
-    if (value !== undefined) form.setFieldsValue(value);
+    if (value !== undefined) form.setValues(value);
   });
 
   setFormContext({
@@ -242,7 +242,7 @@
   // this DOM-driven side effect lives in the event handler, never in render. We
   // reset the headless state then notify (Semi onReset / spec §4 Events reset).
   function handleReset() {
-    form.resetFields();
+    form.reset();
     onReset?.();
   }
 
@@ -252,7 +252,7 @@
     if (preventDefault) e.preventDefault();
     // stopPropagation：阻止 submit 事件向上冒泡（默认 false，向后兼容）。
     if (stopPropagation) e.stopPropagation();
-    const r = await form.submit();
+    const r = await form.submitForm();
     if (!r.valid && effScrollToError) focusFirstError(r.errors);
     if (!r.valid) onSubmitFail?.(r.errors, r.values);
     onSubmit?.(r);

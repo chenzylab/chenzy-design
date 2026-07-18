@@ -2,7 +2,7 @@
   FieldArray (Form.List) — 动态字段数组：增/删/重排子表单项。
   本地维护行标识 items（{ key }[]），children snippet 渲染每行；
   子字段用拼接键 `${name}.${item.key}.${sub}` 走普通 Field（core 扁平键天然支持校验）。
-  remove 时清理该行所有子字段值（setFieldValue undefined），避免提交残留。
+  remove 时清理该行所有子字段值（setValue undefined），避免提交残留。
   不依赖 core 的嵌套路径支持，自包含（红线 #1：不写回 props，状态本地 $state）。
 -->
 <script lang="ts">
@@ -51,9 +51,9 @@
   function remove(item: ArrayItem) {
     // 清理该行所有子字段值（前缀匹配），避免提交残留
     const prefix = `${name}.${item.key}.`;
-    const values = form.getState().values;
+    const values = form.getFormState().values;
     for (const k of Object.keys(values)) {
-      if (k.startsWith(prefix)) form.setFieldValue(k, undefined);
+      if (k.startsWith(prefix)) form.setValue(k, undefined);
     }
     items = items.filter((it) => it.key !== item.key);
   }

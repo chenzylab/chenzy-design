@@ -5,34 +5,34 @@ describe('createForm', () => {
   it('registers fields and reads/writes values', () => {
     const f = createForm({ initialValues: { name: 'a' } });
     f.registerField('name', { label: 'Name' });
-    expect(f.getFieldValue('name')).toBe('a');
-    f.setFieldValue('name', 'b');
-    expect(f.getFieldValue('name')).toBe('b');
+    expect(f.getValue('name')).toBe('a');
+    f.setValue('name', 'b');
+    expect(f.getValue('name')).toBe('b');
   });
 
   it('required rule fails on empty, passes when filled', async () => {
     const f = createForm();
     f.registerField('email', { label: 'Email', rules: [{ required: true }] });
     expect(await f.validateField('email')).toBeTruthy();
-    f.setFieldValue('email', 'x@y.com');
+    f.setValue('email', 'x@y.com');
     expect(await f.validateField('email')).toBeUndefined();
   });
 
   it('email type rule rejects malformed input', async () => {
     const f = createForm();
     f.registerField('email', { rules: [{ type: 'email' }] });
-    f.setFieldValue('email', 'nope');
+    f.setValue('email', 'nope');
     expect(await f.validateField('email')).toBeTruthy();
-    f.setFieldValue('email', 'a@b.co');
+    f.setValue('email', 'a@b.co');
     expect(await f.validateField('email')).toBeUndefined();
   });
 
   it('min/max/length rules', async () => {
     const f = createForm();
     f.registerField('age', { rules: [{ min: 18, max: 60 }] });
-    f.setFieldValue('age', 10);
+    f.setValue('age', 10);
     expect(await f.validateField('age')).toBeTruthy();
-    f.setFieldValue('age', 30);
+    f.setValue('age', 30);
     expect(await f.validateField('age')).toBeUndefined();
   });
 
@@ -51,34 +51,34 @@ describe('createForm', () => {
         },
       ],
     });
-    f.setFieldValue('u', 'first');
+    f.setValue('u', 'first');
     const p1 = f.validateField('u');
     const p2 = f.validateField('u'); // supersedes
     await p2;
     resolveFirst?.('stale error'); // late first result must be discarded
     await p1;
-    expect(f.getFieldError('u')).toBeUndefined();
+    expect(f.getError('u')).toBeUndefined();
   });
 
-  it('resetFields restores initial values and clears errors', async () => {
+  it('reset restores initial values and clears errors', async () => {
     const f = createForm({ initialValues: { name: 'init' } });
     f.registerField('name', { rules: [{ required: true }] });
-    f.setFieldValue('name', '');
+    f.setValue('name', '');
     await f.validateField('name');
-    expect(f.getFieldError('name')).toBeTruthy();
-    f.resetFields();
-    expect(f.getFieldValue('name')).toBe('init');
-    expect(f.getFieldError('name')).toBeUndefined();
+    expect(f.getError('name')).toBeTruthy();
+    f.reset();
+    expect(f.getValue('name')).toBe('init');
+    expect(f.getError('name')).toBeUndefined();
   });
 
   it('submit reports validity and increments submitCount', async () => {
     const f = createForm();
     f.registerField('name', { rules: [{ required: true }] });
-    const r1 = await f.submit();
+    const r1 = await f.submitForm();
     expect(r1.valid).toBe(false);
-    expect(f.getState().submitCount).toBe(1);
-    f.setFieldValue('name', 'ok');
-    const r2 = await f.submit();
+    expect(f.getFormState().submitCount).toBe(1);
+    f.setValue('name', 'ok');
+    const r2 = await f.submitForm();
     expect(r2.valid).toBe(true);
     expect(r2.values).toEqual({ name: 'ok' });
   });
@@ -96,19 +96,19 @@ describe('createForm', () => {
       ],
     });
 
-    f.setFieldValue('password', 'aaa');
-    f.setFieldValue('confirm', 'bbb');
+    f.setValue('password', 'aaa');
+    f.setValue('confirm', 'bbb');
     await f.validateField('confirm');
-    expect(f.getFieldError('confirm')).toBe('mismatch');
+    expect(f.getError('confirm')).toBe('mismatch');
 
     // changing password automatically re-validates the dependent confirm (which
     // is "active" because it already shows an error). The error clears once the
     // values match — note we do NOT validate the password field itself here.
-    f.setFieldValue('password', 'bbb');
+    f.setValue('password', 'bbb');
     // allow the scheduled (async) dependent validation to settle
     await Promise.resolve();
     await Promise.resolve();
-    expect(f.getFieldError('confirm')).toBeUndefined();
+    expect(f.getError('confirm')).toBeUndefined();
   });
 
   it('dependencies: untouched/error-free dependent is not eagerly validated', async () => {
@@ -119,9 +119,9 @@ describe('createForm', () => {
       rules: [{ validator: (v, values) => (v === values.password ? undefined : 'mismatch') }],
     });
     // confirm has neither been touched nor shows an error → must stay clean
-    f.setFieldValue('password', 'x', { validate: true });
+    f.setValue('password', 'x', { validate: true });
     await Promise.resolve();
-    expect(f.getFieldError('confirm')).toBeUndefined();
+    expect(f.getError('confirm')).toBeUndefined();
   });
 
   it('warningOnly rule produces a warning, not an error, and does not block submit', async () => {
@@ -129,15 +129,15 @@ describe('createForm', () => {
     f.registerField('name', {
       rules: [{ minLength: 5, warningOnly: true, message: 'too short' }],
     });
-    f.setFieldValue('name', 'ab');
+    f.setValue('name', 'ab');
     const err = await f.validateField('name');
     // warningOnly never surfaces as a blocking error
     expect(err).toBeUndefined();
-    expect(f.getFieldError('name')).toBeUndefined();
+    expect(f.getError('name')).toBeUndefined();
     expect(f.getFieldWarning('name')).toBe('too short');
 
     // submit must still be valid despite the standing warning
-    const r = await f.submit();
+    const r = await f.submitForm();
     expect(r.valid).toBe(true);
     expect(f.getFieldWarning('name')).toBe('too short');
   });
@@ -145,10 +145,10 @@ describe('createForm', () => {
   it('warning clears once the warningOnly rule passes', async () => {
     const f = createForm();
     f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
-    f.setFieldValue('name', 'ab');
+    f.setValue('name', 'ab');
     await f.validateField('name');
     expect(f.getFieldWarning('name')).toBe('w');
-    f.setFieldValue('name', 'abcdef');
+    f.setValue('name', 'abcdef');
     await f.validateField('name');
     expect(f.getFieldWarning('name')).toBeUndefined();
   });
@@ -161,11 +161,11 @@ describe('createForm', () => {
         { required: true, message: 'err' },
       ],
     });
-    f.setFieldValue('name', '');
+    f.setValue('name', '');
     const err = await f.validateField('name');
     expect(err).toBe('err');
-    expect(f.getFieldError('name')).toBe('err');
-    const r = await f.submit();
+    expect(f.getError('name')).toBe('err');
+    const r = await f.submitForm();
     expect(r.valid).toBe(false);
   });
 
@@ -175,22 +175,22 @@ describe('createForm', () => {
     f.registerField('u', {
       rules: [{ validator: () => new Promise((r) => (resolveV = r)) }],
     });
-    f.setFieldValue('u', 'x');
+    f.setValue('u', 'x');
     const p = f.validateField('u');
     // synchronously after kicking off: the field is marked validating
-    expect(f.getState().validating.u).toBe(true);
+    expect(f.getFormState().validating.u).toBe(true);
     resolveV?.(undefined);
     await p;
-    expect(f.getState().validating.u).toBe(false);
+    expect(f.getFormState().validating.u).toBe(false);
   });
 
-  it('resetFields clears warnings too', async () => {
+  it('reset clears warnings too', async () => {
     const f = createForm();
     f.registerField('name', { rules: [{ minLength: 5, warningOnly: true, message: 'w' }] });
-    f.setFieldValue('name', 'ab');
+    f.setValue('name', 'ab');
     await f.validateField('name');
     expect(f.getFieldWarning('name')).toBe('w');
-    f.resetFields();
+    f.reset();
     expect(f.getFieldWarning('name')).toBeUndefined();
   });
 
@@ -229,7 +229,7 @@ describe('createForm', () => {
         { validator: () => (calls.push('r2'), 'second') },
       ],
     });
-    f.setFieldValue('x', 'v');
+    f.setValue('x', 'v');
     const err = await f.validateField('x');
     expect(err).toBe('first');
     // both rules ran because we did NOT stop at the first error
@@ -245,7 +245,7 @@ describe('createForm', () => {
         { validator: () => (calls.push('r2'), 'second') },
       ],
     });
-    f.setFieldValue('x', 'v');
+    f.setValue('x', 'v');
     const err = await f.validateField('x');
     expect(err).toBe('first');
     // second rule never ran
@@ -260,26 +260,26 @@ describe('createForm', () => {
         { minLength: 5, warningOnly: true, message: 'warn' },
       ],
     });
-    f.setFieldValue('x', '');
+    f.setValue('x', '');
     await f.validateField('x');
-    expect(f.getFieldError('x')).toBe('err');
+    expect(f.getError('x')).toBe('err');
     // empty value skips minLength, so no warning here — sanity that error wins
-    f.setFieldValue('x', 'ab');
+    f.setValue('x', 'ab');
     await f.validateField('x');
     // 'ab' passes required, fails minLength → warning surfaces
-    expect(f.getFieldError('x')).toBeUndefined();
+    expect(f.getError('x')).toBeUndefined();
     expect(f.getFieldWarning('x')).toBe('warn');
   });
 
   // ---- allowEmpty (spec §4 L70) ----
-  it('allowEmpty:false (default) drops empty-value keys on submit/getFieldsValue', async () => {
+  it('allowEmpty:false (default) drops empty-value keys on submit/getValues', async () => {
     const f = createForm();
     f.registerField('name', {});
     f.registerField('bio', {});
-    f.setFieldValue('name', 'jo');
-    f.setFieldValue('bio', '');
-    expect(f.getFieldsValue()).toEqual({ name: 'jo' });
-    const r = await f.submit();
+    f.setValue('name', 'jo');
+    f.setValue('bio', '');
+    expect(f.getValues()).toEqual({ name: 'jo' });
+    const r = await f.submitForm();
     expect(r.values).toEqual({ name: 'jo' });
   });
 
@@ -287,10 +287,10 @@ describe('createForm', () => {
     const f = createForm({ allowEmpty: true });
     f.registerField('name', {});
     f.registerField('bio', {});
-    f.setFieldValue('name', 'jo');
-    f.setFieldValue('bio', '');
-    expect(f.getFieldsValue()).toEqual({ name: 'jo', bio: '' });
-    const r = await f.submit();
+    f.setValue('name', 'jo');
+    f.setValue('bio', '');
+    expect(f.getValues()).toEqual({ name: 'jo', bio: '' });
+    const r = await f.submitForm();
     expect(r.values).toEqual({ name: 'jo', bio: '' });
   });
 
@@ -298,35 +298,35 @@ describe('createForm', () => {
   it('registerField initialValue seeds the field value (field-level init)', () => {
     const f = createForm();
     f.registerField('plan', { initialValue: 'pro' });
-    expect(f.getFieldValue('plan')).toBe('pro');
-    expect(f.getFieldsValue()).toEqual({ plan: 'pro' });
+    expect(f.getValue('plan')).toBe('pro');
+    expect(f.getValues()).toEqual({ plan: 'pro' });
   });
 
   it('container initialValues take precedence over field initialValue', () => {
     const f = createForm({ initialValues: { plan: 'team' } });
     f.registerField('plan', { initialValue: 'pro' });
     // container already supplied a value → field init does not clobber it
-    expect(f.getFieldValue('plan')).toBe('team');
+    expect(f.getValue('plan')).toBe('team');
   });
 
-  it('resetFields restores the field-level initialValue', () => {
+  it('reset restores the field-level initialValue', () => {
     const f = createForm();
     f.registerField('plan', { initialValue: 'pro' });
-    f.setFieldValue('plan', 'free');
-    expect(f.getFieldValue('plan')).toBe('free');
-    f.resetFields();
-    expect(f.getFieldValue('plan')).toBe('pro');
+    f.setValue('plan', 'free');
+    expect(f.getValue('plan')).toBe('free');
+    f.reset();
+    expect(f.getValue('plan')).toBe('pro');
   });
 
   // ---- field-level transform (spec §4.2 L88) ----
   it('transform converts the value on collect/submit without mutating state', async () => {
     const f = createForm();
     f.registerField('tags', { transform: (v) => String(v).split(',').map((s) => s.trim()) });
-    f.setFieldValue('tags', 'a, b , c');
+    f.setValue('tags', 'a, b , c');
     // live state keeps the raw string (red line #2: pure transform, no write-back)
-    expect(f.getFieldValue('tags')).toBe('a, b , c');
-    expect(f.getFieldsValue()).toEqual({ tags: ['a', 'b', 'c'] });
-    const r = await f.submit();
+    expect(f.getValue('tags')).toBe('a, b , c');
+    expect(f.getValues()).toEqual({ tags: ['a', 'b', 'c'] });
+    const r = await f.submitForm();
     expect(r.values).toEqual({ tags: ['a', 'b', 'c'] });
   });
 
@@ -334,9 +334,9 @@ describe('createForm', () => {
     const f = createForm({ allowEmpty: true });
     f.registerField('a', {});
     f.registerField('full', { transform: (_v, values) => `${values.a as string}!` });
-    f.setFieldValue('a', 'hi');
-    f.setFieldValue('full', '');
-    expect(f.getFieldsValue()).toEqual({ a: 'hi', full: 'hi!' });
+    f.setValue('a', 'hi');
+    f.setValue('full', '');
+    expect(f.getValues()).toEqual({ a: 'hi', full: 'hi!' });
   });
 
   it('subscribe notifies on changes', () => {
@@ -344,11 +344,95 @@ describe('createForm', () => {
     f.registerField('x');
     let count = 0;
     const unsub = f.subscribe(() => (count += 1));
-    f.setFieldValue('x', 1);
+    f.setValue('x', 1);
     expect(count).toBeGreaterThan(0);
     unsub();
     const before = count;
-    f.setFieldValue('x', 2);
+    f.setValue('x', 2);
     expect(count).toBe(before);
+  });
+
+  // ---- Semi bare-name additions (批C-A) ----
+  it('getValue() with no arg returns a snapshot of all values', () => {
+    const f = createForm({ initialValues: { a: 1, b: 2 } });
+    expect(f.getValue()).toEqual({ a: 1, b: 2 });
+    // snapshot is a copy — mutating it must not affect form state
+    (f.getValue() as Record<string, unknown>).a = 99;
+    expect(f.getValue('a')).toBe(1);
+  });
+
+  it('getError() with no arg returns the whole errors map', async () => {
+    const f = createForm();
+    f.registerField('name', { rules: [{ required: true }] });
+    await f.validateField('name');
+    expect(f.getError()).toEqual(f.getFormState().errors);
+    expect(f.getError('name')).toBeTruthy();
+  });
+
+  it('setError imperatively sets a field error', () => {
+    const f = createForm();
+    f.registerField('name', {});
+    f.setError('name', 'server says no');
+    expect(f.getError('name')).toBe('server says no');
+    f.setError('name', undefined);
+    expect(f.getError('name')).toBeUndefined();
+  });
+
+  it('getFieldExist reflects registration and cleanup', () => {
+    const f = createForm();
+    expect(f.getFieldExist('name')).toBe(false);
+    const unregister = f.registerField('name', {});
+    expect(f.getFieldExist('name')).toBe(true);
+    unregister();
+    expect(f.getFieldExist('name')).toBe(false);
+  });
+
+  it('getInitValue / getInitValues expose initial values', () => {
+    const f = createForm({ initialValues: { a: 1 } });
+    f.registerField('b', { initialValue: 2 });
+    expect(f.getInitValue('a')).toBe(1);
+    expect(f.getInitValue('b')).toBe(2);
+    expect(f.getInitValue('missing')).toBeUndefined();
+    expect(f.getInitValue()).toEqual({ a: 1, b: 2 });
+    expect(f.getInitValues()).toEqual({ a: 1, b: 2 });
+    // changing a live value must not affect the init snapshot
+    f.setValue('a', 9);
+    expect(f.getInitValue('a')).toBe(1);
+  });
+
+  it('reset(fields) resets only the targeted fields', async () => {
+    const f = createForm({ initialValues: { a: 'a0', b: 'b0' } });
+    f.registerField('a', { rules: [{ required: true }] });
+    f.registerField('b', { rules: [{ required: true }] });
+    f.setValue('a', '');
+    f.setValue('b', '');
+    await f.validate();
+    expect(f.getError('a')).toBeTruthy();
+    expect(f.getError('b')).toBeTruthy();
+
+    f.reset(['a']);
+    // only `a` fell back to its initial value and lost its error
+    expect(f.getValue('a')).toBe('a0');
+    expect(f.getError('a')).toBeUndefined();
+    // `b` is untouched by the partial reset
+    expect(f.getValue('b')).toBe('');
+    expect(f.getError('b')).toBeTruthy();
+  });
+
+  it('reset(fields) drops a field that has no initial value', () => {
+    const f = createForm();
+    f.registerField('a', {});
+    f.setValue('a', 'x');
+    f.reset(['a']);
+    expect(f.getValue('a')).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(f.getValue() as object, 'a')).toBe(false);
+  });
+
+  it('setValues merges by default, replaces with isOverride', () => {
+    const f = createForm({ initialValues: { a: 1, b: 2 } });
+    f.setValues({ b: 20 });
+    expect(f.getValue()).toEqual({ a: 1, b: 20 });
+    f.setValues({ c: 3 }, { isOverride: true });
+    expect(f.getValue()).toEqual({ c: 3 });
   });
 });
