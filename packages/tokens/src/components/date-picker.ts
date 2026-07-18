@@ -13,8 +13,10 @@
  * - Semi `var(--semi-border-radius-small/medium)` → 我们 `var(--cd-border-radius-small/medium)`。
  * - usage 忠实照抄 Semi 中文注释（含原注释错别字）。
  *
- * 末尾「组件消费补充段」为 DatePicker/RangePicker.svelte 消费的老 `date-picker-*` token
- * （Semi 无独立变量）。注：`date-picker-time-col-width`/`-time-item-height` 已迁移至 time-picker.ts。
+ * 阶段4 已去中间层：删除与 `color-date-picker-*` 镜像段语义重复的自造名（cell-bg-selected 等），
+ * CSS 直接消费镜像名。末尾「组件消费段」仅保留 Semi 确无独立变量的浮层容器 token（panel
+ * shadow/radius/z，Semi 走 popover）+ 日期格圆角/非本月弱化色。
+ * 注：`date-picker-time-col-width`/`-time-item-height` 已迁移至 time-picker.ts。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -32,6 +34,12 @@ export const datePickerTokens = {
   'width-date-picker-inset-input-date-type-wrapper': { value: '284px', category: 'width', label: '日期内嵌输入框宽度', usage: '日期类型内嵌输入框宽度' },
   'width-date-picker-panel-list': { value: '56px', category: 'width', label: '时间列列宽', usage: 'dateTime 面板时间列（ScrollList）列宽，对齐 Semi 时间列' },
   'height-date-picker-panel-list-body': { value: '224px', category: 'height', label: '时间列面板高度', usage: 'dateTime 面板时间列（ScrollList）视窗高度，与日历网格视觉对齐' },
+  // 日期格双层：Semi $width-datepicker_day=36px（外框/点击区，含间距）+ $width-datepicker_day_main=32px（内容/圆角高亮）
+  'width-date-picker-day': { value: '36px', category: 'width', label: '日期格外框尺寸', usage: 'Semi $width-datepicker_day 日期格外框（点击区 + 间距），星期标题同宽' },
+  'width-date-picker-day-main': { value: '32px', category: 'width', label: '日期格内容尺寸', usage: 'Semi $width-datepicker_day_main 日期格内容（圆角高亮区）' },
+  // compact 密度：Semi 精确值 28/24，非 32*0.85 近似
+  'width-date-picker-day-compact': { value: '28px', category: 'width', label: '紧凑日期格外框尺寸', usage: 'Semi $width-datepicker_day_compact' },
+  'width-date-picker-day-main-compact': { value: '24px', category: 'width', label: '紧凑日期格内容尺寸', usage: 'Semi $width-datepicker_day_main_compact' },
 
   // ============================ Spacing ============================
   'spacing-date-picker-yam-header-padding-x': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '年月顶栏水平内边距', usage: '年月选择面板顶部导航栏水平内边距' },
@@ -45,6 +53,11 @@ export const datePickerTokens = {
   'spacing-date-picker-inset-input-separator-padding-x': { value: '4px', category: 'spacing', label: '内嵌输入分隔符水平内边距', usage: '' },
 
   // ============================ Color ============================
+  'color-date-picker-panel-bg-default': { value: 'var(--cd-color-bg-3)', category: 'color', label: '面板背景色', usage: 'Semi $color-datepicker_panel-bg-default 日期选择器背景颜色（bg-3）' },
+  'color-date-picker-footer-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'footer 背景色', usage: 'Semi $color-datepicker_footer-bg-default 确认选择 footer 背景（fill-0）' },
+  'color-date-picker-day-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '星期标题文字色', usage: 'Semi $color-datepicker_day-text-default 星期标题及日期时间切换按钮文字 - 默认（text-2）' },
+  'color-date-picker-day-text-active': { value: 'var(--cd-color-text-0)', category: 'color', label: '日期切换选中文字色', usage: 'Semi $color-datepicker_day-text-active header 标题文字 - 选中（text-0）' },
+  'color-date-picker-date-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '日期格悬浮背景色', usage: 'Semi $color-datepicker_date-bg-hover 日期格背景 - 悬浮（fill-0）' },
   'color-date-picker-border-bg-default': { value: 'var(--cd-color-border)', category: 'color', label: '描边色', usage: '日期选择器描边颜色' },
   'color-date-picker-quick-bg-default': { value: 'transparent', category: 'color', label: '快捷操作背景色', usage: '日期选择器快捷操作背景颜色' },
   'color-date-picker-quick-button-text-default': { value: 'var(--cd-color-primary)', category: 'color', label: '快捷操作按钮文字色', usage: '日期选择器快捷操作按钮文字颜色' },
@@ -78,19 +91,12 @@ export const datePickerTokens = {
   // ============================ Other ============================
   'transition-date-picker-range-input': { value: 'background-color .16s ease-in-out', category: 'animation', label: '范围输入过渡', usage: '' },
 
-  // ============================ 组件消费补充段（Semi 无独立变量；DatePicker/RangePicker.svelte 消费）============================
-  // 老式裸值 token，升级为 TokenDef、原名原值保留，避免组件悬空。
-  'date-picker-panel-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '面板背景色', usage: '日期面板背景色（组件消费）' },
-  'date-picker-panel-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '面板阴影', usage: '日期面板阴影（组件消费）' },
-  'date-picker-panel-radius': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '面板圆角', usage: '日期面板圆角（组件消费）' },
-  'date-picker-panel-z': { value: 'var(--cd-z-popover)', category: 'other', label: '面板层级', usage: '日期面板 z-index（组件消费）' },
-  'date-picker-cell-size': { value: '32px', category: 'width', label: '日期格尺寸', usage: '日期格尺寸（组件消费）' },
-  'date-picker-cell-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '日期格圆角', usage: 'Semi 日期格圆角 small（原 medium）（组件消费）' },
-  'date-picker-cell-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '日期格悬浮背景色', usage: '日期格悬浮背景（组件消费）' },
-  'date-picker-cell-bg-selected': { value: 'var(--cd-color-primary)', category: 'color', label: '日期格选中背景色', usage: '日期格选中背景（组件消费）' },
-  'date-picker-cell-color-selected': { value: 'var(--cd-color-white)', category: 'color', label: '日期格选中文字色', usage: '日期格选中文字（组件消费）' },
-  'date-picker-cell-color-muted': { value: 'var(--cd-color-text-3)', category: 'color', label: '日期格弱化文字色', usage: '日期格弱化文字（组件消费）' },
-  'date-picker-footer-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'footer 背景色', usage: 'Semi $color-datepicker_footer-bg-default（组件消费）' },
-  'date-picker-header-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'header 文字色', usage: '日期面板 header 文字（组件消费）' },
-  'date-picker-weekday-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '星期文字色', usage: '星期标题文字（组件消费）' },
+  // ============================ 组件消费段（Semi 无独立变量：面板走 popover，本库以浮层 token 承载）============================
+  // 去中间层后，仅保留 Semi 确实没有对应变量的浮层容器 token（panel shadow/radius/z）与日期格圆角/弱化色。
+  // 语义与 Semi 镜像段重复的自造名（cell-bg-selected/cell-color-selected 等）已删除，CSS 直接消费镜像名。
+  'shadow-date-picker-panel': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '面板阴影', usage: '日期面板阴影（Semi 走 popover 无独立变量）' },
+  'radius-date-picker-panel': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '面板圆角', usage: '日期面板圆角（Semi 走 popover 无独立变量）' },
+  'z-date-picker-panel': { value: 'var(--cd-z-popover)', category: 'other', label: '面板层级', usage: '日期面板 z-index（Semi 走 zIndex prop 无 token）' },
+  'radius-date-picker-day-main': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '日期格圆角', usage: 'Semi $width-datepicker_day_main-borderRadius 日期格内容圆角（small）' },
+  'color-date-picker-date-muted-text-default': { value: 'var(--cd-color-text-3)', category: 'color', label: '非本月日期文字色', usage: '非当前月日期格弱化文字（text-3）' },
 } satisfies TokenGroup;

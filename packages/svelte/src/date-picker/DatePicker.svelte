@@ -890,6 +890,11 @@
         ? loc().t('DatePicker.nextYear')
         : loc().t('DatePicker.nextMonth'),
   );
+  // date/dateTime 面板（日历日格视图）：对齐 Semi Navigation 有翻年双箭头 + 翻月单箭头两组。
+  // month/year 面板走年月滚轮，仍单组 prev/next（切年 / 切十年）。
+  const isDayPanel = $derived(!isMonth && !isYear);
+  const prevYearLabel = $derived(loc().t('DatePicker.prevYear'));
+  const nextYearLabel = $derived(loc().t('DatePicker.nextYear'));
 
   // --- 年月滚轮快速跳转 (PANEL_YAM，对齐 Semi)：点头部年/月标题展开年+月滚轮列 ---
   // yearAndMonthOpts 归一化：仅取 yearCyclic/monthCyclic（其余键透传语义暂不消费）。
@@ -2050,6 +2055,17 @@
             {:else}
             <div class="cd-date-picker__calendar">
               <div class="cd-date-picker__header">
+                {#if isDayPanel}
+                  <!-- 翻年双箭头（对齐 Semi Navigation prevYear «）：date/dateTime 面板一键翻年 -->
+                  <button
+                    type="button"
+                    class="cd-date-picker__nav"
+                    aria-label={prevYearLabel}
+                    onclick={prevYear}
+                  >
+                    <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                  </button>
+                {/if}
                 <button
                   type="button"
                   class="cd-date-picker__nav"
@@ -2087,6 +2103,17 @@
                     <IconChevronRight size="small" aria-hidden="true" />
                   {/if}
                 </button>
+                {#if isDayPanel}
+                  <!-- 翻年双箭头（对齐 Semi Navigation nextYear »）：date/dateTime 面板一键翻年 -->
+                  <button
+                    type="button"
+                    class="cd-date-picker__nav"
+                    aria-label={nextYearLabel}
+                    onclick={nextYear}
+                  >
+                    <IconDoubleChevronRight size="small" aria-hidden="true" />
+                  </button>
+                {/if}
               </div>
 
               {#if yamOpen && yamEnabled}
@@ -2408,13 +2435,18 @@
   .cd-date-picker--compact .cd-date-picker__panel {
     padding: var(--cd-spacing-tight);
   }
+  /* compact 密度：Semi 精确 28/24 双层（$width-datepicker_day_compact / _main_compact），非 32*0.85 近似 */
+  .cd-date-picker--compact .cd-date-picker__row {
+    grid-template-columns: repeat(7, var(--cd-width-date-picker-day-compact));
+  }
   .cd-date-picker--compact .cd-date-picker__cell {
-    inline-size: calc(var(--cd-date-picker-cell-size) * 0.85);
-    block-size: calc(var(--cd-date-picker-cell-size) * 0.85);
+    inline-size: var(--cd-width-date-picker-day-main-compact);
+    block-size: var(--cd-width-date-picker-day-main-compact);
     font-size: var(--cd-font-size-small);
   }
   .cd-date-picker--compact .cd-date-picker__weekday {
-    block-size: calc(var(--cd-date-picker-cell-size) * 0.85);
+    inline-size: var(--cd-width-date-picker-day-compact);
+    block-size: var(--cd-width-date-picker-day-main-compact);
     font-size: var(--cd-font-size-small);
   }
   /* no-motion */
@@ -2478,11 +2510,11 @@
   }
   .cd-date-picker__panel {
     /* 定位（position/inset/transform）由 use:floating action 接管；此处仅保留视觉样式。 */
-    z-index: var(--cd-date-picker-panel-z, 1030);
+    z-index: var(--cd-z-date-picker-panel, 1030);
     padding: var(--cd-spacing-base-tight);
-    background: var(--cd-date-picker-panel-bg);
-    border-radius: var(--cd-date-picker-panel-radius);
-    box-shadow: var(--cd-date-picker-panel-shadow);
+    background: var(--cd-color-date-picker-panel-bg-default);
+    border-radius: var(--cd-radius-date-picker-panel);
+    box-shadow: var(--cd-shadow-date-picker-panel);
   }
   .cd-date-picker__panel:focus-visible {
     outline: none;
@@ -2567,7 +2599,7 @@
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-date-picker__preset:hover {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-bg-hover);
     color: var(--cd-color-date-picker-quick-button-text-default);
   }
   .cd-date-picker__preset:focus-visible {
@@ -2647,7 +2679,7 @@
   .cd-date-picker__title {
     flex: 1 1 auto;
     text-align: center;
-    color: var(--cd-date-picker-header-color);
+    color: var(--cd-color-date-picker-day-text-active);
     font-weight: var(--cd-font-weight-medium);
   }
   .cd-date-picker__nav {
@@ -2655,17 +2687,17 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    inline-size: var(--cd-date-picker-cell-size);
-    block-size: var(--cd-date-picker-cell-size);
+    inline-size: var(--cd-width-date-picker-day-main);
+    block-size: var(--cd-width-date-picker-day-main);
     padding: 0;
     border: none;
     background: transparent;
     color: var(--cd-color-date-picker-nav-icon-text-default);
-    border-radius: var(--cd-date-picker-cell-radius);
+    border-radius: var(--cd-radius-date-picker-day-main);
     cursor: pointer;
   }
   .cd-date-picker__nav:hover {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-bg-hover);
     color: var(--cd-color-date-picker-nav-month-icon-text-default);
   }
   .cd-date-picker__nav:focus-visible {
@@ -2681,10 +2713,12 @@
   .cd-date-picker__grid:focus-visible {
     outline: none;
   }
+  /* 日期格双层（对齐 Semi）：行网格列宽 = 外框 36px（$width-datepicker_day），
+     日期格内容 = 32px（$width-datepicker_day_main）居中，(36-32)/2=2px 天然间距，无需 gap。 */
   .cd-date-picker__row {
     display: grid;
-    grid-template-columns: repeat(7, var(--cd-date-picker-cell-size));
-    gap: 2px;
+    grid-template-columns: repeat(7, var(--cd-width-date-picker-day));
+    gap: 0;
   }
   /* month/year 面板：3 列大格 (仍用 grid 容器) */
   .cd-date-picker__grid--month,
@@ -2692,56 +2726,59 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--cd-spacing-extra-tight);
-    inline-size: calc(var(--cd-date-picker-cell-size) * 7 + 2px * 6);
+    inline-size: calc(var(--cd-width-date-picker-day) * 7);
   }
   .cd-date-picker__cell--block {
     inline-size: auto;
+    place-self: stretch;
     padding-inline: var(--cd-spacing-tight);
-    block-size: calc(var(--cd-date-picker-cell-size) * 1.4);
+    block-size: calc(var(--cd-width-date-picker-day-main) * 1.4);
   }
   .cd-date-picker__weekday {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    block-size: var(--cd-date-picker-cell-size);
-    color: var(--cd-date-picker-weekday-color);
+    inline-size: var(--cd-width-date-picker-day);
+    block-size: var(--cd-width-date-picker-day-main);
+    color: var(--cd-color-date-picker-day-text-default);
     font-size: var(--cd-font-size-small);
   }
   .cd-date-picker__cell {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: var(--cd-date-picker-cell-size);
-    block-size: var(--cd-date-picker-cell-size);
+    place-self: center;
+    inline-size: var(--cd-width-date-picker-day-main);
+    block-size: var(--cd-width-date-picker-day-main);
     padding: 0;
     border: none;
     background: transparent;
     color: var(--cd-color-date-picker-date-text-default);
-    border-radius: var(--cd-date-picker-cell-radius);
+    border-radius: var(--cd-radius-date-picker-day-main);
     font: inherit;
     cursor: pointer;
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-date-picker__cell:hover {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-bg-hover);
   }
   .cd-date-picker__cell:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
   .cd-date-picker__cell--muted {
-    color: var(--cd-date-picker-cell-color-muted);
+    color: var(--cd-color-date-picker-date-muted-text-default);
   }
   .cd-date-picker__cell--today {
-    border-block-end: 2px solid var(--cd-date-picker-cell-bg-selected);
+    border-block-end: 2px solid var(--cd-color-date-picker-date-selected-bg-default);
   }
   .cd-date-picker__cell--highlight {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-bg-hover);
   }
   .cd-date-picker__cell--selected,
   .cd-date-picker__cell--selected:hover {
-    background: var(--cd-date-picker-cell-bg-selected);
-    color: var(--cd-date-picker-cell-color-selected);
+    background: var(--cd-color-date-picker-date-selected-bg-default);
+    color: var(--cd-color-date-picker-date-selected-text-default);
   }
   .cd-date-picker__cell:disabled {
     color: var(--cd-color-date-picker-date-disabled-text-default);
@@ -2756,7 +2793,7 @@
     margin-block-start: var(--cd-spacing-tight);
     padding-block-start: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
-    background: var(--cd-date-picker-footer-bg); /* 对齐 Semi footer 背景 fill-0 */
+    background: var(--cd-color-date-picker-footer-bg-default); /* 对齐 Semi footer 背景 fill-0 */
   }
   .cd-date-picker__panel--datetime .cd-date-picker__footer,
   .cd-date-picker__footer:has(.cd-date-picker__ok) {
@@ -2848,7 +2885,7 @@
     transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-date-picker__title--button:hover {
-    background: var(--cd-date-picker-cell-bg-hover);
+    background: var(--cd-color-date-picker-date-bg-hover);
   }
   .cd-date-picker__title--button:focus-visible {
     outline: none;
@@ -2987,7 +3024,7 @@
   .cd-date-picker__cell--edge:hover {
     background: var(--cd-color-date-picker-date-selected-bg-default);
     color: var(--cd-color-date-picker-date-selected-text-default);
-    border-radius: var(--cd-date-picker-cell-radius);
+    border-radius: var(--cd-radius-date-picker-day-main);
   }
 
   /* ============================ range 时间列 ============================ */
@@ -3000,7 +3037,7 @@
   }
   .cd-date-picker__time--active {
     background: var(--cd-color-date-picker-date-in-hover-bg-default);
-    border-radius: var(--cd-date-picker-cell-radius);
+    border-radius: var(--cd-radius-date-picker-day-main);
   }
 
   @media (prefers-reduced-motion: reduce) {
