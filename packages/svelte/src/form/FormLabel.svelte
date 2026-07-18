@@ -100,11 +100,11 @@
     color: var(--cd-color-form-requiredmark-disabled-text-default, var(--cd-color-text-2));
   }
   .cd-form-field__label-optional {
-    color: var(--cd-form-optional-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-optional-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__label-extra {
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
 </style>

@@ -39,6 +39,14 @@
   }
 
   interface Props {
+    /**
+     * 外部预建的 FormApi（对齐 Semi `Form.useForm()` + `<Form form={api}>`）。传入时用它作为
+     * headless 实例，父组件可在渲染 <Form> 前 `const form = createForm(...)` 并立即操作
+     * （Svelte 无需 React 的 Proxy 延迟绑定）。不传则内部 createForm（getFormApi 回调仍可拿句柄）。
+     * 注意：外部 form 的 initialValues/validateTrigger 等构造项由创建方决定，Form 上对应 prop
+     * （initValues/validateTrigger/...）在传入 form 时不再重复应用（避免双写）。
+     */
+    form?: FormApi;
     /** controlled whole-form values (reported back via onChange, never written to the prop) */
     value?: FormValues;
     initValues?: FormValues;
@@ -109,6 +117,7 @@
   }
 
   let {
+    form: externalForm,
     value,
     initValues = {},
     layout = 'vertical',
@@ -158,13 +167,17 @@
   // validateTrigger / stopValidateWithError / allowEmpty are construction-time
   // config of the headless form (read once, like initialValues). untrack keeps
   // the read non-reactive — the form instance is created exactly once.
-  const form = createForm({
-    initialValues: seedValues,
-    resolveMessage,
-    validateTrigger: untrack(() => validateTrigger),
-    stopValidateWithError: untrack(() => stopValidateWithError),
-    allowEmpty: untrack(() => allowEmpty),
-  });
+  // 外部预建 form（Semi Form.useForm() 对齐）：直接用传入实例，其构造项由创建方决定，
+  // 不再用 Form 上的 initValues/validateTrigger/... 重复应用（避免双写）。untrack 让
+  // "有无外部 form" 的判定成为一次性读取，form 实例只建一次。
+  const form = untrack(() => externalForm) ??
+    createForm({
+      initialValues: seedValues,
+      resolveMessage,
+      validateTrigger: untrack(() => validateTrigger),
+      stopValidateWithError: untrack(() => stopValidateWithError),
+      allowEmpty: untrack(() => allowEmpty),
+    });
 
   // Bridge: callback-subscribe → runes. core returns a STABLE state object whose
   // sub-objects are replaced immutably; we take a fresh shallow snapshot on every
@@ -351,7 +364,7 @@
   .cd-form {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-form-item-gap);
+    gap: var(--cd-spacing-base);
   }
   .cd-form__footer {
     display: flex;

@@ -37,4 +37,14 @@ export const demos: DemoEntry[] = [
     '更多控件',
     'Form.TextArea / InputNumber / CheckboxGroup / RadioGroup / TimePicker / AutoComplete / PinCode 薄封装接管数据流。'
   ),
+  entry(
+    '10-hooks.svelte',
+    'Hooks',
+    '外部 createForm() + <Form form={...}> 父层直接操作；后代 useFormApi / useFormState / getFieldApi 拿表单与字段句柄（对齐 Semi useForm/useFormApi/useFieldApi；Svelte 用 Field snippet 替代 withField HOC）。'
+  ),
+  entry(
+    '11-input-group.svelte',
+    '字段组',
+    'Form.InputGroup 把多字段的 Label/ErrorMessage 上提到 group 级统一渲染，控件无缝拼接，GroupError 聚合组内错误。'
+  ),
 ];

@@ -3,7 +3,8 @@
  * 53 行，~40 个有效变量），并升级为带元数据的 TokenDef 结构以支持 DSM。
  * 值为 var() 引用我们的 alias / global token，或字面量。
  * 分五组：field / label / extra / errormessage / section。
- * 末尾保留 chenzy-design Form 实际消费的 10 个补充 token（组件在用，删了会悬空）。
+ * 组件直接消费这些 Semi 对齐 token（去中间层：不再插一层短名别名，对齐 Space/Toast）。
+ * 末尾仅保留 2 个 spinner 超集 token（Semi 无异步校验指示器）。
  *
  * 映射约定（逐条亲验 Semi variables.scss + 我们的 global/scales.ts + alias/index.ts）：
  * - Semi `var(--semi-color-*)` → 我们 `var(--cd-color-*)`（语义名一一对应）。
@@ -77,20 +78,8 @@ export const formTokens = {
   'spacing-form-section-text-paddingtop': { value: '0px', category: 'spacing', label: '分组标题上内边距', usage: '表单分组标题顶部内边距' },
   'spacing-form-section-text-margintop': { value: '0px', category: 'spacing', label: '分组标题上外边距', usage: '表单分组标题顶部外边距' },
 
-  // —— chenzy-design Form 实际消费的补充 token（Semi 无对应聚合项；组件消费，保留原名兼容） ——
-  // 默认值 = 组件原先直接引的 alias，插一层同值组件变量，默认渲染不变。
-  'form-item-gap': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '表单项间距', usage: '表单项之间的纵向间距（组件消费）' },
-  'form-label-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标签文字色（兼容）', usage: '表单标签文字颜色（组件消费；对齐 Semi color-form-label-text-default = text-0，保持现渲染）' },
-  'form-label-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '标签控件间距', usage: '标签与控件之间的间距（组件消费）' },
-  'form-required-color': { value: 'var(--cd-color-danger)', category: 'color', label: '必填标记色（兼容）', usage: '必填星标颜色（组件消费；Semi 对应 color-form-requiredmark-text-default）' },
-  'form-optional-color': { value: 'var(--cd-color-tertiary)', category: 'color', label: '可选标记色（兼容）', usage: '可选标记颜色（组件消费；Semi color-form-label-optional-text-default）' },
-  'form-extra-color': { value: 'var(--cd-color-tertiary)', category: 'color', label: '额外信息色（兼容）', usage: '额外提示信息颜色（组件消费；Semi color-form-label-extra-text-default）' },
-  'form-error-color': { value: 'var(--cd-color-danger)', category: 'color', label: '错误提示色（兼容）', usage: '错误提示颜色（组件消费；Semi 对应 color-form-message-error-text-default）' },
-  'form-warning-color': { value: 'var(--cd-color-warning)', category: 'color', label: '警告提示色（兼容）', usage: '警告提示颜色（组件消费）' },
-  'form-error-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '提示文字字号', usage: '错误/警告/额外提示文字字号（组件消费）' },
-  'form-section-gap': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '分组间距', usage: '表单分组之间的间距（组件消费）' },
-
   // —— 异步校验 spinner（Semi 无；chenzy-design 独有的纯 CSS 校验指示器）——
+  // 保留：Semi 无异步 spinner，属本库超集，组件直接消费。
   'form-spinner-track-color': { value: 'var(--cd-color-fill-2)', category: 'color', label: 'spinner 轨道色', usage: '异步校验指示器圆环轨道颜色（组件消费）' },
   'form-spinner-active-color': { value: 'var(--cd-color-primary)', category: 'color', label: 'spinner 激活色', usage: '异步校验指示器圆环激活弧颜色（组件消费）' },
 } satisfies TokenGroup;

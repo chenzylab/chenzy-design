@@ -33,7 +33,7 @@
     display: contents;
   }
   .cd-form-section-text {
-    color: var(--cd-form-label-color);
+    color: var(--cd-color-form-section-text-default);
     font-weight: var(--cd-font-weight-medium, 500);
     font-size: var(--cd-font-size-regular, 0.875rem);
     padding: 0;

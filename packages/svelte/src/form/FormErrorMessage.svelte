@@ -86,7 +86,7 @@
 
 <style>
   .cd-form-field__help-text {
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
 </style>

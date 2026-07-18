@@ -32,6 +32,7 @@ export const meta = {
     { name: 'Form.Slot', desc: '在表单布局内自由插入非字段内容（保持栅格/间距一致）。' },
     { name: 'Form.Label', desc: '可独立组合的字段标签原子。' },
     { name: 'Form.ErrorMessage', desc: '可独立组合的字段错误信息原子。' },
+    { name: 'Form.InputGroup', desc: '字段组容器：把内部多字段的 Label/ErrorMessage 上提到 group 级统一渲染，控件无缝拼接，GroupError 聚合组内错误（对齐 Semi Form.InputGroup）。' },
   ],
   props: [
     { name: 'value', type: 'Record<string, unknown>', default: 'undefined', desc: '受控整表单值；变更经 onChange 上报' },
@@ -102,6 +103,15 @@ export const meta = {
     { name: 'Input.maxLength', type: 'number', default: 'undefined' },
     { name: 'Input.dependencies', type: 'string[]', default: 'undefined', desc: '依赖字段名；其值变化时本字段自动重校验' },
     { name: 'Input.trigger', type: "'change'|'blur'|'submit'|'mount'|string[]", default: '继承容器', desc: '字段级校验时机覆盖（spec §4）' },
+    // Form 顶层：外部预建 form
+    { name: 'form', type: 'FormApi', default: 'undefined', desc: '外部预建 FormApi（createForm()），传入则用它，父层可立即操作（对齐 Semi Form.useForm()+form=）；不传则内部创建' },
+    // Form.InputGroup
+    { name: 'InputGroup.label', type: 'string | { text; align; width; required; extra; optional }', default: 'undefined', desc: '组级标签（Label 上提到 group 级）' },
+    { name: 'InputGroup.labelPosition', type: "'top'|'left'", default: '继承容器', desc: '组标签位置' },
+    { name: 'InputGroup.extraText', type: 'string', default: 'undefined', desc: '额外说明文本' },
+    { name: 'InputGroup.extraTextPosition', type: "'bottom'|'middle'", default: 'bottom', desc: '额外说明位置' },
+    { name: 'InputGroup.size', type: "'small'|'default'|'large'", default: 'undefined', desc: '整组尺寸，透传给内部控件' },
+    { name: 'InputGroup.children', type: 'Snippet', default: 'undefined', desc: '组内多个 <Form.Field>；自动进入 isInInputGroup 模式，Label/Error 上提 group 级' },
   ],
   a11y: {
     role: 'form',
@@ -114,20 +124,10 @@ export const meta = {
     ],
   },
   tokens: [
-    // —— chenzy-design 组件消费的补充 token（组件实际引用） ——
-    '--cd-form-item-gap',
-    '--cd-form-label-color',
-    '--cd-form-label-gap',
-    '--cd-form-required-color',
-    '--cd-form-optional-color',
-    '--cd-form-extra-color',
-    '--cd-form-error-color',
-    '--cd-form-warning-color',
-    '--cd-form-error-font-size',
-    '--cd-form-section-gap',
+    // —— 本库超集：异步校验 spinner（Semi 无，组件直接消费） ——
     '--cd-form-spinner-track-color',
     '--cd-form-spinner-active-color',
-    // —— 全量对齐 Semi form/variables.scss（field / label / extra / errormessage / section） ——
+    // —— 全量对齐 Semi form/variables.scss（field / label / extra / errormessage / section）；组件直接消费，无中间层 ——
     '--cd-spacing-form-field-horizontal-paddingright',
     '--cd-spacing-form-field-group-horizontal-paddingright',
     '--cd-spacing-form-field-vertical-paddingtop',
