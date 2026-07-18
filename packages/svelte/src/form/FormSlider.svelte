@@ -1,27 +1,16 @@
 <!--
   Form.Slider — convenience wrapper: <Form.Field> + <Slider> bound to a field.
+  field-level props 经 FieldPassthroughProps 透传给 Field；控件专属给 Slider。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import Slider from '../slider/Slider.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type SliderProps = ComponentProps<typeof Slider>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // Slider-specific props
+  interface Props extends FieldPassthroughProps {
     min?: SliderProps['min'];
     max?: SliderProps['max'];
     step?: SliderProps['step'];
@@ -33,57 +22,38 @@
     tipFormatter?: SliderProps['tipFormatter'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    min,
-    max,
-    step,
-    range,
-    marks,
-    disabled,
-    vertical,
-    tooltipVisible,
-    tipFormatter,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = [
+    'min',
+    'max',
+    'step',
+    'range',
+    'marks',
+    'disabled',
+    'vertical',
+    'tooltipVisible',
+    'tipFormatter',
+  ] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, disabled: fieldDisabled })}
     <Slider
       {...(value !== undefined ? { value: value as NonNullable<SliderProps['value']> } : {})}
-      {...(min !== undefined ? { min } : {})}
-      {...(max !== undefined ? { max } : {})}
-      {...(step !== undefined ? { step } : {})}
-      {...(range !== undefined ? { range } : {})}
-      {...(marks !== undefined ? { marks } : {})}
-      disabled={disabled ?? fieldDisabled}
-      {...(vertical !== undefined ? { vertical } : {})}
-      {...(tooltipVisible !== undefined ? { tooltipVisible } : {})}
-      {...(tipFormatter !== undefined ? { tipFormatter } : {})}
+      {...(control.min !== undefined ? { min: control.min as NonNullable<SliderProps['min']> } : {})}
+      {...(control.max !== undefined ? { max: control.max as NonNullable<SliderProps['max']> } : {})}
+      {...(control.step !== undefined ? { step: control.step as NonNullable<SliderProps['step']> } : {})}
+      {...(control.range !== undefined ? { range: control.range as NonNullable<SliderProps['range']> } : {})}
+      {...(control.marks !== undefined ? { marks: control.marks as NonNullable<SliderProps['marks']> } : {})}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      {...(control.vertical !== undefined ? { vertical: control.vertical as NonNullable<SliderProps['vertical']> } : {})}
+      {...(control.tooltipVisible !== undefined ? { tooltipVisible: control.tooltipVisible as NonNullable<SliderProps['tooltipVisible']> } : {})}
+      {...(control.tipFormatter !== undefined ? { tipFormatter: control.tipFormatter as NonNullable<SliderProps['tipFormatter']> } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

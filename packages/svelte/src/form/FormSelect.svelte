@@ -1,27 +1,16 @@
 <!--
   Form.Select — convenience wrapper: <Form.Field> + <Select> bound to a field.
+  field-level props 经 FieldPassthroughProps 透传给 Field；控件专属给 Select。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import Select from '../select/Select.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type SelectProps = ComponentProps<typeof Select>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // Select-specific props
+  interface Props extends FieldPassthroughProps {
     optionList?: SelectProps['optionList'];
     multiple?: SelectProps['multiple'];
     filter?: SelectProps['filter'];
@@ -34,61 +23,43 @@
     virtualize?: SelectProps['virtualize'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    optionList,
-    multiple,
-    filter,
-    placeholder,
-    disabled,
-    showClear,
-    size,
-    maxTagCount,
-    allowCreate,
-    virtualize,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = [
+    'optionList',
+    'multiple',
+    'filter',
+    'placeholder',
+    'disabled',
+    'showClear',
+    'size',
+    'maxTagCount',
+    'allowCreate',
+    'virtualize',
+  ] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
+  const hasLabel = $derived(props.label !== undefined);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy })}
     <Select
       {...(value !== undefined ? { value: value as NonNullable<SelectProps['value']> } : {})}
-      {...(optionList !== undefined ? { optionList } : {})}
-      {...(multiple !== undefined ? { multiple } : {})}
-      {...(filter !== undefined ? { filter } : {})}
-      {...(placeholder !== undefined ? { placeholder } : {})}
-      disabled={disabled ?? fieldDisabled}
-      {...(showClear !== undefined ? { showClear } : {})}
-      {...(size !== undefined ? { size } : {})}
-      {...(maxTagCount !== undefined ? { maxTagCount } : {})}
-      {...(allowCreate !== undefined ? { allowCreate } : {})}
-      {...(virtualize !== undefined ? { virtualize } : {})}
+      {...(control.optionList !== undefined ? { optionList: control.optionList as NonNullable<SelectProps['optionList']> } : {})}
+      {...(control.multiple !== undefined ? { multiple: control.multiple as NonNullable<SelectProps['multiple']> } : {})}
+      {...(control.filter !== undefined ? { filter: control.filter as NonNullable<SelectProps['filter']> } : {})}
+      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<SelectProps['placeholder']> } : {})}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<SelectProps['showClear']> } : {})}
+      {...(control.size !== undefined ? { size: control.size as NonNullable<SelectProps['size']> } : {})}
+      {...(control.maxTagCount !== undefined ? { maxTagCount: control.maxTagCount as NonNullable<SelectProps['maxTagCount']> } : {})}
+      {...(control.allowCreate !== undefined ? { allowCreate: control.allowCreate as NonNullable<SelectProps['allowCreate']> } : {})}
+      {...(control.virtualize !== undefined ? { virtualize: control.virtualize as NonNullable<SelectProps['virtualize']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      {...(label !== undefined ? {} : { ariaLabelledby: id })}
+      {...(hasLabel ? {} : { ariaLabelledby: id })}
       {...(describedBy !== undefined ? { ariaLabel: describedBy } : {})}
       onChange={(v) => onChange(v)}
     />

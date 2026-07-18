@@ -1,28 +1,17 @@
 <!--
   Form.PinCode — convenience wrapper: <Form.Field> + <PinCode> bound to a field.
   onChange 首参即值（string 整串），直传。可选透传 onComplete。
+  field-level props 经 FieldPassthroughProps 透传给 Field。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import PinCode from '../pincode/PinCode.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type PinCodeProps = ComponentProps<typeof PinCode>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // PinCode-specific props
+  interface Props extends FieldPassthroughProps {
     count?: PinCodeProps['count'];
     format?: PinCodeProps['format'];
     size?: PinCodeProps['size'];
@@ -31,39 +20,14 @@
     onComplete?: PinCodeProps['onComplete'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    count,
-    format,
-    size,
-    disabled,
-    autoFocus,
-    onComplete,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = ['count', 'format', 'size', 'disabled', 'autoFocus', 'onComplete'] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
@@ -71,15 +35,15 @@
     <PinCode
       value={value === undefined ? '' : String(value)}
       status={status === 'error' ? 'error' : 'default'}
-      disabled={disabled ?? fieldDisabled}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
-      {...(count !== undefined ? { count } : {})}
-      {...(format !== undefined ? { format } : {})}
-      {...(size !== undefined ? { size } : {})}
-      {...(autoFocus !== undefined ? { autoFocus } : {})}
-      {...(label !== undefined ? { ariaLabel: label } : {})}
+      {...(control.count !== undefined ? { count: control.count as NonNullable<PinCodeProps['count']> } : {})}
+      {...(control.format !== undefined ? { format: control.format as NonNullable<PinCodeProps['format']> } : {})}
+      {...(control.size !== undefined ? { size: control.size as NonNullable<PinCodeProps['size']> } : {})}
+      {...(control.autoFocus !== undefined ? { autoFocus: control.autoFocus as NonNullable<PinCodeProps['autoFocus']> } : {})}
+      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       onChange={(v) => onChange(v)}
-      {...(onComplete !== undefined ? { onComplete } : {})}
+      {...(control.onComplete !== undefined ? { onComplete: control.onComplete as NonNullable<PinCodeProps['onComplete']> } : {})}
     />
   {/snippet}
 </Field>

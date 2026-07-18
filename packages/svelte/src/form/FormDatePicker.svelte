@@ -1,27 +1,16 @@
 <!--
   Form.DatePicker — convenience wrapper: <Form.Field> + <DatePicker> bound to a field.
+  field-level props 经 FieldPassthroughProps 透传给 Field；控件专属给 DatePicker。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import DatePicker from '../date-picker/DatePicker.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type DatePickerProps = ComponentProps<typeof DatePicker>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // DatePicker-specific props
+  interface Props extends FieldPassthroughProps {
     placeholder?: DatePickerProps['placeholder'];
     disabled?: boolean;
     size?: DatePickerProps['size'];
@@ -29,49 +18,24 @@
     disabledDate?: DatePickerProps['disabledDate'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    placeholder,
-    disabled,
-    size,
-    format,
-    disabledDate,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = ['placeholder', 'disabled', 'size', 'format', 'disabledDate'] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
     <DatePicker
       {...(value instanceof Date || value === null ? { value: value as NonNullable<DatePickerProps['value']> } : {})}
-      {...(placeholder !== undefined ? { placeholder } : {})}
-      disabled={disabled ?? fieldDisabled}
-      {...(size !== undefined ? { size } : {})}
-      {...(format !== undefined ? { format } : {})}
-      {...(disabledDate !== undefined ? { disabledDate } : {})}
+      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<DatePickerProps['placeholder']> } : {})}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      {...(control.size !== undefined ? { size: control.size as NonNullable<DatePickerProps['size']> } : {})}
+      {...(control.format !== undefined ? { format: control.format as NonNullable<DatePickerProps['format']> } : {})}
+      {...(control.disabledDate !== undefined ? { disabledDate: control.disabledDate as NonNullable<DatePickerProps['disabledDate']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
