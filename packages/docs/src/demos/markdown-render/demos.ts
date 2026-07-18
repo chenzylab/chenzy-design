@@ -24,7 +24,24 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '传入 raw 纯文本，渲染标题、加粗、列表、链接、引用等基础 Markdown。'),
-  entry('02-gfm.svelte', 'GFM 扩展', '开启 remarkGfm 后支持表格、任务列表、删除线、自动链接。'),
-  entry('03-code-block.svelte', '代码块', '代码块默认接入 CodeHighlight 做语法高亮。'),
+  entry(
+    '01-basic.svelte',
+    '基本用法',
+    '传入 raw 纯文本即可渲染。支持加粗/删除线/链接/emoji 等富文本，多级标题、列表、表格。',
+  ),
+  entry(
+    '02-custom-element.svelte',
+    '修改元素样式',
+    '向 components 传入渲染组件覆盖任意元素。这里把 h2 标题替换为自定义颜色的 Title。',
+  ),
+  entry(
+    '03-plain-markdown.svelte',
+    '仅纯 Markdown',
+    'format="md" 开启仅 Markdown 模式，无需转义特殊字符；同时覆盖 h1 为主色标题。',
+  ),
+  entry(
+    '04-custom-component.svelte',
+    '添加自定义组件',
+    '通过 components 注册自定义组件，在 Markdown 中渲染带 JS 事件的元素（Svelte 用 rehype 插件 + components 替代 MDX 的正文 JSX）。',
+  ),
 ];
