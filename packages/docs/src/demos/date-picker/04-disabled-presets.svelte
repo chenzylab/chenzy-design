@@ -21,7 +21,7 @@
 <Space vertical align="start">
   <Space>
     <span style="width:240px; display:inline-block">
-      <DatePicker value={disabledDateVal} disabledDate={disableWeekend} onChange={(d) => (disabledDateVal = d)} />
+      <DatePicker value={disabledDateVal} disabledDate={disableWeekend} onChange={(d) => (disabledDateVal = d as Date | Date[] | null)} />
     </span>
     <Text type="tertiary">
       禁用周末：{disabledDateVal instanceof Date ? disabledDateVal.toLocaleDateString('zh-CN') : '（未选）'}
@@ -29,7 +29,7 @@
   </Space>
   <Space>
     <span style="width:240px; display:inline-block">
-      <DatePicker {presets} presetPosition="left" value={presetVal} onChange={(d) => (presetVal = d)} />
+      <DatePicker {presets} presetPosition="left" value={presetVal} onChange={(d) => (presetVal = d as Date | Date[] | null)} />
     </span>
     <Text type="tertiary">
       快捷预设（左侧）：{presetVal instanceof Date ? presetVal.toLocaleDateString('zh-CN') : '（未选）'}

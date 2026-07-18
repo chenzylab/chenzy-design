@@ -7,7 +7,7 @@
 
 <Space vertical align="start">
   <Space>
-    <DatePicker value={dateVal} onChange={(d) => (dateVal = d)} />
+    <DatePicker value={dateVal} onChange={(d) => (dateVal = d as Date | Date[] | null)} />
     <Text type="tertiary">
       日期：{dateVal instanceof Date ? dateVal.toLocaleDateString('zh-CN') : '（未选）'}
     </Text>

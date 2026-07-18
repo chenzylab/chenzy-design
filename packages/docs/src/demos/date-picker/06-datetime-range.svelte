@@ -28,7 +28,7 @@
     <span style="width:320px; display:inline-block">
       <DatePicker
         type="dateTimeRange"
-        showSecond={false}
+        timePickerOpts={{ showSecond: false }}
         {disabledTime}
         value={noSecRange}
         onChange={(r) => (noSecRange = r as [Date | null, Date | null] | null)}
