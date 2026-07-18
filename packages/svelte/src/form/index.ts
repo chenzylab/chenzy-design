@@ -13,6 +13,13 @@ import FormTagInput from './FormTagInput.svelte';
 import FormTreeSelect from './FormTreeSelect.svelte';
 import FormCascader from './FormCascader.svelte';
 import FormUpload from './FormUpload.svelte';
+import FormTextArea from './FormTextArea.svelte';
+import FormInputNumber from './FormInputNumber.svelte';
+import FormCheckboxGroup from './FormCheckboxGroup.svelte';
+import FormRadioGroup from './FormRadioGroup.svelte';
+import FormTimePicker from './FormTimePicker.svelte';
+import FormAutoComplete from './FormAutoComplete.svelte';
+import FormPinCode from './FormPinCode.svelte';
 import FormSection from './FormSection.svelte';
 import FormSlot from './FormSlot.svelte';
 import FormLabel from './FormLabel.svelte';
@@ -37,6 +44,13 @@ export const Form: typeof Form_ & {
   TreeSelect: typeof FormTreeSelect;
   Cascader: typeof FormCascader;
   Upload: typeof FormUpload;
+  TextArea: typeof FormTextArea;
+  InputNumber: typeof FormInputNumber;
+  CheckboxGroup: typeof FormCheckboxGroup;
+  RadioGroup: typeof FormRadioGroup;
+  TimePicker: typeof FormTimePicker;
+  AutoComplete: typeof FormAutoComplete;
+  PinCode: typeof FormPinCode;
   Section: typeof FormSection;
   Slot: typeof FormSlot;
   Label: typeof FormLabel;
@@ -56,6 +70,13 @@ export const Form: typeof Form_ & {
   TreeSelect: FormTreeSelect,
   Cascader: FormCascader,
   Upload: FormUpload,
+  TextArea: FormTextArea,
+  InputNumber: FormInputNumber,
+  CheckboxGroup: FormCheckboxGroup,
+  RadioGroup: FormRadioGroup,
+  TimePicker: FormTimePicker,
+  AutoComplete: FormAutoComplete,
+  PinCode: FormPinCode,
   Section: FormSection,
   Slot: FormSlot,
   Label: FormLabel,
@@ -77,6 +98,13 @@ export {
   FormTreeSelect,
   FormCascader,
   FormUpload,
+  FormTextArea,
+  FormInputNumber,
+  FormCheckboxGroup,
+  FormRadioGroup,
+  FormTimePicker,
+  FormAutoComplete,
+  FormPinCode,
   FormSection,
   FormSlot,
   FormLabel,
