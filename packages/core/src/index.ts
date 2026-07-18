@@ -36,9 +36,11 @@ export {
   type FieldConfig,
   type FieldErrors,
   type Rule,
+  type RuleType,
   type MessageDescriptor,
   type ValidateTrigger,
 } from './form.js';
+export { pathGet, pathSet, pathHas, pathRemove, toSegments } from './form-path.js';
 export {
   findRanges,
   mergeRanges,

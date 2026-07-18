@@ -88,7 +88,9 @@ const components = [
   ['checkbox', '{ Checkbox, CheckboxGroup }', '3.5 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   ['date-picker', '{ DatePicker }', '22 KB'],
-  ['form', '{ FormField, FormInput, FieldArray }', '10 KB'],
+  // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath
+  // （真数组路径），实测 13.22 KB。预算按实测校准，含少量余量。
+  ['form', '{ FormField, FormInput, FieldArray }', '13.5 KB'],
   ['input', '{ Input, InputGroup }', '5.5 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],

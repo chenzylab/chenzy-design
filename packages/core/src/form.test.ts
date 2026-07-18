@@ -105,9 +105,10 @@ describe('createForm', () => {
     // is "active" because it already shows an error). The error clears once the
     // values match — note we do NOT validate the password field itself here.
     f.setValue('password', 'bbb');
-    // allow the scheduled (async) dependent validation to settle
-    await Promise.resolve();
-    await Promise.resolve();
+    // allow the scheduled (async) dependent validation to settle. The engine now
+    // runs through async-validator (Promise-based), so it needs a real task tick
+    // rather than a couple of microtasks.
+    await new Promise((r) => setTimeout(r, 0));
     expect(f.getError('confirm')).toBeUndefined();
   });
 
@@ -434,5 +435,139 @@ describe('createForm', () => {
     expect(f.getValue()).toEqual({ a: 1, b: 20 });
     f.setValues({ c: 3 }, { isOverride: true });
     expect(f.getValue()).toEqual({ c: 3 });
+  });
+
+  // ---- 批C-E: real nested-array paths (lodash path, Semi-aligned) ----
+  it('getValue/setValue address nested array paths (users[0].name)', () => {
+    const f = createForm();
+    f.setValue('users[0].name', 'ada');
+    f.setValue('users[0].age', 30);
+    f.setValue('users[1].name', 'bob');
+    // reads resolve nested paths
+    expect(f.getValue('users[0].name')).toBe('ada');
+    expect(f.getValue('users[1].name')).toBe('bob');
+    // the underlying tree is a REAL array of objects, not flat keys
+    expect(f.getValue('users')).toEqual([
+      { name: 'ada', age: 30 },
+      { name: 'bob' },
+    ]);
+    // no flat string keys leaked
+    const all = f.getValue() as Record<string, unknown>;
+    expect(Object.keys(all)).toEqual(['users']);
+    expect(Array.isArray((all as { users: unknown }).users)).toBe(true);
+  });
+
+  it('setValue does not mutate the previous values tree (immutable)', () => {
+    const f = createForm();
+    f.setValue('a.b', 1);
+    const before = f.getFormState().values;
+    f.setValue('a.c', 2);
+    const after = f.getFormState().values;
+    // fresh root reference so Svelte subscribers see the change
+    expect(after).not.toBe(before);
+    expect(f.getValue('a')).toEqual({ b: 1, c: 2 });
+  });
+
+  it('collectValues rebuilds a nested array structure from registered fields', () => {
+    const f = createForm();
+    f.registerField('users[0].name', {});
+    f.registerField('users[0].age', {});
+    f.registerField('users[1].name', {});
+    f.setValue('users[0].name', 'ada');
+    f.setValue('users[0].age', 42);
+    f.setValue('users[1].name', 'bob');
+    // getValues returns a real nested array — the core Semi-alignment point
+    expect(f.getValues()).toEqual({
+      users: [
+        { name: 'ada', age: 42 },
+        { name: 'bob' },
+      ],
+    });
+  });
+
+  it('nested-path field validates and reads value by path', async () => {
+    const f = createForm();
+    f.registerField('users[0].name', { label: 'Name', rules: [{ required: true }] });
+    expect(await f.validateField('users[0].name')).toBeTruthy();
+    f.setValue('users[0].name', 'ada');
+    expect(await f.validateField('users[0].name')).toBeUndefined();
+  });
+
+  it('nested initialValues seed nested reads and reset restores them', () => {
+    const f = createForm({ initialValues: { users: [{ name: 'seed' }] } });
+    expect(f.getValue('users[0].name')).toBe('seed');
+    f.setValue('users[0].name', 'changed');
+    expect(f.getValue('users[0].name')).toBe('changed');
+    f.reset();
+    expect(f.getValue('users[0].name')).toBe('seed');
+    // initial snapshot never aliased the mutated live tree
+    expect(f.getInitValue('users[0].name')).toBe('seed');
+  });
+
+  // ---- 批C-E: async-validator-specific rules ----
+  it('type=array rule (async-validator) rejects non-arrays', async () => {
+    const f = createForm();
+    f.registerField('tags', { rules: [{ type: 'array', message: 'must be array' }] });
+    f.setValue('tags', 'nope');
+    expect(await f.validateField('tags')).toBe('must be array');
+    f.setValue('tags', ['a', 'b']);
+    expect(await f.validateField('tags')).toBeUndefined();
+  });
+
+  it('type=enum rule (async-validator) restricts to allowed values', async () => {
+    const f = createForm();
+    f.registerField('plan', {
+      rules: [{ type: 'enum', enum: ['free', 'pro'], message: 'bad plan' }],
+    });
+    f.setValue('plan', 'gold');
+    expect(await f.validateField('plan')).toBe('bad plan');
+    f.setValue('plan', 'pro');
+    expect(await f.validateField('plan')).toBeUndefined();
+  });
+
+  it('len rule (async-validator) enforces exact length', async () => {
+    const f = createForm();
+    f.registerField('code', { rules: [{ len: 4, message: 'need 4 chars' }] });
+    f.setValue('code', 'ab');
+    expect(await f.validateField('code')).toBe('need 4 chars');
+    f.setValue('code', 'abcd');
+    expect(await f.validateField('code')).toBeUndefined();
+  });
+
+  it('whitespace rule (async-validator) rejects whitespace-only strings', async () => {
+    const f = createForm();
+    f.registerField('title', {
+      rules: [{ type: 'string', whitespace: true, message: 'blank' }],
+    });
+    f.setValue('title', '   ');
+    expect(await f.validateField('title')).toBe('blank');
+    f.setValue('title', 'hi');
+    expect(await f.validateField('title')).toBeUndefined();
+  });
+
+  it('type=integer rule (async-validator) rejects floats', async () => {
+    const f = createForm();
+    f.registerField('n', { rules: [{ type: 'integer', message: 'not int' }] });
+    f.setValue('n', 3.5);
+    expect(await f.validateField('n')).toBe('not int');
+    f.setValue('n', 3);
+    expect(await f.validateField('n')).toBeUndefined();
+  });
+
+  it('warningOnly still layers on top of async-validator (soft warning)', async () => {
+    const f = createForm();
+    f.registerField('bio', {
+      rules: [
+        { required: true, message: 'required' },
+        { minLength: 10, warningOnly: true, message: 'longer is better' },
+      ],
+    });
+    f.setValue('bio', 'short');
+    const err = await f.validateField('bio');
+    // required passes (non-empty); minLength is warningOnly → warning, not error
+    expect(err).toBeUndefined();
+    expect(f.getFieldWarning('bio')).toBe('longer is better');
+    const r = await f.submitForm();
+    expect(r.valid).toBe(true);
   });
 });

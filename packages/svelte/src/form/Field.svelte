@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, type Rule, type ValidateTrigger } from '@chenzy-design/core';
+  import { useId, pathGet, type Rule, type ValidateTrigger } from '@chenzy-design/core';
   import { IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
   import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
   import { getFormInputGroupContext } from './input-group-context.js';
@@ -228,7 +228,9 @@
   });
 
   // Read-only slices derived from the bridged form state (render-safe getters).
-  const value = $derived(getFormState().values[field]);
+  // `value` is read by nested path (`users[0].name`), aligned with the core's
+  // nested value tree; errors/warnings/touched stay keyed by the field-name string.
+  const value = $derived(pathGet(getFormState().values, field));
   const error = $derived(getFormState().errors[field]);
   const warning = $derived(getFormState().warnings[field]);
   const validating = $derived(getFormState().validating[field] === true);
