@@ -16,7 +16,7 @@
             <Button type="tertiary" size="small" onclick={() => remove(item)}>删除</Button>
           </div>
         {/each}
-        <Button type="tertiary" size="small" onclick={add}>+ 添加成员</Button>
+        <Button type="tertiary" size="small" onclick={() => add()}>+ 添加成员</Button>
       {/snippet}
     </Form.List>
     {#snippet footer({ submitting })}

@@ -53,7 +53,7 @@
             >删除</button>
           </div>
         {/each}
-        <Button onclick={add}>+ 添加联系人</Button>
+        <Button onclick={() => add()}>+ 添加联系人</Button>
       {/snippet}
     </Form.List>
   </Form>

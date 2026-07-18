@@ -2,17 +2,41 @@
  * createForm — framework-agnostic form state machine + validation engine.
  * No DOM, no framework deps. See specs/components/input/Form.spec.md.
  *
- * Scope (foundational subset): values/errors/touched/dirty, field registry,
- * sync + async rules (required/min/max/minLength/maxLength/pattern/type/validator),
- * async race-token discard, validate/reset/submitForm, fine-grained subscribe.
- * Deferred: nested-path arrays beyond simple dot paths, dependencies graph.
+ * Scope: nested-path values (`users[0].name` via lodash paths, Semi-aligned) /
+ * errors / touched / dirty, field registry, sync + async rules run through
+ * async-validator (with a `warningOnly` soft-warning superset layered on top),
+ * async race-token discard, validate/reset/submitForm, fine-grained subscribe,
+ * dependencies graph.
  */
 import { useId } from './id.js';
+import { pathGet, pathSet, pathHas, pathRemove } from './form-path.js';
+import { runFieldRules } from './form-validate.js';
 
 export type FormValues = Record<string, unknown>;
 
 /** Validation message: a string, an i18n-key descriptor, or false/undefined for "no error". */
 export type ValidateResult = string | undefined;
+
+/**
+ * async-validator `type` union (a superset of the old email/url/number). Any
+ * value here routes through async-validator; email/url/number keep our own
+ * regex/coercion + i18n messages for backward compatibility.
+ */
+export type RuleType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'method'
+  | 'regexp'
+  | 'integer'
+  | 'float'
+  | 'array'
+  | 'object'
+  | 'enum'
+  | 'date'
+  | 'url'
+  | 'hex'
+  | 'email';
 
 export interface Rule {
   required?: boolean;
@@ -22,7 +46,17 @@ export interface Rule {
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  type?: 'email' | 'url' | 'number';
+  /**
+   * value type check, delegated to async-validator (Semi-aligned). Supersets the
+   * old email/url/number: `array`/`enum`/`integer`/`float`/`object`/... now work.
+   */
+  type?: RuleType;
+  /** exact length check (async-validator `len`; strings/arrays). */
+  len?: number;
+  /** reject whitespace-only strings (async-validator `whitespace`). */
+  whitespace?: boolean;
+  /** allowed values for `type: 'enum'` (async-validator `enum`). */
+  enum?: Array<string | number | boolean | null | undefined>;
   /** sync or async custom validator; return an error message or undefined */
   validator?: (value: unknown, values: FormValues) => ValidateResult | Promise<ValidateResult>;
   /** override message for the built-in rule on this entry */
@@ -111,9 +145,6 @@ export interface FormOptions {
   allowEmpty?: boolean;
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const URL_RE = /^https?:\/\/[^\s]+$/;
-
 export interface FormApi {
   /** the current form state snapshot (Semi getFormState). */
   getFormState(): FormState;
@@ -180,11 +211,26 @@ function isEmptyValue(v: unknown): boolean {
   return v === undefined || v === null || v === '';
 }
 
+/** deep clone a plain values tree so `initial` and live `values` never alias. */
+function clone<T>(v: T): T {
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(v);
+    } catch {
+      /* value has non-cloneable members (e.g. functions) → fall through */
+    }
+  }
+  return JSON.parse(JSON.stringify(v)) as T;
+}
+
 const DEFAULT_TRIGGER: ValidateTrigger[] = ['blur', 'change'];
 
 export function createForm(options: FormOptions = {}): FormApi {
   const resolve = options.resolveMessage ?? ((d) => d.text ?? d.key);
-  const initial: FormValues = { ...(options.initialValues ?? {}) };
+  // the initial values tree (nested; Semi-aligned). Reassigned (immutably) when a
+  // field registers its own `initialValue` at a nested path. Deep-cloned into
+  // `state.values` so mutating one never leaks into the other.
+  let initialTree: FormValues = clone(options.initialValues ?? {});
   const defaultTrigger: ValidateTrigger[] = Array.isArray(options.validateTrigger)
     ? options.validateTrigger
     : options.validateTrigger
@@ -201,7 +247,7 @@ export function createForm(options: FormOptions = {}): FormApi {
   const dependents = new Map<string, Set<string>>();
 
   const state: FormState = {
-    values: { ...initial },
+    values: clone(initialTree),
     errors: {},
     warnings: {},
     touched: {},
@@ -220,102 +266,64 @@ export function createForm(options: FormOptions = {}): FormApi {
   }
 
   /**
-   * snapshot of values honoring `allowEmpty` (spec §4 L70). With the default
-   * `allowEmpty:false`, keys whose value is empty are omitted from the payload.
+   * snapshot of values honoring `allowEmpty` (spec §4 L70), rebuilt as a NESTED
+   * tree from each registered field's path (Semi-aligned): a `users[0].name`
+   * field lands at `{ users: [{ name }] }`, not a flat `'users[0].name'` key.
+   *
+   * With the default `allowEmpty:false`, fields whose value is empty are omitted.
+   * Registered fields are collected by their path; any remaining top-level keys
+   * that no field registered (e.g. values set via `setValues` without a Field)
+   * pass through verbatim so nothing is silently dropped.
    */
   function collectValues(): FormValues {
-    const out: FormValues = {};
-    for (const [k, raw] of Object.entries(state.values)) {
+    let out: FormValues = {};
+    const seenTop = new Set<string>();
+    for (const [name, cfg] of fields) {
+      const raw = pathGet(state.values, name);
       // a registered field's `transform` runs over the raw value (pure, no
-      // state write-back per red line #2). Unregistered keys pass through.
-      const transform = fields.get(k)?.transform;
-      const v = transform ? transform(raw, state.values) : raw;
+      // state write-back per red line #2).
+      const v = cfg.transform ? cfg.transform(raw, state.values) : raw;
       // `allowEmpty` is decided on the *transformed* value: a transform may turn
       // an empty input into a real value (or vice versa).
-      if (allowEmpty || !isEmptyValue(v)) out[k] = v;
+      if (allowEmpty || !isEmptyValue(v)) {
+        out = pathSet(out, name, v);
+        seenTop.add(topSegment(name));
+      }
+    }
+    // pass through top-level keys not owned by any registered field (unregistered
+    // values written directly). Registered subtrees already rebuilt above.
+    for (const [k, raw] of Object.entries(state.values)) {
+      if (seenTop.has(k)) continue;
+      if (fieldsCoverTop(k)) continue;
+      if (allowEmpty || !isEmptyValue(raw)) out[k] = raw;
     }
     return out;
   }
 
+  /** first path segment of a field name (`users[0].name` → `users`). */
+  function topSegment(name: string): string {
+    const m = /^[^.[\]]+/.exec(name);
+    return m ? m[0] : name;
+  }
+
+  /** whether any registered field lives under top-level key `k`. */
+  function fieldsCoverTop(k: string): boolean {
+    for (const name of fields.keys()) if (topSegment(name) === k) return true;
+    return false;
+  }
+
   /**
-   * run all rules for a field. Returns the first blocking error and the first
-   * warning (from a `warningOnly` rule), if any. A failing `warningOnly` rule
-   * records a warning but does NOT halt evaluation — later rules still run, so a
-   * real error can still win. A failing normal rule short-circuits with an error.
+   * run a field's rules through the async-validator-backed engine (blocking rules
+   * + a `warningOnly` soft-warning layer). Returns the first blocking error and
+   * the first warning, honoring `stopValidateWithError`.
    */
   async function runRules(
     name: string,
     value: unknown,
   ): Promise<{ error?: string | undefined; warning?: string | undefined }> {
     const cfg = fields.get(name);
-    if (!cfg?.rules) return {};
-    const label = labelOf(name);
-    let warning: string | undefined;
-    // first blocking error seen. With stopValidateWithError we return on it
-    // immediately; otherwise we keep scanning (so warnings accumulate and the
-    // semantics of "run all rules" hold) but still surface this first one.
-    let firstError: string | undefined;
-
-    // route a failed rule's message: warningOnly → record warning & continue;
-    // otherwise capture it as the blocking error. Returns a result object only
-    // when evaluation must halt (stopValidateWithError + a blocking error).
-    const fail = (
-      rule: Rule,
-      d: MessageDescriptor,
-    ): { error?: string | undefined; warning?: string | undefined } | undefined => {
-      const text = rule.message ?? resolve(d);
-      if (rule.warningOnly) {
-        if (warning === undefined) warning = text;
-        return undefined; // keep scanning subsequent rules
-      }
-      if (firstError === undefined) firstError = text;
-      if (stopWithError) return { error: firstError, warning };
-      return undefined; // keep scanning subsequent rules
-    };
-
-    for (const rule of cfg.rules) {
-      const isEmpty = isEmptyValue(value);
-
-      if (rule.required && isEmpty) {
-        const r = fail(rule, { key: 'Form.required', params: { label } });
-        if (r) return r;
-        continue;
-      }
-      if (isEmpty) continue; // other rules skip empty values
-
-      let descriptor: MessageDescriptor | undefined;
-      if (rule.type === 'email' && !EMAIL_RE.test(String(value))) {
-        descriptor = { key: 'Form.typeError', params: { label } };
-      } else if (rule.type === 'url' && !URL_RE.test(String(value))) {
-        descriptor = { key: 'Form.typeError', params: { label } };
-      } else if (rule.type === 'number' && Number.isNaN(Number(value))) {
-        descriptor = { key: 'Form.typeError', params: { label } };
-      } else if (rule.minLength !== undefined && String(value).length < rule.minLength) {
-        descriptor = { key: 'Form.minLength', params: { min: rule.minLength } };
-      } else if (rule.maxLength !== undefined && String(value).length > rule.maxLength) {
-        descriptor = { key: 'Form.maxLength', params: { max: rule.maxLength } };
-      } else if (rule.min !== undefined && Number(value) < rule.min) {
-        descriptor = { key: 'Form.min', params: { min: rule.min } };
-      } else if (rule.max !== undefined && Number(value) > rule.max) {
-        descriptor = { key: 'Form.max', params: { max: rule.max } };
-      } else if (rule.pattern && !rule.pattern.test(String(value))) {
-        descriptor = { key: 'Form.pattern', params: { label } };
-      }
-      if (descriptor) {
-        const r = fail(rule, descriptor);
-        if (r) return r;
-        continue;
-      }
-
-      if (rule.validator) {
-        const v = await rule.validator(value, state.values);
-        if (v) {
-          const r = fail(rule, { text: v, key: '' });
-          if (r) return r;
-        }
-      }
-    }
-    return { error: firstError, warning };
+    if (!cfg?.rules || cfg.rules.length === 0) return {};
+    return runFieldRules(name, value, state.values, cfg.rules, labelOf(name), resolve, stopWithError);
   }
 
   async function validateField(name: string): Promise<string | undefined> {
@@ -324,7 +332,7 @@ export function createForm(options: FormOptions = {}): FormApi {
     state.validating = { ...state.validating, [name]: true };
     emit();
 
-    const { error, warning } = await runRules(name, state.values[name]);
+    const { error, warning } = await runRules(name, pathGet(state.values, name));
 
     // race guard: a newer validation superseded this one → discard
     if (tokens.get(name) !== token) return state.errors[name];
@@ -350,9 +358,9 @@ export function createForm(options: FormOptions = {}): FormApi {
         if (!set) dependents.set(dep, (set = new Set()));
         set.add(name);
       }
-      if (config.initialValue !== undefined && state.values[name] === undefined) {
-        state.values = { ...state.values, [name]: config.initialValue };
-        initial[name] = config.initialValue;
+      if (config.initialValue !== undefined && pathGet(state.values, name) === undefined) {
+        state.values = pathSet(state.values, name, config.initialValue);
+        initialTree = pathSet(initialTree, name, config.initialValue);
         emit();
       }
       return () => {
@@ -366,9 +374,11 @@ export function createForm(options: FormOptions = {}): FormApi {
       if (t === undefined) return defaultTrigger;
       return Array.isArray(t) ? t : [t];
     },
-    getValue: (name) => (name === undefined ? { ...state.values } : state.values[name]),
+    getValue: (name) => (name === undefined ? clone(state.values) : pathGet(state.values, name)),
     setValue(name, value, opts) {
-      state.values = { ...state.values, [name]: value };
+      // immutable nested write: rebuild the branch along `name`'s path so Svelte
+      // subscribers see a fresh root reference (never mutate in place).
+      state.values = pathSet(state.values, name, value);
       emit();
       if (opts?.validate) void validateField(name);
       // Re-validate downstream fields that depend on this one (e.g. confirm
@@ -384,9 +394,13 @@ export function createForm(options: FormOptions = {}): FormApi {
       }
     },
     setValues(values, config) {
-      // isOverride:true replaces the whole values object; default merges. The
-      // Field subscribers re-read on emit, so a flat replace is enough.
-      state.values = config?.isOverride ? { ...values } : { ...state.values, ...values };
+      // isOverride:true replaces the whole (nested) values tree; default merges at
+      // the top level (nested subtrees are replaced wholesale, matching Semi's
+      // per-field setValue when a subtree object is supplied). Field subscribers
+      // re-read on emit. Clone the incoming tree so callers can't alias state.
+      state.values = config?.isOverride
+        ? clone(values)
+        : { ...state.values, ...clone(values) };
       emit();
     },
     setTouched(name, touched = true) {
@@ -401,8 +415,8 @@ export function createForm(options: FormOptions = {}): FormApi {
       name === undefined ? { ...state.errors } : state.errors[name],
     getFieldWarning: (name) => state.warnings[name],
     getFieldExist: (name) => fields.has(name),
-    getInitValue: (name) => (name === undefined ? { ...initial } : initial[name]),
-    getInitValues: () => ({ ...initial }),
+    getInitValue: (name) => (name === undefined ? clone(initialTree) : pathGet(initialTree, name)),
+    getInitValues: () => clone(initialTree),
     validateField,
     async validate(names) {
       const targets = names ?? [...fields.keys()];
@@ -413,15 +427,16 @@ export function createForm(options: FormOptions = {}): FormApi {
       if (fields && fields.length > 0) {
         // partial reset: only the targeted fields fall back to their initial
         // value (or drop when there is none) and lose error/warning/touched/
-        // validating state; everything else is left untouched.
-        const values = { ...state.values };
+        // validating state; everything else is left untouched. Values are read/
+        // written by nested path so `users[0].name` resets its leaf, not a flat key.
+        let values = state.values;
         const errors = { ...state.errors };
         const warnings = { ...state.warnings };
         const touched = { ...state.touched };
         const validating = { ...state.validating };
         for (const f of fields) {
-          if (Object.prototype.hasOwnProperty.call(initial, f)) values[f] = initial[f];
-          else delete values[f];
+          if (pathHas(initialTree, f)) values = pathSet(values, f, pathGet(initialTree, f));
+          else values = pathRemove(values, f);
           delete errors[f];
           delete warnings[f];
           delete touched[f];
@@ -435,7 +450,7 @@ export function createForm(options: FormOptions = {}): FormApi {
         emit();
         return;
       }
-      state.values = { ...initial };
+      state.values = clone(initialTree);
       state.errors = {};
       state.warnings = {};
       state.touched = {};
