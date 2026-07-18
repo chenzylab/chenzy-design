@@ -44,6 +44,16 @@ export const anchorTokens = {
   // —— Radius ——
   'radius-anchor-slide': { value: '1px', category: 'radius', label: '滑轨圆角', usage: '滑轨圆角' },
 
+  // —— Animation：标题文字过渡 + 缩放（对齐 Semi anchor/animation.scss，无中间层） ——
+  // Semi: $transition_duration-anchor_title-text: var(--semi-transition_duration-none) → 0ms
+  'transition-duration-anchor-title-text': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '标题文字过渡时长', usage: '锚点标题文字-文字-动画持续时间' },
+  // Semi: $transition_function-anchor_title-text: var(--semi-transition_function-easeIn) → ease-in
+  'transition-function-anchor-title-text': { value: 'var(--cd-motion-ease-in)', category: 'animation', label: '标题文字过渡曲线', usage: '锚点标题文字-文字-过渡曲线' },
+  // Semi: $transition_delay-anchor_title-text: var(--semi-transition_delay-none) → 0ms
+  'transition-delay-anchor-title-text': { value: 'var(--cd-motion-duration-none)', category: 'animation', label: '标题文字过渡延迟', usage: '锚点标题文字-文字-延迟时间' },
+  // Semi: $transform_scale-anchor_title-text: var(--semi-transform_scale-none) → scale(1, 1)
+  'transform-scale-anchor-title-text': { value: 'var(--cd-motion-scale-none)', category: 'animation', label: '标题文字缩放', usage: '锚点-放大' },
+
   // —— Width：轮廓 outline ——
   'width-anchor-outline': { value: '2px', category: 'width', label: '轮廓宽度', usage: 'anchor轮廓宽度' },
   'width-anchor-outlineoffset': { value: '-2px', category: 'width', label: '轮廓 outline-offset', usage: 'anchor轮廓 outline-offset 宽度' },

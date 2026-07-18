@@ -501,8 +501,10 @@
   }
   /* muted 无滑轨条（Semi 该主题 slide 整体 display:none，slide-bar 亦不显）。 */
 
-  /* link-wrapper：链接列表容器（Semi .semi-anchor-link-wrapper）。 */
+  /* link-wrapper：链接列表容器（Semi .semi-anchor-link-wrapper）。
+     对齐 Semi：wrapper 本身无 padding（Semi $spacing-anchor_link-paddingLeft 是孤儿变量，
+     从未被任何 scss 消费；链接缩进由 Anchor.Link 的 paddingLeft: 8*level 内联提供）。 */
   .cd-anchor-link-wrapper {
-    padding-inline-start: var(--cd-spacing-anchor-link-paddingleft);
+    display: block;
   }
 </style>
