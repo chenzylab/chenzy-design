@@ -24,28 +24,48 @@ describe('CodeHighlight a11y + render', () => {
     expect(code?.className).toContain('language-javascript');
   });
 
-  it('root <pre> 为 role=region 且有 i18n aria-label（codeBlock），无 axe violations', async () => {
+  it('root <div> 为 role=region 且有 i18n aria-label（codeBlock），无 axe violations', async () => {
     const { container } = renderWithLocale(CodeHighlight, {
       props: { code: 'let x = 2;', language: 'javascript' },
     });
     await tick();
 
-    const pre = container.querySelector('.cd-code-highlight');
-    expect(pre?.getAttribute('role')).toBe('region');
-    expect(pre?.getAttribute('aria-label')).toBe('Code block');
-    expect(pre?.getAttribute('tabindex')).toBe('0');
+    // DOM 对齐 Semi：根为 div.cd-code-highlight（含 cd-light-scrollbar），承载 role/aria-label/tabindex。
+    const root = container.querySelector('.cd-code-highlight');
+    expect(root?.tagName).toBe('DIV');
+    expect(root?.classList.contains('cd-light-scrollbar')).toBe(true);
+    expect(root?.getAttribute('role')).toBe('region');
+    expect(root?.getAttribute('aria-label')).toBe('Code block');
+    expect(root?.getAttribute('tabindex')).toBe('0');
+    // defaultTheme 默认 true → 根含 cd-code-highlight-defaultTheme。
+    expect(root?.classList.contains('cd-code-highlight-defaultTheme')).toBe(true);
     await expectNoAxeViolations(container);
   });
 
-  it('lineNumber=false 时 root 无 line-numbers class', async () => {
+  it('defaultTheme=false 时根无 cd-code-highlight-defaultTheme class', async () => {
     const { container } = renderWithLocale(CodeHighlight, {
-      props: { code: 'a;', language: 'javascript', lineNumber: false },
+      props: { code: 'a;', language: 'javascript', defaultTheme: false },
     });
     await tick();
 
-    const pre = container.querySelector('.cd-code-highlight');
-    expect(pre?.classList.contains('line-numbers')).toBe(false);
-    const code = container.querySelector('code');
+    const root = container.querySelector('.cd-code-highlight');
+    expect(root?.classList.contains('cd-code-highlight-defaultTheme')).toBe(false);
+  });
+
+  it('lineNumber 控制 <pre> 上的 line-numbers class', async () => {
+    // line-numbers class 加在内部 <pre> 上（对齐 Semi），非根 div。
+    const on = renderWithLocale(CodeHighlight, {
+      props: { code: 'a;', language: 'javascript', lineNumber: true },
+    });
+    await tick();
+    expect(on.container.querySelector('pre')?.classList.contains('line-numbers')).toBe(true);
+
+    const off = renderWithLocale(CodeHighlight, {
+      props: { code: 'a;', language: 'javascript', lineNumber: false },
+    });
+    await tick();
+    expect(off.container.querySelector('pre')?.classList.contains('line-numbers')).toBe(false);
+    const code = off.container.querySelector('code');
     expect(code?.className).not.toContain('line-numbers');
   });
 

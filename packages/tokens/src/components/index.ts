@@ -56,7 +56,6 @@ import { stepsTokens } from './steps.js';
 import { anchorTokens } from './anchor.js';
 import { dropdownTokens } from './dropdown.js';
 import { paginationTokens } from './pagination.js';
-import { codeHighlightTokens } from './code-highlight.js';
 import { highlightTokens } from './highlight.js';
 import { markdownRenderTokens } from './markdown-render.js';
 import { videoPlayerTokens } from './video-player.js';
@@ -129,7 +128,6 @@ export const componentTokens = {
   ...anchorTokens,
   ...dropdownTokens,
   ...paginationTokens,
-  ...codeHighlightTokens,
   ...highlightTokens,
   ...markdownRenderTokens,
   ...videoPlayerTokens,

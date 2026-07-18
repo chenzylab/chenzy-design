@@ -19,7 +19,8 @@
     "@chenzy-design/icons-lab": "workspace:*",
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
-    "@chenzy-design/unocss-preset": "workspace:*"
+    "@chenzy-design/unocss-preset": "workspace:*",
+    "prismjs": "^1.29.0"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.0",
