@@ -1,28 +1,17 @@
 <!--
   Form.InputNumber — convenience wrapper: <Form.Field> + <InputNumber> bound to a field.
+  field-level props 经 FieldPassthroughProps 透传给 Field；控件专属给 InputNumber。
   onChange 首参即值（number | string | null），直传。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import InputNumber from '../input-number/InputNumber.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type InputNumberProps = ComponentProps<typeof InputNumber>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // InputNumber-specific props
+  interface Props extends FieldPassthroughProps {
     placeholder?: InputNumberProps['placeholder'];
     disabled?: boolean;
     size?: InputNumberProps['size'];
@@ -35,62 +24,44 @@
     hideButtons?: InputNumberProps['hideButtons'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    placeholder,
-    disabled,
-    size,
-    min,
-    max,
-    step,
-    precision,
-    showClear,
-    innerButtons,
-    hideButtons,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = [
+    'placeholder',
+    'disabled',
+    'size',
+    'min',
+    'max',
+    'step',
+    'precision',
+    'showClear',
+    'innerButtons',
+    'hideButtons',
+  ] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, describedBy, required: fieldRequired })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id })}
     <InputNumber
       {...(typeof value === 'number' ? { value } : { value: null })}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      disabled={disabled ?? fieldDisabled}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
-      {...(placeholder !== undefined ? { placeholder } : {})}
-      {...(size !== undefined ? { size } : {})}
-      {...(min !== undefined ? { min } : {})}
-      {...(max !== undefined ? { max } : {})}
-      {...(step !== undefined ? { step } : {})}
-      {...(precision !== undefined ? { precision } : {})}
-      {...(showClear !== undefined ? { showClear } : {})}
-      {...(innerButtons !== undefined ? { innerButtons } : {})}
-      {...(hideButtons !== undefined ? { hideButtons } : {})}
-      {...(label !== undefined ? { ariaLabel: label } : {})}
+      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<InputNumberProps['placeholder']> } : {})}
+      {...(control.size !== undefined ? { size: control.size as NonNullable<InputNumberProps['size']> } : {})}
+      {...(control.min !== undefined ? { min: control.min as NonNullable<InputNumberProps['min']> } : {})}
+      {...(control.max !== undefined ? { max: control.max as NonNullable<InputNumberProps['max']> } : {})}
+      {...(control.step !== undefined ? { step: control.step as NonNullable<InputNumberProps['step']> } : {})}
+      {...(control.precision !== undefined ? { precision: control.precision as NonNullable<InputNumberProps['precision']> } : {})}
+      {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<InputNumberProps['showClear']> } : {})}
+      {...(control.innerButtons !== undefined ? { innerButtons: control.innerButtons as NonNullable<InputNumberProps['innerButtons']> } : {})}
+      {...(control.hideButtons !== undefined ? { hideButtons: control.hideButtons as NonNullable<InputNumberProps['hideButtons']> } : {})}
+      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

@@ -1,28 +1,16 @@
 <!--
   Form.TimePicker — convenience wrapper: <Form.Field> + <TimePicker> bound to a field.
-  onChange 首参即值（Date | null | [..]），直传。
+  onChange 首参即值（Date | null | [..]），直传。field-level props 经 FieldPassthroughProps 透传给 Field。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import TimePicker from '../time-picker/TimePicker.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type TimePickerProps = ComponentProps<typeof TimePicker>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // TimePicker-specific props
+  interface Props extends FieldPassthroughProps {
     placeholder?: TimePickerProps['placeholder'];
     disabled?: boolean;
     size?: TimePickerProps['size'];
@@ -30,38 +18,13 @@
     use12Hours?: TimePickerProps['use12Hours'];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    placeholder,
-    disabled,
-    size,
-    format,
-    use12Hours,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = ['placeholder', 'disabled', 'size', 'format', 'use12Hours'] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
 </script>
 
 <Field {...fieldProps}>
@@ -69,11 +32,11 @@
     <TimePicker
       {...(value !== undefined && value !== null ? { value: value as NonNullable<TimePickerProps['value']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      disabled={disabled ?? fieldDisabled}
-      {...(placeholder !== undefined ? { placeholder } : {})}
-      {...(size !== undefined ? { size } : {})}
-      {...(format !== undefined ? { format } : {})}
-      {...(use12Hours !== undefined ? { use12Hours } : {})}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TimePickerProps['placeholder']> } : {})}
+      {...(control.size !== undefined ? { size: control.size as NonNullable<TimePickerProps['size']> } : {})}
+      {...(control.format !== undefined ? { format: control.format as NonNullable<TimePickerProps['format']> } : {})}
+      {...(control.use12Hours !== undefined ? { use12Hours: control.use12Hours as NonNullable<TimePickerProps['use12Hours']> } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

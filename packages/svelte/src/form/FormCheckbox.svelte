@@ -1,75 +1,41 @@
 <!--
   Form.Checkbox — convenience wrapper: <Form.Field> + <Checkbox> bound to a field.
-  Uses valuePropName='checked' since Checkbox is a boolean control.
+  Uses valuePropName='checked' since Checkbox is a boolean control（valuePropName 属
+  field-level prop，经 FieldPassthroughProps + splitFieldProps 归到 fieldProps）。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
   import type { ComponentProps, Snippet } from 'svelte';
   import Field from './Field.svelte';
   import Checkbox from '../checkbox/Checkbox.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type CheckboxProps = ComponentProps<typeof Checkbox>;
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    initValue?: unknown;
-    required?: boolean;
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    span?: number;
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
-    dependencies?: string[];
-    trigger?: ValidateTrigger | ValidateTrigger[];
-    // Checkbox-specific props
+  interface Props extends FieldPassthroughProps {
     disabled?: boolean;
     indeterminate?: CheckboxProps['indeterminate'];
     type?: CheckboxProps['type'];
     children?: Snippet;
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    dependencies,
-    trigger,
-    disabled,
-    indeterminate,
-    type,
-    children: slotChildren,
-  }: Props = $props();
-
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    valuePropName: 'checked',
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  const controlKeys = ['disabled', 'indeterminate', 'type', 'children'] as const;
+  const split = $derived(splitFieldProps(props));
+  // Checkbox 是布尔控件，valuePropName 固定 'checked'（未显式传时补默认）。
+  const fieldProps = $derived<FieldPassthroughProps>({ valuePropName: 'checked', ...split.fieldProps });
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
+  const slotChildren = $derived(props.children);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, required: fieldRequired })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id })}
     <Checkbox
       {...(typeof value === 'boolean' ? { checked: value } : {})}
-      disabled={disabled ?? fieldDisabled}
-      {...(indeterminate !== undefined ? { indeterminate } : {})}
-      {...(type !== undefined ? { type } : {})}
+      disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
+      {...(control.indeterminate !== undefined ? { indeterminate: control.indeterminate as NonNullable<CheckboxProps['indeterminate']> } : {})}
+      {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxProps['type']> } : {})}
       {id}
       ariaInvalid={status === 'error'}
       onChange={(e) => onChange(e.target.checked)}
