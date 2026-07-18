@@ -24,6 +24,7 @@ import FormSection from './FormSection.svelte';
 import FormSlot from './FormSlot.svelte';
 import FormLabel from './FormLabel.svelte';
 import FormErrorMessage from './FormErrorMessage.svelte';
+import FormInputGroup from './FormInputGroup.svelte';
 
 /**
  * Form 命名空间：所有 Form.Xxx 控件都是 <Field> + 对应控件的便捷包装，
@@ -55,6 +56,7 @@ export const Form: typeof Form_ & {
   Slot: typeof FormSlot;
   Label: typeof FormLabel;
   ErrorMessage: typeof FormErrorMessage;
+  InputGroup: typeof FormInputGroup;
 } = Object.assign(Form_, {
   Field,
   List: FieldArray,
@@ -81,6 +83,7 @@ export const Form: typeof Form_ & {
   Slot: FormSlot,
   Label: FormLabel,
   ErrorMessage: FormErrorMessage,
+  InputGroup: FormInputGroup,
 });
 
 export {
@@ -109,8 +112,17 @@ export {
   FormSlot,
   FormLabel,
   FormErrorMessage,
+  FormInputGroup,
 };
 export { meta as formMeta } from './meta.js';
+export {
+  useFormApi,
+  useFormState,
+  getFieldApi,
+  type FieldApi,
+} from './hooks.js';
+// createForm 从 core 透传，供 `const form = createForm()` + <Form {form}> 外部预建用法。
+export { createForm } from '@chenzy-design/core';
 export type { FormApi, FormState, FieldErrors } from '@chenzy-design/core';
 export {
   getFormContext,

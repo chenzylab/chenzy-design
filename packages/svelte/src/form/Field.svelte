@@ -8,6 +8,7 @@
   import { useId, type Rule, type ValidateTrigger } from '@chenzy-design/core';
   import { IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
   import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
+  import { getFormInputGroupContext } from './input-group-context.js';
   import { useLocale } from '../locale-provider/index.js';
 
   /** Label 对象形态（对齐 Semi LabelProps 子集）。 */
@@ -183,6 +184,13 @@
   if (!ctx) throw new Error('<Form.Field> must be used inside <Form>');
   const { form, getFormState } = ctx;
 
+  // FormInputGroup 内的 Field 自动进入 group 模式（对齐 Semi cloneElement isInInputGroup）：
+  // Label/ErrorMessage 上提到 group 级统一渲染，Field 只把值/错误接管数据流。
+  const groupCtx = getFormInputGroupContext();
+  const inGroup = $derived(isInInputGroup || groupCtx !== undefined);
+  // 注册本字段名到 group，供 GroupError 聚合组内所有字段错误（卸载时取消注册）。
+  $effect(() => groupCtx?.register(field));
+
   const loc = useLocale();
 
   const id = useId('cd-field');
@@ -278,9 +286,9 @@
   }
 
   const describedBy = $derived(
-    // noStyle / pure / isInInputGroup render no status/extra elements here, so
+    // noStyle / pure / inGroup render no status/extra elements here, so
     // there is nothing to point at (Group renders them at group level).
-    noStyle || pure || isInInputGroup
+    noStyle || pure || inGroup
       ? undefined
       : // noErrorMessage suppresses the error/warning block: don't point at it
         !noErrorMessage && showError
@@ -345,9 +353,9 @@
   );
 </script>
 
-{#if noStyle || pure || isInInputGroup}
+{#if noStyle || pure || inGroup}
   <!--
-    noStyle (spec §4.2 L85 / §190) / pure / isInInputGroup: register & collect
+    noStyle (spec §4.2 L85 / §190) / pure / inGroup: register & collect
     only, render no layout chrome. The control snippet is still rendered so it can
     bind to the field; label / status text / wrapper DOM are skipped. For
     isInInputGroup the Group renders Label/ErrorMessage at group level.
@@ -443,7 +451,7 @@
 <style>
   .cd-form-field {
     display: flex;
-    gap: var(--cd-form-label-gap);
+    gap: var(--cd-spacing-tight);
   }
   .cd-form-field--label-top {
     flex-direction: column;
@@ -456,7 +464,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-label-color);
+    color: var(--cd-color-form-label-text-default);
   }
   /* labelAlign (§4 L60): justify the label's inline content within its box */
   .cd-form-field__label--align-left {
@@ -465,11 +473,13 @@
   .cd-form-field__label--align-right {
     justify-content: flex-end;
   }
+  /* 水平布局 label 顶部内边距用 Semi 精算 token（(height-control-default - 20px)*0.5），
+     对齐控件高度，取代原先硬写的 extra-tight。 */
   .cd-form-field--label-left .cd-form-field__label {
-    padding-block-start: var(--cd-spacing-extra-tight);
+    padding-block-start: var(--cd-spacing-form-label-paddingtop);
   }
   .cd-form-field__required {
-    color: var(--cd-form-required-color);
+    color: var(--cd-color-form-requiredmark-text-default);
   }
   .cd-form-field__control {
     display: flex;
@@ -503,7 +513,7 @@
   }
   .cd-form-field--floated .cd-form-field__inset-label {
     transform: translateY(calc(-50% - 0.85rem)) scale(0.85);
-    color: var(--cd-form-label-color);
+    color: var(--cd-color-form-label-text-default);
   }
   @media (prefers-reduced-motion: reduce) {
     .cd-form-field__inset-label {
@@ -514,35 +524,35 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-error-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-message-error-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__warning {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-warning-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-warning);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__status-icon {
     flex: 0 0 auto;
   }
   .cd-form-field__extra {
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__help-text {
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__label-optional {
     margin-inline-start: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-optional-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-optional-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__label-extra {
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__extra--middle {
     order: -1;
@@ -555,8 +565,8 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-form-extra-color);
-    font-size: var(--cd-form-error-font-size);
+    color: var(--cd-color-form-label-extra-text-default);
+    font-size: var(--cd-font-size-small);
   }
   .cd-form-field__spinner {
     inline-size: 0.85em;
