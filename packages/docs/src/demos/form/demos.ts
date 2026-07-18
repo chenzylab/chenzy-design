@@ -32,4 +32,9 @@ export const demos: DemoEntry[] = [
   entry('06-dynamic.svelte', '动态字段', 'Form.List 动态增删行，每行子字段名由 name(item, sub) 拼接。'),
   entry('07-form-api.svelte', '外部操作', 'getFormApi 拿到内部句柄，在表单外部命令式 setValues / validate / reset。'),
   entry('08-section.svelte', '分组', 'Form.Section 把字段按语义分区，带分区标题。'),
+  entry(
+    '09-more-controls.svelte',
+    '更多控件',
+    'Form.TextArea / InputNumber / CheckboxGroup / RadioGroup / TimePicker / AutoComplete / PinCode 薄封装接管数据流。'
+  ),
 ];
