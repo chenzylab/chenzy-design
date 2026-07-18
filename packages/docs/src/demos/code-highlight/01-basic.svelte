@@ -1,10 +1,13 @@
 <script lang="ts">
   import { CodeHighlight } from '@chenzy-design/svelte';
 
-  const code = `function greet(name) {
-  const message = \`Hello, \${name}!\`;
-  console.log(message);
-  return message;
+  const code = `
+import * as React from 'react"
+const Test = ()=>{
+    const handleClick = ()=>{
+        alert("Click")
+    }
+    return <div onClick={handleClick}>test</div>
 }`;
 </script>
 

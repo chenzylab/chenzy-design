@@ -1,12 +1,15 @@
 <!--
-  CodeHighlight — see specs/components/show/CodeHighlight.spec.md
-  语法高亮展示：底层用 prismjs（对齐 Semi Design semi-foundation/codeHighlight）。
-  class-name 解析（language-<lang> / line-numbers）为纯函数（@chenzy-design/core
-  resolveCodeClassName）；渲染在 $effect 里对 <code> 元素设 class + textContent，
-  再 Prism.highlightElement(el, false) 就地高亮 —— 只写纯文本节点，绝不 {@html}
-  未处理内容，规避 XSS。语言包/行号插件按需 import（tree-shake 由使用方决定）。
-  defaultTheme 开关控制是否套用内置（token 驱动）配色；长代码块可滚动，
-  加 tabindex/role=region + i18n aria-label 供键盘 + AT 访问。
+  CodeHighlight — 严格对齐 Semi Design（semi-ui/codeHighlight + semi-foundation/codeHighlight）。
+  语法高亮展示：底层用 prismjs。class-name 解析（language-<lang> / line-numbers）为纯函数
+  （@chenzy-design/core resolveCodeClassName）；渲染在 $effect 里对 <code> 元素设 class +
+  textContent，再 Prism.highlightElement(el, false) 就地高亮 —— 只写纯文本节点，绝不 {@html}
+  未处理内容，规避 XSS。语言包/行号插件按需 import。
+
+  DOM 对齐 Semi：<div class="cd-code-highlight [cd-code-highlight-defaultTheme]"><pre><code>。
+  样式对齐 Semi codeHighlight.scss：prism 主题为固定 Lea Verou dabblet 配色（写死色值 +
+  色板阶梯 rgba(var(--semi-X-6),1) → var(--cd-color-X-6)），容器色引 alias。移除自造 token 中间层。
+  defaultTheme 开关控制是否套用内置配色；长代码块可滚动，加 tabindex/role=region + i18n
+  aria-label 供键盘 + AT 访问。
 -->
 <script lang="ts">
   import { resolveCodeClassName } from '@chenzy-design/core';
@@ -42,9 +45,9 @@
     code?: string;
     /** Prism 语言 id，如 'js' | 'ts' | 'css' | 'markup'。 */
     language?: string;
-    /** 是否显示行号（Prism line-numbers 插件）。 */
+    /** 是否显示行号（Prism line-numbers 插件）。对齐 Semi 默认 true。 */
     lineNumber?: boolean;
-    /** 是否套用内置默认主题（token 驱动配色）。关闭后仅结构，配色交给使用方。 */
+    /** 是否套用内置默认主题（Semi dabblet 配色）。对齐 Semi 默认 true。 */
     defaultTheme?: boolean;
     /** 根元素附加类名。 */
     class?: string;
@@ -65,8 +68,15 @@
 
   let codeEl: HTMLElement | undefined = $state();
 
+  // 对齐 Semi：根 class = cd-code-highlight + cd-light-scrollbar + [cd-code-highlight-defaultTheme] + 外部 class。
+  // cd-light-scrollbar 镜像 Semi 的 semi-light-scrollbar（浅色滚动条，全局工具类）。
   const rootClass = $derived(
-    ['cd-code-highlight', defaultTheme && 'cd-code-highlight--theme', className]
+    [
+      'cd-code-highlight',
+      'cd-light-scrollbar',
+      defaultTheme && 'cd-code-highlight-defaultTheme',
+      className,
+    ]
       .filter(Boolean)
       .join(' '),
   );
@@ -96,136 +106,193 @@
   });
 </script>
 
-<!-- tabindex=0 让长代码块可键盘滚动聚焦；role=region + aria-label 命名该滚动区（WCAG 2.1.1，对齐 Card/Carousel 既有做法）。 -->
+<!-- DOM 对齐 Semi：div.cd-code-highlight > pre > code。tabindex=0 让长代码块可键盘滚动聚焦；
+     role=region + aria-label 命名该滚动区（WCAG 2.1.1）。 -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<pre
+<div
   class={rootClass}
-  class:line-numbers={lineNumber}
   style={style || undefined}
   tabindex="0"
   role="region"
-  aria-label={loc().t('CodeHighlight.codeBlock')}><code bind:this={codeEl}></code></pre>
+  aria-label={loc().t('CodeHighlight.codeBlock')}
+><pre class:line-numbers={lineNumber}><code bind:this={codeEl}></code></pre></div>
 
 <style>
+  /* —— 容器 —— 对齐 Semi codeHighlight.scss。根 div 承担滚动 + 键盘聚焦（role=region）。 */
   .cd-code-highlight {
-    margin: 0;
     overflow: auto;
-    padding: var(--cd-code-highlight-padding);
-    border-radius: var(--cd-code-highlight-radius);
-    background: var(--cd-code-highlight-bg);
-    color: var(--cd-code-highlight-color);
-    font-family: var(--cd-code-highlight-font-family);
-    font-size: var(--cd-code-highlight-font-size);
-    line-height: var(--cd-code-highlight-line-height);
-    tab-size: 2;
   }
 
-  .cd-code-highlight :global(code) {
-    font-family: inherit;
-    font-size: inherit;
-    background: none;
+  .cd-code-highlight :global(pre) {
+    margin: 0;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre[class*='language-']),
+  .cd-code-highlight-defaultTheme :global(code[class*='language-']) {
+    color: var(--cd-color-text-0);
+    font-size: 13px;
+    text-shadow: none;
+    font-family:
+      ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono',
+      'DejaVu Sans Mono', 'Courier New', monospace;
+    direction: ltr;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    line-height: 1.5;
+    tab-size: 4;
+    hyphens: none;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre[class*='language-']::selection),
+  .cd-code-highlight-defaultTheme :global(code[class*='language-']::selection) {
+    text-shadow: none;
+    background: #b3d4fc;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre[class*='language-']) {
+    padding: 1em;
+    margin: 0.5em 0;
+    overflow: auto;
+    background: var(--cd-color-tertiary-light-default);
+  }
+
+  .cd-code-highlight-defaultTheme :global(:not(pre) > code[class*='language-']) {
+    display: block;
+    border-radius: 0.3em;
+    color: #895fe2;
+    background: #f9f7f9;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .namespace) {
+    opacity: 0.7;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.comment),
+  .cd-code-highlight-defaultTheme :global(pre .token.prolog),
+  .cd-code-highlight-defaultTheme :global(pre .token.doctype),
+  .cd-code-highlight-defaultTheme :global(pre .token.cdata) {
+    color: #6b7075;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.punctuation) {
+    color: var(--cd-color-grey-8);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.property),
+  .cd-code-highlight-defaultTheme :global(pre .token.tag),
+  .cd-code-highlight-defaultTheme :global(pre .token.boolean),
+  .cd-code-highlight-defaultTheme :global(pre .token.number),
+  .cd-code-highlight-defaultTheme :global(pre .token.constant),
+  .cd-code-highlight-defaultTheme :global(pre .token.symbol),
+  .cd-code-highlight-defaultTheme :global(pre .token.deleted) {
+    color: var(--cd-color-purple-6);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.selector),
+  .cd-code-highlight-defaultTheme :global(pre .token.attr-name),
+  .cd-code-highlight-defaultTheme :global(pre .token.string),
+  .cd-code-highlight-defaultTheme :global(pre .token.char),
+  .cd-code-highlight-defaultTheme :global(pre .token.builtin),
+  .cd-code-highlight-defaultTheme :global(pre .token.inserted) {
+    color: var(--cd-color-green-6);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.operator),
+  .cd-code-highlight-defaultTheme :global(pre .token.entity),
+  .cd-code-highlight-defaultTheme :global(pre .token.url),
+  .cd-code-highlight-defaultTheme :global(pre .language-css .token.string),
+  .cd-code-highlight-defaultTheme :global(pre .style .token.string) {
+    color: var(--cd-color-grey-8);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.atrule),
+  .cd-code-highlight-defaultTheme :global(pre .token.attr-value),
+  .cd-code-highlight-defaultTheme :global(pre .token.keyword) {
+    color: var(--cd-color-purple-6);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.function) {
+    color: var(--cd-color-violet-6);
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.regex),
+  .cd-code-highlight-defaultTheme :global(pre .token.important),
+  .cd-code-highlight-defaultTheme :global(pre .token.variable) {
+    color: #d0955f;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.important),
+  .cd-code-highlight-defaultTheme :global(pre .token.bold) {
+    font-weight: bold;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.italic) {
+    font-style: italic;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre .token.entity) {
+    cursor: help;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre[data-line]) {
+    position: relative;
+  }
+
+  .cd-code-highlight-defaultTheme :global(pre[class*='language-'] > code[class*='language-']) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .cd-code-highlight-defaultTheme :global(.line-highlight) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    padding: inherit 0;
+    margin-top: 1em;
+    background: #ebf4ff;
+    box-shadow: inset 5px 0 0 #0064d2;
+    z-index: 0;
+    pointer-events: none;
+    line-height: inherit;
     white-space: pre;
   }
 
-  /* —— 默认主题：Prism token 分类 → chenzy token（无写死色值） —— */
-  .cd-code-highlight--theme :global(.token.comment),
-  .cd-code-highlight--theme :global(.token.prolog),
-  .cd-code-highlight--theme :global(.token.doctype),
-  .cd-code-highlight--theme :global(.token.cdata) {
-    color: var(--cd-code-highlight-token-comment);
-    font-style: italic;
-  }
-
-  .cd-code-highlight--theme :global(.token.punctuation) {
-    color: var(--cd-code-highlight-token-punctuation);
-  }
-
-  .cd-code-highlight--theme :global(.token.property),
-  .cd-code-highlight--theme :global(.token.tag),
-  .cd-code-highlight--theme :global(.token.boolean),
-  .cd-code-highlight--theme :global(.token.number),
-  .cd-code-highlight--theme :global(.token.constant),
-  .cd-code-highlight--theme :global(.token.symbol),
-  .cd-code-highlight--theme :global(.token.deleted) {
-    color: var(--cd-code-highlight-token-number);
-  }
-
-  .cd-code-highlight--theme :global(.token.selector),
-  .cd-code-highlight--theme :global(.token.attr-name),
-  .cd-code-highlight--theme :global(.token.string),
-  .cd-code-highlight--theme :global(.token.char),
-  .cd-code-highlight--theme :global(.token.builtin),
-  .cd-code-highlight--theme :global(.token.inserted) {
-    color: var(--cd-code-highlight-token-string);
-  }
-
-  .cd-code-highlight--theme :global(.token.operator),
-  .cd-code-highlight--theme :global(.token.entity),
-  .cd-code-highlight--theme :global(.token.url),
-  .cd-code-highlight--theme :global(.language-css .token.string),
-  .cd-code-highlight--theme :global(.style .token.string) {
-    color: var(--cd-code-highlight-token-operator);
-  }
-
-  .cd-code-highlight--theme :global(.token.atrule),
-  .cd-code-highlight--theme :global(.token.attr-value),
-  .cd-code-highlight--theme :global(.token.keyword) {
-    color: var(--cd-code-highlight-token-keyword);
-  }
-
-  .cd-code-highlight--theme :global(.token.function),
-  .cd-code-highlight--theme :global(.token.class-name) {
-    color: var(--cd-code-highlight-token-function);
-  }
-
-  .cd-code-highlight--theme :global(.token.regex),
-  .cd-code-highlight--theme :global(.token.important),
-  .cd-code-highlight--theme :global(.token.variable) {
-    color: var(--cd-code-highlight-token-variable);
-  }
-
-  .cd-code-highlight--theme :global(.token.important),
-  .cd-code-highlight--theme :global(.token.bold) {
-    font-weight: var(--cd-code-highlight-token-bold-weight);
-  }
-
-  .cd-code-highlight--theme :global(.token.italic) {
-    font-style: italic;
-  }
-
-  /* —— 行号插件（对齐 prismjs line-numbers，尺寸/色走 token） —— */
-  .cd-code-highlight.line-numbers {
+  /* —— 行号插件（对齐 Semi codeHighlight.scss line number 段，尺寸/色写死照 Semi） —— */
+  .cd-code-highlight :global(pre[class*='language-'].line-numbers) {
     position: relative;
-    padding-inline-start: var(--cd-code-highlight-linenumber-width);
+    padding-left: 3.8em;
     counter-reset: linenumber;
   }
 
-  .cd-code-highlight.line-numbers :global(> code) {
+  .cd-code-highlight :global(pre[class*='language-'].line-numbers > code) {
     position: relative;
     white-space: inherit;
   }
 
-  .cd-code-highlight.line-numbers :global(.line-numbers-rows) {
+  .cd-code-highlight :global(.line-numbers .line-numbers-rows) {
     position: absolute;
-    inset-block-start: 0;
-    inset-inline-start: calc(-1 * var(--cd-code-highlight-linenumber-width));
-    width: var(--cd-code-highlight-linenumber-width);
-    letter-spacing: -1px;
-    border-inline-end: 1px solid var(--cd-code-highlight-linenumber-border);
-    user-select: none;
     pointer-events: none;
+    top: 0;
+    font-size: 100%;
+    left: -3.8em;
+    width: 3em;
+    letter-spacing: -1px;
+    border-right: 1px solid #999;
+    user-select: none;
   }
 
-  .cd-code-highlight.line-numbers :global(.line-numbers-rows > span) {
+  .cd-code-highlight :global(.line-numbers-rows > span) {
     display: block;
     counter-increment: linenumber;
   }
 
-  .cd-code-highlight.line-numbers :global(.line-numbers-rows > span::before) {
+  .cd-code-highlight :global(.line-numbers-rows > span::before) {
     content: counter(linenumber);
+    color: #999;
     display: block;
-    padding-inline-end: var(--cd-code-highlight-linenumber-gap);
-    text-align: end;
-    color: var(--cd-code-highlight-linenumber-color);
+    padding-right: 0.8em;
+    text-align: right;
   }
 </style>

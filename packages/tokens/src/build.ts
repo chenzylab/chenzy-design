@@ -101,6 +101,38 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* 浅色滚动条工具类（严格对齐 Semi semi-foundation/base/base.scss .semi-light-scrollbar）：
+   跨组件复用（CodeHighlight/Chat 等）；轨道透明、滑块 hover 才显，尺寸 8px、圆角 6px。
+   值镜像 Semi：hover thumb var(--cd-color-fill-2)、thumb:hover var(--cd-color-fill-1)。
+   Semi 用 "&, *" 令自身与所有后代都套用，这里平铺展开（tokens.css 非 scss 不编译嵌套）。 */
+.cd-light-scrollbar::-webkit-scrollbar,
+.cd-light-scrollbar *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.cd-light-scrollbar::-webkit-scrollbar-track,
+.cd-light-scrollbar *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0);
+}
+.cd-light-scrollbar::-webkit-scrollbar-corner,
+.cd-light-scrollbar *::-webkit-scrollbar-corner {
+  background-color: rgba(0, 0, 0, 0);
+}
+.cd-light-scrollbar::-webkit-scrollbar-thumb,
+.cd-light-scrollbar *::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: transparent;
+  transition: all 1s;
+}
+.cd-light-scrollbar:hover::-webkit-scrollbar-thumb,
+.cd-light-scrollbar *:hover::-webkit-scrollbar-thumb {
+  background: var(--cd-color-fill-2);
+}
+.cd-light-scrollbar::-webkit-scrollbar-thumb:hover,
+.cd-light-scrollbar *::-webkit-scrollbar-thumb:hover {
+  background: var(--cd-color-fill-1);
+}
 `;
 writeFileSync(resolve(dist, 'tokens.css'), css);
 console.log('[tokens] built dist/tokens.css');

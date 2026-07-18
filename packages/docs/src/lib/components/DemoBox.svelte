@@ -142,9 +142,9 @@
   .demo-box__hl-line {
     position: absolute;
     inset-inline: 0;
-    block-size: var(--cd-code-highlight-line-height, 1.5em);
+    block-size: 1.5em;
     inset-block-start: calc(
-      16px + (var(--hl-line) - 1) * var(--cd-code-highlight-line-height, 1.5em)
+      16px + (var(--hl-line) - 1) * 1.5em
     );
     background: var(--cd-color-primary-light-default, rgba(0, 100, 250, 0.08));
   }
