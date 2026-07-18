@@ -1,72 +1,47 @@
 /**
- * Component tokens for MarkdownRender (Show / rich-media).
- * 排版复用既有 Typography 语义（font-size / line-height / font-weight scale），
- * 颜色走 text/link/border/fill alias，间距走 spacing alias。**禁写死颜色/尺寸**。
- * 值为 var() 引用 global/alias token，或字面量（仅无对应 alias 的排版基元）。
+ * Component tokens for MarkdownRender — 严格镜像 Semi semi-foundation/markdownRender/variables.scss（20 条）。
+ *
+ * Semi 的 markdownRender 排版（标题字号/行高/颜色、段落、链接）全部由 Typography 组件承担，
+ * variables.scss 只定义：图片容器 margin/maxSize/alt、header1-5 的 marginTop/Bottom、
+ * 行内 simpleCode 的 bg/text、列表 color、图片 alt color。故本库只保留这 20 个，移除此前
+ * 自造的 h1-h6 size/line-height、link、code(bg/radius/padding)、pre、quote、table、hr、img-radius、
+ * block-gap、text-color/font-size/line-height 等 Semi 没有的中间层（无向后兼容）。
+ *
+ * 命名/值/DOM 对齐 Semi：`$spacing-markdownRender_component_image-marginTop:16px` →
+ * `--cd-markdown-render-image-margin-top:16px`；`var(--semi-color-*)` → `var(--cd-color-*)`。
+ * Semi 无 header6 margin token（scss 只到 h5）；无 calc/rgba 公式，全静态字面量或 var 引用。
  *
  * 消费方：packages/svelte/src/markdown-render/MarkdownRender.svelte。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const markdownRenderTokens = {
-  // —— 正文 ——
-  'markdown-render-text-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '正文颜色', usage: '正文文本颜色' },
-  'markdown-render-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '正文字号', usage: '正文字号' },
-  'markdown-render-line-height': { value: '1.6', category: 'other', label: '正文行高', usage: '正文行高（无 px 绑定，用倍数保证换行舒适）' },
-  'markdown-render-block-gap': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '块间距', usage: '段落 / 列表 / 表格等块级元素纵向间距' },
+  // —— 图片容器（对齐 $spacing/$width-markdownRender_component_image-*） ——
+  'markdown-render-image-margin-left': { value: '16px', category: 'spacing', label: '图片左外边距', usage: 'markdownRender 图片容器左外边距' },
+  'markdown-render-image-margin-right': { value: '16px', category: 'spacing', label: '图片右外边距', usage: 'markdownRender 图片容器右外边距' },
+  'markdown-render-image-margin-top': { value: '16px', category: 'spacing', label: '图片上外边距', usage: 'markdownRender 图片容器上外边距' },
+  'markdown-render-image-margin-bottom': { value: '16px', category: 'spacing', label: '图片下外边距', usage: 'markdownRender 图片容器下外边距' },
+  'markdown-render-image-max-width': { value: '50%', category: 'width', label: '图片最大宽度', usage: 'markdownRender 图片容器最大宽度' },
+  'markdown-render-image-max-height': { value: '500px', category: 'height', label: '图片最大高度', usage: 'markdownRender 图片容器最大高度' },
+  'markdown-render-image-alt-margin-top': { value: '8px', category: 'spacing', label: '图片 alt 上间距', usage: '图片 alt 说明文字上外边距' },
+  'markdown-render-image-alt-color': { value: 'var(--cd-color-tertiary)', category: 'color', label: '图片 alt 颜色', usage: '图片 alt 说明文字颜色' },
 
-  // —— 标题（复用 Typography header scale） ——
-  'markdown-render-heading-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '各级标题颜色' },
-  'markdown-render-heading-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '各级标题字重' },
-  'markdown-render-heading-margin-top': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: '标题上间距', usage: '标题与上文的间距' },
-  'markdown-render-heading-margin-bottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '标题下间距', usage: '标题与下文的间距' },
-  'markdown-render-h1-size': { value: 'var(--cd-font-size-header-1)', category: 'font', label: 'h1 字号', usage: 'h1 字号（复用 header-1）' },
-  'markdown-render-h1-line-height': { value: 'var(--cd-line-height-header-1)', category: 'font', label: 'h1 行高', usage: 'h1 行高（复用 header-1）' },
-  'markdown-render-h2-size': { value: 'var(--cd-font-size-header-2)', category: 'font', label: 'h2 字号', usage: 'h2 字号（复用 header-2）' },
-  'markdown-render-h2-line-height': { value: 'var(--cd-line-height-header-2)', category: 'font', label: 'h2 行高', usage: 'h2 行高（复用 header-2）' },
-  'markdown-render-h3-size': { value: 'var(--cd-font-size-header-3)', category: 'font', label: 'h3 字号', usage: 'h3 字号（复用 header-3）' },
-  'markdown-render-h3-line-height': { value: 'var(--cd-line-height-header-3)', category: 'font', label: 'h3 行高', usage: 'h3 行高（复用 header-3）' },
-  'markdown-render-h4-size': { value: 'var(--cd-font-size-header-4)', category: 'font', label: 'h4 字号', usage: 'h4 字号（复用 header-4）' },
-  'markdown-render-h4-line-height': { value: 'var(--cd-line-height-header-4)', category: 'font', label: 'h4 行高', usage: 'h4 行高（复用 header-4）' },
-  'markdown-render-h5-size': { value: 'var(--cd-font-size-header-5)', category: 'font', label: 'h5 字号', usage: 'h5 字号（复用 header-5）' },
-  'markdown-render-h5-line-height': { value: 'var(--cd-line-height-header-5)', category: 'font', label: 'h5 行高', usage: 'h5 行高（复用 header-5）' },
-  'markdown-render-h6-size': { value: 'var(--cd-font-size-header-6)', category: 'font', label: 'h6 字号', usage: 'h6 字号（复用 header-6）' },
-  'markdown-render-h6-line-height': { value: 'var(--cd-line-height-header-6)', category: 'font', label: 'h6 行高', usage: 'h6 行高（复用 header-6）' },
+  // —— 标题 margin（对齐 $spacing-markdownRender_component_header1-5-margin*；Semi 无 header6） ——
+  'markdown-render-header1-margin-top': { value: '16px', category: 'spacing', label: 'h1 上外边距', usage: 'h1 标题上外边距' },
+  'markdown-render-header1-margin-bottom': { value: '16px', category: 'spacing', label: 'h1 下外边距', usage: 'h1 标题下外边距' },
+  'markdown-render-header2-margin-top': { value: '16px', category: 'spacing', label: 'h2 上外边距', usage: 'h2 标题上外边距' },
+  'markdown-render-header2-margin-bottom': { value: '16px', category: 'spacing', label: 'h2 下外边距', usage: 'h2 标题下外边距' },
+  'markdown-render-header3-margin-top': { value: '16px', category: 'spacing', label: 'h3 上外边距', usage: 'h3 标题上外边距' },
+  'markdown-render-header3-margin-bottom': { value: '16px', category: 'spacing', label: 'h3 下外边距', usage: 'h3 标题下外边距' },
+  'markdown-render-header4-margin-top': { value: '16px', category: 'spacing', label: 'h4 上外边距', usage: 'h4 标题上外边距' },
+  'markdown-render-header4-margin-bottom': { value: '16px', category: 'spacing', label: 'h4 下外边距', usage: 'h4 标题下外边距' },
+  'markdown-render-header5-margin-top': { value: '16px', category: 'spacing', label: 'h5 上外边距', usage: 'h5 标题上外边距' },
+  'markdown-render-header5-margin-bottom': { value: '16px', category: 'spacing', label: 'h5 下外边距', usage: 'h5 标题下外边距' },
 
-  // —— 链接 ——
-  'markdown-render-link-color': { value: 'var(--cd-color-link)', category: 'color', label: '链接颜色', usage: '链接文本颜色' },
-  'markdown-render-link-hover-color': { value: 'var(--cd-color-link-hover)', category: 'color', label: '链接悬浮色', usage: '链接悬浮态颜色' },
+  // —— 行内 simpleCode（对齐 $color-markdownRender_simpleCode-*） ——
+  'markdown-render-simple-code-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '行内 code 背景', usage: '无语言行内 code 背景色' },
+  'markdown-render-simple-code-text': { value: 'var(--cd-color-text-1)', category: 'color', label: '行内 code 文本', usage: '无语言行内 code 文本色' },
 
-  // —— 行内 code ——
-  'markdown-render-code-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '行内 code 颜色', usage: '行内 code 文本颜色' },
-  'markdown-render-code-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '行内 code 背景', usage: '行内 code 背景色' },
-  'markdown-render-code-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '行内 code 圆角', usage: '行内 code 圆角' },
-  'markdown-render-code-padding-x': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '行内 code 水平内边距', usage: '行内 code 水平内边距' },
-  'markdown-render-code-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '行内 code 字号', usage: '行内 code 字号' },
-
-  // —— 代码块（CodeHighlight 降级态 <pre>） ——
-  'markdown-render-pre-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '代码块背景', usage: '代码块（pre 降级态）背景' },
-  'markdown-render-pre-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '代码块圆角', usage: '代码块圆角' },
-  'markdown-render-pre-padding': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '代码块内边距', usage: '代码块内边距' },
-
-  // —— 引用 blockquote ——
-  'markdown-render-quote-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '引用文本色', usage: 'blockquote 文本颜色' },
-  'markdown-render-quote-border-color': { value: 'var(--cd-color-border)', category: 'color', label: '引用左边框色', usage: 'blockquote 左侧强调边框颜色' },
-  'markdown-render-quote-border-width': { value: '3px', category: 'width', label: '引用左边框宽度', usage: 'blockquote 左侧强调边框宽度' },
-  'markdown-render-quote-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '引用水平内边距', usage: 'blockquote 左内边距' },
-
-  // —— 表格 ——
-  'markdown-render-table-border-color': { value: 'var(--cd-color-border)', category: 'color', label: '表格边框色', usage: '表格单元格 / 边框颜色' },
-  'markdown-render-table-cell-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '单元格水平内边距', usage: '表格单元格水平内边距' },
-  'markdown-render-table-cell-padding-y': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '单元格垂直内边距', usage: '表格单元格垂直内边距' },
-  'markdown-render-table-head-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '表头背景', usage: '表格表头背景色' },
-
-  // —— 列表 ——
-  'markdown-render-list-padding-inline': { value: 'var(--cd-spacing-loose)', category: 'spacing', label: '列表缩进', usage: 'ul / ol 起始缩进' },
-
-  // —— 分隔线 hr ——
-  'markdown-render-hr-color': { value: 'var(--cd-color-border)', category: 'color', label: '分隔线颜色', usage: 'hr 分隔线颜色' },
-
-  // —— 图片 ——
-  'markdown-render-img-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '图片圆角', usage: 'img 圆角' },
+  // —— 列表颜色（对齐 $color-markdownRender_component_list） ——
+  'markdown-render-list-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '列表颜色', usage: 'ul / li 文本颜色' },
 } satisfies TokenGroup;

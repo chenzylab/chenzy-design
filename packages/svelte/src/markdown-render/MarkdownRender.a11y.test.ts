@@ -43,18 +43,22 @@ describe('MarkdownRender render', () => {
     expect(root.querySelector('h1')?.textContent).toContain('Title');
     expect(root.querySelector('strong')?.textContent).toBe('world');
 
+    // 链接：a→MdLink→Typography.Text link，外链自动补 rel/target。
     const link = root.querySelector('a');
     expect(link?.getAttribute('href')).toBe('https://example.com');
-    // 外链自动补 rel/target（Anchor 覆盖）
     expect(link?.getAttribute('rel')).toContain('noopener');
     expect(link?.getAttribute('target')).toBe('_blank');
 
-    expect(root.querySelectorAll('li').length).toBe(2);
-    expect(root.querySelector('table')).toBeTruthy();
-    expect(root.querySelector('thead')).toBeTruthy();
-    // 代码块降级为 <pre><code>（CodeHighlight 未合并）
-    await waitFor(() => !!root.querySelector('pre code'));
-    expect(root.querySelector('pre code')?.textContent).toContain('const x = 1;');
+    // 列表：markdown 无序列表直接在根下（对齐 Semi ul,li）；用直接子 ul 限定，避免统计 Table 内部 li。
+    const topUl = root.querySelector(':scope > ul');
+    expect(topUl?.querySelectorAll('li').length).toBe(2);
+
+    // 表格：table→MdTable→本库 Table 组件（对齐 Semi table→Table），渲染为 .cd-table（非原生 <table>）。
+    expect(root.querySelector('.cd-table')).toBeTruthy();
+
+    // 代码块：围栏块→MdPre→CodeHighlight（对齐 Semi 代码块走 CodeHighlight），渲染为 .cd-code-highlight。
+    await waitFor(() => !!root.querySelector('.cd-code-highlight'));
+    expect(root.querySelector('.cd-code-highlight')?.textContent).toContain('const x = 1;');
 
     await expectNoAxeViolations(container);
   });
