@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let dtRange = $state<[Date | null, Date | null] | null>(null);
   let noSecRange = $state<[Date | null, Date | null] | null>(null);
@@ -20,18 +20,18 @@
 <Space vertical align="start">
   <Space>
     <span style="width:320px; display:inline-block">
-      <RangePicker type="dateTimeRange" value={dtRange} onChange={(r) => (dtRange = r)} />
+      <DatePicker type="dateTimeRange" value={dtRange} onChange={(r) => (dtRange = r as [Date | null, Date | null] | null)} />
     </span>
     <Text type="tertiary">带时间范围（选完点「确定」提交）：{fmt(dtRange)}</Text>
   </Space>
   <Space>
     <span style="width:320px; display:inline-block">
-      <RangePicker
+      <DatePicker
         type="dateTimeRange"
         showSecond={false}
         {disabledTime}
         value={noSecRange}
-        onChange={(r) => (noSecRange = r)}
+        onChange={(r) => (noSecRange = r as [Date | null, Date | null] | null)}
       />
     </span>
     <Text type="tertiary">隐藏秒列 + disabledTime 禁用凌晨：{fmt(noSecRange)}</Text>

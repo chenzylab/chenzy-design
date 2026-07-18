@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let dates = $state<Date | Date[] | null>(null);
+  let dates = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
   const count = $derived(Array.isArray(dates) ? dates.length : 0);
 </script>
 

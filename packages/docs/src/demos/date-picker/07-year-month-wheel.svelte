@@ -2,8 +2,8 @@
   import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   // 点头部年月标题即展开年 + 月滚轮，快速跳转到很远的年份。
-  let dateVal = $state<Date | Date[] | null>(null);
-  let cyclicVal = $state<Date | Date[] | null>(null);
+  let dateVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
+  let cyclicVal = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
 </script>
 
 <Space vertical align="start">

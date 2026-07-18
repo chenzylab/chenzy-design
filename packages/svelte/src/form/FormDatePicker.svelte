@@ -72,7 +72,7 @@
       {...(size !== undefined ? { size } : {})}
       {...(format !== undefined ? { format } : {})}
       {...(disabledDate !== undefined ? { disabledDate } : {})}
-      status={status === 'error' ? 'error' : 'default'}
+      validateStatus={status === 'error' ? 'error' : 'default'}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

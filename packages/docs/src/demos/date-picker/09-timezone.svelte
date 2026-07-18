@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let val = $state<Date | Date[] | null>(new Date('2024-06-01T12:00:00Z'));
+  let val = $state<Date | Date[] | [Date | null, Date | null] | null>(new Date('2024-06-01T12:00:00Z'));
 </script>
 
 <Space vertical align="start">

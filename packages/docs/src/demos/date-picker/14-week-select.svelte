@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RangePicker, Space, Text } from '@chenzy-design/svelte';
+  import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
   let val = $state<[Date | null, Date | null] | null>(null);
 
@@ -20,11 +20,12 @@
 <Space vertical align="start">
   <!-- startDateOffset/endDateOffset：单击一个日期即选中整周 -->
   <span style="width:280px;display:inline-block">
-    <RangePicker
+    <DatePicker
+      type="dateRange"
       value={val}
       startDateOffset={startOfWeek}
       endDateOffset={endOfWeek}
-      onChange={(r) => (val = r)}
+      onChange={(r) => (val = r as [Date | null, Date | null] | null)}
     />
   </span>
   <Text type="tertiary">

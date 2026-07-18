@@ -1,7 +1,7 @@
 <script lang="ts">
   import { DatePicker, Space, Text } from '@chenzy-design/svelte';
 
-  let val = $state<Date | Date[] | null>(null);
+  let val = $state<Date | Date[] | [Date | null, Date | null] | null>(null);
   let confirmed = $state('');
 </script>
 
