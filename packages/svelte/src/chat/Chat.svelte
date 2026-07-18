@@ -36,8 +36,10 @@
     type SendHotKey,
     type EnableUploadProps,
   } from '@chenzy-design/core';
+  import { IconChevronDown, IconDisc } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import type { UploadFileItem } from '../upload/types.js';
+  import Button from '../button/Button.svelte';
   import ChatBox from './ChatBox.svelte';
   import InputBox from './InputBox.svelte';
   import Hint from './Hint.svelte';
@@ -312,159 +314,162 @@
   }
 </script>
 
+<!-- DOM 对齐 Semi：.cd-chat > .cd-chat-inner > .cd-chat-content > .cd-chat-container；
+     -action 容器承载 backBottom/stop（Button + 具名图标）。 -->
 <div class="cd-chat {className}" {style}>
-  {#if topSlot}
-    <div class="cd-chat-topSlot">{@render topSlot()}</div>
-  {/if}
+  <div class="cd-chat-inner">
+    {#if topSlot}
+      <div class="cd-chat-topSlot">{@render topSlot()}</div>
+    {/if}
 
-  <div
-    bind:this={containerEl}
-    class="cd-chat-container"
-    role="log"
-    aria-live="polite"
-    aria-label={loc().t('Chat.messageList')}
-    onscroll={handleScroll}
-  >
-    {#each currentChats as message, i (message.id ?? i)}
-      <ChatBox
-        {message}
-        role={roleOf(message)}
-        {align}
-        {mode}
-        lastChat={i === currentChats.length - 1}
-        {markdownRenderProps}
-        onMessageCopy={(m) => onMessageCopy?.(m)}
-        onMessageDelete={doDelete}
-        onMessageReset={doReset}
-        onMessageGoodFeedback={doLike}
-        onMessageBadFeedback={doDislike}
-        {renderChatBoxAvatar}
-        {renderChatBoxTitle}
-        {renderChatBoxContent}
-        {renderChatBoxAction}
-        {renderFullChatBox}
-        {renderDivider}
-      />
-    {/each}
-  </div>
+    <div class="cd-chat-content">
+      <div
+        bind:this={containerEl}
+        class="cd-chat-container"
+        role="log"
+        aria-live="polite"
+        aria-label={loc().t('Chat.messageList')}
+        onscroll={handleScroll}
+      >
+        {#each currentChats as message, i (message.id ?? i)}
+          <ChatBox
+            {message}
+            role={roleOf(message)}
+            {align}
+            {mode}
+            lastChat={i === currentChats.length - 1}
+            {markdownRenderProps}
+            onMessageCopy={(m) => onMessageCopy?.(m)}
+            onMessageDelete={doDelete}
+            onMessageReset={doReset}
+            onMessageGoodFeedback={doLike}
+            onMessageBadFeedback={doDislike}
+            {renderChatBoxAvatar}
+            {renderChatBoxTitle}
+            {renderChatBoxContent}
+            {renderChatBoxAction}
+            {renderFullChatBox}
+            {renderDivider}
+          />
+        {/each}
+      </div>
 
-  {#if backBottomVisible}
-    <button
-      type="button"
-      class="cd-chat-backBottom"
-      onclick={() => scrollToBottom(true)}
-      title={loc().t('Chat.backToBottom')}
-      aria-label={loc().t('Chat.backToBottom')}
-    >
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-        <path
-          d="m6 9 6 6 6-6"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  {/if}
-
-  {#if bottomSlot}
-    <div class="cd-chat-bottomSlot">{@render bottomSlot()}</div>
-  {/if}
-
-  {#if hints && hints.length > 0}
-    <Hint {hints} onHintClick={doHintClick} {renderHintBox} />
-  {/if}
-
-  {#if showStopGenerate}
-    <div class="cd-chat-stopBar">
-      <button type="button" class="cd-chat-stop" onclick={() => onStopGenerator?.()}>
-        {loc().t('Chat.stop')}
-      </button>
+      <!-- 回到底部 / 停止生成悬浮按钮（对齐 Semi -action，Button + 具名图标） -->
+      <div class="cd-chat-action">
+        {#if backBottomVisible && !showStopGenerate}
+          <Button
+            class="cd-chat-action-content cd-chat-action-backBottom"
+            theme="light"
+            type="tertiary"
+            onclick={() => scrollToBottom(true)}
+            ariaLabel={loc().t('Chat.backToBottom')}
+            title={loc().t('Chat.backToBottom')}
+            icon={backBottomIcon}
+          />
+        {/if}
+        {#if showStopGenerate}
+          <Button
+            class="cd-chat-action-content cd-chat-action-stop"
+            theme="light"
+            type="tertiary"
+            onclick={() => onStopGenerator?.()}
+            icon={stopIcon}
+          >
+            {loc().t('Chat.stop')}
+          </Button>
+        {/if}
+      </div>
     </div>
-  {/if}
 
-  <InputBox
-    {sendHotKey}
-    {placeholder}
-    {showClearContext}
-    {canSend}
-    clickUpload={uploadModes.clickUpload}
-    pasteUpload={uploadModes.pasteUpload}
-    dragUpload={uploadModes.dragUpload}
-    {uploadProps}
-    onSend={doSend}
-    onClearContext={doClearContext}
-    onInputChange={(p) => onInputChange?.(p)}
-    {renderInputArea}
-  />
+    {#if bottomSlot}
+      <div class="cd-chat-bottomSlot">{@render bottomSlot()}</div>
+    {/if}
+
+    {#if hints && hints.length > 0}
+      <Hint {hints} onHintClick={doHintClick} {renderHintBox} />
+    {/if}
+
+    <InputBox
+      {sendHotKey}
+      {placeholder}
+      {showClearContext}
+      {canSend}
+      clickUpload={uploadModes.clickUpload}
+      pasteUpload={uploadModes.pasteUpload}
+      dragUpload={uploadModes.dragUpload}
+      {uploadProps}
+      onSend={doSend}
+      onClearContext={doClearContext}
+      onInputChange={(p) => onInputChange?.(p)}
+      {renderInputArea}
+    />
+  </div>
 </div>
 
+{#snippet backBottomIcon()}<IconChevronDown />{/snippet}
+{#snippet stopIcon()}<IconDisc />{/snippet}
+
 <style>
+  /* —— 根（对齐 Semi .semi-chat：paddingY + max-width + flex column） —— */
   .cd-chat {
+    padding-top: var(--cd-chat-paddingY);
+    padding-bottom: var(--cd-chat-paddingY);
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 0;
+    max-width: var(--cd-chat-max-width);
     position: relative;
-    background: var(--cd-chat-bg);
+    overflow: hidden;
+  }
+
+  .cd-chat-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* —— 内容滚动区（对齐 Semi -content > -container） —— */
+  .cd-chat-content {
+    overflow: hidden;
+    flex: 1 1;
+    position: relative;
   }
 
   .cd-chat-container {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--cd-chat-gap);
-    padding: var(--cd-spacing-base);
+    padding-left: var(--cd-chat-container-paddingX);
+    padding-right: var(--cd-chat-container-paddingX);
+    height: 100%;
+    overflow: auto;
   }
 
-  .cd-chat-backBottom {
+  /* —— 回到底部 / 停止生成（对齐 Semi -action，绝对定位居中底部） —— */
+  .cd-chat-action {
+    position: relative;
+    z-index: var(--cd-chat-action-z);
+  }
+  .cd-chat-action :global(.cd-chat-action-content) {
     position: absolute;
-    right: var(--cd-spacing-loose);
-    bottom: 120px;
-    z-index: 1;
-    appearance: none;
-    border: none;
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--cd-border-radius-full);
-    background: var(--cd-chat-back-bottom-bg);
-    color: var(--cd-chat-back-bottom-color);
-    box-shadow: var(--cd-chat-back-bottom-shadow);
-    transition: opacity var(--cd-chat-motion-duration) ease;
-  }
-
-  .cd-chat-backBottom:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
-    outline-offset: 2px;
-  }
-
-  .cd-chat-stopBar {
+    bottom: var(--cd-chat-action-content-bottom);
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     justify-content: center;
-    padding: var(--cd-spacing-extra-tight) 0;
+    align-items: center;
+    background: var(--cd-chat-action-content-bg);
+    border: var(--cd-chat-action-content-border-width) solid var(--cd-chat-action-content-border);
   }
-
-  .cd-chat-stop {
-    appearance: none;
-    cursor: pointer;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    background: var(--cd-color-bg-2);
-    color: var(--cd-color-text-1);
-    font: inherit;
+  .cd-chat-action :global(.cd-chat-action-content:hover) {
+    background: var(--cd-chat-action-content-bg-hover);
   }
-
-  .cd-chat-stop:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
-    outline-offset: 2px;
+  .cd-chat-action :global(.cd-chat-action-backBottom) {
+    width: var(--cd-chat-backBottom-wrapper-width);
+    height: var(--cd-chat-backBottom-wrapper-width);
+    border-radius: 50%;
+  }
+  .cd-chat-action :global(.cd-chat-action-stop) {
+    user-select: none;
+    height: var(--cd-chat-action-stop-height);
+    border-radius: calc(var(--cd-chat-action-stop-height) / 2);
   }
 
   .cd-chat-topSlot,
