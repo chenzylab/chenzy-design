@@ -9,13 +9,14 @@
 -->
 <script lang="ts">
   import { tick, untrack, getContext, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, daysBetween, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
+  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, daysBetween, buildHourOptions, buildMinuteOptions, buildSecondOptions, applyHideDisabled, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
   import ScrollItem from '../scroll-list/ScrollItem.svelte';
+  import Button from '../button/Button.svelte';
   import { IconClear, IconCalendar, IconCalendarClock, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
 
   type Size = 'small' | 'default' | 'large';
@@ -972,10 +973,6 @@
   const selectedMinute = $derived(currentSingle ? currentSingle.getMinutes() : 0);
   const selectedSecond = $derived(currentSingle ? currentSingle.getSeconds() : 0);
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = Array.from({ length: 60 }, (_, i) => i);
-  const seconds = Array.from({ length: 60 }, (_, i) => i);
-
   function pad2(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
   }
@@ -1267,6 +1264,109 @@
   function pickRangeMinute(m: number) { if (!rangeDisabledMinuteSet.has(m)) commitRangeTime(rangeActiveHour, m, rangeActiveSecond); }
   function pickRangeSecond(s: number) { if (!rangeDisabledSecondSet.has(s)) commitRangeTime(rangeActiveHour, rangeActiveMinute, s); }
 
+  // ============================================================================
+  // 时间列数据构造（ScrollItemData）：复用 core time.ts 的 buildXxxOptions + applyHideDisabled，
+  // 走 ScrollList+ScrollItem（对齐 Semi Combobox）。DatePicker 时间列仅 24h，无 ampm 列。
+  // 选中态单位后缀 transform（对齐 Semi `value + locale.hour`）。
+  // ============================================================================
+  function makeTimeList(
+    opts: import('@chenzy-design/core').TimeOption[],
+    suffix: string,
+  ): ScrollItemData[] {
+    return opts.map((o) => ({
+      value: o.value,
+      text: pad2(o.value),
+      disabled: o.disabled,
+      transform: (_v: unknown, t: string) => t + suffix,
+    }));
+  }
+  // 单选（date/dateTime）三列。
+  const hourListSingle = $derived(
+    makeTimeList(
+      applyHideDisabled(
+        buildHourOptions(1, false, 'am', disabledTimeCfg?.disabledHours),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.hour'),
+    ),
+  );
+  const minuteListSingle = $derived(
+    makeTimeList(
+      applyHideDisabled(
+        buildMinuteOptions(1, selectedHour, disabledTimeCfg?.disabledMinutes),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.minute'),
+    ),
+  );
+  const secondListSingle = $derived(
+    makeTimeList(
+      applyHideDisabled(
+        buildSecondOptions(1, selectedHour, selectedMinute, disabledTimeCfg?.disabledSeconds),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.second'),
+    ),
+  );
+  // 列表中值 v 对应的 selectedIndex（-1 时回退 0，避免 ScrollItem 越界）。
+  function timeIndexOf(list: ScrollItemData[], v: number): number {
+    const i = list.findIndex((it) => it.value === v);
+    return i < 0 ? 0 : i;
+  }
+  // 单选列 onSelect：按列写入。
+  function onSelectHourSingle(p: ScrollItemSelectPayload) { pickHour(p.value as number); }
+  function onSelectMinuteSingle(p: ScrollItemSelectPayload) { pickMinute(p.value as number); }
+  function onSelectSecondSingle(p: ScrollItemSelectPayload) { pickSecond(p.value as number); }
+
+  // range（dateTimeRange）：起止两组，作用于该端（先切 activeEnd 再写）。
+  function rangeEndDate(end: 'start' | 'end'): Date | null {
+    return end === 'start' ? pendingRange[0] : pendingRange[1];
+  }
+  // 某端的 disabledTime 配置（联动该端已选时分）。
+  function rangeDisabledCfg(end: 'start' | 'end') {
+    const d = rangeEndDate(end);
+    return isDateTime && disabledTime ? disabledTime(d ?? today) : undefined;
+  }
+  function rangeHourList(end: 'start' | 'end'): ScrollItemData[] {
+    return makeTimeList(
+      applyHideDisabled(
+        buildHourOptions(1, false, 'am', rangeDisabledCfg(end)?.disabledHours),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.hour'),
+    );
+  }
+  function rangeMinuteList(end: 'start' | 'end'): ScrollItemData[] {
+    const d = rangeEndDate(end);
+    return makeTimeList(
+      applyHideDisabled(
+        buildMinuteOptions(1, d ? d.getHours() : 0, rangeDisabledCfg(end)?.disabledMinutes),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.minute'),
+    );
+  }
+  function rangeSecondList(end: 'start' | 'end'): ScrollItemData[] {
+    const d = rangeEndDate(end);
+    return makeTimeList(
+      applyHideDisabled(
+        buildSecondOptions(1, d ? d.getHours() : 0, d ? d.getMinutes() : 0, rangeDisabledCfg(end)?.disabledSeconds),
+        hideDisabledOptions,
+      ),
+      loc().t('TimePicker.second'),
+    );
+  }
+  // range 列 onSelect：先切 activeEnd 再写该端。
+  function onSelectRangeHour(end: 'start' | 'end') {
+    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeHour(p.value as number); };
+  }
+  function onSelectRangeMinute(end: 'start' | 'end') {
+    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeMinute(p.value as number); };
+  }
+  function onSelectRangeSecond(end: 'start' | 'end') {
+    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeSecond(p.value as number); };
+  }
+
   // --- presets：点击快捷项直接选中 (惰性 value 即时求值)。range/单选分派。 ---
   function selectPreset(preset: Preset, e?: MouseEvent) {
     // 对齐 Semi onPresetClick(item, e)。
@@ -1330,26 +1430,8 @@
     setOpen(false);
   }
 
-  // 时间列容器引用 (红线 #3: 普通 bind:this，scrollIntoView 命令式调用)
-  let hourCol = $state<HTMLUListElement | null>(null);
-  let minuteCol = $state<HTMLUListElement | null>(null);
-  let secondCol = $state<HTMLUListElement | null>(null);
-
-  function scrollColToSelected(col: HTMLUListElement | null) {
-    if (!col) return;
-    const target = col.querySelector<HTMLElement>('[aria-selected="true"]');
-    target?.scrollIntoView({ block: 'center' });
-  }
-
-  // 打开时把时间列各自滚到选中项 (命令式，不放响应式 attachment)
-  $effect(() => {
-    if (!isOpen || !isDateTime) return;
-    void tick().then(() => {
-      scrollColToSelected(hourCol);
-      scrollColToSelected(minuteCol);
-      if (showSecond) scrollColToSelected(secondCol);
-    });
-  });
+  // 时间列滚动定位由 ScrollItem 自行按 selectedIndex 处理（复用 ScrollList，对齐 Semi Combobox），
+  // 无需组件层命令式 scrollIntoView。
 
   function clear(e: MouseEvent) {
     e.stopPropagation();
@@ -1786,13 +1868,15 @@
             aria-label={loc().t('DatePicker.triggerLabel')}
           >
             {#each presets as preset, i (i)}
-              <button
-                type="button"
+              <!-- preset：small primary Button（对齐 Semi quickControl.tsx:86）。 -->
+              <Button
+                size="small"
+                type="primary"
                 class="cd-date-picker__preset"
-                onclick={() => selectPreset(preset)}
+                onclick={(e) => selectPreset(preset, e)}
               >
                 {preset.label}
-              </button>
+              </Button>
             {/each}
           </div>
         {/if}
@@ -1915,44 +1999,49 @@
                 {/each}
 
                 {#if isDateTime && !disabledTimePicker}
-                  <!-- range 起止两组时间列（对齐 RangePicker，作用于 activeEnd） -->
+                  <!-- range 起止两组时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox），作用于 activeEnd。 -->
                   <div class="cd-date-picker__times">
-                    {#each ['start', 'end'] as end (end)}
+                    {#each ['start', 'end'] as const as end (end)}
                       {@const isActive = activeEnd === end}
                       {@const endDate = end === 'start' ? pendingRange[0] : pendingRange[1]}
                       {@const hh = endDate ? endDate.getHours() : 0}
                       {@const mm = endDate ? endDate.getMinutes() : 0}
                       {@const ss = endDate ? endDate.getSeconds() : 0}
+                      {@const hL = rangeHourList(end)}
+                      {@const mL = rangeMinuteList(end)}
+                      {@const sL = rangeSecondList(end)}
                       <div class="cd-date-picker__time" class:cd-date-picker__time--active={isActive} role="group" aria-label={end === 'start' ? loc().t('DatePicker.startPlaceholder') : loc().t('DatePicker.endPlaceholder')}>
-                        <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')}>
-                          {#each hours as h (h)}
-                            {@const isDis = isActive && rangeDisabledHourSet.has(h)}
-                            {@const isSel = isActive && h === hh && endDate !== null}
-                            {#if !(hideDisabledOptions && isDis)}
-                              <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeHour(h); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeHour(h); } }}>{pad2(h)}</li>
-                            {/if}
-                          {/each}
-                        </ul>
-                        <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')}>
-                          {#each minutes as m (m)}
-                            {@const isDis = isActive && rangeDisabledMinuteSet.has(m)}
-                            {@const isSel = isActive && m === mm && endDate !== null}
-                            {#if !(hideDisabledOptions && isDis)}
-                              <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeMinute(m); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeMinute(m); } }}>{pad2(m)}</li>
-                            {/if}
-                          {/each}
-                        </ul>
-                        {#if showSecond}
-                          <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')}>
-                            {#each seconds as s (s)}
-                              {@const isDis = isActive && rangeDisabledSecondSet.has(s)}
-                              {@const isSel = isActive && s === ss && endDate !== null}
-                              {#if !(hideDisabledOptions && isDis)}
-                                <li class="cd-date-picker__time-item" class:cd-date-picker__time-item--selected={isSel} class:cd-date-picker__time-item--disabled={isDis} role="option" aria-selected={isSel} aria-disabled={isDis || undefined} tabindex="-1" onclick={() => { activeEnd = end as 'start' | 'end'; pickRangeSecond(s); }} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activeEnd = end as 'start' | 'end'; pickRangeSecond(s); } }}>{pad2(s)}</li>
-                              {/if}
-                            {/each}
-                          </ul>
-                        {/if}
+                        <ScrollList>
+                          <ScrollItem
+                            mode="normal"
+                            class="cd-date-picker__panel-list-hour"
+                            list={hL}
+                            selectedIndex={timeIndexOf(hL, hh)}
+                            type="hour"
+                            onSelect={onSelectRangeHour(end)}
+                            ariaLabel={loc().t('TimePicker.hour')}
+                          />
+                          <ScrollItem
+                            mode="normal"
+                            class="cd-date-picker__panel-list-minute"
+                            list={mL}
+                            selectedIndex={timeIndexOf(mL, mm)}
+                            type="minute"
+                            onSelect={onSelectRangeMinute(end)}
+                            ariaLabel={loc().t('TimePicker.minute')}
+                          />
+                          {#if showSecond}
+                            <ScrollItem
+                              mode="normal"
+                              class="cd-date-picker__panel-list-second"
+                              list={sL}
+                              selectedIndex={timeIndexOf(sL, ss)}
+                              type="second"
+                              onSelect={onSelectRangeSecond(end)}
+                              ariaLabel={loc().t('TimePicker.second')}
+                            />
+                          {/if}
+                        </ScrollList>
                       </div>
                     {/each}
                   </div>
@@ -2137,84 +2226,39 @@
             </div>
 
             {#if isDateTime && !disabledTimePicker}
+              <!-- 单选时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox），列内 mode=normal 点击选中。 -->
               <div class="cd-date-picker__time">
-                <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.hour')} bind:this={hourCol}>
-                  {#each hours as h (h)}
-                    {@const isHourDisabled = disabledHourSet.has(h)}
-                    {#if !(hideDisabledOptions && isHourDisabled)}
-                      <li
-                        class="cd-date-picker__time-item"
-                        class:cd-date-picker__time-item--selected={h === selectedHour}
-                        class:cd-date-picker__time-item--disabled={isHourDisabled}
-                        role="option"
-                        aria-selected={h === selectedHour}
-                        aria-disabled={isHourDisabled || undefined}
-                        tabindex="-1"
-                        onclick={() => pickHour(h)}
-                        onkeydown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            pickHour(h);
-                          }
-                        }}
-                      >
-                        {pad2(h)}
-                      </li>
-                    {/if}
-                  {/each}
-                </ul>
-                <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.minute')} bind:this={minuteCol}>
-                  {#each minutes as m (m)}
-                    {@const isMinuteDisabled = disabledMinuteSet.has(m)}
-                    {#if !(hideDisabledOptions && isMinuteDisabled)}
-                      <li
-                        class="cd-date-picker__time-item"
-                        class:cd-date-picker__time-item--selected={m === selectedMinute}
-                        class:cd-date-picker__time-item--disabled={isMinuteDisabled}
-                        role="option"
-                        aria-selected={m === selectedMinute}
-                        aria-disabled={isMinuteDisabled || undefined}
-                        tabindex="-1"
-                        onclick={() => pickMinute(m)}
-                        onkeydown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            pickMinute(m);
-                          }
-                        }}
-                      >
-                        {pad2(m)}
-                      </li>
-                    {/if}
-                  {/each}
-                </ul>
-                {#if showSecond}
-                  <ul class="cd-date-picker__time-col" role="listbox" aria-label={loc().t('TimePicker.second')} bind:this={secondCol}>
-                    {#each seconds as s (s)}
-                      {@const isSecondDisabled = disabledSecondSet.has(s)}
-                      {#if !(hideDisabledOptions && isSecondDisabled)}
-                        <li
-                          class="cd-date-picker__time-item"
-                          class:cd-date-picker__time-item--selected={s === selectedSecond}
-                          class:cd-date-picker__time-item--disabled={isSecondDisabled}
-                          role="option"
-                          aria-selected={s === selectedSecond}
-                          aria-disabled={isSecondDisabled || undefined}
-                          tabindex="-1"
-                          onclick={() => pickSecond(s)}
-                          onkeydown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              pickSecond(s);
-                            }
-                          }}
-                        >
-                          {pad2(s)}
-                        </li>
-                      {/if}
-                    {/each}
-                  </ul>
-                {/if}
+                <ScrollList>
+                  <ScrollItem
+                    mode="normal"
+                    class="cd-date-picker__panel-list-hour"
+                    list={hourListSingle}
+                    selectedIndex={timeIndexOf(hourListSingle, selectedHour)}
+                    type="hour"
+                    onSelect={onSelectHourSingle}
+                    ariaLabel={loc().t('TimePicker.hour')}
+                  />
+                  <ScrollItem
+                    mode="normal"
+                    class="cd-date-picker__panel-list-minute"
+                    list={minuteListSingle}
+                    selectedIndex={timeIndexOf(minuteListSingle, selectedMinute)}
+                    type="minute"
+                    onSelect={onSelectMinuteSingle}
+                    ariaLabel={loc().t('TimePicker.minute')}
+                  />
+                  {#if showSecond}
+                    <ScrollItem
+                      mode="normal"
+                      class="cd-date-picker__panel-list-second"
+                      list={secondListSingle}
+                      selectedIndex={timeIndexOf(secondListSingle, selectedSecond)}
+                      type="second"
+                      onSelect={onSelectSecondSingle}
+                      ariaLabel={loc().t('TimePicker.second')}
+                    />
+                  {/if}
+                </ScrollList>
               </div>
             {/if}
             {/if}
@@ -2222,19 +2266,22 @@
 
           <div class="cd-date-picker__footer">
             {#if !isRange}
-              <button type="button" class="cd-date-picker__today" onclick={selectToday}>
+              <!-- today：borderless Button（对齐 Semi footer 复用 Button）。 -->
+              <Button theme="borderless" class="cd-date-picker__today" onclick={selectToday}>
                 {loc().t('DatePicker.today')}
-              </button>
+              </Button>
             {/if}
             {#if isDateTime || effNeedConfirm}
               {#if isRange || effNeedConfirm}
-                <button type="button" class="cd-date-picker__cancel" onclick={cancelConfirm}>
+                <!-- 取消：borderless（对齐 Semi footer.tsx:21）。 -->
+                <Button theme="borderless" class="cd-date-picker__cancel" onclick={cancelConfirm}>
                   {loc().t('DatePicker.cancel') ?? '取消'}
-                </button>
+                </Button>
               {/if}
-              <button type="button" class="cd-date-picker__ok" onclick={confirm}>
+              <!-- 确认：solid（对齐 Semi footer.tsx:24）。 -->
+              <Button theme="solid" class="cd-date-picker__ok" onclick={confirm}>
                 {loc().t('TimePicker.confirm')}
-              </button>
+              </Button>
             {/if}
           </div>
         </div>
@@ -2247,13 +2294,15 @@
             aria-label={loc().t('DatePicker.triggerLabel')}
           >
             {#each presets as preset, i (i)}
-              <button
-                type="button"
+              <!-- preset：small primary Button（对齐 Semi quickControl.tsx:86）。 -->
+              <Button
+                size="small"
+                type="primary"
                 class="cd-date-picker__preset"
-                onclick={() => selectPreset(preset)}
+                onclick={(e) => selectPreset(preset, e)}
               >
                 {preset.label}
-              </button>
+              </Button>
             {/each}
           </div>
         {/if}
@@ -2535,44 +2584,23 @@
     padding-inline-start: var(--cd-spacing-tight);
     border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
   }
-  .cd-date-picker__time-col {
-    inline-size: var(--cd-date-picker-inline-time-col-width);
-    block-size: calc(var(--cd-date-picker-inline-time-item-height) * 7);
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
-    list-style: none;
-    scrollbar-width: thin;
+  /* --- 时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox）：解除等分、设列宽 + 面板高 +
+     重算居中留白（参照 TimePicker CSS 注释）。列都在同一 svelte scope 内（未 portal），故直接用
+     scoped 后代选择器即可，无需 :global 裸类。 --- */
+  .cd-date-picker__time :global(.cd-scrolllist-item) {
+    flex: none;
+    inline-size: var(--cd-width-date-picker-panel-list);
   }
-  .cd-date-picker__time-col + .cd-date-picker__time-col {
-    border-inline-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  .cd-date-picker__time :global(.cd-scrolllist-body) {
+    block-size: var(--cd-height-date-picker-panel-list-body);
   }
-  .cd-date-picker__time-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    block-size: var(--cd-date-picker-inline-time-item-height);
-    color: var(--cd-color-date-picker-date-text-default);
-    cursor: pointer;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+  /* 居中留白按面板高重算：(body - item) * 0.5（对齐 TimePicker，ScrollList 默认按 300px 视窗算，
+     此处面板收窄需覆盖 :before 与 padding-bottom，否则选中项垂直不居中）。 */
+  .cd-date-picker__time :global(.cd-scrolllist-item > ul::before) {
+    block-size: calc((var(--cd-height-date-picker-panel-list-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
-  .cd-date-picker__time-item:hover {
-    background: var(--cd-date-picker-cell-bg-hover);
-  }
-  .cd-date-picker__time-item:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  .cd-date-picker__time-item--selected,
-  .cd-date-picker__time-item--selected:hover {
-    background: var(--cd-date-picker-cell-bg-selected);
-    color: var(--cd-date-picker-cell-color-selected);
-  }
-  .cd-date-picker__time-item--disabled,
-  .cd-date-picker__time-item--disabled:hover {
-    color: var(--cd-color-date-picker-date-disabled-text-default);
-    cursor: not-allowed;
-    background: transparent;
+  .cd-date-picker__time :global(.cd-scrolllist-item > ul) {
+    padding-block-end: calc((var(--cd-height-date-picker-panel-list-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
   .cd-date-picker__ok {
     padding-inline: var(--cd-spacing-tight);
