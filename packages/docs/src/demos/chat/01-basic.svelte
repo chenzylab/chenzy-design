@@ -41,10 +41,23 @@ export default MyComponent;
   let mode = $state<ChatMode>('bubble');
   let align = $state<ChatAlign>('leftRight');
 
+  // 上传 action（对齐 Semi demo uploadProps）。
+  const uploadProps = { action: 'https://api.semi.design/upload' };
+
   let seq = 0;
   function onMessageSend() {
     setTimeout(() => {
       chats.push({ role: 'assistant', id: `mock-${++seq}`, content: '这是一条 mock 回复信息' });
+    }, 200);
+  }
+
+  // 重生成：把最后一条消息 mock 成 reset 内容（对齐 Semi demo onMessageReset）。
+  function onMessageReset() {
+    setTimeout(() => {
+      const last = chats[chats.length - 1];
+      if (last) {
+        chats[chats.length - 1] = { ...last, status: 'complete', content: 'This is a mock reset message.' };
+      }
     }, 200);
   }
 </script>
