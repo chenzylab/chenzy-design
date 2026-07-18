@@ -37,9 +37,12 @@ export const radioTokens = {
   'color-radio-checked-bg-disabled': { value: 'var(--cd-color-primary-disabled)', category: 'color', label: '选中禁用背景色', usage: '选中圆圈禁用态背景颜色' },
   'color-radio-checked-border-disabled': { value: 'var(--cd-color-primary-disabled)', category: 'color', label: '选中禁用描边色', usage: '选中圆圈禁用态描边颜色' },
 
-  // —— buttonRadio（按钮样式单选） ——
+  // —— buttonRadio（按钮样式单选，对齐 Semi addon_buttonRadio-*） ——
   'color-radio-buttonradio-text-default': { value: 'var(--cd-color-text-1)', category: 'color', label: '按钮文本色', usage: '按钮样式单选文本颜色' },
   'color-radio-buttonradio-bg-default': { value: 'var(--cd-color-fill-0)', category: 'color', label: '按钮背景色', usage: '按钮样式单选背景颜色' },
+  'color-radio-buttonradio-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '按钮悬浮背景', usage: '按钮样式单选悬浮背景色' },
+  'color-radio-buttonradio-bg-checked': { value: 'var(--cd-color-bg-3)', category: 'color', label: '按钮选中背景', usage: '按钮样式单选选中项背景色（对齐 Semi bg-3）' },
+  'color-radio-buttonradio-text-checked': { value: 'var(--cd-color-primary)', category: 'color', label: '按钮选中文本', usage: '按钮样式单选选中项文本色（对齐 Semi primary）' },
 
   // —— cardRadioGroup（卡片样式单选） ——
   'color-radio-cardradiogroup-border-active': { value: 'var(--cd-color-primary)', category: 'color', label: '卡片选中描边色', usage: '卡片样式单选选中态描边颜色' },
