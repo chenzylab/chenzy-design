@@ -1,91 +1,43 @@
 <!--
-  FormInput — see specs/components/input/Form.spec.md
-  Convenience wrapper: <Form.Field> + <Input> bound to a field.
+  FormInput — Convenience wrapper: <Form.Field> + <Input> bound to a field.
+  对齐 Semi withField：field-level props（label/labelPosition/noLabel/helpText/rules/...）
+  经 FieldPassthroughProps 透传给 Field，控件专属 props（placeholder/type/...）给 Input。
 -->
 <script lang="ts">
-  import type { Rule, ValidateTrigger } from '@chenzy-design/core';
-  import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
   import Input from '../input/Input.svelte';
+  import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
-  interface Props {
-    field: string;
-    label?: string;
-    rules?: Rule[];
-    /** field-level initial value (spec §4.2 L79). */
-    initValue?: unknown;
-    required?: boolean;
-    /** externally forced validate status — controlled display (spec §4.2 L81). */
-    validateStatus?: 'default' | 'warning' | 'error';
-    extraText?: string;
-    /** column span inside a grid parent / Form.Section (spec §4.2 L86). */
-    span?: number;
-    /** pure value transform at collect/submit time (spec §4.2 L88). */
-    transform?: (value: unknown, values: Record<string, unknown>) => unknown;
+  interface Props extends FieldPassthroughProps {
     placeholder?: string;
     type?: 'text' | 'password';
     showClear?: boolean;
     maxLength?: number;
-    dependencies?: string[];
-    /** field-level override of the form's validateTrigger (spec §4 L84). */
-    trigger?: ValidateTrigger | ValidateTrigger[];
   }
 
-  let {
-    field,
-    label,
-    rules = [],
-    initValue,
-    required = false,
-    validateStatus,
-    extraText,
-    span,
-    transform,
-    placeholder,
-    type = 'text',
-    showClear = false,
-    maxLength,
-    dependencies,
-    trigger,
-  }: Props = $props();
-
-  // Build props with conditional keys so we never pass an explicit `undefined`
-  // to an optional prop (exactOptionalPropertyTypes).
-  const fieldProps = $derived<ComponentProps<typeof Field>>({
-    field,
-    rules,
-    required,
-    ...(label !== undefined ? { label } : {}),
-    ...(initValue !== undefined ? { initValue } : {}),
-    ...(validateStatus !== undefined ? { validateStatus } : {}),
-    ...(extraText !== undefined ? { extraText } : {}),
-    ...(span !== undefined ? { span } : {}),
-    ...(transform !== undefined ? { transform } : {}),
-    ...(dependencies !== undefined ? { dependencies } : {}),
-    ...(trigger !== undefined ? { trigger } : {}),
-  });
+  const props: Props = $props();
+  // 控件专属 props(非 field-level)在这里显式取，其余经 splitFieldProps 分离。
+  const controlKeys = ['placeholder', 'type', 'showClear', 'maxLength'] as const;
+  const split = $derived(splitFieldProps(props));
+  const fieldProps = $derived(split.fieldProps);
+  const control = $derived(
+    Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
+  );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy, required })}
-    <!--
-      `id` is wired to the native <input> so Field's visible <label for={id}>
-      precisely targets the control (WAI-ARIA preferred association): clicking the
-      label focuses the input and screen readers pair them by name. `ariaLabel`
-      remains as a redundant accessible name (and the only one when no `label`).
-      `describedBy` links the error/warning/extra text to the control.
-      blur-time validation is still deferred until Input gains an `onBlur` hook.
-    -->
     <Input
       value={value === undefined ? '' : String(value)}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {disabled}
       {id}
-      {...(type === 'password' ? { mode: 'password' as const } : {})}
-      {showClear}
-      {...(placeholder !== undefined ? { placeholder } : {})}
-      {...(maxLength !== undefined ? { maxLength } : {})}
-      {...(label !== undefined ? { ariaLabel: label } : {})}
+      {...(control.type === 'password' ? { mode: 'password' as const } : {})}
+      showClear={Boolean(control.showClear)}
+      {...(control.placeholder !== undefined ? { placeholder: control.placeholder as string } : {})}
+      {...(control.maxLength !== undefined ? { maxLength: control.maxLength as number } : {})}
+      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}

@@ -187,16 +187,16 @@
   <Text type="tertiary">{specPropsSubmitted}</Text>
 </div>
 
-<!-- preventDefault=false -->
-<div style="max-width: 360px; margin-top: 16px" data-testid="form-prevent-default">
-  <Text type="tertiary">preventDefault=false（不拦截原生 submit）：</Text>
+<!-- stopPropagation：对象形态分别控制 submit/reset 冒泡 -->
+<div style="max-width: 360px; margin-top: 16px" data-testid="form-stop-propagation">
+  <Text type="tertiary">stopPropagation={'{ submit: true }'}（阻止 submit 冒泡）：</Text>
   <Form
-    preventDefault={false}
+    stopPropagation={{ submit: true }}
     onSubmit={() => {
       nativeSubmitCount += 1;
     }}
   >
-    <Form.Input field="pd_name" label="名称" />
+    <Form.Input field="sp_name" label="名称" />
     {#snippet footer()}
       <Button type="primary" htmlType="submit">提交</Button>
     {/snippet}

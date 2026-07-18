@@ -3,7 +3,6 @@ import type { FormApi, FormState } from '@chenzy-design/core';
 
 export type FormLayout = 'vertical' | 'horizontal';
 export type FormLabelPosition = 'top' | 'left' | 'inset';
-export type FormSize = 'small' | 'default' | 'large';
 export type FormLabelAlign = 'left' | 'right';
 
 export interface GridCol {
@@ -22,7 +21,6 @@ export interface FormContext {
   getLabelWidth: () => number | string | undefined;
   /** Label text alignment (spec §4 L60). */
   getLabelAlign: () => FormLabelAlign;
-  getSize: () => FormSize;
   getDisabled: () => boolean;
   getRequiredMark: () => boolean;
   getColon: () => boolean;
