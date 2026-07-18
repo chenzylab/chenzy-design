@@ -178,21 +178,23 @@
       {...uploadProps}
       onChange={handleAttachmentChange}
     >
-      <!-- Upload 已把 children 包进自身 button；这里放具名图标（对齐 Semi uploadButton icon=IconChainStroked）。 -->
+      <!-- Upload 的 .cd-upload-add 已是 role=button 触发器；children 只放非 interactive 图标 span
+           （对齐 Semi uploadButton 的 IconChainStroked size=extra-large；不嵌 Button 避免 nested-interactive）。 -->
       <span class="cd-chat-inputBox-uploadButton" aria-label={loc().t('Chat.upload')}>
-        <IconChainStroked />
+        <IconChainStroked size="extra-large" />
       </span>
     </Upload>
   </div>
 {/snippet}
-
 {#snippet inputNode()}
   <div class="cd-chat-inputBox-inputArea">
+    <!-- rows=1 确保初始单行（对齐 Semi textAutoSize minRows:1/maxRows:5；本库 autosize 初始高度取 rows）。 -->
     <TextArea
       class="cd-chat-inputBox-textarea"
       value={content}
       placeholder={placeholderText}
-      autosize={{ minRows: 1, maxRows: 6 }}
+      rows={1}
+      autosize={{ minRows: 1, maxRows: 5 }}
       onInput={handleInput}
       onKeyDown={handleKeydown}
     />
@@ -200,9 +202,10 @@
 {/snippet}
 
 {#snippet sendNode()}
+  <!-- 发送按钮对齐 Semi：theme=solid type=primary（实心蓝色，非 borderless）。 -->
   <Button
     class="cd-chat-inputBox-sendButton"
-    theme="borderless"
+    theme="solid"
     type="primary"
     disabled={computedDisableSend}
     onclick={doSend}
@@ -211,7 +214,7 @@
     icon={sendIcon}
   />
 {/snippet}
-{#snippet sendIcon()}<span class="cd-chat-inputBox-sendButton-icon"><IconArrowUp /></span>{/snippet}
+{#snippet sendIcon()}<span class="cd-chat-inputBox-sendButton-icon"><IconArrowUp size="large" /></span>{/snippet}
 
 {#snippet defaultNode()}
   <div
@@ -300,7 +303,7 @@
     font-size: var(--cd-chat-inputBottom-clearButton-icon-font-size);
   }
 
-  /* —— uploadButton（对齐 Semi -uploadButton：32px） —— */
+  /* —— uploadButton（对齐 Semi -uploadButton：32x32 图标 span，模拟 borderless 视觉） —— */
   .cd-chat-inputBox-upload :global(.cd-upload-file-list) {
     display: none;
   }
@@ -317,7 +320,8 @@
     display: none;
   }
 
-  /* —— sendButton（对齐 Semi -sendButton：32px，图标旋转 45deg，禁用色） —— */
+  /* —— sendButton（对齐 Semi -sendButton：Button solid primary 32x32，图标 large 旋转 45deg）。
+       disabled 态用 Button solid 自带的浅灰 bg + 半透明字（Semi 实测 bg fill-2 / color text 35%），不覆盖。 —— */
   .cd-chat-inputBox :global(.cd-chat-inputBox-sendButton) {
     width: var(--cd-chat-inputBottom-sendButton-width);
     height: var(--cd-chat-inputBottom-sendButton-width);
@@ -325,9 +329,6 @@
   .cd-chat-inputBox-sendButton-icon {
     display: inline-flex;
     transform: rotate(45deg);
-  }
-  .cd-chat-inputBox :global(.cd-chat-inputBox-sendButton:disabled) {
-    color: var(--cd-chat-inputBottom-sendButton-icon-disable);
   }
 
   /* —— dropArea 拖拽遮罩（对齐 Semi -dropArea） —— */
