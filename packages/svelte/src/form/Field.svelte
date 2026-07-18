@@ -7,8 +7,18 @@
   import type { Snippet } from 'svelte';
   import { useId, type Rule, type ValidateTrigger } from '@chenzy-design/core';
   import { IconAlertCircle, IconAlertTriangle } from '@chenzy-design/icons';
-  import { getFormContext } from './context.js';
+  import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
+
+  /** Label 对象形态（对齐 Semi LabelProps 子集）。 */
+  interface FieldLabelProps {
+    text?: string;
+    align?: FormLabelAlign;
+    width?: number | string;
+    required?: boolean;
+    extra?: string;
+    optional?: boolean;
+  }
 
   type FieldStatus = 'default' | 'error' | 'warning';
 
@@ -38,7 +48,42 @@
 
   interface Props {
     field: string;
-    label?: string;
+    /** 标签：字符串，或对象形态（{text, align, width, ...}，对齐 Semi LabelProps）。 */
+    label?: string | FieldLabelProps;
+    /** field 级 label 位置覆盖（不传继承 Form context）。 */
+    labelPosition?: FormLabelPosition;
+    /** field 级 label 对齐覆盖（不传继承 Form context）。 */
+    labelAlign?: FormLabelAlign;
+    /** field 级 label 宽度覆盖（left 模式，不传继承 Form context）。 */
+    labelWidth?: number | string;
+    /**
+     * 只去掉 Label，保留 error/wrapper（对齐 Semi noLabel；批D FormInputGroup 依赖）。
+     */
+    noLabel?: boolean;
+    /**
+     * 只去掉错误/校验信息块（对齐 Semi noErrorMessage；批D FormInputGroup 依赖）。
+     */
+    noErrorMessage?: boolean;
+    /** label 的 htmlFor 目标（默认用自动生成 id；对齐 Semi name）。 */
+    name?: string;
+    /** field wrapper 的 class 透传（对齐 Semi fieldClassName）。 */
+    fieldClassName?: string;
+    /** field wrapper 的内联样式透传（对齐 Semi fieldStyle）。 */
+    fieldStyle?: string;
+    /** 提示文案：与 error 同块展示（有 error 时 error 优先，对齐 Semi helpText）。 */
+    helpText?: string;
+    /** field 级 extraText 位置覆盖（不传继承 Form context）。 */
+    extraTextPosition?: 'middle' | 'bottom';
+    /**
+     * 只接管数据流，不插入 Label/ErrorMessage/extra，DOM 与原控件一致
+     * （对齐 Semi pure；区别于 noStyle 仍渲染 wrapper）。
+     */
+    pure?: boolean;
+    /**
+     * group 内字段模式：不在 Field 内插 Label/ErrorMessage，交由 Group 级统一渲染
+     * （对齐 Semi isInInputGroup；批D FormInputGroup 依赖）。
+     */
+    isInInputGroup?: boolean;
     rules?: Rule[];
     /** field-level initial value; overrides the container's initValues (spec §4.2 L79). */
     initValue?: unknown;
@@ -92,6 +137,18 @@
   let {
     field,
     label,
+    labelPosition: labelPositionProp,
+    labelAlign: labelAlignProp,
+    labelWidth: labelWidthProp,
+    noLabel = false,
+    noErrorMessage = false,
+    name,
+    fieldClassName,
+    fieldStyle,
+    helpText,
+    extraTextPosition: extraTextPositionProp,
+    pure = false,
+    isInInputGroup = false,
     rules = [],
     initValue,
     required = false,
@@ -109,6 +166,19 @@
     children,
   }: Props = $props();
 
+  // label 可为对象形态；归一化出文本与覆盖项（对齐 Semi）。
+  const labelObj = $derived(
+    typeof label === 'object' && label !== null ? (label as FieldLabelProps) : undefined,
+  );
+  const labelText = $derived(
+    typeof label === 'string' ? label : labelObj?.text,
+  );
+  const hasLabel = $derived(labelText !== undefined);
+  // label 对象可覆盖 required / optional / extra（对齐 Semi label 对象展开）。
+  const labelRequired = $derived(labelObj?.required ?? required);
+  const labelExtra = $derived(labelObj?.extra);
+  const labelOptional = $derived(labelObj?.optional ?? false);
+
   const ctx = getFormContext();
   if (!ctx) throw new Error('<Form.Field> must be used inside <Form>');
   const { form, getFormState } = ctx;
@@ -119,6 +189,7 @@
   const errorId = `${id}-error`;
   const warningId = `${id}-warning`;
   const extraId = `${id}-extra`;
+  const helpTextId = `${id}-help`;
 
   // Register the field in the core registry (a plain Map, not Svelte-reactive),
   // so this never feeds back into a render-read. Cleanup unregisters.
@@ -134,7 +205,7 @@
     } = {
       rules: effectiveRules,
     };
-    if (label !== undefined) config.label = label;
+    if (labelText !== undefined) config.label = labelText;
     if (initValue !== undefined) config.initialValue = initValue;
     if (dependencies !== undefined) config.dependencies = dependencies;
     if (trigger !== undefined) config.trigger = trigger;
@@ -167,9 +238,13 @@
   );
   const status = $derived<FieldStatus>(showError ? 'error' : showWarning ? 'warning' : 'default');
 
-  const showRequiredMark = $derived(ctx.getRequiredMark() && required);
+  const showRequiredMark = $derived(ctx.getRequiredMark() && labelRequired);
   const showExtra = $derived(
     !showError && !showWarning && extraText !== undefined && extraText !== '',
+  );
+  // helpText: 与 error 同块，无 error/warning 时展示（对齐 Semi helpText）。
+  const showHelpText = $derived(
+    !showError && !showWarning && helpText !== undefined && helpText !== '',
   );
   const validatingText = $derived(loc().t('Form.validating'));
 
@@ -203,23 +278,33 @@
   }
 
   const describedBy = $derived(
-    // noStyle renders no status/extra elements, so there is nothing to point at
-    noStyle
+    // noStyle / pure / isInInputGroup render no status/extra elements here, so
+    // there is nothing to point at (Group renders them at group level).
+    noStyle || pure || isInInputGroup
       ? undefined
-      : showError
+      : // noErrorMessage suppresses the error/warning block: don't point at it
+        !noErrorMessage && showError
         ? errorId
-        : showWarning
+        : !noErrorMessage && showWarning
           ? warningId
-          : showExtra
-            ? extraId
-            : undefined,
+          : showHelpText
+            ? helpTextId
+            : showExtra
+              ? extraId
+              : undefined,
   );
 
-  const labelWidth = $derived(ctx.getLabelWidth());
-  const labelPosition = $derived(ctx.getLabelPosition());
-  const labelAlign = $derived(ctx.getLabelAlign());
+  // field 级覆盖优先于 context（Semi mergeLabelPos = labelPosition || formProps.labelPosition）；
+  // label 对象形态的 align/width 再优先于 field prop（对齐 Semi label 对象展开覆盖）。
+  const labelWidth = $derived(labelObj?.width ?? labelWidthProp ?? ctx.getLabelWidth());
+  const labelPosition = $derived(labelPositionProp ?? ctx.getLabelPosition());
+  const labelAlign = $derived(labelObj?.align ?? labelAlignProp ?? ctx.getLabelAlign());
   const showValidateIcon = $derived(ctx.getShowValidateIcon());
-  const extraTextPosition = $derived(ctx.getExtraTextPosition?.() ?? 'bottom');
+  const extraTextPosition = $derived(
+    extraTextPositionProp ?? ctx.getExtraTextPosition?.() ?? 'bottom',
+  );
+  // htmlFor 目标 name 优先于自动 id（对齐 Semi name）。
+  const forId = $derived(name ?? id);
   // label style: fixed width in `left` mode + text-align from labelAlign (§4 L60)
   const labelStyle = $derived(
     [
@@ -244,22 +329,30 @@
       `cd-form-field--label-${labelPosition}`,
       `cd-form-field--${status}`,
       isInset && labelFloated && 'cd-form-field--floated',
+      fieldClassName,
     ]
       .filter(Boolean)
       .join(' '),
   );
 
   // `span` (spec §4.2 L86): occupy N columns of a grid parent (e.g. Form.Section).
-  // Pure inline `grid-column` — inert when the parent isn't a grid.
-  const wrapStyle = $derived(span !== undefined ? `grid-column:span ${span}` : undefined);
+  // Pure inline `grid-column` — inert when the parent isn't a grid. fieldStyle
+  // (Semi) is merged after so callers can extend the wrapper style.
+  const wrapStyle = $derived(
+    [span !== undefined ? `grid-column:span ${span}` : undefined, fieldStyle]
+      .filter(Boolean)
+      .join(';') || undefined,
+  );
 </script>
 
-{#if noStyle}
+{#if noStyle || pure || isInInputGroup}
   <!--
-    noStyle (spec §4.2 L85 / §190): register & collect only, render no layout
-    chrome. The control snippet is still rendered so it can bind to the field;
-    label / status text / wrapper DOM are skipped. `validateStatus`/error still
-    flow into `status` so a custom control can style itself.
+    noStyle (spec §4.2 L85 / §190) / pure / isInInputGroup: register & collect
+    only, render no layout chrome. The control snippet is still rendered so it can
+    bind to the field; label / status text / wrapper DOM are skipped. For
+    isInInputGroup the Group renders Label/ErrorMessage at group level.
+    `validateStatus`/error still flow into `status` so a custom control can style
+    itself.
   -->
   {@render children?.({
     value,
@@ -274,14 +367,15 @@
   })}
 {:else}
 <div class={cls} data-field={field} style={wrapStyle}>
-  {#if label !== undefined && !isInset}
+  {#if hasLabel && !noLabel && !isInset}
     <label
       class="cd-form-field__label cd-form-field__label--align-{labelAlign}"
-      for={id}
+      for={forId}
       style={labelStyle}
     >
       {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
-      <span class="cd-form-field__label-text">{label}{ctx.getColon() ? '：' : ''}</span>
+      <span class="cd-form-field__label-text">{labelText}{ctx.getColon() ? '：' : ''}{#if !labelRequired && labelOptional}<span class="cd-form-field__label-optional">{loc().t('Form.optional')}</span>{/if}</span>
+      {#if labelExtra !== undefined}<span class="cd-form-field__label-extra">{labelExtra}</span>{/if}
     </label>
   {/if}
 
@@ -293,10 +387,10 @@
     onfocusin={isInset ? () => (focused = true) : undefined}
     onfocusout={isInset ? () => (focused = false) : undefined}
   >
-    {#if label !== undefined && isInset}
-      <label class="cd-form-field__inset-label" for={id}>
+    {#if hasLabel && !noLabel && isInset}
+      <label class="cd-form-field__inset-label" for={forId}>
         {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
-        <span class="cd-form-field__label-text">{label}</span>
+        <span class="cd-form-field__label-text">{labelText}</span>
       </label>
     {/if}
 
@@ -322,20 +416,23 @@
       </div>
     {/if}
 
-    {#if showError}
+    <!-- error / warning / helpText belong to the ErrorMessage block; noErrorMessage removes them all (Semi) -->
+    {#if !noErrorMessage && showError}
       <div id={errorId} role="alert" class="cd-form-field__error">
         {#if showValidateIcon}
           <IconAlertCircle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{error}</span>
       </div>
-    {:else if showWarning}
+    {:else if !noErrorMessage && showWarning}
       <div id={warningId} class="cd-form-field__warning">
         {#if showValidateIcon}
           <IconAlertTriangle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{warning}</span>
       </div>
+    {:else if !noErrorMessage && showHelpText}
+      <div id={helpTextId} class="cd-form-field__help-text">{helpText}</div>
     {:else if showExtra}
       <div id={extraId} class="cd-form-field__extra" class:cd-form-field__extra--middle={extraTextPosition === 'middle'} class:cd-form-field__extra--bottom={extraTextPosition === 'bottom'}>{extraText}</div>
     {/if}
@@ -431,6 +528,19 @@
     flex: 0 0 auto;
   }
   .cd-form-field__extra {
+    color: var(--cd-form-extra-color);
+    font-size: var(--cd-form-error-font-size);
+  }
+  .cd-form-field__help-text {
+    color: var(--cd-form-extra-color);
+    font-size: var(--cd-form-error-font-size);
+  }
+  .cd-form-field__label-optional {
+    margin-inline-start: var(--cd-spacing-extra-tight);
+    color: var(--cd-form-optional-color);
+    font-size: var(--cd-form-error-font-size);
+  }
+  .cd-form-field__label-extra {
     color: var(--cd-form-extra-color);
     font-size: var(--cd-form-error-font-size);
   }

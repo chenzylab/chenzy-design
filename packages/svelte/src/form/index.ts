@@ -118,6 +118,5 @@ export {
   type FormContext,
   type FormLayout,
   type FormLabelPosition,
-  type FormSize,
   type FormLabelAlign,
 } from './context.js';
