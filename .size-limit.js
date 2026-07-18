@@ -84,8 +84,10 @@ const components = [
   ['toast', '{ Toast }', '4.5 KB'],
   // input
   ['autocomplete', '{ AutoComplete }', '5.8 KB'],
-  ['cascader', '{ Cascader }', '10.6 KB'],
-  ['checkbox', '{ Checkbox, CheckboxGroup }', '3.5 KB'],
+  // 对齐 Semi 的功能补齐带来必要体积增长（无异常第三方依赖，已 grep 反证只依赖本库+svelte）。
+  // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.37 / textarea 4.77 KB。
+  ['cascader', '{ Cascader }', '10.8 KB'],
+  ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   ['date-picker', '{ DatePicker }', '22 KB'],
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath
@@ -94,13 +96,13 @@ const components = [
   ['input', '{ Input, InputGroup }', '5.5 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
-  ['radio', '{ Radio, RadioGroup }', '4.1 KB'],
+  ['radio', '{ Radio, RadioGroup }', '4.6 KB'],
   ['rating', '{ Rating }', '4 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],
-  ['textarea', '{ TextArea }', '3.75 KB'],
+  ['textarea', '{ TextArea }', '5 KB'],
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
