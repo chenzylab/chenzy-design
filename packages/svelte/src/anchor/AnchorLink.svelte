@@ -182,7 +182,13 @@
     white-space: nowrap;
     border-radius: var(--cd-width-anchor-outline-border-radius);
     background: var(--cd-color-anchor-title-bg-default);
-    transition: color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    /* 对齐 Semi anchor/animation.scss：文字色过渡 + scale 缩放（默认 none 档，主题/DSM 可开启）。
+       token 值本身即完整 scale(x,y)（对齐 Semi --semi-transform_scale-none: scale(1,1)），
+       故直接 transform: var()，不再外层包 scale()（Semi 原文 scale(scale(1,1)) 为无效 CSS，此处修复对齐）。 */
+    transition: color var(--cd-transition-duration-anchor-title-text)
+      var(--cd-transition-function-anchor-title-text)
+      var(--cd-transition-delay-anchor-title-text);
+    transform: var(--cd-transform-scale-anchor-title-text);
   }
   .cd-anchor-link-title:hover {
     color: var(--cd-color-anchor-title-text-hover);

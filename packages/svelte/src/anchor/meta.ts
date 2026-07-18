@@ -136,7 +136,6 @@ export const meta = {
     '--cd-spacing-anchor-slide-top',
     '--cd-spacing-anchor-slide-default-y',
     '--cd-spacing-anchor-slide-small-y',
-    '--cd-spacing-anchor-link-paddingleft',
     '--cd-spacing-anchor-link-title-paddingtop',
     '--cd-spacing-anchor-link-title-paddingbottom',
     '--cd-width-anchor-slide-default',
@@ -146,9 +145,12 @@ export const meta = {
     '--cd-width-anchor-outline',
     '--cd-width-anchor-outlineoffset',
     '--cd-width-anchor-outline-border-radius',
-    // —— 全局/别名 token ——
-    '--cd-motion-duration-fast',
-    '--cd-motion-ease-standard',
+    // —— Animation：标题文字过渡 + 缩放（对齐 Semi anchor/animation.scss） ——
+    '--cd-transition-duration-anchor-title-text',
+    '--cd-transition-function-anchor-title-text',
+    '--cd-transition-delay-anchor-title-text',
+    '--cd-transform-scale-anchor-title-text',
+    // —— 全局/别名 token（根字号，对齐 Semi @include font-size-*） ——
     '--cd-font-size-regular',
     '--cd-font-size-small',
   ],

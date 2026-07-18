@@ -55,4 +55,9 @@ export const demos: DemoEntry[] = [
     '工具提示位置',
     'position 设置 Tooltip 显示位置，仅 showTooltip=true 时生效（对齐 Semi）',
   ),
+  entry(
+    '12-max-height.svelte',
+    'max-height',
+    '设置 maxHeight 控制 Anchor 高度，内容超出时 Anchor 自身滚动显示（对齐 Semi）',
+  ),
 ];
