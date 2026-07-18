@@ -19,6 +19,37 @@
   6. **AI 友好**：组件 API、文档、元数据让 AI「有章可循」（参考 Semi AI）。
   7. **文案规范**：内置文案符合统一的 Content Guidelines。
 
+## 1.1 严格对齐 Semi Design（核心开发原则，全程满足）
+
+> 本库定位是「对标 Semi Design」。**「严格对齐 Semi」是贯穿所有组件开发的第一原则**，
+> 优先级高于「本库既有实现」与「向后兼容」。1.0 前无兼容包袱，发现偏离 Semi 即破坏性对齐。
+> 参照系：本地 Semi 源码 `~/i/semi-design`（semi-mcp 无响应时直接读源码）。
+
+**四个维度都要对齐（不是只对齐 API 表面）：**
+
+1. **API 对齐**：以 Semi 组件的 `propTypes` / `interface Props` 为契约，**逐 prop 核对实现**（不是看
+   spec/meta/文档——它们会骗人：假 prop、孤儿组件、缺失方法、默认值漂移）。
+   - Semi 有我们没有的 → **补**；我们有 Semi 没有的 → **删超集**（无需向后兼容）。
+   - 同名 prop 默认值/枚举/签名漂移 → **改回 Semi**。
+   - 通用 prop（class/style/id/rest 透传）也要核（易漏；本库 Svelte 用 `class` 非 `className`）。
+2. **DOM 结构对齐**：容器层级、class 语义、条件渲染分支镜像 Semi。
+   - **Semi 复用其他 Semi 组件的地方，我们也复用对应组件**（如 timePicker 复用 ScrollList、
+     colorPicker 复用 Popover/Input/InputNumber/Select）——且被复用组件要**先对齐 Semi**。
+   - Semi 用原生元素处我们也用原生，Semi 不用处我们也不用。
+3. **Token 对齐**：
+   - **名与值都对应 Semi**（逐条核 `variables.scss` 的值 vs 本库 token 值）。
+   - **Semi 无的中间层 token 要删**（去中间层，无需向后兼容）；token 名值、作用的 **DOM 归属**都对齐。
+   - **Semi 用公式算的值（如 `(panel_body - item) * 0.5`），我们也用 `calc()` 公式算**，不硬编码近似值。
+4. **Demo 对齐**：按 Semi demo 机制（本库 `demos.ts` glob），**场景不少于 Semi**；Semi 有的场景补全。
+
+**验证纪律（对齐不能只靠声称）：**
+
+- **逐 prop grep 实现亲验**，别只看 spec / 抽查 / 子代理正则提取（重大归因动手前自己 grep 反例）。
+- **真机对照 Semi**：交互/视觉改动用真实浏览器点击对照 Semi 真机或官方截图（`~/i/semi-design`
+  可本地跑 storybook），别只静态看或用 JS dispatch（会绕过 z-index 遮挡假绿）。
+- **token 双向核对**：定义全被消费（无悬空）+ 消费全有定义（无 undefined 取空值），`while read` 逐个核，无 fallback。
+- 「token/DOM/公式都真对齐了就不会有视觉差异」——出现宽度/间距/高亮偏差，说明某一层没真对齐，实测定位到底哪层。
+
 ## 2. 技术栈（不得擅自替换）
 
 | 维度 | 选型 | 说明 |
@@ -79,6 +110,7 @@ CSS 变量分三层（详见 `specs/00-foundation/theming.spec.md`）：
 
 一个组件 SPEC 被视为「完成」当且仅当：
 
+- [ ] **严格对齐 Semi（§1.1）**：API 逐 prop 核 propTypes（补缺失/删超集/改漂移）、DOM 结构与复用组件对齐、token 名值/DOM 归属/公式对齐、demo 不少于 Semi；真机对照 Semi + token 双向核对
 - [ ] headless 逻辑在 `core/`（如有交互），Svelte 实现在 `svelte/`
 - [ ] 全部 props/events/slots 有 TS 类型 + JSDoc
 - [ ] Component Token 已在 `tokens/` 注册，支持主题覆盖
