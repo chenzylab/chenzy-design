@@ -1,23 +1,19 @@
 <!--
-  Hint — Chat 提示区（对齐 Semi chat-hint）。
-  横排一组可点击提示项；点击派发 onHintClick(hint)（Chat 容器据此追加一条 user 消息）。
-  自定义整项渲染走 renderHintBox snippet（对齐 Semi renderHintBox render prop）。
-  全 token，类名前缀 cd-。
+  Hint — Chat 提示区（严格对齐 Semi chat/hint）。
+  DOM 对齐 Semi：.cd-chat-hints（容器，column） > .cd-chat-hint-item（border）
+    ( .cd-chat-hint-content + .cd-chat-hint-icon(IconArrowRight) )。
+  点击派发 onHintClick(hint)。自定义整项渲染走 renderHintBox snippet。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { IconArrowRight } from '@chenzy-design/icons';
   import type { RenderHintBoxProps } from './types.js';
 
   interface Props {
-    /** 提示文本列表。 */
     hints?: string[];
-    /** 点击某项回调，参数为提示文本。 */
     onHintClick?: ((hint: string) => void) | undefined;
-    /** 自定义单项渲染（对齐 Semi renderHintBox）。 */
     renderHintBox?: Snippet<[RenderHintBoxProps]> | undefined;
-    /** 附加类名。 */
     class?: string;
-    /** 内联样式。 */
     style?: string;
   }
 
@@ -25,17 +21,14 @@
 </script>
 
 {#if hints && hints.length > 0}
-  <div class="cd-chat-hint {className}" {style}>
+  <div class="cd-chat-hints {className}" {style}>
     {#each hints as hint, index (index)}
       {#if renderHintBox}
         {@render renderHintBox({ content: hint, index, onHintClick: () => onHintClick?.(hint) })}
       {:else}
-        <button
-          type="button"
-          class="cd-chat-hint-item"
-          onclick={() => onHintClick?.(hint)}
-        >
-          {hint}
+        <button type="button" class="cd-chat-hint-item" onclick={() => onHintClick?.(hint)}>
+          <span class="cd-chat-hint-content">{hint}</span>
+          <IconArrowRight class="cd-chat-hint-icon" />
         </button>
       {/if}
     {/each}
@@ -43,31 +36,47 @@
 {/if}
 
 <style>
-  .cd-chat-hint {
+  /* —— hints 容器（对齐 Semi .semi-chat-hints：column + marginLeft 34px） —— */
+  .cd-chat-hints {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-spacing-tight);
-    padding: var(--cd-spacing-tight) 0;
+    flex-direction: column;
+    row-gap: var(--cd-chat-hint-rowGap);
+    margin-top: var(--cd-chat-hint-marginY);
+    margin-bottom: var(--cd-chat-hint-marginY);
+    margin-left: var(--cd-chat-hint-marginLeft);
   }
 
+  /* —— hint-item（对齐 Semi -hint-item：border + radius + 内容/图标列间距） —— */
   .cd-chat-hint-item {
-    appearance: none;
-    border: none;
     cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    column-gap: var(--cd-chat-hint-item-columnGap);
+    width: fit-content;
+    background: var(--cd-chat-hint-item-bg);
+    align-items: center;
+    border: var(--cd-chat-hint-item-border-width) solid var(--cd-chat-hint-item-border);
+    padding: var(--cd-chat-hint-item-marginY) var(--cd-chat-hint-item-marginX);
+    border-radius: var(--cd-chat-hint-item-radius);
+    appearance: none;
     font: inherit;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-base);
-    background: var(--cd-chat-hint-bg);
-    color: var(--cd-chat-hint-color);
-    border-radius: var(--cd-chat-hint-radius);
-    transition: background var(--cd-chat-motion-duration) ease;
   }
 
   .cd-chat-hint-item:hover {
-    background: var(--cd-chat-hint-bg-hover);
+    background-color: var(--cd-chat-hint-item-bg-hover);
   }
 
   .cd-chat-hint-item:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
+  }
+
+  .cd-chat-hint-content {
+    font-size: var(--cd-chat-hint-content-font-size);
+    color: var(--cd-chat-hint-content-text);
+  }
+
+  .cd-chat-hint-item :global(.cd-chat-hint-icon) {
+    color: var(--cd-chat-hint-icon);
   }
 </style>

@@ -175,7 +175,9 @@ const components = [
   ['video-player', '{ VideoPlayer }', '9 KB'],
   ['audio-player', '{ AudioPlayer }', '5 KB'],
   ['json-viewer', '{ JsonViewer }', '4 KB'],
-  ['chat', '{ Chat }', '8.5 KB'],
+  // chat 严格对齐 Semi 后含 CodeHighlight（代码块 topSlot 深色高亮，prismjs 静态入壳）
+  // + Avatar/Button/TextArea/Upload + chatBox 拆分子组件，实测 9.96 KB，预算 +~5% 校准。
+  ['chat', '{ Chat }', '10.5 KB'],
   ['cropper', '{ Cropper }', '4 KB'],
   // 引用区（references）+ dialogueRenderConfig 四区块 snippet 结构后实测 6.71 KB，预算按 +15% buffer 校准。
   ['ai-chat-dialogue', '{ AIChatDialogue }', '7.7 KB'],

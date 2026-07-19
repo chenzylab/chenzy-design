@@ -261,6 +261,15 @@
     display: inline-flex;
     gap: var(--cd-spacing-radio-group-horizontal-marginright);
   }
+  /* button 型：灰底容器包裹（对齐 Semi radioGroup-buttonRadio：bg fill-0 + radius，
+     内部按钮透明、选中项白底浮起，类似 segmented control，非独立边框分段）。 */
+  .cd-radio-group--button {
+    gap: 0;
+    background: var(--cd-color-radio-buttonradio-bg-default);
+    border-radius: var(--cd-radius-radio-buttonradio);
+    /* 内边距让选中白块四周留灰边、内缩浮起（对齐 Semi segmented control 观感）。 */
+    padding: 2px;
+  }
   .cd-radio-group--horizontal {
     flex-direction: row;
     flex-wrap: wrap;

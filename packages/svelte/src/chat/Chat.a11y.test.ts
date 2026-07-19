@@ -42,9 +42,10 @@ describe('Chat a11y / 渲染', () => {
     const { container } = renderWithLocale(Chat, { props: { chats: baseChats } });
     // 四条消息各一个 chatBox。
     expect(container.querySelectorAll('.cd-chat-chatBox').length).toBe(4);
-    // loading / error 文本走 locale（非 key）。
-    expect(container.querySelector('.cd-chat-chatBox-error')?.textContent).toBeTruthy();
-    expect(container.querySelector('.cd-chat-chatBox-error')?.textContent).not.toBe('Chat.error');
+    // error 消息内容加 -content-error 类（对齐 Semi）。
+    expect(container.querySelector('.cd-chat-chatBox-content-error')).not.toBeNull();
+    // loading 消息渲染三点动画（对齐 Semi -content-loading-item，非纯文本）。
+    expect(container.querySelector('.cd-chat-chatBox-content-loading-item')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 
@@ -54,10 +55,14 @@ describe('Chat a11y / 渲染', () => {
     const { container } = renderWithLocale(Chat, {
       props: { chats: baseChats, onMessageSend, onChatsChange },
     });
-    const textarea = container.querySelector('.cd-chat-inputBox-textarea') as HTMLTextAreaElement;
+    // textarea 由本库 TextArea 组件渲染（DOM 对齐 Semi：.cd-input-textarea 元素）。
+    const textarea = container.querySelector(
+      '.cd-chat-inputBox-inputArea textarea',
+    ) as HTMLTextAreaElement;
     expect(textarea).not.toBeNull();
     await fireEvent.input(textarea, { target: { value: 'a new message' } });
-    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    // 发送按钮由本库 Button 渲染（.cd-chat-inputBox-sendButton），disabled 在内部 <button>。
+    const sendBtn = container.querySelector('.cd-chat-inputBox-sendButton') as HTMLButtonElement;
     expect(sendBtn.disabled).toBe(false);
     await fireEvent.click(sendBtn);
     expect(onMessageSend).toHaveBeenCalledTimes(1);
@@ -72,7 +77,7 @@ describe('Chat a11y / 渲染', () => {
 
   it('空输入时发送按钮 disabled', async () => {
     const { container } = renderWithLocale(Chat, { props: { chats: baseChats } });
-    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-chat-inputBox-sendButton') as HTMLButtonElement;
     expect(sendBtn.disabled).toBe(true);
   });
 
@@ -102,9 +107,9 @@ describe('Chat a11y / 渲染', () => {
     const { container } = renderWithLocale(Chat, {
       props: { chats: baseChats, canSend: false },
     });
-    const textarea = container.querySelector('.cd-chat-inputBox-textarea') as HTMLTextAreaElement;
+    const textarea = container.querySelector('.cd-chat-inputBox-inputArea textarea') as HTMLTextAreaElement;
     await fireEvent.input(textarea, { target: { value: 'has content' } });
-    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-chat-inputBox-sendButton') as HTMLButtonElement;
     expect(sendBtn.disabled).toBe(true);
   });
 
@@ -112,7 +117,7 @@ describe('Chat a11y / 渲染', () => {
     const { container } = renderWithLocale(Chat, {
       props: { chats: baseChats, canSend: true },
     });
-    const sendBtn = container.querySelector('.cd-chat-inputBox-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-chat-inputBox-sendButton') as HTMLButtonElement;
     expect(sendBtn.disabled).toBe(false);
   });
 
@@ -130,11 +135,11 @@ describe('Chat a11y / 渲染', () => {
     expect(box).not.toBeNull();
     expect(box.getAttribute('role')).toBe('group');
     // 初始未拖拽：无遮罩、无 drag-active。
-    expect(container.querySelector('.cd-chat-inputBox-dropmask')).toBeNull();
-    expect(box.classList.contains('cd-chat-inputBox--drag-active')).toBe(false);
+    expect(container.querySelector('.cd-chat-dropArea')).toBeNull();
+    expect(box.classList.contains('cd-chat-inputBox-drag-active')).toBe(false);
     // 用 plain 对象 mock 一个不含 Files 的 dragover（应被忽略，不阻止默认、不激活）。
     await fireEvent.dragOver(box, { dataTransfer: { types: [] } });
-    expect(box.classList.contains('cd-chat-inputBox--drag-active')).toBe(false);
+    expect(box.classList.contains('cd-chat-inputBox-drag-active')).toBe(false);
   });
 
   it('enableUpload=false：不渲染上传按钮', async () => {

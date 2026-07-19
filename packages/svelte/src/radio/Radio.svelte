@@ -348,7 +348,8 @@
   .cd-radio--pureCard:focus-visible {
     box-shadow: var(--cd-focus-ring);
   }
-  /* button 型：矩形分段按钮，隐藏圆点 indicator */
+  /* button 型（对齐 Semi buttonRadioGroup，segmented control 样式）：透明底无边框，
+     嵌在 group 的灰底容器里；选中项白底（bg-3）+ 蓝字浮起；未选中透明、hover 浅灰。隐藏圆点。 */
   .cd-radio--button {
     gap: 0;
     block-size: var(--cd-radio-button-height);
@@ -356,8 +357,8 @@
     align-items: center;
     justify-content: center;
     color: var(--cd-color-radio-buttonradio-text-default);
-    background: var(--cd-color-radio-buttonradio-bg-default);
-    border: 1px solid var(--cd-color-radio-default-border-default);
+    background: transparent;
+    border: none;
     border-radius: var(--cd-radius-radio-buttonradio);
   }
   .cd-radio--button-small {
@@ -369,9 +370,13 @@
   .cd-radio--button .cd-radio__circle {
     display: none;
   }
+  .cd-radio--button:hover:not(.cd-radio--disabled):not(.cd-radio--checked) {
+    background: var(--cd-color-radio-buttonradio-bg-hover);
+  }
+  /* 选中态：白底浮起（bg-checked=bg-3）+ 蓝字（对齐 Semi addon-buttonRadio-checked）。 */
   .cd-radio--button.cd-radio--checked {
-    color: var(--cd-color-radio-primary-border-default);
-    border-color: var(--cd-color-radio-primary-border-default);
+    color: var(--cd-color-radio-buttonradio-text-checked);
+    background: var(--cd-color-radio-buttonradio-bg-checked);
   }
   /* card / pureCard 型：带边框卡片，选中高亮边框 */
   .cd-radio--card,
