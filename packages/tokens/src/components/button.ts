@@ -9,8 +9,9 @@
  *  - `$height-control-*` → `var(--cd-control-height-*)`；`$border-thickness*` → `var(--cd-border-thickness*)`。
  *  - `var(--semi-border-radius-small)` → `var(--cd-border-radius-small)`。
  *  - `$font-weight-bold` → `var(--cd-font-weight-bold)`；`$font-size-regular` → `var(--cd-font-size-regular)`。
- *  - Semi AI 色板（`--semi-color-ai-*`）我方无对应 alias，colorful 用可编辑渐变三色
- *    `button-colorful-from/via/to`（与 Tag/FloatButton 同源，AI 视觉统一）。
+ *  - Semi AI 色板（`--semi-color-ai-*`）→ alias `--cd-color-ai-general/-hover/-active/-light`
+ *    与 `--cd-color-ai-purple`（4 色 278° 渐变，亮暗双套，值 1:1 镜像 Semi general-5/6/7/0 与 purple-5）。
+ *    colorful token 直接消费这些语义色，与 FloatButton colorful 同源。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -236,8 +237,16 @@ export const buttonTokens = {
   'animation-duration-button-icon-loading': { value: '600ms', category: 'animation', label: '加载图标旋转时长', usage: '加载图标容器旋转一周时长（对齐 Semi 600ms）' },
   'animation-duration-button-icon-custom-loading': { value: '1600ms', category: 'animation', label: '自定义加载图标旋转时长', usage: '自定义指示器旋转一周时长（对齐 Semi 1600ms）' },
 
-  // —— colorful（AI 多彩）：Semi 用 --semi-color-ai-* 语义色，我方用独立可编辑渐变三色 ——
-  'button-colorful-from': { value: '#4d6bff', category: 'color', label: 'Colorful 渐变起始色', usage: 'colorful（AI 多彩）蓝→紫渐变起始色', editable: true },
-  'button-colorful-via': { value: '#7b5cff', category: 'color', label: 'Colorful 渐变中间色', usage: 'colorful（AI 多彩）蓝→紫渐变中间色', editable: true },
-  'button-colorful-to': { value: '#a64dff', category: 'color', label: 'Colorful 渐变结束色', usage: 'colorful（AI 多彩）蓝→紫渐变结束色', editable: true },
+  // —— colorful（AI 多彩）：严格对齐 Semi button/variables.scss，消费 alias AI 语义色 ——
+  //   primary solid   → --semi-color-ai-general(-hover/-active)（4 色 278° 渐变实心底）
+  //   primary light/borderless → --semi-color-ai-general（渐变文字）
+  //   primary outline → --semi-color-ai-purple（紫色单色文字 + 边框）
+  //   tertiary solid  → --semi-ai-general-0（极浅淡彩底）+ --semi-color-ai-general（渐变文字）
+  'color-button-primary-solid-colorful-bg-default': { value: 'var(--cd-color-ai-general)', category: 'color', label: 'Colorful 主要按钮背景', usage: 'colorful primary solid 背景 - 默认' },
+  'color-button-primary-solid-colorful-bg-hover': { value: 'var(--cd-color-ai-general-hover)', category: 'color', label: 'Colorful 主要按钮背景', usage: 'colorful primary solid 背景 - 悬浮' },
+  'color-button-primary-solid-colorful-bg-active': { value: 'var(--cd-color-ai-general-active)', category: 'color', label: 'Colorful 主要按钮背景', usage: 'colorful primary solid 背景 - 按下' },
+  'color-button-primary-light-colorful-text-default': { value: 'var(--cd-color-ai-general)', category: 'color', label: 'Colorful 主要按钮文字填充', usage: 'colorful primary light/borderless 渐变文字填充' },
+  'color-button-primary-outline-colorful-text-default': { value: 'var(--cd-color-ai-purple)', category: 'color', label: 'Colorful 主要按钮文字色', usage: 'colorful primary outline 文字/边框（紫色单色）' },
+  'color-button-tertiary-solid-colorful-bg-default': { value: 'var(--cd-color-ai-general-light)', category: 'color', label: 'Colorful 第三按钮背景', usage: 'colorful tertiary solid 极浅淡彩底' },
+  'color-button-tertiary-solid-colorful-text-default': { value: 'var(--cd-color-ai-general)', category: 'color', label: 'Colorful 第三按钮文字填充', usage: 'colorful tertiary solid 渐变文字填充' },
 } satisfies TokenGroup;

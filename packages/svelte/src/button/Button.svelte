@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { IconAILoading } from '@chenzy-design/icons';
   import BaseButton from './BaseButton.svelte';
   import {
     getButtonGroupContext,
@@ -93,6 +94,16 @@
   const isIconButton = $derived(!!icon || (loading && !disabled));
   // loading 图标：仅在 loading && !disabled 时渲染 spinner（对齐 Semi）。
   const showLoadingIcon = $derived(loading && !disabled);
+  // colorful loading 用自带渐变的 IconAILoading（对齐 Semi iconButton：渐变文字组合下 content
+  // color:transparent 会吃掉 stroke=currentColor 的普通 spinner，故这些组合改用 stroke=url(#渐变)
+  // 的 AILoading）。条件镜像 Semi：colorful 且 theme∈{light,outline,borderless} 或 solid+tertiary。
+  const colorfulLoading = $derived(
+    colorful &&
+      (theme === 'light' ||
+        theme === 'outline' ||
+        theme === 'borderless' ||
+        (theme === 'solid' && type === 'tertiary')),
+  );
   // 是否渲染图标元素（loading spinner 或用户 icon）。
   const hasIconElem = $derived(showLoadingIcon || !!icon);
   // 纯图标（无文字）→ with-icon-only（对齐 Semi children == null）。
@@ -135,9 +146,14 @@
 
 {#snippet iconElem()}
   {#if showLoadingIcon}
-    <svg class="cd-button-loading-spin" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-      <path d="M12 3a9 9 0 1 0 9 9" />
-    </svg>
+    {#if colorfulLoading}
+      <!-- colorful 渐变文字组合：用 stroke=url(#渐变) 的 AILoading，不被 content transparent 吃掉。 -->
+      <IconAILoading class="cd-button-loading-spin" />
+    {:else}
+      <svg class="cd-button-loading-spin" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 3a9 9 0 1 0 9 9" />
+      </svg>
+    {/if}
   {:else if icon}
     {@render icon()}
   {/if}
@@ -211,7 +227,9 @@
     pointer-events: none;
     cursor: not-allowed;
   }
-  :global(.cd-button-loading) :global(.cd-button-content) > svg {
+  /* svg 用 :global——loading spinner 可能来自外部图标组件（colorful 用 IconAILoading），
+     其 svg 不带 Button 的 scope class，不加 :global 则选择器丢失、旋转动画失效。 */
+  :global(.cd-button-loading) :global(.cd-button-content) > :global(svg) {
     width: 16px;
     height: 16px;
     animation: cd-button-icon-rotate var(--cd-animation-duration-button-icon-loading) linear infinite;
@@ -255,7 +273,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-button-loading) :global(.cd-button-content) > svg {
+    :global(.cd-button-loading) :global(.cd-button-content) > :global(svg) {
       animation: none;
     }
   }

@@ -119,6 +119,11 @@ export const aliasLight = {
     'linear-gradient(278deg, rgb(194,53,219) 0%, rgb(134,54,219) 30%, rgb(88,77,219) 60%, rgb(33,114,219) 100%)',
   'color-ai-general-active':
     'linear-gradient(278deg, rgb(157,39,184) 0%, rgb(105,40,184) 30%, rgb(71,59,184) 60%, rgb(22,89,184) 100%)',
+  // AI general 浅底（Semi general-0）：Button tertiary solid colorful 的极浅淡彩背景
+  'color-ai-general-light':
+    'linear-gradient(278deg, rgb(255,242,255) 0%, rgb(248,237,255) 30%, rgb(244,244,255) 60%, rgb(239,247,255) 100%)',
+  // AI purple（Semi ai-purple-5）：Button primary outline colorful 的紫色文字/边框（单色，非渐变）
+  'color-ai-purple': 'rgb(166,71,255)',
 } as const;
 
 export type AliasKey = keyof typeof aliasLight;
@@ -226,4 +231,9 @@ export const aliasDark: Partial<Record<AliasKey, string>> = {
     'linear-gradient(278deg, rgb(243,143,248) 0%, rgb(213,152,255) 30%, rgb(163,160,253) 60%, rgb(131,187,248) 100%)',
   'color-ai-general-active':
     'linear-gradient(278deg, rgb(249,180,251) 0%, rgb(229,186,255) 30%, rgb(192,192,253) 60%, rgb(172,210,250) 100%)',
+  // AI general 浅底（Semi 暗色 general-0）：深靛蓝，tertiary solid colorful 背景
+  'color-ai-general-light':
+    'linear-gradient(278deg, rgb(80,18,101) 0%, rgb(58,23,112) 30%, rgb(39,29,108) 60%, rgb(9,44,100) 100%)',
+  // AI purple（Semi 暗色 ai-purple-5）
+  'color-ai-purple': 'rgb(195,117,255)',
 };
