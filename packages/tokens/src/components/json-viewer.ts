@@ -22,32 +22,40 @@
 import type { TokenGroup } from './token-def.js';
 
 export const jsonViewerTokens = {
-  // —— 容器 ——
-  'color-json-viewer-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '背景', usage: '编辑器容器背景' },
+  // —— 容器（对齐 Semi variables.scss：background=color-default=grey-0，padding 12px/0） ——
+  'color-json-viewer-bg': { value: 'var(--cd-color-grey-0)', category: 'color', label: '背景', usage: '编辑器容器背景（对齐 Semi color-default=grey-0）' },
   'color-json-viewer-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '默认文字', usage: '编辑器默认文字色（标点等未着色内容）' },
   'radius-json-viewer': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '圆角', usage: '编辑器容器圆角' },
   'color-json-viewer-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框', usage: '编辑器容器边框色' },
   'font-json-viewer-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '字号', usage: '编辑器文本字号' },
   'font-json-viewer-fontfamily': { value: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace", category: 'font', label: '字体', usage: '编辑器等宽字体' },
+  'spacing-json-viewer-paddingY': { value: '12px', category: 'spacing', label: '纵向内边距', usage: '编辑器容器纵向内边距（对齐 Semi 12px）' },
 
-  // —— JSON 语法着色（对齐内核 token.scopes class） ——
-  'color-json-viewer-key': { value: 'var(--cd-color-primary)', category: 'color', label: '键名', usage: 'string-key：对象键名' },
-  'color-json-viewer-string': { value: 'var(--cd-color-success)', category: 'color', label: '字符串', usage: 'string-value：字符串值' },
-  'color-json-viewer-number': { value: 'var(--cd-color-warning)', category: 'color', label: '数字', usage: 'number：数字值' },
-  'color-json-viewer-keyword': { value: 'var(--cd-color-link)', category: 'color', label: '布尔/null', usage: 'keyword：布尔与 null（内核归一同一 scope）' },
-  'color-json-viewer-punctuation': { value: 'var(--cd-color-text-2)', category: 'color', label: '标点', usage: 'delimiter-*：括号/逗号/冒号等标点' },
-  'color-json-viewer-comment': { value: 'var(--cd-color-text-3)', category: 'color', label: '注释', usage: 'comment-*：JSONC 注释' },
+  // —— JSON 语法着色（严格对齐 Semi variables.scss 色板阶梯值，rgba(--semi-X-N,1)→var(--cd-color-X-N)） ——
+  'color-json-viewer-key': { value: 'var(--cd-color-red-5)', category: 'color', label: '键名', usage: 'string-key：对象键名（对齐 Semi red-5）' },
+  'color-json-viewer-string': { value: 'var(--cd-color-blue-5)', category: 'color', label: '字符串', usage: 'string-value：字符串值（对齐 Semi value=blue-5）' },
+  'color-json-viewer-number': { value: 'var(--cd-color-green-5)', category: 'color', label: '数字', usage: 'number：数字值（对齐 Semi green-5）' },
+  'color-json-viewer-keyword': { value: 'var(--cd-color-blue-5)', category: 'color', label: '布尔/null', usage: 'keyword：布尔与 null（对齐 Semi blue-5）' },
+  'color-json-viewer-punctuation': { value: 'var(--cd-color-blue-6)', category: 'color', label: '标点', usage: 'delimiter-comma 等标点（对齐 Semi delimiter-comma=blue-6）' },
+  'color-json-viewer-comment': { value: 'var(--cd-color-text-3)', category: 'color', label: '注释', usage: 'comment-*：JSONC 注释（Semi 无此 token，取中性灰）' },
+  // 彩虹括号（对齐 Semi jsonViewer.scss delimiter-bracket/array 0/1/2 硬编码 blue-7/green-7/orange-7）。
+  'color-json-viewer-bracket-0': { value: 'var(--cd-color-blue-7)', category: 'color', label: '括号层级 0', usage: 'delimiter-bracket-0/array-0（对齐 Semi blue-7）' },
+  'color-json-viewer-bracket-1': { value: 'var(--cd-color-green-7)', category: 'color', label: '括号层级 1', usage: 'delimiter-bracket-1/array-1（对齐 Semi green-7）' },
+  'color-json-viewer-bracket-2': { value: 'var(--cd-color-orange-7)', category: 'color', label: '括号层级 2', usage: 'delimiter-bracket-2/array-2（对齐 Semi orange-7）' },
 
-  // —— 行号列 ——
-  'color-json-viewer-line-number': { value: 'var(--cd-color-text-3)', category: 'color', label: '行号', usage: 'line-number：行号文字色' },
-  'color-json-viewer-line-number-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '行号列背景', usage: 'line-number-container：行号列背景' },
+  // —— 行号列（对齐 Semi line-number=grey-5） ——
+  'color-json-viewer-line-number': { value: 'var(--cd-color-grey-5)', category: 'color', label: '行号', usage: 'line-number：行号文字色（对齐 Semi grey-5）' },
+  'color-json-viewer-line-number-bg': { value: 'var(--cd-color-grey-0)', category: 'color', label: '行号列背景', usage: 'line-number-container：行号列背景' },
 
-  // —— 搜索命中 ——
-  'color-json-viewer-search-highlight': { value: 'var(--cd-color-warning-light-default)', category: 'color', label: '搜索命中背景', usage: 'search-result：搜索命中底色' },
-  'color-json-viewer-search-current': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '当前命中背景', usage: 'current-search-result：当前命中底色' },
+  // —— 搜索命中（对齐 Semi search-result=green-2、current=yellow-4） ——
+  'color-json-viewer-search-highlight': { value: 'var(--cd-color-green-2)', category: 'color', label: '搜索命中背景', usage: 'search-result：搜索命中底色（对齐 Semi green-2）' },
+  'color-json-viewer-search-current': { value: 'var(--cd-color-yellow-4)', category: 'color', label: '当前命中背景', usage: 'current-search-result：当前命中底色（对齐 Semi yellow-4）' },
 
-  // —— 错误行 ——
-  'color-json-viewer-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误提示', usage: 'error：语法错误提示色' },
+  // —— 折叠图标（对齐 Semi folding-icon=blue-7） ——
+  'color-json-viewer-folding-icon': { value: 'var(--cd-color-blue-7)', category: 'color', label: '折叠图标', usage: 'folding-icon：折叠图标色（对齐 Semi blue-7）' },
+
+  // —— 错误行（对齐 Semi error 波浪线 danger） ——
+  'color-json-viewer-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误提示', usage: 'error：语法错误波浪线色' },
 
   // —— 自研搜索/替换工具条（Svelte 壳自渲染，内核仅提供 API；对齐 Semi 交互） ——
   'color-json-viewer-toolbar-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '工具条背景', usage: '搜索/替换工具条背景' },

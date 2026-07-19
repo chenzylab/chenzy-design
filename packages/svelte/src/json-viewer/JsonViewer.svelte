@@ -43,9 +43,9 @@
   interface Props {
     /** 展示内容（JSON 字符串）。非受控：仅初始建实例，后续变化不重建（对齐 Semi）。 */
     value?: string;
-    /** 高度（number 记为 px）。 */
+    /** 高度（number 记为 px）。默认 400（对齐 Semi）。 */
     height?: number | string;
-    /** 宽度（number 记为 px）。 */
+    /** 宽度（number 记为 px）。默认 400（对齐 Semi）。 */
     width?: number | string;
     /** 是否显示搜索入口（默认 true，对齐 Semi）。 */
     showSearch?: boolean;
@@ -63,8 +63,8 @@
 
   let {
     value = '',
-    height,
-    width,
+    height = 400,
+    width = 400,
     showSearch = true,
     renderSearchButton,
     options,
@@ -477,15 +477,32 @@
   .cd-json-viewer :global(.cd-json-viewer-keyword) {
     color: var(--cd-color-json-viewer-keyword);
   }
-  .cd-json-viewer :global(.cd-json-viewer-delimiter-bracket),
-  .cd-json-viewer :global(.cd-json-viewer-delimiter-array),
   .cd-json-viewer :global(.cd-json-viewer-delimiter-colon),
   .cd-json-viewer :global(.cd-json-viewer-delimiter-comma) {
     color: var(--cd-color-json-viewer-punctuation);
   }
+  /* 彩虹括号（对齐 Semi delimiter-bracket/array 0/1/2 = blue-7/green-7/orange-7 循环） */
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-bracket-0),
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-array-0) {
+    color: var(--cd-color-json-viewer-bracket-0);
+  }
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-bracket-1),
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-array-1) {
+    color: var(--cd-color-json-viewer-bracket-1);
+  }
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-bracket-2),
+  .cd-json-viewer :global(.cd-json-viewer-delimiter-array-2) {
+    color: var(--cd-color-json-viewer-bracket-2);
+  }
   .cd-json-viewer :global(.cd-json-viewer-comment-block),
   .cd-json-viewer :global(.cd-json-viewer-comment-line) {
     color: var(--cd-color-json-viewer-comment);
+  }
+  /* 折叠图标（对齐 Semi folding-icon，opacity 0.7 transition） */
+  .cd-json-viewer :global(.cd-json-viewer-folding-icon) {
+    color: var(--cd-color-json-viewer-folding-icon);
+    opacity: 0.7;
+    transition: opacity 0.8s;
   }
   .cd-json-viewer :global(.cd-json-viewer-line-number) {
     color: var(--cd-color-json-viewer-line-number);
@@ -499,7 +516,13 @@
   .cd-json-viewer :global(.cd-json-viewer-current-search-result) {
     background: var(--cd-color-json-viewer-search-current);
   }
+  /* 语法错误：波浪下划线（对齐 Semi error：text-decoration underline wavy danger 1px） */
   .cd-json-viewer :global(.cd-json-viewer-error) {
-    color: var(--cd-color-json-viewer-error);
+    text-decoration: underline wavy var(--cd-color-json-viewer-error);
+    text-decoration-thickness: 1px;
+  }
+  /* 容器纵向内边距（对齐 Semi paddingY 12px / paddingX 0） */
+  .cd-json-viewer :global(.cd-json-viewer-view-line) {
+    color: #237893;
   }
 </style>
