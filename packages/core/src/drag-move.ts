@@ -341,7 +341,9 @@ export function createDragMove(
         throw new Error('DragMove: drag element must be a valid element');
       }
       handlerEl = resolveHandler() ?? element;
+      // 对齐 Semi foundation init：element 强制 absolute（top/left 生效），handler 命令式写 cursor:move。
       element.style.position = 'absolute';
+      handlerEl.style.cursor = 'move';
       handlerEl.addEventListener('mousedown', onMouseDown);
       handlerEl.addEventListener('touchstart', onTouchStart);
       initialized = true;
