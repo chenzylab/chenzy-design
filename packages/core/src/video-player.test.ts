@@ -477,12 +477,12 @@ describe('progress geometry helpers', () => {
 });
 
 describe('formatTimeDisplay', () => {
-  it('formats m:ss and h:mm:ss', () => {
-    expect(formatTimeDisplay(0)).toBe('0:00');
-    expect(formatTimeDisplay(65)).toBe('1:05');
+  it('formats MM:SS and H:MM:SS（严格对齐 Semi formatTime：分钟补零、NaN→00:00）', () => {
+    expect(formatTimeDisplay(0)).toBe('00:00');
+    expect(formatTimeDisplay(65)).toBe('01:05');
     expect(formatTimeDisplay(3661)).toBe('1:01:01');
-    expect(formatTimeDisplay(Number.NaN)).toBe('0:00');
-    expect(formatTimeDisplay(-5)).toBe('0:00');
+    expect(formatTimeDisplay(Number.NaN)).toBe('00:00');
+    expect(formatTimeDisplay(-5)).toBe('00:00');
   });
 });
 

@@ -1,18 +1,15 @@
 <!--
-  VideoPlayer — native <video> player, ported from Semi Design's VideoPlayer.
-  No third-party media library (plyr/video.js/hls) — pure <video> + the
-  framework-agnostic createVideoPlayerFoundation from @chenzy-design/core.
+  VideoPlayer — 基于原生 <video> 的视频播放器，严格对齐 Semi VideoPlayer（无第三方媒体库）。
+  DOM 镜像 Semi：div.cd-videoPlayer.-mirror? > div.-wrapper.-wrapper-{theme}(video + resource-not-found)
+  + poster(img) + pause(中央 IconPlayCircle) + error(ErrorSvg) + notification
+  + div.-controls.-controls-hide?(VideoProgress + div.-menu(-menu-left: play/next/time/volume/rate
+  + -menu-right: quality/route/mirror/fullscreen/pip))。
+  复用 Button/Popover/Dropdown/AudioSlider/Tooltip + 11 具名图标。headless 逻辑在
+  @chenzy-design/core createVideoPlayerFoundation（对齐 Semi foundation + progressFoundation）。
 
-  State (isPlaying / volume / muted / time / buffered / notification / …) lives
-  here as $state; the foundation mutates it through an adapter and reads it back
-  through getState/getProps. Native media events + document keydown /
-  fullscreenchange are registered in a single $effect that runs once the <video>
-  is bound, and torn down (with foundation.destroy clearing timers) on cleanup.
-
-  controlsList gates which control items render (Semi shouldShowControlItem).
-  theme only switches the container background (Semi semantics). Every color /
-  size is a Component Token; no hard-coded palette. Class prefix cd-.
-  See specs Semi videoPlayer.foundation.js + VideoPlayer API.
+  ⚠️ 照搬 Semi 缺陷（用户决策）：clickToPlay 死 prop（声明未用，onClick 无条件 handlePlayOrPause）、
+  next 控件语义（绑 play/pause 非下一集）、硬编码色（token 层照搬）、音量键盘调节不实现。
+  ✅ 不复刻 Semi keydown 泄漏 bug：本库 add/removeEventListener 绑同一函数引用（Semi 传不同箭头函数致 remove 无效）。
 -->
 <script lang="ts">
   import { untrack } from 'svelte';
@@ -27,54 +24,60 @@
     type LabeledOption,
     type VideoMarker,
   } from '@chenzy-design/core';
+  import {
+    IconPlay,
+    IconPause,
+    IconRestart,
+    IconVolume1,
+    IconVolume2,
+    IconMute,
+    IconFlipHorizontal,
+    IconMaximize,
+    IconMinimize,
+    IconMiniPlayer,
+    IconPlayCircle,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
+  import Button from '../button/Button.svelte';
+  import Popover from '../popover/Popover.svelte';
+  import Dropdown from '../dropdown/Dropdown.svelte';
+  import DropdownMenu from '../dropdown/DropdownMenu.svelte';
+  import DropdownItem from '../dropdown/DropdownItem.svelte';
+  import AudioSlider from '../audio-player/AudioSlider.svelte';
   import VideoProgress from './VideoProgress.svelte';
-  import VolumeControl from './VolumeControl.svelte';
-  import ControlMenu from './ControlMenu.svelte';
+  import ErrorSvg from './ErrorSvg.svelte';
 
   type Theme = 'dark' | 'light';
 
   interface Props {
-    /** video source url */
     src?: string;
-    /** poster image url */
     poster?: string;
-    /** captions/subtitles track url */
     captionsSrc?: string;
-    /** container width; number → px */
     width?: number | string;
-    /** container height; number → px */
     height?: number | string;
     autoPlay?: boolean;
     loop?: boolean;
     muted?: boolean;
-    /** click the video surface to toggle play (default true) */
+    /** 点击视频面切换播放。**死 prop**（照搬 Semi：声明但未消费，onClick 无条件切换）。 */
     clickToPlay?: boolean;
-    /** initial volume 0–100 */
+    /** 初始音量 0–100 */
     volume?: number;
-    /** seek step (seconds) for ←/→ keys */
+    /** ←/→ 键快进快退秒数 */
     seekTime?: number;
-    /** which control items to show, in order */
+    /** 展示哪些控件项（对齐 Semi controlsList 10 项） */
     controlsList?: string[];
-    /** playback-rate menu options */
     playbackRateList?: PlaybackRateOption[];
-    /** initial playback rate */
     defaultPlaybackRate?: number;
-    /** quality menu options */
     qualityList?: LabeledOption[];
-    /** initial quality */
     defaultQuality?: string;
-    /** route menu options */
     routeList?: LabeledOption[];
-    /** initial route */
     defaultRoute?: string;
-    /** chapter markers */
     markers?: VideoMarker[];
-    /** background theme (affects container bg only) */
     theme?: Theme;
     crossOrigin?: 'anonymous' | 'use-credentials';
     class?: string;
-    /** bound native <video> element ref */
+    style?: string;
+    /** 绑定的原生 <video> 元素 ref（对齐 Semi forwardRef/ref） */
     videoRef?: HTMLVideoElement | null;
     onPlay?: () => void;
     onPause?: () => void;
@@ -107,6 +110,7 @@
     theme = 'dark',
     crossOrigin,
     class: className = '',
+    style = '',
     videoRef = $bindable(null),
     onPlay,
     onPause,
@@ -118,13 +122,13 @@
 
   const loc = useLocale();
 
-  // --- reactive state (foundation mutates via adapter) ---
+  // --- reactive state（foundation 经 adapter 写入）---
   let videoNode = $state<HTMLVideoElement | null>(null);
   let wrapperNode = $state<HTMLElement | null>(null);
 
   let isPlaying = $state(false);
   let muted = $state(untrack(() => mutedProp));
-  let volume = $state(untrack(() => volumeProp)); // 0–100
+  let volume = $state(untrack(() => (mutedProp ? 0 : volumeProp))); // 0–100
   let currentTime = $state(0);
   let totalTime = $state(0);
   let bufferedValue = $state(0);
@@ -138,12 +142,11 @@
   let route = $state<string | undefined>(untrack(() => defaultRoute));
   let isFullscreen = $state(false);
 
-  // localized bundle for foundation notifications
   const notiLocale = $derived<VideoPlayerLocale>({
     loading: loc().t('VideoPlayer.loading'),
     stall: loc().t('VideoPlayer.stall'),
-    mirror: loc().t('VideoPlayer.mirrorOn'),
-    cancelMirror: loc().t('VideoPlayer.mirrorOff'),
+    mirror: loc().t('VideoPlayer.mirror'),
+    cancelMirror: loc().t('VideoPlayer.cancelMirror'),
     rateChange: loc().t('VideoPlayer.rateChange', { rate: '${rate}' }),
     qualityChange: loc().t('VideoPlayer.qualityChange', { quality: '${quality}' }),
     routeChange: loc().t('VideoPlayer.routeChange', { route: '${route}' }),
@@ -180,35 +183,35 @@
     getProps: () => ({ volume: volumeProp, muted: mutedProp, seekTime, controlsList }),
   });
 
-  // --- derived UI helpers ---
+  // --- 派生 UI ---
   const show = (name: string): boolean => controlsList.includes(name);
-  const currentDisplay = $derived(formatTimeDisplay(currentTime));
-  const totalDisplay = $derived(formatTimeDisplay(totalTime));
+  const isResourceNotFound = $derived(src == null);
   const currentRateLabel = $derived(
     playbackRateList.find((r) => r.value === playbackRate)?.label ?? `${playbackRate}x`,
   );
   const currentQualityLabel = $derived(
     qualityList?.find((q) => q.value === quality)?.label ?? quality ?? '',
   );
-  const currentRouteLabel = $derived(
-    routeList?.find((r) => r.value === route)?.label ?? route ?? '',
-  );
+  const currentRouteLabel = $derived(routeList?.find((r) => r.value === route)?.label ?? route ?? '');
+  // poster 隐藏：播放中途（currentTime>0 且 <totalTime）淡出（对齐 Semi renderPoster）。
+  const posterHide = $derived(currentTime > 0 && currentTime < totalTime);
+  // 音量图标三态（对齐 Semi getVolumeIcon：muted→Mute、<50→Volume1、否则 Volume2）。
+  const volumeDisplay = $derived(muted ? 0 : volume);
 
-  const dimStyle = $derived(
+  const wrapperStyle = $derived(
     [
       width != null ? `width:${typeof width === 'number' ? `${width}px` : width}` : '',
       height != null ? `height:${typeof height === 'number' ? `${height}px` : height}` : '',
+      style,
     ]
       .filter(Boolean)
       .join(';'),
   );
 
-  // Register native media events + document keydown/fullscreenchange once the
-  // <video> is bound. Cleanup removes all listeners and clears foundation timers.
+  // 注册原生媒体事件 + document keydown/fullscreenchange。cleanup 全注销（绑同一引用，不复刻 Semi 泄漏 bug）。
   $effect(() => {
     const video = videoNode;
     if (!video) return;
-
     videoRef = video;
     foundation.init();
 
@@ -253,9 +256,10 @@
     };
   });
 
-  // --- control handlers ---
+  // --- 控制回调 ---
   function onSurfaceClick(): void {
-    if (clickToPlay) foundation.handlePlayOrPause();
+    // 照搬 Semi：无条件 handlePlayOrPause（clickToPlay 为死 prop）。
+    foundation.handlePlayOrPause();
   }
   function onTogglePlay(): void {
     foundation.handlePlayOrPause();
@@ -265,7 +269,6 @@
   }
   function onVolume(v: number): void {
     foundation.handleVolumeChange(v);
-    onVolumeChange?.(v);
   }
   function onSeek(v: number): void {
     foundation.handleTimeChange(v);
@@ -279,30 +282,19 @@
   function onPip(): void {
     foundation.handlePictureInPicture();
   }
-  // ControlMenu's option value is the wide `string | number`; narrow back to
-  // the concrete option type the foundation expects at the call boundary.
-  function onSelectRate(o: { label: string; value: string | number }): void {
-    foundation.handleRateChange({ label: o.label, value: Number(o.value) }, untrack(() => notiLocale));
+  function onSelectRate(o: PlaybackRateOption): void {
+    foundation.handleRateChange(o, untrack(() => notiLocale));
   }
-  function onSelectQuality(o: { label: string; value: string | number }): void {
-    foundation.handleQualityChange(
-      { label: o.label, value: String(o.value) },
-      untrack(() => notiLocale),
-    );
+  function onSelectQuality(o: LabeledOption): void {
+    foundation.handleQualityChange(o, untrack(() => notiLocale));
   }
-  function onSelectRoute(o: { label: string; value: string | number }): void {
-    foundation.handleRouteChange(
-      { label: o.label, value: String(o.value) },
-      untrack(() => notiLocale),
-    );
+  function onSelectRoute(o: LabeledOption): void {
+    foundation.handleRouteChange(o, untrack(() => notiLocale));
   }
-  function onMouseMove(): void {
-    foundation.handleMouseMove();
-  }
-  function onMouseEnter(): void {
+  function onWrapperEnter(): void {
     foundation.handleMouseEnterWrapper();
   }
-  function onMouseLeave(): void {
+  function onWrapperLeave(): void {
     foundation.handleMouseLeaveWrapper();
   }
 </script>
@@ -310,182 +302,235 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   bind:this={wrapperNode}
-  class={['cd-video-player', `cd-video-player--${theme}`, className]}
-  class:cd-video-player--playing={isPlaying}
-  class:cd-video-player--controls-visible={showControls || !isPlaying}
-  style={dimStyle}
-  onmousemove={onMouseMove}
-  onmouseenter={onMouseEnter}
-  onmouseleave={onMouseLeave}
+  class={['cd-videoPlayer', isMirror && 'cd-videoPlayer-mirror', className].filter(Boolean).join(' ')}
+  style={wrapperStyle || undefined}
+  onmouseenter={onWrapperEnter}
+  onmouseleave={onWrapperLeave}
 >
-  <!-- svelte-ignore a11y_media_has_caption -->
-  <video
-    bind:this={videoNode}
-    class="cd-video-player__video"
-    class:cd-video-player__video--mirror={isMirror}
-    {src}
-    {poster}
-    {loop}
-    autoplay={autoPlay}
-    muted={mutedProp}
-    crossorigin={crossOrigin}
-    playsinline
-    onclick={onSurfaceClick}
-  >
-    {#if captionsSrc}
-      <track kind="captions" src={captionsSrc} default />
+  <div class={['cd-videoPlayer-wrapper', `cd-videoPlayer-wrapper-${theme}`].join(' ')}>
+    <!-- svelte-ignore a11y_media_has_caption -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <video
+      bind:this={videoNode}
+      {src}
+      {poster}
+      {loop}
+      autoplay={autoPlay}
+      muted={mutedProp}
+      crossorigin={crossOrigin}
+      controls={false}
+      playsinline
+      onclick={onSurfaceClick}
+    >
+      {#if captionsSrc}<track kind="captions" src={captionsSrc} />{/if}
+    </video>
+    {#if isResourceNotFound}
+      <div class="cd-videoPlayer-resource-not-found">{loc().t('VideoPlayer.noResource')}</div>
     {/if}
-  </video>
+  </div>
 
+  <!-- poster：未播放且有 poster 时覆盖 -->
+  {#if !isPlaying && poster}
+    <img
+      class={['cd-videoPlayer-poster', posterHide && 'cd-videoPlayer-poster-hide']
+        .filter(Boolean)
+        .join(' ')}
+      src={poster}
+      alt="poster"
+    />
+  {/if}
+
+  <!-- 中央播放按钮（未播放且无错误）-->
+  {#if !isPlaying && !isError}
+    <div class="cd-videoPlayer-pause"><IconPlayCircle /></div>
+  {/if}
+
+  <!-- 错误态（ErrorSvg 插画 + 文案）-->
   {#if isError}
-    <div class="cd-video-player__error" role="alert">
-      {loc().t('VideoPlayer.error')}
+    <div class={['cd-videoPlayer-error', `cd-videoPlayer-error-${theme}`].join(' ')} role="alert">
+      <div class="cd-videoPlayer-error-svg"><ErrorSvg /></div>
+      {loc().t('VideoPlayer.videoError')}
     </div>
   {/if}
 
+  <!-- notification（loading/stall/临时提示）-->
   {#if showNotification && notificationContent}
-    <div class="cd-video-player__notification" aria-live="polite">
-      {notificationContent}
-    </div>
+    <div class="cd-videoPlayer-notification" aria-live="polite">{notificationContent}</div>
   {/if}
 
-  <div class="cd-video-player__controls" aria-hidden={!(showControls || !isPlaying)}>
-    {#if show('time') || totalTime > 0}
-      <div class="cd-video-player__progress-row">
-        <VideoProgress
-          value={currentTime}
-          buffered={bufferedValue}
-          max={totalTime}
-          {markers}
-          ariaLabel={loc().t('VideoPlayer.progress')}
-          onChange={onSeek}
-        />
-      </div>
-    {/if}
-
-    <div class="cd-video-player__bar">
-      <div class="cd-video-player__group">
+  <!-- 控制栏 -->
+  <div class={['cd-videoPlayer-controls', !showControls && 'cd-videoPlayer-controls-hide']
+      .filter(Boolean)
+      .join(' ')}>
+    <VideoProgress
+      value={currentTime}
+      buffered={bufferedValue}
+      max={totalTime}
+      {markers}
+      ariaLabel={loc().t('VideoPlayer.progress')}
+      onChange={onSeek}
+    />
+    <div class="cd-videoPlayer-controls-menu">
+      <div class="cd-videoPlayer-controls-menu-left">
         {#if show('play')}
-          <button
-            type="button"
-            class="cd-video-player__btn"
-            aria-label={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+          <Button
+            theme="borderless"
+            class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
             onclick={onTogglePlay}
           >
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="currentColor">
-              {#if isPlaying}
-                <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-              {:else}
-                <path d="M8 5v14l11-7z" />
-              {/if}
-            </svg>
-          </button>
+            {#snippet icon()}{#if isPlaying}<IconPause />{:else}<IconPlay />{/if}{/snippet}
+          </Button>
         {/if}
 
-        {#if show('volume')}
-          <VolumeControl
-            {volume}
-            {muted}
-            muteLabel={loc().t('VideoPlayer.mute')}
-            unmuteLabel={loc().t('VideoPlayer.unmute')}
-            volumeLabel={loc().t('VideoPlayer.volume')}
-            onToggleMute={onToggleMute}
-            onVolumeChange={onVolume}
-          />
+        {#if show('next')}
+          <!-- next 控件：照搬 Semi 语义（绑 play/pause 非下一集，图标 IconRestart rotate=180）-->
+          <Button
+            theme="borderless"
+            class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+            onclick={onTogglePlay}
+          >
+            {#snippet icon()}<IconRestart rotate={180} />{/snippet}
+          </Button>
         {/if}
 
         {#if show('time')}
-          <span class="cd-video-player__time" aria-hidden="true">
-            {currentDisplay} / {totalDisplay}
-          </span>
+          <div class="cd-videoPlayer-controls-time">
+            {formatTimeDisplay(currentTime)} / {formatTimeDisplay(totalTime)}
+          </div>
+        {/if}
+
+        {#if show('volume')}
+          <Popover position="top" class="cd-videoPlayer-controls-popover">
+            {#snippet content()}
+              <div class="cd-videoPlayer-controls-volume">
+                <div class="cd-videoPlayer-controls-volume-title">{volumeDisplay}%</div>
+                <AudioSlider
+                  value={volumeDisplay}
+                  max={100}
+                  vertical
+                  height={120}
+                  showTooltip={false}
+                  ariaLabel={loc().t('VideoPlayer.volume')}
+                  onChange={onVolume}
+                />
+              </div>
+            {/snippet}
+            <Button
+              theme="borderless"
+              class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+              ariaLabel={muted ? loc().t('VideoPlayer.unmute') : loc().t('VideoPlayer.mute')}
+              onclick={onToggleMute}
+            >
+              {#snippet icon()}
+                {#if muted}<IconMute />{:else if volume < 50}<IconVolume1 />{:else}<IconVolume2
+                  />{/if}
+              {/snippet}
+            </Button>
+          </Popover>
+        {/if}
+
+        {#if show('playbackRate')}
+          <Dropdown position="top" className="cd-videoPlayer-controls-popup-menu">
+            {#snippet render()}
+              <DropdownMenu>
+                {#each playbackRateList as opt (opt.value)}
+                  <DropdownItem
+                    class="cd-videoPlayer-controls-popup-menu-item"
+                    active={opt.value === playbackRate}
+                    onClick={() => onSelectRate(opt)}
+                  >
+                    {opt.label}
+                  </DropdownItem>
+                {/each}
+              </DropdownMenu>
+            {/snippet}
+            <div class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-popup" role="button" tabindex="0">
+              {currentRateLabel}
+            </div>
+          </Dropdown>
         {/if}
       </div>
 
-      <div class="cd-video-player__group">
-        {#if show('playbackRate')}
-          <ControlMenu
-            options={playbackRateList}
-            current={playbackRate}
-            label={loc().t('VideoPlayer.playbackRate')}
-            onSelect={onSelectRate}
-          >
-            {#snippet trigger()}
-              <span class="cd-video-player__btn-text">{currentRateLabel}</span>
-            {/snippet}
-          </ControlMenu>
-        {/if}
-
+      <div class="cd-videoPlayer-controls-menu-right">
         {#if show('quality') && qualityList && qualityList.length > 0}
-          <ControlMenu
-            options={qualityList}
-            current={quality}
-            label={loc().t('VideoPlayer.quality')}
-            onSelect={onSelectQuality}
-          >
-            {#snippet trigger()}
-              <span class="cd-video-player__btn-text">{currentQualityLabel}</span>
+          <Dropdown position="top" className="cd-videoPlayer-controls-popup-menu">
+            {#snippet render()}
+              <DropdownMenu>
+                {#each qualityList as opt (opt.value)}
+                  <DropdownItem
+                    class="cd-videoPlayer-controls-popup-menu-item"
+                    active={opt.value === quality}
+                    onClick={() => onSelectQuality(opt)}
+                  >
+                    {opt.label}
+                  </DropdownItem>
+                {/each}
+              </DropdownMenu>
             {/snippet}
-          </ControlMenu>
+            <div class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-popup" role="button" tabindex="0">
+              {currentQualityLabel}
+            </div>
+          </Dropdown>
         {/if}
 
         {#if show('route') && routeList && routeList.length > 0}
-          <ControlMenu
-            options={routeList}
-            current={route}
-            label={loc().t('VideoPlayer.route')}
-            onSelect={onSelectRoute}
-          >
-            {#snippet trigger()}
-              <span class="cd-video-player__btn-text">{currentRouteLabel}</span>
+          <Dropdown position="top" className="cd-videoPlayer-controls-popup-menu">
+            {#snippet render()}
+              <DropdownMenu>
+                {#each routeList as opt (opt.value)}
+                  <DropdownItem
+                    class="cd-videoPlayer-controls-popup-menu-item"
+                    active={opt.value === route}
+                    onClick={() => onSelectRoute(opt)}
+                  >
+                    {opt.label}
+                  </DropdownItem>
+                {/each}
+              </DropdownMenu>
             {/snippet}
-          </ControlMenu>
+            <div class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-popup" role="button" tabindex="0">
+              {currentRouteLabel}
+            </div>
+          </Dropdown>
         {/if}
 
         {#if show('mirror')}
-          <button
-            type="button"
-            class="cd-video-player__btn"
-            aria-label={loc().t('VideoPlayer.mirror')}
+          <Button
+            theme="borderless"
+            class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+            ariaLabel={loc().t('VideoPlayer.mirror')}
             aria-pressed={isMirror}
             onclick={onMirror}
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">
-              <path d="M11 3h2v18h-2zM3 8l6-2v12l-6-2V8zm18 0v8l-6 2V6l6 2z" />
-            </svg>
-          </button>
-        {/if}
-
-        {#if show('pictureInPicture')}
-          <button
-            type="button"
-            class="cd-video-player__btn"
-            aria-label={loc().t('VideoPlayer.pictureInPicture')}
-            onclick={onPip}
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">
-              <path d="M21 3H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H3V5h18v14zm-2-8h-8v6h8v-6z" />
-            </svg>
-          </button>
+            {#snippet icon()}<IconFlipHorizontal />{/snippet}
+          </Button>
         {/if}
 
         {#if show('fullscreen')}
-          <button
-            type="button"
-            class="cd-video-player__btn"
-            aria-label={isFullscreen
+          <Button
+            theme="borderless"
+            class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+            ariaLabel={isFullscreen
               ? loc().t('VideoPlayer.exitFullscreen')
               : loc().t('VideoPlayer.fullscreen')}
             aria-pressed={isFullscreen}
             onclick={onFullscreen}
           >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor">
-              {#if isFullscreen}
-                <path d="M9 9H5V7h2V5h2v4zm10-2h-2V5h-2v4h4V7zM5 15h2v2h2v2H5v-4zm12 2v-2h2v4h-4v-2h2z" />
-              {:else}
-                <path d="M7 7h4V5H5v6h2V7zm10 0v4h2V5h-6v2h4zM7 17v-4H5v6h6v-2H7zm10 0h-4v2h6v-6h-2v4z" />
-              {/if}
-            </svg>
-          </button>
+            {#snippet icon()}{#if isFullscreen}<IconMinimize />{:else}<IconMaximize />{/if}{/snippet}
+          </Button>
+        {/if}
+
+        {#if show('pictureInPicture')}
+          <Button
+            theme="borderless"
+            class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
+            ariaLabel={loc().t('VideoPlayer.pictureInPicture')}
+            onclick={onPip}
+          >
+            {#snippet icon()}<IconMiniPlayer />{/snippet}
+          </Button>
         {/if}
       </div>
     </div>
@@ -493,116 +538,232 @@
 </div>
 
 <style>
-  .cd-video-player {
+  /* 严格镜像 Semi videoPlayer.scss。 */
+  .cd-videoPlayer {
     position: relative;
     display: inline-block;
     max-width: 100%;
-    overflow: hidden;
-    border-radius: var(--cd-video-player-radius, var(--cd-border-radius-medium, 6px));
-    background: var(--cd-video-player-bg-dark, #1c1f23);
+  }
+  .cd-videoPlayer :global(::-webkit-media-controls) {
+    display: none;
+  }
+  .cd-videoPlayer-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
     line-height: 0;
   }
-  .cd-video-player--light {
-    background: var(--cd-video-player-bg-light, var(--cd-color-bg-0));
-  }
-  .cd-video-player__video {
-    display: block;
+  .cd-videoPlayer-wrapper :global(video) {
     width: 100%;
     height: 100%;
     object-fit: contain;
   }
-  .cd-video-player__video--mirror {
-    transform: scaleX(-1);
+  .cd-videoPlayer-wrapper-dark {
+    background-color: var(--cd-color-videoPlayer-theme-dark-bg);
+    color: var(--cd-color-videoPlayer-theme-dark-text);
+  }
+  .cd-videoPlayer-wrapper-light {
+    background-color: var(--cd-color-videoPlayer-theme-light-bg);
+    color: var(--cd-color-videoPlayer-theme-light-text);
   }
 
-  .cd-video-player__controls {
-    position: absolute;
+  /* 镜像：video 水平翻转（对齐 Semi rotateY(180deg)）。 */
+  .cd-videoPlayer-mirror :global(video) {
+    transform: rotateX(0deg) rotateY(180deg);
+  }
+
+  .cd-videoPlayer-pause {
+    top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    padding: var(--cd-video-player-controls-padding, 12px);
-    background: var(
-      --cd-video-player-controls-bg,
-      linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.6))
-    );
-    opacity: 0;
-    transition: opacity var(--cd-video-player-transition, 150ms) ease;
-    line-height: normal;
-  }
-  .cd-video-player--controls-visible .cd-video-player__controls {
-    opacity: 1;
-  }
-
-  .cd-video-player__progress-row {
-    margin-bottom: var(--cd-video-player-controls-gap, 8px);
-  }
-  .cd-video-player__bar {
+    width: 100%;
+    height: 100%;
+    position: absolute;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--cd-video-player-controls-gap, 8px);
-  }
-  .cd-video-player__group {
-    display: flex;
-    align-items: center;
-    gap: var(--cd-video-player-controls-gap, 8px);
-  }
-
-  .cd-video-player__btn {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px;
-    border: none;
-    background: transparent;
-    color: var(--cd-video-player-icon-color, var(--cd-color-white));
-    cursor: pointer;
-    border-radius: var(--cd-border-radius-small, 3px);
-    transition: color var(--cd-video-player-transition, 150ms) ease;
+    pointer-events: none;
   }
-  .cd-video-player__btn:hover {
-    color: var(--cd-video-player-icon-color-hover, rgba(255, 255, 255, 0.85));
-  }
-  .cd-video-player__btn:focus-visible {
-    outline: 2px solid var(--cd-focus-ring, rgba(255, 255, 255, 0.6));
-    outline-offset: 1px;
-  }
-  .cd-video-player__btn-text {
-    font-size: var(--cd-font-size-regular, 14px);
-    line-height: 1;
-    padding: 0 4px;
-  }
-
-  .cd-video-player__time {
-    color: var(--cd-video-player-text-color, var(--cd-color-white));
-    font-size: var(--cd-font-size-regular, 14px);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .cd-video-player__notification {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 8px 16px;
-    background: var(--cd-video-player-notification-bg, rgba(0, 0, 0, 0.6));
-    color: var(--cd-video-player-notification-color, var(--cd-color-white));
-    border-radius: var(--cd-video-player-notification-radius, var(--cd-border-radius-medium, 6px));
-    font-size: var(--cd-font-size-regular, 14px);
-    line-height: normal;
+  .cd-videoPlayer-pause :global(svg) {
+    font-size: 88px;
+    width: 88px;
+    height: 88px;
+    color: var(--cd-color-videoPlayer-pause-bg);
     pointer-events: none;
   }
 
-  .cd-video-player__error {
+  .cd-videoPlayer-error {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-weight: var(--cd-font-videoPlayer-error-fontWeight);
+    font-size: var(--cd-font-videoPlayer-error-fontSize);
+  }
+  .cd-videoPlayer-error-svg {
+    margin-bottom: var(--cd-spacing-videoPlayer-error-svg-marginBottom);
+  }
+  .cd-videoPlayer-error-dark {
+    background-color: var(--cd-color-videoPlayer-theme-dark-bg);
+    color: var(--cd-color-videoPlayer-theme-dark-text);
+  }
+  .cd-videoPlayer-error-dark :global(path) {
+    fill: var(--cd-color-videoPlayer-theme-dark-text);
+  }
+  .cd-videoPlayer-error-light {
+    background-color: var(--cd-color-videoPlayer-theme-light-bg);
+    color: var(--cd-color-videoPlayer-theme-light-text);
+  }
+  .cd-videoPlayer-error-light :global(path) {
+    fill: var(--cd-color-videoPlayer-theme-light-text);
+  }
+
+  .cd-videoPlayer-poster {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    object-fit: contain;
+  }
+  .cd-videoPlayer-poster-hide {
+    opacity: 0;
+  }
+
+  .cd-videoPlayer-resource-not-found {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--cd-video-player-notification-bg, rgba(0, 0, 0, 0.6));
-    color: var(--cd-video-player-notification-color, var(--cd-color-white));
-    font-size: var(--cd-font-size-regular, 14px);
-    line-height: normal;
+  }
+
+  .cd-videoPlayer-notification {
+    position: absolute;
+    bottom: calc(
+      var(--cd-height-videoPlayer-controls-menu-default) +
+        var(--cd-spacing-videoPlayer-notification-bottom)
+    );
+    left: var(--cd-spacing-videoPlayer-notification-left);
+    text-align: center;
+    background-color: var(--cd-color-videoPlayer-notification-bg);
+    color: var(--cd-color-videoPlayer-notification-text);
+    padding: var(--cd-spacing-videoPlayer-notification-text-paddingY)
+      var(--cd-spacing-videoPlayer-notification-text-paddingX);
+    line-height: var(--cd-font-videoPlayer-notification-lineHeight);
+    border-radius: var(--cd-radius-videoPlayer-notification);
+    font-size: var(--cd-font-videoPlayer-notification-fontSize);
+  }
+
+  .cd-videoPlayer-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: fit-content;
+    opacity: 1;
+    transition: opacity var(--cd-animation-duration-videoPlayer-controls-show) ease-in-out;
+    z-index: 1;
+  }
+  .cd-videoPlayer-controls-hide {
+    opacity: 0;
+  }
+  .cd-videoPlayer-controls-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    height: var(--cd-height-videoPlayer-controls-menu-default);
+    background-color: var(--cd-color-videoPlayer-controls-bg);
+    padding: var(--cd-spacing-videoPlayer-controls-paddingY)
+      var(--cd-spacing-videoPlayer-controls-paddingX);
+  }
+  .cd-videoPlayer-controls-menu-left,
+  .cd-videoPlayer-controls-menu-right {
+    display: flex;
+    align-items: center;
+  }
+  .cd-videoPlayer :global(.cd-videoPlayer-controls-menu-item) {
+    margin-right: var(--cd-spacing-videoPlayer-controls-item-gap);
+  }
+  .cd-videoPlayer :global(.cd-videoPlayer-controls-menu-button svg) {
+    color: var(--cd-color-videoPlayer-controls-text);
+  }
+
+  .cd-videoPlayer-controls-time {
+    color: var(--cd-color-videoPlayer-controls-text);
+    font-size: var(--cd-font-videoPlayer-controls-time-text-fontSize);
+    margin-right: var(--cd-spacing-videoPlayer-controls-item-gap);
+    padding: 0 var(--cd-spacing-videoPlayer-controls-time-paddingX);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 倍速/清晰度/线路触发块（对齐 Semi -controls-popup）。 */
+  .cd-videoPlayer-controls-popup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cd-width-videoPlayer-controls-popup-item-default);
+    height: var(--cd-height-videoPlayer-controls-popup-default);
+    background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-default);
+    color: var(--cd-color-videoPlayer-controls-text);
+    font-weight: var(--cd-font-videoPlayer-controls-popup-item-fontWeight);
+    font-size: var(--cd-font-videoPlayer-controls-item-fontSize);
+    line-height: var(--cd-font-videoPlayer-controls-popup-item-lineHeight);
+    border-radius: var(--cd-radius-videoPlayer-controls-item);
+    cursor: pointer;
+  }
+
+  /* 音量弹层（Popover content 内）。 */
+  .cd-videoPlayer-controls-volume {
+    box-sizing: border-box;
+    width: var(--cd-width-videoPlayer-controls-volume-default);
+    height: var(--cd-height-videoPlayer-controls-volume-default);
+    background-color: var(--cd-color-videoPlayer-controls-item-bg);
+    color: var(--cd-color-videoPlayer-controls-popup-item-text-default);
+    border-radius: var(--cd-radius-videoPlayer-controls-popup);
+    padding: var(--cd-spacing-videoPlayer-controls-volume-popup-paddingY)
+      var(--cd-spacing-videoPlayer-controls-volume-popup-paddingX);
+    line-height: var(--cd-font-videoPlayer-controls-popup-item-lineHeight);
+    font-size: var(--cd-font-videoPlayer-controls-item-fontSize);
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .cd-videoPlayer-controls-volume-title {
+    padding: var(--cd-spacing-videoPlayer-controls-volume-title-paddingX)
+      var(--cd-spacing-videoPlayer-controls-volume-title-paddingY);
+    text-align: center;
+  }
+
+  /* 弹层菜单（Dropdown className）+ 项 hover/active。 */
+  :global(.cd-videoPlayer-controls-popup-menu) {
+    width: var(--cd-width-videoPlayer-controls-popup-default);
+    background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-default);
+    border-radius: var(--cd-radius-videoPlayer-controls-popup);
+  }
+  :global(.cd-videoPlayer-controls-popup-menu-item) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--cd-spacing-videoPlayer-controls-popup-paddingY)
+      var(--cd-spacing-videoPlayer-controls-popup-paddingX);
+    height: var(--cd-height-videoPlayer-controls-popup-item-default);
+    color: var(--cd-color-videoPlayer-controls-text);
+    font-size: var(--cd-font-videoPlayer-controls-item-fontSize);
+  }
+  :global(.cd-videoPlayer-controls-popup-menu-item:hover) {
+    background-color: var(--cd-color-videoPlayer-controls-item-popup-bg-hover) !important;
+  }
+
+  /* Popover 容器透明（对齐 Semi -controls-popover）。 */
+  :global(.cd-videoPlayer-controls-popover) {
+    background-color: transparent;
   }
 </style>

@@ -13,7 +13,8 @@
 
 ## 3. 分层实现
 - **headless（core/）**：`packages/core/src/video-player/createVideoPlayer.ts`（或单文件 `video-player.ts`）——对齐 Semi `VideoPlayerFoundation`：状态（isPlaying/currentTime/totalTime/buffered/volume/muted/playbackRate/quality/route/isMirror/showControls/isError/notification）、方法（handlePlayOrPause/handleTimeChange/handleVolumeChange/handleFullscreen/handleRateChange/handleQualityChange/handleRouteChange/handleMirror/handlePictureInPicture/handleBodyKeyDown 等）。框架无关，adapter 注入 DOM 读写（getVideo/getVideoWrapper）与 notify 回调。进度条子逻辑对齐 `progressFoundation`（拖拽定位 → 时间换算）。
-- **渲染（svelte/）**：`VideoPlayer.svelte` + 内部子件（`VideoControls`、`VideoProgress`、`VolumeControl`、控件下拉菜单）。`<video bind:this>`，`$effect` 注册/注销原生事件（timeupdate/durationchange/progress/ended/error/canplay/waiting/stalled/leavepictureinpicture + document keydown/fullscreenchange）。销毁时清 timer + 事件。
+- **渲染（svelte/）**：破坏性对齐 Semi。`VideoPlayer.svelte` + `VideoProgress.svelte`（自建进度条镜像 Semi videoProgress.tsx：markers 多段/缓冲/已播放三层/handle/Tooltip 两行预览）+ `ErrorSvg.svelte`（错误态插画镜像 Semi ErrorSvg.tsx）。**复用 Button/Popover/Dropdown/AudioSlider + 11 具名图标**（IconPlay/Pause/Restart/Volume1/Volume2/Mute/FlipHorizontal/Maximize/Minimize/MiniPlayer/PlayCircle），**删自造 VolumeControl/ControlMenu**（改用 Popover+AudioSlider / Dropdown）。DOM 前缀 `cd-videoPlayer`（驼峰对齐 Semi semi-videoPlayer）。`<video bind:this>`，`$effect` 注册/注销原生事件（timeupdate/durationchange/progress/ended/error/canplay/waiting/stalled/leavepictureinpicture + document keydown/fullscreenchange，**绑同一函数引用——不复刻 Semi remove 无效泄漏 bug**）。销毁时清 timer + 事件。
+- **照搬 Semi 缺陷**（用户决策，与 lottie/audio-player 同标准）：`clickToPlay` 为死 prop（声明未消费，onClick 无条件 handlePlayOrPause）、`next` 控件绑 play/pause（非下一集，图标 IconRestart rotate=180）、多处硬编码色（token 层照搬 controls-bg/text/popup-hover）、音量键盘调节不实现。
 
 ## 4. API（对齐 Semi，完整）
 ### Props
@@ -56,17 +57,7 @@
 无（内容由 props 提供）。
 
 ## 5. 主题 / Token
-控件全部走 token；`theme` 只切背景色（对齐 Semi）。
-| Token | 默认 | 用途 |
-|---|---|---|
-| `--cd-video-player-bg` | 深/浅背景 | 播放器背景（theme 切换） |
-| `--cd-video-player-controls-bg` | 半透明遮罩 | 控件栏背景 |
-| `--cd-video-player-progress-track` | fill | 进度条轨 |
-| `--cd-video-player-progress-buffered` | fill 强 | 缓冲进度 |
-| `--cd-video-player-progress-played` | 品牌色 | 已播放 |
-| `--cd-video-player-marker` | 语义色 | 章节标记点 |
-| `--cd-video-player-icon` | 图标色 | 控件图标 |
-（禁写死；深浅两主题都需 token 解析无悬空。）
+**68 个 token 严格镜像 Semi videoPlayer variables.scss(63) + animation.scss(5)**（名+值对应）：命名 `--cd-{category}-videoPlayer-{part}`（Semi `$color-videoPlayer_theme_dark-bg` → `--cd-color-videoPlayer-theme-dark-bg`，`_` 段分隔映射 `-`，videoPlayer 驼峰整名保留）。值 `rgba(var(--semi-x-n),a)` → alpha=1 用 `var(--cd-color-x-n)`、alpha<1 用 color-mix；`var(--semi-color-*)` → `var(--cd-color-*)`（`--semi-color-default` 映射真实值 grey-0）；**硬编码 RGB/#fff 照搬 Semi**（controls-bg=rgba(28,31,35,.8) / controls-text=#fff / popup-hover=rgba(67,68,74,1) / handle-bg=#fff，Semi 未 token 化，照搬缺陷）。分组：Color 20 + WH 11 + Spacing 19 + Radius 5 + Font 8 + Animation 5 = 68。`theme` 只切 wrapper/error 背景色（对齐 Semi）。（禁写死其余；深浅两主题各一套色。）
 
 > **对齐优先**：a11y 以 Semi 实际行为为基线，不改变 Semi 的交互语义。下列「增强」仅在**不偏离 Semi 行为**前提下附加（如纯 aria 标注），Semi 没有的键位默认**不**加。
 - 播放器容器可聚焦（`tabindex`），键盘（焦点在容器内时）：`Space` 播放/暂停、`←/→` 跳转 `seekTime`（**严格对齐 Semi handleBodyKeyDown**）。`↑/↓` 音量 Semi 源码注释掉了 → **默认不实现**（保持对齐）；如实现须登记偏离。
@@ -75,7 +66,9 @@
 - reduced-motion：控件动画降级。RTL：跟随 Semi。
 
 ## 7. 国际化
-- i18n key：`VideoPlayer.{play,pause,mute,unmute,fullscreen,exitFullscreen,pictureInPicture,mirror,playbackRate,quality,route,volume,loading,error,replay}` 等。文案全走 locale，不硬编码。
+- **对齐 Semi 9 key**（通知文案/mediaError）：`VideoPlayer.{rateChange,qualityChange,routeChange,mirror,cancelMirror,loading,stall,noResource,videoError}`；`rateChange/qualityChange/routeChange` 用 `${rate}`/`${quality}`/`${route}` 插值。
+- **本库无障碍必需的 aria-label 超集**（Semi 控制栏按钮无 aria-label，属 Semi 缺陷；本库补齐）：`VideoPlayer.{play,pause,mute,unmute,volume,fullscreen,exitFullscreen,pictureInPicture,progress}`。
+- 移除旧超集 key（replay/playbackRate/quality/route/error/mirrorOn/mirrorOff）。文案全走 locale，不硬编码（除照搬 Semi 硬编码色的 token）。
 
 ## 8. 文案
 - 控件 tooltip/aria 文案简洁，遵循 content-guidelines。
@@ -84,9 +77,9 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | ≤ 9 KB（实测 7.66 KB，2026-07-04 校准） |
-| 运行时 | mousemove 控件显隐 debounce；timeupdate 不做重渲染，只更进度 |
-- 无第三方媒体库，主要体积是控件 + 图标。
+| gzip 体积 | ≤ 9 KB（破坏性对齐 Semi 后复用 Button/Popover/Dropdown/AudioSlider + 11 具名图标，实测 7.83 KB，2026-07 校准，仍达标） |
+| 运行时 | mousemove 控件显隐 throttle；timeupdate 不做重渲染，只更进度 |
+- 无第三方媒体库（原生 `<video>`），主要体积是控件逻辑 + 具名图标。
 
 ## 10. AI 元数据
 提供 `meta.ts`：props/events/tokens/a11y/examples。

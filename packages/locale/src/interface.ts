@@ -534,50 +534,44 @@ export interface Locale {
     collapse: string;
   };
   VideoPlayer: {
-    /** play button aria-label */
-    play: string;
-    /** pause button aria-label */
-    pause: string;
-    /** replay button aria-label (after ended) */
-    replay: string;
-    /** mute button aria-label */
-    mute: string;
-    /** unmute button aria-label */
-    unmute: string;
-    /** volume slider aria-label */
-    volume: string;
-    /** enter-fullscreen button aria-label */
-    fullscreen: string;
-    /** exit-fullscreen button aria-label */
-    exitFullscreen: string;
-    /** picture-in-picture button aria-label */
-    pictureInPicture: string;
-    /** mirror button aria-label */
-    mirror: string;
-    /** playback-rate menu aria-label */
-    playbackRate: string;
-    /** quality menu aria-label */
-    quality: string;
-    /** route menu aria-label */
-    route: string;
-    /** progress slider aria-label */
-    progress: string;
-    /** buffering notification text */
-    loading: string;
-    /** stalled notification text */
-    stall: string;
-    /** error state text */
-    error: string;
-    /** mirror-on transient notification */
-    mirrorOn: string;
-    /** mirror-off transient notification */
-    mirrorOff: string;
-    /** rate-change notification, uses {rate} */
+    // —— Semi 对齐的 9 key（通知文案/mediaError，对齐 Semi VideoPlayer locale）——
+    /** 切换速率通知，uses {rate}（对齐 Semi rateChange） */
     rateChange: string;
-    /** quality-change notification, uses {quality} */
+    /** 切换清晰度通知，uses {quality}（对齐 Semi qualityChange） */
     qualityChange: string;
-    /** route-change notification, uses {route} */
+    /** 切换线路通知，uses {route}（对齐 Semi routeChange） */
     routeChange: string;
+    /** 镜像通知/按钮（对齐 Semi mirror） */
+    mirror: string;
+    /** 取消镜像通知（对齐 Semi cancelMirror） */
+    cancelMirror: string;
+    /** 加载中通知（对齐 Semi loading） */
+    loading: string;
+    /** 加载失败通知（对齐 Semi stall） */
+    stall: string;
+    /** 暂无资源（对齐 Semi noResource） */
+    noResource: string;
+    /** 视频加载错误（对齐 Semi videoError） */
+    videoError: string;
+    // —— 本库无障碍必需的 aria-label 超集（Semi 控制栏按钮无 aria-label，属 Semi 缺陷；本库补齐）——
+    /** 播放按钮 aria-label */
+    play: string;
+    /** 暂停按钮 aria-label */
+    pause: string;
+    /** 静音按钮 aria-label */
+    mute: string;
+    /** 取消静音按钮 aria-label */
+    unmute: string;
+    /** 音量滑块 aria-label */
+    volume: string;
+    /** 进入全屏按钮 aria-label */
+    fullscreen: string;
+    /** 退出全屏按钮 aria-label */
+    exitFullscreen: string;
+    /** 画中画按钮 aria-label */
+    pictureInPicture: string;
+    /** 进度滑块 aria-label */
+    progress: string;
   };
   JsonViewer: {
     /** 编辑器容器 role=textbox 的可访问名 */

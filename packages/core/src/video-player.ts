@@ -555,17 +555,20 @@ export function buildMarkerSegments(
   });
 }
 
-/** Format seconds as `m:ss` / `h:mm:ss` for the time display. */
+/**
+ * Format seconds as `MM:SS` / `H:MM:SS`（严格对齐 Semi utils.formatTime）：
+ * NaN/非法 → '00:00'；≥1h → `H:MM:SS`；否则 `MM:SS`（分钟也补零）。
+ */
 export function formatTimeDisplay(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
   const total = Math.floor(seconds);
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   const ss = String(s).padStart(2, '0');
+  const mm = String(m).padStart(2, '0');
   if (h > 0) {
-    const mm = String(m).padStart(2, '0');
     return `${h}:${mm}:${ss}`;
   }
-  return `${m}:${ss}`;
+  return `${mm}:${ss}`;
 }

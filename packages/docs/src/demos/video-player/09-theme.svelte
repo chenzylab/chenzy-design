@@ -1,4 +1,4 @@
-<!-- 基本用法：传入 src / poster / height 即可播放。严格对齐 Semi「基本用法」。 -->
+<!-- 主题：theme="light" 浅色主题（默认 dark，仅影响 wrapper/error 背景色）。严格对齐 Semi「主题」。 -->
 <script lang="ts">
   import { VideoPlayer } from '@chenzy-design/svelte';
 
@@ -8,4 +8,4 @@
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/poster2.jpeg';
 </script>
 
-<VideoPlayer {src} {poster} height={360} />
+<VideoPlayer {src} {poster} height={360} theme="light" />
