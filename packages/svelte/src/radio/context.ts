@@ -2,6 +2,8 @@ import { getContext, setContext } from 'svelte';
 
 export type RadioValue = string | number | boolean;
 export type RadioType = 'default' | 'button' | 'card' | 'pureCard';
+/** 高级模式：advanced 允许 checked 时点击取消（input 变 checkbox）；'' 为普通模式。 */
+export type RadioMode = 'advanced' | '';
 
 /**
  * 对齐 Semi `RadioChangeEvent`（radioInnerFoundation.ts）：onChange 回调收到的合成事件，
@@ -10,7 +12,7 @@ export type RadioType = 'default' | 'button' | 'card' | 'pureCard';
 export interface RadioChangeEvent {
   target: {
     checked: boolean;
-    value: RadioValue;
+    value: RadioValue | undefined;
     [x: string]: unknown;
   };
   /** 触发本次变更的原生 DOM 事件（点击 / 键盘）。 */
@@ -19,29 +21,19 @@ export interface RadioChangeEvent {
   preventDefault: () => void;
 }
 
-export interface RadioRegistration {
-  value: RadioValue;
-  disabled: boolean;
-  /** focusable element to receive roving focus: native input (default) or role=radio container (button/card) */
-  el: HTMLElement;
-}
-
 export interface RadioGroupContext {
-  /** group name shared by all radios */
+  /** group name shared by all radios（同 name 的原生 radio 天然成组，方向键切换由浏览器接管）。 */
   name: string;
   getSelected: () => RadioValue | undefined;
   getDisabled: () => boolean;
   /** group-level render form (default/button/card/pureCard) */
   getType: () => RadioType;
+  /** group-level advanced/normal mode */
+  getMode: () => RadioMode;
   /** group-level button size, only for type='button' */
   getButtonSize: () => 'small' | 'middle' | 'large' | undefined;
-  select: (v: RadioValue, e: RadioChangeEvent) => void;
-  /** register a radio's input element + meta for roving focus management */
-  register: (reg: RadioRegistration) => () => void;
-  /** keydown handler implementing roving tabindex / arrow navigation */
-  onKeydown: (e: KeyboardEvent, current: RadioValue) => void;
-  /** whether this radio should be the roving tab stop (tabindex=0) */
-  isTabStop: (v: RadioValue, disabled: boolean) => boolean;
+  /** 子 Radio 变更时上抛，Group 内统一处理 advanced 取消 / 受控回写（对齐 radioGroupFoundation.handleChange）。 */
+  onChange: (e: RadioChangeEvent) => void;
 }
 
 const KEY = Symbol('cd-radio-group');

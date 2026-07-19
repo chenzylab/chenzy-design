@@ -85,7 +85,9 @@ const components = [
   // input
   ['autocomplete', '{ AutoComplete }', '5.8 KB'],
   // 对齐 Semi 的功能补齐带来必要体积增长（无异常第三方依赖，已 grep 反证只依赖本库+svelte）。
-  // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.37 / textarea 4.77 KB。
+  // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.63 / textarea 4.77 KB。
+  // radio 破坏性重写严格对齐 Semi（全类型原生 input + IconRadio + 全套 card/button token class），
+  // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算校准至 4.7 KB。
   ['cascader', '{ Cascader }', '10.8 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
@@ -96,7 +98,7 @@ const components = [
   ['input', '{ Input, InputGroup }', '5.5 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
-  ['radio', '{ Radio, RadioGroup }', '4.6 KB'],
+  ['radio', '{ Radio, RadioGroup }', '4.7 KB'],
   ['rating', '{ Rating }', '4 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],
