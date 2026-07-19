@@ -175,7 +175,9 @@ const components = [
   ['code-highlight', '{ CodeHighlight }', '16 KB'],
   ['markdown-render', '{ MarkdownRender }', '3.5 KB'],
   ['video-player', '{ VideoPlayer }', '9 KB'],
-  ['audio-player', '{ AudioPlayer }', '5 KB'],
+  // 破坏性对齐 Semi 后复用 Button/Dropdown/Popover/Tooltip/Image + 具名图标 + 自建 AudioSlider，
+  // 功能显著增长（单行布局/Popover 音量面板/Dropdown 5 档倍速/40 token）。按实测 5.13KB +7% 校准。
+  ['audio-player', '{ AudioPlayer }', '5.5 KB'],
   ['json-viewer', '{ JsonViewer }', '4 KB'],
   // chat 严格对齐 Semi 后含 CodeHighlight（代码块 topSlot 深色高亮，prismjs 静态入壳）
   // + Avatar/Button/TextArea/Upload + chatBox 拆分子组件，实测 9.96 KB，预算 +~5% 校准。

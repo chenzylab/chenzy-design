@@ -153,30 +153,22 @@ export interface Locale {
     ariaLabel: string;
   };
   AudioPlayer: {
-    /** 播放按钮 aria-label */
-    play: string;
-    /** 暂停按钮 aria-label */
-    pause: string;
-    /** 上一曲 aria-label */
-    prev: string;
-    /** 下一曲 aria-label */
-    next: string;
-    /** 快进 aria-label（uses {seconds}） */
-    forward: string;
-    /** 快退 aria-label（uses {seconds}） */
+    /** 快退 Tooltip（uses {seconds}，对齐 Semi backward） */
     backward: string;
-    /** 重播 aria-label */
-    refresh: string;
-    /** 音量 aria-label */
+    /** 快进 Tooltip（uses {seconds}，对齐 Semi forward） */
+    forward: string;
+    /** 上一曲 Tooltip（对齐 Semi prev） */
+    prev: string;
+    /** 下一曲 Tooltip（对齐 Semi next） */
+    next: string;
+    /** 循环播放（对齐 Semi loop，当前无 UI 保留以对齐 API） */
+    loop: string;
+    /** 音量 Tooltip（对齐 Semi volume） */
     volume: string;
-    /** 进度条 aria-label */
+    /** 音频加载失败（对齐 Semi mediaError，当前组件照搬 Semi 硬编码文案未引用） */
+    mediaError: string;
+    /** 进度条 aria-label（本库自建 slider a11y 必需，Semi 无此项） */
     progress: string;
-    /** 倍速 aria-label */
-    speed: string;
-    /** 加载中播报 */
-    loading: string;
-    /** 播放出错播报 */
-    error: string;
   };
   Rating: {
     ariaLabel: string;

@@ -1,125 +1,270 @@
 /**
- * Component tokens for AudioPlayer（M4 富媒体，对齐 Semi AudioPlayer）。
- * Semi 底层无第三方媒体库：纯封装原生 <audio> + 自建工具栏，深/浅双主题。
- * 值回退 Alias / 语义 token，禁写死。深浅差异由所引 alias（bg/fill/text）随主题切换承担，
- * 组件层只做语义映射；仅极少数需在组件层显式区分深浅的项走 var(..., fallback)。
- * 见 specs/components/show/AudioPlayer.spec.md §5。
+ * Component tokens for AudioPlayer — 严格镜像 Semi semi-foundation/audioPlayer/variables.scss（40 个）。
+ * 命名/值对齐 Semi：`$color-audio-player-background` → `--cd-color-audio-player-background` 等；
+ * 值 `rgba(var(--semi-x-n),a)` → alpha=1 用 `var(--cd-color-x-n)`，alpha<1 用 color-mix；
+ * `var(--semi-color-*)` → `var(--cd-color-*)`；字面量原样。深/浅双主题各一套色值（Semi 用 -light 后缀区分）。
+ * 见 plus 对齐工程 [[plus-components-align-semi-batch]]。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const audioPlayerTokens = {
-  // 容器
-  'audio-player-bg': {
-    value: 'var(--cd-color-bg-2)',
+  // —— Dark 主题颜色（5，对齐 Semi）——
+  'color-audio-player-background': {
+    value: 'color-mix(in srgb, var(--cd-color-grey-9) 80%, transparent)',
     category: 'color',
-    label: '背景色',
-    usage: '播放器容器背景（深/浅随 bg alias 切换）',
+    label: '容器背景(dark)',
+    usage: '根容器背景（dark，对齐 Semi rgba(grey-9,.8)）',
   },
-  'audio-player-radius': {
-    value: 'var(--cd-border-radius-medium)',
-    category: 'radius',
-    label: '圆角',
-    usage: '播放器容器圆角',
-  },
-  'audio-player-border': {
-    value: 'var(--cd-color-border)',
+  'color-audio-player-control-icon': {
+    value: 'var(--cd-color-bg-0)',
     category: 'color',
-    label: '描边色',
-    usage: '播放器容器描边',
+    label: '控制图标色(dark)',
+    usage: '控制按钮图标色；也用作 play 按钮背景（对齐 Semi color-bg-0）',
   },
-  'audio-player-shadow': {
-    value: 'var(--cd-shadow-elevated)',
-    category: 'other',
-    label: '阴影',
-    usage: '播放器容器投影',
-  },
-  // 工具栏
-  'audio-player-toolbar-bg': {
-    value: 'var(--cd-color-fill-0)',
-    category: 'color',
-    label: '工具栏背景',
-    usage: '工具栏背景填充',
-  },
-  'audio-player-icon': {
-    value: 'var(--cd-color-text-1)',
-    category: 'color',
-    label: '图标色',
-    usage: '工具栏图标默认色',
-  },
-  'audio-player-icon-hover': {
+  'color-audio-player-control-icon-play': {
     value: 'var(--cd-color-text-0)',
     category: 'color',
-    label: '图标色（悬浮）',
-    usage: '工具栏图标悬浮/激活色',
+    label: 'play 图标色(dark)',
+    usage: 'play 按钮图标色（对齐 Semi color-text-0）',
   },
-  'audio-player-icon-disabled': {
-    value: 'var(--cd-color-text-3)',
+  'color-audio-player-font-color': {
+    value: 'var(--cd-color-bg-0)',
     category: 'color',
-    label: '图标色（禁用）',
-    usage: '工具栏图标禁用色（如首/末曲上/下曲）',
+    label: '文字色(dark)',
+    usage: 'info-title / info-time 文字色（对齐 Semi color-bg-0）',
   },
-  // 进度条
-  'audio-player-progress-track': {
-    value: 'var(--cd-color-fill-1)',
+  'color-audio-player-font-color-speed': {
+    value: 'var(--cd-color-grey-8)',
     category: 'color',
-    label: '进度轨道色',
-    usage: '进度条未播放轨道色',
+    label: '倍速/音量面板背景(dark)',
+    usage: '倍速块 / 倍速菜单 / 音量面板背景（对齐 Semi grey-8）',
   },
-  'audio-player-progress-played': {
-    value: 'var(--cd-color-primary)',
+
+  // —— Light 主题颜色（4，对齐 Semi）——
+  'color-audio-player-background-light': {
+    value: 'var(--cd-color-bg-0)',
     category: 'color',
-    label: '已播放色',
-    usage: '进度条已播放部分（品牌色）',
+    label: '容器背景(light)',
+    usage: '根容器背景（light，对齐 Semi color-bg-0）',
   },
-  'audio-player-progress-thumb': {
-    value: 'var(--cd-color-primary)',
+  'color-audio-player-control-icon-light': {
+    value: 'var(--cd-color-grey-9)',
     category: 'color',
-    label: '进度手柄色',
-    usage: '进度条拖拽手柄色',
+    label: '控制图标色(light)',
+    usage: 'light 控制图标；play 按钮背景（light，对齐 Semi grey-9）',
   },
-  'audio-player-progress-height': {
-    value: '4px',
-    category: 'height',
-    label: '进度条高度',
-    usage: '进度轨道高度',
-  },
-  // 文本
-  'audio-player-title': {
-    value: 'var(--cd-color-text-0)',
+  'color-audio-player-control-icon-play-light': {
+    value: 'var(--cd-color-bg-0)',
     category: 'color',
-    label: '标题色',
-    usage: '曲目标题文本色',
+    label: 'play 图标色(light)',
+    usage: 'play 图标色（light，对齐 Semi color-bg-0）',
   },
-  'audio-player-time': {
-    value: 'var(--cd-color-text-2)',
+  'color-audio-player-font-color-light': {
+    value: 'var(--cd-color-grey-9)',
     category: 'color',
-    label: '时间色',
-    usage: '当前/总时间文本色',
+    label: '文字色(light)',
+    usage: 'info-title/time 文字（light，对齐 Semi grey-9）',
   },
-  'audio-player-time-font-size': {
-    value: 'var(--cd-font-size-small)',
+
+  // —— 字号（1）——
+  'font-size-audio-player-text': {
+    value: '14px',
     category: 'font',
-    label: '时间字号',
-    usage: '时间文本字号',
+    label: '正文字号',
+    usage: 'info-title/time 字号（对齐 Semi 14px）',
   },
-  // 封面
-  'audio-player-cover-size': {
-    value: '48px',
+
+  // —— 间距 gap（3）——
+  'gap-audio-player-small': {
+    value: '4px',
+    category: 'spacing',
+    label: '小间距',
+    usage: 'info gap / error / time span 间距（对齐 Semi 4px；音量面板 gap 用 *2=8px）',
+  },
+  'gap-audio-player-medium': {
+    value: '16px',
+    category: 'spacing',
+    label: '中间距',
+    usage: 'control gap / info-container gap（对齐 Semi 16px）',
+  },
+  'gap-audio-player-large': {
+    value: '24px',
+    category: 'spacing',
+    label: '大间距',
+    usage: '根容器 gap（对齐 Semi 24px）',
+  },
+
+  // —— 尺寸（9）——
+  'width-audio-player-max': {
+    value: '1440px',
     category: 'width',
-    label: '封面尺寸',
-    usage: '封面缩略图宽高',
+    label: '最大宽度',
+    usage: '根 max-width（对齐 Semi 1440px）',
   },
-  'audio-player-cover-radius': {
-    value: 'var(--cd-border-radius-small)',
+  'height-audio-player': {
+    value: '78px',
+    category: 'height',
+    label: '容器高度',
+    usage: '根高度（对齐 Semi 78px）',
+  },
+  'width-audio-player-slider': {
+    value: '323px',
+    category: 'width',
+    label: '进度条容器宽',
+    usage: 'slider-container 宽（对齐 Semi 323px）',
+  },
+  'width-audio-player-speed': {
+    value: '40px',
+    category: 'width',
+    label: '倍速块宽',
+    usage: '倍速块宽（对齐 Semi 40px）',
+  },
+  'height-audio-player-speed': {
+    value: '24px',
+    category: 'height',
+    label: '倍速块高',
+    usage: '倍速块高（对齐 Semi 24px）',
+  },
+  'width-audio-player-speed-menu': {
+    value: '65px',
+    category: 'width',
+    label: '倍速菜单宽',
+    usage: '倍速菜单宽（对齐 Semi 65px）',
+  },
+  'width-audio-player-volume': {
+    value: '43px',
+    category: 'width',
+    label: '音量面板宽',
+    usage: '音量面板宽（对齐 Semi 43px）',
+  },
+  'height-audio-player-volume': {
+    value: '164px',
+    category: 'height',
+    label: '音量面板高',
+    usage: '音量面板高（对齐 Semi 164px）',
+  },
+  'height-audio-player-time': {
+    value: '22px',
+    category: 'height',
+    label: '时间行高',
+    usage: 'info-time 高（对齐 Semi 22px）',
+  },
+
+  // —— 圆角（3）——
+  'border-radius-audio-player-speed': {
+    value: '3px',
     category: 'radius',
-    label: '封面圆角',
-    usage: '封面缩略图圆角',
+    label: '倍速块圆角',
+    usage: '倍速块圆角（对齐 Semi 3px）',
   },
-  // 动效
-  'audio-player-motion-duration': {
-    value: 'var(--cd-motion-duration-fast)',
-    category: 'animation',
-    label: '动画时长',
-    usage: '图标/进度悬浮过渡时长',
+  'border-radius-audio-player-volume': {
+    value: '4px',
+    category: 'radius',
+    label: '音量面板圆角',
+    usage: '音量面板圆角（对齐 Semi 4px）',
+  },
+  'border-radius-audio-player-slider': {
+    value: '9999px',
+    category: 'radius',
+    label: 'slider 圆角',
+    usage: 'slider / progress 圆角（对齐 Semi 9999px）',
+  },
+
+  // —— 小字号 + 行高（2）——
+  'font-size-audio-player-small': {
+    value: '12px',
+    category: 'font',
+    label: '小字号',
+    usage: '倍速/音量标题字号（对齐 Semi 12px）',
+  },
+  'line-height-audio-player-small': {
+    value: '16px',
+    category: 'font',
+    label: '小字行高',
+    usage: '倍速/音量标题行高（对齐 Semi 16px）',
+  },
+
+  // —— Slider 尺寸（2）——
+  'width-audio-player-slider-bar': {
+    value: '4px',
+    category: 'width',
+    label: 'slider 条厚度',
+    usage: 'slider 条厚度（对齐 Semi 4px）',
+  },
+  'size-audio-player-slider-dot': {
+    value: '16px',
+    category: 'width',
+    label: '拖拽圆点尺寸',
+    usage: '拖拽圆点宽高（对齐 Semi 16px）',
+  },
+
+  // —— 其它颜色（6）——
+  'color-audio-player-disabled-bg': {
+    value: 'color-mix(in srgb, var(--cd-color-grey-0) 35%, transparent)',
+    category: 'color',
+    label: 'play 禁用背景(dark)',
+    usage: 'play 禁用背景（dark，对齐 Semi rgba(grey-0,.35)）',
+  },
+  'color-audio-player-slider-bg': {
+    value: 'var(--cd-color-grey-5)',
+    category: 'color',
+    label: 'slider 轨道色(dark)',
+    usage: 'slider 轨道底色（dark，对齐 Semi grey-5）',
+  },
+  'color-audio-player-slider-bg-light': {
+    value: 'var(--cd-color-grey-2)',
+    category: 'color',
+    label: 'slider 轨道色(light)',
+    usage: 'slider 轨道底色（light，对齐 Semi grey-2）',
+  },
+  'color-audio-player-slider-progress': {
+    value: 'var(--cd-color-blue-4)',
+    category: 'color',
+    label: '进度填充色',
+    usage: '进度条填充色（对齐 Semi blue-4）',
+  },
+  'color-audio-player-slider-dot-bg': {
+    value: 'var(--cd-color-white)',
+    category: 'color',
+    label: '拖拽圆点背景',
+    usage: '拖拽圆点背景（对齐 Semi white）',
+  },
+  'color-audio-player-disabled-text': {
+    value: 'var(--cd-color-grey-7)',
+    category: 'color',
+    label: 'play 禁用图标色(dark)',
+    usage: 'play 禁用图标色（dark，对齐 Semi color-grey-7）',
+  },
+
+  // —— 补充颜色（5）——
+  'color-audio-player-text-default': {
+    value: 'var(--cd-color-grey-0)',
+    category: 'color',
+    label: '默认文字色',
+    usage: '倍速菜单项 / 音量标题文字（对齐 Semi color-default=grey-0）',
+  },
+  'color-audio-player-light-disabled-bg': {
+    value: 'var(--cd-color-disabled-text)',
+    category: 'color',
+    label: 'play 禁用背景(light)',
+    usage: 'play 禁用背景（light，对齐 Semi color-disabled-text）',
+  },
+  'color-audio-player-light-disabled-text': {
+    value: 'var(--cd-color-white)',
+    category: 'color',
+    label: 'play 禁用图标色(light)',
+    usage: 'play 禁用图标色（light，对齐 Semi white）',
+  },
+  'color-audio-player-light-text': {
+    value: 'var(--cd-color-grey-9)',
+    category: 'color',
+    label: '菜单项文字(light)',
+    usage: '倍速菜单项 / 音量标题文字（light，对齐 Semi grey-9）',
+  },
+  'color-audio-player-light-hover-bg': {
+    value: 'var(--cd-color-grey-1)',
+    category: 'color',
+    label: '菜单项 hover 背景(light)',
+    usage: '倍速菜单项 hover 背景（light，对齐 Semi grey-1）',
   },
 } satisfies TokenGroup;
