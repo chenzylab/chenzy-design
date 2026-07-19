@@ -134,7 +134,9 @@ const components = [
   ['hotkeys', '{ HotKeys }', '1.85 KB'],
   ['config-provider', '{ ConfigProvider }', '1.7 KB'],
   ['locale-provider', '{ LocaleProvider }', '1.0 KB'],
-  ['lottie-icon', '{ LottieIcon }', '2.5 KB'],
+  // 内置 lottie-web（对齐 Semi）：动态 import 的 lottie-web(svg renderer) 计入入口总量，
+  // 实测 77.6 KB gzip，绝大部分是 lottie-web 本身。按实测 +3% 余量校准到 80 KB。
+  ['lottie', '{ Lottie }', '80 KB'],
   ['resize-observer', '{ ResizeObserver }', '1.2 KB'],
   ['resizable', '{ Resizable, ResizeGroup, ResizeItem, ResizeHandler }', '6 KB'],
   ['drag-move', '{ DragMove }', '2 KB'],

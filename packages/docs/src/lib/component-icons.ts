@@ -99,5 +99,5 @@ export const componentIcons: Record<string, string> = {
   localeprovider: `<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/>`,
   configprovider: `<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3M5 19l2-2M17 7l2-2"/>`,
   resizeobserver: `<rect x="4" y="4" width="16" height="16" rx="1.5" stroke-dasharray="3 3"/><path d="M9 9l6 6"/><path d="M9 13v-4h4"/><path d="M15 11v4h-4"/>`,
-  lottieicon: `<circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>`,
+  lottie: `<circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>`,
 };

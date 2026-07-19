@@ -24,8 +24,20 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础 Lottie 图标', '注入 player 工厂，支持自动播放、悬停触发及降级静止'),
-  entry('02-playback.svelte', '播放控制', 'autoplay/loop 自动循环，speed 调节播放速度'),
-  entry('03-size.svelte', '尺寸', 'small/default/large 预设及自定义数值尺寸'),
-  entry('04-manual-control.svelte', '手动控制', 'trigger="manual" + bind:this 命令式 play/pause/stop'),
+  entry('01-basic.svelte', '基本用法', 'Lottie JSON 在 CDN 上时，params 传入 path=JSON 的 URL'),
+  entry(
+    '02-animation-data.svelte',
+    'animationData 用法',
+    'JSON 需打包进网站代码时，params 传入 animationData=JSON 对象',
+  ),
+  entry(
+    '03-animation-instance.svelte',
+    '获取当前动画实例',
+    'getAnimationInstance 拿到 AnimationItem，实现播放暂停/调速等控制',
+  ),
+  entry(
+    '04-get-lottie.svelte',
+    '获取全局 Lottie',
+    'getLottie prop 或具名导出 getLottie() 获取全局 lottie 包',
+  ),
 ];

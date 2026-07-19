@@ -204,11 +204,6 @@ export interface Locale {
     alt: string;
     shift: string;
   };
-  LottieIcon: {
-    loading: string;
-    loadError: string;
-    label: string;
-  };
   List: {
     /** 空列表缺省展示文案（对齐 Semi List locale.emptyText） */
     emptyText: string;

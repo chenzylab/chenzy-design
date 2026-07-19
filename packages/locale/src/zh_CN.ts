@@ -145,11 +145,6 @@ export const zh_CN: Locale = {
     alt: 'Alt',
     shift: 'Shift',
   },
-  LottieIcon: {
-    loading: '动画加载中',
-    loadError: '动画加载失败',
-    label: '图标',
-  },
   List: {
     emptyText: '暂无数据',
   },

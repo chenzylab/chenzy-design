@@ -21,11 +21,14 @@
 
 全库 **1173 passed + 5 skip**、typecheck 0 errors、perf:check 75 组件全过。
 
-### Lottie 复核结论：不新建，登记取舍
-对比 Semi `Lottie`（Plus，lottie-web 极简封装：`params` 透传 + `getAnimationInstance`/`getLottie`）与本库 `lottie-icon`：
-- **`lottie-icon` 已覆盖 Lottie 播放核心**（core 的 resolveRenderer/segments/animated + play/pause/stop/playSegments），但定位偏**图标级**（`size` 三档、`color`、依赖注入式 `player` 工厂而非硬绑 lottie-web）。
-- **差异（非 bug，设计取向不同）**：Semi 是通用容器 + 硬绑 lottie-web + 暴露原始 animation 实例；`lottie-icon` 刻意做成 library-agnostic（不硬绑 lottie-web，体积友好），只暴露受控方法、不给原始实例。
-- **决定：不新建通用 Lottie 组件**。理由：① core 已能播 Lottie；② 硬绑 lottie-web 违反本库「core 库无关」原则；③ 需要通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。若未来有强需求，可考虑给 `lottie-icon` 增补「暴露原始实例」的可选 API，而非新组件。
+### Lottie 复核结论：已推翻旧取舍，严格对齐 Semi 重写为极简 Lottie（2026-07）
+> **历史决策（已作废）**：曾决定「不新建通用 Lottie 组件」，把本库 `lottie-icon`（依赖注入式 player 工厂、图标级 size/color、library-agnostic）当作等价替代，理由是「硬绑 lottie-web 违反 core 库无关原则」。
+>
+> **现结论（严格对齐 Semi 工程）**：推翻上述取舍。`lottie-icon` 的图标化 + 依赖注入设计**偏离 Semi Lottie 语义**（Semi 是通用容器 + 内置 lottie-web + `params` 透传 + 暴露原始 `AnimationItem`），且用户方向为「严格对齐 Semi，不保留超集」。
+> - **推翻重写为极简 `Lottie`**：目录 `lottie-icon`→`lottie`、导出 `LottieIcon`→`Lottie`；仅 `params`/`width`/`height`/`getAnimationInstance`/`getLottie`/`class`/`style` 7 prop；**内置 lottie-web ^5.13**（对齐 Semi，svelte 包声明依赖，动态 import + onMount 兜 SSR）。
+> - **删除的超集**：依赖注入 player 工厂、`src` fetch、`size`/`color`/`trigger`/`segments`/`flipRtl`/`visible`/`canvas`/`renderer`、命令式 play/pause/stop、reduced-motion 首帧降级、a11y role/label——播放控制全部改由 `getAnimationInstance` 拿到的实例处理。
+> - **删除的分层**：core `lottie-icon.ts`（+test）整删（Semi foundation 极简、强依赖 lottie-web，无跨框架价值，逻辑内联 svelte）；tokens 18 个整删（Semi 零 token）；locale 文案整删。
+> - **Demo 对齐 Semi 文档 4 例**：path CDN / animationData 打包 / getAnimationInstance / getLottie。
 
 ### 未做/后续
 - **AIChatDialogue**：**已于 2026-07-04 落地 + 2026-07-05 补齐 P1 大部**（core OpenAI 消息类型全谱 + 非流式/流式 Adapter + 消息编辑 + 渲染层 ContentItem 分块 + 选择/提示 + demo + 门禁 5.13KB）。**P1 全部完成**：streaming Adapter（PR #427）、消息编辑（PR #428）、tool_call/MCP 完整块交互（状态/折叠/JSON 格式化/MCP server，超越 Semi，PR #430）。**AIChatDialogue 无未实现功能**。见 `AIChatDialogue.spec.md §13`。
@@ -67,11 +70,11 @@
 | **Chat** | MarkdownRender + prismjs | **对齐**——复用本仓库 MarkdownRender（#2）+ CodeHighlight（#1），Upload 已有。 | ✅ 对齐，依赖内部组件。 |
 | **JsonViewer** | `@douyinfe/semi-json-viewer-core` | **两条路**：① 直接依赖 Semi 发布的 `@douyinfe/semi-json-viewer-core`（框架无关的 core，仿 VS Code text-buffer）作为 headless 内核，我们只写 Svelte 渲染层——**最省且行为对齐**；② 若不愿引 Semi 包，则自研 text-buffer（工程量最大）。**建议先评估 ① 的可行性**。 | ✅ 对齐优先走 ①。core 是独立 npm 包，非 React 耦合，值得先试引。 |
 | **Cropper** | 原生 canvas 自建 | **对齐——纯 Svelte + canvas 自建**，不引 cropperjs。 | ✅ 完全对齐。 |
-| **Lottie** | `lottie-web` | **对齐用 `lottie-web`**（框架无关）。本仓库 `lottie-icon` 已存在，需确认是否已用 lottie-web，及是否要拆出通用 Lottie 容器。 | 见 §4 复核。 |
+| **Lottie** | `lottie-web` | **已推翻旧 `lottie-icon`，严格对齐重写为极简 `Lottie`**：内置 lottie-web ^5.13、`params` 透传、`getAnimationInstance`/`getLottie`；删依赖注入/图标级超集。 | ✅ 完全对齐（见 §0「Lottie 复核结论」）。 |
 
 ## 4. 复核项（非新增，需确认现状）
 
-- [x] **Lottie**：结论**不新建，登记取舍**（见 §0「Lottie 复核结论」）——`lottie-icon` core 已覆盖 Lottie 播放，硬绑 lottie-web 违反「core 库无关」原则；通用大容器场景可用 `lottie-icon` 传数字 `size` + 自定义 `player` 工厂。
+- [x] **Lottie**：结论**已推翻旧取舍，严格对齐 Semi 重写为极简 `Lottie`**（见 §0「Lottie 复核结论」）——目录/导出改 lottie/Lottie、内置 lottie-web ^5.13、`params` 透传 + `getAnimationInstance`/`getLottie`；删依赖注入 player/图标级超集、core headless、18 token、locale 文案。
 - [x] **JsonViewer core 引入评估**：确认 `@douyinfe/semi-json-viewer-core` 框架无关、无 React 耦合，走 §3 方案①**已落地**（§0 表格：组件壳 gzip 3.21 KB，内核动态 import；jsdom 无 Worker 故 4 测 skip）。
 - [x] **CodeHighlight 主题**：**已落地**——prismjs 高亮主题接入本仓库 token 体系 + 暗色模式（§0 表格：CodeHighlight ✅，9.40 KB 含 core）。
 - [x] **Image 裁剪**：**已按结论落地**——Cropper（#7）作独立组件实现（§0 表格：Cropper 3.13 KB ✅），未并入 Image；`image` 仍仅含预览灯箱。
