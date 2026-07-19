@@ -19,6 +19,7 @@ export const meta = {
     { name: 'hints', type: 'string[]', default: 'undefined', desc: '提示项列表（点击追加为一条 user 消息）' },
     { name: 'enableUpload', type: 'boolean|EnableUploadProps', default: 'true', desc: '上传能力（true/false 或 {pasteUpload,dragUpload,clickUpload} 三态）' },
     { name: 'uploadProps', type: 'UploadProps', default: 'undefined', desc: '透传内部 Upload 的 props' },
+    { name: 'uploadTipProps', type: 'TooltipProps', default: 'undefined', desc: '上传按钮 Tooltip 提示（对齐 Semi uploadTipProps）；传对象则用 Tooltip 包裹上传触发器' },
     { name: 'markdownRenderProps', type: 'MarkdownRenderProps', default: 'undefined', desc: '透传消息内容 MarkdownRender 的 props' },
     { name: 'placeholder', type: 'string', default: 'undefined', desc: '输入框占位（缺省走 locale Chat.placeholder）' },
     { name: 'topSlot', type: 'Snippet', default: 'undefined', desc: '顶部插槽' },

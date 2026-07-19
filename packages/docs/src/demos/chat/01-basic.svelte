@@ -41,8 +41,9 @@ export default MyComponent;
   let mode = $state<ChatMode>('bubble');
   let align = $state<ChatAlign>('leftRight');
 
-  // 上传 action（对齐 Semi demo uploadProps）。
+  // 上传 action + 上传按钮提示（对齐 Semi demo uploadProps / uploadTipProps）。
   const uploadProps = { action: 'https://api.semi.design/upload' };
+  const uploadTipProps = { content: '自定义上传按钮提示信息' };
 
   let seq = 0;
   function onMessageSend() {
@@ -81,5 +82,15 @@ export default MyComponent;
 </div>
 
 <div style="border:1px solid var(--cd-color-border);border-radius:16px;margin:8px 0;height:550px;">
-  <Chat {chats} {roleConfig} {mode} {align} onChatsChange={(n) => (chats = n)} {onMessageSend} />
+  <Chat
+    {chats}
+    {roleConfig}
+    {mode}
+    {align}
+    {uploadProps}
+    {uploadTipProps}
+    onChatsChange={(n) => (chats = n)}
+    {onMessageSend}
+    {onMessageReset}
+  />
 </div>

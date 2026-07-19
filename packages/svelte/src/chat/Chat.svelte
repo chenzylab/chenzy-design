@@ -79,6 +79,8 @@
     enableUpload?: boolean | EnableUploadProps;
     /** 透传内部 Upload 的 props。 */
     uploadProps?: Record<string, unknown>;
+    /** 上传按钮 Tooltip 提示（对齐 Semi uploadTipProps）；传对象则用 Tooltip 包裹上传触发器。 */
+    uploadTipProps?: Record<string, unknown>;
     /** 透传 MarkdownRender props。 */
     markdownRenderProps?: Record<string, unknown>;
     /** 输入框占位。 */
@@ -126,6 +128,7 @@
     hints,
     enableUpload = true,
     uploadProps,
+    uploadTipProps,
     markdownRenderProps,
     placeholder,
     topSlot,
@@ -398,6 +401,7 @@
       pasteUpload={uploadModes.pasteUpload}
       dragUpload={uploadModes.dragUpload}
       {uploadProps}
+      {uploadTipProps}
       onSend={doSend}
       onClearContext={doClearContext}
       onInputChange={(p) => onInputChange?.(p)}

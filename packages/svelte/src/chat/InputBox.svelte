@@ -17,6 +17,7 @@
   import { Upload } from '../upload/index.js';
   import Button from '../button/Button.svelte';
   import TextArea from '../textarea/TextArea.svelte';
+  import Tooltip from '../tooltip/Tooltip.svelte';
   import type { UploadFileItem } from '../upload/types.js';
   import type { RenderInputAreaProps } from './types.js';
 
@@ -30,6 +31,8 @@
     pasteUpload?: boolean;
     dragUpload?: boolean;
     uploadProps?: Record<string, unknown> | undefined;
+    /** 上传按钮 Tooltip 提示（对齐 Semi uploadTipProps）。 */
+    uploadTipProps?: Record<string, unknown> | undefined;
     onSend?: ((content: string, attachment: UploadFileItem[]) => void) | undefined;
     onClearContext?: (() => void) | undefined;
     onInputChange?: ((props: { value: string; attachment: UploadFileItem[] }) => void) | undefined;
@@ -48,6 +51,7 @@
     pasteUpload = true,
     dragUpload = true,
     uploadProps,
+    uploadTipProps,
     onSend,
     onClearContext,
     onInputChange,
@@ -166,7 +170,7 @@
 {/snippet}
 {#snippet clearIcon()}<IconDeleteStroked />{/snippet}
 
-{#snippet uploadNode()}
+{#snippet uploadCore()}
   <!-- clickUpload 关但 dragUpload 开时仍挂载 Upload 接住 drop 文件，仅 CSS 隐藏点击触发器。 -->
   <div class="cd-chat-inputBox-upload" class:cd-chat-inputBox-upload-hidden={!clickUpload}>
     <!-- listType=none：只保留图标触发按钮，不渲染 Upload 自带文件列表（附件由 chat 内容区/输入区自行展示，对齐 Semi）。 -->
@@ -185,6 +189,17 @@
       </span>
     </Upload>
   </div>
+{/snippet}
+
+{#snippet uploadNode()}
+  <!-- 有 uploadTipProps 时用 Tooltip 包裹上传触发器（对齐 Semi uploadTipProps ? <Tooltip>...）。 -->
+  {#if uploadTipProps}
+    <Tooltip {...uploadTipProps}>
+      {@render uploadCore()}
+    </Tooltip>
+  {:else}
+    {@render uploadCore()}
+  {/if}
 {/snippet}
 {#snippet inputNode()}
   <div class="cd-chat-inputBox-inputArea">
