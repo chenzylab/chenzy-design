@@ -668,6 +668,11 @@
     cursor: pointer;
     border-radius: var(--cd-radius-input-wrapper);
   }
+  /* 图标不参与命中测试（对齐 Semi textarea `& > svg { pointer-events: none }`）：
+     本库图标根为 span.cd-icon，故作用在图标容器上。 */
+  .cd-input-clearbtn > :global(.cd-icon) {
+    pointer-events: none;
+  }
   .cd-input-clearbtn:hover {
     color: var(--cd-color-textarea-icon-hover);
   }

@@ -1755,10 +1755,10 @@
     gap: var(--cd-spacing-extra-tight);
     inline-size: 100%;
     block-size: var(--cd-height-input-default);
-    padding-inline: var(--cd-input-padding-x);
+    padding-inline: var(--cd-spacing-input-paddingleft);
     background: var(--cd-color-fill-0);
     border: 1px solid transparent;
-    border-radius: var(--cd-input-radius);
+    border-radius: var(--cd-radius-input-wrapper);
     transition:
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
@@ -1768,7 +1768,7 @@
   }
   .cd-tree-select__search-field:focus-within {
     background: var(--cd-color-bg-0);
-    border-color: var(--cd-input-border-active);
+    border-color: var(--cd-color-input-default-border-focus);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-tree-select__search-icon {

@@ -705,7 +705,7 @@
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    font-size: var(--cd-input-font-size);
+    font-size: var(--cd-font-size-regular);
   }
   .cd-time-picker__control {
     position: relative;

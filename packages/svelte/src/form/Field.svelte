@@ -506,7 +506,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
     pointer-events: none;
     transition:
       transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),

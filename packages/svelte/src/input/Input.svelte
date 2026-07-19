@@ -24,7 +24,6 @@
     placeholder?: string;
     /** 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear）。 */
     showClear?: boolean;
-    showCount?: boolean;
     maxLength?: number;
     /** 校验状态（对齐 Semi validateStatus，仅影响展示样式）。 */
     validateStatus?: ValidateStatus;
@@ -46,7 +45,7 @@
     addonAfter?: Snippet | string;
     /** 无边框模式（对齐 Semi borderless）。 */
     borderless?: boolean;
-    /** 自定义字符计数函数，替代默认 [...value].length（用于 showCount 展示与 maxLength 校验）。 */
+    /** 自定义字符计数函数，替代默认 [...value].length（存在时接管 maxLength 校验，maxlength 属性不下发）。 */
     getValueLength?: (value: string) => number;
     /** 清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix）。 */
     hideSuffix?: boolean;
@@ -106,7 +105,6 @@
     readonly = false,
     placeholder,
     showClear = false,
-    showCount = false,
     maxLength,
     validateStatus = 'default',
     mode,
@@ -167,8 +165,6 @@
   let composing = $state(false);
   let revealed = $state(false);
   const inputType = $derived(mode === 'password' && !revealed ? 'password' : type);
-
-  const len = $derived(getValueLength ? getValueLength(current) : [...current].length);
 
   function setValue(next: string) {
     // 受控时不回写 prop，仅经 onChange 上报（避免 value→onChange→value 死循环）。
@@ -232,6 +228,11 @@
   const addonBeforeSnippet = $derived(typeof addonBefore === 'function' ? (addonBefore as Snippet) : undefined);
   const addonAfterSnippet = $derived(typeof addonAfter === 'function' ? (addonAfter as Snippet) : undefined);
 
+  // wrapper class 对齐 Semi（index.tsx wrapperCls）。元素类 .cd-input-prepend/-append 与渲染
+  //   顺序严格镜像 Semi；wrapper 修饰类采用自洽命名（with-prepend=addonBefore/前置），并补齐 Semi
+  //   的 -only 圆角变体（只有前置或只有后置时 input 相应侧保留圆角）。
+  const hasPrepend = $derived(addonBefore != null);
+  const hasAppend = $derived(addonAfter != null);
   const wrapperCls = $derived(
     [
       'cd-input-wrapper',
@@ -239,8 +240,10 @@
       (prefix != null || insetLabel != null) && 'cd-input-wrapper__with-prefix',
       suffix != null && 'cd-input-wrapper__with-suffix',
       suffixHidden && 'cd-input-wrapper__with-suffix-hidden',
-      addonBefore != null && 'cd-input-wrapper__with-prepend',
-      addonAfter != null && 'cd-input-wrapper__with-append',
+      hasPrepend && 'cd-input-wrapper__with-prepend',
+      hasAppend && 'cd-input-wrapper__with-append',
+      hasPrepend && !hasAppend && 'cd-input-wrapper__with-prepend-only',
+      hasAppend && !hasPrepend && 'cd-input-wrapper__with-append-only',
       readonly && 'cd-input-wrapper-readonly',
       disabled && 'cd-input-wrapper-disabled',
       validateStatus === 'warning' && 'cd-input-wrapper-warning',
@@ -360,12 +363,6 @@
         <IconEyeClosedSolid />
       {/if}
     </button>
-  {/if}
-
-  {#if showCount}
-    <span class="cd-input-count">
-      {len}{#if maxLength !== undefined}/{maxLength}{/if}
-    </span>
   {/if}
 
   {#if addonAfter != null}
@@ -577,6 +574,12 @@
     cursor: pointer;
     border-radius: var(--cd-radius-input-wrapper);
   }
+  /* 图标不参与命中测试（对齐 Semi `& > svg { pointer-events: none }`）：本库图标根为
+     span.cd-icon（内含 svg），故作用在图标容器上；令点击 target 恒为按钮本身。 */
+  .cd-input-clearbtn > :global(.cd-icon),
+  .cd-input-modebtn > :global(.cd-icon) {
+    pointer-events: none;
+  }
   .cd-input-clearbtn:hover,
   .cd-input-modebtn:hover {
     color: var(--cd-color-input-icon-hover);
@@ -625,13 +628,6 @@
   .cd-input-wrapper__with-append:not(.cd-input-wrapper__with-prepend) .cd-input {
     border-start-start-radius: var(--cd-radius-input-wrapper);
     border-end-start-radius: var(--cd-radius-input-wrapper);
-  }
-  .cd-input-count {
-    flex: 0 0 auto;
-    margin-inline-end: var(--cd-spacing-input-paddingright);
-    color: var(--cd-color-input-counter-text-default);
-    font-size: var(--cd-font-size-small);
-    white-space: nowrap;
   }
   /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。 */
   .cd-input-borderless:not(:focus-within):not(:hover) {

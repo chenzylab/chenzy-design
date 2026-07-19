@@ -2355,7 +2355,7 @@
     position: relative;
     display: inline-flex;
     inline-size: 100%;
-    font-size: var(--cd-input-font-size);
+    font-size: var(--cd-font-size-regular);
   }
   .cd-date-picker__control {
     position: relative;
@@ -2365,9 +2365,9 @@
   .cd-date-picker__control--inset-label {
     display: flex;
     align-items: center;
-    background: var(--cd-input-color-bg);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
+    background: var(--cd-color-input-default-bg-default);
+    border: 1px solid var(--cd-color-input-default-border-default);
+    border-radius: var(--cd-radius-input-wrapper);
   }
   .cd-date-picker__control--inset-label .cd-date-picker__trigger {
     border: none;
@@ -2377,7 +2377,7 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    padding-inline-start: var(--cd-input-padding-x);
+    padding-inline-start: var(--cd-spacing-input-paddingleft);
     color: var(--cd-color-text-2);
     user-select: none;
     white-space: nowrap;
@@ -2388,12 +2388,12 @@
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-height-input-default);
-    padding-inline-start: var(--cd-input-padding-x);
-    padding-inline-end: calc(var(--cd-input-padding-x) + 1.25rem);
-    background: var(--cd-input-color-bg);
-    color: var(--cd-input-color-text);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
+    padding-inline-start: var(--cd-spacing-input-paddingleft);
+    padding-inline-end: calc(var(--cd-spacing-input-paddingleft) + 1.25rem);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-default-text-default);
+    border: 1px solid var(--cd-color-input-default-border-default);
+    border-radius: var(--cd-radius-input-wrapper);
     font: inherit;
     text-align: start;
     cursor: pointer;
@@ -2409,17 +2409,17 @@
   }
   .cd-date-picker__trigger:focus-visible {
     outline: none;
-    border-color: var(--cd-input-border-active);
+    border-color: var(--cd-color-input-default-border-focus);
     box-shadow: var(--cd-focus-ring);
   }
   .cd-date-picker--open .cd-date-picker__trigger {
-    border-color: var(--cd-input-border-active);
+    border-color: var(--cd-color-input-default-border-focus);
   }
   .cd-date-picker--warning .cd-date-picker__trigger {
-    border-color: var(--cd-input-border-warning);
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-date-picker--error .cd-date-picker__trigger {
-    border-color: var(--cd-input-border-error);
+    border-color: var(--cd-color-input-danger-border-focus);
   }
   .cd-date-picker--disabled .cd-date-picker__trigger {
     background: var(--cd-color-fill-0);
@@ -2460,7 +2460,7 @@
     text-overflow: ellipsis;
   }
   .cd-date-picker__value--placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-date-picker__prefix {
     flex: 0 0 auto;
@@ -2468,7 +2468,7 @@
   }
   /* format 可输入模式：原生 input 复用 trigger 外观 */
   .cd-date-picker__input::placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-date-picker__input:disabled {
     background: var(--cd-color-fill-0);
@@ -2479,7 +2479,7 @@
   .cd-date-picker__icon {
     position: absolute;
     inset-block-start: 50%;
-    inset-inline-end: var(--cd-input-padding-x);
+    inset-inline-end: var(--cd-spacing-input-paddingleft);
     transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
@@ -2490,7 +2490,7 @@
   .cd-date-picker__clear {
     padding: 0;
     border: none;
-    background: var(--cd-input-color-bg);
+    background: var(--cd-color-input-default-bg-default);
     cursor: pointer;
     opacity: 0;
     pointer-events: auto;
@@ -2831,9 +2831,9 @@
     flex: 1 1 auto;
     min-inline-size: 0;
     block-size: var(--cd-height-date-picker-range-input-default);
-    padding-inline: var(--cd-input-padding-x);
+    padding-inline: var(--cd-spacing-input-paddingleft);
     background: var(--cd-color-date-picker-range-input-bg-default);
-    color: var(--cd-input-color-text);
+    color: var(--cd-color-input-default-text-default);
     border: var(--cd-width-date-picker-range-input-border) solid var(--cd-color-date-picker-range-input-border-default);
     border-radius: var(--cd-radius-date-picker-range-input-input-wrapper);
     font: inherit;
@@ -2849,7 +2849,7 @@
     box-shadow: var(--cd-focus-ring);
   }
   .cd-date-picker__inset-field::placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-date-picker__inset-field:disabled {
     color: var(--cd-color-date-picker-range-input-disabled-text-default);
@@ -2938,11 +2938,11 @@
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
     block-size: var(--cd-height-input-default);
-    padding-inline: var(--cd-input-padding-x);
-    background: var(--cd-input-color-bg);
-    color: var(--cd-input-color-text);
-    border: 1px solid var(--cd-input-border);
-    border-radius: var(--cd-input-radius);
+    padding-inline: var(--cd-spacing-input-paddingleft);
+    background: var(--cd-color-input-default-bg-default);
+    color: var(--cd-color-input-default-text-default);
+    border: 1px solid var(--cd-color-input-default-border-default);
+    border-radius: var(--cd-radius-input-wrapper);
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-date-picker--small .cd-date-picker__range-input {
@@ -2954,13 +2954,13 @@
     font-size: var(--cd-font-size-header-6);
   }
   .cd-date-picker--open .cd-date-picker__range-input {
-    border-color: var(--cd-input-border-active);
+    border-color: var(--cd-color-input-default-border-focus);
   }
   .cd-date-picker--warning .cd-date-picker__range-input {
-    border-color: var(--cd-input-border-warning);
+    border-color: var(--cd-color-input-warning-border-focus);
   }
   .cd-date-picker--error .cd-date-picker__range-input {
-    border-color: var(--cd-input-border-error);
+    border-color: var(--cd-color-input-danger-border-focus);
   }
   .cd-date-picker--disabled .cd-date-picker__range-input {
     background: var(--cd-color-fill-0);
@@ -2982,7 +2982,7 @@
     outline: none;
   }
   .cd-date-picker__range-field::placeholder {
-    color: var(--cd-input-color-placeholder);
+    color: var(--cd-color-input-placeholder-text-default);
   }
   .cd-date-picker__range-field:disabled {
     cursor: not-allowed;
