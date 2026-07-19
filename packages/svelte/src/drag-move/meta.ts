@@ -8,15 +8,8 @@ export const meta = {
   stage: 'M6',
   semiEquivalent: 'DragMove',
   description:
-    '通用拖拽移动容器：包裹单个子元素使其可被拖拽在页面/约束区内自由移动（与 Resizable 改尺寸正交，DragMove 改位置）。core 沉淀通用拖拽原语 createDragMove（命令式绑/解全局监听，pointerdown 记录起点→document 绑 move/up→计算 clamp 到 constrainer 的 top/left→customMove 或写 style→up 解绑+卸载兜底），供 Modal 可拖拽标题栏、Cropper 画布拖拽后续收敛复用。约束区支持 parent/自定义 DOM/无约束；allowMove 谓词拦截；allowInputDrag 控制是否从表单元素发起。超越 Semi：可选把手键盘可达（tabindex + 方向键移动 + i18n aria-label）、触摸 touch-action:none。',
+    '通用拖拽移动容器（严格对齐 Semi Design dragMove，纯逻辑组件无样式层）：包裹单个子元素使其可被拖拽在页面/约束区内自由移动（与 Resizable 改尺寸正交，DragMove 改位置）。core 沉淀通用拖拽原语 createDragMove（命令式绑/解全局监听，pointerdown 记录起点→document 绑 move/up→计算 clamp 到 constrainer 的 top/left→customMove 或写 style→up 解绑+卸载兜底），供 Modal 可拖拽标题栏、Cropper 画布拖拽后续复用。init 强制 element position:absolute + handler cursor:move（对齐 Semi foundation）。约束区支持 parent/自定义 DOM/无约束；allowMove 谓词拦截；allowInputDrag 控制是否从表单元素发起。鼠标/触摸双通道，touch-action:none 支持触屏。无 token/scss/className（对齐 Semi）；Svelte 无 cloneElement 故用一层透明 wrapper 承载几何（框架必要适配）。',
   relatedTo: ['Resizable', 'Modal', 'Cropper'],
-  a11yPattern: 'button',
-  keyboardMap: {
-    ArrowLeft: '（keyboard 开启时）左移一步',
-    ArrowRight: '右移一步',
-    ArrowUp: '上移一步',
-    ArrowDown: '下移一步',
-  },
   props: [
     {
       name: 'handler',
@@ -48,18 +41,6 @@ export const meta = {
       default: 'false',
       desc: '是否允许从 input/textarea 等表单元素上发起拖拽',
     },
-    {
-      name: 'keyboard',
-      type: 'boolean',
-      default: 'false',
-      desc: '把手键盘可达（tabindex + 方向键移动 + aria-label）',
-    },
-    {
-      name: 'keyboardStep',
-      type: 'number',
-      default: '10',
-      desc: '键盘方向键移动步长（px）',
-    },
     { name: 'class', type: 'string', default: "''" },
     { name: 'style', type: 'string', default: 'undefined' },
     { name: 'onMouseDown', type: '(e: MouseEvent) => void', default: 'undefined', desc: '鼠标按下透传' },
@@ -71,7 +52,7 @@ export const meta = {
     { name: 'onTouchCancel', type: '(e: TouchEvent) => void', default: 'undefined', desc: '触摸取消透传' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '被拖拽移动的子元素' },
   ],
-  tokens: ['dragmove-cursor'],
+  tokens: [],
   examples: [
     {
       title: '基础拖动卡片',
@@ -88,10 +69,6 @@ export const meta = {
     {
       title: 'customMove 自定义应用',
       code: '<DragMove customMove={(el, top, left) => el.style.transform = `translate(${left}px,${top}px)`}>…</DragMove>',
-    },
-    {
-      title: '键盘可达',
-      code: '<DragMove keyboard keyboardStep={20}><div class="card">方向键移动</div></DragMove>',
     },
   ],
   doNot: [

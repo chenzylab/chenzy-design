@@ -1,15 +1,16 @@
 <!--
-  DragMove — wraps a single child element and makes it draggable within an
-  optional constrainer region. Consumes createDragMove from core for imperative
-  pointer geometry (redline #3: no reactive attachment reads geometry). The
-  wrapper is `position: absolute` so top/left take effect; the handler defaults
-  to the whole wrapper. Keyboard move (arrow keys) + i18n aria-label go beyond
-  Semi's pointer-only behaviour. See specs/components/other/DragMove.spec.md §4.
+  DragMove — 严格对齐 Semi Design dragMove（纯逻辑组件，无样式层）。
+  包裹单个子元素使其可拖拽在可选约束区内移动（改位置，非尺寸）。core createDragMove 承载
+  命令式指针几何：init 强制 element position:absolute + handler cursor:move（对齐 Semi foundation），
+  pointerdown 记起点→document 绑 move/up→clamp 到 constrainer 的 top/left→customMove 或写 style。
+
+  Svelte 无 React cloneElement，无法把 ref 注入 children 本身，故用一层 wrapper div 承载 bind:this
+  与几何（这是框架必要适配）；wrapper 不加任何自造 class/token/样式，cursor 由 core 命令式写在
+  handler 上（对齐 Semi 无样式层：无 scss/无 token/无 className）。touch-action:none 保证触屏拖拽。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { createDragMove } from '@chenzy-design/core';
-  import { useLocale } from '../locale-provider/index.js';
 
   interface Props {
     /** 拖拽触发元素（缺省为整个被包裹子元素）。返回把手 DOM。 */
@@ -22,10 +23,6 @@
     customMove?: (el: HTMLElement, top: number, left: number) => void;
     /** 是否允许从 input/textarea 等表单元素上发起拖拽。默认 false。 */
     allowInputDrag?: boolean;
-    /** 是否让把手键盘可达（tabindex + 方向键移动 + aria-label）。默认 false。 */
-    keyboard?: boolean;
-    /** 键盘方向键移动步长（px）。默认 10。 */
-    keyboardStep?: number;
     class?: string;
     style?: string;
     /** 鼠标事件透传。 */
@@ -47,8 +44,6 @@
     allowMove,
     customMove,
     allowInputDrag = false,
-    keyboard = false,
-    keyboardStep = 10,
     class: className = '',
     style,
     onMouseDown,
@@ -61,8 +56,6 @@
     children,
   }: Props = $props();
 
-  const loc = useLocale();
-
   let rootEl = $state<HTMLDivElement | null>(null);
 
   const resolveConstrainer = (): HTMLElement | null => {
@@ -74,7 +67,7 @@
   };
 
   // 命令式几何：拖拽控制器在挂载 effect 内 init（读最新 props 经闭包）；
-  // 卸载兜底 destroy 解绑遗留全局监听（红线 #3 / §9.3）。
+  // 卸载兜底 destroy 解绑遗留全局监听。
   $effect(() => {
     if (!rootEl) return;
     const ctrl = createDragMove({
@@ -96,70 +89,18 @@
     return () => ctrl.destroy();
   });
 
-  // 键盘移动：把手聚焦后方向键移动位置（命令式读当前 offset，写 style）。
-  function handleKeydown(event: KeyboardEvent): void {
-    if (!keyboard || !rootEl) return;
-    let dx = 0;
-    let dy = 0;
-    switch (event.key) {
-      case 'ArrowLeft':
-        dx = -keyboardStep;
-        break;
-      case 'ArrowRight':
-        dx = keyboardStep;
-        break;
-      case 'ArrowUp':
-        dy = -keyboardStep;
-        break;
-      case 'ArrowDown':
-        dy = keyboardStep;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    const nextLeft = rootEl.offsetLeft + dx;
-    const nextTop = rootEl.offsetTop + dy;
-    if (customMove) {
-      customMove(rootEl, nextTop, nextLeft);
-    } else {
-      rootEl.style.left = `${nextLeft}px`;
-      rootEl.style.top = `${nextTop}px`;
-    }
-  }
-
   const cls = $derived(['cd-drag-move', className].filter(Boolean).join(' '));
-  const label = $derived(loc().t('DragMove.handleAriaLabel'));
 </script>
 
-{#if keyboard}
-  <div
-    bind:this={rootEl}
-    class={cls}
-    {style}
-    role="button"
-    tabindex="0"
-    aria-label={label}
-    onkeydown={handleKeydown}
-  >
-    {@render children?.()}
-  </div>
-{:else}
-  <div bind:this={rootEl} class={cls} {style}>
-    {@render children?.()}
-  </div>
-{/if}
+<div bind:this={rootEl} class={cls} {style}>
+  {@render children?.()}
+</div>
 
 <style>
+  /* 无样式层（对齐 Semi dragMove：无 scss/token/className 视觉）；仅 touch-action 保证触屏拖拽、
+     user-select 防拖拽选中。cursor:move 与 position:absolute 由 core 命令式写在元素上（对齐 Semi init）。 */
   .cd-drag-move {
-    /* createDragMove forces position:absolute imperatively; declare cursor +
-       touch-action here so pointer/touch drags feel right. */
-    cursor: var(--cd-dragmove-cursor);
     touch-action: none;
     user-select: none;
-  }
-  .cd-drag-move:focus-visible {
-    outline: 2px solid var(--cd-color-focus);
-    outline-offset: 2px;
   }
 </style>
