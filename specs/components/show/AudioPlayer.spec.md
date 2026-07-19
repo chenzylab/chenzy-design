@@ -13,7 +13,8 @@
 
 ## 3. 分层实现
 - **headless（core/）**：`packages/core/src/audio-player.ts` —— 对齐 Semi `AudioPlayerFoundation`：状态（isPlaying/currentTime/totalTime/volume/playbackRate/currentTrackIndex/isError）、方法（handleStatusClick 播放暂停、handleTimeUpdate、handleTrackChange 'next'|'prev'、handleTimeChange、handleSpeedChange、handleSeek(direction) 按 skipDuration 跳转、handleRefresh 重播、handleVolumeChange、resetAudioState、initAudioState、endHandler、errorHandler）。框架无关，adapter 注入 `<audio>` 读写。**严格照 Semi 方法签名与行为**。
-- **渲染（svelte/）**：`AudioPlayer.svelte` + 工具栏子件。`<audio bind:this>`，`$effect` 注册原生事件（timeupdate/ended/error/loadedmetadata），销毁时注销。`audioUrl` 归一：`string | string[] | AudioInfo | AudioInfo[]`（对齐 Semi），多曲时显示上/下曲。
+- **渲染（svelte/）**：`AudioPlayer.svelte` + `AudioSlider.svelte`（自建滑块，镜像 Semi audioSlider.tsx，不复用通用 Slider）。DOM 单行布局镜像 Semi：`.cd-audio-player.-{theme}` > `<audio>` + control(播放/上下曲) + info-container(封面/标题/进度) + control(工具栏)。复用 `Button/Dropdown/Popover/Tooltip/Image` + 具名图标（IconPlay/Pause/Backward/FastForward/Restart/Refresh/Volume2/VolumnSilent/AlertCircle）。`<audio bind:this>`，`$effect` 注册原生事件（timeupdate/ended/error/loadedmetadata），销毁时注销。`audioUrl` 归一：`string | string[] | AudioInfo | AudioInfo[]`（对齐 Semi），多曲显示上/下曲。
+- **对齐 Semi 关键行为**：`handleTrackChange` 取模**循环**（`(i±1+len)%len`，末曲 next 绕回首曲，非无环绕）；`endHandler` 数组时无条件切下一曲（循环连播）；切曲自动播放（`resetAudioState`：isPlaying=true/currentTime=0/rate=1x）；`handleRefresh` 无错误时仅 currentTime 归零（不自动播放），错误时 `audio.load()` 重载；静音 `handleVolumeSilent` 切换 0↔50%（**照搬 Semi 缺陷**，不记忆原音量）。rateOptions 5 档硬编码（0.5/0.75/1.0/1.5/2.0，无 prop 可配，对齐 Semi）。
 
 ## 4. API（对齐 Semi，完整）
 ### Props
@@ -37,16 +38,7 @@
 无。
 
 ## 5. 主题 / Token
-工具栏与封面区全走 token；`theme` 切深/浅（对齐 Semi）。
-| Token | 默认 | 用途 |
-|---|---|---|
-| `--cd-audio-player-bg` | 深/浅背景 | 播放器背景 |
-| `--cd-audio-player-toolbar-bg` | fill | 工具栏背景 |
-| `--cd-audio-player-progress-track` | fill | 进度轨 |
-| `--cd-audio-player-progress-played` | 品牌色 | 已播放 |
-| `--cd-audio-player-icon` | 图标色 | 工具栏图标 |
-| `--cd-audio-player-title` | text | 标题文本 |
-（禁写死；深浅双主题 token 解析无悬空。）
+**40 个 token 严格镜像 Semi `variables.scss`**（名+值对应）：命名 `--cd-{category}-audio-player-{part}`（如 `--cd-color-audio-player-background`）；值 `rgba(var(--semi-x-n),a)` → alpha=1 用 `var(--cd-color-x-n)`、alpha<1 用 `color-mix`；`var(--semi-color-*)` → `var(--cd-color-*)`（`--semi-color-default` 无对应，映射到其真实值 `--cd-color-grey-0`）；字面量原样。深/浅双主题各一套色值（Semi `-light` 后缀区分）。分组：dark 色 5 + light 色 4 + 字号 1 + gap 3 + 尺寸 9 + 圆角 3 + 小字号/行高 2 + slider 尺寸 2 + 其它色 6 + 补充色 5 = 40。（禁写死；`--cd-` 中间层是本库惯例，值一一映射 Semi。）
 
 ## 6. 无障碍（见 a11y.spec.md）
 > 对齐优先：以 Semi 行为为基线，仅附加不改行为的纯 aria 标注。
@@ -56,7 +48,7 @@
 - reduced-motion / RTL：跟随 Semi。
 
 ## 7. 国际化
-- i18n key：`AudioPlayer.{play,pause,prev,next,forward,backward,refresh,volume,loading,error}` 等。全走 locale，不硬编码。
+- i18n key（对齐 Semi 7 key + 本库 slider a11y 必需的 progress）：`AudioPlayer.{backward,forward,prev,next,loop,volume,mediaError,progress}`。文案对齐 Semi 措辞（prev='上一首'/next='下一首'/backward='后退 {seconds} 秒'/forward='前进 {seconds} 秒'/loop='循环播放'）。`loop` 定义以对齐 Semi API 但当前无 UI；`mediaError` 定义但组件照搬 Semi 硬编码文案未引用。移除旧超集 key（play/pause/refresh/speed/loading/error——现靠 Tooltip + 具名图标承载）。
 
 ## 8. 文案
 - 工具栏 aria/tooltip 文案遵循 content-guidelines。
@@ -65,9 +57,9 @@
 ### Perf Budget
 | 指标 | 预算 |
 |---|---|
-| gzip 体积 | ≤ 5 KB（实测 4.26 KB，2026-07-04 校准） |
+| gzip 体积 | ≤ 5.5 KB（破坏性对齐 Semi 后复用 Button/Dropdown/Popover/Tooltip/Image + 自建 slider，实测 5.14 KB，2026-07 校准） |
 | 运行时 | timeupdate 只更进度，不重渲染 |
-- 无第三方媒体库。
+- 无第三方媒体库（原生 `<audio>`）。
 
 ## 10. AI 元数据
 提供 `meta.ts`：props/tokens/a11y/examples。

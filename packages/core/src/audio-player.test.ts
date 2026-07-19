@@ -103,27 +103,26 @@ describe('createAudioPlayer — statusClick 播放/暂停', () => {
 });
 
 describe('createAudioPlayer — trackChange 上下曲边界', () => {
-  it('多曲 next/prev 推进并在边界钳制（无环绕）', () => {
+  it('多曲 next/prev 取模循环（对齐 Semi：末曲 next 绕回首曲、首曲 prev 绕到末曲）', () => {
     const { adapter } = makeAdapter();
     const p = createAudioPlayer(adapter, { audioUrl: ['a.mp3', 'b.mp3', 'c.mp3'] });
     expect(p.isMultiTrack()).toBe(true);
     expect(p.getState().currentTrackIndex).toBe(0);
 
-    // prev 在首曲不动
+    // 首曲 prev 绕到末曲（(0-1+3)%3=2，对齐 Semi）
     p.handleTrackChange('prev');
+    expect(p.getState().currentTrackIndex).toBe(2);
+
+    p.handleTrackChange('next'); // (2+1)%3=0 绕回首曲
     expect(p.getState().currentTrackIndex).toBe(0);
-
     p.handleTrackChange('next');
     expect(p.getState().currentTrackIndex).toBe(1);
     p.handleTrackChange('next');
     expect(p.getState().currentTrackIndex).toBe(2);
 
-    // next 在末曲不动
+    // 末曲 next 绕回首曲（(2+1)%3=0）
     p.handleTrackChange('next');
-    expect(p.getState().currentTrackIndex).toBe(2);
-
-    p.handleTrackChange('prev');
-    expect(p.getState().currentTrackIndex).toBe(1);
+    expect(p.getState().currentTrackIndex).toBe(0);
   });
 
   it('切曲重置进度', () => {
@@ -201,15 +200,30 @@ describe('createAudioPlayer — speedChange', () => {
 });
 
 describe('createAudioPlayer — refresh 重播', () => {
-  it('归零并播放', () => {
+  it('无错误：仅 currentTime 归零，不自动播放、不改 isPlaying（对齐 Semi handleRefresh）', () => {
     const { adapter, media, play } = makeAdapter();
     const p = createAudioPlayer(adapter, { audioUrl: 'a.mp3' });
     p.handleTimeChange(60);
     p.handleRefresh();
     expect(media.currentTime).toBe(0);
     expect(p.getState().currentTime).toBe(0);
-    expect(p.getState().isPlaying).toBe(true);
-    expect(play).toHaveBeenCalled();
+    // 对齐 Semi：不播放、不改 isPlaying（初始 false）。
+    expect(p.getState().isPlaying).toBe(false);
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('错误态：调 adapter.reload() 重载并清 isError（对齐 Semi handleRefresh error 分支）', () => {
+    const { adapter, media } = makeAdapter();
+    const reload = vi.fn();
+    // 补齐 reload（makeAdapter 可能未提供）。
+    const withReload = { ...adapter, reload };
+    const p = createAudioPlayer(withReload, { audioUrl: 'a.mp3' });
+    p.errorHandler();
+    expect(p.getState().isError).toBe(true);
+    p.handleRefresh();
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(p.getState().isError).toBe(false);
+    void media;
   });
 });
 
@@ -248,14 +262,15 @@ describe('createAudioPlayer — endHandler（对齐 Semi）', () => {
     expect(p.getState().isPlaying).toBe(false);
   });
 
-  it('多曲末曲：停止播放', () => {
+  it('多曲末曲：ended 绕回首曲并续播（对齐 Semi 循环连播）', () => {
     const { adapter } = makeAdapter();
     const p = createAudioPlayer(adapter, { audioUrl: ['a.mp3', 'b.mp3'] });
-    p.handleTrackChange('next'); // → 末曲
-    p.handleStatusClick();
-    p.endHandler();
-    expect(p.getState().isPlaying).toBe(false);
+    p.handleTrackChange('next'); // → 末曲 index=1
     expect(p.getState().currentTrackIndex).toBe(1);
+    p.endHandler(); // 末曲 ended → (1+1)%2=0 绕回首曲
+    expect(p.getState().currentTrackIndex).toBe(0);
+    // handleTrackChange 设 isPlaying=true（切曲自动播放，对齐 Semi resetAudioState）。
+    expect(p.getState().isPlaying).toBe(true);
   });
 });
 

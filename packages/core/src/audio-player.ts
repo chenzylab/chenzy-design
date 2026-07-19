@@ -69,6 +69,8 @@ export interface AudioPlayerAdapter {
   getPlaybackRate(): number;
   /** 写倍速。 */
   setPlaybackRate(v: number): void;
+  /** 重新加载媒体（audio.load()）；错误态重播用。可选（老 adapter 无则 no-op）。 */
+  reload?(): void;
 }
 
 /** AudioPlayer 内部状态快照（对齐 Semi foundation state）。 */
@@ -253,15 +255,19 @@ export function createAudioPlayer(
 
   function handleTrackChange(direction: 'next' | 'prev'): void {
     if (tracks.length <= 1) return;
-    const delta = direction === 'next' ? 1 : -1;
-    const next = state.currentTrackIndex + delta;
-    // 无环绕：越界不动（对齐 Semi 边界行为）。
-    if (next < 0 || next > tracks.length - 1) return;
-    state.currentTrackIndex = next;
-    // 切曲重置进度（src 由 render 层随 index 更新后 load）。
+    const len = tracks.length;
+    // 取模循环（对齐 Semi handleTrackChange：next=(i+1)%len，prev=(i-1+len)%len）。
+    state.currentTrackIndex =
+      direction === 'next'
+        ? (state.currentTrackIndex + 1) % len
+        : (state.currentTrackIndex - 1 + len) % len;
+    // 切曲重置进度并自动播放（对齐 Semi resetAudioState：isPlaying=true, currentTime=0, rate=1x）。
+    // src 由 render 层随 index 更新后 load()，见 render 层 isPlaying 续播逻辑。
     state.currentTime = 0;
     state.totalTime = 0;
     state.isError = false;
+    state.isPlaying = true;
+    state.playbackRate = { ...DEFAULT_RATE };
     emit();
   }
 
@@ -284,11 +290,15 @@ export function createAudioPlayer(
   }
 
   function handleRefresh(): void {
-    adapter.setCurrentTime(0);
-    adapter.play();
-    state.currentTime = 0;
-    state.isPlaying = true;
-    state.isError = false;
+    // 对齐 Semi handleRefresh：error 时 audio.load() 重载（由 render 层监听 isError 触发 load）；
+    // 否则仅 currentTime 归零（不自动播放、不改 isPlaying，与 Semi 一致）。
+    if (state.isError) {
+      adapter.reload?.();
+      state.isError = false;
+    } else {
+      adapter.setCurrentTime(0);
+      state.currentTime = 0;
+    }
     emit();
   }
 
@@ -324,7 +334,8 @@ export function createAudioPlayer(
   }
 
   function endHandler(): void {
-    if (isMultiTrack() && state.currentTrackIndex < tracks.length - 1) {
+    // 对齐 Semi endHandler：数组则切下一曲（循环连播，末曲绕回首曲）；单曲则停。
+    if (isMultiTrack()) {
       handleTrackChange('next');
     } else {
       state.isPlaying = false;
