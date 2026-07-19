@@ -1,7 +1,6 @@
 // HotKeys a11y + 组件行为（jsdom / dom project）。
-// a11y 增强（超越 Semi 的 span）：每个键位用语义化 <kbd> 承载，`+` 分隔符 aria-hidden，
-// 容器 aria-keyshortcuts 声明快捷键。行为：keydown 监听挂载/解绑、preventDefault、
-// content/render/null 提示渲染、getListenerTarget 局部监听。
+// DOM 严格对齐 Semi：div.cd-hotKeys > span > span.-content（用 span 非 kbd），分隔 span.-split "+"。
+// 行为：keydown 监听挂载/解绑、preventDefault、content/render/null 提示渲染、getListenerTarget 局部监听。
 import { describe, it, expect, vi } from 'vitest';
 import type { Component } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
@@ -11,48 +10,48 @@ import HotKeysComponent from './HotKeys.svelte';
 // 用宽松类型别名接收（props 在各用例显式传入，运行时安全）。
 const HotKeys = HotKeysComponent as unknown as Component<Record<string, unknown>>;
 
-function kbds(container: Element): HTMLElement[] {
-  return Array.from(container.querySelectorAll('kbd.cd-hotkeys__key')) as HTMLElement[];
+function contents(container: Element): HTMLElement[] {
+  return Array.from(container.querySelectorAll('.cd-hotKeys-content')) as HTMLElement[];
 }
 
 describe('HotKeys a11y', () => {
-  it('默认渲染：语义化 <kbd> + `+` aria-hidden + aria-keyshortcuts，无 axe violations', async () => {
+  it('默认渲染：div.cd-hotKeys > span.-content（对齐 Semi）+ -split "+"，无 axe violations', async () => {
     const { container } = renderWithLocale(HotKeys, {
       props: { hotKeys: ['Control', 'Shift', 'A'] },
     });
-    const root = container.querySelector('.cd-hotkeys');
+    const root = container.querySelector('.cd-hotKeys');
     expect(root).not.toBeNull();
-    // aria-keyshortcuts 声明组合（W3C 语法：修饰键在前 + 连接）。
-    expect(root?.getAttribute('aria-keyshortcuts')).toBe('Control+Shift+A');
-    // 每个键位是 <kbd>（3 个键）。
-    const keys = kbds(container);
+    expect(root?.tagName).toBe('DIV');
+    // 每个键位是 span.cd-hotKeys-content（3 个键，对齐 Semi 非 kbd）。
+    const keys = contents(container);
     expect(keys).toHaveLength(3);
-    // 分隔符 aria-hidden。
-    const splits = Array.from(container.querySelectorAll('.cd-hotkeys__split'));
+    keys.forEach((k) => expect(k.tagName).toBe('SPAN'));
+    // 分隔符 span.-split，文本 "+"（2 个）。
+    const splits = Array.from(container.querySelectorAll('.cd-hotKeys-split'));
     expect(splits.length).toBe(2);
-    for (const s of splits) expect(s.getAttribute('aria-hidden')).toBe('true');
+    splits.forEach((s) => expect(s.textContent).toBe('+'));
     await expectNoAxeViolations(container);
   });
 
   it('普通字母键大写显示', () => {
     const { container } = renderWithLocale(HotKeys, { props: { hotKeys: ['a'] } });
-    expect(kbds(container)[0]?.textContent).toBe('A');
+    expect(contents(container)[0]?.textContent).toBe('A');
   });
 
   it('content 自定义显示内容（字符串）', () => {
     const { container } = renderWithLocale(HotKeys, {
       props: { hotKeys: ['Control', 'K'], content: ['Ctrl', 'K'] },
     });
-    const texts = kbds(container).map((k) => k.textContent);
+    const texts = contents(container).map((k) => k.textContent);
     expect(texts).toEqual(['Ctrl', 'K']);
   });
 
-  it('render=null：不渲染提示 UI，仅保留监听（无 .cd-hotkeys 节点，仍能触发）', () => {
+  it('render=null：不渲染提示 UI，仅保留监听（无 .cd-hotKeys 节点，仍能触发）', () => {
     const onHotKey = vi.fn();
     const { container } = renderWithLocale(HotKeys, {
       props: { hotKeys: ['Escape'], render: null, onHotKey },
     });
-    expect(container.querySelector('.cd-hotkeys')).toBeNull();
+    expect(container.querySelector('.cd-hotKeys')).toBeNull();
     document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true }));
     expect(onHotKey).toHaveBeenCalledTimes(1);
   });
@@ -129,7 +128,7 @@ describe('HotKeys 行为', () => {
     document.body.removeChild(local);
   });
 
-  it('mergeMetaCtrl：Control 组合按 Meta 也命中', () => {
+  it('mergeMetaCtrl 死 prop：Control 组合按 Meta 不命中（严格对齐 Semi 不生效）', () => {
     const onHotKey = vi.fn();
     renderWithLocale(HotKeys, {
       props: { hotKeys: ['Control', 'K'], mergeMetaCtrl: true, onHotKey },
@@ -137,7 +136,7 @@ describe('HotKeys 行为', () => {
     document.body.dispatchEvent(
       new KeyboardEvent('keydown', { code: 'KeyK', key: 'k', metaKey: true, bubbles: true }),
     );
-    expect(onHotKey).toHaveBeenCalledTimes(1);
+    expect(onHotKey).not.toHaveBeenCalled();
   });
 
   it('非法组合抛错（2 个普通键）', () => {

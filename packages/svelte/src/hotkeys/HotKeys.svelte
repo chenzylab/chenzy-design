@@ -1,9 +1,9 @@
 <!--
-  HotKeys — see specs/components/other/HotKeys.spec.md
-  声明一组键盘快捷键组合，绑定 keydown 监听（默认全局 document.body，可局部），命中触发 onHotKey，
-  并渲染可见键位提示。匹配引擎 / 校验 / 平台侦测全部委托 @chenzy-design/core。
-  a11y 增强（超越 Semi 的 span）：每个键位用语义化 <kbd> 承载，`+` 分隔符 aria-hidden，
-  匹配用 event.code（物理键位，规避输入法/大小写），键位文本可选中（不设 user-select:none）。
+  HotKeys — 严格对齐 Semi Design hotKeys。声明一组键盘快捷键组合，绑定 keydown 监听
+  （默认全局 document.body，可局部），命中触发 onHotKey，并渲染可见键位提示。
+  匹配引擎 / 校验 / 平台侦测全部委托 @chenzy-design/core（匹配用 event.code 物理键位，
+  规避输入法/大小写，保留 Semi 优秀设计）。DOM 对齐 Semi：div.cd-hotKeys > span > span.-content
+  + span.-split "+"（用 span 非 kbd，无 aria-keyshortcuts，无 rtl 特殊处理）。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -27,7 +27,7 @@
     render?: Snippet | null;
     /** 命中时是否 preventDefault（拦截浏览器默认行为，如 Ctrl+S）。 */
     preventDefault?: boolean;
-    /** 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键（本库真正实现，Semi 该 prop 未生效）。 */
+    /** 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键。**死 prop**：严格对齐 Semi，声明但不生效（Meta/Ctrl 仍严格区分）。 */
     mergeMetaCtrl?: boolean;
     /** 监听挂载节点。默认全局 document.body；返回具体元素实现局部监听。 */
     getListenerTarget?: () => HTMLElement | null;
@@ -82,14 +82,7 @@
     return key.length === 1 ? key.toUpperCase() : key;
   }
 
-  const rtl = $derived(loc().direction === 'rtl');
-
-  const cls = $derived(
-    ['cd-hotkeys', rtl && 'cd-hotkeys--rtl', className].filter(Boolean).join(' '),
-  );
-
-  // aria-keyshortcuts 规范值：修饰键在前，用 '+' 连接（W3C 语法用 Control/Meta/Alt/Shift + 键名）。
-  const ariaKeyshortcuts = $derived(validated.join('+'));
+  const cls = $derived(['cd-hotKeys', className].filter(Boolean).join(' '));
 
   // —— 监听生命周期：$effect 内绑定，返回 cleanup 解绑（防泄漏，红线 #2 安全：无同步自写 state）——
   $effect(() => {
@@ -110,46 +103,50 @@
   {#if render}
     {@render render()}
   {:else}
-    <span class={cls} {style} aria-keyshortcuts={ariaKeyshortcuts}>
+    <!-- DOM 对齐 Semi：div.cd-hotKeys > span(每键) > span.-content；分隔 span.-split "+"。 -->
+    <div class={cls} {style}>
       {#each validated as key, i (i)}
         {@const item = content?.[i]}
-        {#if i > 0}<span class="cd-hotkeys__split" aria-hidden="true">+</span>{/if}
-        {#if item !== undefined && typeof item !== 'string'}
-          <kbd class="cd-hotkeys__key">{@render item()}</kbd>
-        {:else}
-          <kbd class="cd-hotkeys__key">{item ?? displayKey(key)}</kbd>
-        {/if}
+        <span>
+          {#if i > 0}<span class="cd-hotKeys-split">+</span>{/if}
+          {#if item !== undefined && typeof item !== 'string'}
+            <span class="cd-hotKeys-content">{@render item()}</span>
+          {:else}
+            <span class="cd-hotKeys-content">{item ?? displayKey(key)}</span>
+          {/if}
+        </span>
       {/each}
-    </span>
+    </div>
   {/if}
 {/if}
 
 <style>
-  .cd-hotkeys {
+  /* 严格对齐 Semi hotKeys.scss：inline-flex 居中、user-select:none、nowrap。 */
+  .cd-hotKeys {
+    box-sizing: border-box;
+    position: relative;
     display: inline-flex;
-    align-items: center;
-    gap: var(--cd-hotkeys-gap);
-  }
-  .cd-hotkeys--rtl {
-    direction: rtl;
-  }
-  .cd-hotkeys__key {
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    min-inline-size: 1.5em;
-    padding: var(--cd-hotkeys-content-padding);
-    font-family: inherit;
-    font-size: var(--cd-hotkeys-content-font-size);
-    line-height: 1;
-    color: var(--cd-hotkeys-content-color);
-    background: var(--cd-hotkeys-content-bg);
-    border: 1px solid var(--cd-hotkeys-content-border);
-    border-radius: var(--cd-hotkeys-content-radius);
-    /* 不设 user-select:none：允许用户复制键位文本（超越 Semi）。 */
-  }
-  .cd-hotkeys__split {
-    color: var(--cd-hotkeys-split-color);
+    align-items: center;
     user-select: none;
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+  /* 键位块（对齐 Semi -content：12px/radius 2px/height 20px/padding 2px 8px/fill-0 底 text-2 字） */
+  .cd-hotKeys :global(.cd-hotKeys-content) {
+    font-size: var(--cd-font-size-small);
+    border-radius: var(--cd-radius-hotkeys);
+    height: var(--cd-height-hotkeys);
+    display: inline-flex;
+    align-items: center;
+    padding: var(--cd-spacing-hotkeys-paddingY) var(--cd-spacing-hotkeys-paddingX);
+    background: var(--cd-color-hotkeys-bg);
+    color: var(--cd-color-hotkeys-text);
+  }
+  /* 分隔符（对齐 Semi -split：12px/margin 0 3px/text-0） */
+  .cd-hotKeys :global(.cd-hotKeys-split) {
+    font-size: var(--cd-font-size-small);
+    margin: 0 3px;
+    color: var(--cd-color-hotkeys-split);
   }
 </style>
