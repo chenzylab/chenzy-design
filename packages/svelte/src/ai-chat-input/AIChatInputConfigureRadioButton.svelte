@@ -37,6 +37,7 @@
 
   function handleChange(e: RadioChangeEvent): void {
     const v = e.target.value;
+    if (v === undefined) return;
     ctx?.setField({ [field]: v });
     onChange?.(v);
   }

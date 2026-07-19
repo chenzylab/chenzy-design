@@ -427,67 +427,48 @@
     border-radius: 50%;
   }
 
-  /* ===== colorful（AI 多彩，对齐 Semi variables.scss colorful 规则；ai 色缺失用三色渐变）=====
-     - primary/tertiary solid：渐变实心背景。
-     - primary light/borderless：渐变文字（background-clip:text，作用在 content-right 或无图标的 content）。
-     - primary outline：渐变文字 + 渐变边框。
-     - tertiary solid colorful：渐变背景 + 渐变文字（对齐 Semi tertiary solid colorful text）。
-     其余 type + colorful：Semi 无定义 → 无 colorful 效果（回落普通 type 着色，此处不写规则即可）。 */
+  /* ===== colorful（AI 多彩，逐规则严格对齐 Semi button.scss $module-colorful）=====
+     colorful 仅对 primary / tertiary 生效（Semi 无其它 type 定义）。渐变全部消费
+     alias AI 语义色（--cd-color-ai-general 系列，4 色 278° 渐变，亮暗双套 1:1 镜像 Semi）。
+       - primary solid：渐变实心底 + hover/active 换档。
+       - primary light / borderless：内容文字渐变填充（background-clip:text）。
+       - primary outline：紫色单色文字 + 紫色单色边框（Semi 用 ai-purple，非渐变）。
+       - tertiary solid：极浅淡彩底 + 渐变文字填充。
+     disabled colorful：Semi 无特殊规则 → 回落普通 disabled 灰底（此处不写即可）。 */
   .cd-button-colorful.cd-button-primary.cd-button-solid {
-    background: linear-gradient(
-      120deg,
-      var(--cd-button-colorful-from) 0%,
-      var(--cd-button-colorful-via) 52%,
-      var(--cd-button-colorful-to) 100%
-    );
+    background: var(--cd-color-button-primary-solid-colorful-bg-default);
     border-color: transparent;
   }
+  .cd-button-colorful.cd-button-primary.cd-button-solid:not(.cd-button-borderless):not(.cd-button-light):not(.cd-button-outline):hover {
+    background: var(--cd-color-button-primary-solid-colorful-bg-hover);
+  }
+  .cd-button-colorful.cd-button-primary.cd-button-solid:not(.cd-button-borderless):not(.cd-button-light):not(.cd-button-outline):active {
+    background: var(--cd-color-button-primary-solid-colorful-bg-active);
+  }
+  /* tertiary solid：极浅淡彩底 + 渐变文字填充。 */
   .cd-button-colorful.cd-button-tertiary.cd-button-solid {
-    background: linear-gradient(
-      120deg,
-      var(--cd-button-colorful-from) 0%,
-      var(--cd-button-colorful-via) 52%,
-      var(--cd-button-colorful-to) 100%
-    );
+    background: var(--cd-color-button-tertiary-solid-colorful-bg-default);
     border-color: transparent;
   }
-  /* tertiary solid colorful：文字也走渐变填充（对齐 Semi tertiary_solid_colorful-text）。 */
   .cd-button-colorful.cd-button-tertiary.cd-button-solid :global(.cd-button-content-right),
   .cd-button-colorful.cd-button-tertiary.cd-button-solid .cd-button-content:not(:has(> :global(.cd-button-content-right))) {
-    background: linear-gradient(
-      120deg,
-      var(--cd-button-colorful-from) 0%,
-      var(--cd-button-colorful-via) 52%,
-      var(--cd-button-colorful-to) 100%
-    );
+    background: var(--cd-color-button-tertiary-solid-colorful-text-default);
     background-clip: text;
     color: transparent;
   }
-  /* primary light / borderless：渐变文字。 */
+  /* primary light / borderless：内容文字渐变填充。 */
   .cd-button-colorful.cd-button-primary.cd-button-light :global(.cd-button-content-right),
   .cd-button-colorful.cd-button-primary.cd-button-light .cd-button-content:not(:has(> :global(.cd-button-content-right))),
   .cd-button-colorful.cd-button-primary.cd-button-borderless :global(.cd-button-content-right),
   .cd-button-colorful.cd-button-primary.cd-button-borderless .cd-button-content:not(:has(> :global(.cd-button-content-right))) {
-    background: linear-gradient(
-      120deg,
-      var(--cd-button-colorful-from) 0%,
-      var(--cd-button-colorful-via) 52%,
-      var(--cd-button-colorful-to) 100%
-    );
+    background: var(--cd-color-button-primary-light-colorful-text-default);
     background-clip: text;
     color: transparent;
   }
-  /* primary outline：渐变文字色 + 渐变边框。 */
+  /* primary outline：紫色单色文字 + 紫色单色边框（对齐 Semi ai-purple）。 */
   .cd-button-colorful.cd-button-primary.cd-button-outline {
-    color: var(--cd-button-colorful-via);
-    border: var(--cd-width-button-outline-border) solid transparent;
-    border-image: linear-gradient(
-        120deg,
-        var(--cd-button-colorful-from) 0%,
-        var(--cd-button-colorful-via) 52%,
-        var(--cd-button-colorful-to) 100%
-      )
-      1;
+    color: var(--cd-color-button-primary-outline-colorful-text-default);
+    border-color: var(--cd-color-button-primary-outline-colorful-text-default);
   }
 
   @media (prefers-reduced-motion: reduce) {

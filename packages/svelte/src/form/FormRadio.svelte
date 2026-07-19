@@ -27,7 +27,7 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
-  const radioValue = $derived((control.value ?? '') as RadioProps['value']);
+  const radioValue = $derived((control.value ?? '') as NonNullable<RadioProps['value']>);
   const slotChildren = $derived(props.children);
 </script>
 

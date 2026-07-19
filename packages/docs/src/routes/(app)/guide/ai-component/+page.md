@@ -21,7 +21,7 @@ AI 风格通过组件的 `colorful` 属性开启，底层用品牌蓝 → 紫的
 - **AI Tag**：`colorful` 开启多彩标签，配合 `gradient` 区分渐变色与单色紫，与 `type`（solid/light/ghost）、`shape`、`prefixIcon` 组合；多彩标签字重比常规标签更重。详见 <a href="{base}/components/tag">Tag</a>。
 - **AI FloatButton**：悬浮按钮的 `colorful` 渐变形态，适合作为常驻的 AI 助手入口。详见 <a href="{base}/components/floatbutton">FloatButton</a>。
 
-渐变色由各组件的 colorful 渐变 token 驱动（如 `--cd-button-colorful-from` / `--cd-tag-colorful-from` 等，同源蓝→紫），暗色模式与品牌定制均随 token 体系联动。
+渐变色由 AI 语义色驱动：Button / FloatButton 消费 `--cd-color-ai-general`（4 色 278° 渐变，亮暗双套，1:1 镜像 Semi），Tag 用可编辑的 `--cd-tag-colorful-from` 三色。暗色模式与品牌定制均随 token 体系联动。
 
 ## AI Chat 组件
 

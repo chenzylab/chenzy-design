@@ -1,7 +1,9 @@
 <!--
   RadioGroup — 严格对齐 Semi radioGroup.tsx。
-  WAI-ARIA radiogroup pattern: roving tabindex + arrow-key navigation.
-  onChange 回调收到对齐 Semi 的 RadioChangeEvent（e.target.{checked,value}）。
+
+  DOM：<div class="cd-radioGroup cd-radioGroup-wrapper cd-radioGroup-{direction}[-default|-card] | cd-radioGroup-buttonRadio">
+  子项为同 name 的原生 radio，方向键切换即选中由浏览器接管（无 JS roving tabindex）。
+  onChange 回调收到对齐 Semi 的 RadioChangeEvent（含 advanced 模式取消时 value=undefined）。
 -->
 <script lang="ts">
   import type { Snippet, ComponentProps } from 'svelte';
@@ -11,8 +13,8 @@
     setRadioGroupContext,
     type RadioValue,
     type RadioType,
+    type RadioMode,
     type RadioChangeEvent,
-    type RadioRegistration,
   } from './context.js';
 
   type OptionObject = {
@@ -40,6 +42,8 @@
     buttonSize?: 'small' | 'middle' | 'large';
     type?: RadioType;
     direction?: 'horizontal' | 'vertical';
+    /** 高级模式（对齐 Semi mode='advanced'），透传给子 Radio。 */
+    mode?: RadioMode;
     /** 对齐 Semi：变更回调收到 RadioChangeEvent（e.target.{checked,value}）。 */
     onChange?: (e: RadioChangeEvent) => void;
     children?: Snippet;
@@ -50,7 +54,6 @@
     /** 根元素内联样式（对齐 Semi style）。 */
     style?: string;
     ariaLabel?: string;
-    /** 关联组的可见标题元素 id（无内置标题时用，优先于 ariaLabel 体现可访问名）。 */
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -69,6 +72,7 @@
     buttonSize = 'middle',
     type = 'default',
     direction = 'horizontal',
+    mode = '',
     onChange,
     children,
     id,
@@ -83,110 +87,41 @@
     ...rest
   }: Props = $props();
 
-  let rootEl = $state<HTMLDivElement | null>(null);
-
-  const groupName = resolveName();
-
-  function resolveName(): string {
-    return name ?? useId('cd-radio');
-  }
+  // name 只取初值（同 Semi：name 不应在运行时切换分组）——初值快照。
+  // svelte-ignore state_referenced_locally
+  const groupName = name ?? useId('cd-radio');
 
   const isControlled = $derived(value !== undefined);
-  let inner = $state<RadioValue | undefined>(getInitialValue());
-
-  function getInitialValue(): RadioValue | undefined {
-    return defaultValue;
-  }
-
+  // defaultValue 只取初值（对齐 Semi 非受控初始态）——初值快照。
+  // svelte-ignore state_referenced_locally
+  let inner = $state<RadioValue | undefined>(defaultValue);
   const selected = $derived(isControlled ? value : inner);
 
-  // Insertion-ordered registry of radios (matches DOM order). PLAIN (non-reactive)
-  // on purpose: radios push to it while mounting. It is read ONLY inside keyboard
-  // event handlers (moveTo) — never during render — so registration never feeds
-  // back into a render-read. This is what keeps the component loop-free
-  // (effect_update_depth_exceeded comes from render reading state that mount writes).
-  const registry: RadioRegistration[] = [];
+  const isButtonRadio = $derived(type === 'button');
+  const isPureCardRadio = $derived(type === 'pureCard');
+  const isCardRadio = $derived(type === 'card' || isPureCardRadio);
+  const isDefaultRadio = $derived(type === 'default');
 
-  function select(v: RadioValue, e?: RadioChangeEvent) {
+  // 对齐 Semi radioGroupFoundation.handleChange：受控只 notify，非受控回写；advanced 取消时 value=undefined。
+  function handleChange(evt: RadioChangeEvent) {
     if (disabled) return;
-    // `value` 是 $bindable：受控时直接写回（Svelte 5 双向绑定核心，不像 React 会 loop）。
-    // 这样 `bind:value` 无需额外 onChange 即可更新；纯受控（父只传 value 不传 bind）时，
-    // 父在 onChange 里重新赋 value 覆盖即可。未传 value（非受控）时维护内部 inner。
-    if (isControlled) value = v;
-    else inner = v;
-    onChange?.(e ?? makeEvent(v));
-  }
+    const { checked, value: v } = evt.target;
+    const lastValue = selected;
+    const cbValue: RadioChangeEvent = { ...evt, target: { ...evt.target } };
 
-  /** 构造对齐 Semi 的 RadioChangeEvent（键盘方向键无原生事件时用）。 */
-  function makeEvent(v: RadioValue, nativeEvent?: Event): RadioChangeEvent {
-    return {
-      target: { checked: true, value: v, name: groupName },
-      ...(nativeEvent ? { nativeEvent } : {}),
-      stopPropagation: () => nativeEvent?.stopPropagation(),
-      preventDefault: () => nativeEvent?.preventDefault(),
-    };
-  }
+    if (mode === 'advanced' && !checked) {
+      cbValue.target.value = undefined;
+    }
 
-  function register(reg: RadioRegistration): () => void {
-    registry.push(reg);
-    return () => {
-      const i = registry.indexOf(reg);
-      if (i !== -1) registry.splice(i, 1);
-    };
-  }
+    if (!isControlled) {
+      inner = mode === 'advanced' && !checked ? undefined : (v as RadioValue);
+    } else {
+      // 受控：value 是 $bindable，直接回写（Svelte 双向绑定；纯受控父在 onChange 里覆盖）。
+      value = mode === 'advanced' && !checked ? undefined : (v as RadioValue);
+    }
 
-  // Roving tabindex tab stop, computed from `selected` ALONE (no registry read
-  // during render → no loop). Per WAI-ARIA APG: when a radio is selected it owns
-  // the tab stop; when nothing is selected every radio is reachable by Tab
-  // (tabindex=0) and Arrow keys then select one. `selected` is the only reactive
-  // input, so this is render-safe.
-  function isTabStop(v: RadioValue, radioDisabled: boolean): boolean {
-    if (radioDisabled || disabled) return false;
-    if (selected === undefined) return true; // none selected → all are tab stops
-    return v === selected;
-  }
-
-  function moveTo(index: number, nativeEvent?: Event) {
-    const enabled = registry.filter((r) => !r.disabled);
-    if (enabled.length === 0) return;
-    const target = enabled[(index + enabled.length) % enabled.length];
-    if (!target) return;
-    select(target.value, makeEvent(target.value, nativeEvent));
-    target.el.focus();
-  }
-
-  function onKeydown(e: KeyboardEvent, current: RadioValue) {
-    if (disabled) return;
-    const enabled = registry.filter((r) => !r.disabled);
-    const idx = enabled.findIndex((r) => r.value === current);
-    if (idx === -1) return;
-    // RTL：水平方向键语义翻转（左右镜像）。读 getComputedStyle 仅在事件里，render 不依赖。
-    const rtl =
-      rootEl != null && getComputedStyle(rootEl).direction === 'rtl';
-    let key = e.key;
-    if (rtl && key === 'ArrowRight') key = 'ArrowLeft';
-    else if (rtl && key === 'ArrowLeft') key = 'ArrowRight';
-    switch (key) {
-      case 'ArrowDown':
-      case 'ArrowRight':
-        e.preventDefault();
-        moveTo(idx + 1, e);
-        break;
-      case 'ArrowUp':
-      case 'ArrowLeft':
-        e.preventDefault();
-        moveTo(idx - 1, e);
-        break;
-      case 'Home':
-        e.preventDefault();
-        moveTo(0, e);
-        break;
-      case 'End':
-        e.preventDefault();
-        moveTo(enabled.length - 1, e);
-        break;
-      default:
-        break;
+    if (mode === 'advanced' || lastValue !== v) {
+      onChange?.(cbValue);
     }
   }
 
@@ -195,19 +130,21 @@
     getSelected: () => selected,
     getDisabled: () => disabled,
     getType: () => type,
+    getMode: () => mode,
     getButtonSize: () => (type === 'button' ? buttonSize : undefined),
-    select,
-    register,
-    onKeydown,
-    isTabStop,
+    onChange: handleChange,
   });
 
+  // 根 class：镜像 Semi radioGroup.tsx prefixClsDisplay。
   const cls = $derived(
     [
-      'cd-radio-group',
-      `cd-radio-group--${direction}`,
-      `cd-radio-group--${type}`,
       className,
+      'cd-radioGroup',
+      'cd-radioGroup-wrapper',
+      direction && !isButtonRadio && `cd-radioGroup-${direction}`,
+      direction && isDefaultRadio && `cd-radioGroup-${direction}-default`,
+      direction && isCardRadio && `cd-radioGroup-${direction}-card`,
+      isButtonRadio && 'cd-radioGroup-buttonRadio',
     ]
       .filter(Boolean)
       .join(' '),
@@ -219,9 +156,8 @@
   }
   const normalizedOptions = $derived(options?.map(normalizeOption));
 
-  // 归一化 option 转成传给 Radio 的 props（仅带上已定义字段，兼容 exactOptionalPropertyTypes）。
   function optionRadioProps(opt: OptionObject): ComponentProps<typeof Radio> {
-    const p = { value: opt.value, disabled: opt.disabled ?? false } as Record<string, unknown>;
+    const p = { value: opt.value, disabled: opt.disabled ?? disabled } as Record<string, unknown>;
     if (opt.extra !== undefined) p.extra = opt.extra;
     if (opt.className !== undefined) p.class = opt.className;
     if (opt.style !== undefined) p.style = opt.style;
@@ -238,10 +174,9 @@
   class={cls}
   {id}
   {style}
-  bind:this={rootEl}
   role="radiogroup"
-  aria-labelledby={ariaLabelledby}
   aria-label={ariaLabelledby ? undefined : ariaLabel}
+  aria-labelledby={ariaLabelledby}
   aria-describedby={ariaDescribedby}
   aria-errormessage={ariaErrormessage}
   aria-invalid={ariaInvalid}
@@ -257,26 +192,39 @@
 </div>
 
 <style>
-  .cd-radio-group {
+  /* 对齐 Semi .semi-radioGroup */
+  .cd-radioGroup {
+    font-size: var(--cd-font-size-regular);
+  }
+
+  /* 垂直排列（default / card 各自让子 radio display:flex 撑满） */
+  .cd-radioGroup-vertical {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--cd-spacing-radio-group-vertical-marginbottom);
+  }
+  .cd-radioGroup-vertical-default :global(.cd-radio),
+  .cd-radioGroup-vertical-card :global(.cd-radio) {
+    display: flex;
+  }
+  /* 垂直卡片组：底部外距用卡片专用值 */
+  .cd-radioGroup-vertical-card {
+    row-gap: var(--cd-spacing-radio-card-group-vertical-marginbottom);
+  }
+
+  /* 水平排列 */
+  .cd-radioGroup-horizontal {
     display: inline-flex;
+    flex-wrap: wrap;
+    vertical-align: bottom;
     gap: var(--cd-spacing-radio-group-horizontal-marginright);
   }
-  /* button 型：灰底容器包裹（对齐 Semi radioGroup-buttonRadio：bg fill-0 + radius，
-     内部按钮透明、选中项白底浮起，类似 segmented control，非独立边框分段）。 */
-  .cd-radio-group--button {
-    gap: 0;
+
+  /* button 型：灰底容器包裹（对齐 Semi .semi-radioGroup-buttonRadio） */
+  .cd-radioGroup-buttonRadio {
+    display: inline-block;
     background: var(--cd-color-radio-buttonradio-bg-default);
     border-radius: var(--cd-radius-radio-buttonradio);
-    /* 内边距让选中白块四周留灰边、内缩浮起（对齐 Semi segmented control 观感）。 */
-    padding: 2px;
-  }
-  .cd-radio-group--horizontal {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .cd-radio-group--vertical {
-    flex-direction: column;
-    align-items: flex-start;
+    vertical-align: middle;
   }
 </style>

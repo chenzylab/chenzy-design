@@ -174,7 +174,7 @@ const COMPONENT_ALIASES: Record<string, string> = {
 
 /**
  * 取组件归属。token 名可能的组织：
- *   --cd-button-colorful-from                    → 首段即组件
+ *   --cd-tag-colorful-from                       → 首段即组件
  *   --cd-color-button-primary-bg-hover          → category + 组件
  *   --cd-animation-duration-button-icon-loading → category + 修饰段 + 组件
  * 循环剥掉 category/修饰前缀后取组件段；落在全局语义段或纯数字则视为无组件归属。

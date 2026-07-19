@@ -79,7 +79,8 @@ export const meta = {
     '--cd-transition-*-button-*',
     '--cd-transform-scale-button-*',
     '--cd-animation-duration-button-icon-*',
-    '--cd-button-colorful-*',
+    '--cd-color-ai-general*',
+    '--cd-color-ai-purple',
   ],
   examples: [{ title: '基础', code: '<Button type="primary">确定</Button>' }],
 } as const;
