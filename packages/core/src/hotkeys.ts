@@ -6,7 +6,7 @@
  *
  * Matching uses modifier equality (metaKey/shiftKey/altKey/ctrlKey all-exact) plus the
  * plain key compared against `event.code`（物理键位，规避输入法 / 大小写 / Shift 干扰，
- * 保留 Semi 的优秀设计）。`mergeMetaCtrl` 真正实现跨平台合并 Cmd/Ctrl（Semi 该 prop 未生效）。
+ * 保留 Semi 的优秀设计）。`mergeMetaCtrl` 为死 prop（严格对齐 Semi：声明但不实现，Meta/Ctrl 仍严格区分）。
  * See specs/components/other/HotKeys.spec.md §3.
  */
 
@@ -122,8 +122,8 @@ export function isValidHotKeys(keys: readonly HotKey[]): boolean {
 /** matchHotKeys 选项。 */
 export interface MatchHotKeysOptions {
   /**
-   * 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键。为 true 时：组合里出现 Control 或 Meta 任一，
-   * 只要事件按下了 metaKey 或 ctrlKey 之一即算命中该修饰位（**Semi 该 prop 未生效，本库真正实现**）。
+   * 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键。**死 prop**：严格对齐 Semi——Semi 声明了此
+   * 语义但 foundation 从未实现（Meta/Ctrl 仍严格区分），故本库亦不据其改变匹配（保留声明以对齐 API）。
    */
   mergeMetaCtrl?: boolean;
 }
@@ -141,26 +141,19 @@ export function matchHotKeys(
   options: MatchHotKeysOptions = {},
 ): boolean {
   const { modifiers, plain } = parseHotKeys(keys);
-  const { mergeMetaCtrl = false } = options;
+  // mergeMetaCtrl：严格对齐 Semi，此 prop 为「死 prop」——Semi 声明了但 foundation 从未使用
+  // （Meta/Ctrl 仍被当作两个独立修饰键严格区分）。故此处解构但不据其改变匹配逻辑。
+  void options.mergeMetaCtrl;
 
-  // —— 修饰键精确匹配 ——
+  // —— 修饰键精确匹配（Meta/Ctrl/Shift/Alt 全严格相等，对齐 Semi foundation） ——
   const wantShift = modifiers.has('Shift');
   const wantAlt = modifiers.has('Alt');
   if (event.shiftKey !== wantShift) return false;
   if (event.altKey !== wantAlt) return false;
-
-  if (mergeMetaCtrl) {
-    // Cmd/Ctrl 合并：组合声明了 Control 或 Meta 任一，则事件需按下 meta 或 ctrl 之一，且二者按下至少一个；
-    // 若组合都没声明，则事件 meta 与 ctrl 都不能按下。
-    const wantMetaCtrl = modifiers.has('Control') || modifiers.has('Meta');
-    const hasMetaCtrl = event.metaKey || event.ctrlKey;
-    if (hasMetaCtrl !== wantMetaCtrl) return false;
-  } else {
-    const wantMeta = modifiers.has('Meta');
-    const wantCtrl = modifiers.has('Control');
-    if (event.metaKey !== wantMeta) return false;
-    if (event.ctrlKey !== wantCtrl) return false;
-  }
+  const wantMeta = modifiers.has('Meta');
+  const wantCtrl = modifiers.has('Control');
+  if (event.metaKey !== wantMeta) return false;
+  if (event.ctrlKey !== wantCtrl) return false;
 
   // —— 普通键：优先 code，回退 key ——
   const wantCode = keyToCode(plain);

@@ -1,21 +1,21 @@
 /**
- * Component tokens for HotKeys（快捷键组合的可见键位提示）。
- * 键位块用语义化 <kbd> 承载，本文件定义其填充式外观（背景/边框/文字/圆角/字号/内边距）
- * 与 `+` 分隔符色、键位间距。默认引用 Alias（暗色仅靠 Alias 重映射即生效）。
- * 见 specs/components/other/HotKeys.spec.md §5。
+ * Component tokens for HotKeys — 严格镜像 Semi semi-foundation/hotKeys/variables.scss（8 个）。
+ * 命名/值对齐 Semi：`$color-hotKeys-bg` → `--cd-color-hotkeys-bg` 等；值 `var(--semi-color-*)` →
+ * `var(--cd-color-*)`，字面量原样（border 1px/radius 2px/height 20px/paddingY 2px/paddingX 8px=tight）。
+ * 键位提示用 span（对齐 Semi，非 kbd）。见 plus 对齐工程。
  */
 import type { TokenGroup } from './token-def.js';
 
 export const hotKeysTokens = {
-  // —— 键位块外观 ——
-  'hotkeys-content-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '键位块背景', usage: '单个 <kbd> 键位块背景' },
-  'hotkeys-content-border': { value: 'var(--cd-color-border)', category: 'color', label: '键位块边框', usage: '单个键位块边框色' },
-  'hotkeys-content-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '键位文字色', usage: '键位块内文字/符号颜色' },
-  'hotkeys-content-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '键位块圆角', usage: '键位块圆角' },
-  // spec §5 记 --cd-font-size-body-small，但库内无此别名；改用等价 --cd-font-size-small（12px）。
-  'hotkeys-content-font-size': { value: 'var(--cd-font-size-small)', category: 'font', label: '键位字号', usage: '键位块字号' },
-  'hotkeys-content-padding': { value: 'var(--cd-spacing-super-tight) var(--cd-spacing-extra-tight)', category: 'spacing', label: '键位块内边距', usage: '键位块内边距' },
-  // —— 分隔符 / 间距 ——
-  'hotkeys-split-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '分隔符色', usage: '键位之间 + 分隔符颜色' },
-  'hotkeys-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '键位间距', usage: '相邻键位块之间的间距' },
+  // —— 键位块（对齐 Semi hotKeys-content：bg=fill-0/text=text-2） ——
+  'color-hotkeys-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '键位块背景', usage: '单个键位块背景（对齐 Semi fill-0）' },
+  'color-hotkeys-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '键位文字', usage: '键位块内文字/符号颜色（对齐 Semi text-2）' },
+  // —— 分隔符（对齐 Semi hotKeys-split=text-0） ——
+  'color-hotkeys-split': { value: 'var(--cd-color-text-0)', category: 'color', label: '分隔符', usage: '键位之间 + 分隔符颜色（对齐 Semi text-0）' },
+  // —— 尺寸（对齐 Semi 字面量） ——
+  'width-hotkeys-border': { value: '1px', category: 'width', label: '边框宽度', usage: '键位块边框宽度' },
+  'radius-hotkeys': { value: '2px', category: 'radius', label: '圆角', usage: '键位块圆角（对齐 Semi 2px）' },
+  'height-hotkeys': { value: '20px', category: 'height', label: '键位块高度', usage: '键位块高度（对齐 Semi 20px）' },
+  'spacing-hotkeys-paddingY': { value: '2px', category: 'spacing', label: '纵向内边距', usage: '键位块纵向内边距（对齐 Semi 2px）' },
+  'spacing-hotkeys-paddingX': { value: '8px', category: 'spacing', label: '横向内边距', usage: '键位块横向内边距（对齐 Semi tight=8px）' },
 } satisfies TokenGroup;

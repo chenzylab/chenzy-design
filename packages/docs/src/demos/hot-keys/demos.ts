@@ -29,5 +29,4 @@ export const demos: DemoEntry[] = [
   entry('03-render.svelte', 'render 自定义', 'render 完全接管提示 UI；render 传 null 则只监听不显示。'),
   entry('04-prevent-default.svelte', '拦截默认行为', 'preventDefault 命中时阻止浏览器默认快捷键（如 Ctrl+S 保存网页）。'),
   entry('05-listener-target.svelte', '局部监听', 'getListenerTarget 返回具体元素，只在该元素作用域内监听。'),
-  entry('06-merge-meta-ctrl.svelte', '跨平台合并', 'mergeMetaCtrl 把 Cmd(Meta) 与 Ctrl 视为同一修饰键（本库真正实现，Semi 未生效）。'),
 ];
