@@ -35,7 +35,7 @@ export const componentNamesZh: Record<string, string> = {
   layout: '布局',
   list: '列表',
   localeprovider: '国际化',
-  lottieicon: '动画图标',
+  lottie: '动画',
   menu: '导航菜单',
   modal: '模态对话框',
   notification: '通知提醒框',

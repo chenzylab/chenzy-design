@@ -52,7 +52,7 @@
 - [x] Feedback（反馈弹窗；漏判补齐，已实现）
 
 ### Other（其他）
-- [x] ConfigProvider · [x] LocaleProvider · [x] BackTop · [x] ResizeObserver · [x] LottieIcon
+- [x] ConfigProvider · [x] LocaleProvider · [x] BackTop · [x] ResizeObserver · [x] Lottie
 - [x] HotKeys（对标 Semi 2.101.0 增补，已实现）
 - [x] Resizable · ResizeGroup/ResizeItem/ResizeHandler（对标 Semi 2.101.0 增补——曾漏判为别名，实为正式组件族；core createResizeDrag 供 Table/SideBar 复用）
 - [x] DragMove（通用拖拽移动原语；漏判补齐，已实现；core createDragMove 供 Modal/Cropper 私有拖拽后续收敛）

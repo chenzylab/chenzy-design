@@ -500,13 +500,7 @@ export {
   type ResizeBox,
   createResizeObserver,
 } from './resize-observer/index.js';
-export {
-  LottieIcon,
-  lottieIconMeta,
-  type LottiePlayerAdapter,
-  type LottiePlayerFactory,
-  type LottieSegments,
-} from './lottie-icon/index.js';
+export { Lottie, getLottie, lottieMeta, type LottieParams } from './lottie/index.js';
 export {
   Resizable,
   ResizeGroup,

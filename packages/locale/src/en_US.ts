@@ -145,11 +145,6 @@ export const en_US: Locale = {
     alt: 'Alt',
     shift: 'Shift',
   },
-  LottieIcon: {
-    loading: 'Loading animation',
-    loadError: 'Failed to load animation',
-    label: 'Icon',
-  },
   List: {
     emptyText: 'No data',
   },

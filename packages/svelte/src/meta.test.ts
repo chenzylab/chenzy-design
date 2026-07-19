@@ -76,7 +76,7 @@ import { meta as backTopMeta } from './back-top/meta.js';
 import { meta as localeProviderMeta } from './locale-provider/meta.js';
 import { meta as configProviderMeta } from './config-provider/meta.js';
 import { meta as resizeObserverMeta } from './resize-observer/meta.js';
-import { meta as lottieIconMeta } from './lottie-icon/meta.js';
+import { meta as lottieMeta } from './lottie/meta.js';
 import { meta as markdownRenderMeta } from './markdown-render/meta.js';
 import { meta as videoPlayerMeta } from './video-player/meta.js';
 import { meta as jsonViewerMeta } from './json-viewer/meta.js';
@@ -165,7 +165,7 @@ const metas = {
   localeProviderMeta,
   configProviderMeta,
   resizeObserverMeta,
-  lottieIconMeta,
+  lottieMeta,
   markdownRenderMeta,
   videoPlayerMeta,
   jsonViewerMeta,

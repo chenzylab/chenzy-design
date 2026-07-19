@@ -300,20 +300,6 @@ export {
   type ResizeObserverOptions,
 } from './resize-observer.js';
 export {
-  resolveSize,
-  resolveAnimated,
-  shouldAutoplay,
-  resolveSegments,
-  isLottieSrc,
-  resolveRenderer,
-  type LottieTrigger,
-  type LottieSize,
-  type LottieSegments,
-  type LottieRenderer,
-  type LottiePlayerAdapter,
-  type LottiePlayerFactory,
-} from './lottie-icon.js';
-export {
   computePosition,
   parsePlacement,
   makePlacement,
