@@ -24,6 +24,6 @@
     "svelte": ">=5.0.0"
   },
   "devDependencies": {
-    "svelte-check": "^4.0.0"
+    "svelte-check": "^4.7.3"
   }
 }
