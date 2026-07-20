@@ -27,6 +27,7 @@
   import Input from '../input/Input.svelte';
   import Spin from '../spin/Spin.svelte';
   import Highlight from '../highlight/Highlight.svelte';
+  import { getInputGroupContext } from '../input/context.js';
 
   type ItemValue = string | number;
   type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
@@ -124,9 +125,9 @@
     ariaLabelledby,
     insetLabel,
     insetLabelId,
-    size = 'default',
+    size: sizeProp,
     validateStatus = 'default',
-    disabled = false,
+    disabled: disabledProp,
     defaultActiveFirstOption = false,
     onSearch,
     loading = false,
@@ -157,6 +158,11 @@
     maxHeight = 300,
     zIndex,
   }: Props = $props();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const loc = useLocale();
 

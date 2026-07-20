@@ -46,6 +46,7 @@
   import Tag from '../tag/Tag.svelte';
   import Popover from '../popover/Popover.svelte';
   import type { TreeNode, TreeKey } from './types.js';
+  import { getInputGroupContext } from '../input/context.js';
 
   type Size = 'small' | 'default' | 'large';
   type Status = 'default' | 'warning' | 'error';
@@ -286,9 +287,9 @@
     checkRelation = 'related',
     maxTagCount,
     placeholder = '请选择',
-    size = 'default',
+    size: sizeProp,
     status = 'default',
-    disabled = false,
+    disabled: disabledProp,
     showClear = false,
     leafOnly = false,
     defaultExpandAll = false,
@@ -367,6 +368,11 @@
     onLoad,
     onVisibleChange,
   }: Props = $props();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const loc = useLocale();
   // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。
