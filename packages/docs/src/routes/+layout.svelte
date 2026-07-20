@@ -4,12 +4,6 @@
   import { browser } from '$app/environment';
   import type { Snippet } from 'svelte';
   import '@chenzy-design/tokens/tokens.css';
-  // 本地打包 Inter 字体（对齐 Semi 文档站字体，@fontsource 含 woff2，无外部 CDN 依赖）。
-  // 引入常用字重：400 正文 / 500 / 600 标题（本库标题 font-weight:600）/ 700。
-  import '@fontsource/inter/400.css';
-  import '@fontsource/inter/500.css';
-  import '@fontsource/inter/600.css';
-  import '@fontsource/inter/700.css';
   import 'uno.css';
   import '../app.css';
   import Search from '$lib/components/Search.svelte';

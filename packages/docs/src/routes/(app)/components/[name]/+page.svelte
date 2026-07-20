@@ -630,15 +630,16 @@
     font-size: 15px;
     margin: 16px 0 8px;
   }
-  /* 标题/正文显式用 Inter 字体栈（对齐 Semi）。不用 inherit——祖先某层被 UnoCSS
-     preflight reset 成 system-ui，inherit 会拿到 system-ui；直接指定完整栈最稳。 */
+  /* 标题/正文字体栈 —— 实测对齐 Semi 官网（system 系统字体栈，非 Inter；Semi 源码虽写
+     Inter 但官网实际渲染回退到 system）。直接指定完整栈，避免祖先被 UnoCSS preflight
+     reset 成 system-ui 后 inherit 拿到错误值。 */
   .inline-doc :global(h2),
   .inline-doc :global(h3),
   .inline-doc :global(h4),
   .inline-doc :global(p),
   .inline-doc :global(li) {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-      'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: system, -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
+      'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
   /* —— inline md 标题字号/间距严格对齐 Semi layout.scss（$bf=16px）——
      h2=$h2=27.65px、h3=$h3=23.04px、h4=$h4=19.2px；margin 用 $bf 倍数。
@@ -649,7 +650,8 @@
     align-items: center;
     color: var(--cd-color-text-0, #1f2329);
     font-size: 27.65px;
-    font-weight: 600;
+    font-weight: 500;
+    line-height: 1.43;
     margin: 64px 0 24px;
     scroll-margin-top: 80px;
   }
@@ -658,7 +660,8 @@
     align-items: center;
     color: var(--cd-color-text-0, #1f2329);
     font-size: 23.04px;
-    font-weight: 600;
+    font-weight: 500;
+    line-height: 1.43;
     margin: 32px 0 24px;
     scroll-margin-top: 80px;
   }
@@ -671,7 +674,7 @@
     align-items: center;
     color: var(--cd-color-text-0, #1f2329);
     font-size: 19.2px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 16px 0;
     scroll-margin-top: 80px;
   }
