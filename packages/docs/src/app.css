@@ -1,2 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; }
+/* 正文字体栈对齐 Semi 文档站（layout.scss）：Inter 首选，回退系统中西文字体。
+   不引 Inter 远程字体，避免外部依赖与首屏字体闪烁，回退栈已贴合 Semi 观感。 */
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}

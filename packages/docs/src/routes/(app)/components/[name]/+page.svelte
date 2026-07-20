@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import { tick } from 'svelte';
+  import { tick, mount } from 'svelte';
+  import { IconLink } from '@chenzy-design/icons';
+  import { Toast } from '@chenzy-design/svelte';
+  import { makeAnchorId } from '$lib/anchor-id';
   import type { PageData } from './$types';
   import { base } from '$app/paths';
   import { replaceState } from '$app/navigation';
@@ -34,6 +37,34 @@
   // ② 「代码演示」标题本身不显示，其下 demo 直接平铺；③ 全部一级平铺，不缩进不分树。
   let inlineTocSections = $state<{ id: string; title: string; level?: number }[]>([]);
   let contentEl = $state<HTMLElement | null>(null);
+
+  // 给 inline md 标题追加「复制链接」锚点按钮（对齐 Semi postTemplate 的 h2/h3 渲染器：
+  // 标题末尾放 anchor-link 图标，点击复制 location+#id 并提示）。mdsvex 无 MDXProvider
+  // 等价物覆写标题渲染器，故编译期加 id（rehypeSemiAnchor）+ 运行期 DOM 注入按钮。
+  function injectAnchor(h: HTMLElement, title: string): void {
+    if (h.querySelector('.header-anchor')) return; // 幂等：切页重扫时不重复注入
+    const btn = document.createElement('button');
+    btn.className = 'header-anchor';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', '复制本节链接');
+    btn.title = '复制链接';
+    // 用本库具名图标 IconLink（对齐 Semi postTemplate 的 IconLink），非手写 svg。
+    mount(IconLink, { target: btn });
+    btn.addEventListener('click', () => {
+      // 严格对齐 Semi postTemplate 的复制逻辑：
+      // copy(`${location.href.replace(location.hash,'')}#${encodeURI(标题文本)}`) + Toast.success。
+      // 注意 hash 用原始标题文本的 encodeURI（可读，如 #基本写法），非 slug id；
+      // 定位时再 makeAnchorId(decodeURI(hash)) 转回 id（见滚动恢复逻辑）。
+      const url = `${location.href.replace(location.hash, '')}#${encodeURI(title)}`;
+      void navigator.clipboard?.writeText(url).then(() => {
+        Toast.success('复制成功');
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1500);
+      });
+    });
+    h.appendChild(btn);
+  }
+
   $effect(() => {
     if (!inlineDoc || !browser) return;
     lowerName; // 切换组件时重扫
@@ -46,6 +77,10 @@
       let started = false;
       for (const h of heads) {
         const title = h.textContent?.trim() ?? '';
+        // 每个带 id 的标题注入「复制链接」锚点按钮（对齐 Semi 标题旁的分享图标 +
+        // meta 驱动页的 SectionAnchor）。md 标题是原生元素、无法嵌组件，故 DOM 注入。
+        // 传注入前捕获的纯标题文本（此时 h 尚无按钮），供复制逻辑用 encodeURI(title)。
+        injectAnchor(h, title);
         // 「代码演示」是分界：之前的总述不进 TOC，标题本身也不显示。
         if (title === '代码演示' || title === 'Demos') {
           started = true;
@@ -184,7 +219,10 @@
   $effect(() => {
     if (!browser) return;
     lowerName; // 依赖组件名：SPA 切换组件时按新页重新恢复
-    const hashId = decodeURIComponent(location.hash.slice(1));
+    const rawHash = decodeURIComponent(location.hash.slice(1));
+    // inline 模式复制的 hash 是原始标题文本（对齐 Semi），需 makeAnchorId 转回元素 id 定位；
+    // 非 inline 页复制的本就是 id，原样用。
+    const hashId = rawHash ? (inlineDoc ? makeAnchorId(rawHash) : rawHash) : '';
     const fromHash = !!hashId;
     const targetId = hashId || loadScrollSection(location.pathname) || '';
     if (!targetId) return;
@@ -591,6 +629,68 @@
   .content-body :global(h3) {
     font-size: 15px;
     margin: 16px 0 8px;
+  }
+  /* —— inline md 标题字号/间距严格对齐 Semi layout.scss（$bf=16px）——
+     h2=$h2=27.65px、h3=$h3=23.04px、h4=$h4=19.2px；margin 用 $bf 倍数。
+     display:flex 让锚点图标与标题基线居中对齐（对齐 Semi .gatsby-h2/h3）。
+     scroll-margin-top 留出顶部固定导航高度，TOC 跳转不被遮。 */
+  .inline-doc :global(h2) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 27.65px;
+    font-weight: 600;
+    margin: 64px 0 24px;
+    scroll-margin-top: 80px;
+  }
+  .inline-doc :global(h3) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 23.04px;
+    font-weight: 600;
+    margin: 32px 0 24px;
+    scroll-margin-top: 80px;
+  }
+  /* h2 紧邻的 h3 收紧上间距（对齐 Semi h2.md + h3.md margin-top:$bf） */
+  .inline-doc :global(h2 + h3) {
+    margin-top: 16px;
+  }
+  .inline-doc :global(h4) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 19.2px;
+    font-weight: 600;
+    margin: 16px 0;
+    scroll-margin-top: 80px;
+  }
+  /* 标题旁的「复制链接」锚点按钮（DOM 注入 IconLink）：对齐 Semi .anchor-link-button-icon
+     （color:link、translateX(10px)、hover/focus 淡入）；点击复制后转绿常显 1.5s。 */
+  .inline-doc :global(.header-anchor) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-link, #0064fa);
+    cursor: pointer;
+    transform: translateX(10px);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .inline-doc :global(h2:hover .header-anchor),
+  .inline-doc :global(h3:hover .header-anchor),
+  .inline-doc :global(h4:hover .header-anchor),
+  .inline-doc :global(.header-anchor:focus-visible) {
+    opacity: 1;
+  }
+  .inline-doc :global(.header-anchor.copied) {
+    opacity: 1;
+    color: var(--cd-color-success, #00b42a);
   }
   .content-body :global(p) {
     line-height: 1.7;
