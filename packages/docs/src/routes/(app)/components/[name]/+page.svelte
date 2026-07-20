@@ -652,10 +652,10 @@
     margin: 32px 0 24px;
     scroll-margin-top: 80px;
   }
-  /* h2 紧邻的 h3 收紧上间距（对齐 Semi h2.md + h3.md margin-top:$bf） */
-  .inline-doc :global(h2 + h3) {
-    margin-top: 16px;
-  }
+  /* 注：Semi 的 h2.md + h3.md 收紧规则依赖其 markdown 每标题包 <section> 的结构，
+     相邻选择器极少命中；本库 mdsvex 是扁平兄弟结构，该规则会错误命中（如「代码演示」
+     h2 紧邻「声明写法」h3），使间距被收紧成 16px，与 Semi 官网的大间距不符。故不加此规则，
+     h3 保持 32px margin-top（对齐 Semi 图中标题间距）。 */
   .inline-doc :global(h4) {
     display: flex;
     align-items: center;
@@ -696,6 +696,13 @@
     line-height: 1.7;
     color: var(--cd-color-text-0, #1f2329);
     margin: 0 0 12px;
+  }
+  /* inline md 正文段落对齐 Semi：font-size 16px、line-height 1.75；
+     说明文字用较浅的 text-2（对齐 Semi 官网正文说明的实际浅灰观感，非纯黑）。 */
+  .inline-doc :global(p) {
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--cd-color-text-2, #86909c);
   }
   .content-body :global(ul),
   .content-body :global(ol) {
