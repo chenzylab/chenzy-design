@@ -18,6 +18,7 @@
   import ScrollItem from '../scroll-list/ScrollItem.svelte';
   import Button from '../button/Button.svelte';
   import { IconClear, IconCalendar, IconCalendarClock, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
+  import { getInputGroupContext } from '../input/context.js';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
@@ -263,9 +264,9 @@
     placeholder,
     startPlaceholder,
     endPlaceholder,
-    size = 'default',
+    size: sizeProp,
     validateStatus = 'default',
-    disabled = false,
+    disabled: disabledProp,
     disabledDate,
     disabledTime,
     presets,
@@ -346,6 +347,11 @@
     // 快捷选项
     presetPosition = 'bottom',
   }: Props = $props();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   // --- 7-type 派生分派（对齐 Semi isRangeType /range/i.test + monthsGridFoundation）---
   const isRange = $derived(/range/i.test(type));
@@ -2371,10 +2377,12 @@
 </div>
 
 <style>
+  /* 对齐 Semi semi-datepicker：inline-block 内容宽，不撑满父。
+     需填满时由外部 style="width:100%" 或 Form 字段控制；
+     在 InputGroup 的 flex 里避免 width:100% 与容器内在尺寸循环依赖导致的病态换行。 */
   .cd-date-picker {
     position: relative;
-    display: inline-flex;
-    inline-size: 100%;
+    display: inline-block;
     font-size: var(--cd-font-size-regular);
   }
   .cd-date-picker__control {
@@ -2407,7 +2415,10 @@
     align-items: center;
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
-    block-size: var(--cd-height-input-default);
+    /* trigger 是承载边框的外层，高度对齐 Input 的 wrapper 层（含 2px 边框），
+       而非内层 -input- 值，否则在 InputGroup 里与 Input 差 2px。 */
+    block-size: var(--cd-height-input-wrapper-default);
+    box-sizing: border-box;
     padding-inline-start: var(--cd-spacing-input-paddingleft);
     padding-inline-end: calc(var(--cd-spacing-input-paddingleft) + 1.25rem);
     background: var(--cd-color-input-default-bg-default);
@@ -2420,11 +2431,11 @@
     transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
   .cd-date-picker--small .cd-date-picker__trigger {
-    block-size: var(--cd-height-input-small);
+    block-size: var(--cd-height-input-wrapper-small);
     font-size: var(--cd-font-size-small);
   }
   .cd-date-picker--large .cd-date-picker__trigger {
-    block-size: var(--cd-height-input-large);
+    block-size: var(--cd-height-input-wrapper-large);
     font-size: var(--cd-font-size-header-6);
   }
   .cd-date-picker__trigger:focus-visible {

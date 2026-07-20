@@ -49,6 +49,7 @@
   import TagInput from '../tag-input/TagInput.svelte';
   import { VirtualList } from '../virtual-list/index.js';
   import type { CascaderNode } from './types.js';
+  import { getInputGroupContext } from '../input/context.js';
 
   type Key = string | number;
   type Size = 'small' | 'default' | 'large';
@@ -229,10 +230,10 @@
     open: openProp,
     defaultOpen = false,
     multiple = false,
-    size = 'default',
+    size: sizeProp,
     validateStatus = 'default',
     placeholder,
-    disabled = false,
+    disabled: disabledProp,
     changeOnSelect = false,
     leafOnly = false,
     filterTreeNode,
@@ -303,6 +304,11 @@
     onListScroll,
     triggerRender,
   }: Props = $props();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const loc = useLocale();
   // ConfigProvider 全局浮层容器默认；自身 getPopupContainer prop 优先，未传时回退此值（再回退 body）。

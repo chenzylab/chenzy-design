@@ -23,6 +23,7 @@
   import { IconChevronUp, IconChevronDown } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import Input from '../input/Input.svelte';
+  import { getInputGroupContext } from '../input/context.js';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'error' | 'warning' | 'success';
@@ -131,8 +132,8 @@
     step = 1,
     shiftStep = 10,
     precision,
-    size = 'default',
-    disabled = false,
+    size: sizeProp,
+    disabled: disabledProp,
     readonly = false,
     validateStatus = 'default',
     innerButtons = false,
@@ -175,6 +176,11 @@
     class: className,
     style,
   }: Props = $props();
+
+  // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
+  const group = getInputGroupContext();
+  const size = $derived<Size>(sizeProp ?? group?.size ?? 'default');
+  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
 
   const loc = useLocale();
   // 单例 live region（polite）：值被 min/max 钳制（越界回弹）时播报实际生效值。
