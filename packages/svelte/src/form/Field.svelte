@@ -18,7 +18,8 @@
     align?: FormLabelAlign;
     width?: number | string;
     required?: boolean;
-    extra?: string;
+    /** 标签后补充内容：字符串或 Snippet（对齐 Semi extra: ReactNode，可放 Tooltip/图标）。 */
+    extra?: string | Snippet;
     optional?: boolean;
   }
 
@@ -506,6 +507,12 @@
   }
   :global(.cd-form-field[x-label-pos='top'] .cd-form-field-label) {
     display: block;
+  }
+  /* with-extra 时 label 恢复 flex 让 extra（Tooltip/图标）与文字同行（对齐 Semi）。 */
+  :global(.cd-form-field[x-label-pos='top'] .cd-form-field-label-with-extra),
+  :global(.cd-form-field[x-label-pos='left'] .cd-form-field-label-with-extra) {
+    display: flex;
+    align-items: center;
   }
   :global(.cd-form-field[x-label-pos='left']) {
     display: flex;
