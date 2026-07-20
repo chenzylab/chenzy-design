@@ -36,6 +36,11 @@
     scrollToField(field: string, opts?: ScrollIntoViewOptions): void;
     /** 滚动到首个错误字段（对齐 Semi scrollToError）。 */
     scrollToError(opts?: ScrollIntoViewOptions): void;
+    /**
+     * 读取 Form 组件当前 props 值（对齐 Semi getFormProps）。不传 propNames 返回全部；
+     * 传入名称数组则只返回这些 prop 的子集。例如读 disabled、layout 等。
+     */
+    getFormProps(propNames?: string[]): Record<string, unknown>;
   }
 
   interface Props {
@@ -75,6 +80,15 @@
     /** 收集值时是否保留空值字段键（spec §4 L70，默认 false）。 */
     allowEmpty?: boolean;
     /**
+     * Form 级别自定义校验器（对齐 Semi validator，推荐）。submit / formApi.validate()
+     * 时调用，入参为收集后的 values，返回 { field: 错误信息 } 映射（空映射即校验通过）。
+     * 支持同步或异步（返回 Promise）。配置后，字段级 rules/validator 在 submit/validate
+     * 时不再触发（Semi 语义：Form 级校验器优先）。
+     */
+    validator?: (values: Record<string, unknown>) => unknown;
+    /** validator 的旧别名（对齐 Semi validateFields，仍保持兼容）。 */
+    validateFields?: (values: Record<string, unknown>) => unknown;
+    /**
      * 提交校验失败时滚动到首个错误字段（scrollToError 别名，可为 boolean 或
      * ScrollIntoViewOptions，对齐 Semi autoScrollToError）。
      */
@@ -110,6 +124,17 @@
      * { formState, formApi }（对齐 Semi children-as-function / render）。
      */
     children?: Snippet<[FormRenderArgs]> | Snippet;
+    /**
+     * 用于声明表单控件的带参 snippet（对齐 Semi render 属性）。入参 { formState, formApi }。
+     * 与 children / component 互斥（优先级 children > render > component）。Svelte 中
+     * render props / children function / component 三种在 React 里的不同入口，统一为带参 snippet。
+     */
+    render?: Snippet<[FormRenderArgs]>;
+    /**
+     * 用于声明表单控件的带参 snippet（对齐 Semi component 属性）。入参 { formState, formApi }。
+     * 与 children / render 互斥（优先级 children > render > component）。
+     */
+    component?: Snippet<[FormRenderArgs]>;
     footer?: Snippet<[{ submitting: boolean }]>;
     /** 透传到 form 的原生属性（class、style、data-attr、name、action、aria-label 等）。 */
     [key: string]: unknown;
@@ -134,6 +159,8 @@
     stopValidateWithError = false,
     stopPropagation,
     allowEmpty = false,
+    validator,
+    validateFields,
     getFormApi,
     onSubmit,
     onValueChange,
@@ -144,9 +171,14 @@
     wrapperCol,
     labelCol,
     children,
+    render,
+    component,
     footer,
     ...rest
   }: Props = $props();
+
+  // 声明控件的 snippet：children > render > component（对齐 Semi 三种写法优先级）。
+  const contentSnippet = $derived(children ?? render ?? component);
 
   const loc = useLocale();
 
@@ -175,6 +207,8 @@
       validateTrigger: untrack(() => validateTrigger),
       stopValidateWithError: untrack(() => stopValidateWithError),
       allowEmpty: untrack(() => allowEmpty),
+      validator: untrack(() => validator) as never,
+      validateFields: untrack(() => validateFields) as never,
     });
 
   // Bridge: callback-subscribe → runes. core returns a STABLE state object whose
@@ -238,6 +272,28 @@
         scrollToFieldEl(field, opts),
       scrollToError: (opts?: ScrollIntoViewOptions) =>
         focusFirstError(form.getFormState().errors, opts),
+      getFormProps: (propNames?: string[]): Record<string, unknown> => {
+        // 当前 Form 组件的可读 props 快照（对齐 Semi getFormProps）。
+        const all: Record<string, unknown> = {
+          layout,
+          labelPosition,
+          labelWidth,
+          labelAlign,
+          disabled,
+          requiredMark,
+          showValidateIcon,
+          extraTextPosition,
+          validateTrigger,
+          stopValidateWithError,
+          allowEmpty,
+          wrapperCol,
+          labelCol,
+        };
+        if (!propNames) return all;
+        const out: Record<string, unknown> = {};
+        for (const k of propNames) out[k] = all[k];
+        return out;
+      },
     },
   ) as FormApiWithScroll;
   $effect(() => {
@@ -348,7 +404,7 @@
   onsubmit={handleSubmit}
   onreset={handleReset}
 >
-  {@render (children as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
+  {@render (contentSnippet as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
   {#if footer}
     <div class="cd-form__footer">
       {@render footer({ submitting: formState.submitting })}

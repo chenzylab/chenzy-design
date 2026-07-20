@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import { tick } from 'svelte';
+  import { tick, mount } from 'svelte';
+  import { IconLink } from '@chenzy-design/icons';
+  import { Toast } from '@chenzy-design/svelte';
+  import { makeAnchorId } from '$lib/anchor-id';
   import type { PageData } from './$types';
   import { base } from '$app/paths';
   import { replaceState } from '$app/navigation';
@@ -22,13 +25,81 @@
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
   const lang = $derived(locale.value);
+  // docMode='inline'：整页由 md 内联驱动（复刻 Semi 无 tab 纵向流）。
+  // 其余组件保持 meta 驱动的 api/usage 双 tab 不变。
+  const inlineDoc = $derived(data.docMode === 'inline');
 
   let activeTab = $state<'api' | 'usage'>('api');
+
+  // —— inline 模式：TOC 由 md 渲染出的标题实时扫描生成 ——
+  // md 编译时已由 rehypeSemiAnchor 给每个标题加上与 Semi 一致的 id。
+  // 对齐 Semi PageAnchor：① 从「代码演示」标题之后才开始收集（之前的总述章节不进 TOC）；
+  // ② 「代码演示」标题本身不显示，其下 demo 直接平铺；③ 全部一级平铺，不缩进不分树。
+  let inlineTocSections = $state<{ id: string; title: string; level?: number }[]>([]);
+  let contentEl = $state<HTMLElement | null>(null);
+
+  // 给 inline md 标题追加「复制链接」锚点按钮（对齐 Semi postTemplate 的 h2/h3 渲染器：
+  // 标题末尾放 anchor-link 图标，点击复制 location+#id 并提示）。mdsvex 无 MDXProvider
+  // 等价物覆写标题渲染器，故编译期加 id（rehypeSemiAnchor）+ 运行期 DOM 注入按钮。
+  function injectAnchor(h: HTMLElement, title: string): void {
+    if (h.querySelector('.header-anchor')) return; // 幂等：切页重扫时不重复注入
+    const btn = document.createElement('button');
+    btn.className = 'header-anchor';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', '复制本节链接');
+    btn.title = '复制链接';
+    // 用本库具名图标 IconLink（对齐 Semi postTemplate 的 IconLink），非手写 svg。
+    mount(IconLink, { target: btn });
+    btn.addEventListener('click', () => {
+      // 严格对齐 Semi postTemplate 的复制逻辑：
+      // copy(`${location.href.replace(location.hash,'')}#${encodeURI(标题文本)}`) + Toast.success。
+      // 注意 hash 用原始标题文本的 encodeURI（可读，如 #基本写法），非 slug id；
+      // 定位时再 makeAnchorId(decodeURI(hash)) 转回 id（见滚动恢复逻辑）。
+      const url = `${location.href.replace(location.hash, '')}#${encodeURI(title)}`;
+      void navigator.clipboard?.writeText(url).then(() => {
+        Toast.success('复制成功');
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 1500);
+      });
+    });
+    h.appendChild(btn);
+  }
+
+  $effect(() => {
+    if (!inlineDoc || !browser) return;
+    lowerName; // 切换组件时重扫
+    lang; // 切换语言时 md 换、标题变，重扫 TOC
+    // 等 md DOM 就位后扫标题（数据同步，tick 一次即可）
+    tick().then(() => {
+      if (!contentEl) return;
+      const heads = Array.from(contentEl.querySelectorAll<HTMLElement>('h2[id], h3[id]'));
+      const sections: { id: string; title: string; level?: number }[] = [];
+      let started = false;
+      for (const h of heads) {
+        const title = h.textContent?.trim() ?? '';
+        // 每个带 id 的标题注入「复制链接」锚点按钮（对齐 Semi 标题旁的分享图标 +
+        // meta 驱动页的 SectionAnchor）。md 标题是原生元素、无法嵌组件，故 DOM 注入。
+        // 传注入前捕获的纯标题文本（此时 h 尚无按钮），供复制逻辑用 encodeURI(title)。
+        injectAnchor(h, title);
+        // 「代码演示」是分界：之前的总述不进 TOC，标题本身也不显示。
+        if (title === '代码演示' || title === 'Demos') {
+          started = true;
+          continue;
+        }
+        if (!started) continue;
+        sections.push({ id: h.id, title, level: 1 });
+      }
+      inlineTocSections = sections;
+    });
+  });
 
   // demo 场景与「使用场景」正文改由 load（+page.ts）同步预取，页面首帧即完整。
   // 不再客户端异步加载，避免 TOC/锚点/页面高度在渲染后才变化导致的滚动错位。
   const demoList = $derived<DemoEntry[]>(data.demos ?? []);
-  const ContentComponent = $derived<Component | null>(data.Content ?? null);
+  // 按文档站语言选中/英 md（对齐 Semi 双 md）；英文缺失时回退中文。
+  const ContentComponent = $derived<Component | null>(
+    lang === 'en' ? (data.ContentEn ?? data.Content ?? null) : (data.Content ?? null),
+  );
 
   const lowerName = $derived(meta.name.toLowerCase());
   // token 归属前缀：用数据集真实存在的前缀匹配，避免命名漂移（见 token-prefix.ts）
@@ -148,7 +219,10 @@
   $effect(() => {
     if (!browser) return;
     lowerName; // 依赖组件名：SPA 切换组件时按新页重新恢复
-    const hashId = decodeURIComponent(location.hash.slice(1));
+    const rawHash = decodeURIComponent(location.hash.slice(1));
+    // inline 模式复制的 hash 是原始标题文本（对齐 Semi），需 makeAnchorId 转回元素 id 定位；
+    // 非 inline 页复制的本就是 id，原样用。
+    const hashId = rawHash ? (inlineDoc ? makeAnchorId(rawHash) : rawHash) : '';
     const fromHash = !!hashId;
     const targetId = hashId || loadScrollSection(location.pathname) || '';
     if (!targetId) return;
@@ -193,6 +267,15 @@
       <p class="description">{meta.description}</p>
     </div>
 
+    {#if inlineDoc}
+      <!-- 整页由 md 内联驱动：单页纵向流，无 tab（复刻 Semi）。
+           md 顶部 import DemoBox/Notice/各 demo，正文按 Semi 章节顺序内联书写。 -->
+      <div class="content-body inline-doc" bind:this={contentEl}>
+        {#if ContentComponent}
+          <ContentComponent />
+        {/if}
+      </div>
+    {:else}
     <div class="tabs">
       <button class="tab" class:active={activeTab === 'api'} onclick={() => (activeTab = 'api')}>
         {t('tab.api', lang)}
@@ -403,9 +486,12 @@
     {:else}
       <p class="no-content">{t('usage.empty', lang)}</p>
     {/if}
+    {/if}
   </div>
 
-  {#if activeTab === 'api'}
+  {#if inlineDoc}
+    <Toc sections={inlineTocSections} />
+  {:else if activeTab === 'api'}
     <Toc sections={tocSections} />
   {/if}
 </div>
@@ -544,10 +630,92 @@
     font-size: 15px;
     margin: 16px 0 8px;
   }
+  /* 标题/正文字体栈 —— 实测对齐 Semi 官网（system 系统字体栈，非 Inter；Semi 源码虽写
+     Inter 但官网实际渲染回退到 system）。直接指定完整栈，避免祖先被 UnoCSS preflight
+     reset 成 system-ui 后 inherit 拿到错误值。 */
+  .inline-doc :global(h2),
+  .inline-doc :global(h3),
+  .inline-doc :global(h4),
+  .inline-doc :global(p),
+  .inline-doc :global(li) {
+    font-family: system, -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
+      'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  /* —— inline md 标题字号/间距严格对齐 Semi layout.scss（$bf=16px）——
+     h2=$h2=27.65px、h3=$h3=23.04px、h4=$h4=19.2px；margin 用 $bf 倍数。
+     display:flex 让锚点图标与标题基线居中对齐（对齐 Semi .gatsby-h2/h3）。
+     scroll-margin-top 留出顶部固定导航高度，TOC 跳转不被遮。 */
+  .inline-doc :global(h2) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 27.65px;
+    font-weight: 500;
+    line-height: 1.43;
+    margin: 64px 0 24px;
+    scroll-margin-top: 80px;
+  }
+  .inline-doc :global(h3) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 23.04px;
+    font-weight: 500;
+    line-height: 1.43;
+    margin: 32px 0 24px;
+    scroll-margin-top: 80px;
+  }
+  /* 注：Semi 的 h2.md + h3.md 收紧规则依赖其 markdown 每标题包 <section> 的结构，
+     相邻选择器极少命中；本库 mdsvex 是扁平兄弟结构，该规则会错误命中（如「代码演示」
+     h2 紧邻「声明写法」h3），使间距被收紧成 16px，与 Semi 官网的大间距不符。故不加此规则，
+     h3 保持 32px margin-top（对齐 Semi 图中标题间距）。 */
+  .inline-doc :global(h4) {
+    display: flex;
+    align-items: center;
+    color: var(--cd-color-text-0, #1f2329);
+    font-size: 19.2px;
+    font-weight: 700;
+    margin: 16px 0;
+    scroll-margin-top: 80px;
+  }
+  /* 标题旁的「复制链接」锚点按钮（DOM 注入 IconLink）：对齐 Semi .anchor-link-button-icon
+     （color:link、translateX(10px)、hover/focus 淡入）；点击复制后转绿常显 1.5s。 */
+  .inline-doc :global(.header-anchor) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--cd-color-link, #0064fa);
+    cursor: pointer;
+    transform: translateX(10px);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .inline-doc :global(h2:hover .header-anchor),
+  .inline-doc :global(h3:hover .header-anchor),
+  .inline-doc :global(h4:hover .header-anchor),
+  .inline-doc :global(.header-anchor:focus-visible) {
+    opacity: 1;
+  }
+  .inline-doc :global(.header-anchor.copied) {
+    opacity: 1;
+    color: var(--cd-color-success, #00b42a);
+  }
   .content-body :global(p) {
     line-height: 1.7;
     color: var(--cd-color-text-0, #1f2329);
     margin: 0 0 12px;
+  }
+  /* inline md 正文段落对齐 Semi：font-size 16px、line-height 1.75；
+     说明文字用较浅的 text-2（对齐 Semi 官网正文说明的实际浅灰观感，非纯黑）。 */
+  .inline-doc :global(p) {
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--cd-color-text-2, #86909c);
   }
   .content-body :global(ul),
   .content-body :global(ol) {

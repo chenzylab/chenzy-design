@@ -9,17 +9,17 @@
   const message = '该项为必填项';
 
   async function handleOk() {
-    try {
-      const values = await formApi?.validate();
-      console.log(values);
+    if (!formApi) return;
+    // 本库 validate 返回 Promise<boolean>（校验是否全部通过）；通过才关闭弹窗。
+    const valid = await formApi.validate();
+    if (valid) {
+      console.log(formApi.getValues());
       visible = false;
-    } catch (errors) {
-      console.log(errors);
     }
   }
 </script>
 
-<Button onClick={() => (visible = true)}>打开弹窗</Button>
+<Button onclick={() => (visible = true)}>打开弹窗</Button>
 <Modal title="新建" visible={visible} onOk={handleOk} onCancel={() => (visible = false)} style="width: 600px">
   <Form getFormApi={(api) => (formApi = api)}>
     <Row>

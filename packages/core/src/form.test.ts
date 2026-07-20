@@ -570,4 +570,83 @@ describe('createForm', () => {
     const r = await f.submitForm();
     expect(r.valid).toBe(true);
   });
+
+  it('getTouched reflects setTouched', () => {
+    const f = createForm();
+    f.registerField('a');
+    expect(f.getTouched('a')).toBe(false);
+    f.setTouched('a', true);
+    expect(f.getTouched('a')).toBe(true);
+    f.setTouched('a', false);
+    expect(f.getTouched('a')).toBe(false);
+  });
+
+  it('silent validate computes result without mutating state', async () => {
+    const f = createForm();
+    f.registerField('email', { rules: [{ required: true, message: 'required' }] });
+    // invalid but silent → returns false, yet no error is surfaced in state
+    const ok = await f.validate({ silent: true });
+    expect(ok).toBe(false);
+    expect(f.getError('email')).toBeUndefined();
+    expect(f.getFormState().touched.email).toBeUndefined();
+    // non-silent validate DOES surface the error
+    await f.validate();
+    expect(f.getError('email')).toBeTruthy();
+  });
+
+  it('silent validate can target specific fields', async () => {
+    const f = createForm();
+    f.registerField('a', { rules: [{ required: true }] });
+    f.registerField('b', { rules: [{ required: true }] });
+    f.setValue('b', 'filled');
+    expect(await f.validate({ fields: ['b'], silent: true })).toBe(true);
+    expect(await f.validate({ fields: ['a'], silent: true })).toBe(false);
+    // still no state mutation
+    expect(f.getError('a')).toBeUndefined();
+  });
+
+  it('form-level validator replaces per-field rules on validate', async () => {
+    const f = createForm({
+      validator: (values) => {
+        const errors: Record<string, string> = {};
+        if (values.name !== 'mike') errors.name = 'you must name mike';
+        return errors;
+      },
+    });
+    // per-field rule would pass, but form-level validator fails it
+    f.registerField('name', { rules: [] });
+    f.setValue('name', 'bob');
+    expect(await f.validate()).toBe(false);
+    expect(f.getError('name')).toBe('you must name mike');
+    f.setValue('name', 'mike');
+    expect(await f.validate()).toBe(true);
+    expect(f.getError('name')).toBeFalsy();
+  });
+
+  it('form-level validator runs on submitForm', async () => {
+    const f = createForm({
+      validator: (values) => ((values.age as number) >= 18 ? {} : { age: 'must be adult' }),
+    });
+    f.registerField('age');
+    f.setValue('age', 10);
+    let r = await f.submitForm();
+    expect(r.valid).toBe(false);
+    expect(r.errors.age).toBe('must be adult');
+    f.setValue('age', 20);
+    r = await f.submitForm();
+    expect(r.valid).toBe(true);
+  });
+
+  it('async form-level validator is awaited', async () => {
+    const f = createForm({
+      validator: async (values) => {
+        await new Promise((res) => setTimeout(res, 10));
+        return values.name ? {} : { name: 'required' };
+      },
+    });
+    f.registerField('name');
+    expect(await f.validate()).toBe(false);
+    f.setValue('name', 'x');
+    expect(await f.validate()).toBe(true);
+  });
 });

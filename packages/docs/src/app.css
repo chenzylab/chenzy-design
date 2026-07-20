@@ -1,2 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; }
+/* 正文字体栈 —— 实测对齐 Semi 官网的 system 系统字体栈（Semi 源码写 Inter 但官网实际
+   渲染回退到 system；不引 Inter，与官网一致且无外部依赖）。 */
+body {
+  margin: 0;
+  font-family: system, -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
+    'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}

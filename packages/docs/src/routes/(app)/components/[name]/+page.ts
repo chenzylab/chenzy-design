@@ -27,7 +27,7 @@ export interface DemoEntry {
 const demoModules = import.meta.glob<{ demos: DemoEntry[] }>('../../../../demos/*/demos.ts', {
   eager: true,
 });
-const contentModules = import.meta.glob<{ default: Component }>(
+const contentModules = import.meta.glob<{ default: Component; metadata?: Record<string, unknown> }>(
   '../../../../content/components/*.md',
   { eager: true },
 );
@@ -43,7 +43,15 @@ export const load: PageLoad = ({ params }) => {
 
   const dir = nameToDir[name] ?? name;
   const demos = demoModules[`../../../../demos/${dir}/demos.ts`]?.demos ?? [];
-  const Content = contentModules[`../../../../content/components/${name}.md`]?.default ?? null;
+  const contentMod = contentModules[`../../../../content/components/${name}.md`];
+  const Content = contentMod?.default ?? null;
+  // 英文文档（对齐 Semi 双 md：index.md 中 / index-en-US.md 英）。命名约定 `{name}.en.md`。
+  // 文档 prerender=true 且 locale 是客户端 $state，无法在 load 阶段按语言选文件，
+  // 故两份都传，由 +page.svelte 按 locale.value 客户端切换（en 缺失时回退中文）。
+  const ContentEn = contentModules[`../../../../content/components/${name}.en.md`]?.default ?? null;
+  // docMode: 'inline' 的组件页由 md 自身内联驱动整页（demo/Notice/API 全写在 md 里，
+  // 单页纵向流，复刻 Semi 无 tab 版式）；其余组件走 meta 驱动的 api/usage 双 tab。
+  const docMode = (contentMod?.metadata?.docMode as string) ?? 'tabbed';
 
-  return { meta: entry[1] as any, demos, Content };
+  return { meta: entry[1] as any, demos, Content, ContentEn, docMode };
 };

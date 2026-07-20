@@ -149,6 +149,13 @@
      * 设为 true 后卸载不清 formState，下次挂载时继承上次状态。
      */
     keepState?: boolean;
+    /**
+     * 外部值变化回调（对齐 Semi Field onChange：Form 接管数据流后，你仍可继续监听
+     * onChange 获取最新的值，常用于字段联动）。在数据流接管之后额外调用，不替代它。
+     */
+    onChange?: (value: unknown) => void;
+    /** 外部失焦回调（对齐 Semi Field onBlur），在内部失焦处理之后额外调用。 */
+    onBlur?: () => void;
     children?: Snippet<[ChildArgs]>;
   }
 
@@ -181,6 +188,8 @@
     allowEmptyString = false,
     convert,
     keepState = false,
+    onChange: externalOnChange,
+    onBlur: externalOnBlur,
     children,
   }: Props = $props();
 
@@ -296,12 +305,15 @@
     const active = touched === true || (error !== undefined && error !== '');
     const validate = tr.includes('change') && active;
     form.setValue(field, stored, { validate });
+    // 数据流接管之后，额外调用外部 onChange（对齐 Semi：仍可监听 onChange 获取最新值，用于联动）。
+    externalOnChange?.(v);
   }
 
   function handleBlur() {
     form.setTouched(field);
     // only validate on blur when 'blur' is an active trigger for this field.
     if (triggers().includes('blur')) void form.validateField(field);
+    externalOnBlur?.();
   }
 
   // aria-describedby：对齐 Semi withField —— 指向 helpText 和/或 extraText 的组合

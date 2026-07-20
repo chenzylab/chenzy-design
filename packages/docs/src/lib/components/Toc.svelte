@@ -81,7 +81,6 @@
 
 {#if sections.length}
   <nav class="toc" aria-label={t('toc.title', lang)}>
-    <div class="toc-title">{t('toc.title', lang)}</div>
     <ul>
       {#each sections as section (section.id)}
         <li>
@@ -113,13 +112,6 @@
     font-size: 13px;
     max-height: calc(100vh - 48px);
     overflow-y: auto;
-  }
-  .toc-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--cd-color-text-2, #86909c);
-    margin-bottom: 12px;
-    padding-left: 12px;
   }
   ul {
     list-style: none;
