@@ -27,7 +27,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy, required })}
+  {#snippet children({ value, onChange, onBlur, status, disabled, id, describedBy, errorMessageId, required, insetLabel, insetLabelId })}
     <Input
       value={value === undefined ? '' : String(value)}
       validateStatus={status === 'error' ? 'error' : 'default'}
@@ -37,8 +37,11 @@
       showClear={Boolean(control.showClear)}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as string } : {})}
       {...(control.maxLength !== undefined ? { maxLength: control.maxLength as number } : {})}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
       {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}

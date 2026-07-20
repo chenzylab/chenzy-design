@@ -47,12 +47,24 @@
     placeholder?: string;
     /** 输入框前置内容（如货币符号 ¥、单位）；传 Snippet 可自定义渲染。 */
     prefix?: string | Snippet;
+    /** 内嵌标签（渲染在输入框内左侧，与 prefix 同槽，对齐 Semi insetLabel）。 */
+    insetLabel?: Snippet | string;
+    /** 内嵌标签容器 id（关联 aria，对齐 Semi insetLabelId）。 */
+    insetLabelId?: string;
     /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染。 */
     suffix?: string | Snippet;
     name?: string;
     /** input 元素 id，关联外部 label；不传自动生成。 */
     id?: string;
     ariaLabel?: string;
+    /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
+    ariaLabelledby?: string;
+    /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
+    ariaDescribedby?: string;
+    /** aria-errormessage：error 态关联错误信息容器（Form.Field 透传）。 */
+    ariaErrormessage?: string;
+    /** aria-required：必填语义（Form.Field required 透传）。 */
+    ariaRequired?: boolean;
     /** 挂载自动聚焦（对齐 Semi autofocus）。 */
     autofocus?: boolean;
     /** 数字格式化 locale，传给内部 Intl（仅未提供 formatter 时生效）。 */
@@ -127,10 +139,16 @@
     hideButtons = false,
     placeholder,
     prefix,
+    insetLabel,
+    insetLabelId,
     suffix,
     name,
     id,
     ariaLabel,
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     autofocus = false,
     locale,
     formatter,
@@ -458,6 +476,10 @@
     ...(placeholder !== undefined && { placeholder }),
     ...(name !== undefined && { name }),
     ...(ariaLabel !== undefined && { ariaLabel }),
+    ...(ariaLabelledby !== undefined && { ariaLabelledby }),
+    ...(ariaDescribedby !== undefined && { ariaDescribedby }),
+    ...(ariaErrormessage !== undefined && { ariaErrormessage }),
+    ...(ariaRequired !== undefined && { ariaRequired }),
     id: inputId,
   });
 
@@ -512,6 +534,8 @@
     onBlur={handleBlur}
     {...passPrefix ? { prefix: prefixNode } : {}}
     {...passSuffix ? { suffix: suffixNode } : {}}
+    {...insetLabel !== undefined ? { insetLabel } : {}}
+    {...insetLabelId !== undefined ? { insetLabelId } : {}}
   />
 
   {#if showOuterButtons}

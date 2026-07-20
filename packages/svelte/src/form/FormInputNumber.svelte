@@ -46,12 +46,14 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, insetLabel, insetLabelId })}
     <InputNumber
       {...(typeof value === 'number' ? { value } : { value: null })}
       validateStatus={status === 'error' ? 'error' : 'default'}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<InputNumberProps['placeholder']> } : {})}
       {...(control.size !== undefined ? { size: control.size as NonNullable<InputNumberProps['size']> } : {})}
       {...(control.min !== undefined ? { min: control.min as NonNullable<InputNumberProps['min']> } : {})}

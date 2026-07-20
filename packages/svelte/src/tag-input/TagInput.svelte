@@ -69,6 +69,14 @@
     onChange?: (tags: string[]) => void;
     onInputChange?: (value: string) => void;
     ariaLabel?: string;
+    /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
+    ariaLabelledby?: string;
+    /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
+    ariaDescribedby?: string;
+    /** aria-errormessage：error 态关联错误信息容器（Form.Field 透传）。 */
+    ariaErrormessage?: string;
+    /** aria-required：必填语义（Form.Field required 透传）。 */
+    ariaRequired?: boolean;
     /** 完全自定义 tag 渲染（对齐 Semi renderTagItem(value, index, onClose)）。 */
     renderTagItem?: Snippet<[{ value: string; index: number; onClose: () => void }]>;
     /** 显示清除全部按钮 */
@@ -122,6 +130,10 @@
     onChange,
     onInputChange,
     ariaLabel,
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     renderTagItem,
     showClear = false,
     clearIcon,
@@ -534,6 +546,10 @@
       {disabled}
       maxlength={maxLength}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
+      aria-describedby={ariaDescribedby}
+      aria-errormessage={ariaErrormessage}
+      aria-required={ariaRequired || undefined}
       aria-invalid={validateStatus === 'error' || undefined}
       oninput={handleInput}
       onkeydown={handleKeydown}

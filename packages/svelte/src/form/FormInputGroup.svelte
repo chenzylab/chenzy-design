@@ -92,7 +92,7 @@
       .filter((e): e is string => typeof e === 'string' && e !== ''),
   );
 
-  // x-label-pos 镜像 Semi 供 DOM 定位；经 attrs 对象展开，让 svelte-check 接受非标准属性名。
+  // x-label-pos 镜像 Semi group 供样式与 DOM 定位；经 attrs 对象展开，让 svelte-check 接受非标准属性名。
   const rootAttrs = $derived({ 'x-label-pos': labelPosition });
   // size 仅在显式传入时透传（exactOptionalPropertyTypes：不能传 undefined 给必填 union）。
   const groupSize = $derived(size !== undefined ? { size } : {});
@@ -101,6 +101,10 @@
   const labelWidthAttr = $derived(labelWidth !== undefined ? { width: labelWidth } : {});
 </script>
 
+<!--
+  DOM 对齐 Semi group.tsx：<div class="cd-form-field-group" x-label-pos><Label/>
+  <div>{extra middle}<InputGroup>{fields}</InputGroup>{extra bottom}<GroupError/></div></div>。
+-->
 <div class={['cd-form-field-group', className].filter(Boolean).join(' ')} {...rootAttrs} {style}>
   {#if hasLabel}
     <FormLabel
@@ -112,44 +116,31 @@
       {...labelExtra}
     />
   {/if}
-  <div class="cd-form-field-group__body">
+  <div class="cd-form-field-group-body">
     {#if extraText && extraTextPosition === 'middle'}
-      <div class="cd-form-field__extra cd-form-field__extra--middle">{extraText}</div>
+      <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-middle">{extraText}</div>
     {/if}
     <InputGroup {...groupSize} {disabled}>
       {@render children?.()}
     </InputGroup>
     {#if extraText && extraTextPosition === 'bottom'}
-      <div class="cd-form-field__extra cd-form-field__extra--bottom">{extraText}</div>
+      <div class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-bottom">{extraText}</div>
     {/if}
     <FormErrorMessage error={groupErrors} {showValidateIcon} isInInputGroup />
   </div>
 </div>
 
 <style>
-  .cd-form-field-group {
-    display: flex;
-    gap: var(--cd-spacing-tight);
-  }
+  /* group：top 时 label 块级在上、body 在下；left 时 label 与 body 横排（对齐 Semi group scss）。 */
   .cd-form-field-group[x-label-pos='top'] {
-    flex-direction: column;
+    display: block;
   }
   .cd-form-field-group[x-label-pos='left'] {
-    flex-direction: row;
+    display: flex;
     align-items: flex-start;
   }
-  .cd-form-field-group__body {
-    display: flex;
+  .cd-form-field-group[x-label-pos='left'] .cd-form-field-group-body {
     flex: 1;
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
     min-inline-size: 0;
-  }
-  .cd-form-field__extra {
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__extra--middle {
-    order: -1;
   }
 </style>

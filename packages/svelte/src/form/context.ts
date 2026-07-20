@@ -23,7 +23,6 @@ export interface FormContext {
   getLabelAlign: () => FormLabelAlign;
   getDisabled: () => boolean;
   getRequiredMark: () => boolean;
-  getColon: () => boolean;
   /** whether error/warning text carries a status icon (spec §4 L66). */
   getShowValidateIcon: () => boolean;
   /** extra text position: 'middle' | 'bottom' (default 'bottom'). */
