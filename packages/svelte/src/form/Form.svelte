@@ -124,6 +124,17 @@
      * { formState, formApi }（对齐 Semi children-as-function / render）。
      */
     children?: Snippet<[FormRenderArgs]> | Snippet;
+    /**
+     * 用于声明表单控件的带参 snippet（对齐 Semi render 属性）。入参 { formState, formApi }。
+     * 与 children / component 互斥（优先级 children > render > component）。Svelte 中
+     * render props / children function / component 三种在 React 里的不同入口，统一为带参 snippet。
+     */
+    render?: Snippet<[FormRenderArgs]>;
+    /**
+     * 用于声明表单控件的带参 snippet（对齐 Semi component 属性）。入参 { formState, formApi }。
+     * 与 children / render 互斥（优先级 children > render > component）。
+     */
+    component?: Snippet<[FormRenderArgs]>;
     footer?: Snippet<[{ submitting: boolean }]>;
     /** 透传到 form 的原生属性（class、style、data-attr、name、action、aria-label 等）。 */
     [key: string]: unknown;
@@ -160,9 +171,14 @@
     wrapperCol,
     labelCol,
     children,
+    render,
+    component,
     footer,
     ...rest
   }: Props = $props();
+
+  // 声明控件的 snippet：children > render > component（对齐 Semi 三种写法优先级）。
+  const contentSnippet = $derived(children ?? render ?? component);
 
   const loc = useLocale();
 
@@ -388,7 +404,7 @@
   onsubmit={handleSubmit}
   onreset={handleReset}
 >
-  {@render (children as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
+  {@render (contentSnippet as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
   {#if footer}
     <div class="cd-form__footer">
       {@render footer({ submitting: formState.submitting })}

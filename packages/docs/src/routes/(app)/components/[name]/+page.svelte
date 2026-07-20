@@ -630,6 +630,16 @@
     font-size: 15px;
     margin: 16px 0 8px;
   }
+  /* 标题/正文显式用 Inter 字体栈（对齐 Semi）。不用 inherit——祖先某层被 UnoCSS
+     preflight reset 成 system-ui，inherit 会拿到 system-ui；直接指定完整栈最稳。 */
+  .inline-doc :global(h2),
+  .inline-doc :global(h3),
+  .inline-doc :global(h4),
+  .inline-doc :global(p),
+  .inline-doc :global(li) {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
   /* —— inline md 标题字号/间距严格对齐 Semi layout.scss（$bf=16px）——
      h2=$h2=27.65px、h3=$h3=23.04px、h4=$h4=19.2px；margin 用 $bf 倍数。
      display:flex 让锚点图标与标题基线居中对齐（对齐 Semi .gatsby-h2/h3）。

@@ -20,6 +20,7 @@
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@chenzy-design/unocss-preset": "workspace:*",
+    "@fontsource/inter": "^5.3.0",
     "prismjs": "^1.29.0"
   },
   "devDependencies": {
