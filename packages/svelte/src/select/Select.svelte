@@ -78,6 +78,12 @@
     ariaLabel?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel） */
     ariaLabelledby?: string;
+    /** 关联外部辅助说明的 id（对齐 Semi withField aria-describedby 注入） */
+    ariaDescribedby?: string;
+    /** 关联外部错误提示的 id（对齐 Semi withField aria-errormessage 注入） */
+    ariaErrormessage?: string;
+    /** 标记为必填（对齐 Semi withField aria-required 注入） */
+    ariaRequired?: boolean;
     /** 绑定到触发器的 id 属性，用于关联外部 <label for="..."> */
     id?: string;
     disabled?: boolean;
@@ -283,6 +289,9 @@
     placeholder,
     ariaLabel,
     ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     id,
     disabled = false,
     showClear = false,
@@ -951,6 +960,9 @@
     {id}
     aria-label={triggerAriaLabel}
     aria-labelledby={resolvedLabelledby}
+    aria-describedby={ariaDescribedby}
+    aria-errormessage={ariaErrormessage}
+    aria-required={ariaRequired || undefined}
     aria-expanded={isOpen}
     aria-haspopup="listbox"
     aria-controls={listId}

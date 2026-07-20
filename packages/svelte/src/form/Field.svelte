@@ -10,6 +10,7 @@
   import { getFormContext, type FormLabelPosition, type FormLabelAlign } from './context.js';
   import { getFormInputGroupContext } from './input-group-context.js';
   import { useLocale } from '../locale-provider/index.js';
+  import FormLabel from './FormLabel.svelte';
 
   /** Label 对象形态（对齐 Semi LabelProps 子集）。 */
   interface FieldLabelProps {
@@ -17,7 +18,8 @@
     align?: FormLabelAlign;
     width?: number | string;
     required?: boolean;
-    extra?: string;
+    /** 标签后补充内容：字符串或 Snippet（对齐 Semi extra: ReactNode，可放 Tooltip/图标）。 */
+    extra?: string | Snippet;
     optional?: boolean;
   }
 
@@ -30,8 +32,15 @@
     onBlur: () => void;
     status: FieldStatus;
     id: string;
-    /** id(s) of the field's error/warning/extra text, for the control's aria-describedby */
+    /**
+     * aria-describedby 目标：helpText/extraText 的 id 组合（对齐 Semi，不含 error）。
+     * error 由 errorMessageId + aria-invalid 承载。
+     */
     describedBy: string | undefined;
+    /** error 态时 error-message 容器 id，供控件置 aria-errormessage + aria-invalid（对齐 Semi）。 */
+    errorMessageId: string | undefined;
+    /** label 元素 id，供控件置 aria-labelledby（对齐 Semi withField）；noLabel/无 label 时为空。 */
+    labelledById: string | undefined;
     disabled: boolean;
     /**
      * whether this field is required (spec §138). Controls should expose it as
@@ -39,6 +48,14 @@
      * the visible star is `aria-hidden` and thus inaudible on its own.
      */
     required: boolean;
+    /**
+     * inset label：labelPosition==='inset' 且有 label 时携带 label 文本，控件应把它
+     * 作为内嵌前缀（insetLabel prop）渲染在控件内部左侧（对齐 Semi withField）。
+     * 非 inset 时为 undefined。
+     */
+    insetLabel: string | undefined;
+    /** inset label 容器 id，供控件把它接入 aria（对齐 Semi insetLabelId）。 */
+    insetLabelId: string | undefined;
     /**
      * Convenience alias keyed by `valuePropName` (default 'value'), carrying the
      * same value as `value`. Lets non-`value` controls (e.g. Checkbox/Switch use
@@ -198,6 +215,7 @@
   const warningId = `${id}-warning`;
   const extraId = `${id}-extra`;
   const helpTextId = `${id}-help`;
+  const labelId = `${id}-label`;
 
   // Register the field in the core registry (a plain Map, not Svelte-reactive),
   // so this never feeds back into a render-read. Cleanup unregisters.
@@ -249,9 +267,8 @@
   const status = $derived<FieldStatus>(showError ? 'error' : showWarning ? 'warning' : 'default');
 
   const showRequiredMark = $derived(ctx.getRequiredMark() && labelRequired);
-  const showExtra = $derived(
-    !showError && !showWarning && extraText !== undefined && extraText !== '',
-  );
+  // extraText 常显（对齐 Semi：与 error/helpText 并存，位于其后），不受 error/warning 影响。
+  const showExtra = $derived(extraText !== undefined && extraText !== '');
   // helpText: 与 error 同块，无 error/warning 时展示（对齐 Semi helpText）。
   const showHelpText = $derived(
     !showError && !showWarning && helpText !== undefined && helpText !== '',
@@ -287,21 +304,25 @@
     if (triggers().includes('blur')) void form.validateField(field);
   }
 
-  const describedBy = $derived(
-    // noStyle / pure / inGroup render no status/extra elements here, so
-    // there is nothing to point at (Group renders them at group level).
-    noStyle || pure || inGroup
-      ? undefined
-      : // noErrorMessage suppresses the error/warning block: don't point at it
-        !noErrorMessage && showError
-        ? errorId
-        : !noErrorMessage && showWarning
-          ? warningId
-          : showHelpText
-            ? helpTextId
-            : showExtra
-              ? extraId
-              : undefined,
+  // aria-describedby：对齐 Semi withField —— 指向 helpText 和/或 extraText 的组合
+  // （不含 error；error 走 aria-errormessage）。noStyle/pure/inGroup 不渲染这些块，故为空。
+  const describedBy = $derived.by(() => {
+    if (noStyle || pure || inGroup || noErrorMessage) return undefined;
+    const ids: string[] = [];
+    if (showHelpText) ids.push(helpTextId);
+    if (showExtra) ids.push(extraId);
+    return ids.length ? ids.join(' ') : undefined;
+  });
+  // aria-errormessage：对齐 Semi —— error 态时指向 error-message 容器（控件同时置 aria-invalid）。
+  const errorMessageId = $derived(
+    !noStyle && !pure && !inGroup && !noErrorMessage && showError ? errorId : undefined,
+  );
+  // aria-labelledby：对齐 Semi withField —— 有 label（含 inset，其 id 由控件 insetLabelId 承载）时
+  // 指向 label 元素 id。noLabel / 无 label 时为空（控件退回 ariaLabel 或自身无障碍名）。
+  // noStyle / pure / inGroup 分支不渲染独立 label（label 上提到 group 级或完全省略），
+  // 此时不能指向不存在的 label id（否则 aria-labelledby 悬空 → 无可访问名），回退控件自身 ariaLabel。
+  const labelledById = $derived(
+    hasLabel && !noLabel && !noStyle && !pure && !inGroup ? labelId : undefined,
   );
 
   // field 级覆盖优先于 context（Semi mergeLabelPos = labelPosition || formProps.labelPosition）；
@@ -315,35 +336,34 @@
   );
   // htmlFor 目标 name 优先于自动 id（对齐 Semi name）。
   const forId = $derived(name ?? id);
-  // label style: fixed width in `left` mode + text-align from labelAlign (§4 L60)
-  const labelStyle = $derived(
-    [
-      labelPosition === 'left' && labelWidth !== undefined
-        ? `inline-size:${typeof labelWidth === 'number' ? `${labelWidth}px` : labelWidth}`
-        : undefined,
-      `text-align:${labelAlign}`,
-    ]
-      .filter(Boolean)
-      .join(';'),
-  );
+  // label 宽度只在 left 模式生效（对齐 Semi mergeLabelWidth，传给 FormLabel width）。
+  const effLabelWidth = $derived(labelPosition === 'left' ? labelWidth : undefined);
 
-  // inset：label 浮入控件，聚焦或有值时上浮变小（floating label）
+  // inset：对齐 Semi withField —— label 作为控件的 insetLabel prefix 注入控件内部左侧，
+  // Field 不渲染独立 label（无 floating 动画）。label 文本经 children 契约传给控件。
   const isInset = $derived(labelPosition === 'inset');
-  let focused = $state(false);
-  const hasValue = $derived(value !== undefined && value !== null && value !== '');
-  const labelFloated = $derived(focused || hasValue);
+  // 有 label 且未被 noLabel 抑制时，inset 模式把 label 文本 / id 暴露给控件。
+  const insetLabel = $derived(isInset && hasLabel && !noLabel ? labelText : undefined);
 
+  // field class 严格对齐 Semi withField（`cd-form-field` + 可选 `cd-form-field-{name}` + fieldClassName）；
+  // 状态与 label 位置不进 class，分别由 error-message 容器 / x-label-pos 属性驱动。
   const cls = $derived(
     [
       'cd-form-field',
-      `cd-form-field--label-${labelPosition}`,
-      `cd-form-field--${status}`,
-      isInset && labelFloated && 'cd-form-field--floated',
+      name ? `cd-form-field-${name}` : undefined,
       fieldClassName,
     ]
       .filter(Boolean)
       .join(' '),
   );
+
+  // x-label-pos / x-field-id / x-extra-pos 镜像 Semi 供样式与外部 DOM 定位；经 attrs 对象展开，
+  // 让 svelte-check 接受非标准属性名。
+  const fieldDomAttrs = $derived({
+    'x-label-pos': labelPosition,
+    'x-field-id': field,
+    'x-extra-pos': extraTextPosition,
+  });
 
   // `span` (spec §4.2 L86): occupy N columns of a grid parent (e.g. Form.Section).
   // Pure inline `grid-column` — inert when the parent isn't a grid. fieldStyle
@@ -372,36 +392,42 @@
     status,
     id,
     describedBy,
+    errorMessageId,
+    labelledById,
     disabled: ctx.getDisabled(),
     required,
+    insetLabel,
+    insetLabelId: insetLabel !== undefined ? labelId : undefined,
   })}
 {:else}
-<div class={cls} data-field={field} style={wrapStyle}>
+<!--
+  DOM 严格对齐 Semi withField：wrapper 用 x-label-pos/x-field-id/x-extra-pos 属性驱动，
+  label 在 main 外（非 inset 非 noLabel 时经 FormLabel 渲染，inset 走控件 insetLabel），
+  控件本体 + error-message + extra 包在 cd-form-field-main 内。data-field 保留供 scrollToError。
+-->
+<div
+  class={cls}
+  data-field={field}
+  {...fieldDomAttrs}
+  style={wrapStyle}
+>
   {#if hasLabel && !noLabel && !isInset}
-    <label
-      class="cd-form-field__label cd-form-field__label--align-{labelAlign}"
-      for={forId}
-      style={labelStyle}
-    >
-      {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
-      <span class="cd-form-field__label-text">{labelText}{ctx.getColon() ? '：' : ''}{#if !labelRequired && labelOptional}<span class="cd-form-field__label-optional">{loc().t('Form.optional')}</span>{/if}</span>
-      {#if labelExtra !== undefined}<span class="cd-form-field__label-extra">{labelExtra}</span>{/if}
-    </label>
+    <FormLabel
+      text={labelText}
+      id={labelId}
+      htmlFor={forId}
+      align={labelAlign}
+      required={showRequiredMark}
+      optional={!labelRequired && labelOptional}
+      {...effLabelWidth !== undefined ? { width: effLabelWidth } : {}}
+      {...labelExtra !== undefined ? { extra: labelExtra } : {}}
+    />
   {/if}
 
-  <!-- inset 时 label 浮入控件容器内；focusin/focusout 驱动上浮 (红线 #3 命令式 DOM 事件) -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    class="cd-form-field__control"
-    aria-describedby={describedBy}
-    onfocusin={isInset ? () => (focused = true) : undefined}
-    onfocusout={isInset ? () => (focused = false) : undefined}
-  >
-    {#if hasLabel && !noLabel && isInset}
-      <label class="cd-form-field__inset-label" for={forId}>
-        {#if showRequiredMark}<span aria-hidden="true" class="cd-form-field__required">*</span>{/if}
-        <span class="cd-form-field__label-text">{labelText}</span>
-      </label>
+  <div class="cd-form-field-main">
+    <!-- extraText middle：位于控件之前（对齐 Semi extraPos==='middle'）。 -->
+    {#if !noErrorMessage && showExtra && extraTextPosition === 'middle'}
+      <div id={extraId} class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-middle">{extraText}</div>
     {/if}
 
     {@render children?.({
@@ -415,162 +441,148 @@
       status,
       id,
       describedBy,
+      errorMessageId,
+      labelledById,
       disabled: ctx.getDisabled(),
       required,
+      insetLabel,
+      insetLabelId: insetLabel !== undefined ? labelId : undefined,
     })}
 
     {#if validating}
-      <div class="cd-form-field__validating" aria-live="polite">
-        <span class="cd-form-field__spinner" aria-hidden="true"></span>
+      <div class="cd-form-field-validating" aria-live="polite">
+        <span class="cd-form-field-spinner" aria-hidden="true"></span>
         <span>{validatingText}</span>
       </div>
     {/if}
 
-    <!-- error / warning / helpText belong to the ErrorMessage block; noErrorMessage removes them all (Semi) -->
+    <!--
+      error-message 块（对齐 Semi ErrorMessage）：error 与 warning 共用同一容器
+      .cd-form-field-error-message（图标靠 validateStatus 区分：error→IconAlertCircle，
+      warning→IconAlertTriangle）；helpText 用 .cd-form-field-help-text。noErrorMessage 时全省略。
+    -->
     {#if !noErrorMessage && showError}
-      <div id={errorId} role="alert" class="cd-form-field__error">
+      <div id={errorId} role="alert" class="cd-form-field-error-message">
         {#if showValidateIcon}
-          <IconAlertCircle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
+          <IconAlertCircle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{error}</span>
       </div>
     {:else if !noErrorMessage && showWarning}
-      <div id={warningId} class="cd-form-field__warning">
+      <div id={warningId} role="alert" class="cd-form-field-error-message cd-form-field-error-message-warning">
         {#if showValidateIcon}
-          <IconAlertTriangle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
+          <IconAlertTriangle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
         {/if}
         <span>{warning}</span>
       </div>
     {:else if !noErrorMessage && showHelpText}
-      <div id={helpTextId} class="cd-form-field__help-text">{helpText}</div>
-    {:else if showExtra}
-      <div id={extraId} class="cd-form-field__extra" class:cd-form-field__extra--middle={extraTextPosition === 'middle'} class:cd-form-field__extra--bottom={extraTextPosition === 'bottom'}>{extraText}</div>
+      <div id={helpTextId} class="cd-form-field-help-text">{helpText}</div>
+    {/if}
+
+    <!-- extraText bottom：位于 error/help 之后（对齐 Semi extraPos==='bottom'，默认）。 -->
+    {#if !noErrorMessage && showExtra && extraTextPosition === 'bottom'}
+      <div id={extraId} class="cd-form-field-extra cd-form-field-extra-string cd-form-field-extra-bottom">{extraText}</div>
     {/if}
   </div>
 </div>
 {/if}
 
 <style>
-  .cd-form-field {
+  /*
+    DOM/间距严格镜像 Semi form.scss。用 :global 保证 Field 自身及 InputGroup/Slot 复用同一套
+    cd-form-field-* 规则。间距模型对齐 Semi：field 上下 padding 在 Form 层（.cd-form-vertical
+    .cd-form-field）注入，Field 自身只保证 box-sizing + label 位置布局。
+  */
+  :global(.cd-form-field) {
+    box-sizing: border-box;
+  }
+  /* 主体容器：控件 + error-message + extra 的列（对齐 Semi .semi-form-field-main width:100%）。 */
+  :global(.cd-form-field-main) {
+    width: 100%;
+  }
+
+  /* label 位置：top（label 块级在上）/ left（label 与 main 横排）/ inset（label 内嵌，无独立 label）。 */
+  :global(.cd-form-field[x-label-pos='top']) {
+    display: block;
+  }
+  :global(.cd-form-field[x-label-pos='top'] .cd-form-field-label) {
+    display: block;
+  }
+  /* with-extra 时 label 恢复 flex 让 extra（Tooltip/图标）与文字同行（对齐 Semi）。 */
+  :global(.cd-form-field[x-label-pos='top'] .cd-form-field-label-with-extra),
+  :global(.cd-form-field[x-label-pos='left'] .cd-form-field-label-with-extra) {
     display: flex;
-    gap: var(--cd-spacing-tight);
-  }
-  .cd-form-field--label-top {
-    flex-direction: column;
-  }
-  .cd-form-field--label-left {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .cd-form-field__label {
-    display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-form-label-text-default);
   }
-  /* labelAlign (§4 L60): justify the label's inline content within its box */
-  .cd-form-field__label--align-left {
-    justify-content: flex-start;
+  :global(.cd-form-field[x-label-pos='left']) {
+    display: flex;
   }
-  .cd-form-field__label--align-right {
-    justify-content: flex-end;
-  }
-  /* 水平布局 label 顶部内边距用 Semi 精算 token（(height-control-default - 20px)*0.5），
-     对齐控件高度，取代原先硬写的 extra-tight。 */
-  .cd-form-field--label-left .cd-form-field__label {
+  :global(.cd-form-field[x-label-pos='left'] .cd-form-field-label) {
+    margin-block-end: var(--cd-spacing-form-label-posleft-marginbottom);
+    margin-inline-end: var(--cd-spacing-form-label-posleft-marginright);
+    /* padding-top 使 label 与控件首行文本水平对齐（Semi 精算 token）。 */
     padding-block-start: var(--cd-spacing-form-label-paddingtop);
+    padding-block-end: var(--cd-spacing-form-label-paddingtop);
   }
-  .cd-form-field__required {
-    color: var(--cd-color-form-requiredmark-text-default);
+  :global(.cd-form-field[x-label-pos='inset']) {
+    display: block;
   }
-  .cd-form-field__control {
+
+  /* error-message / help-text：flex + 顶部外边距（对齐 Semi $spacing-form_message-marginTop）。 */
+  :global(.cd-form-field-error-message),
+  :global(.cd-form-field-help-text) {
     display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: var(--cd-spacing-extra-tight);
-    min-inline-size: 0;
-  }
-  /* inset floating label */
-  .cd-form-field--label-inset {
-    flex-direction: column;
-  }
-  .cd-form-field--label-inset .cd-form-field__control {
-    position: relative;
-    padding-block-start: var(--cd-spacing-base-tight);
-  }
-  .cd-form-field__inset-label {
-    position: absolute;
-    inset-block-start: 50%;
-    inset-inline-start: var(--cd-input-padding-x, var(--cd-spacing-base-tight));
-    transform: translateY(-50%);
-    display: inline-flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-input-placeholder-text-default);
-    pointer-events: none;
-    transition:
-      transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      font-size var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
-      color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    margin-block-start: var(--cd-spacing-form-message-margintop);
+    font-size: var(--cd-font-size-regular);
   }
-  .cd-form-field--floated .cd-form-field__inset-label {
-    transform: translateY(calc(-50% - 0.85rem)) scale(0.85);
-    color: var(--cd-color-form-label-text-default);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .cd-form-field__inset-label {
-      transition: none;
-    }
-  }
-  .cd-form-field__error {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
+  :global(.cd-form-field-error-message) {
     color: var(--cd-color-form-message-error-text-default);
-    font-size: var(--cd-font-size-small);
   }
-  .cd-form-field__warning {
+  :global(.cd-form-field-help-text) {
+    color: var(--cd-color-form-label-extra-text-default);
+  }
+  /* warning：容器同 error-message，图标着警告色（对齐 Semi .semi-icon-alert_triangle 着色）。 */
+  :global(.cd-form-field-error-message-warning) {
+    color: var(--cd-color-form-label-extra-text-default);
+  }
+  :global(.cd-form-field-error-message-warning .cd-form-field-validate-status-icon) {
+    color: var(--cd-color-form-alerticon-icon-default);
+  }
+  /* 状态图标：右外边距 + 顶部微调（对齐 Semi .semi-form-field-validate-status-icon）。 */
+  :global(.cd-form-field-validate-status-icon) {
+    margin-inline-end: var(--cd-spacing-form-statusicon-marginright);
+    flex-shrink: 0;
+    align-self: flex-start;
+    position: relative;
+    top: 2px;
+  }
+
+  /* extraText：常显提示（对齐 Semi .semi-form-field-extra）。 */
+  :global(.cd-form-field-extra) {
+    color: var(--cd-color-form-label-extra-text-default);
+  }
+  :global(.cd-form-field-extra-string) {
+    font-size: var(--cd-font-size-regular);
+  }
+  :global(.cd-form-field[x-extra-pos='middle'] .cd-form-field-extra) {
+    margin-block-start: var(--cd-spacing-form-extra-posmid-margintop);
+    margin-block-end: var(--cd-spacing-form-extra-posmid-marginbottom);
+  }
+  :global(.cd-form-field[x-extra-pos='bottom'] .cd-form-field-extra) {
+    margin-block-start: var(--cd-spacing-form-extra-posbottom-margintop);
+  }
+
+  /* 异步校验指示器（本库超集，Semi 无；纯 CSS spin，无 JS 几何）。 */
+  :global(.cd-form-field-validating) {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-warning);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__status-icon {
-    flex: 0 0 auto;
-  }
-  .cd-form-field__extra {
+    margin-block-start: var(--cd-spacing-form-message-margintop);
     color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
+    font-size: var(--cd-font-size-regular);
   }
-  .cd-form-field__help-text {
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__label-optional {
-    margin-inline-start: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-form-label-optional-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__label-extra {
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__extra--middle {
-    order: -1;
-  }
-  .cd-form-field__extra--bottom {
-    order: 0;
-  }
-  /* async-validation indicator (red line #3: pure-CSS spin, no JS geometry) */
-  .cd-form-field__validating {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-  .cd-form-field__spinner {
+  :global(.cd-form-field-spinner) {
     inline-size: 0.85em;
     block-size: 0.85em;
     border: 2px solid var(--cd-form-spinner-track-color);
@@ -584,7 +596,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-form-field__spinner {
+    :global(.cd-form-field-spinner) {
       animation-duration: 1.8s;
     }
   }

@@ -25,10 +25,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <DatePicker
       {...(value instanceof Date || value === null ? { value: value as NonNullable<DatePickerProps['value']> } : {})}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<DatePickerProps['placeholder']> } : {})}
@@ -37,6 +38,12 @@
       {...(control.format !== undefined ? { format: control.format as NonNullable<DatePickerProps['format']> } : {})}
       {...(control.disabledDate !== undefined ? { disabledDate: control.disabledDate as NonNullable<DatePickerProps['disabledDate']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

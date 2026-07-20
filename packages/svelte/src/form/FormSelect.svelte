@@ -41,11 +41,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
-  const hasLabel = $derived(props.label !== undefined);
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <Select
       {...(value !== undefined ? { value: value as NonNullable<SelectProps['value']> } : {})}
       {...(control.optionList !== undefined ? { optionList: control.optionList as NonNullable<SelectProps['optionList']> } : {})}
@@ -59,8 +59,13 @@
       {...(control.allowCreate !== undefined ? { allowCreate: control.allowCreate as NonNullable<SelectProps['allowCreate']> } : {})}
       {...(control.virtualize !== undefined ? { virtualize: control.virtualize as NonNullable<SelectProps['virtualize']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
-      {...(hasLabel ? {} : { ariaLabelledby: id })}
-      {...(describedBy !== undefined ? { ariaLabel: describedBy } : {})}
+      {id}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

@@ -46,12 +46,14 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <InputNumber
       {...(typeof value === 'number' ? { value } : { value: null })}
       validateStatus={status === 'error' ? 'error' : 'default'}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {id}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<InputNumberProps['placeholder']> } : {})}
       {...(control.size !== undefined ? { size: control.size as NonNullable<InputNumberProps['size']> } : {})}
       {...(control.min !== undefined ? { min: control.min as NonNullable<InputNumberProps['min']> } : {})}
@@ -61,7 +63,10 @@
       {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<InputNumberProps['showClear']> } : {})}
       {...(control.innerButtons !== undefined ? { innerButtons: control.innerButtons as NonNullable<InputNumberProps['innerButtons']> } : {})}
       {...(control.hideButtons !== undefined ? { hideButtons: control.hideButtons as NonNullable<InputNumberProps['hideButtons']> } : {})}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

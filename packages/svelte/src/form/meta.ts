@@ -44,7 +44,6 @@ export const meta = {
     { name: 'labelAlign', type: "'left'|'right'", default: 'left', desc: 'Label 文本对齐（spec §4）' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'requiredMark', type: 'boolean', default: 'true' },
-    { name: 'colon', type: 'boolean', default: 'false' },
     { name: 'scrollToError', type: 'boolean', default: 'false', desc: '提交校验失败时滚动并聚焦首个错误字段' },
     { name: 'validateTrigger', type: "'change'|'blur'|'submit'|'mount'|string[]", default: "['blur','change']", desc: '全局默认校验时机，字段可经 trigger 覆盖（spec §4）' },
     { name: 'showValidateIcon', type: 'boolean', default: 'true', desc: '错误/警告文案是否带状态图标（spec §4）' },

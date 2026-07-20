@@ -27,10 +27,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <Rating
       {...(typeof value === 'number' ? { value } : {})}
       {...(control.count !== undefined ? { count: control.count as NonNullable<RatingProps['count']> } : {})}
@@ -39,6 +40,10 @@
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.size !== undefined ? { size: control.size as NonNullable<RatingProps['size']> } : {})}
       {...(control.tooltips !== undefined ? { tooltips: control.tooltips as NonNullable<RatingProps['tooltips']> } : {})}
+      {...(labelledById !== undefined ? { 'aria-labelledby': labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
+      {...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {})}
+      {...(errorMessageId !== undefined ? { 'aria-errormessage': errorMessageId } : {})}
+      {...(required ? { 'aria-required': true } : {})}
       {...(status === 'error' ? { 'aria-invalid': true } : {})}
       onChange={(v) => onChange(v)}
     />

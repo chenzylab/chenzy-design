@@ -113,6 +113,14 @@
     getPopupContainer?: () => HTMLElement | null | undefined;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
     ariaLabel?: string;
+    /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
+    ariaLabelledby?: string;
+    /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
+    ariaDescribedby?: string;
+    /** aria-errormessage：error 态关联错误信息容器（Form.Field 透传）。 */
+    ariaErrormessage?: string;
+    /** aria-required：必填语义（Form.Field required 透传）。 */
+    ariaRequired?: boolean;
     /** 触发器点击是否阻止事件冒泡（对齐 Semi stopPropagation）。默认 true。 */
     stopPropagation?: boolean;
     /**
@@ -296,6 +304,10 @@
     getPopupContainer,
     onChange,
     ariaLabel,
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     stopPropagation = true,
     triggerRender,
     insetLabel,
@@ -1356,6 +1368,10 @@
     aria-controls={treeId}
     aria-activedescendant={isOpen && !searchActive ? activeDescId : undefined}
     aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledby}
+    aria-describedby={ariaDescribedby}
+    aria-errormessage={ariaErrormessage}
+    aria-required={ariaRequired || undefined}
     aria-invalid={effStatus === 'error' || undefined}
     aria-disabled={disabled || undefined}
     tabindex={disabled ? -1 : 0}

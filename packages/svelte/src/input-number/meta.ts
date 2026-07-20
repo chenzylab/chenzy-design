@@ -24,6 +24,8 @@ export const meta = {
     { name: 'hideButtons', type: 'boolean', default: 'false', desc: '彻底隐藏步进按钮' },
     { name: 'placeholder', type: 'string', default: 'undefined' },
     { name: 'prefix', type: 'string | Snippet', default: 'undefined', desc: '输入框前置内容（如货币符号、单位）' },
+    { name: 'insetLabel', type: 'string | Snippet', default: 'undefined', desc: '内嵌标签（与 prefix 同槽，对齐 Semi insetLabel）' },
+    { name: 'insetLabelId', type: 'string', default: 'undefined', desc: '内嵌标签容器 id（对齐 Semi insetLabelId）' },
     { name: 'suffix', type: 'string | Snippet', default: 'undefined', desc: '输入框后置内容（如单位 %、kg）' },
     { name: 'name', type: 'string', default: 'undefined' },
     { name: 'id', type: 'string', default: '自动生成', desc: 'input 元素 id，关联外部 label' },

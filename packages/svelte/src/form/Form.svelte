@@ -53,14 +53,13 @@
     layout?: FormLayout;
     /** form 元素 id（同时写到 x-form-id 供 scrollToError 定位）。 */
     id?: string;
-    /** 'top' | 'left' | 'inset'（inset：label 浮入控件，聚焦/有值时上浮变小） */
+    /** 'top' | 'left' | 'inset'（inset：label 作为内嵌前缀显示在控件内部左侧，对齐 Semi） */
     labelPosition?: FormLabelPosition;
     labelWidth?: number | string;
     /** Label 文本对齐（spec §4 L60，默认 'left'）。 */
     labelAlign?: FormLabelAlign;
     disabled?: boolean;
     requiredMark?: boolean;
-    colon?: boolean;
     /** on failed submit, scroll to and focus the first errored field */
     scrollToError?: boolean;
     /** 全局默认校验时机（spec §4 L65，默认 ['blur','change']），字段可覆盖。 */
@@ -127,7 +126,6 @@
     labelAlign = 'left',
     disabled = false,
     requiredMark = true,
-    colon = false,
     scrollToError = false,
     autoScrollToError = false,
     extraTextPosition = 'bottom',
@@ -261,7 +259,6 @@
     getLabelAlign: () => labelAlign,
     getDisabled: () => disabled,
     getRequiredMark: () => requiredMark,
-    getColon: () => colon,
     getShowValidateIcon: () => showValidateIcon,
     getExtraTextPosition: () => extraTextPosition,
     getWrapperCol: () => wrapperCol,
@@ -332,11 +329,10 @@
     onSubmit?.(r);
   }
 
-  // merge caller-provided class (via rest) with the computed base classes.
+  // form class 严格对齐 Semi baseForm（`.cd-form` + `-vertical`/`-horizontal`）。
+  // label 位置不进 form class（由每个 field 的 x-label-pos 属性驱动），间距由 field padding 承载。
   const cls = $derived(
-    [`cd-form cd-form--${layout} cd-form--label-${labelPosition}`, rest.class]
-      .filter(Boolean)
-      .join(' '),
+    [`cd-form cd-form-${layout}`, rest.class].filter(Boolean).join(' '),
   );
   // x-form-id mirrors Semi for external DOM queries; scrolling uses the formEl
   // ref directly, so this is parity-only. Merged into rest so svelte-check
@@ -361,10 +357,36 @@
 </form>
 
 <style>
-  .cd-form {
+  /*
+    间距模型严格对齐 Semi form.scss：form 无 gap，靠每个 field 的 padding 撑间距。
+    vertical：field 上下 padding + overflow:hidden；horizontal：flex-wrap + field 右侧 padding。
+    这些规则跨 Field 组件生效，故用 :global。
+  */
+  :global(.cd-form-vertical .cd-form-field) {
+    margin: 0;
+    padding-block-start: var(--cd-spacing-form-field-vertical-paddingtop);
+    padding-block-end: var(--cd-spacing-form-field-vertical-paddingbottom);
+    overflow: hidden;
+  }
+  :global(.cd-form-vertical .cd-form-field-group) {
+    margin: 0;
+    padding-block-start: var(--cd-spacing-form-field-group-vertical-paddingtop);
+    padding-block-end: var(--cd-spacing-form-field-group-vertical-paddingbottom);
+    overflow: hidden;
+  }
+  .cd-form-horizontal {
     display: flex;
-    flex-direction: column;
-    gap: var(--cd-spacing-base);
+    flex-wrap: wrap;
+  }
+  :global(.cd-form-horizontal .cd-form-field) {
+    margin-inline-start: 0;
+    padding-inline-end: var(--cd-spacing-form-field-horizontal-paddingright);
+  }
+  :global(.cd-form-horizontal .cd-form-field:last-child) {
+    margin-inline-end: var(--cd-spacing-form-field-horizontal-paddingright);
+  }
+  :global(.cd-form-horizontal .cd-form-field-group) {
+    padding-inline-end: var(--cd-spacing-form-field-group-horizontal-paddingright);
   }
   .cd-form__footer {
     display: flex;

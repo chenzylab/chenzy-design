@@ -31,6 +31,14 @@
     preventScroll?: boolean;
     /** 无可见文本 label 时提供可访问名（如嵌在 Tree 行内、label 由外部承载时）。 */
     ariaLabel?: string;
+    /** 关联外部 label 的 id（对齐 Semi withField aria-labelledby 注入）。 */
+    ariaLabelledby?: string;
+    /** 关联外部辅助说明的 id（对齐 Semi withField aria-describedby 注入）。 */
+    ariaDescribedby?: string;
+    /** 关联外部错误提示的 id（对齐 Semi withField aria-errormessage 注入）。 */
+    ariaErrormessage?: string;
+    /** 标记为必填（对齐 Semi withField aria-required 注入）。 */
+    ariaRequired?: boolean;
     /** a11y: 标记为无效（校验失败时，对齐 Semi aria-invalid）。 */
     ariaInvalid?: boolean;
     /** a11y: wrapper role（Group 内为 listitem）。 */
@@ -53,6 +61,10 @@
     extraId: extraIdProp,
     preventScroll,
     ariaLabel,
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     ariaInvalid,
     role,
     onChange,
@@ -162,11 +174,21 @@
   );
 
   const extraIsString = $derived(typeof extra === 'string');
+
+  // 合并内部生成的关联 id 与外部（withField）注入的 aria id：
+  // labelledby = 内部 addonId（有可见 children 时）拼外部 ariaLabelledby；
+  // describedby = 内部 extraId（有 extra 时）拼外部 ariaDescribedby。
+  const resolvedLabelledby = $derived(
+    [children ? resolvedAddonId : undefined, ariaLabelledby].filter(Boolean).join(' ') || undefined,
+  );
+  const resolvedDescribedby = $derived(
+    [extraId, ariaDescribedby].filter(Boolean).join(' ') || undefined,
+  );
 </script>
 
 <!-- Semi 注释：label 更好，但用 span 是为规避 gitlab #364（对齐 Semi 根用 span 非 label）。
      a11y 靠原生 input（opacity:0 铺满 inner）+ aria-labelledby 承载，非隐式 label 关联。 -->
-<span class={cls} id={id} {role} aria-labelledby={children ? resolvedAddonId : undefined}>
+<span class={cls} id={id} {role} aria-labelledby={resolvedLabelledby}>
   <span class={innerCls}>
     <input
       bind:this={inputEl}
@@ -179,8 +201,10 @@
       checked={isChecked}
       disabled={resolvedDisabled}
       aria-label={!children ? ariaLabel : undefined}
-      aria-labelledby={children ? resolvedAddonId : undefined}
-      aria-describedby={extraId}
+      aria-labelledby={resolvedLabelledby}
+      aria-describedby={resolvedDescribedby}
+      aria-errormessage={ariaErrormessage}
+      aria-required={ariaRequired || undefined}
       aria-invalid={ariaInvalid || undefined}
       onchange={handleChange}
     />

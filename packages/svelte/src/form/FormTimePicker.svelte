@@ -25,10 +25,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <TimePicker
       {...(value !== undefined && value !== null ? { value: value as NonNullable<TimePickerProps['value']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
@@ -37,6 +38,13 @@
       {...(control.size !== undefined ? { size: control.size as NonNullable<TimePickerProps['size']> } : {})}
       {...(control.format !== undefined ? { format: control.format as NonNullable<TimePickerProps['format']> } : {})}
       {...(control.use12Hours !== undefined ? { use12Hours: control.use12Hours as NonNullable<TimePickerProps['use12Hours']> } : {})}
+      {id}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

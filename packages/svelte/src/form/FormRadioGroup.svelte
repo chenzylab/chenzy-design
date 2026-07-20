@@ -32,7 +32,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <RadioGroup
       {...(value !== undefined ? { value: value as NonNullable<RadioGroupProps['value']> } : {})}
       {...(control.options !== undefined ? { options: control.options as NonNullable<RadioGroupProps['options']> } : {})}
@@ -41,7 +41,11 @@
       {...(control.buttonSize !== undefined ? { buttonSize: control.buttonSize as NonNullable<RadioGroupProps['buttonSize']> } : {})}
       {...(control.direction !== undefined ? { direction: control.direction as NonNullable<RadioGroupProps['direction']> } : {})}
       {id}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
+      {...(status === 'error' ? { ariaInvalid: true } : {})}
       onChange={(e) => onChange(e.target.value)}
     >
       {@render slotChildren?.()}

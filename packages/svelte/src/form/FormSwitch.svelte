@@ -27,10 +27,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <Switch
       {...(typeof value === 'boolean' ? { value } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
@@ -38,6 +39,10 @@
       {...(control.loading !== undefined ? { loading: control.loading as NonNullable<SwitchProps['loading']> } : {})}
       {...(control.checkedText !== undefined ? { checkedText: control.checkedText as string | Snippet } : {})}
       {...(control.uncheckedText !== undefined ? { uncheckedText: control.uncheckedText as string | Snippet } : {})}
+      {...(labelledById !== undefined ? { 'aria-labelledby': labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
+      {...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {})}
+      {...(errorMessageId !== undefined ? { 'aria-errormessage': errorMessageId } : {})}
+      {...(required ? { 'aria-required': true } : {})}
       {...(status === 'error' ? { 'aria-invalid': true } : {})}
       onChange={(v) => onChange(v)}
     />

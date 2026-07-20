@@ -29,6 +29,10 @@
   );
   const radioValue = $derived((control.value ?? '') as NonNullable<RadioProps['value']>);
   const slotChildren = $derived(props.children);
+  // 独立 Form.Radio（非 Group 内）的无障碍名：label 文本优先，回退 field 名。
+  const labelForAria = $derived(
+    (typeof props.label === 'string' ? props.label : props.label?.text) ?? props.field,
+  );
 </script>
 
 <Field {...fieldProps}>
@@ -38,6 +42,7 @@
       {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.type !== undefined ? { type: control.type as NonNullable<RadioProps['type']> } : {})}
+      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       onChange={(e) => onChange(e.target.checked)}
     >
       {@render slotChildren?.()}

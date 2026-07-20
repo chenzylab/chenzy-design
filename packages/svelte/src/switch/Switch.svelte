@@ -43,6 +43,7 @@
     'aria-describedby'?: string;
     'aria-errormessage'?: string;
     'aria-invalid'?: boolean;
+    'aria-required'?: boolean;
   }
 
   let {
@@ -64,6 +65,7 @@
     'aria-describedby': ariaDescribedby,
     'aria-errormessage': ariaErrormessage,
     'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
   }: Props = $props();
 
   const isControlled = $derived(value !== undefined);
@@ -118,6 +120,7 @@
   aria-describedby={ariaDescribedby}
   aria-errormessage={ariaErrormessage}
   aria-invalid={ariaInvalid || undefined}
+  aria-required={ariaRequired || undefined}
   aria-busy={loading || undefined}
   disabled={disabled || loading}
   onclick={toggle}

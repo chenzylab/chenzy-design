@@ -26,17 +26,22 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
   const slotChildren = $derived(props.children);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <Checkbox
       {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.indeterminate !== undefined ? { indeterminate: control.indeterminate as NonNullable<CheckboxProps['indeterminate']> } : {})}
       {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxProps['type']> } : {})}
       {id}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       ariaInvalid={status === 'error'}
       onChange={(e) => onChange(e.target.checked)}
     >

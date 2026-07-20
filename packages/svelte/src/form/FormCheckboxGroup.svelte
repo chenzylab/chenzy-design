@@ -31,7 +31,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, disabled: fieldDisabled, id, labelledById })}
     <CheckboxGroup
       {...(Array.isArray(value) ? { value: value as NonNullable<CheckboxGroupProps['value']> } : {})}
       {...(control.options !== undefined ? { options: control.options as NonNullable<CheckboxGroupProps['options']> } : {})}
@@ -39,7 +39,7 @@
       {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxGroupProps['type']> } : {})}
       {...(control.direction !== undefined ? { direction: control.direction as NonNullable<CheckboxGroupProps['direction']> } : {})}
       {id}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       onChange={(v) => onChange(v)}
     >
       {@render slotChildren?.()}

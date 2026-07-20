@@ -67,6 +67,9 @@
     style?: string;
     ariaLabel?: string;
     ariaLabelledby?: string;
+    ariaDescribedby?: string;
+    ariaErrormessage?: string;
+    ariaRequired?: boolean;
     /** 覆盖 getAriaValueText 的 aria-valuetext 文案（对齐 Semi aria-valuetext）。 */
     ariaValuetext?: string;
     /** 值变化（拖拽中实时 + 键盘），range 时回传已排序数组（对齐 Semi onChange）。 */
@@ -103,6 +106,9 @@
     style: styleProp,
     ariaLabel,
     ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     ariaValuetext,
     onChange,
     onAfterChange,
@@ -496,6 +502,7 @@
             tabindex={disabled ? -1 : 0}
             aria-label={ariaLabelledby ? undefined : ariaLabel}
             aria-labelledby={ariaLabelledby}
+            aria-describedby={ariaDescribedby}
             aria-orientation={vertical ? 'vertical' : 'horizontal'}
             aria-valuemin={handleMin(index)}
             aria-valuemax={handleMax(index)}

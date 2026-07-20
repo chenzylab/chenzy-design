@@ -1,6 +1,9 @@
 <!--
   Form.ErrorMessage — see specs/components/input/Form.spec.md
   独立错误/提示文字展示：带状态图标的错误文字，可独立放置于任意位置。对齐 Semi errorMessage.tsx。
+  DOM：<div class="cd-form-field-error-message | cd-form-field-help-text">
+       [<icon class="cd-form-field-validate-status-icon"/>] <span id>text</span>
+  warning 与 error 共用 error-message 容器（图标靠 validateStatus 区分）。样式集中在 Field.svelte :global。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -56,24 +59,26 @@
   const textId = $derived(hasError ? errorMessageId : helpTextId);
   // InputGroup 内图标恒为 error 图标；否则按 validateStatus 决定。
   const iconIsWarning = $derived(!isInInputGroup && validateStatus === 'warning');
-</script>
 
-{#if hasError || showHelp}
-  <div
-    class={[
-      hasError ? 'cd-form-field__error' : 'cd-form-field__help-text',
+  const cls = $derived(
+    [
+      hasError ? 'cd-form-field-error-message' : 'cd-form-field-help-text',
+      // warning 态容器补修饰类，图标着警告色（对齐 Semi .semi-icon-alert_triangle 着色）。
+      hasError && iconIsWarning && 'cd-form-field-error-message-warning',
       className,
     ]
       .filter(Boolean)
-      .join(' ')}
-    role={hasError ? 'alert' : undefined}
-    {style}
-  >
+      .join(' '),
+  );
+</script>
+
+{#if hasError || showHelp}
+  <div class={cls} role={hasError ? 'alert' : undefined} {style}>
     {#if showValidateIcon && hasError}
       {#if iconIsWarning}
-        <IconAlertTriangle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
+        <IconAlertTriangle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
       {:else}
-        <IconAlertCircle class="cd-form-field__status-icon" size="small" aria-hidden="true" />
+        <IconAlertCircle class="cd-form-field-validate-status-icon" size="small" aria-hidden="true" />
       {/if}
     {/if}
     {#if isSnippet}
@@ -83,10 +88,3 @@
     {/if}
   </div>
 {/if}
-
-<style>
-  .cd-form-field__help-text {
-    color: var(--cd-color-form-label-extra-text-default);
-    font-size: var(--cd-font-size-small);
-  }
-</style>

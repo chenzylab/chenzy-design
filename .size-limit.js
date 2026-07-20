@@ -92,9 +92,10 @@ const components = [
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   ['date-picker', '{ DatePicker }', '22 KB'],
-  // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath
-  // （真数组路径），实测 13.22 KB。预算按实测校准，含少量余量。
-  ['form', '{ FormField, FormInput, FieldArray }', '13.5 KB'],
+  // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath（真数组路径）。
+  // 破坏性重写严格对齐 Semi（Field 复用 FormLabel、a11y 契约 labelledById/errorMessageId、
+  // error/warning 合并、扁平 class）后实测 13.65 KB。预算按实测校准，含少量余量。
+  ['form', '{ FormField, FormInput, FieldArray }', '14 KB'],
   // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
   // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
   ['input', '{ Input, InputGroup, TextArea }', '9 KB'],

@@ -24,27 +24,17 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础校验', 'Form.Input 通过 rules 声明校验规则，onSubmit 返回 { valid, values }。'),
-  entry('02-layout.svelte', '标签位置', '支持 left / top / inset 三种标签位置，inset 在聚焦时上浮。'),
-  entry('03-controls.svelte', '表单控件', 'Form.Input / Select / DatePicker / Switch / Checkbox 等控件接管数据流，无须手动 value/onChange。'),
-  entry('04-validation.svelte', '校验规则', 'required、内置 type、长度 min、自定义 validator（含异步）多种校验规则。'),
-  entry('05-dependencies.svelte', '字段联动', 'dependencies 声明依赖字段，被依赖字段变化时自动重校验（如确认密码）。'),
-  entry('06-dynamic.svelte', '动态字段', 'Form.List 动态增删行，每行子字段名由 name(item, sub) 拼接。'),
-  entry('07-form-api.svelte', '外部操作', 'getFormApi 拿到内部句柄，在表单外部命令式 setValues / validate / reset。'),
-  entry('08-section.svelte', '分组', 'Form.Section 把字段按语义分区，带分区标题。'),
-  entry(
-    '09-more-controls.svelte',
-    '更多控件',
-    'Form.TextArea / InputNumber / CheckboxGroup / RadioGroup / TimePicker / AutoComplete / PinCode 薄封装接管数据流。'
-  ),
-  entry(
-    '10-hooks.svelte',
-    'Hooks',
-    '外部 createForm() + <Form form={...}> 父层直接操作；后代 useFormApi / useFormState / getFieldApi 拿表单与字段句柄（对齐 Semi useForm/useFormApi/useFieldApi；Svelte 用 Field snippet 替代 withField HOC）。'
-  ),
-  entry(
-    '11-input-group.svelte',
-    '字段组',
-    'Form.InputGroup 把多字段的 Label/ErrorMessage 上提到 group 级统一渲染，控件无缝拼接，GroupError 聚合组内错误。'
-  ),
+  entry('01-basic.svelte', '基本写法', '从 Form 导出控件并加 field 属性即接管数据流；label 可传字符串或对象形态（extra / optional）。'),
+  entry('02-controls.svelte', '已支持的表单控件', 'Input / InputNumber / Select / DatePicker / TimePicker / TreeSelect / Cascader / TagInput / TextArea / CheckboxGroup / RadioGroup / Slider / Rating / Switch 全家福。'),
+  entry('03-value-binding.svelte', '控件值的绑定', 'field 支持含 . 或 [] 的多级嵌套路径；children 带参 snippet 实时映射 formState.values。'),
+  entry('04-layout.svelte', '表单布局', 'labelPosition（top / left）与 labelAlign（left / right）控制 label 位置与文本对齐。'),
+  entry('05-section.svelte', '表单分组', 'Form.Section 把字段按语义分区，带分区标题（仅影响布局，不影响数据结构）。'),
+  entry('06-no-label.svelte', '隐藏 Label', 'noLabel 关闭自动 Label（保留 ErrorMessage）；pure 连 wrapper 也不插，DOM 与原控件一致。'),
+  entry('07-inset-label.svelte', '内嵌 Label', "labelPosition='inset' 把 Label 内嵌在控件内部左侧（Input / InputNumber / DatePicker / TimePicker / Select / TreeSelect / Cascader / TagInput 支持）。"),
+  entry('08-help-extra.svelte', 'helpText、extraText', 'helpText 与校验信息共用区块（校验信息优先）；extraText 常显额外提示，extraTextPosition 控制位置。'),
+  entry('09-slot.svelte', 'Form.Slot', '放置自定义组件并保持与 Field 一致的布局；Form 的 labelWidth / labelAlign 自动作用于 Slot。'),
+  entry('10-input-group.svelte', 'InputGroup 组合多个 Field', '把多个控件组合为一组，仅需一个属于整组的 Label，控件无缝拼接，GroupError 聚合组内错误。'),
+  entry('11-validation.svelte', '初始值与校验规则', 'initValues 统一设初始值，rules 声明校验规则（基于 async-validator）；stopValidateWithError 命中首条错误即停。'),
+  entry('12-async-validate.svelte', '自定义校验（异步）', 'rules[].validator 可返回 Promise 做异步校验，返回错误消息字符串或 undefined。'),
+  entry('13-modal.svelte', 'Modal 中的表单', '通过 getFormApi 拿到句柄，在弹窗确认时调用 formApi.validate() 集中校验。'),
 ];
