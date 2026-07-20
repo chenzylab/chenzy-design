@@ -13,11 +13,15 @@
     type?: 'text' | 'password';
     showClear?: boolean;
     maxLength?: number;
+    /** 最小长度（对齐 Semi minLength），下发原生 minlength 触发校验。 */
+    minLength?: number;
+    /** 自定义字符计数（对齐 Semi getValueLength），配合 max/minLength 按可见长度校验。 */
+    getValueLength?: (value: string) => number;
   }
 
   const props: Props = $props();
   // 控件专属 props(非 field-level)在这里显式取，其余经 splitFieldProps 分离。
-  const controlKeys = ['placeholder', 'type', 'showClear', 'maxLength'] as const;
+  const controlKeys = ['placeholder', 'type', 'showClear', 'maxLength', 'minLength', 'getValueLength'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
   const control = $derived(
@@ -37,6 +41,8 @@
       showClear={Boolean(control.showClear)}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as string } : {})}
       {...(control.maxLength !== undefined ? { maxLength: control.maxLength as number } : {})}
+      {...(control.minLength !== undefined ? { minLength: control.minLength as number } : {})}
+      {...(control.getValueLength !== undefined ? { getValueLength: control.getValueLength as (value: string) => number } : {})}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}
       {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}

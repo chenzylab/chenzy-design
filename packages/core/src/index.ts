@@ -669,3 +669,4 @@ export {
   countActiveMcpOptions,
 } from './sidebar.js';
 export type { McpOptionCore } from './sidebar.js';
+export { truncateValueByLength, computeVisibleMinLength } from './input.js';
