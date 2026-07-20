@@ -46,7 +46,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, insetLabel, insetLabelId })}
+  {#snippet children({ value, onChange, onBlur, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <InputNumber
       {...(typeof value === 'number' ? { value } : { value: null })}
       validateStatus={status === 'error' ? 'error' : 'default'}
@@ -63,7 +63,10 @@
       {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<InputNumberProps['showClear']> } : {})}
       {...(control.innerButtons !== undefined ? { innerButtons: control.innerButtons as NonNullable<InputNumberProps['innerButtons']> } : {})}
       {...(control.hideButtons !== undefined ? { hideButtons: control.hideButtons as NonNullable<InputNumberProps['hideButtons']> } : {})}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       onBlur={() => onBlur()}
     />

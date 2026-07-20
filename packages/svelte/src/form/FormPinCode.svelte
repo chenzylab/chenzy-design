@@ -31,7 +31,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, id, describedBy, errorMessageId, labelledById, required })}
     <PinCode
       value={value === undefined ? '' : String(value)}
       status={status === 'error' ? 'error' : 'default'}
@@ -41,7 +41,10 @@
       {...(control.format !== undefined ? { format: control.format as NonNullable<PinCodeProps['format']> } : {})}
       {...(control.size !== undefined ? { size: control.size as NonNullable<PinCodeProps['size']> } : {})}
       {...(control.autoFocus !== undefined ? { autoFocus: control.autoFocus as NonNullable<PinCodeProps['autoFocus']> } : {})}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
       {...(control.onComplete !== undefined ? { onComplete: control.onComplete as NonNullable<PinCodeProps['onComplete']> } : {})}
     />

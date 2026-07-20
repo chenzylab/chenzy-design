@@ -25,10 +25,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <TagInput
       {...(Array.isArray(value) ? { value: value as string[] } : {})}
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<TagInputProps['placeholder']> } : {})}
@@ -37,6 +38,12 @@
       {...(control.maxLength !== undefined ? { maxLength: control.maxLength as NonNullable<TagInputProps['maxLength']> } : {})}
       {...(control.allowDuplicates !== undefined ? { allowDuplicates: control.allowDuplicates as NonNullable<TagInputProps['allowDuplicates']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(tags) => onChange(tags)}
     />
   {/snippet}

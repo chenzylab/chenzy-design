@@ -26,10 +26,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required, insetLabel, insetLabelId })}
     <Cascader
       {...(value !== undefined ? { value: value as NonNullable<CascaderProps['value']> } : {})}
       {...(control.treeData !== undefined ? { treeData: control.treeData as NonNullable<CascaderProps['treeData']> } : {})}
@@ -39,6 +40,12 @@
       {...(control.size !== undefined ? { size: control.size as NonNullable<CascaderProps['size']> } : {})}
       {...(control.displayProp !== undefined ? { displayProp: control.displayProp as NonNullable<CascaderProps['displayProp']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
+      {...(insetLabel !== undefined ? { insetLabel } : {})}
+      {...(insetLabelId !== undefined ? { insetLabelId } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

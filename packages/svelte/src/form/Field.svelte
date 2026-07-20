@@ -318,7 +318,11 @@
   );
   // aria-labelledby：对齐 Semi withField —— 有 label（含 inset，其 id 由控件 insetLabelId 承载）时
   // 指向 label 元素 id。noLabel / 无 label 时为空（控件退回 ariaLabel 或自身无障碍名）。
-  const labelledById = $derived(hasLabel && !noLabel ? labelId : undefined);
+  // noStyle / pure / inGroup 分支不渲染独立 label（label 上提到 group 级或完全省略），
+  // 此时不能指向不存在的 label id（否则 aria-labelledby 悬空 → 无可访问名），回退控件自身 ariaLabel。
+  const labelledById = $derived(
+    hasLabel && !noLabel && !noStyle && !pure && !inGroup ? labelId : undefined,
+  );
 
   // field 级覆盖优先于 context（Semi mergeLabelPos = labelPosition || formProps.labelPosition）；
   // label 对象形态的 align/width 再优先于 field prop（对齐 Semi label 对象展开覆盖）。

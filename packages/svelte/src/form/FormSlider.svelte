@@ -39,10 +39,11 @@
   const control = $derived(
     Object.fromEntries(controlKeys.filter((k) => props[k] !== undefined).map((k) => [k, props[k]])),
   );
+  const labelForAria = $derived(typeof props.label === 'string' ? props.label : props.label?.text);
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, disabled: fieldDisabled })}
+  {#snippet children({ value, onChange, disabled: fieldDisabled, describedBy, labelledById })}
     <Slider
       {...(value !== undefined ? { value: value as NonNullable<SliderProps['value']> } : {})}
       {...(control.min !== undefined ? { min: control.min as NonNullable<SliderProps['min']> } : {})}
@@ -54,6 +55,8 @@
       {...(control.vertical !== undefined ? { vertical: control.vertical as NonNullable<SliderProps['vertical']> } : {})}
       {...(control.tooltipVisible !== undefined ? { tooltipVisible: control.tooltipVisible as NonNullable<SliderProps['tooltipVisible']> } : {})}
       {...(control.tipFormatter !== undefined ? { tipFormatter: control.tipFormatter as NonNullable<SliderProps['tipFormatter']> } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}

@@ -31,7 +31,7 @@
 </script>
 
 <Field {...fieldProps}>
-  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy })}
+  {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <AutoComplete
       {...(value !== undefined ? { value: value as NonNullable<AutoCompleteProps['value']> } : {})}
       {...(control.data !== undefined ? { data: control.data as NonNullable<AutoCompleteProps['data']> } : {})}
@@ -42,8 +42,10 @@
       {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<AutoCompleteProps['showClear']> } : {})}
       {...(control.onSearch !== undefined ? { onSearch: control.onSearch as NonNullable<AutoCompleteProps['onSearch']> } : {})}
       {...(control.loading !== undefined ? { loading: control.loading as NonNullable<AutoCompleteProps['loading']> } : {})}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
+      {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
+      {...(required ? { ariaRequired: true } : {})}
       onChange={(v) => onChange(v)}
     />
   {/snippet}
