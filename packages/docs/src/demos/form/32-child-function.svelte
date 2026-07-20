@@ -1,7 +1,6 @@
 <script lang="ts">
-  // 带参 snippet 写法：Form 的 children snippet 可带参 { formState, formApi }，在 Form 结构
-  // 内部直接拿到实时的 formState / formApi / values。等价于 Semi 的 render props /
-  // child render function / props.component 三种写法（Svelte 用带参 snippet 统一表达）。
+  // 通过 child render function：Form 的 children 是带参 snippet，return 出所有表单控件
+  //（对齐 Semi child render function）。入参 { formState, values, formApi }。
   import { Form } from '@chenzy-design/svelte';
 </script>
 
@@ -19,6 +18,6 @@
     />
     <Form.Input field="UserName" label="用户名" style="width: 80px" />
     <Form.Input field="Password" label="密码" style="width: 176px" />
-    <code style="margin-top: 24px">{JSON.stringify(formState)}</code>
+    <code style="margin-top: 24px">{JSON.stringify(formState.values)}</code>
   {/snippet}
 </Form>
