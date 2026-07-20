@@ -19,7 +19,7 @@
 <div style="display: flex; flex-direction: column; gap: 12px;">
   <div style="display: flex; align-items: center; gap: 8px;">
     <span>展示调整块</span>
-    <Switch value={showResizeBox} onChange={(v) => (showResizeBox = v)} />
+    <Switch checked={showResizeBox} onChange={(v) => (showResizeBox = v)} />
   </div>
   <Cropper
     bind:this={cropper}

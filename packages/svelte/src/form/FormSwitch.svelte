@@ -33,7 +33,7 @@
 <Field {...fieldProps}>
   {#snippet children({ value, onChange, status, disabled: fieldDisabled, describedBy, errorMessageId, labelledById, required })}
     <Switch
-      {...(typeof value === 'boolean' ? { value } : {})}
+      {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.size !== undefined ? { size: control.size as NonNullable<SwitchProps['size']> } : {})}
       {...(control.loading !== undefined ? { loading: control.loading as NonNullable<SwitchProps['loading']> } : {})}

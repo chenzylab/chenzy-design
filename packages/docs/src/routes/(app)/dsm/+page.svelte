@@ -318,7 +318,7 @@
               <Tag color="green">Success</Tag>
               <Tag color="red">Danger</Tag>
               <Badge count={5}><Avatar size="small">CD</Avatar></Badge>
-              <Switch value={demoSwitch} onChange={(c) => (demoSwitch = c)} />
+              <Switch checked={demoSwitch} onChange={(c) => (demoSwitch = c)} />
               <Checkbox bind:checked={demoChecked}>选择</Checkbox>
             </div>
             <div class="prow">
@@ -384,14 +384,14 @@
             </div>
           {:else if previewKey === 'switch'}
             <div class="prow">
-              <Switch value={demoSwitch} onChange={(c) => (demoSwitch = c)} />
-              <Switch value />
+              <Switch checked={demoSwitch} onChange={(c) => (demoSwitch = c)} />
+              <Switch checked />
               <Switch disabled />
-              <Switch value disabled />
+              <Switch checked disabled />
             </div>
             <div class="prow">
-              <Switch size="small" value />
-              <Switch size="large" value />
+              <Switch size="small" checked />
+              <Switch size="large" checked />
             </div>
           {:else if previewKey === 'tag'}
             <div class="prow">

@@ -6,7 +6,7 @@
 </script>
 
 <!-- loading 为 true 时内容区显示骨架占位 -->
-<Switch value={!loading} onChange={(v) => (loading = !v)} />
+<Switch checked={!loading} onChange={(v) => (loading = !v)} />
 <br />
 <br />
 <Card style="max-width: 360px;" {loading}>

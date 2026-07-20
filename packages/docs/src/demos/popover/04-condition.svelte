@@ -7,7 +7,7 @@
 
 <Space align="center">
   <span>condition</span>
-  <Switch value={enabled} onChange={(v) => (enabled = v)} />
+  <Switch checked={enabled} onChange={(v) => (enabled = v)} />
   <Popover {content} condition={enabled}>
     <Button>Hover me</Button>
   </Popover>

@@ -60,11 +60,20 @@ export const switchTokens = {
   'switch-unchecked-text-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '关态文案色', usage: '关闭态文案颜色（$color-switch_unchecked-text-default）' },
 
   // —— loading spin ——
+  // 对齐 Semi：loading 复用 <Spin> 组件（渐变弧 SVG），非自绘 border 圈。
+  // 背景/尺寸/位移/颜色逐条对齐 variables.scss。
   'switch-bg-spin-off': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关态加载背景', usage: '已关闭加载态背景（$color-switch_spin_unchecked-bg-default）' },
   'switch-bg-spin-on': { value: 'var(--cd-color-success-hover)', category: 'color', label: '开态加载背景', usage: '已开启加载态背景（$color-switch_spin_checked-bg-default）' },
-  'switch-spin-track': { value: 'var(--cd-color-fill-1)', category: 'color', label: '加载轨道色', usage: '加载 spinner 轨道颜色' },
-  'switch-spin-indicator': { value: 'var(--cd-color-white)', category: 'color', label: '加载指示色', usage: '加载 spinner 指示颜色（$color-switch_loading_spin-default）' },
-  'switch-spin-duration': { value: 'var(--cd-motion-duration-slow)', category: 'animation', label: '加载动画时长', usage: '加载 spinner 旋转时长' },
+  'switch-spin-indicator': { value: 'var(--cd-color-white)', category: 'color', label: '加载指示色', usage: '加载 spinner 颜色，恒白（$color-switch_loading_spin-default）' },
+  'switch-spin-size': { value: '18px', category: 'width', label: '加载图标尺寸', usage: 'spin SVG 宽高 - 默认（$width-switch_spin-default）' },
+  'switch-spin-size-small': { value: '10px', category: 'width', label: '小尺寸加载图标尺寸', usage: 'spin SVG 宽高 - 小尺寸（$width-switch_spin-small）' },
+  'switch-spin-size-large': { value: '28px', category: 'width', label: '大尺寸加载图标尺寸', usage: 'spin SVG 宽高 - 大尺寸（$width-switch_spin-large）' },
+  'switch-spin-tx-off': { value: '2px', category: 'spacing', label: '关态加载位移', usage: 'spin 位移 - 关态默认（$spacing-switch_spin_unchecked-translateX）' },
+  'switch-spin-tx-on': { value: '16px', category: 'spacing', label: '开态加载位移', usage: 'spin 位移 - 开态默认（$spacing-switch_spin_checked-translateX）' },
+  'switch-spin-tx-off-large': { value: '2px', category: 'spacing', label: '大尺寸关态加载位移', usage: 'spin 位移 - 关态大尺寸（$spacing-switch_spin_unchecked_large-translateX）' },
+  'switch-spin-tx-on-large': { value: '22px', category: 'spacing', label: '大尺寸开态加载位移', usage: 'spin 位移 - 开态大尺寸（$spacing-switch_spin_checked_large-translateX）' },
+  'switch-spin-tx-off-small': { value: '2px', category: 'spacing', label: '小尺寸关态加载位移', usage: 'spin 位移 - 关态小尺寸（$spacing-switch_spin_unchecked_small-translateX）' },
+  'switch-spin-tx-on-small': { value: '10px', category: 'spacing', label: '小尺寸开态加载位移', usage: 'spin 位移 - 开态小尺寸（$spacing-switch_spin_checked_small-translateX）' },
 
   // —— 聚焦轮廓（对齐 $color-switch_primary-outline-focus / $width-switch-outline） ——
   'switch-outline-focus': { value: 'var(--cd-color-primary-light-active)', category: 'color', label: '聚焦轮廓色', usage: '开关聚焦轮廓颜色' },

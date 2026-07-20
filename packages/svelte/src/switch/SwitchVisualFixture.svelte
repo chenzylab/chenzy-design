@@ -12,7 +12,7 @@
     data-visual-root
     style="display:inline-flex; gap:16px; padding:16px; background:#fff; align-items:center;"
   >
-    <Switch value={true} aria-label="on" />
-    <Switch value={false} aria-label="off" />
+    <Switch checked={true} aria-label="on" />
+    <Switch checked={false} aria-label="off" />
   </div>
 </LocaleProvider>

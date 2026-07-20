@@ -30,6 +30,10 @@
     ariaLabel?: string;
     /** 关联组的可见标题元素 id（优先于 ariaLabel 体现可访问名）。 */
     ariaLabelledby?: string;
+    /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
+    style?: string;
+    /** 根容器自定义类名（与内置 cd-checkboxGroup 并存，对齐 Semi className）。 */
+    class?: string;
   }
 
   let {
@@ -45,6 +49,8 @@
     id,
     ariaLabel,
     ariaLabelledby,
+    style,
+    class: className,
   }: Props = $props();
 
   const isControlled = $derived(value !== undefined);
@@ -91,6 +97,7 @@
       `cd-checkboxGroup-${direction}`,
       isCardType && `cd-checkboxGroup-${direction}-cardType`,
       isPureCardType && `cd-checkboxGroup-${direction}-pureCardType`,
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -99,6 +106,7 @@
 
 <div
   class={cls}
+  {style}
   {id}
   role="list"
   aria-labelledby={ariaLabelledby}

@@ -17,9 +17,9 @@ describe('Switch a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('选中：value=true → aria-checked=true', async () => {
+  it('选中：checked=true → aria-checked=true', async () => {
     const { container } = renderWithLocale(Switch, {
-      props: { 'aria-label':'Wifi', value: true },
+      props: { 'aria-label':'Wifi', checked: true },
     });
     const sw = container.querySelector('[role="switch"]');
     expect(sw?.getAttribute('aria-checked')).toBe('true');

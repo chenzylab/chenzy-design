@@ -9,19 +9,20 @@
     token 名值对齐 Semi variables.scss。
 
   死循环红线：
-    - 受控（value=）：父持有 value，仅经 onChange 上抛，绝不回写 prop。
+    - 受控（checked=）：父持有 checked，仅经 onChange 上抛，绝不回写 prop。
     - on / activeText / cls 均为纯 $derived。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import Spin from '../spin/Spin.svelte';
 
   type Size = 'small' | 'default' | 'large';
 
   interface Props {
-    /** 受控值；提供则为受控。 */
-    value?: boolean;
-    /** 非受控初始值（对齐 Semi defaultChecked）。 */
-    defaultValue?: boolean;
+    /** 受控选中态；提供则为受控（对齐 Semi checked）。 */
+    checked?: boolean;
+    /** 非受控初始选中态（对齐 Semi defaultChecked）。 */
+    defaultChecked?: boolean;
     size?: Size;
     disabled?: boolean;
     loading?: boolean;
@@ -47,8 +48,8 @@
   }
 
   let {
-    value,
-    defaultValue = false,
+    checked,
+    defaultChecked = false,
     size = 'default',
     disabled = false,
     loading = false,
@@ -68,13 +69,13 @@
     'aria-required': ariaRequired,
   }: Props = $props();
 
-  const isControlled = $derived(value !== undefined);
-  // 非受控初始态：仅取 defaultValue 首值播种，后续由内部 toggle 维护（受控则读 value）。
+  const isControlled = $derived(checked !== undefined);
+  // 非受控初始态：仅取 defaultChecked 首值播种，后续由内部 toggle 维护（受控则读 checked）。
   let inner = $state(getInitialValue());
-  const on = $derived(isControlled ? !!value : inner);
+  const on = $derived(isControlled ? !!checked : inner);
 
   function getInitialValue(): boolean {
-    return defaultValue;
+    return defaultChecked;
   }
 
   const interactable = $derived(!disabled && !loading);
@@ -82,7 +83,7 @@
   function toggle(event: Event) {
     if (!interactable) return;
     const next = !on;
-    // 受控：父持有 value，仅 onChange 上抛；非受控：同步内部态。
+    // 受控：父持有 checked，仅 onChange 上抛；非受控：同步内部态。
     if (!isControlled) inner = next;
     onChange?.(next, event);
   }
@@ -133,7 +134,9 @@
     </span>
   {/if}
   {#if loading}
-    <span class="cd-switch-loading-spin" aria-hidden="true"></span>
+    <!-- 对齐 Semi：loading 复用 <Spin>（渐变弧 SVG），非自绘 border 圈。
+         SVG 尺寸/位移由 .cd-switch-loading-spin 作用域 CSS 控制。 -->
+    <Spin wrapperClassName="cd-switch-loading-spin" />
   {:else}
     <span class="cd-switch-knob" aria-hidden="true"></span>
   {/if}
@@ -260,56 +263,67 @@
     font-size: var(--cd-switch-text-font-size-large);
   }
 
-  /* loading spin：与 knob 互斥切换，对齐 Semi。 */
+  /* loading：复用 <Spin>（渐变弧 SVG），对齐 Semi 的 <Spin wrapperClassName>。
+     背景切浅灰/浅绿；Spin 根 .cd-switch-loading-spin 绝对定位到 knob 位置、
+     translateX 位移；SVG 恒白、尺寸对齐 Semi spin 宽度。 */
   .cd-switch-loading {
     background: var(--cd-switch-bg-spin-off);
   }
   .cd-switch-loading.cd-switch-checked {
     background: var(--cd-switch-bg-spin-on);
   }
-  .cd-switch-loading-spin {
+  /* :global —— Spin 根节点由子组件渲染，作用域选择器不覆盖，故用 :global 精确限定在 .cd-switch 内。
+     Spin 根盒子取消默认尺寸约束（收缩到内容），改由 SVG 尺寸决定；绝对定位到 knob 位置。 */
+  .cd-switch :global(.cd-switch-loading-spin) {
     position: absolute;
-    inset-block-start: var(--cd-switch-knob-padding);
+    inset-block-start: 50%;
     inset-inline-start: 0;
-    inline-size: var(--cd-switch-knob-size);
-    block-size: var(--cd-switch-knob-size);
-    border: 2px solid var(--cd-switch-spin-track);
-    border-block-start-color: var(--cd-switch-spin-indicator);
-    border-radius: 50%;
-    transform: translateX(var(--cd-switch-knob-tx-off));
-    animation: cd-switch-spin var(--cd-switch-spin-duration) linear infinite;
+    inline-size: auto;
+    block-size: auto;
+    transform: translate(var(--cd-switch-spin-tx-off), -50%);
+    transition: transform var(--cd-switch-transition-duration) var(--cd-switch-transition-easing);
   }
-  .cd-switch-checked .cd-switch-loading-spin {
-    transform: translateX(var(--cd-switch-knob-tx-on));
+  /* spinner 恒白：覆盖 Spin wrapper 的默认 color（currentColor 继承源，对齐 Semi）。
+     wrapper 从 absolute 改回 static，让 Spin 根盒子随 SVG 内容收缩，避免相对 0 尺寸塌陷。 */
+  .cd-switch :global(.cd-switch-loading-spin .cd-spin-wrapper) {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    transform: none;
+    color: var(--cd-switch-spin-indicator);
   }
-  .cd-switch-large .cd-switch-loading-spin {
-    inline-size: var(--cd-switch-knob-size-large);
-    block-size: var(--cd-switch-knob-size-large);
-    transform: translateX(var(--cd-switch-knob-tx-off-large));
+  .cd-switch.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(var(--cd-switch-spin-tx-on), -50%);
   }
-  .cd-switch-large.cd-switch-checked .cd-switch-loading-spin {
-    transform: translateX(var(--cd-switch-knob-tx-on-large));
+  .cd-switch :global(.cd-switch-loading-spin svg) {
+    inline-size: var(--cd-switch-spin-size);
+    block-size: var(--cd-switch-spin-size);
   }
-  .cd-switch-small .cd-switch-loading-spin {
-    inline-size: var(--cd-switch-knob-size-small);
-    block-size: var(--cd-switch-knob-size-small);
-    transform: translateX(var(--cd-switch-knob-tx-off-small));
+  .cd-switch-large :global(.cd-switch-loading-spin) {
+    transform: translate(var(--cd-switch-spin-tx-off-large), -50%);
   }
-  .cd-switch-small.cd-switch-checked .cd-switch-loading-spin {
-    transform: translateX(var(--cd-switch-knob-tx-on-small));
+  .cd-switch-large.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(var(--cd-switch-spin-tx-on-large), -50%);
+  }
+  .cd-switch-large :global(.cd-switch-loading-spin svg) {
+    inline-size: var(--cd-switch-spin-size-large);
+    block-size: var(--cd-switch-spin-size-large);
+  }
+  .cd-switch-small :global(.cd-switch-loading-spin) {
+    transform: translate(var(--cd-switch-spin-tx-off-small), -50%);
+  }
+  .cd-switch-small.cd-switch-checked :global(.cd-switch-loading-spin) {
+    transform: translate(var(--cd-switch-spin-tx-on-small), -50%);
+  }
+  .cd-switch-small :global(.cd-switch-loading-spin svg) {
+    inline-size: var(--cd-switch-spin-size-small);
+    block-size: var(--cd-switch-spin-size-small);
   }
 
-  @keyframes cd-switch-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
     .cd-switch,
-    .cd-switch-knob,
-    .cd-switch-loading-spin {
+    .cd-switch-knob {
       transition: none;
-      animation: none;
     }
   }
 </style>

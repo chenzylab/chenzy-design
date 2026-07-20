@@ -16,7 +16,7 @@
 </script>
 
 <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
-  <Switch value={loading} onChange={(v) => (loading = v)} />
+  <Switch checked={loading} onChange={(v) => (loading = v)} />
   <Text type="tertiary">显示加载内容</Text>
 </div>
 
