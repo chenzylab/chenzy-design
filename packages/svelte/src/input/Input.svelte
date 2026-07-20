@@ -7,6 +7,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { tick } from 'svelte';
+  import { truncateValueByLength, computeVisibleMinLength } from '@chenzy-design/core';
   import { IconClear, IconEyeOpened, IconEyeClosedSolid } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { getInputGroupContext } from './context.js';
@@ -25,6 +26,11 @@
     /** 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear）。 */
     showClear?: boolean;
     maxLength?: number;
+    /**
+     * 最小长度（对齐 Semi minLength）：下发原生 minlength 触发浏览器校验。
+     * 配合 getValueLength 时按可见长度换算（见 computeVisibleMinLength）。
+     */
+    minLength?: number;
     /** 校验状态（对齐 Semi validateStatus，仅影响展示样式）。 */
     validateStatus?: ValidateStatus;
     /** 输入框模式，password 时启用密码显隐按钮（对齐 Semi mode）。 */
@@ -108,6 +114,7 @@
     placeholder,
     showClear = false,
     maxLength,
+    minLength,
     validateStatus = 'default',
     mode,
     type = 'text',
@@ -160,6 +167,28 @@
   let inner = $state(getInitialValue());
   const current = $derived(isControlled ? (value ?? '') : inner);
 
+  // 命令式回写 DOM value（替代声明式 value={current}）：仅当 current 与 DOM 实际值不一致时才赋值。
+  // 目的：用户键入后 DOM 已是最新、current 亦经 handleInput/回流同步 → 二者相等 → 不写 DOM →
+  //       原生 dirty 标志保持 → minlength 的 tooShort 等约束校验才能生效（对齐 Semi 用 state.value
+  //       + React "值相等不写 DOM" 的效果）。外部程序化改 value → 二者不等 → 回写。
+  // 读 current 建立响应依赖；inputEl 经 $state 绑定，mount 后此 effect 亦负责首帧值写入。
+  $effect(() => {
+    const v = current;
+    if (inputEl && inputEl.value !== v) {
+      inputEl.value = v;
+    }
+  });
+
+  // 下发原生 minlength：无 getValueLength 时直接用 minLength；
+  // 有 getValueLength 时按可见长度换算，使浏览器校验按可见长度触发（对齐 Semi handleVisibleMinLength）。
+  const effectiveMinLength = $derived(
+    minLength == null
+      ? undefined
+      : getValueLength
+        ? computeVisibleMinLength({ value: current, minLength, getValueLength })
+        : minLength,
+  );
+
   function getInitialValue(): string {
     return defaultValue;
   }
@@ -177,7 +206,16 @@
   }
 
   function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
-    const next = e.currentTarget.value;
+    // 自定义 getValueLength + maxLength：原生 maxlength 按 UTF-16 计不适用，
+    // 在 JS 层按可见长度截断超长输入（对齐 Semi handleVisibleMaxLength）。
+    // IME 组合期间不截断（避免打断拼音输入），compositionend 时再收尾。
+    const raw = e.currentTarget.value;
+    const next =
+      getValueLength && maxLength != null && !(composition && composing)
+        ? truncateValueByLength({ value: raw, maxLength, getValueLength })
+        : raw;
+    // 截断发生时回写 DOM，保持输入框显示与受控值一致。
+    if (next !== raw && e.currentTarget.value !== next) e.currentTarget.value = next;
     setValue(next);
     onInput?.(next, e);
     // composition 缓冲仅在 composition=true 时生效。
@@ -197,7 +235,13 @@
   function handleCompositionEnd(e: CompositionEvent & { currentTarget: HTMLInputElement }) {
     composing = false;
     if (composition) {
-      const next = e.currentTarget.value;
+      const raw = e.currentTarget.value;
+      // IME 确认后按可见长度收尾截断（对齐 Semi handleCompositionEnd）。
+      const next =
+        getValueLength && maxLength != null
+          ? truncateValueByLength({ value: raw, maxLength, getValueLength })
+          : raw;
+      if (next !== raw && e.currentTarget.value !== next) e.currentTarget.value = next;
       setValue(next);
       onChange?.(next, e);
     }
@@ -339,7 +383,7 @@
     {readonly}
     {placeholder}
     maxlength={getValueLength ? undefined : maxLength}
-    value={current}
+    minlength={effectiveMinLength}
     aria-label={ariaLabel}
     aria-labelledby={ariaLabelledby}
     aria-describedby={ariaDescribedby}
