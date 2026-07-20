@@ -164,6 +164,9 @@
 
   let composing = $state(false);
   let revealed = $state(false);
+  // 悬浮 / 聚焦态（对齐 Semi isHovering / isFocus）：清除按钮仅在有内容且 hover 或 focus 时显示。
+  let isHovering = $state(false);
+  let isFocus = $state(false);
   const inputType = $derived(mode === 'password' && !revealed ? 'password' : type);
 
   function setValue(next: string) {
@@ -204,7 +207,10 @@
     onKeyDown?.(e);
   }
 
+  // clear 用 mousedown（对齐 Semi handleClear onMouseDown，fix issue 1203）：
+  // 清除按钮仅在 hover/focus 时可见，用 click 会因 blur 先触发按钮消失而丢事件，故用 mousedown。
   function clear(e: MouseEvent) {
+    e.preventDefault(); // 阻止 mousedown 抢焦点，保持输入框聚焦
     setValue('');
     onClear?.(e);
     onChange?.('', e);
@@ -215,7 +221,19 @@
     revealed = !revealed;
   }
 
-  const allowClear = $derived(showClear && !disabled && !readonly && current.length > 0);
+  function handleFocus(e: FocusEvent) {
+    isFocus = true;
+    onFocus?.(e);
+  }
+  function handleBlur(e: FocusEvent) {
+    isFocus = false;
+    onBlur?.(e);
+  }
+
+  // 有内容 + showClear + 非禁用 + (聚焦 或 悬浮)（对齐 Semi isAllowClear）。
+  const allowClear = $derived(
+    current.length > 0 && showClear && !disabled && (isFocus || isHovering),
+  );
   const showModeBtn = $derived(mode === 'password' && !disabled);
   const isError = $derived(validateStatus === 'error');
 
@@ -282,7 +300,15 @@
   });
 </script>
 
-<div class={wrapperCls} {style} aria-invalid={isError || undefined}>
+<!-- wrapper 严格对齐 Semi：<div> 无 role，仅承载 mouseenter/leave 追踪 hover（清除按钮显隐用）。 -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class={wrapperCls}
+  {style}
+  aria-invalid={isError || undefined}
+  onmouseenter={() => (isHovering = true)}
+  onmouseleave={() => (isHovering = false)}
+>
   {#if addonBefore != null}
     <div class="cd-input-prepend">
       {#if addonBeforeSnippet}{@render addonBeforeSnippet()}{:else}{addonBefore}{/if}
@@ -324,23 +350,21 @@
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
     oncompositionupdate={onCompositionUpdate}
-    onfocus={onFocus}
-    onblur={onBlur}
+    onfocus={handleFocus}
+    onblur={handleBlur}
   />
 
   {#if allowClear}
-    <button
-      type="button"
-      class="cd-input-clearbtn"
-      aria-label={loc().t('Input.clear')}
-      onclick={clear}
-    >
+    <!-- clearbtn 严格对齐 Semi：无 aria-label/role/tabindex 的 <div>，onmousedown 触发（fix issue 1203）。 -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="cd-input-clearbtn" onmousedown={clear}>
       {#if clearIcon}
         {@render clearIcon()}
       {:else}
         <IconClear />
       {/if}
-    </button>
+    </div>
   {/if}
 
   {#if suffix}
@@ -350,19 +374,23 @@
   {/if}
 
   {#if showModeBtn}
-    <button
-      type="button"
+    <!-- modebtn 严格对齐 Semi：div role=button + tabindex + aria-label（Show/Hidden password），无 aria-pressed。 -->
+    <div
+      role="button"
+      tabindex="0"
       class="cd-input-modebtn"
       aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
-      aria-pressed={revealed}
       onclick={toggleReveal}
+      onkeypress={(e) => {
+        if (e.key === 'Enter') toggleReveal();
+      }}
     >
       {#if revealed}
         <IconEyeOpened />
       {:else}
         <IconEyeClosedSolid />
       {/if}
-    </button>
+    </div>
   {/if}
 
   {#if addonAfter != null}
@@ -588,8 +616,10 @@
   .cd-input-modebtn:active {
     color: var(--cd-color-input-icon-active);
   }
-  .cd-input-clearbtn:focus-visible,
+  /* 仅 modebtn 可聚焦（div role=button tabindex=0）；clearbtn 无 tabindex 不可聚焦，
+     故 focus-visible 只作用于 modebtn（对齐 Semi：clearbtn 是无 tabindex 的 div）。 */
   .cd-input-modebtn:focus-visible {
+    border-radius: var(--cd-radius-input-wrapper);
     outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
     outline-offset: var(--cd-width-input-icon-outlineoffset);
   }

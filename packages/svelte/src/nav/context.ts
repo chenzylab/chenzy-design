@@ -39,6 +39,12 @@ export interface NavContext {
   readonly getPopupContainer: (() => HTMLElement | null | undefined) | undefined;
   /** 自定义展开箭头图标。 */
   readonly expandIcon: Snippet | undefined;
+  /**
+   * 数据驱动的项图标渲染钩子：项自身未设 icon 时，用它按 item 渲染前置图标。
+   * 用于 items 大量、图标随 item 变化的场景（如站点侧边栏按组件名取图标）。
+   * 项自带 icon 优先于此钩子。
+   */
+  readonly renderIcon: Snippet<[NavItemDef]> | undefined;
   /** 自定义导航项外层包裹（payload 对齐 Semi {itemElement,isSubNav,isInSubNav,props}）。 */
   readonly renderWrapper:
     | Snippet<

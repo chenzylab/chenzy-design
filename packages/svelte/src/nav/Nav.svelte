@@ -71,6 +71,11 @@
     toggleIconPosition?: 'left' | 'right';
     /** 自定义展开箭头图标。 */
     expandIcon?: Snippet;
+    /**
+     * 数据驱动的项图标渲染钩子（本库扩展，Semi 无）：项自身未设 icon 时按 item 渲染前置图标。
+     * 用于 items 大量、图标随 item 变化的场景（如站点侧边栏按组件名取图标）。项自带 icon 优先。
+     */
+    renderIcon?: Snippet<[NavItemDef]>;
     /** 子导航展开动画开关（默认 true）。对齐 Semi subNavMotion。 */
     subNavMotion?: boolean;
     /** 浮层子导航展开延迟 ms。对齐 Semi subNavOpenDelay。 */
@@ -136,6 +141,7 @@
     limitIndent = true,
     toggleIconPosition = 'right',
     expandIcon,
+    renderIcon,
     subNavMotion = true,
     subNavOpenDelay = 0,
     subNavCloseDelay = 100,
@@ -317,6 +323,9 @@
     },
     get expandIcon() {
       return expandIcon;
+    },
+    get renderIcon() {
+      return renderIcon;
     },
     get renderWrapper() {
       return renderWrapper;

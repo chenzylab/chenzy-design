@@ -1,6 +1,7 @@
 // TextArea a11y：原生 <textarea> + ariaLabel 可访问名；error 态 aria-invalid；
 // showClear 清除按钮 locale 可访问名。
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { fireEvent } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import TextArea from './TextArea.svelte';
 
@@ -24,7 +25,7 @@ describe('TextArea a11y', () => {
     await expectNoAxeViolations(container);
   });
 
-  it('showClear + showCount：清除按钮 locale 可访问名，无 axe violations', async () => {
+  it('showClear：清除按钮始终渲染，聚焦后才可见，严格对齐 Semi（无 aria-label 的 div）', async () => {
     const { container } = renderWithLocale(TextArea, {
       props: {
         ariaLabel: 'Comment',
@@ -34,11 +35,19 @@ describe('TextArea a11y', () => {
         maxLength: 100,
       },
     });
+    // 对齐 Semi textarea：clearbtn 始终渲染（showClear），用 hidden 类控制显隐；无 aria-label / role。
     const clearBtn = container.querySelector('.cd-input-clearbtn');
     expect(clearBtn).not.toBeNull();
-    const label = clearBtn?.getAttribute('aria-label');
-    expect(label).toBeTruthy();
-    expect(label).not.toBe('Textarea.clear');
+    expect(clearBtn?.getAttribute('aria-label')).toBeNull();
+    expect(clearBtn?.getAttribute('role')).toBeNull();
+    // 有内容但未 hover/focus 时带 hidden 类（不可见）。
+    expect(clearBtn?.classList.contains('cd-input-clearbtn-hidden')).toBe(true);
+    // 聚焦后移除 hidden 类（可见）。fireEvent.focus 正确触发 Svelte 事件并 flush。
+    const ta = container.querySelector('textarea')!;
+    await fireEvent.focus(ta);
+    expect(
+      container.querySelector('.cd-input-clearbtn')?.classList.contains('cd-input-clearbtn-hidden'),
+    ).toBe(false);
     await expectNoAxeViolations(container);
   });
 });

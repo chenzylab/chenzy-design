@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { Form } from './index.js';
-  import TextArea from '../textarea/TextArea.svelte';
+  import TextArea from '../input/TextArea.svelte';
 </script>
 
 <Form initValues={{ name: 'Ada', bio: '' }}>

@@ -110,9 +110,10 @@ export const meta = {
  * CardGroup — 对齐 Semi CardGroup。
  * 基于 Space（flex wrap）成组排布多个 Card；type='grid' 时卡片去圆角以 -1px 负边距拼接。
  */
+// 严格对齐 Semi：CardGroup 在 Semi 无独立文档页（属 Card 页），故不带 category、不单列侧边栏
+// （信息以 Card.subComponents 为准；无 category 即不进 build-components-json 的独立组件表）。
 export const cardGroupMeta = {
   name: 'CardGroup',
-  category: 'show',
   relatedTo: 'Card',
   semiEquivalent: 'CardGroup',
   description:

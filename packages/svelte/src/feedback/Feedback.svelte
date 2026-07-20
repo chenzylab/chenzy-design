@@ -17,7 +17,7 @@
   import type { Snippet } from 'svelte';
   import { Modal } from '../modal/index.js';
   import { SideSheet } from '../side-sheet/index.js';
-  import { TextArea } from '../textarea/index.js';
+  import { TextArea } from '../input/index.js';
   import { RadioGroup } from '../radio/index.js';
   import type { RadioChangeEvent } from '../radio/context.js';
   import { CheckboxGroup } from '../checkbox/index.js';

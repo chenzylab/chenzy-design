@@ -2,9 +2,10 @@
  * Machine-readable component metadata for AI/docs consumption.
  * IconButton 严格对齐 Semi iconButton：带图标的 Button 薄封装，icon/children/ariaLabel 均可选。
  */
+// 严格对齐 Semi：IconButton 在 Semi 无独立文档页（属 Icon/Button 的一部分），故不带 category、
+// 不作为独立组件进侧边栏（对齐 build-components-json isComponentMeta：无 category 即不单列）。
 export const meta = {
   name: 'IconButton',
-  category: 'basic',
   description: '带图标的 Button 薄封装（对齐 Semi iconButton）：icon 与 children(文字) 均可选，icon-only 只是无文字的分支。',
   stage: 'M1',
   semiEquivalent: 'IconButton',

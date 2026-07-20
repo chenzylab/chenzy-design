@@ -163,6 +163,9 @@
   }
 
   let composing = $state(false);
+  // 悬浮 / 聚焦态（对齐 Semi isHover / isFocus）：清除按钮仅在有内容且 hover 或 focus 时显示。
+  let isHovering = $state(false);
+  let isFocus = $state(false);
 
   // 计数：优先 getValueLength，否则字素长度（正确处理 emoji）。
   const count = $derived(getValueLength ? getValueLength(current) : [...current].length);
@@ -210,6 +213,8 @@
     onKeyDown?.(e);
   }
 
+  // clear 用 onclick（对齐 Semi textarea handleClear onClick）：textarea clearbtn 始终渲染、
+  // 用 hidden 类控制显隐，click 时按钮仍在 DOM 不丢事件。
   function clear(e: MouseEvent) {
     setValue('');
     onClear?.(e);
@@ -217,7 +222,19 @@
     taEl?.focus();
   }
 
-  const canClear = $derived(showClear && !disabled && !readonly && current.length > 0);
+  function handleFocus(e: FocusEvent) {
+    isFocus = true;
+    onFocus?.(e);
+  }
+  function handleBlur(e: FocusEvent) {
+    isFocus = false;
+    onBlur?.(e);
+  }
+
+  // 有内容 + showClear + 非禁用/只读 + (聚焦 或 悬浮)（对齐 Semi textarea isAllowClear）。
+  const canClear = $derived(
+    current.length > 0 && showClear && !disabled && !readonly && (isFocus || isHovering),
+  );
 
   const autosizeOn = $derived(autosize !== false);
   const minRows = $derived(typeof autosize === 'object' ? (autosize.minRows ?? rows) : rows);
@@ -404,7 +421,15 @@
   );
 </script>
 
-<div class={wrapperCls} {style} aria-invalid={isError || undefined}>
+<!-- wrapper 严格对齐 Semi：<div> 无 role，仅承载 mouseenter/leave 追踪 hover（清除按钮显隐用）。 -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class={wrapperCls}
+  {style}
+  aria-invalid={isError || undefined}
+  onmouseenter={() => (isHovering = true)}
+  onmouseleave={() => (isHovering = false)}
+>
   {#if showLineNumber}
     <div
       bind:this={lineNumberEl}
@@ -443,8 +468,8 @@
         oncompositionstart={handleCompositionStart}
         oncompositionend={handleCompositionEnd}
         oncompositionupdate={onCompositionUpdate}
-        onfocus={onFocus}
-        onblur={onBlur}
+        onfocus={handleFocus}
+        onblur={handleBlur}
       ></textarea>
     </div>
   {:else}
@@ -474,17 +499,18 @@
       oncompositionstart={handleCompositionStart}
       oncompositionend={handleCompositionEnd}
       oncompositionupdate={onCompositionUpdate}
-      onfocus={onFocus}
-      onblur={onBlur}
+      onfocus={handleFocus}
+      onblur={handleBlur}
     ></textarea>
   {/if}
 
   {#if showClear}
-    <button
-      type="button"
+    <!-- clearbtn 严格对齐 Semi textarea：<div> 无 aria-label，onclick 触发（始终渲染，用 hidden 类控制显隐）。 -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
       class="cd-input-clearbtn"
       class:cd-input-clearbtn-hidden={!canClear}
-      aria-label={loc().t('Textarea.clear')}
       onclick={clear}
     >
       {#if clearIcon}
@@ -492,7 +518,7 @@
       {:else}
         <IconClear />
       {/if}
-    </button>
+    </div>
   {/if}
 
   {#if showCounter}
@@ -678,10 +704,6 @@
   }
   .cd-input-clearbtn-hidden {
     visibility: hidden;
-  }
-  .cd-input-clearbtn:focus-visible {
-    outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
-    outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
 
   /* counter —— 对齐 Semi textarea-counter。 */

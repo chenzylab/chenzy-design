@@ -35,6 +35,7 @@ export const meta = {
     { name: 'tooltipHideDelay', type: 'number', default: 'undefined', desc: '折叠态 tooltip 隐藏延迟 ms' },
     { name: 'getPopupContainer', type: '() => HTMLElement', default: 'undefined', desc: '浮层挂载容器' },
     { name: 'renderWrapper', type: 'Snippet', default: 'undefined', desc: '自定义导航项外层包裹' },
+    { name: 'renderIcon', type: 'Snippet<[NavItemDef]>', default: 'undefined', desc: '数据驱动的项图标渲染钩子（本库扩展，Semi 无）：项未自带 icon 时按 item 渲染前置图标，用于 items 大量、图标随 item 变化的场景（如站点侧边栏按组件名取图标）。项自带 icon 优先' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根元素自定义内联样式' },
     { name: 'bodyStyle', type: 'string', default: 'undefined', desc: '导航项列表容器样式（对齐 Semi bodyStyle）' },

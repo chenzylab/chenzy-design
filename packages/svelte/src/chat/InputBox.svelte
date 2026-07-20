@@ -16,7 +16,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
   import Button from '../button/Button.svelte';
-  import TextArea from '../textarea/TextArea.svelte';
+  import TextArea from '../input/TextArea.svelte';
   import Tooltip from '../tooltip/Tooltip.svelte';
   import type { UploadFileItem } from '../upload/types.js';
   import type { RenderInputAreaProps } from './types.js';
