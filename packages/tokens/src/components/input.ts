@@ -133,20 +133,11 @@ export const inputTokens = {
   // —— other：按压放大（对齐 Semi transform token；归 other tab 对齐 Semi）——
   'transform-scale-input': { value: 'var(--cd-motion-scale-none)', category: 'other', label: '输入框放大', usage: '输入框-变大' },
 
-  // —— chenzy-design 组件实际消费的补充 token（Semi 无；Input/TextArea/Select/DatePicker 等共用）——
-  'input-padding-x': { value: 'var(--cd-spacing-input-paddingleft)', category: 'spacing', label: '输入框水平内边距', usage: '输入框水平内边距（组件消费）' },
-  'input-border': { value: 'var(--cd-color-input-default-border-default)', category: 'color', label: '输入框描边色', usage: '输入框描边颜色 - 默认（组件消费）' },
-  'input-radius': { value: 'var(--cd-radius-input-wrapper)', category: 'radius', label: '输入框圆角', usage: '输入框圆角（组件消费）' },
-  'input-color-bg': { value: 'var(--cd-color-input-default-bg-default)', category: 'color', label: '输入框背景色', usage: '输入框背景颜色 - 默认（组件消费）' },
-  'input-bg-hover': { value: 'var(--cd-color-input-default-bg-hover)', category: 'color', label: '输入框背景色', usage: '输入框背景颜色 - 悬浮（组件消费）' },
-  'input-color-text': { value: 'var(--cd-color-input-default-text-default)', category: 'color', label: '输入框文本色', usage: '输入框文本颜色（组件消费）' },
-  'input-color-placeholder': { value: 'var(--cd-color-input-placeholder-text-default)', category: 'color', label: '占位文字色', usage: '输入框占位文字颜色（组件消费）' },
-  'input-border-active': { value: 'var(--cd-color-input-default-border-focus)', category: 'color', label: '聚焦描边色', usage: '输入框描边颜色 - 聚焦（组件消费）' },
-  'input-border-warning': { value: 'var(--cd-color-input-warning-border-focus)', category: 'color', label: '警告描边色', usage: '输入框描边颜色 - 警告（组件消费）' },
-  'input-border-error': { value: 'var(--cd-color-input-danger-border-focus)', category: 'color', label: '错误描边色', usage: '输入框描边颜色 - 错误（组件消费）' },
-  'input-font-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '输入框字号', usage: '输入框文字字号（组件消费）' },
-  // InputNumber 步进器补充 token 已迁至 components/input-number.ts（组件消费，Semi inputNumber）。
-  // InputGroup 严格对齐 Semi 后不再自造 inputgroup-* 中间层：分隔线直引
+  // 说明：Semi input 全部 token 一一镜像于此（variables.scss + animation.scss）。Semi 无组件级
+  //   中间层以外的「便利别名」，故本库亦不设 input-padding-x / input-border 等自造 token——
+  //   消费方（DatePicker/TreeSelect/TimePicker/Form 等）直接引用上面对齐 Semi 的组件级 token 或全局变量。
+  // InputNumber 步进器补充 token 见 components/input-number.ts（组件消费，Semi inputNumber）。
+  // InputGroup 严格对齐 Semi 后不设 inputgroup-* 中间层：分隔线直引
   //   --cd-color-input-group-border-default / --cd-width-input-group-pseudo-border（Semi 同名），
   //   首尾圆角直引 --cd-radius-input-wrapper，标签间距用 --cd-spacing-base-tight。
 } satisfies TokenGroup;

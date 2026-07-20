@@ -1,39 +1,93 @@
 <script lang="ts">
+  import type { Component } from 'svelte';
+  import * as IconsLab from '@chenzy-design/icons-lab';
   import { componentIcons, categoryColor } from '$lib/component-icons';
 
-  // name：lowercase 组件名；category：分类（决定配色）
-  const { name, category }: { name: string; category: string } = $props();
+  // name：lowercase 组件名（路由/配色/别名键）；displayName：原始驼峰组件名（图标名匹配，
+  // 如 InputNumber → IconInputNumber，避免 lowercase 丢驼峰导致匹配失败）。
+  const {
+    name,
+    displayName,
+    category,
+  }: { name: string; displayName?: string; category: string } = $props();
 
-  const path = $derived(componentIcons[name] ?? componentIcons._fallback);
-  const color = $derived(categoryColor[category] ?? categoryColor._default);
+  // 组件名 → icons-lab 具名图标（对齐 Semi 官网侧边栏彩色组件图标 @douyinfe/semi-icons-lab）。
+  // 多数同名（input → IconInput）；少数组件名与图标名不一致的走别名表。
+  // 别名：组件名 → icons-lab 现有图标名。优先复用 icons-lab 已有图标（对齐 Semi 官网做法：
+  // 官网也复用，如 HotKeys 用齿轮 = IconConfig）；仅 icons-lab 确无对应的才新建专属图标。
+  const alias: Record<string, string> = {
+    colorpicker: 'ColorPlatte',
+    configprovider: 'Config',
+    markdownrender: 'Markdown',
+    nav: 'Navigation',
+    overflowlist: 'Overflow',
+    localeprovider: 'LocaleProvider',
+    inputgroup: 'Input',
+    textarea: 'Input',
+    hotkeys: 'Config', // Semi 官网 HotKeys 用齿轮图标 = IconConfig（复用，对齐 Semi）
+    autocomplete: 'Autocomplete', // 图标名非驼峰
+    pincode: 'Pincode', // 图标名非驼峰
+    resizable: 'Steps', // Semi content/basic/resizable frontmatter icon: doc-steps（复用 Steps 图标）
+  };
+
+  const labIcons = IconsLab as unknown as Record<string, Component>;
+
+  // 解析出对应的 icons-lab 具名图标组件：先别名表（lowercase 键），再用原始驼峰组件名同名匹配。
+  const LabIcon = $derived.by<Component | undefined>(() => {
+    const key = alias[name] ?? displayName ?? name.charAt(0).toUpperCase() + name.slice(1);
+    return labIcons[`Icon${key}`];
+  });
+
+  // fallback：icons-lab 无对应（多为本库特有组件）时用手绘 path + 分类配色。
+  const fallbackPath = $derived(componentIcons[name] ?? componentIcons._fallback);
+  const fallbackColor = $derived(categoryColor[category] ?? categoryColor._default);
 </script>
 
-<span class="sidebar-icon" style:--icon-color={color} aria-hidden="true">
-  <!-- fill/stroke 设在 <svg> 上由子元素继承；个别元素可用 fill="currentColor" 等覆盖 -->
-  <svg
-    viewBox="0 0 24 24"
-    width="16"
-    height="16"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    {@html path}
-  </svg>
-</span>
+{#if LabIcon}
+  <!-- icons-lab 彩色具名图标（自带色，对齐 Semi 官网侧边栏）。Semi docs 侧栏图标为 24px（extra-large）。 -->
+  <span class="sidebar-icon-lab" aria-hidden="true">
+    <LabIcon size="extra-large" />
+  </span>
+{:else}
+  <!-- fallback：本库特有组件无 icons-lab 图标，用手绘 path + 分类配色。 -->
+  <span class="sidebar-icon" style:--icon-color={fallbackColor} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      {@html fallbackPath}
+    </svg>
+  </span>
+{/if}
 
 <style>
+  .sidebar-icon-lab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    /* icons-lab 图标 font-size 驱动尺寸；extra-large 档 = 24px，对齐 Semi docs 侧栏图标。 */
+    font-size: 24px;
+  }
+  .sidebar-icon-lab :global(svg) {
+    display: block;
+  }
+  /* fallback 手绘图标：严格对齐 Semi Nav（图标无背景块，直接着分类色）；尺寸 24px 对齐 Semi docs。 */
   .sidebar-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--icon-color) 14%, transparent);
     color: var(--icon-color);
   }
   .sidebar-icon :global(svg) {

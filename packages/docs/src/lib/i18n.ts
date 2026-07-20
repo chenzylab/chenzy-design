@@ -14,14 +14,15 @@ const dict: Dict = {
   // 侧栏分组
   'group.start': { zh: '开始', en: 'Getting Started' },
   'group.experience': { zh: '体验增强', en: 'Experience' },
-  'cat.ai': { zh: 'AI 组件', en: 'AI' },
+  // 分类文案严格对齐 Semi 官网（src/utils/category.js：text/textUs）。
+  'cat.ai': { zh: 'AI 组件', en: 'AI Component' },
   'cat.basic': { zh: '基础', en: 'Basic' },
   'cat.plus': { zh: 'Plus 组件', en: 'Plus' },
-  'cat.input': { zh: '输入', en: 'Input' },
-  'cat.navigation': { zh: '导航', en: 'Navigation' },
-  'cat.show': { zh: '展示', en: 'Show' },
-  'cat.feedback': { zh: '反馈', en: 'Feedback' },
-  'cat.other': { zh: '其他', en: 'Others' },
+  'cat.input': { zh: '输入类', en: 'Input' },
+  'cat.navigation': { zh: '导航类', en: 'Navigation' },
+  'cat.show': { zh: '展示类', en: 'show' },
+  'cat.feedback': { zh: '反馈类', en: 'Feedback' },
+  'cat.other': { zh: '其他', en: 'Other' },
 
   // 组件详情页
   'tab.api': { zh: 'API 文档', en: 'API' },

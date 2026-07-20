@@ -95,7 +95,9 @@ const components = [
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath
   // （真数组路径），实测 13.22 KB。预算按实测校准，含少量余量。
   ['form', '{ FormField, FormInput, FieldArray }', '13.5 KB'],
-  ['input', '{ Input, InputGroup }', '5.5 KB'],
+  // TextArea 迁入 input/ 目录、与 Input/InputGroup 同为 input 条目导出（对齐 Semi 目录结构，
+  // 原独立 textarea 条目随目录迁移移除）。三者共享 input.scss token/locale，合并测量。
+  ['input', '{ Input, InputGroup, TextArea }', '9 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
   ['radio', '{ Radio, RadioGroup }', '4.7 KB'],
@@ -104,7 +106,6 @@ const components = [
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],
-  ['textarea', '{ TextArea }', '5 KB'],
   ['time-picker', '{ TimePicker }', '7.75 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],

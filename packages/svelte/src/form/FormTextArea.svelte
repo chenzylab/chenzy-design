@@ -6,7 +6,7 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
-  import TextArea from '../textarea/TextArea.svelte';
+  import TextArea from '../input/TextArea.svelte';
   import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type TextAreaProps = ComponentProps<typeof TextArea>;

@@ -45,23 +45,61 @@
 
 <div class="docs-layout">
   <header class="docs-header">
-    <a href="{base}/" class="docs-logo">
-      <svg class="logo-mark" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-        <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
-        <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
-        <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
-        <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
+    <a href="{base}/" class="docs-logo" aria-label="chenzy design">
+      <!-- 单 svg logo（Semi 形式：自由图形标 + 双行文字标合成一个 svg；图形不照搬 Semi）。
+           图形标：无外框的「c」形开口圆环（chenzy 首字母，深色）+ 缺口处一枚主色圆点，轻盈有辨识度；
+           文字标：chenzy / design 两行，同字重紧凑排版，currentColor 随主题变色。尺寸对齐 Semi(高36)。 -->
+      <svg
+        class="logo"
+        viewBox="0 0 152 44"
+        height="36"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="chenzy design"
+      >
+        <!-- 图形标：深色实心圆 + 主色月牙咬合，负空间构成「c」缺口，双色层次、有体块感 -->
+        <!-- 深色主体圆 -->
+        <circle cx="20" cy="22" r="16" fill="currentColor" />
+        <!-- 负空间缺口：用底色圆咬出「c」开口（右侧） -->
+        <circle cx="27" cy="22" r="8.5" fill="var(--cd-color-bg-0, #fff)" />
+        <!-- 主色月牙：填回缺口内侧一弧，形成双色咬合层次 -->
+        <path
+          d="M27 13.5a8.5 8.5 0 010 17 6 6 0 000-17z"
+          fill="var(--cd-color-primary, #0064fa)"
+        />
+        <!-- 文字标（两行、大而粗、紧凑；currentColor 随主题） -->
+        <text
+          x="49"
+          y="20.5"
+          fill="currentColor"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-size="20.5"
+          font-weight="800"
+          letter-spacing="-0.6"
+        >chenzy</text>
+        <text
+          x="49"
+          y="40"
+          fill="currentColor"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-size="20.5"
+          font-weight="800"
+          letter-spacing="-0.6"
+        >design</text>
       </svg>
-      <span class="logo-text">chenzy-design</span>
     </a>
     <nav class="docs-header-nav">
+      <!-- 顶部一级导航对齐 Semi 官网（组件/主题/设计转代码/模板/数据可视化/博客）。
+           组件已实现（可点）；其余页面暂未实现，保持灰色占位（对齐 Semi 项，功能后续补）。 -->
       <a href="{base}/components" class:active={$page.url.pathname.startsWith(`${base}/components`)}>
         {t('nav.components', lang)}
       </a>
-      <!-- 占位一级导航：对齐 Semi 多 Tab 顶栏观感，功能后续补 -->
       <span class="nav-placeholder">{lang === 'zh' ? '主题' : 'Theme'}</span>
+      <span class="nav-placeholder">{lang === 'zh' ? '设计转代码' : 'Design to Code'}</span>
       <span class="nav-placeholder">{lang === 'zh' ? '模板' : 'Templates'}</span>
-      <span class="nav-placeholder">{lang === 'zh' ? '资源' : 'Resources'}</span>
+      <span class="nav-placeholder">{lang === 'zh' ? '数据可视化' : 'Data Visualization'}</span>
+      <span class="nav-placeholder">{lang === 'zh' ? '博客' : 'Blog'}</span>
     </nav>
     <div class="docs-header-actions">
       <Search />
@@ -127,17 +165,15 @@
   .docs-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: 700;
     text-decoration: none;
     color: var(--cd-color-text-0, #1f2329);
-    /* 与左侧栏宽度对齐：logo 区占据侧栏列宽，一级导航从内容区起始处开始（对齐 Semi） */
-    width: calc(260px - 24px);
+    /* 自然宽度（对齐 Semi：logo 后紧跟一级导航，不占满侧栏列宽）。 */
     flex-shrink: 0;
   }
-  .logo-mark {
+  .logo {
     flex-shrink: 0;
+    display: block;
+    color: var(--cd-color-text-0, #1f2329);
   }
   .docs-header-nav {
     display: flex;

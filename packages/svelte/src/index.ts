@@ -38,14 +38,15 @@ export {
 export {
   Input,
   InputGroup,
+  TextArea,
   inputMeta,
   inputGroupMeta,
+  textareaMeta,
   INPUT_GROUP_CTX,
   getInputGroupContext,
   type InputGroupContext,
   type InputGroupSize,
 } from './input/index.js';
-export { TextArea, textareaMeta } from './textarea/index.js';
 export { Switch, switchMeta } from './switch/index.js';
 export { Checkbox, CheckboxGroup, checkboxMeta } from './checkbox/index.js';
 export { Radio, RadioGroup, radioMeta } from './radio/index.js';

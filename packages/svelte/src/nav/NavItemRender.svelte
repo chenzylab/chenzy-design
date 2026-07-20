@@ -108,6 +108,10 @@
   {#if withToggle && ctx.toggleIconPosition === 'left'}{@render toggleArrow()}{/if}
   {#if item.icon}
     <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true">{@render item.icon()}</i>
+  {:else if ctx.renderIcon && !withToggle}
+    <!-- 数据驱动图标：叶子项未自带 icon 时用 Nav 级 renderIcon(item) 渲染（如按组件名取图标）。
+         子导航标题（withToggle）无图标时不占图标位，对齐 Semi（Sub 标题文字与叶子图标左对齐）。 -->
+    <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true">{@render ctx.renderIcon(item)}</i>
   {:else if item.indent || (inSubNav && !popupMode)}
     <!-- indent 或内联子导航项无图标：保留占位对齐（对齐 Semi icon||indent||isInSubNav 占位）。 -->
     <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true"></i>

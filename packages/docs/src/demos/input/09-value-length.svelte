@@ -7,11 +7,10 @@
 </script>
 
 <div style="display:flex;flex-direction:column;gap:8px;max-width:320px">
-  <!-- getValueLength 自定义字符计数（emoji 按可见长度计） -->
+  <!-- getValueLength 自定义字符计数（emoji 按可见长度计），限制可见长度 ≤ 10 -->
   <Input
     value={value}
     onChange={(v) => (value = v)}
-    showCount
     maxLength={10}
     getValueLength={countGraphemes}
     placeholder="最多 10 个字符（emoji 记 1）"

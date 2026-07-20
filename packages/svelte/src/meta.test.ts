@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { meta as buttonMeta } from './button/meta.js';
-import { meta as iconButtonMeta } from './iconbutton/meta.js';
+// IconButton / CardGroup 严格对齐 Semi 后不再是独立组件 meta（无 category），是父组件子项，
+// 不纳入要求 category 的顶层组件断言（其 props 完整性经父 meta 的 subComponents 覆盖）。
 import { meta as floatButtonMeta } from './float-button/meta.js';
 import { meta as iconMeta } from './icon/meta.js';
 import { meta as dividerMeta } from './divider/meta.js';
@@ -8,8 +9,10 @@ import { meta as spaceMeta } from './space/meta.js';
 import { meta as typographyMeta } from './typography/meta.js';
 import { meta as gridMeta } from './grid/meta.js';
 import { meta as layoutMeta } from './layout/meta.js';
-import { meta as inputMeta, inputGroupMeta } from './input/meta.js';
-import { meta as textareaMeta } from './textarea/meta.js';
+// InputGroup / TextArea 严格对齐 Semi 后不再是独立组件 meta（无 category），
+// 而是 Input.subComponents；其 props 完整性经 Input meta 的 subComponents 覆盖，
+// 不纳入要求 category 的顶层组件断言。
+import { meta as inputMeta } from './input/meta.js';
 import { meta as switchMeta } from './switch/meta.js';
 import { meta as checkboxMeta } from './checkbox/meta.js';
 import { meta as radioMeta } from './radio/meta.js';
@@ -41,7 +44,7 @@ import { meta as anchorMeta } from './anchor/meta.js';
 import { meta as tagMeta } from './tag/meta.js';
 import { meta as avatarMeta } from './avatar/meta.js';
 import { meta as badgeMeta } from './badge/meta.js';
-import { meta as cardMeta, cardGroupMeta } from './card/meta.js';
+import { meta as cardMeta } from './card/meta.js';
 import { meta as tooltipMeta } from './tooltip/meta.js';
 import { meta as popoverMeta } from './popover/meta.js';
 import { meta as emptyMeta } from './empty/meta.js';
@@ -87,7 +90,6 @@ import { meta as sideBarMeta } from './sidebar/meta.js';
 
 const metas = {
   buttonMeta,
-  iconButtonMeta,
   floatButtonMeta,
   resizableMeta,
   dragMoveMeta,
@@ -98,8 +100,6 @@ const metas = {
   gridMeta,
   layoutMeta,
   inputMeta,
-  inputGroupMeta,
-  textareaMeta,
   switchMeta,
   checkboxMeta,
   radioMeta,
@@ -130,7 +130,6 @@ const metas = {
   avatarMeta,
   badgeMeta,
   cardMeta,
-  cardGroupMeta,
   tooltipMeta,
   popoverMeta,
   emptyMeta,

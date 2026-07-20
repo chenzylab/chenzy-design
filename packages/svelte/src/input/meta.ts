@@ -7,7 +7,9 @@ export const meta = {
   name: 'Input',
   category: 'input',
   semiEquivalent: 'Input',
-  description: '单行文本录入框，支持前后缀、前后置标签、清除、计数、密码显隐与 IME。严格对齐 Semi。',
+  description:
+    '单行文本录入框，支持前后缀、前后置标签、清除、密码显隐与 IME。严格对齐 Semi。配套 TextArea（多行）与 InputGroup（组合），对齐 Semi 同页三组件（Input / TextArea / InputGroup 均为顶层导出）。',
+  exports: ['Input', 'TextArea', 'InputGroup'],
   props: [
     { name: 'value', type: 'string', default: 'undefined', desc: '受控值；提供则为受控' },
     { name: 'defaultValue', type: 'string', default: "''", desc: '非受控初始值' },
@@ -16,8 +18,7 @@ export const meta = {
     { name: 'readonly', type: 'boolean', default: 'false' },
     { name: 'placeholder', type: 'string', default: 'undefined' },
     { name: 'showClear', type: 'boolean', default: 'false', desc: '有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear）' },
-    { name: 'showCount', type: 'boolean', default: 'false', desc: '显示字符计数' },
-    { name: 'maxLength', type: 'number', default: 'undefined' },
+    { name: 'maxLength', type: 'number', default: 'undefined', desc: '原生 maxlength（getValueLength 存在时不下发）' },
     { name: 'validateStatus', type: "'default'|'warning'|'error'|'success'", default: "'default'", desc: '校验状态，仅影响展示样式（对齐 Semi validateStatus；success 合法但无特殊样式）' },
     { name: 'mode', type: "'password'", default: 'undefined', desc: '输入框模式，password 启用密码显隐按钮（对齐 Semi mode）' },
     { name: 'type', type: 'string', default: "'text'", desc: '原生 input type，透传（对齐 Semi type，可为 number/email/search 等）' },
@@ -29,7 +30,7 @@ export const meta = {
     { name: 'addonBefore', type: 'Snippet | string', default: 'undefined', desc: '前置标签（如 "https://"）' },
     { name: 'addonAfter', type: 'Snippet | string', default: 'undefined', desc: '后置标签（如 ".com"）' },
     { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式（对齐 Semi borderless）' },
-    { name: 'getValueLength', type: '(value: string) => number', default: 'undefined', desc: '自定义字符计数函数，替代默认长度（用于 showCount 与 maxLength 校验）' },
+    { name: 'getValueLength', type: '(value: string) => number', default: 'undefined', desc: '自定义字符计数函数，替代默认长度（存在时接管 maxLength 校验）' },
     { name: 'hideSuffix', type: 'boolean', default: 'false', desc: '清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix）' },
     { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式（对齐 Semi style）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根容器自定义类名（对齐 Semi className）' },
@@ -63,23 +64,134 @@ export const meta = {
   ],
   a11y: {
     role: 'textbox',
-    notes: ['原生 input', 'error 时 aria-invalid', '密码切换 aria-pressed', '清除按钮 aria-label'],
+    notes: [
+      '原生 input',
+      'error 时 aria-invalid',
+      '密码切换按钮 role=button + tabindex + aria-label（对齐 Semi，无 aria-pressed）',
+      '清除按钮为无 aria-label / role 的 div（对齐 Semi）',
+    ],
   },
   tokens: ['--cd-color-input-*', '--cd-height-input-*', '--cd-radius-input-wrapper', '--cd-spacing-input-*'],
+  // TextArea 与 InputGroup 严格对齐 Semi：同为顶层导出（import { Input, TextArea, InputGroup }），
+  // 源码同在 input/ 目录、文档同在 Input 页；侧边栏只列一个 Input 条目（对齐 Semi，二者不单列）。
+  subComponents: [
+    {
+      name: 'TextArea',
+      semiEquivalent: 'TextArea',
+      usage: '<TextArea autosize maxCount={100} showClear />',
+      desc: '多行文本录入框，支持计数（maxCount/getValueLength）、清除、校验态、IME、autosize 自适应高度、行号、resize 全值域。严格对齐 Semi。',
+      capabilities: ['multiline', 'autosize', 'char-count', 'clearable', 'validation-status', 'line-number'],
+      props: [
+        { name: 'value', type: 'string', default: 'undefined', desc: '受控值；提供则为受控' },
+        { name: 'defaultValue', type: 'string', default: "''", desc: '非受控初始值' },
+        { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
+        { name: 'disabled', type: 'boolean', default: 'false' },
+        { name: 'readonly', type: 'boolean', default: 'false' },
+        { name: 'placeholder', type: 'string', default: 'undefined' },
+        { name: 'showCount', type: 'boolean', default: 'false', desc: '显示字数统计（对齐 Semi showCounter；maxCount 存在时亦显示）' },
+        { name: 'maxLength', type: 'number', default: 'undefined', desc: '原生硬性长度限制（截断输入）' },
+        { name: 'maxCount', type: 'number', default: 'undefined', desc: '计数上限（计数展示与超限提示，不截断，对齐 Semi）' },
+        { name: 'showClear', type: 'boolean', default: 'false', desc: '有内容且 hover/focus 时展示清除按钮（对齐 Semi）' },
+        { name: 'autoFocus', type: 'boolean', default: 'false', desc: '挂载后自动聚焦' },
+        { name: 'validateStatus', type: "'default'|'warning'|'error'|'success'", default: "'default'", desc: '校验态（对齐 Semi validateStatus）' },
+        { name: 'rows', type: 'number', default: '4', desc: '默认行数（对齐 Semi）' },
+        { name: 'cols', type: 'number', default: 'undefined', desc: '默认列数（对齐 Semi cols）' },
+        { name: 'autosize', type: 'boolean | { minRows?: number; maxRows?: number }', default: 'false', desc: '随内容自适应高度（对齐 Semi）' },
+        { name: 'resize', type: "'none'|'both'|'horizontal'|'vertical'|'block'|'inline'", default: 'undefined', desc: '拖拽调整方向（对齐 Semi resize 全值域）；autosize 时忽略；仅显式传入生效' },
+        { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式（对齐 Semi borderless）' },
+        { name: 'showLineNumber', type: 'boolean', default: 'false', desc: '展示行号（对齐 Semi showLineNumber）' },
+        { name: 'lineNumberStart', type: 'number', default: '1', desc: '行号起始值（对齐 Semi lineNumberStart）' },
+        { name: 'lineNumberClassName', type: 'string', default: 'undefined', desc: '行号区自定义类名（对齐 Semi）' },
+        { name: 'lineNumberStyle', type: 'string', default: 'undefined', desc: '行号区自定义样式（对齐 Semi）' },
+        { name: 'textareaStyle', type: 'string', default: 'undefined', desc: 'textarea 元素样式，可设高度等（对齐 Semi textareaStyle）' },
+        { name: 'getValueLength', type: '(value: string) => number', default: 'undefined', desc: '自定义字符计数函数（对齐 Semi getValueLength）' },
+        { name: 'disabledEnterStartNewLine', type: 'boolean', default: 'false', desc: '禁用 Enter 换行（Shift+Enter 才换行，对齐 Semi，Chat 场景用）' },
+        { name: 'composition', type: 'boolean', default: 'false', desc: '输入法模式：开启后 IME 未确认期间不触发 onChange，确认后触发一次（对齐 Semi）' },
+        { name: 'name', type: 'string', default: 'undefined' },
+        { name: 'id', type: 'string', default: 'undefined' },
+        { name: 'class', type: 'string', default: "''", desc: '根容器自定义类名（对齐 Semi className）' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式（对齐 Semi style）' },
+        { name: 'ariaLabel', type: 'string', default: 'undefined' },
+        { name: 'ariaLabelledby', type: 'string', default: 'undefined' },
+        { name: 'ariaDescribedby', type: 'string', default: 'undefined' },
+        { name: 'ariaErrormessage', type: 'string', default: 'undefined' },
+        { name: 'ariaRequired', type: 'boolean', default: 'undefined' },
+        { name: 'onChange', type: '(value: string, e: Event) => void', default: 'undefined', desc: '内容变化（对齐 Semi：第二参为原生事件）' },
+        { name: 'onInput', type: '(value: string, e: Event) => void', default: 'undefined' },
+        { name: 'onClear', type: '(e: MouseEvent) => void', default: 'undefined', desc: '点击清除按钮（对齐 Semi：透传鼠标事件）' },
+        { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '获得焦点' },
+        { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '失去焦点' },
+        { name: 'onEnterPress', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '按下 Enter（透传原生事件，对齐 Semi；composition 中不触发）' },
+        { name: 'onPressEnter', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: 'onEnterPress 别名（对齐 Semi onPressEnter）' },
+        { name: 'onResize', type: '(p: { height: number; width?: number }) => void', default: 'undefined', desc: 'autosize 高度变化，或 resize 拖拽（含 width，对齐 Semi）' },
+        { name: 'onKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '透传原生 keydown（对齐 Semi）' },
+        { name: 'onKeyUp', type: '(e: KeyboardEvent) => void', default: 'undefined' },
+        { name: 'onKeyPress', type: '(e: KeyboardEvent) => void', default: 'undefined' },
+        { name: 'onCompositionStart', type: '(e: CompositionEvent) => void', default: 'undefined', desc: 'IME 开始' },
+        { name: 'onCompositionEnd', type: '(e: CompositionEvent) => void', default: 'undefined', desc: 'IME 结束' },
+        { name: 'onCompositionUpdate', type: '(e: CompositionEvent) => void', default: 'undefined' },
+      ],
+      methods: [
+        { name: 'focus()', desc: '命令式聚焦（对齐 Semi）' },
+        { name: 'blur()', desc: '命令式失焦（对齐 Semi）' },
+      ],
+      slots: [
+        { name: 'count', scope: '{ count, maxCount, overLimit }', desc: '自定义计数器渲染（覆盖内建，本库超集扩展）' },
+        { name: 'clearIcon', desc: '自定义清除图标' },
+      ],
+      a11y: {
+        role: 'textbox',
+        notes: [
+          '原生 textarea',
+          'error 时 aria-invalid',
+          'IME composition 安全',
+          '超限经 aria-live=polite 播报',
+          '清除按钮为无 aria-label / role 的 div（对齐 Semi）',
+        ],
+      },
+      i18nKeys: ['Textarea.countFormat', 'Textarea.countOnly', 'Textarea.overLimitAnnounce'],
+      tokens: ['--cd-color-input-*', '--cd-color-textarea-*', '--cd-spacing-textarea-*', '--cd-radius-input-wrapper'],
+    },
+    {
+      name: 'InputGroup',
+      semiEquivalent: 'InputGroup',
+      usage: '<InputGroup><Input /><Select /></InputGroup>',
+      desc: '输入组合容器：将多个输入类控件（Input/Select/DatePicker 等）拼接为一体（相邻圆角合并 + 分隔线），统一 size/disabled 经 context 回退透传（控件显式 prop 优先），可选组 label。',
+      props: [
+        { name: 'size', type: "'small'|'default'|'large'", default: 'undefined', desc: '整组尺寸，回退透传子控件（子控件显式 size 优先）' },
+        { name: 'disabled', type: 'boolean', default: 'undefined', desc: '整组禁用，回退透传子控件（子控件显式 disabled 优先）' },
+        { name: 'label', type: '{ text?: string; name?: string; required?: boolean; width?: number|string }', default: 'undefined', desc: '整组标签（对齐 Semi LabelProps 子集）' },
+        { name: 'labelPosition', type: "'top'|'left'", default: "'top'", desc: '标签位置' },
+        { name: 'onFocus', type: '(e: FocusEvent) => void', default: 'undefined', desc: '组级聚焦（子控件 focusin 冒泡）' },
+        { name: 'onBlur', type: '(e: FocusEvent) => void', default: 'undefined', desc: '组级失焦（子控件 focusout 冒泡）' },
+        { name: 'class', type: 'string', default: 'undefined', desc: '根节点自定义类名' },
+        { name: 'style', type: 'string', default: 'undefined', desc: '根节点自定义内联样式' },
+        { name: 'children', type: 'Snippet', default: 'undefined', desc: '子输入控件' },
+      ],
+      events: [
+        { name: 'onFocus', desc: '组内控件获得焦点' },
+        { name: 'onBlur', desc: '组内控件失去焦点' },
+      ],
+      slots: [{ name: 'children', desc: '子输入控件（Input/Select/DatePicker 等）' }],
+      a11y: {
+        role: 'group',
+        notes: ['单层 span role=group（对齐 Semi）', '有 label 时 label[for] 关联 group[id]', '各子控件保留自身 a11y'],
+      },
+      tokens: ['--cd-color-input-group-border-default', '--cd-width-input-group-pseudo-border', '--cd-radius-input-wrapper'],
+    },
+  ],
 } as const;
 
 /**
- * InputGroup — 严格对齐 Semi（semi-ui/input/inputGroup.tsx）。
- * 单层 span role=group：相邻控件圆角合并 + ::after 分隔线；统一 size/disabled 经 context 回退透传。
+ * InputGroup meta（保留具名导出供 InputGroup demo/文档局部引用）。
+ * 严格对齐 Semi：不带 category，故不作为独立组件进侧边栏——信息以 Input.subComponents 为准。
  */
 export const inputGroupMeta = {
   name: 'InputGroup',
-  category: 'input',
   relatedTo: 'Input',
   semiEquivalent: 'InputGroup',
   description:
     '输入组合容器：将多个输入类控件（Input/Select/DatePicker 等）拼接为一体（相邻圆角合并 + 分隔线），统一 size/disabled 经 context 回退透传（控件显式 prop 优先），可选组 label。',
-  exports: ['InputGroup'],
   props: [
     { name: 'size', type: "'small'|'default'|'large'", default: 'undefined', desc: '整组尺寸，回退透传子控件（子控件显式 size 优先）' },
     { name: 'disabled', type: 'boolean', default: 'undefined', desc: '整组禁用，回退透传子控件（子控件显式 disabled 优先）' },
@@ -102,3 +214,9 @@ export const inputGroupMeta = {
   },
   tokens: ['--cd-color-input-group-border-default', '--cd-width-input-group-pseudo-border', '--cd-radius-input-wrapper'],
 } as const;
+
+/**
+ * TextArea meta（保留具名导出供 TextArea demo/文档局部引用与测试）。
+ * 严格对齐 Semi：不带 category，故不作为独立组件进侧边栏——信息复用 Input.subComponents[0]。
+ */
+export const textareaMeta = meta.subComponents[0];

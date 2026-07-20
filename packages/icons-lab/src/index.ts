@@ -176,3 +176,20 @@ export {
   webcomponentsSvg,
   wheelChairSvg,
 } from './svgs.js';
+export { default as IconAudioPlayer } from './IconAudioPlayer.svelte';
+export { default as IconVideoPlayer } from './IconVideoPlayer.svelte';
+export { default as IconUserGuide } from './IconUserGuide.svelte';
+export { default as IconFeedback } from './IconFeedback.svelte';
+export { default as IconFloatButton } from './IconFloatButton.svelte';
+export { default as IconCropper } from './IconCropper.svelte';
+export { default as IconAIChatDialogue } from './IconAIChatDialogue.svelte';
+export { default as IconAIChatInput } from './IconAIChatInput.svelte';
+export { default as IconIcon } from './IconIcon.svelte';
+export { default as IconAIComponent } from './IconAIComponent.svelte';
+export { default as IconSideBar } from './IconSideBar.svelte';
+export { default as IconIntroduction } from './IconIntroduction.svelte';
+export { default as IconOverview } from './IconOverview.svelte';
+export { default as IconContentGuidelines } from './IconContentGuidelines.svelte';
+export { default as IconInternationalization } from './IconInternationalization.svelte';
+export { default as IconTheming } from './IconTheming.svelte';
+export { default as IconDragMove } from './IconDragMove.svelte';

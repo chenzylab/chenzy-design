@@ -24,7 +24,6 @@
     placeholder?: string;
     /** 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear）。 */
     showClear?: boolean;
-    showCount?: boolean;
     maxLength?: number;
     /** 校验状态（对齐 Semi validateStatus，仅影响展示样式）。 */
     validateStatus?: ValidateStatus;
@@ -46,7 +45,7 @@
     addonAfter?: Snippet | string;
     /** 无边框模式（对齐 Semi borderless）。 */
     borderless?: boolean;
-    /** 自定义字符计数函数，替代默认 [...value].length（用于 showCount 展示与 maxLength 校验）。 */
+    /** 自定义字符计数函数，替代默认 [...value].length（存在时接管 maxLength 校验，maxlength 属性不下发）。 */
     getValueLength?: (value: string) => number;
     /** 清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix）。 */
     hideSuffix?: boolean;
@@ -106,7 +105,6 @@
     readonly = false,
     placeholder,
     showClear = false,
-    showCount = false,
     maxLength,
     validateStatus = 'default',
     mode,
@@ -166,9 +164,10 @@
 
   let composing = $state(false);
   let revealed = $state(false);
+  // 悬浮 / 聚焦态（对齐 Semi isHovering / isFocus）：清除按钮仅在有内容且 hover 或 focus 时显示。
+  let isHovering = $state(false);
+  let isFocus = $state(false);
   const inputType = $derived(mode === 'password' && !revealed ? 'password' : type);
-
-  const len = $derived(getValueLength ? getValueLength(current) : [...current].length);
 
   function setValue(next: string) {
     // 受控时不回写 prop，仅经 onChange 上报（避免 value→onChange→value 死循环）。
@@ -208,7 +207,10 @@
     onKeyDown?.(e);
   }
 
+  // clear 用 mousedown（对齐 Semi handleClear onMouseDown，fix issue 1203）：
+  // 清除按钮仅在 hover/focus 时可见，用 click 会因 blur 先触发按钮消失而丢事件，故用 mousedown。
   function clear(e: MouseEvent) {
+    e.preventDefault(); // 阻止 mousedown 抢焦点，保持输入框聚焦
     setValue('');
     onClear?.(e);
     onChange?.('', e);
@@ -219,7 +221,19 @@
     revealed = !revealed;
   }
 
-  const allowClear = $derived(showClear && !disabled && !readonly && current.length > 0);
+  function handleFocus(e: FocusEvent) {
+    isFocus = true;
+    onFocus?.(e);
+  }
+  function handleBlur(e: FocusEvent) {
+    isFocus = false;
+    onBlur?.(e);
+  }
+
+  // 有内容 + showClear + 非禁用 + (聚焦 或 悬浮)（对齐 Semi isAllowClear）。
+  const allowClear = $derived(
+    current.length > 0 && showClear && !disabled && (isFocus || isHovering),
+  );
   const showModeBtn = $derived(mode === 'password' && !disabled);
   const isError = $derived(validateStatus === 'error');
 
@@ -232,6 +246,11 @@
   const addonBeforeSnippet = $derived(typeof addonBefore === 'function' ? (addonBefore as Snippet) : undefined);
   const addonAfterSnippet = $derived(typeof addonAfter === 'function' ? (addonAfter as Snippet) : undefined);
 
+  // wrapper class 对齐 Semi（index.tsx wrapperCls）。元素类 .cd-input-prepend/-append 与渲染
+  //   顺序严格镜像 Semi；wrapper 修饰类采用自洽命名（with-prepend=addonBefore/前置），并补齐 Semi
+  //   的 -only 圆角变体（只有前置或只有后置时 input 相应侧保留圆角）。
+  const hasPrepend = $derived(addonBefore != null);
+  const hasAppend = $derived(addonAfter != null);
   const wrapperCls = $derived(
     [
       'cd-input-wrapper',
@@ -239,8 +258,10 @@
       (prefix != null || insetLabel != null) && 'cd-input-wrapper__with-prefix',
       suffix != null && 'cd-input-wrapper__with-suffix',
       suffixHidden && 'cd-input-wrapper__with-suffix-hidden',
-      addonBefore != null && 'cd-input-wrapper__with-prepend',
-      addonAfter != null && 'cd-input-wrapper__with-append',
+      hasPrepend && 'cd-input-wrapper__with-prepend',
+      hasAppend && 'cd-input-wrapper__with-append',
+      hasPrepend && !hasAppend && 'cd-input-wrapper__with-prepend-only',
+      hasAppend && !hasPrepend && 'cd-input-wrapper__with-append-only',
       readonly && 'cd-input-wrapper-readonly',
       disabled && 'cd-input-wrapper-disabled',
       validateStatus === 'warning' && 'cd-input-wrapper-warning',
@@ -279,7 +300,15 @@
   });
 </script>
 
-<div class={wrapperCls} {style} aria-invalid={isError || undefined}>
+<!-- wrapper 严格对齐 Semi：<div> 无 role，仅承载 mouseenter/leave 追踪 hover（清除按钮显隐用）。 -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class={wrapperCls}
+  {style}
+  aria-invalid={isError || undefined}
+  onmouseenter={() => (isHovering = true)}
+  onmouseleave={() => (isHovering = false)}
+>
   {#if addonBefore != null}
     <div class="cd-input-prepend">
       {#if addonBeforeSnippet}{@render addonBeforeSnippet()}{:else}{addonBefore}{/if}
@@ -321,23 +350,21 @@
     oncompositionstart={handleCompositionStart}
     oncompositionend={handleCompositionEnd}
     oncompositionupdate={onCompositionUpdate}
-    onfocus={onFocus}
-    onblur={onBlur}
+    onfocus={handleFocus}
+    onblur={handleBlur}
   />
 
   {#if allowClear}
-    <button
-      type="button"
-      class="cd-input-clearbtn"
-      aria-label={loc().t('Input.clear')}
-      onclick={clear}
-    >
+    <!-- clearbtn 严格对齐 Semi：无 aria-label/role/tabindex 的 <div>，onmousedown 触发（fix issue 1203）。 -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="cd-input-clearbtn" onmousedown={clear}>
       {#if clearIcon}
         {@render clearIcon()}
       {:else}
         <IconClear />
       {/if}
-    </button>
+    </div>
   {/if}
 
   {#if suffix}
@@ -347,25 +374,23 @@
   {/if}
 
   {#if showModeBtn}
-    <button
-      type="button"
+    <!-- modebtn 严格对齐 Semi：div role=button + tabindex + aria-label（Show/Hidden password），无 aria-pressed。 -->
+    <div
+      role="button"
+      tabindex="0"
       class="cd-input-modebtn"
       aria-label={revealed ? loc().t('Input.hidePassword') : loc().t('Input.showPassword')}
-      aria-pressed={revealed}
       onclick={toggleReveal}
+      onkeypress={(e) => {
+        if (e.key === 'Enter') toggleReveal();
+      }}
     >
       {#if revealed}
         <IconEyeOpened />
       {:else}
         <IconEyeClosedSolid />
       {/if}
-    </button>
-  {/if}
-
-  {#if showCount}
-    <span class="cd-input-count">
-      {len}{#if maxLength !== undefined}/{maxLength}{/if}
-    </span>
+    </div>
   {/if}
 
   {#if addonAfter != null}
@@ -577,6 +602,12 @@
     cursor: pointer;
     border-radius: var(--cd-radius-input-wrapper);
   }
+  /* 图标不参与命中测试（对齐 Semi `& > svg { pointer-events: none }`）：本库图标根为
+     span.cd-icon（内含 svg），故作用在图标容器上；令点击 target 恒为按钮本身。 */
+  .cd-input-clearbtn > :global(.cd-icon),
+  .cd-input-modebtn > :global(.cd-icon) {
+    pointer-events: none;
+  }
   .cd-input-clearbtn:hover,
   .cd-input-modebtn:hover {
     color: var(--cd-color-input-icon-hover);
@@ -585,8 +616,10 @@
   .cd-input-modebtn:active {
     color: var(--cd-color-input-icon-active);
   }
-  .cd-input-clearbtn:focus-visible,
+  /* 仅 modebtn 可聚焦（div role=button tabindex=0）；clearbtn 无 tabindex 不可聚焦，
+     故 focus-visible 只作用于 modebtn（对齐 Semi：clearbtn 是无 tabindex 的 div）。 */
   .cd-input-modebtn:focus-visible {
+    border-radius: var(--cd-radius-input-wrapper);
     outline: var(--cd-width-input-icon-outline) solid var(--cd-color-input-icon-outline);
     outline-offset: var(--cd-width-input-icon-outlineoffset);
   }
@@ -625,13 +658,6 @@
   .cd-input-wrapper__with-append:not(.cd-input-wrapper__with-prepend) .cd-input {
     border-start-start-radius: var(--cd-radius-input-wrapper);
     border-end-start-radius: var(--cd-radius-input-wrapper);
-  }
-  .cd-input-count {
-    flex: 0 0 auto;
-    margin-inline-end: var(--cd-spacing-input-paddingright);
-    color: var(--cd-color-input-counter-text-default);
-    font-size: var(--cd-font-size-small);
-    white-space: nowrap;
   }
   /* borderless —— 对齐 Semi：非悬浮/聚焦时全透明；error/warning 保留实色描边。 */
   .cd-input-borderless:not(:focus-within):not(:hover) {
