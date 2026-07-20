@@ -96,6 +96,14 @@
     onChange?: (value: Key[] | Key[][] | CascaderNode[] | CascaderNode[][]) => void;
     /** 可访问名（对齐 Semi aria-label，默认 'Cascader'）。本库沿用 Input/Checkbox 的 ariaLabel 命名惯例。 */
     ariaLabel?: string;
+    /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
+    ariaLabelledby?: string;
+    /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
+    ariaDescribedby?: string;
+    /** aria-errormessage：error 态关联错误信息容器（Form.Field 透传）。 */
+    ariaErrormessage?: string;
+    /** aria-required：必填语义（Form.Field required 透传）。 */
+    ariaRequired?: boolean;
 
     // --- 外观 ---
     /** 附加到根节点的自定义 class */
@@ -239,6 +247,10 @@
     displayRender,
     onChange,
     ariaLabel = 'Cascader',
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     class: className = '',
     borderless = false,
     prefix,
@@ -1278,6 +1290,10 @@
   aria-controls={triggerRender || showBuiltinSearch ? undefined : listId}
   aria-activedescendant={!triggerRender && !showBuiltinSearch && isOpen && !searchActive ? activeDescId : undefined}
   aria-label={triggerRender || showBuiltinSearch ? undefined : ariaLabel}
+  aria-labelledby={ariaLabelledby}
+  aria-describedby={ariaDescribedby}
+  aria-errormessage={ariaErrormessage}
+  aria-required={ariaRequired || undefined}
   aria-invalid={!triggerRender && !showBuiltinSearch && validateStatus === 'error' ? true : undefined}
   aria-disabled={!triggerRender && !showBuiltinSearch && disabled ? true : undefined}
   tabindex={triggerRender || showBuiltinSearch ? undefined : (disabled ? -1 : 0)}

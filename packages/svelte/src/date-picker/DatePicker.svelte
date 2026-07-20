@@ -130,6 +130,14 @@
     /** 触发器失去焦点。 */
     onBlur?: (e: FocusEvent) => void;
     ariaLabel?: string;
+    /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
+    ariaLabelledby?: string;
+    /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
+    ariaDescribedby?: string;
+    /** aria-errormessage：error 态关联错误信息容器（Form.Field 透传）。 */
+    ariaErrormessage?: string;
+    /** aria-required：必填语义（Form.Field required 透传）。 */
+    ariaRequired?: boolean;
     /** 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/解析）。 */
     insetLabel?: string | Snippet;
     /**
@@ -280,6 +288,10 @@
     onFocus,
     onBlur,
     ariaLabel,
+    ariaLabelledby,
+    ariaDescribedby,
+    ariaErrormessage,
+    ariaRequired,
     insetLabel,
     insetLabelId,
     rangeSeparator = ' ~ ',
@@ -1552,7 +1564,11 @@
   // insetLabel 提供 insetLabelId 时，把内嵌标签纳入 combobox 的 aria-labelledby，
   // 使屏幕阅读器把内嵌标签朗读为触发器可访问名的一部分（仅 insetLabel 存在时生效）。
   const hasInsetLabel = $derived(insetLabel !== undefined);
-  const triggerLabelledby = $derived(hasInsetLabel && insetLabelId ? insetLabelId : undefined);
+  // aria-labelledby 来源（对齐 Semi withField）：外部 ariaLabelledby(Form label id) 优先；
+  // 否则 insetLabel 提供 insetLabelId 时把内嵌标签纳入可访问名。inset 场景两者为同一 id。
+  const triggerLabelledby = $derived(
+    ariaLabelledby ?? (hasInsetLabel && insetLabelId ? insetLabelId : undefined),
+  );
   // aria-labelledby 存在时不再重复设 aria-label（避免可访问名冗余）。
   const triggerAriaLabel = $derived(triggerLabelledby ? undefined : ariaLabel);
 
@@ -1758,6 +1774,9 @@
         aria-controls={dialogId}
         aria-label={triggerAriaLabel}
         aria-labelledby={triggerLabelledby}
+        aria-describedby={ariaDescribedby}
+        aria-errormessage={ariaErrormessage}
+        aria-required={ariaRequired || undefined}
         placeholder={placeholder ?? format}
         {disabled}
         readonly={inputReadOnly}
@@ -1781,6 +1800,7 @@
         aria-controls={dialogId}
         aria-label={triggerAriaLabel}
         aria-labelledby={triggerLabelledby}
+        aria-describedby={ariaDescribedby}
         {disabled}
         style={inputStyleStr}
         bind:this={triggerEl as HTMLButtonElement}

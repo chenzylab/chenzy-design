@@ -58,8 +58,8 @@ describe('Form.InputGroup + hooks', () => {
     const { getByTestId, container } = renderWithLocale(FormInputGroupFixture, {});
     getByTestId('set-error').click();
     await tick();
-    // group 级 error 块（isInInputGroup → cd-form-field__error）聚合了该错误。
-    const errBlock = container.querySelector('.cd-form-field-group .cd-form-field__error');
+    // group 级 error 块（isInInputGroup → cd-form-field-error-message）聚合了该错误。
+    const errBlock = container.querySelector('.cd-form-field-group .cd-form-field-error-message');
     expect(errBlock).not.toBeNull();
     expect(errBlock?.textContent).toContain('forced error');
   });
