@@ -43,6 +43,10 @@
     ariaInvalid?: boolean;
     /** a11y: wrapper role（Group 内为 listitem）。 */
     role?: string;
+    /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
+    style?: string;
+    /** 根容器自定义类名（与内置 cd-checkbox 并存，对齐 Semi className）。 */
+    class?: string;
     onChange?: (e: CheckboxEvent) => void;
     children?: Snippet;
   }
@@ -67,6 +71,8 @@
     ariaRequired,
     ariaInvalid,
     role,
+    style,
+    class: className,
     onChange,
     children,
   }: Props = $props();
@@ -158,6 +164,7 @@
       isCardType && !resolvedDisabled && 'cd-checkbox-cardType_enable',
       isCardType && isChecked && !resolvedDisabled && 'cd-checkbox-cardType_checked',
       isCardType && isChecked && resolvedDisabled && 'cd-checkbox-cardType_checked_disabled',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -188,7 +195,7 @@
 
 <!-- Semi 注释：label 更好，但用 span 是为规避 gitlab #364（对齐 Semi 根用 span 非 label）。
      a11y 靠原生 input（opacity:0 铺满 inner）+ aria-labelledby 承载，非隐式 label 关联。 -->
-<span class={cls} id={id} {role} aria-labelledby={resolvedLabelledby}>
+<span class={cls} {style} id={id} {role} aria-labelledby={resolvedLabelledby}>
   <span class={innerCls}>
     <input
       bind:this={inputEl}

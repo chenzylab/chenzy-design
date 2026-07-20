@@ -15,7 +15,7 @@
   let loading = $state(true);
 </script>
 
-<Switch value={!loading} onChange={(v) => (loading = !v)} />
+<Switch checked={!loading} onChange={(v) => (loading = !v)} />
 <br />
 <br />
 <Card style="max-width: 300px;">

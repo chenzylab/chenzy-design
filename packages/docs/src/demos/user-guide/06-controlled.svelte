@@ -19,7 +19,7 @@
 <Button onclick={() => (visible = true)}>开始引导</Button>
 <br /><br />
 <div style="display:flex; gap:12px; align-items:center">
-  <span bind:this={el1}><Switch value={true} /></span>
+  <span bind:this={el1}><Switch checked={true} /></span>
   <span bind:this={el2}><Tag>Default Tag</Tag></span>
   <span bind:this={el3}><Button>确定</Button></span>
 </div>

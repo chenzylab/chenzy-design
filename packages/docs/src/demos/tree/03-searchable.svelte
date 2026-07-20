@@ -33,7 +33,7 @@
 
 <div style="display:flex; flex-direction:column; gap:12px; width:260px">
   <label style="display:flex; align-items:center; gap:8px">
-    <Switch value={filteredOnly} onChange={(v) => (filteredOnly = v)} size="small" />
+    <Switch checked={filteredOnly} onChange={(v) => (filteredOnly = v)} size="small" />
     <Text size="small">showFilteredOnly（只展示命中结果）</Text>
   </label>
   <!-- filterTreeNode 开启搜索；默认对 label 搜索，命中高亮 + 自动展开祖先 -->

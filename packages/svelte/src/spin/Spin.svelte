@@ -75,7 +75,14 @@
   const statusLabel = $derived(hasTip ? undefined : loc().t('Spin.loading'));
 
   const rootClass = $derived(
-    ['cd-spin', `cd-spin-${size}`, hasChildren && 'cd-spin-block', !effective && 'cd-spin-hidden']
+    [
+      'cd-spin',
+      `cd-spin-${size}`,
+      hasChildren && 'cd-spin-block',
+      !effective && 'cd-spin-hidden',
+      // 对齐 Semi：wrapperClassName 合并进根 class（供消费方定位/覆盖，如 Switch loading）。
+      wrapperClassName,
+    ]
       .filter(Boolean)
       .join(' '),
   );

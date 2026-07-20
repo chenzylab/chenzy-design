@@ -223,6 +223,10 @@
     prefix?: Snippet;
     /** 触发器右侧后缀（覆盖默认箭头区域） */
     suffix?: Snippet;
+    /** 根容器内联样式（对齐 Semi style，可设 width 等） */
+    style?: string;
+    /** 根容器自定义类名（与内置 cd-select 并存，对齐 Semi className） */
+    class?: string;
     /** 自定义清除按钮图标 */
     clearIcon?: Snippet;
     /** 自定义下拉箭头图标 */
@@ -284,6 +288,8 @@
     open: openProp = $bindable(),
     defaultOpen = false,
     size = 'default',
+    style,
+    class: className,
     validateStatus = 'default',
     position = 'bottomStart',
     placeholder,
@@ -910,6 +916,7 @@
       borderless && 'cd-select--borderless',
       // ellipsisTrigger：多选 tag 溢出时对可见 tag 文本作单行省略（对齐 Semi）。
       ellipsisTrigger && multiple && 'cd-select--ellipsis-trigger',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -942,7 +949,7 @@
   });
 </script>
 
-<div class={cls} bind:this={rootEl}>
+<div class={cls} {style} bind:this={rootEl}>
   {#if triggerRender}
     {@render triggerRender({
       value: currentValue,

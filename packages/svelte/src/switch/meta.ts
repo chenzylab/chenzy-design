@@ -7,8 +7,8 @@ export const meta = {
   category: 'input',
   description: '开关选择器，表示两种互斥状态的即时切换，支持加载态与自定义文案。',
   props: [
-    { name: 'value', type: 'boolean', default: 'undefined', desc: '受控值；提供则为受控（对齐 Semi checked）' },
-    { name: 'defaultValue', type: 'boolean', default: 'false', desc: '非受控初始值（对齐 Semi defaultChecked）' },
+    { name: 'checked', type: 'boolean', default: 'undefined', desc: '受控选中态；提供则为受控（对齐 Semi checked）' },
+    { name: 'defaultChecked', type: 'boolean', default: 'false', desc: '非受控初始选中态（对齐 Semi defaultChecked）' },
     { name: 'size', type: "'small'|'default'|'large'", default: 'default' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'loading', type: 'boolean', default: 'false', desc: '加载态，锁定交互并展示 spinner' },

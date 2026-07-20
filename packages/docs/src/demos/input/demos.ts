@@ -23,24 +23,27 @@ function entry(file: string, title: string, description?: string): DemoEntry {
   };
 }
 
-// 章节顺序对齐 Semi 官网（semi.design/zh-CN/input/input）：
+// 章节顺序逐字对齐 Semi 官网（semi.design/zh-CN/input/input）：
 //   基本 → 三种大小 → 不可用 → 前缀/后缀 → 前置/后置标签 → 带移除图标 → 密码模式 →
-//   校验状态 → 受控 → 输入框组合 → 多行输入框系列 → 自定义计算长度 → 输入法。
+//   校验状态 → 受控组件 → 输入框组合 → 多行输入框 → 设置 TextArea 高度 → 行号 →
+//   Shift+Enter 换行 → autosize → 自定义计算字符串长度 → 输入法模式。
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基本用法', '通过 bind:value 双向绑定输入值，并支持 placeholder 占位提示。'),
-  entry('02-size.svelte', '三种大小', '提供 large / default / small 三种尺寸。'),
-  entry('03-status.svelte', '不可用与校验状态', 'disabled 不可用；validateStatus 支持 warning / error 校验态。'),
-  entry('06-prefix-suffix.svelte', '前缀/后缀', 'prefix / suffix 在输入框内渲染前后缀内容（图标、单位等）。'),
-  entry('07-addon.svelte', '前置/后置标签', 'addonBefore / addonAfter 拼接前置/后置标签（如协议、域名后缀）。'),
-  entry('04-features.svelte', '带移除图标', 'showClear 有内容且 hover/focus 时展示清除按钮；clearIcon 自定义清除图标。'),
-  entry('04b-password.svelte', '密码模式', 'mode="password" 末尾图标切换明文/密文，可与 showClear 并存。'),
-  entry('05-group.svelte', '输入框组合', 'InputGroup 把多个输入控件拼接为一体（相邻圆角合并、分隔线），size 经 context 回退统一透传。'),
-  entry('11-textarea.svelte', '多行输入框', 'TextArea 多行输入，maxCount 字数限制并显示计数，支持 showClear。'),
-  entry('12-textarea-height.svelte', '设置 TextArea 高度', 'textareaStyle 设置内部 textarea 元素样式（如高度），style 控制外层容器。'),
-  entry('13-textarea-linenumber.svelte', '行号', 'showLineNumber 展示行号，lineNumberStart 设置起始行号，软换行自动对齐。'),
-  entry('14-textarea-shift-enter.svelte', 'Shift + Enter 换行', 'disabledEnterStartNewLine 禁用 Enter 换行，仅 Shift + Enter 才换行。'),
-  entry('15-textarea-autosize.svelte', '自动扩展的多行输入框', 'autosize 高度随内容自动增长，可配置 minRows / maxRows。'),
-  entry('08-controlled.svelte', '受控组件', 'value 完全由外部持有，配合 onChange，可编程式设置。'),
-  entry('09-value-length.svelte', '自定义计算字符串长度', 'getValueLength 自定义字符计数（emoji 按可见长度计），配合 TextArea maxCount / maxLength。'),
-  entry('10-composition.svelte', '输入法模式', 'composition 开启后，输入法未确认期间不触发 onChange，确认后触发一次。Input 与 TextArea 均支持。'),
+  entry('01-basic.svelte', '基本', '基本使用。'),
+  entry('02-size.svelte', '三种大小', '默认定义了三种尺寸：大、默认、小。'),
+  entry('03-disabled.svelte', '不可用', '设定 disabled 属性为 true。'),
+  entry('04-prefix-suffix.svelte', '前缀/后缀', '在输入框上增加前缀、后缀图标，可以是任意节点。'),
+  entry('05-addon.svelte', '前置/后置标签', '在输入框上增加前置/后置标签。'),
+  entry('06-clear.svelte', '带移除图标', '点击图标删除所有内容。'),
+  entry('07-password.svelte', '密码模式', '隐藏输入的具体内容。'),
+  entry('08-status.svelte', '校验状态', '可设置不同校验状态，展示不同样式。'),
+  entry('09-controlled.svelte', '受控组件', 'Input 值完全取决于传入的 value 值，配合 onChange 回调函数使用。'),
+  entry('10-group.svelte', '输入框组合', '可以将多个输入框放入 InputGroup 的容器中，通过设置 size、disabled 统一设置组合中的输入框属性。'),
+  entry('11-group-treeselect.svelte', '输入框组合（TreeSelect / Cascader）', 'InputGroup 支持 TreeSelect、Cascader 等输入类控件。'),
+  entry('12-textarea.svelte', '多行输入框', '用于多行输入。通过设置 maxCount 属性可以进行字数限制并显示字数统计。支持 showClear。'),
+  entry('13-textarea-height.svelte', '设置 TextArea 高度', '通过 textareaStyle 可以设置内部 textarea 元素的样式，如高度、背景色等。'),
+  entry('14-textarea-linenumber.svelte', '行号', '通过设置 showLineNumber 展示行号。可用 lineNumberStart 设置起始行号。'),
+  entry('15-textarea-shift-enter.svelte', '使用 Shift + Enter 换行的多行输入框', '禁用 Enter 换行，仅 Shift + Enter 才能换行。'),
+  entry('16-textarea-autosize.svelte', '自动扩展的多行输入框', '通过设置 autosize 属性可设置只有高度自动随内容增加而变化。'),
+  entry('17-value-length.svelte', '自定义计算字符串长度', '通过设置 getValueLength 属性可以自定义计算字符串长度，支持 emoji 按可见长度计算。'),
+  entry('18-composition.svelte', '输入法模式', '通过设置 composition 属性为 true，可以开启输入法模式。Input 和 TextArea 均支持。'),
 ];

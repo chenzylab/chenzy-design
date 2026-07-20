@@ -27,6 +27,8 @@ export const meta = {
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可见文本 label 时的可访问名' },
     { name: 'ariaInvalid', type: 'boolean', default: 'undefined', desc: '标记为无效（校验失败），对齐 Semi aria-invalid' },
     { name: 'role', type: 'string', default: 'undefined', desc: 'wrapper role（Group 内为 listitem）' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式，可设 width 等（对齐 Semi style）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根容器自定义类名（与内置 cd-checkbox 并存，对齐 Semi className）' },
     { name: 'onChange', type: '(e: CheckboxEvent) => void', default: 'undefined', desc: '对齐 Semi：回调收到事件对象，e.target.checked 为选中态' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '标签内容' },
   ],
@@ -53,6 +55,8 @@ export const meta = {
       { name: 'children', type: 'Snippet', default: 'undefined' },
       { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可见标题时的可访问名（role=group）' },
       { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联组可见标题 id（优先于 ariaLabel）' },
+      { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式，可设 width 等（对齐 Semi style）' },
+      { name: 'class', type: 'string', default: 'undefined', desc: '根容器自定义类名（与内置 cd-checkboxGroup 并存，对齐 Semi className）' },
     ],
   },
   methods: [

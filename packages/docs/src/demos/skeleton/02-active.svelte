@@ -12,7 +12,7 @@
 </script>
 
 <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
-  <Switch value={active} onChange={(v) => (active = v)} />
+  <Switch checked={active} onChange={(v) => (active = v)} />
   <Text type="tertiary">{active ? 'active：shimmer 流光动画开启' : 'active 关闭：静态底色'}</Text>
 </div>
 

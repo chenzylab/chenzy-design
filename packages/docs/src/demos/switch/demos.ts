@@ -23,12 +23,14 @@ function entry(file: string, title: string, description?: string): DemoEntry {
   };
 }
 
+// 章节顺序逐字对齐 Semi 官网（semi.design/zh-CN/input/switch）：
+//   基本 → 尺寸 → 不可用 → 带文本(内嵌+外部) → 受控组件 → 加载中。
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基本用法', '通过 bind:value 双向绑定开关状态。'),
-  entry('02-size.svelte', '尺寸', '提供 large / default / small 三种尺寸。'),
-  entry('03-text.svelte', '带文字', '通过 checkedText / uncheckedText 显示开关文案（size=small 时不渲染）。'),
-  entry('04-state.svelte', '状态', '支持禁用与加载中状态。'),
-  entry('05-loading.svelte', '加载中', 'loading 锁定交互并展示 spinner。'),
-  entry('06-text-outside.svelte', '外部文本(推荐)', '相比内嵌文字,更推荐将说明文本放在 Switch 外部。'),
-  entry('07-controlled.svelte', '受控', 'value 完全受控,配合 onChange 使用。'),
+  entry('01-basic.svelte', '基本', '通过 onChange 监听状态变化，通过 defaultChecked 或受控的 checked 指定选中状态。'),
+  entry('02-size.svelte', '尺寸', '通过 size 指定尺寸（large / default / small）。'),
+  entry('03-disabled.svelte', '不可用', 'disabled 禁用开关。'),
+  entry('04-text.svelte', '带文本', '通过 checkedText / uncheckedText 设置开关文本（size=small 时无效）。'),
+  entry('05-text-outside.svelte', '带文本（外部）', '相比内嵌文本，更推荐将文本说明放置在 Switch 外部。'),
+  entry('06-controlled.svelte', '受控组件', '组件是否选中完全取决于传入的 checked 值，配合 onChange 回调使用。'),
+  entry('07-loading.svelte', '加载中', '通过设置 loading 开启加载中状态。'),
 ];

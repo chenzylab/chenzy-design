@@ -371,7 +371,7 @@
           : {}}
       >
         <Switch
-          value={option.active ?? false}
+          checked={option.active ?? false}
           disabled={option.disabled ?? false}
           aria-label={loc().t('SideBar.mcpEnable', { name: option.label })}
           onChange={(v) => handleStatusChange(option, v, custom)}

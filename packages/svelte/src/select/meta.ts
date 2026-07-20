@@ -23,6 +23,8 @@ export const meta = {
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: 'combobox 触发器可访问名' },
     { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: '关联外部 label 的 id（优先于 ariaLabel）' },
     { name: 'id', type: 'string', default: 'undefined', desc: '触发器 id，用于关联外部 <label for="...">' },
+    { name: 'style', type: 'string', default: 'undefined', desc: '根容器内联样式，可设 width 等（对齐 Semi style）' },
+    { name: 'class', type: 'string', default: 'undefined', desc: '根容器自定义类名（与内置 cd-select 并存，对齐 Semi className）' },
     { name: 'disabled', type: 'boolean', default: 'false' },
     { name: 'showClear', type: 'boolean', default: 'false', desc: '是否显示清除按钮（对齐 Semi showClear）' },
     { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式' },

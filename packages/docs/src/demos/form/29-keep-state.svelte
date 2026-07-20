@@ -9,7 +9,7 @@
 <Form style="width: 450px">
   <Form.Switch field="alwaysShow" label="始终显示的字段" />
   <div style="margin: 12px 0; display: flex; align-items: center">
-    <Switch value={show} onChange={(v) => (show = v)} />
+    <Switch checked={show} onChange={(v) => (show = v)} />
     <span style="margin-left: 8px; color: var(--cd-color-text-2)">显示条件字段</span>
   </div>
   {#if show}

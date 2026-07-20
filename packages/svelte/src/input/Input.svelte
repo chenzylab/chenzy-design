@@ -31,8 +31,10 @@
     mode?: 'password';
     /** 原生 input type，透传（对齐 Semi type，可为 text/number/email/search 等任意字符串）。 */
     type?: string;
-    prefix?: Snippet;
-    suffix?: Snippet;
+    /** 前缀标签（输入框内左侧）；传字符串直接渲染、传 Snippet 自定义（对齐 Semi prefix 接受 ReactNode）。 */
+    prefix?: Snippet | string;
+    /** 后缀标签（输入框内右侧）；传字符串直接渲染、传 Snippet 自定义（对齐 Semi suffix 接受 ReactNode）。 */
+    suffix?: Snippet | string;
     /** 内嵌标签（渲染在输入框内左侧，与 prefix 同槽，对齐 Semi insetLabel）。 */
     insetLabel?: Snippet | string;
     /** 内嵌标签容器 id（关联 aria，对齐 Semi insetLabelId）。 */
@@ -243,6 +245,8 @@
   // 前缀槽（prefix 或 insetLabel，对齐 Semi renderPrefix：二者同槽）。
   const prefixNode = $derived(prefix ?? insetLabel);
   const prefixSnippet = $derived(typeof prefixNode === 'function' ? (prefixNode as Snippet) : undefined);
+  // 后缀槽（对齐 Semi renderSuffix：字符串直接渲染、Snippet 自定义）。
+  const suffixSnippet = $derived(typeof suffix === 'function' ? (suffix as Snippet) : undefined);
   const addonBeforeSnippet = $derived(typeof addonBefore === 'function' ? (addonBefore as Snippet) : undefined);
   const addonAfterSnippet = $derived(typeof addonAfter === 'function' ? (addonAfter as Snippet) : undefined);
 
@@ -369,7 +373,7 @@
 
   {#if suffix}
     <div class="cd-input-suffix" class:cd-input-suffix-hidden={suffixHidden}>
-      {@render suffix()}
+      {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
     </div>
   {/if}
 
