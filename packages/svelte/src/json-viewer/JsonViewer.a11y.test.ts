@@ -25,9 +25,12 @@ const JV = JsonViewer as unknown as Parameters<typeof renderWithLocale>[0];
 const SAMPLE = '{"name":"chenzy","age":1,"ok":true,"nested":{"k":[1,2,3]}}';
 
 // 让组件 $effect 里的动态 import 及后续 .then/.catch（内核实例化在 jsdom 下抛 Worker 错）
-// 落定：反复 tick + 宏任务 + 微任务，直到 loading 态被 .catch 清掉。
-async function settle(): Promise<void> {
-  for (let i = 0; i < 15; i++) {
+// 落定：轮询到 loading 态被清掉（data-loading 消失）为止，而非固定轮数——高负载并发跑时
+// 动态 import 很重，固定 15 轮可能在 .catch 落定前就返回导致 flaky。轮询到条件满足即提前
+// 返回，仅在真的永不落定时才耗尽上限（~1.5s）。
+async function settleLoading(editor: Element | null): Promise<void> {
+  for (let i = 0; i < 300; i++) {
+    if (editor && editor.getAttribute('data-loading') === null) return;
     await tick();
     await Promise.resolve();
     await new Promise((r) => setTimeout(r, 5));
@@ -115,10 +118,10 @@ describe('JsonViewer a11y / 渲染', () => {
   it('动态 import 成功但内核在 jsdom 实例化失败 → 走「加载→错误」降级，仍无 axe 违规', async () => {
     const { container } = renderWithLocale(JV, { props: { value: SAMPLE } });
     const editor = container.querySelector('.cd-json-viewer__editor');
-    // 挂载首帧：loading 态（内核异步 import 尚未落定）。
+    // 挂载首帧：loading 态（内核异步 import 尚未落定；import() 至少隔一个微任务才 resolve）。
     expect(editor?.getAttribute('data-loading')).toBe('true');
 
-    await settle();
+    await settleLoading(editor);
 
     // jsdom 无 Worker → new JsonViewer 抛 → .catch → data-error='true'、loading 清除。
     // 这是壳的降级路径，如实断言（内核实际渲染需真实浏览器）。
@@ -173,8 +176,9 @@ describe('JsonViewer ref 方法（kernel=null 空安全兜底）', () => {
   });
 
   it('kernel 未就绪时方法不抛错，返回空安全值', async () => {
-    const { ref } = renderRef();
-    await settle(); // 让内核尝试实例化（jsdom 下失败，kernel 保持 null）。
+    const { ref, container } = renderRef();
+    // 让内核尝试实例化（jsdom 下失败，kernel 保持 null），等 loading 落定。
+    await settleLoading(container.querySelector('.cd-json-viewer__editor'));
 
     // 读方法：kernel?. 兜底 → 空值，不抛。
     expect(() => ref.getValue()).not.toThrow();
@@ -192,8 +196,8 @@ describe('JsonViewer ref 方法（kernel=null 空安全兜底）', () => {
   });
 
   it('readOnly 下 replace/replaceAll 被组件前置拦截（不抛，即便有 kernel 也不写）', async () => {
-    const { ref } = renderRef({ value: SAMPLE, options: { readOnly: true } });
-    await settle();
+    const { ref, container } = renderRef({ value: SAMPLE, options: { readOnly: true } });
+    await settleLoading(container.querySelector('.cd-json-viewer__editor'));
     // 组件在 readOnly 时对 replace/replaceAll 直接 return（见 JsonViewer.svelte）。
     expect(() => ref.replace('x')).not.toThrow();
     expect(() => ref.replaceAll('x')).not.toThrow();
