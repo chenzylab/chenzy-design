@@ -62,6 +62,10 @@ export interface FieldPassthroughProps {
   allowEmptyString?: boolean;
   convert?: (value: unknown) => unknown;
   keepState?: boolean;
+  /** 外部值变化回调（对齐 Semi：Form 接管后仍可监听 onChange 获取最新值，用于联动）。 */
+  onChange?: (value: unknown) => void;
+  /** 外部失焦回调（对齐 Semi Field onBlur）。 */
+  onBlur?: () => void;
   /** 允许封装 extends 后再加控件专属 props(经 splitFieldProps 分离到 rest)。 */
   [key: string]: unknown;
 }
@@ -99,6 +103,8 @@ export const FIELD_PROP_KEYS = [
   'allowEmptyString',
   'convert',
   'keepState',
+  'onChange',
+  'onBlur',
 ] as const;
 
 const FIELD_PROP_KEY_SET = new Set<string>(FIELD_PROP_KEYS);

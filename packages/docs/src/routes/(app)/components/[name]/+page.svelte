@@ -22,13 +22,49 @@
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
   const lang = $derived(locale.value);
+  // docMode='inline'：整页由 md 内联驱动（复刻 Semi 无 tab 纵向流）。
+  // 其余组件保持 meta 驱动的 api/usage 双 tab 不变。
+  const inlineDoc = $derived(data.docMode === 'inline');
 
   let activeTab = $state<'api' | 'usage'>('api');
+
+  // —— inline 模式：TOC 由 md 渲染出的标题实时扫描生成 ——
+  // md 编译时已由 rehypeSemiAnchor 给每个标题加上与 Semi 一致的 id。
+  // 对齐 Semi PageAnchor：① 从「代码演示」标题之后才开始收集（之前的总述章节不进 TOC）；
+  // ② 「代码演示」标题本身不显示，其下 demo 直接平铺；③ 全部一级平铺，不缩进不分树。
+  let inlineTocSections = $state<{ id: string; title: string; level?: number }[]>([]);
+  let contentEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    if (!inlineDoc || !browser) return;
+    lowerName; // 切换组件时重扫
+    lang; // 切换语言时 md 换、标题变，重扫 TOC
+    // 等 md DOM 就位后扫标题（数据同步，tick 一次即可）
+    tick().then(() => {
+      if (!contentEl) return;
+      const heads = Array.from(contentEl.querySelectorAll<HTMLElement>('h2[id], h3[id]'));
+      const sections: { id: string; title: string; level?: number }[] = [];
+      let started = false;
+      for (const h of heads) {
+        const title = h.textContent?.trim() ?? '';
+        // 「代码演示」是分界：之前的总述不进 TOC，标题本身也不显示。
+        if (title === '代码演示' || title === 'Demos') {
+          started = true;
+          continue;
+        }
+        if (!started) continue;
+        sections.push({ id: h.id, title, level: 1 });
+      }
+      inlineTocSections = sections;
+    });
+  });
 
   // demo 场景与「使用场景」正文改由 load（+page.ts）同步预取，页面首帧即完整。
   // 不再客户端异步加载，避免 TOC/锚点/页面高度在渲染后才变化导致的滚动错位。
   const demoList = $derived<DemoEntry[]>(data.demos ?? []);
-  const ContentComponent = $derived<Component | null>(data.Content ?? null);
+  // 按文档站语言选中/英 md（对齐 Semi 双 md）；英文缺失时回退中文。
+  const ContentComponent = $derived<Component | null>(
+    lang === 'en' ? (data.ContentEn ?? data.Content ?? null) : (data.Content ?? null),
+  );
 
   const lowerName = $derived(meta.name.toLowerCase());
   // token 归属前缀：用数据集真实存在的前缀匹配，避免命名漂移（见 token-prefix.ts）
@@ -193,6 +229,15 @@
       <p class="description">{meta.description}</p>
     </div>
 
+    {#if inlineDoc}
+      <!-- 整页由 md 内联驱动：单页纵向流，无 tab（复刻 Semi）。
+           md 顶部 import DemoBox/Notice/各 demo，正文按 Semi 章节顺序内联书写。 -->
+      <div class="content-body inline-doc" bind:this={contentEl}>
+        {#if ContentComponent}
+          <ContentComponent />
+        {/if}
+      </div>
+    {:else}
     <div class="tabs">
       <button class="tab" class:active={activeTab === 'api'} onclick={() => (activeTab = 'api')}>
         {t('tab.api', lang)}
@@ -403,9 +448,12 @@
     {:else}
       <p class="no-content">{t('usage.empty', lang)}</p>
     {/if}
+    {/if}
   </div>
 
-  {#if activeTab === 'api'}
+  {#if inlineDoc}
+    <Toc sections={inlineTocSections} />
+  {:else if activeTab === 'api'}
     <Toc sections={tocSections} />
   {/if}
 </div>

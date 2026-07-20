@@ -143,6 +143,24 @@ export interface FormOptions {
    * from the collected `values` payload.
    */
   allowEmpty?: boolean;
+  /**
+   * Form-level custom validator (Semi `validator`, recommended). Called on
+   * submit / `validate()`. Receives all collected values; returns an errors map
+   * ({ [field]: message }) — an empty map (or empty return) means valid.
+   * May be sync or async (return a Promise). When set, per-field rules/validators
+   * are NOT run on submit/validate (Semi semantics: form-level validator wins).
+   */
+  validator?: (values: FormValues) => FieldErrors | Promise<FieldErrors> | void | Promise<void>;
+  /** deprecated alias of `validator`, kept for compatibility (Semi `validateFields`). */
+  validateFields?: (values: FormValues) => FieldErrors | Promise<FieldErrors> | void | Promise<void>;
+}
+
+/** options for `formApi.validate` (Semi validate options, v2.94.0+). */
+export interface ValidateOptions {
+  /** limit validation to these fields; omit to validate all registered fields. */
+  fields?: string[];
+  /** compute the result without mutating form state (no UI error, no touched, no emit). */
+  silent?: boolean;
 }
 
 export interface FormApi {
@@ -169,6 +187,8 @@ export interface FormApi {
    */
   setValues(values: FormValues, config?: { isOverride?: boolean }): void;
   setTouched(name: string, touched?: boolean): void;
+  /** read a field's touched state (Semi getTouched). */
+  getTouched(name: string): boolean;
   /** command-imperatively set a field's error (e.g. backend validation) (Semi setError). */
   setError(name: string, error: string | undefined): void;
   /**
@@ -189,8 +209,14 @@ export interface FormApi {
   getInitValues(): FormValues;
   /** validate one field; resolves to its (blocking) error (or undefined). Headless superset. */
   validateField(name: string): Promise<string | undefined>;
-  /** validate all (or given) fields; resolves to true when valid */
-  validate(names?: string[]): Promise<boolean>;
+  /**
+   * validate all (or given) fields; resolves to true when valid.
+   * - `validate()` / `validate(['a','b'])`: validate all / named fields, surfacing errors in the UI.
+   * - `validate({ silent: true })` / `validate({ fields, silent: true })`: silent validation —
+   *   compute the result WITHOUT touching form state (no error display, no `touched`, no re-render).
+   *   Useful for "should I fire the request?" checks (Semi `validate({ silent })`, v2.94.0+).
+   */
+  validate(namesOrOptions?: string[] | ValidateOptions): Promise<boolean>;
   /**
    * reset fields to their initial values and clear errors/warnings/touched.
    * With `fields` given, only those fields are reset; otherwise the whole form
@@ -407,6 +433,7 @@ export function createForm(options: FormOptions = {}): FormApi {
       state.touched = { ...state.touched, [name]: touched };
       emit();
     },
+    getTouched: (name) => state.touched[name] === true,
     setError(name, error) {
       state.errors = { ...state.errors, [name]: error };
       emit();
@@ -418,8 +445,39 @@ export function createForm(options: FormOptions = {}): FormApi {
     getInitValue: (name) => (name === undefined ? clone(initialTree) : pathGet(initialTree, name)),
     getInitValues: () => clone(initialTree),
     validateField,
-    async validate(names) {
-      const targets = names ?? [...fields.keys()];
+    async validate(namesOrOptions) {
+      // normalize the two call shapes: string[] | { fields?, silent? }.
+      const opts: ValidateOptions = Array.isArray(namesOrOptions)
+        ? { fields: namesOrOptions }
+        : (namesOrOptions ?? {});
+      const targets = opts.fields ?? [...fields.keys()];
+
+      // Form-level validator (Semi): when set, it REPLACES per-field rules on
+      // validate/submit. Runs against collected values; returns { field: msg }.
+      const formValidator = options.validator ?? options.validateFields;
+
+      if (opts.silent) {
+        // Silent: compute the result without touching state (no emit / touched / error UI).
+        if (formValidator) {
+          const errs = (await formValidator(collectValues())) || {};
+          return Object.values(errs).every((e) => !e);
+        }
+        const results = await Promise.all(
+          targets.map((n) => runRules(n, pathGet(state.values, n)).then((r) => r.error)),
+        );
+        return results.every((e) => !e);
+      }
+
+      if (formValidator) {
+        const errs = (await formValidator(collectValues())) || {};
+        // surface form-level errors on the targeted fields; clear the rest.
+        const next = { ...state.errors };
+        for (const n of targets) next[n] = (errs as FieldErrors)[n];
+        state.errors = next;
+        emit();
+        return targets.every((n) => !(errs as FieldErrors)[n]);
+      }
+
       const results = await Promise.all(targets.map((n) => validateField(n)));
       return results.every((e) => !e);
     },
@@ -463,7 +521,16 @@ export function createForm(options: FormOptions = {}): FormApi {
       state.submitCount += 1;
       emit();
       const targets = [...fields.keys()];
-      await Promise.all(targets.map((n) => validateField(n)));
+      const formValidator = options.validator ?? options.validateFields;
+      if (formValidator) {
+        // Form-level validator replaces per-field rules on submit (Semi semantics).
+        const errs = ((await formValidator(collectValues())) || {}) as FieldErrors;
+        const next = { ...state.errors };
+        for (const n of targets) next[n] = errs[n];
+        state.errors = next;
+      } else {
+        await Promise.all(targets.map((n) => validateField(n)));
+      }
       const valid = targets.every((n) => !state.errors[n]);
       state.submitting = false;
       emit();
