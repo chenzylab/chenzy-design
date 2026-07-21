@@ -1,23 +1,81 @@
 ---
-title: Highlight 文本高亮
+title: Highlight 高亮文本
 name: highlight
 category: show
-brief: Highlight 是一个纯展示型文本高亮组件，用于在一段文本中标记并突出显示一个或多个关键词。
+brief: 高亮特定内容。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
+  import Notice from '$lib/components/Notice.svelte';
 
-Highlight 是一个纯展示型文本高亮组件，用于在一段文本中标记并突出显示一个或多个关键词。典型场景包括搜索结果联想、列表过滤、日志检索结果标注。它接收原始文本与待高亮词，在文本中查找匹配片段并用高亮样式包裹，非匹配片段原样渲染。
+  import Basic from '../../demos/highlight/01-basic.svelte';
+  import basicSrc from '../../demos/highlight/01-basic.svelte?raw';
+  import HighlightStyle from '../../demos/highlight/02-highlight-style.svelte';
+  import highlightStyleSrc from '../../demos/highlight/02-highlight-style.svelte?raw';
+  import Differentiated from '../../demos/highlight/03-differentiated.svelte';
+  import differentiatedSrc from '../../demos/highlight/03-differentiated.svelte?raw';
+  import Component from '../../demos/highlight/04-component.svelte';
+  import componentSrc from '../../demos/highlight/04-component.svelte?raw';
+  import CaseSensitive from '../../demos/highlight/06-case-sensitive.svelte';
+  import caseSensitiveSrc from '../../demos/highlight/06-case-sensitive.svelte?raw';
+</script>
 
-Highlight 支持单个或多个关键词、大小写敏感/不敏感匹配、自定义高亮标签与样式，并支持对不同关键词使用差异化样式（对象数组）。默认对关键词与文本自动转义以防正则注入与 XSS。
+## 代码演示
 
-## 何时使用
+### 如何引入
 
-在需要对一段纯文本中的搜索词或关键词进行视觉标注时使用 Highlight。不适合用于富文本（HTML 内容内查找）或跨节点 DOM 范围高亮。高亮本身是纯展示，不承载交互语义；如需点击高亮词，由外层组件处理事件。
+```jsx
+import { Highlight } from '@chenzy-design/svelte';
+```
 
-## 无障碍
+### 基本用法
 
-- 默认使用原生 `<mark>` 元素包裹高亮片段，浏览器和辅助技术内建对 `<mark>` 的语义支持（表示"当前关注的"内容）。
-- 高亮片段本身不设 `tabindex`，不进入 Tab 序列，为纯展示元素。
-- 不在每个高亮片段上单独添加 `aria-label`，避免读屏器在逐字读取时产生噪声。
-- 若需告知用户匹配数量，应通过外部 live region 播报匹配计数，而非在组件内部实现。
+你可以通过 `searchWords` 指定需要高亮的关键字，通过 `sourceString` 指定源文本。
+
+<Notice title="注意事项">
+
+Highlight 组件会将文本拆分成多个独立的行内元素，任何分割文本流的 CSS 布局（如 flex 布局）可能会将高亮文本断开，为避免高亮内容被浏览器拆分到不同行或列，请按需使用元素包裹 Highlight 组件。
+
+</Notice>
+
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 指定高亮样式
+
+默认情况下，高亮文本会自带文本样式，背景颜色为浅黄色、文本颜色为黑色；暗色模式下背景色更深、文本颜色为白色。当你需要自定义不同的高亮样式时，你可以通过 `highlightClassName`、`highlightStyle` 来指定。
+
+<DemoBox code={highlightStyleSrc}><HighlightStyle /></DemoBox>
+
+### 不同文本使用差异化样式
+
+支持针对不同的高亮文本使用不同的高亮样式。`searchWords` 默认为字符串数组，当传入对象数组时，可以通过 `text` 指定高亮文本，同时单独指定 `className`、`style`。
+
+<DemoBox code={differentiatedSrc}><Differentiated /></DemoBox>
+
+### 指定高亮标签
+
+默认会将 `sourceString` 中与 `searchWords` 匹配的文本用 `mark` 标签包裹，你也可以通过 `component` 重新指定标签。
+
+<DemoBox code={componentSrc}><Component /></DemoBox>
+
+### 大小写敏感
+
+通过设置 `caseSensitive` 控制匹配是否区分大小写，默认为不敏感。
+
+<DemoBox code={caseSensitiveSrc}><CaseSensitive /></DemoBox>
+
+## API 参考
+
+### Highlight
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| searchWords | 期望高亮显示的文本（对象数组支持差异化样式） | string \| string[] \| object[] | `[]` |
+| sourceString | 源文本 | string | - |
+| component | 高亮标签 | string | `mark` |
+| highlightClassName | 高亮标签的样式类名 | string | - |
+| highlightStyle | 高亮标签的内联样式 | string | - |
+| caseSensitive | 是否大小写敏感 | boolean | false |
+| autoEscape | 是否自动转义 | boolean | true |
