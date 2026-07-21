@@ -13,11 +13,11 @@
 </script>
 
 <div>
-  <p style="margin-bottom: 20px;">
+  <div style="margin-bottom: 20px;">
     <Checkbox {checked} {disabled} {onChange} ariaLabel="Checkbox 示例">
       {label}
     </Checkbox>
-  </p>
+  </div>
   <p>
     <Button type="primary" size="small" onclick={() => (checked = !checked)}>
       {!checked ? 'Check' : 'Uncheck'}

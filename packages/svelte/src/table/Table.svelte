@@ -574,6 +574,14 @@
   );
 
   const total = $derived(processed.length);
+  // 分页 range 文案（对齐 Semi Table pageText：显示第 X 条-第 Y 条，共 N 条）。
+  const pageRangeText = $derived(
+    loc().t('Table.pageText', {
+      currentStart: total === 0 ? 0 : (currentPage - 1) * pageSize + 1,
+      currentEnd: Math.min(currentPage * pageSize, total),
+      total,
+    }),
+  );
   const visibleRows = $derived(
     paginationEnabled ? paginate(processed, currentPage, pageSize) : processed,
   );
@@ -2253,12 +2261,15 @@
     {#if renderPagination}
       {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
     {:else}
+      <!-- 对齐 Semi Table 分页：左侧 range 文案（显示第 X-Y 条，共 N 条）+ 右侧 default 页码按钮。
+           表格 size（行高密度）不影响分页器，故分页固定 default 尺寸（不透传表格 size）。 -->
       <div class="cd-table-pagination-outer">
+        <span class="cd-table-pagination-total">{pageRangeText}</span>
         <Pagination
           {total}
           currentPage={currentPage}
           {pageSize}
-          size={size === 'large' ? 'default' : size}
+          size="default"
           onChange={onPageChange}
         />
       </div>
@@ -2725,6 +2736,11 @@
     align-items: center;
     min-block-size: var(--cd-height-table-pagination-outer-min);
     color: var(--cd-color-table-page-text-default);
+  }
+  /* 分页左侧 range 文案（显示第 X-Y 条，共 N 条），对齐 Semi 灰色说明文字。 */
+  .cd-table-pagination-total {
+    color: var(--cd-color-table-page-text-default);
+    font-size: var(--cd-font-size-regular, 14px);
   }
 
   /* ===== 标题 / footer ===== */

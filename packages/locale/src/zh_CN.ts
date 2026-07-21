@@ -46,6 +46,7 @@ export const zh_CN: Locale = {
     sortOrderDescend: '降序',
     rowCount: '{count} 行',
     columnCount: '{count} 列',
+    pageText: '显示第 {currentStart} 条-第 {currentEnd} 条，共 {total} 条',
   },
   Empty: {
     noData: '暂无数据',

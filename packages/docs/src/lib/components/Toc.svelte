@@ -106,10 +106,11 @@
   .toc {
     position: sticky;
     top: 84px;
-    width: 180px;
+    /* 对齐 Semi .category-anchor：1512px 视口下宽 120px、字号 12px（size=small）。 */
+    width: 120px;
     flex-shrink: 0;
     align-self: flex-start;
-    font-size: 13px;
+    font-size: 12px;
     max-height: calc(100vh - 48px);
     overflow-y: auto;
   }

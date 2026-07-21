@@ -303,7 +303,7 @@ Input 和 TextArea 均支持该属性。
 | onBlur | 输入框失去焦点时的回调 | `(e: FocusEvent) => void` | - |
 | onFocus | 输入框 focus 时的回调 | `(e: FocusEvent) => void` | - |
 
-### Methods
+## Methods
 
 绑定在组件实例上的方法（Input / TextArea），可以通过实例句柄调用实现某些特殊交互。
 
