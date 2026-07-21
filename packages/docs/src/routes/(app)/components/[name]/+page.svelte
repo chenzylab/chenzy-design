@@ -277,13 +277,14 @@
         <span>{meta.category}</span>
       </div>
       <h1>{meta.name}</h1>
-      <p class="description">{meta.description}</p>
+      <!-- inline 页头部用 md brief（简洁，对齐 Semi 头部简介）；旧 tab 页保持 meta.description。 -->
+      <p class="description">{inlineDoc && data.brief ? data.brief : meta.description}</p>
     </div>
 
     {#if inlineDoc}
       <!-- 整页由 md 内联驱动：单页纵向流，无 tab（复刻 Semi）。
            md 顶部 import DemoBox/Notice/各 demo，正文按 Semi 章节顺序内联书写。 -->
-      <div class="content-body inline-doc" bind:this={contentEl}>
+      <div class="content-body inline-doc prose" bind:this={contentEl}>
         {#if ContentComponent}
           <ContentComponent />
         {/if}
@@ -501,7 +502,7 @@
         </section>
       {/if}
     {:else if ContentComponent}
-      <div class="content-body">
+      <div class="content-body prose">
         <ContentComponent />
       </div>
     {:else}
@@ -644,62 +645,33 @@
   .ext-icon {
     font-size: 12px;
   }
-  .content-body :global(h2) {
-    font-size: 18px;
-    margin: 24px 0 12px;
+  /* preset-typography 的 prose 默认给容器加 max-width:65ch（Tailwind Typography 惯例，
+     约 655px），会把正文压窄。本站正文跟随内容区全宽，故重置。特异性 (0,1,0) 覆盖
+     preset 的 :where(.prose)(0,0,0)。 */
+  .content-body {
+    max-inline-size: none;
   }
-  .content-body :global(h3) {
-    font-size: 15px;
-    margin: 16px 0 8px;
-  }
-  /* 标题/正文字体栈 —— 实测对齐 Semi 官网（system 系统字体栈，非 Inter；Semi 源码虽写
-     Inter 但官网实际渲染回退到 system）。直接指定完整栈，避免祖先被 UnoCSS preflight
-     reset 成 system-ui 后 inherit 拿到错误值。 */
-  .inline-doc :global(h2),
-  .inline-doc :global(h3),
-  .inline-doc :global(h4),
-  .inline-doc :global(p),
-  .inline-doc :global(li) {
-    font-family: system, -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
-      'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  }
-  /* —— inline md 标题字号/间距严格对齐 Semi layout.scss（$bf=16px）——
-     h2=$h2=27.65px、h3=$h3=23.04px、h4=$h4=19.2px；margin 用 $bf 倍数。
-     display:flex 让锚点图标与标题基线居中对齐（对齐 Semi .gatsby-h2/h3）。
-     scroll-margin-top 留出顶部固定导航高度，TOC 跳转不被遮。 */
-  .inline-doc :global(h2) {
-    display: flex;
-    align-items: center;
+  /* 正文标题/段落/列表/链接/代码/表格排版由 UnoCSS presetTypography 的 prose 默认接管
+     （不再手写 :global 规则）；仅在 vite.config cssExtend 去掉 code 反引号这一默认缺陷。 */
+  /* demo 预览区内「裸」原生标题（无 class，即 demo 里手写 <h2> 包裹用，如 Highlight demo）
+     不吃正文章节标题样式（27.65px flex 等），改为对齐 Semi 全局 heading 排版
+     （Semi demo <h2> 实测 21px/700/lh20）。
+     关键：用 :not([class]) 只命中裸标签，绝不碰组件渲染的带 class 标题
+     （如 Typography Title 的 .cd-typography-h1，其字号由组件自身 token 决定，不可覆盖）。
+     display:block 消除正文标题注入的 flex 布局。 */
+  .inline-doc :global(.demo-box__preview :is(h1, h2, h3, h4, h5, h6):not([class])) {
+    display: block;
     color: var(--cd-color-text-0, #1f2329);
-    font-size: 27.65px;
-    font-weight: 500;
-    line-height: 1.43;
-    margin: 64px 0 24px;
-    scroll-margin-top: 80px;
-  }
-  .inline-doc :global(h3) {
-    display: flex;
-    align-items: center;
-    color: var(--cd-color-text-0, #1f2329);
-    font-size: 23.04px;
-    font-weight: 500;
-    line-height: 1.43;
-    margin: 32px 0 24px;
-    scroll-margin-top: 80px;
-  }
-  /* 注：Semi 的 h2.md + h3.md 收紧规则依赖其 markdown 每标题包 <section> 的结构，
-     相邻选择器极少命中；本库 mdsvex 是扁平兄弟结构，该规则会错误命中（如「代码演示」
-     h2 紧邻「声明写法」h3），使间距被收紧成 16px，与 Semi 官网的大间距不符。故不加此规则，
-     h3 保持 32px margin-top（对齐 Semi 图中标题间距）。 */
-  .inline-doc :global(h4) {
-    display: flex;
-    align-items: center;
-    color: var(--cd-color-text-0, #1f2329);
-    font-size: 19.2px;
+    line-height: 1.5;
+    margin: 0.4em 0;
     font-weight: 700;
-    margin: 16px 0;
-    scroll-margin-top: 80px;
   }
+  .inline-doc :global(.demo-box__preview h1:not([class])) { font-size: 28px; }
+  .inline-doc :global(.demo-box__preview h2:not([class])) { font-size: 21px; line-height: 20px; }
+  .inline-doc :global(.demo-box__preview h3:not([class])) { font-size: 18px; }
+  .inline-doc :global(.demo-box__preview h4:not([class])) { font-size: 16px; }
+  .inline-doc :global(.demo-box__preview h5:not([class])) { font-size: 14px; }
+  .inline-doc :global(.demo-box__preview h6:not([class])) { font-size: 12px; }
   /* 标题旁的「复制链接」锚点按钮（DOM 注入 IconLink）：对齐 Semi .anchor-link-button-icon
      （color:link、translateX(10px)、hover/focus 淡入）；点击复制后转绿常显 1.5s。 */
   .inline-doc :global(.header-anchor) {
@@ -727,63 +699,8 @@
     opacity: 1;
     color: var(--cd-color-success, #00b42a);
   }
-  .content-body :global(p) {
-    line-height: 1.7;
-    color: var(--cd-color-text-0, #1f2329);
-    margin: 0 0 12px;
-  }
-  /* inline md 正文段落对齐 Semi：font-size 16px、line-height 1.75；
-     说明文字用较浅的 text-2（对齐 Semi 官网正文说明的实际浅灰观感，非纯黑）。 */
-  .inline-doc :global(p) {
-    font-size: 16px;
-    line-height: 1.75;
-    color: var(--cd-color-text-2, #86909c);
-  }
-  .content-body :global(ul),
-  .content-body :global(ol) {
-    padding-left: 20px;
-    margin: 0 0 12px;
-  }
-  .content-body :global(li) {
-    line-height: 1.7;
-    margin-bottom: 4px;
-  }
-  .content-body :global(a) {
-    color: var(--cd-color-primary, #0064fa);
-    text-decoration: none;
-  }
-  .content-body :global(a:hover) {
-    text-decoration: underline;
-  }
-  .content-body :global(code) {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    padding: 1px 5px;
-    border-radius: 3px;
-  }
-  .content-body :global(table) {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    margin: 0 0 16px;
-  }
-  .content-body :global(th) {
-    text-align: left;
-    padding: 8px 12px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    font-weight: 600;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-  }
-  .content-body :global(td) {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-    vertical-align: top;
-  }
-  .content-body :global(strong) {
-    font-weight: 600;
-    color: var(--cd-color-text-0, #1f2329);
-  }
+  /* 正文段落/列表/链接/行内代码/强调/表格已迁至 UnoCSS presetTypography 的 cssExtend
+     （prose 作用域收敛 + demo not-prose 隔离，取代此前手写 :global + :not([class])）。 */
   .no-content {
     color: var(--cd-color-text-2, #86909c);
     font-size: 14px;

@@ -1,27 +1,155 @@
 ---
-title: Anchor 锚点导航
+title: Anchor 锚点
 name: anchor
 category: navigation
-brief: 在长页面内提供章节级目录与快速跳转能力，并在滚动时自动高亮当前可视区域对应的锚点项。
+brief: 创建超链接导航栏。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
+  import Notice from '$lib/components/Notice.svelte';
 
-Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳转能力，并在滚动时自动高亮当前可视区域对应的锚点项。典型场景：长文档/详情页右侧目录、Setting 页分组导航、API 文档侧栏。
+  import Basic from '../../demos/anchor/01-basic.svelte';
+  import basicSrc from '../../demos/anchor/01-basic.svelte?raw';
+  import Comprehensive from '../../demos/anchor/02-comprehensive.svelte';
+  import comprehensiveSrc from '../../demos/anchor/02-comprehensive.svelte?raw';
+  import SizeDefault from '../../demos/anchor/03-size-default.svelte';
+  import sizeDefaultSrc from '../../demos/anchor/03-size-default.svelte?raw';
+  import SizeSmall from '../../demos/anchor/04-size-small.svelte';
+  import sizeSmallSrc from '../../demos/anchor/04-size-small.svelte?raw';
+  import RailPrimary from '../../demos/anchor/05-rail-primary.svelte';
+  import railPrimarySrc from '../../demos/anchor/05-rail-primary.svelte?raw';
+  import RailTertiary from '../../demos/anchor/06-rail-tertiary.svelte';
+  import railTertiarySrc from '../../demos/anchor/06-rail-tertiary.svelte?raw';
+  import RailMuted from '../../demos/anchor/07-rail-muted.svelte';
+  import railMutedSrc from '../../demos/anchor/07-rail-muted.svelte?raw';
+  import CollapseOn from '../../demos/anchor/08-collapse-on.svelte';
+  import collapseOnSrc from '../../demos/anchor/08-collapse-on.svelte?raw';
+  import CollapseOff from '../../demos/anchor/09-collapse-off.svelte';
+  import collapseOffSrc from '../../demos/anchor/09-collapse-off.svelte?raw';
+  import Tooltip from '../../demos/anchor/10-tooltip.svelte';
+  import tooltipSrc from '../../demos/anchor/10-tooltip.svelte?raw';
+  import TooltipPosition from '../../demos/anchor/11-tooltip-position.svelte';
+  import tooltipPositionSrc from '../../demos/anchor/11-tooltip-position.svelte?raw';
+</script>
 
-核心能力：组合式 API（对齐 Semi）——`children` + `<Anchor.Link>` 子组件，无 `links` 数组 prop；多级锚点（嵌套 `<Anchor.Link>`），点击平滑滚动到目标节点；滚动联动高亮（scroll-spy）：命令式监听滚动容器 scroll 事件（rAF 节流），计算「当前激活项」并高亮；跟随滑轨条（slide bar）据激活链接标题 `offsetTop` 定位；支持自定义滚动容器 `getContainer`、滚动偏移 `offsetTop`/`targetOffset`（避开固定头部）；`defaultAnchor` 默认高亮；`onChange`/`onClick` 回调传 href 字符串；`autoCollapse` 滚动时动态展开激活路径子级；`showTooltip` 文字缩略时浮层显示完整标题。
+## 代码演示
 
-与原生 `<a href="#id">` 的差异：Anchor 接管滚动行为（平滑 + 偏移）、提供激活高亮、跨容器联动，并保证键盘与读屏可用。
+### 如何引入
 
-## 何时使用
+```jsx
+import { Anchor } from '@chenzy-design/svelte';
+```
 
-适用于长页面内章节间的目录导航与跳转，帮助用户快速定位内容区域。
+### 基本示例
 
-Anchor 只负责「页面内导航」，不负责路由级导航（那是 Menu/Breadcrumb 的职责）；不渲染目标内容本身。
+使用 Link 可以创建锚点，点击它会跳转到指定位置。
 
-## 无障碍
+<DemoBox code={basicSrc}><Basic /></DemoBox>
 
-- 根 `<nav aria-label="...">`，链接为 `role="link"`；激活项加 `aria-current="location"`。
-- 键盘：`Tab` 进入链接列表（roving tabindex，整体一个 Tab stop）；`↑/↓` 在链接间移动焦点；`Home/End` 跳到首/末链接；`Space` 激活并滚动。
-- disabled 链接：`aria-disabled="true"` 且从 roving 序列移除。
-- `prefers-reduced-motion` 下禁用滑轨过渡与平滑滚动，改为瞬时跳转。
+### 综合使用
+
+你可以搭配 `getContainer`、`targetOffset`、`style`、`offsetTop` 完成一个拆箱即用的超链接导航栏。
+
+- 滚动容器：你可以通过 `getContainer` 设置滚动内容的容器，默认值为 `window`。
+- 距离顶部的距离：可以通过设置 `targetOffset` 设置文档滚动结束时，锚点距离容器顶部的距离。
+- 自定义定位方式：Anchor 的默认定位方式为 `relative`，你可以通过 `style` 对象自定义它的定位方式。
+- 偏移距离：`offsetTop` 可以在滚动内容距离容器顶部达到指定偏移量时触发当前 Link 切换。
+
+<DemoBox code={comprehensiveSrc}><Comprehensive /></DemoBox>
+
+### 尺寸
+
+Anchor 设置 `size` 可以控制锚点的尺寸。
+
+<DemoBox code={sizeDefaultSrc}><SizeDefault /></DemoBox>
+
+<DemoBox code={sizeSmallSrc}><SizeSmall /></DemoBox>
+
+### 滑轨主题
+
+Anchor 设置 `railTheme` 可以控制滑轨的主题色。默认值为 `primary`。
+
+<DemoBox code={railPrimarySrc}><RailPrimary /></DemoBox>
+
+<DemoBox code={railTertiarySrc}><RailTertiary /></DemoBox>
+
+<DemoBox code={railMutedSrc}><RailMuted /></DemoBox>
+
+### 动态展示
+
+Anchor 设置 `autoCollapse` 可以动态展示下一级锚点。默认值为 `false`。
+
+<DemoBox code={collapseOnSrc}><CollapseOn /></DemoBox>
+
+<DemoBox code={collapseOffSrc}><CollapseOff /></DemoBox>
+
+### 显示工具提示
+
+Anchor 设置 `showTooltip` 可以在 Link 超出最大宽度时显示 Link 的文字内容。默认值为 `false`，更多使用参考 API 说明。
+
+<DemoBox code={tooltipSrc}><Tooltip /></DemoBox>
+
+### 工具提示位置
+
+Anchor 设置 `position` 可以设置 Tooltip 的显示位置。它仅在 `showTooltip` 为 `true` 时起作用。
+
+<DemoBox code={tooltipPositionSrc}><TooltipPosition /></DemoBox>
+
+## API 参考
+
+### Anchor
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| autoCollapse | 滚动时动态显示下一级锚点 | boolean | false |
+| class | 类名 | string | - |
+| defaultAnchor | 默认高亮锚点 | string | - |
+| getContainer | 指定滚动的容器 | `() => HTMLElement` | window |
+| maxHeight | 组件的 max-height，超出时显示滚动条 | string \| number | `750px` |
+| maxWidth | 组件的 max-width，超出时显示省略 | string \| number | `200px` |
+| offsetTop | 滚动内容距离容器顶部达到指定偏移量时触发 | number | 0 |
+| onChange | 改变锚点的回调函数 | `(currentLink: string, previousLink: string) => void` | - |
+| onClick | 点击锚点回调函数 | `(event: MouseEvent, currentLink: string) => void` | - |
+| position | Tooltip 显示位置，可选值同 Tooltip 组件 position | string | - |
+| railTheme | 滑轨主题，可选值：`primary`、`tertiary`、`muted` | string | `primary` |
+| scrollMotion | 是否开启滚动动画 | boolean | false |
+| showTooltip | 文字缩略时是否显示 Tooltip 及相关配置：`type`（浮层内容承载的组件，支持 `tooltip`（默认）\| `popover`）；`opts`（其他需要透传给浮层组件的属性） | boolean \| object | false |
+| size | 锚点尺寸，可选值：`small`、`default` | string | `default` |
+| style | 样式对象 | string | - |
+| targetOffset | 锚点滚动时距离顶部偏移量 | number | 0 |
+
+### Anchor.Link
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 类名 | string | - |
+| disabled | 禁用，不响应点击跳转 | boolean | false |
+| href | 跳转的链接 | string | - |
+| style | 样式对象 | string | - |
+| title | 文字内容 | string \| Snippet | - |
+
+## 文案规范
+
+- 按句子大小写书写。
+- 保持简洁，避免换行。
+
+## FAQ
+
+- **为何我的 Link 没有高亮和滑动跟随？**
+
+  检查下点击锚点是否可以滚动到指定位置：
+
+  - 不可以，说明 href 有问题，检查文档中是否存在该 id；
+  - 可以，可能是滚动容器设置不正确，确保文档内容被包裹在滚动容器内。滚动容器默认为 window，如果你的容器是 `.my-container` 的 div，则应该将滚动容器设置为该 div。
+
+  ```jsx
+  // 此容器不是 Anchor 组件的容器，是文档内容的容器，
+  // 因为要根据文档容器去计算当前是哪个 id 在容器上方
+  const getContainer = () => document.querySelector('.my-container');
+
+  <Anchor getContainer={getContainer}>
+    {/* Links */}
+  </Anchor>
+  ```

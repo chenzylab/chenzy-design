@@ -154,6 +154,9 @@ importers:
       '@unocss/preset-icons':
         specifier: ^66.7.2
         version: 66.7.2
+      '@unocss/preset-typography':
+        specifier: 66.7.2
+        version: 66.7.2
       lottie-web:
         specifier: ^5.13.0
         version: 5.13.0

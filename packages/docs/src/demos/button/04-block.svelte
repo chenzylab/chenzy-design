@@ -2,7 +2,6 @@
   import { Button } from '@chenzy-design/svelte';
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 12px;">
-  <Button type="primary" block>主操作（块级）</Button>
-  <Button theme="outline" block>次操作（块级）</Button>
+<div>
+  <Button block>块级按钮</Button>
 </div>

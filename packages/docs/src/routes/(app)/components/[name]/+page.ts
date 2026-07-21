@@ -52,6 +52,9 @@ export const load: PageLoad = ({ params }) => {
   // docMode: 'inline' 的组件页由 md 自身内联驱动整页（demo/Notice/API 全写在 md 里，
   // 单页纵向流，复刻 Semi 无 tab 版式）；其余组件走 meta 驱动的 api/usage 双 tab。
   const docMode = (contentMod?.metadata?.docMode as string) ?? 'tabbed';
+  // 页面头部描述：优先用 md frontmatter 的 brief（简洁，对齐 Semi 头部简介），
+  // 回退 components.json 的 description（后者是给 AI/文档消费的长技术说明，不宜作头部简介）。
+  const brief = (contentMod?.metadata?.brief as string) ?? '';
 
-  return { meta: entry[1] as any, demos, Content, ContentEn, docMode };
+  return { meta: entry[1] as any, demos, Content, ContentEn, docMode, brief };
 };

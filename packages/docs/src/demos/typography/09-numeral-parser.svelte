@@ -26,7 +26,7 @@
     chenzy Design 重视我们的用户，加入并助力我们不断完善
     {#each infos as info (info.min)}
       <p style="margin: 4px 0;">
-        {info.type}：<b style="color: var(--semi-color-primary);">{info.min}</b>
+        {info.type}：<b style="color: var(--cd-color-primary);">{info.min}</b>
       </p>
     {/each}
   </Numeral>

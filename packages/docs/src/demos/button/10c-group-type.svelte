@@ -5,12 +5,12 @@
 </script>
 
 <!-- 组级 type 透传；组内单个 Button 仍可单独覆盖 -->
-<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+<div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
   {#each types as type (type)}
-    <ButtonGroup {type} theme="light" ariaLabel="操作按钮组">
-      <Button>编辑</Button>
-      <Button>复制</Button>
-      <Button>删除</Button>
+    <ButtonGroup {type} ariaLabel="操作按钮组">
+      <Button>拷贝</Button>
+      <Button>查询</Button>
+      <Button>剪切</Button>
     </ButtonGroup>
   {/each}
 </div>
