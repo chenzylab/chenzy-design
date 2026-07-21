@@ -2,6 +2,11 @@
   "name": "@chenzy-design/icons-lab",
   "version": "0.3.1",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/icons-lab"
+  },
   "type": "module",
   "sideEffects": false,
   "description": "chenzy-design 彩色图标集，对齐 Semi @douyinfe/semi-icons-lab（彩色、不可改色）",

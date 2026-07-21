@@ -2,6 +2,11 @@
   "name": "@chenzy-design/svelte",
   "version": "0.4.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/svelte"
+  },
   "type": "module",
   "sideEffects": [
     "*.css",

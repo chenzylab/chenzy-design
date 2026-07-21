@@ -2,6 +2,11 @@
   "name": "@chenzy-design/locale",
   "version": "0.4.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/locale"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {

@@ -2,6 +2,11 @@
   "name": "@chenzy-design/theme-cli",
   "version": "0.4.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/theme-cli"
+  },
   "type": "module",
   "bin": {
     "chenzy-theme": "./dist/cli.js"
