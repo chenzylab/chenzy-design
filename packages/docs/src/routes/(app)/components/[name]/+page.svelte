@@ -700,6 +700,25 @@
     margin: 16px 0;
     scroll-margin-top: 80px;
   }
+  /* demo 预览区内「裸」原生标题（无 class，即 demo 里手写 <h2> 包裹用，如 Highlight demo）
+     不吃正文章节标题样式（27.65px flex 等），改为对齐 Semi 全局 heading 排版
+     （Semi demo <h2> 实测 21px/700/lh20）。
+     关键：用 :not([class]) 只命中裸标签，绝不碰组件渲染的带 class 标题
+     （如 Typography Title 的 .cd-typography-h1，其字号由组件自身 token 决定，不可覆盖）。
+     display:block 消除正文标题注入的 flex 布局。 */
+  .inline-doc :global(.demo-box__preview :is(h1, h2, h3, h4, h5, h6):not([class])) {
+    display: block;
+    color: var(--cd-color-text-0, #1f2329);
+    line-height: 1.5;
+    margin: 0.4em 0;
+    font-weight: 700;
+  }
+  .inline-doc :global(.demo-box__preview h1:not([class])) { font-size: 28px; }
+  .inline-doc :global(.demo-box__preview h2:not([class])) { font-size: 21px; line-height: 20px; }
+  .inline-doc :global(.demo-box__preview h3:not([class])) { font-size: 18px; }
+  .inline-doc :global(.demo-box__preview h4:not([class])) { font-size: 16px; }
+  .inline-doc :global(.demo-box__preview h5:not([class])) { font-size: 14px; }
+  .inline-doc :global(.demo-box__preview h6:not([class])) { font-size: 12px; }
   /* 标题旁的「复制链接」锚点按钮（DOM 注入 IconLink）：对齐 Semi .anchor-link-button-icon
      （color:link、translateX(10px)、hover/focus 淡入）；点击复制后转绿常显 1.5s。 */
   .inline-doc :global(.header-anchor) {
@@ -780,7 +799,9 @@
     border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
     vertical-align: top;
   }
-  .content-body :global(strong) {
+  /* 排除组件高亮标签 .cd-highlight-tag：Highlight component="strong" 的高亮片段需保持
+     组件定义的纯黑文字色（对齐 Semi $color-highlight-text-default），不吃正文强调色 #1f2329。 */
+  .content-body :global(strong:not(.cd-highlight-tag)) {
     font-weight: 600;
     color: var(--cd-color-text-0, #1f2329);
   }
