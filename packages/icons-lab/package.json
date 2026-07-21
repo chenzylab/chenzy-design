@@ -10,12 +10,12 @@
   "type": "module",
   "sideEffects": false,
   "description": "chenzy-design 彩色图标集，对齐 Semi @douyinfe/semi-icons-lab（彩色、不可改色）",
-  "svelte": "./src/index.ts",
+  "svelte": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "svelte": "./src/index.ts",
-      "default": "./src/index.ts"
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -23,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "svelte-check --tsconfig ./tsconfig.json",
+    "build": "svelte-package -i src -o dist",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "peerDependencies": {
