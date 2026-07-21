@@ -70,13 +70,16 @@
 
   $effect(() => {
     if (!isObjectGutter) return;
+    // 逐键 mutate（screens[bp] = …）而非 spread 整体重建：registerMediaQuery 的 callInInit
+    // 会在本 effect 同步执行期内立即回调 match/unmatch，若读取整个 screens 再写回会让 effect
+    // 读写同一状态，触发 Svelte effect_update_depth_exceeded 无限循环。单键写不读整体，切断自依赖。
     const unregisters = (Object.keys(defaultResponsiveMap) as Breakpoint[]).map((screen) =>
       registerMediaQuery(defaultResponsiveMap[screen], {
         match: () => {
-          screens = { ...screens, [screen]: true };
+          screens[screen] = true;
         },
         unmatch: () => {
-          screens = { ...screens, [screen]: false };
+          screens[screen] = false;
         },
       }),
     );
