@@ -2,26 +2,47 @@
 title: Divider 分割线
 name: divider
 category: basic
-brief: 用于在内容之间建立视觉与语义上的分隔，是页面排版与信息分组的基础原子组件。
+brief: 分割线是一个呈线状的轻量化组件，用于有逻辑的组织元素内容和页面结构或区域。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Divider（分割线）用于在内容之间建立视觉与语义上的分隔，是页面排版与信息分组的基础原子组件。它本身不承载交互逻辑，属于纯展示组件。
+  import Basic from '../../demos/divider/01-basic.svelte';
+  import basicSrc from '../../demos/divider/01-basic.svelte?raw';
+  import WithContent from '../../demos/divider/02-with-content.svelte';
+  import withContentSrc from '../../demos/divider/02-with-content.svelte?raw';
+</script>
 
-支持水平（默认，块级占满宽度）和垂直（行内占满父级行高，常用于按钮组、文字操作区之间）两个方向。水平分割线支持嵌入文字/图标内容，并控制文字位置（左/中/右）。提供实线与虚线两种样式变体，可控制分隔线两侧的外边距间距。
+## 代码演示
 
-典型场景：卡片内段落分组、列表项之间的细线、表单分区、操作链接之间的竖向分隔、带标题的区块分隔。
+### 如何引入
 
-## 何时使用
+```jsx
+import { Divider } from '@chenzy-design/svelte';
+```
 
-Divider 表达「同级内容的弱分隔」，比留白更强、比卡片边框更弱，用于在不引入容器的前提下切分信息流。虚线样式用于「临时/可选分隔」语义，实线用于「稳定结构分隔」。
+### 基本用法
 
-不处理折叠/展开，不承载点击交互；如需可点击分组请用其他组件。
+通过 `layout` 控制分割线方向（水平 / 垂直），`dashed` 切换实线 / 虚线，`margin` 控制分割线的外边距（水平方向为上下 margin，垂直方向为左右 margin）。
 
-## 无障碍
+<DemoBox code={basicSrc}><Basic /></DemoBox>
 
-- 根元素 `role="separator"`；垂直分隔线额外设置 `aria-orientation="vertical"`。
-- 不可聚焦（无 `tabindex`），不参与 Tab 序列，符合非交互分隔元素规范。
-- 带文字时文字作为分隔的可访问名称随元素读出；纯装饰图标内容消费方应提供 `aria-label`。
-- 组件无动画，天然满足 `prefers-reduced-motion`。
+### 包含内容
+
+水平分割线可以嵌入文字或图标，通过 `align` 控制内容的对齐方式（居左 / 居中 / 居右）。
+
+<DemoBox code={withContentSrc}><WithContent /></DemoBox>
+
+## API 参考
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| align | 带内容时，内容对齐方式 | left \| center \| right | center |
+| children | 内容 | Snippet | 无 |
+| class | 类名 | string | 无 |
+| dashed | 是否为虚线 | boolean | false |
+| layout | 分割线方向 | horizontal \| vertical | horizontal |
+| margin | 分割线上下 margin（垂直方向时为左右 margin） | number \| string | 无 |
+| style | 自定义样式 | string | 无 |
