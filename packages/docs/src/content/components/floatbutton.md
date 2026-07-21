@@ -2,35 +2,112 @@
 title: FloatButton 悬浮按钮
 name: floatbutton
 category: basic
-brief: 悬浮固定在视口的可操作按钮，承载全局快捷入口（AI 编辑、搜索、帮助、回到顶部等），支持单个与成组。
+brief: 悬浮按钮是可以悬浮在页面上的可操作按钮。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-FloatButton 是**悬浮固定在页面视口上的可操作按钮**，用于承载全局快捷入口（AI 编辑、搜索、帮助、回到顶部等）。`FloatButtonGroup` 将多个悬浮按钮平铺成一组，统一分发点击。
+  import Basic from '../../demos/float-button/01-basic.svelte';
+  import basicSrc from '../../demos/float-button/01-basic.svelte?raw';
+  import Size from '../../demos/float-button/02-size.svelte';
+  import sizeSrc from '../../demos/float-button/02-size.svelte?raw';
+  import Shape from '../../demos/float-button/03-shape.svelte';
+  import shapeSrc from '../../demos/float-button/03-shape.svelte?raw';
+  import Href from '../../demos/float-button/04-href.svelte';
+  import hrefSrc from '../../demos/float-button/04-href.svelte?raw';
+  import Colorful from '../../demos/float-button/05-colorful.svelte';
+  import colorfulSrc from '../../demos/float-button/05-colorful.svelte?raw';
+  import BadgeDemo from '../../demos/float-button/06-badge.svelte';
+  import badgeSrc from '../../demos/float-button/06-badge.svelte?raw';
+  import Group from '../../demos/float-button/07-group.svelte';
+  import groupSrc from '../../demos/float-button/07-group.svelte?raw';
+</script>
 
-- 需要一个始终可见、脱离文档流、固定在视口某角的快捷操作入口 → 用 FloatButton。
-- 常规行内操作 → 用 [Button](/components/button)。
-- 仅"回到顶部"单一功能 → 用 [BackTop](/components/backtop)（带滚动监听与平滑回顶）。
+## 代码演示
 
-## 元素与跳转（对齐 Semi）
+### 如何引入
 
-FloatButton 严格对齐 Semi，是**纯 `div` + `onClick`**（非 `button` / `a`）：
+```jsx
+import { FloatButton, FloatButtonGroup } from '@chenzy-design/svelte';
+```
 
-- `href`：有值时点击经 **JS 跳转**——`target="_blank"` 用 `window.open(href, '_blank')`，否则 `window.location.href = href`（不渲染原生 `<a>`）。
-- `disabled`：点击直接 `return`，不跳转、不触发 `onClick`。
+### 基本用法
 
-## 定位
+FloatButton 默认 `position: fixed` 悬浮在视口右下角，通过 `style` 覆盖定位。以下演示为便于在文档中预览，用相对定位容器将按钮框在示例区内。
 
-FloatButton 默认 `position: fixed`，右下角（`bottom` / `right` 各 24px，对齐 Semi）。通过 `style` 覆盖定位（如 `style="bottom:24px;right:24px"` 或改用 `left` / `top`）。`FloatButtonGroup` 平铺容器同样 `position: fixed`，经 `style` 覆盖定位。
+<DemoBox code={basicSrc}><Basic /></DemoBox>
 
-## 形状 / 尺寸 / colorful
+### 尺寸
 
-- `shape`：`round`（默认，正圆）/ `square`（方形，8px 圆角）。
-- `size`：`small` / `default` / `large` 三档（24 / 32 / 40px）。
-- `colorful`：AI 风格多彩渐变外观（白字压 AI 渐变）。
-- `badge`：传入 Badge 参数（`dot` / `count` / `overflowCount` / `type` 等）时外层包裹 [Badge](/components/badge)，徽章按 Semi 几何公式贴形状切点定位。
+支持三种尺寸：默认，小，大。
 
-## 无障碍
+<DemoBox code={sizeSrc}><Size /></DemoBox>
 
-严格对齐 Semi：FloatButton 与 FloatButtonGroup 均为**纯 `div` + `onClick`**，无内置 ARIA 语义、无键盘可达、无 `focus-visible` 焦点环。`href` 经 JS 跳转而非原生链接。Group 的点击委托直接读 `e.target.dataset.value` 回传（不向上冒泡查找）。如需可访问性（可访问名、键盘操作），由消费方在业务层自行补充。
+### 形状
+
+默认定义了两种形状：round（默认）、square。
+
+<DemoBox code={shapeSrc}><Shape /></DemoBox>
+
+### 点击跳转
+
+可通过 `href` 设置跳转地址，`target` 指定目标网页应该在哪个窗口或框架中打开。
+
+<DemoBox code={hrefSrc}><Href /></DemoBox>
+
+### AI 风格 - 多彩悬浮按钮
+
+可设置 `colorful` 为 true，展示多彩的悬浮按钮。
+
+<DemoBox code={colorfulSrc}><Colorful /></DemoBox>
+
+### 带徽章的
+
+传入 `badge` 参数时，按钮外层包裹 [Badge](/components/badge)，支持 `dot` / `count` / `overflowCount` / `type` 等。
+
+<DemoBox code={badgeSrc}><BadgeDemo /></DemoBox>
+
+### 悬浮按钮组
+
+可通过 `items` 传入子项，`onClick` 回传被点击子项的 `value`。
+
+<DemoBox code={groupSrc}><Group /></DemoBox>
+
+## API 参考
+
+### FloatButton
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| badge | 徽章参数 | [BadgeProps](/components/badge) | - |
+| colorful | 多彩悬浮按钮 | boolean | false |
+| class | 样式类名 | string | - |
+| disabled | 禁用状态 | boolean | false |
+| href | 点击跳转的链接 | string | - |
+| icon | 显示图标 | Snippet | - |
+| onClick | 点击回调函数 | (e: MouseEvent) => void | - |
+| shape | 形状，支持 round、square | round \| square | round |
+| size | 尺寸，支持 default、small、large | small \| default \| large | default |
+| style | 样式 | string | - |
+| target | 指定在何处显示链接的 URL | string | - |
+
+### FloatButtonGroupItem
+
+在 FloatButtonProps 基础上增加以下参数。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| content | 文本内容 | Snippet \| string | - |
+| value | item 的标识 | string | - |
+
+### FloatButtonGroup
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 样式类名 | string | - |
+| disabled | 禁用状态 | boolean | false |
+| items | 单个子项的信息 | FloatButtonGroupItem[] | - |
+| onClick | 点击回调函数 | (value: string, e: MouseEvent) => void | - |
+| style | 样式 | string | - |

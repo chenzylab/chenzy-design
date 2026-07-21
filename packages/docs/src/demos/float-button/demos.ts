@@ -24,11 +24,11 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础悬浮按钮', '单个悬浮按钮（纯 div + onClick，对齐 Semi），经 style 覆盖定位'),
-  entry('02-size.svelte', '尺寸', 'small / default / large 三档（24 / 32 / 40px）'),
-  entry('03-shape.svelte', '形状', 'round=正圆（默认）/ square=方形（8px 圆角）'),
-  entry('04-href.svelte', 'href 跳转', '有 href 时点击经 JS 跳转；target=_blank 用 window.open（对齐 Semi）'),
-  entry('05-colorful.svelte', 'colorful 多彩', 'AI 风格多彩渐变外观（白字压 AI 渐变）'),
-  entry('06-badge.svelte', '带徽章', '传入 badge 参数时 body 外层包裹 Badge，贴形状切点定位'),
-  entry('07-group.svelte', 'Group 胶囊工具条', 'FloatButtonGroup 圆角条内横排多项，点击委托直接读 e.target.dataset.value 回传（对齐 Semi）'),
+  entry('01-basic.svelte', '基本用法', '单个悬浮按钮，通过 style 覆盖 fixed 定位。'),
+  entry('02-size.svelte', '尺寸', '支持三种尺寸：默认，小，大。'),
+  entry('03-shape.svelte', '形状', '默认定义了两种形状：round（默认）、square。'),
+  entry('04-href.svelte', '点击跳转', '通过 href 设置跳转地址，target 指定目标网页应该在哪个窗口或框架中打开。'),
+  entry('05-colorful.svelte', 'AI 风格 - 多彩悬浮按钮', '可设置 colorful 为 true，展示多彩的悬浮按钮。'),
+  entry('06-badge.svelte', '带徽章的', '传入 badge 参数时外层包裹 Badge，支持 dot / count / overflowCount / type。'),
+  entry('07-group.svelte', '悬浮按钮组', '可通过 items 传入子项，点击回调回传被点项 value。'),
 ];

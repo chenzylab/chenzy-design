@@ -1,22 +1,27 @@
 <script lang="ts">
-  import { FloatButtonGroup, Text } from '@chenzy-design/svelte';
+  import { FloatButtonGroup } from '@chenzy-design/svelte';
   import type { FloatButtonGroupItem } from '@chenzy-design/svelte';
-
-  let last = $state('');
+  import {
+    IconAIStrokedLevel3,
+    IconSearchStroked,
+    IconHelpCircleStroked,
+  } from '@chenzy-design/icons';
 
   const items: FloatButtonGroupItem[] = [
-    { value: 'edit', content: '编辑' },
-    { value: 'search', content: '搜索' },
-    { value: 'help', content: '帮助' },
+    { icon: editIcon, content: '编辑', value: 'editor' },
+    { icon: searchIcon, content: '搜索', value: 'search' },
+    { icon: helpIcon, content: '帮助', value: 'help' },
   ];
+
+  const onClick = (value: string) => {
+    console.log('点击了 ', value);
+  };
 </script>
 
-<Text type="tertiary">FloatButtonGroup 胶囊工具条：一个圆角条内 inline-flex 横排多项，点击委托直接读 e.target.dataset.value 回传（对齐 Semi）。</Text>
+{#snippet editIcon()}<IconAIStrokedLevel3 />{/snippet}
+{#snippet searchIcon()}<IconSearchStroked />{/snippet}
+{#snippet helpIcon()}<IconHelpCircleStroked />{/snippet}
+
 <div style="position:relative; height:120px">
-  <FloatButtonGroup
-    onClick={(value) => (last = value)}
-    style="position:absolute; bottom:16px; right:16px"
-    {items}
-  />
+  <FloatButtonGroup style="position:absolute; bottom:24px; right:24px" {items} {onClick} />
 </div>
-<Text type="tertiary">最近点击：{last || '（无）'}</Text>

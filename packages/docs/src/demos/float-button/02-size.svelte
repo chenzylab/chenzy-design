@@ -1,13 +1,17 @@
 <script lang="ts">
-  import { FloatButton, Text } from '@chenzy-design/svelte';
+  import { FloatButton } from '@chenzy-design/svelte';
+  import { IconAIEditLevel1 } from '@chenzy-design/icons';
+
+  const onClick = () => {
+    console.log('float button clicked');
+  };
 </script>
 
-<Text type="tertiary">尺寸三档：small / default / large（24 / 32 / 40px）。此处用 static 定位以便并排预览。</Text>
-<div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:8px">
+<div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap">
   {#each ['small', 'default', 'large'] as size (size)}
-    <FloatButton size={size as 'small' | 'default' | 'large'} style="position:static">
+    <FloatButton size={size as 'small' | 'default' | 'large'} style="position:static" {onClick}>
       {#snippet icon()}
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="currentColor" /></svg>
+        <IconAIEditLevel1 />
       {/snippet}
     </FloatButton>
   {/each}
