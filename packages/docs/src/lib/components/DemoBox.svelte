@@ -49,7 +49,9 @@
   {#if description}
     <p class="demo-box__desc">{description}</p>
   {/if}
-  <div class="demo-box__preview">
+  <!-- not-prose：排除 demo 预览区，正文 typography(prose) 不污染里面渲染的组件
+       （对齐 Semi「正文样式够不到 demo」的作用域纪律，取代逐元素 :not([class]) 隔离）。 -->
+  <div class="demo-box__preview not-prose">
     <LocaleProvider locale={demoLocale}>
       {@render children()}
     </LocaleProvider>
