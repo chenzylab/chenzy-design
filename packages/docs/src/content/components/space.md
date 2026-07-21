@@ -2,23 +2,70 @@
 title: Space 间距
 name: space
 category: basic
-brief: 在一组相邻子元素之间施加统一、可控的间隔，避免业务代码中散落魔法值。
+brief: 设置组件之间的间距。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Space 是一个间距布局容器，用于在一组相邻子元素之间施加统一、可控的间隔，避免在业务代码中散落 `margin`/`gap` 等魔法值。它是 Button 组、Tag 组、表单内联控件、卡片操作区等场景的首选编排原语。
+  import Basic from '../../demos/space/01-basic.svelte';
+  import basicSrc from '../../demos/space/01-basic.svelte?raw';
+  import Align from '../../demos/space/02-align.svelte';
+  import alignSrc from '../../demos/space/02-align.svelte?raw';
+  import Spacing from '../../demos/space/03-spacing.svelte';
+  import spacingSrc from '../../demos/space/03-spacing.svelte?raw';
+  import Vertical from '../../demos/space/04-vertical.svelte';
+  import verticalSrc from '../../demos/space/04-vertical.svelte?raw';
+  import Wrap from '../../demos/space/05-wrap.svelte';
+  import wrapSrc from '../../demos/space/05-wrap.svelte?raw';
+</script>
 
-核心能力：支持水平横排或垂直竖排排列子元素；提供预设档位（loose/medium/tight）或自定义数值间距，支持横纵双值 `[h, v]`；交叉轴对齐（start/end/center/baseline）；横向排布超出容器宽度时可自动换行，并保证换行后行间距与列间距一致。
+## 代码演示
 
-## 何时使用
+### 如何引入
 
-一组相邻元素需要统一间距时使用（按钮组、标签组、内联表单控件、卡片操作区）。
+```jsx
+import { Space } from '@chenzy-design/svelte';
+```
 
-Space 只负责一维线性排布 + 间距，不承担二维网格（用 Grid/Row-Col）、不承担弹性比例分配（用业务自行 flex）、不承担滚动容器职责。超长列表请用 List/虚拟列表组件，勿用 Space 堆叠数百节点。
+### 基本用法
 
-## 无障碍
+默认在一组相邻子元素之间施加统一的水平间距。
 
-- 根 `div` 不带 role，为纯布局容器（对齐 Semi，无 `tag`/`role` 超集）；语义化场景由业务在外层包裹语义容器，或经透传的 `role`/`aria-label` 表述。
-- 容器不可聚焦（不设 tabindex），不接管焦点，无焦点陷阱。
-- Space 不重排 DOM（仅 flex 视觉排列），视觉顺序与 DOM/Tab 顺序一致，避免焦点错乱。
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 对齐方式
+
+可使用 `align` 设置对齐方式，可选值：`start`、`center`（默认）、`end`、`baseline`。
+
+<DemoBox code={alignSrc}><Align /></DemoBox>
+
+### 间距尺寸
+
+可使用 `spacing` 设置间距大小，内置可选值：`tight`（8px，默认）、`medium`（16px）、`loose`（24px），并且支持传入 number 来自定义间距大小，也支持传入 array 来同时设置水平和垂直方向的间距。
+
+<DemoBox code={spacingSrc}><Spacing /></DemoBox>
+
+### 间距方向
+
+可使用 `vertical` 设置间距是否为垂直方向，默认情况下为 false。
+
+<DemoBox code={verticalSrc}><Vertical /></DemoBox>
+
+### 设置换行
+
+当间距为水平方向时，可使用 `wrap` 设置是否自动换行，默认情况下为 false。
+
+<DemoBox code={wrapSrc}><Wrap /></DemoBox>
+
+## API 参考
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| align | 对齐方式，支持 `start`、`end`、`center`、`baseline` | string | center |
+| class | 样式类名 | string | - |
+| spacing | 间距尺寸，支持 `tight`、`medium`、`loose` 或 number、array | string \| number \| array | tight |
+| style | 内联样式 | string | - |
+| vertical | 是否为垂直间距 | boolean | false |
+| wrap | 是否自动换行 | boolean | false |
