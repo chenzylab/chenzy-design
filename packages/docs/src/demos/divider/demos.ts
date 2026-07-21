@@ -27,21 +27,11 @@ export const demos: DemoEntry[] = [
   entry(
     '01-basic.svelte',
     '基本用法',
-    '水平分割线块级占满宽度，用 margin 控制主轴外边距；dashed 切换实线/虚线。',
+    'layout 控制方向（水平/垂直），dashed 切换实线/虚线，margin 控制分割线外边距（水平为上下、垂直为左右）。',
   ),
   entry(
-    '02-vertical.svelte',
-    '垂直分割线',
-    'layout="vertical" 时为行内元素，占满父级行高，常用于操作链接之间的竖向分隔。',
-  ),
-  entry(
-    '03-with-text.svelte',
-    '带文字',
-    '水平分割线可嵌入文字，align 控制内容居左/居中/居右；左对齐左线段短、右对齐右线段短、居中两侧等宽。',
-  ),
-  entry(
-    '04-with-icon.svelte',
-    '带图标',
-    '水平分割线内容也可以是图标，用 margin 控制两侧留白。',
+    '02-with-content.svelte',
+    '包含内容',
+    '水平分割线可嵌入文字或图标，align 控制内容对齐方式（居左/居中/居右）。',
   ),
 ];
