@@ -24,12 +24,23 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础栅格', '24 列栅格系统，通过 span 指定列宽（float:left + width%），gutter 控制列间距。'),
-  entry('02-gutter.svelte', '行列间距', 'gutter 传 [水平, 垂直] 数组可同时设置行列间距；传响应式对象按断点降级取值。'),
-  entry('03-offset.svelte', '列偏移', '通过 offset 向右偏移指定列数（margin-left），实现灵活的留白布局。'),
-  entry('08-push-pull.svelte', '列位置微调', 'push / pull 相对移动列位置（left / right），可让 DOM 顺序与视觉顺序解耦。'),
-  entry('05-flex-justify.svelte', 'Flex 水平排列', 'Row type="flex" 下 justify 控制水平排列：start/center/end/space-between/space-around。'),
-  entry('06-flex-align.svelte', 'Flex 垂直对齐', 'Row type="flex" 下 align 控制不等高列的垂直对齐：top/middle/bottom。'),
-  entry('07-order.svelte', '元素排序', 'Row type="flex" 下通过 order 改变列的视觉排列顺序，DOM 顺序不变。'),
-  entry('04-responsive.svelte', '响应式布局', '通过 xs/sm/md/lg/xl/xxl 断点属性实现移动端到桌面端的自适应。'),
+  entry('01-basic.svelte', '基础使用', '使用单一的一组 Row 和 Col 栅格组件即可创建基本栅格系统，所有 Col 必须放在 Row 内。'),
+  entry('02-gutter.svelte', 'Gutter 间隔', 'Row 的 gutter 属性控制栅格间隔，可写成像素值或 [水平, 垂直] 数组或响应式对象。'),
+  entry('03-offset.svelte', 'Offset 偏移', '通过 offset 向右偏移指定列数（间隔内不可有栅格）。'),
+  entry(
+    '05-flex-justify.svelte',
+    'Flex 布局',
+    'Row type="flex" 下 justify 控制子元素水平排列：start/center/end/space-between/space-around。',
+  ),
+  entry(
+    '06-flex-align.svelte',
+    'Flex 子元素垂直对齐',
+    'Row type="flex" 下 align 控制不等高子元素的垂直对齐：top/middle/bottom。',
+  ),
+  entry('07-order.svelte', 'Flex 元素排序', '通过 Flex 布局的 order 改变元素的排序。'),
+  entry(
+    '04-responsive.svelte',
+    '响应式',
+    '参照 Bootstrap 响应式设计，预设六个响应尺寸：xs/sm/md/lg/xl/xxl。',
+  ),
 ];

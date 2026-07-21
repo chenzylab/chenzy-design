@@ -1,50 +1,41 @@
 <script lang="ts">
   import { Row, Col } from '@chenzy-design/svelte';
 
-  // 三种垂直对齐（align），对齐 Semi。需配 type="flex" 启用 flex 布局。
-  const modes = ['top', 'middle', 'bottom'] as const;
-  // 不等高内容，凸显垂直对齐差异。
-  const heights = [56, 32, 72, 44];
+  // 对齐 Semi：四列不等高，凸显垂直对齐差异（对应 Semi demo 的 value 100/50/120/80）。
+  const heights = [100, 50, 120, 80];
 </script>
 
+<div class="grid grid-flex">
+  <p>Align Top</p>
+  <Row type="flex" justify="center" align="top">
+    {#each heights as h, i (i)}
+      <Col span={4}><div class="col-content" style="height:{h}px">col-4</div></Col>
+    {/each}
+  </Row>
+
+  <p>Align Center</p>
+  <Row type="flex" justify="space-around" align="middle">
+    {#each heights as h, i (i)}
+      <Col span={4}><div class="col-content" style="height:{h}px">col-4</div></Col>
+    {/each}
+  </Row>
+
+  <p>Align Bottom</p>
+  <Row type="flex" justify="space-between" align="bottom">
+    {#each heights as h, i (i)}
+      <Col span={4}><div class="col-content" style="height:{h}px">col-4</div></Col>
+    {/each}
+  </Row>
+</div>
+
 <style>
-  .demo-col {
-    background: #e6f0ff;
-    border: 1px solid #91b0f7;
-    border-radius: 4px;
+  .grid-flex :global(.cd-row-flex) {
+    background: var(--cd-color-fill-0);
+  }
+  .col-content {
+    line-height: 30px;
     text-align: center;
-    font-size: 14px;
-    color: #1e40af;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .demo-label {
-    font-size: 12px;
-    color: var(--cd-color-text-2);
-    margin: 12px 0 4px;
-    font-family: ui-monospace, monospace;
-  }
-  .demo-row-box {
-    border: 1px dashed var(--cd-color-border);
-    border-radius: 4px;
-    padding: 4px;
+    background: var(--cd-color-primary-light-default);
+    outline: 1px solid var(--cd-color-primary-light-active);
   }
 </style>
-
-<div style="display: flex; flex-direction: column;">
-  {#each modes as mode (mode)}
-    <p class="demo-label">align=&quot;{mode}&quot;</p>
-    <div class="demo-row-box">
-      <Row type="flex" align={mode} gutter={8}>
-        {#each heights as h, i (i)}
-          <Col span={6}>
-            <div class="demo-col" style={`height:${h}px`}>
-              {h}px
-            </div>
-          </Col>
-        {/each}
-      </Row>
-    </div>
-  {/each}
-</div>
