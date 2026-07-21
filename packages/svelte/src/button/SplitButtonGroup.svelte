@@ -67,8 +67,12 @@
 
 <style>
   /* 对齐 Semi splitButtonGroup.scss。 */
+  /* inline-flex 而非 inline-block：消除子元素（主按钮 + Dropdown trigger span）间的
+     HTML 空白符间隙，否则主按钮 margin-right:1px 之外还会多出 ~4px 空格，间隔达 5px，
+     与 Semi 的 1px 细缝不符（实测 Semi margin-right:1px、间隔 1px）。 */
   .cd-button-split {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
   }
   .cd-button-split :global(.cd-button) {
     border-radius: 0;

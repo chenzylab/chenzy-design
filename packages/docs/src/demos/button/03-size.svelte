@@ -3,7 +3,7 @@
 </script>
 
 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  <Button type="primary" size="large">Large</Button>
-  <Button type="primary" size="default">Default</Button>
-  <Button type="primary" size="small">Small</Button>
+  <Button size="large">大尺寸</Button>
+  <Button size="default">默认尺寸</Button>
+  <Button size="small">小尺寸</Button>
 </div>

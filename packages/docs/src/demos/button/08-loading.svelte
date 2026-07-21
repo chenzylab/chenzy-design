@@ -1,29 +1,46 @@
 <script lang="ts">
   import { Button } from '@chenzy-design/svelte';
+  import { IconDelete } from '@chenzy-design/icons';
 
-  // 受控加载态：两个切换按钮开关下方一组按钮的 loading
-  let loading = $state(true);
+  // 三个独立受控加载态（对齐 Semi）：保存默认关，删除/撤销默认开。
+  let saveLoading = $state(false);
+  let delLoading = $state(true);
+  let repLoading = $state(true);
+
+  function reset(status: boolean) {
+    saveLoading = status;
+    delLoading = status;
+    repLoading = status;
+  }
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 16px;">
-  <!-- 切换：关闭 / 开启加载态 -->
-  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <Button theme="light" onclick={() => (loading = false)}>关闭加载态</Button>
-    <Button theme="light" onclick={() => (loading = true)}>开启加载态</Button>
-  </div>
+{#snippet del()}<IconDelete />{/snippet}
 
-  <!-- 受控 loading 的一组按钮 -->
-  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <Button type="primary" theme="light" {loading}>保存</Button>
-    <Button type="danger" theme="light" {loading}>删除</Button>
-    <Button type="warning" theme="solid" {loading}>撤销</Button>
+<div>
+  <div>
+    <div
+      style="display: inline-flex; align-items: center; gap: 14px; padding-bottom: 14px;"
+    >
+      <Button onclick={() => reset(false)}>关闭加载态</Button>
+      <Button onclick={() => reset(true)}>开启加载态</Button>
+    </div>
   </div>
-
-  <!-- 静态加载态一览：各 theme + 纯图标 -->
-  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    <Button type="primary" loading>加载中</Button>
-    <Button type="primary" theme="light" loading>处理中</Button>
-    <Button type="primary" theme="outline" loading>提交中</Button>
-    <Button type="primary" loading ariaLabel="加载中" />
+  <hr />
+  <Button loading={saveLoading} onclick={() => (saveLoading = true)} style="margin-right: 14px;">
+    保存
+  </Button>
+  <Button
+    loading={delLoading}
+    icon={del}
+    type="danger"
+    onclick={() => (delLoading = true)}
+    style="margin-right: 14px;"
+  >
+    删除
+  </Button>
+  <div style="width: 200px; display: inline-block;">
+    <Button loading={repLoading} type="warning" block theme="solid" onclick={() => (repLoading = true)}>
+      撤销
+    </Button>
   </div>
 </div>

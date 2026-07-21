@@ -3,8 +3,10 @@
 </script>
 
 <!-- 组级 disabled 透传，整组按钮一并禁用 -->
-<ButtonGroup disabled type="primary" theme="light" ariaLabel="文本对齐">
-  <Button>左对齐</Button>
-  <Button>居中</Button>
-  <Button>右对齐</Button>
-</ButtonGroup>
+<div style="display: flex;">
+  <ButtonGroup disabled>
+    <Button>拷贝</Button>
+    <Button>查询</Button>
+    <Button>剪切</Button>
+  </ButtonGroup>
+</div>
