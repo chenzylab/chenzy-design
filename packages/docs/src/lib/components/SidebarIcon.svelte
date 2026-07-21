@@ -5,11 +5,14 @@
 
   // name：lowercase 组件名（路由/配色/别名键）；displayName：原始驼峰组件名（图标名匹配，
   // 如 InputNumber → IconInputNumber，避免 lowercase 丢驼峰导致匹配失败）。
+  // size：图标渲染尺寸（px）。侧边栏默认 24（对齐 Semi docs 侧栏）；prev/next 卡片传 40
+  // （对齐 Semi PrevAndNext nav-icon font-size:40px）。
   const {
     name,
     displayName,
     category,
-  }: { name: string; displayName?: string; category: string } = $props();
+    size = 24,
+  }: { name: string; displayName?: string; category: string; size?: number } = $props();
 
   // 组件名 → icons-lab 具名图标（对齐 Semi 官网侧边栏彩色组件图标 @douyinfe/semi-icons-lab）。
   // 多数同名（input → IconInput）；少数组件名与图标名不一致的走别名表。
@@ -44,17 +47,17 @@
 </script>
 
 {#if LabIcon}
-  <!-- icons-lab 彩色具名图标（自带色，对齐 Semi 官网侧边栏）。Semi docs 侧栏图标为 24px（extra-large）。 -->
-  <span class="sidebar-icon-lab" aria-hidden="true">
-    <LabIcon size="extra-large" />
+  <!-- icons-lab 彩色具名图标（自带色，对齐 Semi 官网侧边栏）。尺寸由 font-size 驱动（size prop）。 -->
+  <span class="sidebar-icon-lab" style:--icon-size="{size}px" aria-hidden="true">
+    <LabIcon size="inherit" />
   </span>
 {:else}
   <!-- fallback：本库特有组件无 icons-lab 图标，用手绘 path + 分类配色。 -->
-  <span class="sidebar-icon" style:--icon-color={fallbackColor} aria-hidden="true">
+  <span class="sidebar-icon" style:--icon-color={fallbackColor} style:--icon-size="{size}px" aria-hidden="true">
     <svg
       viewBox="0 0 24 24"
-      width="24"
-      height="24"
+      width={size}
+      height={size}
       fill="none"
       stroke="currentColor"
       stroke-width="2"
@@ -71,22 +74,23 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: var(--icon-size, 24px);
+    height: var(--icon-size, 24px);
     flex-shrink: 0;
-    /* icons-lab 图标 font-size 驱动尺寸；extra-large 档 = 24px，对齐 Semi docs 侧栏图标。 */
-    font-size: 24px;
+    /* icons-lab 图标 size=inherit → font-size 驱动尺寸。默认 24px 对齐 Semi docs 侧栏；
+       prev/next 卡片传 size=40 时随 --icon-size 放大（对齐 Semi nav-icon 40px）。 */
+    font-size: var(--icon-size, 24px);
   }
   .sidebar-icon-lab :global(svg) {
     display: block;
   }
-  /* fallback 手绘图标：严格对齐 Semi Nav（图标无背景块，直接着分类色）；尺寸 24px 对齐 Semi docs。 */
+  /* fallback 手绘图标：严格对齐 Semi Nav（图标无背景块，直接着分类色）；尺寸随 --icon-size。 */
   .sidebar-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: var(--icon-size, 24px);
+    height: var(--icon-size, 24px);
     flex-shrink: 0;
     color: var(--icon-color);
   }

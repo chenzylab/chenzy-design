@@ -149,9 +149,9 @@ Radio 不可用。
 | value | 用于设置当前选中的值 | string \| number | - |
 | onChange | 选项变化时的回调函数 | `(e: RadioChangeEvent) => void` | - |
 
-### Methods
+## Methods
 
-绑定在 Radio 实例上的方法。
+### Radio
 
 | 名称 | 描述 |
 | --- | --- |

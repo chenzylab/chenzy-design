@@ -77,6 +77,8 @@ export interface Locale {
     rowCount: string;
     /** grid 列数，uses {count} */
     columnCount: string;
+    /** 分页 range 文案（对齐 Semi pageText），uses {currentStart} {currentEnd} {total} */
+    pageText: string;
   };
   Empty: {
     noData: string;

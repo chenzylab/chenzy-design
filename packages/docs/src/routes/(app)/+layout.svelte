@@ -3,17 +3,22 @@
   import { base } from '$app/paths';
   import type { Snippet } from 'svelte';
   import componentsJson from '@chenzy-design/svelte/components.json';
-  import { Nav } from '@chenzy-design/svelte';
+  import { Nav, LocaleProvider } from '@chenzy-design/svelte';
   import type { NavItemDef, NavSelectData } from '@chenzy-design/svelte';
   import { goto } from '$app/navigation';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
   import { componentNamesZh } from '$lib/component-names-zh';
+  import { componentLocale } from '$lib/component-locale';
   import SidebarIcon from '$lib/components/SidebarIcon.svelte';
 
   const { children }: { children: Snippet } = $props();
 
   const lang = $derived(locale.value);
+  // 全站套 LocaleProvider（对齐 Semi layout.js 顶层 LocaleProvider）：站内所有本库组件
+  // 的内置文案（Table 分页 range、Pagination、空态等）跟随文档站语言，无需逐处单独套。
+  // 语言映射集中在 component-locale.ts，多语言扩展只改那一处。
+  const appLocale = $derived(componentLocale[lang]);
 
   // 按 category 分组（label key 走 i18n）
   const categoryKey: Record<string, string> = {
@@ -149,6 +154,7 @@
   }
 </script>
 
+<LocaleProvider locale={appLocale}>
 <div class="docs-body">
   <aside class="docs-sidebar">
     <!-- 侧边栏用本库 Nav 组件渲染（对齐 Semi docs：侧边栏即 Navigation 组件）。
@@ -181,6 +187,7 @@
     {@render children()}
   </main>
 </div>
+</LocaleProvider>
 
 <style>
   .docs-body {

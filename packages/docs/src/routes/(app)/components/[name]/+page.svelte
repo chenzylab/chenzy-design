@@ -17,6 +17,7 @@
   import CodeBlock from '$lib/components/CodeBlock.svelte';
   import Toc from '$lib/components/Toc.svelte';
   import SectionAnchor from '$lib/components/SectionAnchor.svelte';
+  import PrevNextNav from '$lib/components/PrevNextNav.svelte';
   import { locale } from '$lib/locale.svelte';
   import { t, localize } from '$lib/i18n';
   import { resolveTokenPrefix } from '$lib/token-prefix';
@@ -69,14 +70,20 @@
     if (!inlineDoc || !browser) return;
     lowerName; // 切换组件时重扫
     lang; // 切换语言时 md 换、标题变，重扫 TOC
+    hasTokens; // 有无设计变量决定 TOC 末尾是否补 tokens 条目
     // 等 md DOM 就位后扫标题（数据同步，tick 一次即可）
     tick().then(() => {
       if (!contentEl) return;
       const heads = Array.from(contentEl.querySelectorAll<HTMLElement>('h2[id], h3[id]'));
       const sections: { id: string; title: string; level?: number }[] = [];
       let started = false;
+      // 仅「代码演示」章节辖区内的 demo h3 进 TOC；其它 h2 章节（API 参考 / 无障碍 /
+      // 文案规范…）只收 h2 本身，其内部 h3（Checkbox / CheckboxGroup / Methods / ARIA /
+      // 键盘和焦点…）不进——对齐 Semi TOC 与本站 meta 驱动页的 tocSections 规则。
+      let inDemos = false;
       for (const h of heads) {
         const title = h.textContent?.trim() ?? '';
+        const isH2 = h.tagName === 'H2';
         // 每个带 id 的标题注入「复制链接」锚点按钮（对齐 Semi 标题旁的分享图标 +
         // meta 驱动页的 SectionAnchor）。md 标题是原生元素、无法嵌组件，故 DOM 注入。
         // 传注入前捕获的纯标题文本（此时 h 尚无按钮），供复制逻辑用 encodeURI(title)。
@@ -84,11 +91,17 @@
         // 「代码演示」是分界：之前的总述不进 TOC，标题本身也不显示。
         if (title === '代码演示' || title === 'Demos') {
           started = true;
+          inDemos = true;
           continue;
         }
         if (!started) continue;
+        // 进入下一个 h2 即离开「代码演示」辖区，此后 h3 不再收录。
+        if (isH2) inDemos = false;
+        if (!isH2 && !inDemos) continue;
         sections.push({ id: h.id, title, level: 1 });
       }
+      // 设计变量 section 由页面在 md 之后补渲染（不在 md 标题里），故手动补进 TOC 末尾。
+      if (hasTokens) sections.push({ id: 'tokens', title: t('section.tokens', lang), level: 1 });
       inlineTocSections = sections;
     });
   });
@@ -273,6 +286,14 @@
       <div class="content-body inline-doc" bind:this={contentEl}>
         {#if ContentComponent}
           <ContentComponent />
+        {/if}
+        <!-- 设计变量：md 是静态内容，无法内联组件表格，故由页面在 md 之后统一补渲染
+             （数据驱动，对齐 Semi 组件页末尾的「设计变量」章节 <DesignToken/>）。 -->
+        {#if hasTokens}
+          <section class="section" id="tokens">
+            <h2>{t('section.tokens', lang)}<SectionAnchor id="tokens" /></h2>
+            <DesignTokenTable component={tokenComponent} />
+          </section>
         {/if}
       </div>
     {:else}
@@ -487,6 +508,9 @@
       <p class="no-content">{t('usage.empty', lang)}</p>
     {/if}
     {/if}
+
+    <!-- 页脚「上一个 / 下一个」组件导航（对齐 Semi PrevAndNext），置于主内容区底部。 -->
+    <PrevNextNav name={lowerName} />
   </div>
 
   {#if inlineDoc}
@@ -499,17 +523,15 @@
 <style>
   .page {
     display: flex;
-    gap: 48px;
+    /* 内容↔TOC 间距对齐 Semi（1512px 视口实测 ~52px）。 */
+    gap: 52px;
     align-items: flex-start;
   }
   .page-main {
     flex: 1;
     min-width: 0;
-    /* 内容保持可读宽度，TOC 由 margin-left:auto 推到主区最右侧（对齐 Semi） */
-    max-width: 860px;
-  }
-  .page > :global(.toc) {
-    margin-left: auto;
+    /* 内容区可读宽度对齐 Semi（.content 约占 80%，1512px 视口实测 ~980px）。 */
+    max-width: 980px;
   }
   .component-header {
     margin-bottom: 32px;

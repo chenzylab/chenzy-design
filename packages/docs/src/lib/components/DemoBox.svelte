@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { LocaleProvider, CodeHighlight, zh_CN, en_US } from '@chenzy-design/svelte';
+  import { LocaleProvider, CodeHighlight } from '@chenzy-design/svelte';
   import { locale } from '$lib/locale.svelte';
+  import { componentLocale } from '$lib/component-locale';
   import { t } from '$lib/i18n';
 
   const lang = $derived(locale.value);
-  // demo 内组件的内置文案跟随文档站语言（zh→zh_CN / en→en_US），
-  // 否则 useLocale() 无 Provider 会回退 en_US，导致中文页面里组件文案仍是英文。
-  const demoLocale = $derived(lang === 'zh' ? zh_CN : en_US);
+  // demo 内组件的内置文案跟随文档站语言。虽然全站已套 LocaleProvider，DemoBox 作为可复用
+  // 组件不假设一定在其内（如独立预览），自套一层保底（嵌套同值无害）。映射见 component-locale.ts。
+  const demoLocale = $derived(componentLocale[lang]);
 
   const {
     title,

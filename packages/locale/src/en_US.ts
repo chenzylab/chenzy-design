@@ -46,6 +46,7 @@ export const en_US: Locale = {
     sortOrderDescend: 'descending',
     rowCount: '{count} rows',
     columnCount: '{count} columns',
+    pageText: 'Showing {currentStart} - {currentEnd} of {total}',
   },
   Empty: {
     noData: 'No data',
