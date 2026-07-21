@@ -19,6 +19,12 @@ export const meta = {
     { name: 'width', type: 'number | string', default: 'undefined', desc: '宽度（number 记为 px）' },
     { name: 'showSearch', type: 'boolean', default: 'true', desc: '是否显示搜索入口' },
     {
+      name: 'limitSearchButtonBounds',
+      type: 'boolean',
+      default: 'false',
+      desc: '是否限制搜索按钮拖动范围在容器内（对齐 Semi ≥2.94）',
+    },
+    {
       name: 'renderSearchButton',
       type: 'Snippet<[Snippet, SearchControls]>',
       default: 'undefined',

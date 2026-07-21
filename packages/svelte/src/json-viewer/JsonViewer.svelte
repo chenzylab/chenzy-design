@@ -33,6 +33,7 @@
   import Button from '../button/Button.svelte';
   import ButtonGroup from '../button/ButtonGroup.svelte';
   import Input from '../input/Input.svelte';
+  import DragMove from '../drag-move/DragMove.svelte';
 
   /** 搜索工具条暴露给 renderSearchButton 的受控句柄（严格对齐 Semi SearchControls）。 */
   export interface SearchControls {
@@ -61,6 +62,8 @@
     width?: number | string;
     /** 是否显示搜索入口（默认 true，对齐 Semi）。 */
     showSearch?: boolean;
+    /** 是否限制搜索按钮/搜索栏拖动范围在容器内（对齐 Semi limitSearchButtonBounds，默认 false）。 */
+    limitSearchButtonBounds?: boolean;
     /** 自定义渲染搜索按钮（对齐 Semi ≥2.95）。传入默认按钮 snippet 与控制句柄。 */
     renderSearchButton?: Snippet<[Snippet, SearchControls]>;
     /** 编辑器配置（lineHeight/autoWrap/readOnly/customRenderRule/formatOptions）。 */
@@ -78,6 +81,7 @@
     height = 400,
     width = 400,
     showSearch = true,
+    limitSearchButtonBounds = false,
     renderSearchButton,
     options,
     onChange,
@@ -99,6 +103,9 @@
 
   // 搜索工具条 UI 状态（本壳自管，内核不提供 UI）。
   let searchOpen = $state(false);
+  // DragMove 拖动标记（对齐 Semi isDragging）：拖动结束的 mouseup 会触发 click，
+  // 用它在 openSearch 里拦掉「拖完误开搜索栏」。非响应式，只在事件回调间读写。
+  let isDragging = false;
   let searchText = $state('');
   let replaceText = $state('');
   let caseSensitive = $state(false);
@@ -172,9 +179,11 @@
   }
 
   function openSearch() {
+    // 拖动刚结束触发的 click 不应打开搜索栏（对齐 Semi isDragging 拦截）。
+    if (isDragging) return;
+    // 仅切换显示，不自动聚焦搜索框（对齐 Semi showSearchBar：打开后 activeElement 仍是 body，
+    // 焦点只在输入内容后由 refocusSearch 还给搜索框）。
     searchOpen = true;
-    // 下一帧聚焦输入框。
-    queueMicrotask(() => searchInputRef?.focus());
   }
   // 搜索后把焦点还给搜索框（内核 search() 会把焦点抢到编辑器，对齐 Semi）。
   function refocusSearch() {
@@ -277,97 +286,109 @@
     : ''}{style ?? ''}"
 >
   {#if showSearch}
-    <div class="cd-json-viewer-toolbar-slot">
-      {#if renderSearchButton}
-        {@render renderSearchButton(defaultSearchButton, searchControls)}
-      {:else}
-        {@render defaultSearchButton()}
-      {/if}
-    </div>
-  {/if}
+    <!-- DragMove 包裹搜索区（对齐 Semi renderSearchButton 的 DragMove）：可拖动，
+         constrainer='parent' 时限制在容器内。DragMove wrapper 即 Semi 的 drag div
+         （absolute top:0 left:width，定在容器右边缘，w:0），内部 slot 再 top:20 right:20
+         相对它往左贴；按 searchOpen 切换搜索栏 or 搜索按钮（对齐 Semi showSearchBar）。 -->
+    <DragMove
+      class="cd-json-viewer-drag"
+      constrainer={limitSearchButtonBounds ? 'parent' : undefined}
+      onMouseDown={() => (isDragging = false)}
+      onMouseMove={() => (isDragging = true)}
+    >
+      <div class="cd-json-viewer-toolbar-slot">
+        {#if searchOpen}
+          <!-- 搜索/替换浮层（DOM 结构严格对齐 Semi renderSearchBox：
+               search-bar-container > search-bar(Input + ul.search-options + ButtonGroup + close Button)
+                                    + replace-bar(Input + replace Button + replaceAll Button)）。 -->
+          <div class="cd-json-viewer-search-bar-container" role="search">
+            <div class="cd-json-viewer-search-bar">
+              <Input
+                bind:this={searchInputRef}
+                class="cd-json-viewer-search-bar-input"
+                value={searchText}
+                placeholder={loc().t('JsonViewer.search')}
+                ariaLabel={loc().t('JsonViewer.search')}
+                onChange={(v) => {
+                  searchText = v;
+                  runSearch();
+                  // 内核 search() 抢焦点 → 还给搜索框（对齐 Semi）。
+                  refocusSearch();
+                }}
+              />
+              <ul class="cd-json-viewer-search-options">
+                <li
+                  class="cd-json-viewer-search-options-item"
+                  class:cd-json-viewer-search-options-item-active={caseSensitive}
+                >
+                  <IconCaseSensitive
+                    role="button"
+                    aria-label={loc().t('JsonViewer.caseSensitive')}
+                    aria-pressed={caseSensitive}
+                    onclick={toggleCase}
+                  />
+                </li>
+                <li
+                  class="cd-json-viewer-search-options-item"
+                  class:cd-json-viewer-search-options-item-active={useRegex}
+                >
+                  <IconRegExp
+                    role="button"
+                    aria-label={loc().t('JsonViewer.regex')}
+                    aria-pressed={useRegex}
+                    onclick={toggleRegex}
+                  />
+                </li>
+                <li
+                  class="cd-json-viewer-search-options-item"
+                  class:cd-json-viewer-search-options-item-active={wholeWord}
+                >
+                  <IconWholeWord
+                    role="button"
+                    aria-label={loc().t('JsonViewer.wholeWord')}
+                    aria-pressed={wholeWord}
+                    onclick={toggleWord}
+                  />
+                </li>
+              </ul>
+              <ButtonGroup>
+                <Button icon={iconPrev} ariaLabel={loc().t('JsonViewer.prev')} onclick={() => prevSearch()} />
+                <Button icon={iconNext} ariaLabel={loc().t('JsonViewer.next')} onclick={() => nextSearch()} />
+              </ButtonGroup>
+              <Button
+                icon={iconClose}
+                size="small"
+                theme="borderless"
+                type="tertiary"
+                ariaLabel={loc().t('JsonViewer.closeSearch')}
+                onclick={closeSearch}
+              />
+            </div>
 
-  {#if searchOpen}
-    <!-- 搜索/替换浮层（DOM 结构严格对齐 Semi renderSearchBox：
-         search-bar-container > search-bar(Input + ul.search-options + ButtonGroup + close Button)
-                              + replace-bar(Input + replace Button + replaceAll Button)）。 -->
-    <div class="cd-json-viewer-search-bar-container" role="search">
-      <div class="cd-json-viewer-search-bar">
-        <Input
-          bind:this={searchInputRef}
-          class="cd-json-viewer-search-bar-input"
-          value={searchText}
-          placeholder={loc().t('JsonViewer.search')}
-          ariaLabel={loc().t('JsonViewer.search')}
-          onChange={(v) => {
-            searchText = v;
-            runSearch();
-            // 内核 search() 抢焦点 → 还给搜索框（对齐 Semi）。
-            refocusSearch();
-          }}
-        />
-        <ul class="cd-json-viewer-search-options">
-          <li
-            class="cd-json-viewer-search-options-item"
-            class:cd-json-viewer-search-options-item-active={caseSensitive}
-          >
-            <IconCaseSensitive
-              role="button"
-              aria-label={loc().t('JsonViewer.caseSensitive')}
-              aria-pressed={caseSensitive}
-              onclick={toggleCase}
-            />
-          </li>
-          <li
-            class="cd-json-viewer-search-options-item"
-            class:cd-json-viewer-search-options-item-active={useRegex}
-          >
-            <IconRegExp
-              role="button"
-              aria-label={loc().t('JsonViewer.regex')}
-              aria-pressed={useRegex}
-              onclick={toggleRegex}
-            />
-          </li>
-          <li
-            class="cd-json-viewer-search-options-item"
-            class:cd-json-viewer-search-options-item-active={wholeWord}
-          >
-            <IconWholeWord
-              role="button"
-              aria-label={loc().t('JsonViewer.wholeWord')}
-              aria-pressed={wholeWord}
-              onclick={toggleWord}
-            />
-          </li>
-        </ul>
-        <ButtonGroup>
-          <Button icon={iconPrev} ariaLabel={loc().t('JsonViewer.prev')} onclick={() => prevSearch()} />
-          <Button icon={iconNext} ariaLabel={loc().t('JsonViewer.next')} onclick={() => nextSearch()} />
-        </ButtonGroup>
-        <Button
-          icon={iconClose}
-          size="small"
-          theme="borderless"
-          type="tertiary"
-          ariaLabel={loc().t('JsonViewer.closeSearch')}
-          onclick={closeSearch}
-        />
+            {#if !readOnly}
+              <div class="cd-json-viewer-replace-bar">
+                <Input
+                  class="cd-json-viewer-replace-bar-input"
+                  value={replaceText}
+                  placeholder={loc().t('JsonViewer.replaceInput')}
+                  ariaLabel={loc().t('JsonViewer.replaceInput')}
+                  onChange={(v) => (replaceText = v)}
+                />
+                <Button onclick={() => replace(replaceText)}>{loc().t('JsonViewer.replace')}</Button>
+                <Button onclick={() => replaceAll(replaceText)}>{loc().t('JsonViewer.replaceAll')}</Button>
+              </div>
+            {/if}
+          </div>
+        {:else}
+          <!-- 搜索按钮态（对齐 Semi showSearchBar=false 分支）：支持 renderSearchButton 自定义。 -->
+          {#if renderSearchButton}
+            {@render renderSearchButton(defaultSearchButton, searchControls)}
+          {:else}
+            {@render defaultSearchButton()}
+          {/if}
+        {/if}
       </div>
-
-      {#if !readOnly}
-        <div class="cd-json-viewer-replace-bar">
-          <Input
-            class="cd-json-viewer-replace-bar-input"
-            value={replaceText}
-            placeholder={loc().t('JsonViewer.replaceInput')}
-            ariaLabel={loc().t('JsonViewer.replaceInput')}
-            onChange={(v) => (replaceText = v)}
-          />
-          <Button onclick={() => replace(replaceText)}>{loc().t('JsonViewer.replace')}</Button>
-          <Button onclick={() => replaceAll(replaceText)}>{loc().t('JsonViewer.replaceAll')}</Button>
-        </div>
-      {/if}
-    </div>
+    </DragMove>
   {/if}
 
   <div
@@ -423,16 +444,30 @@
     color: var(--cd-color-json-viewer-error);
   }
 
-  /* —— 搜索入口按钮 —— */
-  .cd-json-viewer-toolbar-slot {
+  /* DragMove wrapper = Semi 的 drag div：absolute + top:0 + left:width，定在容器右边缘（w:0）。
+     top/left 靠此 CSS（core 只命令式写 position:absolute + cursor:move，不写 top/left）；
+     内部 trigger / search-bar-container 再以它为定位祖先用 top:20 right:20 往左贴（复刻 Semi）。 */
+  .cd-json-viewer :global(.cd-json-viewer-drag) {
     position: absolute;
-    inset-block-start: var(--cd-spacing-json-viewer-toolbar-padding);
-    inset-inline-end: var(--cd-spacing-json-viewer-toolbar-padding);
+    inset-block-start: 0;
+    /* Semi 用 left:width(具体 px)，此处 100% 等价（= 容器宽 = 右边缘）且不依赖 width 变量是否输出。 */
+    inset-inline-start: 100%;
     z-index: 1;
   }
 
-  /* 搜索触发器改用 Button(theme=light type=primary)（对齐 Semi），
-     样式由 Button 组件自带，此处不再自造裸按钮样式。 */
+  /* slot 只是承载 {#if searchOpen} 条件切换的透明层（Semi 无此层，trigger/container 直接是
+     drag div 的子节点）；display:contents 让它不产生盒子，子节点直接以 drag wrapper 为定位祖先。 */
+  .cd-json-viewer-toolbar-slot {
+    display: contents;
+  }
+
+  /* 搜索触发器：Button(theme=light type=primary)（对齐 Semi），样式由 Button 组件自带；
+     此处仅补 Semi 内联的 absolute top:20 right:20 定位（相对 drag wrapper 右边缘往左贴）。 */
+  .cd-json-viewer :global(.cd-json-viewer-search-bar-trigger) {
+    position: absolute;
+    inset-block-start: 20px;
+    inset-inline-end: 20px;
+  }
 
   /* —— 搜索/替换浮层（逐值对齐 Semi jsonViewer.scss） —— */
   /* search-bar-container：width 458 / padding 8 / gap 8 / border / radius small / bg-0 / flex column
@@ -443,8 +478,9 @@
     inset-inline-end: 20px;
     z-index: 2;
     box-sizing: border-box;
+    /* Semi 固定 width:458，无 max-width（若加 max-inline-size:calc(100%-40px) 会因参照系
+       是 w:0 的 drag wrapper 而坍缩到内容最小宽）。 */
     inline-size: 458px;
-    max-inline-size: calc(100% - 40px);
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-json-viewer-toolbar-padding);
@@ -483,8 +519,8 @@
     align-items: center;
     justify-content: center;
     list-style: none;
-    padding-inline-start: 0;
-    margin-block: 0;
+    padding: 0;
+    margin: 0;
     gap: var(--cd-spacing-json-viewer-toolbar-padding);
   }
   /* search-options-item：min-width 32 / height 32 / flex center / radius / color text-2（走 token 公式） */

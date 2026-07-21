@@ -16,7 +16,7 @@
     /** 拖拽触发元素（缺省为整个被包裹子元素）。返回把手 DOM。 */
     handler?: () => HTMLElement;
     /** 移动约束区。'parent'=父元素，或返回具体容器 DOM；缺省不约束。 */
-    constrainer?: (() => HTMLElement | null) | 'parent';
+    constrainer?: (() => HTMLElement | null) | 'parent' | undefined;
     /** 谓词：本次是否允许拖拽。返回 false 取消。 */
     allowMove?: (e: MouseEvent | TouchEvent, element: HTMLElement) => boolean;
     /** 自定义位置应用（缺省组件直接写 el.style.top/left）。 */
