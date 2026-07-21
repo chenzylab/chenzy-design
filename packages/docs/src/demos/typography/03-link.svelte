@@ -1,28 +1,14 @@
 <script lang="ts">
   import { Typography } from '@chenzy-design/svelte';
+  import { IconLink } from '@chenzy-design/icons';
 
   const { Text } = Typography;
 </script>
 
 <div style="display: flex; flex-direction: column; gap: 12px;">
   <Text link={{ href: 'https://semi.design/' }}>链接文本</Text>
-  <Text link={{ href: 'https://semi.design/', target: '_blank' }}>新窗口打开网站</Text>
-  <Text link icon={linkIcon} underline>带前置图标与下划线的网页链接</Text>
+  <Text link={{ href: 'https://semi.design/' }}>打开网站</Text>
+  <Text link icon={linkIcon} underline>带下划线的网页链接</Text>
 </div>
 
-{#snippet linkIcon()}
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-  </svg>
-{/snippet}
+{#snippet linkIcon()}<IconLink />{/snippet}

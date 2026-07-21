@@ -4,22 +4,32 @@
   const { Numeral } = Typography;
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 12px;">
-  <Numeral precision={1}>点赞量：1.6111e1 K</Numeral>
+<div>
+  <Numeral precision={1}>
+    <p>点赞量：1.6111e1 K</p>
+  </Numeral>
 
-  <div>
+  <p>
     播放量:
     <Numeral rule="numbers" precision={1}>2.4444e2</Numeral>
     K
-  </div>
+  </p>
 
-  <Numeral rule="percentages" precision={2}>好评率: 0.915</Numeral>
+  <Numeral rule="percentages" precision={2} style="margin-bottom: 12px;">
+    <p>好评率: 0.915</p>
+  </Numeral>
 
-  <Numeral rule="percentages">这场比赛我的胜率是 0.6，输的概率是 0.4</Numeral>
+  <Numeral rule="percentages" style="margin-bottom: 12px;">
+    这场比赛我的胜率是0.6，输的概率是0.4
+  </Numeral>
 
-  <Numeral rule="bytes-decimal" precision={2} truncate="floor">已使用: 1000</Numeral>
+  <Numeral rule="bytes-decimal" precision={2} truncate="floor">
+    <p>已使用: 1000</p>
+    <p>未使用: {1024 * 1000}</p>
+  </Numeral>
 
-  <Numeral rule="bytes-binary" precision={2} truncate="floor">未使用: 2000000000000</Numeral>
-
-  <Numeral rule="exponential" precision={2}>10000</Numeral>
+  <Numeral rule="bytes-binary" precision={2} truncate="floor">
+    <p>已使用: 1024</p>
+    <p>未使用: {2e12}</p>
+  </Numeral>
 </div>

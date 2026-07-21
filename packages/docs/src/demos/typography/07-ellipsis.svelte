@@ -54,6 +54,13 @@
     用户体验一致的、符合设计规范的 Web 应用。
   </Paragraph>
 
+  <Text
+    ellipsis={{ showTooltip: { opts: { content: '全英文设置了 word-break' } }, pos: 'middle' }}
+    style="width: 150px; word-break: break-word;"
+  >
+    sssssssssssssssssssssssss
+  </Text>
+
   <Title heading={5} ellipsis={{ showTooltip: { renderTooltip } }} style="width: 250px;">
     这是一个自定义弹出层组件的省略文本
   </Title>
