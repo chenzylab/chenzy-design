@@ -513,7 +513,9 @@
   .cd-radio-cardRadioGroup .cd-radio-inner {
     flex-shrink: 0;
   }
-  .cd-radio-cardRadioGroup .cd-radio-inner-display {
+  /* card 型未选中圆圈用卡片默认底（对齐 Semi &.cardRadioGroup .inner .inner-display）；
+     选中圆圈保持 .inner-checked 的品牌蓝底，故此处排除 checked，避免白底盖掉蓝底。 */
+  .cd-radio-cardRadioGroup .cd-radio-inner:not(.cd-radio-inner-checked) .cd-radio-inner-display {
     background: var(--cd-color-radio-card-bg-default);
   }
   .cd-radio-cardRadioGroup .cd-radio-addon {
