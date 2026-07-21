@@ -133,8 +133,12 @@
     };
   }
 
-  function handleChange(e: Event & { currentTarget: HTMLInputElement }) {
-    const next = e.currentTarget.checked;
+  // 对齐 Semi：点击整个 checkbox（含 addon 文本 / extra / card）都切换（checkbox.tsx:299
+  // onClick={handleChange}）。点击与键盘走互斥两条路径，避免双触发：
+  //   · 指针点击 → 根 wrapper 的 onclick（input pointer-events:none，故 target 恒非 input，
+  //     无原生 checkbox toggle 干扰）；
+  //   · 键盘 Space / 聚焦态 → 原生 input 自身产生 change，走 input 的 onchange。
+  function commit(next: boolean, e: Event) {
     const evt = makeEvent(next, e);
     if (group && value !== undefined) {
       group.toggle(value, evt);
@@ -146,6 +150,30 @@
     // Uncontrolled: keep our own state in sync.
     if (!isControlled) inner = next;
     onChange?.(evt);
+  }
+
+  /** 指针点击 wrapper（含文本/额外区）触发切换（对齐 Semi onClick）。input 已 pointer-events:none，
+   *  指针命中恒不落在 input 上；键盘 Space 会在 input 上派发 click（target===input）并冒泡到此，
+   *  那条路径交给 input 的 onchange 处理，此处按 target 跳过，避免与 change 双触发。 */
+  function handleWrapperClick(e: MouseEvent) {
+    if (resolvedDisabled) return;
+    if (e.target === inputEl) return; // 键盘 Space 派发的 click：让 onchange 处理
+    inputEl?.focus(preventScroll !== undefined ? { preventScroll } : undefined);
+    commit(indeterminate && !isChecked ? true : !isChecked, e);
+  }
+
+  /** 原生 input 的 change（键盘 Space / 聚焦态切换的唯一入口）。 */
+  function handleInputChange(e: Event & { currentTarget: HTMLInputElement }) {
+    commit(e.currentTarget.checked, e);
+  }
+
+  /** Enter 切换（对齐 Semi handleEnterPress）。原生 checkbox 只认 Space，Enter 是 Semi 额外行为。 */
+  function handleKeydown(e: KeyboardEvent) {
+    if (resolvedDisabled) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commit(indeterminate && !isChecked ? true : !isChecked, e);
+    }
   }
 
   /** Set the indeterminate DOM property (not a reflected attribute). */
@@ -194,8 +222,18 @@
 </script>
 
 <!-- Semi 注释：label 更好，但用 span 是为规避 gitlab #364（对齐 Semi 根用 span 非 label）。
-     a11y 靠原生 input（opacity:0 铺满 inner）+ aria-labelledby 承载，非隐式 label 关联。 -->
-<span class={cls} {style} id={id} {role} aria-labelledby={resolvedLabelledby}>
+     切换挂在根 span 的 click 上（对齐 Semi onClick={handleChange}），点击整个 checkbox（含
+     addon 文本 / extra / card）都切换；原生 input 只承载焦点 / a11y，其 change 被 preventDefault
+     旁路，状态由受控 checked 驱动。 -->
+<span
+  class={cls}
+  {style}
+  id={id}
+  {role}
+  aria-labelledby={resolvedLabelledby}
+  onclick={handleWrapperClick}
+  onkeydown={handleKeydown}
+>
   <span class={innerCls}>
     <input
       bind:this={inputEl}
@@ -213,7 +251,7 @@
       aria-errormessage={ariaErrormessage}
       aria-required={ariaRequired || undefined}
       aria-invalid={ariaInvalid || undefined}
-      onchange={handleChange}
+      onchange={handleInputChange}
     />
     <span class="cd-checkbox-inner-display" aria-hidden="true">
       {#if indeterminate && !isChecked}
@@ -270,10 +308,11 @@
     user-select: none;
     cursor: pointer;
   }
-  /* 原生 input 铺满 inner，opacity:0 承载 a11y 焦点（对齐 Semi checkbox.scss:22-30）。
-     z-index:1 让 input 稳定盖在 relative 的 inner-display 之上——否则后置的 relative
-     兄弟会渲染在 absolute input 上层，点击视觉方框（inner-display，aria-hidden）时
-     input 收不到 change，导致「勾不上」（cascader 多选列真机暴露）。 */
+  /* 原生 input 铺满 inner，opacity:0 承载键盘焦点与 a11y（对齐 Semi checkbox.scss:22-30）。
+     pointer-events:none：切换由根 wrapper 的 click 承载（对齐 Semi onClick），若 input 仍接收指针
+     则点框时浏览器会先原生 toggle input.checked，再与受控 checked 绑定打架 —— 表现为根 class 已
+     checked 但 input.checked 停在旧值（受控值未变时 Svelte 跳过 DOM 纠正），真机点框失灵。
+     焦点改由 handleToggle 内 inputEl.focus() 显式承载（对齐 Semi focusCheckboxEntity）。 */
   .cd-checkbox-input {
     position: absolute;
     inset: 0;
@@ -283,7 +322,7 @@
     padding: 0;
     opacity: 0;
     cursor: inherit;
-    z-index: 1;
+    pointer-events: none;
   }
   .cd-checkbox-inner-display {
     box-sizing: border-box;
