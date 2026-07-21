@@ -2,6 +2,11 @@
   "name": "@chenzy-design/icons",
   "version": "0.4.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/icons"
+  },
   "type": "module",
   "sideEffects": false,
   "svelte": "./src/index.ts",
