@@ -1,13 +1,24 @@
 <script lang="ts">
-  import { JsonViewer } from '@chenzy-design/svelte';
+  // 对齐 Semi「格式化配置」：options.formatOptions 设置缩进/换行符，ref.format() 触发格式化。
+  import { JsonViewer, Button } from '@chenzy-design/svelte';
 
-  // 传入未格式化的紧凑 JSON，配合 formatOptions 控制缩进。
-  const value = '{"a":1,"b":{"c":2,"d":[3,4]},"e":"text"}';
+  const data = `{
+  "name": "Semi",
+  "version": "0.0.0"
+}`;
+
+  let viewer = $state<{ format: () => void } | null>(null);
 </script>
 
-<JsonViewer
-  {value}
-  height={180}
-  width="100%"
-  options={{ formatOptions: { tabSize: 2, insertSpaces: true, eol: '\n' } }}
-/>
+<div>
+  <Button onclick={() => viewer?.format()}>格式化</Button>
+  <div style="margin-bottom: 16px; margin-top: 16px;">
+    <JsonViewer
+      bind:this={viewer}
+      height={100}
+      width={700}
+      value={data}
+      options={{ formatOptions: { tabSize: 4, insertSpaces: true, eol: '\n' } }}
+    />
+  </div>
+</div>

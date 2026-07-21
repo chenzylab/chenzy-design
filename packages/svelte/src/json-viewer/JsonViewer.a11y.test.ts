@@ -44,7 +44,7 @@ describe('JsonViewer a11y / 渲染', () => {
     const root = container.querySelector('.cd-json-viewer');
     expect(root).toBeTruthy();
 
-    const editor = container.querySelector('.cd-json-viewer__editor');
+    const editor = container.querySelector('.cd-json-viewer-editor');
     expect(editor).toBeTruthy();
     // 编辑器容器的可访问性语义（组件显式声明）。
     expect(editor?.getAttribute('role')).toBe('textbox');
@@ -64,7 +64,7 @@ describe('JsonViewer a11y / 渲染', () => {
     const { container } = renderWithLocale(JV, { props: { value: SAMPLE } });
     // en_US searchTrigger → 'Search'
     const trigger = container.querySelector(
-      'button.cd-json-viewer__search-trigger[aria-label="Search"]',
+      'button.cd-json-viewer-search-bar-trigger[aria-label="Search"]',
     );
     expect(trigger).toBeTruthy();
     // 折叠态：aria-expanded=false。
@@ -75,8 +75,8 @@ describe('JsonViewer a11y / 渲染', () => {
     const { container } = renderWithLocale(JV, {
       props: { value: SAMPLE, showSearch: false },
     });
-    expect(container.querySelector('.cd-json-viewer__toolbar-slot')).toBeNull();
-    expect(container.querySelector('.cd-json-viewer__search-trigger')).toBeNull();
+    expect(container.querySelector('.cd-json-viewer-toolbar-slot')).toBeNull();
+    expect(container.querySelector('.cd-json-viewer-search-bar-trigger')).toBeNull();
   });
 
   it('class / style / height / width props 透传到根节点', () => {
@@ -104,20 +104,20 @@ describe('JsonViewer a11y / 渲染', () => {
     const { container } = renderWithLocale(JV, {
       props: { value: SAMPLE, options: { readOnly: true } },
     });
-    const editor = container.querySelector('.cd-json-viewer__editor');
+    const editor = container.querySelector('.cd-json-viewer-editor');
     expect(editor?.getAttribute('aria-readonly')).toBe('true');
   });
 
   it('非只读：editor 容器不带 aria-readonly', () => {
     const { container } = renderWithLocale(JV, { props: { value: SAMPLE } });
-    const editor = container.querySelector('.cd-json-viewer__editor');
+    const editor = container.querySelector('.cd-json-viewer-editor');
     // 组件在非只读时把 aria-readonly 设为 undefined（即不渲染该属性）。
     expect(editor?.hasAttribute('aria-readonly')).toBe(false);
   });
 
   it('动态 import 成功但内核在 jsdom 实例化失败 → 走「加载→错误」降级，仍无 axe 违规', async () => {
     const { container } = renderWithLocale(JV, { props: { value: SAMPLE } });
-    const editor = container.querySelector('.cd-json-viewer__editor');
+    const editor = container.querySelector('.cd-json-viewer-editor');
     // 挂载首帧：loading 态（内核异步 import 尚未落定；import() 至少隔一个微任务才 resolve）。
     expect(editor?.getAttribute('data-loading')).toBe('true');
 
@@ -178,7 +178,7 @@ describe('JsonViewer ref 方法（kernel=null 空安全兜底）', () => {
   it('kernel 未就绪时方法不抛错，返回空安全值', async () => {
     const { ref, container } = renderRef();
     // 让内核尝试实例化（jsdom 下失败，kernel 保持 null），等 loading 落定。
-    await settleLoading(container.querySelector('.cd-json-viewer__editor'));
+    await settleLoading(container.querySelector('.cd-json-viewer-editor'));
 
     // 读方法：kernel?. 兜底 → 空值，不抛。
     expect(() => ref.getValue()).not.toThrow();
@@ -197,7 +197,7 @@ describe('JsonViewer ref 方法（kernel=null 空安全兜底）', () => {
 
   it('readOnly 下 replace/replaceAll 被组件前置拦截（不抛，即便有 kernel 也不写）', async () => {
     const { ref, container } = renderRef({ value: SAMPLE, options: { readOnly: true } });
-    await settleLoading(container.querySelector('.cd-json-viewer__editor'));
+    await settleLoading(container.querySelector('.cd-json-viewer-editor'));
     // 组件在 readOnly 时对 replace/replaceAll 直接 return（见 JsonViewer.svelte）。
     expect(() => ref.replace('x')).not.toThrow();
     expect(() => ref.replaceAll('x')).not.toThrow();

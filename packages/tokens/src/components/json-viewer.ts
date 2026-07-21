@@ -66,4 +66,10 @@ export const jsonViewerTokens = {
   'spacing-json-viewer-toolbar-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '工具条内边距', usage: '工具条内边距' },
   'color-json-viewer-toolbar-btn-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '工具按钮悬浮', usage: '工具条按钮悬浮背景' },
   'color-json-viewer-toolbar-btn-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '工具按钮激活', usage: '搜索选项激活态背景' },
+  // 搜索选项按钮（大小写/正则/全词）——对齐 Semi jsonViewer.scss search-options-item：
+  //   color text-2 / hover bg color-default / active color primary + bg primary-light-default。
+  'color-json-viewer-search-options-item': { value: 'var(--cd-color-text-2)', category: 'color', label: '搜索选项文字', usage: 'search-options-item 默认文字色（对齐 Semi text-2）' },
+  'color-json-viewer-search-options-item-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '搜索选项悬浮', usage: 'search-options-item hover 背景（对齐 Semi color-default）' },
+  'color-json-viewer-search-options-item-active-text': { value: 'var(--cd-color-primary)', category: 'color', label: '搜索选项激活文字', usage: 'search-options-item-active 文字色（对齐 Semi primary）' },
+  'color-json-viewer-search-options-item-active-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '搜索选项激活背景', usage: 'search-options-item-active 背景（对齐 Semi primary-light-default）' },
 } satisfies TokenGroup;

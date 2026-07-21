@@ -277,7 +277,8 @@
         <span>{meta.category}</span>
       </div>
       <h1>{meta.name}</h1>
-      <p class="description">{meta.description}</p>
+      <!-- inline 页头部用 md brief（简洁，对齐 Semi 头部简介）；旧 tab 页保持 meta.description。 -->
+      <p class="description">{inlineDoc && data.brief ? data.brief : meta.description}</p>
     </div>
 
     {#if inlineDoc}
