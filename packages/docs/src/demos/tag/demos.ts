@@ -56,9 +56,4 @@ export const demos: DemoEntry[] = [
     'SplitTagGroup 组合标签',
     '使用 SplitTagGroup 将多个标签组合成整体：首尾标签圆角、中间圆角为 0，形成连续视觉效果。',
   ),
-  entry(
-    '13-splittaggroup-style.svelte',
-    'SplitTagGroup 样式组合',
-    '子 Tag 保留自身颜色 / 类型，连接外观纯视觉不影响语义（light / ghost）。',
-  ),
 ];
