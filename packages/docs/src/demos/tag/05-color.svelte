@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Tag } from '@chenzy-design/svelte';
+  import { Tag, Space } from '@chenzy-design/svelte';
 
   // 对齐 Semi：16 种色板 + white。
   const colors = [
@@ -9,8 +9,8 @@
   ] as const;
 </script>
 
-<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+<Space wrap>
   {#each colors as c (c)}
     <Tag color={c}>{c}</Tag>
   {/each}
-</div>
+</Space>
