@@ -1,4 +1,10 @@
 *, *::before, *::after { box-sizing: border-box; }
+/* 固定顶栏（.docs-header 高 60px，sticky top:0）下的锚点跳转留白：滚动容器统一
+   scroll-padding-top，所有 scrollIntoView / hash 跳转（TOC、复制链接、meta 页与
+   inline md 页标题）自动避开顶栏，无需给每个标题单独设 scroll-margin-top。 */
+html {
+  scroll-padding-top: 80px;
+}
 /* 正文字体栈 —— 对齐 Semi 官网：Inter 打头 + system 回退，配合 antialiased 抗锯齿
    （Semi body 实测 -webkit-font-smoothing:antialiased，是「清爽」笔画的主因；
    不加时 macOS 用 subpixel 渲染，笔画更粗更实）。不引外部 Inter 字体文件，
@@ -9,4 +15,29 @@ body {
     'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 背景/前景走 token（token 随 data-theme 切换），否则 dark 下 body 仍是浏览器
+     默认白底，与切了 dark 的组件（浅色文字）撕裂。 */
+  background: var(--cd-color-bg-0, #fff);
+  color: var(--cd-color-text-0, #1f2329);
+}
+
+/* presetTypography 的 prose 颜色是 --un-prose-* 变量（默认色阶硬编码浅色主题值，
+   不响应 data-theme）。dark 下把这些变量重绑到本站 --cd-color-* token（token 已
+   随主题切换），正文文字颜色即与组件/全站一致。变量挂在 prose 容器上，外部 CSS
+   可直接覆盖，无需 dark:prose-invert 工具类（本站 dark 是 data-theme 属性非 .dark class）。 */
+:root[data-theme='dark'] :where(.prose) {
+  --un-prose-body: var(--cd-color-text-1);
+  --un-prose-headings: var(--cd-color-text-0);
+  --un-prose-links: var(--cd-color-text-0);
+  --un-prose-bold: var(--cd-color-text-0);
+  --un-prose-lead: var(--cd-color-text-1);
+  --un-prose-counters: var(--cd-color-text-2);
+  --un-prose-bullets: var(--cd-color-text-3);
+  --un-prose-quotes: var(--cd-color-text-1);
+  --un-prose-code: var(--cd-color-text-0);
+  --un-prose-captions: var(--cd-color-text-2);
+  --un-prose-hr: var(--cd-color-border);
+  --un-prose-quote-borders: var(--cd-color-border);
+  --un-prose-th-borders: var(--cd-color-border);
+  --un-prose-td-borders: var(--cd-color-border);
 }
