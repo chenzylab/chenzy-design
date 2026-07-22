@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { base } from '$app/paths';
+  import { goto } from '$app/navigation';
   import componentsJson from '@chenzy-design/svelte/components.json';
   import { IconButton, Modal, HotKeys } from '@chenzy-design/svelte';
   import { IconSearch, IconClear } from '@chenzy-design/icons';
@@ -21,6 +22,7 @@
   let results = $state<SearchResult[]>([]);
   let open = $state(false);
   let inputEl = $state<HTMLInputElement | null>(null);
+  let bodyEl = $state<HTMLElement | null>(null);
 
   // 快捷键修饰键：Mac 用 Meta(⌘)，其余平台用 Control。HotKeys 严格区分 Meta/Ctrl（对齐 Semi），
   // 故按平台选一个渲染；HotKeys 自动把 Meta→⌘、Control→Ctrl 按平台显示。
@@ -77,16 +79,20 @@
     href: string;
     text: string;          // 命中文本（标题级=标题文本；页级=简介或组件名）
     where: string;         // 归属章节（标题级=该标题；页级=「概述」）
+    navIndex: number;      // 全局可导航序号
   }
   interface ResultGroup {
     name: string;
     displayName: string;
     category: string;
     title: string;
+    href: string;
+    navIndex: number;      // 组头的全局可导航序号
     hits: ResultHit[];
   }
   const groupedResults = $derived.by<ResultGroup[]>(() => {
     const map = new Map<string, ResultGroup>();
+    const order: ResultGroup[] = [];
     for (const r of results) {
       let g = map.get(r.name);
       if (!g) {
@@ -96,18 +102,79 @@
           displayName: cm?.displayName ?? r.name,
           category: cm?.category ?? '',
           title: r.title,
+          href: `${base}/components/${r.name}`,
+          navIndex: -1,
           hits: [],
         };
         map.set(r.name, g);
+        order.push(g);
       }
       if (r.heading) {
-        g.hits.push({ href: resultHref(r), text: r.heading.text, where: r.heading.text });
+        g.hits.push({ href: resultHref(r), text: r.heading.text, where: r.heading.text, navIndex: -1 });
       } else {
         // 页级命中：展示简介，归属「概述」
-        g.hits.push({ href: resultHref(r), text: r.brief || r.title, where: t('search.overview', lang) });
+        g.hits.push({ href: resultHref(r), text: r.brief || r.title, where: t('search.overview', lang), navIndex: -1 });
       }
     }
-    return [...map.values()];
+    // 按渲染顺序（组头 + 命中项）分配全局导航序号
+    let idx = 0;
+    for (const g of order) {
+      g.navIndex = idx++;
+      for (const h of g.hits) h.navIndex = idx++;
+    }
+    return order;
+  });
+
+  // 扁平可导航条目（组头 + 命中项），供键盘 ↑↓ 导航与默认选中第一条。
+  const flatItems = $derived.by<{ href: string }[]>(() => {
+    const items: { href: string }[] = [];
+    for (const g of groupedResults) {
+      items.push({ href: g.href });
+      for (const h of g.hits) items.push({ href: h.href });
+    }
+    return items;
+  });
+
+  // 当前选中项序号。默认 0（选中第一条，对齐 cmd-k 惯例）；每次结果变化重置为 0。
+  let activeIndex = $state(0);
+  $effect(() => {
+    flatItems.length; // 依赖：结果变化时
+    activeIndex = 0;
+  });
+
+  // 键盘导航与鼠标 hover 会争抢选中：键盘移动后，光标虽未动但列表滚动会让 item 滑到光标下，
+  // 触发 mousemove 把选中抢回去。解法：键盘导航时置 suppressHover，直到用户真正移动鼠标才恢复。
+  let suppressHover = $state(false);
+
+  // 键盘导航：↑↓ 移动选中（循环），Enter 跳转选中项，其余交给输入框。
+  function onInputKeydown(e: KeyboardEvent) {
+    const n = flatItems.length;
+    if (e.key === 'ArrowDown' && n > 0) {
+      e.preventDefault();
+      suppressHover = true;
+      activeIndex = (activeIndex + 1) % n;
+    } else if (e.key === 'ArrowUp' && n > 0) {
+      e.preventDefault();
+      suppressHover = true;
+      activeIndex = (activeIndex - 1 + n) % n;
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const item = flatItems[activeIndex];
+      if (item) {
+        closeAndRecord();
+        goto(item.href);
+      } else if (query.trim()) {
+        commitSearch(query);
+      }
+    }
+  }
+
+  // 选中项滚入可视区（键盘移动时）。
+  $effect(() => {
+    activeIndex; // 依赖
+    if (!open) return;
+    const el = bodyEl?.querySelector<HTMLElement>('[data-nav-active="true"]');
+    el?.scrollIntoView({ block: 'nearest' });
   });
 
   // 关键词高亮：按多个查询词（空格分隔）切分原文，逐段 HTML 转义后把命中段包 <mark>
@@ -135,6 +202,16 @@
   function resultHref(r: SearchResult): string {
     const hash = r.heading ? `#${r.heading.anchor}` : '';
     return `${base}/components/${r.name}${hash}`;
+  }
+
+  // 鼠标 hover 更新选中（仅在未被键盘导航抑制时）。
+  function hoverActivate(idx: number) {
+    if (!suppressHover) activeIndex = idx;
+  }
+
+  // 用户真正移动鼠标 → 解除 hover 抑制（body 级 mousemove）。
+  function onBodyMouseMove() {
+    if (suppressHover) suppressHover = false;
   }
 
   // 点击结果 / 条目后关闭面板，并把当前词记入历史（有输入时）。
@@ -186,11 +263,12 @@
         bind:this={inputEl}
         bind:value={query}
         oninput={search}
-        onkeydown={(e) => { if (e.key === 'Enter' && query.trim()) commitSearch(query); }}
+        onkeydown={onInputKeydown}
         class="search-input"
       />
       {#if query}
         <IconButton
+          type="tertiary"
           theme="borderless"
           size="small"
           icon={clearIcon}
@@ -200,21 +278,36 @@
       {/if}
     </div>
 
-    <div class="search-modal-body">
+    <!-- body 级 mousemove 仅用于解除键盘导航时的 hover 抑制（非交互动作） -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="search-modal-body" bind:this={bodyEl} onmousemove={onBodyMouseMove}>
       {#if query}
           {#if groupedResults.length > 0}
           <div class="result-groups">
             <div class="group-label">{t('search.components', lang)}</div>
             {#each groupedResults as g}
               <div class="result-group">
-                <a class="group-head" href="{base}/components/{g.name}" onclick={closeAndRecord}>
+                <a
+                  class="group-head"
+                  class:nav-active={g.navIndex === activeIndex}
+                  data-nav-active={g.navIndex === activeIndex}
+                  href={g.href}
+                  onclick={closeAndRecord}
+                  onmousemove={() => hoverActivate(g.navIndex)}
+                >
                   <SidebarIcon name={g.name} displayName={g.displayName} category={g.category} size={24} />
                   <span class="group-title">{g.title}</span>
                 </a>
                 <ul class="group-hits">
                   {#each g.hits as hit}
                     <li>
-                      <a href={hit.href} onclick={closeAndRecord}>
+                      <a
+                        class:nav-active={hit.navIndex === activeIndex}
+                        data-nav-active={hit.navIndex === activeIndex}
+                        href={hit.href}
+                        onclick={closeAndRecord}
+                        onmousemove={() => hoverActivate(hit.navIndex)}
+                      >
                         <span class="hit-text">{@html highlight(hit.text)}</span>
                         <span class="hit-where">{t('search.in', lang)} {hit.where}</span>
                       </a>
@@ -329,13 +422,14 @@
     background: none;
     color: var(--cd-color-text-0, #1f2329);
   }
-  .group-head:hover { background: var(--cd-color-fill-1, #f2f3f5); }
+  /* 选中态（键盘 ↑↓ 或鼠标 hover 都通过 activeIndex → .nav-active 驱动，视觉统一） */
+  .group-head.nav-active { background: var(--cd-color-fill-1, #f2f3f5); }
   .group-title { font-size: 15px; font-weight: 600; }
   .group-hits { list-style: none; margin: 2px 0 0; padding: 0; }
   .group-hits li a {
     display: block; padding: 7px 8px 7px 48px; border-radius: 6px; text-decoration: none;
   }
-  .group-hits li a:hover { background: var(--cd-color-fill-1, #f2f3f5); }
+  .group-hits li a.nav-active { background: var(--cd-color-fill-1, #f2f3f5); }
   .hit-text { display: block; font-size: 14px; color: var(--cd-color-text-0, #1f2329); }
   .hit-text :global(mark) { background: transparent; color: var(--cd-color-primary, #2f6bff); padding: 0; }
   .hit-where { display: block; font-size: 12px; color: var(--cd-color-text-2, #86909c); margin-top: 1px; }
