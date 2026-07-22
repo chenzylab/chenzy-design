@@ -30,7 +30,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Build component packages
-        run: pnpm --filter @chenzy-design/core --filter @chenzy-design/tokens --filter @chenzy-design/locale --filter @chenzy-design/icons --filter @chenzy-design/svelte --filter @chenzy-design/unocss-preset build
+        # 构建除 docs 外的全部包（对齐 ci.yml），避免新增包（如 icons-lab）漏进硬编码清单导致 docs build 找不到 dist
+        run: pnpm --filter='!@chenzy-design/docs' build
 
       - name: Build docs
         run: pnpm --filter @chenzy-design/docs build
