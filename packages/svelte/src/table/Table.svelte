@@ -1696,10 +1696,17 @@
 
   const scrollTableStyle = $derived.by(() => {
     const parts: string[] = [];
-    if (tableStyle) parts.push(tableStyle);
     if (scroll?.x != null) {
+      // 对齐 Semi（HeadTable/BodyTable：scroll.x 时 tableStyle.width = x）：
+      // 用固定 width（物理属性，与 Semi 一致；表格纯尺寸无 RTL 方向性，不影响逻辑属性 RTL 架构）
+      // 而非 min-width——表格宽度严格等于 scroll.x，table-layout:fixed 下列宽严格按 col width，
+      // 无 width 列吸收剩余。用 min-width 会让表格撑满更宽的容器致有 width 的列被按比例放大
+      // （ellipsis 列撑宽后文字不截断、tooltip 失效）。
       const xVal = typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x;
-      parts.push(`min-inline-size:${xVal}`);
+      parts.push(`width:${xVal}`);
+    } else if (tableStyle) {
+      // 无 scroll.x 但有固定列：沿用固定列总宽的 min-width（触发横滚）。
+      parts.push(tableStyle);
     }
     return parts.length ? parts.join(';') : undefined;
   });
@@ -3077,6 +3084,14 @@
     background-color: var(--cd-color-table-border-default);
   }
   .react-resizable-handle:hover {
+    background-color: var(--cd-color-table-resizer-bg-default);
+  }
+  /* bordered 表格：手柄默认透明（对齐 Semi table.scss &-bordered 内 handle transparent），
+     列分隔靠单元格 border-right，避免灰手柄条 + 边框双重竖线；hover 仍显色。 */
+  .cd-table-bordered .react-resizable-handle {
+    background-color: transparent;
+  }
+  .cd-table-bordered .react-resizable-handle:hover {
     background-color: var(--cd-color-table-resizer-bg-default);
   }
   /* 拖拽中列：resizing 标示线 */
