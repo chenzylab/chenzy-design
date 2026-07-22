@@ -101,8 +101,12 @@ function toCoreOpts(opts: SvelteNotificationOptions): NotificationOptions {
 }
 
 function show(type: NotificationType, opts: SvelteNotificationOptions): string {
-  // 首条通知的 getPopupContainer 决定容器挂载点（对齐 Semi addNotice）。
+  // 首条通知的 getPopupContainer / zIndex 决定容器挂载点与 wrapper z-index
+  // （对齐 Semi addNotice：div.style.zIndex = notice.zIndex ?? defaultConfig.zIndex，首次一次生效）。
   if (!containerMounted && opts.getPopupContainer) getPopupContainer = opts.getPopupContainer;
+  if (!containerMounted && typeof opts.zIndex === 'number' && positionOffsets.zIndex === undefined) {
+    positionOffsets = { ...positionOffsets, zIndex: opts.zIndex };
+  }
   void ensureContainer();
   return ensureStore().open({ ...toCoreOpts(opts), type });
 }
