@@ -45,17 +45,15 @@
     {
       title: '大小',
       dataIndex: 'size',
-      width: 200,
       ...(showSorter
         ? { sorter: (a: FileRow, b: FileRow) => ((a.size as number) - (b.size as number) > 0 ? 1 : -1) }
         : {}),
       render: renderSize,
     },
-    { title: '所有者', dataIndex: 'owner', width: 200, render: renderOwner },
+    { title: '所有者', dataIndex: 'owner', render: renderOwner },
     {
       title: '更新日期',
       dataIndex: 'updateTime',
-      width: 200,
       fixed: fixColumns ? ('right' as const) : undefined,
       ...(showSorter
         ? { sorter: (a: FileRow, b: FileRow) => ((a.updateTime as number) - (b.updateTime as number) > 0 ? 1 : -1) }
@@ -65,9 +63,11 @@
   ]);
 
   const dataSource = $derived(noData ? [] : allData);
+  // 对齐 Semi toggleFixColumns：scroll.x='150%'（容器宽的 1.5 倍），非固定列吸收
+  // 剩余空间并留出横滚区，中间列不会被左右固定列夹没。
   const scroll = $derived({
     ...(fixHeader ? { y: 300 } : {}),
-    ...(fixColumns ? { x: 1400 } : {}),
+    ...(fixColumns ? { x: '150%' } : {}),
   });
   const rowSelection = $derived(
     showSelection

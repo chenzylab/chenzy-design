@@ -1705,8 +1705,10 @@
       const xVal = typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x;
       parts.push(`width:${xVal}`);
     } else if (tableStyle) {
-      // 无 scroll.x 但有固定列：沿用固定列总宽的 min-width（触发横滚）。
-      parts.push(tableStyle);
+      // 无 scroll.x 但有固定列：min-width 保证固定列不被压缩（窄容器横滚），
+      // 同时 width:100% 撑满容器（对齐 Semi：无 scroll.x 时表格 100%，无 width 列
+      // 吸收剩余空间，不塌成固定列总宽致右侧留白）。
+      parts.push(tableStyle, 'inline-size:100%');
     }
     return parts.length ? parts.join(';') : undefined;
   });
