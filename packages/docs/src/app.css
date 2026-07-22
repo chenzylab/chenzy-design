@@ -1,8 +1,12 @@
 *, *::before, *::after { box-sizing: border-box; }
-/* 正文字体栈 —— 实测对齐 Semi 官网的 system 系统字体栈（Semi 源码写 Inter 但官网实际
-   渲染回退到 system；不引 Inter，与官网一致且无外部依赖）。 */
+/* 正文字体栈 —— 对齐 Semi 官网：Inter 打头 + system 回退，配合 antialiased 抗锯齿
+   （Semi body 实测 -webkit-font-smoothing:antialiased，是「清爽」笔画的主因；
+   不加时 macOS 用 subpixel 渲染，笔画更粗更实）。不引外部 Inter 字体文件，
+   Inter 声明在栈首、无本地字体时自然回退到 system，与官网视觉一致且无外部依赖。 */
 body {
   margin: 0;
-  font-family: system, -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
+  font-family: 'Inter', -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
     'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

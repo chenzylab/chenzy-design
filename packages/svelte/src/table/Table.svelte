@@ -65,6 +65,8 @@
   import type {
     ColumnDef,
     RowSelection,
+    ResizableConfig,
+    RowAttrs,
     Expandable,
     TreeTable,
     Align,
@@ -74,6 +76,10 @@
     TableScrollInfo,
     ScrollConfig,
   } from './types.js';
+  import Tooltip from '../tooltip/Tooltip.svelte';
+  import FilterDropdownHost from './FilterDropdownHost.svelte';
+  import Checkbox from '../checkbox/Checkbox.svelte';
+  import Radio from '../radio/Radio.svelte';
 
   // 泛型组件 props 用内联类型而非具名 interface Props：在 declaration:true 下，
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
@@ -112,6 +118,8 @@
     sticky = false,
     showHeader = true,
     defaultExpandAllRows = false,
+    expandAllRows,
+    resizable = false,
     getPopupContainer,
     onRow,
     onHeaderRow,
@@ -128,6 +136,7 @@
     onGroupedRow,
     titleSnippet,
     footerSnippet,
+    emptySnippet,
     renderPagination,
     expandIcon,
     hideExpandedColumn = true,
@@ -156,8 +165,25 @@
       | false
       | {
           pageSize?: number;
+          /** 受控当前页（对齐 Semi currentPage） */
+          currentPage?: number;
+          /** 受控当前页（本库旧名，与 currentPage 等效，currentPage 优先） */
           current?: number;
+          /** 非受控默认当前页（对齐 Semi defaultCurrentPage） */
+          defaultCurrentPage?: number;
+          /** 非受控默认当前页（本库旧名，与 defaultCurrentPage 等效） */
           defaultCurrent?: number;
+          /** 数据总数：受控远程分页时覆盖本地数据长度（对齐 Semi total） */
+          total?: number;
+          /** 分页器位置：底部/顶部/上下都有（对齐 Semi position），默认 bottom */
+          position?: 'bottom' | 'top' | 'both';
+          /** 翻页区域左侧文案自定义格式化；false 关闭（对齐 Semi formatPageText） */
+          formatPageText?:
+            | boolean
+            | ((info: { currentStart: number; currentEnd: number; total: number }) => string);
+          /** 页码变化（对齐 Semi onPageChange） */
+          onPageChange?: (page: number) => void;
+          /** 页码变化（本库旧名，与 onPageChange 等效） */
           onChange?: (page: number) => void;
         };
     rowSelection?: RowSelection<T>;
@@ -165,6 +191,8 @@
     tree?: boolean | TreeTable;
     rowClassName?: (record: T, index: number) => string;
     empty?: string;
+    /** 空数据占位自定义渲染（富内容，如 Empty 组件；优先于 empty 文案，对齐 Semi empty: ReactNode） */
+    emptySnippet?: Snippet;
     ariaLabel?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
     /** 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流）。spec §4 */
@@ -211,10 +239,18 @@
     showHeader?: boolean;
     /** 默认展开全部行（包含树形行），默认 false */
     defaultExpandAllRows?: boolean;
+    /** 是否展开所有行（对齐 Semi expandAllRows；受控语义弱化为初始态同 defaultExpandAllRows） */
+    expandAllRows?: boolean;
+    /**
+     * Table 级列伸缩开关（对齐 Semi resizable）。true 时所有带 width 的列可拖拽伸缩
+     * （column.resize=false 单列关闭）；对象态提供 onResize/onResizeStart/onResizeStop
+     * 事件（返回的对象与该列合并，如 className）。与列级 column.resizable 兼容并存。
+     */
+    resizable?: boolean | ResizableConfig<T>;
     /** 筛选浮层挂载容器，默认跟随触发按钮 */
     getPopupContainer?: () => HTMLElement;
     /** 行级事件与属性（返回 onClick/onDoubleClick/className/style） */
-    onRow?: (record: T, index: number, rowStatus?: { disabled?: boolean; selected?: boolean }) => { onClick?: (e: MouseEvent) => void; onDoubleClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
+    onRow?: (record: T, index: number, rowStatus?: { disabled?: boolean; selected?: boolean }) => RowAttrs;
     /** 表头行级事件与属性 */
     onHeaderRow?: (columns: ColumnDef<T>[], index: number) => { onClick?: (e: MouseEvent) => void; onMouseEnter?: (e: MouseEvent) => void; onMouseLeave?: (e: MouseEvent) => void; className?: string; style?: string };
     /** 点击行体时触发展开/收起，默认 false */
@@ -383,6 +419,31 @@
     return col.width;
   }
 
+  // 某列是否可伸缩：Table 级 resizable 开启时，带 width 且 column.resize!==false 的列
+  // 可伸缩（对齐 Semi）；列级 column.resizable 保持兼容。
+  function columnResizable(col: ColumnDef<T>): boolean {
+    if (col.resizable) return true;
+    if (!resizable) return false;
+    if (col.resize === false) return false;
+    return col.width !== undefined;
+  }
+  // Table 级 resizable 对象态的事件配置。
+  const resizableConfig = $derived<ResizableConfig<T> | null>(
+    typeof resizable === 'object' ? resizable : null,
+  );
+  // resize 事件返回的列覆盖（如 className）：colKey → 合并进该列头的覆盖对象。
+  const resizeOverrides = new SvelteMap<string, Partial<ColumnDef<T>>>();
+  function applyResizeEvent(
+    handler: ((column: ColumnDef<T>) => Partial<ColumnDef<T>> | void) | undefined,
+    col: ColumnDef<T>,
+    colKey: string,
+  ) {
+    if (!handler) return;
+    const prev = resizeOverrides.get(colKey);
+    const merged = handler(prev ? { ...col, ...prev } : { ...col });
+    if (merged && typeof merged === 'object') resizeOverrides.set(colKey, merged);
+  }
+
   // 列头拖拽：收敛到 core 通用拖拽原语 createResizeDrag，命令式管理指针几何
   // (红线 #3)。pointerdown 时以当前列 colKey / 起始宽度构建一次性拖拽实例，
   // 由原语在 document 上绑定 pointermove/pointerup 并在结束/卸载时解绑；
@@ -406,13 +467,16 @@
       min: MIN_COL_WIDTH,
       onStart: () => {
         resizingKey = colKey;
+        applyResizeEvent(resizableConfig?.onResizeStart, col, colKey);
       },
       onMove: (s) => {
         widthOverrides.set(colKey, s.width);
+        applyResizeEvent(resizableConfig?.onResize, col, colKey);
       },
       onEnd: () => {
         resizingKey = null;
         activeDrag = null;
+        applyResizeEvent(resizableConfig?.onResizeStop, col, colKey);
       },
     });
     activeDrag = drag;
@@ -442,20 +506,51 @@
   }
 
   // --- 列筛选：本地 state（colKey → 选中值集合），不写回 props (红线 #1) ---
-  const filterState = new SvelteMap<string, Set<string | number>>();
+  // 非受控初始值吃 column.defaultFilteredValue（对齐 Semi）。
+  const filterState = new SvelteMap<string, Set<string | number>>(initFilterState());
+  function initFilterState(): [string, Set<string | number>][] {
+    const seed: [string, Set<string | number>][] = [];
+    flattenLeaves(columns).forEach((col, i) => {
+      if (col.defaultFilteredValue && col.defaultFilteredValue.length > 0) {
+        seed.push([col.key ?? col.dataIndex ?? String(i), new Set(col.defaultFilteredValue)]);
+      }
+    });
+    return seed;
+  }
+  // confirm 模式（filterConfirmMode='confirm' 或 renderFilterDropdown）临时筛选值：
+  // 打开面板时从生效值快照，点确定才写回 filterState（对齐 Semi tempFilteredValue）。
+  const tempFilterState = new SvelteMap<string, (string | number)[]>();
   // 打开的筛选浮层列 key（同时只开一个）
   let openFilterKey = $state<string | null>(null);
   // 各列漏斗按钮引用（trigger）+ 当前浮层引用（dismiss extraTargets）
   const filterTriggers: Record<string, HTMLButtonElement | null> = $state({});
   let filterPanelEl = $state<HTMLDivElement | null>(null);
 
+  // 打开/关闭筛选浮层（统一入口：同步 temp 快照 + onFilterDropdownVisibleChange 通知）。
+  function setFilterOpen(col: ColumnDef<T>, colKey: string, open: boolean) {
+    if (open) {
+      tempFilterState.set(colKey, [...effectiveFilterValues(col, colKey)]);
+      openFilterKey = colKey;
+    } else if (openFilterKey === colKey) {
+      openFilterKey = null;
+    }
+    col.onFilterDropdownVisibleChange?.(open);
+  }
+
   // 浮层外点击/Esc 关闭（红线 #3：$effect 内 useDismiss，cleanup 解绑）
   $effect(() => {
     if (openFilterKey === null) return;
     const trigger = filterTriggers[openFilterKey];
     if (!trigger) return;
+    const key = openFilterKey;
     return useDismiss(trigger, {
-      onDismiss: () => (openFilterKey = null),
+      onDismiss: () => {
+        openFilterKey = null;
+        // dismiss 关闭也要通知 visible=false
+        leafColumns.forEach((c, i) => {
+          if (colKeyOf(c, i) === key) c.onFilterDropdownVisibleChange?.(false);
+        });
+      },
       escape: true,
       outsideClick: true,
       extraTargets: [filterPanelEl],
@@ -468,16 +563,56 @@
   function isFiltered(colKey: string): boolean {
     return (filterState.get(colKey)?.size ?? 0) > 0;
   }
-  function toggleFilterValue(colKey: string, value: string | number) {
+  // 某列是否走 confirm 模式（点筛选项先暂存，点确定才生效，对齐 Semi filterConfirmMode）。
+  function isConfirmMode(col: ColumnDef<T>): boolean {
+    return col.filterConfirmMode === 'confirm';
+  }
+  function toggleFilterValue(col: ColumnDef<T>, colKey: string, value: string | number) {
+    if (isConfirmMode(col)) {
+      // confirm 模式：只改临时值，不触发筛选。
+      const cur = new Set(tempFilterState.get(colKey) ?? []);
+      if (cur.has(value)) cur.delete(value);
+      else cur.add(value);
+      tempFilterState.set(colKey, [...cur]);
+      return;
+    }
     const cur = new Set(filterState.get(colKey) ?? []);
     if (cur.has(value)) cur.delete(value);
     else cur.add(value);
     filterState.set(colKey, cur);
     emitFilterChange(colKey, [...cur]);
   }
-  function resetFilter(colKey: string) {
+  // 单选（filterMultiple=false）选择：confirm 模式暂存，否则立即生效。
+  function selectSingleFilterValue(col: ColumnDef<T>, colKey: string, value: string | number) {
+    if (isConfirmMode(col)) {
+      tempFilterState.set(colKey, [value]);
+      return;
+    }
+    filterState.set(colKey, new Set([value]));
+    emitFilterChange(colKey, [value]);
+  }
+  // confirm 模式点「确定」：临时值写回生效值并关闭（对齐 Semi）。
+  function confirmFilter(col: ColumnDef<T>, colKey: string, opts?: { closeDropdown?: boolean; filteredValue?: (string | number)[] }) {
+    const values = opts?.filteredValue ?? tempFilterState.get(colKey) ?? [];
+    filterState.set(colKey, new Set(values));
+    tempFilterState.set(colKey, [...values]);
+    if (opts?.closeDropdown !== false) setFilterOpen(col, colKey, false);
+    emitFilterChange(colKey, [...values]);
+  }
+  // confirm 模式点「重置」：恢复到打开面板时的初始状态（不关闭面板，对齐 Semi）。
+  function resetTempFilter(col: ColumnDef<T>, colKey: string) {
+    tempFilterState.set(colKey, [...effectiveFilterValues(col, colKey)]);
+  }
+  // renderFilterDropdown 的 clear：清空筛选值与临时值（对齐 Semi）。
+  function clearFilter(col: ColumnDef<T>, colKey: string, opts?: { closeDropdown?: boolean }) {
     filterState.set(colKey, new Set());
-    openFilterKey = null;
+    tempFilterState.set(colKey, []);
+    if (opts?.closeDropdown !== false) setFilterOpen(col, colKey, false);
+    emitFilterChange(colKey, []);
+  }
+  function resetFilter(col: ColumnDef<T>, colKey: string) {
+    filterState.set(colKey, new Set());
+    setFilterOpen(col, colKey, false);
     emitFilterChange(colKey, []);
   }
   // 筛选变化：单列 onFilterChange + 聚合 onChange。dataIndex 优先列 dataIndex，回退 colKey。
@@ -525,12 +660,33 @@
           col.onFilter ??
           ((value: string | number, rec: T): boolean =>
             col.dataIndex ? rec[col.dataIndex] === value : false);
-        data = data.filter((rec) => {
+        const passes = (rec: T): boolean => {
           for (const v of selected) {
             if (test(v, rec)) return true;
           }
           return false;
-        });
+        };
+        if (col.filterChildrenRecord) {
+          // 树形子级本地过滤：子级命中则父级保留（对齐 Semi filterChildrenRecord）。
+          // 递归裁剪 children 字段：自身命中保留整行；否则保留命中的子孙分支。
+          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const prune = (records: T[]): T[] => {
+            const out: T[] = [];
+            for (const rec of records) {
+              const kids = rec[childKey];
+              const prunedKids = Array.isArray(kids) ? prune(kids as T[]) : [];
+              if (passes(rec)) {
+                out.push(rec);
+              } else if (prunedKids.length > 0) {
+                out.push({ ...rec, [childKey]: prunedKids });
+              }
+            }
+            return out;
+          };
+          data = prune(data);
+        } else {
+          data = data.filter(passes);
+        }
       }
     }
     const { key, order } = currentSort;
@@ -541,9 +697,10 @@
       });
       if (target && target.sorter) {
         const dataIndex = target.dataIndex;
+        const sorterFn = target.sorter;
         const compare =
-          typeof target.sorter === 'function'
-            ? target.sorter
+          typeof sorterFn === 'function'
+            ? (a: T, b: T): number => sorterFn(a, b, order)
             : (a: T, b: T): number => {
                 if (!dataIndex) return 0;
                 const av = a[dataIndex];
@@ -554,36 +711,67 @@
                 if (typeof av === 'number' && typeof bv === 'number') return av - bv;
                 return String(av).localeCompare(String(bv));
               };
-        data = applySort(data, order, compare);
+        if (target.sortChildrenRecord) {
+          // 树形子级本地排序：每层 children 也按同一比较器排序（对齐 Semi sortChildrenRecord）。
+          const childKey = typeof tree === 'object' ? (tree.childrenColumnName ?? 'children') : (childrenRecordName ?? 'children');
+          const deepSort = (records: T[]): T[] =>
+            applySort(records, order, compare).map((rec) => {
+              const kids = rec[childKey];
+              if (Array.isArray(kids) && kids.length > 0) {
+                return { ...rec, [childKey]: deepSort(kids as T[]) };
+              }
+              return rec;
+            });
+          data = deepSort(data);
+        } else {
+          data = applySort(data, order, compare);
+        }
       }
     }
     return data;
   });
 
-  // --- 分页：受控 current 不回写 (红线 #1) ---
+  // --- 分页：受控 currentPage/current 不回写 (红线 #1) ---
   // virtualized 与分页互斥：虚拟滚动时全量渲染滚动，忽略 pagination（取舍见 props 注释）。
+  // currentPage（对齐 Semi）优先于旧名 current；defaultCurrentPage 优先于 defaultCurrent。
   const paginationEnabled = $derived(!virtualized && pagination !== false);
   const pageSize = $derived(pagination ? (pagination.pageSize ?? 10) : 10);
-  const isPageControlled = $derived(!!pagination && pagination.current !== undefined);
+  const controlledPage = $derived(
+    pagination ? (pagination.currentPage ?? pagination.current) : undefined,
+  );
+  const isPageControlled = $derived(controlledPage !== undefined);
   let innerPage = $state(initPage());
   function initPage(): number {
-    return pagination ? (pagination.defaultCurrent ?? 1) : 1;
+    return pagination ? (pagination.defaultCurrentPage ?? pagination.defaultCurrent ?? 1) : 1;
   }
-  const currentPage = $derived(
-    pagination && pagination.current !== undefined ? pagination.current : innerPage,
-  );
+  const currentPage = $derived(controlledPage ?? innerPage);
 
-  const total = $derived(processed.length);
-  // 分页 range 文案（对齐 Semi Table pageText：显示第 X 条-第 Y 条，共 N 条）。
-  const pageRangeText = $derived(
-    loc().t('Table.pageText', {
+  // 受控远程分页可传 pagination.total 覆盖本地数据长度（对齐 Semi）。
+  const total = $derived(
+    pagination && pagination.total !== undefined ? pagination.total : processed.length,
+  );
+  // 分页器位置（对齐 Semi position），默认 bottom。
+  const paginationPosition = $derived(
+    (pagination && pagination.position) || 'bottom',
+  );
+  // 分页 range 文案（对齐 Semi Table pageText / formatPageText）：
+  // formatPageText=false 关闭；函数时自定义；缺省用 locale 的 pageText。
+  const pageRangeText = $derived.by<string | null>(() => {
+    const fmt = pagination ? pagination.formatPageText : undefined;
+    if (fmt === false) return null;
+    const info = {
       currentStart: total === 0 ? 0 : (currentPage - 1) * pageSize + 1,
       currentEnd: Math.min(currentPage * pageSize, total),
       total,
-    }),
-  );
+    };
+    if (typeof fmt === 'function') return fmt(info);
+    return loc().t('Table.pageText', info);
+  });
+  // 受控模式下 Table 不再对 dataSource 分页（对齐 Semi：受控时传入当前页数据）。
   const visibleRows = $derived(
-    paginationEnabled ? paginate(processed, currentPage, pageSize) : processed,
+    paginationEnabled && !isPageControlled
+      ? paginate(processed, currentPage, pageSize)
+      : processed,
   );
 
   // --- 行选择：受控 selectedRowKeys 不回写 (红线 #1) ---
@@ -619,9 +807,13 @@
   // checkStrictly 默认 false=联动；true 时父子独立（与非树形逐行选择一致，向后兼容）。
   // 联动仅在树形 + 有行选择时生效。联动态下 base 选中集为叶子级，经纯函数
   // conductRows(顶层可见行树) 派生 {checked, half}（红线 #2：纯函数 + $derived）。
-  const treeCheckable = $derived(
-    treeEnabled && rowSelection !== undefined && rowSelection.checkStrictly !== true,
-  );
+  // checkRelation（对齐 Semi）显式传入时优先：'related'=联动，'unRelated'=独立；
+  // 缺省沿用 checkStrictly（默认 false=联动）。
+  const treeCheckable = $derived.by(() => {
+    if (!treeEnabled || rowSelection === undefined) return false;
+    if (rowSelection.checkRelation !== undefined) return rowSelection.checkRelation === 'related';
+    return rowSelection.checkStrictly !== true;
+  });
   const rowDisabledFn = (record: T): boolean =>
     rowSelection?.getCheckboxProps?.(record)?.disabled ?? false;
   // 联动选择派生：覆盖整棵可见顶层行树（含未展开的子行）。
@@ -655,8 +847,26 @@
     }
     return [];
   }
+  // expandAllRows=true 时展开全部含子行的行（对齐 Semi expandAllRows，覆盖其余展开态）。
+  const allTreeExpandableKeys = $derived.by<RowKey[]>(() => {
+    if (expandAllRows !== true || !treeEnabled) return [];
+    const keys: RowKey[] = [];
+    const walk = (records: T[]): void => {
+      for (const r of records) {
+        const kids = getChildren(r);
+        if (kids && kids.length > 0) {
+          keys.push(getKey(r));
+          walk(kids);
+        }
+      }
+    };
+    walk(dataSource);
+    return keys;
+  });
   const treeExpandedSet = $derived<Set<RowKey>>(
-    new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
+    expandAllRows === true
+      ? new Set(allTreeExpandableKeys)
+      : new Set(isTreeExpandControlled ? (treeOpts.expandedRowKeys ?? []) : innerTreeExpanded),
   );
 
   function toggleTreeExpand(record: T) {
@@ -699,6 +909,10 @@
   let rafId = 0;
   // onReachBottom 去抖：仅在「进入触底区」的那一帧触发一次，离开后复位（非响应式）。
   let reachedBottom = false;
+  // 横滚位置（固定列阴影按位置显隐，对齐 Semi scroll-position-left/right）：
+  // 在最左时隐藏左固定列右阴影，在最右时隐藏右固定列左阴影。初始默认在最左。
+  let scrollPosLeft = $state(true);
+  let scrollPosRight = $state(false);
 
   const vRowHeight = $derived(rowHeight > 0 ? rowHeight : 48);
   const vTotalHeight = $derived(displayRows.length * vRowHeight);
@@ -784,6 +998,37 @@
     };
   });
 
+  // 固定列横滚位置检测（对齐 Semi scroll-position-left/right）：横滚容器 scrollLeft
+  // 决定左/右固定列阴影显隐。命令式监听 + 初始同步，写本地 $state 只加 class（红线 #3）。
+  let hRafId = 0;
+  $effect(() => {
+    const el = scrollEl;
+    if (!el || !hasFixed) return;
+    const update = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      // scrollLeft 在 RTL 下可能为负，取绝对值判定边缘
+      const sl = Math.abs(scrollLeft);
+      scrollPosLeft = sl <= 0;
+      scrollPosRight = sl + clientWidth >= scrollWidth - 1;
+    };
+    update(); // 初始同步（内容未溢出时 both true，阴影都隐藏）
+    const onHScroll = () => {
+      if (hRafId) return;
+      hRafId = requestAnimationFrame(() => {
+        hRafId = 0;
+        update();
+      });
+    };
+    el.addEventListener('scroll', onHScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onHScroll);
+      if (hRafId) {
+        cancelAnimationFrame(hRafId);
+        hRafId = 0;
+      }
+    };
+  });
+
   // 全选范围 = 当前渲染行集（树形含已展开的子行）；半选据可见行计算
   const visibleKeys = $derived(displayRows.map((r) => r.key));
   const disabledSet = $derived.by(() => {
@@ -811,7 +1056,10 @@
     return { checked: allChecked, indeterminate: !allChecked && anyMarked };
   });
 
-  const hasSelection = $derived(rowSelection !== undefined);
+  // 选择功能启用（状态/回调生效）；rowSelection.hidden=true 时选择列不渲染
+  // （配合 useFullRender 把 selection 物料摆进任意单元格，对齐 Semi hidden）。
+  const selectionEnabled = $derived(rowSelection !== undefined);
+  const hasSelection = $derived(selectionEnabled && rowSelection?.hidden !== true);
   const hasExpand = $derived(expandable !== undefined);
   // 展开按钮是否占独立前置列：hideExpandedColumn=false 时独立成列；默认 true 并入首列（对齐 Semi）。
   const expandAsColumn = $derived(hasExpand && hideExpandedColumn === false);
@@ -843,11 +1091,13 @@
     return [];
   }
   const expandedSet = $derived<Set<RowKey>>(
-    new Set(
-      isExpandControlled
-        ? (expandable?.expandedRowKeys ?? [])
-        : innerExpanded,
-    ),
+    expandAllRows === true && expandable
+      ? new Set(dataSource.map((r) => getKey(r)))
+      : new Set(
+          isExpandControlled
+            ? (expandable?.expandedRowKeys ?? [])
+            : innerExpanded,
+        ),
   );
 
   function canExpand(record: T): boolean {
@@ -999,7 +1249,7 @@
 
   // grid 是否启用：缺省自动检测交互能力；显式 gridNav 覆盖。
   const isInteractive = $derived(
-    hasSelection ||
+    selectionEnabled ||
       hasExpand ||
       treeEnabled ||
       !!onRowClick ||
@@ -1239,7 +1489,7 @@
     }
   }
 
-  // 列的可读名：title 为字符串时直接用，否则回退列 key（snippet/复杂 title 无文本可取）。
+  // 列的可读名：title 为字符串时直接用，否则回退列 dataIndex/key（Snippet title 无文本可取）。
   function columnLabel(col: ColumnDef<T>): string {
     return typeof col.title === 'string' ? col.title : String(col.dataIndex ?? col.key ?? '');
   }
@@ -1255,7 +1505,10 @@
   // --- 分页变更 ---
   function onPageChange(page: number) {
     if (!isPageControlled) innerPage = page;
-    if (pagination) pagination.onChange?.(page);
+    if (pagination) {
+      pagination.onPageChange?.(page);
+      pagination.onChange?.(page);
+    }
     onPaginationChange?.({ current: page, pageSize });
     emitChange('paginate', undefined, page);
   }
@@ -1270,6 +1523,13 @@
 
   function alignOf(col: ColumnDef<T>): Align {
     return col.align ?? 'left';
+  }
+  // ellipsis 开启且未显式 showTitle:false 时，td 带原生 title 提示完整文本（对齐 Semi）。
+  function cellTitleAttr(col: ColumnDef<T>, value: unknown): string | undefined {
+    if (!col.ellipsis) return undefined;
+    if (typeof col.ellipsis === 'object' && col.ellipsis.showTitle === false) return undefined;
+    const text = cellText(value);
+    return text || undefined;
   }
   function widthStyle(col: ColumnDef<T>, index: number): string | undefined {
     const w = resolveWidth(col, index);
@@ -1295,7 +1555,10 @@
   const LEADING_W = 48;
   // 前置 leading 列（expand + selection）的总宽，作为 left 固定列偏移基数
   const leadingWidth = $derived((expandAsColumn ? LEADING_W : 0) + (hasSelection ? LEADING_W : 0));
-  const hasFixed = $derived(leafColumns.some((c) => c.fixed));
+  // fixed 归一化：true 等效 'left'（对齐 Semi）。
+  const fixedOf = (c: ColumnDef<T>): 'left' | 'right' | undefined =>
+    c.fixed === true ? 'left' : c.fixed || undefined;
+  const hasFixed = $derived(leafColumns.some((c) => fixedOf(c)));
   // 固定列时 table 的最小总宽（列宽和 + 前置列），撑过容器以触发横滚
   const totalMinWidth = $derived(
     leadingWidth +
@@ -1317,7 +1580,7 @@
     let acc = leadingWidth;
     for (let i = 0; i < leafColumns.length; i++) {
       const col = leafColumns[i] as ColumnDef<T>;
-      if (col.fixed === 'left') {
+      if (fixedOf(col) === 'left') {
         out.push(acc);
         acc += colNumWidth(col, i);
       } else {
@@ -1332,7 +1595,7 @@
     let acc = 0;
     for (let i = leafColumns.length - 1; i >= 0; i--) {
       const col = leafColumns[i] as ColumnDef<T>;
-      if (col.fixed === 'right') {
+      if (fixedOf(col) === 'right') {
         out[i] = acc;
         acc += colNumWidth(col, i);
       }
@@ -1343,11 +1606,11 @@
   const lastLeftFixed = $derived.by(() => {
     let idx = -1;
     leafColumns.forEach((c, i) => {
-      if (c.fixed === 'left') idx = i;
+      if (fixedOf(c) === 'left') idx = i;
     });
     return idx;
   });
-  const firstRightFixed = $derived(leafColumns.findIndex((c) => c.fixed === 'right'));
+  const firstRightFixed = $derived(leafColumns.findIndex((c) => fixedOf(c) === 'right'));
 
   // 组合某数据列的 sticky 行内样式（含宽度）
   function cellStyle(col: ColumnDef<T>, i: number): string | undefined {
@@ -1572,6 +1835,53 @@
   </button>
 {/snippet}
 
+<!-- 行选择输入框（radio/checkbox，含 rowSelection.renderCell 自定义渲染）。
+     gridTab 为 grid 模式下 roving tabindex（非 grid/物料摆放传 undefined）。 -->
+{#snippet rowSelectionInput(record: T, selected: boolean, rowHalf: boolean, rowDisabled: boolean, gridTab: 0 | -1 | undefined)}
+  {#snippet selectionOrigin()}
+    {#if rowSelection?.type === 'radio'}
+      <Radio
+        class="cd-table-selection-checkbox"
+        ariaLabel={loc().t('Table.selectRow')}
+        checked={selected}
+        disabled={rowDisabled}
+        tabindex={gridTab}
+        onChange={() => onToggleRow(record)}
+      />
+    {:else}
+      <Checkbox
+        class="cd-table-selection-checkbox"
+        ariaLabel={loc().t('Table.selectRow')}
+        checked={selected}
+        disabled={rowDisabled}
+        indeterminate={rowHalf}
+        tabindex={gridTab}
+        onChange={() => onToggleRow(record)}
+      />
+    {/if}
+  {/snippet}
+  <span
+    class="cd-table-selection-wrap"
+    class:cd-table-selection-disabled={rowDisabled}
+    role="presentation"
+    onclick={(e) => e.stopPropagation()}
+  >
+    {#if rowSelection?.renderCell}
+      {@render rowSelection.renderCell({
+        selected,
+        record,
+        originNode: selectionOrigin,
+        inHeader: false,
+        disabled: rowDisabled,
+        indeterminate: rowHalf,
+        selectRow: () => onToggleRow(record),
+      })}
+    {:else}
+      {@render selectionOrigin()}
+    {/if}
+  </span>
+{/snippet}
+
 <!-- 最外层 .semi-table-wrapper（含方向 ltr/rtl），对齐 Semi 分层 -->
 <div
   class="cd-table-wrapper cd-table-wrapper-{direction} {className ?? ''}"
@@ -1586,12 +1896,17 @@
       {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
     </div>
   {/if}
+  {#if paginationEnabled && total > 0 && (paginationPosition === 'top' || paginationPosition === 'both')}
+    {@render paginationArea()}
+  {/if}
   <!-- .semi-table-container：承载 body + footer -->
   <div class="cd-table-container">
     <div
       class="cd-table-body"
       class:cd-table-body-virtual={virtualized}
       class:cd-table-body-scroll={scrollBody}
+      class:cd-table-scroll-position-left={hasFixed && scrollPosLeft}
+      class:cd-table-scroll-position-right={hasFixed && scrollPosRight}
       bind:this={scrollEl}
       style={scrollWrapStyle}
     >
@@ -1668,16 +1983,30 @@
             onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
           >
             {#if showSelectAll}
-              <span class="cd-table-selection-wrap">
-                <input
-                  type="checkbox"
+              {#snippet headerSelectionOrigin()}
+                <Checkbox
                   class="cd-table-selection-checkbox"
-                  aria-label={loc().t('Table.selectAll')}
+                  ariaLabel={loc().t('Table.selectAll')}
                   checked={headerSelect.checked}
+                  disabled={rowSelection?.disabled === true}
+                  indeterminate={headerSelect.indeterminate}
                   tabindex={childTabindex(-1, gc)}
-                  {@attach indeterminate(headerSelect.indeterminate)}
-                  onchange={onToggleAll}
+                  onChange={() => onToggleAll()}
                 />
+              {/snippet}
+              <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowSelection?.disabled === true}>
+                {#if rowSelection?.renderCell}
+                  {@render rowSelection.renderCell({
+                    selected: headerSelect.checked,
+                    originNode: headerSelectionOrigin,
+                    inHeader: true,
+                    disabled: rowSelection?.disabled === true,
+                    indeterminate: headerSelect.indeterminate,
+                    selectAll: () => onToggleAll(),
+                  })}
+                {:else}
+                  {@render headerSelectionOrigin()}
+                {/if}
               </span>
             {/if}
           </th>
@@ -1688,7 +2017,7 @@
           {/each}
         {:else}
           <!-- 合并模式首行：expand/selection th 已 rowspan 跨满，其后接 headerRows[0] -->
-          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+          {#each headerRows[0] ?? [] as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
             {@render headerMergeCell(hc)}
           {/each}
         {/if}
@@ -1696,7 +2025,7 @@
       {#if hasHeaderMerge}
         {#each headerRows.slice(1) as hrow, ri (ri)}
           <tr class="cd-table-row">
-            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${hc.col.title}-${hc.leafIndex}`)}
+            {#each hrow as hc (hc.isLeaf ? colKeyOf(hc.col, hc.leafIndex) : `g-${typeof hc.col.title === 'string' ? hc.col.title : (hc.col.key ?? '')}-${hc.leafIndex}`)}
               {@render headerMergeCell(hc)}
             {/each}
           </tr>
@@ -1710,61 +2039,180 @@
       {:else}
         <th
           class="cd-table-row-head cd-table-align-{alignOf(hc.col)}"
-          class:cd-table-row-cell-ellipsis={hc.col.ellipsis}
+          class:cd-table-row-cell-ellipsis={!!hc.col.ellipsis}
           scope="colgroup"
           colspan={hc.colSpan}
           role={gridEnabled ? 'columnheader' : undefined}
           style={mergeHeaderStyle(undefined)}
         >
-          <span class="cd-table-row-head-title">{hc.col.title}</span>
+          <span class="cd-table-row-head-title">{@render columnTitle(hc.col)}</span>
         </th>
+      {/if}
+    {/snippet}
+    {#snippet columnTitle(col: ColumnDef<T>)}
+      {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
+    {/snippet}
+    <!-- 筛选浮层面板（string / 自定义 title 复用；触发器绑 filterTriggers[colKey]） -->
+    {#snippet filterDropdownPanel(col: ColumnDef<T>, colKey: string)}
+      {@const filterMultiple = col.filterMultiple !== false}
+      {@const confirmMode = isConfirmMode(col)}
+      <div
+        class="cd-table-column-filter-dropdown"
+        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
+        bind:this={filterPanelEl}
+      >
+        {#if col.renderFilterDropdown}
+          {@render col.renderFilterDropdown({
+            tempFilteredValue: tempFilterState.get(colKey) ?? [],
+            setTempFilteredValue: (values) => void tempFilterState.set(colKey, [...values]),
+            confirm: (opts) => confirmFilter(col, colKey, opts?.filteredValue !== undefined ? { closeDropdown: opts?.closeDropdown !== false, filteredValue: opts.filteredValue } : { closeDropdown: opts?.closeDropdown !== false }),
+            clear: (opts) => clearFilter(col, colKey, { closeDropdown: opts?.closeDropdown !== false }),
+            close: () => setFilterOpen(col, colKey, false),
+            ...(col.filters !== undefined ? { filters: col.filters } : {}),
+          })}
+        {:else}
+        {@const checkedSet = confirmMode ? new Set(tempFilterState.get(colKey) ?? []) : activeFilterValues(colKey)}
+        <FilterDropdownHost showTick={col.filterDropdownProps?.showTick ?? false}>
+        <ul class="cd-table-column-filter-list">
+          {#each col.filters ?? [] as f (f.value)}
+            {@const checked = checkedSet.has(f.value)}
+            {@const onItemChange = () =>
+              filterMultiple
+                ? toggleFilterValue(col, colKey, f.value)
+                : selectSingleFilterValue(col, colKey, f.value)}
+            <li class="cd-table-column-filter-item">
+              {#if col.renderFilterDropdownItem}
+                {@render col.renderFilterDropdownItem({ text: f.text, value: f.value, checked, filteredValue: [...checkedSet], filterMultiple, onChange: onItemChange })}
+              {:else}
+              <label class="cd-table-column-filter-label">
+                {#if filterMultiple}
+                  <input type="checkbox" {checked} onchange={onItemChange} />
+                {:else}
+                  <input type="radio" name="cd-filter-{colKey}" {checked} onchange={onItemChange} />
+                {/if}
+                <span>{f.text}</span>
+              </label>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+        </FilterDropdownHost>
+        <div class="cd-table-column-filter-actions">
+          {#if confirmMode}
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.filterConfirm')}</button>
+          {:else}
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.filterConfirm')}</button>
+          {/if}
+        </div>
+        {/if}
+      </div>
+    {/snippet}
+    {#snippet sorterIcons(order: 'ascend' | 'descend' | null, col: ColumnDef<T>)}
+      {#if col.sortIcon}
+        {@render col.sortIcon({ sortOrder: order })}
+      {:else}
+        <span class="cd-table-column-sorter" aria-hidden="true">
+          <span class="cd-table-column-sorter-up" class:on={order === 'ascend'}>
+            <IconCaretup size="small" />
+          </span>
+          <span class="cd-table-column-sorter-down" class:on={order === 'descend'}>
+            <IconCaretdown size="small" />
+          </span>
+        </span>
       {/if}
     {/snippet}
     {#snippet leafHeaderCell(col: ColumnDef<T>, i: number, thRowSpan: number)}
           {@const gc = (expandAsColumn ? 1 : 0) + (hasSelection ? 1 : 0) + i}
           {@const sortable = !!col.sorter}
           {@const colKey = colKeyOf(col, i)}
-          {@const hasFilter = !!col.filters && col.filters.length > 0}
-          {@const resizable = !!col.resizable}
+          {@const hasFilter = (!!col.filters && col.filters.length > 0) || !!col.renderFilterDropdown}
+          {@const colResizable = columnResizable(col)}
+          {@const headerCellProps = col.onHeaderCell ? col.onHeaderCell(col, i) : undefined}
+          {@const resizeOverride = resizeOverrides.get(colKey)}
+          {#if col.colSpan !== 0}
           <th
             rowspan={thRowSpan > 1 ? thRowSpan : undefined}
-            class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
-            class:cd-table-row-cell-ellipsis={col.ellipsis}
+            colspan={col.colSpan !== undefined && col.colSpan > 1 ? col.colSpan : undefined}
+            class="cd-table-row-head cd-table-align-{alignOf(col)} {fixedCellClass(i)} {headerCellProps?.className ?? ''} {resizeOverride?.className ?? ''}"
+            class:cd-table-row-cell-ellipsis={!!col.ellipsis}
             class:cd-table-row-head-has-filter={hasFilter}
-            class:cd-table-row-head-resizable={resizable}
+            class:cd-table-row-head-resizable={colResizable}
             class:resizing={resizingKey === colKey}
             scope="col"
-            style={mergeHeaderStyle(cellStyle(col, i))}
+            style={mergeCellStyle(mergeHeaderStyle(cellStyle(col, i)), headerCellProps?.style)}
             aria-sort={sortable ? ariaSortFor(col, i) : undefined}
             role={gridEnabled ? 'columnheader' : undefined}
             id={gridEnabled ? cellId(-1, gc) : undefined}
             tabindex={rovingTabindex(-1, gc)}
             aria-colindex={gridEnabled ? gc + 1 : undefined}
             onfocusin={gridEnabled ? () => syncFocusCoord(-1, gc) : undefined}
+            onclick={headerCellProps?.onClick ?? undefined}
+            onmouseenter={headerCellProps?.onMouseEnter ?? undefined}
+            onmouseleave={headerCellProps?.onMouseLeave ?? undefined}
           >
+            <!-- 对齐 Semi：仅在有 sorter/filter 时套 .semi-table-operate-wrapper（flex），
+                 消除 inline descender 撑高；纯自定义 title（无 sorter）不套 flex，
+                 直接渲染保持其 inline 布局与 Semi 一致（Semi 自定义 title 不套 operate-wrapper）。 -->
+            <div class="cd-table-operate-wrapper" class:cd-table-operate-plain={typeof col.title !== 'string' && !sortable}>
             {#if sortable}
               {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
+              {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
               <button
                 type="button"
                 class="cd-table-column-sorter-wrapper"
                 tabindex={childTabindex(-1, gc)}
                 onclick={() => onSort(col, i)}
               >
-                <span class="cd-table-row-head-title">{col.title}</span>
-                <span class="cd-table-column-sorter" aria-hidden="true">
-                  <span class="cd-table-column-sorter-up" class:on={order === 'ascend'}>
-                    <IconCaretup size="small" />
-                  </span>
-                  <span class="cd-table-column-sorter-down" class:on={order === 'descend'}>
-                    <IconCaretdown size="small" />
-                  </span>
-                </span>
+                <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
+                {#if showTip}
+                  {@const tipKey = order === 'ascend' ? 'Table.sortDescend' : order === 'descend' ? 'Table.sortCancel' : 'Table.sortAscend'}
+                  <Tooltip content={loc().t(tipKey)}>
+                    {@render sorterIcons(order, col)}
+                  </Tooltip>
+                {:else}
+                  {@render sorterIcons(order, col)}
+                {/if}
               </button>
+            {:else if typeof col.title !== 'string'}
+              <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
+                   title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->
+              {#snippet headerSelectionMaterial()}
+                {#if selectionEnabled}
+                  <Checkbox
+                    class="cd-table-selection-checkbox"
+                    ariaLabel={loc().t('Table.selectAll')}
+                    checked={headerSelect.checked}
+                    disabled={rowSelection?.disabled === true}
+                    indeterminate={headerSelect.indeterminate}
+                    tabindex={childTabindex(-1, gc)}
+                    onChange={() => onToggleAll()}
+                  />
+                {/if}
+              {/snippet}
+              {#snippet headerFilterMaterial()}
+                {#if hasFilter}
+                  <button
+                    type="button"
+                    class="cd-table-column-filter"
+                    class:on={isEffectivelyFiltered(col, colKey)}
+                    aria-label={loc().t('Table.filter')}
+                    aria-expanded={openFilterKey === colKey}
+                    tabindex={childTabindex(-1, gc)}
+                    bind:this={filterTriggers[colKey]}
+                    onclick={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
+                  >
+                    {#if col.filterIcon}{@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}{:else}<IconFilter size="small" aria-hidden="true" />{/if}
+                  </button>
+                {/if}
+              {/snippet}
+              {@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)(hasFilter ? { selection: headerSelectionMaterial, filter: headerFilterMaterial } : { selection: headerSelectionMaterial })}
             {:else}
-              <span class="cd-table-row-head-title">{col.title}</span>
+              <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
             {/if}
 
-            {#if hasFilter}
+            {#if hasFilter && typeof col.title === 'string'}
               <button
                 type="button"
                 class="cd-table-column-filter"
@@ -1775,57 +2223,26 @@
                 bind:this={filterTriggers[colKey]}
                 onclick={(e) => {
                   e.stopPropagation();
-                  openFilterKey = openFilterKey === colKey ? null : colKey;
+                  setFilterOpen(col, colKey, openFilterKey !== colKey);
                 }}
               >
-                <IconFilter size="small" aria-hidden="true" />
+                {#if col.filterIcon}
+                  {@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}
+                {:else}
+                  <IconFilter size="small" aria-hidden="true" />
+                {/if}
               </button>
               {#if openFilterKey === colKey && filterTriggers[colKey]}
-                {@const filterMultiple = col.filterMultiple !== false}
-                <div
-                  class="cd-table-column-filter-dropdown"
-                  use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
-                  bind:this={filterPanelEl}
-                >
-                  <ul class="cd-table-column-filter-list">
-                    {#each col.filters ?? [] as f (f.value)}
-                      <li class="cd-table-column-filter-item">
-                        <label class="cd-table-column-filter-label">
-                          {#if filterMultiple}
-                            <input
-                              type="checkbox"
-                              checked={activeFilterValues(colKey).has(f.value)}
-                              onchange={() => toggleFilterValue(colKey, f.value)}
-                            />
-                          {:else}
-                            <input
-                              type="radio"
-                              name="cd-filter-{colKey}"
-                              checked={activeFilterValues(colKey).has(f.value)}
-                              onchange={() => {
-                                filterState.set(colKey, new Set([f.value]));
-                                emitFilterChange(colKey, [f.value]);
-                              }}
-                            />
-                          {/if}
-                          <span>{f.text}</span>
-                        </label>
-                      </li>
-                    {/each}
-                  </ul>
-                  <div class="cd-table-column-filter-actions">
-                    <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(colKey)}>
-                      {loc().t('Table.filterReset')}
-                    </button>
-                    <button type="button" class="cd-table-column-filter-confirm" onclick={() => (openFilterKey = null)}>
-                      {loc().t('Table.filterConfirm')}
-                    </button>
-                  </div>
-                </div>
+                {@render filterDropdownPanel(col, colKey)}
               {/if}
             {/if}
+            </div>
+            <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
+            {#if hasFilter && typeof col.title !== 'string' && openFilterKey === colKey && filterTriggers[colKey]}
+              {@render filterDropdownPanel(col, colKey)}
+            {/if}
 
-            {#if resizable}
+            {#if colResizable}
               <span
                 class="react-resizable-handle"
                 role="separator"
@@ -1836,6 +2253,7 @@
               ></span>
             {/if}
           </th>
+          {/if}
     {/snippet}
     <svelte:element this={tagTbody} class="cd-table-tbody">
       {#if visibleRows.length === 0}
@@ -1846,7 +2264,7 @@
             role={gridEnabled ? 'gridcell' : undefined}
             aria-colindex={gridEnabled ? 1 : undefined}
           >
-            {empty ?? loc().t('Table.emptyText')}
+            {#if emptySnippet}{@render emptySnippet()}{:else}{empty ?? loc().t('Table.emptyText')}{/if}
           </td>
         </tr>
       {:else}
@@ -1909,7 +2327,7 @@
               {@const rowHalf = treeCheckable && conducted.half.has(key)}
               {@const rowDisabled = disabledSet.has(key)}
               {@const extra = rowClassName ? rowClassName(record, index) : ''}
-              {@const clickable = !!onRowClick || expandRowByClick}
+              {@const clickable = !!onRowClick || expandRowByClick || rowSelection?.clickRow === true}
               {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
               <svelte:element this={tagBodyRow}
                 class="cd-table-row {extra} {rowProps?.className ?? ''}"
@@ -1922,12 +2340,21 @@
                 onclick={(e) => {
                   if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
                   if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
-                  if (onRowClick) onRowClick({ record, index });
+                  if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
+                  if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
+              if (onRowClick) onRowClick({ record, index });
                   if (rowProps?.onClick) rowProps.onClick(e);
                 }}
                 ondblclick={rowProps?.onDoubleClick ?? undefined}
                 onmouseenter={rowProps?.onMouseEnter ?? undefined}
                 onmouseleave={rowProps?.onMouseLeave ?? undefined}
+                draggable={rowProps?.draggable}
+                ondragstart={rowProps?.onDragStart ?? undefined}
+                ondragover={rowProps?.onDragOver ?? ((e) => rowProps?.onDrop && e.preventDefault())}
+                ondragenter={rowProps?.onDragEnter ?? undefined}
+                ondragleave={rowProps?.onDragLeave ?? undefined}
+                ondrop={rowProps?.onDrop ?? undefined}
+                ondragend={rowProps?.onDragEnd ?? undefined}
               >
                 {#if expandAsColumn}
                   <td
@@ -1941,43 +2368,20 @@
                   </td>
                 {/if}
                 {#if hasSelection}
-                  {@const isRadio = rowSelection?.type === 'radio'}
                   <td
                     class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                     style={selectionColStyle ?? leadingStyle('selection')}
                     role={gridEnabled ? 'gridcell' : undefined}
                   >
-                    <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowDisabled}>
-                    {#if isRadio}
-                      <input
-                        type="radio"
-                        class="cd-table-selection-checkbox"
-                        aria-label={loc().t('Table.selectRow')}
-                        checked={selected}
-                        disabled={rowDisabled}
-                        onclick={(e) => e.stopPropagation()}
-                        onchange={() => onToggleRow(record)}
-                      />
-                    {:else}
-                      <input
-                        type="checkbox"
-                        class="cd-table-selection-checkbox"
-                        aria-label={loc().t('Table.selectRow')}
-                        checked={selected}
-                        disabled={rowDisabled}
-                        {@attach indeterminate(rowHalf)}
-                        onclick={(e) => e.stopPropagation()}
-                        onchange={() => onToggleRow(record)}
-                      />
-                    {/if}
-                    </span>
+                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, undefined)}
                   </td>
                 {/if}
                 {#each leafColumns as col, i (colKeyOf(col, i))}
                   {@const value = cellValue(col, record)}
                   <td
                     class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)}"
-                    class:cd-table-row-cell-ellipsis={col.ellipsis}
+                    class:cd-table-row-cell-ellipsis={!!col.ellipsis}
+                    title={cellTitleAttr(col, value)}
                     style={cellStyle(col, i)}
                   >
                     {#snippet gExpandMaterial()}
@@ -2057,7 +2461,7 @@
           {@const rowHalf = treeCheckable && conducted.half.has(key)}
           {@const rowDisabled = disabledSet.has(key)}
           {@const extra = rowClassName ? rowClassName(record, index) : ''}
-          {@const clickable = !!onRowClick || expandRowByClick}
+          {@const clickable = !!onRowClick || expandRowByClick || rowSelection?.clickRow === true}
           {@const rowProps = onRow ? onRow(record, index, { disabled: rowDisabled, selected }) : undefined}
           <svelte:element this={tagBodyRow}
             class="cd-table-row {extra} {rowProps?.className ?? ''}"
@@ -2067,17 +2471,25 @@
             class:cd-table-row-child={treeEnabled && row.level > 0}
             role={gridEnabled ? 'row' : undefined}
             aria-rowindex={gridEnabled ? gridRow + 2 : undefined}
-            aria-selected={gridEnabled && hasSelection ? selected : undefined}
+            aria-selected={gridEnabled && selectionEnabled ? selected : undefined}
             style={rowProps?.style ?? undefined}
             onclick={(e) => {
               if (expandRowByClick && hasExpand && canExpand(record)) toggleExpand(record);
               if (expandRowByClick && treeEnabled && row.hasChildren) toggleTreeExpand(record);
+              if (rowSelection?.clickRow && !rowDisabled) onToggleRow(record);
               if (onRowClick) onRowClick({ record, index });
               if (rowProps?.onClick) rowProps.onClick(e);
             }}
             ondblclick={rowProps?.onDoubleClick ?? undefined}
             onmouseenter={rowProps?.onMouseEnter ?? undefined}
             onmouseleave={rowProps?.onMouseLeave ?? undefined}
+            draggable={rowProps?.draggable}
+            ondragstart={rowProps?.onDragStart ?? undefined}
+            ondragover={rowProps?.onDragOver ?? ((e) => rowProps?.onDrop && e.preventDefault())}
+            ondragenter={rowProps?.onDragEnter ?? undefined}
+            ondragleave={rowProps?.onDragLeave ?? undefined}
+            ondrop={rowProps?.onDrop ?? undefined}
+            ondragend={rowProps?.onDragEnd ?? undefined}
           >
             {#if expandAsColumn}
               {@const gc = 0}
@@ -2097,7 +2509,6 @@
             {/if}
             {#if hasSelection}
               {@const gc = expandAsColumn ? 1 : 0}
-              {@const isRadio = rowSelection?.type === 'radio'}
               <td
                 class="cd-table-row-cell cd-table-column-selection {selectionFixedClass || leadingFixedClass}"
                 style={selectionColStyle ?? leadingStyle('selection')}
@@ -2107,32 +2518,7 @@
                 aria-colindex={gridEnabled ? gc + 1 : undefined}
                 onfocusin={gridEnabled ? () => syncFocusCoord(gridRow, gc) : undefined}
               >
-                <span class="cd-table-selection-wrap" class:cd-table-selection-disabled={rowDisabled}>
-                {#if isRadio}
-                  <input
-                    type="radio"
-                    class="cd-table-selection-checkbox"
-                    aria-label={loc().t('Table.selectRow')}
-                    checked={selected}
-                    disabled={rowDisabled}
-                    tabindex={childTabindex(gridRow, gc)}
-                    onclick={(e) => e.stopPropagation()}
-                    onchange={() => onToggleRow(record)}
-                  />
-                {:else}
-                  <input
-                    type="checkbox"
-                    class="cd-table-selection-checkbox"
-                    aria-label={loc().t('Table.selectRow')}
-                    checked={selected}
-                    disabled={rowDisabled}
-                    tabindex={childTabindex(gridRow, gc)}
-                    {@attach indeterminate(rowHalf)}
-                    onclick={(e) => e.stopPropagation()}
-                    onchange={() => onToggleRow(record)}
-                  />
-                {/if}
-                </span>
+                {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, childTabindex(gridRow, gc))}
               </td>
             {/if}
             {#each leafColumns as col, i (colKeyOf(col, i))}
@@ -2143,7 +2529,8 @@
               {#if !(cellProps && (cellProps.colSpan === 0 || cellProps.rowSpan === 0))}
               <td
                 class="cd-table-row-cell cd-table-align-{alignOf(col)} {fixedCellClass(i)} {cellProps?.className ?? ''}"
-                class:cd-table-row-cell-ellipsis={col.ellipsis}
+                class:cd-table-row-cell-ellipsis={!!col.ellipsis}
+                title={cellTitleAttr(col, value)}
                 colspan={cellProps?.colSpan}
                 rowspan={cellProps?.rowSpan}
                 style={mergeCellStyle(cellStyle(col, i), cellProps?.style)}
@@ -2190,8 +2577,13 @@
                     <span class="cd-table-row-indent" style="inline-size:{row.level * indentSize}px" aria-hidden="true"></span>
                   {/if}
                 {/snippet}
+                {#snippet cellSelectionMaterial()}
+                  {#if selectionEnabled}
+                    {@render rowSelectionInput(record, selected, rowHalf, rowDisabled, undefined)}
+                  {/if}
+                {/snippet}
                 {#if col.useFullRender && col.render}
-                  {@render col.render({ value, record, index, expandIcon: cellExpandMaterial, indentText: cellIndentMaterial })}
+                  {@render col.render({ value, record, index, expandIcon: cellExpandMaterial, selection: cellSelectionMaterial, indentText: cellIndentMaterial })}
                 {:else}
                   {#if i === 0}{@render cellIndentMaterial()}{@render cellExpandMaterial()}{/if}
                   {#if col.render}
@@ -2257,26 +2649,32 @@
     {/if}
   </div>
 
-  {#if paginationEnabled && total > 0}
-    {#if renderPagination}
-      {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
-    {:else}
-      <!-- 对齐 Semi Table 分页：左侧 range 文案（显示第 X-Y 条，共 N 条）+ 右侧 default 页码按钮。
-           表格 size（行高密度）不影响分页器，故分页固定 default 尺寸（不透传表格 size）。 -->
-      <div class="cd-table-pagination-outer">
-        <span class="cd-table-pagination-total">{pageRangeText}</span>
-        <Pagination
-          {total}
-          currentPage={currentPage}
-          {pageSize}
-          size="default"
-          onChange={onPageChange}
-        />
-      </div>
-    {/if}
+  {#if paginationEnabled && total > 0 && (paginationPosition === 'bottom' || paginationPosition === 'both')}
+    {@render paginationArea()}
   {/if}
 </div>
 <!-- /.cd-table-wrapper -->
+
+{#snippet paginationArea()}
+  {#if renderPagination}
+    {@render renderPagination({ total, currentPage, pageSize, onChange: onPageChange })}
+  {:else}
+    <!-- 对齐 Semi Table 分页：左侧 range 文案（显示第 X-Y 条，共 N 条）+ 右侧 default 页码按钮。
+         表格 size（行高密度）不影响分页器，故分页固定 default 尺寸（不透传表格 size）。 -->
+    <div class="cd-table-pagination-outer">
+      {#if pageRangeText !== null}
+        <span class="cd-table-pagination-total">{pageRangeText}</span>
+      {/if}
+      <Pagination
+        {total}
+        currentPage={currentPage}
+        {pageSize}
+        size="default"
+        onChange={onPageChange}
+      />
+    </div>
+  {/if}
+{/snippet}
 
 <style>
   /* ===== 严格对齐 Semi Design table.scss —— 消费 Semi 全名 token ===== */
@@ -2290,6 +2688,8 @@
     inline-size: 100%;
     color: var(--cd-color-table-text-default);
     font-size: var(--cd-font-table-base-fontsize);
+    /* 对齐 Semi font-size-regular mixin：line-height 20px，避免继承文档站正文行高致表头/单元格偏高 */
+    line-height: var(--cd-line-height-regular);
   }
 
   /* body 滚动容器：.semi-table-body（横向 + 纵向滚动区） */
@@ -2482,6 +2882,12 @@
   .cd-table-thead > .cd-table-row > .cd-table-cell-fixed-right {
     background-color: var(--cd-color-table-th-bg-default);
   }
+  /* 固定列表头 z 与数据行固定列一致（=fixed，对齐 Semi：表头/数据行固定列同为 101），
+     覆盖 thead-sticky 通配 th 的 fixed+1（那条用于非固定 sticky 表头列盖住固定列滚动） */
+  .cd-table-thead-sticky th.cd-table-cell-fixed-left,
+  .cd-table-thead-sticky th.cd-table-cell-fixed-right {
+    z-index: var(--cd-z-table-fixed-column);
+  }
   .cd-table-cell-fixed-left-last {
     border-inline-end: var(--cd-width-table-cell-fixed-left-last) solid var(--cd-color-table-shadow-border-default);
     box-shadow: var(--cd-shadow-table-right);
@@ -2520,9 +2926,28 @@
   }
 
   /* ===== 排序 ColumnSorter ===== */
+  /* 对齐 Semi .semi-table-operate-wrapper：flex 行容器，消除 inline line-box 撑高（表头恒 38px） */
+  .cd-table-operate-wrapper {
+    display: flex;
+    align-items: center;
+  }
+  /* 纯自定义 title（无 sorter/filter）：不产生布局盒，title 直接在 th 内 inline 布局，
+     对齐 Semi（Semi 自定义 title 不套 operate-wrapper，其 inline-flex 内容自然撑高表头）。 */
+  .cd-table-operate-plain {
+    display: contents;
+  }
+  .cd-table-align-center .cd-table-operate-wrapper {
+    justify-content: center;
+  }
+  .cd-table-align-right .cd-table-operate-wrapper {
+    justify-content: flex-end;
+  }
+
   .cd-table-column-sorter-wrapper {
     display: inline-flex;
     align-items: center;
+    /* baseline 对齐会留 descender 空间撑高 th 1px；middle 消除，对齐 Semi 恒 38px 表头 */
+    vertical-align: middle;
     gap: var(--cd-spacing-table-column-sorter-marginleft);
     overflow: hidden;
     cursor: pointer;
@@ -2566,6 +2991,8 @@
     margin-inline-start: var(--cd-spacing-table-column-filter-marginleft);
     display: inline-flex;
     align-items: center;
+    /* 同 sorter：消除 baseline descender，避免撑高 th */
+    vertical-align: middle;
     cursor: pointer;
     color: var(--cd-color-table-filter-text-default);
     padding: 0;

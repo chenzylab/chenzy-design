@@ -148,7 +148,24 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    font-family: var(--cd-font-family, system-ui, sans-serif);
+    /* 字体栈对齐 Semi 官网（Inter 打头 + system 回退）；此前 fallback 到 system-ui
+       会盖掉 body 的 Inter 栈致字体偏粗（无 antialiased 清爽感）。与 app.css body 一致。 */
+    font-family: var(
+      --cd-font-family,
+      'Inter',
+      -apple-system,
+      'system-ui',
+      'PingFang SC',
+      'Segoe UI',
+      'Microsoft YaHei',
+      'Hiragino Sans GB',
+      'Helvetica Neue',
+      Helvetica,
+      Arial,
+      sans-serif
+    );
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .docs-header {
     display: flex;

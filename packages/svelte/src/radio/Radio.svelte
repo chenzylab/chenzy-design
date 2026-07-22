@@ -57,6 +57,8 @@
     onMouseLeave?: (e: MouseEvent) => void;
     ariaLabel?: string;
     preventScroll?: boolean;
+    /** 内部 input 的 tabindex（用于 grid roving tabindex 等场景，缺省不设）。 */
+    tabindex?: number | undefined;
   }
 
   let {
@@ -81,6 +83,7 @@
     onMouseLeave,
     ariaLabel,
     preventScroll = false,
+    tabindex,
   }: Props = $props();
 
   const group = getRadioGroupContext();
@@ -249,6 +252,7 @@
       type={resolvedMode === 'advanced' ? 'checkbox' : 'radio'}
       checked={isChecked}
       disabled={resolvedDisabled}
+      {tabindex}
       name={resolvedName}
       value={value === undefined ? undefined : String(value)}
       aria-label={ariaLabel}

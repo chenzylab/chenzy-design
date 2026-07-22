@@ -3,6 +3,8 @@ export { meta as tableMeta } from './meta.js';
 export type {
   ColumnDef,
   RowSelection,
+  ResizableConfig,
+  RenderFilterDropdownProps,
   Expandable,
   TreeTable,
   TableChangeInfo,

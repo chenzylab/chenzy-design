@@ -43,6 +43,8 @@
     ariaInvalid?: boolean;
     /** a11y: wrapper role（Group 内为 listitem）。 */
     role?: string;
+    /** 根 wrapper 的 tabindex（对齐 Semi tabIndex，a11y: wrapper tabIndex；grid roving 场景用，缺省不设）。 */
+    tabindex?: number | undefined;
     /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
     style?: string;
     /** 根容器自定义类名（与内置 cd-checkbox 并存，对齐 Semi className）。 */
@@ -71,6 +73,7 @@
     ariaRequired,
     ariaInvalid,
     role,
+    tabindex,
     style,
     class: className,
     onChange,
@@ -225,11 +228,13 @@
      切换挂在根 span 的 click 上（对齐 Semi onClick={handleChange}），点击整个 checkbox（含
      addon 文本 / extra / card）都切换；原生 input 只承载焦点 / a11y，其 change 被 preventDefault
      旁路，状态由受控 checked 驱动。 -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <span
   class={cls}
   {style}
   id={id}
   {role}
+  {tabindex}
   aria-labelledby={resolvedLabelledby}
   onclick={handleWrapperClick}
   onkeydown={handleKeydown}
