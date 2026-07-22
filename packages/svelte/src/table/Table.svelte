@@ -1893,6 +1893,7 @@
 <div
   class="cd-table-wrapper cd-table-wrapper-{direction} {className ?? ''}"
   class:cd-table-wrapper-rtl={direction === 'rtl'}
+  class:cd-table-wrapper-bordered={bordered}
   data-column-fixed={hasFixed ? 'true' : undefined}
   dir={direction}
   {style}
@@ -2912,7 +2913,10 @@
   }
 
   /* ===== 带边框 bordered ===== */
-  .cd-table-bordered > .cd-table-container {
+  /* bordered 表格外框：container 是 wrapper 的子、table 的祖先，故用 wrapper 的 bordered
+     class 选中（此前误用 table 上的 .cd-table-bordered > container，方向反致外框全丢）。
+     对齐 Semi：保留上/左边框（含表头上边框），右/下由单元格 border 补齐避免双线。 */
+  .cd-table-wrapper-bordered > .cd-table-container {
     border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
     border-inline-end: 0;
     border-block-end: 0;
