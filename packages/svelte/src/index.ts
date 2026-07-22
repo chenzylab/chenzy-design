@@ -521,6 +521,15 @@ export {
   type DragMoveCustomMove,
 } from './drag-move/index.js';
 export {
+  sortable,
+  arrayMove,
+  createSortable,
+  type SortableActionParams,
+  type CreateSortableOptions,
+  type SortableController,
+  type SortableTransform,
+} from './sortable/index.js';
+export {
   SideBar,
   SideBarContainer,
   SideBarAnnotation,

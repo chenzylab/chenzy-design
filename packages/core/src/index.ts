@@ -662,6 +662,16 @@ export {
   type MoveRange,
 } from './drag-move.js';
 export {
+  createSortable,
+  arrayMove,
+  computeTargetIndex,
+  computeItemTransforms,
+  type CreateSortableOptions,
+  type SortableController,
+  type SortableRect,
+  type SortableTransform,
+} from './sortable.js';
+export {
   parseSideBarWidth,
   clampSideBarWidth,
   filterMcpOptions,
