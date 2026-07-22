@@ -19,8 +19,7 @@
     "@chenzy-design/svelte": "workspace:*",
     "@chenzy-design/tokens": "workspace:*",
     "@chenzy-design/unocss-preset": "workspace:*",
-    "prismjs": "^1.29.0",
-    "svelte-dnd-action": "^0.9.74"
+    "prismjs": "^1.29.0"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.0",
