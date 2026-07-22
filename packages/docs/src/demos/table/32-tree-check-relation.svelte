@@ -60,4 +60,6 @@
   });
 </script>
 
-<Table {columns} dataSource={data} {rowSelection} pagination={false} />
+<!-- 本库树形需显式 tree（Semi 靠数据含 children 自动树形，本库有意要求显式开启避免误触发）；
+     checkRelation 父子联动也依赖树形启用。 -->
+<Table {columns} dataSource={data} tree {rowSelection} pagination={false} />

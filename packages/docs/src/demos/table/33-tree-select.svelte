@@ -84,4 +84,5 @@
   });
 </script>
 
-<Table {columns} dataSource={data} {rowSelection} pagination={false} />
+<!-- 本库树形需显式 tree（Semi 靠 children 自动）；此 demo 用 selectedRowKeys 手动派生子级联动。 -->
+<Table {columns} dataSource={data} tree {rowSelection} pagination={false} />
