@@ -13,13 +13,19 @@ describe('createToastStore', () => {
     s.destroy();
   });
 
-  it('auto-dismisses after duration', () => {
+  it('auto-dismisses after duration (marks leaving; finalize removes)', () => {
+    // 两段式（对齐 Semi）：到期 → remove 标记 leaving（仍在列表触发离场动画），
+    // 渲染层动画结束调 finalizeRemove 才真删。
     const s = createToastStore();
-    s.add({ content: 'bye', duration: 2 });
+    const id = s.add({ content: 'bye', duration: 2 });
     expect(s.getToasts().length).toBe(1);
     vi.advanceTimersByTime(1999);
-    expect(s.getToasts().length).toBe(1);
+    expect(s.getToasts()[0]!.leaving).toBe(false);
     vi.advanceTimersByTime(1);
+    // 到期后仍在列表，但已标记离场
+    expect(s.getToasts().length).toBe(1);
+    expect(s.getToasts()[0]!.leaving).toBe(true);
+    s.finalizeRemove(id);
     expect(s.getToasts().length).toBe(0);
     s.destroy();
   });
@@ -42,8 +48,11 @@ describe('createToastStore', () => {
     expect(t!.type).toBe('success');
     expect(s.getToasts().length).toBe(1);
     vi.advanceTimersByTime(2000); // only 2s since update
-    expect(s.getToasts().length).toBe(1);
+    expect(s.getToasts()[0]!.leaving).toBe(false);
     vi.advanceTimersByTime(1000);
+    // 到期标记离场（未真删），finalize 后清空
+    expect(s.getToasts()[0]!.leaving).toBe(true);
+    s.finalizeRemove(id);
     expect(s.getToasts().length).toBe(0);
     s.destroy();
   });
@@ -57,12 +66,14 @@ describe('createToastStore', () => {
     s.destroy();
   });
 
-  it('has() reflects presence', () => {
+  it('has() reflects presence (leaving item still present until finalize)', () => {
     const s = createToastStore();
     const id = s.add({ content: 'a', duration: 0 });
     expect(s.has(id)).toBe(true);
     expect(s.has('nope')).toBe(false);
-    s.remove(id);
+    s.remove(id); // 标记离场，项仍在列表
+    expect(s.has(id)).toBe(true);
+    s.finalizeRemove(id); // 动画结束真删
     expect(s.has(id)).toBe(false);
     s.destroy();
   });
@@ -76,13 +87,19 @@ describe('createToastStore', () => {
     s.destroy();
   });
 
-  it('manual remove and removeAll', () => {
+  it('manual remove and removeAll (two-phase: mark leaving then finalize)', () => {
     const s = createToastStore();
     const a = s.add({ content: 'a', duration: 0 });
-    s.add({ content: 'b', duration: 0 });
-    s.remove(a);
+    const b = s.add({ content: 'b', duration: 0 });
+    s.remove(a); // 标记 a 离场，仍在列表
+    expect(s.getToasts().map((t) => t.content)).toEqual(['a', 'b']);
+    expect(s.getToasts().find((t) => t.id === a)!.leaving).toBe(true);
+    expect(s.getToasts().find((t) => t.id === b)!.leaving).toBe(false);
+    s.finalizeRemove(a); // 真删 a
     expect(s.getToasts().map((t) => t.content)).toEqual(['b']);
-    s.removeAll();
+    s.removeAll(); // 标记全部离场
+    expect(s.getToasts().every((t) => t.leaving)).toBe(true);
+    s.finalizeRemove(b);
     expect(s.getToasts().length).toBe(0);
     s.destroy();
   });
@@ -93,16 +110,19 @@ describe('createToastStore', () => {
     vi.advanceTimersByTime(1000);
     s.pause(id);
     vi.advanceTimersByTime(10000); // paused, no dismiss
-    expect(s.getToasts().length).toBe(1);
+    expect(s.getToasts()[0]!.leaving).toBe(false);
     s.resume(id); // restart full 4s
     vi.advanceTimersByTime(3999);
-    expect(s.getToasts().length).toBe(1);
+    expect(s.getToasts()[0]!.leaving).toBe(false);
     vi.advanceTimersByTime(1);
+    // 到期标记离场（两段式，未真删）
+    expect(s.getToasts()[0]!.leaving).toBe(true);
+    s.finalizeRemove(id);
     expect(s.getToasts().length).toBe(0);
     s.destroy();
   });
 
-  it('onClose fires with no argument (对齐 Semi () => void)', () => {
+  it('onClose fires on finalizeRemove, not on remove (对齐 Semi onAnimationEnd)', () => {
     const s = createToastStore();
     const calls: unknown[][] = [];
     const id = s.add({
@@ -110,8 +130,22 @@ describe('createToastStore', () => {
       duration: 0,
       onClose: (...args: unknown[]) => calls.push(args),
     });
-    s.remove(id);
+    s.remove(id); // 仅标记离场，onClose 不触发
+    expect(calls).toEqual([]);
+    s.finalizeRemove(id); // 动画结束才触发 onClose（无参数）
     expect(calls).toEqual([[]]);
+    s.destroy();
+  });
+
+  it('finalizeRemove is guarded: no-op when item is not leaving (reopened)', () => {
+    const s = createToastStore();
+    const calls: unknown[][] = [];
+    const id = s.add({ content: 'x', duration: 0, onClose: () => calls.push([]) });
+    s.remove(id); // leaving = true
+    s.add({ id, content: 'x2', duration: 0 }); // reopen 清 leaving
+    s.finalizeRemove(id); // 守卫：非 leaving 不处理
+    expect(s.has(id)).toBe(true);
+    expect(calls).toEqual([]);
     s.destroy();
   });
 
@@ -120,8 +154,9 @@ describe('createToastStore', () => {
     const counts: number[] = [];
     s.subscribe((t) => counts.push(t.length));
     const id = s.add({ content: 'a', duration: 0 });
-    s.remove(id);
-    expect(counts).toEqual([1, 0]);
+    s.remove(id); // 标记离场也 emit（列表长度不变）
+    s.finalizeRemove(id); // 真删
+    expect(counts).toEqual([1, 1, 0]);
     s.destroy();
   });
 

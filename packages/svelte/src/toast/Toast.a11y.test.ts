@@ -27,6 +27,7 @@ function makeToast(overrides: Partial<ToastItemData> = {}): ToastItemData {
     direction: 'ltr',
     onClose: undefined,
     icon: undefined,
+    leaving: false,
     ...overrides,
   };
 }

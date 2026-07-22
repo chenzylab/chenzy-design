@@ -15,9 +15,6 @@
   $effect 仅做订阅 + cleanup 退订。
 -->
 <script lang="ts">
-  import { fly } from 'svelte/transition';
-  import { flip } from 'svelte/animate';
-  import { prefersReducedMotion } from 'svelte/motion';
   import type { ToastStore, ToastItem } from '@chenzy-design/core';
   import ToastItemView from './ToastItem.svelte';
   import type { ToastPositionConfig } from './store.js';
@@ -45,12 +42,17 @@
     return unsub;
   });
 
-  // 动画时长：reduced-motion 时降为 0（对齐 Semi 动画 300ms）。
-  const SEMI_DURATION = 300;
-  const flyDuration = $derived(prefersReducedMotion.current ? 0 : SEMI_DURATION);
-  const flipDuration = $derived(prefersReducedMotion.current ? 0 : SEMI_DURATION);
-  // Semi 缓动 cubic-bezier(.22,.57,.02,1.2) 的求值函数（供 transition easing）。
-  const semiEase = bezier(0.22, 0.57, 0.02, 1.2);
+  // 进/退场动画对齐 Semi：用 CSS keyframe（cd-toast-animation-show/hide）而非框架 transition，
+  // 与 Semi（semi-ui/toast/index.tsx 的 Motion + startClassName + onAnimationEnd）同构。
+  // 移除是两段式：core.remove 只标记 leaving（触发 hide keyframe），animationend 后调 finalizeRemove 真删。
+  // 这样卸载时机由「动画真正结束」驱动，不依赖框架 transition 的 outro 调度（后者在 duration 边界会漏卸载）。
+  // 离场动画结束回调：仅当该项仍处于 leaving 才真删（守卫，对齐 Semi animationState==='leave' 判断）。
+  function handleAnimationEnd(item: ToastItem) {
+    if (item.leaving) store.finalizeRemove(item.id);
+  }
+
+  // reduced-motion 时 CSS 动画时长归 0（见 style 块 @media），animationend 仍会在下一 tick 触发 →
+  // 依然走 finalizeRemove 完成卸载，无需另设同步兜底。
 
   // 任一 toast 带 stack → 整组走堆叠模式（对齐 Semi ref.stack）。
   const stacked = $derived(toasts.some((t) => t.stack));
@@ -87,42 +89,17 @@
     if (right !== undefined) parts.push(`right:${right}`);
     return parts.length ? parts.join(';') : undefined;
   });
-
-  // 三次贝塞尔求值（对齐 Notification 做法，用于 transition easing）。
-  function bezier(x1: number, y1: number, x2: number, y2: number): (x: number) => number {
-    const cx = 3 * x1;
-    const bx = 3 * (x2 - x1) - cx;
-    const ax = 1 - cx - bx;
-    const cy = 3 * y1;
-    const by = 3 * (y2 - y1) - cy;
-    const ay = 1 - cy - by;
-    const sampleX = (t: number) => ((ax * t + bx) * t + cx) * t;
-    const sampleY = (t: number) => ((ay * t + by) * t + cy) * t;
-    const sampleDX = (t: number) => (3 * ax * t + 2 * bx) * t + cx;
-    return (x: number) => {
-      if (x <= 0) return 0;
-      if (x >= 1) return 1;
-      let t = x;
-      for (let i = 0; i < 8; i++) {
-        const dx = sampleX(t) - x;
-        if (Math.abs(dx) < 1e-5) break;
-        const d = sampleDX(t);
-        if (Math.abs(d) < 1e-6) break;
-        t -= dx / d;
-      }
-      return sampleY(t);
-    };
-  }
 </script>
 
 <div class="cd-toast-wrapper" style={wrapperStyle()}>
   <div class="cd-toast-innerWrapper" class:cd-toast-innerWrapper-hover={hover} onmouseenter={handleEnter} onmouseleave={handleLeave} role="presentation">
     {#each toasts as t, i (t.id)}
+      <!-- 进/退场由 CSS keyframe 承载：!leaving→show(enter)，leaving→hide(leave)；animationend 且 leaving 时 finalizeRemove 真删（对齐 Semi startClassName + onAnimationEnd） -->
       <div
         class="cd-toast-listItem"
-        in:fly={{ y: -16, duration: flyDuration, easing: semiEase }}
-        out:fly={{ y: -16, duration: flyDuration, easing: semiEase }}
-        animate:flip={{ duration: flipDuration }}
+        class:cd-toast-animation-show={!t.leaving}
+        class:cd-toast-animation-hide={t.leaving}
+        onanimationend={() => handleAnimationEnd(t)}
       >
         <ToastItemView
           toast={t}
@@ -166,5 +143,46 @@
 
   .cd-toast-listItem {
     pointer-events: none;
+  }
+
+  /* —— 进/退场动画（对齐 Semi toast.scss animation-show/hide + keyframes）——
+     300ms cubic-bezier(.22,.57,.02,1.2)，fill-mode forwards（保持终态直到卸载/被替换）。
+     show：opacity 0→1 + translateY(-100%)→0；hide：opacity 1→0 + translateY(0)→-100%。
+     hide 动画结束触发 onanimationend → finalizeRemove（卸载）。 */
+  .cd-toast-animation-show {
+    animation: cd-keyframe-toast-show 300ms cubic-bezier(0.22, 0.57, 0.02, 1.2) 0s;
+    animation-fill-mode: forwards;
+  }
+  .cd-toast-animation-hide {
+    animation: cd-keyframe-toast-hide 300ms cubic-bezier(0.22, 0.57, 0.02, 1.2) 0s;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes cd-keyframe-toast-show {
+    0% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes cd-keyframe-toast-hide {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+
+  /* 减少动效：动画时长归零（animationend 仍会在下一 tick 触发，保证离场后 finalizeRemove 卸载）。 */
+  @media (prefers-reduced-motion: reduce) {
+    .cd-toast-animation-show,
+    .cd-toast-animation-hide {
+      animation-duration: 0.01ms;
+    }
   }
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Toast, Button } from '@chenzy-design/svelte';
+  import { Toast, Button, Space } from '@chenzy-design/svelte';
 
   // 推荐设置 stack 属性应用堆叠样式到同屏多个 Toast，Hover 展开，
   // 可有效防止一次性弹出多个并列 Toast 对用户造成干扰（对齐 Semi 普通提示 demo）。
@@ -19,7 +19,7 @@
   }
 </script>
 
-<div style="display:flex; gap:12px; flex-wrap:wrap">
+<Space wrap>
   <Button onclick={() => Toast.info(opts)}>Display Toast</Button>
   <Button onclick={throttled}>Throttled Toast</Button>
-</div>
+</Space>
