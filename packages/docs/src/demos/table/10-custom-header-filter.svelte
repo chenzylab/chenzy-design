@@ -50,7 +50,15 @@
 {#snippet titleWithInput()}
   <Space>
     <span>标题</span>
-    <Input placeholder="请输入筛选值" style="width: 200px" showClear onChange={handleChange} />
+    <!-- composition：IME 拼音组合期间不触发 onChange，确认后补触发一次（对齐 Semi 手动
+         compositionRef + onCompositionStart/End 的输入法处理，本库内置为 composition prop）。 -->
+    <Input
+      placeholder="请输入筛选值"
+      style="width: 200px"
+      composition
+      showClear
+      onChange={handleChange}
+    />
   </Space>
 {/snippet}
 
