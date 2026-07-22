@@ -1,11 +1,15 @@
 <script lang="ts">
-  import { Table, Avatar } from '@chenzy-design/svelte';
+  import { Table, Avatar, sortable, arrayMove } from '@chenzy-design/svelte';
   import { figmaIconUrl, getData, formatDate, type FileRow } from './_data';
 
-  // 拖拽排序：Semi 用 dnd-kit + components API。本库以原生 HTML5 拖拽 + onRow 返回
-  // draggable/事件属性实现同样的行交换效果（技术栈差异，可观察结果一致）。
+  // 拖拽排序：复刻 Semi（dnd-kit）的思路——拖拽全程只给行叠加 CSS transform 做视觉位移，
+  // 不改动 DOM 结构，松手时用 arrayMove 更新 dataSource 顺序（长度守恒，零丢行）。
+  // sortable action 挂在包住 Table 的容器上，靠容器委托捕获行的 pointerdown。
   let data = $state<FileRow[]>(getData(10));
-  let dragKey: string | null = null;
+
+  const onReorder = (from: number, to: number) => {
+    data = arrayMove(data, from, to);
+  };
 
   const columns = [
     { title: '标题', dataIndex: 'name', width: 400, render: renderName },
@@ -14,24 +18,8 @@
     { title: '更新日期', dataIndex: 'updateTime', render: renderDate },
   ];
 
-  const move = (fromKey: string, toKey: string) => {
-    const from = data.findIndex((d) => d.key === fromKey);
-    const to = data.findIndex((d) => d.key === toKey);
-    if (from < 0 || to < 0 || from === to) return;
-    const next = [...data];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
-    data = next;
-  };
-
-  const onRow = (record: FileRow) => ({
-    draggable: true,
-    onDragStart: () => (dragKey = record.key),
-    onDrop: () => {
-      if (dragKey) move(dragKey, record.key);
-      dragKey = null;
-    },
-  });
+  // 给每行加抓取光标（Table 已支持 onRow 透传 style，无需改组件）。
+  const onRow = () => ({ style: 'cursor: grab;' });
 </script>
 
 {#snippet renderSize({ value }: { value: unknown })}{value} KB{/snippet}
@@ -49,4 +37,6 @@
   </div>
 {/snippet}
 
-<Table {columns} dataSource={data} {onRow} pagination={false} />
+<div use:sortable={{ getItemCount: () => data.length, onReorder }}>
+  <Table {columns} dataSource={data} rowKey="key" {onRow} pagination={false} />
+</div>

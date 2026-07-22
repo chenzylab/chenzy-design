@@ -18,8 +18,10 @@
  * `--cd-table-radius` / `--cd-table-fixed-shadow` 等发明的中间变量已随本次对齐移除，
  * 无向后兼容包袱）。
  *
- * Semi `$color-table_selection-bg-default: rgba(var(--semi-grey-0), 1)`（= #f9f9f9，分组底纹）：
- * 本库 grey-0 暴露为 hex 值的 `--cd-color-grey-0`（非 RGB 通道），故直接引用该变量而非 rgba() 包裹。
+ * Semi `$color-table_selection-bg-default: rgba(var(--semi-grey-0), 1)`（分组底纹）：Semi grey-0
+ * 是随主题反转的 CSS 变量（light #f9f9f9 → dark #1c1f23），故 dark 下分组底纹自然变深。本库
+ * palette.grey-0 是固定原始值（#f9f9f9，不反转），直接引用会致 dark 白底白字，故改用语义 alias
+ * `--cd-color-tertiary-light-default`（= Semi tertiary-light-default=rgba(grey-0,1)，dark 正确变深）。
  */
 import type { TokenGroup } from './token-def.js';
 
@@ -94,7 +96,7 @@ export const tableTokens = {
   'color-table-sorter-text-hover': { value: 'var(--cd-color-text-2)', category: 'color', label: '排序悬浮文字色', usage: '表格排序按钮颜色 - 悬浮态' },
   'color-table-page-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '翻页器文本色', usage: '表格翻页器文本颜色' },
   'color-table-resizer-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '拉伸标示线色', usage: '表格拉伸标示线颜色' },
-  'color-table-selection-bg-default': { value: 'var(--cd-color-grey-0)', category: 'color', label: '分组背景色', usage: '表格分组背景色（对齐 Semi rgba(grey-0,1) = #f9f9f9）' },
+  'color-table-selection-bg-default': { value: 'var(--cd-color-tertiary-light-default)', category: 'color', label: '分组背景色', usage: '表格分组背景色（对齐 Semi tertiary-light-default=rgba(grey-0,1)；用语义 alias 而非固定原始 grey-0：Semi grey-0 随主题反转 light #f9f9f9→dark #1c1f23，本库 palette.grey-0 是固定原始值不反转，直接用会致 dark 下白底白字，改用 dark 正确变深的 tertiary-light-default）' },
   'color-table-placeholder-text-default': { value: 'var(--cd-color-text-2)', category: 'color', label: '空数据文本色', usage: '表格空数据文本颜色' },
   'color-table-cell-bg-hover': { value: 'var(--cd-color-bg-0)', category: 'color', label: '单元格悬浮背景色', usage: '让表格在 hover 时正确显示 body-bg-hover 颜色，如无必要不要修改' },
 

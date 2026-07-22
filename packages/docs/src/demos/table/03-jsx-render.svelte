@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Table, Avatar } from '@chenzy-design/svelte';
+  import { Table, Column, Avatar } from '@chenzy-design/svelte';
   import { IconMore } from '@chenzy-design/icons';
 
   type Row = {
@@ -24,14 +24,7 @@
     { key: '3', name: '设计文档', nameIconSrc: docsIconUrl, size: '34KB', owner: 'Zoey Edwards', updateTime: '2020-01-26 11:01', avatarBg: 'light-blue' },
   ];
 
-  // 以带 render snippet 的配置式列定义（本库 Svelte 惯例，等价 Semi 的 JSX <Column>）。
-  const columns  = [
-    { title: '标题', dataIndex: 'name', key: 'name', render: renderName },
-    { title: '大小', dataIndex: 'size', key: 'size' },
-    { title: '所有者', dataIndex: 'owner', key: 'owner', render: renderOwner },
-    { title: '更新时间', dataIndex: 'updateTime', key: 'updateTime' },
-    { title: '', dataIndex: 'operate', key: 'operate', render: renderOperate },
-  ];
+  // 组合式 <Column> 声明列（对齐 Semi Table.Column 的 JSX 写法）。
 </script>
 
 {#snippet renderName({ value, record }: { value: unknown; record: Row })}
@@ -54,4 +47,10 @@
   <IconMore />
 {/snippet}
 
-<Table {columns} dataSource={data} pagination={false} />
+<Table dataSource={data} pagination={false}>
+  <Column title="标题" dataIndex="name" key="name" render={renderName} />
+  <Column title="大小" dataIndex="size" key="size" />
+  <Column title="所有者" dataIndex="owner" key="owner" render={renderOwner} />
+  <Column title="更新时间" dataIndex="updateTime" key="updateTime" />
+  <Column title="" dataIndex="operate" key="operate" render={renderOperate} />
+</Table>

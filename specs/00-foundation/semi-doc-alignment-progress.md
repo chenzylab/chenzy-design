@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（19）
+## ✅ 已完成（22，判真：`grep -l "docMode: inline"` = 22）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -23,17 +23,18 @@
 - [x] tag — TagGroup/SplitTagGroup 合一页；demo 布局改用 `<Space>`；SplitTagGroup 4 组合并回单 demo（删 13）；close/onTagClose/showPopover 真机验证过
 - [x] timeline — 8 demo 严格对齐 Semi（basic/type/custom/left/center/alternate/right/datasource）；onClick(2.2.0) demo 保留为「可点击节点」章节、aria-label demo 放进 Accessibility 章节；源码/meta 原本已对齐 Semi 无需改；真机验证 onClick 联动 + aria-label DOM 挂载 + 10 实例全渲染
 - [x] popconfirm — 4 Semi demo(基本/类型搭配/延时关闭/初始化焦点)+2 本库补充(关闭按钮/箭头)；封装链改述 Popover(非 Semi 的 Tooltip)；⚠️ **API 表 union 类型踩坑**：`Snippet<[{ initialFocusRef }]>` 的裸 `{}` 让 mdsvex 当 Svelte 表达式→SSR 500(typecheck 假绿真机才暴露)；修法=整型包反引号(反引号内 `{}<>` 全字面)，union 的 `|` 不能进反引号(会当列分隔)→拆成 `A`\|`B` 两段；真机验证 保存→确定→Toast 成功链
+- [x] toast（见优先批 A 详注）
+- [x] notification（见优先批 A 详注）
+- [x] table（PR #604 已合并 2026-07-22）— 全库最大页：34 demo 整页 inline 严格复刻 Semi（含 _data.ts 共享数据）+ API 全表(Table/Column/rowSelection/Expandable/scroll/pagination)。**补全大量 Semi 缺失 API**：showSortTip(+Tooltip)、sortIcon/filterIcon、renderFilterDropdown(+RenderFilterDropdownProps)、renderFilterDropdownItem、filterDropdownProps.showTick(+FilterDropdownHost)、onHeaderCell、defaultFilteredValue、filterChildrenRecord/sortChildrenRecord、colSpan、resize、ellipsis.showTitle、title 支持 Snippet(含 filter/sorter/selection 物料透传)、sorter 第三参 sortOrder、fixed:true 归一化；rowSelection.checkRelation/clickRow/hidden/disabled/renderCell；表级 resizable(+onResize 事件)/expandAllRows/emptySnippet/onRow 拖拽事件(RowAttrs)；pagination.currentPage/total/position/formatPageText/onPageChange(受控不本地分页)；filterConfirmMode='confirm'。**视觉逐 demo 真机 getComputedStyle 逐值对齐**：①表头 39→38px(新增 .cd-table-operate-wrapper flex 消 inline descender)②行选择框原生 input→Checkbox/Radio 组件(16×20，选择列 52→48px；Checkbox/Radio 补 tabindex prop 供 grid roving)③表头固定列 z-index 102→101、固定列阴影按横滚 scroll-position-left/right 显隐④完全自定义渲染表头 38→41px(title 物料透传摆放 selection 全选框)。⚠️ **字体差异按分层改**见 [[align-semi-fix-at-correct-layer]]：全站不清爽→docs 层(app.css/layout 改 Inter 栈+antialiased)；Input `font: inherit` 继承表头 weight 600 变粗→组件层(Input.svelte 改 font-family/size/line-height:inherit 不含 weight，走 UA 默认 400，实测在 Semi th 插裸 input 得 Inter/400 印证)。42 Table 测试+26 Input 测试通过、体积门禁 20.99KB<21KB。踩坑：md 表格裸 `{}`/泛型 `<>` 断 SSR 见 [[inline-md-table-braces-angles-break-ssr]]；demo `$effect(()=>loadMore())` 追踪函数内响应式读取致 effect_update_depth 循环，加 inited guard；真机验证坐标漂移见 [[real-click-coord-drift-use-ref-not-coords]]
 
 ---
 
-## ⏳ 待办（53）
+## ⏳ 待办（50）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
+> toast / notification / table 已完成，移至上方「已完成」区。
 
-- [x] toast — 文档整页 inline 对齐 Semi（11 demo：普通/其他类型/多色/链接/延时/手动关闭/更新/销毁所有/useToast/factory/更多选项，布局裸 div→`<Space>`；API 参考 + Options + Config 三表 + 文案规范）。⚠️ **真机验证连带修出存量组件 bug**：Toast 的移除（自动到期/手动关闭/destroyAll）全部失效——根因 `out:fly` duration 因 `prefersReducedMotion.current` 求值为 0 时节点不 unmount。**破坏性改用 CSS 动画 + 两段式移除对齐 Semi**：core 加 `leaving` 标记 + `finalizeRemove`（remove 只标记触发 hide keyframe，animationend 后真删），ToastContainer 去 fly/flip 改 `cd-toast-animation-show/hide` keyframe + `onanimationend`→finalizeRemove（enter 守卫 `if(leaving)` 防误删）。见 [[toast-remove-broken-out-fly-duration-zero]] [[toast-two-phase-css-animation-align-semi]]。真机验证：录制保持前台见证弹出→3s→自动消失、开3条→destroyAll 全清（后台标签 CSS 动画被浏览器冻结致 animationend 不触发是验证假象，非 bug）
-- [x] notification — 文档整页 inline 对齐 Semi（9 demo：普通/位置/图标/多色/链接/延时/手动关闭/更新/消费Context；API 参考 + Config 双表 + Hook 用法 + a11y + 文案规范）；标题「通知提醒框」→「通知」对齐 Semi、侧边栏中文名同步。⚠️ **API 表逐项核对 store 实现补缺口**（未信旧文档）：补 `id`/`direction`/`onClick`/`onCloseClick`，Config 表补 `direction`/`getPopupContainer`。⚠️ **连带补源码缺口**：per-item `options.zIndex` 之前只有 `config()` 全局能设，per-notice 漏了→store.ts show() 首条通知时注入 wrapper（对齐 Semi `div.style.zIndex = notice.zIndex ?? defaultConfig.zIndex`，首次一次生效）。demo：自定义图标改 icon-only Button（icon snippet prop）、Hook demo 标题「消费 Context」。真机验证：点击弹出右上角 role=alert、zoom 确认卡片视觉对齐 Semi（info 图标+标题+正文+关闭按钮）
-- [ ] table — 已补齐 API（表头合并/onRow/useFullRender 等）；表头 tr 必带 cd-table-row 基类 见 [table-api-gaps]
 - [ ] tooltip — 浮层继承链底层（Popover←Tooltip）见 [overlay-inheritance-chain]
 - [ ] popover — 浮层继承链中层（封装 Tooltip）
 - [ ] sidesheet — 无 focus-trap 非 Modal 同构（已删 Drawer）见 [sidesheet-no-focustrap]

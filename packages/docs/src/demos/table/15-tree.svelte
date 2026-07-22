@@ -38,7 +38,7 @@
           description: '标识视频的唯一 ID',
           default: '无',
           children: [
-            { dataKey: 'video_url', name: '视频地址', type: 'String 字符串', description: '视频的唯一链接', default: '无' },
+            { key: 121, dataKey: 'video_url', name: '视频地址', type: 'String 字符串', description: '视频的唯一链接', default: '无' },
           ],
         },
       ],

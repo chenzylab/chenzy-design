@@ -165,7 +165,16 @@ export function flattenTreeRows<T>(
     topIndex: number,
   ): void {
     nodes.forEach((record, i) => {
-      const key = getKey(record);
+      // 容错缺 key，对齐 Semi 的可观察行为（某行 rowKey 取值为空时仍完整渲染整棵子树）。
+      // Semi(React) 的 flattenData 直接用 getRecordKey 返回的 undefined 做 key，靠 React
+      // 容忍 undefined/重复 key（仅 warning 不中断）。本库(Svelte) keyed `#each (row.key)`
+      // 不容忍 undefined/重复 key（丢节点），故在此用「父 key + 位置」生成稳定 fallback key
+      // 保证唯一且同次渲染稳定——框架差异导致的必要实现差异，容错效果与 Semi 一致。
+      const resolved = getKey(record);
+      const key: RowKey =
+        resolved === undefined || resolved === null
+          ? `__cd_treekey__${parentKey ?? 'root'}:${i}`
+          : resolved;
       const children = getChildren(record);
       const hasChildren = !!children && children.length > 0;
       const ti = level === 0 ? i : topIndex;

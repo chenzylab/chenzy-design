@@ -44,6 +44,7 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
+  import { createColumnCollector, setColumnsContext } from './context.js';
   import { Pagination } from '../pagination/index.js';
   import {
     IconCaretup,
@@ -85,6 +86,7 @@
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
   let {
     columns = [],
+    children,
     dataSource = [],
     rowKey = 'key',
     size = 'default',
@@ -152,6 +154,12 @@
     getVirtualizedListRef,
   }: {
     columns?: ColumnDef<T>[];
+    /**
+     * 组合式列定义容器（对齐 Semi Table.Column）：放 <Column> 子组件，Table 经 context
+     * 收集成与配置式等价的列树。与 `columns` prop 并存——传了 `columns` 用配置式，
+     * 否则用收集的组合式列树。
+     */
+    children?: Snippet;
     dataSource?: T[];
     rowKey?: string | ((record: T) => RowKey);
     size?: TableSize;
@@ -352,6 +360,21 @@
     col.key ?? col.dataIndex ?? String(index);
 
   // --- 表头合并（column.children）：叶子列驱动 body/ColGroup/固定列，父列只作表头分组 ---
+  // 组合式 <Column> 收集：根收集器 + 唯一 version $state（所有层冒泡到此）。
+  // 红线 #2：<Column> 的 register/update/unregister（副作用）写普通数组 + bump version；
+  // collectedColumns $derived 只读 version 重建根 snapshot（递归读普通数组，不写 $state）。
+  let columnsVersion = $state(0);
+  const rootCollector = createColumnCollector<T>(() => {
+    columnsVersion += 1;
+  });
+  setColumnsContext(rootCollector);
+  const collectedColumns = $derived.by<ColumnDef<T>[]>(() => {
+    void columnsVersion; // 收集顺序/内容变化触发重建
+    return rootCollector.snapshot();
+  });
+  // 实际列源：传了配置式 columns 用之（向后兼容）；否则用组合式收集树。
+  const effectiveColumns = $derived(columns.length > 0 ? columns : collectedColumns);
+
   // 无 children 时 leafColumns 与 columns 等价（零行为变化）。
   function flattenLeaves(cols: ColumnDef<T>[]): ColumnDef<T>[] {
     const out: ColumnDef<T>[] = [];
@@ -361,8 +384,8 @@
     }
     return out;
   }
-  const leafColumns = $derived(flattenLeaves(columns));
-  const hasHeaderMerge = $derived(columns.some((c) => c.children && c.children.length > 0));
+  const leafColumns = $derived(flattenLeaves(effectiveColumns));
+  const hasHeaderMerge = $derived(effectiveColumns.some((c) => c.children && c.children.length > 0));
 
   function leafCount(col: ColumnDef<T>): number {
     if (!col.children || col.children.length === 0) return 1;
@@ -371,7 +394,7 @@
   const headerDepth = $derived.by(() => {
     const depth = (col: ColumnDef<T>): number =>
       col.children && col.children.length > 0 ? 1 + Math.max(...col.children.map(depth)) : 1;
-    return columns.length ? Math.max(...columns.map(depth)) : 1;
+    return effectiveColumns.length ? Math.max(...effectiveColumns.map(depth)) : 1;
   });
   interface HeaderCell {
     col: ColumnDef<T>;
@@ -397,7 +420,7 @@
       }
     };
     let cursor = 0;
-    for (const col of columns) {
+    for (const col of effectiveColumns) {
       walk(col, 0, cursor);
       cursor += leafCount(col);
     }
@@ -510,7 +533,8 @@
   const filterState = new SvelteMap<string, Set<string | number>>(initFilterState());
   function initFilterState(): [string, Set<string | number>][] {
     const seed: [string, Set<string | number>][] = [];
-    flattenLeaves(columns).forEach((col, i) => {
+    // 组合式列首帧收集树可能为空，defaultFilteredValue 初始不追溯（对齐 Semi，见组合式限制）。
+    flattenLeaves(effectiveColumns).forEach((col, i) => {
       if (col.defaultFilteredValue && col.defaultFilteredValue.length > 0) {
         seed.push([col.key ?? col.dataIndex ?? String(i), new Set(col.defaultFilteredValue)]);
       }
@@ -1253,7 +1277,7 @@
       hasExpand ||
       treeEnabled ||
       !!onRowClick ||
-      columns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
+      effectiveColumns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
   );
   const gridEnabled = $derived(gridNav !== undefined ? gridNav : isInteractive);
 
@@ -1696,10 +1720,19 @@
 
   const scrollTableStyle = $derived.by(() => {
     const parts: string[] = [];
-    if (tableStyle) parts.push(tableStyle);
     if (scroll?.x != null) {
+      // 对齐 Semi（HeadTable/BodyTable：scroll.x 时 tableStyle.width = x）：
+      // 用固定 width（物理属性，与 Semi 一致；表格纯尺寸无 RTL 方向性，不影响逻辑属性 RTL 架构）
+      // 而非 min-width——表格宽度严格等于 scroll.x，table-layout:fixed 下列宽严格按 col width，
+      // 无 width 列吸收剩余。用 min-width 会让表格撑满更宽的容器致有 width 的列被按比例放大
+      // （ellipsis 列撑宽后文字不截断、tooltip 失效）。
       const xVal = typeof scroll.x === 'number' ? `${scroll.x}px` : scroll.x;
-      parts.push(`min-inline-size:${xVal}`);
+      parts.push(`width:${xVal}`);
+    } else if (tableStyle) {
+      // 无 scroll.x 但有固定列：min-width 保证固定列不被压缩（窄容器横滚），
+      // 同时 width:100% 撑满容器（对齐 Semi：无 scroll.x 时表格 100%，无 width 列
+      // 吸收剩余空间，不塌成固定列总宽致右侧留白）。
+      parts.push(tableStyle, 'inline-size:100%');
     }
     return parts.length ? parts.join(';') : undefined;
   });
@@ -1760,11 +1793,11 @@
   // --- 可折叠分组：受控 expandAllGroupRows 不回写，仅经 onGroupExpandChange 通知 (红线 #1) ---
   // 受控（expandAllGroupRows 定义）时展开态由该值统一决定（true 全展/false 全折）。
   // 非受控时仅记录「用户显式切换过的分组 → 展开态」，未切换的分组回退到默认值：
-  // defaultExpandAllGroupRows 显式 false → 默认折叠；缺省(undefined)或 true → 默认展开
-  // （向后兼容既有「分组头+组内行都显示」）。默认值纯 $derived、不落地为 $state，
-  // 故数据变化产生的新分组自动继承默认展开态，无需 effect seed（红线 #2）。
+  // 对齐 Semi（foundation initExpandedRowKeys）：仅 defaultExpandAllGroupRows === true
+  // 时默认展开，缺省(undefined)与 false 均默认折叠。默认值纯 $derived、不落地为
+  // $state，故数据变化产生的新分组自动继承默认态，无需 effect seed（红线 #2）。
   const isGroupExpandControlled = $derived(expandAllGroupRows !== undefined);
-  const groupDefaultExpanded = $derived(defaultExpandAllGroupRows !== false);
+  const groupDefaultExpanded = $derived(defaultExpandAllGroupRows === true);
   // 用户显式覆盖：groupKey → 展开态（未在此表中的分组用 groupDefaultExpanded）。
   const groupOverrides = new SvelteMap<string, boolean>();
 
@@ -1886,11 +1919,19 @@
 <div
   class="cd-table-wrapper cd-table-wrapper-{direction} {className ?? ''}"
   class:cd-table-wrapper-rtl={direction === 'rtl'}
+  class:cd-table-wrapper-bordered={bordered}
   data-column-fixed={hasFixed ? 'true' : undefined}
   dir={direction}
   {style}
   bind:this={wrapperEl}
 >
+  {#if children}
+    <!-- 组合式 <Column> 收集宿主：display:none 不产生可见/占位 DOM 也不进 a11y 树，
+         但仍挂载子组件、跑其 init/effect（注册列元数据），嵌套 Column 逐级 render 触发。 -->
+    <div class="cd-table-column-collector" aria-hidden="true" style="display:none">
+      {@render children()}
+    </div>
+  {/if}
   {#if titleSnippet || title}
     <div class="cd-table-title">
       {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
@@ -1936,7 +1977,7 @@
       {/each}
     </colgroup>
     {#if showHeader}
-      {@const headerRowProps = onHeaderRow ? onHeaderRow(columns, 0) : undefined}
+      {@const headerRowProps = onHeaderRow ? onHeaderRow(effectiveColumns, 0) : undefined}
     <svelte:element
       this={tagThead}
       class="cd-table-thead"
@@ -2704,8 +2745,10 @@
     overflow: auto;
   }
 
-  /* 吸顶表头：thead sticky */
-  .cd-table-thead-sticky th {
+  /* 吸顶表头：thead sticky。特异性须 > .cd-table-thead > .cd-table-row >
+     .cd-table-row-head（0,3,0，设了 position:relative 且定义在后，同特异性会赢）。
+     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。 */
+  .cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head {
     position: sticky;
     inset-block-start: 0;
     z-index: calc(var(--cd-z-table-fixed-column) + 1);
@@ -2905,7 +2948,10 @@
   }
 
   /* ===== 带边框 bordered ===== */
-  .cd-table-bordered > .cd-table-container {
+  /* bordered 表格外框：container 是 wrapper 的子、table 的祖先，故用 wrapper 的 bordered
+     class 选中（此前误用 table 上的 .cd-table-bordered > container，方向反致外框全丢）。
+     对齐 Semi：保留上/左边框（含表头上边框），右/下由单元格 border 补齐避免双线。 */
+  .cd-table-wrapper-bordered > .cd-table-container {
     border: var(--cd-width-table-base-border) var(--cd-border-table-base-borderstyle) var(--cd-color-table-border-default);
     border-inline-end: 0;
     border-block-end: 0;
@@ -3078,6 +3124,14 @@
   }
   .react-resizable-handle:hover {
     background-color: var(--cd-color-table-resizer-bg-default);
+  }
+  /* bordered 表格：手柄恒透明（默认 + hover 都透明），对齐 Semi table.scss &-bordered 内
+     `.react-resizable-handle { background: transparent }`（无 hover 变色，该规则特异性
+     覆盖了非 bordered 的 handle:hover primary 蓝）。列分隔靠单元格 border-right，
+     避免灰手柄条/hover 蓝竖条 + 边框双重竖线。 */
+  .cd-table-bordered .react-resizable-handle,
+  .cd-table-bordered .react-resizable-handle:hover {
+    background-color: transparent;
   }
   /* 拖拽中列：resizing 标示线 */
   .resizing.cd-table-row-head,

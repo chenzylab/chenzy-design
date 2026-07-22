@@ -7,9 +7,10 @@ export const meta = {
   category: 'show',
   description:
     '表格：列定义驱动渲染，三态排序(升/降/无)、客户端分页、行选择(含半选 indeterminate)；sortState / rowSelection.selectedRowKeys / pagination.current 受控不回写，仅经 onSortChange / onChange 通知。复用 @chenzy-design/core 纯函数算法与 Pagination 组件。支持行展开 expandable（受控/非受控）。固定列 fixed、列筛选 filters/onFilter、列宽拖拽 resizable（本地覆盖宽度不写回 columns）。树形数据 tree（行含 children 自动嵌套，第一列展开三角+缩进，排序/分页作用于顶层行，扁平化用 core flattenTreeRows 纯函数，受控展开 keys 不回写）。树形行选择父子联动 rowSelection.checkStrictly（默认 false 勾父连带后代+半选，true 父子独立；联动用 core conductRows/toggleRowCheck 纯函数）。行虚拟滚动 virtualized：仅渲染视口内行切片（复用 core fixedRange），首尾 padding spacer tr 撑总高，保持原生 table 语义；thead sticky 固定顶部；与 pagination 互斥（虚拟时忽略分页）。',
-  exports: ['Table'],
+  exports: ['Table', 'Column'],
   props: [
     { name: 'columns', type: 'ColumnDef<T>[]', default: '[]', desc: '列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）；useFullRender 完全自定义（render 额外收到 expandIcon/indentText 物料自行摆放）' },
+    { name: 'children', type: 'Snippet', default: 'undefined', desc: '组合式列容器（对齐 Semi Table.Column）：放 <Column> 子组件声明列，嵌套 <Column> 即表头合并。与 columns 并存，传了 columns 用配置式否则用组合式收集' },
     { name: 'dataSource', type: 'T[]', default: '[]', desc: '数据行' },
     { name: 'rowKey', type: "string | ((record: T) => RowKey)", default: "'key'", desc: '行唯一键解析' },
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
@@ -75,7 +76,7 @@ export const meta = {
     { name: 'groupBy', type: 'string | ((record: T) => string)', default: 'undefined', desc: '按字段名或函数对数据行分组，插入分组标题行' },
     { name: 'renderGroupSection', type: 'Snippet<[{ groupKey: string; group: T[] }]>', default: 'undefined', desc: '自定义分组标题渲染' },
     { name: 'clickGroupedRowToExpand', type: 'boolean', default: 'false', desc: '点击分组标题行折叠/展开该组内数据行（groupBy 时生效，disclosure 模式 role=button+aria-expanded+Enter/Space 可达）' },
-    { name: 'defaultExpandAllGroupRows', type: 'boolean', default: 'undefined', desc: '非受控：初始默认展开全部分组。缺省(未配置)时向后兼容为全展开；显式 false 初始全折。动态加载数据不生效' },
+    { name: 'defaultExpandAllGroupRows', type: 'boolean', default: 'false', desc: '非受控：默认是否展开分组行。对齐 Semi，仅显式 true 才默认展开，缺省与 false 均默认折叠。动态加载数据不生效' },
     { name: 'expandAllGroupRows', type: 'boolean', default: 'undefined', desc: '受控：true 展开全部分组、false 折叠全部分组；受控时不回写，仅经 onGroupExpandChange 通知' },
     { name: 'onGroupExpandChange', type: '(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void', default: 'undefined', desc: '分组展开/收起变化回调（点击分组标题行触发）' },
     { name: 'onGroupedRow', type: '(group: T[], index: number) => { onClick?; onDoubleClick?; className?; style? }', default: 'undefined', desc: '分组标题行自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头 tr' },
