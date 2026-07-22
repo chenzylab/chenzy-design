@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（16）
+## ✅ 已完成（17）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -22,15 +22,15 @@
 - [x] jsonviewer
 - [x] tag — TagGroup/SplitTagGroup 合一页；demo 布局改用 `<Space>`；SplitTagGroup 4 组合并回单 demo（删 13）；close/onTagClose/showPopover 真机验证过
 - [x] timeline — 8 demo 严格对齐 Semi（basic/type/custom/left/center/alternate/right/datasource）；onClick(2.2.0) demo 保留为「可点击节点」章节、aria-label demo 放进 Accessibility 章节；源码/meta 原本已对齐 Semi 无需改；真机验证 onClick 联动 + aria-label DOM 挂载 + 10 实例全渲染
+- [x] popconfirm — 4 Semi demo(基本/类型搭配/延时关闭/初始化焦点)+2 本库补充(关闭按钮/箭头)；封装链改述 Popover(非 Semi 的 Tooltip)；⚠️ **API 表 union 类型踩坑**：`Snippet<[{ initialFocusRef }]>` 的裸 `{}` 让 mdsvex 当 Svelte 表达式→SSR 500(typecheck 假绿真机才暴露)；修法=整型包反引号(反引号内 `{}<>` 全字面)，union 的 `|` 不能进反引号(会当列分隔)→拆成 `A`\|`B` 两段；真机验证 保存→确定→Toast 成功链
 
 ---
 
-## ⏳ 待办（55）
+## ⏳ 待办（54）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
 
-- [ ] popconfirm — 已对齐 Semi（无 type 分级、showCloseIcon flex-grow、Button rest 透传）见 [popconfirm-semi-rewrite]
 - [ ] toast — 已破坏性对齐（删 position/6方位/loading；useToast 返 [api,holder]）见 [toast-semi-rewrite]
 - [ ] notification — 已对齐（theme normal/light、useNotification 返 [api,holderStore]）见 [notification-semi-rewrite]
 - [ ] table — 已补齐 API（表头合并/onRow/useFullRender 等）；表头 tr 必带 cd-table-row 基类 见 [table-api-gaps]
