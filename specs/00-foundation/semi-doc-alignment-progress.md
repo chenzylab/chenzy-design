@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（15）
+## ✅ 已完成（16）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -21,15 +21,15 @@
 - [x] floatbutton
 - [x] jsonviewer
 - [x] tag — TagGroup/SplitTagGroup 合一页；demo 布局改用 `<Space>`；SplitTagGroup 4 组合并回单 demo（删 13）；close/onTagClose/showPopover 真机验证过
+- [x] timeline — 8 demo 严格对齐 Semi（basic/type/custom/left/center/alternate/right/datasource）；onClick(2.2.0) demo 保留为「可点击节点」章节、aria-label demo 放进 Accessibility 章节；源码/meta 原本已对齐 Semi 无需改；真机验证 onClick 联动 + aria-label DOM 挂载 + 10 实例全渲染
 
 ---
 
-## ⏳ 待办（56）
+## ⏳ 待办（55）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
 
-- [ ] timeline — 已极简对齐 Semi（删 direction/reverse/pending 等超集，extra 在 time 前）见 [timeline-semi-minimal]
 - [ ] popconfirm — 已对齐 Semi（无 type 分级、showCloseIcon flex-grow、Button rest 透传）见 [popconfirm-semi-rewrite]
 - [ ] toast — 已破坏性对齐（删 position/6方位/loading；useToast 返 [api,holder]）见 [toast-semi-rewrite]
 - [ ] notification — 已对齐（theme normal/light、useNotification 返 [api,holderStore]）见 [notification-semi-rewrite]
