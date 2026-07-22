@@ -94,10 +94,23 @@ export interface SearchResult {
   score: number;
 }
 
-// 极简客户端全文匹配：小写子串 + 前缀/词首加权。71 页规模线性扫无感，中英文通吃。
+// 单个字段对一组词的打分：任一词命中即算命中（OR 语义，对齐 Semi 多词搜索
+// 如「layout button」同时返回 Layout 与 Button 组）；命中越多词、越靠词首分越高。
+function scoreField(field: string, terms: string[], weights: { eq: number; prefix: number; includes: number }): number {
+  let score = 0;
+  for (const term of terms) {
+    if (field === term) score += weights.eq;
+    else if (field.startsWith(term)) score += weights.prefix;
+    else if (field.includes(term)) score += weights.includes;
+  }
+  return score;
+}
+
+// 极简客户端全文匹配：小写子串 + 前缀/词首加权 + 多词 OR。71 页规模线性扫无感，中英文通吃。
+// 多词：query 按空白拆成多个词，任一词命中即入选，分数按命中词累加（对齐 Semi「空格分隔多词」）。
 export function searchSite(rawQuery: string, limit = 8): SearchResult[] {
-  const q = rawQuery.trim().toLowerCase();
-  if (!q) return [];
+  const terms = rawQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
   const results: SearchResult[] = [];
 
   for (const doc of searchDocs) {
@@ -105,31 +118,20 @@ export function searchSite(rawQuery: string, limit = 8): SearchResult[] {
     const title = doc.title.toLowerCase();
     const brief = doc.brief.toLowerCase();
 
-    // 页级打分
-    let pageScore = 0;
-    if (name === q || title === q) pageScore = 100;
-    else if (name.startsWith(q) || title.startsWith(q)) pageScore = 80;
-    else if (name.includes(q) || title.includes(q)) pageScore = 60;
-    else if (brief.includes(q)) pageScore = 30;
+    // 页级打分：name/title 高权重，brief 低权重
+    const nameScore = scoreField(name, terms, { eq: 100, prefix: 80, includes: 60 });
+    const titleScore = scoreField(title, terms, { eq: 100, prefix: 80, includes: 60 });
+    const briefScore = scoreField(brief, terms, { eq: 0, prefix: 0, includes: 30 });
+    const pageScore = Math.max(nameScore, titleScore) + (nameScore || titleScore ? 0 : briefScore);
     if (pageScore > 0) {
       results.push({ name: doc.name, title: doc.title, brief: doc.brief, score: pageScore });
     }
 
     // 标题级打分（页内小节）：分低于页级同名命中，避免淹没组件本身
     for (const h of doc.headings) {
-      const ht = h.text.toLowerCase();
-      let hScore = 0;
-      if (ht === q) hScore = 55;
-      else if (ht.startsWith(q)) hScore = 45;
-      else if (ht.includes(q)) hScore = 35;
+      const hScore = scoreField(h.text.toLowerCase(), terms, { eq: 55, prefix: 45, includes: 35 });
       if (hScore > 0) {
-        results.push({
-          name: doc.name,
-          title: doc.title,
-          brief: doc.brief,
-          heading: h,
-          score: hScore,
-        });
+        results.push({ name: doc.name, title: doc.title, brief: doc.brief, heading: h, score: hScore });
       }
     }
   }

@@ -120,13 +120,14 @@
     return [...map.values()];
   });
 
-  // 关键词高亮：按 query 切分原文，逐段 HTML 转义后把命中段包 <mark>（避免 XSS 与正则语法错）。
+  // 关键词高亮：按多个查询词（空格分隔）切分原文，逐段 HTML 转义后把命中段包 <mark>
+  //（避免 XSS 与正则语法错，对齐多词搜索）。
   function highlight(text: string): string {
     const esc = (s: string) => s.replace(/[&<>"']/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
-    const q = query.trim();
-    if (!q) return esc(text);
-    const pat = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const terms = query.trim().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return esc(text);
+    const pat = terms.map((tm) => tm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
     return text
       .split(new RegExp(`(${pat})`, 'gi'))
       .map((part, i) => (i % 2 === 1 ? `<mark>${esc(part)}</mark>` : esc(part)))
