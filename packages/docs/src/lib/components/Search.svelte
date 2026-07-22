@@ -79,7 +79,58 @@
   // 客户端搜索：索引在构建期由 import.meta.glob 扫组件文档生成（见 search-index.ts），
   // dev 与 prod 均可用，纯客户端匹配、无需后端与构建后索引产物。
   function search() {
-    results = searchSite(query);
+    results = searchSite(query, 60);
+  }
+
+  // 结果按组件分组（对齐 Semi 搜索结果：组件名为组头 + 图标，命中项列其下带「in 章节」归属）。
+  interface ResultHit {
+    href: string;
+    text: string;          // 命中文本（标题级=标题文本；页级=简介或组件名）
+    where: string;         // 归属章节（标题级=该标题；页级=「概述」）
+  }
+  interface ResultGroup {
+    name: string;
+    displayName: string;
+    category: string;
+    title: string;
+    hits: ResultHit[];
+  }
+  const groupedResults = $derived.by<ResultGroup[]>(() => {
+    const map = new Map<string, ResultGroup>();
+    for (const r of results) {
+      let g = map.get(r.name);
+      if (!g) {
+        const cm = compMeta.get(r.name);
+        g = {
+          name: r.name,
+          displayName: cm?.displayName ?? r.name,
+          category: cm?.category ?? '',
+          title: r.title,
+          hits: [],
+        };
+        map.set(r.name, g);
+      }
+      if (r.heading) {
+        g.hits.push({ href: resultHref(r), text: r.heading.text, where: r.heading.text });
+      } else {
+        // 页级命中：展示简介，归属「概述」
+        g.hits.push({ href: resultHref(r), text: r.brief || r.title, where: t('search.overview', lang) });
+      }
+    }
+    return [...map.values()];
+  });
+
+  // 关键词高亮：按 query 切分原文，逐段 HTML 转义后把命中段包 <mark>（避免 XSS 与正则语法错）。
+  function highlight(text: string): string {
+    const esc = (s: string) => s.replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+    const q = query.trim();
+    if (!q) return esc(text);
+    const pat = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text
+      .split(new RegExp(`(${pat})`, 'gi'))
+      .map((part, i) => (i % 2 === 1 ? `<mark>${esc(part)}</mark>` : esc(part)))
+      .join('');
   }
 
   // 提交一次搜索（回车 / 点历史标签）：记录关键词到搜索历史。
@@ -112,81 +163,107 @@
     <kbd class="search-kbd">{shortcutKey} K</kbd>
   </button>
   {#if open}
-  <div class="search-panel">
-    <input
-      type="search"
-      placeholder={t('search.placeholder', lang)}
-      bind:this={inputEl}
-      bind:value={query}
-      oninput={search}
-      onkeydown={(e) => { if (e.key === 'Enter' && query.trim()) commitSearch(query); }}
-      class="search-input"
-    />
-    {#if query}
-      {#if results.length > 0}
-      <ul class="search-results">
-        {#each results as result}
-          <li>
-            <a href={resultHref(result)} onclick={closeAndRecord}>
-              <span class="result-title">
-                {result.title}{#if result.heading}<span class="result-crumb"> › {result.heading.text}</span>{/if}
-              </span>
-              {#if result.brief}<span class="result-excerpt">{result.brief}</span>{/if}
-            </a>
-          </li>
-        {/each}
-      </ul>
-      {:else}
-      <p class="search-empty">{t('search.empty', lang)}</p>
-      {/if}
-    {:else}
-    <!-- 空态引导：搜索历史 / 最近浏览 / 快速访问（对齐 Semi 搜索面板） -->
-    <div class="search-idle">
-      {#if searchHistory.items.length > 0}
-      <div class="idle-section">
-        <div class="idle-head">
-          <span class="idle-title">{t('search.history', lang)}</span>
-          <button class="idle-clear" type="button" onclick={clearSearchHistory}>{t('search.clear', lang)}</button>
-        </div>
-        <div class="history-tags">
-          {#each searchHistory.items as term}
-            <button class="history-tag" type="button" onclick={() => commitSearch(term)}>{term}</button>
-          {/each}
-        </div>
+  <!-- 遮罩 + 居中弹窗（对齐 Semi 搜索弹窗）。点遮罩关闭；面板内点击不冒泡到遮罩。Esc 全局关闭已处理。 -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="search-overlay" onclick={() => (open = false)}>
+    <!-- 弹窗容器：onclick 仅阻止冒泡到遮罩（非交互动作，无需键盘等价）；Esc 全局关闭已在 keydown effect 处理 -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="search-modal" role="dialog" aria-modal="true" tabindex="-1" aria-label={t('nav.search', lang)} onclick={(e) => e.stopPropagation()}>
+      <div class="search-modal-input">
+        <svg class="search-modal-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
+        </svg>
+        <input
+          type="search"
+          placeholder={t('search.placeholder', lang)}
+          bind:this={inputEl}
+          bind:value={query}
+          oninput={search}
+          onkeydown={(e) => { if (e.key === 'Enter' && query.trim()) commitSearch(query); }}
+          class="search-input"
+        />
       </div>
-      {/if}
 
-      {#if recentList.length > 0}
-      <div class="idle-section">
-        <div class="idle-head"><span class="idle-title">{t('search.recent', lang)}</span></div>
-        <ul class="idle-list">
-          {#each recentList as item}
-            <li>
-              <a href="{base}/components/{item.name}" onclick={() => (open = false)}>
-                <SidebarIcon name={item.name} displayName={item.displayName} category={item.category} size={22} />
-                <span class="idle-item-label">{item.title}</span>
-              </a>
-            </li>
-          {/each}
-        </ul>
-      </div>
-      {/if}
+      <div class="search-modal-body">
+        {#if query}
+          {#if groupedResults.length > 0}
+          <div class="result-groups">
+            <div class="group-label">{t('search.components', lang)}</div>
+            {#each groupedResults as g}
+              <div class="result-group">
+                <a class="group-head" href="{base}/components/{g.name}" onclick={closeAndRecord}>
+                  <SidebarIcon name={g.name} displayName={g.displayName} category={g.category} size={24} />
+                  <span class="group-title">{g.title}</span>
+                </a>
+                <ul class="group-hits">
+                  {#each g.hits as hit}
+                    <li>
+                      <a href={hit.href} onclick={closeAndRecord}>
+                        <span class="hit-text">{@html highlight(hit.text)}</span>
+                        <span class="hit-where">{t('search.in', lang)} {hit.where}</span>
+                      </a>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/each}
+          </div>
+          {:else}
+          <p class="search-empty">{t('search.empty', lang)}</p>
+          {/if}
+        {:else}
+        <!-- 空态引导：搜索历史 / 最近浏览 / 快速访问（对齐 Semi 搜索面板） -->
+        <div class="search-idle">
+          {#if searchHistory.items.length > 0}
+          <div class="idle-section">
+            <div class="idle-head">
+              <span class="idle-title">{t('search.history', lang)}</span>
+              <button class="idle-clear" type="button" onclick={clearSearchHistory}>{t('search.clear', lang)}</button>
+            </div>
+            <div class="history-tags">
+              {#each searchHistory.items as term}
+                <button class="history-tag" type="button" onclick={() => commitSearch(term)}>{term}</button>
+              {/each}
+            </div>
+          </div>
+          {/if}
 
-      <div class="idle-section">
-        <div class="idle-head"><span class="idle-title">{t('search.quick', lang)}</span></div>
-        <ul class="idle-list">
-          {#each quickAccess as q}
-            <li>
-              <a href={q.href} onclick={() => (open = false)}>
-                <span class="quick-icon" aria-hidden="true">{q.icon}</span>
-                <span class="idle-item-label">{lang === 'en' ? q.label.en : q.label.zh}</span>
-              </a>
-            </li>
-          {/each}
-        </ul>
+          {#if recentList.length > 0}
+          <div class="idle-section">
+            <div class="idle-head"><span class="idle-title">{t('search.recent', lang)}</span></div>
+            <ul class="idle-list">
+              {#each recentList as item}
+                <li>
+                  <a href="{base}/components/{item.name}" onclick={() => (open = false)}>
+                    <SidebarIcon name={item.name} displayName={item.displayName} category={item.category} size={24} />
+                    <span class="idle-item-label">{item.title}</span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          </div>
+          {/if}
+
+          <div class="idle-section">
+            <div class="idle-head"><span class="idle-title">{t('search.quick', lang)}</span></div>
+            <ul class="idle-list">
+              {#each quickAccess as q}
+                <li>
+                  <a href={q.href} onclick={() => (open = false)}>
+                    <span class="quick-icon" aria-hidden="true">{q.icon}</span>
+                    <span class="idle-item-label">{lang === 'en' ? q.label.en : q.label.zh}</span>
+                  </a>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        </div>
+        {/if}
       </div>
     </div>
-    {/if}
   </div>
   {/if}
 </div>
@@ -223,31 +300,62 @@
     border: 1px solid var(--cd-color-border, #e5e7eb);
     color: var(--cd-color-text-2, #86909c);
   }
-  .search-panel {
-    position: absolute; top: calc(100% + 8px); right: 0;
-    width: 360px; background: var(--cd-color-bg-0, #fff);
-    border: 1px solid var(--cd-color-border, #e5e7eb);
-    border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
-    z-index: 200; padding: 8px;
+  /* —— 遮罩 + 居中弹窗（对齐 Semi 搜索弹窗，顶部偏上） —— */
+  .search-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 10vh 16px 16px;
   }
+  .search-modal {
+    width: min(720px, 100%);
+    max-height: 76vh;
+    display: flex; flex-direction: column;
+    background: var(--cd-color-bg-0, #fff);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
+  }
+  .search-modal-input {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
+    flex-shrink: 0;
+  }
+  .search-modal-icon { flex-shrink: 0; color: var(--cd-color-text-2, #86909c); }
   .search-input {
-    width: 100%; padding: 8px 12px; border: 1px solid var(--cd-color-border, #e5e7eb);
-    border-radius: 6px; font-size: 14px; outline: none; box-sizing: border-box;
-    background: var(--cd-color-bg-1, #f7f8fa); color: var(--cd-color-text-0, #1f2329);
+    flex: 1; min-width: 0;
+    border: none; outline: none; background: none;
+    font-size: 16px; color: var(--cd-color-text-0, #1f2329);
   }
-  .search-results { list-style: none; margin: 8px 0 0; padding: 0; }
-  .search-results li a {
-    display: block; padding: 8px; border-radius: 6px; text-decoration: none;
+  .search-modal-body {
+    overflow-y: auto;
+    padding: 8px 12px 12px;
+  }
+  .search-empty { padding: 24px 8px; text-align: center; font-size: 14px; color: var(--cd-color-text-2, #86909c); }
+
+  /* —— 分组结果（组件名为组头 + 图标，命中项列其下带「in 章节」） —— */
+  .group-label { font-size: 12px; color: var(--cd-color-text-2, #86909c); padding: 8px 8px 4px; }
+  .result-group { margin-bottom: 6px; }
+  .group-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px; border-radius: 8px; text-decoration: none;
+    background: var(--cd-color-fill-1, #f2f3f5);
     color: var(--cd-color-text-0, #1f2329);
   }
-  .search-results li a:hover { background: var(--cd-color-fill-1, #f2f3f5); }
-  .result-title { display: block; font-size: 13px; font-weight: 600; }
-  .result-crumb { font-weight: 400; color: var(--cd-color-text-2, #86909c); }
-  .result-excerpt { display: block; font-size: 12px; color: var(--cd-color-text-2, #86909c); margin-top: 2px; }
-  .search-empty { padding: 8px; font-size: 13px; color: var(--cd-color-text-2, #86909c); }
+  .group-head:hover { background: var(--cd-color-fill-2, #e5e6eb); }
+  .group-title { font-size: 15px; font-weight: 600; }
+  .group-hits { list-style: none; margin: 2px 0 0; padding: 0; }
+  .group-hits li a {
+    display: block; padding: 7px 8px 7px 48px; border-radius: 6px; text-decoration: none;
+  }
+  .group-hits li a:hover { background: var(--cd-color-fill-1, #f2f3f5); }
+  .hit-text { display: block; font-size: 14px; color: var(--cd-color-text-0, #1f2329); }
+  .hit-text :global(mark) { background: transparent; color: var(--cd-color-primary, #2f6bff); padding: 0; }
+  .hit-where { display: block; font-size: 12px; color: var(--cd-color-text-2, #86909c); margin-top: 1px; }
 
   /* —— 空态引导：搜索历史 / 最近浏览 / 快速访问 —— */
-  .search-idle { margin-top: 8px; }
+  .search-idle { padding: 4px 0; }
   .idle-section { padding: 4px 0; }
   .idle-section + .idle-section { margin-top: 8px; }
   .idle-head {

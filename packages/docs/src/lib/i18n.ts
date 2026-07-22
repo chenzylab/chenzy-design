@@ -14,6 +14,9 @@ const dict: Dict = {
   'search.clear': { zh: '清空', en: 'Clear' },
   'search.recent': { zh: '最近浏览', en: 'Recently Viewed' },
   'search.quick': { zh: '快速访问', en: 'Quick Access' },
+  'search.overview': { zh: '概述', en: 'Overview' },
+  'search.components': { zh: '组件', en: 'Components' },
+  'search.in': { zh: 'in', en: 'in' },
 
   // 侧栏分组
   'group.start': { zh: '开始', en: 'Getting Started' },
