@@ -584,7 +584,13 @@
     border: none;
     background: transparent;
     color: inherit;
-    font: inherit;
+    /* 对齐 Semi：Semi 靠全局 input reset（input { font-family/font-size: inherit }）
+       让 input 继承 family/size/line-height，font-weight 走 <input> UA 默认（不继承
+       父级 600）。本库无全局 input reset，故 input 自身显式继承 family/size/line-height
+       （继承 wrapper 的 line-height 30px，与 Semi input 30px 一致），不设 font-weight。 */
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
     box-sizing: border-box;
     outline: none;
   }
