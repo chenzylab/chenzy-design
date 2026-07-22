@@ -2,6 +2,8 @@
   import { browser } from '$app/environment';
   import { base } from '$app/paths';
   import componentsJson from '@chenzy-design/svelte/components.json';
+  import { IconButton, Modal, HotKeys } from '@chenzy-design/svelte';
+  import { IconSearch, IconClear } from '@chenzy-design/icons';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
   import { searchSite, searchDocs, type SearchResult } from '$lib/search-index';
@@ -20,9 +22,10 @@
   let open = $state(false);
   let inputEl = $state<HTMLInputElement | null>(null);
 
-  // 快捷键提示：mac 显示 ⌘，其余平台显示 Ctrl
-  const shortcutKey = $derived(
-    browser && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl',
+  // 快捷键修饰键：Mac 用 Meta(⌘)，其余平台用 Control。HotKeys 严格区分 Meta/Ctrl（对齐 Semi），
+  // 故按平台选一个渲染；HotKeys 自动把 Meta→⌘、Control→Ctrl 按平台显示。
+  const modifierKey = $derived<'Meta' | 'Control'>(
+    browser && /Mac|iPhone|iPad/.test(navigator.platform) ? 'Meta' : 'Control',
   );
 
   // 组件元信息查表（lowercase name → 驼峰 displayName / 分类 / 标题）：
@@ -54,20 +57,7 @@
     { icon: '📐', href: `${base}/dsm`, label: { zh: '设计系统管理 DSM', en: 'Design System Manager' } },
   ];
 
-  // ⌘K / Ctrl+K 唤起搜索，Esc 关闭（独立 effect 管理监听挂卸）
-  $effect(() => {
-    if (!browser) return;
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        open = true;
-      } else if (e.key === 'Escape') {
-        open = false;
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
+  // ⌘K / Ctrl+K 唤起搜索由 <HotKeys> 组件承载（见触发器）；Esc 关闭由 Modal 的 closeOnEsc 处理。
 
   // 打开面板时自动聚焦输入框。
   // 刻意保留 query/results：重新打开时沿用上次的搜索词与结果（用户可继续上次的查找），
@@ -154,6 +144,9 @@
   }
 </script>
 
+<!-- IconButton 的图标以 snippet 传入（对齐库内 IconButton 用法）。 -->
+{#snippet clearIcon()}<IconClear />{/snippet}
+
 <div class="search-wrap">
   <button class="search-trigger" onclick={() => open = !open} aria-label={t('nav.search', lang)}>
     <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -161,35 +154,54 @@
       <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
     </svg>
     <span class="search-label">{t('nav.search', lang)}</span>
-    <kbd class="search-kbd">{shortcutKey} K</kbd>
   </button>
-  {#if open}
-  <!-- 遮罩 + 居中弹窗（对齐 Semi 搜索弹窗）。点遮罩关闭；面板内点击不冒泡到遮罩。Esc 全局关闭已处理。 -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="search-overlay" onclick={() => (open = false)}>
-    <!-- 弹窗容器：onclick 仅阻止冒泡到遮罩（非交互动作，无需键盘等价）；Esc 全局关闭已在 keydown effect 处理 -->
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="search-modal" role="dialog" aria-modal="true" tabindex="-1" aria-label={t('nav.search', lang)} onclick={(e) => e.stopPropagation()}>
-      <div class="search-modal-input">
-        <svg class="search-modal-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
-        </svg>
-        <input
-          type="search"
-          placeholder={t('search.placeholder', lang)}
-          bind:this={inputEl}
-          bind:value={query}
-          oninput={search}
-          onkeydown={(e) => { if (e.key === 'Enter' && query.trim()) commitSearch(query); }}
-          class="search-input"
+  <!-- 快捷键提示 + 监听合一：HotKeys 渲染键位提示（Meta→⌘ / Control→Ctrl 按平台）并全局监听，
+       命中即打开弹窗。preventDefault 拦截浏览器默认；用组件自带 style prop 绝对定位到触发器右侧
+       （HotKeys 与触发器同处 position:relative 的 .search-wrap），pointer-events:none 让点击穿透到触发器。 -->
+  <HotKeys
+    hotKeys={[modifierKey, 'K']}
+    preventDefault
+    onHotKey={() => (open = true)}
+    style="position: absolute; top: 50%; right: 10px; transform: translateY(-50%); pointer-events: none;"
+  />
+  <!-- 弹窗外壳复用库内 Modal（自带遮罩/点遮罩关闭/Esc 关闭/portal/焦点管理）。
+       header/footer 置 null、closable=false：无标题栏、无底部按钮、无右上角关闭按钮（对齐搜索面板）。 -->
+  <Modal
+    visible={open}
+    header={null}
+    footer={null}
+    closable={false}
+    maskClosable
+    closeOnEsc
+    width={720}
+    class="search-modal"
+    bodyStyle="padding: 0; max-height: 70vh; overflow: hidden; display: flex; flex-direction: column;"
+    onCancel={() => (open = false)}
+  >
+    <div class="search-modal-input">
+      <span class="search-modal-icon" aria-hidden="true"><IconSearch size="large" /></span>
+      <input
+        type="text"
+        placeholder={t('search.placeholder', lang)}
+        bind:this={inputEl}
+        bind:value={query}
+        oninput={search}
+        onkeydown={(e) => { if (e.key === 'Enter' && query.trim()) commitSearch(query); }}
+        class="search-input"
+      />
+      {#if query}
+        <IconButton
+          theme="borderless"
+          size="small"
+          icon={clearIcon}
+          ariaLabel={t('search.clear', lang)}
+          onclick={() => { query = ''; results = []; inputEl?.focus(); }}
         />
-      </div>
+      {/if}
+    </div>
 
-      <div class="search-modal-body">
-        {#if query}
+    <div class="search-modal-body">
+      {#if query}
           {#if groupedResults.length > 0}
           <div class="result-groups">
             <div class="group-label">{t('search.components', lang)}</div>
@@ -264,9 +276,7 @@
         </div>
         {/if}
       </div>
-    </div>
-  </div>
-  {/if}
+  </Modal>
 </div>
 
 <style>
@@ -291,32 +301,7 @@
   }
   .search-icon { flex-shrink: 0; }
   .search-label { margin-right: auto; }
-  .search-kbd {
-    font-family: inherit;
-    font-size: 12px;
-    line-height: 1;
-    padding: 3px 6px;
-    border-radius: 5px;
-    background: var(--cd-color-bg-0, #fff);
-    border: 1px solid var(--cd-color-border, #e5e7eb);
-    color: var(--cd-color-text-2, #86909c);
-  }
-  /* —— 遮罩 + 居中弹窗（对齐 Semi 搜索弹窗，顶部偏上） —— */
-  .search-overlay {
-    position: fixed; inset: 0; z-index: 1000;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 10vh 16px 16px;
-  }
-  .search-modal {
-    width: min(720px, 100%);
-    max-height: 76vh;
-    display: flex; flex-direction: column;
-    background: var(--cd-color-bg-0, #fff);
-    border-radius: 12px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
-    overflow: hidden;
-  }
+  .search-trigger { padding-right: 56px; }
   .search-modal-input {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 20px;
