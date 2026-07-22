@@ -341,10 +341,10 @@
   .group-head {
     display: flex; align-items: center; gap: 12px;
     padding: 8px; border-radius: 8px; text-decoration: none;
-    background: var(--cd-color-fill-1, #f2f3f5);
+    background: none;
     color: var(--cd-color-text-0, #1f2329);
   }
-  .group-head:hover { background: var(--cd-color-fill-2, #e5e6eb); }
+  .group-head:hover { background: var(--cd-color-fill-1, #f2f3f5); }
   .group-title { font-size: 15px; font-weight: 600; }
   .group-hits { list-style: none; margin: 2px 0 0; padding: 0; }
   .group-hits li a {
