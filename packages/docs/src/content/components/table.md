@@ -430,7 +430,7 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 | components | 覆盖组成元素的标签名（`table`/`header`/`body` 的 `wrapper`/`row`/`cell`） | object | - |
 | dataSource | 数据。**请为每一条数据分配一个独立的 key，或使用 rowKey 指定一个作为主键的属性名** | `T[]` | [] |
 | defaultExpandAllRows | 默认是否展开所有行，动态加载数据时不生效 | boolean | false |
-| defaultExpandAllGroupRows | 默认是否展开分组行 | boolean | true |
+| defaultExpandAllGroupRows | 默认是否展开分组行，动态加载数据时不生效 | boolean | false |
 | direction | RTL、LTR 方向 | 'ltr' \| 'rtl' | 'ltr' |
 | empty | 无数据时展示的文案 | string | '暂无数据' |
 | emptySnippet | 无数据时展示的自定义内容（优先于 empty，对齐 Semi `empty: ReactNode`） | Snippet | - |

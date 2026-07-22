@@ -75,7 +75,7 @@ export const meta = {
     { name: 'groupBy', type: 'string | ((record: T) => string)', default: 'undefined', desc: '按字段名或函数对数据行分组，插入分组标题行' },
     { name: 'renderGroupSection', type: 'Snippet<[{ groupKey: string; group: T[] }]>', default: 'undefined', desc: '自定义分组标题渲染' },
     { name: 'clickGroupedRowToExpand', type: 'boolean', default: 'false', desc: '点击分组标题行折叠/展开该组内数据行（groupBy 时生效，disclosure 模式 role=button+aria-expanded+Enter/Space 可达）' },
-    { name: 'defaultExpandAllGroupRows', type: 'boolean', default: 'undefined', desc: '非受控：初始默认展开全部分组。缺省(未配置)时向后兼容为全展开；显式 false 初始全折。动态加载数据不生效' },
+    { name: 'defaultExpandAllGroupRows', type: 'boolean', default: 'false', desc: '非受控：默认是否展开分组行。对齐 Semi，仅显式 true 才默认展开，缺省与 false 均默认折叠。动态加载数据不生效' },
     { name: 'expandAllGroupRows', type: 'boolean', default: 'undefined', desc: '受控：true 展开全部分组、false 折叠全部分组；受控时不回写，仅经 onGroupExpandChange 通知' },
     { name: 'onGroupExpandChange', type: '(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void', default: 'undefined', desc: '分组展开/收起变化回调（点击分组标题行触发）' },
     { name: 'onGroupedRow', type: '(group: T[], index: number) => { onClick?; onDoubleClick?; className?; style? }', default: 'undefined', desc: '分组标题行自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头 tr' },

@@ -1767,11 +1767,11 @@
   // --- 可折叠分组：受控 expandAllGroupRows 不回写，仅经 onGroupExpandChange 通知 (红线 #1) ---
   // 受控（expandAllGroupRows 定义）时展开态由该值统一决定（true 全展/false 全折）。
   // 非受控时仅记录「用户显式切换过的分组 → 展开态」，未切换的分组回退到默认值：
-  // defaultExpandAllGroupRows 显式 false → 默认折叠；缺省(undefined)或 true → 默认展开
-  // （向后兼容既有「分组头+组内行都显示」）。默认值纯 $derived、不落地为 $state，
-  // 故数据变化产生的新分组自动继承默认展开态，无需 effect seed（红线 #2）。
+  // 对齐 Semi（foundation initExpandedRowKeys）：仅 defaultExpandAllGroupRows === true
+  // 时默认展开，缺省(undefined)与 false 均默认折叠。默认值纯 $derived、不落地为
+  // $state，故数据变化产生的新分组自动继承默认态，无需 effect seed（红线 #2）。
   const isGroupExpandControlled = $derived(expandAllGroupRows !== undefined);
-  const groupDefaultExpanded = $derived(defaultExpandAllGroupRows !== false);
+  const groupDefaultExpanded = $derived(defaultExpandAllGroupRows === true);
   // 用户显式覆盖：groupKey → 展开态（未在此表中的分组用 groupDefaultExpanded）。
   const groupOverrides = new SvelteMap<string, boolean>();
 
