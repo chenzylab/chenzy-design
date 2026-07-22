@@ -14,8 +14,12 @@ export interface ColumnDef<T> {
   key?: string;
   /** 取值字段 */
   dataIndex?: keyof T & string;
-  /** 表头文案（string）或自定义表头渲染（Snippet，对齐 Semi title: ReactNode） */
-  title: string | Snippet;
+  /**
+   * 表头文案（string）或自定义表头渲染（Snippet）。Snippet 入参含 filter/sorter/selection
+   * 物料（对齐 Semi title 函数的 { filter, sorter, selection }），由使用方自行摆放；
+   * 摆放物料时组件不再自动前置排序/筛选按钮（配合 useFullRender 完全自定义表头）。
+   */
+  title: string | Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>;
   /**
    * 子列（表头合并，对齐 Semi column.children）。父列只作表头分组，
    * 数据渲染下沉到叶子列；父列 title 横跨其全部叶子列。

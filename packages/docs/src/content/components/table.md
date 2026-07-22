@@ -510,7 +510,7 @@ Semi 借助 `dnd-kit` 搭配 `components` API 实现拖拽排序。本库 `compo
 | sorter | 排序：true 按 dataIndex 默认比较，或自定义比较器 `(a, b, sortOrder?) => number` | boolean \| function | - |
 | sortIcon | 自定义 sort 图标 | `Snippet<[{ sortOrder }]>` | - |
 | sortOrder | 排序的受控属性 | 'ascend' \| 'descend' \| null | - |
-| title | 列头显示文字（string）或自定义表头渲染（Snippet） | string \| Snippet | - |
+| title | 列头显示文字（string）或自定义表头渲染（Snippet）。Snippet 入参含 `filter`/`sorter`/`selection` 物料，由使用方摆放（对齐 Semi title 函数）；摆放物料时组件不再自动前置对应按钮 | string \| Snippet | - |
 | useFullRender | 是否完全自定义渲染 | boolean | false |
 | width | 列宽度 | string \| number | - |
 

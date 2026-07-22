@@ -2050,7 +2050,64 @@
       {/if}
     {/snippet}
     {#snippet columnTitle(col: ColumnDef<T>)}
-      {#if typeof col.title === 'string'}{col.title}{:else}{@render col.title()}{/if}
+      {#if typeof col.title === 'string'}{col.title}{:else}{@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)({})}{/if}
+    {/snippet}
+    <!-- 筛选浮层面板（string / 自定义 title 复用；触发器绑 filterTriggers[colKey]） -->
+    {#snippet filterDropdownPanel(col: ColumnDef<T>, colKey: string)}
+      {@const filterMultiple = col.filterMultiple !== false}
+      {@const confirmMode = isConfirmMode(col)}
+      <div
+        class="cd-table-column-filter-dropdown"
+        use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
+        bind:this={filterPanelEl}
+      >
+        {#if col.renderFilterDropdown}
+          {@render col.renderFilterDropdown({
+            tempFilteredValue: tempFilterState.get(colKey) ?? [],
+            setTempFilteredValue: (values) => void tempFilterState.set(colKey, [...values]),
+            confirm: (opts) => confirmFilter(col, colKey, opts?.filteredValue !== undefined ? { closeDropdown: opts?.closeDropdown !== false, filteredValue: opts.filteredValue } : { closeDropdown: opts?.closeDropdown !== false }),
+            clear: (opts) => clearFilter(col, colKey, { closeDropdown: opts?.closeDropdown !== false }),
+            close: () => setFilterOpen(col, colKey, false),
+            ...(col.filters !== undefined ? { filters: col.filters } : {}),
+          })}
+        {:else}
+        {@const checkedSet = confirmMode ? new Set(tempFilterState.get(colKey) ?? []) : activeFilterValues(colKey)}
+        <FilterDropdownHost showTick={col.filterDropdownProps?.showTick ?? false}>
+        <ul class="cd-table-column-filter-list">
+          {#each col.filters ?? [] as f (f.value)}
+            {@const checked = checkedSet.has(f.value)}
+            {@const onItemChange = () =>
+              filterMultiple
+                ? toggleFilterValue(col, colKey, f.value)
+                : selectSingleFilterValue(col, colKey, f.value)}
+            <li class="cd-table-column-filter-item">
+              {#if col.renderFilterDropdownItem}
+                {@render col.renderFilterDropdownItem({ text: f.text, value: f.value, checked, filteredValue: [...checkedSet], filterMultiple, onChange: onItemChange })}
+              {:else}
+              <label class="cd-table-column-filter-label">
+                {#if filterMultiple}
+                  <input type="checkbox" {checked} onchange={onItemChange} />
+                {:else}
+                  <input type="radio" name="cd-filter-{colKey}" {checked} onchange={onItemChange} />
+                {/if}
+                <span>{f.text}</span>
+              </label>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+        </FilterDropdownHost>
+        <div class="cd-table-column-filter-actions">
+          {#if confirmMode}
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.filterConfirm')}</button>
+          {:else}
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.filterConfirm')}</button>
+          {/if}
+        </div>
+        {/if}
+      </div>
     {/snippet}
     {#snippet sorterIcons(order: 'ascend' | 'descend' | null, col: ColumnDef<T>)}
       {#if col.sortIcon}
@@ -2095,9 +2152,10 @@
             onmouseenter={headerCellProps?.onMouseEnter ?? undefined}
             onmouseleave={headerCellProps?.onMouseLeave ?? undefined}
           >
-            <!-- 对齐 Semi .semi-table-operate-wrapper：flex 容器包 title/sorter/filter，
-                 消除 inline line-box descender 撑高（保表头恒 38px） -->
-            <div class="cd-table-operate-wrapper">
+            <!-- 对齐 Semi：仅在有 sorter/filter 时套 .semi-table-operate-wrapper（flex），
+                 消除 inline descender 撑高；纯自定义 title（无 sorter）不套 flex，
+                 直接渲染保持其 inline 布局与 Semi 一致（Semi 自定义 title 不套 operate-wrapper）。 -->
+            <div class="cd-table-operate-wrapper" class:cd-table-operate-plain={typeof col.title !== 'string' && !sortable}>
             {#if sortable}
               {@const order = col.sortOrder !== undefined ? col.sortOrder : (currentSort.key === colKeyOf(col, i) ? currentSort.order : null)}
               {@const showTip = col.showSortTip === true && col.sortOrder === undefined}
@@ -2117,11 +2175,44 @@
                   {@render sorterIcons(order, col)}
                 {/if}
               </button>
+            {:else if typeof col.title !== 'string'}
+              <!-- 自定义 title（函数）：透传 selection/filter 物料，由使用方摆放（对齐 Semi
+                   title({ selection, filter, sorter })）。摆放 selection 全选框会撑高表头至 41px。 -->
+              {#snippet headerSelectionMaterial()}
+                {#if selectionEnabled}
+                  <Checkbox
+                    class="cd-table-selection-checkbox"
+                    ariaLabel={loc().t('Table.selectAll')}
+                    checked={headerSelect.checked}
+                    disabled={rowSelection?.disabled === true}
+                    indeterminate={headerSelect.indeterminate}
+                    tabindex={childTabindex(-1, gc)}
+                    onChange={() => onToggleAll()}
+                  />
+                {/if}
+              {/snippet}
+              {#snippet headerFilterMaterial()}
+                {#if hasFilter}
+                  <button
+                    type="button"
+                    class="cd-table-column-filter"
+                    class:on={isEffectivelyFiltered(col, colKey)}
+                    aria-label={loc().t('Table.filter')}
+                    aria-expanded={openFilterKey === colKey}
+                    tabindex={childTabindex(-1, gc)}
+                    bind:this={filterTriggers[colKey]}
+                    onclick={(e) => { e.stopPropagation(); setFilterOpen(col, colKey, openFilterKey !== colKey); }}
+                  >
+                    {#if col.filterIcon}{@render col.filterIcon({ filtered: isEffectivelyFiltered(col, colKey) })}{:else}<IconFilter size="small" aria-hidden="true" />{/if}
+                  </button>
+                {/if}
+              {/snippet}
+              {@render (col.title as Snippet<[{ filter?: Snippet; sorter?: Snippet; selection?: Snippet }]>)(hasFilter ? { selection: headerSelectionMaterial, filter: headerFilterMaterial } : { selection: headerSelectionMaterial })}
             {:else}
               <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
             {/if}
 
-            {#if hasFilter}
+            {#if hasFilter && typeof col.title === 'string'}
               <button
                 type="button"
                 class="cd-table-column-filter"
@@ -2142,79 +2233,14 @@
                 {/if}
               </button>
               {#if openFilterKey === colKey && filterTriggers[colKey]}
-                {@const filterMultiple = col.filterMultiple !== false}
-                {@const confirmMode = isConfirmMode(col)}
-                <div
-                  class="cd-table-column-filter-dropdown"
-                  use:floating={{ trigger: filterTriggers[colKey], placement: 'bottomEnd', autoAdjust: true, offset: 4, getContainer: getPopupContainer }}
-                  bind:this={filterPanelEl}
-                >
-                  {#if col.renderFilterDropdown}
-                    {@render col.renderFilterDropdown({
-                      tempFilteredValue: tempFilterState.get(colKey) ?? [],
-                      setTempFilteredValue: (values) => void tempFilterState.set(colKey, [...values]),
-                      confirm: (opts) => confirmFilter(col, colKey, opts?.filteredValue !== undefined ? { closeDropdown: opts?.closeDropdown !== false, filteredValue: opts.filteredValue } : { closeDropdown: opts?.closeDropdown !== false }),
-                      clear: (opts) => clearFilter(col, colKey, { closeDropdown: opts?.closeDropdown !== false }),
-                      close: () => setFilterOpen(col, colKey, false),
-                      ...(col.filters !== undefined ? { filters: col.filters } : {}),
-                    })}
-                  {:else}
-                  {@const checkedSet = confirmMode ? new Set(tempFilterState.get(colKey) ?? []) : activeFilterValues(colKey)}
-                  <!-- filterDropdownProps.showTick：为自定义筛选项（Dropdown.Item）提供 showTick context（对齐 Semi） -->
-                  <FilterDropdownHost showTick={col.filterDropdownProps?.showTick ?? false}>
-                  <ul class="cd-table-column-filter-list">
-                    {#each col.filters ?? [] as f (f.value)}
-                      {@const checked = checkedSet.has(f.value)}
-                      {@const onItemChange = () =>
-                        filterMultiple
-                          ? toggleFilterValue(col, colKey, f.value)
-                          : selectSingleFilterValue(col, colKey, f.value)}
-                      <li class="cd-table-column-filter-item">
-                        {#if col.renderFilterDropdownItem}
-                          {@render col.renderFilterDropdownItem({
-                            text: f.text,
-                            value: f.value,
-                            checked,
-                            filteredValue: [...checkedSet],
-                            filterMultiple,
-                            onChange: onItemChange,
-                          })}
-                        {:else}
-                        <label class="cd-table-column-filter-label">
-                          {#if filterMultiple}
-                            <input type="checkbox" {checked} onchange={onItemChange} />
-                          {:else}
-                            <input type="radio" name="cd-filter-{colKey}" {checked} onchange={onItemChange} />
-                          {/if}
-                          <span>{f.text}</span>
-                        </label>
-                        {/if}
-                      </li>
-                    {/each}
-                  </ul>
-                  </FilterDropdownHost>
-                  <div class="cd-table-column-filter-actions">
-                    {#if confirmMode}
-                      <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>
-                        {loc().t('Table.filterReset')}
-                      </button>
-                      <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>
-                        {loc().t('Table.filterConfirm')}
-                      </button>
-                    {:else}
-                      <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>
-                        {loc().t('Table.filterReset')}
-                      </button>
-                      <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>
-                        {loc().t('Table.filterConfirm')}
-                      </button>
-                    {/if}
-                  </div>
-                  {/if}
-                </div>
+                {@render filterDropdownPanel(col, colKey)}
               {/if}
             {/if}
             </div>
+            <!-- 自定义 title 时 filter 按钮由 title snippet 摆放，浮层在此独立渲染（触发器仍绑 filterTriggers[colKey]） -->
+            {#if hasFilter && typeof col.title !== 'string' && openFilterKey === colKey && filterTriggers[colKey]}
+              {@render filterDropdownPanel(col, colKey)}
+            {/if}
 
             {#if colResizable}
               <span
@@ -2904,6 +2930,11 @@
   .cd-table-operate-wrapper {
     display: flex;
     align-items: center;
+  }
+  /* 纯自定义 title（无 sorter/filter）：不产生布局盒，title 直接在 th 内 inline 布局，
+     对齐 Semi（Semi 自定义 title 不套 operate-wrapper，其 inline-flex 内容自然撑高表头）。 */
+  .cd-table-operate-plain {
+    display: contents;
   }
   .cd-table-align-center .cd-table-operate-wrapper {
     justify-content: center;

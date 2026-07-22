@@ -28,9 +28,12 @@
   const rowSelection = { hidden: true, fixed: 'left' as const };
 </script>
 
-{#snippet nameHeader()}
+{#snippet nameHeader({ selection, sorter, filter }: { selection?: Snippet; sorter?: Snippet; filter?: Snippet })}
   <span style="display: inline-flex; align-items: center; padding-left: 20px">
+    {#if selection}{@render selection()}{/if}
     <span style="margin-left: 8px">Name</span>
+    {#if sorter}{@render sorter()}{/if}
+    {#if filter}{@render filter()}{/if}
   </span>
 {/snippet}
 
