@@ -270,7 +270,7 @@
 
 <div class="page">
   <div class="page-main">
-    <div class="component-header" data-pagefind-meta="title:{meta.name}">
+    <div class="component-header">
       <div class="breadcrumb">
         <a href="{base}/components">组件</a>
         <span> / </span>

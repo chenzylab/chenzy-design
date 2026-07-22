@@ -1,15 +1,14 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { base } from '$app/paths';
-  import { onMount } from 'svelte';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
+  import { searchSite, type SearchResult } from '$lib/search-index';
 
   const lang = $derived(locale.value);
 
   let query = $state('');
-  let results = $state<any[]>([]);
-  let pagefind: any = null;
+  let results = $state<SearchResult[]>([]);
   let open = $state(false);
 
   // 快捷键提示：mac 显示 ⌘，其余平台显示 Ctrl
@@ -32,25 +31,16 @@
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  onMount(async () => {
-    if (!browser) return;
-    try {
-      // 用 new Function 包裹动态 import，阻止 Vite/Rollup 在构建期静态解析
-      // `pagefind.js`（该文件由 pagefind 在 build 之后生成，构建期不存在）。
-      // 路径须带 base：GitHub Pages 部署在 /chenzy-design 子路径下，
-      // 否则请求 /pagefind/pagefind.js 会 404（正确为 {base}/pagefind/pagefind.js）。
-      const dynamicImport = new Function('p', 'return import(p)');
-      pagefind = await dynamicImport(`${base}/pagefind/pagefind.js`);
-      await pagefind.init();
-    } catch {
-      // pagefind 仅在 build 后可用，dev 模式静默跳过
-    }
-  });
+  // 客户端搜索：索引在构建期由 import.meta.glob 扫组件文档生成（见 search-index.ts），
+  // dev 与 prod 均可用，纯客户端匹配、无需后端与构建后索引产物。
+  function search() {
+    results = searchSite(query);
+  }
 
-  async function search() {
-    if (!pagefind || !query.trim()) { results = []; return; }
-    const res = await pagefind.search(query);
-    results = await Promise.all(res.results.slice(0, 8).map((r: any) => r.data()));
+  // 命中项链接：页级 -> /components/{name}；标题级 -> 追加 #锚点（与 TOC 一致）。
+  function resultHref(r: SearchResult): string {
+    const hash = r.heading ? `#${r.heading.anchor}` : '';
+    return `${base}/components/${r.name}${hash}`;
   }
 </script>
 
@@ -76,9 +66,11 @@
     <ul class="search-results">
       {#each results as result}
         <li>
-          <a href={result.url} onclick={() => open = false}>
-            <span class="result-title">{result.meta?.title ?? result.url}</span>
-            <span class="result-excerpt">{@html result.excerpt}</span>
+          <a href={resultHref(result)} onclick={() => open = false}>
+            <span class="result-title">
+              {result.title}{#if result.heading}<span class="result-crumb"> › {result.heading.text}</span>{/if}
+            </span>
+            {#if result.brief}<span class="result-excerpt">{result.brief}</span>{/if}
           </a>
         </li>
       {/each}
@@ -141,6 +133,7 @@
   }
   .search-results li a:hover { background: var(--cd-color-fill-1, #f2f3f5); }
   .result-title { display: block; font-size: 13px; font-weight: 600; }
+  .result-crumb { font-weight: 400; color: var(--cd-color-text-2, #86909c); }
   .result-excerpt { display: block; font-size: 12px; color: var(--cd-color-text-2, #86909c); margin-top: 2px; }
   .search-empty { padding: 8px; font-size: 13px; color: var(--cd-color-text-2, #86909c); }
 </style>

@@ -34,7 +34,7 @@
   <title>{meta.name} · {t('tab.design', lang)} — chenzy-design</title>
 </svelte:head>
 
-<div class="design-doc" data-pagefind-body>
+<div class="design-doc">
   <div class="dd-header">
     <div class="breadcrumb">
       <a href="{base}/components/{lowerName}">{meta.name}</a>
