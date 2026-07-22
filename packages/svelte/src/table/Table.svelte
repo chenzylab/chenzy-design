@@ -2712,8 +2712,10 @@
     overflow: auto;
   }
 
-  /* 吸顶表头：thead sticky */
-  .cd-table-thead-sticky th {
+  /* 吸顶表头：thead sticky。特异性须 > .cd-table-thead > .cd-table-row >
+     .cd-table-row-head（0,3,0，设了 position:relative 且定义在后，同特异性会赢）。
+     thead 同时带 cd-table-thead 与 cd-table-thead-sticky 两个 class，叠加成 0,4,0。 */
+  .cd-table-thead.cd-table-thead-sticky > .cd-table-row > .cd-table-row-head {
     position: sticky;
     inset-block-start: 0;
     z-index: calc(var(--cd-z-table-fixed-column) + 1);
