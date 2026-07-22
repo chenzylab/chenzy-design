@@ -76,6 +76,8 @@ docMode: inline
   import useFullRenderSrc from '../../demos/table/18-use-full-render.svelte?raw';
   import HeaderGroup from '../../demos/table/17-header-group.svelte';
   import headerGroupSrc from '../../demos/table/17-header-group.svelte?raw';
+  import HeaderGroupComposable from '../../demos/table/17b-header-group-composable.svelte';
+  import headerGroupComposableSrc from '../../demos/table/17b-header-group-composable.svelte?raw';
   import SpanCell from '../../demos/table/16-span-cell.svelte';
   import spanCellSrc from '../../demos/table/16-span-cell.svelte?raw';
 </script>
@@ -104,9 +106,16 @@ docMode: inline
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
 
-### JSX 写法
+### 组合式写法
 
-本库以「带 `render` Snippet 的配置式列定义」等价 Semi 的 JSX `<Table.Column>` 写法（Svelte 无 JSX，列定义统一走配置式）。
+除配置式 `columns` 外，你也可以用组合式的 `<Column>` 子组件定义列（对齐 Semi `Table.Column`）。请不要用任何组件包裹 `<Column>`。
+
+<Notice type="primary" title="注意事项">
+
+1. 使用组合式写法时，请不要与配置式 `columns` 同时使用；如果同时使用，仅配置式生效，不会进行组合式聚合。
+2. 组合式列在挂载后收集，`defaultSortOrder` / `defaultFilteredValue` 等首帧默认值不追溯；需要 SSR 首屏列请用配置式 `columns`。
+
+</Notice>
 
 <DemoBox code={jsxSrc}><Jsx /></DemoBox>
 
@@ -409,6 +418,10 @@ Semi 借助 React 的 `dnd-kit` 搭配 `components.body.row` 注入自定义 `So
 用户可以通过表头合并功能进行表头的分组，表头合并支持与固定列、虚拟化、数据分组、列伸缩等功能复合使用。通过 `column.children` 定义子列，父列 `title` 横跨其全部叶子列。
 
 <DemoBox code={headerGroupSrc}><HeaderGroup /></DemoBox>
+
+除配置式 `columns` 外，也可以用组合式的 `<Column>` 子组件声明列（对齐 Semi `Table.Column`），嵌套 `<Column>` 即表头合并。两种写法等价，二选一。
+
+<DemoBox code={headerGroupComposableSrc}><HeaderGroupComposable /></DemoBox>
 
 ### 行列合并
 

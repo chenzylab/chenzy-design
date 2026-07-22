@@ -44,6 +44,7 @@
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
+  import { createColumnCollector, setColumnsContext } from './context.js';
   import { Pagination } from '../pagination/index.js';
   import {
     IconCaretup,
@@ -85,6 +86,7 @@
   // 引用泛型参数 T 的具名 interface 会被当作私有名泄漏进生成的 .d.ts 公共签名而报错。
   let {
     columns = [],
+    children,
     dataSource = [],
     rowKey = 'key',
     size = 'default',
@@ -152,6 +154,12 @@
     getVirtualizedListRef,
   }: {
     columns?: ColumnDef<T>[];
+    /**
+     * 组合式列定义容器（对齐 Semi Table.Column）：放 <Column> 子组件，Table 经 context
+     * 收集成与配置式等价的列树。与 `columns` prop 并存——传了 `columns` 用配置式，
+     * 否则用收集的组合式列树。
+     */
+    children?: Snippet;
     dataSource?: T[];
     rowKey?: string | ((record: T) => RowKey);
     size?: TableSize;
@@ -352,6 +360,21 @@
     col.key ?? col.dataIndex ?? String(index);
 
   // --- 表头合并（column.children）：叶子列驱动 body/ColGroup/固定列，父列只作表头分组 ---
+  // 组合式 <Column> 收集：根收集器 + 唯一 version $state（所有层冒泡到此）。
+  // 红线 #2：<Column> 的 register/update/unregister（副作用）写普通数组 + bump version；
+  // collectedColumns $derived 只读 version 重建根 snapshot（递归读普通数组，不写 $state）。
+  let columnsVersion = $state(0);
+  const rootCollector = createColumnCollector<T>(() => {
+    columnsVersion += 1;
+  });
+  setColumnsContext(rootCollector);
+  const collectedColumns = $derived.by<ColumnDef<T>[]>(() => {
+    void columnsVersion; // 收集顺序/内容变化触发重建
+    return rootCollector.snapshot();
+  });
+  // 实际列源：传了配置式 columns 用之（向后兼容）；否则用组合式收集树。
+  const effectiveColumns = $derived(columns.length > 0 ? columns : collectedColumns);
+
   // 无 children 时 leafColumns 与 columns 等价（零行为变化）。
   function flattenLeaves(cols: ColumnDef<T>[]): ColumnDef<T>[] {
     const out: ColumnDef<T>[] = [];
@@ -361,8 +384,8 @@
     }
     return out;
   }
-  const leafColumns = $derived(flattenLeaves(columns));
-  const hasHeaderMerge = $derived(columns.some((c) => c.children && c.children.length > 0));
+  const leafColumns = $derived(flattenLeaves(effectiveColumns));
+  const hasHeaderMerge = $derived(effectiveColumns.some((c) => c.children && c.children.length > 0));
 
   function leafCount(col: ColumnDef<T>): number {
     if (!col.children || col.children.length === 0) return 1;
@@ -371,7 +394,7 @@
   const headerDepth = $derived.by(() => {
     const depth = (col: ColumnDef<T>): number =>
       col.children && col.children.length > 0 ? 1 + Math.max(...col.children.map(depth)) : 1;
-    return columns.length ? Math.max(...columns.map(depth)) : 1;
+    return effectiveColumns.length ? Math.max(...effectiveColumns.map(depth)) : 1;
   });
   interface HeaderCell {
     col: ColumnDef<T>;
@@ -397,7 +420,7 @@
       }
     };
     let cursor = 0;
-    for (const col of columns) {
+    for (const col of effectiveColumns) {
       walk(col, 0, cursor);
       cursor += leafCount(col);
     }
@@ -510,7 +533,8 @@
   const filterState = new SvelteMap<string, Set<string | number>>(initFilterState());
   function initFilterState(): [string, Set<string | number>][] {
     const seed: [string, Set<string | number>][] = [];
-    flattenLeaves(columns).forEach((col, i) => {
+    // 组合式列首帧收集树可能为空，defaultFilteredValue 初始不追溯（对齐 Semi，见组合式限制）。
+    flattenLeaves(effectiveColumns).forEach((col, i) => {
       if (col.defaultFilteredValue && col.defaultFilteredValue.length > 0) {
         seed.push([col.key ?? col.dataIndex ?? String(i), new Set(col.defaultFilteredValue)]);
       }
@@ -1253,7 +1277,7 @@
       hasExpand ||
       treeEnabled ||
       !!onRowClick ||
-      columns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
+      effectiveColumns.some((c) => !!c.sorter || (!!c.filters && c.filters.length > 0)),
   );
   const gridEnabled = $derived(gridNav !== undefined ? gridNav : isInteractive);
 
@@ -1901,6 +1925,13 @@
   {style}
   bind:this={wrapperEl}
 >
+  {#if children}
+    <!-- 组合式 <Column> 收集宿主：display:none 不产生可见/占位 DOM 也不进 a11y 树，
+         但仍挂载子组件、跑其 init/effect（注册列元数据），嵌套 Column 逐级 render 触发。 -->
+    <div class="cd-table-column-collector" aria-hidden="true" style="display:none">
+      {@render children()}
+    </div>
+  {/if}
   {#if titleSnippet || title}
     <div class="cd-table-title">
       {#if titleSnippet}{@render titleSnippet()}{:else}{title}{/if}
@@ -1946,7 +1977,7 @@
       {/each}
     </colgroup>
     {#if showHeader}
-      {@const headerRowProps = onHeaderRow ? onHeaderRow(columns, 0) : undefined}
+      {@const headerRowProps = onHeaderRow ? onHeaderRow(effectiveColumns, 0) : undefined}
     <svelte:element
       this={tagThead}
       class="cd-table-thead"
