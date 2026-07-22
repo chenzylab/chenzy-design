@@ -43,6 +43,7 @@
   } from '@chenzy-design/core';
   import { tick } from 'svelte';
   import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import { SvelteMap } from 'svelte/reactivity';
   import { Pagination } from '../pagination/index.js';
   import {
@@ -149,6 +150,7 @@
     class: className,
     style,
     components,
+    bodyAttach,
     getVirtualizedListRef,
   }: {
     columns?: ColumnDef<T>[];
@@ -321,6 +323,13 @@
       header?: { wrapper?: string; row?: string; cell?: string };
       body?: { wrapper?: string; row?: string; cell?: string };
     };
+    /**
+     * 挂到表体（tbody）元素的 attachment（对齐 Semi 用 components.body 注入拖拽库的能力）。
+     * Semi 靠 React 的 components.body.row 注入 dnd-kit 的 SortableRow；Svelte 侧改为把
+     * svelte-dnd-action 的 dndzone 以 attachment 形式挂到 tbody，实现整表行拖拽排序。
+     * 与树形/展开/占位混合结构无关时使用（拖拽库要求 tbody 直接子行与数据一一对应）。
+     */
+    bodyAttach?: Attachment;
     /**
      * 返回虚拟化滚动控制句柄（对齐 Semi getVirtualizedListRef）。仅 virtualized 时有效。
      * 句柄含 scrollTo(offset) 与 scrollToItem(index)，命令式驱动表体滚动。
@@ -2263,7 +2272,7 @@
           </th>
           {/if}
     {/snippet}
-    <svelte:element this={tagTbody} class="cd-table-tbody">
+    <svelte:element this={tagTbody} class="cd-table-tbody" {@attach bodyAttach ?? false}>
       {#if visibleRows.length === 0}
         <tr class="cd-table-row cd-table-row-placeholder" role={gridEnabled ? 'row' : undefined}>
           <td
