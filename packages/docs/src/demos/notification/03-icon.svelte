@@ -19,10 +19,16 @@
 
 <h5>自定义图标</h5>
 <div style="display:flex; gap:8px; flex-wrap:wrap">
-  <Button onclick={() => notification.info({ ...opts, icon: giftIcon })}>礼物图标</Button>
-  <Button onclick={() => notification.info({ ...opts, icon: starIcon })}>星标图标</Button>
+  <Button icon={giftBtnIcon} onclick={() => notification.info({ ...opts, icon: giftIcon })} />
+  <Button icon={starBtnIcon} onclick={() => notification.info({ ...opts, icon: starIcon })} />
 </div>
 
+{#snippet giftBtnIcon()}
+  <IconGift />
+{/snippet}
+{#snippet starBtnIcon()}
+  <IconStar />
+{/snippet}
 {#snippet giftIcon()}
   <IconGift size="large" style="color: var(--cd-color-danger)" />
 {/snippet}

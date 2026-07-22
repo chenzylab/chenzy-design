@@ -32,5 +32,5 @@ export const demos: DemoEntry[] = [
   entry('06-duration.svelte', '修改延时', '自定义时长 10s，默认时长为 3s。'),
   entry('07-manual-close.svelte', '手动关闭', '设置 duration 为 0 时通知不会自动关闭，只能通过 notification.close(id) 手动关闭。'),
   entry('08-update.svelte', '更新内容', '可以通过唯一的 id 来更新已展示通知的内容。'),
-  entry('09-hook.svelte', 'Hook 用法', 'useNotification() 返回 [api, holderStore]，将 holderStore 传给 <NotificationHolder> 渲染在组件树内，使通知继承该处上下文（如 LocaleProvider）。'),
+  entry('09-hook.svelte', '消费 Context', 'useNotification() 返回 [api, holderStore]，将 holderStore 传给 <NotificationHolder> 渲染在组件树内，使通知继承该处上下文（如 LocaleProvider）。'),
 ];

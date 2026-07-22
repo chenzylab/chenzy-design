@@ -38,7 +38,7 @@ export const componentNamesZh: Record<string, string> = {
   lottie: '动画',
   menu: '导航菜单',
   modal: '模态对话框',
-  notification: '通知提醒框',
+  notification: '通知',
   overflowlist: '溢出折叠列表',
   pagination: '分页器',
   popconfirm: '气泡确认框',
