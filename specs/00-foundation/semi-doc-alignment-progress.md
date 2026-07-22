@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（17）
+## ✅ 已完成（18）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -31,7 +31,7 @@
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
 
-- [ ] toast — 已破坏性对齐（删 position/6方位/loading；useToast 返 [api,holder]）见 [toast-semi-rewrite]
+- [x] toast — 文档整页 inline 对齐 Semi（11 demo：普通/其他类型/多色/链接/延时/手动关闭/更新/销毁所有/useToast/factory/更多选项，布局裸 div→`<Space>`；API 参考 + Options + Config 三表 + 文案规范）。⚠️ **真机验证连带修出存量组件 bug**：Toast 的移除（自动到期/手动关闭/destroyAll）全部失效——根因 `out:fly` duration 因 `prefersReducedMotion.current` 求值为 0 时节点不 unmount。**破坏性改用 CSS 动画 + 两段式移除对齐 Semi**：core 加 `leaving` 标记 + `finalizeRemove`（remove 只标记触发 hide keyframe，animationend 后真删），ToastContainer 去 fly/flip 改 `cd-toast-animation-show/hide` keyframe + `onanimationend`→finalizeRemove（enter 守卫 `if(leaving)` 防误删）。见 [[toast-remove-broken-out-fly-duration-zero]] [[toast-two-phase-css-animation-align-semi]]。真机验证：录制保持前台见证弹出→3s→自动消失、开3条→destroyAll 全清（后台标签 CSS 动画被浏览器冻结致 animationend 不触发是验证假象，非 bug）
 - [ ] notification — 已对齐（theme normal/light、useNotification 返 [api,holderStore]）见 [notification-semi-rewrite]
 - [ ] table — 已补齐 API（表头合并/onRow/useFullRender 等）；表头 tr 必带 cd-table-row 基类 见 [table-api-gaps]
 - [ ] tooltip — 浮层继承链底层（Popover←Tooltip）见 [overlay-inheritance-chain]

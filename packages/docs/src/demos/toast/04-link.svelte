@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Toast, Button, Typography } from '@chenzy-design/svelte';
+  import { Toast, Button, Typography, Space } from '@chenzy-design/svelte';
 
   const { Text } = Typography;
 
@@ -24,9 +24,9 @@
   </span>
 {/snippet}
 
-<div style="display:flex; gap:12px; flex-wrap:wrap">
+<Space wrap>
   <Button onclick={() => Toast.info({ content: inlineContent, duration: 3 })}>Display Toast</Button>
   <Button onclick={() => Toast.info({ content: multiLineContent, duration: 3 })}>
     Display Multi-line Toast
   </Button>
-</div>
+</Space>

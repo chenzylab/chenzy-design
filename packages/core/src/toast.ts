@@ -51,6 +51,14 @@ export interface ToastItem {
   direction: ToastDirection;
   onClose: (() => void) | undefined;
   icon: unknown;
+  /**
+   * 离场标记（对齐 Semi ToastList 的 removedItems + animationState="leave"）。
+   * remove/removeAll 先置 true 触发离场动画（CSS hide keyframe），保留在列表中继续渲染；
+   * 渲染层监听 animationend 后调 finalizeRemove(id) 才真正从列表删除。
+   * 用两段式（标记→动画结束→真删）而非框架 transition 负责 unmount，
+   * 避免 duration 边界下节点不卸载（对齐 Semi 的 CSS 动画 + onAnimationEnd 移除）。
+   */
+  leaving: boolean;
 }
 
 export interface ToastStoreOptions {
@@ -68,8 +76,18 @@ export interface ToastStore {
   add(options: ToastOptions): string;
   /** 按 id 原地更新一条 toast 并重启定时器（对齐 Semi updateToast + restartCloseTimer）。 */
   update(id: string, options: ToastOptions): void;
+  /**
+   * 标记该 toast 离场（对齐 Semi removeToast：置 removedItems + animationState="leave"）。
+   * 触发离场动画，项仍保留在列表中；动画结束后由渲染层调 finalizeRemove 真删。
+   */
   remove(id: string): void;
+  /** 标记全部 toast 离场（对齐 Semi destroyAll）。各项动画结束后各自 finalizeRemove。 */
   removeAll(): void;
+  /**
+   * 离场动画结束后真正从列表移除并触发 onClose（对齐 Semi onAnimationEnd 里 setState 移出 removedItems）。
+   * 若该项已不再处于 leaving（被 update/reopen 复用），则不处理（对齐 Semi 的守卫）。
+   */
+  finalizeRemove(id: string): void;
   /** 悬停暂停定时器（对齐 Semi clearCloseTimer_）。 */
   pause(id: string): void;
   /** 离开恢复定时器，从头完整计时（对齐 Semi startCloseTimer_ / restartCloseTimer）。 */
@@ -127,12 +145,28 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
       direction: options.direction ?? defaultDirection,
       onClose: options.onClose,
       icon: options.icon,
+      leaving: false,
     };
   }
 
+  // 标记离场（对齐 Semi removeToast → removedItems + animationState="leave"）。
+  // 不从列表删除，仅置 leaving=true 触发离场动画；清定时器避免离场中再触发自动关闭。
+  // 真正的删除与 onClose 由渲染层动画结束后调 finalizeRemove 完成。
   function remove(id: string): void {
+    const idx = toasts.findIndex((t) => t.id === id);
+    if (idx < 0) return;
+    const item = toasts[idx]!;
+    if (item.leaving) return;
+    clearTimer(id);
+    toasts = toasts.map((t, i) => (i === idx ? { ...t, leaving: true } : t));
+    emit();
+  }
+
+  // 离场动画结束后真正移除并触发 onClose（对齐 Semi onAnimationEnd 移出 removedItems）。
+  // 守卫：仅当该项仍处于 leaving 才删（被 update/reopen 复用则不处理，对齐 Semi）。
+  function finalizeRemove(id: string): void {
     const item = toasts.find((t) => t.id === id);
-    if (!item) return;
+    if (!item || !item.leaving) return;
     clearTimer(id);
     toasts = toasts.filter((t) => t.id !== id);
     emit();
@@ -143,6 +177,7 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
     const id = options.id ?? useId('cd-toast');
     const item = normalize(options, id);
     clearTimer(id);
+    // 复用已存在 id 时 leaving 由 normalize 重置为 false（对齐 Semi：reopen 清离场态）。
     toasts = [...toasts.filter((t) => t.id !== id), item];
     emit();
     startTimer(id, item.duration);
@@ -168,6 +203,8 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
       direction: options.direction ?? prev.direction,
       onClose: options.onClose ?? prev.onClose,
       icon: options.icon ?? prev.icon,
+      // reopen/update 复用该 id 时清离场态（对齐 Semi 守卫：不再算作 removedItem）。
+      leaving: false,
     };
     toasts = toasts.map((t, i) => (i === idx ? merged : t));
     emit();
@@ -175,12 +212,12 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
     startTimer(id, merged.duration);
   }
 
+  // 标记全部离场（对齐 Semi destroyAll → 全部进 removedItems 走离场动画）。
+  // 各项动画结束后由渲染层各自 finalizeRemove 真删并触发 onClose。
   function removeAll(): void {
-    const snapshot = toasts.slice();
-    for (const t of snapshot) clearTimer(t.id);
-    toasts = [];
+    for (const t of toasts) clearTimer(t.id);
+    toasts = toasts.map((t) => (t.leaving ? t : { ...t, leaving: true }));
     emit();
-    for (const t of snapshot) t.onClose?.();
   }
 
   // 对齐 Semi clearCloseTimer_：hover 暂停即清定时器（不记剩余时间）。
@@ -192,7 +229,7 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
   function resume(id: string): void {
     if (timers.has(id)) return;
     const item = toasts.find((t) => t.id === id);
-    if (!item) return;
+    if (!item || item.leaving) return;
     startTimer(id, item.duration);
   }
 
@@ -207,6 +244,7 @@ export function createToastStore(storeOptions: ToastStoreOptions = {}): ToastSto
     update,
     remove,
     removeAll,
+    finalizeRemove,
     pause,
     resume,
     destroy() {

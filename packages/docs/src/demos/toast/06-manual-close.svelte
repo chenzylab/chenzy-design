@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Toast, Button } from '@chenzy-design/svelte';
+  import { Toast, Button, Space } from '@chenzy-design/svelte';
 
   // duration 设为 0 时 toast 不会自动关闭，必须手动关闭（对齐 Semi）。
   let toastId = $state<string | null>(null);
@@ -17,7 +17,7 @@
   }
 </script>
 
-<div style="display:flex; gap:12px; flex-wrap:wrap">
+<Space wrap>
   <Button type="primary" onclick={show}>Show Toast</Button>
   <Button type="primary" onclick={hide}>Hide Toast</Button>
-</div>
+</Space>
