@@ -10,6 +10,10 @@ const dict: Dict = {
   'nav.search': { zh: '搜索', en: 'Search' },
   'search.placeholder': { zh: '搜索组件...', en: 'Search components...' },
   'search.empty': { zh: '未找到相关结果', en: 'No results found' },
+  'search.history': { zh: '搜索历史', en: 'Search History' },
+  'search.clear': { zh: '清空', en: 'Clear' },
+  'search.recent': { zh: '最近浏览', en: 'Recently Viewed' },
+  'search.quick': { zh: '快速访问', en: 'Quick Access' },
 
   // 侧栏分组
   'group.start': { zh: '开始', en: 'Getting Started' },

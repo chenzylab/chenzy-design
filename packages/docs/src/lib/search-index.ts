@@ -2,18 +2,7 @@
 // 复刻 Semi/VitePress 思路：构建期用 import.meta.glob 扫组件文档，序列化成静态数据，
 // 客户端直接查询——dev 与 prod 均可用，无需后端、无需构建后索引产物。
 // 粒度：页级（title/name/brief/category）+ 标题锚点（h2/h3，含与 TOC 一致的锚点 id）。
-
-// 与 svelte.config.js 的 makeAnchorId 逐字节一致，保证搜索命中标题后跳转的锚点与页内 TOC 相同。
-function makeAnchorId(id: string): string {
-  return id
-    .toLowerCase()
-    .replace(/\//g, '')
-    .replace(/\s/g, '-')
-    .replace(/(\(|\))/g, 'aaa')
-    .replace(/\./g, '-')
-    .replace(/&/g, '-')
-    .replace(/(^[^一-龥^a-z%])/, 'n$1');
-}
+import { makeAnchorId } from './anchor-id';
 
 export interface SearchHeading {
   /** 标题文本 */

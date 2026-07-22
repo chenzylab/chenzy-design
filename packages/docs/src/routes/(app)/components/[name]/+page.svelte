@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Component } from 'svelte';
-  import { tick, mount } from 'svelte';
+  import { tick, mount, untrack } from 'svelte';
   import { IconLink } from '@chenzy-design/icons';
   import { Toast } from '@chenzy-design/svelte';
   import { makeAnchorId } from '$lib/anchor-id';
@@ -22,10 +22,19 @@
   import { t, localize } from '$lib/i18n';
   import { resolveTokenPrefix } from '$lib/token-prefix';
   import { nameToDir } from '$lib/component-dir';
+  import { pushRecentComponent } from '$lib/search-prefs.svelte';
 
   const { data }: { data: PageData } = $props();
   const meta = $derived(data.meta);
   const lang = $derived(locale.value);
+
+  // 记录「最近浏览」供搜索面板空态展示（去重置顶，localStorage 持久化）。
+  // 仅依赖 meta.name（页面身份）；push 内部读写 recentComponents 用 untrack 隔离，
+  // 否则 effect 会因读写同一 state 自触发导致 effect_update_depth_exceeded。
+  $effect(() => {
+    const name = meta?.name;
+    if (browser && name) untrack(() => pushRecentComponent(name));
+  });
   // docMode='inline'：整页由 md 内联驱动（复刻 Semi 无 tab 纵向流）。
   // 其余组件保持 meta 驱动的 api/usage 双 tab 不变。
   const inlineDoc = $derived(data.docMode === 'inline');
