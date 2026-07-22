@@ -13,6 +13,7 @@ import {
   normalizeRowsToLeaves,
   toggleRowCheck,
   type SortState,
+  type RowKey,
 } from './table.js';
 
 describe('sort cycling', () => {
@@ -156,6 +157,38 @@ describe('flattenTreeRows', () => {
   it('does not expand a key with no children', () => {
     const flat = flattenTreeRows(data, new Set([2]), getKey, getChildren);
     expect(flat.map((r) => r.key)).toEqual([1, 2, 3]);
+  });
+
+  it('容错缺 key 的行：生成稳定 fallback key，不丢失子树（对齐 Semi）', () => {
+    interface LooseRow {
+      id?: number;
+      children?: LooseRow[];
+    }
+    const looseData: LooseRow[] = [
+      {
+        id: 1,
+        children: [
+          { id: 11 },
+          { id: 12, children: [{ /* 缺 id/key */ }] },
+        ],
+      },
+      { id: 2, children: [{ id: 21 }, { id: 22 }] },
+    ];
+    const flat = flattenTreeRows(
+      looseData,
+      new Set([1, 12, 2]),
+      (r) => r.id as RowKey,
+      (r) => r.children,
+    );
+    // 全展开：1 + 子(11,12) + 12的缺key孙 + 2 + 子(21,22) = 7 行，缺 key 行不中断
+    expect(flat).toHaveLength(7);
+    const keys = flat.map((r) => r.key);
+    // 缺 key 行有稳定生成 key（父12 + 索引0）
+    expect(keys).toContain('__cd_treekey__12:0');
+    // key 全唯一（无冲突）
+    expect(new Set(keys).size).toBe(keys.length);
+    // 顺序正确：1,11,12,<缺key>,2,21,22 中 12 的子在 2 之前
+    expect(keys.indexOf('__cd_treekey__12:0')).toBeLessThan(keys.indexOf(2));
   });
 });
 
