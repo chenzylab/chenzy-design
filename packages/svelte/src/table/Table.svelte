@@ -3086,13 +3086,13 @@
   .react-resizable-handle:hover {
     background-color: var(--cd-color-table-resizer-bg-default);
   }
-  /* bordered 表格：手柄默认透明（对齐 Semi table.scss &-bordered 内 handle transparent），
-     列分隔靠单元格 border-right，避免灰手柄条 + 边框双重竖线；hover 仍显色。 */
-  .cd-table-bordered .react-resizable-handle {
-    background-color: transparent;
-  }
+  /* bordered 表格：手柄恒透明（默认 + hover 都透明），对齐 Semi table.scss &-bordered 内
+     `.react-resizable-handle { background: transparent }`（无 hover 变色，该规则特异性
+     覆盖了非 bordered 的 handle:hover primary 蓝）。列分隔靠单元格 border-right，
+     避免灰手柄条/hover 蓝竖条 + 边框双重竖线。 */
+  .cd-table-bordered .react-resizable-handle,
   .cd-table-bordered .react-resizable-handle:hover {
-    background-color: var(--cd-color-table-resizer-bg-default);
+    background-color: transparent;
   }
   /* 拖拽中列：resizing 标示线 */
   .resizing.cd-table-row-head,
