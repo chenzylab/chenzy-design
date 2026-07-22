@@ -4,7 +4,7 @@
   const { children }: { children: Snippet } = $props();
 </script>
 
-<div class="guide-content" data-pagefind-body>
+<div class="guide-content">
   {@render children()}
 </div>
 

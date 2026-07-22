@@ -134,7 +134,7 @@
 
   {#if isHome}
     <!-- 首页：全宽落地页，无侧边栏（对齐 Semi 首页） -->
-    <main class="docs-main docs-main--full" data-pagefind-body>
+    <main class="docs-main docs-main--full">
       {@render children()}
     </main>
   {:else}

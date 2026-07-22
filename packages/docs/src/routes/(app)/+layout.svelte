@@ -183,7 +183,7 @@
   {/if}
 {/snippet}
 
-  <main class="docs-main" data-pagefind-body>
+  <main class="docs-main">
     {@render children()}
   </main>
 </div>

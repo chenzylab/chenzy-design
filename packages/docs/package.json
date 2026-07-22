@@ -8,8 +8,7 @@
     "predev": "pnpm run meta",
     "dev": "vite dev",
     "prebuild": "pnpm run meta",
-    "build": "vite build && pagefind --site build",
-    "search": "pagefind --site build",
+    "build": "vite build",
     "preview": "vite preview",
     "pretypecheck": "pnpm run meta",
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
@@ -30,7 +29,6 @@
     "@unocss/preset-typography": "66.7.2",
     "lottie-web": "^5.13.0",
     "mdsvex": "^0.11.2",
-    "pagefind": "^1.0.0",
     "shiki": "^1.29.2",
     "unocss": "^66.7.2"
   }
