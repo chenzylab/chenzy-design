@@ -3,14 +3,15 @@
   import { base } from '$app/paths';
   import { goto } from '$app/navigation';
   import componentsJson from '@chenzy-design/svelte/components.json';
-  import { IconButton, Modal, HotKeys } from '@chenzy-design/svelte';
-  import { IconSearch, IconClear } from '@chenzy-design/icons';
+  import { Modal, HotKeys, Input, Tag, Button } from '@chenzy-design/svelte';
+  import { IconSearch } from '@chenzy-design/icons';
   import { locale } from '$lib/locale.svelte';
   import { t } from '$lib/i18n';
   import { searchSite, searchDocs, type SearchResult } from '$lib/search-index';
   import {
     searchHistory,
     clearSearchHistory,
+    removeSearchHistory,
     pushSearchHistory,
     recentComponents,
   } from '$lib/search-prefs.svelte';
@@ -21,8 +22,10 @@
   let query = $state('');
   let results = $state<SearchResult[]>([]);
   let open = $state(false);
-  let inputEl = $state<HTMLInputElement | null>(null);
   let bodyEl = $state<HTMLElement | null>(null);
+  // 当前 hover 的历史标签词：对齐 Semi 文档站——历史 Tag 默认 closable=false（无 ×），
+  // hover 时动态设 closable=true 才显示 ×（纯 prop 驱动，无 :global 改组件内部）。
+  let hoveredHistory = $state<string | null>(null);
 
   // 快捷键修饰键：Mac 用 Meta(⌘)，其余平台用 Control。HotKeys 严格区分 Meta/Ctrl（对齐 Semi），
   // 故按平台选一个渲染；HotKeys 自动把 Meta→⌘、Control→Ctrl 按平台显示。
@@ -61,17 +64,26 @@
 
   // ⌘K / Ctrl+K 唤起搜索由 <HotKeys> 组件承载（见触发器）；Esc 关闭由 Modal 的 closeOnEsc 处理。
 
-  // 打开面板时自动聚焦输入框。
-  // 刻意保留 query/results：重新打开时沿用上次的搜索词与结果（用户可继续上次的查找），
-  // 而非清空回到空态引导。清空由用户手动删除输入触发。
+  // 打开面板时自动聚焦输入框（Input 组件内部原生 input）。Modal portal 到 body，全局查询。
+  // 刻意保留 query/results：重新打开沿用上次查找。
   $effect(() => {
-    if (open) inputEl?.focus();
+    if (!open || !browser) return;
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>('.search-modal .cd-input')?.focus();
+    });
   });
 
   // 客户端搜索：索引在构建期由 import.meta.glob 扫组件文档生成（见 search-index.ts），
   // dev 与 prod 均可用，纯客户端匹配、无需后端与构建后索引产物。
-  function search() {
-    results = searchSite(query, 60);
+  function search(q: string = query) {
+    results = searchSite(q, 60);
+  }
+
+  // 输入变化：更新 query（用于 Enter/清空/空态判断）并搜索。
+  // Input 配 composition：IME 拼音过程中 onChange 不触发，确认后才触发一次（避免无效搜索）。
+  function onQueryChange(v: string) {
+    query = v;
+    search(v);
   }
 
   // 结果按组件分组（对齐 Semi 搜索结果：组件名为组头 + 图标，命中项列其下带「in 章节」归属）。
@@ -221,8 +233,8 @@
   }
 </script>
 
-<!-- IconButton 的图标以 snippet 传入（对齐库内 IconButton 用法）。 -->
-{#snippet clearIcon()}<IconClear />{/snippet}
+<!-- Input 的前缀搜索图标（对齐库内 prefix 接受 Snippet）。 -->
+{#snippet searchPrefix()}<IconSearch size="large" />{/snippet}
 
 <div class="search-wrap">
   <button class="search-trigger" onclick={() => open = !open} aria-label={t('nav.search', lang)}>
@@ -255,27 +267,19 @@
     bodyStyle="padding: 0; max-height: 70vh; overflow: hidden; display: flex; flex-direction: column;"
     onCancel={() => (open = false)}
   >
-    <div class="search-modal-input">
-      <span class="search-modal-icon" aria-hidden="true"><IconSearch size="large" /></span>
-      <input
-        type="text"
+    <div class="border-b border-[var(--cd-color-border)] px-4 py-2">
+      <Input
+        value={query}
+        size="large"
         placeholder={t('search.placeholder', lang)}
-        bind:this={inputEl}
-        bind:value={query}
-        oninput={search}
-        onkeydown={onInputKeydown}
-        class="search-input"
+        prefix={searchPrefix}
+        showClear
+        borderless
+        composition
+        onChange={onQueryChange}
+        onClear={() => onQueryChange('')}
+        onKeyDown={onInputKeydown}
       />
-      {#if query}
-        <IconButton
-          type="tertiary"
-          theme="borderless"
-          size="small"
-          icon={clearIcon}
-          ariaLabel={t('search.clear', lang)}
-          onclick={() => { query = ''; results = []; inputEl?.focus(); }}
-        />
-      {/if}
     </div>
 
     <!-- body 级 mousemove 仅用于解除键盘导航时的 hover 抑制（非交互动作） -->
@@ -327,11 +331,22 @@
           <div class="idle-section">
             <div class="idle-head">
               <span class="idle-title">{t('search.history', lang)}</span>
-              <button class="idle-clear" type="button" onclick={clearSearchHistory}>{t('search.clear', lang)}</button>
+              <Button theme="borderless" size="small" onclick={clearSearchHistory}>{t('search.clear', lang)}</Button>
             </div>
-            <div class="history-tags">
-              {#each searchHistory.items as term}
-                <button class="history-tag" type="button" onclick={() => commitSearch(term)}>{term}</button>
+            <div class="flex flex-wrap gap-2 px-2 pt-1 pb-0.5">
+              {#each searchHistory.items as term (term)}
+                <span
+                  role="presentation"
+                  onmouseenter={() => (hoveredHistory = term)}
+                  onmouseleave={() => { if (hoveredHistory === term) hoveredHistory = null; }}
+                >
+                  <Tag
+                    closable={hoveredHistory === term}
+                    color="grey"
+                    onClick={() => commitSearch(term)}
+                    onClose={() => removeSearchHistory(term)}
+                  >{term}</Tag>
+                </span>
               {/each}
             </div>
           </div>
@@ -395,18 +410,6 @@
   .search-icon { flex-shrink: 0; }
   .search-label { margin-right: auto; }
   .search-trigger { padding-right: 56px; }
-  .search-modal-input {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--cd-color-border, #e5e7eb);
-    flex-shrink: 0;
-  }
-  .search-modal-icon { flex-shrink: 0; color: var(--cd-color-text-2, #86909c); }
-  .search-input {
-    flex: 1; min-width: 0;
-    border: none; outline: none; background: none;
-    font-size: 16px; color: var(--cd-color-text-0, #1f2329);
-  }
   .search-modal-body {
     overflow-y: auto;
     padding: 8px 12px 12px;
@@ -443,21 +446,6 @@
     padding: 4px 8px;
   }
   .idle-title { font-size: 12px; color: var(--cd-color-text-2, #86909c); }
-  .idle-clear {
-    border: none; background: none; cursor: pointer; padding: 0;
-    font-size: 12px; color: var(--cd-color-primary, #2f6bff);
-  }
-  .idle-clear:hover { text-decoration: underline; }
-  .history-tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 8px 2px; }
-  .history-tag {
-    border: none; cursor: pointer;
-    padding: 4px 12px; border-radius: 999px;
-    background: var(--cd-color-fill-1, #f2f3f5);
-    color: var(--cd-color-text-1, #4e5969);
-    font-size: 13px; line-height: 1.4;
-    transition: background 0.15s;
-  }
-  .history-tag:hover { background: var(--cd-color-fill-2, #e5e6eb); }
   .idle-list { list-style: none; margin: 0; padding: 0; }
   .idle-list li a {
     display: flex; align-items: center; gap: 12px;

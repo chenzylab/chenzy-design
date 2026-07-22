@@ -44,6 +44,13 @@ export function clearSearchHistory() {
   write(HISTORY_KEY, []);
 }
 
+/** 删除单个搜索历史关键词。 */
+export function removeSearchHistory(term: string) {
+  const next = searchHistory.items.filter((x) => x !== term);
+  searchHistory.items = next;
+  write(HISTORY_KEY, next);
+}
+
 // —— 最近浏览（组件 lowercase name）——
 export const recentComponents = $state<{ items: string[] }>({ items: read(RECENT_KEY) });
 
