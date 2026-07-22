@@ -163,8 +163,9 @@ const components = [
   // 箭头定位 CSS 迁回 Tooltip 后 4.11→2.82 KB 实测；预算按 +15% buffer 校准（见浮层三件套注）。
   ['popover', '{ Popover }', '3.3 KB'],
   ['scroll-list', '{ ScrollList }', '5.75 KB'],
-  // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、useFullRender、onRow 事件、根 class/style、components tag 覆盖、getVirtualizedListRef、scrollToFirstRowOnChange、RTL、图标组件化）后实测 17.92 KB，预算按小幅 headroom 校准。
-  ['table', '{ Table }', '18.2 KB'],
+  // 对齐 Semi 破坏性重写 + 补全 API（onCell 行列合并、column.children 表头合并、useFullRender、onRow 事件、根 class/style、components tag 覆盖、getVirtualizedListRef、scrollToFirstRowOnChange、RTL、图标组件化）后实测 17.92 KB。
+  // 二次补齐 Semi 文档全量 API（showSortTip+Tooltip、sortIcon/filterIcon、renderFilterDropdown/renderFilterDropdownItem+FilterDropdownHost、onHeaderCell、filterConfirmMode confirm 模式、defaultFilteredValue、filterChildrenRecord/sortChildrenRecord 树形过滤排序、rowSelection.checkRelation/clickRow/hidden/renderCell、pagination.currentPage/total/position/formatPageText、Table 级 resizable+onResize 事件、expandAllRows、emptySnippet、onRow 拖拽事件）后实测 20.44 KB，预算按小幅 headroom 校准。
+  ['table', '{ Table }', '21 KB'],
   ['tag', '{ Tag, TagGroup, SplitTagGroup }', '5 KB'],
   ['timeline', '{ TimelineItem }', '5.4 KB'],
   // 对齐 Semi 破坏性重写：单 path 箭头 + .cd-tooltip-wrapper[x-placement] 12 方位定位 CSS

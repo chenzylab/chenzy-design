@@ -1,0 +1,87 @@
+<script lang="ts">
+  import { Table } from '@chenzy-design/svelte';
+
+  type TreeRow = {
+    key: number;
+    dataKey: string;
+    name: string;
+    type: string;
+    description: string;
+    default: string;
+    children?: TreeRow[];
+    [k: string]: unknown;
+  };
+
+  let selectedRowKeys = $state<(string | number)[]>([]);
+
+  const columns = [
+    { title: 'Key', dataIndex: 'dataKey', key: 'dataKey' },
+    { title: '名称', dataIndex: 'name', key: 'name', width: 200 },
+    { title: '数据类型', dataIndex: 'type', key: 'type', width: 400 },
+    { title: '描述', dataIndex: 'description', key: 'description' },
+    { title: '默认值', dataIndex: 'default', key: 'default', width: 100 },
+  ];
+
+  const data: TreeRow[] = [
+    {
+      key: 1,
+      dataKey: 'videos_info',
+      name: '视频信息',
+      type: 'Object 对象',
+      description: '视频的元信息',
+      default: '无',
+      children: [
+        { key: 11, dataKey: 'status', name: '视频状态', type: 'Enum <Integer> 枚举', description: '视频的可见、推荐状态', default: '1' },
+        {
+          key: 12,
+          dataKey: 'vid',
+          name: '视频 ID',
+          type: 'String 字符串',
+          description: '标识视频的唯一 ID',
+          default: '无',
+          children: [{ key: 121, dataKey: 'video_url', name: '视频地址', type: 'String 字符串', description: '视频的唯一链接', default: '无' }],
+        },
+      ],
+    },
+    {
+      key: 2,
+      dataKey: 'text_info',
+      name: '文本信息',
+      type: 'Object 对象',
+      description: '视频的元信息',
+      default: '无',
+      children: [
+        { key: 21, dataKey: 'title', name: '视频标题', type: 'String 字符串', description: '视频的标题', default: '无' },
+        { key: 22, dataKey: 'video_description', name: '视频描述', type: 'String 字符串', description: '视频的描述', default: '无' },
+      ],
+    },
+  ];
+
+  // 默认各行独立选中；通过 selectedRowKeys 手动派生子级联动模拟树形选中（对齐 Semi）。
+  const collectKeys = (record: TreeRow, out: number[]) => {
+    out.push(record.key);
+    record.children?.forEach((c) => collectKeys(c, out));
+  };
+  const allKeys = (): number[] => {
+    const out: number[] = [];
+    data.forEach((r) => collectKeys(r, out));
+    return out;
+  };
+
+  const rowSelection = $derived({
+    selectedRowKeys,
+    onSelect: (record: TreeRow, selected: boolean) => {
+      const affected: number[] = [];
+      collectKeys(record, affected);
+      const set = new Set(selectedRowKeys);
+      if (selected) affected.forEach((k) => set.add(k));
+      else affected.forEach((k) => set.delete(k));
+      selectedRowKeys = [...set];
+    },
+    onSelectAll: (selected: boolean) => {
+      selectedRowKeys = selected ? allKeys() : [];
+    },
+  });
+</script>
+
+<Table {columns} dataSource={data} {rowSelection} pagination={false} />
