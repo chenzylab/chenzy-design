@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { Empty } from '@chenzy-design/svelte';
+  import { Empty, Typography } from '@chenzy-design/svelte';
 </script>
 
-<!-- 也可以不使用图片：无图时 title 降为 heading=6 + 常规字重 -->
-<Empty
-  title="暂未找到匹配的筛选结果"
-  description="试试更换关键词或重置筛选条件。"
-/>
+<Empty title="暂未找到匹配的筛选结果" description={desc} />
+
+{#snippet desc()}
+  <span>
+    <Typography.Text>试试 </Typography.Text>
+    <Typography.Text link>重置筛选条件</Typography.Text>
+  </span>
+{/snippet}

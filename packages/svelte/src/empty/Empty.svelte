@@ -25,8 +25,8 @@
     imageStyle?: string;
     /** 标题 */
     title?: string;
-    /** 内容描述 */
-    description?: string;
+    /** 内容描述；string 直渲，Snippet 渲染富内容（对齐 Semi ReactNode）。 */
+    description?: string | Snippet;
     /** 占位图：插画节点(image slot) | SVG 精灵对象 | 图片 URL 字符串 */
     image?: SVGNode | (string & {});
     /** 暗色模式占位图，响应 data-theme 变化 */
@@ -128,7 +128,9 @@
       {/if}
     {/if}
     {#if description}
-      <div class="cd-empty-description">{description}</div>
+      <div class="cd-empty-description">
+        {#if typeof description === 'function'}{@render description()}{:else}{description}{/if}
+      </div>
     {/if}
     {#if children}
       <div class="cd-empty-footer">{@render children()}</div>
