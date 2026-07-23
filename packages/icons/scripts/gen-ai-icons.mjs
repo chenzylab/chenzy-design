@@ -76,8 +76,9 @@ for (const name of names) {
   const svgOpen = tsx.indexOf('<svg', retStart);
   const svgClose = tsx.lastIndexOf('</svg>') + '</svg>'.length;
   let svg = tsx.slice(svgOpen, svgClose);
-  // 去掉 {...rest}（放到 Svelte 组件里由根 <Icon> 透传时不需要；此处直接内联 svg，保留 rest 透传到 svg）
-  svg = svg.replace(/\s*\{\.\.\.rest\}/g, ' {...rest}');
+  // 去掉 svg 上的 {...rest}：对齐 Semi convertIcon，rest（size/spin/rotate/onclick/aria-* …）
+  // 全部透传到外层 <Icon> 基座根 span，svg 仅承载 fill 驱动的图形内容。
+  svg = svg.replace(/\s*\{\.\.\.rest\}/g, '');
   svg = jsxToSvelte(svg);
 
   // 组装 script
@@ -86,11 +87,15 @@ for (const name of names) {
   if (uuidPrefix) imports.push('getUuidShort');
   const lines = [];
   lines.push('<script lang="ts">');
+  lines.push(`  import Icon, { type IconSize } from './Icon.svelte';`);
   lines.push(`  import { ${imports.join(', ')} } from './utils.js';`);
   lines.push('');
   lines.push('  interface Props {');
   lines.push('    /** 多彩填充色：string 或 string[]（缺省用 Semi 默认渐变色）。 */');
   lines.push('    fill?: string | string[];');
+  lines.push('    size?: IconSize;');
+  lines.push('    spin?: boolean;');
+  lines.push('    rotate?: number;');
   lines.push('    class?: string;');
   lines.push('    style?: string;');
   lines.push('    [key: string]: unknown;');
@@ -103,8 +108,12 @@ for (const name of names) {
   }
   lines.push('</script>');
   lines.push('');
-  lines.push(`<!-- ${name} — AI 多彩图标，对齐 Semi ${name}（type='${iconType}'）。fill 数组自定义多色。 -->`);
+  lines.push(
+    `<!-- ${name} — AI 多彩图标，对齐 Semi ${name}（convertIcon 包 Icon 基座，type='${iconType}'）。fill 数组自定义多色，size/spin/rotate 由 Icon 基座承载。 -->`,
+  );
+  lines.push(`<Icon type="${iconType}" {...rest}>`);
   lines.push(svg);
+  lines.push('</Icon>');
   lines.push('');
 
   writeFileSync(resolve(outDir, `${name}.svelte`), lines.join('\n'));
