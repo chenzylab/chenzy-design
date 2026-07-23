@@ -423,16 +423,14 @@
   }
 
   // 箭头沿交叉轴的定位：写 CSS 变量到 wrapper（对齐 Semi --semi-tooltip-arrow-offset-x/y），
-  // 由 arrow.scss 对齐选择器消费（left/top: var(--…-arrow-offset-x, 50%)）。
-  // top/bottom 用 x 偏移；left/right 用 y 偏移。仅 arrowPointAtCenter 且非 start/end 对齐时写。
+  // 由 arrow.scss 对齐选择器消费（inset-inline-start/block-start: var(--…-arrow-offset-x)）。
+  // top/bottom 系用 x 偏移；left/right 系用 y 偏移。arrowPointAtCenter=true 时对**所有**方位
+  // 写变量：core 已按 pointAtCenter 算出 arrowOffset（浮层前缘→触发器中心的距离），CSS 用它
+  // 让箭头指向触发器中心。含 start/end 方位（topLeft/topRight…）——这正是 arrowPointAtCenter
+  // 的用武之地（对齐 Semi：默认 arrowPointAtCenter=true 时 topLeft 箭头仍指向 children 中心）。
+  // 不写变量（arrowPointAtCenter=false）时 CSS 回退：居中方位 50%、start/end 方位边缘固定值。
   const arrowOffsetVar = $derived.by(() => {
     if (!arrowPointAtCenter) return '';
-    const isCenter =
-      resolvedPlacement === 'top' ||
-      resolvedPlacement === 'bottom' ||
-      resolvedPlacement === 'left' ||
-      resolvedPlacement === 'right';
-    if (!isCenter) return '';
     return resolvedSide === 'top' || resolvedSide === 'bottom'
       ? `--cd-tooltip-arrow-offset-x:${arrowOffset}px`
       : `--cd-tooltip-arrow-offset-y:${arrowOffset}px`;
@@ -648,13 +646,23 @@
     transform: translateX(-50%);
     inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
   }
+  /* topLeft/topRight：arrowPointAtCenter=true 时用 offset-x 变量（箭头中心对准触发器中心，
+     translateX(-50%)）；false 时回退到边缘固定值（箭头左/右边缘距浮层边 adjusted-offset-x）。 */
   :global(.cd-tooltip-wrapper[x-placement='topLeft']) :global(.cd-tooltip-icon-arrow) {
     inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
-    inset-inline-start: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
+    inset-inline-start: var(
+      --cd-tooltip-arrow-offset-x,
+      calc(var(--cd-spacing-tooltip-arrow-adjusted-offset-x) + var(--cd-width-tooltip-arrow) / 2)
+    );
+    transform: translateX(-50%);
   }
   :global(.cd-tooltip-wrapper[x-placement='topRight']) :global(.cd-tooltip-icon-arrow) {
     inset-block-end: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
-    inset-inline-end: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
+    inset-inline-start: var(
+      --cd-tooltip-arrow-offset-x,
+      calc(100% - var(--cd-spacing-tooltip-arrow-adjusted-offset-x) - var(--cd-width-tooltip-arrow) / 2)
+    );
+    transform: translateX(-50%);
   }
   /* bottom 系：箭头在上缘，旋转 180° */
   :global(.cd-tooltip-wrapper[x-placement='bottom']) :global(.cd-tooltip-icon-arrow) {
@@ -664,13 +672,19 @@
   }
   :global(.cd-tooltip-wrapper[x-placement='bottomLeft']) :global(.cd-tooltip-icon-arrow) {
     inset-block-start: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
-    inset-inline-start: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
-    transform: rotate(180deg);
+    inset-inline-start: var(
+      --cd-tooltip-arrow-offset-x,
+      calc(var(--cd-spacing-tooltip-arrow-adjusted-offset-x) + var(--cd-width-tooltip-arrow) / 2)
+    );
+    transform: translateX(-50%) rotate(180deg);
   }
   :global(.cd-tooltip-wrapper[x-placement='bottomRight']) :global(.cd-tooltip-icon-arrow) {
     inset-block-start: calc(-1 * var(--cd-height-tooltip-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
-    inset-inline-end: var(--cd-spacing-tooltip-arrow-adjusted-offset-x);
-    transform: rotate(180deg);
+    inset-inline-start: var(
+      --cd-tooltip-arrow-offset-x,
+      calc(100% - var(--cd-spacing-tooltip-arrow-adjusted-offset-x) - var(--cd-width-tooltip-arrow) / 2)
+    );
+    transform: translateX(-50%) rotate(180deg);
   }
   /* left 系：箭头在右缘（垂直箭头尺寸） */
   :global(.cd-tooltip-wrapper[x-placement='left']) :global(.cd-tooltip-icon-arrow),
@@ -684,11 +698,21 @@
     inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
     transform: translateY(-50%);
   }
+  /* leftTop/leftBottom：arrowPointAtCenter=true 时用 offset-y 变量（箭头中心对准触发器中心，
+     translateY(-50%)）；false 时回退到边缘校正固定值。 */
   :global(.cd-tooltip-wrapper[x-placement='leftTop']) :global(.cd-tooltip-icon-arrow) {
-    inset-block-start: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+    inset-block-start: var(
+      --cd-tooltip-arrow-offset-y,
+      calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y) + var(--cd-height-tooltip-arrow-vertical) / 2)
+    );
+    transform: translateY(-50%);
   }
   :global(.cd-tooltip-wrapper[x-placement='leftBottom']) :global(.cd-tooltip-icon-arrow) {
-    inset-block-end: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
+    inset-block-start: var(
+      --cd-tooltip-arrow-offset-y,
+      calc(100% - var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) - var(--cd-spacing-tooltip-arrow-adjusted-offset-y) - var(--cd-height-tooltip-arrow-vertical) / 2)
+    );
+    transform: translateY(-50%);
   }
   /* right 系：箭头在左缘，旋转 180° */
   :global(.cd-tooltip-wrapper[x-placement='right']) :global(.cd-tooltip-icon-arrow),
@@ -703,12 +727,18 @@
     transform: translateY(-50%) rotate(180deg);
   }
   :global(.cd-tooltip-wrapper[x-placement='rightTop']) :global(.cd-tooltip-icon-arrow) {
-    inset-block-start: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
-    transform: rotate(180deg);
+    inset-block-start: var(
+      --cd-tooltip-arrow-offset-y,
+      calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y) + var(--cd-height-tooltip-arrow-vertical) / 2)
+    );
+    transform: translateY(-50%) rotate(180deg);
   }
   :global(.cd-tooltip-wrapper[x-placement='rightBottom']) :global(.cd-tooltip-icon-arrow) {
-    inset-block-end: calc(var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) + var(--cd-spacing-tooltip-arrow-adjusted-offset-y));
-    transform: rotate(180deg);
+    inset-block-start: var(
+      --cd-tooltip-arrow-offset-y,
+      calc(100% - var(--cd-tooltip-vertical-rate) * var(--cd-height-tooltip-arrow-vertical) - var(--cd-spacing-tooltip-arrow-adjusted-offset-y) - var(--cd-height-tooltip-arrow-vertical) / 2)
+    );
+    transform: translateY(-50%) rotate(180deg);
   }
 
   /* motion：进出场 zoomIn（对齐 Semi tooltip zoomIn 关键帧 + 100ms cubic-bezier）。
