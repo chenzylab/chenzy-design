@@ -11,7 +11,7 @@ export const meta = {
     { name: 'image', type: '{ id?; viewBox?; url? } | string', default: 'undefined', desc: '占位图：SVG 精灵对象或图片 URL；自定义节点用 imageSlot' },
     { name: 'darkModeImage', type: '{ id?; viewBox?; url? } | string', default: 'undefined', desc: '暗色模式占位图，响应 data-theme 变化' },
     { name: 'title', type: 'string', default: 'undefined', desc: '标题' },
-    { name: 'description', type: 'string', default: 'undefined', desc: '内容描述' },
+    { name: 'description', type: 'string | Snippet', default: 'undefined', desc: '内容描述；string 直渲，Snippet 渲染富内容' },
     { name: 'imageStyle', type: 'string', default: 'undefined', desc: '占位图容器（.cd-empty-image）内联样式' },
     { name: 'layout', type: "'vertical'|'horizontal'", default: "'vertical'", desc: '布局方式' },
     { name: 'class', type: 'string', default: "''" },
