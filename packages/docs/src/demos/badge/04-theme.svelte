@@ -1,27 +1,40 @@
 <script lang="ts">
   import { Badge, Avatar } from '@chenzy-design/svelte';
+
+  const bgStyle = 'padding: 8px;';
+  const style = 'width: 42px; height: 42px; border-radius: 4px;';
 </script>
 
-<!-- theme：solid（默认）/ light / inverted，作用于 count 与 dot -->
-<div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-  <Badge count={5} theme="solid">
-    <Avatar color="indigo" shape="square">XZ</Avatar>
-  </Badge>
-  <Badge count={5} theme="light">
-    <Avatar color="indigo" shape="square">YB</Avatar>
-  </Badge>
-  <Badge count={5} theme="inverted">
-    <Avatar color="light-green" shape="square">LX</Avatar>
-  </Badge>
-  <Badge dot theme="solid">
-    <Avatar color="light-green" shape="square">YZ</Avatar>
-  </Badge>
-  <Badge dot theme="light">
-    <Avatar color="lime" shape="square">HW</Avatar>
-  </Badge>
-  <div style="padding: 8px; border-radius: 4px; background-color: var(--cd-color-fill-0);">
+<div style="display: flex">
+  <div style={bgStyle}>
+    <Badge count={5} theme="solid">
+      <Avatar color="indigo" shape="square" {style}>XZ</Avatar>
+    </Badge>
+  </div>
+  <div style={bgStyle}>
+    <Badge count={5} theme="light">
+      <Avatar color="indigo" shape="square" {style}>YB</Avatar>
+    </Badge>
+  </div>
+  <div style={bgStyle}>
+    <Badge count={5} theme="inverted">
+      <Avatar color="light-green" shape="square" {style}>LX</Avatar>
+    </Badge>
+  </div>
+  <br />
+  <div style={bgStyle}>
+    <Badge dot theme="solid">
+      <Avatar color="light-green" shape="square" {style}>YZ</Avatar>
+    </Badge>
+  </div>
+  <div style={bgStyle}>
+    <Badge dot theme="light">
+      <Avatar color="lime" shape="square" {style}>HW</Avatar>
+    </Badge>
+  </div>
+  <div style="padding: 8px; border-radius: 4px; background-color: var(--cd-color-fill-0)">
     <Badge dot theme="inverted">
-      <Avatar color="lime" shape="square">XM</Avatar>
+      <Avatar color="lime" shape="square" {style}>XM</Avatar>
     </Badge>
   </div>
 </div>

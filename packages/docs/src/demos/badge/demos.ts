@@ -25,7 +25,7 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 
 export const demos: DemoEntry[] = [
   entry(
-    '01-count.svelte',
+    '01-basic.svelte',
     '基本用法',
     'count 为基本类型；dot 显示小圆点（优先于 count）；count 为节点时直接渲染；也可传字符串。',
   ),

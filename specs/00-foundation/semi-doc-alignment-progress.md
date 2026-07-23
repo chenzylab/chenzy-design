@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（26，判真：`grep -l "docMode: inline"` = 26）
+## ✅ 已完成（28 = 27 inline + 1 特殊处理：iconbutton 删页；判真：`grep -l "docMode: inline"` = 27）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -37,7 +37,7 @@
 
 ---
 
-## ⏳ 待办（46）
+## ⏳ 待办（45）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
@@ -47,7 +47,7 @@
 
 ### 优先批 B：基础/展示类（相对独立，无复杂交互）
 - [x] iconbutton — **不做 inline，改为删独立文档页对齐 Semi**（2026-07-23，用户拍板）：核对 Semi 源码发现 IconButton 在 `semi-ui/index.ts:38` 公开导出但**无文档页**（文档里的「图标按钮」只是 Button 页一个 demo 章节，本库 button.md 05-icon 已覆盖）；本库组件层早已严格对齐（薄封装、meta 无 category 不进 components.json/侧边栏，`/components/iconbutton` 路由本就 404 死页）。故组件/导出/六个内部消费方（Modal/Banner/BackTop/Notification/SideSheet/Toast 关闭按钮）**全保留不动**，删 `iconbutton.md` + `demos/icon-button/`(9 demo+demos.ts) + component-dir/component-names-zh/component-briefs 三处映射条目。五包 typecheck 0 err、IconButton dom 12 测试通过、真机 curl：iconbutton 404 / button·backtop 200。
-- [ ] badge
+- [x] badge — 6 demo 整页 inline 严格复刻 Semi（基本用法/显示最大值/徽标位置/徽标样式 theme+type/独立使用）。React→Svelte 映射：count 为 ReactNode→`number|string|Snippet`（自定义节点用 `{#snippet count()}`，01 用本库具名 IconLock 复刻 Semi `<IconLock/>` 主色）；Avatar style 走本库 style prop（字符串）。theme/type demo 逐字复刻 Semi 的 `<div style="display:flex">` + bgStyle padding 布局（非套 Space，因 Semi 原样有 inverted 背景色块 padding），基本/溢出/位置/独立用 `<Space vertical>`。API 表逐 prop 核 Badge.svelte（本库 class/countClass/style，`${overflowCount}+` 花括号用反引号）+ 本库措辞 Accessibility + 文案规范。组件源码早已对齐 Semi（DOM/class/type×theme 语义色/RTL 全镜像），文档层无需改组件。真机验证（激活前台标签，避免 hidden 冻结）：基本 BM=5/YL dot/XZ 锁图标主色/WF NEW✓、theme solid·light·inverted✓、type 5 色+dot✓、position 四角✓、独立 count/NEW/10+/dot 文字状态列表✓、API 表 + 设计变量表(color/height/other/radius/spacing/width) 自动渲染 + TOC 全收 + 无 SSR 500✓。docs typecheck 0 err、badge dom 3 + visual 1 测试通过、lint 0 warning、体积门禁通过。
 - [ ] avatar — token 短名断链风险 见 [avatar-token-short-name]
 - [ ] card
 - [ ] descriptions

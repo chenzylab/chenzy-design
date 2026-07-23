@@ -1,19 +1,20 @@
 <script lang="ts">
-  import { Badge, Avatar } from '@chenzy-design/svelte';
+  import { Badge, Avatar, Space } from '@chenzy-design/svelte';
+
+  const style = 'width: 42px; height: 42px; border-radius: 4px;';
 </script>
 
-<!-- overflowCount：超过阈值显示 {overflowCount}+ -->
-<div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+<Space vertical align="start" spacing={20}>
   <Badge count={99}>
-    <Avatar color="teal" shape="square">ZH</Avatar>
+    <Avatar color="teal" shape="square" {style}>ZH</Avatar>
   </Badge>
   <Badge count={100}>
-    <Avatar color="teal" shape="square">HS</Avatar>
+    <Avatar color="teal" shape="square" {style}>HS</Avatar>
   </Badge>
   <Badge count={99} overflowCount={10}>
-    <Avatar color="green" shape="square">DY</Avatar>
+    <Avatar color="green" shape="square" {style}>DY</Avatar>
   </Badge>
   <Badge count={1000} overflowCount={999}>
-    <Avatar color="green" shape="square">TT</Avatar>
+    <Avatar color="green" shape="square" {style}>TT</Avatar>
   </Badge>
-</div>
+</Space>
