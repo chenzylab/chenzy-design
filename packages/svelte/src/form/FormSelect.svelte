@@ -21,6 +21,7 @@
     maxTagCount?: SelectProps['maxTagCount'];
     allowCreate?: SelectProps['allowCreate'];
     virtualize?: SelectProps['virtualize'];
+    style?: SelectProps['style'];
   }
 
   const props: Props = $props();
@@ -35,6 +36,7 @@
     'maxTagCount',
     'allowCreate',
     'virtualize',
+    'style',
   ] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
@@ -58,6 +60,7 @@
       {...(control.maxTagCount !== undefined ? { maxTagCount: control.maxTagCount as NonNullable<SelectProps['maxTagCount']> } : {})}
       {...(control.allowCreate !== undefined ? { allowCreate: control.allowCreate as NonNullable<SelectProps['allowCreate']> } : {})}
       {...(control.virtualize !== undefined ? { virtualize: control.virtualize as NonNullable<SelectProps['virtualize']> } : {})}
+      {...(control.style !== undefined ? { style: control.style as NonNullable<SelectProps['style']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {id}
       {...(insetLabel !== undefined ? { insetLabel } : {})}

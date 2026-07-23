@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（22，判真：`grep -l "docMode: inline"` = 22）
+## ✅ 已完成（23，判真：`grep -l "docMode: inline"` = 23）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -29,6 +29,8 @@
 - [x] notification（见优先批 A 详注）
 - [x] table（PR #604 + #605 已合并 2026-07-22）— 全库最大页：34 demo 整页 inline 严格复刻 Semi（含 _data.ts 共享数据）+ API 全表(Table/Column/rowSelection/Expandable/scroll/pagination)。**补全大量 Semi 缺失 API**：showSortTip(+Tooltip)、sortIcon/filterIcon、renderFilterDropdown(+RenderFilterDropdownProps)、renderFilterDropdownItem、filterDropdownProps.showTick(+FilterDropdownHost)、onHeaderCell、defaultFilteredValue、filterChildrenRecord/sortChildrenRecord、colSpan、resize、ellipsis.showTitle、title 支持 Snippet(含 filter/sorter/selection 物料透传)、sorter 第三参 sortOrder、fixed:true 归一化；rowSelection.checkRelation/clickRow/hidden/disabled/renderCell；表级 resizable(+onResize 事件)/expandAllRows/emptySnippet/onRow 拖拽事件(RowAttrs)；pagination.currentPage/total/position/formatPageText/onPageChange(受控不本地分页)；filterConfirmMode='confirm'。**视觉逐 demo 真机 getComputedStyle 逐值对齐**：①表头 39→38px(新增 .cd-table-operate-wrapper flex 消 inline descender)②行选择框原生 input→Checkbox/Radio 组件(16×20，选择列 52→48px；Checkbox/Radio 补 tabindex prop 供 grid roving)③表头固定列 z-index 102→101、固定列阴影按横滚 scroll-position-left/right 显隐④完全自定义渲染表头 38→41px(title 物料透传摆放 selection 全选框)。⚠️ **字体差异按分层改**见 [[align-semi-fix-at-correct-layer]]：全站不清爽→docs 层(app.css/layout 改 Inter 栈+antialiased)；Input `font: inherit` 继承表头 weight 600 变粗→组件层(Input.svelte 改 font-family/size/line-height:inherit 不含 weight，走 UA 默认 400，实测在 Semi th 插裸 input 得 Inter/400 印证)。42 Table 测试+26 Input 测试通过、体积门禁 20.99KB<21KB。踩坑：md 表格裸 `{}`/泛型 `<>` 断 SSR 见 [[inline-md-table-braces-angles-break-ssr]]；demo `$effect(()=>loadMore())` 追踪函数内响应式读取致 effect_update_depth 循环，加 inited guard；真机验证坐标漂移见 [[real-click-coord-drift-use-ref-not-coords]]。
   **PR #605 深化（2026-07-22）**：①**拖拽排序**自建复刻 dnd-kit 思路的 `sortable` primitive(core 纯几何 arrayMove/computeTargetIndex/computeItemTransforms + createSortable 控制器 + svelte use:sortable action)——拖拽只叠 CSS transform 不碰 DOM、松手 arrayMove 更新一次 data，避开 svelte-dnd-action 抢 tbody DOM 致丢行 见 [[svelte-dnd-action-conflicts-with-wrapped-table-render]]②**组合式 `<Column>`** 对齐 Semi Table.Column 双写法(context 多级收集器树 + version 冒泡根 Table $state，rest props 收全字段，与配置式 columns 并存) 见 [[table-composable-column-context-collection]]；03-jsx-render 改组合式、新增 17b 嵌套表头合并 demo③**分组默认折叠**对齐 Semi(仅 defaultExpandAllGroupRows===true 才展开，缺省折叠) 见 [[table-tree-needs-explicit-tree-and-row-key]]④**受控动态表格**补全 4→14 开关+分页控件位置(固定表头/隐藏表头/标题/底部/固定列/选择/加载/无数据/排序/过滤/行展开/展开所有/边框/伸缩)⑤**固定表头**真 bug 修复(sticky 被 th position:relative 因特异性覆盖，改 .cd-table-thead.cd-table-thead-sticky>… 提特异性)⑥固定列列宽用 scroll.x='150%'+仅首列 width、表头合并无 scroll.x 补 inline-size:100% 防右侧留白。**dark 系统性修复**：⑦分组/斑马纹背景白底白字=token 用固定原始 grey-0(不反转)，改语义 alias tertiary-light-default(dark 正确变深) 见 [[dark-mode-grey-0-fixed-vs-semi-reversed]]⑧docs 正文 dark 不切换=presetTypography --un-prose-* 硬编码，重绑 --cd-color-* token；docs dark 以 [data-theme]+token 为准非 unocss dark: 见 [[docs-dark-theme-is-data-theme-not-unocss-dark]]⑨TOC 锚点被 60px 顶栏遮挡→html scroll-padding-top:80px。CI 全绿 --admin 合并
+- [x] sidesheet — 6 demo 整页 inline 严格复刻 Semi（基本/自定义位置/自定义尺寸/可操作外部区域(mask=false)/渲染在指定容器(popup)/自定义内容区域）+ API 全表 + Accessibility + FAQ。源码早已破坏性对齐 Semi（无 focus-trap 非 Modal 同构，已删 Drawer 见 [[sidesheet-no-focustrap-not-modal-isomorphic]]），文档层无需改组件。**06-content demo 复刻 Semi 完整表单**：Form.DatePicker(type=dateTime)+两组横向 RadioGroup+Banner(warning/无icon/bordered)+多选 Select+footer(重置/提交)——为此给 **FormDatePicker 补 type/style 透传、FormSelect 补 style 透传**（原缺，demo 传 type='dateTime'/style='width:272px' 会被吞）。**closeIcon={null} 语义对齐**：Semi `iconType = closeIcon || <IconClose/>`，故 `closeIcon={null}` **仍显示**默认 IconClose（按钮由 closable 控制，默认 true）——本库一致，勿误判为 bug。设计变量章节由页面自动补渲染 DesignTokenTable，md 里**不写** `<DesignToken/>`；正文/表格所有 `mask={false}`/`width={900}` 裸花括号全用反引号包。真机验证（**关键：必前台激活标签**，后台标签 CSS 动画冻结致离场 animationend 不 fire、面板 DOM 残留看似「关不掉」实为假象 见 [[real-click-coord-drift-use-ref-not-coords]]）：基本右滑+X 关闭✓、自定义位置 left 方向+遮罩关闭✓、自定义内容 Form/Banner/Select/footer 全渲染✓、渲染在指定容器 popup 局部渲染(wrapper cd-sidesheet-popup、遮罩只盖容器、width=220)✓、TOC 全收+无 SSR 500✓。svelte/docs typecheck 0 err、side-sheet+form 77 测试通过、体积 side-sheet 3.81<4.5/form 13.89<14。
+  **附带修复浮层 hover 闪烁真 bug**（Tooltip/Popover/Popconfirm 三件套全受益，与 sidesheet 无关，验证 popover 时用户报「下边缘一直闪」发现）见 [[overlay-hover-flicker-when-popup-covers-trigger]]：hover 浮层 flip 后仍覆盖触发器→鼠标进浮层=离触发器 span→pointerleave 关→复现闪；浮层 portal 到 body 却没绑 hover。对齐 Semi `portalEventSet={...triggerEventSet}` 给浮层 div 补 onpointerenter/leave 复用触发器 handler。tooltip 体积 4.69→4.73<5。
 
 ---
 
@@ -36,9 +38,8 @@
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
-> toast / notification / table / popover 已完成，移至上方「已完成」区。
+> toast / notification / table / popover / sidesheet 已完成，移至上方「已完成」区。
 
-- [ ] sidesheet — 无 focus-trap 非 Modal 同构（已删 Drawer）见 [sidesheet-no-focustrap]
 - [ ] userguide — 已对齐（复用 Popover/Modal）见 [userguide-semi-aligned]
 - [ ] modal — SideSheet 相关已处理，核对 Modal 本体
 
@@ -76,7 +77,6 @@
 - [ ] pincode — demos 目录曾缺失，注意补齐
 - [ ] inputnumber
 - [ ] slider
-- [ ] rating（已在 B）
 - [ ] select — 补 style/class 缺口 见 SOP
 - [ ] autocomplete
 - [ ] cascader
