@@ -11,7 +11,7 @@
 
   对齐 Semi：无 focus-trap / 无 inert / 无 Esc / 无箭头键 / 无 role=dialog / 无进度 aria /
   无 live-announcer（Semi 皆无）。仅 Semi 的 disabledBodyScroll（body overflow:hidden + 补偿滚动条宽）。
-  spotlight 矩形延后到 rAF 测量（对齐 Semi updateSpotlightRect），scroll/resize rAF 去抖重算。
+  spotlight 矩形打开/步进时同步测量（对齐 Semi updateSpotlightRect 同步取 rect），scroll/resize rAF 去抖重算。
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -215,7 +215,7 @@
     return () => enabledBodyScroll();
   });
 
-  // —— spotlight 矩形（popup）：rAF 内测量，scroll/resize rAF 去抖重算，目标滚动进视口 ——
+  // —— spotlight 矩形（popup）：打开/步进同步测量，scroll/resize rAF 去抖重算，目标滚动进视口 ——
   let spotlightRect = $state<SpotlightRect | null>(null);
 
   const popupTarget = $derived.by<Element | null>(() => {
@@ -251,7 +251,10 @@
     }
     void activeCurrent;
     scrollTargetIntoViewIfNeeded(popupTarget);
-    let frame = window.requestAnimationFrame(measure);
+    // 对齐 Semi updateSpotlightRect：打开/步进时同步测量（Semi 同步取 rect，仅 setState 进 rAF）。
+    // 全靠 rAF 会在标签被遮挡（rAF 冻结）时让 spotlight 滞后一步；同步测量无此问题。
+    measure();
+    let frame = 0;
     function schedule() {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(measure);

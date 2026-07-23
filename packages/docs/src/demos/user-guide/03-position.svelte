@@ -12,11 +12,9 @@
   ];
 </script>
 
-<div style="display:flex; justify-content:center; padding:80px 0">
-  <span bind:this={el}>
-    <Button onclick={() => (visible = true)}>开始引导</Button>
-  </span>
-</div>
+<span bind:this={el}>
+  <Button onclick={() => (visible = true)}>开始引导</Button>
+</span>
 
 <UserGuide
   mode="popup"
