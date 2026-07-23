@@ -22,15 +22,15 @@
     "prismjs": "^1.29.0"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.0",
+    "@iconify-json/lucide": "^1.2.118",
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.68.0",
-    "@unocss/preset-icons": "^66.7.2",
-    "@unocss/preset-typography": "66.7.2",
-    "@unocss/reset": "66.7.2",
+    "@sveltejs/kit": "^2.70.1",
+    "@unocss/preset-icons": "^66.7.5",
+    "@unocss/preset-typography": "66.7.5",
+    "@unocss/reset": "66.7.5",
     "lottie-web": "^5.13.0",
-    "mdsvex": "^0.11.2",
+    "mdsvex": "^0.12.8",
     "shiki": "^1.29.2",
-    "unocss": "^66.7.2"
+    "unocss": "^66.7.5"
   }
 }
