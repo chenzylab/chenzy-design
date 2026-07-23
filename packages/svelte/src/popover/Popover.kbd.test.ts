@@ -9,6 +9,7 @@ import { page } from 'vitest/browser';
 import { renderKbdFixture, userEvent } from '../test-utils/kbd.js';
 import PopoverKbdFixture from './PopoverKbdFixture.svelte';
 import PopoverStopPropFixture from './PopoverStopPropFixture.svelte';
+import PopoverArrowKeyFixture from './PopoverArrowKeyFixture.svelte';
 
 function loc(el: Element) {
   return page.elementLocator(el);
@@ -62,5 +63,55 @@ describe('Popover 键盘 e2e（dialog Esc 关闭 + 焦点归还）', () => {
     // stopPropagation 生效：外层容器未收到该 click（未误触发外层 onclick）。
     const outerClicks = baseElement.querySelector('[data-testid="outer-clicks"]');
     expect(outerClicks?.textContent).toBe('0');
+  });
+
+  // ArrowDown/ArrowUp 移焦（对齐 Semi）：hover 打开后焦点仍在触发器，
+  // ⬇️ 焦点移入浮层首个可交互元素、⬆️ 移到最后一个。
+  it('hover 打开后 ArrowDown 焦点进首元素、ArrowUp 进末元素', async () => {
+    const { baseElement } = renderKbdFixture(PopoverArrowKeyFixture);
+
+    const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLElement;
+    expect(trigger).not.toBeNull();
+
+    // 聚焦触发器（focus 也会触发 hover trigger 显示，与 Semi 一致），等浮层进场稳定。
+    trigger.focus();
+    await expect.poll(() => document.querySelector('[data-testid="first"]') !== null).toBe(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    // 焦点在触发器上发 ArrowDown → 焦点进浮层首元素。
+    // 直接向触发器派发 keydown（userEvent 的 ArrowDown 默认滚动会把焦点弹出测试 iframe；
+    // dispatchEvent 贴近键盘落到触发器的真实路径：冒泡至包裹 span 的 onkeydown 监听）。
+    const first = document.querySelector('[data-testid="first"]') as HTMLElement;
+    const last = document.querySelector('[data-testid="last"]') as HTMLElement;
+    trigger.focus();
+    const downEv = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true });
+    trigger.dispatchEvent(downEv);
+    // handler 命中：preventDefault（阻止默认滚动）+ 焦点落到首元素。
+    expect(downEv.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(first);
+
+    // 回触发器发 ArrowUp → 末元素。
+    trigger.focus();
+    const upEv = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true });
+    trigger.dispatchEvent(upEv);
+    expect(upEv.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(last);
+  });
+
+  // onEscKeyDown 回调独立于 closeOnEsc：closeOnEsc=false 时按 Esc 仍触发回调但不关闭。
+  it('closeOnEsc=false 时 Esc 触发 onEscKeyDown 回调且浮层不关闭', async () => {
+    const { baseElement } = renderKbdFixture(PopoverArrowKeyFixture);
+
+    const trigger = baseElement.querySelector('[data-testid="trigger"]') as HTMLElement;
+    trigger.focus();
+    await expect.poll(() => document.querySelector('[role="tooltip"]') !== null).toBe(true);
+
+    await userEvent.keyboard('{Escape}');
+
+    // 回调触发（计数 +1）。
+    const count = baseElement.querySelector('[data-testid="esc-count"]');
+    await expect.poll(() => count?.textContent).toBe('1');
+    // closeOnEsc=false → 浮层仍在。
+    expect(document.querySelector('[role="tooltip"]')).not.toBeNull();
   });
 });

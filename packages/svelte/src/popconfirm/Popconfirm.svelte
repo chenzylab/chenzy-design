@@ -265,8 +265,15 @@
   }
 
   // content 函数形态的 initialFocusRef：打开时聚焦浮层内指定元素（复用 Popover 同名机制经 contentSnippet 入参）。
+  // 绑定节点自身不可聚焦（如包裹组件的 span）时，聚焦其内部首个可聚焦元素（与 Popover 保持一致）。
   function initialFocusRef(node: HTMLElement) {
-    queueMicrotask(() => node.focus?.());
+    queueMicrotask(() => {
+      const target =
+        node.matches?.('input, textarea, select, button, a[href], [tabindex]')
+          ? node
+          : node.querySelector<HTMLElement>('input, textarea, select, button, a[href], [tabindex]');
+      (target ?? node).focus?.();
+    });
   }
 </script>
 

@@ -100,6 +100,8 @@
     onVisibleChange?: (visible: boolean) => void;
     /** 点击浮层与触发器外部区域的回调（仅 custom/click），对齐 Semi onClickOutSide */
     onClickOutSide?: (e: MouseEvent) => void;
+    /** 浮层展示时按 Esc 键的回调（与 closeOnEsc 是否关闭相互独立），对齐 Semi onEscKeyDown */
+    onEscKeyDown?: (e: KeyboardEvent) => void;
     /** 浮层完全关闭后的回调 */
     afterClose?: () => void;
     /**
@@ -148,6 +150,7 @@
     style: styleExtra = '',
     onVisibleChange,
     onClickOutSide,
+    onEscKeyDown,
     afterClose,
     ariaLabelledby: ariaLabelledbyProp,
     wrapperClassName = '',
@@ -177,9 +180,17 @@
   );
 
   // initialFocusRef action：绑定到浮层内元素，打开时聚焦（对齐 Semi content 函数）。
-  // 浮层已由 Tooltip focus-trap 陷入，此处仅把初始焦点落到指定元素。
+  // 浮层已由 Tooltip focus-trap 陷入，此处仅把初始焦点落到指定元素；
+  // 若绑定节点自身不可聚焦（如包裹组件的 span），聚焦其内部首个可聚焦元素
+  // （对齐 Semi ref 绑在 Input 等组件上时聚焦真实 input 的行为）。
   function initialFocusRef(node: HTMLElement) {
-    queueMicrotask(() => node.focus?.());
+    queueMicrotask(() => {
+      const target =
+        node.matches?.('input, textarea, select, button, a[href], [tabindex]')
+          ? node
+          : node.querySelector<HTMLElement>('input, textarea, select, button, a[href], [tabindex]');
+      (target ?? node).focus?.();
+    });
   }
 
   // dialog 模式浮层的 aria 关联：外部传入 ariaLabelledby 优先（Popconfirm 等封装者自绘标题）；
@@ -228,6 +239,7 @@
   style={styleExtra}
   {onVisibleChange}
   {onClickOutSide}
+  {onEscKeyDown}
   {afterClose}
   {dialogLabel}
   {ariaLabelledby}

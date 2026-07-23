@@ -4,7 +4,7 @@
 > 判真基准：以 md frontmatter 是否有 `docMode: inline` 为准（`grep -l "docMode: inline" packages/docs/src/content/components/*.md`），别只信本文件——本文件可能滞后。
 > 铁律见 SOP：demo 严格复刻 Semi（不简化、布局用本库 `<Space>`）、正文逐字抄 Semi 别顺手规整、API 表 `{}` 用反引号、**每个交互 demo 真机点击验证**（点了没反应先排 scrollY+dpr 坐标偏移，非组件 bug）。
 
-## ✅ 已完成（21，判真：`grep -l "docMode: inline"` = 21）
+## ✅ 已完成（22，判真：`grep -l "docMode: inline"` = 22）
 
 - [x] form（标杆）
 - [x] input（含 TextArea/InputGroup）
@@ -22,6 +22,7 @@
 - [x] jsonviewer
 - [x] tag — TagGroup/SplitTagGroup 合一页；demo 布局改用 `<Space>`；SplitTagGroup 4 组合并回单 demo（删 13）；close/onTagClose/showPopover 真机验证过
 - [x] tooltip — 9 demo 整页 inline 对齐 Semi（注意事项 children 类型/位置 12 方位/指向元素中心/触发时机 5 类/condition/覆盖样式/getPopupContainer/搭配 Popconfirm/仅超出展示）。React→Svelte 映射：forwardRef children→本库以包裹 span 承载事件故任意渲染真实 DOM 的组件皆可（新增 `_child-component.svelte`）；触发时机 demo 复刻 Semi getPopupContainer 局部容器 + custom trigger RadioGroup 受控。API 表逐 prop 核 Tooltip.svelte（补 afterClose/class/closeOnEsc/preventScroll/wrapperClassName/prefixCls 本库措辞，spacing/margin/content Snippet 用反引号包 `{}`）。**设计变量章节由页面自动补渲染 DesignTokenTable，md 里不写 `<DesignToken/>`**（否则 SSR 无该组件）。补齐 TypographyBase popover 分支透传 class/style/maxWidth（原只 Tooltip 分支有）。真机验证：hover（DOM/自定义组件均弹「semi design」箭头指向）✓、click（「hi bytedance」弹出）✓、custom 受控显示✓、condition 开弹/关不弹✓、页面渲染 + TOC 收集 + 无 SSR 500 ✓。三包 typecheck 全绿、floating/Tooltip/Popover/Popconfirm/Select 测试 40 passed。**修复浮层整体偏低贴触发器真 bug**见 [[floating-position-uses-animation-scaled-rect-too-close]]：use-floating 首次定位用了 enter zoom 动画 scale<1 时的 getBoundingClientRect 缩小高度(28.8 而非 36)且不重算致浮层下移贴住触发器(间距 0.5px 非 8px)；改用 offsetWidth/Height 布局尺寸传 core popupRect→精确 8px 对齐 Semi（影响所有共用 use-floating 的浮层组件）。⚠️ 多 dev 同跑一 repo 互刷（杀掉遗留 5200 只留自起 dev）；首次编译瞬态 500 重试即 200；后台标签 CSS 动画冻结致 JS 读 rect 全乱，判真值用 screenshot 激活前台 + use-floating 加 console.log。
+- [x] popover — 9 demo 整页 inline 严格复刻 Semi（注意事项 children 类型/基本使用/12方位/受控 custom/condition/showArrow/arrowPointAtCenter/setColor(arrowStyle+style)/initialFocus）。demo 用 Empty+IllustrationSuccess 复刻 Semi content 卡片（复用 empty imageSlot/darkModeImageSlot）；setColor 用本库 `--cd-color-blue-4` palette token 复刻 Semi `rgba(var(--semi-blue-4),1)`。**补齐三处跨浮层组件（Tooltip/Popover/Popconfirm 全受益）能力**：①**onEscKeyDown**：dismiss.ts onDismiss 回调补 event 第二参；Tooltip 加 onEscKeyDown prop，Esc 监听门控改 `closeOnEsc || !!onEscKeyDown`（回调独立于关闭），Popover/Popconfirm 透传 + meta 补录。②**ArrowUp/Down 键盘移焦**（对齐 Semi `_handleTriggerArrowUp/DownKeydown`）：`onTriggerKeydown` 删 `if(!isDialog)return` guard，ArrowDown→浮层首个可交互元素、ArrowUp→末个，对所有 trigger 生效（hover/focus 的 tooltip 同样支持）；触发器 span onkeydown 由 `isDialog?…:undefined` 改为始终绑定。Enter/Space 打开仍仅 dialog。③**initialFocusRef 内层查找**：绑定节点自身不可聚焦（如包裹 Input 的 span）时聚焦其内部首个可聚焦元素（对齐 Semi ref 绑组件时聚焦真实 input），Popover/Popconfirm 同步。⚠️ **测试踩坑**：ArrowDown 键盘移焦测试用 `userEvent.keyboard('{ArrowDown}')` 会触发浏览器默认滚动把焦点弹出测试 iframe→改 `trigger.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles,cancelable}))` 直达触发器冒泡至 span onkeydown，断言 `defaultPrevented===true`（handler 命中 preventDefault）+ 同步读 `document.activeElement`（勿 expect.poll，默认滚动会在 poll 期间再弹焦点）。真机验证：注意事项三 children hover 弹 Empty 卡片✓、受控 RadioGroup 切换✓、showArrow 双 path 小三角✓、initialFocus 焦点落 input（span 内层查找生效，activeElement=INPUT[placeholder=focus here]）✓、搭配链接锚点 `#搭配-popover-或-popconfirm-使用` 跳转到位（scroll-padding-top 让开顶栏）✓、TOC 13 项全收✓、无 SSR 500。三包 typecheck 全绿（Tooltip.svelte noUncheckedIndexedAccess 需 `const target=…;if(target)` 不能 `list[i].focus()`）、tooltip/popover/popconfirm/dismiss/floating 42 测试通过（新增 2 kbd）、lint 0 warning、体积 popover 3.01<3.3/tooltip 4.69<5/popconfirm 2.97<3.2。
 - [x] timeline — 8 demo 严格对齐 Semi（basic/type/custom/left/center/alternate/right/datasource）；onClick(2.2.0) demo 保留为「可点击节点」章节、aria-label demo 放进 Accessibility 章节；源码/meta 原本已对齐 Semi 无需改；真机验证 onClick 联动 + aria-label DOM 挂载 + 10 实例全渲染
 - [x] popconfirm — 4 Semi demo(基本/类型搭配/延时关闭/初始化焦点)+2 本库补充(关闭按钮/箭头)；封装链改述 Popover(非 Semi 的 Tooltip)；⚠️ **API 表 union 类型踩坑**：`Snippet<[{ initialFocusRef }]>` 的裸 `{}` 让 mdsvex 当 Svelte 表达式→SSR 500(typecheck 假绿真机才暴露)；修法=整型包反引号(反引号内 `{}<>` 全字面)，union 的 `|` 不能进反引号(会当列分隔)→拆成 `A`\|`B` 两段；真机验证 保存→确定→Toast 成功链
 - [x] toast（见优先批 A 详注）
@@ -35,9 +36,8 @@
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
-> toast / notification / table 已完成，移至上方「已完成」区。
+> toast / notification / table / popover 已完成，移至上方「已完成」区。
 
-- [ ] popover — 浮层继承链中层（封装 Tooltip）
 - [ ] sidesheet — 无 focus-trap 非 Modal 同构（已删 Drawer）见 [sidesheet-no-focustrap]
 - [ ] userguide — 已对齐（复用 Popover/Modal）见 [userguide-semi-aligned]
 - [ ] modal — SideSheet 相关已处理，核对 Modal 本体
