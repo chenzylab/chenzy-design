@@ -134,6 +134,9 @@
     z-index: var(--cd-z-badge);
     text-align: center;
     font-size: var(--cd-font-size-small);
+    /* 配套 Semi @include font-size-small 的 line-height:16px，等于内容区高度
+       (18-2×1border)，让数字精确垂直居中；缺此会继承 body 21px 致数字偏上。 */
+    line-height: var(--cd-line-height-small);
     font-weight: var(--cd-font-weight-regular);
     color: var(--cd-color-badge-default-text-default);
   }
