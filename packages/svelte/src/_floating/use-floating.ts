@@ -83,6 +83,41 @@ export function useFloating(
   popup.style.margin = '0';
 
   let frame = 0;
+  // Layout-size snapshot (trigger + popup) captured at the last position(). The
+  // ResizeObserver re-positions only when one of these actually changed, so the
+  // redundant observe frame is swallowed while a real reflow is not.
+  let lastTriggerW = 0;
+  let lastTriggerH = 0;
+  let lastPopupW = 0;
+  let lastPopupH = 0;
+
+  // Layout extent of an element for the size comparison: offsetWidth/Height (the
+  // un-scaled layout box, so an enter animation's transform: scale doesn't shrink
+  // it) with a getBoundingClientRect fallback (jsdom reads offset* as 0).
+  function extentOf(el: HTMLElement): { w: number; h: number } {
+    const r = el.getBoundingClientRect();
+    return { w: el.offsetWidth || r.width, h: el.offsetHeight || r.height };
+  }
+
+  function snapshotSizes(): void {
+    const t = extentOf(trigger);
+    const p = extentOf(popup);
+    lastTriggerW = t.w;
+    lastTriggerH = t.h;
+    lastPopupW = p.w;
+    lastPopupH = p.h;
+  }
+
+  function sizesChanged(): boolean {
+    const t = extentOf(trigger);
+    const p = extentOf(popup);
+    return (
+      t.w !== lastTriggerW ||
+      t.h !== lastTriggerH ||
+      p.w !== lastPopupW ||
+      p.h !== lastPopupH
+    );
+  }
 
   function position() {
     // 浮层隐藏时（destroyOnClose=false 关闭态挂载 display:none）rect 全 0，
@@ -97,7 +132,19 @@ export function useFloating(
     if (matchWidth) {
       popup.style.minInlineSize = `${Math.round(triggerRect.width)}px`;
     }
-    const popupRect = popup.getBoundingClientRect();
+    // core positions from the trigger rect + the popup's width/height only (it
+    // never reads popupRect.x/y). Take the extent from offsetWidth/offsetHeight
+    // (the un-scaled layout box) rather than the rect's width/height: the enter
+    // animation applies transform: scale, so a mid-animation getBoundingClientRect
+    // reports a shrunken size that would pin the popup too close to the trigger.
+    // Fall back to the rect where offset* is unavailable (jsdom reads 0).
+    const rawRect = popup.getBoundingClientRect();
+    const popupRect = {
+      x: rawRect.x,
+      y: rawRect.y,
+      width: popup.offsetWidth || rawRect.width,
+      height: popup.offsetHeight || rawRect.height,
+    };
     const result = computePosition({
       triggerRect,
       popupRect,
@@ -119,6 +166,7 @@ export function useFloating(
       y = y - cRect.top + container.scrollTop;
     }
     popup.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    snapshotSizes();
     onPlacement?.({ placement: result.placement, arrowOffset: result.arrowOffset });
   }
 
@@ -144,15 +192,17 @@ export function useFloating(
   // native RO is unavailable — the window listeners above still work.
   let ro: ResizeObserver | undefined;
   if (typeof ResizeObserver === 'function') {
-    // RO fires an initial frame on observe(); position() already ran above,
-    // so the first callback is a redundant reposition. Swallow it to avoid a
-    // wasted rAF (and to match "no reposition on observe" intent).
-    let primed = false;
+    // RO fires an initial frame on observe(). We must NOT blanket-swallow it: a
+    // Tooltip's text often wraps to two lines in its original slot (offsetHeight
+    // ~56) and relaxes to one line once max-width/inline-size settles after the
+    // portal into <body> (offsetHeight 36). The first position() pinned the popup
+    // top using that pre-reflow height, so its bottom edge ends up too far from
+    // the trigger (gap 16 instead of 8) unless we re-position after the reflow.
+    // Re-position whenever the popup's layout size differs from what the last
+    // position() actually used; swallow only the truly-redundant frame (size
+    // unchanged) to avoid a wasted rAF.
     ro = new ResizeObserver(() => {
-      if (!primed) {
-        primed = true;
-        return;
-      }
+      if (!sizesChanged()) return;
       schedule();
     });
     ro.observe(trigger);

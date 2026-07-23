@@ -157,6 +157,9 @@ importers:
       '@unocss/preset-typography':
         specifier: 66.7.2
         version: 66.7.2
+      '@unocss/reset':
+        specifier: 66.7.2
+        version: 66.7.2
       lottie-web:
         specifier: ^5.13.0
         version: 5.13.0
@@ -1394,6 +1397,9 @@ packages:
 
   '@unocss/preset-wind@66.7.2':
     resolution: {integrity: sha512-porNxph4xfr67e0LpFis813rKk9+psUJMw0nPL4sZoHovhmR/hA5XlWb6fLCl7t4Lls20I/n8F8KKgkqkxnk8Q==}
+
+  '@unocss/reset@66.7.2':
+    resolution: {integrity: sha512-dKRbpBicfchatvqK2wqfX8gtNTCf+2pFdXBNDC0Cl2PZ8QCVMtCaHTOTSyruM0Pw7aqST4SlPkF5f8x7aZZL0w==}
 
   '@unocss/rule-utils@66.7.2':
     resolution: {integrity: sha512-EGi2m9I87hluz2zgjVpXM4PWFn996RInNcx4PGF6Qw9Z0W78ROXEto0SM1IltpJ4R7+at4EhssU0IbHiT0snEw==}
@@ -4084,6 +4090,8 @@ snapshots:
     dependencies:
       '@unocss/core': 66.7.2
       '@unocss/preset-wind3': 66.7.2
+
+  '@unocss/reset@66.7.2': {}
 
   '@unocss/rule-utils@66.7.2':
     dependencies:

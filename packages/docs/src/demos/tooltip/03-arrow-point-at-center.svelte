@@ -2,15 +2,14 @@
   import { Tooltip, Button } from '@chenzy-design/svelte';
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 20px;">
-  <div>
-    <Tooltip content="semi design tooltip" position="topLeft">
-      <Button>指向元素中心（默认）</Button>
-    </Tooltip>
-  </div>
-  <div>
-    <Tooltip content="semi design tooltip" position="topLeft" arrowPointAtCenter={false}>
-      <Button style="width: 160px;">边缘对齐</Button>
-    </Tooltip>
-  </div>
+<div>
+  <Tooltip position="topLeft" content="semi design tooltip">
+    <Button type="secondary" style="margin-right: 8px;">指向元素中心</Button>
+  </Tooltip>
+</div>
+
+<div style="margin-top: 20px;">
+  <Tooltip content="semi design tooltip" arrowPointAtCenter={false} position="topLeft">
+    <Button type="secondary" style="margin-right: 8px; width: 120px;">边缘对齐</Button>
+  </Tooltip>
 </div>
