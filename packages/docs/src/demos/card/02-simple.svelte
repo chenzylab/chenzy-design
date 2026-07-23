@@ -1,27 +1,31 @@
 <script lang="ts">
-  import { Card, Avatar, Popover } from '@chenzy-design/svelte';
+  import { Card, Popover, Avatar } from '@chenzy-design/svelte';
+  import { IconInfoCircle } from '@chenzy-design/icons';
+
+  const { Meta } = Card;
 </script>
 
-<!-- 简洁卡片：只设置内容区域，或配合 Card.Meta + bodyStyle 排布头像与操作 -->
 <Card style="max-width: 360px;">
-  chenzy-design 是一套对齐 Semi Design 的组件系统。
+  Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统。
 </Card>
-
 <br />
-
 <Card
   style="max-width: 360px;"
   bodyStyle="display: flex; align-items: center; justify-content: space-between;"
 >
-  <Card.Meta title="Semi Doc">
+  <Meta title="Semi Doc">
     {#snippet avatar()}
-      <Avatar size="default" alt="Card meta img" color="blue">SD</Avatar>
+      <Avatar
+        alt="Card meta img"
+        size="default"
+        src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/card-meta-avatar-docs-demo.jpg"
+      />
     {/snippet}
-  </Card.Meta>
+  </Meta>
   <Popover position="top" showArrow>
     {#snippet content()}
-      <div style="padding: 6px;">这是一个 Card</div>
+      <article style="padding: 6px;">这是一个 Card</article>
     {/snippet}
-    <span style="color: var(--cd-color-primary); cursor: help;">ⓘ</span>
+    <IconInfoCircle style="color: var(--cd-color-primary);" />
   </Popover>
 </Card>

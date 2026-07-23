@@ -1,18 +1,19 @@
 <script lang="ts">
   import { Card, Typography } from '@chenzy-design/svelte';
+
+  const { Text } = Typography;
 </script>
 
-<!-- 卡片内部可以嵌套其他卡片 -->
 <Card title="Card title">
   <Card title="Inner Card title" style="margin-bottom: 20px;">
     {#snippet headerExtraContent()}
-      <Typography.Text link={{ href: '#' }}>More</Typography.Text>
+      <Text link>More</Text>
     {/snippet}
     Inner Card content
   </Card>
   <Card title="Inner Card title">
     {#snippet headerExtraContent()}
-      <Typography.Text link={{ href: '#' }}>More</Typography.Text>
+      <Text link>More</Text>
     {/snippet}
     Inner Card content
   </Card>

@@ -98,6 +98,10 @@
     dropdownProps?: DropdownPropsPair;
     /** 溢出项变化回调，携带当前可见 tab keys */
     onVisibleTabsChange?: (visibleTabKeys: TabKey[]) => void;
+    /** 根节点自定义类名（对齐 Semi className）。 */
+    class?: string;
+    /** 根节点自定义内联样式（对齐 Semi style；string 或 CSSProperties 对象）。 */
+    style?: string | Record<string, string>;
     /** 内容区外层样式（string 或 CSSProperties 对象） */
     contentStyle?: string | Record<string, string>;
     /** 标签栏（tab bar 容器 `.cd-tabs__bar`）自定义 class */
@@ -149,6 +153,8 @@
     showRestInDropdown = true,
     dropdownProps,
     onVisibleTabsChange,
+    class: className,
+    style,
     contentStyle,
     preventScroll = false,
     tabPaneMotion = true,
@@ -627,6 +633,7 @@
       .join(';');
   }
 
+  const styleStr = $derived(toStyleString(style));
   const contentStyleStr = $derived(toStyleString(contentStyle));
   const tabBarStyleStr = $derived(toStyleString(tabBarStyle));
   const visibleTabsStyleStr = $derived(toStyleString(visibleTabsStyle));
@@ -647,6 +654,7 @@
       `cd-tabs--${effectivePosition}`,
       dropdownMode ? 'cd-tabs--dropdown' : '',
       !dropdownMode && overflowing ? 'cd-tabs--scrollable' : '',
+      className ?? '',
     ]
       .filter(Boolean)
       .join(' '),
@@ -694,7 +702,7 @@
   </div>
 {/snippet}
 
-<div class={cls} class:cd-tabs--no-motion={!tabPaneMotion}>
+<div class={cls} style={styleStr} class:cd-tabs--no-motion={!tabPaneMotion}>
   {#if renderTabBar}
     <!-- renderTabBar：调用方完全自绘标签栏；跳过内置标签栏/溢出逻辑，面板内容仍按 activeKey 显隐。 -->
     {@render renderTabBar(tabList, activeKey, setActive)}

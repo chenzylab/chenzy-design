@@ -1,29 +1,40 @@
 <script lang="ts">
-  import { Card, Avatar, Button, Space, Typography } from '@chenzy-design/svelte';
+  import { Card, Avatar, Space, Button, Typography } from '@chenzy-design/svelte';
+
+  const { Meta } = Card;
+  const { Text } = Typography;
 </script>
 
-<!-- 用 Card.Meta 承载 title / avatar / description，配合 footer 放置底部操作 -->
-<Card style="max-width: 340px;" footerLine={true} footerStyle="display: flex; justify-content: flex-end;">
+<Card
+  style="max-width: 340px;"
+  footerLine={true}
+  footerStyle="display: flex; justify-content: flex-end;"
+>
   {#snippet title()}
-    <Card.Meta title="Semi Doc" description="全面、易用、优质">
+    <Meta title="Semi Doc" description="全面、易用、优质">
       {#snippet avatar()}
-        <Avatar size="default" color="light-blue">SD</Avatar>
+        <Avatar
+          alt="Card meta img"
+          size="default"
+          src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/card-meta-avatar-docs-demo.jpg"
+        />
       {/snippet}
-    </Card.Meta>
+    </Meta>
   {/snippet}
   {#snippet headerExtraContent()}
-    <Typography.Text link={{ href: '#' }}>More</Typography.Text>
+    <Text link>More</Text>
   {/snippet}
   {#snippet cover()}
-    <div
-      style="height: 150px; background: linear-gradient(135deg, var(--cd-color-cyan-4) 0%, var(--cd-color-primary) 100%);"
-    ></div>
+    <img
+      alt="example"
+      src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/card-cover-docs-demo.jpeg"
+    />
   {/snippet}
   {#snippet footer()}
-    <Space spacing={8}>
+    <Space>
       <Button theme="borderless" type="primary">精选案例</Button>
       <Button theme="solid" type="primary">开始使用</Button>
     </Space>
   {/snippet}
-  chenzy-design 是一套对齐 Semi Design 的组件系统。
+  Semi Design 是由抖音前端团队与 UED 团队共同设计开发并维护的设计系统。
 </Card>
