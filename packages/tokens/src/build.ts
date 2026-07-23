@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { palette } from './global/color.js';
+import { palette, paletteDark } from './global/color.js';
 import * as scales from './global/scales.js';
 import { aliasLight, aliasDark } from './alias/index.js';
 import { componentTokens } from './components/index.js';
@@ -57,6 +57,9 @@ ${componentVars.join('\n')}
 }
 
 [data-theme='dark'] {
+  /* --- Global palette（dark 反转，对齐 Semi body[theme-mode="dark"] 色阶）--- */
+${vars(paletteDark, 'color').join('\n')}
+  /* --- Alias (semantic) --- */
 ${darkVars.join('\n')}
 }
 
