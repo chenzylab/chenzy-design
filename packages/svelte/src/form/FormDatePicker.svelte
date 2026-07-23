@@ -14,12 +14,14 @@
     placeholder?: DatePickerProps['placeholder'];
     disabled?: boolean;
     size?: DatePickerProps['size'];
+    type?: DatePickerProps['type'];
     format?: DatePickerProps['format'];
     disabledDate?: DatePickerProps['disabledDate'];
+    style?: DatePickerProps['style'];
   }
 
   const props: Props = $props();
-  const controlKeys = ['placeholder', 'disabled', 'size', 'format', 'disabledDate'] as const;
+  const controlKeys = ['placeholder', 'disabled', 'size', 'type', 'format', 'disabledDate', 'style'] as const;
   const split = $derived(splitFieldProps(props));
   const fieldProps = $derived(split.fieldProps);
   const control = $derived(
@@ -35,8 +37,10 @@
       {...(control.placeholder !== undefined ? { placeholder: control.placeholder as NonNullable<DatePickerProps['placeholder']> } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.size !== undefined ? { size: control.size as NonNullable<DatePickerProps['size']> } : {})}
+      {...(control.type !== undefined ? { type: control.type as NonNullable<DatePickerProps['type']> } : {})}
       {...(control.format !== undefined ? { format: control.format as NonNullable<DatePickerProps['format']> } : {})}
       {...(control.disabledDate !== undefined ? { disabledDate: control.disabledDate as NonNullable<DatePickerProps['disabledDate']> } : {})}
+      {...(control.style !== undefined ? { style: control.style as NonNullable<DatePickerProps['style']> } : {})}
       validateStatus={status === 'error' ? 'error' : 'default'}
       {...(insetLabel !== undefined ? { insetLabel } : {})}
       {...(insetLabelId !== undefined ? { insetLabelId } : {})}

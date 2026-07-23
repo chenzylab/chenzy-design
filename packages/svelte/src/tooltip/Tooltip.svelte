@@ -282,6 +282,14 @@
     leaveTimer = setTimeout(() => setOpen(false), mouseLeaveDelay);
   }
 
+  // 浮层 portal 到 body 后脱离触发器 DOM 树，flip 到上方可能覆盖触发器：此时鼠标进入
+  // 浮层 = 离开触发器 span，触发器 onPointerLeave 关闭浮层→浮层消失→鼠标回落触发器→
+  // 再打开，形成无限闪烁。对齐 Semi foundation _generateEvent 的 hover 分支：
+  // `portalEventSet = { ...triggerEventSet }`——浮层与触发器共用同一套 mouseEnter/mouseLeave
+  // （进入浮层 = delayShow 取消关闭计时并保持打开，离开浮层 = delayHide 关闭）。故直接复用。
+  const onPopPointerEnter = onPointerEnter;
+  const onPopPointerLeave = onPointerLeave;
+
   function onFocusIn() {
     if (!allowShow || isCustom) return;
     // focus 触发；或 hover 触发但未禁用 focus 监听（键盘可达性，对齐 Semi）。
@@ -574,6 +582,8 @@
       class:cd-tooltip-wrapper--hidden={!isOpen}
       class:cd-tooltip-wrapper--motion={motionEnabled}
       onclick={onPopClick}
+      onpointerenter={onPopPointerEnter}
+      onpointerleave={onPopPointerLeave}
     >
       <div class="cd-tooltip-content">
         {#if contentSnippet}
