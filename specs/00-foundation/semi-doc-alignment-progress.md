@@ -37,7 +37,7 @@
 
 ---
 
-## ⏳ 待办（47）
+## ⏳ 待办（46）
 
 ### 优先批 A：源码近期已破坏性对齐 Semi（文档对齐风险小，优先做）
 > 依据 MEMORY.md 记忆，这些组件源码已对齐 Semi，文档 demo 能力大概率齐备。
@@ -46,7 +46,7 @@
 （本批全部完成）
 
 ### 优先批 B：基础/展示类（相对独立，无复杂交互）
-- [ ] iconbutton
+- [x] iconbutton — **不做 inline，改为删独立文档页对齐 Semi**（2026-07-23，用户拍板）：核对 Semi 源码发现 IconButton 在 `semi-ui/index.ts:38` 公开导出但**无文档页**（文档里的「图标按钮」只是 Button 页一个 demo 章节，本库 button.md 05-icon 已覆盖）；本库组件层早已严格对齐（薄封装、meta 无 category 不进 components.json/侧边栏，`/components/iconbutton` 路由本就 404 死页）。故组件/导出/六个内部消费方（Modal/Banner/BackTop/Notification/SideSheet/Toast 关闭按钮）**全保留不动**，删 `iconbutton.md` + `demos/icon-button/`(9 demo+demos.ts) + component-dir/component-names-zh/component-briefs 三处映射条目。五包 typecheck 0 err、IconButton dom 12 测试通过、真机 curl：iconbutton 404 / button·backtop 200。
 - [ ] badge
 - [ ] avatar — token 短名断链风险 见 [avatar-token-short-name]
 - [ ] card

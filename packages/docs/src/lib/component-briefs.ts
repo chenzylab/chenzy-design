@@ -2,7 +2,6 @@
 // docs 侧维护，不改组件库。key 为组件名（与 components.json 的 name 一致）。
 export const componentBriefsEn: Record<string, string> = {
   Button: 'A button that triggers an immediate action — the most basic interactive primitive.',
-  IconButton: 'An icon-only action button — a thin wrapper over Button that forwards all Button props plus icon, and makes ariaLabel required to guarantee an accessible name.',
   FloatButton: 'A button fixed-floating over the viewport for global quick actions (AI edit, search, help, back-to-top); renders a semantic <button> or <a> (a11y upgrade over Semi), supports single and grouped (FloatButtonGroup) usage.',
   Icon: 'A vector icon container with unified size, color, and alignment — a purely presentational primitive.',
   Divider: 'A divider line that visually separates content sections — purely presentational.',

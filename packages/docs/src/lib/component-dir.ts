@@ -38,7 +38,6 @@ export const nameToDir: Record<string, string> = {
   highlight: 'highlight',
   hotkeys: 'hot-keys',
   icon: 'icon',
-  iconbutton: 'icon-button',
   image: 'image',
   input: 'input',
   inputnumber: 'input-number',
