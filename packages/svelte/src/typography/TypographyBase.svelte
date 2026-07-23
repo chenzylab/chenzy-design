@@ -567,6 +567,17 @@
       title={tooltipOpts.title ?? ''}
       position={tooltipOpts.position ?? 'top'}
       trigger="hover"
+      class={tooltipOpts.className ?? ''}
+      style={[
+        typeof tooltipOpts.maxWidth === 'number'
+          ? `max-inline-size:${tooltipOpts.maxWidth}px`
+          : tooltipOpts.maxWidth
+            ? `max-inline-size:${tooltipOpts.maxWidth}`
+            : '',
+        tooltipOpts.style ?? '',
+      ]
+        .filter(Boolean)
+        .join(';')}
       disabled={!tooltipEnabled}
     >
       {@render hostNode()}

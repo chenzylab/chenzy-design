@@ -97,7 +97,19 @@ export function useFloating(
     if (matchWidth) {
       popup.style.minInlineSize = `${Math.round(triggerRect.width)}px`;
     }
-    const popupRect = popup.getBoundingClientRect();
+    // Measure the popup with getBoundingClientRect for position, but take its
+    // extent from offsetWidth/offsetHeight (layout size, unaffected by any
+    // transform: scale the enter animation applies). Using the rect's scaled
+    // width/height would feed core a mid-animation size and pin the popup with
+    // too small an offset — it never re-runs once the animation finishes, so
+    // the popup ends up sitting ~1px from the trigger instead of `offset` px.
+    const rawRect = popup.getBoundingClientRect();
+    const popupRect = {
+      x: rawRect.x,
+      y: rawRect.y,
+      width: popup.offsetWidth || rawRect.width,
+      height: popup.offsetHeight || rawRect.height,
+    };
     const result = computePosition({
       triggerRect,
       popupRect,
