@@ -1,19 +1,20 @@
 <script lang="ts">
-  import { Badge, Avatar } from '@chenzy-design/svelte';
+  import { Badge, Avatar, Space } from '@chenzy-design/svelte';
+
+  const style = 'width: 42px; height: 42px; border-radius: 4px;';
 </script>
 
-<!-- position：rightTop（默认）/ rightBottom / leftTop / leftBottom -->
-<div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+<Space vertical align="start" spacing={20}>
   <Badge count="VIP" position="rightTop" type="danger">
-    <Avatar color="amber" shape="square">ZH</Avatar>
+    <Avatar color="amber" shape="square" {style}>ZH</Avatar>
   </Badge>
   <Badge count="VIP" position="rightBottom" type="danger">
-    <Avatar color="amber" shape="square">HS</Avatar>
+    <Avatar color="amber" shape="square" {style}>HS</Avatar>
   </Badge>
   <Badge count="VIP" position="leftTop" type="danger">
-    <Avatar color="orange" shape="square">DY</Avatar>
+    <Avatar color="orange" shape="square" {style}>DY</Avatar>
   </Badge>
   <Badge count="VIP" position="leftBottom" type="danger">
-    <Avatar color="orange" shape="square">TT</Avatar>
+    <Avatar color="orange" shape="square" {style}>TT</Avatar>
   </Badge>
-</div>
+</Space>
