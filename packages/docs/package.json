@@ -27,6 +27,7 @@
     "@sveltejs/kit": "^2.68.0",
     "@unocss/preset-icons": "^66.7.2",
     "@unocss/preset-typography": "66.7.2",
+    "@unocss/reset": "66.7.2",
     "lottie-web": "^5.13.0",
     "mdsvex": "^0.11.2",
     "shiki": "^1.29.2",

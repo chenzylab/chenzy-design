@@ -3,6 +3,11 @@
   import { base } from '$app/paths';
   import { browser } from '$app/environment';
   import type { Snippet } from 'svelte';
+  // 浏览器样式 reset 打底（对齐 Semi 官网架构：reset 全局归一 + presetTypography 局部
+  // 加回正文排版）。tailwind-compat 变体不覆盖 button 背景等，与组件库最兼容。必须在
+  // tokens/uno/app.css 之前导入，作为最底层被后续样式覆盖。归零 p/h1-6 等默认 margin，
+  // portal 到 body 的浮层（.cd-*-wrapper）内容也随之紧凑，对齐 Semi 浮层内 p margin:0。
+  import '@unocss/reset/tailwind-compat.css';
   import '@chenzy-design/tokens/tokens.css';
   import 'uno.css';
   import '../app.css';

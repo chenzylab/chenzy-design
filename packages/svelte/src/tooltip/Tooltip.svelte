@@ -322,7 +322,17 @@
 
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
+  // 内层触发包裹 span（.cd-tooltip__trigger，inline-block）；其 firstElementChild 是
+  // children 的真实 DOM 元素，用作浮层定位基准（对齐 Semi getTriggerBounding 用真实
+  // children DOM，不含 children 的 margin——若用包裹 span 定位，其盒子被 children margin
+  // 撑开致箭头到触发器间距偏大；改用 children 首元素则间距对齐 Semi 8px）。
+  let triggerEl = $state<HTMLSpanElement | null>(null);
   let popEl = $state<HTMLDivElement | null>(null);
+
+  // 浮层定位基准：优先内层 children 真实首元素（不含 margin，对齐 Semi），回退包裹 span。
+  const anchorEl = $derived<HTMLElement | null>(
+    (triggerEl?.firstElementChild as HTMLElement | null) ?? rootEl,
+  );
 
   // 解析后的实际方位（flip 后），驱动箭头朝向与 x-placement。初值仅取 placement 一次。
   let resolvedPlacement = $state<Placement>(untrack(() => placement));
@@ -503,6 +513,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
     class="cd-tooltip__trigger"
+    bind:this={triggerEl}
     role={isDialog ? 'button' : undefined}
     tabindex={isDialog && !isCustom ? 0 : undefined}
     aria-haspopup={isDialog ? 'dialog' : undefined}
@@ -531,7 +542,7 @@
       aria-hidden={!isOpen || undefined}
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
-      use:floating={{ trigger: rootEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
+      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
       class="{prefixCls}-wrapper {className}"
       class:cd-tooltip-with-arrow={showArrowBool}
       class:cd-tooltip-wrapper-show={isOpen}
@@ -590,6 +601,9 @@
     position: relative;
     display: inline-block;
   }
+  /* 内层触发包裹保持 inline-block 盒子（承载 dialog 模式 tabindex 焦点、role）。
+     浮层定位不再用此包裹，而用其内 children 真实首元素（anchorEl，不含 children margin，
+     对齐 Semi getTriggerBounding）——故此包裹被 children margin 撑开也不影响定位间距。 */
   .cd-tooltip__trigger {
     display: inline-block;
     inline-size: auto;
