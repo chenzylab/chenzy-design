@@ -60,6 +60,7 @@
         { zh: 'Introduction 介绍', en: 'Introduction', href: '/guide/introduction', icon: 'Introduction' },
         { zh: 'Getting Started 快速开始', en: 'Getting Started', href: '/guide/getting-started', icon: 'GettingStarted' },
         { zh: 'Overview 组件总览', en: 'Overview', href: '/guide/overview', icon: 'Overview' },
+        { zh: 'MCP / Skills', en: 'MCP / Skills', href: '/guide/mcp-skills', icon: 'AIComponent' },
       ],
     },
     {

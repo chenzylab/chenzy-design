@@ -1,0 +1,56 @@
+{
+  "name": "@chenzy-design/mcp",
+  "version": "0.1.0",
+  "description": "chenzy-design MCP Server — Model Context Protocol server for chenzy-design components, docs and source code",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenzylab/chenzy-design.git",
+    "directory": "packages/mcp"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "chenzy-mcp": "./dist/stdio.js",
+    "chenzy-mcp-http": "./dist/http.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "chenzy-design",
+    "mcp",
+    "model-context-protocol",
+    "svelte",
+    "design-system",
+    "component-library"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "oxc-parser": "^0.106.0",
+    "semver": "^7.7.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/semver": "^7.5.8"
+  }
+}
