@@ -8,17 +8,24 @@
     { key: '垂类标签', value: tagValue },
     { key: '认证状态', value: '未认证' },
   ];
-  const aligns = ['center', 'justify', 'left', 'plain'] as const;
+  const style = 'margin: 10px;';
 </script>
 
 {#snippet tagValue()}
   <Tag style="margin: 0;">电商</Tag>
 {/snippet}
 
-<div style="display: flex; flex-wrap: wrap; gap: 16px;">
-  {#each aligns as align (align)}
-    <Card>
-      <Descriptions {align} {data} />
-    </Card>
-  {/each}
+<div style="display: flex; flex-wrap: wrap;">
+  <Card shadows="always" {style}>
+    <Descriptions align="center" {data} />
+  </Card>
+  <Card shadows="always" {style}>
+    <Descriptions align="justify" {data} />
+  </Card>
+  <Card shadows="always" {style}>
+    <Descriptions align="left" {data} />
+  </Card>
+  <Card shadows="always" {style}>
+    <Descriptions align="plain" {data} />
+  </Card>
 </div>
