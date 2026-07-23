@@ -4,12 +4,9 @@
 </script>
 
 {#snippet retention()}
-  <span
-    >98%<IconArrowUp
-      size="small"
-      style="color: var(--cd-color-success); margin-left: 2px;"
-    /></span
-  >
+  <div>
+    98%<IconArrowUp size="small" style="color: var(--cd-color-success); margin-left: 2px;" />
+  </div>
 {/snippet}
 
 {#snippet tagValue()}
