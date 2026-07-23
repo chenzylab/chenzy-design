@@ -27,13 +27,23 @@ export interface FocusTrapOptions {
    * 仅当被记忆的元素在重新 activate 时仍可聚焦才恢复，否则退回首个。
    */
   rememberFocus?: boolean;
+  /**
+   * 聚焦时是否阻止浏览器滚动文档以显示新聚焦元素（透传 focus({ preventScroll })）。
+   * 默认 false。对齐 Semi Modal preventScroll。
+   */
+  preventScroll?: boolean;
 }
 
 export function useFocusTrap(
   container: HTMLElement,
   options: FocusTrapOptions = {},
 ): FocusTrap {
-  const { trapTab = true, returnFocus = true, rememberFocus = false } = options;
+  const {
+    trapTab = true,
+    returnFocus = true,
+    rememberFocus = false,
+    preventScroll = false,
+  } = options;
   let previouslyFocused: HTMLElement | null = null;
   // rememberFocus：deactivate 时记下浮层内最后聚焦的元素，下次 activate 恢复。
   let lastInnerFocused: HTMLElement | null = null;
@@ -65,7 +75,16 @@ export function useFocusTrap(
 
   return {
     activate() {
-      previouslyFocused = document.activeElement as HTMLElement | null;
+      const active = document.activeElement as HTMLElement | null;
+      // 焦点已在容器内（如内容里的 autofocus 元素在 activate 前已生效）则不抢焦点
+      // （对齐 Semi modalDialogFocus 的 activeElementInDialog 判断）。此时打开前的
+      // 焦点信息已不可得，归还目标置 null（关闭后不归还，焦点自然落文档）。
+      if (active && container.contains(active)) {
+        previouslyFocused = null;
+        if (trapTab) container.addEventListener('keydown', onKeydown);
+        return;
+      }
+      previouslyFocused = active;
       if (trapTab) container.addEventListener('keydown', onKeydown);
       // rememberFocus：若记忆的元素仍在容器内且可聚焦，恢复到它；否则聚焦首个。
       if (
@@ -74,9 +93,9 @@ export function useFocusTrap(
         container.contains(lastInnerFocused) &&
         lastInnerFocused.offsetParent !== null
       ) {
-        lastInnerFocused.focus();
+        lastInnerFocused.focus({ preventScroll });
       } else {
-        getFocusable()[0]?.focus();
+        getFocusable()[0]?.focus({ preventScroll });
       }
     },
     deactivate() {
@@ -86,7 +105,7 @@ export function useFocusTrap(
         const active = document.activeElement as HTMLElement | null;
         lastInnerFocused = active && container.contains(active) ? active : null;
       }
-      if (returnFocus) previouslyFocused?.focus();
+      if (returnFocus) previouslyFocused?.focus({ preventScroll });
       previouslyFocused = null;
     },
   };

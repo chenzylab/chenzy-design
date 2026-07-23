@@ -2,16 +2,25 @@
   import { Modal, Button } from '@chenzy-design/svelte';
 
   let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
 </script>
 
-<Button onclick={() => (visible = true)}>自定义按钮属性</Button>
+<Button onclick={showDialog}>自定义按钮属性</Button>
 <Modal
   title="自定义按钮属性"
   {visible}
+  onOk={handleOk}
+  onCancel={handleCancel}
   okButtonProps={{ size: 'small', type: 'warning' }}
   cancelButtonProps={{ size: 'small', disabled: true }}
-  onOk={() => (visible = false)}
-  onCancel={() => (visible = false)}
 >
   <p>This is a modal with customized button props.</p>
   <p>More content...</p>

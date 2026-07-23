@@ -38,8 +38,8 @@
   interface Props {
     /** 对话框是否可见（受控；受控时不回写）。对齐 Semi visible。 */
     visible?: boolean;
-    /** 标题（string）。对齐 Semi title。 */
-    title?: string;
+    /** 标题（string 或 Snippet）。对齐 Semi title(ReactNode)。 */
+    title?: string | Snippet;
     /** 自定义头部（Snippet），设为 null 不展示头部。对齐 Semi header(ReactNode)。 */
     header?: Snippet | null;
     /** 宽度。对齐 Semi width。 */
@@ -107,10 +107,19 @@
     /** 内容主体。 */
     children?: Snippet;
     ariaLabel?: string;
-    /** 点击确认。对齐 Semi onOk。 */
-    onOk?: () => void;
-    /** 取消/关闭。对齐 Semi onCancel。 */
-    onCancel?: () => void;
+    /**
+     * 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus 方法。
+     * 对齐 Semi preventScroll。
+     */
+    preventScroll?: boolean;
+    /**
+     * 点击确认。返回 Promise 时确认按钮自动 loading（pending 期间）。对齐 Semi onOk。
+     * 返回类型放宽为 unknown：`void | Promise` 的 union 会让 `() => (x = false)` 这类
+     * 简写箭头（返回赋值表达式值）在 TS 下报错。
+     */
+    onOk?: () => unknown;
+    /** 取消/关闭。返回 Promise 时取消按钮自动 loading（pending 期间）。对齐 Semi onCancel。 */
+    onCancel?: () => unknown;
     /** 对话框完全关闭后回调。对齐 Semi afterClose。 */
     afterClose?: () => void;
     /** 显隐变化通知（本库补充，便于非受控回写）。 */
@@ -158,6 +167,7 @@
     modalRender,
     children,
     ariaLabel,
+    preventScroll = false,
     onOk,
     onCancel,
     afterClose,
@@ -198,15 +208,53 @@
   });
   const shouldRender = $derived(keepDOM ? !lazyRender || hasBeenOpened : isOpen);
 
-  function cancel() {
+  // onOk/onCancel 返回 Promise 时对应按钮 loading（对齐 Semi onOKReturnPromiseStatus pending）。
+  let okPending = $state(false);
+  let cancelPending = $state(false);
+
+  function isPromise(v: unknown): v is Promise<unknown> {
+    return !!v && typeof (v as Promise<unknown>).then === 'function';
+  }
+
+  function notifyCancelClose() {
     if (!isControlled) innerOpen = false;
     onVisibleChange?.(false);
-    onCancel?.();
     if (afterClose) queueMicrotask(() => afterClose?.());
   }
 
+  function cancel() {
+    const result = onCancel?.();
+    if (isPromise(result)) {
+      // Promise：pending 期间取消按钮 loading（对齐 Semi）；非受控 resolve 后才关闭（reject 保持打开）。
+      cancelPending = true;
+      result.then(
+        () => {
+          cancelPending = false;
+          notifyCancelClose();
+        },
+        () => (cancelPending = false),
+      );
+      return;
+    }
+    notifyCancelClose();
+  }
+
   function ok() {
-    onOk?.();
+    const result = onOk?.();
+    if (isPromise(result)) {
+      okPending = true;
+      result.then(
+        () => {
+          okPending = false;
+          if (!isControlled) {
+            innerOpen = false;
+            onVisibleChange?.(false);
+          }
+        },
+        () => (okPending = false),
+      );
+      return;
+    }
     if (!isControlled) {
       innerOpen = false;
       onVisibleChange?.(false);
@@ -232,7 +280,7 @@
 
   $effect(() => {
     if (!isOpen || !contentEl) return;
-    const trap = useFocusTrap(contentEl);
+    const trap = useFocusTrap(contentEl, { preventScroll });
     trap.activate();
     const releaseScroll = useScrollLock();
     const releaseInert = rootEl ? useInertBackground(rootEl) : () => {};
@@ -320,8 +368,11 @@
 
   const modalStyle = $derived(
     [
-      widthStyle ? `width:${widthStyle}` : '',
-      heightStyle ? `height:${heightStyle}` : '',
+      // 全屏：外壳撑满视口 + 去外边距（对齐 Semi ModalContent getDialogElement
+      // isFullScreen 分支 width/height:100% + margin:unset）。
+      fullScreen ? 'width:100%' : widthStyle ? `width:${widthStyle}` : '',
+      fullScreen ? 'height:100%' : heightStyle ? `height:${heightStyle}` : '',
+      fullScreen ? 'margin:0' : '',
       style ?? '',
     ]
       .filter(Boolean)
@@ -389,7 +440,9 @@
         {#if hasIcon}
           <span class="cd-modal-icon-wrapper">{@render icon?.()}</span>
         {/if}
-        <Title heading={5} class="cd-modal-title" id={titleId}>{title}</Title>
+        <Title heading={5} class="cd-modal-title" id={titleId}>
+          {#if typeof title === 'function'}{@render title()}{:else}{title}{/if}
+        </Title>
         {#if closable}
           {@render closeBtn()}
         {/if}
@@ -425,12 +478,24 @@
           {@render footer({ ok, cancel })}
         {:else}
           {#if hasCancel}
-            <Button onclick={cancel} {...(cancelButtonProps ?? {})}
-              >{cancelText ?? loc().t('Modal.cancelText')}</Button
+            <!-- 对齐 Semi getCancelButton：type=tertiary（浅色无边框）+ block=footerFill。
+                 Semi 的 autoFocus 由本库 useFocusTrap 进场聚焦首个可聚焦元素（此取消按钮）等效实现。 -->
+            <Button
+              type="tertiary"
+              block={footerFill}
+              onclick={cancel}
+              loading={cancelPending}
+              {...(cancelButtonProps ?? {})}>{cancelText ?? loc().t('Modal.cancelText')}</Button
             >
           {/if}
-          <Button type={okBtnType} onclick={ok} loading={confirmLoading} {...(okButtonProps ?? {})}
-            >{okText ?? loc().t('Modal.okText')}</Button
+          <!-- 对齐 Semi 确认按钮：type=okType + theme=solid（实心）+ block=footerFill -->
+          <Button
+            type={okBtnType}
+            theme="solid"
+            block={footerFill}
+            onclick={ok}
+            loading={confirmLoading || okPending}
+            {...(okButtonProps ?? {})}>{okText ?? loc().t('Modal.okText')}</Button
           >
         {/if}
       </div>
@@ -536,20 +601,24 @@
     border-radius: var(--cd-radius-modal-content-fullscreen);
   }
 
-  /* —— header（对齐 Semi .semi-modal-header）—— */
+  /* —— header（对齐 Semi .semi-modal-header）——
+     font-size 作用于 header 容器（影响非 Title 文本），标题字号由 Title heading={5} 自身决定
+     （对齐 Semi：.semi-modal-title 无 font-size，不覆盖 Typography.Title 的 16px）。 */
   .cd-modal-header {
     display: flex;
     align-items: flex-start;
     margin: var(--cd-spacing-modal-header-marginy) var(--cd-spacing-modal-header-marginx);
+    font-size: var(--cd-font-modal-header-fontsize);
+    font-weight: var(--cd-font-modal-header-fontweight);
     background-color: var(--cd-color-modal-header-bg);
     color: var(--cd-color-modal-main-text);
     border-bottom: var(--cd-width-modal-header-border) solid var(--cd-color-modal-header-border);
   }
+  /* 对齐 Semi .semi-modal-title：仅布局，不设 font-size（保留 Title heading=5 的 16px）。 */
   .cd-modal-header :global(.cd-modal-title) {
     flex: 1 1 auto;
+    width: 100%;
     margin: 0;
-    font-size: var(--cd-font-modal-header-fontsize);
-    font-weight: var(--cd-font-modal-header-fontweight);
   }
 
   /* 关闭按钮定位：header/body-wrapper 里靠右（Semi 用 flex，close 在 title 后） */
@@ -589,14 +658,15 @@
     border-top: var(--cd-width-modal-footer-border) solid var(--cd-color-modal-footer-border);
     border-radius: var(--cd-radius-modal-footer);
   }
-  .cd-modal-footer :global(.cd-btn) {
+  /* 对齐 Semi .semi-modal-footer .semi-button（本库 Button class 为 cd-button 非 cd-btn）。 */
+  .cd-modal-footer :global(.cd-button) {
     margin-left: var(--cd-spacing-modal-footer-button-marginleft);
     margin-right: 0;
   }
   .cd-modal-footerfill {
     display: flex;
   }
-  .cd-modal-footerfill :global(.cd-btn) {
+  .cd-modal-footerfill :global(.cd-button) {
     flex: 1;
   }
 
