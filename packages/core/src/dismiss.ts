@@ -6,8 +6,8 @@
 export type DismissReason = 'esc' | 'outsideClick';
 
 export interface DismissOptions {
-  /** 关闭回调，附带来源 reason（'esc' | 'outsideClick'） */
-  onDismiss: (reason: DismissReason) => void;
+  /** 关闭回调，附带来源 reason（'esc' | 'outsideClick'）与原始事件 */
+  onDismiss: (reason: DismissReason, event: KeyboardEvent | PointerEvent) => void;
   /** close when Escape pressed (default true) */
   escape?: boolean;
   /** close when clicking outside the element (default true) */
@@ -45,7 +45,7 @@ export function useDismiss(
   }
 
   function onKeydown(e: KeyboardEvent): void {
-    if (escape && e.key === 'Escape') onDismiss('esc');
+    if (escape && e.key === 'Escape') onDismiss('esc', e);
   }
   function onPointer(e: PointerEvent): void {
     if (!outsideClick) return;
@@ -56,7 +56,7 @@ export function useDismiss(
       const keep = onOutsidePointer(e) === false || e.defaultPrevented;
       if (keep) return;
     }
-    onDismiss('outsideClick');
+    onDismiss('outsideClick', e);
   }
 
   document.addEventListener('keydown', onKeydown);

@@ -3,11 +3,11 @@
 </script>
 
 <Popover trigger="click">
-  {#snippet content()}
+  {#snippet content({ initialFocusRef })}
     <div style="padding: 12px;">
       <Space>
         <Button>first focusable element</Button>
-        <span style="display: inline-block; width: 140px;">
+        <span use:initialFocusRef style="display: inline-flex; width: 140px;">
           <Input placeholder="focus here" />
         </span>
       </Space>

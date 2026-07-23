@@ -96,6 +96,7 @@ export const meta = {
     { name: 'style', type: 'string', default: "''", desc: '浮层自定义内联样式' },
     { name: 'onVisibleChange', type: '(visible: boolean) => void', default: 'undefined', desc: '显隐切换回调' },
     { name: 'onClickOutSide', type: '(e: MouseEvent) => void', default: 'undefined', desc: '点击浮层与触发器外部的回调（仅 custom/click）' },
+    { name: 'onEscKeyDown', type: '(e: KeyboardEvent) => void', default: 'undefined', desc: '浮层展示时按 Esc 键的回调（与 closeOnEsc 相互独立）' },
     { name: 'afterClose', type: '() => void', default: 'undefined', desc: '浮层完全关闭后的回调' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '触发元素（必填）' },
   ],

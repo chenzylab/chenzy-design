@@ -102,6 +102,8 @@
     onVisibleChange?: ((visible: boolean) => void) | undefined;
     /** 点击浮层与触发器外部区域的回调（仅 custom/click 有效，对齐 Semi onClickOutSide） */
     onClickOutSide?: ((e: MouseEvent) => void) | undefined;
+    /** 浮层展示时按 Esc 键的回调（与 closeOnEsc 是否关闭相互独立，对齐 Semi onEscKeyDown） */
+    onEscKeyDown?: ((e: KeyboardEvent) => void) | undefined;
     /** 浮层完全关闭后的回调 */
     afterClose?: (() => void) | undefined;
     /**
@@ -169,6 +171,7 @@
     getPopupContainer,
     onVisibleChange,
     onClickOutSide,
+    onEscKeyDown,
     afterClose,
     prefixCls = 'cd-tooltip',
     wrapperClassName = '',
@@ -362,14 +365,19 @@
     if (!isOpen || !rootEl) return;
     const allowOutsideClick =
       triggers.includes('click') || triggers.includes('contextMenu') || isCustom;
-    if (!closeOnEsc && !allowOutsideClick) return;
+    // Esc 监听：closeOnEsc（关闭行为）或 onEscKeyDown（回调，独立于关闭）任一存在即开启。
+    const listenEsc = closeOnEsc || !!onEscKeyDown;
+    if (!listenEsc && !allowOutsideClick) return;
     const cleanup = useDismiss(rootEl, {
-      onDismiss: (reason) => {
-        if (reason === 'esc' && !closeOnEsc) return;
+      onDismiss: (reason, event) => {
+        if (reason === 'esc') {
+          onEscKeyDown?.(event as KeyboardEvent);
+          if (!closeOnEsc) return;
+        }
         if (reason === 'outsideClick' && !allowOutsideClick) return;
         setOpen(false);
       },
-      escape: closeOnEsc,
+      escape: listenEsc,
       outsideClick: allowOutsideClick,
       extraTargets: [popEl],
       ...(onClickOutSide
@@ -483,8 +491,25 @@
 
   // dialog 模式：触发器承载 button 角色（aria-haspopup/expanded/controls 挂合法宿主，
   // 对齐 Semi Popover 的 a11y 修复）；tooltip 模式保持纯 span + aria-describedby。
-  // dialog 模式触发器可 Enter/Space 激活（与原生 button 一致）。
+  // 触发器 keydown：ArrowUp/Down 移焦（所有 trigger）；Enter/Space 激活（仅 dialog）。
   function onTriggerKeydown(e: KeyboardEvent) {
+    // ⬆️⬇️ 打开后将焦点移入浮层（对齐 Semi _handleTriggerArrowDown/UpKeydown）：
+    // ArrowDown → 首个可聚焦元素，ArrowUp → 最后一个（浮层内无可交互元素则无响应）。
+    // 对所有 trigger 生效（不限 dialog，hover/focus 的 tooltip 同样支持键盘移焦）。
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && isOpen && popEl) {
+      const list = [
+        ...popEl.querySelectorAll<HTMLElement>(
+          'input, textarea, select, button, a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ];
+      const target = e.key === 'ArrowDown' ? list[0] : list[list.length - 1];
+      if (target) {
+        e.preventDefault();
+        target.focus();
+      }
+      return;
+    }
+    // Enter/Space 打开仅 dialog（click/custom）；custom 完全受控不由键盘改显隐。
     if (!isDialog || !allowShow || isCustom) return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault();
@@ -522,7 +547,7 @@
     aria-describedby={!isDialog && isOpen ? tipId : undefined}
     aria-disabled={isDialog && disabled ? 'true' : undefined}
     onclickcapture={isDialog ? onTriggerClickCapture : undefined}
-    onkeydown={isDialog ? onTriggerKeydown : undefined}
+    onkeydown={onTriggerKeydown}
   >
     {@render children?.()}
   </span>
