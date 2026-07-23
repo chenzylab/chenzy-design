@@ -1,13 +1,15 @@
 <script lang="ts">
   import { Card } from '@chenzy-design/svelte';
+
+  const { Meta } = Card;
 </script>
 
-<!-- 用 cover 设置封面，出血铺满卡片顶部 -->
 <Card style="max-width: 300px;">
   {#snippet cover()}
-    <div
-      style="height: 160px; background: linear-gradient(135deg, var(--cd-color-primary) 0%, var(--cd-color-primary-light-active) 100%);"
-    ></div>
+    <img
+      alt="example"
+      src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/card-cover-docs-demo2.jpeg"
+    />
   {/snippet}
-  <Card.Meta title="卡片封面" />
+  <Meta title="卡片封面" />
 </Card>

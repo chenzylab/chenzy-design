@@ -70,6 +70,18 @@ export const meta = {
       desc: 'dropdown 模式下溢出项变化时回调，携带当前可见 tab keys',
     },
     {
+      name: 'class',
+      type: 'string',
+      default: 'undefined',
+      desc: '根节点自定义类名（对齐 Semi className）',
+    },
+    {
+      name: 'style',
+      type: 'string | Record<string, string>',
+      default: 'undefined',
+      desc: '根节点自定义内联样式（对齐 Semi style）',
+    },
+    {
       name: 'contentStyle',
       type: 'string | Record<string, string>',
       default: 'undefined',
