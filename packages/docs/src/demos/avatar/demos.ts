@@ -39,5 +39,4 @@ export const demos: DemoEntry[] = [
   entry('12-group-max.svelte', 'maxCount 折叠', '通过 maxCount 设置展示数量，超出折叠为 +N。'),
   entry('13-render-more.svelte', '自定义 more', 'renderMore 自定义 +N 溢出头像，可结合 Popover 展开剩余成员。'),
   entry('14-overlap-from.svelte', '覆盖方式', 'overlapFrom 控制层叠压盖方向：start=前压后，end=后压前。'),
-  entry('15-rtl.svelte', 'RTL', 'dir="rtl" 作用域下头像组层叠方向、hover 遮罩定位随之镜像。'),
 ];
