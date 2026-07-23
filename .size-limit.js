@@ -70,7 +70,8 @@ const components = [
   ['typography', '{ Title, Text, Paragraph, Numeral }', '8 KB'],
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
-  ['modal', '{ modal }', '6.2 KB'],
+  // modal：6.2→6.4 对齐 Semi 补 onOk/onCancel Promise loading、preventScroll、命令式 config 全字段（实测 6.29）
+  ['modal', '{ modal }', '6.4 KB'],
   ['notification', '{ notification }', '5.5 KB'],
   // 浮层三件套对齐 Semi 破坏性重写后箭头定位职责回归 Tooltip 基座：Tooltip 内联 12 方位
   // x-placement CSS（+40%），Popover/Popconfirm 移除重复箭头 CSS 与中间变量层而下降。

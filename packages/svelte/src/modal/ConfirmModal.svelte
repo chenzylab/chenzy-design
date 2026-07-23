@@ -29,13 +29,28 @@
     /** confirm 显示取消按钮；info/success/warning/error 默认单按钮 */
     hasCancel?: boolean;
     width?: number | string;
+    height?: number | string;
     centered?: boolean;
+    /** 右上角关闭按钮（对齐 Semi 命令式走 Modal 默认 true） */
+    closable?: boolean;
+    /** 显式确认按钮 loading（缺省时异步 onOk 自动 pending loading） */
+    confirmLoading?: boolean;
+    footerFill?: boolean;
+    mask?: boolean;
+    /** 点遮罩关闭（对齐 Semi 命令式走 Modal 默认 true） */
+    maskClosable?: boolean;
+    maskStyle?: string;
+    bodyStyle?: string;
+    style?: string;
+    class?: string;
+    modalContentClass?: string;
     okButtonProps?: Record<string, unknown>;
     cancelButtonProps?: Record<string, unknown>;
     zIndex?: number;
     /** 返回 Promise 时自动 loading，resolve 关闭 / reject 复位 */
-    onOk?: () => void | Promise<unknown>;
-    onCancel?: () => void;
+    onOk?: () => unknown;
+    /** 返回 Promise 时取消按钮自动 loading，resolve 关闭 / reject 复位 */
+    onCancel?: () => unknown;
     /** 关闭后由宿主卸载用 */
     onClose?: () => void;
     /** 自定义图标：命令式传 svg 字符串，声明式可传 Snippet；覆盖内置类型图标 */
@@ -50,8 +65,20 @@
     cancelText,
     okType,
     hasCancel = type === 'confirm',
-    width = 420,
-    centered = true,
+    // 对齐 Semi：命令式无覆盖默认，走 Modal 默认（size small=448px、不居中、closable/maskClosable=true）。
+    width = 448,
+    height,
+    centered = false,
+    closable = true,
+    confirmLoading,
+    footerFill,
+    mask,
+    maskClosable = true,
+    maskStyle,
+    bodyStyle,
+    style,
+    class: className,
+    modalContentClass,
     okButtonProps,
     cancelButtonProps,
     zIndex,
@@ -74,8 +101,14 @@
     ...(okText !== undefined ? { okText } : {}),
     ...(cancelText !== undefined ? { cancelText } : {}),
     ...(okButtonProps !== undefined ? { okButtonProps } : {}),
-    ...(cancelButtonProps !== undefined ? { cancelButtonProps } : {}),
     ...(zIndex !== undefined ? { zIndex } : {}),
+    ...(height !== undefined ? { height } : {}),
+    ...(footerFill !== undefined ? { footerFill } : {}),
+    ...(mask !== undefined ? { mask } : {}),
+    ...(maskStyle !== undefined ? { maskStyle } : {}),
+    ...(bodyStyle !== undefined ? { bodyStyle } : {}),
+    ...(style !== undefined ? { style } : {}),
+    ...(modalContentClass !== undefined ? { modalContentClass } : {}),
   });
 
   function close() {
@@ -100,67 +133,93 @@
     }
   }
 
-  function handleCancel() {
-    onCancel?.();
-    close();
+  // 对齐 Semi ConfirmModal handleCancel：onCancel 返回 Promise 时取消按钮 loading，resolve 关闭 / reject 保持打开。
+  let cancelLoading = $state(false);
+  async function handleCancel() {
+    if (cancelLoading) return;
+    const result = onCancel?.();
+    if (result instanceof Promise) {
+      cancelLoading = true;
+      try {
+        await result;
+        close();
+      } catch {
+        cancelLoading = false;
+      }
+    } else {
+      close();
+    }
   }
 </script>
 
+<!--
+  对齐 Semi ConfirmModal：icon/title 走 Modal 默认头部通道（icon-wrapper + Title + 关闭按钮），
+  不再自定义 header 整体替换——否则 closable 关闭按钮不渲染（默认头部才含 closer）。
+-->
 <Modal
-  class="cd-modal-confirm"
+  class={['cd-modal-confirm', className].filter(Boolean).join(' ')}
   {visible}
   {width}
   {centered}
-  closable={false}
-  maskClosable={false}
-  confirmLoading={loading}
+  {closable}
+  {maskClosable}
+  confirmLoading={confirmLoading ?? loading}
   okType={effectiveOkType}
   {hasCancel}
   onOk={handleOk}
   onCancel={handleCancel}
+  cancelButtonProps={{ loading: cancelLoading, ...(cancelButtonProps ?? {}) }}
+  icon={confirmIcon}
   {...optionalProps}
+  {...(title != null ? { title: confirmTitle } : {})}
 >
-  {#snippet header()}
-    <!-- confirm 头部：icon-wrapper（类型图标）+ title-text，margin-bottom 更紧凑（对齐 Semi confirm header）。 -->
-    <div class="cd-modal-header cd-modal-confirm-header">
-      <span class="cd-modal-icon-wrapper cd-modal-confirm-icon cd-modal-{type}-icon">
-        {#if iconIsString}
-          <Icon svg={icon as string} size="extra-large" />
-        {:else if icon}
-          {@render (icon as Snippet)()}
-        {:else if type === 'info'}
-          <IconInfoCircle size="extra-large" />
-        {:else if type === 'success'}
-          <IconTickCircle size="extra-large" />
-        {:else if type === 'warning'}
-          <IconAlertTriangle size="extra-large" />
-        {:else if type === 'error'}
-          <IconAlertCircle size="extra-large" />
-        {:else}
-          <IconHelpCircle size="extra-large" />
-        {/if}
-      </span>
-      {#if title != null}
-        <span class="cd-modal-confirm-title-text">{title}</span>
-      {/if}
-    </div>
-  {/snippet}
   {#if content}
-    <div class="cd-modal-confirm-content cd-modal-confirm-content-withIcon">{content}</div>
+    <div
+      class={['cd-modal-confirm-content', 'cd-modal-confirm-content-withIcon']
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {content}
+    </div>
   {/if}
 </Modal>
 
+{#snippet confirmIcon()}
+  <span class="cd-modal-confirm-icon cd-modal-{type}-icon">
+    {#if iconIsString}
+      <Icon svg={icon as string} size="extra-large" />
+    {:else if icon}
+      {@render (icon as Snippet)()}
+    {:else if type === 'info'}
+      <IconInfoCircle size="extra-large" />
+    {:else if type === 'success'}
+      <IconTickCircle size="extra-large" />
+    {:else if type === 'warning'}
+      <IconAlertTriangle size="extra-large" />
+    {:else if type === 'error'}
+      <IconAlertCircle size="extra-large" />
+    {:else}
+      <IconHelpCircle size="extra-large" />
+    {/if}
+  </span>
+{/snippet}
+
+{#snippet confirmTitle()}
+  <span class="cd-modal-confirm-title-text">{title}</span>
+{/snippet}
+
 <style>
-  /* confirm 头部：更紧凑的底部间距（对齐 Semi $spacing-modal_confirm_header-marginBottom = 8px）。 */
-  :global(.cd-modal-confirm-header) {
+  /* confirm 头部：更紧凑的底部间距（对齐 Semi .semi-modal-confirm .semi-modal-header marginBottom=8px）。 */
+  :global(.cd-modal-confirm .cd-modal-header) {
     align-items: center;
-    margin-bottom: var(--cd-spacing-modal-confirm-header-marginbottom) !important;
+    margin-bottom: var(--cd-spacing-modal-confirm-header-marginbottom);
   }
+  /* 对齐 Semi .semi-modal-confirm-icon：inline-flex + 默认 primary 色，类型类覆盖。 */
   :global(.cd-modal-confirm-icon) {
     display: inline-flex;
-    margin-right: var(--cd-spacing-modal-confirm-icon-wrapper-marginright);
+    color: var(--cd-color-modal-primary-icon);
   }
-  /* 类型图标色（对齐 Semi $color-modal_*-icon） */
+  /* 类型图标色（对齐 Semi $color-modal_*-icon；.semi-modal-{type}-icon 覆盖 confirm 基础色） */
   :global(.cd-modal-info-icon) {
     color: var(--cd-color-modal-info-icon);
   }
@@ -170,16 +229,11 @@
   :global(.cd-modal-error-icon) {
     color: var(--cd-color-modal-danger-icon);
   }
-  :global(.cd-modal-warning-icon),
-  :global(.cd-modal-confirm-icon.cd-modal-confirm-icon) {
-    color: var(--cd-color-modal-warning-icon);
-  }
   :global(.cd-modal-warning-icon) {
     color: var(--cd-color-modal-warning-icon);
   }
+  /* 命令式标题 span：字号/字重由外层 Title heading={5} 决定（对齐 Semi，不覆盖）。 */
   :global(.cd-modal-confirm-title-text) {
-    font-size: var(--cd-font-modal-header-fontsize);
-    font-weight: var(--cd-font-modal-header-fontweight);
     color: var(--cd-color-modal-main-text);
   }
   :global(.cd-modal-confirm-content) {

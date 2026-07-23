@@ -10,7 +10,7 @@ export const meta = {
   exports: ['Modal', 'ModalContextHolder', 'modal', 'useModal'],
   props: [
     { name: 'visible', type: 'boolean', default: 'undefined', desc: '对话框是否可见（受控；受控时不回写）' },
-    { name: 'title', type: 'string', default: 'undefined', desc: '标题文案' },
+    { name: 'title', type: 'string | Snippet', default: 'undefined', desc: '标题（string 或 Snippet，对齐 Semi ReactNode）' },
     { name: 'header', type: 'Snippet | null', default: 'undefined', desc: '自定义头部，null 不展示头部' },
     { name: 'width', type: 'number | string', default: '448', desc: '宽度' },
     { name: 'height', type: 'number | string', default: 'undefined', desc: '高度' },
@@ -70,8 +70,9 @@ export const meta = {
     },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '内容主体' },
     { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无 title 时的 aria-label' },
-    { name: 'onOk', type: '() => void', default: 'undefined', desc: '点击确认' },
-    { name: 'onCancel', type: '() => void', default: 'undefined', desc: '取消/关闭' },
+    { name: 'preventScroll', type: 'boolean', default: 'false', desc: '聚焦时是否阻止浏览器滚动文档以显示新聚焦元素（作用于组件内 focus）' },
+    { name: 'onOk', type: '() => void | Promise<unknown>', default: 'undefined', desc: '点击确认；返回 Promise 时确认按钮自动 loading' },
+    { name: 'onCancel', type: '() => void | Promise<unknown>', default: 'undefined', desc: '取消/关闭；返回 Promise 时取消按钮自动 loading' },
     { name: 'afterClose', type: '() => void', default: 'undefined', desc: '对话框完全关闭后回调' },
     { name: 'onVisibleChange', type: '(visible: boolean) => void', default: 'undefined', desc: '显隐变化通知' },
     {

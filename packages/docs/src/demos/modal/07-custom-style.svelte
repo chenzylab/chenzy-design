@@ -2,16 +2,25 @@
   import { Modal, Button } from '@chenzy-design/svelte';
 
   let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
 </script>
 
-<Button onclick={() => (visible = true)}>自定义对话框样式</Button>
+<Button onclick={showDialog}>自定义对话框样式</Button>
 <Modal
   title="自定义样式"
   {visible}
+  onOk={handleOk}
+  onCancel={handleCancel}
   centered
   bodyStyle="overflow: auto; height: 200px;"
-  onOk={() => (visible = false)}
-  onCancel={() => (visible = false)}
 >
   <p style="line-height: 1.8;">
     chenzy-design 是对齐 Semi Design 的 Svelte 5 组件库。设计系统包含设计语言以及一整套可复用的前端组件，帮助设计师与开发者更容易地打造高质量的、用户体验一致的、符合设计规范的
