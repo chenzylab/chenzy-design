@@ -1,10 +1,11 @@
 <script lang="ts">
-  // 多色图标：四色渐变，缺省用默认多彩色，也可通过 fill 传 string[] 自定义（对齐 Semi）。
+  // 多色图标：当前的多色按钮可传入四个颜色。通过 fill 属性设置颜色，
+  // 支持 string 与 string[]（严格复刻 Semi）。
   import { IconAIBellLevel3, IconAIWandLevel3, IconAIFilledLevel3 } from '@chenzy-design/icons';
 </script>
 
-<div style="display: flex; gap: 16px; align-items: center;">
-  <IconAIBellLevel3 size="extra-large" />
+<div>
+  <IconAIBellLevel3 style="margin-right: 10px;" size="extra-large" />
   <IconAIWandLevel3
     fill={[
       'var(--cd-color-danger)',
@@ -12,6 +13,7 @@
       'var(--cd-color-primary)',
       'var(--cd-color-warning)',
     ]}
+    style="margin-right: 10px;"
     size="extra-large"
   />
   <IconAIFilledLevel3
