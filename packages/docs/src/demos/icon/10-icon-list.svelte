@@ -144,7 +144,7 @@
     title={name}
     onclick={() => copyName(name)}
   >
-    <span class="icon-list__glyph"><IconComp /></span>
+    <span class="icon-list__glyph"><IconComp size="extra-large" /></span>
     <span class="icon-list__name">{copied === name ? '已复制' : name}</span>
   </button>
 {/snippet}

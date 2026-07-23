@@ -1,9 +1,13 @@
 <script lang="ts">
+  import Icon, { type IconSize } from './Icon.svelte';
   import { getFillColor } from './utils.js';
 
   interface Props {
     /** 多彩填充色：string 或 string[]（缺省用 Semi 默认渐变色）。 */
     fill?: string | string[];
+    size?: IconSize;
+    spin?: boolean;
+    rotate?: number;
     class?: string;
     style?: string;
     [key: string]: unknown;
@@ -13,13 +17,14 @@
   const [primaryColor, secondColor] = $derived.by(() => getFillColor(fill, 2));
 </script>
 
-<!-- IconAIWandLevel2 — AI 多彩图标，对齐 Semi IconAIWandLevel2（type='ai_wand_level_2'）。fill 数组自定义多色。 -->
+<!-- IconAIWandLevel2 — AI 多彩图标，对齐 Semi IconAIWandLevel2（convertIcon 包 Icon 基座，type='ai_wand_level_2'）。fill 数组自定义多色，size/spin/rotate 由 Icon 基座承载。 -->
+<Icon type="ai_wand_level_2" {...rest}>
 <svg
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             width="1em"
-            height="1em" focusable="false" aria-hidden="true" {...rest}
+            height="1em" focusable="false" aria-hidden="true"
         >
             <path
                 fill-rule="evenodd"
@@ -38,3 +43,4 @@
                 fill={secondColor}
             />
         </svg>
+</Icon>

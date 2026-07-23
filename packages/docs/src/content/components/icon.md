@@ -2,147 +2,151 @@
 title: Icon 图标
 name: icon
 category: basic
-brief: 组件库最底层的视觉原语，负责以统一的尺寸、颜色、对齐方式渲染矢量图标。
+brief: 语义化的矢量图形。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Icon 是组件库最底层的视觉原语，负责以统一的尺寸、颜色、对齐方式渲染矢量图标。它有两个使用层级：内置图标（配合 `@chenzy-design/icons` 包导出的具名图标组件，按需引入、tree-shaking 友好）；自定义图标（通过 `<Icon>` 容器 + slot 或 `svg`/`component` prop，把外部图标纳入统一的尺寸/颜色/旋转/状态体系）。
+  import IconList from '../../demos/icon/10-icon-list.svelte';
+  import Basic from '../../demos/icon/07-named-basic.svelte';
+  import basicSrc from '../../demos/icon/07-named-basic.svelte?raw';
+  import Rotate from '../../demos/icon/11-named-rotate.svelte';
+  import rotateSrc from '../../demos/icon/11-named-rotate.svelte?raw';
+  import Size from '../../demos/icon/12-named-size.svelte';
+  import sizeSrc from '../../demos/icon/12-named-size.svelte?raw';
+  import Color from '../../demos/icon/13-named-color.svelte';
+  import colorSrc from '../../demos/icon/13-named-color.svelte?raw';
+  import TwoTone from '../../demos/icon/08-two-tone.svelte';
+  import twoToneSrc from '../../demos/icon/08-two-tone.svelte?raw';
+  import MultiTone from '../../demos/icon/09-multi-tone.svelte';
+  import multiToneSrc from '../../demos/icon/09-multi-tone.svelte?raw';
+  import Custom from '../../demos/icon/14-custom.svelte';
+  import customSrc from '../../demos/icon/14-custom.svelte?raw';
+  import SvgString from '../../demos/icon/05-source-a11y.svelte';
+  import svgStringSrc from '../../demos/icon/05-source-a11y.svelte?raw';
+  import PresetIcons from '../../demos/icon/06-preset-icons.svelte';
+  import presetIconsSrc from '../../demos/icon/06-preset-icons.svelte?raw';
+  import AriaLabel from '../../demos/icon/15-aria-label.svelte';
+  import ariaLabelSrc from '../../demos/icon/15-aria-label.svelte?raw';
+</script>
 
-它解决三个一致性问题：尺寸统一（通过 `size` 枚举映射到 token，保证与同行 Button/Input 文本基线对齐）；颜色继承（默认 `fill: currentColor`，跟随父级文本色）；a11y 默认正确（装饰性图标默认对屏幕阅读器隐藏，语义图标强制要求 `label`）。
+## 图标列表
 
-## 图标集
+默认的图标集 `@chenzy-design/icons` 包含面性、线性、AI 三套图标。面性图标、线性图标，以及 AI 图标中的单色图标默认不带颜色，可通过 css color 属性更改颜色。
+AI 图标中的双色，多色图标有默认颜色，可以通过 fill 更改颜色。
 
-默认图标集 `@chenzy-design/icons`（523 个）包含面性、线性、AI 三套图标。面性图标、线性图标，以及 AI 图标中的单色图标默认不带颜色，可通过 CSS `color` 属性更改颜色；AI 图标中的双色、多色图标有默认颜色，可通过 `fill` 属性更改（支持 `string` 与 `string[]`）。
+`@chenzy-design/icons-lab` 为彩色图标集，需单独安装，不可改色。
 
-`@chenzy-design/icons-lab`（84 个）为彩色图标集，自带颜色、不可改色。
+<div class="not-prose">
+  <IconList />
+</div>
 
-具名图标用法与 Semi 一致：`import { IconHome } from '@chenzy-design/icons'`，即 `<IconHome />`，继承 Icon 基座的 `size`/`spin`/`rotate`/`fill` 属性。全部图标见下方「图标列表」，点击可复制图标名。
+## 代码演示
 
-## 两种图标用法
+### 如何引入
 
-本设计系统提供两条并行的图标路径，按需选用：
+```jsx
+import { Icon } from '@chenzy-design/svelte';
+import { IconHome } from '@chenzy-design/icons';
+import { IconAvatar, IconCard } from '@chenzy-design/icons-lab';
+```
 
-### 一、`<Icon>` 组件（推荐用于需统一控制的场景）
+### 基础使用
 
-自己封装的 `<Icon>` 容器，把图标纳入统一的 `size` / `color` / `status` / `spin` / `rotate` / a11y 体系。适合需要语义状态色、加载旋转、或与表单控件基线严格对齐的场景。用法见上方各示例。
+从`@chenzy-design/icons`包中引入图标
 
-### 二、UnoCSS `preset-icons`（纯 class，轻量）
+<DemoBox code={basicSrc}><Basic /></DemoBox>
 
-无需经过组件，直接写一个图标 class 即可渲染任意 [Iconify](https://icon-sets.iconify.design/) 图标（30 万+ 图标）。图标以**纯 CSS** 形式渲染，不是 img 也不是字体。本站已内置 [Lucide](https://lucide.dev/) 图标集：
+### 旋转
+
+从`@chenzy-design/icons`包中引入图标，自带尺寸、旋转、spin功能
+
+<DemoBox code={rotateSrc}><Rotate /></DemoBox>
+
+### 尺寸
+
+> 可以改变`font-size`来更改图标大小
+
+Icon组件封装了size属性，可以更方便地定义图标尺寸，支持 `extra-small` (8x8)，`small` (12x12)， `default` (16x16)， `large` (20x20)， `extra-large` (24x24)，当size指定为`inherit`时，图标大小继承当前上下文字体大小
+
+<DemoBox code={sizeSrc}><Size /></DemoBox>
+
+### 颜色
+
+单色图标会自动继承外部容器 CSS 的 `color` 属性
+你还可以通过给 Icon 设置 style props 来修改图标的颜色。
+
+<DemoBox code={colorSrc}><Color /></DemoBox>
+
+### 双色图标
+
+双色图标可以通过 `fill` 属性设置颜色，支持 string 以及 string[]。
+
+<DemoBox code={twoToneSrc}><TwoTone /></DemoBox>
+
+### 多色按钮
+
+多色图标，当前的多色按钮可传入四个颜色。可以通过 `fill` 属性设置颜色，支持 string 以及 string[]。
+
+<DemoBox code={multiToneSrc}><MultiTone /></DemoBox>
+
+### 自定义图标
+
+可以使用自定义图标传入Icon组件。Icon组件支持 size、rotate、spin 等属性。React 的 `svg={<CustomIcon />}` 在本库映射为 `svg={snippet}`（`svg` 亦接受可信来源的 SVG 字符串，见下）。
+
+<DemoBox code={customSrc}><Custom /></DemoBox>
+
+### 使用 SVG 字符串作为图标源
+
+Semi 通过 `@svgr/webpack` 把 svg 文件转成 ReactComponent；本库对应做法是以 Vite 的 `?raw` 导入把 svg 文件读成字符串传给 `svg` prop（内部 `{@html}` 渲染，来源须可信）。提供 `type` 后根元素为 `role="img"` + `aria-label`，供屏幕阅读器读出；`fill` 可覆盖填充色。
 
 ```svelte
-<span class="i-lucide-house"></span>
-<span class="i-lucide-star text-amber-500"></span>
-<span class="i-lucide-bell" role="img" aria-label="通知"></span>
+<script>
+  import { Icon } from '@chenzy-design/svelte';
+  import star from './star.svg?raw';
+</script>
+
+<Icon svg={star} />
 ```
 
-#### class 命名规则
+<DemoBox code={svgStringSrc}><SvgString /></DemoBox>
 
-格式为 `<前缀><图标集>-<图标名>`，默认前缀 `i-`。两种分隔写法等价：
+### UnoCSS 图标（纯 class，本库补充）
 
-```html
-<span class="i-lucide-house"></span>   <!-- 连字符写法 -->
-<span class="i-lucide:house"></span>   <!-- 冒号写法 -->
-```
+文档站另内置一条不经过组件的图标路径：UnoCSS `preset-icons` 的 `i-<图标集>-<图标名>` class，可渲染任意 [Iconify](https://icon-sets.iconify.design/) 图标。图标以纯 CSS 渲染，尺寸随 `font-size`、颜色随 `currentColor`；class 必须静态出现在源码中（构建期生成 CSS），a11y 需自理（装饰性加 `aria-hidden`，语义性加 `role="img"` + `aria-label`）。
 
-#### 渲染模式（mask / bg / auto）
+<DemoBox code={presetIconsSrc}><PresetIcons /></DemoBox>
 
-preset-icons 有三种渲染策略，用 query 后缀切换：
+## API参考
 
-```html
-<!-- auto（默认）：按图标自身样式自动选 mask 或 bg -->
-<span class="i-lucide-house"></span>
+### Icon
 
-<!-- ?mask：以 background-color + CSS mask 渲染，单色，自动继承 currentColor -->
-<span class="i-lucide-house?mask text-red-500"></span>
+| 属性  | 说明        | 类型            | 默认值 |
+|-------|-------------|-----------------|--------|
+| class | 类名 | string | 无    |
+| fill | 双色，多色图标的填充颜色。具名 AI 图标（`IconAI…Level2/3`）支持 string 与 string[]；`<Icon>` 基座上为 string（以 `color` 覆盖 currentColor 填充） | string \| string[] | 无 |
+| onclick | 单击图标的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| onmousedown | 鼠标按钮按下的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| onmouseenter | 进入图标的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| onmouseleave | 离开图标的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| onmousemove | 移动鼠标的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| onmouseup | 鼠标按钮抬起的回调事件（原生事件透传） | (e: Event) => void | 无    |
+| rotate | 旋转度数 | number |   |
+| size | 尺寸，支持`inherit`，`extra-small`，`small`， `default`， `large`， `extra-large` | string | `default`  |
+| spin | 旋转动画 | boolean |   |
+| style | 图标样式 | string | 无    |
+| svg | 图标内容：SVG 字符串（`{@html}` 渲染，来源须可信）或自定义图标 Snippet | string \| Snippet | 无    |
+| type | 图标语义类型，映射到 aria-label 与 `cd-icon-{type}` 类 | string | 无    |
+| children | 自定义图标内容（`svg` 未传时的备选插槽） | Snippet | 无    |
 
-<!-- ?bg：以 background-image 渲染，保留图标原始多色，无法改色 -->
-<span class="i-vscode-icons-file-type-pnpm?bg"></span>
-```
+## Accessibility
 
-- **单色图标**用 mask 模式，可随 `currentColor` / `text-*` 改色。
-- **多色图标**（如品牌 logo、文件类型图标）用 bg 模式，保留原色。
+### ARIA
 
-#### 颜色与尺寸
+- Icon 组件 role 为 img，它的 aria-label 默认为组件的文件名。例如 IconHome 的 aria-label 为 `home`，如果你有更好的语义化名字，可以通过 aria-label 传入。
 
-```html
-<!-- 尺寸：默认 1em，用 text-* / font-size 控制 -->
-<span class="i-lucide-house text-2xl"></span>
+<DemoBox code={ariaLabelSrc}><AriaLabel /></DemoBox>
 
-<!-- 颜色（mask 模式）：继承文本色，直接用 text-* 改色 -->
-<span class="i-lucide-house text-orange-500"></span>
-```
-
-也可在 `presetIcons()` 里用 `scale` 统一放大倍数、`extraProperties` 统一附加样式（本站已设 `display:inline-block` + `vertical-align:middle`）。
-
-#### 注意事项
-
-- 图标数据来自本地 `@iconify-json/lucide` 包，**离线可用、可预渲染**，不依赖 CDN。
-- **a11y 需自理**：装饰性图标加 `aria-hidden="true"`；语义图标加 `role="img"` + `aria-label`（`<Icon>` 组件路径会自动处理，class 路径不会）。
-- ⚠️ class 必须**静态出现在源码**中，UnoCSS 才能在构建期生成对应 CSS——不要用运行时字符串拼接 class 名。若图标名确实动态，需加入 `safelist`（见下）。
-
-### 如何换用 / 追加其它图标库
-
-`preset-icons` 支持所有 Iconify 图标集，只需装对应的 `@iconify-json/<图标集>` 包。以追加 [Tabler](https://tabler.io/icons) 为例：
-
-```bash
-pnpm add -D @iconify-json/tabler
-```
-
-装好后即可直接使用 `i-tabler-*`，**无需改配置**——Node 环境下 preset-icons 会按 `i-<图标集>-*` 前缀自动从对应包解析。常见图标集：`@iconify-json/lucide`、`@iconify-json/tabler`、`@iconify-json/carbon`、`@iconify-json/material-symbols`。
-
-想一次性装齐所有图标集（体积较大，仅建议在图标不确定的探索期用）：
-
-```bash
-pnpm add -D @iconify/json
-```
-
-浏览器/无本地包场景可走 CDN 动态获取（本站不用，因为要离线预渲染）：
-
-```ts
-import presetIcons from '@unocss/preset-icons/browser';
-presetIcons({ cdn: 'https://esm.sh/' });
-```
-
-### 动态图标名（safelist）
-
-当图标名在运行时才确定、无法静态出现在源码时，把可能用到的 class 显式列进 `safelist`，强制生成：
-
-```ts
-// vite.config.ts → UnoCSS({ ... })
-UnoCSS({
-  safelist: ['i-lucide-house', 'i-lucide-settings', 'i-lucide-bell'],
-  presets: [/* ... */],
-});
-```
-
-### 关键配置项
-
-配置位于 `packages/docs/vite.config.ts` 的 `presetIcons()`：
-
-```ts
-presetIcons({
-  prefix: 'i-',          // class 前缀，默认 'i-'
-  mode: 'auto',          // 'mask' | 'bg' | 'auto'，默认 'auto'
-  scale: 1.2,            // 尺寸倍数，默认 1（乘以 1em）
-  unit: 'em',            // 尺寸单位，默认 'em'
-  extraProperties: {     // 附加到所有图标的 CSS
-    display: 'inline-block',
-    'vertical-align': 'middle',
-  },
-  warn: true,            // 图标缺失时告警，默认 false
-  // autoInstall: true,  // 缺包时自动安装（仅 Node，默认 false）——本站关闭，依赖显式声明
-});
-```
-
-## 何时使用
-
-在需要矢量图标的任意场景使用。被点击的场景应由外层 Button/可聚焦容器承载，Icon 不自带点击语义角色，避免给非交互元素绑定 `on:click`。
-
-## 无障碍
-
-- 装饰性图标（无 `label`/无 `title` slot）：根元素 `aria-hidden="true"`，内部 `<svg>` 设 `focusable="false"`，对辅助技术完全透明。
-- 语义图标（有 `label` 或 `title` slot）：根元素 `role="img"`；`label` → `aria-label`；`title` slot → 生成 `<title>` 并 `aria-labelledby` 指向它。
-- `@media (prefers-reduced-motion: reduce)` 下禁用 `spin` 动画，保持静态。
-- Icon 本身不可聚焦，不进入 tab 序列。
+- Icon 内部的 svg 元素为装饰元素，默认设置了 aria-hidden 以不被屏幕阅读器阅读

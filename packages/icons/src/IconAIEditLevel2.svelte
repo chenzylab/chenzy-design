@@ -1,9 +1,13 @@
 <script lang="ts">
+  import Icon, { type IconSize } from './Icon.svelte';
   import { getFillColor } from './utils.js';
 
   interface Props {
     /** 多彩填充色：string 或 string[]（缺省用 Semi 默认渐变色）。 */
     fill?: string | string[];
+    size?: IconSize;
+    spin?: boolean;
+    rotate?: number;
     class?: string;
     style?: string;
     [key: string]: unknown;
@@ -13,13 +17,14 @@
   const [primaryColor, secondColor] = $derived.by(() => getFillColor(fill, 2));
 </script>
 
-<!-- IconAIEditLevel2 — AI 多彩图标，对齐 Semi IconAIEditLevel2（type='ai_edit_level_2'）。fill 数组自定义多色。 -->
+<!-- IconAIEditLevel2 — AI 多彩图标，对齐 Semi IconAIEditLevel2（convertIcon 包 Icon 基座，type='ai_edit_level_2'）。fill 数组自定义多色，size/spin/rotate 由 Icon 基座承载。 -->
+<Icon type="ai_edit_level_2" {...rest}>
 <svg
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             width="1em"
-            height="1em" focusable="false" aria-hidden="true" {...rest}
+            height="1em" focusable="false" aria-hidden="true"
         >
             <path
                 d="M16.28 5.04a2 2 0 0 1 2.83 0l2.15 2.14a2 2 0 0 1 0 2.84L11.24 20.04c-.7.7-1.6 1.18-2.56 1.37l-2.97.6a1.2 1.2 0 0 1-1.42-1.42l.6-2.97c.19-.97.67-1.86 1.37-2.56L16.28 5.04Zm-8.6 11.43c-.43.42-.71.96-.83 1.54l-.36 1.8 1.8-.37c.58-.11 1.11-.4 1.53-.82l7.29-7.29-2.15-2.15-7.29 7.3Zm8.7-8.7 2.15 2.14 1.31-1.3-2.15-2.15-1.3 1.3Z"
@@ -32,3 +37,4 @@
                 fill={primaryColor}
             />
         </svg>
+</Icon>
