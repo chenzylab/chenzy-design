@@ -27,12 +27,21 @@ describe('Popconfirm a11y', () => {
     await expectNoAxeViolations(document.body);
   });
 
-  it('触发器声明 disclosure 语义：role=button + aria-haspopup=dialog + aria-expanded', async () => {
-    render(Fixture, { props: { visible: true } });
+  it('click 模式触发器声明 disclosure 语义：role=button + aria-haspopup=dialog + aria-expanded', async () => {
+    render(Fixture, { props: { visible: true, trigger: 'click' } });
     const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
     expect(trigger?.getAttribute('role')).toBe('button');
     expect(trigger?.getAttribute('aria-haspopup')).toBe('dialog');
     expect(trigger?.getAttribute('aria-expanded')).toBe('true');
+    await expectNoAxeViolations(document.body);
+  });
+
+  it('custom 模式触发器纯透传（对齐 Semi：不 wrap、无 role/aria-haspopup）', async () => {
+    render(Fixture, { props: { visible: true, trigger: 'custom' } });
+    const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
+    expect(trigger?.getAttribute('role')).toBeNull();
+    expect(trigger?.getAttribute('aria-haspopup')).toBeNull();
+    expect(trigger?.getAttribute('aria-expanded')).toBeNull();
     await expectNoAxeViolations(document.body);
   });
 

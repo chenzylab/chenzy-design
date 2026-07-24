@@ -10,6 +10,10 @@
 - **里程碑1（commit 3b9d8631）**：core 时区层照搬 Semi date-fns-extra.ts（+date-fns/date-fns-tz，删自造纯偏移）；date-picker-foundation.svelte.ts 值模型对齐 Semi（parseWithTimezone/disposeCallbackArgs/_notifyChange，方法名逐一对齐）；跨文件响应式实测打通。见记忆 datepicker-timezone-must-copy-semi-date-fns-tz。
 - **里程碑2**：Month.svelte（日格双层 .day>.day-main、19 状态 class、role=grid/gridcell 逐格 tabindex、renderDate/renderFullDate snippet）+ Navigation.svelte（复用 IconButton/Button、bimonth visibility 保位）+ month-foundation.svelte.ts（getMonthTable/getDayStatus 三段合成）+ _utils（getMonthTable/getDayOfWeek/isBefore/isAfter/isBetween/isSameDay/isString 照搬 Semi，svelte 包装 date-fns）+ locale weeks 键。测试 Month 6 + Navigation 3 全绿。
   - ⚠️ 遗留（不阻塞）：Icon 基座 aria-hidden=true 时仍输出 role=img aria-label=图标名（被 aria-hidden 遮蔽，axe 不报，与 Semi 主图标一致）；更干净应在 aria-hidden 时省略 role/aria-label，属图标组件独立优化。
+- **里程碑3**：DateInput.svelte（复用 Input，单输入分支，suffix=Calendar/CalendarClock）+ DatePickerNext.svelte（主装配：外层 div.PREFIX > Popover(custom) > combobox wrapper > DateInput；面板 div.PREFIX[x-type]>-container>div>(Navigation+Month)；值模型走 foundation；pickerCursor 本地翻月）。基本 date 单面板可用，测试 DatePickerNext 4（defaultOpen 面板/点日期 onChange/受控回显/combobox）全绿。
+  - **依赖组件偏差修正（用户令：以后有偏差都改，不绕过）**：Tooltip/Popover custom 模式原强加 role=button/aria-haspopup/expanded（偏差）；对齐 Semi「trigger=custom 不 wrap span、语义归使用方」→ custom 时触发器纯透传（isDialog && !isCustom 才加）。Popconfirm 测试拆 click（有 disclosure 语义）/custom（纯透传）两分支。
+  - **真机验证时机**：里程碑3 功能已由 vitest dom 测试真实覆盖（testing-library 真实 mount+click）；视觉真机验证放到阶段3 样式对齐后（现无样式真机点击验不到视觉，记忆：对齐视觉必须实测 Semi DOM）。
+  - **旧 DatePicker.svelte 替换时机**：DatePickerNext 用新文件名避免砸掉旧文件导致 demos 全红；阶段5 收尾时整体替换 index 导出 + 删旧文件（用户令直接覆盖，git 留档）。
 
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：
