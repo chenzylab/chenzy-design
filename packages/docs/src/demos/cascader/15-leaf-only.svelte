@@ -3,4 +3,4 @@
   import { treeData } from './_data';
 </script>
 
-<Cascader style="width: 300px" {treeData} placeholder="请选择所在地区" />
+<Cascader style="width: 300px" {treeData} multiple leafOnly placeholder="leafOnly：value 仅含叶子节点" />
