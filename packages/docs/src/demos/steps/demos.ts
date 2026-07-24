@@ -33,6 +33,4 @@ export const demos: DemoEntry[] = [
   entry('07-status.svelte', '指定步骤状态', '使用 status 属性指定当前步骤的状态（如 error）。'),
   entry('08-custom-icon.svelte', '自定义图标/状态', '通过每步 status 自定义状态、icon 自定义图标（字符串或 Snippet）。'),
   entry('09-onchange.svelte', 'onChange 回调', 'onChange 接收 number 参数（等于 initial + index），用于实现处理进度。'),
-  entry('10-initial.svelte', '起始序号 initial', '通过 initial 设置起始序号偏移，onChange 参数等于 initial + index。'),
-  entry('11-item-style.svelte', '每步自定义 class/style', '每步支持 class / style / ariaLabel，对齐 Semi Steps.Step 的 className/style/aria-label。'),
 ];
