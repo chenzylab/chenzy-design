@@ -1,28 +1,27 @@
 <script lang="ts">
-  import { Select, Text } from '@chenzy-design/svelte';
+  import { Select } from '@chenzy-design/svelte';
 
-  let val = $state<string | undefined>(undefined);
-
-  // 分组：optionList 含 { label, options: [] } 即为分组
+  // 分组：optionList 中含 { label, options } 的对象即渲染为一个分组。
   const optionList = [
     {
-      label: '水果',
+      label: 'Asia',
       options: [
-        { label: '苹果', value: 'apple' },
-        { label: '香蕉', value: 'banana' },
+        { value: 'a-1', label: 'China' },
+        { value: 'a-2', label: 'Korea' },
       ],
     },
     {
-      label: '蔬菜',
+      label: 'Europe',
       options: [
-        { label: '番茄', value: 'tomato' },
-        { label: '黄瓜', value: 'cucumber' },
+        { value: 'b-1', label: 'Germany' },
+        { value: 'b-2', label: 'France' },
       ],
+    },
+    {
+      label: 'South America',
+      options: [{ value: 'c-1', label: 'Peru' }],
     },
   ];
 </script>
 
-<div style="max-width:280px">
-  <Select {optionList} value={val} onChange={(v) => (val = v as string)} placeholder="分组选择" />
-  <Text type="tertiary">已选：{val ?? '（未选）'}</Text>
-</div>
+<Select placeholder="" style="width: 180px" filter {optionList} />

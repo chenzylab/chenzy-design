@@ -1,17 +1,26 @@
 <script lang="ts">
-  import { Select, Text } from '@chenzy-design/svelte';
-
-  let val = $state<string | undefined>(undefined);
+  import { Select } from '@chenzy-design/svelte';
 
   const optionList = [
-    { label: '苹果', value: 'apple' },
-    { label: '香蕉', value: 'banana' },
-    { label: '橙子', value: 'orange' },
-    { label: '葡萄（禁用）', value: 'grape', disabled: true },
+    { value: 'douyin', label: '抖音' },
+    { value: 'ulikecam', label: '轻颜相机' },
+    { value: 'jianying', label: '剪映', disabled: true },
+    { value: 'xigua', label: '西瓜视频' },
   ];
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 8px; max-width: 280px;">
-  <Select {optionList} value={val} onChange={(v) => (val = v as string)} placeholder="请选择水果" />
-  <Text type="tertiary">已选：{val ?? '（未选）'}</Text>
-</div>
+<Select defaultValue="douyin" style="width: 120px" {optionList} />
+<br />
+<br />
+<Select
+  defaultValue="douyin"
+  disabled
+  style="width: 120px"
+  optionList={[
+    { value: 'douyin', label: '抖音' },
+    { value: 'ulikecam', label: '轻颜相机' },
+  ]}
+/>
+<br />
+<br />
+<Select placeholder="请选择业务线" style="width: 120px" {optionList} />

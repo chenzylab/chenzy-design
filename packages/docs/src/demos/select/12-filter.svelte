@@ -16,25 +16,14 @@
   ];
 </script>
 
-<Select
-  filter
-  searchPosition="dropdown"
-  style="width: 200px"
-  defaultValue="ulikecam"
-  placeholder="我的搜索框在下拉菜单中"
-  searchPlaceholder="带搜索功能的单选"
-  optionList={singleList}
-/>
+<Select filter style="width: 180px" placeholder="带搜索功能的单选" optionList={singleList} />
 <br />
 <br />
 <Select
   filter
-  searchPosition="dropdown"
   multiple
   style="width: 300px"
-  defaultValue={['semi-1']}
-  placeholder="我的搜索框在下拉菜单中"
-  searchPlaceholder="带搜索功能的多选"
+  placeholder="带搜索功能的多选"
   autoClearSearchValue={false}
   optionList={multiList}
 />
