@@ -752,16 +752,29 @@
   });
   // 节点在搜索结果可见：命中本身、或在祖先链/含命中后代（expand 集）。
   // showFilteredOnly=true 时只显示精确命中节点，不显示祖先链。
+  // 注意：递归 treeNodes snippet 里以 $derived 集合的 .has() 判定，而非调用普通函数——
+  // 普通函数调用不进入 snippet 的响应式依赖追踪，搜索后 filterResult 变化不会触发树重渲染
+  // （Svelte5 盲区，表现为搜索命中却树不展开/不过滤）。
+  const visibleKeySet = $derived.by(() => {
+    const s = new Set<TreeKey>();
+    if (!searchActive) return s; // 空集表示「全部可见」（见 nodeVisible）
+    for (const k of filterResult.matched) s.add(k);
+    if (!showFilteredOnly) for (const k of filterResult.expand) s.add(k);
+    return s;
+  });
   function nodeVisible(key: TreeKey): boolean {
     if (!searchActive) return true;
-    if (showFilteredOnly) return filterResult.matched.has(key);
-    return filterResult.matched.has(key) || filterResult.expand.has(key);
+    return visibleKeySet.has(key);
   }
 
-  function isExpanded(key: TreeKey): boolean {
+  const expandedKeySet = $derived.by(() => {
+    const s = new Set<TreeKey>(expandedKeys);
     // 搜索激活时强制展开命中链（对齐 Semi：展开受控时不再自动展开，完全由 expandedKeys 控制）。
-    if (!isExpandControlled && searchActive && filterResult.expand.has(key)) return true;
-    return expandedKeys.has(key);
+    if (!isExpandControlled && searchActive) for (const k of filterResult.expand) s.add(k);
+    return s;
+  });
+  function isExpanded(key: TreeKey): boolean {
+    return expandedKeySet.has(key);
   }
 
   // --- 虚拟滚动（复用 Tree 范式）：派生展开集 → flattenVisible 扁平可见行 → fixedRange 视口切片 ---
@@ -1351,8 +1364,10 @@
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {@const setSize = nodes.length}
   {#each nodes as node, i (node.key)}
-    {#if nodeVisible(node.key)}
-      {@const nodeOpen = isExpandable(node) && isExpanded(node.key)}
+    <!-- 直接读 $derived 集合（!searchActive 时全可见），使搜索改动进入 snippet 响应式追踪 -->
+    {@const visible = !searchActive || visibleKeySet.has(node.key)}
+    {#if visible}
+      {@const nodeOpen = isExpandable(node) && expandedKeySet.has(node.key)}
       {@render nodeRow(node, level, undefined, setSize, i + 1)}
       {#if nodeOpen}
         {@render treeNodes(node.children ?? [], level + 1)}
