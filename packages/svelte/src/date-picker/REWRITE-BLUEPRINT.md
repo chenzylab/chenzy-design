@@ -26,7 +26,10 @@
 - Footer.svelte（复用 Button，cancel borderless + confirm solid，disabledConfirm）+ 测试 3。
 - QuickControl.svelte（复用 Button+Typography.Text ellipsis，presetPosition/type 全套 class，top/bottom 无 header，空不渲染）+ 测试 4。
 - foundation 加 PresetType/PresetsType/BaseValueType（对齐 Semi）。
-- 里程碑4b（待做，完整不简化）：YearAndMonth 滚轮（含 monthRange 双面板+autoSelectMonth，复用 ScrollList/ScrollItem，locale 补 months/fullMonths）+ TimePanel + Switch + InsetInput（先 inputFoundation）+ MonthsGrid 容器。
+## 里程碑4b（进行中）
+- ✅ YearAndMonth：year-month-foundation.svelte.ts（完整照搬 Semi：selectYear/selectMonth/autoSelectMonth，含 monthRange left/right + disabled 自动选月，无缩水）+ _utils getYears/getYearAndMonth（照搬）+ YearAndMonth.svelte（header 返回 IconButton + ScrollList 双列 year/month，month 单面板/monthRange 双面板，复用 ScrollList/ScrollItem，locale months/fullMonths）+ 测试 6（含 monthRange 4 列、disabled 年、选月回调 currentMonth.left 更新）。
+- ✅ 根治 Icon aria-hidden 装饰化（用户令：有偏差都改）：Icon 基座 aria-hidden 时省略 role=img/aria-label（对齐 Semi 装饰图标不被 AT 读，消除 axe role-img-alt）；IconButton 尺寸包裹 Icon 加 aria-hidden（语义由按钮 ariaLabel/children 承载）。全库 1829 测试通过（唯一失败 theme-cli 是 worktree tokens 未 build 环境问题，非本改动）。
+- 待做（完整不简化）：TimePanel + Switch(dateTime 日期/时间切换) + InsetInput（先 inputFoundation）+ MonthsGrid 双面板容器 + 把 YearAndMonth/TimePanel 接入 DatePickerNext 面板。
 
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：

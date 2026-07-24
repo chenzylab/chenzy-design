@@ -71,7 +71,9 @@
 </script>
 
 {#snippet wrappedIcon()}
-  <Icon size={wrapSize} style={wrapStyle}>
+  <!-- 尺寸容器为装饰性（语义由按钮 ariaLabel/children 文字承载，对齐 Semi）：aria-hidden 避免
+       role=img 无 alt 的 axe 违规，内部真图标仍随之隐藏。 -->
+  <Icon size={wrapSize} style={wrapStyle} aria-hidden="true">
     {@render icon?.()}
   </Icon>
 {/snippet}

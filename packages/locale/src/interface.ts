@@ -306,6 +306,10 @@ export interface Locale {
     selectDate: string;
     /** dateTime 面板切换到时间视图按钮 aria-label */
     selectTime: string;
+    /** 月名（key=1..12，对齐 Semi locale.months；用于 YearAndMonth 月列展示） */
+    months: Record<number, string>;
+    /** 完整月名（滚轮定制，对齐 Semi locale.fullMonths） */
+    fullMonths: Record<number, string>;
     /** 星期表头文案（key=Sun/Mon…，对齐 Semi locale.weeks） */
     weeks: {
       Mon: string;
