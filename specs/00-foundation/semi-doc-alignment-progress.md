@@ -66,7 +66,7 @@
 - [x] virtuallist — **Semi 无此组件**（用户拍板保留页转 inline 完善并标注技术栈差异，2026-07-24）。核对 Semi 源码：Semi 不导出 VirtualList，虚拟滚动全靠第三方 react-window（Tree/TreeSelect/Cascader/Select）+ react-virtualized（List 无限长列表 story）作内部实现细节；本库因 Svelte 无对应轮子自建 headless VirtualList 基座（被 Table/List/TreeSelect/Cascader 消费）。5 demo 整页 inline（基础/动态不定高/滚动到指定项/横向/自定义项渲染），demo 早已高质量无需改；删未引用的 BasicDemo.svelte（129 行旧稿）。正文顶部加 Notice 引用块明确技术差异（对齐 SOP「技术差异用本库替代技术呈现并说明」）。API 表 VirtualList 10 prop + scrollToIndex 方法逐核。真机验证：技术差异块渲染、基础万行仅渲视口、点「跳到 5000 居中」视口渲 #4994~#5006（scrollToIndex 命令式生效）、TOC 8 项、无 SSR 500。docs typecheck 0 err、组件无单测（core 有逻辑测试）、lint 0、体积 virtual-list 2.28<2.65。
 
 ### 优先批 C：导航类
-- [ ] breadcrumb
+- [x] breadcrumb — inline 单页 + 9 demo 按 Semi 8 段严格复刻（基本/图标/尺寸/分隔符/截断5例/折叠/moreType/renderMore/路由对象），文件名重排对齐 Semi 顺序；折叠能力因 Svelte Snippet children 无法切片改走 routes 数组模式（技术差异已在 md 标注），组合式 Item 适用固定层级；实测折叠 …/点击展开/中间省略均对齐 Semi。组件 API 已全（无缺口）
 - [ ] dropdown
 - [ ] steps — 数组 API vs 组合式子组件 见 [array-api-vs-composable]
 - [ ] tabs — 改名 value→activeKey 已完成，核对消费方 见 [tabs-rename-consumer]

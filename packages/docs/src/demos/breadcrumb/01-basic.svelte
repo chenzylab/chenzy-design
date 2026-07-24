@@ -2,10 +2,8 @@
   import { Breadcrumb } from '@chenzy-design/svelte';
 </script>
 
-<Breadcrumb
-  routes={[
-    { name: '首页', href: '#' },
-    { name: '组件库', href: '#' },
-    { name: 'Breadcrumb' },
-  ]}
-/>
+<Breadcrumb>
+  <Breadcrumb.Item>Semi-ui</Breadcrumb.Item>
+  <Breadcrumb.Item>Breadcrumb</Breadcrumb.Item>
+  <Breadcrumb.Item>Default</Breadcrumb.Item>
+</Breadcrumb>
