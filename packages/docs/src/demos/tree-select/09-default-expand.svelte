@@ -7,5 +7,6 @@
   style="width: 300px"
   dropdownStyle="max-height: 400px; overflow: auto"
   {treeData}
-  placeholder="请选择"
+  defaultExpandAll
+  placeholder="默认展开所有节点"
 />

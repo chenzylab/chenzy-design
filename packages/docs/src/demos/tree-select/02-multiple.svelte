@@ -1,45 +1,24 @@
 <script lang="ts">
-  import { TreeSelect, Text } from '@chenzy-design/svelte';
-
-  const treeData = [
-    {
-      key: 'cn',
-      label: '中国',
-      children: [
-        {
-          key: 'east',
-          label: '华东',
-          children: [
-            { key: 'sh', label: '上海' },
-            { key: 'hz', label: '杭州' },
-            { key: 'nj', label: '南京' },
-          ],
-        },
-        {
-          key: 'south',
-          label: '华南',
-          children: [
-            { key: 'gz', label: '广州' },
-            { key: 'sz', label: '深圳' },
-          ],
-        },
-      ],
-    },
-  ];
-
-  let value = $state<Array<string | number>>(['sh', 'hz']);
+  import { TreeSelect } from '@chenzy-design/svelte';
+  import { treeDataEn as treeData } from './_data';
 </script>
 
-<div style="width: 300px">
+<div>
   <TreeSelect
-    {treeData}
-    {value}
+    style="width: 300px"
     multiple
-    showClear
-    defaultExpandAll
-    maxTagCount={2}
-    placeholder="选择城市"
-    onChange={(k) => (value = Array.isArray(k) ? k : k == null ? [] : [k])}
+    dropdownStyle="max-height: 400px; overflow: auto"
+    {treeData}
+    placeholder="请选择"
   />
-  <Text type="tertiary">已选 {value.length} 项：{value.join('、') || '（未选）'}</Text>
+  <br />
+  <br />
+  <TreeSelect
+    style="width: 300px"
+    dropdownStyle="max-height: 400px; overflow: auto"
+    {treeData}
+    multiple
+    leafOnly
+    placeholder="只渲染叶子节点"
+  />
 </div>
