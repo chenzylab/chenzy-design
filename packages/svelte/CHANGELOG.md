@@ -1,5 +1,54 @@
 # @chenzy-design/svelte
 
+## 0.4.2
+
+### Patch Changes
+
+- 3dec738: fix(button): SplitButtonGroup 主按钮与箭头间隔对齐 Semi（5px → 1px）
+
+  `.cd-button-split` 容器由 `inline-block` 改 `inline-flex`，消除主按钮与 Dropdown 触发器 span 之间的 HTML 空白符间隙（此前叠加 1px margin 后间隔达 ~5px，与 Semi 的 1px 细缝不符）。新增 SplitButtonGroup 视觉回归测试锁住 solid/light/borderless 三组的 1px 缝 + 首尾圆角基线。
+
+  同时整页对齐 Semi 的 Button 组件文档（inline 化 + demo 逐字对齐），并修正过时的 Input 视觉基线（66px → 64px，对齐 Semi 的 32px 灰底透明边框 Input）。
+
+- e2e2067: fix(grid): Row 响应式 gutter 触发 effect_update_depth_exceeded 无限循环
+
+  当 `Row` 的 `gutter` 为响应式对象（如 `{ xs: 16, md: 24 }`）或数组时，`registerMediaQuery` 的 `callInInit` 会在断点订阅 `$effect` 同步执行期内立即回调 `match`/`unmatch`。原实现用 `screens = { ...screens, [bp]: … }` 整体重建 —— spread 读取了整个 `screens`，使该 effect 读写同一状态，触发 Svelte `effect_update_depth_exceeded` 无限循环（页面加载与窗口缩放时均复现，控制台刷屏报错）。
+
+  改为逐键 mutate（`screens[bp] = …`）：单键写不读取整体 `screens`，切断 effect 的自依赖，循环消除。响应式断点降级与运行时窗口缩放的 gutter 自适应均保持正确（真机缩放至 xs 断点复测无报错，grid 单测 27 项全绿）。
+
+- 3dec738: fix(json-viewer): 严格对齐 Semi — DOM 结构/盒模型/搜索栏/token 公式
+
+  以 Semi 真实 DevTools DOM + jsonViewer.scss 源码为基准对齐：
+
+  - **盒模型**：height + padding(12px 0) 落在内核挂载层（对齐 Semi `.semi-json-viewer-background`），
+    外层 relative div 无 padding/overflow，搜索栏浮层可溢出编辑器完整显示（此前 overflow:hidden 裁掉替换行）
+  - **搜索栏 DOM 结构**：一比一重写为 Semi `search-bar-container > search-bar(Input + ul.search-options + ButtonGroup + close) + replace-bar(Input + replace + replaceAll)`
+  - **搜索按钮**：改用 Button(theme=light type=primary)（浅灰底方块 + 蓝图标 + 32×32）
+  - **焦点**：输入后 refocus 搜索框（对齐 Semi `searchInputRef.focus()`），可连续输入
+  - **class 命名**：全改连字符（`cd-json-viewer-search-bar-*`），去 BEM `__`
+  - **SearchControls**：补全对齐 Semi 全字段（showSearchBar/onToggleSearchBar/onSearch/onPrevSearch/onNextSearch/onReplace/onReplaceAll）
+  - **样式全走 token 公式**：padding/gap/bg/border/radius/search-options 色改用 `--cd-*-json-viewer-*` token
+    （tokens 新增 4 个 search-options-item 色 token，对齐 Semi text-2/default/primary/primary-light-default）
+
+- 21fb531: feat(popover): 文档整页对齐 Semi + 补齐浮层键盘无障碍（onEscKeyDown / 方向键移焦 / initialFocusRef 内层聚焦）
+
+  Popover 文档 inline 化，9 个 demo 严格复刻 Semi（注意事项 children 类型 / 基本使用 / 12 方位 / 受控 custom / condition / showArrow / arrowPointAtCenter / 设置浮层背景色 / 初始化弹出层焦点）。demo 用 Empty + IllustrationSuccess 复刻 Semi 的 content 卡片。
+
+  同时补齐三处**跨浮层组件**（Tooltip / Popover / Popconfirm 全受益）的 Semi 键盘无障碍能力：
+
+  - **onEscKeyDown**：新增回调 prop，在 trigger 或浮层按 Esc 时触发，与 `closeOnEsc` 是否关闭相互独立（对齐 Semi）。`useDismiss` 的 `onDismiss` 回调补 event 第二参以透传原始事件。
+  - **ArrowUp/Down 键盘移焦**：浮层打开后在触发器按 ⬇️ 焦点移入浮层首个可交互元素、⬆️ 移到最后一个（对齐 Semi `_handleTriggerArrowUp/DownKeydown`），对所有 trigger 生效（hover/focus 的 tooltip 同样支持）。
+  - **initialFocusRef 内层聚焦**：`content` 函数形态的 `initialFocusRef` 绑定到自身不可聚焦的元素（如包裹 Input 组件的 span）时，聚焦其内部首个可聚焦元素（对齐 Semi ref 绑组件时聚焦真实 input 的行为）。
+
+  新增 Popover 键盘 e2e 测试覆盖方向键移焦与 onEscKeyDown 回调（closeOnEsc=false 下 Esc 触发回调但不关闭）。
+
+- Updated dependencies [3dec738]
+- Updated dependencies [21fb531]
+  - @chenzy-design/tokens@0.4.2
+  - @chenzy-design/core@0.4.2
+  - @chenzy-design/locale@0.4.2
+  - @chenzy-design/icons@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes
