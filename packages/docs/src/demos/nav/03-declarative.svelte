@@ -1,17 +1,11 @@
 <script lang="ts">
   import { Nav } from '@chenzy-design/svelte';
+  import { IconSemiLogo } from '@chenzy-design/icons';
 
   const { Item, Sub } = Nav;
 </script>
 
-{#snippet logo()}
-  <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-    <rect x="2" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
-    <rect x="13" y="2" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
-    <rect x="2" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" opacity="0.55" />
-    <rect x="13" y="13" width="9" height="9" rx="2" fill="var(--cd-color-primary, #0064fa)" />
-  </svg>
-{/snippet}
+{#snippet logo()}<IconSemiLogo style="height:36px; font-size:36px" />{/snippet}
 
 <div style="width: 240px; height: 300px; border: 1px solid var(--cd-color-border); border-radius: 8px; overflow: hidden;">
   <Nav
