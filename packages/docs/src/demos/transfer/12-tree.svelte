@@ -1,30 +1,44 @@
 <script lang="ts">
-  import { Transfer, Text } from '@chenzy-design/svelte';
+  import { Transfer } from '@chenzy-design/svelte';
 
   const treeData = [
     {
-      key: 'east',
-      label: '华东',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { key: 'hz', label: '杭州' },
-        { key: 'nj', label: '南京' },
-        { key: 'sh', label: '上海' },
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            { label: 'Beijing', value: 'Beijing', key: '0-0-0' },
+            { label: 'Shanghai', value: 'Shanghai', key: '0-0-1' },
+            { label: 'Chengdu', value: 'Chengdu', key: '0-0-2' },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [{ label: 'Osaka', value: 'Osaka', key: '0-1-0' }],
+        },
       ],
     },
     {
-      key: 'south',
-      label: '华南',
+      label: 'North America',
+      value: 'North America',
+      key: '1',
       children: [
-        { key: 'gz', label: '广州' },
-        { key: 'sz', label: '深圳' },
+        { label: 'United States', value: 'United States', key: '1-0' },
+        { label: 'Canada', value: 'Canada', key: '1-1' },
+        { label: 'Mexico', value: 'Mexico', disabled: true, key: '1-2' },
+        { label: 'Cuba', value: 'Cuba', key: '1-3' },
       ],
     },
-    { key: 'cd', label: '成都' },
   ];
 
-  let value = $state<(string | number)[]>(['hz']);
+  let value = $state<(string | number)[]>(['Shanghai']);
 </script>
 
-<!-- 树穿梭框：type='treeList'，源面板内嵌复用 Tree 组件，仅叶子迁移；showPath 显示完整路径 -->
-<Transfer type="treeList" showPath dataSource={treeData} {value} onChange={(keys) => (value = keys)} />
-<Text type="tertiary">已选叶子：{value.join(', ') || '（无）'}</Text>
+<Transfer type="treeList" dataSource={treeData} {value} onChange={(keys) => (value = keys)} />
