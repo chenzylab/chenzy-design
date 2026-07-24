@@ -1,22 +1,39 @@
 <script lang="ts">
-  import { Select, Text } from '@chenzy-design/svelte';
+  import { Select } from '@chenzy-design/svelte';
+  import type { OptionData } from '@chenzy-design/svelte';
 
-  let picked = $state<{ label: string; value: string | number; country?: string } | undefined>(undefined);
-  const optionList = [
-    { label: '北京', value: 'bj', country: '中国' },
-    { label: '东京', value: 'tk', country: '日本' },
-    { label: '纽约', value: 'ny', country: '美国' },
+  const list = [
+    { value: 'douyin', label: '抖音', type: 1 },
+    { value: 'ulikecam', label: '轻颜相机', type: 2 },
+    { value: 'jianying', label: '剪映', type: 3 },
+    { value: 'toutiao', label: '今日头条', type: 4 },
   ];
+
+  let cbValue = $state<OptionData | OptionData[]>();
+  let multipleCbValue = $state<OptionData | OptionData[]>();
 </script>
 
-<div style="max-width:280px">
-  <!-- onChangeWithObject：回调携带完整 option 对象，可读取 value 之外的自定义字段 -->
-  <Select
-    {optionList}
-    onChangeWithObject={(opt) => (picked = opt as typeof picked)}
-    placeholder="选择城市"
-  />
-  <Text type="tertiary">
-    {picked ? `${picked.label}（${picked.country}）` : '（未选）'}
-  </Text>
+<div>
+  <div>
+    <Select
+      style="width: 150px"
+      onChangeWithObject={(opt) => (cbValue = opt)}
+      optionList={list}
+      placeholder="单选"
+      defaultValue="douyin"
+    />
+    <h4>onChange回调:</h4>
+    <pre style="width: 320px; margin-bottom: 48px">{JSON.stringify(cbValue)}</pre>
+  </div>
+  <div>
+    <Select
+      style="width: 320px"
+      onChangeWithObject={(opt) => (multipleCbValue = opt)}
+      multiple
+      optionList={list}
+      placeholder="多选"
+    />
+    <h4>onChange回调:</h4>
+    <pre style="width: 320px">{JSON.stringify(multipleCbValue)}</pre>
+  </div>
 </div>
