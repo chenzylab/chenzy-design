@@ -1,30 +1,32 @@
 <script lang="ts">
-  import { Image, ImagePreview, Divider } from '@chenzy-design/svelte';
+  import { Image, ImagePreview, Divider, Tooltip } from '@chenzy-design/svelte';
+  import { IconInfoCircle } from '@chenzy-design/icons';
 
   const srcList = [
-    'https://picsum.photos/seed/mi1/600/400',
-    'https://picsum.photos/seed/mi2/600/400',
-    'https://picsum.photos/seed/mi3/600/400',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/abstract.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/sky.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/greenleaf.jpg',
   ];
 </script>
 
-<!-- 基于默认按钮 menuItems 重组：menuItems 顺序同默认工具栏（翻页/页码/缩放/比例/旋转/下载）。 -->
 <ImagePreview>
   {#snippet renderPreviewMenu(props)}
+    {@const items = props.menuItems ?? []}
     <div
-      style="display: flex; align-items: center; gap: 4px; padding: 5px 16px; background: rgba(0,0,0,0.75); border-radius: 4px;"
+      style="display: flex; background-color: rgba(0, 0, 0, 0.75); align-items: center; padding: 5px 16px; border-radius: 4px;"
     >
-      {#each props.menuItems ?? [] as item, i (i)}
-        {@render item()}
-        {#if i === 2 || i === 6}
-          <Divider layout="vertical" />
-        {/if}
-      {/each}
+      {#each items.slice(0, 3) as item (item)}{@render item()}{/each}
+      <Divider layout="vertical" />
+      {#each items.slice(3, 7) as item (item)}{@render item()}{/each}
+      <Divider layout="vertical" />
+      {#each items.slice(7) as item (item)}{@render item()}{/each}
+      <Divider layout="vertical" />
+      <Tooltip content="我是一个自定义操作">
+        <IconInfoCircle size="large" />
+      </Tooltip>
     </div>
   {/snippet}
-  <div style="display: flex; gap: 8px;">
-    {#each srcList as src, i (src)}
-      <Image {src} width={160} height={110} alt={`图片 ${i + 1}`} />
-    {/each}
-  </div>
+  {#each srcList as src, index (src)}
+    <Image {src} width={200} alt={`lamp${index + 1}`} />
+  {/each}
 </ImagePreview>

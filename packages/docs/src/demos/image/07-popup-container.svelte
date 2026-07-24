@@ -2,25 +2,21 @@
   import { Image, ImagePreview } from '@chenzy-design/svelte';
 
   const srcList = [
-    'https://picsum.photos/seed/c1/600/400',
-    'https://picsum.photos/seed/c2/600/400',
-    'https://picsum.photos/seed/c3/600/400',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/abstract.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/sky.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/greenleaf.jpg',
   ];
 
   let container = $state<HTMLDivElement | null>(null);
 </script>
 
-<!-- 预览浮层渲染到指定容器（需 position:relative），不改视图渲染位置。 -->
-<div
-  bind:this={container}
-  style="height: 400px; position: relative; border: 1px dashed var(--cd-color-border); border-radius: 6px; overflow: hidden;"
->
+<div bind:this={container} style="height: 400px; position: relative;">
   <ImagePreview
     getPopupContainer={() => container}
-    style="height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;"
+    style="height: 100%; display: flex; align-items: center; justify-content: center;"
   >
-    {#each srcList as src, i (src)}
-      <Image {src} width={160} height={110} alt={`容器内图片 ${i + 1}`} />
+    {#each srcList as src, index (src)}
+      <Image {src} width={200} alt={`lamp${index + 1}`} style="margin-right: 5px;" />
     {/each}
   </ImagePreview>
 </div>

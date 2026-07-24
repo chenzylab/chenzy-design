@@ -2,18 +2,15 @@
   import { Image, ImagePreview } from '@chenzy-design/svelte';
 
   const srcList = [
-    'https://picsum.photos/seed/g1/600/400',
-    'https://picsum.photos/seed/g2/600/400',
-    'https://picsum.photos/seed/g3/600/400',
-    'https://picsum.photos/seed/g4/600/400',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/abstract.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/sky.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/greenleaf.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/colorful.jpg',
   ];
 </script>
 
-<!-- ImagePreview 包裹多个 Image：点任一图进组预览，可左右切换。 -->
 <ImagePreview>
-  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-    {#each srcList as src, i (src)}
-      <Image {src} width={160} height={110} alt={`图片 ${i + 1}`} />
-    {/each}
-  </div>
+  {#each srcList as src, index (src)}
+    <Image {src} width={200} alt={`lamp${index + 1}`} style="margin-right: 5px;" />
+  {/each}
 </ImagePreview>

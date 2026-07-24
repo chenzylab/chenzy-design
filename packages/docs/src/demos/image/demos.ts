@@ -24,9 +24,9 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础用法', '通过 src 指定图片路径，width/height 指定宽高，默认可点击预览。'),
-  entry('02-fallback.svelte', '加载失败占位', '通过 fallback 自定义加载失败的占位图（string 降级图或默认破图）。'),
-  entry('03-progressive.svelte', '渐进加载', '大图通过 placeholder 实现渐进加载，先展示模糊小图再淡入主图。'),
+  entry('01-basic.svelte', '基本用法', '通过 src 指定图片路径，width/height 指定宽高，默认可点击预览。'),
+  entry('02-fallback.svelte', '加载失败的占位图', '通过 fallback 自定义加载失败的占位图，支持 string 和 Snippet。'),
+  entry('03-progressive.svelte', '渐进加载', '大图可通过 placeholder 实现渐进加载。'),
   entry('04-custom-preview-src.svelte', '自定义预览图', '缩略图与预览图分离：src 用小图，preview.src 指定高清预览图源。'),
   entry('05-group.svelte', '多图预览', '用 ImagePreview 包裹多个 Image 即可实现多图片预览，可左右切换。'),
   entry('06-standalone.svelte', '单独使用预览组件', 'ImagePreview 可独立使用，通过 visible/onVisibleChange 与 src 编程式控制。'),
