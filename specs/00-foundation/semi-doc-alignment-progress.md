@@ -72,7 +72,7 @@
 - [x] tabs — inline 单页 + 12 段严格复刻 Semi（基本/图标/More/垂直/滚动折叠3子块/自动溢出/禁用/扩展/二次封装/拖拽/动态/关闭）；04-icon+07-vertical 手写 svg 换 IconFile/IconGlobe/IconHelpCircle 具名图标，07 用 RadioGroup 切 type 对齐 Semi；删超集 03-size+18-keepdom；补拖拽排序 demo(19-drag-sort，本库无 dnd-kit 用 renderTabBar+HTML5 draggable 自建，标注技术差异)；组件 API 全覆盖 Semi(renderTabBar/renderArrow 签名不同无 DefaultTabBar 已标注)；11 demo 真机验证渲染正常，拖拽为标准 HTML5 draggable 实现但合成事件+Svelte5 委托无法自动触发原生拖放故未端到端自动验证(工具局限，逻辑经 svelte-autofixer 校验)
 - [x] pagination — inline 单页 + 9 段严格复刻 Semi（基本/禁用/总页数/指定当前页/每页容量切换/快速跳转/页码受控/预设容量可选/迷你版本含 hoverShowPageSelect）；组件 API 全覆盖 Semi 无缺口；demo 内容已对齐无需改（无手写图标）；实测基本段 4 分页器折叠省略号/点击翻页高亮均对齐 Semi
 - [x] nav(Semi 名 navigation) — inline 单页 + 9 段严格复刻（基本使用/样式定义/JSX/配合路由/垂直水平/箭头位置/缩进/非受控/受控）；10 demo 手写 svg 全换具名图标：logo→IconSemiLogo，item 按语义选本库具名图标(IconUser/Calendar/Apps/List/Setting/Star/Folder/Bell/Bookmark/Edit/GridSquare)；本库无 semi-icons-lab 系列(IconAvatar/Tree/Descriptions 等)已在 md 标注；4 子组件(Header/Item/Sub/Footer)API 全；renderWrapper 签名与 Semi 不同已标注；实测 IconSemiLogo/具名图标渲染、子导航展开、collapseButton 均对齐 Semi
-- [ ] backtop
+- [x] backtop(BackTop) — inline 单页 + 2 段严格复刻 Semi（基本用法/自定义样式）；组件目录 back-top，demo 用 IconArrowUp/IconChevronUp 具名图标无手写 svg；API 全（target/visibilityHeight/duration/onClick/style/class）；实测滚动超阈值按钮显现、click 到达 handleClick、scrollToY 同步可写、scrollPositionAt 缓动单测 9 passed；rAF 缓动动画视觉过程因 CDP 标签 document.hidden 冻结无法观察(浏览器限制非 bug，见 real-click-coord-drift 记忆)
 
 ### 优先批 D：输入类（交互复杂，验证成本高，放后面）
 - [ ] pincode — demos 目录曾缺失，注意补齐
