@@ -1,36 +1,26 @@
 <script lang="ts">
   import { Carousel, Typography, Space } from '@chenzy-design/svelte';
+  import { imgList, semiLogo, textList } from './_data.js';
 
   const { Title, Paragraph } = Typography;
+  const titleStyle = 'position:absolute;top:100px;left:100px;';
+  const colorStyle = 'color:#1C1F23;';
 </script>
 
-<!-- 幻灯片内文字用 Typography 排版；wrapper 覆盖 --cd-typography-color 为深色（对齐 Semi #1C1F23）。 -->
-{#snippet slide0()}
-  <div style="width:100%;height:100%;background:var(--cd-color-primary);padding:40px;box-sizing:border-box;--cd-typography-color:#1c1f23">
-    <Space vertical align="start">
-      <Title heading={3}>Semi 设计管理系统</Title>
-      <Paragraph>从 Semi Design，到 Any Design</Paragraph>
-      <Paragraph>快速定制你的设计系统，并应用在设计稿和代码中</Paragraph>
-    </Space>
-  </div>
-{/snippet}
-{#snippet slide1()}
-  <div style="width:100%;height:100%;background:var(--cd-color-success);padding:40px;box-sizing:border-box;--cd-typography-color:#1c1f23">
-    <Space vertical align="start">
-      <Title heading={3}>Semi 物料市场</Title>
-      <Paragraph>面向业务场景的定制化组件，支持线上预览和调试</Paragraph>
-      <Paragraph>内容由 Semi Design 用户共建</Paragraph>
-    </Space>
-  </div>
-{/snippet}
-{#snippet slide2()}
-  <div style="width:100%;height:100%;background:var(--cd-color-warning);padding:40px;box-sizing:border-box;--cd-typography-color:#1c1f23">
-    <Space vertical align="start">
-      <Title heading={3}>Semi Template</Title>
-      <Paragraph>高效的 Design2Code 设计稿转代码</Paragraph>
-      <Paragraph>海量 Figma 设计模板一键转为真实前端代码</Paragraph>
-    </Space>
-  </div>
-{/snippet}
+<Carousel style="width:100%;height:400px" theme="dark" slides={[slide0, slide1, slide2]} />
 
-<Carousel slides={[slide0, slide1, slide2]} theme="dark" style="width:100%;height:400px" />
+{#snippet slide(index: number)}
+  <div style="width:100%;height:100%;background-size:cover;background-image:url('{imgList[index]}')">
+    <Space vertical align="start" spacing="medium" style={titleStyle}>
+      <img src={semiLogo} alt="semi_logo" style="width:87px;height:31px" />
+      <Title heading={2} style={colorStyle}>{textList[index][0]}</Title>
+      <Space vertical align="start">
+        <Paragraph style={colorStyle}>{textList[index][1]}</Paragraph>
+        <Paragraph style={colorStyle}>{textList[index][2]}</Paragraph>
+      </Space>
+    </Space>
+  </div>
+{/snippet}
+{#snippet slide0()}{@render slide(0)}{/snippet}
+{#snippet slide1()}{@render slide(1)}{/snippet}
+{#snippet slide2()}{@render slide(2)}{/snippet}
