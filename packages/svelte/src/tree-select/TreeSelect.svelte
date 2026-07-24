@@ -750,24 +750,25 @@
         : (node: TreeNodeData) => nodeFilterText(node).toLowerCase().includes(lower);
     return computeFilteredKeys(mergedTree as unknown as TreeNodeData[], predicate);
   });
-  // 节点在搜索结果可见：命中本身、或在祖先链/含命中后代（expand 集）。
-  // showFilteredOnly=true 时只显示精确命中节点，不显示祖先链。
+  // 搜索可见性（对齐 Semi）：
+  // - showFilteredOnly=false（默认）：搜索时【整棵树全显示】，只高亮命中 + 展开命中链，
+  //   不隐藏任何节点（含命中项的同级兄弟、其他无关分支根节点）。
+  // - showFilteredOnly=true：只显示命中节点 + 其祖先链（隐藏无关分支）。
   // 注意：递归 treeNodes snippet 里以 $derived 集合的 .has() 判定，而非调用普通函数——
   // 普通函数调用不进入 snippet 的响应式依赖追踪，搜索后 filterResult 变化不会触发树重渲染
   // （Svelte5 盲区，表现为搜索命中却树不展开/不过滤）。
   const visibleKeySet = $derived.by(() => {
     const s = new Set<TreeKey>();
-    if (!searchActive) return s; // 空集表示「全部可见」（见 nodeVisible）
+    if (!searchActive || !showFilteredOnly) return s; // 空集：!showFilteredOnly 时全部可见
+    // showFilteredOnly：命中节点 + 祖先链（祖先链让递归 treeNodes 从根下钻到深层命中节点，
+    // 漏加会在祖先层断链致搜不到；对齐 Semi filteredShownKeys = 命中后代 ∪ 祖先展开链）。
     for (const k of filterResult.matched) s.add(k);
-    // 祖先链（expand 集）始终并入：递归 treeNodes 从根往下，祖先不可见则在祖先层断链、
-    // 深层命中节点永远渲染不到（showFilteredOnly=true 时曾漏加致搜不到）。showFilteredOnly
-    // 的过滤效果体现在 expand 集只含「命中节点的祖先链」而非无关兄弟分支（对齐 Semi
-    // filteredShownKeys = 命中后代 ∪ 祖先展开链）。
     for (const k of filterResult.expand) s.add(k);
     return s;
   });
   function nodeVisible(key: TreeKey): boolean {
-    if (!searchActive) return true;
+    // 非搜索态、或搜索但 !showFilteredOnly：全部可见（只靠展开链控制层级显隐）。
+    if (!searchActive || !showFilteredOnly) return true;
     return visibleKeySet.has(key);
   }
 
@@ -1368,8 +1369,8 @@
 {#snippet treeNodes(nodes: TreeNode[], level: number)}
   {@const setSize = nodes.length}
   {#each nodes as node, i (node.key)}
-    <!-- 直接读 $derived 集合（!searchActive 时全可见），使搜索改动进入 snippet 响应式追踪 -->
-    {@const visible = !searchActive || visibleKeySet.has(node.key)}
+    <!-- 直接读 $derived 集合（非搜索/非 showFilteredOnly 时全可见），使搜索改动进入 snippet 响应式追踪 -->
+    {@const visible = !searchActive || !showFilteredOnly || visibleKeySet.has(node.key)}
     {#if visible}
       {@const nodeOpen = isExpandable(node) && expandedKeySet.has(node.key)}
       {@render nodeRow(node, level, undefined, setSize, i + 1)}
