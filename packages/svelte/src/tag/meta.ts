@@ -35,6 +35,12 @@ export const meta = {
     { name: 'suffixIcon', type: 'Snippet', default: 'undefined', desc: '后置图标（关闭图标始终最右）' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '标签内容' },
     {
+      name: 'contentAlign',
+      type: `'ellipsis' | 'center'`,
+      default: `'ellipsis'`,
+      desc: `内容对齐：ellipsis 纯文本单行省略号左对齐；center 含富内容（图标等）flex 垂直居中`,
+    },
+    {
       name: 'onClose',
       type: '(tagChildren, e, tagKey) => void',
       default: 'undefined',

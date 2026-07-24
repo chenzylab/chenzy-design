@@ -30,7 +30,7 @@
     {#snippet visibleItemRenderer(item)}
       {@const Icon = item.icon}
       <span class="item-cls">
-        <Tag color="blue" style="margin-right:8px;flex:0 0 auto">
+        <Tag color="blue" contentAlign="center" style="margin-right:8px;flex:0 0 auto">
           <Icon style="margin-right:4px" />{item.key}
         </Tag>
       </span>
