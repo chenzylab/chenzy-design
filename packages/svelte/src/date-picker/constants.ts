@@ -42,13 +42,31 @@ export const cssClasses = {
   ...dayItemClasses,
 } as const;
 
-/** format token（对齐 Semi formatToken）。 */
+/** format token（照搬 Semi formatToken，date-fns 小写语法）。 */
 export const formatToken = {
   FORMAT_FULL_DATE: 'yyyy-MM-dd',
   FORMAT_TIME_PICKER: 'HH:mm:ss',
   FORMAT_DATE_TIME: 'yyyy-MM-dd HH:mm:ss',
   FORMAT_YEAR_MONTH: 'yyyy-MM',
 } as const;
+
+/**
+ * 按 type 取默认 format token —— 对齐 Semi _utils/getDefaultFormatToken.ts。
+ * date/dateRange=整日期；dateTime/dateTimeRange=日期+时间；month/monthRange=年月。
+ * year 无默认 token（触发器走 Intl year 显示，与 Semi 一致）。
+ */
+const defaultFormatTokens: Record<string, string> = {
+  date: formatToken.FORMAT_FULL_DATE,
+  dateTime: formatToken.FORMAT_DATE_TIME,
+  dateRange: formatToken.FORMAT_FULL_DATE,
+  dateTimeRange: formatToken.FORMAT_DATE_TIME,
+  month: formatToken.FORMAT_YEAR_MONTH,
+  monthRange: formatToken.FORMAT_YEAR_MONTH,
+};
+
+export function getDefaultFormatTokenByType(type: string): string | undefined {
+  return type ? defaultFormatTokens[type] : undefined;
+}
 
 /** 类型枚举与分隔符（对齐 Semi strings）。 */
 export const strings = {

@@ -25,7 +25,8 @@
     parseFormatSpec,
     formatTime,
     parseTimeString,
-    zonedWallTime,
+    utcToZonedTime,
+    isValidTimeZone,
     type Meridiem,
     type ScrollItemData,
     type ScrollItemSelectPayload,
@@ -308,7 +309,10 @@
   const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
 
   function displayOne(d: Date): string {
-    const shown = zonedWallTime(d, effectiveTimeZone);
+    // 对齐 Semi：timeZone 有效时经 utcToZonedTime 转目标时区墙上时间再展示，否则原样（本地）。
+    const shown = isValidTimeZone(effectiveTimeZone)
+      ? utcToZonedTime(d, effectiveTimeZone as string | number)
+      : d;
     return formatTime(
       { hour: shown.getHours(), minute: shown.getMinutes(), second: shown.getSeconds() },
       format,

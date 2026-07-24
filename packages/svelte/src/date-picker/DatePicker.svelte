@@ -21,7 +21,8 @@
     gridFocusMove,
     formatDate,
     parseDateString,
-    zonedWallTime,
+    utcToZonedTime,
+    isValidTimeZone,
     daysBetween,
     buildHourOptions,
     buildMinuteOptions,
@@ -709,8 +710,11 @@
   const effectiveTimeZone = $derived<string | number | undefined>(
     timeZone ?? configTimeZone,
   );
+  // 值转目标时区墙上时间（对齐 Semi utcToZonedTime；无效时区原样返回本地）。
+  const toZoned = (d: Date): Date =>
+    isValidTimeZone(effectiveTimeZone) ? utcToZonedTime(d, effectiveTimeZone as string | number) : d;
 
-  // --- Intl 本地化格式化器 (不手拼日期串；不传 timeZone，时区在值层由 zonedWallTime 处理) ---
+  // --- Intl 本地化格式化器 (不手拼日期串；不传 timeZone，时区在值层由 utcToZonedTime 处理) ---
   const triggerFormat = $derived(
     new Intl.DateTimeFormat(
       locale,
@@ -756,7 +760,7 @@
   // 无 format 走 Intl 本地字段），使显示随 timeZone 变化。对齐 Semi 值层转换语义。
   function formatSingle(d: Date | null): string {
     if (!d) return '';
-    const shown = zonedWallTime(d, effectiveTimeZone);
+    const shown = toZoned(d);
     return format ? formatDate(shown, format) : triggerFormat.format(shown);
   }
 
@@ -1015,12 +1019,12 @@
   // 触发器双输入框各端显示文本。
   const startText = $derived(
     rangeStart
-      ? triggerFormat.format(zonedWallTime(rangeStart, effectiveTimeZone))
+      ? triggerFormat.format(toZoned(rangeStart))
       : '',
   );
   const endText = $derived(
     rangeEnd
-      ? triggerFormat.format(zonedWallTime(rangeEnd, effectiveTimeZone))
+      ? triggerFormat.format(toZoned(rangeEnd))
       : '',
   );
 

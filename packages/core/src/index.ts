@@ -272,8 +272,6 @@ export {
   EMPTY_SCREENS,
   BREAKPOINTS,
   registerMediaQuery,
-  zonedWallTime,
-  parseTimeZoneOffsetMinutes,
   type Breakpoint,
   type ConfigInput,
   type ResolvedConfig,
@@ -284,6 +282,18 @@ export {
   type OnBreakpointScreensCallback,
   type OnBreakpointChangeCallback,
 } from './config-provider.js';
+export {
+  toIANA,
+  isValidTimezoneIANAString,
+  utcToZonedTime,
+  zonedTimeToUtc,
+  getCurrentTimeZone,
+  isValidTimeZone,
+  localeFormat,
+  format as tzFormat,
+  parse as tzParse,
+  IANAOffsetMap,
+} from './date-fns-extra.js';
 export {
   createResizeObserver,
   normalizeEntry,
