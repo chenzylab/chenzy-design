@@ -759,7 +759,11 @@
     const s = new Set<TreeKey>();
     if (!searchActive) return s; // 空集表示「全部可见」（见 nodeVisible）
     for (const k of filterResult.matched) s.add(k);
-    if (!showFilteredOnly) for (const k of filterResult.expand) s.add(k);
+    // 祖先链（expand 集）始终并入：递归 treeNodes 从根往下，祖先不可见则在祖先层断链、
+    // 深层命中节点永远渲染不到（showFilteredOnly=true 时曾漏加致搜不到）。showFilteredOnly
+    // 的过滤效果体现在 expand 集只含「命中节点的祖先链」而非无关兄弟分支（对齐 Semi
+    // filteredShownKeys = 命中后代 ∪ 祖先展开链）。
+    for (const k of filterResult.expand) s.add(k);
     return s;
   });
   function nodeVisible(key: TreeKey): boolean {
