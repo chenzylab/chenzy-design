@@ -14,5 +14,5 @@
     height="150"
     alt="avatar"
   />
-  <h4>chenzy UI</h4>
+  <h4>Semi UI</h4>
 </Skeleton>

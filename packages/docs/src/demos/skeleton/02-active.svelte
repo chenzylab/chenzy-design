@@ -1,22 +1,8 @@
 <script lang="ts">
-  import {
-    Skeleton,
-    SkeletonAvatar,
-    SkeletonTitle,
-    SkeletonParagraph,
-    Switch,
-    Text,
-  } from '@chenzy-design/svelte';
-
-  let active = $state(true);
+  import { Skeleton, SkeletonAvatar, SkeletonTitle, SkeletonParagraph, Avatar } from '@chenzy-design/svelte';
 </script>
 
-<div style="display:flex; align-items:center; gap:8px; margin-bottom:12px">
-  <Switch checked={active} onChange={(v) => (active = v)} />
-  <Text type="tertiary">{active ? 'active：shimmer 流光动画开启' : 'active 关闭：静态底色'}</Text>
-</div>
-
-<Skeleton loading {active}>
+<Skeleton loading active>
   {#snippet placeholder()}
     <div style="display:flex; align-items:flex-start">
       <SkeletonAvatar style="margin-right:12px" />
@@ -26,4 +12,13 @@
       </div>
     </div>
   {/snippet}
+  <div style="display:flex; align-items:flex-start">
+    <Avatar color="blue" style="margin-right:12px">UI</Avatar>
+    <div>
+      <h3>Semi UI</h3>
+      <p>Hi, Bytedance dance dance.</p>
+      <p>Hi, Bytedance dance dance.</p>
+      <p>Hi, Bytedance dance dance.</p>
+    </div>
+  </div>
 </Skeleton>

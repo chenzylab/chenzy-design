@@ -15,8 +15,8 @@
     </div>
   {/snippet}
   <div style="text-align:center">
-    <p>Hi, chenzy dance dance.</p>
-    <p>Hi, chenzy dance dance.</p>
+    <p>Hi, Bytedance dance dance.</p>
+    <p>Hi, Bytedance dance dance.</p>
     <Button>Button</Button>
   </div>
 </Skeleton>
