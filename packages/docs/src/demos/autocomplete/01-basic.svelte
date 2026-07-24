@@ -1,30 +1,25 @@
 <script lang="ts">
-  import { AutoComplete, Text } from '@chenzy-design/svelte';
+  import { AutoComplete } from '@chenzy-design/svelte';
+  import { IconSearch } from '@chenzy-design/icons';
 
-  const suffixes = ['gmail.com', 'outlook.com', 'qq.com', '163.com'];
+  let stringData = $state<string[]>([]);
   let value = $state('');
-  let data = $state<string[]>([]);
 
-  // 对齐 Semi：组件不做本地过滤，输入时按 query 准备候选 data。
-  function onSearch(query: string) {
-    const at = query.indexOf('@');
-    if (at === -1) {
-      data = query ? suffixes.map((s) => `${query}@${s}`) : [];
-    } else {
-      const prefix = query.slice(0, at);
-      const rest = query.slice(at + 1).toLowerCase();
-      data = suffixes.filter((s) => s.startsWith(rest)).map((s) => `${prefix}@${s}`);
-    }
-  }
+  const handleStringSearch = (v: string) => {
+    stringData = v ? ['gmail.com', '163.com', 'qq.com'].map((domain) => `${v}@${domain}`) : [];
+  };
 </script>
 
-<div style="width: 220px">
-  <AutoComplete
-    {data}
-    {value}
-    placeholder="输入邮箱"
-    {onSearch}
-    onChange={(v) => (value = String(v))}
-  />
-  <Text type="tertiary">输入：{value || '（空）'}</Text>
-</div>
+<AutoComplete
+  data={stringData}
+  {value}
+  showClear
+  placeholder="搜索... "
+  onSearch={handleStringSearch}
+  onChange={(v) => (value = v as string)}
+  style="width: 200px"
+>
+  {#snippet prefix()}
+    <IconSearch />
+  {/snippet}
+</AutoComplete>
