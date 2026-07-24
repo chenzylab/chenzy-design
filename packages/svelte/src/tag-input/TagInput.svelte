@@ -712,9 +712,20 @@
     text-overflow: ellipsis;
     font-size: var(--cd-font-size-small);
     /* 配套 Semi @include font-size-small 的 line-height:16px，收敛文字盒高度，
-       否则 inline-block 继承祖先 21px line-height 把 tag content 撑到 27px，
-       与 12px 关闭图标视觉不垂直居中。 */
+       否则 inline-block 继承祖先 21px line-height 把 tag content 撑到 27px。 */
     line-height: var(--cd-line-height-small);
+  }
+  /* showContentTooltip 用 Popover 包裹文字，插入 .cd-tag__content > .cd-tooltip >
+     .cd-tooltip__trigger 三层 inline 包裹；其 21px 行盒让 16px 的 typo 按 baseline 上浮，
+     与几何居中的关闭图标错位 3px。让这三层都 flex 纵向居中，等效 Semi 用块级 Paragraph 由
+     Tag 根 all-center 承载文字（实测三层 flex 后文字盒中点与关闭图标中点重合，diff=0）。
+     本库既定 scoped + :global 打洞子组件样式（Tooltip/Popover 复用组件的内部 class）。 */
+  .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag .cd-tag__content),
+  .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag .cd-tag__content .cd-tooltip),
+  .cd-tag-input-wrapper :global(.cd-tag-input-wrapper-tag .cd-tag__content .cd-tooltip__trigger) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
   }
 
   /* 拖拽手柄（对齐 Semi &-drag-handler）—— */
