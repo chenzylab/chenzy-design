@@ -62,6 +62,13 @@
     /** 标签内容 */
     children?: Snippet;
     /**
+     * 内容对齐（对齐 Semi content-${stringChild ? 'ellipsis' : 'center'}）：
+     * 'ellipsis'（默认）——纯文本，单行省略号、左对齐；
+     * 'center'——含富内容（图标等），flex 垂直居中。
+     * Semi 按 children 是否纯字符串自动判断，本库 children 为 Snippet 无法内省，故显式指定。
+     */
+    contentAlign?: 'ellipsis' | 'center';
+    /**
      * 关闭回调。对齐 Semi onClose(tagChildren, e, tagKey)：
      * 在回调内 e.preventDefault() 可阻止默认隐藏（点击后依然显示）。
      */
@@ -104,6 +111,7 @@
     prefixIcon,
     suffixIcon,
     children,
+    contentAlign = 'ellipsis',
     onClose,
     onClick,
     onMouseEnter,
@@ -221,7 +229,7 @@
   {#if avatarSrc}
     <Avatar src={avatarSrc} shape={avatarShape} size={avatarSize} />
   {/if}
-  <div class="cd-tag__content cd-tag__content--ellipsis">
+  <div class="cd-tag__content cd-tag__content--{contentAlign}">
     {#if children}{@render children()}{/if}
   </div>
   {#if suffixIcon}
@@ -300,6 +308,17 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  /*
+    对齐 Semi content-center：含富内容（图标等）时 content 走 flex 垂直居中。
+    Snippet 无法内省 children 类型，改用显式 contentAlign 语义控制（默认 ellipsis）。
+  */
+  .cd-tag__content--center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-width: 0;
   }
 
   /* —— close（对齐 Semi &-close）—— */
