@@ -6,7 +6,10 @@
 ## 已完成
 - 基线提交（分支 feat/datepicker-align-semi）：文档 inline 21 demo + 4 能力补全 + dateTime 视图切换（可用状态，未从零重写）。
 - worktree ../chenzy-dp-align（分支 feat/datepicker-strict-align）
-- `constants.ts` 已建：class 名严格镜像 Semi（cd-datepicker-*）+ TYPE_SET/format token/PanelType。
+- `constants.ts` 已建：class 名严格镜像 Semi（cd-datepicker-*）+ TYPE_SET/format token/PanelType（formatToken 已转 Semi 小写 yyyy-MM-dd）。
+- **里程碑1（commit 3b9d8631）**：core 时区层照搬 Semi date-fns-extra.ts（+date-fns/date-fns-tz，删自造纯偏移）；date-picker-foundation.svelte.ts 值模型对齐 Semi（parseWithTimezone/disposeCallbackArgs/_notifyChange，方法名逐一对齐）；跨文件响应式实测打通。见记忆 datepicker-timezone-must-copy-semi-date-fns-tz。
+- **里程碑2**：Month.svelte（日格双层 .day>.day-main、19 状态 class、role=grid/gridcell 逐格 tabindex、renderDate/renderFullDate snippet）+ Navigation.svelte（复用 IconButton/Button、bimonth visibility 保位）+ month-foundation.svelte.ts（getMonthTable/getDayStatus 三段合成）+ _utils（getMonthTable/getDayOfWeek/isBefore/isAfter/isBetween/isSameDay/isString 照搬 Semi，svelte 包装 date-fns）+ locale weeks 键。测试 Month 6 + Navigation 3 全绿。
+  - ⚠️ 遗留（不阻塞）：Icon 基座 aria-hidden=true 时仍输出 role=img aria-label=图标名（被 aria-hidden 遮蔽，axe 不报，与 Semi 主图标一致）；更干净应在 aria-hidden 时省略 role/aria-label，属图标组件独立优化。
 
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：

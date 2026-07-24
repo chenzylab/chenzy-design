@@ -254,6 +254,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.0.0
         version: 3.27.1
+      date-fns:
+        specifier: ^2.30.0
+        version: 2.30.0
       lottie-web:
         specifier: ^5.13.0
         version: 5.13.0

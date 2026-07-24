@@ -226,6 +226,15 @@ export const zh_CN: Locale = {
     monthColumnLabel: '月份',
     selectDate: '选择日期',
     selectTime: '选择时间',
+    weeks: {
+      Mon: '一',
+      Tue: '二',
+      Wed: '三',
+      Thu: '四',
+      Fri: '五',
+      Sat: '六',
+      Sun: '日',
+    },
   },
   TimePicker: {
     placeholder: '请选择时间',

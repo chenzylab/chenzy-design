@@ -226,6 +226,15 @@ export const en_US: Locale = {
     monthColumnLabel: 'Month',
     selectDate: 'Select date',
     selectTime: 'Select time',
+    weeks: {
+      Mon: 'Mon',
+      Tue: 'Tue',
+      Wed: 'Wed',
+      Thu: 'Thu',
+      Fri: 'Fri',
+      Sat: 'Sat',
+      Sun: 'Sun',
+    },
   },
   TimePicker: {
     placeholder: 'Select time',

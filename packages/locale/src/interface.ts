@@ -306,6 +306,16 @@ export interface Locale {
     selectDate: string;
     /** dateTime 面板切换到时间视图按钮 aria-label */
     selectTime: string;
+    /** 星期表头文案（key=Sun/Mon…，对齐 Semi locale.weeks） */
+    weeks: {
+      Mon: string;
+      Tue: string;
+      Wed: string;
+      Thu: string;
+      Fri: string;
+      Sat: string;
+      Sun: string;
+    };
   };
   TimePicker: {
     placeholder: string;
