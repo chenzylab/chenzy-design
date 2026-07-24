@@ -3,20 +3,35 @@
 
   const treeData = [
     {
-      key: 'east',
-      label: '华东',
+      label: 'Asia',
+      value: 'Asia',
+      key: '0',
       children: [
-        { key: 'hz', label: '杭州' },
-        { key: 'nj', label: '南京' },
-        { key: 'sh', label: '上海' },
+        {
+          label: 'China',
+          value: 'China',
+          key: '0-0',
+          children: [
+            { label: 'Beijing', value: 'Beijing', key: '0-0-0' },
+            { label: 'Shanghai', value: 'Shanghai', key: '0-0-1' },
+            { label: 'Chengdu', value: 'Chengdu', key: '0-0-2' },
+          ],
+        },
+        {
+          label: 'Japan',
+          value: 'Japan',
+          key: '0-1',
+          children: [{ label: 'Osaka', value: 'Osaka', key: '0-1-0' }],
+        },
       ],
     },
     {
-      key: 'south',
-      label: '华南',
+      label: 'North America',
+      value: 'North America',
+      key: '1',
       children: [
-        { key: 'gz', label: '广州' },
-        { key: 'sz', label: '深圳' },
+        { label: 'United States', value: 'United States', key: '1-0' },
+        { label: 'Canada', value: 'Canada', key: '1-1' },
       ],
     },
   ];
@@ -27,6 +42,6 @@
 <!-- 树穿梭框自定义头部：leafOnlyNum 显示可选叶子节点数量 -->
 <Transfer type="treeList" dataSource={treeData} {value} onChange={(keys) => (value = keys)}>
   {#snippet renderSourceHeader({ leafOnlyNum })}
-    <div style="padding:8px 12px;font-weight:600">共 {leafOnlyNum ?? 0} 个城市可选</div>
+    <div style="padding:8px 12px;font-weight:600">共 {leafOnlyNum ?? 0} 个叶子节点可选</div>
   {/snippet}
 </Transfer>

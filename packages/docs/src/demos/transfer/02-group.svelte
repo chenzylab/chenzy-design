@@ -1,26 +1,44 @@
 <script lang="ts">
   import { Transfer } from '@chenzy-design/svelte';
 
-  const groupData = [
+  // 分组：本库分组结构为 { title, items }（对齐 Semi type='groupList'；
+  // 字段名 items 为本库既定命名，Semi 用 children）。
+  const dataWithGroup = [
     {
-      title: '华东',
+      title: '类别A',
       items: [
-        { key: 'hz', label: '杭州' },
-        { key: 'nj', label: '南京' },
-        { key: 'sh', label: '上海' },
+        { label: 'A-1', value: 1, disabled: false, key: 1 },
+        { label: 'A-2', value: 2, disabled: false, key: 2 },
+        { label: 'A-3', value: 3, disabled: false, key: 3 },
       ],
     },
     {
-      title: '华南',
+      title: '类别B',
       items: [
-        { key: 'gz', label: '广州' },
-        { key: 'sz', label: '深圳' },
+        { label: 'B-1', value: 4, disabled: false, key: 4 },
+        { label: 'B-2', value: 5, disabled: false, key: 5 },
+        { label: 'B-3（disabled）', value: 6, disabled: true, key: 6 },
+      ],
+    },
+    {
+      title: '类别C',
+      items: [
+        { label: 'C-1', value: 7, disabled: false, key: 7 },
+        { label: 'C-2', value: 8, disabled: false, key: 8 },
+        { label: 'C-3', value: 9, disabled: false, key: 9 },
+        { label: 'C-4', value: 10, disabled: false, key: 10 },
+        { label: 'C-5', value: 11, disabled: false, key: 11 },
+        { label: 'C-6', value: 12, disabled: false, key: 12 },
+        { label: 'C-7', value: 13, disabled: false, key: 13 },
       ],
     },
   ];
-
-  let value = $state<(string | number)[]>(['hz']);
 </script>
 
-<!-- type='groupList'：源面板按分组渲染分组标题 -->
-<Transfer type="groupList" dataSource={groupData} {value} onChange={(keys) => (value = keys)} />
+<Transfer
+  type="groupList"
+  defaultValue={[6]}
+  style="width: 568px"
+  dataSource={dataWithGroup}
+  onChange={(values, items) => console.log(values, items)}
+/>
