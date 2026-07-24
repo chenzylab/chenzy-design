@@ -1,31 +1,37 @@
 <script lang="ts">
-  import { Carousel, Button, Space, Typography } from '@chenzy-design/svelte';
+  import { Carousel, Typography, Space } from '@chenzy-design/svelte';
+  import { imgList, semiLogo, textList } from './_data.js';
 
-  const { Text } = Typography;
-
+  const { Title, Paragraph } = Typography;
   let activeIndex = $state(0);
-  const bgs = ['var(--cd-color-primary)', 'var(--cd-color-success)', 'var(--cd-color-warning)'];
+
+  const titleStyle = 'position:absolute;top:100px;left:100px;';
+  const colorStyle = 'color:#1C1F23;';
 </script>
 
-{#snippet s0()}<div style="width:100%;height:100%;background:{bgs[0]}"></div>{/snippet}
-{#snippet s1()}<div style="width:100%;height:100%;background:{bgs[1]}"></div>{/snippet}
-{#snippet s2()}<div style="width:100%;height:100%;background:{bgs[2]}"></div>{/snippet}
-
-<Space vertical align="start">
-  <Text type="tertiary">受控 activeIndex（当前：第 {activeIndex + 1} 张）</Text>
+<div>
   <Carousel
-    slides={[s0, s1, s2]}
+    style="width:100%;height:400px"
     {activeIndex}
     autoPlay={false}
     theme="dark"
     onChange={(i) => (activeIndex = i)}
-    style="width:100%;height:400px"
+    slides={[slide0, slide1, slide2]}
   />
-  <Space>
-    {#each [0, 1, 2] as i (i)}
-      <Button type={i === activeIndex ? 'primary' : 'tertiary'} onclick={() => (activeIndex = i)}>
-        第 {i + 1} 张
-      </Button>
-    {/each}
-  </Space>
-</Space>
+</div>
+
+{#snippet slide(index: number)}
+  <div style="width:100%;height:100%;background-size:cover;background-image:url('{imgList[index]}')">
+    <Space vertical align="start" spacing="medium" style={titleStyle}>
+      <img src={semiLogo} alt="semi_logo" style="width:87px;height:31px" />
+      <Title heading={2} style={colorStyle}>{textList[index][0]}</Title>
+      <Space vertical align="start">
+        <Paragraph style={colorStyle}>{textList[index][1]}</Paragraph>
+        <Paragraph style={colorStyle}>{textList[index][2]}</Paragraph>
+      </Space>
+    </Space>
+  </div>
+{/snippet}
+{#snippet slide0()}{@render slide(0)}{/snippet}
+{#snippet slide1()}{@render slide(1)}{/snippet}
+{#snippet slide2()}{@render slide(2)}{/snippet}

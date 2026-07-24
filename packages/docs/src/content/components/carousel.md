@@ -1,23 +1,121 @@
 ---
-title: Carousel 走马灯
+title: Carousel 轮播图
 name: carousel
 category: show
-brief: Carousel（走马灯）用于在有限的视觉空间内循环轮播一组内容。
+brief: 轮播图是一种媒体组件，可以在可视化应用中展示多张图片轮流播放的效果。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Carousel（走马灯）用于在有限的视觉空间内循环轮播一组内容，支持自动播放、手动切换、指示器导航等交互模式。典型场景包括首页 Banner 广告位、商品图集、活动公告轮播。
+  import Basic from '../../demos/carousel/01-basic.svelte';
+  import basicSrc from '../../demos/carousel/01-basic.svelte?raw';
+  import ThemeDemo from '../../demos/carousel/02-theme.svelte';
+  import themeSrc from '../../demos/carousel/02-theme.svelte?raw';
+  import Indicator from '../../demos/carousel/03-indicator.svelte';
+  import indicatorSrc from '../../demos/carousel/03-indicator.svelte?raw';
+  import Arrow from '../../demos/carousel/04-arrow.svelte';
+  import arrowSrc from '../../demos/carousel/04-arrow.svelte?raw';
+  import CustomArrow from '../../demos/carousel/05-custom-arrow.svelte';
+  import customArrowSrc from '../../demos/carousel/05-custom-arrow.svelte?raw';
+  import AutoPlay from '../../demos/carousel/06-autoplay.svelte';
+  import autoPlaySrc from '../../demos/carousel/06-autoplay.svelte?raw';
+  import Animation from '../../demos/carousel/07-animation.svelte';
+  import animationSrc from '../../demos/carousel/07-animation.svelte?raw';
+  import Controlled from '../../demos/carousel/08-controlled.svelte';
+  import controlledSrc from '../../demos/carousel/08-controlled.svelte?raw';
+</script>
 
-Carousel 提供 slide 平移与 fade 渐隐两种切换动画，支持循环播放，并允许通过指示器快速跳转到特定幻灯片。自动播放时支持鼠标悬停暂停，减少用户在阅读时内容意外切走的干扰。
+## 代码演示
 
-## 何时使用
+### 如何引入
 
-在空间有限但需要展示多个平行内容的场景中使用 Carousel。不适合用于承载核心功能的导航，因为自动播放轮播会分散注意力、增加读取负担；不应把重要操作或通知放在轮播中依赖用户"等到"那一帧。
+```jsx
+import { Carousel } from '@chenzy-design/svelte';
+```
 
-## 无障碍
+### 基本用法
 
-- 轮播容器使用 `role="region"` 并配置 `aria-roledescription="carousel"` 及 `aria-label`；每张幻灯片使用 `role="group"` + `aria-roledescription="slide"` + `aria-label`（如"第 1 张，共 5 张"）。
-- 指示器渲染为 `tablist`/`tab` 模式或独立按钮，支持 ←/→/Home/End 键切换幻灯片，Enter/Space 激活。
-- 必须提供可见的暂停/继续按钮（满足 WCAG 2.2.2），键盘用户可通过该按钮控制自动播放；鼠标悬停与键盘聚焦均应暂停自动播放。
-- `prefers-reduced-motion` 时禁用滑动动画，改为即时切换，不触发自动播放。
+本库以 `slides` 数组（每项一个 Snippet）承载幻灯片内容（对齐 Semi 的 children 声明式写法）。
+
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 主题切换
+
+默认定义了三种主题：`primary`、`light`、`dark`
+
+<DemoBox code={themeSrc}><ThemeDemo /></DemoBox>
+
+### 指示器
+
+指示器可以调节类型、位置、尺寸
+类型：`dot`、`line`、`columnar`
+位置：`left`、`center`、`right`
+尺寸：`small`、`medium`
+
+<DemoBox code={indicatorSrc}><Indicator /></DemoBox>
+
+### 箭头
+
+通过 `showArrow` 控制箭头是否展示，`arrowType` 控制箭头展示时机（`hover`、`always`）。
+
+<DemoBox code={arrowSrc}><Arrow /></DemoBox>
+
+### 定制箭头
+
+通过 arrowProps 属性定制箭头样式和点击事件
+
+<DemoBox code={customArrowSrc}><CustomArrow /></DemoBox>
+
+### 播放参数
+
+通过给 autoPlay 传入参数 interval 控制两张图片之间的时间间隔，传入 hoverToPause 控制鼠标放置在图片上时是否停止播放
+
+<DemoBox code={autoPlaySrc}><AutoPlay /></DemoBox>
+
+### 动画效果与切换速度
+
+通过给 animation 属性控制动画，可选值有 `fade`，`slide`
+通过给 speed 属性控制两张图片之间的切换时间，单位为 ms
+
+<DemoBox code={animationSrc}><Animation /></DemoBox>
+
+### 受控的轮播图
+
+通过 `activeIndex` 受控当前激活的索引，通过 `onChange` 感知切换。
+
+<DemoBox code={controlledSrc}><Controlled /></DemoBox>
+
+## API 参考
+
+### Carousel
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| activeIndex | 受控属性 | number | - |
+| animation | 切换动画，可选值：`fade`，`slide` | `fade` \| `slide` | `slide` |
+| arrowProps | 箭头参数，用于自定义箭头样式和点击事件 | `{ leftArrow, rightArrow }` | - |
+| arrowType | 箭头展示时机，可选值有：`hover`、`always` | `hover` \| `always` | `always` |
+| autoPlay | 是否自动循环展示，或传入 `{ interval: 自动切换时间间隔(默认 2000), hoverToPause: 鼠标悬浮时是否暂停(默认 true) }` | boolean \| `{ interval?, hoverToPause? }` | true |
+| class | 样式类名 | string | - |
+| defaultActiveIndex | 初始化时默认展示的索引 | number | 0 |
+| indicatorPosition | 指示器位置，可选值有：`left`、`center`、`right` | `left` \| `center` \| `right` | `center` |
+| indicatorSize | 指示器尺寸，可选值有：`small`、`medium` | `small` \| `medium` | `small` |
+| indicatorType | 指示器类型，可选值有：`dot`、`line`、`columnar` | `dot` \| `line` \| `columnar` | `dot` |
+| onChange | 图片切换时的回调 | (index: number, preIndex: number) => void | - |
+| showArrow | 是否展示箭头 | boolean | true |
+| showIndicator | 是否展示指示器 | boolean | true |
+| slideDirection | 动画效果为 `slide` 时的滑动方向，可选值有：`left`、`right` | `left` \| `right` | `left` |
+| slides | 每项一张幻灯片的 Snippet 数组（对齐 Semi children） | Snippet[] | - |
+| speed | 切换速度，单位 ms | number | 300 |
+| style | 内联样式 | string | - |
+| theme | 指示器和箭头主题，可选值有：`primary`、`light`、`dark` | `primary` \| `light` \| `dark` | `light` |
+| trigger | 指示器触发的时机，可选值有：`hover`、`click` | `hover` \| `click` | - |
+
+### ArrowButton（arrowProps.leftArrow / rightArrow）
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| props | 箭头 div 上的可传参数，包括 style、onClick 事件等 | `Record<string, unknown>` | - |
+| children | 箭头自定义 Icon | Snippet | - |
