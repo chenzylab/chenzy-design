@@ -29,7 +29,14 @@
 ## 里程碑4b（进行中）
 - ✅ YearAndMonth：year-month-foundation.svelte.ts（完整照搬 Semi：selectYear/selectMonth/autoSelectMonth，含 monthRange left/right + disabled 自动选月，无缩水）+ _utils getYears/getYearAndMonth（照搬）+ YearAndMonth.svelte（header 返回 IconButton + ScrollList 双列 year/month，month 单面板/monthRange 双面板，复用 ScrollList/ScrollItem，locale months/fullMonths）+ 测试 6（含 monthRange 4 列、disabled 年、选月回调 currentMonth.left 更新）。
 - ✅ 根治 Icon aria-hidden 装饰化（用户令：有偏差都改）：Icon 基座 aria-hidden 时省略 role=img/aria-label（对齐 Semi 装饰图标不被 AT 读，消除 axe role-img-alt）；IconButton 尺寸包裹 Icon 加 aria-hidden（语义由按钮 ariaLabel/children 承载）。全库 1829 测试通过（唯一失败 theme-cli 是 worktree tokens 未 build 环境问题，非本改动）。
-- 待做（完整不简化）：TimePanel + Switch(dateTime 日期/时间切换) + InsetInput（先 inputFoundation）+ MonthsGrid 双面板容器 + 把 YearAndMonth/TimePanel 接入 DatePickerNext 面板。
+- ✅ Switch：Switch.svelte（对齐 Semi monthsGrid.renderSwitch：div.-switch > date/time 两段 role=button，
+  -switch-date-active 随 isTimePickerOpen，density 控图标，disabledTimePicker）+ 测试 4。
+  - 坑：Switch 曾误用 core formatDate（大写 YYYY token）+ Semi 小写 formatToken → 输出 'yyyy-01-dd'；
+    改用 core localeFormat（date-fns，小写 token）。新组件其余无此误用（旧 DatePicker.svelte 用大写 token 正确）。
+  - Semi renderSwitch 的 div[role=button] 无 tabindex（逐字对齐 Semi，svelte-ignore a11y_interactive_supports_focus）。
+- 待做（完整不简化，依赖顺序）：**先做 TimePicker 全面对齐（任务#18，拆出时间列面板组件）→ 再做 DatePicker TimePanel 复用之**
+  （Semi TimePanel 复用 TimePicker 的 Combobox 时间列；本库 TimePicker 未拆分，按「引用组件先对齐 Semi」须先拆）。
+  然后 InsetInput（先 inputFoundation）+ MonthsGrid 双面板容器 + 把 YearAndMonth/Switch/TimePanel 接入 DatePickerNext。
 
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：
