@@ -101,6 +101,10 @@
     preventScroll?: boolean;
     /** 挂载自动聚焦 */
     autoFocus?: boolean;
+    /** 根节点自定义类名（对齐 Semi className）。 */
+    class?: string;
+    /** 根节点自定义内联样式（对齐 Semi style）。 */
+    style?: string;
   }
 
   let {
@@ -146,6 +150,8 @@
     onFocus,
     preventScroll = false,
     autoFocus = false,
+    class: className = '',
+    style = '',
   }: Props = $props();
 
   const loc = useLocale();
@@ -421,6 +427,7 @@
       size === 'large' && 'cd-tag-input-large',
       hasPrefix && 'cd-tag-input-with-prefix',
       suffix !== undefined && 'cd-tag-input-with-suffix',
+      className,
     ]
       .filter(Boolean)
       .join(' '),
@@ -434,6 +441,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
   class={cls}
+  {style}
   role="group"
   aria-label={ariaLabel}
   aria-disabled={disabled || undefined}
@@ -703,6 +711,10 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     font-size: var(--cd-font-size-small);
+    /* 配套 Semi @include font-size-small 的 line-height:16px，收敛文字盒高度，
+       否则 inline-block 继承祖先 21px line-height 把 tag content 撑到 27px，
+       与 12px 关闭图标视觉不垂直居中。 */
+    line-height: var(--cd-line-height-small);
   }
 
   /* 拖拽手柄（对齐 Semi &-drag-handler）—— */
