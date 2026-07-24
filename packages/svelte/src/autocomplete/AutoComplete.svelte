@@ -30,8 +30,10 @@
   import { getInputGroupContext } from '../input/context.js';
 
   type ItemValue = string | number;
-  type Item = ItemValue | { value: ItemValue; label?: string; disabled?: boolean };
-  type NormalizedItem = { value: ItemValue; label: string; disabled: boolean };
+  type Item = ItemValue | ({ value: ItemValue; label?: string; disabled?: boolean } & Record<string, unknown>);
+  // 归一化后保留原对象的额外字段（对齐 Semi：renderItem 拿到完整候选对象），
+  // value/label/disabled 为组件内部约定字段。
+  type NormalizedItem = { value: ItemValue; label: string; disabled: boolean } & Record<string, unknown>;
   type Size = 'small' | 'large' | 'default';
   type ValidateStatus = 'default' | 'warning' | 'error';
   type Position = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight';
@@ -103,6 +105,8 @@
     autoFocus?: boolean;
     /** 浮层位置。 */
     position?: Position;
+    /** 浮层溢出视口时自动翻转到反向 placement（默认 true，对齐 Semi autoAdjustOverflow）。 */
+    autoAdjustOverflow?: boolean;
     /** 透传键盘原始事件（在内部键盘逻辑之前调用）。 */
     onKeyDown?: (e: KeyboardEvent) => void;
     /** 根节点自定义 class。 */
@@ -152,6 +156,7 @@
     onClear,
     autoFocus = false,
     position = 'bottomLeft',
+    autoAdjustOverflow = true,
     onKeyDown,
     class: className = '',
     style = '',
@@ -203,7 +208,8 @@
     if (typeof it === 'string' || typeof it === 'number') {
       return { value: it, label: String(it), disabled: false };
     }
-    return { value: it.value, label: it.label ?? String(it.value), disabled: it.disabled ?? false };
+    // 保留原对象的额外字段（对齐 Semi：renderItem/renderSelectedItem 拿到完整候选对象）。
+    return { ...it, value: it.value, label: it.label ?? String(it.value), disabled: it.disabled ?? false };
   }
 
   // 候选序列：仅归一化，不做本地过滤（对齐 Semi：data 由用户按 query 准备）。
@@ -486,7 +492,7 @@
       role="listbox"
       id={listId}
       aria-busy={loading || undefined}
-      use:floating={{ trigger: rootEl, placement: dropdownPlacement, offset: 4, autoAdjust: true, padding: 8, matchWidth: dropdownMatchSelectWidth, open: showDropdown, getContainer: getPopupContainer }}
+      use:floating={{ trigger: rootEl, placement: dropdownPlacement, offset: 4, autoAdjust: autoAdjustOverflow, padding: 8, matchWidth: dropdownMatchSelectWidth, open: showDropdown, getContainer: getPopupContainer }}
       style={[dropdownStyleStr, maxHeightStyle, zIndexStyle].filter(Boolean).join('; ')}
     >
       {#if loading}
