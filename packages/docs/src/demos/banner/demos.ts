@@ -38,11 +38,6 @@ export const demos: DemoEntry[] = [
   entry(
     '04-custom-content.svelte',
     '自定义内容',
-    '通过 children 自定义其他渲染内容，渲染于横幅尾部的 extra 区。',
-  ),
-  entry(
-    '05-custom-icon.svelte',
-    '自定义图标',
-    '通过 icon 自定义横幅图标，通过 closeIcon 自定义关闭图标。',
+    '可以通过 children 自定义其他渲染内容。',
   ),
 ];
