@@ -2,29 +2,22 @@
   import { ImagePreview, Button } from '@chenzy-design/svelte';
 
   const srcList = [
-    'https://picsum.photos/seed/s1/900/600',
-    'https://picsum.photos/seed/s2/900/600',
-    'https://picsum.photos/seed/s3/900/600',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/abstract.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/sky.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/greenleaf.jpg',
+    'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/colorful.jpg',
   ];
 
-  let visibleSingle = $state(false);
-  let visibleMulti = $state(false);
+  let visible1 = $state(false);
+  let visible2 = $state(false);
 </script>
 
-<!-- 独立使用 ImagePreview：无需 children，用 src + visible 编程式控制。 -->
-<div style="display: flex; gap: 12px;">
-  <Button onclick={() => (visibleSingle = true)}>预览单图</Button>
-  <ImagePreview
-    src="https://picsum.photos/seed/s1/900/600"
-    visible={visibleSingle}
-    onVisibleChange={(v) => (visibleSingle = v)}
-  />
-
-  <Button onclick={() => (visibleMulti = true)}>预览多图</Button>
-  <ImagePreview
-    src={srcList}
-    infinite
-    visible={visibleMulti}
-    onVisibleChange={(v) => (visibleMulti = v)}
-  />
-</div>
+<Button onclick={() => (visible1 = true)}>Preview single Image</Button>
+<ImagePreview
+  src="https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/sky.jpg"
+  visible={visible1}
+  onVisibleChange={(v) => (visible1 = v)}
+/>
+<br />
+<Button onclick={() => (visible2 = true)} style="margin-top: 20px;">Preview multiple Images</Button>
+<ImagePreview src={srcList} visible={visible2} onVisibleChange={(v) => (visible2 = v)} />
