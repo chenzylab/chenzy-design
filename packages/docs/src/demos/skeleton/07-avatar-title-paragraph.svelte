@@ -21,10 +21,10 @@
   <div style="display:flex; align-items:flex-start">
     <Avatar color="blue" style="margin-right:12px">UI</Avatar>
     <div>
-      <h3>chenzy UI</h3>
-      <p>Hi, chenzy dance dance.</p>
-      <p>Hi, chenzy dance dance.</p>
-      <p>Hi, chenzy dance dance.</p>
+      <h3>Semi UI</h3>
+      <p>Hi, Bytedance dance dance.</p>
+      <p>Hi, Bytedance dance dance.</p>
+      <p>Hi, Bytedance dance dance.</p>
     </div>
   </div>
 </Skeleton>

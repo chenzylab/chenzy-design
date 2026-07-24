@@ -2,23 +2,116 @@
 title: Skeleton 骨架屏
 name: skeleton
 category: feedback
-brief: Skeleton（骨架屏）是在内容加载完成前，以占位灰块预渲染页面结构的反馈组件。
+brief: 在需要等待加载内容的位置提供的占位组件。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Skeleton（骨架屏）是在内容加载完成前，以占位灰块预渲染页面结构的反馈组件。它通过预留与真实内容布局一致的几何形状，降低用户在等待数据返回时的感知延迟与布局抖动（CLS），避免空白屏或纯 Spinner 带来的焦虑感。
+  import Basic from '../../demos/skeleton/01-basic.svelte';
+  import basicSrc from '../../demos/skeleton/01-basic.svelte?raw';
+  import ImageTitle from '../../demos/skeleton/03-image-title.svelte';
+  import imageTitleSrc from '../../demos/skeleton/03-image-title.svelte?raw';
+  import Statistic from '../../demos/skeleton/04-statistic.svelte';
+  import statisticSrc from '../../demos/skeleton/04-statistic.svelte?raw';
+  import AvatarTitle from '../../demos/skeleton/05-avatar-title.svelte';
+  import avatarTitleSrc from '../../demos/skeleton/05-avatar-title.svelte?raw';
+  import ParagraphButton from '../../demos/skeleton/06-paragraph-button.svelte';
+  import paragraphButtonSrc from '../../demos/skeleton/06-paragraph-button.svelte?raw';
+  import AvatarTitleParagraph from '../../demos/skeleton/07-avatar-title-paragraph.svelte';
+  import avatarTitleParagraphSrc from '../../demos/skeleton/07-avatar-title-paragraph.svelte?raw';
+  import TableDemo from '../../demos/skeleton/08-table.svelte';
+  import tableSrc from '../../demos/skeleton/08-table.svelte?raw';
+  import Active from '../../demos/skeleton/02-active.svelte';
+  import activeSrc from '../../demos/skeleton/02-active.svelte?raw';
+</script>
 
-适用于首屏/卡片/列表/详情页数据加载占位，以及内容结构已知且加载耗时较长（> 300ms）的场景。提供 Skeleton.Title、Skeleton.Paragraph、Skeleton.Avatar、Skeleton.Image、Skeleton.Button 五种原子占位形状，可自由组合成任意占位模板。
+## 概述
 
-## 何时使用
+- `SkeletonAvatar`：占位头像，默认为圆形，默认尺寸：Avatar medium: `width: 48px`，`height: 48px`。支持 size、shape 属性
+- `SkeletonImage`：占位图像，默认尺寸：`width: 100%`，`height: 100%`。
+- `SkeletonTitle`：占位标题，默认尺寸：`width: 100%`， `height: 24px`。
+- `SkeletonParagraph`：占位内容部分，默认尺寸：`width: 100%`，`height: 16px`，`margin-bottom: 10px`。
+- `SkeletonButton`：占位按钮，默认尺寸：`width: 115px`，`height: 32px`。
 
-当内容结构已知、加载时间较长时使用 Skeleton 代替空白或纯 Spinner，以减少布局抖动和用户等待焦虑。加载时间极短（＜300ms）时无需 Skeleton；错误态使用 Empty；连续进度指示使用 Spin/Progress。
+> 注意：默认样式均可通过 `class` 或 `style` 进行自定义。
 
-## 无障碍
+## 代码演示
 
-Skeleton 镜像 Semi 结构：占位根节点为纯 `<div class="cd-skeleton">`，骨架块为纯装饰 `<div>`，本身不携带语义。设计取向是让骨架屏对辅助技术「透明」——不制造无意义的几何形状播报。
+### 如何引入
 
-- 占位块均为非交互的装饰性 `<div>`，无可聚焦元素，不进入 Tab 序列；加载完成后焦点不主动移动，避免打断用户。
-- 若需向屏幕阅读器播报加载态，由使用方在业务容器上按需补充 `aria-busy` / `aria-live`（组件不强加），以贴合具体页面语境。
-- RTL 下容器 `direction: rtl`，shimmer 扫过方向随之镜像。
+```jsx
+import { Skeleton } from '@chenzy-design/svelte';
+```
+
+### 基本使用
+
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 组合使用
+
+图片和标题。
+
+<DemoBox code={imageTitleSrc}><ImageTitle /></DemoBox>
+
+统计数字。
+
+<DemoBox code={statisticSrc}><Statistic /></DemoBox>
+
+头像和标题。
+
+<DemoBox code={avatarTitleSrc}><AvatarTitle /></DemoBox>
+
+居中段落和按钮。
+
+<DemoBox code={paragraphButtonSrc}><ParagraphButton /></DemoBox>
+
+头像、标题和段落。
+
+<DemoBox code={avatarTitleParagraphSrc}><AvatarTitleParagraph /></DemoBox>
+
+表格。
+
+<DemoBox code={tableSrc}><TableDemo /></DemoBox>
+
+### 加载动画
+
+通过设置 `active` 属性可以展示动画效果。
+
+<DemoBox code={activeSrc}><Active /></DemoBox>
+
+## API 参考
+
+### Skeleton
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| active | 是否展示动画效果 | boolean | false |
+| class | 类名 | string | - |
+| loading | 为 true 时，显示占位元素。反之则显示子组件 | boolean | true |
+| placeholder | 加载等待时的占位元素 | Snippet | - |
+| style | 样式 | string | - |
+
+### SkeletonAvatar
+
+> `SkeletonImage`，`SkeletonTitle`，`SkeletonButton` 大部分 API 与 `SkeletonAvatar` 相同。其中 shape 仅 `SkeletonAvatar` 支持。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 类名 | string | - |
+| size | 设置头像的大小，支持 `extra-extra-small`、`extra-small`、`small`、`medium`、`large`、`extra-large` | string | `medium` |
+| style | 样式 | string | - |
+| shape | 指定头像的形状，支持 `circle`、`square` | string | `circle` |
+
+### SkeletonParagraph
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 类名 | string | - |
+| rows | 设置段落占位图的行数 | number | 4 |
+| style | 样式 | string | - |
+
+## 文案规范
+
+- 不变的固定内容直接展示固定内容，可变的内容使用骨架屏展示

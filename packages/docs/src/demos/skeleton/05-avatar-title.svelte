@@ -16,6 +16,6 @@
   {/snippet}
   <div style="display:flex; align-items:center">
     <Avatar color="blue" style="margin-right:12px">UI</Avatar>
-    <span>chenzy UI</span>
+    <span>Semi UI</span>
   </div>
 </Skeleton>
