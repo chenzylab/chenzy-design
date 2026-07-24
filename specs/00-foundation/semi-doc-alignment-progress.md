@@ -67,7 +67,7 @@
 
 ### 优先批 C：导航类
 - [x] breadcrumb — inline 单页 + 9 demo 按 Semi 8 段严格复刻（基本/图标/尺寸/分隔符/截断5例/折叠/moreType/renderMore/路由对象），文件名重排对齐 Semi 顺序；折叠能力因 Svelte Snippet children 无法切片改走 routes 数组模式（技术差异已在 md 标注），组合式 Item 适用固定层级；实测折叠 …/点击展开/中间省略均对齐 Semi。组件 API 已全（无缺口）
-- [ ] dropdown
+- [x] dropdown — inline 单页 + 6 demo 对齐 Semi（基本/嵌套/弹出位置/触发方式/触发事件/JSON）；01-basic 手写 svg 换 6 个具名图标(IconBox/Setting/Forward/Refresh/Search/AlertCircle)+快捷键用真 HotKeys 组件(Ctrl B/V/F3)；position 用本库 Placement 命名(bottomStart≈Semi bottomLeft，md 标注等价)；组件 API 已全无缺口；实测悬浮下拉/具名图标/HotKeys 胶囊/语义色/禁用态对齐 Semi
 - [ ] steps — 数组 API vs 组合式子组件 见 [array-api-vs-composable]
 - [ ] tabs — 改名 value→activeKey 已完成，核对消费方 见 [tabs-rename-consumer]
 - [ ] pagination
