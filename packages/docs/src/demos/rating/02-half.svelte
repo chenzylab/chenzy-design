@@ -3,8 +3,7 @@
 </script>
 
 <div>
-  <Rating defaultValue={5} />
+  <Rating allowHalf defaultValue={3.5} />
   <br />
-  <br />
-  <Rating size="small" defaultValue={5} />
+  <Rating allowHalf defaultValue={3.65} disabled />
 </div>

@@ -24,11 +24,10 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('BasicDemo.svelte', '基础用法', '半星评分，受控值绑定。'),
-  entry('01-basic.svelte', '基础评分', 'default / small 两种尺寸。'),
-  entry('02-clear.svelte', '允许清除', 'allowClear 控制再次点击当前值是否清零。'),
-  entry('03-readonly-disabled.svelte', '只读', 'disabled 展示既定分值且不可交互（对齐 Semi 只读用法）。'),
-  entry('04-character-tooltips.svelte', '文案展现', 'character 自定义字符/图标，tooltips 提供逐项提示。'),
-  entry('05-size-count.svelte', '尺寸与数量', 'size 调整尺寸，count 自定义评分项数量。'),
-  entry('06-half-custom-size.svelte', '自定义', 'allowHalf 可交互半星；size 传 number 配合自定义字符实现任意尺寸。'),
+  entry('01-basic.svelte', '基本用法', '最简单的用法，支持 default / small 两种尺寸，也支持传入 number 自定义尺寸。'),
+  entry('02-half.svelte', '半星', 'allowHalf 支持选择半星，并支持展示除 0.5 以外的小数。'),
+  entry('03-readonly.svelte', '只读', 'disabled 将无法进行交互。'),
+  entry('04-clear.svelte', '点击清除', 'allowClear 允许再次点击时清除数值，默认为 true。'),
+  entry('05-tooltips.svelte', '文案展现', '给评分组件加上文案展示。'),
+  entry('06-custom.svelte', '自定义', '自定义评分字符、个数及尺寸；自定义尺寸需配合自定义字符才生效。'),
 ];
