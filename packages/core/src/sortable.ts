@@ -21,7 +21,11 @@
 // Types
 // ---------------------------------------------------------------------------
 
-/** The row box of one item, relative to the sortable container's top. */
+/**
+ * The row box of one item along the main axis, relative to the container's
+ * main-axis origin. For axis 'y' these are the CSS top/height; for axis 'x'
+ * they carry left/width (the field names stay top/height for back-compat).
+ */
 export interface SortableRect {
   top: number;
   height: number;
@@ -133,6 +137,14 @@ export interface CreateSortableOptions {
   /** Min pointer travel (px) before a drag actually starts. Default 1 (aligns Semi distance:1). */
   activationDistance?: number;
 
+  /**
+   * Drag axis. `'y'` (default) — vertical list (table rows, vertical tab bar);
+   * geometry reads clientY / rect.top / rect.height. `'x'` — horizontal list
+   * (horizontal tab bar); geometry reads clientX / rect.left / rect.width and
+   * transforms become translateX. Item order/index semantics are identical.
+   */
+  axis?: 'x' | 'y';
+
   /** Apply the frame's transforms. Called on every move once dragging. */
   applyTransforms: (transforms: SortableTransform[], activeIndex: number) => void;
   /** Clear all transforms/transitions. Called on drop/cancel. */
@@ -168,6 +180,9 @@ export function createSortable(
     options.ownerDocument ??
     (typeof document !== 'undefined' ? document : undefined);
   const activationDistance = options.activationDistance ?? 1;
+  const axis = options.axis ?? 'y';
+  // Read the main-axis coordinate from a pointer event (clientX for 'x', clientY for 'y').
+  const pointerMain = (e: PointerEvent): number => (axis === 'x' ? e.clientX : e.clientY);
 
   let container: HTMLElement | null = null;
   let initialized = false;
@@ -177,8 +192,8 @@ export function createSortable(
   let pending = false; // pointerdown seen, awaiting activation distance
   let activeIndex = -1;
   let targetIndex = -1;
-  let startY = 0;
-  let containerTop = 0;
+  let startPos = 0; // main-axis coordinate at pointerdown
+  let containerStart = 0; // container's main-axis origin (left for 'x', top for 'y')
   let rects: SortableRect[] = [];
 
   const resetDragState = (): void => {
@@ -191,14 +206,18 @@ export function createSortable(
 
   const snapshotRects = (): void => {
     const c = options.getContainer();
-    containerTop = c ? c.getBoundingClientRect().top : 0;
+    const cRect = c?.getBoundingClientRect();
+    containerStart = cRect ? (axis === 'x' ? cRect.left : cRect.top) : 0;
     const count = options.getItemCount();
     rects = [];
     for (let i = 0; i < count; i++) {
       const el = options.getItemElement(i);
       if (el) {
         const r = el.getBoundingClientRect();
-        rects.push({ top: r.top - containerTop, height: r.height });
+        // `top`/`height` carry main-axis start/size regardless of axis.
+        const start = (axis === 'x' ? r.left : r.top) - containerStart;
+        const size = axis === 'x' ? r.width : r.height;
+        rects.push({ top: start, height: size });
       } else {
         rects.push({ top: 0, height: 0 });
       }
@@ -213,17 +232,17 @@ export function createSortable(
     options.onDragStart?.(activeIndex);
   };
 
-  const frame = (clientY: number): void => {
-    const pointerDeltaY = clientY - startY;
+  const frame = (mainPos: number): void => {
+    const pointerDelta = mainPos - startPos;
     // Dragged row's visual center = its original center + delta.
     const activeRect = rects[activeIndex];
     const activeCenter =
-      (activeRect ? activeRect.top + activeRect.height / 2 : 0) + pointerDeltaY;
+      (activeRect ? activeRect.top + activeRect.height / 2 : 0) + pointerDelta;
     targetIndex = computeTargetIndex(activeCenter, rects, activeIndex);
     const offsets = computeItemTransforms(
       activeIndex,
       targetIndex,
-      pointerDeltaY,
+      pointerDelta,
       rects,
     );
     const transforms: SortableTransform[] = offsets.map((translateY, index) => ({
@@ -256,13 +275,13 @@ export function createSortable(
 
   function onPointerMove(e: PointerEvent): void {
     if (pending) {
-      if (Math.abs(e.clientY - startY) < activationDistance) return;
+      if (Math.abs(pointerMain(e) - startPos) < activationDistance) return;
       beginDrag();
     }
     if (!dragging) return;
     // Prevent text selection / native scroll interference during drag.
     e.preventDefault();
-    frame(e.clientY);
+    frame(pointerMain(e));
   }
 
   function onPointerUp(): void {
@@ -287,7 +306,7 @@ export function createSortable(
     const idx = options.resolveIndexFromEvent(e);
     if (idx < 0) return;
     activeIndex = idx;
-    startY = e.clientY;
+    startPos = pointerMain(e);
     pending = true;
     if (doc) {
       doc.addEventListener('pointermove', onPointerMove);
