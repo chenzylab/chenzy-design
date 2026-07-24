@@ -15,6 +15,19 @@
   - **真机验证时机**：里程碑3 功能已由 vitest dom 测试真实覆盖（testing-library 真实 mount+click）；视觉真机验证放到阶段3 样式对齐后（现无样式真机点击验不到视觉，记忆：对齐视觉必须实测 Semi DOM）。
   - **旧 DatePicker.svelte 替换时机**：DatePickerNext 用新文件名避免砸掉旧文件导致 demos 全红；阶段5 收尾时整体替换 index 导出 + 删旧文件（用户令直接覆盖，git 留档）。
 
+## ⚠️ 铁律：不做功能缩水的简化（用户拍板 2026-07-25）
+里程碑只做**排序**（先独立组件、后耦合组件），绝不做**功能缩水**。判据：后续能补全→可现阶段先不做（排序）；否则必须现在就完整做。
+- 排序（可）：Footer/QuickControl 先于 YearAndMonth；DatePickerNext 里程碑3 先 date 单面板，range/dateTime/双面板**后续必补**（已记待补，非缩水）。
+- 缩水（禁）：YearAndMonth 不许砍 monthRange 双面板 left/right + autoSelectMonth disabled 逻辑；InsetInput 不许做残缺版（先建 inputFoundation 再完整做）；每个组件做就照搬 Semi 全部逻辑。
+- **待补清单（后续里程碑必须补全，否则即缩水）**：DatePickerNext 的 range/dateTime/monthRange/multiple/inset/preset 装配；YearAndMonth 双面板+autoSelect；TimePanel；Switch(dateTime 日期/时间切换)；InsetInput(依赖 inputFoundation)；MonthsGrid 双面板容器；needConfirm/handleConfirm/handleCancel 流。
+
+## 里程碑4a（已完成）
+- locale 补 DatePicker.footer.{confirm,cancel} + presets（zh/en/interface）。
+- Footer.svelte（复用 Button，cancel borderless + confirm solid，disabledConfirm）+ 测试 3。
+- QuickControl.svelte（复用 Button+Typography.Text ellipsis，presetPosition/type 全套 class，top/bottom 无 header，空不渲染）+ 测试 4。
+- foundation 加 PresetType/PresetsType/BaseValueType（对齐 Semi）。
+- 里程碑4b（待做，完整不简化）：YearAndMonth 滚轮（含 monthRange 双面板+autoSelectMonth，复用 ScrollList/ScrollItem，locale 补 months/fullMonths）+ TimePanel + Switch + InsetInput（先 inputFoundation）+ MonthsGrid 容器。
+
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：
 - `constants.ts` ✅ ← Semi constants.ts

@@ -235,6 +235,11 @@ export const zh_CN: Locale = {
       Sat: '六',
       Sun: '日',
     },
+    footer: {
+      confirm: '确定',
+      cancel: '取消',
+    },
+    presets: '快捷选择',
   },
   TimePicker: {
     placeholder: '请选择时间',

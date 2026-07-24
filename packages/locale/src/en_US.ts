@@ -235,6 +235,11 @@ export const en_US: Locale = {
       Sat: 'Sat',
       Sun: 'Sun',
     },
+    footer: {
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+    },
+    presets: 'Presets',
   },
   TimePicker: {
     placeholder: 'Select time',

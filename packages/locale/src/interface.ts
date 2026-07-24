@@ -316,6 +316,13 @@ export interface Locale {
       Sat: string;
       Sun: string;
     };
+    /** 面板底部确认/取消（needConfirm 时，对齐 Semi footer） */
+    footer: {
+      confirm: string;
+      cancel: string;
+    };
+    /** 快捷选择区标题（对齐 Semi presets） */
+    presets: string;
   };
   TimePicker: {
     placeholder: string;

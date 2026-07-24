@@ -17,6 +17,15 @@ import type { PickerType, PickerSize } from './constants.js';
 export type RangeValue = [Date | null, Date | null];
 export type ValidateStatus = 'default' | 'warning' | 'error';
 
+/** 快捷选择预设（对齐 Semi foundation PresetType/PresetsType）。 */
+export type BaseValueType = string | number | Date;
+export type PresetType = {
+  start?: BaseValueType | (() => BaseValueType);
+  end?: BaseValueType | (() => BaseValueType);
+  text?: string;
+};
+export type PresetsType = Array<PresetType | (() => PresetType)>;
+
 /**
  * foundation 消费的 props 子集（视图层 $props() 后经 getter 传入）。
  * optional 字段显式含 undefined，适配 exactOptionalPropertyTypes（getter 恒返回值，缺省即 undefined）。
