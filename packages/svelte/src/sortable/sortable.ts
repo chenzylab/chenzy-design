@@ -34,6 +34,11 @@ export interface SortableActionParams {
   getRows?: (container: HTMLElement) => HTMLElement[];
   /** Min pointer travel (px) before a drag starts. Default 1. */
   activationDistance?: number;
+  /**
+   * Drag axis. `'y'` (default) — vertical list (table rows, vertical tab bar).
+   * `'x'` — horizontal list (horizontal tab bar); transforms become translateX.
+   */
+  axis?: 'x' | 'y';
   /** Transition applied to the shifting (non-dragged) rows. Default 'transform 200ms ease'. */
   transition?: string;
   onDragStart?: (index: number) => void;
@@ -77,13 +82,19 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
     activeIndex: number,
   ): void => {
     const els = rows();
-    for (const { index, translateY } of transforms) {
+    const isX = (current.axis ?? 'y') === 'x';
+    // `translateY` field carries the main-axis translate regardless of axis.
+    for (const { index, translateY: mainTranslate } of transforms) {
       const el = els[index];
       if (!el) continue;
-      el.style.transform = translateY ? `translateY(${translateY}px)` : '';
+      el.style.transform = mainTranslate
+        ? isX
+          ? `translateX(${mainTranslate}px)`
+          : `translateY(${mainTranslate}px)`
+        : '';
       // The dragged row must follow the pointer with no lag → no transition.
       el.style.transition = index === activeIndex ? 'none' : transition();
-      if (index === activeIndex && translateY) {
+      if (index === activeIndex && mainTranslate) {
         el.style.zIndex = '1';
         el.style.position = 'relative';
       }
@@ -110,6 +121,7 @@ export const sortable: Action<HTMLElement, SortableActionParams> = (
       ...(current.activationDistance !== undefined
         ? { activationDistance: current.activationDistance }
         : {}),
+      ...(current.axis !== undefined ? { axis: current.axis } : {}),
       applyTransforms,
       clearTransforms,
       onReorder: (from, to) => current.onReorder(from, to),
