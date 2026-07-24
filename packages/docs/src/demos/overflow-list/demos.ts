@@ -24,12 +24,8 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-collapse.svelte', '折叠模式（默认）', 'renderMode="collapse"：容器放不下时把溢出项收纳为 +N'),
-  entry('02-collapse-from.svelte', '折叠方向', 'collapseFrom="start" 从头部折叠，尾部项保持可见'),
-  entry('03-min-visible-items.svelte', '最小展示数目', 'minVisibleItems 保证至少展示 N 个可见项'),
-  entry('04-scroll.svelte', '滚动模式', 'renderMode="scroll" 不折叠，容器内横向滚动查看溢出项'),
-  entry('05-on-overflow.svelte', '溢出回调', 'onOverflow 上报当前被折叠的项集合（去重）'),
-  entry('06-custom-overflow.svelte', '自定义折叠节点', 'overflowRenderer 返回下拉菜单，点击 +N 展开被折叠项'),
-  entry('07-scroll-intersect.svelte', '滚动相交回调', 'scroll 模式下 onVisibleStateChange + threshold 上报可见项'),
-  entry('08-dynamic-items.svelte', '动态切换数据', 'items 引用变化后重新测量并重算折叠结果'),
+  entry('01-collapse.svelte', '折叠模式 - 默认', '通过 renderMode="collapse"（默认）来实现内容的折叠。'),
+  entry('02-collapse-from.svelte', '折叠模式 - 方向', 'collapse 模式下支持 collapseFrom 设置折叠方向。'),
+  entry('03-min-visible-items.svelte', '折叠模式 - 最小展示的数目', 'collapse 模式下支持 minVisibleItems 设置最小展示的数目。'),
+  entry('04-scroll.svelte', '滚动模式', '通过 renderMode="scroll" 来使用滚动模式的折叠列表。'),
 ];

@@ -1,30 +1,37 @@
 <script lang="ts">
-  // 折叠方向：collapse 模式下 collapseFrom="start" 从头部折叠，尾部项保持可见（对齐 Semi 文档 demo 2）。
-  import { OverflowList, Tag, Slider, Text } from '@chenzy-design/svelte';
+  // collapse 模式下 collapseFrom 设置折叠方向（对齐 Semi）。
+  import { OverflowList, Tag, Slider } from '@chenzy-design/svelte';
+  import {
+    IconAlarm,
+    IconBookmark,
+    IconCamera,
+    IconDuration,
+    IconEdit,
+    IconFolder,
+  } from '@chenzy-design/icons';
 
-  interface Item {
-    key: string;
-  }
-
-  const items: Item[] = [
-    { key: 'alarm' },
-    { key: 'bookmark' },
-    { key: 'camera' },
-    { key: 'duration' },
-    { key: 'edit' },
-    { key: 'folder' },
+  const items = [
+    { icon: IconAlarm, key: 'alarm' },
+    { icon: IconBookmark, key: 'bookmark' },
+    { icon: IconCamera, key: 'camera' },
+    { icon: IconDuration, key: 'duration' },
+    { icon: IconEdit, key: 'edit' },
+    { icon: IconFolder, key: 'folder' },
   ];
 
   let width = $state(100);
 </script>
 
-<Text type="tertiary">collapseFrom="start"：折叠节点渲染在头部，尾部最新项保持可见</Text>
-<Slider value={width} step={1} min={0} max={100} onChange={(v) => (width = typeof v === 'number' ? v : v[0])} />
+<Slider step={1} value={width} onChange={(v) => (width = typeof v === 'number' ? v : (v[0] ?? 100))} />
+<br />
 <br />
 <div style="width:{width}%">
   <OverflowList {items} collapseFrom="start">
     {#snippet visibleItemRenderer(item)}
-      <Tag color="blue" style="margin-right:8px;flex:0 0 auto">{item.key}</Tag>
+      {@const Icon = item.icon}
+      <Tag color="blue" style="margin-right:8px;flex:0 0 auto">
+        <Icon style="margin-right:4px" />{item.key}
+      </Tag>
     {/snippet}
     {#snippet overflowRenderer(rest)}
       {#if rest.length}<Tag style="margin-right:8px;flex:0 0 auto;font-variant-numeric:tabular-nums">+{rest.length}</Tag>{/if}
