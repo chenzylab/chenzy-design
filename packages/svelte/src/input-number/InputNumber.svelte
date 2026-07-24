@@ -211,10 +211,30 @@
   const text = $derived(editingText ?? formatDisplay(current));
 
   // 科学计数法：启用与阈值派生（对象可自定义 threshold，默认 15）。
+  // 对齐 Semi：threshold 需为 >= 1 的有限数，否则回退 15。
   const sciEnabled = $derived(!!scientificNotation);
-  const sciThreshold = $derived(
-    typeof scientificNotation === 'object' ? (scientificNotation.threshold ?? 15) : 15,
-  );
+  const sciThreshold = $derived.by(() => {
+    if (typeof scientificNotation === 'object' && scientificNotation !== null) {
+      const t = scientificNotation.threshold;
+      return typeof t === 'number' && Number.isFinite(t) && t >= 1 ? t : 15;
+    }
+    return 15;
+  });
+
+  // 科学计数法转换（对齐 Semi _toScientificNotation）：
+  // 按「有效数字位数 >= threshold」判定（而非数量级），系数保留 threshold-1 位小数并去尾零。
+  function toScientificNotation(num: number): string {
+    const absNum = Math.abs(num);
+    const numStr = String(absNum);
+    const hasExp = /e/i.test(numStr);
+    const significantDigits = numStr.replace(/[.\-+eE]/g, '').replace(/^0+/, '');
+    if ((hasExp || significantDigits.length >= sciThreshold) && absNum !== 0) {
+      const fractionDigits = Math.max(0, Math.min(100, Math.floor(sciThreshold) - 1));
+      const exp = num.toExponential(fractionDigits);
+      return exp.replace(/(\.\d*?)0+e/, '$1e').replace(/\.e/, 'e');
+    }
+    return String(num);
+  }
 
   // --- 货币展示（对齐 Semi currency）---
   const currencyEnabled = $derived(currency !== false && currency !== undefined);
@@ -291,9 +311,10 @@
         currencyDisplay,
       }).format(n);
     }
-    // 科学计数法：仅失焦显示态、且数量级达阈值时套用。
-    if (sciEnabled && !focused && Math.abs(n) >= 10 ** sciThreshold) {
-      return n.toExponential();
+    // 科学计数法：仅失焦显示态、且有效数字位数达阈值时套用（对齐 Semi）。
+    if (sciEnabled && !focused) {
+      const sci = toScientificNotation(n);
+      if (sci !== String(n)) return sci;
     }
     if (formatter) return formatter(n);
     if (locale) return formatWithLocale(n, locale);

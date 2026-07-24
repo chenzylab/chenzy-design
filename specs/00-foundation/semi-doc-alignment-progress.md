@@ -76,7 +76,7 @@
 
 ### 优先批 D：输入类（交互复杂，验证成本高，放后面）
 - [x] pincode — inline 单页 + 5 段严格复刻 Semi（基本使用3尺寸/受控/限制格式含设位数count+设字符范围format两子块/手动聚焦失焦）；从零建 demo 目录+demos.ts+5 demo；组件 API 全覆盖 Semi 无缺口(value/defaultValue/count/format/size/disabled/autoFocus/onChange/onComplete + focus/blur 方法用 export function+bind:this 暴露)；实测 3 尺寸(24/32/42px)/defaultValue 填入/number format 拒绝字母 a/自动跳格/focus(2) 聚焦第3格 均对齐 Semi
-- [ ] inputnumber
+- [x] inputnumber — inline 单页 + 7 段严格复刻 Semi（基本输入框 2 代码块 step/shiftStep/min-max·defaultValue/disabled/precision/innerButtons、隐藏步进器 innerButtons+hideButtons、尺寸 3 档、自定义显示格式与解析 formatter/parser 人民币+自定义串含 2.95.0 Notice、纯数字输入框 formatter+onNumberChange、货币展示 3 代码块 currency+localeCode·currencyDisplay·showCurrencySymbol+prefix、科学计数法含 Notice）；从零重建 demo（删本库自造 11 demo 超集结构：BasicDemo 八合一+基础数字输入/范围步进/小数精度/尺寸状态/步进器显隐/纯数字回调等，全不匹配 Semi 章节）。裸 `<label>标签</label>`（Semi 原文无关联控件）改 `<div>` 消 17 个 a11y warning。**修复科学计数法阈值判定真 bug**（见 [[inputnumber-scientific-notation-digit-count-not-magnitude]]）：本库原用「数量级 Math.abs(n)>=10**threshold」判定，Semi 是「有效数字位数 significantDigits.length>=threshold」+ 系数保留 threshold-1 位小数去尾零；对齐后 `1234567890`（10位，阈值10）从不触发→正确触发 `1.23456789e+9`，`9999999999999999`→`1e+16`（去尾零非全精度）。rebuild svelte dist。真机逐项验证（29 输入框显示值全对）：基本1/2 显示值、innerButtons hover 显形 ^/v 内嵌（zoom 确认）、precision 失焦 3.14159→3.14、货币 locale（¥/€德式/￥日元无小数/₫）+display（code/symbol/name）+symbol（showCurrencySymbol=false+prefix/suffix）、科学计数法修复后 4 框位数判定正确、步进按钮点击 ¥123,456.78→¥123,457.78 保持货币格式。docs typecheck 0 err、svelte typecheck 0 err、4 测试过、demo lint 0 warning、体积 input-number 4.2<5。组件其余 API 齐全无缺口。
 - [ ] slider
 - [ ] select — 补 style/class 缺口 见 SOP
 - [ ] autocomplete

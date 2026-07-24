@@ -1,16 +1,20 @@
 <script lang="ts">
-  import { InputNumber, Text } from '@chenzy-design/svelte';
+  import { InputNumber } from '@chenzy-design/svelte';
 
-  const v = 123456.78;
+  const defaultValue = 123456.78;
 </script>
 
-<div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
-  <!-- showCurrencySymbol=false 隐藏内置符号，用 prefix/suffix 自行展示 -->
-  <Text type="tertiary">showCurrencySymbol=false + prefix/suffix 自定义</Text>
-  <div style="width:220px">
-    <InputNumber currency="CNY" prefix="￥" showCurrencySymbol={false} defaultValue={v} />
-  </div>
-  <div style="width:220px">
-    <InputNumber currency="CNY" suffix="人民币" showCurrencySymbol={false} defaultValue={v} />
-  </div>
+<div>
+  <div>🇨🇳 CNY ➕ code</div>
+  <InputNumber style="width: 200px" currency="CNY" prefix="CNY" showCurrencySymbol={false} {defaultValue} />
+  <br />
+  <br />
+  <div>🇨🇳 CNY ➕ symbol</div>
+  <InputNumber style="width: 200px" currency="CNY" prefix="￥" showCurrencySymbol={false} {defaultValue} />
+  <br />
+  <br />
+  <div>🇨🇳 CNY ➕ name</div>
+  <InputNumber style="width: 200px" currency="CNY" suffix="人民币" showCurrencySymbol={false} {defaultValue} />
+  <br />
+  <br />
 </div>
