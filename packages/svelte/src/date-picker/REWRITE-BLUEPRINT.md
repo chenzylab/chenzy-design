@@ -38,6 +38,16 @@
   （Semi TimePanel 复用 TimePicker 的 Combobox 时间列；本库 TimePicker 未拆分，按「引用组件先对齐 Semi」须先拆）。
   然后 InsetInput（先 inputFoundation）+ MonthsGrid 双面板容器 + 把 YearAndMonth/Switch/TimePanel 接入 DatePickerNext。
 
+## 🎯 下一里程碑（5）：months-grid-foundation.svelte.ts —— range 状态机中枢（DatePicker 交互大脑）
+> 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。
+> DatePickerNext 里程碑3 用的是简化 pickerCursor；接入此 foundation 后 dateRange/hover 预览/offset 周选/双面板才真正活起来。
+- 源：`~/i/semi-design/packages/semi-foundation/datePicker/monthsGridFoundation.ts`（977 行）。
+- 已读过的核心方法（行号）：handleDayClick(597,按 type 分派)、handleDateSelected(611,单选 selected Set+multiple/max)、handleRangeSelected(674,rangeStart/End+rangeInputFocus 流转+offset+dateTime 合并)、_isNeedSwap(761)、handleDayHover(770,hover 预览态)、calcDisabledTime(210)、_mergeDateAndTime(659)。
+- 还需读：handleDayHover 全文(770+)、prevMonth/nextMonth/prevYear/nextYear、showYearPicker/showTimePicker/showDatePanel、toYearMonth、maxWeekNum/currentPanelHeight 计算、_getPanelDetail/_updatePanelDetail、getValidDateFormat/getValidTimeFormat、state 初始化(monthLeft/monthRight={showDate,pickerDate,isTimePickerOpen,isYearPickerOpen})。
+- rune 化：createMonthsGridState(getProps)；state 用 $state（selected:Set / rangeStart/End:string / hoverDay:string / monthLeft/Right:面板态 / rangeInputFocus）；adapter 的 notify* → 直接回调 props.onChange/onPanelChange。
+- 接入：DatePickerNext 面板改用 MonthsGrid.svelte（renderMonth 双面板 wrap + yam/tpk 叠加层 + Switch），MonthsGrid 消费此 foundation。renderMonth 装配已读（monthsGrid.tsx:331-401，wrap div>Navigation+Month，yam/tpk 开时 wrap visibility:hidden 绝对定位）。
+- ⚠️ 依赖顺序：TimePanel 仍须先做 TimePicker 拆分（#18，本库 TimePicker 809 行面板逻辑未拆成独立子组件，Semi TimePanel 复用 Combobox 时间列）。MonthsGrid 的 tpk 层接入 TimePanel 在此之后。
+
 ## 目标文件树（对齐 Semi foundation/view 分层）
 foundation（.svelte.ts / .ts，逻辑层，对应 Semi *Foundation.ts）：
 - `constants.ts` ✅ ← Semi constants.ts
