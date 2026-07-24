@@ -2,29 +2,71 @@
 title: ScrollList 滚动列表
 name: scrolllist
 category: show
-brief: 滚动列表，类似 iOS 的滚动选择模式。
+brief: 滚动列表。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-ScrollList 提供了一个类似 iOS 操作系统的滚动选择模式，同时支持滚动至指定窗口位置选择与点击选择。它由容器 `ScrollList`（负责 header / footer / body 布局）与若干列 `ScrollItem` 组合而成，常见于移动端风格的时间选择器、日期滚动列等场景。
+  import Basic from '../../demos/scroll-list/01-basic.svelte';
+  import basicSrc from '../../demos/scroll-list/01-basic.svelte?raw';
+</script>
 
-`ScrollItem` 有两种模式：`wheel`（滚轮，滚动/点击将候选项吸附到中央选区居中，可 `cycled` 无限循环）与 `normal`（普通列表，点击项即选中并高亮）。多列并排时由使用方手动放置多个 `ScrollItem` 并各自受控。
+## 代码演示
 
-## 何时使用
+### 如何引入
 
-在移动端或移动优先的 Web 应用中，需要用滚轮/触摸选择离散数值（如时、分、秒、月份）时使用 ScrollList。桌面端若选项较多，普通下拉选择器可能更合适；日期/时间选择可直接使用 DatePicker / TimePicker（其内部已复用 ScrollList）。
-
-## 如何引入
-
-```svelte
+```jsx
 import { ScrollList, ScrollItem } from '@chenzy-design/svelte';
 ```
 
-选择通过 `selectedIndex` 受控 + `onSelect(data)` 回调驱动，`data` 含 `value` / `index` / `type`（`type` 由 `ScrollItem` 传入，用于外层区分是哪一列）。
+### 基本使用
 
-## 无障碍
+滚动列表提供了一个类似于 iOS 操作系统的滚动选择模式，同时支持滚动至指定窗口位置选择与点击选择。
 
-- 每列的 `ul` 使用 `role="listbox"` + `aria-multiselectable="false"`，并通过 `aria-label`（来自 `ariaLabel`）提供可访问名称。
-- 每个选项使用 `role="option"` + `aria-selected` 反映当前选中状态；禁用项标记 `aria-disabled`。
-- 支持滚动吸附与点击选择两种交互；`prefers-reduced-motion` 下禁用缓动动画，直接定位到目标项。
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+## API 参考
+
+### ScrollList
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| bodyHeight | body 高度 | string \| number | - |
+| class | 样式类名 | string | - |
+| footer | 底部 addon | string \| Snippet | - |
+| header | 头部 addon | string \| Snippet | - |
+| style | 内联样式 | string | - |
+
+### ScrollItem
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| ariaLabel | 该列的无障碍标签 | string | - |
+| class | 样式类名 | string | - |
+| cycled | 是否为无限循环，仅在 mode 为 `wheel` 时生效 | boolean | false |
+| list | 列表内容 | ItemData[] | [] |
+| mode | 模式选择 | `normal` \| `wheel` | `wheel` |
+| motion | 是否开启滚动动画 | boolean | true |
+| onSelect | 选中回调 | (data: ItemData) => void | - |
+| selectedIndex | 选中项的索引 | number | 0 |
+| style | 内联样式 | string | - |
+| transform | 对选中项的变换，返回值会作为文案进行显示 | (value: any, text: string) => string | v => v |
+
+#### ItemData
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| disabled | 该项是否被禁止选择 | boolean | - |
+| text | 每一项的文案 | string | - |
+| transform | 该项处于选中状态时的变换，返回值会作为文案进行显示；ScrollItem 组件如果同时传入会优先选择 ItemData 中的 transform 方法 | (value: any, text: string) => string | v => v |
+| value | 每一项的值 | any | - |
+
+## Accessibility
+
+### ARIA
+
+- `ScrollItem` 支持传入 `ariaLabel`，指定该列标签
+- `ScrollItem` 使用 `aria-disabled` 表示该项目是否被禁用
+- `ScrollItem` 使用 `aria-selected` 表示该项目是否被选中
