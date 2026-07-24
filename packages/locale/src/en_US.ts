@@ -224,6 +224,8 @@ export const en_US: Locale = {
     backToDate: 'Back',
     yearColumnLabel: 'Year',
     monthColumnLabel: 'Month',
+    selectDate: 'Select date',
+    selectTime: 'Select time',
   },
   TimePicker: {
     placeholder: 'Select time',

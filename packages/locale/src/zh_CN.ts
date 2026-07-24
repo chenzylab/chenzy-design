@@ -224,6 +224,8 @@ export const zh_CN: Locale = {
     backToDate: '返回',
     yearColumnLabel: '年份',
     monthColumnLabel: '月份',
+    selectDate: '选择日期',
+    selectTime: '选择时间',
   },
   TimePicker: {
     placeholder: '请选择时间',

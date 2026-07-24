@@ -2,6 +2,7 @@
 // 只断言静态 ARIA + axe 0 violations，不测真实键盘/焦点（jsdom 限制）。
 // 打开态面板 portal 到 document.body，故扫描 document.body。
 import { describe, it, expect, vi } from 'vitest';
+import { tick } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import DatePicker from './DatePicker.svelte';
 
@@ -47,36 +48,48 @@ describe('DatePicker a11y', () => {
 // 对齐 Semi 时补全的能力（在 dom project / jsdom + svelte 编译下断言 DOM/回调）。
 describe('DatePicker 对齐 Semi 补全能力', () => {
   it('disabledDate 收到第二参 options（单选场景字段为空）', () => {
-    const spy = vi.fn(() => false);
+    const spy = vi.fn<(d: Date, o: Record<string, unknown>) => boolean>(() => false);
     renderWithLocale(DatePicker, { props: { defaultOpen: true, disabledDate: spy } });
     expect(spy).toHaveBeenCalled();
-    const options = spy.mock.calls[0]?.[1] as unknown as Record<string, unknown>;
+    const options = spy.mock.calls[0]?.[1];
     expect(options).toMatchObject({ rangeStart: '', rangeEnd: '', rangeInputFocus: expect.anything() });
   });
 
   it('range 场景 disabledDate 第二参含 rangeStart/rangeEnd/rangeInputFocus', () => {
-    const spy = vi.fn(() => false);
+    const spy = vi.fn<(d: Date, o: Record<string, unknown>) => boolean>(() => false);
     renderWithLocale(DatePicker, {
       props: { type: 'dateRange', defaultOpen: true, disabledDate: spy },
     });
-    const options = spy.mock.calls.at(-1)?.[1] as unknown as Record<string, unknown>;
+    const options = spy.mock.calls.at(-1)?.[1];
     expect(options).toHaveProperty('rangeStart');
     expect(options).toHaveProperty('rangeEnd');
     expect(options).toHaveProperty('rangeInputFocus');
   });
 
   it('range 场景 disabledTime 第二参 panelType 传 left/right', () => {
-    const spy = vi.fn(() => ({}));
+    const spy = vi.fn<(d: Date, panelType?: string) => Record<string, unknown>>(() => ({}));
     renderWithLocale(DatePicker, {
       props: { type: 'dateTimeRange', defaultOpen: true, disabledTime: spy },
     });
     expect(spy).toHaveBeenCalled();
-    const panelTypes = spy.mock.calls.map((c) => (c as unknown as [Date, string?])[1]);
+    const panelTypes = spy.mock.calls.map((c) => c[1]);
     expect(panelTypes).toContain('left');
     expect(panelTypes).toContain('right');
   });
 
-  it('timePickerOpts.scrollItemProps wheel/cycled 使时间列渲染为 wheel 模式', () => {
+  it('dateTime 面板默认日期视图（不渲染时间列），点时间切换按钮后才显示', async () => {
+    renderWithLocale(DatePicker, { props: { type: 'dateTime', defaultOpen: true } });
+    // 默认日期视图：无时间列
+    expect(document.querySelector('.cd-date-picker__time--single')).toBeNull();
+    // 切到时间视图
+    const timeBtn = document.querySelector<HTMLButtonElement>('.cd-date-picker__switch-time');
+    expect(timeBtn).not.toBeNull();
+    timeBtn!.click();
+    await tick();
+    expect(document.querySelector('.cd-date-picker__time--single')).not.toBeNull();
+  });
+
+  it('timePickerOpts.scrollItemProps wheel/cycled 切到时间视图后时间列为 wheel 模式', async () => {
     renderWithLocale(DatePicker, {
       props: {
         type: 'dateTime',
@@ -84,11 +97,15 @@ describe('DatePicker 对齐 Semi 补全能力', () => {
         timePickerOpts: { scrollItemProps: { mode: 'wheel', cycled: true } },
       },
     });
+    document.querySelector<HTMLButtonElement>('.cd-date-picker__switch-time')!.click();
+    await tick();
     expect(document.querySelector('.cd-scrolllist-item-wheel')).not.toBeNull();
   });
 
-  it('默认 dateTime 时间列为 normal 模式（无 wheel 类名）', () => {
+  it('默认（不传 scrollItemProps）切到时间视图时间列为 normal 模式', async () => {
     renderWithLocale(DatePicker, { props: { type: 'dateTime', defaultOpen: true } });
+    document.querySelector<HTMLButtonElement>('.cd-date-picker__switch-time')!.click();
+    await tick();
     expect(document.querySelector('.cd-scrolllist-item-wheel')).toBeNull();
   });
 });

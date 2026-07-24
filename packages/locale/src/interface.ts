@@ -302,6 +302,10 @@ export interface Locale {
     yearColumnLabel: string;
     /** 年月滚轮月份列 aria-label */
     monthColumnLabel: string;
+    /** dateTime 面板切换到日期视图按钮 aria-label */
+    selectDate: string;
+    /** dateTime 面板切换到时间视图按钮 aria-label */
+    selectTime: string;
   };
   TimePicker: {
     placeholder: string;

@@ -45,6 +45,7 @@
     IconClear,
     IconCalendar,
     IconCalendarClock,
+    IconClock,
     IconChevronLeft,
     IconChevronRight,
     IconDoubleChevronLeft,
@@ -591,6 +592,10 @@
       } else {
         cursor = startOfDay(currentSingle ?? _pickerSeed ?? new Date());
       }
+      // 每次打开面板回到日期视图（对齐 Semi 默认 isTimePickerOpen=false）。
+      untrack(() => {
+        isTimePickerOpen = false;
+      });
     }
   });
 
@@ -620,6 +625,18 @@
   let offsetPreviewEnd = $state<Date | null>(null);
   // 时间列作用的当前激活端（dateTimeRange）。
   let activeEnd = $state<'start' | 'end'>('start');
+
+  // dateTime/dateTimeRange 面板视图切换（对齐 Semi isTimePickerOpen）：
+  // false=日期视图（显日历网格），true=时间视图（显时/分/秒滚轮列）。默认日期视图。
+  // 底部两个切换按钮（📅日期 / 🕐时间）互斥切换；range 场景两面板共用同一视图态。
+  let isTimePickerOpen = $state(false);
+  function showDatePanel() {
+    isTimePickerOpen = false;
+  }
+  function showTimePanel() {
+    if (disabledTimePicker) return;
+    isTimePickerOpen = true;
+  }
 
   // 单击范围选择（周选择）：start+end offset 都提供且非 monthRange。
   // 单击范围选择（周选择）：对齐 Semi，提供 startDateOffset 或 endDateOffset 任一即启用，
@@ -1188,6 +1205,17 @@
   function pad2(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
   }
+
+  // 视图切换按钮文本（对齐 Semi switch-date/switch-time）：
+  // 日期按钮显示选中日期（yyyy-MM-dd，无值显游标月首日）；时间按钮显示 HH:mm[:ss]。
+  const switchDateText = $derived(
+    formatDate(currentSingle ?? cursor, 'YYYY-MM-DD'),
+  );
+  const switchTimeText = $derived(
+    showSecond
+      ? `${pad2(selectedHour)}:${pad2(selectedMinute)}:${pad2(selectedSecond)}`
+      : `${pad2(selectedHour)}:${pad2(selectedMinute)}`,
+  );
 
   // --- disabledTime (dateTime)：按当前日期解析各列禁用值集合 ---
   // 基准日期取当前选中值(无则今天)；时/分依赖已选时分以联动下游列。
@@ -2520,6 +2548,7 @@
                 {/if}
               </div>
             {:else}
+              {#if !isTimePickerOpen}
               <div class="cd-date-picker__calendar">
                 <div class="cd-date-picker__header">
                   {#if isDayPanel}
@@ -2764,9 +2793,10 @@
                 {/if}
               </div>
 
-              {#if isDateTime && !disabledTimePicker}
-                <!-- 单选时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox），列内 mode=normal 点击选中。 -->
-                <div class="cd-date-picker__time">
+              {/if}
+              {#if isDateTime && !disabledTimePicker && isTimePickerOpen}
+                <!-- 单选时间列：仅时间视图显示（对齐 Semi isTimePickerOpen），复用 ScrollList+ScrollItem。 -->
+                <div class="cd-date-picker__time cd-date-picker__time--single">
                   <ScrollList>
                     <ScrollItem
                       mode={timeScrollItemProps.mode}
@@ -2811,6 +2841,33 @@
               {/if}
             {/if}
           </div>
+
+          {#if isDateTime && !isRange}
+            <!-- 日期/时间视图切换（对齐 Semi switch-date / switch-time）：两按钮互斥，active 高亮。 -->
+            <div class="cd-date-picker__switch">
+              <button
+                type="button"
+                class="cd-date-picker__switch-item cd-date-picker__switch-date"
+                class:cd-date-picker__switch-item--active={!isTimePickerOpen}
+                aria-label={loc().t('DatePicker.selectDate')}
+                onclick={showDatePanel}
+              >
+                <IconCalendar size="small" aria-hidden="true" />
+                <span class="cd-date-picker__switch-text">{switchDateText}</span>
+              </button>
+              <button
+                type="button"
+                class="cd-date-picker__switch-item cd-date-picker__switch-time"
+                class:cd-date-picker__switch-item--active={isTimePickerOpen}
+                disabled={disabledTimePicker}
+                aria-label={loc().t('DatePicker.selectTime')}
+                onclick={showTimePanel}
+              >
+                <IconClock size="small" aria-hidden="true" />
+                <span class="cd-date-picker__switch-text">{switchTimeText}</span>
+              </button>
+            </div>
+          {/if}
 
           <div class="cd-date-picker__footer">
             {#if !isRange}
@@ -3339,6 +3396,41 @@
     color: var(--cd-color-date-picker-date-disabled-text-default);
     cursor: not-allowed;
     background: transparent;
+  }
+  /* 日期/时间视图切换（对齐 Semi switch-date / switch-time） */
+  .cd-date-picker__switch {
+    display: flex;
+    align-items: stretch;
+    border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
+  }
+  .cd-date-picker__switch-item {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cd-spacing-super-tight, 4px);
+    padding-block: var(--cd-spacing-tight);
+    border: none;
+    background: transparent;
+    color: var(--cd-color-date-picker-date-default-text-default, var(--cd-color-text-2));
+    font: inherit;
+    cursor: pointer;
+  }
+  .cd-date-picker__switch-item:hover:not(:disabled) {
+    background: var(--cd-color-fill-0, rgba(0, 0, 0, 0.04));
+  }
+  .cd-date-picker__switch-item--active {
+    color: var(--cd-color-primary);
+  }
+  .cd-date-picker__switch-item:disabled {
+    color: var(--cd-color-text-3, rgba(0, 0, 0, 0.35));
+    cursor: not-allowed;
+  }
+  .cd-date-picker__switch-text {
+    font-size: var(--cd-font-size-regular);
+  }
+  .cd-date-picker__time--single {
+    justify-content: center;
   }
   .cd-date-picker__footer {
     display: flex;
