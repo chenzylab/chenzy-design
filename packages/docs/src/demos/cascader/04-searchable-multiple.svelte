@@ -4,9 +4,10 @@
 </script>
 
 <Cascader
-  defaultValue={['zhejiang', 'ningbo', 'jiangbei']}
   style="width: 300px"
   {treeData}
-  placeholder="请选择所在地区"
+  placeholder="可搜索的多选"
   multiple
+  filterTreeNode
+  maxTagCount={2}
 />

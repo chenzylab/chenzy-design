@@ -4,9 +4,9 @@
 </script>
 
 <Cascader
-  defaultValue={['zhejiang', 'ningbo', 'jiangbei']}
   style="width: 300px"
   {treeData}
-  placeholder="请选择所在地区"
   multiple
+  checkRelation="unRelated"
+  placeholder="checkRelation=unRelated：节点选中互不影响"
 />
