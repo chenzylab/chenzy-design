@@ -2,31 +2,112 @@
 title: Rating 评分
 name: rating
 category: input
-brief: Rating 是一个用于评分与展示评价等级的输入组件，用户通过点击或键盘选择 1~N 个图标表达评分，也可作为只读模式展示既定分值。
+brief: 展示评分的组件。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-Rating 是一个用于评分与展示评价等级的输入组件。用户通过点击或键盘选择 1~N 个图标（默认星形）表达评分；也可通过 `disabled` 作为只读模式展示既定分值。核心能力：
+  import Basic from '../../demos/rating/01-basic.svelte';
+  import basicSrc from '../../demos/rating/01-basic.svelte?raw';
+  import Half from '../../demos/rating/02-half.svelte';
+  import halfSrc from '../../demos/rating/02-half.svelte?raw';
+  import Readonly from '../../demos/rating/03-readonly.svelte';
+  import readonlySrc from '../../demos/rating/03-readonly.svelte?raw';
+  import Clear from '../../demos/rating/04-clear.svelte';
+  import clearSrc from '../../demos/rating/04-clear.svelte?raw';
+  import Tooltips from '../../demos/rating/05-tooltips.svelte';
+  import tooltipsSrc from '../../demos/rating/05-tooltips.svelte?raw';
+  import Custom from '../../demos/rating/06-custom.svelte';
+  import customSrc from '../../demos/rating/06-custom.svelte?raw';
+</script>
 
-- **半星（allowHalf）**：单个图标可表达 0.5 粒度，支持点击图标左半 / 右半区域分别设值。`allowHalf` 也支持展示除 0.5 外的小数。
-- **自定义字符（character）**：默认星形，可替换为任意图标、文本字符，或按 index 返回不同节点的 Snippet。
-- **键盘可达**：方向键增减分值，符合 radio 组语义。
-- **悬停反馈**：hover 时高亮预览分值并触发 onHoverChange，移出时回调 undefined。
-- **附加能力**：count（图标数量）、size（default/small/number）、disabled、tooltips（逐项提示文案）、allowClear（再次点击当前值清零）。
+## 代码演示
 
-典型使用场景：商品评价、满意度调研、内容打分、只读评分展示。
+### 如何引入
 
-## 何时使用
+```jsx
+import { Rating } from '@chenzy-design/svelte';
+```
 
-- 需要用户以图标（星形等）的数量表达评价等级时使用。
-- 只读展示已有评分数据时使用（设置 `disabled` 属性）。
-- 精确数值输入场景不适合使用 Rating，应使用 InputNumber 或 Slider。
+### 基本用法
 
-## 无障碍
+最简单的用法，支持两种尺寸 `default`， `small`。
 
-- 每颗星渲染两个 `role="radio"`（`first` 半星层 / `second` 整星层），配合 roving tabindex：仅当前选中项 `tabindex=0`，其余为 `-1`。额外渲染一个空评分项承载「0 分」焦点。
-- 每个 radio 具有 `aria-checked`（是否选中）、`aria-posinset`（在列表中的位置）、`aria-setsize`（列表长度）；`disabled` 时 `aria-disabled="true"`。
-- 语义化：`aria-label` 优先；若未传且 `character` 为字符串，则以该字符串作为 aria 前缀；否则回退 `star`。
-- 键盘：`→`/`↑` 加一步，`←`/`↓` 减一步（`allowHalf` 时步进 0.5），越界环绕（超过上限归 0，低于 0 归上限）；焦点随分值搬移。RTL 下左右方向键语义镜像。
-- 值变更经 polite live region 播报 `aria-valuetext`。
+支持传入 number 类型自定义尺寸。具体可以参考[自定义](#自定义)
+
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 半星
+
+通过设置 `allowHalf` 属性可以支持选择半星。 `allowHalf` 属性支持**展示**除 0.5 以外的小数。
+
+<DemoBox code={halfSrc}><Half /></DemoBox>
+
+### 只读
+
+通过设置 `disabled` 属性将无法进行交互。
+
+<DemoBox code={readonlySrc}><Readonly /></DemoBox>
+
+### 点击清除
+
+通过设置 `allowClear` 属性允许再次点击时清除数值，默认为 `true`。
+
+<DemoBox code={clearSrc}><Clear /></DemoBox>
+
+### 文案展现
+
+给评分组件加上文案展示。
+
+<DemoBox code={tooltipsSrc}><Tooltips /></DemoBox>
+
+### 自定义
+
+自定义评分字符、个数及尺寸。
+自定义尺寸需要配合自定义的字符才能生效。
+
+<DemoBox code={customSrc}><Custom /></DemoBox>
+
+## API 参考
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| allowClear | 是否允许再次点击后清除 | boolean | true |
+| allowHalf | 是否允许半选 | boolean | false |
+| autoFocus | 自动获取焦点 | boolean | false |
+| character | 自定义字符 | string \| Snippet | `<IconStar size="extra-large"/>` |
+| class | 自定义样式类名 | string | - |
+| count | star 总数 | number | 5 |
+| defaultValue | 默认值 | number | 0 |
+| disabled | 只读，无法进行交互 | boolean | false |
+| preventScroll | 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus 方法 | boolean | - |
+| size | 尺寸，`default`、`small`，支持传入 number 类型自定义尺寸 | string \| number | `default` |
+| style | 自定义样式 | string | - |
+| tooltips | 自定义每项的提示信息 | string[] | - |
+| value | 当前受控值 | number | - |
+| onBlur | 失去焦点时的回调 | () => void | - |
+| onChange | 选择时的回调 | (value: number) => void | - |
+| onFocus | 获取焦点时的回调 | () => void | - |
+| onHoverChange | 鼠标经过时数值变化的回调 | (value: number) => void | - |
+| onKeyDown | 按键回调 | (e: KeyboardEvent) => void | - |
+
+## Accessibility
+
+### ARIA
+
+- Rating 具有 `aria-checked` 表示当前是否选中，`aria-posinset` 表示在列表的位置，`aria-setsize` 表示列表的长度。
+- 支持自定义 Rating 的语义：
+  - 可以使用 `aria-label` 来定制 Rating 的语义化；
+  - 若用户传入的 `character` 类型为 string，将使用这个 string 来做 Rating 的语义化；
+  - `aria-label` 的优先级高于 string 的 `character`。
+
+### 键盘和焦点
+
+- Rating 的初始焦点设置：
+  - 若 Rating 有选择项时，初始焦点应当设置为最后一个选择项（如：有 3 颗🌟被点亮，则初始焦点设置在第三颗被点亮的🌟上）；
+  - 若 Rating 没有选择项时，初始焦点应当为整个 Rating。
+- 一个 Rating 组上，可以通过 `右箭头` 或 `上箭头` 选中当前焦点的下一个焦点项，`左箭头` 或 `下箭头` 选中当前焦点的上一个焦点项；
+  - 用户设置了 `allowHalf` 属性，按方向键只选中或取消选中半颗星；
+- `disabled` 的 Rating 无法被获取到焦点。
