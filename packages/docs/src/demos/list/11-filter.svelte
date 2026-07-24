@@ -1,6 +1,7 @@
 <script lang="ts">
   // 带筛选器：组合 Input 作为 header，对列表数据实时过滤。
   import { List, Input } from '@chenzy-design/svelte';
+  import { IconSearch } from '@chenzy-design/icons';
 
   const data = [
     '围城', '平凡的世界（全三册）', '三体（全集）', '雪中悍刀行（全集）',
@@ -16,7 +17,7 @@
     {#snippet header()}
       <Input placeholder="搜索" value={keyword} onChange={(v) => (keyword = v)}>
         {#snippet prefix()}
-          <span aria-hidden="true">🔍</span>
+          <IconSearch />
         {/snippet}
       </Input>
     {/snippet}
