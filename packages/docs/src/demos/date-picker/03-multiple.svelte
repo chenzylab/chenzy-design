@@ -2,4 +2,4 @@
   import { DatePicker } from '@chenzy-design/svelte';
 </script>
 
-<DatePicker onChange={(date, dateString) => console.log(dateString)} />
+<DatePicker multiple={true} style="width: 240px" />

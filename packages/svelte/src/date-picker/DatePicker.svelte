@@ -9,15 +9,47 @@
 -->
 <script lang="ts">
   import { tick, untrack, getContext, type Snippet } from 'svelte';
-  import { useId, useDismiss, useFocusTrap, isSameDay, startOfDay, addMonths, getMonthGrid, weekdayOrder, gridFocusMove, formatDate, parseDateString, zonedWallTime, daysBetween, buildHourOptions, buildMinuteOptions, buildSecondOptions, applyHideDisabled, type GridFocusKey, type ScrollItemData, type ScrollItemSelectPayload } from '@chenzy-design/core';
+  import {
+    useId,
+    useDismiss,
+    useFocusTrap,
+    isSameDay,
+    startOfDay,
+    addMonths,
+    getMonthGrid,
+    weekdayOrder,
+    gridFocusMove,
+    formatDate,
+    parseDateString,
+    zonedWallTime,
+    daysBetween,
+    buildHourOptions,
+    buildMinuteOptions,
+    buildSecondOptions,
+    applyHideDisabled,
+    type GridFocusKey,
+    type ScrollItemData,
+    type ScrollItemSelectPayload,
+  } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
-  import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/index.js';
+  import {
+    CONFIG_CONTEXT_KEY,
+    type ConfigContextValue,
+  } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import type { Placement } from '@chenzy-design/core';
   import ScrollList from '../scroll-list/ScrollList.svelte';
   import ScrollItem from '../scroll-list/ScrollItem.svelte';
   import Button from '../button/Button.svelte';
-  import { IconClear, IconCalendar, IconCalendarClock, IconChevronLeft, IconChevronRight, IconDoubleChevronLeft, IconDoubleChevronRight } from '@chenzy-design/icons';
+  import {
+    IconClear,
+    IconCalendar,
+    IconCalendarClock,
+    IconChevronLeft,
+    IconChevronRight,
+    IconDoubleChevronLeft,
+    IconDoubleChevronRight,
+  } from '@chenzy-design/icons';
   import { getInputGroupContext } from '../input/context.js';
 
   type Size = 'small' | 'default' | 'large';
@@ -39,6 +71,14 @@
   // range 双输入框焦点态（对齐 Semi rangeInputFocus）：由用户点哪个输入框驱动落 start/end。
   type RangeInputFocus = 'rangeStart' | 'rangeEnd' | false;
 
+  // disabledDate 第二参（对齐 Semi）：range 场景下已选起止的 'yyyy-MM-dd' 串 + 当前聚焦端。
+  // 单选场景 rangeStart/rangeEnd 为空串、rangeInputFocus 为 false。
+  interface DisabledDateOptions {
+    rangeStart: string;
+    rangeEnd: string;
+    rangeInputFocus: 'rangeStart' | 'rangeEnd' | false;
+  }
+
   // 时间列禁用配置 (Semi/AntD 风格)：按当前日期返回各列禁用值
   interface DisabledTime {
     disabledHours?: () => number[];
@@ -52,11 +92,19 @@
     value: Date | (() => Date) | [Date, Date] | (() => [Date, Date]);
   }
 
+  // 对齐 Semi DayStatusType：日期格子的完整状态（range 相关字段仅 range 场景有意义）。
   interface DayStatus {
-    isSelected: boolean;
-    isToday: boolean;
-    isDisabled: boolean;
-    isInMonth: boolean;
+    isToday: boolean; // 当前日
+    isSelected: boolean; // 被选中
+    isDisabled: boolean; // 被禁用
+    isInMonth: boolean; // 属于当前展示月（本库补充，Semi 无但对渲染有用）
+    isSelectedStart: boolean; // 选中开始（range）
+    isSelectedEnd: boolean; // 选中结束（range）
+    isInRange: boolean; // 在选中范围内（range）
+    isHover: boolean; // 在选择项与 hover 日期之间（range 预览）
+    isOffsetRangeStart: boolean; // 周选择开始
+    isOffsetRangeEnd: boolean; // 周选择结束
+    isHoverInOffsetRange: boolean; // hover 在周选择内
   }
 
   interface Props {
@@ -75,8 +123,16 @@
     /** 校验态（对齐 Semi validateStatus）。 */
     validateStatus?: ValidateStatus;
     disabled?: boolean;
-    disabledDate?: (date: Date) => boolean;
-    disabledTime?: (date: Date) => DisabledTime;
+    /**
+     * 日期禁止判断。第二参 options（对齐 Semi）含 range 已选起止的 'yyyy-MM-dd' 串与当前聚焦端，
+     * 可据此实现「动态禁止（相对已选起点）」「按 focus 端禁止」等。单选场景 options 字段为空。
+     */
+    disabledDate?: (date: Date, options: DisabledDateOptions) => boolean;
+    /**
+     * 时间禁止配置。第二参 panelType（对齐 Semi）：range 场景左/右面板分别传 'left'/'right'，
+     * 可据此让两个面板禁用不同时间；单选场景为 undefined。返回值透传给内部时间列。
+     */
+    disabledTime?: (date: Date, panelType?: string) => DisabledTime;
     presets?: Preset[];
     locale?: string;
     /** range 起止跨度上限（天）。选定起始后超出该跨度的日期禁用。 */
@@ -94,7 +150,10 @@
     /** range 起止输入框之间的自定义分隔节点（对齐 Semi rangeSeparatorNode）。 */
     rangeSeparatorNode?: Snippet | string;
     /** 透传给内部时间列的配置（对齐 Semi timePickerOpts）：showSecond 等。 */
-    timePickerOpts?: { showSecond?: boolean; use12Hours?: boolean } & Record<string, unknown>;
+    timePickerOpts?: { showSecond?: boolean; use12Hours?: boolean } & Record<
+      string,
+      unknown
+    >;
     /**
      * 面板初始定位日期（非受控，仅控制面板首次展开时显示哪个月/年）。
      * 与 value 无关：不改变选中值，只 seed 面板游标。range 场景可传 Date[]（取首个）。
@@ -116,7 +175,10 @@
      * rangeSeparator 连接）。参数顺序由 onChangeWithDateFirst 控制：默认 (value, dateString)；
      * onChangeWithDateFirst=false 时 (dateString, value)。历史用法仅取第一参 value，故默认保持 value-first。
      */
-    onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
+    onChange?: (
+      value: Date | Date[] | RangeValue | null,
+      dateString: string,
+    ) => void;
     onOpenChange?: (open: boolean) => void;
     /** 可见年月切换 (头部导航)。 */
     onPanelChange?: (e: { panelDate: Date }) => void;
@@ -234,9 +296,13 @@
     /** 自定义日期单元格内容 */
     renderDate?: Snippet<[{ day: number; fullDate: string }]>;
     /** 完全自定义日期格子 */
-    renderFullDate?: Snippet<[{ day: number; fullDate: string; dayStatus: DayStatus }]>;
+    renderFullDate?: Snippet<
+      [{ day: number; fullDate: string; dayStatus: DayStatus }]
+    >;
     /** 完全自定义触发器 */
-    triggerRender?: Snippet<[{ value: Date | Date[] | RangeValue | null; placeholder: string }]>;
+    triggerRender?: Snippet<
+      [{ value: Date | Date[] | RangeValue | null; placeholder: string }]
+    >;
 
     // --- 时间相关 ---
     /** 隐藏禁止的时间选项 */
@@ -252,7 +318,9 @@
 
     // --- 年月滚轮配置 ---
     /** 透传给年月 ScrollList 的参数 */
-    yearAndMonthOpts?: { yearCyclic?: boolean; monthCyclic?: boolean } | Record<string, unknown>;
+    yearAndMonthOpts?:
+      | { yearCyclic?: boolean; monthCyclic?: boolean }
+      | Record<string, unknown>;
   }
 
   let {
@@ -360,6 +428,18 @@
   const isYear = $derived(type === 'year');
   // showSecond：Semi 走 timePickerOpts.showSecond；默认 true。
   const showSecond = $derived(timePickerOpts?.showSecond ?? true);
+  // 时间列滚轮配置（对齐 Semi timePickerOpts.scrollItemProps）：V2.22 起默认 normal（点击选中），
+  // 传 { scrollItemProps: { mode: 'wheel', cycled: true } } 可切回无限滚动滚轮。
+  const timeScrollItemProps = $derived.by<{
+    mode: 'wheel' | 'normal';
+    cycled: boolean;
+  }>(() => {
+    const sip = (timePickerOpts?.scrollItemProps ?? {}) as {
+      mode?: 'wheel' | 'normal';
+      cycled?: boolean;
+    };
+    return { mode: sip.mode ?? 'normal', cycled: sip.cycled ?? false };
+  });
   // needConfirm：显式传优先；dateTimeRange 默认 true，其它默认 false（对齐 Semi）。
   const effNeedConfirm = $derived(needConfirm ?? type === 'dateTimeRange');
 
@@ -380,7 +460,8 @@
   function normOneRange(d: Date | null | undefined): Date | null {
     if (!d) return null;
     if (type === 'dateTimeRange') return new Date(d);
-    if (type === 'monthRange') return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
+    if (type === 'monthRange')
+      return startOfDay(new Date(d.getFullYear(), d.getMonth(), 1));
     return startOfDay(d);
   }
   function toRangePair(v: unknown): RangeValue {
@@ -487,13 +568,17 @@
   // svelte-ignore state_referenced_locally
   const _pickerSeed: Date | null = Array.isArray(defaultPickerValue)
     ? (defaultPickerValue[0] ?? null)
-    : (defaultPickerValue instanceof Date ? defaultPickerValue : null);
+    : defaultPickerValue instanceof Date
+      ? defaultPickerValue
+      : null;
   // 初始化游标用 defaultValue（刻意静态读初值，default 语义仅取一次，不回写）；
   // 无 defaultValue 时回退到 defaultPickerValue，再无则今天。
   // svelte-ignore state_referenced_locally
   const _initCursorDate: Date | null = Array.isArray(defaultValue)
     ? (defaultValue[0] ?? null)
-    : (defaultValue instanceof Date ? defaultValue : null);
+    : defaultValue instanceof Date
+      ? defaultValue
+      : null;
   let cursor = $state(startOfDay(_initCursorDate ?? _pickerSeed ?? new Date()));
   // 双面板游标：左=cursor、右=cursor+1 月（monthRange 右=+1 年=+12 月）。
   const rightCursor = $derived(addMonths(cursor, isMonth ? 12 : 1));
@@ -537,15 +622,40 @@
   let activeEnd = $state<'start' | 'end'>('start');
 
   // 单击范围选择（周选择）：start+end offset 都提供且非 monthRange。
-  const offsetSelect = $derived(!isMonth && !!startDateOffset && !!endDateOffset);
+  // 单击范围选择（周选择）：对齐 Semi，提供 startDateOffset 或 endDateOffset 任一即启用，
+  // 缺失的一端回退为 identity（点击日本身作该端）。
+  const offsetSelect = $derived(
+    !isMonth && (!!startDateOffset || !!endDateOffset),
+  );
+  // offset 求值（缺失端回退 identity）。
+  const offsetStartOf = (date: Date): Date =>
+    startDateOffset ? startDateOffset(date) : date;
+  const offsetEndOf = (date: Date): Date =>
+    endDateOffset ? endDateOffset(date) : date;
 
   // range 面板生效的起止（needConfirm 用 pending，否则用已提交值）。
-  const panelRangeStart = $derived<Date | null>(effNeedConfirm ? pendingRange[0] : currentRange[0]);
-  const panelRangeEnd = $derived<Date | null>(effNeedConfirm ? pendingRange[1] : currentRange[1]);
+  const panelRangeStart = $derived<Date | null>(
+    effNeedConfirm ? pendingRange[0] : currentRange[0],
+  );
+  const panelRangeEnd = $derived<Date | null>(
+    effNeedConfirm ? pendingRange[1] : currentRange[1],
+  );
 
   // 触发器显示端点（对齐 currentRange，触发器双输入框各显示一端）。
   const rangeStart = $derived<Date | null>(currentRange[0]);
   const rangeEnd = $derived<Date | null>(currentRange[1]);
+
+  // disabledDate 第二参（对齐 Semi foundation.disabledDisableDate）：range 已选起止格式化为
+  // 'yyyy-MM-dd' 串 + 当前聚焦端，供 disabledDate 做「相对已选起点/按 focus 端」的动态禁用。
+  const disabledOptions = $derived<DisabledDateOptions>({
+    rangeStart: rangeStart ? formatDate(rangeStart, 'YYYY-MM-DD') : '',
+    rangeEnd: rangeEnd ? formatDate(rangeEnd, 'YYYY-MM-DD') : '',
+    rangeInputFocus,
+  });
+  // 统一入口：所有格子/输入解析的禁用判断都经此传入 options（对齐 Semi）。
+  function dateDisabled(date: Date): boolean {
+    return disabledDate?.(date, disabledOptions) ?? false;
+  }
 
   // 打开面板时初始化 range 状态机。
   $effect(() => {
@@ -575,9 +685,13 @@
   // 墙上时间」的 Date，再按其本地字段序列化。自身 timeZone prop 优先，未传回退 ConfigProvider
   // 的 timeZone（对齐 Semi：DatePicker 用 timeZone={config} 作默认再被自身 prop 覆盖）。
   // 取值支持数字偏移 / 'GMT±HH:mm'；具名 IANA（无 tz 数据库）不做转换。
-  const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
+  const configCtx = getContext<ConfigContextValue | undefined>(
+    CONFIG_CONTEXT_KEY,
+  );
   const configTimeZone = $derived(configCtx?.current.timeZone);
-  const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
+  const effectiveTimeZone = $derived<string | number | undefined>(
+    timeZone ?? configTimeZone,
+  );
 
   // --- Intl 本地化格式化器 (不手拼日期串；不传 timeZone，时区在值层由 zonedWallTime 处理) ---
   const triggerFormat = $derived(
@@ -592,7 +706,12 @@
               month: '2-digit',
               day: '2-digit',
               ...(isDateTime
-                ? { hour: '2-digit', minute: '2-digit', second: showSecond ? '2-digit' : undefined, hour12: false }
+                ? {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: showSecond ? '2-digit' : undefined,
+                    hour12: false,
+                  }
                 : {}),
             },
     ),
@@ -601,12 +720,20 @@
     new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }),
   );
   // 仅年份的头部文案 (month 面板头部 / year 面板基准)
-  const yearFormat = $derived(new Intl.DateTimeFormat(locale, { year: 'numeric' }));
+  const yearFormat = $derived(
+    new Intl.DateTimeFormat(locale, { year: 'numeric' }),
+  );
   // 月格短名 (month 面板 12 格)
-  const monthShortFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'short' }));
-  const weekdayFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'short' }));
+  const monthShortFormat = $derived(
+    new Intl.DateTimeFormat(locale, { month: 'short' }),
+  );
+  const weekdayFormat = $derived(
+    new Intl.DateTimeFormat(locale, { weekday: 'short' }),
+  );
   // 完整星期名 (columnheader aria-label，朗读用)
-  const weekdayLongFormat = $derived(new Intl.DateTimeFormat(locale, { weekday: 'long' }));
+  const weekdayLongFormat = $derived(
+    new Intl.DateTimeFormat(locale, { weekday: 'long' }),
+  );
 
   // 触发器/输入显示：选中值先转目标时区墙上时间，再序列化（format 走 core 纯函数按本地字段，
   // 无 format 走 Intl 本地字段），使显示随 timeZone 变化。对齐 Semi 值层转换语义。
@@ -618,10 +745,14 @@
 
   const formattedValue = $derived(
     multiple
-      ? (Array.isArray(current) ? current.map(formatSingle).join(` ${rangeSeparator} `) : '')
+      ? Array.isArray(current)
+        ? current.map(formatSingle).join(` ${rangeSeparator} `)
+        : ''
       : formatSingle(currentSingle),
   );
-  const displayText = $derived(formattedValue || (placeholder ?? loc().t('DatePicker.placeholder')));
+  const displayText = $derived(
+    formattedValue || (placeholder ?? loc().t('DatePicker.placeholder')),
+  );
 
   // --- 可输入模式 (format 串)：本地草稿文本 + 按格式解析 ---
   const editable = $derived(!!format && !multiple);
@@ -640,7 +771,7 @@
       return;
     }
     const parsed = parseDateString(raw, format);
-    if (parsed && !(disabledDate?.(parsed) ?? false)) {
+    if (parsed && !dateDisabled(parsed)) {
       setValue(combine(parsed));
     } else {
       // 解析失败：回退到当前值的规范文本
@@ -669,7 +800,9 @@
   // 与面板选择双向同步：点日历/选时间 → currentSingle 变 → 派生文本刷新；键入 → 解析 → 写回。
   // 解析/序列化复用 core 纯函数 formatDate/parseDateString（红线 #2），不重写解析。
   // insetInput 仅在 date / dateTime 面板生效（month/year 无内嵌输入，对齐 Semi）。
-  const insetEnabled = $derived(insetInput && !multiple && (type === 'date' || type === 'dateTime'));
+  const insetEnabled = $derived(
+    insetInput && !multiple && (type === 'date' || type === 'dateTime'),
+  );
   // 内嵌输入用的日期/时间格式串：优先复用用户 format（拆出日期段与时间段），否则用默认。
   const insetDateFormat = $derived(deriveInsetDateFormat());
   const insetTimeFormat = $derived(deriveInsetTimeFormat());
@@ -697,8 +830,12 @@
   let insetTimeText = $state('');
   $effect(() => {
     if (!insetEnabled) return;
-    insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
-    insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+    insetDateText = currentSingle
+      ? formatDate(currentSingle, insetDateFormat)
+      : '';
+    insetTimeText = currentSingle
+      ? formatDate(currentSingle, insetTimeFormat)
+      : '';
   });
 
   // 提交内嵌日期输入：解析日期段，保留已选时间（combine），写回。
@@ -707,12 +844,14 @@
     const raw = insetDateText.trim();
     if (raw === '') return;
     const parsed = parseDateString(raw, insetDateFormat);
-    if (parsed && !(disabledDate?.(parsed) ?? false)) {
+    if (parsed && !dateDisabled(parsed)) {
       const next = combine(parsed);
       if (effNeedConfirm) pendingValue = next;
       else setValue(next);
     } else {
-      insetDateText = currentSingle ? formatDate(currentSingle, insetDateFormat) : '';
+      insetDateText = currentSingle
+        ? formatDate(currentSingle, insetDateFormat)
+        : '';
     }
   }
 
@@ -724,11 +863,18 @@
     const parsedTime = parseDateString(raw, insetTimeFormat);
     if (parsedTime) {
       const base = currentSingle ? new Date(currentSingle) : startOfDay(today);
-      base.setHours(parsedTime.getHours(), parsedTime.getMinutes(), parsedTime.getSeconds(), 0);
+      base.setHours(
+        parsedTime.getHours(),
+        parsedTime.getMinutes(),
+        parsedTime.getSeconds(),
+        0,
+      );
       if (effNeedConfirm) pendingValue = base;
       else setValue(base);
     } else {
-      insetTimeText = currentSingle ? formatDate(currentSingle, insetTimeFormat) : '';
+      insetTimeText = currentSingle
+        ? formatDate(currentSingle, insetTimeFormat)
+        : '';
     }
   }
 
@@ -776,18 +922,29 @@
     Array.from({ length: 12 }, (_, i) => {
       const year = decadeStart - 1 + i;
       const date = new Date(year, 0, 1);
-      const inRange = (startYear === undefined || year >= startYear) && (endYear === undefined || year <= endYear);
-      return { date, year, inDecade: year >= decadeStart && year <= decadeStart + 9, inRange };
+      const inRange =
+        (startYear === undefined || year >= startYear) &&
+        (endYear === undefined || year <= endYear);
+      return {
+        date,
+        year,
+        inDecade: year >= decadeStart && year <= decadeStart + 9,
+        inRange,
+      };
     }),
   );
 
   // 星期名: 用 weekdayOrder + 一个已知周日基准 (2023-01-01 是星期日) 经 Intl 本地化
   const weekdayNames = $derived(
-    weekdayOrder(effWeekStart).map((dow) => weekdayFormat.format(new Date(2023, 0, 1 + dow))),
+    weekdayOrder(effWeekStart).map((dow) =>
+      weekdayFormat.format(new Date(2023, 0, 1 + dow)),
+    ),
   );
   // 完整星期名 (columnheader aria-label)，顺序与 weekdayNames 一致
   const weekdayLongNames = $derived(
-    weekdayOrder(effWeekStart).map((dow) => weekdayLongFormat.format(new Date(2023, 0, 1 + dow))),
+    weekdayOrder(effWeekStart).map((dow) =>
+      weekdayLongFormat.format(new Date(2023, 0, 1 + dow)),
+    ),
   );
 
   // 面板内键盘高亮日 (highlight 为本地 $state；aria-activedescendant 指向它)
@@ -809,8 +966,12 @@
   const rangeRightGridId = useId('cd-date-picker-grid-r');
   const leftGrid = $derived(getMonthGrid(cursor, effWeekStart));
   const rightGrid = $derived(getMonthGrid(rightCursor, effWeekStart));
-  const leftRows = $derived(Array.from({ length: 6 }, (_, r) => leftGrid.slice(r * 7, r * 7 + 7)));
-  const rightRows = $derived(Array.from({ length: 6 }, (_, r) => rightGrid.slice(r * 7, r * 7 + 7)));
+  const leftRows = $derived(
+    Array.from({ length: 6 }, (_, r) => leftGrid.slice(r * 7, r * 7 + 7)),
+  );
+  const rightRows = $derived(
+    Array.from({ length: 6 }, (_, r) => rightGrid.slice(r * 7, r * 7 + 7)),
+  );
   function rangeCellId(prefix: string, date: Date): string {
     return `${prefix}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
@@ -828,25 +989,33 @@
     }),
   );
   // range 头部文案：dateRange 显示「年 月」；monthRange 仅显示年。
-  const rangeLeftHeaderText = $derived(isMonth ? yearFormat.format(cursor) : headerFormat.format(cursor));
-  const rangeRightHeaderText = $derived(isMonth ? yearFormat.format(rightCursor) : headerFormat.format(rightCursor));
+  const rangeLeftHeaderText = $derived(
+    isMonth ? yearFormat.format(cursor) : headerFormat.format(cursor),
+  );
+  const rangeRightHeaderText = $derived(
+    isMonth ? yearFormat.format(rightCursor) : headerFormat.format(rightCursor),
+  );
   // 触发器双输入框各端显示文本。
   const startText = $derived(
-    rangeStart ? triggerFormat.format(zonedWallTime(rangeStart, effectiveTimeZone)) : '',
+    rangeStart
+      ? triggerFormat.format(zonedWallTime(rangeStart, effectiveTimeZone))
+      : '',
   );
   const endText = $derived(
-    rangeEnd ? triggerFormat.format(zonedWallTime(rangeEnd, effectiveTimeZone)) : '',
+    rangeEnd
+      ? triggerFormat.format(zonedWallTime(rangeEnd, effectiveTimeZone))
+      : '',
   );
 
   // showClear 综合判断（对齐 Semi 单一 showClear）：showClear & !disabled & 有值。
   const showClearDerived = $derived(
     showClearProp &&
-    !disabled &&
-    (isRange
-      ? (rangeStart !== null || rangeEnd !== null)
-      : multiple
-        ? (Array.isArray(current) && current.length > 0)
-        : currentSingle !== null),
+      !disabled &&
+      (isRange
+        ? rangeStart !== null || rangeEnd !== null
+        : multiple
+          ? Array.isArray(current) && current.length > 0
+          : currentSingle !== null),
   );
 
   // 头部导航切换可见年月：更新游标并通知 onPanelChange（红线 #1：panelDate 是面板视图态，非 value）
@@ -877,13 +1046,13 @@
 
   // 选中某个月：保留年+月，归一到该月 1 号起始
   function selectMonth(date: Date) {
-    if (disabledDate?.(date)) return;
+    if (dateDisabled(date)) return;
     setValue(startOfDay(date));
     setOpen(false);
   }
   // 选中某一年：归一到该年 1 月 1 号起始
   function selectYear(date: Date) {
-    if (disabledDate?.(date)) return;
+    if (dateDisabled(date)) return;
     setValue(startOfDay(date));
     setOpen(false);
   }
@@ -917,12 +1086,14 @@
   // --- 年月滚轮快速跳转 (PANEL_YAM，对齐 Semi)：点头部年/月标题展开年+月滚轮列 ---
   // yearAndMonthOpts 归一化：仅取 yearCyclic/monthCyclic（其余键透传语义暂不消费）。
   const yamYearCyclic = $derived(
-    typeof (yearAndMonthOpts as { yearCyclic?: boolean } | undefined)?.yearCyclic === 'boolean'
+    typeof (yearAndMonthOpts as { yearCyclic?: boolean } | undefined)
+      ?.yearCyclic === 'boolean'
       ? (yearAndMonthOpts as { yearCyclic: boolean }).yearCyclic
       : false,
   );
   const yamMonthCyclic = $derived(
-    typeof (yearAndMonthOpts as { monthCyclic?: boolean } | undefined)?.monthCyclic === 'boolean'
+    typeof (yearAndMonthOpts as { monthCyclic?: boolean } | undefined)
+      ?.monthCyclic === 'boolean'
       ? (yearAndMonthOpts as { monthCyclic: boolean }).monthCyclic
       : false,
   );
@@ -940,17 +1111,23 @@
   });
 
   // 月份全名（Intl 本地化，朗读/显示用）。
-  const monthLongFormat = $derived(new Intl.DateTimeFormat(locale, { month: 'long' }));
+  const monthLongFormat = $derived(
+    new Intl.DateTimeFormat(locale, { month: 'long' }),
+  );
 
   // 年列 ScrollItem list：value=年份数字，text 本地化（中文加「年」）。
-  const isCJK = $derived(locale.startsWith('zh') || locale.startsWith('ja') || locale.startsWith('ko'));
+  const isCJK = $derived(
+    locale.startsWith('zh') ||
+      locale.startsWith('ja') ||
+      locale.startsWith('ko'),
+  );
   const yamYearItems = $derived<ScrollItemData[]>(
     yamYears.map((y) => ({
       value: y,
       text: isCJK ? `${y}年` : `${y}`,
       // 该年 12 个月全被禁用 → 整年禁用（对齐 Semi isAllMonthDisabled）。
       disabled: Array.from({ length: 12 }, (_, m) => new Date(y, m, 1)).every(
-        (d) => disabledDate?.(d) ?? false,
+        (d) => dateDisabled(d),
       ),
     })),
   );
@@ -961,20 +1138,28 @@
       return {
         value: m,
         text: monthLongFormat.format(d),
-        disabled: disabledDate?.(d) ?? false,
+        disabled: dateDisabled(d),
       };
     }),
   );
   // 各列当前选中索引（受控给 ScrollItem.selectedIndex）：年 = cursor 年在 yamYears 的位置；月 = cursor 月序。
-  const yamYearIndex = $derived(Math.max(0, yamYears.indexOf(cursor.getFullYear())));
+  const yamYearIndex = $derived(
+    Math.max(0, yamYears.indexOf(cursor.getFullYear())),
+  );
   const yamMonthIndex = $derived(cursor.getMonth());
 
   // 滚轮选中 → 只跳转面板游标（不写 value，对齐 Semi「选完回主面板继续选日」）。
   // autoSwitchDate=true 且当前面板存在日期网格（type='date'/'dateTime'）时，选完年/月
   // 自动切回日期网格视图（关闭滚轮）；否则停留在滚轮（对齐 Semi autoSwitchDate）。
   function onYamSelect(data: ScrollItemSelectPayload): void {
-    const year = data.type === 'year' && typeof data.value === 'number' ? data.value : cursor.getFullYear();
-    const month = data.type === 'month' && typeof data.value === 'number' ? data.value : cursor.getMonth();
+    const year =
+      data.type === 'year' && typeof data.value === 'number'
+        ? data.value
+        : cursor.getFullYear();
+    const month =
+      data.type === 'month' && typeof data.value === 'number'
+        ? data.value
+        : cursor.getMonth();
     setCursor(new Date(year, month, 1));
     if (autoSwitchDate && (type === 'date' || type === 'dateTime')) {
       yamOpen = false;
@@ -993,8 +1178,12 @@
 
   // --- 时间部分 (dateTime)：复用 TimePicker 的列逻辑 ---
   const selectedHour = $derived(currentSingle ? currentSingle.getHours() : 0);
-  const selectedMinute = $derived(currentSingle ? currentSingle.getMinutes() : 0);
-  const selectedSecond = $derived(currentSingle ? currentSingle.getSeconds() : 0);
+  const selectedMinute = $derived(
+    currentSingle ? currentSingle.getMinutes() : 0,
+  );
+  const selectedSecond = $derived(
+    currentSingle ? currentSingle.getSeconds() : 0,
+  );
 
   function pad2(n: number): string {
     return n < 10 ? `0${n}` : `${n}`;
@@ -1003,14 +1192,20 @@
   // --- disabledTime (dateTime)：按当前日期解析各列禁用值集合 ---
   // 基准日期取当前选中值(无则今天)；时/分依赖已选时分以联动下游列。
   const disabledTimeCfg = $derived(
-    isDateTime && disabledTime ? disabledTime(currentSingle ?? today) : undefined,
+    isDateTime && disabledTime
+      ? disabledTime(currentSingle ?? today)
+      : undefined,
   );
-  const disabledHourSet = $derived(new Set(disabledTimeCfg?.disabledHours?.() ?? []));
+  const disabledHourSet = $derived(
+    new Set(disabledTimeCfg?.disabledHours?.() ?? []),
+  );
   const disabledMinuteSet = $derived(
     new Set(disabledTimeCfg?.disabledMinutes?.(selectedHour) ?? []),
   );
   const disabledSecondSet = $derived(
-    new Set(disabledTimeCfg?.disabledSeconds?.(selectedHour, selectedMinute) ?? []),
+    new Set(
+      disabledTimeCfg?.disabledSeconds?.(selectedHour, selectedMinute) ?? [],
+    ),
   );
 
   // 合并指定日期与已有时分秒 (dateTime 保留时间，date 归零到当天起始)
@@ -1022,7 +1217,7 @@
   }
 
   function selectDate(date: Date) {
-    if (disabledDate?.(date)) return;
+    if (dateDisabled(date)) return;
 
     if (multiple) {
       const arr = Array.isArray(current) ? [...current] : [];
@@ -1056,7 +1251,7 @@
   }
 
   function selectToday() {
-    if (disabledDate?.(today)) return;
+    if (dateDisabled(today)) return;
     if (isMonth) {
       setValue(startOfDay(new Date(today.getFullYear(), today.getMonth(), 1)));
       setOpen(false);
@@ -1104,7 +1299,10 @@
   function normUnit(d: Date): Date {
     return isMonth ? startOfMonthD(d) : startOfDay(d);
   }
-  function isSameUnit(a: Date | null | undefined, b: Date | null | undefined): boolean {
+  function isSameUnit(
+    a: Date | null | undefined,
+    b: Date | null | undefined,
+  ): boolean {
     if (!a || !b) return false;
     return isMonth
       ? a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
@@ -1146,6 +1344,32 @@
     return isSameUnit(date, visRangeStart) || isSameUnit(date, visRangeEnd);
   }
 
+  // 构造 range 场景日期格子的完整 DayStatus（对齐 Semi DayStatusType，供 renderFullDate 消费）。
+  // hover 预览态：已选起点、未选终点、鼠标 hover 时，区间内格子标 isHover（区别于已确定 isInRange）。
+  // offset 周选择：offsetPreview 存在时，预览区间起止/内部标 isOffsetRange*/isHoverInOffsetRange。
+  function rangeDayStatus(date: Date, isInMonth: boolean): DayStatus {
+    const hoverPreview =
+      pendingRange[0] !== null && pendingRange[1] === null && hoverDay !== null;
+    const offsetPreview =
+      offsetSelect && offsetPreviewStart !== null && offsetPreviewEnd !== null;
+    const within = inRange(date);
+    const isStart = isSameUnit(date, visRangeStart);
+    const isEnd = isSameUnit(date, visRangeEnd);
+    return {
+      isToday: isSameDay(date, today),
+      isSelected: isStart || isEnd,
+      isDisabled: isRangeCellDisabled(date),
+      isInMonth,
+      isSelectedStart: isStart,
+      isSelectedEnd: isEnd,
+      isInRange: within && !hoverPreview && !offsetPreview,
+      isHover: within && hoverPreview,
+      isOffsetRangeStart: offsetPreview && isStart,
+      isOffsetRangeEnd: offsetPreview && isEnd,
+      isHoverInOffsetRange: offsetPreview && within,
+    };
+  }
+
   // maxRange：选定起始后离 pending 起点超过 maxRange-1 天的日期禁用。
   function exceedsMaxRange(date: Date): boolean {
     if (isMonth) return false;
@@ -1154,7 +1378,7 @@
     return Math.abs(daysBetween(pendingRange[0], date)) > maxRange - 1;
   }
   function isRangeCellDisabled(date: Date): boolean {
-    return (disabledDate?.(date) ?? false) || exceedsMaxRange(date);
+    return dateDisabled(date) || exceedsMaxRange(date);
   }
 
   // 合并 day 与某端已有时分秒（dateTimeRange 保时间，dateRange 归零，monthRange 归月 1 号）。
@@ -1162,7 +1386,8 @@
     if (isMonth) return startOfMonthD(day);
     if (!isDateTime) return startOfDay(day);
     const next = startOfDay(day);
-    if (base) next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), 0);
+    if (base)
+      next.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), 0);
     return next;
   }
 
@@ -1172,9 +1397,9 @@
     const day = isMonth ? startOfMonthD(date) : startOfDay(date);
 
     // 单击范围选择（周选择）：一步算出起止提交。
-    if (offsetSelect && startDateOffset && endDateOffset) {
-      const s = startOfDay(startDateOffset(date));
-      const en = startOfDay(endDateOffset(date));
+    if (offsetSelect) {
+      const s = startOfDay(offsetStartOf(date));
+      const en = startOfDay(offsetEndOf(date));
       const [loDay, hiDay] = s.getTime() <= en.getTime() ? [s, en] : [en, s];
       const lo = combineRangeDay(loDay, isDateTime ? pendingRange[0] : null);
       const hi = combineRangeDay(hiDay, isDateTime ? pendingRange[1] : null);
@@ -1230,14 +1455,18 @@
   }
 
   function onRangeCellHover(date: Date) {
-    if (offsetSelect && startDateOffset && endDateOffset) {
+    if (offsetSelect) {
       if (isRangeCellDisabled(date)) return;
-      offsetPreviewStart = startOfDay(startDateOffset(date));
-      offsetPreviewEnd = startOfDay(endDateOffset(date));
+      offsetPreviewStart = startOfDay(offsetStartOf(date));
+      offsetPreviewEnd = startOfDay(offsetEndOf(date));
       return;
     }
     // 有起点、无终点时 hover 预览终点。
-    if (pendingRange[0] !== null && pendingRange[1] === null && !isRangeCellDisabled(date)) {
+    if (
+      pendingRange[0] !== null &&
+      pendingRange[1] === null &&
+      !isRangeCellDisabled(date)
+    ) {
       hoverDay = isMonth ? startOfMonthD(date) : startOfDay(date);
     }
   }
@@ -1245,8 +1474,13 @@
   // 点起止输入框切换 rangeInputFocus（阶段 3 双输入框驱动）。
   function focusRangeInput(which: 'rangeStart' | 'rangeEnd') {
     rangeInputFocus = which;
-    if (which === 'rangeStart') { rangeStartFocused = true; activeEnd = 'start'; }
-    else { rangeEndFocused = true; activeEnd = 'end'; }
+    if (which === 'rangeStart') {
+      rangeStartFocused = true;
+      activeEnd = 'start';
+    } else {
+      rangeEndFocused = true;
+      activeEnd = 'end';
+    }
     if (!isOpen) setOpen(true);
   }
 
@@ -1264,15 +1498,34 @@
   const rangeActiveDate = $derived<Date | null>(
     activeEnd === 'start' ? pendingRange[0] : pendingRange[1],
   );
-  const rangeActiveHour = $derived(rangeActiveDate ? rangeActiveDate.getHours() : 0);
-  const rangeActiveMinute = $derived(rangeActiveDate ? rangeActiveDate.getMinutes() : 0);
-  const rangeActiveSecond = $derived(rangeActiveDate ? rangeActiveDate.getSeconds() : 0);
-  const rangeDisabledTimeCfg = $derived(
-    isDateTime && disabledTime ? disabledTime(rangeActiveDate ?? today) : undefined,
+  const rangeActiveHour = $derived(
+    rangeActiveDate ? rangeActiveDate.getHours() : 0,
   );
-  const rangeDisabledHourSet = $derived(new Set(rangeDisabledTimeCfg?.disabledHours?.() ?? []));
-  const rangeDisabledMinuteSet = $derived(new Set(rangeDisabledTimeCfg?.disabledMinutes?.(rangeActiveHour) ?? []));
-  const rangeDisabledSecondSet = $derived(new Set(rangeDisabledTimeCfg?.disabledSeconds?.(rangeActiveHour, rangeActiveMinute) ?? []));
+  const rangeActiveMinute = $derived(
+    rangeActiveDate ? rangeActiveDate.getMinutes() : 0,
+  );
+  const rangeActiveSecond = $derived(
+    rangeActiveDate ? rangeActiveDate.getSeconds() : 0,
+  );
+  const rangeDisabledTimeCfg = $derived(
+    isDateTime && disabledTime
+      ? disabledTime(rangeActiveDate ?? today)
+      : undefined,
+  );
+  const rangeDisabledHourSet = $derived(
+    new Set(rangeDisabledTimeCfg?.disabledHours?.() ?? []),
+  );
+  const rangeDisabledMinuteSet = $derived(
+    new Set(rangeDisabledTimeCfg?.disabledMinutes?.(rangeActiveHour) ?? []),
+  );
+  const rangeDisabledSecondSet = $derived(
+    new Set(
+      rangeDisabledTimeCfg?.disabledSeconds?.(
+        rangeActiveHour,
+        rangeActiveMinute,
+      ) ?? [],
+    ),
+  );
 
   function commitRangeTime(h: number, m: number, s: number) {
     const baseSrc = rangeActiveDate ?? startOfDay(today);
@@ -1283,9 +1536,18 @@
     pendingRange = nextPair;
     if (!effNeedConfirm) setRangeValue(nextPair);
   }
-  function pickRangeHour(h: number) { if (!rangeDisabledHourSet.has(h)) commitRangeTime(h, rangeActiveMinute, rangeActiveSecond); }
-  function pickRangeMinute(m: number) { if (!rangeDisabledMinuteSet.has(m)) commitRangeTime(rangeActiveHour, m, rangeActiveSecond); }
-  function pickRangeSecond(s: number) { if (!rangeDisabledSecondSet.has(s)) commitRangeTime(rangeActiveHour, rangeActiveMinute, s); }
+  function pickRangeHour(h: number) {
+    if (!rangeDisabledHourSet.has(h))
+      commitRangeTime(h, rangeActiveMinute, rangeActiveSecond);
+  }
+  function pickRangeMinute(m: number) {
+    if (!rangeDisabledMinuteSet.has(m))
+      commitRangeTime(rangeActiveHour, m, rangeActiveSecond);
+  }
+  function pickRangeSecond(s: number) {
+    if (!rangeDisabledSecondSet.has(s))
+      commitRangeTime(rangeActiveHour, rangeActiveMinute, s);
+  }
 
   // ============================================================================
   // 时间列数据构造（ScrollItemData）：复用 core time.ts 的 buildXxxOptions + applyHideDisabled，
@@ -1325,7 +1587,12 @@
   const secondListSingle = $derived(
     makeTimeList(
       applyHideDisabled(
-        buildSecondOptions(1, selectedHour, selectedMinute, disabledTimeCfg?.disabledSeconds),
+        buildSecondOptions(
+          1,
+          selectedHour,
+          selectedMinute,
+          disabledTimeCfg?.disabledSeconds,
+        ),
         hideDisabledOptions,
       ),
       loc().t('TimePicker.second'),
@@ -1337,18 +1604,26 @@
     return i < 0 ? 0 : i;
   }
   // 单选列 onSelect：按列写入。
-  function onSelectHourSingle(p: ScrollItemSelectPayload) { pickHour(p.value as number); }
-  function onSelectMinuteSingle(p: ScrollItemSelectPayload) { pickMinute(p.value as number); }
-  function onSelectSecondSingle(p: ScrollItemSelectPayload) { pickSecond(p.value as number); }
+  function onSelectHourSingle(p: ScrollItemSelectPayload) {
+    pickHour(p.value as number);
+  }
+  function onSelectMinuteSingle(p: ScrollItemSelectPayload) {
+    pickMinute(p.value as number);
+  }
+  function onSelectSecondSingle(p: ScrollItemSelectPayload) {
+    pickSecond(p.value as number);
+  }
 
   // range（dateTimeRange）：起止两组，作用于该端（先切 activeEnd 再写）。
   function rangeEndDate(end: 'start' | 'end'): Date | null {
     return end === 'start' ? pendingRange[0] : pendingRange[1];
   }
-  // 某端的 disabledTime 配置（联动该端已选时分）。
+  // 某端的 disabledTime 配置（联动该端已选时分）。panelType 对齐 Semi：起→'left'、止→'right'。
   function rangeDisabledCfg(end: 'start' | 'end') {
     const d = rangeEndDate(end);
-    return isDateTime && disabledTime ? disabledTime(d ?? today) : undefined;
+    return isDateTime && disabledTime
+      ? disabledTime(d ?? today, end === 'start' ? 'left' : 'right')
+      : undefined;
   }
   function rangeHourList(end: 'start' | 'end'): ScrollItemData[] {
     return makeTimeList(
@@ -1363,7 +1638,11 @@
     const d = rangeEndDate(end);
     return makeTimeList(
       applyHideDisabled(
-        buildMinuteOptions(1, d ? d.getHours() : 0, rangeDisabledCfg(end)?.disabledMinutes),
+        buildMinuteOptions(
+          1,
+          d ? d.getHours() : 0,
+          rangeDisabledCfg(end)?.disabledMinutes,
+        ),
         hideDisabledOptions,
       ),
       loc().t('TimePicker.minute'),
@@ -1373,7 +1652,12 @@
     const d = rangeEndDate(end);
     return makeTimeList(
       applyHideDisabled(
-        buildSecondOptions(1, d ? d.getHours() : 0, d ? d.getMinutes() : 0, rangeDisabledCfg(end)?.disabledSeconds),
+        buildSecondOptions(
+          1,
+          d ? d.getHours() : 0,
+          d ? d.getMinutes() : 0,
+          rangeDisabledCfg(end)?.disabledSeconds,
+        ),
         hideDisabledOptions,
       ),
       loc().t('TimePicker.second'),
@@ -1381,20 +1665,30 @@
   }
   // range 列 onSelect：先切 activeEnd 再写该端。
   function onSelectRangeHour(end: 'start' | 'end') {
-    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeHour(p.value as number); };
+    return (p: ScrollItemSelectPayload) => {
+      activeEnd = end;
+      pickRangeHour(p.value as number);
+    };
   }
   function onSelectRangeMinute(end: 'start' | 'end') {
-    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeMinute(p.value as number); };
+    return (p: ScrollItemSelectPayload) => {
+      activeEnd = end;
+      pickRangeMinute(p.value as number);
+    };
   }
   function onSelectRangeSecond(end: 'start' | 'end') {
-    return (p: ScrollItemSelectPayload) => { activeEnd = end; pickRangeSecond(p.value as number); };
+    return (p: ScrollItemSelectPayload) => {
+      activeEnd = end;
+      pickRangeSecond(p.value as number);
+    };
   }
 
   // --- presets：点击快捷项直接选中 (惰性 value 即时求值)。range/单选分派。 ---
   function selectPreset(preset: Preset, e?: MouseEvent) {
     // 对齐 Semi onPresetClick(item, e)。
     onPresetClick?.(preset, e);
-    const raw = typeof preset.value === 'function' ? preset.value() : preset.value;
+    const raw =
+      typeof preset.value === 'function' ? preset.value() : preset.value;
     if (isRange) {
       if (!Array.isArray(raw)) return;
       const s = normOneRange(raw[0]);
@@ -1411,7 +1705,7 @@
       return;
     }
     const date = raw as Date;
-    if (disabledDate?.(date)) return;
+    if (dateDisabled(date)) return;
     if (isMonth) {
       setValue(startOfDay(new Date(date.getFullYear(), date.getMonth(), 1)));
       setOpen(false);
@@ -1429,7 +1723,12 @@
 
   function confirm() {
     if (isRange) {
-      onConfirm?.({ value: pendingRange[0] === null && pendingRange[1] === null ? null : pendingRange });
+      onConfirm?.({
+        value:
+          pendingRange[0] === null && pendingRange[1] === null
+            ? null
+            : pendingRange,
+      });
       setRangeValue(pendingRange);
       setOpen(false);
       return;
@@ -1550,11 +1849,21 @@
     }
     if (!GRID_NAV_KEYS.has(key)) return;
     e.preventDefault();
-    const next = gridFocusMove(base, key as GridFocusKey, 'month', effWeekStart);
+    const next = gridFocusMove(
+      base,
+      key as GridFocusKey,
+      'month',
+      effWeekStart,
+    );
     if (next) {
       setHighlight(next);
       // range 选择中：方向键移动即刷新 hover 预览终点。
-      if (isRange && pendingRange[0] !== null && pendingRange[1] === null && !isRangeCellDisabled(next)) {
+      if (
+        isRange &&
+        pendingRange[0] !== null &&
+        pendingRange[1] === null &&
+        !isRangeCellDisabled(next)
+      ) {
         hoverDay = isMonth ? startOfMonthD(next) : startOfDay(next);
       }
     }
@@ -1573,7 +1882,8 @@
   // aria-labelledby 来源（对齐 Semi withField）：外部 ariaLabelledby(Form label id) 优先；
   // 否则 insetLabel 提供 insetLabelId 时把内嵌标签纳入可访问名。inset 场景两者为同一 id。
   const triggerLabelledby = $derived(
-    ariaLabelledby ?? (hasInsetLabel && insetLabelId ? insetLabelId : undefined),
+    ariaLabelledby ??
+      (hasInsetLabel && insetLabelId ? insetLabelId : undefined),
   );
   // aria-labelledby 存在时不再重复设 aria-label（避免可访问名冗余）。
   const triggerAriaLabel = $derived(triggerLabelledby ? undefined : ariaLabel);
@@ -1633,7 +1943,9 @@
   }
 
   // --- 样式工具函数 ---
-  function styleToString(s: CSSProperties | string | undefined): string | undefined {
+  function styleToString(
+    s: CSSProperties | string | undefined,
+  ): string | undefined {
     if (!s) return undefined;
     if (typeof s === 'string') return s;
     return Object.entries(s)
@@ -1665,7 +1977,9 @@
     rightBottom: 'rightEnd',
     right: 'right',
   };
-  const resolvedPlacement = $derived<Placement>(POSITION_TO_PLACEMENT[position] ?? 'bottomStart');
+  const resolvedPlacement = $derived<Placement>(
+    POSITION_TO_PLACEMENT[position] ?? 'bottomStart',
+  );
 
   // 触发器与浮层间距：spacing（number）优先，未传回退默认 4（近似原
   // calc(100% + extra-tight) 的紧邻视觉）；再叠加 dropdownMargin（number 直接加，
@@ -1673,7 +1987,8 @@
   const resolvedOffset = $derived.by(() => {
     const base = spacing ?? 4;
     if (typeof dropdownMargin === 'number') return base + dropdownMargin;
-    if (dropdownMargin && typeof dropdownMargin === 'object') return base + (dropdownMargin.y ?? 0);
+    if (dropdownMargin && typeof dropdownMargin === 'object')
+      return base + (dropdownMargin.y ?? 0);
     return base;
   });
 
@@ -1709,11 +2024,22 @@
   }
 
   // presets 布局：left/right 时垂直在侧边；top/bottom 时水平在上下
-  const presetsVertical = $derived(presetPosition === 'left' || presetPosition === 'right');
+  const presetsVertical = $derived(
+    presetPosition === 'left' || presetPosition === 'right',
+  );
 </script>
 
-<div class={cls} style={style || undefined} bind:this={rootEl} aria-invalid={validateStatus === 'error' || undefined} data-position={position}>
-  <div class="cd-date-picker__control" class:cd-date-picker__control--inset-label={hasInsetLabel}>
+<div
+  class={cls}
+  style={style || undefined}
+  bind:this={rootEl}
+  aria-invalid={validateStatus === 'error' || undefined}
+  data-position={position}
+>
+  <div
+    class="cd-date-picker__control"
+    class:cd-date-picker__control--inset-label={hasInsetLabel}
+  >
     {#if hasInsetLabel}
       <span class="cd-date-picker__inset-label" id={insetLabelId}>
         {#if typeof insetLabel === 'string'}
@@ -1724,13 +2050,18 @@
       </span>
     {/if}
     {#if triggerRender}
-      {@render triggerRender({ value: isRange ? currentRange : current, placeholder: placeholder ?? loc().t('DatePicker.placeholder') })}
+      {@render triggerRender({
+        value: isRange ? currentRange : current,
+        placeholder: placeholder ?? loc().t('DatePicker.placeholder'),
+      })}
     {:else if isRange}
       <!-- range 触发器：起止双输入框 + 分隔节点（对齐 Semi dateInput range 分支）。 -->
       <div
         class="cd-date-picker__range-input"
-        class:cd-date-picker__range-input--start-active={isOpen && rangeInputFocus === 'rangeStart'}
-        class:cd-date-picker__range-input--end-active={isOpen && rangeInputFocus === 'rangeEnd'}
+        class:cd-date-picker__range-input--start-active={isOpen &&
+          rangeInputFocus === 'rangeStart'}
+        class:cd-date-picker__range-input--end-active={isOpen &&
+          rangeInputFocus === 'rangeEnd'}
       >
         <input
           type="text"
@@ -1739,14 +2070,19 @@
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-controls={dialogId}
-          aria-label={triggerAriaLabel ?? loc().t('DatePicker.startPlaceholder')}
-          placeholder={startPlaceholder ?? loc().t('DatePicker.startPlaceholder')}
+          aria-label={triggerAriaLabel ??
+            loc().t('DatePicker.startPlaceholder')}
+          placeholder={startPlaceholder ??
+            loc().t('DatePicker.startPlaceholder')}
           value={startText}
           readonly
           {disabled}
           bind:this={triggerEl as HTMLInputElement}
           onclick={() => focusRangeInput('rangeStart')}
-          onfocus={(e) => { focusRangeInput('rangeStart'); onFocus?.(e); }}
+          onfocus={(e) => {
+            focusRangeInput('rangeStart');
+            onFocus?.(e);
+          }}
           onkeydown={onTriggerKeydown}
           onblur={onBlur}
         />
@@ -1824,14 +2160,22 @@
             {/if}
           </span>
         {/if}
-        <span class="cd-date-picker__value" class:cd-date-picker__value--placeholder={!formattedValue}>
+        <span
+          class="cd-date-picker__value"
+          class:cd-date-picker__value--placeholder={!formattedValue}
+        >
           {displayText}
         </span>
       </button>
     {/if}
 
     {#if showClearDerived}
-      <button type="button" class="cd-date-picker__clear" aria-label={loc().t('DatePicker.clear')} onclick={clear}>
+      <button
+        type="button"
+        class="cd-date-picker__clear"
+        aria-label={loc().t('DatePicker.clear')}
+        onclick={clear}
+      >
         {#if clearIcon}
           {@render clearIcon()}
         {:else}
@@ -1860,7 +2204,9 @@
         getContainer: getPopupContainer,
         open: isOpen,
       }}
-      class={['cd-date-picker__panel', dropdownClassName].filter(Boolean).join(' ')}
+      class={['cd-date-picker__panel', dropdownClassName]
+        .filter(Boolean)
+        .join(' ')}
       class:cd-date-picker__panel--datetime={isDateTime}
       id={dialogId}
       role="dialog"
@@ -1880,10 +2226,18 @@
       <div
         class="cd-date-picker__layout"
         class:cd-date-picker__layout--presets={presets && presets.length > 0}
-        class:cd-date-picker__layout--presets-top={presets && presets.length > 0 && presetPosition === 'top'}
-        class:cd-date-picker__layout--presets-bottom={presets && presets.length > 0 && presetPosition === 'bottom'}
-        class:cd-date-picker__layout--presets-left={presets && presets.length > 0 && presetPosition === 'left'}
-        class:cd-date-picker__layout--presets-right={presets && presets.length > 0 && presetPosition === 'right'}
+        class:cd-date-picker__layout--presets-top={presets &&
+          presets.length > 0 &&
+          presetPosition === 'top'}
+        class:cd-date-picker__layout--presets-bottom={presets &&
+          presets.length > 0 &&
+          presetPosition === 'bottom'}
+        class:cd-date-picker__layout--presets-left={presets &&
+          presets.length > 0 &&
+          presetPosition === 'left'}
+        class:cd-date-picker__layout--presets-right={presets &&
+          presets.length > 0 &&
+          presetPosition === 'right'}
       >
         {#if leftSlot}
           <div class="cd-date-picker__slot cd-date-picker__slot--left">
@@ -1914,7 +2268,10 @@
 
         <div class="cd-date-picker__main">
           {#if insetEnabled}
-            <div class="cd-date-picker__inset-input" class:cd-date-picker__inset-input--datetime={isDateTime}>
+            <div
+              class="cd-date-picker__inset-input"
+              class:cd-date-picker__inset-input--datetime={isDateTime}
+            >
               <input
                 type="text"
                 class="cd-date-picker__inset-field cd-date-picker__inset-field--date"
@@ -1947,27 +2304,65 @@
                   <div class="cd-date-picker__month">
                     <div class="cd-date-picker__header">
                       {#if panel.side === 'left'}
-                        <button type="button" class="cd-date-picker__nav" aria-label={isMonth ? loc().t('DatePicker.prevYear') : loc().t('DatePicker.prevMonth')} onclick={rangePrev}>
-                          {#if isMonth}<IconDoubleChevronLeft size="small" aria-hidden="true" />{:else}<IconChevronLeft size="small" aria-hidden="true" />{/if}
+                        <button
+                          type="button"
+                          class="cd-date-picker__nav"
+                          aria-label={isMonth
+                            ? loc().t('DatePicker.prevYear')
+                            : loc().t('DatePicker.prevMonth')}
+                          onclick={rangePrev}
+                        >
+                          {#if isMonth}<IconDoubleChevronLeft
+                              size="small"
+                              aria-hidden="true"
+                            />{:else}<IconChevronLeft
+                              size="small"
+                              aria-hidden="true"
+                            />{/if}
                         </button>
                       {:else}
-                        <span class="cd-date-picker__nav cd-date-picker__nav--ghost" aria-hidden="true"></span>
+                        <span
+                          class="cd-date-picker__nav cd-date-picker__nav--ghost"
+                          aria-hidden="true"
+                        ></span>
                       {/if}
                       <span class="cd-date-picker__title">{panel.header}</span>
                       {#if panel.side === 'right'}
-                        <button type="button" class="cd-date-picker__nav" aria-label={isMonth ? loc().t('DatePicker.nextYear') : loc().t('DatePicker.nextMonth')} onclick={rangeNext}>
-                          {#if isMonth}<IconDoubleChevronRight size="small" aria-hidden="true" />{:else}<IconChevronRight size="small" aria-hidden="true" />{/if}
+                        <button
+                          type="button"
+                          class="cd-date-picker__nav"
+                          aria-label={isMonth
+                            ? loc().t('DatePicker.nextYear')
+                            : loc().t('DatePicker.nextMonth')}
+                          onclick={rangeNext}
+                        >
+                          {#if isMonth}<IconDoubleChevronRight
+                              size="small"
+                              aria-hidden="true"
+                            />{:else}<IconChevronRight
+                              size="small"
+                              aria-hidden="true"
+                            />{/if}
                         </button>
                       {:else}
-                        <span class="cd-date-picker__nav cd-date-picker__nav--ghost" aria-hidden="true"></span>
+                        <span
+                          class="cd-date-picker__nav cd-date-picker__nav--ghost"
+                          aria-hidden="true"
+                        ></span>
                       {/if}
                     </div>
                     {#if isMonth}
-                      <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid" aria-label={panel.header}>
+                      <div
+                        class="cd-date-picker__grid cd-date-picker__grid--month"
+                        role="grid"
+                        aria-label={panel.header}
+                      >
                         {#each panel.months as cell (cell.month)}
                           {@const edge = isEdge(cell.date)}
                           {@const within = inRange(cell.date)}
-                          {@const isCurrentMonth = today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
+                          {@const isCurrentMonth =
+                            today.getFullYear() === cell.date.getFullYear() &&
+                            today.getMonth() === cell.month}
                           {@const isDisabled = isRangeCellDisabled(cell.date)}
                           <button
                             type="button"
@@ -1988,10 +2383,23 @@
                       </div>
                     {:else}
                       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                      <div class="cd-date-picker__grid" role="grid" tabindex="0" aria-label={panel.header} onkeydown={onGridKeydown}>
-                        <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
+                      <div
+                        class="cd-date-picker__grid"
+                        role="grid"
+                        tabindex="0"
+                        aria-label={panel.header}
+                        onkeydown={onGridKeydown}
+                      >
+                        <div
+                          class="cd-date-picker__row cd-date-picker__row--head"
+                          role="row"
+                        >
                           {#each weekdayNames as name, i (i)}
-                            <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>{name}</span>
+                            <span
+                              class="cd-date-picker__weekday"
+                              role="columnheader"
+                              aria-label={weekdayLongNames[i]}>{name}</span
+                            >
                           {/each}
                         </div>
                         {#each panel.rows as row, wi (wi)}
@@ -2000,8 +2408,13 @@
                               {@const edge = isEdge(cell.date)}
                               {@const within = inRange(cell.date)}
                               {@const isTodayCell = isSameDay(cell.date, today)}
-                              {@const isHighlight = isSameDay(cell.date, highlight)}
-                              {@const isDisabled = isRangeCellDisabled(cell.date)}
+                              {@const isHighlight = isSameDay(
+                                cell.date,
+                                highlight,
+                              )}
+                              {@const isDisabled = isRangeCellDisabled(
+                                cell.date,
+                              )}
                               <button
                                 type="button"
                                 id={rangeCellId(panel.gid, cell.date)}
@@ -2017,9 +2430,26 @@
                                 disabled={isDisabled}
                                 tabindex={-1}
                                 onclick={() => selectRangeDate(cell.date)}
-                                onpointerenter={() => onRangeCellHover(cell.date)}
+                                onpointerenter={() =>
+                                  onRangeCellHover(cell.date)}
                               >
-                                {cell.date.getDate()}
+                                {#if renderFullDate}
+                                  {@render renderFullDate({
+                                    day: cell.date.getDate(),
+                                    fullDate: fullDateStr(cell.date),
+                                    dayStatus: rangeDayStatus(
+                                      cell.date,
+                                      cell.inMonth,
+                                    ),
+                                  })}
+                                {:else if renderDate}
+                                  {@render renderDate({
+                                    day: cell.date.getDate(),
+                                    fullDate: fullDateStr(cell.date),
+                                  })}
+                                {:else}
+                                  {cell.date.getDate()}
+                                {/if}
                               </button>
                             {/each}
                           </div>
@@ -2034,17 +2464,26 @@
                   <div class="cd-date-picker__times">
                     {#each ['start', 'end'] as const as end (end)}
                       {@const isActive = activeEnd === end}
-                      {@const endDate = end === 'start' ? pendingRange[0] : pendingRange[1]}
+                      {@const endDate =
+                        end === 'start' ? pendingRange[0] : pendingRange[1]}
                       {@const hh = endDate ? endDate.getHours() : 0}
                       {@const mm = endDate ? endDate.getMinutes() : 0}
                       {@const ss = endDate ? endDate.getSeconds() : 0}
                       {@const hL = rangeHourList(end)}
                       {@const mL = rangeMinuteList(end)}
                       {@const sL = rangeSecondList(end)}
-                      <div class="cd-date-picker__time" class:cd-date-picker__time--active={isActive} role="group" aria-label={end === 'start' ? loc().t('DatePicker.startPlaceholder') : loc().t('DatePicker.endPlaceholder')}>
+                      <div
+                        class="cd-date-picker__time"
+                        class:cd-date-picker__time--active={isActive}
+                        role="group"
+                        aria-label={end === 'start'
+                          ? loc().t('DatePicker.startPlaceholder')
+                          : loc().t('DatePicker.endPlaceholder')}
+                      >
                         <ScrollList>
                           <ScrollItem
-                            mode="normal"
+                            mode={timeScrollItemProps.mode}
+                            cycled={timeScrollItemProps.cycled}
                             class="cd-date-picker__panel-list-hour"
                             list={hL}
                             selectedIndex={timeIndexOf(hL, hh)}
@@ -2053,7 +2492,8 @@
                             ariaLabel={loc().t('TimePicker.hour')}
                           />
                           <ScrollItem
-                            mode="normal"
+                            mode={timeScrollItemProps.mode}
+                            cycled={timeScrollItemProps.cycled}
                             class="cd-date-picker__panel-list-minute"
                             list={mL}
                             selectedIndex={timeIndexOf(mL, mm)}
@@ -2063,7 +2503,8 @@
                           />
                           {#if showSecond}
                             <ScrollItem
-                              mode="normal"
+                              mode={timeScrollItemProps.mode}
+                              cycled={timeScrollItemProps.cycled}
                               class="cd-date-picker__panel-list-second"
                               list={sL}
                               selectedIndex={timeIndexOf(sL, ss)}
@@ -2079,260 +2520,326 @@
                 {/if}
               </div>
             {:else}
-            <div class="cd-date-picker__calendar">
-              <div class="cd-date-picker__header">
-                {#if isDayPanel}
-                  <!-- 翻年双箭头（对齐 Semi Navigation prevYear «）：date/dateTime 面板一键翻年 -->
+              <div class="cd-date-picker__calendar">
+                <div class="cd-date-picker__header">
+                  {#if isDayPanel}
+                    <!-- 翻年双箭头（对齐 Semi Navigation prevYear «）：date/dateTime 面板一键翻年 -->
+                    <button
+                      type="button"
+                      class="cd-date-picker__nav"
+                      aria-label={prevYearLabel}
+                      onclick={prevYear}
+                    >
+                      <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                    </button>
+                  {/if}
                   <button
                     type="button"
                     class="cd-date-picker__nav"
-                    aria-label={prevYearLabel}
-                    onclick={prevYear}
+                    aria-label={prevLabel}
+                    onclick={onPrev}
                   >
-                    <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                    {#if navIsYearJump}
+                      <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                    {:else}
+                      <IconChevronLeft size="small" aria-hidden="true" />
+                    {/if}
                   </button>
-                {/if}
-                <button
-                  type="button"
-                  class="cd-date-picker__nav"
-                  aria-label={prevLabel}
-                  onclick={onPrev}
-                >
-                  {#if navIsYearJump}
-                    <IconDoubleChevronLeft size="small" aria-hidden="true" />
+                  {#if yamEnabled}
+                    <button
+                      type="button"
+                      class="cd-date-picker__title cd-date-picker__title--button"
+                      aria-label={loc().t('DatePicker.switchYearMonth')}
+                      aria-expanded={yamOpen}
+                      onclick={toggleYam}
+                    >
+                      {headerText}
+                    </button>
                   {:else}
-                    <IconChevronLeft size="small" aria-hidden="true" />
+                    <span class="cd-date-picker__title">{headerText}</span>
                   {/if}
-                </button>
-                {#if yamEnabled}
-                  <button
-                    type="button"
-                    class="cd-date-picker__title cd-date-picker__title--button"
-                    aria-label={loc().t('DatePicker.switchYearMonth')}
-                    aria-expanded={yamOpen}
-                    onclick={toggleYam}
-                  >
-                    {headerText}
-                  </button>
-                {:else}
-                  <span class="cd-date-picker__title">{headerText}</span>
-                {/if}
-                <button
-                  type="button"
-                  class="cd-date-picker__nav"
-                  aria-label={nextLabel}
-                  onclick={onNext}
-                >
-                  {#if navIsYearJump}
-                    <IconDoubleChevronRight size="small" aria-hidden="true" />
-                  {:else}
-                    <IconChevronRight size="small" aria-hidden="true" />
-                  {/if}
-                </button>
-                {#if isDayPanel}
-                  <!-- 翻年双箭头（对齐 Semi Navigation nextYear »）：date/dateTime 面板一键翻年 -->
                   <button
                     type="button"
                     class="cd-date-picker__nav"
-                    aria-label={nextYearLabel}
-                    onclick={nextYear}
+                    aria-label={nextLabel}
+                    onclick={onNext}
                   >
-                    <IconDoubleChevronRight size="small" aria-hidden="true" />
+                    {#if navIsYearJump}
+                      <IconDoubleChevronRight size="small" aria-hidden="true" />
+                    {:else}
+                      <IconChevronRight size="small" aria-hidden="true" />
+                    {/if}
                   </button>
-                {/if}
-              </div>
+                  {#if isDayPanel}
+                    <!-- 翻年双箭头（对齐 Semi Navigation nextYear »）：date/dateTime 面板一键翻年 -->
+                    <button
+                      type="button"
+                      class="cd-date-picker__nav"
+                      aria-label={nextYearLabel}
+                      onclick={nextYear}
+                    >
+                      <IconDoubleChevronRight size="small" aria-hidden="true" />
+                    </button>
+                  {/if}
+                </div>
 
-              {#if yamOpen && yamEnabled}
-                <!-- 年月滚轮快速跳转面板 (PANEL_YAM)：ScrollList 容器 + 年/月两 wheel 列（对齐 Semi），
+                {#if yamOpen && yamEnabled}
+                  <!-- 年月滚轮快速跳转面板 (PANEL_YAM)：ScrollList 容器 + 年/月两 wheel 列（对齐 Semi），
                      选中即跳转 cursor（不写 value）；yearCyclic/monthCyclic 控制循环滚动。 -->
-                <div class="cd-date-picker__yam" role="group" aria-label={loc().t('DatePicker.switchYearMonth')}>
-                  <ScrollList>
-                    <ScrollItem
-                      mode="wheel"
-                      list={yamYearItems}
-                      type="year"
-                      cycled={yamYearCyclic}
-                      selectedIndex={yamYearIndex}
-                      onSelect={onYamSelect}
-                      ariaLabel={loc().t('DatePicker.yearColumnLabel')}
-                    />
-                    <ScrollItem
-                      mode="wheel"
-                      list={yamMonthItems}
-                      type="month"
-                      cycled={yamMonthCyclic}
-                      selectedIndex={yamMonthIndex}
-                      onSelect={onYamSelect}
-                      ariaLabel={loc().t('DatePicker.monthColumnLabel')}
-                    />
-                  </ScrollList>
-                  <button type="button" class="cd-date-picker__yam-back" onclick={backToMain}>
-                    {loc().t('DatePicker.backToDate')}
-                  </button>
-                </div>
-              {:else if isMonth}
-                <div class="cd-date-picker__grid cd-date-picker__grid--month" role="grid">
-                  {#each monthCells as cell (cell.month)}
-                    {@const isSelected =
-                      currentSingle !== null &&
-                      currentSingle.getFullYear() === cell.date.getFullYear() &&
-                      currentSingle.getMonth() === cell.month}
-                    {@const isCurrent =
-                      today.getFullYear() === cell.date.getFullYear() && today.getMonth() === cell.month}
-                    {@const isDisabled = disabledDate?.(cell.date) ?? false}
+                  <div
+                    class="cd-date-picker__yam"
+                    role="group"
+                    aria-label={loc().t('DatePicker.switchYearMonth')}
+                  >
+                    <ScrollList>
+                      <ScrollItem
+                        mode="wheel"
+                        list={yamYearItems}
+                        type="year"
+                        cycled={yamYearCyclic}
+                        selectedIndex={yamYearIndex}
+                        onSelect={onYamSelect}
+                        ariaLabel={loc().t('DatePicker.yearColumnLabel')}
+                      />
+                      <ScrollItem
+                        mode="wheel"
+                        list={yamMonthItems}
+                        type="month"
+                        cycled={yamMonthCyclic}
+                        selectedIndex={yamMonthIndex}
+                        onSelect={onYamSelect}
+                        ariaLabel={loc().t('DatePicker.monthColumnLabel')}
+                      />
+                    </ScrollList>
                     <button
                       type="button"
-                      class="cd-date-picker__cell cd-date-picker__cell--block"
-                      class:cd-date-picker__cell--selected={isSelected}
-                      class:cd-date-picker__cell--today={isCurrent}
-                      role="gridcell"
-                      aria-selected={isSelected}
-                      aria-disabled={isDisabled || undefined}
-                      disabled={isDisabled}
-                      tabindex={-1}
-                      onclick={() => selectMonth(cell.date)}
+                      class="cd-date-picker__yam-back"
+                      onclick={backToMain}
                     >
-                      {cell.label}
+                      {loc().t('DatePicker.backToDate')}
                     </button>
-                  {/each}
-                </div>
-              {:else if isYear}
-                <div class="cd-date-picker__grid cd-date-picker__grid--year" role="grid">
-                  {#each yearCells as cell (cell.year)}
-                    {@const isSelected = currentSingle !== null && currentSingle.getFullYear() === cell.year}
-                    {@const isCurrent = today.getFullYear() === cell.year}
-                    {@const isDisabled = (disabledDate?.(cell.date) ?? false) || !cell.inRange}
-                    <button
-                      type="button"
-                      class="cd-date-picker__cell cd-date-picker__cell--block"
-                      class:cd-date-picker__cell--muted={!cell.inDecade}
-                      class:cd-date-picker__cell--selected={isSelected}
-                      class:cd-date-picker__cell--today={isCurrent}
-                      role="gridcell"
-                      aria-selected={isSelected}
-                      aria-disabled={isDisabled || undefined}
-                      disabled={isDisabled}
-                      tabindex={-1}
-                      onclick={() => selectYear(cell.date)}
-                    >
-                      {cell.year}
-                    </button>
-                  {/each}
-                </div>
-              {:else}
-                <!-- WAI-ARIA grid：role=grid 容器 (aria-activedescendant 指当前高亮格)
-                     + 表头行 columnheader + 每周一行 row，格 role=gridcell。
-                     焦点落在容器，方向键经 onGridKeydown → gridFocusMove 移动高亮 (红线 #2)。 -->
-                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                <div
-                  bind:this={gridEl}
-                  class="cd-date-picker__grid"
-                  role="grid"
-                  tabindex="0"
-                  aria-activedescendant={activeCellId}
-                  aria-label={headerText}
-                  onkeydown={onGridKeydown}
-                >
-                  <div class="cd-date-picker__row cd-date-picker__row--head" role="row">
-                    {#each weekdayNames as name, i (i)}
-                      <span class="cd-date-picker__weekday" role="columnheader" aria-label={weekdayLongNames[i]}>
-                        {name}
-                      </span>
+                  </div>
+                {:else if isMonth}
+                  <div
+                    class="cd-date-picker__grid cd-date-picker__grid--month"
+                    role="grid"
+                  >
+                    {#each monthCells as cell (cell.month)}
+                      {@const isSelected =
+                        currentSingle !== null &&
+                        currentSingle.getFullYear() ===
+                          cell.date.getFullYear() &&
+                        currentSingle.getMonth() === cell.month}
+                      {@const isCurrent =
+                        today.getFullYear() === cell.date.getFullYear() &&
+                        today.getMonth() === cell.month}
+                      {@const isDisabled = dateDisabled(cell.date)}
+                      <button
+                        type="button"
+                        class="cd-date-picker__cell cd-date-picker__cell--block"
+                        class:cd-date-picker__cell--selected={isSelected}
+                        class:cd-date-picker__cell--today={isCurrent}
+                        role="gridcell"
+                        aria-selected={isSelected}
+                        aria-disabled={isDisabled || undefined}
+                        disabled={isDisabled}
+                        tabindex={-1}
+                        onclick={() => selectMonth(cell.date)}
+                      >
+                        {cell.label}
+                      </button>
                     {/each}
                   </div>
-                  {#each weekRows as row, wi (wi)}
-                    <div class="cd-date-picker__row" role="row">
-                      {#each row as cell (cell.date.getTime())}
-                        {@const isSelected = isDateSelected(cell.date)}
-                        {@const isToday = isSameDay(cell.date, today)}
-                        {@const isHighlight = isSameDay(cell.date, highlight)}
-                        {@const isDisabled = disabledDate?.(cell.date) ?? false}
-                        {@const dayStatus = { isSelected, isToday, isDisabled, isInMonth: cell.inMonth }}
-                        <button
-                          type="button"
-                          id={cellId(cell.date)}
-                          class="cd-date-picker__cell"
-                          class:cd-date-picker__cell--muted={!cell.inMonth}
-                          class:cd-date-picker__cell--selected={isSelected}
-                          class:cd-date-picker__cell--today={isToday}
-                          class:cd-date-picker__cell--highlight={isHighlight}
-                          role="gridcell"
-                          aria-selected={isSelected}
-                          aria-disabled={isDisabled || undefined}
-                          disabled={isDisabled}
-                          tabindex={-1}
-                          onclick={() => selectDate(cell.date)}
+                {:else if isYear}
+                  <div
+                    class="cd-date-picker__grid cd-date-picker__grid--year"
+                    role="grid"
+                  >
+                    {#each yearCells as cell (cell.year)}
+                      {@const isSelected =
+                        currentSingle !== null &&
+                        currentSingle.getFullYear() === cell.year}
+                      {@const isCurrent = today.getFullYear() === cell.year}
+                      {@const isDisabled =
+                        dateDisabled(cell.date) || !cell.inRange}
+                      <button
+                        type="button"
+                        class="cd-date-picker__cell cd-date-picker__cell--block"
+                        class:cd-date-picker__cell--muted={!cell.inDecade}
+                        class:cd-date-picker__cell--selected={isSelected}
+                        class:cd-date-picker__cell--today={isCurrent}
+                        role="gridcell"
+                        aria-selected={isSelected}
+                        aria-disabled={isDisabled || undefined}
+                        disabled={isDisabled}
+                        tabindex={-1}
+                        onclick={() => selectYear(cell.date)}
+                      >
+                        {cell.year}
+                      </button>
+                    {/each}
+                  </div>
+                {:else}
+                  <!-- WAI-ARIA grid：role=grid 容器 (aria-activedescendant 指当前高亮格)
+                     + 表头行 columnheader + 每周一行 row，格 role=gridcell。
+                     焦点落在容器，方向键经 onGridKeydown → gridFocusMove 移动高亮 (红线 #2)。 -->
+                  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                  <div
+                    bind:this={gridEl}
+                    class="cd-date-picker__grid"
+                    role="grid"
+                    tabindex="0"
+                    aria-activedescendant={activeCellId}
+                    aria-label={headerText}
+                    onkeydown={onGridKeydown}
+                  >
+                    <div
+                      class="cd-date-picker__row cd-date-picker__row--head"
+                      role="row"
+                    >
+                      {#each weekdayNames as name, i (i)}
+                        <span
+                          class="cd-date-picker__weekday"
+                          role="columnheader"
+                          aria-label={weekdayLongNames[i]}
                         >
-                          {#if renderFullDate}
-                            {@render renderFullDate({ day: cell.date.getDate(), fullDate: fullDateStr(cell.date), dayStatus })}
-                          {:else if renderDate}
-                            {@render renderDate({ day: cell.date.getDate(), fullDate: fullDateStr(cell.date) })}
-                          {:else}
-                            {cell.date.getDate()}
-                          {/if}
-                        </button>
+                          {name}
+                        </span>
                       {/each}
                     </div>
-                  {/each}
+                    {#each weekRows as row, wi (wi)}
+                      <div class="cd-date-picker__row" role="row">
+                        {#each row as cell (cell.date.getTime())}
+                          {@const isSelected = isDateSelected(cell.date)}
+                          {@const isToday = isSameDay(cell.date, today)}
+                          {@const isHighlight = isSameDay(cell.date, highlight)}
+                          {@const isDisabled = dateDisabled(cell.date)}
+                          {@const dayStatus = {
+                            isToday,
+                            isSelected,
+                            isDisabled,
+                            isInMonth: cell.inMonth,
+                            isSelectedStart: false,
+                            isSelectedEnd: false,
+                            isInRange: false,
+                            isHover: false,
+                            isOffsetRangeStart: false,
+                            isOffsetRangeEnd: false,
+                            isHoverInOffsetRange: false,
+                          } satisfies DayStatus}
+                          <button
+                            type="button"
+                            id={cellId(cell.date)}
+                            class="cd-date-picker__cell"
+                            class:cd-date-picker__cell--muted={!cell.inMonth}
+                            class:cd-date-picker__cell--selected={isSelected}
+                            class:cd-date-picker__cell--today={isToday}
+                            class:cd-date-picker__cell--highlight={isHighlight}
+                            role="gridcell"
+                            aria-selected={isSelected}
+                            aria-disabled={isDisabled || undefined}
+                            disabled={isDisabled}
+                            tabindex={-1}
+                            onclick={() => selectDate(cell.date)}
+                          >
+                            {#if renderFullDate}
+                              {@render renderFullDate({
+                                day: cell.date.getDate(),
+                                fullDate: fullDateStr(cell.date),
+                                dayStatus,
+                              })}
+                            {:else if renderDate}
+                              {@render renderDate({
+                                day: cell.date.getDate(),
+                                fullDate: fullDateStr(cell.date),
+                              })}
+                            {:else}
+                              {cell.date.getDate()}
+                            {/if}
+                          </button>
+                        {/each}
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+
+              {#if isDateTime && !disabledTimePicker}
+                <!-- 单选时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox），列内 mode=normal 点击选中。 -->
+                <div class="cd-date-picker__time">
+                  <ScrollList>
+                    <ScrollItem
+                      mode={timeScrollItemProps.mode}
+                      cycled={timeScrollItemProps.cycled}
+                      class="cd-date-picker__panel-list-hour"
+                      list={hourListSingle}
+                      selectedIndex={timeIndexOf(hourListSingle, selectedHour)}
+                      type="hour"
+                      onSelect={onSelectHourSingle}
+                      ariaLabel={loc().t('TimePicker.hour')}
+                    />
+                    <ScrollItem
+                      mode={timeScrollItemProps.mode}
+                      cycled={timeScrollItemProps.cycled}
+                      class="cd-date-picker__panel-list-minute"
+                      list={minuteListSingle}
+                      selectedIndex={timeIndexOf(
+                        minuteListSingle,
+                        selectedMinute,
+                      )}
+                      type="minute"
+                      onSelect={onSelectMinuteSingle}
+                      ariaLabel={loc().t('TimePicker.minute')}
+                    />
+                    {#if showSecond}
+                      <ScrollItem
+                        mode={timeScrollItemProps.mode}
+                        cycled={timeScrollItemProps.cycled}
+                        class="cd-date-picker__panel-list-second"
+                        list={secondListSingle}
+                        selectedIndex={timeIndexOf(
+                          secondListSingle,
+                          selectedSecond,
+                        )}
+                        type="second"
+                        onSelect={onSelectSecondSingle}
+                        ariaLabel={loc().t('TimePicker.second')}
+                      />
+                    {/if}
+                  </ScrollList>
                 </div>
               {/if}
-            </div>
-
-            {#if isDateTime && !disabledTimePicker}
-              <!-- 单选时间列复用 ScrollList+ScrollItem（对齐 Semi Combobox），列内 mode=normal 点击选中。 -->
-              <div class="cd-date-picker__time">
-                <ScrollList>
-                  <ScrollItem
-                    mode="normal"
-                    class="cd-date-picker__panel-list-hour"
-                    list={hourListSingle}
-                    selectedIndex={timeIndexOf(hourListSingle, selectedHour)}
-                    type="hour"
-                    onSelect={onSelectHourSingle}
-                    ariaLabel={loc().t('TimePicker.hour')}
-                  />
-                  <ScrollItem
-                    mode="normal"
-                    class="cd-date-picker__panel-list-minute"
-                    list={minuteListSingle}
-                    selectedIndex={timeIndexOf(minuteListSingle, selectedMinute)}
-                    type="minute"
-                    onSelect={onSelectMinuteSingle}
-                    ariaLabel={loc().t('TimePicker.minute')}
-                  />
-                  {#if showSecond}
-                    <ScrollItem
-                      mode="normal"
-                      class="cd-date-picker__panel-list-second"
-                      list={secondListSingle}
-                      selectedIndex={timeIndexOf(secondListSingle, selectedSecond)}
-                      type="second"
-                      onSelect={onSelectSecondSingle}
-                      ariaLabel={loc().t('TimePicker.second')}
-                    />
-                  {/if}
-                </ScrollList>
-              </div>
-            {/if}
             {/if}
           </div>
 
           <div class="cd-date-picker__footer">
             {#if !isRange}
               <!-- today：borderless Button（对齐 Semi footer 复用 Button）。 -->
-              <Button theme="borderless" class="cd-date-picker__today" onclick={selectToday}>
+              <Button
+                theme="borderless"
+                class="cd-date-picker__today"
+                onclick={selectToday}
+              >
                 {loc().t('DatePicker.today')}
               </Button>
             {/if}
             {#if isDateTime || effNeedConfirm}
               {#if isRange || effNeedConfirm}
                 <!-- 取消：borderless（对齐 Semi footer.tsx:21）。 -->
-                <Button theme="borderless" class="cd-date-picker__cancel" onclick={cancelConfirm}>
+                <Button
+                  theme="borderless"
+                  class="cd-date-picker__cancel"
+                  onclick={cancelConfirm}
+                >
                   {loc().t('DatePicker.cancel') ?? '取消'}
                 </Button>
               {/if}
               <!-- 确认：solid（对齐 Semi footer.tsx:24）。 -->
-              <Button theme="solid" class="cd-date-picker__ok" onclick={confirm}>
+              <Button
+                theme="solid"
+                class="cd-date-picker__ok"
+                onclick={confirm}
+              >
                 {loc().t('TimePicker.confirm')}
               </Button>
             {/if}
@@ -2428,7 +2935,8 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: border-color var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker--small .cd-date-picker__trigger {
     block-size: var(--cd-height-input-wrapper-small);
@@ -2525,7 +3033,8 @@
     cursor: pointer;
     opacity: 0;
     pointer-events: auto;
-    transition: opacity var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: opacity var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker__control:hover .cd-date-picker__clear,
   .cd-date-picker__clear:focus-visible {
@@ -2627,7 +3136,8 @@
     text-align: start;
     white-space: nowrap;
     cursor: pointer;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: background var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker__preset:hover {
     background: var(--cd-color-date-picker-date-bg-hover);
@@ -2660,10 +3170,22 @@
   /* 居中留白按面板高重算：(body - item) * 0.5（对齐 TimePicker，ScrollList 默认按 300px 视窗算，
      此处面板收窄需覆盖 :before 与 padding-bottom，否则选中项垂直不居中）。 */
   .cd-date-picker__time :global(.cd-scrolllist-item > ul::before) {
-    block-size: calc((var(--cd-height-date-picker-panel-list-body) - var(--cd-height-scroll-list-item)) * 0.5);
+    block-size: calc(
+      (
+          var(--cd-height-date-picker-panel-list-body) -
+            var(--cd-height-scroll-list-item)
+        ) *
+        0.5
+    );
   }
   .cd-date-picker__time :global(.cd-scrolllist-item > ul) {
-    padding-block-end: calc((var(--cd-height-date-picker-panel-list-body) - var(--cd-height-scroll-list-item)) * 0.5);
+    padding-block-end: calc(
+      (
+          var(--cd-height-date-picker-panel-list-body) -
+            var(--cd-height-scroll-list-item)
+        ) *
+        0.5
+    );
   }
   .cd-date-picker__ok {
     padding-inline: var(--cd-spacing-tight);
@@ -2788,7 +3310,8 @@
     border-radius: var(--cd-radius-date-picker-day-main);
     font: inherit;
     cursor: pointer;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: background var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker__cell:hover {
     background: var(--cd-color-date-picker-date-bg-hover);
@@ -2801,7 +3324,8 @@
     color: var(--cd-color-date-picker-date-muted-text-default);
   }
   .cd-date-picker__cell--today {
-    border-block-end: 2px solid var(--cd-color-date-picker-date-selected-bg-default);
+    border-block-end: 2px solid
+      var(--cd-color-date-picker-date-selected-bg-default);
   }
   .cd-date-picker__cell--highlight {
     background: var(--cd-color-date-picker-date-bg-hover);
@@ -2824,7 +3348,9 @@
     margin-block-start: var(--cd-spacing-tight);
     padding-block-start: var(--cd-spacing-tight);
     border-block-start: 1px solid var(--cd-color-date-picker-border-bg-default);
-    background: var(--cd-color-date-picker-footer-bg-default); /* 对齐 Semi footer 背景 fill-0 */
+    background: var(
+      --cd-color-date-picker-footer-bg-default
+    ); /* 对齐 Semi footer 背景 fill-0 */
   }
   .cd-date-picker__panel--datetime .cd-date-picker__footer,
   .cd-date-picker__footer:has(.cd-date-picker__ok) {
@@ -2865,7 +3391,8 @@
     padding-inline: var(--cd-spacing-input-paddingleft);
     background: var(--cd-color-date-picker-range-input-bg-default);
     color: var(--cd-color-input-default-text-default);
-    border: var(--cd-width-date-picker-range-input-border) solid var(--cd-color-date-picker-range-input-border-default);
+    border: var(--cd-width-date-picker-range-input-border) solid
+      var(--cd-color-date-picker-range-input-border-default);
     border-radius: var(--cd-radius-date-picker-range-input-input-wrapper);
     font: inherit;
     transition: var(--cd-transition-date-picker-range-input);
@@ -2892,11 +3419,19 @@
     inline-size: 40%;
   }
   .cd-date-picker--compact .cd-date-picker__inset-input {
-    inline-size: var(--cd-width-date-picker-inset-input-date-type-wrapper-compact);
-    margin-block-end: var(--cd-spacing-date-picker-inset-input-wrapper-compact-margin);
-    padding-block: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-y)
+    inline-size: var(
+      --cd-width-date-picker-inset-input-date-type-wrapper-compact
+    );
+    margin-block-end: var(
+      --cd-spacing-date-picker-inset-input-wrapper-compact-margin
+    );
+    padding-block: var(
+        --cd-spacing-date-picker-inset-input-wrapper-compact-padding-y
+      )
       var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-bottom);
-    padding-inline: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-x);
+    padding-inline: var(
+      --cd-spacing-date-picker-inset-input-wrapper-compact-padding-x
+    );
   }
   .cd-date-picker--compact .cd-date-picker__inset-field {
     block-size: var(--cd-height-date-picker-inset-input-wrapper-compact);
@@ -2913,7 +3448,8 @@
     font: inherit;
     font-weight: var(--cd-font-weight-medium);
     cursor: pointer;
-    transition: background var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: background var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker__title--button:hover {
     background: var(--cd-color-date-picker-date-bg-hover);
@@ -2947,7 +3483,8 @@
     padding: var(--cd-spacing-date-picker-scrolllist-header-padding);
     min-block-size: var(--cd-height-date-picker-timepicker-header-min);
     border: none;
-    border-block-start: var(--cd-width-date-picker-border) solid var(--cd-color-date-picker-border-bg-default);
+    border-block-start: var(--cd-width-date-picker-border) solid
+      var(--cd-color-date-picker-border-bg-default);
     background: transparent;
     color: var(--cd-color-date-picker-quick-button-text-default);
     font: inherit;
@@ -2974,7 +3511,8 @@
     color: var(--cd-color-input-default-text-default);
     border: 1px solid var(--cd-color-input-default-border-default);
     border-radius: var(--cd-radius-input-wrapper);
-    transition: border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
+    transition: border-color var(--cd-motion-duration-fast)
+      var(--cd-motion-ease-standard);
   }
   .cd-date-picker--small .cd-date-picker__range-input {
     block-size: var(--cd-height-input-small);
@@ -3019,9 +3557,11 @@
     cursor: not-allowed;
   }
   /* 激活端下划线提示（对齐 Semi range 输入焦点态） */
-  .cd-date-picker__range-input--start-active .cd-date-picker__range-field--start,
+  .cd-date-picker__range-input--start-active
+    .cd-date-picker__range-field--start,
   .cd-date-picker__range-input--end-active .cd-date-picker__range-field--end {
-    box-shadow: inset 0 -2px 0 0 var(--cd-color-date-picker-range-input-border-active);
+    box-shadow: inset 0 -2px 0 0
+      var(--cd-color-date-picker-range-input-border-active);
   }
   .cd-date-picker__range-sep {
     flex: 0 0 auto;

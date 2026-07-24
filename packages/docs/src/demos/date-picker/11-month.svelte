@@ -2,4 +2,4 @@
   import { DatePicker } from '@chenzy-design/svelte';
 </script>
 
-<DatePicker onChange={(date, dateString) => console.log(dateString)} />
+<DatePicker defaultValue={new Date()} type="month" style="width: 140px" />
