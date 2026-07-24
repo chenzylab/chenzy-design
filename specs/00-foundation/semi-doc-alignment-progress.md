@@ -75,7 +75,7 @@
 - [x] backtop(BackTop) — inline 单页 + 2 段严格复刻 Semi（基本用法/自定义样式）；组件目录 back-top，demo 用 IconArrowUp/IconChevronUp 具名图标无手写 svg；API 全（target/visibilityHeight/duration/onClick/style/class）；实测滚动超阈值按钮显现、click 到达 handleClick、scrollToY 同步可写、scrollPositionAt 缓动单测 9 passed；rAF 缓动动画视觉过程因 CDP 标签 document.hidden 冻结无法观察(浏览器限制非 bug，见 real-click-coord-drift 记忆)
 
 ### 优先批 D：输入类（交互复杂，验证成本高，放后面）
-- [ ] pincode — demos 目录曾缺失，注意补齐
+- [x] pincode — inline 单页 + 5 段严格复刻 Semi（基本使用3尺寸/受控/限制格式含设位数count+设字符范围format两子块/手动聚焦失焦）；从零建 demo 目录+demos.ts+5 demo；组件 API 全覆盖 Semi 无缺口(value/defaultValue/count/format/size/disabled/autoFocus/onChange/onComplete + focus/blur 方法用 export function+bind:this 暴露)；实测 3 尺寸(24/32/42px)/defaultValue 填入/number format 拒绝字母 a/自动跳格/focus(2) 聚焦第3格 均对齐 Semi
 - [ ] inputnumber
 - [ ] slider
 - [ ] select — 补 style/class 缺口 见 SOP

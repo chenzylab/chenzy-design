@@ -2,32 +2,91 @@
 title: PinCode 验证码输入框
 name: pincode
 category: input
-brief: PinCode 用于分格输入定长验证码 / 一次性密码（OTP）/ 短信码，将定长字符串拆到 count 个独立输入格，逐格填入、自动跳格、支持整串粘贴自动分发。
+brief: 用于便捷直观地输入验证码。
+docMode: inline
 ---
 
-## 使用场景
+<script>
+  import DemoBox from '$lib/components/DemoBox.svelte';
 
-PinCode 用于**分格输入定长验证码 / 一次性密码（OTP）/ 短信码 / 分格密码**。将一个定长字符串拆到 `count` 个独立输入格，逐格填入、自动跳格、支持整串粘贴自动分发到各格。核心能力：
+  import Basic from '../../demos/pincode/01-basic.svelte';
+  import basicSrc from '../../demos/pincode/01-basic.svelte?raw';
+  import Controlled from '../../demos/pincode/02-controlled.svelte';
+  import controlledSrc from '../../demos/pincode/02-controlled.svelte?raw';
+  import Count from '../../demos/pincode/03-count.svelte';
+  import countSrc from '../../demos/pincode/03-count.svelte?raw';
+  import Format from '../../demos/pincode/04-format.svelte';
+  import formatSrc from '../../demos/pincode/04-format.svelte?raw';
+  import Focus from '../../demos/pincode/05-focus.svelte';
+  import focusSrc from '../../demos/pincode/05-focus.svelte?raw';
+</script>
 
-- **字符校验（format）**：`number` 纯数字（inputMode=numeric）、`mixed` 数字+字母、`RegExp` 逐字符 test、函数逐字符判定。
-- **自动跳格**：填入合法字符后自动前进到下一格；填满末格自动 blur 并触发 `onComplete`。
-- **键盘可达**：`←`/`→` 切格、`Backspace` 清空并回退、`Delete` 清空并前进，首末不越界。
-- **粘贴分发**：任一格粘贴整串，从当前格起逐字符按 `count` 上限分发，遇非法字符停止。
-- **受控 / 非受控**：`value` + `onChange` 受控，`defaultValue` 非受控。
-- **附加能力**：`count`、`size`、`disabled`、`status` 校验态、`name`（隐藏聚合 input 提交整串）。
+## 代码演示
 
-典型使用场景：登录二次验证、短信验证码、支付密码。
+### 如何引入
 
-## 何时使用
+```jsx
+import { PinCode } from '@chenzy-design/svelte';
+```
 
-- 需要输入固定位数、逐位可见的短码（4~8 位为主）时使用。
-- 变长 / 长文本用 `Input`；需要遮蔽的长密码用 `Input type="password"`。
+### 基本使用
 
-## 无障碍
+`size` 支持 `small`、`default`、`large` 三种尺寸。
 
-- 根容器 `role="group"`，配 `aria-label`（i18n 默认「验证码」）或 `aria-labelledby` 关联外部 label。
-- 每格 `aria-label` 播报位次「第 N 位，共 M 位」；`autoComplete="one-time-code"` 支持系统级 OTP 填充；`inputMode` 随 `format` 切换（number→numeric）；`maxlength="1"`。
-- `status="error"` 时各格 `aria-invalid="true"`；`disabled` 时 `aria-disabled` + 各格原生 disabled。
-- 键盘全流程无鼠标可操作：`←`/`→` 切格、`Backspace`/`Delete` 清空、合法字符自动跳格、`Home`/`End` 跳首末。RTL 下方向键语义镜像。
-- 输入法组合态（isComposing）不写入，避免中文候选误入。
-- `autoFocus` 默认 `true`（对齐 Semi）：挂载即聚焦第一格，验证码场景通常立即输入；如需关闭传 `autoFocus={false}`。
+<DemoBox code={basicSrc}><Basic /></DemoBox>
+
+### 受控
+
+使用 `value` 传入验证码字符串，配合 `onChange` 受控使用。
+
+<DemoBox code={controlledSrc}><Controlled /></DemoBox>
+
+### 限制验证码格式
+
+#### 设置位数
+
+通过 `count` 设置位数，默认 6 位，下方 Demo 设置为 4 位。
+
+<DemoBox code={countSrc}><Count /></DemoBox>
+
+#### 设置字符范围
+
+使用 `format` 控制可输入的字符范围：
+
+- 传入 `"number"` 只允许输入数字；
+- 传入 `"mixed"` 允许数字和字母；
+- 传入正则表达式，只允许输入可通过正则判定的字符；
+- 传入函数，验证码会在输入时以字符为单位依次作为参数单独传入校验，返回 `true` 时允许该字符被输入进 PinCode。
+
+<DemoBox code={formatSrc}><Format /></DemoBox>
+
+### 手动聚焦失焦
+
+通过 `bind:this` 拿到组件实例后，命令式调用 `focus` 与 `blur`，入参为对应 Input 的序号。
+
+<DemoBox code={focusSrc}><Focus /></DemoBox>
+
+## API 参考
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| autoFocus | 是否自动聚焦到第一个元素 | boolean | true |
+| class | 类名 | string | - |
+| count | 验证码位数 | number | 6 |
+| defaultValue | 输入框内容默认值 | string | - |
+| disabled | 禁用 | boolean | false |
+| format | 验证码单个字符格式限制 | `'number' \| 'mixed' \| RegExp \| ((char: string) => boolean)` | 'number' |
+| size | 输入框大小，`large`、`default`、`small` | string | 'default' |
+| style | 样式 | string | - |
+| value | 输入框内容 | string | - |
+| onChange | 输入回调 | `(value: string) => void` | - |
+| onComplete | 验证码所有位数输入完毕回调 | `(value: string) => void` | - |
+
+## Methods
+
+绑定在组件实例上的方法，可通过 `bind:this` 拿到实例后调用：
+
+| 属性 | 说明 |
+| --- | --- |
+| focus | 聚焦，入参为验证码第几位 |
+| blur | 移出焦点，入参为验证码第几位 |
