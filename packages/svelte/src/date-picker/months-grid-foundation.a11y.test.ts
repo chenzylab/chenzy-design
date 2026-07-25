@@ -99,6 +99,31 @@ describe('months-grid-foundation：单选/导航/面板切换', () => {
     expect(getByTestId('range-end').textContent).toBe('');
   });
 
+  it('dateTimeRange：两端选定后改左端时间列 → rangeStart 时间更新（_updateTimeInDateRange）', async () => {
+    const onSelectedChange = vi.fn();
+    const { component } = render(Fixture, {
+      props: { type: 'dateTimeRange', onSelectedChange },
+    });
+    const api = component as unknown as {
+      clickDay: (d: string) => void;
+      timeChange: (ts: number, p?: 'left' | 'right') => void;
+    };
+    // 建立 range：2026-01-10 ~ 2026-01-20（默认 00:00:00）。
+    api.clickDay('2026-01-10');
+    api.clickDay('2026-01-20');
+    await Promise.resolve();
+    onSelectedChange.mockClear();
+    // 改左端时间为 08:30:00。
+    api.timeChange(new Date(2026, 0, 10, 8, 30, 0).getTime(), 'left');
+    await Promise.resolve();
+    expect(onSelectedChange).toHaveBeenCalled();
+    const dates = onSelectedChange.mock.calls[onSelectedChange.mock.calls.length - 1]![0] as Date[];
+    // start 时间更新为 08:30，end 仍 2026-01-20。
+    expect(dates[0]!.getHours()).toBe(8);
+    expect(dates[0]!.getMinutes()).toBe(30);
+    expect(dates[1]!.getDate()).toBe(20);
+  });
+
   it('面板切换：showYearPicker/showTimePicker/showDatePanel 互斥', async () => {
     const { getByTestId, component } = render(Fixture, { props: { type: 'dateTime' } });
     const api = (component as unknown as {

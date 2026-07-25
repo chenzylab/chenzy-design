@@ -77,6 +77,21 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     expect(container.querySelector('.cd-time-picker-list-hour')).not.toBeNull();
   });
 
+  it('dateTime：disabledTime → tpk 时间列小时禁用（calcDisabledTime 接线）', async () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: {
+        type: 'dateTime',
+        defaultPickerValue: new Date(2026, 0, 1, 10, 0),
+        disabledTime: () => ({ disabledHours: () => [0, 1, 2] }),
+      },
+    });
+    (container.querySelector(`.${PREFIX}-switch-time`) as HTMLElement).click();
+    await tick();
+    const hourList = container.querySelector('.cd-time-picker-list-hour')!;
+    const disabled = hourList.querySelectorAll('li.cd-scrolllist-item-disabled');
+    expect(disabled.length).toBeGreaterThanOrEqual(3);
+  });
+
   it('dateTime：时间列选小时触发 onSelectedChange（合并日期+新时间）', async () => {
     const onSelectedChange = vi.fn();
     const { container } = renderWithLocale(MonthsGrid, {
@@ -104,6 +119,19 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     expect(container.querySelector(`.${PREFIX}-month-grid-right`)).not.toBeNull();
     expect(container.querySelectorAll(`.${PREFIX}-navigation`).length).toBe(2);
     expect(container.querySelectorAll(`.${PREFIX}-month[role="grid"]`).length).toBe(2);
+  });
+
+  it('dateRange：双面板 WEEKS 高度对齐到较多行（maxWeekNum）', () => {
+    // 2026-02（5 行）+ 2026-03（右=左+1=03，6 行）→ 两面板 WEEKS 高度应相等（对齐到 6 行）。
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'dateRange', defaultPickerValue: new Date(2026, 1, 1) },
+    });
+    const weeks = container.querySelectorAll(`.${PREFIX}-weeks`);
+    expect(weeks.length).toBe(2);
+    const h0 = (weeks[0] as HTMLElement).style.height;
+    const h1 = (weeks[1] as HTMLElement).style.height;
+    expect(h0).toBe(h1);
+    expect(h0).not.toBe('');
   });
 
   it('dateRange：左右面板初始不同月（右=左+1，避免同月）', () => {

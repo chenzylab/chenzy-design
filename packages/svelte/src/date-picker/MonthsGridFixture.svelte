@@ -34,6 +34,9 @@
   export function clickDay(fullDate: string) {
     st.handleDayClick({ dayNumber: Number(fullDate.split('-')[2]), fullDate } as MonthDayInfo, 'left');
   }
+  export function timeChange(ts: number, panel: 'left' | 'right' = 'left') {
+    st.handleTimeChange({ timeStampValue: ts }, panel);
+  }
   export function hoverDay(fullDate: string) {
     st.handleDayHover({ fullDate });
   }

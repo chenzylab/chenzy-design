@@ -75,8 +75,13 @@
   （单选 1 个 / range 2 个），onComboboxChange 转 commit。TimePicker 809→714 行，消除重复。
   测试 TimePicker a11y 12 + disabledTime 1 + kbd 1 全绿（改用 Combobox 无破坏）。
   坑：列 class 对齐 Semi 从 BEM `__panel-list-hour` 改为 `-list-hour`（测试同步）。
-- 待补（收尾）：calcDisabledTime(禁用时间联动) + dateTimeRange 双面板时间联动(_updateTimeInDateRange) + maxWeekNum(双面板行高) +
-  年月面板 QuickControl/DateInput 内嵌。剩样式(阶段3)。
+- ✅ 第八批（逻辑内核收尾，测试全绿）：
+  - calcDisabledTime（照搬 Semi）：dateTime 以 showDate、dateTimeRange 以 [rangeStart(,rangeEnd)] 为 cbDate 调 disabledTime→
+    时间列 disabledHours/Minutes/Seconds，接入 MonthsGrid tpk Combobox。测试 +1。
+  - maxWeekNum：range 双面板两月表周行数取 max 传 Month weeksRowNum，WEEKS 高度对齐避免不齐。测试 +1。
+  - dateTimeRange 时间联动（_updateTimeInDateRange 照搬 Semi）：两端选定后改某端时间列→更新该端时间+swap 检查。测试 +1。
+  **DatePicker 交互内核完整无缺口。全 date-picker+time-picker 84 测试全绿，typecheck 非 dist error 归零。**
+- 待补：年月面板 QuickControl/DateInput 内嵌(presetPosition/inset，非核心)。剩样式(阶段3，让功能真机可视)。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

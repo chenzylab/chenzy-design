@@ -19,6 +19,7 @@
     type PanelType,
   } from './months-grid-foundation.svelte.js';
   import type { MonthDayInfo, DayStatus } from './month-foundation.svelte.js';
+  import getMonthTable from './_utils/getMonthTable.js';
   import type { WeekStartNumber } from './_utils/getDayOfWeek.js';
   import type { Snippet } from 'svelte';
 
@@ -44,6 +45,7 @@
     disabledTimePicker = false,
     weekStartsOn = 0,
     disabledDate,
+    disabledTime,
     defaultPickerValue,
     multiple = false,
     syncSwitchMonth = false,
@@ -69,6 +71,7 @@
     ...(setRangeInputFocus ? { setRangeInputFocus } : {}),
     ...(defaultPickerValue !== undefined ? { defaultPickerValue } : {}),
     ...(disabledDate ? { disabledDate } : {}),
+    ...(disabledTime ? { disabledTime } : {}),
     ...(onSelectedChange ? { onSelectedChange } : {}),
   }));
 
@@ -80,6 +83,14 @@
   const LEFT = strings.PANEL_TYPE_LEFT as PanelType;
   const RIGHT = strings.PANEL_TYPE_RIGHT as PanelType;
   const isRange = $derived(/range/i.test(type));
+
+  // maxWeekNum —— 双面板两个月表周行数不齐时对齐到较多者（对齐 Semi maxWeekNum），避免高度不齐。
+  const maxWeekNum = $derived.by(() => {
+    if (!isRange) return undefined;
+    const l = getMonthTable(st.monthLeft.pickerDate, weekStartsOn as WeekStartNumber).weeks.length;
+    const r = getMonthTable(st.monthRight.pickerDate, weekStartsOn as WeekStartNumber).weeks.length;
+    return Math.max(l, r);
+  });
 
   // Navigation monthText（对齐 Semi：locale.months 模板；此处用 yyyy-MM 简化到 locale monthText）。
   function monthTextOf(panelType: PanelType): string {
@@ -131,11 +142,15 @@
     {/if}
     <!-- 时间列面板（tpk 叠加层，对齐 Semi renderTimePicker）：复用 Combobox（拆分 #18） -->
     {#if detail.isTimePickerOpen}
+      {@const dt = st.calcDisabledTime(panelType)}
       <div class={`${PREFIX}-tpk`}>
         <Combobox
           timeStampValue={detail.pickerDate}
           format={formatToken.FORMAT_TIME_PICKER}
           panelHeader={loc().t('DatePicker.selectTime')}
+          disabledHours={dt?.disabledHours}
+          disabledMinutes={dt?.disabledMinutes ? (h) => dt.disabledMinutes!(h ?? 0) : undefined}
+          disabledSeconds={dt?.disabledSeconds ? (h, m) => dt.disabledSeconds!(h ?? 0, m ?? 0) : undefined}
           onChange={(payload) => st.handleTimeChange({ timeStampValue: payload.timeStampValue }, panelType)}
         />
       </div>
@@ -164,6 +179,7 @@
           offsetRangeEnd={st.offsetRangeEnd}
           weekStartsOn={weekStartsOn as WeekStartNumber}
           {multiple}
+          {...(maxWeekNum !== undefined ? { weeksRowNum: maxWeekNum } : {})}
           onDayClick={(day: MonthDayInfo) => st.handleDayClick(day, panelType)}
           onDayHover={(day?: MonthDayInfo) => st.handleDayHover(day ?? { fullDate: '' })}
           {...monthRest}

@@ -32,6 +32,14 @@ export interface MonthsGridFoundationProps {
   defaultPickerValue?: Date | undefined;
   weekStartsOn?: number | undefined;
   disabledDate?: ((date: Date, options?: unknown) => boolean) | undefined;
+  /** 禁用时间（对齐 Semi disabledTime）：返回时间列 disabledHours/Minutes/Seconds。 */
+  disabledTime?:
+    | ((date: Date | Date[] | null, panelType?: PanelType) => {
+        disabledHours?: () => number[];
+        disabledMinutes?: (hour: number) => number[];
+        disabledSeconds?: (hour: number, minute: number) => number[];
+      } | undefined)
+    | undefined;
   format?: string | undefined;
   multiple?: boolean | undefined;
   max?: number | undefined;
@@ -188,7 +196,10 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
       timeDate.getMilliseconds(),
     );
     const type = p().type;
-    if (type === 'dateTime') {
+    if (type === 'dateTimeRange') {
+      handleShowDateAndTime(panelType, fullValidDate);
+      _updateTimeInDateRange(panelType, fullValidDate);
+    } else if (type === 'dateTime') {
       const fullDate = formatFullDate(
         fullValidDate.getFullYear(),
         fullValidDate.getMonth() + 1,
@@ -198,6 +209,94 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
       handleShowDateAndTime(panelType, fullValidDate);
       handleDateSelected({ fullDate, dayNumber: fullValidDate.getDate() }, panelType);
     }
+  }
+
+  /**
+   * _updateTimeInDateRange —— 照搬 Semi：dateTimeRange 两端都已选时，更新对应端的时间部分，
+   * 若因此导致 start>end 则 swap，通知新的 [start,end]。
+   */
+  function _updateTimeInDateRange(panelType: PanelType, timeDate: Date): void {
+    let rs = rangeStart;
+    let re = rangeEnd;
+    if (!rs || !re) return;
+    let startDate = fullDateToDate2(rs);
+    let endDate = fullDateToDate2(re);
+    // 合并对应端日期 + 新时间。
+    const mergeSameDay = (src: Date, t: Date) =>
+      new Date(
+        src.getFullYear(),
+        src.getMonth(),
+        src.getDate(),
+        t.getHours(),
+        t.getMinutes(),
+        t.getSeconds(),
+        t.getMilliseconds(),
+      );
+    if (panelType === RIGHT) {
+      endDate = mergeSameDay(endDate, timeDate);
+      re = fmtDateTime(endDate);
+      if (_isNeedSwap(rs, re)) {
+        [rs, re] = [re, rs];
+        [startDate, endDate] = [endDate, startDate];
+      }
+      rangeEnd = re;
+      rangeStart = rs;
+    } else {
+      startDate = mergeSameDay(startDate, timeDate);
+      rs = fmtDateTime(startDate);
+      if (_isNeedSwap(rs, re)) {
+        [rs, re] = [re, rs];
+        [startDate, endDate] = [endDate, startDate];
+      }
+      rangeStart = rs;
+      rangeEnd = re;
+    }
+    notifySelectedChange([startDate, endDate]);
+  }
+
+  /** dateTimeRange 的 rangeStart/End 含时间段（yyyy-MM-dd HH:mm:ss），解析成 Date。 */
+  function fullDateToDate2(s: string): Date {
+    const [datePart, timePart] = s.trim().split(/\s+/);
+    const base = fullDateToDate(datePart ?? s);
+    if (timePart) {
+      const [h, m, sec] = timePart.split(':').map(Number);
+      base.setHours(h ?? 0, m ?? 0, sec ?? 0, 0);
+    }
+    return base;
+  }
+  function fmtDateTime(d: Date): string {
+    const p2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+    return `${formatFullDate(d.getFullYear(), d.getMonth() + 1, d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  }
+
+  /**
+   * calcDisabledTime —— 照搬 Semi monthsGridFoundation.calcDisabledTime。
+   * dateTime：以面板 showDate 为 cbDate；dateTimeRange：以 [rangeStart(,rangeEnd)] 为 cbDates。
+   * 返回 disabledTime(cbDate, panelType) 的结果（时间列 disabledHours/Minutes/Seconds），无则 undefined。
+   */
+  function calcDisabledTime(panelType: PanelType):
+    | {
+        disabledHours?: () => number[];
+        disabledMinutes?: (hour: number) => number[];
+        disabledSeconds?: (hour: number, minute: number) => number[];
+      }
+    | undefined {
+    const disabledTime = p().disabledTime;
+    const type = p().type;
+    if (typeof disabledTime === 'function' && (type === 'dateTime' || type === 'dateTimeRange')) {
+      const selected: Array<string | Date> = [];
+      if (type === 'dateTimeRange') {
+        if (rangeStart) selected.push(rangeStart);
+        if (rangeStart && rangeEnd) selected.push(rangeEnd);
+      } else {
+        const showDate = _getPanelDetail(panelType).showDate;
+        if (showDate) selected.push(showDate);
+      }
+      const selectedDates = selected.map((s) => (s instanceof Date ? s : fullDateToDate(s.trim().split(/\s+/)[0] ?? s)));
+      const cbDates = type === 'dateTimeRange' ? selectedDates : (selectedDates[0] ?? null);
+      return disabledTime(cbDates, panelType);
+    }
+    return undefined;
   }
 
   // ===== 悬停预览（对齐 Semi handleDayHover）=====
@@ -380,6 +479,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     handleDateSelected,
     handleRangeSelected,
     handleTimeChange,
+    calcDisabledTime,
     handleDayHover,
     handleShowDateAndTime,
     prevMonth,
