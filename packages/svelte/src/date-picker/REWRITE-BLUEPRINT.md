@@ -16,7 +16,7 @@
   - **旧 DatePicker.svelte 替换时机**：DatePickerNext 用新文件名避免砸掉旧文件导致 demos 全红；阶段5 收尾时整体替换 index 导出 + 删旧文件（用户令直接覆盖，git 留档）。
 
 ## ⚠️ 真机发现的待查 bug（阶段3 样式真机验证时暴露）
-- **locale context 断裂（en_US 回退）**：playground 内 LocaleProvider(zh_CN，传字符串或对象均无效) 包 DatePickerNext，
+- ✅【已修复】locale context 断裂（en_US 回退）：根因 Symbol('cd-locale') 普通 Symbol 在 vite dev 下 dist context.js 双求值→两个 Symbol→context 断；改 Symbol.for('cd-locale')(全局注册表跨模块单例，对齐 Semi React.createContext 单例语义)，config 同改。真机验证 code=zh-CN、placeholder=请选择日期、星期「日一二三四五六」、月「2026年 7月」全中文。全 dom 619 测试无回归。原描述：playground 内 LocaleProvider(zh_CN，传字符串或对象均无效) 包 DatePickerNext，
   但触发器 placeholder/面板 weekday/月名/时间列单位全显示英文（en_US fallback）。locale 数据本身正确
   （node resolveLocale('zh_CN').t('DatePicker.weeks.Sun')='日'）。故非数据问题，是 DatePickerNext 读不到
   LocaleProvider context（useLocale 走了模块级 en_US fallback）。**样式对齐结论不受影响**（布局/尺寸/色已真机确认对齐，
