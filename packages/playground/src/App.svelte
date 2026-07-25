@@ -290,6 +290,8 @@
             <div><div style="margin-bottom:8px;">dateRange</div><DatePickerNext type="dateRange" /></div>
             <div><div style="margin-bottom:8px;">dateTime</div><DatePickerNext type="dateTime" /></div>
             <div><div style="margin-bottom:8px;">month</div><DatePickerNext type="month" /></div>
+            <div><div style="margin-bottom:8px;">preset-bottom</div><DatePickerNext type="date" presetPosition="bottom" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
+            <div><div style="margin-bottom:8px;">preset-left</div><DatePickerNext type="date" presetPosition="left" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
           </div>
         </LocaleProvider>
       </section>
