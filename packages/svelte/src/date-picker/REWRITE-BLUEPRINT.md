@@ -38,7 +38,18 @@
   （Semi TimePanel 复用 TimePicker 的 Combobox 时间列；本库 TimePicker 未拆分，按「引用组件先对齐 Semi」须先拆）。
   然后 InsetInput（先 inputFoundation）+ MonthsGrid 双面板容器 + 把 YearAndMonth/Switch/TimePanel 接入 DatePickerNext。
 
-## 🎯 下一里程碑（5）：months-grid-foundation.svelte.ts —— range 状态机中枢（DatePicker 交互大脑）
+## 里程碑5（进行中）：months-grid-foundation.svelte.ts —— range 状态机中枢
+- ✅ 第一批（照搬 Semi，测试 8 全绿）：state(selected/rangeStart/End/hoverDay/offsetRange/monthLeft/Right) +
+  handleDayClick 分派 + handleDateSelected(单选/multiple/max) + handleRangeSelected(range 焦点流转/reset/offset/dateTime 合并) +
+  handleDayHover(hover+offset 预览) + _isNeedSwap + 导航(prevMonth/nextMonth/prevYear/nextYear/handleSwitchMonthOrYear/
+  handleSyncChangeMonths 双面板同步/handleYearOrMonthChange) + 面板切换(showYearPicker/showTimePicker/showDatePanel) +
+  toYearMonth + getValidDateFormat/getValidTimeFormat + _utils(isValidDate/getFullDateOffset 照搬)。
+  - 坑：$state(Set) 的 .add/.delete mutation 不响应 → selected 整体重赋值（记忆 svelte5-plain-set-map-mutation）。
+  - rangeInputFocus 是 prop 非 foundation state（对齐 Semi），getter 返回 p().rangeInputFocus。
+- 待补：calcDisabledTime + handleTimeChange(dateTime 时间列联动) + updateSelectedFromProps(受控 value→内部 state 反解) +
+  _autoAdjustMonth + maxWeekNum/currentPanelHeight。然后接入 MonthsGrid.svelte 装配 + DatePickerNext。
+
+## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。
 > DatePickerNext 里程碑3 用的是简化 pickerCursor；接入此 foundation 后 dateRange/hover 预览/offset 周选/双面板才真正活起来。
 - 源：`~/i/semi-design/packages/semi-foundation/datePicker/monthsGridFoundation.ts`（977 行）。
