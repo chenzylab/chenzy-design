@@ -58,7 +58,13 @@
   透传 foundation、onSelectedChange range 分支调 handleRangeSelectedChange（两端完整才关面板）、Props.value/onChange 放宽 RangeValue。
   MonthsGrid 接线 rangeInputFocus/setRangeInputFocus/isAnotherPanelHasOpened 到状态机。
   DatePicker date/dateTime/dateRange 三主类型端到端跑通（真状态机驱动）。测试 DatePickerNext 6（含 dateRange 双面板/受控反解/点两日期 onChange 抛 string[]）。
-- 待补（依赖 #18 或收尾）：calcDisabledTime + handleTimeChange(接 TimePanel) + updateSelectedFromProps(内部 state 反解，当前受控走 props 反解够用) + maxWeekNum(双面板行高) + monthRange/year/month type 主组件接入。
+- ✅ 第五批（year/month/monthRange type 接入，测试全绿）：DatePickerNext 面板按 typeIsYearOrMonth 分派 ——
+  month/year/monthRange 走 YearAndMonth 滚轮(noBackBtn+monthCycled)非日历；currentYear/Month 从 value 反解({left,right})、
+  handleYMSelectedChange(对齐 Semi：month=new Date(y,m-1)→handleSelectedChange；monthRange=[left,right]→handleRangeSelectedChange)。
+  测试 DatePickerNext 9（month 走 yam 无 grid / 选年月 onChange Date 首日 / monthRange 双列 4 滚轮）。
+  **DatePicker 五主类型全端到端：date/dateTime/dateRange/month/monthRange（year 亦走 yam 分支）。核心交互内核已完整。**
+- 待补（依赖 #18 或收尾）：calcDisabledTime + handleTimeChange(接 TimePanel，依赖 TimePicker 拆分 #18) + maxWeekNum(双面板行高) +
+  年月面板 QuickControl/DateInput 内嵌(presetPosition/inset)。剩时间列(依赖#18)与样式(阶段3)。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

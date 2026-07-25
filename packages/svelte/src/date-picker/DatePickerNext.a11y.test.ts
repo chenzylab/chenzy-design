@@ -102,4 +102,45 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
     expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-10');
     expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-20');
   });
+
+  it('month：面板走 YearAndMonth 滚轮（非日历），无 Month grid', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: { type: 'month', defaultOpen: true, value: new Date(2026, 5, 1) },
+    });
+    await tick();
+    // yam 面板存在、无日历 grid。
+    expect(document.querySelector(`.${PREFIX}-yam`)).not.toBeNull();
+    expect(document.querySelector(`.${PREFIX}-month[role="grid"]`)).toBeNull();
+    // year+month 两列滚轮。
+    expect(document.querySelectorAll('ul[role="listbox"]').length).toBe(2);
+  });
+
+  it('month：选年月触发 onChange（Date 为该月首日）', async () => {
+    const onChange = vi.fn();
+    renderWithLocale(DatePickerNext, {
+      props: { type: 'month', defaultOpen: true, value: new Date(2026, 5, 1), onChange },
+    });
+    await tick();
+    // 点 month 列（第二个 listbox）第 3 项（3月）。
+    const monthList = document.querySelectorAll('ul[role="listbox"]')[1]!;
+    (monthList.querySelectorAll('li[role="option"]')[2] as HTMLElement).click();
+    await tick();
+    expect(onChange).toHaveBeenCalled();
+    const notifyDate = onChange.mock.calls[onChange.mock.calls.length - 1]![1] as Date;
+    expect(notifyDate).toBeInstanceOf(Date);
+    expect(notifyDate.getMonth()).toBe(2); // 3月=index 2
+  });
+
+  it('monthRange：面板双列 YearAndMonth（left+right）', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'monthRange',
+        defaultOpen: true,
+        value: [new Date(2026, 0, 1), new Date(2026, 5, 1)],
+      },
+    });
+    await tick();
+    // monthRange 双面板 → 4 列滚轮（2 panel × year+month）。
+    expect(document.querySelectorAll('ul[role="listbox"]').length).toBe(4);
+  });
 });

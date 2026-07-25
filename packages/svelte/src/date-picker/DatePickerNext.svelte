@@ -13,6 +13,7 @@
   import Popover from '../popover/Popover.svelte';
   import DateInput from './DateInput.svelte';
   import MonthsGrid from './MonthsGrid.svelte';
+  import YearAndMonth from './YearAndMonth.svelte';
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
@@ -145,6 +146,44 @@
     else st.handleSelectedChange(null);
   }
 
+  // ===== year/month/monthRange：面板走 YearAndMonth 滚轮（对齐 Semi typeIsYearOrMonth）=====
+  const typeIsYearOrMonth = $derived(st.isMonth || st.isYear);
+  // currentYear/Month 从 value 反解（{left,right}，对齐 Semi renderYearMonthPanel）。
+  const ymYear = $derived.by(() => {
+    const y = { left: 0, right: 0 };
+    if (st.currentSingle instanceof Date) y.left = st.currentSingle.getFullYear();
+    if (type === 'monthRange') {
+      if (st.currentRange[0]) y.left = st.currentRange[0]!.getFullYear();
+      if (st.currentRange[1]) y.right = st.currentRange[1]!.getFullYear();
+    }
+    return y;
+  });
+  const ymMonth = $derived.by(() => {
+    const m = { left: 0, right: 0 };
+    if (st.currentSingle instanceof Date) m.left = st.currentSingle.getMonth() + 1;
+    if (type === 'monthRange') {
+      if (st.currentRange[0]) m.left = st.currentRange[0]!.getMonth() + 1;
+      if (st.currentRange[1]) m.right = st.currentRange[1]!.getMonth() + 1;
+    }
+    return m;
+  });
+
+  // handleYMSelectedChange —— 对齐 Semi foundation.handleYMSelectedChange。
+  function handleYMSelectedChange(obj: {
+    currentYear: { left: number; right: number };
+    currentMonth: { left: number; right: number };
+  }) {
+    const { currentYear, currentMonth } = obj;
+    if (type === 'monthRange') {
+      const left = new Date(currentYear.left, currentMonth.left - 1);
+      const right = new Date(currentYear.right, currentMonth.right - 1);
+      st.handleRangeSelectedChange([left, right]);
+    } else {
+      const date = new Date(currentYear.left, currentMonth.left - 1);
+      st.handleSelectedChange(date);
+    }
+  }
+
   const disabledDateWrap = $derived(
     disabledDate ? (date: Date) => disabledDate!(date) : undefined,
   );
@@ -164,20 +203,36 @@
     onVisibleChange={(v) => st.setOpen(v)}
   >
     {#snippet content()}
-      <div class={PREFIX} {...{ 'x-type': type }}>
+      <div
+        class={typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}
+        {...{ 'x-type': type }}
+      >
         <div class={`${PREFIX}-container`}>
           <div>
-            <MonthsGrid
-              {type}
-              selected={selectedSet}
-              rangeStart={rangeStartStr}
-              rangeEnd={rangeEndStr}
-              {rangeInputFocus}
-              setRangeInputFocus={(f) => (rangeInputFocus = f)}
-              {weekStartsOn}
-              onSelectedChange={handleSelectedChange}
-              {...monthsGridRest}
-            />
+            {#if typeIsYearOrMonth}
+              <YearAndMonth
+                {type}
+                currentYear={ymYear}
+                currentMonth={ymMonth}
+                noBackBtn
+                monthCycled
+                localeCode={loc().code}
+                onSelect={handleYMSelectedChange}
+                {...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {})}
+              />
+            {:else}
+              <MonthsGrid
+                {type}
+                selected={selectedSet}
+                rangeStart={rangeStartStr}
+                rangeEnd={rangeEndStr}
+                {rangeInputFocus}
+                setRangeInputFocus={(f) => (rangeInputFocus = f)}
+                {weekStartsOn}
+                onSelectedChange={handleSelectedChange}
+                {...monthsGridRest}
+              />
+            {/if}
           </div>
         </div>
       </div>
