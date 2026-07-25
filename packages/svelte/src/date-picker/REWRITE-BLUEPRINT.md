@@ -15,6 +15,16 @@
   - **真机验证时机**：里程碑3 功能已由 vitest dom 测试真实覆盖（testing-library 真实 mount+click）；视觉真机验证放到阶段3 样式对齐后（现无样式真机点击验不到视觉，记忆：对齐视觉必须实测 Semi DOM）。
   - **旧 DatePicker.svelte 替换时机**：DatePickerNext 用新文件名避免砸掉旧文件导致 demos 全红；阶段5 收尾时整体替换 index 导出 + 删旧文件（用户令直接覆盖，git 留档）。
 
+## ⚠️ 真机发现的待查 bug（阶段3 样式真机验证时暴露）
+- **locale context 断裂（en_US 回退）**：playground 内 LocaleProvider(zh_CN，传字符串或对象均无效) 包 DatePickerNext，
+  但触发器 placeholder/面板 weekday/月名/时间列单位全显示英文（en_US fallback）。locale 数据本身正确
+  （node resolveLocale('zh_CN').t('DatePicker.weeks.Sun')='日'）。故非数据问题，是 DatePickerNext 读不到
+  LocaleProvider context（useLocale 走了模块级 en_US fallback）。**样式对齐结论不受影响**（布局/尺寸/色已真机确认对齐，
+  只是文案语言回退）。待查方向：svelte dist 是否有重复 context 模块 / playground 引 dist 的 LocaleProvider setContext 是否生效 /
+  useId 等其它 context 是否也断。
+- **tpk 时间列选中行单位后缀挤压**：ScrollList 列宽不足，选中态 transform 加的单位后缀（时/分/秒，此处显英文 Hour/Minute/Second）
+  被截断。待调 Combobox/tpk 列宽（Semi tpk 时间列有专属宽度）。
+
 ## ⚠️ 铁律：不做功能缩水的简化（用户拍板 2026-07-25）
 里程碑只做**排序**（先独立组件、后耦合组件），绝不做**功能缩水**。判据：后续能补全→可现阶段先不做（排序）；否则必须现在就完整做。
 - 排序（可）：Footer/QuickControl 先于 YearAndMonth；DatePickerNext 里程碑3 先 date 单面板，range/dateTime/双面板**后续必补**（已记待补，非缩水）。

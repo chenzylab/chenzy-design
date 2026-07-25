@@ -8,6 +8,7 @@
     Paragraph,
     DatePickerNext,
     LocaleProvider,
+    zh_CN,
   } from '@chenzy-design/svelte';
 
   // ---- theme ----
@@ -283,9 +284,12 @@
     <main class="preview-area">
       <!-- DatePickerNext 真机验证（阶段3 样式对齐）：始终显示，defaultOpen 看面板 -->
       <section class="preview" style="padding:24px; gap:24px; flex-wrap:wrap;">
-        <LocaleProvider locale="zh_CN">
-          <div style="display:flex; gap:16px; flex-direction:column; align-items:flex-start;">
-            <div><div style="margin-bottom:8px;">date（defaultOpen）</div><DatePickerNext type="date" defaultOpen /></div>
+        <LocaleProvider locale={zh_CN}>
+          <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+            <div><div style="margin-bottom:8px;">date</div><DatePickerNext type="date" /></div>
+            <div><div style="margin-bottom:8px;">dateRange</div><DatePickerNext type="dateRange" /></div>
+            <div><div style="margin-bottom:8px;">dateTime</div><DatePickerNext type="dateTime" /></div>
+            <div><div style="margin-bottom:8px;">month</div><DatePickerNext type="month" /></div>
           </div>
         </LocaleProvider>
       </section>
