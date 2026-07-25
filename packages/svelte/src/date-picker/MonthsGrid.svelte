@@ -75,6 +75,12 @@
     ...(onSelectedChange ? { onSelectedChange } : {}),
   }));
 
+  // 供父组件（DatePickerNext）在手动输入回车提交后命令面板跳到输入值的月份。
+  // 具名导出（对齐本库惯例：Svelte 无静态方法，用组件 export function + bind:this）。
+  export function syncPanelTo(base: Date): void {
+    st.syncPanelToBase(base);
+  }
+
   // 受控 selected/range：外部传入优先，否则用内部状态机（对齐 Semi state）。
   const selected = $derived(selectedProp ?? st.selected);
   const rangeStart = $derived(rangeStartProp ?? st.rangeStart);

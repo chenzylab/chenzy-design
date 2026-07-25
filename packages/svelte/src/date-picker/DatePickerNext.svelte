@@ -145,6 +145,15 @@
   // 提交/关闭后回 null，展示回落 formattedValue/rangeTriggerValue。inset 时强制只读（对齐 Semi）。
   const effectiveReadOnly = $derived(inputReadOnly || insetInput);
   let inputValue = $state<string | null>(null);
+  // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
+  let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
+
+  // 提交手输并让面板跳到解析值的月份（对齐 Semi：value 变化时面板重定位）。
+  function commitInput(v: string) {
+    const parsed = st.parseInput(v);
+    st.handleInputComplete(v);
+    if (parsed.length && parsed[0]) monthsGridRef?.syncPanelTo(parsed[0]);
+  }
 
   // 单值手动输入变化（对齐 Semi handleChange → 更新 inputValue）。
   function handleInputChange(v: string) {
@@ -157,7 +166,7 @@
   // 回车提交（对齐 Semi handleRangeInputEnterPress/notifyEnter → handleInputComplete）。
   function handleEnterPress() {
     if (inputValue !== null) {
-      st.handleInputComplete(inputValue);
+      commitInput(inputValue);
       inputValue = null;
     }
   }
@@ -170,7 +179,7 @@
     if (prevOpen && !nowOpen && inputValue !== null) {
       const pending = inputValue;
       inputValue = null;
-      st.handleInputComplete(pending);
+      commitInput(pending);
     }
     prevOpen = nowOpen;
   });
@@ -356,6 +365,7 @@
               />
             {:else}
               <MonthsGrid
+                bind:this={monthsGridRef}
                 {type}
                 selected={selectedSet}
                 rangeStart={rangeStartStr}

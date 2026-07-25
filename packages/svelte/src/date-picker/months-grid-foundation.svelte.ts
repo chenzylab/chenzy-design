@@ -414,6 +414,18 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     _updatePanelDetail(panelType, { pickerDate: targetMonth });
   }
 
+  /**
+   * syncPanelToBase —— 将双面板游标重定位到 base 月（left=base、right=base+1）。
+   * 用于手动输入回车提交后让面板跳到输入值的月份（对齐 Semi：value 外部变化时面板重定位）。
+   * 仅重设 pickerDate/showDate，不动视图开关状态。
+   */
+  function syncPanelToBase(base: Date): void {
+    if (!isValidDate(base)) return;
+    _updatePanelDetail(LEFT, { pickerDate: base, showDate: base });
+    const right = addMonths(base, 1);
+    _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
+  }
+
   function handleSwitchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType): void {
     const rangeType = isRangeType();
     const syncSwitchMonth = !!p().syncSwitchMonth;
@@ -489,6 +501,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     showYearPicker,
     showTimePicker,
     showDatePanel,
+    syncPanelToBase,
     toYearMonth,
   };
 }
