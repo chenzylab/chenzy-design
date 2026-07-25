@@ -6,6 +6,8 @@
     Title,
     Text,
     Paragraph,
+    DatePickerNext,
+    LocaleProvider,
   } from '@chenzy-design/svelte';
 
   // ---- theme ----
@@ -279,6 +281,14 @@
     </aside>
 
     <main class="preview-area">
+      <!-- DatePickerNext 真机验证（阶段3 样式对齐）：始终显示，defaultOpen 看面板 -->
+      <section class="preview" style="padding:24px; gap:24px; flex-wrap:wrap;">
+        <LocaleProvider locale="zh_CN">
+          <div style="display:flex; gap:16px; flex-direction:column; align-items:flex-start;">
+            <div><div style="margin-bottom:8px;">date（defaultOpen）</div><DatePickerNext type="date" defaultOpen /></div>
+          </div>
+        </LocaleProvider>
+      </section>
       <section class="preview">
         {#if scene === 'button'}
           <Button
