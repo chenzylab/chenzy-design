@@ -140,6 +140,11 @@
     rangeInputFocus = rangeType;
     st.setOpen(true);
   }
+  // rangeEnd 框按 Tab（对齐 Semi handleRangeEndTabPress → setRangeInputFocus(false)）：
+  // 清焦点端，让 Tab 自然移焦出触发器（不阻止默认，不强制关面板，严格对齐 Semi）。
+  function handleRangeEndTab(_e: KeyboardEvent) {
+    rangeInputFocus = false;
+  }
 
   // 手动输入态（对齐 Semi inputValue）：正在编辑时 inputValue 非 null，展示以它为准；
   // 提交/关闭后回 null，展示回落 formattedValue/rangeTriggerValue。inset 时强制只读（对齐 Semi）。
@@ -418,6 +423,7 @@
         {rangeInputFocus}
         onRangeFocus={handleRangeFocus}
         onRangeChange={handleRangeInputChange}
+        onRangeEndTab={handleRangeEndTab}
         {...dateInputRest}
       />
     </div>

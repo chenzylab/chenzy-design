@@ -34,6 +34,8 @@
     onRangeFocus?: (e: Event, rangeType: 'rangeStart' | 'rangeEnd') => void;
     /** range 端值变化（回传完整 [start, end]，对齐 Semi handleRangeInputChange）。 */
     onRangeChange?: (rangeStart: string, rangeEnd: string, e: Event) => void;
+    /** rangeEnd 框按 Tab（对齐 Semi handleRangeInputEndKeyPress → setRangeInputFocus(false)）。 */
+    onRangeEndTab?: (e: KeyboardEvent) => void;
   }
 
   let {
@@ -55,6 +57,7 @@
     rangeInputFocus = false,
     onRangeFocus,
     onRangeChange,
+    onRangeEndTab,
   }: Props = $props();
 
   const prefixCls = cssClasses.PREFIX;
@@ -130,6 +133,9 @@
         value={rangeEnd}
         onChange={(v: string, e: Event) => onRangeChange?.(rangeStart, v, e)}
         onfocus={(e: FocusEvent) => onRangeFocus?.(e, 'rangeEnd')}
+        onKeyDown={(e: KeyboardEvent) => {
+          if (e.key === 'Tab') onRangeEndTab?.(e);
+        }}
         {...(onEnterPress !== undefined ? { onEnterPress } : {})}
       />
     </div>
