@@ -131,6 +131,59 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
     expect(notifyDate.getMonth()).toBe(2); // 3月=index 2
   });
 
+  it('presets：面板渲染 QuickControl（默认 bottom），点 preset 触发 onChange + 关面板', async () => {
+    const onChange = vi.fn();
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'date',
+        defaultOpen: true,
+        onChange,
+        presets: [{ text: '今天', start: new Date(2026, 0, 15) }],
+      },
+    });
+    await tick();
+    const qc = document.querySelector(`.${PREFIX}-quick-control-bottom`);
+    expect(qc).not.toBeNull();
+    (qc!.querySelector('button') as HTMLElement).click();
+    await tick();
+    expect(onChange).toHaveBeenCalled();
+    // dateString 为 2026-01-15。
+    expect(onChange.mock.calls[0]![0]).toBe('2026-01-15');
+  });
+
+  it('presetPosition=left：QuickControl 带 left class', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'date',
+        defaultOpen: true,
+        presetPosition: 'left',
+        presets: [{ text: '今天', start: new Date(2026, 0, 15) }],
+      },
+    });
+    await tick();
+    expect(document.querySelector(`.${PREFIX}-quick-control-left`)).not.toBeNull();
+  });
+
+  it('dateRange preset：点 [start,end] 触发 onChange（string[]）', async () => {
+    const onChange = vi.fn();
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'dateRange',
+        defaultOpen: true,
+        onChange,
+        presets: [{ text: '本周', start: new Date(2026, 0, 12), end: new Date(2026, 0, 18) }],
+      },
+    });
+    await tick();
+    (document.querySelector(`.${PREFIX}-quick-control button`) as HTMLElement).click();
+    await tick();
+    expect(onChange).toHaveBeenCalled();
+    const val = onChange.mock.calls[0]![0] as string[];
+    expect(Array.isArray(val)).toBe(true);
+    expect(val.join(' ')).toContain('2026-01-12');
+    expect(val.join(' ')).toContain('2026-01-18');
+  });
+
   it('monthRange：面板双列 YearAndMonth（left+right）', async () => {
     renderWithLocale(DatePickerNext, {
       props: {

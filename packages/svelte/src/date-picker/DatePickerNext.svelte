@@ -14,10 +14,14 @@
   import DateInput from './DateInput.svelte';
   import MonthsGrid from './MonthsGrid.svelte';
   import YearAndMonth from './YearAndMonth.svelte';
+  import QuickControl from './QuickControl.svelte';
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
     type RangeValue,
+    type PresetsType,
+    type PresetType,
+    type BaseValueType,
     type DatePickerFoundationProps,
     type ValidateStatus,
   } from './date-picker-foundation.svelte.js';
@@ -40,6 +44,11 @@
     weekStartsOn?: WeekStartNumber;
     disabledDate?: (date: Date) => boolean;
     timeZone?: string | number;
+    /** 快捷选择预设（对齐 Semi presets）。 */
+    presets?: PresetsType;
+    /** 预设位置（对齐 Semi presetPosition，默认 bottom）。 */
+    presetPosition?: 'left' | 'right' | 'top' | 'bottom';
+    onPresetClick?: (preset: PresetType, e: MouseEvent) => void;
     onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChangeWithDateFirst?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -62,6 +71,9 @@
     weekStartsOn = numbers.WEEK_START_ON as WeekStartNumber,
     disabledDate,
     timeZone,
+    presets = [],
+    presetPosition = 'bottom',
+    onPresetClick,
     onChange,
     onChangeWithDateFirst = false,
     onOpenChange,
@@ -184,6 +196,27 @@
     }
   }
 
+  // handlePresetClick —— 对齐 Semi foundation.handlePresetClick：preset start/end（可为函数/string/number/Date）
+  // → Date，按 type 选值。single 用 start；range 用 [start,end]。
+  function toPresetDate(v: BaseValueType | (() => BaseValueType) | undefined): Date | null {
+    const raw = typeof v === 'function' ? v() : v;
+    if (raw == null) return null;
+    const d = raw instanceof Date ? raw : new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  function handlePresetClick(preset: PresetType, e: MouseEvent) {
+    const start = toPresetDate(preset.start);
+    const end = toPresetDate(preset.end);
+    if (st.isRange) {
+      st.handleRangeSelectedChange([start, end]);
+      if (start && end) st.setOpen(false);
+    } else if (start) {
+      st.handleSelectedChange(start);
+      st.setOpen(false);
+    }
+    onPresetClick?.(preset, e);
+  }
+
   const disabledDateWrap = $derived(
     disabledDate ? (date: Date) => disabledDate!(date) : undefined,
   );
@@ -208,7 +241,15 @@
         {...{ 'x-type': type }}
       >
         <div class={`${PREFIX}-container`}>
+          <!-- preset left（对齐 Semi，monthRange 暂不支持 preset） -->
+          {#if presetPosition === 'left' && presets.length && type !== 'monthRange'}
+            <QuickControl {type} {presets} presetPosition="left" onPresetClick={handlePresetClick} />
+          {/if}
           <div>
+            <!-- preset top -->
+            {#if presetPosition === 'top' && presets.length && type !== 'monthRange'}
+              <QuickControl {type} {presets} presetPosition="top" onPresetClick={handlePresetClick} />
+            {/if}
             {#if typeIsYearOrMonth}
               <YearAndMonth
                 {type}
@@ -233,7 +274,15 @@
                 {...monthsGridRest}
               />
             {/if}
+            <!-- preset bottom -->
+            {#if presetPosition === 'bottom' && presets.length && type !== 'monthRange'}
+              <QuickControl {type} {presets} presetPosition="bottom" onPresetClick={handlePresetClick} />
+            {/if}
           </div>
+          <!-- preset right -->
+          {#if presetPosition === 'right' && presets.length && type !== 'monthRange'}
+            <QuickControl {type} {presets} presetPosition="right" onPresetClick={handlePresetClick} />
+          {/if}
         </div>
       </div>
     {/snippet}

@@ -81,7 +81,11 @@
   - maxWeekNum：range 双面板两月表周行数取 max 传 Month weeksRowNum，WEEKS 高度对齐避免不齐。测试 +1。
   - dateTimeRange 时间联动（_updateTimeInDateRange 照搬 Semi）：两端选定后改某端时间列→更新该端时间+swap 检查。测试 +1。
   **DatePicker 交互内核完整无缺口。全 date-picker+time-picker 84 测试全绿，typecheck 非 dist error 归零。**
-- 待补：年月面板 QuickControl/DateInput 内嵌(presetPosition/inset，非核心)。剩样式(阶段3，让功能真机可视)。
+- ✅ 第九批（preset/presetPosition 接入，测试全绿）：DatePickerNext 补 presets/presetPosition/onPresetClick +
+  handlePresetClick（照搬 Semi：start/end 可为函数/string/number/Date→Date，single 用 start、range 用 [start,end]）。
+  面板按 presetPosition 渲染 QuickControl（top/bottom 在主体上下、left/right 在 container 内左右，monthRange 不支持 preset 对齐 Semi）。
+  测试 DatePickerNext +3（bottom 点 preset onChange/left class/dateRange preset string[]）。
+- 待补：insetInput（面板内输入框，依赖 inputFoundation 数据模型 insetInputValue，独立子任务，非核心）。剩样式(阶段3，让功能真机可视)。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。
