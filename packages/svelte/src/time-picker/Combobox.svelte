@@ -19,8 +19,8 @@
 
   interface Props extends ComboboxFoundationProps {
     prefixCls?: string;
-    panelHeader?: string | Snippet;
-    panelFooter?: string | Snippet;
+    panelHeader?: string | Snippet | undefined;
+    panelFooter?: string | Snippet | undefined;
     scrollItemProps?: Record<string, unknown>;
     onChange?: (payload: { isAM: boolean; value: string; timeStampValue: number }) => void;
   }

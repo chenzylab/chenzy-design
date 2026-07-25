@@ -39,17 +39,17 @@ function generateOptions(
 }
 
 export interface ComboboxFoundationProps {
-  timeStampValue?: number | Date | null;
-  format?: string;
-  use12Hours?: boolean;
-  isAM?: boolean;
-  hourStep?: number;
-  minuteStep?: number;
-  secondStep?: number;
-  disabledHours?: () => number[];
-  disabledMinutes?: (hour: number | null) => number[];
-  disabledSeconds?: (hour: number | null, minute: number | null) => number[];
-  hideDisabledOptions?: boolean;
+  timeStampValue?: number | Date | null | undefined;
+  format?: string | undefined;
+  use12Hours?: boolean | undefined;
+  isAM?: boolean | undefined;
+  hourStep?: number | undefined;
+  minuteStep?: number | undefined;
+  secondStep?: number | undefined;
+  disabledHours?: (() => number[]) | undefined;
+  disabledMinutes?: ((hour: number | null) => number[]) | undefined;
+  disabledSeconds?: ((hour: number | null, minute: number | null) => number[]) | undefined;
+  hideDisabledOptions?: boolean | undefined;
 }
 
 export function createComboboxState(getProps: () => ComboboxFoundationProps) {

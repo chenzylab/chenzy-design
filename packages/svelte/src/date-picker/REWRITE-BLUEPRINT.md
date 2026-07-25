@@ -70,8 +70,13 @@
     ScrollList>ScrollItem×(ampm?/hour/minute/second)，onItemChange 照搬 Semi，onChange 抛 {isAM,value,timeStampValue}）。测试 Combobox 6。
   - months-grid-foundation 补 handleTimeChange（照搬 Semi，dateTime 单面板：合并 showDate 年月日+新时分秒→handleDateSelected）。
   - MonthsGrid tpk 叠加层复用 Combobox（isTimePickerOpen 时显示时间列）。dateTime 时间列端到端跑通（Switch→tpk→选时→onSelectedChange）。测试 MonthsGrid +3。
+- ✅ 第七批（TimePicker 内部改用 Combobox，#18 拆分闭环）：TimePicker 删内联时间列逻辑
+  （hourList/minuteList/secondList/ampmList/makeSelectHandler/pad2/indexOfValue ~95 行）→ 复用 Combobox
+  （单选 1 个 / range 2 个），onComboboxChange 转 commit。TimePicker 809→714 行，消除重复。
+  测试 TimePicker a11y 12 + disabledTime 1 + kbd 1 全绿（改用 Combobox 无破坏）。
+  坑：列 class 对齐 Semi 从 BEM `__panel-list-hour` 改为 `-list-hour`（测试同步）。
 - 待补（收尾）：calcDisabledTime(禁用时间联动) + dateTimeRange 双面板时间联动(_updateTimeInDateRange) + maxWeekNum(双面板行高) +
-  TimePicker 内部改用 Combobox(消除 809 行重复) + 年月面板 QuickControl/DateInput 内嵌。剩样式(阶段3)。
+  年月面板 QuickControl/DateInput 内嵌。剩样式(阶段3)。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

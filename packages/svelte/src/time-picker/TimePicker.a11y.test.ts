@@ -57,8 +57,8 @@ describe('TimePicker a11y', () => {
         disabledTime: () => ({ disabledHours: () => [0, 1, 2, 3] }),
       },
     });
-    // 左列（begin）的小时列，文本为 '03' 的应被禁用。
-    const hourCol = document.querySelector('.cd-time-picker__panel-list-hour');
+    // 左列（begin）的小时列，文本为 '03' 的应被禁用（Combobox 列 class 对齐 Semi -list-hour）。
+    const hourCol = document.querySelector('.cd-time-picker-list-hour');
     expect(hourCol, '应存在小时列').not.toBeNull();
     const opts = [...hourCol!.querySelectorAll('[role="option"]')];
     const three = opts.find((el) => el.textContent?.trim() === '03');

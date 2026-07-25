@@ -15,29 +15,19 @@
   import {
     useId,
     useDismiss,
-    buildHourOptions,
-    buildMinuteOptions,
-    buildSecondOptions,
-    applyHideDisabled,
-    to12Hour,
     meridiemOf,
-    from12Hour,
     parseFormatSpec,
     formatTime,
     parseTimeString,
     utcToZonedTime,
     isValidTimeZone,
-    type Meridiem,
-    type ScrollItemData,
-    type ScrollItemSelectPayload,
   } from '@chenzy-design/core';
   import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { IconClock } from '@chenzy-design/icons';
   import Input from '../input/Input.svelte';
-  import ScrollList from '../scroll-list/ScrollList.svelte';
-  import ScrollItem from '../scroll-list/ScrollItem.svelte';
+  import Combobox from './Combobox.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
@@ -303,6 +293,12 @@
     emit(next);
   }
 
+  // Combobox 时间列变化（抛新时间戳）→ commit 到对应编辑端（保留该端日期部分）。
+  function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
+    const t = new Date(timeStampValue);
+    commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
+  }
+
   // --- Intl / core formatTime 展示（对齐 Semi 值层时区转换）---
   const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
   const configTimeZone = $derived(configCtx?.current.timeZone);
@@ -385,102 +381,7 @@
     emit([null, null]);
   }
 
-  // --- 列数据构造（ScrollItemData）：值/文案/禁用 + 选中态单位后缀 transform（对齐 Semi）---
-  function pad2(n: number): string {
-    return n < 10 ? `0${n}` : `${n}`;
-  }
-
-  function hourList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const mer = meridiemOf(hour24);
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildHourOptions(hourStep, effUse12Hours, mer, rules?.disabledHours ?? disabledHours),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.hour');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function minuteList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildMinuteOptions(minuteStep, hour24, rules?.disabledMinutes ?? disabledMinutes),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.minute');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function secondList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const minute = d ? d.getMinutes() : 0;
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildSecondOptions(secondStep, hour24, minute, rules?.disabledSeconds ?? disabledSeconds),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.second');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function ampmList(): ScrollItemData[] {
-    return [
-      { value: 'am', text: loc().t('TimePicker.am') },
-      { value: 'pm', text: loc().t('TimePicker.pm') },
-    ];
-  }
-
-  // 选中项在列表中的索引（selectedIndex）。
-  function indexOfValue(list: ScrollItemData[], v: unknown): number {
-    const i = list.findIndex((it) => it.value === v);
-    return i < 0 ? 0 : i;
-  }
-
-  // --- onSelect 分发：按 type 区分列，映射回 24h 内部表示并提交 ---
-  function makeSelectHandler(panelIndex: 0 | 1, col: 'hour' | 'minute' | 'second' | 'ampm') {
-    return (payload: ScrollItemSelectPayload) => {
-      const d = dateOf(panelIndex);
-      const hour24 = d ? d.getHours() : 0;
-      const minute = d ? d.getMinutes() : 0;
-      const second = d ? d.getSeconds() : 0;
-      const mer = meridiemOf(hour24);
-      if (col === 'hour') {
-        const displayHour = payload.value as number;
-        const h = effUse12Hours ? from12Hour(displayHour, mer) : displayHour;
-        commit(panelIndex, h, minute, second);
-      } else if (col === 'minute') {
-        commit(panelIndex, hour24, payload.value as number, second);
-      } else if (col === 'second') {
-        commit(panelIndex, hour24, minute, payload.value as number);
-      } else {
-        // ampm
-        const nextMer = payload.value as Meridiem;
-        if (nextMer === mer) return;
-        const displayHour = to12Hour(hour24);
-        commit(panelIndex, from12Hour(displayHour, nextMer), minute, second);
-      }
-    };
-  }
+  // 时间列面板（h/m/s/ampm 滚轮）已拆分为 Combobox（复用，对齐 Semi）；此处仅保留触发器/浮层/值模型。
 
   // --- useDismiss（红线 #3）：绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -660,45 +561,49 @@
       use:floating={{ trigger: rootEl, placement: panelPlacement, autoAdjust: autoAdjustOverflow, offset: 4, getContainer: getPopupContainer, open: isOpen }}
     >
       {#if isRange}
-        <!-- range：左右两个 Combobox（ScrollList）并排（对齐 Semi RANGE_PANEL_LISTS）。 -->
+        <!-- range：左右两个 Combobox 并排（复用拆分后的时间列面板，对齐 Semi RANGE_PANEL_LISTS）。 -->
         <div class="cd-time-picker__lists">
           {#each [0, 1] as const as pIdx (pIdx)}
-            {@const d = dateOf(pIdx)}
-            {@const hour24 = d ? d.getHours() : 0}
-            {@const hL = hourList(pIdx)}
-            {@const mL = minuteList(pIdx)}
-            {@const sL = secondList(pIdx)}
-            {@const aL = ampmList()}
-            <ScrollList header={pIdx === 0 ? beginHeader : endHeader} footer={panelFooter}>
-              {#if effUse12Hours}
-                <ScrollItem mode="normal" class="cd-time-picker__panel-list-ampm" list={aL} selectedIndex={meridiemOf(hour24) === 'am' ? 0 : 1} type="ampm" onSelect={makeSelectHandler(pIdx, 'ampm')} ariaLabel={loc().t('TimePicker.triggerLabel')} {...scrollItemProps} />
-              {/if}
-              <ScrollItem mode="normal" class="cd-time-picker__panel-list-hour" list={hL} selectedIndex={indexOfValue(hL, effUse12Hours ? to12Hour(hour24) : hour24)} type="hour" onSelect={makeSelectHandler(pIdx, 'hour')} ariaLabel={loc().t('TimePicker.hour')} {...scrollItemProps} />
-              <ScrollItem mode="normal" class="cd-time-picker__panel-list-minute" list={mL} selectedIndex={indexOfValue(mL, d ? d.getMinutes() : 0)} type="minute" onSelect={makeSelectHandler(pIdx, 'minute')} ariaLabel={loc().t('TimePicker.minute')} {...scrollItemProps} />
-              {#if effShowSecond}
-                <ScrollItem mode="normal" class="cd-time-picker__panel-list-second" list={sL} selectedIndex={indexOfValue(sL, d ? d.getSeconds() : 0)} type="second" onSelect={makeSelectHandler(pIdx, 'second')} ariaLabel={loc().t('TimePicker.second')} {...scrollItemProps} />
-              {/if}
-            </ScrollList>
+            {@const rules = disabledRulesFor(pIdx)}
+            <Combobox
+              timeStampValue={dateOf(pIdx)?.getTime() ?? null}
+              {format}
+              use12Hours={effUse12Hours}
+              isAM={meridiemOf(dateOf(pIdx)?.getHours() ?? 0) === 'am'}
+              {hourStep}
+              {minuteStep}
+              {secondStep}
+              disabledHours={rules?.disabledHours ?? disabledHours}
+              disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
+              disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
+              {hideDisabledOptions}
+              panelHeader={pIdx === 0 ? beginHeader : endHeader}
+              {panelFooter}
+              scrollItemProps={scrollItemProps ?? {}}
+              onChange={(payload) => onComboboxChange(pIdx, payload.timeStampValue)}
+            />
           {/each}
         </div>
       {:else}
-        <!-- 单选：单个 Combobox（ScrollList），列内 ScrollItem mode=normal（对齐 Semi Combobox）。 -->
-        {@const d = dateOf(0)}
-        {@const hour24 = d ? d.getHours() : 0}
-        {@const hL = hourList(0)}
-        {@const mL = minuteList(0)}
-        {@const sL = secondList(0)}
-        {@const aL = ampmList()}
-        <ScrollList header={panelHeader} footer={panelFooter}>
-          {#if effUse12Hours}
-            <ScrollItem mode="normal" class="cd-time-picker__panel-list-ampm" list={aL} selectedIndex={meridiemOf(hour24) === 'am' ? 0 : 1} type="ampm" onSelect={makeSelectHandler(0, 'ampm')} ariaLabel={loc().t('TimePicker.triggerLabel')} {...scrollItemProps} />
-          {/if}
-          <ScrollItem mode="normal" class="cd-time-picker__panel-list-hour" list={hL} selectedIndex={indexOfValue(hL, effUse12Hours ? to12Hour(hour24) : hour24)} type="hour" onSelect={makeSelectHandler(0, 'hour')} ariaLabel={loc().t('TimePicker.hour')} {...scrollItemProps} />
-          <ScrollItem mode="normal" class="cd-time-picker__panel-list-minute" list={mL} selectedIndex={indexOfValue(mL, d ? d.getMinutes() : 0)} type="minute" onSelect={makeSelectHandler(0, 'minute')} ariaLabel={loc().t('TimePicker.minute')} {...scrollItemProps} />
-          {#if effShowSecond}
-            <ScrollItem mode="normal" class="cd-time-picker__panel-list-second" list={sL} selectedIndex={indexOfValue(sL, d ? d.getSeconds() : 0)} type="second" onSelect={makeSelectHandler(0, 'second')} ariaLabel={loc().t('TimePicker.second')} {...scrollItemProps} />
-          {/if}
-        </ScrollList>
+        {@const rules = disabledRulesFor(0)}
+        <!-- 单选：单个 Combobox（复用拆分后的时间列面板，对齐 Semi Combobox）。 -->
+        <Combobox
+          timeStampValue={dateOf(0)?.getTime() ?? null}
+          {format}
+          use12Hours={effUse12Hours}
+          isAM={meridiemOf(dateOf(0)?.getHours() ?? 0) === 'am'}
+          {hourStep}
+          {minuteStep}
+          {secondStep}
+          disabledHours={rules?.disabledHours ?? disabledHours}
+          disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
+          disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
+          {hideDisabledOptions}
+          {panelHeader}
+          {panelFooter}
+          scrollItemProps={scrollItemProps ?? {}}
+          onChange={(payload) => onComboboxChange(0, payload.timeStampValue)}
+        />
       {/if}
     </div>
   {/if}
