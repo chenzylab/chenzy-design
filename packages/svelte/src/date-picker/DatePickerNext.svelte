@@ -358,3 +358,20 @@
     </div>
   </Popover>
 </div>
+
+<style>
+  /* 面板容器 —— 对齐 Semi datePicker.scss .datepicker / -container。
+     面板视觉外壳（背景/阴影/圆角）由 Popover popup card 承担；此处只做布局。 */
+  :global(.cd-datepicker) {
+    box-sizing: border-box;
+    display: inline-block;
+  }
+  :global(.cd-datepicker-container) {
+    display: flex;
+  }
+  /* 触发器 wrapper（combobox） */
+  :global(.cd-datepicker-input) {
+    display: inline-block;
+    inline-size: 100%;
+  }
+</style>

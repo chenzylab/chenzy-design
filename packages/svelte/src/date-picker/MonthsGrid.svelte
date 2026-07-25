@@ -210,3 +210,94 @@
 {:else}
   {@render panel(LEFT)}
 {/if}
+
+<style>
+  /* 双月网格 + 单面板 —— 对齐 Semi datePicker.scss -month-grid/-month-grid-left/-right。
+     class 动态字符串，用 :global 打洞（本库既定 scoped+:global）。 */
+  :global(.cd-datepicker-month-grid) {
+    user-select: none;
+    display: flex;
+  }
+  :global(.cd-datepicker-month-grid-left),
+  :global(.cd-datepicker-month-grid-right) {
+    position: relative; /* yam/tpk 绝对定位上下文 */
+    padding: 0;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  /* yam（年月滚轮）/ tpk（时间列）叠加覆盖层（对齐 Semi：absolute top:0 width:100%） */
+  :global(.cd-datepicker-yam) {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  :global(.cd-datepicker-tpk) {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 导航条 —— 对齐 Semi -navigation */
+  :global(.cd-datepicker-navigation) {
+    display: flex;
+    align-items: center;
+    box-sizing: content-box;
+    height: 32px;
+    padding: 8px 12px;
+  }
+  :global(.cd-datepicker-navigation-month) {
+    font-size: var(--cd-font-size-header-6, 16px);
+    flex-grow: 1;
+    text-align: center;
+    font-weight: var(--cd-font-weight-bold, 600);
+    color: var(--cd-color-date-picker-nav-month-icon-text-default, var(--cd-color-text-0));
+  }
+  :global(.cd-datepicker-navigation .cd-button) {
+    color: var(--cd-color-date-picker-nav-icon-text-default, var(--cd-color-text-2));
+  }
+  :global(.cd-datepicker-navigation-month .cd-button) {
+    color: var(--cd-color-date-picker-nav-month-icon-text-default, var(--cd-color-text-0));
+  }
+
+  /* 日期/时间切换条 —— 对齐 Semi -switch */
+  :global(.cd-datepicker-switch) {
+    text-align: center;
+    display: flex;
+    border-top: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+    margin-top: auto;
+  }
+  :global(.cd-datepicker-switch-date),
+  :global(.cd-datepicker-switch-time) {
+    width: 50%;
+    cursor: pointer;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-color-date-picker-day-text-default, var(--cd-color-text-2));
+  }
+  :global(.cd-datepicker-switch-date:not(.cd-datepicker-switch-time-disabled):hover),
+  :global(.cd-datepicker-switch-time:not(.cd-datepicker-switch-time-disabled):hover) {
+    background-color: var(--cd-color-date-picker-date-bg-hover);
+  }
+  :global(.cd-datepicker-switch-date-active) {
+    color: var(--cd-color-date-picker-day-text-active, var(--cd-color-text-0));
+    font-weight: var(--cd-font-weight-bold, 600);
+    cursor: auto;
+  }
+  :global(.cd-datepicker-switch-time-disabled) {
+    cursor: not-allowed;
+  }
+  :global(.cd-datepicker-switch-text) {
+    padding-left: 4px;
+  }
+</style>

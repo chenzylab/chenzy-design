@@ -165,3 +165,156 @@
     {/each}
   </div>
 </div>
+
+<style>
+  /* 月面板 —— 对齐 Semi datePicker.scss &-month/&-weekday/&-weeks/&-week/&-day。
+     class 为动态字符串（constants），故用 :global 打洞（本库既定 scoped+:global）。 */
+  :global(.cd-datepicker-month) {
+    /* 单月面板宽 = 日格 36 × 7 */
+    width: calc(var(--cd-width-date-picker-day, 36px) * 7);
+    box-sizing: content-box;
+    padding: 12px;
+    padding-top: 0;
+  }
+
+  /* 星期表头行 */
+  :global(.cd-datepicker-weekday) {
+    font-size: var(--cd-font-size-small, 12px);
+    line-height: var(--cd-line-height-small, 16px);
+    font-weight: var(--cd-font-weight-bold, 600);
+    color: var(--cd-color-date-picker-day-text-default);
+    border-bottom: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-datepicker-weekday-item) {
+    width: var(--cd-width-date-picker-day, 36px);
+    height: var(--cd-width-date-picker-day, 36px);
+    line-height: var(--cd-width-date-picker-day, 36px);
+    text-align: center;
+    display: inline-block;
+  }
+
+  :global(.cd-datepicker-weeks) {
+    color: var(--cd-color-date-picker-date-text-default);
+  }
+  :global(.cd-datepicker-week) {
+    display: flex;
+    align-items: center;
+  }
+
+  /* 日格外框（36×36 点击区）+ 内层 day-main（32×32 圆角高亮区） */
+  :global(.cd-datepicker-day) {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cd-width-date-picker-day, 36px);
+    height: var(--cd-width-date-picker-day, 36px);
+    cursor: pointer;
+  }
+  :global(.cd-datepicker-day-main) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cd-width-date-picker-day-main, 32px);
+    height: var(--cd-width-date-picker-day-main, 32px);
+    margin: 0 auto;
+    box-sizing: border-box;
+    border-radius: var(--cd-radius-date-picker-day-main, var(--cd-radius-small, 3px));
+  }
+  :global(.cd-datepicker-day-main:hover) {
+    background-color: var(--cd-color-date-picker-date-bg-hover);
+  }
+
+  /* today：浅底 + 主色 + 粗体（非下划线，对齐 Semi） */
+  :global(.cd-datepicker-day-today .cd-datepicker-day-main) {
+    color: var(--cd-color-date-picker-date-today-text-default, var(--cd-color-primary));
+    background-color: var(--cd-color-date-picker-date-bg-hover);
+    font-weight: var(--cd-font-weight-bold, 600);
+  }
+
+  /* in-range/hover 连续条：内层拉宽到 36 消隙 + 直角 */
+  :global(.cd-datepicker-day-inrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-inhover .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-inoffsetrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-selectedrange-hover .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday-around-singleselected .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday-inrange .cd-datepicker-day-main) {
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: var(--cd-width-date-picker-day, 36px);
+  }
+
+  /* range 端点：仅外侧半圆角 + 拉宽 34（36 - 2 marginX） */
+  :global(.cd-datepicker-day-selected-start .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-offsetrange-start .cd-datepicker-day-main) {
+    width: calc(var(--cd-width-date-picker-day, 36px) - 2px);
+    margin-left: 2px;
+    margin-right: 0;
+    border-radius: var(--cd-radius-date-picker-day-main, 3px) 0 0
+      var(--cd-radius-date-picker-day-main, 3px);
+  }
+  :global(.cd-datepicker-day-selected-end .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-offsetrange-end .cd-datepicker-day-main) {
+    width: calc(var(--cd-width-date-picker-day, 36px) - 2px);
+    margin-right: 2px;
+    margin-left: 0;
+    border-radius: 0 var(--cd-radius-date-picker-day-main, 3px)
+      var(--cd-radius-date-picker-day-main, 3px) 0;
+  }
+
+  /* range 悬停高亮背景（对齐 Semi：inRangeHover=fill-0 / hoverDay=fill-1 /
+     hoverday_range=primary-light-active / selectedRange-hover=primary-light-hover） */
+  :global(.cd-datepicker-day-inoffsetrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-offsetrange-start .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-offsetrange-end .cd-datepicker-day-main) {
+    background-color: var(--cd-color-fill-0);
+  }
+  :global(.cd-datepicker-day-hoverday .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday-offset .cd-datepicker-day-main) {
+    background-color: var(--cd-color-fill-1);
+  }
+  :global(.cd-datepicker-day-inrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-inhover .cd-datepicker-day-main) {
+    background-color: var(--cd-color-date-picker-date-in-hover-bg-default, var(--cd-color-fill-0));
+  }
+  :global(.cd-datepicker-day-hoverday-inrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday-beforerange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-hoverday-afterrange .cd-datepicker-day-main) {
+    background-color: var(--cd-color-primary-light-active);
+  }
+  :global(.cd-datepicker-day-selectedrange-hover .cd-datepicker-day-main) {
+    background-color: var(--cd-color-primary-light-hover);
+  }
+
+  /* selected 端点/整体：主色底 + 白字 */
+  :global(.cd-datepicker-day-selected .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-selected-start .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-selected-end .cd-datepicker-day-main) {
+    background-color: var(--cd-color-date-picker-date-selected-bg-default, var(--cd-color-primary));
+    color: var(--cd-color-date-picker-date-selected-text-default, var(--cd-color-white, #fff));
+  }
+  :global(.cd-datepicker-day-selected .cd-datepicker-day-main:hover),
+  :global(.cd-datepicker-day-selected-start .cd-datepicker-day-main:hover),
+  :global(.cd-datepicker-day-selected-end .cd-datepicker-day-main:hover) {
+    background-color: var(--cd-color-date-picker-date-selected-bg-default, var(--cd-color-primary));
+  }
+  /* selected 单点（既是 start 又是 end）四角圆角 */
+  :global(.cd-datepicker-day-selected .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-selected-start.cd-datepicker-day-selected-end .cd-datepicker-day-main) {
+    border-radius: var(--cd-radius-date-picker-day-main, 3px);
+  }
+
+  /* disabled */
+  :global(.cd-datepicker-day-disabled) {
+    cursor: not-allowed;
+    color: var(--cd-color-date-picker-date-disabled-text-default);
+  }
+  :global(.cd-datepicker-day-disabled .cd-datepicker-day-main) {
+    color: var(--cd-color-date-picker-date-disabled-text-default);
+    background-color: transparent;
+    cursor: not-allowed;
+  }
+</style>
