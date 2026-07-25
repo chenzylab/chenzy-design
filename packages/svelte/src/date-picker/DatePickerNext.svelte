@@ -129,6 +129,17 @@
   const rangeEndStr = $derived(
     st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, rangeToken) : '',
   );
+  // range 触发器展示串（`start${sep}end`，与 DateInput split 用同一 separator）。
+  const rangeSep = strings.DEFAULT_SEPARATOR_RANGE;
+  const rangeTriggerValue = $derived(
+    st.isRange ? `${rangeStartStr}${rangeSep}${rangeEndStr}` : '',
+  );
+  // range 端聚焦（对齐 Semi handleRangeInputFocus）：更新 rangeInputFocus + 打开面板。
+  function handleRangeFocus(_e: Event, rangeType: 'rangeStart' | 'rangeEnd') {
+    if (disabled) return;
+    rangeInputFocus = rangeType;
+    st.setOpen(true);
+  }
   // 面板初始定位月：选中值 / range 起点 / defaultPickerValue / 今天。
   const panelPickerValue = $derived(
     (st.currentSingle instanceof Date ? st.currentSingle : null) ?? st.currentRange[0] ?? defaultPickerValue,
@@ -346,13 +357,16 @@
     >
       <DateInput
         {type}
-        value={triggerText}
+        value={st.isRange ? rangeTriggerValue : triggerText}
         placeholder={phText}
         {disabled}
         {showClear}
         {inputReadOnly}
         {size}
         onClear={handleClear}
+        rangeSeparator={rangeSep}
+        {rangeInputFocus}
+        onRangeFocus={handleRangeFocus}
         {...dateInputRest}
       />
     </div>
