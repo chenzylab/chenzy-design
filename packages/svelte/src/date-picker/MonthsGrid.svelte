@@ -284,7 +284,8 @@
     align-items: center;
     box-sizing: content-box;
     height: 32px;
-    padding: 8px 12px;
+    /* 对齐 Semi `padding: navigation-paddingY(base-tight 12px) navigation-paddingX(base 16px)`。 */
+    padding: var(--cd-spacing-base-tight, 12px) var(--cd-spacing-base, 16px);
   }
   :global(.cd-datepicker-navigation-month) {
     font-size: var(--cd-font-size-header-6, 16px);

@@ -173,7 +173,8 @@
     /* 单月面板宽 = 日格 36 × 7 */
     width: calc(var(--cd-width-date-picker-day, 36px) * 7);
     box-sizing: content-box;
-    padding: 12px;
+    /* 对齐 Semi datePicker.scss `padding: $spacing-datepicker_month-padding(=spacing-base 16px); padding-top: 0`。 */
+    padding: var(--cd-spacing-base, 16px);
     padding-top: 0;
   }
 
@@ -282,7 +283,9 @@
   }
   :global(.cd-datepicker-day-hoverday-inrange .cd-datepicker-day-main),
   :global(.cd-datepicker-day-hoverday-beforerange .cd-datepicker-day-main),
-  :global(.cd-datepicker-day-hoverday-afterrange .cd-datepicker-day-main) {
+  :global(.cd-datepicker-day-hoverday-afterrange .cd-datepicker-day-main),
+  /* hoverday-around-singleselected：对齐 Semi `hoverday_around_single_selected-bg-default=primary-light-active`。 */
+  :global(.cd-datepicker-day-hoverday-around-singleselected .cd-datepicker-day-main) {
     background-color: var(--cd-color-primary-light-active);
   }
   :global(.cd-datepicker-day-selectedrange-hover .cd-datepicker-day-main) {
@@ -307,6 +310,13 @@
     border-radius: var(--cd-radius-date-picker-day-main, 3px);
   }
 
+  /* selected 端点朝 hover 延伸方向加 1px 主色边框（对齐 Semi
+     `selected-start-afterhover/selected-end-beforehover { border: 1px solid day_main-border(=primary-active) }`）。 */
+  :global(.cd-datepicker-day-selected-start-afterhover .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-selected-end-beforehover .cd-datepicker-day-main) {
+    border: 1px solid var(--cd-color-primary-active);
+  }
+
   /* disabled */
   :global(.cd-datepicker-day-disabled) {
     cursor: not-allowed;
@@ -316,5 +326,26 @@
     color: var(--cd-color-date-picker-date-disabled-text-default);
     background-color: transparent;
     cursor: not-allowed;
+  }
+  /* disabled hover/active 不改背景（对齐 Semi day-disabled day-main :hover/:active transparent）。 */
+  :global(.cd-datepicker-day-disabled .cd-datepicker-day-main:hover),
+  :global(.cd-datepicker-day-disabled .cd-datepicker-day-main:active) {
+    background-color: transparent;
+  }
+  /* disabled 且处于选中/范围态：用禁用底色覆盖选中色（对齐 Semi day-disabled&day-selected... 组合，
+     background=disabled-bg-default(=disabled-fill)、color=disabled-text）。 */
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-selected .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-selected-start .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-selected-end .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-inhover .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-inrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-inoffsetrange .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-hoverday .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-hoverday-offset .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-offsetrange-start .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-offsetrange-end .cd-datepicker-day-main),
+  :global(.cd-datepicker-day-disabled.cd-datepicker-day-selectedrange-hover .cd-datepicker-day-main) {
+    background-color: var(--cd-color-disabled-fill);
+    color: var(--cd-color-date-picker-date-disabled-text-default);
   }
 </style>
