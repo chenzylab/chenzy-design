@@ -122,7 +122,10 @@
 
 {#snippet panel(panelType: PanelType)}
   {@const detail = panelDetail(panelType)}
-  <div class={`${PREFIX}-month-grid-${panelType}`}>
+  <div
+    class={`${PREFIX}-month-grid-${panelType}`}
+    x-open-type={detail.isTimePickerOpen ? 'time' : detail.isYearPickerOpen ? 'year' : 'date'}
+  >
     {#if detail.isYearPickerOpen}
       <div class={`${PREFIX}-yam`}>
         <YearAndMonth
@@ -145,6 +148,7 @@
       {@const dt = st.calcDisabledTime(panelType)}
       <div class={`${PREFIX}-tpk`}>
         <Combobox
+          prefixCls={`${PREFIX}-tpk-col`}
           timeStampValue={detail.pickerDate}
           format={formatToken.FORMAT_TIME_PICKER}
           panelHeader={loc().t('DatePicker.selectTime')}
@@ -236,12 +240,42 @@
     flex-direction: column;
     box-sizing: border-box;
   }
+  /* time 视图时给父容器明确高度（对齐 Semi：月历面板仍占位撑高，tpk 绝对覆盖其上，
+     其 height:calc(100% - 54px) 才有依据）。253(月历)+32(导航)+16(导航padding)+54(switch)≈355px 面板高。 */
+  :global(.cd-datepicker-month-grid-left[x-open-type='time']),
+  :global(.cd-datepicker-month-grid-right[x-open-type='time']) {
+    min-height: 355px;
+  }
+  /* tpk 时间列面板：高度对齐 Semi `.semi-datepicker-tpk { height: calc(100% - 54px) }`（54=switch 条高）。 */
   :global(.cd-datepicker-tpk) {
     position: absolute;
     top: 0;
+    height: calc(100% - 54px);
     width: 100%;
     display: flex;
     flex-direction: column;
+  }
+  /* tpk 里 scrolllist 撑满（对齐 Semi datePicker.scss `.semi-datepicker-month-grid .semi-scrolllist{width:100%;height:100%;flex:1}`），
+     列走 ScrollList 基础 flex:1 均分（不吃 timePicker 的 64px），故 h/m/s 三列平分日历宽不溢出。 */
+  :global(.cd-datepicker-tpk .cd-scrolllist) {
+    width: 100%;
+    height: 100%;
+    box-shadow: none;
+    overflow: hidden;
+    flex: 1;
+  }
+  :global(.cd-datepicker-tpk .cd-scrolllist-body) {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    flex: 1;
+  }
+  /* 列居中留白按 tpk body 高度重算（对齐 Semi：(body - item) * 0.5，body≈355-54-54≈247px）。 */
+  :global(.cd-datepicker-tpk .cd-scrolllist-item > ul::before) {
+    block-size: calc((247px - var(--cd-height-scroll-list-item)) * 0.5);
+  }
+  :global(.cd-datepicker-tpk .cd-scrolllist-item > ul) {
+    padding-block-end: calc((247px - var(--cd-height-scroll-list-item)) * 0.5);
   }
 
   /* 导航条 —— 对齐 Semi -navigation */

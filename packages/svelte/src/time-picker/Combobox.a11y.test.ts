@@ -6,7 +6,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Combobox from './Combobox.svelte';
 
-const PREFIX = 'cd-time-picker';
+// Combobox 默认 prefixCls=`cd-time-picker-panel`（ScrollList 根 class + 列 `${prefixCls}-list-*` 同前缀，
+// 对齐 Semi：TimePicker 场景由 timePicker.scss 的 `.semi-timepicker-panel-list-*` 提供列宽）。
+const PREFIX = 'cd-time-picker-panel';
 
 describe('Combobox 时间列面板对齐 Semi', () => {
   it('HH:mm:ss：三列 listbox（时/分/秒），无 axe violations', async () => {

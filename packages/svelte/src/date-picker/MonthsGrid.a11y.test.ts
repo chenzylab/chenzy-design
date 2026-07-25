@@ -74,7 +74,7 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     await tick();
     // tpk 层 + Combobox 时间列出现。
     expect(container.querySelector(`.${PREFIX}-tpk`)).not.toBeNull();
-    expect(container.querySelector('.cd-time-picker-list-hour')).not.toBeNull();
+    expect(container.querySelector('.cd-datepicker-tpk-col-list-hour')).not.toBeNull();
   });
 
   it('dateTime：disabledTime → tpk 时间列小时禁用（calcDisabledTime 接线）', async () => {
@@ -87,7 +87,7 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     });
     (container.querySelector(`.${PREFIX}-switch-time`) as HTMLElement).click();
     await tick();
-    const hourList = container.querySelector('.cd-time-picker-list-hour')!;
+    const hourList = container.querySelector('.cd-datepicker-tpk-col-list-hour')!;
     const disabled = hourList.querySelectorAll('li.cd-scrolllist-item-disabled');
     expect(disabled.length).toBeGreaterThanOrEqual(3);
   });
@@ -103,7 +103,7 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     });
     (container.querySelector(`.${PREFIX}-switch-time`) as HTMLElement).click();
     await tick();
-    const hourList = container.querySelector('.cd-time-picker-list-hour')!;
+    const hourList = container.querySelector('.cd-datepicker-tpk-col-list-hour')!;
     (hourList.querySelectorAll('li[role="option"]')[8] as HTMLElement).click();
     await tick();
     expect(onSelectedChange).toHaveBeenCalled();

@@ -58,7 +58,7 @@ describe('TimePicker a11y', () => {
       },
     });
     // 左列（begin）的小时列，文本为 '03' 的应被禁用（Combobox 列 class 对齐 Semi -list-hour）。
-    const hourCol = document.querySelector('.cd-time-picker-list-hour');
+    const hourCol = document.querySelector('.cd-time-picker-panel-list-hour');
     expect(hourCol, '应存在小时列').not.toBeNull();
     const opts = [...hourCol!.querySelectorAll('[role="option"]')];
     const three = opts.find((el) => el.textContent?.trim() === '03');
@@ -85,7 +85,7 @@ describe('TimePicker a11y', () => {
     renderWithLocale(TimePicker, {
       props: { open: false, defaultOpen: true },
     });
-    const panel = document.querySelector('.cd-time-picker__panel');
+    const panel = document.querySelector('.cd-time-picker-panel');
     expect(panel, '曾打开过的面板应仍在 DOM').not.toBeNull();
     expect(panel?.hasAttribute('hidden')).toBe(true);
   });
@@ -93,6 +93,6 @@ describe('TimePicker a11y', () => {
   // 从未打开过：面板不挂载。
   it('从未打开：面板不在 DOM', () => {
     renderWithLocale(TimePicker, { props: { open: false } });
-    expect(document.querySelector('.cd-time-picker__panel')).toBeNull();
+    expect(document.querySelector('.cd-time-picker-panel')).toBeNull();
   });
 });

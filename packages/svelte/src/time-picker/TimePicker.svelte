@@ -478,9 +478,9 @@
 
   const panelCls = $derived(
     [
-      'cd-time-picker__panel',
-      isRange && 'cd-time-picker__panel--range',
-      !motion && 'cd-time-picker__panel--no-motion',
+      'cd-time-picker-panel',
+      isRange && 'cd-time-picker-panel--range',
+      !motion && 'cd-time-picker-panel--no-motion',
       popupClassName,
     ]
       .filter(Boolean)
@@ -634,49 +634,48 @@
   /* --- 面板容器（对齐 Semi timePicker.scss：range 面板走 timePicker 专属 shadow/border/radius，
      单选面板走 scrollList 自身样式；此处面板外壳只做 z-index 与动画）--- */
   /* z-index 由 zIndex prop 经 popupStyle 内联注入（对齐 Semi popoverNumbers.DEFAULT_Z_INDEX=1030）。 */
-  .cd-time-picker__panel:focus-visible {
+  .cd-time-picker-panel:focus-visible {
     outline: none;
   }
-  .cd-time-picker__panel--no-motion {
+  .cd-time-picker-panel--no-motion {
     transition: none;
   }
 
-  /* 面板内列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
-     解除 ScrollList 默认 `flex: 1 1 0%` 的等分，让下面的列宽 width 生效。
-     列间 1px 8% border 保留（对齐 Semi：scrollList `-item:not(:last-child)` 的 border-right，
-     Semi timePicker 只去了 -item-wheel 的 border，normal item 的 border-right 保留）。 */
-  :global(.cd-time-picker__panel .cd-scrolllist-item) {
+  /* --- 面板列视图（TimePicker 独立面板专属，对齐 Semi timePicker.scss `.semi-timepicker-panel ...`）---
+     锚点 `.cd-time-picker-panel` = Combobox 在 TimePicker 场景传入的默认 prefixCls（ScrollList 根 class）；
+     DatePicker dateTime 的 tpk 层传不同 prefixCls，不吃这套 64px，改由 MonthsGrid 的 width:100%+flex:1 均分。
+     面板 portal 到 body，故列类用裸 :global（无祖先前缀，仅 TimePicker 渲染时注入，不污染 DatePicker tpk）。 */
+
+  /* 列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
+     解除 ScrollList 默认 `flex: 1 1 0%` 等分，让下面列宽 width 生效。 */
+  :global(.cd-time-picker-panel .cd-scrolllist-item) {
     flex: none;
   }
-  /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`：
-     Semi 是无祖先前缀的裸类，这里用 :global() 包裸类等价——面板 use:floating portal 到 body，
-     scoped 祖先选择器（如 .cd-time-picker）匹配不到 portal 出去的列。 */
-  :global(.cd-time-picker__panel-list-hour) {
+  /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`）。 */
+  :global(.cd-time-picker-panel-list-hour) {
     inline-size: var(--cd-width-time-picker-panel-list-hour);
   }
-  :global(.cd-time-picker__panel-list-minute) {
+  :global(.cd-time-picker-panel-list-minute) {
     inline-size: var(--cd-width-time-picker-panel-list-minute);
   }
-  :global(.cd-time-picker__panel-list-second) {
+  :global(.cd-time-picker-panel-list-second) {
     inline-size: var(--cd-width-time-picker-panel-list-second);
   }
-  :global(.cd-time-picker__panel-list-ampm) {
+  :global(.cd-time-picker-panel-list-ampm) {
     inline-size: var(--cd-width-time-picker-panel-list-ampm);
   }
-
   /* 面板 body 高度对齐 Semi $height-timePicker_panel_body（252px）。 */
-  .cd-time-picker__panel :global(.cd-scrolllist-body) {
+  :global(.cd-time-picker-panel .cd-scrolllist-body) {
     block-size: var(--cd-height-time-picker-panel-body);
   }
-  /* 面板内 normal 列的居中留白按 Semi 公式重算：(panel_body - item) * 0.5（对齐 timePicker.scss，
-     ScrollList 默认用 300px 视窗高，timePicker 面板收窄到 252px 需重算 :before 与 padding-bottom，
-     否则各列选中项垂直不居中）。 */
-  .cd-time-picker__panel :global(.cd-scrolllist-item > ul::before) {
+  /* 列居中留白按 Semi 公式 (panel_body - item) * 0.5 重算（面板收窄到 252px，替代 ScrollList 默认 300px 视窗高）。 */
+  :global(.cd-time-picker-panel .cd-scrolllist-item > ul::before) {
     block-size: calc((var(--cd-height-time-picker-panel-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
-  .cd-time-picker__panel :global(.cd-scrolllist-item > ul) {
+  :global(.cd-time-picker-panel .cd-scrolllist-item > ul) {
     padding-block-end: calc((var(--cd-height-time-picker-panel-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
+
   /* --- range 双列并排（对齐 Semi timePicker.scss `-range-panel .lists`）--- */
   .cd-time-picker__lists {
     display: flex;
@@ -707,7 +706,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-time-picker__panel {
+    .cd-time-picker-panel {
       transition: none;
     }
   }

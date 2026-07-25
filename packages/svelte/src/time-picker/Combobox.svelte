@@ -37,7 +37,7 @@
     disabledMinutes,
     disabledSeconds,
     hideDisabledOptions = false,
-    prefixCls = 'cd-time-picker',
+    prefixCls = 'cd-time-picker-panel',
     panelHeader,
     panelFooter,
     scrollItemProps = {},
@@ -146,8 +146,12 @@
   }
 </script>
 
-<div class={`${prefixCls}-panel`}>
-  <ScrollList header={panelHeader} footer={panelFooter}>
+<!-- 对齐 Semi Combobox.render()：直接返回 ScrollList，无额外 wrapper（Semi 无 -panel div）。
+     Combobox 自身零样式（对齐 Semi：面板尺寸样式由 timePicker.scss / datePicker.scss 各自提供，不在共享组件里）。
+     ScrollList 根挂 `${prefixCls}`（与列 `${prefixCls}-list-*` 同前缀，作面板锚点）：
+       · TimePicker 传默认 `cd-time-picker-panel` → 命中 TimePicker.svelte 的 64/72px 列宽（timePicker.scss）
+       · DatePicker tpk 传 `cd-datepicker-tpk-list` → 不命中 64px，由 MonthsGrid 的 width:100%+flex:1 均分（datePicker.scss）。 -->
+<ScrollList class={prefixCls} header={panelHeader} footer={panelFooter}>
     {#if use12Hours}
       <ScrollItem
         mode="normal"
@@ -197,4 +201,3 @@
       />
     {/if}
   </ScrollList>
-</div>
