@@ -85,7 +85,16 @@
   handlePresetClick（照搬 Semi：start/end 可为函数/string/number/Date→Date，single 用 start、range 用 [start,end]）。
   面板按 presetPosition 渲染 QuickControl（top/bottom 在主体上下、left/right 在 container 内左右，monthRange 不支持 preset 对齐 Semi）。
   测试 DatePickerNext +3（bottom 点 preset onChange/left class/dateRange preset string[]）。
-- 待补：insetInput（面板内输入框，依赖 inputFoundation 数据模型 insetInputValue，独立子任务，非核心）。剩样式(阶段3，让功能真机可视)。
+- ✅ 第十批（insetInput 面板内输入框，测试全绿）：
+  - input-foundation.ts（照搬 Semi inputFoundation inset 部分，方法名对齐）：concatInsetInputValue/concatInsetDateAndTime/
+    concatInsetDateRange/getInsetInputValue/handleInsetInputChange/_autoFillTimeToInsetInputValue/getInsetInputPlaceholder。
+    数据模型 InsetInputValue={monthLeft/Right:{dateInput,timeInput}}。单测 8。
+  - _utils getInsetInputValueFromInsetInputStr/getInsetInputFormatToken 照搬 Semi。
+  - InsetInput.svelte（对齐 Semi dateInput.renderInputInset + insetInput.tsx）：div.-inset-input-wrapper[x-type] >
+    InsetDateInput+InsetTimeInput(复用 Input)，range 双组+separator；改值→handleInsetInputChange→拼串。
+  - DatePickerNext 接入：insetInput prop → 面板顶渲染 InsetInput，onInsetChange 解析 insetInputStr→Date(s)→提交。
+    测试 DatePickerNext +3（面板顶输入框/输入日期 onChange/dateTimeRange 4 输入框）。
+  **DatePicker 全特性完成：七类型+值模型+range 状态机+时间列+禁用联动+双面板+preset+inset。剩样式(阶段3)。**
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

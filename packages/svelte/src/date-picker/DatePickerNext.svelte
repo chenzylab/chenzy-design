@@ -15,6 +15,9 @@
   import MonthsGrid from './MonthsGrid.svelte';
   import YearAndMonth from './YearAndMonth.svelte';
   import QuickControl from './QuickControl.svelte';
+  import InsetInput from './InsetInput.svelte';
+  import getInsetInputFormatToken from './_utils/getInsetInputFormatToken.js';
+  import { parse as dateFnsParse } from 'date-fns';
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
@@ -49,6 +52,8 @@
     /** 预设位置（对齐 Semi presetPosition，默认 bottom）。 */
     presetPosition?: 'left' | 'right' | 'top' | 'bottom';
     onPresetClick?: (preset: PresetType, e: MouseEvent) => void;
+    /** 面板内嵌输入框（对齐 Semi insetInput）：触发器只读，面板顶部输入。 */
+    insetInput?: boolean;
     onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChangeWithDateFirst?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -74,6 +79,7 @@
     presets = [],
     presetPosition = 'bottom',
     onPresetClick,
+    insetInput = false,
     onChange,
     onChangeWithDateFirst = false,
     onOpenChange,
@@ -217,6 +223,34 @@
     onPresetClick?.(preset, e);
   }
 
+  // ===== insetInput：面板内输入框 → 解析成 value 提交（对齐 Semi handleInsetInputChange 链）=====
+  // inset 当前 value 数组（供 InsetInput 反解显示）。
+  const insetValue = $derived<Array<Date | null>>(
+    st.isRange
+      ? [st.currentRange[0], st.currentRange[1]]
+      : st.currentSingle instanceof Date
+        ? [st.currentSingle]
+        : [],
+  );
+  const insetFormat = $derived(getInsetInputFormatToken({ type, format }));
+
+  function parseInsetOne(s: string): Date | null {
+    const t = s.trim();
+    if (!t) return null;
+    const d = dateFnsParse(t, insetFormat, new Date());
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // onInsetChange —— insetInputStr 拼串 → 按 type 解析成 Date(s) → 提交（两端完整才 range 通知）。
+  function onInsetChange(insetInputStr: string) {
+    if (st.isRange) {
+      const [ls = '', rs = ''] = insetInputStr.split(strings.DEFAULT_SEPARATOR_RANGE);
+      st.handleRangeSelectedChange([parseInsetOne(ls), parseInsetOne(rs)]);
+    } else {
+      st.handleSelectedChange(parseInsetOne(insetInputStr));
+    }
+  }
+
   const disabledDateWrap = $derived(
     disabledDate ? (date: Date) => disabledDate!(date) : undefined,
   );
@@ -246,6 +280,16 @@
             <QuickControl {type} {presets} presetPosition="left" onPresetClick={handlePresetClick} />
           {/if}
           <div>
+            <!-- insetInput：面板内输入框（对齐 Semi renderDateInput，面板顶部） -->
+            {#if insetInput}
+              <InsetInput
+                {type}
+                value={insetValue}
+                {format}
+                rangeSeparator={strings.DEFAULT_SEPARATOR_RANGE}
+                onInsetChange={onInsetChange}
+              />
+            {/if}
             <!-- preset top -->
             {#if presetPosition === 'top' && presets.length && type !== 'monthRange'}
               <QuickControl {type} {presets} presetPosition="top" onPresetClick={handlePresetClick} />

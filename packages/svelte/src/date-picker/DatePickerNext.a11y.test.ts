@@ -184,6 +184,43 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
     expect(val.join(' ')).toContain('2026-01-18');
   });
 
+  it('insetInput：面板顶部渲染 InsetInput 输入框', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: { type: 'date', defaultOpen: true, insetInput: true },
+    });
+    await tick();
+    const wrapper = document.querySelector(`.${PREFIX}-inset-input-wrapper`);
+    expect(wrapper).not.toBeNull();
+    // date 类型：至少一个日期输入框。
+    expect(wrapper!.querySelectorAll('input').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('insetInput：输入日期串 → onChange 提交', async () => {
+    const onChange = vi.fn();
+    renderWithLocale(DatePickerNext, {
+      props: { type: 'date', defaultOpen: true, insetInput: true, onChange },
+    });
+    await tick();
+    const input = document.querySelector(
+      `.${PREFIX}-inset-input-wrapper input`,
+    ) as HTMLInputElement;
+    input.value = '2026-01-15';
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick();
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.calls[onChange.mock.calls.length - 1]![0]).toBe('2026-01-15');
+  });
+
+  it('dateTimeRange insetInput：4 输入框（左右各 date+time）', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: { type: 'dateTimeRange', defaultOpen: true, insetInput: true },
+    });
+    await tick();
+    const wrapper = document.querySelector(`.${PREFIX}-inset-input-wrapper`)!;
+    // 左 date+time + 右 date+time = 4 输入框。
+    expect(wrapper.querySelectorAll('input').length).toBe(4);
+  });
+
   it('monthRange：面板双列 YearAndMonth（left+right）', async () => {
     renderWithLocale(DatePickerNext, {
       props: {
