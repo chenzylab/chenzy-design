@@ -101,3 +101,43 @@
     {/if}
   {/if}
 </div>
+
+<style>
+  /* InsetInput 面板内输入框 —— 对齐 Semi datePicker.scss `&-inset-input`（856-894）。
+     class 为动态字符串，用 :global 打洞。token：wrapper column-gap=8、padding=12 16 0、
+     宽度 date 284/range 568/month 165/monthRange 331；separator 高 32、padding 0 4、color text-3。 */
+  :global(.cd-datepicker-inset-input-wrapper) {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    box-sizing: border-box;
+    column-gap: var(--cd-spacing-tight, 8px);
+    padding: 12px 16px;
+    padding-bottom: 0;
+    width: 284px;
+  }
+  :global(.cd-datepicker-inset-input-wrapper[x-type='dateRange']),
+  :global(.cd-datepicker-inset-input-wrapper[x-type='dateTimeRange']) {
+    width: 568px;
+  }
+  :global(.cd-datepicker-inset-input-wrapper[x-type='month']) {
+    width: 165px;
+  }
+  :global(.cd-datepicker-inset-input-wrapper[x-type='monthRange']) {
+    width: 331px;
+  }
+  /* 内嵌 Input 均分撑满（对齐 Semi `.semi-input-wrapper { flex: 1 }`）。 */
+  :global(.cd-datepicker-inset-input-wrapper .cd-input-wrapper) {
+    flex: 1;
+    flex-shrink: 0;
+  }
+  /* 分隔符（对齐 Semi `&-separator`：高 32、padding 0 4、text-3）。 */
+  :global(.cd-datepicker-inset-input-separator) {
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 4px;
+    color: var(--cd-color-text-3);
+  }
+</style>
