@@ -70,7 +70,7 @@
     placeholder,
     format,
     showClear = false,
-    inputReadOnly = true,
+    inputReadOnly = false,
     validateStatus,
     size = 'default',
     weekStartsOn = numbers.WEEK_START_ON as WeekStartNumber,
@@ -140,6 +140,40 @@
     rangeInputFocus = rangeType;
     st.setOpen(true);
   }
+
+  // 手动输入态（对齐 Semi inputValue）：正在编辑时 inputValue 非 null，展示以它为准；
+  // 提交/关闭后回 null，展示回落 formattedValue/rangeTriggerValue。inset 时强制只读（对齐 Semi）。
+  const effectiveReadOnly = $derived(inputReadOnly || insetInput);
+  let inputValue = $state<string | null>(null);
+
+  // 单值手动输入变化（对齐 Semi handleChange → 更新 inputValue）。
+  function handleInputChange(v: string) {
+    inputValue = v;
+  }
+  // range 手动输入变化（对齐 Semi handleRangeInputChange → 拼 `start${sep}end` 更新 inputValue）。
+  function handleRangeInputChange(rangeStart: string, rangeEnd: string) {
+    inputValue = `${rangeStart}${rangeSep}${rangeEnd}`;
+  }
+  // 回车提交（对齐 Semi handleRangeInputEnterPress/notifyEnter → handleInputComplete）。
+  function handleEnterPress() {
+    if (inputValue !== null) {
+      st.handleInputComplete(inputValue);
+      inputValue = null;
+    }
+  }
+
+  // 面板关闭：提交未决输入并清编辑态（对齐 Semi 关闭时 handleInputComplete，展示回落 formattedValue）。
+  // 仅在 open 由 true→false 的转换时提交（否则面板常闭时每次输入都会被误清空）。
+  let prevOpen = st.isOpen;
+  $effect(() => {
+    const nowOpen = st.isOpen;
+    if (prevOpen && !nowOpen && inputValue !== null) {
+      const pending = inputValue;
+      inputValue = null;
+      st.handleInputComplete(pending);
+    }
+    prevOpen = nowOpen;
+  });
   // 面板初始定位月：选中值 / range 起点 / defaultPickerValue / 今天。
   const panelPickerValue = $derived(
     (st.currentSingle instanceof Date ? st.currentSingle : null) ?? st.currentRange[0] ?? defaultPickerValue,
@@ -151,6 +185,10 @@
   // 触发器展示文案（foundation formattedValue）。
   const triggerText = $derived(st.formattedValue);
   const phText = $derived(placeholder ?? loc().t(`DatePicker.placeholder`));
+  // 触发器展示值：编辑中用 inputValue，否则 range 用双端串、单值用 formattedValue。
+  const triggerDisplay = $derived(
+    inputValue !== null ? inputValue : st.isRange ? rangeTriggerValue : triggerText,
+  );
 
   function openPanel() {
     if (disabled) return;
@@ -357,16 +395,19 @@
     >
       <DateInput
         {type}
-        value={st.isRange ? rangeTriggerValue : triggerText}
+        value={triggerDisplay}
         placeholder={phText}
         {disabled}
         {showClear}
-        {inputReadOnly}
+        inputReadOnly={effectiveReadOnly}
         {size}
         onClear={handleClear}
+        onChange={handleInputChange}
+        onEnterPress={handleEnterPress}
         rangeSeparator={rangeSep}
         {rangeInputFocus}
         onRangeFocus={handleRangeFocus}
+        onRangeChange={handleRangeInputChange}
         {...dateInputRest}
       />
     </div>

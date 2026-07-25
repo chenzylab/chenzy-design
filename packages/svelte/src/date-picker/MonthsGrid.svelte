@@ -124,7 +124,7 @@
   {@const detail = panelDetail(panelType)}
   <div
     class={`${PREFIX}-month-grid-${panelType}`}
-    x-open-type={detail.isTimePickerOpen ? 'time' : detail.isYearPickerOpen ? 'year' : 'date'}
+    {...{ 'x-open-type': detail.isTimePickerOpen ? 'time' : detail.isYearPickerOpen ? 'year' : 'date' }}
   >
     {#if detail.isYearPickerOpen}
       <div class={`${PREFIX}-yam`}>

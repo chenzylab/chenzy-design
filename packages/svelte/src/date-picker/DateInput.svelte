@@ -8,7 +8,8 @@
   import Input from '../input/Input.svelte';
   import { IconCalendar, IconCalendarClock } from '@chenzy-design/icons';
   import { cssClasses, type PickerType, type PickerSize } from './constants.js';
-  import type { ValidateStatus, RangeInputFocus } from './date-picker-foundation.svelte.js';
+  import type { ValidateStatus } from './date-picker-foundation.svelte.js';
+  import type { RangeInputFocus } from './month-foundation.svelte.js';
 
   interface Props {
     type: PickerType;
@@ -101,8 +102,8 @@
         readonly={inputReadOnly}
         placeholder={rangePlaceholder}
         value={rangeStart}
-        onChange={(v, e) => onRangeChange?.(v, rangeEnd, e)}
-        onfocus={(e) => onRangeFocus?.(e, 'rangeStart')}
+        onChange={(v: string, e: Event) => onRangeChange?.(v, rangeEnd, e)}
+        onfocus={(e: FocusEvent) => onRangeFocus?.(e, 'rangeStart')}
         {...(onEnterPress !== undefined ? { onEnterPress } : {})}
       />
     </div>
@@ -127,8 +128,8 @@
         readonly={inputReadOnly}
         placeholder={rangePlaceholder}
         value={rangeEnd}
-        onChange={(v, e) => onRangeChange?.(rangeStart, v, e)}
-        onfocus={(e) => onRangeFocus?.(e, 'rangeEnd')}
+        onChange={(v: string, e: Event) => onRangeChange?.(rangeStart, v, e)}
+        onfocus={(e: FocusEvent) => onRangeFocus?.(e, 'rangeEnd')}
         {...(onEnterPress !== undefined ? { onEnterPress } : {})}
       />
     </div>

@@ -9,7 +9,13 @@
  * 受控红线：不无条件回写 value/open，仅 onChange/onOpenChange。
  */
 import { untrack } from 'svelte';
-import { startOfDay, utcToZonedTime, zonedTimeToUtc, localeFormat as coreLocaleFormat } from '@chenzy-design/core';
+import {
+  startOfDay,
+  utcToZonedTime,
+  zonedTimeToUtc,
+  localeFormat as coreLocaleFormat,
+  compatibleParse,
+} from '@chenzy-design/core';
 import { getDefaultFormatTokenByType } from './constants.js';
 import isValidTimeZone from './_utils/isValidTimeZone.js';
 import type { PickerType, PickerSize } from './constants.js';
@@ -232,6 +238,53 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     _notifyChange(emptied ? [] : next);
   }
 
+  // ===================== 手动输入解析（对齐 Semi parseInput / handleInputComplete）=====================
+  /**
+   * parseInput —— 照搬 Semi foundation.parseInput：输入串 → Date[]。
+   * 单值：compatibleParse 后要求 localeFormat(parsed)===input（往返一致才有效）。
+   * range：按 rangeSeparator 拆分各端解析，全部有效且往返一致才返回（升序排序）。
+   * 无效返回 []（调用方据此保留原值）。
+   */
+  function parseInput(input = '', format?: string): Date[] {
+    const token = format ?? activeFormatToken;
+    if (!input || !input.length || !token) return [];
+    const now = new Date();
+    if (_isRangeType()) {
+      const sep = p().rangeSeparator;
+      const values = input.split(sep);
+      const parsed = values.reduce<Date[]>((arr, cur) => {
+        const v = cur ? compatibleParse(cur.trim(), token, now) : null;
+        if (v) arr.push(v);
+        return arr;
+      }, []);
+      const formatted = parsed.map((v) => localeFormat(v, token)).join(sep);
+      // 往返一致（去两端空白后比对，容忍 separator 周围空格）。
+      if (parsed.length === values.filter((s) => s.trim()).length && formatted.replace(/\s/g, '') === input.replace(/\s/g, '')) {
+        parsed.sort((a, b) => a.getTime() - b.getTime());
+        return parsed;
+      }
+      return [];
+    }
+    const parsed = compatibleParse(input.trim(), token, now);
+    if (parsed && localeFormat(parsed, token) === input.trim()) return [parsed];
+    return [];
+  }
+
+  /**
+   * handleInputComplete —— 照搬 Semi foundation.handleInputComplete：回车/失焦提交手动输入。
+   * 解析成功则更新值并通知；解析失败（空或非法）则回退当前值（不清空）。
+   */
+  function handleInputComplete(input = ''): void {
+    const parsed = input ? parseInput(input) : [];
+    if (!parsed.length) return; // 非法输入：保留原值，不提交（对齐 Semi 空回退，此处更保守不落今天）
+    if (_isRangeType()) {
+      const pair: RangeValue = [parsed[0] ?? null, parsed[1] ?? null];
+      handleRangeSelectedChange(pair);
+    } else {
+      handleSelectedChange(parsed[0] ?? null);
+    }
+  }
+
   // ===================== open 状态（受控/非受控）=====================
   const isOpenControlled = $derived(p().open !== undefined);
   let innerOpen = $state(untrack(() => getProps().defaultOpen));
@@ -261,6 +314,8 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     formatShowText,
     handleSelectedChange,
     handleRangeSelectedChange,
+    parseInput,
+    handleInputComplete,
     // open
     get isOpen() { return isOpen; },
     setOpen,

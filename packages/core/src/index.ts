@@ -290,6 +290,8 @@ export {
   getCurrentTimeZone,
   isValidTimeZone,
   localeFormat,
+  compatibleParse,
+  isValueParseValid,
   format as tzFormat,
   parse as tzParse,
   IANAOffsetMap,

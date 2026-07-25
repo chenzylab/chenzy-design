@@ -10,7 +10,13 @@ import {
   zonedTimeToUtc as dateFnsZonedTimeToUtc,
   type OptionsWithTZ,
 } from 'date-fns-tz';
-import { parse as dateFnsParse, format as dateFnsBaseFormat, type Locale } from 'date-fns';
+import {
+  parse as dateFnsParse,
+  format as dateFnsBaseFormat,
+  parseISO as dateFnsParseISO,
+  isValid as dateFnsIsValid,
+  type Locale,
+} from 'date-fns';
 
 /**
  * Need to be IANA logo without daylight saving time
@@ -237,4 +243,59 @@ export function isValidTimeZone(timeZone?: string | number): boolean {
 const localeFormat = (date: Date, token: string, dateFnsLocale?: Locale): string =>
   dateFnsBaseFormat(date, token, dateFnsLocale ? { locale: dateFnsLocale } : undefined);
 
-export { format, parse, utcToZonedTime, zonedTimeToUtc, getCurrentTimeZone, localeFormat };
+/**
+ * compatibleParse —— 照搬 Semi datePicker/_utils/parser.ts：把输入串解析为 Date。
+ * 三级兜底：date-fns parse(formatToken) → parseISO → new Date(Date.parse)；
+ * 4 位以上年份视为无效（防 date-fns 把 '20210' 之类解析成异常年）。
+ */
+const compatibleParse = (
+  value: string,
+  formatToken?: string,
+  baseDate?: Date,
+  locale?: Locale,
+): Date | null => {
+  let result: Date | null = null;
+  if (value) {
+    if (formatToken) {
+      const base = baseDate ?? new Date();
+      result = dateFnsParse(value, formatToken, base, locale ? { locale } : undefined);
+    }
+    if (!result || !dateFnsIsValid(result)) {
+      result = dateFnsParseISO(value);
+    }
+    if (!dateFnsIsValid(result)) {
+      result = new Date(Date.parse(value));
+    }
+    const yearInvalid = dateFnsIsValid(result) && String(result.getFullYear()).length > 4;
+    if (!dateFnsIsValid(result) || yearInvalid) {
+      result = null;
+    }
+  }
+  return result;
+};
+
+/**
+ * isValueParseValid —— 照搬 Semi parser.ts：value 能否被 date-fns parse(formatToken) 解析为有效日期。
+ */
+const isValueParseValid = (options: {
+  value: string;
+  formatToken: string;
+  baseDate?: Date;
+  locale?: Locale;
+}): boolean => {
+  const { value, locale, formatToken } = options;
+  const baseDate = options.baseDate ?? new Date();
+  const result = dateFnsParse(value, formatToken, baseDate, locale ? { locale } : undefined);
+  return dateFnsIsValid(result);
+};
+
+export {
+  format,
+  parse,
+  utcToZonedTime,
+  zonedTimeToUtc,
+  getCurrentTimeZone,
+  localeFormat,
+  compatibleParse,
+  isValueParseValid,
+};
