@@ -45,6 +45,7 @@
     disabledDate,
     defaultPickerValue,
     multiple = false,
+    syncSwitchMonth = false,
     startYear,
     endYear,
     onSelectedChange,
@@ -58,6 +59,7 @@
   const st = createMonthsGridState(() => ({
     type,
     multiple,
+    syncSwitchMonth,
     ...(defaultPickerValue !== undefined ? { defaultPickerValue } : {}),
     ...(disabledDate ? { disabledDate } : {}),
     ...(onSelectedChange ? { onSelectedChange } : {}),
@@ -69,6 +71,8 @@
   const rangeEnd = $derived(rangeEndProp ?? st.rangeEnd);
 
   const LEFT = strings.PANEL_TYPE_LEFT as PanelType;
+  const RIGHT = strings.PANEL_TYPE_RIGHT as PanelType;
+  const isRange = $derived(/range/i.test(type));
 
   // Navigation monthText（对齐 Semi：locale.months 模板；此处用 yyyy-MM 简化到 locale monthText）。
   function monthTextOf(panelType: PanelType): string {
@@ -124,6 +128,8 @@
         <Navigation
           monthText={monthTextOf(panelType)}
           {density}
+          {panelType}
+          shouldBimonthSwitch={isRange && syncSwitchMonth}
           onMonthClick={() => st.showYearPicker(panelType)}
           onPrevMonth={() => st.prevMonth(panelType)}
           onNextMonth={() => st.nextMonth(panelType)}
@@ -161,4 +167,12 @@
   </div>
 {/snippet}
 
-{@render panel(LEFT)}
+{#if isRange}
+  <!-- range 双面板并排（对齐 Semi -month-grid-left/-right） -->
+  <div class={`${PREFIX}-month-grid`}>
+    {@render panel(LEFT)}
+    {@render panel(RIGHT)}
+  </div>
+{:else}
+  {@render panel(LEFT)}
+{/if}

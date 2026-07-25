@@ -6,22 +6,19 @@
   range/dateTime/yam/tpk/footer/inset/preset 留后续里程碑（此处只装 date 单面板）。
 -->
 <script lang="ts">
-  import { getContext, untrack } from 'svelte';
-  import { addMonths, startOfDay } from '@chenzy-design/core';
+  import { getContext } from 'svelte';
   import { format as dateFnsFormat } from 'date-fns';
   import { useLocale } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/context.js';
   import Popover from '../popover/Popover.svelte';
   import DateInput from './DateInput.svelte';
-  import Navigation from './Navigation.svelte';
-  import Month from './Month.svelte';
+  import MonthsGrid from './MonthsGrid.svelte';
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
     type DatePickerFoundationProps,
     type ValidateStatus,
   } from './date-picker-foundation.svelte.js';
-  import type { MonthDayInfo } from './month-foundation.svelte.js';
   import type { WeekStartNumber } from './_utils/getDayOfWeek.js';
 
   interface Props {
@@ -96,28 +93,16 @@
   };
   const st = createDatePickerState(() => fProps);
 
-  // 面板月份游标：默认取选中值 / defaultPickerValue / 今天（Navigation 翻月改它）。
-  // untrack 初始化：只取初始值（defaultPickerValue 为初始 prop，后续翻月由本地 state 驱动）。
-  let pickerCursor = $state<Date>(
-    untrack(
-      () => (st.currentSingle instanceof Date ? st.currentSingle : null) ?? defaultPickerValue ?? new Date(),
-    ),
-  );
-  // 打开时若有选中值，游标同步到选中月（对齐 Semi 打开定位到选中月）。
-  $effect(() => {
-    if (st.isOpen && st.currentSingle instanceof Date) {
-      pickerCursor = st.currentSingle;
-    }
-  });
-
-  const monthText = $derived(dateFnsFormat(pickerCursor, 'yyyy-MM'));
-
-  // 选中值 → selected Set（fullDate 字符串，对齐 Semi）。
+  // 受控显示：选中值 → selected Set（fullDate 字符串，对齐 Semi）。MonthsGrid 自管面板游标。
   const selectedSet = $derived.by(() => {
     const s = new Set<string>();
     if (st.currentSingle instanceof Date) s.add(dateFnsFormat(st.currentSingle, 'yyyy-MM-dd'));
     return s;
   });
+  // 面板初始定位月：选中值 / defaultPickerValue / 今天。
+  const panelPickerValue = $derived(
+    (st.currentSingle instanceof Date ? st.currentSingle : null) ?? defaultPickerValue,
+  );
 
   // 触发器展示文案（foundation formattedValue）。
   const triggerText = $derived(st.formattedValue);
@@ -128,11 +113,9 @@
     st.setOpen(true);
   }
 
-  function handleDayClick(day: MonthDayInfo) {
-    // fullDate=yyyy-MM-dd → 墙上时间 Date（面板选出的即墙上时间域）。
-    const [y, m, d] = day.fullDate.split('-').map(Number);
-    const picked = startOfDay(new Date(y!, (m ?? 1) - 1, d ?? 1));
-    st.handleSelectedChange(picked);
+  // MonthsGrid 选中回调（Date[] 墙上时间域）→ 联动值模型 foundation。date 单选取 dates[0]。
+  function handleSelectedChange(dates: Date[]) {
+    st.handleSelectedChange(dates[0] ?? null);
     st.setOpen(false);
   }
 
@@ -143,8 +126,10 @@
   const disabledDateWrap = $derived(
     disabledDate ? (date: Date) => disabledDate!(date) : undefined,
   );
-  // 只在有值时传给子组件，兼容 exactOptionalPropertyTypes。
-  const monthRest = $derived(disabledDateWrap ? { disabledDate: disabledDateWrap } : {});
+  const monthsGridRest = $derived({
+    ...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {}),
+    ...(panelPickerValue ? { defaultPickerValue: panelPickerValue } : {}),
+  });
   const dateInputRest = $derived(validateStatus !== undefined ? { validateStatus } : {});
 </script>
 
@@ -160,19 +145,12 @@
       <div class={PREFIX} {...{ 'x-type': type }}>
         <div class={`${PREFIX}-container`}>
           <div>
-            <Navigation
-              {monthText}
-              onPrevMonth={() => (pickerCursor = addMonths(pickerCursor, -1))}
-              onNextMonth={() => (pickerCursor = addMonths(pickerCursor, 1))}
-              onPrevYear={() => (pickerCursor = addMonths(pickerCursor, -12))}
-              onNextYear={() => (pickerCursor = addMonths(pickerCursor, 12))}
-            />
-            <Month
-              month={pickerCursor}
+            <MonthsGrid
+              {type}
               selected={selectedSet}
               {weekStartsOn}
-              onDayClick={handleDayClick}
-              {...monthRest}
+              onSelectedChange={handleSelectedChange}
+              {...monthsGridRest}
             />
           </div>
         </div>

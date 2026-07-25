@@ -13,8 +13,13 @@ import type { Component } from 'svelte';
 import axe, { type RunOptions, type Result } from 'axe-core';
 
 // 被测组件的宽松构造器类型——props 形态各异，测试帮手不关心其精确 prop 签名。
-// 用 Record<string, unknown> 而非 any，既满足 eslint no-explicit-any，又能接收任意组件。
+// 用 Record<string, unknown> 而非 any 满足 eslint no-explicit-any；但必填 prop 的组件
+// （如 Month 的 month、MonthsGrid 的 type）在 exactOptionalPropertyTypes 下与该类型不兼容，
+// 故 renderWithLocale 的 component 入参放宽为「任意 props 的 Component」（unknown props），
+// 运行时 props 由调用方通过 options.props 传入，帮手不校验其形态。
 type AnyComponent = Component<Record<string, unknown>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPropsComponent = Component<any>;
 import { expect } from 'vitest';
 import LocaleHarness from './LocaleHarness.svelte';
 
@@ -35,7 +40,7 @@ export interface RenderWithLocaleOptions {
  * 纯展示组件（无 useLocale）同样可用——Provider 包裹无副作用。
  */
 export function renderWithLocale(
-  component: AnyComponent,
+  component: AnyPropsComponent,
   options: RenderWithLocaleOptions = {},
 ): RenderResult<AnyComponent> {
   const { props = {}, locale = 'en_US' } = options;

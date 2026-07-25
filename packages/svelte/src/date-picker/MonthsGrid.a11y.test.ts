@@ -62,4 +62,36 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     });
     expect(container.querySelector(`.${PREFIX}-switch`)).not.toBeNull();
   });
+
+  it('dateRange：双面板并排（left+right），两个 Navigation + 两个 Month grid', () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'dateRange', defaultPickerValue: new Date(2026, 0, 1) },
+    });
+    expect(container.querySelector(`.${PREFIX}-month-grid-left`)).not.toBeNull();
+    expect(container.querySelector(`.${PREFIX}-month-grid-right`)).not.toBeNull();
+    expect(container.querySelectorAll(`.${PREFIX}-navigation`).length).toBe(2);
+    expect(container.querySelectorAll(`.${PREFIX}-month[role="grid"]`).length).toBe(2);
+  });
+
+  it('dateRange：左右面板初始不同月（右=左+1，避免同月）', () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'dateRange', defaultPickerValue: new Date(2026, 0, 1) },
+    });
+    const navMonths = container.querySelectorAll(`.${PREFIX}-navigation-month`);
+    expect(navMonths[0]!.textContent).not.toBe(navMonths[1]!.textContent);
+  });
+
+  it('dateRange 点两日期触发 onSelectedChange（首点 start，次点 end）', async () => {
+    const onSelectedChange = vi.fn();
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'dateRange', defaultPickerValue: new Date(2026, 0, 1), onSelectedChange },
+    });
+    // 左面板点 10 号（2026-01）。
+    const left = container.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-10"]') as HTMLElement).click();
+    await tick();
+    (left.querySelector('[aria-label="2026-01-20"]') as HTMLElement).click();
+    await tick();
+    expect(onSelectedChange).toHaveBeenCalled();
+  });
 });
