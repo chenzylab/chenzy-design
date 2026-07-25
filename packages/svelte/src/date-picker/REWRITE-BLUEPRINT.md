@@ -53,7 +53,12 @@
   - MonthsGrid range 双面板并排(-month-grid-left/-right，Navigation panelType+shouldBimonthSwitch，初始月错开)+ 测试 8。
   - DatePickerNext 面板换成 MonthsGrid（替换里程碑3 简化 pickerCursor）：主组件现由真状态机驱动（年月切换/翻月/hover 全活），selected 受控透传、onSelectedChange 联动值模型 foundation。
   - 修 renderWithLocale 类型：component 入参放宽为 Component<any>（AnyPropsComponent），清掉 date-picker 有必填 prop 组件测试的 20 个潜伏类型 error（里程碑2 起潜伏，之前 typecheck 过滤太窄漏了 —— 教训：typecheck 要根级递归全量看，勿只过滤源文件）。svelte 包非 dist typecheck error 归零。
-- 待补：calcDisabledTime + handleTimeChange(接 TimePanel，依赖 #18) + updateSelectedFromProps(受控 value→内部 state 反解) + maxWeekNum + 把 dateRange value 反解到 MonthsGrid rangeStart/End 显示。
+- ✅ 第四批（受控 range value 反解，测试全绿）：DatePickerNext 补 range 支持 —— currentRange 反解成
+  rangeStart/End 字符串传 MonthsGrid（受控回显 selected-start/end）、rangeInputFocus 本地流转 + setRangeInputFocus
+  透传 foundation、onSelectedChange range 分支调 handleRangeSelectedChange（两端完整才关面板）、Props.value/onChange 放宽 RangeValue。
+  MonthsGrid 接线 rangeInputFocus/setRangeInputFocus/isAnotherPanelHasOpened 到状态机。
+  DatePicker date/dateTime/dateRange 三主类型端到端跑通（真状态机驱动）。测试 DatePickerNext 6（含 dateRange 双面板/受控反解/点两日期 onChange 抛 string[]）。
+- 待补（依赖 #18 或收尾）：calcDisabledTime + handleTimeChange(接 TimePanel) + updateSelectedFromProps(内部 state 反解，当前受控走 props 反解够用) + maxWeekNum(双面板行高) + monthRange/year/month type 主组件接入。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

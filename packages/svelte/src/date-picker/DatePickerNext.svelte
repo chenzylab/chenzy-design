@@ -16,6 +16,7 @@
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
+    type RangeValue,
     type DatePickerFoundationProps,
     type ValidateStatus,
   } from './date-picker-foundation.svelte.js';
@@ -23,8 +24,8 @@
 
   interface Props {
     type?: PickerType;
-    value?: Date | Date[] | null;
-    defaultValue?: Date | Date[] | null;
+    value?: Date | Date[] | RangeValue | null;
+    defaultValue?: Date | Date[] | RangeValue | null;
     defaultPickerValue?: Date;
     open?: boolean;
     defaultOpen?: boolean;
@@ -38,7 +39,7 @@
     weekStartsOn?: WeekStartNumber;
     disabledDate?: (date: Date) => boolean;
     timeZone?: string | number;
-    onChange?: (value: Date | Date[] | null, dateString: string) => void;
+    onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChangeWithDateFirst?: boolean;
     onOpenChange?: (open: boolean) => void;
   }
@@ -93,16 +94,29 @@
   };
   const st = createDatePickerState(() => fProps);
 
-  // 受控显示：选中值 → selected Set（fullDate 字符串，对齐 Semi）。MonthsGrid 自管面板游标。
+  // 受控显示：单值 → selected Set（fullDate 字符串，对齐 Semi）。MonthsGrid 自管面板游标。
   const selectedSet = $derived.by(() => {
     const s = new Set<string>();
-    if (st.currentSingle instanceof Date) s.add(dateFnsFormat(st.currentSingle, 'yyyy-MM-dd'));
+    if (!st.isRange && st.currentSingle instanceof Date) {
+      s.add(dateFnsFormat(st.currentSingle, 'yyyy-MM-dd'));
+    }
     return s;
   });
-  // 面板初始定位月：选中值 / defaultPickerValue / 今天。
-  const panelPickerValue = $derived(
-    (st.currentSingle instanceof Date ? st.currentSingle : null) ?? defaultPickerValue,
+  // range 反解：currentRange（墙上时间）→ rangeStart/End 字符串（yyyy-MM-dd(HH:mm:ss)）传 MonthsGrid。
+  const rangeToken = $derived(st.isDateTime ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd');
+  const rangeStartStr = $derived(
+    st.isRange && st.currentRange[0] ? dateFnsFormat(st.currentRange[0]!, rangeToken) : '',
   );
+  const rangeEndStr = $derived(
+    st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, rangeToken) : '',
+  );
+  // 面板初始定位月：选中值 / range 起点 / defaultPickerValue / 今天。
+  const panelPickerValue = $derived(
+    (st.currentSingle instanceof Date ? st.currentSingle : null) ?? st.currentRange[0] ?? defaultPickerValue,
+  );
+
+  // range 焦点端（双 Input 联动占位；单 Input 阶段用本地流转，对齐 Semi rangeInputFocus）。
+  let rangeInputFocus = $state<'rangeStart' | 'rangeEnd' | false>(false);
 
   // 触发器展示文案（foundation formattedValue）。
   const triggerText = $derived(st.formattedValue);
@@ -113,14 +127,22 @@
     st.setOpen(true);
   }
 
-  // MonthsGrid 选中回调（Date[] 墙上时间域）→ 联动值模型 foundation。date 单选取 dates[0]。
+  // MonthsGrid 选中回调（Date[] 墙上时间域）→ 联动值模型 foundation。
   function handleSelectedChange(dates: Date[]) {
-    st.handleSelectedChange(dates[0] ?? null);
-    st.setOpen(false);
+    if (st.isRange) {
+      // range：dates=[start(,end)]；完整两端才关闭面板。
+      const pair: [Date | null, Date | null] = [dates[0] ?? null, dates[1] ?? null];
+      st.handleRangeSelectedChange(pair);
+      if (pair[0] && pair[1]) st.setOpen(false);
+    } else {
+      st.handleSelectedChange(dates[0] ?? null);
+      st.setOpen(false);
+    }
   }
 
   function handleClear() {
-    st.handleSelectedChange(null);
+    if (st.isRange) st.handleRangeSelectedChange([null, null]);
+    else st.handleSelectedChange(null);
   }
 
   const disabledDateWrap = $derived(
@@ -148,6 +170,10 @@
             <MonthsGrid
               {type}
               selected={selectedSet}
+              rangeStart={rangeStartStr}
+              rangeEnd={rangeEndStr}
+              {rangeInputFocus}
+              setRangeInputFocus={(f) => (rangeInputFocus = f)}
               {weekStartsOn}
               onSelectedChange={handleSelectedChange}
               {...monthsGridRest}

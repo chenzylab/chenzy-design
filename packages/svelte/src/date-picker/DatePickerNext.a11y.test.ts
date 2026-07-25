@@ -59,4 +59,47 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
     const input = container.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('2026-03-20');
   });
+
+  it('dateRange：defaultOpen 双面板 + 受控 value 反解 selected-start/end', async () => {
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'dateRange',
+        defaultOpen: true,
+        value: [new Date(2026, 0, 10), new Date(2026, 0, 20)],
+      },
+    });
+    await tick();
+    // 双面板。
+    expect(document.querySelectorAll(`.${PREFIX}-month[role="grid"]`).length).toBe(2);
+    // range 端点 class（左面板 1 月内含 start=10、end=20）。
+    expect(document.querySelector(`.${PREFIX}-day-selected-start`)).not.toBeNull();
+    expect(document.querySelector(`.${PREFIX}-day-selected-end`)).not.toBeNull();
+  });
+
+  it('dateRange：点两日期触发 onChange（两端完整才通知）', async () => {
+    const onChange = vi.fn();
+    renderWithLocale(DatePickerNext, {
+      props: {
+        type: 'dateRange',
+        defaultOpen: true,
+        defaultPickerValue: new Date(2026, 0, 1),
+        onChange,
+      },
+    });
+    await tick();
+    const left = document.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-10"]') as HTMLElement).click();
+    await tick();
+    (left.querySelector('[aria-label="2026-01-20"]') as HTMLElement).click();
+    await tick();
+    // 两端完整后通知。
+    expect(onChange).toHaveBeenCalled();
+    const lastArgs = onChange.mock.calls[onChange.mock.calls.length - 1]!;
+    // 默认 onChangeWithDateFirst=false：第一参是 dateString（range 为 string[]，对齐 Semi disposeCallbackArgs）。
+    expect(Array.isArray(lastArgs[0])).toBe(true);
+    expect((lastArgs[0] as string[]).every((s) => typeof s === 'string')).toBe(true);
+    // 含 10 与 20 两端。
+    expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-10');
+    expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-20');
+  });
 });
