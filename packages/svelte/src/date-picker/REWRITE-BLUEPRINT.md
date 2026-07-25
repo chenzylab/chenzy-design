@@ -46,8 +46,11 @@
   toYearMonth + getValidDateFormat/getValidTimeFormat + _utils(isValidDate/getFullDateOffset 照搬)。
   - 坑：$state(Set) 的 .add/.delete mutation 不响应 → selected 整体重赋值（记忆 svelte5-plain-set-map-mutation）。
   - rangeInputFocus 是 prop 非 foundation state（对齐 Semi），getter 返回 p().rangeInputFocus。
-- 待补：calcDisabledTime + handleTimeChange(dateTime 时间列联动) + updateSelectedFromProps(受控 value→内部 state 反解) +
-  _autoAdjustMonth + maxWeekNum/currentPanelHeight。然后接入 MonthsGrid.svelte 装配 + DatePickerNext。
+- ✅ 第二批（MonthsGrid.svelte 装配，测试 5 全绿）：单面板(date/dateTime) renderPanel(wrap>Navigation+Month)
+  + yam 叠加层(点月标题→YearAndMonth 滚轮，toYearMonth/showDatePanel) + Switch(dateTime) + hover/offset 透传 Month。
+  Navigation monthText 走 locale.months 模板。消费 months-grid-foundation 状态机。
+- 待补：range 双面板(MonthsGrid 渲染 left+right + _autoAdjustMonth) + calcDisabledTime + handleTimeChange(接 TimePanel，依赖 #18) +
+  updateSelectedFromProps(受控 value→内部 state 反解) + maxWeekNum。然后把 DatePickerNext 面板换成 MonthsGrid（替换里程碑3 简化 pickerCursor）。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。
