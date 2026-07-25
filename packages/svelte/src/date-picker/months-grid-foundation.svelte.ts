@@ -169,6 +169,37 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     );
   }
 
+  /**
+   * handleTimeChange —— 对齐 Semi monthsGridFoundation.handleTimeChange（dateTime 单面板路径）。
+   * 时间列变化 → 合并到面板 showDate 的年月日 + 新时分秒 → 更新面板 + 通知。
+   * dateTimeRange 双面板时间联动留后续（依赖 range value 反解到面板）。
+   */
+  function handleTimeChange(newTime: { timeStampValue: number }, panelType: PanelType = LEFT): void {
+    const panel = _getPanelDetail(panelType);
+    const showDate = panel.showDate;
+    const timeDate = new Date(newTime.timeStampValue);
+    const fullValidDate = new Date(
+      showDate.getFullYear(),
+      showDate.getMonth(),
+      showDate.getDate(),
+      timeDate.getHours(),
+      timeDate.getMinutes(),
+      timeDate.getSeconds(),
+      timeDate.getMilliseconds(),
+    );
+    const type = p().type;
+    if (type === 'dateTime') {
+      const fullDate = formatFullDate(
+        fullValidDate.getFullYear(),
+        fullValidDate.getMonth() + 1,
+        fullValidDate.getDate(),
+      );
+      // 先更新面板 pickerDate=fullValidDate（handleDateSelected 用 pickerDate 作时间源），再选中该日。
+      handleShowDateAndTime(panelType, fullValidDate);
+      handleDateSelected({ fullDate, dayNumber: fullValidDate.getDate() }, panelType);
+    }
+  }
+
   // ===== 悬停预览（对齐 Semi handleDayHover）=====
   function handleDayHover(day: { fullDate: string } = { fullDate: '' }): void {
     const fullDate = day.fullDate;
@@ -348,6 +379,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     handleDayClick,
     handleDateSelected,
     handleRangeSelected,
+    handleTimeChange,
     handleDayHover,
     handleShowDateAndTime,
     prevMonth,

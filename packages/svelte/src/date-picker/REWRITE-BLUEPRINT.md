@@ -63,8 +63,15 @@
   handleYMSelectedChange(对齐 Semi：month=new Date(y,m-1)→handleSelectedChange；monthRange=[left,right]→handleRangeSelectedChange)。
   测试 DatePickerNext 9（month 走 yam 无 grid / 选年月 onChange Date 首日 / monthRange 双列 4 滚轮）。
   **DatePicker 五主类型全端到端：date/dateTime/dateRange/month/monthRange（year 亦走 yam 分支）。核心交互内核已完整。**
-- 待补（依赖 #18 或收尾）：calcDisabledTime + handleTimeChange(接 TimePanel，依赖 TimePicker 拆分 #18) + maxWeekNum(双面板行高) +
-  年月面板 QuickControl/DateInput 内嵌(presetPosition/inset)。剩时间列(依赖#18)与样式(阶段3)。
+- ✅ 第六批（TimePicker 拆分 Combobox + dateTime 时间列接入，测试全绿）：
+  - TimePicker 拆分（#18 正式启动，规则同 DatePicker：foundation 分层 + 照搬 Semi）：
+    time-picker/combobox-foundation.svelte.ts（照搬 Semi ComboxFoundation：formatOption/generateOptions/initData(show*+options)/
+    disabledHours(use12Hours 调整)/getDisplayDateFromTimeStamp/getValidFormat，方法名对齐）+ Combobox.svelte（对应 Semi Combobox.tsx：
+    ScrollList>ScrollItem×(ampm?/hour/minute/second)，onItemChange 照搬 Semi，onChange 抛 {isAM,value,timeStampValue}）。测试 Combobox 6。
+  - months-grid-foundation 补 handleTimeChange（照搬 Semi，dateTime 单面板：合并 showDate 年月日+新时分秒→handleDateSelected）。
+  - MonthsGrid tpk 叠加层复用 Combobox（isTimePickerOpen 时显示时间列）。dateTime 时间列端到端跑通（Switch→tpk→选时→onSelectedChange）。测试 MonthsGrid +3。
+- 待补（收尾）：calcDisabledTime(禁用时间联动) + dateTimeRange 双面板时间联动(_updateTimeInDateRange) + maxWeekNum(双面板行高) +
+  TimePicker 内部改用 Combobox(消除 809 行重复) + 年月面板 QuickControl/DateInput 内嵌。剩样式(阶段3)。
 
 ## （原）下一里程碑（5）入口备忘 —— range 状态机中枢
 > 这是全项目最硬的核心（Semi monthsGridFoundation.ts 977 行），值得一个专注 turn 逐方法照搬核对，勿疲劳半推。

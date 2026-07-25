@@ -63,6 +63,39 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     expect(container.querySelector(`.${PREFIX}-switch`)).not.toBeNull();
   });
 
+  it('dateTime：点 Switch 时间段 → tpk 层显示 Combobox 时间列', async () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'dateTime', defaultPickerValue: new Date(2026, 0, 1, 10, 30) },
+    });
+    // 初始日期视图，无 tpk。
+    expect(container.querySelector(`.${PREFIX}-tpk`)).toBeNull();
+    // 点 Switch 时间段。
+    (container.querySelector(`.${PREFIX}-switch-time`) as HTMLElement).click();
+    await tick();
+    // tpk 层 + Combobox 时间列出现。
+    expect(container.querySelector(`.${PREFIX}-tpk`)).not.toBeNull();
+    expect(container.querySelector('.cd-time-picker-list-hour')).not.toBeNull();
+  });
+
+  it('dateTime：时间列选小时触发 onSelectedChange（合并日期+新时间）', async () => {
+    const onSelectedChange = vi.fn();
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: {
+        type: 'dateTime',
+        defaultPickerValue: new Date(2026, 0, 15, 10, 30, 0),
+        onSelectedChange,
+      },
+    });
+    (container.querySelector(`.${PREFIX}-switch-time`) as HTMLElement).click();
+    await tick();
+    const hourList = container.querySelector('.cd-time-picker-list-hour')!;
+    (hourList.querySelectorAll('li[role="option"]')[8] as HTMLElement).click();
+    await tick();
+    expect(onSelectedChange).toHaveBeenCalled();
+    const dates = onSelectedChange.mock.calls[onSelectedChange.mock.calls.length - 1]![0] as Date[];
+    expect(dates[0]!.getHours()).toBe(8);
+  });
+
   it('dateRange：双面板并排（left+right），两个 Navigation + 两个 Month grid', () => {
     const { container } = renderWithLocale(MonthsGrid, {
       props: { type: 'dateRange', defaultPickerValue: new Date(2026, 0, 1) },

@@ -11,6 +11,7 @@
   import Month from './Month.svelte';
   import Switch from './Switch.svelte';
   import YearAndMonth from './YearAndMonth.svelte';
+  import Combobox from '../time-picker/Combobox.svelte';
   import { cssClasses, formatToken, strings, type Density } from './constants.js';
   import {
     createMonthsGridState,
@@ -125,6 +126,17 @@
           onSelect={({ currentYear, currentMonth }) =>
             st.toYearMonth(panelType, new Date(currentYear.left, currentMonth.left - 1))}
           onBackToMain={() => st.showDatePanel(panelType)}
+        />
+      </div>
+    {/if}
+    <!-- 时间列面板（tpk 叠加层，对齐 Semi renderTimePicker）：复用 Combobox（拆分 #18） -->
+    {#if detail.isTimePickerOpen}
+      <div class={`${PREFIX}-tpk`}>
+        <Combobox
+          timeStampValue={detail.pickerDate}
+          format={formatToken.FORMAT_TIME_PICKER}
+          panelHeader={loc().t('DatePicker.selectTime')}
+          onChange={(payload) => st.handleTimeChange({ timeStampValue: payload.timeStampValue }, panelType)}
         />
       </div>
     {/if}
