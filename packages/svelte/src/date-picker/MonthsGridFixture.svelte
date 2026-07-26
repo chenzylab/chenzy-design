@@ -15,6 +15,7 @@
     max = undefined,
     defaultPickerValue = undefined,
     onSelectedChange = undefined,
+    onMaxLimit = undefined,
   }: Partial<MonthsGridFoundationProps> = $props();
 
   // range 焦点端本地联动（模拟外部双 Input：setRangeInputFocus 切换）。
@@ -29,6 +30,7 @@
     setRangeInputFocus: (f) => { focus = f; },
     isAnotherPanelHasOpened: () => false,
     get onSelectedChange() { return onSelectedChange; },
+    get onMaxLimit() { return onMaxLimit; },
   }));
 
   export function clickDay(fullDate: string) {

@@ -160,7 +160,7 @@ export function createInputFoundation(getProps: () => InputFoundationProps) {
   }): InsetInputValue {
     const type = p().type;
     const rangeSeparator = p().rangeSeparator;
-    let inputValueStr = '';
+    let inputValueStr: string;
     if (insetInputValue) {
       inputValueStr = concatInsetInputValue({ insetInputValue });
     } else {

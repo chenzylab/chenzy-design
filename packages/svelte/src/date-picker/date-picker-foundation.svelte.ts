@@ -18,7 +18,7 @@ import {
 } from '@chenzy-design/core';
 import { getDefaultFormatTokenByType } from './constants.js';
 import isValidTimeZone from './_utils/isValidTimeZone.js';
-import type { PickerType, PickerSize } from './constants.js';
+import type { PickerType } from './constants.js';
 
 export type RangeValue = [Date | null, Date | null];
 export type ValidateStatus = 'default' | 'warning' | 'error';

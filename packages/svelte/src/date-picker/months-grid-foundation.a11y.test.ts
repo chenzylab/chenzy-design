@@ -34,7 +34,7 @@ describe('months-grid-foundation：单选/导航/面板切换', () => {
   it('multiple：累加 + 再点取消 + max 限制', async () => {
     const onMaxLimit = vi.fn();
     const { getByTestId, component } = render(Fixture, {
-      props: { type: 'date', multiple: true, max: 2, onSelectedChange: () => {} },
+      props: { type: 'date', multiple: true, max: 2, onSelectedChange: () => {}, onMaxLimit },
     });
     const api = component as unknown as { clickDay: (d: string) => void };
     api.clickDay('2026-01-10');
@@ -42,6 +42,11 @@ describe('months-grid-foundation：单选/导航/面板切换', () => {
     await Promise.resolve();
     expect(getByTestId('selected').textContent).toContain('2026-01-10');
     expect(getByTestId('selected').textContent).toContain('2026-01-11');
+    // 到 max=2 后再点新日 → 不增选 + 触发 onMaxLimit（对齐 Semi）。
+    api.clickDay('2026-01-15');
+    await Promise.resolve();
+    expect(getByTestId('selected').textContent).not.toContain('2026-01-15');
+    expect(onMaxLimit).toHaveBeenCalled();
     // 再点已选 → 取消。
     api.clickDay('2026-01-10');
     await Promise.resolve();

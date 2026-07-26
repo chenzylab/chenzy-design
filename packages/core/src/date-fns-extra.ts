@@ -103,7 +103,7 @@ const GMTStringReg = /([-+]{1})(\d{2}):(\d{2})/;
  * @returns {number|undefined}
  */
 export const toIANA = (tz: string | number): string | number | undefined => {
-  let matches: RegExpMatchArray | null = null;
+  let matches: RegExpMatchArray | null;
   if (typeof tz === 'string') {
     matches = tz.match(GMTStringReg);
     if (!matches) {
@@ -153,23 +153,24 @@ export function isValidTimezoneIANAString(timeZoneString: string): boolean {
  * @returns {Date}
  */
 /* istanbul ignore next */
-const parse = (date: string | number | Date, formatToken: string, options?: any): Date => {
+const parse = (date: string | number | Date, formatToken: string, options?: OptionsWithTZ): Date => {
   if (typeof date === 'string') {
-    date = dateFnsParse(date, formatToken, new Date(), options);
+    // date-fns parse 的 options 类型（ParseOptions）与 date-fns-tz 的 OptionsWithTZ 交集足够；断言以复用同一 options。
+    date = dateFnsParse(date, formatToken, new Date(), options as Parameters<typeof dateFnsParse>[3]);
   }
   if (options && options.timeZone != null && options.timeZone !== '') {
     const timeZone = toIANA(options.timeZone);
-    options = { ...options, timeZone };
+    options = { ...options, timeZone: timeZone as string };
   }
 
   return toDate(date, options);
 };
 
 /* istanbul ignore next */
-const format = (date: number | Date, formatToken: string, options?: any): string => {
+const format = (date: number | Date, formatToken: string, options?: OptionsWithTZ): string => {
   if (options && options.timeZone != null && options.timeZone !== '') {
     const timeZone = toIANA(options.timeZone);
-    options = { ...options, timeZone };
+    options = { ...options, timeZone: timeZone as string };
 
     date = dateFnsUtcToZonedTime(date, timeZone as string, options);
   }
