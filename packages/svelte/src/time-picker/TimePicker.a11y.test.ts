@@ -18,6 +18,18 @@ describe('TimePicker a11y', () => {
     await expectNoAxeViolations(container);
   });
 
+  it('timeZone 展示：不同时区独立实例展示按该时区（存储 UTC + 派生展示）', () => {
+    // 存储 UTC 固定时刻 2026-01-01T00:00:00Z；timeZone=0 展示墙上 00，timeZone=8 展示 08。
+    const utc = new Date('2026-01-01T00:00:00.000Z');
+    const r0 = renderWithLocale(TimePicker, { props: { value: utc, timeZone: 0, format: 'HH:mm:ss' } });
+    const r8 = renderWithLocale(TimePicker, { props: { value: utc, timeZone: 8, format: 'HH:mm:ss' } });
+    const v0 = (r0.container.querySelector('.cd-time-picker__input input') as HTMLInputElement)?.value;
+    const v8 = (r8.container.querySelector('.cd-time-picker__input input') as HTMLInputElement)?.value;
+    const h0 = Number(v0?.slice(0, 2));
+    const h8 = Number(v8?.slice(0, 2));
+    expect((h0 + 8) % 24).toBe(h8);
+  });
+
   it('打开态：role=dialog 面板 + listbox/option 列（portal 到 body），无 axe violations', async () => {
     renderWithLocale(TimePicker, {
       props: { defaultOpen: true },
