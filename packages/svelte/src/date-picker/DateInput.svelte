@@ -22,6 +22,14 @@
     validateStatus?: ValidateStatus;
     size?: PickerSize;
     prefix?: import('svelte').Snippet | string;
+    /** 无边框（对齐 Semi borderless，透传 Input）。 */
+    borderless?: boolean;
+    /** 内嵌标签（对齐 Semi insetLabel，透传 Input）。 */
+    insetLabel?: import('svelte').Snippet | string;
+    /** 自定义清除图标（对齐 Semi clearIcon，透传 Input）。 */
+    clearIcon?: import('svelte').Snippet;
+    /** 输入框样式（对齐 Semi inputStyle，透传 Input style）。 */
+    inputStyle?: string;
     onChange?: (value: string, e: Event) => void;
     onEnterPress?: (e: KeyboardEvent) => void;
     onClear?: (e: MouseEvent) => void;
@@ -48,6 +56,10 @@
     validateStatus,
     size = 'default',
     prefix,
+    borderless = false,
+    insetLabel,
+    clearIcon,
+    inputStyle,
     onChange,
     onEnterPress,
     onClear,
@@ -85,6 +97,10 @@
     ...(onClear !== undefined ? { onClear } : {}),
     ...(onfocus !== undefined ? { onfocus } : {}),
     ...(onblur !== undefined ? { onblur } : {}),
+    ...(borderless ? { borderless } : {}),
+    ...(insetLabel !== undefined ? { insetLabel } : {}),
+    ...(clearIcon !== undefined ? { clearIcon } : {}),
+    ...(inputStyle !== undefined ? { style: inputStyle } : {}),
   });
 </script>
 

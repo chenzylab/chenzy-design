@@ -112,6 +112,23 @@
     onFocus?: (e: FocusEvent) => void;
     /** 触发器失焦（对齐 Semi onBlur）。 */
     onBlur?: (e: FocusEvent) => void;
+    // --- 触发器渲染定制（对齐 Semi，透传 DateInput/Input）---
+    /** 无边框触发器（对齐 Semi borderless）。 */
+    borderless?: boolean;
+    /** 触发器内嵌标签（对齐 Semi insetLabel）。 */
+    insetLabel?: import('svelte').Snippet | string;
+    /** 触发器前缀（对齐 Semi prefix）。 */
+    prefix?: import('svelte').Snippet | string;
+    /** 自定义清除图标（对齐 Semi clearIcon）。 */
+    clearIcon?: import('svelte').Snippet;
+    /** 触发器输入框样式（对齐 Semi inputStyle）。 */
+    inputStyle?: string;
+    /** range 分隔符（对齐 Semi rangeSeparator，默认 ' ~ '）。 */
+    rangeSeparator?: string;
+    /** 面板顶部自定义内容（对齐 Semi topSlot）。 */
+    topSlot?: import('svelte').Snippet;
+    /** 面板底部自定义内容（对齐 Semi bottomSlot）。 */
+    bottomSlot?: import('svelte').Snippet;
   }
 
   let {
@@ -163,6 +180,14 @@
     onClickOutSide,
     onFocus,
     onBlur,
+    borderless = false,
+    insetLabel,
+    prefix,
+    clearIcon,
+    inputStyle,
+    rangeSeparator,
+    topSlot,
+    bottomSlot,
   }: Props = $props();
 
   const loc = useLocale();
@@ -182,7 +207,7 @@
     get multiple() { return multiple; },
     get format() { return format; },
     get locale() { return loc().code; },
-    rangeSeparator: strings.DEFAULT_SEPARATOR_RANGE,
+    get rangeSeparator() { return rangeSeparator ?? strings.DEFAULT_SEPARATOR_RANGE; },
     get timeZone() { return timeZone; },
     get configTimeZone() { return configTimeZone; },
     showSecond: true,
@@ -213,7 +238,7 @@
     st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, rangeToken) : '',
   );
   // range 触发器展示串（`start${sep}end`，与 DateInput split 用同一 separator）。
-  const rangeSep = strings.DEFAULT_SEPARATOR_RANGE;
+  const rangeSep = $derived(rangeSeparator ?? strings.DEFAULT_SEPARATOR_RANGE);
   const rangeTriggerValue = $derived(
     st.isRange ? `${rangeStartStr}${rangeSep}${rangeEndStr}` : '',
   );
@@ -443,6 +468,11 @@
     ...(validateStatus !== undefined ? { validateStatus } : {}),
     ...(onFocus ? { onfocus: onFocus } : {}),
     ...(onBlur ? { onblur: onBlur } : {}),
+    ...(borderless ? { borderless } : {}),
+    ...(insetLabel !== undefined ? { insetLabel } : {}),
+    ...(prefix !== undefined ? { prefix } : {}),
+    ...(clearIcon !== undefined ? { clearIcon } : {}),
+    ...(inputStyle !== undefined ? { inputStyle } : {}),
   });
 </script>
 
@@ -468,6 +498,8 @@
         class={typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}
         {...{ 'x-type': type }}
       >
+        <!-- 面板顶部 slot（对齐 Semi topSlot） -->
+        {#if topSlot}<div class={`${PREFIX}-topSlot`}>{@render topSlot()}</div>{/if}
         <div class={`${PREFIX}-container`}>
           <!-- preset left（对齐 Semi，monthRange 暂不支持 preset） -->
           {#if presetPosition === 'left' && presets.length && type !== 'monthRange'}
@@ -542,6 +574,8 @@
             onCancelClick={handleCancel}
           />
         {/if}
+        <!-- 面板底部 slot（对齐 Semi bottomSlot） -->
+        {#if bottomSlot}<div class={`${PREFIX}-bottomSlot`}>{@render bottomSlot()}</div>{/if}
       </div>
     {/snippet}
 
