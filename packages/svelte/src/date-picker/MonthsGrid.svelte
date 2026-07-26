@@ -48,6 +48,8 @@
     disabledTime,
     defaultPickerValue,
     multiple = false,
+    max,
+    onMaxLimit,
     syncSwitchMonth = false,
     rangeInputFocus = false,
     setRangeInputFocus,
@@ -64,6 +66,8 @@
   const st = createMonthsGridState(() => ({
     type,
     multiple,
+    ...(max !== undefined ? { max } : {}),
+    ...(onMaxLimit ? { onMaxLimit } : {}),
     syncSwitchMonth,
     rangeInputFocus,
     // range 双面板：left 面板对应 rangeStart、right 对应 rangeEnd；单面板恒视为「另一面板未开」。

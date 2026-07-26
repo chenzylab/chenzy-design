@@ -47,6 +47,12 @@
     weekStartsOn?: WeekStartNumber;
     disabledDate?: (date: Date) => boolean;
     timeZone?: string | number;
+    /** 多选（仅 type=date，对齐 Semi multiple）：value/onChange 为 Date[]，点日期 toggle。 */
+    multiple?: boolean;
+    /** 多选上限（对齐 Semi max）：到上限再点触发 onMaxLimit，不再增选。 */
+    max?: number;
+    /** 多选到上限时回调（对齐 Semi onMaxSelect）。 */
+    onMaxLimit?: () => void;
     /** 快捷选择预设（对齐 Semi presets）。 */
     presets?: PresetsType;
     /** 预设位置（对齐 Semi presetPosition，默认 bottom）。 */
@@ -76,6 +82,9 @@
     weekStartsOn = numbers.WEEK_START_ON as WeekStartNumber,
     disabledDate,
     timeZone,
+    multiple = false,
+    max,
+    onMaxLimit,
     presets = [],
     presetPosition = 'bottom',
     onPresetClick,
@@ -99,7 +108,7 @@
     get defaultValue() { return defaultValue; },
     get open() { return open; },
     get defaultOpen() { return defaultOpen; },
-    multiple: false,
+    get multiple() { return multiple; },
     get format() { return format; },
     get locale() { return loc().code; },
     rangeSeparator: strings.DEFAULT_SEPARATOR_RANGE,
@@ -113,10 +122,13 @@
   };
   const st = createDatePickerState(() => fProps);
 
-  // 受控显示：单值 → selected Set（fullDate 字符串，对齐 Semi）。MonthsGrid 自管面板游标。
+  // 受控显示：单值/多选 → selected Set（fullDate 字符串，对齐 Semi）。MonthsGrid 自管面板游标。
   const selectedSet = $derived.by(() => {
     const s = new Set<string>();
-    if (!st.isRange && st.currentSingle instanceof Date) {
+    if (st.isRange) return s;
+    if (multiple && Array.isArray(st.current)) {
+      for (const d of st.current) if (d instanceof Date) s.add(dateFnsFormat(d, 'yyyy-MM-dd'));
+    } else if (st.currentSingle instanceof Date) {
       s.add(dateFnsFormat(st.currentSingle, 'yyyy-MM-dd'));
     }
     return s;
@@ -216,6 +228,9 @@
       const pair: [Date | null, Date | null] = [dates[0] ?? null, dates[1] ?? null];
       st.handleRangeSelectedChange(pair);
       if (pair[0] && pair[1]) st.setOpen(false);
+    } else if (multiple) {
+      // 多选：dates=当前全部选中日；抛数组、不关面板（继续 toggle，对齐 Semi）。
+      st.handleSelectedChange(dates);
     } else {
       st.handleSelectedChange(dates[0] ?? null);
       st.setOpen(false);
@@ -378,6 +393,9 @@
                 {rangeInputFocus}
                 setRangeInputFocus={(f) => (rangeInputFocus = f)}
                 {weekStartsOn}
+                {multiple}
+                {...(max !== undefined ? { max } : {})}
+                {...(onMaxLimit ? { onMaxLimit } : {})}
                 onSelectedChange={handleSelectedChange}
                 {...monthsGridRest}
               />

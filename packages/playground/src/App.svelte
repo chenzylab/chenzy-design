@@ -294,6 +294,7 @@
             <div><div style="margin-bottom:8px;">preset-left</div><DatePickerNext type="date" presetPosition="left" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
             <div><div style="margin-bottom:8px;">inset-date</div><DatePickerNext type="date" insetInput /></div>
             <div><div style="margin-bottom:8px;">inset-range</div><DatePickerNext type="dateRange" insetInput /></div>
+            <div><div style="margin-bottom:8px;">multiple</div><DatePickerNext type="date" multiple max={3} /></div>
           </div>
         </LocaleProvider>
       </section>
