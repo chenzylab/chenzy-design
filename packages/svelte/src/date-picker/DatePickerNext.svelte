@@ -16,6 +16,7 @@
   import YearAndMonth from './YearAndMonth.svelte';
   import QuickControl from './QuickControl.svelte';
   import InsetInput from './InsetInput.svelte';
+  import Footer from './Footer.svelte';
   import getInsetInputFormatToken from './_utils/getInsetInputFormatToken.js';
   import { parse as dateFnsParse } from 'date-fns';
   import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
@@ -60,6 +61,12 @@
     onPresetClick?: (preset: PresetType, e: MouseEvent) => void;
     /** 面板内嵌输入框（对齐 Semi insetInput）：触发器只读，面板顶部输入。 */
     insetInput?: boolean;
+    /** 需确认（对齐 Semi needConfirm，仅 dateTime/dateTimeRange）：选择先暂存，点确认才提交。 */
+    needConfirm?: boolean;
+    /** 点确认回调（对齐 Semi onConfirm）。 */
+    onConfirm?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
+    /** 点取消回调（对齐 Semi onCancel）。 */
+    onCancel?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChangeWithDateFirst?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -89,6 +96,9 @@
     presetPosition = 'bottom',
     onPresetClick,
     insetInput = false,
+    needConfirm = false,
+    onConfirm,
+    onCancel,
     onChange,
     onChangeWithDateFirst = false,
     onOpenChange,
@@ -221,20 +231,52 @@
     st.setOpen(true);
   }
 
+  // needConfirm（对齐 Semi）：进入面板时快照原值，cancel 时恢复；confirm 才 notifyConfirm。
+  // 仅 dateTime/dateTimeRange 生效（Semi 语义）。
+  const effectiveNeedConfirm = $derived(needConfirm && (type === 'dateTime' || type === 'dateTimeRange'));
+  let valueSnapshot = $state<Date | Date[] | RangeValue | null>(null);
+  $effect(() => {
+    // 面板打开瞬间快照当前值（供 cancel 恢复）。
+    if (st.isOpen && effectiveNeedConfirm && valueSnapshot === null) {
+      valueSnapshot = st.current;
+    }
+    if (!st.isOpen) valueSnapshot = null;
+  });
+
   // MonthsGrid 选中回调（Date[] 墙上时间域）→ 联动值模型 foundation。
   function handleSelectedChange(dates: Date[]) {
     if (st.isRange) {
-      // range：dates=[start(,end)]；完整两端才关闭面板。
+      // range：dates=[start(,end)]；完整两端才关闭面板（needConfirm 时不自动关，等确认）。
       const pair: [Date | null, Date | null] = [dates[0] ?? null, dates[1] ?? null];
       st.handleRangeSelectedChange(pair);
-      if (pair[0] && pair[1]) st.setOpen(false);
+      if (pair[0] && pair[1] && !effectiveNeedConfirm) st.setOpen(false);
     } else if (multiple) {
       // 多选：dates=当前全部选中日；抛数组、不关面板（继续 toggle，对齐 Semi）。
       st.handleSelectedChange(dates);
     } else {
       st.handleSelectedChange(dates[0] ?? null);
-      st.setOpen(false);
+      if (!effectiveNeedConfirm) st.setOpen(false);
     }
+  }
+
+  // Footer 确认（对齐 Semi handleConfirm）：关面板 + notifyConfirm（当前值即已提交的暂存值）。
+  function handleConfirm() {
+    st.setOpen(false);
+    const { notifyValue, notifyDate } = st.disposeCallbackArgs(st.current);
+    onConfirm?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
+  }
+  // Footer 取消（对齐 Semi handleCancel）：恢复快照原值 + 关面板 + notifyCancel。
+  function handleCancel() {
+    const snap = valueSnapshot;
+    if (st.isRange) {
+      const pair = Array.isArray(snap) ? snap : [null, null];
+      st.handleRangeSelectedChange([pair[0] ?? null, pair[1] ?? null] as RangeValue);
+    } else {
+      st.handleSelectedChange((snap as Date | null) ?? null);
+    }
+    st.setOpen(false);
+    const { notifyValue, notifyDate } = st.disposeCallbackArgs(snap ?? null);
+    onCancel?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
   }
 
   function handleClear() {
@@ -410,6 +452,14 @@
             <QuickControl {type} {presets} presetPosition="right" onPresetClick={handlePresetClick} />
           {/if}
         </div>
+        <!-- needConfirm 确认栏（对齐 Semi footer.tsx）：range 未完整时禁用确认。 -->
+        {#if effectiveNeedConfirm}
+          <Footer
+            disabledConfirm={st.isRange && !(st.currentRange[0] && st.currentRange[1])}
+            onConfirmClick={handleConfirm}
+            onCancelClick={handleCancel}
+          />
+        {/if}
       </div>
     {/snippet}
 

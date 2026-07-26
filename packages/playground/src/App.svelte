@@ -295,6 +295,7 @@
             <div><div style="margin-bottom:8px;">inset-date</div><DatePickerNext type="date" insetInput /></div>
             <div><div style="margin-bottom:8px;">inset-range</div><DatePickerNext type="dateRange" insetInput /></div>
             <div><div style="margin-bottom:8px;">multiple</div><DatePickerNext type="date" multiple max={3} /></div>
+            <div><div style="margin-bottom:8px;">needConfirm</div><DatePickerNext type="dateTime" needConfirm /></div>
           </div>
         </LocaleProvider>
       </section>
