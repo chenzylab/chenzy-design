@@ -11,6 +11,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/context.js';
   import Popover from '../popover/Popover.svelte';
+  import type { Position } from '../tooltip/index.js';
   import DateInput from './DateInput.svelte';
   import MonthsGrid from './MonthsGrid.svelte';
   import YearAndMonth from './YearAndMonth.svelte';
@@ -91,6 +92,26 @@
     onChange?: (value: Date | Date[] | RangeValue | null, dateString: string) => void;
     onChangeWithDateFirst?: boolean;
     onOpenChange?: (open: boolean) => void;
+    // --- 浮层透传（对齐 Semi，传给 Popover）---
+    /** 浮层弹出位置（对齐 Semi position，默认 bottomLeft）。 */
+    position?: Position;
+    /** 浮层 z-index（对齐 Semi zIndex）。 */
+    zIndex?: number;
+    /** 浮层溢出自动调整（对齐 Semi autoAdjustOverflow）。 */
+    autoAdjustOverflow?: boolean;
+    /** 浮层挂载容器（对齐 Semi getPopupContainer）。 */
+    getPopupContainer?: () => HTMLElement | null | undefined;
+    /** 面板展开动画（对齐 Semi motion）。 */
+    motion?: boolean;
+    /** 阻止浮层点击冒泡（对齐 Semi stopPropagation）。 */
+    stopPropagation?: boolean;
+    /** 面板外点击关闭时回调（对齐 Semi onClickOutSide）。 */
+    onClickOutSide?: () => void;
+    // --- 触发器透传（对齐 Semi）---
+    /** 触发器聚焦（对齐 Semi onFocus）。 */
+    onFocus?: (e: FocusEvent) => void;
+    /** 触发器失焦（对齐 Semi onBlur）。 */
+    onBlur?: (e: FocusEvent) => void;
   }
 
   let {
@@ -133,6 +154,15 @@
     onChange,
     onChangeWithDateFirst = false,
     onOpenChange,
+    position = 'bottomLeft',
+    zIndex,
+    autoAdjustOverflow = true,
+    getPopupContainer,
+    motion = true,
+    stopPropagation = true,
+    onClickOutSide,
+    onFocus,
+    onBlur,
   }: Props = $props();
 
   const loc = useLocale();
@@ -409,16 +439,29 @@
     ...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {}),
     ...(panelPickerValue ? { defaultPickerValue: panelPickerValue } : {}),
   });
-  const dateInputRest = $derived(validateStatus !== undefined ? { validateStatus } : {});
+  const dateInputRest = $derived({
+    ...(validateStatus !== undefined ? { validateStatus } : {}),
+    ...(onFocus ? { onfocus: onFocus } : {}),
+    ...(onBlur ? { onblur: onBlur } : {}),
+  });
 </script>
 
 <div class={PREFIX}>
   <Popover
     trigger="custom"
     visible={st.isOpen}
-    position="bottomLeft"
+    {position}
+    {autoAdjustOverflow}
+    {motion}
+    {stopPropagation}
+    {...(zIndex !== undefined ? { zIndex } : {})}
+    {...(getPopupContainer ? { getPopupContainer } : {})}
     spacing={numbers.SPACING}
-    onVisibleChange={(v) => st.setOpen(v)}
+    onVisibleChange={(v) => {
+      // 面板由 open→false（外部点击/Esc 等 Popover 自身关闭）时触发 onClickOutSide（对齐 Semi）。
+      if (!v && st.isOpen) onClickOutSide?.();
+      st.setOpen(v);
+    }}
   >
     {#snippet content()}
       <div
