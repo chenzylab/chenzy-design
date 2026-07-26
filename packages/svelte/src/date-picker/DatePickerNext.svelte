@@ -432,6 +432,12 @@
     if (e) onClearProp?.(e);
   }
 
+  // 面板月切换（对齐 Semi notifyPanelChange）：foundation 抛新游标日期 → 格式化 dateString → 通知用户。
+  function handlePanelChange(date: Date) {
+    const token = st.isDateTime ? 'yyyy-MM-dd HH:mm:ss' : st.isMonth ? 'yyyy-MM' : 'yyyy-MM-dd';
+    onPanelChange?.(date, dateFnsFormat(date, token));
+  }
+
   // ===== year/month/monthRange：面板走 YearAndMonth 滚轮（对齐 Semi typeIsYearOrMonth）=====
   const typeIsYearOrMonth = $derived(st.isMonth || st.isYear);
   // currentYear/Month 从 value 反解（{left,right}，对齐 Semi renderYearMonthPanel）。
@@ -621,6 +627,7 @@
                 {...(endDateOffset ? { endDateOffset } : {})}
                 {...(timePickerOpts ? { timePickerOpts } : {})}
                 onSelectedChange={handleSelectedChange}
+                {...(onPanelChange ? { onPanelChange: handlePanelChange } : {})}
                 {...monthsGridRest}
               />
             {/if}

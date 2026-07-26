@@ -58,6 +58,7 @@
     startYear,
     endYear,
     onSelectedChange,
+    onPanelChange,
     renderDate,
     renderFullDate,
     timePickerOpts,
@@ -80,6 +81,7 @@
     ...(disabledDate ? { disabledDate } : {}),
     ...(disabledTime ? { disabledTime } : {}),
     ...(onSelectedChange ? { onSelectedChange } : {}),
+    ...(onPanelChange ? { onPanelChange } : {}),
   }));
 
   // 供父组件（DatePickerNext）在手动输入回车提交后命令面板跳到输入值的月份。

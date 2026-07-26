@@ -43,6 +43,19 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     expect(after).not.toBe(before);
   });
 
+  it('翻月触发 onPanelChange（对齐 Semi notifyPanelChange）', async () => {
+    const onPanelChange = vi.fn();
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'date', defaultPickerValue: new Date(2026, 0, 1), onPanelChange },
+    });
+    (container.querySelector('button[aria-label="Next month"]') as HTMLElement).click();
+    await tick();
+    expect(onPanelChange).toHaveBeenCalledTimes(1);
+    // 抛出的是新面板游标日期（2026-02）。
+    const arg = onPanelChange.mock.calls[0]![0] as Date;
+    expect(arg.getMonth()).toBe(1); // 0-based：2 月
+  });
+
   it('点月份标题进入年月滚轮（yam 叠加层）', async () => {
     const { container } = renderWithLocale(MonthsGrid, {
       props: { type: 'date', defaultPickerValue: new Date(2026, 0, 1) },

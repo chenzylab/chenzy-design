@@ -57,6 +57,8 @@ export interface MonthsGridFoundationProps {
   /** 选中变化回调（Semi notifySelectedChange，抛 Date[]）。 */
   onSelectedChange?: ((dates: Date[], options?: { needCheckFocusRecord?: boolean }) => void) | undefined;
   onMaxLimit?: (() => void) | undefined;
+  /** 面板月/年切换回调（对齐 Semi notifyPanelChange）：翻月/翻年后抛新面板游标日期。 */
+  onPanelChange?: ((date: Date) => void) | undefined;
 }
 
 const LEFT = strings.PANEL_TYPE_LEFT; // 'left'
@@ -412,6 +414,8 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     const panelDetail = _getPanelDetail(panelType);
     const targetMonth = dateCalcFns[switchType](panelDetail.pickerDate, step);
     _updatePanelDetail(panelType, { pickerDate: targetMonth });
+    // 翻月/翻年后通知外部（对齐 Semi notifyPanelChange）。
+    p().onPanelChange?.(targetMonth);
   }
 
   /**
