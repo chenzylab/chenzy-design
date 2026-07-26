@@ -18,6 +18,7 @@
     meridiemOf,
     parseFormatSpec,
     formatTime,
+    localeFormat,
     parseTimeString,
     utcToZonedTime,
     zonedTimeToUtc,
@@ -63,6 +64,8 @@
     hideDisabledOptions?: boolean;
     /** locale 代码（Intl 本地化用）。对齐 Semi localeCode 语义。 */
     locale?: string;
+    /** date-fns locale（对齐 Semi dateFnsLocale）：驱动时间串格式化的本地化（如 AM/PM 文案）。 */
+    dateFnsLocale?: import('date-fns').Locale;
     /** 单选回调 Date|null；范围回调 [Date|null, Date|null]。 */
     onChange?: (v: (Date | null) | [Date | null, Date | null]) => void;
     onOpenChange?: (open: boolean) => void;
@@ -165,6 +168,7 @@
     disabledSeconds,
     hideDisabledOptions = false,
     locale = 'zh-CN',
+    dateFnsLocale,
     onChange,
     onOpenChange,
     autoAdjustOverflow = true,
@@ -336,6 +340,12 @@
     const shown = isValidTimeZone(effectiveTimeZone)
       ? utcToZonedTime(d, effectiveTimeZone as string | number)
       : d;
+    // dateFnsLocale 存在时走 core localeFormat（date-fns format + locale，本地化 AM/PM 等，对齐 Semi formatToString）；
+    // 否则走本库 core formatTime 纯函数（默认路径，不引入 date-fns locale 依赖）。
+    if (dateFnsLocale) {
+      // date-fns token 小写（HH:mm:ss / hh:mm:ss a 等；本库 format 已是 date-fns 兼容 token）。
+      return localeFormat(shown, format, dateFnsLocale);
+    }
     return formatTime(
       { hour: shown.getHours(), minute: shown.getMinutes(), second: shown.getSeconds() },
       format,
