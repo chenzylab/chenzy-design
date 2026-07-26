@@ -626,6 +626,7 @@
                 {...(startDateOffset ? { startDateOffset } : {})}
                 {...(endDateOffset ? { endDateOffset } : {})}
                 {...(timePickerOpts ? { timePickerOpts } : {})}
+                {hideDisabledOptions}
                 onSelectedChange={handleSelectedChange}
                 {...(onPanelChange ? { onPanelChange: handlePanelChange } : {})}
                 {...monthsGridRest}

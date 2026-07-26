@@ -36,6 +36,8 @@
     renderFullDate?: Snippet<[number | string, string, DayStatus]>;
     /** 时间选择器透传选项（对齐 Semi timePickerOpts）：spread 给 tpk Combobox 的 scrollItemProps。 */
     timePickerOpts?: Record<string, unknown>;
+    /** 隐藏禁用时间项（对齐 Semi hideDisabledOptions）：传给 tpk Combobox。 */
+    hideDisabledOptions?: boolean;
   }
 
   let {
@@ -62,6 +64,9 @@
     renderDate,
     renderFullDate,
     timePickerOpts,
+    startDateOffset,
+    endDateOffset,
+    hideDisabledOptions = false,
   }: Props = $props();
 
   const loc = useLocale();
@@ -82,6 +87,8 @@
     ...(disabledTime ? { disabledTime } : {}),
     ...(onSelectedChange ? { onSelectedChange } : {}),
     ...(onPanelChange ? { onPanelChange } : {}),
+    ...(startDateOffset ? { startDateOffset } : {}),
+    ...(endDateOffset ? { endDateOffset } : {}),
   }));
 
   // 供父组件（DatePickerNext）在手动输入回车提交后命令面板跳到输入值的月份。
@@ -170,6 +177,7 @@
           disabledHours={dt?.disabledHours}
           disabledMinutes={dt?.disabledMinutes ? (h) => dt.disabledMinutes!(h ?? 0) : undefined}
           disabledSeconds={dt?.disabledSeconds ? (h, m) => dt.disabledSeconds!(h ?? 0, m ?? 0) : undefined}
+          {hideDisabledOptions}
           {...(timePickerOpts ? { scrollItemProps: timePickerOpts } : {})}
           onChange={(payload) => st.handleTimeChange({ timeStampValue: payload.timeStampValue }, panelType)}
         />
