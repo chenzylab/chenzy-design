@@ -136,10 +136,18 @@
     spacing?: number;
     /** 浮层 className（对齐 Semi dropdownClassName）。 */
     dropdownClassName?: string;
+    /** 浮层内联样式（对齐 Semi dropdownStyle）。 */
+    dropdownStyle?: string;
     /** 打开面板时阻止滚动（对齐 Semi preventScroll）。 */
     preventScroll?: boolean;
     /** 挂载时自动聚焦触发器（对齐 Semi autoFocus）。 */
     autoFocus?: boolean;
+    /** 清除回调（对齐 Semi onClear）：点清除按钮时触发。 */
+    onClear?: (e: MouseEvent) => void;
+    /** 根节点内联样式（对齐 Semi style）。 */
+    style?: string;
+    /** range 选完起点自动切到止点框（对齐 Semi autoSwitchDate，默认 true）。 */
+    autoSwitchDate?: boolean;
   }
 
   let {
@@ -202,8 +210,12 @@
     triggerRender,
     spacing = numbers.SPACING,
     dropdownClassName,
+    dropdownStyle,
     preventScroll = false,
     autoFocus = false,
+    onClear: onClearProp,
+    style,
+    autoSwitchDate = true,
   }: Props = $props();
 
   const loc = useLocale();
@@ -360,6 +372,8 @@
       // range：dates=[start(,end)]；完整两端才关闭面板（needConfirm 时不自动关，等确认）。
       const pair: [Date | null, Date | null] = [dates[0] ?? null, dates[1] ?? null];
       st.handleRangeSelectedChange(pair);
+      // autoSwitchDate（对齐 Semi）：选完起点未选止点时自动切焦点到 rangeEnd 框。
+      if (autoSwitchDate && pair[0] && !pair[1]) rangeInputFocus = 'rangeEnd';
       if (pair[0] && pair[1] && !effectiveNeedConfirm) st.setOpen(false);
     } else if (multiple) {
       // 多选：dates=当前全部选中日；抛数组、不关面板（继续 toggle，对齐 Semi）。
@@ -390,9 +404,10 @@
     onCancel?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
   }
 
-  function handleClear() {
+  function handleClear(e?: MouseEvent) {
     if (st.isRange) st.handleRangeSelectedChange([null, null]);
     else st.handleSelectedChange(null);
+    if (e) onClearProp?.(e);
   }
 
   // ===== year/month/monthRange：面板走 YearAndMonth 滚轮（对齐 Semi typeIsYearOrMonth）=====
@@ -501,7 +516,7 @@
   });
 </script>
 
-<div class={PREFIX}>
+<div class={PREFIX} {...(style ? { style } : {})}>
   <Popover
     trigger="custom"
     visible={st.isOpen}
@@ -522,6 +537,7 @@
       <div
         class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
         {...{ 'x-type': type }}
+        {...(dropdownStyle ? { style: dropdownStyle } : {})}
       >
         <!-- 面板顶部 slot（对齐 Semi topSlot） -->
         {#if topSlot}<div class={`${PREFIX}-topSlot`}>{@render topSlot()}</div>{/if}
