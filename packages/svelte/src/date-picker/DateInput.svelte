@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import Input from '../input/Input.svelte';
-  import { IconCalendar, IconCalendarClock } from '@chenzy-design/icons';
+  import { IconCalendar, IconCalendarClock, IconClear } from '@chenzy-design/icons';
   import { cssClasses, type PickerType, type PickerSize } from './constants.js';
   import type { ValidateStatus } from './date-picker-foundation.svelte.js';
   import type { RangeInputFocus } from './month-foundation.svelte.js';
@@ -48,6 +48,8 @@
     onRangeChange?: (rangeStart: string, rangeEnd: string, e: Event) => void;
     /** rangeEnd 框按 Tab（对齐 Semi handleRangeInputEndKeyPress → setRangeInputFocus(false)）。 */
     onRangeEndTab?: (e: KeyboardEvent) => void;
+    /** range 清除按钮点击（对齐 Semi handleRangeInputClear）。 */
+    onRangeClear?: (e: MouseEvent) => void;
   }
 
   let {
@@ -76,6 +78,7 @@
     onRangeFocus,
     onRangeChange,
     onRangeEndTab,
+    onRangeClear,
   }: Props = $props();
 
   const prefixCls = cssClasses.PREFIX;
@@ -112,8 +115,22 @@
 </script>
 
 {#if isRange}
-  <!-- range 触发器（对齐 Semi renderRangeInput）：双 wrapper + separator，焦点端 -active 高亮。 -->
-  <div class={`${prefixCls}-range-input`} class:cd-datepicker-range-input-disabled={disabled}>
+  <!-- range 触发器（对齐 Semi renderRangeInput）：[prefix] + 双 wrapper + separator + [clearbtn] + suffix。 -->
+  <div
+    class={`${prefixCls}-range-input`}
+    class:cd-datepicker-range-input-disabled={disabled}
+    class:cd-datepicker-range-input-error={validateStatus === 'error'}
+    class:cd-datepicker-range-input-warning={validateStatus === 'warning'}
+  >
+    <!-- prefix / insetLabel（对齐 Semi renderRangePrefix） -->
+    {#if prefix !== undefined || insetLabel !== undefined}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class={`${prefixCls}-range-input-prefix`}
+        onclick={(e) => !disabled && !rangeInputFocus && onRangeFocus?.(e, 'rangeStart')}
+      >{#if typeof prefix === 'function'}{@render prefix()}{:else if prefix !== undefined}{prefix}{:else if typeof insetLabel === 'function'}{@render insetLabel()}{:else}{insetLabel}{/if}</div>
+    {/if}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
@@ -162,6 +179,18 @@
         {...(onEnterPress !== undefined ? { onEnterPress } : {})}
       />
     </div>
+    <!-- range 清除按钮（对齐 Semi renderRangeClearBtn）：有值 + showClear + 非禁用时显示。 -->
+    {#if (rangeStart || rangeEnd) && showClear && !disabled}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        role="button"
+        tabindex="0"
+        aria-label="Clear range input value"
+        class={`${prefixCls}-range-input-clearbtn`}
+        onmousedown={(e: MouseEvent) => onRangeClear?.(e)}
+        onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onRangeClear?.(e as unknown as MouseEvent); }}
+      >{#if clearIcon}{@render clearIcon()}{:else}<IconClear aria-hidden="true" />{/if}</div>
+    {/if}
     <div class={`${prefixCls}-range-input-suffix`}>
       {#if isTimeType}<IconCalendarClock aria-hidden="true" />{:else}<IconCalendar aria-hidden="true" />{/if}
     </div>
@@ -255,5 +284,36 @@
   :global(.cd-datepicker-range-input-disabled) {
     cursor: not-allowed;
     color: var(--cd-color-disabled-text);
+  }
+  /* range prefix / insetLabel（对齐 Semi -range-input-prefix）。 */
+  :global(.cd-datepicker-range-input-prefix) {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 8px;
+    color: var(--cd-color-text-2);
+  }
+  /* range 清除按钮（对齐 Semi -range-input-clearbtn）：flex center + text-2，hover 加深。 */
+  :global(.cd-datepicker-range-input-clearbtn) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--cd-color-text-2);
+  }
+  :global(.cd-datepicker-range-input-clearbtn:hover) {
+    color: var(--cd-color-text-0);
+  }
+  /* range 校验态（对齐 Semi -range-input-error/-warning）：容器边框 + 浅底。 */
+  :global(.cd-datepicker-range-input-error) {
+    border: 1px solid var(--cd-color-danger);
+    background-color: var(--cd-color-danger-light-default);
+  }
+  :global(.cd-datepicker-range-input-warning) {
+    border: 1px solid var(--cd-color-warning);
+    background-color: var(--cd-color-warning-light-default);
   }
 </style>

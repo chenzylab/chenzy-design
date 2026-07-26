@@ -689,6 +689,7 @@
         onRangeFocus={handleRangeFocus}
         onRangeChange={handleRangeInputChange}
         onRangeEndTab={handleRangeEndTab}
+        onRangeClear={handleClear}
         {...dateInputRest}
       />
       {/if}

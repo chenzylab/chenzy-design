@@ -287,7 +287,7 @@
         <LocaleProvider locale={zh_CN}>
           <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
             <div><div style="margin-bottom:8px;">date</div><DatePickerNext type="date" /></div>
-            <div><div style="margin-bottom:8px;">dateRange</div><DatePickerNext type="dateRange" /></div>
+            <div><div style="margin-bottom:8px;">dateRange</div><DatePickerNext type="dateRange" showClear /></div>
             <div><div style="margin-bottom:8px;">dateTime</div><DatePickerNext type="dateTime" /></div>
             <div><div style="margin-bottom:8px;">month</div><DatePickerNext type="month" /></div>
             <div><div style="margin-bottom:8px;">preset-bottom</div><DatePickerNext type="date" presetPosition="bottom" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
