@@ -8,7 +8,8 @@
 import isValidDate from '../date-picker/_utils/isValidDate.js';
 
 const DEFAULT_FORMAT = 'HH:mm:ss';
-const DEFAULT_FORMAT_A = 'h:mm:ss a';
+// 对齐 Semi constants DEFAULT_FORMAT_A：AM/PM 在前（'a h:mm:ss'），非 'h:mm:ss a'。
+const DEFAULT_FORMAT_A = 'a h:mm:ss';
 
 /** formatOption —— 照搬 Semi：选项数字 → { value(补零字符串), disabled }。 */
 export const formatOption = (

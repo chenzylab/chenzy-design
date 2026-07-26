@@ -92,6 +92,8 @@
     panelHeader?: string | Snippet;
     /** 面板底部自定义内容。对齐 Semi panelFooter。 */
     panelFooter?: string | Snippet;
+    /** range 模式下按面板（0=start,1=end）分别指定 header/footer（对齐 Semi panels，优先级高于 panelHeader/Footer）。 */
+    panels?: Array<string | Snippet | undefined>;
     /** 浮层弹出位置（默认 'bottomLeft'）。对齐 Semi position。 */
     position?: string;
     /** 范围模式分隔符（默认 ' ~ '）。对齐 Semi rangeSeparator（DEFAULT_RANGE_SEPARATOR）。 */
@@ -178,6 +180,7 @@
     motion = true,
     panelHeader,
     panelFooter,
+    panels,
     position = 'bottomLeft',
     rangeSeparator = ' ~ ',
     scrollItemProps,
@@ -513,6 +516,22 @@
   // 单列的 header 文案（范围：begin/end；单选：panelHeader 或空）。
   const beginHeader = $derived(panelHeader ?? loc().t('TimePicker.rangeStart'));
   const endHeader = $derived(loc().t('TimePicker.rangeEnd'));
+
+  // createPanelProps —— 对齐 Semi createPanelProps：range 时 panels[index] 优先，
+  // 否则 panelHeader 无→begin/end 默认、panelHeader 是数组→[index]、否则 panelHeader。
+  function panelHeaderOf(index: 0 | 1): string | Snippet | undefined {
+    if (!isRange) return panelHeader;
+    const fromPanels = panels?.[index];
+    if (fromPanels != null) return fromPanels;
+    if (panelHeader == null) return index === 0 ? beginHeader : endHeader;
+    return Array.isArray(panelHeader) ? panelHeader[index] : panelHeader;
+  }
+  function panelFooterOf(index: 0 | 1): string | Snippet | undefined {
+    if (!isRange) return panelFooter;
+    const fromPanels = panels?.[index];
+    if (fromPanels != null) return fromPanels;
+    return Array.isArray(panelFooter) ? panelFooter[index] : panelFooter;
+  }
 </script>
 
 <div
@@ -600,8 +619,8 @@
               disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
               disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
               {hideDisabledOptions}
-              panelHeader={pIdx === 0 ? beginHeader : endHeader}
-              {panelFooter}
+              panelHeader={panelHeaderOf(pIdx)}
+              panelFooter={panelFooterOf(pIdx)}
               scrollItemProps={scrollItemProps ?? {}}
               onChange={(payload) => onComboboxChange(pIdx, payload.timeStampValue)}
             />
