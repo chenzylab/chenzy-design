@@ -6,6 +6,9 @@
     Title,
     Text,
     Paragraph,
+    DatePickerNext,
+    LocaleProvider,
+    zh_CN,
   } from '@chenzy-design/svelte';
 
   // ---- theme ----
@@ -279,6 +282,30 @@
     </aside>
 
     <main class="preview-area">
+      <!-- DatePickerNext 真机验证（阶段3 样式对齐）：始终显示，defaultOpen 看面板 -->
+      <section class="preview" style="padding:24px; gap:24px; flex-wrap:wrap;">
+        <LocaleProvider locale={zh_CN}>
+          <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+            <div><div style="margin-bottom:8px;">date</div><DatePickerNext type="date" /></div>
+            <div><div style="margin-bottom:8px;">dateRange</div><DatePickerNext type="dateRange" showClear /></div>
+            <div><div style="margin-bottom:8px;">dateTime</div><DatePickerNext type="dateTime" /></div>
+            <div><div style="margin-bottom:8px;">month</div><DatePickerNext type="month" /></div>
+            <div><div style="margin-bottom:8px;">preset-bottom</div><DatePickerNext type="date" presetPosition="bottom" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
+            <div><div style="margin-bottom:8px;">preset-left</div><DatePickerNext type="date" presetPosition="left" presets={[{ text: '今天', start: new Date() }, { text: '明天', start: new Date(Date.now() + 864e5) }, { text: '一周后', start: new Date(Date.now() + 7 * 864e5) }]} /></div>
+            <div><div style="margin-bottom:8px;">inset-date</div><DatePickerNext type="date" insetInput /></div>
+            <div><div style="margin-bottom:8px;">inset-range</div><DatePickerNext type="dateRange" insetInput /></div>
+            <div><div style="margin-bottom:8px;">multiple</div><DatePickerNext type="date" multiple max={3} /></div>
+            <div><div style="margin-bottom:8px;">needConfirm</div><DatePickerNext type="dateTime" needConfirm /></div>
+            <div><div style="margin-bottom:8px;">triggerRender</div>
+              <DatePickerNext type="date">
+                {#snippet triggerRender({ value, placeholder })}
+                  <button style="padding:6px 14px; border:1px solid #0064fa; border-radius:6px; background:#e8f3ff; color:#0064fa; cursor:pointer;">{value || placeholder || '自定义触发器 📅'}</button>
+                {/snippet}
+              </DatePickerNext>
+            </div>
+          </div>
+        </LocaleProvider>
+      </section>
       <section class="preview">
         {#if scene === 'button'}
           <Button

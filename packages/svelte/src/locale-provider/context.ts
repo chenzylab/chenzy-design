@@ -1,7 +1,7 @@
 import type { Locale, LocaleApi } from '@chenzy-design/locale';
 
 /** Svelte context key shared by LocaleProvider 与（未来的）ConfigProvider。 */
-export const LOCALE_CONTEXT_KEY = Symbol('cd-locale');
+export const LOCALE_CONTEXT_KEY = Symbol.for('cd-locale');
 
 /**
  * 注入到 context 的对象。`current` 是消费端读的 LocaleApi（getter，随语言切换更新）；

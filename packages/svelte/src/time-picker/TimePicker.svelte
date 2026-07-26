@@ -15,28 +15,21 @@
   import {
     useId,
     useDismiss,
-    buildHourOptions,
-    buildMinuteOptions,
-    buildSecondOptions,
-    applyHideDisabled,
-    to12Hour,
     meridiemOf,
-    from12Hour,
     parseFormatSpec,
     formatTime,
+    localeFormat,
     parseTimeString,
-    zonedWallTime,
-    type Meridiem,
-    type ScrollItemData,
-    type ScrollItemSelectPayload,
+    utcToZonedTime,
+    zonedTimeToUtc,
+    isValidTimeZone,
   } from '@chenzy-design/core';
   import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
   import { IconClock } from '@chenzy-design/icons';
   import Input from '../input/Input.svelte';
-  import ScrollList from '../scroll-list/ScrollList.svelte';
-  import ScrollItem from '../scroll-list/ScrollItem.svelte';
+  import Combobox from './Combobox.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
@@ -71,6 +64,8 @@
     hideDisabledOptions?: boolean;
     /** locale 代码（Intl 本地化用）。对齐 Semi localeCode 语义。 */
     locale?: string;
+    /** date-fns locale（对齐 Semi dateFnsLocale）：驱动时间串格式化的本地化（如 AM/PM 文案）。 */
+    dateFnsLocale?: import('date-fns').Locale;
     /** 单选回调 Date|null；范围回调 [Date|null, Date|null]。 */
     onChange?: (v: (Date | null) | [Date | null, Date | null]) => void;
     onOpenChange?: (open: boolean) => void;
@@ -100,6 +95,8 @@
     panelHeader?: string | Snippet;
     /** 面板底部自定义内容。对齐 Semi panelFooter。 */
     panelFooter?: string | Snippet;
+    /** range 模式下按面板（0=start,1=end）分别指定 header/footer（对齐 Semi panels，优先级高于 panelHeader/Footer）。 */
+    panels?: Array<string | Snippet | undefined>;
     /** 浮层弹出位置（默认 'bottomLeft'）。对齐 Semi position。 */
     position?: string;
     /** 范围模式分隔符（默认 ' ~ '）。对齐 Semi rangeSeparator（DEFAULT_RANGE_SEPARATOR）。 */
@@ -171,6 +168,7 @@
     disabledSeconds,
     hideDisabledOptions = false,
     locale = 'zh-CN',
+    dateFnsLocale,
     onChange,
     onOpenChange,
     autoAdjustOverflow = true,
@@ -186,6 +184,7 @@
     motion = true,
     panelHeader,
     panelFooter,
+    panels,
     position = 'bottomLeft',
     rangeSeparator = ' ~ ',
     scrollItemProps,
@@ -287,19 +286,48 @@
     return currentPair[panelIndex];
   }
 
+  // 墙上时间视图（对齐 Semi）：Combobox 时间列/isAM 展示的时分秒须是目标时区墙上时间，
+  // 与触发器 displayOne 一致。存储层 UTC → utcToZonedTime → 墙上时间；无 timeZone 时原样。
+  function wallDateOf(panelIndex: 0 | 1): Date | null {
+    const d = currentPair[panelIndex];
+    if (!d) return null;
+    return isValidTimeZone(effectiveTimeZone)
+      ? utcToZonedTime(d, effectiveTimeZone as string | number)
+      : d;
+  }
+
   function disabledRulesFor(panelIndex: 0 | 1) {
     if (!disabledTime) return undefined;
     return disabledTime(dateOf(panelIndex), panelIndex === 0 ? 'left' : 'right');
   }
 
   // 合成 Date：基于当前编辑端或今天，写入 h/m/s（对齐 onChangeWithDateFirst 保留日期部分）。
+  // 时区语义（对齐 Semi）：存储/抛出层始终是 UTC 时刻；用户在墙上时间(displayOne 用 utcToZonedTime)选择，
+  // 故 setHours 须作用在墙上时间 base 上，再 zonedTimeToUtc 转回 UTC 存储——保证读写往返自洽。
   function commit(panelIndex: 0 | 1, h: number, m: number, s: number) {
     const src = dateOf(panelIndex);
+    const tz = effectiveTimeZone;
+    if (isValidTimeZone(tz)) {
+      // 墙上时间 base（src 为 UTC → 转墙上时间；无 src 用当前墙上时间）
+      const base = src ? utcToZonedTime(src, tz as string | number) : utcToZonedTime(new Date(), tz as string | number);
+      base.setHours(h, m, s, 0);
+      const next: Pair = [...currentPair];
+      next[panelIndex] = zonedTimeToUtc(base, tz as string | number);
+      emit(next);
+      return;
+    }
     const base = src ? new Date(src) : new Date();
     base.setHours(h, m, s, 0);
     const next: Pair = [...currentPair];
     next[panelIndex] = base;
     emit(next);
+  }
+
+  // Combobox 时间列变化（抛新时间戳）→ commit 到对应编辑端（保留该端日期部分）。
+  function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
+    const t = new Date(timeStampValue);
+    commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
+    invalid = false; // 面板选择是有效操作，清 invalid（对齐 Semi）
   }
 
   // --- Intl / core formatTime 展示（对齐 Semi 值层时区转换）---
@@ -308,7 +336,16 @@
   const effectiveTimeZone = $derived<string | number | undefined>(timeZone ?? configTimeZone);
 
   function displayOne(d: Date): string {
-    const shown = zonedWallTime(d, effectiveTimeZone);
+    // 对齐 Semi：timeZone 有效时经 utcToZonedTime 转目标时区墙上时间再展示，否则原样（本地）。
+    const shown = isValidTimeZone(effectiveTimeZone)
+      ? utcToZonedTime(d, effectiveTimeZone as string | number)
+      : d;
+    // dateFnsLocale 存在时走 core localeFormat（date-fns format + locale，本地化 AM/PM 等，对齐 Semi formatToString）；
+    // 否则走本库 core formatTime 纯函数（默认路径，不引入 date-fns locale 依赖）。
+    if (dateFnsLocale) {
+      // date-fns token 小写（HH:mm:ss / hh:mm:ss a 等；本库 format 已是 date-fns 兼容 token）。
+      return localeFormat(shown, format, dateFnsLocale);
+    }
     return formatTime(
       { hour: shown.getHours(), minute: shown.getMinutes(), second: shown.getSeconds() },
       format,
@@ -332,6 +369,8 @@
   // 输入过程只做本地展示，Enter/Blur 时解析并提交（单选整串 → 时间；范围按 rangeSeparator 拆两端）。
   let inputDraft = $state<string | null>(null);
   const inputValue = $derived(inputDraft ?? displayText);
+  // invalid 校验态（对齐 Semi foundation invalid）：手输非法/无法解析时置 true，触发器显示 error 样式。
+  let invalid = $state(false);
 
   function parseAndCommit(raw: string) {
     if (inputReadOnly) return;
@@ -339,16 +378,27 @@
     if (text === '') {
       emit([null, null]);
       inputDraft = null;
+      invalid = false;
       return;
     }
     if (isRange) {
       const parts = text.split(rangeSeparator.trim() === '' ? '~' : rangeSeparator.trim());
       const s = parts[0] ? toDate(parts[0].trim()) : null;
       const e = parts[1] ? toDate(parts[1].trim()) : null;
-      if (s || e) emit([s, e]);
+      if (s || e) {
+        emit([s, e]);
+        invalid = false;
+      } else {
+        invalid = true; // 两端都解析失败
+      }
     } else {
       const d = toDate(text);
-      if (d) emit([d, currentPair[1]]);
+      if (d) {
+        emit([d, currentPair[1]]);
+        invalid = false;
+      } else {
+        invalid = true; // 解析失败：标记 invalid，回落展示但给 error 反馈（对齐 Semi）
+      }
     }
     inputDraft = null;
   }
@@ -381,102 +431,7 @@
     emit([null, null]);
   }
 
-  // --- 列数据构造（ScrollItemData）：值/文案/禁用 + 选中态单位后缀 transform（对齐 Semi）---
-  function pad2(n: number): string {
-    return n < 10 ? `0${n}` : `${n}`;
-  }
-
-  function hourList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const mer = meridiemOf(hour24);
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildHourOptions(hourStep, effUse12Hours, mer, rules?.disabledHours ?? disabledHours),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.hour');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function minuteList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildMinuteOptions(minuteStep, hour24, rules?.disabledMinutes ?? disabledMinutes),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.minute');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function secondList(panelIndex: 0 | 1): ScrollItemData[] {
-    const d = dateOf(panelIndex);
-    const hour24 = d ? d.getHours() : 0;
-    const minute = d ? d.getMinutes() : 0;
-    const rules = disabledRulesFor(panelIndex);
-    const opts = applyHideDisabled(
-      buildSecondOptions(secondStep, hour24, minute, rules?.disabledSeconds ?? disabledSeconds),
-      hideDisabledOptions,
-    );
-    const suffix = loc().t('TimePicker.second');
-    return opts.map((o) => ({
-      value: o.value,
-      text: pad2(o.value),
-      disabled: o.disabled,
-      transform: (_v: unknown, t: string) => t + suffix,
-    }));
-  }
-
-  function ampmList(): ScrollItemData[] {
-    return [
-      { value: 'am', text: loc().t('TimePicker.am') },
-      { value: 'pm', text: loc().t('TimePicker.pm') },
-    ];
-  }
-
-  // 选中项在列表中的索引（selectedIndex）。
-  function indexOfValue(list: ScrollItemData[], v: unknown): number {
-    const i = list.findIndex((it) => it.value === v);
-    return i < 0 ? 0 : i;
-  }
-
-  // --- onSelect 分发：按 type 区分列，映射回 24h 内部表示并提交 ---
-  function makeSelectHandler(panelIndex: 0 | 1, col: 'hour' | 'minute' | 'second' | 'ampm') {
-    return (payload: ScrollItemSelectPayload) => {
-      const d = dateOf(panelIndex);
-      const hour24 = d ? d.getHours() : 0;
-      const minute = d ? d.getMinutes() : 0;
-      const second = d ? d.getSeconds() : 0;
-      const mer = meridiemOf(hour24);
-      if (col === 'hour') {
-        const displayHour = payload.value as number;
-        const h = effUse12Hours ? from12Hour(displayHour, mer) : displayHour;
-        commit(panelIndex, h, minute, second);
-      } else if (col === 'minute') {
-        commit(panelIndex, hour24, payload.value as number, second);
-      } else if (col === 'second') {
-        commit(panelIndex, hour24, minute, payload.value as number);
-      } else {
-        // ampm
-        const nextMer = payload.value as Meridiem;
-        if (nextMer === mer) return;
-        const displayHour = to12Hour(hour24);
-        commit(panelIndex, from12Hour(displayHour, nextMer), minute, second);
-      }
-    };
-  }
+  // 时间列面板（h/m/s/ampm 滚轮）已拆分为 Combobox（复用，对齐 Semi）；此处仅保留触发器/浮层/值模型。
 
   // --- useDismiss（红线 #3）：绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -564,7 +519,7 @@
       validateStatus !== 'default' && `cd-time-picker--${validateStatus}`,
       disabled && 'cd-time-picker--disabled',
       isOpen && 'cd-time-picker--open',
-      isRange && 'cd-time-picker--range',
+      isRange && 'cd-time-picker-range',
       className,
     ]
       .filter(Boolean)
@@ -573,9 +528,9 @@
 
   const panelCls = $derived(
     [
-      'cd-time-picker__panel',
-      isRange && 'cd-time-picker__panel--range',
-      !motion && 'cd-time-picker__panel--no-motion',
+      'cd-time-picker-panel',
+      isRange && 'cd-time-picker-range-panel',
+      !motion && 'cd-time-picker-panel--no-motion',
       popupClassName,
     ]
       .filter(Boolean)
@@ -585,6 +540,22 @@
   // 单列的 header 文案（范围：begin/end；单选：panelHeader 或空）。
   const beginHeader = $derived(panelHeader ?? loc().t('TimePicker.rangeStart'));
   const endHeader = $derived(loc().t('TimePicker.rangeEnd'));
+
+  // createPanelProps —— 对齐 Semi createPanelProps：range 时 panels[index] 优先，
+  // 否则 panelHeader 无→begin/end 默认、panelHeader 是数组→[index]、否则 panelHeader。
+  function panelHeaderOf(index: 0 | 1): string | Snippet | undefined {
+    if (!isRange) return panelHeader;
+    const fromPanels = panels?.[index];
+    if (fromPanels != null) return fromPanels;
+    if (panelHeader == null) return index === 0 ? beginHeader : endHeader;
+    return Array.isArray(panelHeader) ? panelHeader[index] : panelHeader;
+  }
+  function panelFooterOf(index: 0 | 1): string | Snippet | undefined {
+    if (!isRange) return panelFooter;
+    const fromPanels = panels?.[index];
+    if (fromPanels != null) return fromPanels;
+    return Array.isArray(panelFooter) ? panelFooter[index] : panelFooter;
+  }
 </script>
 
 <div
@@ -619,7 +590,7 @@
         {size}
         {disabled}
         {borderless}
-        {validateStatus}
+        validateStatus={invalid ? 'error' : validateStatus}
         {showClear}
         readonly={inputReadOnly}
         hideSuffix
@@ -656,45 +627,49 @@
       use:floating={{ trigger: rootEl, placement: panelPlacement, autoAdjust: autoAdjustOverflow, offset: 4, getContainer: getPopupContainer, open: isOpen }}
     >
       {#if isRange}
-        <!-- range：左右两个 Combobox（ScrollList）并排（对齐 Semi RANGE_PANEL_LISTS）。 -->
-        <div class="cd-time-picker__lists">
+        <!-- range：左右两个 Combobox 并排（复用拆分后的时间列面板，对齐 Semi RANGE_PANEL_LISTS）。 -->
+        <div class="cd-time-picker-lists">
           {#each [0, 1] as const as pIdx (pIdx)}
-            {@const d = dateOf(pIdx)}
-            {@const hour24 = d ? d.getHours() : 0}
-            {@const hL = hourList(pIdx)}
-            {@const mL = minuteList(pIdx)}
-            {@const sL = secondList(pIdx)}
-            {@const aL = ampmList()}
-            <ScrollList header={pIdx === 0 ? beginHeader : endHeader} footer={panelFooter}>
-              {#if effUse12Hours}
-                <ScrollItem mode="normal" class="cd-time-picker__panel-list-ampm" list={aL} selectedIndex={meridiemOf(hour24) === 'am' ? 0 : 1} type="ampm" onSelect={makeSelectHandler(pIdx, 'ampm')} ariaLabel={loc().t('TimePicker.triggerLabel')} {...scrollItemProps} />
-              {/if}
-              <ScrollItem mode="normal" class="cd-time-picker__panel-list-hour" list={hL} selectedIndex={indexOfValue(hL, effUse12Hours ? to12Hour(hour24) : hour24)} type="hour" onSelect={makeSelectHandler(pIdx, 'hour')} ariaLabel={loc().t('TimePicker.hour')} {...scrollItemProps} />
-              <ScrollItem mode="normal" class="cd-time-picker__panel-list-minute" list={mL} selectedIndex={indexOfValue(mL, d ? d.getMinutes() : 0)} type="minute" onSelect={makeSelectHandler(pIdx, 'minute')} ariaLabel={loc().t('TimePicker.minute')} {...scrollItemProps} />
-              {#if effShowSecond}
-                <ScrollItem mode="normal" class="cd-time-picker__panel-list-second" list={sL} selectedIndex={indexOfValue(sL, d ? d.getSeconds() : 0)} type="second" onSelect={makeSelectHandler(pIdx, 'second')} ariaLabel={loc().t('TimePicker.second')} {...scrollItemProps} />
-              {/if}
-            </ScrollList>
+            {@const rules = disabledRulesFor(pIdx)}
+            <Combobox
+              timeStampValue={wallDateOf(pIdx)?.getTime() ?? null}
+              {format}
+              use12Hours={effUse12Hours}
+              isAM={meridiemOf(wallDateOf(pIdx)?.getHours() ?? 0) === 'am'}
+              {hourStep}
+              {minuteStep}
+              {secondStep}
+              disabledHours={rules?.disabledHours ?? disabledHours}
+              disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
+              disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
+              {hideDisabledOptions}
+              panelHeader={panelHeaderOf(pIdx)}
+              panelFooter={panelFooterOf(pIdx)}
+              scrollItemProps={scrollItemProps ?? {}}
+              onChange={(payload) => onComboboxChange(pIdx, payload.timeStampValue)}
+            />
           {/each}
         </div>
       {:else}
-        <!-- 单选：单个 Combobox（ScrollList），列内 ScrollItem mode=normal（对齐 Semi Combobox）。 -->
-        {@const d = dateOf(0)}
-        {@const hour24 = d ? d.getHours() : 0}
-        {@const hL = hourList(0)}
-        {@const mL = minuteList(0)}
-        {@const sL = secondList(0)}
-        {@const aL = ampmList()}
-        <ScrollList header={panelHeader} footer={panelFooter}>
-          {#if effUse12Hours}
-            <ScrollItem mode="normal" class="cd-time-picker__panel-list-ampm" list={aL} selectedIndex={meridiemOf(hour24) === 'am' ? 0 : 1} type="ampm" onSelect={makeSelectHandler(0, 'ampm')} ariaLabel={loc().t('TimePicker.triggerLabel')} {...scrollItemProps} />
-          {/if}
-          <ScrollItem mode="normal" class="cd-time-picker__panel-list-hour" list={hL} selectedIndex={indexOfValue(hL, effUse12Hours ? to12Hour(hour24) : hour24)} type="hour" onSelect={makeSelectHandler(0, 'hour')} ariaLabel={loc().t('TimePicker.hour')} {...scrollItemProps} />
-          <ScrollItem mode="normal" class="cd-time-picker__panel-list-minute" list={mL} selectedIndex={indexOfValue(mL, d ? d.getMinutes() : 0)} type="minute" onSelect={makeSelectHandler(0, 'minute')} ariaLabel={loc().t('TimePicker.minute')} {...scrollItemProps} />
-          {#if effShowSecond}
-            <ScrollItem mode="normal" class="cd-time-picker__panel-list-second" list={sL} selectedIndex={indexOfValue(sL, d ? d.getSeconds() : 0)} type="second" onSelect={makeSelectHandler(0, 'second')} ariaLabel={loc().t('TimePicker.second')} {...scrollItemProps} />
-          {/if}
-        </ScrollList>
+        {@const rules = disabledRulesFor(0)}
+        <!-- 单选：单个 Combobox（复用拆分后的时间列面板，对齐 Semi Combobox）。 -->
+        <Combobox
+          timeStampValue={wallDateOf(0)?.getTime() ?? null}
+          {format}
+          use12Hours={effUse12Hours}
+          isAM={meridiemOf(wallDateOf(0)?.getHours() ?? 0) === 'am'}
+          {hourStep}
+          {minuteStep}
+          {secondStep}
+          disabledHours={rules?.disabledHours ?? disabledHours}
+          disabledMinutes={(h) => (rules?.disabledMinutes ?? disabledMinutes)?.(h ?? 0) ?? []}
+          disabledSeconds={(h, m) => (rules?.disabledSeconds ?? disabledSeconds)?.(h ?? 0, m ?? 0) ?? []}
+          {hideDisabledOptions}
+          {panelHeader}
+          {panelFooter}
+          scrollItemProps={scrollItemProps ?? {}}
+          onChange={(payload) => onComboboxChange(0, payload.timeStampValue)}
+        />
       {/if}
     </div>
   {/if}
@@ -725,80 +700,79 @@
   /* --- 面板容器（对齐 Semi timePicker.scss：range 面板走 timePicker 专属 shadow/border/radius，
      单选面板走 scrollList 自身样式；此处面板外壳只做 z-index 与动画）--- */
   /* z-index 由 zIndex prop 经 popupStyle 内联注入（对齐 Semi popoverNumbers.DEFAULT_Z_INDEX=1030）。 */
-  .cd-time-picker__panel:focus-visible {
+  .cd-time-picker-panel:focus-visible {
     outline: none;
   }
-  .cd-time-picker__panel--no-motion {
+  .cd-time-picker-panel--no-motion {
     transition: none;
   }
 
-  /* 面板内列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
-     解除 ScrollList 默认 `flex: 1 1 0%` 的等分，让下面的列宽 width 生效。
-     列间 1px 8% border 保留（对齐 Semi：scrollList `-item:not(:last-child)` 的 border-right，
-     Semi timePicker 只去了 -item-wheel 的 border，normal item 的 border-right 保留）。 */
-  :global(.cd-time-picker__panel .cd-scrolllist-item) {
+  /* --- 面板列视图（TimePicker 独立面板专属，对齐 Semi timePicker.scss `.semi-timepicker-panel ...`）---
+     锚点 `.cd-time-picker-panel` = Combobox 在 TimePicker 场景传入的默认 prefixCls（ScrollList 根 class）；
+     DatePicker dateTime 的 tpk 层传不同 prefixCls，不吃这套 64px，改由 MonthsGrid 的 width:100%+flex:1 均分。
+     面板 portal 到 body，故列类用裸 :global（无祖先前缀，仅 TimePicker 渲染时注入，不污染 DatePicker tpk）。 */
+
+  /* 列 flex: none（镜像 Semi `.semi-timepicker-panel .semi-scrolllist-item { flex: none }`），
+     解除 ScrollList 默认 `flex: 1 1 0%` 等分，让下面列宽 width 生效。 */
+  :global(.cd-time-picker-panel .cd-scrolllist-item) {
     flex: none;
   }
-  /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`：
-     Semi 是无祖先前缀的裸类，这里用 :global() 包裸类等价——面板 use:floating portal 到 body，
-     scoped 祖先选择器（如 .cd-time-picker）匹配不到 portal 出去的列。 */
-  :global(.cd-time-picker__panel-list-hour) {
+  /* 列宽（镜像 Semi `.semi-timepicker-panel-list-{hour,minute,second,ampm} { width: 64px/72px }`）。 */
+  :global(.cd-time-picker-panel-list-hour) {
     inline-size: var(--cd-width-time-picker-panel-list-hour);
   }
-  :global(.cd-time-picker__panel-list-minute) {
+  :global(.cd-time-picker-panel-list-minute) {
     inline-size: var(--cd-width-time-picker-panel-list-minute);
   }
-  :global(.cd-time-picker__panel-list-second) {
+  :global(.cd-time-picker-panel-list-second) {
     inline-size: var(--cd-width-time-picker-panel-list-second);
   }
-  :global(.cd-time-picker__panel-list-ampm) {
+  :global(.cd-time-picker-panel-list-ampm) {
     inline-size: var(--cd-width-time-picker-panel-list-ampm);
   }
-
   /* 面板 body 高度对齐 Semi $height-timePicker_panel_body（252px）。 */
-  .cd-time-picker__panel :global(.cd-scrolllist-body) {
+  :global(.cd-time-picker-panel .cd-scrolllist-body) {
     block-size: var(--cd-height-time-picker-panel-body);
   }
-  /* 面板内 normal 列的居中留白按 Semi 公式重算：(panel_body - item) * 0.5（对齐 timePicker.scss，
-     ScrollList 默认用 300px 视窗高，timePicker 面板收窄到 252px 需重算 :before 与 padding-bottom，
-     否则各列选中项垂直不居中）。 */
-  .cd-time-picker__panel :global(.cd-scrolllist-item > ul::before) {
+  /* 列居中留白按 Semi 公式 (panel_body - item) * 0.5 重算（面板收窄到 252px，替代 ScrollList 默认 300px 视窗高）。 */
+  :global(.cd-time-picker-panel .cd-scrolllist-item > ul::before) {
     block-size: calc((var(--cd-height-time-picker-panel-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
-  .cd-time-picker__panel :global(.cd-scrolllist-item > ul) {
+  :global(.cd-time-picker-panel .cd-scrolllist-item > ul) {
     padding-block-end: calc((var(--cd-height-time-picker-panel-body) - var(--cd-height-scroll-list-item)) * 0.5);
   }
+
   /* --- range 双列并排（对齐 Semi timePicker.scss `-range-panel .lists`）--- */
-  .cd-time-picker__lists {
+  .cd-time-picker-lists {
     display: flex;
     box-shadow: var(--cd-shadow-time-picker-range-panel);
     border: var(--cd-width-time-picker-range-panel-border) solid var(--cd-color-time-picker-range-panel-border);
     border-radius: var(--cd-radius-time-picker-range-panel);
   }
-  .cd-time-picker__lists :global(.cd-scrolllist:first-of-type) {
+  .cd-time-picker-lists :global(.cd-scrolllist:first-of-type) {
     border-radius: var(--cd-radius-time-picker-range-panel) 0 0 var(--cd-radius-time-picker-range-panel);
   }
-  .cd-time-picker__lists :global(.cd-scrolllist:last-of-type) {
+  .cd-time-picker-lists :global(.cd-scrolllist:last-of-type) {
     border-radius: 0 var(--cd-radius-time-picker-range-panel) var(--cd-radius-time-picker-range-panel) 0;
   }
-  .cd-time-picker__lists :global(.cd-scrolllist) {
+  .cd-time-picker-lists :global(.cd-scrolllist) {
     box-shadow: none;
   }
   /* 双列中间分割线（左列 body 右侧描边）。 */
-  .cd-time-picker__lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
+  .cd-time-picker-lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
     border-inline-end: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
   }
   /* range 面板里 body 与 header 的 padding 覆盖为 0（镜像 Semi timePicker.scss L111-115
      `.semi-scrolllist { .semi-scrolllist-body, .semi-scrolllist-header { padding: 0 } }`）。
      ScrollList 默认 body 有 `padding: 0 16px`，在双列 range 布局里会把列内容与面板边缘/
      中间分割线推开 16px 空隙、视觉不紧凑——此处按 Semi 归零。之前只覆盖了 header 漏了 body。 */
-  .cd-time-picker__lists :global(.cd-scrolllist-body),
-  .cd-time-picker__lists :global(.cd-scrolllist-header) {
+  .cd-time-picker-lists :global(.cd-scrolllist-body),
+  .cd-time-picker-lists :global(.cd-scrolllist-header) {
     padding: var(--cd-spacing-time-picker-range-panel-scrolllist-header-body-padding);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-time-picker__panel {
+    .cd-time-picker-panel {
       transition: none;
     }
   }

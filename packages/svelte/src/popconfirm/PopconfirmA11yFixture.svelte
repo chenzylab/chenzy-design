@@ -1,7 +1,7 @@
 <!--
   Popconfirm a11y 测试夹具：在 LocaleProvider 内渲染 Popconfirm。
-  trigger snippet 仅为非交互触发文案——触发包裹 div 自身承载 role=button + tabindex，
-  故 trigger 内不嵌套原生交互元素（否则 axe nested-interactive）。
+  trigger 文案非交互——click 模式下触发包裹 span 承载 role=button + aria-haspopup/expanded；
+  custom 模式（受控）触发器纯透传（对齐 Semi：trigger=custom 不 wrap、语义归使用方）。
   仅供 Popconfirm.a11y.test.ts 使用，不对外导出。
 -->
 <script lang="ts">
@@ -13,6 +13,7 @@
     title?: string;
     content?: string;
     locale?: string;
+    trigger?: 'click' | 'custom';
   }
 
   let {
@@ -20,9 +21,10 @@
     title = 'Delete this item?',
     content = 'This action cannot be undone.',
     locale = 'en_US',
+    trigger = 'custom',
   }: Props = $props();
 </script>
 
 <LocaleProvider {locale}>
-  <Popconfirm {visible} trigger="custom" {title} {content}>Delete</Popconfirm>
+  <Popconfirm {visible} {trigger} {title} {content}>Delete</Popconfirm>
 </LocaleProvider>

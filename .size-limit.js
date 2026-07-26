@@ -92,7 +92,10 @@ const components = [
   ['cascader', '{ Cascader }', '10.8 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
-  ['date-picker', '{ DatePicker }', '22 KB'],
+  // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +
+  // multiple/max + needConfirm+Footer + preset + inset + 触发器/面板定制 + 四向 slot + 时区），
+  // 替换旧版后实测 30.14 KB。预算按实测校准（含少量余量），旧 22 KB 是早期不完整实现的基线。
+  ['date-picker', '{ DatePicker }', '32 KB'],
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath（真数组路径）。
   // 破坏性重写严格对齐 Semi（Field 复用 FormLabel、a11y 契约 labelledById/errorMessageId、
   // error/warning 合并、扁平 class）后实测 13.65 KB。预算按实测校准，含少量余量。

@@ -541,20 +541,22 @@
   oncontextmenu={triggers.includes('contextMenu') ? onTriggerContextMenu : undefined}
 >
   <!-- dialog 模式触发器承载 button 角色（aria-haspopup/expanded/controls 挂合法宿主）；
+       custom 模式不抢 role=button/tabindex（对齐 Semi tooltip：trigger=custom 不 wrap span、
+       由使用方自管交互语义，如 DatePicker 触发器自身即 role=combobox），仅保留 aria-haspopup/expanded；
        tooltip 模式保持纯 span + aria-describedby。role/tabindex 动态，抑制静态分析误报。 -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
     class="cd-tooltip__trigger"
     bind:this={triggerEl}
-    role={isDialog ? 'button' : undefined}
+    role={isDialog && !isCustom ? 'button' : undefined}
     tabindex={isDialog && !isCustom ? 0 : undefined}
-    aria-haspopup={isDialog ? 'dialog' : undefined}
-    aria-expanded={isDialog ? isOpen : undefined}
-    aria-controls={isDialog && isOpen ? tipId : undefined}
+    aria-haspopup={isDialog && !isCustom ? 'dialog' : undefined}
+    aria-expanded={isDialog && !isCustom ? isOpen : undefined}
+    aria-controls={isDialog && !isCustom && isOpen ? tipId : undefined}
     aria-describedby={!isDialog && isOpen ? tipId : undefined}
-    aria-disabled={isDialog && disabled ? 'true' : undefined}
-    onclickcapture={isDialog ? onTriggerClickCapture : undefined}
+    aria-disabled={isDialog && !isCustom && disabled ? 'true' : undefined}
+    onclickcapture={isDialog && !isCustom ? onTriggerClickCapture : undefined}
     onkeydown={onTriggerKeydown}
   >
     {@render children?.()}

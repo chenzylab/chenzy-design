@@ -76,9 +76,22 @@
       .filter(Boolean)
       .join(';'),
   );
+
+  // aria-hidden 时为纯装饰图标：不输出 role=img/aria-label（对齐 Semi 装饰图标不被 AT 读，
+  // 且消除 axe role-img-alt——如 IconButton 内 aria-hidden 图标）。否则 role=img + aria-label=type。
+  const isDecorative = $derived(
+    (rest as Record<string, unknown>)['aria-hidden'] === true ||
+      (rest as Record<string, unknown>)['aria-hidden'] === 'true',
+  );
 </script>
 
-<span class={cls} role="img" aria-label={type} style={outerStyle || undefined} {...rest}>
+<span
+  class={cls}
+  role={isDecorative ? undefined : 'img'}
+  aria-label={isDecorative ? undefined : type}
+  style={outerStyle || undefined}
+  {...rest}
+>
   {#if isSvgString}
     <!-- svg 字符串来源可信（构建期具名图标常量），运行时不做净化。 -->
     {@html svg}

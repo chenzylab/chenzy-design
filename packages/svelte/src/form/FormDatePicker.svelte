@@ -5,7 +5,7 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import Field from './Field.svelte';
-  import DatePicker from '../date-picker/DatePicker.svelte';
+  import DatePicker from '../date-picker/DatePickerNext.svelte';
   import { splitFieldProps, type FieldPassthroughProps } from './field-props.js';
 
   type DatePickerProps = ComponentProps<typeof DatePicker>;

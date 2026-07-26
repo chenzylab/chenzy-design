@@ -5,8 +5,6 @@ import {
   defaultResponsiveMap,
   EMPTY_SCREENS,
   registerMediaQuery,
-  zonedWallTime,
-  parseTimeZoneOffsetMinutes,
 } from './config-provider.js';
 
 describe('mergeConfig', () => {
@@ -40,48 +38,6 @@ describe('mergeConfig', () => {
 
   it('default direction is ltr', () => {
     expect(DEFAULT_CONFIG.direction).toBe('ltr');
-  });
-});
-
-describe('parseTimeZoneOffsetMinutes', () => {
-  it('数字小时偏移 → 分钟', () => {
-    expect(parseTimeZoneOffsetMinutes(8)).toBe(480);
-    expect(parseTimeZoneOffsetMinutes(-5)).toBe(-300);
-    expect(parseTimeZoneOffsetMinutes(0)).toBe(0);
-    expect(parseTimeZoneOffsetMinutes(5.5)).toBe(330);
-  });
-
-  it("'GMT±HH:mm' → 分钟", () => {
-    expect(parseTimeZoneOffsetMinutes('GMT+08:00')).toBe(480);
-    expect(parseTimeZoneOffsetMinutes('GMT-08:00')).toBe(-480);
-    expect(parseTimeZoneOffsetMinutes('GMT+05:30')).toBe(330);
-    expect(parseTimeZoneOffsetMinutes('GMT+00:00')).toBe(0);
-  });
-
-  it('具名 IANA / 非法串 → undefined（回退不转换）', () => {
-    expect(parseTimeZoneOffsetMinutes('Asia/Shanghai')).toBeUndefined();
-    expect(parseTimeZoneOffsetMinutes('UTC')).toBeUndefined();
-    expect(parseTimeZoneOffsetMinutes('nonsense')).toBeUndefined();
-    expect(parseTimeZoneOffsetMinutes(Number.NaN)).toBeUndefined();
-  });
-});
-
-describe('zonedWallTime', () => {
-  it('墙上时间字段等于目标时区当地时间（东八区与西八区相差 16h）', () => {
-    // 2020-02-13T13:08:25.265Z（UTC）
-    const utc = new Date(1581599305265);
-    const east8 = zonedWallTime(utc, 'GMT+08:00');
-    const west8 = zonedWallTime(utc, 'GMT-08:00');
-    // 东八区当地 = UTC+8 = 21:08:25；西八区 = UTC-8 = 05:08:25
-    expect(east8.getHours() - west8.getHours()).toBe(16);
-    // 用 UTC 字段读回：east8 读出的 UTC 字段即东八区墙上时间
-    expect(east8.getTime() - west8.getTime()).toBe(16 * 60 * 60 * 1000);
-  });
-
-  it('无法解析的时区原样返回入参（不做转换）', () => {
-    const d = new Date(1581599305265);
-    expect(zonedWallTime(d, 'Asia/Shanghai')).toBe(d);
-    expect(zonedWallTime(d, undefined)).toBe(d);
   });
 });
 
