@@ -157,14 +157,21 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     notifyDate: Date | Date[] | undefined;
   } {
     // range 进入前已被 _notifyChange 完整性守卫拦截，故此处数组无 null（对齐 Semi）。
-    let _value = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean) as Date[];
+    // 入参是【目标时区墙上时间】（state 存储域）。分两路（对齐 Semi + 避免依赖运行环境 TZ）：
+    //  - dateString（notifyValue）：对墙上时间原值 localeFormat，直接得目标时区墙上串（21:08）。
+    //  - notifyDate：墙上时间经 zonedTimeToUtc 还原成真实 UTC 绝对时刻 Date（其 toISOString 为 UTC）。
+    // 此前对已转 UTC 的 _value 再 localeFormat，dateString 会取运行环境本地字段 → TZ=UTC 环境得 13:08（bug）。
+    const wallValue = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean) as Date[];
     const timeZone = effectiveTimeZone;
-    if (isValidTimeZone(timeZone)) {
-      _value = _value.map((date) => zonedTimeToUtc(date, timeZone as string | number));
-    }
+    const utcValue = isValidTimeZone(timeZone)
+      ? wallValue.map((date) => zonedTimeToUtc(date, timeZone as string | number))
+      : wallValue;
     const t = p().type;
     const token = activeFormatToken;
+    // dateString 用墙上时间原值（呈现目标时区墙上时间）；notifyDate 用 UTC 值（绝对时刻）。
     const fmt = (d: Date) => (d && token ? localeFormat(d, token) : d ? String(d) : '');
+    const wallStr = (i: number) => (wallValue[i] ? fmt(wallValue[i]!) : '');
+    const _value = utcValue;
 
     let notifyValue: string | string[] | undefined;
     let notifyDate: Date | Date[] | undefined;
@@ -173,17 +180,17 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
       case 'dateTime':
       case 'month':
         if (!p().multiple) {
-          notifyValue = _value[0] ? fmt(_value[0]) : undefined;
+          notifyValue = _value[0] ? wallStr(0) : undefined;
           [notifyDate] = _value;
         } else {
-          notifyValue = _value.map(fmt);
+          notifyValue = _value.map((_d, i) => wallStr(i));
           notifyDate = [..._value];
         }
         break;
       case 'dateRange':
       case 'dateTimeRange':
       case 'monthRange':
-        notifyValue = _value.map(fmt);
+        notifyValue = _value.map((_d, i) => wallStr(i));
         notifyDate = [..._value];
         break;
       default:
