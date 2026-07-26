@@ -5,6 +5,8 @@ import {
   zonedTimeToUtc,
   isValidTimeZone,
   localeFormat,
+  compatibleParse,
+  isValueParseValid,
 } from './date-fns-extra.js';
 
 describe('toIANA（照搬 Semi：数字/GMT± → IANA 标识）', () => {
@@ -60,5 +62,35 @@ describe('localeFormat（date-fns format）', () => {
     const d = new Date(2020, 1, 13, 21, 8, 25);
     expect(localeFormat(d, 'yyyy-MM-dd HH:mm:ss')).toBe('2020-02-13 21:08:25');
     expect(localeFormat(d, 'yyyy-MM')).toBe('2020-02');
+  });
+});
+
+describe('compatibleParse（照搬 Semi parser.ts）', () => {
+  it('按 formatToken 解析合法串 → 正确 Date', () => {
+    const d = compatibleParse('2026-05-20', 'yyyy-MM-dd');
+    expect(d).not.toBeNull();
+    expect(d!.getFullYear()).toBe(2026);
+    expect(d!.getMonth()).toBe(4); // 0-based：5 月
+    expect(d!.getDate()).toBe(20);
+  });
+  it('带时间 token 解析', () => {
+    const d = compatibleParse('2026-05-20 14:30:00', 'yyyy-MM-dd HH:mm:ss');
+    expect(d!.getHours()).toBe(14);
+    expect(d!.getMinutes()).toBe(30);
+  });
+  it('4 位以上年份视为无效 → null', () => {
+    // Date.parse 兜底可能解析出异常年，yearInvalid 守卫应拦截
+    expect(compatibleParse('20260-05-20', 'yyyy-MM-dd')).toBeNull();
+  });
+  it('空串 → null', () => {
+    expect(compatibleParse('')).toBeNull();
+  });
+});
+
+describe('isValueParseValid（照搬 Semi）', () => {
+  it('完整合法串 true，部分/非法串 false', () => {
+    expect(isValueParseValid({ value: '2021-01-01', formatToken: 'yyyy-MM-dd' })).toBe(true);
+    expect(isValueParseValid({ value: '2021-01-0', formatToken: 'yyyy-MM-dd' })).toBe(false);
+    expect(isValueParseValid({ value: '2021-01', formatToken: 'yyyy-MM-dd' })).toBe(false);
   });
 });

@@ -20,6 +20,7 @@
     formatTime,
     parseTimeString,
     utcToZonedTime,
+    zonedTimeToUtc,
     isValidTimeZone,
   } from '@chenzy-design/core';
   import type { Placement } from '@chenzy-design/core';
@@ -278,14 +279,36 @@
     return currentPair[panelIndex];
   }
 
+  // 墙上时间视图（对齐 Semi）：Combobox 时间列/isAM 展示的时分秒须是目标时区墙上时间，
+  // 与触发器 displayOne 一致。存储层 UTC → utcToZonedTime → 墙上时间；无 timeZone 时原样。
+  function wallDateOf(panelIndex: 0 | 1): Date | null {
+    const d = currentPair[panelIndex];
+    if (!d) return null;
+    return isValidTimeZone(effectiveTimeZone)
+      ? utcToZonedTime(d, effectiveTimeZone as string | number)
+      : d;
+  }
+
   function disabledRulesFor(panelIndex: 0 | 1) {
     if (!disabledTime) return undefined;
     return disabledTime(dateOf(panelIndex), panelIndex === 0 ? 'left' : 'right');
   }
 
   // 合成 Date：基于当前编辑端或今天，写入 h/m/s（对齐 onChangeWithDateFirst 保留日期部分）。
+  // 时区语义（对齐 Semi）：存储/抛出层始终是 UTC 时刻；用户在墙上时间(displayOne 用 utcToZonedTime)选择，
+  // 故 setHours 须作用在墙上时间 base 上，再 zonedTimeToUtc 转回 UTC 存储——保证读写往返自洽。
   function commit(panelIndex: 0 | 1, h: number, m: number, s: number) {
     const src = dateOf(panelIndex);
+    const tz = effectiveTimeZone;
+    if (isValidTimeZone(tz)) {
+      // 墙上时间 base（src 为 UTC → 转墙上时间；无 src 用当前墙上时间）
+      const base = src ? utcToZonedTime(src, tz as string | number) : utcToZonedTime(new Date(), tz as string | number);
+      base.setHours(h, m, s, 0);
+      const next: Pair = [...currentPair];
+      next[panelIndex] = zonedTimeToUtc(base, tz as string | number);
+      emit(next);
+      return;
+    }
     const base = src ? new Date(src) : new Date();
     base.setHours(h, m, s, 0);
     const next: Pair = [...currentPair];
@@ -566,10 +589,10 @@
           {#each [0, 1] as const as pIdx (pIdx)}
             {@const rules = disabledRulesFor(pIdx)}
             <Combobox
-              timeStampValue={dateOf(pIdx)?.getTime() ?? null}
+              timeStampValue={wallDateOf(pIdx)?.getTime() ?? null}
               {format}
               use12Hours={effUse12Hours}
-              isAM={meridiemOf(dateOf(pIdx)?.getHours() ?? 0) === 'am'}
+              isAM={meridiemOf(wallDateOf(pIdx)?.getHours() ?? 0) === 'am'}
               {hourStep}
               {minuteStep}
               {secondStep}
@@ -588,10 +611,10 @@
         {@const rules = disabledRulesFor(0)}
         <!-- 单选：单个 Combobox（复用拆分后的时间列面板，对齐 Semi Combobox）。 -->
         <Combobox
-          timeStampValue={dateOf(0)?.getTime() ?? null}
+          timeStampValue={wallDateOf(0)?.getTime() ?? null}
           {format}
           use12Hours={effUse12Hours}
-          isAM={meridiemOf(dateOf(0)?.getHours() ?? 0) === 'am'}
+          isAM={meridiemOf(wallDateOf(0)?.getHours() ?? 0) === 'am'}
           {hourStep}
           {minuteStep}
           {secondStep}
