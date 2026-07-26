@@ -129,6 +129,10 @@
     topSlot?: import('svelte').Snippet;
     /** 面板底部自定义内容（对齐 Semi bottomSlot）。 */
     bottomSlot?: import('svelte').Snippet;
+    /** 面板左侧自定义内容（对齐 Semi leftSlot）。 */
+    leftSlot?: import('svelte').Snippet;
+    /** 面板右侧自定义内容（对齐 Semi rightSlot）。 */
+    rightSlot?: import('svelte').Snippet;
     /** 完全自定义触发器渲染（对齐 Semi triggerRender）：替换默认 DateInput，接收当前值/占位/开合/禁用。 */
     triggerRender?: import('svelte').Snippet<[{ value: string; placeholder: string; open: boolean; disabled: boolean }]>;
     // --- 浮层杂项（对齐 Semi）---
@@ -221,6 +225,8 @@
     rangeSeparator,
     topSlot,
     bottomSlot,
+    leftSlot,
+    rightSlot,
     triggerRender,
     spacing = numbers.SPACING,
     dropdownClassName,
@@ -570,14 +576,16 @@
         {...{ 'x-type': type }}
         {...(dropdownStyle ? { style: dropdownStyle } : {})}
       >
-        <!-- 面板顶部 slot（对齐 Semi topSlot） -->
-        {#if topSlot}<div class={`${PREFIX}-topSlot`}>{@render topSlot()}</div>{/if}
         <div class={`${PREFIX}-container`}>
+          <!-- leftSlot（对齐 Semi：container 内最左） -->
+          {#if leftSlot}<div class={`${PREFIX}-leftSlot`}>{@render leftSlot()}</div>{/if}
           <!-- preset left（对齐 Semi，monthRange 暂不支持 preset） -->
           {#if presetPosition === 'left' && presets.length && type !== 'monthRange'}
             <QuickControl {type} {presets} presetPosition="left" onPresetClick={handlePresetClick} />
           {/if}
           <div>
+            <!-- 面板顶部 slot（对齐 Semi topSlot：container 内 div 顶部） -->
+            {#if topSlot}<div class={`${PREFIX}-topSlot`}>{@render topSlot()}</div>{/if}
             <!-- insetInput：面板内输入框（对齐 Semi renderDateInput，面板顶部） -->
             {#if insetInput}
               <InsetInput
@@ -636,11 +644,15 @@
             {#if presetPosition === 'bottom' && presets.length && type !== 'monthRange'}
               <QuickControl {type} {presets} presetPosition="bottom" onPresetClick={handlePresetClick} />
             {/if}
+            <!-- 面板底部 slot（对齐 Semi bottomSlot：container 内 div 底部） -->
+            {#if bottomSlot}<div class={`${PREFIX}-bottomSlot`}>{@render bottomSlot()}</div>{/if}
           </div>
           <!-- preset right -->
           {#if presetPosition === 'right' && presets.length && type !== 'monthRange'}
             <QuickControl {type} {presets} presetPosition="right" onPresetClick={handlePresetClick} />
           {/if}
+          <!-- rightSlot（对齐 Semi：container 内最右） -->
+          {#if rightSlot}<div class={`${PREFIX}-rightSlot`}>{@render rightSlot()}</div>{/if}
         </div>
         <!-- needConfirm 确认栏（对齐 Semi footer.tsx）：range 未完整时禁用确认。 -->
         {#if effectiveNeedConfirm}
@@ -650,8 +662,6 @@
             onCancelClick={handleCancel}
           />
         {/if}
-        <!-- 面板底部 slot（对齐 Semi bottomSlot） -->
-        {#if bottomSlot}<div class={`${PREFIX}-bottomSlot`}>{@render bottomSlot()}</div>{/if}
       </div>
     {/snippet}
 
@@ -706,6 +716,23 @@
   }
   :global(.cd-datepicker-container) {
     display: flex;
+  }
+  /* 面板四向 slot 分割线（对齐 Semi datePicker.scss &-topSlot/-leftSlot/-rightSlot/-bottomSlot）。 */
+  :global(.cd-datepicker-topSlot) {
+    border-bottom: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-datepicker-bottomSlot) {
+    border-top: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-datepicker-leftSlot) {
+    border-right: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+  }
+  :global(.cd-datepicker-rightSlot) {
+    border-left: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
   }
   /* 触发器 wrapper（combobox） */
   :global(.cd-datepicker-input) {

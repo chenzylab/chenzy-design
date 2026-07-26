@@ -323,6 +323,7 @@
   function onComboboxChange(panelIndex: 0 | 1, timeStampValue: number) {
     const t = new Date(timeStampValue);
     commit(panelIndex, t.getHours(), t.getMinutes(), t.getSeconds());
+    invalid = false; // 面板选择是有效操作，清 invalid（对齐 Semi）
   }
 
   // --- Intl / core formatTime 展示（对齐 Semi 值层时区转换）---
@@ -358,6 +359,8 @@
   // 输入过程只做本地展示，Enter/Blur 时解析并提交（单选整串 → 时间；范围按 rangeSeparator 拆两端）。
   let inputDraft = $state<string | null>(null);
   const inputValue = $derived(inputDraft ?? displayText);
+  // invalid 校验态（对齐 Semi foundation invalid）：手输非法/无法解析时置 true，触发器显示 error 样式。
+  let invalid = $state(false);
 
   function parseAndCommit(raw: string) {
     if (inputReadOnly) return;
@@ -365,16 +368,27 @@
     if (text === '') {
       emit([null, null]);
       inputDraft = null;
+      invalid = false;
       return;
     }
     if (isRange) {
       const parts = text.split(rangeSeparator.trim() === '' ? '~' : rangeSeparator.trim());
       const s = parts[0] ? toDate(parts[0].trim()) : null;
       const e = parts[1] ? toDate(parts[1].trim()) : null;
-      if (s || e) emit([s, e]);
+      if (s || e) {
+        emit([s, e]);
+        invalid = false;
+      } else {
+        invalid = true; // 两端都解析失败
+      }
     } else {
       const d = toDate(text);
-      if (d) emit([d, currentPair[1]]);
+      if (d) {
+        emit([d, currentPair[1]]);
+        invalid = false;
+      } else {
+        invalid = true; // 解析失败：标记 invalid，回落展示但给 error 反馈（对齐 Semi）
+      }
     }
     inputDraft = null;
   }
@@ -495,7 +509,7 @@
       validateStatus !== 'default' && `cd-time-picker--${validateStatus}`,
       disabled && 'cd-time-picker--disabled',
       isOpen && 'cd-time-picker--open',
-      isRange && 'cd-time-picker--range',
+      isRange && 'cd-time-picker-range',
       className,
     ]
       .filter(Boolean)
@@ -505,7 +519,7 @@
   const panelCls = $derived(
     [
       'cd-time-picker-panel',
-      isRange && 'cd-time-picker-panel--range',
+      isRange && 'cd-time-picker-range-panel',
       !motion && 'cd-time-picker-panel--no-motion',
       popupClassName,
     ]
@@ -566,7 +580,7 @@
         {size}
         {disabled}
         {borderless}
-        {validateStatus}
+        validateStatus={invalid ? 'error' : validateStatus}
         {showClear}
         readonly={inputReadOnly}
         hideSuffix
@@ -604,7 +618,7 @@
     >
       {#if isRange}
         <!-- range：左右两个 Combobox 并排（复用拆分后的时间列面板，对齐 Semi RANGE_PANEL_LISTS）。 -->
-        <div class="cd-time-picker__lists">
+        <div class="cd-time-picker-lists">
           {#each [0, 1] as const as pIdx (pIdx)}
             {@const rules = disabledRulesFor(pIdx)}
             <Combobox
@@ -719,31 +733,31 @@
   }
 
   /* --- range 双列并排（对齐 Semi timePicker.scss `-range-panel .lists`）--- */
-  .cd-time-picker__lists {
+  .cd-time-picker-lists {
     display: flex;
     box-shadow: var(--cd-shadow-time-picker-range-panel);
     border: var(--cd-width-time-picker-range-panel-border) solid var(--cd-color-time-picker-range-panel-border);
     border-radius: var(--cd-radius-time-picker-range-panel);
   }
-  .cd-time-picker__lists :global(.cd-scrolllist:first-of-type) {
+  .cd-time-picker-lists :global(.cd-scrolllist:first-of-type) {
     border-radius: var(--cd-radius-time-picker-range-panel) 0 0 var(--cd-radius-time-picker-range-panel);
   }
-  .cd-time-picker__lists :global(.cd-scrolllist:last-of-type) {
+  .cd-time-picker-lists :global(.cd-scrolllist:last-of-type) {
     border-radius: 0 var(--cd-radius-time-picker-range-panel) var(--cd-radius-time-picker-range-panel) 0;
   }
-  .cd-time-picker__lists :global(.cd-scrolllist) {
+  .cd-time-picker-lists :global(.cd-scrolllist) {
     box-shadow: none;
   }
   /* 双列中间分割线（左列 body 右侧描边）。 */
-  .cd-time-picker__lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
+  .cd-time-picker-lists :global(.cd-scrolllist:not(:last-child) .cd-scrolllist-body) {
     border-inline-end: var(--cd-width-time-picker-range-panel-scrolllist-body-border) solid var(--cd-color-time-picker-range-picker-panel-split-border);
   }
   /* range 面板里 body 与 header 的 padding 覆盖为 0（镜像 Semi timePicker.scss L111-115
      `.semi-scrolllist { .semi-scrolllist-body, .semi-scrolllist-header { padding: 0 } }`）。
      ScrollList 默认 body 有 `padding: 0 16px`，在双列 range 布局里会把列内容与面板边缘/
      中间分割线推开 16px 空隙、视觉不紧凑——此处按 Semi 归零。之前只覆盖了 header 漏了 body。 */
-  .cd-time-picker__lists :global(.cd-scrolllist-body),
-  .cd-time-picker__lists :global(.cd-scrolllist-header) {
+  .cd-time-picker-lists :global(.cd-scrolllist-body),
+  .cd-time-picker-lists :global(.cd-scrolllist-header) {
     padding: var(--cd-spacing-time-picker-range-panel-scrolllist-header-body-padding);
   }
 

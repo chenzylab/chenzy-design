@@ -3,6 +3,7 @@
 // 只断言静态 ARIA + axe 0 violations，不测真实键盘/焦点（jsdom 限制）。
 // 打开态面板 portal 到 document.body，故扫描 document.body。
 import { describe, it, expect } from 'vitest';
+import { tick } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import TimePicker from './TimePicker.svelte';
 
@@ -86,7 +87,7 @@ describe('TimePicker a11y', () => {
     renderWithLocale(TimePicker, {
       props: { type: 'timeRange', defaultOpen: true },
     });
-    const lists = document.querySelector('.cd-time-picker__lists');
+    const lists = document.querySelector('.cd-time-picker-lists');
     expect(lists, '应存在 range 双列容器').not.toBeNull();
     const scrollLists = lists!.querySelectorAll('.cd-scrolllist');
     expect(scrollLists.length).toBe(2);
@@ -106,5 +107,23 @@ describe('TimePicker a11y', () => {
   it('从未打开：面板不在 DOM', () => {
     renderWithLocale(TimePicker, { props: { open: false } });
     expect(document.querySelector('.cd-time-picker-panel')).toBeNull();
+  });
+
+  // invalid 校验态（对齐 Semi）：手输非法时间串 → 触发器标记 error。
+  it('手输非法时间：触发器进入 error 校验态（invalid）', async () => {
+    const { container } = renderWithLocale(TimePicker, {
+      props: { format: 'HH:mm:ss' },
+    });
+    const input = container.querySelector('.cd-time-picker__input input') as HTMLInputElement;
+    // 输入非法串 + 失焦（触发 parseAndCommit）。
+    input.value = 'not-a-time';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+    await tick();
+    // error 态：Input wrapper 带 error 类（本库 Input validateStatus=error 的表现）。
+    const errored =
+      container.querySelector('[class*="error"]') ??
+      container.querySelector('.cd-time-picker__input [aria-invalid="true"]');
+    expect(errored, '非法输入应进入 error 校验态').not.toBeNull();
   });
 });
