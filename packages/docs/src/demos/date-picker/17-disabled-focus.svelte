@@ -14,9 +14,9 @@
   // 按当前聚焦端禁用不同区间：起始输入框聚焦禁今天前2/后2天，结束输入框聚焦禁前3/后3天。
   function disabledDate(
     date: Date,
-    options: { rangeInputFocus: 'rangeStart' | 'rangeEnd' | false },
+    options?: { rangeInputFocus: 'rangeStart' | 'rangeEnd' | false },
   ): boolean {
-    const { rangeInputFocus } = options;
+    const rangeInputFocus = options?.rangeInputFocus;
     const baseDate = new Date(today);
     baseDate.setHours(0, 0, 0, 0);
     if (rangeInputFocus === 'rangeStart') {

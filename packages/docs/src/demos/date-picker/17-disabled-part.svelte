@@ -15,8 +15,8 @@
     return arr;
   }
 
-  const disabledTime = (date: Date) =>
-    isToday(date)
+  const disabledTime = (date: Date | Date[] | null) =>
+    date instanceof Date && isToday(date)
       ? {
           disabledHours: () => [17, 18],
           disabledMinutes: (hour: number) => (hour === 19 ? range(0, 10) : []),
@@ -25,7 +25,7 @@
         }
       : {};
 
-  const disabledTime2 = (_date: Date, panelType?: string) => {
+  const disabledTime2 = (_date: Date | Date[] | null, panelType?: 'left' | 'right') => {
     if (panelType === 'left') {
       return { disabledHours: () => [17, 18] };
     }

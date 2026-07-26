@@ -2,8 +2,8 @@
   import { DatePicker } from '@chenzy-design/svelte';
 
   // 动态禁用：禁止选择比已选起点更早的日期。rangeStart 为 'YYYY-MM-DD' 串。
-  function disabledDate(date: Date, options: { rangeStart: string }): boolean {
-    const { rangeStart } = options;
+  function disabledDate(date: Date, options?: { rangeStart: string }): boolean {
+    const rangeStart = options?.rangeStart;
     if (!rangeStart) return false;
     const startDate = new Date(rangeStart);
     startDate.setHours(0, 0, 0, 0);

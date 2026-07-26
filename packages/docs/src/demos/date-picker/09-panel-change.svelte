@@ -6,5 +6,5 @@
   syncSwitchMonth={true}
   type="dateTimeRange"
   style="width: 400px"
-  onPanelChange={(e) => console.log(e.panelDate)}
+  onPanelChange={(date) => console.log(date)}
 />

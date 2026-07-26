@@ -5,8 +5,8 @@
 <DatePicker
   type="dateTime"
   needConfirm={true}
-  onConfirm={(e) => {
-    console.log('Confirmed: ', e.value);
+  onConfirm={(value) => {
+    console.log('Confirmed: ', value);
   }}
   onCancel={() => {
     console.log('Canceled');

@@ -1,4 +1,5 @@
-export { default as DatePicker } from './DatePicker.svelte';
+// 主导出 = 从零重写并严格对齐 Semi 的实现（原 DatePickerNext）。
+export { default as DatePicker } from './DatePickerNext.svelte';
 export { meta as datePickerMeta } from './meta.js';
-// 从零重写版（阶段性接入真机验证；样式对齐完成后整体替换旧 DatePicker）。
+// 过渡别名（保留一段时间避免消费方骤断，指向同一实现）。
 export { default as DatePickerNext } from './DatePickerNext.svelte';

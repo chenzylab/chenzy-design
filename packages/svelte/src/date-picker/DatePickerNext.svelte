@@ -48,7 +48,11 @@
     validateStatus?: ValidateStatus;
     size?: PickerSize;
     weekStartsOn?: WeekStartNumber;
-    disabledDate?: (date: Date) => boolean;
+    /** 禁用日期（对齐 Semi disabledDate）：range 场景第二参 options 提供 rangeStart/rangeEnd/rangeInputFocus 上下文。 */
+    disabledDate?: (
+      date: Date,
+      options?: { rangeStart: string; rangeEnd: string; rangeInputFocus: 'rangeStart' | 'rangeEnd' | false },
+    ) => boolean;
     /** 禁用时间（dateTime，对齐 Semi disabledTime）：返回 {disabledHours,disabledMinutes,disabledSeconds}。 */
     disabledTime?: (date: Date | Date[] | null, panelType?: 'left' | 'right') => { disabledHours?: () => number[]; disabledMinutes?: (hour: number) => number[]; disabledSeconds?: (hour: number, minute: number) => number[] } | undefined;
     /** 禁用时间面板整体（对齐 Semi disabledTimePicker）。 */
@@ -532,7 +536,10 @@
   }
 
   const disabledDateWrap = $derived(
-    disabledDate ? (date: Date) => disabledDate!(date) : undefined,
+    disabledDate
+      ? (date: Date, options?: { rangeStart: string; rangeEnd: string; rangeInputFocus: 'rangeStart' | 'rangeEnd' | false }) =>
+          disabledDate!(date, options)
+      : undefined,
   );
   const monthsGridRest = $derived({
     ...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {}),

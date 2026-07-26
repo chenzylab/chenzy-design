@@ -6,7 +6,7 @@
 </script>
 
 <DatePicker>
-  {#snippet renderDate({ day })}
+  {#snippet renderDate(day)}
     {#if day === 1}
       <Tooltip content="Always Day 1">
         <div style={dateStyle}>{day}</div>

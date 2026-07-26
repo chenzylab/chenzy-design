@@ -24,7 +24,7 @@
 </script>
 
 <DatePicker style="width: 260px" type="dateRange">
-  {#snippet renderFullDate({ day, dayStatus })}
+  {#snippet renderFullDate(day, _fullDate, dayStatus)}
     <div style={dayStyle(dayStatus as DayStatus)}>{day}</div>
   {/snippet}
 </DatePicker>

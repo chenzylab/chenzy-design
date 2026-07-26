@@ -3,12 +3,12 @@
 
   const presets = [
     {
-      label: 'Today',
-      value: new Date(),
+      text: 'Today',
+      start: new Date(),
     },
     {
-      label: 'Tomorrow',
-      value: new Date(new Date().valueOf() + 1000 * 3600 * 24),
+      text: 'Tomorrow',
+      start: new Date(new Date().valueOf() + 1000 * 3600 * 24),
     },
   ];
 </script>
