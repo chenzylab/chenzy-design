@@ -30,6 +30,10 @@
     clearIcon?: import('svelte').Snippet;
     /** 输入框样式（对齐 Semi inputStyle，透传 Input style）。 */
     inputStyle?: string;
+    /** 内嵌标签 id（对齐 Semi insetLabelId，透传 Input）。 */
+    insetLabelId?: string;
+    /** range 分隔符自定义节点（对齐 Semi rangeSeparatorNode，优先于 rangeSeparator 字符串）。 */
+    rangeSeparatorNode?: import('svelte').Snippet | string;
     onChange?: (value: string, e: Event) => void;
     onEnterPress?: (e: KeyboardEvent) => void;
     onClear?: (e: MouseEvent) => void;
@@ -60,6 +64,8 @@
     insetLabel,
     clearIcon,
     inputStyle,
+    insetLabelId,
+    rangeSeparatorNode,
     onChange,
     onEnterPress,
     onClear,
@@ -101,6 +107,7 @@
     ...(insetLabel !== undefined ? { insetLabel } : {}),
     ...(clearIcon !== undefined ? { clearIcon } : {}),
     ...(inputStyle !== undefined ? { style: inputStyle } : {}),
+    ...(insetLabelId !== undefined ? { insetLabelId } : {}),
   });
 </script>
 
@@ -132,7 +139,7 @@
       class={`${prefixCls}-range-input-separator`}
       class:cd-datepicker-range-input-separator-active={(rangeStart || rangeEnd) && !disabled}
       onclick={(e) => !disabled && onRangeFocus?.(e, 'rangeStart')}
-    >{rangeSeparator}</span>
+    >{#if typeof rangeSeparatorNode === 'function'}{@render rangeSeparatorNode()}{:else}{rangeSeparatorNode ?? rangeSeparator}{/if}</span>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div

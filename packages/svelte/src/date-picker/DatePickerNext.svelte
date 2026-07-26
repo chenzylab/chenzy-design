@@ -146,8 +146,22 @@
     onClear?: (e: MouseEvent) => void;
     /** 根节点内联样式（对齐 Semi style）。 */
     style?: string;
+    /** 根节点类名（对齐 Semi className，本库命名用 class）。 */
+    class?: string;
     /** range 选完起点自动切到止点框（对齐 Semi autoSwitchDate，默认 true）。 */
     autoSwitchDate?: boolean;
+    /** 浮层溢出冗余边距（对齐 Semi dropdownMargin）。 */
+    dropdownMargin?: number | { marginLeft?: number; marginTop?: number; marginRight?: number; marginBottom?: number };
+    /** 触发器内嵌标签 id（对齐 Semi insetLabelId，透传 Input）。 */
+    insetLabelId?: string;
+    /** range 分隔符自定义节点（对齐 Semi rangeSeparatorNode，优先于 rangeSeparator）。 */
+    rangeSeparatorNode?: import('svelte').Snippet | string;
+    /** date-fns locale（对齐 Semi dateFnsLocale）：驱动 date-fns 解析/格式化的本地化。 */
+    dateFnsLocale?: import('date-fns').Locale;
+    /** 时间选择器透传选项（对齐 Semi timePickerOpts）。 */
+    timePickerOpts?: Record<string, unknown>;
+    /** 年月选择器透传选项（对齐 Semi yearAndMonthOpts）。 */
+    yearAndMonthOpts?: Record<string, unknown>;
   }
 
   let {
@@ -215,7 +229,14 @@
     autoFocus = false,
     onClear: onClearProp,
     style,
+    class: className,
     autoSwitchDate = true,
+    dropdownMargin,
+    insetLabelId,
+    rangeSeparatorNode,
+    dateFnsLocale,
+    timePickerOpts,
+    yearAndMonthOpts,
   }: Props = $props();
 
   const loc = useLocale();
@@ -239,6 +260,7 @@
     get timeZone() { return timeZone; },
     get configTimeZone() { return configTimeZone; },
     showSecond: true,
+    get dateFnsLocale() { return dateFnsLocale; },
     // date 单值：foundation onChange 抛 Date|null，直接透传（RangeValue 分支此里程碑不涉及）。
     get onChange() { return onChange as DatePickerFoundationProps['onChange']; },
     get onChangeWithDateFirst() { return onChangeWithDateFirst; },
@@ -513,10 +535,12 @@
     ...(prefix !== undefined ? { prefix } : {}),
     ...(clearIcon !== undefined ? { clearIcon } : {}),
     ...(inputStyle !== undefined ? { inputStyle } : {}),
+    ...(insetLabelId !== undefined ? { insetLabelId } : {}),
+    ...(rangeSeparatorNode !== undefined ? { rangeSeparatorNode } : {}),
   });
 </script>
 
-<div class={PREFIX} {...(style ? { style } : {})}>
+<div class={`${PREFIX}${className ? ` ${className}` : ''}`} {...(style ? { style } : {})}>
   <Popover
     trigger="custom"
     visible={st.isOpen}
@@ -526,6 +550,7 @@
     {stopPropagation}
     {...(zIndex !== undefined ? { zIndex } : {})}
     {...(getPopupContainer ? { getPopupContainer } : {})}
+    {...(dropdownMargin !== undefined ? { margin: dropdownMargin } : {})}
     {spacing}
     onVisibleChange={(v) => {
       // 面板由 open→false（外部点击/Esc 等 Popover 自身关闭）时触发 onClickOutSide（对齐 Semi）。
@@ -570,6 +595,7 @@
                 monthCycled
                 localeCode={loc().code}
                 onSelect={handleYMSelectedChange}
+                {...(yearAndMonthOpts ? { scrollItemProps: yearAndMonthOpts } : {})}
                 {...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {})}
               />
             {:else}
@@ -593,6 +619,7 @@
                 {...(renderFullDate ? { renderFullDate } : {})}
                 {...(startDateOffset ? { startDateOffset } : {})}
                 {...(endDateOffset ? { endDateOffset } : {})}
+                {...(timePickerOpts ? { timePickerOpts } : {})}
                 onSelectedChange={handleSelectedChange}
                 {...monthsGridRest}
               />

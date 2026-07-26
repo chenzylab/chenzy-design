@@ -50,6 +50,8 @@ export interface DatePickerFoundationProps {
   /** ConfigProvider 注入的时区（自身 timeZone 优先）。 */
   configTimeZone?: string | number | undefined;
   showSecond: boolean;
+  /** date-fns locale（对齐 Semi dateFnsLocale）：驱动 localeFormat/compatibleParse 的本地化。 */
+  dateFnsLocale?: import('date-fns').Locale | undefined;
   onChange?: ((value: Date | Date[] | RangeValue | null, dateString: string) => void) | undefined;
   onChangeWithDateFirst: boolean;
   onOpenChange?: ((open: boolean) => void) | undefined;
@@ -139,9 +141,9 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     p().format ?? getDefaultFormatTokenByType(p().type),
   );
 
-  /** localeFormat —— 对齐 Semi foundation.localeFormat：走 core localeFormat（date-fns format）。 */
+  /** localeFormat —— 对齐 Semi foundation.localeFormat：走 core localeFormat（date-fns format，可选 dateFnsLocale 本地化）。 */
   function localeFormat(date: Date, token: string): string {
-    return coreLocaleFormat(date, token);
+    return coreLocaleFormat(date, token, p().dateFnsLocale);
   }
 
   /**
@@ -253,7 +255,7 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
       const sep = p().rangeSeparator;
       const values = input.split(sep);
       const parsed = values.reduce<Date[]>((arr, cur) => {
-        const v = cur ? compatibleParse(cur.trim(), token, now) : null;
+        const v = cur ? compatibleParse(cur.trim(), token, now, p().dateFnsLocale) : null;
         if (v) arr.push(v);
         return arr;
       }, []);
@@ -265,7 +267,7 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
       }
       return [];
     }
-    const parsed = compatibleParse(input.trim(), token, now);
+    const parsed = compatibleParse(input.trim(), token, now, p().dateFnsLocale);
     if (parsed && localeFormat(parsed, token) === input.trim()) return [parsed];
     return [];
   }

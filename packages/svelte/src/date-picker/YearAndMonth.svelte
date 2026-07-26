@@ -35,6 +35,8 @@
     disabledDate?: (date: Date) => boolean;
     onSelect?: (obj: { currentYear: LR; currentMonth: LR }) => void;
     onBackToMain?: () => void;
+    /** 年月滚动列透传选项（对齐 Semi yearAndMonthOpts）：spread 给 year/month ScrollItem。 */
+    scrollItemProps?: Record<string, unknown>;
   }
 
   let {
@@ -51,6 +53,7 @@
     disabledDate,
     onSelect,
     onBackToMain,
+    scrollItemProps,
   }: Props = $props();
 
   const loc = useLocale();
@@ -117,6 +120,7 @@
         selectedIndex={st.years.findIndex((it) => it.value === st.currentYear[panelType])}
         type="year"
         ariaLabel={loc().t('DatePicker.yearColumnLabel')}
+        {...(scrollItemProps ?? {})}
         onSelect={(payload) => onYearSelect(payload, panelType)}
       />
       <ScrollItem
@@ -126,6 +130,7 @@
         selectedIndex={st.months.findIndex((it) => it.value === st.currentMonth[panelType])}
         type="month"
         ariaLabel={loc().t('DatePicker.monthColumnLabel')}
+        {...(scrollItemProps ?? {})}
         onSelect={(payload) => onMonthSelect(payload, panelType)}
       />
     </ScrollList>

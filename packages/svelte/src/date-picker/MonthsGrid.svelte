@@ -34,6 +34,8 @@
     endYear?: number;
     renderDate?: Snippet<[number | string, string]>;
     renderFullDate?: Snippet<[number | string, string, DayStatus]>;
+    /** 时间选择器透传选项（对齐 Semi timePickerOpts）：spread 给 tpk Combobox 的 scrollItemProps。 */
+    timePickerOpts?: Record<string, unknown>;
   }
 
   let {
@@ -58,6 +60,7 @@
     onSelectedChange,
     renderDate,
     renderFullDate,
+    timePickerOpts,
   }: Props = $props();
 
   const loc = useLocale();
@@ -165,6 +168,7 @@
           disabledHours={dt?.disabledHours}
           disabledMinutes={dt?.disabledMinutes ? (h) => dt.disabledMinutes!(h ?? 0) : undefined}
           disabledSeconds={dt?.disabledSeconds ? (h, m) => dt.disabledSeconds!(h ?? 0, m ?? 0) : undefined}
+          {...(timePickerOpts ? { scrollItemProps: timePickerOpts } : {})}
           onChange={(payload) => st.handleTimeChange({ timeStampValue: payload.timeStampValue }, panelType)}
         />
       </div>
