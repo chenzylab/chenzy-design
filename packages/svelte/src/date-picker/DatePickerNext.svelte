@@ -30,6 +30,7 @@
     type ValidateStatus,
   } from './date-picker-foundation.svelte.js';
   import type { WeekStartNumber } from './_utils/getDayOfWeek.js';
+  import type { DayStatus } from './month-foundation.svelte.js';
 
   interface Props {
     type?: PickerType;
@@ -47,6 +48,26 @@
     size?: PickerSize;
     weekStartsOn?: WeekStartNumber;
     disabledDate?: (date: Date) => boolean;
+    /** 禁用时间（dateTime，对齐 Semi disabledTime）：返回 {disabledHours,disabledMinutes,disabledSeconds}。 */
+    disabledTime?: (date: Date | Date[] | null, panelType?: 'left' | 'right') => { disabledHours?: () => number[]; disabledMinutes?: (hour: number) => number[]; disabledSeconds?: (hour: number, minute: number) => number[] } | undefined;
+    /** 禁用时间面板整体（对齐 Semi disabledTimePicker）。 */
+    disabledTimePicker?: boolean;
+    /** 隐藏禁用时间项（对齐 Semi hideDisabledOptions）。 */
+    hideDisabledOptions?: boolean;
+    /** 紧凑密度（对齐 Semi density）。 */
+    density?: 'default' | 'compact';
+    /** 双面板同步翻月（range，对齐 Semi syncSwitchMonth）。 */
+    syncSwitchMonth?: boolean;
+    /** 自定义日期数字渲染（对齐 Semi renderDate）。 */
+    renderDate?: import('svelte').Snippet<[number | string, string]>;
+    /** 自定义整日格渲染（对齐 Semi renderFullDate）。 */
+    renderFullDate?: import('svelte').Snippet<[number | string, string, DayStatus]>;
+    /** 周选择起偏移（对齐 Semi startDateOffset）。 */
+    startDateOffset?: (date: Date) => Date;
+    /** 周选择止偏移（对齐 Semi endDateOffset）。 */
+    endDateOffset?: (date: Date) => Date;
+    /** 面板月变化回调（对齐 Semi onPanelChange）。 */
+    onPanelChange?: (date: Date | Date[], dateString: string | string[]) => void;
     timeZone?: string | number;
     /** 多选（仅 type=date，对齐 Semi multiple）：value/onChange 为 Date[]，点日期 toggle。 */
     multiple?: boolean;
@@ -88,6 +109,16 @@
     size = 'default',
     weekStartsOn = numbers.WEEK_START_ON as WeekStartNumber,
     disabledDate,
+    disabledTime,
+    disabledTimePicker = false,
+    hideDisabledOptions = false,
+    density = 'default',
+    syncSwitchMonth = false,
+    renderDate,
+    renderFullDate,
+    startDateOffset,
+    endDateOffset,
+    onPanelChange,
     timeZone,
     multiple = false,
     max,
@@ -436,8 +467,16 @@
                 setRangeInputFocus={(f) => (rangeInputFocus = f)}
                 {weekStartsOn}
                 {multiple}
+                {density}
+                {syncSwitchMonth}
                 {...(max !== undefined ? { max } : {})}
                 {...(onMaxLimit ? { onMaxLimit } : {})}
+                {...(disabledTime ? { disabledTime } : {})}
+                {...(disabledTimePicker ? { disabledTimePicker } : {})}
+                {...(renderDate ? { renderDate } : {})}
+                {...(renderFullDate ? { renderFullDate } : {})}
+                {...(startDateOffset ? { startDateOffset } : {})}
+                {...(endDateOffset ? { endDateOffset } : {})}
                 onSelectedChange={handleSelectedChange}
                 {...monthsGridRest}
               />
