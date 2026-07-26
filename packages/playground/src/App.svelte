@@ -296,6 +296,13 @@
             <div><div style="margin-bottom:8px;">inset-range</div><DatePickerNext type="dateRange" insetInput /></div>
             <div><div style="margin-bottom:8px;">multiple</div><DatePickerNext type="date" multiple max={3} /></div>
             <div><div style="margin-bottom:8px;">needConfirm</div><DatePickerNext type="dateTime" needConfirm /></div>
+            <div><div style="margin-bottom:8px;">triggerRender</div>
+              <DatePickerNext type="date">
+                {#snippet triggerRender({ value, placeholder })}
+                  <button style="padding:6px 14px; border:1px solid #0064fa; border-radius:6px; background:#e8f3ff; color:#0064fa; cursor:pointer;">{value || placeholder || '自定义触发器 📅'}</button>
+                {/snippet}
+              </DatePickerNext>
+            </div>
           </div>
         </LocaleProvider>
       </section>

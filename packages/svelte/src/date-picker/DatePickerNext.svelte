@@ -129,6 +129,17 @@
     topSlot?: import('svelte').Snippet;
     /** 面板底部自定义内容（对齐 Semi bottomSlot）。 */
     bottomSlot?: import('svelte').Snippet;
+    /** 完全自定义触发器渲染（对齐 Semi triggerRender）：替换默认 DateInput，接收当前值/占位/开合/禁用。 */
+    triggerRender?: import('svelte').Snippet<[{ value: string; placeholder: string; open: boolean; disabled: boolean }]>;
+    // --- 浮层杂项（对齐 Semi）---
+    /** 浮层与触发器间距（对齐 Semi spacing）。 */
+    spacing?: number;
+    /** 浮层 className（对齐 Semi dropdownClassName）。 */
+    dropdownClassName?: string;
+    /** 打开面板时阻止滚动（对齐 Semi preventScroll）。 */
+    preventScroll?: boolean;
+    /** 挂载时自动聚焦触发器（对齐 Semi autoFocus）。 */
+    autoFocus?: boolean;
   }
 
   let {
@@ -188,6 +199,11 @@
     rangeSeparator,
     topSlot,
     bottomSlot,
+    triggerRender,
+    spacing = numbers.SPACING,
+    dropdownClassName,
+    preventScroll = false,
+    autoFocus = false,
   }: Props = $props();
 
   const loc = useLocale();
@@ -260,6 +276,15 @@
   let inputValue = $state<string | null>(null);
   // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
   let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
+  // 触发器根元素（autoFocus 挂载聚焦用）。
+  let triggerEl = $state<HTMLElement | undefined>();
+  // autoFocus（对齐 Semi）：挂载时聚焦触发器内 input（preventScroll 控制是否阻止滚动）。
+  $effect(() => {
+    if (autoFocus && triggerEl) {
+      const inp = triggerEl.querySelector('input');
+      inp?.focus({ preventScroll });
+    }
+  });
 
   // 提交手输并让面板跳到解析值的月份（对齐 Semi：value 变化时面板重定位）。
   function commitInput(v: string) {
@@ -486,7 +511,7 @@
     {stopPropagation}
     {...(zIndex !== undefined ? { zIndex } : {})}
     {...(getPopupContainer ? { getPopupContainer } : {})}
-    spacing={numbers.SPACING}
+    {spacing}
     onVisibleChange={(v) => {
       // 面板由 open→false（外部点击/Esc 等 Popover 自身关闭）时触发 onClickOutSide（对齐 Semi）。
       if (!v && st.isOpen) onClickOutSide?.();
@@ -495,7 +520,7 @@
   >
     {#snippet content()}
       <div
-        class={typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}
+        class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
         {...{ 'x-type': type }}
       >
         <!-- 面板顶部 slot（对齐 Semi topSlot） -->
@@ -584,6 +609,7 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_role_has_required_aria_props -->
     <div
+      bind:this={triggerEl}
       class={`${PREFIX}-input`}
       role="combobox"
       aria-label={triggerText ? 'Change date' : 'Choose date'}
@@ -592,6 +618,10 @@
       tabindex="-1"
       onclick={openPanel}
     >
+      {#if triggerRender}
+        <!-- 完全自定义触发器（对齐 Semi triggerRender）：替换默认 DateInput。 -->
+        {@render triggerRender({ value: triggerDisplay, placeholder: phText, open: st.isOpen, disabled })}
+      {:else}
       <DateInput
         {type}
         value={triggerDisplay}
@@ -610,6 +640,7 @@
         onRangeEndTab={handleRangeEndTab}
         {...dateInputRest}
       />
+      {/if}
     </div>
   </Popover>
 </div>
