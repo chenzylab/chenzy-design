@@ -537,8 +537,11 @@
 
   const disabledDateWrap = $derived(
     disabledDate
-      ? (date: Date, options?: { rangeStart: string; rangeEnd: string; rangeInputFocus: 'rangeStart' | 'rangeEnd' | false }) =>
-          disabledDate!(date, options)
+      ? (date: Date, options?: unknown) =>
+          disabledDate!(
+            date,
+            options as { rangeStart: string; rangeEnd: string; rangeInputFocus: 'rangeStart' | 'rangeEnd' | false } | undefined,
+          )
       : undefined,
   );
   const monthsGridRest = $derived({
