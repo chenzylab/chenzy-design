@@ -671,6 +671,61 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(monthTexts.some((t) => t?.includes('月')), '未选中月份不应带「月」').toBe(false);
   });
 
+  it('insetInput：monthRange 是单输入框，其余 range 才多框（对齐 Semi isRenderMultipleInputs）', async () => {
+    // Semi dateInput.tsx:319-323 `isRenderMultipleInputs()` =
+    // `type.includes('Range') && type !== 'monthRange'`，原注释
+    // "isRange and not monthRange render multiple inputs"。
+    // 回归：本库原判定是 /range/i.test(type)，把 monthRange 也当多框
+    // → 渲染成两个框 + 「-」分隔符，而 Semi 是一个框、placeholder 为 `yyyy-MM ~ yyyy-MM`。
+    const cases: Array<{ type: string; inputs: number; sep: boolean }> = [
+      { type: 'monthRange', inputs: 1, sep: false },
+      { type: 'dateRange', inputs: 2, sep: true },
+      { type: 'dateTimeRange', inputs: 4, sep: true },
+    ];
+    for (const c of cases) {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+      const api = mount(DatePicker, {
+        target,
+        props: { type: c.type, insetInput: true, defaultOpen: true },
+      });
+      await tick();
+      await new Promise((r) => setTimeout(r, 20));
+
+      const inset = document.querySelector('.cd-datepicker-inset-input-wrapper');
+      expect(inset, `${c.type} 应渲染内嵌输入框`).not.toBeNull();
+      expect(inset?.querySelectorAll('input').length, `${c.type} 输入框数量`).toBe(c.inputs);
+      expect(
+        !!inset?.querySelector('.cd-datepicker-inset-input-separator'),
+        `${c.type} 分隔符`,
+      ).toBe(c.sep);
+
+      unmount(api as never);
+      target.remove();
+    }
+  });
+
+  it('insetInput monthRange：placeholder 是两端拼串（对齐 Semi）', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: { type: 'monthRange', insetInput: true, defaultOpen: true },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const input = document.querySelector<HTMLInputElement>(
+      '.cd-datepicker-inset-input-wrapper input',
+    );
+    expect(input?.placeholder, 'monthRange 单框 placeholder 应为 `yyyy-MM ~ yyyy-MM`').toBe(
+      'yyyy-MM ~ yyyy-MM',
+    );
+
+    unmount(api as never);
+    target.remove();
+  });
+
   it('yam 列 normal 模式有 min-width 规则（回归：只搬 wheel 那条会落空）', async () => {
     // Semi datePicker.scss:196-207 有**两条** li min-width：wheel 的 `-list-outer > ul > li`
     // 与 normal 的 `-item > ul > li`（后者 = 64 + wheel outer paddingRight 18 = 82，
