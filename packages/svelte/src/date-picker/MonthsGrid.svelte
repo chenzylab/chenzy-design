@@ -98,9 +98,12 @@
   }
 
   // 受控 selected/range：外部传入优先，否则用内部状态机（对齐 Semi state）。
+  // range 用 `||` 而非 `??`：外部 rangeStart/End 来自「已提交的值」（currentRange），
+  // 而 range 只有两端都选完才提交，选中起点后外部仍是空串 ''——用 `??` 会让空串盖掉
+  // foundation 里已写入的起点。
   const selected = $derived(selectedProp ?? st.selected);
-  const rangeStart = $derived(rangeStartProp ?? st.rangeStart);
-  const rangeEnd = $derived(rangeEndProp ?? st.rangeEnd);
+  const rangeStart = $derived(rangeStartProp || st.rangeStart);
+  const rangeEnd = $derived(rangeEndProp || st.rangeEnd);
 
   const LEFT = strings.PANEL_TYPE_LEFT as PanelType;
   const RIGHT = strings.PANEL_TYPE_RIGHT as PanelType;
@@ -197,11 +200,15 @@
           onPrevYear={() => st.prevYear(panelType)}
           onNextYear={() => st.nextYear(panelType)}
         />
+        <!-- rangeInputFocus 必须下传：hover 预览区间（Semi isHover→_isHoverAfterStart/
+             _isHoverBeforeEnd）依赖聚焦端，漏传则 Month 取默认 false，
+             选中起点后 hover 中间日期整段不高亮。 -->
         <Month
           month={detail.pickerDate}
           {selected}
           {rangeStart}
           {rangeEnd}
+          {rangeInputFocus}
           hoverDay={st.hoverDay}
           offsetRangeStart={st.offsetRangeStart}
           offsetRangeEnd={st.offsetRangeEnd}
@@ -318,10 +325,14 @@
     font-weight: var(--cd-font-weight-bold, 600);
     color: var(--cd-color-date-picker-nav-month-icon-text-default, var(--cd-color-text-0));
   }
-  :global(.cd-datepicker-navigation .cd-button) {
+  /* 导航按钮改中性色（对齐 Semi datePicker.scss `-navigation .semi-button { color: text-2 }`
+     与 `-navigation-month .semi-button { color: text-0 }`）：本库 Button 的
+     `.cd-button-primary.cd-button-borderless.svelte-xxx` 带 scope 类、特异性 (0,3,0)，
+     会让默认主色蓝盖过来；用 Semi 原样的 `:not(#neverExistElement)` 抬权重压过它。 */
+  :global(.cd-datepicker-navigation .cd-button:not(#neverExistElement)) {
     color: var(--cd-color-date-picker-nav-icon-text-default, var(--cd-color-text-2));
   }
-  :global(.cd-datepicker-navigation-month .cd-button) {
+  :global(.cd-datepicker-navigation-month .cd-button:not(#neverExistElement)) {
     color: var(--cd-color-date-picker-nav-month-icon-text-default, var(--cd-color-text-0));
   }
 

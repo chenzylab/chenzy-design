@@ -281,7 +281,14 @@ export interface Locale {
     restTagsCount: string;
   };
   DatePicker: {
-    placeholder: string;
+    /** 按 type 分派的占位（照搬 Semi）：range 类型为 [start, end] 数组 */
+    placeholder: {
+      date: string;
+      dateTime: string;
+      dateRange: [string, string];
+      dateTimeRange: [string, string];
+      monthRange: [string, string];
+    };
     today: string;
     clear: string;
     prevMonth: string;

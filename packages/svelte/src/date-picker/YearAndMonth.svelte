@@ -154,3 +154,15 @@
 {:else}
   {@render panel(LEFT)}
 {/if}
+
+<style>
+  /* monthRange 双面板横排（照搬 Semi datePicker.scss
+     `.semi-datepicker-panel-yam .semi-datepicker-yearmonth-body { display: flex }`
+     + 第 2 个 scrolllist 左分隔线）。缺此样式两个面板会块级堆叠成上下排列。 */
+  :global(.cd-datepicker-yearmonth-body) {
+    display: flex;
+  }
+  :global(.cd-datepicker-yearmonth-body > .cd-datepicker-yearmonth-panel:nth-child(2)) {
+    border-left: 1px solid var(--cd-color-border);
+  }
+</style>

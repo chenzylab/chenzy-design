@@ -29,7 +29,8 @@ export interface PanelDetail {
 
 export interface MonthsGridFoundationProps {
   type: PickerType;
-  defaultPickerValue?: Date | undefined;
+  /** 面板初始定位日期（对齐 Semi ValueType）：数组时 [0] 定位左面板、[1] 定位右面板。 */
+  defaultPickerValue?: Date | Date[] | undefined;
   weekStartsOn?: number | undefined;
   disabledDate?: ((date: Date, options?: unknown) => boolean) | undefined;
   /** 禁用时间（对齐 Semi disabledTime）：返回时间列 disabledHours/Minutes/Seconds。 */
@@ -78,9 +79,15 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     return { pickerDate: base, showDate: base, isTimePickerOpen: false, isYearPickerOpen: false };
   }
 
-  const initBase = (() => {
+  // 面板初始定位日期（照搬 Semi getDefaultPickerDate）：数组时 [0]→左面板、[1]→右面板；
+  // 右面板缺省（非数组 / [1] 非法）则回退 addMonths(左, 1)。
+  const { initBase, initBaseRight } = (() => {
     const dpv = p().defaultPickerValue;
-    return dpv && isValidDate(dpv) ? dpv : new Date();
+    const now = Array.isArray(dpv) ? dpv[0] : dpv;
+    const next = Array.isArray(dpv) ? dpv[1] : undefined;
+    const nowDate = now && isValidDate(now) ? now : new Date();
+    const nextDate = next && isValidDate(next) ? next : addMonths(nowDate, 1);
+    return { initBase: nowDate, initBaseRight: nextDate };
   })();
 
   // ===== state（对齐 Semi getStates）=====
@@ -93,7 +100,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
   let offsetRangeEnd = $state<string>('');
   // rangeInputFocus 由外部 props 驱动（对齐 Semi：它是 prop 非 foundation state）。
   const monthLeft = $state<PanelDetail>(initPanel(initBase));
-  const monthRight = $state<PanelDetail>(initPanel(addMonths(initBase, 1)));
+  const monthRight = $state<PanelDetail>(initPanel(initBaseRight));
 
   function isRangeType(type?: PickerType): boolean {
     const realType = type ?? p().type;

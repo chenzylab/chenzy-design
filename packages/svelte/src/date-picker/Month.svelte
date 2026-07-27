@@ -77,7 +77,11 @@
 
   // weeksRowNum 显式传入时锁定高度（对齐 Semi：双面板行数不齐时对齐到较多者）。
   const rowNum = $derived(weeksRowNum ?? st.weeksRowNum);
-  const weeksStyle = $derived(rowNum ? `height:${rowNum * numbers.WEEK_HEIGHT}px` : '');
+  // 用 CSS calc 而非 JS 常量：日格高在 compact 下由 --cd-width-date-picker-day 覆写，
+  // JS 算死 36 会让 compact 面板高度不跟随（对齐 Semi 的 scss 变量驱动）。
+  const weeksStyle = $derived(
+    rowNum ? `height:calc(${rowNum} * var(--cd-width-date-picker-day, ${numbers.WEEK_HEIGHT}px))` : '',
+  );
 
   function dayStatusOf(day: MonthDayInfo): DayStatus {
     return getDayStatus({
@@ -197,6 +201,9 @@
 
   :global(.cd-datepicker-weeks) {
     color: var(--cd-color-date-picker-date-text-default);
+    /* 行内 height 只表达「N 行 × 日格高」的内容高；compact 下的 padding-top 需额外撑开，
+       故显式 content-box（默认值，写出来防被上层 border-box 继承压缩掉最后一行）。 */
+    box-sizing: content-box;
   }
   :global(.cd-datepicker-week) {
     display: flex;

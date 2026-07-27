@@ -5,10 +5,12 @@
     {
       text: 'Today',
       start: new Date(),
+      end: new Date(),
     },
     {
       text: 'Tomorrow',
       start: new Date(new Date().valueOf() + 1000 * 3600 * 24),
+      end: new Date(new Date().valueOf() + 1000 * 3600 * 24),
     },
   ];
 </script>

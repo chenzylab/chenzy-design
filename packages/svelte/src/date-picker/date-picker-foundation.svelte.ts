@@ -16,7 +16,7 @@ import {
   localeFormat as coreLocaleFormat,
   compatibleParse,
 } from '@chenzy-design/core';
-import { getDefaultFormatTokenByType } from './constants.js';
+import { getDefaultFormatTokenByType, strings } from './constants.js';
 import isValidTimeZone from './_utils/isValidTimeZone.js';
 import type { PickerType } from './constants.js';
 
@@ -52,6 +52,11 @@ export interface DatePickerFoundationProps {
   showSecond: boolean;
   /** date-fns locale（对齐 Semi dateFnsLocale）：驱动 localeFormat/compatibleParse 的本地化。 */
   dateFnsLocale?: import('date-fns').Locale | undefined;
+  /**
+   * 需确认才提交（对齐 Semi needConfirm）：为 true 时面板选择只写暂存值 cachedSelected*，
+   * 不更新 value、不触发 onChange；点确认（handleConfirm）才提交。仅 dateTime/dateTimeRange 生效。
+   */
+  needConfirm?: boolean | undefined;
   onChange?: ((value: Date | Date[] | RangeValue | null, dateString: string) => void) | undefined;
   onChangeWithDateFirst: boolean;
   onOpenChange?: ((open: boolean) => void) | undefined;
@@ -135,6 +140,42 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     isValueControlled ? toRangePair(p().value) : innerRange,
   );
 
+  // ===================== needConfirm 暂存层（对齐 Semi cachedSelectedValue）=====================
+  // needConfirm 时面板选择只落到这里：value/currentRange 不动（触发器保持原值、不触发 onChange），
+  // 点确认才 commit 进 value。面板高亮读 panelValue/panelRange（优先暂存，无暂存回落已提交值）。
+  const effectiveNeedConfirm = $derived(
+    !!p().needConfirm && (p().type === 'dateTime' || p().type === 'dateTimeRange'),
+  );
+  let cachedSelected = $state<Date | Date[] | null>(null);
+  let cachedRange = $state<RangeValue | null>(null);
+  const panelValue = $derived<Date | Date[] | null>(cachedSelected ?? current);
+  const panelRange = $derived<RangeValue>(cachedRange ?? currentRange);
+  const panelSingle = $derived<Date | null>(
+    Array.isArray(panelValue) ? (panelValue[0] ?? null) : panelValue,
+  );
+
+  /** 丢弃暂存（关闭/取消时调用，对齐 Semi resetCachedSelectedValue）。 */
+  function clearCached(): void {
+    cachedSelected = null;
+    cachedRange = null;
+  }
+
+  /** 提交暂存并通知（对齐 Semi handleConfirm：updateValue(cachedSelectedValue) + notifyConfirm）。 */
+  function commitCached(): { notifyValue: string | string[] | undefined; notifyDate: Date | Date[] | undefined } {
+    if (isRange) {
+      const next = cachedRange ?? currentRange;
+      if (!isValueControlled) innerRange = next;
+      clearCached();
+      _notifyChange(next[0] == null && next[1] == null ? [] : next);
+      return disposeCallbackArgs(next);
+    }
+    const next = cachedSelected ?? current;
+    if (!isValueControlled) innerValue = next;
+    clearCached();
+    _notifyChange(next);
+    return disposeCallbackArgs(next);
+  }
+
   // ===================== 序列化（对齐 Semi localeFormat / disposeCallbackArgs）=====================
   /** 当前生效 format token：显式 format 优先，否则按 type 取默认（对齐 Semi）。 */
   const activeFormatToken = $derived<string | undefined>(
@@ -199,12 +240,23 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     return { notifyValue, notifyDate };
   }
 
-  /** formatShowText —— 触发器展示文案。state 已是墙上时间，直接按 token 序列化本地字段（对齐 Semi）。 */
+  /**
+   * formatShowText —— 触发器展示文案。state 已是墙上时间，直接按 token 序列化本地字段（对齐 Semi）。
+   * 分隔符按 type 分派（照搬 Semi formatDateValues + inputFoundation）：
+   * range 类型两两成组、组内用 rangeSeparator；其余（含 multiple 多选）用 DEFAULT_SEPARATOR_MULTIPLE。
+   */
   function formatShowText(value: Date | Date[] | null): string {
     const token = activeFormatToken;
     const one = (d: Date | null) => (d && token ? localeFormat(d, token) : '');
-    if (Array.isArray(value)) return value.map((d) => one(d)).join(` ${p().rangeSeparator} `);
-    return one(value);
+    if (!Array.isArray(value)) return one(value);
+    const parts = value.map((d) => one(d));
+    if (!_isRangeType()) return parts.join(strings.DEFAULT_SEPARATOR_MULTIPLE);
+    // range：groupSize=2，组内 rangeSeparator，组间 DEFAULT_SEPARATOR_MULTIPLE。
+    const groups: string[] = [];
+    for (let i = 0; i < parts.length; i += 2) {
+      groups.push(parts.slice(i, i + 2).join(p().rangeSeparator));
+    }
+    return groups.join(strings.DEFAULT_SEPARATOR_MULTIPLE);
   }
 
   const formattedValue = $derived(formatShowText(current));
@@ -234,14 +286,26 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     else (onChange as (a: unknown, b: unknown) => void)(notifyValue, notifyDate);
   }
 
-  /** handleSelectedChange —— 单值/multiple 面板选择入口：更新内部墙上时间值并通知。 */
+  /**
+   * handleSelectedChange —— 单值/multiple 面板选择入口。
+   * needConfirm 时只写暂存（对齐 Semi：`!needConfirm()` 才 updateValue，且不 notify），
+   * 否则照常更新内部值并通知。
+   */
   function handleSelectedChange(value: Date | Date[] | null) {
+    if (effectiveNeedConfirm) {
+      cachedSelected = value;
+      return;
+    }
     if (!isValueControlled) innerValue = value;
     _notifyChange(value);
   }
 
   /** handleRangeSelectedChange —— range 面板选择入口：全空清空、否则更新并通知（含完整性守卫）。 */
   function handleRangeSelectedChange(next: RangeValue) {
+    if (effectiveNeedConfirm) {
+      cachedRange = next;
+      return;
+    }
     const emptied = next[0] == null && next[1] == null;
     if (!isValueControlled) innerRange = next;
     _notifyChange(emptied ? [] : next);
@@ -302,6 +366,8 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
   function setOpen(next: boolean) {
     if (next === isOpen) return;
     if (!isOpenControlled) innerOpen = next;
+    // 关闭即丢弃未确认的暂存（对齐 Semi close → resetInnerSelectedStates → resetCachedSelectedValue）。
+    if (!next) clearCached();
     p().onOpenChange?.(next);
   }
 
@@ -317,6 +383,14 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     get currentRange() { return currentRange; },
     get formattedValue() { return formattedValue; },
     get effectiveTimeZone() { return effectiveTimeZone; },
+    // needConfirm 暂存层（对齐 Semi cachedSelectedValue）：面板读 panel*（含未确认选择），
+    // 触发器/onChange 读 current*（仅已提交值）。
+    get needConfirm() { return effectiveNeedConfirm; },
+    get panelValue() { return panelValue; },
+    get panelSingle() { return panelSingle; },
+    get panelRange() { return panelRange; },
+    commitCached,
+    clearCached,
     // 对齐 Semi 方法名
     localeFormat,
     disposeCallbackArgs,

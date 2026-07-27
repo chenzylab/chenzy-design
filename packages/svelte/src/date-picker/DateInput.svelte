@@ -16,6 +16,10 @@
     /** 展示文案（foundation formattedValue / 输入中的 inputValue）。range 时为 `start${sep}end` 串。 */
     value?: string;
     placeholder?: string;
+    /** range 起始输入框占位（对齐 Semi placeholder 数组第 1 项）。 */
+    startPlaceholder?: string;
+    /** range 结束输入框占位（对齐 Semi placeholder 数组第 2 项）。 */
+    endPlaceholder?: string;
     disabled?: boolean;
     showClear?: boolean;
     inputReadOnly?: boolean;
@@ -56,6 +60,8 @@
     type,
     value = '',
     placeholder,
+    startPlaceholder,
+    endPlaceholder,
     disabled = false,
     showClear = false,
     inputReadOnly = false,
@@ -94,7 +100,8 @@
   const rangeEnd = $derived(rangeParts[1] ?? '');
   // range 子 Input 尺寸（对齐 Semi：large→default，其余→small）。
   const rangeSize = $derived<PickerSize>(size === 'large' ? 'default' : 'small');
-  const rangePlaceholder = $derived(placeholder ?? '');
+  const rangeStartPlaceholder = $derived(startPlaceholder ?? placeholder ?? '');
+  const rangeEndPlaceholder = $derived(endPlaceholder ?? placeholder ?? '');
 
   // 只透传已定义的可选项，兼容 Input 的 exactOptionalPropertyTypes（不塞 undefined）。
   const inputRest = $derived({
@@ -143,7 +150,7 @@
         size={rangeSize}
         {disabled}
         readonly={inputReadOnly}
-        placeholder={rangePlaceholder}
+        placeholder={rangeStartPlaceholder}
         value={rangeStart}
         onChange={(v: string, e: Event) => onRangeChange?.(v, rangeEnd, e)}
         onfocus={(e: FocusEvent) => onRangeFocus?.(e, 'rangeStart')}
@@ -169,7 +176,7 @@
         size={rangeSize}
         {disabled}
         readonly={inputReadOnly}
-        placeholder={rangePlaceholder}
+        placeholder={rangeEndPlaceholder}
         value={rangeEnd}
         onChange={(v: string, e: Event) => onRangeChange?.(rangeStart, v, e)}
         onfocus={(e: FocusEvent) => onRangeFocus?.(e, 'rangeEnd')}
@@ -235,7 +242,8 @@
     display: flex;
     align-items: center;
     flex: 1;
-    border: var(--cd-width-focus-border, 2px) solid transparent;
+    /* 实测 Semi range wrapper 是 1px solid transparent（聚焦时换主色），非 focus-border 2px。 */
+    border: 1px solid transparent;
     border-radius: var(--cd-radius-small, 3px);
   }
   :global(.cd-datepicker-range-input-wrapper:hover) {
@@ -259,15 +267,29 @@
     border: none;
     height: fit-content;
   }
-  :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper:hover),
-  :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper:active) {
+  /* 内层 input 尺寸对齐 Semi 实测：padding 2px 4px、高 22（本库 small 默认 0 12px 会矮 5.5px 且左右过宽）。 */
+  :global(.cd-datepicker-range-input-wrapper .cd-input) {
+    padding: 2px 4px;
+  }
+  /* 内层 Input 的 hover / active / focus 态一律压平：这三态只画在外层 -wrapper（照搬 Semi
+     datePicker.scss `.semi-input-wrapper { &:active/&:hover:not(#neverExistElement) }`）。
+     `#neverExistElement` 是 Semi 原样写法——一个永不存在的 id 选择器，纯粹用来抬特异性
+     (+1,0,0) 压过 Input 自带的 hover/focus 规则，比堆一串 :not(.class) 干净。
+     本库 Input 的聚焦态是 :focus-within（Semi 是 -focus 类），故多压一条。 */
+  :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper:hover:not(#neverExistElement)),
+  :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper:active:not(#neverExistElement)),
+  :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper:focus-within:not(#neverExistElement)) {
     background-color: transparent;
+    border: none;
+    box-shadow: none;
   }
   /* 分隔符：有值时 -active 文字加深（对齐 Semi `-separator-active { text-0 }`）。 */
   :global(.cd-datepicker-range-input-separator) {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    /* 实测 Semi separator 高 20px（跟随 line-height），非撑满 wrapper。 */
+    height: var(--cd-line-height-normal, 20px);
   }
   :global(.cd-datepicker-range-input-separator-active) {
     color: var(--cd-color-text-0);
@@ -277,7 +299,8 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    padding: 0 8px;
+    /* 实测 Semi suffix padding: 0 12px 0 8px（右侧留白更大）。 */
+    padding: 0 12px 0 8px;
     color: var(--cd-color-text-2);
   }
   /* hover 整体（对齐 Semi `&-input:hover` bg fill-1 via wrapper）。 */

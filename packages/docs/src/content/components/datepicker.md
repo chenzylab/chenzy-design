@@ -58,6 +58,8 @@ docMode: inline
   import renderDateSrc from '../../demos/date-picker/20-render-date.svelte?raw';
   import RenderFullDate from '../../demos/date-picker/21-render-full-date.svelte';
   import renderFullDateSrc from '../../demos/date-picker/21-render-full-date.svelte?raw';
+  import Methods from '../../demos/date-picker/22-methods.svelte';
+  import methodsSrc from '../../demos/date-picker/22-methods.svelte?raw';
 </script>
 
 ## 代码演示
@@ -147,12 +149,6 @@ type=dateRange 或 dateTimeRange 时，只有开始日期和结束日期都被�
 
 `onPanelChange` 回调函数会在面板的月份或年份切换改变时被调用。
 
-<Notice type="primary" title="本库差异">
-
-本库 `onPanelChange` 的入参为 `` `(e: { panelDate: Date }) => void` ``（对齐面板视图态语义），与 Semi 的 `(date, dateStr)` 形态不同。
-
-</Notice>
-
 <DemoBox code={panelChangeSrc}><PanelChange /></DemoBox>
 
 ### 周选择
@@ -181,23 +177,11 @@ type=dateRange 或 dateTimeRange 时，只有开始日期和结束日期都被�
 
 > 注意：开启确认选择时，需要点击取消按钮关闭面板，点击空白区域不再关闭面板。
 
-<Notice type="primary" title="本库差异">
-
-本库 `onConfirm` 的入参为 `` `(e: { value }) => void` ``、`onCancel` 无参，与 Semi 的 `(date, dateString)` 形态不同。
-
-</Notice>
-
 <DemoBox code={needConfirmSrc}><NeedConfirm /></DemoBox>
 
 ### 带有快捷方式的日期时间选择
 
 通过 `presets` 设定快捷日期选择。
-
-<Notice type="primary" title="本库差异">
-
-本库 `presets` 每项为 `` `{ label: string; value: Date | (() => Date) | [Date, Date] | (() => [Date, Date]) }` ``：单选传 `value` 为 `Date`，范围传 `value` 为 `[start, end]` 元组；与 Semi 的 `` `{ text, start, end }` `` 形态不同。
-
-</Notice>
 
 <DemoBox code={presetsSrc}><Presets /></DemoBox>
 
@@ -304,6 +288,7 @@ type DayStatus = {
 | defaultOpen | 面板默认显示或隐藏 | boolean | false |
 | defaultPickerValue | 默认面板日期（仅控制面板首次展开时显示哪个月/年，不改变选中值） | `Date` \| `Date[]` | - |
 | defaultValue | 默认值 | `Date` \| `Date[]` \| `[Date, Date]` | - |
+| dateFnsLocale | date-fns locale 对象，驱动日期解析/格式化的本地化 | `Locale` | 跟随 LocaleProvider |
 | density | 面板的尺寸，可选值：`default`、`compact` | string | 'default' |
 | disabled | 是否禁用 | boolean | false |
 | disabledDate | 日期禁止判断方法，返回为 true 时禁止该日期。第二参 `options` 含 `` `{ rangeStart, rangeEnd, rangeInputFocus }` `` | `(date: Date, options: { rangeStart: string; rangeEnd: string; rangeInputFocus: 'rangeStart' \| 'rangeEnd' \| false }) => boolean` | - |
@@ -320,18 +305,19 @@ type DayStatus = {
 | inputReadOnly | 文本框是否 readonly | boolean | false |
 | inputStyle | 输入框样式 | `string` \| object | - |
 | insetLabel | 内嵌标签：浮入触发器左侧的常驻标签 | `string` \| Snippet | - |
+| insetLabelId | 内嵌标签容器 id，供 `aria-labelledby` 关联 | string | - |
 | leftSlot | 渲染左侧额外区域 | Snippet | - |
-| locale | 语言（BCP 47 语言标记，如 `zh-CN`） | string | 'zh-CN' |
+| locale | 局部覆盖本组件文案，只需给要改的字段，未给的回退 LocaleProvider | `` `Partial<Locale['DatePicker']>` `` | 跟随 LocaleProvider |
+| localeCode | 覆盖 BCP 47 语言代码，驱动月份/星期的 Intl 本地化 | string | 跟随 LocaleProvider |
 | max | multiple 为 true 时，多选的数目，不传或为 null/undefined 则无限制 | number | - |
-| maxRange | 范围起止跨度上限（天），选定起始后超出该跨度的日期禁用 | number | - |
 | motion | 是否开启面板展开的动画 | boolean | true |
 | multiple | 是否可以选择多个，仅支持 type="date" | boolean | false |
-| needConfirm | 是否需要“确认选择”，仅 type="dateTime"/"dateTimeRange" 时有效 | boolean | dateTimeRange 时 true，其余 false |
+| needConfirm | 是否需要“确认选择”，仅 type="dateTime"/"dateTimeRange" 时有效。开启后面板选择只暂存，点“确定”才写入并触发 `onChange` | boolean | false |
 | open | 面板显示或隐藏的受控属性 | boolean | - |
 | placeholder | 输入框提示文字 | string | - |
 | position | 浮层位置，可选值同 Popover position | string | 'bottomLeft' |
 | prefix | 前缀内容，渲染在 input 左侧 | `string` \| Snippet | - |
-| presets | 日期时间快捷方式 | `Array<{ label: string; value: Date \| (() => Date) \| [Date, Date] \| (() => [Date, Date]) }>` | - |
+| presets | 日期时间快捷方式，每项为 `` `{ text, start, end }` ``（`start`/`end` 支持 `Date`、时间戳、日期串或返回它们的函数） | `` `Array<PresetType \| (() => PresetType)>` `` | `[]` |
 | presetPosition | 快捷方式面板位置，可选值 `'left'`、`'right'`、`'top'`、`'bottom'` | string | 'bottom' |
 | preventScroll | 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus | boolean | false |
 | rangeSeparator | 自定义范围类型输入框的日期分隔符 | string | ' ~ ' |
@@ -358,15 +344,16 @@ type DayStatus = {
 | weekStartsOn | 以周几作为每周第一天，0 代表周日，1 代表周一，以此类推 | number | 0 |
 | zIndex | 弹出面板的 zIndex | number | 1030 |
 | onBlur | 失去焦点时的回调，范围选择时不推荐使用 | `(e: FocusEvent) => void` | - |
-| onCancel | 取消选择时的回调，仅 needConfirm 时有效 | `() => void` | - |
+| onCancel | 取消选择时的回调，仅 needConfirm 时有效 | `(date, dateString: string) => void` | - |
 | onChange | 值变化时的回调 | `(value, dateString: string) => void` | - |
 | onChangeWithDateFirst | 控制 onChange 参数顺序，默认 `(value, dateString)`；false 时 `(dateString, value)` | boolean | true |
 | onClear | 点击清除按钮时触发 | `(e) => void` | - |
 | onClickOutSide | 弹出层展示时，点击非弹出层、触发器的回调 | `(e: MouseEvent) => void` | - |
-| onConfirm | 确认选择时的回调，仅 needConfirm 时有效 | `(e: { value }) => void` | - |
+| onConfirm | 确认选择时的回调，仅 needConfirm 时有效 | `(date, dateString: string) => void` | - |
 | onFocus | 获得焦点时的回调，范围选择时不推荐使用 | `(e: FocusEvent) => void` | - |
+| onMaxLimit | multiple 多选达到 `max` 上限后继续选择时的回调 | `() => void` | - |
 | onOpenChange | 面板显示或隐藏状态切换的回调 | `(open: boolean) => void` | - |
-| onPanelChange | 切换面板的年份或者月份时的回调 | `(e: { panelDate: Date }) => void` | - |
+| onPanelChange | 切换面板的年份或者月份时的回调 | `(date: Date \| Date[], dateString: string \| string[]) => void` | - |
 | onPresetClick | 点击快捷选择按钮的回调 | `(item, e?: MouseEvent) => void` | - |
 | yearAndMonthOpts | 透传给年月滚轮的参数（`yearCyclic`/`monthCyclic`） | object | - |
 
@@ -381,10 +368,20 @@ type DayStatus = {
 | focus | 手动聚焦输入框 | `(focusType?: 'rangeStart' \| 'rangeEnd') => void` |
 | blur | 手动失焦输入框 | `() => void` |
 
+<DemoBox code={methodsSrc}><Methods /></DemoBox>
+
 ## 类型定义
 
 ```typescript
 type RangeValue = [Date | null, Date | null];
+
+type BaseValueType = string | number | Date;
+
+interface PresetType {
+    text?: string;
+    start?: BaseValueType | (() => BaseValueType);
+    end?: BaseValueType | (() => BaseValueType);
+}
 
 interface DisabledDateOptions {
     rangeStart: string;

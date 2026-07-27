@@ -46,6 +46,11 @@ export const datePickerTokens = {
   'spacing-date-picker-yam-header-padding-y': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '年月顶栏垂直内边距', usage: '年月选择面板顶部导航栏垂直内边距' },
   'spacing-date-picker-scrolllist-header-padding': { value: 'var(--cd-spacing-base)', category: 'spacing', label: '时间选择 header 内边距', usage: '时间选择 header 内边距' },
   'spacing-date-picker-scrolllist-body-padding': { value: '0', category: 'spacing', label: '时间滚动菜单内边距', usage: '时间选择滚动菜单内边距' },
+  // compact 密度间距（对齐 Semi $spacing-datepicker_weeks_compact-* / _weekday_compact-*）
+  'spacing-date-picker-weeks-compact-padding': { value: '10px', category: 'spacing', label: '紧凑日期网格内边距', usage: 'Semi $spacing-datepicker_weeks_compact-padding' },
+  'spacing-date-picker-weeks-compact-padding-top': { value: 'calc(var(--cd-spacing-tight) - 2px)', category: 'spacing', label: '紧凑日期网格顶部内边距', usage: 'Semi $spacing-datepicker_weeks_compact-paddingTop（$spacing-tight - 2）' },
+  'spacing-date-picker-weekday-compact-padding-x': { value: '10px', category: 'spacing', label: '紧凑星期行水平内边距', usage: 'Semi $spacing-datepicker_weekday_compact-paddingLeft/Right' },
+  'spacing-date-picker-weekday-compact-padding-bottom': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '紧凑星期行底部内边距', usage: 'Semi $spacing-datepicker_weekday_compact-paddingBottom' },
   'spacing-date-picker-inset-input-wrapper-margin': { value: '8px', category: 'spacing', label: '内嵌输入外边距', usage: '' },
   'spacing-date-picker-inset-input-wrapper-padding-y': { value: '12px', category: 'spacing', label: '内嵌输入垂直内边距', usage: '' },
   'spacing-date-picker-inset-input-wrapper-padding-x': { value: '16px', category: 'spacing', label: '内嵌输入水平内边距', usage: '' },

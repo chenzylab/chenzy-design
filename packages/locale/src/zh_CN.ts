@@ -207,7 +207,14 @@ export const zh_CN: Locale = {
     restTagsCount: '还有 {count} 项',
   },
   DatePicker: {
-    placeholder: '请选择日期',
+    // 照搬 Semi locale DatePicker.placeholder：按 type 分派，range 为 [start, end] 数组。
+    placeholder: {
+      date: '请选择日期',
+      dateTime: '请选择日期及时间',
+      dateRange: ['开始日期', '结束日期'],
+      dateTimeRange: ['开始日期', '结束日期'],
+      monthRange: ['开始月份', '结束月份'],
+    },
     today: '今天',
     clear: '清除',
     prevMonth: '上个月',

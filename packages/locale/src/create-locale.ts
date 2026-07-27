@@ -22,6 +22,13 @@ export interface LocaleApi {
   readonly currency?: string;
   /** translate a dot-path key (e.g. 'Modal.okText'); interpolates {params} */
   t(key: string, params?: Record<string, string | number>): string;
+  /**
+   * Whole component slice, mirroring Semi's `LocaleConsumer componentName="X"`:
+   * returns `Locale['X']` so components can read nested objects / array values
+   * (e.g. DatePicker.placeholder.dateRange) by plain property access instead of `t()`.
+   * Missing keys in the active bundle fall back to the fallback bundle per top-level field.
+   */
+  component<K extends keyof Locale>(name: K): Locale[K];
   formatDate(date: Date, options?: Intl.DateTimeFormatOptions): string;
   formatNumber(value: number, options?: Intl.NumberFormatOptions): string;
 }
@@ -98,6 +105,16 @@ export function createLocale(options: CreateLocaleOptions): LocaleApi {
     t(key, params) {
       const raw = readPath(locale, key) ?? readPath(fallback, key) ?? key;
       return params ? interpolate(raw, params) : raw;
+    },
+    component(name) {
+      // Shallow-merge the fallback slice under the active one so a partial custom
+      // bundle still resolves every field (same intent as the t() fallback chain).
+      const active = locale[name];
+      const base = fallback[name];
+      if (active && base && typeof active === 'object' && typeof base === 'object') {
+        return { ...(base as object), ...(active as object) } as Locale[typeof name];
+      }
+      return (active ?? base) as Locale[typeof name];
     },
     formatDate(date, opts) {
       return getDateFormatter(opts).format(date);

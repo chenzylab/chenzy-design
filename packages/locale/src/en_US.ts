@@ -207,7 +207,14 @@ export const en_US: Locale = {
     restTagsCount: '{count} more',
   },
   DatePicker: {
-    placeholder: 'Select date',
+    // Mirrors Semi locale DatePicker.placeholder: dispatched by type, ranges are [start, end].
+    placeholder: {
+      date: 'Select date',
+      dateTime: 'Select date and time',
+      dateRange: ['Start date', 'End date'],
+      dateTimeRange: ['Start date', 'End date'],
+      monthRange: ['Start month', 'End month'],
+    },
     today: 'Today',
     clear: 'Clear',
     prevMonth: 'Previous month',

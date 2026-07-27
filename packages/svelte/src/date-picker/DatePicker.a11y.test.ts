@@ -4,7 +4,7 @@
  * 点日期回调 onChange + 关闭、受控 value 回显、defaultOpen 直接展开。
  */
 import { describe, it, expect, vi } from 'vitest';
-import { tick } from 'svelte';
+import { tick, mount, unmount } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import DatePicker from './DatePicker.svelte';
 
@@ -232,5 +232,289 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     await tick();
     // monthRange 双面板 → 4 列滚轮（2 panel × year+month）。
     expect(document.querySelectorAll('ul[role="listbox"]').length).toBe(4);
+  });
+
+  it('multiple：触发器多值用逗号分隔（对齐 Semi DEFAULT_SEPARATOR_MULTIPLE，非 range 的 " ~ "）', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: {
+        type: 'date',
+        multiple: true,
+        value: [new Date(2026, 6, 10), new Date(2026, 6, 12)],
+      },
+    });
+    await tick();
+    const input = container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('2026-07-10,2026-07-12');
+    expect(input.value).not.toContain('~');
+  });
+
+  it('range：触发器两端用 rangeSeparator 连接且无多余空格', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateRange',
+        value: [new Date(2026, 6, 10), new Date(2026, 7, 5)],
+      },
+    });
+    await tick();
+    const inputs = [...container.querySelectorAll('input')] as HTMLInputElement[];
+    expect(inputs.map((i) => i.value)).toEqual(['2026-07-10', '2026-08-05']);
+  });
+
+  it('placeholder 按 type 分派（对齐 Semi locale placeholder：date/dateTime/*Range）', async () => {
+    const cases: Array<[string, string[]]> = [
+      ['date', ['Select date']],
+      ['dateTime', ['Select date and time']],
+      ['dateRange', ['Start date', 'End date']],
+      ['dateTimeRange', ['Start date', 'End date']],
+      ['monthRange', ['Start month', 'End month']],
+    ];
+    for (const [type, expected] of cases) {
+      const { container, unmount } = renderWithLocale(DatePicker, { props: { type } });
+      await tick();
+      const phs = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).placeholder);
+      expect(phs, `type=${type}`).toEqual(expected);
+      unmount();
+    }
+  });
+
+  it('placeholder prop 支持 [start, end] 数组覆盖 range 两端（对齐 Semi）', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', placeholder: ['起', '止'] },
+    });
+    await tick();
+    const phs = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).placeholder);
+    expect(phs).toEqual(['起', '止']);
+  });
+
+  it('locale prop 局部覆盖文案（对齐 Semi locale，未给字段回退 provider）', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: {
+        type: 'date',
+        locale: { placeholder: { date: '选个日子', dateTime: '', dateRange: ['', ''], dateTimeRange: ['', ''], monthRange: ['', ''] } },
+      },
+    });
+    await tick();
+    const input = container.querySelector('input') as HTMLInputElement;
+    expect(input.placeholder).toBe('选个日子');
+  });
+
+  it('defaultPickerValue 数组：[0] 定位左面板、[1] 定位右面板（对齐 Semi getDefaultPickerDate）', async () => {
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateRange',
+        defaultOpen: true,
+        defaultPickerValue: [new Date(2022, 7, 8), new Date(2022, 10, 9)],
+      },
+    });
+    await tick();
+    const titles = [...document.querySelectorAll('.cd-datepicker-container button span')]
+      .map((e) => e.textContent?.trim() ?? '')
+      .filter((t) => /2022/.test(t));
+    // 左面板 8 月、右面板 11 月（右面板取数组第二项而非 addMonths(left,1)）。
+    const uniq = [...new Set(titles)];
+    expect(uniq, `titles=${JSON.stringify(titles)}`).toHaveLength(2);
+    expect(uniq[0]).toMatch(/Aug|8/);
+    expect(uniq[1]).toMatch(/Nov|11/);
+  });
+
+  it('命令式方法：open/close 控制面板，focus/blur 控制触发器焦点（对齐 Semi）', async () => {
+    // 命令式 API 走 export function + bind:this，需直接 mount 组件拿实例（harness 拿不到内部实例）。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, { target, props: { type: 'date' } }) as unknown as {
+      open(): void; close(): void; focus(t?: 'rangeStart' | 'rangeEnd'): void; blur(): void;
+    };
+    await tick();
+    api.open();
+    await tick();
+    expect(document.querySelector('.cd-datepicker-container')).not.toBeNull();
+    api.close();
+    await tick();
+    expect(document.querySelector('.cd-datepicker-container')).toBeNull();
+    const input = target.querySelector('input') as HTMLInputElement;
+    api.focus();
+    await tick();
+    expect(document.activeElement).toBe(input);
+    api.blur();
+    await tick();
+    expect(document.activeElement).not.toBe(input);
+    unmount(api as never);
+    target.remove();
+  });
+
+  it('range hover 预览：选中起点后 hover 未来日期，中间整段高亮（对齐 Semi isHover）', async () => {
+    // 回归防护：range 只有两端都选完才提交，故选中起点时 DatePicker 传给 MonthsGrid 的
+    // rangeStart 仍是空串。若 MonthsGrid 用 `??` 合并，空串会覆盖 foundation 内部已写入的起点，
+    // 导致 _isHoverAfterStart 恒 false、预览区间整段不显示（真机可见 bug）。
+    renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', defaultOpen: true, defaultPickerValue: new Date(2026, 6, 1) },
+    });
+    await tick();
+    const dayOf = (n: string) =>
+      [...document.querySelectorAll('.cd-datepicker-container [class*="cd-datepicker-day"]')].find(
+        (e) => e.textContent?.trim() === n,
+      ) as HTMLElement | undefined;
+
+    // 选起点 10 号
+    const d10 = dayOf('10');
+    expect(d10).toBeDefined();
+    d10!.click();
+    await tick();
+    expect(d10!.className).toMatch(/selected-start|selected/);
+
+    // hover 20 号 → 11..19 应带 inhover（预览区间）
+    const d20 = dayOf('20');
+    d20!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+    await tick();
+    const mid = dayOf('15');
+    expect(mid, '15 号应存在于面板').toBeDefined();
+    expect(mid!.className, `15 号 class=${mid!.className}`).toMatch(/inhover/);
+  });
+
+  it('range 关闭面板即清聚焦端，触发器 -active 高亮不残留（对齐 Semi close→resetFocus）', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, { target, props: { type: 'dateRange' } }) as unknown as {
+      open(): void; close(): void; focus(t?: 'rangeStart' | 'rangeEnd'): void;
+    };
+    await tick();
+    api.focus('rangeStart');
+    api.open();
+    await tick();
+    const startWrapper = target.querySelector('.cd-datepicker-range-input-wrapper-start')!;
+    expect(startWrapper.className).toMatch(/wrapper-active/);
+
+    api.close();
+    await tick();
+    expect(
+      target.querySelector('.cd-datepicker-range-input-wrapper-start')!.className,
+      '关闭后 -active 应消失',
+    ).not.toMatch(/wrapper-active/);
+    unmount(api as never);
+    target.remove();
+  });
+
+  it('range 点触发器：焦点落到对应端 input 且面板不抢焦点（对齐 Semi setRangeInputFocus + 无 trapFocus）', async () => {
+    // 两处回归：① Popover guardFocus 缺省随 role=dialog 会把焦点抢到面板首个按钮（Semi 未开 trapFocus）；
+    // ② setRangeInputFocus 除改 state 外还须 inputNode.focus()，否则点 wrapper 只亮 -active、焦点留 body。
+    const { container } = renderWithLocale(DatePicker, { props: { type: 'dateRange' } });
+    await tick();
+    const startW = container.querySelector('.cd-datepicker-range-input-wrapper-start') as HTMLElement;
+    const startInput = startW.querySelector('input') as HTMLInputElement;
+    startW.click();
+    await tick();
+    expect(startW.className).toMatch(/wrapper-active/);
+    expect(document.activeElement, '焦点应落在起始 input，而非面板内按钮/body').toBe(startInput);
+
+    const endW = container.querySelector('.cd-datepicker-range-input-wrapper-end') as HTMLElement;
+    const endInput = endW.querySelector('input') as HTMLInputElement;
+    endW.click();
+    await tick();
+    expect(endW.className).toMatch(/wrapper-active/);
+    expect(document.activeElement).toBe(endInput);
+  });
+
+  it('monthRange：双面板同在 yearmonth-body 容器内（横排布局的结构前提）', async () => {
+    // 注：jsdom 不加载组件 <style>（document.styleSheets 为空），无法断言 display:flex，
+    // 故此处只锁结构；横排视觉由 YearAndMonth 的 :global(.cd-datepicker-yearmonth-body{display:flex})
+    // 保证（照搬 Semi），需真机核。
+    renderWithLocale(DatePicker, { props: { type: 'monthRange', defaultOpen: true } });
+    await tick();
+    const body = document.querySelector('.cd-datepicker-yearmonth-body') as HTMLElement;
+    expect(body, 'monthRange 应渲染 yearmonth-body 容器').not.toBeNull();
+    expect(body.querySelectorAll('.cd-datepicker-yearmonth-panel').length).toBe(2);
+  });
+
+  it('range 触发器展示串走 type 默认 format（monthRange 显示 yyyy-MM 而非 yyyy-MM-dd）', async () => {
+    // 回归：内部传 MonthsGrid 的 rangeStart/End 串固定 yyyy-MM-dd（供同日比较），
+    // 但触发器展示必须走 getDefaultFormatTokenByType(type)，否则 monthRange 会显示成 2026-09-01。
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'monthRange', value: [new Date(2026, 8, 1), new Date(2026, 11, 1)] },
+    });
+    await tick();
+    const values = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value);
+    expect(values).toEqual(['2026-09', '2026-12']);
+  });
+
+  it('range 触发器展示串：用户传 format 时以其为准', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', format: 'yyyy/MM/dd', value: [new Date(2026, 6, 10), new Date(2026, 7, 5)] },
+    });
+    await tick();
+    const values = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value);
+    expect(values).toEqual(['2026/07/10', '2026/08/05']);
+  });
+
+  it('needConfirm：选择只暂存不写值/不触发 onChange，点确定才提交（对齐 Semi cachedSelectedValue）', async () => {
+    const onChange = vi.fn();
+    const onConfirm = vi.fn();
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateTime', needConfirm: true, defaultOpen: true, onChange, onConfirm },
+    });
+    await tick();
+    const input = container.querySelector('input') as HTMLInputElement;
+    const before = input.value;
+
+    const d15 = [...document.querySelectorAll('.cd-datepicker-container [class*="cd-datepicker-day"]')].find(
+      (e) => e.textContent?.trim() === '15',
+    ) as HTMLElement;
+    d15.click();
+    await tick();
+    // 选择后：触发器不变、onChange 未触发、面板不关
+    expect(input.value, '选择后触发器应保持原值').toBe(before);
+    expect(onChange, 'needConfirm 下选择不应触发 onChange').not.toHaveBeenCalled();
+    expect(document.querySelector('.cd-datepicker-container'), '需确认时不自动关闭').not.toBeNull();
+    // 面板高亮读暂存值 → 15 号应已选中
+    expect(d15.className).toMatch(/selected/);
+
+    const ok = [...document.querySelectorAll('.cd-datepicker-footer button')].find(
+      (b) => /确定|Confirm|OK/.test(b.textContent?.trim() ?? ''),
+    ) as HTMLElement;
+    ok.click();
+    await tick();
+    expect(onChange, '确定后才提交 onChange').toHaveBeenCalled();
+    expect(onConfirm).toHaveBeenCalled();
+    expect(input.value, '确定后触发器写入所选值').not.toBe(before);
+  });
+
+  it('needConfirm：取消丢弃暂存，value 与 onChange 均不受影响（对齐 Semi）', async () => {
+    const onChange = vi.fn();
+    const onCancel = vi.fn();
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateTime', needConfirm: true, defaultOpen: true, onChange, onCancel },
+    });
+    await tick();
+    const input = container.querySelector('input') as HTMLInputElement;
+    const before = input.value;
+
+    const d15 = [...document.querySelectorAll('.cd-datepicker-container [class*="cd-datepicker-day"]')].find(
+      (e) => e.textContent?.trim() === '15',
+    ) as HTMLElement;
+    d15.click();
+    await tick();
+
+    const cancel = [...document.querySelectorAll('.cd-datepicker-footer button')].find(
+      (b) => /取消|Cancel/.test(b.textContent?.trim() ?? ''),
+    ) as HTMLElement;
+    cancel.click();
+    await tick();
+    expect(input.value, '取消后触发器保持原值').toBe(before);
+    expect(onChange, '取消不应触发 onChange').not.toHaveBeenCalled();
+    expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('不开 needConfirm：选择即写值并触发 onChange（回归防护，勿被暂存层误伤）', async () => {
+    const onChange = vi.fn();
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'date', defaultOpen: true, onChange },
+    });
+    await tick();
+    const d15 = [...document.querySelectorAll('.cd-datepicker-container [class*="cd-datepicker-day"]')].find(
+      (e) => e.textContent?.trim() === '15',
+    ) as HTMLElement;
+    d15.click();
+    await tick();
+    expect(onChange).toHaveBeenCalled();
+    expect((container.querySelector('input') as HTMLInputElement).value).toMatch(/15/);
   });
 });

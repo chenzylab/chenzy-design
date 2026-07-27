@@ -6,9 +6,9 @@
   range/dateTime/yam/tpk/footer/inset/preset 留后续里程碑（此处只装 date 单面板）。
 -->
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getContext, setContext } from 'svelte';
   import { format as dateFnsFormat } from 'date-fns';
-  import { useLocale } from '../locale-provider/index.js';
+  import { useLocale, LOCALE_CONTEXT_KEY, type LocaleApi, type LocaleContextValue } from '../locale-provider/index.js';
   import { CONFIG_CONTEXT_KEY, type ConfigContextValue } from '../config-provider/context.js';
   import Popover from '../popover/Popover.svelte';
   import type { Position } from '../tooltip/index.js';
@@ -20,7 +20,7 @@
   import Footer from './Footer.svelte';
   import getInsetInputFormatToken from './_utils/getInsetInputFormatToken.js';
   import { parse as dateFnsParse } from 'date-fns';
-  import { cssClasses, numbers, strings, type PickerType, type PickerSize } from './constants.js';
+  import { cssClasses, numbers, strings, getDefaultFormatTokenByType, type PickerType, type PickerSize } from './constants.js';
   import {
     createDatePickerState,
     type RangeValue,
@@ -37,11 +37,13 @@
     type?: PickerType;
     value?: Date | Date[] | RangeValue | null;
     defaultValue?: Date | Date[] | RangeValue | null;
-    defaultPickerValue?: Date;
+    /** 面板初始定位日期（对齐 Semi defaultPickerValue）：数组时 [0] 定位左面板、[1] 定位右面板。 */
+    defaultPickerValue?: Date | Date[];
     open?: boolean;
     defaultOpen?: boolean;
     disabled?: boolean;
-    placeholder?: string;
+    /** 占位（对齐 Semi placeholder）：string 或 range 的 [start, end]；未传按 type 取 locale 默认。 */
+    placeholder?: string | string[];
     format?: string;
     showClear?: boolean;
     inputReadOnly?: boolean;
@@ -164,12 +166,23 @@
     insetLabelId?: string;
     /** range 分隔符自定义节点（对齐 Semi rangeSeparatorNode，优先于 rangeSeparator）。 */
     rangeSeparatorNode?: import('svelte').Snippet | string;
+    /**
+     * 局部覆盖 DatePicker 文案（对齐 Semi locale）：只需给要改的字段，未给的回退 LocaleProvider。
+     * 本库语言包是整包 + 点路径 t()，故此处收 DatePicker 那一片（形状同 Semi Locale['DatePicker']）。
+     */
+    locale?: Partial<import('@chenzy-design/locale').Locale['DatePicker']>;
+    /** 覆盖 BCP 47 语言代码（对齐 Semi localeCode）：驱动 Intl 的月份/星期本地化；未传回退 LocaleProvider。 */
+    localeCode?: string;
     /** date-fns locale（对齐 Semi dateFnsLocale）：驱动 date-fns 解析/格式化的本地化。 */
     dateFnsLocale?: import('date-fns').Locale;
     /** 时间选择器透传选项（对齐 Semi timePickerOpts）。 */
     timePickerOpts?: Record<string, unknown>;
     /** 年月选择器透传选项（对齐 Semi yearAndMonthOpts）。 */
     yearAndMonthOpts?: Record<string, unknown>;
+    /** 年份滚轮开始年（对齐 Semi startYear，默认当前年前 100 年）。 */
+    startYear?: number;
+    /** 年份滚轮结束年（对齐 Semi endYear，默认当前年后 100 年，需大于开始年）。 */
+    endYear?: number;
   }
 
   let {
@@ -177,7 +190,7 @@
     value,
     defaultValue,
     defaultPickerValue,
-    open,
+    open: openProp,
     defaultOpen = false,
     disabled = false,
     placeholder,
@@ -247,10 +260,59 @@
     dateFnsLocale,
     timePickerOpts,
     yearAndMonthOpts,
+    startYear,
+    endYear,
+    locale: localeProp,
+    localeCode,
   }: Props = $props();
 
-  const loc = useLocale();
+  const baseLoc = useLocale();
   const PREFIX = cssClasses.PREFIX;
+
+  // locale / localeCode 局部覆盖（对齐 Semi：外部 prop 优先，未传回退 LocaleProvider）。
+  // locale 是 DatePicker 那一片（形状同 Semi Locale['DatePicker']），浅合并盖在 provider 之上；
+  // t() 与 component('DatePicker') 两条取值口都吃到覆盖，并 setContext 覆盖整棵子树
+  //（MonthsGrid/Footer/YearAndMonth 等各自 useLocale 的子组件同样生效）。
+  const loc: () => LocaleApi = () => {
+    const base = baseLoc();
+    if (!localeProp && !localeCode) return base;
+    return {
+      ...base,
+      get code() { return localeCode ?? base.code; },
+      component(name) {
+        const slice = base.component(name);
+        return name === 'DatePicker' && localeProp
+          ? ({ ...(slice as object), ...localeProp } as typeof slice)
+          : slice;
+      },
+      t(key: string, params?: Record<string, string | number>) {
+        if (localeProp && key.startsWith('DatePicker.')) {
+          const path = key.slice('DatePicker.'.length).split('.');
+          let cur: unknown = localeProp;
+          for (const seg of path) {
+            if (cur && typeof cur === 'object' && seg in (cur as Record<string, unknown>)) {
+              cur = (cur as Record<string, unknown>)[seg];
+            } else {
+              cur = undefined;
+              break;
+            }
+          }
+          if (typeof cur === 'string') return cur;
+        }
+        return base.t(key, params);
+      },
+    } as LocaleApi;
+  };
+
+  // 把覆盖后的 LocaleApi 注入子树，让各自 useLocale() 的子组件（MonthsGrid/Footer/YearAndMonth/
+  // QuickControl/Month）同样吃到 locale/localeCode 覆盖（对齐 Semi 由 LocaleConsumer 统一注入）。
+  const parentLocaleCtx = getContext<LocaleContextValue | undefined>(LOCALE_CONTEXT_KEY);
+  setContext<LocaleContextValue>(LOCALE_CONTEXT_KEY, {
+    get current() { return loc(); },
+    get resolved() { return parentLocaleCtx?.resolved as LocaleContextValue['resolved']; },
+    get timeZone() { return parentLocaleCtx?.timeZone; },
+    get currency() { return parentLocaleCtx?.currency; },
+  });
 
   // ConfigProvider timeZone 注入（自身 timeZone 优先，对齐 Semi index.tsx）。
   const configCtx = getContext<ConfigContextValue | undefined>(CONFIG_CONTEXT_KEY);
@@ -261,7 +323,7 @@
     get type() { return type; },
     get value() { return value; },
     get defaultValue() { return defaultValue; },
-    get open() { return open; },
+    get open() { return openProp; },
     get defaultOpen() { return defaultOpen; },
     get multiple() { return multiple; },
     get format() { return format; },
@@ -273,6 +335,7 @@
     get dateFnsLocale() { return dateFnsLocale; },
     // date 单值：foundation onChange 抛 Date|null，直接透传（RangeValue 分支此里程碑不涉及）。
     get onChange() { return onChange as DatePickerFoundationProps['onChange']; },
+    get needConfirm() { return needConfirm; },
     get onChangeWithDateFirst() { return onChangeWithDateFirst; },
     get onOpenChange() { return onOpenChange; },
   };
@@ -282,30 +345,45 @@
   const selectedSet = $derived.by(() => {
     const s = new Set<string>();
     if (st.isRange) return s;
-    if (multiple && Array.isArray(st.current)) {
-      for (const d of st.current) if (d instanceof Date) s.add(dateFnsFormat(d, 'yyyy-MM-dd'));
-    } else if (st.currentSingle instanceof Date) {
-      s.add(dateFnsFormat(st.currentSingle, 'yyyy-MM-dd'));
+    if (multiple && Array.isArray(st.panelValue)) {
+      for (const d of st.panelValue) if (d instanceof Date) s.add(dateFnsFormat(d, 'yyyy-MM-dd'));
+    } else if (st.panelSingle instanceof Date) {
+      s.add(dateFnsFormat(st.panelSingle, 'yyyy-MM-dd'));
     }
     return s;
   });
-  // range 反解：currentRange（墙上时间）→ rangeStart/End 字符串（yyyy-MM-dd(HH:mm:ss)）传 MonthsGrid。
+  // range 反解：currentRange（墙上时间）→ rangeStart/End 字符串传 MonthsGrid。
+  // 内部串固定 yyyy-MM-dd(HH:mm:ss)：MonthsGrid/Month 靠它做同日比较与区间判定，不能跟随展示 format。
   const rangeToken = $derived(st.isDateTime ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd');
   const rangeStartStr = $derived(
-    st.isRange && st.currentRange[0] ? dateFnsFormat(st.currentRange[0]!, rangeToken) : '',
+    st.isRange && st.panelRange[0] ? dateFnsFormat(st.panelRange[0]!, rangeToken) : '',
   );
   const rangeEndStr = $derived(
-    st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, rangeToken) : '',
+    st.isRange && st.panelRange[1] ? dateFnsFormat(st.panelRange[1]!, rangeToken) : '',
   );
-  // range 触发器展示串（`start${sep}end`，与 DateInput split 用同一 separator）。
+  // range 触发器展示串：走 type 的默认 format（对齐 Semi getDefaultFormatTokenByType），
+  // 故 monthRange 显示 yyyy-MM 而非内部比较用的 yyyy-MM-dd；用户传 format 时以其为准。
+  const displayToken = $derived(format ?? getDefaultFormatTokenByType(type) ?? rangeToken);
   const rangeSep = $derived(rangeSeparator ?? strings.DEFAULT_SEPARATOR_RANGE);
+  const rangeStartDisplay = $derived(
+    st.isRange && st.currentRange[0] ? dateFnsFormat(st.currentRange[0]!, displayToken) : '',
+  );
+  const rangeEndDisplay = $derived(
+    st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, displayToken) : '',
+  );
   const rangeTriggerValue = $derived(
-    st.isRange ? `${rangeStartStr}${rangeSep}${rangeEndStr}` : '',
+    st.isRange ? `${rangeStartDisplay}${rangeSep}${rangeEndDisplay}` : '',
   );
   // range 端聚焦（对齐 Semi handleRangeInputFocus）：更新 rangeInputFocus + 打开面板。
   function handleRangeFocus(_e: Event, rangeType: 'rangeStart' | 'rangeEnd') {
     if (disabled) return;
     rangeInputFocus = rangeType;
+    // 主动把焦点落到对应端的 input（照搬 Semi adapter.setRangeInputFocus：不只改 state，
+    // 还 `inputNode.focus({ preventScroll })`）。漏掉则点 wrapper 空白处只亮 -active，
+    // 焦点留在 body，用户无法接着键入日期。
+    const inputs = triggerInputs();
+    const target = rangeType === 'rangeEnd' ? inputs[1] : inputs[0];
+    if (target && document.activeElement !== target) target.focus({ preventScroll });
     st.setOpen(true);
   }
   // rangeEnd 框按 Tab（对齐 Semi handleRangeEndTabPress → setRangeInputFocus(false)）：
@@ -358,16 +436,21 @@
   let prevOpen = st.isOpen;
   $effect(() => {
     const nowOpen = st.isOpen;
-    if (prevOpen && !nowOpen && inputValue !== null) {
-      const pending = inputValue;
-      inputValue = null;
-      commitInput(pending);
+    if (prevOpen && !nowOpen) {
+      if (inputValue !== null) {
+        const pending = inputValue;
+        inputValue = null;
+        commitInput(pending);
+      }
+      // 关闭面板即清 range 聚焦端（对齐 Semi close → resetInnerSelectedStates → resetFocus）。
+      // 漏掉会让触发器起/止框的 -active 高亮在失焦后一直留着。
+      if (st.isRange) rangeInputFocus = false;
     }
     prevOpen = nowOpen;
   });
-  // 面板初始定位月：选中值 / range 起点 / defaultPickerValue / 今天。
-  const panelPickerValue = $derived(
-    (st.currentSingle instanceof Date ? st.currentSingle : null) ?? st.currentRange[0] ?? defaultPickerValue,
+  // 面板初始定位月：选中值 / range 起点 / defaultPickerValue（可为数组，分别定位左右面板）/ 今天。
+  const panelPickerValue = $derived<Date | Date[] | undefined>(
+    (st.panelSingle instanceof Date ? st.panelSingle : null) ?? st.panelRange[0] ?? defaultPickerValue,
   );
 
   // range 焦点端（双 Input 联动占位；单 Input 阶段用本地流转，对齐 Semi rangeInputFocus）。
@@ -375,7 +458,27 @@
 
   // 触发器展示文案（foundation formattedValue）。
   const triggerText = $derived(st.formattedValue);
-  const phText = $derived(placeholder ?? loc().t(`DatePicker.placeholder`));
+  // 占位按 type 分派（照搬 Semi：locale.placeholder 是 { date, dateTime, *Range: [start, end] }，
+  // 经 component('DatePicker') 拿整片后属性访问取值，range 取数组两端）。
+  // placeholder prop 支持 string | [start, end]（对齐 Semi），传入时优先。
+  const localePh = $derived(loc().component('DatePicker').placeholder);
+  const phDefault = $derived(type === 'dateTime' ? localePh.dateTime : localePh.date);
+  const phRangeDefault = $derived(
+    type === 'monthRange'
+      ? localePh.monthRange
+      : type === 'dateTimeRange'
+        ? localePh.dateTimeRange
+        : localePh.dateRange,
+  );
+  const phText = $derived(
+    Array.isArray(placeholder) ? (placeholder[0] ?? phDefault) : (placeholder ?? phDefault),
+  );
+  const phStart = $derived(
+    Array.isArray(placeholder) ? (placeholder[0] ?? phRangeDefault[0]) : (placeholder ?? phRangeDefault[0]),
+  );
+  const phEnd = $derived(
+    Array.isArray(placeholder) ? (placeholder[1] ?? phRangeDefault[1]) : (placeholder ?? phRangeDefault[1]),
+  );
   // 触发器展示值：编辑中用 inputValue，否则 range 用双端串、单值用 formattedValue。
   const triggerDisplay = $derived(
     inputValue !== null ? inputValue : st.isRange ? rangeTriggerValue : triggerText,
@@ -386,17 +489,44 @@
     st.setOpen(true);
   }
 
-  // needConfirm（对齐 Semi）：进入面板时快照原值，cancel 时恢复；confirm 才 notifyConfirm。
-  // 仅 dateTime/dateTimeRange 生效（Semi 语义）。
-  const effectiveNeedConfirm = $derived(needConfirm && (type === 'dateTime' || type === 'dateTimeRange'));
-  let valueSnapshot = $state<Date | Date[] | RangeValue | null>(null);
-  $effect(() => {
-    // 面板打开瞬间快照当前值（供 cancel 恢复）。
-    if (st.isOpen && effectiveNeedConfirm && valueSnapshot === null) {
-      valueSnapshot = st.current;
+  // ===== 命令式方法（对齐 Semi open/close/focus/blur；本库无静态方法，走 export function + bind:this）=====
+  /** 触发器内的原生输入框（range 时按 focusType 取第 1/2 个）。 */
+  function triggerInputs(): HTMLInputElement[] {
+    return triggerEl ? Array.from(triggerEl.querySelectorAll('input')) : [];
+  }
+
+  /** 手动展开面板（对齐 Semi open）。 */
+  export function open(): void {
+    st.setOpen(true);
+  }
+
+  /** 手动关闭面板（对齐 Semi close）。 */
+  export function close(): void {
+    st.setOpen(false);
+  }
+
+  /** 手动聚焦输入框（对齐 Semi focus）：range 时按 focusType 落到起止端，默认 rangeStart。 */
+  export function focus(focusType?: 'rangeStart' | 'rangeEnd'): void {
+    const inputs = triggerInputs();
+    if (st.isRange) {
+      const which = focusType ?? 'rangeStart';
+      rangeInputFocus = which;
+      const target = which === 'rangeEnd' ? inputs[1] : inputs[0];
+      target?.focus({ preventScroll });
+    } else {
+      inputs[0]?.focus({ preventScroll });
     }
-    if (!st.isOpen) valueSnapshot = null;
-  });
+  }
+
+  /** 手动失焦输入框（对齐 Semi blur）。 */
+  export function blur(): void {
+    if (st.isRange) rangeInputFocus = false;
+    for (const el of triggerInputs()) el.blur();
+  }
+
+  // needConfirm 由 foundation 承载暂存层（对齐 Semi cachedSelectedValue）：
+  // 面板选择只写 cached*，value/onChange 不动；confirm 才 commit、cancel/关闭直接丢弃暂存。
+  const effectiveNeedConfirm = $derived(st.needConfirm);
 
   // MonthsGrid 选中回调（Date[] 墙上时间域）→ 联动值模型 foundation。
   function handleSelectedChange(dates: Date[]) {
@@ -416,23 +546,18 @@
     }
   }
 
-  // Footer 确认（对齐 Semi handleConfirm）：关面板 + notifyConfirm（当前值即已提交的暂存值）。
+  // Footer 确认（对齐 Semi handleConfirm）：提交暂存值（updateValue + onChange）→ 关面板 → notifyConfirm。
   function handleConfirm() {
+    const { notifyValue, notifyDate } = st.commitCached();
     st.setOpen(false);
-    const { notifyValue, notifyDate } = st.disposeCallbackArgs(st.current);
     onConfirm?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
   }
-  // Footer 取消（对齐 Semi handleCancel）：恢复快照原值 + 关面板 + notifyCancel。
+  // Footer 取消（对齐 Semi handleCancel）：丢弃暂存（value 从未被改过，无需回滚）→ 关面板 → notifyCancel。
   function handleCancel() {
-    const snap = valueSnapshot;
-    if (st.isRange) {
-      const pair = Array.isArray(snap) ? snap : [null, null];
-      st.handleRangeSelectedChange([pair[0] ?? null, pair[1] ?? null] as RangeValue);
-    } else {
-      st.handleSelectedChange((snap as Date | null) ?? null);
-    }
+    const cur = st.isRange ? st.currentRange : st.current;
+    st.clearCached();
     st.setOpen(false);
-    const { notifyValue, notifyDate } = st.disposeCallbackArgs(snap ?? null);
+    const { notifyValue, notifyDate } = st.disposeCallbackArgs(cur as Date | Date[] | null);
     onCancel?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
   }
 
@@ -453,19 +578,19 @@
   // currentYear/Month 从 value 反解（{left,right}，对齐 Semi renderYearMonthPanel）。
   const ymYear = $derived.by(() => {
     const y = { left: 0, right: 0 };
-    if (st.currentSingle instanceof Date) y.left = st.currentSingle.getFullYear();
+    if (st.panelSingle instanceof Date) y.left = st.panelSingle.getFullYear();
     if (type === 'monthRange') {
-      if (st.currentRange[0]) y.left = st.currentRange[0]!.getFullYear();
-      if (st.currentRange[1]) y.right = st.currentRange[1]!.getFullYear();
+      if (st.panelRange[0]) y.left = st.panelRange[0]!.getFullYear();
+      if (st.panelRange[1]) y.right = st.panelRange[1]!.getFullYear();
     }
     return y;
   });
   const ymMonth = $derived.by(() => {
     const m = { left: 0, right: 0 };
-    if (st.currentSingle instanceof Date) m.left = st.currentSingle.getMonth() + 1;
+    if (st.panelSingle instanceof Date) m.left = st.panelSingle.getMonth() + 1;
     if (type === 'monthRange') {
-      if (st.currentRange[0]) m.left = st.currentRange[0]!.getMonth() + 1;
-      if (st.currentRange[1]) m.right = st.currentRange[1]!.getMonth() + 1;
+      if (st.panelRange[0]) m.left = st.panelRange[0]!.getMonth() + 1;
+      if (st.panelRange[1]) m.right = st.panelRange[1]!.getMonth() + 1;
     }
     return m;
   });
@@ -547,6 +672,8 @@
   const monthsGridRest = $derived({
     ...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {}),
     ...(panelPickerValue ? { defaultPickerValue: panelPickerValue } : {}),
+    ...(startYear !== undefined ? { startYear } : {}),
+    ...(endYear !== undefined ? { endYear } : {}),
   });
   const dateInputRest = $derived({
     ...(validateStatus !== undefined ? { validateStatus } : {}),
@@ -563,6 +690,9 @@
 </script>
 
 <div class={`${PREFIX}${className ? ` ${className}` : ''}`} {...(style ? { style } : {})}>
+  <!-- guardFocus={false}：不陷入焦点（对齐 Semi——datePicker.tsx 的 Popover 未开 trapFocus，
+       打开后焦点留在触发器 input，用户可继续键入日期）。本库 Tooltip 的 guardFocus 缺省随
+       role=dialog 自动开启，会把焦点抢到面板首个按钮上，与 Semi 不符。 -->
   <Popover
     trigger="custom"
     visible={st.isOpen}
@@ -570,6 +700,7 @@
     {autoAdjustOverflow}
     {motion}
     {stopPropagation}
+    guardFocus={false}
     {...(zIndex !== undefined ? { zIndex } : {})}
     {...(getPopupContainer ? { getPopupContainer } : {})}
     {...(dropdownMargin !== undefined ? { margin: dropdownMargin } : {})}
@@ -582,7 +713,7 @@
   >
     {#snippet content()}
       <div
-        class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
+        class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}${density === 'compact' ? ` ${PREFIX}-compact` : ''}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
         {...{ 'x-type': type }}
         {...(dropdownStyle ? { style: dropdownStyle } : {})}
       >
@@ -621,6 +752,8 @@
                 onSelect={handleYMSelectedChange}
                 {...(yearAndMonthOpts ? { scrollItemProps: yearAndMonthOpts } : {})}
                 {...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {})}
+                {...(startYear !== undefined ? { startYear } : {})}
+                {...(endYear !== undefined ? { endYear } : {})}
               />
             {:else}
               <MonthsGrid
@@ -697,6 +830,8 @@
         {type}
         value={triggerDisplay}
         placeholder={phText}
+        startPlaceholder={phStart}
+        endPlaceholder={phEnd}
         {disabled}
         {showClear}
         inputReadOnly={effectiveReadOnly}
@@ -726,6 +861,44 @@
   }
   :global(.cd-datepicker-container) {
     display: flex;
+  }
+  /* density=compact —— 对齐 Semi datePicker.scss `.semi-datepicker-compact`。
+     覆写尺寸变量即可让下游（day / day-main / month 宽 / weeks 高）整体跟随，
+     实测 Semi compact：day 28×28 / day-main 24 / font-size 12 / line-height 20 /
+     month padding 10 / weekday 行高 28。 */
+  :global(.cd-datepicker-compact) {
+    --cd-width-date-picker-day: var(--cd-width-date-picker-day-compact, 28px);
+    --cd-width-date-picker-day-main: var(--cd-width-date-picker-day-main-compact, 24px);
+    --cd-radius-date-picker-day-main: 4px;
+    font-size: var(--cd-font-size-small, 12px);
+    line-height: 20px;
+  }
+  /* month 内边距 16→10（Semi $spacing-datepicker_month_compact-padding）。
+     本库 month 是 content-box + width=day×7 + 自身 padding，与 Semi「padding 放 weeks/weekday」
+     结构不同但等效；此处沿用本库模型只换值，避免把 padding 挪到 weeks 后挤压日格宽度。 */
+  :global(.cd-datepicker-compact .cd-datepicker-month) {
+    padding: var(--cd-spacing-date-picker-weeks-compact-padding, 10px);
+    padding-top: 0;
+  }
+  /* 日期网格顶部留白（Semi $spacing-datepicker_weeks_compact-paddingTop = $spacing-tight - 2 = 6）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-weeks) {
+    padding-top: var(--cd-spacing-date-picker-weeks-compact-padding-top, 6px);
+  }
+  /* 星期行：照搬 Semi compact 的变量式算高
+     `height: $spacing-tight + $width-datepicker_day_compact`（8 + 28 = 36），
+     paddingX 10 / paddingBottom $spacing-tight。写死 36 会在 day 尺寸 token 改动时脱节。 */
+  :global(.cd-datepicker-compact .cd-datepicker-weekday) {
+    box-sizing: border-box;
+    height: calc(var(--cd-spacing-tight, 8px) + var(--cd-width-date-picker-day-compact, 28px));
+    padding-bottom: var(--cd-spacing-date-picker-weekday-compact-padding-bottom, 8px);
+  }
+  /* 日格字号跟随 compact（默认 14 → 12）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-day) {
+    font-size: var(--cd-font-size-small, 12px);
+  }
+  /* 星期行项高 28（Semi $lineHeight-datepicker_weekday_item_compact）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-weekday-item) {
+    line-height: 28px;
   }
   /* 面板四向 slot 分割线（对齐 Semi datePicker.scss &-topSlot/-leftSlot/-rightSlot/-bottomSlot）。 */
   :global(.cd-datepicker-topSlot) {
