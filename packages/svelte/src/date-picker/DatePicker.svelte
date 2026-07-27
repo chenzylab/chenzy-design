@@ -536,13 +536,16 @@
       st.handleRangeSelectedChange(pair);
       // autoSwitchDate（对齐 Semi）：选完起点未选止点时自动切焦点到 rangeEnd 框。
       if (autoSwitchDate && pair[0] && !pair[1]) rangeInputFocus = 'rangeEnd';
-      if (pair[0] && pair[1] && !effectiveNeedConfirm) st.setOpen(false);
+      // 仅 dateRange 选完两端自动关（对齐 Semi foundation:1019）；dateTimeRange 还要选时间，保持打开。
+      if (type === 'dateRange' && pair[0] && pair[1] && !effectiveNeedConfirm) st.setOpen(false);
     } else if (multiple) {
       // 多选：dates=当前全部选中日；抛数组、不关面板（继续 toggle，对齐 Semi）。
       st.handleSelectedChange(dates);
     } else {
       st.handleSelectedChange(dates[0] ?? null);
-      if (!effectiveNeedConfirm) st.setOpen(false);
+      // 仅 type=date 选完即关（对齐 Semi foundation:1019 的
+      // `type === 'date' && !multiple && closePanel`）；dateTime/month 等还要继续选，保持打开。
+      if (type === 'date' && !effectiveNeedConfirm) st.setOpen(false);
     }
   }
 

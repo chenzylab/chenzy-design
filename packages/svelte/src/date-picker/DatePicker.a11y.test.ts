@@ -517,4 +517,24 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(onChange).toHaveBeenCalled();
     expect((container.querySelector('input') as HTMLInputElement).value).toMatch(/15/);
   });
+
+  it('选日期后仅 type=date 自动关面板，dateTime 保持打开（对齐 Semi foundation:1019）', async () => {
+    // 回归：Semi 的关闭条件精确到 type —— `type==='date' && !multiple` 或
+    // `type==='dateRange' && 两端完整`；dateTime/dateTimeRange 还要选时间，必须保持打开。
+    const pick = async (type: string) => {
+      const { unmount } = renderWithLocale(DatePicker, { props: { type, defaultOpen: true } });
+      await tick();
+      const d15 = [...document.querySelectorAll('.cd-datepicker-container [class*="cd-datepicker-day"]')].find(
+        (e) => e.textContent?.trim() === '15',
+      ) as HTMLElement;
+      d15.click();
+      await tick();
+      const open = !!document.querySelector('.cd-datepicker-container');
+      unmount();
+      await tick();
+      return open;
+    };
+    expect(await pick('date'), 'date 选完应关闭').toBe(false);
+    expect(await pick('dateTime'), 'dateTime 应保持打开').toBe(true);
+  });
 });

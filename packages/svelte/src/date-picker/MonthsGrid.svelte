@@ -176,6 +176,9 @@
     {#if detail.isTimePickerOpen}
       {@const dt = st.calcDisabledTime(panelType)}
       <div class={`${PREFIX}-tpk`}>
+        <!-- timePickerOpts 整体 spread（对齐 Semi monthsGrid.tsx `{...restProps}`）：demo 传
+             `timePickerOpts={{ scrollItemProps: {...} }}`，其中 scrollItemProps 正好落到 Combobox
+             同名 prop；原实现又包了一层 scrollItemProps，导致 wheel/cycled 丢失。 -->
         <Combobox
           prefixCls={`${PREFIX}-tpk-col`}
           timeStampValue={detail.pickerDate}
@@ -185,7 +188,7 @@
           disabledMinutes={dt?.disabledMinutes ? (h) => dt.disabledMinutes!(h ?? 0) : undefined}
           disabledSeconds={dt?.disabledSeconds ? (h, m) => dt.disabledSeconds!(h ?? 0, m ?? 0) : undefined}
           {hideDisabledOptions}
-          {...(timePickerOpts ? { scrollItemProps: timePickerOpts } : {})}
+          {...(timePickerOpts ?? {})}
           onChange={(payload) => st.handleTimeChange({ timeStampValue: payload.timeStampValue }, panelType)}
         />
       </div>
