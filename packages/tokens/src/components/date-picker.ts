@@ -48,6 +48,7 @@ export const datePickerTokens = {
   'spacing-date-picker-scrolllist-body-padding': { value: '0', category: 'spacing', label: '时间滚动菜单内边距', usage: '时间选择滚动菜单内边距' },
   'height-date-picker-tpk-compact': { value: '256px', category: 'height', label: '紧凑时间面板高度', usage: 'Semi $height-datepicker_tpk_compact' },
   'height-date-picker-switch-compact': { value: '32px', category: 'height', label: '紧凑日期时间切换条高度', usage: 'Semi $height-datepicker_switch_compact（默认 54）' },
+  'height-date-picker-date-type-yam-showing-min': { value: '325px', category: 'height', label: '日期面板最小高', usage: 'Semi $height-datepicker_dateType_yamShowing_min：x-type=date 时收窄' },
   'height-date-picker-yam-li-compact': { value: '32px', category: 'height', label: '紧凑年月/时间列项高', usage: 'Semi $height-datepicker_yam_li_compact：compact 下 scrolllist li 高' },
   // compact 密度间距（对齐 Semi $spacing-datepicker_weeks_compact-* / _weekday_compact-*）
   'spacing-date-picker-weeks-compact-padding': { value: '10px', category: 'spacing', label: '紧凑日期网格内边距', usage: 'Semi $spacing-datepicker_weeks_compact-padding' },

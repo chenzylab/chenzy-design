@@ -148,7 +148,11 @@
 {#snippet panel(panelType: PanelType)}
   {@const detail = panelDetail(panelType)}
   <div
-    class={`${PREFIX}-month-grid-${panelType}`}
+    class={`${PREFIX}-month-grid-${panelType}${
+      // 非 range 且 tpk/yam 打开时加 -yam-showing（对齐 Semi monthsGrid.tsx）：
+      // 日历被卸载后容器会塌到内容宽，靠这个类的 min-width/height 撑住面板尺寸。
+      !isRange && (detail.isTimePickerOpen || detail.isYearPickerOpen) ? ` ${PREFIX}-yam-showing` : ''
+    }`}
     {...{ 'x-open-type': detail.isTimePickerOpen ? 'time' : detail.isYearPickerOpen ? 'year' : 'date' }}
   >
     {#if detail.isYearPickerOpen}
@@ -271,12 +275,9 @@
     flex-direction: column;
     box-sizing: border-box;
   }
-  /* time 视图时给父容器明确高度（对齐 Semi：月历面板仍占位撑高，tpk 绝对覆盖其上，
-     其 height:calc(100% - 54px) 才有依据）。253(月历)+32(导航)+16(导航padding)+54(switch)≈355px 面板高。 */
-  :global(.cd-datepicker-month-grid-left[x-open-type='time']),
-  :global(.cd-datepicker-month-grid-right[x-open-type='time']) {
-    min-height: 355px;
-  }
+  /* 注：time 视图的父容器高度已由 DatePicker 的 `-yam-showing`（Semi
+     $height-datepicker_yamShowing_min = 378）承担，此处不再自造近似值（原写 355，
+     与 Semi 差 23，且同特异性下会压过 -yam-showing）。 */
   /* tpk 时间列面板：高度对齐 Semi `.semi-datepicker-tpk { height: calc(100% - 54px) }`（54=switch 条高）。 */
   :global(.cd-datepicker-tpk) {
     position: absolute;
@@ -313,12 +314,24 @@
       var(--cd-color-date-picker-border-bg-default);
     padding: var(--cd-spacing-date-picker-scrolllist-header-padding, 16px);
   }
-  /* 列居中留白按 tpk body 高度重算（对齐 Semi：(body - item) * 0.5，body≈355-54-54≈247px）。 */
+  /* header 只保留外层 padding：ScrollList 默认 title 还带 `16px 0`，两层叠加会让
+     header 从 Semi 的 57 撑到 86，挤掉列表可视高度（实测 body 215 vs Semi 267，列表被裁切）。 */
+  :global(.cd-datepicker-tpk .cd-scrolllist-header-title) {
+    padding: 0;
+  }
+  /* 列居中留白 = (body - item) * 0.5（对齐 Semi）。body 由面板高推出：
+     yamShowing_min(378) - switch(54) - scrolllist header(57) = 267（与 Semi 实测一致）。 */
+  :global(.cd-datepicker-tpk .cd-scrolllist-item > ul::before),
+  :global(.cd-datepicker-tpk .cd-scrolllist-item > ul) {
+    /* 57 = scrolllist header 实高（padding 16×2 + title 24 + 分割线 1，与 Semi 实测一致）；
+       54 = switch 条高（Semi $height-datepicker_switch）。 */
+    --cd-tpk-body-h: calc(var(--cd-height-date-picker-yam-showing-min, 378px) - 54px - 57px);
+  }
   :global(.cd-datepicker-tpk .cd-scrolllist-item > ul::before) {
-    block-size: calc((247px - var(--cd-height-scroll-list-item)) * 0.5);
+    block-size: calc((var(--cd-tpk-body-h) - var(--cd-height-scroll-list-item)) * 0.5);
   }
   :global(.cd-datepicker-tpk .cd-scrolllist-item > ul) {
-    padding-block-end: calc((247px - var(--cd-height-scroll-list-item)) * 0.5);
+    padding-block-end: calc((var(--cd-tpk-body-h) - var(--cd-height-scroll-list-item)) * 0.5);
   }
 
   /* 导航条 —— 对齐 Semi -navigation */

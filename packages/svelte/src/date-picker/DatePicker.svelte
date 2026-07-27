@@ -901,6 +901,16 @@
     line-height: 28px;
   }
 
+  /* tpk/yam 打开时的面板保底尺寸（照搬 Semi `-yam-showing`）：日历被卸载后容器会塌到
+     内容宽（实测 180，Semi 284），靠这条撑住；date 类型的最小高比 dateTime 略矮。 */
+  :global(.cd-datepicker-yam-showing) {
+    min-width: var(--cd-width-date-picker-yam-showing-min, 284px);
+    min-height: var(--cd-height-date-picker-yam-showing-min, 378px);
+  }
+  :global(.cd-datepicker[x-type='date'] .cd-datepicker-yam-showing) {
+    min-height: var(--cd-height-date-picker-date-type-yam-showing-min, 325px);
+  }
+
   /* compact 面板的保底宽高（照搬 Semi）：
      · min-width  = `$width-datepicker_month_compact` = day-compact(28)×7 + weeks padding(10)×2 = 216
        —— tpk/yam 是 position:absolute 覆盖层，盖住日历后容器会塌到内容宽（实测 128），靠它撑住；
