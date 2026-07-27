@@ -74,9 +74,14 @@
   const iconBtnSize = $derived<'default' | 'large'>(density === 'compact' ? 'default' : 'large');
   const code = $derived(localeCode ?? loc().code);
 
-  // 年文案变换：仅中文在选中年后加“年”（对齐 Semi transform）。
+  // 年/月文案变换：仅中文在**选中项**后加“年”/“月”（对齐 Semi yearAndMonth.tsx:158/205，
+  // 两列各有一个 transform，只作用于选中项的展示文案）。
+  const isZh = $derived(code === 'zh-CN' || code === 'zh-TW');
   const yearTransform = $derived<(v: unknown) => string>(
-    code === 'zh-CN' || code === 'zh-TW' ? (v) => `${v}年` : (v) => String(v),
+    isZh ? (v) => `${v}年` : (v) => String(v),
+  );
+  const monthTransform = $derived<(v: unknown) => string>(
+    isZh ? (v) => `${v}月` : (v) => String(v),
   );
 
   const LEFT = strings.PANEL_TYPE_LEFT as PanelType;
@@ -127,6 +132,7 @@
         mode="normal"
         cycled={monthCycled}
         list={monthListData(panelType)}
+        transform={monthTransform}
         selectedIndex={st.months.findIndex((it) => it.value === st.currentMonth[panelType])}
         type="month"
         ariaLabel={loc().t('DatePicker.monthColumnLabel')}

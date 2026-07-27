@@ -645,6 +645,46 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('中文 locale：年/月列选中项加“年”“月”后缀（对齐 Semi 两列各一个 transform）', async () => {
+    // Semi yearAndMonth.tsx:158/205 —— zh-CN/zh-TW 下年列 `${val}年`、月列 `${val}月`，
+    // 且 transform 只作用于**选中项**（未选中的月份保持裸数字）。
+    // 回归：本库原先只给年列传了 transform，月列漏传 → 选中月显示裸「7」而非「7月」。
+    // renderWithLocale 默认 en_US（该 locale 下**不该**加后缀），故显式切 zh_CN。
+    renderWithLocale(DatePicker, {
+      locale: 'zh_CN',
+      props: { type: 'month', defaultOpen: true, value: new Date(2026, 6, 1) },
+    });
+    await tick();
+
+    const lists = document.querySelectorAll('ul[role="listbox"]');
+    expect(lists.length, '年 + 月两列').toBe(2);
+    const selectedText = (ul: Element) =>
+      ul.querySelector('li[role="option"][aria-selected="true"]')?.textContent?.trim();
+    expect(selectedText(lists[0]!), '年列选中项应带「年」').toBe('2026年');
+    expect(selectedText(lists[1]!), '月列选中项应带「月」').toBe('7月');
+
+    // 未选中项保持裸数字（transform 仅作用于选中项）
+    const monthTexts = [...lists[1]!.querySelectorAll('li[role="option"]')]
+      .filter((li) => li.getAttribute('aria-selected') !== 'true')
+      .map((li) => li.textContent?.trim())
+      .filter(Boolean);
+    expect(monthTexts.some((t) => t?.includes('月')), '未选中月份不应带「月」').toBe(false);
+  });
+
+  it('非中文 locale：年/月列不加后缀（对齐 Semi 仅 zh-CN/zh-TW 生效）', async () => {
+    renderWithLocale(DatePicker, {
+      locale: 'en_US',
+      props: { type: 'month', defaultOpen: true, value: new Date(2026, 6, 1) },
+    });
+    await tick();
+
+    const lists = document.querySelectorAll('ul[role="listbox"]');
+    const yearSel = lists[0]
+      ?.querySelector('li[role="option"][aria-selected="true"]')
+      ?.textContent?.trim();
+    expect(yearSel, 'en_US 年列不应带「年」').toBe('2026');
+  });
+
   it('month/monthRange 面板根节点用 -panel-yam 且带 x-insetinput（对齐 Semi）', async () => {
     // 回归：面板根节点曾误用 `-yam`（那是 MonthsGrid 里 absolute + width:100% 的覆盖层类），
     // 导致根节点拿不到 `-panel-yam` 的宽度规则 → 面板宽度塌成 0 → 白底/阴影画不出来，
