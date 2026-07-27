@@ -22,6 +22,12 @@
     endPlaceholder?: string;
     disabled?: boolean;
     showClear?: boolean;
+    /**
+     * 禁用时仍显示清除按钮（对齐 Semi showClearIgnoreDisabled）。
+     * DatePicker 在 insetInput 时传 true——因为 insetInput 打开面板会把触发器置 disabled，
+     * 不忽略的话清除按钮恰好在面板打开时消失。
+     */
+    showClearIgnoreDisabled?: boolean;
     inputReadOnly?: boolean;
     validateStatus?: ValidateStatus;
     size?: PickerSize;
@@ -63,7 +69,9 @@
     startPlaceholder,
     endPlaceholder,
     disabled = false,
-    showClear = false,
+    // 默认 true（对齐 Semi dateInput.tsx defaultProps `showClear: true`）。
+    showClear = true,
+    showClearIgnoreDisabled = false,
     inputReadOnly = false,
     validateStatus,
     size = 'default',
@@ -190,8 +198,9 @@
         {...(onEnterPress !== undefined ? { onEnterPress } : {})}
       />
     </div>
-    <!-- range 清除按钮（对齐 Semi renderRangeClearBtn）：有值 + showClear + 非禁用时显示。 -->
-    {#if (rangeStart || rangeEnd) && showClear && !disabled}
+    <!-- range 清除按钮（对齐 Semi renderRangeClearBtn）：有值 + showClear + 非「真禁用」时显示。
+         真禁用 = disabled && !showClearIgnoreDisabled（Semi isRealDisabled）。 -->
+    {#if (rangeStart || rangeEnd) && showClear && !(disabled && !showClearIgnoreDisabled)}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         role="button"

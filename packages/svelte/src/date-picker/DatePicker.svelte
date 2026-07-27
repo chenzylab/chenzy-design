@@ -195,7 +195,10 @@
     disabled = false,
     placeholder,
     format,
-    showClear = false,
+    // 默认 true（对齐 Semi：DatePicker 不在 defaultProps 里设它，透传 undefined 给
+    // DateInput，由后者 defaultProps 的 showClear:true 兜底；Semi 文档也标默认 true）。
+    // 本库 meta/md 早已写 default: true，此前实现却是 false——属「声明未接线」。
+    showClear = true,
     inputReadOnly = false,
     validateStatus,
     size = 'default',
@@ -419,6 +422,8 @@
     spacing ?? (effectivePosition.includes('Over') ? numbers.SPACING_INSET_INPUT : numbers.SPACING),
   );
   let inputValue = $state<string | null>(null);
+  // 自增以重挂 InsetInput、丢弃其本地编辑态（对齐 Semi updateInsetInputValue(null)）。
+  let insetInputReset = $state(0);
   // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
   let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
   // 触发器根元素（autoFocus 挂载聚焦用）。
@@ -615,9 +620,16 @@
     onCancel?.(notifyDate as Date | Date[] | RangeValue | null, notifyValue as string);
   }
 
+  // 清空 —— 对齐 Semi handleRangeInputClear / handleInputClear（foundation.ts:617-628）：
+  // 除写空值外还要 ① 清编辑中的 inputValue（否则触发器仍显示手输残留）
+  // ② 清 insetInputValue（updateInsetInputValue(null)）③ 复位 rangeInputFocus
+  // （setRangeInputFocus(false)，否则清空后触发器仍留 -active 高亮）。
   function handleClear(e?: MouseEvent) {
     if (st.isRange) st.handleRangeSelectedChange([null, null]);
     else st.handleSelectedChange(null);
+    inputValue = null;
+    insetInputReset += 1;
+    rangeInputFocus = false;
     if (e) onClearProp?.(e);
   }
 
@@ -784,13 +796,17 @@
             {#if topSlot}<div class={`${PREFIX}-topSlot`}>{@render topSlot()}</div>{/if}
             <!-- insetInput：面板内输入框（对齐 Semi renderDateInput，面板顶部） -->
             {#if insetInput}
-              <InsetInput
-                {type}
-                value={insetValue}
-                {format}
-                rangeSeparator={strings.DEFAULT_SEPARATOR_RANGE}
-                onInsetChange={onInsetChange}
-              />
+              <!-- key 上 insetInputReset：清空时自增以重挂 InsetInput，丢弃其 localInset
+                   本地编辑态（对齐 Semi adapter.updateInsetInputValue(null)）。 -->
+              {#key insetInputReset}
+                <InsetInput
+                  {type}
+                  value={insetValue}
+                  {format}
+                  rangeSeparator={strings.DEFAULT_SEPARATOR_RANGE}
+                  onInsetChange={onInsetChange}
+                />
+              {/key}
             {/if}
             <!-- preset top -->
             {#if presetPosition === 'top' && presets.length && type !== 'monthRange'}
@@ -889,6 +905,7 @@
         endPlaceholder={phEnd}
         disabled={effectiveDisabled}
         {showClear}
+        showClearIgnoreDisabled={insetInput}
         inputReadOnly={effectiveReadOnly}
         {size}
         onClear={handleClear}

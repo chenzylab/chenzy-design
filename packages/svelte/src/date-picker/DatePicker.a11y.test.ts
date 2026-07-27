@@ -728,6 +728,76 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     }
   });
 
+  it('showClear 默认 true（对齐 Semi，meta/md 早已声明 true）', async () => {
+    // Semi DatePicker 不在 defaultProps 里设 showClear，透传 undefined 给 DateInput，
+    // 由后者 defaultProps `showClear: true` 兜底；Semi 文档也标默认 true。
+    // 回归：本库 DatePicker/DateInput 实现都写死 false，而 meta/md 声明 true——声明未接线。
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', value: [new Date(2026, 6, 10), new Date(2026, 7, 5)] },
+    });
+    await tick();
+    // range 清除按钮不依赖 hover（Semi renderRangeClearBtn 直接按有值渲染）
+    expect(
+      container.querySelector(`.${PREFIX}-range-input-clearbtn`),
+      '未显式传 showClear 时应默认显示清除按钮',
+    ).not.toBeNull();
+  });
+
+  it('showClear=false 时不渲染清除按钮', async () => {
+    const { container } = renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateRange',
+        showClear: false,
+        value: [new Date(2026, 6, 10), new Date(2026, 7, 5)],
+      },
+    });
+    await tick();
+    expect(container.querySelector(`.${PREFIX}-range-input-clearbtn`)).toBeNull();
+  });
+
+  it('insetInput 下触发器 disabled 仍显示清除按钮（对齐 Semi showClearIgnoreDisabled）', async () => {
+    // Semi datePicker.tsx:678 `showClearIgnoreDisabled: Boolean(insetInput)`。
+    // insetInput 打开面板会把触发器置 disabled，不忽略的话清除按钮恰好在面板打开时消失。
+    const { container } = renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateRange',
+        insetInput: true,
+        disabled: true,
+        value: [new Date(2026, 6, 10), new Date(2026, 7, 5)],
+      },
+    });
+    await tick();
+    expect(
+      container.querySelector(`.${PREFIX}-range-input-clearbtn`),
+      'insetInput 时 disabled 不应吃掉清除按钮',
+    ).not.toBeNull();
+  });
+
+  it('清空后复位 rangeInputFocus（对齐 Semi setRangeInputFocus(false)）', async () => {
+    // 回归：清空只写空值、没复位焦点态，触发器会残留 -active 高亮。
+    // 用 defaultValue（非受控）——受控 value 下 Semi 同样不自行清值
+    // （foundation.ts:620 `if (!this._isControlledComponent('value'))`）。
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', defaultValue: [new Date(2026, 6, 10), new Date(2026, 7, 5)] },
+    });
+    await tick();
+    // 先点起始端制造 -active
+    (container.querySelector(`.${PREFIX}-range-input-wrapper-start`) as HTMLElement)?.click();
+    await tick();
+    const clearBtn = container.querySelector(`.${PREFIX}-range-input-clearbtn`) as HTMLElement;
+    clearBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await tick();
+
+    expect(
+      [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value),
+      '清空后两端都应为空',
+    ).toEqual(['', '']);
+    expect(
+      container.querySelector(`.${PREFIX}-range-input-wrapper-active`),
+      '清空后不应残留 -active',
+    ).toBeNull();
+  });
+
   it('range 触发器无值时 value 为空串而非裸分隔符（对齐 Semi formatText）', async () => {
     // Semi dateInput.tsx:131 `value && value.length ? formatShowText(value) : ''`。
     // 回归：本库无值时曾拼出 ' ~ '，双框下看不出来（分隔符是独立元素），
