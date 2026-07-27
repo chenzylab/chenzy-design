@@ -111,7 +111,9 @@ const components = [
   ['slider', '{ Slider }', '5.5 KB'],
   ['switch', '{ Switch }', '2.7 KB'],
   ['tag-input', '{ TagInput }', '6.25 KB'],
-  ['time-picker', '{ TimePicker }', '7.75 KB'],
+  // 7.75→8 KB：TimeInput 拆分成独立组件 + time-input-foundation（对齐 Semi timePicker/TimeInput.tsx）
+  // 后实测 7.82 KB，按实测校准并留余量（对齐 memory perf-budgets-calibrated-from-real-measurement）。
+  ['time-picker', '{ TimePicker }', '8 KB'],
   ['transfer', '{ Transfer }', '10.9 KB'],
   ['tree-select', '{ TreeSelect }', '12 KB'],
   // 13 KB → 14 KB：破坏性重写严格对齐 Semi，FileCard 拆分后按 Semi「组件调用组件」
