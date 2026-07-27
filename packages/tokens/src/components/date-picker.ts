@@ -55,9 +55,13 @@ export const datePickerTokens = {
   'spacing-date-picker-inset-input-wrapper-padding-x': { value: '16px', category: 'spacing', label: '内嵌输入水平内边距', usage: '' },
   'spacing-date-picker-inset-input-wrapper-padding-bottom': { value: '0', category: 'spacing', label: '内嵌输入底部内边距', usage: '' },
   'spacing-date-picker-inset-input-separator-padding-x': { value: '4px', category: 'spacing', label: '内嵌输入分隔符水平内边距', usage: '' },
+  'height-date-picker-month-grid-year-type-inset-input': { value: '317px', category: 'height', label: 'insetInput 年份面板最小高', usage: 'Semi $height-datepicker_month_grid_yearType_insetInput（insetInput 下 yam 覆盖层撑住容器）' },
+  'height-date-picker-month-grid-time-type-inset-input': { value: '317px', category: 'height', label: 'insetInput 时间面板最小高', usage: 'Semi $height-datepicker_month_grid_timeType_insetInput' },
+  'spacing-date-picker-navigation-inset-input-padding-y': { value: '8px', category: 'spacing', label: 'insetInput 导航栏垂直内边距', usage: 'Semi $spacing-datepicker_navigation_insetInput-paddingY' },
 
   // ============================ Color ============================
   'color-date-picker-panel-bg-default': { value: 'var(--cd-color-bg-3)', category: 'color', label: '面板背景色', usage: 'Semi $color-datepicker_panel-bg-default 日期选择器背景颜色（bg-3）' },
+  'color-date-picker-list-bg-default': { value: 'var(--cd-color-bg-3)', category: 'color', label: '滚动列表背景色', usage: 'Semi $color-datepicker_list-bg-default 日期选择器滚动列表背景颜色（bg-3）——年/月/时间列是覆盖在日历上的绝对定位层，无此底色会透出下层内容' },
   'spacing-date-picker-footer-padding-top': { value: '10px', category: 'spacing', label: 'footer 顶部内边距', usage: 'Semi $spacing-datepicker_footer-paddingTop' },
   'spacing-date-picker-footer-padding-bottom': { value: '10px', category: 'spacing', label: 'footer 底部内边距', usage: 'Semi $spacing-datepicker_footer-paddingBottom' },
   'spacing-date-picker-footer-padding-right': { value: '8px', category: 'spacing', label: 'footer 右侧内边距', usage: 'Semi $spacing-datepicker_footer-paddingRight' },

@@ -109,7 +109,9 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     });
     await tick();
     // yam 面板存在、无日历 grid。
-    expect(document.querySelector(`.${PREFIX}-yam`)).not.toBeNull();
+    // 面板根节点是 `-panel-yam`（对齐 Semi cssClasses.PANEL_YAM，承 max-width + scrolllist 规则）；
+    // `-yam` 是 MonthsGrid 里 absolute 覆盖层的类，两者不可混用。
+    expect(document.querySelector(`.${PREFIX}-panel-yam`)).not.toBeNull();
     expect(document.querySelector(`.${PREFIX}-month[role="grid"]`)).toBeNull();
     // year+month 两列滚轮。
     expect(document.querySelectorAll('ul[role="listbox"]').length).toBe(2);
@@ -638,6 +640,31 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       wrapper?.getAttribute('x-placement'),
       'insetInput 浮层应用覆盖型方位 leftTopOver（不可退化成 leftTop）',
     ).toBe('leftTopOver');
+
+    unmount(api as never);
+    target.remove();
+  });
+
+  it('month/monthRange 面板根节点用 -panel-yam 且带 x-insetinput（对齐 Semi）', async () => {
+    // 回归：面板根节点曾误用 `-yam`（那是 MonthsGrid 里 absolute + width:100% 的覆盖层类），
+    // 导致根节点拿不到 `-panel-yam` 的宽度规则 → 面板宽度塌成 0 → 白底/阴影画不出来，
+    // 年月列因 absolute 脱离而裸露在页面上（insetInput 覆盖型浮层下还会透出触发器文字）。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: { type: 'month', insetInput: true, defaultOpen: true },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const panel = document.querySelector(`.${PREFIX}-panel-yam`);
+    expect(panel, '面板根节点应带 -panel-yam').not.toBeNull();
+    expect(panel?.getAttribute('x-insetinput'), 'insetInput 时面板应带 x-insetinput=true').toBe(
+      'true',
+    );
+    // `-yam` 覆盖层是 MonthsGrid 的类，不该出现在面板根节点上
+    expect(panel?.classList.contains(`${PREFIX}-yam`), '根节点不应带覆盖层类 -yam').toBe(false);
 
     unmount(api as never);
     target.remove();

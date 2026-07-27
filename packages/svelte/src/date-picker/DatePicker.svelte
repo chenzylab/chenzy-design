@@ -748,8 +748,9 @@
   >
     {#snippet content()}
       <div
-        class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-yam` : PREFIX}${density === 'compact' ? ` ${PREFIX}-compact` : ''}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
+        class={`${typeIsYearOrMonth ? `${PREFIX} ${PREFIX}-panel-yam` : PREFIX}${density === 'compact' ? ` ${PREFIX}-compact` : ''}${dropdownClassName ? ` ${dropdownClassName}` : ''}`}
         {...{ 'x-type': type }}
+        {...{ 'x-insetinput': insetInput ? 'true' : 'false' }}
         {...(dropdownStyle ? { style: dropdownStyle } : {})}
       >
         <div class={`${PREFIX}-container`}>
@@ -944,6 +945,29 @@
   }
   :global(.cd-datepicker[x-type='date'] .cd-datepicker-yam-showing) {
     min-height: var(--cd-height-date-picker-date-type-yam-showing-min, 325px);
+  }
+
+  /* insetInput 下的面板尺寸（照搬 Semi datePicker.scss 77-104 的 `[x-insetinput=true]`）：
+     面板顶部多了一行内嵌输入框，故 yam/tpk 覆盖层的保底高与导航栏内边距都另有一套值；
+     tpk/yam 走 100%（由 month-grid 的 min-height 撑），不再沿用默认的固定高。 */
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-month-grid-left[x-open-type='year']),
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-month-grid-right[x-open-type='year']) {
+    min-height: var(--cd-height-date-picker-month-grid-year-type-inset-input, 317px);
+  }
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-month-grid-left[x-open-type='time']),
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-month-grid-right[x-open-type='time']) {
+    min-height: var(--cd-height-date-picker-month-grid-time-type-inset-input, 317px);
+  }
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-navigation) {
+    padding-top: var(--cd-spacing-date-picker-navigation-inset-input-padding-y, 8px);
+    padding-bottom: var(--cd-spacing-date-picker-navigation-inset-input-padding-y, 8px);
+  }
+  :global(.cd-datepicker[x-insetinput='true'] .cd-datepicker-tpk) {
+    min-height: 100%;
+  }
+  :global(.cd-datepicker[x-insetinput='true'][x-type='dateTime'] .cd-datepicker-yam),
+  :global(.cd-datepicker[x-insetinput='true'][x-type='dateTimeRange'] .cd-datepicker-yam) {
+    height: 100%;
   }
 
   /* compact 面板的保底宽高（照搬 Semi）：

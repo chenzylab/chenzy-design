@@ -169,10 +169,14 @@
       var(--cd-width-date-picker-yam-header-border-radius, 6px) 0 0;
   }
 
-  /* yam 面板的 ScrollList —— 照搬 Semi datePicker.scss（192-215）：
-     无阴影 + 固定高 266 + 列项最小宽 64（wheel 模式额外加 outer paddingRight 抹平差异）+ body padding 0。 */
-  :global(.cd-datepicker-yam .cd-scrolllist),
+  /* yam 面板的 ScrollList —— 照搬 Semi datePicker.scss（124-132）：
+     背景 bg-3 + 无阴影 + 固定高 266 + 列项最小宽 64（wheel 模式额外加 outer paddingRight
+     抹平差异）+ body padding 0。
+     **background 不可省**：yam/tpk 是覆盖在日历之上的绝对定位层，缺底色会透出下层日历，
+     insetInput 覆盖型浮层下更会透出触发器文字。 */
+  :global(.cd-datepicker-panel-yam .cd-scrolllist),
   :global(.cd-datepicker-yearmonth-panel .cd-scrolllist) {
+    background: var(--cd-color-date-picker-list-bg-default);
     box-shadow: none;
     height: var(--cd-height-date-picker-panel-yam-scrolllist, 266px);
   }
