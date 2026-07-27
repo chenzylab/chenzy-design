@@ -331,9 +331,13 @@
     padding: 0 8px;
     color: var(--cd-color-text-2);
   }
-  /* range 清除按钮（对齐 Semi -range-input-clearbtn）：flex center + text-2，hover 加深。 */
+  /* range 清除按钮（对齐 Semi -range-input-clearbtn）：flex center + text-2，hover 加深。
+     **默认 display:none**（照搬 Semi datePicker.scss:1016 与 955）——仅在
+     ① 触发器 hover ② 某一端聚焦（-wrapper-active）时才出现；
+     且出现时**隐藏 suffix 图标**（Semi `clearbtn ~ suffix { display: none }`），
+     使清除按钮正好占据日历图标的位置，而不是挤在图标左边。 */
   :global(.cd-datepicker-range-input-clearbtn) {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
@@ -341,6 +345,24 @@
     cursor: pointer;
     white-space: nowrap;
     color: var(--cd-color-text-2);
+  }
+  :global(.cd-datepicker-range-input:hover .cd-datepicker-range-input-clearbtn),
+  :global(
+    .cd-datepicker-range-input-wrapper-active ~ .cd-datepicker-range-input-clearbtn
+  ) {
+    display: flex;
+  }
+  :global(
+    .cd-datepicker-range-input:hover
+      .cd-datepicker-range-input-clearbtn
+      ~ .cd-datepicker-range-input-suffix
+  ),
+  :global(
+    .cd-datepicker-range-input-wrapper-active
+      ~ .cd-datepicker-range-input-clearbtn
+      ~ .cd-datepicker-range-input-suffix
+  ) {
+    display: none;
   }
   :global(.cd-datepicker-range-input-clearbtn:hover) {
     color: var(--cd-color-text-0);

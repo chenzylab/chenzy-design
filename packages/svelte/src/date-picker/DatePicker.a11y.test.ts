@@ -743,6 +743,26 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     ).not.toBeNull();
   });
 
+  it('range 清除按钮默认隐藏、DOM 上排在 suffix 之前（对齐 Semi）', async () => {
+    // Semi datePicker.scss:1016/955：clearbtn 默认 display:none，仅
+    // ① 触发器 hover ② 某端聚焦(-wrapper-active) 时 display:flex；
+    // 且同时 `clearbtn ~ suffix { display:none }` 让清除按钮占据日历图标的位置。
+    // 回归：本库原为无条件 display:flex 且不隐藏 suffix → 清除按钮挤在图标左边。
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', defaultValue: [new Date(2026, 6, 10), new Date(2026, 7, 5)] },
+    });
+    await tick();
+    const root = container.querySelector(`.${PREFIX}-range-input`)!;
+    const kids = [...root.children].map((c) => c.className);
+    const clearIdx = kids.findIndex((c) => c.includes('range-input-clearbtn'));
+    const suffixIdx = kids.findIndex((c) => c.includes('range-input-suffix'));
+    expect(clearIdx, '应渲染清除按钮').toBeGreaterThanOrEqual(0);
+    expect(suffixIdx, '应渲染 suffix').toBeGreaterThanOrEqual(0);
+    expect(clearIdx, 'clearbtn 必须排在 suffix 之前（兄弟选择器 ~ 才成立）').toBeLessThan(
+      suffixIdx,
+    );
+  });
+
   it('showClear=false 时不渲染清除按钮', async () => {
     const { container } = renderWithLocale(DatePicker, {
       props: {
