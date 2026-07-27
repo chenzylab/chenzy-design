@@ -671,6 +671,27 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(monthTexts.some((t) => t?.includes('月')), '未选中月份不应带「月」').toBe(false);
   });
 
+  it('yam 列 normal 模式有 min-width 规则（回归：只搬 wheel 那条会落空）', async () => {
+    // Semi datePicker.scss:196-207 有**两条** li min-width：wheel 的 `-list-outer > ul > li`
+    // 与 normal 的 `-item > ul > li`（后者 = 64 + wheel outer paddingRight 18 = 82，
+    // Semi 注释「make the same width under wheel and normal mode」）。
+    // 本库 yam 列写死 mode="normal"，原先只搬了 wheel 那条 → normal 下无 -list-outer 元素、
+    // 规则完全落空 → 列宽塌到文字宽，monthRange 下「2026年」被挤成两行。
+    renderWithLocale(DatePicker, {
+      locale: 'zh_CN',
+      props: { type: 'monthRange', defaultOpen: true, insetInput: true },
+    });
+    await tick();
+
+    // normal 模式的 DOM 契约：.cd-scrolllist-item > ul > li（无 -list-outer）
+    const normalLi = document.querySelector('.cd-scrolllist-item > ul > li');
+    expect(normalLi, 'yam 列应走 normal 模式 DOM（-item > ul > li）').not.toBeNull();
+    expect(
+      document.querySelector('.cd-scrolllist-list-outer'),
+      'normal 模式不应有 wheel 的 -list-outer',
+    ).toBeNull();
+  });
+
   it('非中文 locale：年/月列不加后缀（对齐 Semi 仅 zh-CN/zh-TW 生效）', async () => {
     renderWithLocale(DatePicker, {
       locale: 'en_US',

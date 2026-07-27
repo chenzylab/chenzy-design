@@ -186,9 +186,25 @@
     box-shadow: none;
     height: var(--cd-height-date-picker-panel-yam-scrolllist, 266px);
   }
+  /* 列项最小宽 —— Semi 有**两条**（datePicker.scss:196-207），wheel / normal 两种模式各一条：
+     · wheel  模式 DOM 是 `-list-outer > ul > li`，取 64；
+     · normal 模式 DOM 是 `-item > ul > li`，取 64 + wheel 的 outer paddingRight(18) = 82，
+       Semi 原注释「add paddingRight to make the same width under wheel and normal mode」。
+     本库 yam 列走 mode="normal"（YearAndMonth 里写死），**只搬 wheel 那条会完全落空**
+     （normal 模式下根本没有 -list-outer 元素）→ 列宽塌到文字宽，
+     monthRange 下「2026年」被挤成两行。 */
+  :global(.cd-datepicker-panel-yam .cd-scrolllist-list-outer > ul > li),
   :global(.cd-datepicker-yearmonth-panel .cd-scrolllist-list-outer > ul > li) {
     min-width: var(--cd-width-date-picker-panel-yam-scrolllist-li-min, 64px);
   }
+  :global(.cd-datepicker-panel-yam .cd-scrolllist-item > ul > li),
+  :global(.cd-datepicker-yearmonth-panel .cd-scrolllist-item > ul > li) {
+    min-width: calc(
+      var(--cd-width-date-picker-panel-yam-scrolllist-li-min, 64px) +
+        var(--cd-spacing-scroll-list-item-wheel-list-outer-paddingright, 18px)
+    );
+  }
+  :global(.cd-datepicker-panel-yam .cd-scrolllist-body),
   :global(.cd-datepicker-yearmonth-panel .cd-scrolllist-body) {
     padding: 0;
     overflow: hidden;
