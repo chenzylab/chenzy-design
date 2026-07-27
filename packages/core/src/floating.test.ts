@@ -184,3 +184,48 @@ describe('computePosition arrowOffset', () => {
     expect(r.arrowOffset).toBe(30);
   });
 });
+
+// `over` = Semi 的 `…Over` 覆盖型方位（leftTopOver/rightTopOver）：浮层压在触发器上，
+// 左/上边缘与触发器对齐后各回退 offset，不沿主轴推开。
+// 照搬 semi-foundation/tooltip/foundation.ts `case 'leftTopOver'`：
+//   left = triggerRect.left - SPACING; top = triggerRect.top - SPACING
+describe('computePosition over (Semi …Over overlay positions)', () => {
+  it('aligns leading edges to the trigger minus offset instead of displacing', () => {
+    const r = computePosition({ ...base, placement: 'leftStart', over: true, offset: 1 });
+    // 覆盖语义：x = trigger.x - 1 = 199（而非 leftStart 的 200-80-1 = 119）
+    expect(r.x).toBe(199);
+    expect(r.y).toBe(199);
+  });
+
+  it('overlaps the trigger rather than sitting beside it', () => {
+    const r = computePosition({ ...base, placement: 'leftStart', over: true, offset: 1 });
+    const overlapsX = r.x < trigger.x + trigger.width && r.x + popup.width > trigger.x;
+    const overlapsY = r.y < trigger.y + trigger.height && r.y + popup.height > trigger.y;
+    expect(overlapsX && overlapsY).toBe(true);
+  });
+
+  it('never flips even when the requested side overflows', () => {
+    // 触发器贴左边缘：leftStart 常规会 flip 到 right，over 模式不 flip。
+    const tight: Rect = { x: 2, y: 2, width: 100, height: 40 };
+    const r = computePosition({
+      ...base, triggerRect: tight, placement: 'leftStart', over: true, offset: 1, autoAdjust: true,
+    });
+    expect(r.side).toBe('left');
+  });
+
+  it('clamps into the viewport on both axes', () => {
+    const tight: Rect = { x: 1, y: 1, width: 100, height: 40 };
+    const r = computePosition({
+      ...base, triggerRect: tight, placement: 'leftStart', over: true, offset: 8, padding: 4,
+    });
+    // trigger.x - 8 = -7 → clamp 到 padding 4
+    expect(r.x).toBe(4);
+    expect(r.y).toBe(4);
+  });
+
+  it('leaves non-over placements untouched', () => {
+    const withFlag = computePosition({ ...base, placement: 'bottomStart' });
+    const explicitFalse = computePosition({ ...base, placement: 'bottomStart', over: false });
+    expect(explicitFalse).toEqual(withFlag);
+  });
+});

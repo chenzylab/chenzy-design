@@ -617,4 +617,48 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     unmount(api as never);
     target.remove();
   });
+
+  it('insetInput 浮层覆盖触发器：x-placement=leftTopOver（对齐 Semi）', async () => {
+    // 照搬 Semi index.tsx:53-65：insetInput 未显式指定 position 时用 POSITION_INLINE_INPUT
+    // （leftTopOver），且 position 含 'Over' 时 spacing 用 SPACING_INSET_INPUT(1)。
+    // leftTopOver 语义 = 浮层左/上边缘与触发器对齐后各回退 1px，**压在触发器上**
+    // （面板自带内嵌输入框，无需再露出触发器）。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: { type: 'date', insetInput: true, defaultOpen: true },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const wrapper = document.querySelector('.cd-popover-wrapper');
+    expect(wrapper, '应渲染浮层').not.toBeNull();
+    expect(
+      wrapper?.getAttribute('x-placement'),
+      'insetInput 浮层应用覆盖型方位 leftTopOver（不可退化成 leftTop）',
+    ).toBe('leftTopOver');
+
+    unmount(api as never);
+    target.remove();
+  });
+
+  it('insetInput 显式 position 优先于 leftTopOver（对齐 Semi 仅在未指定时兜底）', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: { type: 'date', insetInput: true, defaultOpen: true, position: 'bottomLeft' },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(
+      document.querySelector('.cd-popover-wrapper')?.getAttribute('x-placement'),
+      '显式传 position 时不应被 leftTopOver 覆盖',
+    ).toBe('bottomLeft');
+
+    unmount(api as never);
+    target.remove();
+  });
 });

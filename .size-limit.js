@@ -95,7 +95,9 @@ const components = [
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +
   // multiple/max + needConfirm+Footer + preset + inset + 触发器/面板定制 + 四向 slot + 时区），
   // 替换旧版后实测 30.14 KB。预算按实测校准（含少量余量），旧 22 KB 是早期不完整实现的基线。
-  ['date-picker', '{ DatePicker }', '32 KB'],
+  // 深度对齐（density=compact、placeholder 按 type 分派、locale 覆盖、命令式方法、
+  // needConfirm 暂存层、insetInput 覆盖型浮层 leftTopOver）后实测 32.22 KB，预算提到 33 KB。
+  ['date-picker', '{ DatePicker }', '33 KB'],
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath（真数组路径）。
   // 破坏性重写严格对齐 Semi（Field 复用 FormLabel、a11y 契约 labelledById/errorMessageId、
   // error/warning 合并、扁平 class）后实测 13.65 KB。预算按实测校准，含少量余量。

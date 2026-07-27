@@ -225,7 +225,7 @@
     onChange,
     onChangeWithDateFirst = false,
     onOpenChange,
-    position = 'bottomLeft',
+    position,
     zIndex,
     autoAdjustOverflow = true,
     getPopupContainer,
@@ -245,7 +245,7 @@
     leftSlot,
     rightSlot,
     triggerRender,
-    spacing = numbers.SPACING,
+    spacing,
     dropdownClassName,
     dropdownStyle,
     preventScroll = false,
@@ -400,6 +400,16 @@
   // 用户可直接键入日期；关闭时恢复。
   let triggerDisabled = $state(false);
   const effectiveDisabled = $derived(disabled || (insetInput && triggerDisabled));
+
+  // 浮层位置/间距（照搬 Semi index.tsx:53-65）：insetInput 未显式指定 position 时用
+  // `leftTopOver`——面板顶端与触发器顶端对齐并**覆盖住触发器**（面板内已有内嵌输入框，
+  // 无需再露出触发器）；position 含 'Over' 且未指定 spacing 时用 1px，避免左上角圆角漏边。
+  const effectivePosition = $derived<Position>(
+    position ?? (insetInput ? (strings.POSITION_INLINE_INPUT as Position) : 'bottomLeft'),
+  );
+  const effectiveSpacing = $derived(
+    spacing ?? (effectivePosition.includes('Over') ? numbers.SPACING_INSET_INPUT : numbers.SPACING),
+  );
   let inputValue = $state<string | null>(null);
   // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
   let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
@@ -721,7 +731,7 @@
   <Popover
     trigger="custom"
     visible={st.isOpen}
-    {position}
+    position={effectivePosition}
     {autoAdjustOverflow}
     {motion}
     {stopPropagation}
@@ -729,7 +739,7 @@
     {...(zIndex !== undefined ? { zIndex } : {})}
     {...(getPopupContainer ? { getPopupContainer } : {})}
     {...(dropdownMargin !== undefined ? { margin: dropdownMargin } : {})}
-    {spacing}
+    spacing={effectiveSpacing}
     onVisibleChange={(v) => {
       // 面板由 open→false（外部点击/Esc 等 Popover 自身关闭）时触发 onClickOutSide（对齐 Semi）。
       if (!v && st.isOpen) onClickOutSide?.();
