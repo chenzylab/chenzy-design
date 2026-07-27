@@ -3,13 +3,17 @@
  * 底层用 date-fns-tz 的 utcToZonedTime/zonedTimeToUtc；数字/GMT± 偏移经 toIANA 映射成 IANA 标识，
  * 具名 IANA（含夏令时）原样透传。
  */
+// 从 /esm 子路径导入（真 ESM 版）而非 `.` 入口（CJS index.js）：core 是 ESM（type:module），
+// dev SSR 下 Node 原生 ESM loader 实例化 core dist 时，无法解析 CJS 的命名导出 → 500
+// (no export named utcToZonedTime)。date-fns-tz@1.x 的 esm/index.js 是真 ESM，具名导入可解析。
+// build(rollup)/vitest(esbuild) 对两种入口都能 interop，故此前只 docs dev SSR 暴露。
 import {
   toDate,
   format as dateFnsFormat,
   utcToZonedTime as dateFnsUtcToZonedTime,
   zonedTimeToUtc as dateFnsZonedTimeToUtc,
   type OptionsWithTZ,
-} from 'date-fns-tz';
+} from 'date-fns-tz/esm';
 import {
   parse as dateFnsParse,
   format as dateFnsBaseFormat,

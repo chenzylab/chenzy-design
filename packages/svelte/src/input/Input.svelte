@@ -335,6 +335,11 @@
     inputEl?.blur();
   }
 
+  /** 取底层原生 input 元素（对齐 Semi ref inputNode）。TimeInput 光标恢复等场景需读 selectionStart。 */
+  export function getInputElement(): HTMLInputElement | null {
+    return inputEl ?? null;
+  }
+
   $effect(() => {
     if (!autoFocus || !inputEl || disabled) return;
     const el = inputEl;

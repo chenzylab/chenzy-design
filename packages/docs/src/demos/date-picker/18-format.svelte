@@ -3,7 +3,7 @@
 </script>
 
 <DatePicker
-  format="YYYY年MM月DD日 HH:mm"
+  format="yyyy年MM月dd日 HH:mm"
   type="dateTime"
   defaultValue={new Date()}
 />

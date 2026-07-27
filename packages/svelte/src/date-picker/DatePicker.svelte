@@ -1,5 +1,5 @@
 <!--
-  DatePickerNext —— 从零重写的主装配（里程碑3：基本 date 单面板）。
+  DatePicker —— 从零重写并严格对齐 Semi 的主装配。
   对齐 Semi datePicker.tsx：外层 div.PREFIX > Popover(trigger=custom, content=面板) > combobox wrapper > DateInput。
   面板：div.PREFIX[x-type] > div.-container > div > (Navigation + Month)。
   值模型走 date-picker-foundation（parseWithTimezone/disposeCallbackArgs/_notifyChange）。
