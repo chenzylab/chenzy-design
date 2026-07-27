@@ -537,4 +537,29 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(await pick('date'), 'date 选完应关闭').toBe(false);
     expect(await pick('dateTime'), 'dateTime 应保持打开').toBe(true);
   });
+
+  it('wheel cycled：三列都有环绕余量（份数 >= 3），选中项靠列表末尾也不退化', async () => {
+    // 回归：份数按 selectedIndex 的理论位置算，选中项靠两端时会算出 0 份（如 60 项选第 54 项），
+    // parts=1 时 adjustInfiniteList 的 `scrollTop ± listHeight` 会被浏览器夹紧、环绕失效
+    // （真机表现：分钟列滚到底就停、中间项不高亮）。故 cycled 下 prepend/append 各保底 1 份。
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateTime',
+        defaultOpen: true,
+        defaultValue: new Date(2026, 6, 15, 15, 54, 49),
+        timePickerOpts: { scrollItemProps: { mode: 'wheel', cycled: true } },
+      },
+    });
+    await tick();
+    const sw = document.querySelector('.cd-datepicker-switch-time') as HTMLElement;
+    sw.click();
+    await tick();
+    const wheels = [...document.querySelectorAll('.cd-datepicker-tpk .cd-scrolllist-item-wheel')];
+    expect(wheels.length, 'wheel 模式应渲染 3 列').toBe(3);
+    const base = [24, 60, 60];
+    wheels.forEach((w, i) => {
+      const li = w.querySelectorAll('li').length;
+      expect(li, `第 ${i} 列 li=${li}，应 >= 基准 ${base[i]} × 3`).toBeGreaterThanOrEqual(base[i]! * 3);
+    });
+  });
 });
