@@ -935,6 +935,34 @@
     height: calc(100% - var(--cd-height-date-picker-switch-compact, 32px));
   }
 
+  /* compact 下的内嵌输入（照搬 Semi datePicker.scss `.semi-datepicker-compact .semi-datepicker-inset-input`）：
+     间距/宽度/输入高度全部收窄；range 类型宽度翻倍且 paddingTop 归零。 */
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper) {
+    column-gap: var(--cd-spacing-date-picker-inset-input-wrapper-compact-margin, 4px);
+    padding: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-y, 8px)
+      var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-x, 8px);
+    padding-bottom: var(--cd-spacing-date-picker-inset-input-wrapper-compact-padding-bottom, 0);
+    width: var(--cd-width-date-picker-inset-input-date-type-wrapper-compact, 216px);
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper[x-type='dateRange']),
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper[x-type='dateTimeRange']) {
+    width: var(--cd-width-date-picker-inset-input-date-range-type-wrapper-compact, 432px);
+    padding-top: 0;
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper[x-type='month']) {
+    width: var(--cd-width-date-picker-inset-input-month-type-wrapper-compact, 195px);
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper .cd-input-wrapper) {
+    box-sizing: border-box;
+    height: var(--cd-height-date-picker-inset-input-wrapper-compact, 28px);
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-inset-input-wrapper .cd-input) {
+    font-size: var(--cd-font-size-date-picker-inset-input-compact-font-size, 12px);
+    height: var(--cd-height-date-picker-inset-input-compact, 36px);
+    line-height: var(--cd-height-date-picker-inset-input-compact, 36px);
+    vertical-align: top;
+  }
+
   /* compact 下的 ScrollList（tpk 时间列 / yam 年月列）——照搬 Semi datePicker.scss
      `.semi-datepicker-compact .semi-scrolllist`：小尺寸不显示 header、li 高 32、
      去中间分割线（wheel 模式）。 */

@@ -314,10 +314,17 @@
       var(--cd-color-date-picker-border-bg-default);
     padding: var(--cd-spacing-date-picker-scrolllist-header-padding, 16px);
   }
-  /* header 只保留外层 padding：ScrollList 默认 title 还带 `16px 0`，两层叠加会让
-     header 从 Semi 的 57 撑到 86，挤掉列表可视高度（实测 body 215 vs Semi 267，列表被裁切）。 */
+  /* header 内部（照搬 Semi datePicker.scss 同一段 `-line` / `-header-title`）：
+     · line 隐藏——ScrollList 自带的分隔线在 datePicker 场景不显示（会压在标题下方成一条空白横线）；
+     · title padding 归零 + min-height/line-height 24——ScrollList 默认 title 带 `16px 0`，
+       两层 padding 叠加会让 header 从 Semi 的 57 撑到 86，挤掉列表可视高度。 */
+  :global(.cd-datepicker-tpk .cd-scrolllist-line) {
+    display: none;
+  }
   :global(.cd-datepicker-tpk .cd-scrolllist-header-title) {
     padding: 0;
+    min-height: var(--cd-height-date-picker-timepicker-header-min, 24px);
+    line-height: var(--cd-height-date-picker-timepicker-header-min, 24px);
   }
   /* 列居中留白 = (body - item) * 0.5（对齐 Semi）。body 由面板高推出：
      yamShowing_min(378) - switch(54) - scrolllist header(57) = 267（与 Semi 实测一致）。 */

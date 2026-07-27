@@ -156,6 +156,34 @@
 {/if}
 
 <style>
+  /* 年月面板顶栏 —— 照搬 Semi datePicker.scss `-yearmonth-header`（115-122）：
+     paddingY/X + 底边框 + 上圆角 + flex 居中。 */
+  :global(.cd-datepicker-yearmonth-header) {
+    display: flex;
+    align-items: center;
+    padding: var(--cd-spacing-date-picker-yam-header-padding-y, 12px)
+      var(--cd-spacing-date-picker-yam-header-padding-x, 16px);
+    border-bottom: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+    border-radius: var(--cd-width-date-picker-yam-header-border-radius, 6px)
+      var(--cd-width-date-picker-yam-header-border-radius, 6px) 0 0;
+  }
+
+  /* yam 面板的 ScrollList —— 照搬 Semi datePicker.scss（192-215）：
+     无阴影 + 固定高 266 + 列项最小宽 64（wheel 模式额外加 outer paddingRight 抹平差异）+ body padding 0。 */
+  :global(.cd-datepicker-yam .cd-scrolllist),
+  :global(.cd-datepicker-yearmonth-panel .cd-scrolllist) {
+    box-shadow: none;
+    height: var(--cd-height-date-picker-panel-yam-scrolllist, 266px);
+  }
+  :global(.cd-datepicker-yearmonth-panel .cd-scrolllist-list-outer > ul > li) {
+    min-width: var(--cd-width-date-picker-panel-yam-scrolllist-li-min, 64px);
+  }
+  :global(.cd-datepicker-yearmonth-panel .cd-scrolllist-body) {
+    padding: 0;
+    overflow: hidden;
+  }
+
   /* monthRange 双面板横排（照搬 Semi datePicker.scss
      `.semi-datepicker-panel-yam .semi-datepicker-yearmonth-body { display: flex }`
      + 第 2 个 scrolllist 左分隔线）。缺此样式两个面板会块级堆叠成上下排列。 */

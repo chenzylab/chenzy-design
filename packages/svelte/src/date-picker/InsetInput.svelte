@@ -111,10 +111,11 @@
     flex-wrap: nowrap;
     justify-content: space-between;
     box-sizing: border-box;
-    column-gap: var(--cd-spacing-tight, 8px);
-    padding: 12px 16px;
-    padding-bottom: 0;
-    width: 284px;
+    column-gap: var(--cd-spacing-date-picker-inset-input-wrapper-margin, 8px);
+    padding: var(--cd-spacing-date-picker-inset-input-wrapper-padding-y, 12px)
+      var(--cd-spacing-date-picker-inset-input-wrapper-padding-x, 16px);
+    padding-bottom: var(--cd-spacing-date-picker-inset-input-wrapper-padding-bottom, 0);
+    width: var(--cd-width-date-picker-inset-input-date-type-wrapper, 284px);
   }
   :global(.cd-datepicker-inset-input-wrapper[x-type='dateRange']),
   :global(.cd-datepicker-inset-input-wrapper[x-type='dateTimeRange']) {
@@ -135,9 +136,9 @@
   :global(.cd-datepicker-inset-input-separator) {
     flex-grow: 0;
     flex-shrink: 0;
-    height: 32px;
-    line-height: 32px;
-    padding: 0 4px;
+    height: var(--cd-height-date-picker-range-input-default, 32px);
+    line-height: var(--cd-height-date-picker-range-input-default, 32px);
+    padding: 0 var(--cd-spacing-date-picker-inset-input-separator-padding-x, 4px);
     color: var(--cd-color-text-3);
   }
 </style>

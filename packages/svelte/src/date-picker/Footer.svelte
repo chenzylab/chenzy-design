@@ -33,3 +33,18 @@
     {loc().t('DatePicker.footer.confirm')}
   </Button>
 </div>
+
+<style>
+  /* needConfirm 底栏 —— 照搬 Semi datePicker.scss `-footer`（228-245）：
+     右对齐 + paddingTop/Right/Bottom + fill-0 背景 + 取消按钮右间距。 */
+  :global(.cd-datepicker-footer) {
+    text-align: right;
+    padding-top: var(--cd-spacing-date-picker-footer-padding-top, 10px);
+    padding-right: var(--cd-spacing-date-picker-footer-padding-right, 8px);
+    padding-bottom: var(--cd-spacing-date-picker-footer-padding-bottom, 10px);
+    background-color: var(--cd-color-date-picker-footer-bg-default, var(--cd-color-fill-0));
+  }
+  :global(.cd-datepicker-footer .cd-button:first-of-type) {
+    margin-right: var(--cd-spacing-date-picker-footer-cancel-button-margin-right, 12px);
+  }
+</style>

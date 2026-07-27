@@ -228,10 +228,11 @@
     align-items: center;
     box-sizing: border-box;
     border-radius: var(--cd-radius-small, 3px);
-    height: 32px;
+    height: var(--cd-height-date-picker-range-input-default, 32px);
     color: var(--cd-color-text-2);
-    background-color: var(--cd-color-fill-0);
-    border: 0 solid transparent;
+    background-color: var(--cd-color-date-picker-range-input-bg-default, var(--cd-color-fill-0));
+    border: 0 solid var(--cd-color-date-picker-range-input-border-default, transparent);
+    transition: var(--cd-transition-date-picker-range-input, background-color 0.16s ease-in-out);
   }
   /* start/end wrapper：撑满、透明底、paddingX 8、聚焦端 -active 高亮（滑块效果）。 */
   :global(.cd-datepicker-range-input-wrapper) {
@@ -243,11 +244,11 @@
     align-items: center;
     flex: 1;
     /* 实测 Semi range wrapper 是 1px solid transparent（聚焦时换主色），非 focus-border 2px。 */
-    border: 1px solid transparent;
-    border-radius: var(--cd-radius-small, 3px);
+    border: 1px solid var(--cd-color-date-picker-range-input-border-default, transparent);
+    border-radius: var(--cd-radius-date-picker-range-input-input-wrapper, var(--cd-radius-small, 3px));
   }
   :global(.cd-datepicker-range-input-wrapper:hover) {
-    background-color: var(--cd-color-fill-1);
+    background-color: var(--cd-color-date-picker-range-input-bg-hover, var(--cd-color-fill-1));
   }
   :global(.cd-datepicker-range-input-wrapper-start) {
     border-top-right-radius: 0;
@@ -258,8 +259,8 @@
   }
   /* 聚焦端 wrapper：focus 边框 + fill-1 底（对齐 Semi -active）。 */
   :global(.cd-datepicker-range-input-wrapper-active) {
-    border-color: var(--cd-color-focus-border, var(--cd-color-primary));
-    background-color: var(--cd-color-fill-1);
+    border-color: var(--cd-color-date-picker-range-input-border-active, var(--cd-color-focus-border, var(--cd-color-primary)));
+    background-color: var(--cd-color-date-picker-range-input-input-wrapper-bg-focus, var(--cd-color-fill-1));
   }
   /* 内嵌 Input 透明无边框（对齐 Semi `.semi-input-wrapper { bg transparent; border none }`）。 */
   :global(.cd-datepicker-range-input-wrapper .cd-input-wrapper) {
@@ -306,7 +307,8 @@
   /* hover 整体（对齐 Semi `&-input:hover` bg fill-1 via wrapper）。 */
   :global(.cd-datepicker-range-input-disabled) {
     cursor: not-allowed;
-    color: var(--cd-color-disabled-text);
+    color: var(--cd-color-date-picker-range-input-disabled-text-default, var(--cd-color-disabled-text));
+    background-color: var(--cd-color-date-picker-range-input-disabled-bg-default, var(--cd-color-disabled-fill));
   }
   /* range prefix / insetLabel（对齐 Semi -range-input-prefix）。 */
   :global(.cd-datepicker-range-input-prefix) {
