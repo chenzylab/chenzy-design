@@ -230,10 +230,17 @@ export function computePosition(input: ComputePositionInput): ComputePositionRes
   let x: number;
   let y: number;
   if (over) {
-    // Overlay mode: align both of the popup's leading edges with the trigger's
-    // own, pulled back by `offset` — the popup covers the trigger instead of
-    // sitting beside it. Clamped to the viewport on both axes.
-    x = clamp(triggerRect.x - offset, padding, viewport.width - popupRect.width - padding);
+    // Overlay mode: the popup covers the trigger instead of sitting beside it.
+    // Vertically the top edges align (pulled up by `offset`) for both sides.
+    // Horizontally the anchored edge follows the side, mirroring Semi:
+    //   leftTopOver  → left  = triggerRect.left  - SPACING  (left edges align)
+    //   rightTopOver → right = triggerRect.right + SPACING  (right edges align,
+    //                          Semi expresses this as translateX = -1)
+    const rawX =
+      side === 'right'
+        ? triggerRect.x + triggerRect.width + offset - popupRect.width
+        : triggerRect.x - offset;
+    x = clamp(rawX, padding, viewport.width - popupRect.width - padding);
     y = clamp(triggerRect.y - offset, padding, viewport.height - popupRect.height - padding);
   } else if (isVerticalSide(side)) {
     y = mainAxisCoord(side, triggerRect, popupRect, offset);

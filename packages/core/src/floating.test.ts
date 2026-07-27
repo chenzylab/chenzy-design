@@ -229,3 +229,19 @@ describe('computePosition over (Semi …Over overlay positions)', () => {
     expect(explicitFalse).toEqual(withFlag);
   });
 });
+
+describe('computePosition over — rightTopOver 右缘锚定（对齐 Semi translateX=-1）', () => {
+  it('right 侧覆盖时右缘与触发器右缘对齐', () => {
+    const r = computePosition({ ...base, placement: 'rightStart', over: true, offset: 1 });
+    // Semi: right = triggerRect.right + SPACING → x = 200+100+1-80 = 221
+    expect(r.x).toBe(221);
+    // 纵向仍是顶缘对齐回退 offset
+    expect(r.y).toBe(199);
+  });
+
+  it('left 与 right 覆盖的横向锚定边不同', () => {
+    const l = computePosition({ ...base, placement: 'leftStart', over: true, offset: 1 });
+    const rr = computePosition({ ...base, placement: 'rightStart', over: true, offset: 1 });
+    expect(l.x).not.toBe(rr.x);
+  });
+});
