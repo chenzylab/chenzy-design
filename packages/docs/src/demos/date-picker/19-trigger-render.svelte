@@ -20,7 +20,7 @@
   }
 </script>
 
-<DatePicker {onChange} value={date} format="YYYY-MM-DD">
+<DatePicker {onChange} value={date} format="yyyy-MM-dd">
   {#snippet triggerRender({ placeholder })}
     <Button theme="light" iconPosition="right">
       {#snippet icon()}

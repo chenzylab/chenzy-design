@@ -1,18 +1,18 @@
 /**
- * DatePickerNext 装配测试（里程碑3：基本 date 单面板）。
+ * DatePicker 装配测试（里程碑3：基本 date 单面板）。
  * 断言：combobox 触发器（复用 Input）、点击打开 Popover 面板（Navigation+Month）、
  * 点日期回调 onChange + 关闭、受控 value 回显、defaultOpen 直接展开。
  */
 import { describe, it, expect, vi } from 'vitest';
 import { tick } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
-import DatePickerNext from './DatePickerNext.svelte';
+import DatePicker from './DatePicker.svelte';
 
 const PREFIX = 'cd-datepicker';
 
-describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
+describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
   it('关闭态：combobox 触发器 + 复用 Input，无 axe violations', async () => {
-    const { container } = renderWithLocale(DatePickerNext, {
+    const { container } = renderWithLocale(DatePicker, {
       props: { type: 'date' },
     });
     const combobox = container.querySelector('[role="combobox"]');
@@ -24,7 +24,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('defaultOpen：面板 portal 到 body，含 Navigation + Month grid', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'date', defaultOpen: true },
     });
     await tick();
@@ -38,7 +38,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('点击日期触发 onChange（dateString 在前）并关闭面板', async () => {
     const onChange = vi.fn<(a: unknown, b: unknown) => void>();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'date', defaultOpen: true, defaultPickerValue: new Date(2026, 0, 1), onChange },
     });
     await tick();
@@ -52,7 +52,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('受控 value 回显到触发器 Input', async () => {
-    const { container } = renderWithLocale(DatePickerNext, {
+    const { container } = renderWithLocale(DatePicker, {
       props: { type: 'date', value: new Date(2026, 2, 20) },
     });
     await tick();
@@ -61,7 +61,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('dateRange：defaultOpen 双面板 + 受控 value 反解 selected-start/end', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'dateRange',
         defaultOpen: true,
@@ -78,7 +78,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('dateRange：点两日期触发 onChange（两端完整才通知）', async () => {
     const onChange = vi.fn();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'dateRange',
         defaultOpen: true,
@@ -104,7 +104,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('month：面板走 YearAndMonth 滚轮（非日历），无 Month grid', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'month', defaultOpen: true, value: new Date(2026, 5, 1) },
     });
     await tick();
@@ -117,7 +117,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('month：选年月触发 onChange（Date 为该月首日）', async () => {
     const onChange = vi.fn();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'month', defaultOpen: true, value: new Date(2026, 5, 1), onChange },
     });
     await tick();
@@ -133,7 +133,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('presets：面板渲染 QuickControl（默认 bottom），点 preset 触发 onChange + 关面板', async () => {
     const onChange = vi.fn();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'date',
         defaultOpen: true,
@@ -152,7 +152,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('presetPosition=left：QuickControl 带 left class', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'date',
         defaultOpen: true,
@@ -166,7 +166,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('dateRange preset：点 [start,end] 触发 onChange（string[]）', async () => {
     const onChange = vi.fn();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'dateRange',
         defaultOpen: true,
@@ -185,7 +185,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('insetInput：面板顶部渲染 InsetInput 输入框', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'date', defaultOpen: true, insetInput: true },
     });
     await tick();
@@ -197,7 +197,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
 
   it('insetInput：输入日期串 → onChange 提交', async () => {
     const onChange = vi.fn();
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'date', defaultOpen: true, insetInput: true, onChange },
     });
     await tick();
@@ -212,7 +212,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('dateTimeRange insetInput：4 输入框（左右各 date+time）', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: { type: 'dateTimeRange', defaultOpen: true, insetInput: true },
     });
     await tick();
@@ -222,7 +222,7 @@ describe('DatePickerNext 装配对齐 Semi（date 单面板）', () => {
   });
 
   it('monthRange：面板双列 YearAndMonth（left+right）', async () => {
-    renderWithLocale(DatePickerNext, {
+    renderWithLocale(DatePicker, {
       props: {
         type: 'monthRange',
         defaultOpen: true,

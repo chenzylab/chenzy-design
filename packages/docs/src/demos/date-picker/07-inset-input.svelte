@@ -34,5 +34,5 @@
   <DatePicker type="date" position="bottomLeft" insetInput />
   <br />
   <br />
-  <DatePicker type="dateTime" format="YYYY-MM-DD HH:mm" insetInput />
+  <DatePicker type="dateTime" format="yyyy-MM-dd HH:mm" insetInput />
 </div>

@@ -27,20 +27,19 @@
   import type { Placement } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
-  import { IconClock } from '@chenzy-design/icons';
-  import Input from '../input/Input.svelte';
   import Combobox from './Combobox.svelte';
+  import TimeInput from './TimeInput.svelte';
 
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
 
-  /** 单选入参：Date 或时间字符串（如 '12:30:45'）。 */
-  type TimeInput = Date | string | null;
+  /** 单选入参：Date 或时间字符串（如 '12:30:45'）。（命名避开 TimeInput 组件 import） */
+  type TimeInputValue = Date | string | null;
 
   interface Props {
     /** 单选时 Date|string；范围时 [start, end]（各自 Date|string）。 */
-    value?: TimeInput | [TimeInput, TimeInput] | null;
-    defaultValue?: TimeInput | [TimeInput, TimeInput] | null;
+    value?: TimeInputValue | [TimeInputValue, TimeInputValue] | null;
+    defaultValue?: TimeInputValue | [TimeInputValue, TimeInputValue] | null;
     /** 'time' 单选（默认）/ 'timeRange' 范围选择。对齐 Semi type。 */
     type?: 'time' | 'timeRange';
     open?: boolean;
@@ -219,7 +218,7 @@
   const effUse12Hours = $derived(use12Hours || formatSpec.use12Hours);
 
   // --- 字符串/Date 入参归一化为 Date|null（字符串经 core parseTimeString）---
-  function toDate(input: TimeInput): Date | null {
+  function toDate(input: TimeInputValue): Date | null {
     if (input == null) return null;
     if (input instanceof Date) return input;
     const parts = parseTimeString(input);
@@ -238,7 +237,7 @@
 
   function toPair(input: Props['value']): Pair {
     if (Array.isArray(input)) return [toDate(input[0] ?? null), toDate(input[1] ?? null)];
-    return [toDate((input ?? null) as TimeInput), null];
+    return [toDate((input ?? null) as TimeInputValue), null];
   }
 
   const isValueControlled = $derived(value !== undefined);
@@ -435,7 +434,7 @@
 
   // --- useDismiss（红线 #3）：绑定放进 $effect，open 时绑、cleanup 解绑 ---
   let rootEl = $state<HTMLDivElement | null>(null);
-  let inputComp = $state<{ focus: () => void; blur: () => void } | null>(null);
+  let triggerComp = $state<{ focus: () => void; blur: () => void } | null>(null);
   let panelEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
@@ -461,22 +460,22 @@
 
   // autoFocus: 挂载时自动聚焦触发器
   $effect(() => {
-    if (autoFocus && inputComp) inputComp.focus();
+    if (autoFocus && triggerComp) triggerComp.focus();
   });
 
   // focusOnOpen: 打开面板时聚焦触发器
   $effect(() => {
-    if (isOpen && focusOnOpen && inputComp) inputComp.focus();
+    if (isOpen && focusOnOpen && triggerComp) triggerComp.focus();
   });
 
   /** 命令式聚焦触发器（对齐 Semi focus()）。 */
   export function focus(): void {
-    inputComp?.focus();
+    triggerComp?.focus();
   }
 
   /** 命令式移除焦点（对齐 Semi blur()）。 */
   export function blur(): void {
-    inputComp?.blur();
+    triggerComp?.blur();
   }
 
   function isSnippet(v: unknown): v is Snippet {
@@ -500,7 +499,7 @@
     ...(ariaDescribedby !== undefined ? { ariaDescribedby } : {}),
     ...(ariaErrormessage !== undefined ? { ariaErrormessage } : {}),
     ...(ariaRequired !== undefined ? { ariaRequired } : {}),
-    ...(onFocus !== undefined ? { onFocus } : {}),
+    // onFocus 不在此：由 TimeInput 经 foundation.handleFocus → 回调独立 onFocus prop（避免双重绑定）。
   });
 
   const popupStyleStr = $derived.by(() => {
@@ -567,7 +566,7 @@
   data-position={position}
 >
   {#if triggerRender}
-    <!-- 自定义触发器：完全替换默认 Input + 图标区域 -->
+    <!-- 自定义触发器：完全替换默认 Input + 图标区域（需父层 value=Date 等数据，故留在 TimePicker 层，不进 TimeInput）。 -->
     <div
       class="cd-time-picker__control"
       onclick={toggleOpen}
@@ -580,35 +579,28 @@
       {@render triggerRender({ value: current, placeholder: placeholderText, open: isOpen, disabled })}
     </div>
   {:else}
-    <!-- 触发器复用 Input（镜像 Semi TimeInput：<Input hideSuffix suffix={IconClock}>）：可键入时间串 -->
-    <div class="cd-time-picker__control" onclick={toggleOpen} role="presentation">
-      <Input
-        bind:this={inputComp}
-        class="cd-time-picker__input"
-        value={inputValue}
-        placeholder={placeholderText}
-        {size}
-        {disabled}
-        {borderless}
-        validateStatus={invalid ? 'error' : validateStatus}
-        {showClear}
-        readonly={inputReadOnly}
-        hideSuffix
-        role="combobox"
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        aria-controls={baseId}
-        {...inputOptionalProps}
-        onChange={onInputChange}
-        onClear={clear}
-        onBlur={onInputBlur}
-        onKeyDown={onInputKeydown}
-      >
-        {#snippet suffix()}
-          <span class="cd-time-picker__icon" aria-hidden="true"><IconClock /></span>
-        {/snippet}
-      </Input>
-    </div>
+    <!-- 默认触发器：拆分为 TimeInput（对齐 Semi timePicker/TimeInput.tsx，消费 inputFoundation 光标恢复）。 -->
+    <TimeInput
+      bind:this={triggerComp}
+      value={inputValue}
+      placeholder={placeholderText}
+      {size}
+      {disabled}
+      {borderless}
+      {validateStatus}
+      {invalid}
+      {showClear}
+      readonly={inputReadOnly}
+      ariaControls={baseId}
+      expanded={isOpen}
+      {inputOptionalProps}
+      onChange={onInputChange}
+      onClear={clear}
+      onFocus={onFocus}
+      onBlur={onInputBlur}
+      onKeydown={onInputKeydown}
+      onClick={toggleOpen}
+    />
   {/if}
 
   {#if hasOpened && rootEl}
@@ -681,20 +673,6 @@
     display: inline-flex;
     inline-size: 100%;
     font-size: var(--cd-font-size-regular);
-  }
-  .cd-time-picker__control {
-    position: relative;
-    inline-size: 100%;
-  }
-  /* 触发器输入框圆角对齐 Semi $radius-timePicker_input。 */
-  .cd-time-picker :global(.cd-time-picker__input) {
-    border-radius: var(--cd-radius-time-picker-input);
-  }
-  .cd-time-picker__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--cd-color-text-2);
   }
 
   /* --- 面板容器（对齐 Semi timePicker.scss：range 面板走 timePicker 专属 shadow/border/radius，
