@@ -582,4 +582,39 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     });
     expect(document.querySelectorAll('.cd-datepicker-tpk').length, '双 tpk').toBe(2);
   });
+
+  it('insetInput 打开面板：焦点落内嵌输入框 + 触发器禁用，关闭后恢复（对齐 Semi）', async () => {
+    // 对齐 Semi handlePanelVisibleChange：visible 时 setInsetInputFocus() +
+    // setTimeout(setTriggerDisabled(true))，关闭时 setTriggerDisabled(false)。
+    // 触发器 disabled 后光标才会自然留在面板内嵌输入框（Semi datePicker.tsx:460 注释）。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: { type: 'date', insetInput: true },
+    }) as unknown as { open(): void; close(): void };
+    await tick();
+
+    api.open();
+    await tick();
+    // 聚焦走 queueMicrotask、禁用走 setTimeout(0)，等两拍
+    await new Promise((r) => setTimeout(r, 20));
+    const insetInput = document.querySelector(
+      '.cd-datepicker-inset-input-wrapper input',
+    ) as HTMLInputElement;
+    expect(insetInput, '应渲染内嵌输入框').not.toBeNull();
+    expect(document.activeElement, '焦点应落在内嵌输入框').toBe(insetInput);
+    const trigger = target.querySelector('input') as HTMLInputElement;
+    expect(trigger.disabled, '打开后触发器应禁用').toBe(true);
+
+    api.close();
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      (target.querySelector('input') as HTMLInputElement).disabled,
+      '关闭后触发器应恢复',
+    ).toBe(false);
+    unmount(api as never);
+    target.remove();
+  });
 });

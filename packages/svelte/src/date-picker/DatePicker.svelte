@@ -395,6 +395,11 @@
   // 手动输入态（对齐 Semi inputValue）：正在编辑时 inputValue 非 null，展示以它为准；
   // 提交/关闭后回 null，展示回落 formattedValue/rangeTriggerValue。inset 时强制只读（对齐 Semi）。
   const effectiveReadOnly = $derived(inputReadOnly || insetInput);
+  // insetInput 打开面板后禁用触发器（对齐 Semi handlePanelVisibleChange + inputDisabled =
+  // `disabled || insetInput && triggerDisabled`）：触发器 disabled 后光标自然留在面板内嵌输入框，
+  // 用户可直接键入日期；关闭时恢复。
+  let triggerDisabled = $state(false);
+  const effectiveDisabled = $derived(disabled || (insetInput && triggerDisabled));
   let inputValue = $state<string | null>(null);
   // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
   let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
@@ -445,6 +450,23 @@
       // 关闭面板即清 range 聚焦端（对齐 Semi close → resetInnerSelectedStates → resetFocus）。
       // 漏掉会让触发器起/止框的 -active 高亮在失焦后一直留着。
       if (st.isRange) rangeInputFocus = false;
+      // insetInput：关闭时恢复触发器可用（对齐 Semi handlePanelVisibleChange 的 else 分支）。
+      triggerDisabled = false;
+    }
+    // insetInput 打开：聚焦面板内嵌输入框 + 下一帧禁用触发器
+    //（照搬 Semi handlePanelVisibleChange：setInsetInputFocus() 后 setTimeout 里 setTriggerDisabled(true)，
+    // 延后是为了让聚焦先落定——先禁用会让触发器抢在聚焦前失焦到 body）。
+    if (!prevOpen && nowOpen && insetInput) {
+      queueMicrotask(() => {
+        // 浮层 portal 到 body，故全局查询（同一时刻只会有本组件的面板处于刚打开态）。
+        const first = document.querySelector<HTMLInputElement>(
+          '.cd-datepicker-inset-input-wrapper input',
+        );
+        first?.focus({ preventScroll });
+        setTimeout(() => {
+          triggerDisabled = true;
+        }, 0);
+      });
     }
     prevOpen = nowOpen;
   });
@@ -835,7 +857,7 @@
         placeholder={phText}
         startPlaceholder={phStart}
         endPlaceholder={phEnd}
-        {disabled}
+        disabled={effectiveDisabled}
         {showClear}
         inputReadOnly={effectiveReadOnly}
         {size}
