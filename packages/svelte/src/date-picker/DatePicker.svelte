@@ -373,8 +373,14 @@
   const rangeEndDisplay = $derived(
     st.isRange && st.currentRange[1] ? dateFnsFormat(st.currentRange[1]!, displayToken) : '',
   );
+  // 两端都为空时必须回空串，**不能返回裸分隔符** —— 对齐 Semi formatText
+  // （dateInput.tsx:131 `value && value.length ? formatShowText(value) : ''`）。
+  // 双框 range 触发器下裸分隔符看不出来（分隔符本就是独立元素），但 monthRange 走单框，
+  // 裸 ' ~ ' 会成为 input 的 value 顶掉 placeholder，触发器只显示一个「~」。
   const rangeTriggerValue = $derived(
-    st.isRange ? `${rangeStartDisplay}${rangeSep}${rangeEndDisplay}` : '',
+    st.isRange && (rangeStartDisplay || rangeEndDisplay)
+      ? `${rangeStartDisplay}${rangeSep}${rangeEndDisplay}`
+      : '',
   );
   // range 端聚焦（对齐 Semi handleRangeInputFocus）：更新 rangeInputFocus + 打开面板。
   function handleRangeFocus(_e: Event, rangeType: 'rangeStart' | 'rangeEnd') {

@@ -728,6 +728,20 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     }
   });
 
+  it('range 触发器无值时 value 为空串而非裸分隔符（对齐 Semi formatText）', async () => {
+    // Semi dateInput.tsx:131 `value && value.length ? formatShowText(value) : ''`。
+    // 回归：本库无值时曾拼出 ' ~ '，双框下看不出来（分隔符是独立元素），
+    // 但 monthRange 走单框时该串会成为 input 的 value 顶掉 placeholder，
+    // 触发器只显示一个「~」。
+    for (const type of ['monthRange', 'dateRange', 'dateTimeRange']) {
+      const { container, unmount } = renderWithLocale(DatePicker, { props: { type } });
+      await tick();
+      const vals = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value);
+      expect(vals.every((v) => v === ''), `${type} 无值时所有 input 应为空串`).toBe(true);
+      unmount();
+    }
+  });
+
   it('触发器 monthRange：未传 placeholder 时用 locale 两端拼串（对齐 Semi）', async () => {
     // Semi dateInput.tsx:459：placeholder 为数组时 `[0] + rangeSeparator + [1]`。
     // 本库 locale 的 monthRange 是 ['开始月份','结束月份']，单框下应拼成一条。
