@@ -149,9 +149,11 @@
   {@const detail = panelDetail(panelType)}
   <div
     class={`${PREFIX}-month-grid-${panelType}${
-      // 非 range 且 tpk/yam 打开时加 -yam-showing（对齐 Semi monthsGrid.tsx）：
-      // 日历被卸载后容器会塌到内容宽，靠这个类的 min-width/height 撑住面板尺寸。
-      !isRange && (detail.isTimePickerOpen || detail.isYearPickerOpen) ? ` ${PREFIX}-yam-showing` : ''
+      // tpk/yam 打开时加 -yam-showing：日历被卸载后容器会塌（单面板塌到内容宽 180、
+      // range 两侧都切 time 时更会塌到高 53），靠这个类的 min-width/height 撑住。
+      // 对齐 Semi monthsGrid.tsx 的 style.minWidth/minHeight —— Semi 用缓存的日历实测尺寸，
+      // 本库用等价常量（单侧日历宽 = day 36×7 + month padding 16×2 = 284，与 yamShowing_min 同值）。
+      detail.isTimePickerOpen || detail.isYearPickerOpen ? ` ${PREFIX}-yam-showing` : ''
     }`}
     {...{ 'x-open-type': detail.isTimePickerOpen ? 'time' : detail.isYearPickerOpen ? 'year' : 'date' }}
   >

@@ -562,4 +562,24 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       expect(li, `第 ${i} 列 li=${li}，应 >= 基准 ${base[i]} × 3`).toBeGreaterThanOrEqual(base[i]! * 3);
     });
   });
+
+  it('dateTimeRange 两侧同时切时间视图：双 tpk 都带 -yam-showing（不塌高）', async () => {
+    // 回归：-yam-showing 原限定 !isRange，range 两侧都切 time 后日历全被卸载，
+    // 容器塌到高 53px、tpk 高 0，时间列虽渲染但不可见（真机表现：面板成一条）。
+    renderWithLocale(DatePicker, { props: { type: 'dateTimeRange', defaultOpen: true } });
+    await tick();
+    const switches = [...document.querySelectorAll('.cd-datepicker-switch-time')] as HTMLElement[];
+    expect(switches.length, 'range 应有左右两个时间切换').toBe(2);
+    switches[0]!.click();
+    await tick();
+    switches[1]!.click();
+    await tick();
+    const grids = [...document.querySelectorAll('[class*="cd-datepicker-month-grid-"]')];
+    expect(grids.length).toBe(2);
+    grids.forEach((g, i) => {
+      expect(g.getAttribute('x-open-type'), `第 ${i} 侧应为 time`).toBe('time');
+      expect(g.className, `第 ${i} 侧应带 -yam-showing 撑住尺寸`).toMatch(/yam-showing/);
+    });
+    expect(document.querySelectorAll('.cd-datepicker-tpk').length, '双 tpk').toBe(2);
+  });
 });
