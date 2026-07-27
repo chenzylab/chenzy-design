@@ -90,7 +90,11 @@
   const prefixCls = cssClasses.PREFIX;
   // dateTime 系用 CalendarClock，其余用 Calendar（对齐 Semi suffix 选择）。
   const isTimeType = $derived(type.includes('Time'));
-  const isRange = $derived(type.includes('Range'));
+  // 是否渲染双框 range 触发器 —— 照搬 Semi dateInput.tsx `isRenderMultipleInputs()`：
+  // `type.includes('Range') && type !== 'monthRange'`（原注释 "isRange and not monthRange
+  // render multiple inputs"）。**monthRange 走单框**，整段区间显示在一个 Input 里，
+  // placeholder 由两端用 rangeSeparator 拼成（dateInput.tsx:459）。
+  const isRange = $derived(type.includes('Range') && type !== 'monthRange');
   // 只读态 class（对齐 Semi -input-readonly）。
   const inputCls = $derived(inputReadOnly ? `${prefixCls}-input-readonly` : '');
 

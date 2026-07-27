@@ -239,7 +239,9 @@
     prefix,
     clearIcon,
     inputStyle,
-    rangeSeparator,
+    // 默认 ' ~ '（对齐 Semi rangeSeparator 默认值）。原先无默认，靠各子组件自己的
+    // 默认值兜底，顶层直接使用时会拿到 undefined。
+    rangeSeparator = ' ~ ',
     topSlot,
     bottomSlot,
     leftSlot,
@@ -502,9 +504,20 @@
         ? localePh.dateTimeRange
         : localePh.dateRange,
   );
-  const phText = $derived(
-    Array.isArray(placeholder) ? (placeholder[0] ?? phDefault) : (placeholder ?? phDefault),
-  );
+  // 单框 placeholder（date/dateTime/month，以及**单框的 monthRange**）。
+  // monthRange 走单框（对齐 Semi isRenderMultipleInputs），其 placeholder 规则见
+  // dateInput.tsx:459：placeholder 为数组时用 `[0] + rangeSeparator + [1]` 拼成一条，
+  // 否则原样使用；未传 placeholder 时回落 locale 的 monthRange 两端拼串。
+  const phText = $derived.by(() => {
+    if (type === 'monthRange') {
+      if (Array.isArray(placeholder)) {
+        return `${placeholder[0] ?? ''}${rangeSeparator}${placeholder[1] ?? ''}`;
+      }
+      if (placeholder !== undefined) return placeholder;
+      return `${phRangeDefault[0] ?? ''}${rangeSeparator}${phRangeDefault[1] ?? ''}`;
+    }
+    return Array.isArray(placeholder) ? (placeholder[0] ?? phDefault) : (placeholder ?? phDefault);
+  });
   const phStart = $derived(
     Array.isArray(placeholder) ? (placeholder[0] ?? phRangeDefault[0]) : (placeholder ?? phRangeDefault[0]),
   );

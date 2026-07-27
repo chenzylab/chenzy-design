@@ -268,7 +268,8 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       ['dateTime', ['Select date and time']],
       ['dateRange', ['Start date', 'End date']],
       ['dateTimeRange', ['Start date', 'End date']],
-      ['monthRange', ['Start month', 'End month']],
+      // monthRange 走**单框**（对齐 Semi isRenderMultipleInputs），placeholder 两端拼成一条
+      ['monthRange', ['Start month ~ End month']],
     ];
     for (const [type, expected] of cases) {
       const { container, unmount } = renderWithLocale(DatePicker, { props: { type } });
@@ -434,8 +435,10 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       props: { type: 'monthRange', value: [new Date(2026, 8, 1), new Date(2026, 11, 1)] },
     });
     await tick();
+    // monthRange 走单框（对齐 Semi isRenderMultipleInputs），整段区间在一个 input 里；
+    // 本条断言的重点仍是**格式**为 yyyy-MM 而非 yyyy-MM-dd。
     const values = [...container.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value);
-    expect(values).toEqual(['2026-09', '2026-12']);
+    expect(values).toEqual(['2026-09 ~ 2026-12']);
   });
 
   it('range 触发器展示串：用户传 format 时以其为准', async () => {
@@ -703,6 +706,38 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       unmount(api as never);
       target.remove();
     }
+  });
+
+  it('触发器：monthRange 是单框，其余 range 才双框（对齐 Semi isRenderMultipleInputs）', async () => {
+    // 同 isRenderMultipleInputs 契约，但作用在**触发器**上（Semi dateInput.tsx:446 分支）。
+    // 回归：本库 DateInput 的 isRange 原为 `type.includes('Range')`，把 monthRange 也渲染成
+    // 双框 + `~` 分隔符；Semi 是单框显示整段区间。
+    const cases: Array<{ type: string; rangeTrigger: boolean }> = [
+      { type: 'monthRange', rangeTrigger: false },
+      { type: 'dateRange', rangeTrigger: true },
+      { type: 'dateTimeRange', rangeTrigger: true },
+      { type: 'month', rangeTrigger: false },
+    ];
+    for (const c of cases) {
+      const { container } = renderWithLocale(DatePicker, { props: { type: c.type } });
+      await tick();
+      expect(
+        !!container.querySelector(`.${PREFIX}-range-input`),
+        `${c.type} 是否双框 range 触发器`,
+      ).toBe(c.rangeTrigger);
+    }
+  });
+
+  it('触发器 monthRange：未传 placeholder 时用 locale 两端拼串（对齐 Semi）', async () => {
+    // Semi dateInput.tsx:459：placeholder 为数组时 `[0] + rangeSeparator + [1]`。
+    // 本库 locale 的 monthRange 是 ['开始月份','结束月份']，单框下应拼成一条。
+    const { container } = renderWithLocale(DatePicker, {
+      locale: 'zh_CN',
+      props: { type: 'monthRange' },
+    });
+    await tick();
+    const input = container.querySelector('input');
+    expect(input?.placeholder, 'monthRange 单框应显示两端拼串').toBe('开始月份 ~ 结束月份');
   });
 
   it('insetInput monthRange：placeholder 是两端拼串（对齐 Semi）', async () => {
