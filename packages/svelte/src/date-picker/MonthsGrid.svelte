@@ -296,10 +296,22 @@
     flex: 1;
   }
   :global(.cd-datepicker-tpk .cd-scrolllist-body) {
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
     overflow: hidden;
     flex: 1;
+    /* datePicker 场景把 ScrollList 默认的 `0 16px` 归零（对齐 Semi datePicker.scss
+       `-body { padding: $spacing-datepicker_scrolllist_body-padding }` = 0）。
+       不归零会让 tpk 三列被挤窄（实测 216→179）。 */
+    padding: var(--cd-spacing-date-picker-scrolllist-body-padding, 0);
+  }
+  :global(.cd-datepicker-tpk .cd-scrolllist-header) {
+    box-sizing: border-box;
+    width: 100%;
+    border-bottom: var(--cd-width-date-picker-border, 1px) solid
+      var(--cd-color-date-picker-border-bg-default);
+    padding: var(--cd-spacing-date-picker-scrolllist-header-padding, 16px);
   }
   /* 列居中留白按 tpk body 高度重算（对齐 Semi：(body - item) * 0.5，body≈355-54-54≈247px）。 */
   :global(.cd-datepicker-tpk .cd-scrolllist-item > ul::before) {

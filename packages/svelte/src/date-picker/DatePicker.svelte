@@ -900,6 +900,45 @@
   :global(.cd-datepicker-compact .cd-datepicker-weekday-item) {
     line-height: 28px;
   }
+
+  /* compact 面板的保底宽高（照搬 Semi）：
+     · min-width  = `$width-datepicker_month_compact` = day-compact(28)×7 + weeks padding(10)×2 = 216
+       —— tpk/yam 是 position:absolute 覆盖层，盖住日历后容器会塌到内容宽（实测 128），靠它撑住；
+     · min-height = `$height-datepicker_tpk_compact`(256) + `$height-datepicker_switch_compact`(32)
+       —— 否则沿用默认 355，tpk 会按 355-54 撑到 301（Semi 是 256）。 */
+  :global(.cd-datepicker-compact .cd-datepicker-month-grid-left),
+  :global(.cd-datepicker-compact .cd-datepicker-month-grid-right) {
+    min-width: calc(
+      var(--cd-width-date-picker-day-compact, 28px) * 7 +
+        var(--cd-spacing-date-picker-weeks-compact-padding, 10px) * 2
+    );
+    min-height: calc(
+      var(--cd-height-date-picker-tpk-compact, 256px) +
+        var(--cd-height-date-picker-switch-compact, 32px)
+    );
+  }
+  /* 切换条与时间面板高度：compact 下 switch 32（默认 54），tpk 相应改 calc(100% - 32)。 */
+  :global(.cd-datepicker-compact .cd-datepicker-switch) {
+    height: var(--cd-height-date-picker-switch-compact, 32px);
+  }
+  :global(.cd-datepicker-compact .cd-datepicker-tpk) {
+    height: calc(100% - var(--cd-height-date-picker-switch-compact, 32px));
+  }
+
+  /* compact 下的 ScrollList（tpk 时间列 / yam 年月列）——照搬 Semi datePicker.scss
+     `.semi-datepicker-compact .semi-scrolllist`：小尺寸不显示 header、li 高 32、
+     去中间分割线（wheel 模式）。 */
+  :global(.cd-datepicker-compact .cd-scrolllist-header) {
+    /* 小尺寸空间较小，不显示 scrolllist header（Semi 原样注释）。 */
+    display: none;
+  }
+  :global(.cd-datepicker-compact .cd-scrolllist-list-outer > ul > li) {
+    height: var(--cd-height-date-picker-yam-li-compact, 32px);
+  }
+  :global(.cd-datepicker-compact .cd-scrolllist-item-wheel) {
+    /* 去除中间分割线（对齐 Semi）。 */
+    border-right: 0;
+  }
   /* 面板四向 slot 分割线（对齐 Semi datePicker.scss &-topSlot/-leftSlot/-rightSlot/-bottomSlot）。 */
   :global(.cd-datepicker-topSlot) {
     border-bottom: var(--cd-width-date-picker-border, 1px) solid
