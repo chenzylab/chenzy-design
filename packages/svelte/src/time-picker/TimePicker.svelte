@@ -33,13 +33,13 @@
   type Size = 'small' | 'default' | 'large';
   type ValidateStatus = 'default' | 'warning' | 'error';
 
-  /** 单选入参：Date 或时间字符串（如 '12:30:45'）。 */
-  type TimeInput = Date | string | null;
+  /** 单选入参：Date 或时间字符串（如 '12:30:45'）。（命名避开 TimeInput 组件 import） */
+  type TimeInputValue = Date | string | null;
 
   interface Props {
     /** 单选时 Date|string；范围时 [start, end]（各自 Date|string）。 */
-    value?: TimeInput | [TimeInput, TimeInput] | null;
-    defaultValue?: TimeInput | [TimeInput, TimeInput] | null;
+    value?: TimeInputValue | [TimeInputValue, TimeInputValue] | null;
+    defaultValue?: TimeInputValue | [TimeInputValue, TimeInputValue] | null;
     /** 'time' 单选（默认）/ 'timeRange' 范围选择。对齐 Semi type。 */
     type?: 'time' | 'timeRange';
     open?: boolean;
@@ -218,7 +218,7 @@
   const effUse12Hours = $derived(use12Hours || formatSpec.use12Hours);
 
   // --- 字符串/Date 入参归一化为 Date|null（字符串经 core parseTimeString）---
-  function toDate(input: TimeInput): Date | null {
+  function toDate(input: TimeInputValue): Date | null {
     if (input == null) return null;
     if (input instanceof Date) return input;
     const parts = parseTimeString(input);
@@ -237,7 +237,7 @@
 
   function toPair(input: Props['value']): Pair {
     if (Array.isArray(input)) return [toDate(input[0] ?? null), toDate(input[1] ?? null)];
-    return [toDate((input ?? null) as TimeInput), null];
+    return [toDate((input ?? null) as TimeInputValue), null];
   }
 
   const isValueControlled = $derived(value !== undefined);

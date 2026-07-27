@@ -33,18 +33,20 @@
     expanded?: boolean;
     /** 只在定义时透传给 Input 的可选属性（inputStyle/insetLabel/id/aria* 等，父组件按 exactOptionalPropertyTypes 组装）。 */
     inputOptionalProps?: Record<string, unknown>;
+    // 回调显式带 | undefined：父组件（TimePicker）传入的可选回调可能是 undefined，
+    // exactOptionalPropertyTypes:true 下必须让目标属性类型接受 undefined（对齐 memory exactOptional 修法）。
     /** 输入串变化（键入）。对齐 Semi TimeInput onChange。 */
-    onChange?: (v: string) => void;
+    onChange?: ((v: string) => void) | undefined;
     /** 触发器聚焦。对齐 Semi onFocus。 */
-    onFocus?: (e: FocusEvent) => void;
+    onFocus?: ((e: FocusEvent) => void) | undefined;
     /** 触发器失焦。对齐 Semi onBlur。 */
-    onBlur?: (e: FocusEvent) => void;
+    onBlur?: ((e: FocusEvent) => void) | undefined;
     /** 键盘（Enter/ArrowDown/Escape 由父组件处理开关面板与提交）。 */
-    onKeydown?: (e: KeyboardEvent) => void;
+    onKeydown?: ((e: KeyboardEvent) => void) | undefined;
     /** 清除。 */
-    onClear?: () => void;
+    onClear?: (() => void) | undefined;
     /** 点击触发器容器（切换面板开合）。对齐 Semi handleClick。 */
-    onClick?: () => void;
+    onClick?: (() => void) | undefined;
   }
 
   let {
@@ -118,10 +120,10 @@
     aria-controls={ariaControls}
     {...inputOptionalProps}
     onChange={(v) => foundation.handleChange(v)}
-    onClear={onClear}
+    onClear={() => onClear?.()}
     onFocus={(e) => foundation.handleFocus(e)}
     onBlur={(e) => foundation.handleBlur(e)}
-    onKeyDown={onKeydown}
+    onKeyDown={(e) => onKeydown?.(e)}
   >
     {#snippet suffix()}
       <span class="cd-time-picker__icon" aria-hidden="true"><IconClock /></span>
