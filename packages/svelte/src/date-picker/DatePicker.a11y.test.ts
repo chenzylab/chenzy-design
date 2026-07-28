@@ -648,6 +648,33 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('disabledDate 第二参 options 携带 rangeStart（对齐 Semi 动态禁用）', async () => {
+    // Semi 的 disabledDate(date, options) 第二参给 { rangeStart, rangeEnd, rangeInputFocus }，
+    // 「禁止选择早于已选起点的日期」这类动态禁用全靠它。
+    // 回归：MonthsGrid 曾用单参包装 `(d) => disabledDate(d)` 透传给 Month，
+    // **吞掉第二参** → 用户回调里 options.rangeStart 恒 undefined → 动态禁用整个失效。
+    const seen: Array<Record<string, unknown> | undefined> = [];
+    const disabledDate = (_d: Date, options?: Record<string, unknown>) => {
+      seen.push(options);
+      return false;
+    };
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateRange',
+        defaultOpen: true,
+        defaultValue: [new Date(2026, 6, 16), null],
+        disabledDate,
+      },
+    });
+    await tick();
+
+    expect(seen.length, 'disabledDate 应被调用').toBeGreaterThan(0);
+    expect(
+      seen.some((o) => o !== undefined && 'rangeStart' in o),
+      '第二参 options 必须携带 rangeStart（不可被单参包装吞掉）',
+    ).toBe(true);
+  });
+
   it('点 preset 后面板不关闭（对齐 Semi handlePresetClick 全程不碰 open）', async () => {
     // Semi foundation.ts:1069-1092 的 handlePresetClick 只做 handleSelectedChange
     // + notifyPresetsClick，**从不改 open 状态**；用户点完 preset 还能继续在面板里调时间。

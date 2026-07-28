@@ -129,11 +129,19 @@
     return code === 'zh-CN' || code === 'zh-TW' ? `${y}年 ${mText}` : `${y} ${mText}`;
   }
 
+  /**
+   * YearAndMonth 只按「年/月」判禁用，签名是 `(date) => boolean`，没有 range 上下文，
+   * 故单参包装。**Month 不能用它**——Semi 的 disabledDate 第二参 options 携带
+   * `{ rangeStart, rangeEnd, rangeInputFocus }`，动态禁用 demo
+   * （禁止选择早于已选起点的日期）全靠它。
+   */
   const disabledDateWrap = $derived(
     disabledDate ? (d: Date) => (disabledDate as (x: Date) => boolean)(d) : undefined,
   );
   const monthRest = $derived({
-    ...(disabledDateWrap ? { disabledDate: disabledDateWrap } : {}),
+    // 原样透传（不再经单参包装）：包装会吞掉 Month 传入的 disabledOptions，
+    // 用户回调里 options.rangeStart 恒 undefined → 动态禁用整个失效。
+    ...(disabledDate ? { disabledDate } : {}),
     ...(renderDate ? { renderDate } : {}),
     ...(renderFullDate ? { renderFullDate } : {}),
   });

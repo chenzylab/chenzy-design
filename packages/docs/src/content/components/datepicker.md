@@ -199,7 +199,7 @@ type=dateRange 或 dateTimeRange 时，只有开始日期和结束日期都被�
 
 传入 `disabledDate` 可以禁用指定日期，传入 `disabledTime` 可以禁用指定时间，配合 `defaultPickerValue` 可以指定面板打开时所处的年月。
 
-`disabledDate` 接受的入参为当前日期，返回一个 `boolean` 值；`disabledTime` 接受的入参为当前日期与面板类型 `panelType`，返回一个对象，将会透传给 TimePicker 组件。
+`disabledDate` 接受的入参为当前日期与 `options`，返回一个 `boolean` 值。range 类型下 `options` 携带 `{ rangeStart, rangeEnd, rangeInputFocus }`（日期串 + 当前聚焦端），可据此实现动态禁用——例如「禁止选择早于已选起点的日期」。`disabledTime` 接受的入参为当前日期与面板类型 `panelType`，返回一个对象，将会透传给 TimePicker 组件。
 
 <Notice type="primary" title="注意事项">
 

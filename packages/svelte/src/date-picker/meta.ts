@@ -17,7 +17,11 @@ export const meta = {
     { name: 'size', type: "'small'|'default'|'large'", default: "'default'" },
     { name: 'validateStatus', type: "'default'|'warning'|'error'", default: "'default'", desc: '校验态（对齐 Semi validateStatus）' },
     { name: 'disabled', type: 'boolean', default: 'false' },
-    { name: 'disabledDate', type: '(date: Date) => boolean', default: 'undefined' },
+    {
+      name: 'disabledDate',
+      type: '(date: Date, options?: { rangeStart: string; rangeEnd: string; rangeInputFocus: "rangeStart" | "rangeEnd" | false }) => boolean',
+      default: 'undefined',
+    },
     {
       name: 'disabledTime',
       type: '(date: Date) => { disabledHours?: () => number[]; disabledMinutes?: (hour: number) => number[]; disabledSeconds?: (hour: number, minute: number) => number[] }',
