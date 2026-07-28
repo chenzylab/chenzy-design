@@ -389,10 +389,28 @@
       ? `${rangeStartDisplay}${rangeSep}${rangeEndDisplay}`
       : '',
   );
+  /**
+   * 统一的聚焦端设置（对齐 Semi adapter.setRangeInputFocus）：
+   * 除改 rangeInputFocus 外，还**延后一拍**记 focusRecords。
+   * 两条路径都要走它：① 用户点触发器某一端 ② 面板内选完起点后 MonthsGrid 自动切到 rangeEnd。
+   * 早先只在 ① 里记，② 不记 → 面板内选起点后越界禁用不生效（真机看似正常是因为
+   * 用户通常先点过触发器，测试里直接 defaultOpen 点日期就暴露了）。
+   */
+  function setRangeInputFocus(f: 'rangeStart' | 'rangeEnd' | false): void {
+    rangeInputFocus = f;
+    if (f === false) return;
+    // **必须延后一拍**（照搬 Semi datePicker.tsx:340 的 setTimeout(…, 0) 与其注释）：
+    // 选完起点会同步走到 handleSelectedChange，若此刻 focusRecords 已置 true，
+    // 那里会误判两端都选完而提前关掉面板。
+    setTimeout(() => {
+      focusRecords[f] = true;
+    }, 0);
+  }
+
   // range 端聚焦（对齐 Semi handleRangeInputFocus）：更新 rangeInputFocus + 打开面板。
   function handleRangeFocus(_e: Event, rangeType: 'rangeStart' | 'rangeEnd') {
     if (disabled) return;
-    rangeInputFocus = rangeType;
+    setRangeInputFocus(rangeType);
     // 主动把焦点落到对应端的 input（照搬 Semi adapter.setRangeInputFocus：不只改 state，
     // 还 `inputNode.focus({ preventScroll })`）。漏掉则点 wrapper 空白处只亮 -active，
     // 焦点留在 body，用户无法接着键入日期。
@@ -477,6 +495,9 @@
       // 关闭面板即清 range 聚焦端（对齐 Semi close → resetInnerSelectedStates → resetFocus）。
       // 漏掉会让触发器起/止框的 -active 高亮在失焦后一直留着。
       if (st.isRange) rangeInputFocus = false;
+      // 关面板清零聚焦记录（对齐 Semi togglePanel 的 `if (!panelShow)` 分支）：
+      // 下次打开重新按用户实际聚焦顺序判定，否则上轮记录会让刚打开就禁用日期。
+      focusRecords = { rangeStart: false, rangeEnd: false };
       // insetInput：关闭时恢复触发器可用（对齐 Semi handlePanelVisibleChange 的 else 分支）。
       triggerDisabled = false;
     }
@@ -504,6 +525,16 @@
 
   // range 焦点端（双 Input 联动占位；单 Input 阶段用本地流转，对齐 Semi rangeInputFocus）。
   let rangeInputFocus = $state<'rangeStart' | 'rangeEnd' | false>(false);
+  /**
+   * 各端「本次开合内是否被聚焦过」（对齐 Semi focusRecordsRef）。
+   * Month 的禁用判定要它：只有用户真的切到某一端后，才禁用越界日期
+   * （聚焦 rangeEnd → 禁用早于 rangeStart 的；聚焦 rangeStart → 禁用晚于 rangeEnd 的）。
+   * 关面板时清零（对齐 Semi togglePanel 的 else 分支）。
+   */
+  let focusRecords = $state<{ rangeStart: boolean; rangeEnd: boolean }>({
+    rangeStart: false,
+    rangeEnd: false,
+  });
 
   // 触发器展示文案（foundation formattedValue）。
   const triggerText = $derived(st.formattedValue);
@@ -841,7 +872,8 @@
                 rangeStart={rangeStartStr}
                 rangeEnd={rangeEndStr}
                 {rangeInputFocus}
-                setRangeInputFocus={(f) => (rangeInputFocus = f)}
+                {focusRecords}
+                setRangeInputFocus={setRangeInputFocus}
                 {weekStartsOn}
                 {multiple}
                 {density}

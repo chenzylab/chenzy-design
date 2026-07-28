@@ -28,6 +28,8 @@
     selected?: Set<string>;
     rangeStart?: string;
     rangeEnd?: string;
+    /** 各端「本次开合内是否被聚焦过」（对齐 Semi focusRecordsRef）——Month 的越界禁用判定要它。 */
+    focusRecords?: { rangeStart: boolean; rangeEnd: boolean };
     density?: Density;
     disabledTimePicker?: boolean;
     startYear?: number;
@@ -56,6 +58,7 @@
     onMaxLimit,
     syncSwitchMonth = false,
     rangeInputFocus = false,
+    focusRecords,
     setRangeInputFocus,
     startYear,
     endYear,
@@ -219,13 +222,17 @@
         />
         <!-- rangeInputFocus 必须下传：hover 预览区间（Semi isHover→_isHoverAfterStart/
              _isHoverBeforeEnd）依赖聚焦端，漏传则 Month 取默认 false，
-             选中起点后 hover 中间日期整段不高亮。 -->
+             选中起点后 hover 中间日期整段不高亮。
+             focusRecords 同理必须下传：Month 的越界禁用（聚焦 rangeEnd 后禁用早于
+             rangeStart 的日期、反之亦然）靠它判定，漏传则 month-foundation 里
+             两个条件恒 false、整个禁用静默失效。 -->
         <Month
           month={detail.pickerDate}
           {selected}
           {rangeStart}
           {rangeEnd}
           {rangeInputFocus}
+          {...(focusRecords ? { focusRecords } : {})}
           hoverDay={st.hoverDay}
           offsetRangeStart={st.offsetRangeStart}
           offsetRangeEnd={st.offsetRangeEnd}

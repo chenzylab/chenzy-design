@@ -651,6 +651,37 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('range 选完起点后禁用更早日期（对齐 Semi focusRecords 越界禁用）', async () => {
+    // Semi month.tsx:118-128：聚焦 rangeEnd 且 focusRecordsRef.rangeStart 为真时，
+    // 早于 rangeStart 的日期禁用（反向同理）。focusRecords 由 DatePicker 维护：
+    // 聚焦某端时 setTimeout(0) 置 true、关面板清零。
+    // 回归：本库 Month/month-foundation 早已实现该判定，但**没有任何人传 focusRecords**
+    // → 两个条件恒 false → 越界禁用整个静默失效。
+    const { container } = renderWithLocale(DatePicker, {
+      props: { type: 'dateRange', defaultPickerValue: new Date(2026, 0, 1) },
+    });
+    await tick();
+
+    // 先点触发器起始端——这一步才会记下 focusRecords.rangeStart（对齐 Semi：
+    // 记录的是「用户聚焦过哪一端」，defaultOpen 直接点日期时 rangeStart 本就没被聚焦过，
+    // Semi 同样不禁用）。
+    (container.querySelector(`.${PREFIX}-range-input-wrapper-start`) as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+
+    // 再点起点 2026-01-15（内部会 setRangeInputFocus('rangeEnd')）
+    const left = document.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-15"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+
+    // aria-label 就挂在日格 div 上（Month.svelte:152），别再 closest 一层。
+    const isDisabled = (label: string) =>
+      left.querySelector(`[aria-label="${label}"]`)?.getAttribute('aria-disabled') === 'true';
+    expect(isDisabled('2026-01-10'), '早于起点的日期应禁用').toBe(true);
+    expect(isDisabled('2026-01-20'), '晚于起点的日期不应禁用').toBe(false);
+  });
+
   it('onChange 默认首参给 Date、次参给串（对齐 Semi onChangeWithDateFirst 默认 true）', async () => {
     // Semi datePicker.tsx defaultProps `onChangeWithDateFirst: true`。
     // 回归：本库原默认 false（首参给串），与 Props 里
