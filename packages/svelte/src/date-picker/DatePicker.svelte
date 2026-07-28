@@ -689,12 +689,15 @@
     const start = toPresetDate(preset.start);
     const end = toPresetDate(preset.end);
     if (st.isRange) {
+      // range 走 needCheckFocusRecord:false（对齐 Semi：preset 一次性给齐两端，
+      // 不参与「先点起始再点结束」的焦点记录流转）。
       st.handleRangeSelectedChange([start, end]);
-      if (start && end) st.setOpen(false);
     } else if (start) {
       st.handleSelectedChange(start);
-      st.setOpen(false);
     }
+    // **不关面板** —— 对齐 Semi handlePresetClick（foundation.ts:1069-1092）：
+    // 它只 handleSelectedChange + notifyPresetsClick，全程不碰 open 状态，
+    // 用户点完 preset 还能继续在面板里调时间/改日期。
     onPresetClick?.(preset, e);
   }
 

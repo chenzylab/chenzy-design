@@ -648,6 +648,44 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('点 preset 后面板不关闭（对齐 Semi handlePresetClick 全程不碰 open）', async () => {
+    // Semi foundation.ts:1069-1092 的 handlePresetClick 只做 handleSelectedChange
+    // + notifyPresetsClick，**从不改 open 状态**；用户点完 preset 还能继续在面板里调时间。
+    // 回归：本库原先单值/range 都会 setOpen(false)。
+    const onPresetClick = vi.fn();
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: {
+        type: 'dateTime',
+        defaultOpen: true,
+        presetPosition: 'left',
+        presets: [{ text: 'Today', start: new Date(2026, 6, 28), end: new Date(2026, 6, 28) }],
+        onPresetClick,
+      },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const presetBtn = document.querySelector(
+      '.cd-datepicker-quick-control-left-content .cd-button',
+    ) as HTMLElement;
+    expect(presetBtn, '应渲染 preset 按钮').not.toBeNull();
+    presetBtn.click();
+    await tick();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(onPresetClick, 'onPresetClick 应被调用').toHaveBeenCalled();
+    expect(
+      document.querySelector('.cd-datepicker-quick-control-left-content'),
+      '点 preset 后面板应保持打开',
+    ).not.toBeNull();
+
+    unmount(api as never);
+    target.remove();
+  });
+
   it('monthRange 右面板：同年时早于起始月的月份禁用（对齐 Semi isRightPanelDisabled）', async () => {
     // Semi yearAndMonth.tsx renderColMonth:
     //   panelType===right && currentMonth[left] && currentYear[left]===currentYear[right]
