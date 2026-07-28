@@ -462,12 +462,18 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
   function syncPanelsFromRangeValue(values: Array<Date | null>): void {
     const left = values[0];
     const right = values[1];
-    if (left && isValidDate(left)) {
-      _updatePanelDetail(LEFT, { pickerDate: left, showDate: left });
+    // 照搬 Semi `_autoAdjustMonth`（monthsGridFoundation.ts:785）：两面板月份
+    // 左>右则交换、相同则右面板 +1 个月。缺这一步时「两端同月」（如 1-05 ~ 2-12 里
+    // 只改终点到 2-20）会让左右都停在同一月，日格重复、点击落到错的面板。
+    let pLeft = left && isValidDate(left) ? left : undefined;
+    let pRight = right && isValidDate(right) ? right : undefined;
+    if (pLeft && pRight) {
+      const diff = differenceInCalendarMonths(pLeft, pRight);
+      if (diff > 0) [pLeft, pRight] = [pRight, pLeft];
+      else if (diff === 0) pRight = addMonths(pRight, 1);
     }
-    if (right && isValidDate(right)) {
-      _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
-    }
+    if (pLeft) _updatePanelDetail(LEFT, { pickerDate: pLeft, showDate: pLeft });
+    if (pRight) _updatePanelDetail(RIGHT, { pickerDate: pRight, showDate: pRight });
     // 同时把 rangeStart/rangeEnd 也从 value 写回（照搬 Semi 同名函数末段
     // `setRangeStart/setRangeEnd`，dateTimeRange 走 withTime=true 的 FORMAT_DATE_TIME）。
     // **不可省**：面板关闭会销毁 portal 内容、foundation 随之重建，rangeStart/rangeEnd

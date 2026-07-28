@@ -97,7 +97,9 @@ const components = [
   // 替换旧版后实测 30.14 KB。预算按实测校准（含少量余量），旧 22 KB 是早期不完整实现的基线。
   // 深度对齐（density=compact、placeholder 按 type 分派、locale 覆盖、命令式方法、
   // needConfirm 暂存层、insetInput 覆盖型浮层 leftTopOver）后实测 32.22 KB，预算提到 33 KB。
-  ['date-picker', '{ DatePicker }', '33 KB'],
+  // 再补 range 状态机对齐（focusRecords 越界禁用、两端时间各自独立、
+  // isAnotherPanelHasOpened 按端判定、_autoAdjustMonth 同月错开）后实测 33.07 KB → 34 KB。
+  ['date-picker', '{ DatePicker }', '34 KB'],
   // 批C-E 引入 async-validator（gzip ~5-6KB 校验引擎）+ lodash-es get/set/toPath（真数组路径）。
   // 破坏性重写严格对齐 Semi（Field 复用 FormLabel、a11y 契约 labelledById/errorMessageId、
   // error/warning 合并、扁平 class）后实测 13.65 KB。预算按实测校准，含少量余量。

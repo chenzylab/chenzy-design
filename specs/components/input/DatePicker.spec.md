@@ -312,3 +312,34 @@ i18n keys：
 - [ ] Token 仅消费 Alias/Component 级 `--cd-datepicker-*`，无写死值。
 - [ ] 满足 §9 Perf Budget；`destroyOnClose`/时间列惰性渲染生效。
 - [ ] 提供 `component.meta.ts`，schema 与实现一致。
+
+## 13. 已知问题（Known Issues）
+
+### 13.1 `triggerRender` + range：关闭后重开，点日期不提交
+
+**复现**：`type='dateTimeRange'` + `triggerRender`（自定义触发器，无原生 range input）
++ 已有完整区间 → 关闭面板 → 重新打开 → 点任一日期。
+
+**现象**（jsdom 精确复现，非真机偶发）：
+- 重开瞬间禁用格数为 0，约 60ms 后变成两面板各 19 格被禁；
+- 两个面板停在**同一个月**（应相差 1 个月）；
+- 点日期**完全不触发 `onChange`**。
+
+**已定位的成因链**（对齐 Semi 后仍未修完，故记录在此）：
+1. `openPanel` 在 triggerRender 场景会 `setRangeInputFocus('rangeStart')`
+   （照搬 Semi `handleTriggerWrapperClick`），其 `setTimeout(0)` 把
+   `focusRecords.rangeStart` 置真；此时值已是完整区间，Month 的越界禁用随即生效。
+2. 面板关闭销毁 portal → MonthsGrid foundation 重建 → `rangeStart/rangeEnd` 归空，
+   需靠 value 回灌；回灌时机与上述 timer 存在竞态。
+3. `focusRecords` / `rangeInputFocus` / 两个 `pickerDate` / `rangeStart,rangeEnd`
+   四组状态在「关闭重建 + 无 input 可聚焦」这一组合下互相纠缠。
+
+**本轮已修正的相关缺陷**（均已对齐 Semi，但不足以消除本问题）：
+- `isAnotherPanelHasOpened` 原写死 `() => /range/i.test(type)`，改为按端查 `focusRecords`
+  （Semi `datePicker.tsx:610`）——此前会「点终点却把起点冲成同一天」；
+- 补 `_autoAdjustMonth`（Semi `monthsGridFoundation.ts:785`）：两端同月时右面板 +1；
+- `focusRecords` 延时写入加 `clearTimeout`，避免关面板清零后被上一轮 timer 补写回来。
+
+**下一步**：需要把上述四组状态在「开合生命周期」上重新梳理一遍
+（建议参照 Semi 的 `updateSelectedFromProps` + `togglePanel` 两个收口点），
+不宜在功能 PR 中夹带。默认触发器（有 range input）路径不受影响，已有回归测试覆盖。

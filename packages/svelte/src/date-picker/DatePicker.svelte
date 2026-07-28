@@ -396,13 +396,17 @@
    * 早先只在 ① 里记，② 不记 → 面板内选起点后越界禁用不生效（真机看似正常是因为
    * 用户通常先点过触发器，测试里直接 defaultOpen 点日期就暴露了）。
    */
+  /** 待写入 focusRecords 的延时器 id（关面板时要撤销，见下）。 */
+  let focusRecordTimer: ReturnType<typeof setTimeout> | undefined;
   function setRangeInputFocus(f: 'rangeStart' | 'rangeEnd' | false): void {
     rangeInputFocus = f;
     if (f === false) return;
     // **必须延后一拍**（照搬 Semi datePicker.tsx:340 的 setTimeout(…, 0) 与其注释）：
     // 选完起点会同步走到 handleSelectedChange，若此刻 focusRecords 已置 true，
     // 那里会误判两端都选完而提前关掉面板。
-    setTimeout(() => {
+    if (focusRecordTimer !== undefined) clearTimeout(focusRecordTimer);
+    focusRecordTimer = setTimeout(() => {
+      focusRecordTimer = undefined;
       focusRecords[f] = true;
     }, 0);
   }
@@ -521,6 +525,14 @@
       if (st.isRange) rangeInputFocus = false;
       // 关面板清零聚焦记录（对齐 Semi togglePanel 的 `if (!panelShow)` 分支）：
       // 下次打开重新按用户实际聚焦顺序判定，否则上轮记录会让刚打开就禁用日期。
+      // **必须先撤销待执行的延时写入**：setRangeInputFocus 里那个 setTimeout(0)
+      // 若在本次清零之后才触发，就会把上一轮的 true 补写回来——重开时
+      // focusRecords 非空 → 两个方向同时判越界 → 两面板各 19 格被禁、点哪都无效
+      // （triggerRender range 下尤其明显：openPanel 会主动 setRangeInputFocus('rangeStart')）。
+      if (focusRecordTimer !== undefined) {
+        clearTimeout(focusRecordTimer);
+        focusRecordTimer = undefined;
+      }
       focusRecords = { rangeStart: false, rangeEnd: false };
       // insetInput：关闭时恢复触发器可用（对齐 Semi handlePanelVisibleChange 的 else 分支）。
       triggerDisabled = false;

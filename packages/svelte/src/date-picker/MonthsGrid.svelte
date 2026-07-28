@@ -82,8 +82,19 @@
     ...(onMaxLimit ? { onMaxLimit } : {}),
     syncSwitchMonth,
     rangeInputFocus,
-    // range 双面板：left 面板对应 rangeStart、right 对应 rangeEnd；单面板恒视为「另一面板未开」。
-    isAnotherPanelHasOpened: () => /range/i.test(type),
+    /**
+     * 照搬 Semi datePicker.tsx:610：问的是「**另一端**是否已被聚焦过」。
+     *   rangeStart → 返回 focusRecords.rangeEnd；rangeEnd → 返回 focusRecords.rangeStart
+     * handleRangeSelected 用它决定选完一端后是否把焦点甩到对面：另一端已聚焦过就不再甩，
+     * 避免把已选值冲掉。
+     *
+     * 此前写死 `() => /range/i.test(type)`（range 恒 true 且不看问哪一端），
+     * 导致重开后点日期时焦点流转判错。
+     */
+    isAnotherPanelHasOpened: (currentRangeInput: 'rangeStart' | 'rangeEnd') =>
+      currentRangeInput === 'rangeStart'
+        ? !!focusRecords?.rangeEnd
+        : !!focusRecords?.rangeStart,
     ...(setRangeInputFocus ? { setRangeInputFocus } : {}),
     ...(defaultPickerValue !== undefined ? { defaultPickerValue } : {}),
     ...(disabledDate ? { disabledDate } : {}),
