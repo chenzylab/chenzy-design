@@ -752,6 +752,53 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(strOf(1), '终点应带时间').toContain('14:20:11');
   });
 
+  it('dateTimeRange 关闭再打开后改时间仍能提交（回归：foundation 重建丢 rangeStart）', async () => {
+    // 面板关闭会销毁 portal 内容、MonthsGrid foundation 随之重建，rangeStart/rangeEnd
+    // 回到空串；而 _updateTimeInDateRange 以 `if (!rs || !re) return` 为守卫，
+    // 于是「选完 → 关闭 → 重开 → 改时间」时它直接 return——时间列动了但值不提交。
+    // 修法：syncPanelsFromRangeValue 同时把 rangeStart/rangeEnd 从 value 写回
+    // （照搬 Semi `_initDateRangePickerFromValue` 末段的 setRangeStart/setRangeEnd）。
+    const onChange = vi.fn<(a: unknown, b: unknown) => void>();
+    const api = mount(DatePicker, {
+      target: (() => {
+        const t = document.createElement('div');
+        document.body.appendChild(t);
+        return t;
+      })(),
+      props: {
+        type: 'dateTimeRange',
+        // 直接给已提交的 value，模拟「上一轮选完并关闭」后的状态
+        defaultValue: [new Date(2026, 0, 5, 14, 31, 5), new Date(2026, 1, 12, 14, 31, 5)],
+        onChange,
+      },
+    }) as unknown as { open(): void };
+    await tick();
+
+    // 打开面板（等同用户重新点触发器）
+    api.open();
+    await tick();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    // 切右面板到时间列
+    const sws = [...document.querySelectorAll(`.${PREFIX}-switch-time`)] as HTMLElement[];
+    sws[1]?.click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+    const hourList = document.querySelector(`.${PREFIX}-month-grid-right ul[role="listbox"]`);
+    (hourList?.querySelectorAll('li[role="option"]')[8] as HTMLElement)?.click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    expect(onChange, '改时间必须触发 onChange（此前因守卫 return 而完全不提交）').toHaveBeenCalled();
+    const last = onChange.mock.calls.at(-1);
+    const strs = Array.isArray(last?.[1]) ? (last![1] as string[]) : [];
+    expect(strs[0], '起点时间不变').toContain('14:31:05');
+    expect(strs[1], '终点小时应改为 08').toContain('08:31:05');
+
+    unmount(api as never);
+  });
+
   it('triggerRender + range：打开面板默认聚焦 rangeStart，越界禁用照常生效', async () => {
     // Semi foundation.handleTriggerWrapperClick 的 triggerRender 分支：
     // 「因为没有 input，因此打开面板时默认 focus 在 rangeStart」。

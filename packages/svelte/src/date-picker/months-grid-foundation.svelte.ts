@@ -468,6 +468,22 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     if (right && isValidDate(right)) {
       _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
     }
+    // 同时把 rangeStart/rangeEnd 也从 value 写回（照搬 Semi 同名函数末段
+    // `setRangeStart/setRangeEnd`，dateTimeRange 走 withTime=true 的 FORMAT_DATE_TIME）。
+    // **不可省**：面板关闭会销毁 portal 内容、foundation 随之重建，rangeStart/rangeEnd
+    // 回到空串。而 _updateTimeInDateRange 以 `if (!rs || !re) return` 为守卫，
+    // 于是「选完 → 关闭 → 重开 → 改时间」时它直接 return，面板时间列动了但值不提交。
+    const withTime = p().type === 'dateTimeRange';
+    const fmt = (d: Date) =>
+      withTime
+        ? fmtDateTime(d)
+        : formatFullDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    let rs = left && isValidDate(left) ? fmt(left) : '';
+    let re = right && isValidDate(right) ? fmt(right) : '';
+    if (rs && re && _isNeedSwap(rs, re)) [rs, re] = [re, rs];
+    rangeStart = rs;
+    rangeEnd = re;
+    hoverDay = re;
   }
 
   function handleSwitchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType): void {
