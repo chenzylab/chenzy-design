@@ -230,6 +230,22 @@
     box-sizing: border-box;
     border-radius: var(--cd-radius-date-picker-day-main, var(--cd-radius-small, 3px));
   }
+  /* renderDate 里包 Tooltip 时，让触发包裹撑满整个 day-main。
+     Semi 的 Tooltip 对单一有效元素走 cloneElement **直接把事件挂到该元素上**、
+     不额外包一层（tooltip/index.tsx:863），所以用户写的
+     `<div style="width:100%;height:100%">` 的 100% 是相对 day-main 解析的。
+     Svelte 无法克隆 snippet 产物，触发包裹是结构性的；不撑满时用户 div 的
+     100% 会相对这个 shrink-wrap 的 inline-block 解析（实测只有 7.7px），
+     日格大片区域裸露 → 悬停命中的是外层带 title 的 gridcell，
+     冒出浏览器原生 `2026-07-01` 提示（Semi 没有）。 */
+  /* 结构是 day-main > span.cd-tooltip > span.cd-tooltip__trigger > 用户元素，
+     两层都要撑满，100% 才能一路解析到 day-main 的 32×32。 */
+  :global(.cd-datepicker-day-main) > :global(.cd-tooltip),
+  :global(.cd-datepicker-day-main) :global(.cd-tooltip__trigger) {
+    display: flex;
+    inline-size: 100%;
+    block-size: 100%;
+  }
   :global(.cd-datepicker-day-main:hover) {
     background-color: var(--cd-color-date-picker-date-bg-hover);
   }
