@@ -956,7 +956,10 @@
     padding-top: 0;
   }
   /* 日期网格顶部留白（Semi $spacing-datepicker_weeks_compact-paddingTop = $spacing-tight - 2 = 6）。 */
+  /* 照搬 Semi compact：`padding: 10` 四边，再单独覆盖 padding-top（spacing-tight - 2 = 6）。
+     此前只写了 padding-top，横向为 0 → 日格与上方 weekday（paddingX 10）错列。 */
   :global(.cd-datepicker-compact .cd-datepicker-weeks) {
+    padding: var(--cd-spacing-date-picker-weeks-compact-padding, 10px);
     padding-top: var(--cd-spacing-date-picker-weeks-compact-padding-top, 6px);
   }
   /* 星期行：照搬 Semi compact 的变量式算高
@@ -965,6 +968,11 @@
   :global(.cd-datepicker-compact .cd-datepicker-weekday) {
     box-sizing: border-box;
     height: calc(var(--cd-spacing-tight, 8px) + var(--cd-width-date-picker-day-compact, 28px));
+    /* paddingX 10（Semi $spacing-datepicker_weekday_compact-paddingLeft/Right）——
+       与下方 weeks 的 padding 10 对齐，星期标题才与日格同列。
+       此前注释写了 paddingX 10 但规则漏掉，星期行贴着面板边缘。 */
+    padding-left: var(--cd-spacing-date-picker-weeks-compact-padding, 10px);
+    padding-right: var(--cd-spacing-date-picker-weeks-compact-padding, 10px);
     padding-bottom: var(--cd-spacing-date-picker-weekday-compact-padding-bottom, 8px);
   }
   /* 日格字号跟随 compact（默认 14 → 12）。 */
