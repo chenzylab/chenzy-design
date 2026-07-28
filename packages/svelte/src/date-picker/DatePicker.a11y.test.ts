@@ -773,11 +773,13 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     // "isRange and not monthRange render multiple inputs"。
     // 回归：本库原判定是 /range/i.test(type)，把 monthRange 也当多框
     // → 渲染成两个框 + 「-」分隔符，而 Semi 是一个框、placeholder 为 `yyyy-MM ~ yyyy-MM`。
-    const cases: Array<{ type: string; inputs: number; sep: boolean }> = [
+    // 用 as const 保住字面量类型——写成 `type: string` 会与 PickerType 联合类型不兼容
+    // （mount 的 props 是强类型；svelte-check 会报错，docs typecheck 查不出来）。
+    const cases = [
       { type: 'monthRange', inputs: 1, sep: false },
       { type: 'dateRange', inputs: 2, sep: true },
       { type: 'dateTimeRange', inputs: 4, sep: true },
-    ];
+    ] as const;
     for (const c of cases) {
       const target = document.createElement('div');
       document.body.appendChild(target);
@@ -805,12 +807,12 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     // 同 isRenderMultipleInputs 契约，但作用在**触发器**上（Semi dateInput.tsx:446 分支）。
     // 回归：本库 DateInput 的 isRange 原为 `type.includes('Range')`，把 monthRange 也渲染成
     // 双框 + `~` 分隔符；Semi 是单框显示整段区间。
-    const cases: Array<{ type: string; rangeTrigger: boolean }> = [
+    const cases = [
       { type: 'monthRange', rangeTrigger: false },
       { type: 'dateRange', rangeTrigger: true },
       { type: 'dateTimeRange', rangeTrigger: true },
       { type: 'month', rangeTrigger: false },
-    ];
+    ] as const;
     for (const c of cases) {
       const { container } = renderWithLocale(DatePicker, { props: { type: c.type } });
       await tick();
