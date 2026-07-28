@@ -226,7 +226,11 @@
     onConfirm,
     onCancel,
     onChange,
-    onChangeWithDateFirst = false,
+    // 默认 true（对齐 Semi datePicker.tsx defaultProps `onChangeWithDateFirst: true`）：
+    // onChange 首参给 Date 对象、次参给格式化串。本库原默认 false（首参给串），
+    // 与本文件 Props 里 `onChange?: (value: Date | ..., dateString: string)` 的声明自相矛盾，
+    // 受控用法（value + onChange 回写）会把串当 Date 存回去 → 选中不生效。
+    onChangeWithDateFirst = true,
     onOpenChange,
     position,
     zIndex,

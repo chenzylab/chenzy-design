@@ -36,7 +36,8 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(cells.length).toBeGreaterThan(0);
   });
 
-  it('点击日期触发 onChange（dateString 在前）并关闭面板', async () => {
+  it('点击日期触发 onChange（Date 在前、串在后）并关闭面板', async () => {
+    // 对齐 Semi onChangeWithDateFirst 默认 true：首参 Date、次参格式化串。
     const onChange = vi.fn<(a: unknown, b: unknown) => void>();
     renderWithLocale(DatePicker, {
       props: { type: 'date', defaultOpen: true, defaultPickerValue: new Date(2026, 0, 1), onChange },
@@ -48,7 +49,8 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     cell.click();
     await tick();
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]![0]).toBe('2026-01-15');
+    expect(onChange.mock.calls[0]![0]).toBeInstanceOf(Date);
+    expect(onChange.mock.calls[0]![1]).toBe('2026-01-15');
   });
 
   it('受控 value 回显到触发器 Input', async () => {
@@ -95,12 +97,12 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     // 两端完整后通知。
     expect(onChange).toHaveBeenCalled();
     const lastArgs = onChange.mock.calls[onChange.mock.calls.length - 1]!;
-    // 默认 onChangeWithDateFirst=false：第一参是 dateString（range 为 string[]，对齐 Semi disposeCallbackArgs）。
-    expect(Array.isArray(lastArgs[0])).toBe(true);
-    expect((lastArgs[0] as string[]).every((s) => typeof s === 'string')).toBe(true);
+    // 默认 onChangeWithDateFirst=true（对齐 Semi）：首参 Date[]、次参 dateString（range 为 string[]）。
+    expect(Array.isArray(lastArgs[1])).toBe(true);
+    expect((lastArgs[1] as string[]).every((s) => typeof s === 'string')).toBe(true);
     // 含 10 与 20 两端。
-    expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-10');
-    expect((lastArgs[0] as string[]).join(' ')).toContain('2026-01-20');
+    expect((lastArgs[1] as string[]).join(' ')).toContain('2026-01-10');
+    expect((lastArgs[1] as string[]).join(' ')).toContain('2026-01-20');
   });
 
   it('month：面板走 YearAndMonth 滚轮（非日历），无 Month grid', async () => {
@@ -128,7 +130,7 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     (monthList.querySelectorAll('li[role="option"]')[2] as HTMLElement).click();
     await tick();
     expect(onChange).toHaveBeenCalled();
-    const notifyDate = onChange.mock.calls[onChange.mock.calls.length - 1]![1] as Date;
+    const notifyDate = onChange.mock.calls[onChange.mock.calls.length - 1]![0] as Date;
     expect(notifyDate).toBeInstanceOf(Date);
     expect(notifyDate.getMonth()).toBe(2); // 3月=index 2
   });
@@ -149,8 +151,9 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     (qc!.querySelector('button') as HTMLElement).click();
     await tick();
     expect(onChange).toHaveBeenCalled();
-    // dateString 为 2026-01-15。
-    expect(onChange.mock.calls[0]![0]).toBe('2026-01-15');
+    // 首参 Date、次参 dateString（对齐 Semi onChangeWithDateFirst 默认 true）。
+    expect(onChange.mock.calls[0]![0]).toBeInstanceOf(Date);
+    expect(onChange.mock.calls[0]![1]).toBe('2026-01-15');
   });
 
   it('presetPosition=left：QuickControl 带 left class', async () => {
@@ -180,7 +183,7 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     (document.querySelector(`.${PREFIX}-quick-control button`) as HTMLElement).click();
     await tick();
     expect(onChange).toHaveBeenCalled();
-    const val = onChange.mock.calls[0]![0] as string[];
+    const val = onChange.mock.calls[0]![1] as string[];
     expect(Array.isArray(val)).toBe(true);
     expect(val.join(' ')).toContain('2026-01-12');
     expect(val.join(' ')).toContain('2026-01-18');
@@ -210,7 +213,7 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await tick();
     expect(onChange).toHaveBeenCalled();
-    expect(onChange.mock.calls[onChange.mock.calls.length - 1]![0]).toBe('2026-01-15');
+    expect(onChange.mock.calls[onChange.mock.calls.length - 1]![1]).toBe('2026-01-15');
   });
 
   it('dateTimeRange insetInput：4 输入框（左右各 date+time）', async () => {
@@ -646,6 +649,48 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
 
     unmount(api as never);
     target.remove();
+  });
+
+  it('onChange 默认首参给 Date、次参给串（对齐 Semi onChangeWithDateFirst 默认 true）', async () => {
+    // Semi datePicker.tsx defaultProps `onChangeWithDateFirst: true`。
+    // 回归：本库原默认 false（首参给串），与 Props 里
+    // `onChange?: (value: Date | ..., dateString: string)` 的声明自相矛盾；
+    // 受控用法（value + onChange 回写 date）会把串当 Date 存回去 →
+    // 选中不生效、面板不关（triggerRender demo 即如此）。
+    const calls: Array<[unknown, unknown]> = [];
+    renderWithLocale(DatePicker, {
+      props: {
+        defaultOpen: true,
+        onChange: (a: unknown, b: unknown) => calls.push([a, b]),
+      },
+    });
+    await tick();
+    const day = document.querySelector('.cd-datepicker-day-main') as HTMLElement;
+    day.click();
+    await tick();
+
+    expect(calls.length, 'onChange 应被调用').toBeGreaterThan(0);
+    const [first, second] = calls[0]!;
+    expect(first instanceof Date, '首参应为 Date 对象').toBe(true);
+    expect(typeof second, '次参应为格式化串').toBe('string');
+  });
+
+  it('onChangeWithDateFirst=false 时首参给串（显式关闭仍可用）', async () => {
+    const calls: Array<[unknown, unknown]> = [];
+    renderWithLocale(DatePicker, {
+      props: {
+        defaultOpen: true,
+        onChangeWithDateFirst: false,
+        onChange: (a: unknown, b: unknown) => calls.push([a, b]),
+      },
+    });
+    await tick();
+    (document.querySelector('.cd-datepicker-day-main') as HTMLElement).click();
+    await tick();
+
+    const [first, second] = calls[0]!;
+    expect(typeof first, '关闭后首参应为串').toBe('string');
+    expect(second instanceof Date, '次参应为 Date').toBe(true);
   });
 
   it('disabledDate 第二参 options 携带 rangeStart（对齐 Semi 动态禁用）', async () => {
