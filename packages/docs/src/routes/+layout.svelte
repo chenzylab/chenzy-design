@@ -153,22 +153,11 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    /* 字体栈对齐 Semi 官网（Inter 打头 + system 回退）；此前 fallback 到 system-ui
-       会盖掉 body 的 Inter 栈致字体偏粗（无 antialiased 清爽感）。与 app.css body 一致。 */
-    font-family: var(
-      --cd-font-family,
-      'Inter',
-      -apple-system,
-      'system-ui',
-      'PingFang SC',
-      'Segoe UI',
-      'Microsoft YaHei',
-      'Hiragino Sans GB',
-      'Helvetica Neue',
-      Helvetica,
-      Arial,
-      sans-serif
-    );
+    /* 字体栈走 --cd-font-family-regular（token 层单一来源，逐项照搬 Semi
+       $font-family-regular）。原先此处内联了一份与 app.css 不一致的栈
+       （'system-ui' 在第 3 位、'Segoe UI' 提前），macOS 上会解析到与 Semi
+       不同的字体。 */
+    font-family: var(--cd-font-family-regular);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

@@ -11,8 +11,24 @@ html {
    Inter 声明在栈首、无本地字体时自然回退到 system，与官网视觉一致且无外部依赖。 */
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, 'system-ui', 'PingFang SC', 'Segoe UI',
-    'Microsoft YaHei', 'Hiragino Sans GB', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* 走 --cd-font-family-regular（token 层单一来源，逐项照搬 Semi $font-family-regular）。
+     顺序不可自造：原先第 3 项写 'system-ui'、并把 'Segoe UI' 提到 'Hiragino Sans GB' 前，
+     macOS 上会解析到与 Semi 不同的字体（Semi 落 BlinkMacSystemFont），字宽随之有差异。
+     token 未加载时的兜底与 token 值保持一致。 */
+  font-family: var(
+    --cd-font-family-regular,
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    'Segoe UI',
+    'Helvetica Neue',
+    Helvetica,
+    Arial,
+    sans-serif
+  );
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* 背景/前景走 token（token 随 data-theme 切换），否则 dark 下 body 仍是浏览器
