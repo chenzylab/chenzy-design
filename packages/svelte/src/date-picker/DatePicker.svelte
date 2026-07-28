@@ -503,9 +503,12 @@
   $effect(() => {
     if (!st.isRange || !st.isOpen) return;
     const pair = st.currentRange;
-    if (!pair[0] && !pair[1]) return;
     const grid = monthsGridRef;
     if (!grid) return;
+    // **空值也要同步**（不能像早先那样 `if (!pair[0] && !pair[1]) return`）：
+    // 对齐 Semi updateSelectedFromProps 的空值分支——value 清空时面板要一并清掉
+    // selected/rangeStart/rangeEnd。否则「面板开着点清空」会出现触发器已回占位符、
+    // 面板仍高亮旧区间；受控用法（demo 自己 onClear 把 value 置空）也走这条路。
     queueMicrotask(() => grid.syncPanelsFromRange([pair[0], pair[1]]));
   });
 
@@ -708,6 +711,16 @@
     inputValue = null;
     insetInputReset += 1;
     rangeInputFocus = false;
+    // 面板打开时清空要同步面板：Semi handleRangeInputClear 走
+    // `resetCachedSelectedValue([])`，而 cachedSelectedValue 是传给 MonthsGrid 的
+    // `defaultValue`，故面板 rangeStart/rangeEnd 与高亮随之清掉。本库面板状态在
+    // MonthsGrid 内部，只写 value 不通知它 → 触发器已回占位符、面板仍高亮着旧区间。
+    if (st.isRange) monthsGridRef?.syncPanelsFromRange([null, null]);
+    // 清空后把焦点复位到起始端（照搬 Semi initRangeInputFocus 及其注释：
+    // 「如果用户传了一个空的 value，需要把 range input focus 设置为 rangeStart，
+    //  这样用户可以清除完之后继续从开始选择」——triggerRender 场景尤其需要，
+    // 它没有原生 input 可点，不复位就无法接着选）。
+    if (st.isRange && triggerRender) setRangeInputFocus('rangeStart');
     if (e) onClearProp?.(e);
   }
 

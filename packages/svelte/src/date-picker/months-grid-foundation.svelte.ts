@@ -490,6 +490,11 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     rangeStart = rs;
     rangeEnd = re;
     hoverDay = re;
+    // 值被清空（两端皆空）时把高亮集合也清掉——照搬 Semi updateSelectedFromProps
+    // 的空值分支（monthsGridFoundation.ts:196-206：updateDaySelected(new Set())
+    // + setRangeStart('') + setRangeEnd('')）。
+    // 缺这一步时「面板打开着清空」会出现触发器已回占位符、面板仍高亮旧区间。
+    if (!rs && !re && selected.size) selected = new Set();
   }
 
   function handleSwitchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType): void {

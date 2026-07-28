@@ -1116,6 +1116,53 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     ).not.toBeNull();
   });
 
+  it('面板打开时清空：面板高亮一并清掉（对齐 Semi resetCachedSelectedValue）', async () => {
+    // Semi handleRangeInputClear 走 `resetCachedSelectedValue([])`，而 cachedSelectedValue
+    // 就是传给 MonthsGrid 的 `defaultValue`，故面板 rangeStart/rangeEnd 与高亮随之清掉。
+    // 回归：本库面板状态在 MonthsGrid 内部，清空只写了 value 没通知面板 →
+    // 触发器已回占位符、面板却仍高亮着旧区间。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: {
+        type: 'dateTimeRange',
+        defaultOpen: true,
+        defaultValue: [new Date(2026, 0, 5, 15, 0, 0), new Date(2026, 1, 12, 15, 0, 0)],
+      },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    expect(
+      document.querySelectorAll(`[class*="${PREFIX}-day-selected"]`).length,
+      '清空前应有高亮',
+    ).toBeGreaterThan(0);
+
+    const clearBtn = target.querySelector(`.${PREFIX}-range-input-clearbtn`) as HTMLElement;
+    expect(clearBtn, '应渲染清除按钮').not.toBeNull();
+    clearBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 60));
+    await tick();
+
+    expect(
+      document.querySelector(`.${PREFIX}-day-selected-start`),
+      '清空后不应残留起点高亮',
+    ).toBeNull();
+    expect(
+      document.querySelector(`.${PREFIX}-day-selected-end`),
+      '清空后不应残留终点高亮',
+    ).toBeNull();
+    expect(
+      [...target.querySelectorAll('input')].map((i) => (i as HTMLInputElement).value),
+      '两端输入框应为空',
+    ).toEqual(['', '']);
+
+    unmount(api as never);
+    target.remove();
+  });
+
   it('清空后复位 rangeInputFocus（对齐 Semi setRangeInputFocus(false)）', async () => {
     // 回归：清空只写空值、没复位焦点态，触发器会残留 -active 高亮。
     // 用 defaultValue（非受控）——受控 value 下 Semi 同样不自行清值
