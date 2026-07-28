@@ -52,8 +52,14 @@
   );
 
   const placeholders = $derived(f.getInsetInputPlaceholder());
-  const isRange = $derived(/range/i.test(type));
+  // 是否渲染多个输入框 —— 照搬 Semi dateInput.tsx `isRenderMultipleInputs()`：
+  // `type.includes('Range') && type !== 'monthRange'`。**monthRange 是单输入框**
+  // （Semi 原注释 "isRange and not monthRange render multiple inputs"），
+  // 其 placeholder 由两端用 rangeSeparator 拼成一条（dateInput.tsx:459）。
+  const isRange = $derived(type.includes('Range') && type !== 'monthRange');
   const isTimeType = $derived(type.includes('Time'));
+  // 注：monthRange 的合并 placeholder（`yyyy-MM ~ yyyy-MM`）由 foundation 的
+  // getInsetInputPlaceholder 直接给出（照搬 Semi），此处不再拼一次。
 
   function onFieldChange(valuePath: string, v: string) {
     const res = f.handleInsetInputChange({ value: v, valuePath, insetInputValue });
@@ -63,7 +69,7 @@
 </script>
 
 <div class={`${PREFIX}-inset-input-wrapper`} {...{ 'x-type': type }}>
-  <!-- monthLeft date -->
+  <!-- monthLeft date（monthRange 时这一个框即承载整段区间，placeholder 为两端拼串） -->
   <Input
     value={insetInputValue.monthLeft.dateInput}
     placeholder={placeholders.datePlaceholder}
@@ -111,10 +117,11 @@
     flex-wrap: nowrap;
     justify-content: space-between;
     box-sizing: border-box;
-    column-gap: var(--cd-spacing-tight, 8px);
-    padding: 12px 16px;
-    padding-bottom: 0;
-    width: 284px;
+    column-gap: var(--cd-spacing-date-picker-inset-input-wrapper-margin, 8px);
+    padding: var(--cd-spacing-date-picker-inset-input-wrapper-padding-y, 12px)
+      var(--cd-spacing-date-picker-inset-input-wrapper-padding-x, 16px);
+    padding-bottom: var(--cd-spacing-date-picker-inset-input-wrapper-padding-bottom, 0);
+    width: var(--cd-width-date-picker-inset-input-date-type-wrapper, 284px);
   }
   :global(.cd-datepicker-inset-input-wrapper[x-type='dateRange']),
   :global(.cd-datepicker-inset-input-wrapper[x-type='dateTimeRange']) {
@@ -135,9 +142,9 @@
   :global(.cd-datepicker-inset-input-separator) {
     flex-grow: 0;
     flex-shrink: 0;
-    height: 32px;
-    line-height: 32px;
-    padding: 0 4px;
+    height: var(--cd-height-date-picker-range-input-default, 32px);
+    line-height: var(--cd-height-date-picker-range-input-default, 32px);
+    padding: 0 var(--cd-spacing-date-picker-inset-input-separator-padding-x, 4px);
     color: var(--cd-color-text-3);
   }
 </style>

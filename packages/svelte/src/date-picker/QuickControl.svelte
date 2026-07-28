@@ -101,7 +101,7 @@
 
   :global(.cd-datepicker-quick-control) {
     box-sizing: border-box;
-    background-color: transparent;
+    background-color: var(--cd-color-date-picker-quick-bg-default, transparent);
   }
   :global(.cd-datepicker-quick-control-header) {
     padding: 18px 12px 0;
@@ -156,7 +156,7 @@
   :global(.cd-datepicker-quick-control-left-content-item-ellipsis),
   :global(.cd-datepicker-quick-control-right-content-item-ellipsis) {
     width: calc(84px - var(--cd-spacing-tight, 8px) * 2);
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-quick-button-text-default, var(--cd-color-primary));
   }
 
   /* 上下方位 content（date/dateTime）：3 列 grid（按钮宽约 76），gap 8，padding 8 20。 */
@@ -175,7 +175,7 @@
   :global(.cd-datepicker-quick-control-top-content-item-ellipsis),
   :global(.cd-datepicker-quick-control-bottom-content-item-ellipsis) {
     width: calc(76px - var(--cd-spacing-tight, 8px) * 2);
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-quick-button-text-default, var(--cd-color-primary));
   }
 
   /* 上下方位 range content：5 列 grid（按钮宽约 91），gap 8，padding 8 20。 */
@@ -195,7 +195,7 @@
   :global(.cd-datepicker-quick-control-top-range-content-item-ellipsis),
   :global(.cd-datepicker-quick-control-bottom-range-content-item-ellipsis) {
     width: calc(91px - var(--cd-spacing-tight, 8px) * 2);
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-quick-button-text-default, var(--cd-color-primary));
   }
 
   /* 上下方位 month content：2 列 grid（按钮宽 73 = (154-8)/2），gap 8，padding 8 20。 */
@@ -215,6 +215,6 @@
   :global(.cd-datepicker-quick-control-top-month-content-item-ellipsis),
   :global(.cd-datepicker-quick-control-bottom-month-content-item-ellipsis) {
     max-width: calc(73px - var(--cd-spacing-tight, 8px) * 2);
-    color: var(--cd-color-primary);
+    color: var(--cd-color-date-picker-quick-button-text-default, var(--cd-color-primary));
   }
 </style>

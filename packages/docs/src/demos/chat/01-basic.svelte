@@ -19,10 +19,15 @@
     },
   };
 
+  // 注意：下面是「展示给用户看的示例代码字符串」，不是真依赖。
+  // 但 vite 依赖扫描（esbuild）会把模板字符串里的 import 也当真 import，
+  // 解析不到 react/@douyinfe/semi-ui 就整体 "Failed to run dependency scan"→跳过预打包→全站不水合。
+  // 故 import 行用拼接写出，渲染结果不变、扫描器识别不到。
+  const IMP = 'import';
   const assistantCode = `以下是一个 Semi 代码的使用示例：
 \`\`\`jsx
-import React from 'react';
-import { Button } from '@douyinfe/semi-ui';
+${IMP} React from 'react';
+${IMP} { Button } from '@douyinfe/semi-ui';
 
 const MyComponent = () => {
   return (

@@ -324,8 +324,12 @@
       if (isCyclic && count > 0) {
         const baseFirstTop = (wheelHeight - ITEM_HEIGHT) / 2 - selectedIndex * ITEM_HEIGHT;
         const baseLastTop = baseFirstTop + (count - 1) * ITEM_HEIGHT;
-        prependCount = shouldPrepend(baseFirstTop, count, ITEM_HEIGHT, wheelHeight, 2);
-        appendCount = shouldAppend(baseLastTop, count, ITEM_HEIGHT, wheelHeight, 2);
+        // cycled 至少各留 1 份缓冲：份数按「初始 selectedIndex 的理论位置」算时，
+        // 选中项靠列表两端会算出 0 份（如 60 项选到第 54 项 → prepend/append 皆 0，
+        // parts=1），此时 adjustInfiniteList 的 `scrollTop ± listHeight` 会滚出内容范围
+        // 被浏览器夹紧，环绕失效、列表滚到底就停（实测分钟列 li=60 不循环）。
+        prependCount = Math.max(1, shouldPrepend(baseFirstTop, count, ITEM_HEIGHT, wheelHeight, 2));
+        appendCount = Math.max(1, shouldAppend(baseLastTop, count, ITEM_HEIGHT, wheelHeight, 2));
         await tick();
         if (cancelled) return;
       }

@@ -64,23 +64,21 @@
     ariaLabel="Previous year"
     size={buttonSize}
     theme={btnTheme}
-    iconSize={iconBtnSize}
     noHorizontalPadding
     style={leftButtonStyle}
     onclick={onPrevYear}
   >
-    {#snippet icon()}<IconDoubleChevronLeft aria-hidden="true" />{/snippet}
+    {#snippet icon()}<IconDoubleChevronLeft aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
   <IconButton
     ariaLabel="Previous month"
     size={buttonSize}
     theme={btnTheme}
-    iconSize={iconBtnSize}
     noHorizontalPadding
     style={leftButtonStyle}
     onclick={onPrevMonth}
   >
-    {#snippet icon()}<IconChevronLeft aria-hidden="true" />{/snippet}
+    {#snippet icon()}<IconChevronLeft aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
   <div class={`${prefixCls}-month`}>
     <Button theme={btnTheme} size={buttonSize} onclick={onMonthClick}>
@@ -91,22 +89,20 @@
     ariaLabel="Next month"
     size={buttonSize}
     theme={btnTheme}
-    iconSize={iconBtnSize}
     noHorizontalPadding
     style={rightButtonStyle}
     onclick={onNextMonth}
   >
-    {#snippet icon()}<IconChevronRight aria-hidden="true" />{/snippet}
+    {#snippet icon()}<IconChevronRight aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
   <IconButton
     ariaLabel="Next year"
     size={buttonSize}
     theme={btnTheme}
-    iconSize={iconBtnSize}
     noHorizontalPadding
     style={rightButtonStyle}
     onclick={onNextYear}
   >
-    {#snippet icon()}<IconDoubleChevronRight aria-hidden="true" />{/snippet}
+    {#snippet icon()}<IconDoubleChevronRight aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
 </div>

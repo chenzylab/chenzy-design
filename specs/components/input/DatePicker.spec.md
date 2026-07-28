@@ -312,3 +312,30 @@ i18n keys：
 - [ ] Token 仅消费 Alias/Component 级 `--cd-datepicker-*`，无写死值。
 - [ ] 满足 §9 Perf Budget；`destroyOnClose`/时间列惰性渲染生效。
 - [ ] 提供 `component.meta.ts`，schema 与实现一致。
+
+## 13. range 重开语义（曾误记为 Bug，已核实对齐 Semi）
+
+`type='dateTimeRange'` + `triggerRender` 场景下「已有完整区间 → 关闭 → 重开 → 点日期」
+的行为，曾被记为已知问题。逐条核对 Semi 源码 + 真机复验后确认**本库已与 Semi 一致**：
+
+| 环节 | Semi 实现 | 本库 |
+|---|---|---|
+| 关闭面板 | `resetInnerSelectedStates` → `resetFocus()` → `setRangeInputFocus(false)` | 同（DatePicker.svelte 关闭分支） |
+| triggerRender 打开 | `handleTriggerWrapperClick`：`_isRangeType() && !rangeInputFocus` 时 `setRangeInputFocus('rangeStart')` | 同（`openPanel` 带同样守卫） |
+| 点新起点晚于原终点 | `handleRangeSelected`：`isBefore(rangeEnd, rangeStart)` → 清 `rangeEnd`、**不 notify**，等待再选终点 | 同 |
+| 点新起点早于原终点 | 只改起点、保留终点 | 同 |
+
+**真机实测**（`2026-07-08 ~ 2026-08-12` 起）：
+- 点左面板 8 号（早于终点）→ `07-08 ~ 08-12`，终点保留 ✅
+- 点右面板 20 号（晚于终点）→ 触发器暂不变（区间不完整不提交）、面板起点已切到 `08-20` ✅
+- 再点 25 号补终点 → `08-20 ~ 08-25` 提交 ✅
+
+即「点一下没反应」是**区间重开中的中间态**，Semi 同样如此，不是缺陷。
+
+**本轮真正修掉的三处**（见 commit `ba5ebb11`）：
+1. `isAnotherPanelHasOpened` 写死 → 改为按端查 `focusRecords`（Semi `datePicker.tsx:610`）；
+2. 缺 `_autoAdjustMonth` → 补「左>右交换、同月右+1」（Semi `monthsGridFoundation.ts:785`）；
+3. `focusRecords` 延时写入未撤销 → 关面板 `clearTimeout`。
+
+修前重开会出现「两面板同月 + 各 19 格被禁 + 点哪都无效」，修后实测重开
+禁用数 0、面板月份 `2026-07`/`2026-08` 正确。

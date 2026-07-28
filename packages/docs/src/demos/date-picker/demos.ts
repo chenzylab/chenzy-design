@@ -48,4 +48,5 @@ export const demos: DemoEntry[] = [
   entry('19-trigger-render-range.svelte', '自定义触发器（范围）'),
   entry('20-render-date.svelte', '自定义日期显示内容'),
   entry('21-render-full-date.svelte', '自定义日期格子渲染'),
+  entry('22-methods.svelte', '命令式方法'),
 ];

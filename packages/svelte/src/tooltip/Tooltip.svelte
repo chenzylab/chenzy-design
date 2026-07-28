@@ -32,6 +32,7 @@
   import {
     positionToPlacement,
     placementToPosition,
+    isOverPosition,
     resolveSide,
     type Position,
   } from './placement.js';
@@ -196,6 +197,9 @@
   // Semi 12 方位 position → core Placement（内部定位用）
   const placement = $derived<Placement>(positionToPlacement(position));
 
+  // 覆盖型方位（Semi `…Over`）：浮层压在触发器上而非推开，交给 core 的 `over` 开关。
+  const isOver = $derived(isOverPosition(position));
+
   // showArrow 归一：boolean 决定显隐；Snippet 时视为显示且用自定义箭头（Popover 双 path）。
   const showArrowBool = $derived(showArrow !== false);
   const customArrow = $derived(
@@ -349,7 +353,8 @@
   let resolvedPlacement = $state<Placement>(untrack(() => placement));
   const resolvedSide = $derived<Side>(resolveSide(resolvedPlacement));
   // x-placement 属性用 Semi position 命名（topLeft/leftTop…，对齐 Semi arrow.scss 选择器）。
-  const xPlacement = $derived(placementToPosition(resolvedPlacement));
+  // 覆盖型方位不参与 flip，直接回报原名（leftTopOver 不可退化成 leftTop，否则箭头选择器错配）。
+  const xPlacement = $derived(isOver ? position : placementToPosition(resolvedPlacement));
   let arrowOffset = $state(0);
 
   function onPlacement(info: { placement: Placement; arrowOffset: number }) {
@@ -577,7 +582,7 @@
       aria-hidden={!isOpen || undefined}
       tabindex={isDialog ? -1 : undefined}
       bind:this={popEl}
-      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
+      use:floating={{ trigger: anchorEl, placement, autoAdjust: autoAdjustOverflow, offset: mainAxisSpacing, padding: marginPadding, arrowPointAtCenter, over: isOver, onPlacement, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
       class="{prefixCls}-wrapper {className}"
       class:cd-tooltip-with-arrow={showArrowBool}
       class:cd-tooltip-wrapper-show={isOpen}

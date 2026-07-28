@@ -62,6 +62,17 @@ export interface ComputePositionInput {
    * from the popup's aligned edge to the arrow center. Default 12.
    */
   arrowEdgeDistance?: number;
+  /**
+   * Overlay mode (Semi's `…Over` positions, e.g. leftTopOver). Instead of
+   * displacing the popup along the main axis so it sits *beside* the trigger,
+   * the popup's leading edge is aligned with the trigger's own leading edge and
+   * pulled back by `offset`, so the popup covers the trigger.
+   * Mirrors semi-foundation/tooltip/foundation.ts `case 'leftTopOver'`:
+   * `left = triggerRect.left - SPACING; top = triggerRect.top - SPACING`.
+   * Used by DatePicker insetInput, where the panel carries its own input and
+   * the trigger no longer needs to stay visible. Default false.
+   */
+  over?: boolean;
 }
 
 export interface ComputePositionResult {
@@ -207,14 +218,31 @@ export function computePosition(input: ComputePositionInput): ComputePositionRes
   const filled = { ...input, offset, padding };
 
   const requested = parsePlacement(input.placement);
-  const side = resolveSide(requested.side, filled);
+  // Overlay mode never flips: Semi clamps the covering panel to the container
+  // rather than flipping it to the opposite side.
+  const side = input.over ? requested.side : resolveSide(requested.side, filled);
   const align = requested.align;
 
   const { triggerRect, popupRect, viewport } = input;
 
+  const over = input.over ?? false;
+
   let x: number;
   let y: number;
-  if (isVerticalSide(side)) {
+  if (over) {
+    // Overlay mode: the popup covers the trigger instead of sitting beside it.
+    // Vertically the top edges align (pulled up by `offset`) for both sides.
+    // Horizontally the anchored edge follows the side, mirroring Semi:
+    //   leftTopOver  → left  = triggerRect.left  - SPACING  (left edges align)
+    //   rightTopOver → right = triggerRect.right + SPACING  (right edges align,
+    //                          Semi expresses this as translateX = -1)
+    const rawX =
+      side === 'right'
+        ? triggerRect.x + triggerRect.width + offset - popupRect.width
+        : triggerRect.x - offset;
+    x = clamp(rawX, padding, viewport.width - popupRect.width - padding);
+    y = clamp(triggerRect.y - offset, padding, viewport.height - popupRect.height - padding);
+  } else if (isVerticalSide(side)) {
     y = mainAxisCoord(side, triggerRect, popupRect, offset);
     const rawX = crossAxisCoord(side, align, triggerRect, popupRect);
     x = clamp(rawX, padding, viewport.width - popupRect.width - padding);

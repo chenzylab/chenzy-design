@@ -41,6 +41,11 @@ export const fontSize = {
 
 // 等宽字体族（code/kbd 等消费；跨组件共享的设计基元，直引 alias 不组件化）
 export const fontFamily = {
+  // 逐项照搬 Semi $font-family-regular（semi-theme-default/scss/variables.scss:55）。
+  // 顺序即字体解析顺序，不可自造：macOS 上 Semi 落 BlinkMacSystemFont，
+  // 若把 'system-ui' 放第 3 位会解析到不同字体、字宽有差。
+  regular:
+    "'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif",
   code: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
 } as const;
 

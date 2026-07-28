@@ -156,15 +156,29 @@ export function createYearMonthState(getProps: () => YearMonthFoundationProps) {
     });
   }
 
-  /** 月列表构建（含 disabled：该年该月被 disabledDate 禁用）。 */
+  /**
+   * 月列表构建（含 disabled）。两个来源（照搬 Semi yearAndMonth.tsx renderColMonth）：
+   * ① disabledDate 禁用该年该月；
+   * ② isRightPanelDisabled —— 右面板且左右同年时，早于左侧起始月的月份不可选：
+   *    `panelType === right && currentMonth[left] && currentYear[left] === currentYear[right]
+   *     && currentMonth[left] > month`。
+   *    年列早已有对应的 needDisabled，月列此前漏了这一条（monthRange 左右同年时
+   *    右面板的 4/5/6 本该置灰却可选）。
+   */
   function monthList(panelType: PanelType): MonthItem[] {
     const disabledDate = p().disabledDate;
     const year = currentYear[panelType];
-    return months.map(({ value, month }) => ({
-      value,
-      month,
-      disabled: disabledDate ? disabledDate(set(Date.now(), { year, month: month - 1 })) : false,
-    }));
+    return months.map(({ value, month }) => {
+      const isRightPanelDisabled =
+        panelType === RIGHT &&
+        !!currentMonth[LEFT] &&
+        currentYear[LEFT] === currentYear[RIGHT] &&
+        currentMonth[LEFT] > month;
+      const byDisabledDate = disabledDate
+        ? disabledDate(set(Date.now(), { year, month: month - 1 }))
+        : false;
+      return { value, month, disabled: byDisabledDate || isRightPanelDisabled };
+    });
   }
 
   return {

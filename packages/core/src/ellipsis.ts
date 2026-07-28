@@ -31,18 +31,25 @@ export interface EllipsisMeasureInput {
 }
 
 /**
- * Pure: decide whether content overflows its clamp box. For multi-row we compare
- * heights; for a single row we additionally allow a width comparison. A 1px
- * tolerance absorbs sub-pixel rounding so equal content is not flagged.
+ * Pure: decide whether content overflows its clamp box.
+ *
+ * - Height (multi-row clamp): keep a 1px tolerance — line-height rounding makes
+ *   `scrollHeight` exceed `clientHeight` by a hair even when nothing is clipped.
+ * - Width (single row): strict `scrollWidth > clientWidth`, matching Semi
+ *   (`semi-ui/typography/util.tsx` inRange: `scrollWidth <= offsetWidth`).
+ *   A tolerance here is wrong: browsers round both values to integers, so a real
+ *   sub-pixel overflow (e.g. text 68.81px in a 68px box) surfaces as exactly
+ *   `69 - 68 = 1` and a `> 1` test silently swallows it — the ellipsis renders
+ *   but `truncated` stays false, so `showTooltip` never fires.
  */
 export function isOverflowing(input: EllipsisMeasureInput): boolean {
-  const TOL = 1;
-  if (input.scrollHeight - input.clientHeight > TOL) return true;
+  const HEIGHT_TOL = 1;
+  if (input.scrollHeight - input.clientHeight > HEIGHT_TOL) return true;
   if (
     input.rows <= 1 &&
     input.scrollWidth !== undefined &&
     input.clientWidth !== undefined &&
-    input.scrollWidth - input.clientWidth > TOL
+    input.scrollWidth > input.clientWidth
   ) {
     return true;
   }

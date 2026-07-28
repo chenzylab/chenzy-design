@@ -244,8 +244,11 @@
     }
   }
 
-  /* with-icon-only（纯图标）：方形尺寸 + iconOnly 内边距（对齐 Semi -with-icon-only）。 */
-  :global(.cd-button-with-icon-only) {
+  /* with-icon-only（纯图标）：方形尺寸 + iconOnly 内边距（对齐 Semi -with-icon-only）。
+     选择器带上 `.cd-button` 补一级特异性：基础 padding 规则是 `.cd-button.svelte-xxx`(0,2,0)，
+     单靠 `.cd-button-with-icon-only`(0,1,0) 会被它压过，导致纯图标按钮拿到 default padding
+     （实测 6px，Semi 是 iconOnly 的 8px）。 */
+  :global(.cd-button.cd-button-with-icon-only) {
     padding-left: var(--cd-spacing-button-icononly-default-paddingleft);
     padding-right: var(--cd-spacing-button-icononly-default-paddingright);
     padding-top: var(--cd-spacing-button-icononly-default-paddingtop);
@@ -255,7 +258,7 @@
     justify-content: center;
     align-items: center;
   }
-  :global(.cd-button-with-icon-only.cd-button-size-small) {
+  :global(.cd-button.cd-button-with-icon-only.cd-button-size-small) {
     padding-left: var(--cd-spacing-button-icononly-small-paddingleft);
     padding-right: var(--cd-spacing-button-icononly-small-paddingright);
     padding-top: var(--cd-spacing-button-icononly-small-paddingtop);
@@ -263,7 +266,7 @@
     height: var(--cd-height-button-icononly-small);
     width: var(--cd-width-button-icononly-small);
   }
-  :global(.cd-button-with-icon-only.cd-button-size-large) {
+  :global(.cd-button.cd-button-with-icon-only.cd-button-size-large) {
     padding-left: var(--cd-spacing-button-icononly-large-paddingleft);
     padding-right: var(--cd-spacing-button-icononly-large-paddingright);
     padding-top: var(--cd-spacing-button-icononly-large-paddingtop);

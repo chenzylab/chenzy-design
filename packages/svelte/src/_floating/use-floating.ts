@@ -24,6 +24,11 @@ export interface UseFloatingOptions {
   arrowPointAtCenter?: boolean;
   /** distance (px) from the aligned edge to the arrow for start/end alignment */
   arrowEdgeDistance?: number;
+  /**
+   * Overlay mode (Semi `…Over` positions): cover the trigger instead of sitting
+   * beside it — leading edges aligned, pulled back by `offset`, no flipping.
+   */
+  over?: boolean;
   /** called after each reposition with the resolved side/align + arrow offset */
   onPlacement?: (info: { placement: Placement; arrowOffset: number }) => void;
   /**
@@ -65,6 +70,7 @@ export function useFloating(
     matchWidth = false,
     arrowPointAtCenter = false,
     arrowEdgeDistance,
+    over = false,
     onPlacement,
     getContainer,
   } = options;
@@ -154,6 +160,7 @@ export function useFloating(
       autoAdjust,
       padding,
       arrowPointAtCenter,
+      over,
       ...(arrowEdgeDistance !== undefined ? { arrowEdgeDistance } : {}),
     });
     let x = result.x;

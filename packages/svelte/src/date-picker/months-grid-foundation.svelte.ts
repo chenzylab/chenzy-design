@@ -29,7 +29,8 @@ export interface PanelDetail {
 
 export interface MonthsGridFoundationProps {
   type: PickerType;
-  defaultPickerValue?: Date | undefined;
+  /** 面板初始定位日期（对齐 Semi ValueType）：数组时 [0] 定位左面板、[1] 定位右面板。 */
+  defaultPickerValue?: Date | Date[] | undefined;
   weekStartsOn?: number | undefined;
   disabledDate?: ((date: Date, options?: unknown) => boolean) | undefined;
   /** 禁用时间（对齐 Semi disabledTime）：返回时间列 disabledHours/Minutes/Seconds。 */
@@ -78,9 +79,15 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     return { pickerDate: base, showDate: base, isTimePickerOpen: false, isYearPickerOpen: false };
   }
 
-  const initBase = (() => {
+  // 面板初始定位日期（照搬 Semi getDefaultPickerDate）：数组时 [0]→左面板、[1]→右面板；
+  // 右面板缺省（非数组 / [1] 非法）则回退 addMonths(左, 1)。
+  const { initBase, initBaseRight } = (() => {
     const dpv = p().defaultPickerValue;
-    return dpv && isValidDate(dpv) ? dpv : new Date();
+    const now = Array.isArray(dpv) ? dpv[0] : dpv;
+    const next = Array.isArray(dpv) ? dpv[1] : undefined;
+    const nowDate = now && isValidDate(now) ? now : new Date();
+    const nextDate = next && isValidDate(next) ? next : addMonths(nowDate, 1);
+    return { initBase: nowDate, initBaseRight: nextDate };
   })();
 
   // ===== state（对齐 Semi getStates）=====
@@ -93,7 +100,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
   let offsetRangeEnd = $state<string>('');
   // rangeInputFocus 由外部 props 驱动（对齐 Semi：它是 prop 非 foundation state）。
   const monthLeft = $state<PanelDetail>(initPanel(initBase));
-  const monthRight = $state<PanelDetail>(initPanel(addMonths(initBase, 1)));
+  const monthRight = $state<PanelDetail>(initPanel(initBaseRight));
 
   function isRangeType(type?: PickerType): boolean {
     const realType = type ?? p().type;
@@ -223,6 +230,18 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     if (!rs || !re) return;
     let startDate = fullDateToDate2(rs);
     let endDate = fullDateToDate2(re);
+    // rangeStart/rangeEnd 由点日期写入时**只有日期没有时间**（day.fullDate 是 yyyy-MM-dd），
+    // 直接解析会得到 00:00:00。未被改动的那一端要用它自己的面板游标 pickerDate 补回时间，
+    // 否则改右端时间会把左端一起打成 0 点（Semi 那边 rangeStart 始终含时间故无此问题）。
+    const hasTime = (s: string) => /\s/.test(s.trim());
+    if (!hasTime(rs)) {
+      const t = monthLeft.pickerDate;
+      startDate.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), t.getMilliseconds());
+    }
+    if (!hasTime(re)) {
+      const t = monthRight.pickerDate;
+      endDate.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), t.getMilliseconds());
+    }
     // 合并对应端日期 + 新时间。
     const mergeSameDay = (src: Date, t: Date) =>
       new Date(
@@ -430,6 +449,54 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
   }
 
+  /**
+   * syncPanelsFromRangeValue —— 照搬 Semi `_initDateRangePickerFromValue`：
+   * 用 range 两端的**各自** Date 去初始化对应面板的 pickerDate。
+   *
+   * pickerDate 不只是「面板停在哪个月」，dateTimeRange 下它还是**该端的时间源**
+   * （notifySelectedChange 里 startTime=monthLeft.pickerDate、endTime=monthRight.pickerDate）。
+   * 此前只同步了 rangeStart/rangeEnd 两个日期串、从不写 pickerDate，导致：
+   *   · 右面板时间显示的是左端的时间（两端时间不同时右边显示错的）
+   *   · 改右端时间会用左端的分秒去合成，把起始时间也带偏
+   */
+  function syncPanelsFromRangeValue(values: Array<Date | null>): void {
+    const left = values[0];
+    const right = values[1];
+    // 照搬 Semi `_autoAdjustMonth`（monthsGridFoundation.ts:785）：两面板月份
+    // 左>右则交换、相同则右面板 +1 个月。缺这一步时「两端同月」（如 1-05 ~ 2-12 里
+    // 只改终点到 2-20）会让左右都停在同一月，日格重复、点击落到错的面板。
+    let pLeft = left && isValidDate(left) ? left : undefined;
+    let pRight = right && isValidDate(right) ? right : undefined;
+    if (pLeft && pRight) {
+      const diff = differenceInCalendarMonths(pLeft, pRight);
+      if (diff > 0) [pLeft, pRight] = [pRight, pLeft];
+      else if (diff === 0) pRight = addMonths(pRight, 1);
+    }
+    if (pLeft) _updatePanelDetail(LEFT, { pickerDate: pLeft, showDate: pLeft });
+    if (pRight) _updatePanelDetail(RIGHT, { pickerDate: pRight, showDate: pRight });
+    // 同时把 rangeStart/rangeEnd 也从 value 写回（照搬 Semi 同名函数末段
+    // `setRangeStart/setRangeEnd`，dateTimeRange 走 withTime=true 的 FORMAT_DATE_TIME）。
+    // **不可省**：面板关闭会销毁 portal 内容、foundation 随之重建，rangeStart/rangeEnd
+    // 回到空串。而 _updateTimeInDateRange 以 `if (!rs || !re) return` 为守卫，
+    // 于是「选完 → 关闭 → 重开 → 改时间」时它直接 return，面板时间列动了但值不提交。
+    const withTime = p().type === 'dateTimeRange';
+    const fmt = (d: Date) =>
+      withTime
+        ? fmtDateTime(d)
+        : formatFullDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    let rs = left && isValidDate(left) ? fmt(left) : '';
+    let re = right && isValidDate(right) ? fmt(right) : '';
+    if (rs && re && _isNeedSwap(rs, re)) [rs, re] = [re, rs];
+    rangeStart = rs;
+    rangeEnd = re;
+    hoverDay = re;
+    // 值被清空（两端皆空）时把高亮集合也清掉——照搬 Semi updateSelectedFromProps
+    // 的空值分支（monthsGridFoundation.ts:196-206：updateDaySelected(new Set())
+    // + setRangeStart('') + setRangeEnd('')）。
+    // 缺这一步时「面板打开着清空」会出现触发器已回占位符、面板仍高亮旧区间。
+    if (!rs && !re && selected.size) selected = new Set();
+  }
+
   function handleSwitchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType): void {
     const rangeType = isRangeType();
     const syncSwitchMonth = !!p().syncSwitchMonth;
@@ -506,6 +573,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     showTimePicker,
     showDatePanel,
     syncPanelToBase,
+    syncPanelsFromRangeValue,
     toYearMonth,
   };
 }

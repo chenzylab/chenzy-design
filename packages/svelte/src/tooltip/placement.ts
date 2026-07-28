@@ -9,8 +9,10 @@ import { parsePlacement, makePlacement, type Placement, type Side } from '@chenz
  *    Right=右边缘对齐（align end）、无后缀=居中。
  *  - left/right 系：主轴横向、交叉轴纵向。Top=浮层顶边缘对齐（align start）、
  *    Bottom=底边缘对齐（align end）、无后缀=居中。
- *  - leftTopOver/rightTopOver：Semi 特殊，浮层顶部与触发器顶部对齐并允许覆盖到触发器上方，
- *    定位语义等同 leftStart/rightStart（我们不做 over 覆盖，退化为 start 对齐）。
+ *  - leftTopOver/rightTopOver：Semi 特殊，浮层**覆盖住触发器**（左/上边缘与触发器对齐后
+ *    回退 spacing，不沿主轴推开）。定位由 core computePosition 的 `over` 开关实现
+ *    （照搬 semi-foundation/tooltip/foundation.ts `case 'leftTopOver'`），
+ *    side/align 仍映射到 leftStart/rightStart 以驱动箭头与 x-placement。
  */
 export type Position =
   | 'top'
@@ -81,6 +83,14 @@ const PLACEMENT_TO_POSITION: Record<Placement, Position> = {
 /** Semi position（如 topLeft）→ core Placement（如 topStart）。 */
 export function positionToPlacement(position: Position): Placement {
   return POSITION_TO_PLACEMENT[position] ?? 'top';
+}
+
+/**
+ * 该 position 是否为覆盖型（Semi `…Over`）——浮层压在触发器上而非推开。
+ * 由 Tooltip 转成 core computePosition 的 `over` 开关。
+ */
+export function isOverPosition(position: Position): boolean {
+  return position.endsWith('Over');
 }
 
 /** core Placement（flip 后，如 bottomStart）→ Semi position（如 bottomLeft）。 */
