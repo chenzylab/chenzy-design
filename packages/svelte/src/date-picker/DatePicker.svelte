@@ -577,6 +577,13 @@
 
   function openPanel() {
     if (disabled) return;
+    // triggerRender + range：没有原生 range input 可聚焦，打开面板时默认聚焦 rangeStart
+    // （照搬 Semi foundation.handleTriggerWrapperClick 的 triggerRender 分支及其注释：
+    //  "因为没有 input，因此打开面板时默认 focus 在 rangeStart"）。
+    // 漏掉则 focusRecords 永远为 false/false → 选完起点后越界日期不禁用。
+    if (st.isRange && !rangeInputFocus && triggerRender) {
+      setRangeInputFocus('rangeStart');
+    }
     st.setOpen(true);
   }
 

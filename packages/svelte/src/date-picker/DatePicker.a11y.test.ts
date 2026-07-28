@@ -4,7 +4,7 @@
  * 点日期回调 onChange + 关闭、受控 value 回显、defaultOpen 直接展开。
  */
 import { describe, it, expect, vi } from 'vitest';
-import { tick, mount, unmount } from 'svelte';
+import { tick, mount, unmount, createRawSnippet } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import DatePicker from './DatePicker.svelte';
 
@@ -680,6 +680,41 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
       left.querySelector(`[aria-label="${label}"]`)?.getAttribute('aria-disabled') === 'true';
     expect(isDisabled('2026-01-10'), '早于起点的日期应禁用').toBe(true);
     expect(isDisabled('2026-01-20'), '晚于起点的日期不应禁用').toBe(false);
+  });
+
+  it('triggerRender + range：打开面板默认聚焦 rangeStart，越界禁用照常生效', async () => {
+    // Semi foundation.handleTriggerWrapperClick 的 triggerRender 分支：
+    // 「因为没有 input，因此打开面板时默认 focus 在 rangeStart」。
+    // 回归：本库 openPanel 只 setOpen，triggerRender 场景下 focusRecords 恒 false/false
+    // → 选完起点后越界日期不禁用（默认触发器场景因为点了 input 才碰巧正常）。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: {
+        type: 'dateRange',
+        defaultPickerValue: new Date(2026, 0, 1),
+        triggerRender: createRawSnippet(() => ({ render: () => '<button>pick</button>' })),
+      },
+    });
+    await tick();
+
+    (target.querySelector('button') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+
+    const left = document.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-16"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+
+    expect(
+      left.querySelector('[aria-label="2026-01-10"]')?.getAttribute('aria-disabled'),
+      'triggerRender 下早于起点的日期也应禁用',
+    ).toBe('true');
+
+    unmount(api as never);
+    target.remove();
   });
 
   it('onChange 默认首参给 Date、次参给串（对齐 Semi onChangeWithDateFirst 默认 true）', async () => {
