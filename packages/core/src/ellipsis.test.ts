@@ -21,6 +21,20 @@ describe('isOverflowing', () => {
   it('1px sub-pixel tolerance not flagged', () => {
     expect(isOverflowing({ scrollHeight: 41, clientHeight: 40, rows: 2 })).toBe(false);
   });
+  it('single-row: 1px width overflow IS flagged (no width tolerance)', () => {
+    // 回归：宽度轴曾用 `> 1` 容差，而浏览器把 scrollWidth/clientWidth 取整——
+    // 真实的亚像素溢出（文本 68.81px 落在 68px 盒子）恰好呈现为 69-68=1 被吞掉，
+    // 表现为省略号已渲染但 truncated 仍 false → showTooltip 永不触发。
+    // 对齐 Semi util.tsx inRange 的严格比较 `scrollWidth <= offsetWidth`。
+    expect(
+      isOverflowing({ scrollHeight: 20, clientHeight: 20, scrollWidth: 69, clientWidth: 68, rows: 1 }),
+    ).toBe(true);
+  });
+  it('single-row: equal widths → false', () => {
+    expect(
+      isOverflowing({ scrollHeight: 20, clientHeight: 20, scrollWidth: 68, clientWidth: 68, rows: 1 }),
+    ).toBe(false);
+  });
 });
 
 describe('truncateText', () => {
