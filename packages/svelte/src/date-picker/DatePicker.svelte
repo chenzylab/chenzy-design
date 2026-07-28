@@ -951,9 +951,15 @@
   /* month 内边距 16→10（Semi $spacing-datepicker_month_compact-padding）。
      本库 month 是 content-box + width=day×7 + 自身 padding，与 Semi「padding 放 weeks/weekday」
      结构不同但等效；此处沿用本库模型只换值，避免把 padding 挪到 weeks 后挤压日格宽度。 */
+  /* 照搬 Semi compact（datePicker.scss:1369-1372）：month 自身 `padding: 0` + 固定宽，
+     横向内边距交给 weeks/weekday 承担。**不可两层都加**——month 留 10 再给子级各加 10
+     会双重内缩，内容宽不足 7 列致星期行折行（日一二三四五 / 六）。 */
   :global(.cd-datepicker-compact .cd-datepicker-month) {
-    padding: var(--cd-spacing-date-picker-weeks-compact-padding, 10px);
-    padding-top: 0;
+    width: calc(
+      var(--cd-width-date-picker-day-compact, 28px) * 7 +
+        var(--cd-spacing-date-picker-weeks-compact-padding, 10px) * 2
+    );
+    padding: 0;
   }
   /* 日期网格顶部留白（Semi $spacing-datepicker_weeks_compact-paddingTop = $spacing-tight - 2 = 6）。 */
   /* 照搬 Semi compact：`padding: 10` 四边，再单独覆盖 padding-top（spacing-tight - 2 = 6）。
@@ -1028,6 +1034,12 @@
       var(--cd-width-date-picker-day-compact, 28px) * 7 +
         var(--cd-spacing-date-picker-weeks-compact-padding, 10px) * 2
     );
+  }
+  /* 撑住 tpk/yam 覆盖层的保底高**只在覆盖层打开时生效**（Semi 把它挂在
+     `.semi-datepicker-yam-showing` 上，见 datePicker.scss:1298）。
+     此前无条件挂在 month-grid-* 上，纯日期面板也被撑高——内容仅需 248
+     却被拉到 288，日期网格与 bottomSlot 之间空出 40px。 */
+  :global(.cd-datepicker-compact .cd-datepicker-yam-showing) {
     min-height: calc(
       var(--cd-height-date-picker-tpk-compact, 256px) +
         var(--cd-height-date-picker-switch-compact, 32px)
