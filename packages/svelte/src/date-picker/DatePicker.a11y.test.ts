@@ -648,6 +648,34 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('monthRange 右面板：同年时早于起始月的月份禁用（对齐 Semi isRightPanelDisabled）', async () => {
+    // Semi yearAndMonth.tsx renderColMonth:
+    //   panelType===right && currentMonth[left] && currentYear[left]===currentYear[right]
+    //   && currentMonth[left] > month
+    // 回归：年列早有对应的 needDisabled，月列此前只应用 disabledDate，
+    // 导致 monthRange 左右同年时右面板早于起始月的月份仍可选。
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'monthRange',
+        defaultOpen: true,
+        defaultValue: [new Date(2026, 6, 1), new Date(2026, 7, 1)], // 2026-07 ~ 2026-08
+      },
+    });
+    await tick();
+
+    const lists = document.querySelectorAll('ul[role="listbox"]');
+    expect(lists.length, 'monthRange 应有 4 列（左年/左月/右年/右月）').toBe(4);
+    // 按**列内序位**判断，不解析文案——renderWithLocale 默认 en_US，月名是
+    // January/February…，parseInt 会得 NaN（这里踩过一次）。
+    const rightMonths = [...lists[3]!.querySelectorAll('li[role="option"]')];
+    const isDisabled = (li: Element) =>
+      li.getAttribute('aria-disabled') === 'true' || li.className.includes('disabled');
+    const disabledIdx = rightMonths.flatMap((li, i) => (isDisabled(li) ? [i] : []));
+    // 起始月为 7 → 右面板前 6 项（1..6 月）禁用，第 7 项起可选
+    expect(disabledIdx, '右面板应禁用前 6 个月').toEqual([0, 1, 2, 3, 4, 5]);
+    expect(isDisabled(rightMonths[6]!), '第 7 个月（起始月本身）不应禁用').toBe(false);
+  });
+
   it('中文 locale：年/月列选中项加“年”“月”后缀（对齐 Semi 两列各一个 transform）', async () => {
     // Semi yearAndMonth.tsx:158/205 —— zh-CN/zh-TW 下年列 `${val}年`、月列 `${val}月`，
     // 且 transform 只作用于**选中项**（未选中的月份保持裸数字）。
