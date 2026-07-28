@@ -1163,6 +1163,51 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     target.remove();
   });
 
+  it('triggerRender range：清空后再选，首点应记为起点（对齐 Semi initRangeInputFocus）', async () => {
+    // Semi foundation.initRangeInputFocus（foundation.ts:271）由 initFromProps 在
+    // **每次 value 变化**时调用一次：value 清空 + triggerRender 时把焦点复位到 rangeStart。
+    // 回归：消费方自带的清除按钮（如本 demo 的 IconClose）直接把受控 value 置空、
+    // 不经 handleClear，漏掉这条时 rangeInputFocus 仍停在 'rangeEnd'，
+    // 清空后再点日期会被标成 selected-end 而非起点，表现为「选了没反应」。
+    // 非受控 + 内置清除按钮这条路已由上一条用例覆盖；这里锁 triggerRender 场景
+    // 「清空后首点记为起点」——用 defaultValue（非受控）+ 组件自身清空来驱动。
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const api = mount(DatePicker, {
+      target,
+      props: {
+        type: 'dateTimeRange',
+        defaultOpen: true,
+        defaultValue: [new Date(2026, 0, 5, 15, 0, 0), new Date(2026, 1, 12, 15, 0, 0)],
+        triggerRender: createRawSnippet(() => ({ render: () => '<button>pick</button>' })),
+      },
+    }) as unknown as { clear?: () => void };
+    await tick();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    // 先点终点端，制造 rangeInputFocus='rangeEnd' 的现场
+    const right = document.querySelector(`.${PREFIX}-month-grid-right`)!;
+    (right.querySelector('[aria-label="2026-02-20"]') as HTMLElement)?.click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    // 此时区间不完整（起点被清、等待重选），焦点应已回到起始端：
+    // 再点一个更早的日期，必须落在**起点**而非终点。
+    const left = document.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-08"]') as HTMLElement)?.click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    const startLabel = document
+      .querySelector(`.${PREFIX}-day-selected-start`)
+      ?.getAttribute('aria-label');
+    expect(startLabel, '重选后应有明确的起点标记').toBeTruthy();
+
+    unmount(api as never);
+    target.remove();
+  });
+
   it('清空后复位 rangeInputFocus（对齐 Semi setRangeInputFocus(false)）', async () => {
     // 回归：清空只写空值、没复位焦点态，触发器会残留 -active 高亮。
     // 用 defaultValue（非受控）——受控 value 下 Semi 同样不自行清值

@@ -38,6 +38,11 @@ export type PresetsType = Array<PresetType | (() => PresetType)>;
  */
 export interface DatePickerFoundationProps {
   type: PickerType;
+  /**
+   * 是否使用了自定义触发器（对齐 Semi props.triggerRender）。
+   * foundation 只需知道「有没有」——initRangeInputFocus 的守卫要用它。
+   */
+  hasTriggerRender?: boolean | undefined;
   value?: Date | Date[] | RangeValue | null | undefined;
   defaultValue?: Date | Date[] | RangeValue | null | undefined;
   open?: boolean | undefined;
@@ -266,6 +271,26 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     return /range/i.test(p().type);
   }
 
+  /**
+   * initRangeInputFocus —— 照搬 Semi foundation.ts:271。
+   * Semi 原注释：「如果用户传了一个空的 value，需要把 range input focus 设置为
+   * rangeStart，这样用户可以清除完之后继续从开始选择」。
+   *
+   * 判定纯函数：返回 true 表示调用方应把 rangeInputFocus 置为 'rangeStart'。
+   * 守卫逐条对齐 Semi：range 类型 + 有 triggerRender + value 为空。
+   * 限定 triggerRender 是因为默认触发器有原生 input，用户点哪端就聚焦哪端；
+   * 自定义触发器没有 input 可点，清空后不兜底就会停在上一次的 'rangeEnd'——
+   * 再点日期会被标成 selected-end 而非起点，表现为「选了没反应」。
+   *
+   * 放在 foundation 而非组件里：这是状态判定规则（与 Semi 同层），
+   * 组件只负责在 value 变化时应用它。
+   */
+  function initRangeInputFocus(): boolean {
+    if (!_isRangeType() || !p().hasTriggerRender) return false;
+    const [s, e] = currentRange;
+    return !s && !e;
+  }
+
   /** _isRangeValueComplete —— 对齐 Semi：range 两端皆非空才算完整；空数组视为完整。 */
   function _isRangeValueComplete(value: Array<Date | null>): boolean {
     return !value.some((d) => d == null);
@@ -397,6 +422,7 @@ export function createDatePickerState(getProps: () => DatePickerFoundationProps)
     formatShowText,
     handleSelectedChange,
     handleRangeSelectedChange,
+    initRangeInputFocus,
     parseInput,
     handleInputComplete,
     // open

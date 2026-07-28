@@ -330,6 +330,7 @@
   // foundation：值模型/格式化/open（rune 工厂，getProps 回调跨文件响应式）。
   const fProps: DatePickerFoundationProps = {
     get type() { return type; },
+    get hasTriggerRender() { return !!triggerRender; },
     get value() { return value; },
     get defaultValue() { return defaultValue; },
     get open() { return openProp; },
@@ -510,6 +511,29 @@
     // selected/rangeStart/rangeEnd。否则「面板开着点清空」会出现触发器已回占位符、
     // 面板仍高亮旧区间；受控用法（demo 自己 onClear 把 value 置空）也走这条路。
     queueMicrotask(() => grid.syncPanelsFromRange([pair[0], pair[1]]));
+  });
+
+  /**
+   * value 变空时把 range 焦点复位到起始端。判定规则在 foundation 的
+   * `initRangeInputFocus()`（与 Semi 同层同名），组件只负责在 value 变化时应用。
+   *
+   * 对齐 Semi：它由 `initFromProps` 在**每次 value 变化**时调用，故任何清空路径
+   * 都覆盖得到。只在 handleClear 里复位是不够的——消费方常自带清除按钮
+   * （如 triggerRender demo 的 IconClose），直接把受控 value 置空、不经 handleClear。
+   */
+  // 上一次见到的 value 身份（用于「仅在 value 真的变化时」应用复位）。
+  let prevValueKey: string | undefined;
+  $effect(() => {
+    const pair = st.currentRange;
+    const key = `${pair[0] ? pair[0].getTime() : ''}|${pair[1] ? pair[1].getTime() : ''}`;
+    if (key === prevValueKey) return;
+    prevValueKey = key;
+    // **必须只在 value 变化的那一拍应用**（对齐 Semi：initRangeInputFocus 由
+    // initFromProps 在每次 value 变化时调用一次，而非持续生效）。
+    // 若每次求值都强推 'rangeStart'，会与「选完起点后自动切到 rangeEnd」的正常
+    // 焦点流转打架——currentRange 只在两端齐全时才提交，选完起点它仍是空，
+    // 于是焦点被反复拽回起点，第二次点击永远只改起点、区间凑不齐。
+    if (st.initRangeInputFocus()) setRangeInputFocus('rangeStart');
   });
 
   // 面板关闭：提交未决输入并清编辑态（对齐 Semi 关闭时 handleInputComplete，展示回落 formattedValue）。
