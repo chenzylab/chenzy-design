@@ -718,6 +718,40 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(end, '结束时间应保留自己的分秒（:14:53）而非取用开始端的').toBe('08:14:53');
   });
 
+  it('dateTimeRange 现选日期后改一端时间，另一端时间不被打成 0 点', async () => {
+    // 回归：点日期写入的 rangeStart/rangeEnd **只有日期没有时间**（day.fullDate 是 yyyy-MM-dd），
+    // _updateTimeInDateRange 直接解析会得 00:00:00，于是改右端时间把左端一起打成 0 点。
+    // 未被改动那一端必须用自己的面板游标 pickerDate 补回时间。
+    // （Semi 那边 rangeStart 每次选择后都写回含时间的串，故无此问题。）
+    const onChange = vi.fn<(a: unknown, b: unknown) => void>();
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateTimeRange',
+        defaultOpen: true,
+        defaultPickerValue: new Date(2026, 0, 1, 14, 20, 11),
+        onChange,
+      },
+    });
+    await tick();
+
+    // 现场选两端日期（不经 value，走 day.fullDate 这条只有日期的路径）
+    const left = document.querySelector(`.${PREFIX}-month-grid-left`)!;
+    (left.querySelector('[aria-label="2026-01-05"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+    (left.querySelector('[aria-label="2026-01-20"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 20));
+    await tick();
+
+    const strOf = (i: number) => {
+      const last = onChange.mock.calls.at(-1);
+      return Array.isArray(last?.[1]) ? (last![1] as string[])[i] : undefined;
+    };
+    // 两端都应带 14:20:11（来自 defaultPickerValue 的时间），而非 00:00:00
+    expect(strOf(0), '起点应带时间').toContain('14:20:11');
+    expect(strOf(1), '终点应带时间').toContain('14:20:11');
+  });
+
   it('triggerRender + range：打开面板默认聚焦 rangeStart，越界禁用照常生效', async () => {
     // Semi foundation.handleTriggerWrapperClick 的 triggerRender 分支：
     // 「因为没有 input，因此打开面板时默认 focus 在 rangeStart」。

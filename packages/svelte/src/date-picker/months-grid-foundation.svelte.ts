@@ -230,6 +230,18 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     if (!rs || !re) return;
     let startDate = fullDateToDate2(rs);
     let endDate = fullDateToDate2(re);
+    // rangeStart/rangeEnd 由点日期写入时**只有日期没有时间**（day.fullDate 是 yyyy-MM-dd），
+    // 直接解析会得到 00:00:00。未被改动的那一端要用它自己的面板游标 pickerDate 补回时间，
+    // 否则改右端时间会把左端一起打成 0 点（Semi 那边 rangeStart 始终含时间故无此问题）。
+    const hasTime = (s: string) => /\s/.test(s.trim());
+    if (!hasTime(rs)) {
+      const t = monthLeft.pickerDate;
+      startDate.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), t.getMilliseconds());
+    }
+    if (!hasTime(re)) {
+      const t = monthRight.pickerDate;
+      endDate.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), t.getMilliseconds());
+    }
     // 合并对应端日期 + 新时间。
     const mergeSameDay = (src: Date, t: Date) =>
       new Date(
