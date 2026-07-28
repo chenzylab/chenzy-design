@@ -100,6 +100,15 @@
     st.syncPanelToBase(base);
   }
 
+  /**
+   * 供 DatePicker 在打开面板时用 range 两端的真实 Date 初始化两个面板
+   * （照搬 Semi `_initDateRangePickerFromValue`）。dateTimeRange 下 pickerDate
+   * 同时是该端的**时间源**，不同步则右面板会拿左端的时间。
+   */
+  export function syncPanelsFromRange(values: Array<Date | null>): void {
+    st.syncPanelsFromRangeValue(values);
+  }
+
   // 受控 selected/range：外部传入优先，否则用内部状态机（对齐 Semi state）。
   // range 用 `||` 而非 `??`：外部 rangeStart/End 来自「已提交的值」（currentRange），
   // 而 range 只有两端都选完才提交，选中起点后外部仍是空串 ''——用 `??` 会让空串盖掉

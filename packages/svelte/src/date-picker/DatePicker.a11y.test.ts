@@ -682,6 +682,42 @@ describe('DatePicker 装配对齐 Semi（date 单面板）', () => {
     expect(isDisabled('2026-01-20'), '晚于起点的日期不应禁用').toBe(false);
   });
 
+  it('dateTimeRange：两端时间各自独立，改结束时间不动开始时间（对齐 Semi）', async () => {
+    // Semi `_initDateRangePickerFromValue` 用 values[0]/values[1] **各自** 初始化
+    // monthLeft/monthRight 的 pickerDate；dateTimeRange 下 pickerDate 同时是该端的时间源。
+    // 回归：本库只同步 rangeStart/rangeEnd 两个日期串、从不写 pickerDate，导致
+    // 右面板显示左端时间；改右端时间时还会用左端分秒合成，把起始时间一起带偏。
+    renderWithLocale(DatePicker, {
+      props: {
+        type: 'dateTimeRange',
+        defaultOpen: true,
+        defaultValue: [new Date(2026, 6, 1, 12, 14, 13), new Date(2026, 7, 20, 12, 14, 53)],
+      },
+    });
+    await tick();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    const times = () =>
+      [...document.querySelectorAll(`.${PREFIX}-switch-time`)].map((e) => e.textContent?.trim());
+    expect(times(), '两端应各自显示自己的时间').toEqual(['12:14:13', '12:14:53']);
+
+    // 切到右面板时间列，改小时
+    ([...document.querySelectorAll(`.${PREFIX}-switch-time`)][1] as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+    const hourList = document.querySelector(
+      `.${PREFIX}-month-grid-right ul[role="listbox"]`,
+    );
+    (hourList?.querySelectorAll('li[role="option"]')[8] as HTMLElement)?.click();
+    await new Promise((r) => setTimeout(r, 40));
+    await tick();
+
+    const [start, end] = times();
+    expect(start, '改结束时间不应影响开始时间').toBe('12:14:13');
+    expect(end, '结束时间应保留自己的分秒（:14:53）而非取用开始端的').toBe('08:14:53');
+  });
+
   it('triggerRender + range：打开面板默认聚焦 rangeStart，越界禁用照常生效', async () => {
     // Semi foundation.handleTriggerWrapperClick 的 triggerRender 分支：
     // 「因为没有 input，因此打开面板时默认 focus 在 rangeStart」。

@@ -447,7 +447,13 @@
   // 自增以重挂 InsetInput、丢弃其本地编辑态（对齐 Semi updateInsetInputValue(null)）。
   let insetInputReset = $state(0);
   // MonthsGrid 引用（手输提交后命令面板跳到输入值的月份）。
-  let monthsGridRef = $state<{ syncPanelTo: (base: Date) => void } | undefined>();
+  let monthsGridRef = $state<
+    | {
+        syncPanelTo: (base: Date) => void;
+        syncPanelsFromRange: (values: Array<Date | null>) => void;
+      }
+    | undefined
+  >();
   // 触发器根元素（autoFocus 挂载聚焦用）。
   let triggerEl = $state<HTMLElement | undefined>();
   // autoFocus（对齐 Semi）：挂载时聚焦触发器内 input（preventScroll 控制是否阻止滚动）。
@@ -480,6 +486,24 @@
       inputValue = null;
     }
   }
+
+  /**
+   * range 两端的真实 Date → 两个面板游标（照搬 Semi `_initDateRangePickerFromValue`）。
+   * dateTimeRange 下 pickerDate 同时是该端的**时间源**（notifySelectedChange 里
+   * startTime=monthLeft.pickerDate、endTime=monthRight.pickerDate）：不同步则右面板
+   * 显示左端的时间，改右端时间还会用左端的分秒去合成，把起始时间一起带偏。
+   *
+   * 用独立 $effect 跟随 value 而非只在「关→开」转换里做：defaultOpen 时面板
+   * 挂载即为打开态，转换永不发生（prevOpen 初值就是 true）。
+   */
+  $effect(() => {
+    if (!st.isRange || !st.isOpen) return;
+    const pair = st.currentRange;
+    if (!pair[0] && !pair[1]) return;
+    const grid = monthsGridRef;
+    if (!grid) return;
+    queueMicrotask(() => grid.syncPanelsFromRange([pair[0], pair[1]]));
+  });
 
   // 面板关闭：提交未决输入并清编辑态（对齐 Semi 关闭时 handleInputComplete，展示回落 formattedValue）。
   // 仅在 open 由 true→false 的转换时提交（否则面板常闭时每次输入都会被误清空）。

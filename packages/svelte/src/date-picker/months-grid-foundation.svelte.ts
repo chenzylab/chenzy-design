@@ -437,6 +437,27 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
   }
 
+  /**
+   * syncPanelsFromRangeValue —— 照搬 Semi `_initDateRangePickerFromValue`：
+   * 用 range 两端的**各自** Date 去初始化对应面板的 pickerDate。
+   *
+   * pickerDate 不只是「面板停在哪个月」，dateTimeRange 下它还是**该端的时间源**
+   * （notifySelectedChange 里 startTime=monthLeft.pickerDate、endTime=monthRight.pickerDate）。
+   * 此前只同步了 rangeStart/rangeEnd 两个日期串、从不写 pickerDate，导致：
+   *   · 右面板时间显示的是左端的时间（两端时间不同时右边显示错的）
+   *   · 改右端时间会用左端的分秒去合成，把起始时间也带偏
+   */
+  function syncPanelsFromRangeValue(values: Array<Date | null>): void {
+    const left = values[0];
+    const right = values[1];
+    if (left && isValidDate(left)) {
+      _updatePanelDetail(LEFT, { pickerDate: left, showDate: left });
+    }
+    if (right && isValidDate(right)) {
+      _updatePanelDetail(RIGHT, { pickerDate: right, showDate: right });
+    }
+  }
+
   function handleSwitchMonthOrYear(switchType: YearMonthChangeType, panelType: PanelType): void {
     const rangeType = isRangeType();
     const syncSwitchMonth = !!p().syncSwitchMonth;
@@ -513,6 +534,7 @@ export function createMonthsGridState(getProps: () => MonthsGridFoundationProps)
     showTimePicker,
     showDatePanel,
     syncPanelToBase,
+    syncPanelsFromRangeValue,
     toYearMonth,
   };
 }
