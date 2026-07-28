@@ -1,3 +1,13 @@
+/* Inter 字体（self-host，SIL OFL 1.1）—— Semi 官网同样在字体栈首放 Inter，
+   但它从字节 CDN 加载 ttf；本站改为 self-host woff2：无外部运行时依赖、
+   体积更小（每字重 ~23KB vs ttf ~252KB）。
+   只引 latin 子集与 400/500/600 三档（本库 fontWeight 实际用到的档位）——
+   中文由栈内 'PingFang SC' 承担，与 Semi 一致。
+   `@import` 必须位于文件最前（CSS 规范），勿移动。 */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+
 *, *::before, *::after { box-sizing: border-box; }
 /* 固定顶栏（.docs-header 高 60px，sticky top:0）下的锚点跳转留白：滚动容器统一
    scroll-padding-top，所有 scrollIntoView / hash 跳转（TOC、复制链接、meta 页与
