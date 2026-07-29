@@ -2,4 +2,4 @@
   import { TimePicker } from '@chenzy-design/svelte';
 </script>
 
-<TimePicker />
+<TimePicker format="HH:mm" defaultValue="10:24" />

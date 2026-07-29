@@ -7,6 +7,19 @@ export interface Locale {
   code: string;
   /** right-to-left language */
   rtl: boolean;
+  /**
+   * 该语言对应的 date-fns locale 对象（对齐 Semi locale bundle 的 `dateFnsLocale`）。
+   * 消费方（DatePicker / TimePicker）未显式传 dateFnsLocale prop 时回退到它，
+   * 使 `a`（上午/下午）、月份名等**跟随当前语言**而非恒为英文。
+   * 类型用结构性声明而非 `import('date-fns').Locale`，避免 locale 包被迫依赖 date-fns。
+   */
+  dateFnsLocale: {
+    code?: string;
+    formatLong?: unknown;
+    localize?: unknown;
+    match?: unknown;
+    options?: unknown;
+  };
   Modal: {
     okText: string;
     cancelText: string;
@@ -313,6 +326,20 @@ export interface Locale {
     selectDate: string;
     /** dateTime 面板切换到时间视图按钮 aria-label */
     selectTime: string;
+    /**
+     * 日历面板顶部「年 月」标题模板（对齐 Semi locale.monthText）。
+     * 占位符 `${year}` / `${month}`，由语言决定顺序：中文 '${year}年 ${month}'、英文 '${month} ${year}'。
+     * 不用标准 date token 是因为要做字符串 replace，月份 token `M` 可能误伤月名（如 May）——同 Semi 注释。
+     */
+    monthText: string;
+    /**
+     * 语言相关的日期格式串（对齐 Semi locale.localeFormatToken）。
+     * FORMAT_SWITCH_DATE：dateTime 面板底部 Switch 的日期文案格式，
+     * 英文 'MM/dd/yyyy'（07/29/2026）、中文 'yyyy-MM-dd'（2026-07-29）。
+     */
+    localeFormatToken: {
+      FORMAT_SWITCH_DATE: string;
+    };
     /** 月名（key=1..12，对齐 Semi locale.months；用于 YearAndMonth 月列展示） */
     months: Record<number, string>;
     /** 完整月名（滚轮定制，对齐 Semi locale.fullMonths） */
@@ -341,9 +368,18 @@ export interface Locale {
     confirm: string;
     clear: string;
     triggerLabel: string;
+    /**
+     * 选中项后缀单位（对齐 Semi locale.TimePicker.hour/minute/second）。
+     * **英文为空串**——Semi 英文选中项只显示数字 `08`，中文才显示 `08时`。
+     * 这三个键只用于选中项文案拼接，勿拿来当列 aria-label（那是 hourLabel/minuteLabel/secondLabel）。
+     */
     hour: string;
     minute: string;
     second: string;
+    /** 时/分/秒列的 aria-label（本库 a11y 补充，Semi 无；与上面的后缀单位是两码事，不可合并） */
+    hourLabel: string;
+    minuteLabel: string;
+    secondLabel: string;
     am: string;
     pm: string;
     rangeStart: string;

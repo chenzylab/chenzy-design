@@ -1,8 +1,13 @@
+// 走 `date-fns/esm/locale` 真 ESM 子路径：date-fns@2 的 `date-fns/locale` 是 CJS，
+// Node ESM loader 解析不出（docs dev SSR 500）。同 core 里 date-fns-tz/esm 的既有修法。
+import { zhCN } from 'date-fns/esm/locale/index.js';
 import type { Locale } from './interface.js';
 
 export const zh_CN: Locale = {
   code: 'zh-CN',
   rtl: false,
+  // 对齐 Semi locale bundle 的 dateFnsLocale：让 `a` 渲染成「上午/下午」而非 am/pm。
+  dateFnsLocale: zhCN,
   Modal: { okText: '确定', cancelText: '取消', close: '关闭' },
   Input: { clear: '清除', showPassword: '显示密码', hidePassword: '隐藏密码' },
   Textarea: {
@@ -233,6 +238,10 @@ export const zh_CN: Locale = {
     monthColumnLabel: '月份',
     selectDate: '选择日期',
     selectTime: '选择时间',
+    monthText: '${year}年 ${month}',
+    localeFormatToken: {
+      FORMAT_SWITCH_DATE: 'yyyy-MM-dd',
+    },
     months: {
       1: '1月', 2: '2月', 3: '3月', 4: '4月', 5: '5月', 6: '6月',
       7: '7月', 8: '8月', 9: '9月', 10: '10月', 11: '11月', 12: '12月',
@@ -263,9 +272,13 @@ export const zh_CN: Locale = {
     confirm: '确定',
     clear: '清除',
     triggerLabel: '选择时间',
+    // 选中项后缀单位（对齐 Semi zh_CN）：中文选中项显示「08时」。
     hour: '时',
     minute: '分',
     second: '秒',
+    hourLabel: '小时',
+    minuteLabel: '分钟',
+    secondLabel: '秒',
     am: '上午',
     pm: '下午',
     rangeStart: '开始时间',

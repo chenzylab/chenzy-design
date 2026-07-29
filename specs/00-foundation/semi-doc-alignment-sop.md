@@ -32,6 +32,37 @@
 4. **能力缺口就补全**（不跳过）：Semi 有而本库缺的能力，改 core/svelte 源码补实现（改 core src 必 rebuild dist）；技术栈差异（HOC / withField 等 Svelte 无对应的）用本库替代技术呈现，**标题也用本库措辞**并说明。
 5. **API 表**：md 里手写表格。**表格/说明里的 `{ }` 花括号必须用反引号包**（`` `{ silent: true }` ``），否则 mdsvex 当 Svelte 表达式解析报错，页面 500。
 
+## 文件目录结构对齐
+
+对齐 Semi **不是只对齐渲染结果**，文件切分/命名也照 Semi 走——这样「Semi 哪个文件干什么」能一一映射到本库，后续排查/补齐能直接按图索骥（TimePicker 的 `Combobox` / `TimeInput` 拆分就是这么来的）。
+
+### 落点映射（Semi 双包 → 本库单目录）
+
+Semi 分 `semi-ui/<comp>/`（React 渲染层）+ `semi-foundation/<comp>/`（无框架逻辑层 + scss）两个包；本库合并为**一个组件目录** `packages/svelte/src/<comp-dir>/`，逻辑层用 `*-foundation` 文件承担，样式内联在 `.svelte` 的 `<style>`（scoped + `:global` 打洞），token 走 `packages/tokens`。
+
+| Semi | 本库 | 说明 |
+| --- | --- | --- |
+| `semi-ui/<comp>/<Comp>.tsx` | `<Comp>.svelte` | 主组件，**文件名保持 Semi 的 PascalCase 原名** |
+| `semi-ui/<comp>/<Sub>.tsx` | `<Sub>.svelte` | 子组件逐个对应（如 `Combobox.tsx`→`Combobox.svelte`、`TimeInput.tsx`→`TimeInput.svelte`）；**Semi 拆了本库就拆，别合并成一个巨型组件** |
+| `semi-foundation/<comp>/foundation.ts` | `<comp>-foundation.svelte.ts` | 有响应式状态用 `.svelte.ts`（rune），纯函数用 `.ts` |
+| `semi-foundation/<comp>/<X>Foundation.ts` | `<x>-foundation.ts` | 如 `inputFoundation.ts`→`input-foundation.ts`、`ComboxFoundation.ts`→`combobox-foundation.svelte.ts` |
+| `semi-foundation/<comp>/constants.ts` | `constants.ts` | 同名 |
+| `semi-foundation/<comp>/utils/` | `_utils/` | 下划线前缀（对齐本库既有 `_utils`/`_floating` 惯例） |
+| `semi-foundation/<comp>/{timePicker,rtl}.scss` + `variables.scss` | `.svelte` 内 `<style>` + `packages/tokens` | 本库无独立 scss；变量进 token 层 |
+| `semi-ui/<comp>/index.tsx` | `index.ts` | 导出口 |
+| `semi-ui/<comp>/__test__/` | 同目录 `*.a11y.test.ts` | **Svelte 组件测试必须叫 `*.a11y.test.ts`**（vitest dom project），叫 `*.test.ts` 会落 node project 编译不了 `.svelte` |
+| — | `meta.ts` | 本库特有（AI/docs 消费，见 ai-friendly.spec.md），Semi 无对应 |
+
+### 目录名
+
+- **组件目录名用 kebab-case**：Semi 是 camelCase（`timePicker`/`autoComplete`/`datePicker`），本库统一 `time-picker`/`auto-complete`/`date-picker`。**连字符组件的 token component 归属要用整名**（`time-picker` 而非 `time`）。
+- docs demo 目录同名：`packages/docs/src/demos/<comp-dir>/`，与 svelte 组件目录**同名**（`time-picker`），别一边 `timepicker` 一边 `time-picker`。
+- **md 文件名却是无连字符**：`packages/docs/src/content/components/timepicker.md`（对齐 Semi 路由 `/input/timepicker`）。即：**md 名无连字符、目录名有连字符**，三处别混（改名/移文件要同步所有消费方与 glob key，漏一处静默不加载）。
+
+### 判据
+
+对齐完跑一次「双向点名」：`ls ~/i/semi-design/packages/semi-ui/<comp>/` 逐个文件问「本库对应哪个」，反过来本库每个文件问「Semi 哪来的/为何本库特有」。答不上来的就是**漏拆**或**自造超集**——前者补、后者删或在 spec 里写明理由。
+
 ## 铁律（来自 Form 对齐踩坑，务必遵守）
 
 - **prop 名不统一，逐组件 grep 核对别想当然**：

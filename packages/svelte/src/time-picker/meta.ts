@@ -97,7 +97,9 @@ export const meta = {
       'format 字符串经 core parseFormatSpec 决定显示列与 12h（含 ss 显示秒列）',
     ],
   },
-  i18nKeys: ['TimePicker.placeholder', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.am', 'TimePicker.pm', 'TimePicker.rangeStart', 'TimePicker.rangeEnd'],
+  // hour/minute/second 是选中项后缀单位（英文为空串，对齐 Semi）；
+  // hourLabel/minuteLabel/secondLabel 才是列 aria-label（本库 a11y 补充）。
+  i18nKeys: ['TimePicker.placeholder', 'TimePicker.triggerLabel', 'TimePicker.hour', 'TimePicker.minute', 'TimePicker.second', 'TimePicker.hourLabel', 'TimePicker.minuteLabel', 'TimePicker.secondLabel', 'TimePicker.am', 'TimePicker.pm', 'TimePicker.rangeStart', 'TimePicker.rangeEnd'],
   // 面板列宽/面板高/range 双列分割线/圆角/阴影对齐 Semi timePicker/variables.scss；触发输入框复用
   // Input（--cd-input-* + 专属 --cd-radius-time-picker-input），时间列复用 ScrollList/ScrollItem
   // （其自身 --cd-*-scroll-list-* token）。

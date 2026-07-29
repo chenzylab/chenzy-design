@@ -20,10 +20,22 @@ describe('Switch 对齐 Semi', () => {
     // date 视图默认 active。
     expect(dateBtn?.classList.contains(`${PREFIX}-switch-date-active`)).toBe(true);
     expect(timeBtn?.classList.contains(`${PREFIX}-switch-date-active`)).toBe(false);
-    // 日期/时间文案。
-    expect(dateBtn?.textContent).toContain('2026-01-15');
+    // 日期文案走语言相关 FORMAT_SWITCH_DATE：英文 MM/dd/yyyy（renderWithLocale 默认 en_US）。
+    // 时间文案格式与语言无关（对齐 Semi 注释 "Timepicker format is constant"）。
+    expect(dateBtn?.textContent).toContain('01/15/2026');
     expect(timeBtn?.textContent).toContain('14:30:45');
     await expectNoAxeViolations(container);
+  });
+
+  it('日期文案按语言切换格式（对齐 Semi locale.localeFormatToken.FORMAT_SWITCH_DATE）', () => {
+    const en = renderWithLocale(Switch, { props: { showDate }, locale: 'en-US' });
+    expect(en.container.querySelector(`.${PREFIX}-switch-date`)?.textContent).toContain(
+      '01/15/2026',
+    );
+    const zh = renderWithLocale(Switch, { props: { showDate }, locale: 'zh-CN' });
+    expect(zh.container.querySelector(`.${PREFIX}-switch-date`)?.textContent).toContain(
+      '2026-01-15',
+    );
   });
 
   it('isTimePickerOpen=true 时 active 移到 time 段', () => {

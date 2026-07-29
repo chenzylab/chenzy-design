@@ -2,4 +2,4 @@
   import { TimePicker } from '@chenzy-design/svelte';
 </script>
 
-<TimePicker />
+<TimePicker minuteStep={15} secondStep={10} />

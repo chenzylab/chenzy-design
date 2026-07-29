@@ -1,8 +1,12 @@
+// 同 zh_CN：走真 ESM 子路径，勿改回 `date-fns/locale`（CJS，断 SSR）。
+import { enUS } from 'date-fns/esm/locale/index.js';
 import type { Locale } from './interface.js';
 
 export const en_US: Locale = {
   code: 'en-US',
   rtl: false,
+  // 对齐 Semi locale bundle 的 dateFnsLocale（英文即 AM/PM）。
+  dateFnsLocale: enUS,
   Modal: { okText: 'OK', cancelText: 'Cancel', close: 'Close' },
   Input: { clear: 'Clear', showPassword: 'Show password', hidePassword: 'Hide password' },
   Textarea: {
@@ -231,8 +235,12 @@ export const en_US: Locale = {
     backToDate: 'Back',
     yearColumnLabel: 'Year',
     monthColumnLabel: 'Month',
-    selectDate: 'Select date',
-    selectTime: 'Select time',
+    selectDate: 'Select Date',
+    selectTime: 'Select Time',
+    monthText: '${month} ${year}',
+    localeFormatToken: {
+      FORMAT_SWITCH_DATE: 'MM/dd/yyyy',
+    },
     months: {
       1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
       7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec',
@@ -262,9 +270,13 @@ export const en_US: Locale = {
     confirm: 'OK',
     clear: 'Clear',
     triggerLabel: 'Select time',
-    hour: 'Hour',
-    minute: 'Minute',
-    second: 'Second',
+    // 选中项后缀：英文无单位（对齐 Semi en_US hour/minute/second: ''），选中项只显示数字。
+    hour: '',
+    minute: '',
+    second: '',
+    hourLabel: 'Hour',
+    minuteLabel: 'Minute',
+    secondLabel: 'Second',
     am: 'AM',
     pm: 'PM',
     rangeStart: 'Start time',
