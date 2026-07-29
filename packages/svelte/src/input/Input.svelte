@@ -41,6 +41,15 @@
     prefix?: Snippet | string;
     /** 后缀标签（输入框内右侧）；传字符串直接渲染、传 Snippet 自定义（对齐 Semi suffix 接受 ReactNode）。 */
     suffix?: Snippet | string;
+    /**
+     * prefix/suffix 传 Snippet 时是否按「图标」计外边距（默认 true）。
+     *
+     * 对齐 Semi 的三态：`isString` → text 变体(12px)、`isSemiIcon` → icon 变体(8px)、
+     * **其余任意 ReactNode → 两个变体都不加（外边距为 0）**。Svelte 无法内省 Snippet 的内容，
+     * 缺省按最常见的图标处理；传非图标节点（如 ColorPicker 的 `%` 文本 span）时置 false，
+     * 落到 Semi 的第三态，否则平白多吃 8+8px 把输入区挤窄。
+     */
+    affixIsIcon?: boolean;
     /** 内嵌标签（渲染在输入框内左侧，与 prefix 同槽，对齐 Semi insetLabel）。 */
     insetLabel?: Snippet | string;
     /** 内嵌标签容器 id（关联 aria，对齐 Semi insetLabelId）。 */
@@ -120,6 +129,7 @@
     type = 'text',
     prefix,
     suffix,
+    affixIsIcon = true,
     insetLabel,
     insetLabelId,
     clearIcon,
@@ -374,7 +384,7 @@
     <div
       class="cd-input-prefix"
       class:cd-input-prefix-text={!prefixSnippet && !(insetLabel != null && prefix == null)}
-      class:cd-input-prefix-icon={!!prefixSnippet}
+      class:cd-input-prefix-icon={!!prefixSnippet && affixIsIcon}
       class:cd-input-inset-label={insetLabel != null && prefix == null}
       id={insetLabelId}
     >
@@ -436,7 +446,7 @@
     <div
       class="cd-input-suffix"
       class:cd-input-suffix-text={!suffixSnippet}
-      class:cd-input-suffix-icon={!!suffixSnippet}
+      class:cd-input-suffix-icon={!!suffixSnippet && affixIsIcon}
       class:cd-input-suffix-hidden={suffixHidden}
     >
       {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}

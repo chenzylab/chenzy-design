@@ -54,6 +54,8 @@
     insetLabelId?: string;
     /** 输入框后置内容（如单位 %、kg）；传 Snippet 可自定义渲染。 */
     suffix?: string | Snippet;
+    /** prefix/suffix 传 Snippet 时是否按图标计外边距，透传 Input（见 Input.affixIsIcon）。 */
+    affixIsIcon?: boolean;
     name?: string;
     /** input 元素 id，关联外部 label；不传自动生成。 */
     id?: string;
@@ -143,6 +145,7 @@
     insetLabel,
     insetLabelId,
     suffix,
+    affixIsIcon = true,
     name,
     id,
     ariaLabel,
@@ -559,6 +562,7 @@
     onKeyDown={handleKeydown}
     onFocus={handleFocus}
     onBlur={handleBlur}
+    {affixIsIcon}
     {...passPrefix ? { prefix: prefixNode } : {}}
     {...passSuffix ? { suffix: suffixNode } : {}}
     {...insetLabel !== undefined ? { insetLabel } : {}}

@@ -42,9 +42,9 @@ export const colorPickerTokens = {
   // —— 字体（对齐 Semi $font-colorPicker-*）——
   'font-color-picker-inputnumbersuffix-fontsize': { value: '14px', category: 'font', label: '百分比字号', usage: 'alpha 数字输入框后百分比字体大小' },
 
-  // —— chenzy 补充（Semi 靠 renderPicker 传入 handleSize/height，无对应字面量 token；组件消费）——
-  'color-picker-handle-size': { value: '20px', category: 'width', label: '色板把手尺寸', usage: '色板（colorChooseArea）拖拽把手边长（组件消费；对齐 Semi handleSize={20}）' },
-  'color-picker-slider-handle-size': { value: '18px', category: 'width', label: '滑块把手尺寸', usage: 'hue / alpha 滑块把手边长（组件消费；对齐 Semi slider handleSize={18}）' },
+  // —— chenzy 补充（Semi 无对应字面量 token；组件消费）——
+  // 注：把手边长 20/18 与滑块条高 10 在 Semi 是 renderPicker 传入的 props（handleSize/height），
+  // 本库同样走 props（constants.ts 的 AREA_HANDLE_SIZE / SLIDER_HANDLE_SIZE / SLIDER_HEIGHT），
+  // 故不建对应 token——建了也无 CSS 消费方，是「token 建好没接线」的老债。
   'color-picker-handle-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '把手阴影', usage: '拖拽把手阴影（组件消费）' },
-  'color-picker-slider-height': { value: '10px', category: 'height', label: '滑块高度', usage: 'hue / alpha 滑块条高度（组件消费；对齐 Semi height=10）' },
 } satisfies TokenGroup;

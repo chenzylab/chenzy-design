@@ -10,11 +10,11 @@ export const meta = {
   props: [
     { name: 'value', type: 'ColorValue', default: 'undefined', desc: '受控值（{ hsva, rgba, hex }，hsva 的 s/v 为 0-100）' },
     { name: 'defaultValue', type: 'ColorValue', default: '品牌绿 #39c5bb', desc: '非受控初始值（对齐 Semi defaultProps）' },
-    { name: 'alpha', type: 'boolean', default: 'false', desc: '显示 alpha 透明度滑条与百分比输入' },
+    { name: 'alpha', type: 'boolean', default: 'false', desc: '是否开启透明度选择（显示 alpha 滑条与百分比输入）；Semi 无 defaultProps 同为 falsy' },
     { name: 'width', type: 'number', default: '280', desc: '面板宽度 px（对齐 Semi width）' },
     { name: 'height', type: 'number', default: '280', desc: 'saturation 方块高度 px（对齐 Semi height）' },
     { name: 'defaultFormat', type: "'hex'|'rgba'|'hsva'", default: "'hex'", desc: 'DataPart 输入区初始格式（不受控，对齐 Semi）' },
-    { name: 'eyeDropper', type: 'boolean', default: 'true', desc: '支持 EyeDropper 时显示吸管按钮（降级隐藏）' },
+    { name: 'eyeDropper', type: 'boolean', default: 'true', desc: '是否开启滴管拾色器；需安全上下文（HTTPS/localhost）且浏览器支持 EyeDropper，否则按钮自动隐藏' },
     { name: 'usePopover', type: 'boolean', default: 'false', desc: '浮层模式：包裹 Popover，children 作触发器（对齐 Semi usePopover）' },
     { name: 'popoverProps', type: 'PopoverProps', default: 'undefined', desc: '透传内部 Popover 属性（仅 usePopover）' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '自定义触发器（仅 usePopover；缺省渲染默认色块，对齐 Semi children）' },
@@ -33,6 +33,13 @@ export const meta = {
       'usePopover 时浮层由 Popover 承载（含 focus trap / dismiss / Esc）',
     ],
   },
+  methods: [
+    {
+      name: 'colorStringToValue',
+      signature: '(raw: string) => ColorValue',
+      desc: '常见颜色字符串（#39c5bb / rgb(57,197,187) / rgba(...) / hsv(176,71,77)）转 ColorValue 三态对象；对齐 Semi 静态方法 ColorPicker.colorStringToValue，本库为具名导出（Svelte 组件无静态方法）',
+    },
+  ],
   tokens: [
     // Semi 全量对齐（semi-foundation/colorPicker/variables.scss 20 个，均被组件真消费）
     '--cd-radius-color-picker-topleft',
@@ -55,10 +62,8 @@ export const meta = {
     '--cd-spacing-color-picker-slider-margintop',
     '--cd-spacing-color-picker-datapart-margintop',
     '--cd-font-color-picker-inputnumbersuffix-fontsize',
-    // chenzy 补充消费段（Semi 靠 renderPicker 传入，无对应字面量 token）
-    '--cd-color-picker-handle-size',
+    // chenzy 补充消费段（Semi 无对应字面量 token；把手边长/滑块高走 props 同 Semi，不建 token）
     '--cd-color-picker-handle-shadow',
-    '--cd-color-picker-slider-height',
     // 跨组件共享语义 token
     '--cd-focus-ring',
   ],
