@@ -53,7 +53,7 @@ export const meta = {
     { name: 'virtualize', type: '{ itemSize?, height?, width? }', default: 'undefined', desc: '虚拟化对象（对齐 Semi）：传入即开启（仅非分组），itemSize 行高、height 视口高' },
     { name: 'maxHeight', type: 'number', default: '270', desc: '下拉最大高度（px，对齐 Semi）' },
     { name: 'dropdownMatchSelectWidth', type: 'boolean', default: 'true', desc: '浮层宽度是否跟随触发器；false 时浮层自适应内容宽度' },
-    { name: 'dropdownClassName', type: 'string', default: 'undefined', desc: '浮层根 div 追加的自定义 className（与内置 cd-select__dropdown 并存）' },
+    { name: 'dropdownClassName', type: 'string', default: 'undefined', desc: '浮层根 div 追加的自定义 className（与内置 cd-select-dropdown 并存）' },
     { name: 'dropdownStyle', type: 'string', default: 'undefined', desc: '浮层根 div 合并的自定义内联样式（勿含 position/transform）' },
     { name: 'zIndex', type: 'number', default: 'undefined', desc: '浮层层级（z-index）；不传由 CSS 层级 token 控制' },
     { name: 'dropdownMargin', type: 'number | { top?, bottom?, left?, right? }', default: 'undefined', desc: '浮层与触发器间距(px)，映射到 floating offset；object 按 position 主轴取值' },

@@ -68,7 +68,18 @@ export const selectTokens = {
   'select-height-default': { value: 'var(--cd-control-height-default)', category: 'height', label: '选择框高度', usage: '选择器高度 - 默认（组件消费）' },
   'select-height-small': { value: 'var(--cd-control-height-small)', category: 'height', label: '选择框高度', usage: '选择器高度 - 小尺寸（组件消费）' },
   'select-height-large': { value: 'var(--cd-control-height-large)', category: 'height', label: '选择框高度', usage: '选择器高度 - 大尺寸（组件消费）' },
-  'select-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选择框水平内边距', usage: '选择器水平内边距（组件消费）' },
+  'select-padding-x': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '选择框水平内边距', usage: '选择器水平内边距（组件消费；TreeSelect / Cascader 亦消费）' },
+  // 对齐 Semi $width-select_arrow / $spacing-select_selection-marginLeft：
+  // Semi 的触发器本身无水平内边距，左侧留白由内容区 margin-left 承担、右侧由固定宽的箭头盒承担。
+  'width-select-arrow': { value: '32px', category: 'width', label: '箭头区宽度', usage: '选择器下拉箭头区宽度（图标 16px 在其中居中，组件消费）' },
+  // 对齐 Semi `.semi-select { max-height: 300px; overflow-y: auto }`：内容超高滚动而非撑开触发器。
+  'select-max-height': { value: '300px', category: 'height', label: '选择框最大高度', usage: '选择器触发器最大高度，超出滚动（组件消费）' },
+  'spacing-select-selection-marginleft': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: '内容区左外边距', usage: '选择器内容区左侧外边距（组件消费）' },
+  // 对齐 Semi $spacing-select_multiple_selection-marginLeft：多选态内容区左外边距更小（4px）。
+  'spacing-select-multiple-selection-marginleft': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '多选内容区左外边距', usage: '多选选择器内容区左侧外边距（组件消费）' },
+  // 对齐 Semi $opacity-select_selection_text_inactive：触发器内搜索且输入为空时，
+  // 原回填文本叠在输入框下方淡出显示（Semi index.tsx:1057 selection-text-inactive）。
+  'opacity-select-selection-text-inactive': { value: '0.4', category: 'other', label: '回填文本淡出透明度', usage: '触发器内搜索、输入为空时原回填文本的淡出透明度（组件消费）' },
   'select-border': { value: 'transparent', category: 'color', label: '选择框描边色', usage: '选择器描边颜色 - 默认（组件消费）' },
   'select-border-active': { value: 'var(--cd-color-focus-border)', category: 'color', label: '聚焦描边色', usage: '选择器描边颜色 - 聚焦（组件消费）' },
   'select-border-error': { value: 'var(--cd-color-danger)', category: 'color', label: '错误描边色', usage: '选择器描边颜色 - 错误（组件消费）' },

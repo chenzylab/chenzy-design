@@ -274,7 +274,7 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 - [ ] 单选 / 多选 / 搜索 / 远程 / 虚拟化 / 创建项 / 分组 / 清除全部能力可用且符合对标 Semi 行为。
 - [ ] headless 逻辑落在 `@chenzy-design/core` 的 `createSelect`，复用 useDismiss/useRovingTabindex/useLiveAnnouncer/useId/useScrollLock/useFocusTrap；渲染层在 `@chenzy-design/svelte`。
 - [ ] API 遵守一致性约定：`value`+`on:change`、`open`+`on:openChange`、`size`(small|default|large)、`status`(default|warning|error)。
-- [ ] 类名为 `cd-` BEM-like（cd-select / cd-select__trigger / cd-select__dropdown / cd-select__option / cd-select--multiple 等）。
+- [x] 类名为 `cd-` 单连字符，对齐 Semi 零 BEM（cd-select / cd-select-trigger / cd-select-dropdown / cd-select-option / cd-select-multiple 等）。2026-07-29 全量折平，见 class-naming-convention.md。
 - [ ] 仅消费 `--cd-` Alias/Component token，无写死颜色/尺寸；暗色经 Alias 自动适配。
 - [ ] a11y 符合 WAI-ARIA APG combobox+listbox（activedescendant 模型），axe 零违规，键盘全流程通过，焦点正确回归。
 - [ ] 对比度 AA、reduced-motion 降级、RTL 镜像均验证。
