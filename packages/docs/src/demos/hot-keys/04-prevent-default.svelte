@@ -1,14 +1,23 @@
 <script lang="ts">
-  import { HotKeys, Text, Space } from '@chenzy-design/svelte';
+  import { HotKeys, Modal } from '@chenzy-design/svelte';
 
-  let intercepted = $state(0);
+  let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
 </script>
 
-<Space vertical>
-  <Space align="center">
-    <Text>preventDefault 拦截浏览器默认行为：</Text>
-    <HotKeys hotKeys={['Control', 'S']} preventDefault onHotKey={() => (intercepted += 1)} />
-    <Text type="tertiary">已拦截 Ctrl+S：{intercepted} 次</Text>
-  </Space>
-  <Text type="tertiary" size="small">按 Ctrl+S 不再触发浏览器「保存网页」，改为执行回调。</Text>
-</Space>
+<div>
+  <HotKeys hotKeys={[HotKeys.Keys.Meta, HotKeys.Keys.S]} onHotKey={showDialog} preventDefault />
+  <br />
+  <HotKeys hotKeys={[HotKeys.Keys.Control, HotKeys.Keys.S]} onHotKey={showDialog} preventDefault />
+  <Modal title="Dialog" {visible} onOk={handleOk} onCancel={handleCancel}>
+    This is the Modal opened by hotkey: {'Meta/Control + S'}.
+  </Modal>
+</div>

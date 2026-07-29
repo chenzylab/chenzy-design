@@ -307,6 +307,7 @@ export {
   getGlobalResizeObserver,
   type ResizeBox,
   type ResizeSchedule,
+  type ResizeObserverProperty,
   type CDResizeEntry,
   type ResizeObserverApi,
   type ResizeObserverOptions,

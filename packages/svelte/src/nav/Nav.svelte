@@ -18,20 +18,29 @@
   import type { Snippet } from 'svelte';
   import { setContext, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import type {
+    NavItemDef,
+    NavItemInput,
+    NavKey,
+    NavMode,
+    NavHeaderConfig,
+    NavFooterConfig,
+    NavSelectData,
+    NavClickData,
+    NavOpenChangeData,
+  } from './types.js';
   import {
     collectNavItemsByKeys,
     collectAncestorKeys,
     normalizeNavItems,
-    type NavItemDef,
-    type NavItemInput,
-    type NavKey,
-    type NavMode,
-    type NavHeaderConfig,
-    type NavFooterConfig,
-    type NavSelectData,
-    type NavClickData,
-    type NavOpenChangeData,
-  } from './types.js';
+  } from './nav-foundation.js';
+  import {
+    MODE_VERTICAL,
+    DEFAULT_SUBNAV_OPEN_DELAY,
+    DEFAULT_SUBNAV_CLOSE_DELAY,
+    DEFAULT_TOOLTIP_SHOW_DELAY,
+    DEFAULT_TOOLTIP_HIDE_DELAY,
+  } from './constants.js';
   import {
     NAV_CONTEXT_KEY,
     NAV_COLLECTOR_KEY,
@@ -39,8 +48,8 @@
     type NavCollector,
   } from './context.js';
   import NavItemRender from './NavItemRender.svelte';
-  import NavHeader from './NavHeader.svelte';
-  import NavFooter from './NavFooter.svelte';
+  import NavHeader from './Header.svelte';
+  import NavFooter from './Footer.svelte';
 
   interface Props {
     /** 导航项列表（字段对齐 Semi：itemKey/text/icon/items）。string 项取值作 text 与 itemKey。 */
@@ -122,7 +131,11 @@
     headerSlot?: Snippet;
     /** 自定义底部（覆盖 footer 配置对象）。 */
     footerSlot?: Snippet;
-    /** 声明式子项（<Nav.Item>/<Nav.Sub>）。与 items 二选一，items 优先。 */
+    /**
+     * 子内容，渲染在导航列表 ul 内、items 之后（对齐 Semi `{itemElems}{children}`）。
+     * 既可放声明式子项 <Nav.Item>/<Nav.Sub>（经 context 注册，自身不产 DOM；与 items 二选一，
+     * items 优先），也可放任意内容（如一组文字/链接），后者原样渲染。
+     */
     children?: Snippet;
   }
 
@@ -143,11 +156,11 @@
     expandIcon,
     renderIcon,
     subNavMotion = true,
-    subNavOpenDelay = 0,
-    subNavCloseDelay = 100,
+    subNavOpenDelay = DEFAULT_SUBNAV_OPEN_DELAY,
+    subNavCloseDelay = DEFAULT_SUBNAV_CLOSE_DELAY,
     subDropdownProps,
-    tooltipShowDelay = 0,
-    tooltipHideDelay = 100,
+    tooltipShowDelay = DEFAULT_TOOLTIP_SHOW_DELAY,
+    tooltipHideDelay = DEFAULT_TOOLTIP_HIDE_DELAY,
     getPopupContainer,
     renderWrapper,
     class: className = '',
@@ -193,7 +206,7 @@
   const isCollapsedControlled = $derived(isCollapsed !== undefined);
   let innerCollapsed = $state(untrack(() => defaultIsCollapsed));
   const collapsedState = $derived(
-    mode === 'vertical' && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
+    mode === MODE_VERTICAL && (isCollapsedControlled ? !!isCollapsed : innerCollapsed),
   );
   function toggleCollapsed(): void {
     const next = !collapsedState;
@@ -220,7 +233,7 @@
   // openKeys 受控 = openKeys 受控 且 vertical 且未折叠（对齐 Semi openKeysIsControlled）。
   // 浮层 SubNav 据此在受控时用 trigger='custom' + visible。
   const openKeysIsControlled = $derived(
-    isOpenControlled && mode === 'vertical' && !collapsedState,
+    isOpenControlled && mode === MODE_VERTICAL && !collapsedState,
   );
 
   function isSelected(key: NavKey): boolean {
@@ -369,11 +382,14 @@
       {/if}
 
       <div class="cd-nav__list-wrapper" style={bodyStyle}>
-        <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。 -->
+        <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。
+             children 紧随 items 之后渲染在 ul 内（对齐 Semi `{itemElems}{children}`）：
+             <Nav.Item>/<Nav.Sub> 经 context 注册后自身不产 DOM，其余任意内容原样渲染。 -->
         <ul class="cd-nav__list" role="menu" aria-orientation={mode}>
           {#each resolvedItems as item (item.itemKey)}
             <NavItemRender {item} level={0} />
           {/each}
+          {#if children}{@render children()}{/if}
         </ul>
       </div>
     </div>
@@ -392,11 +408,6 @@
       {/if}
     {/if}
   </div>
-
-  <!-- 声明式子项注册宿主：仅当未传 items 且有 children 时挂载。不产可见 DOM。 -->
-  {#if !items.length && children}
-    <div hidden style="display:none">{@render children()}</div>
-  {/if}
 </div>
 
 <style>

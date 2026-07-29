@@ -22,6 +22,12 @@ export const meta = {
       desc: '观测盒模型：content-box 仅内容区，border-box 含 padding+border，device-pixel-content-box 物理像素内容盒（含 DPR；不支持时回退 content-box）',
     },
     {
+      name: 'observerProperty',
+      type: "'width'|'height'|'all'",
+      default: "'all'",
+      desc: "仅当指定维度变化时才回调（对齐 Semi observerProperty）；设为 width/height 时逐目标记忆上次上报值，另一维度单独变化不触发",
+    },
+    {
       name: 'disabled',
       type: 'boolean',
       default: 'false',

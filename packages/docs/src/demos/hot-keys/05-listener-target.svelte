@@ -1,22 +1,30 @@
 <script lang="ts">
-  import { HotKeys, Text, Space, Input } from '@chenzy-design/svelte';
+  import { HotKeys, Input, Modal } from '@chenzy-design/svelte';
 
-  let panelEl = $state<HTMLDivElement | null>(null);
-  let hits = $state(0);
+  // Semi 用 ref 拿 Input 的 DOM；本库 Input 以 getInputElement() 暴露底层原生 input（对齐 Semi inputRef.current）。
+  let inputRef = $state<{ getInputElement: () => HTMLInputElement | null } | null>(null);
+
+  const hotKeys = ['Control', 'q'];
+  let visible = $state(false);
+  const showDialog = () => {
+    visible = true;
+  };
+  const handleOk = () => {
+    visible = false;
+  };
+  const handleCancel = () => {
+    visible = false;
+  };
 </script>
 
-<Space vertical>
-  <Text type="tertiary" size="small">getListenerTarget 局部监听：仅当焦点在下方面板内按 Enter 才命中。</Text>
-  <div
-    bind:this={panelEl}
-    style="padding:16px;border:1px dashed var(--cd-color-border);border-radius:8px;"
-  >
-    <Space vertical>
-      <Input placeholder="聚焦此处后按 Enter" />
-      <Text type="tertiary">面板内 Enter 命中：{hits} 次</Text>
-    </Space>
-  </div>
-  {#if panelEl}
-    <HotKeys hotKeys={['Enter']} getListenerTarget={() => panelEl} onHotKey={() => (hits += 1)} render={null} />
-  {/if}
-</Space>
+<div>
+  <Input bind:this={inputRef} placeholder="test for target" />
+  <HotKeys
+    {hotKeys}
+    onHotKey={showDialog}
+    getListenerTarget={() => inputRef?.getInputElement() ?? null}
+  />
+  <Modal title="Dialog" {visible} onOk={handleOk} onCancel={handleCancel}>
+    This is the Modal opened by hotkey: {hotKeys.join('+')}.
+  </Modal>
+</div>

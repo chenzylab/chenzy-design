@@ -8,12 +8,18 @@ import {
   createResizeObserver,
   type ResizeBox,
   type CDResizeEntry,
+  type ResizeObserverProperty,
 } from '@chenzy-design/core';
 import type { Action } from 'svelte/action';
 
 export interface ResizeActionParams {
   /** 观测盒模型，默认 'content-box'。变化时重建 observer。 */
   box?: ResizeBox;
+  /**
+   * 仅当指定维度变化时才回调（对齐 Semi observerProperty）。默认 'all'。
+   * 变化时重建 observer。
+   */
+  observerProperty?: ResizeObserverProperty;
   /** 节流间隔(ms)，leading+trailing，默认 0 即时。与 debounce 互斥。变化时重建 observer。 */
   throttle?: number;
   /** 防抖等待(ms)，trailing-only，默认 0 关闭。优先于 throttle。变化时重建 observer。 */
@@ -43,6 +49,7 @@ export const resize: Action<HTMLElement, ResizeActionParams | undefined> = (
     const wantBoundary = !!current?.onResizeStart || !!current?.onResizeEnd;
     ro = createResizeObserver({
       box: current?.box ?? 'content-box',
+      observerProperty: current?.observerProperty ?? 'all',
       throttle: current?.throttle ?? 0,
       debounce: current?.debounce ?? 0,
       fallbackToWindow: current?.fallbackToWindow ?? false,
@@ -62,9 +69,11 @@ export const resize: Action<HTMLElement, ResizeActionParams | undefined> = (
     update(next) {
       const prev = current;
       current = next;
-      // 仅 box / throttle / debounce / fallbackToWindow 变化才重建（先 disconnect 旧的，红线 #3）。
+      // 仅 box / observerProperty / throttle / debounce / fallbackToWindow 变化才重建
+      // （先 disconnect 旧的，红线 #3）。
       if (
         (prev?.box ?? 'content-box') !== (next?.box ?? 'content-box') ||
+        (prev?.observerProperty ?? 'all') !== (next?.observerProperty ?? 'all') ||
         (prev?.throttle ?? 0) !== (next?.throttle ?? 0) ||
         (prev?.debounce ?? 0) !== (next?.debounce ?? 0) ||
         (prev?.fallbackToWindow ?? false) !== (next?.fallbackToWindow ?? false)

@@ -9,7 +9,8 @@
 -->
 <script lang="ts">
   import { getNavContext } from './context.js';
-  import { hasSubNav, normalizeNavItems, type NavItemDef } from './types.js';
+  import type { NavItemDef } from './types.js';
+  import { hasSubNav, normalizeNavItems } from './nav-foundation.js';
   import { Dropdown } from '../dropdown/index.js';
   import { IconChevronRight } from '@chenzy-design/icons';
   import Self from './NavPopupNode.svelte';

@@ -22,11 +22,17 @@
     createResizeObserver,
     type CDResizeEntry,
     type ResizeBox,
+    type ResizeObserverProperty,
   } from '@chenzy-design/core';
 
   interface Props {
     /** 观测盒模型，默认 'content-box'（另支持 border-box / device-pixel-content-box） */
     box?: ResizeBox;
+    /**
+     * 仅当指定维度变化时才回调（对齐 Semi observerProperty）。默认 'all'。
+     * 设为 'width' / 'height' 时逐目标记忆上次上报值，另一维度单独变化不触发。
+     */
+    observerProperty?: ResizeObserverProperty;
     /** 暂停尺寸分发，默认 false（observer 仍在监听，仅不向外通知） */
     disabled?: boolean;
     /**
@@ -75,6 +81,7 @@
 
   let {
     box = 'content-box',
+    observerProperty = 'all',
     disabled = false,
     throttle = 0,
     debounce = 0,
@@ -103,7 +110,7 @@
   let firstFired = false;
 
   // observer 命令式创建 + observe + cleanup disconnect（红线 #3）。
-  // 依赖 el + box + throttle + debounce + multiple：变更时重建 observer。
+  // 依赖 el + box + observerProperty + throttle + debounce + multiple：变更时重建 observer。
   // disabled 不进依赖（避免暂停/恢复时丢失监听重建）——在回调内读最新 prop 值。
   $effect(() => {
     if (!el) return;
@@ -111,6 +118,7 @@
     const node = el;
     const ro = createResizeObserver({
       box,
+      observerProperty,
       throttle,
       debounce,
       fallbackToWindow,

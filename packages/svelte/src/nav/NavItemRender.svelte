@@ -11,7 +11,8 @@
   import type { Snippet } from 'svelte';
   import { IconChevronDown, IconChevronRight } from '@chenzy-design/icons';
   import { getNavContext } from './context.js';
-  import { hasSubNav, normalizeNavItems, type NavItemDef } from './types.js';
+  import type { NavItemDef } from './types.js';
+  import { hasSubNav, normalizeNavItems } from './nav-foundation.js';
   import NavSubPopup from './NavSubPopup.svelte';
   import Self from './NavItemRender.svelte';
 

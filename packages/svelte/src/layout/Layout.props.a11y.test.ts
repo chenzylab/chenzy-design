@@ -79,4 +79,49 @@ describe('Sider 响应式断点（对齐 Semi breakpoint / onBreakpoint）', () 
     expect(onBreakpoint).toHaveBeenCalledWith('lg', false);
     vi.unstubAllGlobals();
   });
+
+  it('断点跨越时回调（命中→解除→再命中，对齐 Semi change 监听）', () => {
+    // 受控 stub：保留 change 监听器，测试内手动投递 MediaQueryListEvent 形态的对象。
+    const listeners: Array<(e: { matches: boolean }) => void> = [];
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((media: string) => ({
+        matches: true, // 初始命中
+        media,
+        addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => listeners.push(cb),
+        removeEventListener: () => undefined,
+      })),
+    );
+    const onBreakpoint = vi.fn();
+    renderWithLocale(Sider, { props: { breakpoint: ['md'], onBreakpoint } });
+    expect(onBreakpoint).toHaveBeenLastCalledWith('md', true);
+
+    // 视口缩小越过断点 → unmatch 分支。
+    listeners.forEach((cb) => cb({ matches: false }));
+    expect(onBreakpoint).toHaveBeenLastCalledWith('md', false);
+
+    // 再放大回来 → match 分支。
+    listeners.forEach((cb) => cb({ matches: true }));
+    expect(onBreakpoint).toHaveBeenLastCalledWith('md', true);
+    vi.unstubAllGlobals();
+  });
+
+  it('卸载时解绑 media query 监听（不泄漏）', () => {
+    const removed: string[] = [];
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((media: string) => ({
+        matches: true,
+        media,
+        addEventListener: () => undefined,
+        removeEventListener: () => removed.push(media),
+      })),
+    );
+    const { unmount } = renderWithLocale(Sider, {
+      props: { breakpoint: ['md'], onBreakpoint: vi.fn() },
+    });
+    unmount();
+    expect(removed).toContain('(min-width: 768px)');
+    vi.unstubAllGlobals();
+  });
 });

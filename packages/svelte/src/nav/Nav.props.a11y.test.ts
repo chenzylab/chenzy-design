@@ -5,7 +5,8 @@ import { tick } from 'svelte';
 import { renderWithLocale } from '../test-utils/a11y.js';
 import Nav from './Nav.svelte';
 import NavDeclarativeFixture from './NavDeclarativeFixture.svelte';
-import { collectNavItemsByKeys, collectAncestorKeys } from './types.js';
+import NavChildrenFixture from './NavChildrenFixture.svelte';
+import { collectNavItemsByKeys, collectAncestorKeys } from './nav-foundation.js';
 
 const items = [
   { itemKey: 'home', text: '首页' },
@@ -99,6 +100,20 @@ describe('Nav 声明式写法（Nav.Item / Nav.Sub）', () => {
     // 展开的子项也在（defaultOpenKeys=['mgmt']）
     expect(text).toContain('用户');
     expect(text).toContain('角色');
+  });
+
+  it('items 与任意 children 并存：children 渲染在 ul 内 items 之后（对齐 Semi）', () => {
+    const { container } = renderWithLocale(NavChildrenFixture, {});
+    const list = container.querySelector('.cd-nav__list')!;
+    const free = list.querySelector('[data-testid="free-content"]');
+    // 非 Nav.Item 的子内容可见渲染（旧实现塞进 hidden div 且 items 存在时整个丢弃）。
+    expect(free).not.toBeNull();
+    expect(free?.textContent).toBe('模版推荐');
+    // 位置在 items 之后（对齐 Semi `{itemElems}{children}`）。
+    const items = list.querySelectorAll('[role="menuitem"]');
+    expect(items.length).toBeGreaterThan(0);
+    const lastItem = items[items.length - 1]!;
+    expect(lastItem.compareDocumentPosition(free!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

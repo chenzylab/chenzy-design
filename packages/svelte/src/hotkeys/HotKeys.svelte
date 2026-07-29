@@ -25,6 +25,8 @@
     content?: (string | Snippet)[];
     /** 完全自定义提示渲染。传 null 则不渲染任何提示 UI，仅保留监听。 */
     render?: Snippet | null;
+    /** 提示 UI 根节点点击回调（对齐 Semi onClick）。 */
+    onClick?: () => void;
     /** 命中时是否 preventDefault（拦截浏览器默认行为，如 Ctrl+S）。 */
     preventDefault?: boolean;
     /** 跨平台把 Cmd(Meta) 与 Ctrl 视为同一修饰键。**死 prop**：严格对齐 Semi，声明但不生效（Meta/Ctrl 仍严格区分）。 */
@@ -44,6 +46,7 @@
     onHotKey,
     content,
     render,
+    onClick,
     preventDefault = false,
     mergeMetaCtrl = false,
     getListenerTarget,
@@ -99,12 +102,14 @@
   });
 </script>
 
+<!-- DOM 对齐 Semi（index.tsx render）：render 分支与默认分支**同样**套根节点
+     div.cd-hotKeys（承载 class/style/onClick），仅内部内容不同；render===null 整体不渲染。 -->
 {#if render !== null}
-  {#if render}
-    {@render render()}
-  {:else}
-    <!-- DOM 对齐 Semi：div.cd-hotKeys > span(每键) > span.-content；分隔 span.-split "+"。 -->
-    <div class={cls} {style}>
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div class={cls} {style} onclick={onClick}>
+    {#if render}
+      {@render render()}
+    {:else}
       {#each validated as key, i (i)}
         {@const item = content?.[i]}
         <span>
@@ -116,8 +121,8 @@
           {/if}
         </span>
       {/each}
-    </div>
-  {/if}
+    {/if}
+  </div>
 {/if}
 
 <style>
