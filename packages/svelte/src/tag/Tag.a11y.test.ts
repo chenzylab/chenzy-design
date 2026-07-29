@@ -21,7 +21,7 @@ describe('Tag a11y', () => {
     const root = container.querySelector('.cd-tag');
     expect(root?.getAttribute('role')).toBe('button');
     expect(root?.getAttribute('tabindex')).toBe('0');
-    expect(container.querySelector('.cd-tag__close')).not.toBeNull();
+    expect(container.querySelector('.cd-tag-close')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 

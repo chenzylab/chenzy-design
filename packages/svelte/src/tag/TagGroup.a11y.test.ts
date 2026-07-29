@@ -19,7 +19,7 @@ describe('TagGroup a11y', () => {
     const { container } = render(TagGroupA11yFixture, {
       props: { props: { maxTagCount: 2, showPopover: false } },
     });
-    const n = container.querySelector('.cd-tag-group__n');
+    const n = container.querySelector('.cd-tag-group-n');
     expect(n).not.toBeNull();
     // +N 标签的 aria-label 挂在内部 Tag 根上
     expect(n?.querySelector('.cd-tag')?.getAttribute('aria-label')).toBeTruthy();

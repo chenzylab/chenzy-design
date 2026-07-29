@@ -22,10 +22,10 @@ describe('TagInput a11y', () => {
     const { container } = renderWithLocale(TagInput, {
       props: { ariaLabel: 'Skills', defaultValue: ['svelte', 'a11y'] },
     });
-    // 标签复用 Tag 组件（.cd-tag），关闭按钮由 Tag 提供（.cd-tag__close）。
+    // 标签复用 Tag 组件（.cd-tag），关闭按钮由 Tag 提供（.cd-tag-close）。
     const tags = container.querySelectorAll('.cd-tag-input-wrapper-tag');
     expect(tags.length).toBe(2);
-    const closeBtns = container.querySelectorAll('.cd-tag__close');
+    const closeBtns = container.querySelectorAll('.cd-tag-close');
     expect(closeBtns.length).toBe(2);
     expect(tags[0]?.getAttribute('aria-label')).toContain('svelte');
     await expectNoAxeViolations(container);

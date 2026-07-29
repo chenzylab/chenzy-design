@@ -137,9 +137,9 @@ describe('Cascader a11y', () => {
     const tag = container.querySelector('.cd-cascader-selection-tag');
     expect(tag).not.toBeNull();
     expect(tag?.textContent).toContain('West Lake');
-    // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag__close / [aria-label*=close] 等）。
+    // 点该 tag 的关闭按钮（TagInput 内 Tag 的 .cd-tag-close / [aria-label*=close] 等）。
     const closeBtn = container.querySelector(
-      '.cd-cascader-selection-tag .cd-tag__close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag__close',
+      '.cd-cascader-selection-tag .cd-tag-close, .cd-cascader-selection-tag button, .cd-tag-input .cd-tag-close',
     ) as HTMLElement | null;
     expect(closeBtn).not.toBeNull();
     closeBtn?.click();

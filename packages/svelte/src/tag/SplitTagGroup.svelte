@@ -51,11 +51,11 @@
     margin-right: 0;
   }
   /* circle 子标签首末用胶囊圆角（对齐 Semi &-circle.&-first/&-last）—— */
-  .cd-tag-split :global(> .cd-tag--circle:first-child) {
+  .cd-tag-split :global(> .cd-tag-circle:first-child) {
     border-top-left-radius: var(--cd-tag-radius-circle);
     border-bottom-left-radius: var(--cd-tag-radius-circle);
   }
-  .cd-tag-split :global(> .cd-tag--circle:last-child) {
+  .cd-tag-split :global(> .cd-tag-circle:last-child) {
     border-top-right-radius: var(--cd-tag-radius-circle);
     border-bottom-right-radius: var(--cd-tag-radius-circle);
   }

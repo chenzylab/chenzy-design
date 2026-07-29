@@ -102,7 +102,7 @@
   const restLabel = $derived(loc().t('TagGroup.restTagsAriaLabel', { count: n }));
 
   const rootCls = $derived(
-    ['cd-tag-group', maxTagCount !== undefined && 'cd-tag-group--max', `cd-tag-group--${size}`, className]
+    ['cd-tag-group', maxTagCount !== undefined && 'cd-tag-group-max', `cd-tag-group-${size}`, className]
       .filter(Boolean)
       .join(' '),
   );
@@ -161,7 +161,7 @@
 <!-- +N 标签：对齐 Semi renderNTag（closable=false、color=grey、透明底、size 跟随组） -->
 {#snippet nTag()}
   <span
-    class="cd-tag-group__n"
+    class="cd-tag-group-n"
     onmouseenter={onPlusNMouseEnter}
     role="presentation"
   >
@@ -180,15 +180,15 @@
     margin-right: var(--cd-tag-group-margin-right);
   }
   /* 折叠模式高度（对齐 Semi &-max.&-group-small/large = tag 高 + 2px）—— */
-  .cd-tag-group--max.cd-tag-group--small,
-  .cd-tag-group--max.cd-tag-group--default {
+  .cd-tag-group-max.cd-tag-group-small,
+  .cd-tag-group-max.cd-tag-group-default {
     height: calc(var(--cd-tag-height-small) + 2px);
   }
-  .cd-tag-group--max.cd-tag-group--large {
+  .cd-tag-group-max.cd-tag-group-large {
     height: calc(var(--cd-tag-height-large) + 2px);
   }
 
-  .cd-tag-group__n {
+  .cd-tag-group-n {
     display: inline-flex;
   }
 
