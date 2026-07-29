@@ -120,12 +120,12 @@
      Tabs 只用来做顶部切换、不渲染内容区，故内容区 padding 归零；
      并去掉 tab bar 的底边框，避免与面板 topSlot 自身的分隔线叠成双线。
      面板 portal 到 body，故必须 :global 打洞。 */
-  /* 本库 Tabs 走 BEM 类名（cd-tabs__content / .cd-tabs--line .cd-tabs__bar），
+  /* 本库 Tabs 走 BEM 类名（cd-tabs-content / .cd-tabs-line .cd-tabs-bar），
      与 Semi 的 semi-tabs-content / semi-tabs-bar-line 命名不同，按本库实际类名写。 */
-  :global(.components-datepicker-demo-slot .cd-tabs__content) {
+  :global(.components-datepicker-demo-slot .cd-tabs-content) {
     padding: 0;
   }
-  :global(.components-datepicker-demo-slot .cd-tabs--line .cd-tabs__bar) {
+  :global(.components-datepicker-demo-slot .cd-tabs-line .cd-tabs-bar) {
     border-block-end: none;
   }
 </style>

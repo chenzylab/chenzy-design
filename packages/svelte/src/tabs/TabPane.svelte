@@ -77,7 +77,7 @@
 
 {#if shouldMount}
   <div
-    class="cd-tabs__panel"
+    class="cd-tabs-pane"
     role="tabpanel"
     id={panelId}
     aria-labelledby={labelledBy}
@@ -89,7 +89,7 @@
 {/if}
 
 <style>
-  .cd-tabs__panel {
+  .cd-tabs-pane {
     outline: none;
   }
 </style>
