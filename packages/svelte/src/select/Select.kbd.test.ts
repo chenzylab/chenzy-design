@@ -36,7 +36,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
     // 1. ↓ 高亮首项（activeIndex -1 → 0），aria-activedescendant 指向 opt-0。
     await userEvent.keyboard('{ArrowDown}');
     expect(combobox.getAttribute('aria-activedescendant')).toBe(`${listId}-opt-0`);
-    expect(options[0]!.classList.contains('cd-select__option--active')).toBe(true);
+    expect(options[0]!.classList.contains('cd-select-option-active')).toBe(true);
 
     // 再 ↓ 移到 opt-1。
     await userEvent.keyboard('{ArrowDown}');
@@ -66,7 +66,7 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
 
     const heightOf = (testid: string) => {
       const host = document.querySelector(`[data-testid="${testid}"]`) as HTMLElement;
-      const trigger = host.querySelector('.cd-select__trigger') as HTMLElement;
+      const trigger = host.querySelector('.cd-select-trigger') as HTMLElement;
       return Math.round(trigger.getBoundingClientRect().height);
     };
 

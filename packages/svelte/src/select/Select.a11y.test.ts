@@ -23,9 +23,9 @@ describe('Select a11y', () => {
     expect(combobox?.getAttribute('aria-expanded')).toBe('false');
     expect(combobox?.getAttribute('aria-haspopup')).toBe('listbox');
     // destroyOnClose=false（默认）关闭态浮层保持挂载，须带 [hidden] 隐藏。
-    // 回归防护：.cd-select__dropdown 的 display:flex 曾压过 [hidden] 的 UA display:none，
+    // 回归防护：.cd-select-dropdown 的 display:flex 曾压过 [hidden] 的 UA display:none，
     // 导致浮层常驻可见（如 Pagination size-changer 弹层关不掉），已用属性选择器修复。
-    const dropdown = document.querySelector('.cd-select__dropdown');
+    const dropdown = document.querySelector('.cd-select-dropdown');
     expect(dropdown).not.toBeNull();
     expect(dropdown?.hasAttribute('hidden')).toBe(true);
   });

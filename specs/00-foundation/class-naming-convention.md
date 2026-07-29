@@ -36,7 +36,7 @@ autocomplete(2)、notification-list(1)。
 
 | BEM 原名 | 折平后 | 冲突方所在 | 性质 |
 |---|---|---|---|
-| `cd-select__list` | `cd-select-list` | 同在 Select.svelte | **真冲突**，同组件两个不同元素 |
+| ~~`cd-select__list`~~ | `cd-select-list` | 同在 Select.svelte | ~~真冲突~~ **误报，已折平**：另一处 `cd-select-list` 是 `useId('cd-select-list')` 的 **id 前缀**（`useId` 还会加唯一后缀），不是 class；且 id 与 class 落在同一元素上，命名反而更一致。Select 已于 2026-07-29 全量折平（46 个类 / 160 处引用），全库测试 2029 passed |
 | `cd-tree-select__panel` | `cd-tree-select-panel` | 同组件 | 需确认是否真冲突 |
 | `cd-slider__handle` | `cd-slider-handle` | PreviewFooter vs Slider | 跨组件同前缀，非真冲突 |
 | `cd-slider__rail` | `cd-slider-rail` | 同上 | 同上 |
