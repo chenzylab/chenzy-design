@@ -2,4 +2,4 @@
   import { TimePicker } from '@chenzy-design/svelte';
 </script>
 
-<TimePicker />
+<TimePicker defaultValue="12:08:23" disabled />

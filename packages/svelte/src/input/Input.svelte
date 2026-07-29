@@ -369,7 +369,15 @@
   {/if}
 
   {#if prefixNode != null}
-    <div class="cd-input-prefix" class:cd-input-inset-label={insetLabel != null && prefix == null} id={insetLabelId}>
+    <!-- -prefix-text / -prefix-icon 变体同 suffix（对齐 Semi）：字符串=文案(12px)、Snippet=图标(8px)。
+         insetLabel 走自己的 -inset-label 规则（Semi 同样单列），故不叠变体类。 -->
+    <div
+      class="cd-input-prefix"
+      class:cd-input-prefix-text={!prefixSnippet && !(insetLabel != null && prefix == null)}
+      class:cd-input-prefix-icon={!!prefixSnippet}
+      class:cd-input-inset-label={insetLabel != null && prefix == null}
+      id={insetLabelId}
+    >
       {#if prefixSnippet}{@render prefixSnippet()}{:else}{prefixNode}{/if}
     </div>
   {/if}
@@ -421,7 +429,16 @@
   {/if}
 
   {#if suffix}
-    <div class="cd-input-suffix" class:cd-input-suffix-hidden={suffixHidden}>
+    <!-- -suffix-text / -suffix-icon 变体对齐 Semi（`isString(suffix)` → text、`isSemiIcon(suffix)` → icon）：
+         两者水平外边距不同（text 12px / icon 8px），Svelte 无法内省 Snippet，故按
+         「字符串=文案、Snippet=图标」映射。**别只留基类**——图标拿到 text 的 12px 会让
+         suffix 占位 12+16+12=40px，与 hover 时顶替它的 clearbtn(32px) 不等宽，触发器就会抖。 -->
+    <div
+      class="cd-input-suffix"
+      class:cd-input-suffix-text={!suffixSnippet}
+      class:cd-input-suffix-icon={!!suffixSnippet}
+      class:cd-input-suffix-hidden={suffixHidden}
+    >
       {#if suffixSnippet}{@render suffixSnippet()}{:else}{suffix}{/if}
     </div>
   {/if}
@@ -579,7 +596,8 @@
 
   /* input 元素 —— 对齐 Semi .semi-input：透明底 + 继承色 + 内边距。 */
   .cd-input {
-    flex: 1 1 auto;
+    /* 对齐 Semi .semi-input：不写 flex，用浏览器默认 `0 1 auto`（可收缩不伸长）。 */
+    flex: 0 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
     block-size: 100%;
@@ -626,19 +644,35 @@
     display: none;
   }
 
-  /* prefix/suffix —— 对齐 Semi：text-2 + bold 字重（图标不受 font-weight 影响）。 */
+  /* prefix/suffix —— 对齐 Semi `&-prefix, &-suffix { @include all-center }`：容器只做居中，
+     **外边距/颜色/字重由 -text / -icon 变体分别承担**（Semi 就是这么分的）。 */
   .cd-input-prefix,
   .cd-input-suffix {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* 文案变体（对齐 Semi `&-text`）：水平外边距 12px + text-2 + bold。 */
+  .cd-input-prefix-text,
+  .cd-input-suffix-text {
     margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
     color: var(--cd-color-input-prefix-text-default);
     font-weight: var(--cd-font-input-prefix-suffix-fontweight);
-    white-space: nowrap;
   }
+  /* 图标变体（对齐 Semi `&-icon`）：外边距 8px（比文案窄），图标色，不吃 font-weight。
+     8+16+8=32px 恰等于 clearbtn 宽度，hover 互换时宽度守恒——改小这里会让触发器抖。 */
+  .cd-input-prefix-icon,
+  .cd-input-suffix-icon {
+    margin: var(--cd-spacing-input-prefix-icon-marginy) var(--cd-spacing-input-prefix-icon-marginx);
+    color: var(--cd-color-input-icon-default);
+  }
+  /* 内嵌标签（对齐 Semi `&-inset-label`）：自带 margin/色/字重，不依赖 -text 变体。 */
   .cd-input-inset-label {
+    margin: 0 var(--cd-spacing-input-prefix-suffix-marginx);
+    color: var(--cd-color-input-prefix-text-default);
+    font-weight: var(--cd-font-input-prefix-suffix-fontweight);
     flex-shrink: 0;
     white-space: nowrap;
   }

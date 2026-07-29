@@ -5,6 +5,7 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import Input from './Input.svelte';
 import ControlledFixture from './InputControlledFixture.svelte';
+import AffixFixture from './InputAffixFixture.svelte';
 
 const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 const graphemeLength = (s: string) => [...seg.segment(s)].length;
@@ -113,6 +114,32 @@ describe('Input 受控数据流', () => {
     await fireEvent.input(input, { target: { value: '💖'.repeat(5) } });
     expect(graphemeLength(input.value)).toBe(3);
     expect(input.value).toBe('💖'.repeat(3));
+  });
+
+  // prefix/suffix 变体 —— 对齐 Semi `-suffix-text`(12px) / `-suffix-icon`(8px) 两套外边距。
+  // 图标变体 8+16+8=32px 恰等于 clearbtn 宽度，hover 互换才宽度守恒；只留基类会让
+  // TimePicker/DatePicker 的清除按钮 hover 抖动（实测触发器 213↔205px）。
+  it('suffix 传字符串 → -suffix-text；传 Snippet → -suffix-icon', () => {
+    const text = render(AffixFixture, { props: { iconSuffix: false } });
+    const textSfx = text.container.querySelector('.cd-input-suffix')!;
+    expect(textSfx.classList.contains('cd-input-suffix-text')).toBe(true);
+    expect(textSfx.classList.contains('cd-input-suffix-icon')).toBe(false);
+
+    const icon = render(AffixFixture, { props: { iconSuffix: true } });
+    const iconSfx = icon.container.querySelector('.cd-input-suffix')!;
+    expect(iconSfx.classList.contains('cd-input-suffix-icon')).toBe(true);
+    expect(iconSfx.classList.contains('cd-input-suffix-text')).toBe(false);
+  });
+
+  it('prefix 同样按 字符串/Snippet 分派 -prefix-text / -prefix-icon', () => {
+    const text = render(AffixFixture, { props: { iconPrefix: false } });
+    const textPfx = text.container.querySelector('.cd-input-prefix')!;
+    expect(textPfx.classList.contains('cd-input-prefix-text')).toBe(true);
+
+    const icon = render(AffixFixture, { props: { iconPrefix: true } });
+    const iconPfx = icon.container.querySelector('.cd-input-prefix')!;
+    expect(iconPfx.classList.contains('cd-input-prefix-icon')).toBe(true);
+    expect(iconPfx.classList.contains('cd-input-prefix-text')).toBe(false);
   });
 
   it('minLength：无 getValueLength 时直接下发原生 minlength', () => {

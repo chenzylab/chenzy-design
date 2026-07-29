@@ -7,6 +7,7 @@
 <script lang="ts">
   import { localeFormat } from '@chenzy-design/core';
   import { IconCalendar, IconClock } from '@chenzy-design/icons';
+  import { useLocale } from '../locale-provider/index.js';
   import { cssClasses, formatToken, type Density } from './constants.js';
 
   interface Props {
@@ -37,7 +38,14 @@
 
   const prefixCls = cssClasses.PREFIX;
 
-  const monthText = $derived(showDate ? localeFormat(showDate, formatToken.FORMAT_FULL_DATE) : '');
+  const loc = useLocale();
+  // 日期文案格式走语言相关 token（对齐 Semi locale.localeFormatToken.FORMAT_SWITCH_DATE）：
+  // 英文 MM/dd/yyyy（07/29/2026）、中文 yyyy-MM-dd。勿改回硬编码 FORMAT_FULL_DATE。
+  const switchDateFormat = $derived(
+    loc().component('DatePicker').localeFormatToken?.FORMAT_SWITCH_DATE ??
+      formatToken.FORMAT_FULL_DATE,
+  );
+  const monthText = $derived(showDate ? localeFormat(showDate, switchDateFormat) : '');
   const timeText = $derived(showDate ? localeFormat(showDate, timeFormat) : '');
   const showSwitchIcon = $derived(density === 'default');
 

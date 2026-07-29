@@ -2,4 +2,4 @@
   import { TimePicker } from '@chenzy-design/svelte';
 </script>
 
-<TimePicker />
+<TimePicker scrollItemProps={{ mode: 'wheel', cycled: true }} />

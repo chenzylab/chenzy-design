@@ -43,6 +43,24 @@ describe('MonthsGrid 装配对齐 Semi（单面板）', () => {
     expect(after).not.toBe(before);
   });
 
+  it('monthText 走 locale 模板：英文「Jul 2026」月在前（对齐 Semi monthText ${month} ${year}）', () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'date', defaultPickerValue: new Date(2026, 6, 1) },
+      locale: 'en-US',
+    });
+    const text = container.querySelector(`.${PREFIX}-navigation-month`)?.textContent?.trim();
+    expect(text).toBe('Jul 2026');
+  });
+
+  it('monthText 走 locale 模板：中文「2026年 7月」年在前', () => {
+    const { container } = renderWithLocale(MonthsGrid, {
+      props: { type: 'date', defaultPickerValue: new Date(2026, 6, 1) },
+      locale: 'zh-CN',
+    });
+    const text = container.querySelector(`.${PREFIX}-navigation-month`)?.textContent?.trim();
+    expect(text).toBe('2026年 7月');
+  });
+
   it('翻月触发 onPanelChange（对齐 Semi notifyPanelChange）', async () => {
     const onPanelChange = vi.fn();
     const { container } = renderWithLocale(MonthsGrid, {
