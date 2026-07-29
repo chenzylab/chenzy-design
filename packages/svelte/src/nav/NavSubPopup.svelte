@@ -42,20 +42,20 @@
 <!-- sub-wrap 外层 li：承载 role=menuitem 的 sub-title（对齐 Semi Item.tsx li）。 -->
 {#snippet subTitle()}
   <div
-    class="cd-nav__sub-title"
-    class:cd-nav__sub-title-selected={selected}
-    class:cd-nav__sub-title-disabled={itemDisabled}
+    class="cd-nav-sub-title"
+    class:cd-nav-sub-title-selected={selected}
+    class:cd-nav-sub-title-disabled={itemDisabled}
     role="menuitem"
     tabindex={itemDisabled ? -1 : 0}
     aria-expanded={open}
     aria-disabled={itemDisabled || undefined}
   >
-    <div class="cd-nav__item-inner">{@render titleContent()}</div>
+    <div class="cd-nav-item-inner">{@render titleContent()}</div>
   </div>
 {/snippet}
 
 <!-- sub-wrap li 为 role=none（呈现性）：内部 div[role=menuitem] 由外层 role=menu 直接拥有。 -->
-<li class="cd-nav__item cd-nav__item-sub cd-nav__sub-wrap" role="none" class:cd-nav__item-disabled={itemDisabled}>
+<li class="cd-nav-item cd-nav-item-sub cd-nav-sub-wrap" role="none" class:cd-nav-item-disabled={itemDisabled}>
   {#if itemDisabled}
     {@render subTitle()}
   {:else}
@@ -85,7 +85,7 @@
 
 <style>
   /* 折叠态：sub-title 内容居中，图标居中于图标轨（与 NavItemRender 叶子一致）。 */
-  :global(.cd-nav--collapsed) .cd-nav__sub-title .cd-nav__item-inner {
+  :global(.cd-nav-collapsed) .cd-nav-sub-title .cd-nav-item-inner {
     justify-content: center;
   }
 </style>

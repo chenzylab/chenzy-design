@@ -42,7 +42,7 @@
 
 {#snippet iconNode()}
   {#if item.icon}
-    <i class="cd-nav__item-icon cd-nav__item-icon-info" aria-hidden="true">{@render item.icon()}</i>
+    <i class="cd-nav-item-icon cd-nav-item-icon-info" aria-hidden="true">{@render item.icon()}</i>
   {/if}
 {/snippet}
 
@@ -68,13 +68,13 @@
       </Dropdown.Menu>
     {/snippet}
     <Dropdown.Item
-      class="cd-nav__item-sub"
+      class="cd-nav-item-sub"
       active={selected}
       disabled={itemDisabled}
     >
       {@render iconNode()}
-      <span class="cd-nav__item-text">{@render textNode()}</span>
-      <i class="cd-nav__item-icon cd-nav__item-icon-toggle-right" aria-hidden="true">
+      <span class="cd-nav-item-text">{@render textNode()}</span>
+      <i class="cd-nav-item-icon cd-nav-item-icon-toggle-right" aria-hidden="true">
         <IconChevronRight size="default" />
       </i>
     </Dropdown.Item>
@@ -88,27 +88,27 @@
     {...item.onMouseLeave ? { onMouseLeave: item.onMouseLeave } : {}}
   >
     {@render iconNode()}
-    <span class="cd-nav__item-text">{@render textNode()}</span>
+    <span class="cd-nav-item-text">{@render textNode()}</span>
   </Dropdown.Item>
 {/if}
 
 <style>
   /* 浮层内项：图标 + 文案排布（Dropdown.Item 已是 flex + align-items:center）。 */
-  .cd-nav__item-icon-info {
+  .cd-nav-item-icon-info {
     display: inline-flex;
     align-items: center;
     color: var(--cd-color-navigation-iteml1-icon-default);
     margin-inline-end: var(--cd-width-navigation-icon-text-between);
     min-inline-size: var(--cd-width-navigation-icon-left-minwidth);
   }
-  .cd-nav__item-icon-toggle-right {
+  .cd-nav-item-icon-toggle-right {
     display: inline-flex;
     align-items: center;
     margin-inline-start: auto;
     padding-inline-start: var(--cd-width-navigation-icon-text-between);
     color: var(--cd-color-navigation-iteml1-icon-default);
   }
-  .cd-nav__item-text {
+  .cd-nav-item-text {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

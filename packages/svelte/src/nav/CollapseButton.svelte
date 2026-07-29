@@ -1,7 +1,7 @@
 <!--
   NavCollapseButton — 收起/展开侧边栏按钮（对齐 Semi CollapseButton.tsx）。
-  DOM：div.cd-nav__collapse-btn >
-    - 折叠态：Tooltip(content=展开文案, position=right) 包裹 span.cd-nav__collapse-wrapper > Button(icon=IconSidebar)
+  DOM：div.cd-nav-collapse-btn >
+    - 折叠态：Tooltip(content=展开文案, position=right) 包裹 span.cd-nav-collapse-wrapper > Button(icon=IconSidebar)
     - 展开态：Button(icon=IconSidebar, type=tertiary, theme=borderless) 内含 collapseText 文案
   文案：collapseText(isCollapsed) 优先，否则 locale.expandText/collapseText。
 -->
@@ -42,10 +42,10 @@
   <IconSidebar />
 {/snippet}
 
-<div class="cd-nav__collapse-btn">
+<div class="cd-nav-collapse-btn">
   {#if isCollapsed}
     <Tooltip content={finalText} position="right">
-      <span class="cd-nav__collapse-wrapper">
+      <span class="cd-nav-collapse-wrapper">
         <Button
           icon={sidebarIcon}
           type="tertiary"
@@ -63,12 +63,12 @@
 </div>
 
 <style>
-  .cd-nav__collapse-btn {
+  .cd-nav-collapse-btn {
     display: flex;
     align-items: center;
     inline-size: 100%;
   }
-  .cd-nav__collapse-wrapper {
+  .cd-nav-collapse-wrapper {
     display: inline-flex;
   }
 </style>
