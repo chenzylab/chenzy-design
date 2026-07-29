@@ -2,7 +2,7 @@
 // DOM 严格对齐 Semi：div.cd-hotKeys > span > span.-content（用 span 非 kbd），分隔 span.-split "+"。
 // 行为：keydown 监听挂载/解绑、preventDefault、content/render/null 提示渲染、getListenerTarget 局部监听。
 import { describe, it, expect, vi } from 'vitest';
-import type { Component } from 'svelte';
+import { createRawSnippet, type Component } from 'svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import HotKeysComponent from './HotKeys.svelte';
 
@@ -143,5 +143,38 @@ describe('HotKeys 行为', () => {
     expect(() =>
       renderWithLocale(HotKeys, { props: { hotKeys: ['A', 'B'] } }),
     ).toThrow(/恰含 1 个普通键/);
+  });
+
+  it('onClick：点击提示根节点触发回调（对齐 Semi onClick）', () => {
+    const onClick = vi.fn();
+    const { container } = renderWithLocale(HotKeys, {
+      props: { hotKeys: ['Control', 'K'], onClick },
+    });
+    const root = container.querySelector('.cd-hotKeys') as HTMLElement;
+    root.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('render 分支仍套根节点 div.cd-hotKeys（对齐 Semi：class/style/onClick 照常生效）', () => {
+    const onClick = vi.fn();
+    const { container } = renderWithLocale(HotKeys, {
+      props: {
+        hotKeys: ['Control', 'R'],
+        class: 'custom-cls',
+        style: 'margin-top: 8px;',
+        onClick,
+        // 自定义渲染内容：用最小 snippet（$.text 形态由编译器生成，此处以子节点断言为准）。
+        render: createRawSnippet(() => ({ render: () => '<span id="custom">custom</span>' })),
+      },
+    });
+    const root = container.querySelector('.cd-hotKeys') as HTMLElement;
+    expect(root).not.toBeNull();
+    expect(root.classList.contains('custom-cls')).toBe(true);
+    expect(root.getAttribute('style')).toContain('margin-top: 8px');
+    // 自定义内容在根节点内部，且默认键位提示不再渲染。
+    expect(root.querySelector('#custom')).not.toBeNull();
+    expect(contents(container)).toHaveLength(0);
+    root.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

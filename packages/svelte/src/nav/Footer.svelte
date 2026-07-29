@@ -7,7 +7,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getNavContext } from './context.js';
-  import NavCollapseButton from './NavCollapseButton.svelte';
+  import NavCollapseButton from './CollapseButton.svelte';
 
   interface Props {
     /** 是否展示收起按钮，或传自定义节点（仅 vertical 生效）。 */

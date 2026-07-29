@@ -500,6 +500,7 @@ export {
   type ResizeActionParams,
   type CDResizeEntry,
   type ResizeBox,
+  type ResizeObserverProperty,
   createResizeObserver,
 } from './resize-observer/index.js';
 export { Lottie, getLottie, lottieMeta, type LottieParams } from './lottie/index.js';

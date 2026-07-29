@@ -220,6 +220,100 @@ describe('createResizeObserver (scheduling)', () => {
   });
 });
 
+describe('createResizeObserver (observerProperty 维度过滤，对齐 Semi)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** 装一个可手动触发的原生 ResizeObserver mock，返回触发器。 */
+  function stubNativeRO(): () => (entries: ResizeObserverEntry[]) => void {
+    let trigger!: (entries: ResizeObserverEntry[]) => void;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (e: ResizeObserverEntry[]) => void) {
+          trigger = cb;
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    return () => trigger;
+  }
+
+  it("observerProperty='width'：仅高度变化不上报，宽度变化才上报", () => {
+    const getTrigger = stubNativeRO();
+    const onResize = vi.fn();
+    createResizeObserver({ onResize, observerProperty: 'width' });
+    const target = {} as Element;
+    const trigger = getTrigger();
+
+    // 首帧：未记录过该 target → 放行（对齐 Semi 首次一律上报）。
+    trigger([makeEntry({ target, contentRect: { width: 100, height: 50 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(1);
+
+    // 仅高度变化 → 宽度未变，不上报。
+    trigger([makeEntry({ target, contentRect: { width: 100, height: 80 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(1);
+
+    // 宽度变化 → 上报。
+    trigger([makeEntry({ target, contentRect: { width: 120, height: 80 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(2);
+  });
+
+  it("observerProperty='height'：仅宽度变化不上报", () => {
+    const getTrigger = stubNativeRO();
+    const onResize = vi.fn();
+    createResizeObserver({ onResize, observerProperty: 'height' });
+    const target = {} as Element;
+    const trigger = getTrigger();
+
+    trigger([makeEntry({ target, contentRect: { width: 100, height: 50 } as DOMRectReadOnly })]);
+    trigger([makeEntry({ target, contentRect: { width: 300, height: 50 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(1);
+
+    trigger([makeEntry({ target, contentRect: { width: 300, height: 60 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(2);
+  });
+
+  it("默认 'all'：任何维度变化都上报（无回归）", () => {
+    const getTrigger = stubNativeRO();
+    const onResize = vi.fn();
+    createResizeObserver({ onResize });
+    const target = {} as Element;
+    const trigger = getTrigger();
+
+    trigger([makeEntry({ target, contentRect: { width: 100, height: 50 } as DOMRectReadOnly })]);
+    trigger([makeEntry({ target, contentRect: { width: 100, height: 80 } as DOMRectReadOnly })]);
+    expect(onResize).toHaveBeenCalledTimes(2);
+  });
+
+  it('多目标：逐 target 独立记忆上次值（A 的变化不影响 B 的判定）', () => {
+    const getTrigger = stubNativeRO();
+    const onResize = vi.fn();
+    createResizeObserver({ onResize, observerProperty: 'width' });
+    const a = { id: 'a' } as unknown as Element;
+    const b = { id: 'b' } as unknown as Element;
+    const trigger = getTrigger();
+
+    // 两个 target 首帧各上报一次。
+    trigger([
+      makeEntry({ target: a, contentRect: { width: 100, height: 50 } as DOMRectReadOnly }),
+      makeEntry({ target: b, contentRect: { width: 200, height: 50 } as DOMRectReadOnly }),
+    ]);
+    expect(onResize).toHaveBeenCalledTimes(2);
+
+    // A 宽度变、B 宽度不变 → 只上报 A。
+    trigger([
+      makeEntry({ target: a, contentRect: { width: 130, height: 50 } as DOMRectReadOnly }),
+      makeEntry({ target: b, contentRect: { width: 200, height: 90 } as DOMRectReadOnly }),
+    ]);
+    expect(onResize).toHaveBeenCalledTimes(3);
+    expect(onResize).toHaveBeenLastCalledWith(expect.objectContaining({ target: a, width: 130 }));
+  });
+});
+
 describe('advanceResizePhase / endResizePhase (start/end 纯状态机)', () => {
   it('first resize while idle → emitStart and enters resizing', () => {
     expect(advanceResizePhase(false)).toEqual({ resizing: true, emitStart: true });

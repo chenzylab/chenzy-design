@@ -40,4 +40,14 @@ export const demos: DemoEntry[] = [
     '多目标观测',
     'multiple 模式同时监听多个子元素，onResize 按 target 路由各自尺寸',
   ),
+  entry(
+    '05-observe-parent.svelte',
+    '观测父容器',
+    'observeParent 观测包裹元素的父节点而非自身，用于监听所处容器尺寸',
+  ),
+  entry(
+    '06-observer-property.svelte',
+    '只监听某一维度',
+    'observerProperty 设为 width / height 时，另一维度单独变化不触发回调',
+  ),
 ];

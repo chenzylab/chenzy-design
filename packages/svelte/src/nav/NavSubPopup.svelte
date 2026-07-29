@@ -10,7 +10,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getNavContext } from './context.js';
-  import { normalizeNavItems, type NavItemDef } from './types.js';
+  import type { NavItemDef } from './types.js';
+  import { normalizeNavItems } from './nav-foundation.js';
   import { Dropdown } from '../dropdown/index.js';
   import NavPopupNode from './NavPopupNode.svelte';
 
