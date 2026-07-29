@@ -67,4 +67,70 @@ describe('Calendar a11y', () => {
     const text = container.textContent ?? '';
     expect(text).toContain('CUSTOM_SPAN_LABEL');
   });
+
+  // 回归：对齐 Semi renderTime——`list.splice(0, 1, '')` 在 formatTime 之后执行，
+  // 故第 0 项恒为空串，renderTimeDisplay 也被覆盖（反例：自定义分支先于判空则渲染出 "T0"）。
+  it('renderTimeDisplay：第 0 项恒为空串，其余走自定义（对齐 Semi splice 覆盖）', () => {
+    const { container } = renderWithLocale(Calendar, {
+      props: { displayValue: FIXED, renderTimeDisplay: (h: number) => `T${h}` },
+    });
+    const items = container.querySelectorAll('.cd-calendar-time-item span');
+    expect(items.length).toBeGreaterThan(1);
+    expect(items[0]?.textContent).toBe('');
+    expect(items[1]?.textContent).toBe('T1');
+  });
+
+  // 回归：对齐 Semi renderAllDayEvents——回传 props.events 全量事件（非解析后的全天桶），
+  // 故只含定时事件时自定义渲染仍能拿到它（反例：传 allDayBucket 会得到空数组）。
+  it('allDayEventsRender：回传全量 events（对齐 Semi props.events）', () => {
+    const seen: unknown[][] = [];
+    renderWithLocale(Calendar, {
+      props: {
+        displayValue: FIXED,
+        // 纯定时事件：不会进全天桶，只有传全量 events 才拿得到。
+        events: [{ key: 'timed', start: new Date(2024, 5, 15, 9, 0), end: new Date(2024, 5, 15, 10, 0) }],
+        allDayEventsRender: (events: unknown[]) => {
+          seen.push(events);
+          return null;
+        },
+      },
+    });
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen[0]?.length).toBe(1);
+  });
+
+  // 回归：对齐 Semi className/style 两个通用 prop（本库原缺）。Semi 是 `{ height, width, ...style }`，
+  // 用户 style 排在后面故可覆盖 height/width。
+  it('class / style 落根节点，且 style 可覆盖 height（对齐 Semi 合并顺序）', () => {
+    const { container } = renderWithLocale(Calendar, {
+      props: { mode: 'month', displayValue: FIXED, class: 'my-cal', style: 'height: 123px; margin-top: 20px;' },
+    });
+    const root = container.querySelector('.cd-calendar-month') as HTMLElement | null;
+    expect(root?.classList.contains('my-cal')).toBe(true);
+    expect(root?.style.marginTop).toBe('20px');
+    // height 默认 600，用户 style 排后面故最终生效的是 123px。
+    expect(root?.style.height).toBe('123px');
+  });
+
+  // 回归：week 视图根节点的列数自定义属性不能被 style 合并挤掉。
+  it('week 视图：--cd-calendar-col-count 与用户 style 并存', () => {
+    const { container } = renderWithLocale(Calendar, {
+      props: { displayValue: FIXED, style: 'margin-top: 20px;' },
+    });
+    const root = container.querySelector('.cd-calendar-week') as HTMLElement | null;
+    expect(root?.style.getPropertyValue('--cd-calendar-col-count')).toBe('7');
+    expect(root?.style.marginTop).toBe('20px');
+    expect(root?.style.height).toBe('600px');
+  });
+
+  // 回归：对齐 Semi renderAllDay 的 `style = allDayEventsRender ? null : { height }`——
+  // 自定义全天区不锁高（反例：仍写 `${rows}em` 会限制自定义内容高度）。
+  it('allDayEventsRender：自定义全天区不设 height（对齐 Semi style=null）', () => {
+    const { container } = renderWithLocale(Calendar, {
+      props: { displayValue: FIXED, allDayEventsRender: () => null },
+    });
+    const allDay = container.querySelector('.cd-calendar-all-day') as HTMLElement | null;
+    expect(allDay).not.toBeNull();
+    expect(allDay?.style.height).toBe('');
+  });
 });

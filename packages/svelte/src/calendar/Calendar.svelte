@@ -34,8 +34,15 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { Popover } from '../popover/index.js';
+  import TimeCol from './TimeCol.svelte';
+  import {
+    MONTH_CONTENT_PADDING,
+    MONTH_CONTENT_HEIGHT,
+    DAY_GRID_ROWS,
+    type CalendarMode,
+  } from './constants.js';
 
-  type Mode = 'day' | 'week' | 'month' | 'range';
+  type Mode = CalendarMode;
 
   interface Props {
     /** 展示锚点日期，默认 new Date() */
@@ -62,6 +69,10 @@
     width?: number | string;
     /** 日历整体高度，默认 600 */
     height?: number | string;
+    /** 根节点自定义类名（对齐 Semi className） */
+    class?: string;
+    /** 根节点内联样式（对齐 Semi style：合并在 height/width 之后，可覆盖二者） */
+    style?: string;
     /** 点击日期格（对齐 Semi function(e, date)）：日/周视图精确到半小时，月视图精确到日 */
     onClick?: (e: Event, date: Date) => void;
     /** 月视图 +N 卡片关闭回调（对齐 Semi function(e)） */
@@ -91,6 +102,8 @@
     minEventHeight = Number.MIN_SAFE_INTEGER,
     width,
     height = 600,
+    class: className,
+    style,
     onClick,
     onClose,
     onMoreClick,
@@ -204,8 +217,6 @@
   const monthEventMap = $derived(mode === 'month' ? getMonthEvents(events, anchor, weekStartsOn) : {});
   // 对齐 Semi calcItemLimit = ceil((cellHeight - 60) / 24)，按周行实测高度动态算。
   let monthWeekH = $state(0);
-  const MONTH_CONTENT_PADDING = 60;
-  const MONTH_CONTENT_HEIGHT = 24;
   const monthItemLimit = $derived(
     monthWeekH > 0 ? Math.max(0, Math.ceil((monthWeekH - MONTH_CONTENT_PADDING) / MONTH_CONTENT_HEIGHT)) : 2,
   );
@@ -235,14 +246,15 @@
   // 头部月份标签（对齐 Semi renderHeader 的 month = format(value,'LLL')）。
   const monthLabel = $derived(monthShortFmt.format(anchor));
 
-  // --- 时间列（对齐 Semi timeCol：Array(24)=0..23，第 0 项文案清空）---
-  const HOURS = Array.from({ length: 24 }, (_, h) => h);
+  // --- 时间列文案（列本身在 TimeCol.svelte，对齐 Semi timeCol formatTime）---
   function hourLabel(h: number): string {
+    // 对齐 Semi renderTime：`list.splice(0, 1, '')` 在 formatTime **之后**执行，
+    // 故第 0 项恒为空串——renderTimeDisplay 也被它覆盖，判空必须先于自定义分支。
+    if (h === 0) return '';
     if (renderTimeDisplay) {
       const v = renderTimeDisplay(h);
       return typeof v === 'string' ? v : String(v ?? '');
     }
-    if (h === 0) return '';
     const isAM = h < 12;
     const time = h === 12 ? 12 : isAM ? h : h - 12;
     return loc().t(isAM ? 'Calendar.AM' : 'Calendar.PM', { time });
@@ -298,6 +310,17 @@
   const sizePx = (v: number | string | undefined) =>
     v === undefined ? undefined : typeof v === 'number' ? `${v}px` : v;
 
+  // 根节点内联样式：对齐 Semi `{ height, width, ...style }`——用户 style 排在后面，可覆盖 height/width。
+  const rootStyle = $derived.by(() => {
+    const parts: string[] = [];
+    const h = sizePx(height);
+    const w = sizePx(width);
+    if (h !== undefined) parts.push(`height:${h}`);
+    if (w !== undefined) parts.push(`width:${w}`);
+    if (style) parts.push(style.trim().replace(/;$/, ''));
+    return parts.length ? `${parts.join(';')};` : undefined;
+  });
+
   interface MonthCellEvent {
     key: CalendarEvent['key'];
     children: unknown;
@@ -330,15 +353,9 @@
   {/if}
 {/snippet}
 
-<!-- 时间列（对齐 Semi TimeCol：ul.calendar-time-items > li.calendar-time-item > span） -->
+<!-- 时间列已拆到 TimeCol.svelte（对齐 Semi timeCol.tsx） -->
 {#snippet timeCol()}
-  <div class="cd-calendar-time cd-calendar-{isWeekLike ? 'week' : 'day'}-sticky-left" aria-hidden="true">
-    <ul class="cd-calendar-time-items">
-      {#each HOURS as h (h)}
-        <li class="cd-calendar-time-item"><span>{hourLabel(h)}</span></li>
-      {/each}
-    </ul>
-  </div>
+  <TimeCol {hourLabel} variant={isWeekLike ? 'week' : 'day'} />
 {/snippet}
 
 <!-- 单日列（对齐 Semi DayCol：div.grid > div.grid-content > (curr + ul.grid-skeleton(50 li) + dateGridRender + ul.event-items)） -->
@@ -354,7 +371,7 @@
            点击绑 li 本身（无 button 子元素）；li 加 role/tabindex/keydown 保留键盘可达。 -->
       <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
       <ul class="cd-calendar-grid-skeleton" class:cd-calendar-weekend={weekend} role="row">
-        {#each { length: 25 } as _, item (item)}
+        {#each { length: DAY_GRID_ROWS } as _, item (item)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <li
             class="cd-calendar-grid-skeleton-row-line"
@@ -393,7 +410,8 @@
 
 <!-- 全天区（对齐 Semi renderAllDay：div.all-day > ul.tag.all-day-tag.sticky-left + div.all-day-content > [skeleton] + ul.event-items） -->
 {#snippet allDayRow()}
-  <div class="cd-calendar-all-day" style:height={isWeekLike ? `${allDayRows}em` : undefined}>
+  <!-- 对齐 Semi renderAllDay：style = allDayEventsRender ? null : { height }——自定义全天区不锁高 -->
+  <div class="cd-calendar-all-day" style:height={isWeekLike && !allDayEventsRender ? `${allDayRows}em` : undefined}>
     <ul class="cd-calendar-tag cd-calendar-all-day-tag cd-calendar-{isWeekLike ? 'week' : 'day'}-sticky-left">
       <span>{loc().t('Calendar.allDay')}</span>
     </ul>
@@ -408,7 +426,8 @@
         </ul>
       {/if}
       {#if allDayEventsRender}
-        {@const rendered = allDayEventsRender(allDayBucket)}
+        <!-- 对齐 Semi renderAllDayEvents：回传的是 props.events 全量事件，非解析后的全天桶 -->
+        {@const rendered = allDayEventsRender(events)}
         {#if rendered}{@render rendered()}{/if}
       {:else}
         <ul class="cd-calendar-event-items">
@@ -426,10 +445,9 @@
 {#if mode === 'day'}
   <!-- ===== day 视图（对齐 Semi dayCalendar：根无 role）===== -->
   <div
-    class="cd-calendar-day"
+    class={['cd-calendar-day', className]}
     bind:this={rootEl}
-    style:height={sizePx(height)}
-    style:width={sizePx(width)}
+    style={rootStyle}
   >
     <div class="cd-calendar-day-sticky-top">
       {#if header}{@render header()}{/if}
@@ -445,11 +463,9 @@
 {:else if isWeekLike}
   <!-- ===== week / range 视图（对齐 Semi weekCalendar / rangeCalendar：根无 role）===== -->
   <div
-    class="cd-calendar-week"
+    class={['cd-calendar-week', className]}
     bind:this={rootEl}
-    style:height={sizePx(height)}
-    style:width={sizePx(width)}
-    style:--cd-calendar-col-count={columnDates.length}
+    style={`--cd-calendar-col-count:${columnDates.length};${rootStyle ?? ''}`}
   >
     <div class="cd-calendar-week-sticky-top">
       {#if header}{@render header()}{/if}
@@ -487,7 +503,7 @@
   </div>
 {:else}
   <!-- ===== month 视图（对齐 Semi monthCalendar）===== -->
-  <div class="cd-calendar-month" role="grid" aria-label={title} style:height={sizePx(height)} style:width={sizePx(width)}>
+  <div class={['cd-calendar-month', className]} role="grid" aria-label={title} style={rootStyle}>
     <div class="cd-calendar-month-sticky-top" role="presentation">
       {#if header}{@render header()}{/if}
       <!-- 星期表头（对齐 Semi renderHeader：month-header > grid > grid-row li） -->
@@ -773,33 +789,7 @@
     align-items: flex-start;
   }
 
-  /* 时间列（对齐 Semi .calendar-time / .time-items / .time-item） */
-  .cd-calendar-time {
-    height: auto;
-    display: flex;
-    flex: none;
-    align-items: flex-start;
-    padding-right: var(--cd-calendar-spacing-time-padding-right);
-  }
-  .cd-calendar-time-items {
-    position: relative;
-    min-width: var(--cd-calendar-width-tag-col);
-    background: var(--cd-calendar-color-bg);
-    box-sizing: border-box;
-    margin-left: auto;
-  }
-  .cd-calendar-time-item {
-    position: relative;
-    height: var(--cd-calendar-height-day-grid);
-    text-align: right;
-  }
-  .cd-calendar-time-item span {
-    display: block;
-    position: relative;
-    top: var(--cd-calendar-spacing-time-item-span-top);
-    color: var(--cd-calendar-color-day-text-default);
-    font-size: var(--cd-font-size-regular);
-  }
+  /* 时间列样式已随组件拆到 TimeCol.svelte（对齐 Semi timeCol.tsx） */
 
   /* 单日列（对齐 Semi .calendar-grid { display:flex; align-items:flex-start; flex:1 1 auto; position:relative }） */
   .cd-calendar-grid {
