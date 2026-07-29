@@ -34,7 +34,4 @@ export const demos: DemoEntry[] = [
   entry('07-date-grid-event.svelte', '自定义渲染事件', 'dateGridRender 在某列绝对定位塞事件块（吃饭 / 睡觉 / 打豆豆），需绝对定位 top/height'),
   entry('08-date-grid-cell.svelte', '自定义渲染单元格样式', 'dateGridRender 给重要日期铺一层背景（需绝对定位）'),
   entry('09-render-date-display.svelte', '自定义日期文案', 'renderDateDisplay 用 Avatar 渲染周视图日期头'),
-  // —— 以下为本库增强场景（Semi 未单列）——
-  entry('10-onclick.svelte', '点击回调', 'onClick 回调点击的精确时间点（日 / 周精确到半小时）'),
-  entry('11-more-markweekend.svelte', '周末标识与「还有 N 项」', 'markWeekend 区分周末 + Tag 上色事件 + onMoreClick 处理溢出'),
 ];
