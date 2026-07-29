@@ -24,10 +24,10 @@ function entry(file: string, title: string, description?: string): DemoEntry {
 }
 
 export const demos: DemoEntry[] = [
-  entry('01-basic.svelte', '基础颜色选择', 'usePopover 弹出触发与默认 inline 内联模式；值为 ColorValue 对象。'),
-  entry('03-alpha.svelte', '透明度 Alpha', 'alpha 开启时显示透明度滑条 + 百分比数字输入，关闭则强制不透明。'),
-  entry('06-eye-dropper.svelte', '滴管取色', 'eyeDropper 开启浏览器吸管，从屏幕任意位置取色（需安全上下文，不支持时自动隐藏）。'),
-  entry('07-slots.svelte', '顶部/底部插槽', 'topSlot / bottomSlot 在面板顶部、底部渲染额外内容。'),
-  entry('08-custom-trigger.svelte', '自定义触发器', 'usePopover 浮层模式下用 children 自定义触发器，替换默认色块。'),
-  entry('09-controlled.svelte', '受控', '外部持有 ColorValue 配合 onChange，按钮编程式设置颜色。'),
+  entry('01-popover.svelte', '放在弹层', 'usePopover 放入 Popover 渲染，children 可自定义 trigger。'),
+  entry('02-inline.svelte', '正常展示', '默认直接内联渲染选色面板。'),
+  entry('03-eye-dropper.svelte', '滴管取色器', 'eyeDropper 开启滴管功能，支持从浏览器内或外部软件屏幕取色。'),
+  entry('04-default-value.svelte', '默认值', 'colorStringToValue 把常见颜色字符串转成 ColorValue 三态对象。'),
+  entry('05-controlled.svelte', '受控', '通过传入 value 来受控使用。'),
+  entry('06-slots.svelte', '顶部和底部渲染额外元素', 'topSlot / bottomSlot 在顶部和底部渲染额外元素。'),
 ];

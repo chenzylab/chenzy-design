@@ -1297,6 +1297,9 @@
   .cd-select__trigger {
     display: flex;
     align-items: center;
+    /* 对齐 Semi `.semi-select { box-sizing: border-box }`：高度含 1px 边框，
+       不靠站点全局 reset（组件自持才不会在无 reset 的宿主里胖 2px）。 */
+    box-sizing: border-box;
     gap: var(--cd-spacing-tight);
     inline-size: 100%;
     min-block-size: var(--cd-select-height-default);
@@ -1314,7 +1317,14 @@
         var(--cd-transition-function-select-border) var(--cd-transition-delay-select-border);
     transform: var(--cd-transform-scale-select);
   }
+  /*
+   * 尺寸对齐 Semi select.scss：`&-small { height }` 是**固定 height 不是 min-height**，
+   * `&-large { min-height }` 才是 min。真正让小尺寸从 26.5px 收回 24px 的是
+   * content 的 line-height（见下方 .cd-select__content）——docs 正文 24.5px 的继承行高
+   * 撑开内容后，只有 min-block-size 拦不住。此处固定 height 是照抄 Semi 的写法。
+   */
   .cd-select--small .cd-select__trigger {
+    block-size: var(--cd-select-height-small);
     min-block-size: var(--cd-select-height-small);
   }
   .cd-select--large .cd-select__trigger {
@@ -1370,6 +1380,13 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     min-inline-size: 0;
+    /*
+     * 行高对齐 Semi：`.semi-select-selection` 用 `@include font-size-regular`，
+     * 该 mixin 的 line-height 恒为 20px（semi-theme-default/scss/_font.scss），
+     * 对应本库 --cd-line-height-regular。必须写在 content（内层）而非 trigger——
+     * 挂到 trigger 会让行高等于容器高，把 Semi 留的 1px 边框内缩吃掉（实测 gap 1→0）。
+     */
+    line-height: var(--cd-line-height-regular);
   }
   .cd-select__placeholder {
     color: var(--cd-color-select-input-placeholder-text);

@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderKbdFixture, userEvent } from '../test-utils/kbd.js';
 import SelectKbdFixture from './SelectKbdFixture.svelte';
+import SelectSizeKbdFixture from './SelectSizeKbdFixture.svelte';
 
 describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
   it('打开后 ↑↓ 移高亮 + Home/End 首末 + Enter 选中', async () => {
@@ -55,5 +56,22 @@ describe('Select 键盘 e2e（aria-activedescendant 浮层导航）', () => {
     await userEvent.keyboard('{Enter}');
     const out = document.querySelector('[data-testid="value"]') as HTMLElement;
     expect(out.textContent).toBe(JSON.stringify('apple'));
+  });
+
+  // 尺寸回归（真实 chromium 才有布局，jsdom 量不到）：三档高度对齐 Semi 官网实测值
+  // small 24 / default 32 / large 40。历史 bug：小尺寸只写 min-block-size，
+  // 被继承的 24.5px 行高顶穿成 26.5px（ColorPicker 的 dataPart 因此比 Semi 高 4px）。
+  it('三档尺寸高度对齐 Semi（small 24 / default 32 / large 40）', async () => {
+    renderKbdFixture(SelectSizeKbdFixture);
+
+    const heightOf = (testid: string) => {
+      const host = document.querySelector(`[data-testid="${testid}"]`) as HTMLElement;
+      const trigger = host.querySelector('.cd-select__trigger') as HTMLElement;
+      return Math.round(trigger.getBoundingClientRect().height);
+    };
+
+    expect(heightOf('small')).toBe(24);
+    expect(heightOf('default')).toBe(32);
+    expect(heightOf('large')).toBe(40);
   });
 });

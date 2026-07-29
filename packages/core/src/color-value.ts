@@ -139,6 +139,120 @@ export const DEFAULT_COLOR_VALUE: ColorValue = {
   hex: '#39c5bb',
 };
 
+/** HsvaColor → HslaColor（对齐 Semi hsvaToHsla）。 */
+export function hsvaToHsla({ h, s, v, a }: HsvaColor): {
+  h: number;
+  s: number;
+  l: number;
+  a: number;
+} {
+  const hh = ((200 - s) * v) / 100;
+  return {
+    h: round(h),
+    s: round(hh > 0 && hh < 200 ? ((s * v) / 100 / (hh <= 100 ? hh : 200 - hh)) * 100 : 0),
+    l: round(hh / 2),
+    a: round(a, 2),
+  };
+}
+
+/** HsvaColor → `hsl(h, s%, l%)` 串（对齐 Semi hsvaToHslString，用于色板底色/把手色）。 */
+export function hsvaToHslString(hsva: HsvaColor): string {
+  const { h, s, l } = hsvaToHsla(hsva);
+  return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+/** HsvaColor → `hsla(h, s%, l%, a)` 串（对齐 Semi hsvaToHslaString，用于 alpha 条渐变）。 */
+export function hsvaToHslaString(hsva: HsvaColor): string {
+  const { h, s, l, a } = hsvaToHsla(hsva);
+  return `hsla(${h}, ${s}%, ${l}%, ${a})`;
+}
+
+/** HsvaColor → `rgba(r,g,b,a)` 串（对齐 Semi hsvaToRgbaString，用于 alpha 把手色）。 */
+export function hsvaToRgbaString(hsva: HsvaColor): string {
+  const { r, g, b, a } = hsvaToRgba(hsva);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/** CSS <angle> 单位换算（对齐 Semi convert.ts angleUnits）。 */
+const ANGLE_UNITS: Record<string, number> = {
+  grad: 360 / 400,
+  turn: 360,
+  rad: 360 / (Math.PI * 2),
+};
+
+/** 解析色相角（对齐 Semi parseHue，支持 deg/rad/grad/turn）。 */
+export function parseHue(value: string, unit = 'deg'): number {
+  return Number(value) * (ANGLE_UNITS[unit] ?? 1);
+}
+
+const RGBA_STRING_MATCHER =
+  /rgba?\(?\s*(-?\d*\.?\d+)(%)?[,\s]+(-?\d*\.?\d+)(%)?[,\s]+(-?\d*\.?\d+)(%)?,?\s*[/\s]*(-?\d*\.?\d+)?(%)?\s*\)?/i;
+
+const HSVA_STRING_MATCHER =
+  /hsva?\(?\s*(-?\d*\.?\d+)(deg|rad|grad|turn)?[,\s]+(-?\d*\.?\d+)%?[,\s]+(-?\d*\.?\d+)%?,?\s*[/\s]*(-?\d*\.?\d+)?(%)?\s*\)?/i;
+
+/** `rgb(57,197,187)` / `rgba(57,197,187,.5)` → RgbaColor（对齐 Semi rgbaStringToRgba）。 */
+export function rgbaStringToRgba(rgbaString: string): RgbaColor {
+  const match = RGBA_STRING_MATCHER.exec(rgbaString);
+  if (!match) return { r: 0, g: 0, b: 0, a: 1 };
+  return {
+    r: Number(match[1]) / (match[2] ? 100 / 255 : 1),
+    g: Number(match[3]) / (match[4] ? 100 / 255 : 1),
+    b: Number(match[5]) / (match[6] ? 100 / 255 : 1),
+    a: match[7] === undefined ? 1 : Number(match[7]) / (match[8] ? 100 : 1),
+  };
+}
+
+/** rgb/rgba 字符串 → HsvaColor（对齐 Semi rgbaStringToHsva）。 */
+export function rgbaStringToHsva(rgbaString: string): HsvaColor {
+  return rgbaToHsva(rgbaStringToRgba(rgbaString));
+}
+
+/** Semi 别名：rgb 与 rgba 共用同一解析器。 */
+export const rgbStringToRgba = rgbaStringToRgba;
+export const rgbStringToHsva = rgbaStringToHsva;
+
+/** `hsv(176,71,77)` / `hsva(176,71,77,.5)` → HsvaColor（对齐 Semi hsvaStringToHsva）。 */
+export function hsvaStringToHsva(hsvString: string): HsvaColor {
+  const match = HSVA_STRING_MATCHER.exec(hsvString);
+  if (!match) return { h: 0, s: 0, v: 0, a: 1 };
+  return {
+    h: round(parseHue(match[1]!, match[2])),
+    s: round(Number(match[3])),
+    v: round(Number(match[4])),
+    a: match[5] === undefined ? 1 : round(Number(match[5]) / (match[6] ? 100 : 1), 2),
+  };
+}
+
+/** Semi 别名：hsv 与 hsva 共用同一解析器。 */
+export const hsvStringToHsva = hsvaStringToHsva;
+
+/**
+ * 常见颜色字符串 → ColorValue 三态（对齐 Semi 静态方法 `ColorPicker.colorStringToValue`）。
+ * 支持 `#39c5bb` / `rgb(57,197,187)` / `rgba(57,197,187,.5)` / `hsv(176,71,77)`；
+ * 无法识别时抛错（对齐 Semi，避免静默拿到黑色）。
+ */
+export function colorStringToValue(raw: string): ColorValue {
+  if (raw.startsWith('#')) {
+    return { hsva: hexToHsva(raw), rgba: hexToRgba(raw), hex: raw };
+  }
+  if (raw.startsWith('rgba')) {
+    const rgba = rgbaStringToRgba(raw);
+    return { hsva: rgbaStringToHsva(raw), rgba, hex: rgbaToHex(rgba) };
+  }
+  if (raw.startsWith('rgb')) {
+    const rgba = rgbStringToRgba(raw);
+    return { hsva: rgbStringToHsva(raw), rgba, hex: rgbaToHex(rgba) };
+  }
+  if (raw.startsWith('hsv')) {
+    const hsva = hsvaStringToHsva(raw);
+    return { hsva, rgba: hsvaToRgba(hsva), hex: hsvaToHex(hsva) };
+  }
+  throw new Error(
+    'ColorPicker: error on colorStringToValue, input value is invalid: ' + raw,
+  );
+}
+
 /**
  * 输入框显示串（对齐 Semi DataPartFoundation.getInputValue）：
  * hex → hex.slice(0,7)；rgba → "r,g,b"；hsva → "h,s,v"（均不含 alpha）。

@@ -4,6 +4,7 @@ export {
   colorValueFromHex,
   colorValueFromRgba,
   colorValueFromHsva,
+  colorStringToValue,
   DEFAULT_COLOR_VALUE,
   type ColorValue,
   type ColorValueFormat,
