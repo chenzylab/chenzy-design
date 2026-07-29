@@ -14,6 +14,18 @@ export interface BreadcrumbContext {
   unregister: (id: number) => void;
   /** 该 id 是否为最后一项（当前页：不可点 + aria-current=page）。纯派生。 */
   isLast: (id: number) => boolean;
+  /**
+   * 该 id 是否被 maxItemCount 折叠隐藏（对齐 Semi 对 children 的 slice）。
+   * 折叠规则同数据驱动分支：保留首项 + 末 (maxItemCount-1) 项，中间折叠为「…」。
+   * 被折叠的 Item 自身不渲染，省略号由父级在首项之后统一插入。
+   */
+  isCollapsed: (id: number) => boolean;
+  /** 该 id 之后是否紧跟折叠省略号（由被折叠段的前一项负责渲染，保证位置正确）。 */
+  showEllipsisAfter: (id: number) => boolean;
+  /** 被折叠的项数（用于「…」的无障碍文案）。 */
+  collapsedCount: () => number;
+  /** 点击省略号展开全部。 */
+  expand: () => void;
 }
 
 const KEY = Symbol('cd-breadcrumb');

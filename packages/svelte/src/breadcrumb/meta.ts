@@ -39,7 +39,7 @@ export const meta = {
       name: 'compact',
       type: 'boolean',
       default: 'true',
-      desc: '紧凑模式；false 时根元素附加 cd-breadcrumb--loose 类（更大字号/间距）',
+      desc: '紧凑模式；false 时根元素附加 cd-breadcrumb-loose 类（更大字号/间距）',
     },
     {
       name: 'autoCollapse',

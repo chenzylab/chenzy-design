@@ -6,6 +6,8 @@
   声明式模式：子项间分隔符由纯 CSS（:not(:last-child)::after）自动插入，最后一项后无分隔符；
   最后一项语义（当前页：不可点 + aria-current=page）由 context 注册顺序派生（红线 #2 纯函数）。
   maxItemCount（默认 4）：超出时中间折叠为 IconMore 触发器（保留首项 + 末 maxItemCount-1 项）。
+  **routes 与声明式 <Breadcrumb.Item> 两种模式都支持折叠**：声明式模式下子项经 context
+  注册序号（等价 Semi 对 children 的 slice），被折叠者自身不渲染，「…」由前一项渲染。
   moreType（对齐 Semi 'default'|'popover'，默认 'default'）：
     - 'default'：点击 IconMore 就地展开整条（disclosure，aria-expanded）。
     - 'popover'：悬浮 IconMore 弹出可点击的折叠项菜单。
@@ -52,7 +54,7 @@
     showTooltip?: boolean | ShowTooltipProps;
     /** 折叠 … 的浮层类型，默认 'default'（对齐 Semi）。 */
     moreType?: MoreType;
-    /** 紧凑模式，默认 true；false 时根元素附加 cd-breadcrumb--loose 类（更大字号/间距）。 */
+    /** 紧凑模式，默认 true；false 时根元素附加 cd-breadcrumb-loose 类（更大字号/间距）。 */
     compact?: boolean;
     /** 是否在超出 maxItemCount 时自动折叠，默认 true；false 时始终展示全部项。 */
     autoCollapse?: boolean;
@@ -104,7 +106,7 @@
   const cls = $derived(
     [
       'cd-breadcrumb',
-      compact ? 'cd-breadcrumb--compact' : 'cd-breadcrumb--loose',
+      compact ? 'cd-breadcrumb-compact' : 'cd-breadcrumb-loose',
       className,
     ]
       .filter(Boolean)
@@ -143,14 +145,14 @@
     let updating = false;
     // 承载文本的内层元素（current / link / text 之一）。
     function inner(): HTMLElement | null {
-      return node.querySelector('.cd-breadcrumb__current, .cd-breadcrumb__link, .cd-breadcrumb__text');
+      return node.querySelector('.cd-breadcrumb-current, .cd-breadcrumb-item-link, .cd-breadcrumb-text');
     }
     function update({ enabled, full }: { enabled: boolean; full: string }) {
       if (!enabled || updating) return;
       const el = inner();
       if (!el) return;
       // 含前置图标时不裁 textContent（会误删 icon 节点）；退化为 CSS 末尾省略。
-      if (el.querySelector('.cd-breadcrumb__icon')) return;
+      if (el.querySelector('.cd-breadcrumb-item-icon')) return;
       updating = true;
       el.setAttribute('aria-label', full);
       el.textContent = full;
@@ -226,20 +228,51 @@
   let nextId = 0;
   const order: number[] = [];
   let lastId = $state<number>(-1);
+  // 已注册项数（$state）：驱动折叠派生在成员到齐/增减后重算。
+  let registerCount = $state(0);
   setBreadcrumbContext({
     register: () => {
       const id = nextId++;
       order.push(id);
       lastId = order[order.length - 1] ?? -1;
+      registerCount = order.length;
       return id;
     },
     unregister: (id: number) => {
       const i = order.indexOf(id);
       if (i !== -1) order.splice(i, 1);
       lastId = order.length > 0 ? (order[order.length - 1] ?? -1) : -1;
+      registerCount = order.length;
     },
     isLast: (id: number) => lastId !== -1 && id === lastId,
+    // ---------- 声明式分支的折叠（与 routes 分支同规则，对齐 Semi 对 children 的 slice）----------
+    isCollapsed: (id: number) => declCollapsedIds().includes(id),
+    showEllipsisAfter: (id: number) => {
+      const hidden = declCollapsedIds();
+      if (hidden.length === 0) return false;
+      // 省略号挂在「被折叠段之前那一项」（即首项）之后。
+      const firstHidden = hidden[0]!;
+      const pos = declOrder().indexOf(firstHidden);
+      return pos > 0 && declOrder()[pos - 1] === id;
+    },
+    collapsedCount: () => declCollapsedIds().length,
+    expand: () => {
+      expanded = true;
+    },
   });
+
+  // 声明式项的当前顺序快照（registerCount 变化时重算，保证成员到齐后正确切片）。
+  function declOrder(): number[] {
+    void registerCount;
+    return order;
+  }
+  /** 被折叠隐藏的 id 集合：保留首项 + 末 (maxItemCount-1) 项（对齐 Semi slice(1, len-max+1)）。 */
+  function declCollapsedIds(): number[] {
+    const ids = declOrder();
+    if (!autoCollapse || expanded || maxItemCount <= 0 || ids.length <= maxItemCount) return [];
+    const tail = Math.max(1, maxItemCount - 1);
+    return ids.slice(1, ids.length - tail);
+  }
 </script>
 
 <!-- IconMore：水平三点，对齐 Semi IconMore 折叠触发器视觉。 -->
@@ -249,24 +282,24 @@
 
 <!-- 单个路由项内容：末项=当前页（不可点），有 href=链接，否则可点文本。
      renderItem 优先：传入时直接渲染自定义内容。
-     activeIndex 对应项附加 cd-breadcrumb__link--active / cd-breadcrumb__text--active 类。 -->
+     activeIndex 对应项附加 cd-breadcrumb-link-active / cd-breadcrumb-text-active 类。 -->
 {#snippet routeItem(route: BreadcrumbRoute, index: number, last: boolean)}
   {#if renderItem}
     {@render renderItem(route)}
   {:else if last}
-    <span class="cd-breadcrumb__current" aria-current="page">
-      {#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}
+    <span class="cd-breadcrumb-current" aria-current="page">
+      {#if route.icon}<span class="cd-breadcrumb-item-icon">{@render route.icon()}</span>{/if}{route.name ?? ''}
     </span>
   {:else if route.href}
     <a
-      class={['cd-breadcrumb__link', activeIndex === index ? 'cd-breadcrumb__link--active' : ''].filter(Boolean).join(' ')}
+      class={['cd-breadcrumb-item-link', activeIndex === index ? 'cd-breadcrumb-link-active' : ''].filter(Boolean).join(' ')}
       href={route.href}
       onclick={(e) => handleClick(route, e)}
-      >{#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</a
+      >{#if route.icon}<span class="cd-breadcrumb-item-icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</a
     >
   {:else}
     <span
-      class={['cd-breadcrumb__text', activeIndex === index ? 'cd-breadcrumb__text--active' : ''].filter(Boolean).join(' ')}
+      class={['cd-breadcrumb-text', activeIndex === index ? 'cd-breadcrumb-text-active' : ''].filter(Boolean).join(' ')}
       role="link"
       tabindex="0"
       onclick={(e) => handleClick(route, e)}
@@ -276,7 +309,7 @@
           handleClick(route, e as unknown as MouseEvent);
         }
       }}
-      >{#if route.icon}<span class="cd-breadcrumb__icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</span
+      >{#if route.icon}<span class="cd-breadcrumb-item-icon">{@render route.icon()}</span>{/if}{route.name ?? ''}</span
     >
   {/if}
 {/snippet}
@@ -288,8 +321,8 @@
   {#if tooltipCfg.enabled}
     <Tooltip content={route.name ?? ''} position="top">
       <span
-        class="cd-breadcrumb__ellipsis-wrap"
-        class:cd-breadcrumb__ellipsis-wrap--middle={tooltipCfg.ellipsisPos === 'middle'}
+        class="cd-breadcrumb-ellipsis-wrap"
+        class:cd-breadcrumb-ellipsis-wrap-middle={tooltipCfg.ellipsisPos === 'middle'}
         style="--cd-breadcrumb-item-max-width:{tooltipWidthPx}"
         use:middleEllipsis={{ enabled: tooltipCfg.ellipsisPos === 'middle', full: route.name ?? '' }}
         >{@render routeItem(route, index, last)}</span
@@ -305,7 +338,7 @@
 {#snippet moreTrigger(count: number, menu: boolean)}
   <button
     type="button"
-    class="cd-breadcrumb__more"
+    class="cd-breadcrumb-more"
     aria-label={loc().t('Breadcrumb.moreLabel', { count })}
     aria-haspopup={menu ? 'menu' : undefined}
   >{@render iconMore()}</button>
@@ -315,10 +348,10 @@
      每项一个 item-wrap span（对齐 Semi .semi-breadcrumb-item-wrap），内含 item(a|span) + 项后分隔符。 -->
 <nav class={cls} aria-label={ariaLabel ?? loc().t('Breadcrumb.ariaLabel')} {style}>
   {#if hasRoutes}
-    <span class="cd-breadcrumb__list">
+    <span class="cd-breadcrumb-list">
       {#each cells as cell, cellIndex (cell.type === 'route' ? `r-${cell.index}` : 'ellipsis')}
         {@const isLast = cellIndex === cells.length - 1}
-        <span class="cd-breadcrumb__item">
+        <span class="cd-breadcrumb-item">
           {#if cell.type === 'ellipsis'}
             {#if renderMore}
               <!-- renderMore 接管折叠区域渲染，参数为被折叠路由列表。 -->
@@ -328,19 +361,19 @@
                 {@render moreTrigger(cell.count, true)}
                 {#snippet content()}
                   <!-- 折叠节点展开浮层：WAI-ARIA APG menu 角色，项为 menuitem。 -->
-                  <ul class="cd-breadcrumb__more-list" role="menu">
+                  <ul class="cd-breadcrumb-more-list" role="menu">
                     {#each cell.collapsed as c (c.index)}
-                      <li class="cd-breadcrumb__more-list-item" role="none">
+                      <li class="cd-breadcrumb-more-list-item" role="none">
                         {#if c.route.href}
                           <a
-                            class="cd-breadcrumb__link"
+                            class="cd-breadcrumb-item-link"
                             role="menuitem"
                             href={c.route.href}
                             onclick={(e) => handleClick(c.route, e)}>{c.route.name ?? ''}</a
                           >
                         {:else}
                           <span
-                            class="cd-breadcrumb__text"
+                            class="cd-breadcrumb-text"
                             role="menuitem"
                             tabindex="0"
                             onclick={(e) => handleClick(c.route, e)}
@@ -361,7 +394,7 @@
               <!-- 默认模式（moreType='default'，对齐 Semi）：点击 IconMore 就地展开整条，disclosure 语义用 aria-expanded。 -->
               <button
                 type="button"
-                class="cd-breadcrumb__more"
+                class="cd-breadcrumb-more"
                 aria-label={loc().t('Breadcrumb.moreLabel', { count: cell.count })}
                 aria-expanded={expanded}
                 onclick={() => (expanded = true)}
@@ -371,7 +404,7 @@
             {@render maybeTooltip(cell.route, cell.index, isLast)}
           {/if}
           {#if !isLast}
-            <span class="cd-breadcrumb__separator" aria-hidden="true"
+            <span class="cd-breadcrumb-separator" aria-hidden="true"
               >{#if separatorSnippet}{@render separatorSnippet()}{:else}{separatorText}{/if}</span
             >
           {/if}
@@ -380,7 +413,7 @@
     </span>
   {:else}
     <span
-      class="cd-breadcrumb__list cd-breadcrumb__list--declarative"
+      class="cd-breadcrumb-list cd-breadcrumb-list-declarative"
       style="--cd-breadcrumb-separator-content: '{separatorText}'"
     >
       {@render children?.()}
@@ -397,14 +430,14 @@
   /* 尺寸对齐 Semi：仅 compact 布尔驱动。
      compact → 紧凑小字号（Semi .semi-breadcrumb-wrapper-compact / font-size-small）；
      !compact（loose）→ 宽松常规字号（Semi .semi-breadcrumb-wrapper-loose / font-size-regular）。 */
-  .cd-breadcrumb--compact {
+  .cd-breadcrumb-compact {
     font-size: var(--cd-breadcrumb-font-size-compact);
   }
-  .cd-breadcrumb--loose {
+  .cd-breadcrumb-loose {
     font-size: var(--cd-breadcrumb-font-size);
   }
   /* 扁平结构：nav 下的 span 容器（对齐 Semi .semi-breadcrumb-wrapper，无列表语义）。 */
-  .cd-breadcrumb__list {
+  .cd-breadcrumb-list {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -412,30 +445,30 @@
   }
   /* 子项内容类用 :global 包裹：声明式 <Breadcrumb.Item> 渲染的元素在子组件作用域内，
      数据驱动模式的元素则为本组件 .cd-breadcrumb 后代，两者统一受样式约束（对齐 Collapse 模式）。 */
-  .cd-breadcrumb :global(.cd-breadcrumb__item) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item) {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-breadcrumb-gap);
   }
   /* 前置图标：与文字基线对齐（对齐 Semi .semi-breadcrumb-item-icon 视觉） */
-  .cd-breadcrumb :global(.cd-breadcrumb__icon) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item-icon) {
     display: inline-flex;
     align-items: center;
     margin-inline-end: var(--cd-spacing-breadcrumb-item-text-marginleft);
   }
-  .cd-breadcrumb__separator {
+  .cd-breadcrumb-separator {
     color: var(--cd-breadcrumb-separator-color);
     user-select: none;
   }
   /* 声明式 Item 间分隔符：纯 CSS 自动插入，最后一项后不加（红线 #2）。 */
-  .cd-breadcrumb__list--declarative :global(.cd-breadcrumb__item:not(:last-child))::after {
+  .cd-breadcrumb-list-declarative :global(.cd-breadcrumb-item:not(:last-child))::after {
     content: var(--cd-breadcrumb-separator-content, '/');
     margin-inline-start: var(--cd-breadcrumb-gap);
     color: var(--cd-breadcrumb-separator-color);
     user-select: none;
   }
-  .cd-breadcrumb :global(.cd-breadcrumb__link),
-  .cd-breadcrumb :global(.cd-breadcrumb__text) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item-link),
+  .cd-breadcrumb :global(.cd-breadcrumb-text) {
     display: inline-flex;
     align-items: center;
     color: var(--cd-breadcrumb-color-link);
@@ -443,33 +476,33 @@
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-breadcrumb :global(.cd-breadcrumb__link:hover),
-  .cd-breadcrumb :global(.cd-breadcrumb__text:hover) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item-link:hover),
+  .cd-breadcrumb :global(.cd-breadcrumb-text:hover) {
     color: var(--cd-breadcrumb-color-link-hover);
     text-decoration: underline;
   }
-  .cd-breadcrumb :global(.cd-breadcrumb__link:active),
-  .cd-breadcrumb :global(.cd-breadcrumb__text:active) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item-link:active),
+  .cd-breadcrumb :global(.cd-breadcrumb-text:active) {
     color: var(--cd-breadcrumb-color-link-active);
   }
-  .cd-breadcrumb :global(.cd-breadcrumb__link:focus-visible),
-  .cd-breadcrumb :global(.cd-breadcrumb__text:focus-visible) {
+  .cd-breadcrumb :global(.cd-breadcrumb-item-link:focus-visible),
+  .cd-breadcrumb :global(.cd-breadcrumb-text:focus-visible) {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-breadcrumb :global(.cd-breadcrumb__current) {
+  .cd-breadcrumb :global(.cd-breadcrumb-current) {
     display: inline-flex;
     align-items: center;
     color: var(--cd-breadcrumb-color-active);
     font-weight: var(--cd-breadcrumb-active-weight); /* 对齐 Semi 当前项字重 bold */
   }
   /* activeIndex：选中项高亮（配合 onClick 受控选中） */
-  .cd-breadcrumb :global(.cd-breadcrumb__link--active),
-  .cd-breadcrumb :global(.cd-breadcrumb__text--active) {
+  .cd-breadcrumb :global(.cd-breadcrumb-link-active),
+  .cd-breadcrumb :global(.cd-breadcrumb-text-active) {
     color: var(--cd-breadcrumb-color-active);
     font-weight: var(--cd-breadcrumb-active-weight);
   }
-  .cd-breadcrumb__more {
+  .cd-breadcrumb-more {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -483,17 +516,17 @@
     cursor: pointer;
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-breadcrumb__more:hover {
+  .cd-breadcrumb-more:hover {
     color: var(--cd-breadcrumb-color-link-hover);
     background: var(--cd-color-fill-1);
   }
-  .cd-breadcrumb__more:focus-visible {
+  .cd-breadcrumb-more:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
 
   /* showTooltip：截断包裹——超过 max-inline-size 时省略号，hover 由 Tooltip 显示完整文本 */
-  .cd-breadcrumb__ellipsis-wrap {
+  .cd-breadcrumb-ellipsis-wrap {
     display: inline-block;
     max-inline-size: var(--cd-breadcrumb-item-max-width);
     overflow: hidden;
@@ -502,9 +535,9 @@
     vertical-align: bottom;
   }
   /* 内层可点元素在截断包裹内需为块级以继承省略号（end 截断） */
-  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__link),
-  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__text),
-  .cd-breadcrumb__ellipsis-wrap :global(.cd-breadcrumb__current) {
+  .cd-breadcrumb-ellipsis-wrap :global(.cd-breadcrumb-item-link),
+  .cd-breadcrumb-ellipsis-wrap :global(.cd-breadcrumb-text),
+  .cd-breadcrumb-ellipsis-wrap :global(.cd-breadcrumb-current) {
     display: inline;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -512,9 +545,9 @@
   }
   /* middle 截断：内层块级 + 受父宽约束，供 middleEllipsis action 测量 scrollWidth/clientWidth。
      文本由 action 就地裁剪为「头…尾」，故此处不用 text-overflow。 */
-  .cd-breadcrumb__ellipsis-wrap--middle :global(.cd-breadcrumb__link),
-  .cd-breadcrumb__ellipsis-wrap--middle :global(.cd-breadcrumb__text),
-  .cd-breadcrumb__ellipsis-wrap--middle :global(.cd-breadcrumb__current) {
+  .cd-breadcrumb-ellipsis-wrap-middle :global(.cd-breadcrumb-item-link),
+  .cd-breadcrumb-ellipsis-wrap-middle :global(.cd-breadcrumb-text),
+  .cd-breadcrumb-ellipsis-wrap-middle :global(.cd-breadcrumb-current) {
     display: block;
     max-inline-size: 100%;
     overflow: hidden;
@@ -523,7 +556,7 @@
   }
 
   /* moreType=popover 折叠项列表 */
-  .cd-breadcrumb__more-list {
+  .cd-breadcrumb-more-list {
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-breadcrumb-item-marginright);
@@ -531,7 +564,7 @@
     padding: 0;
     list-style: none;
   }
-  .cd-breadcrumb__more-list-item {
+  .cd-breadcrumb-more-list-item {
     white-space: nowrap;
   }
 </style>
