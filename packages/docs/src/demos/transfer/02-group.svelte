@@ -6,7 +6,7 @@
   const dataWithGroup = [
     {
       title: '类别A',
-      items: [
+      children: [
         { label: 'A-1', value: 1, disabled: false, key: 1 },
         { label: 'A-2', value: 2, disabled: false, key: 2 },
         { label: 'A-3', value: 3, disabled: false, key: 3 },
@@ -14,7 +14,7 @@
     },
     {
       title: '类别B',
-      items: [
+      children: [
         { label: 'B-1', value: 4, disabled: false, key: 4 },
         { label: 'B-2', value: 5, disabled: false, key: 5 },
         { label: 'B-3（disabled）', value: 6, disabled: true, key: 6 },
@@ -22,7 +22,7 @@
     },
     {
       title: '类别C',
-      items: [
+      children: [
         { label: 'C-1', value: 7, disabled: false, key: 7 },
         { label: 'C-2', value: 8, disabled: false, key: 8 },
         { label: 'C-3', value: 9, disabled: false, key: 9 },

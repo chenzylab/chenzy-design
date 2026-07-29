@@ -16,7 +16,7 @@ export const meta = {
       name: 'dataSource',
       type: 'TransferItem[] | TransferGroup[] | TransferTreeNode[]',
       default: '[]',
-      desc: '平铺条目（key/label/disabled/group）、分组结构 {title, items}[]，或树结构 {key,label,children}[]（treeList）；树模式下源面板内嵌复用 Tree 组件，仅叶子可迁移到平铺目标面板，已迁移叶子在源树置灰',
+      desc: '平铺条目（key/label/disabled/group）、分组结构 {title, children}[]，或树结构 {key,label,children}[]（treeList）；树模式下源面板内嵌复用 Tree 组件，仅叶子可迁移到平铺目标面板，已迁移叶子在源树置灰',
     },
     { name: 'type', type: "'list'|'groupList'|'treeList'", default: "'list'", desc: '数据形态：平铺/分组/树（对齐 Semi type）' },
     { name: 'filter', type: 'boolean | ((input, item) => boolean)', default: 'true', desc: '是否显示本地搜索框，或传自定义匹配函数（对齐 Semi filter）' },

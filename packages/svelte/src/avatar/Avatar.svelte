@@ -91,6 +91,20 @@
   const shape = $derived(group?.getShape() ?? shapeProp ?? 'circle');
   const size = $derived(group?.getSize() ?? sizeProp ?? 'medium');
 
+  // ---------- 组合式折叠：向 AvatarGroup 注册自身序号（对齐 Semi React.Children 切片）----------
+  // 组开启 maxCount 时，序号 >= maxCount 的成员自身不渲染，由组统一渲染「+N」溢出头像。
+  // 声明时读取一次即可（成员顺序在挂载期固定），故静态读取 alt。
+  // children 是 Snippet 无法取文本，溢出头像的无障碍文案以 alt 为准（对齐 Semi finalAlt 取 alt）。
+  // 组自身渲染的「+N」溢出头像（class 含 cd-avatar-item-more）不参与注册，否则污染成员计数。
+  // svelte-ignore state_referenced_locally
+  const isMoreAvatar = (className ?? '').includes('cd-avatar-item-more');
+  // svelte-ignore state_referenced_locally
+  const groupIndex =
+    group?.register && !isMoreAvatar ? group.register(alt !== undefined ? { alt } : {}) : -1;
+  const collapsedByGroup = $derived(
+    groupIndex >= 0 && !!group?.isCollapsing?.() && !!group?.isHidden?.(groupIndex),
+  );
+
   // 图片加载失败 → 降级文字/children。
   let imgExist = $state(true);
   const isImg = $derived(!!src && imgExist);
@@ -345,7 +359,9 @@
   {/if}
 {/snippet}
 
-{#if isWrap}
+{#if collapsedByGroup}
+  <!-- 被 AvatarGroup 的 maxCount 折叠：不渲染（由组渲染「+N」），对齐 Semi children.slice。 -->
+{:else if isWrap}
   <!-- Slot/border 包裹层：事件挂 wrapper（对齐 Semi shouldWrap 分支） -->
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
   <span
