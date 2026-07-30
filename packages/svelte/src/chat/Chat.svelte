@@ -365,7 +365,7 @@
             theme="light"
             type="tertiary"
             onclick={() => scrollToBottom(true)}
-            ariaLabel={loc().t('Chat.backToBottom')}
+            aria-label={loc().t('Chat.backToBottom')}
             title={loc().t('Chat.backToBottom')}
             icon={backBottomIcon}
           />

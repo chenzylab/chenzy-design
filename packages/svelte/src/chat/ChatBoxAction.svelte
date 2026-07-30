@@ -90,7 +90,7 @@
     type="tertiary"
     size="small"
     onclick={handleCopy}
-    ariaLabel={loc().t('Chat.copy')}
+    aria-label={loc().t('Chat.copy')}
     title={loc().t('Chat.copy')}
     icon={copyIcon}
   />
@@ -104,7 +104,7 @@
     type="tertiary"
     size="small"
     onclick={() => onMessageReset?.(message)}
-    ariaLabel={loc().t('Chat.reset')}
+    aria-label={loc().t('Chat.reset')}
     title={loc().t('Chat.reset')}
     icon={resetIcon}
   />
@@ -119,7 +119,7 @@
     size="small"
     aria-pressed={Boolean(message.like)}
     onclick={() => onMessageGoodFeedback?.(message)}
-    ariaLabel={loc().t('Chat.like')}
+    aria-label={loc().t('Chat.like')}
     title={loc().t('Chat.like')}
     icon={likeIcon}
   />
@@ -136,7 +136,7 @@
     size="small"
     aria-pressed={Boolean(message.dislike)}
     onclick={() => onMessageBadFeedback?.(message)}
-    ariaLabel={loc().t('Chat.dislike')}
+    aria-label={loc().t('Chat.dislike')}
     title={loc().t('Chat.dislike')}
     icon={dislikeIcon}
   />
@@ -155,7 +155,7 @@
     type="tertiary"
     size="small"
     onclick={() => onMessageDelete?.(message)}
-    ariaLabel={loc().t('Chat.delete')}
+    aria-label={loc().t('Chat.delete')}
     title={loc().t('Chat.delete')}
     icon={deleteIcon}
   />

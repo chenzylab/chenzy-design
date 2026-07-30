@@ -13,7 +13,7 @@ const graphemeLength = (s: string) => [...seg.segment(s)].length;
 describe('Input a11y', () => {
   it('基础 input：ariaLabel 提供可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Username' },
+      props: { 'aria-label': 'Username' },
     });
     const input = container.querySelector('input');
     expect(input).not.toBeNull();
@@ -23,7 +23,7 @@ describe('Input a11y', () => {
 
   it('error 状态：aria-invalid=true', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Email', validateStatus: 'error' },
+      props: { 'aria-label': 'Email', validateStatus: 'error' },
     });
     const input = container.querySelector('input');
     expect(input?.getAttribute('aria-invalid')).toBe('true');
@@ -32,7 +32,7 @@ describe('Input a11y', () => {
 
   it('required：aria-required=true', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Name', ariaRequired: true },
+      props: { 'aria-label': 'Name', ariaRequired: true },
     });
     const input = container.querySelector('input');
     expect(input?.getAttribute('aria-required')).toBe('true');
@@ -41,7 +41,7 @@ describe('Input a11y', () => {
 
   it('clearable：clear 按钮聚焦后才渲染，且严格对齐 Semi（无 aria-label/role 的 div）', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Search', showClear: true, defaultValue: 'hello' },
+      props: { 'aria-label': 'Search', showClear: true, defaultValue: 'hello' },
     });
     // 有内容但未 hover/focus 时清除按钮不渲染（对齐 Semi isAllowClear）。
     expect(container.querySelector('.cd-input-clearbtn')).toBeNull();
@@ -58,7 +58,7 @@ describe('Input a11y', () => {
 
   it('password：reveal 按钮严格对齐 Semi（role=button + tabindex + aria-label，无 aria-pressed）', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Password', mode: 'password' },
+      props: { 'aria-label': 'Password', mode: 'password' },
     });
     const revealBtn = container.querySelector('.cd-input-modebtn');
     // 对齐 Semi：div role=button + tabindex=0 + aria-label（Show/Hidden password），无 aria-pressed。
@@ -71,7 +71,7 @@ describe('Input a11y', () => {
 
   it('autoFocus：挂载后输入框获得焦点（inputEl 经 $state 绑定，effect 正确触发）', async () => {
     const { container } = renderWithLocale(Input, {
-      props: { ariaLabel: 'Focused', autoFocus: true },
+      props: { 'aria-label': 'Focused', autoFocus: true },
     });
     const input = container.querySelector('input');
     expect(input).not.toBeNull();

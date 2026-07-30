@@ -138,7 +138,7 @@ import { Card, CardGroup } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | actions | 卡片操作组，位于卡片内容区的底部，snippet 内多个子元素以 12px 水平间距排布 | Snippet | - |
-| ariaLabel | 根节点 aria-label，表述该 Card 的作用 | string | - |
+| aria-label | 根节点 aria-label，表述该 Card 的作用 | string | - |
 | bodyStyle | 卡片内容区内联样式 | string | - |
 | bordered | 是否设置卡片的外边框 | boolean | true |
 | class | 卡片的样式类名 | string | - |
@@ -176,7 +176,7 @@ import { Card, CardGroup } from '@chenzy-design/svelte';
 
 ## Accessibility
 
-- Card 支持传入 `ariaLabel` 来表示该 Card 作用
+- Card 支持传入 `aria-label` 来表示该 Card 作用
 - Card loading 时，将开启 `aria-busy`
 - Card 为容器型组件，卡片内部的任何元素需要遵循各自的可访问性指南
 

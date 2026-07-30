@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { ColorPicker, colorStringToValue, type ColorValue } from '@chenzy-design/svelte';
+  import { ColorPicker, type ColorValue } from '@chenzy-design/svelte';
 
-  let value = $state<ColorValue>(colorStringToValue('#39c5bb'));
+  let value = $state<ColorValue>(ColorPicker.colorStringToValue('#39c5bb'));
 </script>
 
 <div>

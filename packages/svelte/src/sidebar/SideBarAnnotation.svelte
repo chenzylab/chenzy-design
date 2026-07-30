@@ -172,14 +172,14 @@
   class={['cd-sidebar-annotation', className].filter(Boolean).join(' ')}
 >
   {#if isEmpty}
-    <div class="cd-sidebar-annotation__empty">{emptyText}</div>
+    <div class="cd-sidebar-annotation-empty">{emptyText}</div>
   {:else}
     <Collapse {...collapseProps}>
       {#each info as group (group.key)}
         {#snippet panelHead()}
-          <span class="cd-sidebar-annotation__group-header">
+          <span class="cd-sidebar-annotation-group-header">
             <svg
-              class="cd-sidebar-annotation__group-icon"
+              class="cd-sidebar-annotation-group-icon"
               width="16"
               height="16"
               viewBox="0 0 16 16"
@@ -193,18 +193,18 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span class="cd-sidebar-annotation__group-title">{group.header}</span>
+            <span class="cd-sidebar-annotation-group-title">{group.header}</span>
           </span>
         {/snippet}
         <Collapse.Panel itemKey={group.key} head={panelHead}>
-          <div class="cd-sidebar-annotation__list">
+          <div class="cd-sidebar-annotation-list">
             {#each group.annotations as item, index (index)}
               {#if renderItem}
                 {@render renderItem(item)}
               {:else if isInteractive(item)}
                 <button
                   type="button"
-                  class="cd-sidebar-annotation__card cd-sidebar-annotation__card--{item.type ??
+                  class="cd-sidebar-annotation-card cd-sidebar-annotation-card-{item.type ??
                     'text'}"
                   onclick={(e) => handleItemClick(e, item)}
                 >
@@ -212,8 +212,8 @@
                 </button>
               {:else}
                 <div
-                  class="cd-sidebar-annotation__card cd-sidebar-annotation__card--{item.type ??
-                    'text'} cd-sidebar-annotation__card--static"
+                  class="cd-sidebar-annotation-card cd-sidebar-annotation-card-{item.type ??
+                    'text'} cd-sidebar-annotation-card-static"
                 >
                   {@render cardBody(item)}
                 </div>
@@ -228,16 +228,16 @@
 
 {#snippet cardBody(item: SideBarAnnotationItem)}
   {#if item.type === 'video'}
-    <div class="cd-sidebar-annotation__cover">
+    <div class="cd-sidebar-annotation-cover">
       {#if item.img}
         <img
-          class="cd-sidebar-annotation__cover-img"
+          class="cd-sidebar-annotation-cover-img"
           src={item.img}
           alt={item.title ?? ''}
         />
       {/if}
       <svg
-        class="cd-sidebar-annotation__play"
+        class="cd-sidebar-annotation-play"
         width="24"
         height="24"
         viewBox="0 0 24 24"
@@ -249,25 +249,25 @@
       </svg>
       {#if typeof item.duration === 'number'}
         <span
-          class="cd-sidebar-annotation__duration"
+          class="cd-sidebar-annotation-duration"
           aria-label={durationLabel(item.duration)}
         >
           <span aria-hidden="true">{formatDuration(item.duration)}</span>
         </span>
       {/if}
     </div>
-    <div class="cd-sidebar-annotation__content">
+    <div class="cd-sidebar-annotation-content">
       {#if item.title}
-        <div class="cd-sidebar-annotation__title">{item.title}</div>
+        <div class="cd-sidebar-annotation-title">{item.title}</div>
       {/if}
       {@render cardFooter(item)}
     </div>
   {:else}
     {#if item.title}
-      <div class="cd-sidebar-annotation__title">{item.title}</div>
+      <div class="cd-sidebar-annotation-title">{item.title}</div>
     {/if}
     {#if item.detail}
-      <div class="cd-sidebar-annotation__detail">{item.detail}</div>
+      <div class="cd-sidebar-annotation-detail">{item.detail}</div>
     {/if}
     {@render cardFooter(item)}
   {/if}
@@ -275,21 +275,21 @@
 
 {#snippet cardFooter(item: SideBarAnnotationItem)}
   {#if item.logo || item.siteName || typeof item.order === 'number'}
-    <div class="cd-sidebar-annotation__footer">
+    <div class="cd-sidebar-annotation-footer">
       {#if item.logo}
         <img
-          class="cd-sidebar-annotation__logo"
+          class="cd-sidebar-annotation-logo"
           src={item.logo}
           alt=""
           aria-hidden="true"
         />
       {/if}
       {#if item.siteName}
-        <span class="cd-sidebar-annotation__site">{item.siteName}</span>
+        <span class="cd-sidebar-annotation-site">{item.siteName}</span>
       {/if}
       {#if typeof item.order === 'number'}
         <span
-          class="cd-sidebar-annotation__order"
+          class="cd-sidebar-annotation-order"
           aria-label={orderLabel(item.order)}
         >
           <span aria-hidden="true">{item.order}</span>
@@ -300,34 +300,34 @@
 {/snippet}
 
 <style>
-  .cd-sidebar-annotation__empty {
+  .cd-sidebar-annotation-empty {
     padding: var(--cd-spacing-base, 16px) 0;
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-secondary);
     text-align: center;
   }
-  .cd-sidebar-annotation__group-header {
+  .cd-sidebar-annotation-group-header {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-tight, 8px);
     min-inline-size: 0;
   }
-  .cd-sidebar-annotation__group-icon {
+  .cd-sidebar-annotation-group-icon {
     flex-shrink: 0;
     color: var(--cd-color-text-2);
   }
-  .cd-sidebar-annotation__group-title {
+  .cd-sidebar-annotation-group-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-annotation__list {
+  .cd-sidebar-annotation-list {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-annotation-gap);
     padding-block: var(--cd-spacing-tight, 8px);
   }
-  .cd-sidebar-annotation__card {
+  .cd-sidebar-annotation-card {
     box-sizing: border-box;
     display: flex;
     inline-size: 100%;
@@ -342,21 +342,21 @@
     text-align: start;
     cursor: pointer;
   }
-  .cd-sidebar-annotation__card--video {
+  .cd-sidebar-annotation-card-video {
     flex-direction: row;
     align-items: flex-start;
   }
-  .cd-sidebar-annotation__card--static {
+  .cd-sidebar-annotation-card-static {
     cursor: default;
   }
-  button.cd-sidebar-annotation__card:hover {
+  button.cd-sidebar-annotation-card:hover {
     background: var(--cd-sidebar-annotation-card-bg-hover);
   }
-  button.cd-sidebar-annotation__card:focus-visible {
+  button.cd-sidebar-annotation-card:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-annotation__cover {
+  .cd-sidebar-annotation-cover {
     position: relative;
     flex-shrink: 0;
     inline-size: 96px;
@@ -365,18 +365,18 @@
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-sidebar-annotation-cover-bg);
   }
-  .cd-sidebar-annotation__cover-img {
+  .cd-sidebar-annotation-cover-img {
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
   }
-  .cd-sidebar-annotation__play {
+  .cd-sidebar-annotation-play {
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
     transform: translate(-50%, -50%);
   }
-  .cd-sidebar-annotation__duration {
+  .cd-sidebar-annotation-duration {
     position: absolute;
     inset-block-end: 4px;
     inset-inline-end: 4px;
@@ -387,14 +387,14 @@
     font-size: 11px;
     line-height: 1.5;
   }
-  .cd-sidebar-annotation__content {
+  .cd-sidebar-annotation-content {
     flex: 1;
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
     gap: var(--cd-spacing-tight, 8px);
   }
-  .cd-sidebar-annotation__title {
+  .cd-sidebar-annotation-title {
     overflow: hidden;
     color: var(--cd-sidebar-annotation-title-color);
     font-size: var(--cd-sidebar-annotation-title-size);
@@ -405,7 +405,7 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-annotation__detail {
+  .cd-sidebar-annotation-detail {
     overflow: hidden;
     color: var(--cd-sidebar-annotation-detail-color);
     font-size: var(--cd-sidebar-annotation-detail-size);
@@ -415,7 +415,7 @@
     line-clamp: 3;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-annotation__footer {
+  .cd-sidebar-annotation-footer {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -423,19 +423,19 @@
     color: var(--cd-sidebar-annotation-footer-color);
     font-size: var(--cd-font-size-secondary);
   }
-  .cd-sidebar-annotation__logo {
+  .cd-sidebar-annotation-logo {
     flex-shrink: 0;
     inline-size: 16px;
     block-size: 16px;
     border-radius: var(--cd-border-radius-small);
     object-fit: cover;
   }
-  .cd-sidebar-annotation__site {
+  .cd-sidebar-annotation-site {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-annotation__order {
+  .cd-sidebar-annotation-order {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;

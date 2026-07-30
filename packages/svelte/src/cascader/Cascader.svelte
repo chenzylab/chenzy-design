@@ -96,7 +96,7 @@
     /** 单选回调单条路径；多选回调多条叶子路径。onChangeWithObject=true 时改为回传节点对象（单选节点链 CascaderNode[]，多选每条路径节点链 CascaderNode[][]） */
     onChange?: (value: Key[] | Key[][] | CascaderNode[] | CascaderNode[][]) => void;
     /** 可访问名（对齐 Semi aria-label，默认 'Cascader'）。本库沿用 Input/Checkbox 的 ariaLabel 命名惯例。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -247,7 +247,7 @@
     loadData,
     displayRender,
     onChange,
-    ariaLabel = 'Cascader',
+    'aria-label': ariaLabel = 'Cascader',
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -1251,7 +1251,7 @@
     {validateStatus}
     value={searchValue}
     placeholder={hasSelection ? '' : (searchPlaceholder ?? loc().t('Cascader.searchPlaceholder'))}
-    ariaLabel={ariaLabel}
+    aria-label={ariaLabel}
     role="combobox"
     aria-haspopup="listbox"
     aria-expanded={isOpen}
@@ -1360,7 +1360,7 @@
             if (leaf) removeLeaf(leaf.path[leaf.path.length - 1] as Key);
           }}
           placeholder={hasSelection ? '' : (placeholder ?? '')}
-          ariaLabel={ariaLabel}
+          aria-label={ariaLabel}
         >
           {#snippet renderTagItem({ value: nodeKey, onClose })}
             {@const leaf = tagKeyToLeaf.get(nodeKey)}
@@ -1567,7 +1567,7 @@
                       checked={cs.checked}
                       indeterminate={cs.half}
                       disabled={node.disabled || disabled}
-                      ariaLabel={node.label}
+                      aria-label={node.label}
                       onChange={() => toggleCheckNode(node, colIndex)}
                     />
                   </span>

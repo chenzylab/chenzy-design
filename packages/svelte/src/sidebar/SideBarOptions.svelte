@@ -66,13 +66,13 @@
   }
 </script>
 
-<div class="cd-sidebar__options" role="tablist" aria-orientation="horizontal">
+<div class="cd-sidebar-options" role="tablist" aria-orientation="horizontal">
   {#each options as item (item.key)}
     {@const selected = item.key === activeKey}
     <button
       type="button"
-      class="cd-sidebar__option"
-      class:cd-sidebar__option--active={selected}
+      class="cd-sidebar-option"
+      class:cd-sidebar-option-active={selected}
       role="tab"
       id={optionId(item.key)}
       aria-selected={selected}
@@ -83,16 +83,16 @@
       onkeydown={(e) => onKeydown(e, item)}
     >
       {#if item.icon}
-        <span class="cd-sidebar__option-icon" aria-hidden="true">{@render item.icon()}</span>
+        <span class="cd-sidebar-option-icon" aria-hidden="true">{@render item.icon()}</span>
       {:else}
-        <span class="cd-sidebar__option-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
+        <span class="cd-sidebar-option-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
       {/if}
     </button>
   {/each}
 </div>
 
 <style>
-  .cd-sidebar__options {
+  .cd-sidebar-options {
     display: flex;
     flex-shrink: 0;
     align-items: center;
@@ -100,7 +100,7 @@
     padding: var(--cd-sidebar-options-padding);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar__option {
+  .cd-sidebar-option {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -116,19 +116,19 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar__option:hover:not(.cd-sidebar__option--active) {
+  .cd-sidebar-option:hover:not(.cd-sidebar-option-active) {
     background: var(--cd-sidebar-option-bg-hover);
     color: var(--cd-sidebar-option-color-hover);
   }
-  .cd-sidebar__option--active {
+  .cd-sidebar-option-active {
     background: var(--cd-sidebar-option-bg-active);
     color: var(--cd-sidebar-option-color-active);
   }
-  .cd-sidebar__option:focus-visible {
+  .cd-sidebar-option:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar__option-icon {
+  .cd-sidebar-option-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;

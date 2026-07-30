@@ -36,6 +36,6 @@
     filterTreeNode
     searchRender={false}
     defaultExpandAll
-    ariaLabel="手动触发搜索树"
+    aria-label="手动触发搜索树"
   />
 </div>

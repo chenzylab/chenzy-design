@@ -30,7 +30,7 @@
         style="border: 1px solid var(--cd-color-border); border-radius: 6px"
         treeData={data}
         defaultExpandAll
-        ariaLabel="defaultExpandAll 树"
+        aria-label="defaultExpandAll 树"
       />
     </div>
     <div style="width:200px">
@@ -39,7 +39,7 @@
         style="border: 1px solid var(--cd-color-border); border-radius: 6px"
         treeData={data}
         expandAll
-        ariaLabel="expandAll 树"
+        aria-label="expandAll 树"
       />
     </div>
   </div>

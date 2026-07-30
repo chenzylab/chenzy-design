@@ -264,7 +264,7 @@
   );
 
   const panelCls = $derived(
-    ['cd-sidebar-container__panel', className].filter(Boolean).join(' '),
+    ['cd-sidebar-container-panel', className].filter(Boolean).join(' '),
   );
 
   const handleLabel = $derived(loc().t('Resizable.handleAriaLabel'));
@@ -275,8 +275,8 @@
   <div
     bind:this={rootEl}
     class="cd-sidebar-container"
-    class:cd-sidebar-container--open={isOpen && entered}
-    class:cd-sidebar-container--no-motion={!motion}
+    class:cd-sidebar-container-open={isOpen && entered}
+    class:cd-sidebar-container-no-motion={!motion}
     style={rootStyle}
   >
     <div
@@ -291,7 +291,7 @@
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
-          class="cd-sidebar-container__handle"
+          class="cd-sidebar-container-handle"
           role="separator"
           tabindex="0"
           aria-orientation="vertical"
@@ -307,9 +307,9 @@
       {#if renderHeader}
         {@render renderHeader()}
       {:else if hasTitle || showClose}
-        <header class="cd-sidebar-container__header">
+        <header class="cd-sidebar-container-header">
           {#if hasTitle}
-            <h2 id={titleId} class="cd-sidebar-container__title">
+            <h2 id={titleId} class="cd-sidebar-container-title">
               {#if isTitleSnippet}
                 {@render (title as Snippet)()}
               {:else}
@@ -322,7 +322,7 @@
           {#if showClose}
             <button
               type="button"
-              class="cd-sidebar-container__close"
+              class="cd-sidebar-container-close"
               aria-label={closeLabel}
               onclick={(e) => emitCancel(e)}
             >
@@ -339,7 +339,7 @@
         </header>
       {/if}
 
-      <div class="cd-sidebar-container__body">
+      <div class="cd-sidebar-container-body">
         {@render children?.()}
       </div>
     </div>
@@ -355,7 +355,7 @@
     display: flex;
     pointer-events: none;
   }
-  .cd-sidebar-container__panel {
+  .cd-sidebar-container-panel {
     position: relative;
     box-sizing: border-box;
     display: flex;
@@ -382,15 +382,15 @@
     inset-inline-end: auto;
     inset-inline-start: 0;
   }
-  :global([dir='rtl']) .cd-sidebar-container__panel {
+  :global([dir='rtl']) .cd-sidebar-container-panel {
     transform: translateX(-100%);
   }
-  .cd-sidebar-container--open .cd-sidebar-container__panel {
+  .cd-sidebar-container-open .cd-sidebar-container-panel {
     transform: translateX(0);
     opacity: 1;
   }
   /* 把手：贴内容侧边缘（LTR 左、RTL 右），命中区 ≥12px 满足触控。 */
-  .cd-sidebar-container__handle {
+  .cd-sidebar-container-handle {
     position: absolute;
     inset-block: 0;
     inset-inline-start: 0;
@@ -400,12 +400,12 @@
     touch-action: none;
     transform: translateX(-50%);
   }
-  :global([dir='rtl']) .cd-sidebar-container__handle {
+  :global([dir='rtl']) .cd-sidebar-container-handle {
     inset-inline-start: auto;
     inset-inline-end: 0;
     transform: translateX(50%);
   }
-  .cd-sidebar-container__handle::after {
+  .cd-sidebar-container-handle::after {
     content: '';
     position: absolute;
     inset-block: 0;
@@ -415,14 +415,14 @@
     background: var(--cd-sidebar-handle-color);
     transition: background-color 0.15s;
   }
-  .cd-sidebar-container__handle:hover::after {
+  .cd-sidebar-container-handle:hover::after {
     background: var(--cd-sidebar-handle-color-hover);
   }
-  .cd-sidebar-container__handle:focus-visible {
+  .cd-sidebar-container-handle:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-container__header {
+  .cd-sidebar-container-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
@@ -431,7 +431,7 @@
     padding: var(--cd-sidebar-header-padding);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar-container__title {
+  .cd-sidebar-container-title {
     margin: 0;
     overflow: hidden;
     color: var(--cd-sidebar-title-color);
@@ -441,7 +441,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-container__close {
+  .cd-sidebar-container-close {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -455,23 +455,23 @@
     color: var(--cd-sidebar-close-color);
     cursor: pointer;
   }
-  .cd-sidebar-container__close:hover {
+  .cd-sidebar-container-close:hover {
     background: var(--cd-sidebar-close-hover-bg);
   }
-  .cd-sidebar-container__close:focus-visible {
+  .cd-sidebar-container-close:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-container__body {
+  .cd-sidebar-container-body {
     flex: 1;
     overflow: auto;
     padding: var(--cd-sidebar-body-padding);
   }
-  .cd-sidebar-container--no-motion .cd-sidebar-container__panel {
+  .cd-sidebar-container-no-motion .cd-sidebar-container-panel {
     transition: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-sidebar-container__panel {
+    .cd-sidebar-container-panel {
       transition: none;
     }
   }

@@ -160,7 +160,7 @@
         selectedIndex={isAM ? 0 : 1}
         type="ampm"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.triggerLabel')}
+        aria-label={loc().t('TimePicker.triggerLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -172,7 +172,7 @@
         selectedIndex={hourOptionsAdj.indexOf(hourAdj)}
         type="hour"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.hourLabel')}
+        aria-label={loc().t('TimePicker.hourLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -184,7 +184,7 @@
         selectedIndex={st.minuteOptions.indexOf(value.getMinutes())}
         type="minute"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.minuteLabel')}
+        aria-label={loc().t('TimePicker.minuteLabel')}
         {...scrollItemProps}
       />
     {/if}
@@ -196,7 +196,7 @@
         selectedIndex={st.secondOptions.indexOf(value.getSeconds())}
         type="second"
         onSelect={onItemChange}
-        ariaLabel={loc().t('TimePicker.secondLabel')}
+        aria-label={loc().t('TimePicker.secondLabel')}
         {...scrollItemProps}
       />
     {/if}

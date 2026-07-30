@@ -300,7 +300,7 @@
               value={snapshot.currentTime}
               max={snapshot.totalTime}
               {theme}
-              ariaLabel={loc().t('AudioPlayer.progress')}
+              aria-label={loc().t('AudioPlayer.progress')}
               onChange={onTimeChange}
             />
           </div>
@@ -326,7 +326,7 @@
                 height={120}
                 {theme}
                 showTooltip={false}
-                ariaLabel={loc().t('AudioPlayer.volume')}
+                aria-label={loc().t('AudioPlayer.volume')}
                 onChange={onVolumeChange}
               />
             </div>

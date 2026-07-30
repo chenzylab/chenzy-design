@@ -37,7 +37,7 @@ Checkbox 是用于在一组选项中进行多选，或对单一选项进行开/�
 - 不需要：useFocusTrap / useScrollLock / useDismiss（无浮层）。
 
 **@chenzy-design/svelte · Checkbox.svelte / CheckboxGroup.svelte**
-- 用原生 `<input type="checkbox">` 承载语义与可达性（visually-hidden），自定义视觉层为 `<span class="cd-checkbox__inner">`。`indeterminate` 通过 `bind:this` + `el.indeterminate = ...` 设置（HTML 属性无法声明）。
+- 用原生 `<input type="checkbox">` 承载语义与可达性（visually-hidden），自定义视觉层为 `<span class="cd-checkbox-inner">`。`indeterminate` 通过 `bind:this` + `el.indeterminate = ...` 设置（HTML 属性无法声明）。
 - CheckboxGroup 通过 Svelte `setContext` 注入聚合状态，Checkbox `getContext` 消费；无 Group 时退回独立模式。
 - SSR 安全：初始 checked 直出，indeterminate 在 onMount 后同步 DOM 属性。
 

@@ -1,6 +1,6 @@
 // Popconfirm a11y（封装 Popover→Tooltip 架构）：气泡确认浮层。受控 visible 强制打开。
 //  - 浮层 portal 到 body，role=dialog（在 .cd-popover-wrapper 上），aria-labelledby 指向 Popconfirm 标题。
-//  - 触发器 .cd-tooltip__trigger 承载 role=button + aria-haspopup=dialog + aria-expanded/controls。
+//  - 触发器 .cd-tooltip-trigger 承载 role=button + aria-haspopup=dialog + aria-expanded/controls。
 // 浮层在 document.body —— 全局查询并扫 document.body。
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/svelte';
@@ -29,7 +29,7 @@ describe('Popconfirm a11y', () => {
 
   it('click 模式触发器声明 disclosure 语义：role=button + aria-haspopup=dialog + aria-expanded', async () => {
     render(Fixture, { props: { visible: true, trigger: 'click' } });
-    const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
+    const trigger = document.querySelector('.cd-tooltip-trigger') as HTMLElement | null;
     expect(trigger?.getAttribute('role')).toBe('button');
     expect(trigger?.getAttribute('aria-haspopup')).toBe('dialog');
     expect(trigger?.getAttribute('aria-expanded')).toBe('true');
@@ -38,7 +38,7 @@ describe('Popconfirm a11y', () => {
 
   it('custom 模式触发器纯透传（对齐 Semi：不 wrap、无 role/aria-haspopup）', async () => {
     render(Fixture, { props: { visible: true, trigger: 'custom' } });
-    const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
+    const trigger = document.querySelector('.cd-tooltip-trigger') as HTMLElement | null;
     expect(trigger?.getAttribute('role')).toBeNull();
     expect(trigger?.getAttribute('aria-haspopup')).toBeNull();
     expect(trigger?.getAttribute('aria-expanded')).toBeNull();

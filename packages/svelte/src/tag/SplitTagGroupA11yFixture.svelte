@@ -7,13 +7,13 @@
   import Tag from './Tag.svelte';
 
   interface Props {
-    ariaLabel?: string;
+    'aria-label'?: string;
   }
-  let { ariaLabel = 'Status' }: Props = $props();
+  let { 'aria-label': ariaLabel = 'Status' }: Props = $props();
 </script>
 
 <LocaleProvider locale="en_US">
-  <SplitTagGroup {ariaLabel}>
+  <SplitTagGroup aria-label={ariaLabel}>
     <Tag>Pending</Tag>
     <Tag>Active</Tag>
     <Tag>Done</Tag>

@@ -300,7 +300,7 @@
     blockNode?: boolean;
     disabled?: boolean;
     emptyContent?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根容器内联样式（对齐 Semi `style`）。可设 width/height/border 等；设 height 时列表区自动限高滚动。 */
     style?: string;
     /** 根元素自定义类名（对齐 Semi `className`；本库/Svelte 惯例用 `class`，叠加在内置 class 之后）。 */
@@ -423,7 +423,7 @@
     blockNode = true,
     disabled = false,
     emptyContent,
-    ariaLabel,
+    'aria-label': ariaLabel,
     style: rootStyle,
     class: rootClassName,
     loadData,
@@ -1440,11 +1440,11 @@
   const cls = $derived(
     [
       'cd-tree',
-      disabled && 'cd-tree--disabled',
-      showLine && 'cd-tree--line',
-      effBlockNode && 'cd-tree--block',
-      directory && 'cd-tree--directory',
-      motionEnabled && 'cd-tree--motion',
+      disabled && 'cd-tree-disabled',
+      showLine && 'cd-tree-indent-show-line',
+      effBlockNode && 'cd-tree-block',
+      directory && 'cd-tree-directory',
+      motionEnabled && 'cd-tree-motion',
       rootClassName,
     ]
       .filter(Boolean)
@@ -1455,12 +1455,12 @@
   // className 汇总内置状态类（缩进由 padding 处理，此处给状态类），供自定义渲染沿用内置样式。
   function fullLabelClass(f: FlatNode, selected: boolean, nodeDisabled: boolean, active: boolean): string {
     return [
-      'cd-tree__node',
-      `cd-tree__node--fulllabel`,
-      `cd-tree__node--level-${f.level + 1}`,
-      selected && 'cd-tree__node--selected',
-      nodeDisabled && 'cd-tree__node--disabled',
-      active && 'cd-tree__node--active',
+      'cd-tree-option',
+      `cd-tree-option-fullLabel`,
+      `cd-tree-option-level-${f.level + 1}`,
+      selected && 'cd-tree-option-selected',
+      nodeDisabled && 'cd-tree-option-disabled',
+      active && 'cd-tree-option-active',
     ]
       .filter(Boolean)
       .join(' ');
@@ -1472,7 +1472,7 @@
     {@const placeholder = searchPlaceholder ?? loc().t('Tree.searchPlaceholder')}
     <!-- 搜索框容器（对齐 Semi tree-search-wrapper：paddingY 8 / paddingX 12） -->
     <div
-      class={['cd-tree__search', searchClassName].filter(Boolean).join(' ')}
+      class={['cd-tree-search-wrapper', searchClassName].filter(Boolean).join(' ')}
       style={searchStyle}
     >
       {#if searchRender}
@@ -1492,7 +1492,7 @@
         <Input
           value={searchValue}
           {placeholder}
-          ariaLabel={placeholder}
+          aria-label={placeholder}
           {disabled}
           {showClear}
           onInput={handleSearchValue}
@@ -1507,12 +1507,12 @@
   {/if}
 
   {#if isEmpty}
-    <div class="cd-tree__empty">{emptyText}</div>
+    <div class="cd-tree-empty">{emptyText}</div>
   {:else if virtualized}
     <!-- 虚拟滚动：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
          只渲染视口内切片 renderFlat，保持 treeitem 语义不变（a11y 取舍见下）。-->
     <div
-      class="cd-tree__list cd-tree__list--virtual"
+      class="cd-tree-option-list cd-tree-virtual-list"
       role="tree"
       aria-label={ariaLabel}
       aria-multiselectable={multiple}
@@ -1523,7 +1523,7 @@
       style={`block-size:${virtualHeightCss}; overflow:auto`}
       onkeydown={onKeydown}
     >
-      <div class="cd-tree__spacer" style={`block-size:${totalHeight}px`}>
+      <div class="cd-tree-option-indent" style={`block-size:${totalHeight}px`}>
         {#each renderFlat as f, i (f.node.key)}
           {@render row(f, `position:absolute; inset-inline:0; transform:translateY(${(vRange.startIndex + i) * rowHeight}px); block-size:${rowHeight}px`)}
         {/each}
@@ -1531,7 +1531,7 @@
     </div>
   {:else}
     <div
-      class="cd-tree__list"
+      class="cd-tree-option-list"
       role="tree"
       aria-label={ariaLabel}
       aria-multiselectable={multiple}
@@ -1550,11 +1550,11 @@
 
 {#snippet fullLabelSwitcher(s: { expanded: boolean; loading: boolean })}
   {#if s.loading}
-    <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
+    <span class="cd-tree-option-expand-icon cd-tree-option-spin-icon" aria-hidden="true">
       <Spin size="small" />
     </span>
   {:else}
-    <span class="cd-tree__switcher" class:cd-tree__switcher--open={s.expanded} aria-hidden="true">
+    <span class="cd-tree-option-expand-icon" class:cd-tree-option-expand-icon-open={s.expanded} aria-hidden="true">
       <IconTreeTriangleDown size="small" />
     </span>
   {/if}
@@ -1597,15 +1597,15 @@
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div
           id={itemId(node.key)}
-          class="cd-tree__node"
-          class:cd-tree__node--selected={selected}
-          class:cd-tree__node--disabled={nodeDisabled}
-          class:cd-tree__node--active={active}
-          class:cd-tree__node--block={effBlockNode}
-          class:cd-tree__node--dragging={dragging}
-          class:cd-tree__node--drop-before={isDropTarget && dropPos === 'before'}
-          class:cd-tree__node--drop-inside={isDropTarget && dropPos === 'inside'}
-          class:cd-tree__node--drop-after={isDropTarget && dropPos === 'after'}
+          class="cd-tree-option"
+          class:cd-tree-option-selected={selected}
+          class:cd-tree-option-disabled={nodeDisabled}
+          class:cd-tree-option-active={active}
+          class:cd-tree-option-block={effBlockNode}
+          class:cd-tree-option-draggable={dragging}
+          class:cd-tree-option-drag-over-gap-top={isDropTarget && dropPos === 'before'}
+          class:cd-tree-option-drag-over={isDropTarget && dropPos === 'inside'}
+          class:cd-tree-option-drag-over-gap-bottom={isDropTarget && dropPos === 'after'}
           role="treeitem"
           draggable={draggable && !nodeDisabled ? true : undefined}
           tabindex={-1}
@@ -1633,10 +1633,10 @@
             {#each Array(f.level) as _, depth (depth)}
               {@const isSelfColumn = depth === f.level - 1}
               <span
-                class="cd-tree__line"
-                class:cd-tree__line--through={!isSelfColumn && !f.ancestorIsLast[depth]}
-                class:cd-tree__line--elbow={isSelfColumn && f.isLast}
-                class:cd-tree__line--tee={isSelfColumn && !f.isLast}
+                class="cd-tree-option-line"
+                class:cd-tree-option-line-through={!isSelfColumn && !f.ancestorIsLast[depth]}
+                class:cd-tree-option-line-elbow={isSelfColumn && f.isLast}
+                class:cd-tree-option-line-tee={isSelfColumn && !f.isLast}
                 aria-hidden="true"
               ></span>
             {/each}
@@ -1646,7 +1646,7 @@
               {@render expandIcon({ node, expanded: false, loading: true })}
             {:else}
               <!-- 加载态复用 Spin 组件（对齐 Semi Tree 内部用 Spin） -->
-              <span class="cd-tree__switcher cd-tree__switcher--loading" aria-hidden="true">
+              <span class="cd-tree-option-expand-icon cd-tree-option-spin-icon" aria-hidden="true">
                 <Spin size="small" />
               </span>
             {/if}
@@ -1667,8 +1667,8 @@
             {:else}
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <span
-                class="cd-tree__switcher"
-                class:cd-tree__switcher--open={expanded}
+                class="cd-tree-option-expand-icon"
+                class:cd-tree-option-expand-icon-open={expanded}
                 role="button"
                 tabindex="-1"
                 aria-label={expanded ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
@@ -1684,7 +1684,7 @@
             {#if expandIcon}
               {@render expandIcon({ node, expanded: false, loading: false })}
             {:else}
-              <span class="cd-tree__switcher cd-tree__switcher--leaf" aria-hidden="true"></span>
+              <span class="cd-tree-option-expand-icon cd-tree-option-switcher-leaf-line" aria-hidden="true"></span>
             {/if}
           {/if}
 
@@ -1697,14 +1697,14 @@
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <span
-              class="cd-tree__checkbox"
+              class="cd-tree-option-checkbox"
               onclick={(e) => e.stopPropagation()}
             >
               <Checkbox
                 checked={checked}
                 indeterminate={!checked && rowHalf(node)}
                 disabled={!isCheckableNode(node)}
-                ariaLabel={node.label}
+                aria-label={node.label}
                 onChange={() => emitCheck(node)}
               />
             </span>
@@ -1712,7 +1712,7 @@
 
           {#if icon || directory}
             {@const isLeaf = !expandable}
-            <span class="cd-tree__icon" class:cd-tree__icon--directory={directory && !icon} aria-hidden="true">
+            <span class="cd-tree-option-item-icon" class:cd-tree-option-item-icon-directory={directory && !icon} aria-hidden="true">
               {#if icon}
                 {@render icon({ node, expanded, isLeaf })}
               {:else if directory}
@@ -1728,7 +1728,7 @@
             </span>
           {/if}
 
-          <span class="cd-tree__label" class:cd-tree__label--ellipsis={ellipsis}>
+          <span class="cd-tree-option-label" class:cd-tree-option-ellipsis={ellipsis}>
             {#if renderLabel}
               {@render renderLabel({ node, level: f.level, searchValue: trimmedSearch, selected, checked })}
             {:else if searchActive}
@@ -1736,19 +1736,19 @@
               <Highlight
                 sourceString={node.label}
                 searchWords={trimmedSearch}
-                highlightClassName="cd-tree__highlight"
+                highlightClassName="cd-tree-option-highlight"
               />
             {:else}{node.label}{/if}
           </span>
 
           {#if suffix}
-            <span class="cd-tree__suffix">
+            <span class="cd-tree-option-suffix">
               {@render suffix({ node })}
             </span>
           {/if}
 
           {#if dragGhost && dragging}
-            <span class="cd-tree__drag-ghost" aria-hidden="true">
+            <span class="cd-tree-drag-ghost" aria-hidden="true">
               {@render dragGhost({ node })}
             </span>
           {/if}
@@ -1768,24 +1768,24 @@
     /* 通过 style prop 设 height 时生效：容器不溢出，由列表区自身滚动 */
     overflow: hidden;
   }
-  .cd-tree--small {
+  .cd-tree-small {
     --cd-tree-row-height: var(--cd-tree-node-height-small);
   }
-  .cd-tree--large {
+  .cd-tree-large {
     --cd-tree-row-height: var(--cd-tree-node-height-large);
   }
-  .cd-tree--disabled {
+  .cd-tree-disabled {
     color: var(--cd-color-tree-option-disabled-text-default);
   }
 
   /* 搜索框容器：对齐 Semi tree-search-wrapper（paddingY 8 / paddingX 12）。
      内部搜索框复用 Input 组件，边框/清除/聚焦样式由 Input 自带（无需 Tree 再写）。 */
-  .cd-tree__search {
+  .cd-tree-search-wrapper {
     padding: var(--cd-spacing-tree-search-wrapper-padding-y)
       var(--cd-spacing-tree-search-wrapper-padding-x);
   }
 
-  .cd-tree__list {
+  .cd-tree-option-list {
     display: flex;
     flex-direction: column;
     outline: none;
@@ -1796,21 +1796,21 @@
     overflow-y: auto;
     overflow-x: hidden;
   }
-  .cd-tree__list:focus-visible {
+  .cd-tree-option-list:focus-visible {
     box-shadow: 0 0 0 2px var(--cd-tree-focus-ring);
     border-radius: var(--cd-radius-tree-checkbox-addon);
   }
   /* 虚拟滚动：容器自身滚动，display block 以便 spacer 绝对定位行布局生效 */
-  .cd-tree__list--virtual {
+  .cd-tree-virtual-list {
     display: block;
     position: relative;
   }
-  .cd-tree__spacer {
+  .cd-tree-option-indent {
     position: relative;
     inline-size: 100%;
   }
 
-  .cd-tree__node {
+  .cd-tree-option {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -1821,53 +1821,53 @@
     cursor: pointer;
     transition: background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tree__node:hover {
+  .cd-tree-option:hover {
     background: var(--cd-color-tree-option-bg-hover);
   }
   /* 按下态（对齐 Semi $color-tree_option_selected-bg-default = fill-1） */
-  .cd-tree__node:active {
+  .cd-tree-option:active {
     background: var(--cd-color-tree-option-selected-bg-default);
   }
-  .cd-tree__node--selected {
+  .cd-tree-option-selected {
     color: var(--cd-color-tree-option-text-default);
     background: var(--cd-color-tree-option-bg-active);
   }
-  .cd-tree__node--selected:hover,
-  .cd-tree__node--selected:active {
+  .cd-tree-option-selected:hover,
+  .cd-tree-option-selected:active {
     background: var(--cd-color-tree-option-bg-active);
   }
   /* 键盘 roving 焦点（当前项）：对齐 Semi 无 border，仅用背景区分；焦点可见性靠背景差异。 */
-  .cd-tree__node--active:not(.cd-tree__node--selected) {
+  .cd-tree-option-active:not(.cd-tree-option-selected) {
     background: var(--cd-color-tree-option-bg-hover);
   }
   /* 键盘操作时（容器 focus-visible 内）给当前项一个可见焦点环，鼠标交互不显示 border。 */
-  .cd-tree__list:focus-visible .cd-tree__node--active {
+  .cd-tree-option-list:focus-visible .cd-tree-option-active {
     outline: 2px solid var(--cd-tree-focus-ring);
     outline-offset: -2px;
   }
-  .cd-tree__node--disabled {
+  .cd-tree-option-disabled {
     color: var(--cd-color-tree-option-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-tree__node--disabled:hover {
+  .cd-tree-option-disabled:hover {
     background: transparent;
   }
 
   /* --- 拖拽排序：被拖节点半透明 + 插入指示线 / 内部高亮 --- */
   /* 可拖拽行的内边距（对齐 Semi $spacing-tree_option_draggable-paddingY 2 / paddingX 0） */
-  .cd-tree__node[draggable='true'] {
+  .cd-tree-option[draggable='true'] {
     padding-block: var(--cd-spacing-tree-option-draggable-padding-y);
     padding-inline-end: calc(
       var(--cd-spacing-tree-option-level1-padding-left) +
         var(--cd-spacing-tree-option-draggable-padding-x)
     );
   }
-  .cd-tree__node--dragging {
+  .cd-tree-option-draggable {
     opacity: 0.5;
   }
   /* before/after 用 ::after 画一条插入指示线（不影响布局，子元素不接收 drag 事件） */
-  .cd-tree__node--drop-before::after,
-  .cd-tree__node--drop-after::after {
+  .cd-tree-option-drag-over-gap-top::after,
+  .cd-tree-option-drag-over-gap-bottom::after {
     content: '';
     position: absolute;
     inset-inline: 0;
@@ -1876,31 +1876,31 @@
     border-radius: 1px;
     pointer-events: none;
   }
-  .cd-tree__node--drop-before::after {
+  .cd-tree-option-drag-over-gap-top::after {
     inset-block-start: -1px;
   }
-  .cd-tree__node--drop-after::after {
+  .cd-tree-option-drag-over-gap-bottom::after {
     inset-block-end: -1px;
   }
   /* inside：成为子节点 → 整行高亮框 */
-  .cd-tree__node--drop-inside {
+  .cd-tree-option-drag-over {
     background: var(--cd-color-tree-option-bg-hover);
     box-shadow: inset 0 0 0 1px var(--cd-color-tree-option-draggable-insert-border-default);
   }
   /* 节点需相对定位以承载绝对定位的指示线；虚拟化行已 position:absolute，非虚拟行设 relative */
-  .cd-tree__node {
+  .cd-tree-option {
     position: relative;
   }
 
   /* --- showLine 层级引导线：每层一格，用 ::before 画竖线、::after 画横线 --- */
-  .cd-tree__line {
+  .cd-tree-option-line {
     position: relative;
     flex: 0 0 auto;
     inline-size: var(--cd-spacing-tree-option-level-padding-left);
     align-self: stretch;
   }
   /* 贯穿竖线（祖先非末层） */
-  .cd-tree__line--through::before {
+  .cd-tree-option-line-through::before {
     content: '';
     position: absolute;
     inset-block: 0;
@@ -1909,7 +1909,7 @@
     background: var(--cd-color-tree-option-line);
   }
   /* ├ 形：竖线贯穿 + 横线到右 */
-  .cd-tree__line--tee::before {
+  .cd-tree-option-line-tee::before {
     content: '';
     position: absolute;
     inset-block: 0;
@@ -1918,7 +1918,7 @@
     background: var(--cd-color-tree-option-line);
   }
   /* └ 形：竖线 top→中 + 横线到右 */
-  .cd-tree__line--elbow::before {
+  .cd-tree-option-line-elbow::before {
     content: '';
     position: absolute;
     inset-block-start: 0;
@@ -1927,8 +1927,8 @@
     inline-size: var(--cd-width-tree-option-line);
     background: var(--cd-color-tree-option-line);
   }
-  .cd-tree__line--tee::after,
-  .cd-tree__line--elbow::after {
+  .cd-tree-option-line-tee::after,
+  .cd-tree-option-line-elbow::after {
     content: '';
     position: absolute;
     inset-block-start: 50%;
@@ -1938,7 +1938,7 @@
     background: var(--cd-color-tree-option-line);
   }
 
-  .cd-tree__switcher {
+  .cd-tree-option-expand-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1953,20 +1953,20 @@
     /* IconTreeTriangleDown 默认朝下（=展开态外观，对齐 Semi）；收起态旋转 -90deg 指向右侧。 */
     transform: rotate(-90deg);
   }
-  .cd-tree__switcher:hover {
+  .cd-tree-option-expand-icon:hover {
     color: var(--cd-color-tree-option-icon-hover);
   }
-  .cd-tree__switcher:active {
+  .cd-tree-option-expand-icon:active {
     color: var(--cd-color-tree-option-icon-active);
   }
-  .cd-tree__switcher--open {
+  .cd-tree-option-expand-icon-open {
     transform: rotate(0deg);
   }
-  .cd-tree__switcher--leaf {
+  .cd-tree-option-switcher-leaf-line {
     cursor: default;
     transform: none;
   }
-  .cd-tree__switcher--loading {
+  .cd-tree-option-spin-icon {
     cursor: default;
     transform: none;
     /* 加载 spin 尺寸对齐 Semi $width-tree_spinIcon（12） */
@@ -1975,14 +1975,14 @@
   }
 
   /* 勾选框：框体样式由 Checkbox 组件自带，此处仅负责在行内的定位与右间距（对齐 Semi label withIcon marginRight 8） */
-  .cd-tree__checkbox {
+  .cd-tree-option-checkbox {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
     margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
   }
 
-  .cd-tree__icon {
+  .cd-tree-option-item-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1992,23 +1992,23 @@
     color: var(--cd-color-tree-option-icon-default);
   }
   /* 有自定义图标内容时撑开尺寸 + 右间距（对齐 Semi label withIcon marginRight 8） */
-  .cd-tree__icon:not(:empty) {
+  .cd-tree-option-item-icon:not(:empty) {
     inline-size: var(--cd-width-tree-empty-icon);
     margin-inline-end: var(--cd-spacing-tree-label-with-icon-margin-right);
   }
 
-  .cd-tree__label {
+  .cd-tree-option-label {
     flex: 1 1 auto;
     min-inline-size: 0;
   }
   /* labelEllipsis：超长单行省略（默认关闭；虚拟化下默认开启） */
-  .cd-tree__label--ellipsis {
+  .cd-tree-option-ellipsis {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  .cd-tree__suffix {
+  .cd-tree-option-suffix {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -2016,7 +2016,7 @@
   }
 
   /* 拖拽幽灵节点：绝对定位在节点外屏幕外，由浏览器 setDragImage 拾取（或 CSS 隐藏） */
-  .cd-tree__drag-ghost {
+  .cd-tree-drag-ghost {
     position: absolute;
     inset-inline-start: -9999px;
     inset-block-start: 0;
@@ -2025,27 +2025,27 @@
 
   /* 搜索命中高亮：class 注入到 Highlight 子组件内部的 mark，需 :global 穿透 scoped CSS。
      对齐 Semi：primary 文字 + bold + 无独立背景（inherit）。 */
-  .cd-tree__label :global(.cd-tree__highlight) {
+  .cd-tree-option-label :global(.cd-tree-option-highlight) {
     padding: 0;
     color: var(--cd-color-tree-option-highlight-text);
     background: inherit;
     font-weight: var(--cd-font-tree-option-highlight-weight);
   }
 
-  .cd-tree__empty {
+  .cd-tree-empty {
     padding: var(--cd-spacing-base-tight);
     color: var(--cd-color-tree-option-disabled-text-default);
     text-align: center;
   }
 
-  /* motion 开关（对齐 Semi motion）：仅 cd-tree--motion 时启用 switcher 旋转过渡。 */
-  .cd-tree:not(.cd-tree--motion) .cd-tree__switcher {
+  /* motion 开关（对齐 Semi motion）：仅 cd-tree-motion 时启用 switcher 旋转过渡。 */
+  .cd-tree:not(.cd-tree-motion) .cd-tree-option-expand-icon {
     transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cd-tree__node,
-    .cd-tree__switcher {
+    .cd-tree-option,
+    .cd-tree-option-expand-icon {
       transition: none;
     }
   }

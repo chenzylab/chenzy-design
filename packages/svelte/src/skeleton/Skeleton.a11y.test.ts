@@ -17,11 +17,11 @@ describe('Skeleton a11y', () => {
     expect(root?.getAttribute('aria-busy')).toBeNull();
   });
 
-  it('active：占位容器带 cd-skeleton--active 类', () => {
+  it('active：占位容器带 cd-skeleton-active 类', () => {
     const { container } = renderWithLocale(Skeleton, {
       props: { loading: true, active: true },
     });
-    expect(container.querySelector('.cd-skeleton--active')).not.toBeNull();
+    expect(container.querySelector('.cd-skeleton-active')).not.toBeNull();
   });
 
   it('loading：无 axe violations', async () => {

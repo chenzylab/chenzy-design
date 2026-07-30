@@ -81,7 +81,7 @@ import { SideSheet } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | afterVisibleChange | 面板展示/隐藏时动画结束触发的回调 | `(isVisible: boolean) => void` | - |
-| ariaLabel | 无可见标题时提供的可访问名（对齐 Semi aria-label） | string | - |
+| aria-label | 无可见标题时提供的可访问名（对齐 Semi aria-label） | string | - |
 | bodyStyle | 面板内容的样式 | string | - |
 | class | 类名（对齐 Semi className） | string | - |
 | closable | 是否允许通过右上角的关闭按钮关闭 | boolean | true |
@@ -113,7 +113,7 @@ import { SideSheet } from '@chenzy-design/svelte';
 
 - SideSheet 具有 `dialog` role 来表示它是一个弹窗组件，内部 header 具有 `heading` role 表明是 header。
 - 模态（`mask={true}`）时容器额外设 `aria-modal="true"`，非模态（`mask={false}`）不设，避免误导屏幕阅读器。
-- 有标题时 `aria-labelledby` 关联标题元素 id；无标题须提供 `ariaLabel` 作为可访问名。
+- 有标题时 `aria-labelledby` 关联标题元素 id；无标题须提供 `aria-label` 作为可访问名。
 - 键盘：`closeOnEsc={true}` 时 Esc 关闭；关闭按钮 Enter/Space 激活；`prefers-reduced-motion` 或 `motion={false}` 时移除位移动效，保留即时显隐。
 
 ## FAQ

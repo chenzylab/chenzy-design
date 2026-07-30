@@ -44,7 +44,7 @@ describe('Cropper 渲染结构', () => {
 
   it('ariaLabel prop 覆盖 locale', () => {
     const { container } = renderWithLocale(Cropper, {
-      props: { src: SRC, ariaLabel: '自定义裁切' },
+      props: { src: SRC, 'aria-label': '自定义裁切' },
     });
     expect(container.querySelector('.cd-cropper')?.getAttribute('aria-label')).toBe('自定义裁切');
   });

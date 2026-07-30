@@ -45,8 +45,8 @@
 </script>
 
 <div
-  class={['cd-nav__footer', className].filter(Boolean).join(' ')}
-  class:cd-nav__footer-collapsed={collapsed}
+  class={['cd-nav-footer', className].filter(Boolean).join(' ')}
+  class:cd-nav-footer-collapsed={collapsed}
   {style}
   onclick={onClick}
   role="presentation"
@@ -65,7 +65,7 @@
 </div>
 
 <style>
-  .cd-nav__footer {
+  .cd-nav-footer {
     display: flex;
     align-items: center;
     flex: 0 0 auto;

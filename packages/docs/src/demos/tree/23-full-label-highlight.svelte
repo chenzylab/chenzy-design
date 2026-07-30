@@ -36,7 +36,7 @@
     style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box"
     {treeData}
     defaultExpandAll
-    ariaLabel="单选高亮子节点树"
+    aria-label="单选高亮子节点树"
     onSelect={(key, _sel, node) => {
       selectedKey = key;
       descendants = new Set(collectKeys(node));

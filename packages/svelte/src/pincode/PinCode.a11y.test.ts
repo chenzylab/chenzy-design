@@ -8,7 +8,7 @@ import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import PinCode from './PinCode.svelte';
 
 function cellsOf(container: Element): HTMLInputElement[] {
-  return Array.from(container.querySelectorAll('input.cd-pincode__cell')) as HTMLInputElement[];
+  return Array.from(container.querySelectorAll('input.cd-pincode-cell')) as HTMLInputElement[];
 }
 
 /** Non-null cell accessor (tests always render `count` cells). */
@@ -50,7 +50,7 @@ describe('PinCode a11y', () => {
 
   it('自定义 ariaLabel + error：aria-label / 各格 aria-invalid', async () => {
     const { container } = renderWithLocale(PinCode, {
-      props: { count: 4, ariaLabel: 'SMS code', status: 'error' },
+      props: { count: 4, 'aria-label': 'SMS code', status: 'error' },
     });
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-label')).toBe('SMS code');

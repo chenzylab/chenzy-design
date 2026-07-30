@@ -17,5 +17,5 @@
     <Button size="small" onclick={() => (data = setA)}>数据集 A</Button>
     <Button size="small" onclick={() => (data = setB)}>数据集 B</Button>
   </div>
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" treeData={data} expandAll ariaLabel="动态更新数据树" />
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" treeData={data} expandAll aria-label="动态更新数据树" />
 </div>

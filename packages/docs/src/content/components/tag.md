@@ -138,7 +138,7 @@ import { Tag, TagGroup, SplitTagGroup } from '@chenzy-design/svelte';
 | type | 标签的样式类型，可选 `ghost`、 `solid`、 `light` | string | `light` |
 | visible | 标签是否可见 | boolean | true |
 | tagKey | 作为每个标签的唯一标识，不允许重复 | string \| number | - |
-| ariaLabel | 无障碍标签，对可删除或可点击的标签推荐配置 | string | - |
+| aria-label | 无障碍标签，对可删除或可点击的标签推荐配置 | string | - |
 | onClick | 单击标签时的回调函数 | (e: MouseEvent) => void | - |
 | onClose | 关闭标签时的回调函数 | (tagChildren, e: MouseEvent, tagKey) => void | - |
 
@@ -163,13 +163,13 @@ import { Tag, TagGroup, SplitTagGroup } from '@chenzy-design/svelte';
 | class | 类名 | string | - |
 | style | 样式 | string | - |
 | children | 标签组 | Snippet | - |
-| ariaLabel | 无障碍标签 | string | - |
+| aria-label | 无障碍标签 | string | - |
 
 ## Accessibility
 
 ### ARIA
 
-- `ariaLabel` 用于表示 `Tag` 的作用，对于可删除或者可点击的 `Tag` ，我们推荐使用此属性
+- `aria-label` 用于表示 `Tag` 的作用，对于可删除或者可点击的 `Tag` ，我们推荐使用此属性
 
 ### 键盘和焦点
 

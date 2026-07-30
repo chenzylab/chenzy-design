@@ -27,7 +27,7 @@
     /** 组级多彩开关，透传给组内 Button（对齐 Semi）。 */
     colorful?: boolean;
     /** 按钮组语义标签（aria-label）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根元素自定义类名（透传）。 */
     class?: string;
     /** 根元素自定义内联样式（透传）。 */
@@ -41,7 +41,7 @@
     theme,
     disabled,
     colorful,
-    ariaLabel,
+    'aria-label': ariaLabel,
     class: className,
     style,
     children,

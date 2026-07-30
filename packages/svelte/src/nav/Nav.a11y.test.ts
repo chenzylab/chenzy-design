@@ -30,7 +30,7 @@ describe('Nav a11y', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, defaultOpenKeys: ['sub'], defaultSelectedKeys: ['home'] },
     });
-    const menu = container.querySelector('.cd-nav__list[role="menu"]');
+    const menu = container.querySelector('.cd-nav-list[role="menu"]');
     expect(menu).not.toBeNull();
     expect(menu?.getAttribute('aria-orientation')).toBe('vertical');
     expect(container.querySelector('[role="menuitem"]')).not.toBeNull();
@@ -41,7 +41,7 @@ describe('Nav a11y', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'horizontal', items, defaultSelectedKeys: ['home'] },
     });
-    const menu = container.querySelector('.cd-nav__list[role="menu"]');
+    const menu = container.querySelector('.cd-nav-list[role="menu"]');
     expect(menu).not.toBeNull();
     expect(menu?.getAttribute('aria-orientation')).toBe('horizontal');
     await expectNoAxeViolations(container);
@@ -51,7 +51,7 @@ describe('Nav a11y', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, isCollapsed: true, footer: { collapseButton: true } },
     });
-    const wrap = container.querySelector('.cd-nav__collapse-btn');
+    const wrap = container.querySelector('.cd-nav-collapse-btn');
     expect(wrap).not.toBeNull();
     const btn = wrap?.querySelector('button');
     expect(btn).not.toBeNull();
@@ -76,7 +76,7 @@ describe('Nav a11y', () => {
     const { container } = renderWithLocale(Nav, {
       props: { mode: 'vertical', items, header: { logo, text: '后台' } },
     });
-    expect(container.querySelector('.cd-nav__header')).not.toBeNull();
+    expect(container.querySelector('.cd-nav-header')).not.toBeNull();
     await expectNoAxeViolations(container);
   });
 });

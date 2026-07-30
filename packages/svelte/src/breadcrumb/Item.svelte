@@ -36,7 +36,13 @@
   // 红线 #2: 纯派生，render 期只读。无 context 时退化为普通链接项。
   const isLast = $derived(ctx ? id !== -1 && ctx.isLast(id) : false);
 
-  const cls = $derived(['cd-breadcrumb__item', className].filter(Boolean).join(' '));
+  // 折叠（对齐 Semi 对 children 的 slice）：被折叠的项自身不渲染；
+  // 「…」由被折叠段前一项负责渲染，保证省略号落在正确位置。
+  const isCollapsed = $derived(ctx ? id !== -1 && ctx.isCollapsed(id) : false);
+  const showEllipsis = $derived(ctx ? id !== -1 && ctx.showEllipsisAfter(id) : false);
+  const collapsedCount = $derived(ctx?.collapsedCount() ?? 0);
+
+  const cls = $derived(['cd-breadcrumb-item', className].filter(Boolean).join(' '));
 </script>
 
 <!--
@@ -44,24 +50,27 @@
   noLink：非最后一项也渲染为普通 span（不可点击/键盘激活）；语义上表示该层级无可导航地址。
   icon：前置图标 snippet，渲染在 children 前。
 -->
+{#if isCollapsed}
+  <!-- 被 maxItemCount 折叠：自身不渲染（对齐 Semi children.slice）。 -->
+{:else}
 <span
   class={cls}
   style={separator !== undefined ? `--cd-breadcrumb-separator-content: '${separator}'` : undefined}
 >
   {#if isLast || noLink}
     <span
-      class="cd-breadcrumb__current"
+      class="cd-breadcrumb-current"
       aria-current={isLast ? 'page' : undefined}
     >
-      {#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}
+      {#if icon}<span class="cd-breadcrumb-item-icon">{@render icon()}</span>{/if}{@render children?.()}
     </span>
   {:else if href}
-    <a class="cd-breadcrumb__link" {href} onclick={onClick}>
-      {#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}
+    <a class="cd-breadcrumb-item-link" {href} onclick={onClick}>
+      {#if icon}<span class="cd-breadcrumb-item-icon">{@render icon()}</span>{/if}{@render children?.()}
     </a>
   {:else}
     <span
-      class="cd-breadcrumb__text"
+      class="cd-breadcrumb-text"
       role="link"
       tabindex="0"
       onclick={onClick}
@@ -71,7 +80,27 @@
           onClick?.(e as unknown as MouseEvent);
         }
       }}
-    >{#if icon}<span class="cd-breadcrumb__icon">{@render icon()}</span>{/if}{@render children?.()}</span
+    >{#if icon}<span class="cd-breadcrumb-item-icon">{@render icon()}</span>{/if}{@render children?.()}</span
     >
   {/if}
 </span>
+  {#if showEllipsis}
+    <!-- 折叠省略号：点击就地展开全部（对齐 Semi moreType='default' 的 disclosure 行为）。 -->
+    <span class="cd-breadcrumb-item">
+      <span
+        class="cd-breadcrumb-text cd-breadcrumb-collapse"
+        role="button"
+        tabindex="0"
+        aria-expanded="false"
+        aria-label={`展开被折叠的 ${collapsedCount} 项`}
+        onclick={() => ctx?.expand()}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            ctx?.expand();
+          }
+        }}>…</span
+      >
+    </span>
+  {/if}
+{/if}

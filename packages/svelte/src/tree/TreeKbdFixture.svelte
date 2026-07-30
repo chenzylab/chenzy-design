@@ -26,5 +26,5 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <Tree {treeData} ariaLabel="Fruit tree" />
+  <Tree {treeData} aria-label="Fruit tree" />
 </LocaleProvider>

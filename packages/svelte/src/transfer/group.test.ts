@@ -8,8 +8,8 @@ describe('transfer/group', () => {
     { key: 'b', label: '上海' },
   ];
   const grouped: TransferGroup[] = [
-    { title: '华东', items: [{ key: 'hz', label: '杭州' }, { key: 'sh', label: '上海' }] },
-    { title: '华南', items: [{ key: 'gz', label: '广州' }] },
+    { title: '华东', children: [{ key: 'hz', label: '杭州' }, { key: 'sh', label: '上海' }] },
+    { title: '华南', children: [{ key: 'gz', label: '广州' }] },
   ];
 
   it('isGrouped distinguishes flat vs grouped', () => {
@@ -32,7 +32,7 @@ describe('transfer/group', () => {
 
   it('group title wins over a pre-set group on item', () => {
     const src: TransferGroup[] = [
-      { title: 'X', items: [{ key: '1', label: 'one', group: 'Y' }] },
+      { title: 'X', children: [{ key: '1', label: 'one', group: 'Y' }] },
     ];
     expect(normalizeData(src)[0]!.group).toBe('X');
   });

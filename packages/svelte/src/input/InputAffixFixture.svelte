@@ -20,7 +20,7 @@
 </script>
 
 <Input
-  ariaLabel="affix"
+  aria-label="affix"
   {value}
   {hideSuffix}
   showClear

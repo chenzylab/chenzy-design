@@ -43,6 +43,6 @@
     filterTreeNode
     showFilteredOnly={filteredOnly}
     defaultExpandAll
-    ariaLabel="可搜索地区树"
+    aria-label="可搜索地区树"
   />
 </div>

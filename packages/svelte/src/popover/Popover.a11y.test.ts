@@ -2,7 +2,7 @@
 //  - hover/focus 触发 → 浮层 role=tooltip，触发器 aria-describedby 关联浮层（span 上合法）。
 //  - click/custom 触发 → 浮层 role=dialog，触发器 <span> 承载 role=button + aria-haspopup/expanded/controls。
 // Popover 复用 Tooltip 浮层（prefixCls='cd-popover'）：浮层根为 .cd-popover-wrapper（承 role/aria），
-//   内含 .cd-popover 卡片；触发器为 .cd-tooltip__trigger。
+//   内含 .cd-popover 卡片；触发器为 .cd-tooltip-trigger。
 // 浮层经 use:floating portal 到 document.body。jsdom 触发不了真实 hover/click，故用受控 visible
 //   强制打开再断言静态 ARIA。PopoverA11yFixture 提供非交互触发文案 children。
 import { describe, it, expect } from 'vitest';
@@ -17,7 +17,7 @@ describe('Popover a11y', () => {
     const pop = document.querySelector('.cd-popover-wrapper') as HTMLElement | null;
     expect(pop?.getAttribute('role')).toBe('tooltip');
 
-    const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
+    const trigger = document.querySelector('.cd-tooltip-trigger') as HTMLElement | null;
     const describedby = trigger?.getAttribute('aria-describedby');
     expect(describedby).toBeTruthy();
     expect(describedby).toBe(pop?.id);

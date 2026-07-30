@@ -18,7 +18,7 @@
     width: number;
     height: number;
     handleSize?: number;
-    ariaLabel: string;
+    'aria-label': string;
     /** 饱和度/明度变化（对齐 Semi onChange({ s, v })）。 */
     onChange: (next: { s: number; v: number }) => void;
   }
@@ -28,7 +28,7 @@
     width,
     height,
     handleSize = AREA_HANDLE_SIZE,
-    ariaLabel,
+    'aria-label': ariaLabel,
     onChange,
   }: Props = $props();
 

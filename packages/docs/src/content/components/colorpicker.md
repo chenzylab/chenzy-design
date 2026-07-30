@@ -58,11 +58,7 @@ import { ColorPicker } from '@chenzy-design/svelte';
 
 你传入的 defaultValue(非受控) 和 value(受控) 也应当是同样包含三种格式的对象。
 
-我们提供了工具函数 `colorStringToValue`，用于将常见颜色字符串转换为该对象，支持 rgb(57,197,187) #39c5bb hsv(176,71,77) 等字符串直接传入。
-
-<Notice type="primary" title="与 Semi 的差异">
-Semi 把该工具函数挂在组件类的静态属性上（ColorPicker.colorStringToValue）。Svelte 组件没有静态方法，本库改为从包内具名导出：<code>import &#123; colorStringToValue &#125; from '@chenzy-design/svelte'</code>。
-</Notice>
+我们提供了静态方法 `ColorPicker.colorStringToValue`，用于将常见颜色字符串转换为该对象，支持 rgb(57,197,187) #39c5bb hsv(176,71,77) 等字符串直接传入（亦可用等价的具名导出 `colorStringToValue`）。
 
 <DemoBox code={defaultValueSrc}><DefaultValue /></DemoBox>
 
@@ -108,11 +104,11 @@ Semi 把该工具函数挂在组件类的静态属性上（ColorPicker.colorStri
 | hsva | 色相 / 饱和度 / 明度 / 透明度 | `{ h: number; s: number; v: number; a: number }` |
 | rgba | 红 / 绿 / 蓝 / 透明度 | `{ r: number; g: number; b: number; a: number }` |
 
-### 工具函数
+### 静态方法
 
 | 函数 | 说明 | 类型 |
 | --- | --- | --- |
-| colorStringToValue | 常见颜色字符串转 ColorValue 三态对象，支持 `#39c5bb`、`rgb(57,197,187)`、`rgba(57,197,187,0.5)`、`hsv(176,71,77)`；无法识别时抛错 | `(raw: string) => ColorValue` |
+| ColorPicker.colorStringToValue | 常见颜色字符串转 ColorValue 三态对象，支持 `#39c5bb`、`rgb(57,197,187)`、`rgba(57,197,187,0.5)`、`hsv(176,71,77)`；无法识别时抛错 | `(raw: string) => ColorValue` |
 
 ## Accessibility
 

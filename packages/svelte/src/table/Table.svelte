@@ -102,7 +102,7 @@
     tree,
     rowClassName,
     empty,
-    ariaLabel,
+    'aria-label': ariaLabel,
     onRowClick,
     onChange,
     onFilterChange,
@@ -201,7 +201,7 @@
     empty?: string;
     /** 空数据占位自定义渲染（富内容，如 Empty 组件；优先于 empty 文案，对齐 Semi empty: ReactNode） */
     emptySnippet?: Snippet;
-    ariaLabel?: string;
+    'aria-label'?: string;
     onRowClick?: (info: { record: T; index: number }) => void;
     /** 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流）。spec §4 */
     onChange?: (info: TableChangeInfo) => void;
@@ -1875,7 +1875,7 @@
     {#if rowSelection?.type === 'radio'}
       <Radio
         class="cd-table-selection-checkbox"
-        ariaLabel={loc().t('Table.selectRow')}
+        aria-label={loc().t('Table.selectRow')}
         checked={selected}
         disabled={rowDisabled}
         tabindex={gridTab}
@@ -1884,7 +1884,7 @@
     {:else}
       <Checkbox
         class="cd-table-selection-checkbox"
-        ariaLabel={loc().t('Table.selectRow')}
+        aria-label={loc().t('Table.selectRow')}
         checked={selected}
         disabled={rowDisabled}
         indeterminate={rowHalf}
@@ -2027,7 +2027,7 @@
               {#snippet headerSelectionOrigin()}
                 <Checkbox
                   class="cd-table-selection-checkbox"
-                  ariaLabel={loc().t('Table.selectAll')}
+                  aria-label={loc().t('Table.selectAll')}
                   checked={headerSelect.checked}
                   disabled={rowSelection?.disabled === true}
                   indeterminate={headerSelect.indeterminate}
@@ -2223,7 +2223,7 @@
                 {#if selectionEnabled}
                   <Checkbox
                     class="cd-table-selection-checkbox"
-                    ariaLabel={loc().t('Table.selectAll')}
+                    aria-label={loc().t('Table.selectAll')}
                     checked={headerSelect.checked}
                     disabled={rowSelection?.disabled === true}
                     indeterminate={headerSelect.indeterminate}

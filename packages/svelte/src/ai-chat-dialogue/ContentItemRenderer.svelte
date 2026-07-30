@@ -72,7 +72,7 @@
 {#if custom}
   {@render custom(item)}
 {:else if type === 'message'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block--message">
+  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-message">
     {#each innerParts as part, i (i)}
       {#if part.type === 'output_text' || part.type === 'input_text' || part.type === 'text'}
         <MarkdownRender raw={partText(part)} {...markdownRenderProps} />
@@ -100,7 +100,7 @@
     {/each}
   </div>
 {:else if type === 'reasoning'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block--reasoning">
+  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-reasoning">
     <button
       type="button"
       class="cd-ai-dialogue-reasoning-toggle"
@@ -118,9 +118,9 @@
 {:else if type === 'function_call' || type === 'custom_call' || type.endsWith('_call')}
   <!-- 完整工具调用块：状态图标 + 折叠展开（参数/输出格式化 + call_id + MCP server）。 -->
   <div
-    class="cd-ai-dialogue-block cd-ai-dialogue-block--tool"
-    class:cd-ai-dialogue-tool--running={toolView.status === 'in_progress'}
-    class:cd-ai-dialogue-tool--failed={toolView.status === 'failed'}
+    class="cd-ai-dialogue-block cd-ai-dialogue-block-tool"
+    class:cd-ai-dialogue-tool-running={toolView.status === 'in_progress'}
+    class:cd-ai-dialogue-tool-failed={toolView.status === 'failed'}
   >
     <button
       type="button"
@@ -163,12 +163,12 @@
     {/if}
   </div>
 {:else if type === 'audio'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block--audio">
+  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-audio">
     {loc().t('AIChatDialogue.audio')}
   </div>
 {:else}
   <!-- 兜底：未知类型，渲染类型标签（可被 renderDialogueContentItem 覆盖）。 -->
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block--unknown">
+  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-unknown">
     <span class="cd-ai-dialogue-unknown-type">{type}</span>
   </div>
 {/if}
@@ -225,7 +225,7 @@
     color: var(--cd-color-text-1);
   }
 
-  .cd-ai-dialogue-block--tool {
+  .cd-ai-dialogue-block-tool {
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-medium);
     background: var(--cd-color-fill-0);
@@ -260,11 +260,11 @@
     color: var(--cd-color-text-2);
   }
 
-  .cd-ai-dialogue-tool--running .cd-ai-dialogue-tool-status {
+  .cd-ai-dialogue-tool-running .cd-ai-dialogue-tool-status {
     color: var(--cd-color-primary);
   }
 
-  .cd-ai-dialogue-tool--failed .cd-ai-dialogue-tool-status {
+  .cd-ai-dialogue-tool-failed .cd-ai-dialogue-tool-status {
     color: var(--cd-color-danger);
   }
 
@@ -312,7 +312,7 @@
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 
-  .cd-ai-dialogue-block--unknown {
+  .cd-ai-dialogue-block-unknown {
     color: var(--cd-color-text-3);
   }
 </style>

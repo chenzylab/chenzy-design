@@ -2,7 +2,7 @@
   import { Checkbox, CheckboxGroup, Row, Col } from '@chenzy-design/svelte';
 </script>
 
-<CheckboxGroup style="width: 100%;" ariaLabel="CheckboxGroup 示例">
+<CheckboxGroup style="width: 100%;" aria-label="CheckboxGroup 示例">
   <Row>
     <Col span={8}><Checkbox value="A">A</Checkbox></Col>
     <Col span={8}><Checkbox value="B">B</Checkbox></Col>

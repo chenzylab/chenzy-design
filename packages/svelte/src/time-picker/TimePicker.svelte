@@ -463,10 +463,10 @@
   const cls = $derived(
     [
       'cd-time-picker',
-      `cd-time-picker--${size}`,
-      validateStatus !== 'default' && `cd-time-picker--${validateStatus}`,
-      disabled && 'cd-time-picker--disabled',
-      isOpen && 'cd-time-picker--open',
+      `cd-time-picker-${size}`,
+      validateStatus !== 'default' && `cd-time-picker-${validateStatus}`,
+      disabled && 'cd-time-picker-disabled',
+      isOpen && 'cd-time-picker-open',
       isRange && 'cd-time-picker-range',
       className,
     ]
@@ -478,7 +478,7 @@
     [
       'cd-time-picker-panel',
       isRange && 'cd-time-picker-range-panel',
-      !motion && 'cd-time-picker-panel--no-motion',
+      !motion && 'cd-time-picker-panel-no-motion',
       popupClassName,
     ]
       .filter(Boolean)
@@ -525,7 +525,7 @@
   {#if triggerRender}
     <!-- 自定义触发器：完全替换默认 Input + 图标区域（需父层 value=Date 等数据，故留在 TimePicker 层，不进 TimeInput）。 -->
     <div
-      class="cd-time-picker__control"
+      class="cd-time-picker-control"
       onclick={toggleOpen}
       onkeydown={onInputKeydown}
       role="button"
@@ -641,7 +641,7 @@
   .cd-time-picker-panel:focus-visible {
     outline: none;
   }
-  .cd-time-picker-panel--no-motion {
+  .cd-time-picker-panel-no-motion {
     transition: none;
   }
 

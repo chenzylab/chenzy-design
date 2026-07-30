@@ -50,7 +50,7 @@ export const meta = {
     { name: 'onMouseEnter', type: '(e) => void', default: 'undefined', desc: '鼠标进入回调' },
     { name: 'onKeyDown', type: '(e) => void', default: 'undefined', desc: '键盘事件回调（内部处理后触发）' },
     { name: 'tabIndex', type: 'number', default: 'undefined', desc: '可交互 Tag 的 tabIndex（TagInput 内用 -1）' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '透传根元素可访问名（aria-label）' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '透传根元素可访问名（aria-label）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '透传根类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '透传根内联样式' },
   ],
@@ -90,7 +90,7 @@ export const meta = {
       usage: '<SplitTagGroup><Tag>…</Tag><Tag>…</Tag></SplitTagGroup>',
       desc: '连接式标签组：多个 Tag 组合成整体（首子前缘圆角、末子后缘圆角、中间圆角为 0，相邻 1px 间隙），视觉上是一个分段控件。纯 CSS 装饰，无折叠；circle 子标签首末用胶囊圆角。严格对齐 Semi SplitTagGroup。',
       props: [
-        { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '组的可访问名（aria-label）' },
+        { name: 'aria-label', type: 'string', default: 'undefined', desc: '组的可访问名（aria-label）' },
         { name: 'class', type: 'string', default: 'undefined', desc: '透传根类名' },
         { name: 'style', type: 'string', default: 'undefined', desc: '透传根内联样式' },
         { name: 'children', type: 'Snippet', default: 'undefined', desc: '子 Tag（首尾自动加圆角、相邻合并边）' },

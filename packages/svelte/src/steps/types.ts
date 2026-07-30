@@ -25,7 +25,7 @@ export interface StepProps {
   /** 该步 role（对齐 Semi Steps.Step 的 role）。 */
   role?: string;
   /** 该步 aria-label（对齐 Semi Steps.Step 的 aria-label）。 */
-  ariaLabel?: string;
+  'aria-label'?: string;
   /** 该步点击回调（对齐 Semi Steps.Step 的 onClick）。 */
   onClick?: (e: MouseEvent) => void;
   /** 该步键盘按下回调（对齐 Semi Steps.Step 的 onKeyDown）。 */

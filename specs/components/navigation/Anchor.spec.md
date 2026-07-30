@@ -20,7 +20,7 @@ Anchor（锚点导航）用于在长页面内提供章节级目录与快速跳�
 
 ## 2. 设计语义
 
-- **结构**：根容器 `cd-anchor` + 滑轨 `cd-anchor__rail`（含跟随滑块 `cd-anchor__ink`）+ 链接列表 `cd-anchor__list` > 链接项 `cd-anchor__link`（激活态 `cd-anchor__link--active`，嵌套层级 `cd-anchor__link--level-{n}`）。
+- **结构**：根容器 `cd-anchor` + 滑轨 `cd-anchor-slide`（含跟随滑块 `cd-anchor-slide-bar`）+ 链接列表 `cd-anchor-link-wrapper` > 链接项 `cd-anchor-link`（激活态 `cd-anchor-link-title-active`，嵌套层级 `cd-anchor-link-level-{n}`）。
 - **视觉态**：default / hover / active（当前章节）/ focus-visible / disabled。active 项左侧滑块对齐文本基线，使用 `--cd-color-primary`。
 - **方位语义**：`position: sticky`（默认）使 Anchor 在滚动中固定；`affix` 控制是否启用 sticky。`direction: vertical | horizontal`，水平模式滑块改为底部下划线。
 - **层级缩进**：每级缩进步进由 `--cd-anchor-indent` 控制，保证嵌套可读。

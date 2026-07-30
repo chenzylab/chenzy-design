@@ -1,9 +1,9 @@
 <!--
   AvatarGroup — 横向层叠的头像组（1:1 对齐 Semi AvatarGroup）。
-  两种用法：
-    1. 数据驱动 `items` → 支持 maxCount 折叠为「+N」溢出头像（Svelte 无法遍历 children snippet 计数，
-       折叠只能走数据驱动，这是与 Semi children+React.Children 等价的 Svelte 实现）。
-    2. 自由 `children` snippet → 自定义层叠头像，不折叠。
+  两种用法，**都支持 maxCount 折叠为「+N」溢出头像**（对齐 Semi）：
+    1. 组合式 `children` → 子 <Avatar> 经 context 注册自身序号（等价 Semi React.Children 的
+       可计数/可切片语义），序号 >= maxCount 者自身不渲染，由组统一渲染「+N」。
+    2. 数据驱动 `items` → 组直接切片渲染，同款折叠。
   组级 size/shape 经 context 强制下发给子 Avatar（对齐 Semi cloneElement）。
   overlapFrom: 'start'|'end' 控制压盖方向（对齐 Semi，枚举而非 px）。
 -->
@@ -13,6 +13,7 @@
   import { useLocale } from '../locale-provider/index.js';
   import {
     setAvatarGroupContext,
+    type AvatarGroupMember,
     type AvatarShape,
     type AvatarSizeEnum,
     type AvatarColor,
@@ -60,10 +61,34 @@
 
   const loc = useLocale();
 
-  // 组级 size/shape 经 context 强制下发（子 Avatar 里 group 值优先）。
+  // ---------- 组合式成员注册（对齐 Semi React.Children 可计数/可切片）----------
+  // 子 <Avatar> 在 init 期按挂载顺序领取序号；组据此决定谁渲染、谁被折叠进「+N」。
+  // 注册表本身是 $state 数组：子项在 init 期同步 push（不在 render 期读），
+  // 挂载后异步 bump 一次让派生重算（脱离挂载 effect 同步栈，避免 effect_update_depth）。
+  let declared: AvatarGroupMember[] = [];
+  let declaredCount = $state(0);
+  let bumpScheduled = false;
+  function bumpDeclared(): void {
+    if (bumpScheduled) return;
+    bumpScheduled = true;
+    queueMicrotask(() => {
+      bumpScheduled = false;
+      declaredCount = declared.length;
+    });
+  }
+
+  // 组级 size/shape 经 context 强制下发（子 Avatar 里 group 值优先）+ 组合式折叠协议。
   setAvatarGroupContext({
     getShape: () => shape,
     getSize: () => size,
+    register: (member: AvatarGroupMember) => {
+      const index = declared.length;
+      declared.push(member);
+      bumpDeclared();
+      return index;
+    },
+    isCollapsing: () => typeof maxCount === 'number' && maxCount >= 0,
+    isHidden: (index: number) => typeof maxCount === 'number' && index >= maxCount,
   });
 
   // 折叠计算：前 maxCount 个可见，其余进 restAvatars。
@@ -84,9 +109,24 @@
     `${loc().t('Avatar.moreAlt', { count: restNumber })}${restAlt ? `,${restAlt}` : ''}`,
   );
 
+  // ---------- 组合式分支的折叠计算（与 items 分支同语义，数据源换成已注册成员）----------
+  const declaredRest = $derived.by<AvatarGroupMember[]>(() => {
+    const n = declaredCount; // 依赖已注册成员数，成员到齐后重算
+    if (typeof maxCount !== 'number' || maxCount < 0 || n <= maxCount) return [];
+    return declared.slice(maxCount, n);
+  });
+  const declaredRestNumber = $derived(declaredRest.length);
+  const declaredMoreAlt = $derived.by(() => {
+    const names = declaredRest
+      .map((a) => a.alt ?? a.content ?? '')
+      .filter((s) => s.length > 0)
+      .join(',');
+    return `${loc().t('Avatar.moreAlt', { count: declaredRestNumber })}${names ? `,${names}` : ''}`;
+  });
+
   // 各档尺寸对应一个 group 类，CSS 里直接用对应 margin token（对齐 Semi，无中间变量/fallback）。
   const sizeIsEnum = $derived(typeof size === 'string');
-  const groupSizeClass = $derived(sizeIsEnum ? `cd-avatar-group--${size}` : undefined);
+  const groupSizeClass = $derived(sizeIsEnum ? `cd-avatar-group-${size}` : undefined);
 </script>
 
 <div
@@ -98,7 +138,7 @@
     {#each visible as item, i (i)}
       {@const { content, ...rest } = item}
       <span
-        class="cd-avatar-group__item"
+        class="cd-avatar-group-item"
         role="listitem"
         style="z-index:{overlapFrom === 'start' ? 100 - i : 80 + i}"
       >
@@ -109,7 +149,7 @@
     {/each}
     {#if restNumber > 0}
       <span
-        class="cd-avatar-group__item cd-avatar-group__item-more"
+        class="cd-avatar-group-item cd-avatar-group-item-more"
         role="listitem"
         style="z-index:{overlapFrom === 'start' ? 100 - visible.length : 80 + visible.length}"
       >
@@ -122,6 +162,21 @@
     {/if}
   {:else if children}
     {@render children()}
+    <!-- 组合式折叠：被隐藏的子 Avatar 自身不渲染，这里统一补「+N」溢出头像（对齐 Semi）。 -->
+    {#if declaredRestNumber > 0}
+      <span
+        class="cd-avatar-group-item cd-avatar-group-item-more"
+        style="z-index:{overlapFrom === 'start' ? 100 - (maxCount ?? 0) : 80 + (maxCount ?? 0)}"
+      >
+        {#if renderMore}
+          {@render renderMore({ restNumber: declaredRestNumber, restAvatars: declaredRest })}
+        {:else}
+          <Avatar class="cd-avatar-item-more" alt={declaredMoreAlt}>
+            {`+${declaredRestNumber}`}
+          </Avatar>
+        {/if}
+      </span>
+    {/if}
   {/if}
 </div>
 
@@ -132,33 +187,33 @@
   .cd-avatar-group :global(.cd-avatar) {
     box-sizing: border-box;
   }
-  .cd-avatar-group__item {
+  .cd-avatar-group-item {
     position: relative;
     display: inline-flex;
   }
   /* 各档层叠 marginLeft（直接用对应 token，对齐 Semi，无中间变量/fallback） */
-  .cd-avatar-group--extra-extra-small .cd-avatar-group__item {
+  .cd-avatar-group-extra-extra-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-extra-small-margin);
   }
-  .cd-avatar-group--extra-small .cd-avatar-group__item {
+  .cd-avatar-group-extra-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-small-margin);
   }
-  .cd-avatar-group--small .cd-avatar-group__item {
+  .cd-avatar-group-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-small-margin);
   }
-  .cd-avatar-group--default .cd-avatar-group__item {
+  .cd-avatar-group-default .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-default-margin);
   }
-  .cd-avatar-group--medium .cd-avatar-group__item {
+  .cd-avatar-group-medium .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-medium-margin);
   }
-  .cd-avatar-group--large .cd-avatar-group__item {
+  .cd-avatar-group-large .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-large-margin);
   }
-  .cd-avatar-group--extra-large .cd-avatar-group__item {
+  .cd-avatar-group-extra-large .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-large-margin);
   }
-  .cd-avatar-group__item:first-child {
+  .cd-avatar-group-item:first-child {
     margin-left: 0;
   }
   /* 成员描边（各档宽度，对齐 Semi）保证彼此分隔 */
@@ -192,31 +247,31 @@
   :global([dir='rtl']) .cd-avatar-group {
     direction: rtl;
   }
-  :global([dir='rtl']) .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-item {
     margin-left: auto;
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-extra-small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-extra-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-extra-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--default .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-default .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-default-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--medium .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-medium .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-medium-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--large .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-large .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-large-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-large .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-large .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-large-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group__item:first-child {
+  :global([dir='rtl']) .cd-avatar-group-item:first-child {
     margin-left: auto;
     margin-right: 0;
   }

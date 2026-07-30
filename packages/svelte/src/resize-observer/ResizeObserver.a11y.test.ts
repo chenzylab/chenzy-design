@@ -2,6 +2,7 @@
 // jsdom 无原生 ResizeObserver；用一个可控桩记录 observe 的目标，
 // 断言 observeParent 观测的是父节点（而非包裹元素本身）。
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createRawSnippet } from 'svelte';
 import { render } from '@testing-library/svelte';
 import ResizeObserver from './ResizeObserver.svelte';
 
@@ -30,6 +31,11 @@ class StubResizeObserver {
   unobserve(): void {}
   disconnect(): void {}
 }
+
+/** 最小 children snippet：渲染一个真实子元素，供 observeChild 测试取 firstElementChild。 */
+const childSnippet = createRawSnippet(() => ({
+  render: () => '<span data-testid="ro-child">child</span>',
+}));
 
 /** 造一个最小 ResizeObserverEntry（组件走 contentRect 回退路径）。 */
 function entryFor(target: Element, width: number, height: number): ResizeObserverEntry {
@@ -118,6 +124,28 @@ describe('ResizeObserver observeParent', () => {
     fire([entryFor(wrapper, 100, 50)]);
     fire([entryFor(wrapper, 100, 80)]);
     expect(calls).toBe(2);
+  });
+
+  it('observeChild=true 观测 children 首个元素（对齐 Semi cloneElement 注入 ref）', async () => {
+    observedTargets.length = 0;
+    const { container } = render(ResizeObserver, {
+      props: { observeChild: true, children: childSnippet },
+    });
+    await Promise.resolve();
+    const wrapper = container.querySelector('.cd-resize-observer') as HTMLElement;
+    const child = wrapper.firstElementChild;
+    expect(child).not.toBeNull();
+    // 观测的是子元素本身，不是包裹元素（与 Semi 直接观测 child 语义一致）。
+    expect(observedTargets).toContain(child);
+    expect(observedTargets).not.toContain(wrapper);
+  });
+
+  it('observeChild=true 但无子元素时回退观测包裹元素（不静默失效）', async () => {
+    observedTargets.length = 0;
+    const { container } = render(ResizeObserver, { props: { observeChild: true } });
+    await Promise.resolve();
+    const wrapper = container.querySelector('.cd-resize-observer');
+    expect(observedTargets).toContain(wrapper);
   });
 
   it('透明容器不设 role/tabindex（不进 a11y 树）', () => {

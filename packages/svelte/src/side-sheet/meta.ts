@@ -41,7 +41,7 @@ export const meta = {
     { name: 'maskStyle', type: 'string', default: 'undefined', desc: '遮罩内联样式' },
     { name: 'footer', type: 'Snippet<[{ close: () => void }]>|null', default: 'undefined', desc: 'Footer 操作区；提供 close() 关闭面板；未提供不渲染' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: 'Body 主内容区（可滚动）' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无可见标题时提供 aria-label' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '无可见标题时提供 aria-label' },
     { name: 'class', type: 'string', default: 'undefined', desc: '根元素自定义类名' },
     { name: 'afterVisibleChange', type: '(isVisible: boolean) => void', default: 'undefined', desc: '展示/隐藏动画结束触发' },
     { name: 'onCancel', type: '(e: MouseEvent | KeyboardEvent) => void', default: 'undefined', desc: '取消面板时的回调' },
@@ -59,7 +59,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: true,
-    note: 'wrapper > inner role=dialog tabindex=-1（mask=true 加 aria-modal=true）；内部 header role=heading aria-level=1；有 title 用 aria-labelledby，无则 ariaLabel；closeOnEsc 控制 Esc 关闭；关闭按钮 aria-label 经 SideSheet.closeAriaLabel；reduced-motion / motion=false 退化即时显隐。',
+    note: 'wrapper > inner role=dialog tabindex=-1（mask=true 加 aria-modal=true）；内部 header role=heading aria-level=1；有 title 用 aria-labelledby，无则 aria-label；closeOnEsc 控制 Esc 关闭；关闭按钮 aria-label 经 SideSheet.closeAriaLabel；reduced-motion / motion=false 退化即时显隐。',
   },
   tokens: [
     '--cd-color-side-sheet-mask-bg',

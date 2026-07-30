@@ -61,7 +61,7 @@
 
 <div class={prefixCls}>
   <IconButton
-    ariaLabel="Previous year"
+    aria-label="Previous year"
     size={buttonSize}
     theme={btnTheme}
     noHorizontalPadding
@@ -71,7 +71,7 @@
     {#snippet icon()}<IconDoubleChevronLeft aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
   <IconButton
-    ariaLabel="Previous month"
+    aria-label="Previous month"
     size={buttonSize}
     theme={btnTheme}
     noHorizontalPadding
@@ -86,7 +86,7 @@
     </Button>
   </div>
   <IconButton
-    ariaLabel="Next month"
+    aria-label="Next month"
     size={buttonSize}
     theme={btnTheme}
     noHorizontalPadding
@@ -96,7 +96,7 @@
     {#snippet icon()}<IconChevronRight aria-hidden="true" size={iconBtnSize} />{/snippet}
   </IconButton>
   <IconButton
-    ariaLabel="Next year"
+    aria-label="Next year"
     size={buttonSize}
     theme={btnTheme}
     noHorizontalPadding

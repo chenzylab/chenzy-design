@@ -121,7 +121,7 @@ CheckboxGroup 内嵌 Checkbox 并与 Grid 组件（Row / Col）一起使用，�
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | addonId | addon 节点 id，aria-labelledby 指向这个 id，若无设置会随机生成一个 id | string | - |
-| ariaLabel | 定义 Checkbox 的作用 | string | - |
+| aria-label | 定义 Checkbox 的作用 | string | - |
 | checked | 指定当前 Checkbox 是否选中（在 Group 中使用时无效） | boolean | false |
 | defaultChecked | 初始是否选中（在 Group 中使用时无效） | boolean | false |
 | disabled | 失效状态 | boolean | false |
@@ -137,7 +137,7 @@ CheckboxGroup 内嵌 Checkbox 并与 Grid 组件（Row / Col）一起使用，�
 
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 无可见标题时的可访问名称 | string | - |
+| aria-label | 无可见标题时的可访问名称 | string | - |
 | class | 样式类名 | string | - |
 | defaultValue | 组内默认选中的选项，会与 Checkbox 的 value 值做匹配 | Array | `[]` |
 | direction | 组内 checkbox 布局，可选水平 `horizontal` 或 `vertical` | string | 'vertical' |
@@ -163,7 +163,7 @@ CheckboxGroup 内嵌 Checkbox 并与 Grid 组件（Row / Col）一起使用，�
 ### ARIA
 
 - Checkbox 的 role 为 `checkbox`，CheckboxGroup 的 role 为 `list`，它的直接子元素为 `listitem`。
-- `ariaLabel`：单独使用 Checkbox 时，如果 children 没有文本，建议传入 `ariaLabel`，用一句话描述 Checkbox 的作用。
+- `aria-label`：单独使用 Checkbox 时，如果 children 没有文本，建议传入 `aria-label`，用一句话描述 Checkbox 的作用。
 - `aria-labelledby` 指向 `addon` 节点，用于解释当前 Checkbox 的作用。
 - `aria-describedby` 指向 `extra` 节点，用于补充解释当前 Checkbox 的作用。
 - `aria-disabled` 表示当前的禁用状态，与 `disabled` 保持一致。

@@ -87,8 +87,8 @@
     {#each files as file (file.key)}
       <Collapse.Panel itemKey={file.key}>
         {#snippet head()}
-          <span class="cd-sidebar-file-content__head">
-            <span class="cd-sidebar-file-content__head-icon" aria-hidden="true">
+          <span class="cd-sidebar-file-content-head">
+            <span class="cd-sidebar-file-content-head-icon" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                 <path
                   d="M4 1.5h5l3 3v10h-8v-13ZM9 1.5V4.5h3"
@@ -99,11 +99,11 @@
                 />
               </svg>
             </span>
-            <span class="cd-sidebar-file-content__head-text">{file.name ?? file.key}</span>
+            <span class="cd-sidebar-file-content-head-text">{file.name ?? file.key}</span>
             <!-- 展开（全屏）按钮：在 head 内自渲染，stopPropagation 不触发折叠（对齐 Semi FAQ）。 -->
             <button
               type="button"
-              class="cd-sidebar-file-content__expand"
+              class="cd-sidebar-file-content-expand"
               aria-label={expandLabel}
               title={expandLabel}
               onclick={(e) => handleExpand(e, file)}
@@ -120,7 +120,7 @@
             </button>
           </span>
         {/snippet}
-        <div class="cd-sidebar-file-content__body">
+        <div class="cd-sidebar-file-content-body">
           <SideBarFileItem
             content={file.content ?? ''}
             editable={file.editable ?? false}
@@ -137,7 +137,7 @@
 </div>
 
 <style>
-  .cd-sidebar-file-content__head {
+  .cd-sidebar-file-content-head {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
@@ -145,16 +145,16 @@
     min-inline-size: 0;
   }
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
-  .cd-sidebar-file-content__expand {
+  .cd-sidebar-file-content-expand {
     margin-inline-start: auto;
   }
-  .cd-sidebar-file-content__head-icon {
+  .cd-sidebar-file-content-head-icon {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     color: var(--cd-sidebar-code-head-icon-color);
   }
-  .cd-sidebar-file-content__head-text {
+  .cd-sidebar-file-content-head-text {
     overflow: hidden;
     color: var(--cd-sidebar-code-head-color);
     font-size: var(--cd-sidebar-code-head-size);
@@ -162,7 +162,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-file-content__expand {
+  .cd-sidebar-file-content-expand {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -178,15 +178,15 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-file-content__expand:hover {
+  .cd-sidebar-file-content-expand:hover {
     background: var(--cd-sidebar-code-expand-hover-bg);
     color: var(--cd-sidebar-code-head-color);
   }
-  .cd-sidebar-file-content__expand:focus-visible {
+  .cd-sidebar-file-content-expand:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-file-content__body {
+  .cd-sidebar-file-content-body {
     padding: var(--cd-sidebar-code-body-padding);
   }
 </style>

@@ -37,7 +37,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: true,
-    note: '对齐 Semi：外层 div.cd-back-top 为可点击容器，真实按钮语义/键盘可聚焦/可访问名（locale BackTop.ariaLabel）由内部 IconButton(theme="light") 承担；不可见时不在 DOM。',
+    note: '对齐 Semi：外层 div.cd-back-top 为可点击容器，真实按钮语义/键盘可聚焦/可访问名（locale BackTop.aria-label）由内部 IconButton(theme="light") 承担；不可见时不在 DOM。',
   },
   tokens: ['--cd-backtop-z', '--cd-backtop-right', '--cd-backtop-bottom'],
   responsive: false,

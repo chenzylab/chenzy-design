@@ -69,7 +69,7 @@
     class?: string;
     /** 根容器内联样式（对齐 Semi style）。 */
     style?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -129,7 +129,7 @@
     id,
     class: className = '',
     style,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,

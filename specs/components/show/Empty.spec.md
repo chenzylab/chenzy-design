@@ -90,7 +90,7 @@
 | `--cd-empty-title-font` | `--cd-font-size-2` | 标题字号 |
 | `--cd-empty-description-font` | `--cd-font-size-1` | 描述字号 |
 
-类名约定：`cd-empty`、`cd-empty__image`、`cd-empty__title`、`cd-empty__description`、`cd-empty__action`、`cd-empty__footer`；修饰符 `cd-empty--small/--large`、`cd-empty--horizontal`、`cd-empty--compact`（响应式收缩态）。
+类名约定：`cd-empty`、`cd-empty-image`、`cd-empty-title`、`cd-empty-description`、`cd-empty-footer`、`cd-empty-footer`；修饰符 `cd-empty-small/--large`、`cd-empty-horizontal`、`cd-empty-horizontal`（响应式收缩态）。
 
 ## 6. 无障碍
 
@@ -200,7 +200,7 @@
   - 根 `role="status"`、`aria-live="polite"`；`aria-labelledby`/`aria-describedby` 正确指向且 id 唯一（useId）。
   - 装饰插画 `aria-hidden="true"`；外部图 alt 取 title。
   - axe 无 violations；标题/描述对比度 ≥4.5:1（视觉回归断言 token 值）。
-- **响应式**：模拟容器宽度 < `--cd-empty-compact-width`，断言 horizontal 降级为 vertical 并加 `cd-empty--compact`；`responsive=false` 时不降级、不创建 ResizeObserver。
+- **响应式**：模拟容器宽度 < `--cd-empty-compact-width`，断言 horizontal 降级为 vertical 并加 `cd-empty-horizontal`；`responsive=false` 时不降级、不创建 ResizeObserver。
 - **i18n**：切换 locale 后所有内置文案随 key 变化；无硬编码字符串残留（快照扫描）。
 - **reduced-motion**：模拟 `prefers-reduced-motion: reduce`，断言位移动效被禁用。
 - **slot 覆盖**：`image/title/description/action` slot 提供时覆盖对应 prop 渲染。

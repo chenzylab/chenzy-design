@@ -27,7 +27,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
   - 静态展示：无 hover/focus 态。
   - closable：关闭图标 hover 加深；整体不可聚焦，关闭图标可聚焦。
   - checkable：未选中为 `light/grey`，选中为 `solid/primary`；hover 有底色反馈；可聚焦，焦点环用 `--cd-color-focus`。
-- **可视密度**：默认行高紧凑，文本超长由 `cd-tag__content` 单行省略（配合 TagGroup 的 `width`）。
+- **可视密度**：默认行高紧凑，文本超长由 `cd-tag-content` 单行省略（配合 TagGroup 的 `width`）。
 - **动效**：选中/关闭仅用透明度与背景色过渡（120ms），`prefers-reduced-motion` 下禁用过渡。
 
 ## 3. 分层实现
@@ -219,7 +219,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/core`（`createTag`/`createTagGroup`）与 `@chenzy-design/svelte` 分层正确，纯展示形态零 core 依赖。
-- [ ] 类名前缀 `cd-`，BEM-like（`cd-tag`、`cd-tag__content`、`cd-tag__close`、`cd-tag--solid`、`cd-tag--checked` 等）。
+- [ ] 类名前缀 `cd-`，BEM-like（`cd-tag`、`cd-tag-content`、`cd-tag-close`、`cd-tag-solid`、`cd-tag`（选中态由消费方自管，无内置修饰类） 等）。
 - [ ] 所有色值/尺寸经 `--cd-tag-*` 组件 token 消费 Alias，无写死值；亮/暗主题通过。
 - [ ] API 遵循全局约定：`checked + on:change`、`visible + on:visibleChange`，size/status 一致。
 - [ ] closable：关闭按钮可聚焦、键盘可触发、`aria-label` 经 i18n 插值；`on:close` 可 `preventDefault`。

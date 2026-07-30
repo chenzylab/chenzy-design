@@ -658,7 +658,7 @@
 
 <div
   class="cd-ai-chat-input {className}"
-  class:cd-ai-chat-input--round={round}
+  class:cd-ai-chat-input-round={round}
   {style}
   bind:this={rootEl}
 >
@@ -733,7 +733,7 @@
         {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
           <div
             class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion--active={i === activeSuggestionIndex}
+            class:cd-ai-chat-input-suggestion-active={i === activeSuggestionIndex}
             role="option"
             aria-selected={i === activeSuggestionIndex}
             tabindex="-1"
@@ -759,7 +759,7 @@
         {#each skills as skill, i (skillLabel(skill) + i)}
           <div
             class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion--active={i === activeSkillIndex}
+            class:cd-ai-chat-input-suggestion-active={i === activeSkillIndex}
             role="option"
             aria-selected={i === activeSkillIndex}
             tabindex="-1"
@@ -796,7 +796,7 @@
       <button
         type="button"
         class="cd-ai-chat-input-template-btn"
-        class:cd-ai-chat-input-template-btn--active={templateOpen}
+        class:cd-ai-chat-input-template-btn-active={templateOpen}
         aria-expanded={templateOpen}
         aria-label={loc().t('AIChatInput.template')}
         onclick={toggleTemplate}
@@ -846,7 +846,7 @@
         <button
           type="button"
           class="cd-ai-chat-input-send"
-          class:cd-ai-chat-input-send--stop={generating}
+          class:cd-ai-chat-input-send-stop={generating}
           disabled={!generating && !computedCanSend}
           onclick={handleActionClick}
           title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
@@ -885,7 +885,7 @@
     transition: border-color var(--cd-ai-chat-input-motion-duration) ease;
   }
 
-  .cd-ai-chat-input--round {
+  .cd-ai-chat-input-round {
     border-radius: var(--cd-ai-chat-input-radius-round);
   }
 
@@ -1046,7 +1046,7 @@
     cursor: pointer;
   }
 
-  .cd-ai-chat-input-suggestion--active {
+  .cd-ai-chat-input-suggestion-active {
     background: var(--cd-ai-chat-input-suggestion-bg-active);
   }
 
@@ -1081,7 +1081,7 @@
   }
 
   .cd-ai-chat-input-template-btn:hover,
-  .cd-ai-chat-input-template-btn--active {
+  .cd-ai-chat-input-template-btn-active {
     background: var(--cd-ai-chat-input-template-bg-hover);
   }
 
@@ -1178,7 +1178,7 @@
     background: var(--cd-ai-chat-input-send-bg-hover);
   }
 
-  .cd-ai-chat-input-send--stop {
+  .cd-ai-chat-input-send-stop {
     background: var(--cd-ai-chat-input-stop-bg);
   }
 

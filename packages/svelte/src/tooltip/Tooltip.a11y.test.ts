@@ -21,7 +21,7 @@ describe('Tooltip a11y', () => {
     expect(tip).not.toBeNull();
     expect(tip?.textContent).toContain('Helpful hint');
 
-    const trigger = document.querySelector('.cd-tooltip__trigger') as HTMLElement | null;
+    const trigger = document.querySelector('.cd-tooltip-trigger') as HTMLElement | null;
     const describedby = trigger?.getAttribute('aria-describedby');
     expect(describedby).toBeTruthy();
     expect(describedby).toBe(tip?.id);

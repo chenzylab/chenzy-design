@@ -101,10 +101,10 @@
 </script>
 
 <!-- 默认触发器：复用 Input（镜像 Semi TimeInput：<Input hideSuffix suffix={IconClock}>）：可键入时间串 -->
-<div class="cd-time-picker__control" onclick={onClick} role="presentation">
+<div class="cd-time-picker-control" onclick={onClick} role="presentation">
   <Input
     bind:this={inputComp}
-    class="cd-time-picker__input"
+    class="cd-time-picker-input"
     {value}
     {placeholder}
     {size}
@@ -126,23 +126,23 @@
     onKeyDown={(e) => onKeydown?.(e)}
   >
     {#snippet suffix()}
-      <span class="cd-time-picker__icon" aria-hidden="true"><IconClock /></span>
+      <span class="cd-time-picker-icon" aria-hidden="true"><IconClock /></span>
     {/snippet}
   </Input>
 </div>
 
 <style>
-  .cd-time-picker__control {
+  .cd-time-picker-control {
     position: relative;
     inline-size: 100%;
   }
   /* 触发器输入框圆角对齐 Semi $radius-timePicker_input。
-     以 TimeInput 根 .cd-time-picker__control 为锚点（本组件内无 .cd-time-picker 祖先，那是 TimePicker 根），
-     .cd-time-picker__input 是传给本库 Input 的 class（子组件内部元素），按本库惯例用 :global 打洞。 */
-  .cd-time-picker__control :global(.cd-time-picker__input) {
+     以 TimeInput 根 .cd-time-picker-control 为锚点（本组件内无 .cd-time-picker 祖先，那是 TimePicker 根），
+     .cd-time-picker-input 是传给本库 Input 的 class（子组件内部元素），按本库惯例用 :global 打洞。 */
+  .cd-time-picker-control :global(.cd-time-picker-input) {
     border-radius: var(--cd-radius-time-picker-input);
   }
-  .cd-time-picker__icon {
+  .cd-time-picker-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -20,15 +20,15 @@
 </script>
 
 <div>
-  <CheckboxGroup options={plainOptions} defaultValue={['Semi D2C']} {onChange} ariaLabel="CheckboxGroup 示例" />
+  <CheckboxGroup options={plainOptions} defaultValue={['Semi D2C']} {onChange} aria-label="CheckboxGroup 示例" />
   <br /><br />
-  <CheckboxGroup options={optionsWithExtra} defaultValue={[]} {onChange} ariaLabel="带 extra 示例" />
+  <CheckboxGroup options={optionsWithExtra} defaultValue={[]} {onChange} aria-label="带 extra 示例" />
   <br /><br />
   <CheckboxGroup
     options={optionsWithDisabled}
     disabled
     defaultValue={['Photography']}
     {onChange}
-    ariaLabel="Checkbox 示例"
+    aria-label="Checkbox 示例"
   />
 </div>

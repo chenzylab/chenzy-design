@@ -152,7 +152,7 @@
         type="tertiary"
         theme="borderless"
         size="small"
-        ariaLabel={loc().t('Notification.closeText')}
+        aria-label={loc().t('Notification.closeText')}
         icon={closeIcon}
         onclick={handleCloseClick}
       />

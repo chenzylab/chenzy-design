@@ -22,7 +22,7 @@
 
 <div>
   <div style="padding-bottom: 8px; border-bottom: 1px solid var(--cd-color-border);">
-    <Checkbox {indeterminate} onChange={onCheckAllChange} checked={checkAll} ariaLabel="Checkbox 示例">
+    <Checkbox {indeterminate} onChange={onCheckAllChange} checked={checkAll} aria-label="Checkbox 示例">
       Check all
     </Checkbox>
   </div>
@@ -31,6 +31,6 @@
     options={plainOptions}
     value={checkedList}
     {onChange}
-    ariaLabel="CheckboxGroup 示例"
+    aria-label="CheckboxGroup 示例"
   />
 </div>

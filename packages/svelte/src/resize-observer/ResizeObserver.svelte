@@ -60,6 +60,17 @@
      */
     observeParent?: boolean;
     /**
+     * 观测「children 的首个元素」而非包裹元素本身（**对齐 Semi 语义**）。
+     * Semi 用 `React.cloneElement` 把 ref 注入唯一子元素，自身不产生 DOM、直接观测子元素；
+     * Svelte 无法向 snippet 注入 ref，但可复用本库 Dropdown 的 cloneElement 等价手法——
+     * 包裹元素仍在 DOM 里（`display: contents` 不生成盒子，故改用不影响布局的
+     * `display: block; width/height: 100%` 透传），但**观测目标取 firstElementChild**，
+     * 即用户真实元素，尺寸语义与 Semi 一致。
+     * 与 multiple / observeParent 互斥（优先级：multiple > observeChild > observeParent）。
+     * 子元素缺失时回退观测包裹元素。
+     */
+    observeChild?: boolean;
+    /**
      * 原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize，
      * 用 getBoundingClientRect 近似重测（精度较低）。默认 false：不支持环境静默降级。
      */
@@ -89,6 +100,7 @@
     observeOnMount = true,
     tag = 'div',
     observeParent = false,
+    observeChild = false,
     fallbackToWindow = false,
     onResize,
     onFirstMeasure,
@@ -157,6 +169,11 @@
       // 多目标：观测包裹元素的所有直接子元素（同一 observer 实例复用）。
       const targets = Array.from(node.children);
       for (const child of targets) ro.observe(child);
+    } else if (observeChild) {
+      // 观测 children 首个元素（对齐 Semi cloneElement 注入 ref 的语义）。
+      // 缺子元素时回退观测包裹元素，保证仍有尺寸输出。
+      const child = node.firstElementChild;
+      ro.observe(child ?? node);
     } else if (observeParent) {
       // 观测父节点（对标 Semi observeParent）。父节点缺失时静默不观测。
       const parent = node.parentElement;

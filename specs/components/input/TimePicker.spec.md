@@ -216,7 +216,7 @@ TimePicker 是时间选择控件，用于在表单中精确选取时、分、秒
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/core` / `@chenzy-design/svelte`；core 暴露 `createTimePicker`。
-- [ ] 所有类名 `cd-timepicker` BEM-like，无写死样式值，仅消费 Alias/Component Token。
+- [ ] 所有类名 `cd-time-picker` BEM-like，无写死样式值，仅消费 Alias/Component Token。
 - [ ] API 遵循 `value`+`on:change`、`open`+`on:openChange`、`size`、`status` 约定。
 - [ ] 12/24 小时制与 `use12Hours` AM/PM 列正确，hourCycle 由 locale 驱动。
 - [ ] `hourStep/minuteStep/secondStep` 与 `disabledHours/Minutes/Seconds` 级联生效。

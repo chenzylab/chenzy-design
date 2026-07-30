@@ -15,5 +15,5 @@
 </script>
 
 <div style="width:260px">
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" treeDataSimpleJson={json} defaultExpandAll ariaLabel="简单 JSON 树" />
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" treeDataSimpleJson={json} defaultExpandAll aria-label="简单 JSON 树" />
 </div>

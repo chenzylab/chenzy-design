@@ -219,7 +219,7 @@ Skeleton 为加载状态指示，遵循 WAI-ARIA 加载/忙碌语义。
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/svelte`，导出 `Skeleton` 及 5 个子组件，支持按需 tree-shake。
-- [ ] 类名遵循 `cd-` BEM：`cd-skeleton`、`cd-skeleton__title`、`cd-skeleton--active` 等。
+- [ ] 类名遵循 `cd-` BEM：`cd-skeleton`、`cd-skeleton-title`、`cd-skeleton-active` 等。
 - [ ] 全部颜色 / 圆角 / 间距 / 动画时长经 `--cd-skeleton-*` token，且仅引用 Alias，无写死值。
 - [ ] API 遵循约定：受控 `loading`、尺寸 `small|default|large`（Avatar/Button）；无需 status（纯展示）。
 - [ ] `loading` 切换正确渲染占位 / 内容；`unmountPlaceholder` 行为符合预期。

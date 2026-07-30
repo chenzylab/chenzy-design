@@ -56,7 +56,7 @@ describe('SideBar a11y — detail routing', () => {
     // main 视图的 Options tablist 不渲染。
     expect(container.querySelector('[role="tablist"]')).toBeNull();
     // 返回按钮 aria-label 来自 en_US locale（SideBar.back = "Back"）。
-    const back = container.querySelector('.cd-sidebar__back') as HTMLElement | null;
+    const back = container.querySelector('.cd-sidebar-back') as HTMLElement | null;
     expect(back?.getAttribute('aria-label')).toBe('Back');
     // detail header / content 按 mode 渲染。
     expect(container.querySelector('[data-testid="detail-title"]')?.textContent).toContain(
@@ -73,7 +73,7 @@ describe('SideBar a11y — detail routing', () => {
     const { container } = renderWithLocale(Fixture, {
       props: { mode: 'code', onBackWard: onBack },
     });
-    (container.querySelector('.cd-sidebar__back') as HTMLElement).click();
+    (container.querySelector('.cd-sidebar-back') as HTMLElement).click();
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(onBack.mock.calls[0]?.[1]).toBe('code');
   });

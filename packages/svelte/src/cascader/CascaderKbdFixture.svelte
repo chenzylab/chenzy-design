@@ -27,5 +27,5 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <Cascader {treeData} ariaLabel="Region" placeholder="Select region" />
+  <Cascader {treeData} aria-label="Region" placeholder="Select region" />
 </LocaleProvider>

@@ -221,7 +221,7 @@
 
 ## 12. 验收标准 Checklist
 
-- [ ] 类名前缀 `cd-`，BEM-like：`cd-image`、`cd-image__img`、`cd-image__placeholder`、`cd-image__error`、`cd-image__mask`、`cd-image-preview`、`cd-image-preview__toolbar`、`cd-image--{loading|loaded|error}`。
+- [ ] 类名前缀 `cd-`，单连字符（对齐 Semi）：`cd-image`、`cd-image-img`、`cd-image-img-error`（占位态无独立类，由 Skeleton 子组件承担）、`cd-image-img-error`、`cd-image-mask`、`cd-image-preview`、`cd-image-preview-footer`、`cd-image-{loading|loaded|error}`。
 - [ ] 仅消费 `--cd-` Alias/Component Token，无写死颜色/尺寸。
 - [ ] API 遵循一致性约定：预览显隐 `open` + `on:openChange`；预览组翻页 `activeIndex` + `on:change`。
 - [ ] headless 逻辑在 `@chenzy-design/core` `createImage`/`createImagePreview`，复用 useFocusTrap/useDismiss/useScrollLock/useLiveAnnouncer/useRovingTabindex/useId。

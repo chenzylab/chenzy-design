@@ -24,7 +24,7 @@ const plainColumns = [
 describe('Table a11y', () => {
   it('纯展示表：原生 table 语义（无 role=grid），无 axe violations', async () => {
     const { container } = renderWithLocale(Table, {
-      props: { columns: plainColumns, dataSource, ariaLabel: 'Users' },
+      props: { columns: plainColumns, dataSource, 'aria-label': 'Users' },
     });
     const table = container.querySelector('table');
     expect(table).not.toBeNull();
@@ -42,7 +42,7 @@ describe('Table a11y', () => {
       { key: 'age', dataIndex: 'age', title: 'Age', sorter: true },
     ];
     const { container } = renderWithLocale(Table, {
-      props: { columns: sortableColumns, dataSource, ariaLabel: 'Users grid' },
+      props: { columns: sortableColumns, dataSource, 'aria-label': 'Users grid' },
     });
     const grid = container.querySelector('[role="grid"]');
     expect(grid).not.toBeNull();
@@ -58,7 +58,7 @@ describe('Table a11y', () => {
       props: {
         columns: plainColumns,
         dataSource,
-        ariaLabel: 'Selectable',
+        'aria-label': 'Selectable',
         rowSelection: {},
       },
     });

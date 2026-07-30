@@ -111,7 +111,7 @@ Radio 不可用。
 | addonClassName | 包裹内容容器的样式类名 | string | - |
 | addonId | addon 节点 id，aria-labelledby 指向这个 id，若无设置会随机生成一个 id | string | - |
 | addonStyle | 包裹内容容器的内联样式 | string | - |
-| ariaLabel | Radio 的 label | string | - |
+| aria-label | Radio 的 label | string | - |
 | autoFocus | 自动获取焦点 | boolean | false |
 | checked | 指定当前是否选中 | boolean | false |
 | class | 样式类名 | string | - |
@@ -135,7 +135,7 @@ Radio 不可用。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | RadioGroup 的 label | string | - |
+| aria-label | RadioGroup 的 label | string | - |
 | buttonSize | type='button' 的 radio 尺寸，可选值为：`small`、`middle`、`large` | string | 'middle' |
 | class | 样式类名 | string | - |
 | defaultValue | 默认选中的值 | string \| number | - |
@@ -162,7 +162,7 @@ Radio 不可用。
 
 ### ARIA
 
-- `ariaLabel`：用于解释 Radio 或 RadioGroup 的作用。
+- `aria-label`：用于解释 Radio 或 RadioGroup 的作用。
 - `aria-labelledby` 默认指向 addon 节点，用于解释 Radio 的内容。
 - `aria-describedby` 默认指向 extra 节点，用于补充解释 Radio 的内容。
 - 全类型（default / button / card / pureCard）均用原生 `<input type="radio">`（`mode="advanced"` 时为 `<input type="checkbox">`）；button/card 型时 input 绝对定位盖满容器承接点击与键盘。

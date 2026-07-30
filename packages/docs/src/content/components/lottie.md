@@ -79,9 +79,9 @@ import { Lottie } from '@chenzy-design/svelte';
 
 ### 获取全局 Lottie
 
-使用 `getLottie` Props 获取全局 lottie，也可以使用具名导出 `getLottie` 来获取全局 lottie。
+使用 `getLottie` Props 获取全局 lottie，也可以使用静态方法 `Lottie.getLottie` 来获取全局 lottie。
 
-> Semi 通过组件静态方法 `Lottie.getLottie` 获取全局 lottie；Svelte 组件无法挂载静态方法，本库等价能力以具名导出 `getLottie()` 提供（返回 `Promise`，内部动态 import `lottie-web`）。
+> 本库 `Lottie.getLottie()` 返回 `Promise`（内部动态 import `lottie-web`，避免 SSR 引入 window 依赖）；亦可用等价的具名导出 `getLottie`。
 
 关于全局 lottie 上含有的方法，更多信息可以参考 `lottie-web` [文档](https://github.com/airbnb/lottie-web?tab=readme-ov-file#usage)
 
@@ -99,11 +99,11 @@ import { Lottie } from '@chenzy-design/svelte';
 | style | 样式 | string | - |
 | width | 容器宽度（`params.container` 存在时不生效） | string | - |
 
-### 具名导出
+### 静态方法
 
 | 名称 | 说明 | 类型 |
 | --- | --- | --- |
-| getLottie | 获取全局 lottie 包（含 `setQuality` 等全局方法） | `() => Promise<LottiePlayer>` |
+| Lottie.getLottie | 获取全局 lottie 包（含 `setQuality` 等全局方法）；亦可用具名导出 `getLottie` | `() => Promise<LottiePlayer>` |
 
 ## 无障碍
 

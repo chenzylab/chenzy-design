@@ -37,7 +37,7 @@ export const meta = {
     {
       name: 'colorStringToValue',
       signature: '(raw: string) => ColorValue',
-      desc: '常见颜色字符串（#39c5bb / rgb(57,197,187) / rgba(...) / hsv(176,71,77)）转 ColorValue 三态对象；对齐 Semi 静态方法 ColorPicker.colorStringToValue，本库为具名导出（Svelte 组件无静态方法）',
+      desc: '常见颜色字符串（#39c5bb / rgb(57,197,187) / rgba(...) / hsv(176,71,77)）转 ColorValue 三态对象；1:1 对齐 Semi 静态方法 ColorPicker.colorStringToValue（Object.assign 复合导出，同 HotKeys.Keys）；亦可用等价具名导出',
     },
   ],
   tokens: [

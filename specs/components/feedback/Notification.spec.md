@@ -120,7 +120,7 @@ Notification（通知提醒框）是一种**命令式**的全局反馈组件，�
 | `--cd-notification-enter-duration` | `var(--cd-motion-duration-mid)` | 进入动画时长 |
 | `--cd-notification-leave-duration` | `var(--cd-motion-duration-fast)` | 离开动画时长 |
 
-类名：`cd-notification`（容器项）、`cd-notification__icon`、`cd-notification__body`、`cd-notification__title`、`cd-notification__content`、`cd-notification__close`、`cd-notification__footer`、`cd-notification__progress`、`cd-notification-list`（按 placement 的堆叠容器）、修饰符 `cd-notification--success/info/warning/error`、`cd-notification--dark`、`cd-notification-list--topRight` 等。
+类名：`cd-notification-notice`（容器项）、`cd-notification-notice-icon`、`cd-notification-notice-content`、`cd-notification-title`、`cd-notification-notice-content-wrapper`、`cd-notification-notice-icon-close`、`cd-notification-notice-content`（无独立 footer 区，按 Semi 由 content 承载）、`cd-notification-notice`（进度条已按 Semi 移除，见 notification-semi-rewrite-normal-not-dark）、`cd-notification-list`（按 placement 的堆叠容器）、修饰符 `cd-notification-success/info/warning/error`、`cd-notification-notice`（暗色由 token 切换，无独立修饰类）、`cd-notification-list-topRight` 等。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
@@ -214,7 +214,7 @@ Notification（通知提醒框）是一种**命令式**的全局反馈组件，�
 - [ ] a11y：type→`role`/`aria-live` 极性映射正确，`aria-labelledby/describedby` 关联，关闭按钮有 i18n aria-label，jest-axe 零违规，非模态不抢焦点。
 - [ ] reduced-motion 降级、RTL 镜像、dark 主题均正确。
 - [ ] 所有可见文案走 i18n（key 形如 `Notification.*`），无硬编码；相对时间/数字用 Intl。
-- [ ] 仅消费 `--cd-` Alias/Component Token，无写死颜色/尺寸；类名遵循 `cd-notification` BEM。
+- [ ] 仅消费 `--cd-` Alias/Component Token，无写死颜色/尺寸；类名遵循 `cd-notification-notice` BEM。
 - [ ] 破坏性操作不进入 Notification；`error` 仅事后告知，footer 无一键不可逆操作。
 - [ ] destroyOnClose 生效，portal 按需创建/销毁，无内存泄漏。
 - [ ] Perf Budget 达标（svelte ≤4.5KB / core ≤2.5KB gzip），open→可见 <1 帧。

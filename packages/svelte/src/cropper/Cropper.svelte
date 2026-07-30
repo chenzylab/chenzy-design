@@ -66,7 +66,7 @@
     /** 缩放变化回调。 */
     onZoomChange?: (zoom: number) => void;
     /** 容器 aria-label（未设时走 locale Cropper.container）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     class?: string;
     style?: string;
     children?: Snippet;
@@ -89,7 +89,7 @@
     preview,
     imgProps,
     onZoomChange,
-    ariaLabel,
+    'aria-label': ariaLabel,
     class: className,
     style,
   }: Props = $props();

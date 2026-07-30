@@ -87,7 +87,7 @@ Icon 是纯展示组件，**无交互逻辑、无键盘处理、无浮层**，�
 | `--cd-icon-spin-duration` | `1s` | spin 动画周期 |
 | `--cd-icon-spin-timing` | `linear` | spin 缓动 |
 
-类名：根 `.cd-icon`，修饰 `.cd-icon--spin`、`.cd-icon--<size>`、`.cd-icon--status-<status>`。所有 `fill`/`stroke` 默认 `currentColor`，由 `color` 决定。暗色模式无需特殊处理（继承文本色 + 语义色已含主题切换）。
+类名：根 `.cd-icon`，修饰 `.cd-icon-animation-rotate`（spin 动画）、`.cd-icon-<size>`、`.cd-icon-status-<status>`。所有 `fill`/`stroke` 默认 `currentColor`，由 `color` 决定。暗色模式无需特殊处理（继承文本色 + 语义色已含主题切换）。
 
 ## 6. 无障碍
 
@@ -100,7 +100,7 @@ Icon 是纯展示组件，**无交互逻辑、无键盘处理、无浮层**，�
 
 - **对比度**：作为信息载体的语义图标需对背景满足 ≥3:1（WCAG 1.4.11 非文本对比度）；status 语义色 token 已按此校准。装饰性图标不强制。
 - **reduced-motion**：`@media (prefers-reduced-motion: reduce)` 下禁用 `spin` 动画（`animation: none`），保持静态以免前庭不适。
-- **RTL**：方向性图标（箭头、返回、列表缩进等）在 `[dir="rtl"]` 下需水平镜像，由 `@chenzy-design/icons` 标注 `directional` 元数据，容器加 `.cd-icon--flip-rtl` 应用 `transform: scaleX(-1)`；非方向性图标不翻转。
+- **RTL**：方向性图标（箭头、返回、列表缩进等）在 `[dir="rtl"]` 下需水平镜像，由 `@chenzy-design/icons` 标注 `directional` 元数据，容器加 RTL 镜像类（未实现，规划中）应用 `transform: scaleX(-1)`；非方向性图标不翻转。
 - **焦点管理**：Icon 本身不可聚焦，不进入 tab 序列；不承担焦点逻辑。
 - 不依赖颜色单独传达含义（status 色须配合形状/文案，符合 1.4.1）。
 

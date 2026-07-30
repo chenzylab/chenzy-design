@@ -10,7 +10,7 @@
 
   interface Props {
     /** 分裂按钮组语义标签（root aria-label，对齐 Semi）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根元素自定义类名（透传）。 */
     class?: string;
     /** 根元素自定义内联样式（透传）。 */
@@ -19,7 +19,7 @@
     children?: Snippet;
   }
 
-  let { ariaLabel, class: className, style, children }: Props = $props();
+  let { 'aria-label': ariaLabel, class: className, style, children }: Props = $props();
 
   // 对齐 Semi componentDidMount + MutationObserver：为首/末 button 加圆角 class。
   function splitClasses(node: HTMLElement) {

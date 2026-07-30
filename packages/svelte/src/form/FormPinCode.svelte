@@ -41,7 +41,7 @@
       {...(control.format !== undefined ? { format: control.format as NonNullable<PinCodeProps['format']> } : {})}
       {...(control.size !== undefined ? { size: control.size as NonNullable<PinCodeProps['size']> } : {})}
       {...(control.autoFocus !== undefined ? { autoFocus: control.autoFocus as NonNullable<PinCodeProps['autoFocus']> } : {})}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}

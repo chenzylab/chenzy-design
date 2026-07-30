@@ -15,6 +15,6 @@
       { label: 'Apple', value: 'a' },
       { label: 'Banana', value: 'b' },
     ]}
-    ariaLabel="Fruits"
+    aria-label="Fruits"
   />
 </LocaleProvider>

@@ -14,7 +14,7 @@
 
 <div>
   <div style="margin-bottom: 20px;">
-    <Checkbox {checked} {disabled} {onChange} ariaLabel="Checkbox 示例">
+    <Checkbox {checked} {disabled} {onChange} aria-label="Checkbox 示例">
       {label}
     </Checkbox>
   </div>

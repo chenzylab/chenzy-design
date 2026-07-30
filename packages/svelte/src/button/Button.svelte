@@ -32,7 +32,7 @@
     /** 圆形按钮（border-radius:50%），配合 icon-only 呈正圆。 */
     circle?: boolean;
     /** 无障碍名；纯图标按钮必填（透传 aria-label）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 图标内容（Snippet）。 */
     icon?: Snippet;
     /** 图标相对文字位置。 */
@@ -67,7 +67,7 @@
     colorful: colorfulProp,
     htmlType = 'button',
     circle = false,
-    ariaLabel,
+    'aria-label': ariaLabel,
     icon,
     iconPosition = 'left',
     noHorizontalPadding = false,

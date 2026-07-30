@@ -182,7 +182,7 @@ Avatar 主体为**纯展示组件**，可省 core；但图片加载状态机与 
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/svelte`（Group 同包），core 逻辑位于 `@chenzy-design/core` 的 `createAvatarImage` / `createAvatarGroup`
-- [ ] 类名遵循 `cd-avatar` / `cd-avatar__img|text|icon|dot|mask` / `cd-avatar--circle|square|small|...`，Group 用 `cd-avatar-group`
+- [ ] 类名遵循 `cd-avatar` / `cd-avatar-img|text|icon|dot|mask` / `cd-avatar-circle|square|small|...`，Group 用 `cd-avatar-group`
 - [ ] 所有样式仅消费 `--cd-avatar-*` / Alias token，无写死颜色或尺寸字面量
 - [ ] API 遵循一致性约定：Group 浮层 `open + on:openChange`，size 枚举含 small|default|large（并扩展 xs/xl），status: default|warning|error
 - [ ] 内容降级链 src→text→icon→占位 完整且失败无布局抖动

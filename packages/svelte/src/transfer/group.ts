@@ -12,20 +12,20 @@ export function normalizeData(
   if (isGrouped(dataSource)) {
     const out: TransferItem[] = [];
     for (const grp of dataSource) {
-      for (const item of grp.items) out.push({ ...item, group: grp.title });
+      for (const item of grp.children) out.push({ ...item, group: grp.title });
     }
     return out;
   }
   return dataSource;
 }
 
-/** A grouped data source is an array whose entries have `items` (not `key`). */
+/** A grouped data source is an array whose entries have `children` (not `key`)——对齐 Semi GroupItem。 */
 export function isGrouped(
   dataSource: TransferItem[] | TransferGroup[],
 ): dataSource is TransferGroup[] {
   return (
     dataSource.length > 0 &&
-    Array.isArray((dataSource[0] as TransferGroup).items) &&
+    Array.isArray((dataSource[0] as TransferGroup).children) &&
     (dataSource[0] as TransferItem).key === undefined
   );
 }

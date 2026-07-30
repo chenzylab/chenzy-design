@@ -105,7 +105,7 @@ describe('AIChatInput · 发送按钮态', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { generating: true } });
     await flush(container);
     const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
-    expect(btn.classList.contains('cd-ai-chat-input-send--stop')).toBe(true);
+    expect(btn.classList.contains('cd-ai-chat-input-send-stop')).toBe(true);
     expect(btn.getAttribute('aria-label')).toBe('Stop generating');
     expect(btn.disabled).toBe(false);
   });

@@ -105,7 +105,7 @@
       hsva={currentColor.hsva}
       {width}
       {height}
-      ariaLabel={loc().t('ColorPicker.saturation')}
+      aria-label={loc().t('ColorPicker.saturation')}
       onChange={({ s, v }) =>
         foundation.handleChange(
           { h: currentColor.hsva.h, s, v, a: currentColor.hsva.a },
@@ -116,7 +116,7 @@
     <ColorSlider
       hue={currentColor.hsva.h}
       {width}
-      ariaLabel={loc().t('ColorPicker.hue')}
+      aria-label={loc().t('ColorPicker.hue')}
       onChange={(h) => foundation.handleChangeH(h)}
     />
 
@@ -124,7 +124,7 @@
       <AlphaSlider
         hsva={currentColor.hsva}
         {width}
-        ariaLabel={loc().t('ColorPicker.alpha')}
+        aria-label={loc().t('ColorPicker.alpha')}
         onChange={(a) => foundation.handleChangeA(a)}
       />
     {/if}

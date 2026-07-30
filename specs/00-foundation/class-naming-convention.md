@@ -1,6 +1,9 @@
 # CSS class 命名约定
 
-> 状态：**约定已定，全量统一待独立 PR 执行**（2026-07-28 用户拍板「独立 PR，全量统一」）。
+> 状态：**已全量统一完成**（2026-07-30）。全库 `cd-*` 类名零 `__`/`--` 残留，
+> 分 6 批执行（breadcrumb+nav / tag / tabs / tree+tree-select / sidebar / 其余 21 组件收尾），
+> 每批逐个核对 Semi scss 真实类名后映射语义（非机械去下划线）。
+> 验证：全库 213 文件 2050 passed、三包 typecheck 0 err、lint 0 warning、真机抽验样式无回归。
 
 ## 约定
 
@@ -21,7 +24,7 @@ cd-<component>-<element>[-<modifier>]
 3. **有真实代价**——写 DatePicker 的 demo CSS 时照 Semi 的 `semi-tabs-content` 推出
    `cd-tabs-content`，实际是 `cd-tabs__content`，选择器静默不匹配。消费方会反复踩。
 
-## 待统一清单（27 个组件，1153 处 `__` + 441 处 `--`）
+## ~~待统一清单~~（已全部完成，27 个组件 / 1153 处 `__` + 441 处 `--` 均已清零）
 
 按出现次数：nav(165)、tabs(151)、tree-select(116)、select(107)、tree(97)、breadcrumb(78)、
 sidebar-mcp(57)、sidebar-annotation(51)、color-picker(45)、card(31)、input-wrapper(29)、
@@ -37,13 +40,13 @@ autocomplete(2)、notification-list(1)。
 | BEM 原名 | 折平后 | 冲突方所在 | 性质 |
 |---|---|---|---|
 | ~~`cd-select__list`~~ | `cd-select-list` | 同在 Select.svelte | ~~真冲突~~ **误报，已折平**：另一处 `cd-select-list` 是 `useId('cd-select-list')` 的 **id 前缀**（`useId` 还会加唯一后缀），不是 class；且 id 与 class 落在同一元素上，命名反而更一致。Select 已于 2026-07-29 全量折平（46 个类 / 160 处引用），全库测试 2029 passed |
-| `cd-tree-select__panel` | `cd-tree-select-panel` | 同组件 | 需确认是否真冲突 |
+| ~~`cd-tree-select__panel`~~ | `cd-tree-select-panel` | 同组件 | ~~需确认~~ **误报，已折平**：另一处是 `useId('cd-tree-select-panel')` 的 **id 前缀**（会加唯一后缀），非 class，且落在同一元素上。2026-07-30 已折平 |
 | `cd-slider__handle` | `cd-slider-handle` | PreviewFooter vs Slider | 跨组件同前缀，非真冲突 |
 | `cd-slider__rail` | `cd-slider-rail` | 同上 | 同上 |
 | `cd-slider__track` | `cd-slider-track` | 同上 | 同上 |
 | `cd-divider--vertical` | `cd-divider-vertical` | PreviewFooter vs Divider | 跨组件同前缀 |
-| `cd-ai-dialogue-box--error` | `cd-ai-dialogue-box-error` | 同组件 | 需确认 |
-| `cd-ai-dialogue-box-reference--text` | `cd-ai-dialogue-box-reference-text` | 同组件 | 需确认 |
+| `cd-ai-dialogue-box--error` | ~~`cd-ai-dialogue-box-error`~~ → **`cd-ai-dialogue-box-is-error`** | 同组件 | **真冲突，已避开**：`-error` 已被「错误文案 span」占用（有 color:danger 规则），根节点修饰符改用 `-is-error`。2026-07-30 |
+| `cd-ai-dialogue-box-reference--text` | ~~`cd-ai-dialogue-box-reference-text`~~ → **`cd-ai-dialogue-box-reference-text-only`** | 同组件 | **真冲突，已避开**：`-reference-text` 已被文本 span 占用（line-clamp 规则），容器「纯文本态」修饰符改名并同步样式规则。2026-07-30 |
 
 **盲目 `sed 's/__/-/'` 会把两个不同元素静默合并成同一个类**（如 Select 的两处），
 样式互相污染且不报错——必须逐组件核对后改名。

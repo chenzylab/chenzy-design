@@ -12,7 +12,7 @@ import Sider from './Sider.svelte';
 describe('Layout 家族 props 透传（对齐 Semi）', () => {
   it('Layout：style / aria-label / role 落到 section', () => {
     const { container } = renderWithLocale(Layout, {
-      props: { style: 'background: red', ariaLabel: '页面', role: 'region' },
+      props: { style: 'background: red', 'aria-label': '页面', role: 'region' },
     });
     const el = container.querySelector('section')!;
     expect(el.getAttribute('style')).toContain('background: red');
@@ -22,7 +22,7 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
 
   it('Header：style / aria-label 透传到 header', () => {
     const { container } = renderWithLocale(Header, {
-      props: { style: 'background: blue', ariaLabel: '顶部' },
+      props: { style: 'background: blue', 'aria-label': '顶部' },
     });
     const el = container.querySelector('header')!;
     expect(el.getAttribute('style')).toContain('background: blue');
@@ -40,7 +40,7 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
 
   it('Footer：style / aria-label 透传到 footer', () => {
     const { container } = renderWithLocale(Footer, {
-      props: { style: 'background: gray', ariaLabel: '底部' },
+      props: { style: 'background: gray', 'aria-label': '底部' },
     });
     const el = container.querySelector('footer')!;
     expect(el.getAttribute('style')).toContain('background: gray');
@@ -49,7 +49,7 @@ describe('Layout 家族 props 透传（对齐 Semi）', () => {
 
   it('Sider：style / aria-label / role 透传到 aside，内含 children 容器', () => {
     const { container } = renderWithLocale(Sider, {
-      props: { style: 'background: gold', ariaLabel: '侧栏', role: 'navigation' },
+      props: { style: 'background: gold', 'aria-label': '侧栏', role: 'navigation' },
     });
     const el = container.querySelector('aside')!;
     expect(el.getAttribute('style')).toContain('background: gold');

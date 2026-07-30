@@ -21,7 +21,7 @@ describe('SideBarContainer a11y', () => {
 
     // 关闭按钮 aria-label 来自 en_US locale（SideBar.close = "Close"）。
     const closeBtn = container.querySelector(
-      '.cd-sidebar-container__close',
+      '.cd-sidebar-container-close',
     ) as HTMLElement | null;
     expect(closeBtn?.getAttribute('aria-label')).toBe('Close');
 
@@ -33,7 +33,7 @@ describe('SideBarContainer a11y', () => {
       props: { visible: true, title: 'Resizable panel', minWidth: 200, maxWidth: 500 },
     });
     const handle = container.querySelector(
-      '.cd-sidebar-container__handle',
+      '.cd-sidebar-container-handle',
     ) as HTMLElement | null;
     expect(handle).not.toBeNull();
     expect(handle?.getAttribute('role')).toBe('separator');
@@ -50,7 +50,7 @@ describe('SideBarContainer a11y', () => {
     const { container } = renderWithLocale(SideBarContainer, {
       props: { visible: true, title: 'Static panel', resizable: false },
     });
-    expect(container.querySelector('.cd-sidebar-container__handle')).toBeNull();
+    expect(container.querySelector('.cd-sidebar-container-handle')).toBeNull();
   });
 
   it('showClose=false + 无 title：dialog 用 aria-label 兜底提供可访问名', async () => {

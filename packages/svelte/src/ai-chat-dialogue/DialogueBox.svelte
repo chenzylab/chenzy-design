@@ -135,7 +135,7 @@
     <img class="cd-ai-dialogue-box-avatar" src={role.avatar} alt="" />
   {:else}
     <div
-      class="cd-ai-dialogue-box-avatar cd-ai-dialogue-box-avatar--text"
+      class="cd-ai-dialogue-box-avatar cd-ai-dialogue-box-avatar-text"
       style={role?.color ? `background:${role.color}` : undefined}
       aria-hidden="true"
     >
@@ -175,7 +175,7 @@
           <button
             type="button"
             class="cd-ai-dialogue-box-reference"
-            class:cd-ai-dialogue-box-reference--text={!!ref.content && !ref.name}
+            class:cd-ai-dialogue-box-reference-text-only={!!ref.content && !ref.name}
             title={ref.name ?? ref.content ?? ''}
             onclick={() => onReferenceClick?.(ref)}
           >
@@ -212,10 +212,10 @@
 
 <div
   class="cd-ai-dialogue-box"
-  class:cd-ai-dialogue-box--user={isUser}
-  class:cd-ai-dialogue-box--leftAlign={align === 'leftAlign'}
-  class:cd-ai-dialogue-box--error={isError}
-  class:cd-ai-dialogue-box--bubble={showBubble}
+  class:cd-ai-dialogue-box-user={isUser}
+  class:cd-ai-dialogue-box-leftAlign={align === 'leftAlign'}
+  class:cd-ai-dialogue-box-is-error={isError}
+  class:cd-ai-dialogue-box-bubble={showBubble}
 >
   {#if selecting}
     <input
@@ -272,12 +272,12 @@
     align-items: flex-start;
   }
 
-  .cd-ai-dialogue-box--user {
+  .cd-ai-dialogue-box-user {
     flex-direction: row-reverse;
   }
 
-  .cd-ai-dialogue-box--leftAlign,
-  .cd-ai-dialogue-box--leftAlign.cd-ai-dialogue-box--user {
+  .cd-ai-dialogue-box-leftAlign,
+  .cd-ai-dialogue-box-leftAlign.cd-ai-dialogue-box-user {
     flex-direction: row;
   }
 
@@ -289,7 +289,7 @@
     object-fit: cover;
   }
 
-  .cd-ai-dialogue-box-avatar--text {
+  .cd-ai-dialogue-box-avatar-text {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,13 +309,13 @@
     margin-bottom: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-box--bubble .cd-ai-dialogue-box-content {
+  .cd-ai-dialogue-box-bubble .cd-ai-dialogue-box-content {
     padding: var(--cd-spacing-tight);
     border-radius: var(--cd-border-radius-large, var(--cd-border-radius-medium));
     background: var(--cd-chat-bubble-assistant-bg, var(--cd-color-fill-0));
   }
 
-  .cd-ai-dialogue-box--bubble.cd-ai-dialogue-box--user .cd-ai-dialogue-box-content {
+  .cd-ai-dialogue-box-bubble.cd-ai-dialogue-box-user .cd-ai-dialogue-box-content {
     background: var(--cd-chat-bubble-user-bg, var(--cd-color-primary-light-default));
   }
 
@@ -378,7 +378,7 @@
     border-color: var(--cd-color-primary);
   }
 
-  .cd-ai-dialogue-box-reference--text {
+  .cd-ai-dialogue-box-reference-text-only {
     max-width: 320px;
   }
 

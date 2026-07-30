@@ -332,7 +332,7 @@
         <Input
           {size}
           disabled={disabled || pageCount === 1}
-          ariaLabel={loc().t('Pagination.jumpTo')}
+          aria-label={loc().t('Pagination.jumpTo')}
           value={jumpValue}
           onInput={(v) => (jumpValue = v)}
           onEnterPress={jump}
@@ -449,7 +449,7 @@
             {size}
             {disabled}
             clickToHide
-            ariaLabel={loc().t('Pagination.itemsPerPage')}
+            aria-label={loc().t('Pagination.itemsPerPage')}
             position={sizeChangerPlacement}
             optionList={sizeOptions}
             value={currentSize}

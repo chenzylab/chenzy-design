@@ -28,7 +28,7 @@
     {value}
     {data}
     defaultActiveFirstOption
-    ariaLabel="Fruit"
+    aria-label="Fruit"
     onChange={filter}
     onSelect={(v) => {
       lastSelected = v;

@@ -133,7 +133,7 @@
             type="tertiary"
             theme="borderless"
             size="small"
-            ariaLabel={loc().t('Toast.close')}
+            aria-label={loc().t('Toast.close')}
             icon={closeIcon}
             onclick={handleClose}
           />

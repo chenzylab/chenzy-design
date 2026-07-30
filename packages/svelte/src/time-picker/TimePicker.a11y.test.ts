@@ -12,7 +12,7 @@ describe('TimePicker a11y', () => {
     const { container } = renderWithLocale(TimePicker, {
       props: { ariaLabelledby: 'lbl' },
     });
-    const input = container.querySelector('.cd-time-picker__input input');
+    const input = container.querySelector('.cd-time-picker-input input');
     expect(input).not.toBeNull();
     expect(input?.getAttribute('aria-haspopup')).toBe('dialog');
     expect(input?.getAttribute('aria-expanded')).toBe('false');
@@ -24,8 +24,8 @@ describe('TimePicker a11y', () => {
     const utc = new Date('2026-01-01T00:00:00.000Z');
     const r0 = renderWithLocale(TimePicker, { props: { value: utc, timeZone: 0, format: 'HH:mm:ss' } });
     const r8 = renderWithLocale(TimePicker, { props: { value: utc, timeZone: 8, format: 'HH:mm:ss' } });
-    const v0 = (r0.container.querySelector('.cd-time-picker__input input') as HTMLInputElement)?.value;
-    const v8 = (r8.container.querySelector('.cd-time-picker__input input') as HTMLInputElement)?.value;
+    const v0 = (r0.container.querySelector('.cd-time-picker-input input') as HTMLInputElement)?.value;
+    const v8 = (r8.container.querySelector('.cd-time-picker-input input') as HTMLInputElement)?.value;
     const h0 = Number(v0?.slice(0, 2));
     const h8 = Number(v8?.slice(0, 2));
     expect((h0 + 8) % 24).toBe(h8);
@@ -52,7 +52,7 @@ describe('TimePicker a11y', () => {
     renderWithLocale(TimePicker, {
       props: { defaultOpen: true, defaultValue: '09:30:00' },
     });
-    const input = document.querySelector('.cd-time-picker__input input');
+    const input = document.querySelector('.cd-time-picker-input input');
     expect(input?.getAttribute('aria-expanded')).toBe('true');
     const selected = document.querySelector('[role="option"][aria-selected="true"]');
     expect(selected).not.toBeNull();
@@ -114,7 +114,7 @@ describe('TimePicker a11y', () => {
     const { container } = renderWithLocale(TimePicker, {
       props: { format: 'HH:mm:ss' },
     });
-    const input = container.querySelector('.cd-time-picker__input input') as HTMLInputElement;
+    const input = container.querySelector('.cd-time-picker-input input') as HTMLInputElement;
     // 输入非法串 + 失焦（触发 parseAndCommit）。
     input.value = 'not-a-time';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -123,7 +123,7 @@ describe('TimePicker a11y', () => {
     // error 态：Input wrapper 带 error 类（本库 Input validateStatus=error 的表现）。
     const errored =
       container.querySelector('[class*="error"]') ??
-      container.querySelector('.cd-time-picker__input [aria-invalid="true"]');
+      container.querySelector('.cd-time-picker-input [aria-invalid="true"]');
     expect(errored, '非法输入应进入 error 校验态').not.toBeNull();
   });
 });

@@ -161,7 +161,7 @@
           theme="borderless"
           size="small"
           type="tertiary"
-          ariaLabel={loc().t('Banner.closeButtonAriaLabel')}
+          aria-label={loc().t('Banner.closeButtonAriaLabel')}
           onclick={remove}
           icon={closeIcon ?? defaultCloseIcon}
         />

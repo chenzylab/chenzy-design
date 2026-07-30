@@ -31,7 +31,7 @@ docMode: inline
 
 > **与 Semi 的定位差异**：Semi 的 `resizeObserver` 是**内部实现细节**——它有组件目录、被 Table / Tabs / Tooltip / TextArea / Collapsible 等十余个组件消费，但**不从 `semi-ui` 导出、也没有文档页**。本库把它作为公开基座导出（`ResizeObserver` 组件 + `resize` action + `createResizeObserver`），因为本库同样有十余个内部消费方，且 Svelte 生态缺少对应轮子，故一并对外提供并保留本页文档。API 以本库为准：Semi 内部版本仅有 `onResize` / `observeParent` / `observerProperty` / `delayTick` 四个 prop（其中 `delayTick` 在 Semi 中声明后从未被读取，属死 prop，本库不实现；节流能力由 `throttle` / `debounce` 承担）。
 
-> **渲染差异**：Semi 用 `React.cloneElement` 把 ref 挂到唯一子元素上，自身不产生 DOM；Svelte 无法向 snippet 注入 ref，故本库渲染一个无视觉样式的包裹元素（默认 `div`，可用 `tag` 改）作为观测容器。该元素必须能生成盒子，因此不使用 `display: contents`。
+> **渲染差异**：Semi 用 `React.cloneElement` 把 ref 挂到唯一子元素上，自身不产生 DOM。Svelte 无法向 snippet 注入 ref，故本库渲染一个无视觉样式的包裹元素（默认 `div`，可用 `tag` 改）；但**开启 `observeChild` 即可让观测目标落到 children 首个元素本身**，尺寸语义与 Semi 一致（同本库 Dropdown 处理 cloneElement 的手法）。包裹元素需生成盒子，因此不使用 `display: contents`。
 
 ## 代码演示
 
@@ -91,7 +91,8 @@ import { ResizeObserver } from '@chenzy-design/svelte';
 | fallbackToWindow | 原生不可用或显式开启时，降级监听 `window.resize` 近似重测 | boolean | false |
 | multiple | 观测包裹元素内所有直接子元素（而非包裹元素本身） | boolean | false |
 | observeOnMount | 挂载后立即测量一次 | boolean | true |
-| observeParent | 观测包裹元素的父节点而非自身。与 multiple 互斥（multiple 优先） | boolean | false |
+| observeChild | 观测 children 首个元素而非包裹元素本身（对齐 Semi 直接观测子元素的语义）；无子元素时回退观测包裹元素 | boolean | false |
+| observeParent | 观测包裹元素的父节点而非自身。优先级：multiple > observeChild > observeParent | boolean | false |
 | observerProperty | 仅当指定维度变化时才回调 | `'width' \| 'height' \| 'all'` | all |
 | onFirstMeasure | 首次测量回调 | `(entry: CDResizeEntry) => void` | - |
 | onResize | 尺寸变化回调（归一化 entry） | `(entry: CDResizeEntry) => void` | - |

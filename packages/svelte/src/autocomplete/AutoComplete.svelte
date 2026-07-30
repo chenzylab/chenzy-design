@@ -49,7 +49,7 @@
     defaultOpen?: boolean;
     placeholder?: string;
     /** combobox 输入框可访问名；缺省回退到 placeholder 或 locale 默认。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
     /** 输入框内嵌前缀标签。 */
@@ -125,7 +125,7 @@
     data = [],
     defaultOpen = false,
     placeholder = '',
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     insetLabel,
     insetLabelId,
@@ -361,8 +361,8 @@
   const cls = $derived(
     [
       'cd-autocomplete',
-      disabled && 'cd-autocomplete--disabled',
-      isOpen && 'cd-autocomplete--open',
+      disabled && 'cd-autocomplete-disabled',
+      isOpen && 'cd-autocomplete-open',
       className,
     ]
       .filter(Boolean)
@@ -401,7 +401,7 @@
 <!-- suffix 槽：折入 renderSelectedItem（对齐 Semi：renderSelectedItem 作 Input suffix）。 -->
 {#snippet suffixSlot()}
   {#if renderSelectedItem && selectedItem}
-    <span class="cd-autocomplete__selected">
+    <span class="cd-autocomplete-selected">
       {@render renderSelectedItem({ item: selectedItem })}
     </span>
   {/if}
@@ -460,7 +460,7 @@
       ...(hasSuffixSlot ? { suffix: suffixSlot } : {}),
       ...(clearIcon ? { clearIcon } : {}),
       ...(insetLabelId != null ? { insetLabelId } : {}),
-      ...(inputAriaLabel != null ? { ariaLabel: inputAriaLabel } : {}),
+      ...(inputAriaLabel != null ? { 'aria-label': inputAriaLabel } : {}),
       ...(resolvedLabelledby != null ? { ariaLabelledby: resolvedLabelledby } : {}),
       ...(activeOptionId != null ? { 'aria-activedescendant': activeOptionId } : {}),
     }}
@@ -524,7 +524,7 @@
     inline-size: 100%;
   }
   /* renderSelectedItem 折入 Input suffix 时的内联容器。 */
-  .cd-autocomplete__selected {
+  .cd-autocomplete-selected {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;

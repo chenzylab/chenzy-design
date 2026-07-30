@@ -255,7 +255,7 @@
      由 .cd-popover-wrapper[x-placement] 选择器控制显隐 + 定位（见 <style>）。 -->
 {#snippet popoverArrow()}
   <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow--h"
+    class="cd-popover-icon-arrow cd-popover-icon-arrow-h"
     width="24"
     height="8"
     viewBox="0 0 24 7"
@@ -267,7 +267,7 @@
     <path d="M0 0L0 1C4 1, 5.5 2, 7.5 4S10,7 12,7S14.5  6, 16.5 4S20,1 24,1L24 0L0 0z" style="fill:{arrowBgColor}" />
   </svg>
   <svg
-    class="cd-popover-icon-arrow cd-popover-icon-arrow--v"
+    class="cd-popover-icon-arrow cd-popover-icon-arrow-v"
     width="8"
     height="24"
     viewBox="0 0 7 24"
@@ -283,7 +283,7 @@
 <!-- renderPopCard：对齐 Semi <div class="popover"><div class="popover-content">…</div></div>。
      标题区（可选）+ 内容区。内容函数形态注入 initialFocusRef。 -->
 {#snippet popCard()}
-  <div class="cd-popover" class:cd-popover--with-arrow={showArrow}>
+  <div class="cd-popover" class:cd-popover-with-arrow={showArrow}>
     {#if hasTitle}
       <div class="cd-popover-title" id={titleId}>
         {#if titleSnippet}
@@ -329,7 +329,7 @@
     box-sizing: border-box;
   }
   /* 带箭头时整卡内边距（对齐 Semi $spacing-popover_withArrow-padding: 12px）。 */
-  .cd-popover--with-arrow {
+  .cd-popover-with-arrow {
     padding: var(--cd-spacing-popover-witharrow-padding);
   }
   /* 标题区：下边框分隔，内边距对齐 Semi $spacing-popover_title-padding: 8px。 */
@@ -353,80 +353,80 @@
     display: none;
   }
   /* top/bottom 系显示水平箭头；left/right 系显示垂直箭头 */
-  :global(.cd-popover-wrapper[x-placement^='top']) :global(.cd-popover-icon-arrow--h),
-  :global(.cd-popover-wrapper[x-placement^='bottom']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement^='top']) :global(.cd-popover-icon-arrow-h),
+  :global(.cd-popover-wrapper[x-placement^='bottom']) :global(.cd-popover-icon-arrow-h) {
     display: block;
     inline-size: var(--cd-width-popover-arrow);
     block-size: var(--cd-height-popover-arrow);
   }
-  :global(.cd-popover-wrapper[x-placement^='left']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement^='right']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement^='left']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement^='right']) :global(.cd-popover-icon-arrow-v) {
     display: block;
     inline-size: var(--cd-width-popover-arrow-vertical);
     block-size: var(--cd-height-popover-arrow-vertical);
   }
 
   /* top 系：箭头在下缘 */
-  :global(.cd-popover-wrapper[x-placement='top']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='top']) :global(.cd-popover-icon-arrow-h) {
     inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
     transform: translateX(-50%);
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
   }
-  :global(.cd-popover-wrapper[x-placement='topLeft']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='topLeft']) :global(.cd-popover-icon-arrow-h) {
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-spacing-popover-arrow-adjusted-offset-x);
   }
-  :global(.cd-popover-wrapper[x-placement='topRight']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='topRight']) :global(.cd-popover-icon-arrow-h) {
     inset-block-end: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-end: var(--cd-spacing-popover-arrow-adjusted-offset-x);
   }
   /* bottom 系：箭头在上缘，旋转 180° */
-  :global(.cd-popover-wrapper[x-placement='bottom']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottom']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-tooltip-arrow-offset-x, 50%);
     transform: translateX(-50%) rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='bottomLeft']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottomLeft']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-start: var(--cd-spacing-popover-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='bottomRight']) :global(.cd-popover-icon-arrow--h) {
+  :global(.cd-popover-wrapper[x-placement='bottomRight']) :global(.cd-popover-icon-arrow-h) {
     inset-block-start: calc(-1 * var(--cd-height-popover-arrow) + var(--cd-spacing-tooltip-arrow-offset-y));
     inset-inline-end: var(--cd-spacing-popover-arrow-adjusted-offset-x);
     transform: rotate(180deg);
   }
   /* left 系：箭头在右缘 */
-  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-inline-end: calc(-1 * var(--cd-width-popover-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
   }
-  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='left']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
     transform: translateY(-50%);
   }
-  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='leftTop']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-spacing-popover-arrow-adjusted-offset-y);
   }
-  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='leftBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-block-end: var(--cd-spacing-popover-arrow-adjusted-offset-y);
   }
   /* right 系：箭头在左缘，旋转 180° */
-  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow--v),
-  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow-v),
+  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-inline-start: calc(-1 * var(--cd-width-popover-arrow-vertical) + var(--cd-spacing-tooltip-arrow-offset-x));
   }
-  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='right']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-tooltip-arrow-offset-y, 50%);
     transform: translateY(-50%) rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='rightTop']) :global(.cd-popover-icon-arrow-v) {
     inset-block-start: var(--cd-spacing-popover-arrow-adjusted-offset-y);
     transform: rotate(180deg);
   }
-  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow--v) {
+  :global(.cd-popover-wrapper[x-placement='rightBottom']) :global(.cd-popover-icon-arrow-v) {
     inset-block-end: var(--cd-spacing-popover-arrow-adjusted-offset-y);
     transform: rotate(180deg);
   }

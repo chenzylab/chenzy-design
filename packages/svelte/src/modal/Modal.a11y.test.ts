@@ -34,7 +34,7 @@ describe('Modal a11y', () => {
 
   it('无 title + ariaLabel：role=dialog 用 aria-label 提供可访问名', async () => {
     renderWithLocale(Modal, {
-      props: { visible: true, ariaLabel: 'Settings dialog', closable: false, footer: null },
+      props: { visible: true, 'aria-label': 'Settings dialog', closable: false, footer: null },
     });
 
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;

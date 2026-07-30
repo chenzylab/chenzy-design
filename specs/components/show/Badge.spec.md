@@ -204,7 +204,7 @@ Badge 为**纯展示组件**，无交互逻辑，**省略 @chenzy-design/core �
 - [ ] Props/Events/Slots 与第 4 节一致，类型导出完整（含 `Snippet` 类型）。
 - [ ] count 溢出、showZero、dot、status 五类显隐分支行为正确，边界值覆盖。
 - [ ] 仅消费 `--cd-` Alias/Component token，无写死颜色/尺寸（lint 校验通过）。
-- [ ] 类名遵循 `cd-badge` / `cd-badge__*` / `cd-badge--*` BEM 约定。
+- [ ] 类名遵循 `cd-badge` / `cd-badge-*` 单连字符约定（对齐 Semi，见 class-naming-convention.md）。
 - [ ] 不引入 core headless（纯展示），仅按需 `useId`/`useLiveAnnouncer`。
 - [ ] a11y：dot `aria-hidden`、数字徽标完整可读文本、status `role="status"`、宿主 `aria-describedby` 关联，axe 零违规。
 - [ ] 所有可见文案经 i18n（key 同第 7 节），数字用 `Intl.NumberFormat`。

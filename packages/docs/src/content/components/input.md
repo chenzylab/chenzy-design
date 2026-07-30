@@ -194,7 +194,7 @@ Input 和 TextArea 均支持该属性。
 | addonBefore | 前置标签 | Snippet \| string | - |
 | ariaDescribedby | 关联说明 / 错误文本节点 id | string | - |
 | ariaErrormessage | 设置 aria-errormessage 属性 | string | - |
-| ariaLabel | 设置 aria-label 属性 | string | - |
+| aria-label | 设置 aria-label 属性 | string | - |
 | ariaLabelledby | 设置 aria-labelledby 属性 | string | - |
 | ariaRequired | 必填语义（Form.Field required 透传），输出 aria-required | boolean | - |
 | autoFocus | 挂载时自动聚焦 | boolean | false |
@@ -242,7 +242,7 @@ Input 和 TextArea 均支持该属性。
 | --- | --- | --- | --- |
 | ariaDescribedby | 关联说明 / 错误文本节点 id | string | - |
 | ariaErrormessage | 设置 aria-errormessage 属性 | string | - |
-| ariaLabel | 设置 aria-label 属性 | string | - |
+| aria-label | 设置 aria-label 属性 | string | - |
 | ariaLabelledby | 设置 aria-labelledby 属性 | string | - |
 | ariaRequired | 必填语义（Form.Field required 透传） | boolean | - |
 | autoFocus | 挂载时自动聚焦 | boolean | false |

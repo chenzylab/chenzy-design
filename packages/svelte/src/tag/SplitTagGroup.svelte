@@ -9,7 +9,7 @@
 
   interface Props {
     /** 组的可访问名（对齐 Semi aria-label） */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 透传根类名（对齐 Semi className） */
     class?: string;
     /** 透传根内联样式（对齐 Semi style） */
@@ -18,7 +18,7 @@
     children?: Snippet;
   }
 
-  let { ariaLabel, class: className, style, children }: Props = $props();
+  let { 'aria-label': ariaLabel, class: className, style, children }: Props = $props();
 
   const rootCls = $derived(['cd-tag-split', className].filter(Boolean).join(' '));
 </script>
@@ -51,11 +51,11 @@
     margin-right: 0;
   }
   /* circle 子标签首末用胶囊圆角（对齐 Semi &-circle.&-first/&-last）—— */
-  .cd-tag-split :global(> .cd-tag--circle:first-child) {
+  .cd-tag-split :global(> .cd-tag-circle:first-child) {
     border-top-left-radius: var(--cd-tag-radius-circle);
     border-bottom-left-radius: var(--cd-tag-radius-circle);
   }
-  .cd-tag-split :global(> .cd-tag--circle:last-child) {
+  .cd-tag-split :global(> .cd-tag-circle:last-child) {
     border-top-right-radius: var(--cd-tag-radius-circle);
     border-bottom-right-radius: var(--cd-tag-radius-circle);
   }

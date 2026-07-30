@@ -337,7 +337,7 @@
 
   // --- DOM 引用 ---
   let rootEl = $state<HTMLSpanElement | null>(null);
-  // 内层触发包裹 span（.cd-tooltip__trigger，inline-block）；其 firstElementChild 是
+  // 内层触发包裹 span（.cd-tooltip-trigger，inline-block）；其 firstElementChild 是
   // children 的真实 DOM 元素，用作浮层定位基准（对齐 Semi getTriggerBounding 用真实
   // children DOM，不含 children 的 margin——若用包裹 span 定位，其盒子被 children margin
   // 撑开致箭头到触发器间距偏大；改用 children 首元素则间距对齐 Semi 8px）。
@@ -552,7 +552,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <span
-    class="cd-tooltip__trigger"
+    class="cd-tooltip-trigger"
     bind:this={triggerEl}
     role={isDialog && !isCustom ? 'button' : undefined}
     tabindex={isDialog && !isCustom ? 0 : undefined}
@@ -586,8 +586,8 @@
       class="{prefixCls}-wrapper {className}"
       class:cd-tooltip-with-arrow={showArrowBool}
       class:cd-tooltip-wrapper-show={isOpen}
-      class:cd-tooltip-wrapper--hidden={!isOpen}
-      class:cd-tooltip-wrapper--motion={motionEnabled}
+      class:cd-tooltip-wrapper-hidden={!isOpen}
+      class:cd-tooltip-wrapper-motion={motionEnabled}
       onclick={onPopClick}
       onpointerenter={onPopPointerEnter}
       onpointerleave={onPopPointerLeave}
@@ -646,7 +646,7 @@
   /* 内层触发包裹保持 inline-block 盒子（承载 dialog 模式 tabindex 焦点、role）。
      浮层定位不再用此包裹，而用其内 children 真实首元素（anchorEl，不含 children margin，
      对齐 Semi getTriggerBounding）——故此包裹被 children margin 撑开也不影响定位间距。 */
-  .cd-tooltip__trigger {
+  .cd-tooltip-trigger {
     display: inline-block;
     inline-size: auto;
     block-size: auto;
@@ -800,7 +800,7 @@
   /* motion：进出场 zoomIn（对齐 Semi tooltip zoomIn 关键帧 + 100ms cubic-bezier）。
      用独立 scale 属性（非 transform）做缩放：use:floating 用 transform: translate() 定位，
      动画走 transform 会覆盖定位把浮层拉到 (0,0)；scale 属性与 transform 正交，二者叠加互不覆盖。 */
-  :global(.cd-tooltip-wrapper--motion) {
+  :global(.cd-tooltip-wrapper-motion) {
     animation: cd-tooltip-zoom-in var(--cd-animation-duration-tooltip-in)
       var(--cd-animation-function-tooltip-in) both;
   }
@@ -819,13 +819,13 @@
   }
 
   /* keepDOM=true 关闭后保留 DOM 但不可见、不可交互、不占位 */
-  :global(.cd-tooltip-wrapper--hidden) {
+  :global(.cd-tooltip-wrapper-hidden) {
     display: none;
   }
 
   /* reduced-motion：禁用进场动画 */
   @media (prefers-reduced-motion: reduce) {
-    :global(.cd-tooltip-wrapper--motion) {
+    :global(.cd-tooltip-wrapper-motion) {
       animation: none;
     }
   }

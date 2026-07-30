@@ -85,7 +85,7 @@
   treeData={data as unknown as TreeNode[]}
   draggable
   defaultExpandAll
-  ariaLabel="可拖拽高级定制树"
+  aria-label="可拖拽高级定制树"
   onDrop={(d) => {
     data = reorder(data, d.dragNode.key, d.dropNode.key, d.dropPosition);
   }}

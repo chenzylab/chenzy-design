@@ -43,10 +43,10 @@
     {@render children()}
   {:else}
     {#if logo}
-      <span class="cd-nav__header-logo">{@render logo()}</span>
+      <span class="cd-nav-header-logo">{@render logo()}</span>
     {/if}
     {#if text && !collapsedState}
-      <span class="cd-nav__header-text"
+      <span class="cd-nav-header-text"
         >{#if typeof text === 'string'}{text}{:else}{@render text()}{/if}</span
       >
     {/if}
@@ -55,9 +55,9 @@
 
 <div
   class={[
-    'cd-nav__header',
-    `cd-nav__header--${mode}`,
-    collapsedState && 'cd-nav__header--collapsed',
+    'cd-nav-header',
+    `cd-nav-header-${mode}`,
+    collapsedState && 'cd-nav-header-collapsed',
     className,
   ]
     .filter(Boolean)
@@ -65,14 +65,14 @@
   {style}
 >
   {#if link}
-    <a class="cd-nav__header-link" href={link} {...linkOptions}>{@render inner()}</a>
+    <a class="cd-nav-header-link" href={link} {...linkOptions}>{@render inner()}</a>
   {:else}
     {@render inner()}
   {/if}
 </div>
 
 <style>
-  .cd-nav__header {
+  .cd-nav-header {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-navigation-header-logo-marginright);
@@ -81,32 +81,32 @@
     overflow: hidden;
   }
   /* 顶部导航：左右内边距 24px（对齐 Semi $spacing-navigation_horizontal-paddingLeft）。 */
-  .cd-nav__header--horizontal {
+  .cd-nav-header-horizontal {
     padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
   }
   /* 侧边导航：左内边距按 Semi 公式派生使 Logo 与折叠态图标居中对齐，右为 tight。 */
-  .cd-nav__header--vertical {
+  .cd-nav-header-vertical {
     padding-left: var(--cd-spacing-navigation-vertical-header-paddingleft);
     padding-right: var(--cd-spacing-navigation-vertical-header-paddingright);
   }
   /* 侧边折叠态：右内边距归 0（对齐 Semi collapsed-paddingRight）。 */
-  .cd-nav__header--vertical.cd-nav__header--collapsed {
+  .cd-nav-header-vertical.cd-nav-header-collapsed {
     padding-left: var(--cd-spacing-navigation-vertical-header-collapsed-paddingleft);
     padding-right: var(--cd-spacing-navigation-vertical-header-collapsed-paddingright);
   }
-  .cd-nav__header-link {
+  .cd-nav-header-link {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-navigation-header-logo-marginright);
     color: inherit;
     text-decoration: none;
   }
-  .cd-nav__header-logo {
+  .cd-nav-header-logo {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
   }
-  .cd-nav__header-text {
+  .cd-nav-header-text {
     font-size: var(--cd-font-size-navigation-header-text);
     font-weight: var(--cd-font-navigation-header-item-fontweight);
     white-space: nowrap;

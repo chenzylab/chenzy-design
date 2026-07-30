@@ -111,7 +111,7 @@
     <!-- 对勾恒占位：active 显示实色勾，否则透明勾保持宽度一致（对齐 Semi IconTick 占位机制） -->
     <IconTick
       size="small"
-      class={`cd-dropdown-item-tick${active ? '' : ' cd-dropdown-item-tick--hidden'}`}
+      class={`cd-dropdown-item-tick${active ? '' : ' cd-dropdown-item-tick-hidden'}`}
       aria-hidden="true"
     />
   {/if}
@@ -152,7 +152,7 @@
     height: var(--cd-size-dropdown-icon-height);
     margin-right: var(--cd-spacing-dropdown-icon-marginright);
   }
-  .cd-dropdown-item-tick--hidden {
+  .cd-dropdown-item-tick-hidden {
     color: transparent;
   }
   /* icon 容器：对齐 Semi .semi-dropdown-item-icon（inline-flex + margin-right:tight） */

@@ -351,7 +351,7 @@
   });
 
   const cls = $derived(
-    ['cd-nav', `cd-nav--${mode}`, collapsedState && 'cd-nav--collapsed', className]
+    ['cd-nav', `cd-nav-${mode}`, collapsedState && 'cd-nav-collapsed', className]
       .filter(Boolean)
       .join(' '),
   );
@@ -362,8 +362,8 @@
 
 <!-- 根为纯容器 <div>（对齐 Semi index.tsx：无 nav landmark）；列表用 role=menu 语义。 -->
 <div class={cls} {style}>
-  <div class="cd-nav__inner">
-    <div class="cd-nav__header-list-outer" class:cd-nav__header-list-outer-collapsed={collapsedState}>
+  <div class="cd-nav-inner">
+    <div class="cd-nav-header-list-outer" class:cd-nav-header-list-outer-collapsed={collapsedState}>
       {#if hasHeader}
         {#if headerSlot}
           {@render headerSlot()}
@@ -381,11 +381,11 @@
         {/if}
       {/if}
 
-      <div class="cd-nav__list-wrapper" style={bodyStyle}>
+      <div class="cd-nav-list-wrapper" style={bodyStyle}>
         <!-- 对齐 Semi index.tsx:434：ul[role=menu][aria-orientation=mode]；项为 role=menuitem。
              children 紧随 items 之后渲染在 ul 内（对齐 Semi `{itemElems}{children}`）：
              <Nav.Item>/<Nav.Sub> 经 context 注册后自身不产 DOM，其余任意内容原样渲染。 -->
-        <ul class="cd-nav__list" role="menu" aria-orientation={mode}>
+        <ul class="cd-nav-list" role="menu" aria-orientation={mode}>
           {#each resolvedItems as item (item.itemKey)}
             <NavItemRender {item} level={0} />
           {/each}
@@ -427,7 +427,7 @@
        导致折叠后宽度停在展开态。折叠为即时切换（功能优先）。 */
     transition: padding var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-nav__inner {
+  .cd-nav-inner {
     inline-size: 100%;
     block-size: 100%;
     display: flex;
@@ -436,51 +436,51 @@
   }
 
   /* 折叠态：容器收窄到图标轨宽度。 */
-  .cd-nav--collapsed {
+  .cd-nav-collapsed {
     width: var(--cd-width-navigation-container-collapsed);
     padding-inline: var(--cd-spacing-navigation-collapsed-paddingx);
   }
 
-  .cd-nav__header-list-outer {
+  .cd-nav-header-list-outer {
     block-size: 100%;
     display: flex;
     flex-direction: column;
     min-block-size: 0;
   }
-  .cd-nav__list-wrapper {
+  .cd-nav-list-wrapper {
     padding-block-start: var(--cd-spacing-navigation-list-wrapper-paddingtop);
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1 1 auto;
     min-block-size: 0;
   }
-  .cd-nav__list {
+  .cd-nav-list {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   /* 水平顶部导航。 */
-  .cd-nav--horizontal {
+  .cd-nav-horizontal {
     inline-size: 100%;
     block-size: var(--cd-height-navigation-horizontal-header);
     border-inline-end: none;
     border-block-end: var(--cd-width-navigation-border) solid var(--cd-color-navigation-border-default);
     padding-inline: var(--cd-spacing-navigation-horizontal-paddingleft);
   }
-  .cd-nav--horizontal .cd-nav__inner {
+  .cd-nav-horizontal .cd-nav-inner {
     flex-direction: row;
   }
-  .cd-nav--horizontal .cd-nav__header-list-outer {
+  .cd-nav-horizontal .cd-nav-header-list-outer {
     flex-direction: row;
     align-items: center;
     block-size: auto;
   }
-  .cd-nav--horizontal .cd-nav__list-wrapper {
+  .cd-nav-horizontal .cd-nav-list-wrapper {
     padding-block-start: 0;
     overflow: visible;
   }
-  .cd-nav--horizontal .cd-nav__list {
+  .cd-nav-horizontal .cd-nav-list {
     display: inline-flex;
     align-items: center;
   }

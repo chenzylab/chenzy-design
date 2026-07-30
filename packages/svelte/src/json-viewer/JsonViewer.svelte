@@ -273,7 +273,7 @@
     theme="light"
     type="primary"
     icon={searchTriggerIcon}
-    ariaLabel={loc().t('JsonViewer.searchTrigger')}
+    aria-label={loc().t('JsonViewer.searchTrigger')}
     aria-expanded={searchOpen}
     onclick={openSearch}
   />
@@ -308,7 +308,7 @@
                 class="cd-json-viewer-search-bar-input"
                 value={searchText}
                 placeholder={loc().t('JsonViewer.search')}
-                ariaLabel={loc().t('JsonViewer.search')}
+                aria-label={loc().t('JsonViewer.search')}
                 onChange={(v) => {
                   searchText = v;
                   runSearch();
@@ -352,15 +352,15 @@
                 </li>
               </ul>
               <ButtonGroup>
-                <Button icon={iconPrev} ariaLabel={loc().t('JsonViewer.prev')} onclick={() => prevSearch()} />
-                <Button icon={iconNext} ariaLabel={loc().t('JsonViewer.next')} onclick={() => nextSearch()} />
+                <Button icon={iconPrev} aria-label={loc().t('JsonViewer.prev')} onclick={() => prevSearch()} />
+                <Button icon={iconNext} aria-label={loc().t('JsonViewer.next')} onclick={() => nextSearch()} />
               </ButtonGroup>
               <Button
                 icon={iconClose}
                 size="small"
                 theme="borderless"
                 type="tertiary"
-                ariaLabel={loc().t('JsonViewer.closeSearch')}
+                aria-label={loc().t('JsonViewer.closeSearch')}
                 onclick={closeSearch}
               />
             </div>
@@ -371,7 +371,7 @@
                   class="cd-json-viewer-replace-bar-input"
                   value={replaceText}
                   placeholder={loc().t('JsonViewer.replaceInput')}
-                  ariaLabel={loc().t('JsonViewer.replaceInput')}
+                  aria-label={loc().t('JsonViewer.replaceInput')}
                   onChange={(v) => (replaceText = v)}
                 />
                 <Button onclick={() => replace(replaceText)}>{loc().t('JsonViewer.replace')}</Button>

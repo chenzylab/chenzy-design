@@ -13,7 +13,7 @@ const OPTIONS = [
 describe('RadioGroup a11y', () => {
   it('默认：role=radiogroup + ariaLabel + 多选项渲染，无 axe violations', async () => {
     const { container } = renderWithLocale(RadioGroup, {
-      props: { ariaLabel: 'Fruit', options: OPTIONS },
+      props: { 'aria-label': 'Fruit', options: OPTIONS },
     });
     const group = container.querySelector('[role="radiogroup"]');
     expect(group?.getAttribute('aria-label')).toBe('Fruit');
@@ -25,7 +25,7 @@ describe('RadioGroup a11y', () => {
 
   it('选中态：value 命中的 radio 为 checked', async () => {
     const { container } = renderWithLocale(RadioGroup, {
-      props: { ariaLabel: 'Fruit', options: OPTIONS, value: 'banana' },
+      props: { 'aria-label': 'Fruit', options: OPTIONS, value: 'banana' },
     });
     const checked = container.querySelector('input[type="radio"]:checked') as HTMLInputElement | null;
     expect(checked?.value).toBe('banana');
@@ -34,7 +34,7 @@ describe('RadioGroup a11y', () => {
 
   it('禁用项：对应 radio 为 disabled', async () => {
     const { container } = renderWithLocale(RadioGroup, {
-      props: { ariaLabel: 'Fruit', options: OPTIONS },
+      props: { 'aria-label': 'Fruit', options: OPTIONS },
     });
     const disabled = container.querySelectorAll('input[type="radio"]:disabled');
     expect(disabled.length).toBe(1);

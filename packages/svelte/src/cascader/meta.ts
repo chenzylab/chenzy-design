@@ -30,7 +30,7 @@ export const meta = {
     { name: 'loadData', type: '(node: CascaderNode) => Promise<CascaderNode[]>', default: 'undefined', desc: '动态加载子节点' },
     { name: 'displayRender', type: '(labels: string[], selectedNodes: CascaderNode[]) => string', default: 'undefined', desc: '自定义触发器选中路径回显（单选 + 多选每个 tag 共用）' },
     { name: 'onChange', type: '(value: (string|number)[] | (string|number)[][]) => void', default: 'undefined', desc: '单选回调单条路径；多选回调多条叶子路径' },
-    { name: 'ariaLabel', type: 'string', default: "'Cascader'", desc: '可访问名（对齐 Semi aria-label）' },
+    { name: 'aria-label', type: 'string', default: "'Cascader'", desc: '可访问名（对齐 Semi aria-label）' },
     { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: 'aria-labelledby：关联外部 label 元素（Form.Field 透传）' },
     { name: 'ariaDescribedby', type: 'string', default: 'undefined', desc: 'aria-describedby：关联 helpText / extraText（Form.Field 透传）' },
     { name: 'ariaErrormessage', type: 'string', default: 'undefined', desc: 'aria-errormessage：error 态关联错误信息容器（Form.Field 透传）' },

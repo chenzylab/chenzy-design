@@ -557,7 +557,7 @@
 -->
 <span
   class="cd-dropdown-trigger"
-  class:cd-dropdown-trigger--nested={isNested}
+  class:cd-dropdown-trigger-nested={isNested}
   id={triggerId}
   bind:this={rootEl}
   use:triggerAria={{ open: isOpen, controls: menuId, nested: isNested }}
@@ -578,7 +578,7 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown--motion={motion}
+    class:cd-dropdown-motion={motion}
     use:cursorFloating={{ x: cursorX, y: cursorY }}
     onkeydown={onMenuKeydown}
     onclick={onMenuClick}
@@ -593,8 +593,8 @@
     id={menuId}
     bind:this={menuWrapperEl}
     style={wrapperInlineStyle}
-    class:cd-dropdown--hidden={!isOpen}
-    class:cd-dropdown--motion={motion && isOpen}
+    class:cd-dropdown-hidden={!isOpen}
+    class:cd-dropdown-motion={motion && isOpen}
     use:floating={{ trigger: anchorEl, placement: position, autoAdjust: autoAdjustOverflow, offset, padding: floatPadding, getContainer: resolvePopupContainer, open: isOpen, rePosKey }}
     onkeydown={onMenuKeydown}
     onpointerenter={() => trigger === 'hover' && clearTimers()}
@@ -616,7 +616,7 @@
   }
   /* 嵌套：子 Dropdown 触发器为 Dropdown.Item（<li>），需直接参与父 ul 布局，
      故包裹 span 用 display:contents 不产生盒子（li 视觉归位 ul，事件仍经 span 冒泡处理）。 */
-  .cd-dropdown-trigger--nested {
+  .cd-dropdown-trigger-nested {
     display: contents;
   }
   /* 浮层 wrapper：portal 到 body，由 use:floating 写 position:fixed + transform 定位。
@@ -632,12 +632,12 @@
     line-height: var(--cd-line-height-regular);
   }
   /* keepDOM 关闭后保留 DOM 但不可见 */
-  .cd-dropdown--hidden {
+  .cd-dropdown-hidden {
     display: none;
   }
   /* motion：进场淡入；定位 transform 由 use:floating 写入 inline style，
      keyframe 绝不能设 transform（会覆盖 translate 使浮层飘走），故只动 opacity。 */
-  .cd-dropdown--motion {
+  .cd-dropdown-motion {
     animation: cd-dropdown-in var(--cd-motion-duration-fast) var(--cd-motion-ease-standard) both;
   }
   @keyframes cd-dropdown-in {
@@ -649,7 +649,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-dropdown--motion {
+    .cd-dropdown-motion {
       animation: none;
     }
   }

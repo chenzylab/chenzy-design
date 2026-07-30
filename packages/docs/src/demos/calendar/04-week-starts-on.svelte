@@ -8,7 +8,7 @@
 <div>
   <RadioGroup
     defaultValue={v}
-    ariaLabel="周起始日"
+    aria-label="周起始日"
     type="button"
     name="demo-radio-group-vertical"
     onChange={(e) => (v = e.target.value as 0 | 1 | 2 | 3 | 4 | 5 | 6)}

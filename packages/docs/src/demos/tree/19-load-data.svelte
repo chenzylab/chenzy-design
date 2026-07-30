@@ -22,5 +22,5 @@
 </script>
 
 <div style="width:260px">
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} {loadData} ariaLabel="异步加载树" />
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} {loadData} aria-label="异步加载树" />
 </div>

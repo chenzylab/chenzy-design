@@ -30,7 +30,7 @@
     defaultExpandAll
     value={selected}
     onChange={(v) => (selected = v as string | number)}
-    ariaLabel="字段映射树"
+    aria-label="字段映射树"
   />
   <Text type="tertiary" size="small">已选：{selected ?? '（未选）'}</Text>
 </div>

@@ -59,7 +59,7 @@
     name?: string;
     /** input 元素 id，关联外部 label；不传自动生成。 */
     id?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -148,7 +148,7 @@
     affixIsIcon = true,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -505,7 +505,7 @@
   const optionalAttrs = $derived({
     ...(placeholder !== undefined && { placeholder }),
     ...(name !== undefined && { name }),
-    ...(ariaLabel !== undefined && { ariaLabel }),
+    ...(ariaLabel !== undefined && { 'aria-label': ariaLabel }),
     ...(ariaLabelledby !== undefined && { ariaLabelledby }),
     ...(ariaDescribedby !== undefined && { ariaDescribedby }),
     ...(ariaErrormessage !== undefined && { ariaErrormessage }),

@@ -55,7 +55,7 @@
     style?: string;
     onMouseEnter?: (e: MouseEvent) => void;
     onMouseLeave?: (e: MouseEvent) => void;
-    ariaLabel?: string;
+    'aria-label'?: string;
     preventScroll?: boolean;
     /** 内部 input 的 tabindex（用于 grid roving tabindex 等场景，缺省不设）。 */
     tabindex?: number | undefined;
@@ -81,7 +81,7 @@
     style,
     onMouseEnter,
     onMouseLeave,
-    ariaLabel,
+    'aria-label': ariaLabel,
     preventScroll = false,
     tabindex,
   }: Props = $props();

@@ -53,7 +53,7 @@ import { Transfer } from '@chenzy-design/svelte';
 
 ### 分组
 
-将 type 设为 `groupList`。分组的 dataSource，一级子元素必须拥有 title 以及 items 属性（本库分组字段为 `items`，对齐 Semi 的分组语义）。暂不支持多层嵌套。
+将 type 设为 `groupList`。分组的 dataSource，一级子元素必须拥有 title 以及 children 属性。暂不支持多层嵌套。
 
 <DemoBox code={groupSrc}><Group /></DemoBox>
 
@@ -172,7 +172,7 @@ GroupItem 继承 Item 的所有属性：
 
 | 属性 | 说明 | 类型 |
 | --- | --- | --- |
-| items | 该分组的元素（本库字段名 items，对齐 Semi children 语义） | `Item[]` |
+| children | 该分组的元素 | `Item[]` |
 | title | 分组名称 | string |
 
 ### TreeItem

@@ -29,7 +29,7 @@
       defaultExpandAll
       value={related}
       onChange={(value) => (related = value as (string | number)[])}
-      ariaLabel="联动勾选树"
+      aria-label="联动勾选树"
     />
   </div>
   <div style="width:220px">
@@ -42,7 +42,7 @@
       defaultExpandAll
       value={unrelated}
       onChange={(value) => (unrelated = value as (string | number)[])}
-      ariaLabel="非联动勾选树"
+      aria-label="非联动勾选树"
     />
   </div>
 </div>

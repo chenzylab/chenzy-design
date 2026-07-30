@@ -21,7 +21,7 @@
 
 <div style="width:260px">
   <!-- renderLabel snippet：自定义节点渲染（父节点加计数标签） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} defaultExpandAll ariaLabel="自定义节点内容树">
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} defaultExpandAll aria-label="自定义节点内容树">
     {#snippet renderLabel({ node })}
       <span style="display:inline-flex; align-items:center; gap:8px">
         {node.label}

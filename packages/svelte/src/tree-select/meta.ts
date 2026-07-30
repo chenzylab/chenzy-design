@@ -48,7 +48,7 @@ export const meta = {
       default: 'undefined',
       desc: '多选返回 checked 全集数组，单选返回单 key',
     },
-    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'aria-label', type: 'string', default: 'undefined' },
     { name: 'ariaLabelledby', type: 'string', default: 'undefined', desc: 'aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）' },
     { name: 'ariaDescribedby', type: 'string', default: 'undefined', desc: 'aria-describedby：关联 helpText / extraText（Form.Field 透传）' },
     { name: 'ariaErrormessage', type: 'string', default: 'undefined', desc: 'aria-errormessage：error 态关联错误信息容器（Form.Field 透传）' },

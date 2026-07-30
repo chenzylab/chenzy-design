@@ -146,7 +146,7 @@
     >
       {#each group.items as item (item.id)}
         <div
-          class="cd-notification-list__item"
+          class="cd-notification-list-item"
           in:slide={{ position: group.position }}
           out:slide={{ position: group.position }}
         >

@@ -99,7 +99,7 @@
       dataSource={rows}
       rowKey="name"
       pagination={{ pageSize: 10 }}
-      ariaLabel={t('section.tokens', lang)}
+      aria-label={t('section.tokens', lang)}
     />
   </Tabs>
 {/if}

@@ -18,7 +18,7 @@
     /** 文字内容（可选）；提供后不再是纯图标按钮（对齐 Semi children）。 */
     children?: Snippet;
     /** 可访问名（可选，透传到 Button 的 aria-label）。纯图标按钮建议提供。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 语义类型。默认 primary（对齐 Semi Button）。 */
     type?: ButtonType;
     /** 视觉变体。默认 light。 */

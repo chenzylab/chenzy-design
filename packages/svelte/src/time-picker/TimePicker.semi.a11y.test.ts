@@ -6,7 +6,7 @@ import { renderWithLocale } from '../test-utils/a11y.js';
 import TimePicker from './TimePicker.svelte';
 
 function triggerValue(container: HTMLElement): string {
-  return (container.querySelector('.cd-time-picker__input input') as HTMLInputElement)?.value ?? '';
+  return (container.querySelector('.cd-time-picker-input input') as HTMLInputElement)?.value ?? '';
 }
 
 describe('TimePicker 对齐 Semi', () => {

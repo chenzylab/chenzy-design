@@ -40,7 +40,7 @@ Radio 同时提供受控（传 `value`）与非受控（传 `defaultValue`）两
 - 单个 `createRadio`（无 group 场景）：封装 checked 切换与 `aria-checked`，无 roving。
 
 `@chenzy-design/svelte` — `Radio.svelte` / `RadioGroup.svelte`：
-- 通过 Svelte `setContext`/`getContext`（key `cd-radio-group`）连接父子，子项消费 group 的 `name` / `disabled` / `size` / `status` / `value`。
+- 通过 Svelte `setContext`/`getContext`（key `cd-radio-addon`（RadioGroup 无独立根类，按 Semi 由 Radio 自身承担））连接父子，子项消费 group 的 `name` / `disabled` / `size` / `status` / `value`。
 - 绑定 core 返回的 props 到原生 `<input type="radio">`（视觉隐藏，保留可访问性）或 `role="radio"` 容器（button/card 型）。
 - 不引入虚拟化；纯 CSS Token 驱动样式。
 

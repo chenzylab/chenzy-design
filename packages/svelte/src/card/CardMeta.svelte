@@ -24,19 +24,19 @@
   const hasWrapper = $derived(title !== undefined || description !== undefined);
 </script>
 
-<div class={['cd-card__meta', className].filter(Boolean).join(' ')} {style}>
+<div class={['cd-card-meta', className].filter(Boolean).join(' ')} {style}>
   {#if avatar}
-    <div class="cd-card__meta-avatar">{@render avatar()}</div>
+    <div class="cd-card-meta-avatar">{@render avatar()}</div>
   {/if}
   {#if hasWrapper}
-    <div class="cd-card__meta-wrapper">
+    <div class="cd-card-meta-wrapper">
       {#if title !== undefined}
-        <div class="cd-card__meta-wrapper-title">
+        <div class="cd-card-meta-wrapper-title">
           {#if typeof title === 'string'}{title}{:else}{@render title()}{/if}
         </div>
       {/if}
       {#if description !== undefined}
-        <div class="cd-card__meta-wrapper-description">
+        <div class="cd-card-meta-wrapper-description">
           {#if typeof description === 'string'}{description}{:else}{@render description()}{/if}
         </div>
       {/if}
@@ -45,22 +45,22 @@
 </div>
 
 <style>
-  .cd-card__meta {
+  .cd-card-meta {
     display: flex;
     align-items: center;
     justify-content: flex-start;
   }
-  .cd-card__meta-avatar {
+  .cd-card-meta-avatar {
     margin-inline-end: var(--cd-card-avatar-marginright);
   }
-  .cd-card__meta-wrapper-title {
+  .cd-card-meta-wrapper-title {
     font-size: var(--cd-card-title-size);
     font-weight: var(--cd-card-title-weight);
     line-height: var(--cd-card-title-lineheight);
     color: var(--cd-card-title-color);
     letter-spacing: 0;
   }
-  .cd-card__meta-wrapper-description {
+  .cd-card-meta-wrapper-description {
     font-size: var(--cd-card-default-size);
     font-weight: var(--cd-card-default-weight);
     line-height: var(--cd-card-default-lineheight);

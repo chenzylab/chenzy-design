@@ -44,7 +44,7 @@ export const meta = {
     },
     { name: 'class', type: 'string', default: "''" },
     { name: 'style', type: 'string', default: 'undefined', desc: '容器内联样式（对齐 Semi style）' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '容器 aria-label（对齐 Semi aria-label）' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '容器 aria-label（对齐 Semi aria-label）' },
     { name: 'children', type: 'Snippet', default: 'undefined', desc: '内嵌 <Steps.Step> 列表' },
   ],
   // <Steps.Step> 子组件 props（对齐 Semi Steps.Step）。
@@ -63,7 +63,7 @@ export const meta = {
       default: 'undefined',
       desc: '该步自定义图标（字符串或 Snippet），替代默认序号/✓/✕/⚠（对齐 Semi Steps.Step.icon）',
     },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '该步 aria-label（对齐 Semi Steps.Step.aria-label）' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '该步 aria-label（对齐 Semi Steps.Step.aria-label）' },
     { name: 'role', type: 'string', default: 'undefined', desc: '该步 role（对齐 Semi Steps.Step.role）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '该步根节点类名（对齐 Semi Steps.Step.className）' },
     { name: 'style', type: 'string', default: 'undefined', desc: '该步根节点内联样式（对齐 Semi Steps.Step.style）' },

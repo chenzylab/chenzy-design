@@ -146,7 +146,7 @@ export const meta = {
     { name: 'renderFullLabel', type: 'Snippet<[FullLabelContext]>', default: 'undefined', desc: '完全接管整行渲染（叶子分组勾选、单选高亮子节点等高级场景）' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: '整树禁用' },
     { name: 'emptyContent', type: 'string', default: 'undefined', desc: '空态文案' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '无障碍标签' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '无障碍标签' },
     {
       name: 'loadData',
       type: '(node) => Promise<TreeNodeData[]>',

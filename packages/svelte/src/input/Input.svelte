@@ -83,7 +83,7 @@
     composition?: boolean;
     name?: string;
     id?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -146,7 +146,7 @@
     composition = false,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -313,13 +313,13 @@
     [
       'cd-input-wrapper',
       `cd-input-wrapper-${size}`,
-      (prefix != null || insetLabel != null) && 'cd-input-wrapper__with-prefix',
-      suffix != null && 'cd-input-wrapper__with-suffix',
-      suffixHidden && 'cd-input-wrapper__with-suffix-hidden',
-      hasPrepend && 'cd-input-wrapper__with-prepend',
-      hasAppend && 'cd-input-wrapper__with-append',
-      hasPrepend && !hasAppend && 'cd-input-wrapper__with-prepend-only',
-      hasAppend && !hasPrepend && 'cd-input-wrapper__with-append-only',
+      (prefix != null || insetLabel != null) && 'cd-input-wrapper-with-prefix',
+      suffix != null && 'cd-input-wrapper-with-suffix',
+      suffixHidden && 'cd-input-wrapper-with-suffix-hidden',
+      hasPrepend && 'cd-input-wrapper-with-prepend',
+      hasAppend && 'cd-input-wrapper-with-append',
+      hasPrepend && !hasAppend && 'cd-input-wrapper-with-prepend-only',
+      hasAppend && !hasPrepend && 'cd-input-wrapper-with-append-only',
       readonly && 'cd-input-wrapper-readonly',
       disabled && 'cd-input-wrapper-disabled',
       validateStatus === 'warning' && 'cd-input-wrapper-warning',
@@ -520,18 +520,18 @@
     cursor: default;
   }
   /* 对齐 Semi 填充式：悬浮加深底色（无前后置标签时）。 */
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):hover:not(.cd-input-wrapper-disabled):not(:focus-within) {
     background: var(--cd-color-input-default-bg-hover);
     border-color: var(--cd-color-input-default-border-hover);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within {
     background: var(--cd-color-input-default-bg-focus);
     border: var(--cd-width-input-wrapper-focus-border) solid var(--cd-color-input-default-border-focus);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:hover:not(.cd-input-wrapper-warning):not(.cd-input-wrapper-error) {
     background: var(--cd-color-input-default-bg-focus-hover);
   }
-  .cd-input-wrapper:not(.cd-input-wrapper__with-prepend):not(.cd-input-wrapper__with-append):focus-within:active {
+  .cd-input-wrapper:not(.cd-input-wrapper-with-prepend):not(.cd-input-wrapper-with-append):focus-within:active {
     background: var(--cd-color-input-default-bg-active);
     border-color: var(--cd-color-input-default-border-focus);
   }
@@ -586,21 +586,21 @@
     color: var(--cd-color-input-disabled-text-default);
   }
   /* 前后置标签模式：wrapper 转透明，内部 input 自持填充底（对齐 Semi with-prepend/append）。 */
-  .cd-input-wrapper__with-prepend,
-  .cd-input-wrapper__with-append {
+  .cd-input-wrapper-with-prepend,
+  .cd-input-wrapper-with-append {
     background: transparent;
   }
-  .cd-input-wrapper__with-prepend:hover,
-  .cd-input-wrapper__with-append:hover {
+  .cd-input-wrapper-with-prepend:hover,
+  .cd-input-wrapper-with-append:hover {
     background: transparent;
   }
-  .cd-input-wrapper__with-prepend:focus-within,
-  .cd-input-wrapper__with-append:focus-within {
+  .cd-input-wrapper-with-prepend:focus-within,
+  .cd-input-wrapper-with-append:focus-within {
     background: transparent;
     border-color: var(--cd-color-input-default-border-default);
   }
-  .cd-input-wrapper__with-prepend .cd-input,
-  .cd-input-wrapper__with-append .cd-input {
+  .cd-input-wrapper-with-prepend .cd-input,
+  .cd-input-wrapper-with-append .cd-input {
     background: var(--cd-color-input-default-bg-default);
   }
 
@@ -628,10 +628,10 @@
     outline: none;
   }
   /* 对齐 Semi with-prefix/suffix：相应侧内边距归零，交给 prefix/suffix 槽。 */
-  .cd-input-wrapper__with-prefix .cd-input {
+  .cd-input-wrapper-with-prefix .cd-input {
     padding-inline-start: 0;
   }
-  .cd-input-wrapper__with-suffix .cd-input {
+  .cd-input-wrapper-with-suffix .cd-input {
     padding-inline-end: 0;
   }
   .cd-input::placeholder {
@@ -754,11 +754,11 @@
     border-end-end-radius: var(--cd-radius-input-wrapper);
   }
   /* 前后置标签模式下 input 侧的圆角调整（对齐 Semi with-prepend-only/append-only）。 */
-  .cd-input-wrapper__with-prepend:not(.cd-input-wrapper__with-append) .cd-input {
+  .cd-input-wrapper-with-prepend:not(.cd-input-wrapper-with-append) .cd-input {
     border-start-end-radius: var(--cd-radius-input-wrapper);
     border-end-end-radius: var(--cd-radius-input-wrapper);
   }
-  .cd-input-wrapper__with-append:not(.cd-input-wrapper__with-prepend) .cd-input {
+  .cd-input-wrapper-with-append:not(.cd-input-wrapper-with-prepend) .cd-input {
     border-start-start-radius: var(--cd-radius-input-wrapper);
     border-end-start-radius: var(--cd-radius-input-wrapper);
   }

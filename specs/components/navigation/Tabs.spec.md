@@ -66,9 +66,9 @@ Tabs（标签页）用于在同一区域内组织并切换多组对等内容，�
 | `destroyInactiveTabPane` | `boolean` | `false` | 切走即卸载非激活面板 |
 | `collapsible` | `boolean` | `false` | `line` 风格溢出时启用折叠箭头/下拉 |
 | `renderTabBar` | `(props, DefaultBar) => Snippet` | — | 完全自定义标签栏渲染 |
-| `tabBarClassName` | `string` | — | 标签栏容器（`.cd-tabs__bar`）自定义 class |
-| `tabBarStyle` | `string \| Record<string, string>` | — | 标签栏容器（`.cd-tabs__bar`）自定义样式 |
-| `visibleTabsStyle` | `string \| Record<string, string>` | — | 可见标签区域样式（scroll 模式作用于 `.cd-tabs__nav`，dropdown 模式作用于 `.cd-tabs__list`） |
+| `tabBarClassName` | `string` | — | 标签栏容器（`.cd-tabs-bar`）自定义 class |
+| `tabBarStyle` | `string \| Record<string, string>` | — | 标签栏容器（`.cd-tabs-bar`）自定义样式 |
+| `visibleTabsStyle` | `string \| Record<string, string>` | — | 可见标签区域样式（scroll 模式作用于 `.cd-tabs-nav`，dropdown 模式作用于 `.cd-tabs-list`） |
 | `class` / `style` | `string` | — | 根节点透传 |
 
 **Tabs.TabPane Props**

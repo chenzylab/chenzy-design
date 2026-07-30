@@ -19,7 +19,7 @@ const treeData = [
 describe('Tree a11y', () => {
   it('默认渲染：role=tree + treeitem，无 axe violations', async () => {
     const { container } = renderWithLocale(Tree, {
-      props: { treeData, ariaLabel: 'File tree' },
+      props: { treeData, 'aria-label': 'File tree' },
     });
     const tree = container.querySelector('[role="tree"]');
     expect(tree).not.toBeNull();
@@ -30,7 +30,7 @@ describe('Tree a11y', () => {
 
   it('展开节点：aria-expanded 反映展开态 + aria-level', async () => {
     const { container } = renderWithLocale(Tree, {
-      props: { treeData, ariaLabel: 'Tree', defaultExpandAll: true },
+      props: { treeData, 'aria-label': 'Tree', defaultExpandAll: true },
     });
     const expanded = container.querySelector('[role="treeitem"][aria-expanded="true"]');
     expect(expanded?.textContent).toContain('Parent');
@@ -45,7 +45,7 @@ describe('Tree a11y', () => {
 
   it('multiple：treeitem aria-checked + 容器 aria-multiselectable', async () => {
     const { container } = renderWithLocale(Tree, {
-      props: { treeData, ariaLabel: 'Tree', multiple: true, defaultExpandAll: true },
+      props: { treeData, 'aria-label': 'Tree', multiple: true, defaultExpandAll: true },
     });
     expect(container.querySelector('[role="tree"]')?.getAttribute('aria-multiselectable')).toBe('true');
     expect(container.querySelector('[role="treeitem"][aria-checked]')).not.toBeNull();
@@ -54,7 +54,7 @@ describe('Tree a11y', () => {
 
   it('选中态：单选节点 aria-selected', async () => {
     const { container } = renderWithLocale(Tree, {
-      props: { treeData, ariaLabel: 'Tree', defaultValue: 'leaf' },
+      props: { treeData, 'aria-label': 'Tree', defaultValue: 'leaf' },
     });
     const selected = container.querySelector('[role="treeitem"][aria-selected="true"]');
     expect(selected?.textContent).toContain('Leaf');

@@ -76,14 +76,14 @@
     {#if options.length > 0}
       <SideBarOptions {options} {activeKey} {onActiveOptionChange} />
     {/if}
-    <div class="cd-sidebar__main">
+    <div class="cd-sidebar-main">
       {@render renderMainContent?.(activeKey)}
     </div>
   {:else}
-    <div class="cd-sidebar__detail-header">
+    <div class="cd-sidebar-detail-header">
       <button
         type="button"
-        class="cd-sidebar__back"
+        class="cd-sidebar-back"
         aria-label={backLabel}
         disabled={backPending}
         onclick={handleBack}
@@ -99,12 +99,12 @@
         </svg>
       </button>
       {#if renderDetailHeader}
-        <div class="cd-sidebar__detail-header-content">
+        <div class="cd-sidebar-detail-header-content">
           {@render renderDetailHeader(mode)}
         </div>
       {/if}
     </div>
-    <div class="cd-sidebar__detail">
+    <div class="cd-sidebar-detail">
       {@render renderDetailContent?.(mode)}
     </div>
   {/if}
@@ -118,13 +118,13 @@
     min-block-size: 0;
     color: var(--cd-sidebar-color);
   }
-  .cd-sidebar__main,
-  .cd-sidebar__detail {
+  .cd-sidebar-main,
+  .cd-sidebar-detail {
     flex: 1;
     min-block-size: 0;
     overflow: auto;
   }
-  .cd-sidebar__detail-header {
+  .cd-sidebar-detail-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
@@ -132,11 +132,11 @@
     padding: var(--cd-sidebar-header-padding);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar__detail-header-content {
+  .cd-sidebar-detail-header-content {
     flex: 1;
     min-inline-size: 0;
   }
-  .cd-sidebar__back {
+  .cd-sidebar-back {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -150,19 +150,19 @@
     color: var(--cd-sidebar-back-color);
     cursor: pointer;
   }
-  .cd-sidebar__back:hover:not(:disabled) {
+  .cd-sidebar-back:hover:not(:disabled) {
     background: var(--cd-sidebar-back-hover-bg);
   }
-  .cd-sidebar__back:disabled {
+  .cd-sidebar-back:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
-  .cd-sidebar__back:focus-visible {
+  .cd-sidebar-back:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
   /* RTL：返回箭头方向翻转。 */
-  :global([dir='rtl']) .cd-sidebar__back svg {
+  :global([dir='rtl']) .cd-sidebar-back svg {
     transform: scaleX(-1);
   }
 </style>

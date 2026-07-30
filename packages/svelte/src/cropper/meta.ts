@@ -55,7 +55,7 @@ export const meta = {
     },
     { name: 'imgProps', type: 'Record<string, unknown>', default: 'undefined', desc: '透传给底图 <img> 的属性' },
     { name: 'onZoomChange', type: '(zoom: number) => void', default: 'undefined', desc: '缩放变化回调' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: '容器 aria-label（未设走 locale Cropper.container）' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: '容器 aria-label（未设走 locale Cropper.container）' },
     { name: 'class', type: 'string', default: 'undefined', desc: '容器附加类名' },
     { name: 'style', type: 'string', default: 'undefined', desc: '容器附加内联样式' },
   ],
@@ -70,7 +70,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: false,
-    note: '容器 role=group + aria-label（走 locale Cropper.container 或 ariaLabel）；底图/裁切视图 img 为装饰(alt="")；角点/遮罩/裁切框 role=presentation，交互经鼠标/滚轮（对齐 Semi 原生实现，无键盘 resize）。',
+    note: '容器 role=group + aria-label（走 locale Cropper.container 或 aria-label）；底图/裁切视图 img 为装饰(alt="")；角点/遮罩/裁切框 role=presentation，交互经鼠标/滚轮（对齐 Semi 原生实现，无键盘 resize）。',
   },
   tokens: [
     '--cd-cropper-mask-bg',
