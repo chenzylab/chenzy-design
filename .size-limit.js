@@ -130,7 +130,11 @@ const components = [
   // 4 KB → 4.8 KB：全面对齐 Semi 引入的真实新功能（ellipsisPos:'middle' JS 二分截断 +
   // ResizeObserver、IconMore 折叠图标、showTooltip 对象化、链接三态、字符串 route 归一化）。
   // 实测 baseline 3460 B → 4620 B，纯功能增长；同类导航组件 anchor 4.5 / pagination 3.8 / tabs 7.3。
-  ['breadcrumb', '{ BreadcrumbItem }', '4.8 KB'],
+  // 4.8 KB → 5 KB：声明式 <Breadcrumb.Item> 补齐 maxItemCount 折叠能力（原先只有 routes
+  // 数据驱动分支支持，组合式分支被标注为「Svelte Snippet 不可切片」绕过）。实现为 context
+  // 注册式：子项上报序号 → 父级算出折叠区间 → 被折叠项自身不渲染 + 「…」点击展开。
+  // 实测 4.9 KB（净增 102 B），预算按实测校准留余量。
+  ['breadcrumb', '{ BreadcrumbItem }', '5 KB'],
   ['dropdown', '{ Dropdown }', '7.85 KB'],
   // 3.46 KB → 4.82 KB：全面对齐 Semi 引入的真实新功能（hoverShowPageSelect Popover 集成、
   // pageSizeOpts 动态选项 + Select size-changer、quickJumper、preventPageChangeOnPageSizeChange
