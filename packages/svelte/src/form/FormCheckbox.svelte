@@ -38,7 +38,7 @@
       {...(control.indeterminate !== undefined ? { indeterminate: control.indeterminate as NonNullable<CheckboxProps['indeterminate']> } : {})}
       {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxProps['type']> } : {})}
       {id}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}

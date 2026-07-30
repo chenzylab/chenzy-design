@@ -47,7 +47,7 @@
     /** 根容器 id，关联 aria-labelledby；不传自动生成。 */
     id?: string;
     /** 无可视标签时分组的辅助名（i18n 默认）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 外部可视 label 的 id，关联为分组名（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
     /** 校验态，透传各格边框语义。 */
@@ -72,7 +72,7 @@
     autoFocus = true,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     status = 'default',
     className,

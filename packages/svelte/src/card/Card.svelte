@@ -51,7 +51,7 @@
     /** 根节点自定义内联样式。 */
     style?: string;
     /** 根节点 aria-label，表述该 Card 的作用。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 卡片正文。 */
     children?: Snippet;
   }
@@ -73,7 +73,7 @@
     loading = false,
     class: className,
     style,
-    ariaLabel,
+    'aria-label': ariaLabel,
     children,
   }: Props = $props();
 

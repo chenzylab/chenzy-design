@@ -11,5 +11,5 @@
 
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
-  <InputNumber defaultValue={5} min={0} max={100} step={1} ariaLabel="Quantity" />
+  <InputNumber defaultValue={5} min={0} max={100} step={1} aria-label="Quantity" />
 </LocaleProvider>

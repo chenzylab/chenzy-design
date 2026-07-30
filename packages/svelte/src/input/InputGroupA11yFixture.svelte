@@ -15,6 +15,6 @@
   {...size ? { size } : {}}
   {...disabled !== undefined ? { disabled } : {}}
 >
-  <Input ariaLabel="From" defaultValue="0" />
-  <Input ariaLabel="To" defaultValue="100" />
+  <Input aria-label="From" defaultValue="0" />
+  <Input aria-label="To" defaultValue="100" />
 </InputGroup>

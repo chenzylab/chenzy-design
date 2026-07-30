@@ -33,6 +33,6 @@
     {treeData}
     directory
     defaultExpandAll
-    ariaLabel="目录树"
+    aria-label="目录树"
   />
 </div>

@@ -63,7 +63,7 @@
       {...(control.showClear !== undefined ? { showClear: control.showClear as NonNullable<InputNumberProps['showClear']> } : {})}
       {...(control.innerButtons !== undefined ? { innerButtons: control.innerButtons as NonNullable<InputNumberProps['innerButtons']> } : {})}
       {...(control.hideButtons !== undefined ? { hideButtons: control.hideButtons as NonNullable<InputNumberProps['hideButtons']> } : {})}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
       {...(errorMessageId !== undefined ? { ariaErrormessage: errorMessageId } : {})}
       {...(required ? { ariaRequired: true } : {})}

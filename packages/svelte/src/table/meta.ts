@@ -46,7 +46,7 @@ export const meta = {
     },
     { name: 'rowClassName', type: '(record: T, index: number) => string', default: 'undefined' },
     { name: 'empty', type: 'string', default: "'暂无数据'", desc: '空数据占位文案' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: 'table aria-label' },
+    { name: 'aria-label', type: 'string', default: 'undefined', desc: 'table aria-label' },
     { name: 'onRowClick', type: '(info: { record: T; index: number }) => void', default: 'undefined' },
     { name: 'virtualized', type: 'boolean', default: 'false', desc: '行虚拟滚动：仅渲染视口内行，适合大数据(1000+)。启用时忽略 pagination(全量滚动)、表头 sticky 固定顶部；假定行等高，不建议与 expandable 混用' },
     { name: 'height', type: 'number', default: '400', desc: '虚拟滚动视口高度(px)，virtualized 时生效' },

@@ -24,21 +24,21 @@
     options={plainOptions}
     value={value1}
     onChange={(e) => (value1 = e.target.value ?? 'Guest')}
-    ariaLabel="单选组合示例"
+    aria-label="单选组合示例"
     name="demo-radio-group-1"
   />
   <RadioGroup
     options={optionsWithDisabled}
     value={value2}
     onChange={(e) => (value2 = e.target.value ?? 'Developer')}
-    ariaLabel="单选组合示例"
+    aria-label="单选组合示例"
     name="demo-radio-group-2"
   />
   <RadioGroup
     options={options}
     value={value3}
     onChange={(e) => (value3 = e.target.value ?? 'Maintainer')}
-    ariaLabel="单选组合示例"
+    aria-label="单选组合示例"
     name="demo-radio-group-3"
   />
 </Space>

@@ -139,7 +139,7 @@
     {#if children}
       {@render children()}
     {:else}
-      <IconButton theme="light" ariaLabel={loc().t('BackTop.ariaLabel')} icon={defaultIcon} />
+      <IconButton theme="light" aria-label={loc().t('BackTop.ariaLabel')} icon={defaultIcon} />
     {/if}
   </div>
 {/if}

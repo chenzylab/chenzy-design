@@ -32,25 +32,25 @@
       {@const pIcon = iconLevel(theme, 'primary')}
       {@const tIcon = iconLevel(theme, 'tertiary')}
       <div style="display: flex; column-gap: 16px; flex-wrap: wrap;">
-        <Button colorful {theme} type="primary" ariaLabel={content ? undefined : 'AI Level1'}>
+        <Button colorful {theme} type="primary" aria-label={content ? undefined : 'AI Level1'}>
           {#snippet icon()}{@render aiIcon(pIcon)}{/snippet}
           {content}
         </Button>
-        <Button colorful {theme} type="primary" loading ariaLabel={content ? undefined : '加载中'}>
+        <Button colorful {theme} type="primary" loading aria-label={content ? undefined : '加载中'}>
           {content}
         </Button>
-        <Button colorful {theme} type="primary" disabled ariaLabel={content ? undefined : 'AI Level1'}>
+        <Button colorful {theme} type="primary" disabled aria-label={content ? undefined : 'AI Level1'}>
           {#snippet icon()}{@render aiIcon(pIcon)}{/snippet}
           {content}
         </Button>
-        <Button colorful {theme} type="tertiary" ariaLabel={content ? undefined : 'AI Level'}>
+        <Button colorful {theme} type="tertiary" aria-label={content ? undefined : 'AI Level'}>
           {#snippet icon()}{@render aiIcon(tIcon)}{/snippet}
           {content}
         </Button>
-        <Button colorful {theme} type="tertiary" loading ariaLabel={content ? undefined : '加载中'}>
+        <Button colorful {theme} type="tertiary" loading aria-label={content ? undefined : '加载中'}>
           {content}
         </Button>
-        <Button colorful {theme} type="tertiary" disabled ariaLabel={content ? undefined : 'AI Level'}>
+        <Button colorful {theme} type="tertiary" disabled aria-label={content ? undefined : 'AI Level'}>
           {#snippet icon()}{@render aiIcon(tIcon)}{/snippet}
           {content}
         </Button>

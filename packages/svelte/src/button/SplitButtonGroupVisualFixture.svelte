@@ -23,9 +23,9 @@
     style="display:inline-flex; gap:10px; padding:16px; background:#fff; align-items:center;"
   >
     {#each themes as theme (theme)}
-      <SplitButtonGroup ariaLabel="Project actions">
+      <SplitButtonGroup aria-label="Project actions">
         <Button {theme} type="primary">Split</Button>
-        <Button {theme} type="primary" icon={caret} ariaLabel="More"></Button>
+        <Button {theme} type="primary" icon={caret} aria-label="More"></Button>
       </SplitButtonGroup>
     {/each}
   </div>

@@ -25,12 +25,12 @@
     max: number;
     markers?: VideoMarker[];
     showTooltip?: boolean;
-    ariaLabel: string;
+    'aria-label': string;
     /** 拖拽/点击时持续回调新时间 */
     onChange: (value: number) => void;
   }
 
-  let { value, buffered, max, markers = [], showTooltip = true, ariaLabel, onChange }: Props =
+  let { value, buffered, max, markers = [], showTooltip = true, 'aria-label': ariaLabel, onChange }: Props =
     $props();
 
   let sliderEl = $state<HTMLDivElement | null>(null);

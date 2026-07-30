@@ -7,7 +7,7 @@ import SplitTagGroupA11yFixture from './SplitTagGroupA11yFixture.svelte';
 describe('SplitTagGroup a11y', () => {
   it('组容器 role=group + aria-label，子 Tag 连接渲染，无 axe violations', async () => {
     const { container } = render(SplitTagGroupA11yFixture, {
-      props: { ariaLabel: 'Task status' },
+      props: { 'aria-label': 'Task status' },
     });
     const group = container.querySelector('.cd-tag-split');
     expect(group?.getAttribute('role')).toBe('group');

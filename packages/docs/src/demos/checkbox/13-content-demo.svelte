@@ -15,7 +15,7 @@
   <CheckboxGroup
     {options}
     direction="horizontal"
-    ariaLabel="CheckboxGroup 示例"
+    aria-label="CheckboxGroup 示例"
     style="margin-top: 10px;"
   />
 </div>

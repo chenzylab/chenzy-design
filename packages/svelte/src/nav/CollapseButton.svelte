@@ -50,7 +50,7 @@
           icon={sidebarIcon}
           type="tertiary"
           theme="borderless"
-          ariaLabel={finalText}
+          aria-label={finalText}
           onclick={handleClick}
         />
       </span>

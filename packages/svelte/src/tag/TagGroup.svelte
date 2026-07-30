@@ -165,7 +165,7 @@
     onmouseenter={onPlusNMouseEnter}
     role="presentation"
   >
-    <Tag {size} color="grey" ariaLabel={restLabel} style="background-color: transparent;">+{n}</Tag>
+    <Tag {size} color="grey" aria-label={restLabel} style="background-color: transparent;">+{n}</Tag>
   </span>
 {/snippet}
 

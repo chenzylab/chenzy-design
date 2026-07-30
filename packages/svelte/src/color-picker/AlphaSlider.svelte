@@ -14,7 +14,7 @@
     width: number;
     height?: number;
     handleSize?: number;
-    ariaLabel: string;
+    'aria-label': string;
     onChange: (alpha: number) => void;
   }
 
@@ -23,7 +23,7 @@
     width,
     height = SLIDER_HEIGHT,
     handleSize = SLIDER_HANDLE_SIZE,
-    ariaLabel,
+    'aria-label': ariaLabel,
     onChange,
   }: Props = $props();
 

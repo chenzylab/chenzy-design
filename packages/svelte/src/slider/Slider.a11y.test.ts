@@ -7,7 +7,7 @@ import Slider from './Slider.svelte';
 describe('Slider a11y', () => {
   it('默认单值：group 容器 + role=slider 手柄（aria-valuemin/max/now），无 axe violations', async () => {
     const { container } = renderWithLocale(Slider, {
-      props: { ariaLabel: 'Volume', value: 30 },
+      props: { 'aria-label': 'Volume', value: 30 },
     });
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-label')).toBe('Volume');
@@ -22,7 +22,7 @@ describe('Slider a11y', () => {
 
   it('range：两个 slider 手柄，各自 aria-valuenow', async () => {
     const { container } = renderWithLocale(Slider, {
-      props: { ariaLabel: 'Price range', range: true, value: [20, 60] },
+      props: { 'aria-label': 'Price range', range: true, value: [20, 60] },
     });
     const handles = container.querySelectorAll('[role="slider"]');
     expect(handles.length).toBe(2);
@@ -33,7 +33,7 @@ describe('Slider a11y', () => {
 
   it('禁用：aria-disabled=true，无 axe violations', async () => {
     const { container } = renderWithLocale(Slider, {
-      props: { ariaLabel: 'Brightness', value: 50, disabled: true },
+      props: { 'aria-label': 'Brightness', value: 50, disabled: true },
     });
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-disabled')).toBe('true');

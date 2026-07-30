@@ -30,6 +30,6 @@
 
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
-  <Table {columns} {dataSource} rowKey="key" ariaLabel="Users grid" />
+  <Table {columns} {dataSource} rowKey="key" aria-label="Users grid" />
   <button type="button" data-testid="after">after</button>
 </LocaleProvider>

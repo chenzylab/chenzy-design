@@ -163,7 +163,7 @@
     theme="borderless"
     type="primary"
     onclick={handleClear}
-    ariaLabel={loc().t('Chat.clear')}
+    aria-label={loc().t('Chat.clear')}
     title={loc().t('Chat.clear')}
     icon={clearIcon}
   />
@@ -224,7 +224,7 @@
     type="primary"
     disabled={computedDisableSend}
     onclick={doSend}
-    ariaLabel={loc().t('Chat.send')}
+    aria-label={loc().t('Chat.send')}
     title={loc().t('Chat.send')}
     icon={sendIcon}
   />

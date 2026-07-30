@@ -39,7 +39,7 @@
       {...(control.type !== undefined ? { type: control.type as NonNullable<CheckboxGroupProps['type']> } : {})}
       {...(control.direction !== undefined ? { direction: control.direction as NonNullable<CheckboxGroupProps['direction']> } : {})}
       {id}
-      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelledById !== undefined ? { ariaLabelledby: labelledById } : labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       onChange={(v) => onChange(v)}
     >
       {@render slotChildren?.()}

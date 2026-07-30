@@ -93,7 +93,7 @@ import { Layout } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
+| aria-label | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
 | class | 类名 | string | - |
 | hasSider | 表示子元素里有 Sider，一般不用指定。可用于服务端渲染时避免样式闪动 | boolean | - |
 | role | [role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) 属性，提升可访问性 | string | - |
@@ -103,14 +103,12 @@ import { Layout } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
+| aria-label | [aria-label](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/ARIA_Techniques/Using_the_aria-label_attribute) 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - |
 | breakpoint | 触发响应式布局的断点，可选值 'xs', 'sm', 'md', 'lg', 'xl', 'xxl' | string[] | - |
 | class | 类名 | string | - |
 | onBreakpoint | 触发响应式布局断点时的回调 | (screen: string, matched: boolean) => void | - |
 | role | [role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles) 属性，提升可访问性 | string | - |
 | style | 样式 | string | - |
-
-> 本库通用无障碍属性统一用驼峰 prop 名 `ariaLabel`（Semi 为 `aria-label`），其余语义一致。
 
 ### responsive map
 
@@ -129,6 +127,6 @@ import { Layout } from '@chenzy-design/svelte';
 
 ### ARIA
 
-- Sider 可传入 `ariaLabel` props，描述该 Sider 作用。
-- Header Content Main Footer 可传入 `role`、`ariaLabel` 描述对应元素作用。
+- Sider 可传入 `aria-label` props，描述该 Sider 作用。
+- Header Content Main Footer 可传入 `role`、`aria-label` 描述对应元素作用。
 - 默认使用 landmark 语义标签（与 Semi 一致）：Layout→`<section>`，Header→`<header>`，Content→`<main>`，Footer→`<footer>`，Sider→`<aside>`；传入 `role` 可覆盖默认语义。

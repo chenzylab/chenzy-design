@@ -2,7 +2,7 @@
   import { CheckboxGroup, Checkbox } from '@chenzy-design/svelte';
 </script>
 
-<CheckboxGroup style="width: 100%;" defaultValue={['A', 'B']} ariaLabel="CheckboxGroup 示例">
+<CheckboxGroup style="width: 100%;" defaultValue={['A', 'B']} aria-label="CheckboxGroup 示例">
   <Checkbox value="A">A</Checkbox>
   <Checkbox value="B">B</Checkbox>
   <Checkbox value="C">C</Checkbox>

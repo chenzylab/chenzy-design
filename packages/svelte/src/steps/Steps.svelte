@@ -30,7 +30,7 @@
     /** 容器内联样式（对齐 Semi Steps 的 style，字符串形式）。 */
     style?: string;
     /** 容器 aria-label（对齐 Semi Steps 的 aria-label）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 内嵌 <Steps.Step> 列表。 */
     children?: Snippet;
   }
@@ -47,7 +47,7 @@
     onChange,
     class: className = '',
     style,
-    ariaLabel,
+    'aria-label': ariaLabel,
     children,
   }: Props = $props();
 

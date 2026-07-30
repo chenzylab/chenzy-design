@@ -6,11 +6,11 @@
 
 <!-- Radio 不可用（含默认选中的禁用态） -->
 <div>
-  <Radio defaultChecked={false} {disabled} ariaLabel="单选示例" name="demo-radio-disabled">
+  <Radio defaultChecked={false} {disabled} aria-label="单选示例" name="demo-radio-disabled">
     Disabled
   </Radio>
   <br />
-  <Radio defaultChecked {disabled} ariaLabel="单选示例" name="demo-radio-defaultChecked-disabled">
+  <Radio defaultChecked {disabled} aria-label="单选示例" name="demo-radio-defaultChecked-disabled">
     Disabled
   </Radio>
   <div style="margin-top: 20px;">

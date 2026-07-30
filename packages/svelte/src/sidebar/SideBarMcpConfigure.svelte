@@ -16,8 +16,8 @@
   产出的「下一份数组 + custom 标记」，绝不回写 prop（Switch 亦不 bind）。
 
   a11y（spec §6）：
-  - 启用开关用本库 Switch（原生 <button role="switch"> + aria-checked），ariaLabel 走 i18n（含工具名）。
-  - 搜索框 Input ariaLabel 走 i18n（mcpSearchLabel）。
+  - 启用开关用本库 Switch（原生 <button role="switch"> + aria-checked），aria-label 走 i18n（含工具名）。
+  - 搜索框 Input aria-label 走 i18n（mcpSearchLabel）。
   - 每个列表用 role="list" / 项 role="listitem"；动作按钮 aria-label 走 i18n（含工具名）。
   - 空态 / 无结果有文本提示。
 -->
@@ -202,7 +202,7 @@
   <Input
     value={inputValue}
     placeholder={resolvedPlaceholder}
-    ariaLabel={loc().t('SideBar.mcpSearchLabel')}
+    aria-label={loc().t('SideBar.mcpSearchLabel')}
     onInput={handleSearch}
   >
     {#snippet prefix()}

@@ -127,7 +127,7 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 
 ### 图标按钮
 
-可定义按钮的图标。图标通过 `icon` snippet 传入，`iconPosition` 控制图标相对文字的位置。纯图标按钮（无文字）自动收成方形，需提供 `ariaLabel`。
+可定义按钮的图标。图标通过 `icon` snippet 传入，`iconPosition` 控制图标相对文字的位置。纯图标按钮（无文字）自动收成方形，需提供 `aria-label`。
 
 <DemoBox code={iconSrc}><Icon /></DemoBox>
 
@@ -183,7 +183,7 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 按钮的无障碍标签（对齐 Semi `aria-label`）；纯图标按钮必填 | string | - |
+| aria-label | 按钮的无障碍标签（对齐 Semi `aria-label`）；纯图标按钮必填 | string | - |
 | block | 将按钮设置为块级按钮 | boolean | false |
 | circle | 圆形按钮（`border-radius: 50%`），配合 icon-only 呈正圆 | boolean | false |
 | class | 根元素自定义类名 | string | - |
@@ -204,13 +204,13 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 | onmouseenter | 鼠标移入事件 | `(e: MouseEvent) => void` | - |
 | onmouseleave | 鼠标移出事件 | `(e: MouseEvent) => void` | - |
 
-> 事件 prop 使用原生小写命名（`onclick` 而非 `onClick`）；无障碍名用 `ariaLabel`（camelCase）而非 `aria-label` 属性。其余原生属性（`data-*`、`name`、`value`、`form`、`title`、`tabindex` 等）透传到根 `button`。
+> 事件 prop 使用原生小写命名（`onclick` 而非 `onClick`）；无障碍名用 `aria-label`（camelCase）而非 `aria-label` 属性。其余原生属性（`data-*`、`name`、`value`、`form`、`title`、`tabindex` 等）透传到根 `button`。
 
 ### ButtonGroup
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 按钮组的无障碍标签 | string | - |
+| aria-label | 按钮组的无障碍标签 | string | - |
 | class | 自定义类名 | string | - |
 | colorful | 多彩按钮，透传给组内 Button | boolean | false |
 | disabled | 禁用状态 | boolean | false |
@@ -225,7 +225,7 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 分裂按钮组的无障碍标签 | string | - |
+| aria-label | 分裂按钮组的无障碍标签 | string | - |
 | class | 自定义类名 | string | - |
 | style | 自定义样式 | string | - |
 
@@ -233,7 +233,7 @@ import { Button, ButtonGroup, SplitButtonGroup } from '@chenzy-design/svelte';
 
 ### ARIA
 
-- `ariaLabel` 用于表示按钮的作用，对于图标按钮，我们推荐使用此属性。
+- `aria-label` 用于表示按钮的作用，对于图标按钮，我们推荐使用此属性。
 - `aria-disabled` 与 `disabled` 属性同步，表示按钮禁用。
 - 加载状态下 `aria-busy="true"`。
 

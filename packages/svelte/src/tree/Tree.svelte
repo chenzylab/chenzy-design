@@ -300,7 +300,7 @@
     blockNode?: boolean;
     disabled?: boolean;
     emptyContent?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根容器内联样式（对齐 Semi `style`）。可设 width/height/border 等；设 height 时列表区自动限高滚动。 */
     style?: string;
     /** 根元素自定义类名（对齐 Semi `className`；本库/Svelte 惯例用 `class`，叠加在内置 class 之后）。 */
@@ -423,7 +423,7 @@
     blockNode = true,
     disabled = false,
     emptyContent,
-    ariaLabel,
+    'aria-label': ariaLabel,
     style: rootStyle,
     class: rootClassName,
     loadData,
@@ -1492,7 +1492,7 @@
         <Input
           value={searchValue}
           {placeholder}
-          ariaLabel={placeholder}
+          aria-label={placeholder}
           {disabled}
           {showClear}
           onInput={handleSearchValue}
@@ -1704,7 +1704,7 @@
                 checked={checked}
                 indeterminate={!checked && rowHalf(node)}
                 disabled={!isCheckableNode(node)}
-                ariaLabel={node.label}
+                aria-label={node.label}
                 onChange={() => emitCheck(node)}
               />
             </span>

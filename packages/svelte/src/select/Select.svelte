@@ -76,7 +76,7 @@
     position?: Placement;
     placeholder?: string;
     /** combobox 触发器可访问名；缺省回退到 placeholder 或 locale 默认 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel） */
     ariaLabelledby?: string;
     /** 关联外部辅助说明的 id（对齐 Semi withField aria-describedby 注入） */
@@ -294,7 +294,7 @@
     validateStatus = 'default',
     position = 'bottomStart',
     placeholder,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -1287,7 +1287,7 @@
     size="small"
     color="white"
     closable={!disabled}
-    ariaLabel={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
+    aria-label={loc().t('Select.removeItem', { label: getOptionLabel(tag.opt) })}
     onClose={(_c, e) => {
       (e as Event)?.stopPropagation?.();
       removeTag(tag.opt.value);

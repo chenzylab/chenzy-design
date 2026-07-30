@@ -49,7 +49,7 @@
     defaultOpen?: boolean;
     placeholder?: string;
     /** combobox 输入框可访问名；缺省回退到 placeholder 或 locale 默认。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联外部 label 的 id（优先于 ariaLabel）。 */
     ariaLabelledby?: string;
     /** 输入框内嵌前缀标签。 */
@@ -125,7 +125,7 @@
     data = [],
     defaultOpen = false,
     placeholder = '',
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     insetLabel,
     insetLabelId,
@@ -460,7 +460,7 @@
       ...(hasSuffixSlot ? { suffix: suffixSlot } : {}),
       ...(clearIcon ? { clearIcon } : {}),
       ...(insetLabelId != null ? { insetLabelId } : {}),
-      ...(inputAriaLabel != null ? { ariaLabel: inputAriaLabel } : {}),
+      ...(inputAriaLabel != null ? { 'aria-label': inputAriaLabel } : {}),
       ...(resolvedLabelledby != null ? { ariaLabelledby: resolvedLabelledby } : {}),
       ...(activeOptionId != null ? { 'aria-activedescendant': activeOptionId } : {}),
     }}

@@ -35,7 +35,7 @@
     defaultExpandAll
     value={checked}
     onChange={(value) => (checked = value as (string | number)[])}
-    ariaLabel="严格禁用树"
+    aria-label="严格禁用树"
   />
   <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
 </div>

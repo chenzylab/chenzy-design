@@ -42,7 +42,7 @@
       {...(typeof value === 'boolean' ? { checked: value } : {})}
       disabled={(control.disabled as boolean | undefined) ?? fieldDisabled}
       {...(control.type !== undefined ? { type: control.type as NonNullable<RadioProps['type']> } : {})}
-      {...(labelForAria !== undefined ? { ariaLabel: labelForAria } : {})}
+      {...(labelForAria !== undefined ? { 'aria-label': labelForAria } : {})}
       onChange={(e) => onChange(e.target.checked)}
     >
       {@render slotChildren?.()}

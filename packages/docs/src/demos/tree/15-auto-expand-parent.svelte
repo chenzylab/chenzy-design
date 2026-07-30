@@ -26,6 +26,6 @@
     expandedKeys={expanded}
     autoExpandParent
     onExpand={(keys) => (expanded = keys)}
-    ariaLabel="自动展开父节点树"
+    aria-label="自动展开父节点树"
   />
 </div>

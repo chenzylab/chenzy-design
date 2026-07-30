@@ -88,7 +88,7 @@
     /** 主内容区（可滚动）。对齐 Semi children。 */
     children?: Snippet;
     /** 无可见标题时的 aria-label。对齐 Semi aria-label。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根元素自定义类名。对齐 Semi className。 */
     class?: string;
     /** 面板展示/隐藏动画结束触发。对齐 Semi afterVisibleChange。 */
@@ -121,7 +121,7 @@
     maskStyle,
     footer,
     children,
-    ariaLabel,
+    'aria-label': ariaLabel,
     class: className,
     afterVisibleChange,
     onCancel,
@@ -374,7 +374,7 @@
                 type="tertiary"
                 theme="borderless"
                 size="small"
-                ariaLabel={loc().t('SideSheet.closeAriaLabel')}
+                aria-label={loc().t('SideSheet.closeAriaLabel')}
                 onclick={emitCancel}
               >
                 {#snippet icon()}

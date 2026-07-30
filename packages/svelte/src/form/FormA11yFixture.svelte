@@ -21,7 +21,7 @@
         value={value === undefined ? '' : String(value)}
         {id}
         validateStatus={status === 'error' ? 'error' : 'default'}
-        ariaLabel="Bio"
+        aria-label="Bio"
         {...(describedBy !== undefined ? { ariaDescribedby: describedBy } : {})}
         onChange={(v) => onChange(v)}
         onBlur={() => onBlur()}

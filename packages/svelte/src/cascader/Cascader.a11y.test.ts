@@ -23,7 +23,7 @@ const treeData = [
 describe('Cascader a11y', () => {
   it('关闭态：触发器 role=combobox / aria-expanded=false，无 axe violations', async () => {
     const { container } = renderWithLocale(Cascader, {
-      props: { treeData, ariaLabel: 'Region', placeholder: 'Select region' },
+      props: { treeData, 'aria-label': 'Region', placeholder: 'Select region' },
     });
     const combobox = container.querySelector('[role="combobox"]');
     expect(combobox).not.toBeNull();
@@ -36,7 +36,7 @@ describe('Cascader a11y', () => {
   // 每列 listbox 经 locale Cascader.columnLabel 获可访问名（「第 N 级选项」）。
   it('打开态：面板列 listbox + option 渲染（portal 到 body），无 axe violations', async () => {
     renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, ariaLabel: 'Region' },
+      props: { treeData, defaultOpen: true, 'aria-label': 'Region' },
     });
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
@@ -48,7 +48,7 @@ describe('Cascader a11y', () => {
 
   it('已选路径：触发器 aria-expanded 切换，选中 option 标记 aria-selected', async () => {
     renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, defaultValue: ['zj', 'hz', 'xh'], ariaLabel: 'Region' },
+      props: { treeData, defaultOpen: true, defaultValue: ['zj', 'hz', 'xh'], 'aria-label': 'Region' },
     });
     const combobox = document.querySelector('[role="combobox"]');
     expect(combobox?.getAttribute('aria-expanded')).toBe('true');
@@ -62,7 +62,7 @@ describe('Cascader a11y', () => {
   // 根容器不再是 combobox（避免嵌套双 combobox）。
   it('可搜索打开态：combobox 落在触发器内原生 input，root 非 combobox，无 axe violations', async () => {
     const { container } = renderWithLocale(Cascader, {
-      props: { treeData, defaultOpen: true, filterTreeNode: true, ariaLabel: 'Region', placeholder: 'Select region' },
+      props: { treeData, defaultOpen: true, filterTreeNode: true, 'aria-label': 'Region', placeholder: 'Select region' },
     });
     // combobox 现在是搜索 Input 的原生 input（.cd-input），而非根 .cd-cascader div。
     const combobox = container.querySelector('input.cd-input[role="combobox"]');
@@ -84,7 +84,7 @@ describe('Cascader a11y', () => {
         treeData,
         multiple: true,
         defaultValue: [['zj', 'hz', 'xh']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
         placeholder: 'Select region',
       },
     });
@@ -106,7 +106,7 @@ describe('Cascader a11y', () => {
         multiple: true,
         maxTagCount: 1,
         defaultValue: [['zj', 'hz', 'xh'], ['js', 'nj']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const restN = container.querySelector('.cd-tag-input-wrapper-n');
@@ -127,7 +127,7 @@ describe('Cascader a11y', () => {
         autoMergeValue: true,
         // 合并态：杭州(hz)父路径代表其唯一叶子 xh 全选；tag 展开显示 West Lake。
         defaultValue: [['zj', 'hz']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
         onChange: (v: unknown) => {
           changed = v;
         },
@@ -159,7 +159,7 @@ describe('Cascader a11y', () => {
         checkRelation: 'unRelated',
         // 勾选中间节点 Hangzhou（其下有叶子 West Lake）。unRelated 下应独立选中它本身。
         defaultValue: [['zj', 'hz']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];
@@ -181,7 +181,7 @@ describe('Cascader a11y', () => {
         checkRelation: 'unRelated',
         // 两个跨层中间节点：Hangzhou（zj>hz）与 Jiangsu（js，第一层）。
         defaultValue: [['zj', 'hz'], ['js']],
-        ariaLabel: 'Region',
+        'aria-label': 'Region',
       },
     });
     const tags = [...container.querySelectorAll('.cd-cascader-selection-tag')];

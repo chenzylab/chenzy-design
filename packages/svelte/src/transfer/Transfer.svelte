@@ -518,7 +518,7 @@
         placeholder={loc().t('Transfer.searchPlaceholder')}
         showClear
         {disabled}
-        ariaLabel={loc().t('Transfer.searchPlaceholder')}
+        aria-label={loc().t('Transfer.searchPlaceholder')}
         onInput={onInputChange}
       >
         {#snippet prefix()}
@@ -774,7 +774,7 @@
       theme="borderless"
       type="tertiary"
       size="small"
-      ariaLabel={loc().t('Transfer.moveToRight')}
+      aria-label={loc().t('Transfer.moveToRight')}
       disabled={moveRightDisabled}
       onclick={moveToRight}
     >

@@ -106,7 +106,7 @@
     modalRender?: Snippet<[Snippet]>;
     /** 内容主体。 */
     children?: Snippet;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /**
      * 指示浏览器是否应滚动文档以显示新聚焦的元素，作用于组件内的 focus 方法。
      * 对齐 Semi preventScroll。
@@ -166,7 +166,7 @@
     icon,
     modalRender,
     children,
-    ariaLabel,
+    'aria-label': ariaLabel,
     preventScroll = false,
     onOk,
     onCancel,
@@ -509,7 +509,7 @@
     type="tertiary"
     theme="borderless"
     size="small"
-    ariaLabel={loc().t('Modal.close')}
+    aria-label={loc().t('Modal.close')}
     onclick={cancel}
   >
     {#snippet icon()}

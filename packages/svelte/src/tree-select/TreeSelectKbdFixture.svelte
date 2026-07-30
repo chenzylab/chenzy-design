@@ -16,5 +16,5 @@
 </script>
 
 <LocaleProvider locale="en_US">
-  <TreeSelect {treeData} ariaLabel="Fruit tree" placeholder="Pick a fruit" />
+  <TreeSelect {treeData} aria-label="Fruit tree" placeholder="Pick a fruit" />
 </LocaleProvider>

@@ -46,7 +46,7 @@
     block?: boolean;
     disabled?: boolean;
     htmlType?: 'button' | 'submit' | 'reset';
-    ariaLabel?: string;
+    'aria-label'?: string;
     class?: string;
     /** 打开面板时自动聚焦此按钮（对齐 Semi autoFocus） */
     autoFocus?: boolean;

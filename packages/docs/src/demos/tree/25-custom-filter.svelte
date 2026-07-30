@@ -39,5 +39,5 @@
   {treeData}
   filterTreeNode={startsWith}
   defaultExpandAll
-  ariaLabel="自定义过滤谓词树"
+  aria-label="自定义过滤谓词树"
 />

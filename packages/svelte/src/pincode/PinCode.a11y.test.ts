@@ -50,7 +50,7 @@ describe('PinCode a11y', () => {
 
   it('自定义 ariaLabel + error：aria-label / 各格 aria-invalid', async () => {
     const { container } = renderWithLocale(PinCode, {
-      props: { count: 4, ariaLabel: 'SMS code', status: 'error' },
+      props: { count: 4, 'aria-label': 'SMS code', status: 'error' },
     });
     const group = container.querySelector('[role="group"]');
     expect(group?.getAttribute('aria-label')).toBe('SMS code');

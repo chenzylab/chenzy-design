@@ -27,7 +27,7 @@
     children?: Snippet;
     id?: string;
     /** 无可见标题时的可访问名称（role=list）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联组的可见标题元素 id（优先于 ariaLabel 体现可访问名）。 */
     ariaLabelledby?: string;
     /** 根容器内联样式（对齐 Semi style，可设 width 等）。 */
@@ -47,7 +47,7 @@
     onChange,
     children,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     style,
     class: className,

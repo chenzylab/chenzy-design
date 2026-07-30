@@ -68,7 +68,7 @@
     showContentTooltip?: boolean | ShowTooltip;
     onChange?: (tags: string[]) => void;
     onInputChange?: (value: string) => void;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -133,7 +133,7 @@
     showContentTooltip = true,
     onChange,
     onInputChange,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,
@@ -487,7 +487,7 @@
             size={tagSize}
             closable={!disabled}
             visible
-            ariaLabel={`${!disabled ? 'Closable ' : ''}Tag: ${tag}`}
+            aria-label={`${!disabled ? 'Closable ' : ''}Tag: ${tag}`}
             onClose={(_children, e) => {
               e.preventDefault();
               removeAt(i);

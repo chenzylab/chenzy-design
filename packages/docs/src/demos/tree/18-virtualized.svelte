@@ -25,6 +25,6 @@
     {treeData}
     virtualize={{ itemSize: 32, height: 320 }}
     defaultExpandAll
-    ariaLabel="大数据虚拟树"
+    aria-label="大数据虚拟树"
   />
 </div>

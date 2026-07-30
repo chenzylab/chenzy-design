@@ -31,7 +31,7 @@
     value={value}
     onExpand={(keys) => (expanded = keys)}
     onChange={(v) => (value = v as string | number)}
-    ariaLabel="受控树"
+    aria-label="受控树"
   />
   <Text type="tertiary" size="small">已选：{value ?? '（未选）'}</Text>
 </div>

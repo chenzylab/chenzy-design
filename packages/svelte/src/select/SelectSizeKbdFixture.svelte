@@ -22,9 +22,9 @@
 
 <div class="size-fixture">
   <LocaleProvider locale="en_US">
-    <div data-testid="small"><Select {optionList} size="small" ariaLabel="Small" /></div>
-    <div data-testid="default"><Select {optionList} ariaLabel="Default" /></div>
-    <div data-testid="large"><Select {optionList} size="large" ariaLabel="Large" /></div>
+    <div data-testid="small"><Select {optionList} size="small" aria-label="Small" /></div>
+    <div data-testid="default"><Select {optionList} aria-label="Default" /></div>
+    <div data-testid="large"><Select {optionList} size="large" aria-label="Large" /></div>
   </LocaleProvider>
 </div>
 

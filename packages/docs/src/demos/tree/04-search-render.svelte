@@ -17,7 +17,7 @@
 
 <div style="width:260px">
   <!-- searchRender：自定义搜索框渲染（这里加了自定义 placeholder 与前缀文案） -->
-  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} filterTreeNode defaultExpandAll ariaLabel="自定义搜索框树">
+  <Tree style="width: 260px; height: 420px; border: 1px solid var(--cd-color-border); border-radius: 6px; box-sizing: border-box" {treeData} filterTreeNode defaultExpandAll aria-label="自定义搜索框树">
     {#snippet searchRender({ value, placeholder, onChange, onClear, showClear })}
       <Input
         {value}

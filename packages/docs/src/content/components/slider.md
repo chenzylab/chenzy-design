@@ -83,7 +83,7 @@ import { Slider } from '@chenzy-design/svelte';
 
 | 属性 | 说明 | 类型 | 默认值 | 版本 |
 | --- | --- | --- | --- | --- |
-| ariaLabel | `aria-label` 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - | - |
+| aria-label | `aria-label` 属性，用来给当前元素加上的标签描述，提升可访问性 | string | - | - |
 | ariaLabelledby | `aria-labelledby` 属性，表明某些元素的 id 是某一对象的标签 | string | - | - |
 | ariaValuetext | `aria-valuetext` 属性，为滑块的当前值提供用户友好的名称 | string | - | - |
 | defaultValue | 设置初始取值 | `number \| number[]` | 0 | - |

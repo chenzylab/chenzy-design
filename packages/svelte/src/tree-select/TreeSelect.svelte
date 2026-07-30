@@ -113,7 +113,7 @@
     /** 浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body。 */
     getPopupContainer?: () => HTMLElement | null | undefined;
     onChange?: (value: TreeKey | TreeKey[] | null) => void;
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi）。 */
     ariaLabelledby?: string;
     /** aria-describedby：关联 helpText / extraText（Form.Field 透传）。 */
@@ -304,7 +304,7 @@
     dropdownMatchSelectWidth = true,
     getPopupContainer,
     onChange,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,

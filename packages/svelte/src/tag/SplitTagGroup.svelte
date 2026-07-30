@@ -9,7 +9,7 @@
 
   interface Props {
     /** 组的可访问名（对齐 Semi aria-label） */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 透传根类名（对齐 Semi className） */
     class?: string;
     /** 透传根内联样式（对齐 Semi style） */
@@ -18,7 +18,7 @@
     children?: Snippet;
   }
 
-  let { ariaLabel, class: className, style, children }: Props = $props();
+  let { 'aria-label': ariaLabel, class: className, style, children }: Props = $props();
 
   const rootCls = $derived(['cd-tag-split', className].filter(Boolean).join(' '));
 </script>

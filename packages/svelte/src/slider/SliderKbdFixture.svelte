@@ -13,9 +13,9 @@
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
   <div data-testid="single">
-    <Slider defaultValue={50} min={0} max={100} step={1} ariaLabel="Volume" />
+    <Slider defaultValue={50} min={0} max={100} step={1} aria-label="Volume" />
   </div>
   <div data-testid="range">
-    <Slider range defaultValue={[20, 60]} min={0} max={100} step={1} ariaLabel="Range" />
+    <Slider range defaultValue={[20, 60]} min={0} max={100} step={1} aria-label="Range" />
   </div>
 </LocaleProvider>

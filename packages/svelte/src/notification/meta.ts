@@ -81,7 +81,7 @@ export const meta = {
   a11y: {
     hasRole: true,
     focusable: false,
-    note: 'role=alert（对齐 Semi）；标题经 aria-labelledby 关联；关闭按钮为 IconButton，带 ariaLabel「关闭」。不抢焦点、不锁滚动。',
+    note: 'role=alert（对齐 Semi）；标题经 aria-labelledby 关联；关闭按钮为 IconButton，带 aria-label「关闭」。不抢焦点、不锁滚动。',
   },
   tokens: [
     '--cd-color-notification-bg-default',

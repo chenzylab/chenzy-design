@@ -40,7 +40,7 @@
     defaultExpandAll
     value={checked}
     onChange={(value) => (checked = value as (string | number)[])}
-    ariaLabel="多选地区树"
+    aria-label="多选地区树"
   />
   <Text type="tertiary" size="small">已勾选 {checked.length} 项</Text>
 </div>

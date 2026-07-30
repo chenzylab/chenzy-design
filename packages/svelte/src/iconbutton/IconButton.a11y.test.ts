@@ -16,7 +16,7 @@ const icon = createRawSnippet(() => ({
 describe('IconButton a11y', () => {
   it('基础：原生 <button> + 非空 aria-label，无 axe violations', async () => {
     const { container } = renderWithLocale(IconButtonC, {
-      props: { icon, ariaLabel: 'Edit', type: 'primary' },
+      props: { icon, 'aria-label': 'Edit', type: 'primary' },
     });
     const btn = container.querySelector('button')!;
     expect(btn.getAttribute('type')).toBe('button');
@@ -28,21 +28,21 @@ describe('IconButton a11y', () => {
 
   it('circle 圆形按钮：无 axe violations', async () => {
     const { container } = renderWithLocale(IconButtonC, {
-      props: { icon, ariaLabel: 'Add', circle: true },
+      props: { icon, 'aria-label': 'Add', circle: true },
     });
     await expectNoAxeViolations(container);
   });
 
   it('danger 危险操作图标按钮：无 axe violations', async () => {
     const { container } = renderWithLocale(IconButtonC, {
-      props: { icon, ariaLabel: 'Delete', type: 'danger' },
+      props: { icon, 'aria-label': 'Delete', type: 'danger' },
     });
     await expectNoAxeViolations(container);
   });
 
   it('loading 态：aria-busy + 无 axe violations', async () => {
     const { container } = renderWithLocale(IconButtonC, {
-      props: { icon, ariaLabel: 'Saving', loading: true },
+      props: { icon, 'aria-label': 'Saving', loading: true },
     });
     const btn = container.querySelector('button')!;
     expect(btn.getAttribute('aria-busy')).toBe('true');

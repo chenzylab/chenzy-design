@@ -367,7 +367,7 @@
       buffered={bufferedValue}
       max={totalTime}
       {markers}
-      ariaLabel={loc().t('VideoPlayer.progress')}
+      aria-label={loc().t('VideoPlayer.progress')}
       onChange={onSeek}
     />
     <div class="cd-videoPlayer-controls-menu">
@@ -376,7 +376,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+            aria-label={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
             onclick={onTogglePlay}
           >
             {#snippet icon()}{#if isPlaying}<IconPause />{:else}<IconPlay />{/if}{/snippet}
@@ -388,7 +388,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
+            aria-label={isPlaying ? loc().t('VideoPlayer.pause') : loc().t('VideoPlayer.play')}
             onclick={onTogglePlay}
           >
             {#snippet icon()}<IconRestart rotate={180} />{/snippet}
@@ -412,7 +412,7 @@
                   vertical
                   height={120}
                   showTooltip={false}
-                  ariaLabel={loc().t('VideoPlayer.volume')}
+                  aria-label={loc().t('VideoPlayer.volume')}
                   onChange={onVolume}
                 />
               </div>
@@ -420,7 +420,7 @@
             <Button
               theme="borderless"
               class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-              ariaLabel={muted ? loc().t('VideoPlayer.unmute') : loc().t('VideoPlayer.mute')}
+              aria-label={muted ? loc().t('VideoPlayer.unmute') : loc().t('VideoPlayer.mute')}
               onclick={onToggleMute}
             >
               {#snippet icon()}
@@ -500,7 +500,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={loc().t('VideoPlayer.mirror')}
+            aria-label={loc().t('VideoPlayer.mirror')}
             aria-pressed={isMirror}
             onclick={onMirror}
           >
@@ -512,7 +512,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={isFullscreen
+            aria-label={isFullscreen
               ? loc().t('VideoPlayer.exitFullscreen')
               : loc().t('VideoPlayer.fullscreen')}
             aria-pressed={isFullscreen}
@@ -526,7 +526,7 @@
           <Button
             theme="borderless"
             class="cd-videoPlayer-controls-menu-item cd-videoPlayer-controls-menu-button"
-            ariaLabel={loc().t('VideoPlayer.pictureInPicture')}
+            aria-label={loc().t('VideoPlayer.pictureInPicture')}
             onclick={onPip}
           >
             {#snippet icon()}<IconMiniPlayer />{/snippet}

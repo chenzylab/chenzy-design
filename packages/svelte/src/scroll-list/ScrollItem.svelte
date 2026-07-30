@@ -52,7 +52,7 @@
     /** 列内联样式。对齐 Semi style。 */
     style?: string;
     /** 列无障碍标签。对齐 Semi aria-label。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
   }
 
   let {
@@ -66,7 +66,7 @@
     onSelect,
     class: className,
     style,
-    ariaLabel,
+    'aria-label': ariaLabel,
   }: Props = $props();
 
   const count = $derived(list.length);

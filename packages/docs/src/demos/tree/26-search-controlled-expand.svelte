@@ -33,5 +33,5 @@
   expandedKeys={expandedKeys}
   onExpand={(keys) => (expandedKeys = keys)}
   onSearch={(_value, filteredExpandedKeys) => (expandedKeys = [...filteredExpandedKeys])}
-  ariaLabel="展开受控可搜索树"
+  aria-label="展开受控可搜索树"
 />

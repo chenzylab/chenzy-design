@@ -29,10 +29,10 @@ export const meta = {
       desc: '折叠 … 的浮层类型（对齐 Semi）：default 点击三点图标就地展开全部；popover 悬浮弹出可点击跳转的折叠项菜单',
     },
     {
-      name: 'ariaLabel',
+      name: 'aria-label',
       type: 'string',
       default: 'undefined',
-      desc: '无障碍标签，默认取 i18n Breadcrumb.ariaLabel；传入覆盖（对齐 Semi aria-label）',
+      desc: '无障碍标签，默认取 i18n Breadcrumb.aria-label；传入覆盖（对齐 Semi aria-label）',
     },
     { name: 'style', type: 'string', default: 'undefined', desc: '根节点内联样式（对齐 Semi style）' },
     {

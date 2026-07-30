@@ -21,7 +21,7 @@
     disabled?: boolean;
     theme?: 'dark' | 'light';
     /** 无障碍名（role=slider 的 accessible name）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
   }
 
   let {
@@ -35,7 +35,7 @@
     showTooltip = true,
     disabled = false,
     theme = 'dark',
-    ariaLabel,
+    'aria-label': ariaLabel,
   }: Props = $props();
 
   let sliderEl = $state<HTMLDivElement | null>(null);

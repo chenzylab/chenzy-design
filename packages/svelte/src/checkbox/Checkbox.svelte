@@ -30,7 +30,7 @@
     extraId?: string;
     preventScroll?: boolean;
     /** 无可见文本 label 时提供可访问名（如嵌在 Tree 行内、label 由外部承载时）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 关联外部 label 的 id（对齐 Semi withField aria-labelledby 注入）。 */
     ariaLabelledby?: string;
     /** 关联外部辅助说明的 id（对齐 Semi withField aria-describedby 注入）。 */
@@ -66,7 +66,7 @@
     addonId,
     extraId: extraIdProp,
     preventScroll,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,

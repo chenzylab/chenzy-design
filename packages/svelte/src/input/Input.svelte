@@ -83,7 +83,7 @@
     composition?: boolean;
     name?: string;
     id?: string;
-    ariaLabel?: string;
+    'aria-label'?: string;
     ariaLabelledby?: string;
     ariaDescribedby?: string;
     ariaErrormessage?: string;
@@ -146,7 +146,7 @@
     composition = false,
     name,
     id,
-    ariaLabel,
+    'aria-label': ariaLabel,
     ariaLabelledby,
     ariaDescribedby,
     ariaErrormessage,

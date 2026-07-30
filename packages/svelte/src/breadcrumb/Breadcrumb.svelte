@@ -61,7 +61,7 @@
     /** 受控选中项索引（配合 onClick 使用，令对应项高亮；对齐 Semi activeIndex）。 */
     activeIndex?: number;
     /** 无障碍标签，默认取 i18n Breadcrumb.ariaLabel；传入时覆盖（对齐 Semi aria-label）。 */
-    ariaLabel?: string;
+    'aria-label'?: string;
     /** 根节点内联样式（对齐 Semi style）。 */
     style?: string;
     /**
@@ -91,7 +91,7 @@
     compact = true,
     autoCollapse = true,
     activeIndex = undefined,
-    ariaLabel,
+    'aria-label': ariaLabel,
     style,
     renderItem,
     renderMore,

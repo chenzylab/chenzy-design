@@ -139,7 +139,7 @@
       class="cd-color-picker-colorpickerinput"
       size="small"
       value={inputValue}
-      ariaLabel={labels.value}
+      aria-label={labels.value}
       onChange={handleInputChange}
     />
     {#if alpha}
@@ -150,7 +150,7 @@
         max={100}
         hideButtons
         affixIsIcon={false}
-        ariaLabel={labels.alpha}
+        aria-label={labels.alpha}
         value={alphaPercentValue}
         onNumberChange={handleAlphaNumberChange}
       >
@@ -164,7 +164,7 @@
       size="small"
       value={format}
       optionList={formatOptions}
-      ariaLabel={labels.format}
+      aria-label={labels.format}
       onSelect={(v) => (format = v as ColorValueFormat)}
     />
   </InputGroup>
@@ -174,7 +174,7 @@
       type="tertiary"
       theme="light"
       size="small"
-      ariaLabel={labels.eyeDropper}
+      aria-label={labels.eyeDropper}
       onclick={handlePickValueWithStraw}
     >
       {#snippet icon()}<IconEyedropper aria-hidden="true" />{/snippet}

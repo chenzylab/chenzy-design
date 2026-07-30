@@ -16,6 +16,6 @@
 
 <LocaleProvider locale="en_US">
   <button type="button" data-testid="before">before</button>
-  <RadioGroup {options} defaultValue="apple" ariaLabel="Fruit" />
+  <RadioGroup {options} defaultValue="apple" aria-label="Fruit" />
   <button type="button" data-testid="after">after</button>
 </LocaleProvider>

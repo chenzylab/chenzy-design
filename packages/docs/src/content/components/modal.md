@@ -122,7 +122,7 @@ import { Modal } from '@chenzy-design/svelte';
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | afterClose | 对话框完全关闭后的回调函数 | `() => void` | 无 |
-| ariaLabel | 无 title 时对话框的无障碍名称（本库补充） | string | 无 |
+| aria-label | 无 title 时对话框的无障碍名称（本库补充） | string | 无 |
 | bodyStyle | 对话框内容的样式 | string | 无 |
 | cancelButtonProps | 取消按钮的 props | [ButtonProps](/components/button#API-参考) | 无 |
 | cancelText | 取消按钮的文字 | string | 无 |

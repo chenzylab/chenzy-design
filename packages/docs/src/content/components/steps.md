@@ -121,7 +121,7 @@ import { Steps } from '@chenzy-design/svelte';
 
 | 参数 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| ariaLabel | 容器 aria-label | string | - |
+| aria-label | 容器 aria-label | string | - |
 | class | 类名 | string | - |
 | description | 步骤的详情描述，可选 | string \| Snippet | - |
 | icon | 步骤图标的类型，可选 | string \| Snippet | - |

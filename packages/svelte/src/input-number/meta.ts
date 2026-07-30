@@ -29,7 +29,7 @@ export const meta = {
     { name: 'suffix', type: 'string | Snippet', default: 'undefined', desc: '输入框后置内容（如单位 %、kg）' },
     { name: 'name', type: 'string', default: 'undefined' },
     { name: 'id', type: 'string', default: '自动生成', desc: 'input 元素 id，关联外部 label' },
-    { name: 'ariaLabel', type: 'string', default: 'undefined' },
+    { name: 'aria-label', type: 'string', default: 'undefined' },
     { name: 'autofocus', type: 'boolean', default: 'false', desc: '挂载自动聚焦' },
     { name: 'locale', type: 'string', default: 'undefined', desc: '数字格式化 locale（仅未提供 formatter 时生效）' },
     { name: 'borderless', type: 'boolean', default: 'false', desc: '无边框模式' },

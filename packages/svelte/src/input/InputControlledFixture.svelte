@@ -24,7 +24,7 @@
 </script>
 
 <Input
-  ariaLabel="controlled"
+  aria-label="controlled"
   value={val}
   {...(maxLength !== undefined ? { maxLength } : {})}
   {...(minLength !== undefined ? { minLength } : {})}
