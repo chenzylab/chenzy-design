@@ -1178,14 +1178,14 @@
   const cls = $derived(
     [
       'cd-tree-select',
-      `cd-tree-select--${size}`,
-      `cd-tree-select--${effStatus}`,
-      disabled && 'cd-tree-select--disabled',
-      isOpen && 'cd-tree-select--open',
-      borderless && 'cd-tree-select--borderless',
-      showLine && 'cd-tree-select--show-line',
-      !motionExpand && 'cd-tree-select--no-motion-expand',
-      triggerTagWrap && 'cd-tree-select--tag-wrap',
+      `cd-tree-select-${size}`,
+      `cd-tree-select-${effStatus}`,
+      disabled && 'cd-tree-select-disabled',
+      isOpen && 'cd-tree-select-open',
+      borderless && 'cd-tree-select-borderless',
+      showLine && 'cd-tree-select-show-line',
+      !motionExpand && 'cd-tree-select-no-motion-expand',
+      triggerTagWrap && 'cd-tree-select-tag-wrap',
     ]
       .filter(Boolean)
       .join(' '),
@@ -1209,7 +1209,7 @@
 </script>
 
 {#snippet emptyBlock()}
-  <div class="cd-tree-select__empty">
+  <div class="cd-tree-select-empty">
     {#if emptyContent !== undefined}
       {#if typeof emptyContent === 'string'}{emptyContent}{:else}{@render emptyContent()}{/if}
     {:else}
@@ -1235,9 +1235,9 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
     id={itemId(node.key)}
-    class="cd-tree-select__node"
-    class:cd-tree-select__node--selected={!multiple && selected}
-    class:cd-tree-select__node--active={active}
+    class="cd-tree-select-node"
+    class:cd-tree-select-node-selected={!multiple && selected}
+    class:cd-tree-select-node-active={active}
     role="treeitem"
     aria-level={level + 1}
     aria-setsize={setSize}
@@ -1253,13 +1253,13 @@
     tabindex={-1}
   >
     {#if loading}
-      <span class="cd-tree-select__expand cd-tree-select__expand--loading" aria-hidden="true">
-        <span class="cd-tree-select__spinner"></span>
+      <span class="cd-tree-select-expand cd-tree-select-expand-loading" aria-hidden="true">
+        <span class="cd-tree-select-spinner"></span>
       </span>
     {:else if expandable}
       <span
-        class="cd-tree-select__expand"
-        class:cd-tree-select__expand--open={nodeOpen}
+        class="cd-tree-select-expand"
+        class:cd-tree-select-expand-open={nodeOpen}
         role="button"
         tabindex="-1"
         aria-label={nodeOpen ? loc().t('Tree.collapse') : loc().t('Tree.expand')}
@@ -1278,13 +1278,13 @@
         <IconTreeTriangleDown size="small" aria-hidden="true" />
       </span>
     {:else}
-      <span class="cd-tree-select__expand cd-tree-select__expand--placeholder" aria-hidden="true"></span>
+      <span class="cd-tree-select-expand cd-tree-select-expand-placeholder" aria-hidden="true"></span>
     {/if}
     {#if multiple}
       <span
-        class="cd-tree-select__checkbox"
-        class:cd-tree-select__checkbox--checked={cs.checked}
-        class:cd-tree-select__checkbox--half={cs.half}
+        class="cd-tree-select-checkbox"
+        class:cd-tree-select-checkbox-checked={cs.checked}
+        class:cd-tree-select-checkbox-half={cs.half}
         aria-hidden="true"
       >
         {#if cs.checked}
@@ -1295,12 +1295,12 @@
       </span>
     {/if}
     {#if node.icon != null}
-      <span class="cd-tree-select__icon" aria-hidden="true">{node.icon}</span>
+      <span class="cd-tree-select-icon" aria-hidden="true">{node.icon}</span>
     {/if}
-    <span class="cd-tree-select__node-label">
+    <span class="cd-tree-select-node-label">
       {#if searchActive}
         {#each highlightParts(node.label) as part, i (i)}
-          {#if part.mark}<mark class="cd-tree-select__highlight">{part.text}</mark>{:else}{part.text}{/if}
+          {#if part.mark}<mark class="cd-tree-select-highlight">{part.text}</mark>{:else}{part.text}{/if}
         {/each}
       {:else}
         {node.label}
@@ -1312,7 +1312,7 @@
 {#snippet restTagsTrigger()}
   <!-- +N 折叠触发器：aria-label 走 i18n restTagsCount（「还有 {count} 项」/「{count} more」）供屏幕阅读器朗读折叠数 -->
   <span
-    class="cd-tree-select__rest-trigger"
+    class="cd-tree-select-rest-trigger"
     aria-label={loc().t('TreeSelect.restTagsCount', { count: hiddenTagCount })}
   >
     <Tag size={size === 'large' ? 'default' : 'small'}>+{hiddenTagCount}</Tag>
@@ -1334,7 +1334,7 @@
     })}
   {:else if bare}
     <input
-      class="cd-tree-select__search-input cd-tree-select__search-input--bare"
+      class="cd-tree-select-search-input cd-tree-select-search-input-bare"
       type="text"
       role="combobox"
       aria-expanded={isOpen}
@@ -1347,10 +1347,10 @@
       onkeydown={onSearchKeydown}
     />
   {:else}
-    <span class="cd-tree-select__search-field">
-      <IconSearch class="cd-tree-select__search-icon" aria-hidden="true" />
+    <span class="cd-tree-select-search-field">
+      <IconSearch class="cd-tree-select-search-icon" aria-hidden="true" />
       <input
-        class="cd-tree-select__search-input"
+        class="cd-tree-select-search-input"
         type="text"
         role="combobox"
         aria-expanded={isOpen}
@@ -1387,7 +1387,7 @@
     {@render triggerRender({ value: triggerValue, placeholder, isOpen, disabled })}
   {:else}
   <div
-    class="cd-tree-select__trigger"
+    class="cd-tree-select-trigger"
     role="combobox"
     aria-haspopup="tree"
     aria-expanded={isOpen}
@@ -1423,23 +1423,23 @@
     }}
   >
     {#if prefix}
-      <span class="cd-tree-select__prefix">
+      <span class="cd-tree-select-prefix">
         {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
       </span>
     {/if}
     {#if insetLabel}
-      <span class="cd-tree-select__inset-label" id={insetLabelId}>
+      <span class="cd-tree-select-inset-label" id={insetLabelId}>
         {#if typeof insetLabel === 'string'}{insetLabel}{:else}{@render insetLabel()}{/if}
       </span>
     {/if}
-    <span class="cd-tree-select__content" class:cd-tree-select__content--search-trigger={searchInTrigger}>
+    <span class="cd-tree-select-content" class:cd-tree-select-content-search-trigger={searchInTrigger}>
       {#if searchInTrigger}
         <!-- searchPosition='trigger'：朴素 input 内嵌触发器，与触发器融为一体（bare 模式，无灰底框）。 -->
-        <span class="cd-tree-select__trigger-search">{@render builtinSearchInput(true)}</span>
+        <span class="cd-tree-select-trigger-search">{@render builtinSearchInput(true)}</span>
       {/if}
       {#if multiple}
         {#if checkedNodes.length > 0}
-          <span class="cd-tree-select__tags">
+          <span class="cd-tree-select-tags">
             {#each visibleTagNodes as node (node.key)}
               {#if renderSelectedItem}
                 {@render renderSelectedItem({ node, onRemove: () => removeChecked(node) })}
@@ -1459,7 +1459,7 @@
                 <Popover trigger="hover" position="top" {...(restTagsPopoverProps ?? {})}>
                   {@render restTagsTrigger()}
                   {#snippet content()}
-                    <span class="cd-tree-select__rest-tags">
+                    <span class="cd-tree-select-rest-tags">
                       {#each hiddenTagNodes as node (node.key)}
                         <Tag
                           size={size === 'large' ? 'default' : 'small'}
@@ -1478,22 +1478,22 @@
             {/if}
           </span>
         {:else}
-          <span class="cd-tree-select__placeholder">{placeholder}</span>
+          <span class="cd-tree-select-placeholder">{placeholder}</span>
         {/if}
       {:else if hasSelection}
         {#if renderSelectedItem && selectedNode}
           {@render renderSelectedItem({ node: selectedNode, onRemove: () => setValue(null) })}
         {:else}
-          <span class="cd-tree-select__value">{displayLabel}</span>
+          <span class="cd-tree-select-text">{displayLabel}</span>
         {/if}
       {:else}
-        <span class="cd-tree-select__placeholder">{placeholder}</span>
+        <span class="cd-tree-select-placeholder">{placeholder}</span>
       {/if}
     </span>
 
     {#if showClearBtn}
       <span
-        class="cd-tree-select__clear"
+        class="cd-tree-select-clearbtn"
         role="button"
         tabindex="-1"
         aria-label={loc().t('TreeSelect.clear')}
@@ -1511,11 +1511,11 @@
     {/if}
 
     {#if suffix}
-      <span class="cd-tree-select__suffix">
+      <span class="cd-tree-select-suffix">
         {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
       </span>
     {/if}
-    <span class="cd-tree-select__arrow" aria-hidden="true">
+    <span class="cd-tree-select-arrow" aria-hidden="true">
       {#if arrowIcon}
         {@render arrowIcon()}
       {:else}
@@ -1527,9 +1527,9 @@
 
   {#if shouldRender}
     <div
-      class={['cd-tree-select__panel', dropdownClassName].filter(Boolean).join(' ')}
-      class:cd-tree-select__panel--hidden={!isOpen}
-      class:cd-tree-select__panel--motion={motion && isOpen}
+      class={['cd-tree-select-panel', dropdownClassName].filter(Boolean).join(' ')}
+      class:cd-tree-select-hidden={!isOpen}
+      class:cd-tree-select-panel-motion={motion && isOpen}
       bind:this={panelEl}
       use:floating={{
         trigger: rootEl,
@@ -1544,19 +1544,19 @@
       style={dropdownStyleStr}
     >
       {#if searchInDropdown}
-        <div class="cd-tree-select__search">
+        <div class="cd-tree-select-search-wrapper">
           {@render builtinSearchInput()}
         </div>
       {/if}
       {#if mergedTree.length === 0}
-        <div class="cd-tree-select__tree" role="tree">
+        <div class="cd-tree-select-tree" role="tree">
           {@render emptyBlock()}
         </div>
       {:else if useVirtual}
         <!-- 虚拟滚动（复用 Tree 范式）：role=tree 容器自身滚动，spacer 撑总高，行绝对定位按索引偏移。
              只渲染视口内切片 renderFlat，保持 role=tree → role=treeitem 语义不变。 -->
         <div
-          class="cd-tree-select__tree cd-tree-select__tree--virtual"
+          class="cd-tree-select-tree cd-tree-select-tree-virtual"
           role="tree"
           aria-multiselectable={multiple || undefined}
           aria-activedescendant={activeDescId}
@@ -1569,7 +1569,7 @@
           {#if visibleFlat.length === 0}
             {@render emptyBlock()}
           {:else}
-            <div class="cd-tree-select__spacer" style={`block-size:${totalHeight}px`}>
+            <div class="cd-tree-select-spacer" style={`block-size:${totalHeight}px`}>
               {#each renderFlat as f, i (f.node.key)}
                 {@render nodeRow(
                   f.node as unknown as TreeNode,
@@ -1584,7 +1584,7 @@
         </div>
       {:else}
         <div
-          class="cd-tree-select__tree"
+          class="cd-tree-select-tree"
           role="tree"
           aria-multiselectable={multiple || undefined}
           aria-activedescendant={activeDescId}
@@ -1609,7 +1609,7 @@
     inline-size: 100%;
     font-size: var(--cd-select-font-size);
   }
-  .cd-tree-select__trigger {
+  .cd-tree-select-trigger {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-tight);
@@ -1627,83 +1627,83 @@
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tree-select--small .cd-tree-select__trigger {
+  .cd-tree-select-small .cd-tree-select-trigger {
     min-block-size: var(--cd-select-height-small);
   }
-  .cd-tree-select--large .cd-tree-select__trigger {
+  .cd-tree-select-large .cd-tree-select-trigger {
     min-block-size: var(--cd-select-height-large);
   }
   /* 对齐 Semi 填充式：悬浮加深底色 fill-1（非展开/禁用态） */
-  .cd-tree-select:not(.cd-tree-select--open):not(.cd-tree-select--disabled) .cd-tree-select__trigger:hover {
+  .cd-tree-select:not(.cd-tree-select-open):not(.cd-tree-select-disabled) .cd-tree-select-trigger:hover {
     background: var(--cd-select-bg-hover);
   }
-  .cd-tree-select__trigger:focus-visible {
+  .cd-tree-select-trigger:focus-visible {
     outline: none;
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-tree-select--open .cd-tree-select__trigger {
+  .cd-tree-select-open .cd-tree-select-trigger {
     background: var(--cd-select-bg);
     border-color: var(--cd-select-border-active);
   }
   /* warning 校验态：light-bg + 分态 border（对齐 Semi treeSelect warning，same as Input）。 */
-  .cd-tree-select--warning .cd-tree-select__trigger {
+  .cd-tree-select-warning .cd-tree-select-trigger {
     background: var(--cd-color-tree-select-warning-bg-default);
     border-color: var(--cd-color-tree-select-warning-border-default);
   }
-  .cd-tree-select--warning:not(.cd-tree-select--open):not(.cd-tree-select--disabled)
-    .cd-tree-select__trigger:hover {
+  .cd-tree-select-warning:not(.cd-tree-select-open):not(.cd-tree-select-disabled)
+    .cd-tree-select-trigger:hover {
     background: var(--cd-color-tree-select-warning-bg-hover);
     border-color: var(--cd-color-tree-select-warning-border-hover);
   }
-  .cd-tree-select--warning .cd-tree-select__trigger:focus-visible,
-  .cd-tree-select--warning.cd-tree-select--open .cd-tree-select__trigger {
+  .cd-tree-select-warning .cd-tree-select-trigger:focus-visible,
+  .cd-tree-select-warning.cd-tree-select-open .cd-tree-select-trigger {
     background: var(--cd-color-tree-select-warning-bg-focus);
     border-color: var(--cd-color-tree-select-warning-border-focus);
   }
-  .cd-tree-select--warning .cd-tree-select__trigger:active {
+  .cd-tree-select-warning .cd-tree-select-trigger:active {
     background: var(--cd-color-tree-select-warning-bg-active);
     border-color: var(--cd-color-tree-select-warning-border-active);
   }
   /* error 校验态：light-bg + 分态 border（对齐 Semi treeSelect danger，same as Input）。 */
-  .cd-tree-select--error .cd-tree-select__trigger {
+  .cd-tree-select-error .cd-tree-select-trigger {
     background: var(--cd-color-tree-select-danger-bg-default);
     border-color: var(--cd-color-tree-select-danger-border-default);
   }
-  .cd-tree-select--error:not(.cd-tree-select--open):not(.cd-tree-select--disabled)
-    .cd-tree-select__trigger:hover {
+  .cd-tree-select-error:not(.cd-tree-select-open):not(.cd-tree-select-disabled)
+    .cd-tree-select-trigger:hover {
     background: var(--cd-color-tree-select-danger-bg-hover);
     border-color: var(--cd-color-tree-select-danger-border-hover);
   }
-  .cd-tree-select--error .cd-tree-select__trigger:focus-visible,
-  .cd-tree-select--error.cd-tree-select--open .cd-tree-select__trigger {
+  .cd-tree-select-error .cd-tree-select-trigger:focus-visible,
+  .cd-tree-select-error.cd-tree-select-open .cd-tree-select-trigger {
     background: var(--cd-color-tree-select-danger-bg-focus);
     border-color: var(--cd-color-tree-select-danger-border-focus);
   }
-  .cd-tree-select--error .cd-tree-select__trigger:active {
+  .cd-tree-select-error .cd-tree-select-trigger:active {
     background: var(--cd-color-tree-select-danger-bg-active);
     border-color: var(--cd-color-tree-select-danger-border-active);
   }
-  .cd-tree-select__trigger[aria-disabled='true'] {
+  .cd-tree-select-trigger[aria-disabled='true'] {
     background: var(--cd-color-tree-select-input-disabled-bg-default, var(--cd-color-fill-0));
     color: var(--cd-color-tree-select-input-disabled-text-default);
     cursor: not-allowed;
   }
-  .cd-tree-select__content {
+  .cd-tree-select-content {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
     min-inline-size: 0;
   }
   /* searchPosition='trigger'：搜索输入占据触发器主区，与已选值/占位并存。 */
-  .cd-tree-select__trigger-search {
+  .cd-tree-select-trigger-search {
     display: flex;
     flex: 1 1 auto;
     min-inline-size: 0;
   }
   /* bare 搜索 input：透明、无边框，与触发器融为一体（避免臃肿的灰底框）。 */
-  .cd-tree-select__search-input--bare {
+  .cd-tree-select-search-input-bare {
     inline-size: 100%;
     min-inline-size: 0;
     block-size: auto;
@@ -1714,20 +1714,20 @@
     font: inherit;
     outline: none;
   }
-  .cd-tree-select__search-input--bare::placeholder {
+  .cd-tree-select-search-input-bare::placeholder {
     color: var(--cd-color-text-2);
   }
-  .cd-tree-select__value {
+  .cd-tree-select-text {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-tree-select__placeholder {
+  .cd-tree-select-placeholder {
     /* 对齐 Semi treeSelect 占位符 input-placeholder-text-default = text-2 */
     color: var(--cd-color-tree-select-input-placeholder-text-default);
   }
-  .cd-tree-select__clear,
-  .cd-tree-select__arrow {
+  .cd-tree-select-clearbtn,
+  .cd-tree-select-arrow {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1735,20 +1735,20 @@
     /* 对齐 Semi treeSelect default-icon-default = text-2 */
     color: var(--cd-color-tree-select-default-icon-default);
   }
-  .cd-tree-select__clear {
+  .cd-tree-select-clearbtn {
     cursor: pointer;
   }
-  .cd-tree-select__clear:hover {
+  .cd-tree-select-clearbtn:hover {
     color: var(--cd-color-tree-select-default-icon-hover);
   }
-  .cd-tree-select__arrow {
+  .cd-tree-select-arrow {
     transition: transform var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tree-select--open .cd-tree-select__arrow {
+  .cd-tree-select-open .cd-tree-select-arrow {
     transform: rotate(180deg);
   }
   /* 面板 portal 到容器，由 use:floating action 写 position:fixed + transform 定位 */
-  .cd-tree-select__panel {
+  .cd-tree-select-panel {
     z-index: var(--cd-select-dropdown-z);
     padding-block: var(--cd-spacing-extra-tight);
     background: var(--cd-select-dropdown-bg);
@@ -1756,14 +1756,14 @@
     box-shadow: var(--cd-select-dropdown-shadow);
   }
   /* 关闭后保留 DOM 但不可见、不可交互、不占位（对齐 Semi，不销毁重建） */
-  .cd-tree-select__panel--hidden {
+  .cd-tree-select-hidden {
     display: none;
   }
   /* motion：下拉浮层开合进场淡入；reduced-motion 退化。
      注意：定位 transform 由 use:floating 写入 inline style，动画 keyframe
      绝不能设 transform（CSS animation 优先级高于 inline style，会把 floating 的
      translate(x,y) 覆盖成 0，浮层飘到容器左上角）。故仅动 opacity（与 Dropdown 一致）。 */
-  .cd-tree-select__panel--motion {
+  .cd-tree-select-panel-motion {
     animation: cd-tree-select-in var(--cd-dropdown-motion-duration, 120ms)
       var(--cd-dropdown-motion-easing, ease) both;
   }
@@ -1776,7 +1776,7 @@
     }
   }
   /* insetLabel 内嵌标签：回填值前的标签文本，消费 tree-select label token */
-  .cd-tree-select__inset-label {
+  .cd-tree-select-inset-label {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
@@ -1786,12 +1786,12 @@
     white-space: nowrap;
     user-select: none;
   }
-  .cd-tree-select__search {
+  .cd-tree-select-search-wrapper {
     padding: var(--cd-spacing-tight);
     padding-block-end: var(--cd-spacing-extra-tight);
   }
   /* 搜索字段：灰底圆角 + 左侧放大镜图标（对齐 Semi 的和谐观感，与列表分隔清晰）。 */
-  .cd-tree-select__search-field {
+  .cd-tree-select-search-field {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -1805,19 +1805,19 @@
       background-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard),
       border-color var(--cd-motion-duration-fast) var(--cd-motion-ease-standard);
   }
-  .cd-tree-select__search-field:hover {
+  .cd-tree-select-search-field:hover {
     background: var(--cd-color-fill-1);
   }
-  .cd-tree-select__search-field:focus-within {
+  .cd-tree-select-search-field:focus-within {
     background: var(--cd-color-bg-0);
     border-color: var(--cd-color-input-default-border-focus);
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-tree-select__search-icon {
+  .cd-tree-select-search-icon {
     flex: 0 0 auto;
     color: var(--cd-color-text-2);
   }
-  .cd-tree-select__search-input {
+  .cd-tree-select-search-input {
     flex: 1 1 auto;
     inline-size: 100%;
     min-inline-size: 0;
@@ -1830,29 +1830,29 @@
     font-size: var(--cd-font-size-small);
     outline: none;
   }
-  .cd-tree-select__search-input::placeholder {
+  .cd-tree-select-search-input::placeholder {
     color: var(--cd-color-text-2);
   }
-  .cd-tree-select__tree {
+  .cd-tree-select-tree {
     max-block-size: 14rem;
     overflow-y: auto;
   }
   /* 虚拟滚动：容器自身定高滚动，spacer 绝对定位行布局，max-block-size 让位给固定 height */
-  .cd-tree-select__tree--virtual {
+  .cd-tree-select-tree-virtual {
     position: relative;
     max-block-size: none;
     overflow-y: auto;
   }
-  .cd-tree-select__spacer {
+  .cd-tree-select-spacer {
     position: relative;
     inline-size: 100%;
   }
-  .cd-tree-select__highlight {
+  .cd-tree-select-highlight {
     padding: 0;
     color: var(--cd-color-tree-option-highlight-text);
     background: inherit;
   }
-  .cd-tree-select__node {
+  .cd-tree-select-node {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -1860,26 +1860,26 @@
     padding-inline-end: var(--cd-tree-node-padding-x);
     cursor: pointer;
   }
-  .cd-tree-select__node:hover {
+  .cd-tree-select-node:hover {
     background: var(--cd-color-tree-option-bg-hover);
   }
-  .cd-tree-select__node--selected {
+  .cd-tree-select-node-selected {
     color: var(--cd-color-tree-option-text-default);
     background: var(--cd-color-tree-option-bg-active);
   }
   /* 键盘 roving 高亮（aria-activedescendant 当前项），焦点环不依赖真实 DOM 焦点 */
-  .cd-tree-select__node--active {
+  .cd-tree-select-node-active {
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-tree-select__node:focus-visible {
+  .cd-tree-select-node:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-tree-select__node[aria-disabled='true'] {
+  .cd-tree-select-node[aria-disabled='true'] {
     color: var(--cd-color-text-3);
     cursor: not-allowed;
   }
-  .cd-tree-select__expand {
+  .cd-tree-select-expand {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1892,19 +1892,19 @@
     /* IconTreeTriangleDown 默认朝下（展开态）；折叠态旋转 -90deg 朝右，对齐 Semi。 */
     transform: rotate(-90deg);
   }
-  .cd-tree-select__expand--open {
+  .cd-tree-select-expand-open {
     transform: rotate(0deg);
   }
-  .cd-tree-select__expand--placeholder {
+  .cd-tree-select-expand-placeholder {
     cursor: default;
     transform: none;
   }
-  .cd-tree-select__expand--loading {
+  .cd-tree-select-expand-loading {
     cursor: default;
     transition: none;
     transform: none;
   }
-  .cd-tree-select__spinner {
+  .cd-tree-select-spinner {
     inline-size: 0.75rem;
     block-size: 0.75rem;
     border: 2px solid var(--cd-color-border, currentColor);
@@ -1917,7 +1917,7 @@
       transform: rotate(360deg);
     }
   }
-  .cd-tree-select__icon {
+  .cd-tree-select-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1926,16 +1926,16 @@
     block-size: 1rem;
     color: var(--cd-color-tree-option-text-default);
   }
-  /* 有自定义图标内容时撑开尺寸（对齐 Tree 的 .cd-tree__icon） */
-  .cd-tree-select__icon:not(:empty) {
+  /* 有自定义图标内容时撑开尺寸（对齐 Tree 的 .cd-tree-option-item-icon） */
+  .cd-tree-select-icon:not(:empty) {
     inline-size: 1rem;
   }
-  .cd-tree-select__node-label {
+  .cd-tree-select-node-label {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-tree-select__checkbox {
+  .cd-tree-select-checkbox {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1947,30 +1947,30 @@
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-small);
   }
-  .cd-tree-select__checkbox--checked,
-  .cd-tree-select__checkbox--half {
+  .cd-tree-select-checkbox-checked,
+  .cd-tree-select-checkbox-half {
     background: var(--cd-color-primary);
     border-color: var(--cd-color-primary);
   }
-  .cd-tree-select__tags {
+  .cd-tree-select-tags {
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
     align-items: center;
     min-inline-size: 0;
   }
-  .cd-tree-select__empty {
+  .cd-tree-select-empty {
     padding: var(--cd-tree-node-padding-x);
     color: var(--cd-color-text-3);
     text-align: center;
   }
   /* +N 折叠触发器：内联包裹 Tag，承载 aria-label（Popover trigger 宿主） */
-  .cd-tree-select__rest-trigger {
+  .cd-tree-select-rest-trigger {
     display: inline-flex;
     align-items: center;
   }
   /* showRestTagsPopover 浮层内剩余 Tag 列表：换行铺排，限制最大宽避免过宽 */
-  .cd-tree-select__rest-tags {
+  .cd-tree-select-rest-tags {
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
@@ -1978,13 +1978,13 @@
     max-inline-size: 240px;
   }
   @media (prefers-reduced-motion: reduce) {
-    .cd-tree-select__trigger,
-    .cd-tree-select__arrow,
-    .cd-tree-select__expand {
+    .cd-tree-select-trigger,
+    .cd-tree-select-arrow,
+    .cd-tree-select-expand {
       transition: none;
     }
-    .cd-tree-select__spinner,
-    .cd-tree-select__panel--motion {
+    .cd-tree-select-spinner,
+    .cd-tree-select-panel-motion {
       animation: none;
     }
   }
