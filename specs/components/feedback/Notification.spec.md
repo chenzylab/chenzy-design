@@ -120,7 +120,7 @@ Notification（通知提醒框）是一种**命令式**的全局反馈组件，�
 | `--cd-notification-enter-duration` | `var(--cd-motion-duration-mid)` | 进入动画时长 |
 | `--cd-notification-leave-duration` | `var(--cd-motion-duration-fast)` | 离开动画时长 |
 
-类名：`cd-notification`（容器项）、`cd-notification__icon`、`cd-notification__body`、`cd-notification__title`、`cd-notification__content`、`cd-notification__close`、`cd-notification__footer`、`cd-notification__progress`、`cd-notification-list`（按 placement 的堆叠容器）、修饰符 `cd-notification--success/info/warning/error`、`cd-notification--dark`、`cd-notification-list--topRight` 等。
+类名：`cd-notification`（容器项）、`cd-notification-icon`、`cd-notification-body`、`cd-notification-title`、`cd-notification-content`、`cd-notification-close`、`cd-notification-footer`、`cd-notification-progress`、`cd-notification-list`（按 placement 的堆叠容器）、修饰符 `cd-notification-success/info/warning/error`、`cd-notification-dark`、`cd-notification-list-topRight` 等。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 

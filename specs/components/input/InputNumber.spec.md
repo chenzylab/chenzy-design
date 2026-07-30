@@ -17,7 +17,7 @@ InputNumber 是受约束的数值输入控件，在原生 `<input>` 之上增加
 
 ## 2. 设计语义
 
-- **结构**：外层 `cd-input-number`（行内块容器，承载 border/状态/尺寸），内部依次为可选前缀 `prefix`、`<input>`、步进控制 `cd-input-number__actions`（上下两枚按钮 stacked，或 `controlsPosition="sides"` 时左右排布）。`innerButtons` 模式下按钮悬浮于输入区右内侧（hover/focus 显形）。
+- **结构**：外层 `cd-input-number`（行内块容器，承载 border/状态/尺寸），内部依次为可选前缀 `prefix`、`<input>`、步进控制 `cd-input-number-actions`（上下两枚按钮 stacked，或 `controlsPosition="sides"` 时左右排布）。`innerButtons` 模式下按钮悬浮于输入区右内侧（hover/focus 显形）。
 - **尺寸**：`small`(28px) / `default`(32px) / `large`(40px)，高度、内边距、字号、步进按钮宽度均由 token 派生，与 Input 完全对齐保证表单同行视觉一致。
 - **状态语义**：default / warning / error 对应 `--cd-color-border` / `--cd-color-warning` / `--cd-color-danger`；hover 加深边框，focus 显示 `--cd-color-primary` 边框 + focus ring；disabled 降透明度并禁用全部交互；readonly 保留选中复制但禁步进。
 - **步进按钮态**：当 `value` 达到 `max` 时「+」按钮 disabled，达到 `min` 时「−」disabled，提供到边界的明确反馈。长按按钮触发加速重复步进（首次延迟 → 加速间隔）。

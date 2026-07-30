@@ -113,7 +113,7 @@ Banner 含「关闭交互 + 关闭动画 + a11y 公告」逻辑，因此采用 c
 | `--cd-banner-close-hover-bg` | `--cd-color-fill-1` | 关闭按钮 hover 底色 |
 | `--cd-banner-motion-duration` | `--cd-motion-duration-fast` | 关闭过渡时长 |
 
-类名约定：根 `cd-banner`，修饰 `cd-banner--info/--success/--warning/--danger`、`cd-banner--full`、`cd-banner--card`、`cd-banner--bordered`；元素 `cd-banner__icon`、`cd-banner__content`、`cd-banner__title`、`cd-banner__description`、`cd-banner__action`、`cd-banner__close`。
+类名约定：根 `cd-banner`，修饰 `cd-banner-info/--success/--warning/--danger`、`cd-banner-full`、`cd-banner-card`、`cd-banner-bordered`；元素 `cd-banner-icon`、`cd-banner-content`、`cd-banner-title`、`cd-banner-description`、`cd-banner-action`、`cd-banner-close`。
 
 ## 6. 无障碍 (WCAG 2.1 AA)
 

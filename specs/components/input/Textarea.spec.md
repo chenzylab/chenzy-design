@@ -114,7 +114,7 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
 | `--cd-textarea-line-height` | `--cd-line-height-body` | 行高（autosize 行数计算依据） |
 | `--cd-textarea-transition` | `--cd-motion-duration-fast` | 高度过渡时长 |
 
-类名：`cd-textarea`、`cd-textarea__inner`（textarea 元素）、`cd-textarea__footer`、`cd-textarea__counter`、`cd-textarea__clear`；修饰符 `cd-textarea--small/--large`、`cd-textarea--disabled`、`cd-textarea--readonly`、`cd-textarea--warning`、`cd-textarea--error`、`cd-textarea--autosize`、`cd-textarea--over-limit`。
+类名：`cd-textarea`、`cd-textarea-inner`（textarea 元素）、`cd-textarea-footer`、`cd-textarea-counter`、`cd-textarea-clear`；修饰符 `cd-textarea-small/--large`、`cd-textarea-disabled`、`cd-textarea-readonly`、`cd-textarea-warning`、`cd-textarea-error`、`cd-textarea-autosize`、`cd-textarea-over-limit`。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 

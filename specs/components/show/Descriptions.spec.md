@@ -112,7 +112,7 @@ Descriptions 以展示为主，**无键盘交互、无焦点管理、无浮层**
 
 ## 6. 无障碍（WCAG 2.1 AA）
 
-- **语义结构**：根节点渲染为 `<dl class="cd-descriptions__list">`；每项 label 为 `<dt>`，value 为 `<dd>`，天然表达「描述列表」语义，无需额外 ARIA。
+- **语义结构**：根节点渲染为 `<dl class="cd-descriptions-list">`；每项 label 为 `<dt>`，value 为 `<dd>`，天然表达「描述列表」语义，无需额外 ARIA。
 - **row 模式**：若以 table 视觉呈现，DOM 仍保持 `<dl>` 为主；若确需 `<table>` 排版，则补 `role="presentation"`（纯布局表格）或为真表格补 `<th scope="row">`——默认实现采用 CSS Grid + `<dl>`，避免 layout table 的可访问性陷阱。
 - **标题关联**：`title` 渲染为带 `id` 的元素，`<dl>` 通过 `aria-labelledby` 指向它（`useId` 生成 id）。
 - **分隔符**：`:` 由 CSS `::after` 注入，不进入可访问性树，避免读屏冗余朗读。

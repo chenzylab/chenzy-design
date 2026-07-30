@@ -19,7 +19,7 @@ Transfer（穿梭框）用于在两组数据集合之间移动条目，实现"�
 
 ## 2. 设计语义
 
-- **结构**：容器 `cd-transfer` 横向排布两个 `cd-transfer__panel`（source / selected），中间为 `cd-transfer__operations`（方向按钮组）。每个 panel = header（标题 + 计数 + 全选）+ search + body（列表）+ footer（可选）。
+- **结构**：容器 `cd-transfer` 横向排布两个 `cd-transfer-panel`（source / selected），中间为 `cd-transfer-operations`（方向按钮组）。每个 panel = header（标题 + 计数 + 全选）+ search + body（列表）+ footer（可选）。
 - **状态语义**：条目有 `unchecked / checked / disabled` 三态；面板有 `empty / loading / filtered-empty` 三态；整体受 `disabled` 与 `status`（default|warning|error）影响。
 - **方向按钮**：`→` 将左栏勾选项移入右栏，`←` 反向；无勾选项时按钮 disabled。语义上"移动"而非"复制"，源与已选互斥。
 - **尺寸**：small|default|large 影响条目行高、搜索框高度与字号，映射到 `--cd-transfer-item-height-*`。

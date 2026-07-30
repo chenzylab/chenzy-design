@@ -97,7 +97,7 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 | `--cd-backtop-offset-bottom` | 由 `bottom` prop 注入 | 底部偏移 |
 | `--cd-backtop-offset-inline-end` | 由 `right` prop 注入 | inline-end 偏移（RTL 自适应） |
 
-类名结构：`cd-backtop`（根/按钮）、`cd-backtop__icon`、修饰符 `cd-backtop--small` / `cd-backtop--large` / `cd-backtop--visible` / `cd-backtop--hidden`。
+类名结构：`cd-backtop`（根/按钮）、`cd-backtop-icon`、修饰符 `cd-backtop-small` / `cd-backtop-large` / `cd-backtop-visible` / `cd-backtop-hidden`。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 

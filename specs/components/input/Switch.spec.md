@@ -50,12 +50,12 @@ Switch（开关）是一个二态切换控件，用于在「开 / 关」两个�
 
 DOM 结构（BEM-like）：
 ```
-button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-switch--loading?.cd-switch--<status>
-  span.cd-switch__handle
-    span.cd-switch__loading (loading 时)
-  span.cd-switch__text.cd-switch__text--checked
-  span.cd-switch__text.cd-switch__text--unchecked
-  input.cd-switch__native (visually-hidden, type=checkbox, 表单提交用)
+button.cd-switch.cd-switch-<size>.cd-switch-checked?.cd-switch-disabled?.cd-switch-loading?.cd-switch-<status>
+  span.cd-switch-handle
+    span.cd-switch-loading (loading 时)
+  span.cd-switch-text.cd-switch-text-checked
+  span.cd-switch-text.cd-switch-text-unchecked
+  input.cd-switch-native (visually-hidden, type=checkbox, 表单提交用)
 ```
 
 ## 4. API
@@ -137,7 +137,7 @@ button.cd-switch.cd-switch--<size>.cd-switch--checked?.cd-switch--disabled?.cd-s
 - **对比度**：开态 primary 轨道与白滑块、内嵌文字均需 ≥ 3:1（图形）/4.5:1（文字）；状态不仅靠颜色，还有滑块位移与文字/图标双重表达。
 - **reduced-motion**：`prefers-reduced-motion: reduce` 时移除滑块位移与色渐变过渡。
 - **RTL**：`[dir="rtl"]` 下开/关方向与文字侧镜像（滑块开态靠左、文字侧对调）。
-- **隐藏原生 input**：`.cd-switch__native` 用 visually-hidden 而非 `display:none`，保证表单提交与辅助技术回退。
+- **隐藏原生 input**：`.cd-switch-native` 用 visually-hidden 而非 `display:none`，保证表单提交与辅助技术回退。
 
 ## 7. 国际化
 

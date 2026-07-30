@@ -19,7 +19,7 @@ ColorPicker 是一个颜色选择控件，用于让用户通过可视化的色�
 
 ## 2. 设计语义
 
-- **形态**：由 `cd-colorpicker`（根/Trigger 容器）与 `cd-colorpicker__panel`（浮层面板）两部分组成。面板自上而下为：饱和度-明度方块（`__board`）→ 色相滑块（`__hue`）→ 透明度滑块（`__alpha`，可选）→ 数值区（`__inputs`，含格式切换 `__format`）→ 预设区（`__presets`）。
+- **形态**：由 `cd-colorpicker`（根/Trigger 容器）与 `cd-colorpicker-panel`（浮层面板）两部分组成。面板自上而下为：饱和度-明度方块（`__board`）→ 色相滑块（`__hue`）→ 透明度滑块（`__alpha`，可选）→ 数值区（`__inputs`，含格式切换 `__format`）→ 预设区（`__presets`）。
 - **Trigger 默认形态**：一个圆角色块（`__swatch`）显示当前色值；透明色用棋盘格底纹（`__swatch--transparent` 叠加 conic/linear 棋盘）表达 Alpha。
 - **尺寸 size**：`small | default | large`，影响 Trigger 色块尺寸、滑块手柄直径与输入框高度。Token 化（见第 5 节），不写死像素。
 - **校验态 status**：`default | warning | error`，仅作用于内联输入框/Trigger 边框，复用 `--cd-color-warning` / `--cd-color-danger`。
@@ -48,7 +48,7 @@ ColorPicker 含拖拽、键盘、浮层、焦点管理等交互逻辑，采用 h
 - 子组件：`ColorBoard`、`HueSlider`、`AlphaSlider`、`ColorInputs`、`ColorPresets`、`ColorTrigger`，均为薄渲染层。
 - 浮层支持 `destroyOnClose` 惰性渲染 panel。
 
-纯展示场景（仅展示一个色块、不可交互）不应使用本组件，应直接用 `<span class="cd-colorpicker__swatch">`。
+纯展示场景（仅展示一个色块、不可交互）不应使用本组件，应直接用 `<span class="cd-colorpicker-swatch">`。
 
 ## 4. API
 

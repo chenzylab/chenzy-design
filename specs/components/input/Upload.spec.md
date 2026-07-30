@@ -275,7 +275,7 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 ## 12. 验收标准 checklist
 
 - [ ] headless 逻辑位于 `@chenzy-design/core` 的 `createUpload`，渲染在 `@chenzy-design/svelte`，复用 useId/useLiveAnnouncer/useDismiss/useFocusTrap。
-- [ ] 类名前缀 `cd-`，BEM-like（`cd-upload`、`cd-upload__item`、`cd-upload--picture` 等）。
+- [ ] 类名前缀 `cd-`，BEM-like（`cd-upload`、`cd-upload-item`、`cd-upload-picture` 等）。
 - [ ] 仅消费 `--cd-` Alias/Component token，无写死颜色/尺寸值。
 - [ ] 受控 API：`value` + `on:change`；预览浮层 `open` + `on:openChange`；`size` 三档；`status` 三态。
 - [ ] 支持点击 + 拖拽两种触发，拖拽区有等效点击路径与可见高亮态。

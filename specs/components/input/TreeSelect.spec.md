@@ -154,7 +154,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 | `--cd-treeselect-shadow` | `--cd-shadow-elevated` | 浮层投影。 |
 | `--cd-treeselect-height-small/default/large` | `--cd-height-s/m/l` | 三档触发器高度。 |
 
-类名：`cd-treeselect`、`cd-treeselect__trigger`、`cd-treeselect__tag`、`cd-treeselect__caret`、`cd-treeselect__popover`、`cd-treeselect__search`、`cd-treeselect__list`、`cd-treeselect__node`、`cd-treeselect__node-switcher`、`cd-treeselect__node-checkbox`、`cd-treeselect__node-label`、`cd-treeselect__empty`；修饰符 `--multiple`、`--small/--large`、`--error/--warning`、`--disabled`、`--open`、`cd-treeselect__node--selected/--active/--disabled`。
+类名：`cd-treeselect`、`cd-treeselect-trigger`、`cd-treeselect-tag`、`cd-treeselect-caret`、`cd-treeselect-popover`、`cd-treeselect-search`、`cd-treeselect-list`、`cd-treeselect-node`、`cd-treeselect-node-switcher`、`cd-treeselect-node-checkbox`、`cd-treeselect-node-label`、`cd-treeselect-empty`；修饰符 `--multiple`、`--small/--large`、`--error/--warning`、`--disabled`、`--open`、`cd-treeselect-node-selected/--active/--disabled`。
 
 暗色模式由 Alias Token 自动翻转，组件层不写独立 dark 规则。
 
