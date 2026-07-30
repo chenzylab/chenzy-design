@@ -175,7 +175,7 @@
           <button
             type="button"
             class="cd-ai-dialogue-box-reference"
-            class:cd-ai-dialogue-box-reference-text={!!ref.content && !ref.name}
+            class:cd-ai-dialogue-box-reference-text-only={!!ref.content && !ref.name}
             title={ref.name ?? ref.content ?? ''}
             onclick={() => onReferenceClick?.(ref)}
           >
@@ -214,7 +214,7 @@
   class="cd-ai-dialogue-box"
   class:cd-ai-dialogue-box-user={isUser}
   class:cd-ai-dialogue-box-leftAlign={align === 'leftAlign'}
-  class:cd-ai-dialogue-box-error={isError}
+  class:cd-ai-dialogue-box-is-error={isError}
   class:cd-ai-dialogue-box-bubble={showBubble}
 >
   {#if selecting}
@@ -378,7 +378,7 @@
     border-color: var(--cd-color-primary);
   }
 
-  .cd-ai-dialogue-box-reference-text {
+  .cd-ai-dialogue-box-reference-text-only {
     max-width: 320px;
   }
 
