@@ -829,13 +829,13 @@
   }
 
   /* showTooltip 包裹撑满父宽，使宽度约束正确传递到宿主省略节点。 */
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography-ellipsis-single-line)),
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography-ellipsis-multiple-line)) {
+  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line)),
+  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line)) {
     display: block;
     max-inline-size: 100%;
   }
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography-ellipsis-single-line) > .cd-tooltip__trigger),
-  :global(.cd-tooltip:has(> .cd-tooltip__trigger > .cd-typography-ellipsis-multiple-line) > .cd-tooltip__trigger) {
+  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-single-line) > .cd-tooltip-trigger),
+  :global(.cd-tooltip:has(> .cd-tooltip-trigger > .cd-typography-ellipsis-multiple-line) > .cd-tooltip-trigger) {
     display: block;
     max-inline-size: 100%;
   }

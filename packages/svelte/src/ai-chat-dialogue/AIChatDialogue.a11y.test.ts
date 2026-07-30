@@ -187,7 +187,7 @@ describe('AIChatDialogue · 工具块完整交互（P1）', () => {
       { id: 'a', role: 'assistant', content: [{ type: 'mcp_call', name: 'search', arguments: '{', status: 'in_progress', server_label: 'fs' }], status: 'in_progress' },
     ];
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats: running, roleConfig } });
-    expect(container.querySelector('.cd-ai-dialogue-tool--running')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-dialogue-tool-running')).not.toBeNull();
     // MCP server 标识渲染
     expect(container.querySelector('.cd-ai-dialogue-tool-server')?.textContent).toBe('fs');
   });

@@ -321,7 +321,7 @@
   });
 
   const cls = $derived(
-    ['cd-virtual-list', horizontal && 'cd-virtual-list--horizontal', className]
+    ['cd-virtual-list', horizontal && 'cd-virtual-list-horizontal', className]
       .filter(Boolean)
       .join(' '),
   );
@@ -353,10 +353,10 @@
 </script>
 
 <div class={cls} bind:this={viewportEl} role="list" style={viewportStyle}>
-  <div class="cd-virtual-list__spacer" style={spacerStyle}>
+  <div class="cd-virtual-list-spacer" style={spacerStyle}>
     {#each visible as item, i (getKey(item, startIndex + i))}
       <div
-        class="cd-virtual-list__item"
+        class="cd-virtual-list-item"
         role="listitem"
         data-vindex={startIndex + i}
         aria-setsize={data.length}
@@ -376,24 +376,24 @@
     background: var(--cd-virtual-list-bg);
     scrollbar-color: var(--cd-virtual-list-scrollbar) transparent;
   }
-  .cd-virtual-list__spacer {
+  .cd-virtual-list-spacer {
     position: relative;
     inline-size: 100%;
   }
-  .cd-virtual-list__item {
+  .cd-virtual-list-item {
     position: absolute;
     inset-block-start: 0;
     inset-inline: 0;
   }
   /* horizontal：视口主轴为宽度（block-size 撑满父容器高度）；项沿 x 轴绝对定位、纵向撑满。 */
-  .cd-virtual-list--horizontal {
+  .cd-virtual-list-horizontal {
     block-size: 100%;
   }
-  .cd-virtual-list--horizontal .cd-virtual-list__spacer {
+  .cd-virtual-list-horizontal .cd-virtual-list-spacer {
     block-size: 100%;
     inline-size: auto;
   }
-  .cd-virtual-list--horizontal .cd-virtual-list__item {
+  .cd-virtual-list-horizontal .cd-virtual-list-item {
     inset-block: 0;
     inset-inline-start: 0;
     inset-inline-end: auto;

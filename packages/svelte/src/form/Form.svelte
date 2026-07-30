@@ -406,7 +406,7 @@
 >
   {@render (contentSnippet as Snippet<[FormRenderArgs]>)?.({ formState, formApi: formApiWithScroll })}
   {#if footer}
-    <div class="cd-form__footer">
+    <div class="cd-form-footer">
       {@render footer({ submitting: formState.submitting })}
     </div>
   {/if}
@@ -444,7 +444,7 @@
   :global(.cd-form-horizontal .cd-form-field-group) {
     padding-inline-end: var(--cd-spacing-form-field-group-horizontal-paddingright);
   }
-  .cd-form__footer {
+  .cd-form-footer {
     display: flex;
     gap: var(--cd-spacing-base-tight);
   }

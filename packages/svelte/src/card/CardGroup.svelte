@@ -50,7 +50,7 @@
   });
 
   const cls = $derived(
-    ['cd-card-group', isGrid && 'cd-card-group--grid', className]
+    ['cd-card-group', isGrid && 'cd-card-group-grid', className]
       .filter(Boolean)
       .join(' '),
   );
@@ -63,10 +63,10 @@
 <style>
   /*
     网格型：子 Card 去圆角，以 -1px 负边距使相邻边框重叠为单线（对齐 Semi）。
-    .cd-card-group--grid 作用在 Space 渲染的根节点（非本组件模板内），子 .cd-card 亦为外部组件，
+    .cd-card-group-grid 作用在 Space 渲染的根节点（非本组件模板内），子 .cd-card 亦为外部组件，
     故整条走 :global，否则 Svelte scoped 会因找不到静态匹配而剪掉规则、样式失效。
   */
-  :global(.cd-card-group--grid .cd-card) {
+  :global(.cd-card-group-grid .cd-card) {
     border-radius: 0;
     margin-inline-start: var(--cd-cardgroup-card-margin);
     margin-block-start: var(--cd-cardgroup-card-margin);

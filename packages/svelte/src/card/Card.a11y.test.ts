@@ -52,8 +52,8 @@ describe('Card a11y', () => {
       props: { title: 'Shadow card', shadows: 'always' },
     });
     const root = container.querySelector('.cd-card');
-    expect(root?.classList.contains('cd-card--shadows')).toBe(true);
-    expect(root?.classList.contains('cd-card--shadows-always')).toBe(true);
+    expect(root?.classList.contains('cd-card-shadows')).toBe(true);
+    expect(root?.classList.contains('cd-card-shadows-always')).toBe(true);
     await expectNoAxeViolations(container);
   });
 });

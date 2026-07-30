@@ -82,7 +82,7 @@ export const meta = {
     { name: 'dropdownStyle', type: 'CSSProperties | string', default: 'undefined', desc: '下拉浮层样式' },
     { name: 'dropdownMargin', type: 'number | { x?: number; y?: number }', default: 'undefined', desc: '浮层溢出冗余值' },
     { name: 'zIndex', type: 'number', default: '1030', desc: '浮层 z-index' },
-    { name: 'motion', type: 'boolean', default: 'true', desc: '面板展开动画，false 时添加 cd-date-picker--no-motion' },
+    { name: 'motion', type: 'boolean', default: 'true', desc: '面板展开动画，false 时添加 cd-date-picker-no-motion' },
     { name: 'preventScroll', type: 'boolean', default: 'false', desc: '聚焦时阻止滚动' },
     { name: 'stopPropagation', type: 'boolean', default: 'true', desc: '阻止浮层点击事件冒泡' },
     { name: 'topSlot', type: 'Snippet', default: 'undefined', desc: '面板顶部额外区域' },

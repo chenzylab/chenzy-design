@@ -361,8 +361,8 @@
   const cls = $derived(
     [
       'cd-autocomplete',
-      disabled && 'cd-autocomplete--disabled',
-      isOpen && 'cd-autocomplete--open',
+      disabled && 'cd-autocomplete-disabled',
+      isOpen && 'cd-autocomplete-open',
       className,
     ]
       .filter(Boolean)
@@ -401,7 +401,7 @@
 <!-- suffix 槽：折入 renderSelectedItem（对齐 Semi：renderSelectedItem 作 Input suffix）。 -->
 {#snippet suffixSlot()}
   {#if renderSelectedItem && selectedItem}
-    <span class="cd-autocomplete__selected">
+    <span class="cd-autocomplete-selected">
       {@render renderSelectedItem({ item: selectedItem })}
     </span>
   {/if}
@@ -524,7 +524,7 @@
     inline-size: 100%;
   }
   /* renderSelectedItem 折入 Input suffix 时的内联容器。 */
-  .cd-autocomplete__selected {
+  .cd-autocomplete-selected {
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;

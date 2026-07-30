@@ -19,7 +19,7 @@ describe('CardGroup a11y', () => {
     const group = container.querySelector('.cd-card-group') as HTMLElement;
     expect(group.style.cssText).toContain('gap: 16px');
     // 非网格型：不加 grid 类
-    expect(group.classList.contains('cd-card-group--grid')).toBe(false);
+    expect(group.classList.contains('cd-card-group-grid')).toBe(false);
   });
 
   it('spacing=number：统一 gap', async () => {
@@ -44,7 +44,7 @@ describe('CardGroup a11y', () => {
       props: { type: 'grid', spacing: 24 },
     });
     const group = container.querySelector('.cd-card-group') as HTMLElement;
-    expect(group.classList.contains('cd-card-group--grid')).toBe(true);
+    expect(group.classList.contains('cd-card-group-grid')).toBe(true);
     // 网格型 spacing 被忽略，Space gap=0
     expect(group.style.cssText).toContain('gap: 0px');
   });

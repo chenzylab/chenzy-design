@@ -45,7 +45,7 @@
 <button
   type="button"
   class="cd-ai-chat-input-configure-button"
-  class:cd-ai-chat-input-configure-button--active={active}
+  class:cd-ai-chat-input-configure-button-active={active}
   aria-pressed={active}
   {disabled}
   onclick={handleClick}
@@ -76,7 +76,7 @@
     background: var(--cd-ai-chat-input-template-bg-hover);
   }
 
-  .cd-ai-chat-input-configure-button--active {
+  .cd-ai-chat-input-configure-button-active {
     border-color: var(--cd-color-primary);
     background: var(--cd-color-primary-light-default);
     color: var(--cd-color-primary);

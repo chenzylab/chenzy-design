@@ -1,7 +1,7 @@
 <!--
   Skeleton — 骨架屏容器，镜像 Semi semi-ui/skeleton/index.tsx。
   loading=true 渲染 <div class="cd-skeleton">{placeholder}</div>；否则渲染 children。
-  active 仅挂根容器类 cd-skeleton--active，经后代选择器作用到骨架块（对齐 Semi，不用 context）。
+  active 仅挂根容器类 cd-skeleton-active，经后代选择器作用到骨架块（对齐 Semi，不用 context）。
   本组件的 <style> 以 :global 承载全部骨架块样式（镜像 Semi skeleton.scss 单一全局样式表），
   故原子子组件（Avatar/Image/Title/Button/Paragraph）只输出裸 DOM + 类名，样式统一在此定义。
   loading 受控不回写：仅由父级 prop 驱动，组件内部不修改。
@@ -34,7 +34,7 @@
   }: Props = $props();
 
   const cls = $derived(
-    ['cd-skeleton', active && 'cd-skeleton--active', className]
+    ['cd-skeleton', active && 'cd-skeleton-active', className]
       .filter(Boolean)
       .join(' '),
   );
@@ -129,11 +129,11 @@
   }
 
   /* active shimmer：根容器类经后代选择器作用到各块（对齐 Semi 渐变 25% / 44% / 88%） */
-  :global(.cd-skeleton--active .cd-skeleton-avatar),
-  :global(.cd-skeleton--active .cd-skeleton-image),
-  :global(.cd-skeleton--active .cd-skeleton-title),
-  :global(.cd-skeleton--active .cd-skeleton-button),
-  :global(.cd-skeleton--active .cd-skeleton-paragraph li) {
+  :global(.cd-skeleton-active .cd-skeleton-avatar),
+  :global(.cd-skeleton-active .cd-skeleton-image),
+  :global(.cd-skeleton-active .cd-skeleton-title),
+  :global(.cd-skeleton-active .cd-skeleton-button),
+  :global(.cd-skeleton-active .cd-skeleton-paragraph li) {
     background: linear-gradient(
       90deg,
       var(--cd-color-skeleton-default-bg-default) 25%,

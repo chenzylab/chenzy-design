@@ -126,7 +126,7 @@
 
   // 各档尺寸对应一个 group 类，CSS 里直接用对应 margin token（对齐 Semi，无中间变量/fallback）。
   const sizeIsEnum = $derived(typeof size === 'string');
-  const groupSizeClass = $derived(sizeIsEnum ? `cd-avatar-group--${size}` : undefined);
+  const groupSizeClass = $derived(sizeIsEnum ? `cd-avatar-group-${size}` : undefined);
 </script>
 
 <div
@@ -138,7 +138,7 @@
     {#each visible as item, i (i)}
       {@const { content, ...rest } = item}
       <span
-        class="cd-avatar-group__item"
+        class="cd-avatar-group-item"
         role="listitem"
         style="z-index:{overlapFrom === 'start' ? 100 - i : 80 + i}"
       >
@@ -149,7 +149,7 @@
     {/each}
     {#if restNumber > 0}
       <span
-        class="cd-avatar-group__item cd-avatar-group__item-more"
+        class="cd-avatar-group-item cd-avatar-group-item-more"
         role="listitem"
         style="z-index:{overlapFrom === 'start' ? 100 - visible.length : 80 + visible.length}"
       >
@@ -165,7 +165,7 @@
     <!-- 组合式折叠：被隐藏的子 Avatar 自身不渲染，这里统一补「+N」溢出头像（对齐 Semi）。 -->
     {#if declaredRestNumber > 0}
       <span
-        class="cd-avatar-group__item cd-avatar-group__item-more"
+        class="cd-avatar-group-item cd-avatar-group-item-more"
         style="z-index:{overlapFrom === 'start' ? 100 - (maxCount ?? 0) : 80 + (maxCount ?? 0)}"
       >
         {#if renderMore}
@@ -187,33 +187,33 @@
   .cd-avatar-group :global(.cd-avatar) {
     box-sizing: border-box;
   }
-  .cd-avatar-group__item {
+  .cd-avatar-group-item {
     position: relative;
     display: inline-flex;
   }
   /* 各档层叠 marginLeft（直接用对应 token，对齐 Semi，无中间变量/fallback） */
-  .cd-avatar-group--extra-extra-small .cd-avatar-group__item {
+  .cd-avatar-group-extra-extra-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-extra-small-margin);
   }
-  .cd-avatar-group--extra-small .cd-avatar-group__item {
+  .cd-avatar-group-extra-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-small-margin);
   }
-  .cd-avatar-group--small .cd-avatar-group__item {
+  .cd-avatar-group-small .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-small-margin);
   }
-  .cd-avatar-group--default .cd-avatar-group__item {
+  .cd-avatar-group-default .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-default-margin);
   }
-  .cd-avatar-group--medium .cd-avatar-group__item {
+  .cd-avatar-group-medium .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-medium-margin);
   }
-  .cd-avatar-group--large .cd-avatar-group__item {
+  .cd-avatar-group-large .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-large-margin);
   }
-  .cd-avatar-group--extra-large .cd-avatar-group__item {
+  .cd-avatar-group-extra-large .cd-avatar-group-item {
     margin-left: var(--cd-avatar-group-extra-large-margin);
   }
-  .cd-avatar-group__item:first-child {
+  .cd-avatar-group-item:first-child {
     margin-left: 0;
   }
   /* 成员描边（各档宽度，对齐 Semi）保证彼此分隔 */
@@ -247,31 +247,31 @@
   :global([dir='rtl']) .cd-avatar-group {
     direction: rtl;
   }
-  :global([dir='rtl']) .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-item {
     margin-left: auto;
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-extra-small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-extra-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-extra-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--small .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-small .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-small-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--default .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-default .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-default-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--medium .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-medium .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-medium-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--large .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-large .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-large-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group--extra-large .cd-avatar-group__item {
+  :global([dir='rtl']) .cd-avatar-group-extra-large .cd-avatar-group-item {
     margin-right: var(--cd-avatar-group-extra-large-margin);
   }
-  :global([dir='rtl']) .cd-avatar-group__item:first-child {
+  :global([dir='rtl']) .cd-avatar-group-item:first-child {
     margin-left: auto;
     margin-right: 0;
   }
