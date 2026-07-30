@@ -219,7 +219,7 @@ Tag 默认是**纯展示**组件，但提供两种可交互形态：
 ## 12. 验收标准 Checklist
 
 - [ ] 包名 `@chenzy-design/core`（`createTag`/`createTagGroup`）与 `@chenzy-design/svelte` 分层正确，纯展示形态零 core 依赖。
-- [ ] 类名前缀 `cd-`，BEM-like（`cd-tag`、`cd-tag-content`、`cd-tag-close`、`cd-tag-solid`、`cd-tag-checked` 等）。
+- [ ] 类名前缀 `cd-`，BEM-like（`cd-tag`、`cd-tag-content`、`cd-tag-close`、`cd-tag-solid`、`cd-tag`（选中态由消费方自管，无内置修饰类） 等）。
 - [ ] 所有色值/尺寸经 `--cd-tag-*` 组件 token 消费 Alias，无写死值；亮/暗主题通过。
 - [ ] API 遵循全局约定：`checked + on:change`、`visible + on:visibleChange`，size/status 一致。
 - [ ] closable：关闭按钮可聚焦、键盘可触发、`aria-label` 经 i18n 插值；`on:close` 可 `preventDefault`。

@@ -55,7 +55,6 @@ button.cd-switch.cd-switch-<size>.cd-switch-checked?.cd-switch-disabled?.cd-swit
     span.cd-switch-loading (loading 时)
   span.cd-switch-text.cd-switch-text-checked
   span.cd-switch-text.cd-switch-text-unchecked
-  input.cd-switch-native (visually-hidden, type=checkbox, 表单提交用)
 ```
 
 ## 4. API
@@ -137,7 +136,7 @@ button.cd-switch.cd-switch-<size>.cd-switch-checked?.cd-switch-disabled?.cd-swit
 - **对比度**：开态 primary 轨道与白滑块、内嵌文字均需 ≥ 3:1（图形）/4.5:1（文字）；状态不仅靠颜色，还有滑块位移与文字/图标双重表达。
 - **reduced-motion**：`prefers-reduced-motion: reduce` 时移除滑块位移与色渐变过渡。
 - **RTL**：`[dir="rtl"]` 下开/关方向与文字侧镜像（滑块开态靠左、文字侧对调）。
-- **隐藏原生 input**：`.cd-switch-native` 用 visually-hidden 而非 `display:none`，保证表单提交与辅助技术回退。
+- **无隐藏原生 input**：本库根节点是 `<button role="switch">`（APG Switch Pattern，role 载体即按钮本身），不设隐藏 checkbox——与 Semi 的 `<div>` + 隐藏 `<input type=checkbox role=switch>` 结构有意不同（组件头注释已说明）。表单场景由使用方读 `checked` 自行提交。
 
 ## 7. 国际化
 

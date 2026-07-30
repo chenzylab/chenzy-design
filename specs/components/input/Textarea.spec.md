@@ -16,7 +16,7 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
 
 ## 2. 设计语义
 
-- **形态**：圆角矩形容器 `cd-textarea`，内部为原生 `<textarea>` 元素 + 可选计数器 + 可选清除按钮区。容器承载边框/背景/聚焦环，textarea 自身透明无边框，保证多元素（计数器、清除）布局一致。
+- **形态**：圆角矩形容器 `cd-input-textarea`，内部为原生 `<textarea>` 元素 + 可选计数器 + 可选清除按钮区。容器承载边框/背景/聚焦环，textarea 自身透明无边框，保证多元素（计数器、清除）布局一致。
 - **状态语义**：
   - 默认 → hover（边框加深 `--cd-color-border-hover`）→ focus（主色描边 `--cd-color-primary` + 聚焦环）。
   - warning/error 用 `--cd-color-warning`/`--cd-color-danger` 覆盖边框与聚焦环；error 优先级高于 warning。
@@ -114,7 +114,7 @@ Textarea 是多行文本输入控件，用于采集较长的、可换行的用�
 | `--cd-textarea-line-height` | `--cd-line-height-body` | 行高（autosize 行数计算依据） |
 | `--cd-textarea-transition` | `--cd-motion-duration-fast` | 高度过渡时长 |
 
-类名：`cd-textarea`、`cd-textarea-inner`（textarea 元素）、`cd-textarea-footer`、`cd-textarea-counter`、`cd-textarea-clear`；修饰符 `cd-textarea-small/--large`、`cd-textarea-disabled`、`cd-textarea-readonly`、`cd-textarea-warning`、`cd-textarea-error`、`cd-textarea-autosize`、`cd-textarea-over-limit`。
+类名：`cd-input-textarea`、`cd-input-textarea-content`（textarea 元素）、`cd-input-textarea-line`、`cd-input-textarea-counter`、`cd-input-clearbtn`；修饰符 `cd-textarea-small/--large`、`cd-input-wrapper-disabled`、`cd-input-wrapper-readonly`、`cd-input-wrapper-warning`、`cd-input-wrapper-error`、`cd-input-textarea-autosize`、`cd-input-textarea-counter-exceed`。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 

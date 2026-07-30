@@ -239,7 +239,7 @@ RTL 语言（ar/he）下文本方向、截断位置、图标顺序随 `dir` 自�
 
 - [ ] 提供 `Title` / `Text` / `Paragraph` / `Link` 四子组件，并支持 `Typography.*` 命名空间与独立导入两种用法。
 - [ ] 仅消费 `--cd-` Alias/Component token，零裸值（lint 校验通过）。
-- [ ] 类名遵循 `cd-typography` BEM-like 约定（`cd-typography-action`、`cd-typography-ellipsis` 等）。
+- [ ] 类名遵循 `cd-typography` BEM-like 约定（`cd-typography-action-copy`、`cd-typography-ellipsis` 等）。
 - [ ] 受控编辑遵循 `value + on:change`；无浮层显隐（tooltip 委托 Tooltip 的 `open + on:openChange`）。
 - [ ] `size` 支持 small/default/large；`type` 含 default/secondary/tertiary/warning/danger/success。
 - [ ] ellipsis 支持单行/多行/expandable/suffix/pos/showTooltip，CSS clamp 为默认路径、测量路径按需启用。

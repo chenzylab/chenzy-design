@@ -18,7 +18,7 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 - 触发器（Trigger）：默认 outline 输入框形态，单选回填为节点 label，多选回填为 Tag 列表（可 maxTagCount 折叠 +N）。占位 placeholder，可清除（showClear）时 hover 出现 clear 图标，尾部箭头 caret 随 open 旋转 180°。
 - 浮层（Popover）：包裹 Tree 面板，宽度默认对齐触发器宽度（可 dropdownMatchSelectWidth），最大高度后内部滚动；超过阈值启用虚拟化。
 - 选中语义：
-  - 单选：点击节点即选中并关闭浮层；当前选中节点高亮（`--cd-treeselect-node-selected-bg`）。
+  - 单选：点击节点即选中并关闭浮层；当前选中节点高亮（`--cd-tree-select-node-selected-bg`）。
   - 多选：节点前置 Checkbox，父子级联时父节点呈现 indeterminate（半选）。
   - leafOnly：仅叶子节点可被选中，父节点仅作展开容器。
 - 状态：default / hover / focus（触发器外发光 ring）/ disabled（整体降透明度，节点级 disabled 单独置灰）/ status warning|error（边框换 `--cd-color-warning`/`--cd-color-danger`）。
@@ -136,25 +136,25 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 | Component Token | 默认引用 | 用途 |
 | --- | --- | --- |
-| `--cd-treeselect-bg` | `--cd-color-bg-0` | 触发器与浮层背景。 |
-| `--cd-treeselect-border` | `--cd-color-border` | 触发器边框。 |
-| `--cd-treeselect-border-hover` | `--cd-color-primary` | hover 边框。 |
-| `--cd-treeselect-border-focus` | `--cd-color-primary` | focus 边框 + ring。 |
-| `--cd-treeselect-border-warning` | `--cd-color-warning` | warning 态边框。 |
-| `--cd-treeselect-border-error` | `--cd-color-danger` | error 态边框。 |
-| `--cd-treeselect-text` | `--cd-color-text-0` | 选中值/节点文字。 |
-| `--cd-treeselect-placeholder` | `--cd-color-text-2` | 占位文字。 |
-| `--cd-treeselect-node-hover-bg` | `--cd-color-fill-0` | 节点行 hover 背景。 |
-| `--cd-treeselect-node-active-bg` | `--cd-color-fill-1` | 键盘高亮节点背景。 |
-| `--cd-treeselect-node-selected-bg` | `--cd-color-primary-light-default` | 单选选中背景。 |
-| `--cd-treeselect-node-selected-text` | `--cd-color-primary` | 单选选中文字。 |
-| `--cd-treeselect-node-disabled-text` | `--cd-color-text-3` | 禁用节点文字。 |
-| `--cd-treeselect-indent` | `--cd-spacing-base`(=24px) | 单级缩进宽度。 |
-| `--cd-treeselect-radius` | `--cd-radius-default` | 触发器/浮层圆角。 |
-| `--cd-treeselect-shadow` | `--cd-shadow-elevated` | 浮层投影。 |
-| `--cd-treeselect-height-small/default/large` | `--cd-height-s/m/l` | 三档触发器高度。 |
+| `--cd-tree-select-bg` | `--cd-color-bg-0` | 触发器与浮层背景。 |
+| `--cd-tree-select-border` | `--cd-color-border` | 触发器边框。 |
+| `--cd-tree-select-border-hover` | `--cd-color-primary` | hover 边框。 |
+| `--cd-tree-select-border-focus` | `--cd-color-primary` | focus 边框 + ring。 |
+| `--cd-tree-select-border-warning` | `--cd-color-warning` | warning 态边框。 |
+| `--cd-tree-select-border-error` | `--cd-color-danger` | error 态边框。 |
+| `--cd-tree-select-text` | `--cd-color-text-0` | 选中值/节点文字。 |
+| `--cd-tree-select-placeholder` | `--cd-color-text-2` | 占位文字。 |
+| `--cd-tree-select-node-hover-bg` | `--cd-color-fill-0` | 节点行 hover 背景。 |
+| `--cd-tree-select-node-active-bg` | `--cd-color-fill-1` | 键盘高亮节点背景。 |
+| `--cd-tree-select-node-selected-bg` | `--cd-color-primary-light-default` | 单选选中背景。 |
+| `--cd-tree-select-node-selected-text` | `--cd-color-primary` | 单选选中文字。 |
+| `--cd-tree-select-node-disabled-text` | `--cd-color-text-3` | 禁用节点文字。 |
+| `--cd-tree-select-indent` | `--cd-spacing-base`(=24px) | 单级缩进宽度。 |
+| `--cd-tree-select-radius` | `--cd-radius-default` | 触发器/浮层圆角。 |
+| `--cd-tree-select-shadow` | `--cd-shadow-elevated` | 浮层投影。 |
+| `--cd-tree-select-height-small/default/large` | `--cd-height-s/m/l` | 三档触发器高度。 |
 
-类名：`cd-treeselect`、`cd-treeselect-trigger`、`cd-treeselect-tag`、`cd-treeselect-caret`、`cd-treeselect-popover`、`cd-treeselect-search`、`cd-treeselect-list`、`cd-treeselect-node`、`cd-treeselect-node-switcher`、`cd-treeselect-node-checkbox`、`cd-treeselect-node-label`、`cd-treeselect-empty`；修饰符 `--multiple`、`--small/--large`、`--error/--warning`、`--disabled`、`--open`、`cd-treeselect-node-selected/--active/--disabled`。
+类名：`cd-tree-select`、`cd-tree-select-trigger`、`cd-tree-select-tags`、`cd-tree-select-arrow`、`cd-tree-select-panel`、`cd-tree-select-search-wrapper`、`cd-tree-select-tree`、`cd-tree-select-node`、`cd-tree-select-expand`、`cd-tree-select-checkbox`、`cd-tree-select-node-label`、`cd-tree-select-empty`；修饰符 `--multiple`、`--small/--large`、`--error/--warning`、`--disabled`、`--open`、`cd-tree-select-node-selected/--active/--disabled`。
 
 暗色模式由 Alias Token 自动翻转，组件层不写独立 dark 规则。
 

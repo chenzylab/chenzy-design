@@ -259,7 +259,7 @@ Pagination 含分页算法、键盘导航、跳页解析、a11y 通告，属"有
 - [ ] 包名 `@chenzy-design/core`（`createPagination`）与 `@chenzy-design/svelte` 分层落地，纯算法在 core。
 - [ ] 复用原语：useRovingTabindex / useLiveAnnouncer / useId，未重复造轮子。
 - [ ] 所有样式仅消费 `--cd-` Alias/Component token，无字面量颜色/间距硬编码。
-- [ ] 类名 BEM-like：`cd-pagination` / `cd-pagination-item` / `cd-pagination-simple` 等。
+- [ ] 类名 BEM-like：`cd-page` / `cd-page-item` / `cd-page-item-small` 等。
 - [ ] API 遵循约定：受控 `currentPage/pageSize`，统一 `on:change`，size 三档，status 三态。
 - [ ] 省略号折叠：可见节点数与 total 解耦，百万页 O(1) DOM。
 - [ ] simple 模式 total 文案完整（current/count），且 i18n 可定制。

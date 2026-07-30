@@ -104,7 +104,7 @@ DatePicker 是一个日期/时间选择组件，通过输入框触发浮层日�
 | `dropdownStyle` | `CSSProperties \| string` | — | 下拉浮层样式 |
 | `dropdownMargin` | `number \| { x?: number; y?: number }` | — | 浮层溢出冗余值 |
 | `zIndex` | `number` | `1030` | 浮层 z-index |
-| `motion` | `boolean` | `true` | 面板展开动画，false 时添加 `cd-date-picker-no-motion` |
+| `motion` | `boolean` | `true` | 面板展开动画，false 时添加 `cd-datepicker`（关闭动画由 motion prop 控制，无独立修饰类） |
 | `stopPropagation` | `boolean` | `true` | 阻止浮层点击事件冒泡 |
 | `class` | `string` | `''` | 根节点自定义类名（对齐 Semi className） |
 | `style` | `string` | — | 根节点内联样式 |

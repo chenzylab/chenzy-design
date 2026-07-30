@@ -18,7 +18,7 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 ## 2. 设计语义
 
 - **视觉层级**：悬浮于内容之上，使用中性/低饱和背景的圆形按钮，避免与主操作（primary CTA）抢夺注意力。默认不使用 `--cd-color-primary`，而用 `--cd-color-bg-2` + 阴影做"次要悬浮控件"语义。
-- **进出场动画**：`fade + 轻微 translateY` 进出，时长走 token `--cd-backtop-motion-duration`（默认 200ms）。`prefers-reduced-motion` 下退化为瞬时显隐 + 瞬时跳转（`scrollTo` 不带 behavior:smooth）。
+- **进出场动画**：`fade + 轻微 translateY` 进出，时长走 token `--cd-back-top-motion-duration`（默认 200ms）。`prefers-reduced-motion` 下退化为瞬时显隐 + 瞬时跳转（`scrollTo` 不带 behavior:smooth）。
 - **尺寸**：默认 `default`（40px），`small`（32px）、`large`（48px）。圆形，图标居中。
 - **状态**：default / hover（提升阴影、背景变深）/ active（按下）/ focus-visible（2px 焦点环 `--cd-color-primary`）。无 disabled 语义（隐藏即不可交互）。
 - **定位语义**：相对最近定位上下文（target 为 window 时相对 viewport，`position: fixed`；target 为元素时建议 `position: absolute` 于容器内或 fixed 配合偏移）。
@@ -83,21 +83,21 @@ BackTop（回到顶部）是一个浮于页面右下角的悬浮按钮，当目�
 
 | Component Token | 回退（Alias） | 用途 |
 |---|---|---|
-| `--cd-backtop-size` | `40px`（default；small 32 / large 48 由 modifier 覆盖） | 按钮直径 |
-| `--cd-backtop-bg` | `var(--cd-color-bg-2)` | 默认背景 |
-| `--cd-backtop-bg-hover` | `var(--cd-color-bg-3)` | hover 背景 |
-| `--cd-backtop-bg-active` | `var(--cd-color-bg-4)` | active 背景 |
-| `--cd-backtop-color` | `var(--cd-color-text-0)` | 图标颜色 |
-| `--cd-backtop-border` | `var(--cd-color-border)` | 描边（默认透明，hover 显现可选） |
-| `--cd-backtop-shadow` | `var(--cd-shadow-elevated)` | 悬浮阴影 |
-| `--cd-backtop-radius` | `var(--cd-radius-full)` | 圆角（默认全圆） |
-| `--cd-backtop-z-index` | `var(--cd-z-affix)` | 层级 |
-| `--cd-backtop-focus-ring` | `var(--cd-color-primary)` | focus-visible 焦点环色 |
-| `--cd-backtop-motion-duration` | `200ms` | 进出场过渡时长 |
-| `--cd-backtop-offset-bottom` | 由 `bottom` prop 注入 | 底部偏移 |
-| `--cd-backtop-offset-inline-end` | 由 `right` prop 注入 | inline-end 偏移（RTL 自适应） |
+| `--cd-back-top-size` | `40px`（default；small 32 / large 48 由 modifier 覆盖） | 按钮直径 |
+| `--cd-back-top-bg` | `var(--cd-color-bg-2)` | 默认背景 |
+| `--cd-back-top-bg-hover` | `var(--cd-color-bg-3)` | hover 背景 |
+| `--cd-back-top-bg-active` | `var(--cd-color-bg-4)` | active 背景 |
+| `--cd-back-top-color` | `var(--cd-color-text-0)` | 图标颜色 |
+| `--cd-back-top-border` | `var(--cd-color-border)` | 描边（默认透明，hover 显现可选） |
+| `--cd-back-top-shadow` | `var(--cd-shadow-elevated)` | 悬浮阴影 |
+| `--cd-back-top-radius` | `var(--cd-radius-full)` | 圆角（默认全圆） |
+| `--cd-back-top-z-index` | `var(--cd-z-affix)` | 层级 |
+| `--cd-back-top-focus-ring` | `var(--cd-color-primary)` | focus-visible 焦点环色 |
+| `--cd-back-top-motion-duration` | `200ms` | 进出场过渡时长 |
+| `--cd-back-top-offset-bottom` | 由 `bottom` prop 注入 | 底部偏移 |
+| `--cd-back-top-offset-inline-end` | 由 `right` prop 注入 | inline-end 偏移（RTL 自适应） |
 
-类名结构：`cd-backtop`（根/按钮）、`cd-backtop-icon`、修饰符 `cd-backtop-small` / `cd-backtop-large` / `cd-backtop-visible` / `cd-backtop-hidden`。
+类名结构：`cd-back-top`（根/按钮）、`cd-back-top`（图标由 children/IconButton 承担，无独立类）、修饰符 `cd-back-top`（同上） / `cd-back-top`（尺寸由 style/class prop 自定义，无内置档位） / `cd-back-top`（显隐由条件渲染而非修饰类） / `cd-back-top`（隐藏由条件渲染而非修饰类）。
 
 ## 6. 无障碍（WCAG 2.1 AA）
 

@@ -205,7 +205,7 @@ Tooltip 是轻量级文字提示组件：当用户悬停（hover）、聚焦（f
 ## 12. 验收标准 Checklist
 
 - [ ] 包名/导出符合 `@chenzy-design/core#createTooltip` 与 `@chenzy-design/svelte#Tooltip`。
-- [ ] 所有类名为 `cd-tooltip` BEM-like（`cd-tooltip-content`/`cd-tooltip-arrow`/`cd-tooltip-dark`/`cd-tooltip-warning`）。
+- [ ] 所有类名为 `cd-tooltip` BEM-like（`cd-tooltip-content`/`cd-tooltip-icon-arrow`/`cd-tooltip`（暗色由 token 切换，无独立修饰类）/`cd-tooltip`（语义色由 token 切换，无独立修饰类））。
 - [ ] 仅消费 Alias/Component 级 `--cd-tooltip-*` Token，无写死颜色/尺寸。
 - [ ] API 遵循约定：`open` + `on:openChange`、`status: default|warning|error`；`visibleChange` 标记 deprecated。
 - [ ] headless 逻辑在 core，复用 `useId`/`useDismiss`/定位原语；渲染层 Portal + `destroyOnClose`。
