@@ -196,9 +196,9 @@
   title={resolvedTitle}
   class={['cd-sidebar-mcp', className].filter(Boolean).join(' ')}
 >
-  <div class="cd-sidebar-mcp__count">{countLabel}</div>
+  <div class="cd-sidebar-mcp-count">{countLabel}</div>
 
-  <div class="cd-sidebar-mcp__search">
+  <div class="cd-sidebar-mcp-search">
   <Input
     value={inputValue}
     placeholder={resolvedPlaceholder}
@@ -226,33 +226,33 @@
   </div>
 
   <!-- 内置工具组 -->
-  <section class="cd-sidebar-mcp__group">
-    <h3 class="cd-sidebar-mcp__group-title">
+  <section class="cd-sidebar-mcp-group">
+    <h3 class="cd-sidebar-mcp-group-title">
       {loc().t('SideBar.mcpBuiltinGroup')}
     </h3>
     {#if shownBuiltin.length > 0}
-      <ul class="cd-sidebar-mcp__list" role="list">
+      <ul class="cd-sidebar-mcp-list" role="list">
         {#each shownBuiltin as option (option.value)}
           {@render itemRow(option, false)}
         {/each}
       </ul>
     {:else if !noResult}
-      <div class="cd-sidebar-mcp__empty">
+      <div class="cd-sidebar-mcp-empty">
         {loc().t('SideBar.mcpEmptyBuiltin')}
       </div>
     {/if}
   </section>
 
   <!-- 自定义工具组 -->
-  <section class="cd-sidebar-mcp__group">
-    <div class="cd-sidebar-mcp__group-head">
-      <h3 class="cd-sidebar-mcp__group-title">
+  <section class="cd-sidebar-mcp-group">
+    <div class="cd-sidebar-mcp-group-head">
+      <h3 class="cd-sidebar-mcp-group-title">
         {loc().t('SideBar.mcpCustomGroup')}
       </h3>
       {#if hasCustom}
         <button
           type="button"
-          class="cd-sidebar-mcp__add"
+          class="cd-sidebar-mcp-add"
           aria-label={loc().t('SideBar.mcpAddCustom')}
           title={loc().t('SideBar.mcpAddCustom')}
           onclick={(e) => onAddClick?.(e)}
@@ -262,17 +262,17 @@
       {/if}
     </div>
     {#if shownCustom.length > 0}
-      <ul class="cd-sidebar-mcp__list" role="list">
+      <ul class="cd-sidebar-mcp-list" role="list">
         {#each shownCustom as option (option.value)}
           {@render itemRow(option, true)}
         {/each}
       </ul>
     {:else if !hasCustom}
-      <div class="cd-sidebar-mcp__empty cd-sidebar-mcp__empty--custom">
+      <div class="cd-sidebar-mcp-empty cd-sidebar-mcp-empty-custom">
         <span>{loc().t('SideBar.mcpEmptyCustom')}</span>
         <button
           type="button"
-          class="cd-sidebar-mcp__add-cta"
+          class="cd-sidebar-mcp-add-cta"
           onclick={(e) => onAddClick?.(e)}
         >
           {@render plusIcon()}
@@ -283,7 +283,7 @@
   </section>
 
   {#if noResult}
-    <div class="cd-sidebar-mcp__empty">{loc().t('SideBar.mcpNoResult')}</div>
+    <div class="cd-sidebar-mcp-empty">{loc().t('SideBar.mcpNoResult')}</div>
   {/if}
 </SideBarContainer>
 
@@ -299,36 +299,36 @@
 {/snippet}
 
 {#snippet itemRow(option: SideBarMcpOption, custom: boolean)}
-  <li class="cd-sidebar-mcp__item" role="listitem">
+  <li class="cd-sidebar-mcp-item" role="listitem">
     {#if renderItem}
       {@render renderItem({ option, custom })}
     {:else}
       {#if option.icon}
         {#if typeof option.icon === 'string'}
           <img
-            class="cd-sidebar-mcp__icon"
+            class="cd-sidebar-mcp-icon"
             src={option.icon}
             alt=""
             aria-hidden="true"
           />
         {:else}
-          <span class="cd-sidebar-mcp__icon">{@render option.icon()}</span>
+          <span class="cd-sidebar-mcp-icon">{@render option.icon()}</span>
         {/if}
       {:else}
-        <span class="cd-sidebar-mcp__icon" aria-hidden="true"></span>
+        <span class="cd-sidebar-mcp-icon" aria-hidden="true"></span>
       {/if}
 
-      <div class="cd-sidebar-mcp__content">
-        <div class="cd-sidebar-mcp__label">{option.label}</div>
+      <div class="cd-sidebar-mcp-content">
+        <div class="cd-sidebar-mcp-label">{option.label}</div>
         {#if option.desc}
-          <div class="cd-sidebar-mcp__desc">{option.desc}</div>
+          <div class="cd-sidebar-mcp-desc">{option.desc}</div>
         {/if}
       </div>
 
       {#if option.configure}
         <button
           type="button"
-          class="cd-sidebar-mcp__action"
+          class="cd-sidebar-mcp-action"
           aria-label={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           title={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           onclick={(e) => onConfigureClick?.(e, option)}
@@ -348,7 +348,7 @@
       {#if custom}
         <button
           type="button"
-          class="cd-sidebar-mcp__action"
+          class="cd-sidebar-mcp-action"
           aria-label={loc().t('SideBar.mcpEditItem', { name: option.label })}
           title={loc().t('SideBar.mcpEditItem', { name: option.label })}
           onclick={(e) => onEditClick?.(e, option)}
@@ -365,7 +365,7 @@
       {/if}
 
       <span
-        class="cd-sidebar-mcp__switch"
+        class="cd-sidebar-mcp-switch"
         {...option.disabled
           ? { title: loc().t('SideBar.mcpPresetLocked') }
           : {}}
@@ -382,35 +382,35 @@
 {/snippet}
 
 <style>
-  :global(.cd-sidebar-mcp .cd-sidebar-container__body) {
+  :global(.cd-sidebar-mcp .cd-sidebar-container-body) {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-mcp-gap);
   }
-  .cd-sidebar-mcp__count {
+  .cd-sidebar-mcp-count {
     color: var(--cd-sidebar-mcp-count-color);
     font-size: var(--cd-sidebar-mcp-count-size);
   }
-  .cd-sidebar-mcp__search {
+  .cd-sidebar-mcp-search {
     inline-size: 100%;
   }
-  .cd-sidebar-mcp__group {
+  .cd-sidebar-mcp-group {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-mcp-item-gap);
   }
-  .cd-sidebar-mcp__group-head {
+  .cd-sidebar-mcp-group-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .cd-sidebar-mcp__group-title {
+  .cd-sidebar-mcp-group-title {
     margin: 0;
     color: var(--cd-sidebar-mcp-group-title-color);
     font-size: var(--cd-sidebar-mcp-group-title-size);
     font-weight: var(--cd-font-weight-medium, 500);
   }
-  .cd-sidebar-mcp__add {
+  .cd-sidebar-mcp-add {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -423,17 +423,17 @@
     color: var(--cd-sidebar-mcp-action-color);
     cursor: pointer;
   }
-  .cd-sidebar-mcp__add:hover {
+  .cd-sidebar-mcp-add:hover {
     background: var(--cd-sidebar-mcp-action-hover-bg);
     color: var(--cd-sidebar-mcp-label-color);
   }
-  .cd-sidebar-mcp__add:focus-visible,
-  .cd-sidebar-mcp__action:focus-visible,
-  .cd-sidebar-mcp__add-cta:focus-visible {
+  .cd-sidebar-mcp-add:focus-visible,
+  .cd-sidebar-mcp-action:focus-visible,
+  .cd-sidebar-mcp-add-cta:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-mcp__list {
+  .cd-sidebar-mcp-list {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-mcp-item-gap);
@@ -441,7 +441,7 @@
     padding: 0;
     list-style: none;
   }
-  .cd-sidebar-mcp__item {
+  .cd-sidebar-mcp-item {
     display: flex;
     align-items: center;
     gap: var(--cd-sidebar-mcp-item-gutter);
@@ -450,10 +450,10 @@
     border-radius: var(--cd-sidebar-mcp-item-radius);
     background: var(--cd-sidebar-mcp-item-bg);
   }
-  .cd-sidebar-mcp__item:hover {
+  .cd-sidebar-mcp-item:hover {
     background: var(--cd-sidebar-mcp-item-bg-hover);
   }
-  .cd-sidebar-mcp__icon {
+  .cd-sidebar-mcp-icon {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -466,14 +466,14 @@
     object-fit: cover;
     overflow: hidden;
   }
-  .cd-sidebar-mcp__content {
+  .cd-sidebar-mcp-content {
     flex: 1;
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .cd-sidebar-mcp__label {
+  .cd-sidebar-mcp-label {
     overflow: hidden;
     color: var(--cd-sidebar-mcp-label-color);
     font-size: var(--cd-sidebar-mcp-label-size);
@@ -481,7 +481,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-mcp__desc {
+  .cd-sidebar-mcp-desc {
     overflow: hidden;
     color: var(--cd-sidebar-mcp-desc-color);
     font-size: var(--cd-sidebar-mcp-desc-size);
@@ -491,7 +491,7 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-mcp__action {
+  .cd-sidebar-mcp-action {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -505,28 +505,28 @@
     color: var(--cd-sidebar-mcp-action-color);
     cursor: pointer;
   }
-  .cd-sidebar-mcp__action:hover {
+  .cd-sidebar-mcp-action:hover {
     background: var(--cd-sidebar-mcp-action-hover-bg);
     color: var(--cd-sidebar-mcp-label-color);
   }
-  .cd-sidebar-mcp__switch {
+  .cd-sidebar-mcp-switch {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
   }
-  .cd-sidebar-mcp__empty {
+  .cd-sidebar-mcp-empty {
     padding: var(--cd-spacing-tight, 8px) 0;
     color: var(--cd-sidebar-mcp-empty-color);
     font-size: var(--cd-font-size-secondary);
     text-align: center;
   }
-  .cd-sidebar-mcp__empty--custom {
+  .cd-sidebar-mcp-empty-custom {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--cd-spacing-tight, 8px);
   }
-  .cd-sidebar-mcp__add-cta {
+  .cd-sidebar-mcp-add-cta {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -538,7 +538,7 @@
     font-size: var(--cd-font-size-secondary);
     cursor: pointer;
   }
-  .cd-sidebar-mcp__add-cta:hover {
+  .cd-sidebar-mcp-add-cta:hover {
     background: var(--cd-sidebar-mcp-item-bg-hover);
   }
 </style>

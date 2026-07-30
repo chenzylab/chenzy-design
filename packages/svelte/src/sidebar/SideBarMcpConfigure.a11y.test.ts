@@ -28,11 +28,11 @@ describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
   it('渲染内置 + 自定义两组列表，item 显示 label/desc', () => {
     const { container } = base();
     expect(container.querySelector('.cd-sidebar-mcp')).toBeTruthy();
-    const labels = [...container.querySelectorAll('.cd-sidebar-mcp__label')].map(
+    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-label')].map(
       (n) => n.textContent,
     );
     expect(labels).toEqual(['File System', 'Git', 'Preset Search', 'My Tool']);
-    const descs = [...container.querySelectorAll('.cd-sidebar-mcp__desc')].map(
+    const descs = [...container.querySelectorAll('.cd-sidebar-mcp-desc')].map(
       (n) => n.textContent,
     );
     expect(descs).toContain('读写本地文件');
@@ -40,7 +40,7 @@ describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
 
   it('计数显示已启用/总数（en_US: "2/4 enabled"）', () => {
     const { container } = base();
-    expect(container.querySelector('.cd-sidebar-mcp__count')?.textContent).toBe(
+    expect(container.querySelector('.cd-sidebar-mcp-count')?.textContent).toBe(
       '2/4 enabled',
     );
   });
@@ -75,7 +75,7 @@ describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
 
   it('搜索框有 aria-label（en_US mcpSearchLabel）', () => {
     const { container } = base();
-    const input = container.querySelector('.cd-sidebar-mcp__search input');
+    const input = container.querySelector('.cd-sidebar-mcp-search input');
     expect(input?.getAttribute('aria-label')).toBe('Search MCP tools');
   });
 });
@@ -84,12 +84,12 @@ describe('SideBarMcpConfigure — 搜索过滤', () => {
   it('输入过滤两组列表（大小写不敏感，match label）', async () => {
     const { container } = base();
     const input = container.querySelector(
-      '.cd-sidebar-mcp__search input',
+      '.cd-sidebar-mcp-search input',
     ) as HTMLInputElement;
     input.value = 'git';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await Promise.resolve();
-    const labels = [...container.querySelectorAll('.cd-sidebar-mcp__label')].map(
+    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-label')].map(
       (n) => n.textContent,
     );
     expect(labels).toEqual(['Git']);
@@ -98,7 +98,7 @@ describe('SideBarMcpConfigure — 搜索过滤', () => {
   it('无匹配显示无结果提示（en_US mcpNoResult）', async () => {
     const { container } = base();
     const input = container.querySelector(
-      '.cd-sidebar-mcp__search input',
+      '.cd-sidebar-mcp-search input',
     ) as HTMLInputElement;
     input.value = 'zzz-none';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -166,7 +166,7 @@ describe('SideBarMcpConfigure — 空态', () => {
       props: { visible: true, options: OPTIONS, customOptions: [], onAddClick },
     });
     expect(container.textContent).toContain('No custom tools yet');
-    const cta = container.querySelector('.cd-sidebar-mcp__add-cta') as HTMLElement;
+    const cta = container.querySelector('.cd-sidebar-mcp-add-cta') as HTMLElement;
     expect(cta).toBeTruthy();
     cta.click();
     expect(onAddClick).toHaveBeenCalledTimes(1);

@@ -181,8 +181,8 @@
     )}
       <button
         type="button"
-        class="cd-sidebar-file-item__btn"
-        class:cd-sidebar-file-item__btn--active={active}
+        class="cd-sidebar-file-item-btn"
+        class:cd-sidebar-file-item-btn-active={active}
         aria-label={label}
         aria-pressed={active ?? undefined}
         title={label}
@@ -193,31 +193,31 @@
       </button>
     {/snippet}
 
-    <div class="cd-sidebar-file-item__menu" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
+    <div class="cd-sidebar-file-item-menu" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
       {@render toolBtn(t('SideBar.undo'), () => chain()?.undo().run(), false, !toolbarState.canUndo, undoIcon)}
       {@render toolBtn(t('SideBar.redo'), () => chain()?.redo().run(), false, !toolbarState.canRedo, redoIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
       {@render toolBtn(t('SideBar.heading1'), () => chain()?.toggleHeading({ level: 1 }).run(), toolbarState.isH1, false, h1Icon)}
       {@render toolBtn(t('SideBar.heading2'), () => chain()?.toggleHeading({ level: 2 }).run(), toolbarState.isH2, false, h2Icon)}
       {@render toolBtn(t('SideBar.heading3'), () => chain()?.toggleHeading({ level: 3 }).run(), toolbarState.isH3, false, h3Icon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
       {@render toolBtn(t('SideBar.bulletList'), () => chain()?.toggleBulletList().run(), toolbarState.isBulletList, false, bulletIcon)}
       {@render toolBtn(t('SideBar.orderedList'), () => chain()?.toggleOrderedList().run(), toolbarState.isOrderedList, false, orderedIcon)}
       {@render toolBtn(t('SideBar.blockquote'), () => chain()?.toggleBlockquote().run(), toolbarState.isBlockquote, false, quoteIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
       {@render toolBtn(t('SideBar.alignLeft'), () => chain()?.setTextAlign('left').run(), toolbarState.isAlignLeft, false, alignLeftIcon)}
       {@render toolBtn(t('SideBar.alignCenter'), () => chain()?.setTextAlign('center').run(), toolbarState.isAlignCenter, false, alignCenterIcon)}
       {@render toolBtn(t('SideBar.alignRight'), () => chain()?.setTextAlign('right').run(), toolbarState.isAlignRight, false, alignRightIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
       {@render toolBtn(t('SideBar.bold'), () => chain()?.toggleBold().run(), toolbarState.isBold, false, boldIcon)}
       {@render toolBtn(t('SideBar.italic'), () => chain()?.toggleItalic().run(), toolbarState.isItalic, false, italicIcon)}
       {@render toolBtn(t('SideBar.strike'), () => chain()?.toggleStrike().run(), toolbarState.isStrike, false, strikeIcon)}
       {@render toolBtn(t('SideBar.code'), () => chain()?.toggleCode().run(), toolbarState.isCode, false, codeIcon)}
-      <span class="cd-sidebar-file-item__sep" aria-hidden="true"></span>
+      <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
       {@render toolBtn(t('SideBar.image'), () => chain()?.insertContent({ type: 'imageUpload' }).run(), false, false, imageIcon)}
     </div>
   {/if}
-  <div bind:this={editorHost} class="cd-sidebar-file-item__editor"></div>
+  <div bind:this={editorHost} class="cd-sidebar-file-item-editor"></div>
 </div>
 
 {#snippet undoIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8a5 5 0 1 1 1.5 3.5M3 8V4.5M3 8h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
@@ -243,7 +243,7 @@
     flex-direction: column;
     gap: var(--cd-sidebar-file-gap);
   }
-  .cd-sidebar-file-item__menu {
+  .cd-sidebar-file-item-menu {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -251,7 +251,7 @@
     padding: var(--cd-sidebar-file-menu-padding);
     border-bottom: 1px solid var(--cd-sidebar-file-menu-border);
   }
-  .cd-sidebar-file-item__btn {
+  .cd-sidebar-file-item-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -267,45 +267,45 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-file-item__btn:hover:not(:disabled) {
+  .cd-sidebar-file-item-btn:hover:not(:disabled) {
     background: var(--cd-sidebar-file-btn-hover-bg);
     color: var(--cd-sidebar-file-btn-color-hover);
   }
-  .cd-sidebar-file-item__btn--active {
+  .cd-sidebar-file-item-btn-active {
     background: var(--cd-sidebar-file-btn-active-bg);
     color: var(--cd-sidebar-file-btn-color-active);
   }
-  .cd-sidebar-file-item__btn:disabled {
+  .cd-sidebar-file-item-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-  .cd-sidebar-file-item__btn:focus-visible {
+  .cd-sidebar-file-item-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-file-item__sep {
+  .cd-sidebar-file-item-sep {
     inline-size: 1px;
     block-size: 16px;
     background: var(--cd-sidebar-file-menu-border);
   }
-  .cd-sidebar-file-item__editor {
+  .cd-sidebar-file-item-editor {
     color: var(--cd-sidebar-file-editor-color);
     font-size: var(--cd-sidebar-file-editor-size);
     line-height: var(--cd-sidebar-file-editor-line-height);
   }
   /* ProseMirror 编辑区（运行时注入 class）用 :global 命中。 */
-  :global(.cd-sidebar-file-item__editor .ProseMirror) {
+  :global(.cd-sidebar-file-item-editor .ProseMirror) {
     outline: none;
     min-block-size: var(--cd-sidebar-file-editor-min-height);
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror:focus) {
+  :global(.cd-sidebar-file-item-editor .ProseMirror:focus) {
     outline: none;
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror img) {
+  :global(.cd-sidebar-file-item-editor .ProseMirror img) {
     max-inline-size: 100%;
     border-radius: var(--cd-sidebar-file-image-radius);
   }
-  :global(.cd-sidebar-file-item__editor .ProseMirror .cd-sidebar-file-select) {
+  :global(.cd-sidebar-file-item-editor .ProseMirror .cd-sidebar-file-select) {
     background: var(--cd-sidebar-file-selection-bg);
   }
 </style>
