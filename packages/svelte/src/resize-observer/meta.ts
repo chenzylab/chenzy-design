@@ -22,6 +22,12 @@ export const meta = {
       desc: '观测盒模型：content-box 仅内容区，border-box 含 padding+border，device-pixel-content-box 物理像素内容盒（含 DPR；不支持时回退 content-box）',
     },
     {
+      name: 'observeChild',
+      type: 'boolean',
+      default: 'false',
+      desc: "观测 children 首个元素而非包裹元素本身（对齐 Semi cloneElement 注入 ref 的语义，尺寸即用户真实元素）；无子元素时回退观测包裹元素。与 multiple/observeParent 互斥，优先级 multiple > observeChild > observeParent",
+    },
+    {
       name: 'observerProperty',
       type: "'width'|'height'|'all'",
       default: "'all'",
