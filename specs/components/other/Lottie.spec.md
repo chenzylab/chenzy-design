@@ -25,7 +25,7 @@
 | class | 根节点类名 | `string` | - |
 | style | 根节点内联样式 | `CSSProperties` / `string` | - |
 
-**静态能力**：具名导出 `getLottie()`（异步函数）返回全局 lottie 包。对齐 Semi 的 `Lottie.getLottie` 静态方法——Svelte 组件无法挂静态方法，故以具名导出提供。
+**静态能力**：静态方法 `Lottie.getLottie()`（异步函数）返回全局 lottie 包，1:1 对齐 Semi `Lottie.getLottie`。实现放 `<script module>`，`index.ts` 用 `Object.assign` 挂到组件上（同 HotKeys.Keys）；同时保留等价具名导出 `getLottie`。
 
 **params 默认值**（loadAnimation）：`renderer: 'svg'` / `loop: true` / `autoplay: true` / `container` 缺省时用组件自管的 div；用户 params 覆盖这些默认。
 
