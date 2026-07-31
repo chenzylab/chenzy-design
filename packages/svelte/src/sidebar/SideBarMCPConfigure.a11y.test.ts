@@ -1,20 +1,20 @@
-// SideBarMcpConfigure 组件测（P3）：双列表渲染 / 搜索过滤 / 启用开关 role=switch /
+// SideBarMCPConfigure 组件测（P3）：双列表渲染 / 搜索过滤 / 启用开关 role=switch /
 // 动作按钮 i18n / 受控 onStatusChange 不回写 / 空态与无结果。
 // 命名 *.a11y.test.ts → 落 dom(jsdom) vitest project（红线：*.test.ts 会落 node project 缺 DOM 崩溃）。
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale } from '../test-utils/a11y.js';
-import SideBarMcpConfigure from './SideBarMcpConfigure.svelte';
-import type { SideBarMcpOption } from './types.js';
+import SideBarMCPConfigure from './SideBarMCPConfigure.svelte';
+import type { SideBarMCPOption } from './types.js';
 
-const MC = SideBarMcpConfigure as unknown as Parameters<typeof renderWithLocale>[0];
+const MC = SideBarMCPConfigure as unknown as Parameters<typeof renderWithLocale>[0];
 
-const OPTIONS: SideBarMcpOption[] = [
+const OPTIONS: SideBarMCPOption[] = [
   { value: 'fs', label: 'File System', desc: '读写本地文件', active: true, configure: true },
   { value: 'git', label: 'Git', desc: '版本控制', active: false },
   { value: 'preset', label: 'Preset Search', active: true, disabled: true },
 ];
 
-const CUSTOM: SideBarMcpOption[] = [
+const CUSTOM: SideBarMCPOption[] = [
   { value: 'my', label: 'My Tool', active: false },
 ];
 
@@ -24,7 +24,7 @@ function base(props: Record<string, unknown> = {}) {
   });
 }
 
-describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
+describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
   it('渲染内置 + 自定义两组列表，item 显示 label/desc', () => {
     const { container } = base();
     expect(container.querySelector('.cd-sidebar-mcp')).toBeTruthy();
@@ -81,7 +81,7 @@ describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
   });
 });
 
-describe('SideBarMcpConfigure — 搜索过滤', () => {
+describe('SideBarMCPConfigure — 搜索过滤', () => {
   it('输入过滤两组列表（大小写不敏感，match label）', async () => {
     const { container } = base();
     const input = container.querySelector(
@@ -108,7 +108,7 @@ describe('SideBarMcpConfigure — 搜索过滤', () => {
   });
 });
 
-describe('SideBarMcpConfigure — 交互回调（受控不回写）', () => {
+describe('SideBarMCPConfigure — 交互回调（受控不回写）', () => {
   it('点击开关触发 onStatusChange(下一份数组, custom=false)，不回写 prop', () => {
     const onStatusChange = vi.fn();
     const { container } = base({ onStatusChange });
@@ -118,7 +118,7 @@ describe('SideBarMcpConfigure — 交互回调（受控不回写）', () => {
     expect(onStatusChange).toHaveBeenCalledTimes(1);
     const [nextList, custom] = onStatusChange.mock.calls[0] ?? [];
     expect(custom).toBe(false);
-    expect(nextList.find((o: SideBarMcpOption) => o.value === 'git')?.active).toBe(true);
+    expect(nextList.find((o: SideBarMCPOption) => o.value === 'git')?.active).toBe(true);
     // 受控不回写：原选项 active 仍 false，DOM aria-checked 未变。
     expect(container.querySelectorAll('[role="switch"]')[1]?.getAttribute('aria-checked')).toBe('false');
   });
@@ -160,7 +160,7 @@ describe('SideBarMcpConfigure — 交互回调（受控不回写）', () => {
   });
 });
 
-describe('SideBarMcpConfigure — 空态', () => {
+describe('SideBarMCPConfigure — 空态', () => {
   it('自定义组为空显示添加按钮与空态文案（en_US emptyCustomMcpInfo）', () => {
     const onAddClick = vi.fn();
     const { container } = renderWithLocale(MC, {

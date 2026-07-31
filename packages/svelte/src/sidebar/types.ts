@@ -67,7 +67,7 @@ export interface SideBarAnnotationItem {
  * （= foundation `MCPOption` + `icon`/`desc` 渲染槽）。core `McpOptionCore`
  * 只承载 headless 逻辑读取的字段（value/label/active/disabled），此处扩展渲染槽。
  */
-export interface SideBarMcpOption {
+export interface SideBarMCPOption {
   /** 唯一标识（列表 key + 过滤/label 兜底）。 */
   value: string;
   /** 展示名（过滤主目标）。 */

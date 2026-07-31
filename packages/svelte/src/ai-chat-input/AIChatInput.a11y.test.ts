@@ -171,6 +171,37 @@ describe('AIChatInput · ref 方法', () => {
     await flush();
     expect(component.getText().trim()).toBe('');
   });
+
+  // 附件列表是本组件自绘的（Upload 传 listType="none"），删除**不走** Upload 内部移除流程，
+  // 故必须显式兑现 uploadProps 的两个钩子 —— 否则文档里「删除会触发 onRemove 并遵循
+  // beforeRemove」这条对本库就是假的。
+  it('deleteUploadFile 触发 uploadProps.onRemove 并遵循 beforeRemove', async () => {
+    const onRemove = vi.fn();
+    const onUploadChange = vi.fn();
+    let allow = false;
+    const beforeRemove = vi.fn(() => Promise.resolve(allow));
+
+    const rendered = render(AIChatInput, {
+      props: { uploadProps: { beforeRemove, onRemove }, onUploadChange },
+    }) as unknown as {
+      container: Element;
+      component: { deleteUploadFile: (a: Record<string, unknown>) => void };
+    };
+    await flush(rendered.container);
+
+    const attachment = { uid: 'a1', name: 'a.txt' };
+    // 组件内部附件列表初始为空，先让它有一项：走 onUploadChange 的公开路径不可行，
+    // 故直接调 deleteUploadFile 验证「beforeRemove 返回 false 时不触发 onRemove」这一半。
+    rendered.component.deleteUploadFile(attachment);
+    await flush();
+    expect(beforeRemove).toHaveBeenCalled();
+    expect(onRemove, 'beforeRemove 返回 false 应中止删除').not.toHaveBeenCalled();
+
+    allow = true;
+    rendered.component.deleteUploadFile(attachment);
+    await flush();
+    expect(onRemove, 'beforeRemove 放行后应触发 onRemove').toHaveBeenCalled();
+  });
 });
 
 describe('AIChatInput · axe', () => {

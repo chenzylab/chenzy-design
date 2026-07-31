@@ -39,6 +39,21 @@
     type AIChatInputSkill,
     type AIChatInputConfigureValue,
   } from '@chenzy-design/core';
+  import {
+    IconArrowUp,
+    IconClose,
+    IconCode,
+    IconCrossStroked,
+    IconExcel,
+    IconFile,
+    IconMusic,
+    IconPaperclip,
+    IconPdf,
+    IconStop,
+    IconTemplateStroked,
+    IconVideo,
+    IconWord,
+  } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
   import type { UploadFileItem } from '../upload/types.js';
@@ -607,10 +622,36 @@
     return files;
   }
 
-  // 从附件列表移除一项（top area 附件列表删除按钮 + ref deleteUploadFile 共用）。
-  function removeAttachment(target: AIChatInputAttachment): void {
-    attachments = attachments.filter((a) => a.uid !== target.uid);
-    onUploadChange?.(attachments);
+  /**
+   * 从附件列表移除一项（top area 附件列表删除按钮 + ref deleteUploadFile 共用）。
+   *
+   * ⚠️ 附件列表是本组件**自绘**的（Upload 传 `listType="none"`，只当触发器+上传管线），
+   * 所以删除**不会**走 Upload 内部的移除流程 —— 必须在这里显式兑现
+   * `uploadProps.beforeRemove` / `onRemove` 两个钩子，否则 Semi 文档里
+   * 「删除上传文件时会触发 onRemove 并遵循 beforeRemove」这条对本库就是假的。
+   *
+   * beforeRemove 支持返回 Promise（对齐 Semi 与本库 Upload 的签名）：
+   * 返回 false / resolve(false) 即中止删除。
+   */
+  async function removeAttachment(target: AIChatInputAttachment): Promise<void> {
+    const before = uploadProps?.['beforeRemove'] as
+      | ((file: unknown, fileList: unknown[]) => boolean | Promise<boolean>)
+      | undefined;
+    if (typeof before === 'function') {
+      const ok = await before(target, attachments);
+      if (ok === false) return;
+    }
+
+    const next = attachments.filter((a) => a.uid !== target.uid);
+    attachments = next;
+
+    const onRemove = uploadProps?.['onRemove'] as
+      | ((currentFile: unknown, fileList: unknown[], currentFileItem: unknown) => void)
+      | undefined;
+    // 与本库 Upload 的 onRemove 同签名：(currentFile, fileList, currentFileItem)
+    onRemove?.(target['file'], next, target);
+
+    onUploadChange?.(next);
   }
 
   // —— ref 方法（对齐 Semi Methods）——
@@ -673,7 +714,34 @@
   }
   /** 从附件列表删除一项（对齐 Semi deleteUploadFile）。 */
   export function deleteUploadFile(attachment: AIChatInputAttachment): void {
-    removeAttachment(attachment);
+    // beforeRemove 可能是异步的；此处不等待（与点击删除按钮一致，属即发即忘）。
+    void removeAttachment(attachment);
+  }
+
+  /**
+   * 引用/附件类型 → 具名图标组件（逐条对齐 Semi `getIconByType`）。
+   * text 不出图标；file 与 word 共用 IconWord；未知类型兜底 IconFile。
+   */
+  function iconByType(type: string | undefined) {
+    switch (type) {
+      case 'text':
+        return null;
+      case 'file':
+      case 'word':
+        return IconWord;
+      case 'code':
+        return IconCode;
+      case 'excel':
+        return IconExcel;
+      case 'video':
+        return IconVideo;
+      case 'audio':
+        return IconMusic;
+      case 'pdf':
+        return IconPdf;
+      default:
+        return IconFile;
+    }
   }
 </script>
 
@@ -703,6 +771,13 @@
                 >
                   {#if isImageReference(reference)}
                     <img class="cd-ai-chat-input-reference-img" src={reference.url} alt="" />
+                  {:else if iconByType(reference.type)}
+                    {@const RefIcon = iconByType(reference.type)}
+                    <span
+                      class="cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{reference.type} cd-ai-chat-input-reference-icon"
+                    >
+                      <RefIcon size="small" />
+                    </span>
                   {/if}
                   <span class="cd-ai-chat-input-reference-name">{referenceLabel(reference)}</span>
                 </button>
@@ -712,9 +787,7 @@
                   aria-label={loc().t('AIChatInput.deleteReference')}
                   onclick={(e) => handleReferenceDelete(reference, e)}
                 >
-                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                  </svg>
+                  <IconCrossStroked size="small" />
                 </button>
               </div>
             {/if}
@@ -725,16 +798,23 @@
         <div class="cd-ai-chat-input-attachments">
           {#each attachments as attachment (attachment.uid)}
             <div class="cd-ai-chat-input-attachment">
+              {#if iconByType(attachment.type)}
+                {@const AttIcon = iconByType(attachment.type)}
+                <!-- 附件图标：Semi getAttachmentIconByType 用 size='large'（引用处是 small）。 -->
+                <span
+                  class="cd-ai-chat-input-attachment-icon cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{attachment.type}"
+                >
+                  <AttIcon size="large" />
+                </span>
+              {/if}
               <span class="cd-ai-chat-input-attachment-name">{attachment.name ?? attachment.uid}</span>
               <button
                 type="button"
                 class="cd-ai-chat-input-attachment-delete"
                 aria-label={loc().t('AIChatInput.deleteAttachment')}
-                onclick={() => removeAttachment(attachment)}
+                onclick={() => void removeAttachment(attachment)}
               >
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                </svg>
+                <IconClose size="small" />
               </button>
             </div>
           {/each}
@@ -822,9 +902,7 @@
         aria-label={loc().t('AIChatInput.template')}
         onclick={toggleTemplate}
       >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-          <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-        </svg>
+        <IconTemplateStroked />
         <span>{loc().t('AIChatInput.template')}</span>
       </button>
     {/if}
@@ -845,15 +923,7 @@
             })}
           {:else}
             <span class="cd-ai-chat-input-upload-trigger" aria-label={loc().t('AIChatInput.upload')}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-                <path
-                  d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M12 3v13m0-13-4 4m4-4 4 4"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <IconPaperclip />
             </span>
           {/if}
         </Upload>
@@ -874,19 +944,9 @@
           aria-label={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
         >
           {#if generating}
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-              <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
-            </svg>
+            <IconStop />
           {:else}
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-              <path
-                d="M12 20V5m0 0-6 6m6-6 6 6"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <IconArrowUp />
           {/if}
         </button>
       {/if}

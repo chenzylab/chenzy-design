@@ -45,7 +45,7 @@ SideBar 在 AI 对话/编辑器场景提供**右侧可伸缩浮层**，承载：
   - `createSideBarContainer`：resizable 拖拽几何 + 动画状态 + Esc/键盘（P0）。
   - `createMcpConfigure`：内置/自定义列表状态 + 搜索过滤 + 启用态缓存（P3）。
   - 步进/路由逻辑（mode 路由）内联主壳（P1）。
-- **渲染（svelte/）**：`SideBar.svelte`（主壳）+ `SideBarContainer.svelte` + `SideBarMcpConfigure.svelte` + `SideBarAnnotation.svelte` + `SideBarCodeContent.svelte` + `SideBarFileContent.svelte`。
+- **渲染（svelte/）**：`SideBar.svelte`（主壳）+ `SideBarContainer.svelte` + `SideBarMCPConfigure.svelte` + `SideBarAnnotation.svelte` + `SideBarCodeContent.svelte` + `SideBarFileContent.svelte`。
 
 ## 4. API
 
@@ -92,17 +92,17 @@ SideBar 在 AI 对话/编辑器场景提供**右侧可伸缩浮层**，承载：
 | SideBarCodeContent.onExpand | `(e: MouseEvent, code: CodeItemProps, mode: string) => void` | `undefined` | 点击某项展开（全屏）按钮回调；mode 固定 "code"（对齐 Semi onExpand） |
 | SideBarCodeContent.class | `string` | `undefined` | 根自定义类名 |
 | SideBarCodeContent.style | `string` | `undefined` | 根自定义内联样式 |
-| SideBarMcpConfigure.options | `SideBarMcpOption[]` | `[]` | 内置 MCP 工具列表（受控）；每项 { value, label, icon?, desc?, active?, disabled?, configure? } |
-| SideBarMcpConfigure.customOptions | `SideBarMcpOption[]` | `[]` | 自定义 MCP 工具列表（受控）；空时显示添加入口 |
-| SideBarMcpConfigure.filter | `(input: string, option: SideBarMcpOption) => boolean` | `undefined` | 自定义搜索过滤谓词（覆盖默认 label/value 大小写不敏感包含匹配） |
-| SideBarMcpConfigure.placeholder | `string` | `undefined` | 搜索占位（覆盖 i18n mcpSearchPlaceholder，修 Semi 硬编码「请输入」） |
-| SideBarMcpConfigure.onSearch | `(input: string, custom: boolean) => void` | `undefined` | 搜索输入回调（custom 恒 false） |
-| SideBarMcpConfigure.onStatusChange | `(options: SideBarMcpOption[], custom: boolean) => void` | `undefined` | 启用/关闭变化：产出该组「下一份数组」+ custom 标记（不回写 prop） |
-| SideBarMcpConfigure.onAddClick | `(e: MouseEvent) => void` | `undefined` | 自定义组「添加」按钮回调 |
-| SideBarMcpConfigure.onConfigureClick | `(e: MouseEvent, option: SideBarMcpOption) => void` | `undefined` | 内置工具（configure=true）「配置」按钮回调 |
-| SideBarMcpConfigure.onEditClick | `(e: MouseEvent, option: SideBarMcpOption) => void` | `undefined` | 自定义工具「编辑」按钮回调 |
-| SideBarMcpConfigure.renderItem | `Snippet<[{ option; custom }]>` | `undefined` | 自定义单项渲染（覆盖默认项，custom 标记来自自定义组） |
-| SideBarMcpConfigure....Container | `SideBarContainer props` | `—` | 继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n mcpTitle |
+| SideBarMCPConfigure.options | `SideBarMCPOption[]` | `[]` | 内置 MCP 工具列表（受控）；每项 { value, label, icon?, desc?, active?, disabled?, configure? } |
+| SideBarMCPConfigure.customOptions | `SideBarMCPOption[]` | `[]` | 自定义 MCP 工具列表（受控）；空时显示添加入口 |
+| SideBarMCPConfigure.filter | `(input: string, option: SideBarMCPOption) => boolean` | `undefined` | 自定义搜索过滤谓词（覆盖默认 label/value 大小写不敏感包含匹配） |
+| SideBarMCPConfigure.placeholder | `string` | `undefined` | 搜索占位（覆盖 i18n mcpSearchPlaceholder，修 Semi 硬编码「请输入」） |
+| SideBarMCPConfigure.onSearch | `(input: string, custom: boolean) => void` | `undefined` | 搜索输入回调（custom 恒 false） |
+| SideBarMCPConfigure.onStatusChange | `(options: SideBarMCPOption[], custom: boolean) => void` | `undefined` | 启用/关闭变化：产出该组「下一份数组」+ custom 标记（不回写 prop） |
+| SideBarMCPConfigure.onAddClick | `(e: MouseEvent) => void` | `undefined` | 自定义组「添加」按钮回调 |
+| SideBarMCPConfigure.onConfigureClick | `(e: MouseEvent, option: SideBarMCPOption) => void` | `undefined` | 内置工具（configure=true）「配置」按钮回调 |
+| SideBarMCPConfigure.onEditClick | `(e: MouseEvent, option: SideBarMCPOption) => void` | `undefined` | 自定义工具「编辑」按钮回调 |
+| SideBarMCPConfigure.renderItem | `Snippet<[{ option; custom }]>` | `undefined` | 自定义单项渲染（覆盖默认项，custom 标记来自自定义组） |
+| SideBarMCPConfigure....Container | `SideBarContainer props` | `—` | 继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n mcpTitle |
 | SideBarFileContent.files | `FileItemProps[]` | `[]` | 富文本文件项列表；每项 { key, name, content, editable, onContentChange, extensions, imgUploadProps }，一个 tiptap 编辑器（editable 控制查看/编辑，默认只读） |
 | SideBarFileContent.activeKey | `string \| string[]` | `undefined` | 受控展开项 key（受控，不回写；仅经 onChange 通知，内部兜底非受控） |
 | SideBarFileContent.onChange | `(keys: string[]) => void` | `undefined` | 展开态变化回调（Collapse onChange） |
@@ -117,7 +117,7 @@ SideBar 在 AI 对话/编辑器场景提供**右侧可伸缩浮层**，承载：
 | SideBarFileItem.class | `string` | `undefined` | 根自定义类名 |
 | SideBarFileItem.style | `string` | `undefined` | 根自定义内联样式 |
 
-**子组件**：`SideBar`、`SideBarContainer`、`SideBarAnnotation`、`SideBarCodeContent`、`SideBarMcpConfigure`、`SideBarFileContent`、`SideBarFileItem`
+**子组件**：`SideBar`、`SideBarContainer`、`SideBarAnnotation`、`SideBarCodeContent`、`SideBarMCPConfigure`、`SideBarFileContent`、`SideBarFileItem`
 
 ### SideBar.Container Props
 

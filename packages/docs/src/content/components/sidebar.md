@@ -23,7 +23,7 @@ brief: AI 场景的侧边信息栏，承载参考来源、代码/JSON 预览、�
   import codeContentSrc from '../../demos/sidebar/05-code-content.svelte?raw';
   import CodeList from '../../demos/sidebar/05b-code-list.svelte';
   import codeListSrc from '../../demos/sidebar/05b-code-list.svelte?raw';
-  import McpConfigure from '../../demos/sidebar/06-mcp-configure.svelte';
+  import MCPConfigure from '../../demos/sidebar/06-mcp-configure.svelte';
   import mcpConfigureSrc from '../../demos/sidebar/06-mcp-configure.svelte?raw';
   import FileContent from '../../demos/sidebar/07-file-content.svelte';
   import fileContentSrc from '../../demos/sidebar/07-file-content.svelte?raw';
@@ -37,7 +37,7 @@ brief: AI 场景的侧边信息栏，承载参考来源、代码/JSON 预览、�
 
 `SideBar` 用于 AI 会话场景的侧边信息栏，展示参考来源、代码/JSON 预览、富文本内容与 MCP 工具配置。
 
-它由一组可独立使用的子组件构成：外层浮层壳 `SideBarContainer`，主壳 `SideBar`（按 `mode` 在主视图与详情视图间路由），以及内容组件 `SideBarAnnotation`、`SideBarCodeContent`、`SideBarFileContent`、`SideBarMcpConfigure`。
+它由一组可独立使用的子组件构成：外层浮层壳 `SideBarContainer`，主壳 `SideBar`（按 `mode` 在主视图与详情视图间路由），以及内容组件 `SideBarAnnotation`、`SideBarCodeContent`、`SideBarFileContent`、`SideBarMCPConfigure`。
 
 <Notice type="primary" title="与 Semi 的结构差异">
 
@@ -58,7 +58,7 @@ import {
   SideBarAnnotation,
   SideBarCodeContent,
   SideBarFileContent,
-  SideBarMcpConfigure,
+  SideBarMCPConfigure,
 } from '@chenzy-design/svelte';
 ```
 
@@ -106,7 +106,7 @@ import {
 
 ### MCP 配置
 
-`SideBarMcpConfigure` 渲染 MCP 工具配置面板：搜索过滤、内置/自定义列表、启用开关与配置/编辑/添加动作。
+`SideBarMCPConfigure` 渲染 MCP 工具配置面板：搜索过滤、内置/自定义列表、启用开关与配置/编辑/添加动作。
 
 <Notice type="primary" title="与 Semi 的差异">
 
@@ -114,7 +114,7 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 
 </Notice>
 
-<DemoBox code={mcpConfigureSrc}><McpConfigure /></DemoBox>
+<DemoBox code={mcpConfigureSrc}><MCPConfigure /></DemoBox>
 
 ### 富文本编辑器
 
@@ -177,24 +177,24 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | title | 标题内容 | `string \| Snippet` | - |
 | visible | 是否可见 | boolean | - |
 
-### SideBarMcpConfigure
+### SideBarMCPConfigure
 
 除下列参数外，还支持 [SideBarContainer](#sidebarcontainer) 的全部参数。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| customOptions | 自定义选项列表 | `SideBarMcpOption[]` | - |
-| filter | 筛选函数，用于根据输入值过滤选项 | `(inputValue: string, option: SideBarMcpOption) => boolean` | - |
+| customOptions | 自定义选项列表 | `SideBarMCPOption[]` | - |
+| filter | 筛选函数，用于根据输入值过滤选项 | `(inputValue: string, option: SideBarMCPOption) => boolean` | - |
 | onAddClick | 新增按钮点击事件回调 | `(e: MouseEvent) => void` | - |
-| onConfigureClick | 配置按钮点击事件回调 | `(e: MouseEvent, option: SideBarMcpOption) => void` | - |
-| onEditClick | 编辑按钮点击事件回调 | `(e: MouseEvent, option: SideBarMcpOption) => void` | - |
+| onConfigureClick | 配置按钮点击事件回调 | `(e: MouseEvent, option: SideBarMCPOption) => void` | - |
+| onEditClick | 编辑按钮点击事件回调 | `(e: MouseEvent, option: SideBarMCPOption) => void` | - |
 | onSearch | 搜索事件回调，返回输入值和是否为自定义标识 | `(inputValue: string, custom: boolean) => void` | - |
-| onStatusChange | 状态变化事件回调，返回选项列表和是否为自定义标识 | `(options: SideBarMcpOption[], custom: boolean) => void` | - |
-| options | 基础选项列表 | `SideBarMcpOption[]` | - |
+| onStatusChange | 状态变化事件回调，返回选项列表和是否为自定义标识 | `(options: SideBarMCPOption[], custom: boolean) => void` | - |
+| options | 基础选项列表 | `SideBarMCPOption[]` | - |
 | placeholder | 输入框占位提示文字 | string | 走 locale `SideBar.searchPlaceholder` |
 | renderItem | 自定义选项渲染 | `Snippet<[option, custom]>` | - |
 
-#### SideBarMcpOption
+#### SideBarMCPOption
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |

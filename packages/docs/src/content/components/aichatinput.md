@@ -53,7 +53,14 @@ import { AIChatInput } from '@chenzy-design/svelte';
 
 ### 基本用法
 
-通过 `onMessageSend` 接收发送内容，`onContentChange` 感知输入变化。
+支持文本输入以及文件上传，使用时可按需配置以下参数：
+
+- `uploadProps` 配置文件上传相关的参数，详见 [UploadProps](/components/upload#api-参考)
+- `onUploadChange` 获取文件上传变化
+- 删除上传文件时，会触发 `uploadProps.onRemove`，并遵循 `uploadProps.beforeRemove`（支持 Promise）
+- `placeholder` 输入框的占位符
+- `defaultContent` 输入框的默认内容
+- `onContentChange` 输入框内容变化时的回调函数，参数为当前输入框的内容
 
 <DemoBox code={basicSrc}><Basic /></DemoBox>
 

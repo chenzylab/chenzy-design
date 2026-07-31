@@ -1,5 +1,5 @@
 <!--
-  SideBarMcpConfigure — MCP 工具配置面板（P3）。see specs/components/show/SideBar.spec.md §4/§6/§9。
+  SideBarMCPConfigure — MCP 工具配置面板（P3）。see specs/components/show/SideBar.spec.md §4/§6/§9。
   外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n mcpConfigure）。
   内部结构（对齐 Semi mcpConfigure/content，但双列表并列展示而非 radio 二选一）：
     顶部计数（「已激活 MCP 数: N/总数」，对齐 Semi activeMCPNumber）+ 搜索框（Input，前缀放大镜 + aria-label）
@@ -32,30 +32,30 @@
   import Switch from '../switch/Switch.svelte';
   import { useLocale } from '../locale-provider/index.js';
   import SideBarContainer from './SideBarContainer.svelte';
-  import type { SideBarMcpOption } from './types.js';
+  import type { SideBarMCPOption } from './types.js';
 
   interface Props {
     // —— Content props（对齐 Semi MCPConfigureContentReactProps）——
     /** 内置 MCP 工具列表（受控）。 */
-    options?: SideBarMcpOption[];
+    options?: SideBarMCPOption[];
     /** 自定义 MCP 工具列表（受控）。 */
-    customOptions?: SideBarMcpOption[];
+    customOptions?: SideBarMCPOption[];
     /** 自定义搜索过滤谓词（覆盖默认 label/value 包含匹配）。 */
-    filter?: (input: string, option: SideBarMcpOption) => boolean;
+    filter?: (input: string, option: SideBarMCPOption) => boolean;
     /** 搜索占位（覆盖 i18n searchPlaceholder）。 */
     placeholder?: string;
     /** 搜索输入回调（input 值 + 当前是否聚焦自定义组，本组件双列表恒传 false）。 */
     onSearch?: (input: string, custom: boolean) => void;
     /** 启用/关闭变化回调：产出该组「下一份数组」+ custom 标记（不回写 prop）。 */
-    onStatusChange?: (options: SideBarMcpOption[], custom: boolean) => void;
+    onStatusChange?: (options: SideBarMCPOption[], custom: boolean) => void;
     /** 自定义组「添加」按钮回调。 */
     onAddClick?: (e: MouseEvent) => void;
     /** 内置工具「配置」按钮回调。 */
-    onConfigureClick?: (e: MouseEvent, option: SideBarMcpOption) => void;
+    onConfigureClick?: (e: MouseEvent, option: SideBarMCPOption) => void;
     /** 自定义工具「编辑」按钮回调。 */
-    onEditClick?: (e: MouseEvent, option: SideBarMcpOption) => void;
+    onEditClick?: (e: MouseEvent, option: SideBarMCPOption) => void;
     /** 自定义单项渲染（覆盖默认项，custom 标记该项来自自定义组）。 */
-    renderItem?: Snippet<[{ option: SideBarMcpOption; custom: boolean }]>;
+    renderItem?: Snippet<[{ option: SideBarMCPOption; custom: boolean }]>;
 
     // —— Container props（透传 SideBarContainer，MCPConfigure 继承 Container）——
     /** 是否可见（受控，不回写；仅经 onCancel 通知）。 */
@@ -153,7 +153,7 @@
   }
 
   function handleStatusChange(
-    option: SideBarMcpOption,
+    option: SideBarMCPOption,
     next: boolean,
     custom: boolean,
   ): void {
@@ -300,7 +300,7 @@
   </svg>
 {/snippet}
 
-{#snippet itemRow(option: SideBarMcpOption, custom: boolean)}
+{#snippet itemRow(option: SideBarMCPOption, custom: boolean)}
   <li class="cd-sidebar-mcp-item" role="listitem">
     {#if renderItem}
       {@render renderItem({ option, custom })}
