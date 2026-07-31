@@ -38,7 +38,7 @@ const chats: AIDialogueMessage[] = [
 describe('AIChatDialogue a11y / 渲染', () => {
   it('消息流 role=log / aria-live=polite / locale 可访问名，无 axe violations', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
-    const log = container.querySelector('.cd-ai-dialogue-container');
+    const log = container.querySelector('.cd-ai-chat-dialogue-list');
     expect(log).not.toBeNull();
     expect(log?.getAttribute('role')).toBe('log');
     expect(log?.getAttribute('aria-live')).toBe('polite');
@@ -50,33 +50,33 @@ describe('AIChatDialogue a11y / 渲染', () => {
 
   it('两条消息各一个 DialogueBox', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
-    expect(container.querySelectorAll('.cd-ai-dialogue-box').length).toBe(2);
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper').length).toBe(2);
   });
 
   it('ContentItem 分块：reasoning 折叠块 + function_call 工具块渲染', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
     // reasoning 折叠按钮存在，aria-expanded=false（默认收起）。
-    const toggle = container.querySelector('.cd-ai-dialogue-reasoning-toggle');
+    const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header');
     expect(toggle).not.toBeNull();
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     // function_call 工具块名称渲染。
-    const tool = container.querySelector('.cd-ai-dialogue-tool-name');
+    const tool = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-name');
     expect(tool?.textContent).toBe('get_weather');
   });
 
   it('reasoning 折叠：点击后展开 aria-expanded=true', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
-    const toggle = container.querySelector('.cd-ai-dialogue-reasoning-toggle') as HTMLButtonElement;
+    const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header') as HTMLButtonElement;
     await fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelector('.cd-ai-dialogue-reasoning-body')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-reasoning-content')).not.toBeNull();
   });
 
   it('选择模式：每条消息前置 checkbox', async () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats, roleConfig, selecting: true },
     });
-    expect(container.querySelectorAll('.cd-ai-dialogue-box-select').length).toBe(2);
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper-selected').length).toBe(2);
     await expectNoAxeViolations(container);
   });
 
@@ -87,7 +87,7 @@ describe('AIChatDialogue a11y / 渲染', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: errorChats, roleConfig },
     });
-    const err = container.querySelector('.cd-ai-dialogue-box-error');
+    const err = container.querySelector('.cd-ai-chat-dialogue-content-failed-text');
     expect(err?.textContent).toBeTruthy();
     expect(err?.textContent).not.toBe('AIChatDialogue.error');
   });
@@ -160,26 +160,26 @@ describe('AIChatDialogue · 工具块完整交互（P1）', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: toolChats, roleConfig },
     });
-    const header = container.querySelector('.cd-ai-dialogue-tool-header');
+    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header');
     expect(header?.getAttribute('aria-expanded')).toBe('false');
-    expect(container.querySelector('.cd-ai-dialogue-tool-name')?.textContent).toBe('get_weather');
-    expect(container.querySelector('.cd-ai-dialogue-tool-status')).not.toBeNull();
-    expect(container.querySelector('.cd-ai-dialogue-tool-body')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-name')?.textContent).toBe('get_weather');
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-status')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-body')).toBeNull();
   });
 
   it('点击展开：显示格式化参数 + 输出 + call_id', async () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: toolChats, roleConfig },
     });
-    const header = container.querySelector('.cd-ai-dialogue-tool-header') as HTMLButtonElement;
+    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header') as HTMLButtonElement;
     await fireEvent.click(header);
     expect(header.getAttribute('aria-expanded')).toBe('true');
-    const args = container.querySelectorAll('.cd-ai-dialogue-tool-args');
+    const args = container.querySelectorAll('.cd-ai-chat-dialogue-content-tool-call-args');
     // 参数 + 输出各一个 pre，且 JSON 已格式化（含换行缩进）
     expect(args.length).toBe(2);
     expect(args[0]!.textContent).toContain('"city": "SF"');
     expect(args[1]!.textContent).toContain('"temp": 20');
-    expect(container.querySelector('.cd-ai-dialogue-tool-callid')?.textContent).toBe('call_1');
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-id')?.textContent).toBe('call_1');
   });
 
   it('in_progress 状态：running 标记', async () => {
@@ -187,16 +187,16 @@ describe('AIChatDialogue · 工具块完整交互（P1）', () => {
       { id: 'a', role: 'assistant', content: [{ type: 'mcp_call', name: 'search', arguments: '{', status: 'in_progress', server_label: 'fs' }], status: 'in_progress' },
     ];
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats: running, roleConfig } });
-    expect(container.querySelector('.cd-ai-dialogue-tool-running')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-running')).not.toBeNull();
     // MCP server 标识渲染
-    expect(container.querySelector('.cd-ai-dialogue-tool-server')?.textContent).toBe('fs');
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-server')?.textContent).toBe('fs');
   });
 
   it('工具块展开态无 axe 违规', async () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: toolChats, roleConfig },
     });
-    const header = container.querySelector('.cd-ai-dialogue-tool-header') as HTMLButtonElement;
+    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header') as HTMLButtonElement;
     await fireEvent.click(header);
     await expectNoAxeViolations(container);
   });

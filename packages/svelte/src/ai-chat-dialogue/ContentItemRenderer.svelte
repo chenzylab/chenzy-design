@@ -107,23 +107,23 @@
 {#if custom}
   {@render custom(item)}
 {:else if type === 'message'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-message">
+  <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-message">
     {#each innerParts as part, i (i)}
       {#if part.type === 'output_text' || part.type === 'input_text' || part.type === 'text'}
         <!-- 引用标注（对齐 Semi AnnotationWidget）：渲染在正文之前，点击回传整组 annotation。 -->
         {#if partAnnotations(part).length > 0}
-          <ul class="cd-ai-dialogue-annotations">
+          <ul class="cd-ai-chat-dialogue-annotation-wrapper">
             {#each partAnnotations(part) as anno, ai (ai)}
               {@const view = annotationView(anno)}
               <li>
                 <button
                   type="button"
-                  class="cd-ai-dialogue-annotation"
+                  class="cd-ai-chat-dialogue-annotation"
                   title={view.url ?? view.title}
                   onclick={() => onAnnotationClick?.(partAnnotations(part))}
                 >
-                  <span class="cd-ai-dialogue-annotation-index">{ai + 1}</span>
-                  <span class="cd-ai-dialogue-annotation-title">{view.title}</span>
+                  <span class="cd-ai-chat-dialogue-annotation-content-logo">{ai + 1}</span>
+                  <span class="cd-ai-chat-dialogue-annotation-content">{view.title}</span>
                 </button>
               </li>
             {/each}
@@ -131,22 +131,22 @@
         {/if}
         <MarkdownRender raw={partText(part)} {...markdownRenderProps} />
       {:else if part.type === 'refusal'}
-        <div class="cd-ai-dialogue-refusal">{part.refusal}</div>
+        <div class="cd-ai-chat-dialogue-content-refusal">{part.refusal}</div>
       {:else if part.type === 'input_image' || part.type === 'image'}
         <button
           type="button"
-          class="cd-ai-dialogue-image-btn"
+          class="cd-ai-chat-dialogue-content-img-btn"
           onclick={() => onImageClick?.(part)}
         >
           <img
-            class="cd-ai-dialogue-image"
+            class="cd-ai-chat-dialogue-content-img"
             src={(part.image_url as string) ?? (part.url as string)}
             alt=""
           />
         </button>
       {:else if part.type === 'input_file' || part.type === 'file'}
-        <button type="button" class="cd-ai-dialogue-file" onclick={() => onFileClick?.(part)}>
-          <span class="cd-ai-dialogue-file-name"
+        <button type="button" class="cd-ai-chat-dialogue-content-file" onclick={() => onFileClick?.(part)}>
+          <span class="cd-ai-chat-dialogue-content-file-title"
             >{(part.filename as string) ?? loc().t('AIChatDialogue.file')}</span
           >
         </button>
@@ -154,17 +154,17 @@
     {/each}
   </div>
 {:else if type === 'reasoning'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-reasoning">
+  <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-reasoning">
     <button
       type="button"
-      class="cd-ai-dialogue-reasoning-toggle"
+      class="cd-ai-chat-dialogue-reasoning-header"
       aria-expanded={reasoningOpen}
       onclick={() => (reasoningOpen = !reasoningOpen)}
     >
       {loc().t('AIChatDialogue.reasoning')}
     </button>
     {#if reasoningOpen}
-      <div class="cd-ai-dialogue-reasoning-body">
+      <div class="cd-ai-chat-dialogue-reasoning-content">
         <MarkdownRender raw={reasoningText} {...markdownRenderProps} />
       </div>
     {/if}
@@ -172,72 +172,72 @@
 {:else if type === 'function_call' || type === 'custom_call' || type.endsWith('_call')}
   <!-- 完整工具调用块：状态图标 + 折叠展开（参数/输出格式化 + call_id + MCP server）。 -->
   <div
-    class="cd-ai-dialogue-block cd-ai-dialogue-block-tool"
-    class:cd-ai-dialogue-tool-running={toolView.status === 'in_progress'}
-    class:cd-ai-dialogue-tool-failed={toolView.status === 'failed'}
+    class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-tool-call"
+    class:cd-ai-chat-dialogue-content-tool-call-running={toolView.status === 'in_progress'}
+    class:cd-ai-chat-dialogue-content-tool-call-failed={toolView.status === 'failed'}
   >
     <button
       type="button"
-      class="cd-ai-dialogue-tool-header"
+      class="cd-ai-chat-dialogue-content-tool-call-header"
       aria-expanded={toolOpen}
       onclick={() => (toolOpen = !toolOpen)}
     >
-      <span class="cd-ai-dialogue-tool-status" aria-hidden="true">
+      <span class="cd-ai-chat-dialogue-content-tool-call-status" aria-hidden="true">
         {#if toolView.status === 'in_progress'}⟳{:else if toolView.status === 'failed'}✗{:else}✓{/if}
       </span>
-      <span class="cd-ai-dialogue-tool-name">{toolView.name || loc().t('AIChatDialogue.toolCall')}</span>
+      <span class="cd-ai-chat-dialogue-content-tool-call-name">{toolView.name || loc().t('AIChatDialogue.toolCall')}</span>
       {#if toolView.serverLabel}
-        <span class="cd-ai-dialogue-tool-server">{toolView.serverLabel}</span>
+        <span class="cd-ai-chat-dialogue-content-tool-call-server">{toolView.serverLabel}</span>
       {/if}
     </button>
     {#if toolOpen}
-      <div class="cd-ai-dialogue-tool-body">
+      <div class="cd-ai-chat-dialogue-content-tool-call-body">
         {#if toolView.arguments}
-          <div class="cd-ai-dialogue-tool-section">
-            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolArguments')}</span>
-            <pre class="cd-ai-dialogue-tool-args">{toolView.arguments}</pre>
+          <div class="cd-ai-chat-dialogue-content-tool-call-section">
+            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolArguments')}</span>
+            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.arguments}</pre>
           </div>
         {/if}
         {#if toolView.input}
-          <div class="cd-ai-dialogue-tool-section">
-            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolInput')}</span>
-            <pre class="cd-ai-dialogue-tool-args">{toolView.input}</pre>
+          <div class="cd-ai-chat-dialogue-content-tool-call-section">
+            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolInput')}</span>
+            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.input}</pre>
           </div>
         {/if}
         {#if toolView.output}
-          <div class="cd-ai-dialogue-tool-section">
-            <span class="cd-ai-dialogue-tool-label">{loc().t('AIChatDialogue.toolOutput')}</span>
-            <pre class="cd-ai-dialogue-tool-args">{toolView.output}</pre>
+          <div class="cd-ai-chat-dialogue-content-tool-call-section">
+            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolOutput')}</span>
+            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.output}</pre>
           </div>
         {/if}
         {#if toolView.callId}
-          <div class="cd-ai-dialogue-tool-callid">{toolView.callId}</div>
+          <div class="cd-ai-chat-dialogue-content-tool-call-id">{toolView.callId}</div>
         {/if}
       </div>
     {/if}
   </div>
 {:else if type === 'audio'}
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-audio">
+  <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-audio">
     {loc().t('AIChatDialogue.audio')}
   </div>
 {:else}
   <!-- 兜底：未知类型，渲染类型标签（可被 renderDialogueContentItem 覆盖）。 -->
-  <div class="cd-ai-dialogue-block cd-ai-dialogue-block-unknown">
-    <span class="cd-ai-dialogue-unknown-type">{type}</span>
+  <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-unknown">
+    <span class="cd-ai-chat-dialogue-content-unknown-type">{type}</span>
   </div>
 {/if}
 
 <style>
-  .cd-ai-dialogue-block {
+  .cd-ai-chat-dialogue-content-item {
     margin-block: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-refusal {
+  .cd-ai-chat-dialogue-content-refusal {
     color: var(--cd-color-danger);
   }
 
   /* 引用标注（对齐 Semi AnnotationWidget）：正文上方一排可点击的来源徽标。 */
-  .cd-ai-dialogue-annotations {
+  .cd-ai-chat-dialogue-annotation-wrapper {
     display: flex;
     flex-wrap: wrap;
     gap: var(--cd-spacing-extra-tight);
@@ -245,30 +245,30 @@
     padding: 0;
     list-style: none;
   }
-  .cd-ai-dialogue-annotation {
+  .cd-ai-chat-dialogue-annotation {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     max-inline-size: 200px;
     padding: 2px var(--cd-spacing-tight);
-    border: 1px solid var(--cd-color-aichatdialogue-annotation-border, var(--cd-color-border));
+    border: 1px solid var(--cd-ai-chat-dialogue-annotation-border);
     border-radius: var(--cd-border-radius-full);
     background: transparent;
-    color: var(--cd-color-aichatdialogue-annotation-text, var(--cd-color-text-2));
+    color: var(--cd-ai-chat-dialogue-annotation-text);
     font-size: var(--cd-font-size-small);
     line-height: var(--cd-line-height-small);
     cursor: pointer;
   }
-  .cd-ai-dialogue-annotation:hover {
-    background: var(--cd-color-aichatdialogue-annotation-bg-hover, var(--cd-color-fill-0));
+  .cd-ai-chat-dialogue-annotation:hover {
+    background: var(--cd-ai-chat-dialogue-annotation-bg-hover);
   }
-  .cd-ai-dialogue-annotation-title {
+  .cd-ai-chat-dialogue-annotation-content {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .cd-ai-dialogue-image-btn {
+  .cd-ai-chat-dialogue-content-img-btn {
     appearance: none;
     border: none;
     background: none;
@@ -276,13 +276,13 @@
     cursor: pointer;
   }
 
-  .cd-ai-dialogue-image {
+  .cd-ai-chat-dialogue-content-img {
     max-width: 240px;
     max-height: 240px;
     border-radius: var(--cd-border-radius-medium);
   }
 
-  .cd-ai-dialogue-file {
+  .cd-ai-chat-dialogue-content-file {
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -294,7 +294,7 @@
     color: var(--cd-color-text-0);
   }
 
-  .cd-ai-dialogue-reasoning-toggle {
+  .cd-ai-chat-dialogue-reasoning-header {
     appearance: none;
     border: none;
     background: none;
@@ -304,21 +304,21 @@
     font: inherit;
   }
 
-  .cd-ai-dialogue-reasoning-body {
+  .cd-ai-chat-dialogue-reasoning-content {
     margin-top: var(--cd-spacing-extra-tight);
     padding-left: var(--cd-spacing-tight);
     border-left: 2px solid var(--cd-color-border);
     color: var(--cd-color-text-1);
   }
 
-  .cd-ai-dialogue-block-tool {
+  .cd-ai-chat-dialogue-content-tool-call {
     border: 1px solid var(--cd-color-border);
     border-radius: var(--cd-border-radius-medium);
     background: var(--cd-color-fill-0);
     overflow: hidden;
   }
 
-  .cd-ai-dialogue-tool-header {
+  .cd-ai-chat-dialogue-content-tool-call-header {
     display: flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -333,33 +333,33 @@
     font: inherit;
   }
 
-  .cd-ai-dialogue-tool-header:hover {
+  .cd-ai-chat-dialogue-content-tool-call-header:hover {
     background: var(--cd-color-fill-1);
   }
 
-  .cd-ai-dialogue-tool-header:focus-visible {
+  .cd-ai-chat-dialogue-content-tool-call-header:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: -2px;
   }
 
-  .cd-ai-dialogue-tool-status {
+  .cd-ai-chat-dialogue-content-tool-call-status {
     color: var(--cd-color-text-2);
   }
 
-  .cd-ai-dialogue-tool-running .cd-ai-dialogue-tool-status {
+  .cd-ai-chat-dialogue-content-tool-call-running .cd-ai-chat-dialogue-content-tool-call-status {
     color: var(--cd-color-primary);
   }
 
-  .cd-ai-dialogue-tool-failed .cd-ai-dialogue-tool-status {
+  .cd-ai-chat-dialogue-content-tool-call-failed .cd-ai-chat-dialogue-content-tool-call-status {
     color: var(--cd-color-danger);
   }
 
-  .cd-ai-dialogue-tool-name {
+  .cd-ai-chat-dialogue-content-tool-call-name {
     font-weight: var(--cd-font-weight-bold);
     color: var(--cd-color-text-0);
   }
 
-  .cd-ai-dialogue-tool-server {
+  .cd-ai-chat-dialogue-content-tool-call-server {
     padding: 0 var(--cd-spacing-extra-tight);
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-color-fill-2);
@@ -367,21 +367,21 @@
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 
-  .cd-ai-dialogue-tool-body {
+  .cd-ai-chat-dialogue-content-tool-call-body {
     padding: 0 var(--cd-spacing-tight) var(--cd-spacing-tight);
   }
 
-  .cd-ai-dialogue-tool-section {
+  .cd-ai-chat-dialogue-content-tool-call-section {
     margin-top: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-tool-label {
+  .cd-ai-chat-dialogue-content-tool-call-label {
     display: block;
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 
-  .cd-ai-dialogue-tool-args {
+  .cd-ai-chat-dialogue-content-tool-call-args {
     margin: var(--cd-spacing-extra-tight) 0 0;
     padding: var(--cd-spacing-extra-tight);
     border-radius: var(--cd-border-radius-small);
@@ -392,13 +392,13 @@
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 
-  .cd-ai-dialogue-tool-callid {
+  .cd-ai-chat-dialogue-content-tool-call-id {
     margin-top: var(--cd-spacing-extra-tight);
     color: var(--cd-color-text-3);
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
   }
 
-  .cd-ai-dialogue-block-unknown {
+  .cd-ai-chat-dialogue-content-unknown {
     color: var(--cd-color-text-3);
   }
 </style>

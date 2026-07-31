@@ -16,6 +16,8 @@
     type AIChatInputMessageContent,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
+  // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
+  import { Avatar } from '../avatar/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
   import type { DialogueRenderConfig } from './render-config.js';
 
@@ -143,36 +145,42 @@
 
 <!-- 默认头像节点。 -->
 {#snippet defaultAvatar()}
+  <!-- 复用 Avatar（对齐 Semi dialogueAvatar.tsx：`<Avatar className={-avatar} src size="extra-small">`）。
+       此前是自绘 img/div——圆角、底色、文字居中全靠本组件自造样式，与 Semi 的 Avatar 视觉两套。 -->
+  <!-- alt 取角色名：本库 Avatar 的文字/图片模式都带 role="img"，没有可访问名会触发
+       axe role-img-alt（serious）。Semi 侧 demo 只传 src 不传 alt，但那是它的 demo 疏漏，
+       不是可照搬的契约——这里补上真实可访问名。 -->
   {#if role?.avatar}
-    <img class="cd-ai-dialogue-box-avatar" src={role.avatar} alt="" />
+    <Avatar
+      class="cd-ai-chat-dialogue-avatar"
+      src={role.avatar}
+      alt={role?.name ?? ''}
+      size="extra-small"
+    />
   {:else}
-    <div
-      class="cd-ai-dialogue-box-avatar cd-ai-dialogue-box-avatar-text"
-      style={role?.color ? `background:${role.color}` : undefined}
-      aria-hidden="true"
-    >
+    <Avatar class="cd-ai-chat-dialogue-avatar" alt={role?.name ?? ''} size="extra-small">
       {avatarInitial}
-    </div>
+    </Avatar>
   {/if}
 {/snippet}
 
 <!-- 默认标题节点。 -->
 {#snippet defaultTitle()}
   {#if title}
-    <div class="cd-ai-dialogue-box-title">{title}</div>
+    <div class="cd-ai-chat-dialogue-title">{title}</div>
   {/if}
 {/snippet}
 
 <!-- 默认内容节点（含编辑态 / loading / error / 内容块 + 引用区）。 -->
 {#snippet defaultContent()}
-  <div class="cd-ai-dialogue-box-content" aria-busy={isLoading}>
+  <div class="cd-ai-chat-dialogue-content" aria-busy={isLoading}>
     {#if isEditing && messageEditRender}
       <!-- 编辑态：用 messageEditRender 替代内容（对齐 Semi），消费方通常放 AIChatInput 编辑器。 -->
       {@render messageEditRender(editPayload)}
     {:else if isLoading && items.length === 0}
-      <span class="cd-ai-dialogue-box-loading">{loc().t('AIChatDialogue.loading')}</span>
+      <span class="cd-ai-chat-dialogue-content-loading">{loc().t('AIChatDialogue.loading')}</span>
     {:else if isError}
-      <span class="cd-ai-dialogue-box-error">{loc().t('AIChatDialogue.error')}</span>
+      <span class="cd-ai-chat-dialogue-content-failed-text">{loc().t('AIChatDialogue.error')}</span>
     {:else}
       {#each items as item, i (i)}
         <ContentItemRenderer
@@ -190,21 +198,21 @@
   </div>
 
   {#if references.length > 0}
-    <ul class="cd-ai-dialogue-box-references" aria-label={loc().t('AIChatDialogue.references')}>
+    <ul class="cd-ai-chat-dialogue-references" aria-label={loc().t('AIChatDialogue.references')}>
       {#each references as ref, i (ref.id ?? i)}
         <li>
           <button
             type="button"
-            class="cd-ai-dialogue-box-reference"
-            class:cd-ai-dialogue-box-reference-text-only={!!ref.content && !ref.name}
+            class="cd-ai-chat-dialogue-reference"
+            class:cd-ai-chat-dialogue-reference-text-only={!!ref.content && !ref.name}
             title={ref.name ?? ref.content ?? ''}
             onclick={() => onReferenceClick?.(ref)}
           >
             {#if ref.name}
-              <span class="cd-ai-dialogue-box-reference-icon" aria-hidden="true">◈</span>
-              <span class="cd-ai-dialogue-box-reference-name">{ref.name}</span>
+              <span class="cd-ai-chat-dialogue-references-icon" aria-hidden="true">◈</span>
+              <span class="cd-ai-chat-dialogue-references-name">{ref.name}</span>
             {:else}
-              <span class="cd-ai-dialogue-box-reference-text">{ref.content}</span>
+              <span class="cd-ai-chat-dialogue-references-content">{ref.content}</span>
             {/if}
           </button>
         </li>
@@ -216,7 +224,7 @@
 <!-- 默认操作栏节点。 -->
 {#snippet defaultAction()}
   {#if !isLoading && !selecting && !isEditing}
-    <div class="cd-ai-dialogue-box-actions">
+    <div class="cd-ai-chat-dialogue-action">
       <button type="button" onclick={handleCopy} aria-label={loc().t('AIChatDialogue.copy')} title={loc().t('AIChatDialogue.copy')}>⧉</button>
       {#if editable && isUser && onMessageEdit}
         <button type="button" onclick={() => onMessageEdit?.(message)} aria-label={loc().t('AIChatDialogue.edit')} title={loc().t('AIChatDialogue.edit')}>✎</button>
@@ -236,16 +244,16 @@
 {/snippet}
 
 <div
-  class="cd-ai-dialogue-box"
-  class:cd-ai-dialogue-box-user={isUser}
-  class:cd-ai-dialogue-box-leftAlign={align === 'leftAlign'}
-  class:cd-ai-dialogue-box-is-error={isError}
-  class:cd-ai-dialogue-box-bubble={showBubble}
+  class="cd-ai-chat-dialogue-wrapper"
+  class:cd-ai-chat-dialogue-content-user={isUser}
+  class:cd-ai-chat-dialogue-wrapper-leftAlign={align === 'leftAlign'}
+  class:cd-ai-chat-dialogue-content-failed={isError}
+  class:cd-ai-chat-dialogue-content-bubble={showBubble}
 >
   {#if selecting}
     <input
       type="checkbox"
-      class="cd-ai-dialogue-box-select"
+      class="cd-ai-chat-dialogue-wrapper-selected"
       checked={selected}
       aria-label={loc().t('AIChatDialogue.selectMessage')}
       onchange={() => onSelectToggle?.(message)}
@@ -267,7 +275,7 @@
       {@render defaultAvatar()}
     {/if}
 
-    <div class="cd-ai-dialogue-box-body">
+    <div class="cd-ai-chat-dialogue-inner">
       {#if dialogueRenderConfig?.renderDialogueTitle}
         {@render dialogueRenderConfig.renderDialogueTitle({ message, role, defaultTitle })}
       {:else}
@@ -290,90 +298,87 @@
 </div>
 
 <style>
-  .cd-ai-dialogue-box {
+  .cd-ai-chat-dialogue-wrapper {
     display: flex;
     gap: var(--cd-spacing-tight);
     padding: var(--cd-spacing-tight);
     align-items: flex-start;
   }
 
-  .cd-ai-dialogue-box-user {
+  .cd-ai-chat-dialogue-content-user {
     flex-direction: row-reverse;
   }
 
-  .cd-ai-dialogue-box-leftAlign,
-  .cd-ai-dialogue-box-leftAlign.cd-ai-dialogue-box-user {
+  .cd-ai-chat-dialogue-wrapper-leftAlign,
+  .cd-ai-chat-dialogue-wrapper-leftAlign.cd-ai-chat-dialogue-content-user {
     flex-direction: row;
   }
 
-  .cd-ai-dialogue-box-avatar {
-    width: var(--cd-chat-avatar-size, 32px);
-    height: var(--cd-chat-avatar-size, 32px);
-    border-radius: var(--cd-chat-avatar-radius, 50%);
+  /* Semi &-avatar 只有这三条：圆角/底色/文字样式都由复用的 Avatar 组件承担。
+     必须 :global —— 类名挂在子组件 Avatar 的根节点上，scoped 规则匹配不到
+     （编译器已用 unused-selector 警告提示过）。 */
+  :global(.cd-ai-chat-dialogue-avatar) {
     flex-shrink: 0;
-    object-fit: cover;
+    width: var(--cd-width-ai-chat-dialogue-avatar);
+    height: var(--cd-height-ai-chat-dialogue-avatar);
   }
 
-  .cd-ai-dialogue-box-avatar-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cd-chat-avatar-bg, var(--cd-color-fill-1));
-    color: var(--cd-color-text-0);
-    font-size: var(--cd-font-size-regular);
+  /* Semi &-avatar-hidden：continueSend（连续同角色发言）时占位但不显示。 */
+  :global(.cd-ai-chat-dialogue-avatar-hidden) {
+    visibility: hidden;
   }
 
-  .cd-ai-dialogue-box-body {
+  .cd-ai-chat-dialogue-inner {
     min-width: 0;
     flex: 1 1 auto;
   }
 
-  .cd-ai-dialogue-box-title {
+  .cd-ai-chat-dialogue-title {
     color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
     margin-bottom: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-box-bubble .cd-ai-dialogue-box-content {
+  .cd-ai-chat-dialogue-content-bubble .cd-ai-chat-dialogue-content {
     padding: var(--cd-spacing-tight);
     border-radius: var(--cd-border-radius-large, var(--cd-border-radius-medium));
-    background: var(--cd-chat-bubble-assistant-bg, var(--cd-color-fill-0));
+    background: var(--cd-ai-chat-dialogue-bubble-bg);
   }
 
-  .cd-ai-dialogue-box-bubble.cd-ai-dialogue-box-user .cd-ai-dialogue-box-content {
-    background: var(--cd-chat-bubble-user-bg, var(--cd-color-primary-light-default));
+  .cd-ai-chat-dialogue-content-bubble.cd-ai-chat-dialogue-content-user .cd-ai-chat-dialogue-content {
+    background: var(--cd-ai-chat-dialogue-bubble-bg);
   }
 
-  .cd-ai-dialogue-box-error {
+  .cd-ai-chat-dialogue-content-failed-text {
     color: var(--cd-color-danger);
   }
 
-  .cd-ai-dialogue-box-loading {
+  .cd-ai-chat-dialogue-content-loading {
     color: var(--cd-color-text-2);
   }
 
-  .cd-ai-dialogue-box-actions {
+  .cd-ai-chat-dialogue-action {
     display: flex;
     gap: var(--cd-spacing-extra-tight);
     margin-top: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-box-actions button {
+  .cd-ai-chat-dialogue-action button {
     appearance: none;
     border: none;
     background: none;
     cursor: pointer;
     padding: var(--cd-spacing-extra-tight);
     border-radius: var(--cd-border-radius-small);
-    color: var(--cd-chat-action-icon, var(--cd-color-text-2));
+    color: var(--cd-color-text-2);
     font-size: var(--cd-font-size-regular);
   }
 
-  .cd-ai-dialogue-box-actions button:hover {
-    color: var(--cd-chat-action-icon-hover, var(--cd-color-text-0));
+  .cd-ai-chat-dialogue-action button:hover {
+    color: var(--cd-color-text-0);
   }
 
-  .cd-ai-dialogue-box-references {
+  .cd-ai-chat-dialogue-references {
     list-style: none;
     margin: var(--cd-spacing-extra-tight) 0 0;
     padding: 0;
@@ -382,7 +387,7 @@
     gap: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-dialogue-box-reference {
+  .cd-ai-chat-dialogue-reference {
     appearance: none;
     display: inline-flex;
     align-items: center;
@@ -398,27 +403,27 @@
     text-align: left;
   }
 
-  .cd-ai-dialogue-box-reference:hover {
+  .cd-ai-chat-dialogue-reference:hover {
     background: var(--cd-color-fill-1);
     border-color: var(--cd-color-primary);
   }
 
-  .cd-ai-dialogue-box-reference-text-only {
+  .cd-ai-chat-dialogue-reference-text-only {
     max-width: 320px;
   }
 
-  .cd-ai-dialogue-box-reference-icon {
+  .cd-ai-chat-dialogue-references-icon {
     color: var(--cd-color-primary);
     flex-shrink: 0;
   }
 
-  .cd-ai-dialogue-box-reference-name {
+  .cd-ai-chat-dialogue-references-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .cd-ai-dialogue-box-reference-text {
+  .cd-ai-chat-dialogue-references-content {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;

@@ -186,10 +186,10 @@
   // 使用方处理，本组件不主动改 chats，故 onChatsChange 预留给需要时透传（当前不内部触发）。
 </script>
 
-<div class="cd-ai-dialogue {className}" {style}>
+<div class="cd-ai-chat-dialogue {className}" {style}>
   <div
     bind:this={containerEl}
-    class="cd-ai-dialogue-container"
+    class="cd-ai-chat-dialogue-list"
     role="log"
     aria-live="polite"
     aria-label={loc().t('AIChatDialogue.messageList')}
@@ -231,7 +231,7 @@
   {#if showBackBottom}
     <button
       type="button"
-      class="cd-ai-dialogue-backbottom"
+      class="cd-ai-chat-dialogue-backBottom"
       aria-label={loc().t('AIChatDialogue.backToBottom')}
       onclick={() => scrollToBottom(true)}>↓</button
     >
@@ -243,7 +243,7 @@
 </div>
 
 <style>
-  .cd-ai-dialogue {
+  .cd-ai-chat-dialogue {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -251,13 +251,13 @@
     min-height: 0;
   }
 
-  .cd-ai-dialogue-container {
+  .cd-ai-chat-dialogue-list {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0;
   }
 
-  .cd-ai-dialogue-backbottom {
+  .cd-ai-chat-dialogue-backBottom {
     position: absolute;
     right: var(--cd-spacing-loose);
     bottom: var(--cd-spacing-loose);
