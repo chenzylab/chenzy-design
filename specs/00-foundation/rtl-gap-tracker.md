@@ -1,7 +1,33 @@
 # RTL 覆盖面缺口追踪
 
 > 对标 Semi 的 61 个 `semi-foundation/<comp>/rtl.scss`。
-> 调查日期：2026-07-30。**状态：已探明、暂缓实施**。
+> 调查日期：2026-07-30。**状态：2026-07-31 起分批实施中**。
+>
+> ## ⚠️ 三条已被推翻/更正的旧结论（先看这里，别按旧数据干活）
+>
+> 1. **§2 的阻断点已基本消除**。「class 不同构、命中率仅 40-50%」是 ① 之前测的。
+>    把 Semi 61 份 rtl.scss 的 `&-` 嵌套与 `#{$module}` 插值还原成完整类名后重测：
+>    **474 个目标类本库命中 392 = 83%**（含 navigation→nav / pagination→page 两个前缀别名）。
+>    rtl.scss 现在可以逐条参照了。
+> 2. **工作量应按「真镜像缺口」算，不是按物理属性总数**。
+>    粗数物理属性得 1067 处，但其中大量是**左右同值**的 padding/margin
+>    （互换等于空操作，Semi 写它们只因正向就用了物理属性）、
+>    以及 `translateX(-50%)` 这类居中用法（与方向无关）。
+>    剔掉后**真缺口约 230 处**（不含已完成的 grid），集中在十几个组件。
+> 3. **Carousel 原有的 RTL 规则是死代码**（写成 `:dir(rtl)`，只认 HTML `dir` 属性，
+>    而本库同 Semi 只注入 `class="cd-rtl"`）。已修并建闸门 `check:rtl-scope` 禁用 `:dir()`。
+>
+> ## 已完成（逐批提交，每批配 browser 用例并验红）
+>
+> | 批次 | 组件 | 要点 |
+> |---|---|---|
+> | 试点 | switch | 只取负会把 knob 甩出轨道；须像 Semi 用物理属性钉死锚点 |
+> | 批1 | calendar / descriptions / timeline | 补 `--cd-motion-timeline-head-custom-transform-rtl` token |
+> | 批1.5 | carousel | 修死代码 + 建 `check:rtl-scope` 闸门 |
+> | 批2 | steps / tag / tag-group / split-tag-group | 分裂标签首末圆角也要换边 |
+>
+> 剩余按 `rtl-effective.mjs` 的排序继续（cropper / resizable / side-sheet /
+> date-picker / dropdown / modal / notification / chat / video-player / json-viewer …）。
 >
 > **本文件是 Semi 对齐工作的一部分**，属
 > [semi-doc-alignment-progress.md](./semi-doc-alignment-progress.md) 的「第二轮对齐 ②」的细节承载
