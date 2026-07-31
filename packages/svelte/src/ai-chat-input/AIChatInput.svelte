@@ -62,6 +62,8 @@
   import { Upload } from '../upload/index.js';
   // 复用现有组件：Semi renderAttachment 用 Progress type=circle 显示上传进度，本库同样复用。
   import { Progress } from '../progress/index.js';
+  // 对齐 Semi：三个浮层（建议/技能/模版）由同一个 Popover 承载，不再自绘绝对定位面板。
+  import { Popover } from '../popover/index.js';
   import AIChatInputHorizontalScroller from './AIChatInputHorizontalScroller.svelte';
   // Semi 把技能/建议单项拆成 skillItem.tsx / suggestionItem.tsx，本库同样拆分。
   import AIChatInputSkillItem from './AIChatInputSkillItem.svelte';
@@ -227,6 +229,13 @@
     onBlur?: ((event: FocusEvent) => void) | undefined;
     /** 粘贴回调（携带粘贴的文件，对齐 Semi onPaste；不改变默认粘贴行为）。 */
     onPaste?: ((files: File[]) => void) | undefined;
+    /**
+     * 透传给承载建议/技能/模版浮层的 Popover（对齐 Semi popoverProps）。
+     * position 默认 bottomLeft、trigger 固定 custom（显隐由组件内部状态驱动，不可覆盖）。
+     */
+    popoverProps?: Record<string, unknown> | undefined;
+    /** 浮层宽度是否跟随触发器宽度（对齐 Semi dropdownMatchTriggerWidth，默认 true）。 */
+    dropdownMatchTriggerWidth?: boolean;
     /** 附加类名。 */
     class?: string;
     /** 内联样式。 */
@@ -276,6 +285,8 @@
     onFocus,
     onBlur,
     onPaste,
+    popoverProps,
+    dropdownMatchTriggerWidth = true,
     class: className = '',
     style,
   }: Props = $props();
@@ -339,6 +350,50 @@
   const showTemplate = $derived(
     showTemplateButton && !!renderTemplate && !!currentSkill?.hasTemplate,
   );
+
+  // —— 承载三个浮层的 Popover（对齐 Semi render()：同一个 Popover + 内容分派）——
+  const showTemplatePanel = $derived(templateOpen && !!currentSkill && !!renderTemplate);
+  const popoverVisible = $derived(showTemplatePanel || showSkillPanel || showSuggestionPanel);
+  // class 逐条对齐 Semi：按当前显示的是哪种内容挂不同修饰类。
+  const popoverClass = $derived(
+    [
+      showSuggestionPanel && !showSkillPanel && !showTemplatePanel
+        ? 'cd-ai-chat-input-popover-suggestion'
+        : '',
+      showSkillPanel && !showTemplatePanel ? 'cd-ai-chat-input-popover-skill' : '',
+      showTemplatePanel ? 'cd-ai-chat-input-popover-template' : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  // dropdownMatchTriggerWidth（对齐 Semi setDropdownWidth）：浮层宽度跟随触发器。
+  // Semi 优先取 style.width 里的定值，否则取触发器实测宽度。
+  let popupWidth = $state<number | undefined>();
+  const popupWidthStyle = $derived(popupWidth === undefined ? '' : `width: ${popupWidth}px;`);
+
+  // rePosKey：值变化即让 Popover 重新定位（对齐 Semi reposPopover —— 输入内容变化会改变
+  // 触发器高度，模版这类高浮层必须跟着重算，否则会错位）。
+  let popupKey = $state(0);
+
+  $effect(() => {
+    if (!popoverVisible) return;
+    if (!dropdownMatchTriggerWidth) {
+      popupWidth = undefined;
+      return;
+    }
+    const el = untrack(() => rootEl);
+    if (!el) return;
+    // 触发器宽度会随窗口/内容变化，用 ResizeObserver 跟随（Semi 侧靠 setDropdownWidth
+    // 在每次打开时取一次 + reposPopover 节流重算，效果等价）。
+    const sync = (): void => {
+      popupWidth = el.offsetWidth;
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   // top area 是否有内容（引用条 / topSlot / 附件列表），无则不渲染容器。
   const hasReferences = $derived(showReference && references.length > 0);
   const hasTopSlot = $derived(!!renderTopSlot);
@@ -376,7 +431,11 @@
       },
       onBlur: (event) => onBlur?.(event),
       onEmptyChange: (v) => (isEmpty = v),
-      onContentChange: (payload) => onContentChange?.(payload),
+      onContentChange: (payload) => {
+        onContentChange?.(payload);
+        // 内容变化会改变触发器高度，通知 Popover 重算位置（对齐 Semi reposPopover）。
+        popupKey += 1;
+      },
       onEditorChange: (ed) => (editor = ed),
     }),
   );
@@ -704,6 +763,24 @@
   }
 </script>
 
+<!--
+  整个输入框包在一个 Popover 里承载建议/技能/模版三个浮层（对齐 Semi render()）：
+  Semi 用**同一个** Popover + renderPopoverContent 按 visible 状态分派内容，
+  触发器是整个输入框、方位 bottomLeft、trigger='custom' 全受控。
+  此前本库是自绘的绝对定位面板（挂在编辑区内），既无法透传 popoverProps，
+  也不会像 Popover 那样自动 flip / 传送到 body。
+-->
+<Popover
+  position="bottomLeft"
+  {...popoverProps}
+  rePosKey={popupKey}
+  class={popoverClass}
+  wrapperClassName="cd-ai-chat-input-popover-trigger"
+  triggerStyle="display: block; width: 100%;"
+  visible={popoverVisible}
+  trigger="custom"
+  content={popoverContent}
+>
 <div
   class="cd-ai-chat-input {className}"
   class:cd-ai-chat-input-round={round}
@@ -832,42 +909,6 @@
 
   <div class="cd-ai-chat-input-editor-wrap">
     <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
-
-    {#if showSuggestionPanel}
-      <div class="cd-ai-chat-input-suggestion" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
-        {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
-          <AIChatInputSuggestionItem
-            {suggestion}
-            index={i}
-            isActive={i === activeSuggestionIndex}
-            {renderSuggestionItem}
-            onClick={selectSuggestion}
-            onMouseEnter={(idx) => (activeSuggestionIndex = idx)}
-          />
-        {/each}
-      </div>
-    {/if}
-
-    {#if showSkillPanel}
-      <div class="cd-ai-chat-input-skill" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
-        {#each skills as skill, i (skillLabel(skill) + i)}
-          <AIChatInputSkillItem
-            {skill}
-            index={i}
-            isActive={i === activeSkillIndex}
-            {renderSkillItem}
-            onClick={selectSkill}
-            onMouseEnter={(idx) => (activeSkillIndex = idx)}
-          />
-        {/each}
-      </div>
-    {/if}
-
-    {#if templateOpen && currentSkill && renderTemplate}
-      <div class="cd-ai-chat-input-template">
-        {@render renderTemplate({ skill: currentSkill, setContent: applyTemplate })}
-      </div>
-    {/if}
   </div>
 
   <!-- footer 结构逐条对齐 Semi renderFooter：左 configure、右 action（上传+发送同组）。
@@ -909,6 +950,55 @@
     {/if}
   </div>
 </div>
+</Popover>
+
+<!--
+  浮层内容：按 visible 状态分派模版 / 技能 / 建议（逐条对齐 Semi renderPopoverContent
+  的 if-else 优先级：template > skill > suggestion）。
+-->
+{#snippet popoverContent()}
+  {#if templateOpen && currentSkill && renderTemplate}
+    <div class="cd-ai-chat-input-template" style={popupWidthStyle}>
+      {@render renderTemplate({ skill: currentSkill, setContent: applyTemplate })}
+    </div>
+  {:else if showSkillPanel}
+    <div
+      class="cd-ai-chat-input-skill"
+      style={popupWidthStyle}
+      role="listbox"
+      aria-label={loc().t('AIChatInput.skills')}
+    >
+      {#each skills as skill, i (skillLabel(skill) + i)}
+        <AIChatInputSkillItem
+          {skill}
+          index={i}
+          isActive={i === activeSkillIndex}
+          {renderSkillItem}
+          onClick={selectSkill}
+          onMouseEnter={(idx) => (activeSkillIndex = idx)}
+        />
+      {/each}
+    </div>
+  {:else if showSuggestionPanel}
+    <div
+      class="cd-ai-chat-input-suggestion"
+      style={popupWidthStyle}
+      role="listbox"
+      aria-label={loc().t('AIChatInput.suggestions')}
+    >
+      {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
+        <AIChatInputSuggestionItem
+          {suggestion}
+          index={i}
+          isActive={i === activeSuggestionIndex}
+          {renderSuggestionItem}
+          onClick={selectSuggestion}
+          onMouseEnter={(idx) => (activeSuggestionIndex = idx)}
+        />
+      {/each}
+    </div>
+  {/if}
+{/snippet}
 
 <!-- 默认操作按钮组（上传 + 发送/停止）。抽成 snippet 以便原样回传给 renderActionArea。 -->
 {#snippet actionMenuItem()}
@@ -1213,52 +1303,14 @@
     outline-offset: 1px;
   }
 
-  /* —— 建议浮层面板（阶段 2）—— */
   .cd-ai-chat-input-editor-wrap {
     position: relative;
   }
 
-  /* —— 建议面板 / 技能面板 ——
-     类树逐条对齐 Semi aiChatInput.scss：`&-suggestion > &-item` 与 `&-skill > &-item`
-     是**两棵独立的树**（此前本库让技能复用了建议的类，是自造合并）。
-     浮层定位/背景/阴影 Semi 侧由 Popover 承担，本库自绘面板故保留这几条。 */
-  .cd-ai-chat-input-suggestion,
-  .cd-ai-chat-input-skill {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + var(--cd-spacing-extra-tight));
-    z-index: 10;
-    max-height: 270px;
-    overflow: scroll;
-    background: var(--cd-ai-chat-input-suggestions-bg);
-    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
-  }
-
-  /* Semi: &-skill { padding: 4px 0; border-radius: 8px } */
-  .cd-ai-chat-input-skill {
-    padding: var(--cd-spacing-ai-chat-input-skill-paddingy)
-      var(--cd-spacing-ai-chat-input-skill-paddingx);
-    border-radius: var(--cd-radius-ai-chat-input-skill);
-  }
-
-  /* 技能项 / 建议项的样式已随组件拆分迁到 AIChatInputSkillItem.svelte /
-     AIChatInputSuggestionItem.svelte —— Svelte scoped CSS 不跨组件，留在这里会静默失效。 */
-
-  /* —— 模版面板 / 按钮（阶段 3）—— */
-  .cd-ai-chat-input-template {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + var(--cd-spacing-extra-tight));
-    z-index: 10;
-    max-height: 500px;
-    overflow-y: auto;
-    padding: var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-suggestions-bg);
-    border-radius: var(--cd-ai-chat-input-suggestions-radius);
-    box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
-  }
+  /* 建议 / 技能 / 模版三个面板的样式已随「改由 Popover 承载」迁到组件外
+     （见文件末尾的 :global 段）——它们被 portal 到 body，scoped 规则匹配不到。
+     技能项 / 建议项的样式则随组件拆分迁到了 AIChatInputSkillItem.svelte /
+     AIChatInputSuggestionItem.svelte。 */
 
   .cd-ai-chat-input-template-btn {
     appearance: none;
@@ -1423,5 +1475,47 @@
   .cd-ai-chat-input-footer-action-button:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
+  }
+
+  /* —— 浮层内容（建议 / 技能 / 模版）——
+     这三块被 Popover portal 到 body，已脱离本组件的 scope，故必须 :global 打洞。
+     定位/背景/圆角/阴影由 Popover 承担（对齐 Semi：其 scss 里这三者也**没有**
+     position/box-shadow，全交给 Popover）；这里只留 Semi 确有的那几条。 */
+
+  /* Semi: &-skill { padding + border-radius + overflow:scroll }，高度由内联 style 钉 */
+  :global(.cd-ai-chat-input-skill) {
+    padding: var(--cd-spacing-ai-chat-input-skill-paddingy)
+      var(--cd-spacing-ai-chat-input-skill-paddingx);
+    border-radius: var(--cd-radius-ai-chat-input-skill);
+    overflow: scroll;
+    max-height: 270px;
+  }
+
+  /* Semi: &-suggestion { overflow: scroll }，仅此一条 */
+  :global(.cd-ai-chat-input-suggestion) {
+    overflow: scroll;
+    max-height: 270px;
+  }
+
+  /* Semi renderTemplate 的容器只有内联 style（width + maxHeight 500），无独立 scss 规则 */
+  :global(.cd-ai-chat-input-template) {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  /* Semi: &-popover-suggestion { box-shadow: none } —— 建议浮层不要 Popover 的阴影 */
+  :global(.cd-ai-chat-input-popover-suggestion) {
+    box-shadow: none;
+  }
+
+  /* ⚠️ 触发器包裹层必须撑满宽度。
+     本库 Tooltip/Popover 会把触发器包进两层 span（外层 .cd-tooltip + 内层
+     .cd-tooltip-trigger），二者都是 inline-block —— 会把本组件这种块级输入框
+     **收缩成内容宽度**（实测 890px → 106px，整页每个实例都被压扁）。
+     Semi 侧 Popover 用 React.cloneElement 不加包裹层，没有这个问题。
+     外层由 triggerStyle 处理，内层只能从这里 :global 打洞。 */
+  :global(.cd-ai-chat-input-popover-trigger > .cd-tooltip-trigger) {
+    display: block;
+    width: 100%;
   }
 </style>

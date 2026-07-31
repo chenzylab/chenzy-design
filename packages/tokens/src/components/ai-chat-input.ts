@@ -204,19 +204,8 @@ export const aiChatInputTokens = {
   'color-ai-chat-input-footer-upload-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '上传按钮底（悬浮）', usage: 'Semi $color-aiChatInput_footer_upload-bg-hover' },
   'color-ai-chat-input-footer-upload-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '上传按钮底（按下）', usage: 'Semi $color-aiChatInput_footer_upload-bg-active' },
   // —— 建议面板 / 技能面板（逐条镜像 Semi aiChatInput/variables.scss）——
-  // 面板容器（背景/圆角/阴影）Semi 侧由 Popover 承担，这三条是本库自绘面板所需，保留。
-  'ai-chat-input-suggestions-bg': {
-    value: 'var(--cd-color-bg-2)',
-    category: 'color',
-    label: '建议面板背景',
-    usage: '建议浮层面板背景（Semi 由 Popover 提供，本库自绘面板故单列）',
-  },
-  'ai-chat-input-suggestions-shadow': {
-    value: 'var(--cd-shadow-elevated)',
-    category: 'other',
-    label: '建议面板阴影',
-    usage: '建议浮层投影（同上）',
-  },
+  // 原有 -suggestions-bg / -suggestions-shadow 两条已删除：它们是本库自绘浮层时期的产物，
+  // Semi 无对应变量（面板背景/阴影由 Popover 承担）。现浮层改由 Popover 承载，二者无人消费。
   // 建议项（Semi $color-aiChatInput_suggestion_item-* / $spacing-* / $radius-*）
   'color-ai-chat-input-suggestion-item-text': {
     value: 'var(--cd-color-text-0)',

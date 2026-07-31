@@ -46,6 +46,8 @@ export const meta = {
     { name: 'showTemplateButton', type: 'boolean', default: 'true', desc: '是否展示模版按钮（仅当前技能 hasTemplate 时生效，阶段 3）' },
     { name: 'configureDefaultValue', type: 'Record<string, unknown>', default: 'undefined', desc: '配置区初始值（阶段 4）' },
     { name: 'showUploadFile', type: 'boolean', default: 'true', desc: 'top area 展示上传附件列表' },
+    { name: 'popoverProps', type: 'object', default: '-', desc: '承载建议/技能/模版浮层的 Popover 配置（对齐 Semi popoverProps）' },
+    { name: 'dropdownMatchTriggerWidth', type: 'boolean', default: 'true', desc: '浮层宽度跟随输入框宽度（对齐 Semi）' },
     { name: 'clearContentOnGenerating', type: 'boolean', default: 'true', desc: 'generating false→true 时清空输入' },
   ],
   events: [

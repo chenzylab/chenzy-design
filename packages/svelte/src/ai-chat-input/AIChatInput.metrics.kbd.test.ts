@@ -81,6 +81,21 @@ describe('AIChatInput 视觉度量对齐 Semi', () => {
     expectMatches('.cd-ai-chat-input-reference', AI_CHAT_INPUT_REFERENCE);
   });
 
+  // 浮层改由 Popover 承载后踩到的真回归：本库 Tooltip/Popover 会把触发器包进两层
+  // inline-block 的 span，把这种块级输入框**收缩成内容宽度**（实测 890→106px，
+  // 整页每个实例都被压扁）。Semi 侧 Popover 用 cloneElement 不加包裹层。
+  it('输入框宽度不被 Popover 触发器包裹层压缩（撑满父容器）', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+
+    const box = document.querySelector('[data-testid="attachment-host"] .cd-ai-chat-input')!;
+    const host = document.querySelector('[data-testid="attachment-host"]')!;
+    const boxW = box.getBoundingClientRect().width;
+    const hostW = host.getBoundingClientRect().width;
+
+    expect(hostW, '夹具容器应有真实宽度').toBeGreaterThan(200);
+    expect(boxW, `输入框应撑满容器（实测 ${boxW} / ${hostW}）`).toBeCloseTo(hostW, 0);
+  });
+
   // Semi 按条数自适应 1/2/3 列，本库此前完全没有这套规则（恒为内容宽度）。
   it('引用条按条数自适应列宽：1 条占满、3 条各约 1/3', () => {
     renderKbdFixture(AIChatInputMetricsKbdFixture);

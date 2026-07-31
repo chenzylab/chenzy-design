@@ -218,7 +218,9 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 | onSuggestClick | 建议点击回调 | `(suggestion) => void` | - |
 | onTemplateVisibleChange | 模板弹出层可见性变化回调 | `(visible: boolean) => void` | - |
 | onUploadChange | 上传文件相关回调 | `(attachments) => void` | - |
+| dropdownMatchTriggerWidth | 建议/技能/模板浮层宽度是否跟随输入框宽度 | boolean | true |
 | placeholder | 输入框占位符（对齐 Semi：无内置默认文案） | string | - |
+| popoverProps | 承载建议/技能/模板浮层的 Popover 配置（`trigger` 固定 `custom`，显隐由组件驱动） | PopoverProps | - |
 | references | 输入框引用列表 | `AIChatInputReference[]` | `[]` |
 | renderActionArea | 自定义底部的操作区域（整块替换，`menuItem` 为默认的上传/发送按钮组，`className` 需自行挂到根节点） | `Snippet<[{ menuItem, className }]>` | - |
 | renderConfigureArea | 自定义底部的配置区域 | Snippet | - |
@@ -246,7 +248,6 @@ editor.storage.CdAIChatInput.allowHotKeySend = true;
 > **与 Semi 的差异**：
 >
 > - `immediatelyRender` 是 tiptap 在 React SSR 下的专用开关，本库 SSR 机制不同（tiptap 全程动态 import、仅客户端实例化），无需该参数。
-> - `dropdownMatchTriggerWidth` / `popoverProps`：本库建议/技能面板不经 Popover 组件承载，故不透传这两项。
 
 ### Configure.Select
 

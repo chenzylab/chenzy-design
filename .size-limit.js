@@ -230,8 +230,11 @@ const components = [
   //   · 附件卡片从自造 chip 重写为 Semi 的 224×36 双行卡片（图标/缩略图 + name + `类型 大小`）；
   //   · 补 Semi horizontalScroller.tsx 整个组件（ResizeObserver + 左右滚动按钮 + smooth scrollBy）；
   //   · 技能/建议项按 Semi 拆成独立子组件（各自带 scoped 样式，比内联多一份组件壳）。
-  // 预算按实测 +~6% 余量校准（对齐 perf-budgets-calibrated-from-real-measurement）。
-  ['ai-chat-input', '{ AIChatInput }', '14.5 KB'],
+  // 14.5 → 15.5 KB：三个浮层（建议/技能/模版）改由 Popover 承载后实测 14.7 KB
+  //   （Popover 走 `../popover/` 属兄弟组件被 externalize 不计入，增量是本组件自身的
+  //    浮层装配 + dropdownMatchTriggerWidth 的 ResizeObserver + rePosKey 重定位）。
+  // 预算按实测 +~5% 余量校准（对齐 perf-budgets-calibrated-from-real-measurement）。
+  ['ai-chat-input', '{ AIChatInput }', '15.5 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载

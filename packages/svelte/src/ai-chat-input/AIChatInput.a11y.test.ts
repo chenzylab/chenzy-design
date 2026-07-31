@@ -27,6 +27,21 @@ for (const proto of [Element.prototype, Range.prototype]) {
   proto.getBoundingClientRect = emptyRect;
 }
 
+/**
+ * 查询浮层内容（建议/技能/模版面板）。
+ *
+ * 这三者对齐 Semi 后由 Popover 承载，而 Popover 会把浮层 **portal 到 document.body**，
+ * 因此它们不在 render 返回的 container 里 —— 用 container.querySelector 找会恒为 null，
+ * 断言「面板不存在」的用例会假绿。故浮层一律走 document 查询。
+ */
+function popup<T extends Element = Element>(selector: string): T | null {
+  return document.querySelector<T>(selector);
+}
+
+function popupAll(selector: string): NodeListOf<Element> {
+  return document.querySelectorAll(selector);
+}
+
 // tiptap 内核动态 import + editor 创建是异步的（且并发跑测试时时序有波动）。
 // 用轮询等 .ProseMirror 真正挂载，而非固定 sleep —— 避免高并发下等待不足。
 async function flush(container?: Element): Promise<void> {
@@ -428,11 +443,11 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
   it('suggestions 由空变非空即自动弹出面板（无需重新聚焦）', async () => {
     const { container } = renderWithLocale(AIChatInputSuggestionsFixture);
     await flush(container);
-    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+    expect(popup('.cd-ai-chat-input-suggestion')).toBeNull();
 
     await fireEvent.click(container.querySelector('[data-testid="fill"]') as HTMLElement);
     await flush();
-    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(2);
+    expect(popupAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(2);
   });
 
   it('suggestions 变空即关闭面板', async () => {
@@ -440,27 +455,27 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     await flush(container);
     await fireEvent.click(container.querySelector('[data-testid="fill"]') as HTMLElement);
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-suggestion')).not.toBeNull();
+    expect(popup('.cd-ai-chat-input-suggestion')).not.toBeNull();
 
     await fireEvent.click(container.querySelector('[data-testid="clear"]') as HTMLElement);
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+    expect(popup('.cd-ai-chat-input-suggestion')).toBeNull();
   });
 
   it('聚焦编辑区弹出建议面板（listbox + options）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
     await flush(container);
     await openPanel(container);
-    const panel = container.querySelector('.cd-ai-chat-input-suggestion');
+    const panel = popup('.cd-ai-chat-input-suggestion');
     expect(panel?.getAttribute('role')).toBe('listbox');
-    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(3);
+    expect(popupAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(3);
   });
 
   it('无 suggestions 时聚焦不弹面板', async () => {
     const { container } = renderWithLocale(AIChatInput);
     await flush(container);
     await openPanel(container);
-    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+    expect(popup('.cd-ai-chat-input-suggestion')).toBeNull();
   });
 
   it('点击建议项触发 onSuggestClick', async () => {
@@ -470,18 +485,18 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     });
     await flush(container);
     await openPanel(container);
-    const item = container.querySelector('.cd-ai-chat-input-suggestion-item') as HTMLElement;
+    const item = popup('.cd-ai-chat-input-suggestion-item') as HTMLElement;
     await fireEvent.mouseDown(item);
     expect(onSuggestClick).toHaveBeenCalledWith('帮我写代码');
     // 选中后面板关闭
-    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+    expect(popup('.cd-ai-chat-input-suggestion')).toBeNull();
   });
 
   it('鼠标悬浮高亮建议项（aria-selected）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
     await flush(container);
     await openPanel(container);
-    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion-item');
+    const items = popupAll('.cd-ai-chat-input-suggestion-item');
     await fireEvent.mouseEnter(items[1]!);
     expect(items[1]!.getAttribute('aria-selected')).toBe('true');
   });
@@ -516,7 +531,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await flush(container);
     component.setContent('<skill-slot data-label="总结" data-value="summarize"></skill-slot>');
     await flush();
-    const chip = container.querySelector('.cd-ai-chat-input-skill-slot');
+    const chip = popup('.cd-ai-chat-input-skill-slot');
     expect(chip).not.toBeNull();
     expect(chip?.textContent).toContain('总结');
   });
@@ -525,9 +540,9 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills } });
     await flush(container);
     await pressSkillHotKey(container);
-    const panel = container.querySelector('.cd-ai-chat-input-skill[aria-label="Skills"]');
+    const panel = popup('.cd-ai-chat-input-skill[aria-label="Skills"]');
     expect(panel).not.toBeNull();
-    expect(container.querySelectorAll('.cd-ai-chat-input-skill-item')).toHaveLength(2);
+    expect(popupAll('.cd-ai-chat-input-skill-item')).toHaveLength(2);
   });
 
   it('点击技能项触发 onSkillChange 并插入 skillSlot', async () => {
@@ -535,11 +550,11 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills, onSkillChange } });
     await flush(container);
     await pressSkillHotKey(container);
-    const item = container.querySelector('.cd-ai-chat-input-skill-item') as HTMLElement;
+    const item = popup('.cd-ai-chat-input-skill-item') as HTMLElement;
     await fireEvent.mouseDown(item);
     expect(onSkillChange).toHaveBeenCalledWith(skills[0]);
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-skill-slot')?.textContent).toContain('总结');
+    expect(popup('.cd-ai-chat-input-skill-slot')?.textContent).toContain('总结');
   });
 
   it('选中 hasTemplate 技能后展示模版按钮，changeTemplateVisible 打开面板', async () => {
@@ -552,10 +567,10 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await flush(container);
     // 直接选中带模版的技能（插入其 skillSlot 并设 currentSkill）——借面板路径。
     await pressSkillHotKey(container);
-    const items = container.querySelectorAll('.cd-ai-chat-input-skill-item');
+    const items = popupAll('.cd-ai-chat-input-skill-item');
     await fireEvent.mouseDown(items[1]!); // 翻译（hasTemplate）
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-template-btn')).not.toBeNull();
+    expect(popup('.cd-ai-chat-input-template-btn')).not.toBeNull();
   });
 
   // 对齐 Semi skillItem.tsx：renderSkillItem 存在时**整项替换**（不再套默认外壳），
@@ -568,7 +583,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await flush(container);
     await pressSkillHotKey(container);
 
-    const custom = container.querySelectorAll('[data-testid="custom-skill"]');
+    const custom = popupAll('[data-testid="custom-skill"]');
     expect(custom, '自定义渲染应逐项生效').toHaveLength(2);
     expect(custom[0]!.textContent).toContain('自定义-总结');
 
@@ -579,7 +594,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     expect(custom[0]!.className).toContain('cd-ai-chat-input-skill-item');
     await fireEvent.mouseEnter(custom[1]!);
     await flush();
-    const after = container.querySelectorAll('[data-testid="custom-skill"]');
+    const after = popupAll('[data-testid="custom-skill"]');
     expect(after[1]!.className).toContain('cd-ai-chat-input-skill-item-active');
 
     // onClick 回传接得上选中流程。
