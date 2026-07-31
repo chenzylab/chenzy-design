@@ -185,36 +185,99 @@ export const aiChatInputTokens = {
     label: '引用项圆角',
     usage: '引用条单项圆角',
   },
-  // 建议面板（阶段 2）
+  // —— 建议面板 / 技能面板（逐条镜像 Semi aiChatInput/variables.scss）——
+  // 面板容器（背景/圆角/阴影）Semi 侧由 Popover 承担，这三条是本库自绘面板所需，保留。
   'ai-chat-input-suggestions-bg': {
     value: 'var(--cd-color-bg-2)',
     category: 'color',
     label: '建议面板背景',
-    usage: '建议浮层面板背景',
-  },
-  'ai-chat-input-suggestions-radius': {
-    value: 'var(--cd-border-radius-medium)',
-    category: 'radius',
-    label: '建议面板圆角',
-    usage: '建议浮层面板圆角',
+    usage: '建议浮层面板背景（Semi 由 Popover 提供，本库自绘面板故单列）',
   },
   'ai-chat-input-suggestions-shadow': {
     value: 'var(--cd-shadow-elevated)',
     category: 'other',
     label: '建议面板阴影',
-    usage: '建议浮层投影',
+    usage: '建议浮层投影（同上）',
   },
-  'ai-chat-input-suggestion-color': {
+  // 建议项（Semi $color-aiChatInput_suggestion_item-* / $spacing-* / $radius-*）
+  'color-ai-chat-input-suggestion-item-text': {
     value: 'var(--cd-color-text-0)',
     category: 'color',
     label: '建议项文本',
-    usage: '建议项文本色',
+    usage: '建议项文本色（Semi $color-aiChatInput_suggestion_item-text）',
   },
-  'ai-chat-input-suggestion-bg-active': {
-    value: 'var(--cd-color-fill-1)',
+  'color-ai-chat-input-suggestion-item-bg-hover': {
+    value: 'var(--cd-color-fill-0)',
+    category: 'color',
+    label: '建议项背景（悬浮）',
+    usage: '建议项悬浮背景（Semi $color-aiChatInput_suggestion_item-bg-hover）',
+  },
+  'color-ai-chat-input-suggestion-item-bg-active': {
+    value: 'var(--cd-color-fill-0)',
     category: 'color',
     label: '建议项背景（激活）',
-    usage: '建议项高亮/悬浮背景',
+    usage: '建议项激活背景（Semi $color-aiChatInput_suggestion_item-bg-active）',
+  },
+  'spacing-ai-chat-input-suggestion-item-paddingy': {
+    value: '8px',
+    category: 'spacing',
+    label: '建议项纵向内距',
+    usage: 'Semi $spacing-aiChatInput_suggestion_item-paddingY',
+  },
+  'spacing-ai-chat-input-suggestion-item-paddingx': {
+    value: '20px',
+    category: 'spacing',
+    label: '建议项横向内距',
+    usage: 'Semi $spacing-aiChatInput_suggestion_item-paddingX',
+  },
+  'radius-ai-chat-input-suggestion-item': {
+    value: '6px',
+    category: 'radius',
+    label: '建议项圆角',
+    usage: 'Semi $radius-aiChatInput_suggestion_item',
+  },
+  // 技能面板与技能项（Semi $..._skill-* / $..._skill_item-*）——此前本库与建议项混用，已拆开
+  'radius-ai-chat-input-skill': {
+    value: '8px',
+    category: 'radius',
+    label: '技能面板圆角',
+    usage: 'Semi $radius-aiChatInput_skill',
+  },
+  'spacing-ai-chat-input-skill-paddingy': {
+    value: '4px',
+    category: 'spacing',
+    label: '技能面板纵向内距',
+    usage: 'Semi $spacing-aiChatInput_skill-paddingY',
+  },
+  'spacing-ai-chat-input-skill-paddingx': {
+    value: '0px',
+    category: 'spacing',
+    label: '技能面板横向内距',
+    usage: 'Semi $spacing-aiChatInput_skill-paddingX',
+  },
+  'spacing-ai-chat-input-skill-item-paddingy': {
+    value: '8px',
+    category: 'spacing',
+    label: '技能项纵向内距',
+    usage: 'Semi $spacing-aiChatInput_skill_item-paddingY',
+  },
+  'spacing-ai-chat-input-skill-item-paddingx': {
+    value: '20px',
+    category: 'spacing',
+    label: '技能项横向内距',
+    usage: 'Semi $spacing-aiChatInput_skill_item-paddingX',
+  },
+  'color-ai-chat-input-skill-item-bg-hover': {
+    value: 'var(--cd-color-fill-0)',
+    category: 'color',
+    label: '技能项背景（悬浮）',
+    usage: 'Semi $color-aiChatInput_skill_item-bg-hover',
+  },
+  'color-ai-chat-input-skill-item-bg-active': {
+    value: 'var(--cd-color-fill-0)',
+    category: 'color',
+    label: '技能项背景（激活）',
+    usage: 'Semi $color-aiChatInput_skill_item-bg-active',
   },
   // skill-slot 编辑器内技能 chip（阶段 3）
   'ai-chat-input-skill-bg': {

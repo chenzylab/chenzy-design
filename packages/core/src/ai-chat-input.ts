@@ -230,6 +230,11 @@ export interface AIChatInputSkill {
   value?: string;
   /** 是否有配套模版（选中后展示模版按钮）。 */
   hasTemplate?: boolean;
+  /**
+   * 技能项前置图标（对齐 Semi `Skill.icon?: ReactNode`）。
+   * core 是无框架层，故此处只声明为未知；Svelte 侧按 Snippet 渲染。
+   */
+  icon?: unknown;
   [key: string]: unknown;
 }
 

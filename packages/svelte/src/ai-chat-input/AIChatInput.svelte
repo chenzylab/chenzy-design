@@ -830,11 +830,11 @@
     <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
 
     {#if showSuggestionPanel}
-      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
+      <div class="cd-ai-chat-input-suggestion" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
         {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
           <div
-            class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion-active={i === activeSuggestionIndex}
+            class="cd-ai-chat-input-suggestion-item"
+            class:cd-ai-chat-input-suggestion-item-active={i === activeSuggestionIndex}
             role="option"
             aria-selected={i === activeSuggestionIndex}
             tabindex="-1"
@@ -856,11 +856,11 @@
     {/if}
 
     {#if showSkillPanel}
-      <div class="cd-ai-chat-input-suggestions" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
+      <div class="cd-ai-chat-input-skill" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
         {#each skills as skill, i (skillLabel(skill) + i)}
           <div
-            class="cd-ai-chat-input-suggestion"
-            class:cd-ai-chat-input-suggestion-active={i === activeSkillIndex}
+            class="cd-ai-chat-input-skill-item"
+            class:cd-ai-chat-input-skill-item-active={i === activeSkillIndex}
             role="option"
             aria-selected={i === activeSkillIndex}
             tabindex="-1"
@@ -873,7 +873,12 @@
             {#if renderSkillItem}
               {@render renderSkillItem({ skill, active: i === activeSkillIndex })}
             {:else}
-              {skillLabel(skill)}
+              <!-- 对齐 Semi skillItem.tsx：图标 + .-skill-item-content 两段 -->
+              {#if typeof skill.icon === 'function'}
+                {@const SkillIcon = skill.icon as Snippet}
+                {@render SkillIcon()}
+              {/if}
+              <div class="cd-ai-chat-input-skill-item-content">{skillLabel(skill)}</div>
             {/if}
           </div>
         {/each}
@@ -1106,29 +1111,61 @@
     position: relative;
   }
 
-  .cd-ai-chat-input-suggestions {
+  /* —— 建议面板 / 技能面板 ——
+     类树逐条对齐 Semi aiChatInput.scss：`&-suggestion > &-item` 与 `&-skill > &-item`
+     是**两棵独立的树**（此前本库让技能复用了建议的类，是自造合并）。
+     浮层定位/背景/阴影 Semi 侧由 Popover 承担，本库自绘面板故保留这几条。 */
+  .cd-ai-chat-input-suggestion,
+  .cd-ai-chat-input-skill {
     position: absolute;
     left: 0;
     right: 0;
     top: calc(100% + var(--cd-spacing-extra-tight));
     z-index: 10;
     max-height: 270px;
-    overflow-y: auto;
-    padding: var(--cd-spacing-extra-tight);
+    overflow: scroll;
     background: var(--cd-ai-chat-input-suggestions-bg);
-    border-radius: var(--cd-ai-chat-input-suggestions-radius);
     box-shadow: var(--cd-ai-chat-input-suggestions-shadow);
   }
 
-  .cd-ai-chat-input-suggestion {
-    padding: var(--cd-spacing-tight);
-    border-radius: var(--cd-ai-chat-input-reference-radius);
-    color: var(--cd-ai-chat-input-suggestion-color);
-    cursor: pointer;
+  /* Semi: &-skill { padding: 4px 0; border-radius: 8px } */
+  .cd-ai-chat-input-skill {
+    padding: var(--cd-spacing-ai-chat-input-skill-paddingy)
+      var(--cd-spacing-ai-chat-input-skill-paddingx);
+    border-radius: var(--cd-radius-ai-chat-input-skill);
   }
 
-  .cd-ai-chat-input-suggestion-active {
-    background: var(--cd-ai-chat-input-suggestion-bg-active);
+  /* Semi: &-skill-item { flex + column-gap 8px + padding 8px 20px } */
+  .cd-ai-chat-input-skill-item {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-spacing-ai-chat-input-skill-item-columngap);
+    padding: var(--cd-spacing-ai-chat-input-skill-item-paddingy)
+      var(--cd-spacing-ai-chat-input-skill-item-paddingx);
+    cursor: pointer;
+  }
+  .cd-ai-chat-input-skill-item:hover {
+    background-color: var(--cd-color-ai-chat-input-skill-item-bg-hover);
+  }
+  .cd-ai-chat-input-skill-item-active {
+    background-color: var(--cd-color-ai-chat-input-skill-item-bg-active);
+  }
+
+  /* Semi: &-suggestion-item { radius 6px + padding 8px 20px + text-0 + font-size-regular } */
+  .cd-ai-chat-input-suggestion-item {
+    padding: var(--cd-spacing-ai-chat-input-suggestion-item-paddingy)
+      var(--cd-spacing-ai-chat-input-suggestion-item-paddingx);
+    border-radius: var(--cd-radius-ai-chat-input-suggestion-item);
+    color: var(--cd-color-ai-chat-input-suggestion-item-text);
+    font-size: var(--cd-font-size-regular);
+    line-height: var(--cd-line-height-regular);
+    cursor: pointer;
+  }
+  .cd-ai-chat-input-suggestion-item:hover {
+    background-color: var(--cd-color-ai-chat-input-suggestion-item-bg-hover);
+  }
+  .cd-ai-chat-input-suggestion-item-active {
+    background-color: var(--cd-color-ai-chat-input-suggestion-item-bg-active);
   }
 
   /* —— 模版面板 / 按钮（阶段 3）—— */

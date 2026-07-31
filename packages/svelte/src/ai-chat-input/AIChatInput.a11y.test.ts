@@ -286,16 +286,16 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
     await flush(container);
     await openPanel(container);
-    const panel = container.querySelector('.cd-ai-chat-input-suggestions');
+    const panel = container.querySelector('.cd-ai-chat-input-suggestion');
     expect(panel?.getAttribute('role')).toBe('listbox');
-    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion')).toHaveLength(3);
+    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(3);
   });
 
   it('无 suggestions 时聚焦不弹面板', async () => {
     const { container } = renderWithLocale(AIChatInput);
     await flush(container);
     await openPanel(container);
-    expect(container.querySelector('.cd-ai-chat-input-suggestions')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
   });
 
   it('点击建议项触发 onSuggestClick', async () => {
@@ -305,18 +305,18 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     });
     await flush(container);
     await openPanel(container);
-    const item = container.querySelector('.cd-ai-chat-input-suggestion') as HTMLElement;
+    const item = container.querySelector('.cd-ai-chat-input-suggestion-item') as HTMLElement;
     await fireEvent.mouseDown(item);
     expect(onSuggestClick).toHaveBeenCalledWith('帮我写代码');
     // 选中后面板关闭
-    expect(container.querySelector('.cd-ai-chat-input-suggestions')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
   });
 
   it('鼠标悬浮高亮建议项（aria-selected）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
     await flush(container);
     await openPanel(container);
-    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion');
+    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion-item');
     await fireEvent.mouseEnter(items[1]!);
     expect(items[1]!.getAttribute('aria-selected')).toBe('true');
   });
@@ -360,9 +360,9 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills } });
     await flush(container);
     await pressSkillHotKey(container);
-    const panel = container.querySelector('.cd-ai-chat-input-suggestions[aria-label="Skills"]');
+    const panel = container.querySelector('.cd-ai-chat-input-skill[aria-label="Skills"]');
     expect(panel).not.toBeNull();
-    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion')).toHaveLength(2);
+    expect(container.querySelectorAll('.cd-ai-chat-input-skill-item')).toHaveLength(2);
   });
 
   it('点击技能项触发 onSkillChange 并插入 skillSlot', async () => {
@@ -370,7 +370,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     const { container } = renderWithLocale(AIChatInput, { props: { skills, onSkillChange } });
     await flush(container);
     await pressSkillHotKey(container);
-    const item = container.querySelector('.cd-ai-chat-input-suggestion') as HTMLElement;
+    const item = container.querySelector('.cd-ai-chat-input-skill-item') as HTMLElement;
     await fireEvent.mouseDown(item);
     expect(onSkillChange).toHaveBeenCalledWith(skills[0]);
     await flush();
@@ -387,7 +387,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await flush(container);
     // 直接选中带模版的技能（插入其 skillSlot 并设 currentSkill）——借面板路径。
     await pressSkillHotKey(container);
-    const items = container.querySelectorAll('.cd-ai-chat-input-suggestion');
+    const items = container.querySelectorAll('.cd-ai-chat-input-skill-item');
     await fireEvent.mouseDown(items[1]!); // 翻译（hasTemplate）
     await flush();
     expect(container.querySelector('.cd-ai-chat-input-template-btn')).not.toBeNull();
