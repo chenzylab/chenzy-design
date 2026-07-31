@@ -517,4 +517,39 @@
     border-color: transparent;
     border-image: var(--ct) 1;
   }
+
+  /* —— RTL（逐条对齐 Semi tag/rtl.scss）——
+     前后缀图标、关闭叉、头像的物理内外边距整体换边；
+     closable / avatar 的四值 padding 左右互换。 */
+  :global(.cd-rtl) .cd-tag {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-tag-prefix-icon {
+    padding-right: 0;
+    padding-left: var(--cd-tag-prefix-icon-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-suffix-icon {
+    padding-left: 0;
+    padding-right: var(--cd-tag-suffix-icon-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-close {
+    padding-left: 0;
+    padding-right: var(--cd-tag-close-padding-left);
+  }
+  :global(.cd-rtl) .cd-tag-closable {
+    padding: var(--cd-tag-closable-padding-top) var(--cd-tag-closable-padding-left)
+      var(--cd-tag-closable-padding-bottom) var(--cd-tag-closable-padding-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square :global(.cd-avatar),
+  :global(.cd-rtl) .cd-tag-avatar-circle :global(.cd-avatar) {
+    margin-right: 0;
+    margin-left: var(--cd-tag-avatar-margin-right);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-square {
+    padding: 0 0 0 var(--cd-tag-avatar-square-padding-x);
+  }
+  :global(.cd-rtl) .cd-tag-avatar-circle {
+    padding: var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-left)
+      var(--cd-tag-avatar-circle-padding-y) var(--cd-tag-avatar-circle-padding-x);
+  }
 </style>
