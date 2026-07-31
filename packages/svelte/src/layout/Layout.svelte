@@ -78,9 +78,10 @@
   .cd-layout-has-sider > :global(.cd-layout-content) {
     overflow-x: hidden;
   }
-  /* RTL */
-  :global(.cd-rtl) .cd-layout,
-  :global(.cd-portal-rtl) .cd-layout {
+  /* RTL —— 只保留 .cd-rtl。
+     不搬 Semi 的 `.semi-portal-rtl`：那个类在 Semi 全仓 **0 处被赋值**
+     （51 份 rtl.scss 引用它，却没有任何 TS/TSX 输出它），是上游死代码。 */
+  :global(.cd-rtl) .cd-layout {
     direction: rtl;
   }
 </style>

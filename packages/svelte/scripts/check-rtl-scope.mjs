@@ -1,7 +1,17 @@
 /**
- * RTL 作用域闸门：禁止用 `:dir()` 做方向判定。
+ * RTL 作用域闸门：禁止 `:dir()` 与 `portal-rtl` 两种「永不生效」的写法。
  *
- * ## 为什么
+ * ## 二、`portal-rtl` 是 Semi 的上游死代码，不搬
+ *
+ * Semi 有 **51 份** rtl.scss 的选择器里写了 `.semi-portal-rtl`，
+ * 但全仓 **0 处** TS/TSX 会输出这个类 —— 它从来没被赋予过。
+ * 照抄进本库只会得到同样永不生效的选择器（本库 Layout / Space 一度就抄了）。
+ * 用户 2026-07-31 拍板：**对齐 Semi 就行，他是死代码我们就不搬**。
+ *
+ * 浮层（Portal 到 body）真要支持 RTL，得另设机制（透传 direction / 挂类 / dir 属性），
+ * 那是独立设计决策，不靠这个类。
+ *
+ * ## 一、为什么禁 `:dir()`
  *
  * `:dir()` **只匹配 HTML 的 `dir` 属性**，不认 CSS 的 `direction` 属性。
  * 而本库（与 Semi 一致）的 ConfigProvider 只注入 `<div class="cd-rtl">`，
@@ -68,7 +78,14 @@ function walk(dir) {
       // 行注释
       code = code.replace(/\/\/.*$/, '');
 
-      if (/:dir\(/.test(code)) offenders.push(`${rel}:${i + 1}  ${line.trim().slice(0, 90)}`);
+      if (/:dir\(/.test(code)) {
+        offenders.push(`${rel}:${i + 1}  [:dir()]  ${line.trim().slice(0, 80)}`);
+      }
+      // `portal-rtl` 是 Semi 的上游死代码（51 份 rtl.scss 引用、0 处 TS 赋值），
+      // 本库不搬；照抄进来只会得到同样永不生效的选择器。
+      if (/portal-rtl/.test(code)) {
+        offenders.push(`${rel}:${i + 1}  [portal-rtl]  ${line.trim().slice(0, 80)}`);
+      }
     });
   }
 }
@@ -76,10 +93,10 @@ function walk(dir) {
 walk(SRC);
 
 if (offenders.length) {
-  console.error('❌ 发现 `:dir()` 用法 —— 它只认 HTML dir 属性，本库靠 .cd-rtl 类，规则不会生效：\n');
+  console.error('❌ 发现永不生效的 RTL 写法（:dir() 只认 HTML dir 属性；portal-rtl 无人赋值）：\n');
   for (const o of offenders) console.error(`  ${o}`);
   console.error('\n改用 `:global(.cd-rtl) .cd-<comp>`（CSS）或 getComputedStyle(el).direction（JS）。');
   process.exit(1);
 }
 
-console.log('✅ 无 `:dir()` 误用（RTL 一律走 .cd-rtl 作用域）');
+console.log('✅ 无 `:dir()` / `portal-rtl` 误用（RTL 一律走 .cd-rtl 作用域）');

@@ -149,9 +149,10 @@
   .cd-space-loose-vertical {
     row-gap: var(--cd-spacing-space-loose);
   }
-  /* RTL（对齐 Semi rtl.scss） */
-  :global(.cd-rtl) .cd-space,
-  :global(.cd-portal-rtl) .cd-space {
+  /* RTL（对齐 Semi rtl.scss）—— 只保留 .cd-rtl。
+     不搬 Semi 的 `.semi-portal-rtl`：那个类在 Semi 全仓 **0 处被赋值**
+     （51 份 rtl.scss 引用它，却没有任何 TS/TSX 输出它），是上游死代码。 */
+  :global(.cd-rtl) .cd-space {
     direction: rtl;
   }
 </style>

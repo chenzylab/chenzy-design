@@ -17,6 +17,20 @@
 > 3. **Carousel 原有的 RTL 规则是死代码**（写成 `:dir(rtl)`，只认 HTML `dir` 属性，
 >    而本库同 Semi 只注入 `class="cd-rtl"`）。已修并建闸门 `check:rtl-scope` 禁用 `:dir()`。
 >
+> ## 浮层（Portal 到 body）：已定 —— 不搬 Semi 的 `portal-rtl`
+>
+> Semi 有 **51 份** rtl.scss 的选择器写了 `.semi-portal-rtl`，
+> 但全仓 **0 处** TS/TSX 输出这个类 —— **Semi 自己这块也是死代码**。
+>
+> 用户 2026-07-31 拍板：**对齐 Semi 就行，他是死代码我们就不搬**。
+>
+> 执行结果：删掉本库 Layout / Space 一度照抄的 2 处 `.cd-portal-rtl` 选择器，
+> 并把 `portal-rtl` 一并纳入 `check:rtl-scope` 闸门禁止（已双向验红）。
+>
+> 因此 dropdown / modal / notification / toast / tooltip / select 这些浮层组件
+> **不做 RTL 覆盖**（与 Semi 现状一致）。若将来真要支持，需另设机制
+> （透传 direction / 浮层根挂类 / portal 容器加 dir），届时再单独立项。
+>
 > ## 已完成（逐批提交，每批配 browser 用例并验红）
 >
 > | 批次 | 组件 | 要点 |
