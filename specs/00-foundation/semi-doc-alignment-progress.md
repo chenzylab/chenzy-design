@@ -225,15 +225,26 @@ Provider 子树 Pagination 文案同步变 `pages in total`，链路完全正常
 - **ResizeObserver 定位**：Semi 是内部组件（不导出、无文档页），本库公开导出，故保留文档页（用户拍板，同 virtuallist 先例）。
 - **Semi `delayTick` 死 prop**：Semi 声明后从未读取，本库不实现（节流由 throttle/debounce 承担）。
 
-## 第二轮对齐（文档页全部完成后的下一阶段）
+## ✅ 第二轮对齐（① ② ③ 已全部完成，2026-07-31）
 
-> ⚠️ **前置未满足**：本阶段原定「71/71 文档页完成后开始」，但实际还差 13 个组件页（见「❌ 未开始」）。
-> **先补完那 13 个，再进第二轮。**
+文档整页对齐只解决了「每页讲什么、demo 长什么样、API 表写什么」；渲染层与样式层的对齐
+攒到第二轮统一重跑。三项均已清零：
 
-文档整页对齐只解决了「每页讲什么、demo 长什么样、API 表写什么」。**渲染层与样式层的对齐还没做完**，
-用户 2026-07-30 拍板：这些攒到第二轮统一重跑，不要边写文档边零敲碎打。
+| | 内容 | 结果 |
+|---|---|---|
+| ① | class 命名 / DOM 结构 | BEM 残留实测 **0** |
+| ② | RTL 覆盖面 | 3 → **49 个组件**；查出三类死代码共 30+ 处 |
+| ③ | token 名/值/公式 | 缺失 **0** / 不一致 **0** / 已核实例外 3 |
 
-### 待办
+**新增四道长期闸门**（全在 `pnpm check:semi`）：
+`check:lineheight`（字号↔行高绑定）、`check:rtl-scope`（三类 RTL 死写法）、
+`check:anchors`（md 锚点）、`check:semi-parity`（Semi 运行时变量名/值/公式）。
+
+> 贯穿三项的同一条教训：**很多"已经做了"的对齐其实从没生效** ——
+> 语义色抄值断了换肤链路、RTL 选择器压根不匹配、闸门口径拿编译期常量当运行时契约。
+> 判据一律是**真机实测**（双侧对比 computed 值 / 真实布局坐标），不是读代码。
+
+### 待办（已全部完成）
 
 - [x] **①（前置）全库重跑对齐：class 命名 / DOM 结构 / 子类层级** ——
   已于 PR #664（commit `c6e3dfe7`）分六批清零，见该提交内各批说明。
@@ -242,11 +253,38 @@ Provider 子树 Pagination 文案同步变 `pages in total`，链路完全正常
   连带修出一处折平撞车（DialogueBox 的 `-error` 与错误文案 span 同名 → 改 `-is-error`），
   该问题**测试全绿也发现不了**，是靠脚本比对「折平后是否与既有类同名」检出的。
 
-- [ ] **② 补齐 RTL 覆盖面（依赖 ①）**
-  Semi 有 61 个 `rtl.scss` / 2942 行，本库只有 Layout / Space / Grid.Col 三个实现。
-  规模、声明分类、阻断点、冗余机理、附带发现的 49 处 token 命名错配，
-  **已全部量化并写进 [rtl-gap-tracker.md](./rtl-gap-tracker.md)**，重跑时直接取用、不必重查。
-  必须等 ① 做完 —— 否则按当前 class 写的 RTL 规则，对齐后要全部重写。
+- [x] **② 补齐 RTL 覆盖面** —— 已完成（2026-07-31，分 4 批提交）。
+  从「只有 Layout / Space / Grid.Col 三个实现」到 **49 个组件目录**已实现镜像。
+  详细数据与决策见 [rtl-gap-tracker.md](./rtl-gap-tracker.md)。
+
+  #### 最大的收获不是补样式，是查出**三种「写了但从来没生效」的死代码**
+
+  | 写法 | 为何不匹配 | 本库曾有 |
+  |---|---|---|
+  | `:dir(rtl)` | 只认 HTML `dir` 属性，不认 CSS `direction` | Carousel 整段 |
+  | `[dir='rtl']` | ConfigProvider 不设 `dir`，整页 `[dir]` 实测为 **0** | **28 处 / 8 个组件** |
+  | `portal-rtl` | **Semi 上游死代码**（51 处引用、0 处赋值） | Layout / Space |
+
+  第二类害得最狠：AvatarGroup 整套层叠镜像（8 档尺寸）、Banner 关闭按钮与图标换边、
+  Badge 四方位 transform 翻向**全部静默失效**，而 typecheck / 单测 / a11y 一路全绿。
+  已建闸门 `check:rtl-scope` 三种形态都拦（挂进 `pnpm check:semi`，均双向验红）。
+
+  #### 三条被推翻的旧结论
+
+  1. 「class 不同构、命中率 40-50%」是 ① 之前测的；重测为 **83%**，阻断点已消除；
+  2. 「1067 处物理属性」严重高估 —— 剔掉左右同值的 padding（互换=空操作）
+     与 `translateX(-50%)` 居中用法后，**真缺口约 230 处**；
+  3. cropper / resizable / jsonViewer / videoPlayer 在 **Semi 侧没有 rtl.scss**
+     （媒体画布类镜像反而错），约 30 处「缺口」是伪的。
+
+  #### 刻意不做的两类（与 Semi 现状一致）
+
+  - **浮层类**（Modal / Dropdown / Toast / Notification / Tooltip / Select…）：
+    Portal 到 body 取不到作用域；Semi 为此留的 `portal-rtl` 从未被赋值。
+    用户 2026-07-31 拍板：**对齐 Semi 就行，他是死代码我们就不搬**。
+  - **媒体与画布类**：Semi 侧同样无 rtl.scss。
+
+  两条已写进 configprovider.md（原 warning「只有三个布局组件实现」已改为如实说明）。
 
 - [x] **③ token 名/值/公式对齐 Semi 变量** —— 已清零（commit `ec024d95`）。
   **闸门已挂进 `pnpm check:semi`**：缺失 0 / 不一致 0 / 已核实例外 3。
