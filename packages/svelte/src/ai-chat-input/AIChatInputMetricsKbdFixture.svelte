@@ -17,10 +17,24 @@
   const uploadProps = {
     defaultFileList: [{ uid: 'a1', name: 'spec.docx', size: '12KB', status: 'success' }],
   };
+
+  // 单条引用：验 Semi 的 `:only-child { width: 100% }`。
+  const references = [{ type: 'text', id: 'r1', content: '引用一段话' }];
+
+  const threeReferences = [
+    { type: 'text', id: 'r1', content: '引用一' },
+    { type: 'text', id: 'r2', content: '引用二' },
+    { type: 'text', id: 'r3', content: '引用三' },
+  ];
 </script>
 
 <div data-testid="attachment-host">
-  <AIChatInput {uploadProps} />
+  <AIChatInput {uploadProps} {references} />
+</div>
+
+<!-- 三条引用：验 Semi 的「3 条及以上各占 1/3」自适应列宽规则。 -->
+<div data-testid="references-three-host">
+  <AIChatInput references={threeReferences} showUploadFile={false} />
 </div>
 
 <!-- 技能/建议项单独挂载：只验样式，不依赖面板弹出时序。 -->

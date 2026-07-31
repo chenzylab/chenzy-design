@@ -180,10 +180,11 @@ export const aiChatInputTokens = {
     usage: '引用条单项文本色',
   },
   'ai-chat-input-reference-radius': {
-    value: 'var(--cd-border-radius-small)',
+    // Semi $radius-aiChatInput_reference: 6px（本库原回退 --cd-border-radius-small=3px，差一半）
+    value: '6px',
     category: 'radius',
     label: '引用项圆角',
-    usage: '引用条单项圆角',
+    usage: 'Semi $radius-aiChatInput_reference',
   },
   // —— footer（逐条镜像 Semi aiChatInput/variables.scss 的 $..._footer_* ）——
   'spacing-ai-chat-input-footer-margintop': { value: '20px', category: 'spacing', label: 'footer 上外距', usage: 'Semi $spacing-aiChatInput_footer-marginTop' },
@@ -333,6 +334,79 @@ export const aiChatInputTokens = {
     category: 'color',
     label: '模版按钮背景（悬浮）',
     usage: '模版按钮悬浮背景',
+  },
+  // —— 引用条（逐条镜像 Semi $*-aiChatInput_reference* / $*-aiChatInput_references*）——
+  'ai-chat-input-references-text': {
+    value: 'var(--cd-color-text-2)',
+    category: 'color',
+    label: '引用区文本',
+    usage: 'Semi $color-aiChatInput_references-text',
+  },
+  'ai-chat-input-reference-delete-bg': {
+    value: 'var(--cd-color-fill-1)',
+    category: 'color',
+    label: '引用删除按钮背景（悬浮）',
+    usage: 'Semi $color-aiChatInput_reference_delete-bg',
+  },
+  'ai-chat-input-references-marginBottom': {
+    value: '8px',
+    category: 'spacing',
+    label: '引用区下外边距',
+    usage: 'Semi $spacing-aiChatInput_references-marginBottom',
+  },
+  'ai-chat-input-references-columnGap': {
+    value: '4px',
+    category: 'spacing',
+    label: '引用区列间距',
+    usage: 'Semi $spacing-aiChatInput_references-columnGap',
+  },
+  'ai-chat-input-references-rowGap': {
+    value: '4px',
+    category: 'spacing',
+    label: '引用区行间距',
+    usage: 'Semi $spacing-aiChatInput_references-rowGap',
+  },
+  'ai-chat-input-reference-paddingY': {
+    value: '8px',
+    category: 'spacing',
+    label: '引用项垂直内边距',
+    usage: 'Semi $spacing-aiChatInput_reference-paddingY',
+  },
+  'ai-chat-input-reference-paddingX': {
+    value: '12px',
+    category: 'spacing',
+    label: '引用项水平内边距',
+    usage: 'Semi $spacing-aiChatInput_reference-paddingX',
+  },
+  'ai-chat-input-reference-columnGap': {
+    value: '8px',
+    category: 'spacing',
+    label: '引用项列间距',
+    usage: 'Semi $spacing-aiChatInput_reference-columnGap',
+  },
+  'ai-chat-input-reference-icon-marginRight': {
+    value: '4px',
+    category: 'spacing',
+    label: '引用图标右外边距',
+    usage: 'Semi $spacing-aiChatInput_reference_icon-marginRight',
+  },
+  'ai-chat-input-references-delete-padding': {
+    value: '2px',
+    category: 'spacing',
+    label: '引用删除按钮内边距',
+    usage: 'Semi $spacing-aiChatInput_references_delete-padding',
+  },
+  'ai-chat-input-reference-icon-width': {
+    value: '16px',
+    category: 'width',
+    label: '引用图标宽高',
+    usage: 'Semi $width-aiChatInput_reference_icon',
+  },
+  'ai-chat-input-reference-icon-radius': {
+    value: '2px',
+    category: 'radius',
+    label: '引用图标圆角',
+    usage: 'Semi $radius-aiChatInput_reference_icon',
   },
   // —— 附件卡片（对齐 Semi $*-aiChatInput_attachment*，名/值/公式逐条镜像）——
   'ai-chat-input-attachment-bg': {

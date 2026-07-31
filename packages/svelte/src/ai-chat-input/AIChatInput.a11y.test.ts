@@ -325,6 +325,32 @@ describe('AIChatInput · 引用条（阶段 2）', () => {
     expect(container.querySelector('.cd-ai-chat-input-reference-img')).not.toBeNull();
   });
 
+  // 对齐 Semi renderReference：每条引用前置一枚 IconSendMsgStroked，
+  // 名称/图标包在 .-reference-content 里，三段式 icon + content + delete。
+  it('引用项三段式结构：前置 send-msg 图标 + -reference-content + -reference-delete', async () => {
+    const { container } = renderWithLocale(AIChatInput, { props: { references: refs } });
+    const first = container.querySelector('.cd-ai-chat-input-reference')!;
+
+    expect(
+      first.querySelector('.cd-icon-send_msg_stroked'),
+      '应有 Semi 的前置 IconSendMsgStroked',
+    ).not.toBeNull();
+    expect(first.querySelector('.cd-ai-chat-input-reference-content')).not.toBeNull();
+    expect(first.querySelector('.cd-ai-chat-input-reference-name')).not.toBeNull();
+    expect(first.querySelector('.cd-ai-chat-input-reference-delete')).not.toBeNull();
+  });
+
+  // Semi: {type !== 'text' && (isImage ? <img/> : icon)} —— 文本引用不出图标，只有文字。
+  it("type='text' 的引用不渲染类型图标/缩略图（对齐 Semi 的 type!=='text' 守卫）", async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { references: [{ type: 'text', id: 'r1', content: '引用一段话' }] },
+    });
+    const first = container.querySelector('.cd-ai-chat-input-reference')!;
+    expect(first.querySelector('.cd-ai-chat-input-reference-img')).toBeNull();
+    expect(first.querySelector('.cd-ai-chat-input-reference-icon')).toBeNull();
+    expect(first.textContent).toContain('引用一段话');
+  });
+
   it('showReference=false 不渲染引用条', async () => {
     const { container } = renderWithLocale(AIChatInput, {
       props: { references: refs, showReference: false },
@@ -337,7 +363,7 @@ describe('AIChatInput · 引用条（阶段 2）', () => {
     const { container } = renderWithLocale(AIChatInput, {
       props: { references: refs, onReferenceClick },
     });
-    const first = container.querySelector('.cd-ai-chat-input-reference-main') as HTMLElement;
+    const first = container.querySelector('.cd-ai-chat-input-reference-content') as HTMLElement;
     await fireEvent.click(first);
     expect(onReferenceClick).toHaveBeenCalledWith(refs[0]);
   });

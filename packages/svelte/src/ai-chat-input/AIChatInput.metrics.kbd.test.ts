@@ -16,6 +16,8 @@ import {
   AI_CHAT_INPUT_ATTACHMENT_ICON,
   AI_CHAT_INPUT_SKILL_ITEM,
   AI_CHAT_INPUT_SUGGESTION_ITEM,
+  AI_CHAT_INPUT_REFERENCES,
+  AI_CHAT_INPUT_REFERENCE,
 } from '../test-utils/semi-metrics.js';
 import AIChatInputMetricsKbdFixture from './AIChatInputMetricsKbdFixture.svelte';
 
@@ -65,5 +67,40 @@ describe('AIChatInput 视觉度量对齐 Semi', () => {
   it('建议项 radius 6 + padding 8/20 + 14px/20px（样式随组件拆分迁移生效）', () => {
     renderKbdFixture(AIChatInputMetricsKbdFixture);
     expectMatches('.cd-ai-chat-input-suggestion-item', AI_CHAT_INPUT_SUGGESTION_ITEM);
+  });
+
+  // 引用条原值全错：padding 走 extra-tight/tight（非 8/12）、radius 回退到
+  // --cd-border-radius-small=3px（Semi 是 6px）、gap 用 extra-tight（非 8px）。
+  it('引用区容器 12px/16px + 4px 双向间距 + 8px 下外距', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    expectMatches('.cd-ai-chat-input-references', AI_CHAT_INPUT_REFERENCES);
+  });
+
+  it('引用项 padding 8/12 + radius 6 + column-gap 8', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    expectMatches('.cd-ai-chat-input-reference', AI_CHAT_INPUT_REFERENCE);
+  });
+
+  // Semi 按条数自适应 1/2/3 列，本库此前完全没有这套规则（恒为内容宽度）。
+  it('引用条按条数自适应列宽：1 条占满、3 条各约 1/3', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+
+    const single = document.querySelector('[data-testid="attachment-host"] .cd-ai-chat-input-reference')!;
+    const singleWrap = single.parentElement!;
+    expect(single.getBoundingClientRect().width).toBeCloseTo(
+      singleWrap.getBoundingClientRect().width,
+      0,
+    );
+
+    const three = document.querySelectorAll(
+      '[data-testid="references-three-host"] .cd-ai-chat-input-reference',
+    );
+    expect(three).toHaveLength(3);
+    const threeWrapW = three[0]!.parentElement!.getBoundingClientRect().width;
+    // Semi 公式：calc(33.333% - columnGap)，columnGap=4px。
+    const expected = threeWrapW * 0.33333 - 4;
+    for (const el of three) {
+      expect(el.getBoundingClientRect().width).toBeCloseTo(expected, 0);
+    }
   });
 });

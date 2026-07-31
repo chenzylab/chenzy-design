@@ -52,6 +52,7 @@
     IconMusic,
     IconPaperclip,
     IconPdf,
+    IconSendMsgStroked,
     IconStop,
     IconTemplateStroked,
     IconVideo,
@@ -805,22 +806,36 @@
             {#if renderReference}
               {@render renderReference(reference)}
             {:else}
-              <!-- chip 容器本身非交互（避免 nested-interactive）；名称按钮与删除按钮平级。 -->
+              <!--
+                结构对齐 Semi renderReference：前置 IconSendMsgStroked + .-reference-content
+                （内含图/图标 + name）+ .-reference-delete 三段。
+                与 Semi 的一处有意差异：Semi 把 onClick 挂在 -reference 根 div 上（键盘不可达，
+                其源码里也挂着 eslint-disable click-events-have-key-events），本库改为
+                -reference-content 用 button 承载点击，容器保持非交互避免 nested-interactive。
+              -->
               <div class="cd-ai-chat-input-reference">
+                <IconSendMsgStroked />
                 <button
                   type="button"
-                  class="cd-ai-chat-input-reference-main"
+                  class="cd-ai-chat-input-reference-content"
                   onclick={() => handleReferenceClick(reference)}
                 >
-                  {#if isImageReference(reference)}
-                    <img class="cd-ai-chat-input-reference-img" src={reference.url} alt="" />
-                  {:else if iconByType(reference.type)}
-                    {@const RefIcon = iconByType(reference.type)}
-                    <span
-                      class="cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{reference.type} cd-ai-chat-input-reference-icon"
-                    >
-                      <RefIcon size="small" />
-                    </span>
+                  {#if reference.type !== 'text'}
+                    {#if isImageReference(reference)}
+                      <img
+                        class="cd-ai-chat-input-reference-img"
+                        src={reference.url}
+                        alt={reference.name}
+                      />
+                    {:else}
+                      {@const signIconType = getContentType(getAttachmentType(reference))}
+                      {@const RefIcon = iconByType(signIconType)}
+                      <span
+                        class="cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{signIconType} cd-ai-chat-input-reference-icon"
+                      >
+                        {#if RefIcon}<RefIcon size="small" />{/if}
+                      </span>
+                    {/if}
                   {/if}
                   <span class="cd-ai-chat-input-reference-name">{referenceLabel(reference)}</span>
                 </button>
@@ -1039,10 +1054,35 @@
     gap: var(--cd-ai-chat-input-gap);
   }
 
+  /* Semi: &-references —— @include font-size-small（12px + line-height 16px）+ text-2。 */
   .cd-ai-chat-input-references {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--cd-ai-chat-input-gap);
+    margin-bottom: var(--cd-ai-chat-input-references-marginBottom);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    color: var(--cd-ai-chat-input-references-text);
+    column-gap: var(--cd-ai-chat-input-references-columnGap);
+    row-gap: var(--cd-ai-chat-input-references-rowGap);
+  }
+
+  /* Semi 的引用条按条数自适应 1/2/3 列（本库此前完全没有这套规则，恒为内容宽度）：
+     1 条占满、2 条各半、3 条及以上各 1/3，宽度都减去一个列间距。 */
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:only-child {
+    width: 100%;
+  }
+
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-last-child(2):first-child,
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-child(2):nth-last-child(1) {
+    flex-basis: calc(50% - var(--cd-ai-chat-input-references-columnGap));
+    max-width: calc(50% - var(--cd-ai-chat-input-references-columnGap));
+  }
+
+  .cd-ai-chat-input-references > .cd-ai-chat-input-reference:nth-last-child(n + 3):nth-child(1),
+  .cd-ai-chat-input-references
+    > .cd-ai-chat-input-reference:nth-last-child(n + 3):nth-child(1)
+    ~ .cd-ai-chat-input-reference {
+    width: calc(33.333% - var(--cd-ai-chat-input-references-columnGap));
   }
 
   /* —— 附件卡片（showUploadFile）：逐条对齐 Semi aiChatInput.scss &-attachment —— */
@@ -1164,69 +1204,80 @@
     transform: translate(-50%, -50%);
   }
 
+  /* Semi: &-reference { padding 8/12 + radius 6 + fill-0 + flex + column-gap 8 } */
   .cd-ai-chat-input-reference {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    max-width: 100%;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-reference-bg);
-    color: var(--cd-ai-chat-input-reference-color);
+    padding: var(--cd-ai-chat-input-reference-paddingY)
+      var(--cd-ai-chat-input-reference-paddingX);
+    box-sizing: border-box;
     border-radius: var(--cd-ai-chat-input-reference-radius);
-    transition: background var(--cd-ai-chat-input-motion-duration) ease;
+    background: var(--cd-ai-chat-input-reference-bg);
+    flex-shrink: 1;
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-ai-chat-input-reference-columnGap);
   }
 
-  .cd-ai-chat-input-reference:hover {
-    background: var(--cd-ai-chat-input-reference-bg-hover);
-  }
+  /* Semi 的 -reference-content 是 span；本库用 button 承载点击（Semi 把 onClick 挂根 div，
+     键盘不可达），故额外重置按钮默认外观，视觉与 Semi 的 span 等价。 */
+  .cd-ai-chat-input-reference-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
-  /* chip 内的名称按钮：无边框透明，负责图标+名称布局与点击。 */
-  .cd-ai-chat-input-reference-main {
     appearance: none;
     border: none;
     background: transparent;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
     min-width: 0;
-    max-width: 100%;
     padding: 0;
     color: inherit;
     font: inherit;
+    text-align: start;
   }
 
-  .cd-ai-chat-input-reference-main:focus-visible {
+  .cd-ai-chat-input-reference-content:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
   }
 
   .cd-ai-chat-input-reference-img {
-    width: 20px;
-    height: 20px;
-    object-fit: cover;
-    border-radius: var(--cd-border-radius-small);
+    width: var(--cd-ai-chat-input-reference-icon-width);
+    height: var(--cd-ai-chat-input-reference-icon-width);
+    margin-right: var(--cd-ai-chat-input-reference-icon-marginRight);
+  }
+
+  /* Semi: &-reference-icon（与 -img 同宽高，另有 radius 2px）。 */
+  .cd-ai-chat-input-reference-icon {
+    width: var(--cd-ai-chat-input-reference-icon-width);
+    height: var(--cd-ai-chat-input-reference-icon-width);
+    border-radius: var(--cd-ai-chat-input-reference-icon-radius);
+    margin-right: var(--cd-ai-chat-input-reference-icon-marginRight);
   }
 
   .cd-ai-chat-input-reference-name {
-    overflow: hidden;
+    display: inline-block;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--cd-font-size-regular);
+    overflow: hidden;
+    word-break: break-all;
   }
 
   .cd-ai-chat-input-reference-delete {
+    cursor: pointer;
+    padding: var(--cd-ai-chat-input-references-delete-padding);
+    border-radius: 50%;
+
     appearance: none;
     border: none;
     background: transparent;
-    cursor: pointer;
     display: inline-flex;
-    padding: 0;
-    color: var(--cd-ai-chat-input-action-icon);
+    color: inherit;
   }
 
   .cd-ai-chat-input-reference-delete:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+    background: var(--cd-ai-chat-input-reference-delete-bg);
   }
 
   .cd-ai-chat-input-reference-delete:focus-visible {

@@ -214,3 +214,37 @@ export const AI_CHAT_INPUT_SUGGESTION_ITEM: MetricBaseline = {
     lineHeight: '20px',
   },
 };
+
+/** 引用条容器 —— Semi `&-references`（@include font-size-small + 4px 双向间距 + 8px 下外距）。 */
+export const AI_CHAT_INPUT_REFERENCES: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-references',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-references',
+  computed: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    marginBottom: '8px',
+    fontSize: '12px',
+    lineHeight: '16px',
+    columnGap: '4px',
+    rowGap: '4px',
+  },
+};
+
+/** 引用项 —— Semi `&-reference`（padding 8/12 + radius 6 + column-gap 8）。 */
+export const AI_CHAT_INPUT_REFERENCE: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-reference',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-reference',
+  computed: {
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    paddingLeft: '12px',
+    paddingRight: '12px',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    columnGap: '8px',
+    boxSizing: 'border-box',
+  },
+};
