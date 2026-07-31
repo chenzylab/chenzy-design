@@ -781,4 +781,12 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi input/rtl.scss）——
+     只需声明方向：本库 Input 的内边距、append/prepend 边框**全部已用逻辑属性**
+     （padding-inline / border-inline-start|end），RTL 下自己就翻，
+     不像 Semi 那样需要逐条写 padding-left/right、border-left/right 掰回来。 */
+  :global(.cd-rtl) .cd-input-wrapper {
+    direction: rtl;
+  }
 </style>

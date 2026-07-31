@@ -86,6 +86,11 @@ function walk(dir) {
       if (/portal-rtl/.test(code)) {
         offenders.push(`${rel}:${i + 1}  [portal-rtl]  ${line.trim().slice(0, 80)}`);
       }
+      // `[dir='rtl']` 属性选择器同理：ConfigProvider 不设 dir 属性，
+      // 这类选择器同样永不匹配（本库一度有 28 处，分布在 8 个组件）。
+      if (/\[\s*dir\s*[~|^$*]?=\s*['"]?rtl/.test(code)) {
+        offenders.push(`${rel}:${i + 1}  [dir=rtl 属性选择器]  ${line.trim().slice(0, 80)}`);
+      }
     });
   }
 }

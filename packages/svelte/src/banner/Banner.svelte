@@ -269,14 +269,14 @@
   }
 
   /* RTL（对齐 Semi rtl.scss） */
-  :global([dir='rtl']) .cd-banner {
+  :global(.cd-rtl) .cd-banner {
     direction: rtl;
   }
-  :global([dir='rtl']) .cd-banner :global(.cd-banner-close) {
+  :global(.cd-rtl) .cd-banner :global(.cd-banner-close) {
     margin-left: 0;
     margin-right: var(--cd-spacing-banner-closebtn-marginleft);
   }
-  :global([dir='rtl']) .cd-banner-icon {
+  :global(.cd-rtl) .cd-banner-icon {
     margin-right: 0;
     margin-left: var(--cd-spacing-banner-icon-marginright);
   }

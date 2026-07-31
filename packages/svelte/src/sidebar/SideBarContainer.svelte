@@ -378,11 +378,11 @@
     will-change: transform, opacity;
   }
   /* RTL：面板贴左，圆角/边框镜像，位移方向翻转。 */
-  :global([dir='rtl']) .cd-sidebar-container {
+  :global(.cd-rtl) .cd-sidebar-container {
     inset-inline-end: auto;
     inset-inline-start: 0;
   }
-  :global([dir='rtl']) .cd-sidebar-container-panel {
+  :global(.cd-rtl) .cd-sidebar-container-panel {
     transform: translateX(-100%);
   }
   .cd-sidebar-container-open .cd-sidebar-container-panel {
@@ -400,7 +400,7 @@
     touch-action: none;
     transform: translateX(-50%);
   }
-  :global([dir='rtl']) .cd-sidebar-container-handle {
+  :global(.cd-rtl) .cd-sidebar-container-handle {
     inset-inline-start: auto;
     inset-inline-end: 0;
     transform: translateX(50%);

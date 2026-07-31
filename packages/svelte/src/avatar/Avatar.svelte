@@ -898,16 +898,16 @@
   }
 
   /* ============ RTL（1:1 对齐 Semi avatar/rtl.scss）============ */
-  :global([dir='rtl']) .cd-avatar {
+  :global(.cd-rtl) .cd-avatar {
     direction: rtl;
   }
   /* 小档 content 在 RTL 下仍保持 scale(0.8)（对齐 Semi，避免 direction 影响缩放表现） */
-  :global([dir='rtl']) .cd-avatar-extra-extra-small .cd-avatar-content,
-  :global([dir='rtl']) .cd-avatar-extra-small .cd-avatar-content {
+  :global(.cd-rtl) .cd-avatar-extra-extra-small .cd-avatar-content,
+  :global(.cd-rtl) .cd-avatar-extra-small .cd-avatar-content {
     transform: scale(0.8);
   }
   /* hover 遮罩镜像 */
-  :global([dir='rtl']) .cd-avatar-hover {
+  :global(.cd-rtl) .cd-avatar-hover {
     left: auto;
     right: 0;
   }

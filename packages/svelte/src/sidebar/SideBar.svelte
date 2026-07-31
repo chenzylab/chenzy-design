@@ -251,7 +251,7 @@
     box-shadow: var(--cd-focus-ring);
   }
   /* RTL：返回箭头方向翻转。 */
-  :global([dir='rtl']) .cd-sidebar-back svg {
+  :global(.cd-rtl) .cd-sidebar-back svg {
     transform: scaleX(-1);
   }
 </style>

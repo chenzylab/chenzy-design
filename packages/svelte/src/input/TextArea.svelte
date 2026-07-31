@@ -792,4 +792,15 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi input/rtl.scss 的 textarea 段）——
+     计数器贴到行末（RTL 下即左侧）。
+     ⚠️ 行号列的 `text-align: right` **不翻**：那是代码行号的排版惯例
+     （数字右对齐便于对位），与书写方向无关；Semi 同样没翻它。 */
+  :global(.cd-rtl) .cd-input-textarea-wrapper {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-input-textarea-counter {
+    text-align: left;
+  }
 </style>

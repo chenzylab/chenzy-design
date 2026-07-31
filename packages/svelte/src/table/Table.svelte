@@ -3270,4 +3270,19 @@
       transition: none;
     }
   }
+
+  /* —— RTL（对齐 Semi table/rtl.scss）——
+     表体与表头的默认文字方向由左改右；`-align-right` 修饰类在 RTL 下
+     语义仍是「行末对齐」，故翻成 left（Semi 同）。
+     单元格内边距本库已用 padding-inline，会自己翻，不重复覆盖。 */
+  :global(.cd-rtl) .cd-table {
+    direction: rtl;
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-table-thead > .cd-table-row > .cd-table-row-head {
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-table-align-right {
+    text-align: left;
+  }
 </style>

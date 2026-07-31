@@ -152,4 +152,14 @@
   :global(.cd-form-field-label-right) {
     text-align: right;
   }
+
+  /* —— RTL（对齐 Semi form/rtl.scss）——
+     labelPosition 的 left/right 是**相对书写方向**的语义（行首 / 行末），
+     RTL 下两者的物理方向互换。 */
+  :global(.cd-rtl) :global(.cd-form-field-label-left) {
+    text-align: right;
+  }
+  :global(.cd-rtl) :global(.cd-form-field-label-right) {
+    text-align: left;
+  }
 </style>
