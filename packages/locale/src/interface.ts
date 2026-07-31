@@ -666,6 +666,10 @@ export interface Locale {
     deleteSkill: string;
     /** template button label / toggle aria-label */
     template: string;
+    /** attachment scroller left button aria-label */
+    scrollLeft: string;
+    /** attachment scroller right button aria-label */
+    scrollRight: string;
   };
   Resizable: {
     /** resize handle default aria-label */

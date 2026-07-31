@@ -216,7 +216,7 @@ const components = [
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态
   // import（下方 ignore）。度量含各自壳；预算按实测校准（P3/P5 后续阶段各自增量）。
-  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMcpConfigure, SideBarFileContent }', '20 KB'],
+  ['sidebar', '{ SideBar, SideBarContainer, SideBarAnnotation, SideBarCodeContent, SideBarMCPConfigure, SideBarFileContent }', '20 KB'],
   // AIChatInput 的 tiptap 内核（@tiptap/core+starter-kit+extensions，gzip ~126KB）
   // 是「动态 import」惰性加载（见 AIChatInput.svelte，spec §0 要求内核不进主 bundle），
   // 故度量组件壳时 ignore 内核。内核体积单独在 spec §0 记录。
@@ -225,7 +225,13 @@ const components = [
   // tiptap 内核/pm/svelte-tiptap 第三方均 per-component ignore；本组件自己的懒加载代码
   // （input-slot-plugins 等本地相对 import）size-limit 的 esbuild 会内联进 entry 度量，
   // 属组件功能成本正当计入。
-  ['ai-chat-input', '{ AIChatInput }', '12 KB'],
+  // 12 → 14.5 KB：对齐 Semi 补齐附件区真实能力后实测 13.61 KB（纯功能增长，已 grep 反证
+  // 未引入任何第三方依赖，Progress 走 `../progress/` 属兄弟组件被 externalize 不计入）：
+  //   · 附件卡片从自造 chip 重写为 Semi 的 224×36 双行卡片（图标/缩略图 + name + `类型 大小`）；
+  //   · 补 Semi horizontalScroller.tsx 整个组件（ResizeObserver + 左右滚动按钮 + smooth scrollBy）；
+  //   · 技能/建议项按 Semi 拆成独立子组件（各自带 scoped 样式，比内联多一份组件壳）。
+  // 预算按实测 +~6% 余量校准（对齐 perf-budgets-calibrated-from-real-measurement）。
+  ['ai-chat-input', '{ AIChatInput }', '14.5 KB'],
 ];
 
 // JsonViewer 的内核 @douyinfe/semi-json-viewer-core 是「动态 import」惰性加载

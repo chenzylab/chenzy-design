@@ -188,8 +188,8 @@ const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.
 | renderActionArea | 自定义底部的操作区域 | `Snippet<[{ canSend, generating }]>` | - |
 | renderConfigureArea | 自定义底部的配置区域 | Snippet | - |
 | renderReference | 自定义渲染引用 | `Snippet<[reference]>` | - |
-| renderSkillItem | 自定义技能列表的 item 渲染 | `Snippet<[{ skill, active }]>` | - |
-| renderSuggestionItem | 自定义建议列表的 item 渲染 | `Snippet<[{ suggestion, active }]>` | - |
+| renderSkillItem | 自定义技能列表的 item 渲染（整项替换，需自行渲染根节点并挂 className/onClick/onMouseEnter） | `Snippet<[{ skill, className, onClick, onMouseEnter }]>` | - |
+| renderSuggestionItem | 自定义建议列表的 item 渲染（整项替换，需自行渲染根节点并挂 className/onClick/onMouseEnter） | `Snippet<[{ suggestion, className, onClick, onMouseEnter }]>` | - |
 | renderTemplate | 自定义模板渲染 | `Snippet<[{ skill, setContent }]>` | - |
 | renderTopSlot | 自定义顶部 slot | `Snippet<[{ references, attachments }]>` | - |
 | renderUploadButton | 自定义底部操作区上传按钮 UI（内置上传/粘贴逻辑仍由组件托管） | `Snippet<[{ openFileDialog, disabled, attachments }]>` | - |

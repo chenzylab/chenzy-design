@@ -23,6 +23,9 @@
     nextSuggestionIndex,
     referenceLabel,
     isImageReference,
+    isImageType,
+    getAttachmentType,
+    getContentType,
     skillLabel,
     getSkillSlotHTML,
     shouldOpenSkillPanel,
@@ -56,6 +59,12 @@
   } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
+  // 复用现有组件：Semi renderAttachment 用 Progress type=circle 显示上传进度，本库同样复用。
+  import { Progress } from '../progress/index.js';
+  import AIChatInputHorizontalScroller from './AIChatInputHorizontalScroller.svelte';
+  // Semi 把技能/建议单项拆成 skillItem.tsx / suggestionItem.tsx，本库同样拆分。
+  import AIChatInputSkillItem from './AIChatInputSkillItem.svelte';
+  import AIChatInputSuggestionItem from './AIChatInputSuggestionItem.svelte';
   import type { UploadFileItem } from '../upload/types.js';
   import { untrack } from 'svelte';
   import { setConfigureContext } from './configure-context.js';
@@ -112,8 +121,23 @@
     // —— 阶段 2 · 建议 ——
     /** 建议列表：聚焦空编辑区时弹出面板（对齐 Semi suggestions）。 */
     suggestions?: AIChatInputSuggestion[];
-    /** 自定义单条建议渲染（对齐 Semi renderSuggestionItem）。 */
-    renderSuggestionItem?: Snippet<[{ suggestion: AIChatInputSuggestion; active: boolean }]> | undefined;
+    /**
+     * 自定义单条建议渲染（对齐 Semi renderSuggestionItem）：**整项替换**，
+     * 入参逐字段对齐 Semi RenderSuggestionItemProps —— 消费方需自己渲染根节点并挂上
+     * className / onClick / onMouseEnter。
+     */
+    renderSuggestionItem?:
+      | Snippet<
+          [
+            {
+              suggestion: AIChatInputSuggestion;
+              className: string;
+              onClick: () => void;
+              onMouseEnter: () => void;
+            },
+          ]
+        >
+      | undefined;
     /**
      * 建议点击/选中回调。未提供时默认把建议文本 setContent 进编辑器。
      * 提供时以回调为准（不再默认插入）。
@@ -129,8 +153,22 @@
     skills?: AIChatInputSkill[];
     /** 触发技能面板的按键（对齐 Semi skillHotKey，默认 '/'）。 */
     skillHotKey?: string;
-    /** 自定义单条技能渲染（对齐 Semi renderSkillItem）。 */
-    renderSkillItem?: Snippet<[{ skill: AIChatInputSkill; active: boolean }]> | undefined;
+    /**
+     * 自定义单条技能渲染（对齐 Semi renderSkillItem）：**整项替换**，
+     * 入参逐字段对齐 Semi RenderSkillItemProps。
+     */
+    renderSkillItem?:
+      | Snippet<
+          [
+            {
+              skill: AIChatInputSkill;
+              className: string;
+              onClick: () => void;
+              onMouseEnter: () => void;
+            },
+          ]
+        >
+      | undefined;
     /** 技能选中回调。 */
     onSkillChange?: ((skill: AIChatInputSkill) => void) | undefined;
     /**
@@ -237,7 +275,12 @@
   // tiptap editor 命令式实例：动态 import 内核后创建，store.subscribe 桥接进 runes。
   let editor = $state<Editor>();
   let isEmpty = $state(true);
-  let attachments = $state<AIChatInputAttachment[]>([]);
+  // 初值取 uploadProps.defaultFileList（对齐 Semi：
+  // `const defaultAttachment = props?.uploadProps?.defaultFileList ?? []`）。
+  // untrack：只吃初始值，后续变化归 Upload 的 onChange 驱动。
+  let attachments = $state<AIChatInputAttachment[]>(
+    untrack(() => (uploadProps?.defaultFileList as AIChatInputAttachment[] | undefined) ?? []),
+  );
   let editorHost = $state<HTMLDivElement>();
   let rootEl = $state<HTMLDivElement>();
 
@@ -795,19 +838,50 @@
         </div>
       {/if}
       {#if hasAttachments}
-        <div class="cd-ai-chat-input-attachments">
+        <!--
+          附件区结构逐条对齐 Semi renderAttachment：HorizontalScroller 包裹，卡片内
+          「图片缩略图 或 类型图标」+ -content（name / `类型 大小` 两行）+ 上传中的环形进度
+          + hover 才显示的右上角删除钮。类型由 getContentType(getAttachmentType(item)) 推导。
+        -->
+        <AIChatInputHorizontalScroller>
           {#each attachments as attachment (attachment.uid)}
+            {@const signIconType = getContentType(getAttachmentType(attachment))}
+            {@const realType = getAttachmentType(attachment)}
+            {@const showPercent =
+              !(attachment.percent === 100 || attachment.percent === undefined) &&
+              attachment.status === 'uploading'}
             <div class="cd-ai-chat-input-attachment">
-              {#if iconByType(attachment.type)}
-                {@const AttIcon = iconByType(attachment.type)}
+              {#if isImageType(attachment)}
+                <img
+                  class="cd-ai-chat-input-attachment-img"
+                  src={attachment.url}
+                  alt={attachment.name}
+                />
+              {:else}
+                {@const AttIcon = iconByType(signIconType)}
                 <!-- 附件图标：Semi getAttachmentIconByType 用 size='large'（引用处是 small）。 -->
                 <span
-                  class="cd-ai-chat-input-attachment-icon cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{attachment.type}"
+                  class="cd-ai-chat-input-attachment-icon cd-ai-chat-input-ref-icon cd-ai-chat-input-ref-icon-{signIconType}"
                 >
-                  <AttIcon size="large" />
+                  {#if AttIcon}<AttIcon size="large" />{/if}
                 </span>
               {/if}
-              <span class="cd-ai-chat-input-attachment-name">{attachment.name ?? attachment.uid}</span>
+              <div class="cd-ai-chat-input-attachment-content">
+                <div class="cd-ai-chat-input-attachment-content-name">{attachment.name}</div>
+                <div class="cd-ai-chat-input-attachment-content-size">
+                  {`${realType} ${attachment.size ?? ''}`}
+                </div>
+              </div>
+              {#if showPercent}
+                <Progress
+                  type="circle"
+                  width={30}
+                  class="cd-ai-chat-input-attachment-progress"
+                  percent={attachment.percent ?? 0}
+                  showInfo={false}
+                  aria-label="upload progress"
+                />
+              {/if}
               <button
                 type="button"
                 class="cd-ai-chat-input-attachment-delete"
@@ -818,7 +892,7 @@
               </button>
             </div>
           {/each}
-        </div>
+        </AIChatInputHorizontalScroller>
       {/if}
       {#if hasTopSlot && topSlotPosition === 'bottom'}
         {@render renderTopSlot?.({ references, attachments })}
@@ -832,25 +906,14 @@
     {#if showSuggestionPanel}
       <div class="cd-ai-chat-input-suggestion" role="listbox" aria-label={loc().t('AIChatInput.suggestions')}>
         {#each suggestions as suggestion, i (suggestionContent(suggestion) + i)}
-          <div
-            class="cd-ai-chat-input-suggestion-item"
-            class:cd-ai-chat-input-suggestion-item-active={i === activeSuggestionIndex}
-            role="option"
-            aria-selected={i === activeSuggestionIndex}
-            tabindex="-1"
-            onmousedown={(e) => {
-              // mousedown 而非 click：避免编辑器先 blur 触发 useDismiss 关闭面板。
-              e.preventDefault();
-              selectSuggestion(suggestion);
-            }}
-            onmouseenter={() => (activeSuggestionIndex = i)}
-          >
-            {#if renderSuggestionItem}
-              {@render renderSuggestionItem({ suggestion, active: i === activeSuggestionIndex })}
-            {:else}
-              {suggestionContent(suggestion)}
-            {/if}
-          </div>
+          <AIChatInputSuggestionItem
+            {suggestion}
+            index={i}
+            isActive={i === activeSuggestionIndex}
+            {renderSuggestionItem}
+            onClick={selectSuggestion}
+            onMouseEnter={(idx) => (activeSuggestionIndex = idx)}
+          />
         {/each}
       </div>
     {/if}
@@ -858,29 +921,14 @@
     {#if showSkillPanel}
       <div class="cd-ai-chat-input-skill" role="listbox" aria-label={loc().t('AIChatInput.skills')}>
         {#each skills as skill, i (skillLabel(skill) + i)}
-          <div
-            class="cd-ai-chat-input-skill-item"
-            class:cd-ai-chat-input-skill-item-active={i === activeSkillIndex}
-            role="option"
-            aria-selected={i === activeSkillIndex}
-            tabindex="-1"
-            onmousedown={(e) => {
-              e.preventDefault();
-              selectSkill(skill);
-            }}
-            onmouseenter={() => (activeSkillIndex = i)}
-          >
-            {#if renderSkillItem}
-              {@render renderSkillItem({ skill, active: i === activeSkillIndex })}
-            {:else}
-              <!-- 对齐 Semi skillItem.tsx：图标 + .-skill-item-content 两段 -->
-              {#if typeof skill.icon === 'function'}
-                {@const SkillIcon = skill.icon as Snippet}
-                {@render SkillIcon()}
-              {/if}
-              <div class="cd-ai-chat-input-skill-item-content">{skillLabel(skill)}</div>
-            {/if}
-          </div>
+          <AIChatInputSkillItem
+            {skill}
+            index={i}
+            isActive={i === activeSkillIndex}
+            {renderSkillItem}
+            onClick={selectSkill}
+            onMouseEnter={(idx) => (activeSkillIndex = idx)}
+          />
         {/each}
       </div>
     {/if}
@@ -997,48 +1045,123 @@
     gap: var(--cd-ai-chat-input-gap);
   }
 
-  /* —— 附件列表（showUploadFile，复用引用条 chip 视觉）—— */
-  .cd-ai-chat-input-attachments {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-ai-chat-input-gap);
-  }
-
+  /* —— 附件卡片（showUploadFile）：逐条对齐 Semi aiChatInput.scss &-attachment —— */
   .cd-ai-chat-input-attachment {
-    display: inline-flex;
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    max-width: 100%;
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-reference-bg);
-    color: var(--cd-ai-chat-input-reference-color);
-    border-radius: var(--cd-ai-chat-input-reference-radius);
-  }
-
-  .cd-ai-chat-input-attachment-name {
+    column-gap: var(--cd-ai-chat-input-attachment-columnGap);
+    border-radius: var(--cd-ai-chat-input-attachment-radius);
+    background: var(--cd-ai-chat-input-attachment-bg);
+    padding: var(--cd-ai-chat-input-attachment-padding);
+    width: var(--cd-ai-chat-input-attachment-width);
+    height: var(--cd-ai-chat-input-attachment-height);
     overflow: hidden;
-    text-overflow: ellipsis;
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  .cd-ai-chat-input-attachment-icon,
+  .cd-ai-chat-input-attachment-img {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    width: var(--cd-ai-chat-input-attachment-left-height);
+    height: var(--cd-ai-chat-input-attachment-left-height);
+  }
+
+  .cd-ai-chat-input-attachment-img {
+    object-fit: cover;
+  }
+
+  .cd-ai-chat-input-attachment-content {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: flex-start;
+    width: var(--cd-ai-chat-input-attachment-content-width);
+  }
+
+  /* @include font-size-small 同时带 line-height:16px，别只搬 font-size。 */
+  .cd-ai-chat-input-attachment-content-name {
+    flex-shrink: 0;
+    width: var(--cd-ai-chat-input-attachment-content-width);
+    height: var(--cd-ai-chat-input-attachment-content-height);
+    overflow: hidden;
     white-space: nowrap;
-    font-size: var(--cd-font-size-regular);
+    text-overflow: ellipsis;
+    color: var(--cd-ai-chat-input-attachment-name-text);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    font-weight: var(--cd-ai-chat-input-attachment-content-name-fontWeight);
   }
 
+  .cd-ai-chat-input-attachment-content-size {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    column-gap: var(--cd-ai-chat-input-attachment-content-size-columnGap);
+    color: var(--cd-color-text-2);
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
+    text-transform: uppercase;
+  }
+
+  /* Semi：删除钮默认 display:none，仅 hover 卡片时才显示在右上角。 */
   .cd-ai-chat-input-attachment-delete {
-    appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    display: inline-flex;
-    padding: 0;
-    color: var(--cd-ai-chat-input-action-icon);
+    display: none;
   }
 
-  .cd-ai-chat-input-attachment-delete:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+  .cd-ai-chat-input-attachment:hover > .cd-ai-chat-input-attachment-delete {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    padding: 0;
+    background: var(--cd-ai-chat-input-attachment-delete-bg);
+    color: var(--cd-ai-chat-input-attachment-delete-icon);
+    border-radius: 50%;
+    width: var(--cd-ai-chat-input-attachment-delete-width);
+    height: var(--cd-ai-chat-input-attachment-delete-width);
+    font-size: var(--cd-ai-chat-input-attachment-content-delete-fontSize);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 键盘可达：Semi 靠 hover 显示，纯键盘用户拿不到删除钮，故补 focus-within 同显。 */
+  .cd-ai-chat-input-attachment:focus-within > .cd-ai-chat-input-attachment-delete {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    border: none;
+    padding: 0;
+    background: var(--cd-ai-chat-input-attachment-delete-bg);
+    color: var(--cd-ai-chat-input-attachment-delete-icon);
+    border-radius: 50%;
+    width: var(--cd-ai-chat-input-attachment-delete-width);
+    height: var(--cd-ai-chat-input-attachment-delete-width);
+    font-size: var(--cd-ai-chat-input-attachment-content-delete-fontSize);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .cd-ai-chat-input-attachment-delete:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 1px;
+  }
+
+  /* Semi：&-attachment-progress.#{$prefix}-progress-circle 绝对居中在卡片上。 */
+  .cd-ai-chat-input-attachment :global(.cd-ai-chat-input-attachment-progress) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .cd-ai-chat-input-reference {
@@ -1140,38 +1263,8 @@
     border-radius: var(--cd-radius-ai-chat-input-skill);
   }
 
-  /* Semi: &-skill-item { flex + column-gap 8px + padding 8px 20px } */
-  .cd-ai-chat-input-skill-item {
-    display: flex;
-    align-items: center;
-    column-gap: var(--cd-spacing-ai-chat-input-skill-item-columngap);
-    padding: var(--cd-spacing-ai-chat-input-skill-item-paddingy)
-      var(--cd-spacing-ai-chat-input-skill-item-paddingx);
-    cursor: pointer;
-  }
-  .cd-ai-chat-input-skill-item:hover {
-    background-color: var(--cd-color-ai-chat-input-skill-item-bg-hover);
-  }
-  .cd-ai-chat-input-skill-item-active {
-    background-color: var(--cd-color-ai-chat-input-skill-item-bg-active);
-  }
-
-  /* Semi: &-suggestion-item { radius 6px + padding 8px 20px + text-0 + font-size-regular } */
-  .cd-ai-chat-input-suggestion-item {
-    padding: var(--cd-spacing-ai-chat-input-suggestion-item-paddingy)
-      var(--cd-spacing-ai-chat-input-suggestion-item-paddingx);
-    border-radius: var(--cd-radius-ai-chat-input-suggestion-item);
-    color: var(--cd-color-ai-chat-input-suggestion-item-text);
-    font-size: var(--cd-font-size-regular);
-    line-height: var(--cd-line-height-regular);
-    cursor: pointer;
-  }
-  .cd-ai-chat-input-suggestion-item:hover {
-    background-color: var(--cd-color-ai-chat-input-suggestion-item-bg-hover);
-  }
-  .cd-ai-chat-input-suggestion-item-active {
-    background-color: var(--cd-color-ai-chat-input-suggestion-item-bg-active);
-  }
+  /* 技能项 / 建议项的样式已随组件拆分迁到 AIChatInputSkillItem.svelte /
+     AIChatInputSuggestionItem.svelte —— Svelte scoped CSS 不跨组件，留在这里会静默失效。 */
 
   /* —— 模版面板 / 按钮（阶段 3）—— */
   .cd-ai-chat-input-template {

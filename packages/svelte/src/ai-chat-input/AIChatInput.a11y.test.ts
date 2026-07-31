@@ -12,6 +12,7 @@ import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatInput from './AIChatInput.svelte';
 import AIChatInputConfigureFixture from './AIChatInputConfigureFixture.svelte';
 import AIChatInputMcpFixture from './AIChatInputMcpFixture.svelte';
+import AIChatInputRenderItemFixture from './AIChatInputRenderItemFixture.svelte';
 
 // jsdom 对部分节点（floating-ui 的 target 可能是 Range/Element）未实现 getClientRects/
 // getBoundingClientRect —— Dropdown floating action 会调用。无条件补空实现，避免 Mcp 浮层
@@ -172,6 +173,93 @@ describe('AIChatInput · ref 方法', () => {
     expect(component.getText().trim()).toBe('');
   });
 
+  // —— 附件卡片结构（逐条对齐 Semi renderAttachment）——
+  // 附件初值取 uploadProps.defaultFileList（对齐 Semi defaultAttachment）。
+  it('附件卡片渲染图标 + name/`类型 大小` 两行 + 删除钮（对齐 Semi）', async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: {
+        uploadProps: {
+          defaultFileList: [{ uid: 'a1', name: 'spec.docx', size: '12KB', status: 'success' }],
+        },
+      },
+    });
+    await flush(container);
+
+    const card = container.querySelector('.cd-ai-chat-input-attachment');
+    expect(card, '应渲染附件卡片').not.toBeNull();
+
+    // 类型由 getContentType(getAttachmentType) 推导：docx → word（非把 type 原样当图标键）。
+    expect(container.querySelector('.cd-ai-chat-input-ref-icon-word')).not.toBeNull();
+
+    expect(container.querySelector('.cd-ai-chat-input-attachment-content-name')?.textContent).toBe(
+      'spec.docx',
+    );
+    // 第二行是 `类型 大小`（Semi 模板字符串），且 CSS 会 uppercase。
+    expect(
+      container.querySelector('.cd-ai-chat-input-attachment-content-size')?.textContent?.trim(),
+    ).toBe('docx 12KB');
+
+    expect(container.querySelector('.cd-ai-chat-input-attachment-delete')).not.toBeNull();
+  });
+
+  it('附件是图片时渲染缩略图而非类型图标', async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: {
+        uploadProps: {
+          defaultFileList: [{ uid: 'a1', name: 'pic.png', url: 'https://x/pic.png' }],
+        },
+      },
+    });
+    await flush(container);
+
+    const img = container.querySelector<HTMLImageElement>('.cd-ai-chat-input-attachment-img');
+    expect(img, '应渲染缩略图').not.toBeNull();
+    expect(img!.getAttribute('src')).toBe('https://x/pic.png');
+    expect(
+      container.querySelector('.cd-ai-chat-input-attachment-icon'),
+      '有缩略图时不应再渲染类型图标',
+    ).toBeNull();
+  });
+
+  // Semi: showPercent = !(percent === 100 || percent === undefined) && status === 'uploading'
+  it('上传中且 percent 非 100 时显示环形进度（复用 Progress）', async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: {
+        uploadProps: {
+          defaultFileList: [{ uid: 'a1', name: 'big.zip', percent: 42, status: 'uploading' }],
+        },
+      },
+    });
+    await flush(container);
+    expect(container.querySelector('.cd-ai-chat-input-attachment-progress')).not.toBeNull();
+  });
+
+  it('percent=100 或非 uploading 态不显示进度', async () => {
+    for (const item of [
+      { uid: 'a1', name: 'big.zip', percent: 100, status: 'uploading' },
+      { uid: 'a1', name: 'big.zip', percent: 42, status: 'success' },
+      { uid: 'a1', name: 'big.zip', status: 'uploading' },
+    ]) {
+      const { container } = renderWithLocale(AIChatInput, {
+        props: { uploadProps: { defaultFileList: [item] } },
+      });
+      await flush(container);
+      expect(
+        container.querySelector('.cd-ai-chat-input-attachment-progress'),
+        `${JSON.stringify(item)} 不该显示进度`,
+      ).toBeNull();
+    }
+  });
+
+  it('附件区外层是横向滚动容器（对齐 Semi HorizontalScroller）', async () => {
+    const { container } = renderWithLocale(AIChatInput, {
+      props: { uploadProps: { defaultFileList: [{ uid: 'a1', name: 'a.txt' }] } },
+    });
+    await flush(container);
+    expect(container.querySelector('.cd-ai-chat-input-scroll-wrapper')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-scroll-container')).not.toBeNull();
+  });
+
   // 附件列表是本组件自绘的（Upload 传 listType="none"），删除**不走** Upload 内部移除流程，
   // 故必须显式兑现 uploadProps 的两个钩子 —— 否则文档里「删除会触发 onRemove 并遵循
   // beforeRemove」这条对本库就是假的。
@@ -224,7 +312,8 @@ describe('AIChatInput · 引用条（阶段 2）', () => {
   const refs = [
     { type: 'text' as const, id: 'r1', content: '引用一段话' },
     { type: 'file' as const, id: 'r2', name: 'spec.pdf' },
-    { type: 'image' as const, id: 'r3', name: '图', url: 'https://x/y.png' },
+    // 判图对齐 Semi isImageType：只看 name 的后缀，不看 url。
+    { type: 'image' as const, id: 'r3', name: '图.png', url: 'https://x/y.png' },
   ];
 
   it('渲染每条引用：text→content、file→name、image→缩略图', async () => {
@@ -391,6 +480,35 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await fireEvent.mouseDown(items[1]!); // 翻译（hasTemplate）
     await flush();
     expect(container.querySelector('.cd-ai-chat-input-template-btn')).not.toBeNull();
+  });
+
+  // 对齐 Semi skillItem.tsx：renderSkillItem 存在时**整项替换**（不再套默认外壳），
+  // 且回传 className 必须带激活态 —— 否则消费方做不出高亮，onClick 也接不上选中流程。
+  it('renderSkillItem 整项替换：默认外壳消失、className 带激活态、onClick 接选中', async () => {
+    const onSkillChange = vi.fn();
+    const { container } = renderWithLocale(AIChatInputRenderItemFixture, {
+      props: { skills, onSkillChange },
+    });
+    await flush(container);
+    await pressSkillHotKey(container);
+
+    const custom = container.querySelectorAll('[data-testid="custom-skill"]');
+    expect(custom, '自定义渲染应逐项生效').toHaveLength(2);
+    expect(custom[0]!.textContent).toContain('自定义-总结');
+
+    // 整项替换：不应再出现默认外壳的 div（自定义根节点是 button）。
+    expect(container.querySelector('div.cd-ai-chat-input-skill-item')).toBeNull();
+
+    // className 回传含基类；hover 后该项拿到激活类。
+    expect(custom[0]!.className).toContain('cd-ai-chat-input-skill-item');
+    await fireEvent.mouseEnter(custom[1]!);
+    await flush();
+    const after = container.querySelectorAll('[data-testid="custom-skill"]');
+    expect(after[1]!.className).toContain('cd-ai-chat-input-skill-item-active');
+
+    // onClick 回传接得上选中流程。
+    await fireEvent.mouseDown(after[0]!);
+    expect(onSkillChange).toHaveBeenCalledWith(skills[0]);
   });
 
   it('技能面板无 axe 违规', async () => {

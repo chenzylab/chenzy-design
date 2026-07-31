@@ -66,9 +66,9 @@ export const meta = {
   slots: [
     { name: 'renderActionArea', payload: '{ canSend, generating }', desc: '自定义发送/停止按钮区' },
     { name: 'renderReference', payload: 'reference', desc: '自定义单条引用渲染（阶段 2）' },
-    { name: 'renderSuggestionItem', payload: '{ suggestion, active }', desc: '自定义单条建议渲染（阶段 2）' },
+    { name: 'renderSuggestionItem', payload: '{ suggestion, className, onClick, onMouseEnter }', desc: '自定义单条建议渲染（阶段 2）' },
     { name: 'renderTopSlot', payload: '{ references, attachments }', desc: '自定义 top slot 渲染（阶段 2）' },
-    { name: 'renderSkillItem', payload: '{ skill, active }', desc: '自定义单条技能渲染（阶段 3）' },
+    { name: 'renderSkillItem', payload: '{ skill, className, onClick, onMouseEnter }', desc: '自定义单条技能渲染（阶段 3）' },
     { name: 'renderTemplate', payload: '{ skill, setContent }', desc: '模版面板渲染（阶段 3）' },
     { name: 'renderConfigureArea', payload: '()', desc: 'footer 配置区渲染（放 Configure 子组件，阶段 4）' },
     { name: 'renderUploadButton', payload: '{ openFileDialog, disabled, attachments }', desc: '自定义上传按钮 UI（保留内置上传/粘贴逻辑）' },

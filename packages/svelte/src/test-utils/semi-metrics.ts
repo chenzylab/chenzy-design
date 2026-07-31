@@ -117,3 +117,100 @@ export const TAG_COLORFUL_GHOST: MetricBaseline = {
     color: 'rgb(166, 71, 255)',
   },
 };
+
+/**
+ * AIChatInput 附件卡片 —— 规则来自 Semi 源码
+ * `semi-foundation/aiChatInput/aiChatInput.scss` `&-attachment` +
+ * `variables.scss`（224×36、padding 8、radius 6、column-gap 8）。
+ *
+ * 采集方式说明：Semi 文档页需真实上传文件才出现附件卡片，无法静态截取，
+ * 故此基线**取自源码规则**（$width/$height/$radius/$spacing 常量直读），
+ * 属"源码为准"那一档；数值本身是编译期常量，不受主题/视口影响。
+ */
+export const AI_CHAT_INPUT_ATTACHMENT: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-attachment + variables.scss',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-attachment',
+  computed: {
+    display: 'flex',
+    alignItems: 'center',
+    columnGap: '8px',
+    borderRadius: '6px',
+    padding: '8px',
+    width: '224px',
+    height: '36px',
+    overflow: 'hidden',
+    flexShrink: '0',
+    position: 'relative',
+  },
+};
+
+/** 附件卡片名称行 —— Semi `&-attachment-content-name`（@include font-size-small → 12px/16px）。 */
+export const AI_CHAT_INPUT_ATTACHMENT_NAME: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-attachment-content-name',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-attachment-content-name',
+  computed: {
+    width: '180px',
+    height: '20px',
+    fontSize: '12px',
+    lineHeight: '16px',
+    fontWeight: '600',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+  },
+};
+
+/** 附件左侧图标/缩略图 —— Semi `&-attachment-icon, &-attachment-img`（36×36 + radius 3px）。 */
+export const AI_CHAT_INPUT_ATTACHMENT_ICON: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-attachment-icon',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-attachment-icon',
+  computed: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '3px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: '0',
+  },
+};
+
+/**
+ * 技能项 —— Semi `&-skill &-item`（flex + column-gap 8 + padding 8/20 + cursor:pointer）。
+ * 本基线同时守住「组件拆分后 scoped CSS 没跟着搬」这类静默失效：
+ * 样式若留在父组件，拆分后这些值会全部塌回浏览器默认，用例即红。
+ */
+export const AI_CHAT_INPUT_SKILL_ITEM: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-skill &-item',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-skill-item',
+  computed: {
+    display: 'flex',
+    alignItems: 'center',
+    columnGap: '8px',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    cursor: 'pointer',
+  },
+};
+
+/** 建议项 —— Semi `&-suggestion &-item`（radius 6 + padding 8/20 + @include font-size-regular）。 */
+export const AI_CHAT_INPUT_SUGGESTION_ITEM: MetricBaseline = {
+  source: 'semi-foundation/aiChatInput/aiChatInput.scss &-suggestion &-item',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-aiChatInput-suggestion-item',
+  computed: {
+    borderRadius: '6px',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    fontSize: '14px',
+    lineHeight: '20px',
+  },
+};
