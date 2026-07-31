@@ -81,7 +81,7 @@ describe('AIChatInput · 发送按钮态', () => {
   it('空态：发送按钮禁用', async () => {
     const { container } = renderWithLocale(AIChatInput);
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
   });
 
@@ -90,22 +90,22 @@ describe('AIChatInput · 发送按钮态', () => {
       props: { defaultContent: '<p>hi</p>' },
     });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
 
   it('canSend=true 覆盖空态推断（可点）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { canSend: true } });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
   });
 
   it('generating：按钮变停止态，aria-label=stop 且可点', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { generating: true } });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
-    expect(btn.classList.contains('cd-ai-chat-input-send-stop')).toBe(true);
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
+    expect(btn.classList.contains('cd-ai-chat-input-footer-action-stop')).toBe(true);
     expect(btn.getAttribute('aria-label')).toBe('Stop generating');
     expect(btn.disabled).toBe(false);
   });
@@ -118,7 +118,7 @@ describe('AIChatInput · 发送 / 停止回调', () => {
       props: { defaultContent: '<p>send me</p>', onMessageSend },
     });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(btn);
     expect(onMessageSend).toHaveBeenCalledTimes(1);
     const payload = onMessageSend.mock.calls[0]![0];
@@ -132,7 +132,7 @@ describe('AIChatInput · 发送 / 停止回调', () => {
       props: { generating: true, defaultContent: '<p>x</p>', onStopGenerate, onMessageSend },
     });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(btn);
     expect(onStopGenerate).toHaveBeenCalledTimes(1);
     expect(onMessageSend).not.toHaveBeenCalled();
@@ -142,7 +142,7 @@ describe('AIChatInput · 发送 / 停止回调', () => {
     const onMessageSend = vi.fn();
     const { container } = renderWithLocale(AIChatInput, { props: { onMessageSend } });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(btn);
     expect(onMessageSend).not.toHaveBeenCalled();
   });
@@ -404,7 +404,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
 describe('AIChatInput · 配置区（阶段 4）', () => {
   it('renderConfigureArea 渲染配置项', async () => {
     const { container } = renderWithLocale(AIChatInputConfigureFixture);
-    expect(container.querySelector('.cd-ai-chat-input-configure')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-footer-configure')).not.toBeNull();
     expect(container.querySelector('.cd-ai-chat-input-configure-button')).not.toBeNull();
   });
 
@@ -431,7 +431,7 @@ describe('AIChatInput · 配置区（阶段 4）', () => {
     const cfgBtn = container.querySelector('.cd-ai-chat-input-configure-button') as HTMLButtonElement;
     await fireEvent.click(cfgBtn);
     // 发送
-    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     expect(onMessageSend).toHaveBeenCalledTimes(1);
     expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ web: true });
@@ -473,7 +473,7 @@ describe('AIChatInput · select-slot 自定义节点（可选补充）', () => {
       '<p>去 <select-slot options=\'["北京","上海"]\' value="上海"></select-slot></p>',
     );
     await flush();
-    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     expect(onMessageSend).toHaveBeenCalledTimes(1);
     const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
@@ -508,7 +508,7 @@ describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
     component.setContent('<p>去 <input-slot placeholder="填城市">北京</input-slot></p>');
     await flush();
     expect(container.querySelector('.cd-ai-chat-input-input-slot-placeholder')).toBeNull();
-    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
     expect(text).toContain('北京');
@@ -546,7 +546,7 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
     await flush(container);
     const trigger = container.querySelector('.cd-ai-chat-input-configure-mcp-trigger');
     expect(trigger?.textContent).toContain('MCP · 1');
-    const sendBtn = container.querySelector('.cd-ai-chat-input-send') as HTMLButtonElement;
+    const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ mcp: ['fs'] });
   });

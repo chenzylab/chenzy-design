@@ -892,57 +892,62 @@
     {/if}
   </div>
 
-  <div class="cd-ai-chat-input-footer">
-    {#if renderConfigureArea}
-      <div class="cd-ai-chat-input-configure">
+  <!-- footer 结构逐条对齐 Semi renderFooter：左 configure、右 action（上传+发送同组）。
+       round 由 -footer-round 修饰类统一改各控件圆角（对齐 Semi &-footer-round）。 -->
+  <div class="cd-ai-chat-input-footer" class:cd-ai-chat-input-footer-round={round}>
+    <div class="cd-ai-chat-input-footer-configure">
+      {#if renderConfigureArea}
         {@render renderConfigureArea()}
-      </div>
-    {/if}
-    {#if showTemplate}
-      <button
-        type="button"
-        class="cd-ai-chat-input-template-btn"
-        class:cd-ai-chat-input-template-btn-active={templateOpen}
-        aria-expanded={templateOpen}
-        aria-label={loc().t('AIChatInput.template')}
-        onclick={toggleTemplate}
-      >
-        <IconTemplateStroked />
-        <span>{loc().t('AIChatInput.template')}</span>
-      </button>
-    {/if}
-    {#if showUploadButton}
-      <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
-      <div class="cd-ai-chat-input-upload">
-        <Upload
-          listType="none"
-          multiple
-          {...uploadProps}
-          onChange={handleAttachmentChange}
+      {/if}
+      {#if showTemplate}
+        <button
+          type="button"
+          class="cd-ai-chat-input-template-btn"
+          class:cd-ai-chat-input-template-btn-active={templateOpen}
+          aria-expanded={templateOpen}
+          aria-label={loc().t('AIChatInput.template')}
+          onclick={toggleTemplate}
         >
-          {#if renderUploadButton}
-            {@render renderUploadButton({
-              openFileDialog: () => {},
-              disabled: generating,
-              attachments,
-            })}
-          {:else}
-            <span class="cd-ai-chat-input-upload-trigger" aria-label={loc().t('AIChatInput.upload')}>
-              <IconPaperclip />
-            </span>
-          {/if}
-        </Upload>
-      </div>
-    {/if}
+          <IconTemplateStroked />
+          <span>{loc().t('AIChatInput.template')}</span>
+        </button>
+      {/if}
+    </div>
 
-    <div class="cd-ai-chat-input-action">
+    <div class="cd-ai-chat-input-footer-action">
       {#if renderActionArea}
         {@render renderActionArea({ canSend: computedCanSend, generating })}
       {:else}
+        {#if showUploadButton}
+          <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
+          <Upload listType="none" multiple {...uploadProps} onChange={handleAttachmentChange}>
+            {#if renderUploadButton}
+              {@render renderUploadButton({
+                openFileDialog: () => {},
+                disabled: generating,
+                attachments,
+              })}
+            {:else}
+              <!-- ⚠️ 这里必须是 span 不能是 button：本库 Upload 的触发器外壳
+                   `.cd-upload-add` 自带 role="button" tabindex="0"，再套一个真 button
+                   会构成 nested-interactive（axe serious）。Semi 侧写的是 button，
+                   因为它的 Upload 外壳不是交互元素 —— 属**框架实现差异**，
+                   视觉与类名仍与 Semi 一致（-footer-action-button + -footer-action-upload）。 -->
+              <span
+                class="cd-ai-chat-input-footer-action-button cd-ai-chat-input-footer-action-upload"
+                aria-label={loc().t('AIChatInput.upload')}
+              >
+                <IconPaperclip />
+              </span>
+            {/if}
+          </Upload>
+        {/if}
         <button
           type="button"
-          class="cd-ai-chat-input-send"
-          class:cd-ai-chat-input-send-stop={generating}
+          class="cd-ai-chat-input-footer-action-button"
+          class:cd-ai-chat-input-footer-action-send={!generating}
+          class:cd-ai-chat-input-footer-action-stop={generating}
+          class:cd-ai-chat-input-footer-action-send-disabled={!generating && !computedCanSend}
           disabled={!generating && !computedCanSend}
           onclick={handleActionClick}
           title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
@@ -1266,69 +1271,84 @@
     color: var(--cd-ai-chat-input-placeholder-color);
   }
 
+  /* —— footer —— 逐条对齐 Semi aiChatInput.scss 的 &-footer 段 —— */
   .cd-ai-chat-input-footer {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: var(--cd-ai-chat-input-gap);
-  }
-
-  .cd-ai-chat-input-upload {
-    display: inline-flex;
-  }
-
-  .cd-ai-chat-input-action {
-    display: inline-flex;
+    margin-top: var(--cd-spacing-ai-chat-input-footer-margintop);
     align-items: center;
-    gap: var(--cd-ai-chat-input-gap);
-    margin-inline-start: auto;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
-  .cd-ai-chat-input-upload-trigger,
-  .cd-ai-chat-input-send {
-    appearance: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
+  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角 */
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-button,
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-upload,
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-template-btn {
+    border-radius: var(--cd-radius-ai-chat-input-footer-round);
+  }
+
+  /* Semi &-footer-configure：flex + column-gap 8px */
+  .cd-ai-chat-input-footer-configure {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-spacing-ai-chat-input-footer-configure-columngap);
+  }
+
+  /* Semi &-footer-action：flex + column-gap 8px，内部 button 去默认样式 */
+  .cd-ai-chat-input-footer-action {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cd-spacing-ai-chat-input-footer-action-columngap);
+  }
+  .cd-ai-chat-input-footer-action :global(button) {
+    padding: 0;
+    border: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--cd-ai-chat-input-action-padding);
-    border-radius: var(--cd-ai-chat-input-action-radius);
-    transition:
-      color var(--cd-ai-chat-input-motion-duration) ease,
-      background var(--cd-ai-chat-input-motion-duration) ease;
   }
 
-  .cd-ai-chat-input-upload-trigger {
-    background: transparent;
-    color: var(--cd-ai-chat-input-action-icon);
+  /* Semi &-footer-action-button：32×32 + radius 8px */
+  .cd-ai-chat-input-footer-action-button {
+    width: var(--cd-width-ai-chat-input-footer-action-button);
+    height: var(--cd-height-ai-chat-input-footer-action-button);
+    cursor: pointer;
+    border-radius: var(--cd-radius-ai-chat-input-footer-action-button);
   }
 
-  .cd-ai-chat-input-upload-trigger:hover {
-    color: var(--cd-ai-chat-input-action-icon-hover);
+  /* Semi &-footer-action-send / -stop：同一组配色（primary 系） */
+  .cd-ai-chat-input-footer-action-send,
+  .cd-ai-chat-input-footer-action-stop {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-default);
+    color: var(--cd-color-ai-chat-input-footer-send-text);
   }
-
-  .cd-ai-chat-input-send {
-    background: var(--cd-ai-chat-input-send-bg);
-    color: var(--cd-ai-chat-input-send-icon);
+  .cd-ai-chat-input-footer-action-send:hover:not(.cd-ai-chat-input-footer-action-send-disabled),
+  .cd-ai-chat-input-footer-action-stop:hover:not(.cd-ai-chat-input-footer-action-send-disabled) {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-hover);
   }
-
-  .cd-ai-chat-input-send:hover:not(:disabled) {
-    background: var(--cd-ai-chat-input-send-bg-hover);
+  .cd-ai-chat-input-footer-action-send:active:not(.cd-ai-chat-input-footer-action-send-disabled),
+  .cd-ai-chat-input-footer-action-stop:active:not(.cd-ai-chat-input-footer-action-send-disabled) {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-active);
   }
-
-  .cd-ai-chat-input-send-stop {
-    background: var(--cd-ai-chat-input-stop-bg);
-  }
-
-  .cd-ai-chat-input-send:disabled {
-    background: var(--cd-ai-chat-input-send-bg-disabled);
-    color: var(--cd-ai-chat-input-send-icon-disabled);
+  .cd-ai-chat-input-footer-action-send-disabled {
+    background-color: var(--cd-color-ai-chat-input-footer-send-bg-disabled);
     cursor: not-allowed;
   }
 
-  .cd-ai-chat-input-upload-trigger:focus-visible,
-  .cd-ai-chat-input-send:focus-visible {
+  /* Semi &-footer-action-upload */
+  .cd-ai-chat-input-footer-action-upload {
+    background: var(--cd-color-ai-chat-input-footer-upload-bg-default);
+    color: var(--cd-color-ai-chat-input-footer-upload-text);
+  }
+  .cd-ai-chat-input-footer-action-upload:hover {
+    background-color: var(--cd-color-ai-chat-input-footer-upload-bg-hover);
+  }
+  .cd-ai-chat-input-footer-action-upload:active {
+    background-color: var(--cd-color-ai-chat-input-footer-upload-bg-active);
+  }
+
+  .cd-ai-chat-input-footer-action-button:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
   }

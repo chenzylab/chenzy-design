@@ -185,6 +185,23 @@ export const aiChatInputTokens = {
     label: '引用项圆角',
     usage: '引用条单项圆角',
   },
+  // —— footer（逐条镜像 Semi aiChatInput/variables.scss 的 $..._footer_* ）——
+  'spacing-ai-chat-input-footer-margintop': { value: '20px', category: 'spacing', label: 'footer 上外距', usage: 'Semi $spacing-aiChatInput_footer-marginTop' },
+  'spacing-ai-chat-input-footer-action-columngap': { value: '8px', category: 'spacing', label: '操作区水平间距', usage: 'Semi $spacing-aiChatInput_footer_action-columnGap' },
+  'spacing-ai-chat-input-footer-configure-columngap': { value: '8px', category: 'spacing', label: '配置区水平间距', usage: 'Semi $spacing-aiChatInput_footer_configure-columnGap' },
+  'width-ai-chat-input-footer-action-button': { value: '32px', category: 'width', label: '操作按钮宽', usage: 'Semi $width-aiChatInput_footer_action_button' },
+  'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
+  'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
+  'radius-ai-chat-input-footer-round': { value: '9999px', category: 'radius', label: 'round 模式圆角', usage: 'Semi $radius-aiChatInput_footer_round' },
+  'color-ai-chat-input-footer-send-text': { value: 'var(--cd-color-white)', category: 'color', label: '发送按钮内容色', usage: 'Semi $color-aiChatInput_footer_send-text' },
+  'color-ai-chat-input-footer-send-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '发送按钮底（默认）', usage: 'Semi $color-aiChatInput_footer_send-bg-default' },
+  'color-ai-chat-input-footer-send-bg-hover': { value: 'var(--cd-color-primary-hover)', category: 'color', label: '发送按钮底（悬浮）', usage: 'Semi $color-aiChatInput_footer_send-bg-hover' },
+  'color-ai-chat-input-footer-send-bg-active': { value: 'var(--cd-color-primary-active)', category: 'color', label: '发送按钮底（按下）', usage: 'Semi $color-aiChatInput_footer_send-bg-active' },
+  'color-ai-chat-input-footer-send-bg-disabled': { value: 'var(--cd-color-fill-2)', category: 'color', label: '发送按钮底（禁用）', usage: 'Semi $color-aiChatInput_footer_send-bg-disabled' },
+  'color-ai-chat-input-footer-upload-text': { value: 'var(--cd-color-text-1)', category: 'color', label: '上传按钮内容色', usage: 'Semi $color-aiChatInput_footer_upload-text' },
+  'color-ai-chat-input-footer-upload-bg-default': { value: 'transparent', category: 'color', label: '上传按钮底（默认）', usage: 'Semi $color-aiChatInput_footer_upload-bg-default' },
+  'color-ai-chat-input-footer-upload-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '上传按钮底（悬浮）', usage: 'Semi $color-aiChatInput_footer_upload-bg-hover' },
+  'color-ai-chat-input-footer-upload-bg-active': { value: 'var(--cd-color-fill-1)', category: 'color', label: '上传按钮底（按下）', usage: 'Semi $color-aiChatInput_footer_upload-bg-active' },
   // —— 建议面板 / 技能面板（逐条镜像 Semi aiChatInput/variables.scss）——
   // 面板容器（背景/圆角/阴影）Semi 侧由 Popover 承担，这三条是本库自绘面板所需，保留。
   'ai-chat-input-suggestions-bg': {
