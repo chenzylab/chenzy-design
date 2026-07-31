@@ -389,4 +389,11 @@
   .cd-chat-dropArea-text {
     font-size: var(--cd-chat-dropArea-text-font-size);
   }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）——
+     发送按钮的箭头正向是 rotate(45deg)（指右上），RTL 下改 rotate(225deg) 指左上，
+     与 Semi 取值完全一致。 */
+  :global(.cd-rtl) .cd-chat-inputBox-sendButton-icon {
+    transform: rotate(225deg);
+  }
 </style>

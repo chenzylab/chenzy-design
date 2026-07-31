@@ -506,4 +506,10 @@
   .cd-chat-bottomSlot {
     flex: 0 0 auto;
   }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）：根节点声明方向；
+     图标镜像分别在 Hint / InputBox / ChatBoxAction 各自的 <style> 里。 —— */
+  :global(.cd-rtl) .cd-chat {
+    direction: rtl;
+  }
 </style>

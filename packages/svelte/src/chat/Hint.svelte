@@ -79,4 +79,11 @@
   .cd-chat-hint-item :global(.cd-chat-hint-icon) {
     color: var(--cd-chat-hint-icon);
   }
+
+  /* —— RTL（对齐 Semi chat/rtl.scss）：箭头图标水平翻转 ——
+     这是**图标语义**的镜像（右箭头在 RTL 下应指左），不是布局位移，
+     故与 Semi 一样用 scaleX(-1) 而非改定位。 */
+  :global(.cd-rtl) .cd-chat-hint-item :global(.cd-chat-hint-icon) {
+    transform: scaleX(-1);
+  }
 </style>
