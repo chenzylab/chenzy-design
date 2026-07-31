@@ -260,4 +260,69 @@
   .cd-timeline-right :global(.cd-timeline-item-right .cd-timeline-item-content) {
     width: var(--cd-width-timeline-item-right-content);
   }
+
+  /* —— RTL（逐条对齐 Semi timeline/rtl.scss）——
+     轴线、圆点、自定义节点都靠 `left` 绝对定位（物理属性，逻辑属性管不到），
+     RTL 下须 `left:auto` 再用同值 `right` 顶回去；连线的 border 侧、
+     内容区的 text-align 与 margin 一并换边。 */
+  :global(.cd-rtl) .cd-timeline {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-timeline :global(.cd-timeline-item-tail) {
+    left: auto;
+    right: var(--cd-spacing-timeline-tail-left);
+    border-left: 0;
+    border-right: var(--cd-width-timeline-tail-border) solid var(--cd-color-timeline-tail-border);
+  }
+  :global(.cd-rtl) .cd-timeline :global(.cd-timeline-item:last-child > .cd-timeline-item-tail) {
+    border-right: none;
+  }
+  :global(.cd-rtl) .cd-timeline :global(.cd-timeline-item-head-custom) {
+    left: auto;
+    right: var(--cd-spacing-timeline-head-custom-left);
+    transform: var(--cd-motion-timeline-head-custom-transform-rtl);
+  }
+
+  /* alternate / right / center 三种布局：轴居中，定位与外边距整体镜像 */
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-tail),
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-head-custom),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-tail),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-head-custom),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-tail),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-head-custom) {
+    left: auto;
+    right: var(--cd-spacing-timeline-item-head-custom-left);
+  }
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-head) {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-timeline-item-head-marginleft);
+  }
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-left .cd-timeline-item-content),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-left .cd-timeline-item-content),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-left .cd-timeline-item-content) {
+    left: auto;
+    right: var(--cd-spacing-timeline-item-left-item-content-left);
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-timeline-alternate :global(.cd-timeline-item-right .cd-timeline-item-content),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-right .cd-timeline-item-content),
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-right .cd-timeline-item-content) {
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-timeline-center :global(.cd-timeline-item-content-time) {
+    margin-left: 0;
+    margin-right: var(--cd-spacing-timeline-item-content-time-marginleft);
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-right .cd-timeline-item-tail),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-right .cd-timeline-item-head),
+  :global(.cd-rtl) .cd-timeline-right :global(.cd-timeline-item-right .cd-timeline-item-head-custom) {
+    left: 0;
+    right: var(--cd-spacing-timeline-item-right-item-left);
+  }
 </style>

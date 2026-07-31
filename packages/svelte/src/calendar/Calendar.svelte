@@ -1088,4 +1088,46 @@
   .cd-calendar-month-event-card-list li {
     padding: var(--cd-spacing-extra-tight) 0;
   }
+
+  /* —— RTL（逐条对齐 Semi calendar/rtl.scss）——
+     只覆盖**逻辑属性管不到**的那几类：text-align、物理 border 左右、
+     以及左右取值不对称的 padding/margin。
+     sticky 列本库已用 `inset-inline-start`，RTL 下自己会翻，故不重复写 left/right。 */
+  :global(.cd-rtl) .cd-calendar-day,
+  :global(.cd-rtl) .cd-calendar-week,
+  :global(.cd-rtl) .cd-calendar-month {
+    direction: rtl;
+  }
+
+  /* 全天标签列 / 月份标签列：右对齐 + 右内边距 → RTL 整体翻到左侧 */
+  :global(.cd-rtl) .cd-calendar-all-day-tag {
+    text-align: left;
+    padding-right: 0;
+    padding-left: var(--cd-calendar-spacing-allday-tag-padding-right);
+  }
+  :global(.cd-rtl) .cd-calendar-week-tag {
+    text-align: left;
+    padding-right: 0;
+    padding-left: var(--cd-calendar-spacing-tag-child-padding-right);
+  }
+
+  /* 列竖线：Semi rtl.scss 把 border-right 换到 border-left（含 last-child 不画那条） */
+  :global(.cd-rtl) .cd-calendar-all-day-skeleton li {
+    border-right: 0;
+    border-left: 1px solid var(--cd-calendar-color-day-border);
+  }
+  :global(.cd-rtl) .cd-calendar-all-day-skeleton li:last-child {
+    border-left: 1px solid transparent;
+  }
+  :global(.cd-rtl) .cd-calendar-week .cd-calendar-grid-skeleton li {
+    border-right: 0;
+    border-left: 1px solid var(--cd-calendar-color-day-border);
+  }
+  :global(.cd-rtl)
+    .cd-calendar-week
+    .cd-calendar-grid:last-child
+    .cd-calendar-grid-content
+    .cd-calendar-grid-skeleton li {
+    border-left: 0;
+  }
 </style>

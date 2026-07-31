@@ -278,4 +278,37 @@
   .cd-descriptions-horizontal :global(.cd-descriptions-item) {
     flex: 0;
   }
+
+  /* —— RTL（逐条对齐 Semi descriptions/rtl.scss）——
+     四种 align 的 text-align 与 th/value 的物理内边距整体换边。 */
+  :global(.cd-rtl) .cd-descriptions {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-descriptions :global(th) {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-descriptions-th-paddingright);
+  }
+  :global(.cd-rtl) .cd-descriptions :global(.cd-descriptions-item) {
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-descriptions-center :global(.cd-descriptions-item-th) {
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-descriptions-center :global(.cd-descriptions-item-td) {
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-descriptions-left :global(.cd-descriptions-item-th),
+  :global(.cd-rtl) .cd-descriptions-left :global(.cd-descriptions-item-td) {
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-descriptions-justify :global(.cd-descriptions-item-th) {
+    text-align: right;
+  }
+  :global(.cd-rtl) .cd-descriptions-justify :global(.cd-descriptions-item-td) {
+    text-align: left;
+  }
+  :global(.cd-rtl) .cd-descriptions-plain :global(.cd-descriptions-value) {
+    padding-left: 0;
+    padding-right: var(--cd-spacing-descriptions-value-plain-paddingleft);
+  }
 </style>
