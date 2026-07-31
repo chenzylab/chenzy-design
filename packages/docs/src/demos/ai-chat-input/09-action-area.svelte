@@ -1,25 +1,28 @@
 <script lang="ts">
-  // 对齐 Semi「操作区域」：通过 renderActionArea 自定义输入框右下角操作区，
-  // 参数带 canSend / generating，可据此决定渲染发送还是停止。
-  import { AIChatInput, Button } from '@chenzy-design/svelte';
+  // 严格对齐 Semi「操作区域」demo：renderActionArea 整块替换，在默认按钮组
+  // （menuItem）之前插入一枚圆形删除按钮 + 竖向 Divider。
+  //
+  // 关键点：容器 class 由组件回传（className），需自行挂到根节点上；menuItem 渲染出的
+  // 就是内置的「上传 + 发送/停止」，因此自定义后内置能力（上传管线、发送态、禁用态）不丢。
+  import type { Snippet } from 'svelte';
+  import { AIChatInput, Button, Divider } from '@chenzy-design/svelte';
+  import { IconDeleteStroked } from '@chenzy-design/icons';
 
-  let last = $state('');
+  const uploadProps = { action: 'https://api.semi.design/upload' };
 </script>
 
-<AIChatInput
-  onMessageSend={(m) => (last = JSON.stringify(m.inputContents ?? []).slice(0, 60))}
-  renderActionArea={actionArea}
-/>
+<div style="margin: 12px;">
+  <AIChatInput placeholder="输入内容或者上传内容..." {uploadProps} {renderActionArea} />
+</div>
 
-{#if last}
-  <p style="margin-top: 8px; color: var(--cd-color-text-2);">已发送：{last}</p>
-{/if}
-
-{#snippet actionArea({ canSend, generating }: { canSend: boolean; generating: boolean })}
-  <div style="display: flex; gap: 8px; align-items: center;">
-    <Button size="small" type="tertiary" theme="borderless" disabled={generating}>草稿</Button>
-    <Button size="small" theme="solid" disabled={!canSend}>
-      {generating ? '生成中' : '发送'}
-    </Button>
+{#snippet renderActionArea({ menuItem, className }: { menuItem: Snippet; className: string })}
+  <div class={className}>
+    <div style="display: flex; align-items: center;">
+      <Button type="tertiary" style="border-radius: 50%;">
+        {#snippet icon()}<IconDeleteStroked />{/snippet}
+      </Button>
+      <Divider layout="vertical" style="margin-left: 8px;" />
+    </div>
+    {@render menuItem()}
   </div>
 {/snippet}

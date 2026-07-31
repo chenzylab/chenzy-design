@@ -64,7 +64,7 @@ export const meta = {
     { name: 'onPaste', payload: 'files', desc: '粘贴（携带剪贴板文件）' },
   ],
   slots: [
-    { name: 'renderActionArea', payload: '{ canSend, generating }', desc: '自定义发送/停止按钮区' },
+    { name: 'renderActionArea', payload: '{ menuItem, className }', desc: '自定义发送/停止按钮区' },
     { name: 'renderReference', payload: 'reference', desc: '自定义单条引用渲染（阶段 2）' },
     { name: 'renderSuggestionItem', payload: '{ suggestion, className, onClick, onMouseEnter }', desc: '自定义单条建议渲染（阶段 2）' },
     { name: 'renderTopSlot', payload: '{ references, attachments }', desc: '自定义 top slot 渲染（阶段 2）' },

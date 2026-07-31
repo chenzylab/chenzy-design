@@ -15,6 +15,8 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
   import generatingSrc from '../../demos/ai-chat-input/02-generating.svelte?raw';
   import HotkeyUpload from '../../demos/ai-chat-input/03-hotkey-upload.svelte';
   import hotkeyUploadSrc from '../../demos/ai-chat-input/03-hotkey-upload.svelte?raw';
+  import RichText from '../../demos/ai-chat-input/03b-rich-text.svelte';
+  import richTextSrc from '../../demos/ai-chat-input/03b-rich-text.svelte?raw';
   import References from '../../demos/ai-chat-input/04-references.svelte';
   import referencesSrc from '../../demos/ai-chat-input/04-references.svelte?raw';
   import Suggestions from '../../demos/ai-chat-input/05-suggestions.svelte';
@@ -74,7 +76,15 @@ import { AIChatInput } from '@chenzy-design/svelte';
 
 ### 富文本输入区
 
-AIChatInput 使用 [tiptap](https://tiptap.dev/docs/editor/getting-started/overview) 作为富文本输入框的编辑器，用户可以在输入框中输入文本，使用内置的 extensions（引用槽、选择槽、技能槽）。用户也可以通过 `extensions` 自定义扩展来扩展编辑器的功能。
+AIChatInput 使用 [tiptap](https://tiptap.dev/docs/editor/getting-started/overview) 作为富文本输入框的编辑器，用户可以在输入框中输入文本，使用 AIChatInput 内置的 extensions（包括 `input-slot`，`select-slot`，`skill-slot`）。用户也可以自定义 extensions 来扩展编辑器的功能。
+
+- `input-slot` 支持用户输入文本，并支持 placeholder 占位符。
+- `select-slot` 支持用户进行简单的选择，选项仅支持 string 类型。
+- `skill-slot` 是用于技能展示的块，方便用户理解当前输入框中的技能。
+
+可以通过 ref 方法 `setContent` 来设置输入框的内容，使用 `focusEditor` 方法可以将输入框的焦点设置到编辑器中。
+
+<DemoBox code={richTextSrc}><RichText /></DemoBox>
 
 <Notice type="primary" title="按需加载">
 
@@ -97,6 +107,15 @@ tiptap 内核体积较大，本库**全程动态 import**，不进主 bundle—�
 ### 操作区域
 
 输入框右下角为操作区域，用户可以通过 `renderActionArea` 自定义操作区域，展示自定义的操作按钮。
+
+```ts
+interface ActionAreaProps {
+  /** 默认的操作按钮组（上传 + 发送/停止），渲染它即可保留内置能力 */
+  menuItem: Snippet;
+  /** 默认容器类名，需自行挂到根节点上 */
+  className: string;
+}
+```
 
 <DemoBox code={actionAreaSrc}><ActionArea /></DemoBox>
 
@@ -138,15 +157,31 @@ tiptap 内核体积较大，本库**全程动态 import**，不进主 bundle—�
 
 ### 自定义扩展
 
-富文本区域可以自定义扩展，实现可参考 [Tiptap 自定义扩展](https://tiptap.dev/docs/editor/extensions/custom-extensions/create-new)。通过 `extensions` 可将自定义扩展添加到组件中。如果添加了自定义扩展，需要在 `transformer` 中添加对应的转换规则，以保证在 `onContentChange` 中得到的该节点数据符合预期。
+富文本区域可以自定义扩展，自定义扩展的实现可参考 [Tiptap 自定义扩展](https://tiptap.dev/docs/editor/extensions/custom-extensions/create-new)。通过 `extensions` API 可将自定义扩展添加到 `AIChatInput` 组件中。如果添加了自定义扩展，需要在 `transformer` 中添加对应的转换规则，以保证在 `onContentChange` 中得到的该节点数据符合用户预期。
 
-```jsx
+添加自定义扩展时有以下注意事项：
+
+- 请在自定义扩展中添加 `isCustomSlot` 的属性，该属性和自定义扩展前后的光标高度有关。
+- 由于 `AIChatInput` 使用 `Enter` 作为发送热键，如果自定义扩展有使用 `Enter` 作为快捷操作，需要自行设置 `editor.storage` 中的 `CdAIChatInput.allowHotKeySend` 用于表示热键是否应该被 AIChatInput 用于发送，避免热键冲突。
+
+```js
 import { AIChatInput } from '@chenzy-design/svelte';
 import Mention from '@tiptap/extension-mention';
 
 const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.attrs.id })]]);
+```
 
-<AIChatInput extensions={[Mention]} {transformer} />;
+```svelte
+<AIChatInput extensions={[Mention]} {transformer} />
+```
+
+自定义扩展占用 `Enter` 时，在扩展内部让路：
+
+```js
+// 浮层打开期间把 Enter 让给扩展自己用，关闭后交还 AIChatInput
+editor.storage.CdAIChatInput.allowHotKeySend = false;
+// …扩展浮层关闭时
+editor.storage.CdAIChatInput.allowHotKeySend = true;
 ```
 
 ### 接入对话
@@ -185,7 +220,7 @@ const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.
 | onUploadChange | 上传文件相关回调 | `(attachments) => void` | - |
 | placeholder | 输入框占位符（对齐 Semi：无内置默认文案） | string | - |
 | references | 输入框引用列表 | `AIChatInputReference[]` | `[]` |
-| renderActionArea | 自定义底部的操作区域 | `Snippet<[{ canSend, generating }]>` | - |
+| renderActionArea | 自定义底部的操作区域（整块替换，`menuItem` 为默认的上传/发送按钮组，`className` 需自行挂到根节点） | `Snippet<[{ menuItem, className }]>` | - |
 | renderConfigureArea | 自定义底部的配置区域 | Snippet | - |
 | renderReference | 自定义渲染引用 | `Snippet<[reference]>` | - |
 | renderSkillItem | 自定义技能列表的 item 渲染（整项替换，需自行渲染根节点并挂 className/onClick/onMouseEnter） | `Snippet<[{ skill, className, onClick, onMouseEnter }]>` | - |

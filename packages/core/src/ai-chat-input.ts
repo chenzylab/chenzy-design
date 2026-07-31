@@ -37,10 +37,18 @@ export interface AIChatInputAttachment {
 
 /**
  * 引用块（阶段 2 渲染于编辑区上方 top area）。对齐 Semi Reference：
- * type='text' 时显示 content，其它类型显示 name；图片类型（type='image' 或 url 是图）显示缩略图。
+ * type='text' 时显示 content，其它类型显示 name；图片按 isImageType 判定后显示缩略图。
  */
 export interface AIChatInputReference {
-  type: string;
+  /**
+   * 类型标记。**可选**：缺省时由 getAttachmentType 从 name 后缀推导
+   * （如 `飞书文档.docx` → docx → word 图标）。
+   *
+   * Semi 的 TS 声明把它写成必填，但其官方 demo 的引用项大多不带 type、纯靠后缀推导
+   * （其 demo 是无类型 JSX，编译期查不出来）。本库按**实际契约**声明为可选，
+   * 否则用户照着 Semi 文档写就会被类型报错。
+   */
+  type?: string;
   id: string;
   /** type='text' 时的文本内容。 */
   content?: string;

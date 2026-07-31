@@ -69,6 +69,8 @@
   import type { UploadFileItem } from '../upload/types.js';
   import { untrack } from 'svelte';
   import { setConfigureContext } from './configure-context.js';
+  // 纯读取侧，无 tiptap 依赖，故可静态 import（扩展本体仍随内核动态加载）。
+  import { isHotKeySendAllowed } from './status-storage.js';
 
   interface Props {
     /** 初始内容（HTML 或纯文本，tiptap Content）。 */
@@ -106,8 +108,12 @@
     onStopGenerate?: (() => void) | undefined;
     /** 上传附件变化回调。 */
     onUploadChange?: ((attachments: AIChatInputAttachment[]) => void) | undefined;
-    /** 自定义发送/停止按钮区渲染（对齐 Semi renderActionArea 子集）。 */
-    renderActionArea?: Snippet<[{ canSend: boolean; generating: boolean }]> | undefined;
+    /**
+     * 自定义底部操作区渲染（对齐 Semi renderActionArea）：**整块替换**，
+     * 入参对齐 Semi ActionAreaProps —— `menuItem` 是默认的「上传 + 发送/停止」按钮组
+     * （渲染它即可保留内置能力），`className` 是默认容器类名（需自行挂到根节点上）。
+     */
+    renderActionArea?: Snippet<[{ menuItem: Snippet; className: string }]> | undefined;
     // —— 阶段 2 · 引用 ——
     /** 受控引用列表，渲染于编辑区上方 top area（对齐 Semi references）。 */
     references?: AIChatInputReference[];
@@ -367,6 +373,7 @@
         pmView,
         placeholderExt,
         inputSlotPlugins,
+        statusExt,
       ] = await Promise.all([
         import('@tiptap/core'),
         import('@tiptap/starter-kit'),
@@ -378,6 +385,7 @@
         import('@tiptap/pm/view'),
         import('./placeholder-extension.js'),
         import('./input-slot-plugins.js'),
+        import('./status-extension.js'),
       ]);
       if (destroyed) return;
 
@@ -414,6 +422,10 @@
           skillSlot as never,
           selectSlot as never,
           inputSlot as never,
+          // 状态扩展（对齐 Semi statusExtension）：在 editor.storage 上挂 allowHotKeySend，
+          // 供自定义扩展声明「Enter 被我占用了，别拿去发送」。必须在用户 extensions 之前
+          // 注册，否则用户扩展的 onCreate 里读不到该 storage 命名空间。
+          statusExt.StatusExtension as never,
           ...(extensions as never[]),
         ],
         content: defaultContent,
@@ -539,6 +551,9 @@
     if (event.key !== 'Enter') return false;
     if (generating) return false;
     if (!isSendHotKey(event.key, event.shiftKey, sendHotKey)) return false;
+    // 自定义扩展可把 editor.storage.CdAIChatInput.allowHotKeySend 置 false 声明
+    // 「Enter 归我用」，此时不发送，避免热键冲突（对齐 Semi foundation.ts 同名判定）。
+    if (!isHotKeySendAllowed(editor)) return false;
     event.preventDefault();
     doSend();
     return true;
@@ -558,6 +573,24 @@
   }
 
   // —— 建议面板（阶段 2）——
+  // suggestions 变化即开/关面板（对齐 Semi componentDidUpdate：!isEqual(suggestions,prev)
+  // 时按 length>0 决定 show/hide）。没有这条，「按输入内容动态派生建议」这种用法
+  // 就必须先失焦再聚焦才看得到面板——Semi 文档的建议 demo 正是这种用法。
+  let prevSuggestionsKey = untrack(() => JSON.stringify(suggestions));
+  $effect(() => {
+    const key = JSON.stringify(suggestions);
+    if (key === prevSuggestionsKey) return;
+    prevSuggestionsKey = key;
+    untrack(() => {
+      if (suggestions.length > 0) {
+        suggestionOpen = true;
+        activeSuggestionIndex = -1;
+      } else {
+        closeSuggestions();
+      }
+    });
+  });
+
   function openSuggestions(): void {
     if (suggestions.length === 0) return;
     suggestionOpen = true;
@@ -977,55 +1010,68 @@
       {/if}
     </div>
 
-    <div class="cd-ai-chat-input-footer-action">
-      {#if renderActionArea}
-        {@render renderActionArea({ canSend: computedCanSend, generating })}
-      {:else}
-        {#if showUploadButton}
-          <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
-          <Upload listType="none" multiple {...uploadProps} onChange={handleAttachmentChange}>
-            {#if renderUploadButton}
-              {@render renderUploadButton({
-                openFileDialog: () => {},
-                disabled: generating,
-                attachments,
-              })}
-            {:else}
-              <!-- ⚠️ 这里必须是 span 不能是 button：本库 Upload 的触发器外壳
-                   `.cd-upload-add` 自带 role="button" tabindex="0"，再套一个真 button
-                   会构成 nested-interactive（axe serious）。Semi 侧写的是 button，
-                   因为它的 Upload 外壳不是交互元素 —— 属**框架实现差异**，
-                   视觉与类名仍与 Semi 一致（-footer-action-button + -footer-action-upload）。 -->
-              <span
-                class="cd-ai-chat-input-footer-action-button cd-ai-chat-input-footer-action-upload"
-                aria-label={loc().t('AIChatInput.upload')}
-              >
-                <IconPaperclip />
-              </span>
-            {/if}
-          </Upload>
-        {/if}
-        <button
-          type="button"
-          class="cd-ai-chat-input-footer-action-button"
-          class:cd-ai-chat-input-footer-action-send={!generating}
-          class:cd-ai-chat-input-footer-action-stop={generating}
-          class:cd-ai-chat-input-footer-action-send-disabled={!generating && !computedCanSend}
-          disabled={!generating && !computedCanSend}
-          onclick={handleActionClick}
-          title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
-          aria-label={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
-        >
-          {#if generating}
-            <IconStop />
-          {:else}
-            <IconArrowUp />
-          {/if}
-        </button>
-      {/if}
-    </div>
+    <!--
+      对齐 Semi renderRightFooter：自定义渲染时**连外层容器一起交给用户**
+      （回传 className 让用户自己挂），并把默认的「上传 + 发送」两枚按钮作为
+      menuItem 回传，用户可在其前后加东西而非被迫整套重写。
+    -->
+    {#if renderActionArea}
+      {@render renderActionArea({
+        menuItem: actionMenuItem,
+        className: 'cd-ai-chat-input-footer-action',
+      })}
+    {:else}
+      <div class="cd-ai-chat-input-footer-action">
+        {@render actionMenuItem()}
+      </div>
+    {/if}
   </div>
 </div>
+
+<!-- 默认操作按钮组（上传 + 发送/停止）。抽成 snippet 以便原样回传给 renderActionArea。 -->
+{#snippet actionMenuItem()}
+  {#if showUploadButton}
+    <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
+    <Upload listType="none" multiple {...uploadProps} onChange={handleAttachmentChange}>
+      {#if renderUploadButton}
+        {@render renderUploadButton({
+          openFileDialog: () => {},
+          disabled: generating,
+          attachments,
+        })}
+      {:else}
+        <!-- ⚠️ 这里必须是 span 不能是 button：本库 Upload 的触发器外壳
+             `.cd-upload-add` 自带 role="button" tabindex="0"，再套一个真 button
+             会构成 nested-interactive（axe serious）。Semi 侧写的是 button，
+             因为它的 Upload 外壳不是交互元素 —— 属**框架实现差异**，
+             视觉与类名仍与 Semi 一致（-footer-action-button + -footer-action-upload）。 -->
+        <span
+          class="cd-ai-chat-input-footer-action-button cd-ai-chat-input-footer-action-upload"
+          aria-label={loc().t('AIChatInput.upload')}
+        >
+          <IconPaperclip />
+        </span>
+      {/if}
+    </Upload>
+  {/if}
+  <button
+    type="button"
+    class="cd-ai-chat-input-footer-action-button"
+    class:cd-ai-chat-input-footer-action-send={!generating}
+    class:cd-ai-chat-input-footer-action-stop={generating}
+    class:cd-ai-chat-input-footer-action-send-disabled={!generating && !computedCanSend}
+    disabled={!generating && !computedCanSend}
+    onclick={handleActionClick}
+    title={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
+    aria-label={generating ? loc().t('AIChatInput.stop') : loc().t('AIChatInput.send')}
+  >
+    {#if generating}
+      <IconStop />
+    {:else}
+      <IconArrowUp />
+    {/if}
+  </button>
+{/snippet}
 
 <style>
   .cd-ai-chat-input {

@@ -13,6 +13,8 @@ import AIChatInput from './AIChatInput.svelte';
 import AIChatInputConfigureFixture from './AIChatInputConfigureFixture.svelte';
 import AIChatInputMcpFixture from './AIChatInputMcpFixture.svelte';
 import AIChatInputRenderItemFixture from './AIChatInputRenderItemFixture.svelte';
+import AIChatInputSuggestionsFixture from './AIChatInputSuggestionsFixture.svelte';
+import AIChatInputActionAreaFixture from './AIChatInputActionAreaFixture.svelte';
 
 // jsdom 对部分节点（floating-ui 的 target 可能是 Range/Element）未实现 getClientRects/
 // getBoundingClientRect —— Dropdown floating action 会调用。无条件补空实现，避免 Mcp 浮层
@@ -109,6 +111,29 @@ describe('AIChatInput · 发送按钮态', () => {
     expect(btn.classList.contains('cd-ai-chat-input-footer-action-stop')).toBe(true);
     expect(btn.getAttribute('aria-label')).toBe('Stop generating');
     expect(btn.disabled).toBe(false);
+  });
+});
+
+// 对齐 Semi renderRightFooter：自定义时连外层容器一起交给用户（回传 className），
+// 并把默认的「上传 + 发送/停止」作为 menuItem 回传——用户可加东西而非被迫整套重写。
+// 本库原来只回传 { canSend, generating } 且外壳仍由组件渲染，导致 demo 里只能手搓
+// 假的发送按钮，内置上传管线与发送态全丢。
+describe('AIChatInput · renderActionArea（对齐 Semi ActionAreaProps）', () => {
+  it('自定义操作区：容器由用户渲染，menuItem 保留内置发送按钮', async () => {
+    const { container } = renderWithLocale(AIChatInputActionAreaFixture);
+    await flush(container);
+
+    const custom = container.querySelector('[data-testid="custom-action"]');
+    expect(custom, '应渲染用户自己的容器').not.toBeNull();
+    // className 回传的是默认容器类名，用户挂上后样式不丢。
+    expect(custom!.classList.contains('cd-ai-chat-input-footer-action')).toBe(true);
+
+    expect(container.querySelector('[data-testid="extra-btn"]')).not.toBeNull();
+    // menuItem 渲染出的内置发送按钮仍在。
+    expect(container.querySelector('.cd-ai-chat-input-footer-action-send')).not.toBeNull();
+
+    // 组件不应再额外套一层自己的 -footer-action（否则会出现两个）。
+    expect(container.querySelectorAll('.cd-ai-chat-input-footer-action')).toHaveLength(1);
   });
 });
 
@@ -396,6 +421,31 @@ describe('AIChatInput · 建议面板（阶段 2）', () => {
     pm.dispatchEvent(new FocusEvent('focus', { bubbles: false }));
     await new Promise((r) => setTimeout(r, 20));
   }
+
+  // 对齐 Semi componentDidUpdate：suggestions 变化即按 length>0 开/关面板。
+  // 没有这条，「按输入内容动态派生建议」（Semi 官方建议 demo 的用法）就必须
+  // 先失焦再聚焦才看得到面板。
+  it('suggestions 由空变非空即自动弹出面板（无需重新聚焦）', async () => {
+    const { container } = renderWithLocale(AIChatInputSuggestionsFixture);
+    await flush(container);
+    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+
+    await fireEvent.click(container.querySelector('[data-testid="fill"]') as HTMLElement);
+    await flush();
+    expect(container.querySelectorAll('.cd-ai-chat-input-suggestion-item')).toHaveLength(2);
+  });
+
+  it('suggestions 变空即关闭面板', async () => {
+    const { container } = renderWithLocale(AIChatInputSuggestionsFixture);
+    await flush(container);
+    await fireEvent.click(container.querySelector('[data-testid="fill"]') as HTMLElement);
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-suggestion')).not.toBeNull();
+
+    await fireEvent.click(container.querySelector('[data-testid="clear"]') as HTMLElement);
+    await flush();
+    expect(container.querySelector('.cd-ai-chat-input-suggestion')).toBeNull();
+  });
 
   it('聚焦编辑区弹出建议面板（listbox + options）', async () => {
     const { container } = renderWithLocale(AIChatInput, { props: { suggestions } });
