@@ -27,13 +27,21 @@ brief: 基于富文本编辑器的 AI 聊天输入框，支持引用、附件、
   import withDialogueSrc from '../../demos/ai-chat-input/08-with-dialogue.svelte?raw';
   import ActionArea from '../../demos/ai-chat-input/09-action-area.svelte';
   import actionAreaSrc from '../../demos/ai-chat-input/09-action-area.svelte?raw';
-  import UploadButtonRound from '../../demos/ai-chat-input/10-upload-button-round.svelte';
-  import uploadButtonRoundSrc from '../../demos/ai-chat-input/10-upload-button-round.svelte?raw';
+  import UploadButton from '../../demos/ai-chat-input/10-upload-button.svelte';
+  import uploadButtonSrc from '../../demos/ai-chat-input/10-upload-button.svelte?raw';
+  import Round from '../../demos/ai-chat-input/10b-round.svelte';
+  import roundSrc from '../../demos/ai-chat-input/10b-round.svelte?raw';
   import TopSlot from '../../demos/ai-chat-input/11-top-slot.svelte';
   import topSlotSrc from '../../demos/ai-chat-input/11-top-slot.svelte?raw';
   import PlaceholderSkillOnly from '../../demos/ai-chat-input/12-placeholder-skill-only.svelte';
   import placeholderSkillOnlySrc from '../../demos/ai-chat-input/12-placeholder-skill-only.svelte?raw';
 </script>
+
+## 使用场景
+
+在 AI 聊天场景下，用户可通过 `AIChatInput` 实现富文本输入、上传、引用、建议、模版、功能配置、及丰富自定义展示等需求。
+
+`AIChatInput` 的富文本输入是基于 [tiptap](https://tiptap.dev/docs/editor/getting-started/overview) 实现，`tiptap` 是一款现代的富文本编辑器开发框架，具备极强的可定制性和扩展性。其组件化能力优秀，性能优良，内置多种常用拓展，并支持用户自定义节点、命令、插件与菜单，使复杂 AI 场景下的富文本输入能力能够灵活适配和扩展。本库的 `AIChatInput` 组件对 tiptap 进行了封装，开发者可开箱即用或按需按业务扩展。
 
 ## 代码演示
 
@@ -85,13 +93,19 @@ tiptap 内核体积较大，本库**全程动态 import**，不进主 bundle—�
 
 <DemoBox code={actionAreaSrc}><ActionArea /></DemoBox>
 
-### 自定义上传按钮与底部按钮形状
+### 自定义上传按钮
 
-底部操作区左侧默认会渲染上传按钮。可以通过 `renderUploadButton` **仅自定义按钮 UI**（内置上传/粘贴逻辑仍由组件托管）。
+底部操作区左侧默认会渲染上传按钮。你可以通过 `renderUploadButton` **仅自定义按钮 UI**（例如改成图标按钮、加 Tooltip 等）。
 
-通过 `round` 配置底部按钮的形状，默认是 `true`（圆角按钮），可以设置为 `false` 配置为方形按钮。
+注意：这不会影响上传/粘贴上传逻辑（`Upload` 仍由组件内部托管），`openFileDialog` 会触发内部 Upload 的文件选择。
 
-<DemoBox code={uploadButtonRoundSrc}><UploadButtonRound /></DemoBox>
+<DemoBox code={uploadButtonSrc}><UploadButton /></DemoBox>
+
+### 底部按钮形状
+
+用户可以通过 `round` API 配置底部按钮的形状，默认是 `true`，是圆角按钮，可以设置为 `false` 来配置为方形按钮。
+
+<DemoBox code={roundSrc}><Round /></DemoBox>
 
 ### 建议
 
@@ -129,6 +143,9 @@ const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.
 ```
 
 ### 接入对话
+
+> **本库补充**：Semi 该页无此段。AIChatInput 与 AIChatDialogue 组合是最常见的落地形态，
+> 单看输入框不易看出两者如何联动，故补一个可运行示例。
 
 与 `AIChatDialogue` 组合使用，构成完整的对话界面。
 
@@ -188,3 +205,48 @@ const transformer = new Map([['mention', (node) => ({ type: 'mention', id: node.
 >
 > - `immediatelyRender` 是 tiptap 在 React SSR 下的专用开关，本库 SSR 机制不同（tiptap 全程动态 import、仅客户端实例化），无需该参数。
 > - `dropdownMatchTriggerWidth` / `popoverProps`：本库建议/技能面板不经 Popover 组件承载，故不透传这两项。
+
+### Configure.Select
+
+同 [SelectProps](/components/select#api-参考)。
+
+### Configure.Button
+
+同 [ButtonProps](/components/button#api-参考)。
+
+### Configure.RadioButton
+
+同 [RadioGroupProps](/components/radio#api-参考)。
+
+### Configure.Mcp
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| field | 绑定的配置字段名（发送时并入消息 `setup`） | string | - |
+| initValue | 初始已选的 MCP value 数组 | `string[]` | - |
+| onChange | 选中项变化回调 | `(selected: string[]) => void` | - |
+| options | 可选 MCP 服务列表 | `McpOption[]` | `[]` |
+
+> 本库配置区各项统一由 `field` 绑定到配置对象（值经 `onConfigureChange` 上抛、
+> 发送时并入 `setup`），故用 `field` + `initValue`，而非 Semi 的受控 `value`/`defaultValue`。
+
+## Methods
+
+通过 `bind:this` 获取组件实例后调用（对齐 Semi 的 ref 方法）。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| changeTemplateVisible | 切换模板弹出层的可见性 | `(visible: boolean) => void` | - |
+| clearContent | 清空输入框内容 | `() => void` | - |
+| deleteContent | 删除富文本中的某一项 | `(content: Content) => void` | - |
+| deleteUploadFile | 删除上传文件中的某一项 | `(item: Attachment) => void` | - |
+| focusEditor | 聚焦输入框，默认聚焦到输入框末尾 | `() => void` | - |
+| getConfigureValue | 获取当前配置区的值 | `() => AIChatInputConfigureValue` | - |
+| getEditor | 获取当前 tiptap 的 editor 实例 | `() => Editor \| undefined` | - |
+| getHTML | 获取输入框内容的 HTML 字符串 | `() => string` | - |
+| getText | 获取输入框内容的纯文本 | `() => string` | - |
+| setContent | 设置输入框内容 | `(content: string) => void` | - |
+| setContentWhileSaveTool | 保留技能项的同时设置输入框内容 | `(content: string) => void` | - |
+
+> Semi 的 7 个方法本库全部具备；`clearContent` / `getText` / `getHTML` / `getConfigureValue`
+> 为本库补充（Svelte 无 `getEditor()` 之外的通用取值途径，这几个更顺手）。
