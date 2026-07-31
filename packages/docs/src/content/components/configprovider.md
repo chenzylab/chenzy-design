@@ -95,12 +95,20 @@ ConfigProvider 支持配置响应式断点，并在断点变化时进行订阅�
 - 如果你想对有方向性的 Icon 做 RTL 国际化，需要自己单独进行处理。我们认为对 Icon 进行 RTL 会让它变得难以理解和维护。其他组件内的 icon 已经做了 RTL 适配。
 - Table 的树形数据暂不支持 RTL。
 
-<Notice type="warning" title="本库 RTL 覆盖面尚不完整">
+<Notice type="primary" title="RTL 覆盖范围">
 
-`direction='rtl'` 会正确注入 `<div class="cd-rtl">` 方向作用域（与 Semi 的 `.semi-rtl` 同构），
-但**镜像样式目前只有 Layout / Space / Grid.Col 三个布局组件实现**（Semi 侧有 61 个组件各带
-`rtl.scss`）。因此下方 demo 里大部分组件在 rtl 下**不会真正镜像**——这是本库尚未补齐的能力，
-不是配置未生效。逐组件补 RTL 覆盖是独立待办。
+`direction='rtl'` 会注入 `<div class="cd-rtl">` 方向作用域（与 Semi 的 `.semi-rtl` 同构），
+常用组件均已实现镜像：Button / Input / Table / Form / Tag / Timeline / Steps / Calendar /
+Descriptions / Carousel / Switch / Avatar / Badge / Banner / List / Collapse / Transfer /
+Typography / Progress / Radio / Rating / Nav / Chat / Layout / Space / Grid.Col 等。
+
+**两类不做镜像**（与 Semi 一致）：
+
+- **浮层类**（Modal / Dropdown / Toast / Notification / Tooltip / Select 等）：
+  它们 Portal 到 `body`，取不到方向作用域。Semi 为此留了 `.semi-portal-rtl` 类，
+  但该类在 Semi 全仓从未被赋值（51 处引用、0 处赋值），照搬无实际效果，故本库不搬。
+- **媒体与画布类**（VideoPlayer / Cropper / Resizable / JsonViewer）：
+  Semi 侧同样没有 `rtl.scss` —— 这类 UI 镜像反而不符合预期。
 
 </Notice>
 

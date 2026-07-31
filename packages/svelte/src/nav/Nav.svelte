@@ -495,4 +495,12 @@
     display: inline-flex;
     align-items: center;
   }
+
+  /* —— RTL（对齐 Semi navigation/rtl.scss）——
+     只需声明方向：本库 Nav 的内边距与右侧分隔边框**已全部用逻辑属性**
+     （padding-inline / border-inline-end），RTL 下自己就翻，
+     不像 Semi 那样要写 `border-right:0; border-left:...` 掰回来。 */
+  :global(.cd-rtl) .cd-nav {
+    direction: rtl;
+  }
 </style>
