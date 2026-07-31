@@ -71,6 +71,9 @@
   import { setConfigureContext } from './configure-context.js';
   // 纯读取侧，无 tiptap 依赖，故可静态 import（扩展本体仍随内核动态加载）。
   import { isHotKeySendAllowed } from './status-storage.js';
+  // 编辑器内核装配与生命周期（对齐 Semi richTextInput.tsx 的拆分）。
+  // 本模块顶层只有 import type，内核仍在其内部动态 import。
+  import { mountRichTextInput } from './rich-text-input.svelte.js';
 
   interface Props {
     /** 初始内容（HTML 或纯文本，tiptap Content）。 */
@@ -351,141 +354,32 @@
     prevGenerating = now;
   });
 
-  // —— tiptap 内核动态 import + editor 生命周期（体积约束：内核不进主 bundle）——
-  $effect(() => {
-    const host = editorHost;
-    if (!host) return;
-
-    let ed: Editor | undefined;
-    let destroyed = false;
-
-    // 动态 import 整个 editor 内核（gzip ~126KB）+ svelte-tiptap（NodeView 适配）+
-    // skillSlot 扩展工厂，像 JsonViewer/MarkdownRender 那样懒加载（内核不进主 bundle）。
-    void (async () => {
-      const [
-        tiptapCore,
-        { default: StarterKit },
-        { SvelteNodeViewRenderer },
-        { createSkillSlotExtension },
-        { createSelectSlotExtension },
-        { createInputSlotExtension },
-        pmState,
-        pmView,
-        placeholderExt,
-        inputSlotPlugins,
-        statusExt,
-      ] = await Promise.all([
-        import('@tiptap/core'),
-        import('@tiptap/starter-kit'),
-        import('svelte-tiptap'),
-        import('./skill-slot-extension.js'),
-        import('./select-slot-extension.js'),
-        import('./input-slot-extension.js'),
-        import('@tiptap/pm/state'),
-        import('@tiptap/pm/view'),
-        import('./placeholder-extension.js'),
-        import('./input-slot-plugins.js'),
-        import('./status-extension.js'),
-      ]);
-      if (destroyed) return;
-
-      const { Editor: TiptapEditor, Node, mergeAttributes, Extension } = tiptapCore;
-      const { Plugin, PluginKey, TextSelection } = pmState;
-      const pmDeps = { Plugin, PluginKey, TextSelection } as never;
-      const inputSlotHandlePaste = inputSlotPlugins.makeHandlePaste(pmDeps);
-      // skillSlot / selectSlot / inputSlot 自定义节点始终注册（编辑器需能渲染/序列化这些节点，
-      // 且 inputSlot 的光标 plugin 需识别全部 isCustomSlot 节点）；是否用到另由 props/模版决定。
-      const skillSlot = createSkillSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
-      const selectSlot = createSelectSlotExtension(Node, mergeAttributes, SvelteNodeViewRenderer);
-      const inputSlot = createInputSlotExtension(
-        Node,
-        mergeAttributes,
-        SvelteNodeViewRenderer,
-        pmDeps,
-      );
-
-      ed = new TiptapEditor({
-        element: host,
-        extensions: [
-          StarterKit,
-          placeholderExt
-            .createPlaceholderExtension(Extension as never, {
-              Plugin,
-              PluginKey,
-              Decoration: pmView.Decoration,
-              DecorationSet: pmView.DecorationSet,
-            } as never)
-            .configure({
-              placeholder: placeholderText,
-              showPlaceholderWhenSkillOnly,
-            }) as never,
-          skillSlot as never,
-          selectSlot as never,
-          inputSlot as never,
-          // 状态扩展（对齐 Semi statusExtension）：在 editor.storage 上挂 allowHotKeySend，
-          // 供自定义扩展声明「Enter 被我占用了，别拿去发送」。必须在用户 extensions 之前
-          // 注册，否则用户扩展的 onCreate 里读不到该 storage 命名空间。
-          statusExt.StatusExtension as never,
-          ...(extensions as never[]),
-        ],
-        content: defaultContent,
-        editorProps: {
-          attributes: {
-            role: 'textbox',
-            'aria-multiline': 'true',
-            'aria-label': loc().t('AIChatInput.editor'),
-          },
-          handleKeyDown: (_view, event) => handleEditorKeyDown(event),
-          // inputSlot 的粘贴/文本输入零宽锚点清理（对齐 Semi editorProps）；
-          // 粘贴时先抽取剪贴板文件交给 onPaste（不改变默认粘贴行为）。
-          handlePaste: (view, event) => {
-            const files = extractClipboardFiles(event as ClipboardEvent);
-            if (files.length > 0) onPaste?.(files);
-            return inputSlotHandlePaste(view, event);
-          },
-          handleTextInput: inputSlotPlugins.makeHandleTextInput(),
-          handleDOMEvents: {
-            // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）+ onFocus 回调。
-            focus: (_view, event) => {
-              openSuggestions();
-              onFocus?.(event as FocusEvent);
-              return false;
-            },
-            blur: (_view, event) => {
-              onBlur?.(event as FocusEvent);
-              return false;
-            },
-            // IME 合成结束后清理 inputSlot 内残留零宽字符（延迟等 ProseMirror flush composition）。
-            compositionend: (view) => {
-              setTimeout(() => inputSlotPlugins.handleCompositionEndLogic(view), 60);
-              return false;
-            },
-          },
-        },
-        onCreate: ({ editor: created }) => {
-          isEmpty = created.isEmpty;
-          // 初次挂载补齐零宽锚点（若 defaultContent 含自定义节点）。
-          const tr = inputSlotPlugins.handleZeroWidthCharLogic(created.state);
-          if (tr) created.view.dispatch(tr);
-        },
-        onUpdate: ({ editor: updated }) => {
-          isEmpty = updated.isEmpty;
-          onContentChange?.({
-            text: updated.getText(),
-            html: updated.getHTML(),
-            json: updated.getJSON(),
-          });
-        },
-      });
-      editor = ed;
-    })();
-
-    return () => {
-      destroyed = true;
-      ed?.destroy();
-      editor = undefined;
-    };
-  });
+  // —— tiptap 内核装配与生命周期：拆到 rich-text-input.svelte.ts（对齐 Semi richTextInput.tsx）——
+  // ⚠️ 除 editorHost 外**一律走 getter**：直接把 props 值写进 options 会让它们成为本
+  // effect 的依赖，任何一次 prop 变化都会重建编辑器、丢掉用户已输入的内容
+  // （曾因此让 clearContentOnGenerating 用例变红：rerender 后编辑器重建，
+  // defaultContent 又被填回去了）。
+  $effect(() =>
+    mountRichTextInput({
+      getHost: () => editorHost,
+      getDefaultContent: () => defaultContent,
+      getPlaceholder: () => placeholderText,
+      getShowPlaceholderWhenSkillOnly: () => showPlaceholderWhenSkillOnly,
+      getEditorLabel: () => loc().t('AIChatInput.editor'),
+      getExtensions: () => extensions,
+      onKeyDown: handleEditorKeyDown,
+      onPasteFiles: (files) => onPaste?.(files),
+      // 聚焦编辑区且有建议项时弹出建议面板（对齐 Semi：点击/聚焦即开）+ onFocus 回调。
+      onFocus: (event) => {
+        openSuggestions();
+        onFocus?.(event);
+      },
+      onBlur: (event) => onBlur?.(event),
+      onEmptyChange: (v) => (isEmpty = v),
+      onContentChange: (payload) => onContentChange?.(payload),
+      onEditorChange: (ed) => (editor = ed),
+    }),
+  );
 
   // 编辑区 keydown：建议面板可见时先拦截 ↑↓/Enter/Esc 用于面板导航（返回 true 阻断编辑器默认）；
   // 否则走发送快捷键判定（generating/IME 中不发送）。返回 true = 已处理，tiptap 停止默认行为。
@@ -685,18 +579,6 @@
   function handleAttachmentChange({ fileList }: { fileList: UploadFileItem[]; currentFile: UploadFileItem }): void {
     attachments = fileList as unknown as AIChatInputAttachment[];
     onUploadChange?.(attachments);
-  }
-
-  // 从剪贴板事件抽取文件（供 onPaste + 粘贴上传）。
-  function extractClipboardFiles(e: ClipboardEvent): File[] {
-    const items = e.clipboardData?.items;
-    if (!items) return [];
-    const files: File[] = [];
-    for (const it of items) {
-      const f = it.getAsFile();
-      if (f) files.push(f);
-    }
-    return files;
   }
 
   /**

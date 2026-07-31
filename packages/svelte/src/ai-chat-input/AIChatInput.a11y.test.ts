@@ -773,6 +773,32 @@ describe('AIChatInput · 补齐 Semi props/methods', () => {
     expect(component.getText()).toContain('新内容');
   });
 
+  // 编辑器内核装配拆到 rich-text-input.svelte.ts 后，若把创建期参数（defaultContent /
+  // placeholder / extensions 等）当裸值传进去，它们会成为挂载 effect 的依赖——
+  // 任何一次 prop 变化都会重建编辑器、把用户已输入的内容冲掉。故一律走 getter + untrack。
+  it('prop 变化不重建编辑器：用户已输入的内容不被冲掉', async () => {
+    const rendered = render(AIChatInput, {
+      props: { defaultContent: '<p>初始</p>', placeholder: 'a' },
+    }) as unknown as {
+      container: Element;
+      component: { setContent: (s: string) => void; getText: () => string };
+      rerender: (p: Record<string, unknown>) => Promise<void>;
+    };
+    await flush(rendered.container);
+
+    // 模拟用户输入。
+    rendered.component.setContent('<p>用户敲的字</p>');
+    await flush();
+    expect(rendered.component.getText()).toContain('用户敲的字');
+
+    // 改一个与编辑器创建无关的 prop。
+    await rendered.rerender({ defaultContent: '<p>初始</p>', placeholder: 'b' });
+    await flush();
+    expect(rendered.component.getText(), '改 prop 后不应回退成 defaultContent').toContain(
+      '用户敲的字',
+    );
+  });
+
   it('clearContentOnGenerating：generating false→true 时清空输入', async () => {
     const { container, rerender } = render(AIChatInput, {
       props: { defaultContent: '<p>草稿</p>', generating: false },
