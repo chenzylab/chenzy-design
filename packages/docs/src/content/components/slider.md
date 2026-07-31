@@ -3,7 +3,6 @@ title: Slider 滑动选择器
 name: slider
 category: input
 brief: 滑动选择器，使用拖动交互快速选择数值或数值范围，与 InputNumber 相比更直观。
-docMode: inline
 ---
 
 <script>

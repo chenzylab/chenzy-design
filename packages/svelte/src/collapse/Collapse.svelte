@@ -11,6 +11,7 @@
   #3 展开动画由子 Panel 的 <Collapsible> 原语负责（CSS grid / JS 测高），父不测 DOM。
 -->
 <script lang="ts">
+  import { resolveDefault } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { CollapseIconPosition } from './context.js';
@@ -51,18 +52,23 @@
     activeKey,
     defaultActiveKey,
     accordion = false,
-    clickHeaderToExpand = true,
+    clickHeaderToExpand: clickHeaderToExpandProp,
     expandIcon,
     collapseIcon,
-    expandIconPosition = 'right',
+    expandIconPosition: expandIconPositionProp,
     keepDOM = false,
     motion = true,
-    lazyRender = false,
+    lazyRender: lazyRenderProp,
     style,
     class: className,
     onChange,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Collapse'] > 组件内置默认值。
+  const clickHeaderToExpand = $derived(resolveDefault(clickHeaderToExpandProp, 'Collapse', 'clickHeaderToExpand', true));
+  const expandIconPosition = $derived(resolveDefault(expandIconPositionProp, 'Collapse', 'expandIconPosition', 'right'));
+  const lazyRender = $derived(resolveDefault(lazyRenderProp, 'Collapse', 'lazyRender', false));
 
   function normalize(value: string | string[] | undefined): string[] {
     if (value === undefined || value === '') return [];

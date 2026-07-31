@@ -26,6 +26,7 @@
     useFocusTrap,
     type Placement,
     type Side,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { getGlobalPopupContainer } from '../config-provider/index.js';
   import { floating } from '../_floating/use-floating.js';
@@ -146,27 +147,27 @@
     content,
     visible,
     defaultVisible = false,
-    trigger = 'hover',
-    position = 'top',
-    autoAdjustOverflow = true,
-    spacing = 8,
-    margin = 0,
-    mouseEnterDelay = 50,
-    mouseLeaveDelay = 50,
-    showArrow = true,
-    arrowPointAtCenter = true,
+    trigger: triggerProp,
+    position: positionProp,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    spacing: spacingProp,
+    margin: marginProp,
+    mouseEnterDelay: mouseEnterDelayProp,
+    mouseLeaveDelay: mouseLeaveDelayProp,
+    showArrow: showArrowProp,
+    arrowPointAtCenter: arrowPointAtCenterProp,
     disabled = false,
-    condition = true,
+    condition: conditionProp,
     clickToHide = false,
-    keepDOM = false,
-    disableFocusListener = false,
-    motion = true,
-    transformFromCenter = true,
+    keepDOM: keepDOMProp,
+    disableFocusListener: disableFocusListenerProp,
+    motion: motionProp,
+    transformFromCenter: transformFromCenterProp,
     zIndex,
     class: className = '',
     style: styleExtra = '',
     stopPropagation = false,
-    closeOnEsc = true,
+    closeOnEsc: closeOnEscProp,
     preventScroll = false,
     rePosKey,
     getPopupContainer,
@@ -174,17 +175,37 @@
     onClickOutSide,
     onEscKeyDown,
     afterClose,
-    prefixCls = 'cd-tooltip',
+    prefixCls: prefixClsProp,
     wrapperClassName = '',
     triggerStyle = '',
     wrapperId,
-    role = 'tooltip',
+    role: roleProp,
     guardFocus,
-    returnFocusOnClose = true,
+    returnFocusOnClose: returnFocusOnCloseProp,
     dialogLabel,
     ariaLabelledby,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Tooltip'] > 组件内置默认值。
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Tooltip', 'autoAdjustOverflow', true));
+  const arrowPointAtCenter = $derived(resolveDefault(arrowPointAtCenterProp, 'Tooltip', 'arrowPointAtCenter', true));
+  const trigger = $derived(resolveDefault(triggerProp, 'Tooltip', 'trigger', 'hover'));
+  const transformFromCenter = $derived(resolveDefault(transformFromCenterProp, 'Tooltip', 'transformFromCenter', true));
+  const position = $derived(resolveDefault(positionProp, 'Tooltip', 'position', 'top'));
+  const prefixCls = $derived(resolveDefault(prefixClsProp, 'Tooltip', 'prefixCls', 'cd-tooltip'));
+  const role = $derived(resolveDefault(roleProp, 'Tooltip', 'role', 'tooltip'));
+  const mouseEnterDelay = $derived(resolveDefault(mouseEnterDelayProp, 'Tooltip', 'mouseEnterDelay', 50));
+  const mouseLeaveDelay = $derived(resolveDefault(mouseLeaveDelayProp, 'Tooltip', 'mouseLeaveDelay', 50));
+  const motion = $derived(resolveDefault(motionProp, 'Tooltip', 'motion', true));
+  const spacing = $derived(resolveDefault(spacingProp, 'Tooltip', 'spacing', 8));
+  const margin = $derived(resolveDefault(marginProp, 'Tooltip', 'margin', 0));
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Tooltip', 'showArrow', true));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'Tooltip', 'closeOnEsc', true));
+  const returnFocusOnClose = $derived(resolveDefault(returnFocusOnCloseProp, 'Tooltip', 'returnFocusOnClose', true));
+  const disableFocusListener = $derived(resolveDefault(disableFocusListenerProp, 'Tooltip', 'disableFocusListener', false));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'Tooltip', 'keepDOM', false));
+  const condition = $derived(resolveDefault(conditionProp, 'Tooltip', 'condition', true));
 
   const autoId = useId('cd-tooltip');
   // 浮层 wrapper id：优先用户 wrapperId，否则自动生成（对齐 Semi wrapperId 语义）。

@@ -3,6 +3,7 @@
   1:1 对齐 Semi avatar/index.tsx（结构、类名、行为、slot/border/contentMotion 均对齐）。
 -->
 <script lang="ts">
+  import { resolveDefault } from '@chenzy-design/core';
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import TopSlotSvg from './TopSlotSvg.svelte';
@@ -69,10 +70,10 @@
     alt,
     shape: shapeProp,
     size: sizeProp,
-    color = 'grey',
+    color: colorProp,
     border = false,
     contentMotion = false,
-    gap = 3,
+    gap: gapProp,
     hoverMask,
     topSlot,
     bottomSlot,
@@ -85,6 +86,10 @@
     style: styleProp,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Avatar'] > 组件内置默认值。
+  const color = $derived(resolveDefault(colorProp, 'Avatar', 'color', 'grey'));
+  const gap = $derived(resolveDefault(gapProp, 'Avatar', 'gap', 3));
 
   // 组级 size/shape 强制覆盖子（对齐 Semi cloneElement({size, shape})）。
   const group = getAvatarGroupContext();

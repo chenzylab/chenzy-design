@@ -54,22 +54,85 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 
 ### 4.1 共享 Props（Text / Title / Paragraph / Link 通用）
 
-| Prop | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `type` | `'default' \| 'secondary' \| 'tertiary' \| 'quaternary' \| 'warning' \| 'danger' \| 'success'` | `'default'` | 颜色语义 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 字号档（Title 由 heading 决定，忽略 size） |
-| `strong` | `boolean` | `false` | 加粗 |
-| `weight` | `number \| 'regular' \| 'medium' \| 'semibold' \| 'bold'` | — | 显式字重，覆盖 strong |
-| `disabled` | `boolean` | `false` | 禁用态（Link 同时移除 href 行为） |
-| `mark` | `boolean` | `false` | 高亮背景 |
-| `underline` | `boolean` | `false` | 下划线 |
-| `delete` | `boolean` | `false` | 删除线 |
-| `code` | `boolean` | `false` | 等宽代码样式 |
-| `ellipsis` | `boolean \| EllipsisConfig` | `false` | 省略配置，见下 |
-| `copyable` | `boolean \| CopyableConfig` | `false` | 复制配置，见下 |
-| `editable` | `boolean \| EditableConfig` | `false` | 可编辑配置，见下 |
-| `component` | `string` | 各自默认 | 覆盖渲染标签（如 Text 渲染为 `label`） |
-| `class` | `string` | — | 透传类名 |
+> 本表由 `packages/svelte/src/typography/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| Typography.Title.heading | `1\|2\|3\|4\|5\|6` | `1` |  |
+| Typography.Title.weight | `'light'\|'regular'\|'medium'\|'semibold'\|'bold'\|'default'\|number` | `undefined` | 字重：字符串枚举走类，数字走内联 style（对齐 Semi） |
+| Typography.Title.id | `string` | `undefined` | 透传根元素 id（供 aria-labelledby 关联） |
+| Typography.Title.type | `'primary'\|'secondary'\|'tertiary'\|'quaternary'\|'warning'\|'danger'\|'success'` | `'primary'` | 语义色（对齐 Semi） |
+| Typography.Title.disabled | `boolean` | `false` |  |
+| Typography.Title.mark | `boolean` | `false` | <mark> 高亮背景 |
+| Typography.Title.underline | `boolean` | `false` | <u> 下划线 |
+| Typography.Title.delete | `boolean` | `false` | <del> 删除线 |
+| Typography.Title.code | `boolean` | `false` | <code> 等宽代码样式 |
+| Typography.Title.strong | `boolean` | `false` | <strong> 加粗 |
+| Typography.Title.link | `boolean \| AnchorAttrs` | `false` | 链接：true 或透传给 <a> 的属性对象（对齐 Semi link） |
+| Typography.Title.ellipsis | `boolean \| EllipsisConfig` | `false` | 省略：单行/多行(rows)截断、expandable 展开、suffix、pos、showTooltip。CSS clamp 为默认路径，expandable/suffix/showTooltip/pos≠end 触发 ResizeObserver 测量路径。 |
+| Typography.Title.copyable | `boolean \| CopyableConfig` | `false` | 复制：尾部复制按钮 + 成功反馈 + live announce，可自定义 content/copyTip/successTip/icon/render，onCopy(e,content,res) 回调。 |
+| Typography.Title.component | `string` | `各自默认` | 覆盖渲染标签 |
+| Typography.Title.class | `string` | `''` |  |
+| Typography.Title.style | `string` | `undefined` | 自定义内联样式（对齐 Semi style） |
+| Typography.Text.size | `'normal'\|'small'\|'inherit'` | `'normal'` | 字号档；inherit 继承外层 Typography size（对齐 Semi） |
+| Typography.Text.weight | `number` | `undefined` | 字重（数字，走内联 style） |
+| Typography.Text.icon | `Snippet` | `undefined` | 前置图标（对齐 Semi） |
+| Typography.Text.type | `'primary'\|'secondary'\|'tertiary'\|'quaternary'\|'warning'\|'danger'\|'success'` | `'primary'` | 语义色（对齐 Semi） |
+| Typography.Text.disabled | `boolean` | `false` |  |
+| Typography.Text.mark | `boolean` | `false` | <mark> 高亮背景 |
+| Typography.Text.underline | `boolean` | `false` | <u> 下划线 |
+| Typography.Text.delete | `boolean` | `false` | <del> 删除线 |
+| Typography.Text.code | `boolean` | `false` | <code> 等宽代码样式 |
+| Typography.Text.strong | `boolean` | `false` | <strong> 加粗 |
+| Typography.Text.link | `boolean \| AnchorAttrs` | `false` | 链接：true 或透传给 <a> 的属性对象（对齐 Semi link） |
+| Typography.Text.ellipsis | `boolean \| EllipsisConfig` | `false` | 省略：单行/多行(rows)截断、expandable 展开、suffix、pos、showTooltip。CSS clamp 为默认路径，expandable/suffix/showTooltip/pos≠end 触发 ResizeObserver 测量路径。 |
+| Typography.Text.copyable | `boolean \| CopyableConfig` | `false` | 复制：尾部复制按钮 + 成功反馈 + live announce，可自定义 content/copyTip/successTip/icon/render，onCopy(e,content,res) 回调。 |
+| Typography.Text.component | `string` | `各自默认` | 覆盖渲染标签 |
+| Typography.Text.class | `string` | `''` |  |
+| Typography.Text.style | `string` | `undefined` | 自定义内联样式（对齐 Semi style） |
+| Typography.Paragraph.size | `'normal'\|'small'` | `'normal'` |  |
+| Typography.Paragraph.spacing | `'normal'\|'extended'` | `'normal'` | 行距（对齐 Semi） |
+| Typography.Paragraph.type | `'primary'\|'secondary'\|'tertiary'\|'quaternary'\|'warning'\|'danger'\|'success'` | `'primary'` | 语义色（对齐 Semi） |
+| Typography.Paragraph.disabled | `boolean` | `false` |  |
+| Typography.Paragraph.mark | `boolean` | `false` | <mark> 高亮背景 |
+| Typography.Paragraph.underline | `boolean` | `false` | <u> 下划线 |
+| Typography.Paragraph.delete | `boolean` | `false` | <del> 删除线 |
+| Typography.Paragraph.code | `boolean` | `false` | <code> 等宽代码样式 |
+| Typography.Paragraph.strong | `boolean` | `false` | <strong> 加粗 |
+| Typography.Paragraph.link | `boolean \| AnchorAttrs` | `false` | 链接：true 或透传给 <a> 的属性对象（对齐 Semi link） |
+| Typography.Paragraph.ellipsis | `boolean \| EllipsisConfig` | `false` | 省略：单行/多行(rows)截断、expandable 展开、suffix、pos、showTooltip。CSS clamp 为默认路径，expandable/suffix/showTooltip/pos≠end 触发 ResizeObserver 测量路径。 |
+| Typography.Paragraph.copyable | `boolean \| CopyableConfig` | `false` | 复制：尾部复制按钮 + 成功反馈 + live announce，可自定义 content/copyTip/successTip/icon/render，onCopy(e,content,res) 回调。 |
+| Typography.Paragraph.component | `string` | `各自默认` | 覆盖渲染标签 |
+| Typography.Paragraph.class | `string` | `''` |  |
+| Typography.Paragraph.style | `string` | `undefined` | 自定义内联样式（对齐 Semi style） |
+| Typography.Numeral.rule | `'text'\|'numbers'\|'bytes-decimal'\|'bytes-binary'\|'percentages'\|'exponential'` | `'text'` | 解析规则 |
+| Typography.Numeral.precision | `number` | `0` | 保留小数位数 |
+| Typography.Numeral.truncate | `'ceil'\|'floor'\|'round'` | `'round'` | 小数截断取整方式 |
+| Typography.Numeral.parser | `(raw: string) => string` | `undefined` | 自定义解析函数（优先于 rule） |
+| Typography.Numeral.size | `'normal'\|'small'\|'inherit'` | `'normal'` |  |
+| Typography.Numeral.icon | `Snippet` | `undefined` |  |
+| Typography.Numeral.type | `'primary'\|'secondary'\|'tertiary'\|'quaternary'\|'warning'\|'danger'\|'success'` | `'primary'` | 语义色（对齐 Semi） |
+| Typography.Numeral.disabled | `boolean` | `false` |  |
+| Typography.Numeral.mark | `boolean` | `false` | <mark> 高亮背景 |
+| Typography.Numeral.underline | `boolean` | `false` | <u> 下划线 |
+| Typography.Numeral.delete | `boolean` | `false` | <del> 删除线 |
+| Typography.Numeral.code | `boolean` | `false` | <code> 等宽代码样式 |
+| Typography.Numeral.strong | `boolean` | `false` | <strong> 加粗 |
+| Typography.Numeral.link | `boolean \| AnchorAttrs` | `false` | 链接：true 或透传给 <a> 的属性对象（对齐 Semi link） |
+| Typography.Numeral.ellipsis | `boolean \| EllipsisConfig` | `false` | 省略：单行/多行(rows)截断、expandable 展开、suffix、pos、showTooltip。CSS clamp 为默认路径，expandable/suffix/showTooltip/pos≠end 触发 ResizeObserver 测量路径。 |
+| Typography.Numeral.copyable | `boolean \| CopyableConfig` | `false` | 复制：尾部复制按钮 + 成功反馈 + live announce，可自定义 content/copyTip/successTip/icon/render，onCopy(e,content,res) 回调。 |
+| Typography.Numeral.component | `string` | `各自默认` | 覆盖渲染标签 |
+| Typography.Numeral.class | `string` | `''` |  |
+| Typography.Numeral.style | `string` | `undefined` | 自定义内联样式（对齐 Semi style） |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onCopy` | 复制回调（对齐 Semi） |
+| `onExpand` | ellipsis 展开/收起切换 |
+
+**子组件**：`Typography.Title`、`Typography.Text`、`Typography.Paragraph`、`Typography.Numeral`
 
 ### 4.2 子组件专属 Props
 
@@ -101,19 +164,15 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 | | `maxLength` | `number` | — | 字符上限。**硬截断**：超出的字符打不进去（textarea 原生 `maxlength` + core `setDraft`/`start` 双重 clamp） |
 | | `autosize` | `boolean` | `true` | textarea 自适应高度 |
 | | `editIcon` | `Snippet` | 内置铅笔 | 自定义编辑触发图标 |
-| | `tooltip` | `string \| false` | i18n `Typography.edit` | 编辑触发图标的 tooltip（title）；`false` 隐藏 title（`aria-label` 始终保留） |
+| | `tooltip` | `string \| false` | - | 编辑触发图标的 tooltip（title）；无 locale 默认值（Typography slice 只有 `copy`/`copied`/`expand`/`collapse`），`false` 隐藏 title（`aria-label` 始终保留） |
 | | `enterIcon` | `Snippet \| false` | 内置回车箭头 | 编辑框右下角「回车确认」图标，点击 = 提交；`false` 隐藏 |
 
 ### 4.4 Events
 
-| 事件 | payload | 触发组件 | 说明 |
-|---|---|---|---|
-| `on:copy` | `{ content: string }` | 全部 | 复制成功后 |
-| `on:change` | `{ value: string }` | editable | 编辑提交（受控输入约定：value + on:change） |
-| `on:editStart` | `void` | editable | 进入编辑 |
-| `on:editCancel` | `void` | editable | 取消编辑 |
-| `on:expand` | `{ expanded: boolean }` | ellipsis | 展开/收起切换 |
-| `on:click` | `MouseEvent` | Link | 链接点击（disabled 时阻止） |
+| 事件 | 说明 |
+| --- | --- |
+| `onCopy` | 复制回调（对齐 Semi） |
+| `onExpand` | ellipsis 展开/收起切换 |
 
 ### 4.5 Slots
 
@@ -161,7 +220,7 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 - **语义标签**：Title 渲染真实 `<h1>`–`<h6>`，不破坏文档大纲（提示：勿仅为字号选 heading，可用 `component` 改标签保留视觉）。Paragraph→`<p>`，Link→`<a>`，Text→`<span>`。
 - **Link**：必须有可辨识文本；外链 `target="_blank"` 自动 `rel="noopener noreferrer"`；disabled Link 渲染为 `<a aria-disabled="true">` 并移除 `href`、`tabindex="-1"`、阻止默认。
 - **copyable**：复制按钮为 `<button type="button">`，`aria-label` 来自 i18n（`Typography.copy`）；复制成功通过 `useLiveAnnouncer`（`aria-live="polite"`）朗读 `Typography.copied`，图标切换不依赖颜色（形状变化）。
-- **editable**：编辑触发为 `<button>` 带 `aria-label`（`Typography.edit`）；进入编辑 textarea 自动聚焦，`aria-label` 关联原文本；ESC 取消并把焦点送回触发按钮。
+- **editable**：编辑触发为 `<button>` 带 `aria-label`（由调用方传入；locale 无 `Typography.edit` 键）；进入编辑 textarea 自动聚焦，`aria-label` 关联原文本；ESC 取消并把焦点送回触发按钮。
 - **ellipsis + tooltip**：截断节点 `title` 或 tooltip 提供完整文本；`showTooltip` 时用 `aria-describedby` 关联；纯 CSS clamp 时确保 DOM 仍含完整文本供 SR 读取（视觉截断不截断可访问名）。
 - **expandable**：展开/收起触发为 `<button aria-expanded>`，文案区分。
 - **对比度**：tertiary（text-3）等弱色需校验 ≥ 4.5:1（小字）/3:1（大字 ≥18.66px 或 14px bold）；danger/warning 文本同样校验。mark 背景与文字组合校验对比度。
@@ -173,18 +232,14 @@ Typography 大部分为纯展示，但 **ellipsis（多行测量/展开）**、*
 
 用户可见文案零硬编码，全部经 i18n。日期/数字若出现于 Paragraph 由调用方用 `Intl` 格式化（组件不内置）。
 
-| i18n key | 默认（zh-CN / en-US） | 用途 |
-|---|---|---|
-| `Typography.copy` | 复制 / Copy | 复制按钮 aria-label/tooltip |
-| `Typography.copied` | 已复制 / Copied | 复制成功提示与 announce |
-| `Typography.copyFailed` | 复制失败 / Copy failed | 剪贴板失败提示 |
-| `Typography.edit` | 编辑 / Edit | 编辑按钮 aria-label |
-| `Typography.editConfirm` | 完成 / Save | 编辑确认（可选可视按钮） |
-| `Typography.editCancel` | 取消 / Cancel | 取消编辑 |
-| `Typography.enter` | 回车确认 / Press Enter to confirm | 编辑框回车确认图标 aria-label |
-| `Typography.expand` | 展开 / Expand | ellipsis 展开 |
-| `Typography.collapse` | 收起 / Collapse | ellipsis 收起 |
-| `Typography.ellipsisSuffix` | … / … | 省略符（一般沿用 U+2026） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Typography.copy` | 复制 |
+| `Typography.copied` | 复制成功 |
+| `Typography.expand` | 展开 |
+| `Typography.collapse` | 收起 |
 
 RTL 语言（ar/he）下文本方向、截断位置、图标顺序随 `dir` 自动适配。
 

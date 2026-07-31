@@ -3,7 +3,6 @@ title: Calendar 日历
 name: calendar
 category: show
 brief: 日历组件，允许以日/周/月视图展示对应事件
-docMode: inline
 ---
 
 <script>

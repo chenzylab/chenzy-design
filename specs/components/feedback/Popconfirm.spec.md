@@ -55,44 +55,49 @@ Popconfirm 内部复用 `Popover` 的浮层定位与显隐能力，额外封装�
 
 ### Props
 
+> 本表由 `packages/svelte/src/popconfirm/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `open` | `boolean` | `undefined` | 受控显隐。配合 `on:openChange` 使用 |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐 |
-| `title` | `string \| Snippet` | — | 确认标题（语义必填，建议为一句话提问，如"确定删除？"） |
-| `content` | `string \| Snippet` | — | 补充描述/后果说明（危险操作建议填写） |
-| `type` | `'default' \| 'danger' \| 'warning'` | `'default'` | 确认语义，影响图标色与确认按钮主题 |
-| `icon` | `Snippet \| false` | 自动 | 标题前图标；`type=danger/warning` 默认警示图标，`false` 隐藏 |
-| `okText` | `string` | i18n 默认 | 确认按钮文案 |
-| `cancelText` | `string` | i18n 默认 | 取消按钮文案 |
-| `okType` | `ButtonProps['type']` | 跟随 `type` | 覆盖确认按钮颜色类型 |
-| `okButtonProps` | `Partial<ButtonProps>` | — | 透传确认按钮属性 |
-| `cancelButtonProps` | `Partial<ButtonProps>` | — | 透传取消按钮属性 |
-| `showCancel` | `boolean` | `true` | 是否显示取消按钮 |
-| `trigger` | `'click' \| 'hover' \| 'focus' \| 'custom'` | `'click'` | 触发方式 |
-| `placement` | `Placement`（top/bottom/left/right + start/end 共 12 向） | `'top'` | 浮层方位 |
-| `position` | 同 `placement` 别名 | — | 与 Semi 对齐的别名 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 浮层与按钮尺寸 |
-| `disabled` | `boolean` | `false` | 禁用触发（不弹出） |
-| `closeOnEsc` | `boolean` | `true` | Esc 关闭并触发 cancel |
-| `closeOnOutsideClick` | `boolean` | `true` | 点击外部关闭并触发 cancel |
-| `destroyOnClose` | `boolean` | `true` | 关闭时卸载浮层 DOM |
-| `getPopupContainer` | `() => HTMLElement` | `body` | 浮层挂载容器 |
-| `zIndex` | `number` | token 默认 | 浮层层级 |
-| `motion` | `boolean` | `true` | 是否启用入场动效（受 reduced-motion 覆盖） |
-| `arrowPointAtCenter` | `boolean` | `false` | 箭头是否指向触发元素中心 |
-| `class` | `string` | — | 浮层根节点自定义类 |
+| --- | --- | --- | --- |
+| visible | `boolean` | `undefined` | 受控显隐（配合 trigger=custom）；不回写，仅 onVisibleChange |
+| defaultVisible | `boolean` | `false` | 非受控初始显隐 |
+| title | `string \| Snippet` | `undefined` | 标题（文本或富文本 Snippet） |
+| content | `string \| Snippet<[{ initialFocusRef }]>` | `undefined` | 正文；函数 Snippet 入参含 initialFocusRef，绑定后打开时聚焦（对齐 Semi） |
+| icon | `Snippet \| false` | `<IconAlertTriangle size="extra-large"/>` | 自定义图标；false 隐藏；缺省 IconAlertTriangle（警示色） |
+| okText | `string` | `'确认'（locale）` | 确认按钮文字 |
+| cancelText | `string` | `'取消'（locale）` | 取消按钮文字 |
+| okType | `'primary'\|'secondary'\|'tertiary'\|'warning'\|'danger'` | `'primary'` | 确认按钮类型（对齐 Semi） |
+| cancelType | `ButtonType` | `'tertiary'` | 取消按钮类型（对齐 Semi） |
+| okButtonProps | `ExtraButtonProps` | `undefined` | 透传确认按钮额外属性（含 autoFocus；onclick/loading/theme 组件托管） |
+| cancelButtonProps | `ExtraButtonProps` | `undefined` | 透传取消按钮额外属性（含 autoFocus；onclick/loading/disabled 组件托管） |
+| showCloseIcon | `boolean` | `true` | 是否显示右上角关闭按钮（对齐 Semi） |
+| position | `'top'\|'topLeft'\|...\|'bottomRight' 等 12 方位` | `'bottomLeft'` | 弹出方位（对齐 Semi 默认 bottomLeft） |
+| trigger | `'click'\|'hover'\|'focus'\|'custom'` | `'click'` | 触发方式（对齐 Semi） |
+| disabled | `boolean` | `false` | 点击子元素是否弹出，false 不弹（对齐 Semi） |
+| closeOnEsc | `boolean` | `true` | Esc 关闭，受控时不生效（对齐 Semi） |
+| arrowPointAtCenter | `boolean` | `false` | 箭头指向触发元素中心（需 showArrow，对齐 Semi） |
+| showArrow | `boolean` | `false` | 是否显示箭头三角（对齐 Semi） |
+| motion | `boolean` | `true` | 入场动效（reduced-motion 退化） |
+| mouseEnterDelay | `number` | `50` | hover 进入延迟(ms) |
+| mouseLeaveDelay | `number` | `50` | hover 离开延迟(ms) |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 自定义浮层容器（对齐 Semi） |
+| zIndex | `number` | `1030` | 浮层层级（对齐 Semi） |
+| guardFocus | `boolean` | `true` | Tab 焦点在浮层内循环（对齐 Semi） |
+| returnFocusOnClose | `boolean` | `true` | Esc 后焦点回到 trigger（仅 click，对齐 Semi） |
+| stopPropagation | `boolean` | `true` | 阻止浮层内事件冒泡（对齐 Semi） |
+| rePosKey | `string \| number` | `undefined` | 手动触发重新定位 |
+| class | `string` | `''` | 卡片自定义类名（对齐 Semi className） |
+| style | `string` | `''` | 卡片自定义内联样式（对齐 Semi） |
+| children | `Snippet` | `undefined` | 触发元素（必填） |
+| onVisibleChange | `(visible: boolean) => void` | `undefined` | 显隐切换回调（对齐 Semi） |
+| onClickOutSide | `(e: MouseEvent) => void` | `undefined` | 点击浮层外部回调（对齐 Semi） |
+| onEscKeyDown | `(e: KeyboardEvent) => void` | `undefined` | trigger/浮层按 Esc 回调（对齐 Semi） |
+| onConfirm | `(e: MouseEvent) => void \| Promise<unknown>` | `undefined` | 确认回调；返回 Promise 时按钮 loading，resolve 关闭 / reject 保持 |
+| onCancel | `(e: MouseEvent) => void \| Promise<unknown>` | `undefined` | 取消回调；返回 Promise 时按钮 loading，resolve 关闭 / reject 保持 |
 
 ### Events
 
-| Event | 载荷 (`event.detail`) | 说明 |
-|---|---|---|
-| `on:openChange` | `{ open: boolean, reason: 'trigger' \| 'confirm' \| 'cancel' \| 'esc' \| 'outsideClick' }` | 显隐变化，含原因 |
-| `on:confirm` | `MouseEvent` | 点击确认。若回调返回 `Promise`，浮层进入 loading 直到 settle |
-| `on:cancel` | `MouseEvent \| KeyboardEvent` | 点击取消 / Esc / 外部点击触发 |
-| `on:clickOutside` | `MouseEvent` | 点击浮层外部（在关闭逻辑前触发，可阻止默认关闭） |
-| `on:afterOpen` | `void` | 入场动效结束、浮层完全可见 |
-| `on:afterClose` | `void` | 出场动效结束、DOM 卸载后 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 注：异步确认通过 `okButtonProps.loading` 自动托管；调用方也可在 `on:confirm` 中 `event.detail` 之外通过返回 Promise 控制（Svelte 事件不支持返回值时，提供 `confirmLoading` 受控 prop 作为兜底）。
 
@@ -148,20 +153,19 @@ Popconfirm 是一个轻量非模态对话框，遵循 APG **Dialog (Non-Modal)**
 - **对比度**：文字/图标对背景 ≥ 4.5:1，确认按钮（含 danger 态）满足 3:1 非文本对比；阴影不作为唯一边界，高对比模式补充 `--cd-popconfirm-border`。
 - **reduced-motion**：`prefers-reduced-motion: reduce` 时禁用 scale 动效，仅保留 opacity。
 - **RTL**：`dir="rtl"` 时按钮组顺序与箭头/placement 自动镜像（start/end 逻辑属性驱动）。
-- **SR 播报**：异步确认进入 loading 时 `useLiveAnnouncer` 以 `polite` 播报 `Popconfirm.confirming`。
+- **SR 播报**：异步确认进入 loading 时 `useLiveAnnouncer` 以 `polite` 播报 `Popconfirm.confirm` / `Popconfirm.cancel`（slice 仅此两键，无 `confirming` 中间态文案）。
 
 ## 7. 国际化
 
 - 所有用户可见文案零硬编码，走 i18n provider；缺省回退英文。
 - i18n keys：
 
-| Key | 默认（en） | 默认（zh） |
-|---|---|---|
-| `Popconfirm.confirm` | `Confirm` | `确定` |
-| `Popconfirm.cancel` | `Cancel` | `取消` |
-| `Popconfirm.confirming` | `Processing…` | `处理中…` |
-| `Popconfirm.deleteTitle` | `Delete this item?` | `确定删除该项？` |
-| `Popconfirm.deleteContent` | `This action cannot be undone.` | `此操作无法撤销。` |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Popconfirm.confirm` | 确定 |
+| `Popconfirm.cancel` | 取消 |
 
 - `okText`/`cancelText` 显式传入时覆盖 i18n 默认。
 - 文案中如含数量/日期，调用方应使用 `Intl.NumberFormat` / `Intl.DateTimeFormat` 格式化后再传入 `title`/`content`，组件不内置格式化但保证插值位置 RTL 安全。

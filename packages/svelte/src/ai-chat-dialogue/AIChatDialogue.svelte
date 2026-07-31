@@ -16,6 +16,7 @@
     type AIDialogueReference,
     type ContentItem,
     type AIChatInputMessageContent,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
@@ -24,6 +25,18 @@
   import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
+    /** 是否对用户消息中的 HTML 标签进行转义，防止被 Markdown 解析器当作 HTML 处理导致内容丢失（对齐 Semi escapeHtml）。 */
+    escapeHtml?: boolean;
+    /** 是否禁用文件点击（对齐 Semi disabledFileItemClick）。 */
+    disabledFileItemClick?: boolean;
+    /** 提示区最外层样式类名（对齐 Semi hintCls）。 */
+    hintCls?: string;
+    /** 提示区最外层样式（对齐 Semi hintStyle）。 */
+    hintStyle?: string;
+    /** 分享消息回调（对齐 Semi onMessageShare）。 */
+    onMessageShare?: ((message: unknown) => void) | undefined;
+    /** annotation 点击回调（对齐 Semi onAnnotationClick）。 */
+    onAnnotationClick?: ((annotation: unknown) => void) | undefined;
     /** 受控对话列表。 */
     chats?: AIDialogueMessage[];
     /** 角色配置（必填，对齐 Semi）。 */
@@ -72,11 +85,11 @@
   let {
     chats = [],
     roleConfig,
-    align = 'leftRight',
-    mode = 'bubble',
+    align: alignProp,
+    mode: modeProp,
     hints,
-    selecting = false,
-    showReset = true,
+    selecting: selectingProp,
+    showReset: showResetProp,
     markdownRenderProps,
     renderDialogueContentItem,
     renderHintBox,
@@ -95,10 +108,23 @@
     messageEditRender,
     onMessageEdit,
     editable = true,
-    showReference = false,
+    showReference: showReferenceProp,
     onReferenceClick,
     dialogueRenderConfig,
+    escapeHtml = true,
+    disabledFileItemClick = false,
+    hintCls = '',
+    hintStyle = '',
+    onMessageShare,
+    onAnnotationClick,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['AIChatDialogue'] > 组件内置默认值。
+  const align = $derived(resolveDefault(alignProp, 'AIChatDialogue', 'align', 'leftRight'));
+  const mode = $derived(resolveDefault(modeProp, 'AIChatDialogue', 'mode', 'bubble'));
+  const selecting = $derived(resolveDefault(selectingProp, 'AIChatDialogue', 'selecting', false));
+  const showReset = $derived(resolveDefault(showResetProp, 'AIChatDialogue', 'showReset', true));
+  const showReference = $derived(resolveDefault(showReferenceProp, 'AIChatDialogue', 'showReference', false));
 
   const loc = useLocale();
 
@@ -194,6 +220,10 @@
         {showReference}
         {onReferenceClick}
         {dialogueRenderConfig}
+        {escapeHtml}
+        {disabledFileItemClick}
+        {onMessageShare}
+        {onAnnotationClick}
       />
     {/each}
   </div>
@@ -208,7 +238,7 @@
   {/if}
 
   {#if hints && hints.length > 0}
-    <Hint {hints} onHintClick={handleHintClick} {renderHintBox} />
+    <Hint {hints} onHintClick={handleHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
   {/if}
 </div>
 

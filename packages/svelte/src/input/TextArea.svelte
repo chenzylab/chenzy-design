@@ -646,7 +646,14 @@
     color: var(--cd-color-input-default-text-default);
     font: inherit;
     font-size: inherit;
-    line-height: 1.5;
+    /*
+      对齐 Semi：textarea 主体走 `@include font-size-regular`，该 mixin 除 font-size 外
+      还带 **固定 `line-height: 20px`**（semi-theme-default/scss/_font.scss:10），
+      不是比例值。本库原写 `1.5` → 14px 字号下算出 21px，比 Semi 高 1px；
+      多行时逐行累积（Semi 4 行 90px vs 本库 94px），表现为输入框整体偏高、
+      文字视觉不居中。同 [[semi-font-size-mixin-carries-line-height]]。
+    */
+    line-height: var(--cd-line-height-regular);
     resize: none;
     outline: none;
     cursor: text;

@@ -64,7 +64,7 @@ DragMove 包裹一个子元素，使其可被拖拽在页面/约束容器内自�
 
 ## 7. 国际化
 
-- i18n key：`DragMove.handleAriaLabel`（把手可访问名，zh「拖动」/ en「Drag to move」）。
+- i18n key：**无**。DragMove 不消费 locale（`useLocale` 出现 0 次），把手可访问名由调用方经 prop 传入；原 `DragMove.handleAriaLabel` 键已随悬空键清理删除，见 [[locale-dangling-keys-render-raw-key]]。
 
 ## 8. 文案
 

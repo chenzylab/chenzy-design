@@ -52,7 +52,9 @@
     color: var(--cd-ai-chat-input-skill-color);
     border-radius: var(--cd-ai-chat-input-skill-radius);
     font-size: var(--cd-font-size-regular);
-    line-height: 1.6;
+    /* 对齐 Semi 的 `$font-aiChatInput_rich_text-input_slot-lineHeight`
+       —— Semi 用组件专属变量，本库 token 同形同值。 */
+    line-height: var(--cd-ai-chat-input-rich-text-input-slot-lineheight);
     vertical-align: baseline;
   }
 

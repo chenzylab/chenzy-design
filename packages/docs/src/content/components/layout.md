@@ -3,7 +3,6 @@ title: Layout 布局
 name: layout
 category: basic
 brief: 用于快捷划分页面整体布局。
-docMode: inline
 ---
 
 <script>

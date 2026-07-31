@@ -88,9 +88,11 @@ Spin（加载指示器）用于告知用户内容正在加载且需要一段不�
 
 ## 7. 国际化
 
-| key | 默认（zh-CN） | 用途 |
-|---|---|---|
-| `Spin.loading` | 加载中 | 无 tip 时的 aria-label |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Spin.loading` | 加载中 |
 
 `tip` 由调用方自行国际化（业务文案），组件不代管。
 

@@ -3,7 +3,6 @@ title: Grid 栅格
 name: grid
 category: basic
 brief: 24 栅格系统。
-docMode: inline
 ---
 
 <script>

@@ -16,6 +16,7 @@
   import {
     contentItemType,
     toolCallView,
+    escapeHtmlInMarkdown,
     type ContentItem,
     type ToolCallView,
   } from '@chenzy-design/core';
@@ -33,9 +34,24 @@
     onFileClick?: ((file: unknown) => void) | undefined;
     /** 图片点击回调。 */
     onImageClick?: ((image: unknown) => void) | undefined;
+    /** 是否转义 HTML 标签（对齐 Semi escapeHtml，仅对 user 角色生效）。 */
+    escapeHtml?: boolean;
+    /** 当前消息是否为用户消息（决定 escapeHtml 是否生效）。 */
+    isUser?: boolean;
+    /** annotation 点击回调（对齐 Semi onAnnotationClick，回传整组 annotation）。 */
+    onAnnotationClick?: ((annotations: unknown) => void) | undefined;
   }
 
-  let { item, markdownRenderProps, renderMap, onFileClick, onImageClick }: Props = $props();
+  let {
+    item,
+    markdownRenderProps,
+    renderMap,
+    onFileClick,
+    onImageClick,
+    escapeHtml = true,
+    isUser = false,
+    onAnnotationClick,
+  }: Props = $props();
 
   const loc = useLocale();
   const type = $derived(contentItemType(item));
@@ -65,7 +81,26 @@
   const toolView = $derived<ToolCallView>(toolCallView(item));
 
   function partText(part: Record<string, unknown>): string {
-    return typeof part.text === 'string' ? part.text : '';
+    const text = typeof part.text === 'string' ? part.text : '';
+    // 对齐 Semi：仅 user 角色的消息做 HTML 转义，助手输出的 markdown 原样渲染。
+    return escapeHtml && isUser ? escapeHtmlInMarkdown(text) : text;
+  }
+
+  /**
+   * 取该文本块的可展示 annotation（对齐 Semi dialogueContent.tsx:243）：
+   * 过滤掉 file_citation / container_file_citation 两类。
+   */
+  function partAnnotations(part: Record<string, unknown>): Record<string, unknown>[] {
+    const list = Array.isArray(part.annotations) ? (part.annotations as Record<string, unknown>[]) : [];
+    return list.filter((a) => a.type !== 'file_citation' && a.type !== 'container_file_citation');
+  }
+
+  /** annotation 的展示名与链接（url_citation 形态优先）。 */
+  function annotationView(a: Record<string, unknown>): { title: string; url?: string } {
+    const cite = (a.url_citation ?? a) as Record<string, unknown>;
+    const title = typeof cite.title === 'string' ? cite.title : (typeof cite.url === 'string' ? cite.url : '');
+    const url = typeof cite.url === 'string' ? cite.url : undefined;
+    return url !== undefined ? { title, url } : { title };
   }
 </script>
 
@@ -75,6 +110,25 @@
   <div class="cd-ai-dialogue-block cd-ai-dialogue-block-message">
     {#each innerParts as part, i (i)}
       {#if part.type === 'output_text' || part.type === 'input_text' || part.type === 'text'}
+        <!-- 引用标注（对齐 Semi AnnotationWidget）：渲染在正文之前，点击回传整组 annotation。 -->
+        {#if partAnnotations(part).length > 0}
+          <ul class="cd-ai-dialogue-annotations">
+            {#each partAnnotations(part) as anno, ai (ai)}
+              {@const view = annotationView(anno)}
+              <li>
+                <button
+                  type="button"
+                  class="cd-ai-dialogue-annotation"
+                  title={view.url ?? view.title}
+                  onclick={() => onAnnotationClick?.(partAnnotations(part))}
+                >
+                  <span class="cd-ai-dialogue-annotation-index">{ai + 1}</span>
+                  <span class="cd-ai-dialogue-annotation-title">{view.title}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
         <MarkdownRender raw={partText(part)} {...markdownRenderProps} />
       {:else if part.type === 'refusal'}
         <div class="cd-ai-dialogue-refusal">{part.refusal}</div>
@@ -180,6 +234,38 @@
 
   .cd-ai-dialogue-refusal {
     color: var(--cd-color-danger);
+  }
+
+  /* 引用标注（对齐 Semi AnnotationWidget）：正文上方一排可点击的来源徽标。 */
+  .cd-ai-dialogue-annotations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cd-spacing-extra-tight);
+    margin: 0 0 var(--cd-spacing-tight);
+    padding: 0;
+    list-style: none;
+  }
+  .cd-ai-dialogue-annotation {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--cd-spacing-extra-tight);
+    max-inline-size: 200px;
+    padding: 2px var(--cd-spacing-tight);
+    border: 1px solid var(--cd-color-aichatdialogue-annotation-border, var(--cd-color-border));
+    border-radius: var(--cd-border-radius-full);
+    background: transparent;
+    color: var(--cd-color-aichatdialogue-annotation-text, var(--cd-color-text-2));
+    font-size: var(--cd-font-size-small);
+    line-height: var(--cd-line-height-small);
+    cursor: pointer;
+  }
+  .cd-ai-dialogue-annotation:hover {
+    background: var(--cd-color-aichatdialogue-annotation-bg-hover, var(--cd-color-fill-0));
+  }
+  .cd-ai-dialogue-annotation-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .cd-ai-dialogue-image-btn {

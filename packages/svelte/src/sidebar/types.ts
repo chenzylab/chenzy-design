@@ -14,6 +14,27 @@ export interface SideBarOption {
 export type SideBarMode = 'main' | 'code' | 'file' | (string & {});
 
 /**
+ * 详情视图内容（对齐 Semi `detailContent`）。
+ * `mode='code'` 时按 CodeItemProps 消费（isJson/language/content），
+ * `mode='file'` 时按 FileItemProps 消费（content/editable/extensions）。
+ * 两者字段取并集，故此处用宽松结构承载。
+ */
+export interface SideBarDetailContent {
+  /** 详情头部显示名。 */
+  name?: string;
+  /** 唯一标识。 */
+  key?: string;
+  /** 内容正文（代码文本 / 富文本 HTML）。 */
+  content?: string;
+  /** code 模式：是否按 JSON 渲染。 */
+  isJson?: boolean;
+  /** code 模式：CodeHighlight 语言 id。 */
+  language?: string;
+  /** 其余字段透传给对应 Item 组件。 */
+  [key: string]: unknown;
+}
+
+/**
  * Annotation 单条引用条目（P2）。对齐 Semi `AnnotationItem`。
  * `type='video'` 渲染带封面/时长/播放态的视频卡片；`type='text'`（默认）渲染
  * 带站点 logo/名称/序号的文本卡片。`url` 存在时点击在新窗口打开来源。

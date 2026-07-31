@@ -12,10 +12,10 @@ import type { Locale } from './interface.js';
 
 describe('mergeLocale (deep merge / inherit)', () => {
   it('child overrides parent per nested key, inherits the rest', () => {
-    const merged = mergeLocale(en_US, { Modal: { okText: 'Confirm' } });
-    expect(merged.Modal.okText).toBe('Confirm'); // overridden
-    expect(merged.Modal.cancelText).toBe(en_US.Modal.cancelText); // inherited
-    expect(merged.Input.clear).toBe(en_US.Input.clear); // untouched group inherited
+    const merged = mergeLocale(en_US, { Modal: { confirm: 'Confirm' } });
+    expect(merged.Modal.confirm).toBe('Confirm'); // overridden
+    expect(merged.Modal.cancel).toBe(en_US.Modal.cancel); // inherited
+    expect(merged.Input.showPassword).toBe(en_US.Input.showPassword); // untouched group inherited
   });
 
   it('replaces scalars (code/rtl) wholesale', () => {
@@ -25,23 +25,23 @@ describe('mergeLocale (deep merge / inherit)', () => {
   });
 
   it('is pure — mutates neither input', () => {
-    const child = { Modal: { okText: 'X' } };
+    const child = { Modal: { confirm: 'X' } };
     const merged = mergeLocale(en_US, child);
-    expect(en_US.Modal.okText).not.toBe('X');
+    expect(en_US.Modal.confirm).not.toBe('X');
     expect(merged).not.toBe(en_US);
     expect(merged.Modal).not.toBe(en_US.Modal);
   });
 
   it('skips undefined child values (keeps parent)', () => {
     const merged = mergeLocale(en_US, { Modal: undefined } as Record<string, unknown>);
-    expect((merged as Locale).Modal.okText).toBe(en_US.Modal.okText);
+    expect((merged as Locale).Modal.confirm).toBe(en_US.Modal.confirm);
   });
 
   it('merged bundle drives createLocale t() with inheritance', () => {
-    const merged = mergeLocale(zh_CN, { Modal: { okText: 'OK!' } }) as Locale;
+    const merged = mergeLocale(zh_CN, { Modal: { confirm: 'OK!' } }) as Locale;
     const l = createLocale({ locale: merged });
-    expect(l.t('Modal.okText')).toBe('OK!');
-    expect(l.t('Modal.cancelText')).toBe('取消'); // inherited from zh_CN
+    expect(l.t('Modal.confirm')).toBe('OK!');
+    expect(l.t('Modal.cancel')).toBe('取消'); // inherited from zh_CN
   });
 });
 
@@ -69,17 +69,17 @@ describe('registerLocale', () => {
   });
 
   it('makes a custom pack resolvable by code (dash/underscore agnostic)', () => {
-    const fr = { ...en_US, code: 'fr-FR', Modal: { ...en_US.Modal, okText: 'Confirmer' } };
+    const fr = { ...en_US, code: 'fr-FR', Modal: { ...en_US.Modal, confirm: 'Confirmer' } };
     registerLocale('fr_FR', fr);
     expect(resolveLocale('fr_FR')).toBe(fr);
     expect(resolveLocale('fr-FR')).toBe(fr);
-    expect(createLocale({ locale: resolveLocale('fr_FR')! }).t('Modal.okText')).toBe(
+    expect(createLocale({ locale: resolveLocale('fr_FR')! }).t('Modal.confirm')).toBe(
       'Confirmer',
     );
   });
 
   it('registered pack takes precedence over a built-in code', () => {
-    const custom = { ...zh_CN, Modal: { ...zh_CN.Modal, okText: '好的' } };
+    const custom = { ...zh_CN, Modal: { ...zh_CN.Modal, confirm: '好的' } };
     registerLocale('zh_CN', custom);
     expect(resolveLocale('zh_CN')).toBe(custom);
   });

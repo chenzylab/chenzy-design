@@ -47,40 +47,43 @@ Slider 是用于在连续或离散区间内选择数值的输入控件。用户�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `number \| [number, number]` | — | 受控值；`range` 时为二元组。配合 `on:change` 使用 |
-| `defaultValue` | `number \| [number, number]` | `min` / `[min,min]` | 非受控初始值 |
-| `min` | `number` | `0` | 最小值 |
-| `max` | `number` | `100` | 最大值 |
-| `step` | `number \| null` | `1` | 步长；为 `null` 时仅可停靠在 `marks` 点 |
-| `range` | `boolean` | `false` | 双滑块区间模式 |
-| `marks` | `Record<number, string \| { label, style }>` | — | 刻度标记，键为数值，值为标签 |
-| `dots` | `boolean` | `false` | 是否在每个 step 处显示圆点 |
-| `included` | `boolean` | `true` | 是否填充已选轨道段（`false` 仅显示手柄） |
-| `vertical` | `boolean` | `false` | 垂直方向 |
-| `height` | `number` | `200` | 垂直模式下的高度（px） |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `tooltipVisible` | `boolean \| undefined` | `undefined` | 强制控制 Tooltip 显隐（受控） |
-| `alwaysShowTip` | `boolean` | `false` | 始终显示数值 Tooltip |
-| `tipFormatter` | `(value: number) => string \| null` | `String` | 自定义提示文案；返回 `null` 隐藏 |
-| `getAriaValueText` | `(value: number, index: number) => string` | — | 自定义 `aria-valuetext`（如带单位） |
-| `marks` 点击 | `clickable` `boolean` | `true` | 是否允许点击 marks/轨道跳转 |
-| `verticalReverse` | `boolean` | `false` | 垂直时反向（顶部为 min） |
-| `railStyle` / `handleStyle` | `string` | — | 透传内联样式 |
-| `id` | `string` | 自动生成 | 根 id，关联表单 label |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（轨道色调提示，用于表单集成） |
+> 本表由 `packages/svelte/src/slider/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `number \| [number, number]` | `undefined` | 受控值；range 时为二元组 |
+| defaultValue | `number \| [number, number]` | `min / [min,min]` | 非受控初始值 |
+| min | `number` | `0` |  |
+| max | `number` | `100` |  |
+| step | `number` | `1` | 步长 |
+| range | `boolean` | `false` | 双滑块区间模式 |
+| marks | `Record<number, string>` | `undefined` | 刻度标记 |
+| included | `boolean` | `true` | 是否填充已选轨道段 |
+| vertical | `boolean` | `false` |  |
+| verticalReverse | `boolean` | `false` | 垂直时反向（顶部为 min） |
+| disabled | `boolean` | `false` |  |
+| tooltipVisible | `boolean \| undefined` | `undefined` | 强制控制数值气泡显隐（受控） |
+| tooltipOnMark | `boolean` | `false` | 气泡跟随刻度显示 |
+| tipFormatter | `(value: number) => string \| number \| null \| undefined` | `(v) => v` | 自定义气泡文案；返回 null/undefined 隐藏气泡 |
+| getAriaValueText | `(value: number, index?: number) => string` | `undefined` | 自定义 aria-valuetext（如带单位） |
+| railStyle | `string` | `undefined` | 透传轨道内联样式 |
+| showArrow | `boolean` | `true` | tooltip 是否显示箭头 |
+| showMarkLabel | `boolean` | `true` | 显示标记文本标签 |
+| showBoundary | `boolean` | `false` | hover 时展示轨道两端边界值标签 |
+| handleDot | `{ color?: string; size?: string } \| { color?: string; size?: string }[]` | `undefined` | 自定义手柄圆点样式，range 时为数组 |
+| id | `string` | `undefined` | 根节点 id |
+| class | `string` | `undefined` | 根节点自定义类名 |
+| style | `string` | `undefined` | 根节点自定义内联样式 |
+| aria-label | `string` | `undefined` |  |
+| ariaLabelledby | `string` | `undefined` | group 与各手柄 aria-labelledby（指向外部 label id） |
+| ariaValuetext | `string` | `undefined` | 覆盖 getAriaValueText 的 aria-valuetext 文案 |
+| onChange | `(value: number \| [number, number]) => void` | `undefined` | 值变化（拖拽中实时/键盘），range 时回传已排序数组 |
+| onAfterChange | `(value: number \| [number, number]) => void` | `undefined` | 拖拽结束/点击/键盘落定时触发 |
+| onMouseUp | `(e: MouseEvent) => void` | `undefined` | pointerup 时触发 |
 
 ### Events
 
-| 事件 | Payload | 说明 |
-|---|---|---|
-| `on:change` | `number \| [number, number]` | 拖拽/键盘/点击导致值变化时（实时，每步触发） |
-| `on:changeComplete` | `number \| [number, number]` | 拖拽结束（pointerup）或键盘操作落定时触发，适合做请求节流 |
-| `on:input` | `number \| [number, number]` | 与 change 同步的低级输入信号（表单绑定用） |
-| `on:focus` | `{ index: number }` | 手柄获得焦点，附带手柄索引（0/1） |
-| `on:blur` | `{ index: number }` | 手柄失焦 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -136,12 +139,12 @@ Slider 是用于在连续或离散区间内选择数值的输入控件。用户�
 - 数字格式化统一用 `Intl.NumberFormat`（千分位、货币、百分比由调用方配置 locale 传入 formatter）。
 - 内部仅以下 a11y 兜底文案走 i18n（当未提供自定义 formatter 时用于 `aria-valuetext` 的可选包装）：
 
-| i18n key | 默认（en） | 说明 |
-|---|---|---|
-| `Slider.ariaLabel` | `"Slider"` | 无外部 label 时的兜底 `aria-label` |
-| `Slider.minHandleLabel` | `"Minimum"` | 双滑块起始手柄 `aria-label` |
-| `Slider.maxHandleLabel` | `"Maximum"` | 双滑块结束手柄 `aria-label` |
-| `Slider.valueText` | `"{value}"` | `aria-valuetext` 模板（locale 数字） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Slider.minReachedAnnounce` | 已是最小值 |
+| `Slider.maxReachedAnnounce` | 已是最大值 |
 
 - RTL locale（ar/he）自动启用方向镜像（见 §6）。
 

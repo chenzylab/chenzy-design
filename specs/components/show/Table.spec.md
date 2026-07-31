@@ -58,38 +58,85 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 ### Props
 
+> 本表由 `packages/svelte/src/table/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `columns` | `ColumnDef<T>[]` | `[]` | 列定义数组（亦可用 `<Table.Column>` 声明式） |
-| `dataSource` | `T[]` | `[]` | 数据源；每行需可由 `rowKey` 解析唯一键 |
-| `rowKey` | `string \| (record:T)=>string` | `'key'` | 行唯一键，虚拟化/选择/展开必需且必须稳定 |
-| `loading` | `boolean \| { spinning, tip }` | `false` | 加载态遮罩 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 密度档位 |
-| `bordered` | `boolean` | `false` | 显示单元格边框 |
-| `stripe` | `boolean` | `false` | 斑马纹 |
-| `sticky` | `boolean \| { offsetHeader }` | `false` | 表头吸顶 |
-| `scroll` | `{ x?: number\|string; y?: number }` | `—` | `x` 触发横向滚动与固定列；`y` 启用固定表头/纵向滚动 |
-| `virtualized` | `boolean \| { itemHeight?: number; overscan?: number }` | `false` | 行虚拟化；`itemHeight` 未给则动态测量。需配合 `scroll.y` |
-| `pagination` | `false \| PaginationProps` | 内置 10/页 | 分页配置；`false` 关闭（常用于虚拟化场景） |
-| `rowSelection` | `RowSelection<T>` | `—` | 选择配置（见下） |
-| `expandable` | `Expandable<T>` | `—` | 展开行配置（含 `expandedRowRender`/`rowExpandable`） |
-| `childrenColumnName` | `string` | `'children'` | 树形数据的子节点字段 |
-| `defaultExpandAllRows` | `boolean` | `false` | 树形/展开默认全展开 |
-| `groupBy` | `string \| (record:T)=>string` | `—` | 分组依据，插入分组标题行（仅顶层行分组） |
-| `renderGroupSection` | `Snippet<[{ groupKey, group }]>` | `—` | 自定义分组标题渲染 |
-| `clickGroupedRowToExpand` | `boolean` | `false` | 点击分组标题行折叠/展开该组数据行（disclosure：`role=button`+`aria-expanded`+Enter/Space） |
-| `defaultExpandAllGroupRows` | `boolean` | `—` | 非受控分组展开初值：缺省（未配置）向后兼容为全展开，显式 `false` 初始全折。动态加载不生效 |
-| `expandAllGroupRows` | `boolean` | `—` | 受控分组展开：`true` 全展/`false` 全折；受控不回写，仅 `on:groupExpandChange` 通知（红线 #1） |
-| `onGroupedRow` | `(group:T[],index:number)=>{ onClick?; onDoubleClick?; className?; style? }` | `—` | 分组标题行自定义属性回调（类似 `onRow`，仅作用于分组头行），返回值合并进分组头 tr |
-| `rowClassName` | `(record:T,index:number)=>string` | `—` | 行自定义类名 |
-| `empty` | `Snippet \| string` | 内置 Empty | 空数据占位 |
-| `getPopupContainer` | `()=>HTMLElement` | `body` | 筛选浮层挂载点 |
-| `renderPagination` | `Snippet<[{ total, currentPage, pageSize, onChange }]>` | `—` | 自定义分页器渲染，替换内置 Pagination；调用 `onChange(page)` 触发内部翻页（受控 current 不回写，红线 #1） |
-| `expandIcon` | `Snippet<[{ expanded, record }]>` | `—` | 自定义展开行的展开/收起图标（替换默认三角），仅 `expandable` 展开列生效 |
-| `hideExpandedColumn` | `boolean` | `true` | 展开按钮是否并入首列。默认 `true`（并入首列，对齐 Semi）；`false` 时展开按钮单独成列 |
-| `rowSpanHover` | `boolean` | `false` | 合并单元格（`rowSpan`）时 hover 高亮整个合并区（渐进能力，依赖单元格合并） |
-| `headerStyle` | `string \| Record<string,string>` | `—` | 表头单元格（所有 th，含 fixed 表头）自定义内联样式 |
-| `locale` | `Partial<TableLocale>` | 全局 | 局部文案覆盖 |
+| --- | --- | --- | --- |
+| columns | `ColumnDef<T>[]` | `[]` | 列定义：key/dataIndex/title/width/fixed/resizable/align/className/ellipsis/sorter/filters/onFilter/filterConfirmMode/render；children 表头合并（子列，父列 title 横跨叶子列）；onCell 返回 colSpan/rowSpan 行列合并（值 0 跳过渲染）；useFullRender 完全自定义（render 额外收到 expandIcon/indentText 物料自行摆放） |
+| children | `Snippet` | `undefined` | 组合式列容器（对齐 Semi Table.Column）：放 <Column> 子组件声明列，嵌套 <Column> 即表头合并。与 columns 并存，传了 columns 用配置式否则用组合式收集 |
+| dataSource | `T[]` | `[]` | 数据行 |
+| rowKey | `string \| ((record: T) => RowKey)` | `'key'` | 行唯一键解析 |
+| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| bordered | `boolean` | `false` | 单元格边框 |
+| stripe | `boolean` | `false` | 斑马纹 |
+| loading | `boolean` | `false` | 半透明遮罩 + spinner |
+| sortState | `SortState` | `undefined` | 受控排序态；受控时不回写，仅 onSortChange |
+| defaultSortState | `SortState` | `{ key: null, order: null }` | 非受控初始排序 |
+| onSortChange | `(state: SortState) => void` | `undefined` |  |
+| pagination | `false \| { pageSize?: number; current?: number; defaultCurrent?: number; onChange?: (page: number) => void }` | `undefined` | false 关闭；对象/缺省启用内置分页(pageSize 默认 10)。current 受控不回写 |
+| rowSelection | `RowSelection<T>` | `undefined` | selectedRowKeys 受控不回写；defaultSelectedRowKeys / onChange / getCheckboxProps；checkStrictly(默认 false) 树形父子联动开关：false 勾父连带勾后代+后代部分选中父行半选，true 父子独立 |
+| expandable | `Expandable<T>` | `undefined` | expandedRowRender / rowExpandable / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand |
+| tree | `boolean \| TreeTable` | `undefined` | 树形数据：true 或 { childrenColumnName(默认 children) / indentSize(默认 16) / expandedRowKeys 受控不回写 / defaultExpandedRowKeys / onExpand }。第一列内展开三角+逐级缩进；排序/分页/筛选作用于顶层行 |
+| rowClassName | `(record: T, index: number) => string` | `undefined` |  |
+| empty | `string` | `'暂无数据'` | 空数据占位文案 |
+| aria-label | `string` | `undefined` | table aria-label |
+| onRowClick | `(info: { record: T; index: number }) => void` | `undefined` |  |
+| virtualized | `boolean` | `false` | 行虚拟滚动：仅渲染视口内行，适合大数据(1000+)。启用时忽略 pagination(全量滚动)、表头 sticky 固定顶部；假定行等高，不建议与 expandable 混用 |
+| height | `number` | `400` | 虚拟滚动视口高度(px)，virtualized 时生效 |
+| rowHeight | `number` | `48` | 虚拟滚动行高(px)，virtualized 时生效 |
+| onChange | `(info: TableChangeInfo) => void` | `undefined` | 聚合事件：排序/筛选/分页任一变化的主入口（受控数据回流） |
+| onFilterChange | `(info: { dataIndex: string; values: (string\|number)[] }) => void` | `undefined` | 筛选状态变化（含重置） |
+| onPaginationChange | `(info: { current: number; pageSize: number }) => void` | `undefined` | 分页变化 |
+| onSelectChange | `(info: { selectedRowKeys: RowKey[]; selectedRows: T[] }) => void` | `undefined` | 选择集变化（与 rowSelection.onChange 同时触发） |
+| onExpandChange | `(info: { expanded: boolean; record: T; expandedRowKeys: RowKey[] }) => void` | `undefined` | 行展开/收起（展开行与树形行均触发） |
+| onScroll | `(info: TableScrollInfo) => void` | `undefined` | 滚动位置（含触底，用于无限加载） |
+| onReachBottom | `() => void` | `undefined` | 纵向触底（懒加载触发），距底 reachBottomThreshold 像素内触发一次 |
+| reachBottomThreshold | `number` | `0` | onReachBottom 触发阈值（距底像素），默认 0（精确触底） |
+| gridNav | `boolean` | `undefined` | 交互态 WAI-ARIA Grid Pattern 开关；缺省时按是否有交互能力自动启用，显式 true/false 强制 |
+| scroll | `ScrollConfig` | `undefined` | 横/纵向滚动配置：x 设最小宽度横向溢出，y 设最大高度纵向溢出；scrollToFirstRowOnChange 分页/排序/筛选变化后滚回顶部 |
+| components | `{ table?; header?; body? }（tag 名）` | `undefined` | 覆盖组成元素 tag（对齐 Semi）：thead/tbody/行经 svelte:element 换标签，内部 class/role/事件仍注入 |
+| getVirtualizedListRef | `(ref: { scrollTo; scrollToItem }) => void` | `undefined` | 返回虚拟化滚动控制句柄，仅 virtualized 有效（对齐 Semi） |
+| sticky | `boolean \| { offsetHeader?: number }` | `false` | 表头吸顶：true 时 sticky 定位；对象可指定 offsetHeader（px） |
+| showHeader | `boolean` | `true` | 是否显示表头 |
+| defaultExpandAllRows | `boolean` | `false` | 默认展开全部行（含树形行） |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 筛选浮层挂载容器，默认跟随触发按钮 |
+| onRow | `(record: T, index: number, rowStatus?: { disabled?; selected? }) => { onClick?; onDoubleClick?; onMouseEnter?; onMouseLeave?; className?; style? }` | `undefined` | 行级事件与属性（返回值合并到 tr；第三参 rowStatus 含 disabled/selected） |
+| onHeaderRow | `(columns: ColumnDef<T>[], index: number) => { onClick?; className?; style? }` | `undefined` | 表头行级事件与属性 |
+| expandRowByClick | `boolean` | `false` | 点击行体触发展开/收起 |
+| expandCellFixed | `boolean \| 'left' \| 'right'` | `undefined` | 展开图标列固定方向 |
+| keepDOM | `boolean` | `false` | true 时保留已展开行 DOM 但隐藏（display:none） |
+| indentSize | `number` | `20` | 树形缩进像素（tree.indentSize 优先） |
+| groupBy | `string \| ((record: T) => string)` | `undefined` | 按字段名或函数对数据行分组，插入分组标题行 |
+| renderGroupSection | `Snippet<[{ groupKey: string; group: T[] }]>` | `undefined` | 自定义分组标题渲染 |
+| clickGroupedRowToExpand | `boolean` | `false` | 点击分组标题行折叠/展开该组内数据行（groupBy 时生效，disclosure 模式 role=button+aria-expanded+Enter/Space 可达） |
+| defaultExpandAllGroupRows | `boolean` | `false` | 非受控：默认是否展开分组行。对齐 Semi，仅显式 true 才默认展开，缺省与 false 均默认折叠。动态加载数据不生效 |
+| expandAllGroupRows | `boolean` | `undefined` | 受控：true 展开全部分组、false 折叠全部分组；受控时不回写，仅经 onGroupExpandChange 通知 |
+| onGroupExpandChange | `(info: { groupKey: string; expanded: boolean; expandedGroupKeys: string[] }) => void` | `undefined` | 分组展开/收起变化回调（点击分组标题行触发） |
+| onGroupedRow | `(group: T[], index: number) => { onClick?; onDoubleClick?; className?; style? }` | `undefined` | 分组标题行自定义属性回调（类似 onRow，仅作用于分组头行），返回值合并进分组头 tr |
+| titleSnippet | `Snippet` | `undefined` | 表格顶部标题区域 |
+| footerSnippet | `Snippet<[{ currentData: T[] }]>` | `undefined` | 表格底部内容区域（接收 currentData） |
+| renderPagination | `Snippet<[{ total: number; currentPage: number; pageSize: number; onChange: (page: number) => void }]>` | `undefined` | 自定义分页器渲染，替换内置 Pagination UI；调用 onChange(page) 触发内部翻页（受控 current 不回写） |
+| expandIcon | `Snippet<[{ expanded: boolean; record: T }]>` | `undefined` | 自定义展开行的展开/收起图标（替换默认三角），仅 expandable 展开列生效 |
+| hideExpandedColumn | `boolean` | `true` | 展开按钮是否并入首列。默认 true（并入首列，对齐 Semi）；false 时展开按钮单独成列 |
+| rowSpanHover | `boolean` | `false` | 合并单元格（rowSpan）时 hover 高亮整个合并区（渐进能力，依赖单元格合并） |
+| headerStyle | `string \| Record<string, string>` | `undefined` | 表头单元格（所有 th，含 fixed 表头）自定义内联样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 排序/筛选/分页任一变化的聚合主入口（受控数据回流） |
+| `onSortChange` | 表头排序切换(三态循环) |
+| `onFilterChange` | 列筛选状态变化（含重置） |
+| `onPaginationChange` | 分页变化 |
+| `onSelectChange` | 选择集变化（与 rowSelection.onChange 同时触发） |
+| `onExpandChange` | 行展开/收起（展开行与树形行均触发） |
+| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发） |
+| `onScroll` | 滚动位置（含触底） |
+| `onReachBottom` | 纵向触底（懒加载触发） |
+| `rowSelection.onChange` | 行选择变更，回传 keys 与对应 rows |
+| `pagination.onChange` | 页码变更 |
+| `onRowClick` | 行点击(复选框/排序按钮已阻止冒泡) |
 
 `ColumnDef<T>` 关键字段：`dataIndex`、`title`、`key`、`width`、`align('left'|'center'|'right')`、`fixed('left'|'right'|true)`、`ellipsis`、`sorter(boolean|(a,b)=>number|{multiple})`、`sortOrder`、`defaultSortOrder`、`filters`、`filteredValue`、`onFilter`、`filterMultiple`、`render`、`colSpan`/`rowSpan`(via `onCell`)、`resizable`、`children`(多级表头)。
 
@@ -97,18 +144,20 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| `on:change` | `{ pagination, filters, sorter, extra:{action:'paginate'\|'sort'\|'filter'} }` | 排序/筛选/分页任一变化的聚合事件（受控数据主入口） |
-| `on:sortChange` | `{ column, order, sorter }` | 排序状态变化 |
-| `on:filterChange` | `{ dataIndex, values }` | 筛选状态变化 |
-| `on:paginationChange` | `{ current, pageSize }` | 分页变化 |
-| `on:selectChange` | `{ selectedRowKeys, selectedRows }` | 选择集变化（对应 `rowSelection.onChange`） |
-| `on:expandChange` | `{ expanded, record, expandedRowKeys }` | 行展开/收起 |
-| `on:groupExpandChange` | `{ groupKey, expanded, expandedGroupKeys }` | 分组展开/收起（点击分组标题行触发） |
-| `on:rowClick` | `{ record, index, event }` | 行点击（亦提供 `rowDblClick`/`rowContextMenu`） |
-| `on:scroll` | `{ scrollLeft, scrollTop, atLeft, atRight, atTop, atBottom }` | 滚动位置（含虚拟化触底，用于无限加载） |
-| `on:reachBottom` | `{ }` | 纵向触底（懒加载触发） |
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 排序/筛选/分页任一变化的聚合主入口（受控数据回流） |
+| `onSortChange` | 表头排序切换(三态循环) |
+| `onFilterChange` | 列筛选状态变化（含重置） |
+| `onPaginationChange` | 分页变化 |
+| `onSelectChange` | 选择集变化（与 rowSelection.onChange 同时触发） |
+| `onExpandChange` | 行展开/收起（展开行与树形行均触发） |
+| `onGroupExpandChange` | 分组展开/收起（点击分组标题行触发） |
+| `onScroll` | 滚动位置（含触底） |
+| `onReachBottom` | 纵向触底（懒加载触发） |
+| `rowSelection.onChange` | 行选择变更，回传 keys 与对应 rows |
+| `pagination.onChange` | 页码变更 |
+| `onRowClick` | 行点击(复选框/排序按钮已阻止冒泡) |
 
 注：受控 API 统一为 `value + on:change` 语义在此具象为「各状态字段 + 聚合 `on:change`」；筛选浮层显隐内部遵循 `open + on:openChange` 模式（透传至内部 Dropdown）。
 
@@ -174,26 +223,28 @@ Table 是结构化二维数据的核心展示与操作组件，是整个组件�
 
 用户可见文案零硬编码，经 `locale` prop 或全局 i18n provider 注入。日期/数字列由用户在 `render` 中使用 `Intl.DateTimeFormat`/`Intl.NumberFormat`（组件透传当前 locale 至 `render` 上下文）。
 
-| i18n key | 默认（en） | 用途 |
-|---|---|---|
-| `Table.emptyText` | No data | 空数据 |
-| `Table.selectAll` | Select all | 全选框标签 |
-| `Table.selectInvert` | Invert selection | 反选 |
-| `Table.selectNone` | Clear all | 清空选择 |
-| `Table.selectRow` | Select row | 行选择框标签 |
-| `Table.sortBy` | Sort by {column} | 排序按钮标签 |
-| `Table.sortAscend` | Click to sort ascending | 排序提示 |
-| `Table.sortDescend` | Click to sort descending | 排序提示 |
-| `Table.sortCancel` | Click to cancel sorting | 排序提示 |
-| `Table.sortedAnnounce` | Sorted by {column}, {order} | 排序播报 |
-| `Table.filterTitle` | Filter menu | 筛选浮层标题 |
-| `Table.filterConfirm` | OK | 筛选确认 |
-| `Table.filterReset` | Reset | 筛选重置 |
-| `Table.filterEmpty` | No filters | 无筛选项 |
-| `Table.expand` | Expand row | 展开按钮 |
-| `Table.collapse` | Collapse row | 收起按钮 |
-| `Table.selectedCount` | {count} selected | 选中计数（亦用于播报） |
-| `Table.loading` | Loading… | 加载提示 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Table.emptyText` | 暂无数据 |
+| `Table.selectAll` | 全选 |
+| `Table.selectRow` | 选择此行 |
+| `Table.expandRow` | 展开行 |
+| `Table.collapseRow` | 收起行 |
+| `Table.ascend` | 点击升序 |
+| `Table.descend` | 点击降序 |
+| `Table.cancelSort` | 取消排序 |
+| `Table.filter` | 筛选 |
+| `Table.resetFilter` | 重置 |
+| `Table.confirmFilter` | 确定 |
+| `Table.resizeColumn` | 拖拽调整列宽 |
+| `Table.sortedAnnounce` | 已按 {column} {order}排序 |
+| `Table.sortClearedAnnounce` | 已取消 {column} 排序 |
+| `Table.sortOrderAscend` | 升序 |
+| `Table.sortOrderDescend` | 降序 |
+| `Table.rowCount` | {count} 行 |
+| `Table.pageText` | 显示第 {currentStart} 条-第 {currentEnd} 条，共 {total} 条 |
 
 分页文案复用 `Pagination.*` key，不在此重复定义。
 

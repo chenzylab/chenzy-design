@@ -1,24 +1,36 @@
 <script lang="ts">
-  import { LocaleProvider, Empty, Pagination, Text } from '@chenzy-design/svelte';
+  // 严格复刻 Semi「自定义国际化组件」demo：
+  //  - 上半部分读**内置组件**的 i18n 文本（Semi 用 TimePicker.begin，本库同）；
+  //  - 下半部分读**自定义组件**注入的键（Semi 的 ComponentA.customKey，本库同）。
+  // 三个语言包各自 mergeLocale 出一份带 ComponentA 的副本（对齐 Semi 的 `{...zh_CN, ComponentA: {...}}`）。
+  // 本库语言包只有 zh_CN / en_US，故第三档用「en_US 基底 + 自定义 code」演示注册自定义包。
+  import { LocaleProvider, zh_CN, en_US, mergeLocale, type Locale } from '@chenzy-design/svelte';
+  import LocaleConsumerView from './LocaleConsumerView.svelte';
 
-  // locale 既可传语言包对象，也可传内置字符串码（'zh-CN' / 'en-US'）。
-  let code = $state<'zh-CN' | 'en-US'>('zh-CN');
+  const new_zh_CN = mergeLocale(zh_CN, { ComponentA: { customKey: 'semi' } }) as Locale;
+  const new_en_US = mergeLocale(en_US, { ComponentA: { customKey: 'design' } }) as Locale;
+  const new_custom = mergeLocale(en_US, {
+    code: 'en-GB',
+    ComponentA: { customKey: 'dsm' },
+  }) as Locale;
 </script>
 
-<div style="display:flex; gap:8px; margin-bottom:12px">
-  <button type="button" onclick={() => (code = 'zh-CN')}>中文（zh-CN）</button>
-  <button type="button" onclick={() => (code = 'en-US')}>English (en-US)</button>
-</div>
+<LocaleProvider locale={new_zh_CN}>
+  <LocaleConsumerView componentName="TimePicker" field="begin" />
+</LocaleProvider>
+<LocaleProvider locale={new_en_US}>
+  <LocaleConsumerView componentName="TimePicker" field="begin" />
+</LocaleProvider>
+<LocaleProvider locale={new_custom}>
+  <LocaleConsumerView componentName="TimePicker" field="begin" />
+</LocaleProvider>
 
-<LocaleProvider locale={code}>
-  <div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
-    <div>
-      <Text type="secondary">Empty 内置文案</Text>
-      <Empty />
-    </div>
-    <div>
-      <Text type="secondary">Pagination 内置文案</Text>
-      <Pagination total={120} showTotal currentPage={1} pageSize={10} />
-    </div>
-  </div>
+<LocaleProvider locale={new_zh_CN}>
+  <LocaleConsumerView componentName="ComponentA" field="customKey" />
+</LocaleProvider>
+<LocaleProvider locale={new_en_US}>
+  <LocaleConsumerView componentName="ComponentA" field="customKey" />
+</LocaleProvider>
+<LocaleProvider locale={new_custom}>
+  <LocaleConsumerView componentName="ComponentA" field="customKey" />
 </LocaleProvider>

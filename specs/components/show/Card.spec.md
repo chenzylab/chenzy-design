@@ -41,33 +41,34 @@ Card 为纯展示组件，**无键盘/焦点/浮层逻辑，故省略 @chenzy-de
 
 ### Props
 
-| 属性 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `title` | `string \| Snippet` | — | 卡片标题，渲染于 header 左侧；为字符串时参与 `aria-labelledby` |
-| `extra` | `string \| Snippet` | — | header 右侧附加区，常放操作链接/下拉 |
-| `cover` | `Snippet` | — | 封面区内容（图片/视频），通栏出血、无内边距 |
-| `actions` | `Snippet[] \| Snippet` | — | 底部操作区，多项时等分并以分隔线分割 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸，影响内边距与标题字号 |
-| `bordered` | `boolean` | `true` | 是否显示边框 |
-| `shadow` | `'never' \| 'hover' \| 'always'` | `'never'` | 阴影策略；`hover` 等价悬停抬升 |
-| `hoverable` | `boolean` | `false` | 悬停态视觉反馈（抬升），暗示可点击 |
-| `loading` | `boolean` | `false` | 加载态，body 区渲染骨架占位 |
-| `loadingRows` | `number` | `3` | 骨架占位的段落行数 |
-| `bodyStyle` | `string` | — | body 区内联样式透传 |
-| `headerStyle` | `string` | — | header 区内联样式透传 |
-| `headerLine` | `boolean` | `true` | header 与 body 间是否显示分隔线 |
-| `footerLine` | `boolean` | `true` | actions 区上方是否显示分隔线 |
-| `clickable` | `boolean` | `false` | 整卡可点击：合并 hoverable 视觉并启用 `on:click`/键盘激活与 `role` |
-| `disabled` | `boolean` | `false` | 仅在 `clickable` 时生效，禁用点击与 hover 反馈 |
-| `class` | `string` | — | 根节点自定义类名 |
+> 本表由 `packages/svelte/src/card/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| title | `string\|Snippet` | `undefined` | 标题；string 时用 Typography.Title heading=6 渲染并关联 aria-labelledby |
+| headerExtraContent | `Snippet` | `undefined` | header 右侧的额外内容 |
+| header | `Snippet` | `undefined` | 自定义头部，覆盖 title 与 headerExtraContent |
+| headerLine | `boolean` | `true` | header 与 body 间分隔线 |
+| headerStyle | `string` | `undefined` | header 区内联样式透传 |
+| cover | `Snippet` | `undefined` | 顶部出血封面 |
+| bodyStyle | `string` | `undefined` | body 区内联样式透传 |
+| actions | `Snippet` | `undefined` | body 底部操作组，以 12px 水平间距（Space）排布 |
+| footer | `Snippet` | `undefined` | 自定义页脚 |
+| footerLine | `boolean` | `false` | footer 区上方分隔线 |
+| footerStyle | `string` | `undefined` | footer 区内联样式透传 |
+| bordered | `boolean` | `true` | 是否有外边框 |
+| shadows | `'hover'\|'always'` | `undefined` | 阴影显示时机：hover 悬停显示、always 常显；不设则无阴影 |
+| loading | `boolean` | `false` | body 显示 Skeleton 占位（Title + Paragraph rows=3） |
+| class | `string` | `undefined` | 根节点自定义类名 |
+| style | `string` | `undefined` | 根节点自定义内联样式 |
+| aria-label | `string` | `undefined` | 根节点 aria-label，表述该 Card 的作用 |
+| children | `Snippet` | `undefined` | 卡片正文 |
+
+**子组件**：`Card.Meta`、`Card.Group`
 
 ### Events
 
-| 事件 | 载荷 (detail) | 触发时机 |
-|---|---|---|
-| `on:click` | `{ originalEvent: MouseEvent \| KeyboardEvent }` | `clickable` 时整卡被点击或键盘激活（Enter/Space）；`disabled` 时不触发 |
-| `on:mouseenter` | `{ originalEvent: MouseEvent }` | 指针进入卡片（用于业务联动 hover） |
-| `on:mouseleave` | `{ originalEvent: MouseEvent }` | 指针离开卡片 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 非 `clickable` 模式下 Card 不拦截原生事件，使用方可直接监听冒泡的原生 DOM 事件。
 

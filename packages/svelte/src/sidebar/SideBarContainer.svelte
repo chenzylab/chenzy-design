@@ -437,7 +437,8 @@
     color: var(--cd-sidebar-title-color);
     font-size: var(--cd-sidebar-title-size);
     font-weight: var(--cd-sidebar-title-weight);
-    line-height: 1.4;
+    /* Semi sidebar.scss:45 @include font-size-header-6 → 22px */
+    line-height: var(--cd-line-height-header-6);
     text-overflow: ellipsis;
     white-space: nowrap;
   }

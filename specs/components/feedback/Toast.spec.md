@@ -45,38 +45,35 @@ Toast 是轻量级全局反馈组件，用于在不打断用户当前操作流�
 
 ### Props（`Toast.config` 全局默认 / 单条 `open` 入参 options）
 
+> 本表由 `packages/svelte/src/toast/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| content | string \| Snippet | — | 提示内容；必填（命令式首参可直接传 string） |
-| type | `'info'\|'success'\|'warning'\|'error'\|'loading'` | `'info'` | 类型预设，决定图标与色彩 |
-| duration | number | 3 | 自动消失秒数；`0` 表示不自动关闭（`loading` 默认 0） |
-| id | string | 自动 | 唯一标识；重复传入则更新现有 Toast |
-| position | `'top'\|'topLeft'\|'topRight'\|'bottom'\|'bottomLeft'\|'bottomRight'` | `'top'` | 弹出方位 |
-| size | `'small'\|'default'\|'large'` | `'default'` | 尺寸 |
-| icon | Snippet \| false | 类型默认图标 | 自定义前导图标；`false` 隐藏图标 |
-| showClose | boolean | true | 是否显示关闭按钮 |
-| closable | boolean | true | 是否允许手动关闭（含关闭按钮与可选点击） |
-| pauseOnHover | boolean | true | 悬停/聚焦时暂停计时 |
-| top | number \| string | 24 | 距视口顶/底的偏移（top/bottom 系生效） |
-| zIndex | number | `--cd-z-index-toast` | 自定义层级 |
-| maxCount | number | 5 | 同时可见上限（全局，超出 FIFO 移除） |
-| getPopupContainer | () => HTMLElement | () => body | 自定义挂载容器 |
-| theme | `'light'\|'dark'` | 跟随系统/主题 | 强制配色主题 |
-| stack | boolean | true | 是否堆叠展示；false 时仅显示最新一条 |
-| onClose | () => void | — | 关闭回调（见 Events） |
-| onClick | (e) => void | — | 点击 Toast 主体回调 |
+| --- | --- | --- | --- |
+| content | `string \| Snippet` | `''` | 提示内容（必填），支持文本或自定义 Snippet |
+| id | `string` | `undefined` | 自定义 ToastId；已存在则原地合并更新并重启定时器 |
+| type | `'info'\|'success'\|'warning'\|'error'\|'default'` | `'default'` | 语义类型，决定图标与色；default 无内置图标 |
+| duration | `number` | `3` | 自动关闭秒数；0 = 不自动关闭（须手动关闭） |
+| showClose | `boolean` | `true` | 是否展示关闭按钮 |
+| textMaxWidth | `number \| string` | `450` | 内容的最大宽度 |
+| theme | `'normal'\|'light'` | `'normal'` | 填充样式；'light' 浅色填充 + 类型描边 |
+| stack | `boolean` | `false` | 是否堆叠 Toast（多条叠一摞、Hover 展开） |
+| icon | `Snippet` | `undefined` | 自定义图标（覆盖类型内置图标） |
+| direction | `'ltr'\|'rtl'` | `'ltr'` | 书写方向 |
+| onClose | `() => void` | `undefined` | toast 关闭时的回调（无参数，对齐 Semi） |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | toast 关闭时触发（无参数，对齐 Semi） |
 
 > 说明：本组件以命令式为主，无传统受控 `value`；其"显隐受控"语义由 `id` + `Toast.close(id)` / `Toast.update(id, opts)` 表达，符合命令式浮层的一致性变体。
 
 ### Events / Callbacks
 
-| 事件 | 触发时机 | 回调参数 |
-|---|---|---|
-| onClose | 任意原因关闭（到时/手动/destroyAll）后 | `(id: string, reason: 'timeout'\|'manual'\|'replace'\|'destroyAll')` |
-| onClick | 用户点击 Toast 主体 | `(event: MouseEvent, id: string)` |
-| onMouseEnter | 指针进入（暂停计时） | `(id: string)` |
-| onMouseLeave | 指针离开（恢复计时） | `(id: string)` |
-| onOpenChange | 单条出现/消失（统一变体，open=true 出现，false 消失） | `(open: boolean, id: string)` |
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | toast 关闭时触发（无参数，对齐 Semi） |
 
 > 命令式返回值：`Toast.success(...)` 返回 `id: string`，便于后续 `close/update`。`Toast.promise(p, msgs)` 返回原 Promise。
 
@@ -138,14 +135,11 @@ Toast 是轻量级全局反馈组件，用于在不打断用户当前操作流�
 
 用户可见文案零硬编码，经 i18n provider 注入；命令式 `content` 由调用方负责本地化。库自带文案：
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `Toast.close` | 关闭 | 关闭按钮 aria-label |
-| `Toast.loading` | 加载中 | loading 类型缺省播报前缀（无 content 时） |
-| `Toast.typeLabel.info` | 信息 | 播报时前缀类型语义（供读屏） |
-| `Toast.typeLabel.success` | 成功 | 同上 |
-| `Toast.typeLabel.warning` | 警告 | 同上 |
-| `Toast.typeLabel.error` | 错误 | 同上 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Toast.close` | 关闭 |
 
 - 播报文本组装为 `{typeLabel} + content`（如"错误：保存失败"），`typeLabel` 走 i18n。
 - 涉及时间/数量的内容由调用方用 `Intl.DateTimeFormat` / `Intl.NumberFormat` 格式化后传入；组件不内置格式化。

@@ -3,7 +3,6 @@ title: Empty 空状态
 name: empty
 category: show
 brief: 空状态时的展示占位图。
-docMode: inline
 ---
 
 <script>
@@ -31,7 +30,7 @@ import { Empty } from '@chenzy-design/svelte';
 
 ### 基本用法
 
-通过 `imageSlot` 设置占位图片，可以引入本库内置的对应插画（插画默认宽高是 200x200），也可以传入自定义的插画。目前拥有的插画可以查看[占位图插画](#占位图插画_建设中_)。
+通过 `imageSlot` 设置占位图片，可以引入本库内置的对应插画（插画默认宽高是 200x200），也可以传入自定义的插画。目前拥有的插画可以查看[占位图插画](#占位图插画aaa建设中aaa)。
 
 内置一系列暗色模式的插画，并支持通过 `darkModeImageSlot` 传入暗色模式下需要使用的插画，以更好地适配暗色模式。
 

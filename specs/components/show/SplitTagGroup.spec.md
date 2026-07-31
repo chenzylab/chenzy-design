@@ -25,11 +25,44 @@ SplitTagGroup 把一组 Tag 渲染成**连接的整体**——首个子元素前
 
 ### Props
 
-| 名称 | 类型 | 默认 | 说明 |
+> 本表由 `packages/svelte/src/tag/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `ariaLabel` | `string` | — | 组的可访问名（`aria-label`）。 |
-| `class` / `style` | `string` | — | 根节点。 |
-| `children` | `Snippet` | — | 子 Tag（首尾自动加圆角、相邻合并边）。 |
+| type | `'light'\|'solid'\|'ghost'` | `'light'` | 视觉风格 |
+| color | `'amber'\|'blue'\|'cyan'\|'green'\|'grey'\|'indigo'\|'light-blue'\|'light-green'\|'lime'\|'orange'\|'pink'\|'purple'\|'red'\|'teal'\|'violet'\|'yellow'\|'white'` | `'grey'` | 语义色，对齐 Semi 16 色板 + white |
+| size | `'small'\|'default'\|'large'` | `'default'` | default 与 small 同高 |
+| shape | `'square'\|'circle'` | `'square'` | circle 用胶囊圆角 |
+| closable | `boolean` | `false` | 尾部关闭按钮 |
+| visible | `boolean` | `undefined` | 受控显隐；受控时不回写，仅 onClose 通知 |
+| colorful | `boolean` | `false` | AI 多彩标签：蓝→紫渐变，字重更重 |
+| gradient | `boolean` | `false` | 渐变色，仅 colorful=true 时生效 |
+| avatarSrc | `string` | `undefined` | 头像型 Tag 的图片地址 |
+| avatarShape | `'square'\|'circle'` | `'square'` | 头像形状 |
+| tagKey | `string\|number` | `undefined` | 在 TagGroup 中的稳定标识 |
+| prefixIcon | `Snippet` | `undefined` | 前置图标 |
+| suffixIcon | `Snippet` | `undefined` | 后置图标（关闭图标始终最右） |
+| children | `Snippet` | `undefined` | 标签内容 |
+| contentAlign | `'ellipsis' \| 'center'` | `'ellipsis'` | 内容对齐：ellipsis 纯文本单行省略号左对齐；center 含富内容（图标等）flex 垂直居中 |
+| onClose | `(tagChildren, e, tagKey) => void` | `undefined` | 关闭回调；在回调内 e.preventDefault() 阻止默认隐藏 |
+| onClick | `(e) => void` | `undefined` | 单击回调；传入后标签变可交互(role=button/可聚焦/Enter 激活) |
+| onMouseEnter | `(e) => void` | `undefined` | 鼠标进入回调 |
+| onKeyDown | `(e) => void` | `undefined` | 键盘事件回调（内部处理后触发） |
+| tabIndex | `number` | `undefined` | 可交互 Tag 的 tabIndex（TagInput 内用 -1） |
+| aria-label | `string` | `undefined` | 透传根元素可访问名（aria-label） |
+| class | `string` | `undefined` | 透传根类名 |
+| style | `string` | `undefined` | 透传根内联样式 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onClose` | 关闭按钮点击（tagChildren, e, tagKey） |
+| `onClick` | 标签点击（clickable 时） |
+| `onMouseEnter` | 鼠标进入 |
+| `onKeyDown` | 键盘按下 |
+
+**子组件**：`TagGroup`、`SplitTagGroup`
 
 ### Slots
 

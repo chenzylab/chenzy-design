@@ -21,18 +21,15 @@ export interface Locale {
     options?: unknown;
   };
   Modal: {
-    okText: string;
-    cancelText: string;
+    confirm: string;
+    cancel: string;
     close: string;
   };
   Input: {
-    clear: string;
     showPassword: string;
     hidePassword: string;
   };
   Textarea: {
-    /** clear button aria-label */
-    clear: string;
     /** count display template, uses {count} and {maxCount} */
     countFormat: string;
     /** count display template with no limit, uses {count} */
@@ -53,7 +50,7 @@ export interface Locale {
     /** showSizeChanger 内置 Select 的可访问名 */
     itemsPerPage: string;
     jumpTo: string;
-    jumpToSuffix: string;
+    page: string;
     /** 省略号项的可访问名（对齐 Semi aria-label="More"） */
     more: string;
     /** live-region 翻页播报，uses {page} and {count} */
@@ -67,16 +64,12 @@ export interface Locale {
     selectRow: string;
     expandRow: string;
     collapseRow: string;
-    /** uses {column} */
-    sortBy: string;
-    sortAscend: string;
-    sortDescend: string;
-    sortCancel: string;
-    /** uses {count} */
-    selectedCount: string;
+    ascend: string;
+    descend: string;
+    cancelSort: string;
     filter: string;
-    filterReset: string;
-    filterConfirm: string;
+    resetFilter: string;
+    confirmFilter: string;
     resizeColumn: string;
     /** live-region 排序播报，uses {column} and {order} */
     sortedAnnounce: string;
@@ -88,29 +81,8 @@ export interface Locale {
     sortOrderDescend: string;
     /** grid 行数（虚拟化焦点回收播报），uses {count} */
     rowCount: string;
-    /** grid 列数，uses {count} */
-    columnCount: string;
     /** 分页 range 文案（对齐 Semi pageText），uses {currentStart} {currentEnd} {total} */
     pageText: string;
-  };
-  Empty: {
-    noData: string;
-    noResult: string;
-    error: string;
-    construction: string;
-    success: string;
-    noAccess: string;
-  };
-  Descriptions: {
-    empty: string;
-  };
-  OverflowList: {
-    /** uses {count} */
-    moreLabel: string;
-    /** uses {count} */
-    moreAriaLabel: string;
-    /** scroll 模式可滚动可见层的可访问名 */
-    scrollAriaLabel: string;
   };
   Avatar: {
     /** AvatarGroup 折叠 +N 头像的可访问名，uses {count} */
@@ -120,32 +92,12 @@ export interface Locale {
   };
   Spin: {
     loading: string;
-    loaded: string;
-  };
-  Progress: {
-    ariaLabel: string;
-    /** uses {percent} */
-    valueText: string;
-    success: string;
-    error: string;
-    indeterminate: string;
-  };
-  Skeleton: {
-    loading: string;
-    loaded: string;
-    imageAlt: string;
   };
   Banner: {
     closeButtonAriaLabel: string;
   };
-  Drawer: {
-    close: string;
-    title: string;
-  };
   SideSheet: {
     closeAriaLabel: string;
-    closeText: string;
-    confirmText: string;
   };
   Popconfirm: {
     confirm: string;
@@ -157,12 +109,6 @@ export interface Locale {
   };
   Notification: {
     closeText: string;
-    notification: string;
-    /** 视觉隐藏类型前缀（屏幕阅读器先播报极性） */
-    success: string;
-    info: string;
-    warning: string;
-    error: string;
   };
   BackTop: {
     ariaLabel: string;
@@ -176,17 +122,12 @@ export interface Locale {
     prev: string;
     /** 下一曲 Tooltip（对齐 Semi next） */
     next: string;
-    /** 循环播放（对齐 Semi loop，当前无 UI 保留以对齐 API） */
-    loop: string;
     /** 音量 Tooltip（对齐 Semi volume） */
     volume: string;
-    /** 音频加载失败（对齐 Semi mediaError，当前组件照搬 Semi 硬编码文案未引用） */
-    mediaError: string;
     /** 进度条 aria-label（本库自建 slider a11y 必需，Semi 无此项） */
     progress: string;
   };
   Rating: {
-    ariaLabel: string;
     /** uses {value} and {count} */
     valueText: string;
     cleared: string;
@@ -216,7 +157,6 @@ export interface Locale {
     emptyText: string;
   };
   Calendar: {
-    noEvents: string;
     /** 全天事件标签（Semi allDay） */
     allDay: string;
     /** 时间列上午刻度，uses {time}（Semi AM） */
@@ -225,28 +165,21 @@ export interface Locale {
     PM: string;
     /** 月视图 +N 折叠文案，uses {count}（Semi remaining，${remained}） */
     remaining: string;
-    /** LiveAnnouncer：选中日期，uses {date} */
-    selectedDateAnnounce: string;
+    /**
+     * 月视图每月 1 号日期后的单位后缀（对齐 Semi datestring）。
+     * **英文为空串**——中文显示「7月 1日」，英文只显示「Jul 1」。
+     */
+    datestring: string;
   };
   Tree: {
     emptyText: string;
     searchPlaceholder: string;
-    loading: string;
-    /** uses {label} */
-    a11yExpanded: string;
-    /** uses {label} */
-    a11yCollapsed: string;
-    /** uses {label} */
-    a11yChecked: string;
     expand: string;
     collapse: string;
-    clear: string;
   };
   Image: {
     /** 图片 hover 蒙层「预览」文字 */
     preview: string;
-    loading: string;
-    loadError: string;
     /** 预览工具栏 tooltip（对齐 Semi） */
     prevTip: string;
     nextTip: string;
@@ -258,7 +191,6 @@ export interface Locale {
     originTip: string;
     errorAlt: string;
     previewAlt: string;
-    previewTrigger: string;
     closePreview: string;
     /** LiveAnnouncer：预览翻页计数，uses {index} / {total} */
     previewCount: string;
@@ -271,15 +203,11 @@ export interface Locale {
     /** 裁切容器 aria-label */
     container: string;
   };
-  Timeline: {
-    pending: string;
-  };
   Navigation: {
     collapseText: string;
     expandText: string;
   };
   Select: {
-    placeholder: string;
     /** combobox 触发器缺省可访问名 */
     ariaLabel: string;
     emptyText: string;
@@ -288,10 +216,8 @@ export interface Locale {
     clear: string;
     /** uses {label} */
     removeItem: string;
-    /** uses {label} */
-    create: string;
-    /** +N 折叠 Tag 的可访问名 / 悬停浮层标题，uses {count} */
-    restTagsCount: string;
+    /** 新建选项的「创建」提示前缀（对齐 Semi createText，无占位符；输入值由组件另行渲染） */
+    createText: string;
   };
   DatePicker: {
     /** 按 type 分派的占位（照搬 Semi）：range 类型为 [start, end] 数组 */
@@ -363,10 +289,15 @@ export interface Locale {
     presets: string;
   };
   TimePicker: {
-    placeholder: string;
-    now: string;
-    confirm: string;
-    clear: string;
+    /**
+     * 按 type 分派的占位（照搬 Semi locale.TimePicker.placeholder）：
+     * `time` 单选、`timeRange` 范围选择。原先本库是扁平单串，范围模式也显示
+     * 「请选择时间」而非「请选择时间范围」，属真 bug，已按 Semi 拆成两键。
+     */
+    placeholder: {
+      time: string;
+      timeRange: string;
+    };
     triggerLabel: string;
     /**
      * 选中项后缀单位（对齐 Semi locale.TimePicker.hour/minute/second）。
@@ -380,13 +311,13 @@ export interface Locale {
     hourLabel: string;
     minuteLabel: string;
     secondLabel: string;
-    am: string;
-    pm: string;
-    rangeStart: string;
-    rangeEnd: string;
+    AM: string;
+    PM: string;
+    begin: string;
+    end: string;
   };
   Transfer: {
-    searchPlaceholder: string;
+    placeholder: string;
     /** 分组回退标题 / 源栏标题 */
     titleSource: string;
     /** 左侧空态 */
@@ -416,20 +347,17 @@ export interface Locale {
   };
   Upload: {
     trigger: string;
-    draggerText: string;
+    /** 拖拽区主文案（对齐 Semi mainText） */
+    mainText: string;
     /** uses {size} */
     sizeError: string;
     /** uses {size} — file smaller than minSize */
     minSizeError: string;
-    /** uses {limit} */
-    limitError: string;
     remove: string;
     /** 重试按钮/失败重传 */
     retry: string;
     /** 替换已上传文件按钮（showReplace） */
     replace: string;
-    /** 照片墙预览图标 aria-label */
-    preview: string;
     /** 批量清空按钮 */
     clear: string;
     /** live 播报：上传中，uses {name} {percent} */
@@ -438,8 +366,6 @@ export interface Locale {
     announceSuccess: string;
     /** live 播报：上传失败，uses {name} */
     announceError: string;
-    /** 上传中进度条可访问名，uses {name} */
-    uploadingProgress: string;
     /** 裁切弹窗默认标题 */
     cropTitle: string;
     /** 上传超时错误文案（列表项 error + live 播报，uses {name}） */
@@ -450,8 +376,6 @@ export interface Locale {
     selectedFiles: string;
     /** 上传失败默认校验信息（对齐 Semi fail） */
     fail: string;
-    /** 文件尺寸不合法默认信息（对齐 Semi illegalSize） */
-    illegalSize: string;
   };
   Form: {
     /** uses {label} */
@@ -469,9 +393,6 @@ export interface Locale {
     max: string;
     /** uses {label} */
     pattern: string;
-    /** uses {count} */
-    submitFailAnnounce: string;
-    colon: string;
     /** announced/shown while a field is running async validation */
     validating: string;
   };
@@ -485,8 +406,6 @@ export interface Locale {
   AutoComplete: {
     /** combobox 输入框缺省可访问名 */
     ariaLabel: string;
-    clear: string;
-    loading: string;
     emptyText: string;
   };
   InputNumber: {
@@ -494,8 +413,6 @@ export interface Locale {
     decrease: string;
     /** LiveAnnouncer：越界钳制后实际生效值，uses {value} */
     clampedAnnounce: string;
-    /** 清除按钮 aria-label */
-    clear: string;
   };
   Slider: {
     /** LiveAnnouncer：值到达最小边界 */
@@ -512,8 +429,6 @@ export interface Locale {
     columnLabel: string;
     /** 搜索结果 listbox 可访问名 */
     searchResults: string;
-    /** 折叠剩余 tag 的 +N 可访问名 / 浮层计数，uses {count} */
-    restTagsCount: string;
   };
   Carousel: {
     prev: string;
@@ -569,29 +484,16 @@ export interface Locale {
     eyeDropper: string;
     format: string;
   };
-  Tag: {
-    close: string;
-    /** closable 关闭按钮无障碍名，uses {label}（标签文本） */
-    closeAriaLabel: string;
-  };
   TagGroup: {
     /** TagGroup +N 折叠标签的可访问名，uses {count}（被折叠的标签数） */
     restTagsAriaLabel: string;
   };
-  Dropdown: {
-    trigger: string;
-  };
   Tabs: {
     scrollPrev: string;
     scrollNext: string;
-    add: string;
     more: string;
     /** 关闭标签按钮 aria-label，uses {tab} */
     closeTab: string;
-  };
-  Tooltip: {
-    warningLabel: string;
-    errorLabel: string;
   };
   Popover: {
     /** dialog 模式（click/custom 触发）无标题时的兜底 aria-label */
@@ -670,6 +572,8 @@ export interface Locale {
     replaceInput: string;
   };
   Chat: {
+    /** 输入框 aria-label（本库补充：Semi 未给该 textarea 无障碍名，axe 判 critical 违规） */
+    editor: string;
     /** send button aria-label */
     send: string;
     /** stop-generate button aria-label */
@@ -678,6 +582,8 @@ export interface Locale {
     clear: string;
     /** copy-message action aria-label */
     copy: string;
+    /** 代码块复制成功后的即时反馈文案（对齐 Semi Chat.copied） */
+    copied: string;
     /** delete-message action aria-label */
     delete: string;
     /** reset/regenerate-message action aria-label */
@@ -688,14 +594,10 @@ export interface Locale {
     dislike: string;
     /** upload-attachment button aria-label */
     upload: string;
-    /** input placeholder */
-    placeholder: string;
-    /** loading message status text */
-    loading: string;
-    /** error message status text */
-    error: string;
     /** clear-context divider text */
     clearContext: string;
+    /** 拖拽上传遮罩提示文案（对齐 Semi dropAreaText） */
+    dropAreaText: string;
     /** back-to-bottom button aria-label */
     backToBottom: string;
     /** message list region aria-label */
@@ -716,6 +618,8 @@ export interface Locale {
     edit: string;
     /** delete action aria-label */
     delete: string;
+    /** share action aria-label（对齐 Semi onMessageShare 的分享按钮） */
+    share: string;
     /** good-feedback action aria-label */
     like: string;
     /** bad-feedback action aria-label */
@@ -744,8 +648,6 @@ export interface Locale {
   AIChatInput: {
     /** rich-text editor region aria-label */
     editor: string;
-    /** input placeholder */
-    placeholder: string;
     /** send button aria-label */
     send: string;
     /** stop-generate button aria-label */
@@ -769,10 +671,6 @@ export interface Locale {
     /** resize handle default aria-label */
     handleAriaLabel: string;
   };
-  DragMove: {
-    /** drag handle default aria-label (keyboard-accessible handle) */
-    handleAriaLabel: string;
-  };
   SideBar: {
     /** close button aria-label */
     close: string;
@@ -789,9 +687,9 @@ export interface Locale {
     /** CodeContent item expand (fullscreen) button aria-label */
     expand: string;
     /** MCPConfigure default panel title */
-    mcpTitle: string;
+    mcpConfigure: string;
     /** MCPConfigure search input placeholder (fixes Semi hardcoded "请输入") */
-    mcpSearchPlaceholder: string;
+    searchPlaceholder: string;
     /** MCPConfigure search input aria-label */
     mcpSearchLabel: string;
     /** MCPConfigure built-in tools group heading */
@@ -799,19 +697,19 @@ export interface Locale {
     /** MCPConfigure custom tools group heading */
     mcpCustomGroup: string;
     /** MCPConfigure active count summary; interpolates {count} and {total} */
-    mcpActiveCount: string;
+    activeMCPNumber: string;
     /** MCPConfigure enable switch aria-label; interpolates {name} */
     mcpEnable: string;
     /** MCPConfigure preset (locked) switch title/tooltip */
-    mcpPresetLocked: string;
+    defaultMcpInfo: string;
     /** MCPConfigure per-item configure button aria-label; interpolates {name} */
     mcpConfigureItem: string;
     /** MCPConfigure per-item edit button aria-label; interpolates {name} */
     mcpEditItem: string;
     /** MCPConfigure add-custom-tool button label */
-    mcpAddCustom: string;
+    newMcpAdd: string;
     /** MCPConfigure custom-group empty state text */
-    mcpEmptyCustom: string;
+    emptyCustomMcpInfo: string;
     /** MCPConfigure built-in-group empty state text */
     mcpEmptyBuiltin: string;
     /** MCPConfigure no-search-result text */
@@ -853,9 +751,15 @@ export interface Locale {
     /** toolbar insert image */
     image: string;
     /** image upload drop-zone hint */
-    uploadImage: string;
+    uploadImgInfo: string;
     /** image upload failure hint */
-    uploadFail: string;
+    uploadFailInfo: string;
+    /** 图片**校验**失败提示（对齐 Semi validateFailInfo；与 uploadFail 是两条不同文案） */
+    validateFailInfo: string;
+    /** 详情内容复制按钮无障碍名（本库补充：Semi 该按钮无 aria-label，axe 判 critical） */
+    copy: string;
+    /** 详情内容复制成功提示（对齐 Semi Sidebar.copySuccess） */
+    copySuccess: string;
   };
   UserGuide: {
     /** skip button */

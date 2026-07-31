@@ -56,48 +56,52 @@ TagInput 用于在单个输入框内录入并管理一组离散的字符串标�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | `string[]` | — | 受控标签集合，配合 `on:change`。 |
-| defaultValue | `string[]` | `[]` | 非受控初始值。 |
-| inputValue | `string` | — | 受控的输入框文本，配合 `on:inputChange`。 |
-| defaultInputValue | `string` | `''` | 非受控初始输入文本。 |
-| placeholder | `string` | — | 输入框占位（i18n key 兜底，见第 7 节）。 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态。 |
-| disabled | `boolean` | `false` | 禁用整个控件。 |
-| readonly | `boolean` | `false` | 只读：可聚焦不可编辑/删除。 |
-| max | `number` | — | 最大标签数量，达到后禁止新增。 |
-| maxLength | `number` | — | 单个输入文本最大字符数。 |
-| maxTagTextLength | `number` | — | 标签显示截断长度（不改变实际 value）。 |
-| separator | `string \| string[]` | `['Enter']` | 触发成标签的分隔键/字符，如 `[',', ';', 'Enter']`。 |
-| split | `(value: string, separator: string) => string[]` | — | 自定义分隔处理函数（优先于内置拆分，对齐 Semi）。 |
-| maxTagCount | `number` | — | 标签最大展示数量，超出折叠为 `+N`。 |
-| showRestTagsPopover | `boolean` | `true` | hover `+N` 时是否用 Popover 展示剩余标签。 |
-| expandRestTagsOnClick | `boolean` | `true` | 点击 `+N` 是否展开剩余标签。 |
-| addOnBlur | `boolean` | `false` | 失焦时把残留输入文本提交为标签。 |
-| allowDuplicates | `boolean` | `false` | 是否允许重复标签。 |
-| trimWhitespace | `boolean` | `true` | 提交前 trim，空白标签忽略。 |
-| showClear | `boolean` | `false` | 显示一键清空按钮（hover/focus 时）。 |
-| showContentTooltip | `boolean` | `true` | 截断标签 hover 显示全文 tooltip。 |
-| validateTag | `(tag: string, current: string[]) => boolean \| string` | — | 自定义校验，返回 string 作为拒绝原因（播报+不入列）。 |
-| prefix | `string \| Snippet` | — | 输入框前缀（string/图标自动带间隔，自定义 Snippet 间隔为 0）。 |
-| suffix | `string \| Snippet` | — | 输入框后缀。 |
-| ariaLabel | `string` | — | 无可见 label 时的可访问名。 |
+> 本表由 `packages/svelte/src/tag-input/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `string[]` | `undefined` | 受控标签数组（不回写，仅 onChange） |
+| defaultValue | `string[]` | `[]` | 非受控初始标签 |
+| inputValue | `string` | `undefined` | 受控输入框文本（不回写，仅 onInputChange） |
+| placeholder | `string` | `undefined` |  |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `default` | 校验状态样式（对齐 Semi） |
+| disabled | `boolean` | `false` |  |
+| max | `number` | `undefined` | 标签数量上限，超出触发 onExceed 并截断 |
+| maxLength | `number` | `undefined` | 单个标签最大字符数 |
+| separator | `string\|string[]` | `','` | Enter 提交时按此拆分输入为多标签（对齐 Semi 默认逗号） |
+| addOnBlur | `boolean` | `false` | 失焦时自动提交输入 |
+| allowDuplicates | `boolean` | `true` | 是否允许重复标签（对齐 Semi 默认 true） |
+| draggable | `boolean` | `false` | 标签可拖拽重排 |
+| split | `(value: string, separator: string \| string[]) => string[]` | `undefined` | 自定义分隔处理函数（对齐 Semi，优先于内置拆分） |
+| prefix | `string \| Snippet` | `undefined` | 输入框前缀（string/图标自动带间隔） |
+| insetLabel | `string \| Snippet` | `undefined` | 内嵌 label（前缀位，对齐 Semi） |
+| insetLabelId | `string` | `undefined` | 内嵌 label 的 id（对齐 Semi） |
+| suffix | `string \| Snippet` | `undefined` | 输入框后缀 |
+| maxTagCount | `number` | `undefined` | 标签最大展示数量，超出折叠为 +N |
+| showRestTagsPopover | `boolean` | `true` | hover +N 是否用 Popover 展示剩余标签 |
+| restTagsPopoverProps | `Record<string, unknown>` | `undefined` | +N Popover 配置透传（对齐 Semi） |
+| expandRestTagsOnClick | `boolean` | `true` | 点击 +N 是否展开剩余标签 |
+| showContentTooltip | `boolean \| { type?: string; opts?: object }` | `true` | 标签文本截断时 hover 显示全文（对齐 Semi，可传 Popover 配置） |
+| showClear | `boolean` | `false` | 显示清除全部按钮 |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标 |
+| preventScroll | `boolean` | `false` | focus 时阻止滚动 |
+| autoFocus | `boolean` | `false` | 挂载自动聚焦 |
+| renderTagItem | `Snippet<[{ value: string; index: number; onClose: () => void }]>` | `undefined` | 完全自定义 tag 渲染（对齐 Semi renderTagItem(value, index, onClose)） |
+| onChange | `(tags: string[]) => void` | `undefined` |  |
+| onInputChange | `(value: string) => void` | `undefined` |  |
+| onAdd | `(addedValue: string[]) => void` | `undefined` | 新增标签后触发，传当前完整数组（对齐 Semi） |
+| onRemove | `(removedValue: string, index: number) => void` | `undefined` | 移除单个标签时触发（对齐 Semi） |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 输入框 keydown 透传（对齐 Semi） |
+| onExceed | `(value: string[]) => void` | `undefined` | 超出 max 时触发，传当前标签数组（对齐 Semi） |
+| onInputExceed | `(value: string) => void` | `undefined` | 单 tag 超出 maxLength 时触发 |
+| onFocus | `(e: FocusEvent) => void` | `undefined` | 输入框聚焦 |
+| onBlur | `(e: FocusEvent) => void` | `undefined` | 输入框失焦 |
+| aria-label | `string` | `undefined` |  |
 
 ### Events
 
-| 名称 | 载荷 (`event.detail`) | 触发时机 |
-|---|---|---|
-| change | `{ value: string[] }` | 标签集合变化（增/删/清空）。 |
-| inputChange | `{ value: string }` | 输入框文本变化。 |
-| add | `{ tag: string, value: string[] }` | 单个标签被添加成功。 |
-| remove | `{ tag: string, index: number, value: string[] }` | 单个标签被删除。 |
-| exceed | `{ attempted: string, max: number }` | 因达到 `max` 而拒绝新增。 |
-| invalid | `{ tag: string, reason: string }` | `validateTag`/去重/空白校验拒绝。 |
-| focus | `FocusEvent` | 容器获得焦点。 |
-| blur | `FocusEvent` | 容器失去焦点。 |
-| keydown | `KeyboardEvent` | 透传原生键盘事件。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Methods
 
@@ -174,17 +178,11 @@ TagInput 用于在单个输入框内录入并管理一组离散的字符串标�
 
 用户可见文案零硬编码，全部经 i18n。日期/数字（如计数）通过 `Intl.NumberFormat` 格式化。
 
-| i18n key | 默认（zh-CN） | 用途 |
-|---|---|---|
-| `TagInput.placeholder` | 请输入后按回车 | 输入框占位。 |
-| `TagInput.removeTag` | 删除标签 {tag} | 删除按钮 aria-label。 |
-| `TagInput.clearAll` | 清空全部 | 清空按钮 aria-label。 |
-| `TagInput.added` | 已添加 {tag} | 添加成功播报。 |
-| `TagInput.removed` | 已删除 {tag} | 删除播报。 |
-| `TagInput.maxReached` | 最多可添加 {max} 个 | 达上限播报/提示。 |
-| `TagInput.duplicate` | {tag} 已存在 | 重复拒绝播报。 |
-| `TagInput.empty` | 不能添加空标签 | 空白拒绝播报。 |
-| `TagInput.count` | 已添加 {count} 个 | 计数展示。 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `TagInput.clear` | 清空 |
 
 - `{count}` / `{max}` 经 `Intl.NumberFormat(locale)` 输出，适配阿拉伯语等数字系统。
 - 文案支持复数规则（如英文 `1 tag` / `2 tags`）由 i18n 运行时按 locale 选择，组件不内置单复数判断。

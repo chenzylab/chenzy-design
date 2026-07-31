@@ -59,37 +59,41 @@ Carousel（走马灯）用于在有限的视觉空间内循环轮播一组内容
 ## 4. API
 
 ### Props
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `value` | `number` | `0` | 当前激活索引（受控）。配合 `on:change`。 |
-| `defaultActiveIndex` | `number` | `0` | 非受控初始索引。 |
-| `autoplay` | `boolean \| { interval?: number; hoverToPause?: boolean }` | `false` | 是否自动播放；对象形式可配间隔/悬停暂停。 |
-| `interval` | `number` | `3000` | 自动播放间隔（ms）。`autoplay` 对象优先。 |
-| `loop` | `boolean` | `true` | 是否循环（首尾相接）。 |
-| `animation` | `'slide' \| 'fade'` | `'slide'` | 切换动效。 |
-| `slidesToShow` | `number` | `1` | 一屏展示的 slide 数。 |
-| `slidesToScroll` | `number` | `1` | 每次切换滚动的 slide 数。 |
-| `speed` | `number` | `300` | 过渡时长（ms）。 |
-| `showIndicator` | `boolean` | `true` | 是否显示指示器。 |
-| `indicatorType` | `'dot' \| 'line' \| 'columnar'` | `'dot'` | 指示器形态。 |
-| `indicatorPosition` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'bottom'` | 指示器位置。 |
-| `indicatorSize` | `'small' \| 'default' \| 'large'` | `'default'` | 指示器尺寸。 |
-| `trigger` | `'click' \| 'hover'` | `'click'` | 指示器触发切换方式。 |
-| `arrowType` | `'always' \| 'hover' \| 'never'` | `'hover'` | 箭头显示策略。 |
-| `theme` | `'light' \| 'dark'` | `'dark'` | 指示器/箭头配色主题。 |
-| `draggable` | `boolean` | `true`(触摸) / `false`(鼠标) | 是否允许指针拖拽切换。 |
-| `height` | `string \| number` | `'auto'` | 视口高度。 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 整体尺寸（影响箭头/指示器）。 |
-| `destroyOnInactive` | `boolean` | `false` | 非 active slide 是否卸载。 |
-| `ariaLabel` | `string` | i18n 默认 | 走马灯整体可访问名称。 |
+
+> 本表由 `packages/svelte/src/carousel/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| slides | `Snippet[]` | `[]` | 每项一张幻灯片的 Snippet 数组（对齐 Semi children） |
+| activeIndex | `number` | `undefined` | 受控当前激活索引（不回写） |
+| defaultActiveIndex | `number` | `0` | 非受控初始索引 |
+| autoPlay | `boolean \| { interval?: number; hoverToPause?: boolean }` | `true` | 自动播放；布尔或对象形式（interval 默认 2000ms，hoverToPause 默认 true） |
+| animation | `'slide'\|'fade'` | `'slide'` | 切换动画 |
+| speed | `number` | `300` | 切换动画时长（ms） |
+| showIndicator | `boolean` | `true` | 是否展示指示器（每张一个） |
+| indicatorType | `'dot'\|'line'\|'columnar'` | `'dot'` | 指示器类型 |
+| indicatorPosition | `'left'\|'center'\|'right'` | `'center'` | 指示器位置 |
+| indicatorSize | `'small'\|'medium'` | `'small'` | 指示器尺寸 |
+| showArrow | `boolean` | `true` | 是否展示左右箭头 |
+| arrowType | `'always'\|'hover'` | `'always'` | 箭头展示时机：always 始终 / hover 悬停显示 |
+| arrowProps | `{ leftArrow?: ArrowButton; rightArrow?: ArrowButton }` | `undefined` | 自定义箭头（props 透传 onClick/style，children 覆盖默认 Icon） |
+| theme | `'primary'\|'light'\|'dark'` | `'light'` | 指示器与箭头主题 |
+| slideDirection | `'left'\|'right'` | `'left'` | slide 动画滑动方向 |
+| trigger | `'click'\|'hover'` | `'click'` | 指示器触发切换的交互方式 |
+| onChange | `(index: number, preIndex: number) => void` | `undefined` | 索引变更回调（对齐 Semi） |
+| style | `string` | `undefined` | 根元素内联样式（常用于设定宽高） |
+| class | `string` | `''` | 根类名透传 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 当前索引变更（index, preIndex） |
 
 ### Events
-| 名称 | 回调签名 | 说明 |
-|---|---|---|
-| `on:change` | `(e: CustomEvent<{ activeIndex: number; preIndex: number }>)` | 激活项变化（受控同步点）。 |
-| `on:beforeChange` | `(e: CustomEvent<{ from: number; to: number }>)` | 切换开始前，可 `preventDefault` 取消。 |
-| `on:afterChange` | `(e: CustomEvent<{ activeIndex: number }>)` | 过渡动画结束后。 |
-| `on:playStateChange` | `(e: CustomEvent<{ playing: boolean }>)` | autoplay 暂停/恢复时。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onChange` | 当前索引变更（index, preIndex） |
 
 ### Slots
 | 名称 | 作用域参数 | 说明 |
@@ -149,15 +153,18 @@ Carousel（走马灯）用于在有限的视觉空间内循环轮播一组内容
 
 用户可见文案零硬编码，全部走 i18n key；索引/总数用 `Intl.NumberFormat` 格式化。
 
-| i18n key | 默认文案（zh-CN / en） | 用途 |
-|---|---|---|
-| `Carousel.ariaLabel` | 走马灯 / Carousel | 容器可访问名。 |
-| `Carousel.slideLabel` | 第 {index} 张，共 {total} 张 / {index} of {total} | slide 标签 + 播报。 |
-| `Carousel.prev` | 上一张 / Previous slide | 左箭头。 |
-| `Carousel.next` | 下一张 / Next slide | 右箭头。 |
-| `Carousel.play` | 播放 / Start automatic slide show | 播放按钮。 |
-| `Carousel.pause` | 暂停 / Pause automatic slide show | 暂停按钮。 |
-| `Carousel.goToSlide` | 跳转到第 {index} 张 / Go to slide {index} | 指示器。 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Carousel.prev` | 上一张 |
+| `Carousel.next` | 下一张 |
+| `Carousel.indicators` | 轮播指示器 |
+| `Carousel.slideLabel` | 第 {index} 张 |
+| `Carousel.ariaLabel` | 走马灯 |
+| `Carousel.play` | 播放 |
+| `Carousel.pause` | 暂停 |
+| `Carousel.slideAnnounce` | 第 {index} 张，共 {total} 张 |
 
 - `{index}`/`{total}` 经 `Intl.NumberFormat(locale)` 格式化（兼容阿拉伯语等数字系统）。
 - RTL 语言由 locale 推断 `dir`，与 §6 镜像联动。

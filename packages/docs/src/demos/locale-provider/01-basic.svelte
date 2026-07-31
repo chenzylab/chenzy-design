@@ -1,19 +1,13 @@
 <script lang="ts">
-  import { LocaleProvider, zh_CN, en_US, Button, Pagination, Text } from '@chenzy-design/svelte';
-
-  let isZh = $state(true);
+  // 严格复刻 Semi「国际化」demo：两个 LocaleProvider 并列，各包一个 Pagination，
+  // 直观对比同一组件在不同语言下的内置文案。
+  // 本库语言包目前只有 zh_CN / en_US（Semi 有 57 个），故用这两个演示。
+  import { LocaleProvider, zh_CN, en_US, Pagination } from '@chenzy-design/svelte';
 </script>
 
-<Button onclick={() => (isZh = !isZh)}>切换语言：{isZh ? '中文' : 'English'}</Button>
-<div style="margin-top:12px">
-  <LocaleProvider locale={isZh ? zh_CN : en_US}>
-    {#snippet children({ locale, t, formatNumber })}
-      <div style="line-height:2; margin-bottom:8px">
-        <div>生效 locale：<strong>{locale}</strong></div>
-        <div>Modal.okText：<strong>{t('Modal.okText')}</strong></div>
-        <div>格式化数字 1234567.89：<strong>{formatNumber(1234567.89)}</strong></div>
-      </div>
-      <Pagination total={200} showTotal currentPage={1} pageSize={10} />
-    {/snippet}
-  </LocaleProvider>
-</div>
+<LocaleProvider locale={en_US}>
+  <Pagination total={100} showTotal showSizeChanger style="margin: 20px" />
+</LocaleProvider>
+<LocaleProvider locale={zh_CN}>
+  <Pagination total={100} showTotal showSizeChanger style="margin: 20px" />
+</LocaleProvider>

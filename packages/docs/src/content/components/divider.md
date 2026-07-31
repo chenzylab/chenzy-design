@@ -3,7 +3,6 @@ title: Divider 分割线
 name: divider
 category: basic
 brief: 分割线是一个呈线状的轻量化组件，用于有逻辑的组织元素内容和页面结构或区域。
-docMode: inline
 ---
 
 <script>

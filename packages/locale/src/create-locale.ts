@@ -20,7 +20,7 @@ export interface LocaleApi {
   readonly timeZone?: string;
   /** default ISO 4217 currency for currency-style formatNumber */
   readonly currency?: string;
-  /** translate a dot-path key (e.g. 'Modal.okText'); interpolates {params} */
+  /** translate a dot-path key (e.g. 'Modal.confirm'); interpolates {params} */
   t(key: string, params?: Record<string, string | number>): string;
   /**
    * Whole component slice, mirroring Semi's `LocaleConsumer componentName="X"`:
@@ -46,7 +46,7 @@ export interface CreateLocaleOptions {
   currency?: string;
 }
 
-/** read a dot-path (e.g. 'Modal.okText') from a bundle; undefined if absent */
+/** read a dot-path (e.g. 'Modal.confirm') from a bundle; undefined if absent */
 function readPath(bundle: unknown, key: string): string | undefined {
   let cur: unknown = bundle;
   for (const part of key.split('.')) {

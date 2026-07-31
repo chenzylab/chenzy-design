@@ -1,8 +1,8 @@
 <!--
   SideBarMcpConfigure — MCP 工具配置面板（P3）。see specs/components/show/SideBar.spec.md §4/§6/§9。
-  外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n mcpTitle）。
+  外层复用 SideBarContainer 浮层壳（透传全部 Container props，title 默认走 i18n mcpConfigure）。
   内部结构（对齐 Semi mcpConfigure/content，但双列表并列展示而非 radio 二选一）：
-    顶部计数（已启用 N/总数）+ 搜索框（Input，前缀放大镜 + aria-label）
+    顶部计数（「已激活 MCP 数: N/总数」，对齐 Semi activeMCPNumber）+ 搜索框（Input，前缀放大镜 + aria-label）
     → 「内置工具」分组列表（options）
     → 「自定义工具」分组列表（customOptions），空态显示「添加自定义工具」按钮。
   每项：前置图标（string→img / Snippet）+ label + desc + 动作按钮（内置 configure=true 显示配置；
@@ -42,7 +42,7 @@
     customOptions?: SideBarMcpOption[];
     /** 自定义搜索过滤谓词（覆盖默认 label/value 包含匹配）。 */
     filter?: (input: string, option: SideBarMcpOption) => boolean;
-    /** 搜索占位（覆盖 i18n mcpSearchPlaceholder）。 */
+    /** 搜索占位（覆盖 i18n searchPlaceholder）。 */
     placeholder?: string;
     /** 搜索输入回调（input 值 + 当前是否聚焦自定义组，本组件双列表恒传 false）。 */
     onSearch?: (input: string, custom: boolean) => void;
@@ -60,7 +60,7 @@
     // —— Container props（透传 SideBarContainer，MCPConfigure 继承 Container）——
     /** 是否可见（受控，不回写；仅经 onCancel 通知）。 */
     visible?: boolean;
-    /** 标题（默认走 i18n mcpTitle）。 */
+    /** 标题（默认走 i18n mcpConfigure）。 */
     title?: string | Snippet;
     /** 关闭回调。 */
     onCancel?: (e: Event) => void;
@@ -118,10 +118,10 @@
   let inputValue = $state('');
 
   const resolvedTitle = $derived<string | Snippet>(
-    title ?? loc().t('SideBar.mcpTitle'),
+    title ?? loc().t('SideBar.mcpConfigure'),
   );
   const resolvedPlaceholder = $derived(
-    placeholder ?? loc().t('SideBar.mcpSearchPlaceholder'),
+    placeholder ?? loc().t('SideBar.searchPlaceholder'),
   );
 
   // 过滤后的两组列表（纯派生）。
@@ -134,8 +134,10 @@
 
   const activeCount = $derived(countActiveMcpOptions(options, customOptions));
   const totalCount = $derived(options.length + customOptions.length);
+  // 对齐 Semi `{locale.activeMCPNumber} {activatedCount}/{总数}`：文案本身不含占位符，
+  // 计数作为独立文本拼在后面（Semi zh 值就是「已激活 MCP 数:」）。
   const countLabel = $derived(
-    loc().t('SideBar.mcpActiveCount', { count: activeCount, total: totalCount }),
+    `${loc().t('SideBar.activeMCPNumber')} ${activeCount}/${totalCount}`,
   );
 
   const hasCustom = $derived(customOptions.length > 0);
@@ -253,8 +255,8 @@
         <button
           type="button"
           class="cd-sidebar-mcp-add"
-          aria-label={loc().t('SideBar.mcpAddCustom')}
-          title={loc().t('SideBar.mcpAddCustom')}
+          aria-label={loc().t('SideBar.newMcpAdd')}
+          title={loc().t('SideBar.newMcpAdd')}
           onclick={(e) => onAddClick?.(e)}
         >
           {@render plusIcon()}
@@ -269,14 +271,14 @@
       </ul>
     {:else if !hasCustom}
       <div class="cd-sidebar-mcp-empty cd-sidebar-mcp-empty-custom">
-        <span>{loc().t('SideBar.mcpEmptyCustom')}</span>
+        <span>{loc().t('SideBar.emptyCustomMcpInfo')}</span>
         <button
           type="button"
           class="cd-sidebar-mcp-add-cta"
           onclick={(e) => onAddClick?.(e)}
         >
           {@render plusIcon()}
-          <span>{loc().t('SideBar.mcpAddCustom')}</span>
+          <span>{loc().t('SideBar.newMcpAdd')}</span>
         </button>
       </div>
     {/if}
@@ -367,7 +369,7 @@
       <span
         class="cd-sidebar-mcp-switch"
         {...option.disabled
-          ? { title: loc().t('SideBar.mcpPresetLocked') }
+          ? { title: loc().t('SideBar.defaultMcpInfo') }
           : {}}
       >
         <Switch
@@ -485,7 +487,8 @@
     overflow: hidden;
     color: var(--cd-sidebar-mcp-desc-color);
     font-size: var(--cd-sidebar-mcp-desc-size);
-    line-height: 1.5;
+    /* Semi sidebar.scss:159 @include font-size-small → 16px */
+    line-height: var(--cd-line-height-small);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;

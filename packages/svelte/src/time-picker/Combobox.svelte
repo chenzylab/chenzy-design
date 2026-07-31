@@ -102,8 +102,8 @@
     }),
   );
   const ampmList = $derived<ScrollItemData[]>([
-    { value: 'AM', text: loc().t('TimePicker.am') },
-    { value: 'PM', text: loc().t('TimePicker.pm') },
+    { value: 'AM', text: loc().t('TimePicker.AM') },
+    { value: 'PM', text: loc().t('TimePicker.PM') },
   ]);
 
   // onItemChange —— 照搬 Semi Combobox.onItemChange。

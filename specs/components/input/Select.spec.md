@@ -49,67 +49,80 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 
 ### 4.1 Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| value | string \| number \| Array<string\|number> | — | 受控选中值；多选为数组。配合 `on:change`。 |
-| defaultValue | 同上 | — | 非受控初始值。 |
-| options | Array<OptionData \| GroupData> | [] | 数据驱动选项；亦可用 `<Option>` 子节点声明式。 |
-| multiple | boolean | false | 多选模式。 |
-| filter | boolean \| (input, option) => boolean | false | 是否可搜索 / 自定义过滤函数。 |
-| searchPosition | 'dropdown' \| 'trigger' | 'dropdown' | 搜索框位置（仅 filter 生效）：dropdown=浮层顶部；trigger=内联触发器。 |
-| inputProps | Record<string, unknown> | — | 透传给搜索 input 的额外属性（勿传 value/onChange/onFocus 等会覆盖内部搜索回调的键）。 |
-| insetLabel | string \| Snippet | — | 内嵌标签，浮入触发器左侧（纯展示，不影响值/过滤）。 |
-| insetLabelId | string | — | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox。 |
-| remote | boolean | false | 远程搜索模式，过滤交由 `on:search`，内部不再本地过滤。 |
-| loading | boolean | false | 显示加载态（远程请求中）。 |
-| open | boolean | — | 受控浮层显隐，配合 `on:openChange`。 |
-| defaultOpen | boolean | false | 非受控初始展开。 |
-| size | 'small' \| 'default' \| 'large' | 'default' | 尺寸。 |
-| status | 'default' \| 'warning' \| 'error' | 'default' | 校验态。 |
-| placeholder | string | i18n `Select.placeholder` | 占位符。 |
-| disabled | boolean | false | 禁用整个控件。 |
-| clearable | boolean | false | 显示清除按钮。 |
-| allowCreate | boolean | false | 搜索无匹配时允许创建新项（tags 场景）。 |
-| maxTagCount | number | — | 多选 Tag 折叠阈值，超出显示 `+N`。 |
-| maxTagTextLength | number | — | 单个 Tag 文本最大长度，超出省略。 |
-| expandRestTagsOnClick | boolean | false | 多选 maxTagCount 折叠时，浮层打开态下点击 `+N` 就地展开剩余全部 Tag（纯展示，不改值；关闭复位）。 |
-| showRestTagsPopover | boolean | false | 多选 maxTagCount 折叠出 `+N` 时，hover `+N` 用 Popover 浮层展示剩余全部 Tag（对齐 Semi restTagsPopover）。可与 expandRestTagsOnClick 共存（hover 预览 + 点击展开）。 |
-| restTagsPopoverProps | Record<string, unknown> | — | 透传给 `+N` 悬停 Popover 浮层的配置（spread 到 Popover，可覆盖 position/trigger/spacing 等）。 |
-| ellipsisTrigger | boolean | false | 多选且有 maxTagCount 时，对溢出可见 Tag 文本作单行省略（完整文本经 title 查看）。 |
-| showArrow | boolean | true | 是否显示触发器右侧下拉箭头；false 隐藏（suffix 存在时以 suffix 为准）。 |
-| clickToHide | boolean | false | 浮层已展开时，点击触发器是否收起浮层。 |
-| defaultActiveFirstOption | boolean | true | 打开浮层时默认高亮首个可用选项（键盘 Enter 可直接选中）。 |
-| preventScroll | boolean | false | autoFocus/命令式聚焦触发器时传入 `focus({ preventScroll })`，避免页面跳动。 |
-| virtualize | boolean \| { itemHeight: number } | 'auto' | 虚拟化；auto = 选项数超阈值自动开启。 |
-| dropdownMatchSelectWidth | boolean | true | 浮层宽度是否跟随触发器。 |
-| dropdownClassName | string | — | 浮层根 div 追加的自定义 className。 |
-| dropdownStyle | string | — | 浮层根 div 合并的自定义内联样式（勿含 position/transform）。 |
-| zIndex | number | — | 浮层层级（z-index）；不传由 CSS token 控制。 |
-| dropdownMargin | number \| { top?, bottom?, left?, right? } | — | 浮层与触发器间距(px)，映射到 floating offset。 |
-| destroyOnClose | boolean | false | 关闭时销毁浮层 DOM。 |
-| getPopupContainer | () => HTMLElement | body | 浮层挂载容器。 |
-| emptyContent | string \| Snippet | i18n `Select.empty` | 无数据内容。 |
-| optionLabelProp | string | 'label' | 用作回显的字段名。 |
-| debounce | number | 300 | 远程搜索防抖毫秒。 |
-| autoFocus | boolean | false | 挂载自动聚焦。 |
-| autoAdjustOverflow | boolean | true | 浮层被遮挡时自动翻转方向（映射 use:floating autoAdjust，对齐 Semi）。 |
-| id | string | auto(useId) | 关联外部 `<label for>`。 |
+> 本表由 `packages/svelte/src/select/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `string\|number\|(string\|number)[]` | `undefined` |  |
+| defaultValue | `string\|number\|(string\|number)[]` | `undefined` |  |
+| optionList | `OptionData[] \| OptionGroup[]` | `[]` | 选项；含 { label, options:[] } 即分组（对齐 Semi optionList） |
+| multiple | `boolean` | `false` |  |
+| filter | `boolean \| ((input, option) => boolean)` | `false` | true 按 label 本地过滤；函数则自定义过滤逻辑（对齐 Semi） |
+| remote | `boolean` | `false` | 远程搜索：不本地过滤，输入回调 onSearch，由外部更新 optionList（对齐 Semi） |
+| max | `number` | `undefined` | 多选最多可选项数；达上限忽略新增并触发 onExceed（对齐 Semi） |
+| open | `boolean` | `undefined` |  |
+| defaultOpen | `boolean` | `false` |  |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| validateStatus | `'default'\|'warning'\|'error'` | `default` | 校验态样式（对齐 Semi validateStatus） |
+| position | `Placement` | `'bottomStart'` | 下拉浮层弹出位置（对齐 Semi position） |
+| placeholder | `string` | `'请选择'` |  |
+| aria-label | `string` | `undefined` | combobox 触发器可访问名 |
+| ariaLabelledby | `string` | `undefined` | 关联外部 label 的 id（优先于 aria-label） |
+| id | `string` | `undefined` | 触发器 id，用于关联外部 <label for="..."> |
+| style | `string` | `undefined` | 根容器内联样式，可设 width 等（对齐 Semi style） |
+| class | `string` | `undefined` | 根容器自定义类名（与内置 cd-select 并存，对齐 Semi className） |
+| disabled | `boolean` | `false` |  |
+| showClear | `boolean` | `false` | 是否显示清除按钮（对齐 Semi showClear） |
+| borderless | `boolean` | `false` | 无边框模式 |
+| autoFocus | `boolean` | `false` | 挂载后自动聚焦触发器 |
+| autoAdjustOverflow | `boolean` | `true` | 浮层被遮挡时自动翻转方向（映射 use:floating autoAdjust，对齐 Semi） |
+| maxTagCount | `number` | `0` | 多选 tag 超出折叠为 +N（0=不折叠） |
+| maxTagTextLength | `number` | `undefined` | 单个 Tag 文本最大长度，超出截断为「前缀…」，完整文本经 title 查看 |
+| showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示剩余全部 Tag（对齐 Semi restTagsPopover） |
+| restTagsPopoverProps | `object` | `undefined` | 透传给 +N 悬停 Popover 浮层的配置（spread 到 Popover，可覆盖 position/trigger/spacing 等） |
+| expandRestTagsOnClick | `boolean` | `false` | 多选 maxTagCount 折叠时，浮层打开态下点击 +N 就地展开剩余全部 Tag（纯展示，不改值） |
+| ellipsisTrigger | `boolean` | `false` | 多选且有 maxTagCount 时，对溢出可见 Tag 文本做单行省略（完整文本经 title 查看） |
+| showArrow | `boolean` | `true` | 是否显示触发器右侧下拉箭头；false 隐藏（suffix 存在时以 suffix 为准） |
+| clickToHide | `boolean` | `false` | 浮层已展开时，点击触发器是否收起浮层 |
+| stopPropagation | `boolean` | `true` | 浮层点击是否 stopPropagation（对齐 Semi） |
+| defaultActiveFirstOption | `boolean` | `true` | 打开浮层时默认高亮首个可用选项（键盘 Enter 可直接选中） |
+| allowCreate | `boolean` | `false` | filter 无匹配时可创建新选项 |
+| autoClearSearchValue | `boolean` | `true` | 多选选中后自动清空搜索词 |
+| searchPosition | `'dropdown' \| 'trigger'` | `'trigger'` | 搜索框位置（filter 开启时生效）：trigger=输入内联在触发器上就地过滤；dropdown=浮层顶部搜索框（对齐 Semi） |
+| searchPlaceholder | `string` | `undefined` | 搜索框占位文本（对齐 Semi）；缺省走 locale |
+| inputProps | `object` | `undefined` | 透传给搜索 input 的额外属性（勿传 value/onChange/onFocus 等覆盖内部搜索回调的键） |
+| preventScroll | `boolean` | `false` | autoFocus/命令式聚焦触发器时传入 focus({ preventScroll })，避免页面跳动 |
+| insetLabel | `string \| Snippet` | `undefined` | 内嵌标签：浮入触发器左侧的常驻标签（纯展示，不影响值/过滤） |
+| insetLabelId | `string` | `undefined` | insetLabel 的 id，经 aria-labelledby 关联触发器 combobox（仅 insetLabel 存在时生效） |
+| onSearch | `(value: string, event?: Event) => void` | `undefined` | 搜索输入回调（对齐 Semi onSearch(value, event)） |
+| loading | `boolean` | `false` | 远程加载中（显示 spinner） |
+| virtualize | `{ itemSize?, height?, width? }` | `undefined` | 虚拟化对象（对齐 Semi）：传入即开启（仅非分组），itemSize 行高、height 视口高 |
+| maxHeight | `number` | `270` | 下拉最大高度（px，对齐 Semi） |
+| dropdownMatchSelectWidth | `boolean` | `true` | 浮层宽度是否跟随触发器；false 时浮层自适应内容宽度 |
+| dropdownClassName | `string` | `undefined` | 浮层根 div 追加的自定义 className（与内置 cd-select-dropdown 并存） |
+| dropdownStyle | `string` | `undefined` | 浮层根 div 合并的自定义内联样式（勿含 position/transform） |
+| zIndex | `number` | `undefined` | 浮层层级（z-index）；不传由 CSS 层级 token 控制 |
+| dropdownMargin | `number \| { top?, bottom?, left?, right? }` | `undefined` | 浮层与触发器间距(px)，映射到 floating offset；object 按 position 主轴取值 |
+| destroyOnClose | `boolean` | `false` | 关闭时销毁浮层 DOM |
+| getPopupContainer | `() => HTMLElement` | `undefined` | 浮层挂载目标容器 |
+| onChange | `(v: string\|number\|(string\|number)[]) => void` | `undefined` |  |
+| onDropdownVisibleChange | `(open: boolean) => void` | `undefined` | 浮层显隐变化回调（对齐 Semi） |
+| onSelect | `(value, option) => void` | `undefined` | 选中某项时触发 |
+| onDeselect | `(value, option) => void` | `undefined` | 多选取消某项时触发 |
+| onClear | `() => void` | `undefined` | 点击清除按钮时触发 |
+| onCreate | `(value: string) => void` | `undefined` | allowCreate 创建新项时触发 |
+| onFocus | `() => void` | `undefined` | 触发器获焦时触发 |
+| onBlur | `() => void` | `undefined` | 触发器失焦时触发 |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` | 触发器鼠标进入回调（对齐 Semi） |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` | 触发器鼠标离开回调（对齐 Semi） |
+| onScrollToBottom | `() => void` | `undefined` | 浮层列表滚动触底时触发 |
+| onListScroll | `(e: Event) => void` | `undefined` | 浮层选项列表滚动时触发（携带原生 scroll 事件） |
+| onExceed | `(option) => void` | `undefined` | 多选超出 max/maxTagCount 时触发（携带被隐藏的 option） |
+| onChangeWithObject | `(option \| option[]) => void` | `undefined` | 携带完整 option 对象的 change 回调 |
 
 ### 4.2 Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| on:change | `{ value, option, options }` | 选中值变化（单/多选）。 |
-| on:openChange | `{ open: boolean }` | 浮层显隐变化。 |
-| on:search | `{ input: string }` | 搜索输入变化（remote 据此请求；已防抖）。 |
-| on:select | `{ value, option }` | 选中某一项（含取消多选项时同源派发）。 |
-| on:deselect | `{ value, option }` | 多选取消某项。 |
-| on:clear | `void` | 点击清除。 |
-| on:create | `{ input: string }` | allowCreate 触发创建新项。 |
-| on:focus | `FocusEvent` | 触发器获焦。 |
-| on:blur | `FocusEvent` | 触发器失焦。 |
-| on:scrollToBottom | `void` | 浮层滚动触底（远程分页加载用）。 |
-| on:listScroll | `Event` | 浮层选项列表滚动时派发（携带原生 scroll 事件）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### 4.3 Slots / Snippets
 
@@ -205,18 +218,18 @@ Select 是从一组预定义选项中进行选择的下拉表单控件，是 che
 
 用户可见文案零硬编码，全部走 i18n key：
 
-| key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| Select.placeholder | 请选择 | 占位符 |
-| Select.searchPlaceholder | 搜索 | 搜索框占位 |
-| Select.empty | 无匹配选项 | 空态 |
-| Select.loading | 加载中 | 加载态 |
-| Select.clear | 清除 | 清除按钮 aria-label |
-| Select.create | 创建 "{input}" | allowCreate 提示 |
-| Select.maxTagCount | +{count} | Tag 折叠计数 |
-| Select.selectedCount | 已选 {count} 项 | 多选播报 |
-| Select.announceExpanded | 展开，共 {count} 个选项 | 展开播报 |
-| Select.announceLoaded | 已加载 {count} 个选项 | 远程播报 |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Select.placeholder` | 请选择 |
+| `Select.ariaLabel` | 选择框 |
+| `Select.emptyText` | 无匹配项 |
+| `Select.searchPlaceholder` | 搜索 |
+| `Select.loading` | 加载中 |
+| `Select.clear` | 清除 |
+| `Select.removeItem` | 移除 {label} |
+| `Select.createText` | 创建 |
 
 - 计数（`{count}`）通过 `Intl.NumberFormat` 格式化以适配千分位/本地化数字。
 - 含选项类（如日期型选项标签）的展示交由调用方用 `Intl.DateTimeFormat` 预格式化。

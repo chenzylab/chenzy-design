@@ -13,11 +13,12 @@
     'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/root-web-sites/abstract.jpg';
 </script>
 
-<AudioPlayer
-  audioUrl={[
-    { src: audio1, title: 'Audio One', cover },
-    { src: audio2, title: 'Audio Two', cover },
-  ]}
-  theme="light"
-  autoPlay={false}
-/>
+<div style="width: 100%">
+  <AudioPlayer
+    audioUrl={[
+      { src: audio1, title: '音频标题1', cover },
+      { src: audio2, title: '音频标题2', cover },
+    ]}
+    theme="light"
+  />
+</div>

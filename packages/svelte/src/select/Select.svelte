@@ -33,6 +33,7 @@
     fixedRange,
     scrollOffsetForIndex,
     type Placement,
+    resolveDefault,
   } from '@chenzy-design/core';
   import { IconClear, IconChevronDown, IconTick } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
@@ -221,9 +222,9 @@
     /** 携带完整 option 对象的 change 回调（单选 OptionData；多选 OptionData[]） */
     onChangeWithObject?: (option: OptionData | OptionData[]) => void;
     /** 触发器左侧前缀 */
-    prefix?: Snippet;
+    prefix?: Snippet | string;
     /** 触发器右侧后缀（覆盖默认箭头区域） */
-    suffix?: Snippet;
+    suffix?: Snippet | string;
     /** 根容器内联样式（对齐 Semi style，可设 width 等） */
     style?: string;
     /** 根容器自定义类名（与内置 cd-select 并存，对齐 Semi className） */
@@ -284,10 +285,10 @@
     value = $bindable(),
     defaultValue,
     optionList = [],
-    multiple = false,
-    filter = false,
+    multiple: multipleProp,
+    filter: filterProp,
     open: openProp = $bindable(),
-    defaultOpen = false,
+    defaultOpen: defaultOpenProp,
     size: sizeProp,
     style,
     class: className,
@@ -301,41 +302,41 @@
     ariaRequired,
     id,
     disabled: disabledProp,
-    showClear = false,
+    showClear: showClearProp,
     max,
     maxTagCount = 0,
     maxTagTextLength,
-    allowCreate = false,
-    remote = false,
+    allowCreate: allowCreateProp,
+    remote: remoteProp,
     onSearch,
     loading = false,
     virtualize,
-    maxHeight = 270,
-    dropdownMatchSelectWidth = true,
+    maxHeight: maxHeightProp,
+    dropdownMatchSelectWidth: dropdownMatchSelectWidthProp,
     dropdownClassName,
     dropdownStyle,
     zIndex,
     dropdownMargin,
-    stopPropagation = true,
+    stopPropagation: stopPropagationProp,
     onMouseEnter,
     onMouseLeave,
     destroyOnClose = false,
     getPopupContainer,
-    autoAdjustOverflow = true,
-    borderless = false,
+    autoAdjustOverflow: autoAdjustOverflowProp,
+    borderless: borderlessProp,
     autoFocus = false,
-    autoClearSearchValue = true,
-    showRestTagsPopover = false,
+    autoClearSearchValue: autoClearSearchValueProp,
+    showRestTagsPopover: showRestTagsPopoverProp,
     restTagsPopoverProps,
-    defaultActiveFirstOption = true,
+    defaultActiveFirstOption: defaultActiveFirstOptionProp,
     inputProps,
-    showArrow = true,
+    showArrow: showArrowProp,
     clickToHide = false,
     onListScroll,
     preventScroll = false,
-    expandRestTagsOnClick = false,
-    ellipsisTrigger = false,
-    searchPosition = 'trigger',
+    expandRestTagsOnClick: expandRestTagsOnClickProp,
+    ellipsisTrigger: ellipsisTriggerProp,
+    searchPosition: searchPositionProp,
     searchPlaceholder,
     insetLabel,
     insetLabelId,
@@ -364,6 +365,26 @@
     renderCreateItem,
     triggerRender,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Select'] > 组件内置默认值。
+  const stopPropagation = $derived(resolveDefault(stopPropagationProp, 'Select', 'stopPropagation', true));
+  const borderless = $derived(resolveDefault(borderlessProp, 'Select', 'borderless', false));
+  const filter = $derived(resolveDefault(filterProp, 'Select', 'filter', false));
+  const multiple = $derived(resolveDefault(multipleProp, 'Select', 'multiple', false));
+  const defaultOpen = $derived(resolveDefault(defaultOpenProp, 'Select', 'defaultOpen', false));
+  const allowCreate = $derived(resolveDefault(allowCreateProp, 'Select', 'allowCreate', false));
+  const maxHeight = $derived(resolveDefault(maxHeightProp, 'Select', 'maxHeight', 270));
+  const dropdownMatchSelectWidth = $derived(resolveDefault(dropdownMatchSelectWidthProp, 'Select', 'dropdownMatchSelectWidth', true));
+  const defaultActiveFirstOption = $derived(resolveDefault(defaultActiveFirstOptionProp, 'Select', 'defaultActiveFirstOption', true));
+  const showArrow = $derived(resolveDefault(showArrowProp, 'Select', 'showArrow', true));
+  const showClear = $derived(resolveDefault(showClearProp, 'Select', 'showClear', false));
+  const searchPosition = $derived(resolveDefault(searchPositionProp, 'Select', 'searchPosition', 'trigger'));
+  const remote = $derived(resolveDefault(remoteProp, 'Select', 'remote', false));
+  const autoAdjustOverflow = $derived(resolveDefault(autoAdjustOverflowProp, 'Select', 'autoAdjustOverflow', true));
+  const autoClearSearchValue = $derived(resolveDefault(autoClearSearchValueProp, 'Select', 'autoClearSearchValue', true));
+  const showRestTagsPopover = $derived(resolveDefault(showRestTagsPopoverProp, 'Select', 'showRestTagsPopover', false));
+  const expandRestTagsOnClick = $derived(resolveDefault(expandRestTagsOnClickProp, 'Select', 'expandRestTagsOnClick', false));
+  const ellipsisTrigger = $derived(resolveDefault(ellipsisTriggerProp, 'Select', 'ellipsisTrigger', false));
 
   // InputGroup 组级默认（size/disabled）：显式 prop 始终优先，否则回退组级，再回退组件默认。
   const group = getInputGroupContext();
@@ -963,7 +984,7 @@
     {@render triggerRender({
       value: currentValue,
       selectedOptions,
-      placeholder: placeholder ?? loc().t('Select.placeholder'),
+      placeholder: placeholder ?? '',
       open: isOpen,
       disabled,
       toggle: toggleOpen,
@@ -994,7 +1015,10 @@
     onmouseleave={(e) => onMouseLeave?.(e)}
   >
     {#if prefix}
-      <span class="cd-select-prefix">{@render prefix()}</span>
+      <!-- prefix 支持 string | Snippet（对齐 Semi ReactNode；与 insetLabel 同款分派）。 -->
+      <span class="cd-select-prefix">
+        {#if typeof prefix === 'string'}{prefix}{:else}{@render prefix()}{/if}
+      </span>
     {/if}
 
     {#if hasInsetLabel}
@@ -1071,11 +1095,18 @@
             class:cd-select-value-inactive={triggerSearch && !query}
           >{singleLabel}</span>
         {:else}
+          <!--
+            严格对齐 Semi：placeholder 无内置文案（Semi select/index.tsx:349
+            `defaultProps.placeholder = ''`，其 Select locale 只有 emptyText/createText）。
+            本库原先兜底到一个自造的 Select 占位 locale 键，会凭空显示「请选择」，现已连键一并删除。
+            （注意：注释里别写出完整的 locale 取值调用形式——locale-coverage 闸门按文本扫描引用，
+             会把注释当成真实消费方而误报悬空键。）
+          -->
           <span
             class="cd-select-placeholder"
             class:cd-select-value-hide={triggerSearch && !!query}
             class:cd-select-value-inactive={triggerSearch && !query}
-          >{placeholder ?? loc().t('Select.placeholder')}</span>
+          >{placeholder ?? ''}</span>
         {/if}
         {#if triggerSearch}
           <input
@@ -1108,7 +1139,9 @@
     {/if}
 
     {#if suffix}
-      <span class="cd-select-suffix">{@render suffix()}</span>
+      <span class="cd-select-suffix">
+        {#if typeof suffix === 'string'}{suffix}{:else}{@render suffix()}{/if}
+      </span>
     {:else if showArrow}
       <span class="cd-select-arrow" aria-hidden="true">
         {#if arrowIcon}
@@ -1184,7 +1217,10 @@
           {#if renderCreateItem}
             {@render renderCreateItem(query.trim())}
           {:else}
-            <span class="cd-select-option-label">{loc().t('Select.create', { label: query.trim() })}</span>
+            <!-- 对齐 Semi：`<span class="-create-tips">创建</span>` + 裸的输入值两个节点，
+                 而非把值插值进一整串（Semi locale.createText 就是不含占位符的「创建」）。 -->
+            <span class="cd-select-create-tips">{loc().t('Select.createText')}</span>
+            {query.trim()}
           {/if}
         </div>
       {/if}
@@ -1544,8 +1580,11 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-select-option-create {
-    color: var(--cd-color-select-option-keyword-text);
+  /* 对齐 Semi：只有「创建」提示前缀染色（$color-select_create_tips-text = text-2）+ 右间距 4px，
+     整行不额外染色（Semi 无 `.semi-select-option-create` 规则，原先本库把整行染成 primary 是自造差异）。 */
+  .cd-select-create-tips {
+    margin-inline-end: var(--cd-spacing-select-create-tips-marginright);
+    color: var(--cd-color-select-create-tips-text);
   }
   .cd-select-clear,
   /* 对齐 Semi `.semi-select-arrow { width: $width-select_arrow }`：固定 32px 盒、撑满高度，

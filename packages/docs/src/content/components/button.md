@@ -3,7 +3,6 @@ title: Button 按钮
 name: button
 category: basic
 brief: 用户使用按钮来触发一个操作或者进行跳转。
-docMode: inline
 ---
 
 <script>

@@ -3,7 +3,6 @@ title: SideSheet 滑动侧边栏
 name: sidesheet
 category: feedback
 brief: 可从屏幕边沿滑出的浮层面板，通常用于承载二级操作页面。
-docMode: inline
 ---
 
 <script>

@@ -60,28 +60,39 @@ ResizeObserver 没有视觉表现，其"设计语义"体现在**数据契约与�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `box` | `'content-box' \| 'border-box' \| 'device-pixel-content-box'` | `'content-box'` | 观测的盒模型。高 DPI Canvas 用 `device-pixel-content-box`。 |
-| `throttle` | `number` | `0` | 节流间隔(ms)，`0` 即原生即时回调。leading+trailing。与 `debounce` 互斥。 |
-| `debounce` | `number` | `0` | 防抖等待(ms)，trailing-only。`0` 关闭。与 `throttle` 互斥（同时 >0 时 `debounce` 优先并 dev 告警）。 |
-| `multiple` | `boolean` | `false` | `true` 时监听 slot 内所有直接子元素，回调逐个抛出，可用 `entry.id`/`entry.target` 区分。 |
-| `disabled` | `boolean` | `false` | 暂停监听（保留已注册目标，仅不分发回调）。从 `true→false` 立即补发一次当前尺寸。 |
-| `observeOnMount` | `boolean` | `true` | 挂载后是否立即测量并触发一次首帧回调（用于初始化布局）。 |
-| `tag` | `string \| null` | `null` | 包裹元素标签名；`null` 表示不渲染包裹节点（action 模式，监听唯一子元素）。 |
-| `fallbackToWindow` | `boolean` | `false` | 原生不支持时是否退化为监听 `window.resize` 重新测量（精度较低）。 |
-| `observeParent` | `boolean` | `false` | 观测包裹元素的父节点（`parentElement`）而非自身（对标 Semi `observeParent`）。用于「监听我所处容器」而无需额外包一层。与 `multiple` 互斥（同时为 `true` 时 `multiple` 优先）；父节点缺失时静默不观测。 |
-| `size` | — | — | **N/A · 工具组件不渲染，无视觉尺寸。** |
-| `status` | — | — | **N/A · 非输入组件，无校验态。** |
+> 本表由 `packages/svelte/src/resize-observer/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| box | `'content-box'\|'border-box'\|'device-pixel-content-box'` | `'content-box'` | 观测盒模型：content-box 仅内容区，border-box 含 padding+border，device-pixel-content-box 物理像素内容盒（含 DPR；不支持时回退 content-box） |
+| observeChild | `boolean` | `false` | 观测 children 首个元素而非包裹元素本身（对齐 Semi cloneElement 注入 ref 的语义，尺寸即用户真实元素）；无子元素时回退观测包裹元素。与 multiple/observeParent 互斥，优先级 multiple > observeChild > observeParent |
+| observerProperty | `'width'\|'height'\|'all'` | `'all'` | 仅当指定维度变化时才回调（对齐 Semi observerProperty）；设为 width/height 时逐目标记忆上次上报值，另一维度单独变化不触发 |
+| disabled | `boolean` | `false` | 暂停尺寸分发，observer 仍监听但不向 slot/回调通知 |
+| throttle | `number` | `0` | 节流间隔(ms)，leading+trailing，0 即原生即时。与 debounce 互斥（同时 >0 时 debounce 优先） |
+| debounce | `number` | `0` | 防抖等待(ms)，trailing-only，0 关闭。与 throttle 互斥（优先于 throttle） |
+| multiple | `boolean` | `false` | 多目标：观测包裹元素的所有直接子元素，onResize 逐个抛出，用 entry.target 区分 |
+| observeOnMount | `boolean` | `true` | 挂载后立即测量一次（ResizeObserver 原生在 observe 时即触发首次回调，天然满足） |
+| tag | `string` | `'div'` | 包裹元素标签，经 svelte:element 渲染；须为可生成盒子的元素（勿用 display:contents 类标签） |
+| fallbackToWindow | `boolean` | `false` | 原生 ResizeObserver 不可用（SSR/老环境）或显式开启时，降级监听 window.resize 并用 getBoundingClientRect 近似重测（精度较低） |
+| observeParent | `boolean` | `false` | 观测包裹元素的父节点（parentElement）而非自身（对标 Semi observeParent）。与 multiple 互斥，同时为 true 时 multiple 优先；父节点缺失时静默不观测 |
+
+**事件**（回调 prop 形式，对齐 Semi）：
+
+| 事件 | 说明 |
+| --- | --- |
+| `onResize` | 尺寸变化时分发归一化 entry（受控，不回写） |
+| `onFirstMeasure` | 首次测量完成时分发归一化 entry |
+| `onResizeStart` | 一段连续尺寸变化的首帧触发（"调整中"态） |
+| `onResizeEnd` | 连续变化静默结束后触发，payload 为最后一帧（"调整完成"） |
 
 ### Events
 
-| 事件 | payload 类型 | 触发时机 | 说明 |
-|---|---|---|---|
-| `on:resize` | `CDResizeEntry` | 目标尺寸变化（经节流/防抖后） | 主事件。归一化尺寸数据。 |
-| `on:resizeStart` | `{ target }` | 一段连续变化的首帧（节流/防抖窗口开始） | 用于"调整中"态（如显示尺寸 badge）。 |
-| `on:resizeEnd` | `CDResizeEntry` | 连续变化结束后（debounce trailing / throttle 静默 `wait` 后） | 用于"调整完成"提交。 |
-| `on:firstMeasure` | `CDResizeEntry` | `observeOnMount` 首次测量 | 区分初始尺寸与后续变化。 |
+| 事件 | 说明 |
+| --- | --- |
+| `onResize` | 尺寸变化时分发归一化 entry（受控，不回写） |
+| `onFirstMeasure` | 首次测量完成时分发归一化 entry |
+| `onResizeStart` | 一段连续尺寸变化的首帧触发（"调整中"态） |
+| `onResizeEnd` | 连续变化静默结束后触发，payload 为最后一帧（"调整完成"） |
 
 > 遵循一致性约定：尺寸为只读数据流，**不使用 `value`+`on:change`**（无可写受控值）；`disabled` 为命令式开关，不走 `open`+`openChange`（无浮层）。此处偏离全局 input/overlay 约定是合理的，因为本组件既非输入也非浮层。
 

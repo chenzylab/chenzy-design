@@ -18,4 +18,5 @@ export {
   unregisterLocale,
   resolveLocale,
   type PartialLocale,
+  type LocaleWithCustom,
 } from './registry.js';

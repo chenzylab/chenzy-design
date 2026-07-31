@@ -53,62 +53,86 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 
 ### Props
 
-| Prop | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `value` | `UploadFileItem[]` | `[]` | 受控文件列表（含状态/进度），配合 `on:change` |
-| `defaultValue` | `UploadFileItem[]` | `[]` | 非受控初始列表 |
-| `action` | `string` | — | 上传目标 URL（未提供 `customRequest` 时必填） |
-| `customRequest` | `(opt: UploadRequestOptions) => void` | — | 自定义上传实现，接管传输与进度回调 |
-| `accept` | `string` | — | 接受的文件类型（同原生 input accept） |
-| `multiple` | `boolean` | `false` | 是否允许多选 |
-| `directory` | `boolean` | `false` | 是否上传目录（webkitdirectory） |
-| `limit` | `number` | — | 列表最大文件数；超出阻止新增并 `on:exceed`。**`limit=1` 为替换语义**：始终用最新选中文件替换当前项，不触发 `onExceed`（对齐 Semi） |
-| `maxSize` | `number` (KB) | — | 单文件大小上限 |
-| `minSize` | `number` (KB) | — | 单文件大小下限 |
-| `concurrency` | `number` | `3` | 并发上传数 |
-| `autoUpload` | `boolean` | `true` | 选择后自动上传，false 时手动 `start()` |
-| `beforeUpload` | `(file, fileList) => boolean \| File \| Promise<...>` | — | 上传前异步校验/转换 |
-| `headers` (`headers`) | `Record<string,string> \| ((file: File) => Record<string,string>)` | — | 请求头；静态对象或按当前 file 求值的函数。对标 Semi headers |
-| `uploadData` (Semi `data`) | `Record<string,string> \| ((file: File) => Record<string,string>)` | — | 附加表单字段；静态对象或按当前 file 求值的函数。对标 Semi data（本仓库命名 `uploadData`） |
-| `uploadName` (Semi `name`) | `string` | `'file'` | 表单文件字段名（本仓库命名 `uploadName`） |
-| `withCredentials` | `boolean` | `false` | 跨域携带 cookie |
-| `listType` | `'list' \| 'picture' \| 'avatar'` | `'list'` | 列表展示形态 |
-| `draggable` | `boolean` | `false` | 启用拖拽区 |
-| `showUploadList` | `boolean` | `true` | 是否展示文件列表 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态（表单联动） |
-| `previewable` | `boolean` | `true` | 是否启用内置预览（picture/avatar） |
-| `transformFile` | `(file)=>File\|Promise<File>` | — | 上传前文件转换（压缩等） |
-| `crop` | `boolean \| UploadCropProps` | `false` | 启用图片裁切：image/* 文件先进裁切弹窗（Modal + 内建 Cropper），确认后用裁切结果（canvas→toBlob→File，保留原名/type）替换原文件再上传；非图片文件正常上传。传对象自定义宽高比/形状/质量等（对标 Semi CropProps） |
-| `beforeCrop` | `(file: File) => boolean \| Promise<boolean>` | — | 裁切前钩子：返回 `false` 跳过裁切直接上传该文件，支持异步 |
-| `onCropError` | `(err: unknown) => void` | — | 裁切失败（如 canvas.toBlob 失败）回调 |
-| `cropModalProps` | `Record<string, unknown>` | — | 透传给裁切 Modal 的额外 props（样式/宽度等） |
-| `renderFileItem` | `Snippet<[{ fileItem, remove, retry, preview }]>` | — | 完全自定义单个文件项渲染，替换默认列表项（list/text listType）。`fileItem` 上另挂 `onRemove`/`onRetry`/`onPreview`/`onReplace` 方法（对标 Semi `fileItem.onRemove()` 直接可调，与外层分开传的 `remove`/`retry`/`preview` 等价并存）。对标 Semi renderFileItem |
-| `previewFile` | `Snippet<[{ fileItem }]>` | — | 自定义缩略图预览内容，替换默认缩略图 `<img>`（image/picture-card）。对标 Semi previewFile |
-| `renderThumbnail` | `Snippet<[{ fileItem }]>` | — | 自定义整个缩略图容器（picture-card），接管图片本身，常配合放大预览。对标 Semi renderThumbnail |
-| `showPicInfo` | `boolean` | `false` | 是否显示 picture-card 图片信息浮层（文件名等），只在 picture-card 有效。对标 Semi showPicInfo |
-| `renderPicInfo` | `Snippet<[{ fileItem }]>` | — | 自定义 picture-card 图片信息浮层渲染（`showPicInfo` 为 true 时生效）。对标 Semi renderPicInfo |
-| `beforeRemove` | `(file: UploadFileItem, fileList: UploadFileItem[]) => boolean \| Promise<boolean>` | — | 移除文件前钩子：返回 `false`/`Promise.resolve(false)`/reject 阻止移除，支持异步。对标 Semi beforeRemove |
-| `onRemove` | `(currentFile: File \| undefined, fileList: UploadFileItem[], currentFileItem: UploadFileItem) => void` | — | 文件被移除后的回调（移除完成后触发）。对标 Semi onRemove |
-| `timeout` | `number` (ms) | `0` | 单文件上传超时；`>0` 启用，超时中止 XHR 并标 error（`Upload.timeoutError`）。仅对内置 XHR 上传生效，`customRequest` 自管超时 |
-| `uploadTrigger` | `'auto' \| 'custom'` | `'auto'` | 上传触发时机：`auto`=选文件即自动上传；`custom`=选文件后停在 ready 态，需命令式 `upload()` 触发。对标 Semi uploadTrigger |
-| `beforeClear` | `(fileList: UploadFileItem[]) => boolean \| Promise<boolean>` | — | 批量清除前钩子：返回 `false`/`Promise.resolve(false)`/reject 阻止清除，支持异步。对标 Semi beforeClear |
-| `afterUpload` | `(payload: { response, file, fileList }) => { autoRemove?, status?, validateMessage?, name?, url? } \| void` | — | 单文件上传成功后钩子（同步返回，不支持异步）：据返回值改该项 `status`/`validateMessage`(→`error`)/`name`/`url`，或 `autoRemove` 自动移除。对标 Semi afterUpload |
-| `onPastingError` | `(error: unknown) => void` | — | 粘贴上传出错回调（`addOnPasting` 场景，读取剪贴板失败）。对标 Semi onPastingError |
-| `renderPicPreviewIcon` | `Snippet<[{ fileItem, remove, retry, preview }]>` | — | 自定义照片墙 hover 预览图标（picture-card），常配合 `onPreviewClick`。`fileItem` 上另挂 `onRemove`/`onRetry`/`onPreview`/`onReplace` 方法。对标 Semi renderPicPreviewIcon |
-| `renderPicClose` | `Snippet<[{ className, remove }]>` | — | 自定义照片墙关闭（移除）按钮（picture-card）。对标 Semi renderPicClose |
-| `renderFileOperation` | `Snippet<[{ fileItem, remove, retry, preview }]>` | — | 自定义文件列表项操作区（text/list，替换默认重试/移除）。`fileItem` 上另挂 `onRemove`/`onRetry`/`onPreview`/`onReplace` 方法（对标 Semi `fileItem.onRemove()` 直接可调）。对标 Semi renderFileOperation |
-| `picHeight` | `number \| string` | — | 照片墙缩略图高度（number 视为 px），写入卡片 inline style。对标 Semi picHeight |
-| `picWidth` | `number \| string` | — | 照片墙缩略图宽度（number 视为 px），写入卡片 inline style。对标 Semi picWidth |
-| `capture` | `boolean \| 'user' \| 'environment'` | — | 透传给 file input 的 `capture` 属性（移动端拍照/录像来源），命令式设置。对标 Semi capture |
-| `itemStyle` | `string \| Record<string, string \| number>` | — | 每个文件列表项/卡片的自定义 style（合并进容器；对象值为 `number` 时按 CSS 数字属性惯例补 px，如 `{ width: 300 }` → `width: 300px`）。对标 Semi itemStyle |
-| `onFileChange` | `(files: File[]) => void` | — | 选中原始 File 列表变化回调（经 accept/limit 过滤后），区别于 `onChange` 的 `UploadFileItem` 列表。对标 Semi onFileChange |
-| `onProgress` | `(percent: number, item: UploadFileItem) => void` | — | 单文件上传进度回调（仅内置 XHR 上传触发，`customRequest` 外部自管）。对标 Semi onProgress |
-| `showReplace` | `boolean` | `false` | 已上传（success）文件项显示"替换"按钮，点击重选文件替换该项；text/picture-card 均支持。对标 Semi showReplace |
-| `showTooltip` | `boolean \| { type?: 'tooltip'\|'popover'; opts?: Record<string, unknown>; renderTooltip?: Snippet<[{ content, children }]> }` | `true` | 文件名提示：boolean=原生 `title` 属性；对象 `type`=用 Tooltip/Popover 包裹文件名；`renderTooltip` **完全接管浮层**（对标 Semi `(content, children) => ReactNode`）：入参 `content`=文件名文案、`children`=渲染文件名节点的 Snippet，由用户自行组织（如 `<Tooltip content={content}>{@render children()}</Tooltip>`），传了 `renderTooltip` 时不再套内置 Tooltip/Popover（也不要求先声明 `type`）。对标 Semi showTooltip |
-| `showClear` | `boolean` | `false` | 是否显示批量清除按钮（文案 `Upload.clear`）。**注：Semi 默认 `true`（limit≠1 且已上传>1 时显示），本仓库为不破坏现有行为保持 `false`** |
-| `fileListTitle` | `string \| false \| Snippet<[{ fileList, onClear, clearText }]>` | — | 文件列表标题：string=仅替换标题文字（保留默认清空按钮）；false=不渲染；Snippet=完全自定义标题区（含清空按钮）。对标 Semi fileListTitle |
+> 本表由 `packages/svelte/src/upload/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| fileList | `UploadFileItem[]` | `undefined` | 受控文件列表（对齐 Semi fileList）；提供则受控。UploadFileItem.status：'wait'\|'validating'\|'uploading'\|'success'\|'validateFail'\|'uploadFail'；preview?:boolean 控制缩略图；file 即 Semi fileInstance；项级 showReplace/showRetry 覆盖组件级；response/event/validateMessage 对齐 Semi FileItem |
+| defaultFileList | `UploadFileItem[]` | `[]` | 非受控初始文件列表（对齐 Semi defaultFileList） |
+| accept | `string` | `undefined` | 接受的文件类型（input accept） |
+| multiple | `boolean` | `false` |  |
+| directory | `boolean` | `false` | 上传整个目录（webkitdirectory），递归选择目录下所有文件，保留 relativePath（对齐 Semi directory） |
+| limit | `number` | `undefined` | 最大文件数；超出触发 onExceed；limit=1 替换语义 |
+| maxSize | `number` | `undefined` | 单文件最大体积（KB）；超限标 validateFail（对齐 Semi maxSize） |
+| minSize | `number` | `undefined` | 单文件最小体积（KB）；过小标 validateFail（对齐 Semi minSize） |
+| disabled | `boolean` | `false` |  |
+| validateStatus | `'default'\|'error'\|'warning'\|'success'` | `'default'` | 组件级校验态（表单联动，影响上传区/边框色）。对齐 Semi validateStatus，枚举含 success |
+| listType | `'list'\|'picture'\|'none'` | `'list'` | 文件列表展示类型（对齐 Semi listType）：list 文本卡片、picture 照片墙、none 不渲染列表 |
+| draggable | `boolean` | `false` | true 渲染拖拽区，false 渲染按钮（对齐 Semi draggable） |
+| action | `string` | `undefined` | 上传地址；有则选文件后自动 XHR 上传 |
+| name | `string` | `'file'` | 表单字段名（对齐 Semi name） |
+| fileName | `string` | `undefined` | 同 name，避免 Form.Upload 中 props 冲突（对齐 Semi fileName）；优先于 name |
+| headers | `Record<string,string> \| ((file: File) => Record<string,string>)` | `undefined` | 额外请求头；静态对象或按当前 file 求值的函数（对齐 Semi headers） |
+| data | `Record<string,string> \| ((file: File) => Record<string,string>)` | `undefined` | 额外表单字段；静态对象或按当前 file 求值的函数（对齐 Semi data） |
+| beforeUpload | `(props: { file, fileList }) => boolean \| BeforeUploadObjectResult \| Promise<...>` | `undefined` | 上传前钩子（对齐 Semi beforeUpload）：入参 { file, fileList }。返回 false 拒绝；true/undefined 上传；返回富对象 BeforeUploadObjectResult（shouldUpload/autoRemove/status/validateMessage/fileInstance）精细控制。支持异步 |
+| customRequest | `(item: UploadFileItem) => void \| Promise<void>` | `undefined` | 自定义上传实现（对齐 Semi customRequest，优先于 action） |
+| afterUpload | `(props: { response, file, fileList }) => AfterUploadResult \| void` | `undefined` | 上传成功后钩子（同步返回）：据返回值改该项 status/validateMessage/name/url 或 autoRemove（对齐 Semi afterUpload） |
+| onChange | `(props: { fileList, currentFile }) => void` | `undefined` | 文件列表变化回调（对齐 Semi onChange，入参 { fileList, currentFile }） |
+| onExceed | `(files: File[]) => void` | `undefined` |  |
+| onSuccess | `(responseBody, file, fileList) => void` | `undefined` | 上传成功回调（对齐 Semi onSuccess(responseBody, file, fileList)） |
+| onError | `(error, file, fileList, xhr) => void` | `undefined` | 上传失败回调（对齐 Semi onError(error, file, fileList, xhr)） |
+| onProgress | `(percent, file, fileList) => void` | `undefined` | 上传进度回调（仅内置 XHR 上传，对齐 Semi onProgress(percent, file, fileList)） |
+| children | `Snippet` | `undefined` | 自定义触发器/拖拽区内容 |
+| showRetry | `boolean` | `true` | 上传失败是否显示重试按钮（对齐 Semi showRetry） |
+| showReplace | `boolean` | `false` | 已上传（success）项显示替换按钮（对齐 Semi showReplace）；list/picture 均支持 |
+| showUploadList | `boolean` | `true` | 是否渲染文件列表（对齐 Semi showUploadList） |
+| showClear | `boolean` | `true` | 是否显示批量清除按钮（对齐 Semi showClear 默认 true） |
+| onClear | `() => void` | `undefined` | 清除按钮点击回调 |
+| beforeClear | `(fileList) => boolean \| Promise<boolean>` | `undefined` | 批量清除前钩子（对齐 Semi beforeClear） |
+| fileListTitle | `string \| false \| Snippet<[{ fileList, onClear, clearText }]>` | `undefined` | 文件列表标题：string=替换标题文字；false=不渲染；Snippet=完全自定义（对齐 Semi fileListTitle） |
+| showTooltip | `boolean \| { type?: 'tooltip'\|'popover'; opts?; renderTooltip? }` | `true` | 文件名超长提示（对齐 Semi showTooltip），经 Typography.Text ellipsis 消费 |
+| prompt | `string \| Snippet` | `undefined` | 上传区提示内容（对齐 Semi prompt） |
+| promptPosition | `'left'\|'right'\|'bottom'` | `'right'` | 提示位置（对齐 Semi promptPosition，默认 right） |
+| onDrop | `(e, files, fileList) => void` | `undefined` | 拖拽放下回调（对齐 Semi onDrop(e, files, fileList)） |
+| onOpenFileDialog | `() => void` | `undefined` |  |
+| onPreviewClick | `(fileItem: UploadFileItem) => void` | `undefined` | 预览图/卡片点击回调 |
+| onAcceptInvalid | `(files: File[]) => void` | `undefined` | accept 校验失败回调（对齐 Semi onAcceptInvalid） |
+| onRetry | `(fileItem: UploadFileItem) => void` | `undefined` |  |
+| onSizeError | `(file, fileList) => void` | `undefined` | 大小校验失败回调（对齐 Semi onSizeError(file, fileList)） |
+| validateMessage | `string` | `undefined` | 校验失败统一文案（对齐 Semi validateMessage） |
+| withCredentials | `boolean` | `false` |  |
+| transformFile | `(file: File) => File \| Promise<File>` | `undefined` | 上传前文件转换（对齐 Semi transformFile） |
+| dragIcon | `Snippet` | `undefined` | 拖拽区自定义图标；未传默认云上传图标 |
+| dragMainText | `string \| Snippet` | `undefined` | 拖拽区主文案 |
+| dragSubText | `string \| Snippet` | `undefined` | 拖拽区副文案 |
+| addOnPasting | `boolean` | `false` | 粘贴添加文件（对齐 Semi addOnPasting） |
+| onPastingError | `(error: unknown) => void` | `undefined` | 粘贴上传出错回调（对齐 Semi onPastingError） |
+| hotSpotLocation | `'start'\|'end'` | `'end'` | 照片墙添加瓦片位置（对齐 Semi hotSpotLocation，默认 end） |
+| onFileChange | `(files: File[]) => void` | `undefined` | 选中原始 File 列表变化回调（对齐 Semi onFileChange） |
+| beforeRemove | `(file, fileList) => boolean \| Promise<boolean>` | `undefined` | 移除前钩子（对齐 Semi beforeRemove） |
+| onRemove | `(currentFile, fileList, currentFileItem) => void` | `undefined` | 移除后回调（对齐 Semi onRemove） |
+| timeout | `number` | `0` | 单文件上传超时（毫秒），>0 启用 |
+| uploadTrigger | `'auto' \| 'custom'` | `'auto'` | 上传触发时机（对齐 Semi uploadTrigger）：auto 选即传；custom 停 wait 需 upload() 触发 |
+| itemStyle | `string \| Record<string, string \| number>` | `undefined` | 每个文件卡片自定义 style（对齐 Semi itemStyle） |
+| picWidth | `number \| string` | `undefined` | 照片墙缩略图宽度（对齐 Semi picWidth，number→px） |
+| picHeight | `number \| string` | `undefined` | 照片墙缩略图高度（对齐 Semi picHeight，number→px） |
+| capture | `boolean \| 'user' \| 'environment'` | `undefined` | 透传给 file input 的 capture 属性（对齐 Semi capture） |
+| crop | `boolean \| UploadCropProps` | `false` | 启用图片裁切：image/* 文件先进裁切弹窗（Modal+Cropper）（对齐 Semi crop） |
+| beforeCrop | `(file: File, fileList: File[]) => boolean \| Promise<boolean>` | `undefined` | 裁切前钩子（对齐 Semi beforeCrop(file, fileList)） |
+| onCropError | `(err: unknown) => void` | `undefined` | 裁切失败回调（对齐 Semi onCropError） |
+| cropModalProps | `Record<string, unknown>` | `undefined` | 透传给裁切 Modal 的额外 props（对齐 Semi cropModalProps） |
+| renderFileItem | `Snippet<[RenderFileItemProps]>` | `undefined` | 完全自定义单个文件项渲染（替换 FileCard）。入参对齐 Semi RenderFileItemProps（index/listType/onRemove/onRetry/onReplace/onPreviewClick…） |
+| previewFile | `Snippet<[RenderFileItemProps]>` | `undefined` | 自定义缩略图预览内容（对齐 Semi previewFile） |
+| renderThumbnail | `Snippet<[RenderFileItemProps]>` | `undefined` | 自定义整个缩略图容器（picture，对齐 Semi renderThumbnail） |
+| showPicInfo | `boolean` | `false` | 照片墙图片信息浮层（序号，对齐 Semi showPicInfo） |
+| renderPicInfo | `Snippet<[RenderFileItemProps]>` | `undefined` | 自定义照片墙信息浮层（对齐 Semi renderPicInfo） |
+| renderPicPreviewIcon | `Snippet<[RenderFileItemProps]>` | `undefined` | 自定义照片墙 hover 预览图标（对齐 Semi renderPicPreviewIcon） |
+| renderPicClose | `Snippet<[{ className, remove }]>` | `undefined` | 自定义照片墙关闭按钮（对齐 Semi renderPicClose） |
+| renderFileOperation | `Snippet<[RenderFileItemProps]>` | `undefined` | 自定义文件条操作区（list，对齐 Semi renderFileOperation） |
+| class | `string` | `undefined` | 根容器额外 class（对齐 Semi className） |
+| style | `string` | `undefined` | 根容器 style（对齐 Semi style） |
+
+**子组件**：`FileCard`
 
 > `showUploadList`（见上表）默认 `true`；`false` 时不渲染列表区（text 列表/picture 网格），但触发器与上传逻辑照常。
 
@@ -145,20 +169,7 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 
 ### Events
 
-| Event | payload | 说明 |
-|---|---|---|
-| `on:change` | `{ value: UploadFileItem[], file: UploadFileItem }` | 列表或某文件状态变化（受控同步） |
-| `on:select` | `{ files: File[] }` | 用户选择/拖入文件（校验前） |
-| `on:beforeUpload` | `{ file, allow: boolean, reason?: string }` | 校验结果通知 |
-| `on:progress` | `{ file, percent: number }` | 单文件进度更新 |
-| `on:success` | `{ file, response: unknown }` | 单文件上传成功 |
-| `on:error` | `{ file, error: Error }` | 单文件失败 |
-| `on:remove` | `{ file }` | 文件被移除（可 `preventDefault` 拦截，返回 false 阻止） |
-| `on:retry` | `{ file }` | 重试某文件 |
-| `on:exceed` | `{ files: File[], limit: number }` | 超出 `limit` |
-| `on:drop` | `{ files: File[], event: DragEvent }` | 拖拽放下 |
-| `on:preview` | `{ file }` | 点击预览 |
-| `on:openChange` | `{ open: boolean }` | 内置预览浮层显隐 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -211,21 +222,26 @@ Upload 用于将本地文件上传至服务端，支持点击选择与拖拽两�
 
 用户可见文案零硬编码，全部走 i18n key；文件大小用 `Intl.NumberFormat`（字节换算后带单位），时间（若展示上传时间）用 `Intl.DateTimeFormat`。
 
-| i18n key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `Upload.trigger` | 点击上传 | 触发按钮默认文案 |
-| `Upload.dragText` | 点击或拖拽文件到此处上传 | 拖拽区主文案 |
-| `Upload.dragHint` | 支持单个或批量上传 | 拖拽区副文案 |
-| `Upload.uploading` | 上传中 | 状态 |
-| `Upload.success` | 上传成功 | 状态 |
-| `Upload.error` | 上传失败 | 状态 |
-| `Upload.retry` | 重试 | 操作 |
-| `Upload.remove` | 移除 | 操作（aria-label：移除 {name}） |
-| `Upload.preview` | 预览 | 操作 |
-| `Upload.exceed` | 最多上传 {limit} 个文件 | 数量超限 |
-| `Upload.sizeError` | 文件大小不能超过 {size} | 大小超限（size 经 Intl 格式化） |
-| `Upload.typeError` | 不支持的文件类型 | 类型校验失败 |
-| `Upload.fileSize` | {size} | 文件大小展示（Intl 格式化值占位） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Upload.trigger` | 选择文件 |
+| `Upload.mainText` | 点击上传文件或拖拽文件到这里 |
+| `Upload.sizeError` | 文件大小不能超过 {size} |
+| `Upload.minSizeError` | 文件大小不能小于 {size} |
+| `Upload.remove` | 移除 |
+| `Upload.retry` | 重试 |
+| `Upload.replace` | 替换 |
+| `Upload.clear` | 清空 |
+| `Upload.announceUploading` | {name} 上传中 {percent}% |
+| `Upload.announceSuccess` | {name} 上传成功 |
+| `Upload.announceError` | {name} 上传失败 |
+| `Upload.cropTitle` | 裁切图片 |
+| `Upload.timeoutError` | 上传超时 |
+| `Upload.legalTips` | 松开鼠标开始上传 |
+| `Upload.selectedFiles` | 已选择文件 |
+| `Upload.fail` | 上传失败 |
 
 ## 8. 文案
 

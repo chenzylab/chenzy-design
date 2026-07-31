@@ -3,7 +3,6 @@ title: Steps 步骤条
 name: steps
 category: navigation
 brief: 将复杂任务或存在先后关系的任务分解，使用步骤组件引导用户按规定流程操作，并让其知道其当前的进度。
-docMode: inline
 ---
 
 <script>

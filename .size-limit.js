@@ -71,7 +71,8 @@ const components = [
   // feedback
   ['banner', '{ Banner }', '3.3 KB'],
   // modal：6.2→6.4 对齐 Semi 补 onOk/onCancel Promise loading、preventScroll、命令式 config 全字段（实测 6.29）
-  ['modal', '{ modal }', '6.4 KB'],
+  //        →6.5 接 cdGlobal 全局默认 props（12 个 prop 走 resolveDefault，实测 6.41）
+  ['modal', '{ modal }', '6.5 KB'],
   ['notification', '{ notification }', '5.5 KB'],
   // 浮层三件套对齐 Semi 破坏性重写后箭头定位职责回归 Tooltip 基座：Tooltip 内联 12 方位
   // x-placement CSS（+40%），Popover/Popconfirm 移除重复箭头 CSS 与中间变量层而下降。
@@ -89,7 +90,8 @@ const components = [
   // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.63 / textarea 4.77 KB。
   // radio 破坏性重写严格对齐 Semi（全类型原生 input + IconRadio + 全套 card/button token class），
   // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算校准至 4.7 KB。
-  ['cascader', '{ Cascader }', '10.8 KB'],
+  // cascader：10.8→11 接 cdGlobal 全局默认 props（24 个 prop 走 resolveDefault，实测 10.85）
+  ['cascader', '{ Cascader }', '11 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
   ['color-picker', '{ ColorPicker }', '7.5 KB'],
   // DatePicker 从零重写并严格对齐 Semi（7 type + range 双框触发器 + dateTime + 手输解析 +

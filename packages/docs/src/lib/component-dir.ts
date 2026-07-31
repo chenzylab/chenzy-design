@@ -51,7 +51,7 @@ export const nameToDir: Record<string, string> = {
   notification: 'notification',
   overflowlist: 'overflow-list',
   pagination: 'pagination',
-  pincode: 'pin-code',
+  pincode: 'pincode',
   popconfirm: 'popconfirm',
   popover: 'popover',
   progress: 'progress',

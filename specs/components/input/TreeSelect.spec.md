@@ -51,63 +51,102 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/tree-select/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| value | `Key \| Key[] \| null` | `null` | 受控值；多选为数组（`Key = string \| number`）。配合 `on:change`。 |
-| defaultValue | `Key \| Key[] \| null` | `null` | 非受控初始值。 |
-| treeData | `TreeNode[]` | `[]` | 树数据。`TreeNode = { key; label; value?; disabled?; disableCheckbox?; isLeaf?; icon?; children? }`。 |
-| multiple | `boolean` | `false` | 是否多选。 |
-| open | `boolean` | — | 受控浮层显隐，配合 `on:openChange`。 |
-| defaultOpen | `boolean` | `false` | 非受控初始展开。 |
-| placeholder | `string` | i18n | 占位文案（默认走 i18n）。 |
-| size | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸。 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态。 |
-| disabled | `boolean` | `false` | 整体禁用。 |
-| showClear | `boolean` | `false` | 值不为空时 trigger 展示清除按钮（对齐 Semi）。 |
-| position | `string` | `'bottomLeft'` | 浮层弹出位置（对齐 Semi，参考 Tooltip position）；映射到 use:floating placement。 |
-| filterable | `boolean \| ((input, node) => boolean)` | `false` | 是否可搜索；可传自定义过滤函数。 |
-| filterTreeNode | `boolean \| ((inputValue, treeNodeString, data?) => boolean)` | — | 对齐 Semi：开启搜索并按 `treeNodeFilterProp` 匹配；函数则自定义匹配谓词。与 `filterable` 其一为真即显示搜索框。 |
-| remote | `boolean` | `false` | 远程搜索，输入仅触发 `on:search`，不本地过滤。 |
-| leafOnly | `boolean` | `false` | 仅允许选中叶子节点。 |
-| checkRelation | `'related' \| 'unRelated'` | `'related'` | 多选父子是否级联联动。 |
-| showCheckedStrategy | `'all' \| 'parent' \| 'child'` | `'all'` | 回填值/Tag 的收敛策略。 |
-| maxTagCount | `number` | — | 多选回填 Tag 最大展示数，超出折叠为 +N。 |
-| showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag。 |
-| restTagsPopoverProps | `Record<string, unknown>` | — | 透传给剩余 Tag Popover 浮层的额外 props（在默认 `trigger=hover`/`position=top` 之后展开，可覆盖）。 |
-| defaultExpandAll | `boolean` | `false` | 初始化时默认全部展开（对齐 Semi）。 |
-| defaultExpandedKeys | `Key[]` | `[]` | 默认展开节点（对齐 Semi）。 |
-| expandedKeys | `Key[]` | — | 受控展开，配合 `on:expand`。 |
-| loadData | `(node) => Promise<TreeNode[]>` | — | 异步加载子节点。 |
-| virtualize | `{ height?: number; width?: number \| string; itemSize?: number }` | — | 列表虚拟化（对齐 Semi）：传入对象即开启，`height` 视口高（默认 224）、`itemSize` 行高（默认 32）。 |
-| virtualizeThreshold | `number` | `100` | 自动启用虚拟化的节点数阈值。 |
-| dropdownMatchSelectWidth | `boolean` | `true` | 浮层宽度对齐触发器。 |
-| getPopupContainer | `() => HTMLElement` | `() => document.body` | 浮层挂载容器。 |
-| destroyOnClose | `boolean` | `false` | 关闭时销毁浮层 DOM。 |
-| loading | `boolean` | `false` | 触发器 loading 态。 |
-| emptyText | `string` | i18n | 无数据/无匹配文案。 |
-| emptyContent | `string \| Snippet` | i18n | 无数据/无匹配占位内容（对齐 Semi emptyContent）；未传回退 `emptyText` i18n。 |
-| searchRender | `boolean \| Snippet<[{ value; onInput; onKeydown; placeholder }]>` | — | 自定义搜索框渲染：`false` 隐藏内置搜索框；Snippet 完全接管渲染（回调回填输入）。 |
-| dropdownMargin | `number \| { marginTop?; marginBottom?; marginLeft?; marginRight? }` | — | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop。 |
-| dropdownClassName | `string` | — | 追加到浮层根节点的自定义类名（与内置类名并存）。 |
-| dropdownStyle | `string \| Record<string, string>` | — | 合并进浮层根节点的内联样式（不覆盖内置定位样式）。 |
-| zIndex | `number` | — | 浮层层级（z-index），未传由 CSS 控制。 |
-| searchPosition | `'dropdown' \| 'trigger'` | `'dropdown'` | 搜索框位置：`dropdown` 面板顶部；`trigger` 内嵌触发器（对齐 Semi）。 |
-| disableStrictly | `boolean` | `false` | 严格禁用：`disabled` 不向下传播，仅节点自身 disabled 才不参与父子联动（对齐 Semi）。 |
-| renderSelectedItem | `Snippet<[{ node: TreeNode; onRemove: () => void }]>` | — | 自定义已选项渲染（单选值 / 多选每个 tag）。 |
+| value | `TreeKey\|TreeKey[]\|null` | `undefined` |  |
+| defaultValue | `TreeKey\|TreeKey[]\|null` | `null` |  |
+| treeData | `TreeNode[]` | `[]` | 树数据源；字段名可经 keyMaps 自定义 |
+| defaultOpen | `boolean` | `false` |  |
+| multiple | `boolean` | `false` | checkbox 多选 + 父子联动，多 tag 回显 |
+| checkRelation | `'related'\|'unRelated'` | `'related'` | 多选父子是否级联联动；unRelated 互不影响（对齐 Semi） |
+| maxTagCount | `number` | `undefined` | 多选回填 Tag 最大展示数，超出折叠为 +N（仅影响显示） |
+| placeholder | `string` | `'请选择'` |  |
+| size | `'small'\|'default'\|'large'` | `default` |  |
+| status | `'default'\|'warning'\|'error'` | `default` |  |
+| disabled | `boolean` | `false` |  |
+| showClear | `boolean` | `false` | 值不为空时 trigger 展示清除按钮（对齐 Semi） |
+| leafOnly | `boolean` | `false` |  |
+| defaultExpandAll | `boolean` | `false` |  |
+| defaultExpandedKeys | `TreeKey[]` | `[]` | 默认展开的节点 key（非受控初始展开集，与 defaultExpandAll 取并集；对齐 Semi） |
+| filterable | `boolean` | `false` | 面板搜索框过滤节点 + 高亮命中 |
+| filterTreeNode | `boolean \| ((inputValue: string, treeNodeString: string, data?: TreeNode) => boolean)` | `undefined` | 按输入筛选节点（对齐 Semi）：true 开启搜索并默认按 treeNodeFilterProp 包含匹配；函数则自定义匹配谓词。与 filterable 其一为真即显示搜索框 |
+| remote | `boolean` | `false` | 远程搜索：输入仅触发 onSearch，不本地过滤（外部更新 treeData） |
+| onSearch | `(input: string, filteredExpandedKeys: TreeKey[], filteredNodes: TreeNode[]) => void` | `undefined` | 搜索输入回调（对齐 Semi 三入参）：入参为当前输入、过滤后应展开的节点 keys、命中节点数组 |
+| loadData | `(node: TreeNode) => Promise<TreeNode[]>` | `undefined` | 异步加载子节点：展开未加载的非叶子节点时调用，返回该节点子节点数组（加载中显示 spinner，竞态去重，不写回 treeData）。与 Tree 的 loadData 对齐 |
+| virtualize | `{ height?: number; width?: number \| string; itemSize?: number }` | `undefined` | 列表虚拟化（对齐 Semi）：传入对象即开启，仅渲染视口内可见行；height 视口高（默认 224）、itemSize 行高（默认 32）。复用 Tree 范式（core fixedRange），保持 role=tree/treeitem 语义 |
+| triggerRender | `Snippet<[{ value: TreeKey\|TreeKey[]\|null\|undefined; placeholder: string; isOpen: boolean; disabled: boolean }]>` | `undefined` | 完全自定义触发器渲染（替换默认选择框）；参数含当前 value/placeholder/isOpen/disabled，与 Cascader.triggerRender 对齐 |
+| insetLabel | `Snippet \| string` | `undefined` | 触发器内嵌标签，渲染在回填值/占位符之前（对齐 Semi insetLabel），消费 --cd-color/font-tree-select-label token |
+| insetLabelId | `string` | `undefined` | 内嵌标签的 id（a11y 关联用），对齐 Semi insetLabelId |
+| motion | `boolean` | `true` | 下拉浮层开合动画（淡入）；与 Cascader/Dropdown 的 motion 对齐。reduced-motion 退化 |
+| onChange | `(value: TreeKey\|TreeKey[]\|null) => void` | `undefined` | 多选返回 checked 全集数组，单选返回单 key |
+| aria-label | `string` | `undefined` |  |
+| ariaLabelledby | `string` | `undefined` | aria-labelledby：关联外部 label 元素（Form.Field 透传 labelId，对齐 Semi） |
+| ariaDescribedby | `string` | `undefined` | aria-describedby：关联 helpText / extraText（Form.Field 透传） |
+| ariaErrormessage | `string` | `undefined` | aria-errormessage：error 态关联错误信息容器（Form.Field 透传） |
+| ariaRequired | `boolean` | `undefined` | aria-required：必填语义（Form.Field required 透传） |
+| position | `string` | `'bottomLeft'` | 浮层弹出位置（对齐 Semi，参考 Tooltip position）；映射到 use:floating placement |
+| dropdownMatchSelectWidth | `boolean` | `true` | 浮层宽度对齐触发器（min-inline-size = 触发器宽） |
+| getPopupContainer | `() => HTMLElement \| null \| undefined` | `undefined` | 浮层挂载容器，缺省 ConfigProvider 全局值再回退 document.body |
+| stopPropagation | `boolean` | `true` | 触发器点击是否阻止事件冒泡（对齐 Semi） |
+| borderless | `boolean` | `false` | 无边框模式：trigger 边框透明 |
+| prefix | `Snippet \| string` | `undefined` | trigger 前缀 |
+| suffix | `Snippet \| string` | `undefined` | trigger 后缀 |
+| clearIcon | `Snippet` | `undefined` | 自定义清除按钮图标 |
+| expandIcon | `Snippet<[{ node: TreeNode; expanded: boolean; level: number }]>` | `undefined` | 自定义展开图标；也可传无参 Snippet 统一渲染 |
+| arrowIcon | `Snippet` | `undefined` | 自定义右侧下拉箭头（expandIcon 的别名） |
+| showLine | `boolean` | `false` | 显示节点连接线（垂直导引线） |
+| labelEllipsis | `boolean` | `true` | 节点 label 单行省略截断，可关闭以允许换行 |
+| style | `string` | `undefined` | 选择框样式 |
+| autoAdjustOverflow | `boolean` | `true` | 浮层遮挡时自动调整方向 |
+| validateStatus | `'default'\|'error'\|'warning'` | `undefined` | status 的别名（优先于 status） |
+| onBlur | `(e: FocusEvent) => void` | `undefined` | 失焦回调 |
+| onFocus | `(e: FocusEvent) => void` | `undefined` | 聚焦回调 |
+| preventScroll | `boolean` | `false` | 聚焦时阻止滚动 |
+| outerTopSlot | `Snippet` | `undefined` | 面板顶部外层 slot（在搜索框之上） |
+| outerBottomSlot | `Snippet` | `undefined` | 面板底部外层 slot（在树之下） |
+| searchAutoFocus | `boolean` | `false` | 面板打开时搜索框自动获焦 |
+| searchPosition | `'dropdown'\|'trigger'` | `'dropdown'` | 搜索框位置：'dropdown' 面板内；'trigger' trigger 内 |
+| searchPlaceholder | `string` | `undefined` | 搜索框占位文字 |
+| treeNodeFilterProp | `string` | `'label'` | 搜索过滤属性 |
+| showSearchClear | `boolean` | `true` | 搜索框右侧显示清除按钮（有内容时） |
+| showFilteredOnly | `boolean` | `false` | 搜索激活时仅显示命中节点，不显示祖先链 |
+| emptyContent | `string \| Snippet` | `undefined` | 无匹配/无数据占位内容（对齐 Semi emptyContent）；未传回退 i18n TreeSelect.emptyText |
+| searchRender | `boolean \| Snippet<[{ value: string; onInput: (v: string) => void; onKeydown: (e: KeyboardEvent) => void; placeholder: string }]>` | `undefined` | 自定义搜索框渲染：false 隐藏内置搜索框；Snippet 完全接管渲染（回调回填输入） |
+| expandedKeys | `TreeKey[]` | `undefined` | 受控展开的节点 keys |
+| expandAll | `boolean` | `false` | 动态全部展开（受控/动态，区别于 defaultExpandAll） |
+| expandAction | `false \| 'click' \| 'doubleClick'` | `false` | 行点击展开方式：false 仅展开按钮；'click' 单击行；'doubleClick' 双击行 |
+| autoExpandParent | `boolean` | `false` | 展开节点时自动展开其所有祖先链 |
+| motionExpand | `boolean` | `true` | 展开/折叠动画 |
+| onExpand | `(expandedKeys: TreeKey[], info: { expanded: boolean; node: unknown }) => void` | `undefined` | 节点展开回调 |
+| autoMergeValue | `boolean` | `true` | 自动合并值：父节点全选时 value 折叠为父不含后代（对齐 Semi）；leafOnly 时改为仅叶子 |
+| onChangeWithObject | `boolean` | `false` | onChange 回调携带完整节点对象而非仅 key |
+| showRestTagsPopover | `boolean` | `false` | 多选 maxTagCount 折叠出 +N 时，hover +N 用 Popover 浮层展示折叠掉的剩余全部 Tag |
+| restTagsPopoverProps | `Record<string, unknown>` | `undefined` | 透传给剩余 Tag Popover 浮层的额外 props（在默认 trigger=hover/position=top 之后展开，可覆盖） |
+| triggerTagWrap | `boolean` | `false` | trigger 多选 tags 换行显示（默认单行截断折叠） |
+| renderLabel | `Snippet<[{ label: string; data: TreeNode; searchWord: string }]>` | `undefined` | 自定义节点 label 渲染（仅替换文字部分） |
+| renderFullLabel | `Snippet<[{ node: TreeNode; expanded: boolean; level: number; checked: boolean; halfChecked: boolean; selected: boolean }]>` | `undefined` | 完全自定义节点行渲染（替换整行内容） |
+| renderSelectedItem | `Snippet<[{ node: TreeNode; onRemove: () => void }]>` | `undefined` | 自定义 trigger 已选 tag 渲染（多选时每个 tag 独立渲染） |
+| treeNodeLabelProp | `string` | `'label'` | 节点数据中用作显示 label 的字段名 |
+| keyMaps | `{ key?: string; label?: string; value?: string; children?: string }` | `undefined` | 自定义节点字段名映射（对齐 Semi keyMaps）：适配任意后端数据结构，如 { key:'id', label:'name', children:'sub' } |
+| optionListStyle | `string \| Record<string, string>` | `undefined` | 选项列表容器的内联 style |
+| loadedKeys | `Set<TreeKey>` | `undefined` | 受控已加载的节点 keys |
+| clickToHide | `boolean` | `true` | 单选选中后自动关闭面板 |
+| clickTriggerToHide | `boolean` | `true` | 面板开启时点击 trigger 关闭面板 |
+| disableStrictly | `boolean` | `false` | 严格禁用：disabled 节点不因父节点联动而影响，禁用态独立 |
+| dropdownMargin | `number \| { marginTop?: number; marginBottom?: number; marginLeft?: number; marginRight?: number }` | `undefined` | 浮层与 trigger 的额外间距（px）；数字映射到浮层 offset，对象取 marginTop |
+| dropdownClassName | `string` | `undefined` | 追加到浮层根节点的自定义类名（与内置类名并存） |
+| dropdownStyle | `string \| Record<string, string>` | `undefined` | 合并进浮层根节点的内联样式（不覆盖内置定位样式） |
+| zIndex | `number` | `undefined` | 浮层层级（z-index），未传由 CSS 控制 |
+| onClear | `(e: MouseEvent) => void` | `undefined` | 点击清除按钮回调 |
+| onSelect | `(selectedKey: TreeKey, selected: boolean, node: unknown) => void` | `undefined` | 节点选中回调 |
+| onLoad | `(loadedKeys: TreeKey[], treeNode: TreeNode) => void` | `undefined` | 异步加载完成回调（含已加载 key 集合与当前节点） |
+| onVisibleChange | `(isVisible: boolean) => void` | `undefined` | 面板可见性变化回调（对齐 Semi onVisibleChange） |
 
 ### Events
 
-| 事件 | payload | 说明 |
-| --- | --- | --- |
-| change | `{ value: Key \| Key[] \| null; nodes: TreeNode \| TreeNode[] \| null }` | 选中值变化。 |
-| openChange | `{ open: boolean }` | 浮层显隐变化。 |
-| search | `{ input: string }` | 搜索输入变化（防抖后），远程搜索数据源。 |
-| expand | `{ expandedKeys: Key[]; node: TreeNode; expanded: boolean }` | 展开/收起。 |
-| check | `{ checkedKeys: Key[]; halfCheckedKeys: Key[]; node: TreeNode; checked: boolean }` | 多选勾选变化。 |
-| select | `{ key: Key; node: TreeNode; selected: boolean }` | 单个节点点选（原始事件，未经策略收敛）。 |
-| clear | `void` | 点击清除。 |
-| load | `{ node: TreeNode; children: TreeNode[] }` | `loadData` 完成。 |
-| blur / focus | `FocusEvent` | 触发器失焦/聚焦。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Methods
 
@@ -179,20 +218,14 @@ TreeSelect 是「树形数据 + 下拉选择」的复合输入控件：把 Tree 
 
 用户可见文案零硬编码，全部走 i18n key；日期/数字若出现在节点（如计数）用 `Intl.NumberFormat`。
 
-| i18n key | 默认（zh-CN / en） |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
 | --- | --- |
-| `TreeSelect.placeholder` | 请选择 / Please select |
-| `TreeSelect.searchPlaceholder` | 搜索 / Search |
-| `TreeSelect.empty` | 暂无数据 / No data |
-| `TreeSelect.notFound` | 无匹配结果 / No results found |
-| `TreeSelect.loading` | 加载中… / Loading… |
-| `TreeSelect.clear` | 清除 / Clear |
-| `TreeSelect.selectAll` | 全选 / Select all |
-| `TreeSelect.maxTagSuffix` | +{count} / +{count} |
-| `TreeSelect.a11y.selectedCount` | 已选 {count} 项 / {count} selected |
-| `TreeSelect.a11y.expanded` | 已展开 {label} / {label} expanded |
-| `TreeSelect.a11y.collapsed` | 已收起 {label} / {label} collapsed |
-| `TreeSelect.a11y.removeTag` | 移除 {label} / Remove {label} |
+| `TreeSelect.clear` | 清除 |
+| `TreeSelect.emptyText` | 无数据 |
+| `TreeSelect.searchPlaceholder` | 搜索 |
+| `TreeSelect.restTagsCount` | 还有 {count} 项 |
 
 `+{count}` 与 `已选 {count} 项` 中的数字经 `Intl.NumberFormat(locale)` 格式化。
 

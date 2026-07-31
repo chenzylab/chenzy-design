@@ -3,7 +3,6 @@ title: Card 卡片
 name: card
 category: show
 brief: 常规的卡片容器，可以承载标题、段落、图片、列表等内容。
-docMode: inline
 ---
 
 <script>

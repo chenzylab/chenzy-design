@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Cropper, Button, Slider } from '@chenzy-design/svelte';
 
-  const src = 'https://picsum.photos/id/1025/800/500';
+  const src = 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/image.png';
   let rotate = $state(0);
   let zoom = $state(1);
   let cropper = $state<{ getCropperCanvas: () => HTMLCanvasElement } | undefined>();
@@ -23,7 +23,7 @@
     {zoom}
     onZoomChange={(z) => (zoom = z)}
     preview={() => previewEl}
-    style="width: 100%; height: 300px;"
+    style="width: 550px; height: 300px; margin: 20px;"
   />
   <div style="display: flex; align-items: center; gap: 12px;">
     <span style="width: 48px;">旋转</span>

@@ -48,8 +48,13 @@
   interface Props {
     /** 初始内容（HTML 或纯文本，tiptap Content）。 */
     defaultContent?: string;
-    /** 占位文本（缺省走 locale AIChatInput.placeholder）。 */
+    /** 占位文本（对齐 Semi：无内置默认文案，不传则不显示）。 */
     placeholder?: string | undefined;
+    /**
+     * 仅选中技能（无其他内容）时是否仍显示 placeholder（对齐 Semi showPlaceholderWhenSkillOnly）。
+     * 开启后 placeholder 显示在 skill 后方。
+     */
+    showPlaceholderWhenSkillOnly?: boolean;
     /**
      * 是否可发送（对齐 Semi canSend）。未设置时按内容/附件推断；显式设置以此为准。
      */
@@ -168,6 +173,7 @@
   let {
     defaultContent = '',
     placeholder,
+    showPlaceholderWhenSkillOnly = false,
     canSend,
     generating = false,
     sendHotKey = 'enter',
@@ -247,7 +253,10 @@
     },
   });
 
-  const placeholderText = $derived(placeholder ?? loc().t('AIChatInput.placeholder'));
+  // 严格对齐 Semi：placeholder 原样透传，**无内置兜底文案**
+  // （Semi aiChatInput/index.tsx:637 直接 `placeholder={placeholder}`，defaultProps 未含该项，
+  //  且 Semi 的 AIChatInput locale 只有 template/configure/selected 三个键、无 placeholder）。
+  const placeholderText = $derived(placeholder ?? '');
 
   // 当前是否可发送（headless 判定；显式 canSend 优先）。
   const computedCanSend = $derived(
@@ -291,27 +300,29 @@
       const [
         tiptapCore,
         { default: StarterKit },
-        { Placeholder },
         { SvelteNodeViewRenderer },
         { createSkillSlotExtension },
         { createSelectSlotExtension },
         { createInputSlotExtension },
         pmState,
+        pmView,
+        placeholderExt,
         inputSlotPlugins,
       ] = await Promise.all([
         import('@tiptap/core'),
         import('@tiptap/starter-kit'),
-        import('@tiptap/extensions'),
         import('svelte-tiptap'),
         import('./skill-slot-extension.js'),
         import('./select-slot-extension.js'),
         import('./input-slot-extension.js'),
         import('@tiptap/pm/state'),
+        import('@tiptap/pm/view'),
+        import('./placeholder-extension.js'),
         import('./input-slot-plugins.js'),
       ]);
       if (destroyed) return;
 
-      const { Editor: TiptapEditor, Node, mergeAttributes } = tiptapCore;
+      const { Editor: TiptapEditor, Node, mergeAttributes, Extension } = tiptapCore;
       const { Plugin, PluginKey, TextSelection } = pmState;
       const pmDeps = { Plugin, PluginKey, TextSelection } as never;
       const inputSlotHandlePaste = inputSlotPlugins.makeHandlePaste(pmDeps);
@@ -330,7 +341,17 @@
         element: host,
         extensions: [
           StarterKit,
-          Placeholder.configure({ placeholder: placeholderText }),
+          placeholderExt
+            .createPlaceholderExtension(Extension as never, {
+              Plugin,
+              PluginKey,
+              Decoration: pmView.Decoration,
+              DecorationSet: pmView.DecorationSet,
+            } as never)
+            .configure({
+              placeholder: placeholderText,
+              showPlaceholderWhenSkillOnly,
+            }) as never,
           skillSlot as never,
           selectSlot as never,
           inputSlot as never,
@@ -1104,7 +1125,9 @@
     overflow-y: auto;
     color: var(--cd-ai-chat-input-color);
     font: inherit;
-    line-height: 1.5;
+    /* 对齐 Semi aiChatInput.scss:499 `line-height: $font-aiChatInput_rich_text-lineHeight`
+       —— Semi 用组件专属变量，本库 token 同形同值。 */
+    line-height: var(--cd-ai-chat-input-rich-text-lineheight);
   }
 
   /* tiptap ProseMirror 编辑区：去默认 outline，占位符用 data 属性伪元素。 */
@@ -1123,6 +1146,25 @@
     content: attr(data-placeholder);
     float: left;
     height: 0;
+    pointer-events: none;
+    color: var(--cd-ai-chat-input-placeholder-color);
+  }
+
+  /*
+    showPlaceholderWhenSkillOnly：段落里只有 skillSlot 时仍显示 placeholder，
+    且要排在 skill **后方**——故关掉 ::before（float:left 会跑到 skill 前），
+    改用 ::after 内联跟随。逐条对齐 Semi aiChatInput.scss:510-521。
+  */
+  .cd-ai-chat-input-editor
+    :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::before) {
+    content: none;
+  }
+  .cd-ai-chat-input-editor
+    :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::after) {
+    content: attr(data-placeholder);
+    display: inline;
+    height: 0;
+    margin-inline-start: var(--cd-spacing-ai-chat-input-skill-item-columngap);
     pointer-events: none;
     color: var(--cd-ai-chat-input-placeholder-color);
   }

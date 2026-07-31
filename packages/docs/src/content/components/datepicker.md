@@ -3,7 +3,6 @@ title: DatePicker 日期选择器
 name: datepicker
 category: input
 brief: 日期选择器用于帮助用户选择一个符合要求的、格式化的日期（时间）或日期（时间）范围。
-docMode: inline
 ---
 
 <script>

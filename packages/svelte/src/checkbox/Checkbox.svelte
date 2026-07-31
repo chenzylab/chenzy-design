@@ -291,7 +291,9 @@
     column-gap: var(--cd-spacing-checkbox-label-paddingleft);
     color: var(--cd-color-checkbox-label-text-default);
     cursor: pointer;
-    line-height: 1.4;
+    /* 对齐 Semi checkbox.scss:44 `line-height: $font-checkbox_label-lineHeight`
+       —— Semi 用的是组件专属变量，本库对应 token 同名同值，故消费它而非通用刻度。 */
+    line-height: var(--cd-font-checkbox-label-lineheight);
     transition:
       background-color var(--cd-transition-duration-checkbox-bg) var(--cd-transition-function-checkbox-bg)
         var(--cd-transition-delay-checkbox-bg),

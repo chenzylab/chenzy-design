@@ -8,6 +8,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { IconAILoading } from '@chenzy-design/icons';
+  import { resolveDefault } from '@chenzy-design/core';
   import BaseButton from './BaseButton.svelte';
   import {
     getButtonGroupContext,
@@ -83,12 +84,24 @@
   }: Props = $props();
 
   // ButtonGroup 上下文：仅在未显式设置对应 prop 时作为默认回退（显式 prop 始终优先）。
+  // 优先级（对齐 Semi）：显式 prop > ButtonGroup 上下文 > cdGlobal 全局默认 > 组件内置默认。
+  // cdGlobal 见 core/global-config.ts（对齐 Semi semiGlobal.config.overrideDefaultProps）。
   const group = getButtonGroupContext();
-  const type = $derived<ButtonType>(typeProp ?? group?.type ?? 'primary');
-  const theme = $derived<ButtonTheme>(themeProp ?? group?.theme ?? 'light');
-  const size = $derived<ButtonSize>(sizeProp ?? group?.size ?? 'default');
-  const disabled = $derived<boolean>(disabledProp ?? group?.disabled ?? false);
-  const colorful = $derived<boolean>(colorfulProp ?? group?.colorful ?? false);
+  const type = $derived<ButtonType>(
+    typeProp ?? group?.type ?? resolveDefault(undefined, 'Button', 'type', 'primary'),
+  );
+  const theme = $derived<ButtonTheme>(
+    themeProp ?? group?.theme ?? resolveDefault(undefined, 'Button', 'theme', 'light'),
+  );
+  const size = $derived<ButtonSize>(
+    sizeProp ?? group?.size ?? resolveDefault(undefined, 'Button', 'size', 'default'),
+  );
+  const disabled = $derived<boolean>(
+    disabledProp ?? group?.disabled ?? resolveDefault(undefined, 'Button', 'disabled', false),
+  );
+  const colorful = $derived<boolean>(
+    colorfulProp ?? group?.colorful ?? resolveDefault(undefined, 'Button', 'colorful', false),
+  );
 
   // 对齐 Semi 派发：有 icon || (loading && !disabled) 走 IconButton 组装分支。
   const isIconButton = $derived(!!icon || (loading && !disabled));

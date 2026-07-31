@@ -3,7 +3,6 @@ title: Typography 排版
 name: typography
 category: basic
 brief: 文字，图片，段落，数值的基本格式。
-docMode: inline
 ---
 
 <script>

@@ -3,7 +3,6 @@ title: ScrollList 滚动列表
 name: scrolllist
 category: show
 brief: 滚动列表。
-docMode: inline
 ---
 
 <script>

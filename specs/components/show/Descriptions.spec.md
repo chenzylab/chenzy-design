@@ -47,35 +47,34 @@ Descriptions 以展示为主，**无键盘交互、无焦点管理、无浮层**
 
 ### Props（Descriptions）
 
+> 本表由 `packages/svelte/src/descriptions/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `data` | `Array<{ key?: string; label: Snippet \| string; value: Snippet \| unknown; span?: number; className?: string }>` | `[]` | 声明式数据源；与 `Descriptions.Item` 子组件二选一或合并 |
-| `layout` | `'inline' \| 'row'` | `'inline'` | 行布局：inline 流式紧凑，row 表格化对齐 |
-| `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 单项内 label 与 value 的方向（vertical 即 label 在上） |
-| `column` | `number \| Partial<Record<'xs'\|'sm'\|'md'\|'lg'\|'xl'\|'xxl', number>>` | `3` | 每行字段数，支持响应式断点对象 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸，影响行高/字号/内边距 |
-| `align` | `'left' \| 'center' \| 'right' \| 'justify'` | `'left'` | label/value 对齐方式 |
-| `bordered` | `boolean` | `false` | 是否显示边框（row 模式常配合使用） |
-| `colon` | `boolean` | `true` | label 后是否显示分隔符 `:`（inline/horizontal 生效） |
-| `title` | `Snippet \| string` | `undefined` | 整组标题 |
-| `emptyText` | `string` | i18n `Descriptions.empty` (`-`) | 空值占位文案 |
-| `class` | `string` | `undefined` | 根节点自定义类名 |
-| `style` | `string` | `undefined` | 根节点行内样式 |
+| --- | --- | --- | --- |
+| align | `'center'\|'justify'\|'left'\|'plain'` | `'center'` | 对齐方式（row=true 时失效） |
+| row | `boolean` | `false` | 是否双行显示 |
+| size | `'small'\|'medium'\|'large'` | `'medium'` | 双行显示时的大小 |
+| data | `DescriptionData[]` | `[]` | 列表数据（不传时渲染 children 内的 Descriptions.Item） |
+| layout | `'vertical'\|'horizontal'` | `'vertical'` | 布局模式 |
+| column | `number` | `3` | horizontal 布局下每行的总列数 |
+| class | `string` | `''` |  |
+| style | `string` | `undefined` |  |
+| children | `Snippet` | `undefined` | 声明式用法：内嵌 <Descriptions.Item>（不传 data 时生效） |
+
+**子组件**：`Descriptions.Item`
 
 ### Props（Descriptions.Item）
 
 | Prop | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `label` | `Snippet \| string` | `undefined` | 该项的 term/label |
+| `label`（**未实现**，标题字段真名见主表） | `Snippet \| string` | `undefined` | 该项的 term/label |
 | `span` | `number` | `1` | 跨列数（受当前行剩余列数约束，超出自动截断换行） |
 | `key` | `string` | 自动生成 | 列表 key |
 | `class` | `string` | `undefined` | 该项自定义类名 |
 
 ### Events
 
-| Event | Payload | 触发时机 | 说明 |
-|---|---|---|---|
-| `on:breakpointChange` | `{ breakpoint: 'xs'\|...\|'xxl'; column: number }` | 响应式 `column` 解析出的断点变化时 | 仅当 `column` 为响应式对象时触发；用于消费方联动布局 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 说明：Descriptions 为只读展示组件，无 `value/on:change`、无 `open/on:openChange`、无 `status` 校验态——不强加无意义的一致性 API。
 
@@ -127,10 +126,7 @@ Descriptions 以展示为主，**无键盘交互、无焦点管理、无浮层**
 - 用户可见文案零硬编码，统一走 i18n provider。
 - i18n key：
 
-| Key | 默认（en / zh） | 用途 |
-|---|---|---|
-| `Descriptions.empty` | `-` / `-` | 空值占位符 |
-| `Descriptions.colon` | `:` / `：` | 分隔符（中文用全角冒号，由 locale 决定） |
+> **本组件不消费 locale**（2026-07-30 重校）：`Descriptions` 的 .svelte 里 `useLocale` 出现 0 次，所有用户可见文案由调用方经 props 传入。此前本节列的整张 i18n 键表从未被实现，已随「悬空键清理」把 `Descriptions` slice 整片从 `packages/locale` 删除，见 [[locale-dangling-keys-render-raw-key]]。空值占位与冒号当前由组件内联常量承担。
 
 - **冒号本地化**：中文 locale 默认全角 `：`，西文为半角 `:`，由 `Descriptions.colon` 按 locale 提供，避免硬编码标点。
 - **日期/数字**：组件不格式化业务值，但文档与示例约定 value 中的日期用 `Intl.DateTimeFormat`、数字/货币用 `Intl.NumberFormat` 由调用方格式化后传入；提供 recipe 片段。

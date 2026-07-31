@@ -30,7 +30,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
-  import { useId, useScrollLock } from '@chenzy-design/core';
+  import { useId, useScrollLock,
+    resolveDefault,
+  } from '@chenzy-design/core';
   import { IconClose } from '@chenzy-design/icons';
   import { IconButton } from '../iconbutton/index.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -99,22 +101,22 @@
 
   let {
     visible,
-    placement = 'right',
-    size = 'small',
+    placement: placementProp,
+    size: sizeProp,
     width,
     height,
     title,
     titleSnippet,
-    closable = true,
+    closable: closableProp,
     closeIcon,
-    mask = true,
-    maskClosable = true,
-    closeOnEsc = false,
-    keepDOM = false,
-    disableScroll = true,
+    mask: maskProp,
+    maskClosable: maskClosableProp,
+    closeOnEsc: closeOnEscProp,
+    keepDOM: keepDOMProp,
+    disableScroll: disableScrollProp,
     getPopupContainer,
-    zIndex = 1000,
-    motion = true,
+    zIndex: zIndexProp,
+    motion: motionProp,
     style,
     bodyStyle,
     headerStyle,
@@ -126,6 +128,18 @@
     afterVisibleChange,
     onCancel,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['SideSheet'] > 组件内置默认值。
+  const motion = $derived(resolveDefault(motionProp, 'SideSheet', 'motion', true));
+  const mask = $derived(resolveDefault(maskProp, 'SideSheet', 'mask', true));
+  const placement = $derived(resolveDefault(placementProp, 'SideSheet', 'placement', 'right'));
+  const closable = $derived(resolveDefault(closableProp, 'SideSheet', 'closable', true));
+  const zIndex = $derived(resolveDefault(zIndexProp, 'SideSheet', 'zIndex', 1000));
+  const maskClosable = $derived(resolveDefault(maskClosableProp, 'SideSheet', 'maskClosable', true));
+  const size = $derived(resolveDefault(sizeProp, 'SideSheet', 'size', 'small'));
+  const disableScroll = $derived(resolveDefault(disableScrollProp, 'SideSheet', 'disableScroll', true));
+  const closeOnEsc = $derived(resolveDefault(closeOnEscProp, 'SideSheet', 'closeOnEsc', false));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'SideSheet', 'keepDOM', false));
 
   const loc = useLocale();
   const titleId = useId('cd-sidesheet-title');
@@ -474,7 +488,8 @@
     color: var(--cd-color-side-sheet-main-text);
     font-weight: var(--cd-font-side-sheet-title-fontweight);
     font-size: var(--cd-font-side-sheet-title-fontsize);
-    line-height: 1.5;
+    /* Semi sideSheet.scss:77 @include font-size-header-5 → 24px */
+    line-height: var(--cd-line-height-header-5);
     text-align: left;
   }
 

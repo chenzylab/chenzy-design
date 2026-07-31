@@ -3,7 +3,6 @@ title: Banner 通知横幅
 name: banner
 category: feedback
 brief: 横幅通常用于标识全页的状态或通知等。它通常是常驻的，需要用户主动将其关闭。
-docMode: inline
 ---
 
 <script>

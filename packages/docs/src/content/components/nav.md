@@ -3,7 +3,6 @@ title: Nav 导航
 name: nav
 category: navigation
 brief: 为网页和应用提供导航的菜单列表，支持垂直、水平两种布局。
-docMode: inline
 ---
 
 <script>

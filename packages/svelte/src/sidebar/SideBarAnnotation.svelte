@@ -385,7 +385,8 @@
     background: var(--cd-sidebar-annotation-duration-bg);
     color: var(--cd-sidebar-annotation-duration-color);
     font-size: 11px;
-    line-height: 1.5;
+    /* Semi sidebar.scss:333 @include font-size-small → 16px */
+    line-height: var(--cd-line-height-small);
   }
   .cd-sidebar-annotation-content {
     flex: 1;
@@ -399,7 +400,8 @@
     color: var(--cd-sidebar-annotation-title-color);
     font-size: var(--cd-sidebar-annotation-title-size);
     font-weight: var(--cd-font-weight-medium, 500);
-    line-height: 1.4;
+    /* Semi sidebar.scss:338 @include font-size-regular → 20px */
+    line-height: var(--cd-line-height-regular);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -409,7 +411,8 @@
     overflow: hidden;
     color: var(--cd-sidebar-annotation-detail-color);
     font-size: var(--cd-sidebar-annotation-detail-size);
-    line-height: 1.5;
+    /* Semi sidebar.scss:271 @include font-size-small → 16px */
+    line-height: var(--cd-line-height-small);
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;

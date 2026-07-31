@@ -36,6 +36,7 @@
   "scripts": {
     "build": "svelte-package -i src -o dist && node scripts/clean-dist.mjs && pnpm build:meta",
     "build:meta": "tsx scripts/build-components-json.ts",
+    "check:lineheight": "node scripts/check-font-lineheight.mjs",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {

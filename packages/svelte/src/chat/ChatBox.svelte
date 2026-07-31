@@ -37,6 +37,8 @@
     mode?: ChatMode;
     lastChat?: boolean;
     markdownRenderProps?: Record<string, unknown> | undefined;
+    /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml）。 */
+    escapeHtml?: boolean;
     onMessageCopy?: ((message: Message) => void) | undefined;
     onMessageDelete?: ((message: Message) => void) | undefined;
     onMessageReset?: ((message: Message) => void) | undefined;
@@ -57,6 +59,7 @@
     mode = CHAT_MODE.BUBBLE,
     lastChat = false,
     markdownRenderProps,
+    escapeHtml = true,
     onMessageCopy,
     onMessageDelete,
     onMessageReset,
@@ -141,6 +144,7 @@
     {isError}
     {showBubble}
     {markdownRenderProps}
+    {escapeHtml}
     {renderChatBoxContent}
   />
 {/snippet}

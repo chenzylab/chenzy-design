@@ -45,31 +45,30 @@ Badge 为**纯展示组件**，无交互逻辑，**省略 @chenzy-design/core �
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| count | `number \| string \| Snippet` | — | 徽标内容；数字时受 `overflowCount`/`showZero` 控制 |
-| dot | `boolean` | `false` | 红点模式，忽略 `count` 内容只显示圆点 |
-| overflowCount | `number` | `99` | 数字溢出阈值，超过显示 `${overflowCount}+` |
-| showZero | `boolean` | `false` | `count` 为 0 时是否仍显示徽标 |
-| type | `'primary' \| 'secondary' \| 'tertiary' \| 'success' \| 'warning' \| 'danger'` | `'danger'` | 徽标/状态点语义色 |
-| theme | `'solid' \| 'light'` | `'solid'` | 实心 / 浅色变体 |
-| position | `'top-right' \| 'top-left' \| 'bottom-right' \| 'bottom-left'` | `'top-right'` | 角标锚点 |
-| offset | `[number, number]` | `[0, 0]` | 在锚点基础上的 `[x, y]` 像素偏移 |
-| size | `'small' \| 'default'` | `'default'` | 徽标尺寸 |
-| status | `'default' \| 'success' \| 'processing' \| 'error' \| 'warning'` | — | 独立状态点模式（不依赖子元素）；设置后渲染 status 点 |
-| text | `string` | — | `status` 模式下状态点右侧文本 |
-| announce | `boolean` | `false` | 是否在 `count` 变化时向读屏播报 |
-| countAriaLabel | `string` | — | 覆盖默认数字徽标的无障碍标签 |
-| class | `string` | — | 透传到根节点的自定义类名 |
-| style | `string` | — | 透传内联样式 |
+> 本表由 `packages/svelte/src/badge/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| count | `number\|string\|Snippet` | `undefined` | 徽标内容；数字/字符串按 overflowCount 处理，Snippet 时直接渲染 |
+| dot | `boolean` | `false` | 显示小圆点，优先于 count |
+| type | `'primary'\|'secondary'\|'tertiary'\|'danger'\|'warning'\|'success'` | `'primary'` |  |
+| theme | `'solid'\|'light'\|'inverted'` | `'solid'` |  |
+| position | `'leftTop'\|'leftBottom'\|'rightTop'\|'rightBottom'` | `'rightTop'` |  |
+| overflowCount | `number` | `undefined` | 超出显示 {n}+ |
+| countStyle | `string` | `undefined` | 徽标内容区域样式 |
+| countClass | `string` | `undefined` | 徽标内容区域类名 |
+| style | `string` | `undefined` | 徽标内容区域内联样式（优先于 countStyle） |
+| class | `string` | `undefined` | 根节点类名 |
+| onClick | `(e: MouseEvent) => void` | `undefined` |  |
+| onMouseEnter | `(e: MouseEvent) => void` | `undefined` |  |
+| onMouseLeave | `(e: MouseEvent) => void` | `undefined` |  |
+| children | `Snippet` | `undefined` | 宿主子元素；省略时独立使用 |
 
 > 注：Badge 无受控显隐与受控输入，故不涉及 `value`/`on:change`/`open`/`on:openChange`。显隐由 `count`/`dot`/`showZero` 派生。
 
 ### Events
 
-| 名称 | 载荷 (detail) | 说明 |
-|---|---|---|
-| countChange | `{ count: number, overflowed: boolean }` | `count` 解析为数字且变化时派发（含是否溢出标记），便于外部统计/动画钩子 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 点击行为不由 Badge 提供；宿主元素自行绑定 `on:click`。
 

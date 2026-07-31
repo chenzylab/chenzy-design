@@ -3,7 +3,6 @@ title: ColorPicker 颜色选择器
 name: colorpicker
 category: input
 brief: 快速便捷地选择颜色，并提供滴管工具取色
-docMode: inline
 ---
 
 <script>

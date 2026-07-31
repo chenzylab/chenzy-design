@@ -48,32 +48,41 @@ Rating 是一个用于评分与展示评价等级的输入组件。用户通过�
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
+> 本表由 `packages/svelte/src/rating/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| value | `number` | — | 当前分值（受控），与 on:change 配合 |
-| defaultValue | `number` | `0` | 非受控初始分值 |
-| count | `number` | `5` | 图标总数 |
-| allowHalf | `boolean` | `false` | 是否允许半星（步进 0.5） |
-| allowClear | `boolean` | `true` | 点击当前值是否可清零 |
-| character | `string \| Snippet \| ((index:number, state) => Snippet)` | 星形图标 | 自定义字符/图标 |
-| size | `'small' \| 'default' \| 'large' \| number` | `'default'` | 尺寸，number 为像素边长 |
-| disabled | `boolean` | `false` | 禁用 |
-| readonly | `boolean` | `false` | 只读展示态 |
-| status | `'default' \| 'warning' \| 'error'` | `'default'` | 校验态 |
-| tooltips | `string[]` | — | 逐项提示文案，长度应等于 count |
-| autoFocus | `boolean` | `false` | 挂载时聚焦 |
-| name | `string` | — | 表单字段名（透传隐藏 input） |
-| id | `string` | 自动生成 | 根元素 id，关联 aria |
-| ariaLabel | `string` | i18n 默认 | 无可视标签时的辅助名 |
+| value | `number` | `undefined` | 受控值；提供则为受控（只回调不回写） |
+| defaultValue | `number` | `0` | 非受控初始值 |
+| count | `number` | `5` | star 总数 |
+| allowHalf | `boolean` | `false` | 允许半选（步进 0.5） |
+| allowClear | `boolean` | `true` | 再次点击当前值清零 |
+| character | `string \| Snippet<[{index,value}]>` | `undefined` | 自定义字符/图标；不传则默认星形 |
+| size | `'small'\|'default'\|number` | `'default'` | 尺寸；number 为自定义尺寸（需配合 character） |
+| disabled | `boolean` | `false` | 禁用（只读，无法交互） |
+| tooltips | `string[]` | `undefined` | 逐项提示文案（复用 Tooltip 浮层），长度应等于 count |
+| autoFocus | `boolean` | `false` | 挂载时聚焦当前分值对应星 |
+| id | `string` | `undefined` | 根元素 id |
+| tabIndex | `number` | `-1` | 根 tabIndex；焦点实际落在星 radio 上 |
+| style | `string` | `undefined` | 根元素内联样式 |
+| class | `string` | `undefined` | 根元素追加类名 |
+| preventScroll | `boolean` | `undefined` | autoFocus / focus() 聚焦时是否阻止滚动 |
+| aria-label | `string` | `i18n 默认` | 无可视标签时的辅助名（优先于 string character） |
+| aria-labelledby | `string` | `undefined` |  |
+| aria-describedby | `string` | `undefined` |  |
+| aria-errormessage | `string` | `undefined` |  |
+| aria-invalid | `boolean` | `undefined` |  |
+| aria-required | `boolean` | `undefined` |  |
+| onChange | `(value: number) => void` | `undefined` | 选择时的回调 |
+| onHoverChange | `(value: number) => void` | `undefined` | 鼠标经过时数值变化；移出时回调 undefined |
+| onClick | `(e, index: number) => void` | `undefined` | 点击某项的回调（index 为 0..count，count 为空项） |
+| onFocus | `(e: FocusEvent) => void` | `undefined` | 获得焦点时的回调 |
+| onBlur | `(e: FocusEvent) => void` | `undefined` | 失去焦点时的回调 |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 按键回调（内部处理后透传） |
 
 ### Events
 
-| 名称 | 载荷 (detail) | 说明 |
-| --- | --- | --- |
-| change | `number` | 分值确定变更（点击/键盘提交） |
-| hoverChange | `number` | 悬停预览值变化（移出时为当前 value） |
-| focus | `FocusEvent` | 组件获得焦点 |
-| blur | `FocusEvent` | 组件失焦 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 命名说明：受控值遵循全局约定 `value` + `on:change`；本组件无浮层，故不涉及 open/openChange。
 
@@ -126,13 +135,13 @@ Rating 是一个用于评分与展示评价等级的输入组件。用户通过�
 
 用户可见文案零硬编码，全部走 i18n key。
 
-| key | 默认（zh-CN） | 用途 |
-| --- | --- | --- |
-| `Rating.ariaLabel` | `评分` | 默认辅助名 |
-| `Rating.valueText` | `{value} 颗星，共 {count} 颗` | aria-valuetext / 播报 |
-| `Rating.valueTextHalf` | `{value} 颗星，共 {count} 颗` | 半星播报（value 含 .5） |
-| `Rating.cleared` | `已清除评分` | 清零播报 |
-| `Rating.unrated` | `未评分` | value=0 的 valuetext |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Rating.valueText` | {value} 颗星，共 {count} 颗 |
+| `Rating.cleared` | 已清除评分 |
+| `Rating.unrated` | 未评分 |
 
 - 数字格式（value/count）经 `Intl.NumberFormat(locale)` 输出，避免半角/全角与小数点分隔符问题（如 `3.5` → 阿拉伯语 `٣٫٥`）。
 - RTL：根据 `dir` 镜像图标排列与方向键语义，由 svelte 层读取文档/容器方向。

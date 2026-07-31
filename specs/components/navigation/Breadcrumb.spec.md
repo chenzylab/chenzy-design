@@ -50,20 +50,27 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `routes` | `BreadcrumbRoute[]` | `[]` | 数据驱动模式的层级数组，与声明式 `Breadcrumb.Item` 二选一 |
-| `separator` | `string \| Snippet` | `'/'` | 全局分隔符，支持字符串或图标渲染片段 |
-| `maxItemCount` | `number` | `0` | 超过该数量时中间折叠为 `...`；`0` 表示不折叠 |
-| `compact` | `boolean` | `true` | 紧凑分隔间距；`false` 时使用宽松间距 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 尺寸 |
-| `wrap` | `boolean` | `false` | 允许多行换行；否则单行省略 |
-| `showTooltip` | `boolean \| TooltipProps` | `true` | 文本溢出时是否展示 Tooltip 及其配置 |
-| `moreType` | `'default' \| 'popover'` | `'default'` | 折叠节点展开为内联菜单或 Popover 浮层 |
-| `renderItem` | `(route: BreadcrumbRoute, index: number) => Snippet` | — | 自定义单项渲染 |
-| `renderMore` | `(collapsed: BreadcrumbRoute[]) => Snippet` | — | 自定义折叠节点/菜单渲染 |
-| `class` | `string` | — | 根节点自定义类名 |
-| `style` | `string` | — | 根节点自定义内联样式 |
+> 本表由 `packages/svelte/src/breadcrumb/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| routes | `(BreadcrumbRoute \| string)[]` | `[]` | 数据驱动的路由项，元素为 Route 对象或纯字符串（字符串即 name）；最后一项为当前页（aria-current=page） |
+| separator | `string \| Snippet` | `'/'` | 分隔符，字符串或 Snippet（对齐 Semi separator: ReactNode，支持传图标） |
+| maxItemCount | `number` | `4` | 超出时中间折叠（对齐 Semi；<=0 不折叠） |
+| showTooltip | `boolean \| { width?: number\|string; ellipsisPos?: 'end'\|'middle'; opts?: object }` | `false` | 项文本超出 width（默认 150）被截断时，hover 用 Tooltip 展示完整名；对象配置 width/ellipsisPos（对齐 Semi showToolTipProps） |
+| moreType | `'default'\|'popover'` | `'default'` | 折叠 … 的浮层类型（对齐 Semi）：default 点击三点图标就地展开全部；popover 悬浮弹出可点击跳转的折叠项菜单 |
+| aria-label | `string` | `undefined` | 无障碍标签，默认取 i18n Breadcrumb.aria-label；传入覆盖（对齐 Semi aria-label） |
+| style | `string` | `undefined` | 根节点内联样式（对齐 Semi style） |
+| compact | `boolean` | `true` | 紧凑模式；false 时根元素附加 cd-breadcrumb-loose 类（更大字号/间距） |
+| autoCollapse | `boolean` | `true` | 超出 maxItemCount 时是否自动折叠；false 时始终展示全部项 |
+| activeIndex | `number` | `undefined` | 受控选中项索引（配合 onClick 使用，令对应项高亮） |
+| renderItem | `Snippet<[route: BreadcrumbRoute]>` | `undefined` | 自定义路由项渲染（routes 模式）；传入时替换默认的链接/文本/当前页渲染逻辑（对齐 Semi renderItem(route)） |
+| renderMore | `(restItems: CollapsedRoute[]) => Snippet` | `undefined` | 自定义折叠 … 区域渲染；传入时接管折叠展示（替代 moreType 内置浮层），参数为被折叠路由列表 |
+| class | `string` | `''` |  |
+| children | `Snippet` | `undefined` | 声明式 <Breadcrumb.Item> 列表；项间分隔符按 separator 纯 CSS 自动插入，最后一项后无分隔符 |
+| onClick | `(route: BreadcrumbRoute, event: MouseEvent) => void` | `undefined` | 单击事件（对齐 Semi onClick(route, event)） |
+
+**子组件**：`BreadcrumbItem`
 
 `BreadcrumbRoute`：`{ name?: string; href?: string; icon?: Snippet; separator?: string \| Snippet; disabled?: boolean; menu?: BreadcrumbMenuItem[]; key?: string }`
 
@@ -71,11 +78,7 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 
 ### Events
 
-| 名称 | payload | 说明 |
-|---|---|---|
-| `on:click` | `{ route: BreadcrumbRoute; index: number; event: MouseEvent }` | 点击任一可点击项（末项默认不触发，除非显式可点） |
-| `on:openChange` | `{ open: boolean; type: 'collapse' \| 'dropdown'; index?: number }` | 折叠菜单或单项下拉显隐变化（受控浮层约定） |
-| `on:select` | `{ item: BreadcrumbMenuItem; index: number }` | 折叠菜单 / 单项下拉中选择某条目 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 > 一致性：浮层显隐遵循 `open` + `on:openChange`；下拉本身不持有 `value`（属导航触发，非表单输入），故不暴露 `value`/`on:change`。
 
@@ -113,7 +116,7 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 
 遵循 WAI-ARIA APG Breadcrumb 模式。
 
-- **容器**：`<nav aria-label>`（文案来自 i18n `Breadcrumb.navLabel`，默认"面包屑"），内部 `<ol>` 有序列表，每项 `<li>`。
+- **容器**：`<nav aria-label>`（文案来自 i18n `Breadcrumb.ariaLabel`，默认"面包屑"），内部 `<ol>` 有序列表，每项 `<li>`。
 - **当前项**：末项使用 `aria-current="page"`，渲染为非链接 `<span>`。
 - **链接项**：`<a href>`；无 `href` 时降级为 `<button type="button">` 以保证可聚焦可激活。
 - **分隔符**：纯 CSS 伪元素或带 `aria-hidden="true"` 的节点，绝不进入无障碍树/Tab 序列。
@@ -133,12 +136,12 @@ Breadcrumb 含折叠下拉、单项下拉的键盘与焦点逻辑，故采用 co
 
 用户可见文案零硬编码，全部走 i18n key：
 
-| Key | 默认（zh-CN） | 说明 |
-|---|---|---|
-| `Breadcrumb.navLabel` | 面包屑 | `nav` 的 `aria-label` |
-| `Breadcrumb.moreLabel` | 显示更多 | 折叠触发器 `aria-label` |
-| `Breadcrumb.collapsedAnnounce` | 已展开 {count} 个隐藏层级 | 折叠展开 live 播报（`useLiveAnnouncer`） |
-| `Breadcrumb.expandTooltip` | 展开 | 折叠节点 hover Tooltip |
+> 本表由 `packages/locale/src/zh_CN.ts` 真源生成（2026-07-30 重校）。键名与键值都是 Semi 契约，勿手写「规划中」的键——历史上本表列过大量从未实现的键名，见 [[locale-dangling-keys-render-raw-key]]。
+
+| i18n key | 默认（zh-CN） |
+| --- | --- |
+| `Breadcrumb.ariaLabel` | 面包屑 |
+| `Breadcrumb.moreLabel` | 展开其余 {count} 项 |
 
 - `{count}` 用 `Intl.NumberFormat(locale)` 格式化。
 - 折叠播报与 `aria-label` 随 locale 切换；分隔符为符号，不本地化（除非宿主自定义）。

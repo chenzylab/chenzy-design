@@ -7,7 +7,7 @@
   autoComplete="one-time-code"、inputMode 随 format、maxlength=1。
 -->
 <script lang="ts">
-  import { useId } from '@chenzy-design/core';
+  import { useId, resolveDefault } from '@chenzy-design/core';
   import {
     validateChar,
     inputModeForFormat,
@@ -65,11 +65,11 @@
   let {
     value = $bindable(),
     defaultValue = '',
-    count = 6,
-    format = 'number',
+    count: countProp,
+    format: formatProp,
     size = 'default',
     disabled = false,
-    autoFocus = true,
+    autoFocus: autoFocusProp,
     name,
     id,
     'aria-label': ariaLabel,
@@ -80,6 +80,11 @@
     onChange,
     onComplete,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['PinCode'] > 组件内置默认值。
+  const count = $derived(resolveDefault(countProp, 'PinCode', 'count', 6));
+  const format = $derived(resolveDefault(formatProp, 'PinCode', 'format', 'number'));
+  const autoFocus = $derived(resolveDefault(autoFocusProp, 'PinCode', 'autoFocus', true));
 
   const loc = useLocale();
   const autoId = useId('cd-pincode');

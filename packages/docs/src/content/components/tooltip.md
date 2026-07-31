@@ -3,7 +3,6 @@ title: Tooltip 工具提示
 name: tooltip
 category: show
 brief: 工具提示用于对一个元素进行标识或者附上少量辅助信息，最典型的场景是向用户解释图标的含义、展示被截断的文本、显示图片的描述等。
-docMode: inline
 ---
 
 <script>

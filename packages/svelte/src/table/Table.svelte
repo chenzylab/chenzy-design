@@ -2140,11 +2140,11 @@
         </FilterDropdownHost>
         <div class="cd-table-column-filter-actions">
           {#if confirmMode}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.filterConfirm')}</button>
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetTempFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => confirmFilter(col, colKey)}>{loc().t('Table.confirmFilter')}</button>
           {:else}
-            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.filterReset')}</button>
-            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.filterConfirm')}</button>
+            <button type="button" class="cd-table-column-filter-reset" onclick={() => resetFilter(col, colKey)}>{loc().t('Table.resetFilter')}</button>
+            <button type="button" class="cd-table-column-filter-confirm" onclick={() => setFilterOpen(col, colKey, false)}>{loc().t('Table.confirmFilter')}</button>
           {/if}
         </div>
         {/if}
@@ -2208,7 +2208,7 @@
               >
                 <span class="cd-table-row-head-title">{@render columnTitle(col)}</span>
                 {#if showTip}
-                  {@const tipKey = order === 'ascend' ? 'Table.sortDescend' : order === 'descend' ? 'Table.sortCancel' : 'Table.sortAscend'}
+                  {@const tipKey = order === 'ascend' ? 'Table.descend' : order === 'descend' ? 'Table.cancelSort' : 'Table.ascend'}
                   <Tooltip content={loc().t(tipKey)}>
                     {@render sorterIcons(order, col)}
                   </Tooltip>

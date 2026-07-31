@@ -11,7 +11,7 @@
   import type { Snippet } from 'svelte';
   import { untrack } from 'svelte';
   import type { HTMLAttributes } from 'svelte/elements';
-  import { createSpinController, type SpinController } from '@chenzy-design/core';
+  import { createSpinController, type SpinController, resolveDefault } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
 
   type Size = 'small' | 'middle' | 'large';
@@ -29,9 +29,9 @@
   }
 
   let {
-    size = 'middle',
-    spinning = true,
-    delay = 0,
+    size: sizeProp,
+    spinning: spinningProp,
+    delay: delayProp,
     tip = '',
     wrapperClassName = '',
     style,
@@ -40,6 +40,11 @@
     children,
     ...rest
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Spin'] > 组件内置默认值。
+  const size = $derived(resolveDefault(sizeProp, 'Spin', 'size', 'middle'));
+  const spinning = $derived(resolveDefault(spinningProp, 'Spin', 'spinning', true));
+  const delay = $derived(resolveDefault(delayProp, 'Spin', 'delay', 0));
 
   const loc = useLocale();
 

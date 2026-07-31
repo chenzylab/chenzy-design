@@ -3,7 +3,6 @@ title: Radio 单选框
 name: radio
 category: input
 brief: 用户使用单选框来从少量的选项集合中选择单个选项。
-docMode: inline
 ---
 
 <script>

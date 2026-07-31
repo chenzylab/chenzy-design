@@ -515,10 +515,10 @@
     <div role="search" aria-label="Transfer filter" class="cd-transfer-filter">
       <Input
         value={inputValue}
-        placeholder={loc().t('Transfer.searchPlaceholder')}
+        placeholder={loc().t('Transfer.placeholder')}
         showClear
         {disabled}
-        aria-label={loc().t('Transfer.searchPlaceholder')}
+        aria-label={loc().t('Transfer.placeholder')}
         onInput={onInputChange}
       >
         {#snippet prefix()}

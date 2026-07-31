@@ -3,7 +3,6 @@ title: Timeline 时间轴
 name: timeline
 category: show
 brief: 时间轴是用于对一系列信息进行时间排序时，垂直展示的组件。
-docMode: inline
 ---
 
 <script>

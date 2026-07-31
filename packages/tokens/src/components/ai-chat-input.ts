@@ -75,6 +75,28 @@ export const aiChatInputTokens = {
     label: '编辑区最大高度',
     usage: '编辑区最大高度（超出内部滚动）',
   },
+  // 行高：镜像 Semi 的组件专属变量（Semi 此处用变量而非 mixin，本库同形对应）
+  // semi-foundation/aiChatInput/variables.scss:146
+  'ai-chat-input-rich-text-lineheight': {
+    value: '24px',
+    category: 'font',
+    label: '富文本行高',
+    usage: '富文本编辑器正文行高（对齐 Semi $font-aiChatInput_rich_text-lineHeight）',
+  },
+  // semi-foundation/aiChatInput/variables.scss:62
+  'spacing-ai-chat-input-skill-item-columngap': {
+    value: '8px',
+    category: 'spacing',
+    label: '技能项水平间距',
+    usage: '技能项内容的水平间距（对齐 Semi $spacing-aiChatInput_skill_item-columnGap）',
+  },
+  // semi-foundation/aiChatInput/variables.scss:148
+  'ai-chat-input-rich-text-input-slot-lineheight': {
+    value: '20px',
+    category: 'font',
+    label: '插槽文本行高',
+    usage: '富文本编辑器输入框插槽文本行高（对齐 Semi $font-aiChatInput_rich_text-input_slot-lineHeight）',
+  },
   // 操作区（上传图标）
   'ai-chat-input-action-icon': {
     value: 'var(--cd-color-text-2)',

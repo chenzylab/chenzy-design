@@ -3,7 +3,6 @@ title: Table 表格
 name: table
 category: show
 brief: 表格用于呈现结构化的数据内容，通常会伴随提供对数据进行操作（排序、搜索、分页……）的能力。
-docMode: inline
 ---
 
 <script>

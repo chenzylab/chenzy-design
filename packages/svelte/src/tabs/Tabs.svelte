@@ -32,7 +32,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { useId, computeTabOverflow } from '@chenzy-design/core';
+  import { useId, computeTabOverflow, resolveDefault } from '@chenzy-design/core';
   import { IconClose, IconChevronDown, IconChevronLeft, IconChevronRight } from '@chenzy-design/icons';
   import { setTabsContext, type TabPaneRegistration } from './context.js';
   import { useLocale } from '../locale-provider/index.js';
@@ -139,25 +139,25 @@
   let {
     activeKey: activeKeyProp,
     defaultActiveKey,
-    type = 'line',
-    size = 'large',
-    tabPosition = 'top',
+    type: typeProp,
+    size: sizeProp,
+    tabPosition: tabPositionProp,
     tabList: tabListProp,
     closable = false,
-    collapsible = false,
-    lazyRender = false,
-    keepDOM = true,
+    collapsible: collapsibleProp,
+    lazyRender: lazyRenderProp,
+    keepDOM: keepDOMProp,
     more,
-    arrowPosition = 'both',
+    arrowPosition: arrowPositionProp,
     renderArrow,
-    showRestInDropdown = true,
+    showRestInDropdown: showRestInDropdownProp,
     dropdownProps,
     onVisibleTabsChange,
     class: className,
     style,
     contentStyle,
     preventScroll = false,
-    tabPaneMotion = true,
+    tabPaneMotion: tabPaneMotionProp,
     tabBarClassName,
     tabBarStyle,
     visibleTabsStyle,
@@ -168,6 +168,17 @@
     renderTabBar,
     children,
   }: Props = $props();
+  // cdGlobal 全局默认 props（对齐 Semi semiGlobal.config.overrideDefaultProps）：
+  // 优先级 = 显式传值 > cdGlobal['Tabs'] > 组件内置默认值。
+  const collapsible = $derived(resolveDefault(collapsibleProp, 'Tabs', 'collapsible', false));
+  const keepDOM = $derived(resolveDefault(keepDOMProp, 'Tabs', 'keepDOM', true));
+  const lazyRender = $derived(resolveDefault(lazyRenderProp, 'Tabs', 'lazyRender', false));
+  const size = $derived(resolveDefault(sizeProp, 'Tabs', 'size', 'large'));
+  const tabPaneMotion = $derived(resolveDefault(tabPaneMotionProp, 'Tabs', 'tabPaneMotion', true));
+  const tabPosition = $derived(resolveDefault(tabPositionProp, 'Tabs', 'tabPosition', 'top'));
+  const type = $derived(resolveDefault(typeProp, 'Tabs', 'type', 'line'));
+  const showRestInDropdown = $derived(resolveDefault(showRestInDropdownProp, 'Tabs', 'showRestInDropdown', true));
+  const arrowPosition = $derived(resolveDefault(arrowPositionProp, 'Tabs', 'arrowPosition', 'both'));
 
   const baseId = useId('cd-tabs');
   const loc = useLocale();

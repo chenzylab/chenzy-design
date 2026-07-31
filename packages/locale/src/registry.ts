@@ -15,9 +15,22 @@ import type { Locale } from './interface.js';
 import { zh_CN } from './zh_CN.js';
 import { en_US } from './en_US.js';
 
-/** A partial language pack — a nested provider may override only some keys. */
+/** A partial language pack — a nested provider may override only some keys（仅内置 slice）。 */
 export type PartialLocale = {
   [K in keyof Locale]?: Locale[K] extends object ? Partial<Locale[K]> : Locale[K];
+};
+
+/**
+ * 允许在内置 slice 之外**追加自定义组件的 i18n 键**（对齐 Semi 的
+ * `{ ...zh_CN, ComponentA: { customKey: 'x' } }`）：业务方给自己的组件注入文案时，
+ * 不必先改 `Locale` 类型。运行时本就支持（`t()` 接受任意点号路径），此前仅被类型挡住。
+ *
+ * 单独起一个类型而非往 `PartialLocale` 上加索引签名：加索引签名会让 `Locale` 自身
+ * 不可赋值给 `PartialLocale`（Locale 没有索引签名），把 `mergeLocale(zh_CN, …)` 打红。
+ */
+export type LocaleWithCustom = PartialLocale & {
+  /** 自定义组件的 slice，如 `{ ComponentA: { customKey: 'x' } }`。 */
+  [customComponent: string]: unknown;
 };
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -30,7 +43,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  * scalars (`code`, `rtl`) and any non-object value are replaced wholesale.
  * Pure: returns a fresh object, mutates neither input.
  */
-export function mergeLocale<P extends PartialLocale, C extends PartialLocale>(
+export function mergeLocale<P extends PartialLocale, C extends PartialLocale | LocaleWithCustom>(
   parent: P,
   child: C,
 ): P & C {

@@ -38,10 +38,11 @@ describe('SideBarMcpConfigure — 渲染 / 双列表', () => {
     expect(descs).toContain('读写本地文件');
   });
 
-  it('计数显示已启用/总数（en_US: "2/4 enabled"）', () => {
+  // 对齐 Semi `{locale.activeMCPNumber} {n}/{总数}`：文案不含占位符，计数拼在后面。
+  it('计数显示「已激活 MCP 数: n/总数」（en_US: "Number of activated MCPs: 2/4"）', () => {
     const { container } = base();
     expect(container.querySelector('.cd-sidebar-mcp-count')?.textContent).toBe(
-      '2/4 enabled',
+      'Number of activated MCPs: 2/4',
     );
   });
 
@@ -160,12 +161,13 @@ describe('SideBarMcpConfigure — 交互回调（受控不回写）', () => {
 });
 
 describe('SideBarMcpConfigure — 空态', () => {
-  it('自定义组为空显示添加按钮与空态文案（en_US mcpEmptyCustom）', () => {
+  it('自定义组为空显示添加按钮与空态文案（en_US emptyCustomMcpInfo）', () => {
     const onAddClick = vi.fn();
     const { container } = renderWithLocale(MC, {
       props: { visible: true, options: OPTIONS, customOptions: [], onAddClick },
     });
-    expect(container.textContent).toContain('No custom tools yet');
+    // 文案对齐 Semi emptyCustomMcpInfo（'No custom MCP yet'），原「No custom tools yet」是本库自拟措辞。
+    expect(container.textContent).toContain('No custom MCP yet');
     const cta = container.querySelector('.cd-sidebar-mcp-add-cta') as HTMLElement;
     expect(cta).toBeTruthy();
     cta.click();

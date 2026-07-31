@@ -10,6 +10,7 @@
  */
 import {
   createNotificationStore,
+  getGlobalDefaults,
   type NotificationStore,
   type NotificationOptions,
   type NotificationType,
@@ -100,7 +101,13 @@ function toCoreOpts(opts: SvelteNotificationOptions): NotificationOptions {
   return core as NotificationOptions;
 }
 
-function show(type: NotificationType, opts: SvelteNotificationOptions): string {
+function show(type: NotificationType, rawOpts: SvelteNotificationOptions): string {
+  // cdGlobal 全局默认 props（对齐 Semi：命令式入口读 overrideDefaultProps.Notification
+  // 再与用户 options 合并）。用户显式传的键恒覆盖全局默认。
+  const opts = {
+    ...getGlobalDefaults('Notification'),
+    ...rawOpts,
+  } as SvelteNotificationOptions;
   // 首条通知的 getPopupContainer / zIndex 决定容器挂载点与 wrapper z-index
   // （对齐 Semi addNotice：div.style.zIndex = notice.zIndex ?? defaultConfig.zIndex，首次一次生效）。
   if (!containerMounted && opts.getPopupContainer) getPopupContainer = opts.getPopupContainer;

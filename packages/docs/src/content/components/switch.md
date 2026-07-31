@@ -3,7 +3,6 @@ title: Switch 开关
 name: switch
 category: input
 brief: 开关是用于切换两种互斥状态的交互形式。
-docMode: inline
 ---
 
 <script>

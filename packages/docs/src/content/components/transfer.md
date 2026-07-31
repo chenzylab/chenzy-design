@@ -3,7 +3,6 @@ title: Transfer 穿梭框
 name: transfer
 category: input
 brief: 一个更直观高效的多选选择器，可以露出更多选项的信息，支持搜索功能，缺点是占据更多空间。
-docMode: inline
 ---
 
 <script>

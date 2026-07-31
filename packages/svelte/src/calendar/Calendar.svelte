@@ -539,8 +539,9 @@
                     {#if renderDateDisplay}
                       {@render renderDateDisplay(cell.date)}
                     {:else if dayString(cell.date) === '1'}
-                      <!-- 对齐 Semi formatDayString：每月 1 号显示「X月 1」（月份缩写 + today-date） -->
-                      <span class="cd-calendar-month-date">{monthShortFmt.format(cell.date)}<span class="cd-calendar-today-date">&nbsp;{dayString(cell.date)}</span></span>
+                      <!-- 对齐 Semi formatDayString：每月 1 号显示「X月 1日」——月份缩写 + today-date
+                           + locale.datestring 单位后缀（中文「日」、英文空串）。原先漏了后缀。 -->
+                      <span class="cd-calendar-month-date">{monthShortFmt.format(cell.date)}<span class="cd-calendar-today-date">&nbsp;{dayString(cell.date)}</span>{loc().t('Calendar.datestring')}</span>
                     {:else}
                       <span class="cd-calendar-month-date"><span class="cd-calendar-today-date">{dayString(cell.date)}</span></span>
                     {/if}

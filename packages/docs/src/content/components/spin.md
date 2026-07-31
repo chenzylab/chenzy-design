@@ -3,7 +3,6 @@ title: Spin 加载器
 name: spin
 category: feedback
 brief: 加载器组件用于告知用户内容正在加载且需要一段不确定的时长。
-docMode: inline
 ---
 
 <script>

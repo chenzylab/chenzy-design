@@ -15,37 +15,62 @@
 
 ## 4. API
 ### Props
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| value | `string` | — | 受控值 |
-| defaultValue | `string` | `''` | 非受控初值 |
-| size | `'small'\|'default'\|'large'` | `'default'` | 尺寸 |
-| disabled | `boolean` | `false` | 禁用 |
-| readonly | `boolean` | `false` | 只读 |
-| placeholder | `string` | — | 占位符 |
-| clearable | `boolean` | `false` | 显示清除按钮 |
-| showCount | `boolean` | `false` | 显示字数 |
-| maxLength | `number` | — | 最大长度 |
-| status | `'default'\|'warning'\|'error'` | `'default'` | 校验态 |
-| prefix / suffix | `Snippet` | — | 前后缀 |
-| addonBefore / addonAfter | `Snippet \| string` | — | 输入框外前置/后置标签（如 `https://` / `.com`） |
-| borderless | `boolean` | `false` | 无边框模式 |
-| type | `'text'\|'password'\|...` | `'text'` | 原生 type；password 带显隐切换 |
-| getValueLength | `(value: string) => number` | — | 自定义字符计数（emoji 按可见长度计），用于 showCount 与 maxLength |
-| hideSuffix | `boolean` | `false` | 有值时隐藏 suffix |
-| composition | `boolean` | `false` | 输入法模式：开启后 IME 未确认期间不触发 on:change，确认后触发一次（对齐 Semi） |
-| clearIcon | `Snippet` | — | 自定义清除图标（clearable 有值时替换默认图标，对齐 Semi） |
-| preventScroll | `boolean` | `false` | 命令式 focus() 时是否阻止滚动文档 |
+
+> 本表由 `packages/svelte/src/input/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| value | `string` | `undefined` | 受控值；提供则为受控 |
+| defaultValue | `string` | `''` | 非受控初始值 |
+| size | `'small'\|'default'\|'large'` | `'default'` |  |
+| disabled | `boolean` | `false` |  |
+| readonly | `boolean` | `false` |  |
+| placeholder | `string` | `undefined` |  |
+| showClear | `boolean` | `false` | 有内容且 hover/focus 时展示清除按钮（对齐 Semi showClear） |
+| maxLength | `number` | `undefined` | 原生 maxlength（getValueLength 存在时不下发，改由 JS 按可见长度截断） |
+| minLength | `number` | `undefined` | 最小长度，下发原生 minlength 触发校验（getValueLength 存在时按可见长度换算，对齐 Semi） |
+| validateStatus | `'default'\|'warning'\|'error'\|'success'` | `'default'` | 校验状态，仅影响展示样式（对齐 Semi validateStatus；success 合法但无特殊样式） |
+| mode | `'password'` | `undefined` | 输入框模式，password 启用密码显隐按钮（对齐 Semi mode） |
+| type | `string` | `'text'` | 原生 input type，透传（对齐 Semi type，可为 number/email/search 等） |
+| prefix | `Snippet \| string` | `undefined` | 前缀标签（输入框内左侧）；字符串直接渲染，Snippet 自定义（对齐 Semi） |
+| suffix | `Snippet \| string` | `undefined` | 后缀标签（输入框内右侧）；字符串直接渲染，Snippet 自定义（对齐 Semi） |
+| insetLabel | `Snippet \| string` | `undefined` | 内嵌标签（与 prefix 同槽，对齐 Semi insetLabel） |
+| insetLabelId | `string` | `undefined` | 内嵌标签容器 id（对齐 Semi insetLabelId） |
+| clearIcon | `Snippet` | `undefined` | 自定义清除图标（showClear 有值时替换默认图标，对齐 Semi） |
+| addonBefore | `Snippet \| string` | `undefined` | 前置标签（如 "https://"） |
+| addonAfter | `Snippet \| string` | `undefined` | 后置标签（如 ".com"） |
+| borderless | `boolean` | `false` | 无边框模式（对齐 Semi borderless） |
+| getValueLength | `(value: string) => number` | `undefined` | 自定义字符计数函数，替代默认长度（存在时接管 maxLength 校验） |
+| hideSuffix | `boolean` | `false` | 清除按钮与后缀并存时隐藏后缀（对齐 Semi hideSuffix） |
+| style | `string` | `undefined` | 根容器内联样式（对齐 Semi style） |
+| class | `string` | `undefined` | 根容器自定义类名（对齐 Semi className） |
+| inputStyle | `string` | `undefined` | input 元素内联样式（对齐 Semi inputStyle） |
+| preventScroll | `boolean` | `false` | 调用 focus() 时传入 { preventScroll }（对齐 Semi） |
+| autoFocus | `boolean` | `false` | 组件挂载时自动聚焦（对齐 Semi） |
+| composition | `boolean` | `false` | 输入法模式：开启后 IME 未确认期间不触发 onChange，确认后触发一次（对齐 Semi） |
+| name | `string` | `undefined` |  |
+| id | `string` | `undefined` | 透传到原生 <input id>，供 <label for> 精确关联 |
+| aria-label | `string` | `undefined` |  |
+| ariaLabelledby | `string` | `undefined` | 对齐 Semi aria-labelledby |
+| ariaDescribedby | `string` | `undefined` | 关联说明/错误文本 |
+| ariaErrormessage | `string` | `undefined` | 对齐 Semi aria-errormessage |
+| ariaRequired | `boolean` | `undefined` | 必填语义（Form.Field required 透传）：输出 aria-required |
+| onChange | `(value: string, e: Event) => void` | `undefined` | 内容变化（对齐 Semi：第二参为原生事件） |
+| onInput | `(value: string, e: Event) => void` | `undefined` |  |
+| onClear | `(e: MouseEvent) => void` | `undefined` | 点击清除按钮（对齐 Semi：透传鼠标事件） |
+| onEnterPress | `(e: KeyboardEvent) => void` | `undefined` | 回车按下（composition 中不触发） |
+| onFocus | `(e: FocusEvent) => void` | `undefined` |  |
+| onBlur | `(e: FocusEvent) => void` | `undefined` |  |
+| onKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 透传原生 keydown（对齐 Semi） |
+| onKeyUp | `(e: KeyboardEvent) => void` | `undefined` |  |
+| onKeyPress | `(e: KeyboardEvent) => void` | `undefined` |  |
+| onCompositionStart | `(e: CompositionEvent) => void` | `undefined` |  |
+| onCompositionEnd | `(e: CompositionEvent) => void` | `undefined` |  |
+| onCompositionUpdate | `(e: CompositionEvent) => void` | `undefined` |  |
+
+**子组件**：`TextArea`、`InputGroup`
 ### Events
-| 事件 | 载荷 | 说明 |
-|---|---|---|
-| on:change | `string` | 值变化（受控约定）|
-| on:input | `string` | 每次输入（含 IME 处理后）|
-| on:clear | — | 点击清除 |
-| on:enterPress | `KeyboardEvent` | 回车 |
-| on:focus / on:blur | `FocusEvent` | |
-| on:keyDown / on:keyUp / on:keyPress | `KeyboardEvent` | 透传原生键盘事件（对齐 Semi）|
-| on:compositionStart / on:compositionEnd / on:compositionUpdate | `CompositionEvent` | 透传原生输入法事件（对齐 Semi）|
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 ### Slots
 | 名称 | 说明 |
 |---|---|
@@ -90,7 +115,7 @@ token（灰底 + 透明描边，聚焦换 focus 边框），全表见 `packages/
 - 正确处理 IME composition，组合期间不触发 change。
 
 ## 7. 国际化
-- key：`Input.clear`、`Input.showPassword`、`Input.hidePassword`、`Input.countSeparator`。
+- key：`Input.showPassword`、`Input.hidePassword`（Input slice 仅此两键）。清除按钮 `aria-label` 由调用方传入；字数计数分隔符走 `Textarea.countFormat`，Input 自身不产出计数文案。
 - showCount 文案随 locale。
 
 ## 8. 文案

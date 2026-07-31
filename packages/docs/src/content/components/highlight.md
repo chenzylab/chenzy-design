@@ -3,7 +3,6 @@ title: Highlight 高亮文本
 name: highlight
 category: show
 brief: 高亮特定内容。
-docMode: inline
 ---
 
 <script>

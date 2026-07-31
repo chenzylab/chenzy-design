@@ -2,7 +2,7 @@
   import { Cropper, Button, RadioGroup, Radio } from '@chenzy-design/svelte';
   import type { CropperShape } from '@chenzy-design/svelte';
 
-  const src = 'https://picsum.photos/id/1015/800/500';
+  const src = 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/image.png';
   let shape = $state<CropperShape>('rect');
   let cropper = $state<{ getCropperCanvas: () => HTMLCanvasElement } | undefined>();
   let result = $state('');
@@ -19,11 +19,12 @@
     <Radio value="round">round</Radio>
     <Radio value="roundRect">roundRect</Radio>
   </RadioGroup>
-  <Cropper bind:this={cropper} {src} {shape} style="width: 100%; height: 300px;" />
+  <!-- 容器尺寸对齐 Semi demo：550×300、margin 20。 -->
+  <Cropper bind:this={cropper} {src} {shape} style="width: 550px; height: 300px; margin: 20px;" />
   <div>
     <Button onclick={crop}>裁切</Button>
   </div>
   {#if result}
-    <img src={result} alt="裁切结果" style="max-height: 240px; border: 1px solid var(--cd-color-border);" />
+    <img src={result} alt="裁切结果" style="height: 400px;" />
   {/if}
 </div>

@@ -67,30 +67,40 @@ Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、�
 
 ### Props
 
+> 本表由 `packages/svelte/src/dropdown/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `trigger` | `'hover' \| 'click' \| 'contextMenu'` | `'hover'` | 触发方式 |
-| `open` | `boolean` | — | 受控显隐（配合 `on:openChange`） |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐 |
-| `position` | `'top' \| 'topStart' \| 'topEnd' \| 'bottom' \| 'bottomStart' \| 'bottomEnd' \| 'left' \| 'leftStart' \| 'leftEnd' \| 'right' \| 'rightStart' \| 'rightEnd'` | `'bottomStart'` | 浮层位置 |
-| `size` | `'small' \| 'default' \| 'large'` | `'default'` | 菜单项尺寸 |
-| `disabled` | `boolean` | `false` | 禁用整个触发 |
-| `mouseEnterDelay` | `number` | `150` | hover 触发的进入延迟(ms) |
-| `mouseLeaveDelay` | `number` | `150` | hover 触发的离开延迟(ms) |
-| `spacing` | `number \| { x: number; y: number }` | `4` | 浮层与触发元素间距(px) |
-| `closeOnEsc` | `boolean` | `true` | Esc 是否关闭 |
-| `closeOnSelect` | `boolean` | `true` | 点击 Item 后是否自动关闭（多选项可设 false） |
-| `clickToHide` | `boolean` | `true` | hover 模式下点击项是否关闭 |
-| `destroyOnClose` | `boolean` | `false` | 关闭时是否销毁浮层 DOM |
-| `lazyRender` | `boolean` | `true` | 首次打开前不渲染浮层内容 |
-| `getPopupContainer` | `() => HTMLElement` | `() => document.body` | 浮层挂载容器 |
-| `zIndex` | `number` | `1050` | 浮层层级 |
-| `className` | `string` | — | 浮层根 `<ul>` 追加的 className（弹层外层） |
-| `contentClassName` | `string` | — | 浮层内容根 className；本库浮层 `<ul>` 兼外层与内容根，与 className 并存 |
-| `style` | `string` | — | 浮层根 `<ul>` 合并的内联样式（勿含 position/transform） |
-| `rePosKey` | `string \| number` | — | 值变化时强制浮层重新定位 |
-| `autoAdjustOverflow` | `boolean` | `true` | 空间不足时自动翻转/移位 |
-| `keepDOM` | `boolean` | `false` | 关闭后保留 DOM（与 destroyOnClose 互斥） |
+| render | `Snippet` | `undefined` | 弹出层内容，由 Dropdown.Menu / Item / Title / Divider 构成（对齐 Semi render） |
+| menu | `DropdownMenuItem[]` | `undefined` | 通过 JSON Array 快速配置内容（node=item/title/divider）；render 存在时忽略（对齐 Semi menu） |
+| children | `Snippet` | `undefined` | 触发弹出层的 Trigger 元素（对齐 Semi children） |
+| trigger | `'hover'\|'focus'\|'click'\|'custom'\|'contextMenu'` | `hover` | 触发方式；custom 需配 visible 受控，contextMenu 右键定位光标 |
+| visible | `boolean` | `undefined` | 受控显隐，需配合 trigger=custom（对齐 Semi visible） |
+| defaultVisible | `boolean` | `false` | 非受控初始显隐 |
+| position | `Placement` | `bottom` | 弹出位置（12 方位，语义对齐 Semi position：bottomStart≈bottomLeft、rightStart≈rightTop） |
+| autoAdjustOverflow | `boolean` | `true` | 弹出层被遮挡时自动调整方向（对齐 Semi） |
+| mouseEnterDelay | `number` | `50` | 移入 Trigger 后延迟显示(ms)，仅 hover/focus 生效（对齐 Semi） |
+| mouseLeaveDelay | `number` | `100` | 移出弹出层后延迟消失(ms)，仅 hover/focus 生效（对齐 Semi） |
+| spacing | `number \| { x: number; y: number }` | `4（嵌套 2）` | 弹出层与 Trigger 距离(px)（对齐 Semi spacing） |
+| margin | `number` | `undefined` | 弹出层计算溢出的冗余值(px)（对齐 Semi margin） |
+| zIndex | `number` | `1050` | 弹出层 z-index（对齐 Semi zIndex） |
+| motion | `boolean` | `true` | 下拉动画开关（对齐 Semi motion） |
+| className | `string` | `undefined` | 下拉弹层外层样式类名（作用于 div.cd-dropdown，对齐 Semi className） |
+| contentClassName | `string` | `undefined` | 下拉菜单根元素类名（作用于 div.cd-dropdown-content，对齐 Semi contentClassName） |
+| style | `string` | `undefined` | 弹出层内联样式（作用于 div.cd-dropdown-content，对齐 Semi style） |
+| showTick | `boolean` | `false` | 自动在 active 的 Dropdown.Item 左侧展示对勾（对齐 Semi showTick） |
+| stopPropagation | `boolean` | `false` | 阻止弹出层上的点击事件冒泡（对齐 Semi stopPropagation） |
+| closeOnEsc | `boolean` | `true` | 在 trigger 或弹出层按 Esc 是否关闭，受控时不生效（对齐 Semi closeOnEsc） |
+| rePosKey | `string \| number` | `undefined` | 更新该值手动触发弹出层重新定位（对齐 Semi rePosKey） |
+| disableFocusListener | `boolean` | `false` | hover 时不响应键盘聚焦弹出事件（对齐 Semi，issue#977） |
+| clickToHide | `boolean` | `true` | 弹出层内点击时是否自动关闭弹出层（对齐 Semi clickToHide） |
+| keepDOM | `boolean` | `false` | 关闭时是否保留内部组件 DOM 不销毁（对齐 Semi keepDOM） |
+| getPopupContainer | `() => HTMLElement` | `() => document.body` | 指定父级 DOM 挂载弹层（对齐 Semi getPopupContainer） |
+| onVisibleChange | `(visible: boolean) => void` | `undefined` | 弹出层显示状态改变时的回调（对齐 Semi onVisibleChange） |
+| onEscKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 在 trigger 或弹出层按 Esc 时调用，关闭逻辑之前（对齐 Semi onEscKeyDown） |
+| onClickOutSide | `(e: PointerEvent) => void` | `undefined` | 展示状态下点击外部区域回调，仅 custom/click 有效（对齐 Semi onClickOutSide） |
+
+**子组件**：`Dropdown.Menu`、`Dropdown.Item`、`Dropdown.Title`、`Dropdown.Divider`
 
 `Dropdown.Item` 专属 Props：
 
@@ -99,20 +109,13 @@ Dropdown 是一个轻量级浮层菜单容器，通过触发元素（按钮、�
 | `type` | `'default' \| 'danger'` | `'default'` | 危险操作项 |
 | `disabled` | `boolean` | `false` | 禁用该项 |
 | `active` | `boolean` | `false` | 强制激活高亮 |
-| `selected` | `boolean` | `false` | 勾选态（显示 check 图标） |
+| `selected`（**未实现**，选中态用 `Dropdown.Item` 的 `active`） | `boolean` | `false` | 勾选态（显示 check 图标） |
 | `icon` | `Snippet` | — | 前置图标 |
-| `hotkey` | `string` | — | 右侧快捷键提示文本 |
+| `hotkey`（**未实现**） | `string` | — | 右侧快捷键提示文本 |
 
 ### Events
 
-| Event | Payload | 说明 |
-| --- | --- | --- |
-| `on:openChange` | `{ open: boolean }` | 显隐变化（受控同步用） |
-| `onEscKeyDown` | `KeyboardEvent` | 在 trigger 或浮层内按 Esc 键时触发（关闭逻辑之前） |
-| `on:visibleChange` | `boolean` | `openChange` 的简写别名（兼容迁移） |
-| `on:select` | `{ value: string \| number; item: ItemMeta; domEvent: Event }` | 任一菜单项被选中 |
-| `on:itemClick`（Item 上） | `{ domEvent: MouseEvent \| KeyboardEvent }` | 单个 Item 点击/回车 |
-| `on:contextMenu` | `{ x: number; y: number; domEvent: MouseEvent }` | contextMenu 触发时坐标 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 

@@ -20,6 +20,14 @@
   import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
+    /** 是否转义用户消息中的 HTML 标签（对齐 Semi escapeHtml）。 */
+    escapeHtml?: boolean;
+    /** 是否禁用文件点击（对齐 Semi disabledFileItemClick）。 */
+    disabledFileItemClick?: boolean;
+    /** 分享消息回调（对齐 Semi onMessageShare）。 */
+    onMessageShare?: ((message: unknown) => void) | undefined;
+    /** annotation 点击回调（对齐 Semi onAnnotationClick）。 */
+    onAnnotationClick?: ((annotation: unknown) => void) | undefined;
     message: AIDialogueMessage;
     /** 解析后的角色元数据（名称/头像/色）。 */
     role?: AIDialogueMetadata | undefined;
@@ -87,6 +95,10 @@
     showReference = false,
     onReferenceClick,
     dialogueRenderConfig,
+    escapeHtml = true,
+    disabledFileItemClick = false,
+    onMessageShare,
+    onAnnotationClick,
   }: Props = $props();
 
   const loc = useLocale();
@@ -163,7 +175,16 @@
       <span class="cd-ai-dialogue-box-error">{loc().t('AIChatDialogue.error')}</span>
     {:else}
       {#each items as item, i (i)}
-        <ContentItemRenderer {item} {markdownRenderProps} {renderMap} {onFileClick} {onImageClick} />
+        <ContentItemRenderer
+          {item}
+          {markdownRenderProps}
+          {renderMap}
+          onFileClick={disabledFileItemClick ? undefined : onFileClick}
+          {onImageClick}
+          {escapeHtml}
+          {isUser}
+          {onAnnotationClick}
+        />
       {/each}
     {/if}
   </div>
@@ -202,6 +223,10 @@
       {/if}
       {#if showReset}
         <button type="button" onclick={() => onMessageReset?.(message)} aria-label={loc().t('AIChatDialogue.reset')} title={loc().t('AIChatDialogue.reset')}>↻</button>
+      {/if}
+      <!-- 分享（对齐 Semi dialogueAction.tsx:168 shareNode，仅在传了回调时渲染）。 -->
+      {#if onMessageShare}
+        <button type="button" onclick={() => onMessageShare?.(message)} aria-label={loc().t('AIChatDialogue.share')} title={loc().t('AIChatDialogue.share')}>⇪</button>
       {/if}
       <button type="button" onclick={() => onMessageGoodFeedback?.(message)} aria-label={loc().t('AIChatDialogue.like')} title={loc().t('AIChatDialogue.like')}>👍</button>
       <button type="button" onclick={() => onMessageBadFeedback?.(message)} aria-label={loc().t('AIChatDialogue.dislike')} title={loc().t('AIChatDialogue.dislike')}>👎</button>

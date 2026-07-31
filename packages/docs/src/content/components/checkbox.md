@@ -3,7 +3,6 @@ title: Checkbox 复选框
 name: checkbox
 category: input
 brief: 复选框允许用户选中多个选项。
-docMode: inline
 ---
 
 <script>

@@ -3,7 +3,6 @@ title: Popconfirm 气泡确认框
 name: popconfirm
 category: feedback
 brief: 目标元素的操作需要用户进一步的确认时使用。与 Popover 相比它内置了一系列可配置的操作按钮，与 Modal 相比它不强制全屏居中显示，交互也更轻量。
-docMode: inline
 ---
 
 <script>
@@ -108,7 +107,7 @@ content 支持传入函数，它的入参是一个对象，将 `initialFocusRef`
 
 ### ARIA
 
-语义化请参考 [Popover](/components/popover#Accessibility)。
+语义化请参考 [Popover](/components/popover#accessibility)。
 
 ### 键盘和焦点
 

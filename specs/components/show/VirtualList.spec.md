@@ -52,40 +52,24 @@
 
 ### Props
 
-| 名称 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| data | `T[]` | `[]` | 列表数据源（也可只传 `count` 做无数据模式） |
-| count | `number` | `data.length` | 总条目数；与远程/惰性数据配合时显式指定 |
-| getKey | `(item: T, index: number) => string \| number` | `(_, i) => i` | 行唯一 key，影响复用与测量缓存正确性，强烈建议提供稳定 key |
-| mode | `'fixed' \| 'dynamic'` | `'fixed'` | 定高 / 不定高 |
-| itemSize | `number \| ((index: number) => number)` | `40` | `fixed` 模式行高（px）；函数形式支持已知变高 |
-| estimateSize | `number` | `40` | `dynamic` 模式估算行高，用于首屏总高估算 |
-| overscan | `number` | `3` | 可视区外预渲染行数（上下/左右各） |
-| horizontal | `boolean` | `false` | 横向虚拟化 |
-| height | `number \| string` | `'100%'` | viewport 高度（横向时为宽度无关，仍取容器尺寸） |
-| scrollTarget | `'self' \| 'window' \| HTMLElement` | `'self'` | 滚动宿主：内部容器 / 窗口 / 指定元素 |
-| scrollMargin | `number` | `0` | 当滚动宿主为 window/外层时，列表距宿主顶部的偏移修正 |
-| paddingStart | `number` | `0` | 列表起始内边距（计入总高，不被回收） |
-| paddingEnd | `number` | `0` | 列表末尾内边距 |
-| initialScrollOffset | `number` | `0` | 初始滚动偏移（px） |
-| initialIndex | `number` | `-` | 初始定位到的 index（优先于 offset） |
-| stickyIndices | `number[]` | `[]` | 需吸附置顶的行索引（如分组头） |
-| reachThreshold | `number` | `0` | 距底部多少 px 触发 `reachEnd`（用于上层无限加载） |
-| destroyOnHidden | `boolean` | `true` | 不可见行从 DOM 移除（false 时仅隐藏，保留状态） |
-| ssrItemCount | `number` | `0` | SSR/首屏预渲染的占位行数 |
-| ariaLabel | `string` | `-` | 列表无障碍名称 |
-| announceRange | `boolean` | `false` | 是否通过 live region 播报可见区间 |
+> 本表由 `packages/svelte/src/virtual-list/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| data | `T[]` | `[]` | 列表数据数组 |
+| getKey | `(item: T, index: number) => string \| number` | `(_, i) => i` | 行唯一标识，用于 each key |
+| itemSize | `number \| 'auto'` | `40` | 固定行高（px，fixed 定高）；传 'auto' 启用 dynamic 不定高测量 |
+| estimatedItemSize | `number` | `40` | dynamic 模式初始估算行高（px），用于首屏占位与总高估算 |
+| overscan | `number` | `3` | 可视区上下缓冲行数，消除白屏 |
+| height | `number \| string` | `400` | 视口主轴尺寸（vertical 为高度、horizontal 为宽度）；数字按 px，字符串/百分比时用 ResizeObserver 测量 |
+| horizontal | `boolean` | `false` | 横向虚拟化：沿 x 轴排列、itemSize 作列宽、读/写 scrollLeft（仅支持 fixed 定宽） |
+| scrollTarget | `'self' \| 'window'` | `'self'` | 滚动源：'self' 内部容器自身滚动（默认，向后兼容）；'window' 用窗口（document）滚动、容器撑开总高，适合整页长列表（纵向）。horizontal 在 window 下退化为 self。 |
+| renderItem | `Snippet<[item: T, index: number]>` | `required` | 行渲染 Snippet（必填） |
+| class | `string` | `''` | 根类名透传 |
 
 ### Events
 
-| 事件 | payload | 说明 |
-|---|---|---|
-| on:scroll | `{ offset: number; direction: 'forward' \| 'backward'; isScrolling: boolean }` | 滚动时触发（rAF 节流） |
-| on:rangeChange | `{ startIndex: number; endIndex: number; visibleStart: number; visibleEnd: number }` | 可见/渲染区间变化（含 overscan 与不含 overscan 各一对） |
-| on:reachEnd | `{ index: number }` | 滚动到距底 `reachThreshold` 内，供上层加载更多 |
-| on:reachStart | `{ index: number }` | 滚动到顶部阈值内 |
-| on:measure | `{ index: number; size: number }` | 不定高模式某行实测尺寸回填后触发 |
-| on:visibilityChange | `{ visible: boolean }` | viewport 进入/离开视口（window 宿主下，配合 IntersectionObserver） |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 
@@ -102,10 +86,9 @@
 | 方法 | 签名 | 说明 |
 |---|---|---|
 | scrollToIndex | `(index, opts?: { align?: 'start'\|'center'\|'end'\|'auto'\|'smart'; behavior?: 'auto'\|'smooth' }) => void` | 滚动到指定行 |
-| scrollToOffset | `(offset: number, opts?) => void` | 滚动到像素偏移 |
-| scrollToKey | `(key, opts?) => void` | 按 key 滚动 |
-| getVirtualItems | `() => VirtualItem[]` | 当前渲染行快照 |
-| measure | `() => void` | 强制重测（数据/容器尺寸外部变更后） |
+
+> **仅 `scrollToIndex` 一个命令式方法**（2026-07-30 重校，实测 `export function` 只有它）。
+> 此前本表列的 `scrollToOffset` / `scrollToKey` / `getVirtualItems` / `measure` 从未实现。
 
 ## 5. 主题 / Token
 

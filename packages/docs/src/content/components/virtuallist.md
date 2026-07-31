@@ -3,7 +3,6 @@ title: VirtualList 虚拟列表
 name: virtuallist
 category: show
 brief: 虚拟滚动列表底座，渲染大数据量时只渲染视口内的可见行。
-docMode: inline
 ---
 
 <script>

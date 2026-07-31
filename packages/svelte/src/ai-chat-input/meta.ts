@@ -28,6 +28,7 @@ export const meta = {
   props: [
     { name: 'defaultContent', type: 'string', default: "''", desc: '初始内容（HTML 或纯文本，tiptap Content）' },
     { name: 'placeholder', type: 'string', default: 'undefined', desc: '占位文本（缺省走 locale AIChatInput.placeholder）' },
+    { name: 'showPlaceholderWhenSkillOnly', type: 'boolean', default: 'false', desc: '仅选中技能（无其他内容）时是否仍显示 placeholder，开启后 placeholder 显示在 skill 后方' },
     { name: 'canSend', type: 'boolean', default: 'undefined', desc: '是否可发送；未设置按内容/附件推断，显式设置以此为准' },
     { name: 'generating', type: 'boolean', default: 'false', desc: '生成中：发送键变停止键，Enter 不发送' },
     { name: 'sendHotKey', type: "'enter'|'shift+enter'", default: "'enter'", desc: '发送快捷键' },

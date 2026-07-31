@@ -50,38 +50,49 @@ Tooltip 是轻量级文字提示组件：当用户悬停（hover）、聚焦（f
 
 ### Props
 
+> 本表由 `packages/svelte/src/tooltip/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
 | Prop | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `content` | `string \| Snippet` | — | 提示内容（文本或渲染片段）。可见文案应来自 i18n。 |
-| `open` | `boolean` | — | 受控显隐；配合 `on:openChange` 使用。 |
-| `defaultOpen` | `boolean` | `false` | 非受控初始显隐。 |
-| `trigger` | `'hover' \| 'focus' \| 'click' \| 'custom' \| Array` | `['hover','focus']` | 触发方式，可组合。`custom` 完全受控。 |
-| `placement` | `'top'\|'topLeft'\|'topRight'\|'bottom'\|'bottomLeft'\|'bottomRight'\|'left'\|'leftTop'\|'leftBottom'\|'right'\|'rightTop'\|'rightBottom'` | `'top'` | 期望方位（实际会按避让翻转）。 |
-| `mouseEnterDelay` | `number` (ms) | `100` | hover 进入显示延迟。 |
-| `mouseLeaveDelay` | `number` (ms) | `100` | hover 离开隐藏延迟。 |
-| `showArrow` | `boolean` | `true` | 是否显示指向箭头。 |
-| `arrowPointAtCenter` | `boolean` | `false` | 箭头是否对齐触发元素中心。 |
-| `theme` | `'dark' \| 'light'` | `'dark'` | 配色主题。 |
-| `status` | `'default' \| 'warning' \| 'error'` | `'default'` | 校验/语义态（影响背景与可选图标）。 |
-| `maxWidth` | `number \| string` | `300` | 内容最大宽度，超出换行。 |
-| `gap` | `number` | `8` | 触发元素与气泡间距（offset）。 |
-| `disabled` | `boolean` | `false` | 禁用提示（始终不显示）。 |
-| `destroyOnClose` | `boolean` | `true` | 关闭时卸载内容 DOM。 |
-| `getPopupContainer` | `() => HTMLElement` | `() => document.body` | 指定挂载容器。 |
-| `zIndex` | `number` | `--cd-tooltip-z` | 浮层层级覆盖。 |
-| `closeOnEsc` | `boolean` | `true` | Esc 关闭（focus/click 触发时生效）。 |
-| `spacing` | `number \| { x:number; y:number }` | `0` | 在 gap 基础上的额外偏移微调。 |
-| `id` | `string` | 自动生成 | 气泡 id，用于 `aria-describedby` 关联。 |
+| --- | --- | --- | --- |
+| content | `string \| Snippet` | `undefined` | 提示内容，为空不显示 |
+| visible | `boolean` | `undefined` | 受控显隐（配合 trigger=custom） |
+| defaultVisible | `boolean` | `false` | 非受控初始显隐 |
+| trigger | `'hover'\|'focus'\|'click'\|'custom'\|'contextMenu'\|Array<...>` | `'hover'` | 触发方式，可组合；'custom' 完全受控（仅 visible + onVisibleChange）；'contextMenu' 右键触发 |
+| position | `'top'\|'topLeft'\|'topRight'\|'left'\|'leftTop'\|'leftBottom'\|'right'\|'rightTop'\|'rightBottom'\|'bottom'\|'bottomLeft'\|'bottomRight'\|'leftTopOver'\|'rightTopOver'` | `'top'` | 弹出方位（Semi 12 方位命名 + 2 Over） |
+| autoAdjustOverflow | `boolean` | `true` | 视口溢出时翻转到对侧 |
+| spacing | `number \| { x: number; y: number }` | `8` | 浮层与触发器距离(px) |
+| margin | `number \| { marginLeft; marginTop; marginRight; marginBottom }` | `0` | 计算溢出翻转时增加的冗余安全边距 |
+| mouseEnterDelay | `number` | `50` | hover 进入延迟(ms) |
+| mouseLeaveDelay | `number` | `50` | hover 离开延迟(ms) |
+| showArrow | `boolean \| Snippet` | `true` | 是否显示箭头，或传自定义箭头 Snippet |
+| arrowPointAtCenter | `boolean` | `true` | 箭头是否指向触发元素中心（需 showArrow） |
+| disabled | `boolean` | `false` | 禁用触发 |
+| condition | `boolean` | `true` | false 时不响应 hover/click/focus 触发（custom 不受影响） |
+| clickToHide | `boolean` | `false` | hover 触发下点击浮层内部即关闭 |
+| keepDOM | `boolean` | `false` | 关闭时保留浮层 DOM 不销毁（--hidden 隐藏） |
+| disableFocusListener | `boolean` | `false` | hover 触发时不响应键盘 focus 显隐 |
+| motion | `boolean` | `true` | 是否展示进出场动画，reduced-motion 退化 |
+| transformFromCenter | `boolean` | `true` | 是否从触发元素中心处变换（仅影响动效 transform-origin，一般无需改动） |
+| zIndex | `number` | `undefined` | 浮层 z-index（覆盖 token --cd-z-tooltip，=1060） |
+| prefixCls | `string` | `'cd-tooltip'` | 浮层 wrapper 类名前缀（对齐 Semi prefixCls）；Popover 传 cd-popover 切换整套前缀与视觉 |
+| wrapperClassName | `string` | `''` | 触发器包裹 span 的类名（对齐 Semi wrapperClassName） |
+| wrapperId | `string` | `undefined` | 浮层 wrapper 节点 id（对齐 Semi wrapperId）；不设则自动生成，trigger 的 aria 指向它 |
+| class | `string` | `''` | 浮层自定义类名 |
+| style | `string` | `''` | 浮层自定义内联样式（如覆盖 max-width） |
+| stopPropagation | `boolean` | `false` | 阻止浮层上的点击事件冒泡 |
+| closeOnEsc | `boolean` | `true` | Esc 关闭浮层（WCAG 1.4.13） |
+| preventScroll | `boolean` | `false` | 显示时阻止页面滚动 |
+| rePosKey | `string \| number` | `undefined` | 更新该值手动触发浮层重新定位 |
+| getPopupContainer | `() => HTMLElement \| null \| undefined` | `undefined` | 自定义浮层挂载容器（缺省回退 ConfigProvider 全局，再回退 body） |
+| onVisibleChange | `(visible: boolean) => void` | `undefined` | 显隐切换回调 |
+| onClickOutSide | `(e: MouseEvent) => void` | `undefined` | 点击浮层与触发器外部的回调（仅 custom/click） |
+| onEscKeyDown | `(e: KeyboardEvent) => void` | `undefined` | 浮层展示时按 Esc 键的回调（与 closeOnEsc 相互独立） |
+| afterClose | `() => void` | `undefined` | 浮层完全关闭后的回调 |
+| children | `Snippet` | `undefined` | 触发元素（必填） |
 
 ### Events
 
-| Event | Payload | 说明 |
-|-------|---------|------|
-| `on:openChange` | `(open: boolean)` | 显隐状态变更（受控同步）。 |
-| `on:visibleChange` | `(open: boolean)` | `openChange` 别名，兼容 Semi 习惯（标记 deprecated）。 |
-| `on:clickOutside` | `(event: PointerEvent)` | 浮层外部点击。 |
-| `on:escKeyDown` | `(event: KeyboardEvent)` | Esc 触发关闭前回调。 |
-| `on:mountChange` | `(mounted: boolean)` | 内容 DOM 挂载/卸载（用于惰性资源）。 |
+> 本组件无事件回调 prop（meta.events 为空）。此前本表列的回调均未实现，已删。
 
 ### Slots
 

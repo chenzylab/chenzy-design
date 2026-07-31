@@ -53,21 +53,71 @@ SideBar 在 AI 对话/编辑器场景提供**右侧可伸缩浮层**，承载：
 
 ### SideBar（主组件）Props
 
-| 名称 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `mode` | `'main' \| 'code' \| 'file' \| string` | `'main'` | 展示模式，main 主视图，其余详情视图。 |
-| `detailContent` | `CodeItemProps \| FileItemProps` | — | 详情区数据源。 |
-| `activeKey` | `string` | — | 主视图激活 option。 |
-| `options` | `Option[]` | — | 顶部图标 tab 组（`{ icon, name, key }`）。 |
-| `onActiveOptionChange` | `(e, key: string) => void` | — | option 切换。 |
-| `renderMainContent` | `(key) => Snippet` | — | 主视图内容。 |
-| `renderDetailContent` | `(mode) => Snippet` | — | 详情内容。 |
-| `renderDetailHeader` | `(mode, detail) => Snippet` | — | 详情头部。 |
-| `fileEditable` | `boolean` | `true` | file 模式富文本可编辑。 |
-| `onFileContentChange` | `(content: string) => void` | — | 富文本变更。 |
-| `onBackWard` | `(e, mode) => void \| Promise` | — | 详情返回主视图（可异步）。 |
-| `onDetailContentCopy` | `(e, content, ok) => void` | — | 详情复制回调。 |
-| `imgUploadProps` | `ImageUploadNodeOptions` | — | 富文本图片上传配置。 |
+> 本表由 `packages/svelte/src/sidebar/meta.ts` 真源生成（2026-07-30 重校）。此前本表列的 prop 多为 Semi 对齐前的旧名或已删除项（如 `value`→`activeKey`、`change`→`onChange`），改 prop 时请同步 meta.ts，勿手写「规划中」的 prop。
+
+| Prop | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| SideBar.mode | `'main' \| 'code' \| 'file' \| string` | `'main'` | 展示模式，main 主视图，其余详情视图 |
+| SideBar.activeKey | `string` | `undefined` | 主视图激活 option（受控，不回写） |
+| SideBar.options | `SideBarOption[]` | `[]` | 顶部图标 tab 组（{ icon, name, key }） |
+| SideBar.onActiveOptionChange | `(e: Event, key: string) => void` | `undefined` | option 切换回调 |
+| SideBar.renderMainContent | `Snippet<[string \| undefined]>` | `undefined` | 主视图内容（按 activeKey 渲染） |
+| SideBar.renderDetailContent | `Snippet<[mode]>` | `undefined` | 详情内容（按 mode 渲染） |
+| SideBar.renderDetailHeader | `Snippet<[mode]>` | `undefined` | 详情头部（返回按钮之后） |
+| SideBar.onBackWard | `(e: Event, mode) => void \| Promise<void>` | `undefined` | 详情返回主视图（可异步，await 期间禁用防重触发） |
+| SideBar.class | `string` | `undefined` | 根自定义类名 |
+| SideBar.style | `string` | `undefined` | 根自定义内联样式 |
+| SideBarContainer.visible | `boolean` | `false` | 是否可见（受控，不回写；仅经 onCancel 通知） |
+| SideBarContainer.title | `string \| Snippet` | `undefined` | 标题 |
+| SideBarContainer.onCancel | `(e: Event) => void` | `undefined` | 关闭回调（Esc / 关闭按钮） |
+| SideBarContainer.afterVisibleChange | `(v: boolean) => void` | `undefined` | 动画结束后（入场或出场）触发 |
+| SideBarContainer.motion | `boolean` | `true` | 展开/收起动画；false 等价即时显隐 |
+| SideBarContainer.resizable | `boolean` | `true` | 宽度可拖拽（复用 Resizable 把手 + 键盘 a11y） |
+| SideBarContainer.minWidth | `string \| number` | `150` | 最小宽度 |
+| SideBarContainer.maxWidth | `string \| number` | `undefined` | 最大宽度 |
+| SideBarContainer.defaultSize | `{ width?; height? }` | `undefined` | 默认尺寸（当前消费 width） |
+| SideBarContainer.showClose | `boolean` | `true` | 显示关闭按钮 |
+| SideBarContainer.renderHeader | `Snippet` | `undefined` | 自定义头部（覆盖 title + 关闭按钮） |
+| SideBarContainer.class | `string` | `undefined` | 面板自定义类名 |
+| SideBarContainer.style | `string` | `undefined` | 面板自定义内联样式 |
+| SideBarAnnotation.info | `SideBarAnnotationGroup[]` | `[]` | 分组数组（{ header, key, annotations }[]），每组一个折叠面板 |
+| SideBarAnnotation.activeKey | `string \| string[]` | `undefined` | 展开的分组 key（受控，不回写；透传 Collapse） |
+| SideBarAnnotation.onChange | `(keys: string[]) => void` | `undefined` | 展开变更回调（当前展开 key 数组） |
+| SideBarAnnotation.onClick | `(e: Event, item) => void` | `undefined` | 点击某条引用（url 存在先在新窗口打开来源） |
+| SideBarAnnotation.renderItem | `Snippet<[SideBarAnnotationItem]>` | `undefined` | 自定义单条渲染（覆盖默认 video/text 卡片） |
+| SideBarAnnotation....Container | `SideBarContainer props` | `—` | 继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n annotationTitle |
+| SideBarCodeContent.codes | `CodeItemProps[]` | `[]` | 代码/JSON 预览项列表；每项按 isJson 分流 JsonViewer / CodeHighlight |
+| SideBarCodeContent.activeKey | `string \| string[]` | `undefined` | 受控展开项 key（受控，不回写；仅经 onChange 通知，内部兜底非受控） |
+| SideBarCodeContent.onChange | `(keys: string[]) => void` | `undefined` | 展开态变化回调（Collapse onChange） |
+| SideBarCodeContent.onExpand | `(e: MouseEvent, code: CodeItemProps, mode: string) => void` | `undefined` | 点击某项展开（全屏）按钮回调；mode 固定 "code"（对齐 Semi onExpand） |
+| SideBarCodeContent.class | `string` | `undefined` | 根自定义类名 |
+| SideBarCodeContent.style | `string` | `undefined` | 根自定义内联样式 |
+| SideBarMcpConfigure.options | `SideBarMcpOption[]` | `[]` | 内置 MCP 工具列表（受控）；每项 { value, label, icon?, desc?, active?, disabled?, configure? } |
+| SideBarMcpConfigure.customOptions | `SideBarMcpOption[]` | `[]` | 自定义 MCP 工具列表（受控）；空时显示添加入口 |
+| SideBarMcpConfigure.filter | `(input: string, option: SideBarMcpOption) => boolean` | `undefined` | 自定义搜索过滤谓词（覆盖默认 label/value 大小写不敏感包含匹配） |
+| SideBarMcpConfigure.placeholder | `string` | `undefined` | 搜索占位（覆盖 i18n mcpSearchPlaceholder，修 Semi 硬编码「请输入」） |
+| SideBarMcpConfigure.onSearch | `(input: string, custom: boolean) => void` | `undefined` | 搜索输入回调（custom 恒 false） |
+| SideBarMcpConfigure.onStatusChange | `(options: SideBarMcpOption[], custom: boolean) => void` | `undefined` | 启用/关闭变化：产出该组「下一份数组」+ custom 标记（不回写 prop） |
+| SideBarMcpConfigure.onAddClick | `(e: MouseEvent) => void` | `undefined` | 自定义组「添加」按钮回调 |
+| SideBarMcpConfigure.onConfigureClick | `(e: MouseEvent, option: SideBarMcpOption) => void` | `undefined` | 内置工具（configure=true）「配置」按钮回调 |
+| SideBarMcpConfigure.onEditClick | `(e: MouseEvent, option: SideBarMcpOption) => void` | `undefined` | 自定义工具「编辑」按钮回调 |
+| SideBarMcpConfigure.renderItem | `Snippet<[{ option; custom }]>` | `undefined` | 自定义单项渲染（覆盖默认项，custom 标记来自自定义组） |
+| SideBarMcpConfigure....Container | `SideBarContainer props` | `—` | 继承并透传全部 Container props（visible/title/onCancel/resizable/... ）；title 默认走 i18n mcpTitle |
+| SideBarFileContent.files | `FileItemProps[]` | `[]` | 富文本文件项列表；每项 { key, name, content, editable, onContentChange, extensions, imgUploadProps }，一个 tiptap 编辑器（editable 控制查看/编辑，默认只读） |
+| SideBarFileContent.activeKey | `string \| string[]` | `undefined` | 受控展开项 key（受控，不回写；仅经 onChange 通知，内部兜底非受控） |
+| SideBarFileContent.onChange | `(keys: string[]) => void` | `undefined` | 展开态变化回调（Collapse onChange） |
+| SideBarFileContent.onExpand | `(e: MouseEvent, file: FileItemProps, mode: string) => void` | `undefined` | 点击某项展开（全屏）按钮回调；mode 固定 "file"（对齐 Semi onExpand） |
+| SideBarFileContent.class | `string` | `undefined` | 根自定义类名 |
+| SideBarFileContent.style | `string` | `undefined` | 根自定义内联样式 |
+| SideBarFileItem.content | `string` | `undefined` | 初始富文本内容（HTML） |
+| SideBarFileItem.editable | `boolean` | `true` | 是否可编辑（false=只读查看，渲染工具栏与否由此决定） |
+| SideBarFileItem.onContentChange | `(html: string) => void` | `undefined` | 内容变更回调（editor.getHTML()） |
+| SideBarFileItem.extensions | `Extension[]` | `[]` | 追加到默认扩展集末尾的自定义 tiptap 扩展（对齐 Semi extensions） |
+| SideBarFileItem.imgUploadProps | `SideBarImageUploadOptions` | `undefined` | 图片上传配置（透传 ImageUploadNode / 内嵌 Upload；含 action/accept/getUploadImageSrc 等） |
+| SideBarFileItem.class | `string` | `undefined` | 根自定义类名 |
+| SideBarFileItem.style | `string` | `undefined` | 根自定义内联样式 |
+
+**子组件**：`SideBar`、`SideBarContainer`、`SideBarAnnotation`、`SideBarCodeContent`、`SideBarMcpConfigure`、`SideBarFileContent`、`SideBarFileItem`
 
 ### SideBar.Container Props
 

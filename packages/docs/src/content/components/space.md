@@ -3,7 +3,6 @@ title: Space 间距
 name: space
 category: basic
 brief: 设置组件之间的间距。
-docMode: inline
 ---
 
 <script>
