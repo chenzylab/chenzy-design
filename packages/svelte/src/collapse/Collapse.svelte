@@ -223,4 +223,21 @@
   .cd-collapse :global(.cd-collapse-content p) {
     margin: 0;
   }
+
+  /* —— RTL（对齐 Semi collapse/rtl.scss）——
+     右侧操作区各项的间距、iconLeft 模式下图标与标题的间距，均换边。 */
+  :global(.cd-rtl) .cd-collapse {
+    direction: rtl;
+  }
+  :global(.cd-rtl) .cd-collapse :global(.cd-collapse-header-right > span) {
+    padding-right: 0;
+    padding-left: var(--cd-spacing-collapse-right-paddingright);
+  }
+  :global(.cd-rtl) .cd-collapse :global(.cd-collapse-header-right > span:last-child) {
+    padding-left: 0;
+  }
+  :global(.cd-rtl) .cd-collapse :global(.cd-collapse-header-iconLeft .cd-collapse-header-icon) {
+    margin-right: 0;
+    margin-left: var(--cd-spacing-collapse-header-iconleft-marginright);
+  }
 </style>
