@@ -63,3 +63,57 @@ export const CHAT_INPUT_CONTAINER: MetricBaseline = {
     alignItems: 'flex-end',
   },
 };
+
+/**
+ * AI 多彩标签（colorful）四种形态 —— 实测 semi.design/zh-CN/show/tag。
+ *
+ * 源码依据：Semi `tag/variables.scss:12-32` 全部指向 AI 色板 ——
+ *   solid-bg = `var(--semi-color-ai-purple)`（= ai-purple-5）
+ *   solid_gradient-bg = `var(--semi-color-ai-general)`（= ai-general-5，278° 四段）
+ *   light-bg = `rgba(var(--semi-ai-purple-0), 1)`
+ *   ghost-bg = `var(--semi-color-white)`（**是白底，不是 transparent**）
+ *
+ * 本库原先是自造的蓝→紫三色（#4d6bff/#7b5cff/#a64dff）+ 120° 三段渐变，
+ * **既不同色也不同角度**；AI 色板补齐后改为直接消费，两侧实测已逐字节一致。
+ */
+export const TAG_COLORFUL_SOLID_GRADIENT: MetricBaseline = {
+  source: 'https://semi.design/zh-CN/show/tag',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-tag-colorful.semi-tag-gradient.semi-tag-solid',
+  computed: {
+    // 278deg 四段：ai-general-5-0..3
+    backgroundImage:
+      'linear-gradient(278deg, rgb(233, 69, 255) 0%, rgb(166, 71, 255) 30%, rgb(107, 97, 255) 60%, rgb(46, 140, 255) 100%)',
+    color: 'rgb(255, 255, 255)',
+  },
+};
+
+export const TAG_COLORFUL_SOLID: MetricBaseline = {
+  source: 'https://semi.design/zh-CN/show/tag',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-tag-colorful.semi-tag-solid:not(.semi-tag-gradient)',
+  computed: {
+    backgroundColor: 'rgb(166, 71, 255)', // ai-purple-5
+    color: 'rgb(255, 255, 255)',
+  },
+};
+
+export const TAG_COLORFUL_LIGHT: MetricBaseline = {
+  source: 'https://semi.design/zh-CN/show/tag',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-tag-colorful.semi-tag-light:not(.semi-tag-gradient)',
+  computed: {
+    backgroundColor: 'rgb(248, 237, 255)', // ai-purple-0
+    color: 'rgb(166, 71, 255)', // ai-purple-5
+  },
+};
+
+export const TAG_COLORFUL_GHOST: MetricBaseline = {
+  source: 'https://semi.design/zh-CN/show/tag',
+  measuredAt: '2026-07-31',
+  semiSelector: '.semi-tag-colorful.semi-tag-ghost:not(.semi-tag-gradient)',
+  computed: {
+    backgroundColor: 'rgb(255, 255, 255)', // 白底，非 transparent
+    color: 'rgb(166, 71, 255)',
+  },
+};

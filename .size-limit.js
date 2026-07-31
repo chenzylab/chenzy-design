@@ -89,7 +89,9 @@ const components = [
   // 对齐 Semi 的功能补齐带来必要体积增长（无异常第三方依赖，已 grep 反证只依赖本库+svelte）。
   // 预算按实测校准 + 少量余量：cascader 10.63 / checkbox 3.8 / radio 4.63 / textarea 4.77 KB。
   // radio 破坏性重写严格对齐 Semi（全类型原生 input + IconRadio + 全套 card/button token class），
-  // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算校准至 4.7 KB。
+  // 实测 4.63 KB（含 IconRadio SVG），无异常第三方依赖，预算曾校准至 4.7 KB。
+  // 2026-07-31 补 RTL 镜像（direction + buttonRadioGroup 内边距换边）后实测 4.71 KB，
+  // 属对齐 Semi rtl.scss 的真实功能增长，预算上调至 4.8 KB。
   // cascader：10.8→11 接 cdGlobal 全局默认 props（24 个 prop 走 resolveDefault，实测 10.85）
   ['cascader', '{ Cascader }', '11 KB'],
   ['checkbox', '{ Checkbox, CheckboxGroup }', '4 KB'],
@@ -111,7 +113,7 @@ const components = [
   ['input', '{ Input, InputGroup, TextArea }', '9 KB'],
   ['input-number', '{ InputNumber }', '5 KB'],
   ['pincode', '{ PinCode }', '3.5 KB'],
-  ['radio', '{ Radio, RadioGroup }', '4.7 KB'],
+  ['radio', '{ Radio, RadioGroup }', '4.8 KB'],
   ['rating', '{ Rating }', '4 KB'],
   ['select', '{ Select }', '10 KB'],
   ['slider', '{ Slider }', '5.5 KB'],

@@ -76,10 +76,19 @@ export const tagTokens = {
   'tag-avatar-circle-padding-x': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '圆头像右内距', usage: '圆形头像标签右侧内边距（Semi $spacing-tag_avatar_circle-paddingRight）' },
   'tag-avatar-circle-padding-left': { value: 'var(--cd-spacing-super-tight)', category: 'spacing', label: '圆头像左内距', usage: '圆形头像标签左侧内边距（Semi $spacing-tag_avatar_circle-paddingLeft）' },
 
-  // —— AI 多彩标签（colorful/gradient）：与 Button/FloatButton colorful 同源可编辑渐变三色 ——
-  'tag-colorful-from': { value: '#4d6bff', category: 'color', label: 'Colorful 渐变起始色', usage: 'colorful（AI 多彩）蓝→紫渐变起始色', editable: true },
-  'tag-colorful-via': { value: '#7b5cff', category: 'color', label: 'Colorful 渐变中间色', usage: 'colorful（AI 多彩）蓝→紫渐变中间色', editable: true },
-  'tag-colorful-to': { value: '#a64dff', category: 'color', label: 'Colorful 渐变结束色', usage: 'colorful（AI 多彩）蓝→紫渐变结束色', editable: true },
+  // —— AI 多彩标签（colorful/gradient）：逐条镜像 Semi tag/variables.scss 的 $color-tag_colorful_* ——
+  // 原先是自造的蓝→紫三色（#4d6bff/#7b5cff/#a64dff，120° 三段），与 Semi 的
+  // AI 色板（278° 四段，洋红→蓝）既不同色也不同角度；AI 色板补齐后改为直接消费。
+  'tag-colorful-solid-bg': { value: 'var(--cd-color-ai-purple)', category: 'color', label: '多彩实心底', usage: 'AI Tag 深色底背景（Semi $color-tag_colorful_solid-bg）' },
+  'tag-colorful-solid-text': { value: 'var(--cd-color-white)', category: 'color', label: '多彩实心字', usage: 'AI Tag 深色底字色（Semi $color-tag_colorful_solid-text）' },
+  'tag-colorful-solid-gradient-bg': { value: 'var(--cd-color-ai-general)', category: 'color', label: '多彩实心渐变底', usage: 'AI Tag 深色底渐变背景（Semi $color-tag_colorful_solid_gradient-bg）' },
+  'tag-colorful-light-bg': { value: 'var(--cd-color-ai-purple-0)', category: 'color', label: '多彩浅色底', usage: 'AI Tag 浅色底背景（Semi $color-tag_colorful_light-bg）' },
+  'tag-colorful-light-text': { value: 'var(--cd-color-ai-purple)', category: 'color', label: '多彩浅色字', usage: 'AI Tag 浅色底字色（Semi $color-tag_colorful_light-text）' },
+  'tag-colorful-light-gradient-bg': { value: 'var(--cd-color-ai-general-0)', category: 'color', label: '多彩浅色渐变底', usage: 'AI Tag 浅色底渐变背景（Semi $color-tag_colorful_light_gradient-bg）' },
+  'tag-colorful-light-gradient-text': { value: 'var(--cd-color-ai-general)', category: 'color', label: '多彩浅色渐变字', usage: 'AI Tag 浅色底渐变字色，经 background-clip:text 裁切（Semi $color-tag_colorful_light_gradient-text）' },
+  'tag-colorful-ghost-bg': { value: 'var(--cd-color-white)', category: 'color', label: '多彩白底', usage: 'AI Tag 白色底背景（Semi $color-tag_colorful_ghost-bg）' },
+  'tag-colorful-ghost-text': { value: 'var(--cd-color-ai-purple)', category: 'color', label: '多彩白底字', usage: 'AI Tag 白色底字色（Semi $color-tag_colorful_ghost-text）' },
+  'tag-colorful-ghost-border': { value: 'var(--cd-color-ai-general)', category: 'color', label: '多彩白底描边', usage: 'AI Tag 白色底描边（Semi $color-tag_colorful_ghost-border）' },
 
   // —— TagGroup（Semi $spacing-tag_group-marginRight；折叠高度 = tag 高 + 2px）——
   'tag-group-margin-right': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '组内标签右外距', usage: '标签组内相邻标签右侧外边距（Semi $spacing-tag_group-marginRight）' },
