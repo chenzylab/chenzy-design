@@ -67,7 +67,7 @@ export const tagTokens = {
   'tag-avatar-bg': { value: 'var(--cd-color-bg-4)', category: 'color', label: '头像标签背景', usage: '头像标签背景色（Semi $color-tag_avatar-bg-default）' },
   'tag-avatar-border': { value: 'var(--cd-color-border)', category: 'color', label: '头像标签描边', usage: '头像标签描边色（Semi $color-tag_avatar-border-default）' },
   'tag-avatar-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '头像标签文字', usage: '头像标签文字色（Semi $color-tag_avatar-text-default）' },
-  'tag-avatar-square-img-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '方形头像图片底', usage: '方形头像图片背景色（Semi $color-tag_avatar_square_img-bg-default，近似 color-default）' },
+  'tag-avatar-square-img-bg': { value: 'var(--cd-color-default)', category: 'color', label: '方形头像图片底', usage: '方形头像图片背景色（Semi $color-tag_avatar_square_img-bg-default = var(--semi-color-default)）' },
   'tag-avatar-circle-small': { value: '16px', category: 'width', label: '圆头像小尺寸', usage: '小尺寸圆形头像标签头像宽高（Semi $width-tag_avatar_circle_small）' },
   'tag-avatar-circle-large': { value: '20px', category: 'width', label: '圆头像大尺寸', usage: '大尺寸圆形头像标签头像宽高（Semi $width-tag_avatar_circle_large）' },
   'tag-avatar-margin-right': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: '头像右外距', usage: '头像右侧外边距（Semi $spacing-tag_avatar-marginRight）' },

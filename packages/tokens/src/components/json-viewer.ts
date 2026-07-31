@@ -22,8 +22,8 @@
 import type { TokenGroup } from './token-def.js';
 
 export const jsonViewerTokens = {
-  // —— 容器（对齐 Semi variables.scss：background=color-default=grey-0，padding 12px/0） ——
-  'color-json-viewer-bg': { value: 'var(--cd-color-grey-0)', category: 'color', label: '背景', usage: '编辑器容器背景（对齐 Semi color-default=grey-0）' },
+  // —— 容器（对齐 Semi variables.scss：background=color-default，padding 12px/0） ——
+  'color-json-viewer-bg': { value: 'var(--cd-color-default)', category: 'color', label: '背景', usage: '编辑器容器背景（Semi $color-json-viewer-background = var(--semi-color-default)）' },
   'color-json-viewer-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '默认文字', usage: '编辑器默认文字色（标点等未着色内容）' },
   'radius-json-viewer': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '圆角', usage: '编辑器容器圆角' },
   'color-json-viewer-border': { value: 'var(--cd-color-border)', category: 'color', label: '边框', usage: '编辑器容器边框色' },
@@ -69,7 +69,7 @@ export const jsonViewerTokens = {
   // 搜索选项按钮（大小写/正则/全词）——对齐 Semi jsonViewer.scss search-options-item：
   //   color text-2 / hover bg color-default / active color primary + bg primary-light-default。
   'color-json-viewer-search-options-item': { value: 'var(--cd-color-text-2)', category: 'color', label: '搜索选项文字', usage: 'search-options-item 默认文字色（对齐 Semi text-2）' },
-  'color-json-viewer-search-options-item-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: '搜索选项悬浮', usage: 'search-options-item hover 背景（对齐 Semi color-default）' },
+  'color-json-viewer-search-options-item-hover': { value: 'var(--cd-color-default)', category: 'color', label: '搜索选项悬浮', usage: 'search-options-item hover 背景（Semi jsonViewer.scss:175 = var(--semi-color-default)）' },
   'color-json-viewer-search-options-item-active-text': { value: 'var(--cd-color-primary)', category: 'color', label: '搜索选项激活文字', usage: 'search-options-item-active 文字色（对齐 Semi primary）' },
   'color-json-viewer-search-options-item-active-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '搜索选项激活背景', usage: 'search-options-item-active 背景（对齐 Semi primary-light-default）' },
 } satisfies TokenGroup;

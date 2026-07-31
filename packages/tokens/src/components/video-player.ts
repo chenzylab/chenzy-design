@@ -16,7 +16,7 @@ export const videoPlayerTokens = {
   'color-videoPlayer-theme-light-bg': { value: 'var(--cd-color-disabled-bg)', category: 'color', label: 'light 背景色', usage: 'light 主题背景色（对齐 Semi color-disabled-bg）' },
   'color-videoPlayer-pause-bg': { value: 'var(--cd-color-text-1)', category: 'color', label: '暂停按钮色', usage: '中央暂停按钮颜色（对齐 Semi color-text-1）' },
   'color-videoPlayer-notification-bg': { value: 'var(--cd-color-overlay-bg)', category: 'color', label: 'notification 背景', usage: 'notification 背景色（对齐 Semi color-overlay-bg）' },
-  'color-videoPlayer-notification-text': { value: 'var(--cd-color-grey-0)', category: 'color', label: 'notification 字体', usage: 'notification 字体色（对齐 Semi color-default=grey-0）' },
+  'color-videoPlayer-notification-text': { value: 'var(--cd-color-default)', category: 'color', label: 'notification 字体', usage: 'notification 字体色（Semi $color-videoPlayer_notification-text = var(--semi-color-default)）' },
   'color-videoPlayer-controls-bg': { value: 'rgba(28, 31, 35, 0.8)', category: 'color', label: '控制栏背景', usage: '控制栏背景色（照搬 Semi 硬编码 rgba(28,31,35,.8)）' },
   'color-videoPlayer-controls-item-bg': { value: 'var(--cd-color-overlay-bg)', category: 'color', label: '控制栏 item 背景', usage: '控制栏 item 背景色（对齐 Semi color-overlay-bg）' },
   'color-videoPlayer-controls-text': { value: '#fff', category: 'color', label: '控制栏文字', usage: '控制栏文字色（照搬 Semi 硬编码 #fff）' },
