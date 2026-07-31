@@ -235,11 +235,12 @@ Provider 子树 Pagination 文案同步变 `pages in total`，链路完全正常
 
 ### 待办
 
-- [ ] **①（前置）全库重跑对齐：class 命名 / DOM 结构 / 子类层级**
-  文档轮里反复撞到同一堵墙——本库 class 在「单连字符折平」那轮把 Semi 的中缀结构折平了
-  （`semi-tabs-bar-line` → `cd-tabs-line`），导致任何「照搬 Semi 样式/选择器」的工作都无法逐行对上。
-  抽查命中率：Tabs 11 个目标类只中 3 个、button 50%、timeline 40%、steps 50%。
-  这一条是后面所有样式级对齐的**前置**。
+- [x] **①（前置）全库重跑对齐：class 命名 / DOM 结构 / 子类层级** ——
+  已于 PR #664（commit `c6e3dfe7`）分六批清零，见该提交内各批说明。
+  实测判据：全库 `cd-*` 的 BEM（`__` / `--`）残留 **0 处**
+  （扫描 svelte/icons/docs/core 的 .svelte + .ts）。
+  连带修出一处折平撞车（DialogueBox 的 `-error` 与错误文案 span 同名 → 改 `-is-error`），
+  该问题**测试全绿也发现不了**，是靠脚本比对「折平后是否与既有类同名」检出的。
 
 - [ ] **② 补齐 RTL 覆盖面（依赖 ①）**
   Semi 有 61 个 `rtl.scss` / 2942 行，本库只有 Layout / Space / Grid.Col 三个实现。
@@ -247,36 +248,70 @@ Provider 子树 Pagination 文案同步变 `pages in total`，链路完全正常
   **已全部量化并写进 [rtl-gap-tracker.md](./rtl-gap-tracker.md)**，重跑时直接取用、不必重查。
   必须等 ① 做完 —— 否则按当前 class 写的 RTL 规则，对齐后要全部重写。
 
-- [ ] **③ token 名/值/公式全量对齐 Semi 变量（可独立进行）**
+- [x] **③ token 名/值/公式对齐 Semi 变量** —— 已清零（commit `ec024d95`）。
+  **闸门已挂进 `pnpm check:semi`**：缺失 0 / 不一致 0 / 已核实例外 3。
 
-  **已建闸门**：`pnpm --filter @chenzy-design/tokens check:semi-parity [组件名]`
-  （`packages/tokens/scripts/check-semi-variable-parity.mjs`），把 Semi 75 份
-  `variables.scss` 共 **3678 条变量**与本库 token manifest 逐条比对名/值/公式。
+  #### ⚠️ 先纠正一个错误口径：原「缺失 2058 条」绝大多数是伪缺口
 
-  **2026-07-31 首次全量比对基线**：
-  - **缺失 2058 条**（Semi 有、本库无同名 token）
-  - **值/公式不一致 81 条**
+  闸门最初拿 `semi-foundation/<组件>/variables.scss` 共 3678 条逐条要求本库建同名 token。
+  **这个口径是错的**，实测证据（Semi 官网 + 其 805 KB 生产 CSS）：
 
-  ⚠️ 原条目写「49 处命名语义错配」**严重低估**——那只是 RTL 调查时顺带发现的一类
-  （逻辑属性配物理方位命名）。真实缺口大两个数量级。
+  - 生产 CSS 里 `--semi-*` **组件级变量出现 0 次**；
+  - `$font-checkbox_label-lineHeight: 20px` 的编译产物是字面量 `line-height:20px`，
+    不是 `var(--semi-font-checkbox-label-lineheight)`；
+  - 页面实测 `--semi-color-primary` / `--semi-grey-9` **有值**，
+    而 `--semi-color-checkbox-label-text-default` **无值**。
 
-  缺口按组件（Top）：datePicker 220 / aiChatDialogue 194 / aiChatInput 144 /
-  sidebar 126 / chat 115 / cascader 94 / calendar 94 / select 82 / navigation 75 …
+  即那 3359 条带下划线的变量是 **SCSS 编译期常量**，编译后就地展开、不进运行时，
+  外部根本无法用 CSS 变量覆盖。要求本库为它们各建一个 `--cd-*`，
+  等于凭空造出 Semi 并不存在的契约。
 
-  典型问题形态：
-  1. **命名分叉**：Semi `$height-control-default` → 应 `--cd-height-control-default`，
-     本库叫 `--cd-control-height-default`（词序颠倒），连带 button/form 多条引用不一致；
-  2. **绕过组件级中转变量**：Semi `$color-button_disabled-bg-default` 指向
-     `$color-button-disabled-bg-default`（button 自己的一层），本库直接指基础色
-     `--cd-color-disabled-bg`，**主题定制时改不动 button 这一层**；
-  3. **把变量写死**：Semi `$width-grid-screen-sm-min: $width-grid-screen-sm`，本库写 `576px`；
-  4. 原记的逻辑属性/物理命名错配（详见 rtl-gap-tracker.md §4）。
+  **真正的运行时契约**只有 `semi-theme-default/scss/` 的
+  `_palette.scss` + `global.scss`（本库比对到 340 条）。闸门已按此重写。
 
-  **两类不算差异、闸门已内置归一**：色板形态（Semi 存裸 RGB 三元组故需 `rgba(var(...), 1)`）、
-  算术形态（SCSS 原生算术 vs CSS `calc()`）。
+  > 教训：**先确认「参照物真的存在」，再拿它当分母。**
+  > 同类错误在本文件开头也犯过一次（拿清单自己的条目数当分母 → 71/71 实为 71/84）。
 
-  因量级过大，闸门暂不进 `verify` 阻断构建；**按组件分批清零**，
-  清完一个跑 `check:semi-parity <组件名>` 验证归零。
+  #### 清掉的真问题
+
+  1. **换肤链路在语义层是断的**（本轮最重要的一个）。
+     Semi `--semi-color-primary: rgba(var(--semi-blue-5), 1)` 运行时真的指向色板；
+     本库 `'color-primary': palette['blue-5']` 看着是引用，实为**取值**，
+     产物 `--cd-color-primary: #0064fa` 引用关系已丢。
+     **双侧真机实测**：覆盖 `--semi-blue-5` → Semi primary 跟随；
+     覆盖 `--cd-color-blue-5` → 本库 primary 纹丝不动。
+     已新增 `ref()` 声明引用，98 条语义色改为引用形态；
+     色板+透明度的条目改用 `color-mix` 复合同一色板变量（沿用 tag.ts/chat.ts 惯例）。
+  2. **整段缺失的运行时变量**（92 → 0）：AI 色板（`ai-purple-0..9` +
+     `ai-general-<档>-<停靠点>`，并补回 Semi 的中间层 `ai-general-0..9` 渐变——
+     本库原先把三层压成一条死值）、vchart `color-data-0..19`、
+     `color-default` 三档、AI 场景渐变背景各三档。
+  3. **5 个组件 token 在用近似色**：Semi 明写 `var(--semi-color-default)` 处
+     （tag 方形头像底 / jsonViewer 容器背景与搜索选项 hover / videoPlayer notification 文字），
+     本库因缺该 token 而用 `fill-0`/`fill-1`/`grey-0` 顶替 ——
+     **`fill-*` 是半透明叠加、`default` 是不透明灰**，非白底上渲染结果不同，属真实视觉偏差。
+  4. **manifest `resolvedDark` 一直是错的**：`litDark` 只覆盖 alias 层、从不喂 dark 色板。
+     改 ref 后该记账错误会传染到语义色，遂补 `globalDark` 入参修正
+     （产物 CSS 一直是对的，只是 manifest 记账错）。
+
+  #### 已核实的 3 条例外（闸门内置，各注明理由）
+
+  - `--cd-color-white` / `--cd-color-black`：Semi 存裸三元组故需 `rgba(var(...),1)`，
+    本库色板本身即完整颜色，再指向自己会**自引用成环**；
+  - `--cd-color-ai-background-top-hover`：**Semi 上游 bug** ——
+    `global.scss:143/272` 把「激活态」也命名成 `-hover`（注释明写激活态），
+    激活值覆盖了悬浮值。本库按其注释拆成 `-hover` / `-active` 两档。
+
+  #### 验证
+
+  **对比度逐条比对改前改后：24 条 ratio 全部逐字节相同**（4.68/2.47/7.30…），
+  只有显示字符串从字面值变成引用形式 —— 证明**颜色零漂移**；
+  visual project 7 条截图回归全过（像素级零变化）；
+  新增 5 条 ref 测试并**故意改回字面值确认 4 条会红**（非空转）。
+
+  遗留（已登记，属可见视觉变化故单独一轮）：Tag 的 `tag-colorful-from/via/to`
+  仍是自造色 `#4d6bff/#7b5cff/#a64dff`，Semi 实际用 `ai-purple` / `ai-general` 系列；
+  AI 色板已补齐，可直接改指。
 
 ### 已在文档轮顺带完成的对齐（不必重做）
 

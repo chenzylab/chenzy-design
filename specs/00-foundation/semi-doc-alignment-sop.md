@@ -103,37 +103,57 @@ visual project 的截图回归也救不了：它只能发现「相对自己过�
 ### 铁律：**token 的名 / 值 / 公式都要和 Semi 变量一一对应**
 
 **闸门**：`pnpm --filter @chenzy-design/tokens check:semi-parity`
-（脚本 `packages/tokens/scripts/check-semi-variable-parity.mjs`）
+（脚本 `packages/tokens/scripts/check-semi-variable-parity.mjs`，已挂进 `pnpm check:semi`）
+**当前状态：缺失 0 / 不一致 0 / 已核实例外 3**（2026-07-31 清零，commit `ec024d95`）。
 
-把 Semi 全部 75 份 `variables.scss`（3678 条变量）与本库 token manifest 逐条比对：
-**同名、同值、同公式**，缺的新增、错的修正。
+#### ⚠️ 只比对「运行时契约」，别拿 SCSS 内部变量当分母
 
-命名映射（按本库既有 token 实测归纳）：
-`$color-checkbox_cardType-bg-hover` → `--cd-color-checkbox-cardtype-bg-hover`
-——去 `$`、`_`→`-`、**驼峰整体小写不拆词**、加 `--cd-`。
+本闸门最初的口径是错的，报出「缺失 2058 条」——**绝大多数是伪缺口**。
+实测证据（Semi 官网 checkbox 页 + 其 805 KB 生产 CSS）：
+
+- 生产 CSS 里 `--semi-*` **组件级变量出现 0 次**；
+- `$font-checkbox_label-lineHeight: 20px` 编译产物是字面量 `line-height:20px`；
+- 页面实测 `--semi-color-primary` / `--semi-grey-9` **有值**，
+  `--semi-color-checkbox-label-text-default` **无值**。
+
+即 `semi-foundation/<组件>/variables.scss` 里 3359 条带下划线变量是
+**SCSS 编译期常量**，编译后就地展开、不进运行时，外部无法用 CSS 变量覆盖它们。
+
+**真正的运行时契约**只有 `semi-theme-default/scss/` 两份：
+`_palette.scss`（色板，裸 RGB 三元组）+ `global.scss`（语义色/尺寸）。
+
+> 本库的组件 token（`--cd-color-checkbox-*` 等）是**本库自己的额外能力**
+> （Semi 编译期写死的，本库允许运行时定制），属超集不是缺口，不参与比对。
+
+> **通用教训**：拿一个数当分母前，先确认它**真的存在**。
+> 同类错误本项目犯过两次——「71/71 完成」实为 71/84（拿清单自己的条目数当分母）、
+> 本条「缺失 2058」（拿编译期常量当运行时契约）。
+
+#### 铁律：语义层必须**引用**色板，不能抄值
+
+Semi `--semi-color-primary: rgba(var(--semi-blue-5), 1)` 运行时真的指向色板，
+所以覆盖 `--semi-blue-5` 即可换肤。本库曾写 `'color-primary': palette['blue-5']`
+——TS 里看着是引用，实为**取值**，构建后引用关系就没了。
+
+**判据是双侧真机实测，不是读代码**：
+覆盖色板后看语义色跟不跟随（Semi 跟随 / 本库改前不跟随 = 缺陷）。
+
+现已提供 `ref('blue-5')`（构建出 `var(--cd-color-blue-5)`）。
+新增语义色**必须用 `ref()`**，`packages/tokens/src/alias/ref.test.ts` 会守住这条。
 
 两类**必须归一、不算差异**的形态差别（脚本已内置）：
 
-1. **色板形态**：Semi 的 `--semi-grey-9` 存的是**裸 RGB 三元组**（`28,31,35`，
-   见 `_palette.scss:52`），故必须写 `rgba(var(--semi-grey-9), 1)`；
-   本库 `--cd-color-grey-9` 本身是完整颜色，等价写法就是 `var(--cd-color-grey-9)`。
-   带透明度的 `rgba(var(--semi-X), .8)` ≡ `color-mix(in srgb, var(--cd-color-X) 80%, transparent)`。
+1. **色板形态**：Semi `--semi-grey-9` 存**裸 RGB 三元组**（`28,31,35`），
+   故必须写 `rgba(var(--semi-grey-9), 1)`；本库 `--cd-color-grey-9` 本身是完整颜色，
+   等价写法即 `var(--cd-color-grey-9)`。
+   带透明度的 `rgba(var(--semi-X), .8)` ≡ `color-mix(in srgb, var(--cd-color-X) 80%, transparent)`
+   ——**注意是 `color-mix` 复合色板变量，不是把合成结果抄成 rgba 字面值**。
 2. **算术形态**：SCSS 原生支持算术，CSS 必须 `calc()`。
-   Semi `($height-control-default - 20px) * 0.5`
-   ≡ 本库 `calc((var(--cd-height-control-default) - 20px) * 0.5)`。
 
-**当前基线（2026-07-31 首次全量比对）**：缺失 **2058** 条、值/公式不一致 **81** 条。
-这是第二轮对齐 ③「token 命名/取值对齐」的**真实工作量**（原估「49 处命名错配」严重低估）。
-因量级过大，闸门暂不进 `verify` 阻断构建；按组件分批清零，
-清一个组件就跑 `check:semi-parity <组件名>` 验证归零。
+#### 若发现「Semi 有、本库无」，先分清是缺口还是伪缺口
 
-典型问题形态（来自首次扫描）：
-- **命名分叉**：Semi `$height-control-default` → 应为 `--cd-height-control-default`，
-  本库却叫 `--cd-control-height-default`（词序颠倒）；
-- **绕过中间变量**：Semi `$color-button_disabled-bg-default: $color-button-disabled-bg-default`
-  这类**组件级中转**，本库直接指向基础色 `--cd-color-disabled-bg`，
-  导致主题定制时改不动 button 这一层；
-- **把变量写死**：Semi `$width-grid-screen-sm-min: $width-grid-screen-sm`，本库写成 `576px`。
+判据一句话：**去 Semi 生产 CSS 里搜这个变量名**，搜不到就是编译期常量（伪缺口），
+搜得到才是真契约。别只看 `variables.scss` 有没有写。
 
 ### 铁律：**形式对齐，不只是数值对齐**
 
