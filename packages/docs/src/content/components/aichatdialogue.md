@@ -37,6 +37,11 @@ brief: AI 对话消息流，支持多种消息类型、引用标注、选择模�
   import annotationShareSrc from '../../demos/ai-chat-dialogue/13-annotation-share.svelte?raw';
 </script>
 
+## 使用场景
+
+AIChatDialogue 组件可搭配 AIChatInput 使用，实现更丰富的、功能覆盖更全面、定制更加便捷的 AI 会话场景。
+组件消息格式以 OpenAI 的 [Response Object](https://platform.openai.com/docs/api-reference/responses/object) 为原型，默认支持 OpenAI 社区 [Response](https://platform.openai.com/docs/api-reference/responses/create) / [Chat Completion](https://platform.openai.com/docs/api-reference/chat/create) 格式标准，对 GPT-5、GPT-4o 系列模型的响应均支持开箱即用，详见[消息数据转换](#消息数据转换)。
+
 ## 代码演示
 
 ### 如何引入

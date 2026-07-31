@@ -10,34 +10,9 @@
   §9.3：render 期不读 effect 写入的 $state；codes 遍历为纯派生，无自循环。
 -->
 <script lang="ts">
-  import type { ComponentProps } from 'svelte';
   import { Collapse } from '../collapse/index.js';
-  import CodeHighlight from '../code-highlight/CodeHighlight.svelte';
-  import JsonViewer from '../json-viewer/JsonViewer.svelte';
+  import SideBarCodeItem, { type CodeItemProps } from './SideBarCodeItem.svelte';
   import { useLocale } from '../locale-provider/index.js';
-
-  /** JsonViewer 组件 props 子集（透传，非受控 value）。 */
-  type JsonViewerProps = Partial<ComponentProps<typeof JsonViewer>>;
-  /** CodeHighlight 组件 props 子集（透传）。 */
-  type CodeHighlightProps = Partial<ComponentProps<typeof CodeHighlight>>;
-
-  /** 单个代码/JSON 预览项。对齐 Semi CodeItemProps。 */
-  export interface CodeItemProps {
-    /** 折叠头显示名。 */
-    name?: string;
-    /** 唯一标识（折叠面板 key）。 */
-    key: string;
-    /** 是否按 JSON 渲染（true → JsonViewer；false → CodeHighlight）。 */
-    isJson?: boolean;
-    /** CodeHighlight 语言 id（isJson=false 时生效）。 */
-    language?: string;
-    /** 预览内容（CodeHighlight 的 code / JsonViewer 的 value）。 */
-    content?: string;
-    /** 透传给 JsonViewer 的额外 props（isJson=true 时）。 */
-    jsonViewerProps?: JsonViewerProps;
-    /** 透传给 CodeHighlight 的额外 props（isJson=false 时）。 */
-    codeHighlightProps?: CodeHighlightProps;
-  }
 
   interface Props {
     /** 代码/JSON 预览项列表。 */
@@ -124,22 +99,9 @@
             </button>
           </span>
         {/snippet}
-        <div class="cd-sidebar-code-content-body">
-          {#if code.isJson}
-            <JsonViewer
-              value={code.content ?? ''}
-              width="100%"
-              showSearch={false}
-              {...code.jsonViewerProps}
-            />
-          {:else}
-            <CodeHighlight
-              code={code.content ?? ''}
-              language={code.language ?? 'markup'}
-              {...code.codeHighlightProps}
-            />
-          {/if}
-        </div>
+        <!-- 单项渲染委托给 SideBarCodeItem（对齐 Semi：CodeContent 内部渲染 CodeItem），
+             避免同一套 isJson 分流逻辑在两处各写一遍。 -->
+        <SideBarCodeItem {code} />
       </Collapse.Panel>
     {/each}
   </Collapse>
@@ -195,7 +157,6 @@
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-code-content-body {
-    padding: var(--cd-sidebar-code-body-padding);
-  }
+  /* 内容区 padding 随元素一起搬到 SideBarCodeItem（Svelte scoped 类不跨组件，
+     留在这里会被编译器判为「未使用」而丢弃）。 */
 </style>

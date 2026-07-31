@@ -21,10 +21,14 @@ brief: AI 场景的侧边信息栏，承载参考来源、代码/JSON 预览、�
   import annotationSrc from '../../demos/sidebar/05-annotation.svelte?raw';
   import CodeContent from '../../demos/sidebar/05-code-content.svelte';
   import codeContentSrc from '../../demos/sidebar/05-code-content.svelte?raw';
+  import CodeList from '../../demos/sidebar/05b-code-list.svelte';
+  import codeListSrc from '../../demos/sidebar/05b-code-list.svelte?raw';
   import McpConfigure from '../../demos/sidebar/06-mcp-configure.svelte';
   import mcpConfigureSrc from '../../demos/sidebar/06-mcp-configure.svelte?raw';
   import FileContent from '../../demos/sidebar/07-file-content.svelte';
   import fileContentSrc from '../../demos/sidebar/07-file-content.svelte?raw';
+  import FileList from '../../demos/sidebar/07b-file-list.svelte';
+  import fileListSrc from '../../demos/sidebar/07b-file-list.svelte?raw';
   import DetailContent from '../../demos/sidebar/08-detail-content.svelte';
   import detailContentSrc from '../../demos/sidebar/08-detail-content.svelte?raw';
 </script>
@@ -94,6 +98,12 @@ import {
 
 <DemoBox code={codeContentSrc}><CodeContent /></DemoBox>
 
+### 代码列表
+
+用户可通过 `SideBarCodeContent` 展示代码列表信息（可脱离 `SideBarContainer` 独立使用）。
+
+<DemoBox code={codeListSrc}><CodeList /></DemoBox>
+
 ### MCP 配置
 
 `SideBarMcpConfigure` 渲染 MCP 工具配置面板：搜索过滤、内置/自定义列表、启用开关与配置/编辑/添加动作。
@@ -111,6 +121,12 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 `SideBarFileContent` 以折叠列表展示富文本，每项是一个 tiptap 编辑器；`editable` 控制查看/编辑，编辑态渲染格式工具栏与图片上传节点。
 
 <DemoBox code={fileContentSrc}><FileContent /></DemoBox>
+
+### 富文本列表
+
+用户可通过 `SideBarFileContent` 展示富文本列表信息（可脱离 `SideBarContainer` 独立使用）。
+
+<DemoBox code={fileListSrc}><FileList /></DemoBox>
 
 ### 侧边信息栏
 
@@ -237,6 +253,17 @@ Semi 用单选（radio）在「内置 / 自定义」间二选一切换列表；�
 | key | 唯一标识 | string | - |
 | language | 代码语言类型 | string | - |
 | name | 折叠头显示名 | string | - |
+
+### SideBarCodeItem
+
+单个代码/JSON 预览项（对齐 Semi `widget/code.tsx` 导出的 `CodeItem`），
+`SideBarCodeContent` 内部即渲染它；也可单独用于「只渲染一项、不要折叠列表」的场景。
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| class | 自定义类名 | string | - |
+| code | 待渲染的代码项 | `CodeItemProps` | - |
+| style | 自定义内联样式 | string | - |
 
 ### SideBarFileContent
 

@@ -5,7 +5,8 @@
 // 不测内核真实语法高亮/JSON DOM（那部分留给 Playwright）。
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithLocale } from '../test-utils/a11y.js';
-import SideBarCodeContent, { type CodeItemProps } from './SideBarCodeContent.svelte';
+import SideBarCodeContent from './SideBarCodeContent.svelte';
+import type { CodeItemProps } from './SideBarCodeItem.svelte';
 
 const CC = SideBarCodeContent as unknown as Parameters<typeof renderWithLocale>[0];
 

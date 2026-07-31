@@ -548,6 +548,7 @@ export {
   SideBarCodeContent,
   SideBarMcpConfigure,
   SideBarFileContent,
+  SideBarCodeItem,
   SideBarFileItem,
   sideBarMeta,
   type SideBarOption,
