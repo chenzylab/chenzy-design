@@ -91,6 +91,33 @@ export interface ToolCallContentItem extends CommonContentItem {
   [x: string]: unknown;
 }
 
+/**
+ * 步骤块里的单条动作（对齐 Semi foundation.ts `Action`）。
+ * icon 由渲染层提供（Snippet/组件），此处只管数据。
+ */
+export interface DialogueStepAction {
+  status?: string;
+  summary?: string;
+  description?: string;
+  icon?: unknown;
+}
+
+/** 单个步骤（对齐 Semi foundation.ts `Step`）。status='completed' 显示完成图标，否则显示 loading。 */
+export interface DialogueStep {
+  type?: string;
+  status?: string;
+  summary?: string;
+  actions?: DialogueStepAction[];
+}
+
+/**
+ * 步骤内容块（对齐 Semi MESSAGE_ITEM_TYPE.STEPS = 'steps'）：
+ * 一组可展开的步骤，每步下挂若干 action。
+ */
+export interface StepsContentItem extends CommonContentItem {
+  steps?: DialogueStep[];
+}
+
 /** 兜底：任意自定义块（对齐 Semi CustomObject）。 */
 export type CustomContentItem = { type?: string; [key: string]: unknown };
 
@@ -100,6 +127,7 @@ export type ContentItem =
   | OutputMessage
   | ToolCallContentItem
   | Reasoning
+  | StepsContentItem
   | CustomContentItem;
 
 // —— Message ——

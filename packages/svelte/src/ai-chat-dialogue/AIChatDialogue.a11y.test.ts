@@ -201,3 +201,137 @@ describe('AIChatDialogue · 工具块完整交互（P1）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+// steps 内容块（对齐 Semi MESSAGE_ITEM_TYPE.STEPS + widgets/contentItem/dialogueStep.tsx）。
+// 本库此前完全没有这个内容类型：ContentItemRenderer 无分支、core 无类型，
+// 传 steps 进来只会落到「未知类型」兜底分支渲染一个类型标签。
+describe('AIChatDialogue · steps 内容块', () => {
+  const stepChats: AIDialogueMessage[] = [
+    {
+      id: 's1',
+      role: 'assistant',
+      content: [
+        {
+          type: 'steps',
+          steps: [
+            {
+              status: 'completed',
+              summary: '检索资料',
+              actions: [{ summary: '搜索', description: '关键词 A' }],
+            },
+            { status: 'in_progress', summary: '整理结论' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it('渲染每个步骤：summary + 完成/加载前缀', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: stepChats, roleConfig },
+    });
+    const steps = container.querySelectorAll('.cd-ai-chat-dialogue-step');
+    expect(steps).toHaveLength(2);
+    expect(steps[0]!.textContent).toContain('检索资料');
+    expect(steps[1]!.textContent).toContain('整理结论');
+
+    // completed 用 IconStoryStroked；未完成用三点 loading（复用 -content-loading 类树）。
+    expect(steps[0]!.querySelector('.cd-ai-chat-dialogue-step-completed')).not.toBeNull();
+    expect(steps[1]!.querySelectorAll('.cd-ai-chat-dialogue-content-loading-item')).toHaveLength(3);
+  });
+
+  // 对齐 Semi：`actionsLength > 0` 才渲染展开箭头。
+  it('只有带 actions 的步骤渲染展开箭头', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: stepChats, roleConfig },
+    });
+    const steps = container.querySelectorAll('.cd-ai-chat-dialogue-step');
+    expect(steps[0]!.querySelector('.cd-ai-chat-dialogue-step-suffix')).not.toBeNull();
+    expect(steps[1]!.querySelector('.cd-ai-chat-dialogue-step-suffix')).toBeNull();
+  });
+
+  it('渲染 action 的 summary 与 description', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: stepChats, roleConfig },
+    });
+    expect(
+      container.querySelector('.cd-ai-chat-dialogue-step-action-summary')?.textContent,
+    ).toBe('搜索');
+    expect(
+      container.querySelector('.cd-ai-chat-dialogue-step-action-desc')?.textContent?.trim(),
+    ).toBe('关键词 A');
+  });
+
+  // 对齐 Semi：初始 openIndexes = 所有下标，即默认全展开。
+  it('默认全部展开，点击可折叠', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: stepChats, roleConfig },
+    });
+    const first = container.querySelector('.cd-ai-chat-dialogue-step') as HTMLButtonElement;
+    expect(first.getAttribute('aria-expanded')).toBe('true');
+    await fireEvent.click(first);
+    expect(first.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('steps 块无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: stepChats, roleConfig },
+    });
+    await expectNoAxeViolations(container);
+  });
+});
+
+// 对话内代码块（对齐 Semi widgets/contentItem/code.tsx）。
+// 本库此前没有这个覆盖：围栏代码块走 MarkdownRender 默认 MdPre，没有语言标签栏也没有复制按钮。
+describe('AIChatDialogue · 代码块（DialogueCode）', () => {
+  const codeChats: AIDialogueMessage[] = [
+    {
+      id: 'c1',
+      role: 'assistant',
+      content: [
+        {
+          type: 'message',
+          content: [{ type: 'output_text', text: '```ts\nconst a = 1;\n```' }],
+        },
+      ],
+    },
+  ];
+
+  it('围栏代码块渲染 topSlot：语言标签 + 复制按钮', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: codeChats, roleConfig },
+    });
+    // CodeHighlight 内部动态 import prism，需等一拍它挂载完成。
+    await new Promise((r) => setTimeout(r, 100));
+    const block = container.querySelector('.cd-ai-chat-dialogue-code');
+    expect(block, '应套上对话专属代码块外壳').not.toBeNull();
+    expect(
+      block!.querySelector('.cd-ai-chat-dialogue-code-topSlot-type')?.textContent,
+    ).toBe('ts');
+    expect(block!.querySelector('.cd-ai-chat-dialogue-code-topSlot-copy-wrapper')).not.toBeNull();
+  });
+
+  // 对齐 Semi：`language ? 套壳 : code(props)` —— 无语言不套 topSlot。
+  it('无语言的代码块不套 topSlot 外壳', async () => {
+    const noLang: AIDialogueMessage[] = [
+      {
+        id: 'c2',
+        role: 'assistant',
+        content: [{ type: 'message', content: [{ type: 'output_text', text: '```\nplain\n```' }] }],
+      },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: noLang, roleConfig },
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(container.querySelector('.cd-ai-chat-dialogue-code')).toBeNull();
+  });
+
+  it('代码块无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: codeChats, roleConfig },
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    await expectNoAxeViolations(container);
+  });
+});

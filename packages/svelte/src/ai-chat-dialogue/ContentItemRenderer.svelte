@@ -19,9 +19,12 @@
     escapeHtmlInMarkdown,
     type ContentItem,
     type ToolCallView,
+    type DialogueStep as DialogueStepType,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   import { MarkdownRender } from '../markdown-render/index.js';
+  import DialogueStep from './DialogueStep.svelte';
+  import DialogueCode from './DialogueCode.svelte';
 
   interface Props {
     /** 待渲染的 ContentItem。 */
@@ -56,6 +59,26 @@
   const loc = useLocale();
   const type = $derived(contentItemType(item));
   const custom = $derived(renderMap?.[type]);
+
+  /**
+   * 注入对话专属的代码块渲染（对齐 Semi：aiChatDialogue 用自己的 code.tsx 覆盖
+   * markdownRender 的 code 组件，带语言标签栏 + 复制按钮）。
+   * 挂 `pre` 键的原因见 DialogueCode.svelte 顶部说明。
+   * 放在展开之前，调用方仍可用 markdownRenderProps.components 覆盖掉它。
+   */
+  const mdProps = $derived({
+    ...markdownRenderProps,
+    components: {
+      pre: DialogueCode,
+      ...((markdownRenderProps?.components as Record<string, unknown>) ?? {}),
+    },
+  });
+
+  /** 取步骤块的 steps 数组（对齐 Semi DialogueStepWidget 的 props.steps）。 */
+  function stepsOf(it: ContentItem): DialogueStepType[] {
+    const s = (it as { steps?: unknown }).steps;
+    return Array.isArray(s) ? (s as DialogueStepType[]) : [];
+  }
 
   // OutputMessage / InputMessage 的内层 content 数组（output_text / input_* / refusal）。
   const innerParts = $derived(
@@ -129,7 +152,7 @@
             {/each}
           </ul>
         {/if}
-        <MarkdownRender raw={partText(part)} {...markdownRenderProps} />
+        <MarkdownRender raw={partText(part)} {...mdProps} />
       {:else if part.type === 'refusal'}
         <div class="cd-ai-chat-dialogue-content-refusal">{part.refusal}</div>
       {:else if part.type === 'input_image' || part.type === 'image'}
@@ -165,7 +188,7 @@
     </button>
     {#if reasoningOpen}
       <div class="cd-ai-chat-dialogue-reasoning-content">
-        <MarkdownRender raw={reasoningText} {...markdownRenderProps} />
+        <MarkdownRender raw={reasoningText} {...mdProps} />
       </div>
     {/if}
   </div>
@@ -216,6 +239,10 @@
       </div>
     {/if}
   </div>
+{:else if type === 'steps'}
+  <!-- 步骤块（对齐 Semi MESSAGE_ITEM_TYPE.STEPS）：拆到 DialogueStep.svelte，同 Semi
+       把它单独放在 widgets/contentItem/dialogueStep.tsx。 -->
+  <DialogueStep steps={stepsOf(item)} />
 {:else if type === 'audio'}
   <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-audio">
     {loc().t('AIChatDialogue.audio')}
