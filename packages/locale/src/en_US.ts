@@ -422,7 +422,6 @@ export const en_US: Locale = {
     like: 'Good response',
     dislike: 'Bad response',
     loading: 'Generating…',
-    error: 'Something went wrong',
     reasoning: {
       completed: 'Reasoning completed',
       thinking: 'Thinking...',

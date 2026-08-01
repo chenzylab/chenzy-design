@@ -228,7 +228,11 @@ const components = [
   //     （前缀/图标/prop 名/selecting 态都不同），本库原来直接复用了 chat 那个；
   //   · DialogueBox 补 container 层 + continueSend，多选框从裸 input 换成复用 Checkbox。
   // Checkbox 走 `../` 属兄弟组件被 externalize 不计入，增量主要来自 DialogueHint 自身。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '13.5 KB'],
+  // 13.5 → 14 KB：内容区补齐 Semi dialogueContent.tsx 的分层与状态，实测 13.6 KB。
+  //   · -content-wrapper > -content-failed + -content-inner 两层；
+  //   · 失败态改成 IconAlertCircle 图标（本库原来是一行自造 locale 文案）；
+  //   · loading 从裸文字换成 Semi 的三个弹跳圆点 + 文案（含 keyframes）。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '14 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

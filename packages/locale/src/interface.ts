@@ -628,8 +628,6 @@ export interface Locale {
     dislike: string;
     /** loading status text */
     loading: string;
-    /** error status text */
-    error: string;
     /**
      * reasoning block header text（对齐 Semi：嵌套两态而非单串）。
      * status==='completed' 用 completed，否则用 thinking。

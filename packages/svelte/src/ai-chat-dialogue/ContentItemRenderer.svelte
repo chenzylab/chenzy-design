@@ -135,7 +135,11 @@
 </script>
 
 {#if custom}
-  {@render custom(item)}
+  <!-- 自定义渲染要保留 Semi 的包裹层（dialogueContent.tsx:196 的 -content-custom-renderer）：
+       右对齐时靠这个类做 margin-left:auto，裸渲染 snippet 会让该规则匹配不到。 -->
+  <div class="cd-ai-chat-dialogue-content-custom-renderer">
+    {@render custom(item)}
+  </div>
 {:else if type === 'message'}
   <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-message">
     {#each innerParts as part, i (i)}

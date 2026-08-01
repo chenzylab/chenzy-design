@@ -17,6 +17,7 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
+  import { IconAlertCircle } from '@chenzy-design/icons';
   import { Avatar } from '../avatar/index.js';
   import { Checkbox } from '../checkbox/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
@@ -133,6 +134,9 @@
   );
   const isError = $derived(message.status === 'failed' || message.status === 'cancelled');
   const showBubble = $derived(mode === 'bubble' || (mode === 'userBubble' && isUser));
+  // 对齐 Semi contentCls：两种气泡态分别打自己的类，都不满足才是 -no-bubble。
+  const isBubbleMode = $derived(mode === 'bubble');
+  const isUserBubbleMode = $derived(mode === 'userBubble' && isUser);
   const title = $derived(role?.name ?? message.name ?? message.role ?? '');
   const items = $derived(normalizeDialogueContent(message.content));
 
@@ -172,30 +176,61 @@
 
 <!-- 默认内容节点（含编辑态 / loading / error / 内容块 + 引用区）。 -->
 {#snippet defaultContent()}
-  <div class="cd-ai-chat-dialogue-content" aria-busy={isLoading}>
+  <!-- 修饰类挂在 content 上并由 mode 驱动（对齐 Semi dialogueContent.tsx:162-168）。
+       本库原来把 -content-user / -content-bubble / -content-failed 挂在最外层 wrapper 上，
+       层级和命名都与 Semi 不同。 -->
+  <div
+    class="cd-ai-chat-dialogue-content"
+    class:cd-ai-chat-dialogue-content-bubble={isBubbleMode}
+    class:cd-ai-chat-dialogue-content-userBubble={isUserBubbleMode}
+    class:cd-ai-chat-dialogue-content-no-bubble={!isBubbleMode && !isUserBubbleMode}
+    class:cd-ai-chat-dialogue-content-user={isUser}
+    class:cd-ai-chat-dialogue-content-error={isError && (isBubbleMode || isUserBubbleMode)}
+    class:cd-ai-chat-dialogue-content-editing={isEditing}
+    aria-busy={isLoading}
+  >
     {#if isEditing && messageEditRender}
       <!-- 编辑态：用 messageEditRender 替代内容（对齐 Semi），消费方通常放 AIChatInput 编辑器。 -->
       {@render messageEditRender(editPayload)}
     {:else if isLoading && items.length === 0}
-      <span class="cd-ai-chat-dialogue-content-loading">{loc().t('AIChatDialogue.loading')}</span>
-    {:else if isError}
-      <span class="cd-ai-chat-dialogue-content-failed-text">{loc().t('AIChatDialogue.error')}</span>
+      <!-- 三个弹跳圆点 + 文案（对齐 Semi dialogueContent.tsx 的 loadingNode）。
+           本库原来只有一行裸文字——这几个圆点的 token 早就建好了，没人消费。 -->
+      <span class="cd-ai-chat-dialogue-content-loading">
+        <span class="cd-ai-chat-dialogue-content-loading-item"></span>
+        <span class="cd-ai-chat-dialogue-content-loading-item"></span>
+        <span class="cd-ai-chat-dialogue-content-loading-item"></span>
+        <span class="cd-ai-chat-dialogue-content-loading-text">
+          {loc().t('AIChatDialogue.loading')}
+        </span>
+      </span>
     {:else}
-      {#each items as item, i (i)}
-        <ContentItemRenderer
-          {item}
-          {markdownRenderProps}
-          {renderMap}
-          {onFileClick}
-          {onImageClick}
-          {escapeHtml}
-          {isUser}
-          {onAnnotationClick}
-          {showReference}
-          {disabledFileItemClick}
-          {onReferenceClick}
-        />
-      {/each}
+      <!-- Semi 的内容分两层：-content-wrapper 里放「失败图标 + -content-inner」。
+           失败时是一个 IconAlertCircle 图标（本库原来渲染的是一行 locale 错误文案，
+           Semi 根本没有这个文案节点）。 -->
+      <div class="cd-ai-chat-dialogue-content-wrapper">
+        {#if isError}
+          <div class="cd-ai-chat-dialogue-content-failed">
+            <IconAlertCircle />
+          </div>
+        {/if}
+        <div class="cd-ai-chat-dialogue-content-inner">
+          {#each items as item, i (i)}
+            <ContentItemRenderer
+              {item}
+              {markdownRenderProps}
+              {renderMap}
+              {onFileClick}
+              {onImageClick}
+              {escapeHtml}
+              {isUser}
+              {onAnnotationClick}
+              {showReference}
+              {disabledFileItemClick}
+              {onReferenceClick}
+            />
+          {/each}
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -248,9 +283,6 @@
   class="cd-ai-chat-dialogue-wrapper"
   class:cd-ai-chat-dialogue-wrapper-selected={selecting && selected}
   class:cd-ai-chat-dialogue-wrapper-continue-send={continueSend}
-  class:cd-ai-chat-dialogue-content-user={isUser}
-  class:cd-ai-chat-dialogue-content-failed={isError}
-  class:cd-ai-chat-dialogue-content-bubble={showBubble}
 >
   {#if selecting}
     <div class="cd-ai-chat-dialogue-checkbox">
@@ -371,22 +403,111 @@
     margin-bottom: var(--cd-spacing-extra-tight);
   }
 
-  .cd-ai-chat-dialogue-content-bubble .cd-ai-chat-dialogue-content {
-    padding: var(--cd-spacing-tight);
-    border-radius: var(--cd-border-radius-large, var(--cd-border-radius-medium));
-    background: var(--cd-ai-chat-dialogue-bubble-bg);
+  /* 气泡（对齐 Semi &-bubble, &-userBubble）。修饰类现在直接挂在 content 上，
+     不再靠外层 wrapper 后代选择，且尺寸值接回 Semi token（原来用的是通用 spacing）。 */
+  .cd-ai-chat-dialogue-content-bubble,
+  .cd-ai-chat-dialogue-content-userBubble {
+    margin-top: var(--cd-ai-chat-dialogue-content-bubble-margin-top);
+    padding: var(--cd-ai-chat-dialogue-bubble-padding-y)
+      var(--cd-ai-chat-dialogue-bubble-padding-x);
+    border-radius: var(--cd-ai-chat-dialogue-bubble);
+    background-color: var(--cd-ai-chat-dialogue-bubble-bg);
+    max-width: var(--cd-ai-chat-dialogue-bubble-max);
+    box-sizing: border-box;
+    width: fit-content;
   }
 
-  .cd-ai-chat-dialogue-content-bubble.cd-ai-chat-dialogue-content-user .cd-ai-chat-dialogue-content {
-    background: var(--cd-ai-chat-dialogue-bubble-bg);
+  .cd-ai-chat-dialogue-content-no-bubble {
+    margin-top: var(--cd-ai-chat-dialogue-content-no-bubble-margin-top);
+    width: fit-content;
   }
 
-  .cd-ai-chat-dialogue-content-failed-text {
-    color: var(--cd-color-danger);
+  /* 右对齐时这三类内容靠右（对齐 Semi container-right 下的规则）。
+     -content-custom-renderer 渲染在 ContentItemRenderer 子组件里，需 :global 打洞。 */
+  .cd-ai-chat-dialogue-container-right .cd-ai-chat-dialogue-content-no-bubble,
+  .cd-ai-chat-dialogue-container-right .cd-ai-chat-dialogue-content-user,
+  .cd-ai-chat-dialogue-container-right :global(.cd-ai-chat-dialogue-content-custom-renderer) {
+    margin-left: auto;
   }
 
+  .cd-ai-chat-dialogue-container-right .cd-ai-chat-dialogue-content-inner {
+    text-align: right;
+  }
+
+  /* markdown 正文在右对齐容器里仍保持左对齐（Semi 显式做了这条兜底）。 */
+  .cd-ai-chat-dialogue-container-right
+    .cd-ai-chat-dialogue-content-inner
+    :global(.cd-markdown-render) {
+    text-align: left;
+  }
+
+  /* 失败图标（对齐 Semi &-content-failed）：Semi 这里是 IconAlertCircle，
+     没有错误文案节点——本库原来渲染的是一行 locale 文字，属自造。 */
+  .cd-ai-chat-dialogue-content-failed {
+    color: var(--cd-ai-chat-dialogue-failed);
+    margin-right: var(--cd-ai-chat-dialogue-content-failed-margin-right);
+  }
+
+  /* 加载：三个弹跳圆点 + 文案（对齐 Semi &-loading）。 */
   .cd-ai-chat-dialogue-content-loading {
-    color: var(--cd-color-text-2);
+    display: flex;
+    align-items: center;
+    margin-top: var(--cd-ai-chat-dialogue-content-loading-margin-top);
+  }
+
+  .cd-ai-chat-dialogue-content-loading-item {
+    border-radius: var(--cd-radius-ai-chat-dialogue-loading-circle);
+    width: var(--cd-width-ai-chat-dialogue-loading-circle);
+    height: var(--cd-height-ai-chat-dialogue-loading-circle);
+    margin: var(--cd-ai-chat-dialogue-loading-item-margin-y)
+      var(--cd-ai-chat-dialogue-loading-item-margin-x);
+    overflow: visible;
+    position: relative;
+    animation: cd-ai-chat-dialogue-loading-bounce 1s infinite ease;
+  }
+
+  /* 三个圆点各自的颜色与动画延迟（对齐 Semi 的 nth-child(1..3)）。 */
+  .cd-ai-chat-dialogue-content-loading-item:nth-child(1) {
+    animation-delay: -200ms;
+    background-color: var(--cd-ai-chat-dialogue-loading-circle-first-bg);
+  }
+
+  .cd-ai-chat-dialogue-content-loading-item:nth-child(2) {
+    animation-delay: -100ms;
+    background-color: var(--cd-ai-chat-dialogue-loading-circle-second-bg);
+  }
+
+  .cd-ai-chat-dialogue-content-loading-item:nth-child(3) {
+    animation-delay: 0ms;
+    background-color: var(--cd-ai-chat-dialogue-loading-circle-third-bg);
+  }
+
+  .cd-ai-chat-dialogue-content-loading-text {
+    margin-left: var(--cd-ai-chat-dialogue-loading-text-margin-left);
+    color: var(--cd-ai-chat-dialogue-loading-text);
+    font-size: var(--cd-ai-chat-dialogue-loading-text-font-size);
+  }
+
+  /* 逐帧照搬 Semi 的 @keyframes（起跳/落地/回弹/静止四段）。 */
+  @keyframes cd-ai-chat-dialogue-loading-bounce {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    18% {
+      transform: translateY(-4px) scale(0.96);
+    }
+    36% {
+      transform: translateY(0) scale(1.06);
+    }
+    44% {
+      transform: translateY(-0.5px) scale(0.98);
+    }
+    52% {
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
   }
 
   /* 操作区样式已随组件拆分迁到 DialogueAction.svelte

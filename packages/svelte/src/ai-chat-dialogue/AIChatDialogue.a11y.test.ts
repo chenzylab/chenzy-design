@@ -9,6 +9,7 @@ import { fireEvent } from '@testing-library/svelte';
 import { renderWithLocale, expectNoAxeViolations } from '../test-utils/a11y.js';
 import AIChatDialogue from './AIChatDialogue.svelte';
 import AIChatDialogueEditFixture from './AIChatDialogueEditFixture.svelte';
+import AIChatDialogueCustomRendererFixture from './AIChatDialogueCustomRendererFixture.svelte';
 import type { AIDialogueMessage, AIDialogueRoleConfig } from '@chenzy-design/core';
 
 const roleConfig: AIDialogueRoleConfig = {
@@ -132,16 +133,35 @@ describe('AIChatDialogue a11y / 渲染', () => {
     expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper-selected').length).toBe(1);
   });
 
-  it('error 状态渲染错误文案（走 locale 非 key）', async () => {
+  // Semi 的失败态是在内容左侧放一个 IconAlertCircle（-content-failed），
+  // 并给 content 加 -content-error 修饰类；没有任何错误文案节点。
+  // 本库原来渲染的是一行 locale 文案 + 自造类名 -content-failed-text，属自造。
+  it('error 状态：渲染失败图标 + content 带 -content-error，无自造文案节点', async () => {
     const errorChats: AIDialogueMessage[] = [
       { id: 'e1', role: 'assistant', content: [], status: 'failed' },
     ];
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: errorChats, roleConfig },
     });
-    const err = container.querySelector('.cd-ai-chat-dialogue-content-failed-text');
-    expect(err?.textContent).toBeTruthy();
-    expect(err?.textContent).not.toBe('AIChatDialogue.error');
+    const failed = container.querySelector('.cd-ai-chat-dialogue-content-failed');
+    expect(failed).not.toBeNull();
+    // 图标而非文字。
+    expect(failed?.querySelector('svg')).not.toBeNull();
+    // 默认 mode=bubble → 满足 Semi 的 -content-error 条件。
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-error')).not.toBeNull();
+    // 自造的文案节点不该再出现。
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-failed-text')).toBeNull();
+  });
+
+  // cancelled 与 failed 同样出图标（对齐 Semi 的 FAILED || CANCELLED 判定）。
+  it('cancelled 状态同样渲染失败图标', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'c1', role: 'assistant', content: [], status: 'cancelled' }],
+        roleConfig,
+      },
+    });
+    expect(container.querySelector('.cd-ai-chat-dialogue-content-failed')).not.toBeNull();
   });
 });
 
@@ -620,5 +640,96 @@ describe('AIChatDialogue · continueSend 连续发言（对齐 Semi index.tsx:33
       wrappers[2]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
     ).toBeNull();
     expect(wrappers[2]!.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
+  });
+});
+
+// 内容分层与 mode 修饰类。Semi dialogueContent.tsx 把 -user/-bubble/-no-bubble/-error
+// 挂在 content 元素上并由 mode 驱动；本库原来挂在最外层 wrapper 上，层级与命名都不同。
+// 内容本体还有 -content-wrapper > -content-failed + -content-inner 两层，本库整个缺。
+describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogueContent.tsx）', () => {
+  const one: AIDialogueMessage[] = [{ id: 'a1', role: 'assistant', content: 'hi' }];
+
+  it('content 内是 -content-wrapper > -content-inner 两层', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: one, roleConfig },
+    });
+    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    const wrapper = content.querySelector('.cd-ai-chat-dialogue-content-wrapper');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.querySelector('.cd-ai-chat-dialogue-content-inner')).not.toBeNull();
+  });
+
+  it('mode=bubble：content 带 -content-bubble，不带 -no-bubble', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: one, roleConfig, mode: 'bubble' },
+    });
+    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    expect(content.classList.contains('cd-ai-chat-dialogue-content-bubble')).toBe(true);
+    expect(content.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(false);
+  });
+
+  it('mode=noBubble：content 带 -content-no-bubble', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: one, roleConfig, mode: 'noBubble' },
+    });
+    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    expect(content.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(true);
+    expect(content.classList.contains('cd-ai-chat-dialogue-content-bubble')).toBe(false);
+  });
+
+  // mode=userBubble 只让 user 那条起泡，assistant 那条走 no-bubble。
+  it('mode=userBubble：user 带 -content-userBubble，assistant 带 -no-bubble', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [
+          { id: 'u1', role: 'user', content: 'hi' },
+          { id: 'a1', role: 'assistant', content: 'yo' },
+        ],
+        roleConfig,
+        mode: 'userBubble',
+      },
+    });
+    const contents = container.querySelectorAll('.cd-ai-chat-dialogue-content');
+    expect(contents[0]!.classList.contains('cd-ai-chat-dialogue-content-userBubble')).toBe(true);
+    expect(contents[1]!.classList.contains('cd-ai-chat-dialogue-content-no-bubble')).toBe(true);
+  });
+
+  it('user 消息的 content 带 -content-user（修饰类已从 wrapper 移到 content）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: [{ id: 'u1', role: 'user', content: 'hi' }], roleConfig },
+    });
+    const wrapper = container.querySelector('.cd-ai-chat-dialogue-wrapper')!;
+    const content = container.querySelector('.cd-ai-chat-dialogue-content')!;
+    expect(content.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(true);
+    // 不该再挂在 wrapper 上。
+    expect(wrapper.classList.contains('cd-ai-chat-dialogue-content-user')).toBe(false);
+  });
+
+  // Semi 的 loading 是三个弹跳圆点 + 文案，本库原来只有一行裸文字。
+  it('loading 态：三个圆点 + 文案（走 locale 非 key）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [{ id: 'l1', role: 'assistant', content: [], status: 'in_progress' }],
+        roleConfig,
+      },
+    });
+    const loading = container.querySelector('.cd-ai-chat-dialogue-content-loading')!;
+    expect(loading).not.toBeNull();
+    expect(
+      loading.querySelectorAll('.cd-ai-chat-dialogue-content-loading-item').length,
+    ).toBe(3);
+    const text = loading.querySelector('.cd-ai-chat-dialogue-content-loading-text');
+    expect(text?.textContent?.trim()).toBeTruthy();
+    expect(text?.textContent?.trim()).not.toBe('AIChatDialogue.loading');
+  });
+
+  // 自定义渲染必须保留 Semi 的包裹层，否则右对齐规则匹配不到。
+  it('renderDialogueContentItem 自定义渲染保留 -content-custom-renderer 包裹层', () => {
+    const { container } = renderWithLocale(AIChatDialogueCustomRendererFixture, {
+      props: { chats: one },
+    });
+    const custom = container.querySelector('.cd-ai-chat-dialogue-content-custom-renderer');
+    expect(custom).not.toBeNull();
+    expect(custom!.querySelector('[data-testid="custom-block"]')).not.toBeNull();
   });
 });
