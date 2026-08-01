@@ -14,27 +14,35 @@ export const sideBarTokens = {
   'sidebar-handle-color': { value: 'var(--cd-color-border)', category: 'color', label: '把手可视线色', usage: 'Container 拖拽把手默认可视分隔线颜色（组件消费）' },
   'sidebar-handle-color-hover': { value: 'var(--cd-color-primary)', category: 'color', label: '把手 hover 色', usage: 'Container 拖拽把手 hover/拖拽高亮色（组件消费）' },
 
-  // —— Container 面板 ——
-  'sidebar-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '容器背景', usage: 'Container 浮层背景（组件消费）' },
-  'sidebar-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '容器正文色', usage: 'Container 正文文字颜色（组件消费）' },
-  'sidebar-border': { value: 'var(--cd-color-border)', category: 'color', label: '容器边框色', usage: 'Container 边框/分隔线颜色（组件消费）' },
-  'sidebar-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '容器阴影', usage: 'Container 浮层阴影（组件消费）' },
-  'sidebar-radius': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '容器圆角', usage: 'Container 贴边对侧圆角（组件消费）' },
-  'sidebar-width': { value: '400px', category: 'other', label: '容器默认宽度', usage: 'Container 默认宽度（组件消费）' },
-  'sidebar-z': { value: 'var(--cd-z-modal)', category: 'other', label: '层叠层级', usage: 'Container 浮层 z-index 基线（组件消费；运行时按堆叠计数覆盖）' },
-  'sidebar-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '展开动效时长', usage: 'Container 展开/收起过渡时长（组件消费）' },
+  // —— Container / Header（Semi 侧只有下面 5 条：一条左边框 + header 的三向内边距与下边框）——
+  'color-sidebar-container-border-left': { value: 'var(--cd-color-border)', category: 'color', label: '容器左边框颜色', usage: 'Semi $color-sidebar_container-borderLeft' },
+  'color-sidebar-container-header-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: '容器头部底边框的颜色', usage: 'Semi $color-sidebar_container_header-borderBottom' },
+  'width-sidebar-container-border-left': { value: '1px', category: 'width', label: '容器左边框宽度', usage: 'Semi $width-sidebar_container-borderLeft' },
+  'width-sidebar-container-header-border-bottom': { value: '1px', category: 'width', label: '容器头部下边框宽度', usage: 'Semi $width-sidebar_container_header_borderBottom' },
+  'sidebar-container-header-padding-right': { value: '12px', category: 'spacing', label: '容器头部右内边距', usage: 'Semi $spacing-sidebar_container_header-paddingRight' },
+  'sidebar-container-header-padding-left': { value: '20px', category: 'spacing', label: '容器头部左内边距', usage: 'Semi $spacing-sidebar_container_header-paddingLeft' },
+  'sidebar-container-header-padding-y': { value: '12px', category: 'spacing', label: '容器头部垂直内边距', usage: 'Semi $spacing-sidebar_container_header-paddingY' },
+  'sidebar-detail-header-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '详情视图顶部文本颜色', usage: 'Semi $color-sidebar_detail_header-text' },
 
-  // —— Header ——
-  'sidebar-header-padding': { value: 'var(--cd-spacing-base-tight) 16px', category: 'spacing', label: 'header 内边距', usage: 'Container header 内边距（组件消费）' },
-  'sidebar-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: 'Container 标题文字颜色（组件消费）' },
-  'sidebar-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '标题字号', usage: 'Container 标题字号（组件消费）' },
-  'sidebar-title-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: 'Container 标题字重（组件消费）' },
-  'sidebar-close-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '关闭图标色', usage: '关闭按钮图标颜色（组件消费）' },
-  'sidebar-close-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关闭悬浮背景', usage: '关闭按钮悬浮背景（组件消费）' },
-  'sidebar-close-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '关闭按钮圆角', usage: '关闭按钮圆角（组件消费）' },
-
-  // —— Body ——
-  'sidebar-body-padding': { value: '16px', category: 'spacing', label: '内容区内边距', usage: 'Container 内容区内边距（组件消费）' },
+  // —— 以下 Container/Header 项为**本库自有**：
+  //    Semi 的 SideBar 容器是「贴边的一块面板」，只有一条 border-left，
+  //    背景/阴影/圆角/宽度/层级/动效全由使用方或外层浮层承担，其变量表里没有对应项。
+  //    本库 Container 是自带浮层壳的组件，故这些是本库多出来的一层。——
+  'sidebar-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '容器背景', usage: '本库自有：Container 浮层背景（Semi 容器无背景变量）' },
+  'sidebar-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '容器正文色', usage: '本库自有：Container 正文色' },
+  'sidebar-border': { value: 'var(--cd-color-border)', category: 'color', label: '容器边框色', usage: '本库自有：Container 边框/分隔线（Semi 只有 border-left 一条）' },
+  'sidebar-shadow': { value: 'var(--cd-shadow-elevated)', category: 'other', label: '容器阴影', usage: '本库自有：Container 浮层阴影' },
+  'sidebar-radius': { value: 'var(--cd-border-radius-large)', category: 'radius', label: '容器圆角', usage: '本库自有：Container 贴边对侧圆角' },
+  'sidebar-width': { value: '400px', category: 'other', label: '容器默认宽度', usage: '本库自有：Container 默认宽度' },
+  'sidebar-z': { value: 'var(--cd-z-modal)', category: 'other', label: '层叠层级', usage: '本库自有：Container 浮层 z-index 基线' },
+  'sidebar-motion-duration': { value: 'var(--cd-motion-duration-mid)', category: 'animation', label: '展开动效时长', usage: '本库自有：Container 展开/收起过渡时长' },
+  'sidebar-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '标题颜色', usage: '本库自有：header 标题色（Semi 未抽变量）' },
+  'sidebar-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '标题字号', usage: '本库自有：header 标题字号' },
+  'sidebar-title-weight': { value: 'var(--cd-font-weight-bold)', category: 'font', label: '标题字重', usage: '本库自有：header 标题字重' },
+  'sidebar-close-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '关闭图标色', usage: '本库自有：关闭按钮图标色（Semi 用 Button 自带态）' },
+  'sidebar-close-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '关闭悬浮背景', usage: '本库自有：关闭按钮悬浮背景' },
+  'sidebar-close-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '关闭按钮圆角', usage: '本库自有：关闭按钮圆角' },
+  'sidebar-body-padding': { value: '16px', category: 'spacing', label: '内容区内边距', usage: '本库自有：Container 内容区内边距' },
 
   // —— Options 图标 tab 组（P1）——
   // —— Options / Collapse（名/值逐条镜像 Semi $*-sidebar_options_* 与 $*-sidebar_collapse_*）——

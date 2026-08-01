@@ -210,8 +210,10 @@
     flex-shrink: 0;
     align-items: center;
     gap: var(--cd-spacing-tight, 8px);
-    padding: var(--cd-sidebar-header-padding);
-    border-block-end: 1px solid var(--cd-sidebar-border);
+    padding: var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-right)
+      var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-left);
+    border-block-end: var(--cd-width-sidebar-container-header-border-bottom) solid
+      var(--cd-color-sidebar-container-header-border-bottom);
   }
   .cd-sidebar-detail-header-content {
     flex: 1;
