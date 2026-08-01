@@ -17,11 +17,18 @@
     options?: unknown[];
     /** 附加变更回调。 */
     onChange?: ((value: RadioValue) => void) | undefined;
+    /** 附加类名（与组件固有类名合并，对齐 Semi getConfigureItem 的 cls 合并）。 */
+    class?: string;
     /** 其余透传给 RadioGroup。 */
     [key: string]: unknown;
   }
 
-  let { field, initValue, options, onChange, ...rest }: Props = $props();
+  let { field, initValue, options, onChange, class: className, ...rest }: Props = $props();
+
+  // Semi getConfigureItem 把 opts.className 与调用方 className 合并后传给内层组件。
+  const cls = $derived(
+    ['cd-ai-chat-input-footer-configure-radio-button', className].filter(Boolean).join(' '),
+  );
 
   const ctx = getConfigureContext();
 
@@ -45,6 +52,7 @@
 
 <RadioGroup
   {...rest}
+  class={cls}
   type="button"
   options={options as never}
   {...(value !== undefined ? { value } : {})}

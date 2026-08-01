@@ -449,6 +449,8 @@ export const en_US: Locale = {
     skills: 'Skills',
     deleteSkill: 'Delete skill',
     template: 'Template',
+    configure: 'Configure',
+    selected: 'Selected ${count} items',
     // 值逐字对齐 Semi horizontalScroller.tsx 的硬编码 aria-label。
     scrollLeft: 'Scroll left',
     scrollRight: 'Scroll right',

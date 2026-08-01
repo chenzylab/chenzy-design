@@ -907,9 +907,9 @@
     </div>
   {/if}
 
-  <div class="cd-ai-chat-input-editor-wrap">
-    <div class="cd-ai-chat-input-editor" bind:this={editorHost}></div>
-  </div>
+  <!-- tiptap 挂载点。Semi 只有 -editor-content 这一层（richTextInput.tsx 的 EditorContent），
+       原来外面那层 -editor-wrap 只给了个 position:relative 且无绝对定位子元素，一并去掉。 -->
+  <div class="cd-ai-chat-input-editor-content" bind:this={editorHost}></div>
 
   <!-- footer 结构逐条对齐 Semi renderFooter：左 configure、右 action（上传+发送同组）。
        round 由 -footer-round 修饰类统一改各控件圆角（对齐 Semi &-footer-round）。 -->
@@ -1303,10 +1303,6 @@
     outline-offset: 1px;
   }
 
-  .cd-ai-chat-input-editor-wrap {
-    position: relative;
-  }
-
   /* 建议 / 技能 / 模版三个面板的样式已随「改由 Popover 承载」迁到组件外
      （见文件末尾的 :global 段）——它们被 portal 到 body，scoped 规则匹配不到。
      技能项 / 建议项的样式则随组件拆分迁到了 AIChatInputSkillItem.svelte /
@@ -1337,15 +1333,7 @@
     outline-offset: 2px;
   }
 
-  /* —— 配置区（阶段 4）—— */
-  .cd-ai-chat-input-configure {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-ai-chat-input-gap);
-    flex-wrap: wrap;
-  }
-
-  .cd-ai-chat-input-editor {
+  .cd-ai-chat-input-editor-content {
     min-height: var(--cd-ai-chat-input-editor-min-height);
     max-height: var(--cd-ai-chat-input-editor-max-height);
     overflow-y: auto;
@@ -1357,18 +1345,18 @@
   }
 
   /* tiptap ProseMirror 编辑区：去默认 outline，占位符用 data 属性伪元素。 */
-  .cd-ai-chat-input-editor :global(.ProseMirror) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror) {
     outline: none;
     min-height: inherit;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  .cd-ai-chat-input-editor :global(.ProseMirror p) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror p) {
     margin: 0;
   }
 
-  .cd-ai-chat-input-editor :global(.ProseMirror p.is-editor-empty:first-child::before) {
+  .cd-ai-chat-input-editor-content :global(.ProseMirror p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -1381,11 +1369,11 @@
     且要排在 skill **后方**——故关掉 ::before（float:left 会跑到 skill 前），
     改用 ::after 内联跟随。逐条对齐 Semi aiChatInput.scss:510-521。
   */
-  .cd-ai-chat-input-editor
+  .cd-ai-chat-input-editor-content
     :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::before) {
     content: none;
   }
-  .cd-ai-chat-input-editor
+  .cd-ai-chat-input-editor-content
     :global(.ProseMirror p.has-skill-slot.is-editor-empty:first-child::after) {
     content: attr(data-placeholder);
     display: inline;
@@ -1405,10 +1393,13 @@
     -webkit-user-select: none;
   }
 
-  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角 */
+  /* Semi &-footer-round：统一把配置/操作各控件改成全圆角。
+     radio-button / mcp-trigger 渲染在子组件里，用 :global 打洞才够得着。 */
   .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-button,
   .cd-ai-chat-input-footer-round .cd-ai-chat-input-footer-action-upload,
-  .cd-ai-chat-input-footer-round .cd-ai-chat-input-template-btn {
+  .cd-ai-chat-input-footer-round .cd-ai-chat-input-template-btn,
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-radio-button),
+  .cd-ai-chat-input-footer-round :global(.cd-ai-chat-input-footer-configure-mcp-trigger) {
     border-radius: var(--cd-radius-ai-chat-input-footer-round);
   }
 

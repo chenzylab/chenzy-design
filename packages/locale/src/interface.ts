@@ -682,6 +682,10 @@ export interface Locale {
     deleteSkill: string;
     /** template button label / toggle aria-label */
     template: string;
+    /** MCP 下拉头部「配置」按钮文案 */
+    configure: string;
+    /** MCP 下拉头部已选计数，含 ${count} 占位符 */
+    selected: string;
     /** attachment scroller left button aria-label */
     scrollLeft: string;
     /** attachment scroller right button aria-label */

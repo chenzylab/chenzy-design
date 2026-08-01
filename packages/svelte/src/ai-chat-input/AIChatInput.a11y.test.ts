@@ -614,7 +614,7 @@ describe('AIChatInput · 配置区（阶段 4）', () => {
   it('renderConfigureArea 渲染配置项', async () => {
     const { container } = renderWithLocale(AIChatInputConfigureFixture);
     expect(container.querySelector('.cd-ai-chat-input-footer-configure')).not.toBeNull();
-    expect(container.querySelector('.cd-ai-chat-input-configure-button')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-footer-configure-button')).not.toBeNull();
   });
 
   it('切换配置按钮：onConfigureChange 触发，aria-pressed 更新', async () => {
@@ -623,7 +623,7 @@ describe('AIChatInput · 配置区（阶段 4）', () => {
       props: { onConfigureChange },
     });
     await flush(container);
-    const btn = container.querySelector('.cd-ai-chat-input-configure-button') as HTMLButtonElement;
+    const btn = container.querySelector('.cd-ai-chat-input-footer-configure-button') as HTMLButtonElement;
     expect(btn.getAttribute('aria-pressed')).toBe('false');
     await fireEvent.click(btn);
     expect(btn.getAttribute('aria-pressed')).toBe('true');
@@ -637,7 +637,7 @@ describe('AIChatInput · 配置区（阶段 4）', () => {
     });
     await flush(container);
     // 打开 web 开关
-    const cfgBtn = container.querySelector('.cd-ai-chat-input-configure-button') as HTMLButtonElement;
+    const cfgBtn = container.querySelector('.cd-ai-chat-input-footer-configure-button') as HTMLButtonElement;
     await fireEvent.click(cfgBtn);
     // 发送
     const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
@@ -737,15 +737,19 @@ describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
 });
 
 describe('AIChatInput · Configure.Mcp（可选补充）', () => {
-  it('渲染 MCP 触发器，显示已选数', async () => {
+  // 触发器计数是「可选服务总数」不是「已选数」——对齐 Semi mcp.tsx 的
+  // `MCP · {options.length ?? num}`（options 默认 []，故 ?? num 实为死代码）。
+  // 本库原来显示已选数，是自造语义，已改回。
+  it('渲染 MCP 触发器，计数为可选服务总数（非已选数）', async () => {
     const { container } = renderWithLocale(AIChatInputMcpFixture);
     await flush(container);
-    const trigger = container.querySelector('.cd-ai-chat-input-configure-mcp-trigger');
+    const trigger = container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger');
     expect(trigger).not.toBeNull();
-    expect(trigger?.textContent).toContain('MCP · 0');
+    // fixture 提供 2 个可选服务，未选任何一个 → 仍显示 2。
+    expect(trigger?.textContent).toContain('MCP · 2');
   });
 
-  it('initValue 预设已选：触发器计数 + 发送并入 setup', async () => {
+  it('initValue 预设已选：计数不随已选变化 + 发送并入 setup', async () => {
     // Dropdown 浮层的完整点击流在 jsdom 下不稳（floating + lazyRender），
     // 这里用 initValue 预设验证 configure context 绑定 + setup 并入的核心逻辑。
     const onMessageSend = vi.fn();
@@ -753,11 +757,72 @@ describe('AIChatInput · Configure.Mcp（可选补充）', () => {
       props: { onMessageSend, initValue: ['fs'] },
     });
     await flush(container);
-    const trigger = container.querySelector('.cd-ai-chat-input-configure-mcp-trigger');
-    expect(trigger?.textContent).toContain('MCP · 1');
+    const trigger = container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger');
+    // 已选 1 个，但计数仍是可选总数 2。
+    expect(trigger?.textContent).toContain('MCP · 2');
     const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     expect(onMessageSend.mock.calls[0]![0].setup).toEqual({ mcp: ['fs'] });
+  });
+
+  // 下拉头部（对齐 Semi mcp.tsx 的 -mcp-header）：已选计数文案 + 配置按钮。
+  // 浮层被 portal 到 body，故查 document 而非 container。
+  it('展开后渲染头部：locale 计数文案 + 配置按钮，showConfigure=false 时隐藏按钮', async () => {
+    const { container } = renderWithLocale(AIChatInputMcpFixture);
+    await flush(container);
+    const trigger = container.querySelector(
+      '.cd-ai-chat-input-footer-configure-mcp-trigger',
+    ) as HTMLElement;
+    await fireEvent.click(trigger);
+    await flush(container);
+
+    const header = document.querySelector('.cd-ai-chat-input-footer-configure-mcp-header');
+    expect(header).not.toBeNull();
+    // en_US 'Selected ${count} items' 里的 ${count} 被 options.length 替换。
+    const title = document.querySelector(
+      '.cd-ai-chat-input-footer-configure-mcp-header-title',
+    );
+    expect(title?.textContent?.trim()).toBe('Selected 2 items');
+    // 配置按钮默认显示，文案走 locale。
+    const config = document.querySelector(
+      '.cd-ai-chat-input-footer-configure-mcp-header-config',
+    );
+    expect(config?.textContent?.trim()).toBe('Configure');
+  });
+
+  it('点击头部配置按钮触发 onConfigureButtonClick', async () => {
+    const onConfigureButtonClick = vi.fn();
+    const { container } = renderWithLocale(AIChatInputMcpFixture, {
+      props: { onConfigureButtonClick },
+    });
+    await flush(container);
+    await fireEvent.click(
+      container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger') as HTMLElement,
+    );
+    await flush(container);
+    await fireEvent.click(
+      document.querySelector(
+        '.cd-ai-chat-input-footer-configure-mcp-header-config',
+      ) as HTMLElement,
+    );
+    expect(onConfigureButtonClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('showConfigure=false：头部仍在，配置按钮不渲染', async () => {
+    const { container } = renderWithLocale(AIChatInputMcpFixture, {
+      props: { showConfigure: false },
+    });
+    await flush(container);
+    await fireEvent.click(
+      container.querySelector('.cd-ai-chat-input-footer-configure-mcp-trigger') as HTMLElement,
+    );
+    await flush(container);
+    expect(
+      document.querySelector('.cd-ai-chat-input-footer-configure-mcp-header'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('.cd-ai-chat-input-footer-configure-mcp-header-config'),
+    ).toBeNull();
   });
 });
 

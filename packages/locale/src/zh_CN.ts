@@ -447,7 +447,9 @@ export const zh_CN: Locale = {
     suggestions: '建议',
     skills: '技能',
     deleteSkill: '删除技能',
-    template: '模版',
+    template: '模板',
+    configure: '配置',
+    selected: '已选 ${count} 个',
     // 附件横向滚动器左右按钮。Semi 在 horizontalScroller.tsx 里硬编码英文
     // aria-label="Scroll left/right"（未进 locale 包），本库补成可翻译键。
     scrollLeft: '向左滚动',

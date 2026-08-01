@@ -19,9 +19,18 @@
     onChange?: ((value: boolean) => void) | undefined;
     /** 禁用。 */
     disabled?: boolean;
+    /** 附加类名（与组件固有类名合并，对齐 Semi getConfigureItem 的 cls 合并）。 */
+    class?: string;
   }
 
-  let { field, initValue, children, onChange, disabled = false }: Props = $props();
+  let {
+    field,
+    initValue,
+    children,
+    onChange,
+    disabled = false,
+    class: className,
+  }: Props = $props();
 
   const ctx = getConfigureContext();
 
@@ -44,8 +53,8 @@
 
 <button
   type="button"
-  class="cd-ai-chat-input-configure-button"
-  class:cd-ai-chat-input-configure-button-active={active}
+  class={['cd-ai-chat-input-footer-configure-button', className].filter(Boolean).join(' ')}
+  class:cd-ai-chat-input-footer-configure-button-active={active}
   aria-pressed={active}
   {disabled}
   onclick={handleClick}
@@ -54,7 +63,7 @@
 </button>
 
 <style>
-  .cd-ai-chat-input-configure-button {
+  .cd-ai-chat-input-footer-configure-button {
     appearance: none;
     cursor: pointer;
     display: inline-flex;
@@ -72,22 +81,22 @@
       color var(--cd-ai-chat-input-motion-duration) ease;
   }
 
-  .cd-ai-chat-input-configure-button:hover:not(:disabled) {
+  .cd-ai-chat-input-footer-configure-button:hover:not(:disabled) {
     background: var(--cd-ai-chat-input-template-bg-hover);
   }
 
-  .cd-ai-chat-input-configure-button-active {
+  .cd-ai-chat-input-footer-configure-button-active {
     border-color: var(--cd-color-primary);
     background: var(--cd-color-primary-light-default);
     color: var(--cd-color-primary);
   }
 
-  .cd-ai-chat-input-configure-button:disabled {
+  .cd-ai-chat-input-footer-configure-button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
   }
 
-  .cd-ai-chat-input-configure-button:focus-visible {
+  .cd-ai-chat-input-footer-configure-button:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 2px;
   }

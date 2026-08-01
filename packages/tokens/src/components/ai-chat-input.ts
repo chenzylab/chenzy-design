@@ -190,6 +190,13 @@ export const aiChatInputTokens = {
   'spacing-ai-chat-input-footer-margintop': { value: '20px', category: 'spacing', label: 'footer 上外距', usage: 'Semi $spacing-aiChatInput_footer-marginTop' },
   'spacing-ai-chat-input-footer-action-columngap': { value: '8px', category: 'spacing', label: '操作区水平间距', usage: 'Semi $spacing-aiChatInput_footer_action-columnGap' },
   'spacing-ai-chat-input-footer-configure-columngap': { value: '8px', category: 'spacing', label: '配置区水平间距', usage: 'Semi $spacing-aiChatInput_footer_configure-columnGap' },
+  // MCP 下拉头部（Semi mcp.tsx 的 -footer-configure-mcp-header）
+  'spacing-ai-chat-input-footer-configure-mcp-header-paddingtop': { value: '8px', category: 'spacing', label: 'MCP 头部上内距', usage: 'Semi $spacing-aiChatInput_footer_configure_mcp_header-paddingTop' },
+  'spacing-ai-chat-input-footer-configure-mcp-header-paddingbottom': { value: '0px', category: 'spacing', label: 'MCP 头部下内距', usage: 'Semi $spacing-aiChatInput_footer_configure_mcp_header-paddingBottom' },
+  'spacing-ai-chat-input-footer-configure-mcp-header-paddingx': { value: '16px', category: 'spacing', label: 'MCP 头部水平内距', usage: 'Semi $spacing-aiChatInput_footer_configure_mcp_header-paddingX' },
+  'spacing-ai-chat-input-footer-configure-mcp-columngap': { value: '4px', category: 'spacing', label: 'MCP 头部水平间距', usage: 'Semi $spacing-aiChatInput_footer_configure_mcp_columnGap' },
+  'height-ai-chat-input-footer-configure-mcp-header': { value: '16px', category: 'height', label: 'MCP 头部高', usage: 'Semi $height-aiChatInput_footer_configure_mcp_header' },
+  'color-ai-chat-input-footer-configure-mcp-header-title-text': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 头部标题色', usage: 'Semi $color-aiChatInput_footer-configure_mcp_header_title-text' },
   'width-ai-chat-input-footer-action-button': { value: '32px', category: 'width', label: '操作按钮宽', usage: 'Semi $width-aiChatInput_footer_action_button' },
   'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
