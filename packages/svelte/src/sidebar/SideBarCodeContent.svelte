@@ -112,7 +112,7 @@
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: var(--cd-sidebar-code-head-gap);
+    gap: var(--cd-sidebar-collapse-header-content-gap);
     min-inline-size: 0;
   }
   /* 展开按钮推到 head 右端（原 extra 靠右语义），紧邻折叠箭头前。 */
@@ -128,8 +128,8 @@
   .cd-sidebar-code-content-head-text {
     overflow: hidden;
     color: var(--cd-sidebar-code-head-color);
-    font-size: var(--cd-sidebar-code-head-size);
-    font-weight: var(--cd-sidebar-code-head-weight);
+    font-size: var(--cd-font-size-regular);
+    font-weight: var(--cd-font-weight-regular);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
@@ -143,7 +143,7 @@
     border: none;
     border-radius: var(--cd-sidebar-close-radius);
     background: transparent;
-    color: var(--cd-sidebar-code-expand-color);
+    color: var(--cd-sidebar-options-button-text);
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),

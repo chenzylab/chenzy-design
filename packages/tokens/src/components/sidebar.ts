@@ -37,15 +37,39 @@ export const sideBarTokens = {
   'sidebar-body-padding': { value: '16px', category: 'spacing', label: '内容区内边距', usage: 'Container 内容区内边距（组件消费）' },
 
   // —— Options 图标 tab 组（P1）——
-  'sidebar-options-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'Options 项间距', usage: 'Options 图标 tab 项之间间距（组件消费）' },
-  'sidebar-options-padding': { value: 'var(--cd-spacing-tight) 16px', category: 'spacing', label: 'Options 栏内边距', usage: 'Options 图标 tab 栏内边距（组件消费）' },
-  'sidebar-option-size': { value: '32px', category: 'other', label: 'Option 项尺寸', usage: '单个 Option 图标 tab 命中区尺寸（组件消费）' },
-  'sidebar-option-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'Option 圆角', usage: '单个 Option 圆角（组件消费）' },
-  'sidebar-option-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'Option 默认色', usage: 'Option 图标默认颜色（组件消费）' },
-  'sidebar-option-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: 'Option hover 色', usage: 'Option hover 图标颜色（组件消费）' },
-  'sidebar-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'Option hover 背景', usage: 'Option hover 背景（组件消费）' },
-  'sidebar-option-color-active': { value: 'var(--cd-color-primary)', category: 'color', label: 'Option 激活色', usage: '当前激活 Option 图标颜色（组件消费）' },
-  'sidebar-option-bg-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: 'Option 激活背景', usage: '当前激活 Option 背景（组件消费）' },
+  // —— Options / Collapse（名/值逐条镜像 Semi $*-sidebar_options_* 与 $*-sidebar_collapse_*）——
+  'color-sidebar-options-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: '视图选项区域底部边框颜色', usage: 'Semi $color-sidebar_options-borderBottom' },
+  'sidebar-options-button-text': { value: 'var(--cd-color-text-2)', category: 'color', label: '视图顶部按钮文本颜色', usage: 'Semi $color-sidebar_options_button-text' },
+  'width-sidebar-options-border-bottom': { value: '1px', category: 'width', label: '视图选项区域底部边框宽度', usage: 'Semi $width-sidebar_options-borderBottom' },
+  'sidebar-options-gap': { value: '8px', category: 'spacing', label: '视图顶部按钮区域间距', usage: 'Semi $spacing-sidebar_options-gap' },
+  'sidebar-options-padding-y': { value: '8px', category: 'spacing', label: '视图顶部按钮区域垂直内边距', usage: 'Semi $spacing-sidebar_options-paddingY' },
+  'sidebar-options-padding-x': { value: '12px', category: 'spacing', label: '视图顶部按钮区域水平内边距', usage: 'Semi $spacing-sidebar_options-paddingX' },
+  'sidebar-options-button-margin-left': { value: '4px', category: 'spacing', label: '选项按钮左外边距', usage: 'Semi $spacing-sidebar_options_button-marginLeft' },
+
+  'color-sidebar-collapse-item-border': { value: 'var(--cd-color-border)', category: 'color', label: '折叠项边框颜色', usage: 'Semi $color-sidebar_collapse_item-border' },
+  'color-sidebar-collapse-item-content-border-top': { value: 'var(--cd-color-border)', category: 'color', label: '折叠项展开时内容顶部边框颜色', usage: 'Semi $color-sidebar_collapse_item_content-borderTop' },
+  'width-sidebar-collapse-item-border': { value: '1px', category: 'width', label: '折叠项边框宽度', usage: 'Semi $width-sidebar_collapse_item_border' },
+  'width-sidebar-collapse-item-content-border-top': { value: '1px', category: 'width', label: '折叠项展开时内容顶部边框宽度', usage: 'Semi $width-sidebar_collapse_item_content-borderTop' },
+  'sidebar-collapse-header-expand-btn': { value: '24px', category: 'width', label: '折叠面板展开按钮宽高', usage: 'Semi $width-sidebar_collapse_header_expand_btn' },
+  'sidebar-collapse-item-margin-bottom': { value: '8px', category: 'spacing', label: '折叠项底部外边距', usage: 'Semi $spacing-sidebar_collapse_item_marginBottom' },
+  'sidebar-collapse-header-padding-y': { value: '8px', category: 'spacing', label: '折叠项头部垂直内边距', usage: 'Semi $spacing-sidebar_collapse_header-paddingY' },
+  'sidebar-collapse-header-padding-x': { value: '16px', category: 'spacing', label: '折叠项头部水平内边距', usage: 'Semi $spacing-sidebar_collapse_header-paddingX' },
+  'sidebar-collapse-header-content-gap': { value: '8px', category: 'spacing', label: '折叠项头部内容间距', usage: 'Semi $spacing-sidebar_collapse_header_content_gap' },
+  'sidebar-collapse-header-content-padding-right': { value: '8px', category: 'spacing', label: '折叠项头部内容右侧内边距', usage: 'Semi $spacing-sidebar_collapse_header_content_paddingRight' },
+  'sidebar-collapse-header-expand-btn-padding': { value: '4px', category: 'spacing', label: '折叠项展开按钮内边距', usage: 'Semi $spacing-sidebar_collapse_header_expand_btn-padding' },
+  'radius-sidebar-collapse-item': { value: '8px', category: 'radius', label: '折叠项圆角', usage: 'Semi $radius-sidebar_collapse_item' },
+  'sidebar-main-collapse-file-content-max-height': { value: '400px', category: 'height', label: '主视图文件内容最大高度', usage: 'Semi $height-sidebar_main_collapse_file_content-maxHeight' },
+  'sidebar-main-collapse-code-content-max-height': { value: '200px', category: 'height', label: '主视图代码内容最大高度', usage: 'Semi $height-sidebar_main_collapse_code_content-maxHeight' },
+
+  // —— 以下 Option 项为**本库自有**：本库的 Options 是图标 tab（方形命中区 + hover/激活态），
+  //    Semi 的 options 是一排 Button，尺寸/圆角/三态色全归 Button 管，其 variables.scss
+  //    里只有 $color-sidebar_options_button-text 一条文本色。——
+  'sidebar-option-size': { value: '32px', category: 'other', label: 'Option 项尺寸', usage: '本库自有：图标 tab 命中区尺寸（Semi 用 Button 无此变量）' },
+  'sidebar-option-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'Option 圆角', usage: '本库自有：图标 tab 圆角' },
+  'sidebar-option-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: 'Option hover 色', usage: '本库自有：图标 tab hover 色' },
+  'sidebar-option-bg-hover': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'Option hover 背景', usage: '本库自有：图标 tab hover 背景' },
+  'sidebar-option-color-active': { value: 'var(--cd-color-primary)', category: 'color', label: 'Option 激活色', usage: '本库自有：图标 tab 激活色' },
+  'sidebar-option-bg-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: 'Option 激活背景', usage: '本库自有：图标 tab 激活背景' },
 
   // —— 详情返回按钮（P1）——
   'sidebar-back-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '返回按钮色', usage: '详情视图返回按钮颜色（组件消费）' },
@@ -109,14 +133,14 @@ export const sideBarTokens = {
   'sidebar-annotation-order-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '序号背景', usage: '本库自有：序号背景（Semi 内联 fill-1，未抽变量）' },
   'sidebar-annotation-cover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '封面占位背景', usage: '本库自有：视频封面占位背景' },
   // —— CodeContent 代码/JSON 预览列表（P4）——
-  'sidebar-code-head-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'CodeContent 头部图标间距', usage: 'CodeContent 折叠头图标与文本间距（组件消费）' },
-  'sidebar-code-head-icon-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'CodeContent 头部图标色', usage: 'CodeContent 折叠头前导图标颜色（组件消费）' },
-  'sidebar-code-head-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'CodeContent 头部文本色', usage: 'CodeContent 折叠头 name 文本颜色（组件消费）' },
-  'sidebar-code-head-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: 'CodeContent 头部字号', usage: 'CodeContent 折叠头 name 字号（组件消费）' },
-  'sidebar-code-head-weight': { value: 'var(--cd-font-weight-medium)', category: 'font', label: 'CodeContent 头部字重', usage: 'CodeContent 折叠头 name 字重（组件消费）' },
-  'sidebar-code-expand-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'CodeContent 展开按钮色', usage: 'CodeContent 全屏展开按钮图标颜色（组件消费）' },
-  'sidebar-code-expand-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'CodeContent 展开按钮悬浮背景', usage: 'CodeContent 全屏展开按钮悬浮背景（组件消费）' },
-  'sidebar-code-body-padding': { value: 'var(--cd-spacing-tight) 0', category: 'spacing', label: 'CodeContent 内容区内边距', usage: 'CodeContent 折叠内容区（代码/JSON）内边距（组件消费）' },
+  // CodeContent 的「折叠头」在 Semi 侧就是 collapse-header（上面那组 $*-sidebar_collapse_header_*），
+  // 故这几条改指同一批 Semi 变量，不再另立 -code-head-* 一套。
+  // 仍保留为本库自有的两条：Semi 的折叠头图标/文本色是内联 text-1、字重用全局
+  // $font-weight-regular，没有抽成 sidebar 专属变量。
+  'sidebar-code-head-icon-color': { value: 'var(--cd-color-text-1)', category: 'color', label: 'CodeContent 头部图标色', usage: '本库自有：折叠头图标色（Semi 内联 text-1）' },
+  'sidebar-code-head-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'CodeContent 头部文本色', usage: '本库自有：折叠头文本色（Semi 未抽变量）' },
+  'sidebar-code-expand-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'CodeContent 展开按钮悬浮背景', usage: '本库自有：展开按钮悬浮背景（Semi 用 Button 自带态）' },
+  'sidebar-code-body-padding': { value: 'var(--cd-spacing-tight) 0', category: 'spacing', label: 'CodeContent 内容区内边距', usage: '本库自有：折叠内容区内边距' },
 
   // —— MCPConfigure MCP 工具配置面板（P3）——
   'sidebar-mcp-gap': { value: 'var(--cd-spacing-base-tight)', category: 'spacing', label: 'MCP 区块间距', usage: 'MCPConfigure 搜索/分组区块之间纵向间距（组件消费）' },

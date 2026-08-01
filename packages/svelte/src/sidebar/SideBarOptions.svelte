@@ -97,7 +97,7 @@
     flex-shrink: 0;
     align-items: center;
     gap: var(--cd-sidebar-options-gap);
-    padding: var(--cd-sidebar-options-padding);
+    padding: var(--cd-sidebar-options-padding-y) var(--cd-sidebar-options-padding-x);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
   .cd-sidebar-option {
@@ -110,7 +110,7 @@
     border: none;
     border-radius: var(--cd-sidebar-option-radius);
     background: transparent;
-    color: var(--cd-sidebar-option-color);
+    color: var(--cd-sidebar-options-button-text);
     cursor: pointer;
     transition:
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
