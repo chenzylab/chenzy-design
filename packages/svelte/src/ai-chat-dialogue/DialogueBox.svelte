@@ -174,11 +174,14 @@
           {item}
           {markdownRenderProps}
           {renderMap}
-          onFileClick={disabledFileItemClick ? undefined : onFileClick}
+          {onFileClick}
           {onImageClick}
           {escapeHtml}
           {isUser}
           {onAnnotationClick}
+          {showReference}
+          {disabledFileItemClick}
+          {onReferenceClick}
         />
       {/each}
     {/if}

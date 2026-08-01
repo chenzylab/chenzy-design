@@ -418,3 +418,66 @@ describe('AIChatDialogue · 操作区（DialogueAction）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+// 文件卡（对齐 Semi dialogueContent.tsx 的 FileAttachment）。
+// 本库原来只有一个裸 button + 文件名一行，缺 <a> 跳转、类型底色图标框、「类型 大小」第二行、引用入口。
+describe('AIChatDialogue · 文件卡（DialogueFile）', () => {
+  function fileChats(file: Record<string, unknown>, role = 'assistant'): AIDialogueMessage[] {
+    return [{ id: 'f1', role, content: [{ type: 'message', content: [{ type: 'input_file', ...file }] }] }];
+  }
+
+  it('渲染为可跳转的 <a>，含图标框 + 标题 + 「类型 大小」两行', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: fileChats({ filename: '报告.pdf', file_url: 'https://x/a.pdf', size: '12KB' }), roleConfig },
+    });
+    const card = container.querySelector('a.cd-ai-chat-dialogue-content-file') as HTMLAnchorElement;
+    expect(card, '应是 <a> 而非 button').not.toBeNull();
+    expect(card.getAttribute('href')).toBe('https://x/a.pdf');
+    expect(card.getAttribute('target')).toBe('_blank');
+    expect(card.querySelector('.cd-ai-chat-dialogue-content-file-title')?.textContent).toBe('报告.pdf');
+    expect(card.querySelector('.cd-ai-chat-dialogue-content-file-type')?.textContent).toBe('pdf');
+    expect(card.querySelector('.cd-ai-chat-dialogue-content-file-metadata')?.textContent).toContain('12KB');
+  });
+
+  // 图标分类顺序照搬 Semi renderFileIcon 的 if-else。
+  it('按后缀挂类型底色类', () => {
+    const cases: [string, string][] = [
+      ['a.docx', 'word'],
+      ['a.pdf', 'pdf'],
+      ['a.xlsx', 'excel'],
+      ['a.ts', 'code'],
+      ['a.mp4', 'video'],
+      ['a.png', 'image'],
+      ['a.zip', 'default'],
+    ];
+    for (const [filename, cls] of cases) {
+      const { container } = renderWithLocale(AIChatDialogue, {
+        props: { chats: fileChats({ filename }), roleConfig },
+      });
+      expect(
+        container.querySelector(`.cd-ai-chat-dialogue-content-file-icon-${cls}`),
+        `${filename} 应挂 -file-icon-${cls}`,
+      ).not.toBeNull();
+    }
+  });
+
+  // 对齐 Semi：引用入口只在 user 消息 + showReference 时出现。
+  it('引用入口仅 user 消息且 showReference 时渲染', () => {
+    const withRef = renderWithLocale(AIChatDialogue, {
+      props: { chats: fileChats({ filename: 'a.pdf' }, 'user'), roleConfig, showReference: true },
+    });
+    expect(withRef.container.querySelector('.cd-ai-chat-dialogue-content-icon-reference')).not.toBeNull();
+
+    const assistant = renderWithLocale(AIChatDialogue, {
+      props: { chats: fileChats({ filename: 'a.pdf' }), roleConfig, showReference: true },
+    });
+    expect(assistant.container.querySelector('.cd-ai-chat-dialogue-content-icon-reference')).toBeNull();
+  });
+
+  it('文件卡无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: fileChats({ filename: 'a.pdf', file_url: 'https://x/a.pdf' }), roleConfig },
+    });
+    await expectNoAxeViolations(container);
+  });
+});

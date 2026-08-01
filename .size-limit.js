@@ -221,7 +221,9 @@ const components = [
   //   · action 从裸 emoji 换成复用 Button 的具名图标，并补剪贴板/Toast/删除确认 Modal；
   //   · annotation 从「一排药丸」改成 Semi 的头像组折叠摘要（复用 AvatarGroup）。
   // Button/Dropdown/Modal/Toast/AvatarGroup/Collapsible 均走 `../` 属兄弟组件被 externalize 不计入。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '12 KB'],
+  // 12 → 13 KB：再拆出 file 卡片（Semi dialogueContent.tsx 的 FileAttachment），实测 12.41 KB。
+  // 同样是补 Semi 有本库缺的部分：<a> 跳转 + 6 类底色图标框 + 「类型 大小」第二行 + 引用入口。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '13 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

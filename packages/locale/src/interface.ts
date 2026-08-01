@@ -658,8 +658,6 @@ export interface Locale {
     toolOutput: string;
     /** audio block placeholder */
     audio: string;
-    /** file item fallback name */
-    file: string;
     /** references region label */
     references: string;
   };

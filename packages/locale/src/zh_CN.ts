@@ -435,7 +435,6 @@ export const zh_CN: Locale = {
     toolInput: '输入',
     toolOutput: '输出',
     audio: '音频',
-    file: '文件',
     references: '引用',
   },
   AIChatInput: {

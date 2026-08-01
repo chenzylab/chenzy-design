@@ -27,6 +27,7 @@
   import DialogueCode from './DialogueCode.svelte';
   import DialogueReasoning from './DialogueReasoning.svelte';
   import DialogueAnnotation, { type AnnotationItem } from './DialogueAnnotation.svelte';
+  import DialogueFile from './DialogueFile.svelte';
 
   interface Props {
     /** 待渲染的 ContentItem。 */
@@ -45,6 +46,12 @@
     isUser?: boolean;
     /** annotation 点击回调（对齐 Semi onAnnotationClick，回传整组 annotation）。 */
     onAnnotationClick?: ((annotations: unknown) => void) | undefined;
+    /** 是否展示文件卡上的引用入口（对齐 Semi showReference，仅 user 消息生效）。 */
+    showReference?: boolean;
+    /** 禁用文件点击跳转（对齐 Semi disabledFileItemClick）。 */
+    disabledFileItemClick?: boolean;
+    /** 文件卡引用入口点击回调（对齐 Semi onReferenceClick）。 */
+    onReferenceClick?: ((ref: { name?: string; url?: string }) => void) | undefined;
   }
 
   let {
@@ -56,6 +63,9 @@
     escapeHtml = true,
     isUser = false,
     onAnnotationClick,
+    showReference = false,
+    disabledFileItemClick = false,
+    onReferenceClick,
   }: Props = $props();
 
   const loc = useLocale();
@@ -157,11 +167,17 @@
           />
         </button>
       {:else if part.type === 'input_file' || part.type === 'file'}
-        <button type="button" class="cd-ai-chat-dialogue-content-file" onclick={() => onFileClick?.(part)}>
-          <span class="cd-ai-chat-dialogue-content-file-title"
-            >{(part.filename as string) ?? loc().t('AIChatDialogue.file')}</span
-          >
-        </button>
+        <!-- 文件卡拆到 DialogueFile.svelte（同 Semi dialogueContent.tsx 的 FileAttachment）。
+             本库原来只有一个裸 button + 文件名一行，缺图标底框/类型大小/引用入口。 -->
+        <DialogueFile
+          file={part}
+          isLastFile={i === innerParts.length - 1}
+          {isUser}
+          {showReference}
+          {disabledFileItemClick}
+          {onFileClick}
+          {onReferenceClick}
+        />
       {/if}
     {/each}
   </div>
@@ -261,17 +277,8 @@
     border-radius: var(--cd-border-radius-medium);
   }
 
-  .cd-ai-chat-dialogue-content-file {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding: var(--cd-spacing-extra-tight) var(--cd-spacing-tight);
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    background: var(--cd-color-fill-0);
-    cursor: pointer;
-    color: var(--cd-color-text-0);
-  }
+  /* 文件卡的样式已随组件拆分迁到 DialogueFile.svelte
+     （原来这一条是给「裸 button + 文件名」写的，Semi 是带类型底色图标框 + 两行信息的卡片）。 */
 
   /* reasoning 的样式已随组件拆分迁到 DialogueReasoning.svelte
      （原来这两条是本库自造的「无边框按钮 + 左竖线」，与 Semi 的

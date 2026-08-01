@@ -6,6 +6,8 @@ import {
   streamingResponseToMessage,
   streamingChatCompletionToMessage,
   dialogueMessageToInput,
+  dialogueFileIconType,
+  dialogueFileRealType,
   formatToolArguments,
   toolCallStatus,
   toolCallView,
@@ -394,5 +396,42 @@ describe('ai-chat-dialogue · 工具块 helpers', () => {
     expect(view.serverLabel).toBe('fs-server');
     expect(view.input).toBe('{\n  "q": "x"\n}');
     expect(view.callId).toBe('mcp_1');
+  });
+});
+
+describe('ai-chat-dialogue · dialogueFileIconType', () => {
+  it('六类各自命中（顺序照搬 Semi renderFileIcon 的 if-else）', () => {
+    expect(dialogueFileIconType('docx')).toBe('word');
+    expect(dialogueFileIconType('txt')).toBe('word');
+    expect(dialogueFileIconType('png')).toBe('image');
+    expect(dialogueFileIconType('pdf')).toBe('pdf');
+    expect(dialogueFileIconType('xlsx')).toBe('excel');
+    expect(dialogueFileIconType('ts')).toBe('code');
+    expect(dialogueFileIconType('mp4')).toBe('video');
+  });
+
+  it('未命中与 undefined 都落 default', () => {
+    expect(dialogueFileIconType('zip')).toBe('default');
+    expect(dialogueFileIconType(undefined)).toBe('default');
+  });
+
+  // 与 ai-chat-input 的 getContentType 是两套：那边 txt→word 但 ts→video（Map 后写覆盖），
+  // 这里 txt→word、ts→code。Semi 两处也各写各的，别合并。
+  it("与 aiChatInput 的分类刻意不同：'ts' 在这里是 code", () => {
+    expect(dialogueFileIconType('ts')).toBe('code');
+  });
+});
+
+describe('ai-chat-dialogue · dialogueFileRealType', () => {
+  it('优先取 filename 后缀', () => {
+    expect(dialogueFileRealType({ filename: 'a.pdf' })).toBe('pdf');
+  });
+
+  it('无 filename 时取 fileInstance.type 尾段', () => {
+    expect(dialogueFileRealType({ fileInstance: { type: 'image/png' } })).toBe('png');
+  });
+
+  it('都缺省返回 undefined', () => {
+    expect(dialogueFileRealType({})).toBeUndefined();
   });
 });
