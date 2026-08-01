@@ -38,6 +38,7 @@
     "build:meta": "tsx scripts/build-components-json.ts",
     "check:lineheight": "node scripts/check-font-lineheight.mjs",
     "check:rtl-scope": "node scripts/check-rtl-scope.mjs",
+    "check:token-refs": "node scripts/check-token-refs.mjs",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {

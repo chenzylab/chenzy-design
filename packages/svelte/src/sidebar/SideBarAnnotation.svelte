@@ -303,7 +303,7 @@
   .cd-sidebar-annotation-empty {
     padding: var(--cd-spacing-base, 16px) 0;
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
     text-align: center;
   }
   .cd-sidebar-annotation-group-header {
@@ -324,7 +324,7 @@
   .cd-sidebar-annotation-list {
     display: flex;
     flex-direction: column;
-    gap: var(--cd-sidebar-annotation-gap);
+    gap: var(--cd-sidebar-annotation-content-gap);
     padding-block: var(--cd-spacing-tight, 8px);
   }
   .cd-sidebar-annotation-card {
@@ -333,7 +333,7 @@
     inline-size: 100%;
     flex-direction: column;
     gap: var(--cd-spacing-tight, 8px);
-    padding: var(--cd-sidebar-annotation-card-padding);
+    padding: var(--cd-sidebar-annotation-text-padding-y) var(--cd-sidebar-annotation-text-padding-x);
     border: 1px solid var(--cd-sidebar-annotation-card-border);
     border-radius: var(--cd-sidebar-annotation-card-radius);
     background: var(--cd-sidebar-annotation-card-bg);
@@ -382,8 +382,8 @@
     inset-inline-end: 4px;
     padding: 0 4px;
     border-radius: var(--cd-border-radius-small);
-    background: var(--cd-sidebar-annotation-duration-bg);
-    color: var(--cd-sidebar-annotation-duration-color);
+    background: var(--cd-sidebar-annotation-video-duration-bg);
+    color: var(--cd-sidebar-annotation-video-duration-text);
     font-size: 11px;
     /* Semi sidebar.scss:333 @include font-size-small → 16px */
     line-height: var(--cd-line-height-small);
@@ -397,8 +397,8 @@
   }
   .cd-sidebar-annotation-title {
     overflow: hidden;
-    color: var(--cd-sidebar-annotation-title-color);
-    font-size: var(--cd-sidebar-annotation-title-size);
+    color: var(--cd-sidebar-annotation-video-title-text);
+    font-size: var(--cd-font-size-regular);
     font-weight: var(--cd-font-weight-medium, 500);
     /* Semi sidebar.scss:338 @include font-size-regular → 20px */
     line-height: var(--cd-line-height-regular);
@@ -424,7 +424,7 @@
     gap: 6px;
     min-inline-size: 0;
     color: var(--cd-sidebar-annotation-footer-color);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
   }
   .cd-sidebar-annotation-logo {
     flex-shrink: 0;

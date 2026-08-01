@@ -520,7 +520,7 @@
   .cd-sidebar-mcp-empty {
     padding: var(--cd-spacing-tight, 8px) 0;
     color: var(--cd-sidebar-mcp-empty-color);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
     text-align: center;
   }
   .cd-sidebar-mcp-empty-custom {
@@ -538,7 +538,7 @@
     border-radius: var(--cd-sidebar-mcp-item-radius);
     background: transparent;
     color: var(--cd-sidebar-mcp-label-color);
-    font-size: var(--cd-font-size-secondary);
+    font-size: var(--cd-font-size-small);
     cursor: pointer;
   }
   .cd-sidebar-mcp-add-cta:hover {

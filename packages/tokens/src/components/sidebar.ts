@@ -51,23 +51,63 @@ export const sideBarTokens = {
   'sidebar-back-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '返回按钮色', usage: '详情视图返回按钮颜色（组件消费）' },
   'sidebar-back-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '返回按钮悬浮背景', usage: '详情视图返回按钮悬浮背景（组件消费）' },
 
-  // —— Annotation 引用溯源卡片（P2）——
-  'sidebar-annotation-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'Annotation 条目间距', usage: 'Annotation 分组内条目之间间距（组件消费）' },
-  'sidebar-annotation-card-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '卡片背景', usage: 'Annotation 引用卡片背景（组件消费）' },
-  'sidebar-annotation-card-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '卡片悬浮背景', usage: 'Annotation 引用卡片悬浮背景（组件消费）' },
-  'sidebar-annotation-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片边框', usage: 'Annotation 引用卡片边框（组件消费）' },
-  'sidebar-annotation-card-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: 'Annotation 引用卡片圆角（组件消费）' },
-  'sidebar-annotation-card-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: '卡片内边距', usage: 'Annotation 引用卡片内边距（组件消费）' },
-  'sidebar-annotation-title-color': { value: 'var(--cd-color-text-0)', category: 'color', label: '卡片标题色', usage: 'Annotation 卡片标题颜色（组件消费）' },
-  'sidebar-annotation-title-size': { value: 'var(--cd-font-size-regular)', category: 'font', label: '卡片标题字号', usage: 'Annotation 卡片标题字号（组件消费）' },
-  'sidebar-annotation-detail-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片摘要色', usage: 'Annotation 文本卡片摘要颜色（组件消费）' },
-  'sidebar-annotation-detail-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: '卡片摘要字号', usage: 'Annotation 文本卡片摘要字号（组件消费）' },
-  'sidebar-annotation-footer-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '页脚站点色', usage: 'Annotation 卡片页脚站点名颜色（组件消费）' },
-  'sidebar-annotation-order-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '序号色', usage: 'Annotation 卡片引用序号颜色（组件消费）' },
-  'sidebar-annotation-order-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '序号背景', usage: 'Annotation 卡片引用序号背景（组件消费）' },
-  'sidebar-annotation-duration-bg': { value: 'rgba(0, 0, 0, 0.6)', category: 'color', label: '时长遮罩背景', usage: 'Annotation 视频卡片时长标签背景（组件消费）' },
-  'sidebar-annotation-duration-color': { value: '#fff', category: 'color', label: '时长文字色', usage: 'Annotation 视频卡片时长标签文字色（组件消费）' },
-  'sidebar-annotation-cover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '封面占位背景', usage: 'Annotation 视频卡片封面占位背景（组件消费）' },
+  // ————————————————————————————————————————————————————————————————
+  // Annotation 引用溯源（名/值逐条镜像 Semi sideBar/variables.scss 的
+  // $*-sidebar_annotation_*，共 33 条）。
+  //
+  // 此前本层是自造命名（-card-* / -cover-* / -detail-*），与 Semi 的
+  // -item-* / -video-* / -footer-* 一套对不上，主题/DSM 按 Semi 变量名找不到。
+  //
+  // ⚠️ Semi 的 annotation **item 本身没有边框/背景/圆角**（只有 cursor:pointer），
+  // 那些是本库自造的卡片观感；带边框圆角的是 video 子卡。故本库那几条标为「本库自有」保留，
+  // 不硬塞进 Semi 名下。
+  // ————————————————————————————————————————————————————————————————
+  'color-sidebar-annotation-video-border': { value: 'var(--cd-color-border)', category: 'color', label: '引用视频卡片边框颜色', usage: 'Semi $color-sidebar_annotation_video-border' },
+  'sidebar-annotation-video-duration-bg': { value: 'color-mix(in srgb, var(--cd-color-grey-7) 70%, transparent)', category: 'color', label: '引用视频时长背景颜色', usage: 'Semi $color-sidebar_annotation_video_duration-bg' },
+  'sidebar-annotation-video-duration-text': { value: 'var(--cd-color-bg-0)', category: 'color', label: '引用视频时长文本颜色', usage: 'Semi $color-sidebar_annotation_video_duration-text' },
+  'sidebar-annotation-video-title-text': { value: 'var(--cd-color-text-0)', category: 'color', label: '引用视频标题文本颜色', usage: 'Semi $color-sidebar_annotation_video_title-text' },
+  'sidebar-annotation-footer-logo': { value: '14px', category: 'width', label: '引用项底部 logo 宽高', usage: 'Semi $width-sidebar_annotation_footer_logo' },
+  'sidebar-annotation-footer-order-min-width': { value: '16px', category: 'width', label: '引用项底部序号最小宽度', usage: 'Semi $width-sidebar_annotation_footer_order-minWidth' },
+  'height-sidebar-annotation-footer-order': { value: '16px', category: 'height', label: '引用项底部序号高度', usage: 'Semi $height-sidebar_annotation_footer_order' },
+  'sidebar-annotation-video-play': { value: '20px', category: 'width', label: '引用视频播放按钮宽度', usage: 'Semi $width-sidebar_annotation_video_play' },
+  'sidebar-annotation-video-img-wrapper': { value: '107px', category: 'height', label: '引用视频封面容器高度', usage: 'Semi $height-sidebar_annotation_video_img-wrapper' },
+  'width-sidebar-annotation-video-border': { value: '1px', category: 'width', label: '引用视频卡片边框宽度', usage: 'Semi $width-sidebar_annotation_video-border' },
+  'sidebar-annotation-video-item-title': { value: '40px', category: 'height', label: '引用视频标题高度', usage: 'Semi $height-sidebar_annotation_video_item_title' },
+  'sidebar-annotation-container-padding': { value: '12px', category: 'spacing', label: '引用容器内边距', usage: 'Semi $spacing-sidebar_annotation_container-padding' },
+  'sidebar-annotation-content-gap': { value: '8px', category: 'spacing', label: '引用内容项间距', usage: 'Semi $spacing-sidebar_annotation_content-gap' },
+  'sidebar-annotation-footer-column-gap': { value: '4px', category: 'spacing', label: '引用底部列间距', usage: 'Semi $spacing-sidebar_annotation_footer-columnGap' },
+  'sidebar-annotation-footer-order-padding-y': { value: '0', category: 'spacing', label: '引用序号垂直内边距', usage: 'Semi $spacing-sidebar_annotation_footer_order-paddingY' },
+  'sidebar-annotation-footer-order-padding-x': { value: '2px', category: 'spacing', label: '引用序号水平内边距', usage: 'Semi $spacing-sidebar_annotation_footer_order-paddingX' },
+  'sidebar-annotation-text-padding-y': { value: '3px', category: 'spacing', label: '引用文本区域垂直内边距', usage: 'Semi $spacing-sidebar_annotation_text-paddingY' },
+  'sidebar-annotation-text-padding-x': { value: '12px', category: 'spacing', label: '引用文本区域水平内边距', usage: 'Semi $spacing-sidebar_annotation_text-paddingX' },
+  'sidebar-annotation-video-content-padding-top': { value: '8px', category: 'spacing', label: '引用视频内容区域上内边距', usage: 'Semi $spacing-sidebar_annotation_video_content-paddingTop' },
+  'sidebar-annotation-video-content-padding-right': { value: '8px', category: 'spacing', label: '引用视频内容区域右内边距', usage: 'Semi $spacing-sidebar_annotation_video_content-paddingRight' },
+  'sidebar-annotation-video-content-padding-bottom': { value: '12px', category: 'spacing', label: '引用视频内容区域下内边距', usage: 'Semi $spacing-sidebar_annotation_video_content-paddingBottom' },
+  'sidebar-annotation-video-content-padding-left': { value: '8px', category: 'spacing', label: '引用视频内容区域左内边距', usage: 'Semi $spacing-sidebar_annotation_video_content-paddingLeft' },
+  'sidebar-annotation-video-duration-padding-y': { value: '2px', category: 'spacing', label: '引用视频时长垂直内边距', usage: 'Semi $spacing-sidebar_annotation_video_duration-paddingY' },
+  'sidebar-annotation-video-duration-padding-x': { value: '4px', category: 'spacing', label: '引用视频时长水平内边距', usage: 'Semi $spacing-sidebar_annotation_video_duration-paddingX' },
+  'sidebar-annotation-video-play-top': { value: '6px', category: 'spacing', label: '引用视频播放按钮顶部偏移', usage: 'Semi $spacing-sidebar_annotation_video_play-top' },
+  'sidebar-annotation-video-play-right': { value: '6px', category: 'spacing', label: '引用视频播放按钮右侧偏移', usage: 'Semi $spacing-sidebar_annotation_video_play-right' },
+  'sidebar-annotation-video-duration-bottom': { value: '6px', category: 'spacing', label: '引用视频时长底部偏移', usage: 'Semi $spacing-sidebar_annotation_video_duration-bottom' },
+  'sidebar-annotation-video-duration-right': { value: '6px', category: 'spacing', label: '引用视频时长右侧偏移', usage: 'Semi $spacing-sidebar_annotation_video_duration-right' },
+  'radius-sidebar-annotation-footer-order': { value: '8px', category: 'radius', label: '引用序号圆角', usage: 'Semi $radius-sidebar_annotation_footer_order' },
+  'sidebar-annotation-video': { value: '6px', category: 'radius', label: '引用视频卡片圆角', usage: 'Semi $radius-sidebar_annotation_video' },
+  'radius-sidebar-annotation-video-duration': { value: '4px', category: 'radius', label: '引用视频时长标签圆角', usage: 'Semi $radius-sidebar_annotation_video_duration' },
+  'sidebar-annotation-footer-logo-font-size': { value: '14px', category: 'font', label: '引用底部 logo 字号', usage: 'Semi $font-sidebar_annotation_footer_logo-fontSize' },
+  'sidebar-annotation-video-play-icon-font-size': { value: '12px', category: 'font', label: '引用视频播放图标大小', usage: 'Semi $font-sidebar_annotation_video_play_icon-fontSize' },
+
+  // —— 以下 annotation 相关为**本库自有**：Semi 的 annotation item 只有 cursor:pointer，
+  //    卡片观感（背景/边框/圆角/hover）与文本层级色号是本库的增强，Semi 无对应变量。——
+  'sidebar-annotation-card-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '卡片背景', usage: '本库自有：引用卡片背景（Semi item 无背景）' },
+  'sidebar-annotation-card-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: '卡片悬浮背景', usage: '本库自有：引用卡片悬浮背景' },
+  'sidebar-annotation-card-border': { value: 'var(--cd-color-border)', category: 'color', label: '卡片边框', usage: '本库自有：引用卡片边框（Semi 仅 video 子卡有边框）' },
+  'sidebar-annotation-card-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: '卡片圆角', usage: '本库自有：引用卡片圆角' },
+  'sidebar-annotation-detail-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '卡片摘要色', usage: '本库自有：文本卡摘要色（Semi 该处内联 text-0）' },
+  'sidebar-annotation-detail-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: '卡片摘要字号', usage: '本库自有：文本卡摘要字号' },
+  'sidebar-annotation-footer-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '页脚站点色', usage: '本库自有：页脚站点名色（Semi 内联 text-0）' },
+  'sidebar-annotation-order-color': { value: 'var(--cd-color-text-2)', category: 'color', label: '序号色', usage: '本库自有：序号色（Semi 内联 text-2，未抽变量）' },
+  'sidebar-annotation-order-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '序号背景', usage: '本库自有：序号背景（Semi 内联 fill-1，未抽变量）' },
+  'sidebar-annotation-cover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '封面占位背景', usage: '本库自有：视频封面占位背景' },
   // —— CodeContent 代码/JSON 预览列表（P4）——
   'sidebar-code-head-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'CodeContent 头部图标间距', usage: 'CodeContent 折叠头图标与文本间距（组件消费）' },
   'sidebar-code-head-icon-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'CodeContent 头部图标色', usage: 'CodeContent 折叠头前导图标颜色（组件消费）' },

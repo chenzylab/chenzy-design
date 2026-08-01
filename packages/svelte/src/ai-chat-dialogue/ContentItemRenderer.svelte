@@ -337,7 +337,7 @@
     border-radius: var(--cd-border-radius-small);
     background: var(--cd-color-fill-2);
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
   }
 
   .cd-ai-chat-dialogue-content-tool-call-body {
@@ -351,7 +351,7 @@
   .cd-ai-chat-dialogue-content-tool-call-label {
     display: block;
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
   }
 
   .cd-ai-chat-dialogue-content-tool-call-args {
@@ -362,13 +362,13 @@
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--cd-color-text-1);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
   }
 
   .cd-ai-chat-dialogue-content-tool-call-id {
     margin-top: var(--cd-spacing-extra-tight);
     color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
   }
 
   .cd-ai-chat-dialogue-content-unknown {

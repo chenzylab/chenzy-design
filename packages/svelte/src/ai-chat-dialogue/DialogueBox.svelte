@@ -320,7 +320,7 @@
 
   .cd-ai-chat-dialogue-title {
     color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
     margin-bottom: var(--cd-spacing-extra-tight);
   }
 
@@ -365,7 +365,7 @@
     border-radius: var(--cd-border-radius-medium);
     background: var(--cd-color-fill-0);
     color: var(--cd-color-text-1);
-    font-size: var(--cd-font-size-secondary, var(--cd-font-size-regular));
+    font-size: var(--cd-font-size-small);
     cursor: pointer;
     text-align: left;
   }
