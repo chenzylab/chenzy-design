@@ -443,11 +443,14 @@
     padding: 0;
     list-style: none;
   }
+  /* padding / 图标间距取 Semi 值（$spacing-sidebar_mcp_item-paddingY|X、
+     $spacing-sidebar_mcp_item_sign-marginRight）。
+     边框/圆角/底色是本库的卡片观感 —— Semi 那边是扁平行 + 一条 border-bottom。 */
   .cd-sidebar-mcp-item {
     display: flex;
     align-items: center;
-    gap: var(--cd-sidebar-mcp-item-gutter);
-    padding: var(--cd-sidebar-mcp-item-padding);
+    gap: var(--cd-sidebar-mcp-item-sign-margin-right);
+    padding: var(--cd-sidebar-mcp-item-padding-y) var(--cd-sidebar-mcp-item-padding-x);
     border: 1px solid var(--cd-sidebar-mcp-item-border);
     border-radius: var(--cd-sidebar-mcp-item-radius);
     background: var(--cd-sidebar-mcp-item-bg);
@@ -460,8 +463,8 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    inline-size: var(--cd-sidebar-mcp-icon-size);
-    block-size: var(--cd-sidebar-mcp-icon-size);
+    inline-size: var(--cd-sidebar-mcp-item-sign);
+    block-size: var(--cd-sidebar-mcp-item-sign);
     border-radius: var(--cd-sidebar-mcp-icon-radius);
     background: var(--cd-sidebar-mcp-icon-bg);
     color: var(--cd-sidebar-mcp-label-color);

@@ -44,6 +44,28 @@ export const sideBarTokens = {
   'sidebar-close-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: '关闭按钮圆角', usage: '本库自有：关闭按钮圆角' },
   'sidebar-body-padding': { value: '16px', category: 'spacing', label: '内容区内边距', usage: '本库自有：Container 内容区内边距' },
 
+
+  // —— MCPConfigure（名/值逐条镜像 Semi $*-sidebar_mcp_*，19 条）——
+  'sidebar-mcp-header-counter-text': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 配置头部计数器颜色', usage: 'Semi $color-sidebar_mcp_header_counter-text' },
+  'sidebar-mcp-item-label': { value: 'var(--cd-color-text-0)', category: 'color', label: 'MCP 配置项标题颜色', usage: 'Semi $color-sidebar_mcp_item_label' },
+  'sidebar-mcp-item-desc': { value: 'var(--cd-color-text-0)', category: 'color', label: 'MCP 配置项描述颜色', usage: 'Semi $color-sidebar_mcp_item_desc' },
+  'color-sidebar-mcp-item-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: 'MCP 配置项底部边框颜色', usage: 'Semi $color-sidebar_mcp_item-borderBottom' },
+  'sidebar-mcp-item-sign': { value: '32px', category: 'width', label: 'MCP 配置项图标容器宽高', usage: 'Semi $width-sidebar_mcp_item_sign' },
+  'sidebar-mcp-item-button': { value: '24px', category: 'width', label: 'MCP 配置项图标按钮宽高', usage: 'Semi $width-sidebar_mcp_item_button' },
+  'width-sidebar-mcp-item-border-bottom': { value: '1px', category: 'width', label: 'MCP 配置项底部比框宽度', usage: 'Semi $width-sidebar_mcp_item-borderBottom' },
+  'sidebar-mcp-content-padding-y': { value: '20px', category: 'spacing', label: 'MCP 配置内容区域垂直内边距', usage: 'Semi $spacing-sidebar_mcp_content-paddingY' },
+  'sidebar-mcp-content-padding-x': { value: '16px', category: 'spacing', label: 'MCP 配置内容区域水平内边距', usage: 'Semi $spacing-sidebar_mcp_content-paddingX' },
+  'sidebar-mcp-search-margin-y': { value: '16px', category: 'spacing', label: 'MCP 配置搜索区域垂直外边距', usage: 'Semi $spacing-sidebar_mcp_search-marginY' },
+  'sidebar-mcp-search-margin-x': { value: '0', category: 'spacing', label: 'MCP 配置搜索区域水平外边距', usage: 'Semi $spacing-sidebar_mcp_search-marginX' },
+  'sidebar-mcp-search-container-column-gap': { value: '8px', category: 'spacing', label: 'MCP 配置搜索容器列间距', usage: 'Semi $spacing-sidebar_mcp_search_container-columnGap' },
+  'sidebar-mcp-item-padding-y': { value: '8px', category: 'spacing', label: 'MCP 配置项垂直内边距', usage: 'Semi $spacing-sidebar_mcp_item-paddingY' },
+  'sidebar-mcp-item-padding-x': { value: '16px', category: 'spacing', label: 'MCP 配置项水平内边距', usage: 'Semi $spacing-sidebar_mcp_item-paddingX' },
+  'sidebar-mcp-item-sign-margin-right': { value: '12px', category: 'spacing', label: 'MCP 配置项图标右侧外边距', usage: 'Semi $spacing-sidebar_mcp_item_sign-marginRight' },
+  'sidebar-mcp-item-content-margin-right': { value: '24px', category: 'spacing', label: 'MCP 配置项内容右侧外边距', usage: 'Semi $spacing-sidebar_mcp_item_content-marginRight' },
+  'sidebar-mcp-item-button-configure-margin-right': { value: '12px', category: 'spacing', label: 'MCP 配置项配置按钮右侧外边距', usage: 'Semi $spacing-sidebar_mcp_item_button_configure-marginRight' },
+  'sidebar-mcp-custom-empty-margin-top': { value: '64px', category: 'spacing', label: 'MCP 自定义空态顶部外边距', usage: 'Semi $spacing-sidebar_mcp_custom_empty-marginTop' },
+  'sidebar-mcp-item-sign-icon-font-size': { value: '32px', category: 'font', label: 'MCP 配置项图标字号', usage: 'Semi $font-sidebar_mcp_item_sign_icon-fontSize' },
+
   // —— Options 图标 tab 组（P1）——
   // —— Options / Collapse（名/值逐条镜像 Semi $*-sidebar_options_* 与 $*-sidebar_collapse_*）——
   'color-sidebar-options-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: '视图选项区域底部边框颜色', usage: 'Semi $color-sidebar_options-borderBottom' },
