@@ -71,7 +71,7 @@
     {@const selected = item.key === activeKey}
     <button
       type="button"
-      class="cd-sidebar-option"
+      class="cd-sidebar-options-button"
       class:cd-sidebar-option-active={selected}
       role="tab"
       id={optionId(item.key)}
@@ -83,9 +83,9 @@
       onkeydown={(e) => onKeydown(e, item)}
     >
       {#if item.icon}
-        <span class="cd-sidebar-option-icon" aria-hidden="true">{@render item.icon()}</span>
+        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{@render item.icon()}</span>
       {:else}
-        <span class="cd-sidebar-option-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
+        <span class="cd-sidebar-options-button-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
       {/if}
     </button>
   {/each}
@@ -100,7 +100,7 @@
     padding: var(--cd-sidebar-options-padding-y) var(--cd-sidebar-options-padding-x);
     border-block-end: 1px solid var(--cd-sidebar-border);
   }
-  .cd-sidebar-option {
+  .cd-sidebar-options-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -116,7 +116,7 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-option:hover:not(.cd-sidebar-option-active) {
+  .cd-sidebar-options-button:hover:not(.cd-sidebar-option-active) {
     background: var(--cd-sidebar-option-bg-hover);
     color: var(--cd-sidebar-option-color-hover);
   }
@@ -124,11 +124,11 @@
     background: var(--cd-sidebar-option-bg-active);
     color: var(--cd-sidebar-option-color-active);
   }
-  .cd-sidebar-option:focus-visible {
+  .cd-sidebar-options-button:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-option-icon {
+  .cd-sidebar-options-button-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;

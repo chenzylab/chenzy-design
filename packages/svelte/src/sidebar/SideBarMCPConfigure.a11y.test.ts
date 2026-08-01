@@ -28,11 +28,11 @@ describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
   it('渲染内置 + 自定义两组列表，item 显示 label/desc', () => {
     const { container } = base();
     expect(container.querySelector('.cd-sidebar-mcp')).toBeTruthy();
-    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-label')].map(
+    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-label')].map(
       (n) => n.textContent,
     );
     expect(labels).toEqual(['File System', 'Git', 'Preset Search', 'My Tool']);
-    const descs = [...container.querySelectorAll('.cd-sidebar-mcp-desc')].map(
+    const descs = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-desc')].map(
       (n) => n.textContent,
     );
     expect(descs).toContain('读写本地文件');
@@ -41,7 +41,7 @@ describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
   // 对齐 Semi `{locale.activeMCPNumber} {n}/{总数}`：文案不含占位符，计数拼在后面。
   it('计数显示「已激活 MCP 数: n/总数」（en_US: "Number of activated MCPs: 2/4"）', () => {
     const { container } = base();
-    expect(container.querySelector('.cd-sidebar-mcp-count')?.textContent).toBe(
+    expect(container.querySelector('.cd-sidebar-mcp-configure-content-header-count')?.textContent).toBe(
       'Number of activated MCPs: 2/4',
     );
   });
@@ -76,7 +76,7 @@ describe('SideBarMCPConfigure — 渲染 / 双列表', () => {
 
   it('搜索框有 aria-label（en_US mcpSearchLabel）', () => {
     const { container } = base();
-    const input = container.querySelector('.cd-sidebar-mcp-search input');
+    const input = container.querySelector('.cd-sidebar-mcp-configure-content-search input');
     expect(input?.getAttribute('aria-label')).toBe('Search MCP tools');
   });
 });
@@ -85,12 +85,12 @@ describe('SideBarMCPConfigure — 搜索过滤', () => {
   it('输入过滤两组列表（大小写不敏感，match label）', async () => {
     const { container } = base();
     const input = container.querySelector(
-      '.cd-sidebar-mcp-search input',
+      '.cd-sidebar-mcp-configure-content-search input',
     ) as HTMLInputElement;
     input.value = 'git';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await Promise.resolve();
-    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-label')].map(
+    const labels = [...container.querySelectorAll('.cd-sidebar-mcp-configure-content-item-content-label')].map(
       (n) => n.textContent,
     );
     expect(labels).toEqual(['Git']);
@@ -99,7 +99,7 @@ describe('SideBarMCPConfigure — 搜索过滤', () => {
   it('无匹配显示无结果提示（en_US mcpNoResult）', async () => {
     const { container } = base();
     const input = container.querySelector(
-      '.cd-sidebar-mcp-search input',
+      '.cd-sidebar-mcp-configure-content-search input',
     ) as HTMLInputElement;
     input.value = 'zzz-none';
     input.dispatchEvent(new Event('input', { bubbles: true }));

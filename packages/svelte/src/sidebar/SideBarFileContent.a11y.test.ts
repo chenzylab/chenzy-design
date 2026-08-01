@@ -69,7 +69,7 @@ describe('SideBarFileContent · 渲染 + 折叠列表', () => {
     const { container } = renderWithLocale(SideBarFileContent, {
       props: { files, activeKey: ['a', 'b'] },
     });
-    const btn = container.querySelector('.cd-sidebar-file-content-expand');
+    const btn = container.querySelector('.cd-sidebar-collapse-header-expand-btn');
     expect(btn?.getAttribute('aria-label')).toBe('Expand');
   });
 

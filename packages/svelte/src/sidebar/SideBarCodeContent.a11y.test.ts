@@ -34,7 +34,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
     const items = container.querySelectorAll('.cd-collapse-item');
     expect(items.length).toBe(2);
     // 头部 name 文本。
-    const texts = [...container.querySelectorAll('.cd-sidebar-code-content-head-text')].map(
+    const texts = [...container.querySelectorAll('.cd-sidebar-collapse-header-text')].map(
       (n) => n.textContent,
     );
     expect(texts).toEqual(['config.json', 'main.ts']);
@@ -45,7 +45,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
       props: { codes: [{ key: 'only-key', content: 'x' }] as CodeItemProps[] },
     });
     expect(
-      container.querySelector('.cd-sidebar-code-content-head-text')?.textContent,
+      container.querySelector('.cd-sidebar-collapse-header-text')?.textContent,
     ).toBe('only-key');
   });
 
@@ -77,7 +77,7 @@ describe('SideBarCodeContent — 交互回调', () => {
     const onExpand = vi.fn();
     const { container } = renderWithLocale(CC, { props: { codes: CODES, onExpand } });
     const btn = container.querySelector(
-      '.cd-sidebar-code-content-expand',
+      '.cd-sidebar-collapse-header-expand-btn',
     ) as HTMLElement | null;
     expect(btn).toBeTruthy();
     btn!.click();
@@ -89,7 +89,7 @@ describe('SideBarCodeContent — 交互回调', () => {
 
   it('展开按钮 aria-label / title 走 i18n（en_US SideBar.expand = "Expand"）', () => {
     const { container } = renderWithLocale(CC, { props: { codes: CODES } });
-    const btn = container.querySelector('.cd-sidebar-code-content-expand');
+    const btn = container.querySelector('.cd-sidebar-collapse-header-expand-btn');
     expect(btn?.getAttribute('aria-label')).toBe('Expand');
     expect(btn?.getAttribute('title')).toBe('Expand');
   });

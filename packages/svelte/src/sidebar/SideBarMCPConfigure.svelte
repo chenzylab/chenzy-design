@@ -198,9 +198,9 @@
   title={resolvedTitle}
   class={['cd-sidebar-mcp', className].filter(Boolean).join(' ')}
 >
-  <div class="cd-sidebar-mcp-count">{countLabel}</div>
+  <div class="cd-sidebar-mcp-configure-content-header-count">{countLabel}</div>
 
-  <div class="cd-sidebar-mcp-search">
+  <div class="cd-sidebar-mcp-configure-content-search">
   <Input
     value={inputValue}
     placeholder={resolvedPlaceholder}
@@ -233,7 +233,7 @@
       {loc().t('SideBar.mcpBuiltinGroup')}
     </h3>
     {#if shownBuiltin.length > 0}
-      <ul class="cd-sidebar-mcp-list" role="list">
+      <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
         {#each shownBuiltin as option (option.value)}
           {@render itemRow(option, false)}
         {/each}
@@ -264,13 +264,13 @@
       {/if}
     </div>
     {#if shownCustom.length > 0}
-      <ul class="cd-sidebar-mcp-list" role="list">
+      <ul class="cd-sidebar-mcp-configure-content-item-container" role="list">
         {#each shownCustom as option (option.value)}
           {@render itemRow(option, true)}
         {/each}
       </ul>
     {:else if !hasCustom}
-      <div class="cd-sidebar-mcp-empty cd-sidebar-mcp-empty-custom">
+      <div class="cd-sidebar-mcp-empty cd-sidebar-mcp-configure-content-custom-empty">
         <span>{loc().t('SideBar.emptyCustomMcpInfo')}</span>
         <button
           type="button"
@@ -301,36 +301,36 @@
 {/snippet}
 
 {#snippet itemRow(option: SideBarMCPOption, custom: boolean)}
-  <li class="cd-sidebar-mcp-item" role="listitem">
+  <li class="cd-sidebar-mcp-configure-content-item" role="listitem">
     {#if renderItem}
       {@render renderItem({ option, custom })}
     {:else}
       {#if option.icon}
         {#if typeof option.icon === 'string'}
           <img
-            class="cd-sidebar-mcp-icon"
+            class="cd-sidebar-mcp-configure-content-item-sign"
             src={option.icon}
             alt=""
             aria-hidden="true"
           />
         {:else}
-          <span class="cd-sidebar-mcp-icon">{@render option.icon()}</span>
+          <span class="cd-sidebar-mcp-configure-content-item-sign">{@render option.icon()}</span>
         {/if}
       {:else}
-        <span class="cd-sidebar-mcp-icon" aria-hidden="true"></span>
+        <span class="cd-sidebar-mcp-configure-content-item-sign" aria-hidden="true"></span>
       {/if}
 
-      <div class="cd-sidebar-mcp-content">
-        <div class="cd-sidebar-mcp-label">{option.label}</div>
+      <div class="cd-sidebar-mcp-configure-content-item-content">
+        <div class="cd-sidebar-mcp-configure-content-item-content-label">{option.label}</div>
         {#if option.desc}
-          <div class="cd-sidebar-mcp-desc">{option.desc}</div>
+          <div class="cd-sidebar-mcp-configure-content-item-content-desc">{option.desc}</div>
         {/if}
       </div>
 
       {#if option.configure}
         <button
           type="button"
-          class="cd-sidebar-mcp-action"
+          class="cd-sidebar-mcp-configure-content-item-button"
           aria-label={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           title={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           onclick={(e) => onConfigureClick?.(e, option)}
@@ -350,7 +350,7 @@
       {#if custom}
         <button
           type="button"
-          class="cd-sidebar-mcp-action"
+          class="cd-sidebar-mcp-configure-content-item-button"
           aria-label={loc().t('SideBar.mcpEditItem', { name: option.label })}
           title={loc().t('SideBar.mcpEditItem', { name: option.label })}
           onclick={(e) => onEditClick?.(e, option)}
@@ -384,16 +384,16 @@
 {/snippet}
 
 <style>
-  :global(.cd-sidebar-mcp .cd-sidebar-container-body) {
+  :global(.cd-sidebar-mcp .cd-sidebar-container-content) {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-mcp-gap);
   }
-  .cd-sidebar-mcp-count {
+  .cd-sidebar-mcp-configure-content-header-count {
     color: var(--cd-sidebar-mcp-count-color);
     font-size: var(--cd-sidebar-mcp-count-size);
   }
-  .cd-sidebar-mcp-search {
+  .cd-sidebar-mcp-configure-content-search {
     inline-size: 100%;
   }
   .cd-sidebar-mcp-group {
@@ -430,12 +430,12 @@
     color: var(--cd-sidebar-mcp-label-color);
   }
   .cd-sidebar-mcp-add:focus-visible,
-  .cd-sidebar-mcp-action:focus-visible,
+  .cd-sidebar-mcp-configure-content-item-button:focus-visible,
   .cd-sidebar-mcp-add-cta:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-mcp-list {
+  .cd-sidebar-mcp-configure-content-item-container {
     display: flex;
     flex-direction: column;
     gap: var(--cd-sidebar-mcp-item-gap);
@@ -446,7 +446,7 @@
   /* padding / 图标间距取 Semi 值（$spacing-sidebar_mcp_item-paddingY|X、
      $spacing-sidebar_mcp_item_sign-marginRight）。
      边框/圆角/底色是本库的卡片观感 —— Semi 那边是扁平行 + 一条 border-bottom。 */
-  .cd-sidebar-mcp-item {
+  .cd-sidebar-mcp-configure-content-item {
     display: flex;
     align-items: center;
     gap: var(--cd-sidebar-mcp-item-sign-margin-right);
@@ -455,10 +455,10 @@
     border-radius: var(--cd-sidebar-mcp-item-radius);
     background: var(--cd-sidebar-mcp-item-bg);
   }
-  .cd-sidebar-mcp-item:hover {
+  .cd-sidebar-mcp-configure-content-item:hover {
     background: var(--cd-sidebar-mcp-item-bg-hover);
   }
-  .cd-sidebar-mcp-icon {
+  .cd-sidebar-mcp-configure-content-item-sign {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -471,14 +471,14 @@
     object-fit: cover;
     overflow: hidden;
   }
-  .cd-sidebar-mcp-content {
+  .cd-sidebar-mcp-configure-content-item-content {
     flex: 1;
     min-inline-size: 0;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .cd-sidebar-mcp-label {
+  .cd-sidebar-mcp-configure-content-item-content-label {
     overflow: hidden;
     color: var(--cd-sidebar-mcp-label-color);
     font-size: var(--cd-sidebar-mcp-label-size);
@@ -486,7 +486,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .cd-sidebar-mcp-desc {
+  .cd-sidebar-mcp-configure-content-item-content-desc {
     overflow: hidden;
     color: var(--cd-sidebar-mcp-desc-color);
     font-size: var(--cd-sidebar-mcp-desc-size);
@@ -497,7 +497,7 @@
     line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-  .cd-sidebar-mcp-action {
+  .cd-sidebar-mcp-configure-content-item-button {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -511,7 +511,7 @@
     color: var(--cd-sidebar-mcp-action-color);
     cursor: pointer;
   }
-  .cd-sidebar-mcp-action:hover {
+  .cd-sidebar-mcp-configure-content-item-button:hover {
     background: var(--cd-sidebar-mcp-action-hover-bg);
     color: var(--cd-sidebar-mcp-label-color);
   }
@@ -526,7 +526,7 @@
     font-size: var(--cd-font-size-small);
     text-align: center;
   }
-  .cd-sidebar-mcp-empty-custom {
+  .cd-sidebar-mcp-configure-content-custom-empty {
     display: flex;
     flex-direction: column;
     align-items: center;

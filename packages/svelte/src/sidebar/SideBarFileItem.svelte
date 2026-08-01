@@ -181,7 +181,7 @@
     )}
       <button
         type="button"
-        class="cd-sidebar-file-item-btn"
+        class="cd-sidebar-file-menu-bar-btn"
         class:cd-sidebar-file-item-btn-active={active}
         aria-label={label}
         aria-pressed={active ?? undefined}
@@ -193,7 +193,7 @@
       </button>
     {/snippet}
 
-    <div class="cd-sidebar-file-item-menu" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
+    <div class="cd-sidebar-file-menu-bar" role="toolbar" aria-label={t('SideBar.fileToolbar')}>
       {@render toolBtn(t('SideBar.undo'), () => chain()?.undo().run(), false, !toolbarState.canUndo, undoIcon)}
       {@render toolBtn(t('SideBar.redo'), () => chain()?.redo().run(), false, !toolbarState.canRedo, redoIcon)}
       <span class="cd-sidebar-file-item-sep" aria-hidden="true"></span>
@@ -217,7 +217,7 @@
       {@render toolBtn(t('SideBar.image'), () => chain()?.insertContent({ type: 'imageUpload' }).run(), false, false, imageIcon)}
     </div>
   {/if}
-  <div bind:this={editorHost} class="cd-sidebar-file-item-editor"></div>
+  <div bind:this={editorHost} class="cd-sidebar-editor"></div>
 </div>
 
 {#snippet undoIcon()}<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8a5 5 0 1 1 1.5 3.5M3 8V4.5M3 8h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>{/snippet}
@@ -243,7 +243,7 @@
     flex-direction: column;
     gap: var(--cd-sidebar-file-gap);
   }
-  .cd-sidebar-file-item-menu {
+  .cd-sidebar-file-menu-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -251,7 +251,7 @@
     padding: var(--cd-sidebar-file-menu-padding);
     border-bottom: 1px solid var(--cd-sidebar-file-menu-border);
   }
-  .cd-sidebar-file-item-btn {
+  .cd-sidebar-file-menu-bar-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -267,7 +267,7 @@
       background-color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease),
       color var(--cd-motion-duration-fast, 0.1s) var(--cd-motion-ease-standard, ease);
   }
-  .cd-sidebar-file-item-btn:hover:not(:disabled) {
+  .cd-sidebar-file-menu-bar-btn:hover:not(:disabled) {
     background: var(--cd-sidebar-file-btn-hover-bg);
     color: var(--cd-sidebar-file-btn-color-hover);
   }
@@ -275,11 +275,11 @@
     background: var(--cd-sidebar-file-btn-active-bg);
     color: var(--cd-sidebar-file-btn-color-active);
   }
-  .cd-sidebar-file-item-btn:disabled {
+  .cd-sidebar-file-menu-bar-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
-  .cd-sidebar-file-item-btn:focus-visible {
+  .cd-sidebar-file-menu-bar-btn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
@@ -288,24 +288,24 @@
     block-size: 16px;
     background: var(--cd-sidebar-file-menu-border);
   }
-  .cd-sidebar-file-item-editor {
+  .cd-sidebar-editor {
     color: var(--cd-sidebar-file-editor-color);
     font-size: var(--cd-sidebar-file-editor-size);
     line-height: var(--cd-sidebar-file-editor-line-height);
   }
   /* ProseMirror 编辑区（运行时注入 class）用 :global 命中。 */
-  :global(.cd-sidebar-file-item-editor .ProseMirror) {
+  :global(.cd-sidebar-editor .ProseMirror) {
     outline: none;
     min-block-size: var(--cd-sidebar-file-editor-min-height);
   }
-  :global(.cd-sidebar-file-item-editor .ProseMirror:focus) {
+  :global(.cd-sidebar-editor .ProseMirror:focus) {
     outline: none;
   }
-  :global(.cd-sidebar-file-item-editor .ProseMirror img) {
+  :global(.cd-sidebar-editor .ProseMirror img) {
     max-inline-size: 100%;
     border-radius: var(--cd-sidebar-file-image-radius);
   }
-  :global(.cd-sidebar-file-item-editor .ProseMirror .cd-sidebar-file-select) {
+  :global(.cd-sidebar-editor .ProseMirror .cd-sidebar-file-select) {
     background: var(--cd-sidebar-file-selection-bg);
   }
 </style>

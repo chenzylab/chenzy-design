@@ -309,7 +309,7 @@
       {:else if hasTitle || showClose}
         <header class="cd-sidebar-container-header">
           {#if hasTitle}
-            <h2 id={titleId} class="cd-sidebar-container-title">
+            <h2 id={titleId} class="cd-sidebar-container-header-title">
               {#if isTitleSnippet}
                 {@render (title as Snippet)()}
               {:else}
@@ -322,7 +322,7 @@
           {#if showClose}
             <button
               type="button"
-              class="cd-sidebar-container-close"
+              class="cd-sidebar-container-header-closeBtn"
               aria-label={closeLabel}
               onclick={(e) => emitCancel(e)}
             >
@@ -339,7 +339,7 @@
         </header>
       {/if}
 
-      <div class="cd-sidebar-container-body">
+      <div class="cd-sidebar-container-content">
         {@render children?.()}
       </div>
     </div>
@@ -433,7 +433,7 @@
     border-block-end: var(--cd-width-sidebar-container-header-border-bottom) solid
       var(--cd-color-sidebar-container-header-border-bottom);
   }
-  .cd-sidebar-container-title {
+  .cd-sidebar-container-header-title {
     margin: 0;
     overflow: hidden;
     color: var(--cd-sidebar-title-color);
@@ -444,7 +444,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .cd-sidebar-container-close {
+  .cd-sidebar-container-header-closeBtn {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
@@ -458,14 +458,14 @@
     color: var(--cd-sidebar-close-color);
     cursor: pointer;
   }
-  .cd-sidebar-container-close:hover {
+  .cd-sidebar-container-header-closeBtn:hover {
     background: var(--cd-sidebar-close-hover-bg);
   }
-  .cd-sidebar-container-close:focus-visible {
+  .cd-sidebar-container-header-closeBtn:focus-visible {
     outline: none;
     box-shadow: var(--cd-focus-ring);
   }
-  .cd-sidebar-container-body {
+  .cd-sidebar-container-content {
     flex: 1;
     overflow: auto;
     padding: var(--cd-sidebar-body-padding);
