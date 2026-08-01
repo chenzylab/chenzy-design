@@ -19,6 +19,7 @@
   // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
   import { Avatar } from '../avatar/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
+  import DialogueAction from './DialogueAction.svelte';
   import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
@@ -127,20 +128,6 @@
   // 头像：有 avatar 用图，否则色块 + 首字。
   const avatarInitial = $derived(title.slice(0, 1).toUpperCase());
 
-  async function handleCopy(): Promise<void> {
-    try {
-      const text = items
-        .flatMap((it) => {
-          const inner = (it as { content?: { text?: string }[] }).content;
-          return Array.isArray(inner) ? inner.map((p) => p.text ?? '') : [];
-        })
-        .join('\n\n');
-      await navigator.clipboard?.writeText(text);
-    } catch {
-      // 剪贴板不可用静默。
-    }
-    onMessageCopy?.(message);
-  }
 </script>
 
 <!-- 默认头像节点。 -->
@@ -221,25 +208,20 @@
   {/if}
 {/snippet}
 
-<!-- 默认操作栏节点。 -->
+<!-- 默认操作栏节点：拆到 DialogueAction.svelte（同 Semi widgets/dialogueAction.tsx）。 -->
 {#snippet defaultAction()}
   {#if !isLoading && !selecting && !isEditing}
-    <div class="cd-ai-chat-dialogue-action">
-      <button type="button" onclick={handleCopy} aria-label={loc().t('AIChatDialogue.copy')} title={loc().t('AIChatDialogue.copy')}>⧉</button>
-      {#if editable && isUser && onMessageEdit}
-        <button type="button" onclick={() => onMessageEdit?.(message)} aria-label={loc().t('AIChatDialogue.edit')} title={loc().t('AIChatDialogue.edit')}>✎</button>
-      {/if}
-      {#if showReset}
-        <button type="button" onclick={() => onMessageReset?.(message)} aria-label={loc().t('AIChatDialogue.reset')} title={loc().t('AIChatDialogue.reset')}>↻</button>
-      {/if}
-      <!-- 分享（对齐 Semi dialogueAction.tsx:168 shareNode，仅在传了回调时渲染）。 -->
-      {#if onMessageShare}
-        <button type="button" onclick={() => onMessageShare?.(message)} aria-label={loc().t('AIChatDialogue.share')} title={loc().t('AIChatDialogue.share')}>⇪</button>
-      {/if}
-      <button type="button" onclick={() => onMessageGoodFeedback?.(message)} aria-label={loc().t('AIChatDialogue.like')} title={loc().t('AIChatDialogue.like')}>👍</button>
-      <button type="button" onclick={() => onMessageBadFeedback?.(message)} aria-label={loc().t('AIChatDialogue.dislike')} title={loc().t('AIChatDialogue.dislike')}>👎</button>
-      <button type="button" onclick={() => onMessageDelete?.(message)} aria-label={loc().t('AIChatDialogue.delete')} title={loc().t('AIChatDialogue.delete')}>🗑</button>
-    </div>
+    <DialogueAction
+      {message}
+      isLastChat={showReset}
+      onMessageCopy={onMessageCopy}
+      onMessageDelete={onMessageDelete}
+      onMessageReset={onMessageReset}
+      onMessageEdit={editable && isUser ? onMessageEdit : undefined}
+      onMessageShare={onMessageShare}
+      onMessageGoodFeedback={onMessageGoodFeedback}
+      onMessageBadFeedback={onMessageBadFeedback}
+    />
   {/if}
 {/snippet}
 
@@ -357,26 +339,8 @@
     color: var(--cd-color-text-2);
   }
 
-  .cd-ai-chat-dialogue-action {
-    display: flex;
-    gap: var(--cd-spacing-extra-tight);
-    margin-top: var(--cd-spacing-extra-tight);
-  }
-
-  .cd-ai-chat-dialogue-action button {
-    appearance: none;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: var(--cd-spacing-extra-tight);
-    border-radius: var(--cd-border-radius-small);
-    color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-regular);
-  }
-
-  .cd-ai-chat-dialogue-action button:hover {
-    color: var(--cd-color-text-0);
-  }
+  /* 操作区样式已随组件拆分迁到 DialogueAction.svelte
+     （原来这三条是给裸 emoji 按钮写的，Semi 侧那几个按钮是复用 Button，样式归 Button 管）。 */
 
   .cd-ai-chat-dialogue-references {
     list-style: none;

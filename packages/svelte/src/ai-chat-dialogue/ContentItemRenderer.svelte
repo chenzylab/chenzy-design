@@ -25,6 +25,8 @@
   import { MarkdownRender } from '../markdown-render/index.js';
   import DialogueStep from './DialogueStep.svelte';
   import DialogueCode from './DialogueCode.svelte';
+  import DialogueReasoning from './DialogueReasoning.svelte';
+  import DialogueAnnotation, { type AnnotationItem } from './DialogueAnnotation.svelte';
 
   interface Props {
     /** 待渲染的 ContentItem。 */
@@ -87,18 +89,6 @@
       : [],
   );
 
-  // reasoning 折叠态。
-  let reasoningOpen = $state(false);
-  const reasoningText = $derived(resolveReasoningText(item));
-  function resolveReasoningText(it: ContentItem): string {
-    const r = it as { summary?: { text?: string }[]; content?: { text?: string }[] };
-    const parts = [...(r.summary ?? []), ...(r.content ?? [])];
-    return parts
-      .map((p) => p.text)
-      .filter((t): t is string => typeof t === 'string')
-      .join('\n\n');
-  }
-
   // 工具调用块折叠态 + 归一视图（core toolCallView：name/status/arguments/output/callId/serverLabel）。
   let toolOpen = $state(false);
   const toolView = $derived<ToolCallView>(toolCallView(item));
@@ -118,12 +108,19 @@
     return list.filter((a) => a.type !== 'file_citation' && a.type !== 'container_file_citation');
   }
 
-  /** annotation 的展示名与链接（url_citation 形态优先）。 */
-  function annotationView(a: Record<string, unknown>): { title: string; url?: string } {
-    const cite = (a.url_citation ?? a) as Record<string, unknown>;
-    const title = typeof cite.title === 'string' ? cite.title : (typeof cite.url === 'string' ? cite.url : '');
-    const url = typeof cite.url === 'string' ? cite.url : undefined;
-    return url !== undefined ? { title, url } : { title };
+  /**
+   * 把 annotation 归一成 DialogueAnnotation 需要的 { logo, title, url } 形态。
+   * url_citation 形态优先（OpenAI Response 的标注放在这一层）。
+   */
+  function annotationItems(part: Record<string, unknown>): AnnotationItem[] {
+    return partAnnotations(part).map((a) => {
+      const cite = (a.url_citation ?? a) as Record<string, unknown>;
+      const url = typeof cite.url === 'string' ? cite.url : undefined;
+      const title = typeof cite.title === 'string' ? cite.title : (url ?? '');
+      // logo 取站点 favicon（Semi demo 由数据直接给 logo，这里从 url 推导一个兜底）。
+      const logo = typeof cite.logo === 'string' ? cite.logo : undefined;
+      return { title, ...(url !== undefined ? { url } : {}), ...(logo !== undefined ? { logo } : {}) };
+    });
   }
 </script>
 
@@ -133,24 +130,16 @@
   <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-message">
     {#each innerParts as part, i (i)}
       {#if part.type === 'output_text' || part.type === 'input_text' || part.type === 'text'}
-        <!-- 引用标注（对齐 Semi AnnotationWidget）：渲染在正文之前，点击回传整组 annotation。 -->
+        <!--
+          引用标注：拆到 DialogueAnnotation.svelte（同 Semi widgets/contentItem/annotation.tsx）。
+          注意这是**一条折叠摘要**（logo 头像组 + 「N 篇资料」+ chevron），不是逐条列表——
+          本库原来是一个 annotation 渲染一个 li，与 Semi 完全不是一种形态。
+        -->
         {#if partAnnotations(part).length > 0}
-          <ul class="cd-ai-chat-dialogue-annotation-wrapper">
-            {#each partAnnotations(part) as anno, ai (ai)}
-              {@const view = annotationView(anno)}
-              <li>
-                <button
-                  type="button"
-                  class="cd-ai-chat-dialogue-annotation"
-                  title={view.url ?? view.title}
-                  onclick={() => onAnnotationClick?.(partAnnotations(part))}
-                >
-                  <span class="cd-ai-chat-dialogue-annotation-content-logo">{ai + 1}</span>
-                  <span class="cd-ai-chat-dialogue-annotation-content">{view.title}</span>
-                </button>
-              </li>
-            {/each}
-          </ul>
+          <DialogueAnnotation
+            annotation={annotationItems(part)}
+            onClick={() => onAnnotationClick?.(partAnnotations(part))}
+          />
         {/if}
         <MarkdownRender raw={partText(part)} {...mdProps} />
       {:else if part.type === 'refusal'}
@@ -177,21 +166,13 @@
     {/each}
   </div>
 {:else if type === 'reasoning'}
-  <div class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-reasoning">
-    <button
-      type="button"
-      class="cd-ai-chat-dialogue-reasoning-header"
-      aria-expanded={reasoningOpen}
-      onclick={() => (reasoningOpen = !reasoningOpen)}
-    >
-      {loc().t('AIChatDialogue.reasoning')}
-    </button>
-    {#if reasoningOpen}
-      <div class="cd-ai-chat-dialogue-reasoning-content">
-        <MarkdownRender raw={reasoningText} {...mdProps} />
-      </div>
-    {/if}
-  </div>
+  <!-- 思考块拆到 DialogueReasoning.svelte（同 Semi widgets/contentItem/reasoning.tsx）。 -->
+  <DialogueReasoning
+    status={(item as { status?: string }).status}
+    summary={(item as { summary?: { text?: string }[] }).summary}
+    content={(item as { content?: { text?: string }[] }).content}
+    markdownRenderProps={mdProps}
+  />
 {:else if type === 'function_call' || type === 'custom_call' || type.endsWith('_call')}
   <!-- 完整工具调用块：状态图标 + 折叠展开（参数/输出格式化 + call_id + MCP server）。 -->
   <div
@@ -263,37 +244,8 @@
     color: var(--cd-color-danger);
   }
 
-  /* 引用标注（对齐 Semi AnnotationWidget）：正文上方一排可点击的来源徽标。 */
-  .cd-ai-chat-dialogue-annotation-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cd-spacing-extra-tight);
-    margin: 0 0 var(--cd-spacing-tight);
-    padding: 0;
-    list-style: none;
-  }
-  .cd-ai-chat-dialogue-annotation {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    max-inline-size: 200px;
-    padding: 2px var(--cd-spacing-tight);
-    border: 1px solid var(--cd-ai-chat-dialogue-annotation-border);
-    border-radius: var(--cd-border-radius-full);
-    background: transparent;
-    color: var(--cd-ai-chat-dialogue-annotation-text);
-    font-size: var(--cd-font-size-small);
-    line-height: var(--cd-line-height-small);
-    cursor: pointer;
-  }
-  .cd-ai-chat-dialogue-annotation:hover {
-    background: var(--cd-ai-chat-dialogue-annotation-bg-hover);
-  }
-  .cd-ai-chat-dialogue-annotation-content {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  /* 引用标注的样式已随组件拆分迁到 DialogueAnnotation.svelte
+     （原来这几条是给「一排药丸徽标」写的，Semi 是一条带头像组的折叠摘要，形态不同）。 */
 
   .cd-ai-chat-dialogue-content-img-btn {
     appearance: none;
@@ -321,22 +273,9 @@
     color: var(--cd-color-text-0);
   }
 
-  .cd-ai-chat-dialogue-reasoning-header {
-    appearance: none;
-    border: none;
-    background: none;
-    padding: 0;
-    cursor: pointer;
-    color: var(--cd-color-text-2);
-    font: inherit;
-  }
-
-  .cd-ai-chat-dialogue-reasoning-content {
-    margin-top: var(--cd-spacing-extra-tight);
-    padding-left: var(--cd-spacing-tight);
-    border-left: 2px solid var(--cd-color-border);
-    color: var(--cd-color-text-1);
-  }
+  /* reasoning 的样式已随组件拆分迁到 DialogueReasoning.svelte
+     （原来这两条是本库自造的「无边框按钮 + 左竖线」，与 Semi 的
+     -wrapper 外框 + 三段 header 完全不是一套，已按 Semi 重写）。 */
 
   .cd-ai-chat-dialogue-content-tool-call {
     border: 1px solid var(--cd-color-border);

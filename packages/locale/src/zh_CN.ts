@@ -410,6 +410,7 @@ export const zh_CN: Locale = {
   },
   AIChatDialogue: {
     messageList: '消息列表',
+    more: '更多操作',
     backToBottom: '回到底部',
     selectMessage: '选择消息',
     copy: '复制',
@@ -421,7 +422,14 @@ export const zh_CN: Locale = {
     dislike: '无帮助',
     loading: '生成中…',
     error: '出错了',
-    reasoning: '思考过程',
+    reasoning: {
+      completed: '已思考完成',
+      thinking: '正在思考中...',
+    },
+    annotationText: '篇资料',
+    copySuccess: '复制成功',
+    deleteConfirm: '确认要删除吗？',
+    deleteContent: '删除后将无法恢复！',
     toolCall: '工具调用',
     toolArguments: '参数',
     toolInput: '输入',

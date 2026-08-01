@@ -55,21 +55,54 @@ describe('AIChatDialogue a11y / 渲染', () => {
 
   it('ContentItem 分块：reasoning 折叠块 + function_call 工具块渲染', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
-    // reasoning 折叠按钮存在，aria-expanded=false（默认收起）。
+    // 对齐 Semi reasoning.tsx：defaultOpen = status !== 'completed'
+    // —— 该 fixture 无 status（思考中），故**默认展开**。本库原来恒为收起。
     const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header');
     expect(toggle).not.toBeNull();
-    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     // function_call 工具块名称渲染。
     const tool = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-name');
     expect(tool?.textContent).toBe('get_weather');
   });
 
-  it('reasoning 折叠：点击后展开 aria-expanded=true', async () => {
+  it('reasoning 可折叠：点击在展开/收起间切换', async () => {
     const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
     const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header') as HTMLButtonElement;
+    // 无 status → 思考中 → 默认展开（见上条用例说明）。
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    await fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
     await fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(container.querySelector('.cd-ai-chat-dialogue-reasoning-content')).not.toBeNull();
+  });
+
+  // 对齐 Semi：completed 态默认收起，且标题文案走 reasoning.completed（本库原来是单串）。
+  it('reasoning status=completed：默认收起 + 标题用 completed 文案', async () => {
+    const done: AIDialogueMessage[] = [
+      {
+        id: 'r1',
+        role: 'assistant',
+        content: [{ type: 'reasoning', status: 'completed', summary: [{ text: '想好了' }] }],
+      },
+    ];
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats: done, roleConfig } });
+    const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(
+      container.querySelector('.cd-ai-chat-dialogue-reasoning-header-title')?.textContent,
+    ).toBe('Reasoning completed');
+  });
+
+  // Semi 的 header 是 prefix 图标 / title / suffix 箭头 三段；本库原来只有一个裸按钮。
+  it('reasoning header 三段结构：prefix + title + suffix', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
+    const header = container.querySelector('.cd-ai-chat-dialogue-reasoning-header')!;
+    expect(header.querySelector('.cd-ai-chat-dialogue-reasoning-header-prefix')).not.toBeNull();
+    expect(header.querySelector('.cd-ai-chat-dialogue-reasoning-header-title')).not.toBeNull();
+    expect(header.querySelector('.cd-ai-chat-dialogue-reasoning-header-suffix')).not.toBeNull();
+    // 外框（带边框圆角）也是 Semi 有本库缺的一层。
+    expect(container.querySelector('.cd-ai-chat-dialogue-reasoning-wrapper')).not.toBeNull();
   });
 
   it('选择模式：每条消息前置 checkbox', async () => {
@@ -332,6 +365,56 @@ describe('AIChatDialogue · 代码块（DialogueCode）', () => {
       props: { chats: codeChats, roleConfig },
     });
     await new Promise((r) => setTimeout(r, 100));
+    await expectNoAxeViolations(container);
+  });
+});
+
+// 操作区（对齐 Semi widgets/dialogueAction.tsx）。
+// 本库原来是一排裸 emoji 按钮（👍👎🗑✎↻⇪），且删除直接触发回调、复制不写剪贴板不弹 Toast。
+describe('AIChatDialogue · 操作区（DialogueAction）', () => {
+  const assistantDone: AIDialogueMessage[] = [
+    { id: 'a1', role: 'assistant', content: 'hi', status: 'completed' },
+  ];
+
+  it('操作按钮用具名图标 Button，不再是裸 emoji', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig },
+    });
+    const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+    expect(action).not.toBeNull();
+    // 每个操作按钮都挂 Semi 的 -action-btn 类。
+    expect(action.querySelectorAll('.cd-ai-chat-dialogue-action-btn').length).toBeGreaterThan(0);
+    // 不应再出现 emoji 文本。
+    expect(action.textContent).not.toContain('👍');
+    expect(action.textContent).not.toContain('🗑');
+  });
+
+  // 对齐 Semi render()：showFeedback = 非 user 且 status==='completed'。
+  it('assistant 且 completed 才显示点赞/点踩', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig },
+    });
+    expect(container.querySelector('button[aria-label="Good response"]')).not.toBeNull();
+
+    const userMsg: AIDialogueMessage[] = [{ id: 'u1', role: 'user', content: 'hi', status: 'completed' }];
+    const r2 = renderWithLocale(AIChatDialogue, { props: { chats: userMsg, roleConfig } });
+    expect(r2.container.querySelector('button[aria-label="Good response"]')).toBeNull();
+  });
+
+  // 对齐 Semi：删除收在「更多」下拉里，不再是操作栏上的直接按钮。
+  it('删除不在操作栏直出，收在「更多」下拉里', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig },
+    });
+    const action = container.querySelector('.cd-ai-chat-dialogue-action')!;
+    expect(action.querySelector('button[aria-label="Delete"]')).toBeNull();
+    expect(action.querySelector('button[aria-label="More actions"]')).not.toBeNull();
+  });
+
+  it('操作区无 axe 违规', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: assistantDone, roleConfig },
+    });
     await expectNoAxeViolations(container);
   });
 });

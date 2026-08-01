@@ -606,6 +606,8 @@ export interface Locale {
   AIChatDialogue: {
     /** message list region aria-label */
     messageList: string;
+    /** more-actions dropdown trigger aria-label */
+    more: string;
     /** back-to-bottom button aria-label */
     backToBottom: string;
     /** select-message checkbox aria-label */
@@ -628,8 +630,24 @@ export interface Locale {
     loading: string;
     /** error status text */
     error: string;
-    /** reasoning block toggle label */
-    reasoning: string;
+    /**
+     * reasoning block header text（对齐 Semi：嵌套两态而非单串）。
+     * status==='completed' 用 completed，否则用 thinking。
+     */
+    reasoning: {
+      /** finished state header */
+      completed: string;
+      /** in-progress state header */
+      thinking: string;
+    };
+    /** annotation count suffix（对齐 Semi annotationText） */
+    annotationText: string;
+    /** copy-success toast text（对齐 Semi copySuccess） */
+    copySuccess: string;
+    /** delete confirm title（对齐 Semi deleteConfirm） */
+    deleteConfirm: string;
+    /** delete confirm body（对齐 Semi deleteContent） */
+    deleteContent: string;
     /** tool-call block fallback name */
     toolCall: string;
     /** tool-call arguments section label */

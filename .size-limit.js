@@ -215,7 +215,13 @@ const components = [
   // 已 grep 反证未引入第三方依赖；Collapsible/CodeHighlight 走 `../` 属兄弟组件被 externalize 不计入）：
   //   · steps（Semi widgets/contentItem/dialogueStep.tsx）：可折叠步骤 + action 列表；
   //   · code（Semi widgets/contentItem/code.tsx）：语言标签栏 + 复制按钮的代码块覆盖。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '10.5 KB'],
+  // 10.5 → 12 KB：再按 Semi widgets/ 拆出 reasoning / action / annotation 三个 widget，
+  // 实测 11.2 KB。同样是纯功能增长（Semi 有本库缺的部分）：
+  //   · reasoning 补 -wrapper 外框 + 三段 header + 两态文案 + status 决定默认展开；
+  //   · action 从裸 emoji 换成复用 Button 的具名图标，并补剪贴板/Toast/删除确认 Modal；
+  //   · annotation 从「一排药丸」改成 Semi 的头像组折叠摘要（复用 AvatarGroup）。
+  // Button/Dropdown/Modal/Toast/AvatarGroup/Collapsible 均走 `../` 属兄弟组件被 externalize 不计入。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '12 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

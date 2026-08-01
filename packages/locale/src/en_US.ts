@@ -409,6 +409,9 @@ export const en_US: Locale = {
   },
   AIChatDialogue: {
     messageList: 'Messages',
+    // 「更多」按钮的可访问名。Semi moreNode 是裸图标 Button 不带 aria-label，
+    // 那样屏幕阅读器只会念出图标名；本库补一个真实可访问名。
+    more: 'More actions',
     backToBottom: 'Back to bottom',
     selectMessage: 'Select message',
     copy: 'Copy',
@@ -420,7 +423,14 @@ export const en_US: Locale = {
     dislike: 'Bad response',
     loading: 'Generating…',
     error: 'Something went wrong',
-    reasoning: 'Reasoning',
+    reasoning: {
+      completed: 'Reasoning completed',
+      thinking: 'Thinking...',
+    },
+    annotationText: 'pieces of information',
+    copySuccess: 'Copy successful.',
+    deleteConfirm: 'Are you sure you want to delete this message?',
+    deleteContent: 'This message will be permanently deleted and cannot be recovered.',
     toolCall: 'Tool call',
     toolArguments: 'Arguments',
     toolInput: 'Input',
