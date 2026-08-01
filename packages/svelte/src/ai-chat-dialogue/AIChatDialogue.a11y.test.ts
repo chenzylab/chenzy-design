@@ -481,3 +481,53 @@ describe('AIChatDialogue · 文件卡（DialogueFile）', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+// hints 提示区。此前本库直接复用 chat/Hint.svelte，类名前缀是 cd-chat-hint-*，
+// 且没有 selecting 态——Semi 是两个独立组件（chat/hint.tsx 与 dialogueHint.tsx），
+// 前缀与能力都不同。这里钉住 dialogue 版的类名与行为。
+describe('AIChatDialogue · hints 提示区（对齐 Semi dialogueHint）', () => {
+  const hints = ['帮我总结这段', '换个说法'];
+
+  it('渲染 dialogue 自己的类名前缀（不是 chat 的），每条一个 item', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints },
+    });
+    expect(container.querySelector('.cd-ai-chat-dialogue-hints')).not.toBeNull();
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-hint-item').length).toBe(2);
+    expect(container.querySelector('.cd-ai-chat-dialogue-hint-content')?.textContent).toBe(
+      '帮我总结这段',
+    );
+    // 复用 chat/Hint 时会渲染成这些类名 + 一个箭头图标，dialogue 版都不该有。
+    expect(container.querySelector('.cd-chat-hints')).toBeNull();
+    expect(container.querySelector('.cd-chat-hint-item')).toBeNull();
+    expect(container.querySelector('.cd-chat-hint-icon')).toBeNull();
+  });
+
+  it('selecting 态给容器加 -hints-selecting（左外边距让位多选框）', () => {
+    const off = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints },
+    });
+    expect(
+      off.container.querySelector('.cd-ai-chat-dialogue-hints-selecting'),
+    ).toBeNull();
+
+    const on = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints, selecting: true },
+    });
+    expect(
+      on.container.querySelector('.cd-ai-chat-dialogue-hints-selecting'),
+    ).not.toBeNull();
+  });
+
+  it('点击提示项触发 onHintClick(hint)，且无 axe 违规', async () => {
+    const onHintClick = vi.fn();
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: [], roleConfig, hints, onHintClick },
+    });
+    await fireEvent.click(
+      container.querySelectorAll('.cd-ai-chat-dialogue-hint-item')[1] as HTMLElement,
+    );
+    expect(onHintClick).toHaveBeenCalledWith('换个说法');
+    await expectNoAxeViolations(container);
+  });
+});

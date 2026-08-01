@@ -21,7 +21,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { useLocale } from '../locale-provider/index.js';
   import DialogueBox from './DialogueBox.svelte';
-  import Hint from '../chat/Hint.svelte';
+  import DialogueHint from './DialogueHint.svelte';
   import type { DialogueRenderConfig } from './render-config.js';
 
   interface Props {
@@ -238,7 +238,14 @@
   {/if}
 
   {#if hints && hints.length > 0}
-    <Hint {hints} onHintClick={handleHintClick} {renderHintBox} class={hintCls} style={hintStyle} />
+    <DialogueHint
+      {hints}
+      {selecting}
+      onHintClick={handleHintClick}
+      {renderHintBox}
+      class={hintCls}
+      style={hintStyle}
+    />
   {/if}
 </div>
 

@@ -400,12 +400,8 @@ export const aiChatDialogueTokens = {
     label: '操作按钮高度',
     usage: 'Semi $height-aiChatDialogue_action_btn',
   },
-  'ai-chat-dialogue-reasoning': {
-    value: '100%',
-    category: 'width',
-    label: '推理组件宽度',
-    usage: 'Semi $width-aiChatDialogue_reasoning',
-  },
+  // 注：Semi 有 $width-aiChatDialogue_reasoning（对应 scss 的 &-reasoning），
+  // 但它的 tsx 从不渲染 -reasoning 这个类名，属上游死 CSS，本库不再镜像该变量。
   'width-ai-chat-dialogue-reasoning-wrapper': {
     value: '100%',
     category: 'width',
