@@ -223,7 +223,12 @@ const components = [
   // Button/Dropdown/Modal/Toast/AvatarGroup/Collapsible 均走 `../` 属兄弟组件被 externalize 不计入。
   // 12 → 13 KB：再拆出 file 卡片（Semi dialogueContent.tsx 的 FileAttachment），实测 12.41 KB。
   // 同样是补 Semi 有本库缺的部分：<a> 跳转 + 6 类底色图标框 + 「类型 大小」第二行 + 引用入口。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '13 KB'],
+  // 13 → 13.5 KB：第二遍对齐补两处 Semi 有本库缺的，实测 13.06 KB。
+  //   · DialogueHint：Semi 的 chat/hint 与 aiChatDialogue/dialogueHint 是两个不同组件
+  //     （前缀/图标/prop 名/selecting 态都不同），本库原来直接复用了 chat 那个；
+  //   · DialogueBox 补 container 层 + continueSend，多选框从裸 input 换成复用 Checkbox。
+  // Checkbox 走 `../` 属兄弟组件被 externalize 不计入，增量主要来自 DialogueHint 自身。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '13.5 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

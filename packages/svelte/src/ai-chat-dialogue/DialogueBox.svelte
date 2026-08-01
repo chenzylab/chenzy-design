@@ -18,6 +18,7 @@
   import { useLocale } from '../locale-provider/index.js';
   // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
   import { Avatar } from '../avatar/index.js';
+  import { Checkbox } from '../checkbox/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
   import DialogueAction from './DialogueAction.svelte';
   import type { DialogueRenderConfig } from './render-config.js';
@@ -42,6 +43,8 @@
     selecting?: boolean;
     /** 当前是否被选中。 */
     selected?: boolean;
+    /** 与上一条同角色的连续发言：隐藏头像占位、不渲染标题（对齐 Semi continueSend）。 */
+    continueSend?: boolean;
     /** 透传 MarkdownRender props。 */
     markdownRenderProps?: Record<string, unknown> | undefined;
     /** ContentItem 按类型覆盖渲染。 */
@@ -81,6 +84,7 @@
     mode = 'bubble',
     selecting = false,
     selected = false,
+    continueSend = false,
     markdownRenderProps,
     renderMap,
     showReset = true,
@@ -107,6 +111,13 @@
   const loc = useLocale();
 
   const isUser = $derived(message.role === 'user');
+  // 对齐 Semi：只有 user 消息且 align=leftRight 时才右对齐（container-right）。
+  const isRightAlign = $derived(isUser && align === 'leftRight');
+  const avatarCls = $derived(
+    ['cd-ai-chat-dialogue-avatar', continueSend && 'cd-ai-chat-dialogue-avatar-hidden']
+      .filter(Boolean)
+      .join(' '),
+  );
   // 引用区：仅 user 消息 + showReference + 有 references 时展示（对齐 Semi）。
   const references = $derived<AIDialogueReference[]>(
     (showReference && isUser && Array.isArray(message.references) ? message.references : []),
@@ -137,15 +148,16 @@
   <!-- alt 取角色名：本库 Avatar 的文字/图片模式都带 role="img"，没有可访问名会触发
        axe role-img-alt（serious）。Semi 侧 demo 只传 src 不传 alt，但那是它的 demo 疏漏，
        不是可照搬的契约——这里补上真实可访问名。 -->
+  <!-- continueSend 时加 -avatar-hidden（visibility:hidden 占位但不显示），对齐 Semi dialogueAvatar.tsx。 -->
   {#if role?.avatar}
     <Avatar
-      class="cd-ai-chat-dialogue-avatar"
+      class={avatarCls}
       src={role.avatar}
       alt={role?.name ?? ''}
       size="extra-small"
     />
   {:else}
-    <Avatar class="cd-ai-chat-dialogue-avatar" alt={role?.name ?? ''} size="extra-small">
+    <Avatar class={avatarCls} alt={role?.name ?? ''} size="extra-small">
       {avatarInitial}
     </Avatar>
   {/if}
@@ -228,40 +240,52 @@
   {/if}
 {/snippet}
 
+<!-- 结构逐层对齐 Semi Dialogue.tsx：
+     wrapper[-selected][-continue-send] > checkbox + container[-right] > avatar + inner。
+     右对齐由 container-right 正向标记（Semi 只在 user 且 align=leftRight 时加），
+     本库原来是 wrapper-leftAlign 反向标记 + 无 container 层，语义相反且少一层。 -->
 <div
   class="cd-ai-chat-dialogue-wrapper"
+  class:cd-ai-chat-dialogue-wrapper-selected={selecting && selected}
+  class:cd-ai-chat-dialogue-wrapper-continue-send={continueSend}
   class:cd-ai-chat-dialogue-content-user={isUser}
-  class:cd-ai-chat-dialogue-wrapper-leftAlign={align === 'leftAlign'}
   class:cd-ai-chat-dialogue-content-failed={isError}
   class:cd-ai-chat-dialogue-content-bubble={showBubble}
 >
   {#if selecting}
-    <input
-      type="checkbox"
-      class="cd-ai-chat-dialogue-wrapper-selected"
-      checked={selected}
-      aria-label={loc().t('AIChatDialogue.selectMessage')}
-      onchange={() => onSelectToggle?.(message)}
-    />
+    <div class="cd-ai-chat-dialogue-checkbox">
+      <Checkbox
+        checked={selected}
+        aria-label={loc().t('AIChatDialogue.selectMessage')}
+        onChange={() => onSelectToggle?.(message)}
+      />
+    </div>
   {/if}
 
-  {#if dialogueRenderConfig?.renderFullDialogue}
-    <!-- 整块自定义渲染（优先级最高，对齐 Semi renderFullDialogue）。 -->
-    {@render dialogueRenderConfig.renderFullDialogue({
-      message,
-      role,
-      defaultNodes: { avatar: defaultAvatar, title: defaultTitle, content: defaultContent, action: defaultAction },
-    })}
-  {:else}
-    <!-- 头像 -->
-    {#if dialogueRenderConfig?.renderDialogueAvatar}
-      {@render dialogueRenderConfig.renderDialogueAvatar({ message, role, defaultAvatar })}
+  <div
+    class="cd-ai-chat-dialogue-container"
+    class:cd-ai-chat-dialogue-container-right={isRightAlign}
+  >
+    {#if dialogueRenderConfig?.renderFullDialogue}
+      <!-- 整块自定义渲染（优先级最高，对齐 Semi renderFullDialogue）。 -->
+      {@render dialogueRenderConfig.renderFullDialogue({
+        message,
+        role,
+        defaultNodes: { avatar: defaultAvatar, title: defaultTitle, content: defaultContent, action: defaultAction },
+      })}
     {:else}
-      {@render defaultAvatar()}
-    {/if}
+      <!-- 头像 -->
+      {#if dialogueRenderConfig?.renderDialogueAvatar}
+        {@render dialogueRenderConfig.renderDialogueAvatar({ message, role, defaultAvatar })}
+      {:else}
+        {@render defaultAvatar()}
+      {/if}
 
     <div class="cd-ai-chat-dialogue-inner">
-      {#if dialogueRenderConfig?.renderDialogueTitle}
+      <!-- Semi：continueSend 时不渲染标题（同角色连发只在第一条显示名字/时间）。 -->
+      {#if continueSend}
+        <!-- 连续发言不渲染标题 -->
+      {:else if dialogueRenderConfig?.renderDialogueTitle}
         {@render dialogueRenderConfig.renderDialogueTitle({ message, role, defaultTitle })}
       {:else}
         {@render defaultTitle()}
@@ -279,24 +303,47 @@
         {@render defaultAction()}
       {/if}
     </div>
-  {/if}
+    {/if}
+  </div>
 </div>
 
 <style>
+  /* 逐条对齐 Semi &-wrapper：这些 token 早就按 Semi 建好了，
+     但组件一直在用 --cd-spacing-tight 之类的通用值，等于没接上。 */
   .cd-ai-chat-dialogue-wrapper {
+    box-sizing: border-box;
     display: flex;
-    gap: var(--cd-spacing-tight);
-    padding: var(--cd-spacing-tight);
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    width: var(--cd-ai-chat-dialogue-wrapper);
+    flex-wrap: nowrap;
+    padding: var(--cd-ai-chat-dialogue-wrapper-padding-y)
+      var(--cd-ai-chat-dialogue-wrapper-padding-x);
+    margin-top: var(--cd-ai-chat-dialogue-wrapper-margin-top);
+    column-gap: var(--cd-ai-chat-dialogue-wrapper-column-gap);
   }
 
-  .cd-ai-chat-dialogue-content-user {
+  .cd-ai-chat-dialogue-wrapper-selected {
+    background-color: var(--cd-ai-chat-dialogue-wrapper-selected-bg);
+    border-radius: var(--cd-ai-chat-dialogue-wrapper-selected);
+  }
+
+  /* container 层：Semi 用它承载左右布局，本库原来整层缺失。 */
+  .cd-ai-chat-dialogue-container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    column-gap: var(--cd-ai-chat-dialogue-container-column-gap);
+  }
+
+  /* 右对齐（user + align=leftRight）。Semi 是正向标记 -container-right；
+     本库原来是反向的 -wrapper-leftAlign（默认反转、leftAlign 再转回来），语义相反。 */
+  .cd-ai-chat-dialogue-container-right {
     flex-direction: row-reverse;
   }
 
-  .cd-ai-chat-dialogue-wrapper-leftAlign,
-  .cd-ai-chat-dialogue-wrapper-leftAlign.cd-ai-chat-dialogue-content-user {
-    flex-direction: row;
+  .cd-ai-chat-dialogue-container-right .cd-ai-chat-dialogue-inner {
+    align-items: flex-end;
   }
 
   /* Semi &-avatar 只有这三条：圆角/底色/文字样式都由复用的 Avatar 组件承担。

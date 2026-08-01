@@ -195,13 +195,14 @@
     aria-label={loc().t('AIChatDialogue.messageList')}
     onscroll={handleScroll}
   >
-    {#each chats as message (message.id)}
+    {#each chats as message, index (message.id)}
       <DialogueBox
         {message}
         role={resolveRole(message)}
         {align}
         {mode}
         {selecting}
+        continueSend={index > 0 && message.role === chats[index - 1]?.role}
         selected={selectedIds.has(message.id)}
         {markdownRenderProps}
         renderMap={renderDialogueContentItem}

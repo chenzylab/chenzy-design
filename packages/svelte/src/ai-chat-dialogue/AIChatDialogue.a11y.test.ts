@@ -105,12 +105,31 @@ describe('AIChatDialogue a11y / 渲染', () => {
     expect(container.querySelector('.cd-ai-chat-dialogue-reasoning-wrapper')).not.toBeNull();
   });
 
-  it('选择模式：每条消息前置 checkbox', async () => {
+  // 注意 -checkbox 与 -wrapper-selected 是两回事（本库原来混为一谈）：
+  // 前者是多选框容器（selecting 时每条都有），后者是「本行已选中」的高亮标记。
+  it('选择模式：每条消息前置 checkbox 容器，未选中时无 -wrapper-selected', async () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats, roleConfig, selecting: true },
     });
-    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper-selected').length).toBe(2);
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-checkbox').length).toBe(2);
+    // 复用 Checkbox 组件，故 checkbox 容器里是真实的 input[type=checkbox]。
+    expect(
+      container.querySelectorAll('.cd-ai-chat-dialogue-checkbox input[type="checkbox"]').length,
+    ).toBe(2);
+    // 一条都没选 → 没有任何行带选中高亮。
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper-selected').length).toBe(0);
     await expectNoAxeViolations(container);
+  });
+
+  it('选中某条后该行带 -wrapper-selected 高亮', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats, roleConfig, selecting: true },
+    });
+    const first = container.querySelector(
+      '.cd-ai-chat-dialogue-checkbox input[type="checkbox"]',
+    ) as HTMLInputElement;
+    await fireEvent.click(first);
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-wrapper-selected').length).toBe(1);
   });
 
   it('error 状态渲染错误文案（走 locale 非 key）', async () => {
@@ -529,5 +548,77 @@ describe('AIChatDialogue · hints 提示区（对齐 Semi dialogueHint）', () =
     );
     expect(onHintClick).toHaveBeenCalledWith('换个说法');
     await expectNoAxeViolations(container);
+  });
+});
+
+// DOM 分层与右对齐。Semi Dialogue.tsx 的结构是
+//   wrapper[-selected][-continue-send] > checkbox + container[-right] > avatar + inner
+// 本库原来整个缺 container 层，且右对齐用的是反向标记 -wrapper-leftAlign
+// （默认就反转、传 leftAlign 再转回来），与 Semi 的 -container-right 语义相反。
+describe('AIChatDialogue · DOM 分层 / 右对齐（对齐 Semi Dialogue.tsx）', () => {
+  it('每条消息都有 container 层，且包住 avatar 与 inner', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats, roleConfig },
+    });
+    const containers = container.querySelectorAll('.cd-ai-chat-dialogue-container');
+    expect(containers.length).toBe(chats.length);
+    const first = containers[0]!;
+    expect(first.querySelector('.cd-ai-chat-dialogue-avatar')).not.toBeNull();
+    expect(first.querySelector('.cd-ai-chat-dialogue-inner')).not.toBeNull();
+    // container 必须是 wrapper 的子节点（层级不能塌）。
+    expect(first.parentElement?.classList.contains('cd-ai-chat-dialogue-wrapper')).toBe(true);
+  });
+
+  it('align=leftRight（默认）时只有 user 那条带 -container-right', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats, roleConfig },
+    });
+    const rights = container.querySelectorAll('.cd-ai-chat-dialogue-container-right');
+    const userCount = chats.filter((c) => c.role === 'user').length;
+    expect(rights.length).toBe(userCount);
+    // 反向标记已废弃，不该再出现。
+    expect(container.querySelector('.cd-ai-chat-dialogue-wrapper-leftAlign')).toBeNull();
+  });
+
+  it('align=leftAlign 时一条都不右对齐', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats, roleConfig, align: 'leftAlign' },
+    });
+    expect(container.querySelectorAll('.cd-ai-chat-dialogue-container-right').length).toBe(0);
+  });
+});
+
+// continueSend：与上一条同角色的连续发言，隐藏头像占位 + 不渲染标题。
+// 本库此前只在注释里提过这个概念，实际从未接线。
+describe('AIChatDialogue · continueSend 连续发言（对齐 Semi index.tsx:331）', () => {
+  const sameRole: AIDialogueMessage[] = [
+    { id: 'a1', role: 'assistant', content: '第一句' },
+    { id: 'a2', role: 'assistant', content: '第二句' },
+    { id: 'u1', role: 'user', content: '我的话' },
+  ];
+
+  it('同角色第二条：头像加 -avatar-hidden 且不渲染标题', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: sameRole, roleConfig },
+    });
+    const wrappers = container.querySelectorAll('.cd-ai-chat-dialogue-wrapper');
+    // 第 1 条（首条）：正常头像 + 有标题。
+    expect(
+      wrappers[0]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
+    ).toBeNull();
+    expect(wrappers[0]!.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
+    // 第 2 条（同角色连发）：头像隐藏 + 无标题 + wrapper 带 -continue-send。
+    expect(
+      wrappers[1]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
+    ).not.toBeNull();
+    expect(wrappers[1]!.querySelector('.cd-ai-chat-dialogue-title')).toBeNull();
+    expect(
+      wrappers[1]!.classList.contains('cd-ai-chat-dialogue-wrapper-continue-send'),
+    ).toBe(true);
+    // 第 3 条换了角色 → 恢复正常。
+    expect(
+      wrappers[2]!.querySelector('.cd-ai-chat-dialogue-avatar-hidden'),
+    ).toBeNull();
+    expect(wrappers[2]!.querySelector('.cd-ai-chat-dialogue-title')).not.toBeNull();
   });
 });
