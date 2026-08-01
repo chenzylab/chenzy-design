@@ -738,16 +738,32 @@ export interface Locale {
     fileEditor: string;
     /** FileContent toolbar aria-label */
     fileToolbar: string;
+    /** Hn 下拉触发器 */
+    heading: string;
+    /** 正文按钮 */
+    paragraph: string;
+    /** 代码块按钮 */
+    codeBlock: string;
+    /** 分割线按钮 */
+    divider: string;
+    /** 两端对齐按钮 */
+    alignJustify: string;
+    /** 链接按钮 */
+    link: string;
+    /** 链接弹层确认按钮 */
+    linkConfirm: string;
+    /** 链接弹层移除按钮 */
+    linkRemove: string;
+    /** 链接输入占位（对齐 Semi enterLinkAddress） */
+    enterLinkAddress: string;
+    /** 链接添加成功 Toast（对齐 Semi） */
+    linkAddSuccess: string;
+    /** 链接移除成功 Toast（对齐 Semi） */
+    linkRemoveSuccess: string;
     /** toolbar undo */
     undo: string;
     /** toolbar redo */
     redo: string;
-    /** toolbar heading level 1 */
-    heading1: string;
-    /** toolbar heading level 2 */
-    heading2: string;
-    /** toolbar heading level 3 */
-    heading3: string;
     /** toolbar bullet list */
     bulletList: string;
     /** toolbar ordered list */

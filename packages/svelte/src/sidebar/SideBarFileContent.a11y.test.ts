@@ -147,3 +147,52 @@ describe('SideBarFileItem · axe', () => {
     await expectNoAxeViolations(container);
   });
 });
+
+// 工具栏对齐 Semi MenuBar（21 项 + 4 条 Divider）。
+// 本库原来 14 项、图标全是手写 svg，且缺 Hn 下拉 / 正文 / 代码块 / 分割线 / 两端对齐 / 链接。
+describe('SideBarFileItem · 工具栏对齐 Semi', () => {
+  it('按 Semi 顺序渲染各按钮，图标走具名图标（非手写 svg）', async () => {
+    const { container } = renderWithLocale(SideBarFileItem, {
+      props: { content: '<p>hi</p>', editable: true },
+    });
+    await flush(container, 1);
+
+    const bar = container.querySelector('.cd-sidebar-file-menu-bar')!;
+    expect(bar).not.toBeNull();
+
+    // Semi 有本库此前缺的这几项。
+    for (const label of ['Heading', 'Paragraph', 'Code block', 'Divider', 'Justify', 'Link']) {
+      expect(
+        bar.querySelector(`[aria-label="${label}"]`),
+        `工具栏应有「${label}」按钮`,
+      ).not.toBeNull();
+    }
+
+    // 图标是具名图标（cd-icon-*），不是内联手写 svg。
+    expect(bar.querySelectorAll('[class*="cd-icon-"]').length).toBeGreaterThan(10);
+
+    // 代码块按钮无图标、显示 "CB" 文字（对齐 Semi）。
+    const cb = bar.querySelector('.cd-sidebar-file-menu-bar-btn-codeblock');
+    expect(cb?.textContent?.trim()).toBe('CB');
+  });
+
+  // 对齐 Semi：菜单栏里有 4 条竖分隔线（本库原来是自绘 span.-item-sep）。
+  it('用 Divider 组件分组，共 4 条', async () => {
+    const { container } = renderWithLocale(SideBarFileItem, {
+      props: { content: '<p>hi</p>', editable: true },
+    });
+    await flush(container, 1);
+    const bar = container.querySelector('.cd-sidebar-file-menu-bar')!;
+    expect(bar.querySelectorAll('.cd-divider-vertical')).toHaveLength(4);
+    // 旧的自绘分隔符已移除。
+    expect(bar.querySelector('.cd-sidebar-file-item-sep')).toBeNull();
+  });
+
+  it('工具栏无 a11y 违规（Dropdown 触发器不套裸 span）', async () => {
+    const { container } = renderWithLocale(SideBarFileItem, {
+      props: { content: '<p>hi</p>', editable: true },
+    });
+    await flush(container, 1);
+    await expectNoAxeViolations(container);
+  });
+});

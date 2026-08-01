@@ -420,18 +420,21 @@
     line-clamp: 3;
     -webkit-box-orient: vertical;
   }
+  /* gap 改用 Semi 的 $spacing-sidebar_annotation_footer-columnGap（4px；本库原为 6px）。 */
   .cd-sidebar-annotation-item-footer {
     display: flex;
     align-items: center;
-    gap: 6px;
+    column-gap: var(--cd-sidebar-annotation-footer-column-gap);
     min-inline-size: 0;
     color: var(--cd-sidebar-annotation-footer-color);
     font-size: var(--cd-font-size-small);
   }
+  /* logo 宽高/字号改用 Semi 值（14px；本库原为 16px）。 */
   .cd-sidebar-annotation-item-footer-logo {
     flex-shrink: 0;
-    inline-size: 16px;
-    block-size: 16px;
+    font-size: var(--cd-sidebar-annotation-footer-logo-font-size);
+    inline-size: var(--cd-sidebar-annotation-footer-logo);
+    block-size: var(--cd-sidebar-annotation-footer-logo);
     border-radius: var(--cd-border-radius-small);
     object-fit: cover;
   }
@@ -440,19 +443,23 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* 尺寸/内边距/圆角改用 Semi 值（16px / 0 2px / 8px；本库原来是 18px / 0 5px / 9px、
+     字号 11px 也是自造）。字号走 font-size-small（Semi 该处 @include font-size-small）。 */
   .cd-sidebar-annotation-item-footer-order {
+    box-sizing: border-box;
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
     margin-inline-start: auto;
-    min-inline-size: 18px;
-    block-size: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
+    min-inline-size: var(--cd-sidebar-annotation-footer-order-min-width);
+    block-size: var(--cd-height-sidebar-annotation-footer-order);
+    padding: var(--cd-sidebar-annotation-footer-order-padding-y)
+      var(--cd-sidebar-annotation-footer-order-padding-x);
+    border-radius: var(--cd-radius-sidebar-annotation-footer-order);
     background: var(--cd-sidebar-annotation-order-bg);
     color: var(--cd-sidebar-annotation-order-color);
-    font-size: 11px;
-    line-height: 1;
+    font-size: var(--cd-font-size-small);
+    line-height: 16px;
   }
 </style>

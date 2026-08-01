@@ -66,6 +66,25 @@ export const sideBarTokens = {
   'sidebar-mcp-custom-empty-margin-top': { value: '64px', category: 'spacing', label: 'MCP 自定义空态顶部外边距', usage: 'Semi $spacing-sidebar_mcp_custom_empty-marginTop' },
   'sidebar-mcp-item-sign-icon-font-size': { value: '32px', category: 'font', label: 'MCP 配置项图标字号', usage: 'Semi $font-sidebar_mcp_item_sign_icon-fontSize' },
 
+
+  // —— file 编辑器菜单栏（名/值逐条镜像 Semi $*-sidebar_menu_bar_* 与 $*-sidebar_file_menu_bar_*）——
+  'color-sidebar-menu-bar-border-top': { value: 'var(--cd-color-border)', category: 'color', label: '富文本编辑器菜单栏顶部边框颜色', usage: 'Semi $color-sidebar_menu_bar-borderTop' },
+  'color-sidebar-menu-bar-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: '富文本编辑器菜单栏底部边框颜色', usage: 'Semi $color-sidebar_menu_bar-borderBottom' },
+  'sidebar-menu-bar-dropdown-item-active-text': { value: 'var(--cd-color-primary)', category: 'color', label: '富文本编辑器菜单栏下拉框中选择项文本颜色', usage: 'Semi $color-sidebar_menu_bar_dropdown_item-active-text' },
+  'sidebar-menu-bar-dropdown-item-active-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '富文本编辑器菜单栏下拉框中选择项背景颜色', usage: 'Semi $color-sidebar_menu_bar_dropdown_item-active-bg' },
+  'sidebar-menu-bar-btn-active-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: '富文本编辑器菜单栏按钮背景颜色-激活', usage: 'Semi $color-sidebar_menu_bar_btn-active-bg' },
+  'sidebar-menu-bar-link-dropdown-btn-active': { value: 'var(--cd-color-primary)', category: 'color', label: '富文本编辑器菜单栏链接按钮下拉框按钮颜色-激活', usage: 'Semi $color-sidebar_menu_bar_link_dropdown_btn-active' },
+  'width-sidebar-menu-bar-border-top': { value: '1px', category: 'width', label: '富文本编辑器菜单栏顶部边框宽度', usage: 'Semi $width-sidebar_menu_bar-borderTop' },
+  'width-sidebar-menu-bar-border-bottom': { value: '1px', category: 'width', label: '富文本编辑器菜单栏底部边框宽度', usage: 'Semi $width-sidebar_menu_bar-borderBottom' },
+  'sidebar-file-menu-bar-gap': { value: '2px', category: 'spacing', label: '富文本编辑器菜单栏间距', usage: 'Semi $spacing-sidebar_file_menu_bar-gap' },
+  'sidebar-file-menu-bar-padding-y': { value: '2px', category: 'spacing', label: '富文本编辑器菜单栏垂直内边距', usage: 'Semi $spacing-sidebar_file_menu_bar-paddingY' },
+  'sidebar-file-menu-bar-padding-x': { value: '12px', category: 'spacing', label: '富文本编辑器菜单栏水平内边距', usage: 'Semi $spacing-sidebar_file_menu_bar-paddingX' },
+  'sidebar-file-menu-bar-codeblock-padding': { value: '8px', category: 'spacing', label: '富文本编辑器菜单栏代码块按钮内边距', usage: 'Semi $spacing-sidebar_file_menu_bar_codeblock-padding' },
+  'sidebar-file-menu-bar-link-dropdown-padding': { value: '8px', category: 'spacing', label: '富文本编辑器菜单栏链接按钮下拉内容内边距', usage: 'Semi $spacing-sidebar_file_menu_bar-link-dropdown-padding' },
+  'sidebar-menu-bar-divider-margin': { value: '0px', category: 'spacing', label: '富文本编辑器分割线外边距', usage: 'Semi $spacing-sidebar_menu_bar_divider-margin' },
+  'sidebar-file-menu-bar-codeblock-font-size': { value: '12px', category: 'font', label: '富文本编辑器菜单栏代码块按钮字号', usage: 'Semi $font-sidebar_file_menu_bar_codeblock-fontSize' },
+  'sidebar-file-menu-bar-codeblock-line-height': { value: '16px', category: 'font', label: '富文本编辑器菜单栏代码块按钮行高', usage: 'Semi $font-sidebar_file_menu_bar_codeblock-lineHeight' },
+
   // —— Options 图标 tab 组（P1）——
   // —— Options / Collapse（名/值逐条镜像 Semi $*-sidebar_options_* 与 $*-sidebar_collapse_*）——
   'color-sidebar-options-border-bottom': { value: 'var(--cd-color-border)', category: 'color', label: '视图选项区域底部边框颜色', usage: 'Semi $color-sidebar_options-borderBottom' },
@@ -180,12 +199,10 @@ export const sideBarTokens = {
   'sidebar-mcp-group-title-size': { value: 'var(--cd-font-size-secondary)', category: 'font', label: 'MCP 分组标题字号', usage: 'MCPConfigure 分组标题字号（组件消费）' },
   'sidebar-mcp-item-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项间距', usage: 'MCPConfigure 列表项纵向间距（组件消费）' },
   'sidebar-mcp-item-padding': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项内边距', usage: 'MCPConfigure 单个工具项内边距（组件消费）' },
-  'sidebar-mcp-item-gutter': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'MCP 列表项内元素间距', usage: 'MCPConfigure 工具项内图标/文本/动作横向间距（组件消费）' },
   'sidebar-mcp-item-radius': { value: 'var(--cd-border-radius-medium)', category: 'radius', label: 'MCP 列表项圆角', usage: 'MCPConfigure 工具项圆角（组件消费）' },
   'sidebar-mcp-item-bg': { value: 'var(--cd-color-fill-0)', category: 'color', label: 'MCP 列表项背景', usage: 'MCPConfigure 工具项背景（组件消费）' },
   'sidebar-mcp-item-bg-hover': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'MCP 列表项悬浮背景', usage: 'MCPConfigure 工具项悬浮背景（组件消费）' },
   'sidebar-mcp-item-border': { value: 'var(--cd-color-border)', category: 'color', label: 'MCP 列表项边框', usage: 'MCPConfigure 工具项边框（组件消费）' },
-  'sidebar-mcp-icon-size': { value: '32px', category: 'other', label: 'MCP 图标尺寸', usage: 'MCPConfigure 工具项前置图标尺寸（组件消费）' },
   'sidebar-mcp-icon-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: 'MCP 图标圆角', usage: 'MCPConfigure 工具项前置图标圆角（组件消费）' },
   'sidebar-mcp-icon-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: 'MCP 图标占位背景', usage: 'MCPConfigure 工具项前置图标占位背景（组件消费）' },
   'sidebar-mcp-label-color': { value: 'var(--cd-color-text-0)', category: 'color', label: 'MCP 工具名色', usage: 'MCPConfigure 工具名文本颜色（组件消费）' },
@@ -197,9 +214,6 @@ export const sideBarTokens = {
   'sidebar-mcp-empty-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'MCP 空态色', usage: 'MCPConfigure 自定义空态文本颜色（组件消费）' },
   // —— FileContent 富文本查看/编辑列表（P5）——
   'sidebar-file-gap': { value: 'var(--cd-spacing-tight)', category: 'spacing', label: 'FileContent 工具栏与编辑区间距', usage: 'FileItem 工具栏与编辑区之间间距（组件消费）' },
-  'sidebar-file-menu-gap': { value: 'var(--cd-spacing-extra-tight)', category: 'spacing', label: 'FileContent 工具栏按钮间距', usage: 'FileItem 工具栏按钮之间间距（组件消费）' },
-  'sidebar-file-menu-padding': { value: 'var(--cd-spacing-extra-tight) 0', category: 'spacing', label: 'FileContent 工具栏内边距', usage: 'FileItem 工具栏内边距（组件消费）' },
-  'sidebar-file-menu-border': { value: 'var(--cd-color-border)', category: 'color', label: 'FileContent 工具栏分隔线色', usage: 'FileItem 工具栏底边/竖分隔线颜色（组件消费）' },
   'sidebar-file-btn-radius': { value: 'var(--cd-border-radius-small)', category: 'radius', label: 'FileContent 工具按钮圆角', usage: 'FileItem 工具栏按钮圆角（组件消费）' },
   'sidebar-file-btn-color': { value: 'var(--cd-color-text-2)', category: 'color', label: 'FileContent 工具按钮默认色', usage: 'FileItem 工具栏按钮默认图标色（组件消费）' },
   'sidebar-file-btn-color-hover': { value: 'var(--cd-color-text-0)', category: 'color', label: 'FileContent 工具按钮 hover 色', usage: 'FileItem 工具栏按钮 hover 图标色（组件消费）' },
