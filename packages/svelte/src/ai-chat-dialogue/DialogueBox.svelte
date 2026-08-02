@@ -17,7 +17,7 @@
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
-  import { IconAlertCircle } from '@chenzy-design/icons';
+  import { IconAlertCircle, IconFile, IconSendMsgStroked } from '@chenzy-design/icons';
   import { Avatar } from '../avatar/index.js';
   import { Checkbox } from '../checkbox/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
@@ -238,6 +238,11 @@
     <ul class="cd-ai-chat-dialogue-references" aria-label={loc().t('AIChatDialogue.references')}>
       {#each references as ref, i (ref.id ?? i)}
         <li>
+          <!-- 逐层对齐 Semi contentItem/reference.tsx:66-79：
+               外层 -reference（复数 -references 是容器），内含前置发送图标 +
+               -reference-content 包裹层，包裹层里才是 -reference-icon / -reference-name。
+               本库原来把 -icon/-name/-content 三个都挂了**复数**前缀，
+               且 -content 是与 icon/name 并列的分支而非包裹层，层级也不对。 -->
           <button
             type="button"
             class="cd-ai-chat-dialogue-reference"
@@ -245,12 +250,17 @@
             title={ref.name ?? ref.content ?? ''}
             onclick={() => onReferenceClick?.(ref)}
           >
-            {#if ref.name}
-              <span class="cd-ai-chat-dialogue-references-icon" aria-hidden="true">◈</span>
-              <span class="cd-ai-chat-dialogue-references-name">{ref.name}</span>
-            {:else}
-              <span class="cd-ai-chat-dialogue-references-content">{ref.content}</span>
-            {/if}
+            <IconSendMsgStroked />
+            <span class="cd-ai-chat-dialogue-reference-content">
+              {#if ref.name}
+                <span class="cd-ai-chat-dialogue-reference-icon" aria-hidden="true">
+                  <IconFile />
+                </span>
+              {/if}
+              <span class="cd-ai-chat-dialogue-reference-name">
+                {ref.name || ref.content}
+              </span>
+            </span>
           </button>
         </li>
       {/each}
@@ -547,18 +557,18 @@
     max-width: 320px;
   }
 
-  .cd-ai-chat-dialogue-references-icon {
+  .cd-ai-chat-dialogue-reference-icon {
     color: var(--cd-color-primary);
     flex-shrink: 0;
   }
 
-  .cd-ai-chat-dialogue-references-name {
+  .cd-ai-chat-dialogue-reference-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .cd-ai-chat-dialogue-references-content {
+  .cd-ai-chat-dialogue-reference-content {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;

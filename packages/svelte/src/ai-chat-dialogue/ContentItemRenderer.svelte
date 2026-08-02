@@ -99,6 +99,17 @@
       : [],
   );
 
+  // 多于一张图时走「图片列表」排布（对齐 Semi dialogueContent.tsx:233 的 isImageList）。
+  const isImageList = $derived(
+    innerParts.filter((p) => p?.type === 'input_image' || p?.type === 'image').length > 1,
+  );
+
+  /** 本张图是否为「最后一张」：其后没有内容，或紧跟着的是文件（对齐 Semi:261）。 */
+  function isLastImage(idx: number): boolean {
+    const nextType = innerParts[idx + 1]?.type;
+    return idx === innerParts.length - 1 || nextType === 'input_file' || nextType === 'file';
+  }
+
   // 工具调用块折叠态 + 归一视图（core toolCallView：name/status/arguments/output/callId/serverLabel）。
   let toolOpen = $state(false);
   const toolView = $derived<ToolCallView>(toolCallView(item));
@@ -164,8 +175,12 @@
           class="cd-ai-chat-dialogue-content-img-btn"
           onclick={() => onImageClick?.(part)}
         >
+          <!-- -img-list（同条消息多于一张图）与 -img-last（最后一张 / 下一项是文件）
+               两个修饰类对齐 Semi ImageAttachment，本库原来只有基础的 -img。 -->
           <img
             class="cd-ai-chat-dialogue-content-img"
+            class:cd-ai-chat-dialogue-content-img-list={isImageList}
+            class:cd-ai-chat-dialogue-content-img-last={isLastImage(i)}
             src={(part.image_url as string) ?? (part.url as string)}
             alt=""
           />
@@ -275,10 +290,27 @@
     cursor: pointer;
   }
 
+  /* 逐条对齐 Semi &-content-img：固定宽高 + object-fit:cover（本库原来是
+     max-width/height 240px 的自造值，且 -img-list / -img-last 两个修饰类
+     的 token 早就建好了却没人消费）。 */
   .cd-ai-chat-dialogue-content-img {
-    max-width: 240px;
-    max-height: 240px;
-    border-radius: var(--cd-border-radius-medium);
+    margin-top: var(--cd-ai-chat-dialogue-img-margin-top);
+    border-radius: var(--cd-radius-ai-chat-dialogue-img);
+    width: var(--cd-width-ai-chat-dialogue-img);
+    height: var(--cd-height-ai-chat-dialogue-img);
+    object-fit: cover;
+  }
+
+  /* 多图时改用列表尺寸（128×128）并留右间距。 */
+  .cd-ai-chat-dialogue-content-img-list {
+    margin-right: var(--cd-ai-chat-dialogue-img-list-margin-right);
+    width: var(--cd-width-ai-chat-dialogue-img-list);
+    height: var(--cd-height-ai-chat-dialogue-img-list);
+  }
+
+  /* 最后一张（或下一项是文件）不留右间距。 */
+  .cd-ai-chat-dialogue-content-img-last {
+    margin-right: 0;
   }
 
   /* 文件卡的样式已随组件拆分迁到 DialogueFile.svelte

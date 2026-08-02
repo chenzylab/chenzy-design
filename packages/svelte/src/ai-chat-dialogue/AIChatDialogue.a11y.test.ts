@@ -733,3 +733,139 @@ describe('AIChatDialogue · 内容分层 / mode 修饰类（对齐 Semi dialogue
     expect(custom!.querySelector('[data-testid="custom-block"]')).not.toBeNull();
   });
 });
+
+// 引用区（user 消息 + showReference）。此前一条断言都没有，所以类名用错了复数前缀
+// 也没人发现：Semi 的 PREFIX_REFERENCES 只用于容器，子元素一律挂单数 PREFIX_REFERENCE。
+describe('AIChatDialogue · 引用区（对齐 Semi contentItem/reference.tsx）', () => {
+  const withRefs: AIDialogueMessage[] = [
+    {
+      id: 'u1',
+      role: 'user',
+      content: 'hi',
+      references: [{ id: 'r1', name: 'spec.md' }],
+    },
+  ];
+
+  it('容器用复数 -references，每项用单数 -reference', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: withRefs, roleConfig, showReference: true },
+    });
+    const list = container.querySelector('.cd-ai-chat-dialogue-references');
+    expect(list).not.toBeNull();
+    expect(list!.querySelectorAll('.cd-ai-chat-dialogue-reference').length).toBe(1);
+  });
+
+  it('项内为 -reference-content 包裹层，里面才是 -reference-icon / -reference-name', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: withRefs, roleConfig, showReference: true },
+    });
+    const item = container.querySelector('.cd-ai-chat-dialogue-reference')!;
+    const content = item.querySelector('.cd-ai-chat-dialogue-reference-content');
+    expect(content, '-content 应是包裹层').not.toBeNull();
+    // icon / name 必须在包裹层**内部**（本库原来是与之并列的分支）。
+    expect(content!.querySelector('.cd-ai-chat-dialogue-reference-icon')).not.toBeNull();
+    expect(content!.querySelector('.cd-ai-chat-dialogue-reference-name')?.textContent?.trim()).toBe(
+      'spec.md',
+    );
+    // 复数前缀的子元素不该再出现。
+    expect(container.querySelector('.cd-ai-chat-dialogue-references-icon')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-references-name')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-dialogue-references-content')).toBeNull();
+  });
+
+  it('无 name 时 -reference-name 回落到 content（对齐 Semi `name || content`）', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: [
+          { id: 'u2', role: 'user', content: 'hi', references: [{ id: 'r2', content: '一段引用' }] },
+        ],
+        roleConfig,
+        showReference: true,
+      },
+    });
+    expect(
+      container.querySelector('.cd-ai-chat-dialogue-reference-name')?.textContent?.trim(),
+    ).toBe('一段引用');
+  });
+});
+
+// 图片修饰类：Semi 的 ImageAttachment 按「同条消息是否多图」加 -img-list，
+// 按「是否最后一张 / 下一项是文件」加 -img-last。本库原来只有基础的 -img，
+// 而这两个修饰类的 token（128×128 + 右间距）早就按 Semi 建好了、无人消费。
+describe('AIChatDialogue · 图片 -img-list / -img-last（对齐 Semi ImageAttachment）', () => {
+  const imgMsg = (parts: Record<string, unknown>[]): AIDialogueMessage[] => [
+    { id: 'u1', role: 'user', content: [{ type: 'message', content: parts }] },
+  ];
+
+  it('单图：不加 -img-list，但仍是最后一张 → 有 -img-last', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: { chats: imgMsg([{ type: 'input_image', image_url: 'a.png' }]), roleConfig },
+    });
+    const img = container.querySelector('.cd-ai-chat-dialogue-content-img')!;
+    expect(img.classList.contains('cd-ai-chat-dialogue-content-img-list')).toBe(false);
+    expect(img.classList.contains('cd-ai-chat-dialogue-content-img-last')).toBe(true);
+  });
+
+  it('多图：每张都加 -img-list，只有最后一张加 -img-last', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: imgMsg([
+          { type: 'input_image', image_url: 'a.png' },
+          { type: 'input_image', image_url: 'b.png' },
+        ]),
+        roleConfig,
+      },
+    });
+    const imgs = [...container.querySelectorAll('.cd-ai-chat-dialogue-content-img')];
+    expect(imgs.length).toBe(2);
+    expect(imgs.every((n) => n.classList.contains('cd-ai-chat-dialogue-content-img-list'))).toBe(
+      true,
+    );
+    expect(imgs[0]!.classList.contains('cd-ai-chat-dialogue-content-img-last')).toBe(false);
+    expect(imgs[1]!.classList.contains('cd-ai-chat-dialogue-content-img-last')).toBe(true);
+  });
+
+  // Semi 的判定含「下一项是文件」这一支，不只是「数组末尾」。
+  it('图片后紧跟文件：该图也算 -img-last', () => {
+    const { container } = renderWithLocale(AIChatDialogue, {
+      props: {
+        chats: imgMsg([
+          { type: 'input_image', image_url: 'a.png' },
+          { type: 'input_file', filename: 'x.pdf' },
+        ]),
+        roleConfig,
+      },
+    });
+    const img = container.querySelector('.cd-ai-chat-dialogue-content-img')!;
+    expect(img.classList.contains('cd-ai-chat-dialogue-content-img-last')).toBe(true);
+  });
+});
+
+// 滚动条按需显隐 + 回到底部按钮结构。
+describe('AIChatDialogue · -list-scroll-hidden / -backBottom-button（对齐 Semi index.tsx）', () => {
+  it('默认隐藏滚动条（-list-scroll-hidden），用户滚轮后移除', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
+    const list = container.querySelector('.cd-ai-chat-dialogue-list')!;
+    expect(list.classList.contains('cd-ai-chat-dialogue-list-scroll-hidden')).toBe(true);
+    await fireEvent.wheel(list);
+    expect(list.classList.contains('cd-ai-chat-dialogue-list-scroll-hidden')).toBe(false);
+  });
+
+  it('回到底部是 span.-backBottom 包 Button.-backBottom-button（非裸 ↓ 字符）', async () => {
+    const { container } = renderWithLocale(AIChatDialogue, { props: { chats, roleConfig } });
+    const list = container.querySelector('.cd-ai-chat-dialogue-list') as HTMLElement;
+    // 造出「距底 > 阈值」的滚动状态：jsdom 下 scrollHeight 恒 0，直接改属性再触发 scroll。
+    Object.defineProperty(list, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(list, 'clientHeight', { value: 300, configurable: true });
+    list.scrollTop = 0;
+    await fireEvent.scroll(list);
+
+    const wrap = container.querySelector('span.cd-ai-chat-dialogue-backBottom');
+    expect(wrap, '外层应是 span.-backBottom').not.toBeNull();
+    const btn = wrap!.querySelector('button.cd-ai-chat-dialogue-backBottom-button');
+    expect(btn, '内层应是带 -backBottom-button 的 Button').not.toBeNull();
+    // 图标而非「↓」字符。
+    expect(btn!.querySelector('svg')).not.toBeNull();
+    expect(btn!.textContent?.trim()).not.toBe('↓');
+  });
+});
