@@ -157,8 +157,6 @@ export const meta = {
     '--cd-sidebar-option-bg-hover',
     '--cd-sidebar-option-color-active',
     '--cd-sidebar-option-bg-active',
-    '--cd-sidebar-back-color',
-    '--cd-sidebar-back-hover-bg',
     '--cd-sidebar-annotation-gap',
     '--cd-sidebar-annotation-card-bg',
     '--cd-sidebar-annotation-card-bg-hover',

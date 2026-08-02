@@ -4,13 +4,16 @@
 -->
 <script lang="ts">
   import SideBar from './SideBar.svelte';
-  import type { SideBarOption, SideBarMode } from './types.js';
+  import type { SideBarOption, SideBarMode, SideBarDetailContent } from './types.js';
 
   interface Props {
     mode?: SideBarMode;
     activeKey?: string;
     onActiveOptionChange?: (e: Event, key: string) => void;
     onBackWard?: (e: Event, mode: SideBarMode) => void | Promise<void>;
+    /** 传 false 则不传 renderDetailHeader，走 SideBar 自带的默认详情头。 */
+    customDetailHeader?: boolean;
+    detailContent?: SideBarDetailContent | undefined;
   }
 
   let {
@@ -18,6 +21,8 @@
     activeKey = 'tools',
     onActiveOptionChange,
     onBackWard,
+    customDetailHeader = true,
+    detailContent,
   }: Props = $props();
 
   const options: SideBarOption[] = [
@@ -36,7 +41,8 @@
   {onActiveOptionChange}
   {onBackWard}
   {renderMainContent}
-  {renderDetailHeader}
+  {...customDetailHeader ? { renderDetailHeader } : {}}
+  {...detailContent ? { detailContent } : {}}
   {renderDetailContent}
 />
 

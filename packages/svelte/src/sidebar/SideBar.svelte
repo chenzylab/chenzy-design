@@ -14,7 +14,7 @@
   import CodeHighlight from '../code-highlight/CodeHighlight.svelte';
   import JsonViewer from '../json-viewer/JsonViewer.svelte';
   import Button from '../button/Button.svelte';
-  import { IconCopyStroked } from '@chenzy-design/icons';
+  import { IconClose, IconCopyStroked } from '@chenzy-design/icons';
   import type { SideBarOption, SideBarMode, SideBarDetailContent } from './types.js';
   import type { SideBarImageUploadOptions } from './file-extensions.js';
 
@@ -116,52 +116,55 @@
 
 <div class={rootCls} {style}>
   {#if isMain}
-    {#if options.length > 0}
-      <SideBarOptions {options} {activeKey} {onActiveOptionChange} />
-    {/if}
-    <div class="cd-sidebar-main">
-      {@render renderMainContent?.(activeKey)}
+    <!-- Semi renderMain：-main-content-wrapper 包住「options + -main-content」两部分
+         （index.tsx:75-80）。本库原来没有外层 wrapper，内层也叫 -main 而非 -main-content。 -->
+    <div class="cd-sidebar-main-content-wrapper">
+      {#if options.length > 0}
+        <SideBarOptions {options} {activeKey} {onActiveOptionChange} />
+      {/if}
+      <div class="cd-sidebar-main-content">
+        {@render renderMainContent?.(activeKey)}
+      </div>
     </div>
   {:else}
-    <div class="cd-sidebar-detail-header">
-      <button
-        type="button"
-        class="cd-sidebar-back"
-        aria-label={backLabel}
-        disabled={backPending}
-        onclick={handleBack}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path
-            d="M10 3L5 8l5 5"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      {#if renderDetailHeader}
-        <div class="cd-sidebar-detail-header-content">
-          {@render renderDetailHeader(mode, detailContent)}
-        </div>
-      {:else if detailContent}
-        <!--
-          对齐 Semi renderHeader（semi-ui/sidebar/index.tsx:131-150）：
-          左侧 返回按钮 + detailContent.name，右侧复制按钮（IconCopyStroked）。
-        -->
-        <span class="cd-sidebar-detail-header-title">{detailContent.name ?? ''}</span>
-        <Button
-          class="cd-sidebar-detail-header-copy"
-          theme="borderless"
-          type="tertiary"
-          aria-label={copied ? loc().t('SideBar.copySuccess') : loc().t('SideBar.copy')}
-          onclick={handleCopyDetail}
-        >
-          <IconCopyStroked />
-        </Button>
-      {/if}
-    </div>
+    {#if renderDetailHeader}
+      <!-- Semi renderHeader 里 renderDetailHeader 有返回值就直接 return（index.tsx:127-130），
+           整个头部由消费方接管、连返回按钮一起替换。本库原来只是把它包进
+           -detail-header-content 里、外面仍保留自绘返回按钮，等于替换不彻底。 -->
+      {@render renderDetailHeader(mode, detailContent)}
+    {:else}
+      <!--
+        对齐 Semi renderHeader（semi-ui/sidebar/index.tsx:131-150）：
+        左右两个 span 分组——左 [关闭按钮 + 标题]，右 [复制按钮]。
+        本库原来没有 -left/-right 分组，且返回按钮是手写 svg（Semi 用 IconClose + Button）。
+      -->
+      <div class="cd-sidebar-detail-header">
+        <span class="cd-sidebar-detail-header-left">
+          <Button
+            class="cd-sidebar-back"
+            theme="borderless"
+            type="tertiary"
+            aria-label={backLabel}
+            disabled={backPending}
+            onclick={handleBack}
+          >
+            <IconClose />
+          </Button>
+          <span class="cd-sidebar-detail-header-title">{detailContent?.name ?? ''}</span>
+        </span>
+        <span class="cd-sidebar-detail-header-right">
+          <Button
+            class="cd-sidebar-detail-header-copy"
+            theme="borderless"
+            type="tertiary"
+            aria-label={copied ? loc().t('SideBar.copySuccess') : loc().t('SideBar.copy')}
+            onclick={handleCopyDetail}
+          >
+            <IconCopyStroked />
+          </Button>
+        </span>
+      </div>
+    {/if}
     <div class="cd-sidebar-detail">
       <!--
         对齐 Semi renderDetail：renderDetailContent 优先完全接管；
@@ -199,61 +202,62 @@
     min-block-size: 0;
     color: var(--cd-sidebar-color);
   }
-  .cd-sidebar-main,
+  /* Semi &-main-content-wrapper：竖向 flex 占满高（index.tsx 的 renderMain）。 */
+  .cd-sidebar-main-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-block-size: 0;
+  }
+
+  /* Semi &-main-content：12px 内边距 + 自身滚动。 */
+  .cd-sidebar-main-content {
+    padding: var(--cd-sidebar-main-content-padding);
+    height: 100%;
+    box-sizing: border-box;
+    overflow: auto;
+    min-block-size: 0;
+  }
+
   .cd-sidebar-detail {
     flex: 1;
     min-block-size: 0;
     overflow: auto;
   }
+
+  /* Semi &-detail-header：左右两组 space-between（本库原来是「标题 flex:1 撑开」）。 */
   .cd-sidebar-detail-header {
     display: flex;
-    flex-shrink: 0;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-    gap: var(--cd-spacing-tight, 8px);
-    padding: var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-right)
-      var(--cd-sidebar-container-header-padding-y) var(--cd-sidebar-container-header-padding-left);
-    border-block-end: var(--cd-width-sidebar-container-header-border-bottom) solid
-      var(--cd-color-sidebar-container-header-border-bottom);
+    flex-shrink: 0;
+    color: var(--cd-sidebar-detail-header-text);
+    padding: var(--cd-sidebar-detail-header-padding);
   }
-  .cd-sidebar-detail-header-content {
-    flex: 1;
+
+  .cd-sidebar-detail-header-left {
+    display: flex;
+    flex-direction: row;
+    column-gap: var(--cd-sidebar-detail-header-left-column-gap);
+    align-items: center;
     min-inline-size: 0;
   }
-  /* 对齐 Semi -detail-header：左侧标题占满、右侧复制按钮靠边（Semi 用 left/right 两个 span）。 */
+
+  .cd-sidebar-detail-header-right {
+    display: flex;
+    flex-direction: row;
+    column-gap: var(--cd-sidebar-detail-header-right-column-gap);
+    align-items: center;
+  }
+
+  /* Semi @include font-size-header-6 + bold（连带 line-height，见 semi-font-size-mixin 记忆）。 */
   .cd-sidebar-detail-header-title {
-    flex: 1;
-    min-inline-size: 0;
+    font-size: var(--cd-font-size-header-6);
+    line-height: 24px;
+    font-weight: var(--cd-font-weight-bold);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .cd-sidebar-back {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--cd-sidebar-close-radius);
-    background: transparent;
-    color: var(--cd-sidebar-back-color);
-    cursor: pointer;
-  }
-  .cd-sidebar-back:hover:not(:disabled) {
-    background: var(--cd-sidebar-back-hover-bg);
-  }
-  .cd-sidebar-back:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-  .cd-sidebar-back:focus-visible {
-    outline: none;
-    box-shadow: var(--cd-focus-ring);
-  }
-  /* RTL：返回箭头方向翻转。 */
-  :global(.cd-rtl) .cd-sidebar-back svg {
-    transform: scaleX(-1);
   }
 </style>

@@ -109,6 +109,10 @@ export const sideBarTokens = {
   'radius-sidebar-collapse-item': { value: '8px', category: 'radius', label: '折叠项圆角', usage: 'Semi $radius-sidebar_collapse_item' },
   'sidebar-main-collapse-file-content-max-height': { value: '400px', category: 'height', label: '主视图文件内容最大高度', usage: 'Semi $height-sidebar_main_collapse_file_content-maxHeight' },
   'sidebar-main-collapse-code-content-max-height': { value: '200px', category: 'height', label: '主视图代码内容最大高度', usage: 'Semi $height-sidebar_main_collapse_code_content-maxHeight' },
+  'sidebar-main-content-padding': { value: '12px', category: 'spacing', label: '主视图内容区内边距', usage: 'Semi $spacing-sidebar_main_content-padding' },
+  'sidebar-detail-header-padding': { value: '12px', category: 'spacing', label: '详情头内边距', usage: 'Semi $spacing-sidebar_detail_header-padding' },
+  'sidebar-detail-header-left-column-gap': { value: '8px', category: 'spacing', label: '详情头左侧列间距', usage: 'Semi $spacing-sidebar_detail_header_left-columnGap' },
+  'sidebar-detail-header-right-column-gap': { value: '4px', category: 'spacing', label: '详情头右侧列间距', usage: 'Semi $spacing-sidebar_detail_header_right-columnGap' },
 
   // —— 以下 Option 项为**本库自有**：本库的 Options 是图标 tab（方形命中区 + hover/激活态），
   //    Semi 的 options 是一排 Button，尺寸/圆角/三态色全归 Button 管，其 variables.scss
@@ -121,8 +125,6 @@ export const sideBarTokens = {
   'sidebar-option-bg-active': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: 'Option 激活背景', usage: '本库自有：图标 tab 激活背景' },
 
   // —— 详情返回按钮（P1）——
-  'sidebar-back-color': { value: 'var(--cd-color-text-1)', category: 'color', label: '返回按钮色', usage: '详情视图返回按钮颜色（组件消费）' },
-  'sidebar-back-hover-bg': { value: 'var(--cd-color-fill-1)', category: 'color', label: '返回按钮悬浮背景', usage: '详情视图返回按钮悬浮背景（组件消费）' },
 
   // ————————————————————————————————————————————————————————————————
   // Annotation 引用溯源（名/值逐条镜像 Semi sideBar/variables.scss 的

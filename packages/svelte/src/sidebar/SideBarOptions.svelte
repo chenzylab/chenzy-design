@@ -73,6 +73,7 @@
       type="button"
       class="cd-sidebar-options-button"
       class:cd-sidebar-option-active={selected}
+      class:cd-sidebar-options-normal={!selected}
       role="tab"
       id={optionId(item.key)}
       aria-selected={selected}
@@ -120,6 +121,15 @@
     background: var(--cd-sidebar-option-bg-hover);
     color: var(--cd-sidebar-option-color-hover);
   }
+  /* 未选中态（对齐 Semi &-options-normal）：Semi 标记的是「未选中」而非「选中」，
+     用它把默认 Button 的 primary 色/粗体压回常规文本色。
+     本库 Options 是自建图标 tab（非 Button），仍保留 -option-active 表达选中态，
+     但同时补上 Semi 的 -options-normal 标记与其文本色/字重，保持类名契约一致。 */
+  .cd-sidebar-options-normal {
+    color: var(--cd-sidebar-options-button-text);
+    font-weight: var(--cd-font-weight-regular);
+  }
+
   .cd-sidebar-option-active {
     background: var(--cd-sidebar-option-bg-active);
     color: var(--cd-sidebar-option-color-active);

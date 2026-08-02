@@ -49,15 +49,17 @@ describe('SideBar a11y — main / Options', () => {
 });
 
 describe('SideBar a11y — detail routing', () => {
-  it('mode!=main：返回按钮 i18n aria-label + renderDetailHeader/Content，无 axe violations', async () => {
+  // 对齐 Semi renderHeader（index.tsx:127-130）：renderDetailHeader 有返回值就直接 return，
+  // 整个头部由消费方接管——连返回按钮一起替换，不是「在自带头部里插一段」。
+  it('mode!=main + renderDetailHeader：整个头部被替换（无自带返回按钮）', async () => {
     const { container } = renderWithLocale(Fixture, {
       props: { mode: 'code' },
     });
     // main 视图的 Options tablist 不渲染。
     expect(container.querySelector('[role="tablist"]')).toBeNull();
-    // 返回按钮 aria-label 来自 en_US locale（SideBar.back = "Back"）。
-    const back = container.querySelector('.cd-sidebar-back') as HTMLElement | null;
-    expect(back?.getAttribute('aria-label')).toBe('Back');
+    // 自定义头接管后，默认头部整块不出现。
+    expect(container.querySelector('.cd-sidebar-detail-header')).toBeNull();
+    expect(container.querySelector('.cd-sidebar-back')).toBeNull();
     // detail header / content 按 mode 渲染。
     expect(container.querySelector('[data-testid="detail-title"]')?.textContent).toContain(
       'code',
@@ -68,13 +70,58 @@ describe('SideBar a11y — detail routing', () => {
     await expectNoAxeViolations(container);
   });
 
+  // 默认头部：Semi 是左右两个 span 分组——左 [关闭按钮 + 标题]，右 [复制按钮]。
+  it('mode!=main 不传 renderDetailHeader：默认头部左右分组 + i18n 返回按钮', async () => {
+    const { container } = renderWithLocale(Fixture, {
+      props: { mode: 'code', customDetailHeader: false, detailContent: { name: '示例文件' } },
+    });
+    const header = container.querySelector('.cd-sidebar-detail-header');
+    expect(header).not.toBeNull();
+    const left = header!.querySelector('.cd-sidebar-detail-header-left');
+    const right = header!.querySelector('.cd-sidebar-detail-header-right');
+    expect(left).not.toBeNull();
+    expect(right).not.toBeNull();
+    // 返回按钮在左组里，aria-label 走 en_US locale（SideBar.back = "Back"）。
+    const back = left!.querySelector('.cd-sidebar-back') as HTMLElement | null;
+    expect(back?.getAttribute('aria-label')).toBe('Back');
+    // 标题也在左组；复制按钮在右组。
+    expect(left!.querySelector('.cd-sidebar-detail-header-title')?.textContent).toBe('示例文件');
+    expect(right!.querySelector('.cd-sidebar-detail-header-copy')).not.toBeNull();
+    await expectNoAxeViolations(container);
+  });
+
   it('点击返回按钮触发 onBackWard(mode)', () => {
     const onBack = vi.fn();
     const { container } = renderWithLocale(Fixture, {
-      props: { mode: 'code', onBackWard: onBack },
+      props: { mode: 'code', customDetailHeader: false, onBackWard: onBack },
     });
     (container.querySelector('.cd-sidebar-back') as HTMLElement).click();
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(onBack.mock.calls[0]?.[1]).toBe('code');
+  });
+
+  // Semi 标记的是「未选中」（-options-normal）而非「选中」——正好与本库相反。
+  // 本库保留 -option-active 表达选中态，同时补上 Semi 的 -options-normal 标记。
+  it('Options：未选中项带 -options-normal，选中项不带', () => {
+    const { container } = renderWithLocale(Fixture, {
+      props: { mode: 'main', activeKey: 'tools' },
+    });
+    const buttons = container.querySelectorAll('.cd-sidebar-options-button');
+    expect(buttons.length).toBe(2);
+    // activeKey=tools → 第一个选中、第二个未选中。
+    expect(buttons[0]!.classList.contains('cd-sidebar-options-normal')).toBe(false);
+    expect(buttons[0]!.classList.contains('cd-sidebar-option-active')).toBe(true);
+    expect(buttons[1]!.classList.contains('cd-sidebar-options-normal')).toBe(true);
+  });
+
+  // Semi renderMain：-main-content-wrapper 包住 options + -main-content 两部分。
+  it('main 视图：-main-content-wrapper 包住 options 与 -main-content', () => {
+    const { container } = renderWithLocale(Fixture, { props: { mode: 'main' } });
+    const wrapper = container.querySelector('.cd-sidebar-main-content-wrapper');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper!.querySelector('[role="tablist"]')).not.toBeNull();
+    const content = wrapper!.querySelector('.cd-sidebar-main-content');
+    expect(content).not.toBeNull();
+    expect(content!.querySelector('[data-testid="main-content"]')).not.toBeNull();
   });
 });

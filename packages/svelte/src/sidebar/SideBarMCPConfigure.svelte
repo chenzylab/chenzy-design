@@ -200,7 +200,11 @@
 >
   <div class="cd-sidebar-mcp-configure-content-header-count">{countLabel}</div>
 
-  <div class="cd-sidebar-mcp-configure-content-search">
+  <!-- Semi 同一个 div 上挂两个类：-search（外边距）与 -search-container（列间距），
+       见 mcpConfigure/content.tsx:219。本库原来只有前者。 -->
+  <div
+    class="cd-sidebar-mcp-configure-content-search cd-sidebar-mcp-configure-content-search-container"
+  >
   <Input
     value={inputValue}
     placeholder={resolvedPlaceholder}
@@ -393,8 +397,14 @@
     color: var(--cd-sidebar-mcp-count-color);
     font-size: var(--cd-sidebar-mcp-count-size);
   }
+  /* Semi &-search 只管外边距，&-search-container 管 flex + 列间距（两个类同挂一个 div）。 */
   .cd-sidebar-mcp-configure-content-search {
     inline-size: 100%;
+    margin: var(--cd-sidebar-mcp-search-margin-y) var(--cd-sidebar-mcp-search-margin-x);
+  }
+  .cd-sidebar-mcp-configure-content-search-container {
+    display: flex;
+    column-gap: var(--cd-sidebar-mcp-search-container-column-gap);
   }
   .cd-sidebar-mcp-group {
     display: flex;
