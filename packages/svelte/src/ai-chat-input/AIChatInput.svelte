@@ -1313,6 +1313,38 @@
   }
 
   /* Semi: &-reference-icon（与 -img 同宽高，另有 radius 2px）。 */
+  /* 文件类型图标：底色按类型分派（逐条对齐 Semi &-ref-icon 的七个子类）。
+     本库此前渲染了 -ref-icon-{type} 类名却没有任何对应样式 ——
+     七种类型全是同一个默认底色，token 也一条没建。 */
+  .cd-ai-chat-input-ref-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cd-color-white);
+    flex-shrink: 0;
+  }
+  .cd-ai-chat-input-ref-icon-word {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-bg);
+  }
+  .cd-ai-chat-input-ref-icon-pdf {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-pdf);
+  }
+  .cd-ai-chat-input-ref-icon-code {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-code);
+  }
+  .cd-ai-chat-input-ref-icon-excel {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-excel);
+  }
+  .cd-ai-chat-input-ref-icon-video {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-video);
+  }
+  .cd-ai-chat-input-ref-icon-audio {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-audio);
+  }
+  .cd-ai-chat-input-ref-icon-unknown {
+    background-color: var(--cd-color-ai-chat-input-ref-icon-word-unknown);
+  }
+
   .cd-ai-chat-input-reference-icon {
     width: var(--cd-ai-chat-input-reference-icon-width);
     height: var(--cd-ai-chat-input-reference-icon-width);

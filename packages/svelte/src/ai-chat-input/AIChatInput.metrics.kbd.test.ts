@@ -119,3 +119,20 @@ describe('AIChatInput 视觉度量对齐 Semi', () => {
     }
   });
 });
+
+// 文件类型图标底色。Semi &-ref-icon 给七种类型各定一个底色
+// （$color-aiChatInput_ref_icon_word-*）；本库此前渲染了 -ref-icon-{type} 类名
+// 却一条样式/token 都没有 —— 七种类型全同色，而 a11y 用例只断类名存在，照样绿。
+describe('AIChatInput 文件类型图标底色（对齐 Semi）', () => {
+  it('docx 附件 → -ref-icon-word，底色是蓝 4（非透明/默认色）', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    const icon = document.querySelector('.cd-ai-chat-input-ref-icon-word') as HTMLElement;
+    expect(icon, '应渲染 word 类型图标').not.toBeNull();
+    const bg = getComputedStyle(icon).backgroundColor;
+    // Semi $color-aiChatInput_ref_icon_word-bg = rgba(var(--semi-blue-4), 1) = #3295fb。
+    expect(bg).toBe('rgb(50, 149, 251)');
+    // 前景白（Semi &-ref-icon 的 color: white）。
+    // 不断 display：本库 -attachment-icon 另有 flex 覆盖（Semi 无这层规则，属本库自有）。
+    expect(getComputedStyle(icon).color).toBe('rgb(255, 255, 255)');
+  });
+});

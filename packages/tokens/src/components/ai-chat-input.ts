@@ -201,6 +201,16 @@ export const aiChatInputTokens = {
   'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-round': { value: '9999px', category: 'radius', label: 'round 模式圆角', usage: 'Semi $radius-aiChatInput_footer_round' },
+  // —— 引用/附件的文件类型图标底色（逐条镜像 Semi $color-aiChatInput_ref_icon_word-*）——
+  // 本库此前一条都没有：组件渲染了 -ref-icon-{type} 类名，却没有任何对应样式，
+  // 七种类型全是同一个默认底色。
+  'color-ai-chat-input-ref-icon-word-bg': { value: 'var(--cd-color-blue-4)', category: 'color', label: '文本文件图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-bg' },
+  'color-ai-chat-input-ref-icon-word-pdf': { value: 'var(--cd-color-red-4)', category: 'color', label: 'PDF 图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-pdf' },
+  'color-ai-chat-input-ref-icon-word-code': { value: 'var(--cd-color-teal-5)', category: 'color', label: '代码文件图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-code' },
+  'color-ai-chat-input-ref-icon-word-excel': { value: 'var(--cd-color-green-5)', category: 'color', label: '表格文件图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-excel' },
+  'color-ai-chat-input-ref-icon-word-video': { value: 'var(--cd-color-purple-4)', category: 'color', label: '视频文件图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-video' },
+  'color-ai-chat-input-ref-icon-word-audio': { value: 'var(--cd-color-purple-4)', category: 'color', label: '音频文件图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-audio' },
+  'color-ai-chat-input-ref-icon-word-unknown': { value: 'var(--cd-color-grey-5)', category: 'color', label: '未知类型图标底色', usage: 'Semi $color-aiChatInput_ref_icon_word-unknown' },
   'color-ai-chat-input-footer-send-text': { value: 'var(--cd-color-white)', category: 'color', label: '发送按钮内容色', usage: 'Semi $color-aiChatInput_footer_send-text' },
   'color-ai-chat-input-footer-send-bg-default': { value: 'var(--cd-color-primary)', category: 'color', label: '发送按钮底（默认）', usage: 'Semi $color-aiChatInput_footer_send-bg-default' },
   'color-ai-chat-input-footer-send-bg-hover': { value: 'var(--cd-color-primary-hover)', category: 'color', label: '发送按钮底（悬浮）', usage: 'Semi $color-aiChatInput_footer_send-bg-hover' },
