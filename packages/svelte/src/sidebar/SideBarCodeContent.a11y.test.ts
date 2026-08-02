@@ -28,7 +28,7 @@ const CODES: CodeItemProps[] = [
 describe('SideBarCodeContent — 渲染 / 分流', () => {
   it('遍历 codes 渲染折叠面板，头部显示 name', () => {
     const { container } = renderWithLocale(CC, { props: { codes: CODES } });
-    const root = container.querySelector('.cd-sidebar-code-content');
+    const root = container.querySelector('.cd-sidebar-collapse-code');
     expect(root).toBeTruthy();
     // 两个折叠面板。
     const items = container.querySelectorAll('.cd-collapse-item');
@@ -67,7 +67,7 @@ describe('SideBarCodeContent — 渲染 / 分流', () => {
 
   it('空 codes 渲染空折叠列表，不抛错', () => {
     const { container } = renderWithLocale(CC, { props: { codes: [] } });
-    expect(container.querySelector('.cd-sidebar-code-content')).toBeTruthy();
+    expect(container.querySelector('.cd-sidebar-collapse-code')).toBeTruthy();
     expect(container.querySelectorAll('.cd-collapse-item').length).toBe(0);
   });
 });

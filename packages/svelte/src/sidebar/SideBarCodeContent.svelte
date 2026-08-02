@@ -52,8 +52,10 @@
     onChange?.(keys);
   }
 
+  // Semi widget/code.tsx:77 给 Collapse 根节点挂 `-collapse` + `-collapse-code` 两个类
+  // （公共折叠样式 + code 变体），本库原来叫 -code-content，与 Semi 无对应。
   const rootCls = $derived(
-    ['cd-sidebar-code-content', className].filter(Boolean).join(' '),
+    ['cd-sidebar-collapse', 'cd-sidebar-collapse-code', className].filter(Boolean).join(' '),
   );
 </script>
 

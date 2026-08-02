@@ -110,7 +110,13 @@
     }
   }
 
-  const rootCls = $derived(['cd-sidebar', className].filter(Boolean).join(' '));
+  // Semi 在根节点上按 mode 打 -main / -detail 标记（index.tsx:163-164），
+  // 供外部按视图定制样式。本库原来根节点只有 cd-sidebar，没有任何 mode 标记。
+  const rootCls = $derived(
+    ['cd-sidebar', isMain ? 'cd-sidebar-main' : 'cd-sidebar-detail', className]
+      .filter(Boolean)
+      .join(' '),
+  );
   const backLabel = $derived(loc().t('SideBar.back'));
 </script>
 
@@ -165,7 +171,10 @@
         </span>
       </div>
     {/if}
-    <div class="cd-sidebar-detail">
+    <!-- 这层是本库自有：Semi renderDetail 直接返回 CodeItem / FileItem，没有外层 div
+         （它的滚动由 Container 承担）。本库需要一层做 flex/滚动，故保留，
+         但改名 -detail-content——原名 -detail 与 Semi 根节点的 mode 标记同名，会撞。 -->
+    <div class="cd-sidebar-detail-content">
       <!--
         对齐 Semi renderDetail：renderDetailContent 优先完全接管；
         否则 mode='code' 走 CodeHighlight / JsonViewer，'file' 走 FileItem（可编辑富文本）。
@@ -219,7 +228,7 @@
     min-block-size: 0;
   }
 
-  .cd-sidebar-detail {
+  .cd-sidebar-detail-content {
     flex: 1;
     min-block-size: 0;
     overflow: auto;

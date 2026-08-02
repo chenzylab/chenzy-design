@@ -73,8 +73,10 @@
     onChange?.(keys);
   }
 
+  // Semi widget/file.tsx:459 给 Collapse 根节点挂 `-collapse` + `-collapse-file` 两个类
+  // （公共折叠样式 + file 变体），本库原来叫 -file-content，与 Semi 无对应。
   const rootCls = $derived(
-    ['cd-sidebar-file-content', className].filter(Boolean).join(' '),
+    ['cd-sidebar-collapse', 'cd-sidebar-collapse-file', className].filter(Boolean).join(' '),
   );
 </script>
 

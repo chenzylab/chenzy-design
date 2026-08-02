@@ -114,6 +114,23 @@ describe('SideBar a11y — detail routing', () => {
     expect(buttons[1]!.classList.contains('cd-sidebar-options-normal')).toBe(true);
   });
 
+  // Semi 在根节点按 mode 打 -main / -detail 标记（index.tsx:163-164），本库原来一个都没有。
+  // 注意 -detail 是**根节点的 mode 标记**，不是详情内容区——内容区那层本库自有，
+  // 已改名 -detail-content（Semi renderDetail 直接返回 CodeItem/FileItem，没有这层 div）。
+  it('根节点按 mode 打 -main / -detail 标记', () => {
+    const main = renderWithLocale(Fixture, { props: { mode: 'main' } });
+    const mainRoot = main.container.querySelector('.cd-sidebar')!;
+    expect(mainRoot.classList.contains('cd-sidebar-main')).toBe(true);
+    expect(mainRoot.classList.contains('cd-sidebar-detail')).toBe(false);
+
+    const detail = renderWithLocale(Fixture, { props: { mode: 'code' } });
+    const detailRoot = detail.container.querySelector('.cd-sidebar')!;
+    expect(detailRoot.classList.contains('cd-sidebar-detail')).toBe(true);
+    expect(detailRoot.classList.contains('cd-sidebar-main')).toBe(false);
+    // 内容区那层不再叫 -detail（否则与根标记同名相撞）。
+    expect(detailRoot.querySelector('.cd-sidebar-detail-content')).not.toBeNull();
+  });
+
   // Semi renderMain：-main-content-wrapper 包住 options + -main-content 两部分。
   it('main 视图：-main-content-wrapper 包住 options 与 -main-content', () => {
     const { container } = renderWithLocale(Fixture, { props: { mode: 'main' } });

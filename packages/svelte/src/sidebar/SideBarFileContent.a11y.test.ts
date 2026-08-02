@@ -60,7 +60,7 @@ describe('SideBarFileContent · 渲染 + 折叠列表', () => {
     const { container } = renderWithLocale(SideBarFileContent, {
       props: { files, activeKey: ['a', 'b'] },
     });
-    expect(container.querySelector('.cd-sidebar-file-content')).not.toBeNull();
+    expect(container.querySelector('.cd-sidebar-collapse-file')).not.toBeNull();
     expect(container.textContent).toContain('a.md');
     expect(container.textContent).toContain('b.html');
   });
