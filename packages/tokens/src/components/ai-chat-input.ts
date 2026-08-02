@@ -201,6 +201,30 @@ export const aiChatInputTokens = {
   'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-round': { value: '9999px', category: 'radius', label: 'round 模式圆角', usage: 'Semi $radius-aiChatInput_footer_round' },
+  // —— 富文本输入插槽（逐条镜像 Semi $*-aiChatInput_rich_text-input_slot-*，13 条）——
+  // 本库此前只有一条 lineHeight：插槽画成「虚线下划线」，Semi 是「主色浅底药丸」，
+  // 视觉是两套东西。
+  'color-ai-chat-input-rich-text-input-slot-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '输入插槽背景', usage: 'Semi $color-aiChatInput_rich_text-input_slot-bg' },
+  'color-ai-chat-input-rich-text-input-slot-text': { value: 'var(--cd-color-primary)', category: 'color', label: '输入插槽文本色', usage: 'Semi $color-aiChatInput_rich_text-input_slot-text' },
+  'color-ai-chat-input-rich-text-input-slot-placeholder': { value: 'var(--cd-color-primary-disabled)', category: 'color', label: '输入插槽占位符色', usage: 'Semi $color-aiChatInput_rich_text-input_slot_placeholder' },
+  'spacing-ai-chat-input-rich-text-input-slot-paddingy': { value: '2px', category: 'spacing', label: '输入插槽垂直内距', usage: 'Semi $spacing-aiChatInput_rich_text-input_slot-paddingY' },
+  'spacing-ai-chat-input-rich-text-input-slot-paddingx': { value: '4px', category: 'spacing', label: '输入插槽水平内距', usage: 'Semi $spacing-aiChatInput_rich_text-input_slot-paddingX' },
+  'spacing-ai-chat-input-rich-text-input-slot-marginy': { value: '2px', category: 'spacing', label: '输入插槽垂直外距', usage: 'Semi $spacing-aiChatInput_rich_text-input_slot-marginY' },
+  'spacing-ai-chat-input-rich-text-input-slot-marginx': { value: '2px', category: 'spacing', label: '输入插槽水平外距', usage: 'Semi $spacing-aiChatInput_rich_text-input_slot-marginX' },
+  'width-ai-chat-input-rich-text-input-slot': { value: '2px', category: 'width', label: '输入插槽最小宽', usage: 'Semi $width-aiChatInput_rich_text-input_slot' },
+  'radius-ai-chat-input-rich-text-input-slot': { value: '4px', category: 'radius', label: '输入插槽圆角', usage: 'Semi $radius-aiChatInput_rich_text-input_slot' },
+  'font-ai-chat-input-rich-text-input-slot-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '输入插槽字号', usage: 'Semi $font-aiChatInput_rich_text-input_slot-fontSize' },
+  'font-ai-chat-input-rich-text-input-slot-fontweight': { value: '600', category: 'font', label: '输入插槽字重', usage: 'Semi $font-aiChatInput_rich_text-input_slot-fontWeight' },
+  'ai-chat-input-rich-text-input-slot-placeholder-z': { value: '1', category: 'other', label: '输入插槽占位符层级', usage: 'Semi $z-aiChatInput_rich_text-input_slot_placeholder' },
+
+  // —— 配置区按钮（逐条镜像 Semi $*-aiChatInput_footer_configure_button-*）——
+  // 值与本库原来写死的一致，但此前没走专属 token：外部改不动、也对不上 Semi 变量表。
+  'color-ai-chat-input-footer-configure-button-border': { value: 'var(--cd-color-primary)', category: 'color', label: '配置按钮边框色', usage: 'Semi $color-aiChatInput_footer_configure_button-border' },
+  'color-ai-chat-input-footer-configure-button-border-active': { value: 'var(--cd-color-primary)', category: 'color', label: '配置按钮边框色（激活）', usage: 'Semi $color-aiChatInput_footer_configure_button-border-active' },
+  'color-ai-chat-input-footer-configure-button-text': { value: 'var(--cd-color-primary)', category: 'color', label: '配置按钮文字色（激活）', usage: 'Semi $color-aiChatInput_footer_configure_button-text' },
+  'color-ai-chat-input-footer-configure-button-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '配置按钮背景（激活）', usage: 'Semi $color-aiChatInput_footer_configure_button-bg' },
+  'width-ai-chat-input-footer-configure-button-border': { value: '1px', category: 'width', label: '配置按钮边框宽', usage: 'Semi $width-aiChatInput_footer_configure_button-border' },
+
   // —— 引用/附件的文件类型图标底色（逐条镜像 Semi $color-aiChatInput_ref_icon_word-*）——
   // 本库此前一条都没有：组件渲染了 -ref-icon-{type} 类名，却没有任何对应样式，
   // 七种类型全是同一个默认底色。

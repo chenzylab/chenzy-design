@@ -136,3 +136,29 @@ describe('AIChatInput 文件类型图标底色（对齐 Semi）', () => {
     expect(getComputedStyle(icon).color).toBe('rgb(255, 255, 255)');
   });
 });
+
+// 富文本输入插槽的视觉。Semi 是「主色浅底 + 4px 圆角」的行内药丸，
+// 本库原来画成「1px 虚线下划线」—— 两套完全不同的视觉，而 a11y 用例只断类名，照样绿。
+// 那 13 条 $*-rich_text-input_slot-* 变量本库此前只有 lineHeight 一条。
+describe('AIChatInput 输入插槽视觉（对齐 Semi）', () => {
+  it('input-slot 是主色浅底药丸（非虚线下划线）', async () => {
+    // 结构由 fixture 提供（见 input-slot-host）：塞进 ProseMirror 会被编辑器重写，
+    // 用 document.createElement 造裸节点又会依赖「同文件先挂过 AIChatInput」才注入
+    // :global 样式 —— 那样单跑绿、全量跑红（本轮就这么红过一次）。
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    await new Promise((r) => setTimeout(r, 60));
+    const host = document.querySelector('[data-testid="input-slot-host"]') as HTMLElement;
+    expect(host, 'fixture 应提供 input-slot 结构').not.toBeNull();
+
+    const slot = host.querySelector('.input-slot') as HTMLElement;
+    const cs = getComputedStyle(slot);
+    expect(cs.display).toBe('inline-block');
+    // Semi: 4px 圆角 + 主色浅底；本库原来是 border-bottom dashed、无背景。
+    expect(cs.borderRadius).toBe('4px');
+    expect(cs.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(cs.borderBottomStyle).not.toBe('dashed');
+    // 占位符是绝对定位（Semi 用它避免撑开插槽），本库原来是普通行内元素。
+    const ph = host.querySelector('.input-slot-placeholder') as HTMLElement;
+    expect(getComputedStyle(ph).position).toBe('absolute');
+  });
+});

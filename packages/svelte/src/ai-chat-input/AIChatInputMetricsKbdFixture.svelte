@@ -55,3 +55,14 @@
     onMouseEnter={() => {}}
   />
 </div>
+
+<!-- 输入插槽视觉度量用：直接摆一份 input-slot 结构。
+     不塞进 ProseMirror —— 往编辑器 innerHTML 注入的节点会被它重写掉；
+     也不在用例里用裸 document.createElement —— 那样样式能否命中取决于
+     同文件是否已挂过 AIChatInput（:global 样式随组件挂载注入），会变成顺序依赖。 -->
+<div data-testid="input-slot-host">
+  <span class="input-slot">
+    <span class="input-slot-placeholder">占位</span>
+    <span class="content">x</span>
+  </span>
+</div>

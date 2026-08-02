@@ -70,7 +70,8 @@
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
     padding: var(--cd-ai-chat-input-action-padding) var(--cd-spacing-tight);
-    border: 1px solid var(--cd-color-border);
+    border: var(--cd-width-ai-chat-input-footer-configure-button-border) solid
+      var(--cd-color-border);
     border-radius: var(--cd-ai-chat-input-action-radius);
     background: transparent;
     color: var(--cd-ai-chat-input-template-color);
@@ -85,10 +86,12 @@
     background: var(--cd-ai-chat-input-template-bg-hover);
   }
 
+  /* 激活态三色走 Semi 的专属变量（值与原来写死的一致，但此前对不上 Semi 变量表、
+     外部也改不动）。 */
   .cd-ai-chat-input-footer-configure-button-active {
-    border-color: var(--cd-color-primary);
-    background: var(--cd-color-primary-light-default);
-    color: var(--cd-color-primary);
+    border-color: var(--cd-color-ai-chat-input-footer-configure-button-border-active);
+    background: var(--cd-color-ai-chat-input-footer-configure-button-bg);
+    color: var(--cd-color-ai-chat-input-footer-configure-button-text);
   }
 
   .cd-ai-chat-input-footer-configure-button:disabled {
