@@ -56,3 +56,25 @@
   value={value as never}
   onChange={handleChange as never}
 />
+
+<style>
+  /* 逐条对齐 Semi aiChatInput.scss:277-294：1px 边框 + 透明底，
+     文字 600 字重 + text-1；hover/focus 保持同样的边框、不换底。
+     本库此前只挂了类名（上一轮补的），一条样式都没接。 */
+  :global(.cd-ai-chat-input-footer-configure-select) {
+    border: var(--cd-width-ai-chat-input-footer-configure-select-border) solid
+      var(--cd-color-ai-chat-input-footer-configure-select-border);
+    background: transparent;
+  }
+
+  :global(.cd-ai-chat-input-footer-configure-select .cd-select-value) {
+    font-weight: var(--cd-font-ai-chat-input-footer-configure-select-fontweight);
+    color: var(--cd-color-ai-chat-input-footer-configure-select-text);
+  }
+
+  :global(.cd-ai-chat-input-footer-configure-select:hover),
+  :global(.cd-ai-chat-input-footer-configure-select:focus) {
+    border-color: var(--cd-color-ai-chat-input-footer-configure-select-border);
+    background: transparent;
+  }
+</style>

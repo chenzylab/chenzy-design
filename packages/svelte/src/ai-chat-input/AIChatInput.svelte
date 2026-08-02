@@ -1415,9 +1415,9 @@
     max-height: var(--cd-ai-chat-input-editor-max-height);
     overflow-y: auto;
     color: var(--cd-ai-chat-input-color);
-    font: inherit;
-    /* 对齐 Semi aiChatInput.scss:499 `line-height: $font-aiChatInput_rich_text-lineHeight`
-       —— Semi 用组件专属变量，本库 token 同形同值。 */
+    /* 对齐 Semi aiChatInput.scss:498-499（font-size + line-height 两条都是组件专属变量）。
+       原来写 `font: inherit` 会把字号一并继承外部，Semi 是显式 regular。 */
+    font-size: var(--cd-font-ai-chat-input-rich-text-fontsize);
     line-height: var(--cd-ai-chat-input-rich-text-lineheight);
   }
 

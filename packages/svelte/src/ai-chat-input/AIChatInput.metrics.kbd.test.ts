@@ -194,3 +194,22 @@ describe('AIChatInput 技能插槽视觉（对齐 Semi）', () => {
     expect(cs.color).not.toBe('rgba(0, 0, 0, 0)');
   });
 });
+
+// 编辑区字号/行高。Semi aiChatInput.scss:498-499 两条都是组件专属变量
+// （$font-aiChatInput_rich_text-fontSize / -lineHeight）；本库原来写的是
+// `font: inherit`，字号会跟着外部走，而不是 Semi 的显式 regular。
+describe('AIChatInput 编辑区字号（对齐 Semi）', () => {
+  it('.ProseMirror 字号 14px / 行高 24px（非继承外部）', async () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    const deadline = Date.now() + 3000;
+    let pm: HTMLElement | null = null;
+    while (!pm && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 40));
+      pm = document.querySelector('.ProseMirror') as HTMLElement | null;
+    }
+    expect(pm, '编辑器应已挂载').not.toBeNull();
+    const cs = getComputedStyle(pm!);
+    expect(cs.fontSize).toBe('14px');
+    expect(cs.lineHeight).toBe('24px');
+  });
+});

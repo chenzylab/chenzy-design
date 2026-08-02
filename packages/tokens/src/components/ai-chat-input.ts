@@ -201,6 +201,43 @@ export const aiChatInputTokens = {
   'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-round': { value: '9999px', category: 'radius', label: 'round 模式圆角', usage: 'Semi $radius-aiChatInput_footer_round' },
+  // —— 补齐最后三条（附件滚动区/按钮前景、富文本字号）——
+  // 注：这条 Semi 变量表里有、但它自己的 scss 从不消费（上游死变量，注释还与
+  // -scroll_button-bg 复制粘贴同一句）。仍镜像以保持变量表一致，本库同样不消费。
+  'color-ai-chat-input-attachment-scroll-button-text': { value: 'var(--cd-color-white)', category: 'color', label: '附件滚动按钮前景', usage: 'Semi $color-aiChatInput_attachment_scroll_button-text（Semi 侧未消费）' },
+  'spacing-ai-chat-input-attachment-scroll-container': { value: '8px', category: 'spacing', label: '附件滚动区内间距', usage: 'Semi $spacing-aiChatInput_attachment_scroll_container' },
+  'font-ai-chat-input-rich-text-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '富文本编辑器字号', usage: 'Semi $font-aiChatInput_rich_text-fontSize' },
+
+  // —— 配置区下拉/单选按钮（逐条镜像 Semi $*-aiChatInput_footer_configure_{select,radio_button}-*）——
+  // 本库这两个组件此前只挂了类名（上一轮补的），一条 Semi 样式都没接。
+  // 注：Semi 的 $color-...configure_select-text 在 variables.scss 里重复定义了两次
+  //（54/55 行同名同值），这里只镜像一条。
+  'color-ai-chat-input-footer-configure-select-border': { value: 'var(--cd-color-border)', category: 'color', label: '配置下拉边框色', usage: 'Semi $color-aiChatInput_footer_configure_select-border' },
+  'color-ai-chat-input-footer-configure-select-bg': { value: 'var(--cd-color-bg-0)', category: 'color', label: '配置下拉背景', usage: 'Semi $color-aiChatInput_footer_configure_select-bg' },
+  'color-ai-chat-input-footer-configure-select-text': { value: 'var(--cd-color-text-1)', category: 'color', label: '配置下拉文字色', usage: 'Semi $color-aiChatInput_footer_configure_select-text' },
+  'width-ai-chat-input-footer-configure-select-border': { value: '1px', category: 'width', label: '配置下拉边框宽', usage: 'Semi $width-aiChatInput_footer_configure_select-border' },
+  'font-ai-chat-input-footer-configure-select-fontweight': { value: '600', category: 'font', label: '配置下拉字重', usage: 'Semi $font-aiChatInput_footer_configure_select-fontWeight' },
+  'color-ai-chat-input-footer-configure-radio-button-checked': { value: 'var(--cd-color-text-1)', category: 'color', label: '单选按钮选中文字色', usage: 'Semi $color-aiChatInput_footer_configure_radio_button_checked' },
+  'color-ai-chat-input-footer-configure-radio-button-checked-bg': { value: 'var(--cd-color-bg-2)', category: 'color', label: '单选按钮选中底色', usage: 'Semi $color-aiChatInput_footer_configure_radio_button_checked-bg' },
+  'spacing-ai-chat-input-footer-configure-radio-button-padding': { value: '4px', category: 'spacing', label: '单选按钮内距', usage: 'Semi $spacing-aiChatInput_footer_configure_radio_button-padding' },
+  'height-ai-chat-input-footer-configure-radio-button': { value: '16px', category: 'height', label: '单选按钮高', usage: 'Semi $height-aiChatInput_footer_configure_radio_button' },
+  'font-ai-chat-input-footer-configure-radio-button-fontsize': { value: '14px', category: 'font', label: '单选按钮字号', usage: 'Semi $font-aiChatInput_footer_configure_radio_button-fontSize' },
+
+  // —— 富文本选择器插槽（逐条镜像 Semi $*-aiChatInput_rich_text-select_slot-*）——
+  // 本库此前只有「inline-flex + 通用 spacing 外边距 + min-width:80px」三行自造样式，
+  // Semi 的底色/圆角/高度/内距/文本色/箭头色一条都没接。
+  'color-ai-chat-input-rich-text-select-slot-bg': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '选择器插槽背景', usage: 'Semi $color-aiChatInput_rich_text-select_slot-bg' },
+  'color-ai-chat-input-rich-text-select-selection-text': { value: 'var(--cd-color-primary)', category: 'color', label: '选择器插槽文本色', usage: 'Semi $color-aiChatInput_rich_text-select_selection-text' },
+  'color-ai-chat-input-rich-text-select-slot-arrow': { value: 'var(--cd-color-text-2)', category: 'color', label: '选择器插槽箭头色', usage: 'Semi $color-aiChatInput_rich_text-select_slot_arrow' },
+  'spacing-ai-chat-input-rich-text-select-slot-paddingx': { value: '4px', category: 'spacing', label: '选择器插槽水平内距', usage: 'Semi $spacing-aiChatInput_rich_text-select_slot-paddingX' },
+  'spacing-ai-chat-input-rich-text-select-slot-paddingy': { value: '2px', category: 'spacing', label: '选择器插槽垂直内距', usage: 'Semi $spacing-aiChatInput_rich_text-select_slot-paddingY' },
+  'spacing-ai-chat-input-rich-text-select-slot-marginx': { value: '4px', category: 'spacing', label: '选择器插槽水平外距', usage: 'Semi $spacing-aiChatInput_rich_text-select_slot-marginX' },
+  'spacing-ai-chat-input-rich-text-select-slot-marginy': { value: '2px', category: 'spacing', label: '选择器插槽垂直外距', usage: 'Semi $spacing-aiChatInput_rich_text-select_slot-marginY' },
+  'spacing-ai-chat-input-rich-text-select-selection-marginleft': { value: '0px', category: 'spacing', label: '选择器文本左外距', usage: 'Semi $spacing-aiChatInput_rich_text-select_selection-marginLeft' },
+  'height-ai-chat-input-rich-text-select-slot': { value: '24px', category: 'height', label: '选择器插槽高度', usage: 'Semi $height-aiChatInput_rich_text-select-slot' },
+  'width-ai-chat-input-rich-text-select-slot-arrow': { value: '16px', category: 'width', label: '选择器插槽箭头宽', usage: 'Semi $width-aiChatInput_rich_text-select_slot_arrow' },
+  'radius-ai-chat-input-rich-text-select-slot': { value: '4px', category: 'radius', label: '选择器插槽圆角', usage: 'Semi $radius-aiChatInput_rich_text-select_slot' },
+
   // —— 富文本技能插槽（逐条镜像 Semi $*-aiChatInput_rich_text-skill_slot-*）——
   // 本库此前用自造的 -skill-bg/-skill-color/-skill-radius/-skill-delete 四条，
   // 视觉也不同：本库是「常显药丸 + 常显删除按钮」，Semi 是「纯文字 + hover 才染底、

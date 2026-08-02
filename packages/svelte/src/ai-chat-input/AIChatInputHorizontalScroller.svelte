@@ -99,6 +99,8 @@
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE / Edge */
     column-gap: var(--cd-ai-chat-input-attachment-scroll-container-columnGap);
+    /* Semi $spacing-aiChatInput_attachment_scroll_container：滚动区自身内间距。 */
+    padding: var(--cd-spacing-ai-chat-input-attachment-scroll-container);
   }
 
   .cd-ai-chat-input-scroll-container::-webkit-scrollbar {
