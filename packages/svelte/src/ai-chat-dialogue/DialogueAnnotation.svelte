@@ -45,7 +45,7 @@
   onclick={() => onClick?.(annotation)}
 >
   <span class="cd-ai-chat-dialogue-annotation-content">
-    <AvatarGroup {maxCount} size="extra-extra-small" overlapFrom="end">
+    <AvatarGroup {maxCount} size="extra-extra-small" overlapFrom="end" {renderMore}>
       {#each annotation as item, index (index)}
         {#if item.logo}
           <Avatar
@@ -60,6 +60,18 @@
     <span class="cd-ai-chat-dialogue-annotation-content-icon"><IconChevronRight /></span>
   </span>
 </button>
+
+<!-- 溢出「+N」头像：Semi 用 renderMore 给它单独挂 -content-logo-renderMore 类
+     （annotation.tsx:34-38）。本库原来直接吃 AvatarGroup 的默认溢出渲染，没有这个类。 -->
+{#snippet renderMore({ restNumber }: { restNumber: number })}
+  <Avatar
+    class="cd-ai-chat-dialogue-annotation-content-logo-renderMore"
+    size="extra-extra-small"
+    alt="more"
+  >
+    {`+${restNumber}`}
+  </Avatar>
+{/snippet}
 
 <style>
   /* 逐条对齐 Semi aiChatDialogue.scss &-annotation。 */

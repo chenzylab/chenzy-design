@@ -742,7 +742,9 @@ describe('AIChatDialogue · 引用区（对齐 Semi contentItem/reference.tsx）
       id: 'u1',
       role: 'user',
       content: 'hi',
-      references: [{ id: 'r1', name: 'spec.md' }],
+      // 用 .pdf：Semi 只对 word/pdf/excel/code/video 五类出图标，
+      // .md 不在其中（原来这里写 spec.md，断言「有图标」其实与 Semi 不符）。
+      references: [{ id: 'r1', name: 'spec.pdf' }],
     },
   ];
 
@@ -765,7 +767,7 @@ describe('AIChatDialogue · 引用区（对齐 Semi contentItem/reference.tsx）
     // icon / name 必须在包裹层**内部**（本库原来是与之并列的分支）。
     expect(content!.querySelector('.cd-ai-chat-dialogue-reference-icon')).not.toBeNull();
     expect(content!.querySelector('.cd-ai-chat-dialogue-reference-name')?.textContent?.trim()).toBe(
-      'spec.md',
+      'spec.pdf',
     );
     // 复数前缀的子元素不该再出现。
     expect(container.querySelector('.cd-ai-chat-dialogue-references-icon')).toBeNull();
@@ -867,5 +869,56 @@ describe('AIChatDialogue · -list-scroll-hidden / -backBottom-button（对齐 Se
     // 图标而非「↓」字符。
     expect(btn!.querySelector('svg')).not.toBeNull();
     expect(btn!.textContent?.trim()).not.toBe('↓');
+  });
+});
+
+// 引用项的类型图标 / 缩略图分派（对齐 Semi renderReferenceIcon + renderReferenceImage）。
+describe('AIChatDialogue · 引用项类型图标（对齐 Semi 的五类映射）', () => {
+  const withRef = (ref: Record<string, unknown>): AIDialogueMessage[] => [
+    { id: 'u1', role: 'user', content: 'hi', references: [{ id: 'r', ...ref }] },
+  ];
+  const render1 = (ref: Record<string, unknown>) =>
+    renderWithLocale(AIChatDialogue, {
+      props: { chats: withRef(ref), roleConfig, showReference: true },
+    }).container;
+
+  it('按扩展名给出 -reference-icon-{type} 修饰类', () => {
+    for (const [name, type] of [
+      ['a.docx', 'word'],
+      ['a.pdf', 'pdf'],
+      ['a.xlsx', 'excel'],
+      ['a.ts', 'code'],
+      ['a.mp4', 'video'],
+    ] as const) {
+      const c = render1({ name });
+      expect(
+        c.querySelector(`.cd-ai-chat-dialogue-reference-icon-${type}`),
+        `${name} 应映射到 ${type}`,
+      ).not.toBeNull();
+    }
+  });
+
+  // Semi 只对这五类出图标：其余扩展名（.md/.zip…）不出图标节点。
+  it('五类之外不渲染图标节点', () => {
+    const c = render1({ name: 'note.md' });
+    expect(c.querySelector('.cd-ai-chat-dialogue-reference-icon')).toBeNull();
+    // 名称仍要渲染。
+    expect(c.querySelector('.cd-ai-chat-dialogue-reference-name')?.textContent?.trim()).toBe(
+      'note.md',
+    );
+  });
+
+  // 图片类走缩略图而不是图标（对齐 Semi renderReferenceImage）。
+  it('图片类且有 url：渲染 -reference-img 缩略图，不渲染图标', () => {
+    const c = render1({ name: 'p.png', url: 'https://x/p.png' });
+    const img = c.querySelector('.cd-ai-chat-dialogue-reference-img') as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('src')).toBe('https://x/p.png');
+    expect(c.querySelector('.cd-ai-chat-dialogue-reference-icon')).toBeNull();
+  });
+
+  it('图片类但无 url：不渲染缩略图', () => {
+    const c = render1({ name: 'p.png' });
+    expect(c.querySelector('.cd-ai-chat-dialogue-reference-img')).toBeNull();
   });
 });

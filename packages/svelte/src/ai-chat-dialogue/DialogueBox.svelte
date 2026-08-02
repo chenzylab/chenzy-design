@@ -14,10 +14,19 @@
     type AIDialogueReference,
     type ContentItem,
     type AIChatInputMessageContent,
+    dialogueFileIconType,
   } from '@chenzy-design/core';
   import { useLocale } from '../locale-provider/index.js';
   // 复用现有组件：Semi dialogueAvatar.tsx 用 Avatar，本库同样复用。
-  import { IconAlertCircle, IconFile, IconSendMsgStroked } from '@chenzy-design/icons';
+  import {
+    IconAlertCircle,
+    IconCode,
+    IconExcel,
+    IconPdf,
+    IconSendMsgStroked,
+    IconVideo,
+    IconWord,
+  } from '@chenzy-design/icons';
   import { Avatar } from '../avatar/index.js';
   import { Checkbox } from '../checkbox/index.js';
   import ContentItemRenderer from './ContentItemRenderer.svelte';
@@ -140,6 +149,11 @@
   const title = $derived(role?.name ?? message.name ?? message.role ?? '');
   const items = $derived(normalizeDialogueContent(message.content));
 
+  /** 取引用文件名的扩展名（对齐 Semi `name.split('.').pop()`）。 */
+  function refExtension(name: string | undefined): string | undefined {
+    return name ? name.split('.').pop() : undefined;
+  }
+
   // 头像：有 avatar 用图，否则色块 + 首字。
   const avatarInitial = $derived(title.slice(0, 1).toUpperCase());
 
@@ -237,6 +251,9 @@
   {#if references.length > 0}
     <ul class="cd-ai-chat-dialogue-references" aria-label={loc().t('AIChatDialogue.references')}>
       {#each references as ref, i (ref.id ?? i)}
+        <!-- 按扩展名分派类型图标 + -icon-{type} 修饰类（对齐 Semi renderReferenceIcon）。
+             Semi 只对 word/pdf/excel/code/video 五类出图标，其余（含图片）不出。 -->
+        {@const refType = dialogueFileIconType(refExtension(ref.name))}
         <li>
           <!-- 逐层对齐 Semi contentItem/reference.tsx:66-79：
                外层 -reference（复数 -references 是容器），内含前置发送图标 +
@@ -252,10 +269,27 @@
           >
             <IconSendMsgStroked />
             <span class="cd-ai-chat-dialogue-reference-content">
-              {#if ref.name}
-                <span class="cd-ai-chat-dialogue-reference-icon" aria-hidden="true">
-                  <IconFile />
+              {#if ref.name && refType !== 'default' && refType !== 'image'}
+                <span
+                  class="cd-ai-chat-dialogue-reference-icon cd-ai-chat-dialogue-reference-icon-{refType}"
+                  aria-hidden="true"
+                >
+                  {#if refType === 'word'}<IconWord size="small" />
+                  {:else if refType === 'pdf'}<IconPdf size="small" />
+                  {:else if refType === 'excel'}<IconExcel size="small" />
+                  {:else if refType === 'code'}<IconCode size="small" />
+                  {:else}<IconVideo size="small" />{/if}
                 </span>
+              {/if}
+              <!-- 图片类引用直接出缩略图（对齐 Semi renderReferenceImage：16×16 的 Image）。 -->
+              {#if ref.url && refType === 'image'}
+                <img
+                  class="cd-ai-chat-dialogue-reference-img"
+                  src={ref.url}
+                  alt=""
+                  width="16"
+                  height="16"
+                />
               {/if}
               <span class="cd-ai-chat-dialogue-reference-name">
                 {ref.name || ref.content}
@@ -557,9 +591,19 @@
     max-width: 320px;
   }
 
+  /* 逐条对齐 Semi &-reference-icon：16×16 + 右外边距 4px（本库原来只有色和 flex-shrink）。 */
   .cd-ai-chat-dialogue-reference-icon {
     color: var(--cd-color-primary);
     flex-shrink: 0;
+    width: var(--cd-width-ai-chat-dialogue-reference-icon);
+    height: var(--cd-height-ai-chat-dialogue-reference-icon);
+    margin-right: var(--cd-ai-chat-dialogue-reference-icon-margin-right);
+  }
+
+  /* 图片类引用的缩略图（对齐 Semi &-reference-img）。 */
+  .cd-ai-chat-dialogue-reference-img {
+    flex-shrink: 0;
+    margin-right: var(--cd-ai-chat-dialogue-reference-img-margin-right);
   }
 
   .cd-ai-chat-dialogue-reference-name {
