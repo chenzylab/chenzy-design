@@ -20,31 +20,34 @@
   const isEmpty = $derived(node.textContent === '' || node.textContent === ZERO_WIDTH);
 </script>
 
-<NodeViewWrapper as="span" class="cd-ai-chat-input-input-slot" data-empty={isEmpty || undefined}>
+<!-- 类名逐条对齐 Semi extension/inputSlot/component.tsx：input-slot /
+     input-slot-placeholder / content 三个都是**无前缀**的（Semi 这几个 tiptap 节点视图
+     刻意不带 semi- 前缀），本库原来一律加了 cd-ai-chat-input- 前缀。 -->
+<NodeViewWrapper as="span" class="input-slot" data-empty={isEmpty || undefined}>
   {#if isEmpty && placeholder}
-    <span class="cd-ai-chat-input-input-slot-placeholder" contenteditable="false" aria-hidden="true"
+    <span class="input-slot-placeholder" contenteditable="false" aria-hidden="true"
       >{placeholder}</span
     >
   {/if}
-  <NodeViewContent as="span" class="cd-ai-chat-input-input-slot-content" />
+  <NodeViewContent as="span" class="content" />
 </NodeViewWrapper>
 
 <style>
   /* NodeViewWrapper 的 class 在运行时注入，用 :global 命中（避免 unused-selector）。 */
-  :global(.cd-ai-chat-input-input-slot) {
+  :global(.input-slot) {
     display: inline;
     position: relative;
     border-bottom: 1px dashed var(--cd-color-primary);
     padding: 0 var(--cd-spacing-extra-tight);
   }
 
-  :global(.cd-ai-chat-input-input-slot-placeholder) {
+  :global(.input-slot-placeholder) {
     color: var(--cd-ai-chat-input-placeholder-color);
     pointer-events: none;
     user-select: none;
   }
 
-  :global(.cd-ai-chat-input-input-slot-content) {
+  :global(.input-slot .content) {
     outline: none;
   }
 </style>

@@ -31,8 +31,12 @@
   }
 </script>
 
-<NodeViewWrapper as="span" class="cd-ai-chat-input-select-slot-wrap">
+<!-- 类名对齐 Semi extension/selectSlot/index.tsx：select-slot-wrapper（外层）+
+     select-slot（Select 自身），两个都**无前缀**。本库原来外层叫
+     cd-ai-chat-input-select-slot-wrap，且 Select 上没挂 select-slot。 -->
+<NodeViewWrapper as="span" class="select-slot-wrapper">
   <Select
+    class="select-slot"
     size="small"
     optionList={options as never}
     value={value as never}
@@ -42,13 +46,13 @@
 
 <style>
   /* NodeViewWrapper 的 class 在运行时注入，用 :global 命中（避免 unused-selector）。 */
-  :global(.cd-ai-chat-input-select-slot-wrap) {
+  :global(.select-slot-wrapper) {
     display: inline-flex;
     vertical-align: baseline;
     margin: 0 var(--cd-spacing-extra-tight);
   }
 
-  :global(.cd-ai-chat-input-select-slot-wrap .cd-select) {
+  :global(.select-slot-wrapper .cd-select) {
     min-width: 80px;
   }
 </style>

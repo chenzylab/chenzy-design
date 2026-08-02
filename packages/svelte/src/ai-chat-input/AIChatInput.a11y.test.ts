@@ -531,7 +531,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await flush(container);
     component.setContent('<skill-slot data-label="总结" data-value="summarize"></skill-slot>');
     await flush();
-    const chip = popup('.cd-ai-chat-input-skill-slot');
+    const chip = popup('.skill-slot');
     expect(chip).not.toBeNull();
     expect(chip?.textContent).toContain('总结');
   });
@@ -554,7 +554,7 @@ describe('AIChatInput · 技能 + 模版（阶段 3）', () => {
     await fireEvent.mouseDown(item);
     expect(onSkillChange).toHaveBeenCalledWith(skills[0]);
     await flush();
-    expect(popup('.cd-ai-chat-input-skill-slot')?.textContent).toContain('总结');
+    expect(popup('.skill-slot')?.textContent).toContain('总结');
   });
 
   it('选中 hasTemplate 技能后展示模版按钮，changeTemplateVisible 打开面板', async () => {
@@ -666,7 +666,7 @@ describe('AIChatInput · select-slot 自定义节点（可选补充）', () => {
     );
     await flush();
     // NodeView 渲染出 select-slot wrapper + 内部 Select 触发器
-    expect(container.querySelector('.cd-ai-chat-input-select-slot-wrap')).not.toBeNull();
+    expect(container.querySelector('.select-slot-wrapper')).not.toBeNull();
     expect(container.querySelector('.cd-select')).not.toBeNull();
   });
 
@@ -700,8 +700,8 @@ describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
     await flush(container);
     component.setContent('<p>去 <input-slot placeholder="填城市">﻿</input-slot> 出差</p>');
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-input-slot')).not.toBeNull();
-    expect(container.querySelector('.cd-ai-chat-input-input-slot-placeholder')?.textContent).toBe(
+    expect(container.querySelector('.input-slot')).not.toBeNull();
+    expect(container.querySelector('.input-slot-placeholder')?.textContent).toBe(
       '填城市',
     );
   });
@@ -716,7 +716,7 @@ describe('AIChatInput · input-slot 可编辑节点（可选补充）', () => {
     await flush(container);
     component.setContent('<p>去 <input-slot placeholder="填城市">北京</input-slot></p>');
     await flush();
-    expect(container.querySelector('.cd-ai-chat-input-input-slot-placeholder')).toBeNull();
+    expect(container.querySelector('.input-slot-placeholder')).toBeNull();
     const sendBtn = container.querySelector('.cd-ai-chat-input-footer-action-send, .cd-ai-chat-input-footer-action-stop') as HTMLButtonElement;
     await fireEvent.click(sendBtn);
     const text = onMessageSend.mock.calls[0]![0].inputContents?.[0]?.text;
@@ -904,5 +904,46 @@ describe('AIChatInput · 补齐 Semi props/methods', () => {
     await rerender({ defaultContent: '<p>草稿</p>', generating: true, clearContentOnGenerating: false });
     await flush();
     expect(container.querySelector('.ProseMirror')?.textContent).toContain('草稿');
+  });
+});
+
+// tiptap 节点视图的类名。Semi 的三个 slot 扩展（inputSlot/selectSlot/skillSlot）
+// 刻意**不带 semi- 前缀**（extension/*/index.tsx 里全是裸类名），本库原来一律加了
+// cd-ai-chat-input- 前缀，且 skill 外层写成 -wrap（Semi 是 -wrapper）。
+describe('AIChatInput · slot 节点类名（对齐 Semi extension/*）', () => {
+  it('skill-slot：外层 skill-slot-wrapper，内层 skill-slot + skill-slot-delete', async () => {
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContent: (h: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    component.setContent('<skill-slot data-label="总结" data-value="summarize"></skill-slot>');
+    await flush();
+    expect(container.querySelector('.skill-slot-wrapper'), '外层应是 -wrapper').not.toBeNull();
+    const chip = container.querySelector('.skill-slot');
+    expect(chip).not.toBeNull();
+    expect(chip!.querySelector('.skill-slot-delete')).not.toBeNull();
+    // 带前缀的旧名不该再出现。
+    expect(container.querySelector('.cd-ai-chat-input-skill-slot-wrap')).toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-skill-slot')).toBeNull();
+  });
+
+  it('input-slot：input-slot > input-slot-placeholder + .content', async () => {
+    const rendered = render(AIChatInput) as unknown as {
+      container: Element;
+      component: { setContent: (h: string) => void };
+    };
+    const { container, component } = rendered;
+    await flush(container);
+    // 属性名是 placeholder（不是 data-placeholder，见 input-slot-extension.ts:43）。
+    component.setContent('<p><input-slot placeholder="填这里"></input-slot></p>');
+    await flush();
+    const slot = container.querySelector('.input-slot');
+    expect(slot).not.toBeNull();
+    expect(slot!.querySelector('.input-slot-placeholder')?.textContent).toContain('填这里');
+    // NodeViewContent 的类名是裸 content（对齐 Semi）。
+    expect(slot!.querySelector('.content')).not.toBeNull();
+    expect(container.querySelector('.cd-ai-chat-input-input-slot')).toBeNull();
   });
 });

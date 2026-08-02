@@ -24,13 +24,18 @@
   }
 </script>
 
-<NodeViewWrapper as="span" class="cd-ai-chat-input-skill-slot-wrap">
+<!-- 类名逐条对齐 Semi extension/skillSlot/index.tsx：skill-slot-wrapper / skill-slot /
+     skill-slot-delete 三个都**无前缀**（同 inputSlot/selectSlot）。本库原来加了
+     cd-ai-chat-input- 前缀，且外层写成 -wrap（Semi 是 -wrapper）。
+     Semi 里技能名是 skill-slot 的直接文本子节点，没有 -label 这一层，故一并去掉。
+     删除按钮保留 <button>（Semi 是给 IconClose 挂 onClick，键盘不可达）。 -->
+<NodeViewWrapper as="span" class="skill-slot-wrapper">
   {#if label}
-    <span class="cd-ai-chat-input-skill-slot" contenteditable="false">
-      <span class="cd-ai-chat-input-skill-slot-label">{label}</span>
+    <span class="skill-slot" contenteditable="false">
+      {label}
       <button
         type="button"
-        class="cd-ai-chat-input-skill-slot-delete"
+        class="skill-slot-delete"
         aria-label={loc().t('AIChatInput.deleteSkill')}
         onclick={handleRemove}
       >
@@ -43,7 +48,9 @@
 </NodeViewWrapper>
 
 <style>
-  .cd-ai-chat-input-skill-slot {
+  .skill-slot {
+    /* 原来 nowrap 在 -label 层上；Semi 无该层，故由 skill-slot 自身承担。 */
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: var(--cd-spacing-extra-tight);
@@ -58,11 +65,7 @@
     vertical-align: baseline;
   }
 
-  .cd-ai-chat-input-skill-slot-label {
-    white-space: nowrap;
-  }
-
-  .cd-ai-chat-input-skill-slot-delete {
+  .skill-slot-delete {
     appearance: none;
     border: none;
     background: transparent;
@@ -73,11 +76,11 @@
     color: var(--cd-ai-chat-input-skill-delete);
   }
 
-  .cd-ai-chat-input-skill-slot-delete:hover {
+  .skill-slot-delete:hover {
     color: var(--cd-ai-chat-input-skill-color);
   }
 
-  .cd-ai-chat-input-skill-slot-delete:focus-visible {
+  .skill-slot-delete:focus-visible {
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 1px;
   }
