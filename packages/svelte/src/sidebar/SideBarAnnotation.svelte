@@ -256,7 +256,10 @@
         </span>
       {/if}
     </div>
-    <div class="cd-sidebar-annotation-content">
+    <!-- Semi 把 video 卡的「标题 + 页脚」包在 -item-video-content 里（annotation/item.tsx:45）。
+         本库原来复用了 -annotation-content，而那个类在分组网格上另有其义，
+         两处同名导致 style 段出现两个同名规则块、后者静默覆盖前者。 -->
+    <div class="cd-sidebar-annotation-item-video-content">
       {#if item.title}
         <div class="cd-sidebar-annotation-item-title">{item.title}</div>
       {/if}
@@ -390,7 +393,7 @@
     /* Semi sidebar.scss:333 @include font-size-small → 16px */
     line-height: var(--cd-line-height-small);
   }
-  .cd-sidebar-annotation-content {
+  .cd-sidebar-annotation-item-video-content {
     flex: 1;
     min-inline-size: 0;
     display: flex;

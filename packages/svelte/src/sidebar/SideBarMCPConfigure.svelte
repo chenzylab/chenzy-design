@@ -309,7 +309,7 @@
       {#if option.configure}
         <button
           type="button"
-          class="cd-sidebar-mcp-configure-content-item-button"
+          class="cd-sidebar-mcp-configure-content-item-button cd-sidebar-mcp-configure-content-item-button-configure"
           aria-label={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           title={loc().t('SideBar.mcpConfigureItem', { name: option.label })}
           onclick={(e) => onConfigureClick?.(e, option)}
@@ -329,7 +329,7 @@
       {#if custom}
         <button
           type="button"
-          class="cd-sidebar-mcp-configure-content-item-button"
+          class="cd-sidebar-mcp-configure-content-item-button cd-sidebar-mcp-configure-content-item-button-configure"
           aria-label={loc().t('SideBar.mcpEditItem', { name: option.label })}
           title={loc().t('SideBar.mcpEditItem', { name: option.label })}
           onclick={(e) => onEditClick?.(e, option)}
@@ -452,14 +452,21 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
+    /* Semi $width-sidebar_mcp_item_button = 24px（本库原来是自造的 28px）。 */
+    inline-size: var(--cd-sidebar-mcp-item-button);
+    block-size: var(--cd-sidebar-mcp-item-button);
     padding: 0;
     border: none;
     border-radius: var(--cd-sidebar-close-radius);
     background: transparent;
     color: var(--cd-sidebar-mcp-action-color);
     cursor: pointer;
+  }
+
+  /* 配置/编辑按钮右外边距（对齐 Semi &-item-button-configure）。
+     该 token 早就按 Semi 建好了，但没有任何消费方。 */
+  .cd-sidebar-mcp-configure-content-item-button-configure {
+    margin-right: var(--cd-sidebar-mcp-item-button-configure-margin-right);
   }
   .cd-sidebar-mcp-configure-content-item-button:hover {
     background: var(--cd-sidebar-mcp-action-hover-bg);
