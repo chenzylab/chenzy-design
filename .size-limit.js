@@ -235,7 +235,9 @@ const components = [
   // 14 → 14.5 KB：引用区补齐 Semi renderReferenceIcon 的五类映射，实测 14.3 KB。
   // 增量来自 IconWord/Pdf/Excel/Code/Video 五个具名图标 + 扩展名分派分支
   // （原来只有一个 IconFile 通用图标）。
-  ['ai-chat-dialogue', '{ AIChatDialogue }', '14.5 KB'],
+  // 14.5 → 14 KB：工具调用块按 Semi ToolCallWidget 收敛成扁平 div（删掉本库自造的
+  // 折叠面板 + 10 个子类名 + 4 个 locale 键），实测 13.57 KB。
+  ['ai-chat-dialogue', '{ AIChatDialogue }', '14 KB'],
   // SideBar P0+P1+P2+P4（Container 浮层壳 + 主壳 mode 路由 + Options + Annotation 引用溯源
   // + CodeContent 代码/JSON 预览）；spec §9 各阶段增量。Annotation/CodeContent 复用
   // Collapse；CodeContent 的 CodeHighlight(prismjs) 静态入壳计入、JsonViewer 内核动态

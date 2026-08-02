@@ -21,6 +21,7 @@
     type ToolCallView,
     type DialogueStep as DialogueStepType,
   } from '@chenzy-design/core';
+  import { IconWrench } from '@chenzy-design/icons';
   import { useLocale } from '../locale-provider/index.js';
   import { MarkdownRender } from '../markdown-render/index.js';
   import DialogueStep from './DialogueStep.svelte';
@@ -209,51 +210,15 @@
     markdownRenderProps={mdProps}
   />
 {:else if type === 'function_call' || type === 'custom_call' || type.endsWith('_call')}
-  <!-- 完整工具调用块：状态图标 + 折叠展开（参数/输出格式化 + call_id + MCP server）。 -->
-  <div
-    class="cd-ai-chat-dialogue-content-item cd-ai-chat-dialogue-content-tool-call"
-    class:cd-ai-chat-dialogue-content-tool-call-running={toolView.status === 'in_progress'}
-    class:cd-ai-chat-dialogue-content-tool-call-failed={toolView.status === 'failed'}
-  >
-    <button
-      type="button"
-      class="cd-ai-chat-dialogue-content-tool-call-header"
-      aria-expanded={toolOpen}
-      onclick={() => (toolOpen = !toolOpen)}
-    >
-      <span class="cd-ai-chat-dialogue-content-tool-call-status" aria-hidden="true">
-        {#if toolView.status === 'in_progress'}⟳{:else if toolView.status === 'failed'}✗{:else}✓{/if}
-      </span>
-      <span class="cd-ai-chat-dialogue-content-tool-call-name">{toolView.name || loc().t('AIChatDialogue.toolCall')}</span>
-      {#if toolView.serverLabel}
-        <span class="cd-ai-chat-dialogue-content-tool-call-server">{toolView.serverLabel}</span>
-      {/if}
-    </button>
-    {#if toolOpen}
-      <div class="cd-ai-chat-dialogue-content-tool-call-body">
-        {#if toolView.arguments}
-          <div class="cd-ai-chat-dialogue-content-tool-call-section">
-            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolArguments')}</span>
-            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.arguments}</pre>
-          </div>
-        {/if}
-        {#if toolView.input}
-          <div class="cd-ai-chat-dialogue-content-tool-call-section">
-            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolInput')}</span>
-            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.input}</pre>
-          </div>
-        {/if}
-        {#if toolView.output}
-          <div class="cd-ai-chat-dialogue-content-tool-call-section">
-            <span class="cd-ai-chat-dialogue-content-tool-call-label">{loc().t('AIChatDialogue.toolOutput')}</span>
-            <pre class="cd-ai-chat-dialogue-content-tool-call-args">{toolView.output}</pre>
-          </div>
-        {/if}
-        {#if toolView.callId}
-          <div class="cd-ai-chat-dialogue-content-tool-call-id">{toolView.callId}</div>
-        {/if}
-      </div>
-    {/if}
+  <!-- 工具调用块逐条对齐 Semi ToolCallWidget（dialogueContent.tsx:137-143）：
+       一个扁平 div + IconWrench + `name  arguments` 两段文本，Semi 的 scss 里
+       连 &-tool-call 的样式都没有。
+       本库原来自造了一整套「状态图标 + 可折叠头部 + 参数/输入/输出分节 + call_id +
+       MCP server」的结构化面板，共 10 个 Semi 不存在的类名（-header/-body/-section/
+       -args/-label/-status/-server/-id/-running/-failed），已按 Semi 收敛。 -->
+  <div class="cd-ai-chat-dialogue-content-tool-call">
+    <IconWrench />
+    {toolView.name ?? ''}  {toolView.arguments ?? ''}
   </div>
 {:else if type === 'steps'}
   <!-- 步骤块（对齐 Semi MESSAGE_ITEM_TYPE.STEPS）：拆到 DialogueStep.svelte，同 Semi
@@ -320,92 +285,35 @@
      （原来这两条是本库自造的「无边框按钮 + 左竖线」，与 Semi 的
      -wrapper 外框 + 三段 header 完全不是一套，已按 Semi 重写）。 */
 
+  /* 逐条对齐 Semi &-content-tool-call：一个 fit-content 的水平 flex 药丸。
+     本库原来是「1px 边框 + overflow:hidden 的卡片」，且用的是通用色值 ——
+     而这几条 token 早就按 $*-aiChatDialogue_tool_call-* 建好、无人消费。 */
   .cd-ai-chat-dialogue-content-tool-call {
-    border: 1px solid var(--cd-color-border);
-    border-radius: var(--cd-border-radius-medium);
-    background: var(--cd-color-fill-0);
-    overflow: hidden;
-  }
-
-  .cd-ai-chat-dialogue-content-tool-call-header {
     display: flex;
     align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    width: 100%;
-    padding: var(--cd-spacing-tight);
-    appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    text-align: left;
-    color: inherit;
-    font: inherit;
+    justify-content: center;
+    width: fit-content;
+    color: var(--cd-ai-chat-dialogue-tool-call-text);
+    background-color: var(--cd-ai-chat-dialogue-tool-call-bg);
+    padding: var(--cd-ai-chat-dialogue-tool-call-padding-y)
+      var(--cd-ai-chat-dialogue-tool-call-padding-x);
+    border-radius: var(--cd-ai-chat-dialogue-tool-call);
+    column-gap: var(--cd-ai-chat-dialogue-tool-call-column-gap);
+    margin-top: var(--cd-ai-chat-dialogue-tool-call-margin-top);
   }
 
-  .cd-ai-chat-dialogue-content-tool-call-header:hover {
-    background: var(--cd-color-fill-1);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-header:focus-visible {
-    outline: 2px solid var(--cd-color-primary);
-    outline-offset: -2px;
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-status {
-    color: var(--cd-color-text-2);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-running .cd-ai-chat-dialogue-content-tool-call-status {
-    color: var(--cd-color-primary);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-failed .cd-ai-chat-dialogue-content-tool-call-status {
-    color: var(--cd-color-danger);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-name {
-    font-weight: var(--cd-font-weight-bold);
-    color: var(--cd-color-text-0);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-server {
-    padding: 0 var(--cd-spacing-extra-tight);
-    border-radius: var(--cd-border-radius-small);
-    background: var(--cd-color-fill-2);
-    color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-small);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-body {
-    padding: 0 var(--cd-spacing-tight) var(--cd-spacing-tight);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-section {
-    margin-top: var(--cd-spacing-extra-tight);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-label {
-    display: block;
-    color: var(--cd-color-text-2);
-    font-size: var(--cd-font-size-small);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-args {
-    margin: var(--cd-spacing-extra-tight) 0 0;
-    padding: var(--cd-spacing-extra-tight);
-    border-radius: var(--cd-border-radius-small);
-    background: var(--cd-color-fill-1);
-    white-space: pre-wrap;
-    word-break: break-all;
-    color: var(--cd-color-text-1);
-    font-size: var(--cd-font-size-small);
-  }
 
-  .cd-ai-chat-dialogue-content-tool-call-id {
-    margin-top: var(--cd-spacing-extra-tight);
-    color: var(--cd-color-text-3);
-    font-size: var(--cd-font-size-small);
-  }
+
 
   .cd-ai-chat-dialogue-content-unknown {
     color: var(--cd-color-text-3);

@@ -61,9 +61,9 @@ describe('AIChatDialogue a11y / 渲染', () => {
     const toggle = container.querySelector('.cd-ai-chat-dialogue-reasoning-header');
     expect(toggle).not.toBeNull();
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-    // function_call 工具块名称渲染。
-    const tool = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-name');
-    expect(tool?.textContent).toBe('get_weather');
+    // function_call 工具块名称渲染（Semi 是扁平 div，名称是直接文本，无 -name 子层）。
+    const tool = container.querySelector('.cd-ai-chat-dialogue-content-tool-call');
+    expect(tool?.textContent).toContain('get_weather');
   });
 
   it('reasoning 可折叠：点击在展开/收起间切换', async () => {
@@ -228,48 +228,33 @@ describe('AIChatDialogue · 工具块完整交互（P1）', () => {
     },
   ];
 
-  it('工具块默认折叠：header 显示名称 + 状态图标，body 未展开', async () => {
+  // Semi 的 ToolCallWidget（dialogueContent.tsx:137-143）是一个**扁平 div**：
+  // IconWrench + `name  arguments` 两段文本，没有折叠、没有状态图标、没有分节。
+  // 本库原来自造了一整套结构化面板（header/body/section/args/status/server/id 等
+  // 10 个 Semi 不存在的类名），这批用例也是照那套写的，已随实现一起收敛。
+  it('工具块是扁平结构：一个 -content-tool-call + 扳手图标 + 名称与参数文本', () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: toolChats, roleConfig },
     });
-    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header');
-    expect(header?.getAttribute('aria-expanded')).toBe('false');
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-name')?.textContent).toBe('get_weather');
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-status')).not.toBeNull();
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-body')).toBeNull();
+    const box = container.querySelector('.cd-ai-chat-dialogue-content-tool-call');
+    expect(box).not.toBeNull();
+    // Semi 用 IconWrench。
+    expect(box!.querySelector('svg')).not.toBeNull();
+    expect(box!.textContent).toContain('get_weather');
+    expect(box!.textContent).toContain('"city"');
+    // 自造的那套子结构不该再出现。
+    for (const sub of ['header', 'body', 'section', 'args', 'status', 'server', 'id']) {
+      expect(
+        container.querySelector(`.cd-ai-chat-dialogue-content-tool-call-${sub}`),
+        `-tool-call-${sub} 是本库自造，Semi 没有`,
+      ).toBeNull();
+    }
   });
 
-  it('点击展开：显示格式化参数 + 输出 + call_id', async () => {
+  it('工具块无 axe 违规', async () => {
     const { container } = renderWithLocale(AIChatDialogue, {
       props: { chats: toolChats, roleConfig },
     });
-    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header') as HTMLButtonElement;
-    await fireEvent.click(header);
-    expect(header.getAttribute('aria-expanded')).toBe('true');
-    const args = container.querySelectorAll('.cd-ai-chat-dialogue-content-tool-call-args');
-    // 参数 + 输出各一个 pre，且 JSON 已格式化（含换行缩进）
-    expect(args.length).toBe(2);
-    expect(args[0]!.textContent).toContain('"city": "SF"');
-    expect(args[1]!.textContent).toContain('"temp": 20');
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-id')?.textContent).toBe('call_1');
-  });
-
-  it('in_progress 状态：running 标记', async () => {
-    const running: AIDialogueMessage[] = [
-      { id: 'a', role: 'assistant', content: [{ type: 'mcp_call', name: 'search', arguments: '{', status: 'in_progress', server_label: 'fs' }], status: 'in_progress' },
-    ];
-    const { container } = renderWithLocale(AIChatDialogue, { props: { chats: running, roleConfig } });
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-running')).not.toBeNull();
-    // MCP server 标识渲染
-    expect(container.querySelector('.cd-ai-chat-dialogue-content-tool-call-server')?.textContent).toBe('fs');
-  });
-
-  it('工具块展开态无 axe 违规', async () => {
-    const { container } = renderWithLocale(AIChatDialogue, {
-      props: { chats: toolChats, roleConfig },
-    });
-    const header = container.querySelector('.cd-ai-chat-dialogue-content-tool-call-header') as HTMLButtonElement;
-    await fireEvent.click(header);
     await expectNoAxeViolations(container);
   });
 });
