@@ -131,6 +131,23 @@ describe('SideBar a11y — detail routing', () => {
     expect(detailRoot.querySelector('.cd-sidebar-detail-content')).not.toBeNull();
   });
 
+  // Semi options.tsx:15-17：renderOptionItem 命中即**整项接管**，不再渲染默认按钮。
+  // 本库此前完全没有这个 prop（props 审计一直报缺，之前只顾着核类名）。
+  it('renderOptionItem：整项接管，默认按钮不再渲染，onChange 仍可用', async () => {
+    const onChange = vi.fn();
+    const { container } = renderWithLocale(Fixture, {
+      props: { mode: 'main', customOptionItem: true, onActiveOptionChange: onChange },
+    });
+    const custom = container.querySelectorAll('[data-testid="custom-option"]');
+    expect(custom.length, '两个 option 都走自定义渲染').toBe(2);
+    // 默认按钮整项被替换。
+    expect(container.querySelector('.cd-sidebar-options-button')).toBeNull();
+    // 回传的 onChange 仍能切换（点第二项，第一项是当前激活项会被 setActive 提前 return）。
+    (custom[1] as HTMLElement).click();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[1]).toBe('refs');
+  });
+
   // Semi renderMain：-main-content-wrapper 包住 options + -main-content 两部分。
   it('main 视图：-main-content-wrapper 包住 options 与 -main-content', () => {
     const { container } = renderWithLocale(Fixture, { props: { mode: 'main' } });

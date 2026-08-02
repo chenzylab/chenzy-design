@@ -29,6 +29,10 @@
     onActiveOptionChange?: ((e: Event, key: string) => void) | undefined;
     /** 主视图内容（按 activeKey 渲染）。 */
     renderMainContent?: Snippet<[string | undefined]>;
+    /** 自定义单个 Option 渲染（对齐 Semi renderOptionItem，透传给 SideBarOptions）。 */
+    renderOptionItem?:
+      | Snippet<[{ option: SideBarOption; onChange: (e: Event, key: string) => void }]>
+      | undefined;
     /** 详情内容（按 mode 渲染）。传了则完全接管，不再走内置 code/file 渲染。 */
     renderDetailContent?: Snippet<[SideBarMode]>;
     /** 详情头部（按 mode 渲染，返回按钮之后）。 */
@@ -57,6 +61,7 @@
     options = [],
     onActiveOptionChange,
     renderMainContent,
+    renderOptionItem,
     renderDetailContent,
     renderDetailHeader,
     detailContent,
@@ -126,7 +131,7 @@
          （index.tsx:75-80）。本库原来没有外层 wrapper，内层也叫 -main 而非 -main-content。 -->
     <div class="cd-sidebar-main-content-wrapper">
       {#if options.length > 0}
-        <SideBarOptions {options} {activeKey} {onActiveOptionChange} />
+        <SideBarOptions {options} {activeKey} {onActiveOptionChange} {renderOptionItem} />
       {/if}
       <div class="cd-sidebar-main-content">
         {@render renderMainContent?.(activeKey)}

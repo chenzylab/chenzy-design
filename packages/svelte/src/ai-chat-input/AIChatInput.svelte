@@ -200,7 +200,11 @@
      * 其值发送时并入 MessageContent.setup。
      */
     renderConfigureArea?: Snippet | undefined;
-    /** 配置区初始值（对齐 Semi Configure defaultValue）。 */
+    /**
+     * 配置区初始值。**层级与 Semi 不同**：Semi 的 defaultValue 在 Configure 组件上
+     * （configure/index.tsx:19 `props.value || props.defaultValue`），本库的配置区
+     * 是由 AIChatInput 提供 context、没有独立的 Configure 容器组件，故提到父层。
+     */
     configureDefaultValue?: AIChatInputConfigureValue;
     /** 配置区变更回调（value 为全量，changed 为本次变更字段，对齐 Semi onConfigureChange）。 */
     onConfigureChange?: ((value: AIChatInputConfigureValue, changed: AIChatInputConfigureValue) => void) | undefined;

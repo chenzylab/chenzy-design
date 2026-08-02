@@ -5,6 +5,7 @@
   受控 activeKey（红线 #1）：不回写，仅经 onActiveOptionChange 通知。
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { useId } from '@chenzy-design/core';
   import type { SideBarOption } from './types.js';
 
@@ -12,9 +13,16 @@
     options: SideBarOption[];
     activeKey?: string | undefined;
     onActiveOptionChange?: ((e: Event, key: string) => void) | undefined;
+    /**
+     * 自定义单个 Option 的渲染（对齐 Semi renderOptionItem(option, onChange)）：
+     * 命中时**整项替换**默认按钮，连 role=tab / roving tabindex 一起交给使用方。
+     */
+    renderOptionItem?:
+      | Snippet<[{ option: SideBarOption; onChange: (e: Event, key: string) => void }]>
+      | undefined;
   }
 
-  let { options, activeKey, onActiveOptionChange }: Props = $props();
+  let { options, activeKey, onActiveOptionChange, renderOptionItem }: Props = $props();
 
   const baseId = useId('cd-sidebar-opt');
 
@@ -69,6 +77,10 @@
 <div class="cd-sidebar-options" role="tablist" aria-orientation="horizontal">
   {#each options as item (item.key)}
     {@const selected = item.key === activeKey}
+    {#if renderOptionItem}
+      <!-- 对齐 Semi options.tsx:15-17：renderOptionItem 命中即整项接管，不再渲染默认按钮。 -->
+      {@render renderOptionItem({ option: item, onChange: setActive })}
+    {:else}
     <button
       type="button"
       class="cd-sidebar-options-button"
@@ -89,6 +101,7 @@
         <span class="cd-sidebar-options-button-icon" aria-hidden="true">{item.name.slice(0, 1)}</span>
       {/if}
     </button>
+    {/if}
   {/each}
 </div>
 

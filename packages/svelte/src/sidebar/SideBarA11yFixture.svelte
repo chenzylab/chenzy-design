@@ -11,6 +11,8 @@
     activeKey?: string;
     onActiveOptionChange?: (e: Event, key: string) => void;
     onBackWard?: (e: Event, mode: SideBarMode) => void | Promise<void>;
+    /** 传 true 则给 SideBar 传 renderOptionItem（自定义 Option 整项渲染）。 */
+    customOptionItem?: boolean;
     /** 传 false 则不传 renderDetailHeader，走 SideBar 自带的默认详情头。 */
     customDetailHeader?: boolean;
     detailContent?: SideBarDetailContent | undefined;
@@ -21,6 +23,7 @@
     activeKey = 'tools',
     onActiveOptionChange,
     onBackWard,
+    customOptionItem = false,
     customDetailHeader = true,
     detailContent,
   }: Props = $props();
@@ -41,6 +44,7 @@
   {onActiveOptionChange}
   {onBackWard}
   {renderMainContent}
+  {...customOptionItem ? { renderOptionItem } : {}}
   {...customDetailHeader ? { renderDetailHeader } : {}}
   {...detailContent ? { detailContent } : {}}
   {renderDetailContent}
@@ -56,4 +60,10 @@
 
 {#snippet renderDetailContent(m: SideBarMode)}
   <div data-testid="detail-content">Detail body: {m}</div>
+{/snippet}
+
+{#snippet renderOptionItem({ option, onChange }: { option: SideBarOption; onChange: (e: Event, key: string) => void })}
+  <button type="button" data-testid="custom-option" onclick={(e) => onChange(e, option.key)}>
+    {option.name}
+  </button>
 {/snippet}

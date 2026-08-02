@@ -75,7 +75,11 @@
     messageEditRender?: Snippet<[AIChatInputMessageContent]> | undefined;
     /** 点击编辑操作回调（对齐 Semi onMessageEdit）。 */
     onMessageEdit?: ((message: AIDialogueMessage) => void) | undefined;
-    /** 是否展示编辑操作（默认 true；仅 user 消息）。 */
+    /**
+     * 是否展示编辑操作（默认 true；仅 user 消息）。
+     * **本库自有**：Semi 的 showEdit 恒为 `role === USER`（dialogueAction.tsx:261），
+     * 没有开关，user 消息必出编辑按钮。本库多这个 prop 供使用方关掉。
+     */
     editable?: boolean;
     /** 是否在 user 消息展示引用区（对齐 Semi showReference）。 */
     showReference?: boolean;
