@@ -142,23 +142,55 @@ describe('AIChatInput 文件类型图标底色（对齐 Semi）', () => {
 // 那 13 条 $*-rich_text-input_slot-* 变量本库此前只有 lineHeight 一条。
 describe('AIChatInput 输入插槽视觉（对齐 Semi）', () => {
   it('input-slot 是主色浅底药丸（非虚线下划线）', async () => {
-    // 结构由 fixture 提供（见 input-slot-host）：塞进 ProseMirror 会被编辑器重写，
-    // 用 document.createElement 造裸节点又会依赖「同文件先挂过 AIChatInput」才注入
-    // :global 样式 —— 那样单跑绿、全量跑红（本轮就这么红过一次）。
+    // 断言对象是**编辑器真渲染出来的** input-slot 节点，不是裸 markup：
+    // InputSlotNode 的样式写在它自己的 <style> 里（:global），而 Svelte 组件样式
+    // 随组件挂载才注入 —— 摆一份裸 markup 的话，样式能否命中取决于本文件里
+    // 是否恰好有别的用例先挂过该组件，会变成用例顺序依赖（本轮因此红过两次）。
     renderKbdFixture(AIChatInputMetricsKbdFixture);
-    await new Promise((r) => setTimeout(r, 60));
-    const host = document.querySelector('[data-testid="input-slot-host"]') as HTMLElement;
-    expect(host, 'fixture 应提供 input-slot 结构').not.toBeNull();
-
-    const slot = host.querySelector('.input-slot') as HTMLElement;
-    const cs = getComputedStyle(slot);
+    const deadline = Date.now() + 3000;
+    let slot: HTMLElement | null = null;
+    while (!slot && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 40));
+      slot = document.querySelector(
+        '[data-testid="slot-style-host"] .input-slot',
+      ) as HTMLElement | null;
+    }
+    expect(slot, '编辑器应渲染出 input-slot 节点').not.toBeNull();
+    const cs = getComputedStyle(slot!);
     expect(cs.display).toBe('inline-block');
     // Semi: 4px 圆角 + 主色浅底；本库原来是 border-bottom dashed、无背景。
     expect(cs.borderRadius).toBe('4px');
     expect(cs.backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
     expect(cs.borderBottomStyle).not.toBe('dashed');
     // 占位符是绝对定位（Semi 用它避免撑开插槽），本库原来是普通行内元素。
-    const ph = host.querySelector('.input-slot-placeholder') as HTMLElement;
+    const ph = slot!.querySelector('.input-slot-placeholder') as HTMLElement;
     expect(getComputedStyle(ph).position).toBe('absolute');
+  });
+});
+
+// 技能插槽视觉。Semi 是「纯文字（主色 + 600 字重）→ hover 才染底」，
+// 删除按钮平时 display:none、hover 才浮成右上角小圆徽标（aiChatInput.scss:612-648）。
+// 本库原来是「常显药丸（有底色）+ 常显删除按钮」，且用的是自造的 -skill-* 四条 token。
+describe('AIChatInput 技能插槽视觉（对齐 Semi）', () => {
+  it('默认：纯文字无底色，删除按钮 display:none', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    const wrap = document.querySelector('[data-testid="skill-slot-host"] .skill-slot-wrapper') as HTMLElement;
+    expect(wrap, 'fixture 应提供 skill-slot 结构').not.toBeNull();
+    // 未 hover 时不染底（Semi 只在 :hover 才有 background-color）。
+    expect(getComputedStyle(wrap).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    // 4px 圆角（Semi $radius-aiChatInput_rich_text-skill_slot）。
+    expect(getComputedStyle(wrap).borderRadius).toBe('4px');
+
+    const del = wrap.querySelector('.skill-slot-delete') as HTMLElement;
+    expect(getComputedStyle(del).display, '删除按钮平时不显示').toBe('none');
+  });
+
+  it('文本是主色 + 600 字重（非本库原来的 chip 前景色）', () => {
+    renderKbdFixture(AIChatInputMetricsKbdFixture);
+    const slot = document.querySelector('[data-testid="skill-slot-host"] .skill-slot') as HTMLElement;
+    const cs = getComputedStyle(slot);
+    expect(cs.fontWeight).toBe('600');
+    // 主色（非透明、非继承的默认文本色）。
+    expect(cs.color).not.toBe('rgba(0, 0, 0, 0)');
   });
 });

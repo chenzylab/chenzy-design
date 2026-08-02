@@ -201,6 +201,25 @@ export const aiChatInputTokens = {
   'height-ai-chat-input-footer-action-button': { value: '32px', category: 'height', label: '操作按钮高', usage: 'Semi $height-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-action-button': { value: '8px', category: 'radius', label: '操作按钮圆角', usage: 'Semi $radius-aiChatInput_footer_action_button' },
   'radius-ai-chat-input-footer-round': { value: '9999px', category: 'radius', label: 'round 模式圆角', usage: 'Semi $radius-aiChatInput_footer_round' },
+  // —— 富文本技能插槽（逐条镜像 Semi $*-aiChatInput_rich_text-skill_slot-*）——
+  // 本库此前用自造的 -skill-bg/-skill-color/-skill-radius/-skill-delete 四条，
+  // 视觉也不同：本库是「常显药丸 + 常显删除按钮」，Semi 是「纯文字 + hover 才染底、
+  // 删除按钮平时 display:none，hover 才浮出到右上角」。
+  'color-ai-chat-input-rich-text-skill-slot-text': { value: 'var(--cd-color-primary)', category: 'color', label: '技能插槽文本色', usage: 'Semi $color-aiChatInput_rich_text-skill_slot-text' },
+  'color-ai-chat-input-rich-text-skill-slot-bg-hover': { value: 'var(--cd-color-primary-light-default)', category: 'color', label: '技能插槽悬停底色', usage: 'Semi $color-aiChatInput_rich_text-skill_slot-bg-hover' },
+  'color-ai-chat-input-rich-text-skill-slot-delete-bg': { value: 'var(--cd-color-grey-7)', category: 'color', label: '技能删除按钮底色', usage: 'Semi $color-aiChatInput_rich_text-skill_slot_delete-bg' },
+  'color-ai-chat-input-rich-text-skill-slot-delete-text': { value: 'var(--cd-color-white)', category: 'color', label: '技能删除按钮前景', usage: 'Semi $color-aiChatInput_rich_text-skill_slot_delete-text' },
+  'spacing-ai-chat-input-rich-text-skill-slot-paddingx': { value: '4px', category: 'spacing', label: '技能插槽水平内距', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-paddingX' },
+  'spacing-ai-chat-input-rich-text-skill-slot-paddingy': { value: '0px', category: 'spacing', label: '技能插槽垂直内距', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-paddingY' },
+  'spacing-ai-chat-input-rich-text-skill-slot-marginx': { value: '2px', category: 'spacing', label: '技能插槽水平外距', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-marginX' },
+  'spacing-ai-chat-input-rich-text-skill-slot-marginy': { value: '2px', category: 'spacing', label: '技能插槽垂直外距', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-marginY' },
+  'spacing-ai-chat-input-rich-text-skill-slot-top': { value: '0px', category: 'spacing', label: '删除按钮距顶', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-top' },
+  'spacing-ai-chat-input-rich-text-skill-slot-right': { value: '0px', category: 'spacing', label: '删除按钮距右', usage: 'Semi $spacing-aiChatInput_rich_text-skill_slot-right' },
+  'radius-ai-chat-input-rich-text-skill-slot': { value: '4px', category: 'radius', label: '技能插槽圆角', usage: 'Semi $radius-aiChatInput_rich_text-skill_slot' },
+  'font-ai-chat-input-rich-text-skill-slot-fontweight': { value: '600', category: 'font', label: '技能插槽字重', usage: 'Semi $font-aiChatInput_rich_text-skill_slot-fontWeight' },
+  'width-ai-chat-input-rich-text-select-slot-delete': { value: '12px', category: 'width', label: '插槽删除按钮宽高', usage: 'Semi $width-aiChatInput_rich_text-select_slot_delete' },
+  'width-ai-chat-input-rich-text-select-slot-delete-icon': { value: '8px', category: 'width', label: '插槽删除图标宽高', usage: 'Semi $width-aiChatInput_rich_text-select_slot_delete_icon' },
+
   // —— 富文本输入插槽（逐条镜像 Semi $*-aiChatInput_rich_text-input_slot-*，13 条）——
   // 本库此前只有一条 lineHeight：插槽画成「虚线下划线」，Semi 是「主色浅底药丸」，
   // 视觉是两套东西。
@@ -328,30 +347,6 @@ export const aiChatInputTokens = {
     usage: 'Semi $color-aiChatInput_skill_item-bg-active',
   },
   // skill-slot 编辑器内技能 chip（阶段 3）
-  'ai-chat-input-skill-bg': {
-    value: 'var(--cd-color-primary-light-default)',
-    category: 'color',
-    label: '技能块背景',
-    usage: '编辑器内 skill-slot chip 背景（品牌浅色）',
-  },
-  'ai-chat-input-skill-color': {
-    value: 'var(--cd-color-primary)',
-    category: 'color',
-    label: '技能块文本',
-    usage: 'skill-slot chip 文本/图标色',
-  },
-  'ai-chat-input-skill-delete': {
-    value: 'var(--cd-color-primary)',
-    category: 'color',
-    label: '技能块删除图标',
-    usage: 'skill-slot 删除图标默认色',
-  },
-  'ai-chat-input-skill-radius': {
-    value: 'var(--cd-border-radius-small)',
-    category: 'radius',
-    label: '技能块圆角',
-    usage: 'skill-slot chip 圆角',
-  },
   // 模版按钮（阶段 3）
   'ai-chat-input-template-color': {
     value: 'var(--cd-color-text-1)',

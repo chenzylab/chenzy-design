@@ -56,13 +56,24 @@
   />
 </div>
 
-<!-- 输入插槽视觉度量用：直接摆一份 input-slot 结构。
-     不塞进 ProseMirror —— 往编辑器 innerHTML 注入的节点会被它重写掉；
-     也不在用例里用裸 document.createElement —— 那样样式能否命中取决于
-     同文件是否已挂过 AIChatInput（:global 样式随组件挂载注入），会变成顺序依赖。 -->
-<div data-testid="input-slot-host">
-  <span class="input-slot">
-    <span class="input-slot-placeholder">占位</span>
-    <span class="content">x</span>
+<!-- ⚠️ 必须真挂一次 InputSlotNode / SkillSlotNode：它们的样式写在各自组件的
+     <style> 里（:global），而 Svelte 的组件样式是**随组件挂载才注入**的。
+     只在下面摆裸 markup 的话，样式能否命中取决于本文件里是否恰好还有别的用例
+     挂过这两个组件 —— 会变成用例顺序依赖（本轮已因此红过两次）。
+     这两个 NodeView 需要 tiptap 的 node/editor 上下文，不能直接实例化，
+     故改为把样式所需的最小结构 + 一次真实挂载都交给 AIChatInput：
+     它内部注册了这两个扩展，编辑器一挂载，两份 :global 样式就都进文档了。 -->
+<div data-testid="slot-style-host" style="position:absolute;left:-9999px;top:0;">
+  <AIChatInput defaultContent={'<p><input-slot placeholder="x"></input-slot></p>'} />
+</div>
+
+
+<!-- 技能插槽视觉度量用（同 input-slot：不塞编辑器、不在用例里造裸节点）。 -->
+<div data-testid="skill-slot-host">
+  <span class="skill-slot-wrapper">
+    <span class="skill-slot">
+      总结
+      <button type="button" class="skill-slot-delete">x</button>
+    </span>
   </span>
 </div>

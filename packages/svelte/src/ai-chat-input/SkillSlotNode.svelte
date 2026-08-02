@@ -48,39 +48,73 @@
 </NodeViewWrapper>
 
 <style>
-  .skill-slot {
-    /* 原来 nowrap 在 -label 层上；Semi 无该层，故由 skill-slot 自身承担。 */
-    white-space: nowrap;
+  /* 逐条对齐 Semi aiChatInput.scss:612-648。
+     本库原来是「常显药丸（有底色）+ 常显删除按钮」，用的是自造的
+     -skill-bg/-skill-color/-skill-radius/-skill-delete 四条 token；
+     Semi 是「纯文字（只有主色 + 600 字重）→ hover 才染底 → 删除按钮平时
+     display:none，hover 时浮到右上角变成一个小圆徽标」。 */
+  :global(.skill-slot-wrapper) {
     display: inline-flex;
-    align-items: center;
-    gap: var(--cd-spacing-extra-tight);
-    padding: 0 var(--cd-spacing-extra-tight) 0 var(--cd-spacing-tight);
-    background: var(--cd-ai-chat-input-skill-bg);
-    color: var(--cd-ai-chat-input-skill-color);
-    border-radius: var(--cd-ai-chat-input-skill-radius);
-    font-size: var(--cd-font-size-regular);
-    /* 对齐 Semi 的 `$font-aiChatInput_rich_text-input_slot-lineHeight`
-       —— Semi 用组件专属变量，本库 token 同形同值。 */
-    line-height: var(--cd-ai-chat-input-rich-text-input-slot-lineheight);
-    vertical-align: baseline;
+    position: relative;
+    padding: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-paddingy)
+      var(--cd-spacing-ai-chat-input-rich-text-skill-slot-paddingx);
+    margin: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-marginy)
+      var(--cd-spacing-ai-chat-input-rich-text-skill-slot-marginx);
+    border-radius: var(--cd-radius-ai-chat-input-rich-text-skill-slot);
   }
 
-  .skill-slot-delete {
+  :global(.skill-slot) {
+    white-space: nowrap;
+    outline: none;
+    color: var(--cd-color-ai-chat-input-rich-text-skill-slot-text);
+    font-weight: var(--cd-font-ai-chat-input-rich-text-skill-slot-fontweight);
+  }
+
+  /* 平时不显示（Semi &-delete { display: none }）。 */
+  :global(.skill-slot-delete) {
+    display: none;
     appearance: none;
     border: none;
-    background: transparent;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
     padding: 0;
-    color: var(--cd-ai-chat-input-skill-delete);
   }
 
-  .skill-slot-delete:hover {
-    color: var(--cd-ai-chat-input-skill-color);
+  :global(.skill-slot-wrapper:hover) {
+    background-color: var(--cd-color-ai-chat-input-rich-text-skill-slot-bg-hover);
   }
 
-  .skill-slot-delete:focus-visible {
+  /* hover 时浮出：绝对定位到右上角，圆形小徽标。 */
+  :global(.skill-slot-wrapper:hover .skill-slot-delete) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: absolute;
+    top: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-top);
+    right: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-right);
+    transform: translate(50%, -50%);
+    border-radius: 50%;
+    width: var(--cd-width-ai-chat-input-rich-text-select-slot-delete);
+    height: var(--cd-width-ai-chat-input-rich-text-select-slot-delete);
+    font-size: var(--cd-width-ai-chat-input-rich-text-select-slot-delete-icon);
+    background: var(--cd-color-ai-chat-input-rich-text-skill-slot-delete-bg);
+    color: var(--cd-color-ai-chat-input-rich-text-skill-slot-delete-text);
+  }
+
+  /* 键盘可达性：本库删除按钮是真 <button>（Semi 是给 IconClose 挂 onClick），
+     故聚焦时也要显示出来，否则 Tab 到一个 display:none 的按钮上无从操作。 */
+  :global(.skill-slot-delete:focus-visible) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-top);
+    right: var(--cd-spacing-ai-chat-input-rich-text-skill-slot-right);
+    transform: translate(50%, -50%);
+    border-radius: 50%;
+    width: var(--cd-width-ai-chat-input-rich-text-select-slot-delete);
+    height: var(--cd-width-ai-chat-input-rich-text-select-slot-delete);
+    background: var(--cd-color-ai-chat-input-rich-text-skill-slot-delete-bg);
+    color: var(--cd-color-ai-chat-input-rich-text-skill-slot-delete-text);
     outline: 2px solid var(--cd-color-primary);
     outline-offset: 1px;
   }
