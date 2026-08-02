@@ -1176,7 +1176,7 @@ export const aiChatDialogueTokens = {
     label: '提示内容字体大小',
     usage: 'Semi $font-aiChatDialogue_hint_content-fontSize',
   },
-  'ai-chat-dialogue-back-bottom': {
+  'z-ai-chat-dialogue-back-bottom': {
     value: '1',
     category: 'other',
     label: '返回按钮z-index',

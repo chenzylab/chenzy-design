@@ -87,3 +87,29 @@ describe('AIChatDialogue 布局实测（对齐 Semi）', () => {
     expect(getComputedStyle(avatars[1] as HTMLElement).visibility).toBe('hidden');
   });
 });
+
+// z-index：Semi 给 -backBottom 设了 $z-aiChatDialogue_backBottom（scss:87），
+// 本库此前漏了这条规则 —— token 建了但没有任何消费方，回到底部按钮没有层级保障。
+describe('AIChatDialogue backBottom z-index（对齐 Semi）', () => {
+  it('回到底部按钮带 z-index: 1（非 auto）', async () => {
+    const many: AIDialogueMessage[] = Array.from({ length: 30 }, (_, i) => ({
+      id: `m${i}`,
+      role: i % 2 ? 'assistant' : 'user',
+      content: `第 ${i} 条`,
+    }));
+    render(AIChatDialogue, { props: { chats: many, roleConfig } });
+    await settle();
+    const list = document.querySelector('.cd-ai-chat-dialogue-list') as HTMLElement;
+    // 必须让列表真的溢出：按钮的显隐取决于「距底距离 > 阈值」，
+    // 容器不限高就没有滚动空间，scrollTop 恒 0、距底也恒 0，按钮永远不出现。
+    (list.parentElement as HTMLElement).style.height = '200px';
+    list.style.maxHeight = '200px';
+    await settle();
+    list.scrollTop = 0;
+    list.dispatchEvent(new Event('scroll'));
+    await settle();
+    const btn = document.querySelector('.cd-ai-chat-dialogue-backBottom') as HTMLElement | null;
+    expect(btn, '距底超阈值时应出现回到底部按钮').not.toBeNull();
+    expect(getComputedStyle(btn!).zIndex).toBe('1');
+  });
+});

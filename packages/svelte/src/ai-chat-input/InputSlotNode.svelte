@@ -58,7 +58,7 @@
     position: absolute;
     top: var(--cd-spacing-ai-chat-input-rich-text-input-slot-paddingy);
     left: var(--cd-spacing-ai-chat-input-rich-text-input-slot-paddingx);
-    z-index: var(--cd-ai-chat-input-rich-text-input-slot-placeholder-z);
+    z-index: var(--cd-z-ai-chat-input-rich-text-input-slot-placeholder);
     color: var(--cd-color-ai-chat-input-rich-text-input-slot-placeholder);
     white-space: pre;
     pointer-events: none;

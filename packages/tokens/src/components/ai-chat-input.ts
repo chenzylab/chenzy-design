@@ -271,7 +271,7 @@ export const aiChatInputTokens = {
   'radius-ai-chat-input-rich-text-input-slot': { value: '4px', category: 'radius', label: '输入插槽圆角', usage: 'Semi $radius-aiChatInput_rich_text-input_slot' },
   'font-ai-chat-input-rich-text-input-slot-fontsize': { value: 'var(--cd-font-size-regular)', category: 'font', label: '输入插槽字号', usage: 'Semi $font-aiChatInput_rich_text-input_slot-fontSize' },
   'font-ai-chat-input-rich-text-input-slot-fontweight': { value: '600', category: 'font', label: '输入插槽字重', usage: 'Semi $font-aiChatInput_rich_text-input_slot-fontWeight' },
-  'ai-chat-input-rich-text-input-slot-placeholder-z': { value: '1', category: 'other', label: '输入插槽占位符层级', usage: 'Semi $z-aiChatInput_rich_text-input_slot_placeholder' },
+  'z-ai-chat-input-rich-text-input-slot-placeholder': { value: '1', category: 'other', label: '输入插槽占位符层级', usage: 'Semi $z-aiChatInput_rich_text-input_slot_placeholder' },
 
   // —— 配置区按钮（逐条镜像 Semi $*-aiChatInput_footer_configure_button-*）——
   // 值与本库原来写死的一致，但此前没走专属 token：外部改不动、也对不上 Semi 变量表。
@@ -622,7 +622,7 @@ export const aiChatInputTokens = {
     label: '滚动按钮阴影',
     usage: '左右滚动按钮阴影',
   },
-  'ai-chat-input-attachment-scroll-button-zIndex': {
+  'z-ai-chat-input-attachment-scroll-button': {
     value: '10',
     category: 'other',
     label: '滚动按钮层级',

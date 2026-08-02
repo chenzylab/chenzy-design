@@ -303,6 +303,9 @@
 
   .cd-ai-chat-dialogue-backBottom {
     position: absolute;
+    /* Semi aiChatDialogue.scss:87 给它设了 z-index，本库此前漏了这条 ——
+       所以 $z-aiChatDialogue_backBottom 对应的 token 一直没有消费方。 */
+    z-index: var(--cd-z-ai-chat-dialogue-back-bottom);
     right: var(--cd-spacing-loose);
     bottom: var(--cd-spacing-loose);
     width: 32px;

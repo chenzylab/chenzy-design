@@ -113,7 +113,7 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    z-index: var(--cd-ai-chat-input-attachment-scroll-button-zIndex);
+    z-index: var(--cd-z-ai-chat-input-attachment-scroll-button);
     width: var(--cd-ai-chat-input-attachment-scroll-button-width);
     height: var(--cd-ai-chat-input-attachment-scroll-button-width);
     border-radius: 50%;
