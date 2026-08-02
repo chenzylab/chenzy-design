@@ -947,3 +947,87 @@ describe('AIChatInput · slot 节点类名（对齐 Semi extension/*）', () => 
     expect(container.querySelector('.cd-ai-chat-input-input-slot')).toBeNull();
   });
 });
+
+// props 补齐（此前只核了类名，这轮回头核 API）。
+describe('AIChatInput · keepSkillAfterSend / uploadTipProps（对齐 Semi）', () => {
+  // Semi componentDidUpdate:215-220：generating 边沿清空时，
+  // keepSkillAfterSend=true 走 setContentWhileSaveTool('') 保留技能标记，否则整体清空；
+  // 两条分支都会 clearAttachments()。本库此前没有这个 prop，恒走「整体清空」。
+  // 技能必须**经 UI 选中**才会进 currentSkill（对齐 Semi 的 state.skill）——
+  // 光用 setContent 塞一个 <skill-slot> 标签不算，setContentWhileSaveTool 读的是那份状态。
+  // （我第一版就是这么写的，断言恒红，是夹具错不是实现缺口。）
+  async function pickFirstSkill(container: Element): Promise<void> {
+    const pm = container.querySelector('.ProseMirror') as HTMLElement;
+    pm.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true }));
+    await new Promise((r) => setTimeout(r, 30));
+    // 技能项走 mousedown 选中（不是 click），面板 portal 到 body 故查 document。
+    const first = document.querySelector('.cd-ai-chat-input-skill-item') as HTMLElement;
+    await fireEvent.mouseDown(first);
+    await new Promise((r) => setTimeout(r, 30));
+  }
+
+  it('keepSkillAfterSend=true：generating 边沿保留技能标记', async () => {
+    const skillList = [{ value: 'sum', label: '总结' }];
+    const rendered = render(AIChatInput, {
+      props: { keepSkillAfterSend: true, skills: skillList },
+    }) as unknown as {
+      container: Element;
+      rerender: (p: Record<string, unknown>) => Promise<void>;
+    };
+    const { container } = rendered;
+    await flush(container);
+    await pickFirstSkill(container);
+    expect(popup('.skill-slot'), '选中后应插入技能标记').not.toBeNull();
+
+    await rendered.rerender({ keepSkillAfterSend: true, skills: skillList, generating: true });
+    await flush();
+    expect(popup('.skill-slot'), '技能标记应保留').not.toBeNull();
+  });
+
+  it('keepSkillAfterSend=false（默认）：generating 边沿整体清空', async () => {
+    const skillList = [{ value: 'sum', label: '总结' }];
+    const rendered = render(AIChatInput, { props: { skills: skillList } }) as unknown as {
+      container: Element;
+      rerender: (p: Record<string, unknown>) => Promise<void>;
+    };
+    const { container } = rendered;
+    await flush(container);
+    await pickFirstSkill(container);
+    expect(popup('.skill-slot')).not.toBeNull();
+
+    await rendered.rerender({ skills: skillList, generating: true });
+    await flush();
+    expect(popup('.skill-slot'), '默认不保留技能标记').toBeNull();
+  });
+
+  // Semi index.tsx:558：传了 uploadTipProps 才给上传节点包 Tooltip，否则原样返回。
+  it('uploadTipProps：不传时不包 Tooltip，传了才包', async () => {
+    // 两处干扰：①整个输入框被 Popover 包着 ②Upload 自身的 showTooltip（长文件名提示）
+    // 也会渲染 .cd-tooltip-trigger。故改为数「上传按钮到 footer 之间」隔了几层 trigger：
+    // 不传时应为 0，传了应≥1。
+    const triggersAboveUpload = (c: Element): number => {
+      const btn = c.querySelector('.cd-ai-chat-input-footer-action-upload');
+      const stop = c.querySelector('.cd-ai-chat-input-footer-action');
+      let n = 0;
+      let cur = btn?.parentElement ?? null;
+      while (cur && cur !== stop) {
+        if (cur.classList.contains('cd-tooltip-trigger')) n += 1;
+        cur = cur.parentElement;
+      }
+      return n;
+    };
+
+    const plain = renderWithLocale(AIChatInput);
+    await flush(plain.container);
+    expect(triggersAboveUpload(plain.container), '不传时上传节点不该被 Tooltip 包裹').toBe(0);
+
+    const tipped = renderWithLocale(AIChatInput, {
+      props: { uploadTipProps: { content: '上传附件' } },
+    });
+    await flush(tipped.container);
+    expect(
+      triggersAboveUpload(tipped.container),
+      '传了 uploadTipProps 应包一层 Tooltip 触发器',
+    ).toBeGreaterThan(0);
+  });
+});

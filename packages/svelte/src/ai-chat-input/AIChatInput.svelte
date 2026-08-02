@@ -58,6 +58,7 @@
     IconVideo,
     IconWord,
   } from '@chenzy-design/icons';
+  import { Tooltip } from '../tooltip/index.js';
   import { useLocale } from '../locale-provider/index.js';
   import { Upload } from '../upload/index.js';
   // 复用现有组件：Semi renderAttachment 用 Progress type=circle 显示上传进度，本库同样复用。
@@ -223,6 +224,17 @@
       | undefined;
     /** generating 从 false→true 时清空输入（对齐 Semi clearContentOnGenerating，默认 true）。 */
     clearContentOnGenerating?: boolean;
+    /**
+     * 清空输入时保留已选技能标记（对齐 Semi keepSkillAfterSend，默认 false）。
+     * true 时走 setContentWhileSaveTool('') 而非整体 clearContent。
+     */
+    keepSkillAfterSend?: boolean;
+    /** 模版浮层附加类名（对齐 Semi templatesCls）。 */
+    templatesCls?: string;
+    /** 模版浮层附加内联样式（对齐 Semi templatesStyle）。 */
+    templatesStyle?: string;
+    /** 上传按钮的 Tooltip 配置；传了才包 Tooltip（对齐 Semi uploadTipProps）。 */
+    uploadTipProps?: Record<string, unknown> | undefined;
     /** 编辑区聚焦回调。 */
     onFocus?: ((event: FocusEvent) => void) | undefined;
     /** 编辑区失焦回调。 */
@@ -282,6 +294,10 @@
     showUploadFile = true,
     renderUploadButton,
     clearContentOnGenerating = true,
+    keepSkillAfterSend = false,
+    templatesCls,
+    templatesStyle,
+    uploadTipProps,
     onFocus,
     onBlur,
     onPaste,
@@ -362,6 +378,8 @@
         : '',
       showSkillPanel && !showTemplatePanel ? 'cd-ai-chat-input-popover-skill' : '',
       showTemplatePanel ? 'cd-ai-chat-input-popover-template' : '',
+      // 模版浮层的附加类名（对齐 Semi templatesCls，只在模版态生效）。
+      showTemplatePanel && templatesCls ? templatesCls : '',
     ]
       .filter(Boolean)
       .join(' '),
@@ -399,12 +417,21 @@
   const hasTopSlot = $derived(!!renderTopSlot);
   const hasAttachments = $derived(showUploadFile && attachments.length > 0);
 
-  // clearContentOnGenerating：generating false→true 边沿时清空输入（对齐 Semi）。
+  // clearContentOnGenerating：generating false→true 边沿时清空输入（对齐 Semi
+  // componentDidUpdate:215-220）。两处此前漏了：
+  //   · keepSkillAfterSend=true 时走 setContentWhileSaveTool('') 保留技能标记，
+  //     而不是整个清空（本库该方法早就有，只是没接上这个 prop）；
+  //   · 无论哪条分支，Semi 都会同时 clearAttachments()。
   let prevGenerating = untrack(() => generating);
   $effect(() => {
     const now = generating;
     if (clearContentOnGenerating && now && !untrack(() => prevGenerating)) {
-      editor?.commands.clearContent(true);
+      if (keepSkillAfterSend) {
+        setContentWhileSaveTool('');
+      } else {
+        editor?.commands.clearContent(true);
+      }
+      attachments = [];
     }
     prevGenerating = now;
   });
@@ -775,6 +802,7 @@
   {...popoverProps}
   rePosKey={popupKey}
   class={popoverClass}
+  {...showTemplatePanel && templatesStyle ? { style: templatesStyle } : {}}
   wrapperClassName="cd-ai-chat-input-popover-trigger"
   triggerStyle="display: block; width: 100%;"
   visible={popoverVisible}
@@ -1003,6 +1031,19 @@
 <!-- 默认操作按钮组（上传 + 发送/停止）。抽成 snippet 以便原样回传给 renderActionArea。 -->
 {#snippet actionMenuItem()}
   {#if showUploadButton}
+    <!-- uploadTipProps 存在时给整个上传节点包一层 Tooltip（对齐 Semi index.tsx:558：
+         `uploadTipProps ? <Tooltip {...uploadTipProps}><span>{uploadNode}</span></Tooltip> : uploadNode`）。
+         此前本库完全没有这个 prop。 -->
+    {#if uploadTipProps}
+      <Tooltip {...uploadTipProps}>
+        <span>{@render uploadNode()}</span>
+      </Tooltip>
+    {:else}
+      {@render uploadNode()}
+    {/if}
+  {/if}
+
+  {#snippet uploadNode()}
     <!-- listType='none'：附件列表由本组件 top area 自绘（showUploadFile），Upload 仅做触发器+上传管线。 -->
     <Upload listType="none" multiple {...uploadProps} onChange={handleAttachmentChange}>
       {#if renderUploadButton}
@@ -1025,7 +1066,7 @@
         </span>
       {/if}
     </Upload>
-  {/if}
+  {/snippet}
   <button
     type="button"
     class="cd-ai-chat-input-footer-action-button"
